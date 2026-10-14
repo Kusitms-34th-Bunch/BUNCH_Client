@@ -1,0 +1,63 @@
+name: Discord PR Conflict
+
+# 충돌이 있는 PR은 병합 결과 commit을 만들 수 없어 pull_request workflow가 실행되지 않는다.
+# 그래서 PR이 열리거나 갱신될 때(pull_request_target)와 기준 브랜치가 바뀔 때(push) 둘 다 확인한다.
+# pull_request_target은 PR 코드를 checkout하지 않는 이 workflow에서만 안전하다. checkout 단계를 추가하지 않는다.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: pr-conflict-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      GH_TOKEN: ${{ github.token }}
+      BASE: ${{ github.base_ref || github.ref_name }}
+      ONLY_PR: ${{ github.event.pull_request.number }}
+
+    steps:
+      - name: Notify conflicting pull requests
+        shell: bash
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo 'DISCORD_WEBHOOK_URL is not configured; skipping.'
+            exit 0
+          fi
+
+          # push는 기준 브랜치로 향하는 열린 PR 전체를, PR 이벤트는 그 PR 하나만 본다.
+          # mergeable은 GitHub가 비동기로 계산해서 직후에는 UNKNOWN일 수 있어 몇 번 다시 확인한다.
+          for attempt in 1 2 3 4 5; do
+            prs=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --base "$BASE" --limit 100 \
+              --json number,title,url,author,mergeable |
+              jq --arg only "$ONLY_PR" 'map(select($only == "" or .number == ($only | tonumber)))')
+            [ "$(jq 'map(select(.mergeable == "UNKNOWN")) | length' <<<"$prs")" = '0' ] && break
+            sleep 6
+          done
+          [ "$(jq 'map(select(.mergeable == "UNKNOWN")) | length' <<<"$prs")" != '0' ] &&
+            echo '::warning::Some pull requests are still UNKNOWN; they were not checked.'
+
+          lines=$(jq -r '.[] | select(.mergeable == "CONFLICTING")
+            | "⚠️ PR conflict: [#\(.number) \(.title)](\(.url)) by @\(.author.login // "ghost")"' <<<"$prs")
+
+          if [ -z "$lines" ]; then
+            echo 'No conflicting pull requests.'
+            exit 0
+          fi
+
+          # PR 제목은 외부 입력이라 @everyone 같은 멘션이 동작하지 않게 막는다.
+          jq -n --arg content "$lines" '{content: $content, allowed_mentions: {parse: []}}' |
+            curl --fail-with-body --connect-timeout 10 --max-time 30 --request POST "$DISCORD_WEBHOOK_URL" \
+              --header 'Content-Type: application/json' \
+              --data @-
