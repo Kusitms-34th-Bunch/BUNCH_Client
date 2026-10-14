@@ -18,3 +18,4 @@
 - [004: apps/admin은 scaffold로 유지하고 기능 개발은 보류한다](./records/004-admin-deferred.md)
 - [005: 작업은 develop으로 모으고 main은 프로덕션용으로 둔다](./records/005-branch-strategy.md)
 - [006: 웹 오류 수집에 Sentry를 사용한다](./records/006-web-sentry-error-monitoring.md)
+- [007: 로그인·온보딩 API 계약 확정 후 MSW를 도입한다](./records/007-msw-adoption-after-api-contract.md)
