@@ -74,6 +74,11 @@ jobs:
               });
             }
 
+            if (pullRequest.base.ref === 'main' && pullRequest.head.ref === 'develop') {
+              core.info('Release pull request: change type validation and type labels are skipped.');
+              return;
+            }
+
             const branchMatch = pullRequest.head.ref.match(/^(\d+)-(feat|fix|hotfix|refactor|remove|rename|style|test|docs|chore)\/.+$/);
 
             if (context.payload.action === 'opened' && branchMatch) {

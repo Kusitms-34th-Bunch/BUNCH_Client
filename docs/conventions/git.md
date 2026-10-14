@@ -42,7 +42,7 @@ checkout에는 `contents: read`, 라벨·assignee·본문 수정에는 `issues: 
 - PR을 **열 때 한 번**, 브랜치가 `<이슈번호>-<type>/<이름>` 형식이면 연결된 이슈의 제목으로 PR 제목을 `[Type] 제목`(예: `[Feat] 로그인 페이지`)으로 바꾼다. 이후에 고친 제목은 덮어쓰지 않으며, 이슈를 못 찾거나 브랜치가 형식에 안 맞으면 제목을 그대로 둔다.
 - PR 제목(`[Type] 제목` 또는 `type: subject` 형식) 또는 브랜치명에서 타입을 다시 파싱해 같은 라벨을 붙이고, 기존에 다른 타입 라벨이 있으면 제거한다.
 - PR에 assignee가 없으면 작성자를 지정한다.
-- 제목과 브랜치명 어디에서도 타입을 찾지 못하면 `PR Metadata / Metadata` check가 **실패**한다. 필수 체크로 지정돼 있으면 머지할 수 없고, PR 제목을 `[Type] 제목` 또는 `type: subject` 형식으로 고치면 다시 실행되어 통과한다.
+- `develop` → `main` 릴리스 PR은 타입 제목 검사와 타입 라벨 처리를 생략한다. `develop to main` 같은 제목을 그대로 쓸 수 있고, 릴리스 본문·assignee 처리는 유지한다. 그 외 PR은 제목과 브랜치명 어디에서도 타입을 찾지 못하면 `PR Metadata / Metadata` check가 **실패**한다. 필수 체크로 지정돼 있으면 머지할 수 없고, PR 제목을 `[Type] 제목` 또는 `type: subject` 형식으로 고치면 다시 실행되어 통과한다.
 - fork에서 온 PR, dependabot PR, 봇이 만든 PR은 건드리지 않는다(이 검사도 적용되지 않는다).
 
 ## 디자인 토큰 자동 PR
