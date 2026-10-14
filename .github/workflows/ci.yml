@@ -1,4 +1,4 @@
-name: CI
+name: Frontend CI
 
 on:
   pull_request:
@@ -16,19 +16,186 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      suspicious: ${{ steps.suspicious.outcome }}
+      install: ${{ steps.install.outcome }}
+      generated: ${{ steps.generated.outcome }}
+      catalog: ${{ steps.catalog.outcome }}
+      agent-docs: ${{ steps.agent-docs.outcome }}
+      boundaries: ${{ steps.boundaries.outcome }}
+      format: ${{ steps.format.outcome }}
+      lint: ${{ steps.lint.outcome }}
+      typecheck: ${{ steps.typecheck.outcome }}
+      test: ${{ steps.test.outcome }}
+      build: ${{ steps.build.outcome }}
 
     steps:
       - uses: actions/checkout@v4
 
-      # 의존성 설치(코드가 실행될 수 있는 단계) 전에 변조 징후를 먼저 검사한다.
+      # 의존성 설치(코드가 실행될 수 있는 단계) 전에 변조 징후를 먼저 검사한다. 실패하면 설치하지 않고 멈춘다.
       - name: Suspicious file guard
+        id: suspicious
         run: node turbo/workflows/check-suspicious.mjs
+
+      # setup-node의 yarn 캐시가 Yarn 4를 찾으려면 Corepack을 먼저 켠다.
+      - run: corepack enable
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: yarn
 
-      - run: corepack enable
-      - run: yarn install --immutable
-      - run: yarn verify
+      - name: Install dependencies
+        id: install
+        run: yarn install --immutable
+
+      # 아래 단계는 package.json의 verify와 같은 순서·같은 명령을 유지한다. 하나가 실패해도 나머지를 끝까지 실행해 결과를 모은다.
+      - name: Generated files check
+        id: generated
+        continue-on-error: true
+        run: yarn check:generated
+
+      - name: Catalog check
+        id: catalog
+        continue-on-error: true
+        run: yarn check:catalog
+
+      - name: Agent docs check
+        id: agent-docs
+        continue-on-error: true
+        run: yarn check:agent-docs
+
+      - name: Boundaries check
+        id: boundaries
+        continue-on-error: true
+        run: yarn check:boundaries
+
+      - name: Format check
+        id: format
+        continue-on-error: true
+        run: yarn format:check
+
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: yarn lint
+
+      - name: Type check
+        id: typecheck
+        continue-on-error: true
+        run: yarn typecheck
+
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: yarn test
+
+      - name: Build
+        id: build
+        continue-on-error: true
+        run: yarn build
+
+      - name: Fail if any check failed
+        if: always()
+        env:
+          OUTCOMES: >-
+            ${{ steps.suspicious.outcome }} ${{ steps.install.outcome }}
+            ${{ steps.generated.outcome }} ${{ steps.catalog.outcome }}
+            ${{ steps.agent-docs.outcome }} ${{ steps.boundaries.outcome }}
+            ${{ steps.format.outcome }} ${{ steps.lint.outcome }}
+            ${{ steps.typecheck.outcome }} ${{ steps.test.outcome }}
+            ${{ steps.build.outcome }}
+        run: |
+          case " $OUTCOMES " in
+            *" failure "* | *" cancelled "*) echo "실패한 검증이 있습니다."; exit 1 ;;
+          esac
+
+  comment:
+    name: Result comment
+    needs: verify
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Comment CI result on the pull request
+        uses: actions/github-script@v7
+        env:
+          OUTCOMES: ${{ toJSON(needs.verify.outputs) }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const outcomes = JSON.parse(process.env.OUTCOMES);
+            const marker = '<!-- frontend-ci-result -->';
+            const rows = [
+              ['suspicious', '변조 가드'],
+              ['install', '의존성 설치'],
+              ['generated', '생성물 동기화'],
+              ['catalog', 'catalog'],
+              ['agent-docs', 'agent 문서'],
+              ['boundaries', '경계(boundaries)'],
+              ['format', 'Prettier'],
+              ['lint', 'ESLint'],
+              ['typecheck', 'TypeScript'],
+              ['test', 'Test'],
+              ['build', 'Build'],
+            ];
+            const status = { success: '통과', failure: '**실패**', skipped: '건너뜀', cancelled: '취소' };
+
+            // 결과는 job 전체 결과가 success일 때만 통과로 본다. 단계 outcome에 failure가 없어도(앞 단계 실패로 전부 건너뜀 등) 실패일 수 있다.
+            const passed = process.env.VERIFY_RESULT === 'success';
+            const failed = rows.filter(([key]) => outcomes[key] === 'failure');
+            const halted = ['suspicious', 'install'].find((key) => outcomes[key] === 'failure');
+
+            let summary;
+            if (passed) {
+              summary = `**결과: 통과** — ${rows.length}개 단계 모두 통과`;
+            } else if (failed.length) {
+              const names = failed.map(([, label]) => label).join(', ');
+              summary = `**결과: 실패** — ${rows.length}개 단계 중 ${failed.length}개 실패 (${names})`;
+            } else {
+              summary = '**결과: 실패** — 단계별 결과를 확인하지 못했습니다. 실행 로그를 확인하세요.';
+            }
+
+            const commitUrl = `${context.payload.repository.html_url}/commit/${context.payload.pull_request.head.sha}`;
+            const lines = [
+              marker,
+              '## Frontend CI',
+              '',
+              summary,
+              ...(halted
+                ? ['', `${rows.find(([key]) => key === halted)[1]} 단계가 실패해서 이후 단계는 실행하지 않았습니다.`]
+                : []),
+              '',
+              '| 단계 | 결과 |',
+              '| --- | --- |',
+              ...rows.map(([key, label]) => `| ${label} | ${status[outcomes[key]] ?? '-'} |`),
+              '',
+              `[기준 커밋](${commitUrl}) · [실행 로그](${process.env.RUN_URL})`,
+            ];
+            const body = lines.join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (comment) => comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

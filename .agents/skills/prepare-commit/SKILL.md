@@ -43,6 +43,7 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 ## 메시지 규칙
 
 ```text
+<type>: <subject>
 <type>(<scope>): <subject>
 ```
 
@@ -56,7 +57,7 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 | `style`          | 동작 없는 UI/format 변경      |
 | `chore`          | build, package, CI, 보조 설정 |
 
-- scope는 변경 영역이 분명한 경우만 쓴다.
+- scope는 기본적으로 쓰지 않는다. 변경이 한 영역(`web`, `admin`, `design-system`, `api-core`, `bridge`, `ci` 등)에 한정될 때만 쓰고, 여러 영역에 걸치거나 분명하지 않으면 쓰지 않는다.
 - subject는 한국어 명사형 또는 요약형, 50자 내외, 마침표 없음으로 작성한다.
 - 파일명·AI 출처·검증하지 않은 동작을 subject에 넣지 않는다.
 - issue close 문구는 커밋이 아니라 PR 본문의 `Close #번호`에 둔다.
@@ -66,7 +67,7 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 ````markdown
 ## Commit Plan
 
-### Commit 1 — type(scope): 한국어 요약
+### Commit 1 — type: 한국어 요약
 
 - 포함: `path/...`
 - 이유: 독립적인 변경 목적
@@ -74,7 +75,7 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 
 ```bash
 git add -- path/...
-git commit -m "type(scope): 한국어 요약"
+git commit -m "type: 한국어 요약"
 ```
 ````
 

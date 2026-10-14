@@ -80,7 +80,7 @@ agent는 커밋·push·PR·이슈 생성을 사용자가 요청하고 실행 직
 
 ## PR 제목과 커밋 메시지
 
-PR 제목은 `[Type] 제목`(자동 설정), 커밋 메시지는 `type(scope): subject`다. 둘의 type은 위 브랜치 타입과 같은 값을 쓴다. 커밋 메시지 형식 자체는 `docs/conventions/commit.md`를 따른다.
+PR 제목은 `[Type] 제목`(자동 설정), 커밋 메시지는 `type: subject`다(scope는 한 영역에 한정된 변경에만 `type(scope): subject`로 쓴다). 둘의 type은 위 브랜치 타입과 같은 값을 쓴다. 커밋 메시지 형식 자체는 `docs/conventions/commit.md`를 따른다.
 
 ## 알림
 
