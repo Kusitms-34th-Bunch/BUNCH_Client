@@ -36,6 +36,8 @@ PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이�
 
 `pr-metadata.yml`이 PR이 열리거나 재오픈·ready for review·제목 수정·동기화될 때 실행되어:
 
+checkout에는 `contents: read`, 라벨·assignee·본문 수정에는 `issues: write`와 `pull-requests: write`를 사용한다. `permissions`에서 생략한 권한은 `none`이므로 checkout 읽기 권한도 명시한다.
+
 - `develop` → `main` PR을 **열 때 한 번**, 본문이 비어 있거나 기본 PR 템플릿 그대로면 릴리스 본문으로 바꾼다. 본문은 "작업 내용: develop 변경사항을 main에 반영", "확인 사항: 개별 변경사항은 develop 머지 전 각 PR에서 확인"으로 구성한다. 직접 작성한 본문과 이후 수정한 내용은 보존한다. agent가 이 릴리스 PR 초안을 준비할 때도 같은 본문을 사용한다.
 - PR을 **열 때 한 번**, 브랜치가 `<이슈번호>-<type>/<이름>` 형식이면 연결된 이슈의 제목으로 PR 제목을 `[Type] 제목`(예: `[Feat] 로그인 페이지`)으로 바꾼다. 이후에 고친 제목은 덮어쓰지 않으며, 이슈를 못 찾거나 브랜치가 형식에 안 맞으면 제목을 그대로 둔다.
 - PR 제목(`[Type] 제목` 또는 `type: subject` 형식) 또는 브랜치명에서 타입을 다시 파싱해 같은 라벨을 붙이고, 기존에 다른 타입 라벨이 있으면 제거한다.
