@@ -43,16 +43,16 @@
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
     "@playwright/test": "catalog:",
-    "@turbo/gen": "^2.10.5",
+    "@turbo/gen": "^2.11.7",
     "@types/node": "catalog:",
     "@yarnpkg/types": "^4.0.1",
     "eslint": "catalog:",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.8",
+    "lint-staged": "^17.6.0",
     "openapi-typescript": "catalog:",
-    "prettier": "^3.9.5",
+    "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "catalog:",
-    "turbo": "^2.10.5",
+    "turbo": "^2.11.7",
     "typescript": "catalog:"
   }
 }
