@@ -8,7 +8,8 @@
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./tokens.css": "./tokens/tokens.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -18,7 +19,9 @@
     "gen:index": "tsx scripts/genIndex.ts",
     "gen:index:check": "tsx scripts/genIndex.ts --check",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "tokens:build": "tsx scripts/buildTokens.ts",
+    "tokens:check": "tsx scripts/buildTokens.ts --check"
   },
   "dependencies": {
     "clsx": "^2.1.1",

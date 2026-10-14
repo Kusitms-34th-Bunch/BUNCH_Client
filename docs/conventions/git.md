@@ -42,6 +42,14 @@ PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이�
 - 제목과 브랜치명 어디에서도 타입을 찾지 못하면 `PR Metadata / Metadata` check가 **실패**한다. 필수 체크로 지정돼 있으면 머지할 수 없고, PR 제목을 `[Type] 제목` 또는 `type: subject` 형식으로 고치면 다시 실행되어 통과한다.
 - fork에서 온 PR, dependabot PR, 봇이 만든 PR은 건드리지 않는다(이 검사도 적용되지 않는다).
 
+## 디자인 토큰 자동 PR
+
+- `.github/workflows/sync-design-tokens.yml`은 `design-token`의 `packages/design-system/tokens/tokens.json` 변경 또는 수동 실행을 대상으로 한다.
+- Yarn 4·Node 24로 CSS 생성과 토큰 테스트를 실행하고 `tokens.css`만 같은 브랜치에 커밋·push한다. Git hook은 유지한다. 원본·CSS가 `develop`과 같으면 PR을 만들지 않고, 열린 `design-token` → `develop` PR이 있으면 재사용한다.
+- repository Actions secret `DESIGN_TOKENS_PR_TOKEN`에 이 저장소만 선택한 fine-grained PAT를 등록한다. `Contents: Read and write`, `Pull requests: Read and write`가 필요하며 조직 정책에 따라 승인이 필요할 수 있다. Tokens Studio 연결용 PAT와 별도 관리하는 편이 만료·권한 관리에 편하다.
+- PAT로 commit push와 PR 생성 요청을 인증해 후속 CI를 실행한다. [GitHub 공식 문서](https://docs.github.com/en/actions/concepts/security/github_token#when-github_token-triggers-workflow-runs)에 따르면 `GITHUB_TOKEN`으로 생성·갱신한 PR의 workflow는 승인 대기가 필요할 수 있다.
+- 최초 적용 시 workflow·변환 스크립트와 최신 `develop` 변경을 `design-token`에도 반영해야 한다. 이후 PR을 merge할 때 지속 사용하는 `design-token` 브랜치는 삭제하지 않고, 다음 디자인 변경 전 `develop`을 반영한다. 자동 merge·강제 push는 하지 않는다.
+
 ## Git hook (husky)
 
 사람과 agent 모두 걸린다. `yarn install`의 `prepare`가 hook을 건다.

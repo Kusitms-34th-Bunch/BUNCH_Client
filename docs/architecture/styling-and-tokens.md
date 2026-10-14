@@ -30,7 +30,19 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 여�
 
 font·asset은 라이선스, 크기, preload·cache 전략이 확정된 뒤 도입한다. 외부 CDN font를 기본값으로 추가하지 않는다.
 
-## 확인
+## Tokens Studio 변환
+
+- 원본은 `packages/design-system/tokens/tokens.json`이며 Tokens Studio의 `design-token` 브랜치 Push 경로다. 원본의 Figma metadata와 Primitive·Semantic 세트를 유지한다.
+- `yarn tokens:build`로 같은 폴더의 `tokens.css`를 생성하고, `yarn tokens:check`로 원본과 생성물의 동기화를 검증한다. CSS를 직접 수정하지 않는다. 원본과 생성물은 Prettier 대상에서 제외한다.
+- 기존 `yarn check:generated`가 `tokens:check`도 실행하므로 local verify와 CI에서 오래된 생성 CSS를 발견한다.
+- 내부 CSS 변수는 `--primitive-<경로>`, `--semantic-<경로>`로 구분하며 그룹과 토큰 이름에 반복된 접두어를 제거한다. 예: `Border.border-brand` → `--semantic-border-brand`, `Bunch.color-primitive-bunch-500` → `--primitive-bunch-500`. Semantic alias는 Primitive 변수에 대한 `var(...)` 참조로 남긴다. Composite typography는 `typography-title-1-bold` 같은 `@utility`로 생성한다.
+- Tailwind v4의 `@theme inline`에 색상·간격·radius·shadow·gradient를 연결한다. 예: `text-text-primary`, `bg-surface-primary`, `rounded-r1`, `gap-s1`. 실제 이름은 생성 CSS를 기준으로 확인한다.
+- 소비 앱은 `@app/design-system` workspace 의존성을 선언하고 Tailwind 전역 CSS에서 `@import '@app/design-system/tokens.css';`로 사용한다. Web은 `src/app/globals.css`에서 연결하며 admin·Storybook은 아직 연결하지 않았다. Tailwind의 `border-border-brand`는 속성 `border-`와 색상 이름 `border-brand`의 조합이므로 유지한다.
+- `sync-design-tokens.yml`은 `design-token` 브랜치의 원본 변경을 변환·검증하고 생성 CSS를 같은 브랜치에 커밋한 뒤 `develop`으로 PR한다. 기존 열린 PR은 재사용하고 CSS만 바뀐 Push는 다시 변환하지 않는다. 설정과 secret은 `docs/conventions/git.md`를 따른다.
+- opacity 숫자는 Figma의 0–100 값을 퍼센트로, 길이는 px로 변환한다. 참조 누락·순환·이름 충돌·미지원 타입 및 모드는 실패로 처리한다. 현재 export의 `Primitive/Mode 1`, `Semantic/Mode 1`만 지원하며 theme이나 mode가 추가되면 선택 규칙부터 확정한다. Pretendard 파일은 설치하거나 로드하지 않는다.
+- 다른 변수를 참조하는 Tailwind theme은 [공식 `@theme inline` 규칙](https://tailwindcss.com/docs/theme#referencing-other-variables)을 따른다.
+
+## 스타일 검증
 
 - light/dark 또는 다른 theme을 지원한다면 token contract와 fallback을 명시한다. 지원하지 않는 theme은 class만 미리 만들지 않는다.
 - 긴 텍스트, 좁은 viewport, disabled·error·selected 상태에서 contrast와 overflow를 확인한다.
