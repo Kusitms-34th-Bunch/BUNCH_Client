@@ -5,14 +5,19 @@ const checks = [
     name: 'Design-system barrel exports',
     command: ['workspace', '@app/design-system', 'gen:index:check'],
   },
+  {
+    name: 'Design-system component structure',
+    bin: process.execPath,
+    command: ['turbo/workflows/check-ds-components.mjs'],
+  },
 ];
 
 const yarnCommand = process.platform === 'win32' ? 'yarn.cmd' : 'yarn';
 
-for (const { name, command } of checks) {
+for (const { name, bin = yarnCommand, command } of checks) {
   console.log(`Checking ${name}...`);
 
-  const result = spawnSync(yarnCommand, command, { stdio: 'inherit' });
+  const result = spawnSync(bin, command, { stdio: 'inherit' });
 
   if (result.error) {
     throw result.error;
