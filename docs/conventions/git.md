@@ -11,7 +11,7 @@
 
 ## 이슈 생성 → 브랜치 자동 생성
 
-1. `.github/ISSUE_TEMPLATE/issue.yml` 폼으로 이슈를 만든다. "브랜치명"(영어)과 "브랜치 타입"(`feat`/`fix`/`hotfix`/`refactor`/`style`/`test`/`docs`/`chore`)을 입력한다.
+1. `.github/ISSUE_TEMPLATE/issue.yml` 폼으로 이슈를 만든다. "브랜치명"(영어)과 "브랜치 타입"(`feat`/`fix`/`hotfix`/`refactor`/`remove`/`rename`/`style`/`test`/`docs`/`chore`)을 입력한다.
 2. 이슈가 열리면 `create-work-branch.yml`이 실행되어:
    - `.github/scripts/parse_issue.py`로 폼 값을 파싱하고
    - `<이슈번호>-<타입>/<브랜치명>` 형식의 브랜치를 default branch에서 만들어 push하고 (예: `12-feat/login-page`)
@@ -65,22 +65,24 @@ agent는 커밋·push·PR·이슈 생성을 사용자가 요청하고 실행 직
 
 ## 브랜치 타입
 
-| 타입       | 라벨     | 용도             |
-| ---------- | -------- | ---------------- |
-| `feat`     | FEAT     | 새로운 기능 구현 |
-| `fix`      | FIX      | 버그 수정        |
-| `hotfix`   | HOTFIX   | 긴급 수정        |
-| `refactor` | REFACTOR | 코드 리팩토링    |
-| `style`    | STYLE    | 스타일 작업      |
-| `test`     | TEST     | 테스트           |
-| `docs`     | DOCS     | 문서 수정        |
-| `chore`    | CHORE    | 기타 작업        |
+| 타입       | 라벨     | 용도                      |
+| ---------- | -------- | ------------------------- |
+| `feat`     | FEAT     | 새로운 기능 구현          |
+| `fix`      | FIX      | 버그 수정                 |
+| `hotfix`   | HOTFIX   | 긴급 수정                 |
+| `refactor` | REFACTOR | 코드 리팩토링             |
+| `remove`   | REMOVE   | 파일 삭제                 |
+| `rename`   | RENAME   | 파일, 폴더명 수정 OR 이동 |
+| `style`    | STYLE    | 스타일 작업               |
+| `test`     | TEST     | 테스트                    |
+| `docs`     | DOCS     | 문서 수정                 |
+| `chore`    | CHORE    | 기타 작업                 |
 
 이 표와 실제 라벨 색상·설명은 `.github/scripts/parse_issue.py`의 `LABEL_MAP`이 기준이다. 타입을 추가·변경하면 이슈 템플릿의 드롭다운과 함께 갱신한다.
 
 ## PR 제목과 커밋 메시지
 
-PR 제목은 `[Type] 제목`(자동 설정), 커밋 메시지는 `type: subject`다(scope는 한 영역에 한정된 변경에만 `type(scope): subject`로 쓴다). 둘의 type은 위 브랜치 타입과 같은 값을 쓴다. 커밋 메시지 형식 자체는 `docs/conventions/commit.md`를 따른다.
+PR 제목은 `[Type] 제목`(자동 설정), 커밋 메시지는 `type: subject`다(scope는 한 영역에 한정된 변경에만 `type(scope): subject`로 쓴다). 둘의 type은 위 브랜치 타입과 같은 값을 쓴다(`commitlint`의 `type-enum`도 같은 값만 허용한다). 커밋 메시지 형식 자체는 `docs/conventions/commit.md`를 따른다.
 
 ## 알림
 

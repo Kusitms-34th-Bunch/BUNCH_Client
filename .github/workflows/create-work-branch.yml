@@ -121,7 +121,7 @@ jobs:
                 '작업 브랜치를 만들지 못했습니다. 이슈 폼에서 아래 두 칸을 읽지 못했습니다.',
                 '',
                 '- `🌳 브랜치명 (Branch)`: 비어 있지 않아야 합니다.',
-                '- `📂 브랜치 타입`: `feat`, `fix`, `hotfix`, `refactor`, `style`, `test`, `docs`, `chore` 중 하나여야 합니다.',
+                '- `📂 브랜치 타입`: `feat`, `fix`, `hotfix`, `refactor`, `remove`, `rename`, `style`, `test`, `docs`, `chore` 중 하나여야 합니다.',
                 '',
                 '이 workflow는 이슈를 열 때만 실행되므로 내용을 고쳐도 다시 실행되지 않습니다. 이 이슈를 닫고 이슈 폼으로 새 이슈를 만들어 주세요.',
               ].join('\n'),

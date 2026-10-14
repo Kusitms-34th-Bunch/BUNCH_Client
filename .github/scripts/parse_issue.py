@@ -24,6 +24,8 @@ LABEL_MAP = {
     'fix': {'name': 'FIX', 'color': 'FFF5F7', 'description': '버그 수정'},
     'hotfix': {'name': 'HOTFIX', 'color': 'FFF7FF', 'description': '긴급 수정'},
     'refactor': {'name': 'REFACTOR', 'color': 'F2FFF8', 'description': '코드 리팩토링'},
+    'remove': {'name': 'REMOVE', 'color': 'F6F9F4', 'description': '파일 삭제'},
+    'rename': {'name': 'RENAME', 'color': 'FFFBEF', 'description': '파일, 폴더명 수정 OR 이동'},
     'style': {'name': 'STYLE', 'color': 'F8F4FF', 'description': '스타일 작업'},
     'test': {'name': 'TEST', 'color': 'ECFFFF', 'description': '테스트'},
 }

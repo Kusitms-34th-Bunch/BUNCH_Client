@@ -48,7 +48,7 @@ jobs:
               });
             }
 
-            const branchMatch = pullRequest.head.ref.match(/^(\d+)-(feat|fix|hotfix|refactor|style|test|docs|chore)\/.+$/);
+            const branchMatch = pullRequest.head.ref.match(/^(\d+)-(feat|fix|hotfix|refactor|remove|rename|style|test|docs|chore)\/.+$/);
 
             if (context.payload.action === 'opened' && branchMatch) {
               const [, issueNumber, branchType] = branchMatch;
@@ -76,7 +76,7 @@ jobs:
                 return;
               }
               core.setFailed(
-                'PR 제목을 `[Type] 제목` 또는 `type: subject` 형식으로 쓰거나(feat, fix, hotfix, refactor, style, test, docs, chore) 브랜치를 `<이슈번호>-<type>/<이름>`으로 만들어야 타입 라벨이 붙는다. 제목을 고치면 이 검사가 다시 실행된다.',
+                'PR 제목을 `[Type] 제목` 또는 `type: subject` 형식으로 쓰거나(feat, fix, hotfix, refactor, remove, rename, style, test, docs, chore) 브랜치를 `<이슈번호>-<type>/<이름>`으로 만들어야 타입 라벨이 붙는다. 제목을 고치면 이 검사가 다시 실행된다.',
               );
               return;
             }

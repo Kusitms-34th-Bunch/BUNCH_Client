@@ -52,6 +52,8 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 | `feat`           | 새 사용자 기능                |
 | `fix` / `hotfix` | 버그 또는 긴급 수정           |
 | `refactor`       | 동작 보존 구조 개선           |
+| `remove`         | 파일 삭제                     |
+| `rename`         | 파일·폴더 이름 변경, 이동     |
 | `test`           | 테스트만 변경                 |
 | `docs`           | 문서·agent 지침               |
 | `style`          | 동작 없는 UI/format 변경      |

@@ -13,5 +13,13 @@ export default {
       },
     },
   ],
-  rules: { 'no-ai-attribution': [2, 'always'] },
+  rules: {
+    // 브랜치 타입(docs/conventions/git.md)과 같은 값만 허용한다.
+    'type-enum': [
+      2,
+      'always',
+      ['feat', 'fix', 'hotfix', 'refactor', 'remove', 'rename', 'style', 'test', 'docs', 'chore'],
+    ],
+    'no-ai-attribution': [2, 'always'],
+  },
 };
