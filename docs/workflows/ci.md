@@ -4,29 +4,29 @@ GitHub Actions가 PR과 `main`·`develop` push에서 검증을 실행한다. wor
 
 ## Workflows
 
-| Workflow                  | Trigger                                                        | 역할                                                                                                                                                                                                                          |
-| ------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                  | `pull_request`, `push`(main, develop)                          | `Frontend CI`. 설치 전에 `check-suspicious`(변조 징후 가드)를 먼저 실행한 뒤 `yarn verify`와 같은 단계(생성물·catalog·agent docs·boundary 확인 + format·lint·typecheck·test·build)를 하나씩 실행하고, 결과를 PR 댓글로 남긴다 |
-| `e2e.yml`                 | `pull_request`, `workflow_dispatch`                            | Playwright E2E(chromium). 실패 시 report·result를 artifact로 업로드                                                                                                                                                           |
-| `security.yml`            | `pull_request`, `push`(main, develop), `workflow_dispatch`     | gitleaks로 git 이력 전체의 시크릿 스캔. 시크릿이 있으면 실패                                                                                                                                                                  |
-| `create-work-branch.yml`  | `issues: opened`                                               | 이슈 폼에서 브랜치 자동 생성 — `docs/conventions/git.md`                                                                                                                                                                      |
-| `pr-metadata.yml`         | `pull_request`(열림·재오픈·ready·제목 수정·동기화)             | PR 타입 라벨·assignee 자동화, 타입 라벨을 붙일 수 없는 PR은 실패 — `docs/conventions/git.md`                                                                                                                                  |
-| `branch-protection.yml`   | `main`을 대상으로 하는 `pull_request`                          | 출발 브랜치가 `develop`이 아니면 실패 — `docs/decisions/records/005-branch-strategy.md`                                                                                                                                       |
-| `cache-cleanup.yml`       | `pull_request_target`(닫힘)                                    | PR이 닫히면 그 PR이 만든 Actions 캐시를 삭제한다. `develop`·`main`의 캐시는 건드리지 않는다. PR 코드를 checkout하지 않는다                                                                                                    |
-| `discord-notify.yml`      | `pull_request`(열림·재오픈·ready·닫힘)                         | Discord 알림, webhook 없으면 스킵                                                                                                                                                                                             |
-| `discord-pr-conflict.yml` | `pull_request_target`(열림·재오픈·갱신), `push`(main, develop) | 충돌 상태(`CONFLICTING`)인 PR을 Discord로 알림. PR 코드를 checkout하지 않는다. webhook 없으면 스킵                                                                                                                            |
+| Workflow                  | Trigger                                                        | 역할                                                                                                                                                                                                                   |
+| ------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                  | `pull_request`, `push`(main, develop)                          | `Frontend CI`. 설치 전에 `check-suspicious`(변조 징후 가드)를 먼저 실행한 뒤 `yarn verify`와 같은 검사(생성물·catalog·agent docs·boundary 확인 + format·lint·typecheck·test·build)를 실행하고, 결과를 PR 댓글로 남긴다 |
+| `e2e.yml`                 | `pull_request`, `workflow_dispatch`                            | Playwright E2E(chromium). 실패 시 report·result를 artifact로 업로드                                                                                                                                                    |
+| `security.yml`            | `pull_request`, `push`(main, develop), `workflow_dispatch`     | gitleaks로 git 이력 전체의 시크릿 스캔. 시크릿이 있으면 실패                                                                                                                                                           |
+| `create-work-branch.yml`  | `issues: opened`                                               | 이슈 폼에서 브랜치 자동 생성 — `docs/conventions/git.md`                                                                                                                                                               |
+| `pr-metadata.yml`         | `pull_request`(열림·재오픈·ready·제목 수정·동기화)             | PR 타입 라벨·assignee 자동화, 타입 라벨을 붙일 수 없는 PR은 실패 — `docs/conventions/git.md`                                                                                                                           |
+| `branch-protection.yml`   | `main`을 대상으로 하는 `pull_request`                          | 출발 브랜치가 `develop`이 아니면 실패 — `docs/decisions/records/005-branch-strategy.md`                                                                                                                                |
+| `cache-cleanup.yml`       | `pull_request_target`(닫힘)                                    | PR이 닫히면 그 PR이 만든 Actions 캐시를 삭제한다. `develop`·`main`의 캐시는 건드리지 않는다. PR 코드를 checkout하지 않는다                                                                                             |
+| `discord-notify.yml`      | `pull_request`(열림·재오픈·ready·닫힘)                         | Discord 알림, webhook 없으면 스킵                                                                                                                                                                                      |
+| `discord-pr-conflict.yml` | `pull_request_target`(열림·재오픈·갱신), `push`(main, develop) | 충돌 상태(`CONFLICTING`)인 PR을 Discord로 알림. PR 코드를 checkout하지 않는다. webhook 없으면 스킵                                                                                                                     |
 
 ## 필수 체크
 
-`Frontend CI / Verify`(`ci.yml`)가 branch protection의 required check다. `Security / Secret scan`과 `PR Metadata / Metadata`도 필수 체크로 두면 시크릿이 든 PR과 PR 제목·브랜치에서 타입을 읽을 수 없는 PR은 머지되지 않는다(필수 체크 지정은 저장소 관리자가 GitHub에서 설정한다). `Branch Protection / Validate Source Branch`는 **`main`의 ruleset에만** 필수 체크로 지정한다. 이 workflow는 `main` 대상 PR에서만 돌아서, `develop` 대상 PR까지 필수로 걸면 체크가 오지 않아 모든 PR이 대기 상태로 막힌다. 같은 PR·브랜치에 새 commit이 push되면 이전 CI run은 concurrency 설정으로 취소된다.
+`Verify`(`Frontend CI`, `ci.yml`)가 branch protection의 required check다. `Secret scan`(`Security`)과 `Metadata`(`PR Metadata`)도 필수 체크로 두면 시크릿이 든 PR과 PR 제목·브랜치에서 타입을 읽을 수 없는 PR은 머지되지 않는다(필수 체크 지정은 저장소 관리자가 GitHub에서 설정한다). `Validate Source Branch`(`Branch Protection`)는 **`main`의 ruleset에만** 필수 체크로 지정한다. 이 workflow는 `main` 대상 PR에서만 돌아서, `develop` 대상 PR까지 필수로 걸면 체크가 오지 않아 모든 PR이 대기 상태로 막힌다. 같은 PR·브랜치에 새 commit이 push되면 이전 CI run은 concurrency 설정으로 취소된다.
 
 ## CI 결과 댓글
 
 `Frontend CI`는 PR에 단계별 결과 표를 댓글로 남긴다. 같은 PR에서는 새 댓글을 만들지 않고 기존 댓글을 갱신한다. 한 단계가 실패해도 나머지를 끝까지 실행해서 한 번에 모두 보여 준다. 단 `변조 가드`나 `의존성 설치`가 실패하면 그 뒤 단계는 실행하지 않고 "건너뜀"으로 표시한다. 설치는 코드를 실행할 수 있는 단계라서 가드가 실패하면 하지 않는다.
 
-- `ci.yml`의 검증 단계는 `package.json`의 `verify`와 같은 순서·같은 명령을 유지한다. `verify`에 단계를 더하거나 빼면 `ci.yml`의 단계, job `outputs`, 댓글 표를 함께 고친다.
+- `ci.yml`은 `package.json`의 `verify`와 같은 검사를 실행한다. 생성물·catalog·agent docs·boundary·format 검사 뒤에 `yarn lint`, `yarn typecheck`, `yarn test`를 같은 runner에서 병렬로 실행한다. 세 검사가 끝나면 각각의 로그와 성공·실패 결과를 모은 뒤 빌드를 별도로 실행한다. Next.js 생성 파일을 공유하는 typecheck와 build는 동시에 실행하지 않는다. `verify`에 검사를 더하거나 빼면 `ci.yml`의 명령, job `outputs`, 댓글 표를 함께 고친다.
 - 댓글은 같은 저장소 안의 PR에서만 남긴다. 포크와 Dependabot PR은 토큰이 읽기 전용이라 댓글을 쓸 수 없어서 건너뛴다. 이때도 `Verify` 체크의 성공·실패는 그대로 나온다.
-- 필수 체크로 지정하는 것은 `Frontend CI / Verify`다. 댓글 job(`Result comment`)은 필수가 아니다.
+- ruleset의 필수 체크 입력란에는 job 이름인 `Verify`를 지정한다. Actions 화면에서는 `Frontend CI` workflow 안에 표시된다. 댓글 job(`Result comment`)은 필수가 아니다.
 
 ## 빌드 캐시
 

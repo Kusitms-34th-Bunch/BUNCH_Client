@@ -25,9 +25,9 @@ jobs:
       agent-docs: ${{ steps.agent-docs.outcome }}
       boundaries: ${{ steps.boundaries.outcome }}
       format: ${{ steps.format.outcome }}
-      lint: ${{ steps.lint.outcome }}
-      typecheck: ${{ steps.typecheck.outcome }}
-      test: ${{ steps.test.outcome }}
+      lint: ${{ steps.checks.outputs.lint || steps.checks.outcome }}
+      typecheck: ${{ steps.checks.outputs.typecheck || steps.checks.outcome }}
+      test: ${{ steps.checks.outputs.test || steps.checks.outcome }}
       build: ${{ steps.build.outcome }}
 
     steps:
@@ -68,7 +68,7 @@ jobs:
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
           restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
 
-      # 아래 단계는 package.json의 verify와 같은 순서·같은 명령을 유지한다. 하나가 실패해도 나머지를 끝까지 실행해 결과를 모은다.
+      # verify와 같은 검사를 실행한다. 독립적인 lint·typecheck·test만 병렬로 실행하고 빌드는 뒤에 실행한다.
       - name: Generated files check
         id: generated
         continue-on-error: true
@@ -94,20 +94,41 @@ jobs:
         continue-on-error: true
         run: yarn format:check
 
-      - name: Lint
-        id: lint
+      - name: Lint, type check and test
+        id: checks
         continue-on-error: true
-        run: yarn lint
+        run: |
+          run_check() {
+            local check="$1"
+            local status=0
+            yarn "$check" > "$RUNNER_TEMP/ci-$check.log" 2>&1 || status=$?
+            if [ "$status" -eq 0 ]; then
+              echo success > "$RUNNER_TEMP/ci-$check.outcome"
+            else
+              echo failure > "$RUNNER_TEMP/ci-$check.outcome"
+            fi
+          }
 
-      - name: Type check
-        id: typecheck
-        continue-on-error: true
-        run: yarn typecheck
+          run_check lint &
+          lint_pid=$!
+          run_check typecheck &
+          typecheck_pid=$!
+          run_check test &
+          test_pid=$!
+          wait "$lint_pid" "$typecheck_pid" "$test_pid"
 
-      - name: Test
-        id: test
-        continue-on-error: true
-        run: yarn test
+          failed=0
+          for check in lint typecheck test; do
+            echo "::group::$check"
+            cat "$RUNNER_TEMP/ci-$check.log"
+            echo "::endgroup::"
+            outcome=$(cat "$RUNNER_TEMP/ci-$check.outcome")
+            echo "$check=$outcome" >> "$GITHUB_OUTPUT"
+            if [ "$outcome" != success ]; then
+              failed=1
+            fi
+          done
+          exit "$failed"
 
       - name: Build
         id: build
@@ -137,8 +158,9 @@ jobs:
             ${{ steps.suspicious.outcome }} ${{ steps.install.outcome }}
             ${{ steps.generated.outcome }} ${{ steps.catalog.outcome }}
             ${{ steps.agent-docs.outcome }} ${{ steps.boundaries.outcome }}
-            ${{ steps.format.outcome }} ${{ steps.lint.outcome }}
-            ${{ steps.typecheck.outcome }} ${{ steps.test.outcome }}
+            ${{ steps.format.outcome }} ${{ steps.checks.outcome }}
+            ${{ steps.checks.outputs.lint }}
+            ${{ steps.checks.outputs.typecheck }} ${{ steps.checks.outputs.test }}
             ${{ steps.build.outcome }}
         run: |
           case " $OUTCOMES " in
