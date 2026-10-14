@@ -31,7 +31,9 @@ playwright-report/
 .agents/state/
 .agents/notes/
 .worktrees/
-.serena/
+# Serena: 팀 공용 설정(project.yml)만 추적하고 cache·memories·로컬 override는 제외한다
+.serena/*
+!.serena/project.yml
 .claude/settings.local.json
 CLAUDE.local.md
 storybook-static/

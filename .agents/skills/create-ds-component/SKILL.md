@@ -12,7 +12,7 @@ description: 저장소 generator, test, Storybook story, 생성 export 검증으
 
 ## 진행
 
-1. 가능한 경우 `yarn gen:ds-component`로 저장소의 파일·export 구조를 만든 뒤 기존 패턴을 따른다.
+1. 새 컴포넌트는 반드시 `yarn gen:ds-component <PascalCase 이름>`(예: `yarn gen:ds-component UserAvatar`)으로 시작한다. 폴더와 파일을 직접 만들지 않는다. 이름 인자를 빠뜨리면 대화형 입력을 기다리므로 항상 함께 준다. 생성된 파일을 채우는 방식으로 구현한다. 기존 컴포넌트를 확장할 때만 generator를 쓰지 않는다.
 2. token·기존 primitive를 조합하고, 임의 색상·spacing·새 styling 규칙을 추가하지 않는다.
 3. props, variant, size, disabled·loading·error 상태를 명시적 타입으로 제한한다.
 4. accessible name, keyboard/focus, semantic HTML, ref와 className 확장 정책을 확인한다.

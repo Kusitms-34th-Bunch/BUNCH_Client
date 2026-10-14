@@ -85,7 +85,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@app/design-system@workspace:packages/design-system":
+"@app/design-system@workspace:*, @app/design-system@workspace:packages/design-system":
   version: 0.0.0-use.local
   resolution: "@app/design-system@workspace:packages/design-system"
   dependencies:
@@ -153,6 +153,7 @@ __metadata:
   dependencies:
     "@app/api-core": "workspace:*"
     "@app/bridge": "workspace:*"
+    "@app/design-system": "workspace:*"
     "@app/lint-config": "workspace:*"
     "@app/ts-config": "workspace:*"
     "@sentry/nextjs": "npm:^11.7.0"

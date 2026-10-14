@@ -11,7 +11,7 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 
 ## 읽기와 입력 점검
 
-1. `docs/conventions/commit.md`, 현재 branch, `git status --short --branch`, `git diff`, `git diff --staged`를 확인한다.
+1. `docs/conventions/git.md`의 agent 실행 기준, `docs/conventions/commit.md`, 현재 branch, `git status --short --branch`, `git diff`, `git diff --staged`를 확인한다.
 2. Git 정보를 읽을 수 없으면 변경 파일 목록과 사용자의 목적을 기준으로 계획임을 명시한다.
 3. secret, `.env*`, lockfile, generated output, 다른 작업의 untracked 파일을 명시적으로 포함/제외 판단한다.
 4. staged 변경과 unstaged 변경을 별도 surface로 보고, 한쪽을 다른 쪽의 근거로 가정하지 않는다.
@@ -43,6 +43,7 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 ## 메시지 규칙
 
 ```text
+<type>: <subject>
 <type>(<scope>): <subject>
 ```
 
@@ -51,12 +52,14 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 | `feat`           | 새 사용자 기능                |
 | `fix` / `hotfix` | 버그 또는 긴급 수정           |
 | `refactor`       | 동작 보존 구조 개선           |
+| `remove`         | 파일 삭제                     |
+| `rename`         | 파일·폴더 이름 변경, 이동     |
 | `test`           | 테스트만 변경                 |
 | `docs`           | 문서·agent 지침               |
 | `style`          | 동작 없는 UI/format 변경      |
 | `chore`          | build, package, CI, 보조 설정 |
 
-- scope는 변경 영역이 분명한 경우만 쓴다.
+- scope는 기본적으로 쓰지 않는다. 변경이 한 영역(`web`, `admin`, `design-system`, `api-core`, `bridge`, `ci` 등)에 한정될 때만 쓰고, 여러 영역에 걸치거나 분명하지 않으면 쓰지 않는다.
 - subject는 한국어 명사형 또는 요약형, 50자 내외, 마침표 없음으로 작성한다.
 - 파일명·AI 출처·검증하지 않은 동작을 subject에 넣지 않는다.
 - issue close 문구는 커밋이 아니라 PR 본문의 `Close #번호`에 둔다.
@@ -66,7 +69,7 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 ````markdown
 ## Commit Plan
 
-### Commit 1 — type(scope): 한국어 요약
+### Commit 1 — type: 한국어 요약
 
 - 포함: `path/...`
 - 이유: 독립적인 변경 목적
@@ -74,7 +77,7 @@ description: 현재 변경을 검토해 저장소 규칙에 맞는 한국어 Con
 
 ```bash
 git add -- path/...
-git commit -m "type(scope): 한국어 요약"
+git commit -m "type: 한국어 요약"
 ```
 ````
 
@@ -84,7 +87,7 @@ git commit -m "type(scope): 한국어 요약"
 
 ## 실행
 
-1. 계획을 보여 준 뒤 "이 계획대로 커밋할까요?"를 사용자에게 묻는다(Claude Code는 질문 도구, Codex는 대화로 묻는다). 승인이 없으면 실행하지 않고 명령만 남긴다. 승인은 이 계획에만 유효하며, 계획이 바뀌면 다시 묻는다.
+1. 기본 결과는 계획과 명령이다. 이를 보여 준 뒤 "이 계획대로 커밋할까요?"를 사용자에게 묻는다. 사용자가 "명령만"·"초안만"을 요청하면 묻지 않는다. 실행 질문에 긍정한 경우에만 해당 계획을 실행한다. 이미 같은 계획을 승인했다면 다시 묻지 않고, 계획이 바뀌면 새 범위를 보여 주고 승인을 받는다. 규칙이나 설명에 동의한 답변은 실행 승인으로 보지 않는다.
 2. git 저장소이고 `git status`를 읽을 수 있을 때만 실행한다. 읽을 수 없으면 제안만 한다. 커밋은 로컬 작업이라 `gh` 인증은 필요 없다.
 3. 승인되면 계획 순서대로 `git add -- <경로>`(경로를 하나씩) → `git diff --cached --name-only`와 `git diff --cached --check`로 범위 확인 → `git commit -m`을 실행한다. 다른 작업의 파일은 어느 커밋에도 넣지 않고 따로 알린다.
 4. `pre-commit`·`commit-msg` hook이 실패하면 원인을 보고 고친 뒤 새로 커밋한다. `--no-verify`로 우회하지 않는다.

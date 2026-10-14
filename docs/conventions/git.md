@@ -11,7 +11,7 @@
 
 ## 이슈 생성 → 브랜치 자동 생성
 
-1. `.github/ISSUE_TEMPLATE/issue.yml` 폼으로 이슈를 만든다. "브랜치명"(영어)과 "브랜치 타입"(`feat`/`fix`/`hotfix`/`refactor`/`style`/`test`/`docs`/`chore`)을 입력한다.
+1. `.github/ISSUE_TEMPLATE/issue.yml` 폼으로 이슈를 만든다. "브랜치명"(영어)과 "브랜치 타입"(`feat`/`fix`/`hotfix`/`refactor`/`remove`/`rename`/`style`/`test`/`docs`/`chore`)을 입력한다.
 2. 이슈가 열리면 `create-work-branch.yml`이 실행되어:
    - `.github/scripts/parse_issue.py`로 폼 값을 파싱하고
    - `<이슈번호>-<타입>/<브랜치명>` 형식의 브랜치를 default branch에서 만들어 push하고 (예: `12-feat/login-page`)
@@ -36,11 +36,22 @@ PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이�
 
 `pr-metadata.yml`이 PR이 열리거나 재오픈·ready for review·제목 수정·동기화될 때 실행되어:
 
+checkout에는 `contents: read`, 라벨·assignee·본문 수정에는 `issues: write`와 `pull-requests: write`를 사용한다. `permissions`에서 생략한 권한은 `none`이므로 checkout 읽기 권한도 명시한다.
+
+- `develop` → `main` PR을 **열 때 한 번**, 본문이 비어 있거나 기본 PR 템플릿 그대로면 릴리스 본문으로 바꾼다. 본문은 "작업 내용: develop 변경사항을 main에 반영", "확인 사항: 개별 변경사항은 develop 머지 전 각 PR에서 확인"으로 구성한다. 직접 작성한 본문과 이후 수정한 내용은 보존한다. agent가 이 릴리스 PR 초안을 준비할 때도 같은 본문을 사용한다.
 - PR을 **열 때 한 번**, 브랜치가 `<이슈번호>-<type>/<이름>` 형식이면 연결된 이슈의 제목으로 PR 제목을 `[Type] 제목`(예: `[Feat] 로그인 페이지`)으로 바꾼다. 이후에 고친 제목은 덮어쓰지 않으며, 이슈를 못 찾거나 브랜치가 형식에 안 맞으면 제목을 그대로 둔다.
 - PR 제목(`[Type] 제목` 또는 `type: subject` 형식) 또는 브랜치명에서 타입을 다시 파싱해 같은 라벨을 붙이고, 기존에 다른 타입 라벨이 있으면 제거한다.
 - PR에 assignee가 없으면 작성자를 지정한다.
-- 제목과 브랜치명 어디에서도 타입을 찾지 못하면 `PR Metadata / Metadata` check가 **실패**한다. 필수 체크로 지정돼 있으면 머지할 수 없고, PR 제목을 `[Type] 제목` 또는 `type: subject` 형식으로 고치면 다시 실행되어 통과한다.
+- `develop` → `main` 릴리스 PR은 타입 제목 검사와 타입 라벨 처리를 생략한다. `develop to main` 같은 제목을 그대로 쓸 수 있고, 릴리스 본문·assignee 처리는 유지한다. 그 외 PR은 제목과 브랜치명 어디에서도 타입을 찾지 못하면 `PR Metadata / Metadata` check가 **실패**한다. 필수 체크로 지정돼 있으면 머지할 수 없고, PR 제목을 `[Type] 제목` 또는 `type: subject` 형식으로 고치면 다시 실행되어 통과한다.
 - fork에서 온 PR, dependabot PR, 봇이 만든 PR은 건드리지 않는다(이 검사도 적용되지 않는다).
+
+## 디자인 토큰 자동 PR
+
+- `.github/workflows/sync-design-tokens.yml`은 `design-token`의 `packages/design-system/tokens/tokens.json` 변경 또는 수동 실행을 대상으로 한다.
+- Yarn 4·Node 24로 CSS 생성과 토큰 테스트를 실행하고 `tokens.css`만 같은 브랜치에 커밋·push한다. Git hook은 유지한다. 원본·CSS가 `develop`과 같으면 PR을 만들지 않고, 열린 `design-token` → `develop` PR이 있으면 재사용한다.
+- repository Actions secret `DESIGN_TOKENS_PR_TOKEN`에 이 저장소만 선택한 fine-grained PAT를 등록한다. `Contents: Read and write`, `Pull requests: Read and write`가 필요하며 조직 정책에 따라 승인이 필요할 수 있다. Tokens Studio 연결용 PAT와 별도 관리하는 편이 만료·권한 관리에 편하다.
+- PAT로 commit push와 PR 생성 요청을 인증해 후속 CI를 실행한다. [GitHub 공식 문서](https://docs.github.com/en/actions/concepts/security/github_token#when-github_token-triggers-workflow-runs)에 따르면 `GITHUB_TOKEN`으로 생성·갱신한 PR의 workflow는 승인 대기가 필요할 수 있다.
+- 최초 적용 시 workflow·변환 스크립트와 최신 `develop` 변경을 `design-token`에도 반영해야 한다. 이후 PR을 merge할 때 지속 사용하는 `design-token` 브랜치는 삭제하지 않고, 다음 디자인 변경 전 `develop`을 반영한다. 자동 merge·강제 push는 하지 않는다.
 
 ## Git hook (husky)
 
@@ -54,7 +65,13 @@ PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이�
 
 ## agent의 git 명령 제한
 
-agent는 커밋·push·PR·이슈 생성을 사용자가 요청하고 실행 직전에 승인한 경우에만 한다. `prepare-issue`, `prepare-commit`, `prepare-pull-request` skill은 내용을 보여 주고 승인을 받은 뒤 직접 실행한다. 커밋 승인은 push·PR 승인을 대신하지 않는다. push·PR·이슈 생성은 `gh auth status`가 성공할 때만 하고, 아니면 복사해서 쓸 내용만 준다.
+`prepare-commit`, `prepare-pull-request`, `prepare-issue`의 기본 결과는 검토할 내용과 복사해서 실행할 명령이다. 내용을 준비하기 전에 실행 승인을 요구하지 않는다.
+
+- 커밋: 계획과 명령을 보여 준 뒤 실행 여부를 묻는다. 로컬 작업이므로 `gh` 인증은 필요 없다.
+- PR·이슈: 초안과 명령을 보여 주고 `gh auth status`를 확인한다. 인증이 성공하면 실행 여부를 묻고, 실패하면 초안과 명령만 남긴다. 인증을 대신 시도하지 않는다.
+- 사용자가 "명령만"·"초안만"을 요청하면 실행 여부를 묻지 않는다.
+
+제시한 계획의 실행 질문에 "응"·"맞아"·"진행해"처럼 긍정하면 그 범위만 실행한다. 규칙이나 설명에 동의한 답변은 실행 승인으로 보지 않는다. 이미 같은 계획의 실행을 승인했다면 다시 묻지 않고, 계획이 바뀌면 새 범위를 보여 주고 승인을 받는다. 커밋 승인은 push·PR 승인을 대신하지 않는다. push·PR·이슈 생성에는 `gh auth status` 성공과 해당 작업의 승인이 모두 필요하다.
 
 `.claude/hooks/guard-rules.mjs`가 agent가 실행하는 git 명령 중 위험한 것을 막는다(Claude Code·Codex 공통, 사람이 터미널에서 직접 실행하는 건 막지 않는다). 막힌 이유는 agent에게 전달된다.
 
@@ -65,22 +82,24 @@ agent는 커밋·push·PR·이슈 생성을 사용자가 요청하고 실행 직
 
 ## 브랜치 타입
 
-| 타입       | 라벨     | 용도             |
-| ---------- | -------- | ---------------- |
-| `feat`     | FEAT     | 새로운 기능 구현 |
-| `fix`      | FIX      | 버그 수정        |
-| `hotfix`   | HOTFIX   | 긴급 수정        |
-| `refactor` | REFACTOR | 코드 리팩토링    |
-| `style`    | STYLE    | 스타일 작업      |
-| `test`     | TEST     | 테스트           |
-| `docs`     | DOCS     | 문서 수정        |
-| `chore`    | CHORE    | 기타 작업        |
+| 타입       | 라벨     | 용도                      |
+| ---------- | -------- | ------------------------- |
+| `feat`     | FEAT     | 새로운 기능 구현          |
+| `fix`      | FIX      | 버그 수정                 |
+| `hotfix`   | HOTFIX   | 긴급 수정                 |
+| `refactor` | REFACTOR | 코드 리팩토링             |
+| `remove`   | REMOVE   | 파일 삭제                 |
+| `rename`   | RENAME   | 파일, 폴더명 수정 OR 이동 |
+| `style`    | STYLE    | 스타일 작업               |
+| `test`     | TEST     | 테스트                    |
+| `docs`     | DOCS     | 문서 수정                 |
+| `chore`    | CHORE    | 기타 작업                 |
 
 이 표와 실제 라벨 색상·설명은 `.github/scripts/parse_issue.py`의 `LABEL_MAP`이 기준이다. 타입을 추가·변경하면 이슈 템플릿의 드롭다운과 함께 갱신한다.
 
 ## PR 제목과 커밋 메시지
 
-PR 제목은 `[Type] 제목`(자동 설정), 커밋 메시지는 `type(scope): subject`다. 둘의 type은 위 브랜치 타입과 같은 값을 쓴다. 커밋 메시지 형식 자체는 `docs/conventions/commit.md`를 따른다.
+PR 제목은 `[Type] 제목`(자동 설정), 커밋 메시지는 `type: subject`다(scope는 한 영역에 한정된 변경에만 `type(scope): subject`로 쓴다). 둘의 type은 위 브랜치 타입과 같은 값을 쓴다(`commitlint`의 `type-enum`도 같은 값만 허용한다). 커밋 메시지 형식 자체는 `docs/conventions/commit.md`를 따른다.
 
 ## 알림
 

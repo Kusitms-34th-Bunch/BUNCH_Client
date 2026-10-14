@@ -1,0 +1,35 @@
+name: Cache Cleanup
+
+# PR이 닫히면 그 PR이 만든 Actions 캐시를 지운다. develop·main이 만든 캐시는 건드리지 않는다.
+# pull_request_target은 포크·Dependabot PR에서도 쓰기 토큰을 받는다. checkout 단계를 추가하지 않는다(PR 코드를 실행하지 않는 이 workflow에서만 안전하다).
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_REF: refs/pull/${{ github.event.pull_request.number }}/merge
+
+    steps:
+      - name: Delete caches created by this pull request
+        shell: bash
+        run: |
+          ids=$(gh cache list --repo "$GITHUB_REPOSITORY" --ref "$PR_REF" --limit 1000 --json id --jq '.[].id')
+
+          if [ -z "$ids" ]; then
+            echo 'No caches to delete.'
+            exit 0
+          fi
+
+          # 한 캐시의 삭제가 실패해도(예: 동시에 이미 지워짐) 나머지는 계속 지운다.
+          for id in $ids; do
+            gh cache delete "$id" --repo "$GITHUB_REPOSITORY" || echo "::warning::Failed to delete cache $id"
+          done

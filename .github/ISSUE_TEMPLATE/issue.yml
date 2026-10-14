@@ -20,6 +20,8 @@ body:
         - fix
         - hotfix
         - refactor
+        - remove
+        - rename
         - style
         - test
         - docs

@@ -16,3 +16,6 @@ pnpm-lock.yaml
 turbo/generators/templates/**/*.hbs
 apps/admin/src/routeTree.gen.ts
 apps/web/next-env.d.ts
+# Tokens Studio 원본과 생성 CSS는 tokens:check로 검증한다.
+packages/design-system/tokens/tokens.json
+packages/design-system/tokens/tokens.css
