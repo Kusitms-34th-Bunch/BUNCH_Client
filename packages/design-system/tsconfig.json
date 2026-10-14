@@ -1,0 +1,4 @@
+{
+  "extends": "@app/ts-config/react.json",
+  "include": ["src", "scripts", ".storybook/**/*.ts", "vitest.config.ts"]
+}

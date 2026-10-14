@@ -1,0 +1,126 @@
+name: PR Metadata
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, edited, synchronize]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  metadata:
+    name: Metadata
+    if: github.event.pull_request.head.repo.fork == false && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Read pull request metadata
+        id: work
+        env:
+          WORK_ITEM_MODE: pull_request
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        run: python3 .github/scripts/parse_issue.py
+
+      - uses: actions/github-script@v7
+        env:
+          WORK_MATCHED: ${{ steps.work.outputs.matched }}
+          LABEL_NAME: ${{ steps.work.outputs.label }}
+          LABEL_COLOR: ${{ steps.work.outputs.label_color }}
+          LABEL_DESCRIPTION: ${{ steps.work.outputs.label_description }}
+          TYPE_LABELS: ${{ steps.work.outputs.label_names }}
+        with:
+          script: |
+            const pullRequest = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+
+            if (pullRequest.assignees.length === 0 && pullRequest.user.type !== 'Bot') {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: pullRequest.number,
+                assignees: [pullRequest.user.login],
+              });
+            }
+
+            const branchMatch = pullRequest.head.ref.match(/^(\d+)-(feat|fix|hotfix|refactor|style|test|docs|chore)\/.+$/);
+
+            if (context.payload.action === 'opened' && branchMatch) {
+              const [, issueNumber, branchType] = branchMatch;
+
+              try {
+                const { data: issue } = await github.rest.issues.get({
+                  owner,
+                  repo,
+                  issue_number: Number(issueNumber),
+                });
+                const subject = issue.title.replace(/^\[[^\]]+\]\s*(?:#\d+\s*-\s*)?/, '').trim();
+                const nextTitle = `[${branchType[0].toUpperCase()}${branchType.slice(1)}] ${subject}`;
+
+                if (!issue.pull_request && subject && nextTitle !== pullRequest.title) {
+                  await github.rest.pulls.update({ owner, repo, pull_number: pullRequest.number, title: nextTitle });
+                }
+              } catch (error) {
+                core.warning(`Failed to sync the pull request title from issue #${issueNumber}: ${error.message}`);
+              }
+            }
+
+            if (process.env.WORK_MATCHED !== 'true') {
+              if (pullRequest.user.type === 'Bot') {
+                core.info('Bot pull request without a change type is skipped.');
+                return;
+              }
+              core.setFailed(
+                'PR 제목을 `[Type] 제목` 또는 `type: subject` 형식으로 쓰거나(feat, fix, hotfix, refactor, style, test, docs, chore) 브랜치를 `<이슈번호>-<type>/<이름>`으로 만들어야 타입 라벨이 붙는다. 제목을 고치면 이 검사가 다시 실행된다.',
+              );
+              return;
+            }
+
+            const labelName = process.env.LABEL_NAME;
+
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: labelName });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: labelName,
+                color: process.env.LABEL_COLOR,
+                description: process.env.LABEL_DESCRIPTION,
+              });
+            }
+
+            const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              owner,
+              repo,
+              issue_number: pullRequest.number,
+            });
+            const typeLabelNames = new Set(process.env.TYPE_LABELS.split('|'));
+
+            await Promise.all(
+              currentLabels
+                .filter((label) => typeLabelNames.has(label.name) && label.name !== labelName)
+                .map((label) =>
+                  github.rest.issues.removeLabel({
+                    owner,
+                    repo,
+                    issue_number: pullRequest.number,
+                    name: label.name,
+                  }),
+                ),
+            );
+
+            if (!currentLabels.some((label) => label.name === labelName)) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: pullRequest.number,
+                labels: [labelName],
+              });
+            }

@@ -1,0 +1,129 @@
+name: Create Work Branch
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  create:
+    if: github.event.issue.user.type != 'Bot'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Parse issue metadata
+        id: work
+        env:
+          WORK_ITEM_MODE: issue
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: python3 .github/scripts/parse_issue.py
+
+      - name: Apply issue metadata
+        if: steps.work.outputs.matched == 'true'
+        uses: actions/github-script@v7
+        env:
+          ISSUE_TITLE: ${{ steps.work.outputs.issue_title }}
+          LABEL_NAME: ${{ steps.work.outputs.label }}
+          LABEL_COLOR: ${{ steps.work.outputs.label_color }}
+          LABEL_DESCRIPTION: ${{ steps.work.outputs.label_description }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.issue.number;
+
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: process.env.LABEL_NAME });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: process.env.LABEL_NAME,
+                color: process.env.LABEL_COLOR,
+                description: process.env.LABEL_DESCRIPTION,
+              });
+            }
+
+            await github.rest.issues.update({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              title: process.env.ISSUE_TITLE,
+              assignees: [context.payload.issue.user.login],
+              labels: [process.env.LABEL_NAME],
+            });
+
+      - name: Create branch
+        id: branch
+        if: steps.work.outputs.matched == 'true'
+        env:
+          BRANCH_NAME: ${{ steps.work.outputs.branch_name }}
+        run: |
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" > /dev/null 2>&1; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            git push origin "HEAD:refs/heads/$BRANCH_NAME"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Share branch name
+        if: steps.work.outputs.matched == 'true'
+        uses: actions/github-script@v7
+        env:
+          BRANCH_NAME: ${{ steps.work.outputs.branch_name }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+          CREATED: ${{ steps.branch.outputs.created }}
+        with:
+          script: |
+            const { BRANCH_NAME, BASE_BRANCH, CREATED } = process.env;
+
+            const body = [
+              CREATED === 'true' ? '작업 브랜치를 만들었습니다.' : '작업 브랜치가 이미 있습니다.',
+              '',
+              `- 브랜치: \`${BRANCH_NAME}\``,
+              `- 기준: \`${BASE_BRANCH}\``,
+              '',
+              '```bash',
+              'git status --short',
+              'git fetch origin',
+              `git switch ${BRANCH_NAME}`,
+              '```',
+              '',
+              '`git status --short`에 커밋 안 된 변경이 보이면 먼저 커밋하거나 옮긴 뒤 브랜치를 바꿉니다.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Report invalid issue form
+        if: steps.work.outputs.matched != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                '작업 브랜치를 만들지 못했습니다. 이슈 폼에서 아래 두 칸을 읽지 못했습니다.',
+                '',
+                '- `🌳 브랜치명 (Branch)`: 비어 있지 않아야 합니다.',
+                '- `📂 브랜치 타입`: `feat`, `fix`, `hotfix`, `refactor`, `style`, `test`, `docs`, `chore` 중 하나여야 합니다.',
+                '',
+                '이 workflow는 이슈를 열 때만 실행되므로 내용을 고쳐도 다시 실행되지 않습니다. 이 이슈를 닫고 이슈 폼으로 새 이슈를 만들어 주세요.',
+              ].join('\n'),
+            });
+            core.setFailed('이슈 폼에서 브랜치명 또는 브랜치 타입을 읽지 못했습니다.');

@@ -1,0 +1,22 @@
+# Code Style Rules
+
+- TypeScript strictness를 우회하는 `any`, 광범위한 type assertion, 불필요한 non-null assertion을 피한다.
+- 외부 입력·API 응답·form 값에는 실제로 소비하는 범위의 명시적인 타입을 둔다. 형태를 아직 확인할 수 없을 때는 `any` 대신 `unknown`으로 경계를 드러낸다.
+- 타입은 재사용되기 전까지 기능 가까이에 둔다. 사용하지 않는 응답 필드까지 미리 모델링하지 않는다.
+- 컴포넌트는 PascalCase, 일반 함수·변수는 camelCase, boolean은 `is`·`has`·`can` 접두사를 사용한다.
+- 이벤트 내부 함수는 `handle*`, 외부 prop은 `on*` 형태를 사용한다.
+- 함수가 값을 계산하는지, 서버 상태를 바꾸는지, navigation·storage·logging 같은 side effect를 내는지 이름과 호출 위치에서 알 수 있게 한다.
+- `const`를 기본으로 사용하고 재할당이 필요할 때만 `let`을 사용한다. `var`는 사용하지 않는다.
+- 새 코드에서 deprecated 표시가 있는 API·타입은 사용하지 않고, 타입 선언 또는 공식 문서가 안내하는 대안을 사용한다.
+- 클릭 가능한 `div`나 `span` 대신 의미에 맞는 `button`·`a`를 사용한다.
+- 아이콘 전용 버튼에는 접근 가능한 이름을 제공하고, form control은 label과 연결한다.
+- 동적 목록의 key는 정렬·삽입·삭제에도 변하지 않는 식별자를 사용한다. 순서가 고정된 정적 목록이 아니면 배열 index를 key로 쓰지 않는다.
+- 조건을 바꾸기 위한 boolean prop이 계속 늘어나면 명시적 variant 또는 composition을 검토한다.
+- variant별 필수 prop이 달라지면 boolean 조합 대신 discriminated union을 검토한다. 값별 설정의 완전성이 중요하면 `Record<Variant, Config>`와 `satisfies`를 사용한다.
+- 반복 UI의 항목과 설정은 JSX에 중복해 적기보다 데이터 배열 또는 설정 객체로 분리한다. 순서가 중요하면 tuple·배열을, 값별 설정의 완전성이 중요하면 `Record`를 사용한다.
+- 색상, 간격, 타이포그래피처럼 반복되는 시각 값은 token 또는 utility를 우선 사용한다. 일회성 inline style과 임의 값이 반복되면 공통 값으로 승격할지 검토한다.
+- 단순 표현식에 불필요한 memo를 추가하지 않고, 비용이 큰 계산·구독·컴포넌트만 근거를 두고 분리한다.
+- API response, URL, storage, form value처럼 외부 입력은 소비 경계에서 validation·normalizing하고 내부 구현 전체로 `unknown`·assertion을 전파하지 않는다.
+- 주석은 코드·타입·이름으로 이미 알 수 있는 내용이면 쓰지 않는다. 남기는 주석도 기본 2줄 이내로 쓴다.
+- 2줄을 넘는 주석은 외부 제약(스펙, 브라우저 동작, 백엔드 계약), 출처가 있는 측정값, 실제로 디버깅 비용이 들었던 함정 중 하나를 설명할 때만 허용한다. 그 외의 긴 설명(변경 이력, 검토했던 대안, 이번 작업의 근거)은 커밋 메시지 본문이나 PR 설명으로 보내고, 코드에는 그곳을 가리키는 한 줄만 남긴다.
+- 남기는 주석은 "~한다/~된다" 같은 문장형이 아니라 "~처리", "~방지", "~적용"처럼 명사형으로 끝맺는다.

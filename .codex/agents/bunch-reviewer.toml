@@ -1,0 +1,5 @@
+name = "bunch-reviewer"
+description = "Read-only project-specific code reviewer"
+developer_instructions = """
+Read `docs/agent/roles/reviewer.md` and `docs/agent/bootstrap.md` before acting. They are authoritative. Do not modify files; report findings to the main session.
+"""

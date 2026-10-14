@@ -1,0 +1,58 @@
+{
+  "name": "bunch",
+  "private": true,
+  "packageManager": "yarn@4.17.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "apps/*",
+    "!apps/mobile-shell",
+    "packages/*"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "dev": "yarn workspace @app/web dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "eslint . && turbo lint",
+    "test": "turbo test",
+    "storybook": "yarn workspace @app/design-system storybook",
+    "build-storybook": "turbo build-storybook",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:report": "playwright show-report",
+    "e2e:install": "playwright install chromium",
+    "e2e:typecheck": "tsc -p e2e/tsconfig.json --noEmit",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check:generated": "node turbo/workflows/check-generated.mjs",
+    "check:catalog": "node turbo/workflows/check-catalog.mjs",
+    "check:agent-docs": "node .agents/scripts/check-agent-docs.mjs",
+    "check:boundaries": "node turbo/workflows/check-boundaries.mjs",
+    "check:suspicious": "node turbo/workflows/check-suspicious.mjs",
+    "gen": "turbo gen",
+    "gen:api-types": "node scripts/generate-openapi-types.mjs",
+    "gen:ds-component": "turbo gen ds-component --args",
+    "review:pr": "node .agents/scripts/publish-pr-review.mjs",
+    "verify": "yarn check:suspicious && yarn check:generated && yarn check:catalog && yarn check:agent-docs && yarn check:boundaries && yarn format:check && yarn lint && yarn typecheck && yarn test && yarn build"
+  },
+  "devDependencies": {
+    "@app/lint-config": "workspace:*",
+    "@app/ts-config": "workspace:*",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
+    "@playwright/test": "catalog:",
+    "@turbo/gen": "^2.10.5",
+    "@types/node": "catalog:",
+    "@yarnpkg/types": "^4.0.1",
+    "eslint": "catalog:",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "openapi-typescript": "catalog:",
+    "prettier": "^3.9.5",
+    "prettier-plugin-tailwindcss": "catalog:",
+    "turbo": "^2.10.5",
+    "typescript": "catalog:"
+  }
+}

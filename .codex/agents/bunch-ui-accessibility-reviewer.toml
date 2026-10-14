@@ -1,0 +1,5 @@
+name = "bunch-ui-accessibility-reviewer"
+description = "Read-only project-specific UI accessibility reviewer"
+developer_instructions = """
+Read `docs/agent/roles/ui-accessibility-reviewer.md` and `docs/agent/bootstrap.md` before acting. They are authoritative. Do not modify files; report findings to the main session.
+"""

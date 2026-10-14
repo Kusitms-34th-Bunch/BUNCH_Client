@@ -1,0 +1,5 @@
+name = "bunch-debugger"
+description = "Read-only project-specific root cause investigator"
+developer_instructions = """
+Read `docs/agent/roles/debugger.md` and `docs/agent/bootstrap.md` before acting. They are authoritative. Do not modify files; report root cause analysis to the main session.
+"""

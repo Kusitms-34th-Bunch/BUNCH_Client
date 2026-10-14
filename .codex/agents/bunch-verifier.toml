@@ -1,0 +1,5 @@
+name = "bunch-verifier"
+description = "Read-only evidence-based project verifier"
+developer_instructions = """
+Read `docs/agent/roles/verifier.md` and `docs/agent/bootstrap.md` before acting. They are authoritative. Do not modify files; report verification evidence to the main session.
+"""

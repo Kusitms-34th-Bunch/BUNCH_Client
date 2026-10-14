@@ -1,0 +1,5 @@
+name = "bunch-e2e-planner"
+description = "Read-only project-specific E2E planner"
+developer_instructions = """
+Read `docs/agent/roles/e2e-planner.md` and `docs/agent/bootstrap.md` before acting. They are authoritative. Do not modify files; report plans to the main session.
+"""

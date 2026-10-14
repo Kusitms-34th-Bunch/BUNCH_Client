@@ -1,0 +1,36 @@
+name: Performance Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: Deployed URL to audit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn dlx @lhci/cli@0.15.1 collect --url="${{ inputs.target_url }}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report
+          path: .lighthouseci
+          if-no-files-found: ignore

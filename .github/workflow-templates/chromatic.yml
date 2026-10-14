@@ -1,0 +1,60 @@
+name: Chromatic
+
+on:
+  pull_request:
+    paths:
+      - 'packages/design-system/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.yarnrc.yml'
+      - '.github/workflows/chromatic.yml'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'packages/design-system/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.yarnrc.yml'
+      - '.github/workflows/chromatic.yml'
+
+concurrency:
+  group: chromatic-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+
+    steps:
+      - name: Check Chromatic configuration
+        id: chromatic
+        run: echo "enabled=${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.chromatic.outputs.enabled == 'true'
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        if: steps.chromatic.outputs.enabled == 'true'
+        with:
+          node-version: 24
+          cache: yarn
+
+      - if: steps.chromatic.outputs.enabled == 'true'
+        run: corepack enable
+      - if: steps.chromatic.outputs.enabled == 'true'
+        run: yarn install --immutable
+      - if: steps.chromatic.outputs.enabled == 'true'
+        uses: chromaui/action@latest
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          workingDir: packages/design-system
+          buildScriptName: build-storybook
+          onlyChanged: true

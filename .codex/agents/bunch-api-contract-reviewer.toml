@@ -1,0 +1,5 @@
+name = "bunch-api-contract-reviewer"
+description = "Read-only project-specific API contract reviewer"
+developer_instructions = """
+Read `docs/agent/roles/api-contract-reviewer.md` and `docs/agent/bootstrap.md` before acting. They are authoritative. Do not modify files; report findings to the main session.
+"""

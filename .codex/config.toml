@@ -1,0 +1,10 @@
+[features]
+plugin_hooks = true
+goals = true
+
+[plugins."oh-my-codex@oh-my-codex-local"]
+enabled = true
+
+[marketplaces.oh-my-codex-local]
+source_type = "local"
+source = "/Users/kyeongjunior/.nvm/versions/node/v24.18.0/lib/node_modules/oh-my-codex"

@@ -1,0 +1,48 @@
+name: Discord PR Notify
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      PR_MERGED: ${{ github.event.pull_request.merged }}
+
+    steps:
+      - name: Send notification
+        shell: bash
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo 'DISCORD_WEBHOOK_URL is not configured; skipping.'
+            exit 0
+          fi
+
+          if [ "${{ github.event.action }}" = 'closed' ] && [ "$PR_MERGED" != 'true' ]; then
+            echo 'Pull request was closed without merging; skipping.'
+            exit 0
+          fi
+
+          if [ "$PR_MERGED" = 'true' ]; then
+            status='✅ PR merged'
+          elif [ "${{ github.event.action }}" = 'ready_for_review' ]; then
+            status='👀 PR ready for review'
+          else
+            status='🆕 PR opened'
+          fi
+
+          jq -n \
+            --arg content "$status: [#$PR_NUMBER $PR_TITLE]($PR_URL) by @$PR_AUTHOR" \
+            '{content: $content}' |
+            curl --fail-with-body --connect-timeout 10 --max-time 30 --request POST "$DISCORD_WEBHOOK_URL" \
+              --header 'Content-Type: application/json' \
+              --data @-

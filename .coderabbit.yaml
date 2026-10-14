@@ -1,0 +1,175 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: ko-KR
+early_access: false
+
+tone_instructions: |
+  한국어로 간결하고 근거 중심의 리뷰를 작성한다.
+  실제 버그, 보안·권한 문제, 접근성 차단, 데이터 계약·cache·route 경계 위반을 우선한다.
+  취향 차이, 미래 사용처를 위한 추상화, 실행 근거 없는 성능 최적화는 inline comment로 제안하지 않는다.
+  저장소의 AGENTS.md와 docs/를 최우선 기준으로 적용하고, 발견 사항에는 영향과 수정 방향을 함께 설명한다.
+
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  review_status: true
+  commit_status: true
+  fail_commit_status: false
+  poem: false
+  sequence_diagrams: false
+  related_prs: false
+  related_issues: false
+  assess_linked_issues: false
+  abort_on_close: true
+  suggested_labels: true
+
+  path_filters:
+    - '!**/.yarn/**'
+    - '!**/.pnp.*'
+    - '!**/node_modules/**'
+    - '!**/.next/**'
+    - '!**/.turbo/**'
+    - '!**/dist/**'
+    - '!**/build/**'
+    - '!**/coverage/**'
+    - '!**/storybook-static/**'
+    - '!playwright-report/**'
+    - '!test-results/**'
+    - '!packages/api-core/src/generated/**'
+    - '!**/*.snap'
+    - '!**/*.{png,jpg,jpeg,gif,webp,ico,avif,mp4,webm,mp3,ogg}'
+    - '!yarn.lock'
+
+  path_instructions:
+    - path: 'apps/web/src/app/**'
+      instructions: |
+        Next.js App Router 경계를 검토한다.
+        route·layout·metadata·server/client boundary만 소유하고, domain mutation·raw API 요청·복잡한 form state가 route에 섞이지 않는지 확인한다.
+        secret, cookie, server-only 의존성이 client bundle로 넘어가지 않는지 확인한다.
+
+    - path: 'apps/web/src/domains/**'
+      instructions: |
+        도메인 UI와 사용자 작업의 소유 경계를 검토한다.
+        route-local 코드와 shared 추출이 과하지 않은지, API·권한·상태 규칙이 관련 spec 및 domain 기준과 일치하는지 확인한다.
+
+    - path: 'apps/web/src/shared/api/**'
+      instructions: |
+        browser/server client 분리, 인증 갱신, 실패 응답 처리를 검토한다.
+        응답 계약을 추측하거나 오류를 조용히 삼키지 않고, UI 표현 계층의 toast·analytics를 transport에 넣지 않는지 확인한다.
+
+    - path: 'apps/admin/src/routes/**'
+      instructions: |
+        TanStack Router의 path·params/search validation·loader·redirect·access 경계를 검토한다.
+        외부 URL 입력이 validation과 fallback을 거치며, loader/prefetch와 component query가 같은 요청을 중복 소유하지 않는지 확인한다.
+
+    - path: 'apps/admin/src/pages/**'
+      instructions: |
+        page는 화면 조립과 route-local UI를 소유해야 한다.
+        사용자 행동 단위 로직은 feature, API 요청은 api 경계에 두며 loading·error·empty·disabled 상태와 keyboard/focus 흐름을 확인한다.
+
+    - path: 'apps/admin/src/features/**'
+      instructions: |
+        feature가 사용자 작업 단위를 명확히 소유하는지 검토한다.
+        route·page·shared component의 책임을 넘지 않고, form 제출·성공·실패·cache 갱신이 관찰 가능한 상태로 연결되는지 확인한다.
+
+    - path: 'apps/admin/src/api/**'
+      instructions: |
+        endpoint 함수와 TanStack Query 경계를 검토한다.
+        query key에는 응답을 바꾸는 params를 포함하고, mutation 뒤 invalidate·setQueryData·optimistic update 선택 이유가 명확한지 확인한다.
+
+    - path: 'packages/api-core/src/**'
+      instructions: |
+        이 package는 transport와 공유 API 계약만 소유한다.
+        UI, route, toast, analytics를 import하지 않고 public export를 통해서만 소비되는지 확인한다.
+        generated OpenAPI type 외부로 불필요한 전송 계약이 새지 않는지 검토한다.
+
+    - path: 'packages/design-system/src/**'
+      instructions: |
+        앱 전용 route·API·도메인 규칙이 들어오지 않는지 검토한다.
+        component API, variant, disabled·error 상태, keyboard/focus, accessible name과 public export 영향을 확인한다.
+        색상·간격·타이포그래피는 기존 token 또는 utility를 우선 사용한다.
+
+    - path: 'packages/design-system/**/*.stories.tsx'
+      instructions: |
+        Storybook story가 지원하는 variant와 사용자 관찰 상태를 보여주는지 검토한다.
+        새 public component라면 접근성 상태와 test 필요성이 빠지지 않는지 확인한다.
+
+    - path: '**/*.{test,spec}.{ts,tsx}'
+      instructions: |
+        구현 세부가 아니라 사용자가 관찰하는 계약과 회귀 위험을 검증하는지 확인한다.
+        성공 경로뿐 아니라 해당 범위의 error·empty·invalid·권한·cache 갱신 상태를 검토하고, 불안정한 timer·내부 구현 의존 assertion은 피한다.
+
+    - path: '.github/**'
+      instructions: |
+        GitHub Actions와 issue·PR 자동화를 검토한다.
+        trigger, 최소 permissions, secret 노출, Yarn script·파일 경로·label·template id의 실제 존재 여부와 재실행 안전성을 확인한다.
+
+    - path: 'turbo/**'
+      instructions: |
+        Turbo task, boundary, generator 변경이 현재 workspace와 root script에 맞는지 검토한다.
+        생성물·catalog·public export 검증이 실제 생성 경로와 일치하는지 확인한다.
+
+    - path: '{AGENTS.md,CLAUDE.md,docs/**,.agents/**,.claude/**,.codex/**}'
+      instructions: |
+        docs/가 단일 source of truth이고 AGENTS.md는 라우팅 허브 역할만 하는지 검토한다.
+        skill·flow·adapter가 문서 규칙을 복제하거나 오래된 경로를 가리키지 않으며, 관련 check-agent-docs 검증 범위가 함께 갱신되는지 확인한다.
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+      - develop
+    labels:
+      - '!wip'
+      - '!draft'
+      - '!skip-review'
+    ignore_usernames:
+      - dependabot[bot]
+    ignore_title_keywords:
+      - '[skip-review]'
+
+  pre_merge_checks:
+    description:
+      mode: warning
+    issue_assessment:
+      mode: off
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+
+  tools:
+    eslint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    yamllint:
+      enabled: true
+    actionlint:
+      enabled: true
+
+chat:
+  art: false
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: local
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - 'CLAUDE.md'
+      - 'docs/**/*.md'
+      - '.agents/**/*.md'
+      - '.claude/**/*.md'
+      - '.codex/**/*.toml'

@@ -1,0 +1,7 @@
+{
+  "extends": "@app/ts-config/base.json",
+  "compilerOptions": {
+    "allowJs": true
+  },
+  "include": ["*.mjs", "*.cjs", "playwright.config.ts"]
+}

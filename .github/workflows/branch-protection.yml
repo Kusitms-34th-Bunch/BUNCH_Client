@@ -1,0 +1,25 @@
+name: Branch Protection
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-source-branch:
+    name: Validate Source Branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Require develop as the source of main
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [ "$HEAD_REF" != "develop" ]; then
+            echo "::error::main에는 develop에서 올리는 PR만 받습니다. 현재 출발 브랜치: $HEAD_REF"
+            exit 1
+          fi

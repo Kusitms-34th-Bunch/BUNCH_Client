@@ -1,0 +1,29 @@
+{
+  "name": "@app/bridge",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@webview-bridge/types": "^1.8.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@app/lint-config": "workspace:*",
+    "@app/ts-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "globals": "^17.13.0",
+    "typescript": "catalog:"
+  }
+}

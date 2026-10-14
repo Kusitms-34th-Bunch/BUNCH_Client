@@ -1,0 +1,47 @@
+name: '이슈 생성'
+description: 'GitHub에서 이슈를 생성하면 지정한 브랜치가 자동으로 생성됩니다.'
+body:
+  - type: input
+    id: branch
+    attributes:
+      label: '🌳 브랜치명 (Branch)'
+      description: '영어로 입력해 주세요 (예: login-page, token-expiry-fix)'
+      placeholder: 'login-page'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: branchType
+    attributes:
+      label: '📂 브랜치 타입'
+      description: '기능 타입을 선택하세요'
+      options:
+        - feat
+        - fix
+        - hotfix
+        - refactor
+        - style
+        - test
+        - docs
+        - chore
+    validations:
+      required: true
+
+  - type: input
+    id: description
+    attributes:
+      label: '📝 상세 내용(Description)'
+      description: '이슈에 대해서 간략히 설명해 주세요'
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: '✅ 체크리스트(Tasks)'
+      description: '이 작업에서 수행해야 할 내용을 작성해 주세요'
+      value: |
+        - [ ] 작업 항목 1
+        - [ ] 작업 항목 2
+    validations:
+      required: true

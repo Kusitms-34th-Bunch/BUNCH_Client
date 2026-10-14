@@ -1,0 +1,42 @@
+# yarn pnp (제로 인스톨 미사용 — .pnp.*는 install 시 재생성)
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+node_modules/
+dist/
+.next/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+playwright-report/
+
+.env
+.env.*
+!.env.example
+!.env.openapi.example
+!.env.pr-review.example
+
+.DS_Store
+*.log
+
+# agent runtime state — 규칙 파일은 커밋, 세션 상태는 제외
+.omc/
+.omx/
+.agents/state/
+.agents/notes/
+.worktrees/
+.serena/
+.claude/settings.local.json
+CLAUDE.local.md
+storybook-static/
+.pnpm-store/
+*.tsbuildinfo
+
+# 기획 쪽 공개 동의를 받으면 이 줄을 지우고 올린다
+docs/specs/bunch-prd.md

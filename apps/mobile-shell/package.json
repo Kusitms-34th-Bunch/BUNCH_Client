@@ -1,0 +1,30 @@
+{
+  "name": "@app/mobile-shell",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@app/bridge": "file:../../packages/bridge",
+    "@sentry/react-native": "~7.11.0",
+    "@webview-bridge/react-native": "^1.8.0",
+    "expo": "~57.0.26",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-webview": "13.16.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "test": "node --test sanitize-sentry-event.test.mjs",
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "expo lint"
+  }
+}

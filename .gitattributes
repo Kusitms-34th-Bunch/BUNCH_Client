@@ -1,0 +1,5 @@
+# 모든 텍스트 파일 LF 통일
+* text=auto eol=lf
+
+# Windows 배치 파일만 CRLF
+*.bat text eol=crlf

@@ -1,0 +1,17 @@
+# 파일마다 마지막으로 맞는 줄이 적용된다.
+/.github/ @KyeongJooni @Hyochan02
+/.vscode/ @KyeongJooni @Hyochan02
+/.husky/ @KyeongJooni @Hyochan02
+/.claude/ @KyeongJooni @Hyochan02
+/.agents/scripts/ @KyeongJooni @Hyochan02
+/turbo/ @KyeongJooni @Hyochan02
+/scripts/ @KyeongJooni @Hyochan02
+
+/.yarnrc.yml @KyeongJooni @Hyochan02
+/.gitignore @KyeongJooni @Hyochan02
+/yarn.config.cjs @KyeongJooni @Hyochan02
+/eslint.config.* @KyeongJooni @Hyochan02
+/turbo.json @KyeongJooni @Hyochan02
+package.json @KyeongJooni @Hyochan02
+
+* @KyeongJooni @Hyochan02
