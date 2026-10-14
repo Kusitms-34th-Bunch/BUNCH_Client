@@ -11,7 +11,7 @@ description: 현재 브랜치 변경과 실제 검증 근거를 바탕으로 저
 
 ## 입력 점검
 
-1. `.github/PULL_REQUEST_TEMPLATE.md`, `docs/conventions/commit.md`, 현재 branch와 base branch를 확인한다.
+1. `docs/conventions/git.md`의 agent 실행 기준, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/conventions/commit.md`, 현재 branch와 base branch를 확인한다.
 2. `git status --short`, `git log <base>..HEAD --oneline`, `git diff <base>...HEAD --stat`과 필요한 상세 diff를 읽는다.
 3. 브랜치·커밋·사용자 요청에서 이슈 번호를 찾되, 확인되지 않은 번호를 추측하지 않는다.
 4. 미커밋 변경은 PR diff와 구분하고 포함 여부를 명확히 한다.
@@ -48,15 +48,15 @@ PR 초안을 쓰기 **전에** 브랜치 전체(`<base>...HEAD`)를 `bunch-revie
 ## 출력
 
 - 필요한 경우 70자 이내 제목을 `[Type] 제목`(예: `[Feat] 로그인 페이지`) 형식으로 제안한다. 브랜치가 `<이슈번호>-<type>/<이름>`이면 PR을 열 때 workflow가 이슈 제목으로 같은 형식에 맞춘다.
-- 템플릿 모든 section을 같은 순서로 채운 Markdown 초안을 제공한다.
+- 템플릿 모든 section을 같은 순서로 채운 Markdown 초안과 `git push -u origin <브랜치>`, `gh pr create --base <base> --title "<제목>" --body-file <파일>` 명령을 제공한다. 본문을 저장할 파일 경로를 명시한다.
 - 이슈 번호가 없으면 `Close #`를 임의 번호로 채우지 않고 template 안내를 남긴다.
 - AI 출처 문구와 실제로 수행하지 않은 검증은 넣지 않는다.
 
 ## 실행
 
-1. `gh auth status`를 확인한다. 인증을 대신 시도하지 않는다. 실패하면 초안만 제공하고, 직접 올리는 법(`git push -u origin <브랜치>` 뒤 웹에서 PR 생성)을 안내한다.
+1. 기본 결과인 초안과 명령을 준비한 뒤 `gh auth status`를 확인한다. 인증을 대신 시도하지 않는다. 실패하면 실행 여부를 묻지 않고 초안과 명령만 남기며, 웹에서 PR을 만드는 방법도 안내한다.
 2. 올리기 전에 `gh pr view <브랜치> --json state`로 이미 열렸거나 머지된 PR이 아닌지, 미커밋 변경이 없는지, base 브랜치가 맞는지 확인한다. 작업 브랜치의 base는 `develop`이고, `main`을 base로 하는 PR은 `develop`에서 올리는 릴리스 PR뿐이다. 하나라도 걸리면 올리지 않고 알린다.
-3. 제목과 본문을 보여 준 뒤 "push하고 PR을 올릴까요?"를 사용자에게 묻는다. 승인이 없으면 실행하지 않는다. 커밋 승인은 이 승인을 대신하지 않는다.
+3. 인증이 성공하고 입력 점검을 통과하면 제목·본문·명령을 보여 준 뒤 "push하고 PR을 올릴까요?"를 사용자에게 묻는다. 사용자가 "명령만"·"초안만"을 요청하면 묻지 않는다. 실행 질문에 긍정한 경우에만 제시한 범위를 실행한다. 이미 같은 범위를 승인했다면 다시 묻지 않고, 범위가 바뀌면 새로 승인받는다. 규칙이나 설명에 대한 동의와 커밋 승인은 push·PR 승인을 대신하지 않는다.
 4. 승인되면 `git push -u origin <브랜치>`를 실행한다. `pre-push` hook(typecheck·test)이 실패하면 PR을 만들지 않고 원인을 보고하며, `--no-verify`로 우회하지 않는다. 강제 푸시가 필요하면 `--force-with-lease`를 쓰되 따로 확인받는다.
 5. 본문을 임시 파일에 쓰고 `gh pr create --base <base> --title "<제목>" --body-file <파일>`로 만든다. 라벨과 assignee는 `pr-metadata` workflow가 채우므로 주지 않는다.
 6. PR URL을 알려 준다. UI 변경 스크린샷은 사람이 붙인다. 만들지 않았다면 만들지 않았다고 쓴다.
