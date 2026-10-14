@@ -11,7 +11,7 @@ description: 현재 브랜치 변경과 실제 검증 근거를 바탕으로 저
 
 ## 입력 점검
 
-1. `docs/conventions/git.md`의 agent 실행 기준, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/conventions/commit.md`, 현재 branch와 base branch를 확인한다.
+1. `docs/conventions/git.md`의 agent 실행 기준과 릴리스 본문 규칙, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/conventions/commit.md`, 현재 branch와 base branch를 확인한다.
 2. `git status --short`, `git log <base>..HEAD --oneline`, `git diff <base>...HEAD --stat`과 필요한 상세 diff를 읽는다.
 3. 브랜치·커밋·사용자 요청에서 이슈 번호를 찾되, 확인되지 않은 번호를 추측하지 않는다.
 4. 미커밋 변경은 PR diff와 구분하고 포함 여부를 명확히 한다.
@@ -48,7 +48,7 @@ PR 초안을 쓰기 **전에** 브랜치 전체(`<base>...HEAD`)를 `bunch-revie
 ## 출력
 
 - 필요한 경우 70자 이내 제목을 `[Type] 제목`(예: `[Feat] 로그인 페이지`) 형식으로 제안한다. 브랜치가 `<이슈번호>-<type>/<이름>`이면 PR을 열 때 workflow가 이슈 제목으로 같은 형식에 맞춘다.
-- 템플릿 모든 section을 같은 순서로 채운 Markdown 초안과 `git push -u origin <브랜치>`, `gh pr create --base <base> --title "<제목>" --body-file <파일>` 명령을 제공한다. 본문을 저장할 파일 경로를 명시한다.
+- `develop` → `main` 릴리스 PR은 `docs/conventions/git.md`의 릴리스 본문을 사용한다. 그 외 PR은 템플릿 모든 section을 같은 순서로 채운 Markdown 초안을 제공한다. 모든 PR에 `git push -u origin <브랜치>`, `gh pr create --base <base> --title "<제목>" --body-file <파일>` 명령을 제공한다. 본문을 저장할 파일 경로를 명시한다.
 - 이슈 번호가 없으면 `Close #`를 임의 번호로 채우지 않고 template 안내를 남긴다.
 - AI 출처 문구와 실제로 수행하지 않은 검증은 넣지 않는다.
 

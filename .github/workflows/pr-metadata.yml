@@ -19,6 +19,31 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
 
+      - name: Apply release pull request body
+        if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'develop'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            const { data: pullRequest } = await github.rest.pulls.get({ owner, repo, pull_number });
+            const defaultBody = require('node:fs').readFileSync('.github/PULL_REQUEST_TEMPLATE.md', 'utf8');
+            const normalize = (body) => (body ?? '').replace(/\r\n/g, '\n').trim();
+
+            if (pullRequest.base.ref !== 'main' || pullRequest.head.ref !== 'develop') return;
+            if (normalize(pullRequest.body) && normalize(pullRequest.body) !== normalize(defaultBody)) return;
+
+            const body = [
+              '## 작업 내용',
+              '',
+              '- develop 브랜치 변경사항을 main 브랜치에 반영',
+              '',
+              '## 확인 사항',
+              '',
+              '- 개별 변경사항은 develop 머지 전 각 PR에서 확인',
+            ].join('\n');
+            await github.rest.pulls.update({ owner, repo, pull_number, body });
+
       - name: Read pull request metadata
         id: work
         env:

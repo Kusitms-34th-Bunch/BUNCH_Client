@@ -4,6 +4,7 @@
 
 - 일반 리뷰는 `.agents/skills/review-changes/SKILL.md`로 읽기 전용으로 수행한다.
 - CodeRabbit은 root `.coderabbit.yaml`을 기준으로 PR의 자동 1차 리뷰를 수행한다. 저장소 규칙은 `AGENTS.md`와 `docs/`를 knowledge base로 읽고, path instruction은 실제 workspace 경계를 보조한다.
+- 기본 브랜치는 `develop`으로 유지하고, CodeRabbit의 추가 자동 리뷰 대상에서도 `main`을 제외한다. `develop` → `main` 릴리스 PR은 개별 PR에서 검토한 변경을 모으므로 중복 자동 리뷰를 생략한다. CI와 브랜치 보호 검사는 유지한다. CodeRabbit은 기본 브랜치를 자동 리뷰하므로 기본 브랜치를 `main`으로 바꾸면 이 제외 조건이 성립하지 않는다.
 - CodeRabbit review와 사람이 작성하는 리뷰는 실제 버그, 보안·권한·접근성, API·cache·route 경계 문제를 우선한다. 취향 차이와 생성물에는 inline comment를 남기지 않는다.
 - 외부 PR comment 게시가 명시된 경우에만 `yarn review:pr`을 사용한다.
 - 버그, 보안, 접근성, 데이터·권한 처리, 사용자 흐름 회귀처럼 근거가 분명한 항목만 inline comment로 남긴다.
