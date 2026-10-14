@@ -50,6 +50,24 @@ jobs:
         id: install
         run: yarn install --immutable
 
+      # Turbo는 입력이 같은 패키지의 lint·typecheck·test·build 결과를 재사용한다. 바뀐 앱만 다시 돌게 캐시를 이어 받는다.
+      - name: Restore Turbo cache
+        id: turbo-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      # Turbo는 .next/cache를 build 출력에서 제외하므로 Next 빌드 캐시는 따로 이어 받는다.
+      - name: Restore Next.js build cache
+        id: next-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: apps/web/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
+          restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
+
       # 아래 단계는 package.json의 verify와 같은 순서·같은 명령을 유지한다. 하나가 실패해도 나머지를 끝까지 실행해 결과를 모은다.
       - name: Generated files check
         id: generated
@@ -95,6 +113,22 @@ jobs:
         id: build
         continue-on-error: true
         run: yarn build
+
+      # actions/cache의 자동 저장은 job이 성공해야 실행된다. 이 job은 검사가 하나라도 실패하면 마지막 단계에서 실패하므로,
+      # 설치가 끝난 뒤에는 검사 결과와 상관없이 여기서 직접 저장한다. Turbo는 성공한 작업의 결과만 캐시한다.
+      - name: Save Turbo cache
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+
+      - name: Save Next.js build cache
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: apps/web/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
 
       - name: Fail if any check failed
         if: always()

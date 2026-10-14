@@ -12,6 +12,7 @@ GitHub Actions가 PR과 `main`·`develop` push에서 검증을 실행한다. wor
 | `create-work-branch.yml`  | `issues: opened`                                               | 이슈 폼에서 브랜치 자동 생성 — `docs/conventions/git.md`                                                                                                                                                                      |
 | `pr-metadata.yml`         | `pull_request`(열림·재오픈·ready·제목 수정·동기화)             | PR 타입 라벨·assignee 자동화, 타입 라벨을 붙일 수 없는 PR은 실패 — `docs/conventions/git.md`                                                                                                                                  |
 | `branch-protection.yml`   | `main`을 대상으로 하는 `pull_request`                          | 출발 브랜치가 `develop`이 아니면 실패 — `docs/decisions/records/005-branch-strategy.md`                                                                                                                                       |
+| `cache-cleanup.yml`       | `pull_request_target`(닫힘)                                    | PR이 닫히면 그 PR이 만든 Actions 캐시를 삭제한다. `develop`·`main`의 캐시는 건드리지 않는다. PR 코드를 checkout하지 않는다                                                                                                    |
 | `discord-notify.yml`      | `pull_request`(열림·재오픈·ready·닫힘)                         | Discord 알림, webhook 없으면 스킵                                                                                                                                                                                             |
 | `discord-pr-conflict.yml` | `pull_request_target`(열림·재오픈·갱신), `push`(main, develop) | 충돌 상태(`CONFLICTING`)인 PR을 Discord로 알림. PR 코드를 checkout하지 않는다. webhook 없으면 스킵                                                                                                                            |
 
@@ -26,6 +27,17 @@ GitHub Actions가 PR과 `main`·`develop` push에서 검증을 실행한다. wor
 - `ci.yml`의 검증 단계는 `package.json`의 `verify`와 같은 순서·같은 명령을 유지한다. `verify`에 단계를 더하거나 빼면 `ci.yml`의 단계, job `outputs`, 댓글 표를 함께 고친다.
 - 댓글은 같은 저장소 안의 PR에서만 남긴다. 포크와 Dependabot PR은 토큰이 읽기 전용이라 댓글을 쓸 수 없어서 건너뛴다. 이때도 `Verify` 체크의 성공·실패는 그대로 나온다.
 - 필수 체크로 지정하는 것은 `Frontend CI / Verify`다. 댓글 job(`Result comment`)은 필수가 아니다.
+
+## 빌드 캐시
+
+`Frontend CI`는 `actions/cache`로 Turbo 캐시(`.turbo/cache`)와 Next.js 빌드 캐시(`apps/web/.next/cache`)를 이어 받는다. Turbo는 입력이 같은 패키지의 lint·typecheck·test·build 결과를 재사용해서 바뀐 앱만 다시 실행한다. Next 캐시는 Turbo 출력에서 제외되어 있어 따로 둔다.
+
+- 캐시가 없거나 맞지 않으면(첫 실행, 소스·`yarn.lock` 변경으로 Next 캐시 키가 달라진 경우, 7일 이상 미사용으로 만료) 해당 부분을 다시 실행하므로 느려질 뿐 결과는 같다. 캐시 서비스 오류는 경고로만 처리되어 CI를 실패시키지 않는다.
+- 저장은 `actions/cache/save`를 마지막 "Fail if any check failed" 단계 앞에 따로 둔다. 기본 자동 저장은 job이 성공해야 실행되는데, 이 job은 검사가 하나라도 실패하면 실패로 끝나서 고친 뒤 다시 push할 때마다 캐시 없이 시작하게 된다. 설치가 성공한 뒤에는 검사 결과와 상관없이 저장하고(Turbo는 성공한 작업의 결과만 캐시한다), 변조 가드나 설치가 실패하면 저장하지 않는다.
+- Turbo 캐시가 hit한 작업은 다시 실행하지 않고 이전 로그만 재생한다. 입력(소스, 의존성, `turbo.json`)이 같을 때만 hit하므로 검증을 건너뛰는 것은 아니다. 의심스러우면 Actions의 Caches에서 해당 캐시를 지우고 다시 실행한다.
+- Turbo 캐시 키에 커밋 SHA를 쓰므로 실행마다 항목이 새로 저장된다. PR이 닫히면 `cache-cleanup.yml`이 그 PR의 캐시를 지워서 쌓이지 않게 한다. `develop`·`main`에 push되며 저장된 캐시는 정리하지 않고 아래 한도에 의한 삭제에 맡긴다. 저장소 캐시 한도(10GB)를 넘으면 오래된 항목부터 지워진다.
+- Next 캐시는 빌드가 성공한 실행에서만 저장한다. 중간에 실패한 빌드의 부분 캐시가 그 키에 고정되지 않게 하려는 것이다.
+- Turbo 설정(`turbo.json`)의 `outputs`·`inputs`·`env`를 바꾸면 캐시가 틀린 결과를 재사용하지 않는지 확인한다.
 
 ## 로컬 재현
 
