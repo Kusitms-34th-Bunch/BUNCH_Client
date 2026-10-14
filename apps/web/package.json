@@ -21,7 +21,7 @@
     "@tanstack/react-query": "catalog:",
     "@webview-bridge/web": "^1.8.0",
     "ky": "catalog:",
-    "next": "^16.2.10",
+    "next": "^16.4.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "server-only": "^0.0.1",

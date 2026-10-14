@@ -20,14 +20,14 @@
   },
   "dependencies": {
     "ky": "catalog:",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@app/lint-config": "workspace:*",
     "@app/ts-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
-    "globals": "^17.7.0",
+    "globals": "^17.13.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
