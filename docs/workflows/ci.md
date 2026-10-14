@@ -10,7 +10,7 @@ GitHub Actions가 PR과 `main`·`develop` push에서 검증을 실행한다. wor
 | `e2e.yml`                 | `pull_request`, `workflow_dispatch`                            | Playwright E2E(chromium). 실패 시 report·result를 artifact로 업로드                                                                                                                                                    |
 | `security.yml`            | `pull_request`, `push`(main, develop), `workflow_dispatch`     | gitleaks로 git 이력 전체의 시크릿 스캔. 시크릿이 있으면 실패                                                                                                                                                           |
 | `create-work-branch.yml`  | `issues: opened`                                               | 이슈 폼에서 브랜치 자동 생성 — `docs/conventions/git.md`                                                                                                                                                               |
-| `pr-metadata.yml`         | `pull_request`(열림·재오픈·ready·제목 수정·동기화)             | PR 타입 라벨·assignee 자동화, 타입 라벨을 붙일 수 없는 PR은 실패 — `docs/conventions/git.md`                                                                                                                           |
+| `pr-metadata.yml`         | `pull_request`(열림·재오픈·ready·제목 수정·동기화)             | PR 타입 라벨·assignee와 릴리스 본문 자동화. develop → main은 타입 검사 제외 — `docs/conventions/git.md`                                                                                                                |
 | `branch-protection.yml`   | `main`을 대상으로 하는 `pull_request`                          | 출발 브랜치가 `develop`이 아니면 실패 — `docs/decisions/records/005-branch-strategy.md`                                                                                                                                |
 | `cache-cleanup.yml`       | `pull_request_target`(닫힘)                                    | PR이 닫히면 그 PR이 만든 Actions 캐시를 삭제한다. `develop`·`main`의 캐시는 건드리지 않는다. PR 코드를 checkout하지 않는다                                                                                             |
 | `discord-notify.yml`      | `pull_request`(열림·재오픈·ready·닫힘)                         | Discord 알림, webhook 없으면 스킵                                                                                                                                                                                      |
@@ -18,7 +18,7 @@ GitHub Actions가 PR과 `main`·`develop` push에서 검증을 실행한다. wor
 
 ## 필수 체크
 
-`Verify`(`Frontend CI`, `ci.yml`)가 branch protection의 required check다. `Secret scan`(`Security`)과 `Metadata`(`PR Metadata`)도 필수 체크로 두면 시크릿이 든 PR과 PR 제목·브랜치에서 타입을 읽을 수 없는 PR은 머지되지 않는다(필수 체크 지정은 저장소 관리자가 GitHub에서 설정한다). `Validate Source Branch`(`Branch Protection`)는 **`main`의 ruleset에만** 필수 체크로 지정한다. 이 workflow는 `main` 대상 PR에서만 돌아서, `develop` 대상 PR까지 필수로 걸면 체크가 오지 않아 모든 PR이 대기 상태로 막힌다. 같은 PR·브랜치에 새 commit이 push되면 이전 CI run은 concurrency 설정으로 취소된다.
+`Verify`(`Frontend CI`, `ci.yml`)가 branch protection의 required check다. `Secret scan`(`Security`)과 `Metadata`(`PR Metadata`)도 필수 체크로 두면 시크릿이 든 PR과 타입을 읽을 수 없는 일반 작업 PR은 머지되지 않는다. `develop` → `main` 릴리스 PR은 타입 검사를 생략한다(필수 체크 지정은 저장소 관리자가 GitHub에서 설정한다). `Validate Source Branch`(`Branch Protection`)는 **`main`의 ruleset에만** 필수 체크로 지정한다. 이 workflow는 `main` 대상 PR에서만 돌아서, `develop` 대상 PR까지 필수로 걸면 체크가 오지 않아 모든 PR이 대기 상태로 막힌다. 같은 PR·브랜치에 새 commit이 push되면 이전 CI run은 concurrency 설정으로 취소된다.
 
 ## CI 결과 댓글
 
