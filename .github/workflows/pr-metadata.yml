@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.base.sha }}
 
@@ -27,7 +27,7 @@ jobs:
           BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         run: python3 .github/scripts/parse_issue.py
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         env:
           WORK_MATCHED: ${{ steps.work.outputs.matched }}
           LABEL_NAME: ${{ steps.work.outputs.label }}

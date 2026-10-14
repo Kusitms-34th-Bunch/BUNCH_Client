@@ -18,13 +18,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # 의존성 설치(코드가 실행될 수 있는 단계) 전에 변조 징후를 먼저 검사한다.
       - name: Suspicious file guard
         run: node turbo/workflows/check-suspicious.mjs
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: yarn
