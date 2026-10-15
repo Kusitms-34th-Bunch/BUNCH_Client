@@ -57,6 +57,32 @@ test('키워드가 있는 질문에도 추천과 실행 승인을 구분하도�
   }
 });
 
+test('이슈·커밋·PR을 이어서 올리는 요청에 작업 전달 흐름을 안내한다', () => {
+  for (const prompt of [
+    '이슈부터 pr까지 올려줘',
+    '작업 끝났어 PR 올려줘',
+    'PR 올려줘',
+    '이 작업 올릴게',
+    '작업 마무리해줘',
+    'deliver-work',
+  ]) {
+    assert.match(suggest(JSON.stringify({ prompt })), /deliver-work/, prompt);
+  }
+});
+
+test('상태 질문이나 관련 없는 "올려" 표현에는 작업 전달 흐름을 안내하지 않는다', () => {
+  for (const prompt of [
+    '버전 올려줘',
+    '작업 올라갔어?',
+    'PR 자동화가 어떻게 동작해?',
+    '오늘 작업 상태 알려줘',
+    'PR 본문에 이슈 번호 넣어줘',
+    'PR 템플릿 만들어줘',
+  ]) {
+    assert.doesNotMatch(suggest(JSON.stringify({ prompt })), /deliver-work/, prompt);
+  }
+});
+
 test('빈 입력과 잘못된 JSON은 조용히 건너뛴다', () => {
   assert.equal(suggest('{}'), '');
   assert.equal(suggest('invalid json'), '');

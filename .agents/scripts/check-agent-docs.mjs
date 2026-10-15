@@ -112,6 +112,7 @@ const skillNames = [
   'prepare-issue',
   'prepare-commit',
   'prepare-pull-request',
+  'deliver-work',
 ];
 const missingFiles = requiredFiles.filter((file) => !existsSync(resolve(root, file)));
 
