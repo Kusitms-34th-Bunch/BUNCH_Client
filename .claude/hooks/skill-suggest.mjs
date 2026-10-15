@@ -25,7 +25,7 @@ const rules = [
   [/commit|커밋/, 'prepare-commit - 커밋 메시지 초안'],
   [
     /review-pr|(?:\bpr\b|풀리퀘스트|pull request)\s*#?\d*.*(?:리뷰|review).*(?:달아|달기|달고|게시|(?:코멘트|comment)s?\s*(?:달|남|게시|올))|\bpr\s*#?\d+.*(?:리뷰|review)|(?:인라인|inline).*(?:리뷰|review|코멘트|comment)/,
-    'review-pr - 올라온 PR의 inline 리뷰 초안, 게시는 --publish 명시 또는 확인 뒤',
+    'review-pr - 올라온 PR을 리뷰하고 inline 코멘트까지 게시, --dry-run이면 게시 안 함',
   ],
   [/\bpr\b|pull request|풀리퀘스트/, 'prepare-pull-request - PR 제목과 본문 초안'],
   [/refactor|cleanup|dedupe|simplify|리팩터링|정리|중복/, 'refactor-code - 동작 보존 리팩터링'],

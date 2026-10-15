@@ -119,25 +119,25 @@ Claude Code와 Codex의 adapter는 각각 `.claude/agents/`, `.codex/agents/`에
 - 추천 훅은 보조 안내다. 추천이 없거나 빗나가도 이 문서의 작업 분류로 선택한다. 아래 흐름도 필수 입력과 권한이 확보된 단계까지만 진행한다.
 - 복합 작업은 해당 단계만 조합한다. 이미 확인한 계약은 재사용하고, 모든 스킬을 일괄 로드하거나 같은 검증을 이유 없이 반복하지 않는다.
 
-| 요청·변경 범위                    | 실행 연결                                                                                                                          |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 새 기능·도메인 구현               | 범위가 정리되지 않았으면 `prepare-feature-scope` → 해당 구현 스킬                                                                  |
-| Figma·스크린샷 구현               | `implement-from-figma` → `docs/workflows/development.md`의 전용 흐름                                                               |
-| page·route·layout 구현            | `create-page-feature` → 포함된 폼·API·재사용 UI 스킬                                                                               |
-| 폼·검증·제출 구현                 | `implement-form-flow` → 서버 연동이 있으면 API 흐름                                                                                |
-| API 연동·query·mutation           | 계약 미확인 시 `assess-api-contract` → 확정 후 `integrate-api` → `verify-api-integration`                                          |
-| 앱 재사용 UI·공용 primitive       | 실제 소유 범위에 따라 `create-app-component` 또는 `create-ds-component`                                                            |
-| 버그 수정                         | 재현·원인 확인 → 해당 구현 스킬 → 필요한 회귀 검증에 `gen-tests`. 원인 조사가 막히면 debugger 호출                                 |
-| 리팩터링·성능 개선                | 각각 `refactor-code` 또는 `diagnose-performance`. 성능 개선은 기준선 측정 → 수정 → 같은 조건의 재측정                              |
-| 테스트 작성·수정                  | 단위·컴포넌트 테스트는 `gen-tests`, 핵심 흐름은 `plan-e2e` → 설정·smoke 변경 시 `verify-e2e-smoke`                                 |
-| 검사 실행·검증만 요청             | `verify-changes` → 변경 범위별 검증 스킬. 테스트 추가나 구현 수정으로 범위를 넓히지 않음                                           |
-| GitHub 자동화·agent 문서 변경     | 각각 `verify-github-workflows` 또는 `verify-agent-docs`                                                                            |
-| 구조·공유 경계 판단               | `review-architecture` → 구현 요청이면 결정한 소유 범위의 구현 스킬                                                                 |
-| diff·코드 품질·명세 대조 리뷰     | 각각 `review-changes`, `review-code-quality`, `verify-spec-sync`. 리뷰 결과만 보고                                                 |
-| 올라온 PR 리뷰·inline 코멘트 게시 | `review-pr`. 독립 reviewer 리뷰와 기존 thread 확인 뒤 dry-run까지 만들고, 게시는 사용자가 `--publish`를 명시하거나 확인한 경우에만 |
-| 생성기·OpenAPI 타입 생성 설정     | 각각 `create-generator`, `configure-openapi-types` → 생성물과 consumer 검증                                                        |
-| 이슈·커밋·PR 준비                 | 각각 `prepare-issue`, `prepare-commit`, `prepare-pull-request`의 초안·리뷰·실행 조건                                               |
-| 작업을 이슈부터 PR까지 올리기     | `deliver-work`로 현재 단계를 점검한 뒤 위 세 스킬을 순서대로, PR 뒤에는 `review-pr`까지. 단계마다 승인을 새로 받는다               |
+| 요청·변경 범위                    | 실행 연결                                                                                                                                                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 새 기능·도메인 구현               | 범위가 정리되지 않았으면 `prepare-feature-scope` → 해당 구현 스킬                                                                                                 |
+| Figma·스크린샷 구현               | `implement-from-figma` → `docs/workflows/development.md`의 전용 흐름                                                                                              |
+| page·route·layout 구현            | `create-page-feature` → 포함된 폼·API·재사용 UI 스킬                                                                                                              |
+| 폼·검증·제출 구현                 | `implement-form-flow` → 서버 연동이 있으면 API 흐름                                                                                                               |
+| API 연동·query·mutation           | 계약 미확인 시 `assess-api-contract` → 확정 후 `integrate-api` → `verify-api-integration`                                                                         |
+| 앱 재사용 UI·공용 primitive       | 실제 소유 범위에 따라 `create-app-component` 또는 `create-ds-component`                                                                                           |
+| 버그 수정                         | 재현·원인 확인 → 해당 구현 스킬 → 필요한 회귀 검증에 `gen-tests`. 원인 조사가 막히면 debugger 호출                                                                |
+| 리팩터링·성능 개선                | 각각 `refactor-code` 또는 `diagnose-performance`. 성능 개선은 기준선 측정 → 수정 → 같은 조건의 재측정                                                             |
+| 테스트 작성·수정                  | 단위·컴포넌트 테스트는 `gen-tests`, 핵심 흐름은 `plan-e2e` → 설정·smoke 변경 시 `verify-e2e-smoke`                                                                |
+| 검사 실행·검증만 요청             | `verify-changes` → 변경 범위별 검증 스킬. 테스트 추가나 구현 수정으로 범위를 넓히지 않음                                                                          |
+| GitHub 자동화·agent 문서 변경     | 각각 `verify-github-workflows` 또는 `verify-agent-docs`                                                                                                           |
+| 구조·공유 경계 판단               | `review-architecture` → 구현 요청이면 결정한 소유 범위의 구현 스킬                                                                                                |
+| diff·코드 품질·명세 대조 리뷰     | 각각 `review-changes`, `review-code-quality`, `verify-spec-sync`. 리뷰 결과만 보고                                                                                |
+| 올라온 PR 리뷰·inline 코멘트 게시 | `review-pr`. 독립 reviewer 리뷰와 기존 thread 확인 뒤 dry-run을 보여 주고 게시한다(`--dry-run` 인자를 주면 게시하지 않음)                                         |
+| 생성기·OpenAPI 타입 생성 설정     | 각각 `create-generator`, `configure-openapi-types` → 생성물과 consumer 검증                                                                                       |
+| 이슈·커밋·PR 준비                 | 각각 `prepare-issue`, `prepare-commit`, `prepare-pull-request`의 초안·리뷰·실행 조건                                                                              |
+| 작업을 이슈부터 PR까지 올리기     | `deliver-work`로 현재 단계를 점검한 뒤 위 세 스킬을 순서대로, PR 뒤에는 `review-pr`까지. 단계마다 승인을 새로 받고, PR 리뷰 단계는 주소 입력을 게시 요청으로 본다 |
 
 구현·수정을 마치면 `verify-changes`와 위의 "필수 호출 기준"을 적용한다. 리뷰에서 수정한 부분은 영향을 받는 검증을 다시 실행한다. 검증만 요청받았으면 결과를 보고하며 수정으로 범위를 넓히지 않는다. 실제 실행 결과와 미검증 항목을 구분해 보고할 때 작업을 마친다. 미완료 인계는 `docs/workflows/development.md`를 따른다.
 

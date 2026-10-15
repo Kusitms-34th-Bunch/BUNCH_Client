@@ -1,13 +1,13 @@
 ---
 name: review-pr
-description: GitHub PR의 변경 diff를 독립 리뷰해 변경 줄에 inline 코멘트 초안을 만들고, 사용자가 게시를 명시하면 `yarn review:pr`로 게시한다. 올라온 PR을 리뷰하거나 리뷰 코멘트를 달 때 사용한다.
+description: GitHub PR의 변경 diff를 독립 리뷰해 변경 줄에 inline 코멘트 초안을 만들고, `yarn review:pr`로 게시한다. `--dry-run` 인자를 주면 게시하지 않는다. 올라온 PR을 리뷰하거나 리뷰 코멘트를 달 때 사용한다.
 ---
 
 # PR 인라인 리뷰
 
 ## 목표
 
-올라온 PR의 변경 줄에 팀원이 남기는 것 같은 짧고 부드러운 코멘트와 `Summary`·`Code Review` 본문을 만든다. 리뷰를 요청받은 것과 게시를 승인받은 것은 다르다. 기본 결과는 dry-run이다. 게시 기준과 payload 형식의 정본은 `docs/workflows/pr-review.md`다.
+올라온 PR의 변경 줄에 팀원이 남기는 것 같은 짧고 부드러운 코멘트와 `Summary`·`Code Review` 본문을 만든다. 이 스킬을 호출하면 리뷰하고 게시까지 한다. `--dry-run` 인자를 주면 게시하지 않는다. 게시 기준과 payload 형식의 정본은 `docs/workflows/pr-review.md`다.
 
 ## 입력 점검
 
@@ -85,15 +85,16 @@ PR의 핵심 변경을 1문장으로 요약한다.
 
 ## 게시
 
-1. payload JSON을 scratchpad나 `tmp/`에 만든다. `line`은 새 코드의 변경된 줄이고 `side`는 `RIGHT`다.
+1. payload JSON을 저장소 밖 임시 디렉터리(scratchpad)에 만든다. `line`은 새 코드의 변경된 줄이고 `side`는 `RIGHT`다.
 2. `yarn review:pr -- --pr <PR> --comments <파일> --dry-run`을 실행한다.
 3. dry-run 출력의 코멘트 목록과 본문을 사용자에게 보여 주고, `comments` 개수가 기대와 같은지 확인한다.
-4. 인자에 `--publish`가 있고 입력 점검 6단계(토큰 확인)를 통과했으면 보여 준 payload로 `--publish`를 실행한다. 이 게시는 `gh auth status`가 아니라 `GH_TOKEN`으로 동작한다. `--publish`는 사용자가 payload를 보기 전에 게시를 명시한 것으로 보며, dry-run 결과는 게시 전에 항상 보여 준다.
-5. `--publish`가 없으면 "이 내용으로 게시할까요?"를 묻는다. "게시해줘" 같은 자연어도 dry-run을 보여 준 뒤 확인한다.
-6. 기존 thread를 확인하지 못한 상태라면 중복 코멘트가 달릴 수 있다고 알리고 확인받는다.
-7. 보여 준 payload가 바뀌면 다시 승인받는다.
-8. 승인 뒤 PR에 새 커밋이 올라갔으면 줄 번호가 어긋날 수 있어 diff부터 다시 확인한다.
+4. 입력 점검 6단계(토큰 확인)를 통과했고 인자에 `--dry-run`이 없으면 같은 payload로 `--publish`를 실행한다. 스킬을 호출한 것이 게시 요청이므로 별도 확인을 묻지 않는다.
+5. 이 게시는 `gh auth status`가 아니라 `GH_TOKEN`으로 동작한다.
+6. 인자에 `--dry-run`이 있으면 게시하지 않고 dry-run 결과만 보여 준다.
+7. 기존 thread를 확인하지 못했으면 중복 코멘트가 달릴 수 있다고 결과에 알린다.
+8. dry-run 뒤에 payload를 바꿨거나 PR에 새 커밋이 올라갔으면 diff와 dry-run을 다시 확인한 뒤 게시한다.
 9. 게시가 실패하면 payload를 수정해 dry-run부터 다시 한다. 스크립트는 상태 코드만 출력하므로 앵커 거부는 줄 번호를 의심해 추정한다. 리뷰는 한 번의 요청이라 일부 코멘트만 거부되는 경우는 없고, 전체가 성공하거나 실패한다. 의심되는 코멘트는 `Code Review` 목록으로 옮긴다.
+10. 비공개 저장소에서 `status=404`가 나오면 토큰에 이 저장소 접근 권한이 없는 경우일 수 있다고 알린다. 토큰 값은 출력하지 않는다.
 
 ## 출력
 
