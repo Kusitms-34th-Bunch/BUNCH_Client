@@ -10,15 +10,17 @@ description: 이 저장소의 디자인 시스템, token, 컴포넌트 배치, �
 - `docs/workflows/development.md`의 "Figma·스크린샷 구현"을 따라 디자인 조회·후속 스킬·필수 리뷰·시각 검증을 연결한다. 현재 제공된 Figma 도구와 플러그인 스킬을 확인하며, 플러그인 설치 경로를 저장소에 고정하지 않는다.
 - `docs/architecture/components.md`, `component-patterns.md`, `design-system-components.md`, 대상 app·design-system의 가까운 UI를 읽는다.
 - design source의 화면 상태·breakpoint·asset·interaction 범위와 현재 token·component로 표현 가능한 범위를 확인한다.
+- 코드 주석은 `docs/conventions/coding.md`의 주석 규칙을 따른다..
 
 ## 진행
 
 0. 구현 전에 Figma 속성(색, 반경, 폰트, padding, gap)을 현재 token·utility에 대응시킨 표를 먼저 만든다. 대응하는 token이 없으면 하드코딩하지 않고 가장 가까운 기존 token을 쓴 뒤, 어떤 값이 어긋났는지 PR 설명에 남기고 새 token은 제안만 한다.
-1. 기존 design-system component와 token을 우선 사용하고, 실제 반복 규칙이 없는 새 token·primitive는 만들지 않는다.
-2. 화면 전용 조립은 route-local 또는 feature에 두고, props·variant는 지원 상태만 타입으로 모델링한다.
-3. SVG·이미지는 기존 asset 파이프라인을 따르며, 원본 asset을 임의로 인라인 재작성하지 않는다.
-4. 390px 수준의 좁은 폭, 긴 텍스트, truncate/min-width, dynamic content와 empty·loading·error 상태를 확인한다.
-5. semantic HTML, accessible name, focus·keyboard, color만으로 전달된 정보가 없는지 확인한다.
+1. 새 디자인 시스템 컴포넌트를 만들면(`create-ds-component`) 구현 전에 위 대응표, 토큰 값이 Figma와 어긋난 곳, Figma에 없는 동작, 이름 결정을 spec 초안의 `확인할 항목`에 적고 구현 전에 확인한다.
+2. 기존 design-system component와 token을 우선 사용하고, 실제 반복 규칙이 없는 새 token·primitive는 만들지 않는다.
+3. 화면 전용 조립은 route-local 또는 feature에 두고, props·variant는 지원 상태만 타입으로 모델링한다.
+4. SVG·이미지는 기존 asset 파이프라인을 따르며, 원본 asset을 임의로 인라인 재작성하지 않는다.
+5. 390px 수준의 좁은 폭, 긴 텍스트, truncate/min-width, dynamic content와 empty·loading·error 상태를 확인한다.
+6. semantic HTML, accessible name, focus·keyboard, color만으로 전달된 정보가 없는지 확인한다.
 
 ## 완료·출력
 

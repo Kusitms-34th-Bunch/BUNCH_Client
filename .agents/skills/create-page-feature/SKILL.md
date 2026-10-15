@@ -32,6 +32,7 @@ route, 권한, 완료 이동, API 계약이 모호하면 route scaffold만 만�
 3. `.agents/guides/page-feature.md`, 대상 앱 `AGENTS.md`
 4. 가까운 route, page, layout, test, `*.spec.md`
 5. API가 있으면 `docs/architecture/data-layer.md`와 `integrate-api` 기준
+6. `docs/conventions/coding.md`의 주석 규칙
 
 ## App별 route 책임
 
