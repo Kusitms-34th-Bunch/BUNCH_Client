@@ -70,5 +70,5 @@
 - [x] public export 영향 확인(`yarn check:generated`)
 - [x] 실행 command와 결과: `yarn workspace @app/design-system test`·`lint`·`typecheck`
 - [ ] Figma 대조: 웹 임시 미리보기에서 54개 케이스(변형 6 × 크기 3 × 기본·눌림·비활성 3)의 높이·패딩·간격·글자·배경·글자색·테두리·눌림 오버레이를 Figma 사양과 대조했으나 미리보기를 저장소에 남기지 않아 재현 증거가 없다
-- [x] Storybook 렌더 확인: 정적 빌드의 `Matrix`를 Chrome에서 열어 변형 6 × 크기 3 × 기본·비활성이 토큰대로 보이는 것을 확인(눌림·focus는 미확인)
+- [ ] Storybook 렌더 확인: 로컬 정적 빌드의 `Matrix`에서 변형 6 × 크기 3 × 기본·비활성이 토큰대로 보였으나 저장소에 재현 증거가 없다. Chromatic 첫 빌드로 대체한다(눌림·focus는 미확인)
 - [ ] 390px 폭·키보드 focus 모양·iOS WebView의 `:active`·Windows 고대비 모드·실기기
