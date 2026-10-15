@@ -32,7 +32,7 @@ const { WebView } = createWebView({ bridge: appBridge });
 const isWebViewUrl = (url: string) => /^(https?|about):/i.test(url);
 
 function Shell() {
-  // Safe Area는 네이티브가 측정해 웹의 CSS 변수로만 넘긴다. 웹의 AppFrame이 그 값을 한 번 적용한다.
+  // Safe Area: 네이티브 측정값을 웹 CSS 변수로 전달(적용은 웹의 AppFrame 담당)
   const safeAreaScript = buildSafeAreaScript(useSafeAreaInsets());
   const webViewRef = useRef<ComponentRef<typeof WebView>>(null);
   const canGoBack = useRef(false);
@@ -47,7 +47,7 @@ function Shell() {
     return () => subscription.remove();
   }, []);
 
-  // 이미 열린 페이지에서 값이 바뀌면(예: 기기 회전) 다시 넣는다. 마운트 직후에도 한 번 실행되지만 같은 값이라 무해하다. 첫 로드는 아래 injectedJavaScriptBeforeContentLoaded가 맡는다.
+  // 값 변경 시(예: 기기 회전) 재주입 — 첫 로드는 injectedJavaScriptBeforeContentLoaded 담당
   useEffect(() => {
     webViewRef.current?.injectJavaScript(safeAreaScript);
   }, [safeAreaScript]);
@@ -59,7 +59,7 @@ function Shell() {
         source={{ uri: WEB_URL }}
         style={styles.webview}
         injectedJavaScriptBeforeContentLoaded={safeAreaScript}
-        // WebView 자체의 inset 보정을 끈다. 웹이 위 값으로 여백을 적용하므로 켜 두면 같은 여백이 두 번 들어간다.
+        // WebView 자체 inset 보정 해제(웹이 여백을 적용하므로 이중 적용 방지)
         contentInsetAdjustmentBehavior="never"
         allowsBackForwardNavigationGestures
         onNavigationStateChange={(navState) => {
