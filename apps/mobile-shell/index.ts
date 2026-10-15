@@ -1,4 +1,4 @@
-import './sentry';
+import './src/sentry';
 import { registerRootComponent } from 'expo';
 
 import App from './App';
