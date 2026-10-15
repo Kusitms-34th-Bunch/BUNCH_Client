@@ -59,7 +59,6 @@ jobs:
           LABEL_NAME: ${{ steps.work.outputs.label }}
           LABEL_COLOR: ${{ steps.work.outputs.label_color }}
           LABEL_DESCRIPTION: ${{ steps.work.outputs.label_description }}
-          TYPE_LABELS: ${{ steps.work.outputs.label_names }}
         with:
           script: |
             const pullRequest = context.payload.pull_request;
@@ -132,21 +131,7 @@ jobs:
               repo,
               issue_number: pullRequest.number,
             });
-            const typeLabelNames = new Set(process.env.TYPE_LABELS.split('|'));
-
-            await Promise.all(
-              currentLabels
-                .filter((label) => typeLabelNames.has(label.name) && label.name !== labelName)
-                .map((label) =>
-                  github.rest.issues.removeLabel({
-                    owner,
-                    repo,
-                    issue_number: pullRequest.number,
-                    name: label.name,
-                  }),
-                ),
-            );
-
+            // 이미 붙은 다른 라벨(직접 추가한 타입 라벨 포함)은 지우지 않는다.
             if (!currentLabels.some((label) => label.name === labelName)) {
               await github.rest.issues.addLabels({
                 owner,

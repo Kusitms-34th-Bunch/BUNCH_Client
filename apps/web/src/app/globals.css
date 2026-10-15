@@ -1,2 +1,12 @@
 @import 'tailwindcss';
 @import '@app/design-system/tokens.css';
+
+:root {
+  --app-max-width: 430px;
+
+  /* 네이티브 쉘이 --native-safe-area-*를 주입하면 그 값을, 일반 브라우저에서는 env()를 쓴다. 화면마다 여백 값을 따로 두지 않는다. */
+  --safe-area-top: var(--native-safe-area-top, env(safe-area-inset-top, 0px));
+  --safe-area-bottom: var(--native-safe-area-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-area-left: var(--native-safe-area-left, env(safe-area-inset-left, 0px));
+  --safe-area-right: var(--native-safe-area-right, env(safe-area-inset-right, 0px));
+}

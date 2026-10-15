@@ -135,6 +135,7 @@ Claude Code와 Codex의 adapter는 각각 `.claude/agents/`, `.codex/agents/`에
 | diff·코드 품질·명세 대조 리뷰 | 각각 `review-changes`, `review-code-quality`, `verify-spec-sync`. 리뷰 결과만 보고                    |
 | 생성기·OpenAPI 타입 생성 설정 | 각각 `create-generator`, `configure-openapi-types` → 생성물과 consumer 검증                           |
 | 이슈·커밋·PR 준비             | 각각 `prepare-issue`, `prepare-commit`, `prepare-pull-request`의 초안·리뷰·실행 조건                  |
+| 작업을 이슈부터 PR까지 올리기 | `deliver-work`로 현재 단계를 점검한 뒤 위 세 스킬을 순서대로. 단계마다 승인을 새로 받는다             |
 
 구현·수정을 마치면 `verify-changes`와 위의 "필수 호출 기준"을 적용한다. 리뷰에서 수정한 부분은 영향을 받는 검증을 다시 실행한다. 검증만 요청받았으면 결과를 보고하며 수정으로 범위를 넓히지 않는다. 실제 실행 결과와 미검증 항목을 구분해 보고할 때 작업을 마친다. 미완료 인계는 `docs/workflows/development.md`를 따른다.
 
@@ -153,6 +154,7 @@ Claude Code와 Codex의 adapter는 각각 `.claude/agents/`, `.codex/agents/`에
 | `review-architecture`, `refactor-code`                                                      | 경계 판단·동작 보존 리팩터링        |
 | `diagnose-performance`                                                                      | 측정 기반 성능 진단                 |
 | `prepare-issue`, `prepare-commit`, `prepare-pull-request`                                   | 이슈·commit·PR 초안, 승인 시 실행   |
+| `deliver-work`                                                                              | 이슈·commit·PR 단계 점검과 순서     |
 | `verify-github-workflows`, `verify-agent-docs`                                              | GitHub 자동화·agent harness 검증    |
 | `verify-spec-sync`                                                                          | spec·구현·API 계약 동기화 점검      |
 | `prepare-feature-scope`                                                                     | 기획·도메인·명세 구현 준비          |

@@ -18,6 +18,10 @@ const rules = [
     'implement-from-figma - 디자인 구현 요청이면 docs/workflows/development.md의 Figma·스크린샷 구현 흐름과 해당 SKILL.md를 읽고 적용한다. 질문·조사 요청은 구현으로 해석하지 않는다.',
   ],
   [/이슈.*(만들|작성|생성|발급|올려)|(create|open|new) issue/, 'prepare-issue - 이슈 폼 내용 정리'],
+  [
+    /deliver-work|(?:이슈|커밋).*(?:\bpr\b|풀리퀘스트)|(?:\bpr\b|풀리퀘스트).*(?:올리|올릴|올려)|(?:작업|변경).*(?:올리|올릴|올려|마무리|전달)/,
+    'deliver-work - 현재 상태를 보고 이슈·커밋·PR 중 빠진 단계부터 안내, 단계마다 승인',
+  ],
   [/commit|커밋/, 'prepare-commit - 커밋 메시지 초안'],
   [/\bpr\b|pull request|풀리퀘스트/, 'prepare-pull-request - PR 제목과 본문 초안'],
   [/refactor|cleanup|dedupe|simplify|리팩터링|정리|중복/, 'refactor-code - 동작 보존 리팩터링'],

@@ -7,6 +7,11 @@ Root `AGENTS.md`와 `docs/architecture/mobile-shell.md`를 먼저 따른다. 이
 - 이 앱은 화면을 직접 그리지 않는다. `react-native-webview`로 `apps/web`(Next.js)을 그대로 열고, 카메라·푸시·공유 같은 네이티브 기능만 `packages/bridge`를 통해 제공한다.
 - Expo Router, 여러 네이티브 화면 구성 같은 "진짜 네이티브 앱" 패턴은 지금 범위가 아니다. 실제로 WebView 밖에서 네이티브 UI가 필요해지기 전까지 추가하지 않는다.
 
+## 폴더 구조
+
+- 루트에는 Expo 진입점(`index.ts`, `App.tsx`)과 설정(`app.json`, `metro.config.js`, `tsconfig.json`, `package.json`)만 둔다.
+- 런타임 코드(`sentry.ts`, `safe-area-script.ts` 등)와 그 테스트는 `src/`에 두고 같은 폴더에서 나란히 관리한다. `scripts/`는 빌드·개발용 CLI 스크립트가 생길 때만 쓴다.
+
 ## 패키지 매니저 예외
 
 - 이 워크스페이스만 **pnpm**을 쓴다. Expo/Metro가 Yarn PnP를 지원하지 않기 때문이다 — `docs/decisions/records/003-mobile-shell-pnpm-exception.md`를 확인한다.

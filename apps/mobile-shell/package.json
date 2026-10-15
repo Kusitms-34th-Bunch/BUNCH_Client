@@ -12,6 +12,7 @@
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
     "react-native-webview": "13.16.1",
     "zod": "^4.6.5"
   },
@@ -20,7 +21,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "test": "node --test sanitize-sentry-event.test.mjs",
+    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",

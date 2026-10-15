@@ -6,5 +6,6 @@ describe('HomePage', () => {
   it('renders', () => {
     render(<HomePage />);
     expect(screen.getByRole('heading', { name: 'web' })).toBeInTheDocument();
+    expect(screen.getByRole('main')).toContainElement(screen.getByRole('heading', { name: 'web' }));
   });
 });
