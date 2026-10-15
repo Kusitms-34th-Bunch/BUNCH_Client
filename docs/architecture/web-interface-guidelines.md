@@ -71,7 +71,7 @@ WebView 쉘(`docs/architecture/mobile-shell.md`)에서도 체감이 유지되도
 
 - input 글자 크기가 16px 미만이면 iOS가 포커스 때 화면을 확대한다. viewport `maximum-scale`로 막으면 접근성이 나빠지고 실기기에서도 안정적이지 않았으므로, 입력 글자는 16px 이상으로 둔다.
 - iOS WebKit은 input 포커스 때 `body { overflow: hidden }`을 무시하고 document를 스크롤할 수 있다. 시트·모달이 열린 동안 배경을 고정해야 하면 `position: fixed; inset: 0`처럼 document 스크롤 경로 자체를 없앤다.
-- 하단 고정 영역(bottom nav, 시트 버튼, FAB)은 `env(safe-area-inset-bottom)`을 더한다. 바 위로 튀어나온 장식까지 포함한 실제 가림 높이는 바 높이와 다르다. 화면마다 여백 매직 넘버를 두지 말고 공용 CSS 변수 하나로 둔다.
+- 하단 고정 영역(bottom nav, 시트 버튼, FAB)은 `env(safe-area-inset-bottom)`을 더한다. 바 위로 튀어나온 장식까지 포함한 실제 가림 높이는 바 높이와 다르다. 화면마다 여백 매직 넘버를 두지 말고 공용 CSS 변수 하나로 둔다. 이 저장소는 `--safe-area-top`·`--safe-area-bottom`(`apps/web/src/app/globals.css`)이고 `AppFrame`이 한 번만 적용하므로, 화면에서 `env(safe-area-inset-*)`를 직접 더하지 않는다.
 - 오버레이가 겹칠 때(시트 위의 확인 모달) 아래 시트의 닫기는 다음 오버레이가 표시된 뒤에 호출한다. 먼저 닫으면 두 오버레이가 동시에 사라진다.
 - 롱프레스로 시작하는 제스처는 시작 컨테이너 자체에 `user-select: none`(`-webkit-user-select: none`)을 둔다. 자식에만 걸면 텍스트 선택이 먼저 잡혀 다음 탭이 무시된다.
 

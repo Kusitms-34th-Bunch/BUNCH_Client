@@ -15,7 +15,17 @@
 - iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 웹 history에 먼저 연결한다. 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
 - 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면뿐이다.
 
-SafeArea 처리와 앱 식별자(iOS `bundleIdentifier`, Android `package`)는 아직 없다. 실기기 확인과 출시 준비 시점에 정한다.
+## Safe Area
+
+Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/components/layout/AppFrame.tsx`)이 CSS 변수 `--safe-area-top`·`-bottom`·`-left`·`-right`로 한 번만 적용한다. 변수는 `apps/web/src/app/globals.css`에 있고, 값은 `--native-safe-area-*`가 있으면 그 값을, 없으면 `env(safe-area-inset-*)`를 쓴다. 일반 브라우저와 네이티브 쉘이 같은 코드로 동작하고, 두 값이 겹쳐 더해지지 않는다. 루트 layout의 `viewport-fit=cover`가 있어야 iOS에서 `env()`가 실제 값을 돌려준다.
+
+- 네이티브 쉘은 `react-native-safe-area-context`의 `useSafeAreaInsets()`로 측정한 값을 `src/safe-area-script.ts`의 `buildSafeAreaScript`로 `--native-safe-area-*`에 넣는다. 첫 로드는 `injectedJavaScriptBeforeContentLoaded`가, 이미 열린 페이지에서 값이 바뀌면 `injectJavaScript`가 맡는다.
+- WebView의 `contentInsetAdjustmentBehavior`는 `"never"`로 둔다. 켜 두면 WebView가 자기 inset을 더해 같은 여백이 두 번 들어간다. 이 prop은 iOS 전용이라 Android에서는 적용되지 않으며, Android는 실기기로 따로 확인한다.
+- 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
+- 앱은 `app.json`의 `orientation: "portrait"`로 세로에 고정되어 있어, iPhone 기준으로 앱 안에서는 가로 모드가 생기지 않는다(`ios.supportsTablet: true`인 iPad에서도 세로로 고정되는지는 확인하지 못했다). 일반 브라우저의 가로 모드를 위해 좌우 Safe Area를 적용하고, `PageShell`의 본문은 최소 높이(8rem)를 가진다. header·bottom·Safe Area를 뺀 높이가 그보다 작으면 본문 대신 틀 전체가 넘쳐 페이지가 스크롤된다. 이때 하단 영역(CTA)은 문서를 스크롤해야 보이고, main 위에서 스크롤하면 `overscroll-y-contain` 때문에 문서로 이어지지 않아 닿기 어려울 수 있다. 하단을 항상 보이게 하는 sticky 방식과 문서 스크롤 하나로 통일하는 방식은 이득이 불분명하거나 범위가 커서 택하지 않았고, 이 한계는 실기기와 낮은 화면에서 확인한 뒤 다시 정한다.
+- 확인한 것: 브라우저에서 네이티브 값이 한 번만 적용되고 가로 모드·낮은 화면의 최소 높이 정책이 동작하는 것, 네이티브의 TypeScript 검사·iOS JS 번들 생성·값 변환 테스트. 확인하지 못한 것: iOS·Android 실기기와 시뮬레이터에서 실제 값이 들어가는지, 마운트 뒤 값이 바뀐 상태에서 새 문서를 로드할 때 `injectedJavaScriptBeforeContentLoaded`의 새 값이 쓰이는지, Android 시스템 바(edge-to-edge) 처리, 소프트 키보드와 `dvh`. 이 부분은 실기기 확인 전까지 통과로 보지 않는다.
+
+앱 식별자(iOS `bundleIdentifier`, Android `package`)는 아직 없다. 실기기 확인과 출시 준비 시점에 정한다.
 
 ## 권한과 출시 전 확인
 
