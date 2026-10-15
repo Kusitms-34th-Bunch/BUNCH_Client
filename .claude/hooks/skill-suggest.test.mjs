@@ -83,6 +83,37 @@ test('상태 질문이나 관련 없는 "올려" 표현에는 작업 전달 흐�
   }
 });
 
+test('올라온 PR의 inline 리뷰 요청에 review-pr을 안내한다', () => {
+  for (const prompt of [
+    '/review-pr 12',
+    'PR 리뷰 달아줘',
+    'pr 리뷰 코멘트 게시해줘',
+    '인라인 리뷰 해줘',
+    'inline review comments 달아줘',
+    'PR 12 리뷰해줘',
+    '이 PR 인라인 리뷰 올려줘',
+  ]) {
+    const output = suggest(JSON.stringify({ prompt }));
+
+    assert.match(output, /review-pr/, prompt);
+    assert.doesNotMatch(output, /prepare-pull-request|review-changes|deliver-work/, prompt);
+  }
+});
+
+test('일반 리뷰·PR 초안 요청에는 review-pr을 안내하지 않는다', () => {
+  for (const prompt of [
+    '코드 리뷰해줘',
+    'PR 본문 써줘',
+    '커밋 정리해줘',
+    '리뷰어를 지정해줘',
+    'PR 리뷰 코멘트 반영해줘',
+    'PR 올려줘',
+    'PR 리뷰해줘',
+  ]) {
+    assert.doesNotMatch(suggest(JSON.stringify({ prompt })), /review-pr/, prompt);
+  }
+});
+
 test('빈 입력과 잘못된 JSON은 조용히 건너뛴다', () => {
   assert.equal(suggest('{}'), '');
   assert.equal(suggest('invalid json'), '');

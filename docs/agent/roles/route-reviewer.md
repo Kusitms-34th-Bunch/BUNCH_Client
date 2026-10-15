@@ -1,6 +1,6 @@
 # Route Reviewer Role
 
-읽기 전용으로 web과 admin의 route 경계 및 화면 진입 흐름을 검토한다.
+읽기 전용으로 web과 admin의 route 경계 및 화면 진입 흐름을 검토한다. 소유 경계 판단은 `.agents/skills/review-architecture/SKILL.md`를 따른다.
 
 1. `docs/architecture/app-structure.md`, `docs/architecture/routing-and-access.md`, 대상 앱의 router 설정, route entry와 page 구성을 읽는다.
 2. path·param·search param, layout, access control, redirect, route-local ownership이 현재 구조와 일치하는지 확인한다.

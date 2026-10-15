@@ -60,3 +60,4 @@ PR 초안을 쓰기 **전에** 브랜치 전체(`<base>...HEAD`)를 `bunch-revie
 4. 승인되면 `git push -u origin <브랜치>`를 실행한다. `pre-push` hook(typecheck·test)이 실패하면 PR을 만들지 않고 원인을 보고하며, `--no-verify`로 우회하지 않는다. 강제 푸시가 필요하면 `--force-with-lease`를 쓰되 따로 확인받는다.
 5. 본문을 임시 파일에 쓰고 `gh pr create --base <base> --title "<제목>" --body-file <파일>`로 만든다. 라벨과 assignee는 `pr-metadata` workflow가 채우므로 주지 않는다.
 6. PR URL을 알려 준다. UI 변경 스크린샷은 사람이 붙인다. 만들지 않았다면 만들지 않았다고 쓴다.
+7. `deliver-work` 없이 직접 호출됐고 PR이 올라갔다면 `review-pr`로 inline 리뷰 코멘트를 달 수 있다고 안내한다. `deliver-work`가 호출했다면 안내하지 않는다.

@@ -27,3 +27,4 @@ description: 이 저장소의 디자인 시스템, token, 컴포넌트 배치, �
 - 사용한 token·기존 component, 새 UI의 소유 위치, 지원 화면 상태, 시각·접근성 검증 결과를 적는다.
 - Figma에 없는 동작·token·responsive 규칙은 추측으로 확정하지 않고 전제로 표시한다.
 - 시각 검증은 `docs/workflows/development.md`와 `docs/agent/agent-browser-mcp.md`에 따라 기준 화면과 실제 렌더를 비교한다. 레이아웃·타이포그래피·색상·에셋별 차이와 수정 후 재확인 결과를 적는다. 둘 중 하나만 있으면 통과로 표현하지 않고 없는 입력을 명시한다.
+- 완료를 보고하기 전에 `bunch-ui-accessibility-reviewer`를 호출한다(`docs/agent/bootstrap.md`의 필수 호출 기준). 호출하지 않았다면 호출했다고 쓰지 않는다.
