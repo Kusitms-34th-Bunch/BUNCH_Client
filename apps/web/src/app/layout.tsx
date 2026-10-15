@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: 'web',
 };
 
-// viewport-fit=cover가 있어야 iOS에서 env(safe-area-inset-*)가 실제 값을 돌려준다.
+// iOS에서 env(safe-area-inset-*)가 값을 돌려주려면 viewport-fit=cover 필요
 export const viewport: Viewport = {
   viewportFit: 'cover',
 };
