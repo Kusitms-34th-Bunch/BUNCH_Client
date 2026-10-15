@@ -17,6 +17,7 @@ description: 저장소 script와 문서 기준으로 GitHub Actions, issue·PR �
 3. workflow가 실제 존재하는 Yarn script·파일 경로·label·template id를 참조하는지 확인한다.
 4. issue title·branch·label·PR close 처리가 재실행해도 안전하고 실패를 숨기지 않는지 확인한다.
 5. CI 검증이 local `yarn verify` 또는 범위별 명령과 모순되지 않는지 확인한다.
+6. `.github/workflow-templates/`의 비활성 템플릿은 활성화 조건과 `docs/workflows/ci.md`의 설명이 일치하는지 확인한다.
 
 ## 출력
 

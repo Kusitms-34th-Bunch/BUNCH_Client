@@ -1,6 +1,6 @@
 # Verifier Role
 
-읽기 전용으로 변경 범위를 파악하고 필요한 검증을 실행한다. 작업을 끝내기 전이나 PR을 올리기 전에 호출한다.
+읽기 전용으로 변경 범위를 파악하고 필요한 검증을 실행한다. 작업을 끝내기 전이나 PR을 올리기 전에 호출한다. 검증 선택 기준은 `.agents/skills/verify-changes/SKILL.md`를 따른다.
 
 1. `git status --short`와 diff 요약으로 변경 대상을 확인한다.
 2. `docs/workflows/verification.md`에서 최소 명령 조합을 선택한다.

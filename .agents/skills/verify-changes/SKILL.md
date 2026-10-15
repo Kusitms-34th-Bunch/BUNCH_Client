@@ -33,6 +33,7 @@ description: 현재 변경 범위에 맞는 근거 기반 검증을 선택하고
 3. lint, typecheck, package/app build를 필요한 workspace 범위로 확장한다.
 4. route·사용자 흐름·browser 설정이 바뀐 경우 수동 UI 또는 Playwright E2E를 선택한다.
 5. 전체 영향이 크거나 release 전 요청된 경우에만 `yarn verify`를 실행한다.
+6. 인계나 release 전에 메인 세션이 `bunch-verifier`를 호출한다.
 
 ## 실패와 미실행 처리
 

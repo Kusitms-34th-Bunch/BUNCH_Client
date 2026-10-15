@@ -26,3 +26,4 @@ description: 저장소 generator, test, Storybook story, 생성 export 검증으
 - public export, generator 영향, story/test, consumer 호환성, `yarn check:generated` 및 대상 검증 결과를 보고한다.
 - app 전용 의존성, server data, route·feature 상태를 design-system에 넣지 않는다.
 - spec의 상태·검증·`확인할 항목`을 구현 결과에 맞춰 갱신한다. 실행하지 않은 검증은 체크하지 않는다.
+- 완료를 보고하기 전에 `bunch-ui-accessibility-reviewer`를 호출한다(`docs/agent/bootstrap.md`의 필수 호출 기준). 호출하지 않았다면 호출했다고 쓰지 않는다.

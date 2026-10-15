@@ -39,7 +39,7 @@
 
 ## 심각도
 
-`review-changes`, `review-code-quality`와 같은 Critical/Major/Minor/Suggestion 기준을 쓴다.
+심각도의 정본은 `docs/code-quality/review.md`의 Finding 기준이다. 보안 영역에는 아래 표로 적용한다.
 
 | 수준       | 기준                                                                                |
 | ---------- | ----------------------------------------------------------------------------------- |

@@ -23,3 +23,4 @@ description: 명확한 소유 경계와 집중 테스트를 갖춘 앱 공용 Re
 
 - 소유 앱, public import 위치, props 계약, 지원 상태, 검증 결과를 적는다.
 - 다른 app 또는 package를 import하지 않고, 실제 재사용 근거 없는 범용화·새 의존성 추가를 하지 않는다.
+- 완료를 보고하기 전에 `bunch-ui-accessibility-reviewer`를 호출한다(`docs/agent/bootstrap.md`의 필수 호출 기준). 호출하지 않았다면 호출했다고 쓰지 않는다.

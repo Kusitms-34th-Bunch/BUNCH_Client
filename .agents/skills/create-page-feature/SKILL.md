@@ -70,6 +70,7 @@ route, 권한, 완료 이동, API 계약이 모호하면 route scaffold만 만�
 - route·page·feature·shared·design system의 소유 경계가 설명 가능하다.
 - UI 상태와 접근성·responsive 확인이 변경 범위에 맞게 끝났다.
 - 관련 test와 `yarn lint`, `yarn typecheck`, 대상 app build 또는 수동 검증을 실제로 실행·기록했다.
+- 완료를 보고하기 전에 `bunch-route-reviewer`(UI가 포함되면 `bunch-ui-accessibility-reviewer`도)를 호출한다(`docs/agent/bootstrap.md`의 필수 호출 기준). 호출하지 않았다면 호출했다고 쓰지 않는다.
 
 ## 출력
 
