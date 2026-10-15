@@ -7,6 +7,7 @@ description: 이 저장소의 디자인 시스템, token, 컴포넌트 배치, �
 
 ## 먼저 확인
 
+- `docs/workflows/development.md`의 "Figma·스크린샷 구현"을 따라 디자인 조회·후속 스킬·필수 리뷰·시각 검증을 연결한다. 현재 제공된 Figma 도구와 플러그인 스킬을 확인하며, 플러그인 설치 경로를 저장소에 고정하지 않는다.
 - `docs/architecture/components.md`, `component-patterns.md`, `design-system-components.md`, 대상 app·design-system의 가까운 UI를 읽는다.
 - design source의 화면 상태·breakpoint·asset·interaction 범위와 현재 token·component로 표현 가능한 범위를 확인한다.
 
@@ -23,4 +24,4 @@ description: 이 저장소의 디자인 시스템, token, 컴포넌트 배치, �
 
 - 사용한 token·기존 component, 새 UI의 소유 위치, 지원 화면 상태, 시각·접근성 검증 결과를 적는다.
 - Figma에 없는 동작·token·responsive 규칙은 추측으로 확정하지 않고 전제로 표시한다.
-- Figma 화면과 실제 렌더 결과를 비교할 때는 `visual-verdict` skill로 스크린샷과 기준 화면을 대조해 구조화된 판정을 받는다. 하나만 있으면 통과로 표현하지 않고 없는 입력을 명시한다.
+- 시각 검증은 `docs/workflows/development.md`와 `docs/agent/agent-browser-mcp.md`에 따라 기준 화면과 실제 렌더를 비교한다. 레이아웃·타이포그래피·색상·에셋별 차이와 수정 후 재확인 결과를 적는다. 둘 중 하나만 있으면 통과로 표현하지 않고 없는 입력을 명시한다.

@@ -22,6 +22,8 @@
 
 Skill은 "page 구현", "API 연동", "PR 준비"처럼 반복되는 작업 절차를 담는다. 어떤 작업에 어떤 skill을 쓰는지는 `AGENTS.md`의 "작업 진입점"과 `docs/agent/bootstrap.md`의 Skills 표가 기준이다.
 
+사용자는 원하는 작업을 자연어로 요청하면 된다. agent가 bootstrap의 "요청에서 실행까지"에 따라 스킬을 선택하고 후속 구현·리뷰·검증을 이어간다. 키워드 추천은 보조 수단이며 질문을 실행 승인으로 바꾸지 않는다.
+
 - 원본은 `.agents/skills/{name}/SKILL.md` 하나뿐이다.
 - Claude Code는 `.claude/skills/{name}`(원본을 가리키는 symlink)으로만 skill을 인식한다.
 - Codex는 `AGENTS.md` 라우팅과 `.agents/skills/` 원본을 직접 읽는다.
@@ -39,7 +41,7 @@ route·API 계약·UI 접근성에 영향을 주는 변경은 완료 보고 전�
 
 - **`guard-rules.mjs`**(PreToolUse): `console.log`, 명시적 `any`, `npm`/`pnpm`/`npx` 사용을 편집·커맨드 단계에서 차단한다. git 위험 명령(강제 푸시, `main` 직접 push, hook 우회, 전체 add, 되돌릴 수 없는 삭제)도 막는다(`docs/conventions/git.md`). 규칙을 바꾸면 `node --test .claude/hooks/guard-rules.test.mjs`로 확인한다.
 - **`lint-check.mjs`**(PostToolUse): 수정한 파일 하나만 바로 eslint로 검사해 결과를 보여준다. 막지는 않는다.
-- **`skill-suggest.mjs`**(UserPromptSubmit): 프롬프트에 커밋·리뷰·리팩터링 같은 키워드가 있으면 관련 skill을 먼저 안내한다.
+- **`skill-suggest.mjs`**(UserPromptSubmit): 프롬프트에 Figma·디자인 구현·커밋·리뷰·리팩터링 같은 키워드가 있으면 관련 skill을 먼저 안내한다. 직접 실행하는 훅은 아니며, agent가 요청 의도를 확인해 해당 skill과 후속 지침을 읽고 적용한다. 감지 회귀 검증은 `node --test .claude/hooks/skill-suggest.test.mjs`로 실행한다.
 
 hook을 새로 추가하는 기준(보편적 정책 + 안전 문제 + 반복된 miss 입증)은 `docs/agent/maintenance.md`를 따른다. **새 hook 이벤트를 등록한 직후에는 세션을 재시작해야 반영된다** — 같은 세션 안에서 바로 발화하지 않아도 설정이 잘못된 게 아니다.
 

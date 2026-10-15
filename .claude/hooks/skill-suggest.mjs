@@ -13,6 +13,10 @@ const lowerPrompt = prompt.toLowerCase();
 const suggestions = [];
 
 const rules = [
+  [
+    /figma|피그마|(?:디자인|스크린샷|\b(?:design|screenshot)\b)[\s\S]*(?:구현|만들|\b(?:implement|build|code)\b)|(?:구현|만들|\b(?:implement|build|code)\b)[\s\S]*(?:디자인|스크린샷|\b(?:design|screenshot)\b)/,
+    'implement-from-figma - 디자인 구현 요청이면 docs/workflows/development.md의 Figma·스크린샷 구현 흐름과 해당 SKILL.md를 읽고 적용한다. 질문·조사 요청은 구현으로 해석하지 않는다.',
+  ],
   [/이슈.*(만들|작성|생성|발급|올려)|(create|open|new) issue/, 'prepare-issue - 이슈 폼 내용 정리'],
   [/commit|커밋/, 'prepare-commit - 커밋 메시지 초안'],
   [/\bpr\b|pull request|풀리퀘스트/, 'prepare-pull-request - PR 제목과 본문 초안'],
@@ -29,7 +33,7 @@ for (const [pattern, suggestion] of rules) {
 }
 
 if (suggestions.length > 0) {
-  const additionalContext = `관련 skill:\n${suggestions.map((item) => `- ${item}`).join('\n')}`;
+  const additionalContext = `관련 skill:\n${suggestions.map((item) => `- ${item}`).join('\n')}\n선택·후속 실행 기준: docs/agent/bootstrap.md의 "요청에서 실행까지". 추천은 실행 승인이 아니다. 질문·조사·초안 요청의 범위를 유지하고, 구현 요청이면 필요한 후속 스킬·리뷰·검증까지 연결한다.`;
   console.log(
     JSON.stringify({
       hookSpecificOutput: {

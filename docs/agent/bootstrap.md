@@ -52,6 +52,7 @@
 | 재현 가능한 반복 장애                       | `docs/troubleshooting/README.md`                                            |
 | symbol·reference 탐색, Serena MCP 설정      | `docs/agent/serena-mcp.md`                                                  |
 | agent가 직접 브라우저로 UI 확인             | `docs/agent/agent-browser-mcp.md`                                           |
+| Figma 링크·스크린샷으로 UI 구현             | `docs/workflows/development.md`, `implement-from-figma`                     |
 
 ## Surface reference
 
@@ -108,6 +109,38 @@ Claude Code와 Codex의 adapter는 각각 `.claude/agents/`, `.codex/agents/`에
 단순 오탈자 수정, 문서 전용 변경, 한 파일의 사소한 조정에는 이 표를 적용하지 않는다. 이 표와 별개로 `prepare-commit`(코드 변경 커밋)과 `prepare-pull-request`(PR)는 계획·초안을 내기 전에 `bunch-reviewer`를 호출한다. 기준은 각 skill 문서를 따른다. debugger와 e2e-planner는 완료 게이트가 아니라 조사·설계가 필요한 시점에 그때그때 호출한다.
 
 ## Skills
+
+### 요청에서 실행까지
+
+사용자가 스킬 이름을 따로 부르지 않아도 요청 의도와 실제 변경 범위로 아래 흐름을 선택한다. 해당 `SKILL.md`를 읽고 적용하며, 추천 목록을 보여준 뒤 사용자의 재호출을 기다리지 않는다. 명시적으로 지정한 스킬과 작업 범위를 우선한다.
+
+- 질문·비교·조사·초안·읽기 전용 리뷰는 해당 범위만 수행한다. 키워드나 첨부 링크만으로 구현·수정·게시 요청으로 바꾸지 않는다.
+- 추천 훅은 보조 안내다. 추천이 없거나 빗나가도 이 문서의 작업 분류로 선택한다. 아래 흐름도 필수 입력과 권한이 확보된 단계까지만 진행한다.
+- 복합 작업은 해당 단계만 조합한다. 이미 확인한 계약은 재사용하고, 모든 스킬을 일괄 로드하거나 같은 검증을 이유 없이 반복하지 않는다.
+
+| 요청·변경 범위                | 실행 연결                                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 새 기능·도메인 구현           | 범위가 정리되지 않았으면 `prepare-feature-scope` → 해당 구현 스킬                                     |
+| Figma·스크린샷 구현           | `implement-from-figma` → `docs/workflows/development.md`의 전용 흐름                                  |
+| page·route·layout 구현        | `create-page-feature` → 포함된 폼·API·재사용 UI 스킬                                                  |
+| 폼·검증·제출 구현             | `implement-form-flow` → 서버 연동이 있으면 API 흐름                                                   |
+| API 연동·query·mutation       | 계약 미확인 시 `assess-api-contract` → 확정 후 `integrate-api` → `verify-api-integration`             |
+| 앱 재사용 UI·공용 primitive   | 실제 소유 범위에 따라 `create-app-component` 또는 `create-ds-component`                               |
+| 버그 수정                     | 재현·원인 확인 → 해당 구현 스킬 → 필요한 회귀 검증에 `gen-tests`. 원인 조사가 막히면 debugger 호출    |
+| 리팩터링·성능 개선            | 각각 `refactor-code` 또는 `diagnose-performance`. 성능 개선은 기준선 측정 → 수정 → 같은 조건의 재측정 |
+| 테스트 작성·수정              | 단위·컴포넌트 테스트는 `gen-tests`, 핵심 흐름은 `plan-e2e` → 설정·smoke 변경 시 `verify-e2e-smoke`    |
+| 검사 실행·검증만 요청         | `verify-changes` → 변경 범위별 검증 스킬. 테스트 추가나 구현 수정으로 범위를 넓히지 않음              |
+| GitHub 자동화·agent 문서 변경 | 각각 `verify-github-workflows` 또는 `verify-agent-docs`                                               |
+| 구조·공유 경계 판단           | `review-architecture` → 구현 요청이면 결정한 소유 범위의 구현 스킬                                    |
+| diff·코드 품질·명세 대조 리뷰 | 각각 `review-changes`, `review-code-quality`, `verify-spec-sync`. 리뷰 결과만 보고                    |
+| 생성기·OpenAPI 타입 생성 설정 | 각각 `create-generator`, `configure-openapi-types` → 생성물과 consumer 검증                           |
+| 이슈·커밋·PR 준비             | 각각 `prepare-issue`, `prepare-commit`, `prepare-pull-request`의 초안·리뷰·실행 조건                  |
+
+구현·수정을 마치면 `verify-changes`와 위의 "필수 호출 기준"을 적용한다. 리뷰에서 수정한 부분은 영향을 받는 검증을 다시 실행한다. 검증만 요청받았으면 결과를 보고하며 수정으로 범위를 넓히지 않는다. 실제 실행 결과와 미검증 항목을 구분해 보고할 때 작업을 마친다. 미완료 인계는 `docs/workflows/development.md`를 따른다.
+
+구현 요청을 이슈 발급·커밋·push·PR 게시 승인으로 해석하지 않는다. 게시나 인증이 막혔어도 독립적으로 완료할 수 있는 로컬 구현·검증은 계속한다.
+
+### 목록
 
 | Skill                                                                                       | 용도                                |
 | ------------------------------------------------------------------------------------------- | ----------------------------------- |
