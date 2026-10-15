@@ -146,12 +146,13 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: [
-                '작업 브랜치를 만들지 못했습니다. 이슈 폼에서 아래 두 칸을 읽지 못했습니다.',
+                '작업 브랜치를 만들지 못했습니다. 이슈 제목과 아래 폼 값을 확인해 주세요.',
                 '',
-                '- `🌳 브랜치명 (Branch)`: 비어 있지 않아야 합니다.',
-                '- `📂 브랜치 타입`: `feat`, `fix`, `hotfix`, `refactor`, `remove`, `rename`, `style`, `test`, `docs`, `chore` 중 하나여야 합니다.',
+                '- 이슈 제목: `[작업]` 뒤에 실제 작업 제목을 입력해 주세요.',
+                '- `브랜치 이름`: 비어 있지 않아야 합니다.',
+                '- `작업 타입`: 이슈 폼의 선택지에서 골라 주세요(`feat`, `fix`, `hotfix`, `refactor`, `remove`, `rename`, `style`, `test`, `docs`, `chore`).',
                 '',
                 '이 workflow는 이슈를 열 때만 실행되므로 내용을 고쳐도 다시 실행되지 않습니다. 이 이슈를 닫고 이슈 폼으로 새 이슈를 만들어 주세요.',
               ].join('\n'),
             });
-            core.setFailed('이슈 폼에서 브랜치명 또는 브랜치 타입을 읽지 못했습니다.');
+            core.setFailed('이슈 제목 또는 브랜치 이름·작업 타입이 유효하지 않습니다.');

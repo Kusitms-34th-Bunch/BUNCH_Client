@@ -36,9 +36,10 @@ TYPE_ALIASES = {'feature': 'feat'}
 
 def parse_form_field(body: str, field_label: str) -> str:
     """이슈 폼 마크다운에서 특정 필드의 첫 줄 값을 추출한다."""
-    pattern = rf'###\s*{re.escape(field_label)}.*?\n\n(.+?)(?:\n\n###|\Z)'
-    match = re.search(pattern, body, re.DOTALL)
-    return match.group(1).strip().split('\n')[0].strip() if match else ''
+    pattern = rf'^### {re.escape(field_label)}[ \t]*\n(.*?)(?=^### |\Z)'
+    match = re.search(pattern, body.replace('\r\n', '\n'), re.DOTALL | re.MULTILINE)
+    value = match.group(1).strip() if match else ''
+    return value.split('\n')[0].strip() if value and value != '_No response_' else ''
 
 
 def clean_branch_name(raw: str) -> str:
@@ -52,6 +53,7 @@ def clean_branch_name(raw: str) -> str:
 
 def build_issue_title(branch_type: str, issue_number: str, original_title: str) -> str:
     """[Type] #번호 - 제목 형식의 이슈 제목을 생성한다."""
+    original_title = re.sub(r'^\[작업\]\s*', '', original_title)
     if re.match(r'^\[[^\]]+\]', original_title):
         return original_title
     return f'[{branch_type.capitalize()}] #{issue_number} - {original_title}'
@@ -86,11 +88,12 @@ def issue_output() -> Dict[str, str]:
     title = os.environ.get('ISSUE_TITLE', '')
     number = os.environ.get('ISSUE_NUMBER', '')
     body = os.environ.get('ISSUE_BODY', '')
-    raw_branch = parse_form_field(body, '🌳 브랜치명 (Branch)')
-    raw_type = parse_form_field(body, '📂 브랜치 타입')
-    branch_type = find_type(raw_type)
+    raw_branch = parse_form_field(body, '브랜치 이름') or parse_form_field(body, '🌳 브랜치명 (Branch)')
+    raw_type = parse_form_field(body, '작업 타입') or parse_form_field(body, '📂 브랜치 타입')
+    type_option = re.search(r'\(([a-z]+)\)\s*-', raw_type)
+    branch_type = find_type(type_option.group(1) if type_option else raw_type)
 
-    if not raw_branch or not branch_type:
+    if not raw_branch or not branch_type or not re.sub(r'^\[작업\]\s*', '', title).strip():
         return {
             'matched': 'false',
             'label_names': '|'.join(details['name'] for details in LABEL_MAP.values()),
