@@ -12,14 +12,16 @@ description: GitHub PR의 변경 diff를 독립 리뷰해 변경 줄에 inline �
 ## 입력 점검
 
 1. 인자는 PR 번호 또는 `https://github.com/OWNER/REPO/pull/N`이다.
-2. 인자가 없고 `gh auth status`가 성공하면 `gh pr view --json number,baseRefName,headRefOid`로 현재 브랜치의 PR을 찾는다. 찾지 못하면 번호를 묻는다.
-3. `docs/workflows/pr-review.md`와 `docs/conventions/writing.md`를 읽는다.
-4. 게시용 토큰을 확인한다. `GH_TOKEN` 환경 변수나 `.env.pr-review`의 `GH_TOKEN=` 줄이 있어야 한다. 줄의 존재만 확인하고 값은 읽거나 출력하지 않는다.
-5. 토큰이 없으면 게시하지 않고 dry-run과 명령만 낸다.
-6. `gh auth status`가 성공하면 `gh pr diff <PR> --patch`로 diff를 읽는다.
-7. 인증이 없으면 base를 정한다. 기본은 `develop`이고 릴리스 PR이면 `main`이며, 사용자가 알려 주면 그 값을 쓴다.
-8. `git fetch origin pull/<번호>/head` 뒤 `git diff origin/<base>...FETCH_HEAD`로 diff를 읽는다. 기존 thread는 확인하지 못했다고 결과에 적는다.
-9. fetch가 실패하면 추측하지 않고 `BLOCKED`와 이유를 보고한다.
+2. 인자가 없고 `gh auth status`가 성공하면 `gh pr view --json number,baseRefName,headRefOid`로 현재 브랜치의 PR을 찾는다. 찾았으면 5로 간다.
+3. 인자가 없고 PR을 찾지 못했거나 인증이 없으면 AskUserQuestion으로 "리뷰할 PR을 알려 주세요"를 묻는다. 선택지는 "올렸어요(주소나 번호를 입력)"와 "아직 PR을 올리지 않았어요"다. 주소나 번호는 "Other" 입력칸으로 받는다.
+4. "아직 PR을 올리지 않았어요"를 고르면 여기서 끝내고, PR을 올린 뒤 다시 부르라고 안내한다. AskUserQuestion을 쓸 수 없는 환경이면 같은 질문을 글로 묻는다.
+5. `docs/workflows/pr-review.md`와 `docs/conventions/writing.md`를 읽는다.
+6. 게시용 토큰을 확인한다. `GH_TOKEN` 환경 변수나 `.env.pr-review`의 `GH_TOKEN=` 줄이 있어야 한다. 줄의 존재만 확인하고 값은 읽거나 출력하지 않는다.
+7. 토큰이 없으면 게시하지 않고 dry-run과 명령만 낸다.
+8. `gh auth status`가 성공하면 `gh pr diff <PR> --patch`로 diff를 읽는다.
+9. 인증이 없으면 base를 정한다. 기본은 `develop`이고 릴리스 PR이면 `main`이며, 사용자가 알려 주면 그 값을 쓴다.
+10. `git fetch origin pull/<번호>/head` 뒤 `git diff origin/<base>...FETCH_HEAD`로 diff를 읽는다. 기존 thread는 확인하지 못했다고 결과에 적는다.
+11. fetch가 실패하면 추측하지 않고 `BLOCKED`와 이유를 보고한다.
 
 ## 리뷰
 
@@ -86,7 +88,7 @@ PR의 핵심 변경을 1문장으로 요약한다.
 1. payload JSON을 scratchpad나 `tmp/`에 만든다. `line`은 새 코드의 변경된 줄이고 `side`는 `RIGHT`다.
 2. `yarn review:pr -- --pr <PR> --comments <파일> --dry-run`을 실행한다.
 3. dry-run 출력의 코멘트 목록과 본문을 사용자에게 보여 주고, `comments` 개수가 기대와 같은지 확인한다.
-4. 인자에 `--publish`가 있고 입력 점검 4단계를 통과했으면 보여 준 payload로 `--publish`를 실행한다. 이 게시는 `gh auth status`가 아니라 `GH_TOKEN`으로 동작한다. `--publish`는 사용자가 payload를 보기 전에 게시를 명시한 것으로 보며, dry-run 결과는 게시 전에 항상 보여 준다.
+4. 인자에 `--publish`가 있고 입력 점검 6단계(토큰 확인)를 통과했으면 보여 준 payload로 `--publish`를 실행한다. 이 게시는 `gh auth status`가 아니라 `GH_TOKEN`으로 동작한다. `--publish`는 사용자가 payload를 보기 전에 게시를 명시한 것으로 보며, dry-run 결과는 게시 전에 항상 보여 준다.
 5. `--publish`가 없으면 "이 내용으로 게시할까요?"를 묻는다. "게시해줘" 같은 자연어도 dry-run을 보여 준 뒤 확인한다.
 6. 기존 thread를 확인하지 못한 상태라면 중복 코멘트가 달릴 수 있다고 알리고 확인받는다.
 7. 보여 준 payload가 바뀌면 다시 승인받는다.
