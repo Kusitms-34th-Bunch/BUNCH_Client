@@ -10,7 +10,7 @@ description: 이 저장소의 디자인 시스템, token, 컴포넌트 배치, �
 - `docs/workflows/development.md`의 "Figma·스크린샷 구현"을 따라 디자인 조회·후속 스킬·필수 리뷰·시각 검증을 연결한다. 현재 제공된 Figma 도구와 플러그인 스킬을 확인하며, 플러그인 설치 경로를 저장소에 고정하지 않는다.
 - `docs/architecture/components.md`, `component-patterns.md`, `design-system-components.md`, 대상 app·design-system의 가까운 UI를 읽는다.
 - design source의 화면 상태·breakpoint·asset·interaction 범위와 현재 token·component로 표현 가능한 범위를 확인한다.
-- 코드 주석은 `docs/conventions/coding.md`의 주석 규칙을 따른다..
+- 코드 주석은 `docs/conventions/coding.md`의 주석 규칙을 따른다.
 
 ## 진행
 

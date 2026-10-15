@@ -69,6 +69,7 @@
 - [x] 사용자 관찰 동작 test(이름, 기본 type, 클릭, 비활성, 아이콘 접근성 이름, className·native 속성 전달, 긴 글자)
 - [x] 지원 variant·edge state story(`Matrix`, `WithIcons`, `Disabled`, `LongLabel`, `SideBySide`)
 - [x] public export 영향 확인(`yarn check:generated`)
-- [x] 실행 command와 결과: `yarn workspace @app/design-system test`·`lint`·`typecheck`, 웹 임시 미리보기(저장소에 남기지 않아 재현 증거 없음)에서 54개 케이스(변형 6 × 크기 3 × 기본·눌림·비활성 3)의 높이·패딩·간격·글자·배경·글자색·테두리·눌림 오버레이를 Figma 사양과 대조
+- [x] 실행 command와 결과: `yarn workspace @app/design-system test`·`lint`·`typecheck`
+- [ ] Figma 대조: 웹 임시 미리보기에서 54개 케이스(변형 6 × 크기 3 × 기본·눌림·비활성 3)의 높이·패딩·간격·글자·배경·글자색·테두리·눌림 오버레이를 Figma 사양과 대조했으나 미리보기를 저장소에 남기지 않아 재현 증거가 없다
 - [ ] Storybook 시각 확인(Tailwind 미연결)
 - [ ] 390px 폭·키보드 focus 모양·iOS WebView의 `:active`·Windows 고대비 모드·실기기

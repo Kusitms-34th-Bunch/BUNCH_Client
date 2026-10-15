@@ -9,7 +9,7 @@ description: 명확한 소유 경계와 집중 테스트를 갖춘 앱 공용 Re
 
 - `docs/architecture/components.md`, `component-patterns.md`, 대상 app `AGENTS.md`, 가까운 공용 component와 사용처를 읽는다.
 - 현재와 가까운 두 곳 이상에서 같은 계약이 필요한지 확인한다. 하나의 route만 쓰면 route-local로 둔다.
-- 코드 주석은 `docs/conventions/coding.md`의 주석 규칙을 따른다..
+- 코드 주석은 `docs/conventions/coding.md`의 주석 규칙을 따른다.
 
 ## 진행
 
