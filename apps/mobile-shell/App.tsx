@@ -2,8 +2,10 @@ import { bridge, createWebView } from '@webview-bridge/react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, type ComponentRef } from 'react';
 import { BackHandler, Button, Linking, Share, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shareParamsSchema, type AppBridgeMethods } from '@app/bridge';
 import * as Sentry from '@sentry/react-native';
+import { buildSafeAreaScript } from './src/safe-area-script';
 
 // apps/web 배포 주소. .env.local 또는 EAS 환경변수로 넘긴다. 하드코딩하지 않는다.
 const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL;
@@ -29,7 +31,9 @@ const { WebView } = createWebView({ bridge: appBridge });
 // ponytail: 허용 출처 allowlist는 인증 흐름이 정해진 뒤에 추가한다.
 const isWebViewUrl = (url: string) => /^(https?|about):/i.test(url);
 
-function App() {
+function Shell() {
+  // Safe Area는 네이티브가 측정해 웹의 CSS 변수로만 넘긴다. 웹의 AppFrame이 그 값을 한 번 적용한다.
+  const safeAreaScript = buildSafeAreaScript(useSafeAreaInsets());
   const webViewRef = useRef<ComponentRef<typeof WebView>>(null);
   const canGoBack = useRef(false);
 
@@ -43,12 +47,20 @@ function App() {
     return () => subscription.remove();
   }, []);
 
+  // 이미 열린 페이지에서 값이 바뀌면(예: 기기 회전) 다시 넣는다. 마운트 직후에도 한 번 실행되지만 같은 값이라 무해하다. 첫 로드는 아래 injectedJavaScriptBeforeContentLoaded가 맡는다.
+  useEffect(() => {
+    webViewRef.current?.injectJavaScript(safeAreaScript);
+  }, [safeAreaScript]);
+
   return (
     <View style={styles.container}>
       <WebView
         ref={webViewRef}
         source={{ uri: WEB_URL }}
         style={styles.webview}
+        injectedJavaScriptBeforeContentLoaded={safeAreaScript}
+        // WebView 자체의 inset 보정을 끈다. 웹이 위 값으로 여백을 적용하므로 켜 두면 같은 여백이 두 번 들어간다.
+        contentInsetAdjustmentBehavior="never"
         allowsBackForwardNavigationGestures
         onNavigationStateChange={(navState) => {
           canGoBack.current = navState.canGoBack;
@@ -69,6 +81,14 @@ function App() {
       />
       <StatusBar style="auto" />
     </View>
+  );
+}
+
+function App() {
+  return (
+    <SafeAreaProvider>
+      <Shell />
+    </SafeAreaProvider>
   );
 }
 
