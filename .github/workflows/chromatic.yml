@@ -1,15 +1,8 @@
 name: Chromatic
 
 on:
-  pull_request:
-    paths:
-      - 'packages/design-system/**'
-      - 'package.json'
-      - 'yarn.lock'
-      - '.yarnrc.yml'
-      - '.github/workflows/chromatic.yml'
   push:
-    branches: [main, develop]
+    tags-ignore: ['**']
     paths:
       - 'packages/design-system/**'
       - 'package.json'
@@ -18,28 +11,39 @@ on:
       - '.github/workflows/chromatic.yml'
 
 concurrency:
-  group: chromatic-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: chromatic-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   publish:
+    name: Visual Review
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
 
     steps:
+      # 토큰 미전달 실행(Dependabot, 미등록)의 이후 단계 스킵
       - name: Check Chromatic configuration
         id: chromatic
-        run: echo "enabled=${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+        run: echo "enabled=${{ env.CHROMATIC_PROJECT_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         if: steps.chromatic.outputs.enabled == 'true'
         with:
           fetch-depth: 0
+
+      # 설치 전 변조 징후 선검사
+      - name: Suspicious file guard
+        if: steps.chromatic.outputs.enabled == 'true'
+        run: node turbo/workflows/check-suspicious.mjs
+
+      # setup-node의 yarn 캐시가 Yarn 4를 찾도록 Corepack 선활성화
+      - if: steps.chromatic.outputs.enabled == 'true'
+        run: corepack enable
 
       - uses: actions/setup-node@v4
         if: steps.chromatic.outputs.enabled == 'true'
@@ -48,13 +52,12 @@ jobs:
           cache: yarn
 
       - if: steps.chromatic.outputs.enabled == 'true'
-        run: corepack enable
-      - if: steps.chromatic.outputs.enabled == 'true'
         run: yarn install --immutable
+      - if: steps.chromatic.outputs.enabled == 'true'
+        run: yarn workspace @app/design-system build-storybook
+
       - if: steps.chromatic.outputs.enabled == 'true'
         uses: chromaui/action@latest
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-          workingDir: packages/design-system
-          buildScriptName: build-storybook
-          onlyChanged: true
+          storybookBuildDir: packages/design-system/storybook-static

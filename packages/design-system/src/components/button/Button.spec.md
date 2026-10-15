@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - 소유 경계: design-system
-- Status: 구현됨(실기기·Storybook 시각 검증 전)
+- Status: 구현됨(실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `SolidButton`(node `115:761`). Figma 이름은 `SolidButton`이고 코드 이름은 `Button`이다. 이후 다른 모양의 버튼(아웃라인·아이콘 전용 등)이 디자인에 생기면 이름을 다시 정한다.
 
 ## 목적과 범위
@@ -52,7 +52,7 @@
 - 허용되는 dependency: `tailwind-variants`(변형 선언). 병합은 기존 `tailwind-merge`를 쓰며, `cn`과 `tv`가 같은 설정(토큰 이름 등록)을 공유한다.
 - 토큰 차이(확인 필요): 저장소 토큰 `surface-brand-subtle-1`은 `#e2e4ff`(`bunch-100`)인데 현재 Figma는 `#f1f2ff`(`bunch-50`)다. 생성된 토큰 CSS를 직접 고치지 않고 올바른 의미의 토큰을 쓰므로, Tokens Studio 원본이 갱신되면 `brandSubtle`이 자동으로 Figma와 같아진다.
 - Figma 변형 이름 `Scondary`는 오타로 보고 코드에서는 `secondary`로 쓴다.
-- Storybook state matrix: `Matrix`(변형 × 크기 × 기본·비활성), `WithIcons`, `Disabled`, `LongLabel`, `SideBySide`. 눌림은 `:active`라서 표로 재현할 수 없어 직접 눌러 확인한다. 현재 Storybook은 Tailwind·토큰 CSS를 연결하지 않아 스타일이 적용되지 않는다(연결에는 새 devDependency가 필요해 아직 하지 않았다).
+- Storybook state matrix: `Matrix`(변형 × 크기 × 기본·비활성), `WithIcons`, `Disabled`, `LongLabel`, `SideBySide`. 눌림은 `:active`라서 표로 재현할 수 없어 직접 눌러 확인한다. Storybook은 `.storybook/storybook.css`로 Tailwind와 토큰 CSS를 연결한다.
 - 웹 앱에서 쓸 때: 앱의 `globals.css`가 디자인 시스템 소스를 Tailwind 스캔 범위에 넣어야(`@source`) 클래스가 만들어진다. 첫 소비자를 연결할 때 함께 확인한다.
 
 ## 확인할 항목
@@ -61,7 +61,6 @@
 - 눌림 오버레이 (미정): Warning만 20%인 것이 의도인지 디자이너에게 확인한다.
 - 이름 (제안): Figma `SolidButton`은 코드에서 `Button`, 오타 `Scondary`는 `secondary`로 쓴다.
 - Figma에 없는 추가 (제안): focus-visible outline, 긴 글자 말줄임, `touch-manipulation`, `type="button"` 기본값. 필요 없으면 제거한다.
-- Storybook 시각 확인 (미정): Tailwind·토큰 CSS 연결에 새 devDependency(`tailwindcss`, `@tailwindcss/vite`)가 필요하다.
 - 터치 영역 (미정): `md`(40px)·`sm`(32px)이 44px 미만인 점의 정책을 디자이너·기획과 정한다.
 
 ## 검증
@@ -71,5 +70,5 @@
 - [x] public export 영향 확인(`yarn check:generated`)
 - [x] 실행 command와 결과: `yarn workspace @app/design-system test`·`lint`·`typecheck`
 - [ ] Figma 대조: 웹 임시 미리보기에서 54개 케이스(변형 6 × 크기 3 × 기본·눌림·비활성 3)의 높이·패딩·간격·글자·배경·글자색·테두리·눌림 오버레이를 Figma 사양과 대조했으나 미리보기를 저장소에 남기지 않아 재현 증거가 없다
-- [ ] Storybook 시각 확인(Tailwind 미연결)
+- [ ] Storybook 렌더 확인: 로컬 정적 빌드의 `Matrix`에서 변형 6 × 크기 3 × 기본·비활성이 토큰대로 보였으나 저장소에 재현 증거가 없다. Chromatic 첫 빌드로 대체한다(눌림·focus는 미확인)
 - [ ] 390px 폭·키보드 focus 모양·iOS WebView의 `:active`·Windows 고대비 모드·실기기
