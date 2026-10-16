@@ -2,6 +2,10 @@ import { spawnSync } from 'node:child_process';
 
 const checks = [
   {
+    name: 'Design-system icons',
+    command: ['workspace', '@app/design-system', 'icons:check'],
+  },
+  {
     name: 'Design-system barrel exports',
     command: ['workspace', '@app/design-system', 'gen:index:check'],
   },
