@@ -28,11 +28,29 @@ PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이�
 
 ## 작업 시작과 병렬 세션
 
-- 브랜치를 옮기기 전에 `git status --short`로 커밋 안 된 변경이 없는지 본다. 있으면 먼저 커밋하거나 옮긴다.
+- 구현 시작 시 `docs/workflows/development.md`의 "worktree를 만드는 기준"으로 작업 위치를 선택한다. 단일 작업은 feature 브랜치·현재 세션이 기본이다. 브랜치를 옮기기 전에 `git status --short`로 변경의 소유 작업을 확인한다. 다른 작업의 변경이나 실행 중 세션이 있으면 그대로 보존하고 새 작업만 worktree로 격리한다. 같은 작업의 변경은 충돌 없이 따라가는 경우에만 브랜치를 이동하며, 자동 stash·commit·reset으로 이동을 강제하지 않는다.
 - 자동 생성된 브랜치로는 `git fetch origin && git switch <브랜치>`로 옮긴다. 직접 만들 때는 로컬 기준 브랜치를 거치지 않고 `git switch -c <이름> origin/<기준 브랜치>`로 만든다. 다른 사람이 머지하면 `origin/*`만 움직이고 로컬 브랜치는 멈춰 있어서, 로컬에서 파면 뒤처진 자리에서 시작한다.
-- 작업을 시작하기 전에 `git rev-list --count HEAD..origin/<기준 브랜치>`가 0인지 본다. 0이 아니면 먼저 따라잡는다. 뒤처진 브랜치에서 올린 PR은 충돌이 크게 난다.
+- `git fetch origin` 후 대상 작업 폴더에서 `git rev-list --count HEAD..origin/develop`으로 뒤처짐을 확인한다. 이슈 자동화는 default branch(`develop`)를 checkout한 HEAD에서 브랜치를 만들며, 생성 후 들어온 변경은 자동 반영하지 않는다. 미커밋 변경이 없고 작업 커밋도 없는 신규 브랜치는 `git merge --ff-only origin/develop`으로 최신화한다. 진행 중인 브랜치는 미커밋 변경을 보존하고 `develop` 반영 범위·충돌을 먼저 확인하며, 통합 커밋은 기존 커밋 승인 기준을 따른다. push된 브랜치를 자동 rebase·강제 push하지 않는다.
 - 기존 PR 브랜치에 커밋을 더 올리기 전에 `gh pr view <번호> --json state`가 `MERGED`가 아닌지 확인한다. 머지된 뒤에 올린 커밋은 어디에도 반영되지 않으므로 새 이슈·브랜치·PR로 옮긴다.
-- AI 세션을 둘 이상 동시에 돌리거나 작업을 동시에 열 때는 폴더를 나눈다. 한 폴더에서 브랜치를 바꾸면 다른 세션의 커밋 안 된 파일이 사라지거나 섞인다. `git worktree add .worktrees/<이름> <브랜치>`를 쓰고, 워크트리마다 `yarn install`을 한다(PnP 파일은 추적되지 않는다). 끝나면 `git worktree remove`로 지운다.
+
+### 격리·동시 구현용 worktree
+
+생성 여부와 세션 수는 `docs/workflows/development.md`의 "worktree를 만드는 기준"을 따른다. 아래는 격리 또는 동시 구현으로 결정한 경우의 준비 절차이며, 새 이슈마다 worktree를 만들지는 않는다.
+
+1. `git worktree list`와 현재 폴더의 `git status --short`를 확인한다. 해당 작업의 worktree가 있으면 재사용하되 다른 세션이 사용 중이면 넘겨받지 않는다. 현재 폴더의 미커밋 변경은 그대로 두고, 병렬 작업을 위해 그 폴더의 브랜치를 바꾸지 않는다.
+2. `git fetch origin` 후 저장소 루트에서 아래 중 맞는 명령을 사용한다. 이슈 자동화가 만든 브랜치를 우선 사용하고 이슈 번호를 임의로 만들지 않는다. 자동화 실행 중이면 완료를 확인한 뒤 다시 fetch한다. 실패했으면 원인을 확인하며 대체 브랜치를 임의 생성하지 않는다. 직접 생성은 자동 생성 대상이 아니거나 수동 생성을 명시한 작업에만 사용한다. 이미 다른 worktree에서 사용하는 브랜치는 `--force`로 중복 연결하지 않는다.
+
+   | 브랜치 상태      | 명령                                                                         |
+   | ---------------- | ---------------------------------------------------------------------------- |
+   | 로컬에 있음      | `git worktree add .worktrees/<작업명> <브랜치>`                              |
+   | 원격에만 있음    | `git worktree add --track -b <브랜치> .worktrees/<작업명> origin/<브랜치>`   |
+   | 새로 만들어야 함 | `git worktree add --no-track -b <브랜치> .worktrees/<작업명> origin/develop` |
+
+   `--no-track`은 새 브랜치가 `origin/develop`을 upstream으로 추적하지 않게 한다. 처음 push할 때 `git push -u origin <브랜치>`로 같은 이름의 upstream을 만든다.
+
+3. `.worktrees/`는 git·Prettier·ESLint·변조 가드(`check-suspicious`)의 검사 대상에서 제외된다. 각 worktree는 자기 폴더에서 검증한다. 새 worktree 안에서 `yarn install --immutable`을 실행한다. PnP 설치 파일은 추적되지 않으므로 원래 폴더의 설치 상태를 그대로 사용할 수 없다. 환경 설정은 기존 예제를 따르고 비밀 값은 자동 복사하지 않는다. 개발 서버 포트를 분리하고 브라우저·검증 명령이 해당 worktree의 서버를 가리키는지 확인한다.
+4. 다른 작업의 미커밋 변경은 새 worktree에 포함되지 않는다. 선행 구현이 필요하면 승인된 커밋이 준비된 뒤 반영하고, 반영한 기준 커밋을 인계에 남긴다. 공통 파일 변경과 통합 검증은 담당 세션이 수행한다.
+5. 종료한 세션의 worktree는 변경이 없고 로컬 메모·환경 파일·검증 자료도 보관됐는지 확인한 뒤 `git worktree remove .worktrees/<작업명>`으로 정리한다. 강제 삭제와 브랜치 자동 삭제는 하지 않는다.
 
 ## PR 생성 시 자동 라벨·assignee와 타입 검사
 
