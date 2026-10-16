@@ -48,7 +48,7 @@ PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이�
 
    `--no-track`은 새 브랜치가 `origin/develop`을 upstream으로 추적하지 않게 한다. 처음 push할 때 `git push -u origin <브랜치>`로 같은 이름의 upstream을 만든다.
 
-3. `.worktrees/`는 git·Prettier·ESLint·변조 가드(`check-suspicious`)의 검사 대상에서 제외된다. 각 worktree는 자기 폴더에서 검증한다. 새 worktree 안에서 `yarn install --immutable`을 실행한다. PnP 설치 파일은 추적되지 않으므로 원래 폴더의 설치 상태를 그대로 사용할 수 없다. 환경 설정은 기존 예제를 따르고 비밀 값은 자동 복사하지 않는다. 개발 서버 포트를 분리하고 브라우저·검증 명령이 해당 worktree의 서버를 가리키는지 확인한다.
+3. `.worktrees/`는 `.gitignore` 규칙(Prettier 포함)과 ESLint·변조 가드(`check-suspicious`) 설정에서 제외된다. 각 worktree는 자기 폴더에서 검증한다. 새 worktree 안에서 `yarn install --immutable`을 실행한다. PnP 설치 파일은 추적되지 않으므로 원래 폴더의 설치 상태를 그대로 사용할 수 없다. 환경 설정은 기존 예제를 따르고 비밀 값은 자동 복사하지 않는다. 개발 서버 포트를 분리하고 브라우저·검증 명령이 해당 worktree의 서버를 가리키는지 확인한다.
 4. 다른 작업의 미커밋 변경은 새 worktree에 포함되지 않는다. 선행 구현이 필요하면 승인된 커밋이 준비된 뒤 반영하고, 반영한 기준 커밋을 인계에 남긴다. 공통 파일 변경과 통합 검증은 담당 세션이 수행한다.
 5. 종료한 세션의 worktree는 변경이 없고 로컬 메모·환경 파일·검증 자료도 보관됐는지 확인한 뒤 `git worktree remove .worktrees/<작업명>`으로 정리한다. 강제 삭제와 브랜치 자동 삭제는 하지 않는다.
 
