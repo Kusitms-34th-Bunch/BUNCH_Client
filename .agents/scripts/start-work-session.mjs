@@ -1,9 +1,14 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { readFileSync, realpathSync } from 'node:fs';
+import { isAbsolute } from 'node:path';
 import { createInterface } from 'node:readline';
 import { pathToFileURL } from 'node:url';
 
 export function prepareSession(worktree, handoff) {
+  // yarn은 저장소 루트에서 스크립트를 실행하므로 상대 경로의 기준이 호출 폴더와 달라짐
+  if (!isAbsolute(worktree) || !isAbsolute(handoff)) {
+    throw new Error('worktree와 인계문은 절대 경로로 지정하세요.');
+  }
   const cwd = realpathSync(worktree);
   const git = (...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' }).trim();
   if (

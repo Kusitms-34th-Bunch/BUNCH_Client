@@ -8,6 +8,11 @@ import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
 import { AGENTS, parseArguments, prepareSession, startSession } from './start-work-session.mjs';
 
+test('상대 경로 인자는 거부한다', () => {
+  assert.throws(() => prepareSession('.worktrees/task', '/tmp/handoff.md'), /절대 경로/);
+  assert.throws(() => prepareSession('/tmp/task', 'handoff.md'), /절대 경로/);
+});
+
 test('별도 worktree 루트와 비어 있지 않은 인계문만 허용한다', () => {
   const root = mkdtempSync(join(tmpdir(), 'bunch-session-'));
   const git = (...args) => execFileSync('git', ['-C', root, ...args], { stdio: 'pipe' });
