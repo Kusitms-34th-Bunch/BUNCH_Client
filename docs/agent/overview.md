@@ -13,7 +13,7 @@
 
 1. agent가 root `AGENTS.md`를 읽는다(작업 workspace에 `AGENTS.md`가 따로 있으면 그것도 함께).
 2. `docs/agent/bootstrap.md`를 읽고, 작업 성격에 따라 Tier 1(항상)과 Tier 2(필요한 것만)를 고른다.
-3. 작업 대상 app·package의 실제 코드·설정(`package.json`, 기존 구현)을 확인한다 — 설치 안 된 라이브러리나 예정 구조를 가정하지 않는다.
+3. 구현·수정 요청이면 `docs/workflows/development.md`의 "worktree를 만드는 기준"으로 작업 위치와 세션 수를 선택하고 준비한다. 단일 작업은 feature 브랜치·현재 세션으로 진행한다. 작업 대상 app·package의 실제 코드·설정(`package.json`, 기존 구현)을 확인한다.
 4. 구현 후 변경 범위에 맞는 검증(`docs/workflows/verification.md`)을 실행하고, 필요하면 전용 agent를 호출한 뒤 결과를 보고한다.
 
 이 순서와 각 Tier에 뭐가 들어있는지는 `docs/agent/bootstrap.md`가 기준이다.
@@ -30,6 +30,8 @@ Skill은 "page 구현", "API 연동", "PR 준비"처럼 반복되는 작업 절�
 - 새 skill은 반복되는 실제 작업에서만 추가한다. 한 번 쓸 절차를 위해 skill을 만들지 않는다.
 
 ## 전용 agent: 읽기 전용 리뷰·검증
+
+작업 격리와 별도 세션의 선택·실행은 `docs/workflows/development.md`의 "worktree를 만드는 기준"을 따른다. 이 판단은 메인 세션이 수행하며, hook이나 CI가 로컬 worktree를 자동 생성하는 구조는 아니다. worktree는 파일을 격리하며 대화·로컬 메모를 자동 공유하지 않는다.
 
 reviewer, verifier, debugger, api-contract-reviewer, ui-accessibility-reviewer, route-reviewer, e2e-planner는 조사·검토만 하고 파일을 고치지 않는다. 일반 구현은 메인 세션이 담당한다.
 
