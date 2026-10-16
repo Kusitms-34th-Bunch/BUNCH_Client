@@ -102,7 +102,8 @@ jobs:
               `git switch ${BRANCH_NAME}`,
               '```',
               '',
-              '`git status --short`에 커밋 안 된 변경이 보이면 먼저 커밋하거나 옮긴 뒤 브랜치를 바꿉니다.',
+              '단일 작업은 위 feature 브랜치에서 진행합니다. 다른 작업의 변경이나 실행 중 세션을 보존해야 하면 이 브랜치를 별도 worktree에 연결합니다.',
+              '변경을 자동으로 옮기거나 stash하지 않습니다. 작업 위치와 병렬 세션 기준은 `docs/workflows/development.md`의 "worktree를 만드는 기준"을 따릅니다.',
             ].join('\n');
 
             await github.rest.issues.createComment({

@@ -35,7 +35,7 @@ const IGNORED_DIRS = new Set([
   '.omx',
 ]);
 // git에 올라가지 않는 로컬 전용 경로
-const IGNORED_PREFIXES = ['.agents/notes/', '.agents/state/', '.claude/worktrees/'];
+const IGNORED_PREFIXES = ['.agents/notes/', '.agents/state/', '.claude/worktrees/', '.worktrees/'];
 const IGNORED_FILES = new Set(['yarn.lock', 'pnpm-lock.yaml', 'package-lock.json']);
 
 const CODE_EXT = /\.(?:[cm]?[jt]sx?|json|html|ya?ml)$/i;

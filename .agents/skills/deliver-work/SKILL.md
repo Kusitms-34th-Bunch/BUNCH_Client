@@ -13,7 +13,7 @@ description: 현재 상태(브랜치, 커밋 안 된 변경, push·PR 여부, gh
 
 원격 ref를 갱신하는 `git fetch` 외에는 읽기만 하는 명령으로 확인한다. 인증을 대신 시도하지 않는다. 작업 브랜치의 기준은 `develop`이다(`main`은 릴리스 PR로만 바뀐다. `docs/conventions/git.md`).
 
-1. `git fetch origin`으로 원격 정보를 갱신한다. 하지 않으면 아래 비교가 오래된 정보를 쓴다.
+1. `git worktree list`로 이번 작업의 폴더를 확인하고 그 폴더에서 아래 점검을 진행한다. 다른 작업의 worktree를 대신 전달하지 않는다. `git fetch origin`으로 원격 정보를 갱신한다. 하지 않으면 아래 비교가 오래된 정보를 쓴다.
 2. `git branch --show-current`, `git status --short --branch`, `git log origin/develop..HEAD --oneline`, `gh auth status`를 본다.
 3. 열린 PR이 있는지는 인증이 있을 때 `gh pr view <브랜치> --json state`로 본다. "no pull requests found"면 PR이 없는 것이고, 그 밖의 오류(네트워크 등)는 확인하지 못한 것이다. 인증이 없으면 확인하지 못했다고 쓰고, 열린 PR이 있는지 사용자에게 묻는다.
 4. 이미 push된 브랜치인지는 `git status --short --branch`로 본다. 원격 추적 브랜치가 있고 `[ahead N]`이 없으면 push된 것이다.
@@ -43,7 +43,7 @@ description: 현재 상태(브랜치, 커밋 안 된 변경, push·PR 여부, gh
 ## 단계
 
 1. **이슈** — `prepare-issue`. 만들었으면 이슈 번호와 브랜치 이름을 알린다.
-2. **브랜치 이동** — `docs/conventions/git.md`의 "작업 시작과 병렬 세션"대로 `git switch <브랜치>`와 `origin/develop` 대비 뒤처짐 확인을 한다. 커밋 안 된 변경은 `git.md`대로 먼저 확인하고, 새 브랜치로 충돌 없이 따라갈 때만 `git switch`로 옮긴다. `git switch`가 막히면 옮기지 않고 알린다. stash나 reset으로 우회하지 않는다. 이슈를 방금 만들었고 커밋 안 된 변경이 없으면 커밋할 것이 아직 없으므로 여기서 멈추고, 작업을 마친 뒤 다시 부르라고 안내한다. 변경이 있으면 멈추지 않고 3으로 간다.
+2. **브랜치 이동** — `docs/workflows/development.md`의 "worktree를 만드는 기준"으로 작업 위치·세션 수를 선택하고, `docs/conventions/git.md`의 "작업 시작과 병렬 세션"에 따라 자동 생성된 브랜치를 준비·재사용한다. 단일 작업에 worktree를 강제하지 않으며 다른 작업을 보존해야 하면 격리한다. 이후 점검과 명령은 선택한 작업 폴더에서 수행한다. 현재 폴더의 미커밋 변경을 다른 폴더로 자동 복사하지 않고 stash나 reset으로 우회하지 않는다. 이동 후 `origin/develop` 대비 뒤처짐을 확인한다. 이슈를 방금 만들었고 해당 작업 폴더에 변경이 없으면 커밋할 것이 아직 없으므로 여기서 멈춘다. 단, 구현까지 요청받았으면 해당 구현 스킬로 이어가며, 변경이 있으면 3으로 간다.
 3. **커밋** — `prepare-commit`. 코드 커밋은 그 skill의 리뷰 게이트를 거친다.
 4. **PR** — `prepare-pull-request`. 브랜치 전체 리뷰를 거친다.
 5. **PR 리뷰** — PR이 올라갔는지 확인하고 `review-pr`로 inline 리뷰를 만든다. 아래 "PR 리뷰 단계"를 따른다.
