@@ -1,0 +1,33 @@
+// @generated — run `yarn icons:build` to update
+import type { ComponentProps } from 'react';
+const LineReloadSmallIcon = ({
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledby,
+  ...props
+}: ComponentProps<'svg'>) => {
+  const hasAccessibleName = Boolean(ariaLabel?.trim() || ariaLabelledby?.trim());
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={16}
+      height={16}
+      fill="none"
+      viewBox="0 0 16 16"
+      aria-hidden={hasAccessibleName ? undefined : true}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledby}
+      focusable={false}
+      role={hasAccessibleName ? 'img' : undefined}
+      {...props}
+    >
+      <path
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.2}
+        d="M13.289 8.694a5.334 5.334 0 1 1-6.617-5.859c2.6-.666 5.29.672 6.283 3.165m.378-3.333V6H10"
+      />
+    </svg>
+  );
+};
+export default LineReloadSmallIcon;
