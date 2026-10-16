@@ -41,7 +41,7 @@
 | 이슈·브랜치·PR 라벨 자동화                  | `docs/conventions/git.md`                                                   |
 | CI 파이프라인·workflow 실패 대응            | `docs/workflows/ci.md`                                                      |
 | 디자인 시스템 컴포넌트                      | `docs/architecture/design-system-components.md`                             |
-| 아이콘 생성 파이프라인(비활성)              | `docs/architecture/design-system-icons.md`                                  |
+| 아이콘 생성 파이프라인                      | `docs/architecture/design-system-icons.md`                                  |
 | 네이티브 쉘·web↔native bridge               | `docs/architecture/mobile-shell.md`                                         |
 | Tailwind·token·스타일 책임                  | `docs/architecture/styling-and-tokens.md`                                   |
 | 성능·번들·리렌더 이슈                       | `docs/workflows/performance.md`                                             |
