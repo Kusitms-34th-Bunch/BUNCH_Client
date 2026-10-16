@@ -42,7 +42,7 @@
 
 ## 생성 구조
 
-새 컴포넌트는 반드시 `yarn gen:ds-component <PascalCase 이름>`으로 생성한다. 직접 만든 폴더는 `yarn check:generated`의 구조 검사(`turbo/workflows/check-ds-components.mjs`)가 CI에서 실패시킨다. 폴더마다 컴포넌트·test·story·`index.ts`가 모두 있어야 한다.
+새 컴포넌트는 반드시 `yarn gen:ds-component <PascalCase 이름>`으로 생성한다. 직접 만든 폴더는 `yarn check:generated`의 구조 검사(`turbo/workflows/check-ds-components.mjs`)가 CI에서 실패시킨다. 폴더마다 컴포넌트·test·story·`index.ts`가 모두 있어야 한다. `src/icons/generated/`의 아이콘은 SVG asset 파이프라인으로 생성하며 `docs/architecture/design-system-icons.md`를 따른다.
 
 ```text
 packages/design-system/src/components/{component-name}/

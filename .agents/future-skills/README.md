@@ -16,7 +16,7 @@
 | `pick-ui-library/`      | pick-ui-library            | toast·OTP 입력·virtualization·drag&drop·state 등 흔한 요구별 검증된 라이브러리 하나를 추천하는 lookup                                                                               |
 | `library-picks.md`      | (자체 작성)                | 범용 유틸·overlay 상태관리·Suspense 통합·다단계 흐름 등 라이브러리(es-toolkit, overlay-kit, suspensive, use-funnel 등)와 바텀시트(Base UI Drawer vs plainsheet vs vaul) 선택 lookup |
 
-`design-system-icons/generate-icons.mjs`는 skill이 아니라 비활성 아이콘 파이프라인 스크립트다. `@svgr/*` 의존성이 설치되기 전에는 `packages/` 안에 두면 lint와 boundary 검사에 걸려서 여기에 보관한다. 활성화 절차는 `docs/architecture/design-system-icons.md`를 따른다.
+아이콘 파이프라인은 활성화되어 `packages/design-system/scripts/generate-icons.mjs`로 이동했다. 사용 방법은 `docs/architecture/design-system-icons.md`를 따른다.
 
 `taste-*`는 Leonxlnx/taste-skill, `pick-ui-library`는 emilkowalski/skills에서 문서만 가져왔다. `library-picks.md`는 각 라이브러리를 직접 조사해 우리가 쓴 원본 문서다. 실행 스크립트·launcher는 포함하지 않았다.
 

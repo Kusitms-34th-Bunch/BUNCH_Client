@@ -42,6 +42,8 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 
 ## 로컬 재현
 
+`check:generated`는 디자인 시스템의 SVG → TSX 아이콘 동기화(`icons:check`), barrel·컴포넌트 구조, 디자인 토큰 CSS를 검증한다. 아이콘 원본을 바꾸면 `yarn workspace @app/design-system icons:build`로 TSX와 barrel을 함께 갱신한다.
+
 ```bash
 yarn install --immutable
 yarn verify
