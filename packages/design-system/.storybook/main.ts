@@ -15,6 +15,17 @@ const config: StorybookConfig = {
   viteFinal: (config) => ({
     ...config,
     customLogger: logger,
+    optimizeDeps: {
+      ...config.optimizeDeps,
+      include: [
+        ...(config.optimizeDeps?.include ?? []),
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'react/jsx-dev-runtime',
+        'react/jsx-runtime',
+      ],
+    },
     plugins: [...(config.plugins ?? []), tailwindcss()],
   }),
 };
