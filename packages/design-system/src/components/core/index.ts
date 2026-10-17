@@ -6,6 +6,7 @@ export * from './button';
 export * from './dialog';
 export * from './header';
 export * from './searchField';
+export * from './stepper';
 export * from './textButton';
 export * from './textField';
 export * from './toast';
