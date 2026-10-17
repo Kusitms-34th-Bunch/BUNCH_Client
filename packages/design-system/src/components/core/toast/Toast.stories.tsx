@@ -16,17 +16,23 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+// 네 가지 형태는 아래 Matrix가 한 번에 스냅샷하므로 개별 story는 Controls로 보는 용도로 두고 스냅샷에서 제외한다.
+const skipSnapshot = { chromatic: { disableSnapshot: true } };
+
+export const Default: Story = { parameters: skipSnapshot };
 
 export const WithIcon: Story = {
+  parameters: skipSnapshot,
   args: { icon: 'success' },
 };
 
 export const WithAction: Story = {
+  parameters: skipSnapshot,
   args: { action: { label: '공유', onClick: () => {} } },
 };
 
 export const WithIconAndAction: Story = {
+  parameters: skipSnapshot,
   args: { icon: 'success', action: { label: '공유', onClick: () => {} } },
 };
 
