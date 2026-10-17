@@ -16,6 +16,8 @@ describe('Toast', () => {
 
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     expect(container.querySelector('span[aria-hidden="true"] svg')).toBeTruthy();
+    expect(container.querySelector('svg')?.getAttribute('width')).toBe('24');
+    expect(container.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 24 24');
     expect(screen.queryByRole('img')).toBeNull();
   });
 
