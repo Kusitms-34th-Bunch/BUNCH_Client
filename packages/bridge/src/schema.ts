@@ -18,7 +18,13 @@ export const nativeTabBarItemSchema = z.object({
 });
 
 export const setNativeTabBarParamsSchema = z.object({
-  items: z.array(nativeTabBarItemSchema).min(2).max(5),
+  items: z
+    .array(nativeTabBarItemSchema)
+    .min(2)
+    .max(5)
+    .refine((items) => new Set(items.map((item) => item.id)).size === items.length, {
+      message: '탭 ID는 서로 달라야 합니다.',
+    }),
   selectedId: z.string().min(1),
   /** 막대 숨김 여부, 기본값은 표시 */
   hidden: z.boolean().optional(),
