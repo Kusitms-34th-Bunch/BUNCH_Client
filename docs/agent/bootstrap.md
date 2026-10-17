@@ -107,7 +107,7 @@ Claude Code와 Codex의 adapter는 각각 `.claude/agents/`, `.codex/agents/`에
 | API 계약·query·mutation 변경    | api-contract-reviewer     |
 | UI·Figma 구현, 접근성 관련 변경 | ui-accessibility-reviewer |
 
-단순 오탈자 수정, 문서 전용 변경, 한 파일의 사소한 조정에는 이 표를 적용하지 않는다. 이 표와 별개로 `prepare-commit`(코드 변경 커밋)과 `prepare-pull-request`(PR)는 계획·초안을 내기 전에 `bunch-reviewer`를 호출한다. 기준은 각 skill 문서를 따른다. debugger와 e2e-planner는 완료 게이트가 아니라 조사·설계가 필요한 시점에 그때그때 호출한다.
+단순 오탈자 수정, 문서 전용 변경, 한 파일의 사소한 조정에는 이 표를 적용하지 않는다. 이 표와 별개로 `prepare-commit`(코드 변경 커밋)과 `prepare-pull-request`(PR)는 계획·초안을 내기 전에 `bunch-reviewer`를 호출하되, 같은 변경을 이미 리뷰했으면 결과를 재사용하고 바뀐 부분만 다시 맡긴다. 기준은 각 skill 문서를 따른다. debugger와 e2e-planner는 완료 게이트가 아니라 조사·설계가 필요한 시점에 그때그때 호출한다.
 
 ## Skills
 

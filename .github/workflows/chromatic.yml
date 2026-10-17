@@ -2,7 +2,8 @@ name: Chromatic
 
 on:
   push:
-    tags-ignore: ['**']
+    # tags-ignore만 정의하면 브랜치 push가 실행되지 않으므로 branches를 정의한다(태그 push는 실행하지 않음)
+    branches: ['**']
     paths:
       - 'packages/design-system/**'
       - 'package.json'
