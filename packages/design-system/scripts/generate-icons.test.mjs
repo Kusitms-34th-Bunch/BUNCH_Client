@@ -70,8 +70,11 @@ describe('icon generator', () => {
 
     await generateIcons({ iconRoot });
 
-    const monochrome = await readFile(join(iconRoot, 'generated', 'LineSearchIcon.tsx'), 'utf8');
-    const preserved = await readFile(join(iconRoot, 'generated', 'ColorDotIcon.tsx'), 'utf8');
+    const monochrome = await readFile(
+      join(iconRoot, 'generated', 'LineSearchMediumIcon.tsx'),
+      'utf8',
+    );
+    const preserved = await readFile(join(iconRoot, 'generated', 'ColorDotMediumIcon.tsx'), 'utf8');
     expect(monochrome).toContain('fill="currentColor"');
     expect(preserved).toContain('fill="red"');
     expect(preserved).not.toContain('fill="currentColor"');
@@ -79,22 +82,28 @@ describe('icon generator', () => {
     expect(monochrome).toContain('{...props}');
   });
 
-  it('makes one component per icon from the three size files with a size prop', async () => {
+  it('separates fixed size modules from the runtime size selector', async () => {
     const iconRoot = await fixture();
     await writeIconSet(iconRoot, 'svg', 'line-search');
-
-    const { icons, sources } = await generateIcons({ iconRoot });
-
-    expect(sources).toHaveLength(3);
-    expect(icons.map((icon) => icon.componentName)).toEqual(['LineSearchIcon']);
+    await generateIcons({ iconRoot });
     const code = await readFile(join(iconRoot, 'generated', 'LineSearchIcon.tsx'), 'utf8');
     expect(code).toMatch(/size = ['"]md['"]/);
-    expect(code).toContain('width={16}');
-    expect(code).toContain('width={20}');
-    expect(code).toContain('width={24}');
-    expect(code).toContain('viewBox="0 0 16 16"');
-    expect(code).toContain('viewBox="0 0 20 20"');
-    expect(code).toContain('viewBox="0 0 24 24"');
+    expect(code).toMatch(/from ['"]\.\/LineSearchMediumIcon['"]/);
+    expect(code).not.toContain('<svg');
+    for (const [label, pixels] of [
+      ['Small', 16],
+      ['Medium', 20],
+      ['Large', 24],
+    ]) {
+      const fixed = await readFile(
+        join(iconRoot, 'generated', `LineSearch${label}Icon.tsx`),
+        'utf8',
+      );
+      expect(fixed).toContain(`width={${pixels}}`);
+      expect(fixed).toContain(`viewBox="0 0 ${pixels} ${pixels}"`);
+      expect(fixed).not.toContain('SIZES');
+      expect(fixed).not.toMatch(/import (?!type).* from ['"]\.\//);
+    }
   });
 
   it('keeps the stroke width each size was drawn with', async () => {
@@ -106,9 +115,14 @@ describe('icon generator', () => {
 
     await generateIcons({ iconRoot });
 
-    const code = await readFile(join(iconRoot, 'generated', 'LineAddIcon.tsx'), 'utf8');
-    expect(code).toContain('strokeWidth={1.2}');
-    expect(code.match(/strokeWidth=\{1\.5\}/g)).toHaveLength(2);
+    for (const [label, width] of [
+      ['Small', '1.2'],
+      ['Medium', '1.5'],
+      ['Large', '1.5'],
+    ]) {
+      const code = await readFile(join(iconRoot, 'generated', `LineAdd${label}Icon.tsx`), 'utf8');
+      expect(code).toContain(`strokeWidth={${width}}`);
+    }
   });
 
   it('puts the accessibility contract on the outer component once', async () => {
@@ -117,7 +131,7 @@ describe('icon generator', () => {
 
     await generateIcons({ iconRoot });
 
-    const code = await readFile(join(iconRoot, 'generated', 'LineSearchIcon.tsx'), 'utf8');
+    const code = await readFile(join(iconRoot, 'generated', 'LineSearchMediumIcon.tsx'), 'utf8');
     expect(code).toContain('ariaLabel?.trim() || ariaLabelledby?.trim()');
     expect(code.match(/aria-hidden=\{hasAccessibleName \? undefined : true\}/g)).toHaveLength(1);
     expect(code.match(/focusable=\{false\}/g)).toHaveLength(1);
@@ -145,7 +159,7 @@ describe('icon generator', () => {
     const iconRoot = await fixture();
     await writeIconSet(iconRoot, 'svg', 'line-search');
     await generateIcons({ iconRoot });
-    const generatedPath = join(iconRoot, 'generated', 'LineSearchIcon.tsx');
+    const generatedPath = join(iconRoot, 'generated', 'LineSearchMediumIcon.tsx');
     await writeFile(generatedPath, '// changed');
     await writeFile(
       join(iconRoot, 'generated', 'StaleIcon.tsx'),
@@ -164,6 +178,13 @@ describe('icon generator', () => {
     await writeIconSet(iconRoot, 'svg', 'line-search');
     await writeIconSet(iconRoot, 'svg-preserve', 'line_search');
 
+    await expect(generateIcons({ iconRoot })).rejects.toThrow('중복된 아이콘 컴포넌트 이름');
+  });
+
+  it('rejects a fixed export colliding with another icon name', async () => {
+    const iconRoot = await fixture();
+    await writeIconSet(iconRoot, 'svg', 'line-search');
+    await writeIconSet(iconRoot, 'svg', 'line-search-medium');
     await expect(generateIcons({ iconRoot })).rejects.toThrow('중복된 아이콘 컴포넌트 이름');
   });
 

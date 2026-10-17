@@ -156,13 +156,19 @@ export const groupIconSources = (sources) => {
   return icons;
 };
 
+const sizedName = (name, size) =>
+  name.endsWith('Icon') ? `${name.slice(0, -4)}${size}Icon` : `${name}${size}`;
+
 export const assertUniqueComponentNames = (icons) => {
   const names = new Set();
-  for (const icon of icons) {
-    if (names.has(icon.componentName)) {
-      throw new Error(`중복된 아이콘 컴포넌트 이름: ${icon.componentName}`);
+  for (const componentName of icons.flatMap((icon) => [
+    icon.componentName,
+    ...['Small', 'Medium', 'Large'].map((size) => sizedName(icon.componentName, size)),
+  ])) {
+    if (names.has(componentName)) {
+      throw new Error(`중복된 아이콘 컴포넌트 이름: ${componentName}`);
     }
-    names.add(icon.componentName);
+    names.add(componentName);
   }
 };
 
@@ -202,31 +208,23 @@ const renderSize = async (source, icon, sizeName) => {
   );
 };
 
-const renderComponent = async (icon, outputDir) => {
-  const sizeCodes = [];
-  for (const sizeName of Object.keys(ICON_SIZES)) {
-    sizeCodes.push(await renderSize(icon.files[sizeName], icon, sizeName));
-  }
-
+const renderFixedComponent = async (icon, outputDir, sizeName) => {
+  const innerName = sizeName[0].toUpperCase() + sizeName.slice(1);
+  const name = sizedName(icon.componentName, innerName);
   const code = `${GENERATED_TAG}
 import type { ComponentProps } from 'react';
 import type { IconProps } from '../types';
 
-${sizeCodes.join('\n')}
+${await renderSize(icon.files[sizeName], icon, sizeName)}
 
-const SIZES = { sm: Small, md: Medium, lg: Large };
-
-const ${icon.componentName} = ({
-  size = 'md',
+const ${name} = ({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
   ...props
-}: IconProps) => {
+}: Omit<IconProps, 'size'>) => {
   const hasAccessibleName = Boolean(ariaLabel?.trim() || ariaLabelledby?.trim());
-  const Icon = SIZES[size];
-
   return (
-    <Icon
+    <${innerName}
       aria-hidden={hasAccessibleName ? undefined : true}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledby}
@@ -236,11 +234,27 @@ const ${icon.componentName} = ({
     />
   );
 };
+export default ${name};
+`;
+  const prettierConfig = (await resolveConfig(join(outputDir, `${name}.tsx`))) ?? {};
+  return format(code, { ...prettierConfig, parser: 'typescript' });
+};
 
+const renderComponent = async (icon, outputDir) => {
+  const code = `${GENERATED_TAG}
+import type { IconProps } from '../types';
+import Large from './${sizedName(icon.componentName, 'Large')}';
+import Medium from './${sizedName(icon.componentName, 'Medium')}';
+import Small from './${sizedName(icon.componentName, 'Small')}';
+
+const SIZES = { sm: Small, md: Medium, lg: Large };
+const ${icon.componentName} = ({ size = 'md', ...props }: IconProps) => {
+  const Icon = SIZES[size];
+  return <Icon {...props} />;
+};
 export default ${icon.componentName};
 `;
   const prettierConfig = (await resolveConfig(join(outputDir, `${icon.componentName}.tsx`))) ?? {};
-
   return format(code, { ...prettierConfig, parser: 'typescript' });
 };
 
@@ -290,6 +304,13 @@ export const generateIcons = async ({
 
   const expectedFiles = new Map();
   for (const icon of icons) {
+    for (const sizeName of Object.keys(ICON_SIZES)) {
+      const label = sizeName[0].toUpperCase() + sizeName.slice(1);
+      expectedFiles.set(
+        join(outputDir, `${sizedName(icon.componentName, label)}.tsx`),
+        await renderFixedComponent(icon, outputDir, sizeName),
+      );
+    }
     expectedFiles.set(
       join(outputDir, `${icon.componentName}.tsx`),
       await renderComponent(icon, outputDir),

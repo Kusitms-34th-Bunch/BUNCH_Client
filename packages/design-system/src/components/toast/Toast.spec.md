@@ -63,7 +63,7 @@
 
 ## Styling과 의존성
 
-- Token·기존 primitive: 배경 `bg-surface-inversed/60`, 글자 `text-text-inversed`·`typography-body-2-regular`, 아이콘 색 `text-system-success-fg`, 여백 `p4`·`p6`·`s5`·`s8`, radius `r6`. 액션은 `Button`, 아이콘은 `<FillCircleCheckIcon size="lg" />`.
+- Token·기존 primitive: 배경 `bg-surface-inversed/60`, 글자 `text-text-inversed`·`typography-body-2-regular`, 아이콘 색 `text-system-success-fg`, 여백 `p4`·`p6`·`s5`·`s8`, radius `r6`. 액션은 `Button`, 아이콘은 `FillCircleCheckLargeIcon`(고정 크기 export).
 - 허용되는 dependency: `sonner`. 이 컴포넌트에서만 쓴다.
 - `'use client'`: sonner를 import하는 `Toaster.tsx`와 `showToast.tsx`가 client 모듈이다. `Toast.tsx`는 순수 표시 컴포넌트라 지시어가 없다. 서버 컴포넌트(root layout 등)는 `<Toaster />`를 그대로 import해도 된다(`apps/web` 빌드로 확인).
 - Storybook state matrix: 네 가지 형태를 한 `Matrix` story에 모으고, 긴 글자 story와 실제 `toast()`를 눌러 보는 `Playground` story(스냅샷 제외)를 둔다.

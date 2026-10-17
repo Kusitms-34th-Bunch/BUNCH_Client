@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { FillCircleCheckIcon } from '../../icons';
+import { FillCircleCheckLargeIcon } from '../../icons';
 import { tv } from '../../utils';
 import { Button } from '../button';
 
@@ -38,7 +38,7 @@ export const Toast = ({ icon, action, className, children, ...props }: ToastProp
     <div className={base({ className })} {...props}>
       {icon === 'success' ? (
         <span aria-hidden="true" className={iconSlot()}>
-          <FillCircleCheckIcon size="lg" />
+          <FillCircleCheckLargeIcon />
         </span>
       ) : null}
       <div className={content()}>
