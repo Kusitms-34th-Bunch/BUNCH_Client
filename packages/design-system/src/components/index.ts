@@ -2,5 +2,6 @@
 
 export * from './badge';
 export * from './button';
+export * from './header';
 export * from './textButton';
 export * from './toast';
