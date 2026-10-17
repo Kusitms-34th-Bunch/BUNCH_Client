@@ -23,7 +23,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/native-tab-bar/native-tab-bar.test.mjs",
+    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/native-tab-bar/*.test.mjs",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",

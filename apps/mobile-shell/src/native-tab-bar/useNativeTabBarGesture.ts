@@ -65,12 +65,31 @@ export function useNativeTabBarGesture({ items, selectedIndex, onSelect }: Param
   const press = useRef<{ startX: number; isHeld: boolean; isScrubbing: boolean } | null>(null);
 
   useEffect(() => {
+    let active = true;
+    let changed = false;
+    const updateMotion = (enabled: boolean) => {
+      isMotionReduced.current = enabled;
+      if (!enabled) return;
+      pillX.stopAnimation();
+      pillScale.stopAnimation();
+      pillX.setValue(Math.max(latest.current.selectedIndex, 0) * latest.current.itemWidth);
+      pillScale.setValue(1);
+      setLag((value) => ({ ...value, from: null }));
+    };
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      changed = true;
+      updateMotion(enabled);
+    });
     AccessibilityInfo.isReduceMotionEnabled()
       .then((enabled) => {
-        isMotionReduced.current = enabled;
+        if (active && !changed) updateMotion(enabled);
       })
       .catch(() => {});
-  }, []);
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [pillX, pillScale]);
 
   useEffect(() => {
     if (lag.from === null) return;
@@ -157,15 +176,23 @@ export function useNativeTabBarGesture({ items, selectedIndex, onSelect }: Param
           if (!hasScrubbed) pillScale.setValue(1);
           return;
         }
-        if (hasScrubbed) timing(pillX, selected * width, PILL_MOVE_MS).start();
+        if (hasScrubbed) {
+          if (isMotionReduced.current) pillX.setValue(selected * width);
+          else timing(pillX, selected * width, PILL_MOVE_MS).start();
+        }
         if (hasScrubbed || current?.isHeld) settle(PILL_SCALE_HELD);
       },
       onPanResponderTerminate: () => {
         press.current = null;
         setScrubIndex(null);
         const { selectedIndex: selected, itemWidth: width } = latest.current;
-        timing(pillX, Math.max(selected, 0) * width, PILL_MOVE_MS).start();
-        timing(pillScale, 1, PILL_MOVE_MS).start();
+        if (isMotionReduced.current) {
+          pillX.setValue(Math.max(selected, 0) * width);
+          pillScale.setValue(1);
+        } else {
+          timing(pillX, Math.max(selected, 0) * width, PILL_MOVE_MS).start();
+          timing(pillScale, 1, PILL_MOVE_MS).start();
+        }
       },
     }),
   ).current;

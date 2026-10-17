@@ -74,11 +74,11 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 
 쉘은 화면을 직접 그리지 않지만 iOS 26 이상에서는 하단 탭 막대 하나를 WebView 위에 네이티브 `GlassView`(`expo-glass-effect`)로 그린다. 근거와 대안은 `docs/decisions/records/011-bottom-navigation-glass-by-platform.md`다.
 
-- 막대는 `src/native-tab-bar/NativeTabBar.tsx`가 그린다. 항목 라벨·아이콘(SF Symbol 이름)·선택은 웹이 `setNativeTabBar`로 정하고, 쉘은 그리기와 눌림 전달만 한다.
+- 막대는 `src/native-tab-bar/NativeTabBar.tsx`가 그린다. 항목 라벨·아이콘(SF Symbol 이름)·선택은 웹이 `setNativeTabBar`로 정하고, 쉘은 그리기와 눌림 전달만 한다. 항목 ID는 서로 달라야 하며 중복이면 요청 검증에서 거부한다.
 - 쉘은 iOS이고 `isLiquidGlassAvailable()`이 true일 때만 `setNativeTabBar`가 true를 돌려준다. 웹 탭 조합은 true일 때 자기 `BottomNavigation`을 숨기고, false(브라우저·안드로이드·iOS 26 미만)이면 계속 쓰도록 구현해야 한다. 웹 호출부는 아직 미구현이다.
 - 탭을 누르면 쉘이 `postMessage('nativeTabPress', { id })`로 웹에 알린다. 웹이 해당 탭 화면으로 이동한다.
 - WebView는 막대 뒤까지 그려져야 글라스 효과가 보인다. 막대가 차지하는 높이는 CSS 변수 `--native-tab-bar-inset`으로 웹에 주입한다(막대가 없으면 0). 웹 탭 조합은 본문 아래 여백에 이 값을 더해야 한다. 현재 웹에는 이 변수의 소비 코드가 없다. 새 문서를 로드하면 막대 상태를 비우므로 웹이 다시 정해야 한다.
-- 선택 알약은 웹 막대와 같이 항목 사이를 200ms로 미끄러진다(`Animated`, 처음 배치와 모션 감소 설정에서는 즉시 이동).
+- 선택 알약은 웹 막대와 같이 항목 사이를 200ms로 미끄러진다(`Animated`, 처음 배치와 모션 감소 설정에서는 즉시 이동). 실행 중 모션 감소 설정이 켜지면 진행 중인 애니메이션을 멈추고, 선택 위치·기본 크기·활성 표시를 즉시 맞춘다. 끌기 종료·취소의 복귀에도 같은 설정을 적용한다.
 - 웹 막대와 같은 동작을 낸다. 탭, 누른 채 끌어서 손을 뗀 탭 선택(6px 이상 움직이면 끌기), 끄는 동안 알약이 도착한 항목의 아이콘이 활성으로 바뀜, 알약을 누르는 동안 1.12배로 커졌다가 놓으면 0.95배를 거쳐 돌아옴(탭 이동 때도 같은 모션). 막대 전체를 `PanResponder`가 받고 보조 기술은 항목의 `onAccessibilityTap`으로 선택한다. 좌표·여백 계산 단위 테스트, 타입 검사와 iOS JS 번들 생성을 확인했고 iPhone에서 실제 터치(끌기·모션·VoiceOver)는 확인하지 못했다.
 - 막대 위치(홈 인디케이터 위 여백)는 실기기에서 맞춰 보지 않은 추정값이다. 쉘 앱으로 iPhone에서 눌림·VoiceOver·스크롤 성능을 확인하지 못했다. 막대 모양은 별도 실험 앱으로만 확인했다.
 - 안드로이드에서는 `GlassView`가 일반 View로 떨어지므로 쓰지 않는다.
