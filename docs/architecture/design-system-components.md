@@ -20,7 +20,7 @@
 - **checkbox·radio**: 여러 개를 하나의 질문으로 묶을 때는 `<fieldset>`과 `<legend>`로 그룹을 표현한다. radio는 그룹 내 `input`에 같은 `name`을 준다. `<input>`을 못 쓰는 커스텀 UI는 `role="checkbox"`/`role="radio"` + `aria-checked` + `tabIndex={0}` + Space key 핸들러로 대체한다.
 - **switch**: `role="switch"`와 `aria-checked`(또는 `<input type="checkbox" role="switch">`의 `checked`)로 on/off를 표현한다. checkbox와 다른 의미(선택 여부가 아니라 켬/끔)이므로 역할을 구분해서 쓴다.
 - **accordion**: 가능하면 `<details>`/`<summary>`를 쓴다. 커스텀 구현은 헤더 버튼에 `aria-expanded`, `aria-controls`로 패널 id를 연결하고, 패널에는 `role="region"` + `aria-labelledby`를 준다. `aria-expanded`와 패널의 `hidden` 상태는 항상 동기화한다.
-- **dialog(모달)**: 가능하면 native `<dialog>` + `showModal()`을 쓴다 — top-layer 배치, 내부 focus 이동, focus trap, ESC 닫기, 포커스 복원을 브라우저가 대신 해준다. 커스텀 구현은 `role="dialog"` + `aria-modal="true"` + `aria-labelledby`에 더해 포커스 저장·복원, ESC 핸들러, 배경 콘텐츠 `inert` 처리를 직접 구현한다.
+- **확인 dialog(모달)**: `Dialog`·`ConfirmDialog`를 사용한다. Base UI Alert Dialog로 응답을 요구하는 `alertdialog` 의미, 포커스 가두기·복원과 ESC 취소를 처리한다. 바깥 터치는 닫지 않는다. 확인은 콜백만 호출하고 호출자가 `open`을 갱신한다. 모달 안의 오류·필수 안내는 본문에 표시하고 액션 Toast는 모달을 닫은 뒤 띄운다. 폼·풍부한 콘텐츠용 일반 Dialog는 이 확인창의 지원 범위 밖이다. 결정·제약은 [ADR 009](../decisions/records/009-confirm-dialog-base-ui.md), API·토큰은 `packages/design-system/src/components/dialog/Dialog.spec.md`를 따른다.
 - **tabs**: 컨테이너는 `role="tablist"`, 각 탭은 `role="tab"` + `aria-selected`, 콘텐츠는 `role="tabpanel"` + `aria-labelledby`(연결된 탭 id)로 구성한다. 비활성 탭의 패널은 `hidden`으로 감춘다 — `aria-selected`만으로는 스크린 리더가 패널을 구분하지 못한다.
 
 ## Variant 선언

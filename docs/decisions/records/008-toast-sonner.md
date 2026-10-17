@@ -28,7 +28,7 @@ BUNCH는 복사 완료, 저장 실패처럼 작업 결과를 잠깐 알리는 �
 - 번들: `sonner` 배포 파일은 `index.mjs` 약 68KB(gzip 약 14KB), 스타일 17KB(gzip 3KB)다. tree-shaking 전 수치이며 실제 앱 번들 증가는 측정하지 않았다. MIT 라이선스이고 런타임 의존성이 없으며 `react` 18·19를 peer로 받는다.
 - 웹: `'use client'` 모듈이라 서버 컴포넌트인 root layout이 `Toaster`를 import해도 `apps/web` 빌드가 통과한다(Next 16, `--webpack`).
 - 접근성: sonner 영역은 `aria-live="polite"`이다. 키보드 포커스 중에도 자동 닫힘이 멈추지 않으므로, 액션이 있는 토스트의 지속 시간은 정책으로 정한다(`Toast.spec.md`).
-- 제약: `Dialog`가 native `<dialog>`의 modal이면 top layer에 놓여 토스트가 가려질 수 있다. Dialog 구현에서 함께 확인한다.
+- 제약: [ADR 009](009-confirm-dialog-base-ui.md)의 Base UI 확인창과 공존을 시험했다. Toast는 보이고 마우스로 누를 수 있지만 모달 내부 Tab 순환에서 바깥 Toast 액션으로 이동할 수 없다. 액션 Toast는 모달을 닫은 뒤 표시하고, 모달 안의 필수 안내는 본문에 둔다. VoiceOver 낭독은 미검증이다.
 - 제약: `apps/web`은 디자인 시스템 소스를 Tailwind `@source`로 등록하지 않아, 웹에서 디자인 시스템 컴포넌트를 처음 쓰기 전에 등록이 필요하다(빌드로 확인함).
 
 ## 검증 / 후속 작업
