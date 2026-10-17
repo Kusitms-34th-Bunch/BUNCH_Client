@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { IconSize } from './types';
 import { Button } from '../components/button';
 import * as icons from './generated';
 
-const sizes = ['Small', 'Medium', 'Large'] as const;
-const names = Object.keys(icons)
-  .filter((name) => name.endsWith('SmallIcon'))
-  .map((name) => name.replace(/SmallIcon$/, ''));
+const sizes: IconSize[] = ['sm', 'md', 'lg'];
+const entries = Object.entries(icons);
 
 const meta = {
   title: 'Foundations/Icons',
@@ -33,33 +32,30 @@ export const Gallery: Story = {
           </tr>
         </thead>
         <tbody>
-          {names.map((name) => (
+          {entries.map(([name, Icon]) => (
             <tr key={name} className="border-border-secondary border-b">
               <th scope="row" className="p-s4 text-text-secondary text-left font-normal">
                 {name}
               </th>
-              {sizes.map((size) => {
-                const Icon = icons[`${name}${size}Icon` as keyof typeof icons];
-                return (
-                  <td key={size} className="p-s4 text-icon-primary">
-                    <span className="flex items-center justify-center">
-                      <Icon />
-                    </span>
-                  </td>
-                );
-              })}
+              {sizes.map((size) => (
+                <td key={size} className="p-s4 text-icon-primary">
+                  <span className="flex items-center justify-center">
+                    <Icon size={size} />
+                  </span>
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
       <div className="gap-s8 typography-label-m flex flex-wrap items-center">
         <span className="text-icon-brand">
-          <icons.FillCircleCheckLargeIcon aria-label="완료" />
+          <icons.FillCircleCheckIcon size="lg" aria-label="완료" />
         </span>
-        <Button size="md" leftIcon={<icons.LineCameraMediumIcon />}>
+        <Button size="md" leftIcon={<icons.LineCameraIcon size="md" />}>
           사진 추가
         </Button>
-        <Button size="md" disabled leftIcon={<icons.LineCameraMediumIcon />}>
+        <Button size="md" disabled leftIcon={<icons.LineCameraIcon size="md" />}>
           사진 추가
         </Button>
       </div>

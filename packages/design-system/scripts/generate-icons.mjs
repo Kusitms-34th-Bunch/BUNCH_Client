@@ -2,13 +2,14 @@ import { transform } from '@svgr/core';
 import jsxPlugin from '@svgr/plugin-jsx';
 import svgoPlugin from '@svgr/plugin-svgo';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { basename, extname, join, relative, resolve } from 'node:path';
+import { extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { format, resolveConfig } from 'prettier';
 
 const GENERATED_TAG = '// @generated — run `yarn icons:build` to update';
 const ICON_ROOT = resolve(import.meta.dirname, '../src/icons');
 const ICON_SIZES = { small: 16, medium: 20, large: 24 };
+const SIZED_FILE_PATTERN = /^(.+)-(small|medium|large)\.svg$/i;
 
 const svgrPlugins = [svgoPlugin, jsxPlugin];
 const UNSAFE_TAG_PATTERN =
@@ -68,11 +69,11 @@ export const toPascalCase = (value) =>
     )
     .replace(/[^a-zA-Z0-9]/g, '');
 
-export const toComponentName = (fileName) => {
-  const pascalName = toPascalCase(basename(fileName, extname(fileName)));
+export const toComponentName = (baseName) => {
+  const pascalName = toPascalCase(baseName);
 
   if (!pascalName || /^\d/.test(pascalName)) {
-    throw new Error(`유효하지 않은 아이콘 파일 이름: ${fileName}`);
+    throw new Error(`유효하지 않은 아이콘 이름: ${baseName}`);
   }
 
   return /(Icon|Logo|Brand|Symbol|Wordmark)$/.test(pascalName) ? pascalName : `${pascalName}Icon`;
@@ -101,12 +102,22 @@ export const readIconSources = async (sourceDir, preserveColors, rootDir = sourc
 
   const files = entries
     .filter((entry) => entry.isFile() && extname(entry.name).toLowerCase() === '.svg')
-    .map((entry) => ({
-      componentName: toComponentName(entry.name),
-      fileName: relative(rootDir, join(sourceDir, entry.name)),
-      filePath: join(sourceDir, entry.name),
-      preserveColors,
-    }));
+    .map((entry) => {
+      const match = SIZED_FILE_PATTERN.exec(entry.name);
+      if (!match) {
+        throw new Error(
+          `아이콘 파일 이름은 <이름>-small|medium|large.svg 형식이어야 합니다: ${entry.name}`,
+        );
+      }
+
+      return {
+        baseName: match[1].toLowerCase(),
+        fileName: relative(rootDir, join(sourceDir, entry.name)),
+        filePath: join(sourceDir, entry.name),
+        preserveColors,
+        sizeName: match[2].toLowerCase(),
+      };
+    });
   const nested = await Promise.all(
     entries
       .filter((entry) => entry.isDirectory())
@@ -116,40 +127,60 @@ export const readIconSources = async (sourceDir, preserveColors, rootDir = sourc
   return [...files, ...nested.flat()];
 };
 
-export const assertUniqueComponentNames = (sources) => {
-  const names = new Set();
+// 같은 이름의 SVG 세 개(small·medium·large)를 아이콘 하나로 묶는다. 하나라도 없으면 크기 prop이 일부만 가능해지므로 실패시킨다.
+export const groupIconSources = (sources) => {
+  const groups = new Map();
   for (const source of sources) {
-    if (names.has(source.componentName)) {
-      throw new Error(`중복된 아이콘 컴포넌트 이름: ${source.componentName}`);
+    const key = `${source.preserveColors}:${source.baseName}`;
+    const group = groups.get(key) ?? {
+      baseName: source.baseName,
+      componentName: toComponentName(source.baseName),
+      files: {},
+      preserveColors: source.preserveColors,
+    };
+    if (group.files[source.sizeName]) {
+      throw new Error(`같은 크기의 아이콘이 두 개입니다: ${source.fileName}`);
     }
-    names.add(source.componentName);
+    group.files[source.sizeName] = source;
+    groups.set(key, group);
+  }
+
+  const icons = [...groups.values()];
+  for (const icon of icons) {
+    const missing = Object.keys(ICON_SIZES).filter((sizeName) => !icon.files[sizeName]);
+    if (missing.length > 0) {
+      throw new Error(`아이콘 크기가 빠졌습니다: ${icon.baseName}(${missing.join(', ')} 없음)`);
+    }
+  }
+
+  return icons;
+};
+
+export const assertUniqueComponentNames = (icons) => {
+  const names = new Set();
+  for (const icon of icons) {
+    if (names.has(icon.componentName)) {
+      throw new Error(`중복된 아이콘 컴포넌트 이름: ${icon.componentName}`);
+    }
+    names.add(icon.componentName);
   }
 };
 
-const componentTemplate = ({ componentName, jsx }, { tpl }) => tpl`
-  import type { ComponentProps } from 'react';
-
-  const ${componentName} = ({
-    'aria-label': ariaLabel,
-    'aria-labelledby': ariaLabelledby,
-    ...props
-  }: ComponentProps<'svg'>) => {
-    const hasAccessibleName = Boolean(ariaLabel?.trim() || ariaLabelledby?.trim());
-
-    return ${jsx};
-  };
-
-  export default ${componentName};
+// 크기별 도형(viewBox·선 굵기 포함)을 그대로 담은 내부 컴포넌트. 접근성 속성은 바깥 래퍼가 한 번만 붙인다.
+const sizeTemplate = ({ componentName, jsx }, { tpl }) => tpl`
+  const ${componentName} = (props: ComponentProps<'svg'>) => ${jsx};
 `;
 
-const renderComponent = async (source, outputDir) => {
+const renderSize = async (source, icon, sizeName) => {
   const rawSvg = await readFile(source.filePath, 'utf8');
   assertSafeSvg(rawSvg, source.fileName);
   assertIconDimensions(rawSvg, source.fileName);
   const svg = source.preserveColors
     ? normalizePreservedSvg(rawSvg)
     : normalizeToCurrentColor(rawSvg);
-  const componentCode = await transform(
+  const innerName = sizeName[0].toUpperCase() + sizeName.slice(1);
+
+  return transform(
     svg,
     {
       dimensions: true,
@@ -157,29 +188,60 @@ const renderComponent = async (source, outputDir) => {
       jsxRuntime: 'automatic',
       plugins: svgrPlugins,
       prettier: false,
-      svgProps: {
-        'aria-hidden': '{hasAccessibleName ? undefined : true}',
-        'aria-label': '{ariaLabel}',
-        'aria-labelledby': '{ariaLabelledby}',
-        focusable: '{false}',
-        role: '{hasAccessibleName ? "img" : undefined}',
-      },
       svgo: true,
       svgoConfig: {
         plugins: [
           { name: 'preset-default', params: { overrides: { removeViewBox: false } } },
-          { name: 'prefixIds', params: { prefix: source.componentName } },
+          { name: 'prefixIds', params: { prefix: `${icon.componentName}${innerName}` } },
         ],
       },
-      template: componentTemplate,
+      template: sizeTemplate,
       typescript: true,
     },
-    { componentName: source.componentName },
+    { componentName: innerName },
   );
-  const prettierConfig =
-    (await resolveConfig(join(outputDir, `${source.componentName}.tsx`))) ?? {};
+};
 
-  return format(`${GENERATED_TAG}\n${componentCode}`, { ...prettierConfig, parser: 'typescript' });
+const renderComponent = async (icon, outputDir) => {
+  const sizeCodes = [];
+  for (const sizeName of Object.keys(ICON_SIZES)) {
+    sizeCodes.push(await renderSize(icon.files[sizeName], icon, sizeName));
+  }
+
+  const code = `${GENERATED_TAG}
+import type { ComponentProps } from 'react';
+import type { IconProps } from '../types';
+
+${sizeCodes.join('\n')}
+
+const SIZES = { sm: Small, md: Medium, lg: Large };
+
+const ${icon.componentName} = ({
+  size = 'md',
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledby,
+  ...props
+}: IconProps) => {
+  const hasAccessibleName = Boolean(ariaLabel?.trim() || ariaLabelledby?.trim());
+  const Icon = SIZES[size];
+
+  return (
+    <Icon
+      aria-hidden={hasAccessibleName ? undefined : true}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledby}
+      focusable={false}
+      role={hasAccessibleName ? 'img' : undefined}
+      {...props}
+    />
+  );
+};
+
+export default ${icon.componentName};
+`;
+  const prettierConfig = (await resolveConfig(join(outputDir, `${icon.componentName}.tsx`))) ?? {};
+
+  return format(code, { ...prettierConfig, parser: 'typescript' });
 };
 
 const readGeneratedFiles = async (outputDir) => {
@@ -220,14 +282,17 @@ export const generateIcons = async ({
   const sources = [
     ...(await readIconSources(join(iconRoot, 'svg'), false)),
     ...(await readIconSources(join(iconRoot, 'svg-preserve'), true)),
-  ].sort((left, right) => left.componentName.localeCompare(right.componentName));
-  assertUniqueComponentNames(sources);
+  ];
+  const icons = groupIconSources(sources).sort((left, right) =>
+    left.componentName.localeCompare(right.componentName),
+  );
+  assertUniqueComponentNames(icons);
 
   const expectedFiles = new Map();
-  for (const source of sources) {
+  for (const icon of icons) {
     expectedFiles.set(
-      join(outputDir, `${source.componentName}.tsx`),
-      await renderComponent(source, outputDir),
+      join(outputDir, `${icon.componentName}.tsx`),
+      await renderComponent(icon, outputDir),
     );
   }
 
@@ -246,12 +311,12 @@ export const generateIcons = async ({
     );
   }
 
-  return { changedFiles, sources, staleFiles };
+  return { changedFiles, icons, sources, staleFiles };
 };
 
 const main = async () => {
   const check = process.argv.includes('--check');
-  const { changedFiles, sources, staleFiles } = await generateIcons({ check });
+  const { changedFiles, icons, sources, staleFiles } = await generateIcons({ check });
 
   if (check) {
     if (changedFiles.length > 0 || staleFiles.length > 0) {
@@ -262,11 +327,15 @@ const main = async () => {
       process.exitCode = 1;
       return;
     }
-    process.stdout.write(`Icon files are up to date. (${sources.length} SVG files)\n`);
+    process.stdout.write(
+      `Icon files are up to date. (${icons.length} icons, ${sources.length} SVG files)\n`,
+    );
     return;
   }
 
-  process.stdout.write(`Generated ${sources.length} icon components.\n`);
+  process.stdout.write(
+    `Generated ${icons.length} icon components from ${sources.length} SVG files.\n`,
+  );
 };
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
