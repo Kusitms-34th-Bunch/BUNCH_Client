@@ -1,20 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import {
-  LineChevronLeftLargeIcon,
-  LineChevronLeftMediumIcon,
-  LineChevronLeftSmallIcon,
-} from '../../icons';
+import { LineChevronLeftIcon } from '../../icons';
 import { TextButton, type TextButtonSize, type TextButtonVariant } from './TextButton';
 
 const variants: TextButtonVariant[] = ['primary', 'secondary', 'warning'];
 const sizes: TextButtonSize[] = ['lg', 'md', 'sm'];
-
-// Figma 인스턴스와 같은 크기별 chevron-left(슬롯 크기는 size가 정한다)
-const chevronBySize = {
-  lg: LineChevronLeftLargeIcon,
-  md: LineChevronLeftMediumIcon,
-  sm: LineChevronLeftSmallIcon,
-} satisfies Record<TextButtonSize, unknown>;
 
 const meta = {
   title: 'Components/TextButton',
@@ -61,13 +50,15 @@ export const Matrix: Story = {
 export const WithIcons: Story = {
   render: (args) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-      {sizes.map((size) => {
-        const Icon = chevronBySize[size];
-
-        return (
-          <TextButton key={size} {...args} size={size} leftIcon={<Icon />} rightIcon={<Icon />} />
-        );
-      })}
+      {sizes.map((size) => (
+        <TextButton
+          key={size}
+          {...args}
+          size={size}
+          leftIcon={<LineChevronLeftIcon size={size} />}
+          rightIcon={<LineChevronLeftIcon size={size} />}
+        />
+      ))}
     </div>
   ),
 };
