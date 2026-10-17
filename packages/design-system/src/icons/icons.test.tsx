@@ -7,6 +7,10 @@ import * as icons from './generated';
 
 afterEach(cleanup);
 
+const dynamicIcons = Object.fromEntries(
+  Object.entries(icons).filter(([name]) => !/(Small|Medium|Large)Icon$/.test(name)),
+);
+
 const SIZES: [IconSize, number][] = [
   ['sm', 16],
   ['md', 20],
@@ -15,13 +19,13 @@ const SIZES: [IconSize, number][] = [
 
 describe('Icons', () => {
   it('Line 23종과 Fill 8종을 아이콘 하나씩 제공한다', () => {
-    expect(Object.keys(icons)).toHaveLength(31);
-    expect(Object.keys(icons).filter((name) => name.startsWith('Line'))).toHaveLength(23);
-    expect(Object.keys(icons).filter((name) => name.startsWith('Fill'))).toHaveLength(8);
+    expect(Object.keys(dynamicIcons)).toHaveLength(31);
+    expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Line'))).toHaveLength(23);
+    expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Fill'))).toHaveLength(8);
   });
 
   it('모든 아이콘이 세 크기의 도형과 장식 기본값을 갖는다', () => {
-    for (const Icon of Object.values(icons)) {
+    for (const Icon of Object.values(dynamicIcons)) {
       for (const [size, pixels] of SIZES) {
         const { container, unmount } = render(<Icon size={size} />);
         const svg = container.querySelector('svg');
@@ -31,6 +35,26 @@ describe('Icons', () => {
         expect(svg?.getAttribute('aria-hidden')).toBe('true');
         expect(svg?.getAttribute('focusable')).toBe('false');
         unmount();
+      }
+    }
+  });
+
+  it('fixed exports preserve the exact geometry and accessibility of every size', () => {
+    expect(Object.keys(icons)).toHaveLength(124);
+    for (const [name, Icon] of Object.entries(dynamicIcons)) {
+      for (const [size, label] of [
+        ['sm', 'Small'],
+        ['md', 'Medium'],
+        ['lg', 'Large'],
+      ] as const) {
+        const fixedName = name.replace(/Icon$/, `${label}Icon`) as keyof typeof icons;
+        const Fixed = icons[fixedName];
+        const dynamic = render(<Icon size={size} aria-label="아이콘" />);
+        const markup = dynamic.container.innerHTML;
+        dynamic.unmount();
+        const fixed = render(<Fixed aria-label="아이콘" />);
+        expect(fixed.container.innerHTML).toBe(markup);
+        fixed.unmount();
       }
     }
   });

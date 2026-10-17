@@ -4,7 +4,7 @@ import { Button } from '../components/button';
 import * as icons from './generated';
 
 const sizes: IconSize[] = ['sm', 'md', 'lg'];
-const entries = Object.entries(icons);
+const entries = Object.entries(icons).filter(([name]) => !/(Small|Medium|Large)Icon$/.test(name));
 
 const meta = {
   title: 'Foundations/Icons',
