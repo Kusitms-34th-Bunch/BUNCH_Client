@@ -1,6 +1,6 @@
 ---
 name: create-ds-component
-description: 저장소 generator, test, Storybook story, 생성 export 검증으로 @app/design-system의 재사용 컴포넌트를 생성하거나 확장한다. 공용 UI primitive 작업에 사용한다.
+description: 저장소 generator, test, Storybook story, 생성 export 검증으로 @app/design-system의 재사용 컴포넌트를 생성하거나 확장한다. Figma에 정의된 UI 컴포넌트 작업에 사용한다.
 ---
 
 # 디자인 시스템 컴포넌트
