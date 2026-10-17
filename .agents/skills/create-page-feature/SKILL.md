@@ -43,7 +43,7 @@ route, 권한, 완료 이동, API 계약이 모호하면 route scaffold만 만�
 
 - route 파일에 복잡한 form state, raw API request, 재사용 UI 구현을 쌓지 않는다.
 - 다른 route 하나에서만 쓸 UI는 route/page 가까이에 둔다.
-- 여러 화면의 동일 사용자 작업은 feature, app 간 검증된 재사용 UI primitive만 design system으로 올린다.
+- 여러 화면의 동일 사용자 작업은 feature에 두고, Figma에 정의된 UI 컴포넌트는 design system에 둔다. DS 컴포넌트를 조합해 문구·route·데이터를 붙이는 일은 feature가 맡는다.
 
 ## 구현 순서
 

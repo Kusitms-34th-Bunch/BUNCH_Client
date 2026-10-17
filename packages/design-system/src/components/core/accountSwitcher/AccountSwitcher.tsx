@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
-import { FillConfettiIcon, LineChevronDownIcon, cn } from '@app/design-system';
+import { FillConfettiIcon, LineChevronDownIcon } from '../../../icons';
+import { cn } from '../../../utils';
 
 export type AccountSwitcherProps = Omit<ComponentProps<'button'>, 'children'> & {
   /** 현재 계정 이름 */

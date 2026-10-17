@@ -1,11 +1,11 @@
 # Styling And Design Tokens
 
-Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 여러 app이 공유하는 제품 비의존 UI primitive 경계다. 아직 확정되지 않은 색상·타이포그래피 체계를 token package나 임의 theme 이름으로 먼저 만들지 않는다. 실제 비주얼 아이덴티티가 정해지면 `.agents/templates/design-system-identity.md`로 정리한다.
+Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 Figma에 정의된 UI 컴포넌트와 token의 경계이며, 컴포넌트는 제품 문구·route·데이터를 직접 알지 않는다. 아직 확정되지 않은 색상·타이포그래피 체계를 token package나 임의 theme 이름으로 먼저 만들지 않는다. 실제 비주얼 아이덴티티가 정해지면 `.agents/templates/design-system-identity.md`로 정리한다.
 
 ## 소유 경계
 
 - global reset, app shell, route 전용 layout은 각 app이 소유한다.
-- 여러 app에서 같은 의미와 API로 재사용되는 UI primitive는 `packages/design-system`에 둔다.
+- Figma에 컴포넌트로 정의된 UI는 사용처 수와 관계없이 `packages/design-system`에 둔다.
 - 색상, spacing, typography, radius, shadow, z-index가 여러 곳에서 같은 의미로 반복되고 디자인 기준이 확정되면 design-system token으로 승격한다.
 - 제품 도메인 상태, route 전용 여백, 화면 문맥의 색상·copy는 app 또는 feature에 남긴다.
 

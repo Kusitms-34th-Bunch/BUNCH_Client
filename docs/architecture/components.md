@@ -2,10 +2,11 @@
 
 ## 배치
 
-- 기존 디자인 시스템, 앱 공용 컴포넌트, feature-local UI 순으로 재사용 가능성을 확인한다. 새 공용 컴포넌트는 기존 API로 해결할 수 없을 때만 만든다.
+- 기존 디자인 시스템, 앱 공용 컴포넌트, feature-local UI 순으로 재사용 가능성을 확인한다. 새 UI 컴포넌트는 기존 API로 해결할 수 없을 때만 만든다.
+- Figma에 컴포넌트로 정의된 UI는 사용처 수와 관계없이 `@app/design-system`에 둔다. 모든 앱이 쓰면 `core`, `apps/web`에서만 쓰면 `web` 구역이다. 제품 문구·route·데이터는 props·slot·callback으로 받는다.
+- 그 컴포넌트들을 조합해 domain 문구·route·데이터·행동을 붙이는 것은 해당 앱의 `features`에 둔다.
 - route 또는 domain 문맥을 아는 UI는 해당 앱의 `pages`, `features`, `domains` 가까이에 둔다.
-- 두 곳 이상에서 같은 UI 구조가 실제로 필요하고 app 문맥이 없을 때만 `components` 또는 `shared/components`로 올린다.
-- 여러 앱에서 재사용할 React UI primitive와 token만 `@app/design-system`에 둔다.
+- 두 곳 이상에서 같은 조합이 실제로 필요하고 app 문맥이 없을 때만 `components` 또는 `shared/components`로 올린다.
 - route shell과 앱 전용 layout은 디자인 시스템으로 올리지 않는다.
 - 디자인 시스템은 interaction state와 접근성 계약을, 앱은 페이지 layout·route·데이터 흐름·제품 문구를 책임진다.
 

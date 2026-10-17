@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { LineChevronLeftIcon, LineMenuIcon, LineSearchIcon, LineSettingIcon } from '../../icons';
+import { LineChevronLeftIcon, LineMenuIcon, LineSearchIcon, LineSettingIcon } from '../../../icons';
 import { TextButton } from '../textButton';
 import { Header } from './Header';
 

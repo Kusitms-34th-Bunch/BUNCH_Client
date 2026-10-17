@@ -55,10 +55,17 @@ jobs:
       - if: steps.chromatic.outputs.enabled == 'true'
         run: yarn install --immutable
       - if: steps.chromatic.outputs.enabled == 'true'
-        run: yarn workspace @app/design-system build-storybook
+        run: yarn workspace @app/design-system build-storybook --stats-json
 
       - if: steps.chromatic.outputs.enabled == 'true'
         uses: chromaui/action@latest
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           storybookBuildDir: packages/design-system/storybook-static
+          # TurboSnap: 바뀐 모듈에 닿는 story만 찍는다. 모노레포라서 Storybook 기준 폴더를 알려 준다
+          onlyChanged: true
+          storybookBaseDir: packages/design-system
+          storybookConfigDir: packages/design-system/.storybook
+          # tokens.css는 storybook.css가 @import해서 의존 그래프에 별도 모듈로 잡히지 않으므로 바뀌면 전체를 다시 찍는다
+          externals: |
+            packages/design-system/tokens/*.css

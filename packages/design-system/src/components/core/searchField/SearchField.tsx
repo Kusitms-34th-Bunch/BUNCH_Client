@@ -1,8 +1,9 @@
 'use client';
 
-import { LineSearchIcon, cn } from '@app/design-system';
 import { type ComponentProps, type SubmitEvent, useRef } from 'react';
-import { fieldText } from './fieldText';
+import { LineSearchIcon } from '../../../icons';
+import { cn } from '../../../utils';
+import { fieldText } from '../textField/fieldText';
 
 export type SearchFieldProps = Omit<ComponentProps<'input'>, 'type' | 'ref'> & {
   /** Enter 또는 검색 버튼을 누를 때 현재 입력값과 함께 호출 */

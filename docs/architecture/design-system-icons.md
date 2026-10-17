@@ -4,7 +4,7 @@ Figma의 Line 23종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 
 
 ## 왜 design-system인가
 
-아이콘은 보통 여러 app이 같은 의미로 재사용하는 제품 비의존 asset이라 `docs/architecture/design-system-components.md`의 승격 기준과 같은 논리를 따른다.
+아이콘은 보통 여러 app이 같은 의미로 재사용하는 제품 비의존 asset이라 `docs/architecture/design-system-components.md`의 배치 기준과 같은 논리를 따른다.
 
 - **design-system에 둔다**: 여러 app에서 같은 의미·모양으로 재사용하고, 제품 copy·route·API·logging에 의존하지 않는다.
 - **app 내부에 둔다**: 한 app 또는 한 화면 전용이거나, 이름·노출 조건이 특정 도메인에 묶인다.
@@ -90,7 +90,7 @@ import { Button, LineCameraMediumIcon, FillCircleCheckLargeIcon, LineCameraIcon 
 
 고정 크기 컴포넌트는 다른 크기를 import하지 않는다. 선택용 래퍼만 세 고정 크기를 import하므로 `size="md"` 리터럴을 줘도 세 도형이 포함된다. 크기가 정해진 Toast는 `FillCircleCheckLargeIcon`을 사용한다.
 
-패키지 `sideEffects`는 CSS만 보존한다(`**/*.css`). 사용하지 않는 JS export와 그 하위 import는 제거 가능하며, CSS import는 유지된다. JS 모듈의 전역 등록·초기화 같은 부수 효과를 추가하면 이 선언도 재검토한다. `scripts/icons-bundle.test.mjs`가 최상위 공개 barrel을 통해 한 크기만 남는지, 다른 컴포넌트 의존성이 제거되는지, 토큰 CSS가 보존되는지 실제 Vite 빌드로 검사한다. 측정 조건과 결과는 icon spec에 기록한다.
+패키지 `sideEffects`는 CSS만 보존한다(`**/*.css`). 사용하지 않는 JS export와 그 하위 import는 제거 가능하며, CSS import는 유지된다. JS 모듈의 전역 등록·초기화 같은 부수 효과를 추가하면 이 선언도 재검토한다. `packages/design-system/scripts/icons-bundle.test.mjs`가 최상위 공개 barrel을 통해 한 크기만 남는지, 다른 컴포넌트 의존성이 제거되는지, 토큰 CSS가 보존되는지 실제 Vite 빌드로 검사한다. 측정 조건과 결과는 icon spec에 기록한다.
 
 ## Drift 감지
 

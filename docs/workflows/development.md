@@ -109,13 +109,13 @@ Figma 링크·node 또는 디자인 스크린샷의 구현 요청은 `implement-
 3. `implement-from-figma`로 토큰·기존 컴포넌트·Code Connect 매핑·에셋을 대조한다. 플러그인이 반환한 코드는 저장소 구조에 맞춰 옮기며, 디자인 스크린샷 자체를 화면 이미지로 사용하거나 임시 에셋 URL을 제품 코드에 남기지 않는다.
 4. 변경 소유자에 따라 아래 스킬을 추가로 적용한다. 필요하지 않은 스킬·공통화·테스트·이슈·PR은 생성하지 않는다.
 
-| 변경 범위               | 후속 스킬                                            |
-| ----------------------- | ---------------------------------------------------- |
-| route·page·layout       | `create-page-feature`                                |
-| 앱 내부 재사용 UI       | `create-app-component`                               |
-| 앱 간 공용 UI primitive | `create-ds-component`                                |
-| 폼·검증·제출            | `implement-form-flow`                                |
-| API 계약·서버 상태      | `assess-api-contract` → 계약 확인 후 `integrate-api` |
+| 변경 범위                  | 후속 스킬                                            |
+| -------------------------- | ---------------------------------------------------- |
+| route·page·layout          | `create-page-feature`                                |
+| 앱 내부 재사용 UI          | `create-app-component`                               |
+| Figma에 정의된 UI 컴포넌트 | `create-ds-component`                                |
+| 폼·검증·제출               | `implement-form-flow`                                |
+| API 계약·서버 상태         | `assess-api-contract` → 계약 확인 후 `integrate-api` |
 
 5. `verify-changes`로 변경 범위의 검사와 브라우저 확인을 수행한다. UI 구현은 `bunch-ui-accessibility-reviewer`, route·layout·접근 조건 변경은 `bunch-route-reviewer`, API 계약·query·mutation 변경은 `bunch-api-contract-reviewer`를 호출한다. 리뷰 지적을 수정하고 영향을 받은 검증을 다시 실행한다. 핵심 사용자 흐름의 회귀 위험이 있으면 `plan-e2e`를 적용한다.
 6. 시각 검증은 `docs/agent/agent-browser-mcp.md`에 따라 수행한다. 요청한 화면의 기준 스크린샷과 같은 viewport·상태·데이터의 실제 렌더를 비교하고, 390px 수준의 좁은 폭·긴 텍스트·키보드·focus와 해당 화면의 loading·error·empty 상태도 확인한다. 레이아웃·타이포그래피·색상·에셋 차이를 고친 뒤 다시 비교한다. 기준 화면이나 실제 렌더가 없으면 시각 검증은 미검증으로 남긴다.

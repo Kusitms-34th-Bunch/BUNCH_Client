@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { LineChevronLeftIcon } from '../../icons';
+import { LineChevronLeftIcon } from '../../../icons';
 import { TextButton, type TextButtonSize, type TextButtonVariant } from './TextButton';
 
 const variants: TextButtonVariant[] = ['primary', 'secondary', 'warning'];

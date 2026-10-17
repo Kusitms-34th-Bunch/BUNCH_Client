@@ -8,7 +8,7 @@ Turbo generator는 반복 scaffold의 파일 구성과 export 흐름을 일관�
 yarn gen:ds-component UserAvatar
 ```
 
-`ds-component`는 PascalCase component name을 받고 `@app/design-system`에 component, unit test, Storybook story, local index를 생성한 뒤 root barrel export를 동기화한다.
+`ds-component`는 PascalCase component name과 구역(`core`: 모든 앱, `web`: apps/web 전용)을 받고 `packages/design-system/src/components/<구역>/`에 component, unit test, Storybook story, local index를 생성한 뒤 barrel export를 동기화한다.
 
 - endpoint, business rule, product copy처럼 generator가 알 수 없는 계약은 생성하지 않는다.
 - 기존 파일을 덮어쓰지 않는다.
@@ -20,7 +20,7 @@ yarn gen:ds-component UserAvatar
 ## Generated artifacts
 
 - OpenAPI type, component export처럼 생성된 파일은 직접 수정하지 않는다. schema, template, generator source를 바꾼 뒤 해당 명령으로 다시 생성한다.
-- `yarn check:generated`는 barrel export 동기화와 함께 `packages/design-system/src/components/` 아래 각 폴더가 generator 구조(컴포넌트·test·story·`index.ts`)를 갖췄는지 확인한다. generator를 건너뛴 컴포넌트는 CI에서 실패한다.
+- `yarn check:generated`는 barrel export 동기화와 함께 `packages/design-system/src/components/core/`와 `src/components/web/` 아래 각 폴더가 generator 구조(컴포넌트·test·story·`index.ts`)를 갖췄는지 확인한다. generator를 건너뛴 컴포넌트는 CI에서 실패한다.
 - 생성물 검증 명령이 있으면 CI와 로컬 검증에 포함한다. 생성물과 원본의 불일치를 수동 편집으로 맞추지 않는다.
 - 아직 생성 명령이 없는 폴더를 위한 barrel, icon pipeline, check script를 미리 만들지 않는다.
 
