@@ -1,6 +1,6 @@
 # Design System Icons
 
-Figma의 Line 23종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 93개)를 SVGR로 변환해 **아이콘당 컴포넌트 하나**로 묶고 `size`(`sm`·`md`·`lg`)로 크기를 고른다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
+Figma의 Line 23종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 93개)를 SVGR로 변환해 **고정 크기 export 93개**와 기존 `size`(`sm`·`md`·`lg`) 선택용 export 31개로 제공한다. 고정 크기가 기본이며 크기가 실행 중 바뀔 때만 `size` API를 사용한다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
 
 ## 왜 design-system인가
 
@@ -23,8 +23,12 @@ packages/design-system/src/icons/
 원본 파일명에서 `-small`·`-medium`·`-large`를 뗀 이름을 PascalCase로 변환하고, `Icon`/`Logo`/`Brand`/`Symbol`/`Wordmark`로 끝나지 않으면 `Icon`을 붙인다. 세 크기 파일이 모두 있어야 생성되고, 하나라도 없거나 파일명이 `<이름>-small|medium|large.svg` 형식이 아니면 생성이 실패한다.
 
 ```text
-svg/line-chevron-down-{small,medium,large}.svg → generated/LineChevronDownIcon.tsx
-svg/fill-circle-check-{small,medium,large}.svg → generated/FillCircleCheckIcon.tsx
+svg/line-chevron-down-{small,medium,large}.svg
+  → generated/LineChevronDown{Small,Medium,Large}Icon.tsx (도형·접근성)
+  → generated/LineChevronDownIcon.tsx (크기 선택 래퍼)
+svg/fill-circle-check-{small,medium,large}.svg
+  → generated/FillCircleCheck{Small,Medium,Large}Icon.tsx
+  → generated/FillCircleCheckIcon.tsx
 ```
 
 ## SVG 입력 검증 (필수)
@@ -70,15 +74,23 @@ metadata는 변환 전에 제거한다. 현재 세트는 모두 단색이며, wh
 ## 사용과 접근성
 
 ```tsx
-import { Button, LineCameraIcon, FillCircleCheckIcon } from '@app/design-system';
+import { Button, LineCameraMediumIcon, FillCircleCheckLargeIcon, LineCameraIcon } from '@app/design-system';
 
-<Button size="md" leftIcon={<LineCameraIcon size="md" />}>사진 추가</Button>
-<FillCircleCheckIcon size="lg" aria-label="완료" className="text-icon-brand" />
+<Button size="md" leftIcon={<LineCameraMediumIcon />}>사진 추가</Button>
+<FillCircleCheckLargeIcon aria-label="완료" className="text-icon-brand" />
+// 실행 중 크기가 바뀌는 경우
+<LineCameraIcon size={iconSize} />
 ```
 
-`size`를 주지 않으면 `md`(20px)다. 기본 SVG는 `aria-hidden="true"`, `focusable="false"`인 장식이다. 의미가 있는 독립 아이콘에는 `aria-label` 또는 `aria-labelledby`를 제공하면 `role="img"`로 노출된다. 아이콘 전용 버튼의 이름은 button에 제공하며, 버튼 안 SVG는 장식으로 유지한다. React SVG props·className·ref를 전달하고 CSS color를 상속한다.
+고정 export는 `size` prop을 받지 않으며 선택한 원본 크기로 렌더한다. 선택용 export는 `size`를 주지 않으면 `md`(20px)다. 기본 SVG는 `aria-hidden="true"`, `focusable="false"`인 장식이다. 의미가 있는 독립 아이콘에는 `aria-label` 또는 `aria-labelledby`를 제공하면 `role="img"`로 노출된다. 아이콘 전용 버튼의 이름은 button에 제공하며, 버튼 안 SVG는 장식으로 유지한다. React SVG props·className·ref를 전달하고 CSS color를 상속한다.
 
 `Foundations/Icons`의 Gallery story 하나에서 전체 세트·세 크기·색상 상속·Button 조합을 확인한다. 기존 Chromatic workflow가 이 story도 수집한다. 로컬 Storybook 검증과 원격 Chromatic 게시는 구분한다.
+
+## 번들 경계
+
+고정 크기 컴포넌트는 다른 크기를 import하지 않는다. 선택용 래퍼만 세 고정 크기를 import하므로 `size="md"` 리터럴을 줘도 세 도형이 포함된다. 크기가 정해진 Toast는 `FillCircleCheckLargeIcon`을 사용한다.
+
+패키지 `sideEffects`는 CSS만 보존한다(`**/*.css`). 사용하지 않는 JS export와 그 하위 import는 제거 가능하며, CSS import는 유지된다. JS 모듈의 전역 등록·초기화 같은 부수 효과를 추가하면 이 선언도 재검토한다. `scripts/icons-bundle.test.mjs`가 최상위 공개 barrel을 통해 한 크기만 남는지, 다른 컴포넌트 의존성이 제거되는지, 토큰 CSS가 보존되는지 실제 Vite 빌드로 검사한다. 측정 조건과 결과는 icon spec에 기록한다.
 
 ## Drift 감지
 
