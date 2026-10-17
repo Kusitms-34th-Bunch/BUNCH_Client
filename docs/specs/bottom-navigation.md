@@ -3,7 +3,7 @@
 > Status: Draft
 > Date: 2026-10-18
 
-디자인 출처: Figma `BUNCH - 작업파일`의 `BottomNavigationItem`(node `118:973`)과 `BottomNavigation`(node `127:2213`). 값(색·간격·radius·타이포)은 구현 때 `get_design_context`로 확인했고 토큰 대응은 컴포넌트 spec(`BottomNavigation.spec.md`)에 있다.
+디자인 출처: Figma `BUNCH - 작업파일`의 `BottomNavigationItem`(node `118:973`)과 `BottomNavigation`(node `127:2213`). 값(색·간격·radius·타이포)은 구현 때 `get_design_context`로 확인했고 토큰 대응은 [컴포넌트 spec](../../packages/design-system/src/components/web/bottomNavigation/BottomNavigation.spec.md)에 있다.
 
 ## 목적
 
@@ -46,7 +46,7 @@
 
 ### 있으면 좋은 것 (Nice to Have)
 
-- [ ] 리퀴드 글래스 스타일(반투명 블러). 디자인에 정의된 값이 아니라 개발 쪽에서 임의로 적용해 보여 주는 효과다(Figma의 개발 메모). 값은 개발자가 정하고 디자이너 확인 전까지 확정 사양으로 취급하지 않는다. 막대 뒤로 사진이 스크롤될 때의 글자 대비를 확인한다.
+- [x] 프로스트 글라스(`glass` 옵션, 반투명 블러 + 가장자리 반사). 디자인에 정의된 값이 아니라 개발 쪽에서 임의로 적용해 보여 주는 효과다(Figma의 개발 메모). 값은 개발자가 정했고 디자이너 확인 전까지 확정 사양으로 취급하지 않는다. 굴절은 CSS로 낼 수 없어(SVG 변위는 Chromium 전용, iOS WebKit 미지원) 제외했다. 막대 뒤로 사진이 스크롤될 때의 글자 대비는 실기기에서 확인해야 한다.
 
 ## 상태
 
@@ -74,16 +74,17 @@
 
 ## 구현 단위와 이슈
 
-선행이 있는 단위는 선행이 끝난 뒤에 시작한다. Figma node: `BottomNavigationItem` `118:973`, `BottomNavigation` `127:2213`.
+선행이 있는 단위는 선행이 끝난 뒤에 시작한다. Figma node: `BottomNavigationItem` `118:973`, `BottomNavigation` `127:2213`. 글라스 효과의 플랫폼별 구현은 `docs/decisions/records/011-bottom-navigation-glass-by-platform.md`를 따른다.
 
-| 단위                                                                                                                 | 타입 | 브랜치명          | 선행                                     | 이슈 |
-| -------------------------------------------------------------------------------------------------------------------- | ---- | ----------------- | ---------------------------------------- | ---- |
-| `BottomNavigation` 컴포넌트: 항목·선택 상태·접근성·스토리·테스트(디자인 시스템 web 구역)                             | feat | bottom-navigation | #35(디자인 시스템 core/web 구역)         |      |
-| (보류) 탭 조합: 탭 4개의 라벨·경로·현재 탭 판정, `PageShell` `bottom` 연결, 소유 방식 결정과 `app-structure.md` 갱신 | feat | main-navigation   | `BottomNavigation`, 연결할 탭 화면 route | 없음 |
+| 단위                                                                                                                           | 타입 | 브랜치명             | 선행                                               | 이슈                                    |
+| ------------------------------------------------------------------------------------------------------------------------------ | ---- | -------------------- | -------------------------------------------------- | --------------------------------------- |
+| `BottomNavigation` 컴포넌트와 CSS `glass` 옵션(디자인 시스템 web 구역, web·안드로이드용)                                       | feat | bottom-navigation    | #35                                                | #37                                     |
+| iOS 쉘 네이티브 글라스 막대: WebView 위 `GlassView` 탭 막대, 탭 상태·숨김·여백을 `bridge`로 동기화, iOS 26 미만은 웹 막대 유지 | feat | shell-native-tab-bar | `BottomNavigation`, bridge 계약(`packages/bridge`) | #37에서 구현(쉘·bridge, 웹 호출부 제외) |
+| (보류) 탭 조합: 탭 4개의 라벨·경로·현재 탭 판정, `PageShell` `bottom` 연결, 소유 방식 결정과 `app-structure.md` 갱신           | feat | main-navigation      | `BottomNavigation`, 연결할 탭 화면 route           | 없음                                    |
 
-- 탭 조합은 연결할 탭 화면(번치·사진함 등)이 아직 없어서 이슈를 만들지 않는다. 첫 탭 화면이 생기는 시점(PRD 순위 2)에 이슈를 만든다.
-- 두 단위는 목적과 reviewer가 달라(UI 접근성 vs route·접근) 나눈다.
-- 권장 순서: `BottomNavigation` → (첫 탭 화면 route가 생긴 뒤) 탭 조합. 구현은 `implement-from-figma`·`create-ds-component`, 조합은 `create-page-feature`로 이어지고, UI는 `bunch-ui-accessibility-reviewer`, route 변경은 `bunch-route-reviewer`를 부른다.
+- iOS 쉘 막대의 쉘 코드와 bridge 계약(`setNativeTabBar`, `nativeTabPress`)은 #37에서 만들었다. 웹이 이 계약을 호출해 막대를 켜고, `nativeTabPress`를 받아 이동하고, 자기 막대를 숨기는 부분은 탭 조합(보류)이 맡는다. 쉘 앱 실기기 확인도 남아 있다.
+- 탭 조합은 연결할 탭 화면(번치·사진함 등)이 아직 없어서 이슈를 만들지 않는다. 첫 탭 화면이 생기는 시점(PRD 순위 2)에 만든다.
+- 남은 순서: 첫 탭 화면 route 구현 → 탭 조합 → iOS 쉘 막대 연동·실기기 확인. 구현은 `implement-from-figma`·`create-ds-component`, 조합은 `create-page-feature`, 쉘은 별도 지침(`docs/architecture/mobile-shell.md`)이다. UI는 `bunch-ui-accessibility-reviewer`, route 변경은 `bunch-route-reviewer`를 부른다.
 
 ## 완료 기준
 
@@ -107,7 +108,7 @@
 **디자인**
 
 - 리퀴드 글래스는 개발 쪽 임의 적용이라 디자이너의 값이 없다. 정식으로 쓸지 디자인에 확인한다.
-- 눌림·포커스·비활성 상태, 전환 애니메이션 유무.
+- 눌림·포커스·비활성 상태. 선택 알약 이동 애니메이션은 Figma에 없어 개발 쪽에서 임의로 넣었다(200ms, 모션 감소 시 즉시 이동). 정식 사양으로 쓸지 확인. 막대를 누른 채 끌어 손을 뗀 탭을 선택하는 동작도 같은 임의 적용이다(웹·iOS 네이티브 막대에 구현, 실제 터치·VoiceOver 미검증).
 - 토큰: 막대 배경·선택 알약 배경·라벨 색이 기존 토큰에 있는지.
 - `BottomNavigationItem` 시트(순서 피드·번치·마이페이지·사진함)와 막대(피드·사진함·번치·마이페이지)의 순서 차이는 막대를 기준으로 해석했다. 맞는지 확인.
 

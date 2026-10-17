@@ -7,13 +7,37 @@
 - Capacitor의 remote URL 모드와 같은 논리다 — WebView가 실제 배포 주소를 그대로 열기 때문에 Next.js App Router의 RSC, Server Action, `apps/web`의 BFF(`docs/architecture/data-layer.md`)가 평소처럼 동작한다. 정적 export가 필요 없다.
 - 완전 네이티브(화면마다 RN 컴포넌트로 재구현)보다 비용이 작다. 번치의 가장 차별화된 인터랙션(사진 드래그, 번들 룸 실시간 편집)은 WebView 한 겹을 거치면서 제스처 체감이 둔해질 수 있다는 점은 알려진 트레이드오프다. 다만 웹 구현에 따라 크게 달라지므로, 먼저 `docs/architecture/web-interface-guidelines.md`의 "Drag와 제스처" 기준으로 구현하고 실기기에서 확인한다. 그래도 기준에 못 미치는 화면이 나오면 해당 화면만 네이티브로 옮기는 걸 재검토한다.
 
+## 소스 배치
+
+진입점과 설정은 앱 루트에 두고, 런타임 코드와 테스트는 `src/`에 둔다. 기능별 파일은 같은 폴더에 모은다.
+
+```text
+apps/mobile-shell/
+  App.tsx
+  index.ts
+  src/
+    native-tab-bar/
+      NativeTabBar.tsx
+      useNativeTabBarGesture.ts
+      native-tab-bar.ts
+      native-tab-bar-store.ts
+      native-tab-bar.test.mjs
+    safe-area-script.ts
+    safe-area-script.test.mjs
+    sentry.ts
+    sanitize-sentry-event.ts
+    sanitize-sentry-event.test.mjs
+```
+
+네이티브 탭 막대의 UI·제스처·상태·좌표 계산과 테스트는 `src/native-tab-bar/`가 소유한다. 검증은 `apps/mobile-shell`에서 `pnpm test`와 `pnpm exec tsc --noEmit`으로 실행한다.
+
 ## WebView 기본 동작
 
 `apps/mobile-shell/App.tsx`가 WebView에 다음 기본 동작을 건다.
 
 - `http(s)`·`about:` 이동은 WebView 안에서 그대로 처리한다(소셜 로그인 redirect가 깨지지 않게 한다). `tel:`, `mailto:` 같은 다른 scheme은 WebView가 처리하지 못하므로 `Linking.openURL`로 OS에 넘긴다. 허용 출처 allowlist는 인증 흐름이 정해진 뒤에 추가한다.
 - iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 웹 history에 먼저 연결한다. 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
-- 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면뿐이다.
+- 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면과 iOS 26 이상의 글라스 탭 막대다.
 
 ## Safe Area
 
@@ -46,6 +70,20 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 의존성 설치·관리는 `apps/mobile-shell` 안에서 `pnpm install`로 따로 한다.
 - 네이티브 모듈 추가는 `pnpm add`가 아니라 `npx expo install <package>`를 쓴다 — 설치된 Expo SDK와 호환되는 버전을 Expo가 직접 고른다.
 
+## 네이티브 글라스 탭 막대 (iOS 26 이상)
+
+쉘은 화면을 직접 그리지 않지만 iOS 26 이상에서는 하단 탭 막대 하나를 WebView 위에 네이티브 `GlassView`(`expo-glass-effect`)로 그린다. 근거와 대안은 `docs/decisions/records/011-bottom-navigation-glass-by-platform.md`다.
+
+- 막대는 `src/native-tab-bar/NativeTabBar.tsx`가 그린다. 항목 라벨·아이콘(SF Symbol 이름)·선택은 웹이 `setNativeTabBar`로 정하고, 쉘은 그리기와 눌림 전달만 한다.
+- 쉘은 iOS이고 `isLiquidGlassAvailable()`이 true일 때만 `setNativeTabBar`가 true를 돌려준다. 웹 탭 조합은 true일 때 자기 `BottomNavigation`을 숨기고, false(브라우저·안드로이드·iOS 26 미만)이면 계속 쓰도록 구현해야 한다. 웹 호출부는 아직 미구현이다.
+- 탭을 누르면 쉘이 `postMessage('nativeTabPress', { id })`로 웹에 알린다. 웹이 해당 탭 화면으로 이동한다.
+- WebView는 막대 뒤까지 그려져야 글라스 효과가 보인다. 막대가 차지하는 높이는 CSS 변수 `--native-tab-bar-inset`으로 웹에 주입한다(막대가 없으면 0). 웹 탭 조합은 본문 아래 여백에 이 값을 더해야 한다. 현재 웹에는 이 변수의 소비 코드가 없다. 새 문서를 로드하면 막대 상태를 비우므로 웹이 다시 정해야 한다.
+- 선택 알약은 웹 막대와 같이 항목 사이를 200ms로 미끄러진다(`Animated`, 처음 배치와 모션 감소 설정에서는 즉시 이동).
+- 웹 막대와 같은 동작을 낸다. 탭, 누른 채 끌어서 손을 뗀 탭 선택(6px 이상 움직이면 끌기), 끄는 동안 알약이 도착한 항목의 아이콘이 활성으로 바뀜, 알약을 누르는 동안 1.12배로 커졌다가 놓으면 0.95배를 거쳐 돌아옴(탭 이동 때도 같은 모션). 막대 전체를 `PanResponder`가 받고 보조 기술은 항목의 `onAccessibilityTap`으로 선택한다. 좌표·여백 계산 단위 테스트, 타입 검사와 iOS JS 번들 생성을 확인했고 iPhone에서 실제 터치(끌기·모션·VoiceOver)는 확인하지 못했다.
+- 막대 위치(홈 인디케이터 위 여백)는 실기기에서 맞춰 보지 않은 추정값이다. 쉘 앱으로 iPhone에서 눌림·VoiceOver·스크롤 성능을 확인하지 못했다. 막대 모양은 별도 실험 앱으로만 확인했다.
+- 안드로이드에서는 `GlassView`가 일반 View로 떨어지므로 쓰지 않는다.
+- 스타일은 `StyleSheet`를 쓰고, 색·크기는 디자인 시스템 토큰 값을 상수로 옮겨 이름과 출처를 주석에 남긴다(RN은 CSS 변수를 못 쓴다). NativeWind는 쓰지 않는다. Tailwind v4용 v5가 아직 정식이 아니고(preview, `react-native-css` nightly 필요) Expo SDK 57·React Native 0.86과의 호환을 확인하지 못했으며, 쉘의 네이티브 UI가 막대 하나뿐이라 도구를 더할 이득이 작다. 쉘에 네이티브 화면이 늘고 정식 v5가 나오면 결정 기록과 함께 다시 검토한다.
+
 ## Bridge 계약 (`packages/bridge`)
 
 `packages/bridge`는 web↔native 호출의 타입 계약만 담는다. 런타임 구현은 두지 않는다.
@@ -62,29 +100,13 @@ packages/bridge/
 
 ### 네이티브 쪽 구현 (`apps/mobile-shell/App.tsx`)
 
-```ts
-const appBridge = bridge({
-  share: async (params) => {
-    /* ... */
-  },
-} satisfies AppBridgeMethods);
-
-const { WebView } = createWebView({ bridge: appBridge });
-```
+실제 구현은 [App.tsx](../../apps/mobile-shell/App.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`로 네이티브 탭 선택 이벤트를 연결한다.
 
 `bridge()`에는 **인라인 객체 리터럴**을 넘긴다. 미리 `AppBridgeMethods` 타입을 선언한 변수를 넘기면 TypeScript가 index signature 불일치로 거부한다(이름 있는 타입은 fresh literal 취급을 받지 못한다).
 
 ### 웹 쪽 호출 (`apps/web/src/shared/bridge/client.ts`)
 
-```ts
-export const appBridge = linkBridge<AppBridge>({
-  initialBridge: {
-    share: async ({ url, title }) => {
-      /* Web Share API 폴백 */
-    },
-  },
-});
-```
+실제 구현은 [bridge client](../../apps/web/src/shared/bridge/client.ts)를 따른다. `linkBridge<AppBridge, AppPostMessageSchema>`로 메서드와 이벤트 계약을 함께 지정한다.
 
 `initialBridge`는 WebView 밖(일반 브라우저)에서 실행될 때의 폴백이다. `isWebViewBridgeAvailable`로 지금 네이티브 쉘 안인지 확인할 수 있다.
 
