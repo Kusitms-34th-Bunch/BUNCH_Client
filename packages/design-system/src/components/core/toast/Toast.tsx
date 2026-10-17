@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
-import { FillCircleCheckLargeIcon } from '../../icons';
-import { tv } from '../../utils';
+import { FillCircleCheckLargeIcon } from '../../../icons';
+import { tv } from '../../../utils';
 import { Button } from '../button';
 
 // 배경: Figma의 surface-inversed-alpha-60 토큰이 아직 tokens.json에 없어 surface-inversed에 투명도 60%를 적용(Toast.spec.md)

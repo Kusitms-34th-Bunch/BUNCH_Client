@@ -1,7 +1,8 @@
 'use client';
 
-import { LineCloseIcon, cn } from '@app/design-system';
 import { type ComponentProps, type ReactNode, useRef } from 'react';
+import { LineCloseIcon } from '../../../icons';
+import { cn } from '../../../utils';
 import { fieldText } from './fieldText';
 
 export type TextFieldProps = Omit<

@@ -2,7 +2,7 @@
 
 import { AlertDialog } from '@base-ui/react/alert-dialog';
 import { useRef, type ComponentProps, type ReactNode } from 'react';
-import { cn } from '../../utils';
+import { cn } from '../../../utils';
 import { Button, type ButtonProps } from '../button';
 import { TextButton } from '../textButton';
 

@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { cn } from '../../utils';
+import { cn } from '../../../utils';
 
 export type HeaderProps = Omit<ComponentProps<'header'>, 'title'> & {
   /** 제목 앞 영역(뒤로 가기 버튼, 로고, 계정 전환 등) */

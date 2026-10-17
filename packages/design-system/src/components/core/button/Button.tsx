@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react';
 import type { VariantProps } from 'tailwind-variants';
-import { tv } from '../../utils';
+import { tv } from '../../../utils';
 
 // 눌림 오버레이: 글자 아래·배경 위의 -z-10 pseudo 요소(isolate로 쌓임 맥락 분리)
 // Warning만 overlay-pressed(20%), 나머지 overlay-hover(10%) — Figma 스크린샷 픽셀 측정값

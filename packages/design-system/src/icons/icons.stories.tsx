@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { IconSize } from './types';
-import { Button } from '../components/button';
+import { Button } from '../components/core/button';
 import * as icons from './generated';
 
 const sizes: IconSize[] = ['sm', 'md', 'lg'];
