@@ -18,7 +18,7 @@
 
 - 로딩 상태, 아이콘만 있는 버튼, 링크 모양(`<a>`)은 디자인에 없어서 만들지 않았다.
 - hover 스타일은 디자인에 없어서 만들지 않았다.
-- 아이콘 자산은 컴포넌트가 직접 갖지 않는다. Figma의 앞·뒤 아이콘은 `chevron-left`를 기본으로 보여 주는 교체 가능한 슬롯이라서, 호출하는 쪽이 `leftIcon`·`rightIcon`으로 넘긴다. 저장소의 `LineChevronLeft{Small,Medium,Large}Icon`이 Figma 인스턴스(16/20/24)와 같은 자산이며 `WithIcons` story에서 크기별로 쓴다.
+- 아이콘 자산은 컴포넌트가 직접 갖지 않는다. Figma의 앞·뒤 아이콘은 `chevron-left`를 기본으로 보여 주는 교체 가능한 슬롯이라서, 호출하는 쪽이 `leftIcon`·`rightIcon`으로 넘긴다. 저장소의 `LineChevronLeftIcon`의 `size`(`sm`·`md`·`lg` = 16/20/24)가 Figma 인스턴스와 같은 자산이며 `WithIcons` story에서 크기별로 쓴다.
 
 ## Public API
 
