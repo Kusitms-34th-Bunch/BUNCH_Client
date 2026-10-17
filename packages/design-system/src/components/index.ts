@@ -3,5 +3,6 @@
 export * from './badge';
 export * from './button';
 export * from './dialog';
+export * from './header';
 export * from './textButton';
 export * from './toast';
