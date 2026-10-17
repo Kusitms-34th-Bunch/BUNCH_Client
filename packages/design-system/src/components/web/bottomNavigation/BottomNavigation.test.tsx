@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -172,6 +172,209 @@ describe('BottomNavigation', () => {
     await userEvent.click(screen.getByRole('link', { name: '번치' }));
 
     expect(onItemSelect).not.toHaveBeenCalled();
+  });
+
+  it('glass 옵션을 켜면 반투명 배경과 블러를 쓴다', () => {
+    render(<BottomNavigation aria-label="주요 메뉴" items={items} selectedId="feed" glass />);
+
+    const nav = screen.getByRole('navigation', { name: '주요 메뉴' });
+    expect(nav.className).toContain('backdrop-blur');
+    expect(nav.className).not.toMatch(/(^| )bg-surface-primary( |$)/);
+  });
+
+  const pillOf = (nav: HTMLElement) => nav.querySelector<HTMLElement>('div[aria-hidden="true"]');
+
+  it('선택 알약은 선택된 항목 위치로 이동한다', () => {
+    const { rerender } = render(
+      <BottomNavigation aria-label="주요 메뉴" items={items} selectedId="feed" />,
+    );
+    const nav = screen.getByRole('navigation', { name: '주요 메뉴' });
+    expect(pillOf(nav)?.style.transform).toBe('translateX(0%)');
+
+    rerender(<BottomNavigation aria-label="주요 메뉴" items={items} selectedId="bunch" />);
+
+    expect(pillOf(nav)?.style.transform).toBe('translateX(200%)');
+    expect(pillOf(nav)?.style.width).toBe('25%');
+  });
+
+  it('selectedId가 목록에 없으면 알약을 그리지 않는다', () => {
+    render(<BottomNavigation aria-label="주요 메뉴" items={items} selectedId="none" />);
+
+    expect(pillOf(screen.getByRole('navigation', { name: '주요 메뉴' }))).toBeNull();
+  });
+
+  it('알약 이동은 모션 감소 설정에서 즉시 일어난다', () => {
+    render(<BottomNavigation aria-label="주요 메뉴" items={items} selectedId="feed" />);
+
+    const pill = pillOf(screen.getByRole('navigation', { name: '주요 메뉴' }));
+    expect(pill?.className).toContain('motion-reduce:transition-none');
+  });
+
+  it('glass 옵션에서는 알약이 더 진한 회색이다', () => {
+    const { rerender } = render(
+      <BottomNavigation aria-label="주요 메뉴" items={items} selectedId="feed" />,
+    );
+    const nav = screen.getByRole('navigation', { name: '주요 메뉴' });
+    const solid = pillOf(nav)?.firstElementChild?.className;
+    rerender(<BottomNavigation aria-label="주요 메뉴" items={items} selectedId="feed" glass />);
+    const glass = pillOf(nav)?.firstElementChild?.className;
+
+    expect(solid).toContain('bg-surface-secondary');
+    expect(glass).not.toContain('bg-surface-secondary');
+  });
+
+  it('선택이 바뀌면 알약이 도착한 뒤에 새 항목의 아이콘이 활성으로 바뀐다', async () => {
+    const marked: BottomNavigationItem[] = ['feed', 'photos'].map((id) => ({
+      id,
+      label: id,
+      icon: <svg data-testid={`line-${id}`} />,
+      selectedIcon: <svg data-testid={`fill-${id}`} />,
+    }));
+    const { rerender } = render(
+      <BottomNavigation aria-label="주요 메뉴" items={marked} selectedId="feed" />,
+    );
+    rerender(<BottomNavigation aria-label="주요 메뉴" items={marked} selectedId="photos" />);
+
+    expect(screen.getByRole('button', { name: 'photos' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(screen.queryByTestId('fill-feed')).toBeTruthy();
+    await waitFor(() => expect(screen.queryByTestId('fill-photos')).toBeTruthy());
+    expect(screen.queryByTestId('fill-feed')).toBeNull();
+  });
+
+  describe('누른 채 끌어서 선택', () => {
+    const mockRect = () =>
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        right: 400,
+        top: 0,
+        bottom: 56,
+        width: 400,
+        height: 56,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+    const drag = (from: HTMLElement, xs: number[]) => {
+      const nav = screen.getByRole('navigation', { name: '주요 메뉴' });
+      fireEvent.pointerDown(from, { pointerId: 1, pointerType: 'touch', clientX: 20 });
+      for (const x of xs)
+        fireEvent.pointerMove(nav, { pointerId: 1, pointerType: 'touch', clientX: x });
+      return nav;
+    };
+
+    afterEach(() => vi.restoreAllMocks());
+
+    it('끌다가 손을 떼면 그 위치의 항목을 한 번 선택한다', () => {
+      mockRect();
+      const onItemSelect = vi.fn();
+      render(
+        <BottomNavigation
+          aria-label="주요 메뉴"
+          items={items}
+          selectedId="feed"
+          onItemSelect={onItemSelect}
+        />,
+      );
+      const nav = drag(screen.getByRole('button', { name: '피드' }), [120, 330]);
+
+      fireEvent.pointerUp(nav, { pointerId: 1, pointerType: 'touch', clientX: 330 });
+      fireEvent.click(screen.getByRole('button', { name: '피드' }));
+
+      expect(onItemSelect).toHaveBeenCalledTimes(1);
+      expect(onItemSelect).toHaveBeenCalledWith('my');
+    });
+
+    it('끄는 동안 알약은 손가락을 따라가지만 도착한 항목이 활성으로 보이고 현재 항목 표시는 그대로다', () => {
+      mockRect();
+      const marked: BottomNavigationItem[] = ['feed', 'photos', 'bunch', 'my'].map((id) => ({
+        id,
+        label: id,
+        icon: <svg data-testid={`line-${id}`} />,
+        selectedIcon: <svg data-testid={`fill-${id}`} />,
+      }));
+      render(<BottomNavigation aria-label="주요 메뉴" items={marked} selectedId="feed" />);
+      const nav = drag(screen.getByRole('button', { name: 'feed' }), [210]);
+
+      const pill = nav.querySelector<HTMLElement>('div[aria-hidden="true"]');
+      expect(pill?.style.transform).toBe('translateX(160px)');
+      // 끌기 미리보기(bunch)와 실제 선택(feed)의 분리 확인
+      expect(screen.getByTestId('fill-bunch')).toBeTruthy();
+      expect(screen.queryByTestId('fill-feed')).toBeNull();
+      expect(screen.getByRole('button', { name: 'feed' }).getAttribute('aria-current')).toBe(
+        'page',
+      );
+    });
+
+    it('알약을 누르거나 끄는 동안 알약이 커지고 손을 떼면 돌아온다', () => {
+      mockRect();
+      render(<BottomNavigation aria-label="주요 메뉴" items={items} selectedId="feed" />);
+      const nav = screen.getByRole('navigation', { name: '주요 메뉴' });
+      const inner = () => nav.querySelector('div[aria-hidden="true"] > span');
+
+      expect(inner()?.className).toContain('scale-100');
+      fireEvent.pointerDown(screen.getByRole('button', { name: '피드' }), {
+        pointerId: 1,
+        clientX: 20,
+      });
+      expect(inner()?.className).toContain('scale-[1.12]');
+      fireEvent.pointerUp(nav, { pointerId: 1, clientX: 20 });
+      expect(inner()?.className).toContain('scale-100');
+    });
+
+    it('다른 탭을 누를 때는 알약이 커지지 않는다', () => {
+      mockRect();
+      render(<BottomNavigation aria-label="주요 메뉴" items={items} selectedId="feed" />);
+      const nav = screen.getByRole('navigation', { name: '주요 메뉴' });
+
+      fireEvent.pointerDown(screen.getByRole('button', { name: '번치' }), {
+        pointerId: 1,
+        clientX: 250,
+      });
+
+      expect(nav.querySelector('div[aria-hidden="true"] > span')?.className).not.toContain(
+        'scale-[1.12]',
+      );
+    });
+
+    it('움직임이 작으면 끌기가 아니라 일반 탭이다', () => {
+      mockRect();
+      const onItemSelect = vi.fn();
+      render(
+        <BottomNavigation
+          aria-label="주요 메뉴"
+          items={items}
+          selectedId="feed"
+          onItemSelect={onItemSelect}
+        />,
+      );
+      const nav = drag(screen.getByRole('button', { name: '사진함' }), [22]);
+
+      fireEvent.pointerUp(nav, { pointerId: 1, pointerType: 'touch', clientX: 22 });
+      fireEvent.click(screen.getByRole('button', { name: '사진함' }));
+
+      expect(onItemSelect).toHaveBeenCalledTimes(1);
+      expect(onItemSelect).toHaveBeenCalledWith('photos');
+    });
+
+    it('끌기를 취소하면 선택하지 않는다', () => {
+      mockRect();
+      const onItemSelect = vi.fn();
+      render(
+        <BottomNavigation
+          aria-label="주요 메뉴"
+          items={items}
+          selectedId="feed"
+          onItemSelect={onItemSelect}
+        />,
+      );
+      const nav = drag(screen.getByRole('button', { name: '피드' }), [330]);
+
+      fireEvent.pointerCancel(nav, { pointerId: 1, pointerType: 'touch', clientX: 330 });
+
+      expect(onItemSelect).not.toHaveBeenCalled();
+    });
   });
 
   it('className과 native nav 속성을 전달한다', () => {
