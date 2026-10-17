@@ -1,6 +1,6 @@
 # Design System Icons
 
-Figma의 Line 23종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 총 93개 SVG를 SVGR로 변환하며, 크기별 도형을 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
+Figma의 Line 23종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 93개)를 SVGR로 변환해 **아이콘당 컴포넌트 하나**로 묶고 `size`(`sm`·`md`·`lg`)로 크기를 고른다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
 
 ## 왜 design-system인가
 
@@ -20,11 +20,11 @@ packages/design-system/src/icons/
 
 ## 명명
 
-원본 파일명을 PascalCase로 변환하고, `Icon`/`Logo`/`Brand`/`Symbol`/`Wordmark`로 끝나지 않으면 `Icon`을 붙인다.
+원본 파일명에서 `-small`·`-medium`·`-large`를 뗀 이름을 PascalCase로 변환하고, `Icon`/`Logo`/`Brand`/`Symbol`/`Wordmark`로 끝나지 않으면 `Icon`을 붙인다. 세 크기 파일이 모두 있어야 생성되고, 하나라도 없거나 파일명이 `<이름>-small|medium|large.svg` 형식이 아니면 생성이 실패한다.
 
 ```text
-svg/line-chevron-down-small.svg → generated/LineChevronDownSmallIcon.tsx
-svg/fill-circle-check-large.svg → generated/FillCircleCheckLargeIcon.tsx
+svg/line-chevron-down-{small,medium,large}.svg → generated/LineChevronDownIcon.tsx
+svg/fill-circle-check-{small,medium,large}.svg → generated/FillCircleCheckIcon.tsx
 ```
 
 ## SVG 입력 검증 (필수)
@@ -70,13 +70,13 @@ metadata는 변환 전에 제거한다. 현재 세트는 모두 단색이며, wh
 ## 사용과 접근성
 
 ```tsx
-import { Button, LineCameraMediumIcon, FillCircleCheckLargeIcon } from '@app/design-system';
+import { Button, LineCameraIcon, FillCircleCheckIcon } from '@app/design-system';
 
-<Button size="md" leftIcon={<LineCameraMediumIcon />}>사진 추가</Button>
-<FillCircleCheckLargeIcon aria-label="완료" className="text-icon-brand" />
+<Button size="md" leftIcon={<LineCameraIcon size="md" />}>사진 추가</Button>
+<FillCircleCheckIcon size="lg" aria-label="완료" className="text-icon-brand" />
 ```
 
-기본 SVG는 `aria-hidden="true"`, `focusable="false"`인 장식이다. 의미가 있는 독립 아이콘에는 `aria-label` 또는 `aria-labelledby`를 제공하면 `role="img"`로 노출된다. 아이콘 전용 버튼의 이름은 button에 제공하며, 버튼 안 SVG는 장식으로 유지한다. React SVG props·className·ref를 전달하고 CSS color를 상속한다.
+`size`를 주지 않으면 `md`(20px)다. 기본 SVG는 `aria-hidden="true"`, `focusable="false"`인 장식이다. 의미가 있는 독립 아이콘에는 `aria-label` 또는 `aria-labelledby`를 제공하면 `role="img"`로 노출된다. 아이콘 전용 버튼의 이름은 button에 제공하며, 버튼 안 SVG는 장식으로 유지한다. React SVG props·className·ref를 전달하고 CSS color를 상속한다.
 
 `Foundations/Icons`의 Gallery story 하나에서 전체 세트·세 크기·색상 상속·Button 조합을 확인한다. 기존 Chromatic workflow가 이 story도 수집한다. 로컬 Storybook 검증과 원격 Chromatic 게시는 구분한다.
 
@@ -86,7 +86,7 @@ import { Button, LineCameraMediumIcon, FillCircleCheckLargeIcon } from '@app/des
 
 ## 반입·갱신
 
-1. Figma에서 크기별 SVG를 내려받고 이름·실제 크기·원본 색을 확인한다. 코드에서 정규화한 Figma 이름은 spec에 기록한다.
+1. Figma에서 small·medium·large 세 크기의 SVG를 모두 내려받고 이름·실제 크기·원본 색을 확인한다. 코드에서 정규화한 Figma 이름은 spec에 기록한다.
 2. 단색은 `svg/`, 원본 색 보존은 `svg-preserve/`에 둔다. SVG는 안전성 검증 후 정규화한다.
 3. `yarn workspace @app/design-system icons:build`를 실행한다. TSX 생성 뒤 `gen:index`가 전체 barrel을 갱신한다.
 4. `yarn check:generated`, 대상 test·lint·typecheck와 Gallery를 확인한다.
