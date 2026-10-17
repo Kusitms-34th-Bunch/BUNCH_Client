@@ -58,6 +58,12 @@ export const BottomNavigation = ({
   onItemSelect,
   renderItem,
   className,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+  onPointerLeave,
+  onClickCapture,
   ...props
 }: BottomNavigationProps) => {
   const selectedIndex = items.findIndex((item) => item.id === selectedId);
@@ -71,8 +77,31 @@ export const BottomNavigation = ({
   return (
     <nav
       className={cn('p-s2 w-full touch-pan-y rounded-full', glass ? glassBar : solidBar, className)}
-      {...navProps}
       {...props}
+      onPointerDown={(event) => {
+        navProps.onPointerDown(event);
+        onPointerDown?.(event);
+      }}
+      onPointerMove={(event) => {
+        navProps.onPointerMove(event);
+        onPointerMove?.(event);
+      }}
+      onPointerUp={(event) => {
+        navProps.onPointerUp(event);
+        onPointerUp?.(event);
+      }}
+      onPointerCancel={(event) => {
+        navProps.onPointerCancel(event);
+        onPointerCancel?.(event);
+      }}
+      onPointerLeave={(event) => {
+        navProps.onPointerLeave(event);
+        onPointerLeave?.(event);
+      }}
+      onClickCapture={(event) => {
+        navProps.onClickCapture(event);
+        onClickCapture?.(event);
+      }}
     >
       <div className="relative">
         {selectedIndex >= 0 || scrub ? (

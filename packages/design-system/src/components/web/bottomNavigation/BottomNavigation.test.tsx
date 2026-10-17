@@ -286,6 +286,83 @@ describe('BottomNavigation', () => {
       expect(onItemSelect).toHaveBeenCalledWith('my');
     });
 
+    it('외부 nav 이벤트 핸들러를 전달해도 끌기 선택과 중복 클릭 방지가 동작한다', () => {
+      mockRect();
+      const onItemSelect = vi.fn();
+      const onPointerDown = vi.fn();
+      const onPointerMove = vi.fn();
+      const onPointerUp = vi.fn();
+      const onClickCapture = vi.fn();
+      render(
+        <BottomNavigation
+          aria-label="주요 메뉴"
+          items={items}
+          selectedId="feed"
+          onItemSelect={onItemSelect}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onClickCapture={onClickCapture}
+        />,
+      );
+      const nav = drag(screen.getByRole('button', { name: '피드' }), [330]);
+      fireEvent.pointerUp(nav, { pointerId: 1, pointerType: 'touch', clientX: 330 });
+      fireEvent.click(screen.getByRole('button', { name: '피드' }));
+
+      expect(onPointerDown).toHaveBeenCalledTimes(1);
+      expect(onPointerMove).toHaveBeenCalledTimes(1);
+      expect(onPointerUp).toHaveBeenCalledTimes(1);
+      expect(onClickCapture).toHaveBeenCalled();
+      expect(onItemSelect).toHaveBeenCalledTimes(1);
+      expect(onItemSelect).toHaveBeenCalledWith('my');
+    });
+
+    it('다른 손가락의 입력과 종료는 진행 중인 끌기를 방해하지 않는다', () => {
+      mockRect();
+      const onItemSelect = vi.fn();
+      render(
+        <BottomNavigation
+          aria-label="주요 메뉴"
+          items={items}
+          selectedId="feed"
+          onItemSelect={onItemSelect}
+        />,
+      );
+      const nav = drag(screen.getByRole('button', { name: '피드' }), [210]);
+      fireEvent.pointerDown(nav, { pointerId: 2, pointerType: 'touch', clientX: 320 });
+      fireEvent.pointerLeave(nav, { pointerId: 2, pointerType: 'touch', clientX: 320 });
+      fireEvent.pointerUp(nav, { pointerId: 2, pointerType: 'touch', clientX: 320 });
+      fireEvent.pointerUp(nav, { pointerId: 1, pointerType: 'touch', clientX: 210 });
+
+      expect(onItemSelect).toHaveBeenCalledOnce();
+      expect(onItemSelect).toHaveBeenCalledWith('bunch');
+      expect(pillOf(nav)?.style.transform).toBe('translateX(0%)');
+    });
+
+    it('끌기 전에 막대 밖에서 손을 떼어도 다음 끌기를 시작할 수 있다', () => {
+      mockRect();
+      const onItemSelect = vi.fn();
+      render(
+        <BottomNavigation
+          aria-label="주요 메뉴"
+          items={items}
+          selectedId="feed"
+          onItemSelect={onItemSelect}
+        />,
+      );
+      const nav = screen.getByRole('navigation', { name: '주요 메뉴' });
+      fireEvent.pointerDown(nav, { pointerId: 1, pointerType: 'mouse', button: 0, clientX: 20 });
+      fireEvent.pointerLeave(nav, { pointerId: 1, pointerType: 'mouse', clientX: 20 });
+      fireEvent.pointerUp(document.body, { pointerId: 1, pointerType: 'mouse', clientX: 20 });
+
+      fireEvent.pointerDown(nav, { pointerId: 2, pointerType: 'mouse', button: 0, clientX: 20 });
+      fireEvent.pointerMove(nav, { pointerId: 2, pointerType: 'mouse', clientX: 210 });
+      fireEvent.pointerUp(nav, { pointerId: 2, pointerType: 'mouse', clientX: 210 });
+
+      expect(onItemSelect).toHaveBeenCalledOnce();
+      expect(onItemSelect).toHaveBeenCalledWith('bunch');
+    });
+
     it('끄는 동안 알약은 손가락을 따라가지만 도착한 항목이 활성으로 보이고 현재 항목 표시는 그대로다', () => {
       mockRect();
       const marked: BottomNavigationItem[] = ['feed', 'photos', 'bunch', 'my'].map((id) => ({

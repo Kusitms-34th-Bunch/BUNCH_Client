@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react';
 import { ARRIVE_MS, HELD_SCALE, prefersReducedMotion, settlePill } from './pillMotion.internal';
 
 // 탭과 끌기를 구분하는 최소 이동 거리(px)
@@ -59,7 +59,7 @@ export const useBottomNavigationGesture = ({ itemCount, selectedIndex }: Params)
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLElement>) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (press.current || (event.pointerType === 'mouse' && event.button !== 0)) return;
     press.current = { id: event.pointerId, startX: event.clientX };
     setIsSelectedHeld(locate(event.clientX)?.index === selectedIndex);
   };
@@ -82,6 +82,7 @@ export const useBottomNavigationGesture = ({ itemCount, selectedIndex }: Params)
 
   const finishPress = (event: PointerEvent<HTMLElement>, isCommitted: boolean) => {
     const current = press.current;
+    if (!current || current.id !== event.pointerId) return;
     press.current = null;
     const at = locate(event.clientX);
     // 선택 변경 시 effect에서 마무리 모션 처리
@@ -90,7 +91,7 @@ export const useBottomNavigationGesture = ({ itemCount, selectedIndex }: Params)
     setCanSkipLag(hasSelectionChange);
     if ((isSelectedHeld || scrub) && !hasSelectionChange) settlePill(pillRef.current, HELD_SCALE);
     setIsSelectedHeld(false);
-    if (!current || current.id !== event.pointerId || !scrub) return;
+    if (!scrub) return;
     setScrub(null);
     if (hasSelectionChange && at) {
       listRef.current?.children[at.index]?.querySelector<HTMLElement>('button, a')?.click();
@@ -114,10 +115,12 @@ export const useBottomNavigationGesture = ({ itemCount, selectedIndex }: Params)
       onPointerMove: handlePointerMove,
       onPointerUp: (event: PointerEvent<HTMLElement>) => finishPress(event, true),
       onPointerCancel: (event: PointerEvent<HTMLElement>) => finishPress(event, false),
-      onPointerLeave: () => {
-        if (!scrub) setIsSelectedHeld(false);
+      onPointerLeave: (event: PointerEvent<HTMLElement>) => {
+        if (scrub || press.current?.id !== event.pointerId) return;
+        press.current = null;
+        setIsSelectedHeld(false);
       },
-      onClickCapture: (event: PointerEvent<HTMLElement>) => {
+      onClickCapture: (event: MouseEvent<HTMLElement>) => {
         if (!canSuppressClick.current) return;
         event.stopPropagation();
         event.preventDefault();
