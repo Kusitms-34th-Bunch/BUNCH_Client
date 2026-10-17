@@ -19,3 +19,4 @@
 - [005: 작업은 develop으로 모으고 main은 프로덕션용으로 둔다](./records/005-branch-strategy.md)
 - [006: 웹 오류 수집에 Sentry를 사용한다](./records/006-web-sentry-error-monitoring.md)
 - [007: 로그인·온보딩 API 계약 확정 후 MSW를 도입한다](./records/007-msw-adoption-after-api-contract.md)
+- [008: Toast는 sonner에 알림 동작을 맡기고 모양은 디자인 시스템이 입힌다](./records/008-toast-sonner.md)

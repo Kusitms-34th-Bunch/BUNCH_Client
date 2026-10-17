@@ -14,16 +14,16 @@ body:
       label: 작업 타입
       description: 브랜치 이름과 이슈 제목에 사용할 작업 타입을 선택해주세요.
       options:
-        - ✨ Feature (feat) - 새 기능
-        - 🐛 BugFix (fix) - 버그 수정
-        - 🚨 Hotfix (hotfix) - 긴급 수정
-        - ♻️ Refactor (refactor) - 코드 구조 개선
-        - 🗑️ Remove (remove) - 코드 및 파일 삭제
-        - 🚚 Rename (rename) - 파일 및 폴더 이름 변경
-        - 🎨 Style (style) - 스타일 작업
-        - ✅ Test (test) - 테스트 추가 및 수정
-        - 📝 Docs (docs) - 문서 수정
-        - 🔧 Chore (chore) - 설정 및 기타 작업
+        - Feature (feat) - 새 기능
+        - BugFix (fix) - 버그 수정
+        - Hotfix (hotfix) - 긴급 수정
+        - Refactor (refactor) - 코드 구조 개선
+        - Remove (remove) - 코드 및 파일 삭제
+        - Rename (rename) - 파일 및 폴더 이름 변경
+        - Style (style) - 스타일 작업
+        - Test (test) - 테스트 추가 및 수정
+        - Docs (docs) - 문서 수정
+        - Chore (chore) - 설정 및 기타 작업
     validations:
       required: true
 
