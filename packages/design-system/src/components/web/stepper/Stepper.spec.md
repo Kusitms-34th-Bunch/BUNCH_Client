@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- 소유 경계: design-system `core`
+- 소유 경계: design-system `web`(`@app/design-system/web`으로 import)
 - Status: 구현됨(Storybook 렌더를 Figma 스크린샷과 눈으로 대조함. 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `StepperItem`(node `754:5617`)과 `PageHeader` 안의 `Stepper`(node `770:2664`). Figma의 `StepperItem`은 코드에서 `Stepper` 내부 막대로만 쓰고 따로 export하지 않는다.
 

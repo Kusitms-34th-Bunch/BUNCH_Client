@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Stepper } from './Stepper';
 
 const meta = {
-  title: 'Components/Stepper',
+  title: 'Web/Stepper',
   component: Stepper,
   args: { total: 3, current: 1 },
   argTypes: {

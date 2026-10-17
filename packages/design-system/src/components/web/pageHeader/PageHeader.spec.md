@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- 소유 경계: design-system `core`
+- 소유 경계: design-system `web`(`@app/design-system/web`으로 import)
 - Status: 구현됨(Storybook 렌더를 Figma 스크린샷과 눈으로 대조함. 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `PageHeader`(node `770:2664`). Figma의 progress·description boolean 조합 4가지를 slot과 선택 prop으로 표현한다.
 

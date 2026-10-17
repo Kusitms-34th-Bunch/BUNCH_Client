@@ -6,7 +6,7 @@ const title = '함께 기록할 멤버를 초대해보세요';
 const description = '초대 링크를 보내면 친구가 번치에 참여할 수 있어요.';
 
 const meta = {
-  title: 'Components/PageHeader',
+  title: 'Web/PageHeader',
   component: PageHeader,
   args: { title, description, progress: <Stepper total={3} current={1} /> },
   decorators: [
