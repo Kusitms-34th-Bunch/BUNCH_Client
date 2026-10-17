@@ -41,7 +41,7 @@ const meta = {
   argTypes: {
     selectedId: { control: 'inline-radio', options: items.map((item) => item.id) },
   },
-  decorators: [(Story) => <div className="bg-surface-secondary p-s8 w-[375px]">{Story()}</div>],
+  decorators: [(Story) => <div className="bg-surface-secondary p-s8 w-93.75">{Story()}</div>],
 } satisfies Meta<typeof BottomNavigation>;
 
 export default meta;
@@ -81,7 +81,7 @@ export const LongLabel: Story = {
 
 /** 좁은 폭에서 알약의 항목 폭 축소 확인 */
 export const Narrow: Story = {
-  decorators: [(Story) => <div className="w-[280px]">{Story()}</div>],
+  decorators: [(Story) => <div className="w-70">{Story()}</div>],
 };
 
 // 토스·배민처럼 밝은 화면(흰 카드, 글자, 파란 버튼) 위에서의 모습을 보기 위한 배경
@@ -112,9 +112,9 @@ export const Glass: Story = {
   render: (args) => <InteractiveExample {...args} />,
   decorators: [
     (Story) => (
-      <div className="relative h-[480px] w-full overflow-y-auto">
+      <div className="relative h-120 w-full overflow-y-auto">
         <ContentBackground />
-        <div className="bottom-s6 px-s4 sticky -mt-[64px]">
+        <div className="bottom-s6 px-s4 sticky -mt-16">
           <Story />
         </div>
       </div>
