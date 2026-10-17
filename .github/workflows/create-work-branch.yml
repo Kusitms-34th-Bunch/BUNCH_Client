@@ -91,7 +91,7 @@ jobs:
             const { BRANCH_NAME, BASE_BRANCH, CREATED } = process.env;
 
             const body = [
-              CREATED === 'true' ? '작업 브랜치를 만들었습니다.' : '작업 브랜치가 이미 있습니다.',
+              CREATED === 'true' ? '작업 브랜치를 생성했습니다.' : '작업 브랜치가 이미 있습니다.',
               '',
               `- 브랜치: \`${BRANCH_NAME}\``,
               `- 기준: \`${BASE_BRANCH}\``,
@@ -102,8 +102,7 @@ jobs:
               `git switch ${BRANCH_NAME}`,
               '```',
               '',
-              '단일 작업은 위 feature 브랜치에서 진행합니다. 다른 작업의 변경이나 실행 중 세션을 보존해야 하면 이 브랜치를 별도 worktree에 연결합니다.',
-              '변경을 자동으로 옮기거나 stash하지 않습니다. 작업 위치와 병렬 세션 기준은 `docs/workflows/development.md`의 "worktree를 만드는 기준"을 따릅니다.',
+              '단일 작업은 이 브랜치에서 진행합니다. 다른 작업과 분리해야 하면 별도 worktree에 연결하세요(`docs/workflows/development.md`의 "worktree를 만드는 기준").',
             ].join('\n');
 
             await github.rest.issues.createComment({
