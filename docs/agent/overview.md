@@ -35,6 +35,18 @@ Skill은 "page 구현", "API 연동", "PR 준비"처럼 반복되는 작업 절�
 
 reviewer, verifier, debugger, api-contract-reviewer, ui-accessibility-reviewer, route-reviewer, e2e-planner는 조사·검토만 하고 파일을 고치지 않는다. 일반 구현은 메인 세션이 담당한다.
 
+### agent별 모델
+
+판단이 가벼운 역할만 가벼운 모델로 낮추고, 리뷰·조사 역할은 모델을 지정하지 않아 호출한 세션의 모델을 이어받는다. 지정 위치는 Claude Code가 `.claude/agents/*.md` frontmatter의 `model`, Codex가 `.codex/agents/*.toml`의 `model`이다. 두 도구의 모델 이름이 달라 같은 값을 쓰지 않는다.
+
+| 역할                                                                          | Claude Code | Codex        | 이유                                           |
+| ----------------------------------------------------------------------------- | ----------- | ------------ | ---------------------------------------------- |
+| verifier                                                                      | `haiku`     | `gpt-6-luna` | 명령을 실행하고 결과를 보고하는 역할           |
+| e2e-planner, route-reviewer, api-contract-reviewer, ui-accessibility-reviewer | `sonnet`    | 지정 안 함   | 범위가 좁고 문서화된 기준으로 검토·설계한다    |
+| reviewer, debugger                                                            | 지정 안 함  | 지정 안 함   | 최종 게이트·원인 조사라 품질이 모델에 좌우된다 |
+
+Codex는 기본 모델이 이미 중간 등급이라 verifier 외에는 지정하지 않는다. Codex는 agent별 sandbox를 따로 줄 수 없고 부모 설정을 상속한다. 모델 이름은 설치된 CLI가 제공하는 목록(`codex debug models`)에 있어야 한다.
+
 route·API 계약·UI 접근성에 영향을 주는 변경은 완료 보고 전에 해당 전용 agent를 **최소 한 번 호출해야 한다** — 사용자가 화면을 직접 확인해준 것으로는 대체되지 않는다. 정확한 호출 기준은 `docs/agent/bootstrap.md`의 "필수 호출 기준"을 확인한다.
 
 ## Hook: 자동으로 걸리는 안전장치
