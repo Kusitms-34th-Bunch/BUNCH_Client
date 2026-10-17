@@ -140,3 +140,43 @@ jobs:
                 labels: [labelName],
               });
             }
+
+  notify:
+    name: Notify
+    needs: metadata
+    # metadata가 건너뛰어지거나 실패해도 알림은 보낸다. 제목은 이벤트 값이 아니라 현재 값을 읽는다.
+    if: ${{ !cancelled() && contains(fromJSON('["opened","reopened","ready_for_review"]'), github.event.action) }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_ACTION: ${{ github.event.action }}
+
+    steps:
+      - name: Send notification
+        shell: bash
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo 'DISCORD_WEBHOOK_URL is not configured; skipping.'
+            exit 0
+          fi
+
+          pr=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")
+
+          if [ "$PR_ACTION" = 'ready_for_review' ]; then
+            status='👀 PR ready for review'
+          else
+            status='🆕 PR opened'
+          fi
+
+          jq -n \
+            --arg status "$status" \
+            --argjson pr "$pr" \
+            '{content: "\($status): [#\($pr.number) \($pr.title)](\($pr.html_url)) by @\($pr.user.login)"}' |
+            curl --fail-with-body --connect-timeout 10 --max-time 30 --request POST "$DISCORD_WEBHOOK_URL" \
+              --header 'Content-Type: application/json' \
+              --data @-

@@ -126,4 +126,4 @@ PR 제목은 `[Type] 제목`(자동 설정), 커밋 메시지는 `type: subject`
 
 `create-work-branch.yml`은 이슈 제목·라벨·담당자 지정과 브랜치 생성·안내가 성공한 뒤 이슈 생성 알림을 보낸다. 제목과 담당자는 GitHub의 이슈 수정 응답을 사용하고 링크·작성자를 함께 표시한다. 잘못된 폼이나 자동화 실패 시 알림을 보내지 않는다. 이슈 본문은 보내지 않고 Discord 멘션은 비활성화한다.
 
-`discord-notify.yml`은 PR 열림·재오픈·ready for review·merge를 알린다. PR merge는 배포 완료를 뜻하지 않는다. 두 workflow 모두 Discord webhook(`secrets.DISCORD_WEBHOOK_URL`)을 사용하며, webhook이 설정되지 않으면 전송을 건너뛴다.
+PR 열림·재오픈·ready for review 알림은 `pr-metadata.yml`의 notify job이 metadata 처리(제목 동기화·라벨) 뒤에 보내며, 이벤트 값이 아니라 현재 PR 제목을 읽는다. PR merge 알림은 `discord-notify.yml`이 보낸다. PR merge는 배포 완료를 뜻하지 않는다. 두 workflow 모두 Discord webhook(`secrets.DISCORD_WEBHOOK_URL`)을 사용하며, webhook이 설정되지 않으면 전송을 건너뛴다.
