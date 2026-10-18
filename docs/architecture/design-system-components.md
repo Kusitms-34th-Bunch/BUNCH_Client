@@ -36,7 +36,7 @@
 - Figma에 컴포넌트로 정의된 UI(버튼, 입력, 헤더, 다이얼로그처럼 모양과 상태·접근성 계약을 가진 부품)는 사용처 수와 관계없이 디자인 시스템에 둔다. 두 곳 이상 쓰일 때까지 기다리지 않는다.
 - 패키지 안은 두 구역으로 나눈다. 폴더 이름은 그 UI를 쓰는 앱 폴더 이름을 따른다.
   - `src/components/core/`: 모든 앱(web·admin)이 쓰는 기본 부품. 제품 문구·route·데이터를 모른다. 공개 주소는 `@app/design-system`이다.
-  - `src/components/web/`: `apps/web` 전용 UI(아직 없음. 하단 내비게이션처럼 사용자 앱에서만 의미가 있는 UI가 생기면 만든다). BUNCH 사용자 앱의 문구·모양을 가질 수 있다. 공개 주소는 `@app/design-system/web`이고 루트 barrel에는 포함하지 않는다.
+  - `src/components/web/`: `apps/web` 전용 UI(예: 하단 내비게이션 `BottomNavigation`). BUNCH 사용자 앱의 문구·모양을 가질 수 있다. 공개 주소는 `@app/design-system/web`이고 루트 barrel에는 포함하지 않는다.
 - 구역 선택 질문은 하나다. "BUNCH 사용자 앱에서만 의미가 있는가?" 예면 `web`, 아니면 `core`. `web`에서 어드민도 필요해지면 제품 문구를 props로 빼고 `core`로 옮긴다.
 - 의존 방향은 한쪽이다. `web`은 `core`를 쓸 수 있고, `core`는 `web`을 import하지 않는다(ESLint `no-restricted-imports`로 검사). `apps/admin`은 `@app/design-system/web`을 import하지 않는다(같은 규칙).
 - 두 구역 모두 route, domain data, API, logging을 직접 알지 않는다. 문구·항목·링크·핸들러는 props, slot, callback으로 받는다(예: 하단 내비게이션은 `items`와 현재 항목을 받고 링크를 어떻게 그릴지는 호출자가 넘긴다).
@@ -47,7 +47,7 @@
 
 ## 생성 구조
 
-새 컴포넌트는 반드시 `yarn gen:ds-component <PascalCase 이름>`으로 생성하고 구역(`core`/`web`)을 고른다. 직접 만든 폴더는 `yarn check:generated`의 구조 검사(`turbo/workflows/check-ds-components.mjs`)가 CI에서 실패시킨다. 폴더마다 컴포넌트·test·story·`index.ts`가 모두 있어야 한다. `src/icons/generated/`의 아이콘은 SVG asset 파이프라인으로 생성하며 `docs/architecture/design-system-icons.md`를 따른다.
+새 컴포넌트는 반드시 `yarn gen:ds-component <PascalCase 이름>`으로 생성하고 구역(`core`/`web`)을 고른다. 직접 만든 폴더는 `yarn check:generated`의 구조 검사(`turbo/workflows/check-ds-components.mjs`)가 CI에서 실패시킨다. 폴더마다 컴포넌트·test·story·`index.ts`가 모두 있어야 한다. 컴포넌트 안에서만 쓰는 hook·헬퍼 파일은 `<이름>.internal.ts`로 만들면 `yarn gen:index`가 barrel에서 빼서 공개 API가 되지 않는다. 이름이 `use`로 시작하는 hook 파일에 `.internal`이 없으면 구조 검사가 실패한다(헬퍼 파일은 검사하지 않으니 직접 지킨다). `src/icons/generated/`의 아이콘은 SVG asset 파이프라인으로 생성하며 `docs/architecture/design-system-icons.md`를 따른다.
 
 ```text
 packages/design-system/src/components/{core|web}/{component-name}/
