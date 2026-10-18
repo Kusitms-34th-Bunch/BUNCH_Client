@@ -8,8 +8,20 @@ import * as icons from './generated';
 afterEach(cleanup);
 
 const dynamicIcons = Object.fromEntries(
-  Object.entries(icons).filter(([name]) => !/(Small|Medium|Large)Icon$/.test(name)),
+  Object.entries(icons).filter(
+    ([name]) => !/(Small|Medium|Large)Icon$/.test(name) && !name.startsWith('Graphic'),
+  ),
 );
+const graphicIcons = Object.fromEntries(
+  Object.entries(icons).filter(([name]) => name.startsWith('Graphic')),
+);
+const GRAPHIC_SIZES: Record<string, number> = {
+  GraphicGlobeIcon: 34,
+  GraphicLockIcon: 34,
+  GraphicChatIcon: 40,
+  GraphicEditIcon: 40,
+  GraphicPeopleIcon: 40,
+};
 
 const SIZES: [IconSize, number][] = [
   ['sm', 16],
@@ -40,7 +52,7 @@ describe('Icons', () => {
   });
 
   it('fixed exports preserve the exact geometry and accessibility of every size', () => {
-    expect(Object.keys(icons)).toHaveLength(124);
+    expect(Object.keys(icons)).toHaveLength(129);
     for (const [name, Icon] of Object.entries(dynamicIcons)) {
       for (const [size, label] of [
         ['sm', 'Small'],
@@ -57,6 +69,28 @@ describe('Icons', () => {
         fixed.unmount();
       }
     }
+  });
+
+  it('그래픽 아이콘 5종이 Figma 크기(34·40px)와 원본 색, 장식 기본값을 갖는다', () => {
+    expect(Object.keys(graphicIcons).sort()).toEqual(Object.keys(GRAPHIC_SIZES).sort());
+    for (const [name, Icon] of Object.entries(graphicIcons)) {
+      const pixels = GRAPHIC_SIZES[name];
+      const { container, unmount } = render(<Icon />);
+      const svg = container.querySelector('svg');
+      expect(svg?.getAttribute('width')).toBe(String(pixels));
+      expect(svg?.getAttribute('height')).toBe(String(pixels));
+      expect(svg?.getAttribute('viewBox')).toBe(`0 0 ${pixels} ${pixels}`);
+      expect(svg?.getAttribute('aria-hidden')).toBe('true');
+      expect(svg?.getAttribute('focusable')).toBe('false');
+      expect(container.innerHTML).toContain('#');
+      expect(container.innerHTML).not.toContain('currentColor');
+      unmount();
+    }
+  });
+
+  it('그래픽 아이콘에 이름을 주면 img로 노출한다', () => {
+    render(<icons.GraphicLockIcon aria-label="비공개" />);
+    expect(screen.getByRole('img', { name: '비공개' })).toBeTruthy();
   });
 
   it('size를 주지 않으면 md(20px)다', () => {
