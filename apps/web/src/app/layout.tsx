@@ -13,7 +13,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ko">
+    // 네이티브 쉘이 hydration 전에 html.style에 기기별 Safe Area를 주입함
+    <html lang="ko" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );
