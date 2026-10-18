@@ -48,7 +48,8 @@ export const Stepper = ({
           key={index}
           aria-hidden="true"
           className={cn(
-            'h-s2 min-w-px flex-1 rounded-full',
+            // 화면설계서(Smart Animate, ease-out 300ms): `current`가 바뀌면 막대 색이 서서히 바뀜
+            'h-s2 min-w-px flex-1 rounded-full transition-colors duration-300 ease-out motion-reduce:transition-none',
             index === step - 1 ? 'bg-surface-brand-subtle-2' : 'bg-surface-disabled',
           )}
         />

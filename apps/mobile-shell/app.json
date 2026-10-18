@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile-shell",
+    "name": "Bunch",
     "slug": "mobile-shell",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,7 +17,8 @@
       ]
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kyeongjooni.mobile-shell"
     },
     "android": {
       "adaptiveIcon": {

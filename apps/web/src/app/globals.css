@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import '@app/design-system/tokens.css';
+/* 앱 밖 패키지라 자동 감지되지 않아 디자인 시스템 컴포넌트의 Tailwind class 스캔 등록 */
+@source '../../../../packages/design-system/src';
 
 :root {
   --app-max-width: 430px;

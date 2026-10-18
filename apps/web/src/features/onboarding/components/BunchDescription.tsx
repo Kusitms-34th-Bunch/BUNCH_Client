@@ -1,0 +1,73 @@
+'use client';
+
+import { Badge, Button, LabeledTextArea } from '@app/design-system';
+import { PageHeader } from '@app/design-system/web';
+import { useRouter } from 'next/navigation';
+import { PageShell } from '@/shared/components/layout/PageShell';
+import { ONBOARDING_PATHS } from '../constants/paths';
+import { useCreateBunchDraft } from '../model/createBunchDraftContext';
+
+const DESCRIPTION_MAX_LENGTH = 50;
+const TIPS = [
+  '만나면 웃음이 끊이지 않는 우리',
+  '맛집 탐방에 진심인 사람들',
+  '소소한 일상도 특별하게 기록하는 사이',
+];
+
+/** 번치 만들기 2단계: 번치를 한 줄로 소개하는 화면 */
+export function BunchDescription() {
+  const router = useRouter();
+  const { description, setDescription } = useCreateBunchDraft();
+  const canGoNext = description.trim().length > 0;
+
+  return (
+    <PageShell
+      bottom={
+        <div className="gap-s5 pt-s5 px-padding-p8 flex">
+          <Button variant="secondary" className="w-22 shrink-0" onClick={() => router.back()}>
+            이전
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={!canGoNext}
+            onClick={() => router.push(ONBOARDING_PATHS.createBunchMood)}
+          >
+            다음
+          </Button>
+        </div>
+      }
+    >
+      <PageHeader title="번치를 소개해주세요" className="pt-s13" />
+      <div className="pt-s15 px-padding-p8">
+        <LabeledTextArea
+          label="한 줄 소개"
+          placeholder="우리 번치를 간단하게 소개해주세요"
+          value={description}
+          maxLength={DESCRIPTION_MAX_LENGTH}
+          onChange={(event) => setDescription(event.target.value.replace(/[\r\n]+/g, ' '))}
+          // 한 줄 소개라 Enter로 줄을 바꾸지 않음(붙여넣은 줄바꿈은 공백으로 처리)
+          enterKeyHint="done"
+          onKeyDown={(event) => {
+            // 한글 조합 확정 Enter는 막지 않음
+            if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.preventDefault();
+          }}
+        />
+      </div>
+      <section className="pt-s15 px-padding-p8 gap-s4 flex flex-col">
+        <div className="gap-s3 flex items-center">
+          <Badge size="sm">TIP</Badge>
+          <h2 className="typography-body-2-meduim text-text-primary">이런 소개는 어때요?</h2>
+        </div>
+        {/* 목록 들여쓰기 19.5px은 토큰에 없어 Figma 값 직접 지정 */}
+        {/* list-style none인 ul은 Safari에서 목록으로 읽히지 않을 수 있어 list-disc를 ul에 지정 */}
+        <ul className="bg-surface-secondary rounded-r4 p-s8 gap-s2 typography-body-3-regular text-text-tertiary flex list-disc flex-col">
+          {TIPS.map((tip) => (
+            <li key={tip} className="ms-[19.5px]">
+              {tip}
+            </li>
+          ))}
+        </ul>
+      </section>
+    </PageShell>
+  );
+}

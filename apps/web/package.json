@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -23,6 +23,7 @@
     "@webview-bridge/web": "^1.8.0",
     "ky": "catalog:",
     "next": "^16.2.10",
+    "overlay-kit": "^1.9.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "server-only": "^0.0.1",

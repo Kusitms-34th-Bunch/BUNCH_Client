@@ -183,6 +183,7 @@ __metadata:
     happy-dom: "catalog:"
     ky: "catalog:"
     next: "npm:^16.2.10"
+    overlay-kit: "npm:^1.9.0"
     react: "catalog:"
     react-dom: "catalog:"
     server-only: "npm:^0.0.1"
@@ -7859,6 +7860,15 @@ __metadata:
     type-check: "npm:^0.4.0"
     word-wrap: "npm:^1.2.5"
   checksum: 10c0/4afb687a059ee65b61df74dfe87d8d6815cd6883cb8b3d5883a910df72d0f5d029821f37025e4bccf4048873dbdb09acc6d303d27b8f76b1a80dd5a7d5334675
+  languageName: node
+  linkType: hard
+
+"overlay-kit@npm:^1.9.0":
+  version: 1.9.0
+  resolution: "overlay-kit@npm:1.9.0"
+  peerDependencies:
+    react: ^16.8 || ^17 || ^18 || ^19
+  checksum: 10c0/b32a6f8648a075598ee215775b541d3e144c075a233ecc6b1630bee33d72fa39e12d1204919a7f1ea575daf5c1e467d41cfbd8eb3369a5734d141d0f07d5ca2b
   languageName: node
   linkType: hard
 

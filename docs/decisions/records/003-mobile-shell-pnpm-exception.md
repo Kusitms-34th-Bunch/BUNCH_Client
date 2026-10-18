@@ -25,7 +25,7 @@ Expo/React Native의 Metro 번들러는 Yarn PnP의 모듈 해석 방식을 지�
 ## 영향
 
 - `apps/mobile-shell` 설치·빌드는 그 폴더 안에서 `pnpm install`로 한다. root `yarn install`은 이 워크스페이스를 건드리지 않는다.
-- `apps/mobile-shell`에 네이티브 모듈을 추가할 때는 `pnpm add`가 아니라 `npx expo install <package>`를 쓴다.
+- `apps/mobile-shell`에 네이티브 모듈을 추가할 때는 `pnpm add`가 아니라 `pnpm exec expo install <package> --pnpm`을 쓴다.
 - `.claude/hooks/guard-rules.mjs`의 "Yarn만 쓴다" 차단 규칙은 명령어에 `apps/mobile-shell` 경로가 포함된 경우에만 pnpm·npx를 예외로 허용한다.
 - `packages/bridge`를 수정하면 `apps/mobile-shell`에서 `pnpm install`을 다시 실행해 `file:` 참조를 갱신해야 한다 — 자동으로 반영되지 않는다.
 - `.agents/scripts/check-agent-docs.mjs`의 workspace 목록에 `packages/bridge`를 추가했다(Yarn workspace 멤버이므로). `apps/mobile-shell`은 Yarn workspace가 아니라서 이 목록에 넣지 않았다.

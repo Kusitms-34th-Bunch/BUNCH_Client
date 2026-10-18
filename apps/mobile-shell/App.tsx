@@ -28,13 +28,15 @@ import {
 } from './src/native-tab-bar/native-tab-bar';
 import { nativeTabBarStore } from './src/native-tab-bar/native-tab-bar-store';
 import { buildSafeAreaScript } from './src/safe-area-script';
+import { resolveWebUrl } from './src/web-url';
 
-// .env.local 또는 EAS 환경변수로 웹 배포 주소 설정
-const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL;
-
-if (!WEB_URL) {
-  throw new Error('EXPO_PUBLIC_WEB_URL이 설정되지 않았다. .env.local을 확인한다.');
-}
+// Metro는 `process.env.EXPO_PUBLIC_*`를 이렇게 직접 쓴 곳만 번들에 넣어 주므로 변수·객체로 바꿔 접근하지 않는다
+const WEB_URL = resolveWebUrl(
+  __DEV__,
+  // Release 번들에 개발 주소가 인라인되지 않게 __DEV__로 감싼다
+  __DEV__ ? process.env.EXPO_PUBLIC_DEV_WEB_URL : undefined,
+  process.env.EXPO_PUBLIC_WEB_URL,
+);
 
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({

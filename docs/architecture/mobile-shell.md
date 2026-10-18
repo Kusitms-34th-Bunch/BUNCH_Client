@@ -44,12 +44,19 @@ apps/mobile-shell/
 Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/components/layout/AppFrame.tsx`)이 CSS 변수 `--safe-area-top`·`-bottom`·`-left`·`-right`로 한 번만 적용한다. 변수는 `apps/web/src/app/globals.css`에 있고, 값은 `--native-safe-area-*`가 있으면 그 값을, 없으면 `env(safe-area-inset-*)`를 쓴다. 일반 브라우저와 네이티브 쉘이 같은 코드로 동작하고, 두 값이 겹쳐 더해지지 않는다. 루트 layout의 `viewport-fit=cover`가 있어야 iOS에서 `env()`가 실제 값을 돌려준다.
 
 - 네이티브 쉘은 `react-native-safe-area-context`의 `useSafeAreaInsets()`로 측정한 값을 `src/safe-area-script.ts`의 `buildSafeAreaScript`로 `--native-safe-area-*`에 넣는다. 첫 로드는 `injectedJavaScriptBeforeContentLoaded`가, 이미 열린 페이지에서 값이 바뀌면 `injectJavaScript`가 맡는다.
+- 첫 로드의 주입은 hydration 전에 `<html>`의 `style`을 변경한다. 서버가 알 수 없는 기기별 값이므로 웹 루트 layout의 `<html>`에만 `suppressHydrationWarning`을 적용한다. 하위 화면의 hydration 경고는 억제하지 않는다.
 - WebView의 `contentInsetAdjustmentBehavior`는 `"never"`로 둔다. 켜 두면 WebView가 자기 inset을 더해 같은 여백이 두 번 들어간다. 이 prop은 iOS 전용이라 Android에서는 적용되지 않으며, Android는 실기기로 따로 확인한다.
 - 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
 - 앱은 `app.json`의 `orientation: "portrait"`로 세로에 고정되어 있어, iPhone 기준으로 앱 안에서는 가로 모드가 생기지 않는다(`ios.supportsTablet: true`인 iPad에서도 세로로 고정되는지는 확인하지 못했다). 일반 브라우저의 가로 모드를 위해 좌우 Safe Area를 적용하고, `PageShell`의 본문은 최소 높이(8rem)를 가진다. header·bottom·Safe Area를 뺀 높이가 그보다 작으면 본문 대신 틀 전체가 넘쳐 페이지가 스크롤된다. 이때 하단 영역(CTA)은 문서를 스크롤해야 보이고, main 위에서 스크롤하면 `overscroll-y-contain` 때문에 문서로 이어지지 않아 닿기 어려울 수 있다. 하단을 항상 보이게 하는 sticky 방식과 문서 스크롤 하나로 통일하는 방식은 이득이 불분명하거나 범위가 커서 택하지 않았고, 이 한계는 실기기와 낮은 화면에서 확인한 뒤 다시 정한다.
 - 확인한 것: 브라우저에서 네이티브 값이 한 번만 적용되고 가로 모드·낮은 화면의 최소 높이 정책이 동작하는 것, 네이티브의 TypeScript 검사·iOS JS 번들 생성·값 변환 테스트. 확인하지 못한 것: iOS·Android 실기기와 시뮬레이터에서 실제 값이 들어가는지, 마운트 뒤 값이 바뀐 상태에서 새 문서를 로드할 때 `injectedJavaScriptBeforeContentLoaded`의 새 값이 쓰이는지, Android 시스템 바(edge-to-edge) 처리, 소프트 키보드와 `dvh`. 이 부분은 실기기 확인 전까지 통과로 보지 않는다.
 
-앱 식별자(iOS `bundleIdentifier`, Android `package`)는 아직 없다. 실기기 확인과 출시 준비 시점에 정한다.
+현재 iOS `bundleIdentifier`는 `com.kyeongjooni.mobile-shell`이고 Android `package`는 아직 없다. 출시용 식별자는 스토어 등록 전에 확정한다.
+
+## 실행과 테스트
+
+시뮬레이터·실기기의 최초 설치, 다음 실행, Expo Go·개발 앱 구분, Xcode·EAS 빌드와 확인 항목은
+[모바일 앱 실행과 테스트](../workflows/mobile-testing.md)를 따른다.
+실행 절차는 해당 문서에서 관리하며, 이 문서는 구조와 런타임 계약을 다룬다.
 
 ## 권한과 출시 전 확인
 
@@ -68,7 +75,7 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - root `package.json`의 `workspaces`에서 `apps/mobile-shell`을 명시적으로 제외한다. Yarn install·workspace 명령의 대상이 아니다.
 - 루트 `.yarnrc.yml`의 `pnpIgnorePatterns`도 `./apps/mobile-shell/**`를 제외한다. VS Code가 루트 Yarn TypeScript SDK를 사용해도 이 폴더의 의존성은 자체 `node_modules`에서 찾는다. 설정 변경 후에는 TypeScript 서버를 재시작한다.
 - 의존성 설치·관리는 `apps/mobile-shell` 안에서 `pnpm install`로 따로 한다.
-- 네이티브 모듈 추가는 `pnpm add`가 아니라 `npx expo install <package>`를 쓴다 — 설치된 Expo SDK와 호환되는 버전을 Expo가 직접 고른다.
+- 네이티브 모듈 추가는 `pnpm exec expo install <package> --pnpm`을 쓴다. 설치된 Expo SDK와 호환되는 버전을 Expo가 직접 고른다.
 
 ## 네이티브 글라스 탭 막대 (iOS 26 이상)
 
@@ -126,7 +133,7 @@ packages/bridge/
 
 - 네이티브 쉘은 `@sentry/react-native`로 조직 `bunch-01`의 `bunch-mobile` 프로젝트에 오류를 보낸다. WebView 안의 웹 오류는 기존 웹 Sentry 프로젝트가 수집한다.
 - `index.ts`에서 앱을 읽기 전에 SDK를 초기화하고, `App`을 `Sentry.wrap`으로 감싼다. 개발 모드에서는 전송을 끄며, 배포 빌드와 `EXPO_PUBLIC_SENTRY_DSN`이 있을 때만 수집한다.
-- `apps/mobile-shell/.env.local`에 `EXPO_PUBLIC_WEB_URL`, `EXPO_PUBLIC_SENTRY_DSN`을 설정한다. 소스맵·네이티브 심볼 업로드용 `SENTRY_AUTH_TOKEN`은 빌드 전용 비밀값이며 `EXPO_PUBLIC_` 접두사를 붙이지 않는다. EAS 빌드에는 별도로 비밀 환경변수를 설정해야 한다.
+- `apps/mobile-shell/.env.local`에 `EXPO_PUBLIC_DEV_WEB_URL`(개발), `EXPO_PUBLIC_WEB_URL`(Release), `EXPO_PUBLIC_SENTRY_DSN`을 설정한다. 소스맵·네이티브 심볼 업로드용 `SENTRY_AUTH_TOKEN`은 빌드 전용 비밀값이며 `EXPO_PUBLIC_` 접두사를 붙이지 않는다. EAS 빌드에는 별도로 비밀 환경변수를 설정해야 한다.
 - `metro.config.js`는 Sentry Debug ID를 번들·소스맵에 추가하고, `app.json`의 Sentry Expo config plugin은 네이티브 빌드 업로드를 구성한다. `ios/`, `android/` 생성물은 저장소에 추가하지 않는다.
 - 성능 추적·Replay·로그·세션 추적과 breadcrumb를 끈다. JavaScript 이벤트는 사용자·요청·부가 정보를 제거하고 오류 설명·타입·스택을 남긴다. 오류 설명의 URL·이메일·토큰·비밀번호·한국 휴대전화 패턴은 웹과 동일하게 마스킹한다. 패턴 밖 개인정보를 탐지하지 못하므로 오류 메시지에 사용자 원문을 넣지 않는다. **네이티브 크래시는 JavaScript `beforeSend`를 거치지 않는다.** 네이티브 이벤트의 전체 개인정보 제거를 보장하지 않으며 출시 전에 Sentry 서버 측 데이터 정제와 실제 크래시 내용을 점검한다.
 - Expo Go에서는 네이티브 크래시 수집을 검증할 수 없다. config plugin 적용 후 개발/배포용 네이티브 앱을 다시 빌드해야 한다. 현재 전송 조건에서는 배포 모드 빌드로 수신을 확인한다.
@@ -134,7 +141,7 @@ packages/bridge/
 
 ## 검증 명령
 
-- `apps/mobile-shell`: `pnpm exec tsc --noEmit`, `npx expo lint`
+- `apps/mobile-shell`: `pnpm exec tsc --noEmit`, `pnpm test`. lint의 현재 제약은 [모바일 앱 실행과 테스트](../workflows/mobile-testing.md)를 확인한다.
 - Sentry JavaScript 이벤트 정제: `apps/mobile-shell`에서 `pnpm test`
 - `packages/bridge`: `yarn workspace @app/bridge typecheck`, `lint`
-- WebView가 가리키는 주소는 `EXPO_PUBLIC_WEB_URL` 환경변수로 관리한다. `apps/mobile-shell/.env.example`을 확인한다.
+- WebView가 가리키는 주소는 개발 시 `EXPO_PUBLIC_DEV_WEB_URL`, Release에서 `EXPO_PUBLIC_WEB_URL`을 자동 선택한다. `apps/mobile-shell/.env.example`을 확인한다.
