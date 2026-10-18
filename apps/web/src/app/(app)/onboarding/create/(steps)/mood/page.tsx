@@ -1,4 +1,4 @@
-import { BunchMood } from '@/features/onboarding/components/BunchMood';
+import { BunchMood } from '@/features/onboarding/components';
 
 export default function CreateBunchMoodPage() {
   return <BunchMood />;
