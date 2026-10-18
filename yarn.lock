@@ -167,6 +167,7 @@ __metadata:
     "@app/lint-config": "workspace:*"
     "@app/ts-config": "workspace:*"
     "@sentry/nextjs": "npm:^11.7.0"
+    "@ssgoi/react": "npm:^7.4.1"
     "@tailwindcss/postcss": "npm:^4.3.3"
     "@tanstack/react-query": "catalog:"
     "@testing-library/dom": "catalog:"
@@ -230,7 +231,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/core@npm:^7.21.3, @babel/core@npm:^7.23.7, @babel/core@npm:^7.24.4, @babel/core@npm:^7.28.0, @babel/core@npm:^7.28.5":
+"@babel/core@npm:^7.21.3, @babel/core@npm:^7.23.7, @babel/core@npm:^7.24.4, @babel/core@npm:^7.26.10, @babel/core@npm:^7.28.0, @babel/core@npm:^7.28.5":
   version: 7.29.7
   resolution: "@babel/core@npm:7.29.7"
   dependencies:
@@ -3169,6 +3170,40 @@ __metadata:
   version: 1.2.0
   resolution: "@simple-libs/stream-utils@npm:1.2.0"
   checksum: 10c0/2788ac7b167d1b6c81b8c6fae2f5d9688b1f02ab31e9e15b33c9dc2ae920cf7de87869de10679be8957f9adb645c91c8919e271f3e34b6b4ec56daf725522dc7
+  languageName: node
+  linkType: hard
+
+"@ssgoi/core@npm:^7.4.1":
+  version: 7.4.1
+  resolution: "@ssgoi/core@npm:7.4.1"
+  checksum: 10c0/478b89c27fd7fd4c6ad5ba7937a1e676e5594b08bb8cfeea7b9a5d46c8029a163c4446425aeeda745a50bc7595ef0066d6a6815754753c4bc86b1fdf09a7d9fd
+  languageName: node
+  linkType: hard
+
+"@ssgoi/react@npm:^7.4.1":
+  version: 7.4.1
+  resolution: "@ssgoi/react@npm:7.4.1"
+  dependencies:
+    "@babel/core": "npm:^7.26.10"
+    "@ssgoi/core": "npm:^7.4.1"
+    unplugin: "npm:^2.3.2"
+  peerDependencies:
+    "@remix-run/react": "*"
+    "@tanstack/react-router": "*"
+    next: "*"
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+    react-router: "*"
+  peerDependenciesMeta:
+    "@remix-run/react":
+      optional: true
+    "@tanstack/react-router":
+      optional: true
+    next:
+      optional: true
+    react-router:
+      optional: true
+  checksum: 10c0/f658e2ef098a510e31f8d704b9405be64d08e5d92b95efa0c51cf91bf00dc2ad5af5248bd59e531a8c3addd7828834cc6215cdd140115ca6305324441cd7a103
   languageName: node
   linkType: hard
 
@@ -9817,7 +9852,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"unplugin@npm:^2.3.5":
+"unplugin@npm:^2.3.2, unplugin@npm:^2.3.5":
   version: 2.3.11
   resolution: "unplugin@npm:2.3.11"
   dependencies:
