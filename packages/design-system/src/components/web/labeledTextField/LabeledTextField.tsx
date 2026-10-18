@@ -107,7 +107,7 @@ export const LabeledTextField = ({
             <p
               id={errorId}
               role="alert"
-              className="typography-caption-1-medium text-system-fail-fg"
+              className="typography-caption-1-medium text-system-fail-text"
             >
               {errorMessage}
             </p>

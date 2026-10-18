@@ -53,13 +53,13 @@
 
 ## Styling과 의존성
 
-- Token: `gap-s3`·`gap-s2`, `typography-body-2-meduim`(제목 14/21 SemiBold, 접미사 철자는 저장소 토큰 이름 그대로), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-fg`(오류), `typography-body-3-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 표시는 `Option`을 쓴다.
+- Token: `gap-s3`·`gap-s2`, `typography-body-2-meduim`(제목 14/21 SemiBold, 접미사 철자는 저장소 토큰 이름 그대로), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-3-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 표시는 `Option`을 쓴다.
 - dependency 추가 없음.
 - Storybook state matrix: `Default`, `Focused`, `Editing`, `Filled`, `ErrorState`, `Disabled`, `OptionalWithoutCounter`.
 
 ## 확인할 항목
 
-- 오류 문구 색 (제안): Figma는 `system/system-fail-text`(`#f04d29`)를 쓰는데 저장소 토큰에는 같은 이름의 텍스트 색이 없다. 가장 가까운 `system-fail-fg`(`#bc2b0d`)를 썼다. 값이 더 진해 대비는 높아졌다(흰 배경 약 7:1, Figma 값은 약 3.8:1). 새 토큰을 만들지는 않았다. 디자이너 확인이 필요하다.
+- 오류 문구 색 (확정): Figma `system/system-fail-text`(`#f04d29`)와 같은 이름의 토큰 `text-system-fail-text`를 쓴다(`develop`의 디자인 토큰 갱신으로 추가됨). 흰 배경 대비는 약 3.8:1로 4.5:1에 못 미친다(Figma 값).
 - 글자 수와 입력 제한 (제안): 설계서는 최대 12자와 글자 수 실시간 갱신을 요구한다. `maxLength`를 입력 길이 제한과 글자 수 표시에 함께 쓴다. Figma `Error` 시안은 제한을 넘은 문구("입력 가능한 글자수를 초과했어요")를 보여 주는데, 입력이 제한되면 그 문구가 필요 없을 수 있다. 제한 없이 넘길 수 있게 하려면 글자 수만 받는 prop을 따로 연다.
 - 안내 문구 숨김 (확정): 입력창이 포커스되면 placeholder를 숨긴다(Figma `Focused`, 사용자 확인). core `TextField`의 스타일이라 이 입력창을 쓰는 곳 모두 같다.
 - 지우기 버튼과 포커스 (제안): Figma의 `Editing`·`Filled` 차이를 포커스 유무로 해석했다(사용자 설명: Editing은 글자가 하나라도 있을 때 오른쪽 삭제 버튼). 값이 있고 포커스가 있을 때만 보인다. Safari·터치에서 버튼을 누르는 순간 입력창 포커스가 빠져 버튼이 사라지지 않도록 버튼의 `mousedown` 기본 동작을 막는다(실제 Chromium에서 확인, Safari 재현은 미검증). uncontrolled 입력은 지우기를 지원하지 않는다(`TextField`의 `onClear` 계약).
