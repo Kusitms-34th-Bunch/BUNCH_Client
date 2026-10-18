@@ -5,9 +5,12 @@ import { CreateBunchCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../constants/paths';
+import { HeaderIconButton } from './HeaderIconButton';
 
-/** 회원가입 뒤 번치를 새로 만들지, 초대받은 번치에 참여할지 고르는 시작 화면 */
-// 닫기(X)는 도착지·확인 모달 미정으로 동작 미연결
+/**
+ * 회원가입 뒤 번치를 새로 만들지, 초대받은 번치에 참여할지 고르는 시작 화면
+ * 닫기(X)는 도착지·확인 모달 미정으로 동작 미연결
+ */
 export function BunchStartSelect() {
   const router = useRouter();
 
@@ -16,13 +19,9 @@ export function BunchStartSelect() {
       header={
         <Header
           leading={
-            <button
-              type="button"
-              aria-label="닫기"
-              className="text-icon-primary focus-visible:outline-border-brand -ml-s4 size-s16 flex cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
+            <HeaderIconButton label="닫기">
               <LineCloseLargeIcon />
-            </button>
+            </HeaderIconButton>
           }
         />
       }
