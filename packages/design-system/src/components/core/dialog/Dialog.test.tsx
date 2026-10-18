@@ -81,6 +81,34 @@ describe('Dialog', () => {
     expect(onCancel).not.toHaveBeenCalled();
   });
 
+  it('reports completed closing without treating initial closed state as a dismissal', async () => {
+    const onOpenChangeComplete = vi.fn();
+    const ExampleWithCompletion = () => {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button onClick={() => setOpen(true)}>열기</button>
+          <ConfirmDialog
+            open={open}
+            onOpenChange={setOpen}
+            onOpenChangeComplete={onOpenChangeComplete}
+            title="확인"
+            confirmLabel="OK"
+            cancelLabel="Cancel"
+            onConfirm={() => {}}
+          />
+        </>
+      );
+    };
+    render(<ExampleWithCompletion />);
+    expect(onOpenChangeComplete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '열기' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(onOpenChangeComplete).toHaveBeenCalledWith(false));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(onOpenChangeComplete.mock.calls.filter(([open]) => open === false)).toHaveLength(1);
+  });
+
   it('leaves confirm closing to the caller', async () => {
     const onConfirm = vi.fn();
     render(<Example onConfirm={onConfirm} />);
