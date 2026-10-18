@@ -41,15 +41,16 @@ export function ExitFlowDialog({
         <Dialog.Title>{title}</Dialog.Title>
         <Dialog.Description>{description}</Dialog.Description>
         <Dialog.Footer>
+          {/* 두 버튼은 같은 폭(135.5px)이다. Button 라벨은 안쪽 여백 안에서 글자를 자르는데 Figma는 글자가 여백까지 번져 보이므로 좌우 여백을 줄여 「계속 참여하기」가 잘리지 않게 한다 */}
           <Dialog.Confirm
             variant="secondary"
-            className="min-w-0 flex-1"
+            className="px-s6 min-w-0 flex-1"
             disabled={!open}
             onClick={onExit}
           >
             나가기
           </Dialog.Confirm>
-          <Dialog.Cancel variant="primary" className="min-w-0 flex-1" disabled={!open}>
+          <Dialog.Cancel variant="primary" className="px-s6 min-w-0 flex-1" disabled={!open}>
             {cancelLabel}
           </Dialog.Cancel>
         </Dialog.Footer>
