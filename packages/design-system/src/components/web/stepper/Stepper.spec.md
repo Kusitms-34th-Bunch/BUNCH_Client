@@ -26,7 +26,7 @@
 
 ## 상태와 동작
 
-- 전환: 같은 요소에서 `current`가 바뀌면 막대 색이 300ms 동안 `ease-out`으로 바뀐다(화면설계서의 진행바 Smart Animate). `prefers-reduced-motion: reduce`이면 즉시 바뀐다. 화면이 바뀌며 컴포넌트가 새로 만들어지면 전환이 없으므로, 단계 화면들이 공통 layout에 이 컴포넌트를 두어 계속 남게 하는 것은 호출하는 쪽 몫이다.
+- 전환: 같은 요소에서 `current`가 바뀌면 막대 색이 300ms 동안 CSS `ease-out`(`cubic-bezier(0, 0, .58, 1)`)으로 바뀐다. `ease-[ease-out]`으로 Tailwind 기본 곡선과 구분한다. 화면설계서 `791:8480`은 「진행바만 인터랙션 O」로 명시하므로 제목·본문에는 이 효과를 적용하지 않는다. `prefers-reduced-motion: reduce`이면 즉시 바뀐다. 화면이 바뀌며 컴포넌트가 새로 만들어지면 전환이 없으므로, 단계 화면들이 공통 layout에 이 컴포넌트를 두어 계속 남게 하는 것은 호출하는 쪽 몫이다.
 - 채움 규칙: `current`번째 막대만 `surface-brand-subtle-2`(Selected), 나머지는 `surface-disabled`(Default). 지나온 단계도 채우지 않는다(디자이너 확인).
 - 막대 간격 2px, 반경 `full`. 폭은 컨테이너를 채우고 막대가 균등 분할한다.
 - 로딩·에러·disabled 상태는 없다.
