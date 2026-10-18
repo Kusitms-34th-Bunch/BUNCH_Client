@@ -107,3 +107,9 @@ CodeQL(`codeql.yml`)은 저장소를 공개로 돌린 뒤에 활성화한다. �
 - 변경된 story만 찍는 `onlyChanged`(TurboSnap)를 켜 두었다. 이를 위해 `build-storybook --stats-json`으로 `preview-stats.json`을 만들고(미리 빌드한 Storybook을 쓸 때 필요), 모노레포라서 `storybookBaseDir`·`storybookConfigDir`를 repo root 기준으로 지정한다. `tokens/*.css`는 `storybook.css`가 `@import`해서 의존 그래프에 별도 모듈로 잡히지 않으므로 `externals`로 지정해 바뀌면 전체를 다시 찍는다. 문서로 확인한 사항(Chromatic TurboSnap 문서): Storybook 8+의 Vite는 `--stats-json`을 지원하고, stats 파일이 없으면 빌드를 실패시키지 않고 전체를 찍는다. TurboSnap은 `pull_request` 트리거와 호환되지 않아 `push`만 쓴다. `package.json`·`yarn.lock`·`.storybook`·`preview`가 import하는 파일·`externals`가 바뀌면 전체를 다시 찍는다. merge commit은 조상이 둘이라 예상보다 많이 다시 찍을 수 있다. 확인하지 못한 사항: `storybookConfigDir`·`externals`의 기준 경로와 여러 줄 값의 분리는 문서 예시를 따랐을 뿐 실행으로 확인하지 않았고, 문서에 Yarn PnP 설명이 없고(로컬 빌드에서 stats 생성과 모듈 경로 `./src/...`만 확인), 사전 조건에 "완료된 CI 빌드 10개"가 있어 처음에는 전체가 찍힐 수 있으며, 실제 Chromatic 실행으로 바뀐 story만 선택되는지 확인하지 않았다. 매번 전부 찍히거나 필요한 story를 놓치면 이 설정을 다시 검토한다.
 - 무료 플랜에는 월 스냅샷 한도가 있다. 시각 검토가 필요 없는 story는 `parameters: { chromatic: { disableSnapshot: true } }`로 제외하고, 변형 조합은 한 story(예: Button `Matrix`)에 모아 스냅샷 수를 줄인다. Toast처럼 `Matrix`가 모든 형태를 보여 주면 개별 story는 스냅샷에서 제외한다. 한도 초과 시 동작은 Chromatic 문서를 확인한다.
 - 앱 화면 단위 시각 검증은 Playwright 스냅샷이 맡고, 화면이 생긴 뒤 별도로 도입한다.
+
+## 디자인 토큰 동기화
+
+`sync-design-tokens.yml`은 `design-token`에 Push된 `packages/design-system/tokens/tokens.json` 변경 또는 수동 실행을 대상으로 한다. `yarn tokens:build`, `yarn tokens:check`, 토큰 변환 테스트를 실행하고 생성 CSS를 커밋한 뒤 `develop` PR을 생성하거나 갱신한다.
+
+저장소 secret `DESIGN_TOKENS_PR_TOKEN`에는 Contents와 Pull requests의 읽기·쓰기 권한이 필요하다. `design-token`에도 workflow, 변환 스크립트와 package 명령을 함께 유지한다. 최초 파일 반영 직후에는 workflow를 한 번 수동 실행하고, 이후 토큰 원본 Push부터 자동 실행한다.

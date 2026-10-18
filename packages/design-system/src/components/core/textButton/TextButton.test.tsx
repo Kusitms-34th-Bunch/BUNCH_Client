@@ -99,7 +99,7 @@ describe('TextButton', () => {
   it.each([
     ['primary', 'text-text-brand'],
     ['secondary', 'text-text-secondary'],
-    ['warning', 'text-system-fail-fg'],
+    ['warning', 'text-system-fail-text'],
   ] as const)('%s variant는 %s 글자색을 쓴다', (variant, color) => {
     render(<TextButton variant={variant}>확인</TextButton>);
 

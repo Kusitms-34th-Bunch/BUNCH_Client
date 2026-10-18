@@ -286,7 +286,7 @@
   --semantic-surface-tertiary: var(--primitive-gray-scale-gray-200);
   --semantic-system-fail-bg: var(--primitive-red-color-feedback-red-50);
   --semantic-system-fail-border: var(--primitive-red-color-feedback-red-300);
-  --semantic-system-fail-fg: var(--primitive-red-color-feedback-red-700);
+  --semantic-system-fail-text: var(--primitive-red-color-feedback-red-500);
   --semantic-system-success-bg: var(--primitive-green-50);
   --semantic-system-success-border: var(--primitive-green-300);
   --semantic-system-success-fg: var(--primitive-green-700);
@@ -479,7 +479,7 @@
   --color-surface-tertiary: var(--semantic-surface-tertiary);
   --color-system-fail-bg: var(--semantic-system-fail-bg);
   --color-system-fail-border: var(--semantic-system-fail-border);
-  --color-system-fail-fg: var(--semantic-system-fail-fg);
+  --color-system-fail-text: var(--semantic-system-fail-text);
   --color-system-success-bg: var(--semantic-system-success-bg);
   --color-system-success-border: var(--semantic-system-success-border);
   --color-system-success-fg: var(--semantic-system-success-fg);
