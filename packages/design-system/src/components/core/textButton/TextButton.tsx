@@ -19,7 +19,7 @@ const textButton = tv({
     variant: {
       primary: { base: 'text-text-brand' },
       secondary: { base: 'text-text-secondary' },
-      warning: { base: 'text-system-fail-fg' },
+      warning: { base: 'text-system-fail-text' },
     },
     size: {
       lg: { base: 'h-s18 gap-s4 px-s12 typography-label-l', icon: 'size-6' },
