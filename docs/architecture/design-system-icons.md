@@ -15,6 +15,7 @@ Figma의 Line 23종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 
 packages/design-system/src/icons/
   svg/            currentColor로 정규화할 원본 SVG(단색 아이콘)
   svg-preserve/   원본 색을 유지해야 하는 SVG(로고, 브랜드 마크)
+  svg-graphic/    크기가 하나뿐인 컬러 그래픽 아이콘(graphic-<이름>.svg)
   generated/      생성된 TSX 컴포넌트 + barrel index.ts (직접 수정 금지)
 ```
 
@@ -31,6 +32,17 @@ svg/fill-circle-check-{small,medium,large}.svg
   → generated/FillCircleCheckIcon.tsx
 ```
 
+## 그래픽 아이콘
+
+온보딩 카드처럼 색이 있고 크기가 하나뿐인 아이콘(Globe·Lock 34px, Chat·Edit·People 40px)은 Line/Fill의 세 크기 규칙에 맞지 않아 `svg-graphic/`에서 따로 만든다.
+
+- 파일은 `graphic-<이름>.svg` 하나이고 width·height가 같은 양수이며 viewBox가 `0 0 <width> <height>`여야 한다. 다르면 생성이 실패한다.
+- 원본 색을 유지하고(`currentColor`로 바꾸지 않는다) 크기별 export나 `size` prop이 없다. 컴포넌트는 `GraphicLockIcon`처럼 `Graphic<이름>Icon`이다.
+- 접근성 계약은 고정 크기 아이콘과 같다(기본 장식, `aria-label`·`aria-labelledby`가 있으면 `role="img"`).
+- Figma는 아이콘을 캔버스 크기 프레임 안에 레이어로 배치하므로, 레이어 SVG를 프레임 좌표대로 한 캔버스에 조립해 넣는다(래퍼 노드 export는 주변 캔버스가 섞인다).
+- 색이 SVG에 고정돼 있어 밝은 배경을 전제로 한다. Chat·Edit의 안쪽 틈은 칠하지 않은 투명 구멍이라 배경색이 비친다. 어두운 배경이나 흰색이 아닌 카드 위에서의 모습은 확인하지 못했고, 필요해지면 디자이너와 별도 원본 여부를 정한다.
+- 안전성 검증과 metadata 제거는 다른 SVG와 같다.
+
 ## SVG 입력 검증 (필수)
 
 SVGR은 sanitizer가 아니다. 외부에서 받은 SVG(특히 Figma export, 디자이너 전달 파일)를 그대로 신뢰하지 않는다. 생성 스크립트는 변환 전에 아래를 차단한다.
@@ -43,7 +55,7 @@ SVGR은 sanitizer가 아니다. 외부에서 받은 SVG(특히 Figma export, 디
 
 이 검증은 정규식 기반 1차 차단이라 모든 우회를 막지 못한다. 새 SVG를 들일 때는 리뷰에서 원본도 직접 확인한다.
 
-metadata는 변환 전에 제거한다. 현재 세트는 모두 단색이며, white는 clipPath 내부에만 있어 별도의 원본 색 보존 아이콘은 없다.
+metadata는 변환 전에 제거한다. Line/Fill 세트는 모두 단색이며, white는 clipPath 내부에만 있어 `svg-preserve/`의 아이콘은 없다. 컬러 아이콘은 `svg-graphic/`의 그래픽 아이콘뿐이다.
 
 이 검증 없이 아이콘 생성 스크립트를 만들지 않는다. `docs/workflows/security-review.md`의 XSS 기준과 같은 이유다 — 신뢰할 수 없는 입력이 렌더링 가능한 코드로 바뀌는 경로다.
 
