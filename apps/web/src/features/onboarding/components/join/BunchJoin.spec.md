@@ -73,6 +73,6 @@
 - 링크 형식 (확인 필요): 호스트(운영 도메인)가 정해지지 않아 `https`와 `/invite/<코드>` 경로만 검사한다. 호스트를 제한할지, 링크가 짧은 코드만 받는 형태인지 확인한다.
 - 링크 확인의 판정 주체 (미정, API): Figma의 「잘못된링크」·「인원초과링크」·「정상링크」는 서버가 판단하는 예시다. 형식이 맞는 링크가 유효한지, 인원이 찼는지는 API가 알려 줘야 한다. 지금은 `onSubmit`의 결과(`JoinFailure`)로 받는 자리만 있다.
 - 토스트 노출 시간 (확정, 2026-10-19): 설계서의 Toast Interaction대로 3초다.
-- 모달 모션 (설계서와 다름): 화면설계서는 Move in ↑·Ease in·300ms이고 `Dialog`는 중앙 확대+페이드(200ms)다. 번치 만들기 모달과 같은 구현을 쓴다(`ExitFlowDialog`).
+- 모달 모션 (확정, 2026-10-19, 사용자 결정): 화면설계서의 Move in ↑·Ease in·300ms를 따르지 않고 지금 구현(중앙 확대+페이드, 패널 200ms)을 쓴다. 번치 만들기 모달과 같은 구현이다(`ExitFlowDialog`).
 - 모달을 연 채 브라우저 뒤로 가기 (미검증): 모달은 history를 만들지 않고 `OverlayProvider`가 `(app)` layout에 있어, 뒤로 가기로 화면이 바뀌어도 모달이 남을 수 있다(번치 만들기 흐름과 같은 한계).
 - 화면 전환 (구현, 2026-10-19 확인): 시작 화면의 「초대받은 번치 참여하기」에서 SSGOI Slide In으로 들어온다. page를 `data-ssgoi-transition` 래퍼로 감싸야 `AppTransitions`의 시작 → 참여 규칙이 걸린다. headless Chromium에서 이전·새 화면에 각각 약 233ms 애니메이션이 붙는 것을 확인했다. 시작 화면의 「초대받은 번치 참여하기」에서 Slide In으로 들어온다(`BunchStartSelect.spec.md`, `docs/architecture/motion.md`).
