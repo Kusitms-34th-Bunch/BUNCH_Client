@@ -23,7 +23,7 @@
 
 - 바깥 터치는 무시. Cancel·ESC는 실행 없이 닫힘 요청, Confirm은 자동으로 닫지 않는다.
 - Solid: 취소 왼쪽, 확인 오른쪽 동일 폭. Text: 오른쪽 정렬. 취소 문구가 없으면 확인 하나.
-- 긴 제목·설명은 줄바꿈하고 작은 viewport에서 본문을 스크롤한다. 버튼은 축소하지 않는다.
+- 긴 제목·설명은 단어 단위로 줄바꿈하고(`break-keep`, 한 단어가 폭보다 길면 `overflow-wrap: break-word`로 끊는다. `break-words`는 tailwind-merge가 `break-keep`을 지워 쓰지 않는다. Figma가 "피드로 / 이동해요."처럼 단어 사이에서 끊는다) 작은 viewport에서 본문을 스크롤한다. 버튼은 축소하지 않는다.
 - 진입·닫힘 모션은 호출자가 Content와 `backdropClassName`으로 지정한다. CSS 전환이 끝나면 Base UI의 `onOpenChangeComplete`를 통해 제거 시점을 알린다. 비동기 확인 중 중복 실행은 confirmDisabled로 막는다.
 
 ## 접근성
