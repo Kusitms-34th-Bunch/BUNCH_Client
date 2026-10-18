@@ -13,8 +13,8 @@
 
 ## Public API
 
-- `Dialog.Root`: `open: boolean`, `onOpenChange(open: boolean): void`, `children`.
-- `Dialog.Content`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Title은 h2, Description은 p, Footer는 div.
+- `Dialog.Root`: `open: boolean`, `onOpenChange(open: boolean): void`, 선택 `onOpenChangeComplete(open: boolean): void`, `children`. 종료 콜백은 전환이 끝난 후 호출되므로 overlay 제거 시점에 쓴다.
+- `Dialog.Content`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Title은 h2, Description은 p, Footer는 div. Content의 선택 `backdropClassName`으로 딤 전환을 조절한다.
 - `Dialog.Cancel`, `Confirm`: 기존 Button props 중 variant는 primary/secondary/warning으로 제한하고 `appearance?: 'solid' | 'text'`를 받는다. Cancel은 닫힘 요청, Confirm은 onClick만 호출한다.
 - `ConfirmDialog`: Root props + `title`, 선택 `description`, `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
 - controlled 전용. 실제 작업·비동기 상태·확인 후 닫기는 호출자가 소유한다. Base UI 타입은 공개하지 않는다.
@@ -24,7 +24,7 @@
 - 바깥 터치는 무시. Cancel·ESC는 실행 없이 닫힘 요청, Confirm은 자동으로 닫지 않는다.
 - Solid: 취소 왼쪽, 확인 오른쪽 동일 폭. Text: 오른쪽 정렬. 취소 문구가 없으면 확인 하나.
 - 긴 제목·설명은 줄바꿈하고 작은 viewport에서 본문을 스크롤한다. 버튼은 축소하지 않는다.
-- 닫힘 애니메이션·로딩 UI는 이번 범위 밖. 비동기 확인 중 중복 실행은 confirmDisabled로 막는다.
+- 진입·닫힘 모션은 호출자가 Content와 `backdropClassName`으로 지정한다. CSS 전환이 끝나면 Base UI의 `onOpenChangeComplete`를 통해 제거 시점을 알린다. 비동기 확인 중 중복 실행은 confirmDisabled로 막는다.
 
 ## 접근성
 

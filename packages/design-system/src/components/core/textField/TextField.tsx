@@ -42,7 +42,7 @@ export function TextField({
   return (
     <div
       className={cn(
-        'gap-s2 rounded-r5 border-border-secondary bg-surface-primary pl-padding-p8 flex w-full items-center border',
+        'gap-s2 rounded-r5 border-border-secondary bg-surface-primary pl-padding-p8 focus-within:border-primitive-gray-700 flex w-full items-center border forced-colors:focus-within:outline-2 forced-colors:focus-within:outline-offset-2',
         action ? 'py-padding-p3 pr-padding-p3' : 'py-padding-p5 pr-padding-p8',
         className,
       )}

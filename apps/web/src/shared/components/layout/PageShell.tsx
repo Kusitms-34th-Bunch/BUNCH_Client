@@ -14,7 +14,7 @@ type PageShellProps = {
  */
 export function PageShell({ header, bottom, children }: PageShellProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="bg-surface-primary flex min-h-0 flex-1 flex-col">
       {header ? <div className="shrink-0">{header}</div> : null}
       {/* min-h-32: 낮은 화면(가로 모드·큰 글꼴)의 본문 0 방지 — 상세는 docs/architecture/mobile-shell.md */}
       {/* overscroll-y-contain: WebView 바운스·pull-to-refresh 전파 방지(새로고침 화면에서 재검토) */}

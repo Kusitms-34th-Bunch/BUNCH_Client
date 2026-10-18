@@ -19,6 +19,7 @@
     "@app/bridge": "workspace:*",
     "@app/design-system": "workspace:*",
     "@sentry/nextjs": "^11.7.0",
+    "@ssgoi/react": "^7.4.1",
     "@tanstack/react-query": "catalog:",
     "@webview-bridge/web": "^1.8.0",
     "ky": "catalog:",

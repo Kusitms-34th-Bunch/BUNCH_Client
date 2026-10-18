@@ -6,7 +6,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 const BOTTOM_OFFSET =
   'calc(var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)) + var(--spacing-s8))';
 
-/** 앱 최상위에 한 번만 둔다. */
+/** 화면을 그리는 앱의 최상위 layout에 한 번만 둔다. */
 export const Toaster = () => (
   <SonnerToaster
     position="bottom-center"

@@ -5,7 +5,6 @@ export * from './badge';
 export * from './button';
 export * from './dialog';
 export * from './header';
-export * from './labeledTextField';
 export * from './searchField';
 export * from './textButton';
 export * from './textField';
