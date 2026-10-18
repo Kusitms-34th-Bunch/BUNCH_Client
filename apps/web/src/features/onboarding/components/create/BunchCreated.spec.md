@@ -38,7 +38,7 @@
 
 ## UI와 접근성
 
-- Component mapping: `BunchAvatar`(카메라 버튼 포함), `Button`(내 번치로 이동하기), `GraphicPeopleIcon`, 폭죽 `CreateBunchConfetti`(이 feature 안).
+- Component mapping: `BunchAvatar`(카메라 버튼 포함), `Button`(내 번치로 이동하기), `GraphicPeopleIcon`, 폭죽 `BunchConfetti`(이 feature 안).
 - 멤버 초대 카드: Figma는 링크처럼 그린 카드인데 디자인 시스템의 `InviteMemberCard`는 라디오 선택 카드라 의미가 달라 쓰지 않고 같은 모양으로 이 화면에 `button`으로 만들었다(아래 확인할 항목).
 - 폭죽: 장식이라 `aria-hidden`이고 포인터 이벤트를 받지 않는다. 위치(`translate`)·회전(`rotate`)·불투명도를 `Element.animate`로 따로 재생해 transform·opacity만 쓴다(`docs/architecture/motion.md`).
 - 제목은 `h1`이고 이름과 문구가 줄을 나눠 보인다. 카메라 버튼의 이름은 「사진 변경」이다.
@@ -56,7 +56,7 @@
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 정적 페이지로 생성되고 `next start`에서 직접 URL 렌더·재생·종료 후 조각 제거를 확인함. 새로고침·뒤로 가기는 미검증
 - [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증)
-- [x] 관련 test: `BunchCreated.test.tsx`(제목, 이름 없음, 버튼), `CreateBunchConfetti.test.tsx`(조각당 3개 재생과 길이, 종료 후 제거, 취소, 움직임 줄이기)
+- [x] 관련 test: `BunchCreated.test.tsx`(제목, 이름 없음, 버튼), `BunchConfetti.test.tsx`(조각당 3개 재생과 길이, 종료 후 제거, 취소, 움직임 줄이기)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`(103개)·lint·typecheck·build 통과
 - [x] 헤드리스 Chromium(375×812): 아바타 154×158, 구름 이미지 로드, 카드와 버튼 위치, 250ms 시점 폭죽 위치, 종료 후 조각 0개, 가로 넘침 없음. Figma 정지 화면과 픽셀 비교, 실기기 프레임은 하지 못함
 

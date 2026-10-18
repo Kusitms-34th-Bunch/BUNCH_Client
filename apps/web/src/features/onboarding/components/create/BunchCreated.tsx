@@ -8,7 +8,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
-import { CreateBunchConfetti } from './CreateBunchConfetti';
+import { BunchConfetti } from '../BunchConfetti';
 
 // 기본 대표 이미지(구름 마스코트). 디자인 시스템에 이미지 파일이 없어 앱이 가진다
 const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
@@ -74,7 +74,7 @@ export function BunchCreated() {
             <span className="block text-[#111318]">번치가 만들어졌어요!</span>
           </h1>
         </div>
-        <CreateBunchConfetti />
+        <BunchConfetti />
       </div>
     </PageShell>
   );

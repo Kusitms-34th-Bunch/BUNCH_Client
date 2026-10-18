@@ -9,17 +9,17 @@ import {
   CONFETTI_PIECES,
   CONFETTI_PIECE_SIZE,
   CONFETTI_ROTATION_END_MS,
-} from '../../constants/confetti';
+} from '../constants/confetti';
 
 const BEZIER = 'cubic-bezier(0.5, 0, 0.5, 1)';
 const at = (timeMs: number) => timeMs / CONFETTI_DURATION_MS;
 
 /**
- * 번치 생성 완료 화면에서 한 번 터지는 폭죽. 끝나면 스스로 사라짐
+ * 번치 생성·참여 완료 화면에서 한 번 터지는 폭죽. 끝나면 스스로 사라짐
  * 위치(`translate`)·회전(`rotate`)·불투명도를 각각 Web Animations API로 재생(transform·opacity만 사용)
  * `prefers-reduced-motion: reduce`이면 그리지 않음. 부모는 `relative`여야 함
  */
-export function CreateBunchConfetti() {
+export function BunchConfetti() {
   const pieceRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [finished, setFinished] = useState(false);
 
