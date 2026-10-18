@@ -10,6 +10,11 @@ const checks = [
     command: ['workspace', '@app/design-system', 'gen:index:check'],
   },
   {
+    name: 'Web feature component barrels',
+    bin: process.execPath,
+    command: ['turbo/workflows/gen-feature-barrels.mjs', '--check'],
+  },
+  {
     name: 'Design-system component structure',
     bin: process.execPath,
     command: ['turbo/workflows/check-ds-components.mjs'],

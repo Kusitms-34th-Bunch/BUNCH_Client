@@ -12,7 +12,8 @@
 
 ## 위치와 이름
 
-- web 기능: `apps/web/src/features/<feature>/<feature>.spec.md`
+- web 기능 전체(여러 화면·흐름에 걸친 목적과 범위): `apps/web/src/features/<feature>/<feature>.spec.md`
+- web 화면·컴포넌트·hook 단위: 구현 파일 옆에 같은 이름으로 둔다(예: `features/<feature>/components/<flow>/<Component>.spec.md`, `<Component>.tsx`와 `<Component>.test.tsx` 곁). 한 화면의 상태·접근성·확인할 항목은 그 화면 spec이 소유하고, 구현 파일을 옮기면 spec도 함께 옮긴다.
 - web route 전용 기능: 해당 `src/app` route 폴더의 `<feature>.spec.md`
 - admin 기능: `apps/admin/src/features/<feature>/<feature>.spec.md`
 - 여러 app·도메인에 걸치거나, 구현 위치가 아직 정해지지 않았거나, 감사·마이그레이션처럼 하나의 파일에 묶이지 않는 스펙은 `docs/specs/<slug>.md`에 둔다. 도메인이 확정되면 해당 스펙을 다시 co-located 위치로 옮기거나 링크를 남긴다.
