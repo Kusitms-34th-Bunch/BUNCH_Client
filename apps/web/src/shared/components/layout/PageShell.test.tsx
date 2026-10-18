@@ -28,13 +28,13 @@ describe('PageShell', () => {
     expect(container.firstElementChild?.className).toContain('bg-surface-primary');
 
     rerender(
-      <PageShell className="bg-primitive-bunch-50">
+      <PageShell className="bg-surface-brand-subtle-1">
         <p>본문</p>
       </PageShell>,
     );
 
     const shell = container.firstElementChild;
-    expect(shell?.className).toContain('bg-primitive-bunch-50');
+    expect(shell?.className).toContain('bg-surface-brand-subtle-1');
     expect(shell?.className).not.toContain('bg-surface-primary');
   });
 

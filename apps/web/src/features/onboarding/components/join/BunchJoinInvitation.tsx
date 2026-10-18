@@ -47,8 +47,8 @@ export function BunchJoinInvitation({
 
   return (
     <PageShell
-      // 초대장 로티가 끝나는 원 색(#f1f2ff)과 맞춘다. 의미 토큰 surface-brand-subtle-1은 #e2e4ff로 어긋나 있다(Button.spec.md)
-      className="bg-primitive-bunch-50"
+      // 초대장 로티가 끝나는 원 색(#f1f2ff)과 같은 의미 토큰
+      className="bg-surface-brand-subtle-1"
       header={
         <Header
           // 배경이 연보라라 헤더도 투명하게 둔다

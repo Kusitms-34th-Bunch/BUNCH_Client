@@ -23,7 +23,7 @@
 
 - Path·params·search: `/onboarding/join/invitation`. params·search는 없다.
 - 접근 권한·guard: 아직 없다. URL로 바로 열려도 예시 번치가 보인다(API가 생기면 초대 링크로 번치를 식별한다).
-- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 배경은 연보라(`bg-primitive-bunch-50`, `PageShell`의 `className`). 「참여하기」와 「나가기」는 `router.replace`로 이동해 뒤로 가기로 돌아오지 않는다.
+- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 배경은 연보라(`bg-surface-brand-subtle-1`, `PageShell`의 `className`). 「참여하기」와 「나가기」는 `router.replace`로 이동해 뒤로 가기로 돌아오지 않는다.
 
 ## 상태와 흐름
 
@@ -37,12 +37,12 @@
 - Keyboard·focus·accessible name: 뒤로 가기, 「참여하기」(카드 안). `InviteCard`는 `article`(이름은 번치 이름)이고 번치 이름이 `h2`다. 모달은 첫 초점이 「계속 참여하기」다.
 - Responsive·긴 텍스트: 카드 폭은 화면 폭에서 좌우 40px를 뺀 값(375에서 295)이다.
 
-| Figma     | 값                                 | 사용한 토큰·utility                                                                            |
-| --------- | ---------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 배경      | `#f1f2ff`                          | `bg-primitive-bunch-50`(의미 토큰 `surface-brand-subtle-1`은 `#e2e4ff`로 어긋나 사용하지 않음) |
-| 제목      | Title-1-Bold 24/31, 카드와 간격 20 | `typography-title-1-bold gap-s10`                                                              |
-| 카드      | 295 폭, 위 40·아래 16, radius 16   | `InviteCard`                                                                                   |
-| 본문 영역 | 가운데 정렬, 아래 40               | `justify-center px-padding-p18 pb-padding-p18`                                                 |
+| Figma     | 값                                 | 사용한 토큰·utility                                                                       |
+| --------- | ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| 배경      | `#f1f2ff`                          | `bg-surface-brand-subtle-1`(토큰이 `develop`의 PR #60으로 `bunch-50`이 되어 Figma와 같다) |
+| 제목      | Title-1-Bold 24/31, 카드와 간격 20 | `typography-title-1-bold gap-s10`                                                         |
+| 카드      | 295 폭, 위 40·아래 16, radius 16   | `InviteCard`                                                                              |
+| 본문 영역 | 가운데 정렬, 아래 40               | `justify-center px-padding-p18 pb-padding-p18`                                            |
 
 ## 검증
 

@@ -6,8 +6,8 @@ export default function JoinBunchInvitationPage() {
   return (
     <div
       data-ssgoi-transition={ONBOARDING_PATHS.joinBunchInvitation}
-      // 초대장 로티가 끝나는 원 색(#f1f2ff)과 맞춘다. 의미 토큰 surface-brand-subtle-1은 #e2e4ff로 어긋나 있다(Button.spec.md)
-      className="bg-primitive-bunch-50 flex h-full min-h-0 flex-1 flex-col"
+      // 초대장 로티가 끝나는 원 색(#f1f2ff)과 같은 의미 토큰
+      className="bg-surface-brand-subtle-1 flex h-full min-h-0 flex-1 flex-col"
     >
       <BunchJoinInvitation {...joinInvitationFixture} />
     </div>
