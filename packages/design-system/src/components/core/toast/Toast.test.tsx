@@ -142,6 +142,26 @@ describe('toast()', () => {
     expect(screen.queryByText('액션 후 닫힘')).toBeNull();
   });
 
+  it('lifts the toast by bottomOffset and stretches it with fullWidth', async () => {
+    render(<Toaster />);
+    await show('위치 확인', { bottomOffset: 32, fullWidth: true });
+
+    const message = within(screen.getByLabelText('알림')).getByText('위치 확인');
+    const toast = message.closest('div[class*="rounded-r6"]') as HTMLElement;
+    expect(toast.className).toContain('w-full');
+    expect((toast.parentElement as HTMLElement).style.paddingBottom).toBe('32px');
+  });
+
+  it('keeps the toast centered at its content width and un-lifted by default', async () => {
+    render(<Toaster />);
+    await show('기본 위치');
+
+    const message = within(screen.getByLabelText('알림')).getByText('기본 위치');
+    const toast = message.closest('div[class*="rounded-r6"]') as HTMLElement;
+    expect(toast.className).toContain('mx-auto');
+    expect((toast.parentElement as HTMLElement).style.paddingBottom).toBe('');
+  });
+
   it('replaces the previous toast with the new one', async () => {
     render(<Toaster />);
     await show('첫 번째');
