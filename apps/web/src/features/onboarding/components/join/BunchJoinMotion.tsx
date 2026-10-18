@@ -70,7 +70,7 @@ export function BunchJoinMotion() {
   return (
     <PageShell
       // 배경은 로티가 끝나는 원 색(초대 확인 화면 배경)으로 번진다
-      className={`transition-colors duration-300 motion-reduce:transition-none ${tinted ? 'bg-surface-brand-subtle-1' : ''}`}
+      className={`transition-colors duration-300 ease-out motion-reduce:transition-none ${tinted ? 'bg-surface-brand-subtle-1' : ''}`}
     >
       {/* 보이는 글자가 없는 화면이라 제목으로 불러오는 중임을 전한다. 라이브 영역(role=status)은 처음부터 들어 있는 글자를 알리지 않는다 */}
       <h1 className="sr-only">초대받은 번치 정보를 불러오는 중이에요.</h1>
