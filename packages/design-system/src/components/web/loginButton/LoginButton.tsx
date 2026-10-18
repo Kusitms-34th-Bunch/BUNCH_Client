@@ -2,13 +2,13 @@ import type { ComponentProps, ReactNode } from 'react';
 import type { VariantProps } from 'tailwind-variants';
 import { tv } from '../../../utils';
 
-// 눌림 오버레이: 글자 아래·배경 위의 -z-10 pseudo 요소(isolate로 쌓임 맥락 분리), overlay-hover(10%)
+// 눌림 오버레이: 글자 아래·배경 위의 -z-10 pseudo 요소(isolate로 쌓임 맥락 분리), overlay-login-pressed(8%). Figma 실측: Google 흰색→#ebebeb, Kakao #fee500→#ead300
 // 화면 설계서: 누르는 동안 Pressed 스타일, Dissolve / Ease out / 100ms → opacity만 100ms ease-out
 // 브랜드 색(Kakao #fee500·글자 85% 검정, Google 테두리 #e2e2e2·글자 #1f1f1f, Apple 검정)은 각 사의 가이드 값이라 토큰이 없다
 const loginButton = tv({
   base: [
     'relative isolate inline-flex h-s18 w-full max-w-full cursor-pointer touch-manipulation items-center justify-center gap-s3 overflow-clip rounded-r6 px-padding-p8 py-padding-p7 typography-login-button',
-    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-overlay-hover before:opacity-0 before:transition-opacity before:duration-100 before:ease-out',
+    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-overlay-login-pressed before:opacity-0 before:transition-opacity before:duration-100 before:ease-out',
     'not-disabled:active:before:opacity-100',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand',
     'disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',

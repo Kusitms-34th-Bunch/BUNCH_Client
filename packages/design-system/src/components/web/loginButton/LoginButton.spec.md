@@ -29,7 +29,7 @@
 
 ## 상태와 동작
 
-- 눌림: 브랜드 색 위에 `overlay-hover`(검정 10%) 오버레이. 설계서 전환(Dissolve / Ease out / 100ms)에 맞춰 opacity를 100ms ease-out으로 바꾼다. Apple은 검정이라 눈에 띄지 않는다(Figma와 같음).
+- 눌림: 브랜드 색 위에 `overlay-login-pressed`(검정 8%) 오버레이. 설계서 전환(Dissolve / Ease out / 100ms)에 맞춰 opacity를 100ms ease-out으로 바꾼다. Apple은 검정이라 눈에 띄지 않는다(Figma와 같음).
 - 비활성: 전체에 `opacity-disabled`(40%)를 적용하고 `cursor-not-allowed`.
 - 긴 글자: 한 줄로 잘린다(`truncate`).
 - 로고: Apple 24px, Kakao 20px, Google 20px 영역(안쪽 16×16.3). Apple·Kakao는 글자색을 따라가고(`currentColor`) Google은 색이 든 이미지다.
@@ -42,7 +42,7 @@
 
 ## Styling과 의존성
 
-- Token: `h-s18`(48), `rounded-r6`(12), `px-padding-p8`(16), `py-padding-p7`(14), `gap-s3`(6), `typography-login-button`(15/22), `bg-surface-primary`, `text-text-inversed`, `before:bg-overlay-hover`, `border-border-brand`(focus), `--semantic-opacity-disabled`.
+- Token: `h-s18`(48), `rounded-r6`(12), `px-padding-p8`(16), `py-padding-p7`(14), `gap-s3`(6), `typography-login-button`(15/22), `bg-surface-primary`, `text-text-inversed`, `before:bg-overlay-login-pressed`, `border-border-brand`(focus), `--semantic-opacity-disabled`.
 - 브랜드 색은 토큰이 없어 값을 직접 쓴다: Kakao `#fee500`·글자 검정 85%, Google 테두리 `#e2e2e2`·글자 `#1f1f1f`, Apple 검정. 각 사의 가이드 색이라 디자인 시스템 토큰으로 만들지 않았다.
 - dependency 추가 없음. Google 로고는 `assets/google-logo.png`(Figma 원본)를 `new URL(..., import.meta.url)`로 참조한다.
 - Storybook state matrix: `Default`, `Brands`, `Disabled`, `LongLabel`.
@@ -53,7 +53,6 @@
 - Google 로고 로딩 (미정): `new URL('./assets/google-logo.png', import.meta.url)`를 Storybook(Vite)에서 확인했다. `apps/web`(Next.js)에서 실제로 쓰는 화면이 생길 때 번들링을 확인한다.
 - 로그인 처리 중 상태 (제안): 설계서가 "로그인 처리 중 중복 선택 방지"만 요구하고 처리 중 버튼 모양은 디자인에 없다. 그래서 로딩 표시 없이 호출자가 `disabled`로 막는 방식으로 두었다. 처리 중 시각 표현이 필요하면 디자이너 확인 후 추가한다.
 - 로그인 버튼 클릭 전환 (미정): 설계서의 "Login Action: Dissolve / Ease Out / 200ms"는 인증 시작 뒤 화면 전환이라 버튼이 아니라 화면 쪽 일이다.
-- 눌림 오버레이 농도 (제안): Figma 스크린샷 색과 가장 가까운 `overlay-hover`(10%)를 썼다. 정확한 값은 디자이너 확인.
 - 흰 배경 토큰 (제안): Google 배경은 Figma `text-inversed`(흰색)이고 `surface-primary`를 썼다. 값은 같다.
 - Google 글자·테두리 색 (제안): Figma가 변수 없이 `#1f1f1f`, `#e2e2e2`를 직접 쓰고 있어 같은 값을 썼다.
 - 한글 줄바꿈: 한 줄로 자르는 버튼이라 `break-keep`은 쓰지 않았다.
@@ -67,4 +66,4 @@
 - [x] 지원 variant·edge state story 작성
 - [x] public export 영향 확인(`yarn gen:index`로 `web` barrel에 `loginButton` 추가)
 - [x] 실행 command와 결과: `yarn workspace @app/design-system lint`·`typecheck`·`test`(226 통과, 기존 `icons-bundle` Windows 경로 테스트 2개 실패는 무관)·`gen:index:check`, `node turbo/workflows/check-ds-components.mjs`
-- [x] Storybook 렌더 확인(390px 폭, Figma 스크린샷과 눈 대조: Default·Disabled). Pressed 전환 100ms·포커스·픽셀 단위 대조·실기기는 미검증
+- [x] Storybook 렌더 확인(390px 폭, Figma 스크린샷과 눈 대조: Default·Disabled). Pressed 색은 Figma 픽셀 실측(Google·Kakao)과 맞춤. Pressed 전환 100ms·포커스·실기기는 미검증
