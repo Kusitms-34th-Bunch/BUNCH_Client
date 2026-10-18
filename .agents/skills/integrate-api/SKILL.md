@@ -101,6 +101,7 @@ export const memberQueryKeys = {
 - 모든 response-changing parameter가 key에 포함되고 mutation cache 영향이 명확하다.
 - transport와 UI, generated type과 view model의 경계가 분리되어 있다.
 - 관련 unit/component test와 범위에 맞는 `yarn lint`, `yarn typecheck`, 대상 test/build가 실행됐거나 미실행 이유가 기록됐다.
+- 완료를 보고하기 전에 `bunch-api-contract-reviewer`를 호출한다(`docs/agent/bootstrap.md`의 필수 호출 기준). 호출하지 않았다면 호출했다고 쓰지 않는다.
 
 ## 출력
 

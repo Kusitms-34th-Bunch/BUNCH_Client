@@ -1,7 +1,7 @@
 import { base, disableTypeChecked } from '@app/lint-config';
 export default [
   {
-    ignores: ['apps/**', 'packages/**', '.yarn/**', '.pnp.*'],
+    ignores: ['apps/**', 'packages/**', '.yarn/**', '.pnp.*', '.worktrees/**'],
   },
   ...base,
   {

@@ -5,3 +5,9 @@
 - `<slug>.md` 형식으로 새 파일을 만들고 `.agents/templates/feature-spec.md`를 기준으로 작성한다.
 - 도메인이나 구현 위치가 확정되면 해당 스펙을 co-located 위치로 옮기거나, 옮기지 않을 이유가 있으면 여기 남기고 새 위치로 링크한다.
 - 완료된 기능의 스펙을 무기한 방치하지 않는다. 구현과 계속 어긋나면 `verify-spec-sync`로 동기화 여부를 확인한다.
+
+## 현재 스펙
+
+- [BUNCH PRD (초안)](./bunch-prd.md)
+- [기능: 로그인·가입](./login-signup.md)
+- [기능: 하단 내비게이션](./bottom-navigation.md)

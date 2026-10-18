@@ -22,7 +22,7 @@ Yarn 4 PnP를 workspace의 유일한 설치 방식으로 유지한다. package m
 - 설치와 CI는 `yarn install --immutable`을 사용한다.
 - TypeScript·ESLint·Prettier는 `.yarn/sdks/`를 통해 workspace dependency를 해석한다.
 - 새 dependency는 실제 consumer workspace와 root catalog에 선언하고, 다른 package의 transitive dependency에 기대지 않는다.
-- Vite 기반 admin 작업에서 PnP 경고가 나타날 수 있으며, 경고 자체는 실패로 취급하지 않는다.
+- Vite·Vitest·Storybook 설정의 `customLogger`는 알려진 PnP 지원 경고만 숨긴다. 다른 경고와 오류는 유지하며, PnP 지원 범위와 재검토 조건은 바뀌지 않는다.
 
 ## 검증 / 후속 작업
 

@@ -32,6 +32,7 @@ route, 권한, 완료 이동, API 계약이 모호하면 route scaffold만 만�
 3. `.agents/guides/page-feature.md`, 대상 앱 `AGENTS.md`
 4. 가까운 route, page, layout, test, `*.spec.md`
 5. API가 있으면 `docs/architecture/data-layer.md`와 `integrate-api` 기준
+6. `docs/conventions/coding.md`의 주석 규칙
 
 ## App별 route 책임
 
@@ -42,7 +43,7 @@ route, 권한, 완료 이동, API 계약이 모호하면 route scaffold만 만�
 
 - route 파일에 복잡한 form state, raw API request, 재사용 UI 구현을 쌓지 않는다.
 - 다른 route 하나에서만 쓸 UI는 route/page 가까이에 둔다.
-- 여러 화면의 동일 사용자 작업은 feature, app 간 검증된 재사용 UI primitive만 design system으로 올린다.
+- 여러 화면의 동일 사용자 작업은 feature에 두고, Figma에 정의된 UI 컴포넌트는 design system에 둔다. DS 컴포넌트를 조합해 문구·route·데이터를 붙이는 일은 feature가 맡는다.
 
 ## 구현 순서
 
@@ -69,6 +70,7 @@ route, 권한, 완료 이동, API 계약이 모호하면 route scaffold만 만�
 - route·page·feature·shared·design system의 소유 경계가 설명 가능하다.
 - UI 상태와 접근성·responsive 확인이 변경 범위에 맞게 끝났다.
 - 관련 test와 `yarn lint`, `yarn typecheck`, 대상 app build 또는 수동 검증을 실제로 실행·기록했다.
+- 완료를 보고하기 전에 `bunch-route-reviewer`(UI가 포함되면 `bunch-ui-accessibility-reviewer`도)를 호출한다(`docs/agent/bootstrap.md`의 필수 호출 기준). 호출하지 않았다면 호출했다고 쓰지 않는다.
 
 ## 출력
 

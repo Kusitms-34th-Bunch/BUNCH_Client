@@ -31,6 +31,7 @@ description: 저장소의 컴포넌트·데이터 계층 기준으로 접근성 
 - keyboard submit과 invalid field focus/안내를 확인한다.
 - 입력, invalid submit, pending, 서버 오류, success를 관찰 가능한 결과로 test한다.
 - 여러 화면을 지나는 핵심 success flow만 E2E 후보로 올린다.
+- 완료를 보고하기 전에 `bunch-ui-accessibility-reviewer`(서버 연동이 있으면 `bunch-api-contract-reviewer`도)를 호출한다(`docs/agent/bootstrap.md`의 필수 호출 기준). 호출하지 않았다면 호출했다고 쓰지 않는다.
 
 ## 출력과 금지
 

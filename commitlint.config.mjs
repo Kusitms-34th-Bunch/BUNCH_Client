@@ -14,6 +14,7 @@ export default {
     },
   ],
   rules: {
+    'subject-case': [0],
     // 브랜치 타입(docs/conventions/git.md)과 같은 값만 허용한다.
     'type-enum': [
       2,

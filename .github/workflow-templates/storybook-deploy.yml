@@ -1,0 +1,55 @@
+name: Storybook Deploy
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'packages/design-system/**'
+      - 'yarn.lock'
+      - '.github/workflows/storybook-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # 설치 전 변조 징후 선검사
+      - name: Suspicious file guard
+        run: node turbo/workflows/check-suspicious.mjs
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - run: yarn install --immutable
+
+      - run: yarn workspace @app/design-system build-storybook
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/design-system/storybook-static
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,39 +1,78 @@
 import { bridge, createWebView } from '@webview-bridge/react-native';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, type ComponentRef } from 'react';
-import { BackHandler, Button, Linking, Share, StyleSheet, Text, View } from 'react-native';
-import { shareParamsSchema, type AppBridgeMethods } from '@app/bridge';
+import { useEffect, useRef, useSyncExternalStore, type ComponentRef } from 'react';
+import {
+  BackHandler,
+  Button,
+  Linking,
+  Platform,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  appPostMessageSchema,
+  setNativeTabBarParamsSchema,
+  shareParamsSchema,
+  type AppBridgeMethods,
+} from '@app/bridge';
 import * as Sentry from '@sentry/react-native';
+import { NativeTabBar } from './src/native-tab-bar/NativeTabBar';
+import {
+  buildTabBarInsetScript,
+  getTabBarLayout,
+  shouldUseNativeTabBar,
+} from './src/native-tab-bar/native-tab-bar';
+import { nativeTabBarStore } from './src/native-tab-bar/native-tab-bar-store';
+import { buildSafeAreaScript } from './src/safe-area-script';
 
-// apps/web 배포 주소. .env.local 또는 EAS 환경변수로 넘긴다. 하드코딩하지 않는다.
+// .env.local 또는 EAS 환경변수로 웹 배포 주소 설정
 const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL;
 
 if (!WEB_URL) {
   throw new Error('EXPO_PUBLIC_WEB_URL이 설정되지 않았다. .env.local을 확인한다.');
 }
 
-// AppBridge(packages/bridge) 계약을 실제로 구현한다. 메서드를 추가하면
-// packages/bridge의 AppBridge 타입과 schema도 함께 갱신한다.
-// bridge()는 인라인 객체 리터럴을 받아야 index signature를 만족한다 — 미리 타입을
-// 선언한 변수를 넘기면 TS2345(Bridge index signature 누락)가 난다.
+// bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
     await Share.share({ message: title ? `${title}\n${url}` : url, url });
   },
+  // 지원하지 않는 환경에서는 웹 탭 막대 사용
+  setNativeTabBar: (params) => {
+    if (!shouldUseNativeTabBar(Platform.OS, isLiquidGlassAvailable())) {
+      return Promise.resolve(false);
+    }
+    nativeTabBarStore.set(setNativeTabBarParamsSchema.parse(params));
+    return Promise.resolve(true);
+  },
 } satisfies AppBridgeMethods);
-const { WebView } = createWebView({ bridge: appBridge });
+const { WebView, postMessage } = createWebView({
+  bridge: appBridge,
+  postMessageSchema: appPostMessageSchema,
+});
 
-// http(s)는 WebView 안에서 그대로 연다(소셜 로그인 redirect 등이 깨지지 않게 한다).
-// tel:, mailto: 같은 다른 scheme은 WebView가 처리하지 못하므로 OS에 넘긴다.
-// ponytail: 허용 출처 allowlist는 인증 흐름이 정해진 뒤에 추가한다.
+// 소셜 로그인 redirect 유지를 위해 웹 URL은 WebView, 나머지 scheme은 OS에서 처리
+// shortcut: 웹 출처 제한 없음, 인증 흐름 확정 시 allowlist 적용
 const isWebViewUrl = (url: string) => /^(https?|about):/i.test(url);
 
-function App() {
+function Shell() {
+  // Safe Area: 네이티브 측정값을 웹 CSS 변수로 전달(적용은 웹의 AppFrame 담당)
+  const insets = useSafeAreaInsets();
+  const safeAreaScript = buildSafeAreaScript(insets);
+  const tabBar = useSyncExternalStore(nativeTabBarStore.subscribe, nativeTabBarStore.get);
+  const isTabBarVisible = tabBar !== null && !tabBar.hidden;
+  const tabBarInsetScript = buildTabBarInsetScript(
+    isTabBarVisible ? getTabBarLayout(insets.bottom).inset : 0,
+  );
   const webViewRef = useRef<ComponentRef<typeof WebView>>(null);
   const canGoBack = useRef(false);
 
-  // Android 하드웨어 뒤로가기는 웹 history를 먼저 되돌리고, 더 갈 곳이 없으면 앱 기본 동작에 맡긴다.
+  // Android 뒤로가기 시 웹 history 우선 처리
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (!canGoBack.current) return false;
@@ -43,13 +82,29 @@ function App() {
     return () => subscription.remove();
   }, []);
 
+  // 값 변경 시(예: 기기 회전) 재주입 — 첫 로드는 injectedJavaScriptBeforeContentLoaded 담당
+  useEffect(() => {
+    webViewRef.current?.injectJavaScript(safeAreaScript);
+  }, [safeAreaScript]);
+
+  // 막대가 차지하는 높이를 웹 CSS 변수로 전달(막대가 바뀔 때마다, 그리고 새 문서를 로드한 뒤)
+  useEffect(() => {
+    webViewRef.current?.injectJavaScript(tabBarInsetScript);
+  }, [tabBarInsetScript]);
+
   return (
     <View style={styles.container}>
       <WebView
         ref={webViewRef}
         source={{ uri: WEB_URL }}
         style={styles.webview}
+        injectedJavaScriptBeforeContentLoaded={safeAreaScript}
+        // WebView 자체 inset 보정 해제(웹이 여백을 적용하므로 이중 적용 방지)
+        contentInsetAdjustmentBehavior="never"
         allowsBackForwardNavigationGestures
+        // 이전 문서의 탭 막대 잔존 방지
+        onLoadStart={() => nativeTabBarStore.set(null)}
+        onLoadEnd={() => webViewRef.current?.injectJavaScript(tabBarInsetScript)}
         onNavigationStateChange={(navState) => {
           canGoBack.current = navState.canGoBack;
         }}
@@ -67,8 +122,24 @@ function App() {
           </View>
         )}
       />
+      {isTabBarVisible ? (
+        <NativeTabBar
+          items={tabBar.items}
+          selectedId={tabBar.selectedId}
+          bottomInset={insets.bottom}
+          onPress={(id) => postMessage('nativeTabPress', { id })}
+        />
+      ) : null}
       <StatusBar style="auto" />
     </View>
+  );
+}
+
+function App() {
+  return (
+    <SafeAreaProvider>
+      <Shell />
+    </SafeAreaProvider>
   );
 }
 

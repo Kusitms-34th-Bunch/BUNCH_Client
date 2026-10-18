@@ -5,7 +5,14 @@ const SRC = join(process.cwd(), 'src');
 
 const HEADER = '// @generated — run `yarn gen:index` to update';
 
-const IGNORE = [/^index\.tsx?$/, /\.test\.tsx?$/, /\.stories\.tsx?$/, /\.d\.ts$/, /^\./];
+const IGNORE = [
+  /^index\.tsx?$/,
+  /\.internal\.tsx?$/,
+  /\.test\.tsx?$/,
+  /\.stories\.tsx?$/,
+  /\.d\.ts$/,
+  /^\./,
+];
 
 const shouldIgnore = (name: string) => IGNORE.some((pattern) => pattern.test(name));
 
@@ -21,6 +28,10 @@ interface BarrelFile {
   content: string;
 }
 
+// web 구역은 components barrel에서 빼고 `@app/design-system/web`(src/components/web/index.ts)으로만 공개한다
+const COMPONENTS_DIR = join(SRC, 'components');
+const PRIVATE_ZONES = new Set(['web']);
+
 const generateBarrelsForDir = async (dirPath: string): Promise<BarrelFile[]> => {
   const entries = (await readdir(dirPath)).sort();
   const exportLines: string[] = [];
@@ -35,7 +46,7 @@ const generateBarrelsForDir = async (dirPath: string): Promise<BarrelFile[]> => 
     if (entryStat.isDirectory()) {
       const nested = await generateBarrelsForDir(fullPath);
       results.push(...nested);
-      if (nested.length > 0) {
+      if (nested.length > 0 && !(dirPath === COMPONENTS_DIR && PRIVATE_ZONES.has(entry))) {
         exportLines.push(`export * from './${entry}';`);
       }
       continue;

@@ -61,14 +61,7 @@ description: frontend diff의 가독성, 예측 가능한 계약, 변경 경계,
 
 ## 심각도
 
-`docs/code-quality/review.md`의 기준을 따른다.
-
-| 수준       | 기준                                           |
-| ---------- | ---------------------------------------------- |
-| Critical   | 실제 버그, 계약 위반, 데이터 손실, 접근성 차단 |
-| Major      | 회귀 가능성이 높은 경계·상태 처리 문제         |
-| Minor      | 유지보수 비용이 커질 수 있는 구조 문제         |
-| Suggestion | 현재 작업을 막지는 않는 개선 제안              |
+`docs/code-quality/review.md`의 Finding 기준을 따른다.
 
 ## 출력
 

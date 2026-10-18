@@ -10,6 +10,10 @@ description: 이 monorepo의 사용자 핵심 흐름을 위한 집중 Playwright
 `docs/workflows/e2e-testing.md`, `docs/workflows/testing.md`, `e2e/`, Playwright config, 대상 route와 scripts를 읽는다.
 unit/component test로 증명하기 어려운 navigation, route guard, 인증, mutation 후 이동을 대상으로 삼는다.
 
+## 범위 설계 위임
+
+시나리오가 둘 이상의 route에 걸치면 메인 세션이 `bunch-e2e-planner`로 범위를 먼저 설계한다.
+
 ## 시나리오 설계
 
 1. 사용자 목표 하나와 happy path 하나를 먼저 정한다.
