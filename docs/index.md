@@ -29,6 +29,7 @@
 
 - [Development](./workflows/development.md)
 - [Local Development](./workflows/local-development.md)
+- [모바일 앱 실행과 테스트](./workflows/mobile-testing.md)
 - [Testing](./workflows/testing.md)
 - [E2E Testing](./workflows/e2e-testing.md)
 - [API Integration](./workflows/api-integration.md)

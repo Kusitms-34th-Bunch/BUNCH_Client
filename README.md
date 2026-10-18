@@ -28,13 +28,9 @@ yarn dev
 
 `yarn dev`는 웹을 실행한다. 관리자 앱은 `yarn workspace @app/admin dev`로 실행한다.
 
-모바일 쉘은 Yarn workspace 밖에서 pnpm으로 실행한다. 웹 주소 설정은 [모바일 쉘 구조](./docs/architecture/mobile-shell.md)를 참고한다.
-
-```sh
-cd apps/mobile-shell
-pnpm install --frozen-lockfile
-pnpm start
-```
+모바일 쉘은 Yarn workspace 밖에서 pnpm으로 실행한다.
+시뮬레이터·실기기 설치와 실행 순서는 [모바일 앱 실행과 테스트](./docs/workflows/mobile-testing.md)를 따른다.
+WebView와 bridge 구성은 [모바일 쉘 구조](./docs/architecture/mobile-shell.md)를 참고한다.
 
 ## Commands
 
