@@ -276,7 +276,7 @@
   --semantic-spacing-s8: var(--primitive-dimension-16);
   --semantic-spacing-s9: var(--primitive-dimension-18);
   --semantic-surface-brand: var(--primitive-bunch-500);
-  --semantic-surface-brand-subtle-1: var(--primitive-bunch-100);
+  --semantic-surface-brand-subtle-1: var(--primitive-bunch-50);
   --semantic-surface-brand-subtle-2: var(--primitive-bunch-300);
   --semantic-surface-danger: var(--primitive-red-color-feedback-red-600);
   --semantic-surface-disabled: var(--primitive-gray-scale-gray-200);
