@@ -59,7 +59,7 @@ Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 | 아이콘 크기 16/20/24        | `size` `sm`/`md`/`lg`. SVG 원본 width/height/viewBox, 생성기에서 파일명과 검증                    |
 | 크기별 선 굵기              | 원본 유지(sm 1.2, md·lg 1.5). 확대·축소로 대체하지 않음                                           |
 | 갤러리 배경·문구·간격       | `bg-surface-primary`, `text-text-primary`, `text-text-secondary`, 기존 spacing·typography utility |
-| 터치 영역 S40/M44/L48       | 기존 전달값을 문서에 유지, SVG에 padding·클릭 동작 추가하지 않음                                  |
+| 터치 영역 S32/M40/L40       | 전달값을 문서에 유지(Large 40은 확인 요청 중), SVG에 padding·클릭 동작 추가하지 않음              |
 
 ## 입력과 생성 계약
 
@@ -75,7 +75,7 @@ Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 - [미정] 그래픽 아이콘 이름(`Graphic<이름>Icon`)과 두 가지 크기(34·40) 유지 여부: 디자이너 확인. Chat·Edit의 안쪽 도형은 투명 구멍이라 배경색이 비친다.
 - [미정] `fill-user` medium의 몸통 상단 y=11은 large의 y=14를 20/24로 축소한 11.667과 약 0.667 viewBox 단위 차이가 난다. 원본 SVG와 생성물 모두 이 차이를 유지한다. 의도한 보정인지 디자이너 확인 전에는 비례 축소로 바꾸지 않는다.
 - [측정] 번들 비용(2026-10-17 재측정): 같은 아이콘을 md로만 사용할 때 이전 구조 대비 gzip 크기는 1개 723B → 1,179B(+456B), 5개 1,327B → 2,671B(+1,344B), 31개 3,177B → 7,704B(+4,527B)다. 이전 구조는 `6f5d8519bb7460c5f071350d6d5d254bac7100de`의 Medium 컴포넌트, 현재 구조는 같은 이름순 아이콘의 `size="md"` 사용이다. 로컬 macOS·Node 26.10.0·Yarn 4.17.1·Vite 8.1.5 production ES library, minify 활성화, React·jsx-runtime 외부 처리, Node gzip 기본값으로 각 1회 측정했다. 세 크기 도형을 런타임에 고르므로 안 쓰는 크기도 포함된다. 이전 소스 gzip 평균이나 개별 gzip 합계는 이 번들 수치와 비교하지 않는다. 여러 크기 동시 사용과 Next 앱 실제 증분은 미측정이다.
-- [미정] Small 터치 영역 40px의 실제 사용 위치·디자이너 재확인. IconButton 구현 시 확정하며 이번 작업에서 클릭 가능한 UI를 추가하지 않음.
+- [미정] Small 터치 영역 32px의 실제 사용 위치와 Large 40px 확정(디자이너 확인 요청 중). IconButton 구현 시 확정하며 이번 작업에서 클릭 가능한 UI를 추가하지 않음.
 - [미검증] 원격 Chromatic 게시. 기존 workflow가 갤러리 story를 수집하며 이 작업은 게시하지 않음.
 
 ## 검증
