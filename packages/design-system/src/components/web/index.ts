@@ -3,3 +3,4 @@
 export * from './label';
 export * from './pageHeader';
 export * from './stepper';
+export * from './termsLabel';
