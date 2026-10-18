@@ -54,7 +54,8 @@ export function TextField({
         value={value}
         className={cn(
           fieldText,
-          'py-padding-p1 disabled:text-text-disabled focus:outline-none disabled:cursor-not-allowed',
+          // 포커스되면 안내 문구를 숨겨 캐럿만 보이게 한다(Figma Focused)
+          'py-padding-p1 disabled:text-text-disabled focus:outline-none focus:placeholder:text-transparent disabled:cursor-not-allowed',
         )}
         {...props}
         ref={inputRef}
@@ -65,6 +66,8 @@ export function TextField({
           type="button"
           aria-label={clearLabel}
           onClick={handleClear}
+          // Safari·터치에서 버튼을 누를 때 입력창 포커스가 빠지지 않도록 막는다
+          onMouseDown={(event) => event.preventDefault()}
           className="-my-s4 -mr-s4 size-s16 text-icon-primary focus-visible:outline-border-brand inline-flex shrink-0 cursor-pointer items-center justify-center focus-visible:outline-2"
         >
           <span aria-hidden="true" className="bg-overlay-hover inline-flex size-4 rounded-full">

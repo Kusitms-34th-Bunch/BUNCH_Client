@@ -53,4 +53,23 @@ describe('TextField', () => {
     const button = screen.getByRole('button', { name: 'BUTTON' });
     expect(input.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it('포커스되면 안내 문구를 숨기도록 스타일을 건다', () => {
+    render(<TextField label="제목" />);
+
+    expect(screen.getByRole('textbox').className).toContain('focus:placeholder:text-transparent');
+  });
+
+  it('지우기 버튼에 마우스를 누르고 있는 동안에도 입력창의 포커스가 유지된다', async () => {
+    render(<TextField label="제목" value="부산" onChange={vi.fn()} onClear={vi.fn()} />);
+
+    await userEvent.tab();
+    await userEvent.pointer({
+      keys: '[MouseLeft>]',
+      target: screen.getByRole('button', { name: '입력 지우기' }),
+    });
+
+    expect(document.activeElement).toBe(screen.getByRole('textbox'));
+    await userEvent.pointer({ keys: '[/MouseLeft]' });
+  });
 });
