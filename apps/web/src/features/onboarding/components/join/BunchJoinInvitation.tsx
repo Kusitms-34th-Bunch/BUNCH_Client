@@ -61,7 +61,8 @@ export function BunchJoinInvitation({
         />
       }
     >
-      <div className="gap-s10 px-padding-p18 pb-padding-p18 flex min-h-full flex-col items-center justify-center">
+      {/* 로딩 화면의 연보라 배경에서 이어지므로 내용만 부드럽게 나타난다(`globals.css`의 `page-content-in`) */}
+      <div className="gap-s10 px-padding-p18 pb-padding-p18 flex min-h-full animate-[page-content-in_300ms_ease-out_both] flex-col items-center justify-center motion-reduce:animate-none">
         <h1 className="typography-title-1-bold text-text-primary text-center break-keep">
           초대받은 번치에 참여할까요?
         </h1>

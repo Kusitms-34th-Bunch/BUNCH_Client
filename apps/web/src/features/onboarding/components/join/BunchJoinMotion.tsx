@@ -1,13 +1,18 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { InviteAnimation } from './InviteAnimation';
 
 // 동작 줄이기에서는 로티를 재생하지 않고 잠깐 안내만 보여 준 뒤 넘어간다
 const REDUCED_MOTION_HOLD_MS = 800;
+
+// 로티(30fps, 120프레임)는 연보라 원이 프레임 58~89에 커지고 그 뒤 약 1초는 변화 없이 끝난다
+// 정지한 채 기다리지 않게 원이 다 커진 직후(프레임 96)에 넘어가고, 그 전에(프레임 80) 화면 배경을 연보라로 번지게 해서 다음 화면 배경과 이어 준다
+const TINT_FRAME = 80;
+const HAND_OFF_FRAME = 96;
 
 const MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 function subscribeMotion(listener: () => void) {
@@ -27,6 +32,7 @@ export function BunchJoinMotion() {
   const router = useRouter();
   const moved = useRef(false);
   const mounted = useRef(true);
+  const [tinted, setTinted] = useState(false);
   const reducedMotion = useSyncExternalStore(
     subscribeMotion,
     getReducedMotion,
@@ -47,6 +53,14 @@ export function BunchJoinMotion() {
     router.replace(ONBOARDING_PATHS.joinBunchInvitation);
   }, [router]);
 
+  const handleFrame = useCallback(
+    (frame: number) => {
+      if (frame >= TINT_FRAME) setTinted(true);
+      if (frame >= HAND_OFF_FRAME) goNext();
+    },
+    [goNext],
+  );
+
   useEffect(() => {
     if (!reducedMotion) return;
     const timer = setTimeout(goNext, REDUCED_MOTION_HOLD_MS);
@@ -54,11 +68,16 @@ export function BunchJoinMotion() {
   }, [reducedMotion, goNext]);
 
   return (
-    <PageShell>
+    <PageShell
+      // 배경은 로티가 끝나는 원 색(초대 확인 화면 배경)으로 번진다
+      className={`transition-colors duration-300 motion-reduce:transition-none ${tinted ? 'bg-surface-brand-subtle-1' : ''}`}
+    >
       {/* 보이는 글자가 없는 화면이라 제목으로 불러오는 중임을 전한다. 라이브 영역(role=status)은 처음부터 들어 있는 글자를 알리지 않는다 */}
       <h1 className="sr-only">초대받은 번치 정보를 불러오는 중이에요.</h1>
       <div className="size-full">
-        {reducedMotion ? null : <InviteAnimation onComplete={goNext} onError={goNext} />}
+        {reducedMotion ? null : (
+          <InviteAnimation onFrame={handleFrame} onComplete={goNext} onError={goNext} />
+        )}
       </div>
     </PageShell>
   );
