@@ -8,5 +8,6 @@ export * from './inviteCard';
 export * from './inviteMemberCard';
 export * from './loginButton';
 export * from './pageHeader';
+export * from './profileImage';
 export * from './stepper';
 export * from './visibilityOption';
