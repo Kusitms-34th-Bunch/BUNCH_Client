@@ -35,6 +35,15 @@ for (const COMPONENTS_DIR of zoneDirs)
 
     if (missing.length > 0)
       problems.push(`  - ${COMPONENTS_DIR}/${dir}: ${missing.join(', ')} 없음`);
+
+    // 내부 hook의 barrel 노출 방지, 공개 hook 추가 시 명시적 예외 필요
+    const leakedHooks = readdirSync(join(COMPONENTS_DIR, dir)).filter(
+      (file) => /^use[A-Z].*\.tsx?$/.test(file) && !/\.(internal|test|stories)\.tsx?$/.test(file),
+    );
+    for (const file of leakedHooks)
+      problems.push(
+        `  - ${COMPONENTS_DIR}/${dir}/${file}: hook 파일은 ${file.replace(/\.tsx?$/, '.internal$&')}로 이름을 바꿔야 공개 API에서 빠집니다`,
+      );
   }
 
 if (problems.length > 0) {

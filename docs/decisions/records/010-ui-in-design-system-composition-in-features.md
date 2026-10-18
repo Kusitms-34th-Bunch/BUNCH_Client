@@ -1,7 +1,7 @@
 # 010: UI 컴포넌트는 디자인 시스템(core·web 구역)에, 조합은 features에 둔다
 
 - 상태: accepted
-- 구현 상태(2026-10-18 확인): 구현됨. 기존 컴포넌트를 `src/components/core/`로 옮기고 `@app/design-system/web` 공개 주소, 생성기 구역 선택, 구조 검사, import 경계 규칙을 추가했다. `src/components/web/`은 첫 컴포넌트가 생길 때 만들어진다.
+- 구현 상태(2026-10-18 확인): 구현됨. 기존 컴포넌트를 `src/components/core/`로 옮기고 `@app/design-system/web` 공개 주소, 생성기 구역 선택, 구조 검사, import 경계 규칙을 추가했다. `src/components/web/`은 첫 전용 컴포넌트(`BottomNavigation`, 2026-10-18)가 들어오면서 채워졌다.
 
 ## 배경
 
@@ -28,7 +28,7 @@ Figma 컴포넌트 페이지에는 공통 부품과 사용자 앱 전용 부품(
 
 - `승격 기준` 대신 `배치 기준`을 쓴다. 두 곳 이상 쓰일 때까지 기다리지 않고 UI는 처음부터 디자인 시스템에 둔다.
 - 앱 전용 UI도 Storybook·Chromatic 검증을 받는다.
-- 이번 이동: 기존 6개 컴포넌트와 헤더에 쓰는 SearchField·TextField·AccountSwitcher를 모두 `core`에 둔다. `web` 구역은 첫 전용 컴포넌트(예: 하단 내비게이션)가 생길 때 만든다.
+- 이번 이동: 기존 6개 컴포넌트와 헤더에 쓰는 SearchField·TextField·AccountSwitcher를 모두 `core`에 둔다. `web` 구역은 첫 전용 컴포넌트로 하단 내비게이션(`BottomNavigation`)을 두었다.
 - 디자인 시스템이 제품 흐름의 일부 UI를 갖게 되므로 컴포넌트가 문구·route·데이터를 직접 import하지 않는다는 경계가 더 중요하다. 리뷰에서 확인한다.
 - Storybook 제목은 바꾸지 않았다(`Components/…`, web은 `Web/…`). Chromatic 기준선 영향은 첫 실행에서 확인한다.
 

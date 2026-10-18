@@ -11,7 +11,7 @@ const meta = {
   args: { title, description, progress: <Stepper total={3} current={1} /> },
   decorators: [
     (Story) => (
-      <div className="w-[375px]">
+      <div className="w-93.75">
         <Story />
       </div>
     ),

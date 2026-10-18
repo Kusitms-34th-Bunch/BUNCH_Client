@@ -4,7 +4,10 @@ import { Button } from '../components/core/button';
 import * as icons from './generated';
 
 const sizes: IconSize[] = ['sm', 'md', 'lg'];
-const entries = Object.entries(icons).filter(([name]) => !/(Small|Medium|Large)Icon$/.test(name));
+const entries = Object.entries(icons).filter(
+  ([name]) => !/(Small|Medium|Large)Icon$/.test(name) && !name.startsWith('Graphic'),
+);
+const graphicEntries = Object.entries(icons).filter(([name]) => name.startsWith('Graphic'));
 
 const meta = {
   title: 'Foundations/Icons',
@@ -48,6 +51,17 @@ export const Gallery: Story = {
           ))}
         </tbody>
       </table>
+      <section className="gap-s4 flex flex-col">
+        <h2 className="pb-s4 typography-title-1-semi-bold">Graphic 5 (컬러, 크기 하나)</h2>
+        <ul className="gap-s6 flex flex-wrap items-end">
+          {graphicEntries.map(([name, Icon]) => (
+            <li key={name} className="gap-s2 typography-label-s flex flex-col items-center">
+              <Icon />
+              <span className="text-text-secondary">{name}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
       <div className="gap-s8 typography-label-m flex flex-wrap items-center">
         <span className="text-icon-brand">
           <icons.FillCircleCheckIcon size="lg" aria-label="완료" />
