@@ -95,3 +95,9 @@ yarn e2e
 `.github/workflow-templates/`에는 Chromatic, Lighthouse 성능 감사, Vercel 배포, CodeQL workflow 초안이 있다. `.github/workflows/`가 아닌 곳에 있어 실행되지 않으며, 각 파일이 요구하는 secret을 설정하기 전까지는 도입하지 않는다. 조건이 갖춰지면 해당 템플릿을 `.github/workflows/`로 옮기고 이 문서에 실제 trigger·역할을 추가한다. 자세한 활성화 조건은 `.github/workflow-templates/README.md`를 확인한다.
 
 CodeQL(`codeql.yml`)은 저장소를 공개로 돌린 뒤에 활성화한다. 비공개 저장소에서는 code scanning에 GitHub Advanced Security가 필요하다. 비공개인 동안에는 `yarn check:suspicious`, Dependabot, 코드 오너 리뷰가 보안 방어의 중심이다. 활성화하면 이 문서의 Workflows 표에 trigger와 역할을 추가한다.
+
+## 디자인 토큰 동기화
+
+`sync-design-tokens.yml`은 `design-token`에 Push된 `packages/design-system/tokens/tokens.json` 변경 또는 수동 실행을 대상으로 한다. `yarn tokens:build`, `yarn tokens:check`, 토큰 변환 테스트를 실행하고 생성 CSS를 커밋한 뒤 `develop` PR을 생성하거나 갱신한다.
+
+저장소 secret `DESIGN_TOKENS_PR_TOKEN`에는 Contents와 Pull requests의 읽기·쓰기 권한이 필요하다. `design-token`에도 workflow, 변환 스크립트와 package 명령을 함께 유지한다. 최초 파일 반영 직후에는 workflow를 한 번 수동 실행하고, 이후 토큰 원본 Push부터 자동 실행한다.

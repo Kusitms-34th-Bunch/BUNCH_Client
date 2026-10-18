@@ -35,7 +35,9 @@
     "gen:api-types": "node scripts/generate-openapi-types.mjs",
     "gen:ds-component": "turbo gen ds-component --args",
     "review:pr": "node .agents/scripts/publish-pr-review.mjs",
-    "verify": "yarn check:suspicious && yarn check:generated && yarn check:catalog && yarn check:agent-docs && yarn check:boundaries && yarn format:check && yarn lint && yarn typecheck && yarn test && yarn build"
+    "verify": "yarn check:suspicious && yarn check:generated && yarn check:catalog && yarn check:agent-docs && yarn check:boundaries && yarn format:check && yarn lint && yarn typecheck && yarn test && yarn build",
+    "tokens:build": "yarn workspace @app/design-system tokens:build",
+    "tokens:check": "yarn workspace @app/design-system tokens:check"
   },
   "devDependencies": {
     "@app/lint-config": "workspace:*",

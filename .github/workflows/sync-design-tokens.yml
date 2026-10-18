@@ -1,0 +1,135 @@
+name: Sync Design Tokens
+
+on:
+  push:
+    branches: [design-token]
+    paths:
+      - packages/design-system/tokens/tokens.json
+  workflow_dispatch:
+
+concurrency:
+  group: sync-design-tokens
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check automation token
+        env:
+          PR_TOKEN: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
+        run: |
+          if [ -z "$PR_TOKEN" ]; then
+            echo "Set DESIGN_TOKENS_PR_TOKEN with Contents and Pull requests read/write access to this repository."
+            exit 1
+          fi
+
+      # PAT-authenticated pushes and PRs allow their CI workflows to run without bot approval.
+      - uses: actions/checkout@v4
+        with:
+          ref: design-token
+          fetch-depth: 0
+          token: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
+
+      - name: Suspicious file guard
+        run: node turbo/workflows/check-suspicious.mjs
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - run: yarn install --immutable
+
+      - name: Convert and verify tokens
+        run: |
+          yarn tokens:build
+          yarn tokens:check
+          yarn workspace @app/design-system test scripts/tokens.test.ts
+
+      - name: Commit generated CSS
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/design-system/tokens/tokens.css
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: 디자인 토큰 자동 변환"
+            git push origin HEAD:design-token
+          fi
+
+      - name: Open a PR to develop when needed
+        env:
+          GH_TOKEN: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
+        run: |
+          git fetch origin develop
+          if git diff --quiet origin/develop HEAD -- packages/design-system/tokens/tokens.json packages/design-system/tokens/tokens.css; then
+            echo "No design token changes compared with develop."
+            exit 0
+          fi
+          OPEN_PR=$(gh pr list --base develop --head design-token --state open --json number --jq '.[0].number // empty')
+          if [ -n "$OPEN_PR" ]; then
+            echo "Updated existing design-token PR #$OPEN_PR."
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/design-token-pr.md" <<'BODY'
+          ## ✨ 주요 변경사항
+
+          - Tokens Studio에서 전달된 디자인 토큰 원본과 생성 CSS를 반영합니다.
+
+          ---
+
+          ## 📝 작업 상세 내용
+
+          - Primitive·Semantic 계층과 CSS 변수 참조를 유지합니다.
+          - 색상·간격·radius·shadow·타이포그래피를 변환합니다.
+
+          ---
+
+          ## 🧪 검증
+
+          - `yarn tokens:build`, `yarn tokens:check`
+          - `yarn workspace @app/design-system test scripts/tokens.test.ts`
+
+          ---
+
+          ## 👀 리뷰 포인트
+
+          - 디자인 의도와 토큰 이름·값이 일치하는지 확인해주세요.
+
+          ---
+
+          ## ✅ 체크리스트
+
+          - [ ] 관련 이슈 `Close #번호` 작성
+          - [ ] 불필요한 주석 및 디버깅 코드 제거
+          - [ ] 기능 정상 동작 확인
+          - [ ] 커밋 및 코드 컨벤션 준수
+          - [ ] 코드 리뷰 지적에 모두 응답 (고침 / 안 고치는 이유 / 이슈 번호)
+
+          ---
+
+          ## 📸 스크린샷 (선택)
+
+          UI 변경이 있는 경우 리뷰 시 첨부합니다.
+
+          ---
+
+          ## ⚠️ 리스크 / 후속 작업
+
+          - 앱 화면과 실제 폰트 렌더링은 별도 확인이 필요합니다.
+
+          ---
+
+          ## 🔗 관련 이슈
+
+          연결할 이슈가 있으면 리뷰 시 추가합니다.
+          BODY
+          gh pr create --base develop --head design-token \
+            --title "[Chore] 디자인 토큰 업데이트" \
+            --body-file "$RUNNER_TEMP/design-token-pr.md"
