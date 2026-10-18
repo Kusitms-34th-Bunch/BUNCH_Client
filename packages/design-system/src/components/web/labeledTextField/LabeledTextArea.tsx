@@ -66,7 +66,7 @@ export function LabeledTextArea({
         <label htmlFor={inputId} className="typography-body-2-meduim text-text-secondary">
           {label}
         </label>
-        <div className="rounded-r5 border-border-secondary bg-surface-primary px-padding-p8 py-padding-p5 border">
+        <div className="rounded-r5 border-border-secondary bg-surface-primary px-padding-p8 py-padding-p5 focus-within:border-primitive-gray-700 border forced-colors:focus-within:outline-2 forced-colors:focus-within:outline-offset-2">
           <textarea
             ref={ref}
             id={inputId}
@@ -76,7 +76,7 @@ export function LabeledTextArea({
             placeholder={placeholder}
             aria-invalid={error ? true : undefined}
             aria-describedby={describedBy || undefined}
-            className="typography-body-2-regular text-text-primary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent focus:outline-none"
+            className="typography-body-2-regular text-text-primary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent focus:outline-none focus:placeholder:text-transparent"
             {...props}
           />
         </div>

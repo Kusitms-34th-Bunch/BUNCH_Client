@@ -35,9 +35,11 @@
 
 ## 접근성
 
+- 강제 색상 모드에서는 테두리 색 변화가 사라질 수 있어 입력 영역에 2px 시스템 색 윤곽선을 추가한다.
+
 - 보이는 `<label htmlFor>`가 이름이다. 오류와 글자 수는 `aria-describedby`로 연결하고, 오류가 바뀔 때 읽기는 항상 있는 `role="status"` 영역이 맡는다(`LabeledTextField`의 `role="alert"` 방식과 다르다).
 - 내용이 길어져 높이가 늘어도 포커스와 입력 위치는 유지된다.
-- 입력창에 포커스 윤곽선을 따로 그리지 않는다(`TextField`와 같은 방식, Figma에 없음). 키보드 포커스가 보이지 않는 점은 `TextField`와 같은 기존 한계다(확인할 항목).
+- 포커스 시 1px 테두리를 `border-strong` 색상으로 바꾸고 안내 문구를 숨긴다. 포커스 해제 시 기본 테두리·안내 문구로 돌아간다.
 
 ## Styling과 의존성
 
@@ -47,11 +49,11 @@
 | 입력 글자    | Body-2-Regular(14/21), `text-primary`, 안내 `text-quaternary` | `typography-body-2-regular text-text-primary placeholder:text-text-quaternary` |
 | 라벨·안내 줄 | 라벨은 `LabeledTextField`와 같고 안내 줄은 `FieldFooter`      | 같은 utility                                                                   |
 
-- dependency 추가 없음. 높이 조절은 `useEffect`로 `scrollHeight`를 읽는다(`field-sizing`을 쓰지 않아 iOS WebView 지원 여부와 무관하다).
+- dependency 추가 없음. 높이 조절은 `useLayoutEffect`로 `scrollHeight`를 읽는다(`field-sizing`을 쓰지 않아 iOS WebView 지원 여부와 무관하다).
 
 ## 확인할 항목
 
-- 포커스 윤곽선 (미정): `TextField`와 같이 입력창에 포커스 표시가 없다. 디자이너 확인(Figma에 정의가 없음).
+- 포커스 표시 (확정): Figma `720:3803`·`796:4808`과 동일하게 적용한다. `border-strong` semantic 토큰이 아직 없어 같은 값인 `focus-within:border-primitive-gray-700`(#25282d)을 쓴다. semantic 토큰 동기화 후 교체한다.
 - 줄바꿈 입력 (미정): 한 줄 소개에서 Enter로 줄을 바꿀 수 있는지 설계서에 없다. 이 컴포넌트는 막지 않고 호출자가 정한다.
 - 한글 IME와 높이 (미검증): 조합 중 `scrollHeight`가 어떻게 바뀌는지 실기기에서 확인하지 못했다.
 - 글자 수 최대치 (확정): 설계서 본문과 Figma는 50이다(설계서 목업의 `0/30`은 오기로 본다).

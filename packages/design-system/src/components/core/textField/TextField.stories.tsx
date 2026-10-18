@@ -16,6 +16,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+export const Focused: Story = { args: { autoFocus: true } };
+
 /** 값이 있을 때만 지우기 버튼이 보인다(controlled) */
 const ClearableExample = (args: React.ComponentProps<typeof TextField>) => {
   const [value, setValue] = useState('입력한 글');

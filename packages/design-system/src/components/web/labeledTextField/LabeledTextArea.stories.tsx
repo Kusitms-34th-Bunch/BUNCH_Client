@@ -26,6 +26,10 @@ type Story = StoryObj<typeof meta>;
 /** 비어 있을 때: 안내 문구와 0/50 */
 export const Empty: Story = { args: { value: '', onChange: () => {} } };
 
+export const Focused: Story = {
+  args: { value: '', onChange: () => {}, autoFocus: true },
+};
+
 /** 길어지면 줄바꿈되고 높이가 늘어난다 */
 export const Wrapped: Story = {
   args: {
