@@ -67,7 +67,7 @@ WebView 쉘(`docs/architecture/mobile-shell.md`)에서도 체감이 유지되도
 
 ## WebView 주의 사항
 
-다른 프로젝트(Capacitor, iOS WKWebView)에서 실제로 겪은 사례다. 번치 쉘(`react-native-webview`)의 실기기에서는 아직 확인하지 않았으므로, 해당 UI를 만들 때 먼저 확인할 목록으로 쓴다.
+iOS WKWebView에서 알려진 사례다. 번치 쉘(`react-native-webview`)의 실기기에서는 아직 확인하지 않았으므로, 해당 UI를 만들 때 먼저 확인할 목록으로 쓴다.
 
 - input 글자 크기가 16px 미만이면 iOS가 포커스 때 화면을 확대한다. viewport `maximum-scale`로 막으면 접근성이 나빠지고 실기기에서도 안정적이지 않았으므로, 입력 글자는 16px 이상으로 둔다.
 - iOS WebKit은 input 포커스 때 `body { overflow: hidden }`을 무시하고 document를 스크롤할 수 있다. 시트·모달이 열린 동안 배경을 고정해야 하면 `position: fixed; inset: 0`처럼 document 스크롤 경로 자체를 없앤다.

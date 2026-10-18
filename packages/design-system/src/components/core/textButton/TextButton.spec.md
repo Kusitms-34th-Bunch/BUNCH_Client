@@ -30,7 +30,7 @@
 
 ## 상태와 동작
 
-- Default: 배경 없음. 글자색은 `primary` `text-brand`, `secondary` `text-secondary`, `warning` `system-fail-fg`(토큰 차이는 확인할 항목 참고).
+- Default: 배경 없음. 글자색은 `primary` `text-brand`, `secondary` `text-secondary`, `warning` `system-fail-text`(대비는 확인할 항목 참고).
 - Variant·size: 크기는 높이 48/40/32, 좌우 패딩 24/16/12, 요소 간격 8/8/6, 아이콘 24/20/16, 글자 `label-l/m/s`. 반경 `r4`. 모두 Button과 같다.
 - 눌림: 글자 아래에 `overlay-hover`(검정 10%) 오버레이를 깐다. 세 variant 모두 같다(Figma `Pressed`가 `overlay-hover` 변수를 쓴다).
 - 비활성: 세 variant 모두 `text-disabled` 글자색. 눌림 오버레이는 켜지지 않는다.
@@ -48,7 +48,7 @@
 
 ## Styling과 의존성
 
-- Token·기존 primitive: 모두 기존 토큰(`text-text-brand`, `text-text-secondary`, `text-system-fail-fg`, `text-text-disabled`, `rounded-r4`, `h-s14/16/18`, `px-s6/8/12`, `gap-s3/4`, `typography-label-l/m/s`, `bg-overlay-hover`). 하드코딩한 값이 없다. 선언 방식은 Button과 같다(`tv` slots `base`·`icon`·`label`).
+- Token·기존 primitive: 모두 기존 토큰(`text-text-brand`, `text-text-secondary`, `text-system-fail-text`, `text-text-disabled`, `rounded-r4`, `h-s14/16/18`, `px-s6/8/12`, `gap-s3/4`, `typography-label-l/m/s`, `bg-overlay-hover`). 하드코딩한 값이 없다. 선언 방식은 Button과 같다(`tv` slots `base`·`icon`·`label`).
 - 허용되는 dependency: `tailwind-variants`.
 - Figma 이름 대응: `varient`→`variant`, `rIghtIcon`→`rightIcon`, `Size L/M/S`→`lg/md/sm`, 아이콘 boolean(`leftIcon`·`rIghtIcon`)과 `swapIconL/M/S`→ReactNode 슬롯 `leftIcon`·`rightIcon`(크기별 슬롯 크기는 `size`가 정한다).
 - Storybook state matrix: `Matrix`(variant × 크기 × 기본·비활성), `WithIcons`, `Disabled`, `LongLabel`, `SideBySide`. 눌림은 `:active`라서 직접 눌러 확인한다.
@@ -56,7 +56,7 @@
 
 ## 확인할 항목
 
-- Warning 글자색 토큰 (미정): Figma `system-fail-fg`는 `#f04d29`(`red-500`)인데 저장소 토큰 `system-fail-fg`는 `#bc2b0d`(`red-700`)다. 값을 하드코딩하지 않고 같은 의미의 `text-system-fail-fg`를 써서 Tokens Studio 원본이 갱신되면 자동으로 Figma와 같아진다. 그때까지는 Figma보다 어둡게 보이며, 대비는 저장소 값이 더 좋다(약 6:1, Figma 값은 흰 배경에서 약 3.7:1). 디자이너가 원본을 다시 push할지, Figma 값을 의도한 것인지 확인한다.
+- Warning 글자색 대비: 토큰 원본의 `system-fail-text`가 `red-500`(`#f04d29`)을 참조한다. 흰 배경에서 대비가 약 3.7:1이므로 일반 크기 텍스트의 WCAG AA 기준 4.5:1 충족 여부는 별도 디자인 확인이 필요하다.
 - Pressed 오버레이 (확정): Figma가 세 variant 모두 `overlay-hover`(10%)다. Button의 Warning 20%와 달라서 의도한 차이인지 디자이너에게 확인한다.
 - 이름 (확정): variant `primary`(브랜드 색 글자)는 Figma 이름을 따랐다. Button의 `primary`(검정 반전 배경)와 모양이 다르다.
 - Figma에 없는 추가 (제안): focus-visible outline, 긴 글자 말줄임, `touch-manipulation`, `type="button"` 기본값. 필요 없으면 제거한다.
