@@ -188,6 +188,64 @@ describe('icon generator', () => {
     await expect(generateIcons({ iconRoot })).rejects.toThrow('중복된 아이콘 컴포넌트 이름');
   });
 
+  it('generates a single fixed-size graphic icon that keeps its original colors', async () => {
+    const iconRoot = await fixture();
+    await writeIcon(
+      iconRoot,
+      'svg-graphic',
+      'graphic-lock.svg',
+      svg(34, '<path fill="#A7ADFF" d="M0 0h1v1H0z"/>'),
+    );
+
+    const result = await generateIcons({ iconRoot });
+
+    expect(result.graphicSources.map((source) => source.componentName)).toEqual([
+      'GraphicLockIcon',
+    ]);
+    const code = await readFile(join(iconRoot, 'generated', 'GraphicLockIcon.tsx'), 'utf8');
+    expect(code).toContain('#A7ADFF');
+    expect(code).not.toContain('currentColor');
+    expect(code).toContain('width={34}');
+    expect(code).toContain('ariaLabel?.trim() || ariaLabelledby?.trim()');
+  });
+
+  it.each([
+    ['lock.svg', svg(34), '그래픽 아이콘 파일 이름은 graphic-<이름>.svg'],
+    [
+      'graphic-lock.svg',
+      '<svg width="34" height="30" viewBox="0 0 34 30" xmlns="http://www.w3.org/2000/svg"/>',
+      'width와 height가 같은 양수',
+    ],
+    [
+      'graphic-lock.svg',
+      '<svg width="34" height="34" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"/>',
+      'viewBox가 width·height와 맞지 않습니다',
+    ],
+    [
+      'graphic-lock.svg',
+      '<svg width="34" height="34" viewBox="10 10 34 34" xmlns="http://www.w3.org/2000/svg"/>',
+      'viewBox가 width·height와 맞지 않습니다',
+    ],
+    [
+      'graphic-lock.svg',
+      `<svg width="34" height="34" viewBox="0 0 34 34"><script/></svg>`,
+      '안전하지 않은 SVG',
+    ],
+  ])('rejects invalid graphic icon %s', async (name, content, message) => {
+    const iconRoot = await fixture();
+    await writeIcon(iconRoot, 'svg-graphic', name, content);
+
+    await expect(generateIcons({ iconRoot })).rejects.toThrow(message);
+  });
+
+  it('rejects a graphic icon colliding with another icon name', async () => {
+    const iconRoot = await fixture();
+    await writeIconSet(iconRoot, 'svg', 'graphic-lock');
+    await writeIcon(iconRoot, 'svg-graphic', 'graphic-lock.svg', svg(34));
+
+    await expect(generateIcons({ iconRoot })).rejects.toThrow('중복된 아이콘 컴포넌트 이름');
+  });
+
   it('normalizes names and removes metadata without erasing dimensions', () => {
     expect(toComponentName('line-search')).toBe('LineSearchIcon');
     expect(normalizeToCurrentColor(`${svg()}<metadata>author</metadata>`)).toContain(

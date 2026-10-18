@@ -15,6 +15,7 @@ Figma의 Line 23종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 
 packages/design-system/src/icons/
   svg/            currentColor로 정규화할 원본 SVG(단색 아이콘)
   svg-preserve/   원본 색을 유지해야 하는 SVG(로고, 브랜드 마크)
+  svg-graphic/    크기가 하나뿐인 컬러 그래픽 아이콘(graphic-<이름>.svg)
   generated/      생성된 TSX 컴포넌트 + barrel index.ts (직접 수정 금지)
 ```
 
@@ -31,6 +32,17 @@ svg/fill-circle-check-{small,medium,large}.svg
   → generated/FillCircleCheckIcon.tsx
 ```
 
+## 그래픽 아이콘
+
+온보딩 카드처럼 색이 있고 크기가 하나뿐인 아이콘(Globe·Lock 34px, Chat·Edit·People 40px)은 Line/Fill의 세 크기 규칙에 맞지 않아 `svg-graphic/`에서 따로 만든다.
+
+- 파일은 `graphic-<이름>.svg` 하나이고 width·height가 같은 양수이며 viewBox가 `0 0 <width> <height>`여야 한다. 다르면 생성이 실패한다.
+- 원본 색을 유지하고(`currentColor`로 바꾸지 않는다) 크기별 export나 `size` prop이 없다. 컴포넌트는 `GraphicLockIcon`처럼 `Graphic<이름>Icon`이다.
+- 접근성 계약은 고정 크기 아이콘과 같다(기본 장식, `aria-label`·`aria-labelledby`가 있으면 `role="img"`).
+- Figma는 아이콘을 캔버스 크기 프레임 안에 레이어로 배치하므로, 레이어 SVG를 프레임 좌표대로 한 캔버스에 조립해 넣는다(래퍼 노드 export는 주변 캔버스가 섞인다).
+- 색이 SVG에 고정돼 있어 밝은 배경을 전제로 한다. Chat·Edit의 안쪽 틈은 칠하지 않은 투명 구멍이라 배경색이 비친다. 어두운 배경이나 흰색이 아닌 카드 위에서의 모습은 확인하지 못했고, 필요해지면 디자이너와 별도 원본 여부를 정한다.
+- 안전성 검증과 metadata 제거는 다른 SVG와 같다.
+
 ## SVG 입력 검증 (필수)
 
 SVGR은 sanitizer가 아니다. 외부에서 받은 SVG(특히 Figma export, 디자이너 전달 파일)를 그대로 신뢰하지 않는다. 생성 스크립트는 변환 전에 아래를 차단한다.
@@ -43,7 +55,7 @@ SVGR은 sanitizer가 아니다. 외부에서 받은 SVG(특히 Figma export, 디
 
 이 검증은 정규식 기반 1차 차단이라 모든 우회를 막지 못한다. 새 SVG를 들일 때는 리뷰에서 원본도 직접 확인한다.
 
-metadata는 변환 전에 제거한다. 현재 세트는 모두 단색이며, white는 clipPath 내부에만 있어 별도의 원본 색 보존 아이콘은 없다.
+metadata는 변환 전에 제거한다. Line/Fill 세트는 모두 단색이며, white는 clipPath 내부에만 있어 `svg-preserve/`의 아이콘은 없다. 컬러 아이콘은 `svg-graphic/`의 그래픽 아이콘뿐이다.
 
 이 검증 없이 아이콘 생성 스크립트를 만들지 않는다. `docs/workflows/security-review.md`의 XSS 기준과 같은 이유다 — 신뢰할 수 없는 입력이 렌더링 가능한 코드로 바뀌는 경로다.
 
@@ -51,18 +63,19 @@ metadata는 변환 전에 제거한다. 현재 세트는 모두 단색이며, wh
 
 아이콘은 보이는 크기와 터치 영역을 분리한다. 눌러서 쓰는 아이콘은 보이는 크기보다 큰 터치 영역을 가져야 한다. 아이콘 SVG 자체는 보이는 크기만 그리고, 터치 영역은 아이콘을 감싸는 interactive element(아이콘 버튼 등)가 padding이나 최소 크기로 만든다.
 
-디자이너가 전달한 값이다(2026-10-14). 값은 바뀔 수 있다.
+디자이너와 정한 값이다. 처음 전달받은 값(40/44/48, 2026-10-14)을 아래 기준으로 바꿨다. 값은 바뀔 수 있다.
 
 | 크기   | 보이는 크기(Figma) | 터치 영역 |
 | ------ | ------------------ | --------- |
-| Small  | 16×16              | 40×40     |
-| Medium | 20×20              | 44×44     |
-| Large  | 24×24              | 48×48     |
+| Small  | 16×16              | 32×32     |
+| Medium | 20×20              | 40×40     |
+| Large  | 24×24              | 40×40     |
 
 - SVG의 실제 크기는 생성기가 파일명의 small·medium·large와 대조해 검증한다. 호출자는 크기별 named export를 고르고 숫자를 화면마다 복사하지 않는다.
-- 터치 영역은 기존 spacing token `s16`(40), `s17`(44), `s18`(48)에 대응한다. SVG 자체에는 padding이나 클릭 동작을 추가하지 않는다.
+- 터치 영역은 기존 spacing token `s14`(32), `s16`(40)에 대응한다. SVG 자체에는 padding이나 클릭 동작을 추가하지 않는다.
 - 터치 영역이 이웃 요소의 터치 영역과 겹치지 않는지 확인한다.
-- Small(40)의 실제 사용 위치와 최소 터치 영역은 디자이너 확인 전이다. IconButton을 구현할 때 확정한다.
+- Large 40×40은 디자이너에게 확인을 요청한 값이다("Large를 40으로 해 줄 수 있는지"). 확정 전에는 Large 아이콘 버튼도 40을 기준으로 하되 바뀔 수 있다.
+- Small(32)의 실제 사용 위치와 최소 터치 영역은 IconButton을 구현할 때 확정한다.
 
 ## 색상 계약
 

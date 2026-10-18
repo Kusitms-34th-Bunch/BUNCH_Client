@@ -5,7 +5,14 @@ const SRC = join(process.cwd(), 'src');
 
 const HEADER = '// @generated — run `yarn gen:index` to update';
 
-const IGNORE = [/^index\.tsx?$/, /\.test\.tsx?$/, /\.stories\.tsx?$/, /\.d\.ts$/, /^\./];
+const IGNORE = [
+  /^index\.tsx?$/,
+  /\.internal\.tsx?$/,
+  /\.test\.tsx?$/,
+  /\.stories\.tsx?$/,
+  /\.d\.ts$/,
+  /^\./,
+];
 
 const shouldIgnore = (name: string) => IGNORE.some((pattern) => pattern.test(name));
 

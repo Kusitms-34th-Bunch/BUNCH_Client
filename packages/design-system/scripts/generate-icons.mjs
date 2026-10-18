@@ -62,6 +62,30 @@ export const assertIconDimensions = (svg, fileName) => {
   }
 };
 
+// 그래픽 아이콘은 크기가 하나뿐이라 파일명이 아니라 SVG 자체의 정사각형 크기와 viewBox 일치만 확인한다.
+export const assertGraphicDimensions = (svg, fileName) => {
+  const width = Number(getRootAttribute(svg, 'width'));
+  const height = Number(getRootAttribute(svg, 'height'));
+  const viewBox = getRootAttribute(svg, 'viewBox')
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(Number);
+
+  if (!(width > 0) || width !== height) {
+    throw new Error(`그래픽 아이콘은 width와 height가 같은 양수여야 합니다: ${fileName}`);
+  }
+  if (
+    !viewBox ||
+    viewBox.length !== 4 ||
+    viewBox[0] !== 0 ||
+    viewBox[1] !== 0 ||
+    viewBox[2] !== width ||
+    viewBox[3] !== height
+  ) {
+    throw new Error(`그래픽 아이콘의 viewBox가 width·height와 맞지 않습니다: ${fileName}`);
+  }
+};
+
 export const toPascalCase = (value) =>
   value
     .replace(/(^|[-_\s]+)([a-zA-Z0-9])/g, (_, separator, character) =>
@@ -127,6 +151,37 @@ export const readIconSources = async (sourceDir, preserveColors, rootDir = sourc
   return [...files, ...nested.flat()];
 };
 
+const GRAPHIC_FILE_PATTERN = /^(graphic-.+)\.svg$/i;
+
+// 크기가 하나뿐인 컬러 그래픽 아이콘 원본. 파일명은 graphic-<이름>.svg다.
+export const readGraphicSources = async (sourceDir) => {
+  let entries;
+  try {
+    entries = await readdir(sourceDir, { withFileTypes: true });
+  } catch (error) {
+    if (notFound(error)) return [];
+    throw error;
+  }
+
+  return entries
+    .filter((entry) => entry.isFile() && extname(entry.name).toLowerCase() === '.svg')
+    .map((entry) => {
+      const match = GRAPHIC_FILE_PATTERN.exec(entry.name);
+      if (!match) {
+        throw new Error(
+          `그래픽 아이콘 파일 이름은 graphic-<이름>.svg 형식이어야 합니다: ${entry.name}`,
+        );
+      }
+
+      return {
+        baseName: match[1].toLowerCase(),
+        componentName: toComponentName(match[1].toLowerCase()),
+        fileName: relative(sourceDir, join(sourceDir, entry.name)),
+        filePath: join(sourceDir, entry.name),
+      };
+    });
+};
+
 // 같은 이름의 SVG 세 개(small·medium·large)를 아이콘 하나로 묶는다. 하나라도 없으면 크기 prop이 일부만 가능해지므로 실패시킨다.
 export const groupIconSources = (sources) => {
   const groups = new Map();
@@ -159,12 +214,15 @@ export const groupIconSources = (sources) => {
 const sizedName = (name, size) =>
   name.endsWith('Icon') ? `${name.slice(0, -4)}${size}Icon` : `${name}${size}`;
 
-export const assertUniqueComponentNames = (icons) => {
+export const assertUniqueComponentNames = (icons, graphicIcons = []) => {
   const names = new Set();
-  for (const componentName of icons.flatMap((icon) => [
-    icon.componentName,
-    ...['Small', 'Medium', 'Large'].map((size) => sizedName(icon.componentName, size)),
-  ])) {
+  for (const componentName of [
+    ...icons.flatMap((icon) => [
+      icon.componentName,
+      ...['Small', 'Medium', 'Large'].map((size) => sizedName(icon.componentName, size)),
+    ]),
+    ...graphicIcons.map((icon) => icon.componentName),
+  ]) {
     if (names.has(componentName)) {
       throw new Error(`중복된 아이콘 컴포넌트 이름: ${componentName}`);
     }
@@ -177,16 +235,8 @@ const sizeTemplate = ({ componentName, jsx }, { tpl }) => tpl`
   const ${componentName} = (props: ComponentProps<'svg'>) => ${jsx};
 `;
 
-const renderSize = async (source, icon, sizeName) => {
-  const rawSvg = await readFile(source.filePath, 'utf8');
-  assertSafeSvg(rawSvg, source.fileName);
-  assertIconDimensions(rawSvg, source.fileName);
-  const svg = source.preserveColors
-    ? normalizePreservedSvg(rawSvg)
-    : normalizeToCurrentColor(rawSvg);
-  const innerName = sizeName[0].toUpperCase() + sizeName.slice(1);
-
-  return transform(
+const transformSvg = (svg, prefix, innerName) =>
+  transform(
     svg,
     {
       dimensions: true,
@@ -198,7 +248,7 @@ const renderSize = async (source, icon, sizeName) => {
       svgoConfig: {
         plugins: [
           { name: 'preset-default', params: { overrides: { removeViewBox: false } } },
-          { name: 'prefixIds', params: { prefix: `${icon.componentName}${innerName}` } },
+          { name: 'prefixIds', params: { prefix } },
         ],
       },
       template: sizeTemplate,
@@ -206,16 +256,26 @@ const renderSize = async (source, icon, sizeName) => {
     },
     { componentName: innerName },
   );
+
+const renderSize = async (source, icon, sizeName) => {
+  const rawSvg = await readFile(source.filePath, 'utf8');
+  assertSafeSvg(rawSvg, source.fileName);
+  assertIconDimensions(rawSvg, source.fileName);
+  const svg = source.preserveColors
+    ? normalizePreservedSvg(rawSvg)
+    : normalizeToCurrentColor(rawSvg);
+  const innerName = sizeName[0].toUpperCase() + sizeName.slice(1);
+
+  return transformSvg(svg, `${icon.componentName}${innerName}`, innerName);
 };
 
-const renderFixedComponent = async (icon, outputDir, sizeName) => {
-  const innerName = sizeName[0].toUpperCase() + sizeName.slice(1);
-  const name = sizedName(icon.componentName, innerName);
+// 접근성 속성은 바깥 래퍼가 한 번만 붙인다.
+const fixedComponentCode = async ({ innerName, name, outputDir, shapeCode }) => {
   const code = `${GENERATED_TAG}
 import type { ComponentProps } from 'react';
 import type { IconProps } from '../types';
 
-${await renderSize(icon.files[sizeName], icon, sizeName)}
+${shapeCode}
 
 const ${name} = ({
   'aria-label': ariaLabel,
@@ -238,6 +298,30 @@ export default ${name};
 `;
   const prettierConfig = (await resolveConfig(join(outputDir, `${name}.tsx`))) ?? {};
   return format(code, { ...prettierConfig, parser: 'typescript' });
+};
+
+const renderFixedComponent = async (icon, outputDir, sizeName) => {
+  const innerName = sizeName[0].toUpperCase() + sizeName.slice(1);
+  return fixedComponentCode({
+    innerName,
+    name: sizedName(icon.componentName, innerName),
+    outputDir,
+    shapeCode: await renderSize(icon.files[sizeName], icon, sizeName),
+  });
+};
+
+// 원본 색을 유지하고 크기가 하나뿐인 컬러 그래픽 아이콘
+const renderGraphicComponent = async (source, outputDir) => {
+  const rawSvg = await readFile(source.filePath, 'utf8');
+  assertSafeSvg(rawSvg, source.fileName);
+  assertGraphicDimensions(rawSvg, source.fileName);
+
+  return fixedComponentCode({
+    innerName: 'Shape',
+    name: source.componentName,
+    outputDir,
+    shapeCode: await transformSvg(normalizePreservedSvg(rawSvg), source.componentName, 'Shape'),
+  });
 };
 
 const renderComponent = async (icon, outputDir) => {
@@ -300,7 +384,8 @@ export const generateIcons = async ({
   const icons = groupIconSources(sources).sort((left, right) =>
     left.componentName.localeCompare(right.componentName),
   );
-  assertUniqueComponentNames(icons);
+  const graphicSources = await readGraphicSources(join(iconRoot, 'svg-graphic'));
+  assertUniqueComponentNames(icons, graphicSources);
 
   const expectedFiles = new Map();
   for (const icon of icons) {
@@ -314,6 +399,13 @@ export const generateIcons = async ({
     expectedFiles.set(
       join(outputDir, `${icon.componentName}.tsx`),
       await renderComponent(icon, outputDir),
+    );
+  }
+
+  for (const source of graphicSources) {
+    expectedFiles.set(
+      join(outputDir, `${source.componentName}.tsx`),
+      await renderGraphicComponent(source, outputDir),
     );
   }
 
@@ -332,12 +424,14 @@ export const generateIcons = async ({
     );
   }
 
-  return { changedFiles, icons, sources, staleFiles };
+  return { changedFiles, graphicSources, icons, sources, staleFiles };
 };
 
 const main = async () => {
   const check = process.argv.includes('--check');
-  const { changedFiles, icons, sources, staleFiles } = await generateIcons({ check });
+  const { changedFiles, graphicSources, icons, sources, staleFiles } = await generateIcons({
+    check,
+  });
 
   if (check) {
     if (changedFiles.length > 0 || staleFiles.length > 0) {
@@ -349,13 +443,13 @@ const main = async () => {
       return;
     }
     process.stdout.write(
-      `Icon files are up to date. (${icons.length} icons, ${sources.length} SVG files)\n`,
+      `Icon files are up to date. (${icons.length} icons, ${sources.length} SVG files, ${graphicSources.length} graphic icons)\n`,
     );
     return;
   }
 
   process.stdout.write(
-    `Generated ${icons.length} icon components from ${sources.length} SVG files.\n`,
+    `Generated ${icons.length} icon components from ${sources.length} SVG files and ${graphicSources.length} graphic icons.\n`,
   );
 };
 
