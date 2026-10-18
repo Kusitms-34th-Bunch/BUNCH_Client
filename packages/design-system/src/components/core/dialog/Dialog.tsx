@@ -30,7 +30,7 @@ const Content = ({ className, children, ref, ...props }: DialogContentProps) => 
   const popupRef = useRef<HTMLDivElement>(null);
   return (
     <AlertDialog.Portal>
-      <AlertDialog.Backdrop className="bg-overlay-scrim fixed inset-0" />
+      <AlertDialog.Backdrop className="bg-overlay-dim-subtle fixed inset-0" />
       <AlertDialog.Popup
         {...props}
         aria-modal="true"

@@ -40,13 +40,13 @@
 - 폭 311px / 최대 320px, 최대 높이 640px은 Figma 기하 값. 작은 화면은 viewport 여백 안으로 제한.
 - radius-r9, padding-p11(22), padding-p10(20), padding-p8(16), spacing-s4(8).
 - typography-heading-1-semibold / typography-body-1-regular, text-primary / text-tertiary.
-- Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경은 overlay-scrim.
+- Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경 딤은 Figma(`791:11665`의 딤 레이어)대로 overlay-dim-subtle(검정 10%).
 - Story: Solid, Text, 확인 하나, 긴 글, 상호작용·Toast 공존.
 
 ## 확인할 항목
 
 - 확정: 외부 터치 무시, ESC 취소, 첫 초점, controlled 확인 동작은 2026-10-17 대화 합의.
-- 제안: Floated 대체와 scrim은 기존 토큰 사용. 디자인 토큰이 전달되면 재검토.
+- 제안: Floated 대체는 기존 토큰 사용. 딤은 처음 overlay-scrim(60%)이었다가 3단계 화면의 Figma(`overlay-dim-subtle`)에 맞춰 바꿨다.
 - 미정: iOS 실기기 VoiceOver·WebView 스크롤/초점과 Android 뒤로가기는 별도 검증.
 
 ## 사용 예
