@@ -18,6 +18,22 @@ Line 23종·Fill 8종, 아이콘 31종을 크기별 SVG(small·medium·large, �
 - 장식은 기본 `aria-hidden="true"`, `focusable="false"`. 의미가 있으면 `aria-label` 또는 `aria-labelledby`를 제공해 `role="img"`로 노출. 이 계약은 `size`와 무관하다. 호출자가 넘긴 `aria-hidden`·`role`·`focusable`은 접근성 속성 뒤에 펼쳐지므로 덮어쓸 수 있고 이를 막지 않는다(호출자 책임). `children`(예: `<title>`)은 받지 않는다.
 - 아이콘 전용 버튼은 버튼에 이름을 제공하고 SVG는 장식으로 사용. Button 슬롯의 숨김 정책 유지.
 
+## 그래픽 아이콘
+
+온보딩 카드용 컬러 그래픽 아이콘 5종을 `svg-graphic/`에서 만든다. Figma `그래픽아이콘`(node `758:6075`).
+
+| Figma 이름          | 코드 이름           | 크기 |
+| ------------------- | ------------------- | ---- |
+| Graphic Icon/Globe  | `GraphicGlobeIcon`  | 34   |
+| Graphic Icon/lock   | `GraphicLockIcon`   | 34   |
+| Graphic Icon/chat   | `GraphicChatIcon`   | 40   |
+| Graphic Icon/Edit   | `GraphicEditIcon`   | 40   |
+| Graphic Icon/people | `GraphicPeopleIcon` | 40   |
+
+- 색은 Figma 원본(`#A7ADFF`, `#777FF2`, `#454EDF`)을 SVG에 그대로 둔다. 토큰이 아니라 아이콘의 일부다.
+- `size` prop과 크기별 export가 없고 `Omit<IconProps, 'size'>`를 받는다. 접근성 계약은 고정 크기 아이콘과 같다.
+- 레이어 SVG를 Figma 프레임 안의 위치(예: Lock은 프레임 34×34 안의 (4, 2))로 한 캔버스에 조립했다. 위치는 Figma 코드의 중심 offset에서 계산했고 Figma 렌더와 육안으로 대조했다.
+
 ## 이름과 크기 확정
 
 2026-10-17 사용자 확인: 아래 이름만 코드에서 정규화하고 도형은 변경하지 않는다.
@@ -56,6 +72,7 @@ Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 ## 확인할 항목
 
 - [확정] 이름 정규화와 SVG/터치 영역 분리: 사용자 확인 완료.
+- [미정] 그래픽 아이콘 이름(`Graphic<이름>Icon`)과 두 가지 크기(34·40) 유지 여부: 디자이너 확인. Chat·Edit의 안쪽 도형은 투명 구멍이라 배경색이 비친다.
 - [미정] `fill-user` medium의 몸통 상단 y=11은 large의 y=14를 20/24로 축소한 11.667과 약 0.667 viewBox 단위 차이가 난다. 원본 SVG와 생성물 모두 이 차이를 유지한다. 의도한 보정인지 디자이너 확인 전에는 비례 축소로 바꾸지 않는다.
 - [측정] 번들 비용(2026-10-17 재측정): 같은 아이콘을 md로만 사용할 때 이전 구조 대비 gzip 크기는 1개 723B → 1,179B(+456B), 5개 1,327B → 2,671B(+1,344B), 31개 3,177B → 7,704B(+4,527B)다. 이전 구조는 `6f5d8519bb7460c5f071350d6d5d254bac7100de`의 Medium 컴포넌트, 현재 구조는 같은 이름순 아이콘의 `size="md"` 사용이다. 로컬 macOS·Node 26.10.0·Yarn 4.17.1·Vite 8.1.5 production ES library, minify 활성화, React·jsx-runtime 외부 처리, Node gzip 기본값으로 각 1회 측정했다. 세 크기 도형을 런타임에 고르므로 안 쓰는 크기도 포함된다. 이전 소스 gzip 평균이나 개별 gzip 합계는 이 번들 수치와 비교하지 않는다. 여러 크기 동시 사용과 Next 앱 실제 증분은 미측정이다.
 - [미정] Small 터치 영역 40px의 실제 사용 위치·디자이너 재확인. IconButton 구현 시 확정하며 이번 작업에서 클릭 가능한 UI를 추가하지 않음.
