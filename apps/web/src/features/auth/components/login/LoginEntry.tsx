@@ -1,0 +1,84 @@
+'use client';
+
+import { LoginButton } from '@app/design-system/web';
+import Image from 'next/image';
+import { PageShell } from '@/shared/components/layout/PageShell';
+import {
+  LOGIN_PENDING_MESSAGE,
+  type SignIn,
+  type SocialProvider,
+  useSocialLogin,
+} from '../../hooks/useSocialLogin';
+
+// 앱 아이콘·로고·슬로건은 임시 디자인이라 최종 확정본으로 교체 예정(화면 설계서 로그인 1번)
+const APP_ICON = '/images/app-icon.png';
+const BUNCH_LOGO = '/images/bunch-logo.svg';
+
+// 순서가 곧 노출 순서(카카오 → Google → Apple)
+const PROVIDERS: { provider: SocialProvider; label: string }[] = [
+  { provider: 'kakao', label: '카카오 로그인' },
+  { provider: 'google', label: 'Google로 계속하기' },
+  { provider: 'apple', label: 'Apple로 계속하기' },
+];
+
+type LoginEntryProps = {
+  /** 소셜 로그인 호출. 없으면 아직 연결되지 않은 것으로 보고 버튼을 눌러도 아무 일도 일어나지 않는다 */
+  signIn?: SignIn | undefined;
+};
+
+/**
+ * 앱을 처음 연 사람이 소셜 계정으로 시작하는 로그인(Entry) 화면
+ * 회원가입 버튼은 따로 없다. 로그인 결과에 따른 이동(약관·프로필·도착지)과 접근 제어는 연결하지 않았다
+ */
+export function LoginEntry({ signIn }: LoginEntryProps) {
+  const { pendingProvider, login } = useSocialLogin(signIn);
+
+  return (
+    <PageShell
+      bottom={
+        <div className="px-padding-p8 pb-s10 gap-s4 flex flex-col">
+          {PROVIDERS.map(({ provider, label }) => {
+            const isPending = pendingProvider === provider;
+            return (
+              <LoginButton
+                key={provider}
+                brand={provider}
+                // 진행 중인 버튼은 그대로 두고 나머지만 비활성화해 어느 로그인이 진행 중인지 보이게 한다
+                disabled={pendingProvider !== null && !isPending}
+                aria-busy={isPending || undefined}
+                onClick={() => void login(provider)}
+              >
+                {label}
+              </LoginButton>
+            );
+          })}
+          {/* 진행 중인 버튼은 aria-busy만으로는 읽히지 않는 경우가 많아 상태를 말로 알린다(화면에는 보이지 않는다) */}
+          <p role="status" className="sr-only">
+            {pendingProvider ? LOGIN_PENDING_MESSAGE : ''}
+          </p>
+        </div>
+      }
+    >
+      <div className="px-padding-p8 flex min-h-full flex-col items-center justify-center">
+        <div className="gap-s12 flex flex-col items-center">
+          <Image
+            src={APP_ICON}
+            alt=""
+            width={120}
+            height={120}
+            priority
+            className="rounded-r10 size-30 object-cover"
+          />
+          <div className="gap-s6 flex flex-col items-center">
+            <h1>
+              <Image src={BUNCH_LOGO} alt="Bunch" width={136} height={40} className="h-10 w-auto" />
+            </h1>
+            <p className="typography-body-1-medium text-text-tertiary text-center break-keep">
+              함께한 순간을, 우리 그룹의 기록으로
+            </p>
+          </div>
+        </div>
+      </div>
+    </PageShell>
+  );
+}
