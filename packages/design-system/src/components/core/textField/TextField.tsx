@@ -4,6 +4,7 @@ import { type ComponentProps, type ReactNode, useRef } from 'react';
 import { LineCloseIcon } from '../../../icons';
 import { cn } from '../../../utils';
 import { fieldText } from './fieldText';
+import inputScale from './inputScale.module.css';
 
 export type TextFieldProps = Omit<
   ComponentProps<'input'>,
@@ -47,20 +48,22 @@ export function TextField({
         className,
       )}
     >
-      <input
-        type="text"
-        placeholder={placeholder}
-        disabled={disabled}
-        value={value}
-        className={cn(
-          fieldText,
-          // 포커스되면 안내 문구를 숨겨 캐럿만 보이게 한다(Figma Focused)
-          'py-padding-p1 disabled:text-text-disabled focus:outline-none focus:placeholder:text-transparent disabled:cursor-not-allowed',
-        )}
-        {...props}
-        ref={inputRef}
-        aria-label={label}
-      />
+      <div className={inputScale.inputSlot}>
+        <input
+          type="text"
+          placeholder={placeholder}
+          disabled={disabled}
+          value={value}
+          className={cn(
+            fieldText,
+            // 포커스되면 안내 문구를 숨겨 캐럿만 보이게 한다(Figma Focused)
+            'py-padding-p1 disabled:text-text-disabled focus:outline-none focus:placeholder:text-transparent disabled:cursor-not-allowed',
+          )}
+          {...props}
+          ref={inputRef}
+          aria-label={label}
+        />
+      </div>
       {showClear ? (
         <button
           type="button"

@@ -2,6 +2,7 @@
 
 import { useId, useLayoutEffect, useRef, type ComponentProps } from 'react';
 import { cn } from '../../../utils';
+import inputScale from '../../core/textField/inputScale.module.css';
 import { FieldFooter } from './fieldFooter.internal';
 
 export type LabeledTextAreaProps = Omit<
@@ -45,7 +46,9 @@ export function LabeledTextArea({
     if (!element) return;
     const fit = () => {
       element.style.height = 'auto';
-      element.style.height = `${element.scrollHeight}px`;
+      const height = element.scrollHeight;
+      element.style.height = `${height}px`;
+      element.parentElement?.style.setProperty('--textarea-height', `${height}px`);
     };
     fit();
     if (typeof ResizeObserver === 'undefined' || !element.parentElement) return;
@@ -67,18 +70,20 @@ export function LabeledTextArea({
           {label}
         </label>
         <div className="rounded-r5 border-border-secondary bg-surface-primary px-padding-p8 py-padding-p5 focus-within:border-primitive-gray-700 border forced-colors:focus-within:outline-2 forced-colors:focus-within:outline-offset-2">
-          <textarea
-            ref={ref}
-            id={inputId}
-            rows={1}
-            value={value}
-            maxLength={maxLength}
-            placeholder={placeholder}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={describedBy || undefined}
-            className="typography-body-2-regular text-text-primary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent focus:outline-none focus:placeholder:text-transparent"
-            {...props}
-          />
+          <div className={inputScale.textareaSlot}>
+            <textarea
+              ref={ref}
+              id={inputId}
+              rows={1}
+              value={value}
+              maxLength={maxLength}
+              placeholder={placeholder}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={describedBy || undefined}
+              className="typography-body-2-regular text-text-primary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent focus:outline-none focus:placeholder:text-transparent"
+              {...props}
+            />
+          </div>
         </div>
       </div>
       <FieldFooter

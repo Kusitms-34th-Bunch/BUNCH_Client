@@ -20,6 +20,8 @@
 - 입력값 검증과 문구 결정, 줄바꿈 입력(Enter) 제한. 호출하는 쪽이 정한다.
 - 지우기 버튼·오른쪽 동작 영역. `TextField`의 기능이며 이 컴포넌트에는 없다.
 
+iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 폭·행 높이·padding을 보정하며 textarea 자동 높이에는 축소 비율을 반영한다. 실제 터치·커서·선택·한글 줄바꿈 검증은 별도로 필요하다.
+
 ## Public API
 
 - Props: `label`(필수), `error`, 그리고 `<textarea>`의 속성(`value`, `onChange`, `maxLength`, `placeholder`, `id`, `className` 등). `rows`·`aria-label`·`aria-describedby`는 받지 않는다.
