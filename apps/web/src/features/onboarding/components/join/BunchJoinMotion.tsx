@@ -4,12 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
+import styles from './BunchJoinMotion.module.css';
 import { InviteAnimation } from './InviteAnimation';
 
 // 동작 줄이기 설정 시 로티 대신 안내 후 이동
 const REDUCED_MOTION_HOLD_MS = 800;
 
-// 원·초대장의 마지막 움직임이 끝나는 89프레임에 바로 이동, 80프레임부터 다음 화면 배경으로 연결
+// 마지막 300ms 동안 원을 화면 끝까지 확장한 뒤 89프레임에 이동
 const TINT_FRAME = 80;
 const HAND_OFF_FRAME = 89;
 
@@ -28,7 +29,9 @@ export function BunchJoinMotion() {
   const router = useRouter();
   const moved = useRef(false);
   const mounted = useRef(true);
-  const [tinted, setTinted] = useState(false);
+  const [revealFrame, setRevealFrame] = useState<number | null>(null);
+  const progress = Math.min(((revealFrame ?? TINT_FRAME) - TINT_FRAME) / 8, 1);
+  const revealProgress = 1 - (1 - progress) ** 3;
   const reducedMotion = useSyncExternalStore(
     subscribeMotion,
     getReducedMotion,
@@ -53,13 +56,23 @@ export function BunchJoinMotion() {
     router.replace(ONBOARDING_PATHS.joinBunchInvitation);
   }, [router]);
 
-  const handleFrame = useCallback(
-    (frame: number) => {
-      if (frame >= TINT_FRAME) setTinted(true);
-      if (frame >= HAND_OFF_FRAME) goNext();
-    },
-    [goNext],
-  );
+  const handleFrame = useCallback((frame: number) => {
+    if (frame >= TINT_FRAME) setRevealFrame(Math.min(frame, HAND_OFF_FRAME));
+  }, []);
+  const finish = useCallback(() => setRevealFrame(HAND_OFF_FRAME), []);
+
+  useEffect(() => {
+    if (revealFrame !== HAND_OFF_FRAME || reducedMotion) return;
+    let painted = 0;
+    // 프레임이 건너뛰어도 완성된 배경을 한 번 그린 뒤 이동한다.
+    const frame = requestAnimationFrame(() => {
+      painted = requestAnimationFrame(goNext);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(painted);
+    };
+  }, [revealFrame, reducedMotion, goNext]);
 
   useEffect(() => {
     if (!reducedMotion) return;
@@ -68,16 +81,19 @@ export function BunchJoinMotion() {
   }, [reducedMotion, goNext]);
 
   return (
-    <PageShell
-      data-app-background={tinted ? 'brand-subtle-1' : undefined}
-      // 로티의 마지막 원 색과 초대 확인 화면 배경 연결
-      className={`transition-colors duration-300 ease-out motion-reduce:transition-none ${tinted ? 'bg-surface-brand-subtle-1' : ''}`}
-    >
+    <PageShell>
+      {revealFrame !== null && !reducedMotion ? (
+        <div
+          aria-hidden="true"
+          className={styles.reveal}
+          style={{ clipPath: `circle(${revealProgress * 100}% at 50% var(--reveal-y))` }}
+        />
+      ) : null}
       {/* 초기부터 있는 status 문구는 알림이 누락될 수 있어 숨김 제목으로 로딩 상태 전달 */}
       <h1 className="sr-only">초대받은 번치 정보를 불러오는 중이에요.</h1>
-      <div className="size-full">
+      <div className="relative z-2 size-full">
         {reducedMotion ? null : (
-          <InviteAnimation onFrame={handleFrame} onComplete={goNext} onError={goNext} />
+          <InviteAnimation onFrame={handleFrame} onComplete={finish} onError={goNext} />
         )}
       </div>
     </PageShell>
