@@ -12,9 +12,9 @@ import { PageHeader } from '@app/design-system/web';
 import { captureException } from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
 import { useId } from 'react';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
-import { HeaderIconButton } from '../HeaderIconButton';
 
 // 보이는 라벨과 입력창의 접근성 이름 일치
 const LINK_LABEL = '초대 링크';

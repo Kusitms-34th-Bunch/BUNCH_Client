@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it, vi, type Mock } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { LabeledTextField } from './LabeledTextField';
 
-const Controlled = ({ initial = '', onClear }: { initial?: string; onClear?: Mock }) => {
+const Controlled = ({ initial = '' }: { initial?: string }) => {
   const [value, setValue] = useState(initial);
   return (
     <LabeledTextField
@@ -13,10 +13,6 @@ const Controlled = ({ initial = '', onClear }: { initial?: string; onClear?: Moc
       maxLength={12}
       value={value}
       onChange={(event) => setValue(event.target.value)}
-      onClear={() => {
-        onClear?.();
-        setValue('');
-      }}
     />
   );
 };
@@ -91,43 +87,54 @@ describe('LabeledTextField', () => {
     expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBeNull();
   });
 
-  it('지우기 버튼은 포커스가 있고 값이 있을 때만 보인다', async () => {
+  it('입력창은 기본 변형이라 값이 있고 포커스가 있어도 지우기 버튼이 없다', async () => {
     render(<Controlled initial="으누누" />);
-    expect(screen.queryByRole('button', { name: '입력 지우기' })).toBeNull();
 
     await userEvent.tab();
-    expect(screen.getByRole('button', { name: '입력 지우기' })).toBeTruthy();
 
-    await userEvent.tab();
-    await userEvent.tab();
-    expect(screen.queryByRole('button', { name: '입력 지우기' })).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('값이 없으면 포커스가 있어도 지우기 버튼이 없다', async () => {
-    render(<Controlled />);
+  it('입력하면 값과 글자 수가 갱신된다', async () => {
+    render(<Controlled initial="으누누" />);
 
-    await userEvent.tab();
+    await userEvent.type(screen.getByRole('textbox'), '!');
 
-    expect(screen.queryByRole('button', { name: '입력 지우기' })).toBeNull();
-  });
-
-  it('지우기 버튼을 누르면 값이 비워지고 입력창에 포커스가 돌아온다', async () => {
-    const onClear = vi.fn();
-    render(<Controlled initial="으누누" onClear={onClear} />);
-
-    await userEvent.tab();
-    await userEvent.click(screen.getByRole('button', { name: '입력 지우기' }));
-
-    expect(onClear).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('textbox')).toHaveProperty('value', '');
-    expect(document.activeElement).toBe(screen.getByRole('textbox'));
-    expect(screen.getByText('0/12')).toBeTruthy();
+    expect(screen.getByRole('textbox')).toHaveProperty('value', '으누누!');
+    expect(screen.getByText('4/12')).toBeTruthy();
   });
 
   it('disabled면 입력창을 쓸 수 없다', () => {
     render(<LabeledTextField title="닉네임" disabled />);
 
     expect(screen.getByRole('textbox')).toHaveProperty('disabled', true);
+  });
+
+  it('disabled면 제목·입력창·글자 수·오류 문구 각각에만 40% 투명 클래스가 붙는다(루트에는 없다)', () => {
+    const dim = 'opacity-(--semantic-opacity-disabled)';
+    render(<LabeledTextField title="닉네임" maxLength={12} errorMessage="오류" disabled />);
+
+    const root = screen.getByRole('textbox').closest('.gap-s3.flex.w-full.flex-col')!;
+    expect(root.className).not.toContain(dim);
+    expect(screen.getByText('닉네임').className).toContain(dim);
+    expect(screen.getByRole('alert').parentElement!.className).toContain(dim);
+    const field = screen.getByRole('textbox').parentElement!.parentElement!;
+    expect(field.className).toContain('has-[input:disabled]:' + dim);
+  });
+
+  it('disabled가 아니면 어디에도 40% 투명 클래스가 붙지 않는다', () => {
+    render(<LabeledTextField title="닉네임" maxLength={12} errorMessage="오류" />);
+
+    const dimmed = [...document.body.querySelectorAll('*')].filter((element) =>
+      element.classList.contains('opacity-(--semantic-opacity-disabled)'),
+    );
+    expect(dimmed).toHaveLength(0);
+  });
+
+  it('editing을 입력창에 전달해 입력창이 진행 중으로 표시된다', () => {
+    render(<LabeledTextField title="닉네임" editing />);
+
+    expect(screen.getByRole('textbox').getAttribute('aria-busy')).toBe('true');
   });
 
   it('className은 전체 영역에 적용된다', () => {

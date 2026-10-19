@@ -4,10 +4,10 @@ import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { InviteCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
-import { HeaderIconButton } from '../HeaderIconButton';
 
 type BunchJoinInvitationProps = {
   bunchName: string;

@@ -4,11 +4,11 @@ import { Button, Header, LineChevronLeftLargeIcon, TextField, toast } from '@app
 import { PageHeader } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
 import { isInviteLink } from '../../lib/inviteLink';
-import { HeaderIconButton } from '../HeaderIconButton';
 
 /** 클라이언트 형식 오류와 서버 정원 초과 응답 구분 */
 export type JoinFailure = 'invalid' | 'full';

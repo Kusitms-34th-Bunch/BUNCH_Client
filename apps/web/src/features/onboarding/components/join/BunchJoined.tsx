@@ -3,10 +3,10 @@
 import { Button, Header, LineCloseLargeIcon } from '@app/design-system';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { BunchConfetti } from '../BunchConfetti';
-import { HeaderIconButton } from '../HeaderIconButton';
 
 type BunchJoinedProps = {
   bunchName: string;

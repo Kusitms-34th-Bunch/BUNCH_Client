@@ -4,8 +4,8 @@ import type { ReactNode } from 'react';
 import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { Stepper } from '@app/design-system/web';
 import { useSelectedLayoutSegment } from 'next/navigation';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { useExitCreateBunchDialog } from '../../hooks/useExitCreateBunchDialog';
-import { HeaderIconButton } from '../HeaderIconButton';
 
 const TOTAL_STEPS = 3;
 // 단계 route 폴더 이름과 불일치하면 1단계로 표시

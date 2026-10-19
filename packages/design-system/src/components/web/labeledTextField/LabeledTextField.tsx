@@ -1,11 +1,17 @@
 'use client';
 
-import { type FocusEvent, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { cn } from '../../../utils';
 import { TextField, type TextFieldProps } from '../../core/textField';
 import { Option, type OptionVariant } from '../option';
 
-export type LabeledTextFieldProps = Omit<TextFieldProps, 'label' | 'action' | 'className'> & {
+// 입력창은 자체 투명도, 제목·글자 수·오류 문구는 이 값 적용(각 한 번씩)
+const DISABLED_OPACITY = 'opacity-(--semantic-opacity-disabled)';
+
+export type LabeledTextFieldProps = Omit<
+  TextFieldProps,
+  'label' | 'action' | 'onClear' | 'clearLabel' | 'className'
+> & {
   /** 입력창 위에 보이는 제목이자 입력창의 접근성 이름 */
   title: string;
   /** 제목 옆 필수·선택 표시 */
@@ -18,9 +24,8 @@ export type LabeledTextFieldProps = Omit<TextFieldProps, 'label' | 'action' | 'c
 
 /**
  * 제목 + 필수·선택 표시 + 입력창 + 글자 수/오류 문구(Figma `Labled_Text_Field`)
- * 입력창은 core `TextField`이며, 나머지 props는 input에 전달된다
+ * 입력창은 Figma 기본 변형의 core `TextField`(지우기·버튼 없음)이고, 나머지 props는 input에 전달된다
  * `maxLength`를 주면 오른쪽 아래에 "현재/최대" 글자 수를 보이고 입력도 그 길이로 제한된다
- * 지우기 버튼은 포커스가 있고 값이 있을 때만 보인다(Figma의 Editing). 값은 `value`·`onClear`로 호출하는 쪽이 비운다
  */
 export const LabeledTextField = ({
   title,
@@ -32,7 +37,6 @@ export const LabeledTextField = ({
   defaultValue,
   maxLength,
   onChange,
-  onClear,
   disabled,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
@@ -44,7 +48,6 @@ export const LabeledTextField = ({
   const errorId = `${inputId}-error`;
   const counterId = `${inputId}-counter`;
 
-  const [focused, setFocused] = useState(false);
   const [uncontrolledLength, setUncontrolledLength] = useState(String(defaultValue ?? '').length);
   const length = value === undefined ? uncontrolledLength : String(value).length;
 
@@ -55,25 +58,15 @@ export const LabeledTextField = ({
       .filter(Boolean)
       .join(' ') || undefined;
 
-  // 포커스가 이 영역 안(입력창·지우기 버튼) 사이를 옮겨 갈 때는 포커스가 유지된 것으로 본다
-  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
-  };
-
   return (
-    <div
-      className={cn(
-        'gap-s3 flex w-full flex-col items-end',
-        disabled && 'opacity-(--semantic-opacity-disabled)',
-        className,
-      )}
-      onFocus={() => setFocused(true)}
-      onBlur={handleBlur}
-    >
+    <div className={cn('gap-s3 flex w-full flex-col items-end', className)}>
       <div className="gap-s2 flex w-full flex-col items-start">
         <label
           htmlFor={inputId}
-          className="typography-body-2-meduim gap-s2 text-text-secondary flex items-center"
+          className={cn(
+            'typography-body-2-meduim gap-s2 text-text-secondary flex items-center',
+            disabled && DISABLED_OPACITY,
+          )}
         >
           {title}
           {option ? <Option variant={option} /> : null}
@@ -93,27 +86,26 @@ export const LabeledTextField = ({
             setUncontrolledLength(event.target.value.length);
             onChange?.(event);
           }}
-          {...(focused && onClear ? { onClear } : {})}
         />
       </div>
       {errorMessage || hasCounter ? (
         <div
-          className={cn(
-            'flex w-full items-start',
-            errorMessage ? 'justify-between' : 'justify-end',
-          )}
+          className={cn('gap-s3 flex w-full items-start justify-end', disabled && DISABLED_OPACITY)}
         >
           {errorMessage ? (
             <p
               id={errorId}
               role="alert"
-              className="typography-caption-1-medium text-system-fail-text"
+              className="typography-caption-1-medium text-system-fail-text min-w-0 flex-1"
             >
               {errorMessage}
             </p>
           ) : null}
           {hasCounter ? (
-            <span id={counterId} className="typography-body-3-regular text-text-tertiary">
+            <span
+              id={counterId}
+              className="typography-body-3-regular text-text-tertiary shrink-0 whitespace-nowrap"
+            >
               {length}/{maxLength}
             </span>
           ) : null}
