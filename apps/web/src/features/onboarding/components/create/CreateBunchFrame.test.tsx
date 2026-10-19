@@ -143,7 +143,7 @@ describe('CreateBunchFrame', () => {
     await userEvent.click(await screen.findByRole('button', { name: '나가기' }));
 
     expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed);
-    // 피드로 이동해도 같은 OverlayProvider가 남으므로 모달이 직접 닫혀야 함
+    // 피드 이동 후에도 유지되는 OverlayProvider의 모달 닫힘 확인
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(screen.getByLabelText('이름', { selector: 'output' }).textContent).toBe('');
     expect(screen.getByLabelText('분위기', { selector: 'output' }).textContent).toBe('');

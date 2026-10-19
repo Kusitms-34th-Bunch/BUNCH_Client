@@ -52,6 +52,7 @@ describe('LabeledTextArea', () => {
     await userEvent.type(textarea, '가');
 
     expect(textarea.style.height).toBe('66px');
+    expect(textarea.parentElement?.style.getPropertyValue('--textarea-height')).toBe('66px');
   });
 
   it('error가 있으면 안내를 입력창에 연결하고 항상 있는 status 영역이 읽는다', () => {

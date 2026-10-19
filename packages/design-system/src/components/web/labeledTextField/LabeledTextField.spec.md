@@ -24,6 +24,8 @@
 - 오류일 때 입력창 테두리 색 변화는 Figma에 없어서 만들지 않았다. 포커스가 없으면 `border-secondary`, 입력 영역에 포커스가 있으면 `border-strong` 색상을 쓴다.
 - 포커스 시 기존 1px 테두리의 색상이 `border-strong`(#25282d)으로 바뀌고 안내 문구가 사라진다. core `TextField`에 적용해 입력·지우기 버튼 사이 포커스 이동에도 표시를 유지한다.
 
+iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 폭·행 높이·padding을 보정하며 textarea 자동 높이에는 축소 비율을 반영한다. 실제 터치·커서·선택·한글 줄바꿈 검증은 별도로 필요하다.
+
 ## Public API
 
 - Props: `title`(필수, 제목이자 입력창 접근성 이름), `option`(`required` / `optional`), `maxLength`, `errorMessage`, `className`(전체 영역), `disabled`, `value`·`defaultValue`·`onChange`·`onClear`·`id`·`name` 등 `TextField`의 나머지 props. `action`·`label`은 받지 않는다(`label`은 `title`이 대신한다).

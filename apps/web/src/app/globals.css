@@ -12,3 +12,13 @@
   --safe-area-left: var(--native-safe-area-left, env(safe-area-inset-left, 0px));
   --safe-area-right: var(--native-safe-area-right, env(safe-area-inset-right, 0px));
 }
+
+/* 배경이 이미 같은 색인 화면에서 내용만 나타낸다(참여 초대 확인 화면). 위치 이동을 넣으면 main(overflow-y-auto)에 스크롤 바가 잠깐 생긴다 */
+@keyframes page-content-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

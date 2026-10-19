@@ -23,6 +23,7 @@
     "@tanstack/react-query": "catalog:",
     "@webview-bridge/web": "^1.8.0",
     "ky": "catalog:",
+    "lottie-react": "^3.1.2",
     "next": "^16.2.10",
     "overlay-kit": "^1.9.0",
     "react": "catalog:",

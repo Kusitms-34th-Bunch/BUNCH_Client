@@ -9,17 +9,13 @@ import {
   CONFETTI_PIECES,
   CONFETTI_PIECE_SIZE,
   CONFETTI_ROTATION_END_MS,
-} from '../../constants/confetti';
+} from '../constants/confetti';
 
 const BEZIER = 'cubic-bezier(0.5, 0, 0.5, 1)';
 const at = (timeMs: number) => timeMs / CONFETTI_DURATION_MS;
 
-/**
- * 번치 생성 완료 화면에서 한 번 터지는 폭죽. 끝나면 스스로 사라짐
- * 위치(`translate`)·회전(`rotate`)·불투명도를 각각 Web Animations API로 재생(transform·opacity만 사용)
- * `prefers-reduced-motion: reduce`이면 그리지 않음. 부모는 `relative`여야 함
- */
-export function CreateBunchConfetti() {
+// 부모의 relative 좌표계를 사용하며 동작 줄이기 설정 시 렌더링 생략
+export function BunchConfetti() {
   const pieceRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [finished, setFinished] = useState(false);
 
@@ -73,7 +69,7 @@ export function CreateBunchConfetti() {
       ];
     });
 
-    // 끝난 폭죽은 DOM에서 치움(취소되면 이 화면이 사라지는 중이라 무시)
+    // 애니메이션 종료 후 DOM 정리(화면 이탈로 인한 취소는 무시)
     void Promise.all(animations.map((animation) => animation.finished))
       .then(() => setFinished(true))
       .catch(() => undefined);
@@ -85,7 +81,7 @@ export function CreateBunchConfetti() {
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* 아바타·제목이 고정 크기라 폭에 따라 키우지 않고 Figma 틀(375×591)의 가운데를 본문 가운데에 맞춤 */}
+      {/* 고정 크기 아바타·제목에 맞춰 Figma 틀(375×591)의 가운데 정렬 */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{ width: CONFETTI_FRAME.width, height: CONFETTI_FRAME.height }}

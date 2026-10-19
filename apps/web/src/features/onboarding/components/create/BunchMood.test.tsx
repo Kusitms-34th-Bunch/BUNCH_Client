@@ -15,7 +15,7 @@ const Providers = ({ children }: { children: ReactNode }) => (
     <OverlayProvider>{children}</OverlayProvider>
   </CreateBunchDraftProvider>
 );
-// 1·2단계를 마친 상태(가드를 통과). 3단계 화면은 이 상태로 시작한다
+// 3단계 가드 통과를 위한 1·2단계 완료 상태
 const AfterDescription = ({ children }: { children: ReactNode }) => (
   <CreateBunchDraftProvider
     initial={{ name: '퇴근런클럽', visibility: 'public', description: '퇴근 후 달리는 모임' }}
@@ -71,7 +71,7 @@ describe('BunchMood', () => {
     await userEvent.click(screen.getByRole('radio', { name: '분위기 1' }));
     await userEvent.click(submitButton());
 
-    // push면 뒤로 가기로 이 단계에 돌아와 다시 만들 수 있어 replace로 이동한다
+    // 뒤로 가기를 통한 중복 생성 방지를 위해 replace 확인
     expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.createBunchComplete);
     expect(push).not.toHaveBeenCalled();
   });

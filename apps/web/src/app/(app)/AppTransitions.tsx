@@ -11,7 +11,7 @@ import { type ReactNode, useMemo, useSyncExternalStore } from 'react';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { easeOutIntegrator } from '@/shared/components/layout/easeOutIntegrator.internal';
 
-export const ONBOARDING_TRANSITION_DURATION_MS = 200;
+export const ONBOARDING_TRANSITION_DURATION_MS = 300;
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
 function subscribeMotion(listener: () => void) {

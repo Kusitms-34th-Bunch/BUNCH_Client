@@ -17,7 +17,7 @@ const Providers = ({ children }: { children: ReactNode }) => (
     <OverlayProvider>{children}</OverlayProvider>
   </CreateBunchDraftProvider>
 );
-// 1단계를 마친 상태(가드를 통과). 2단계 화면은 이 상태로 시작한다
+// 2단계 가드 통과를 위한 1단계 완료 상태
 const AfterBasicInfo = ({ children }: { children: ReactNode }) => (
   <CreateBunchDraftProvider initial={{ name: '퇴근런클럽', visibility: 'public' }}>
     <OverlayProvider>{children}</OverlayProvider>

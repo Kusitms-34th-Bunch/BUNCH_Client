@@ -68,7 +68,7 @@ const Title = ({ className, ...props }: DialogTitleProps) => (
   <AlertDialog.Title
     {...props}
     className={cn(
-      'px-padding-p11 pt-padding-p11 text-text-primary typography-heading-1-semibold break-words',
+      'px-padding-p11 pt-padding-p11 text-text-primary typography-heading-1-semibold [overflow-wrap:break-word] break-keep',
       className,
     )}
   />
@@ -77,7 +77,7 @@ const Description = ({ className, ...props }: DialogDescriptionProps) => (
   <AlertDialog.Description
     {...props}
     className={cn(
-      'px-padding-p11 mt-s4 text-text-tertiary typography-body-1-regular break-words',
+      'px-padding-p11 mt-s4 text-text-tertiary typography-body-1-regular [overflow-wrap:break-word] break-keep',
       className,
     )}
   />
