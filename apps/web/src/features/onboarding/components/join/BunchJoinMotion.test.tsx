@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { BunchJoinMotion } from './BunchJoinMotion';
@@ -72,7 +72,7 @@ describe('BunchJoinMotion', () => {
       done.click();
     });
 
-    expect(replace).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
     expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation);
   });
 
@@ -90,23 +90,40 @@ describe('BunchJoinMotion', () => {
       screen.getByRole('button', { name: '재생 끝' }).click();
     });
 
-    expect(replace).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
     expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation);
   });
 
-  it('원이 커지기 시작하면 배경이 연보라로 번진다', async () => {
+  it('마지막 구간에 화면 전체로 퍼지는 장식 배경을 표시한다', async () => {
     const { container } = render(<BunchJoinMotion />);
-    const shell = container.firstElementChild;
-    expect(shell?.className).not.toContain('bg-surface-brand-subtle-1');
-    expect(shell?.hasAttribute('data-app-background')).toBe(false);
+    expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
 
     await screen.findByRole('button', { name: '85프레임' });
     act(() => {
       screen.getByRole('button', { name: '85프레임' }).click();
     });
 
-    expect(shell?.className).toContain('bg-surface-brand-subtle-1');
-    expect(shell?.getAttribute('data-app-background')).toBe('brand-subtle-1');
+    const reveal = container.querySelector<HTMLElement>('[aria-hidden="true"]');
+    expect(reveal).toBeTruthy();
+    expect(replace).not.toHaveBeenCalled();
+
+    act(() => {
+      screen.getByRole('button', { name: '88프레임' }).click();
+    });
+    expect(reveal?.style.clipPath).toBe('circle(100% at 50% var(--reveal-y))');
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('중간 프레임을 건너뛰어도 배경 완성 상태를 렌더한 뒤 이동한다', async () => {
+    const { container } = render(<BunchJoinMotion />);
+    const last = await screen.findByRole('button', { name: '89프레임' });
+    act(() => last.click());
+
+    expect(container.querySelector<HTMLElement>('[aria-hidden="true"]')?.style.clipPath).toBe(
+      'circle(100% at 50% var(--reveal-y))',
+    );
+    expect(replace).not.toHaveBeenCalled();
+    await waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
   });
 
   it('재생에 실패해도 화면이 멈추지 않고 다음으로 넘어간다', async () => {

@@ -10,7 +10,7 @@ type AppFrameProps = {
  */
 export function AppFrame({ children }: AppFrameProps) {
   return (
-    <div className="has-data-[app-background=brand-subtle-1]:bg-surface-brand-subtle-1 bg-surface-primary mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col pt-(--safe-area-top) pr-(--safe-area-right) pb-(--safe-area-bottom) pl-(--safe-area-left) transition-colors duration-300 ease-out motion-reduce:transition-none">
+    <div className="has-data-[app-background=brand-subtle-1]:bg-surface-brand-subtle-1 bg-surface-primary mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col pt-(--safe-area-top) pr-(--safe-area-right) pb-(--safe-area-bottom) pl-(--safe-area-left)">
       {children}
     </div>
   );
