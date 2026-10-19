@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { Stepper } from '@app/design-system/web';
 import { useSelectedLayoutSegment } from 'next/navigation';
-import { HeaderIconButton } from '../HeaderIconButton';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { useExitCreateBunchDialog } from './useExitCreateBunchDialog';
 
 const TOTAL_STEPS = 3;

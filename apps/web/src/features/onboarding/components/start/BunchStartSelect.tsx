@@ -3,9 +3,9 @@
 import { GraphicEditIcon, Header, LineCloseLargeIcon } from '@app/design-system';
 import { CreateBunchCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
-import { HeaderIconButton } from '../HeaderIconButton';
 
 /**
  * 회원가입 뒤 번치를 새로 만들지, 초대받은 번치에 참여할지 고르는 시작 화면
