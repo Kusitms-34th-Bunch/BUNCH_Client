@@ -6,13 +6,12 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { InviteAnimation } from './InviteAnimation';
 
-// 동작 줄이기에서는 로티를 재생하지 않고 잠깐 안내만 보여 준 뒤 넘어간다
+// 동작 줄이기 설정 시 로티 대신 안내 후 이동
 const REDUCED_MOTION_HOLD_MS = 800;
 
-// 로티(30fps, 120프레임)는 연보라 원이 프레임 58~89에 커지고 그 뒤 약 1초는 변화 없이 끝난다
-// 정지한 채 기다리지 않게 원이 다 커진 직후(프레임 96)에 넘어가고, 그 전에(프레임 80) 화면 배경을 연보라로 번지게 해서 다음 화면 배경과 이어 준다
+// 원·초대장의 마지막 움직임이 끝나는 89프레임에 바로 이동, 80프레임부터 다음 화면 배경으로 연결
 const TINT_FRAME = 80;
-const HAND_OFF_FRAME = 96;
+const HAND_OFF_FRAME = 89;
 
 const MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 function subscribeMotion(listener: () => void) {
@@ -21,13 +20,10 @@ function subscribeMotion(listener: () => void) {
   return () => query.removeEventListener('change', listener);
 }
 const getReducedMotion = () => window.matchMedia(MOTION_QUERY).matches;
-// 서버·hydration 첫 렌더는 동작 줄이기로 보고(`AppTransitions`와 같다) 로티를 그리지 않는다. 실제 설정은 hydration 직후 반영된다
+// hydration 불일치 방지를 위해 서버·첫 렌더에서는 로티 생략
 const getServerReducedMotion = () => true;
 
-/**
- * 초대 링크를 확인하는 동안 초대장 로티를 재생하는 화면. 재생이 끝나면 초대 확인 화면으로 자동 이동한다
- * 번치 정보 조회 API가 없어 재생 시간(약 4초)이 곧 로딩 시간이다. 이동은 `replace`라 뒤로 가기로 돌아오지 않는다
- */
+/** 번치 조회 API 미연결 상태에서 로티의 마지막 움직임까지 재생 후 초대 확인 화면으로 replace 이동 */
 export function BunchJoinMotion() {
   const router = useRouter();
   const moved = useRef(false);
@@ -46,8 +42,12 @@ export function BunchJoinMotion() {
     };
   }, []);
 
+  useEffect(() => {
+    router.prefetch(ONBOARDING_PATHS.joinBunchInvitation);
+  }, [router]);
+
   const goNext = useCallback(() => {
-    // 화면을 떠난 뒤 재생 라이브러리가 이벤트를 보내도 이동하지 않는다
+    // 언마운트 후 이벤트·중복 이벤트에 의한 추가 이동 방지
     if (moved.current || !mounted.current) return;
     moved.current = true;
     router.replace(ONBOARDING_PATHS.joinBunchInvitation);
@@ -69,10 +69,11 @@ export function BunchJoinMotion() {
 
   return (
     <PageShell
-      // 배경은 로티가 끝나는 원 색(초대 확인 화면 배경)으로 번진다
+      data-app-background={tinted ? 'brand-subtle-1' : undefined}
+      // 로티의 마지막 원 색과 초대 확인 화면 배경 연결
       className={`transition-colors duration-300 ease-out motion-reduce:transition-none ${tinted ? 'bg-surface-brand-subtle-1' : ''}`}
     >
-      {/* 보이는 글자가 없는 화면이라 제목으로 불러오는 중임을 전한다. 라이브 영역(role=status)은 처음부터 들어 있는 글자를 알리지 않는다 */}
+      {/* 초기부터 있는 status 문구는 알림이 누락될 수 있어 숨김 제목으로 로딩 상태 전달 */}
       <h1 className="sr-only">초대받은 번치 정보를 불러오는 중이에요.</h1>
       <div className="size-full">
         {reducedMotion ? null : (

@@ -23,7 +23,7 @@
 
 - Path·params·search: `/onboarding/join/invitation`. params·search는 없다.
 - 접근 권한·guard: 아직 없다. URL로 바로 열려도 예시 번치가 보인다(API가 생기면 초대 링크로 번치를 식별한다).
-- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 배경은 연보라(`bg-surface-brand-subtle-1`, `PageShell`의 `className`). 「참여하기」와 「나가기」는 `router.replace`로 이동해 뒤로 가기로 돌아오지 않는다.
+- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 배경은 연보라(`bg-surface-brand-subtle-1`, `PageShell`의 `className`). route의 `data-app-background="brand-subtle-1"`을 `AppFrame`이 감지해 상단 상태 바·하단 홈 인디케이터의 Safe Area까지 같은 배경을 적용한다. 「참여하기」와 「나가기」는 `router.replace`로 이동해 뒤로 가기로 돌아오지 않는다.
 
 ## 상태와 흐름
 

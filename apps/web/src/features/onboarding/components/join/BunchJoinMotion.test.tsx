@@ -4,9 +4,11 @@ import { ONBOARDING_PATHS } from '../../constants/paths';
 import { BunchJoinMotion } from './BunchJoinMotion';
 
 const replace = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
+const prefetch = vi.fn();
+const router = { replace, prefetch };
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
-// 로티 재생은 jsdom에서 그릴 수 없어 끝남·오류 이벤트만 흉내 내는 껍데기로 대체한다(모양은 테스트하지 않는다)
+// DOM 테스트 환경에서 로티를 재생할 수 없어 프레임·완료·오류 이벤트 대체
 type PlayerProps = {
   subscriptions: {
     frame: (_event: { currentFrame: number }) => void;
@@ -18,7 +20,8 @@ vi.mock('lottie-react', () => ({
   LottieLight: ({ subscriptions }: PlayerProps) => (
     <div>
       <button onClick={() => subscriptions.frame({ currentFrame: 85 })}>85프레임</button>
-      <button onClick={() => subscriptions.frame({ currentFrame: 96 })}>96프레임</button>
+      <button onClick={() => subscriptions.frame({ currentFrame: 88 })}>88프레임</button>
+      <button onClick={() => subscriptions.frame({ currentFrame: 89 })}>89프레임</button>
       <button onClick={subscriptions.complete}>재생 끝</button>
       <button onClick={subscriptions.error}>재생 오류</button>
     </div>
@@ -35,6 +38,7 @@ const setReducedMotion = (matches: boolean) =>
 describe('BunchJoinMotion', () => {
   beforeEach(() => {
     replace.mockClear();
+    prefetch.mockClear();
     setReducedMotion(false);
   });
   afterEach(() => {
@@ -52,6 +56,13 @@ describe('BunchJoinMotion', () => {
     await screen.findByRole('button', { name: '재생 끝' });
   });
 
+  it('재생 중 다음 초대장 페이지를 미리 불러온다', () => {
+    render(<BunchJoinMotion />);
+
+    expect(prefetch).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation);
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('재생이 끝나면 초대 확인 화면으로 한 번만 replace한다', async () => {
     render(<BunchJoinMotion />);
     const done = await screen.findByRole('button', { name: '재생 끝' });
@@ -65,9 +76,9 @@ describe('BunchJoinMotion', () => {
     expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation);
   });
 
-  it('연보라 원이 다 커진 직후(96프레임)에 끝을 기다리지 않고 넘어가고 그 전에는 넘어가지 않는다', async () => {
+  it('마지막 움직임이 끝나는 89프레임에 정지 구간 없이 넘어간다', async () => {
     render(<BunchJoinMotion />);
-    const early = await screen.findByRole('button', { name: '85프레임' });
+    const early = await screen.findByRole('button', { name: '88프레임' });
 
     act(() => {
       early.click();
@@ -75,7 +86,8 @@ describe('BunchJoinMotion', () => {
     expect(replace).not.toHaveBeenCalled();
 
     act(() => {
-      screen.getByRole('button', { name: '96프레임' }).click();
+      screen.getByRole('button', { name: '89프레임' }).click();
+      screen.getByRole('button', { name: '재생 끝' }).click();
     });
 
     expect(replace).toHaveBeenCalledTimes(1);
@@ -86,6 +98,7 @@ describe('BunchJoinMotion', () => {
     const { container } = render(<BunchJoinMotion />);
     const shell = container.firstElementChild;
     expect(shell?.className).not.toContain('bg-surface-brand-subtle-1');
+    expect(shell?.hasAttribute('data-app-background')).toBe(false);
 
     await screen.findByRole('button', { name: '85프레임' });
     act(() => {
@@ -93,6 +106,7 @@ describe('BunchJoinMotion', () => {
     });
 
     expect(shell?.className).toContain('bg-surface-brand-subtle-1');
+    expect(shell?.getAttribute('data-app-background')).toBe('brand-subtle-1');
   });
 
   it('재생에 실패해도 화면이 멈추지 않고 다음으로 넘어간다', async () => {

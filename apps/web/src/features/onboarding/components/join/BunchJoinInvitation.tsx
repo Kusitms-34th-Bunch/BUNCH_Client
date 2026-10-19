@@ -12,16 +12,11 @@ import { HeaderIconButton } from '../HeaderIconButton';
 type BunchJoinInvitationProps = {
   bunchName: string;
   description: string;
-  /** 초대한 사람 이름 */
   senderName: string;
   imageSrc: string;
 };
 
-/**
- * 초대받은 번치의 정보를 보여 주고 참여할지 묻는 화면: 번치 이름·소개·대표 이미지·초대한 사람과 「참여하기」
- * 뒤로 가기는 중단 확인 모달을 연다. 「참여하기」는 참여 완료 화면으로 `replace`한다(뒤로 가기로 다시 참여하지 않게)
- * 참여 요청 API가 없어 요청 없이 이동만 한다(spec 확인할 항목)
- */
+/** 참여 API 미연결로 완료 화면 이동만 처리; 뒤로 가기 재참여 방지를 위해 replace 적용 */
 export function BunchJoinInvitation({
   bunchName,
   description,
@@ -47,11 +42,10 @@ export function BunchJoinInvitation({
 
   return (
     <PageShell
-      // 초대장 로티가 끝나는 원 색(#f1f2ff)과 같은 의미 토큰
+      // 로티의 마지막 원 색(#f1f2ff)과 배경 연결
       className="bg-surface-brand-subtle-1"
       header={
         <Header
-          // 배경이 연보라라 헤더도 투명하게 둔다
           className="bg-transparent"
           leading={
             <HeaderIconButton label="뒤로 가기" onClick={openExitDialog}>
@@ -61,7 +55,7 @@ export function BunchJoinInvitation({
         />
       }
     >
-      {/* 로딩 화면의 연보라 배경에서 이어지므로 내용만 부드럽게 나타난다(`globals.css`의 `page-content-in`) */}
+      {/* 로티 배경을 유지하며 내용에만 등장 애니메이션 적용 */}
       <div className="gap-s10 px-padding-p18 pb-padding-p18 flex min-h-full animate-[page-content-in_300ms_ease-out_both] flex-col items-center justify-center motion-reduce:animate-none">
         <h1 className="typography-title-1-bold text-text-primary text-center break-keep">
           초대받은 번치에 참여할까요?
