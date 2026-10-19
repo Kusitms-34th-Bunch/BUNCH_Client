@@ -7,9 +7,9 @@ import { CHECK_FAILURE_MESSAGE } from '../../hooks/useNicknameAvailability';
 import { NICKNAME_INVALID_MESSAGE, NICKNAME_TAKEN_MESSAGE } from '../../lib/nickname';
 import { ProfileSetup } from './ProfileSetup';
 
-const push = vi.fn();
+const replace = vi.fn();
 const back = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, back }) }));
 // 토스트 표시는 DS의 `toast()`가 맡으므로 호출만 막는다
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
@@ -44,7 +44,7 @@ const male = () => screen.getByRole('button', { name: '남성' });
 
 describe('ProfileSetup', () => {
   beforeEach(() => {
-    push.mockClear();
+    replace.mockClear();
     back.mockClear();
     picker.photoUrl = undefined;
     picker.isPending = false;
@@ -399,8 +399,8 @@ describe('ProfileSetup', () => {
 
     await userEvent.click(start());
 
-    expect(push).toHaveBeenCalledWith(NEXT_PATH);
-    expect(push).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith(NEXT_PATH);
+    expect(replace).toHaveBeenCalledTimes(1);
   });
 
   describe('키보드', () => {
@@ -444,7 +444,7 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(false);
 
       fireEvent.click(start());
-      expect(push).toHaveBeenCalledWith(NEXT_PATH);
+      expect(replace).toHaveBeenCalledWith(NEXT_PATH);
       expect(document.activeElement).not.toBe(nickname());
     });
 

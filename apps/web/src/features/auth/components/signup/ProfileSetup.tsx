@@ -101,7 +101,7 @@ export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
 
   const start = () => {
     closeKeyboard();
-    router.push(nextPath);
+    router.replace(nextPath);
   };
 
   return (
