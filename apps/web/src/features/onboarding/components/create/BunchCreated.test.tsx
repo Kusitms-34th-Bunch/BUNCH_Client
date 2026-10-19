@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ReactNode, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +6,16 @@ import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { CreateBunchDraftProvider } from '../../contexts/CreateBunchDraftProvider';
 import { BunchCreated } from './BunchCreated';
+
+const gallery = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/bridge/client', () => ({
+  isNativeShell: () => true,
+  galleryBridge: {
+    isReactNativeWebView: true,
+    isNativeMethodAvailable: () => true,
+    pickGalleryImage: gallery,
+  },
+}));
 
 const replace = vi.fn();
 const push = vi.fn();
@@ -30,7 +40,22 @@ const Empty = ({ children }: { children: ReactNode }) => (
 const DraftName = () => <output aria-label="draft 이름">{useCreateBunchDraft().name}</output>;
 
 describe('BunchCreated', () => {
+  it('사진 변경 버튼이 갤러리와 연결되고 재선택 취소 후에도 임시 미리보기 안내를 유지한다', async () => {
+    const dataUrl = 'data:image/jpeg;base64,YWJj';
+    gallery.mockResolvedValueOnce({ dataUrl }).mockResolvedValueOnce(null);
+    render(<BunchCreated />, { wrapper: AfterMood });
+    await userEvent.click(screen.getByRole('button', { name: '사진 변경' }));
+    await waitFor(() =>
+      expect(screen.getByAltText('선택한 번치 대표 사진').getAttribute('src')).toBe(dataUrl),
+    );
+    await userEvent.click(screen.getByRole('button', { name: '사진 변경' }));
+    await waitFor(() => expect(gallery).toHaveBeenCalledTimes(2));
+    expect(screen.getByText('현재 화면에서만 미리 볼 수 있어요.')).toBeTruthy();
+    expect(screen.getByAltText('선택한 번치 대표 사진').getAttribute('src')).toBe(dataUrl);
+  });
+
   beforeEach(() => {
+    gallery.mockReset();
     replace.mockClear();
     push.mockClear();
   });
@@ -54,7 +79,7 @@ describe('BunchCreated', () => {
     );
 
     expect(screen.getByLabelText('draft 이름').textContent).toBe('');
-    // draft를 비워도 제목의 이름과 가드 판정은 그대로다
+    // draft 초기화 후 제목과 가드 판정 유지 확인
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('퇴근런클럽');
     expect(replace).not.toHaveBeenCalled();
   });
