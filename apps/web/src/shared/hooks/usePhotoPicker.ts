@@ -27,8 +27,13 @@ function readWebImage(file: File): Promise<string> {
   });
 }
 
-/** 번치 사진 선택과 임시 미리보기. 서버 저장은 생성·이미지 업로드 API 연결 시 추가 */
-export function useBunchPhoto() {
+/** 사진 선택과 임시 미리보기(네이티브 갤러리 또는 웹 파일 선택). 서버 저장은 이미지 업로드 API 연결 시 추가 */
+type PhotoPickerOptions = {
+  /** 사진 선택이 실패했을 때 호출. 화면이 자기 방식으로 알릴 때 쓴다(`message`와 별개) */
+  onError?: (_error: Error) => void;
+};
+
+export function usePhotoPicker({ onError }: PhotoPickerOptions = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isPicking = useRef(false);
   const isMounted = useRef(true);
@@ -55,9 +60,9 @@ export function useBunchPhoto() {
         setMessage('사진을 선택했어요.');
       }
     } catch (error) {
-      if (isMounted.current) {
-        setMessage(error instanceof Error ? error.message : '사진을 선택하지 못했어요.');
-      }
+      const failure = error instanceof Error ? error : new Error('사진을 선택하지 못했어요.');
+      if (isMounted.current) setMessage(failure.message);
+      onError?.(failure);
     } finally {
       isPicking.current = false;
       if (isMounted.current) setIsPending(false);
@@ -71,7 +76,9 @@ export function useBunchPhoto() {
       return;
     }
     if (!galleryBridge.isNativeMethodAvailable('pickGalleryImage')) {
-      setMessage('갤러리를 사용하려면 개발 앱을 업데이트해 주세요.');
+      const failure = new Error('갤러리를 사용하려면 개발 앱을 업데이트해 주세요.');
+      setMessage(failure.message);
+      onError?.(failure);
       return;
     }
     void selectPhoto(async () => {

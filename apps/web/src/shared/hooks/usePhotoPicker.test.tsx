@@ -1,7 +1,7 @@
 import type { ChangeEvent } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { useBunchPhoto } from './useBunchPhoto';
+import { usePhotoPicker } from './usePhotoPicker';
 
 const native = vi.hoisted(() => ({
   isReactNativeWebView: true,
@@ -24,7 +24,7 @@ beforeEach(() => {
 
 it('네이티브 사진을 미리 보고 취소하면 기존 사진을 유지한다', async () => {
   native.pickGalleryImage.mockResolvedValueOnce({ dataUrl: imageUrl }).mockResolvedValueOnce(null);
-  const { result } = renderHook(useBunchPhoto);
+  const { result } = renderHook(usePhotoPicker);
   act(() => result.current.handleCameraClick());
   await waitFor(() => expect(result.current.photoUrl).toBe(imageUrl));
   expect(result.current.message).toBe('사진을 선택했어요.');
@@ -42,7 +42,7 @@ it('선택 중 중복 호출을 막고 실패 후 다시 선택할 수 있다', 
         reject = fail;
       }),
   );
-  const { result } = renderHook(useBunchPhoto);
+  const { result } = renderHook(usePhotoPicker);
   act(() => {
     result.current.handleCameraClick();
     result.current.handleCameraClick();
@@ -62,7 +62,7 @@ it('선택 중 중복 호출을 막고 실패 후 다시 선택할 수 있다', 
 
 it('잘못된 네이티브 응답을 이미지로 사용하지 않는다', async () => {
   native.pickGalleryImage.mockResolvedValue({ dataUrl: 'file:///private/photo.jpg' });
-  const { result } = renderHook(useBunchPhoto);
+  const { result } = renderHook(usePhotoPicker);
   act(() => result.current.handleCameraClick());
   await waitFor(() => expect(result.current.isPending).toBe(false));
   expect(result.current.photoUrl).toBeUndefined();
@@ -71,7 +71,7 @@ it('잘못된 네이티브 응답을 이미지로 사용하지 않는다', async
 
 it('이전 개발 앱에서는 업데이트를 안내한다', () => {
   native.isNativeMethodAvailable.mockReturnValue(false);
-  const { result } = renderHook(useBunchPhoto);
+  const { result } = renderHook(usePhotoPicker);
   act(() => result.current.handleCameraClick());
   expect(native.pickGalleryImage).not.toHaveBeenCalled();
   expect(result.current.message).toContain('업데이트');
@@ -85,7 +85,7 @@ function fileEvent(file: File): ChangeEvent<HTMLInputElement> {
 
 it('웹에서는 사용자 클릭에서 파일 input을 즉시 연다', () => {
   native.isReactNativeWebView = false;
-  const { result } = renderHook(useBunchPhoto);
+  const { result } = renderHook(usePhotoPicker);
   const input = document.createElement('input');
   const click = vi.spyOn(input, 'click');
   result.current.inputRef.current = input;
@@ -95,7 +95,7 @@ it('웹에서는 사용자 클릭에서 파일 input을 즉시 연다', () => {
 });
 
 it('지원하지 않는 파일과 3MB 초과 파일을 거부한다', async () => {
-  const { result } = renderHook(useBunchPhoto);
+  const { result } = renderHook(usePhotoPicker);
   const files = [
     new File(['x'], 'x.svg', { type: 'image/svg+xml' }),
     new File([new Uint8Array(3 * 1024 * 1024 + 1)], 'x.jpg', { type: 'image/jpeg' }),
@@ -122,7 +122,7 @@ it('웹 이미지를 디코딩한 뒤 미리 보고 같은 파일을 다시 고�
       }
     },
   );
-  const { result } = renderHook(useBunchPhoto);
+  const { result } = renderHook(usePhotoPicker);
   const event = fileEvent(new File(['abc'], 'x.png', { type: 'image/png' }));
   act(() => result.current.handleFileChange(event));
   await waitFor(() => expect(image.src).toContain('data:image/png;base64,'));
@@ -148,7 +148,7 @@ it('깨진 웹 이미지는 미리보기를 바꾸지 않는다', async () => {
       }
     },
   );
-  const { result } = renderHook(useBunchPhoto);
+  const { result } = renderHook(usePhotoPicker);
   act(() =>
     result.current.handleFileChange(
       fileEvent(new File(['broken'], 'x.jpg', { type: 'image/jpeg' })),

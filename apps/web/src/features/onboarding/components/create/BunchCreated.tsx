@@ -5,9 +5,9 @@ import { BunchAvatar } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
-import { useBunchPhoto } from '../../hooks/useBunchPhoto';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
 import { BunchConfetti } from '../BunchConfetti';
 
@@ -17,7 +17,7 @@ const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
 export function BunchCreated() {
   const router = useRouter();
   const { inputRef, photoUrl, isPending, message, handleCameraClick, handleFileChange } =
-    useBunchPhoto();
+    usePhotoPicker();
   const ready = useCreateBunchGuard(3);
   const draft = useCreateBunchDraft();
   const { finish } = draft;
