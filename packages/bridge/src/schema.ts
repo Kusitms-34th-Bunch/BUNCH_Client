@@ -9,6 +9,14 @@ export const galleryImageSchema = z.object({
 });
 export type GalleryImage = z.infer<typeof galleryImageSchema>;
 
+/** 가입할 때 요청하는 시스템 권한 */
+export const permissionKindSchema = z.enum(['photo', 'camera', 'notification']);
+export type PermissionKind = z.infer<typeof permissionKindSchema>;
+
+/** 요청 뒤의 권한 상태. 허용도 거부도 아직 정하지 않았으면 `undetermined` */
+export const permissionStatusSchema = z.enum(['granted', 'denied', 'undetermined']);
+export type PermissionStatus = z.infer<typeof permissionStatusSchema>;
+
 export const shareParamsSchema = z.object({
   url: z.url(),
   title: z.string().optional(),

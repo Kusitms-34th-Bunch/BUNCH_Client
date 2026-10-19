@@ -30,6 +30,7 @@ import { nativeTabBarStore } from './src/native-tab-bar/native-tab-bar-store';
 import { buildSafeAreaScript } from './src/safe-area-script';
 import { isAppWebUrl, resolveWebUrl } from './src/web-url';
 import { pickGalleryImage } from './src/gallery-image';
+import { requestPermission } from './src/permissions';
 
 // Metro는 `process.env.EXPO_PUBLIC_*`를 이렇게 직접 쓴 곳만 번들에 넣어 주므로 변수·객체로 바꿔 접근하지 않는다
 const WEB_URL = resolveWebUrl(
@@ -42,6 +43,7 @@ const WEB_URL = resolveWebUrl(
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({
   pickGalleryImage,
+  requestPermission,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
     await Share.share({ message: title ? `${title}\n${url}` : url, url });
