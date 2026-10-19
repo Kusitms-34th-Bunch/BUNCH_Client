@@ -12,7 +12,7 @@ const push = vi.fn();
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push }) }));
-// 토스트 표시는 DS의 `toast()`가 맡으므로 호출 인자만 확인한다
+// DS 토스트 렌더링을 제외하고 호출 인자만 검증
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: (...args: ToastArgs) => toast(...args),

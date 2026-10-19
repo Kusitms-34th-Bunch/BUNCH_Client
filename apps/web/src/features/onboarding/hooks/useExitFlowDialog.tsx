@@ -11,10 +11,7 @@ type UseExitFlowDialogOptions = {
   onExit: () => void;
 };
 
-/**
- * 중단 확인 모달을 여는 함수를 돌려줌. 모달은 앱의 `OverlayProvider`가 그려서
- * 화면의 router·상태 정리는 열 때 `onExit`에 담아 넘김(모달이 흐름의 provider 밖에서 그려지기 때문)
- */
+// 모달은 흐름의 provider 밖에서 렌더링되므로 화면 상태 정리를 onExit으로 전달
 export function useExitFlowDialog({
   title,
   description,

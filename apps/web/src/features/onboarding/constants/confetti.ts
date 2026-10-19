@@ -1,8 +1,5 @@
-/**
- * 번치 생성 완료 화면의 폭죽 애니메이션 값(Figma `791:3260`의 모션 데이터, 1.5초 한 번 재생)
- * 좌표는 Figma 375×591 틀 기준(px)이고 위치·회전은 조각 왼쪽 위 모서리를 기준으로 함
- * 화면에서는 이 틀의 가운데를 본문(아바타·제목) 가운데에 맞춰 놓음(`BunchConfetti`)
- */
+// Figma `791:3260` 모션 데이터. 375×591 틀과 각 조각의 왼쪽 위 모서리 기준 좌표·회전
+// 화면에서는 틀의 가운데를 본문 가운데에 정렬(`BunchConfetti`)
 export const CONFETTI_FRAME = { width: 375, height: 591 } as const;
 export const CONFETTI_DURATION_MS = 1499.586;
 /** 회전이 끝나는 시각(이후 값 고정) */

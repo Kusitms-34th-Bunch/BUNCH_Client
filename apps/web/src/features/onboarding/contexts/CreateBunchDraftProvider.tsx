@@ -3,16 +3,13 @@
 import { useCallback, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { CreateBunchDraftContext, type Mood, type Visibility } from './createBunchDraftContext';
 
-/**
- * 번치 만들기 단계들이 함께 쓰는 입력값 임시 보관
- * create 폴더의 layout이 소유해 단계를 오가는 동안 유지되고, 새로고침하거나 흐름을 벗어나면 사라진다
- */
+// create layout에서 단계 간 임시 입력값 유지. 새로고침이나 흐름 이탈 시 초기화
 export function CreateBunchDraftProvider({
   children,
   initial,
 }: {
   children: ReactNode;
-  /** 처음 값. 테스트에서 앞 단계를 마친 상태로 시작할 때 쓴다 */
+  /** 테스트에서 앞 단계를 마친 상태로 시작하기 위한 초기값 */
   initial?: Partial<{
     name: string;
     visibility: Visibility;
@@ -27,7 +24,7 @@ export function CreateBunchDraftProvider({
   const [mood, setMood] = useState<Mood | null>(initial?.mood ?? null);
   const [createdName, setCreatedName] = useState<string | null>(initial?.createdName ?? null);
 
-  // 만들기를 마친 뒤 뒤로 가서 새로 입력하기 시작하면 이전 완료 기록을 버린다(옛 이름이 새 완료 화면에 나오지 않게)
+  // 이전 완료 후 새로 입력할 때 옛 이름이 완료 화면에 남는 현상 방지
   const edits =
     <T,>(set: Dispatch<SetStateAction<T>>): Dispatch<SetStateAction<T>> =>
     (value) => {
@@ -35,7 +32,7 @@ export function CreateBunchDraftProvider({
       set(value);
     };
 
-  // 완료 화면의 effect가 의존하므로 setter(안정적)만 써서 identity를 고정한다
+  // 완료 화면 effect의 불필요한 재실행 방지를 위한 함수 참조 유지
   const reset = useCallback(() => {
     setName('');
     setVisibility(null);

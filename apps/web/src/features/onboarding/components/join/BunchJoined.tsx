@@ -13,10 +13,7 @@ type BunchJoinedProps = {
   imageSrc: string;
 };
 
-/**
- * 번치에 참여한 뒤 보는 완료 화면: 대표 이미지와 「{번치 이름}에 합류했어요!」, 폭죽 한 번
- * 닫기(X)와 「번치로 이동하기」는 피드(임시 `/`, 설계서는 참여한 번치의 메인 화면)로 `replace`한다
- */
+/** 번치 메인 화면 미연결로 닫기·이동 시 피드 경로 사용 */
 export function BunchJoined({ bunchName, imageSrc }: BunchJoinedProps) {
   const router = useRouter();
   const leave = () => router.replace(ONBOARDING_PATHS.feed);

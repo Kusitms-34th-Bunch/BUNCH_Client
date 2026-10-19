@@ -15,11 +15,11 @@ export type CreateBunchDraft = {
   setDescription: Dispatch<SetStateAction<string>>;
   mood: Mood | null;
   setMood: Dispatch<SetStateAction<Mood | null>>;
-  /** 만들기를 마친 번치의 이름. 완료 화면이 입력값을 비운 뒤에도 다시 들어오면 같은 화면을 보이게 한다. 아직 마치지 않았으면 null */
+  /** 입력값 초기화 후 완료 화면 재진입을 위한 이름. 미완료 시 null */
   createdName: string | null;
-  /** 입력값을 모두 비움(번치 만들기를 그만둘 때). 마쳤다는 기록도 지운다 */
+  /** 입력값과 완료 기록 초기화 */
   reset: () => void;
-  /** 만들기를 마쳤음을 기록하고 입력값을 비움(완료 화면에서 한 번) */
+  /** 완료 기록 저장 후 입력값 초기화 */
   finish: (_createdName: string) => void;
 };
 

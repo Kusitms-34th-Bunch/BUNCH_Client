@@ -37,7 +37,7 @@ describe('BunchStartSelect', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /새 번치 만들기/ }));
 
-    // 앞으로 가는 이동이라 오른쪽에서 들어오는 전환 타입을 붙인다
+    // 앞으로 이동할 때 오른쪽에서 들어오는 전환 확인
     expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.createBunch);
     expect(push).toHaveBeenCalledTimes(1);
   });

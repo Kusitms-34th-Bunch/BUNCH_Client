@@ -16,9 +16,9 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { HeaderIconButton } from '../HeaderIconButton';
 
-// 보이는 라벨과 입력창의 접근성 이름이 어긋나지 않게 한 곳에서 쓴다
+// 보이는 라벨과 입력창의 접근성 이름 일치
 const LINK_LABEL = '초대 링크';
-// Figma: 토스트 아래 82px(홈 인디케이터 34px 포함) → 기본 위치(Safe Area + 16px)보다 32px 위. 「나중에 할게요」(34px) 위 14px에 놓인다
+// Figma 기준 홈 인디케이터 포함 하단 82px 위치를 위해 기본 위치에서 32px 상향
 const TOAST_BOTTOM_OFFSET = 32;
 
 type BunchInviteProps = {
@@ -26,11 +26,6 @@ type BunchInviteProps = {
   inviteLink: string;
 };
 
-/**
- * 번치를 만든 뒤 멤버를 초대하는 화면
- * 복사 아이콘을 누르면 링크를 복사하고 「공유」 버튼이 있는 토스트를 띄운다
- * 닫기(X)와 「나중에 할게요」는 피드로 이동한다(도착지는 spec의 확인할 항목)
- */
 export function BunchInvite({ inviteLink }: BunchInviteProps) {
   const router = useRouter();
   const linkId = useId();
@@ -67,7 +62,7 @@ export function BunchInvite({ inviteLink }: BunchInviteProps) {
         fullWidth: true,
       });
     } catch {
-      // 권한·비보안 컨텍스트에서 막히면 복사되지 않았음을 알린다(Figma에 없는 문구)
+      // 권한 거부·비보안 컨텍스트의 복사 실패 안내
       toast('초대 링크를 복사하지 못했어요.', { bottomOffset: TOAST_BOTTOM_OFFSET });
     }
   };

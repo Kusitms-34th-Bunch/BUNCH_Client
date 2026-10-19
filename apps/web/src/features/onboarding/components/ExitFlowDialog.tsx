@@ -1,7 +1,6 @@
 import { Dialog } from '@app/design-system';
 
 type ExitFlowDialogProps = {
-  /** 모달 제목(예: 「번치 만들기를 그만둘까요?」) */
   title: string;
   description: string;
   /** 모달만 닫는 버튼 글자 */
@@ -12,11 +11,7 @@ type ExitFlowDialogProps = {
   onClosed?: () => void;
 };
 
-/**
- * 번치 만들기·참여 흐름의 헤더 뒤로 가기가 여는 중단 확인 모달(문구는 흐름이 정함)
- * 「나가기」는 `onExit`, 취소 버튼·ESC는 모달만 닫음
- * 닫힘 요청(ESC)이 나가기가 되지 않도록 `ConfirmDialog` 대신 부품을 조합함
- */
+// ESC 닫힘과 나가기 동작을 구분하기 위해 ConfirmDialog 대신 부품 조합
 export function ExitFlowDialog({
   title,
   description,
@@ -41,7 +36,7 @@ export function ExitFlowDialog({
         <Dialog.Title>{title}</Dialog.Title>
         <Dialog.Description>{description}</Dialog.Description>
         <Dialog.Footer>
-          {/* 두 버튼은 같은 폭(135.5px)이다. Button 라벨은 안쪽 여백 안에서 글자를 자르는데 Figma는 글자가 여백까지 번져 보이므로 좌우 여백을 줄여 「계속 참여하기」가 잘리지 않게 한다 */}
+          {/* 동일한 버튼 폭에서 「계속 참여하기」가 잘리지 않도록 좌우 여백 축소 */}
           <Dialog.Confirm
             variant="secondary"
             className="px-s6 min-w-0 flex-1"
