@@ -1,4 +1,4 @@
-// joinBunch(참여 화면)는 route 미구현이라 이동 시 404. 해당 경로는 spec의 임시 값
+// 경로는 spec의 임시 값
 export const ONBOARDING_PATHS = {
   start: '/onboarding',
   createBunch: '/onboarding/create',
@@ -7,6 +7,9 @@ export const ONBOARDING_PATHS = {
   createBunchComplete: '/onboarding/create/complete',
   createBunchInvite: '/onboarding/create/invite',
   joinBunch: '/onboarding/join',
-  // 번치 만들기를 그만두면 이동하는 홈(피드 탭). 홈 route가 아직 피드 화면이 아니라 현재는 `/`
+  joinBunchMotion: '/onboarding/join/motion',
+  joinBunchInvitation: '/onboarding/join/invitation',
+  joinBunchComplete: '/onboarding/join/complete',
+  // 피드 화면 연결 전 임시 홈 경로
   feed: '/',
 } as const;

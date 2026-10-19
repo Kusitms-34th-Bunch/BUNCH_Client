@@ -17,7 +17,7 @@
 ### 범위 외
 
 - 초대 링크를 만드는 API. 지금은 Figma 예시 값(`fixtures/invite.fixture.ts`의 `inviteLinkFixture`)이다.
-- 화면 전환: 완료 → 초대는 SSGOI `slide`(Ease Out·이동 시간 200ms)를 적용하고 뒤로 가기는 반대 방향으로 이동한다. 피드로 나가는 이동에는 전환을 등록하지 않았다. 설정과 검증 범위는 `docs/architecture/motion.md`를 따른다.
+- 화면 전환: 완료 → 초대는 SSGOI `slide`(Ease Out·이동 시간 300ms)를 적용하고 뒤로 가기는 반대 방향으로 이동한다. 피드로 나가는 이동에는 전환을 등록하지 않았다. 설정과 검증 범위는 `docs/architecture/motion.md`를 따른다.
 - iPhone 상태 바·홈 인디케이터(기기 요소. Safe Area는 `AppFrame`이 처리한다).
 
 ## Route와 접근
@@ -63,8 +63,8 @@
 ## 확인할 항목
 
 - 토스트 위치 (확정): Figma는 토스트가 아래에서 82px(홈 인디케이터 34px 제외하면 48px)에 폭을 넓게 펴고 「나중에 할게요」(34px) 위 14px에 놓인다. `toast()`의 `bottomOffset: 32`(기본 Safe Area + 16px에 더함)와 `fullWidth`로 맞췄다(`Toast.spec.md`). 「나중에 할게요」 영역은 Figma처럼 버튼 높이 34px만 둔다. Figma 토스트의 좌우 여백은 왼쪽 19·오른쪽 12로 비대칭이라 목록 폭(좌우 16px)을 썼다.
-- 토스트 노출 시간 (확정, 설계서 내부 불일치): 설계서 3-2 본문은 "5초 뒤 사라짐", Toast Interaction은 "노출 시간 3,000ms"다. `Toast.spec.md`의 「공유」 버튼이 있는 토스트 5초를 따른다. 등장 Fade In·Ease Out 200ms, 퇴장 Fade Out·Ease In 200ms는 sonner 기본 전환이라 맞추지 않았다.
+- 토스트 노출 시간 (확정, 2026-10-19): 설계서의 Toast Interaction대로 3초다(`Toast.spec.md`). 등장 Fade In·Ease Out 200ms, 퇴장 Fade Out·Ease In 200ms는 sonner 기본 전환이라 맞추지 않았다.
 - 안내 문구 마침표 (확정 필요): 기본 상태 「…함께할 수 있어요.」, 복사됨 상태 「…초대할 수 있어요」로 다르다. 같은 화면이라면 어느 쪽인지 디자이너 확인. 지금은 기본 상태 문구를 쓴다.
 - 링크 값 (미정): 설계서의 기본 상태 입력창은 자리 표시 문구(`reqsaieiei///…`)다. 링크 발급 전 상태를 어떻게 보일지 정해야 한다.
 - 닫기·「나중에 할게요」 도착지 (제안): 설계서는 "생성된 번치 홈 화면"이다. 번치 홈이 없어 피드(`/`)로 임시 이동한다.
-- 화면 전환 애니메이션 (구현, 실기기 미검증): 완료 화면 → 이 화면은 Slide In·왼쪽·200ms다. 브라우저의 뒤로 가기(스와이프 포함)는 방향 타입이 붙지 않아 방향 전환이 없다(`docs/architecture/motion.md`). 곡선·시간은 `BunchStartSelect.spec.md`의 확인할 항목(설계서와 다름)을 따른다.
+- 화면 전환 애니메이션 (구현, 실기기 미검증): 완료 화면 → 이 화면은 Slide In·왼쪽·300ms다. 브라우저의 뒤로 가기(스와이프 포함)는 방향 타입이 붙지 않아 방향 전환이 없다(`docs/architecture/motion.md`). 곡선·시간은 `BunchStartSelect.spec.md`의 확인할 항목(설계서와 다름)을 따른다.

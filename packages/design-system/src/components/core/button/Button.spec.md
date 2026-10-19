@@ -52,14 +52,14 @@
 
 - Token·기존 primitive: 모두 기존 토큰(`bg-surface-*`, `text-text-*`, `border-border-secondary`, `rounded-r4`, `h-s14/16/18`, `px-s6/8/12`, `gap-s3/4`, `typography-label-l/m/s`, `bg-overlay-hover/pressed`). 하드코딩한 색·간격 값이 없다. 변형·크기는 `tailwind-variants`(`tv`)로 선언하고(slots: `base`·`icon`·`label`), 호출하는 쪽의 `className`은 `tv` 호출에 넘겨 한 곳에서 병합한다.
 - 허용되는 dependency: `tailwind-variants`(변형 선언). 병합은 기존 `tailwind-merge`를 쓰며, `cn`과 `tv`가 같은 설정(토큰 이름 등록)을 공유한다.
-- 토큰 차이(확인 필요): 저장소 토큰 `surface-brand-subtle-1`은 `#e2e4ff`(`bunch-100`)인데 현재 Figma는 `#f1f2ff`(`bunch-50`)다. 생성된 토큰 CSS를 직접 고치지 않고 올바른 의미의 토큰을 쓰므로, Tokens Studio 원본이 갱신되면 `brandSubtle`이 자동으로 Figma와 같아진다.
+- 토큰 차이 (해소, 2026-10-19): 저장소 `surface-brand-subtle-1`이 `#e2e4ff`(`bunch-100`)로 Figma(`#f1f2ff`, `bunch-50`)와 달랐으나 `develop`의 PR #60으로 `bunch-50`이 되어 `brandSubtle`이 Figma와 같아졌다(코드 변경 없음).
 - Figma 변형 이름 `Scondary`는 오타로 보고 코드에서는 `secondary`로 쓴다.
 - Storybook state matrix: `Matrix`(변형 × 크기 × 기본·비활성), `WithIcons`, `Disabled`, `LongLabel`, `SideBySide`. 눌림은 `:active`라서 표로 재현할 수 없어 직접 눌러 확인한다. Storybook은 `.storybook/storybook.css`로 Tailwind와 토큰 CSS를 연결한다.
 - 웹 앱에서 쓸 때: 앱의 `globals.css`가 디자인 시스템 소스를 Tailwind 스캔 범위에 넣어야(`@source`) 클래스가 만들어진다. 첫 소비자를 연결할 때 함께 확인한다.
 
 ## 확인할 항목
 
-- `brandSubtle` 배경 토큰 (미정): 저장소 `#e2e4ff`와 Figma `#f1f2ff`가 다르다. 디자이너가 Tokens Studio 원본을 다시 push해야 한다.
+- `brandSubtle` 배경 토큰 (해소, 2026-10-19): 위 "토큰 차이"와 같다. 저장소와 Figma가 `#f1f2ff`로 같다.
 - 눌림 오버레이 (미정): Warning만 20%인 것이 의도인지 디자이너에게 확인한다.
 - 이름 (제안): Figma `SolidButton`은 코드에서 `Button`, 오타 `Scondary`는 `secondary`로 쓴다.
 - Figma에 없는 추가 (제안): focus-visible outline, 긴 글자 말줄임, `touch-manipulation`, `type="button"` 기본값. 필요 없으면 제거한다.

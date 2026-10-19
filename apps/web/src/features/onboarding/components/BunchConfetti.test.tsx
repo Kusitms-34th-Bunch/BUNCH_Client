@@ -1,7 +1,7 @@
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CONFETTI_DURATION_MS, CONFETTI_PIECES } from '../../constants/confetti';
-import { CreateBunchConfetti } from './CreateBunchConfetti';
+import { CONFETTI_DURATION_MS, CONFETTI_PIECES } from '../constants/confetti';
+import { BunchConfetti } from './BunchConfetti';
 
 const cancel = vi.fn();
 const animate = vi.fn(() => ({ finished: Promise.resolve(), cancel }));
@@ -12,7 +12,7 @@ const mockReducedMotion = (reduce: boolean) =>
     vi.fn(() => ({ matches: reduce })),
   );
 
-describe('CreateBunchConfetti', () => {
+describe('BunchConfetti', () => {
   beforeEach(() => {
     animate.mockClear();
     cancel.mockClear();
@@ -22,7 +22,7 @@ describe('CreateBunchConfetti', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('조각마다 위치·회전·불투명도 세 가지를 1.5초 동안 재생한다', () => {
-    const { container } = render(<CreateBunchConfetti />);
+    const { container } = render(<BunchConfetti />);
 
     expect(container.querySelectorAll('span')).toHaveLength(CONFETTI_PIECES.length);
     expect(animate).toHaveBeenCalledTimes(CONFETTI_PIECES.length * 3);
@@ -35,19 +35,19 @@ describe('CreateBunchConfetti', () => {
   });
 
   it('보조기기에는 장식이라 숨긴다', () => {
-    const { container } = render(<CreateBunchConfetti />);
+    const { container } = render(<BunchConfetti />);
 
     expect(container.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('재생이 끝나면 조각을 치운다', async () => {
-    const { container } = render(<CreateBunchConfetti />);
+    const { container } = render(<BunchConfetti />);
 
     await waitFor(() => expect(container.firstElementChild).toBeNull());
   });
 
   it('화면이 사라지면 재생을 취소한다', () => {
-    const { unmount } = render(<CreateBunchConfetti />);
+    const { unmount } = render(<BunchConfetti />);
 
     unmount();
 
@@ -57,7 +57,7 @@ describe('CreateBunchConfetti', () => {
   it('움직임 줄이기 설정이면 그리지도 재생하지도 않는다', async () => {
     mockReducedMotion(true);
 
-    const { container } = render(<CreateBunchConfetti />);
+    const { container } = render(<BunchConfetti />);
 
     await waitFor(() => expect(container.firstElementChild).toBeNull());
     expect(animate).not.toHaveBeenCalled();

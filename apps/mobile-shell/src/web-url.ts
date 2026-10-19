@@ -14,3 +14,12 @@ export function resolveWebUrl(isDevelopment: boolean, localUrl?: string, product
   }
   return value;
 }
+
+export function isAppWebUrl(value: string, appUrl: string) {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && url.origin === new URL(appUrl).origin;
+  } catch {
+    return false;
+  }
+}

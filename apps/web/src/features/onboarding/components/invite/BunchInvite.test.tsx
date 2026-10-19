@@ -12,7 +12,7 @@ const replace = vi.fn();
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
-// 토스트 표시는 DS의 `toast()`가 맡으므로 호출 인자만 확인한다
+// DS `toast()`의 호출 인자 확인
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: (...args: ToastArgs) => toast(...args),
@@ -23,9 +23,9 @@ const writeText = vi.fn();
 const share = vi.fn();
 // 첫 토스트의 「공유」 액션
 const shareAction = () => toast.mock.calls[0]![1]!.action!;
-// 비동기 공유가 끝나도록 마이크로태스크를 비운다
+// 비동기 공유 완료를 위한 마이크로태스크 처리
 const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-// jsdom의 navigator.clipboard는 getter만 있어 defineProperty로 덮어쓴다
+// getter만 있는 jsdom navigator.clipboard의 대체
 const setNavigator = (props: Record<string, unknown>) => {
   for (const [key, value] of Object.entries(props)) {
     Object.defineProperty(navigator, key, { value, configurable: true });
@@ -68,7 +68,7 @@ describe('BunchInvite', () => {
     const [message, options] = toast.mock.calls[0]!;
     expect(message).toBe('초대 링크가 복사되었어요.');
     expect(options?.action?.label).toBe('공유');
-    // 하단 「나중에 할게요」를 가리지 않게 위로 올리고 Figma처럼 폭을 편다
+    // 「나중에 할게요」를 가리지 않는 Figma 토스트 위치·너비 확인
     expect(options).toMatchObject({ bottomOffset: 32, fullWidth: true });
   });
 

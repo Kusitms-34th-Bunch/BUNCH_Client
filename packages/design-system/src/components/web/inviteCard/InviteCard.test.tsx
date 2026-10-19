@@ -24,6 +24,12 @@ describe('InviteCard', () => {
     expect(screen.getByText('From.').parentElement?.textContent).toBe('From. 민지 님');
   });
 
+  it('긴 소개는 2줄까지만 보이고 말줄임한다', () => {
+    render(<InviteCard {...props} description={'긴 소개 '.repeat(40)} />);
+
+    expect(screen.getByText(/긴 소개/).className).toContain('line-clamp-2');
+  });
+
   it('참여하기를 누르면 onJoin을 한 번 호출한다', async () => {
     const onJoin = vi.fn();
     render(<InviteCard {...props} onJoin={onJoin} />);

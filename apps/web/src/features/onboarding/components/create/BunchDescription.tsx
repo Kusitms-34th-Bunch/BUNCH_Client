@@ -15,7 +15,6 @@ const TIPS = [
   '소소한 일상도 특별하게 기록하는 사이',
 ];
 
-/** 번치 만들기 2단계: 번치를 한 줄로 소개하는 화면 */
 export function BunchDescription() {
   const router = useRouter();
   const { description, setDescription } = useCreateBunchDraft();
@@ -48,10 +47,10 @@ export function BunchDescription() {
           value={description}
           maxLength={DESCRIPTION_MAX_LENGTH}
           onChange={(event) => setDescription(event.target.value.replace(/[\r\n]+/g, ' '))}
-          // 한 줄 소개라 Enter로 줄을 바꾸지 않음(붙여넣은 줄바꿈은 공백으로 처리)
+          // 한 줄 소개의 Enter 줄바꿈 방지(붙여넣은 줄바꿈은 공백 처리)
           enterKeyHint="done"
           onKeyDown={(event) => {
-            // 한글 조합 확정 Enter는 막지 않음
+            // 한글 조합 확정 Enter 허용
             if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.preventDefault();
           }}
         />
@@ -61,8 +60,8 @@ export function BunchDescription() {
           <Badge size="sm">TIP</Badge>
           <h2 className="typography-body-2-meduim text-text-primary">이런 소개는 어때요?</h2>
         </div>
-        {/* 목록 들여쓰기 19.5px은 토큰에 없어 Figma 값 직접 지정 */}
-        {/* list-style none인 ul은 Safari에서 목록으로 읽히지 않을 수 있어 list-disc를 ul에 지정 */}
+        {/* 토큰이 없는 목록 들여쓰기에 Figma 값 19.5px 적용 */}
+        {/* Safari에서 list-style none인 ul의 목록 인식 누락 방지 */}
         <ul className="bg-surface-secondary rounded-r4 p-s8 gap-s2 typography-body-3-regular text-text-tertiary flex list-disc flex-col">
           {TIPS.map((tip) => (
             <li key={tip} className="ms-[19.5px]">

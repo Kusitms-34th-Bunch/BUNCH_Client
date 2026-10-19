@@ -28,7 +28,8 @@ import {
 } from './src/native-tab-bar/native-tab-bar';
 import { nativeTabBarStore } from './src/native-tab-bar/native-tab-bar-store';
 import { buildSafeAreaScript } from './src/safe-area-script';
-import { resolveWebUrl } from './src/web-url';
+import { isAppWebUrl, resolveWebUrl } from './src/web-url';
+import { pickGalleryImage } from './src/gallery-image';
 
 // Metro는 `process.env.EXPO_PUBLIC_*`를 이렇게 직접 쓴 곳만 번들에 넣어 주므로 변수·객체로 바꿔 접근하지 않는다
 const WEB_URL = resolveWebUrl(
@@ -40,6 +41,7 @@ const WEB_URL = resolveWebUrl(
 
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({
+  pickGalleryImage,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
     await Share.share({ message: title ? `${title}\n${url}` : url, url });
@@ -57,10 +59,6 @@ const { WebView, postMessage } = createWebView({
   bridge: appBridge,
   postMessageSchema: appPostMessageSchema,
 });
-
-// 소셜 로그인 redirect 유지를 위해 웹 URL은 WebView, 나머지 scheme은 OS에서 처리
-// shortcut: 웹 출처 제한 없음, 인증 흐름 확정 시 allowlist 적용
-const isWebViewUrl = (url: string) => /^(https?|about):/i.test(url);
 
 function Shell() {
   // Safe Area: 네이티브 측정값을 웹 CSS 변수로 전달(적용은 웹의 AppFrame 담당)
@@ -111,7 +109,8 @@ function Shell() {
           canGoBack.current = navState.canGoBack;
         }}
         onShouldStartLoadWithRequest={(request) => {
-          if (isWebViewUrl(request.url)) return true;
+          // 외부 페이지의 네이티브 브리지 접근 방지를 위해 앱 출처만 내부 이동 허용
+          if (isAppWebUrl(request.url, WEB_URL)) return true;
           Linking.openURL(request.url).catch(() => {});
           return false;
         }}

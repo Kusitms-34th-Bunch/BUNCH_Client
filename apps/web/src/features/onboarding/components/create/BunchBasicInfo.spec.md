@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/onboarding/create`(`apps/web/src/app/(app)/onboarding/create/page.tsx`)
-- Status: UI와 입력 규칙 구현됨(`next build` 렌더를 Figma 값과 측정으로 대조함). 「다음」은 2단계(`BunchDescription.spec.md`)로 이동하고 헤더 뒤로 가기는 중단 확인 모달(`ExitCreateBunchDialog`)을 연다. 실기기 검증 전
+- Status: UI와 입력 규칙 구현됨(`next build` 렌더를 Figma 값과 측정으로 대조함). 「다음」은 2단계(`BunchDescription.spec.md`)로 이동하고 헤더 뒤로 가기는 중단 확인 모달(`ExitFlowDialog`)을 연다. 실기기 검증 전
 - 디자인 출처: Figma `Bunch/Create/BasicInfo`(node `791:2868` 빈 입력, `791:2892`·`874:5460` 입력됨, `875:5539` 오류). 화면설계서는 `온보딩_02`(node `791:8338`).
 
 ## 목적과 범위
@@ -44,7 +44,7 @@
 
 ## UI와 접근성
 
-- Component mapping: `CreateBunchFrame`(`(steps)/layout.tsx`가 1~3단계에 한 번 씌우는 틀: `Header`의 뒤로 가기가 `ExitCreateBunchDialog`를 열고 `Stepper`가 단계 사이에 남는다), `PageHeader`(제목만), `LabeledTextField`(번치 이름), `fieldset`·`legend`+`VisibilityOption`(공개 범위), `Button`(다음).
+- Component mapping: `CreateBunchFrame`(`(steps)/layout.tsx`가 1~3단계에 한 번 씌우는 틀: `Header`의 뒤로 가기가 `ExitFlowDialog`를 열고 `Stepper`가 단계 사이에 남는다), `PageHeader`(제목만), `LabeledTextField`(번치 이름), `fieldset`·`legend`+`VisibilityOption`(공개 범위), `Button`(다음).
 - Keyboard·focus·accessible name: 번치 이름 입력은 보이는 라벨로 이름을 얻고 오류는 `aria-invalid`와 안내 문구로 읽힌다. 공개 범위는 「공개 범위」 `legend`의 라디오 그룹이라 방향키로 선택을 옮긴다. 「다음」은 비활성일 때 native `disabled`다.
 - Responsive·긴 텍스트·overflow: 입력창과 카드는 `w-full`이고 좌우 16px다. 375px에서 가로 넘침이 없고 본문이 길어지면 스크롤한다.
 

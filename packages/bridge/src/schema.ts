@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+// 미리보기용 전송 상한: base64 약 4MiB(원본 약 3MiB)
+export const galleryImageSchema = z.object({
+  dataUrl: z
+    .string()
+    .max(4 * 1024 * 1024)
+    .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/),
+});
+export type GalleryImage = z.infer<typeof galleryImageSchema>;
+
 export const shareParamsSchema = z.object({
   url: z.url(),
   title: z.string().optional(),

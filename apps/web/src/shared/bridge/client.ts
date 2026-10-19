@@ -17,3 +17,12 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     setNativeTabBar: () => Promise.resolve(false),
   },
 });
+
+/** initialBridge 지원 여부와 별개로 실제 네이티브 호스트 확인 */
+export const isNativeShell = () => typeof window !== 'undefined' && 'ReactNativeWebView' in window;
+
+/** 사용자 선택 대기 중에는 타임아웃 없이 갤러리 응답 대기, 기존 브리지의 대기 정책 유지 */
+export const galleryBridge = linkBridge<AppBridge, AppPostMessageSchema>({
+  timeout: 0,
+  throwOnError: ['pickGalleryImage'],
+});

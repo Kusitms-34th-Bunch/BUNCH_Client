@@ -109,15 +109,15 @@ describe('toast()', () => {
     expect(screen.queryByText('3초 뒤 닫힘')).toBeNull();
   });
 
-  it('keeps a toast with an action for 5 seconds', async () => {
+  it('closes a toast with an action after 3 seconds too', async () => {
     render(<Toaster />);
-    await show('5초 뒤 닫힘', { action: { label: '공유', onClick: vi.fn() } });
+    await show('액션 3초 뒤 닫힘', { action: { label: '공유', onClick: vi.fn() } });
 
-    await advance(4500);
-    expect(screen.queryByText('5초 뒤 닫힘')).toBeTruthy();
+    await advance(2500);
+    expect(screen.queryByText('액션 3초 뒤 닫힘')).toBeTruthy();
 
     await advance(1500);
-    expect(screen.queryByText('5초 뒤 닫힘')).toBeNull();
+    expect(screen.queryByText('액션 3초 뒤 닫힘')).toBeNull();
   });
 
   it('never closes by itself with Infinity', async () => {

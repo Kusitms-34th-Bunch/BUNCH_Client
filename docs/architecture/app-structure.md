@@ -6,7 +6,9 @@
 - 화면·feature 로직은 `src/features`, 재사용 가능한 인프라는 `src/shared`에 둔다. 디자인 시스템 UI 컴포넌트를 조합해 domain 문구·route·데이터·행동을 붙이는 것은 `src/features`가 맡는다.
 - `shared`는 특정 domain이나 route를 import하지 않는다.
 - feature 폴더는 역할별로 나눈다(예: `components` UI, `constants` 상수, `hooks` 일반 hook, `contexts` context·provider, `lib`·`utils` 순수 함수, `fixtures` API 연결 전 샘플 데이터·테스트 공용 값). 필요한 폴더만 만들고(빈 폴더는 `.gitkeep`), 정해진 목록은 없다. `features/auth`가 역할 폴더 스캐폴딩의 예이고, `api`처럼 아직 기준이 없는 폴더는 데이터 계층 문서(`docs/architecture/data-layer.md`)가 정해진 뒤 추가한다.
-- 역할 폴더가 커지면 `components`뿐 아니라 `hooks`·`lib`·`utils`도 같은 방식으로 화면(흐름)별 하위 폴더로 묶는다(예: `components/start`, `components/create`, `components/invite`). 같이 바뀌는 화면 컴포넌트·부품·그 화면에서만 쓰는 hook을 한 폴더에 두고, 테스트와 spec(`<Component>.test.tsx`, `<Component>.spec.md`, `docs/workflows/spec-writing.md`)은 구현 파일 옆에 둔다. 컴포넌트 이름의 접두사나 파일 수가 아니라 화면 흐름이 묶는 기준이다. 여러 흐름이 쓰는 파일은 해당 역할 폴더 바로 아래에, feature 전체가 쓰는 상태·hook·상수는 각 역할 폴더에 둔다.
+- `components/`에는 UI 컴포넌트와 해당 컴포넌트의 테스트·spec·스타일만 둔다. 공개 컴포넌트 export용 `index.ts`는 예외다. 화면 전용이어도 별도 파일로 분리한 hook은 `hooks/`, 순수 함수는 `lib/`·`utils/`, 라이브러리 연결 래퍼는 `lib/`에 둔다. 상수·타입도 별도 파일이면 각 역할 폴더로 분리한다. 컴포넌트 파일 안의 작은 handler·상수까지 억지로 추출하지 않는다.
+- 역할 폴더가 커지면 같은 역할 안에서 화면(흐름)별 하위 폴더로 묶는다(예: `components/join`, `hooks/join`, `lib/join`). 화면 흐름이 같아도 역할이 다른 파일을 `components/join`에 함께 넣지 않는다. 여러 흐름이 쓰는 파일은 해당 역할 폴더 바로 아래에 둔다. 테스트는 대상 구현 파일 옆에 두고, 컴포넌트 spec은 `docs/workflows/spec-writing.md`를 따른다.
+- 웹 앱에서 import하는 이미지·로티 등 정적 자산은 `src/shared/assets/`에서 종류별로 관리한다(예: `lotties/`). URL로 직접 제공하는 파일은 `public/`에 둔다. 재생 컴포넌트·hook·도메인 로직은 자산과 함께 옮기지 않고 해당 feature에 둔다.
 - `features/<feature>/components/index.ts`는 route가 쓰는 화면 컴포넌트만 내보내는 생성 배럴이다. `yarn gen:feature-index`(`turbo/workflows/gen-feature-barrels.mjs`)가 `src/app`이 `@/features/<feature>/components`에서 import하는 이름을 읽어 만들고, `check:generated`가 최신 여부를 검사한다. 직접 고치지 않는다. route(`src/app`)는 이 배럴로 import하고, feature 내부 파일은 배럴을 거치지 않고 상대 경로로 직접 import한다(순환 import 방지). 내부 부품은 route가 import하지 않으므로 공개되지 않는다. 새 화면을 route에서 쓰기 시작하면 `yarn gen:feature-index`를 실행한다. 화면이 많아져 로드가 느려지면 흐름별 배럴로 나눈다.
 - 해당 domain 안에서만 쓰면 `features`에 두고, 두 곳 이상에서 쓰게 되면 `shared`로 올린다.
 - 서버 전용 코드는 browser client 경로에 섞지 않는다.

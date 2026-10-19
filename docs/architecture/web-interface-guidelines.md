@@ -69,7 +69,7 @@ WebView 쉘(`docs/architecture/mobile-shell.md`)에서도 체감이 유지되도
 
 iOS WKWebView에서 알려진 사례다. 번치 쉘(`react-native-webview`)의 실기기에서는 아직 확인하지 않았으므로, 해당 UI를 만들 때 먼저 확인할 목록으로 쓴다.
 
-- input 글자 크기가 16px 미만이면 iOS가 포커스 때 화면을 확대한다. viewport `maximum-scale`로 막으면 접근성이 나빠지고 실기기에서도 안정적이지 않았으므로, 입력 글자는 16px 이상으로 둔다.
+- input 글자 크기는 iOS 포커스 자동 확대 방지를 위해 16px 이상을 권장한다. 14px 디자인을 유지하는 공통 필드는 iOS WebKit에서 16px 렌더링 후 0.875배 축소하며 폭·행 높이·padding을 보정한다([모바일 쉘](mobile-shell.md)). viewport 확대 제한은 주입하지 않는다.
 - iOS WebKit은 input 포커스 때 `body { overflow: hidden }`을 무시하고 document를 스크롤할 수 있다. 시트·모달이 열린 동안 배경을 고정해야 하면 `position: fixed; inset: 0`처럼 document 스크롤 경로 자체를 없앤다.
 - 하단 고정 영역(bottom nav, 시트 버튼, FAB)은 `env(safe-area-inset-bottom)`을 더한다. 바 위로 튀어나온 장식까지 포함한 실제 가림 높이는 바 높이와 다르다. 화면마다 여백 매직 넘버를 두지 말고 공용 CSS 변수 하나로 둔다. 이 저장소는 `--safe-area-top`·`--safe-area-bottom`(`apps/web/src/app/globals.css`)이고 `AppFrame`이 한 번만 적용하므로, 화면에서 `env(safe-area-inset-*)`를 직접 더하지 않는다.
 - 오버레이가 겹칠 때(시트 위의 확인 모달) 아래 시트의 닫기는 다음 오버레이가 표시된 뒤에 호출한다. 먼저 닫으면 두 오버레이가 동시에 사라진다.
