@@ -16,7 +16,7 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 ## Easing과 duration
 
 - 진입·이탈은 `ease-out`, 화면 안에서의 이동·모핑은 `ease-in-out`, hover·색상 전환은 `ease`, 등속(마퀴, 진행바)은 `linear`를 쓴다.
-- 기본 진입에는 `ease-in`을 피한다. 온보딩의 페이지 Slide In은 끝에서 감속하도록 Ease Out 200ms를 적용한다.
+- 기본 진입에는 `ease-in`을 피한다. 온보딩의 페이지 Slide In은 끝에서 감속하도록 Ease Out 300ms를 적용한다.
 - duration 기준: 버튼 피드백 100–160ms, 툴팁·작은 팝오버 125–200ms, 드롭다운·셀렉트 150–250ms, 모달·drawer 200–500ms. UI 애니메이션은 300ms를 넘지 않는다.
 
 ## 물리감
@@ -46,7 +46,7 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 
 - 온보딩은 로그인 뒤에 나오므로, 첫 화면 로딩을 늦추지 않고 동적 import로 자산을 받을 수 있다. 온보딩 한 단계가 보이는 동안 다음 단계의 자산을 미리 받아 두면 전환할 때 끊기지 않는다(FE 판단). 로그인 화면에 쓰기로 정해지면 그 화면은 첫 렌더가 늦어질 수 있으니 다시 판단한다.
 - 자산 형식(`.json` 또는 압축된 `.lottie`)과 재생 라이브러리는 디자이너의 자산을 받은 뒤 정한다. 다른 프로젝트에서는 `lottie-react`를 썼다. production dependency 추가는 사용자 확인을 받는다.
-- 여러 화면이 쓰는 자산은 design-system의 `lotties/` 폴더에 두고 `loadingAnimation`처럼 이름 붙인 export로 내보낸다(제안). 소비하는 쪽은 파일 경로 대신 이름을 쓴다. 한 화면에서만 쓰는 연출은 그 화면 가까이에 둔다.
+- 웹 앱의 로티 JSON은 `apps/web/src/shared/assets/lotties/`에서 관리한다. 재생 컴포넌트와 기능 로직은 사용하는 feature에 둔다. 앱 전용 자산을 디자인 시스템으로 옮기지 않는다.
 - 재생 컴포넌트는 브라우저 API를 쓰므로 클라이언트 컴포넌트(`'use client'`)로 둔다. 서버 컴포넌트에서 직접 import하지 않는다.
 - 자산이 50KB 이상이면 동적 import로 쓰는 시점에 받는다(제안). 정적 import하면 그 화면 번들에 JSON 전체가 들어간다. PR에는 자산 용량을 적는다.
 - `prefers-reduced-motion: reduce`이면 자동 재생과 반복을 끄고 정지 프레임을 보여준다. 애니메이션을 유일한 정보 전달 수단으로 쓰지 않고, 같은 정보를 텍스트로도 준다.
@@ -55,8 +55,8 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 - 위 "애니메이션을 넣을지 판단" 표를 따른다. 자주 보는 요소에는 쓰지 않고 온보딩, 축하, 로딩 같은 드문 장면에 쓴다. "UI 애니메이션은 300ms를 넘지 않는다"는 전환에 대한 규칙이라 Lottie 연출 길이에는 적용하지 않지만, 재생 중에도 사용자의 interaction을 막지 않는다.
 - 복잡한 애니메이션은 WebView에서 프레임이 떨어질 수 있다. 렌더러 선택과 프레임은 실기기에서 확인한다(FE 판단, 미검증).
 - 테스트에서는 재생 라이브러리를 mock한다. 애니메이션의 모양은 테스트하지 않는다.
-- 도입 결과 (2026-10-19): `lottie-react` 3.x는 엔진 세 빌드(full·svg·light)를 함께 내보내서 모듈 전체를 동적 `import()`하면 셋이 모두 내려받아진다(합계 약 180KB gzip). 표현식이 없는 로티는 light 빌드만 쓰도록 `export { LottieLight } from 'lottie-react'` 래퍼(`components/join/lottieLight.ts`)를 동적 import해서 엔진 하나(약 164KB)와 래퍼(약 47KB)만 내려받는다. 새 로티를 넣을 때 표현식이 있으면 `LottieSvg`로 바꾼다.
-- 자산 위치 (확정): 한 화면에서만 쓰는 로티는 그 화면 폴더에 JSON으로 둔다(`components/join/inviteAnimation.json`, 13KB). 재생 컴포넌트가 JSON도 동적 import한다. 여러 화면이 쓰게 되면 위 `lotties/` 제안을 따른다.
+- 도입 결과 (2026-10-19): `lottie-react` 3.x는 엔진 세 빌드(full·svg·light)를 함께 내보내서 모듈 전체를 동적 `import()`하면 셋이 모두 내려받아진다(합계 약 180KB gzip). 표현식이 없는 로티는 light 빌드만 쓰도록 `export { LottieLight } from 'lottie-react'` 래퍼(`lib/lottieLight.ts`)를 동적 import해서 엔진 하나(약 164KB)와 래퍼(약 47KB)만 내려받는다. 새 로티를 넣을 때 표현식이 있으면 `LottieSvg`로 바꾼다.
+- 자산 위치 (확정): 초대장 로티는 `apps/web/src/shared/assets/lotties/inviteAnimation.json`에 둔다. 재생 컴포넌트에서 JSON을 동적 import한다.
 - 재생 실패 (확정): 로티가 화면 전환을 이끄는 경우(로딩 화면) 라이브러리·자산을 못 받거나 재생 오류가 나면 멈추지 않고 다음 화면으로 넘긴다.
 - 동작 줄이기 (확정): 정지 프레임이 의미가 없는 장면은 로티를 불러오지 않고 짧게 안내만 둔 뒤 넘어간다(`BunchJoinMotion`).
 
@@ -65,8 +65,8 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한다. React 실험 기능 `ViewTransition`과 별도의 전역 전환 CSS는 사용하지 않는다.
 
 - 설정: `apps/web/src/app/(app)/AppTransitions.tsx`의 경로 쌍과 `ONBOARDING_TRANSITION_DURATION_MS`를 수정한다. 전역 provider만 공유하며, 등록하지 않은 이동과 첫 진입에는 전환을 적용하지 않는다.
-- 효과: 온보딩 시작 → 만들기·참여, 만들기 완료 → 초대는 `slide`를 사용한다. 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. 반대 이동은 방향을 뒤집는다. 페이드는 섞지 않고 경계 밖을 잘라낸다. 참여 route는 아직 없어 해당 화면 전환은 미검증이다.
-- 시간·곡선: Slide In / Left / 이동 시간 200ms를 적용한다. 곡선은 사용자 합의에 따라 설계서의 Ease In 대신 Ease Out으로 조정한다. SSGOI의 `override`에 `easeOutIntegrator`를 넣어 CSS `cubic-bezier(0, 0, .58, 1)`의 진행도를 계산한다. 라이브러리의 `easeOut({ duration })`은 관성 기반 곡선이므로 CSS 곡선과 동일하다고 취급하지 않는다. 이동은 설정 시간에 도달하며 SSGOI 7.4.1은 종료 판정용 정지 프레임을 약 33ms 더 유지한다(200ms 설정 시 WAAPI timeline 약 233ms). 시간을 변경하면 이 구분도 브라우저에서 다시 확인한다.
+- 효과: 온보딩 시작 → 만들기·참여, 만들기 완료 → 초대는 `slide`를 사용한다. 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. 반대 이동은 방향을 뒤집는다. 페이드는 섞지 않고 경계 밖을 잘라낸다. 참여 화면의 시각 전환은 미검증이다.
+- 시간·곡선: Slide In / Left / 이동 시간 300ms를 적용한다. 곡선은 사용자 합의에 따라 설계서의 Ease In 대신 Ease Out으로 조정한다. SSGOI의 `override`에 `easeOutIntegrator`를 넣어 CSS `cubic-bezier(0, 0, .58, 1)`의 진행도를 계산한다. 라이브러리의 `easeOut({ duration })`은 관성 기반 곡선이므로 CSS 곡선과 동일하다고 취급하지 않는다. 이동 시간과 라이브러리의 종료 판정 시간은 구분한다. 이전 200ms 설정에서 SSGOI 7.4.1의 WAAPI timeline 약 233ms를 확인했으며, 현재 300ms 설정의 실제 종료 시간은 브라우저 재검증 전이다.
 - 상태 유지: 상위 layout은 provider만 유지한다. 실제 route의 DOM에 `data-ssgoi-transition`을 지정하고, 만들기 layout 내부에서 단계 묶음·완료·초대를 구분한다. URL을 먼저 감지하는 상위 경계에서 빈 화면이 전환되는 문제를 피하려고 콘텐츠와 경계를 함께 마운트한다. 1~3단계의 헤더·Stepper와 draft provider는 유지한다. 단계 사이의 본문 전환은 현재 등록하지 않았다.
 - 접근성: `prefers-reduced-motion` 변경을 구독해 전환 규칙을 비운다. SSGOI가 함수형 규칙을 캐시하므로 함수 안에서 설정을 읽는 것으로 대체하지 않는다. 전환 중 이전 화면은 `inert`로 포커스·접근성 탐색에서 제외하고 종료 시 복원한다.
 - 검증: 진행도 단위 테스트와 온보딩 회귀 테스트, Chromium의 순방향·뒤로 가기·입력 유지·헤더 유지·동작 줄이기 변경·좁은 화면/넓은 화면 중간 프레임을 확인한다. iOS WKWebView와 실제 화면 읽기 도구는 별도 확인이 필요하다. 네이티브 스와이프와 전환 중 빠른 연속 이동도 실기기에서 확인한다.
@@ -74,4 +74,4 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 ### 온보딩 단계 진행바
 
 - 화면설계서 `온보딩_03`(Figma node `791:8480`)의 「진행바만 인터랙션 O」에 따라 단계 변경 시 진행바 색상만 CSS `ease-out`·300ms로 전환한다. 제목·본문에는 이 효과를 적용하지 않는다.
-- `CreateBunchFrame`이 같은 `Stepper` 요소를 유지하고 `current`만 바꾼다. `ease-[ease-out]`은 Tailwind 기본 ease-out 곡선 대신 CSS 표준 곡선을 명시하며, 모션 감소 설정에서는 전환을 끈다. 전체 페이지의 200ms 슬라이드와 별도이다.
+- `CreateBunchFrame`이 같은 `Stepper` 요소를 유지하고 `current`만 바꾼다. `ease-[ease-out]`은 Tailwind 기본 ease-out 곡선 대신 CSS 표준 곡선을 명시하며, 모션 감소 설정에서는 전환을 끈다. 전체 페이지의 300ms 슬라이드와 별도이다.

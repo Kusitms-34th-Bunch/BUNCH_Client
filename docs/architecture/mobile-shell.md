@@ -35,9 +35,11 @@ apps/mobile-shell/
 
 `apps/mobile-shell/App.tsx`가 WebView에 다음 기본 동작을 건다.
 
-- `http(s)`·`about:` 이동은 WebView 안에서 그대로 처리한다(소셜 로그인 redirect가 깨지지 않게 한다). `tel:`, `mailto:` 같은 다른 scheme은 WebView가 처리하지 못하므로 `Linking.openURL`로 OS에 넘긴다. 허용 출처 allowlist는 인증 흐름이 정해진 뒤에 추가한다.
+- 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)의 이동만 WebView 안에서 처리한다. 외부 주소와 `tel:`, `mailto:` 등은 `Linking.openURL`로 OS에 넘긴다. 인증 redirect는 별도 계약 확정 후 연결한다.
 - iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 웹 history에 먼저 연결한다. 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
 - 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면과 iOS 26 이상의 글라스 탭 막대다.
+
+iOS 입력 포커스 확대는 디자인 시스템의 `TextField`·`LabeledTextArea`에서 대응한다. 실제 글꼴을 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 입력 폭·행 높이·padding과 textarea 자동 높이도 같은 비율로 보정한다. `@supports (-webkit-touch-callout: none)`으로 iOS WebKit에 적용하며 모바일 Safari도 포함한다. 쉘에서 viewport 확대 제한을 주입하지 않는다. 실제 터치·키보드·커서·텍스트 선택·줄바꿈은 시뮬레이터와 실기기 검증이 필요하다.
 
 ## Safe Area
 
@@ -47,6 +49,7 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 첫 로드의 주입은 hydration 전에 `<html>`의 `style`을 변경한다. 서버가 알 수 없는 기기별 값이므로 웹 루트 layout의 `<html>`에만 `suppressHydrationWarning`을 적용한다. 하위 화면의 hydration 경고는 억제하지 않는다.
 - WebView의 `contentInsetAdjustmentBehavior`는 `"never"`로 둔다. 켜 두면 WebView가 자기 inset을 더해 같은 여백이 두 번 들어간다. 이 prop은 iOS 전용이라 Android에서는 적용되지 않으며, Android는 실기기로 따로 확인한다.
 - 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
+- 초대장처럼 Safe Area까지 배경이 이어지는 화면은 route에 `data-app-background="brand-subtle-1"`을 지정한다. `AppFrame`이 CSS `:has()`로 같은 배경을 칠하며 여백 크기는 바꾸지 않는다. 로티 화면은 배경 전환이 시작될 때 같은 표식을 `PageShell`에 전달해 본문과 Safe Area를 함께 300ms ease-out으로 전환한다. 동작 줄이기에서는 배경 전환 효과를 끈다. 화면이 제거되면 배경도 해제된다.
 - 앱은 `app.json`의 `orientation: "portrait"`로 세로에 고정되어 있어, iPhone 기준으로 앱 안에서는 가로 모드가 생기지 않는다(`ios.supportsTablet: true`인 iPad에서도 세로로 고정되는지는 확인하지 못했다). 일반 브라우저의 가로 모드를 위해 좌우 Safe Area를 적용하고, `PageShell`의 본문은 최소 높이(8rem)를 가진다. header·bottom·Safe Area를 뺀 높이가 그보다 작으면 본문 대신 틀 전체가 넘쳐 페이지가 스크롤된다. 이때 하단 영역(CTA)은 문서를 스크롤해야 보이고, main 위에서 스크롤하면 `overscroll-y-contain` 때문에 문서로 이어지지 않아 닿기 어려울 수 있다. 하단을 항상 보이게 하는 sticky 방식과 문서 스크롤 하나로 통일하는 방식은 이득이 불분명하거나 범위가 커서 택하지 않았고, 이 한계는 실기기와 낮은 화면에서 확인한 뒤 다시 정한다.
 - 확인한 것: 브라우저에서 네이티브 값이 한 번만 적용되고 가로 모드·낮은 화면의 최소 높이 정책이 동작하는 것, 네이티브의 TypeScript 검사·iOS JS 번들 생성·값 변환 테스트. 확인하지 못한 것: iOS·Android 실기기와 시뮬레이터에서 실제 값이 들어가는지, 마운트 뒤 값이 바뀐 상태에서 새 문서를 로드할 때 `injectedJavaScriptBeforeContentLoaded`의 새 값이 쓰이는지, Android 시스템 바(edge-to-edge) 처리, 소프트 키보드와 `dvh`. 이 부분은 실기기 확인 전까지 통과로 보지 않는다.
 
@@ -124,6 +127,16 @@ packages/bridge/
 3. `apps/mobile-shell/App.tsx`의 `bridge({...})`에 실제 네이티브 구현을 추가한다.
 4. `apps/web`의 bridge client에 `initialBridge` 폴백을 추가한다(웹 전용 대체 동작이 있다면).
 5. 양쪽에서 typecheck를 돌려 계약이 어긋나지 않는지 확인한다(`yarn workspace @app/bridge typecheck`, `apps/mobile-shell`에서 `pnpm exec tsc --noEmit`).
+
+## 갤러리 사진 선택
+
+- `pickGalleryImage(): Promise<GalleryImage | null>`은 `expo-image-picker`로 사진 한 장을 선택한다. 촬영은 제공하지 않는다. 취소는 `null`, 읽기·크기 제한 실패는 reject이며 웹은 기존 사진을 유지한다.
+- SDK 57 호환 버전은 `expo install`로 설치한다. 사진 전용 시스템 선택기는 전체 앨범 권한을 먼저 요청하지 않는다. 앱 권한 설명은 `app.json`에서 관리하며 카메라·마이크 권한은 추가하지 않는다. [Expo ImagePicker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/)를 기준으로 한다.
+- `src/gallery-image.ts`에서 시스템 정사각형 편집 후 JPEG base64를 반환한다. 네이티브 `file://` 경로는 웹에서 직접 읽지 않는다. 브리지 응답은 `galleryImageSchema`로 data URL 형식과 약 4MiB 전송 상한을 검증한다.
+- 현재는 번치 생성 완료 화면의 임시 미리보기다. 이미지·생성 API 확정 후 업로드 결과 ID/URL로 저장 계약을 연결한다. `exif: false`만으로 파일 메타데이터 제거를 보장하지 않으며 업로드 단계에서 별도 확정한다.
+- 웹 개발 fallback은 파일 input(JPEG·PNG·WebP, 최대 3MiB)으로 선택하고 브라우저 디코딩 성공 후 표시한다. 네이티브 편집 UI·HEIC 지원을 대체하지 않는다. 사진을 영구 저장하거나 localStorage에 남기지 않는다.
+- WebView 내부 이동은 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)만 허용하고 외부 주소는 OS로 전달한다. 외부 페이지가 갤러리 등 네이티브 브리지에 접근하지 못하도록 하는 경계다. 인증 redirect는 별도 계약 확정 후 연결한다.
+- 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다. 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`은 initialBridge 메서드도 포함). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
 
 ## 인증 — 아직 설계 전
 
