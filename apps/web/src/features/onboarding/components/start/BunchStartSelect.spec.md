@@ -75,6 +75,6 @@
 - 제목 색 (제안): Figma는 `black`(변수 없음)이고 구현은 토큰 `text-primary`(#121212)다. 디자이너 확인.
 - 두 번째 카드 아이콘 (확정 필요): 「초대받은 번치 참여하기」도 Edit 아이콘이다. 의도인지 디자이너 확인.
 - 웹 앱의 디자인 시스템 사용 (결정): 이 화면이 `apps/web`의 첫 디자인 시스템 소비다. `globals.css`에 디자인 시스템 소스를 Tailwind `@source`로 등록했다(`docs/decisions/records/008-toast-sonner.md`의 제약). `transpilePackages` 없이 빌드가 통과했다.
-- 화면 전환: SSGOI `slide`로 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. Ease Out·이동 시간 200ms이며 첫 진입과 동작 줄이기 설정에서는 움직이지 않는다. 경로·시간·종료 판정·검증 범위는 `docs/architecture/motion.md`의 페이지 전환을 따른다. 참여 route는 아직 없어 해당 경로의 시각 전환은 미검증이다.
+- 화면 전환: SSGOI `slide`로 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. Ease Out·이동 시간 300ms이며 첫 진입과 동작 줄이기 설정에서는 움직이지 않는다. 경로·시간·종료 판정·검증 범위는 `docs/architecture/motion.md`의 페이지 전환을 따른다. 참여 화면의 시각 전환은 미검증이다.
 - 진행바 전환 방식 (결정): 헤더와 진행 표시줄을 단계 공통 틀(`CreateBunchFrame`, `create/(steps)/layout.tsx`)로 올려 단계 route가 바뀌어도 같은 요소가 남게 했고, 막대 색은 `Stepper`의 `transition-colors`(300ms ease-out)로 이어서 바뀐다. 현재 단계는 주소 조각(`description`·`mood`)으로 정한다. 완료 화면은 이 틀 밖이다(`create/complete`). 진행 표시줄은 본문 스크롤 밖에 고정된다(이전에는 제목과 함께 스크롤됐다). 페이지 전환 방식을 정할 때 이 구조를 유지할지 함께 판단한다.
 - 뒤로 가기 후 모달 (미검증): 모달을 연 채 브라우저 뒤로 가기를 하면 단계 화면은 바뀌는데 모달은 `OverlayProvider`에 남을 수 있다. 「나가기」로 이동한 뒤 브라우저 뒤로 가기로 이전 단계에 돌아오면 입력이 비어 있다.
