@@ -1,9 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ONBOARDING_PATHS } from '../../constants/paths';
-import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
-import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
+import { ONBOARDING_PATHS } from '../constants/paths';
+import { useCreateBunchDraft } from '../contexts/createBunchDraftContext';
+import { useExitFlowDialog } from './useExitFlowDialog';
 
 /** 번치 만들기 단계의 뒤로 가기가 여는 중단 확인 모달. 나가면 입력값을 비우고 피드로 이동 */
 export function useExitCreateBunchDialog() {

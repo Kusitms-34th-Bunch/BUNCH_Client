@@ -44,7 +44,7 @@
 
 ## UI와 접근성
 
-- Component mapping: `core`의 `Header`(뒤로 가기), `TextField`(`action` 슬롯에 `Button brandSubtle sm`「붙여넣기」), `Button`(「완료」), `toast()`. `web`의 `PageHeader`(제목만). 중단 모달은 feature 공용 `ExitFlowDialog`(`hooks/useExitFlowDialog`)이고 번치 만들기 흐름과 같이 쓴다. 링크 형식 검사는 `inviteLink.ts`다.
+- Component mapping: `core`의 `Header`(뒤로 가기), `TextField`(`action` 슬롯에 `Button brandSubtle sm`「붙여넣기」), `Button`(「완료」), `toast()`. `web`의 `PageHeader`(제목만). 중단 모달은 feature 공용 `ExitFlowDialog`(`hooks/useExitFlowDialog`)이고 번치 만들기 흐름과 같이 쓴다. 링크 형식 검사는 `lib/inviteLink.ts`다.
 - 「완료」 비활성: 입력이 비면 `disabled`이고 이유는 별도로 전달하지 않는다(Figma가 비활성 상태를 정의했고 입력창의 이름·안내 문구가 이유를 설명한다). 이유 전달이 필요하면 `aria-disabled`와 `aria-describedby`로 바꾼다(접근성 리뷰의 제안).
 - Keyboard·focus·accessible name: 뒤로 가기, 링크 입력창(이름 「초대 링크」, `inputMode=url`, 자동 완성·대문자·맞춤법 검사 끔), 「붙여넣기」, 「완료」. 토스트의 읽기는 `sonner`의 `aria-live` 영역이 맡는다(`Toast.spec.md`). 모달은 첫 초점이 「계속 참여하기」이고 ESC는 모달만 닫는다(`Dialog.spec.md`).
 - Responsive·긴 텍스트: 링크는 입력창 안에서 한 줄로 잘린다(전체를 선택해 확인할 수 있다). 375px에서 가로 넘침이 없다.
@@ -60,7 +60,7 @@
 
 ## 검증
 
-- [x] 관련 test: `BunchJoin.test.tsx`(제목·main, 완료 활성 조건, 붙여넣기 성공·실패, 형식 오류·서버 실패 토스트, `onSubmit` 없음, 중단 모달 열기·계속·나가기), `inviteLink.test.ts`(형식 판정)
+- [x] 관련 test: `BunchJoin.test.tsx`(제목·main, 완료 활성 조건, 붙여넣기 성공·실패, 형식 오류·서버 실패 토스트, `onSubmit` 없음, 중단 모달 열기·계속·나가기), `lib/inviteLink.test.ts`(형식 판정)
 - [x] 브라우저 렌더 대조(headless Chromium, 375×812): 제목 y60·높이 28, 입력창 343×46(y100), 「붙여넣기」 32 높이 폰트 13/600, 「완료」 343×48 하단, 토스트 343×46으로 「완료」 위 10px, 중단 모달 311×188과 「피드로 / 이동해요.」 줄바꿈이 Figma와 맞다. 「나가기」는 `/`로 이동한다. 가로 넘침 없음
 - [ ] 키보드가 올라온 상태(Figma `1229:11098`)의 레이아웃: 실기기 미검증
 - [ ] 클립보드 읽기 권한·iOS WebView 동작: 실기기 미검증
