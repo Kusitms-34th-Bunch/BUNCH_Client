@@ -42,7 +42,6 @@
 - [Web SEO](./workflows/seo.md)
 - [CI](./workflows/ci.md)
 - [Turbo Generators](./workflows/turbo-generators.md)
-
 - [Code Quality](./code-quality/index.md)
 
 ## Operations
