@@ -5,7 +5,7 @@
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 스크린샷과 눈으로 대조함. 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Cam Button - S`(node `796:4790`). Figma 이름 `Cam Button - S`를 `CameraButton`으로 옮겼다(크기가 S 하나뿐이라 size prop은 없다).
-- 화면 설계서: `화면 설계서 - 로그인, 이용약관, 프로필 작성`(node `796:9226`)의 프로필 작성 화면 2번 "Profile"(node `796:6629`).
+- 화면설계서: 프로필 작성 화면의 "Profile" 영역(설계서 프레임 `796:9226`, node `796:6629`).
 
 ## 목적과 범위
 

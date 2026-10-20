@@ -5,7 +5,7 @@
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 스크린샷과 눈으로 대조함. 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Login Button - Brand`(node `796:4718`)와 `Login Button - Status`(node `796:4739`).
-- 화면 설계서: Figma `화면 설계서 - 로그인, 이용약관, 프로필 작성`(node `796:9226`)의 로그인 화면(경로: 로그인 > 소셜 로그인 인증 > 이용약관) 중 2번 "소셜 로그인 영역"(node `796:4536`). 이 화면에서 Kakao·Google·Apple 버튼 3개를 세로로 놓는다(간격 8px, 좌우 16px).
+- 화면설계서: 로그인 화면의 "소셜 로그인 영역"(설계서 프레임 `796:9226`, node `796:4536`). 이 화면에서 Kakao·Google·Apple 버튼 3개를 세로로 놓는다(간격 8px, 좌우 16px).
 
 ## 목적과 범위
 

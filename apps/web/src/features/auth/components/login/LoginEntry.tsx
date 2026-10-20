@@ -10,7 +10,7 @@ import {
   useSocialLogin,
 } from '../../hooks/useSocialLogin';
 
-// 앱 아이콘·로고·슬로건은 임시 디자인이라 최종 확정본으로 교체 예정(화면 설계서 로그인 1번)
+// 앱 아이콘·로고·슬로건은 임시 디자인이라 최종 확정본으로 교체 예정
 const APP_ICON = '/images/app-icon.png';
 const BUNCH_LOGO = '/images/bunch-logo.svg';
 

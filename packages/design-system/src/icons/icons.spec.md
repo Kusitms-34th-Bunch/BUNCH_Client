@@ -2,7 +2,7 @@
 
 - 소유 경계: `@app/design-system/src/icons`
 - 상태: 구현됨(로컬 검증), 원격 Chromatic·실기기 미검증
-- 디자인: [Icon 프레임](https://www.figma.com/design/3nvm4AeRaybVAu8kUZv5Mv/BUNCH---%EC%9E%91%EC%97%85%ED%8C%8C%EC%9D%BC?node-id=93-2623&m=dev)
+- 디자인: Figma `BUNCH - 작업파일`의 Icon 프레임(node `93:2623`, 파일 링크는 `docs/workflows/figma-references.md`)
 
 ## 목적과 범위
 

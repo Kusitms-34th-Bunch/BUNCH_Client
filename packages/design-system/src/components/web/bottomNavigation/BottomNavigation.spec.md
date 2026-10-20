@@ -78,7 +78,7 @@ Figma 속성과 토큰 대응표.
 - 알약 위치 (제안): Figma의 선택 알약은 항목 폭(약 83.75px)이 아니라 80px로 항목 안에 가운데 놓인다. 같은 크기로 구현했다.
 - URL 하위 경로(예: `/bunch/123`)에서도 같은 탭이 선택되게 하는 규칙은 앱 조합의 몫이다. 이 컴포넌트는 `selectedId`만 본다.
 - 선택 알약 배경 (제안): Figma 코드의 fallback은 `#f5f5f5`지만 토큰 `surface-secondary`는 `#f7f7f8`이다. 토큰을 기준으로 구현했다. 디자이너 확인.
-- 마이페이지/MY 라벨: PRD는 「MY」, Figma는 「마이페이지」다. 라벨은 호출자가 정한다.
+- 마이페이지/MY 라벨: 내부 기획 문서는 「MY」, Figma는 「마이페이지」다. 라벨은 호출자가 정한다.
 
 - 목록 의미 (미검증): Tailwind preflight가 `list-style: none`을 적용해 Safari VoiceOver가 목록 의미(항목 수)를 잃을 수 있다는 알려진 문제가 있다. `jsx-a11y/no-redundant-roles` lint가 `role="list"`를 막으므로 실기기 VoiceOver에서 문제가 확인되면 규칙 예외와 함께 추가한다.
 - 포커스 윤곽선 대비 (미검증): `border-brand`의 비텍스트 대비(3:1)와, 첫·마지막 항목 윤곽선이 막대·`PageShell` 컨테이너 밖에서 잘리는지는 확인하지 못했다.

@@ -4,7 +4,7 @@
 
 - Route: `/signup/terms`(`apps/web/src/app/(app)/signup/terms/page.tsx`)
 - Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 시작하기는 시스템 권한(사진 → 카메라 → 알림)을 요청한 뒤 프로필로 이동하며, 약관 저장과 접근 제어는 연결하지 않음. 권한 팝업은 실기기·Expo Go 확인 전
-- 디자인 출처: Figma `이용약관`(node `796:4654`). 화면 설계서는 `이용약관 화면`(node `796:5872`, 설계서 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.3 약관 동의).
+- 디자인 출처: Figma `이용약관`(node `796:4654`). 화면설계서(node `796:5872`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.3 약관 동의).
 
 ## 목적과 범위
 

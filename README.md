@@ -50,3 +50,9 @@ WebView와 bridge 구성은 [모바일 쉘 구조](./docs/architecture/mobile-sh
 - [Git 작업 흐름](./docs/conventions/git.md) · [CI](./docs/workflows/ci.md)
 - [변경 범위별 검증](./docs/workflows/verification.md)
 - [Agent 문서 라우팅](./AGENTS.md)
+
+## License
+
+Copyright (c) 2026 BUNCH. All rights reserved.
+
+이 저장소는 열람만 허용하며, 코드와 디자인 자산의 복제·수정·배포·재사용을 허용하지 않는다.

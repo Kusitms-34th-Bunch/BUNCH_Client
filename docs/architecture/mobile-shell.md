@@ -63,11 +63,11 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 
 ## 권한과 출시 전 확인
 
-가입 때 사진·카메라·알림 권한을 요청하는 `requestPermission`(bridge, `src/permissions.ts`)만 구현했다(약관 화면의 시작하기가 사진 → 카메라 → 알림 순서로 호출, 허용·거부와 무관하게 다음으로 진행). 사진·카메라는 `expo-image-picker`, 알림은 `expo-notifications`로 요청하며 상태는 `granted`·`denied`(다시 물을 수 없음)·`undetermined`로 돌려준다. 사용 목적 문구는 `app.json`의 `expo-image-picker` 플러그인에 Figma Alert 문구로 넣었다. 새 네이티브 모듈이라 개발 앱·EAS 빌드는 다시 만들어야 하고, 실기기에서 팝업은 확인하지 못했다. 나머지 항목은 아직 구현 전이다. 다른 프로젝트의 App Store 심사 경험(UGC 신고·차단 미구현으로 1.2 거절)에서 가져온 확인 목록이며, `docs/specs/bunch-prd.md`의 앱 심사 항목과 함께 본다.
+가입 때 사진·카메라·알림 권한을 요청하는 `requestPermission`(bridge, `src/permissions.ts`)만 구현했다(약관 화면의 시작하기가 사진 → 카메라 → 알림 순서로 호출, 허용·거부와 무관하게 다음으로 진행). 사진·카메라는 `expo-image-picker`, 알림은 `expo-notifications`로 요청하며 상태는 `granted`·`denied`(다시 물을 수 없음)·`undetermined`로 돌려준다. 사용 목적 문구는 `app.json`의 `expo-image-picker` 플러그인에 Figma Alert 문구로 넣었다. 새 네이티브 모듈이라 개발 앱·EAS 빌드는 다시 만들어야 하고, 실기기에서 팝업은 확인하지 못했다. 나머지 항목은 아직 구현 전이다. 다른 프로젝트의 App Store 심사 경험(UGC 신고·차단 미구현으로 1.2 거절)에서 가져온 확인 목록이며, 내부 기획 문서의 앱 심사 항목과 함께 본다.
 
 - iOS는 권한 팝업을 한 번 거절하면 앱에서 다시 띄울 수 없다. `denied` 상태는 팝업 재요청이 아니라 설정 화면 안내로 처리한다.
-- 사진·카메라·알림 권한의 사용 목적 문구(`Info.plist`의 `NS*UsageDescription` 등)는 사용자가 읽는 한국어로 적고, 실제 사용 목적과 어긋나지 않게 한다. 위치 권한은 받지 않는다(촬영 위치는 사진의 EXIF에서만 읽는다, PRD 8장).
-- 출시 대상은 iOS 앱뿐이다(PRD 8장). 다만 Android로 넓힐 수 있게 만든다. 플랫폼 분기는 쉘의 얇은 계층에 가두고, 웹은 iOS에서만 되는 API나 스타일을 전제로 쓰지 않는다. Android 전용 처리(하드웨어 뒤로가기 등)는 유지하되, Android 실기기 검증은 출시 범위가 아니다.
+- 사진·카메라·알림 권한의 사용 목적 문구(`Info.plist`의 `NS*UsageDescription` 등)는 사용자가 읽는 한국어로 적고, 실제 사용 목적과 어긋나지 않게 한다. 위치 권한은 받지 않고 사진의 위치 정보도 쓰지 않는다. 업로드 전에 앱이 촬영 날짜·시간만 뽑고 GPS를 포함한 위치 메타데이터를 모두 지운다(서버가 받은 뒤 지우면 위치가 서버로 간 것이 된다, 내부 기획 문서).
+- 출시 대상은 iOS 앱뿐이다(내부 기획 문서). 다만 Android로 넓힐 수 있게 만든다. 플랫폼 분기는 쉘의 얇은 계층에 가두고, 웹은 iOS에서만 되는 API나 스타일을 전제로 쓰지 않는다. Android 전용 처리(하드웨어 뒤로가기 등)는 유지하되, Android 실기기 검증은 출시 범위가 아니다.
 - 심사 전에 개인정보 처리방침의 공개 URL, 계정 삭제, 신고·차단, 부적절한 콘텐츠 삭제 정책이 갖춰졌는지 확인한다.
 - 서명 키와 keystore 파일은 저장소에 두지 않고 `.gitignore`에 포함한다.
 
