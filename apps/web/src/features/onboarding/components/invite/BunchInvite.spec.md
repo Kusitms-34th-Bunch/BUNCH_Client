@@ -4,7 +4,7 @@
 
 - Route: `/onboarding/create/invite`(`apps/web/src/app/(app)/onboarding/create/invite/page.tsx`)
 - Status: UI와 복사·공유 동작 구현됨(브라우저 렌더 대조 결과는 검증 항목). 초대 링크는 API가 없어 임시 값이다. 실기기 검증 전
-- 디자인 출처: Figma `Bunch/Invite/Default`(node `791:3364`), `Bunch/Invite/LinkCopied`(node `791:3390`). 화면설계서는 `온보딩_번치 멤버 초대`(node `791:8962`), 진입점은 `온보딩_번치 생성 완료`(node `791:8727`).
+- 디자인 출처: Figma `Bunch/Invite/Default`(node `791:3364`), `Bunch/Invite/LinkCopied`(node `791:3390`). 화면설계서(node `791:8962`, 진입점 `791:8727`)를 함께 참고했다.
 
 ## 목적과 범위
 

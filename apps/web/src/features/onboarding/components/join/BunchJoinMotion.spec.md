@@ -4,7 +4,7 @@
 
 - Route: `/onboarding/join/motion`(`apps/web/src/app/(app)/onboarding/join/motion/page.tsx`)
 - Status: 구현됨(headless Chromium 375×734 렌더에서 로티가 재생되고 자동 이동함. 89프레임 전환 시점은 단위 검증, 실제 기기 체감 검증 전). 실기기 검증 전
-- 디자인 출처: Figma `Bunch/Join/Loading`(node `791:3177`)과 디자이너가 전달한 로티 `Invite_Animation.json`. 화면설계서는 `온보딩_번치 참여`(node `791:9342`)의 ①.
+- 디자인 출처: Figma `Bunch/Join/Loading`(node `791:3177`)과 디자이너가 전달한 로티 `Invite_Animation.json`. 화면설계서(node `791:9342`)를 함께 참고했다.
 
 ## 목적과 범위
 

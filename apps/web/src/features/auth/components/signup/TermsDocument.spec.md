@@ -4,7 +4,7 @@
 
 - Route: `/signup/terms/[termId]`(`apps/web/src/app/(app)/signup/terms/[termId]/page.tsx`). `termId`는 `service`(서비스 이용약관)·`privacy`(개인정보 처리방침)
 - Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함). 문구는 임시이며 실기기 검증 전
-- 디자인 출처: Figma `서비스 이용약관`(node `916:7802`), `개인정보 처리방침`(node `916:7823`). 화면 설계서는 `서비스 이용약관`(`916:7706`)·`개인정보 처리방침`(`916:7727`), 이용약관 화면 설계 6번. 기능 spec은 `docs/specs/login-signup.md`(1.3.2).
+- 디자인 출처: Figma `서비스 이용약관`(node `916:7802`), `개인정보 처리방침`(node `916:7823`). 화면설계서(node `916:7706`·`916:7727`). 기능 spec은 `docs/specs/login-signup.md`(1.3.2).
 
 ## 목적과 범위
 

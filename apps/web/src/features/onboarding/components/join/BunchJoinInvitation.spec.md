@@ -4,7 +4,7 @@
 
 - Route: `/onboarding/join/invitation`(`apps/web/src/app/(app)/onboarding/join/invitation/page.tsx`)
 - Status: UI와 이동·중단 모달 구현됨(headless Chromium에서 흐름 전체를 클릭으로 확인함). 참여 요청 API가 없어 요청 없이 이동만 한다. 실기기 검증 전
-- 디자인 출처: Figma `Bunch/Join/Invitation`(node `791:3050`), 긴 소개(`875:5962`), 중단 모달(`791:13839`). 화면설계서는 `온보딩_번치 참여`(node `791:9342`)의 ②③④.
+- 디자인 출처: Figma `Bunch/Join/Invitation`(node `791:3050`), 긴 소개(`875:5962`), 중단 모달(`791:13839`). 화면설계서(node `791:9342`)를 함께 참고했다.
 
 ## 목적과 범위
 

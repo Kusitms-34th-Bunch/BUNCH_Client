@@ -4,7 +4,7 @@
 
 - Route: `/onboarding/create/description`(`apps/web/src/app/(app)/onboarding/create/description/page.tsx`)
 - Status: UI와 입력 규칙 구현됨(`next build` 렌더를 Figma 값과 측정으로 대조함). 「다음」은 3단계(`BunchMood.spec.md`)로 이동하고 헤더 뒤로 가기는 중단 확인 모달을 연다. 실기기 검증 전
-- 디자인 출처: Figma `Bunch/Create/Description`(node `791:2994` 빈 입력, `791:3022` 입력됨). 화면설계서는 `온보딩_03`(node `791:8480`).
+- 디자인 출처: Figma `Bunch/Create/Description`(node `791:2994` 빈 입력, `791:3022` 입력됨). 화면설계서(node `791:8480`)를 함께 참고했다.
 
 ## 목적과 범위
 

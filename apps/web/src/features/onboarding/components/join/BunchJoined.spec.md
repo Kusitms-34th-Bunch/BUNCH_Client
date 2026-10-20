@@ -4,7 +4,7 @@
 
 - Route: `/onboarding/join/complete`(`apps/web/src/app/(app)/onboarding/join/complete/page.tsx`)
 - Status: UI 구현됨(headless Chromium에서 Figma 값을 대조함). 참여가 실제로 이뤄지지 않는 거짓 성공 흐름이다(참여 API 없음). 실기기 검증 전
-- 디자인 출처: Figma `Bunch/Join/Success`(node `791:3089`). 화면설계서는 `온보딩_번치 참여`(node `791:9342`)의 ⑤.
+- 디자인 출처: Figma `Bunch/Join/Success`(node `791:3089`). 화면설계서(node `791:9342`)를 함께 참고했다.
 
 ## 목적과 범위
 
