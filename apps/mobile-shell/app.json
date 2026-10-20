@@ -15,11 +15,12 @@
           "project": "bunch-mobile"
         }
       ],
+      "expo-notifications",
       [
         "expo-image-picker",
         {
-          "photosPermission": "번치 대표 사진을 선택하기 위해 사진에 접근합니다.",
-          "cameraPermission": false,
+          "photosPermission": "사진함・게시물에 올리거나 프로필로 쓸 사진을 불러올 때 사용해요.",
+          "cameraPermission": "사진을 찍어 사진함과 게시물에 올릴 때 사용해요.",
           "microphonePermission": false
         }
       ]

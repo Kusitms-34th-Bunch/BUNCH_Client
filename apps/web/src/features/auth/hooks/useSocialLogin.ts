@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from '@app/design-system';
+import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
 export type SocialProvider = 'kakao' | 'google' | 'apple';
@@ -18,10 +19,11 @@ export const LOGIN_PENDING_MESSAGE = '로그인하는 중이에요';
 /**
  * 소셜 로그인 버튼 3개가 함께 쓰는 진행 상태
  * 하나가 진행 중이면 다른 시도는 무시되고(연타·동시 로그인 방지), 취소·실패하면 처음 상태로 돌아간다
- * 성공하면 결과 분기로 이동할 때까지 잠금을 유지한다(분기는 인증 BFF 연결 뒤에 붙는다)
+ * 성공하면 `nextPath`로 이동하고, 이동할 때까지 잠금을 유지한다(가입 상태에 따른 분기는 인증 BFF 연결 뒤에 붙는다)
  * `signIn`이 없으면(소셜 SDK·인증 BFF 연결 전) 버튼을 눌러도 아무 일도 일어나지 않는다
  */
-export function useSocialLogin(signIn?: SignIn) {
+export function useSocialLogin(signIn: SignIn | undefined, nextPath: string) {
+  const router = useRouter();
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(null);
   // state는 다음 렌더에야 바뀌어 같은 틱의 연타를 막지 못해 ref로 먼저 잠근다
   const inFlight = useRef(false);
@@ -34,6 +36,7 @@ export function useSocialLogin(signIn?: SignIn) {
     let keepLocked = false;
     try {
       keepLocked = (await signIn(provider)) === 'success';
+      if (keepLocked) router.push(nextPath);
     } catch {
       toast(LOGIN_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });
     } finally {

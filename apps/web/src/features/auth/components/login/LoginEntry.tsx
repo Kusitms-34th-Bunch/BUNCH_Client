@@ -24,14 +24,16 @@ const PROVIDERS: { provider: SocialProvider; label: string }[] = [
 type LoginEntryProps = {
   /** 소셜 로그인 호출. 없으면 아직 연결되지 않은 것으로 보고 버튼을 눌러도 아무 일도 일어나지 않는다 */
   signIn?: SignIn | undefined;
+  /** 로그인에 성공했을 때 이동할 경로. 라우트가 정해 넘긴다 */
+  nextPath: string;
 };
 
 /**
  * 앱을 처음 연 사람이 소셜 계정으로 시작하는 로그인(Entry) 화면
- * 회원가입 버튼은 따로 없다. 로그인 결과에 따른 이동(약관·프로필·도착지)과 접근 제어는 연결하지 않았다
+ * 회원가입 버튼은 따로 없다. 성공하면 `nextPath`(지금은 약관)로 이동만 하고, 가입 상태에 따른 분기와 접근 제어는 연결하지 않았다
  */
-export function LoginEntry({ signIn }: LoginEntryProps) {
-  const { pendingProvider, login } = useSocialLogin(signIn);
+export function LoginEntry({ signIn, nextPath }: LoginEntryProps) {
+  const { pendingProvider, login } = useSocialLogin(signIn, nextPath);
 
   return (
     <PageShell

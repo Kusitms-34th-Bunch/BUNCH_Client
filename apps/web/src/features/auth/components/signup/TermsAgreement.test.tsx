@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,11 @@ import { TermsDocument } from './TermsDocument';
 const push = vi.fn();
 const back = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back }) }));
+const permissions = vi.hoisted(() => ({
+  isRequesting: false,
+  requestAll: vi.fn<() => Promise<void>>(),
+}));
+vi.mock('../../hooks/usePermissionRequests', () => ({ usePermissionRequests: () => permissions }));
 
 const all = () => screen.getByRole('checkbox', { name: '필수 항목 모두 체크하기' });
 const service = () => screen.getByRole('checkbox', { name: '[필수] 서비스 이용 약관' });
@@ -28,6 +33,9 @@ describe('TermsAgreement', () => {
   beforeEach(() => {
     push.mockClear();
     back.mockClear();
+    permissions.isRequesting = false;
+    permissions.requestAll.mockReset();
+    permissions.requestAll.mockResolvedValue();
   });
 
   it('화면 제목(h1)과 본문 영역(main), 헤더의 뒤로 가기 버튼을 가진다', async () => {
@@ -97,6 +105,30 @@ describe('TermsAgreement', () => {
 
     await userEvent.click(privacy());
     expect((all() as HTMLInputElement).checked).toBe(false);
+    expect(start().hasAttribute('disabled')).toBe(true);
+  });
+
+  it('모두 동의하고 시작하기를 누르면 권한 요청을 마친 뒤 프로필 화면으로 이동한다', async () => {
+    let finish!: () => void;
+    permissions.requestAll.mockImplementation(
+      () => new Promise<void>((resolve) => (finish = resolve)),
+    );
+    renderPage();
+
+    await userEvent.click(all());
+    await userEvent.click(start());
+
+    expect(permissions.requestAll).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+
+    act(() => finish());
+    await waitFor(() => expect(push).toHaveBeenLastCalledWith(SIGNUP_PATHS.profile));
+  });
+
+  it('권한을 요청하는 동안에는 시작하기를 다시 누를 수 없다', () => {
+    permissions.isRequesting = true;
+    renderPage({ service: true, privacy: true, age: true });
+
     expect(start().hasAttribute('disabled')).toBe(true);
   });
 
