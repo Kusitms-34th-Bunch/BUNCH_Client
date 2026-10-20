@@ -73,5 +73,5 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 
 ### 온보딩 단계 진행바
 
-- 화면설계서 `온보딩_03`(Figma node `791:8480`)의 「진행바만 인터랙션 O」에 따라 단계 변경 시 진행바 색상만 CSS `ease-out`·300ms로 전환한다. 제목·본문에는 이 효과를 적용하지 않는다.
+- 화면설계서(Figma node `791:8480`)의 「진행바만 인터랙션 O」에 따라 단계 변경 시 진행바 색상만 CSS `ease-out`·300ms로 전환한다. 제목·본문에는 이 효과를 적용하지 않는다.
 - `CreateBunchFrame`이 같은 `Stepper` 요소를 유지하고 `current`만 바꾼다. `ease-[ease-out]`은 Tailwind 기본 ease-out 곡선 대신 CSS 표준 곡선을 명시하며, 모션 감소 설정에서는 전환을 끈다. 전체 페이지의 300ms 슬라이드와 별도이다.
