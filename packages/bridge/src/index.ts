@@ -1,11 +1,19 @@
 import type { BridgeStore } from '@webview-bridge/types';
-import type { GalleryImage, SetNativeTabBarParams, ShareParams } from './schema';
+import type {
+  GalleryImage,
+  PermissionKind,
+  PermissionStatus,
+  SetNativeTabBarParams,
+  ShareParams,
+} from './schema';
 
 export {
   appPostMessageSchema,
   galleryImageSchema,
   nativeTabBarItemSchema,
   nativeTabPressSchema,
+  permissionKindSchema,
+  permissionStatusSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
 } from './schema';
@@ -14,6 +22,8 @@ export type {
   GalleryImage,
   NativeTabBarItem,
   NativeTabPress,
+  PermissionKind,
+  PermissionStatus,
   SetNativeTabBarParams,
   ShareParams,
 } from './schema';
@@ -22,6 +32,8 @@ export type {
 export type AppBridgeMethods = {
   /** 갤러리 사진의 임시 미리보기. 취소 시 null */
   pickGalleryImage: () => Promise<GalleryImage | null>;
+  /** 시스템 권한 팝업 요청. 이미 정해진 권한은 팝업 없이 현재 상태를 돌려준다 */
+  requestPermission: (_kind: PermissionKind) => Promise<PermissionStatus>;
   /** 네이티브 공유 시트 호출, 일반 브라우저에서는 Web Share API로 대체 */
   share: (_params: ShareParams) => Promise<void>;
   /** 네이티브 탭 막대 표시·갱신. 미지원 환경에서는 false 반환, 탭 선택은 nativeTabPress로 전달 */

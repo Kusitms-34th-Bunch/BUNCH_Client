@@ -3,25 +3,47 @@
 import { Button } from '@app/design-system';
 import { Label, PageHeader, TermsLabel } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { SIGNUP_PATHS } from '../../constants/paths';
 import { TERMS_ITEMS } from '../../constants/terms';
 import { useTermsAgreement } from '../../contexts/termsAgreementContext';
+import { usePermissionRequests } from '../../hooks/usePermissionRequests';
 import { PermissionGuide } from './PermissionGuide';
 import { SignupFrame } from './SignupFrame';
 
 /**
  * 필수 약관 동의 화면(전체·개별 체크 동기화, 모두 동의해야 시작하기 활성화)
- * 시작하기의 약관 저장·권한 요청·이동은 미연결
+ * 시작하기는 시스템 권한(사진 → 카메라 → 알림)을 차례로 요청한 뒤 프로필 화면으로 이동한다(약관 저장은 미연결)
  */
 export function TermsAgreement() {
   const router = useRouter();
   const { agreed, allAgreed, setAgreed, setAllAgreed } = useTermsAgreement();
+  const { isRequesting, requestAll } = usePermissionRequests();
+
+  // 권한을 요청하는 동안 화면을 벗어났으면(뒤로 가기) 끝난 뒤에 프로필로 끌고 가지 않는다
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const start = async () => {
+    if (isRequesting) return;
+    await requestAll();
+    if (mounted.current) router.push(SIGNUP_PATHS.profile);
+  };
 
   return (
     <SignupFrame
       bottom={
         <div className="px-padding-p8 pt-padding-p7">
-          <Button disabled={!allAgreed} className="w-full">
+          <Button
+            disabled={!allAgreed || isRequesting}
+            className="w-full"
+            onClick={() => void start()}
+          >
             시작하기
           </Button>
         </div>

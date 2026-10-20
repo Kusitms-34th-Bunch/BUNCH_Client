@@ -13,6 +13,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
         await navigator.clipboard.writeText(url);
       }
     },
+    // 브라우저에는 시스템 권한 팝업이 없다. 호출부는 먼저 isNativeShell()로 걸러야 한다
+    requestPermission: () => Promise.resolve('undetermined'),
     // 브라우저에서는 웹 탭 막대 사용
     setNativeTabBar: () => Promise.resolve(false),
   },
@@ -25,4 +27,10 @@ export const isNativeShell = () => typeof window !== 'undefined' && 'ReactNative
 export const galleryBridge = linkBridge<AppBridge, AppPostMessageSchema>({
   timeout: 0,
   throwOnError: ['pickGalleryImage'],
+});
+
+/** 시스템 권한 팝업은 사용자가 응답할 때까지 기다려야 하므로 타임아웃을 두지 않는다 */
+export const permissionBridge = linkBridge<AppBridge, AppPostMessageSchema>({
+  timeout: 0,
+  throwOnError: ['requestPermission'],
 });
