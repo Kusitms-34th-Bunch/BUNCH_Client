@@ -5,7 +5,7 @@
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 픽셀 실측과 대조함. 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Terms Label`(node `796:4758`). Figma 상태 이름 `Disabled` / `Default` / `Pressed`를 코드 상태로 옮겨 쓴다(아래 "상태와 동작"). Figma 이름과 코드 이름이 같다.
-- 화면 설계서: `화면 설계서 - 로그인, 이용약관, 프로필 작성`(node `796:9226`)의 이용약관 화면 3번 "이용약관 동의"(node `796:6361`).
+- 화면설계서: 이용약관 화면의 "이용약관 동의" 영역(설계서 프레임 `796:9226`, node `796:6361`).
 
 ## 목적과 범위
 

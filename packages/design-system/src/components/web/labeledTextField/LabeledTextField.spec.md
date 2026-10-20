@@ -5,7 +5,7 @@
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 높이·구조와 대조함. 색·픽셀 대조 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Labled_Text_Field`(node `796:4808`). Figma 이름의 오탈자(`Labled`)를 바로잡아 코드 이름은 `LabeledTextField`다. Figma `Labled_Text_Field`는 status가 `Default`·`Disabled`뿐이고 안에 든 입력창은 `TextField`의 기본 변형이다. 입력창의 `Focused`·`Filled`·`Editing`은 core `TextField`의 상태이고, 오류·글자 수는 `errorMessage`·`maxLength`로 옮겼다(아래 "상태와 동작").
-- 화면 설계서: `화면 설계서 - 로그인, 이용약관, 프로필 작성`(node `796:9226`)의 프로필 작성 화면 3번 "닉네임"(node `796:6955`).
+- 화면설계서: 프로필 작성 화면의 "닉네임" 영역(설계서 프레임 `796:9226`, node `796:6955`).
 
 ## 목적과 범위
 

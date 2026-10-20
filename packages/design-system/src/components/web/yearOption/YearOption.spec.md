@@ -5,7 +5,7 @@
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 픽셀 실측과 대조함. 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Year_Option`(node `831:9717`). Figma 상태 이름 `Default` / `Pressed` / `Disabled`를 코드 상태로 옮겨 쓴다(아래 "상태와 동작"). 코드 이름은 `YearOption`이다.
-- 화면 설계서: `화면 설계서 - 로그인, 이용약관, 프로필 작성`(node `796:9226`)의 프로필 작성 화면 4번 "출생연도"(node `796:9142`).
+- 화면설계서: 프로필 작성 화면의 "출생연도" 영역(설계서 프레임 `796:9226`, node `796:9142`).
 
 ## 목적과 범위
 

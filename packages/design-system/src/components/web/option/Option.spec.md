@@ -5,7 +5,7 @@
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 크기·색과 대조함. 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Option`(node `796:4803`). Figma 이름과 코드 이름이 같다. Figma의 `Options=Required` / `Optional`은 `variant`(`required` / `optional`)로 옮겼다.
-- 화면 설계서: `화면 설계서 - 로그인, 이용약관, 프로필 작성`(node `796:9226`)의 프로필 작성 화면에서 닉네임은 필수 입력, 성별·출생연도는 선택 입력으로 쓴다(node `796:6955`, `796:9148`, `796:9142`).
+- 화면설계서: 프로필 작성 화면에서 닉네임은 필수 입력, 성별·출생연도는 선택 입력으로 쓴다(설계서 프레임 `796:9226`, node `796:6955`·`796:9148`·`796:9142`).
 
 ## 목적과 범위
 

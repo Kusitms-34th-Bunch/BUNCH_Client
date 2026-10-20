@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system `web`(`@app/design-system/web`). `LabeledTextField`와 같은 폴더에 둔다. 안내 줄 `fieldFooter.internal.tsx`는 이 컴포넌트만 쓴다.
 - Status: 구현됨(렌더를 Figma 값과 측정으로 대조함. 실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Labled_Text_Field`가 쓰인 `Bunch/Create/Description`(node `791:2994` 빈 입력, `791:3022` 입력됨). 화면설계서는 `온보딩_03`(node `791:8480`).
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Labled_Text_Field`가 쓰인 `Bunch/Create/Description`(node `791:2994` 빈 입력, `791:3022` 입력됨). 화면설계서(node `791:8480`)를 함께 참고했다.
 
 ## 목적과 범위
 
