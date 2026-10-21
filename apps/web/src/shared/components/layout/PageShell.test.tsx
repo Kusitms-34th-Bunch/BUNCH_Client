@@ -60,7 +60,7 @@ describe('PageShell', () => {
     );
 
     expect(screen.getByRole('main')).toHaveTextContent('본문');
-    // 빈 header·bottom 영역이 DOM에 남지 않고 main만 있다.
+    // 빈 header·bottom 영역 없이 DOM에 main만 남는지 확인
     expect(container.firstElementChild?.children).toHaveLength(1);
   });
 });

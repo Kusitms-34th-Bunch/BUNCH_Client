@@ -9,7 +9,7 @@ export type AccountSwitcherProps = Omit<ComponentProps<'button'>, 'children'> & 
 
 /**
  * 현재 계정을 보여 주고 전환 목록을 여는 트리거. 목록 자체와 열림 상태는 호출하는 쪽이 소유
- * 목록을 열면 호출자가 aria-haspopup·aria-expanded를 넘긴다
+ * 목록을 열면 aria-haspopup·aria-expanded는 호출자가 전달
  */
 export function AccountSwitcher({
   label,

@@ -10,7 +10,7 @@ import { ProfileSetup } from './ProfileSetup';
 const replace = vi.fn();
 const back = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, back }) }));
-// 토스트 표시는 DS의 `toast()`가 맡으므로 호출만 막는다
+// 토스트 표시는 DS의 `toast()` 담당이라 호출만 차단
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: vi.fn(),
@@ -269,7 +269,7 @@ describe('ProfileSetup', () => {
   });
 
   describe('출생연도', () => {
-    // 해가 바뀌는 시점에 흔들리지 않게 날짜를 고정한다(타이머는 진짜를 쓴다)
+    // 해가 바뀌는 시점에 흔들리지 않게 날짜 고정(타이머는 실제 타이머 사용)
     beforeEach(() => {
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(new Date('2026-06-01T00:00:00'));

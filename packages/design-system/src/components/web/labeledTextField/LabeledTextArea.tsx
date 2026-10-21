@@ -11,13 +11,13 @@ export type LabeledTextAreaProps = Omit<
 > & {
   /** 입력창 위에 보이는 라벨이자 입력창의 접근성 이름 */
   label: string;
-  /** 있으면 입력창 아래에 빨간 안내로 보이고 입력창이 잘못된 값(aria-invalid)으로 표시된다. 문구는 호출자가 정한다 */
+  /** 있으면 입력창 아래에 빨간 안내로 보이고 입력창을 잘못된 값(aria-invalid)으로 표시. 문구는 호출자가 결정 */
   error?: string | undefined;
 };
 
 /**
  * 라벨·입력창·안내 줄을 세로로 쌓은 여러 줄 입력 필드
- * 한 줄로 시작해 내용이 길어지면 줄바꿈되며 높이가 늘어난다. 라벨·입력창 모양은 `LabeledTextField`와 맞춘 것이다
+ * 한 줄로 시작해 내용이 길어지면 줄바꿈되며 높이 증가. 라벨·입력창 모양은 `LabeledTextField`와 통일
  */
 export function LabeledTextArea({
   label,
@@ -39,7 +39,7 @@ export function LabeledTextArea({
     .filter(Boolean)
     .join(' ');
 
-  // 값이 바뀔 때와 폭이 바뀔 때(회전·글자 크기 변경) 내용 높이에 맞춘다(auto로 줄였다가 scrollHeight로 늘림)
+  // 값이 바뀔 때와 폭이 바뀔 때(회전·글자 크기 변경) 내용 높이에 맞춤(auto로 줄였다가 scrollHeight로 늘림)
   // 그리기 전에 높이를 맞춰 줄바꿈 프레임에 잘려 보이지 않게 함
   useLayoutEffect(() => {
     const element = ref.current;

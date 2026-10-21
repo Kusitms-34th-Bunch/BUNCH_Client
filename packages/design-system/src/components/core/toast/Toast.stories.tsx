@@ -16,7 +16,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-// 네 가지 형태는 아래 Matrix가 한 번에 스냅샷하므로 개별 story는 Controls로 보는 용도로 두고 스냅샷에서 제외한다.
+// 네 가지 형태는 아래 Matrix가 한 번에 스냅샷하므로 개별 story는 Controls 확인용으로 두고 스냅샷에서 제외
 const skipSnapshot = { chromatic: { disableSnapshot: true } };
 
 export const Default: Story = { parameters: skipSnapshot };
@@ -41,7 +41,7 @@ const surfaces: { name: string; className: string }[] = [
   { name: '브랜드 색 배경', className: 'bg-surface-brand' },
 ];
 
-// 토스트는 화면 내용 위에 뜨므로 배경에 따라 보이는 모양(글자 대비)이 달라진다.
+// 토스트는 화면 내용 위에 뜨므로 배경별로 보이는 모양(글자 대비) 비교
 export const Matrix: Story = {
   render: () => (
     <div className="gap-s8 flex flex-col">
@@ -65,7 +65,7 @@ export const Matrix: Story = {
   ),
 };
 
-// 좁은 화면 폭에서 긴 글자는 줄바꿈하고 버튼은 줄어들지 않는다.
+// 좁은 화면 폭에서 긴 글자는 줄바꿈, 버튼은 크기 유지
 export const LongText: Story = {
   render: () => (
     <div className="bg-surface-inversed p-padding-p8 w-80">
@@ -76,7 +76,7 @@ export const LongText: Story = {
   ),
 };
 
-// 실제 toast()와 Toaster를 눌러 보는 용도. 시간이 지나면 사라지는 동작이라 스냅샷에서 제외한다.
+// 실제 toast()와 Toaster를 눌러 보는 용도. 시간이 지나면 사라지는 동작이라 스냅샷에서 제외
 export const Playground: Story = {
   parameters: { chromatic: { disableSnapshot: true } },
   render: () => (

@@ -6,7 +6,7 @@ type PageShellProps = {
   header?: ReactNode;
   /** 하단 고정 영역(내비게이션·CTA) */
   bottom?: ReactNode;
-  /** 바깥 틀에 더하는 class. 배경색이 흰색이 아닌 화면은 여기서 `bg-*`로 바꾼다 */
+  /** 바깥 틀에 더하는 class. 배경색이 흰색이 아닌 화면은 여기서 `bg-*`로 변경 */
   className?: string;
   /** Safe Area까지 이어질 배경 표식(AppFrame에서 처리) */
   'data-app-background'?: 'brand-subtle-1' | undefined;

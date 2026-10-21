@@ -30,7 +30,7 @@ export const Focused: Story = {
   args: { value: '', onChange: () => {}, autoFocus: true },
 };
 
-/** 길어지면 줄바꿈되고 높이가 늘어난다 */
+/** 길어지면 줄바꿈되며 높이 증가 */
 export const Wrapped: Story = {
   args: {
     value: '소소한 일상도 특별하게 기록하는 사이 소소한 일상도 특별하게 기록하는 사이소소한 일상',

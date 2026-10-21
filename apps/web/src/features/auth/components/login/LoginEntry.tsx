@@ -22,15 +22,15 @@ const PROVIDERS: { provider: SocialProvider; label: string }[] = [
 ];
 
 type LoginEntryProps = {
-  /** 소셜 로그인 호출. 없으면 아직 연결되지 않은 것으로 보고 버튼을 눌러도 아무 일도 일어나지 않는다 */
+  /** 소셜 로그인 호출. 없으면(연결 전) 버튼을 눌러도 동작 없음 */
   signIn?: SignIn | undefined;
-  /** 로그인에 성공했을 때 이동할 경로. 라우트가 정해 넘긴다 */
+  /** 로그인 성공 시 이동할 경로. 라우트가 정해 전달 */
   nextPath: string;
 };
 
 /**
  * 앱을 처음 연 사람이 소셜 계정으로 시작하는 로그인(Entry) 화면
- * 회원가입 버튼은 따로 없다. 성공하면 `nextPath`(지금은 약관)로 이동만 하고, 가입 상태에 따른 분기와 접근 제어는 연결하지 않았다
+ * 회원가입 버튼 없음. 성공하면 `nextPath`(지금은 약관)로 이동만 처리(가입 상태별 분기·접근 제어는 미연결)
  */
 export function LoginEntry({ signIn, nextPath }: LoginEntryProps) {
   const { pendingProvider, login } = useSocialLogin(signIn, nextPath);
@@ -45,7 +45,7 @@ export function LoginEntry({ signIn, nextPath }: LoginEntryProps) {
               <LoginButton
                 key={provider}
                 brand={provider}
-                // 진행 중인 버튼은 그대로 두고 나머지만 비활성화해 어느 로그인이 진행 중인지 보이게 한다
+                // 어느 로그인이 진행 중인지 보이도록 진행 중인 버튼은 두고 나머지만 비활성화
                 disabled={pendingProvider !== null && !isPending}
                 aria-busy={isPending || undefined}
                 onClick={() => void login(provider)}
@@ -54,7 +54,7 @@ export function LoginEntry({ signIn, nextPath }: LoginEntryProps) {
               </LoginButton>
             );
           })}
-          {/* 진행 중인 버튼은 aria-busy만으로는 읽히지 않는 경우가 많아 상태를 말로 알린다(화면에는 보이지 않는다) */}
+          {/* 진행 중인 버튼은 aria-busy만으로는 읽히지 않는 경우가 많아 상태를 음성으로 안내(화면에는 숨김) */}
           <p role="status" className="sr-only">
             {pendingProvider ? LOGIN_PENDING_MESSAGE : ''}
           </p>

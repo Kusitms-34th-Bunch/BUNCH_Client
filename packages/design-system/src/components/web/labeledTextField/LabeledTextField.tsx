@@ -16,7 +16,7 @@ export type LabeledTextFieldProps = Omit<
   title: string;
   /** 제목 옆 필수·선택 표시 */
   option?: OptionVariant;
-  /** 오류 문구. 있으면 입력창 아래 왼쪽에 빨간 글자로 보이고 입력창은 `aria-invalid`가 된다 */
+  /** 오류 문구. 있으면 입력창 아래 왼쪽에 빨간 글자로 표시하고 입력창에 `aria-invalid` 적용 */
   errorMessage?: string;
   /** 행 전체에 적용되는 class */
   className?: string;
@@ -24,8 +24,8 @@ export type LabeledTextFieldProps = Omit<
 
 /**
  * 제목 + 필수·선택 표시 + 입력창 + 글자 수/오류 문구(Figma `Labled_Text_Field`)
- * 입력창은 Figma 기본 변형의 core `TextField`(지우기·버튼 없음)이고, 나머지 props는 input에 전달된다
- * `maxLength`를 주면 오른쪽 아래에 "현재/최대" 글자 수를 보이고 입력도 그 길이로 제한된다
+ * 입력창은 Figma 기본 변형의 core `TextField`(지우기·버튼 없음)이고, 나머지 props는 input에 전달
+ * `maxLength`를 주면 오른쪽 아래에 "현재/최대" 글자 수를 표시하고 입력도 그 길이로 제한
  */
 export const LabeledTextField = ({
   title,
@@ -52,7 +52,7 @@ export const LabeledTextField = ({
   const length = value === undefined ? uncontrolledLength : String(value).length;
 
   const hasCounter = maxLength !== undefined;
-  // 호출자가 준 aria-describedby(예: 도움말)도 오류 문구·글자 수와 함께 유지한다
+  // 호출자가 준 aria-describedby(예: 도움말)도 오류 문구·글자 수와 함께 유지
   const describedBy =
     [errorMessage ? errorId : null, hasCounter ? counterId : null, ariaDescribedBy]
       .filter(Boolean)

@@ -25,7 +25,7 @@ const Controlled = (args: LabeledTextFieldProps & { initial?: string; focusOnMou
   const [value, setValue] = useState(initial);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Focused 상태를 보여 주려고 마운트 때 입력창에 포커스를 준다(스토리 전용)
+  // Focused 상태 표시를 위해 마운트 때 입력창에 포커스(스토리 전용)
   useEffect(() => {
     if (focusOnMount) rootRef.current?.querySelector('input')?.focus();
   }, [focusOnMount]);
@@ -41,19 +41,19 @@ const Controlled = (args: LabeledTextFieldProps & { initial?: string; focusOnMou
   );
 };
 
-// Figma Default: 값이 없고 포커스도 없다
+// Figma Default: 값·포커스 없음
 export const Default: Story = { render: (args) => <Controlled {...args} /> };
 
 // 입력창 Focused: 값이 없는 채로 포커스(캐럿만 보임)
 export const Focused: Story = { render: (args) => <Controlled {...args} focusOnMount /> };
 
-// 입력창 Filled: 값이 있다
+// 입력창 Filled: 값 있음
 export const Filled: Story = { render: (args) => <Controlled {...args} initial="으누누" /> };
 
 // 입력창 Editing: 점 3개 애니메이션
 export const Editing: Story = { render: (args) => <Controlled {...args} editing /> };
 
-// 오류 문구가 왼쪽에, 글자 수가 오른쪽에 보인다
+// 오류 문구는 왼쪽, 글자 수는 오른쪽에 표시
 export const ErrorState: Story = {
   render: (args) => (
     <Controlled

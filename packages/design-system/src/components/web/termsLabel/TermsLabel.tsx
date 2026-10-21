@@ -3,7 +3,7 @@ import { FillCircleCheckMediumIcon, LineChevronRightMediumIcon } from '../../../
 import { cn } from '../../../utils';
 
 export type TermsLabelProps = Omit<ComponentProps<'input'>, 'type' | 'children'> & {
-  /** 약관 이름(예: "서비스 이용 약관"). 접근성 이름에 `tag`와 함께 들어간다 */
+  /** 약관 이름(예: "서비스 이용 약관"). 접근성 이름에 `tag`와 함께 포함 */
   children: ReactNode;
   /** 이름 앞 구분 글자(예: "[필수]") */
   tag?: ReactNode;
@@ -28,7 +28,7 @@ export const TermsLabel = ({
 }: TermsLabelProps) => (
   <div
     className={cn(
-      // 눌림은 체크 영역(label)을 누를 때만 나온다(chevron 버튼과 비활성은 제외)
+      // 눌림은 체크 영역(label)을 누를 때만 표시(chevron 버튼과 비활성은 제외)
       // 눌림: 선택된 모양(아이콘 80%·진한 글자)에 overlay-dim-subtle(10%)를 아이콘·글자 위까지 덮는다. Figma 실측: 아이콘 #a2a4a7→#919395
       'pr-padding-p4 relative isolate flex w-full items-center justify-between',
       'before:bg-overlay-dim-subtle before:pointer-events-none before:absolute before:inset-0 before:z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',

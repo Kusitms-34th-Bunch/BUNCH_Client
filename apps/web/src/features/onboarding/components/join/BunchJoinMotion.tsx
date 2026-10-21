@@ -64,7 +64,7 @@ export function BunchJoinMotion() {
   useEffect(() => {
     if (revealFrame !== HAND_OFF_FRAME || reducedMotion) return;
     let painted = 0;
-    // 프레임이 건너뛰어도 완성된 배경을 한 번 그린 뒤 이동한다.
+    // 프레임이 건너뛰어도 완성된 배경을 한 번 그린 뒤 이동
     const frame = requestAnimationFrame(() => {
       painted = requestAnimationFrame(goNext);
     });

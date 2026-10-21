@@ -4,7 +4,7 @@ import { tv } from '../../../utils';
 
 // 눌림 오버레이: 글자 아래·배경 위의 -z-10 pseudo 요소(isolate로 쌓임 맥락 분리), overlay-login-pressed(8%). Figma 실측: Google 흰색→#ebebeb, Kakao #fee500→#ead300
 // 누르는 동안 Pressed 스타일, Dissolve / Ease out / 75ms(디자이너 공통 지침) → opacity만 75ms ease-out
-// 브랜드 색(Kakao #fee500·글자 85% 검정, Google 테두리 #e2e2e2·글자 #1f1f1f, Apple 검정)은 각 사의 가이드 값이라 토큰이 없다
+// 브랜드 색(Kakao #fee500·글자 85% 검정, Google 테두리 #e2e2e2·글자 #1f1f1f, Apple 검정)은 각 사의 가이드 값이라 토큰 없음
 const loginButton = tv({
   base: [
     'relative isolate inline-flex h-s18 w-full max-w-full cursor-pointer touch-manipulation items-center justify-center gap-s3 overflow-clip rounded-r6 px-padding-p8 py-padding-p7 typography-login-button',
@@ -28,12 +28,12 @@ export type LoginButtonBrand = NonNullable<LoginButtonVariants['brand']>;
 
 export type LoginButtonProps = ComponentProps<'button'> & {
   brand: LoginButtonBrand;
-  /** 접근성 이름이 되는 글자(예: "Google로 계속하기"). 문구는 호출하는 쪽이 정한다 */
+  /** 접근성 이름이 되는 글자(예: "Google로 계속하기"). 문구는 호출하는 쪽이 결정 */
   children: ReactNode;
 };
 
-// 브랜드 로고(Figma 원본 에셋). 아이콘 생성 파이프라인은 16/20/24 세 크기를 요구하는데 이 로고들은 한 크기뿐이라 이 파일에 둔다
-// Apple·Kakao는 글자색(currentColor)을 따라가고, Google은 색이 들어간 이미지라 그대로 쓴다
+// 브랜드 로고(Figma 원본 에셋). 아이콘 생성 파이프라인은 16/20/24 세 크기를 요구하는데 이 로고들은 한 크기뿐이라 이 파일에 직접 정의
+// Apple·Kakao는 글자색(currentColor)을 따르고, Google은 색이 들어간 이미지라 그대로 사용
 const googleLogoUrl = new URL('./assets/google-logo.png', import.meta.url).href;
 
 const AppleLogo = () => (
@@ -70,7 +70,7 @@ const KakaoLogo = () => (
   </svg>
 );
 
-// 20×20 영역 안에서 16×16.3 크기로 2px 안쪽에 놓인다(Figma 배치)
+// 20×20 영역 안에서 16×16.3 크기로 2px 안쪽 배치(Figma 배치)
 const GoogleLogo = () => (
   <span aria-hidden="true" className="relative inline-block size-5 shrink-0">
     <img

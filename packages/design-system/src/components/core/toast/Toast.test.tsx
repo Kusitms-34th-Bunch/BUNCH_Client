@@ -53,7 +53,7 @@ describe('Toast', () => {
   });
 });
 
-// sonner는 토스트를 setTimeout으로 한 틱 늦게 반영하고 제거도 타이머로 예약한다. act 하나 안에서는 갱신이 모여 반영되므로 시간을 단계로 나눠 흘려 보낸다.
+// sonner는 토스트를 setTimeout으로 한 틱 늦게 반영하고 제거도 타이머로 예약. act 하나 안에서는 갱신이 모여 반영되므로 시간을 단계로 나눠 진행
 describe('toast()', () => {
   beforeEach(() => {
     vi.useFakeTimers();

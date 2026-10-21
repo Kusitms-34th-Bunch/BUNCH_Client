@@ -9,7 +9,7 @@ export type SearchFieldProps = Omit<ComponentProps<'input'>, 'type' | 'ref'> & {
   /** Enter(키보드의 검색 키)를 누를 때 현재 입력값과 함께 호출 */
   // eslint-disable-next-line unused-imports/no-unused-vars -- 함수 type의 매개변수 이름은 문서용
   onSearch?: (query: string) => void;
-  /** 입력창의 접근성 이름. placeholder는 label을 대체하지 못한다 */
+  /** 입력창의 접근성 이름. placeholder로 label 대체 불가 */
   inputLabel?: string;
 };
 

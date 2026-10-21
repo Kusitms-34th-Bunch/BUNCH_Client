@@ -3,7 +3,7 @@ import { FillCameraSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
 
 export type CameraButtonProps = Omit<ComponentProps<'button'>, 'children' | 'aria-label'> & {
-  /** 아이콘만 있는 버튼이라 접근성 이름이 필요하다(예: "프로필 사진 변경") */
+  /** 아이콘만 있는 버튼이라 접근성 이름 필수(예: "프로필 사진 변경") */
   'aria-label': string;
 };
 
@@ -12,7 +12,7 @@ export type CameraButtonProps = Omit<ComponentProps<'button'>, 'children' | 'ari
 // after: 보이는 28px보다 넓은 40px 터치 영역(design-system-icons.md의 Small 기준)
 /**
  * 카메라 버튼(S): 28px 원형 아이콘 버튼
- * 촬영·선택·업로드는 호출하는 쪽이 처리하고, 처리 중에는 `disabled`를 넘긴다
+ * 촬영·선택·업로드는 호출하는 쪽이 처리하고, 처리 중에는 `disabled` 전달
  */
 export const CameraButton = ({ type = 'button', className, ...props }: CameraButtonProps) => (
   <button
