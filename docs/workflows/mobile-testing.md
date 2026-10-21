@@ -44,6 +44,7 @@ yarn dev
 
 실제 iPhone은 PC와 같은 Wi-Fi에 연결하고 QR을 연다. Mac의 시뮬레이터는 터미널에서 `i`를 누른다.
 Expo Go에서는 앱 고유 설정·네이티브 모듈을 모두 검증할 수 없다.
+iOS 시스템 탭 바(expo-router 네이티브 탭)와 탭 라벨 글꼴(`app.json`의 `expo-font` plugin)은 번치 개발 앱 기준이다. 이 의존성이나 `app.json`을 바꾸면 `pnpm exec expo prebuild -p ios`와 `pod install` 뒤 개발 앱을 다시 빌드해야 반영된다.
 
 ## iOS 개발 앱 실행 (macOS)
 

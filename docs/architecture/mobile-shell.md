@@ -9,35 +9,35 @@
 
 ## 소스 배치
 
-진입점과 설정은 앱 루트에 두고, 런타임 코드와 테스트는 `src/`에 둔다. 기능별 파일은 같은 폴더에 모은다.
+진입점과 설정은 앱 루트에, 화면 route는 `app/`(expo-router)에, 런타임 코드와 테스트는 `src/`에 둔다. 기능별 파일은 같은 폴더에 모은다.
 
 ```text
 apps/mobile-shell/
-  App.tsx
-  index.ts
+  index.ts              Sentry 초기화 후 expo-router/entry
+  app/
+    _layout.tsx         SafeAreaProvider, Stack(헤더 없음)
+    index.tsx           첫 화면: WebView 하나(로그인·온보딩)
+    (tabs)/
+      _layout.tsx       iOS 시스템 탭 바(NativeTabs)
+      feed.tsx photos.tsx bunch.tsx my.tsx   탭마다 WebView
+  assets/
+    tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
+    fonts/              Pretendard Regular(탭 라벨), 라이선스
   src/
-    native-tab-bar/
-      NativeTabBar.tsx
-      useNativeTabBarGesture.ts
-      native-tab-bar.ts
-      native-tab-bar-store.ts
-      native-tab-bar.test.mjs
-    safe-area-script.ts
-    safe-area-script.test.mjs
-    sentry.ts
-    sanitize-sentry-event.ts
-    sanitize-sentry-event.test.mjs
+    web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기·오류 화면)
+    tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx)
+    safe-area-script.ts, sentry.ts, sanitize-sentry-event.ts, web-url.ts, gallery-image.ts, permissions.ts (+ *.test.mjs)
 ```
 
-네이티브 탭 막대의 UI·제스처·상태·좌표 계산과 테스트는 `src/native-tab-bar/`가 소유한다. 검증은 `apps/mobile-shell`에서 `pnpm test`와 `pnpm exec tsc --noEmit`으로 실행한다.
+검증은 `apps/mobile-shell`에서 `pnpm test`와 `pnpm exec tsc --noEmit`으로 실행한다.
 
 ## WebView 기본 동작
 
-`apps/mobile-shell/App.tsx`가 WebView에 다음 기본 동작을 건다.
+`src/web-view/AppWebView.tsx`가 쉘의 모든 WebView(첫 화면, 탭마다 하나)에 다음 기본 동작을 건다.
 
 - 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)의 이동만 WebView 안에서 처리한다. 외부 주소와 `tel:`, `mailto:` 등은 `Linking.openURL`로 OS에 넘긴다. 인증 redirect는 별도 계약 확정 후 연결한다.
 - iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 웹 history에 먼저 연결한다. 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
-- 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면과 iOS 26 이상의 글라스 탭 막대다.
+- 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면과 iOS 시스템 탭 바다.
 
 iOS 입력 포커스 확대는 디자인 시스템의 `TextField`·`LabeledTextArea`에서 대응한다. 실제 글꼴을 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 입력 폭·행 높이·padding과 textarea 자동 높이도 같은 비율로 보정한다. `@supports (-webkit-touch-callout: none)`으로 iOS WebKit에 적용하며 모바일 Safari도 포함한다. 쉘에서 viewport 확대 제한을 주입하지 않는다. 실제 터치·키보드·커서·텍스트 선택·줄바꿈은 시뮬레이터와 실기기 검증이 필요하다.
 
@@ -79,20 +79,21 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 루트 `.yarnrc.yml`의 `pnpIgnorePatterns`도 `./apps/mobile-shell/**`를 제외한다. VS Code가 루트 Yarn TypeScript SDK를 사용해도 이 폴더의 의존성은 자체 `node_modules`에서 찾는다. 설정 변경 후에는 TypeScript 서버를 재시작한다.
 - 의존성 설치·관리는 `apps/mobile-shell` 안에서 `pnpm install`로 따로 한다.
 - 네이티브 모듈 추가는 `pnpm exec expo install <package> --pnpm`을 쓴다. 설치된 Expo SDK와 호환되는 버전을 Expo가 직접 고른다.
+- pnpm은 react-native를 peer 조합마다 따로 설치할 수 있다. 두 벌이 번들에 들어가면 앱 시작이 `"main" has not been registered`로 멈춘다. expo-router를 처음 넣을 때 기존 잠금 파일에 증분으로 설치하면서 이 상태가 생겼고, 잠금 파일을 되돌린 뒤 한 번에 다시 풀자 한 벌로 돌아왔다(정확한 해석 차이는 특정하지 못함). 의존성을 바꾼 뒤에는 `ls node_modules/.pnpm | grep '^react-native@'`로 한 벌인지 확인한다.
+- pnpm 11의 최소 공개 기간 정책(공개 후 하루가 지나야 설치)을 예외 없이 지킨다. `expo install`이 갓 나온 패치를 고르면서 `pnpm-workspace.yaml`에 `minimumReleaseAgeExclude`를 자동으로 넣을 수 있으니, 넣었다면 지우고 정책을 통과하는 패치로 범위를 맞춘다(예: `expo-router` `~57.0.28`).
 
-## 네이티브 글라스 탭 막대 (iOS 26 이상)
+## iOS 시스템 탭 바
 
-쉘은 화면을 직접 그리지 않지만 iOS 26 이상에서는 하단 탭 막대 하나를 WebView 위에 네이티브 `GlassView`(`expo-glass-effect`)로 그린다. 근거와 대안은 `docs/decisions/records/011-bottom-navigation-glass-by-platform.md`다.
+쉘은 화면을 직접 그리지 않지만 iOS에서는 하단 탭을 시스템 탭 바(UITabBar)로 그린다. iOS 26 이상은 시스템이 Liquid Glass로 그리고 끌어서 이동·렌즈 효과도 시스템 동작이다. 근거와 대안은 `docs/decisions/records/012-ios-system-tab-bar.md`다(011의 직접 만든 `GlassView` 막대를 대체).
 
-- 막대는 `src/native-tab-bar/NativeTabBar.tsx`가 그린다. 항목 라벨·아이콘(SF Symbol 이름)·선택은 웹이 `setNativeTabBar`로 정하고, 쉘은 그리기와 눌림 전달만 한다. 항목 ID는 서로 달라야 하며 중복이면 요청 검증에서 거부한다.
-- 쉘은 iOS이고 `isLiquidGlassAvailable()`이 true일 때만 `setNativeTabBar`가 true를 돌려준다. 웹 탭 조합은 true일 때 자기 `BottomNavigation`을 숨기고, false(브라우저·안드로이드·iOS 26 미만)이면 계속 쓰도록 구현해야 한다. 웹 호출부는 아직 미구현이다.
-- 탭을 누르면 쉘이 `postMessage('nativeTabPress', { id })`로 웹에 알린다. 웹이 해당 탭 화면으로 이동한다.
-- WebView는 막대 뒤까지 그려져야 글라스 효과가 보인다. 막대가 차지하는 높이는 CSS 변수 `--native-tab-bar-inset`으로 웹에 주입한다(막대가 없으면 0). 웹 탭 조합은 본문 아래 여백에 이 값을 더해야 한다. 현재 웹에는 이 변수의 소비 코드가 없다. 새 문서를 로드하면 막대 상태를 비우므로 웹이 다시 정해야 한다.
-- 선택 알약은 웹 막대와 같이 항목 사이를 200ms로 미끄러진다(`Animated`, 처음 배치와 모션 감소 설정에서는 즉시 이동). 실행 중 모션 감소 설정이 켜지면 진행 중인 애니메이션을 멈추고, 선택 위치·기본 크기·활성 표시를 즉시 맞춘다. 끌기 종료·취소의 복귀에도 같은 설정을 적용한다.
-- 웹 막대와 같은 동작을 낸다. 탭, 누른 채 끌어서 손을 뗀 탭 선택(6px 이상 움직이면 끌기), 끄는 동안 알약이 도착한 항목의 아이콘이 활성으로 바뀜, 알약을 누르는 동안 1.12배로 커졌다가 놓으면 0.95배를 거쳐 돌아옴(탭 이동 때도 같은 모션). 막대 전체를 `PanResponder`가 받고 보조 기술은 항목의 `onAccessibilityTap`으로 선택한다. 좌표·여백 계산 단위 테스트, 타입 검사와 iOS JS 번들 생성을 확인했고 iPhone에서 실제 터치(끌기·모션·VoiceOver)는 확인하지 못했다.
-- 막대 위치(홈 인디케이터 위 여백)는 실기기에서 맞춰 보지 않은 추정값이다. 쉘 앱으로 iPhone에서 눌림·VoiceOver·스크롤 성능을 확인하지 못했다. 막대 모양은 별도 실험 앱으로만 확인했다.
-- 안드로이드에서는 `GlassView`가 일반 View로 떨어지므로 쓰지 않는다.
-- 스타일은 `StyleSheet`를 쓰고, 색·크기는 디자인 시스템 토큰 값을 상수로 옮겨 이름과 출처를 주석에 남긴다(RN은 CSS 변수를 못 쓴다). NativeWind는 쓰지 않는다. Tailwind v4용 v5가 아직 정식이 아니고(preview, `react-native-css` nightly 필요) Expo SDK 57·React Native 0.86과의 호환을 확인하지 못했으며, 쉘의 네이티브 UI가 막대 하나뿐이라 도구를 더할 이득이 작다. 쉘에 네이티브 화면이 늘고 정식 v5가 나오면 결정 기록과 함께 다시 검토한다.
+- 구조: 첫 화면(`app/index.tsx`)은 WebView 하나다. 웹 탭 화면(`apps/web`의 `features/main-navigation/components/MainTabBar.tsx`)이 `setNativeTabBar({ items, selectedId })`를 부르면 쉘이 `(tabs)`로 바꾸고, 탭마다 WebView가 항목의 `path`를 연다. 이미 탭 화면이면 같은 요청은 화면을 옮기지 않는다. `hidden: true`면 하나의 WebView로 돌아간다.
+- 탭 화면 파일은 `app/(tabs)/`의 `feed`·`photos`·`bunch`·`my` 4개로 고정이다(`src/tabs/tabs.ts`의 `TAB_IDS`). 웹이 이 밖의 ID를 보내면 `setNativeTabBar`가 false를 돌려 웹 막대를 쓴다. 항목이 없는 탭은 숨긴다.
+- 탭 라벨·경로는 웹이 정하고, 아이콘은 쉘이 탭 ID로 정한다. 아이콘은 웹 막대와 같은 디자인 시스템 Line·Fill 아이콘(Large 24px) SVG를 1x·2x·3x PNG로 옮긴 것이다(`assets/tab-icons/`, template으로 시스템이 색을 칠함). 디자인 시스템 아이콘이 바뀌면 다시 변환한다.
+- 선택 색은 text-primary(#121212), 라벨은 Pretendard Regular 12pt다(`app/(tabs)/_layout.tsx`). 미선택 색 text-tertiary(#535a61)도 지정했지만 iOS 26 Liquid Glass 탭 바는 배경에 맞춰 시스템이 정해 적용되지 않았다. 알약 크기·막대 높이·간격은 시스템이 정한다. `itemPositioning`·`itemWidth` 실험에서 iOS 26 알약 폭이 바뀌지 않았다.
+- 쉘은 iOS일 때만 `setNativeTabBar`에 true를 돌려준다. 브라우저·안드로이드는 false라 웹 `BottomNavigation`을 쓴다. 웹 막대는 응답 전에는 그리지 않아 쉘에서 잠깐 보였다 사라지지 않는다.
+- 탭 화면 아래 여백: 탭 안의 `SafeAreaProvider`가 탭 바 높이를 포함한 아래 Safe Area를 재서 웹에 넘긴다. 그래서 웹 본문은 탭 바 위에서 끝나고 탭 바 뒤로 내용이 비치지는 않는다. 내용을 탭 바 뒤까지 펼치려면 웹이 아래 여백을 본문 안 여백으로 바꿔야 한다(미구현).
+- 탭 WebView 4개는 처음에 함께 만들어진다(expo-router 네이티브 탭은 모든 탭을 미리 그림). 탭마다 웹 상태가 따로라 번치 전환·로그아웃처럼 다른 탭에도 알려야 하는 변화는 아직 연결하지 않았다.
+- 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 첫 화면 → 탭 화면 전환, 탭 이동, 아이콘·선택 색·라벨 크기. 확인하지 못한 것: 실기기, 끌어서 이동·렌즈 효과의 실제 터치, VoiceOver, 탭 사이 로그인 쿠키 공유, 메모리, `hidden: true`로 돌아가기, 안드로이드에서 탭 WebView 여러 개의 뒤로가기 처리.
 
 ## Bridge 계약 (`packages/bridge`)
 
@@ -108,9 +109,9 @@ packages/bridge/
 - `packages/bridge`는 Yarn workspace 멤버다. `apps/web`은 평소처럼 `@app/bridge`를 import한다.
 - `apps/mobile-shell`은 Yarn workspace 밖에 있어 `"@app/bridge": "file:../../packages/bridge"`로 참조한다. `packages/bridge`를 수정하면 `apps/mobile-shell`에서 `pnpm install`을 다시 실행해야 반영된다.
 
-### 네이티브 쪽 구현 (`apps/mobile-shell/App.tsx`)
+### 네이티브 쪽 구현 (`apps/mobile-shell/src/web-view/AppWebView.tsx`)
 
-실제 구현은 [App.tsx](../../apps/mobile-shell/App.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`로 네이티브 탭 선택 이벤트를 연결한다.
+실제 구현은 [AppWebView.tsx](../../apps/mobile-shell/src/web-view/AppWebView.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 지금 없다(탭 선택은 시스템 탭 바가 처리해 `nativeTabPress`를 지웠다). 여러 WebView가 같은 bridge를 쓴다.
 
 `bridge()`에는 **인라인 객체 리터럴**을 넘긴다. 미리 `AppBridgeMethods` 타입을 선언한 변수를 넘기면 TypeScript가 index signature 불일치로 거부한다(이름 있는 타입은 fresh literal 취급을 받지 못한다).
 
@@ -124,7 +125,7 @@ packages/bridge/
 
 1. `packages/bridge/src/schema.ts`에 zod schema를 추가한다.
 2. `packages/bridge/src/index.ts`의 `AppBridgeMethods`에 메서드 시그니처를 추가한다.
-3. `apps/mobile-shell/App.tsx`의 `bridge({...})`에 실제 네이티브 구현을 추가한다.
+3. `apps/mobile-shell/src/web-view/AppWebView.tsx`의 `bridge({...})`에 실제 네이티브 구현을 추가한다.
 4. `apps/web`의 bridge client에 `initialBridge` 폴백을 추가한다(웹 전용 대체 동작이 있다면).
 5. 양쪽에서 typecheck를 돌려 계약이 어긋나지 않는지 확인한다(`yarn workspace @app/bridge typecheck`, `apps/mobile-shell`에서 `pnpm exec tsc --noEmit`).
 

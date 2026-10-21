@@ -62,7 +62,7 @@
 - admin: TanStack Router와 `src/routes`, `src/pages`, `src/features`, `src/api`
 - design system: `packages/design-system/src`, Storybook, 공개 export
 - api core: `packages/api-core/src`와 호출 앱의 API 경계
-- mobile shell: `apps/mobile-shell/App.tsx`, Yarn workspace 밖(pnpm 별도 설치)
+- mobile shell: `apps/mobile-shell/app/`(expo-router 화면)·`src/`, Yarn workspace 밖(pnpm 별도 설치)
 - bridge: `packages/bridge/src`, web↔mobile-shell 타입 계약만 소유
 
 ## 읽기 범위
