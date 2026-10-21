@@ -80,7 +80,7 @@ export function LabeledTextArea({
               placeholder={placeholder}
               aria-invalid={error ? true : undefined}
               aria-describedby={describedBy || undefined}
-              className="typography-body-2-regular text-text-primary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent focus:outline-none focus:placeholder:text-transparent"
+              className="typography-body-2-regular text-text-primary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) focus:outline-none focus:placeholder:text-transparent"
               {...props}
             />
           </div>

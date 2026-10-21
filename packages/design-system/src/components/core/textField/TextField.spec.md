@@ -58,7 +58,7 @@
 
 ## Styling과 의존성
 
-- Token: `gap-s2`, `rounded-r5`, `border-border-secondary`, `bg-surface-primary`, `pl-padding-p8`, `py-padding-p5`(버튼 변형은 `p3`), `fieldText`(14/21, `text-primary`, placeholder `text-quaternary`), `--semantic-opacity-disabled`, `--semantic-icon-quaternary`.
+- Token: `gap-s2`, `rounded-r5`, `border-border-secondary`, `bg-surface-primary`, `pl-padding-p8`, `py-padding-p5`(버튼 변형은 `p3`), `fieldText`(입력값 `typography-body-2-regular`·`text-primary`, placeholder는 Body-2-Meduim의 굵기·자간(SemiBold, -0.5px)만 덧붙이고 크기·행 높이는 input에서 상속·`text-quaternary`. 2026-10-22 Figma 변경으로 placeholder만 SemiBold. 크기까지 지정하면 iOS 축소 보정이 두 번 적용됨), `--semantic-opacity-disabled`, `--semantic-icon-quaternary`.
 - `border-strong` semantic 토큰이 아직 원본에 없어 같은 값인 `primitive-gray-700`(#25282d)을 쓴다. 토큰 동기화 뒤 교체한다.
 - dependency 추가 없음.
 - Storybook state matrix: 기본·지우기·버튼 3종 × `Default`·`Focused`·`Filled`·`Editing`·`Disabled`(기본은 접두어 없이, 나머지는 `Clear*`·`Button*`).
