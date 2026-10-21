@@ -23,7 +23,7 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 
 - `scale(0)`에서 시작하지 않는다. `scale(0.9~0.97)` + `opacity: 0`에서 시작한다.
 - 팝오버·드롭다운은 트리거 쪽에서 자라나도록 `transform-origin`을 트리거 위치에 맞춘다. 모달은 예외로, 화면 중앙에 뜨므로 `transform-origin: center`를 유지한다.
-- 버튼 press 피드백은 `transform: scale(0.97)`, `transition: transform 160ms ease-out` 정도로 절제한다.
+- 버튼 눌림 피드백은 디자이너 공통 지침 `Dissolve / Ease Out / 75ms`를 따른다(2026-10-22, 이전 100ms). 크기를 바꾸지 않고 눌림 오버레이의 투명도만 75ms ease-out으로 바꾼다. 적용: `Button`, `TextButton`, `LoginButton`, `Label`, `TermsLabel`, `CameraButton`(디자인 시스템). 동작 줄이기에서는 전환을 끈다. 곡선은 `Button`·`TextButton`이 CSS Ease Out(`cubic-bezier(0,0,0.58,1)`), 나머지는 Tailwind `ease-out`(`cubic-bezier(0,0,0.2,1)`)이라 아직 다르다.
 
 ## 성능
 
