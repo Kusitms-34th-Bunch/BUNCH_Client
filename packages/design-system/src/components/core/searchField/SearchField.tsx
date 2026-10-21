@@ -34,7 +34,7 @@ export function SearchField({
       onSubmit={handleSubmit}
       className={cn(
         'gap-s2 bg-surface-secondary py-s4 pr-s4 pl-s6 flex w-full items-center rounded-full has-[input:disabled]:cursor-not-allowed',
-        // Figma에 Focused·Disabled 시안이 없어 TextField와 같은 포커스 테두리 색과 비활성 투명도를 쓴다
+        // 포커스 테두리 색·비활성 투명도는 TextField 기준 적용(Figma에 Focused·Disabled 시안 없음)
         'focus-within:outline-primitive-gray-700 focus-within:outline-1 forced-colors:focus-within:outline-2',
         'has-[input:disabled]:opacity-(--semantic-opacity-disabled)',
         className,

@@ -25,10 +25,10 @@ import { canShowTabs } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { isAppWebUrl, resolveWebUrl } from '../web-url';
 
-// Metro는 `process.env.EXPO_PUBLIC_*`를 이렇게 직접 쓴 곳만 번들에 넣어 주므로 변수·객체로 바꿔 접근하지 않는다
+// `process.env.EXPO_PUBLIC_*` 직접 접근 유지(Metro는 이렇게 쓴 곳만 번들에 포함)
 export const WEB_URL = resolveWebUrl(
   __DEV__,
-  // Release 번들에 개발 주소가 인라인되지 않게 __DEV__로 감싼다
+  // Release 번들에 개발 주소 인라인 방지
   __DEV__ ? process.env.EXPO_PUBLIC_DEV_WEB_URL : undefined,
   process.env.EXPO_PUBLIC_WEB_URL,
 );
@@ -41,20 +41,20 @@ const appBridge = bridge({
     const { url, title } = shareParamsSchema.parse(params);
     await Share.share({ message: title ? `${title}\n${url}` : url, url });
   },
-  // iOS만 시스템 탭 바를 쓴다. 브라우저·안드로이드는 false를 받아 웹 탭 막대를 쓴다
+  // 시스템 탭 바는 iOS만 지원(그 외는 false 반환으로 웹 탭 막대 사용)
   setNativeTabBar: (params) => {
     if (Platform.OS !== 'ios') return Promise.resolve(false);
     const next = setNativeTabBarParamsSchema.parse(params);
     if (next.hidden) {
       if (tabsStore.get()) {
-        // 화면을 먼저 옮긴 뒤 비워야 탭이 모두 숨은 막대가 한 프레임 보이지 않는다
+        // 화면 이동 뒤 비움(탭이 모두 숨은 막대가 한 프레임 보이는 것 방지)
         router.replace('/');
         tabsStore.set(null);
       }
       return Promise.resolve(true);
     }
     if (!canShowTabs(next, WEB_URL)) return Promise.resolve(false);
-    // 이미 탭 화면이면 탭 WebView 4개가 같은 요청을 다시 보내도 화면을 옮기지 않고, 항목이 같으면 다시 그리지 않는다
+    // 이미 탭 화면이면 탭 WebView 4개의 같은 요청에 화면 이동 생략, 항목이 같으면 다시 그리기 생략
     const current = tabsStore.get();
     if (!current) {
       tabsStore.set(next);
@@ -71,9 +71,9 @@ const { WebView } = createWebView({
   postMessageSchema: appPostMessageSchema,
 });
 
-/** 쉘의 모든 화면이 쓰는 WebView. 출처 제한·Safe Area·뒤로가기·오류 화면을 함께 건다 */
+/** 쉘의 모든 화면이 쓰는 WebView. 출처 제한·Safe Area·뒤로가기·오류 화면 설정 포함 */
 export function AppWebView({ uri }: { uri: string }) {
-  // 탭 화면에서는 가장 가까운 SafeAreaProvider가 탭 바 높이를 포함한 값을 준다
+  // 탭 화면에서는 가장 가까운 SafeAreaProvider의 값(탭 바 높이 포함) 사용
   const insets = useSafeAreaInsets();
   const safeAreaScript = buildSafeAreaScript(insets);
   const webViewRef = useRef<ComponentRef<typeof WebView>>(null);

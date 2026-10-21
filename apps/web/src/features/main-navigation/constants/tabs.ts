@@ -8,7 +8,7 @@ export const MAIN_TAB_PATHS = {
 
 export type MainTabId = keyof typeof MAIN_TAB_PATHS;
 
-/** 탭 순서·라벨. 아이콘은 웹 막대(MainTabBar)와 iOS 쉘이 같은 디자인 시스템 아이콘으로 그린다 */
+/** 탭 순서·라벨(아이콘은 웹 막대와 iOS 쉘이 같은 디자인 시스템 아이콘 사용) */
 export const MAIN_TABS: { id: MainTabId; label: string }[] = [
   { id: 'feed', label: '피드' },
   { id: 'photos', label: '사진함' },

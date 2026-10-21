@@ -6,7 +6,7 @@ export type HeaderProps = Omit<ComponentProps<'header'>, 'title' | 'children'> &
   leading?: ReactNode;
   /** 제목 글자. 폭이 모자라면 한 줄로 잘린다 */
   title?: ReactNode;
-  /** 오른쪽 끝 영역(아이콘 버튼, 텍스트 버튼). 제목이 없어도 오른쪽에 붙는다 */
+  /** 오른쪽 끝 영역(아이콘 버튼, 텍스트 버튼). 제목이 없어도 오른쪽 끝 배치 */
   trailing?: ReactNode;
 };
 

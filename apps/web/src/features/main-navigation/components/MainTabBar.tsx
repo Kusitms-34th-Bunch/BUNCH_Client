@@ -35,13 +35,13 @@ const nativeItems = MAIN_TABS.map((tab) => ({ ...tab, path: MAIN_TAB_PATHS[tab.i
 const subscribeNone = () => () => {};
 
 /**
- * 탭 화면의 하단 내비게이션. iOS 쉘은 시스템 탭 바를 그리므로(탭마다 WebView) 웹 막대를 숨기고,
- * 브라우저·안드로이드는 웹 막대를 그린다(docs/decisions/records/012-ios-system-tab-bar.md)
+ * 탭 화면의 하단 내비게이션. 브라우저·안드로이드는 웹 막대, iOS 쉘은 시스템 탭 바를 써서 웹 막대 숨김
+ * 근거: docs/decisions/records/012-ios-system-tab-bar.md
  */
 export function MainTabBar() {
   const pathname = usePathname();
   const selectedId = findMainTab(pathname) ?? 'feed';
-  // 서버는 쉘 여부를 몰라 막대를 숨긴 채 그리고, 쉘 안에서는 응답 전까지 숨겨 웹 막대가 잠깐 보였다 사라지지 않게 한다
+  // 서버 렌더링과 쉘 응답 전에는 막대 숨김(쉘에서 웹 막대가 잠깐 보였다 사라지는 것 방지)
   const inShell = useSyncExternalStore(subscribeNone, isNativeShell, () => true);
   const [usesNativeBar, setUsesNativeBar] = useState<boolean | null>(null);
 
