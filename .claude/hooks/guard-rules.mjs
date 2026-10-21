@@ -37,6 +37,22 @@ if (isCodeFile && !isGeneratedFile && /:\s*any([^A-Za-z]|$)|<any>|as any/.test(c
   deny('명시적 any 대신 구체적인 타입 또는 unknown을 사용하세요.');
 }
 
+// docs/conventions/coding.md의 주석 명사형 끝맺음 검사(생성기 출력 제외)
+// 줄 앞·JSX·코드 뒤 주석에서 한글 뒤 `다`로 끝나는 줄(괄호 덧붙임 포함) 차단. `바다` 같은 명사 오탐은 감수
+const isCommentCheckableFile = /\.(ts|tsx|js|jsx|css)$/.test(filePath);
+const sentenceFormComment =
+  /(^\s*(\/\*+|\*|\{\/\*)|(^|\s)\/\/).*[가-힣]다(\([^)]*\))?\.?\s*(\*\/\}?)?\s*$/;
+const isGeneratedContent = /^\s*\/\/\s*@generated/m.test(content);
+
+if (isCommentCheckableFile && !isGeneratedFile && !isGeneratedContent) {
+  const offendingLine = content.split('\n').find((line) => sentenceFormComment.test(line));
+  if (offendingLine) {
+    deny(
+      `주석은 명사형으로 끝내세요(예: ~처리, ~방지, ~적용, docs/conventions/coding.md). 문장형으로 끝난 줄: "${offendingLine.trim()}"`,
+    );
+  }
+}
+
 // apps/mobile-shell은 Expo/Metro가 Yarn PnP를 지원하지 않아 pnpm을 쓰는 예외다.
 // docs/architecture/mobile-shell.md, docs/decisions/records/003-mobile-shell-pnpm-exception.md 참고.
 const targetsMobileShell = /apps\/mobile-shell/.test(content);

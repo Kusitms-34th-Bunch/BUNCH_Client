@@ -53,7 +53,7 @@ route·API 계약·UI 접근성에 영향을 주는 변경은 완료 보고 전�
 
 `.claude/hooks/`의 스크립트가 Claude Code·Codex 양쪽에 등록돼 있다(`.claude/settings.json`, `.codex/hooks.json`).
 
-- **`guard-rules.mjs`**(PreToolUse): `console.log`, 명시적 `any`, `npm`/`pnpm`/`npx` 사용을 편집·커맨드 단계에서 차단한다. git 위험 명령(강제 푸시, `main` 직접 push, hook 우회, 전체 add, 되돌릴 수 없는 삭제)도 막는다(`docs/conventions/git.md`). 규칙을 바꾸면 `node --test .claude/hooks/guard-rules.test.mjs`로 확인한다.
+- **`guard-rules.mjs`**(PreToolUse): `console.log`, 명시적 `any`, 문장형(`~한다`)으로 끝난 코드 주석(`docs/conventions/coding.md`), `npm`/`pnpm`/`npx` 사용을 편집·커맨드 단계에서 차단한다. git 위험 명령(강제 푸시, `main` 직접 push, hook 우회, 전체 add, 되돌릴 수 없는 삭제)도 막는다(`docs/conventions/git.md`). 규칙을 바꾸면 `node --test .claude/hooks/guard-rules.test.mjs`로 확인한다.
 - **`lint-check.mjs`**(PostToolUse): 수정한 파일 하나만 바로 eslint로 검사해 결과를 보여준다. 막지는 않는다.
 - **`skill-suggest.mjs`**(UserPromptSubmit): 프롬프트에 Figma·디자인 구현·커밋·리뷰·리팩터링 같은 키워드가 있으면 관련 skill을 먼저 안내한다. 직접 실행하는 훅은 아니며, agent가 요청 의도를 확인해 해당 skill과 후속 지침을 읽고 적용한다. 감지 회귀 검증은 `node --test .claude/hooks/skill-suggest.test.mjs`로 실행한다.
 
