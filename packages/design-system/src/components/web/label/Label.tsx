@@ -17,7 +17,7 @@ export const Label = ({ className, children, ...props }: LabelProps) => (
     className={cn(
       // 눌림: 선택된 모양(채운 아이콘·진한 글자·불투명)에 overlay-pressed(20%)를 아이콘·글자 위까지 덮는다. Figma 실측: 배경 #f1f2ff→#c1c2cc, 아이콘 #a7adff→#868acc
       'group/label rounded-r4 relative isolate block w-full cursor-pointer touch-manipulation',
-      'before:bg-overlay-pressed before:rounded-r4 before:pointer-events-none before:absolute before:inset-0 before:z-10 before:opacity-0 before:transition-opacity before:duration-100 before:ease-out',
+      'before:bg-overlay-pressed before:rounded-r4 before:pointer-events-none before:absolute before:inset-0 before:z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
       '[&:active:not(:has(input:disabled))]:before:opacity-100',
       // 비활성(disabled)일 때는 눌러도 눌림 모양이 나오지 않는다
       // 포커스 링은 흐려지는 안쪽 행이 아니라 이 바깥 label에 둔다
@@ -27,7 +27,7 @@ export const Label = ({ className, children, ...props }: LabelProps) => (
     )}
   >
     <input type="checkbox" className="peer sr-only" {...props} />
-    <span className="bg-chip-blue-bg rounded-r4 px-padding-p4 py-padding-p5 gap-s3 flex items-center opacity-(--semantic-opacity-disabled) transition-opacity duration-100 ease-out group-has-[input:checked]/label:opacity-100 group-[:active:not(:has(input:disabled))]/label:opacity-100">
+    <span className="bg-chip-blue-bg rounded-r4 px-padding-p4 py-padding-p5 gap-s3 flex items-center opacity-(--semantic-opacity-disabled) transition-opacity duration-75 ease-out group-has-[input:checked]/label:opacity-100 group-[:active:not(:has(input:disabled))]/label:opacity-100 motion-reduce:transition-none">
       <LineCircleCheckMediumIcon
         aria-hidden="true"
         className="text-icon-quaternary [&_path]:fill-surface-disabled shrink-0 group-has-[input:checked]/label:hidden group-[:active:not(:has(input:disabled))]/label:hidden"

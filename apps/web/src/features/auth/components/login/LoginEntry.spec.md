@@ -46,7 +46,7 @@
 
 ## UI와 접근성
 
-- Component mapping: `web`의 `LoginButton`(브랜드별 색·로고, 눌림 100ms Ease Out은 컴포넌트가 처리). 브랜딩 영역은 이 화면 전용이다. 앱 아이콘은 `next/image`(`public/images/app-icon.png`, 우선 로드), 로고는 `public/images/bunch-logo.svg`.
+- Component mapping: `web`의 `LoginButton`(브랜드별 색·로고, 눌림 75ms Ease Out은 컴포넌트가 처리). 브랜딩 영역은 이 화면 전용이다. 앱 아이콘은 `next/image`(`public/images/app-icon.png`, 우선 로드), 로고는 `public/images/bunch-logo.svg`.
 - Keyboard·focus·accessible name: 로고 이미지가 화면 제목(`h1`, 이름 「Bunch」)이고 앱 아이콘은 장식(`alt=""`)이다. 버튼 이름은 「카카오 로그인」「Google로 계속하기」「Apple로 계속하기」(Figma 문구)이고 Tab 순서는 화면 순서와 같다. 비활성 버튼은 native `disabled`라 포커스가 가지 않는다. 로그인 실패 토스트는 DS `Toaster`가 알린다. `main`은 `PageShell`이 하나만 만든다.
 - Responsive·긴 텍스트·overflow: 버튼 폭은 `w-full`(화면 좌우 16px), 버튼 글자는 길면 잘린다(`LoginButton`). 375×812와 390×844에서 가로 넘침이 없다. 브랜딩 영역은 버튼을 뺀 본문 영역에서 가운데 정렬이라 화면이 낮아지면 본문이 스크롤된다.
 
