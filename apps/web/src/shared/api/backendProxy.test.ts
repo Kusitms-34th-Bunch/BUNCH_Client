@@ -31,7 +31,6 @@ const request = (
     cookie?: string;
     body?: string;
     contentType?: string;
-    fetchSite?: string;
   } = {},
 ) =>
   new NextRequest(`https://app.example.com/api/${path}`, {
@@ -39,7 +38,6 @@ const request = (
     headers: {
       ...(init.cookie ? { cookie: init.cookie } : {}),
       ...(init.contentType ? { 'content-type': init.contentType } : {}),
-      ...(init.fetchSite ? { 'sec-fetch-site': init.fetchSite } : {}),
       accept: 'application/json',
     },
     ...(init.body === undefined ? {} : { body: init.body }),
@@ -185,45 +183,6 @@ describe('proxyToBackend', () => {
     await proxyToBackend(request('members/me/onboarding'), ['members', 'me', 'onboarding']);
 
     expect(captured[0]?.url).toBe('https://backend.example.com/svc/api/v1/members/me/onboarding');
-  });
-
-  it('다른 사이트에서 온 상태 변경 요청은 백엔드를 부르지 않고 403', async () => {
-    stubBackend(new Response(null));
-
-    for (const fetchSite of ['cross-site', 'same-site']) {
-      const response = await proxyToBackend(
-        request('bunches', {
-          method: 'POST',
-          body: '{}',
-          contentType: 'application/json',
-          fetchSite,
-        }),
-        ['bunches'],
-      );
-      expect(response.status).toBe(403);
-    }
-    expect(captured).toHaveLength(0);
-  });
-
-  it('같은 출처 요청과 다른 사이트의 GET은 통과한다', async () => {
-    stubBackend(new Response(null, { status: 200 }));
-
-    const sameOrigin = await proxyToBackend(
-      request('bunches', {
-        method: 'POST',
-        body: '{}',
-        contentType: 'application/json',
-        fetchSite: 'same-origin',
-      }),
-      ['bunches'],
-    );
-    const crossSiteGet = await proxyToBackend(
-      request('invitations/t', { fetchSite: 'cross-site' }),
-      ['invitations', 't'],
-    );
-
-    expect(sameOrigin.status).toBe(200);
-    expect(crossSiteGet.status).toBe(200);
   });
 
   it('백엔드가 Cache-Control을 주지 않으면 저장 금지를 기본으로 붙인다', async () => {

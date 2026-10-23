@@ -10,7 +10,7 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 - 응답은 `{ success, data, error: { code, message, detail } }` envelope이다. 성공은 `@app/api-core`의 `unwrapEnvelope`로 `data`를 꺼내고, 실패는 `normalizeError`가 `error` 안의 `code`·`message`를 읽는다.
 - 재발급은 refresh 토큰을 원자적으로 교체한다. 같은 refresh 토큰으로 두 번 재발급하면 두 번째는 401이다.
 - 백엔드 주소는 서버 전용 환경 변수 `API_BASE_URL`이다. `NEXT_PUBLIC_`를 붙이지 않는다. 끝 `/`는 없어도 보정한다(경로가 든 주소 대응).
-- CSRF: 백엔드는 CSRF·Origin 검사가 없어 BFF가 막는다. 쿠키는 `SameSite=Lax`이고, 상태 변경 요청(GET·HEAD 외)은 `Sec-Fetch-Site`가 `cross-site`·`same-site`(형제 서브도메인)이면 403(`BFF_CROSS_SITE`)이다. 범용 프록시, 인증 Route Handler, `createAuthorizedRoute`가 같은 검사(`crossSite.ts`)를 쓴다. `Sec-Fetch-Site`를 보내지 않는 오래된 브라우저(Safari 16.4 미만 등)는 SameSite=Lax로 cross-site만 막고 same-site는 막지 못한다. 백엔드 GET은 상태를 바꾸지 않는다는 전제다.
+- CSRF: 백엔드는 CSRF·Origin 검사가 없어 BFF가 막는다. 쿠키는 `SameSite=Lax`이고, `src/proxy.ts`(Next.js proxy, `/api/*`)가 모든 BFF 요청 앞에서 상태 변경 요청(GET·HEAD 외)의 `Sec-Fetch-Site`가 `cross-site`·`same-site`(형제 서브도메인)이면 403(`BFF_CROSS_SITE`)으로 막는다. 그래서 새 Route Handler는 따로 검사하지 않는다. `Sec-Fetch-Site`를 보내지 않는 오래된 브라우저(Safari 16.4 미만 등)는 SameSite=Lax로 cross-site만 막고 same-site는 막지 못한다. 백엔드 GET은 상태를 바꾸지 않는다는 전제다.
 
 ## 구성 요소(`src/shared/api/`)
 
@@ -23,11 +23,11 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 
 ## 인증 Route Handler(`src/app/api/auth/`)
 
-| 경로                     | 동작                                                                                                                                                                                          |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /api/auth/login`   | `{ provider: 'apple' \| 'google' \| 'kakao', idToken, nonce? }`(Apple·Kakao는 `nonce` 필수)를 백엔드에 전달하고 토큰을 쿠키로 발급, 204                                                       |
-| `POST /api/auth/reissue` | refresh 쿠키로 `reissueOnce`, 두 쿠키 교체 후 204. 실패해도 쿠키는 지우지 않는다(다른 탭·인스턴스가 먼저 교체한 새 쿠키를 지우지 않도록). 쿠키 정리는 로그아웃이 맡는다                       |
-| `POST /api/auth/logout`  | 백엔드 로그아웃을 시도하고 결과(만료로 인한 401 포함)와 관계없이 쿠키 삭제, 204. 백엔드 로그아웃은 access 토큰만 받으므로 access 쿠키가 이미 만료됐으면 백엔드 세션은 refresh 만료까지 남는다 |
+| 경로                     | 동작                                                                                                                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /api/auth/login`   | `{ provider: 'apple' \| 'google' \| 'kakao', idToken, nonce? }`(Apple·Kakao는 `nonce` 필수)를 백엔드에 전달하고 토큰을 쿠키로 발급, 204                                                                                                                |
+| `POST /api/auth/reissue` | refresh 쿠키로 `reissueOnce`, 두 쿠키 교체 후 204. 실패해도 쿠키는 지우지 않는다(다른 탭·인스턴스가 먼저 교체한 새 쿠키를 지우지 않도록). 쿠키 정리는 로그아웃이 맡는다                                                                                |
+| `POST /api/auth/logout`  | 백엔드 로그아웃을 시도하고 결과(만료로 인한 401 포함)와 관계없이 쿠키 삭제, 204. 백엔드 로그아웃은 access 토큰만 받으므로 access 쿠키가 만료돼 없으면 refresh 쿠키로 재발급한 access로 폐기한다(재발급도 실패하면 백엔드 세션은 refresh 만료까지 남음) |
 
 이 구성을 섞지 않는다 — server-only 코드에 `browserClient`를 쓰거나 브라우저 코드에서 쿠키·토큰을 직접 다루지 않는다. multipart 업로드(가입 프로필, 번치 사진)도 BFF를 거치므로 배포처의 요청 본문 크기 제한을 백엔드 제한(파일 6MB·요청 7MB)과 함께 확인한다.
 
@@ -35,4 +35,3 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 
 - 일반 요청은 범용 프록시(`src/app/api/[...path]/route.ts`)가 전달한다. BFF 경로는 백엔드 경로에서 `/api/v1`을 뺀 경로다(예: BFF `GET /api/members/nickname-availability` → 백엔드 `GET /api/v1/members/nickname-availability`). 그래서 API를 붙일 때 Route Handler를 새로 만들지 않는다.
 - 전용 Route Handler는 인증(쿠키 발급·삭제), 여러 백엔드 응답 조합·가공, 응답에서 민감한 값을 걸러야 할 때만 만들고 `createAuthorizedRoute`·`createServerApi`를 쓴다. 전용 Route Handler가 있는 경로는 프록시보다 우선한다.
-- `createAuthorizedRoute`를 쓰지 않는 전용 Route Handler(인증, 공개 상태 변경 등)는 처음에 `isCrossSiteMutation`을 직접 호출해 교차 사이트 요청을 403으로 막는다.

@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { setAuthCookies } from '@/shared/api/authCookies';
 import { requestLogin } from '@/shared/api/authSession';
-import { crossSiteResponse, isCrossSiteMutation } from '@/shared/api/crossSite';
 import { parseRequestBody } from '@/shared/api/requestBody';
 import { toErrorResponse } from '@/shared/api/routeError';
 
@@ -18,8 +17,6 @@ const loginBodySchema = z
 
 /** 소셜 로그인: 백엔드가 준 토큰을 httpOnly 쿠키로 저장하고 본문 없이 204 */
 export async function POST(request: NextRequest) {
-  if (isCrossSiteMutation(request)) return crossSiteResponse();
-
   try {
     const parsed = loginBodySchema.safeParse(await parseRequestBody(request));
     if (!parsed.success) {

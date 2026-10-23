@@ -133,22 +133,4 @@ describe('createAuthorizedRoute', () => {
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ message: '인증 필요', code: 'AUTH_001' });
   });
-
-  it('다른 사이트에서 온 상태 변경 요청은 handler를 부르지 않고 403, GET은 통과한다', async () => {
-    const handler = vi.fn().mockResolvedValue({ ok: true });
-    const route = createAuthorizedRoute(handler);
-    const crossSite = (method: string) =>
-      new NextRequest('https://example.com/api/x', {
-        method,
-        headers: { cookie: 'accessToken=token-1', 'sec-fetch-site': 'cross-site' },
-      });
-
-    const post = await route(crossSite('POST'), noParams);
-    expect(post.status).toBe(403);
-    expect(await post.json()).toMatchObject({ code: 'BFF_CROSS_SITE' });
-    expect(handler).not.toHaveBeenCalled();
-
-    const get = await route(crossSite('GET'), noParams);
-    expect(get.status).toBe(200);
-  });
 });

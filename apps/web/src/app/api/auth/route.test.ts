@@ -16,16 +16,12 @@ vi.mock('@/shared/api/authSession', () => session);
 
 const TOKENS = { accessToken: 'a.e30.s', refreshToken: 'r.e30.s' };
 
-const post = (
-  path: string,
-  options: { body?: unknown; cookie?: string; fetchSite?: string } = {},
-) =>
+const post = (path: string, options: { body?: unknown; cookie?: string } = {}) =>
   new NextRequest(`https://app.example.com/api/auth/${path}`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       ...(options.cookie ? { cookie: options.cookie } : {}),
-      ...(options.fetchSite ? { 'sec-fetch-site': options.fetchSite } : {}),
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
   });
@@ -123,26 +119,32 @@ describe('POST /api/auth/logout', () => {
     expect(response.cookies.get('refreshToken')).toMatchObject({ value: '', maxAge: 0 });
   });
 
-  it('access 쿠키가 없으면 백엔드를 부르지 않고 쿠키만 지운다', async () => {
+  it('access 쿠키가 만료돼 없으면 refresh로 재발급한 access로 백엔드 세션을 폐기한다', async () => {
+    session.reissueOnce.mockResolvedValue(TOKENS);
+    session.requestLogout.mockResolvedValue(undefined);
+
+    const response = await logout(post('logout', { cookie: 'refreshToken=old' }));
+
+    expect(session.reissueOnce).toHaveBeenCalledWith('old');
+    expect(session.requestLogout).toHaveBeenCalledWith(TOKENS.accessToken);
+    expect(response.status).toBe(204);
+  });
+
+  it('access가 없고 재발급도 실패하면 백엔드를 부르지 않고 쿠키만 지운다', async () => {
+    session.reissueOnce.mockRejectedValue(new Error('401'));
+
+    const response = await logout(post('logout', { cookie: 'refreshToken=old' }));
+
+    expect(session.requestLogout).not.toHaveBeenCalled();
+    expect(response.status).toBe(204);
+    expect(response.cookies.get('accessToken')).toMatchObject({ value: '', maxAge: 0 });
+    expect(response.cookies.get('refreshToken')).toMatchObject({ value: '', maxAge: 0 });
+  });
+
+  it('쿠키가 하나도 없으면 백엔드를 부르지 않고 쿠키만 지운다', async () => {
     const response = await logout(post('logout'));
 
     expect(session.requestLogout).not.toHaveBeenCalled();
     expect(response.status).toBe(204);
-  });
-});
-
-describe('교차 사이트 요청', () => {
-  it('다른 사이트에서 온 로그인·재발급·로그아웃은 403이고 백엔드를 부르지 않는다', async () => {
-    const body = { provider: 'google', idToken: 'id' };
-    const responses = await Promise.all([
-      login(post('login', { body, fetchSite: 'cross-site' })),
-      reissue(post('reissue', { cookie: 'refreshToken=old', fetchSite: 'same-site' })),
-      logout(post('logout', { cookie: 'accessToken=a-1', fetchSite: 'cross-site' })),
-    ]);
-
-    expect(responses.map((response) => response.status)).toEqual([403, 403, 403]);
-    expect(session.requestLogin).not.toHaveBeenCalled();
-    expect(session.reissueOnce).not.toHaveBeenCalled();
-    expect(session.requestLogout).not.toHaveBeenCalled();
   });
 });

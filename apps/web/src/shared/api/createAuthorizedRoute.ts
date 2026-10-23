@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACCESS_TOKEN_COOKIE } from './authCookies';
-import { crossSiteResponse, isCrossSiteMutation } from './crossSite';
 import { parseRequestBody } from './requestBody';
 import { toErrorResponse } from './routeError';
 
@@ -25,8 +24,6 @@ export const createAuthorizedRoute = <Body = unknown, Params = Record<string, st
   const accessTokenCookieName = options.accessTokenCookieName ?? ACCESS_TOKEN_COOKIE;
 
   return async (...[request, context]: RouteHandlerArgs<Params>): Promise<Response> => {
-    if (isCrossSiteMutation(request)) return crossSiteResponse();
-
     const accessToken = request.cookies.get(accessTokenCookieName)?.value;
 
     if (!accessToken) {

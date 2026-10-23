@@ -2,7 +2,6 @@ import 'server-only';
 import { ApiError } from '@app/api-core';
 import { type NextRequest } from 'next/server';
 import { ACCESS_TOKEN_COOKIE } from './authCookies';
-import { crossSiteResponse, isCrossSiteMutation } from './crossSite';
 import { toErrorResponse } from './routeError';
 import { apiBaseUrl } from './serverClient';
 
@@ -32,8 +31,6 @@ export const toBackendPath = (segments: string[]): string | undefined => {
 
 /** 일반 요청을 백엔드로 전달: access 쿠키는 Bearer로, 브라우저 쿠키는 미전달, 상태·본문은 그대로 */
 export const proxyToBackend = async (request: NextRequest, segments: string[]) => {
-  if (isCrossSiteMutation(request)) return crossSiteResponse();
-
   const path = toBackendPath(segments);
   if (!path) {
     return Response.json(
