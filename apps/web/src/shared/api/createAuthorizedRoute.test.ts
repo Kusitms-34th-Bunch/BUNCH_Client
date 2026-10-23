@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { ApiError } from '@app/api-core';
+import ky from 'ky';
 import { NextRequest } from 'next/server';
 import { describe, expect, it, vi } from 'vitest';
 import { createAuthorizedRoute } from './createAuthorizedRoute';
@@ -110,5 +111,44 @@ describe('createAuthorizedRoute', () => {
     const response = await route(makeRequest({ cookie: 'accessToken=token-1' }), noParams);
 
     expect(response.status).toBe(500);
+  });
+
+  it('백엔드 HTTP 오류는 envelope의 코드와 상태를 그대로 전달한다(브라우저 재발급 판단용)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: false,
+          data: null,
+          error: { code: 'AUTH_001', message: '인증 필요' },
+        }),
+        { status: 401, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    const route = createAuthorizedRoute(() =>
+      ky.get('https://backend.example.com/api/v1/members/me/onboarding', { fetch: fetchMock }),
+    );
+
+    const response = await route(makeRequest({ cookie: 'accessToken=token-1' }), noParams);
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ message: '인증 필요', code: 'AUTH_001' });
+  });
+
+  it('다른 사이트에서 온 상태 변경 요청은 handler를 부르지 않고 403, GET은 통과한다', async () => {
+    const handler = vi.fn().mockResolvedValue({ ok: true });
+    const route = createAuthorizedRoute(handler);
+    const crossSite = (method: string) =>
+      new NextRequest('https://example.com/api/x', {
+        method,
+        headers: { cookie: 'accessToken=token-1', 'sec-fetch-site': 'cross-site' },
+      });
+
+    const post = await route(crossSite('POST'), noParams);
+    expect(post.status).toBe(403);
+    expect(await post.json()).toMatchObject({ code: 'BFF_CROSS_SITE' });
+    expect(handler).not.toHaveBeenCalled();
+
+    const get = await route(crossSite('GET'), noParams);
+    expect(get.status).toBe(200);
   });
 });
