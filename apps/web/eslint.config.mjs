@@ -1,7 +1,16 @@
 import { next } from '@app/lint-config';
 
 // API 연동 파일 경계(docs/architecture/data-layer.md "파일 배치 (web)")
-const QUERY_DEFINITION_FILES = ['src/features/*/queries/**', 'src/shared/query/**'];
+const QUERY_DEFINITION_FILES = ['src/features/**/queries/**', 'src/shared/query/**'];
+const TANSTACK_DEFINITIONS = [
+  'QueryClient',
+  'QueryClientProvider',
+  'infiniteQueryOptions',
+  'mutationOptions',
+  'queryOptions',
+  'useMutation',
+  'useQueryClient',
+];
 
 export default [
   ...next,
@@ -17,15 +26,8 @@ export default [
           paths: [
             {
               name: '@tanstack/react-query',
-              importNames: [
-                'QueryClient',
-                'QueryClientProvider',
-                'infiniteQueryOptions',
-                'mutationOptions',
-                'queryOptions',
-                'useMutation',
-                'useQueryClient',
-              ],
+              importNames: TANSTACK_DEFINITIONS,
+              allowTypeImports: true,
               message:
                 'query 정의(queryOptions)·mutation·캐시 조작은 feature의 queries/(공용은 shared/query/)에 둡니다.',
             },
@@ -36,7 +38,7 @@ export default [
   },
   {
     // 요청 함수는 HTTP 요청과 계약 변환만 담당
-    files: ['src/features/*/api/**/*.{ts,tsx}'],
+    files: ['src/features/**/api/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
