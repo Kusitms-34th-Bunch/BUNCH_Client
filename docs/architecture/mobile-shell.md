@@ -141,7 +141,7 @@ packages/bridge/
 
 ## 인증 — 아직 설계 전
 
-지금 `apps/web`의 BFF는 httpOnly 쿠키에만 의존한다(`docs/architecture/api-boundary.md`). WebView는 쿠키 지속성이 불안정할 수 있어, 실제로 로그인 흐름을 이 쉘에 연결하기 전에 쿠키 유실 대응 설계가 필요하다. 참고할 만한 패턴이 있으면 `.agents/notes/`를 먼저 확인한다 — 이 저장소의 확정된 결정이 아니라 리서치 메모이므로, 실제로 적용하기로 결정하면 이 문서와 `api-boundary.md`를 함께 갱신한다.
+지금 `apps/web`의 BFF는 httpOnly 쿠키에만 의존한다(`docs/architecture/api-boundary.md`). WebView는 쿠키 지속성이 불안정할 수 있어, 실제로 로그인 흐름을 이 쉘에 연결하기 전에 쿠키 유실 대응 설계가 필요하다. 쿠키 유실 대응은 아직 결정 전이며, 정하면 이 문서와 `api-boundary.md`를 함께 갱신한다.
 
 ## 오류 모니터링
 

@@ -25,7 +25,7 @@
 ## 근거
 
 - iPhone iOS 26.6.2 실험(Expo Go): WebView 위 `GlassView`가 막대 뒤 웹 내용을 비추고 가장자리에 뒤 색이 번졌다. WebView가 막대 위까지만이면 효과가 사라졌다. WebView 안의 CSS 막대도 동작했다.
-- 비교 사진·시험: 로컬 노트(`.agents/notes/liquid-glass/`)에 있고 저장소에는 올리지 않는다.
+- 비교 사진·시험 자료는 저장소에 올리지 않았다.
 
 ## 결과
 
