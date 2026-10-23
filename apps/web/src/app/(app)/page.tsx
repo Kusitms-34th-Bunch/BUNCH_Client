@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { PageShell } from '@/shared/components/layout/PageShell';
 
@@ -13,6 +14,13 @@ export default function HomePage() {
           className="bg-surface-brand text-text-inversed rounded-r4 px-s8 h-s18 typography-label-l focus-visible:outline-border-brand inline-flex items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           온보딩 시작 (임시)
+        </Link>
+        {/* 탭 화면 개발 확인용 임시 진입점 */}
+        <Link
+          href={MAIN_TAB_PATHS.feed}
+          className="typography-label-l text-text-brand focus-visible:outline-border-brand underline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          탭 화면 (임시)
         </Link>
       </div>
     </PageShell>

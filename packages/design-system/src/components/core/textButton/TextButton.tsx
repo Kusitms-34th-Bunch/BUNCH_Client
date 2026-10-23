@@ -8,7 +8,7 @@ const textButton = tv({
     base: [
       'relative isolate inline-flex max-w-full shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-r4',
       'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-r4 before:bg-overlay-hover before:opacity-0',
-      'transition-colors duration-100 ease-[cubic-bezier(0,0,0.58,1)] before:transition-opacity before:duration-100 before:ease-[cubic-bezier(0,0,0.58,1)]',
+      'transition-colors duration-75 ease-[cubic-bezier(0,0,0.58,1)] before:transition-opacity before:duration-75 before:ease-[cubic-bezier(0,0,0.58,1)]',
       'motion-reduce:transition-none motion-reduce:before:transition-none',
       'not-disabled:active:before:opacity-100',
       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand',

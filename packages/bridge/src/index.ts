@@ -11,7 +11,6 @@ export {
   appPostMessageSchema,
   galleryImageSchema,
   nativeTabBarItemSchema,
-  nativeTabPressSchema,
   permissionKindSchema,
   permissionStatusSchema,
   setNativeTabBarParamsSchema,
@@ -21,7 +20,6 @@ export type {
   AppPostMessageSchema,
   GalleryImage,
   NativeTabBarItem,
-  NativeTabPress,
   PermissionKind,
   PermissionStatus,
   SetNativeTabBarParams,
@@ -32,11 +30,11 @@ export type {
 export type AppBridgeMethods = {
   /** 갤러리 사진의 임시 미리보기. 취소 시 null */
   pickGalleryImage: () => Promise<GalleryImage | null>;
-  /** 시스템 권한 팝업 요청. 이미 정해진 권한은 팝업 없이 현재 상태를 돌려준다 */
+  /** 시스템 권한 팝업 요청. 이미 정해진 권한은 팝업 없이 현재 상태 반환 */
   requestPermission: (_kind: PermissionKind) => Promise<PermissionStatus>;
   /** 네이티브 공유 시트 호출, 일반 브라우저에서는 Web Share API로 대체 */
   share: (_params: ShareParams) => Promise<void>;
-  /** 네이티브 탭 막대 표시·갱신. 미지원 환경에서는 false 반환, 탭 선택은 nativeTabPress로 전달 */
+  /** iOS 쉘의 시스템 탭 화면 시작·종료. 미지원 환경(브라우저·안드로이드)에서는 false 반환 */
   setNativeTabBar: (_params: SetNativeTabBarParams) => Promise<boolean>;
 };
 

@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../../../utils';
 
 export type PageHeaderProps = Omit<ComponentProps<'div'>, 'title'> & {
-  /** 화면 제목. `h1`로 그려지므로 화면당 하나만 쓴다 */
+  /** 화면 제목. `h1`로 그려지므로 화면당 하나만 사용 */
   title: ReactNode;
   /** 제목 아래 설명 */
   description?: ReactNode;
@@ -11,8 +11,8 @@ export type PageHeaderProps = Omit<ComponentProps<'div'>, 'title'> & {
 };
 
 /**
- * 화면 제목 영역: 진행 표시(선택) · 제목 · 설명(선택)을 세로로 쌓는다
- * 진행 표시와 문구는 호출하는 쪽이 넘긴다(제품 문구·단계 수를 알지 못함)
+ * 화면 제목 영역: 진행 표시(선택) · 제목 · 설명(선택)을 세로로 배치
+ * 진행 표시와 문구는 호출하는 쪽이 전달(제품 문구·단계 수를 알지 못함)
  */
 export const PageHeader = ({
   title,

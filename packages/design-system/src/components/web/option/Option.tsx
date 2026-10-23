@@ -23,7 +23,7 @@ export type OptionProps = ComponentProps<'span'> & {
 
 /**
  * 입력 항목의 필수·선택 표시(Figma `Option`)
- * 글자를 넘기지 않으면 "필수" / "선택"이 들어간다. 표시일 뿐이라 입력 검증은 하지 않는다
+ * 글자를 넘기지 않으면 "필수" / "선택" 기본 표시. 표시일 뿐이라 입력 검증 없음
  */
 export const Option = ({ variant = 'required', className, children, ...props }: OptionProps) => (
   <span className={option({ variant, className })} {...props}>

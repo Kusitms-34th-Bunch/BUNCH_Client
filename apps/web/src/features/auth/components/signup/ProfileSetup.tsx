@@ -36,9 +36,9 @@ const PHOTO_UNUSABLE_MESSAGE = '이 사진은 사용할 수 없어요.';
 const DEFAULT_PROFILE_IMAGE = '/images/default-bunch.png';
 
 type ProfileSetupProps = {
-  /** 시작하기를 누르면 이동할 경로. 이동 대상은 호출하는 route가 정한다 */
+  /** 시작하기를 누르면 이동할 경로. 이동 대상은 호출하는 route가 결정 */
   nextPath: string;
-  /** 닉네임 중복 확인 호출. 없으면(서버 연결 전) 확인하지 않는다 */
+  /** 닉네임 중복 확인 호출. 없으면(서버 연결 전) 확인 생략 */
   checkNickname?: CheckNickname | undefined;
 };
 
@@ -47,7 +47,7 @@ const closeKeyboard = () => {
   if (active instanceof HTMLInputElement) active.blur();
 };
 
-// 입력창·라벨·버튼이 아닌 곳을 누르면 키보드를 닫는다. 버튼은 누르는 중에 닫으면 화면이 밀려 탭이 사라지므로 클릭 뒤에 닫는다
+// 입력창·라벨·버튼이 아닌 곳을 누르면 키보드 닫기. 버튼은 누르는 중에 닫으면 화면이 밀려 탭이 사라지므로 클릭 뒤에 닫기
 const dismissKeyboard = (event: PointerEvent<HTMLElement>) => {
   if (event.target instanceof Element && event.target.closest('input, label, button')) return;
   closeKeyboard();
@@ -55,7 +55,7 @@ const dismissKeyboard = (event: PointerEvent<HTMLElement>) => {
 
 /**
  * 가입 마지막 단계인 프로필 작성 화면
- * 닉네임(필수)이 규칙에 맞고 중복이 아닐 때만 시작하기가 활성화된다. 사진은 미리보기까지만 연결하고 저장·접근 제어는 연결하지 않았다
+ * 닉네임(필수)이 규칙에 맞고 중복이 아닐 때만 시작하기 활성화. 사진은 미리보기까지만 연결(저장·접근 제어는 미연결)
  */
 export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
   const router = useRouter();
@@ -72,7 +72,7 @@ export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
   const [birthYearBlurred, setBirthYearBlurred] = useState(false);
   const [gender, setGender] = useState<Gender | null>(null);
 
-  // 오류 표시는 조합 중인 자모를 봐주고, 시작하기·중복 확인은 조합이 끝난 완성된 값만 인정한다
+  // 오류 표시는 조합 중인 자모를 허용하고, 시작하기·중복 확인은 조합이 끝난 완성 값만 인정
   const nicknameInvalid = hasInvalidNicknameChars(nickname, composing);
   const nicknameValid = isValidNickname(nickname);
   const availability = useNicknameAvailability(

@@ -22,4 +22,6 @@
 - [008: Toast는 sonner에 알림 동작을 맡기고 모양은 디자인 시스템이 입힌다](./records/008-toast-sonner.md)
 - [009: 확인 Dialog의 모달 동작은 Base UI에 맡긴다](./records/009-confirm-dialog-base-ui.md)
 - [010: UI 컴포넌트는 디자인 시스템(core·web 구역)에, 조합은 features에 둔다](./records/010-ui-in-design-system-composition-in-features.md)
-- [011: 하단 내비게이션의 글라스 효과는 플랫폼별로 나눠 구현한다](./records/011-bottom-navigation-glass-by-platform.md)
+- [011: 하단 내비게이션의 글라스 효과는 플랫폼별로 나눠 구현한다](./records/011-bottom-navigation-glass-by-platform.md) (iOS 부분은 012로 대체)
+- [012: iOS 쉘의 하단 탭은 시스템 탭 바를 쓰고 탭마다 WebView를 둔다](./records/012-ios-system-tab-bar.md)
+- [013: Pretendard는 직접 호스팅하고, 앱 화면은 한 파일·처음 오는 웹 화면은 동적 서브셋을 쓴다](./records/013-pretendard-self-hosting.md)

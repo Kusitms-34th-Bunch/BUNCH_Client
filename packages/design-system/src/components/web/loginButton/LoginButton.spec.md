@@ -12,7 +12,7 @@
 ### 제공하는 동작
 
 - 소셜 로그인 버튼. 브랜드 3종(`apple`, `google`, `kakao`)마다 배경·글자색·로고가 정해져 있다.
-- 기본, 눌림(`:active`), 비활성(`disabled`) 상태. 설계서 기준으로 누르는 동안 Pressed 스타일을 적용하고 전환은 Dissolve / Ease out / 100ms다(overlay opacity만 100ms ease-out).
+- 기본, 눌림(`:active`), 비활성(`disabled`) 상태. 누르는 동안 Pressed 스타일을 적용하고 전환은 디자이너 공통 지침 기준 Dissolve / Ease out / 75ms다(2026-10-22 디자이너 공통 지침 변경: 100ms → 75ms). overlay opacity만 75ms ease-out으로 바꾼다.
 - 폭은 컨테이너를 채우고(Figma 343px) 높이는 48px이다.
 
 ### 제공하지 않는 동작
@@ -29,7 +29,7 @@
 
 ## 상태와 동작
 
-- 눌림: 브랜드 색 위에 `overlay-login-pressed`(검정 8%) 오버레이. 설계서 전환(Dissolve / Ease out / 100ms)에 맞춰 opacity를 100ms ease-out으로 바꾼다. Apple은 검정이라 눈에 띄지 않는다(Figma와 같음).
+- 눌림: 브랜드 색 위에 `overlay-login-pressed`(검정 8%) 오버레이. opacity를 75ms ease-out으로 바꾼다(2026-10-22 디자이너 공통 지침 변경: 100ms → 75ms). Apple은 검정이라 눈에 띄지 않는다(Figma와 같음).
 - 비활성: 전체에 `opacity-disabled`(40%)를 적용하고 `cursor-not-allowed`.
 - 긴 글자: 한 줄로 잘린다(`truncate`).
 - 로고: Apple 24px, Kakao 20px, Google 20px 영역(안쪽 16×16.3). Apple·Kakao는 글자색을 따라가고(`currentColor`) Google은 색이 든 이미지다.
@@ -66,4 +66,4 @@
 - [x] 지원 variant·edge state story 작성
 - [x] public export 영향 확인(`yarn gen:index`로 `web` barrel에 `loginButton` 추가)
 - [x] 실행 command와 결과: `yarn workspace @app/design-system lint`·`typecheck`·`test`(226 통과, 기존 `icons-bundle` Windows 경로 테스트 2개 실패는 무관)·`gen:index:check`, `node turbo/workflows/check-ds-components.mjs`
-- [x] Storybook 렌더 확인(390px 폭, Figma 스크린샷과 눈 대조: Default·Disabled). Pressed 색은 Figma 픽셀 실측(Google·Kakao)과 맞춤. Pressed 전환 100ms·포커스·실기기는 미검증
+- [x] Storybook 렌더 확인(390px 폭, Figma 스크린샷과 눈 대조: Default·Disabled). Pressed 색은 Figma 픽셀 실측(Google·Kakao)과 맞춤. Pressed 전환 75ms·포커스·실기기는 미검증

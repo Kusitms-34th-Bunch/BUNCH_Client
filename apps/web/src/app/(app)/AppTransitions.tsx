@@ -28,7 +28,7 @@ const tuneTransition =
   (durationMs: number) =>
   ({ animation }: { animation: MultiAnimation<'out' | 'in'> }) => {
     animation.set({ integrator: easeOutIntegrator(durationMs) });
-    // 중단된 이전 전환에서 돌아오는 DOM도 다시 조작할 수 있게 한다.
+    // 중단된 이전 전환에서 돌아오는 DOM도 다시 조작할 수 있게 처리
     const incoming = animation.select('in').getMotionTracks()[0];
     if (incoming) incoming.element.inert = false;
     const outgoing = animation.select('out').getMotionTracks()[0];
@@ -46,7 +46,7 @@ const tuneTransition =
 const tuneSlide = tuneTransition(ONBOARDING_TRANSITION_DURATION_MS);
 const transition = slide({}, { override: { forward: tuneSlide, backward: tuneSlide } });
 // 기획: 가입 화면의 헤더 뒤로 가기는 Dissolve / Ease out / 300ms. fade는 나가는 화면이 사라진 뒤 들어오는 화면이 나타나는 순차 방식이라
-// 단계마다 절반을 써서 전체가 300ms가 되게 한다. 규칙은 두 방향에 모두 적용된다
+// 단계마다 절반씩 써서 전체 300ms 유지. 규칙은 두 방향에 모두 적용
 const tuneDissolve = tuneTransition(SIGNUP_DISSOLVE_DURATION_MS / 2);
 const dissolve = fade({}, { override: { forward: tuneDissolve, backward: tuneDissolve } });
 const rules: SsgoiTransitionRule[] = [

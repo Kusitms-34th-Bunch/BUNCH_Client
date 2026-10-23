@@ -23,6 +23,13 @@
           "cameraPermission": "사진을 찍어 사진함과 게시물에 올릴 때 사용해요.",
           "microphonePermission": false
         }
+      ],
+      "expo-router",
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/Pretendard-Regular.otf"]
+        }
       ]
     ],
     "ios": {

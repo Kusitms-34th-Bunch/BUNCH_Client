@@ -24,14 +24,18 @@ export const shareParamsSchema = z.object({
 
 export type ShareParams = z.infer<typeof shareParamsSchema>;
 
-/** 탭 항목과 선택 상태는 웹에서 관리: docs/decisions/records/011-bottom-navigation-glass-by-platform.md */
+/** iOS 시스템 탭 바 항목: 라벨·경로는 웹, 아이콘은 쉘이 탭 ID로 결정(docs/decisions/records/012-ios-system-tab-bar.md) */
 export const nativeTabBarItemSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
-  /** 선택하지 않았을 때의 iOS SF Symbol 이름, 생략 시 라벨만 표시 */
-  symbol: z.string().min(1).optional(),
-  /** 선택했을 때의 SF Symbol 이름, 생략 시 `symbol` 사용 */
-  selectedSymbol: z.string().min(1).optional(),
+  /** 탭 WebView가 여는 웹 경로(같은 출처의 절대 경로만 허용) */
+  path: z
+    .string()
+    .startsWith('/')
+    // 실제로 풀어 본 출처로 판정(URL 파서가 탭·개행을 지워 `/\t/evil.test`를 `//evil.test`로 읽는 우회 차단)
+    .refine((path) => new URL(path, 'https://app.invalid').origin === 'https://app.invalid', {
+      message: '같은 출처의 절대 경로여야 합니다.',
+    }),
 });
 
 export const setNativeTabBarParamsSchema = z.object({
@@ -43,26 +47,14 @@ export const setNativeTabBarParamsSchema = z.object({
       message: '탭 ID는 서로 달라야 합니다.',
     }),
   selectedId: z.string().min(1),
-  /** 막대 숨김 여부, 기본값은 표시 */
+  /** true면 탭 화면 종료 후 하나의 WebView로 복귀(로그아웃 등). 기본값은 표시 */
   hidden: z.boolean().optional(),
 });
 
 export type NativeTabBarItem = z.infer<typeof nativeTabBarItemSchema>;
 export type SetNativeTabBarParams = z.infer<typeof setNativeTabBarParamsSchema>;
 
-/** 네이티브 탭 선택 시 웹으로 전달하는 이벤트 */
-export const nativeTabPressSchema = z.object({ id: z.string().min(1) });
-
-export type NativeTabPress = z.infer<typeof nativeTabPressSchema>;
-
-// @webview-bridge의 이벤트 schema에 필요한 validate 인터페이스 적용
-const validator = <T extends z.ZodType>(schema: T) => ({
-  validate: (data: unknown): z.infer<T> => schema.parse(data),
-});
-
-/** `createWebView({ postMessageSchema })`와 `linkBridge`가 같이 쓰는 네이티브 → 웹 이벤트 목록 */
-export const appPostMessageSchema = {
-  nativeTabPress: validator(nativeTabPressSchema),
-};
+/** `createWebView({ postMessageSchema })`와 `linkBridge`가 같이 쓰는 네이티브 → 웹 이벤트 목록. 탭 선택은 시스템 탭 바가 처리해 현재 없음 */
+export const appPostMessageSchema = {};
 
 export type AppPostMessageSchema = typeof appPostMessageSchema;

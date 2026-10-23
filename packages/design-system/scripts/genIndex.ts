@@ -28,7 +28,7 @@ interface BarrelFile {
   content: string;
 }
 
-// web 구역은 components barrel에서 빼고 `@app/design-system/web`(src/components/web/index.ts)으로만 공개한다
+// web 구역은 components barrel에서 빼고 `@app/design-system/web`(src/components/web/index.ts)으로만 공개
 const COMPONENTS_DIR = join(SRC, 'components');
 const PRIVATE_ZONES = new Set(['web']);
 

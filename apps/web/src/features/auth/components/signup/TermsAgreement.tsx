@@ -13,14 +13,14 @@ import { SignupFrame } from './SignupFrame';
 
 /**
  * 필수 약관 동의 화면(전체·개별 체크 동기화, 모두 동의해야 시작하기 활성화)
- * 시작하기는 시스템 권한(사진 → 카메라 → 알림)을 차례로 요청한 뒤 프로필 화면으로 이동한다(약관 저장은 미연결)
+ * 시작하기는 시스템 권한(사진 → 카메라 → 알림)을 차례로 요청한 뒤 프로필 화면으로 이동(약관 저장은 미연결)
  */
 export function TermsAgreement() {
   const router = useRouter();
   const { agreed, allAgreed, setAgreed, setAllAgreed } = useTermsAgreement();
   const { isRequesting, requestAll } = usePermissionRequests();
 
-  // 권한을 요청하는 동안 화면을 벗어났으면(뒤로 가기) 끝난 뒤에 프로필로 끌고 가지 않는다
+  // 권한 요청 중 화면을 벗어났으면(뒤로 가기) 끝난 뒤 프로필 이동 생략
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;

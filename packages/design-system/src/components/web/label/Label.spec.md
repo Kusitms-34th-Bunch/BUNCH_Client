@@ -37,7 +37,7 @@ Figma 상태 이름은 의미와 다르다. 사용자가 정리해 준 대응은
 | `Pressed`  | 누르는 중 | 선택된 모양에 검정 20% 오버레이(배경 `#c1c2cc`, 아이콘 `#868acc`)            |
 
 - 눌림은 선택 전·후 어느 쪽에서 눌러도 같은 모양이다(Figma 설계서: Disabled → Pressed → Default, 체크 해제 시 Pressed → Disabled). 오버레이는 아이콘·글자 위까지 덮는다.
-- 전환: 설계서의 "Smart Animate / Ease out / 100ms"에 맞춰 투명도·오버레이를 100ms ease-out으로 바꾼다. 아이콘 교체는 전환 없이 바뀐다.
+- 전환: 투명도·오버레이를 75ms ease-out으로 바꾼다(2026-10-22 디자이너 공통 지침 변경: 100ms → 75ms). 설계서는 "Smart Animate / Ease out / 100ms"였다. 아이콘 교체는 전환 없이 바뀐다.
 - `disabled`를 넘기면 native 대로 눌리지 않고 `cursor-not-allowed`다. 별도 시각은 없고, 눌러도 눌림 모양이 나오지 않는다.
 - 긴 글자: 줄바꿈되어 모두 보인다.
 

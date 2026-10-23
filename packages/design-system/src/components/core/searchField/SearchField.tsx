@@ -6,18 +6,15 @@ import { cn } from '../../../utils';
 import { fieldText } from '../textField/fieldText';
 
 export type SearchFieldProps = Omit<ComponentProps<'input'>, 'type' | 'ref'> & {
-  /** Enter 또는 검색 버튼을 누를 때 현재 입력값과 함께 호출 */
+  /** Enter(키보드의 검색 키)를 누를 때 현재 입력값과 함께 호출 */
   // eslint-disable-next-line unused-imports/no-unused-vars -- 함수 type의 매개변수 이름은 문서용
   onSearch?: (query: string) => void;
-  /** 검색 버튼의 접근성 이름 */
-  searchLabel?: string;
-  /** 입력창의 접근성 이름. placeholder는 label을 대체하지 못한다 */
+  /** 입력창의 접근성 이름. placeholder로 label 대체 불가 */
   inputLabel?: string;
 };
 
 export function SearchField({
   onSearch,
-  searchLabel = '검색',
   inputLabel = '검색어',
   disabled,
   className,
@@ -36,10 +33,14 @@ export function SearchField({
       role="search"
       onSubmit={handleSubmit}
       className={cn(
-        'h-s15 gap-s2 rounded-r8 bg-surface-tertiary py-s3 pr-s4 pl-s6 flex w-full items-center has-[input:disabled]:cursor-not-allowed',
+        'gap-s2 bg-surface-secondary py-s4 pr-s4 pl-s6 flex w-full items-center rounded-full has-[input:disabled]:cursor-not-allowed',
+        // 포커스 테두리 색·비활성 투명도는 TextField 기준 적용(Figma에 Focused·Disabled 시안 없음)
+        'focus-within:outline-primitive-gray-700 focus-within:outline-1 forced-colors:focus-within:outline-2',
+        'has-[input:disabled]:opacity-(--semantic-opacity-disabled)',
         className,
       )}
     >
+      <LineSearchIcon size="sm" aria-hidden="true" className="text-icon-quaternary shrink-0" />
       <input
         ref={inputRef}
         type="search"
@@ -49,18 +50,10 @@ export function SearchField({
         disabled={disabled}
         className={cn(
           fieldText,
-          'py-padding-p1 disabled:text-text-disabled h-full focus:outline-none disabled:cursor-not-allowed [&::-webkit-search-cancel-button]:hidden',
+          'py-padding-p1 disabled:text-text-disabled focus:outline-none disabled:cursor-not-allowed [&::-webkit-search-cancel-button]:hidden',
         )}
         {...props}
       />
-      <button
-        type="submit"
-        aria-label={searchLabel}
-        disabled={disabled}
-        className="-my-s3 -mr-s4 size-s18 text-icon-primary focus-visible:outline-border-brand disabled:text-icon-disabled inline-flex shrink-0 cursor-pointer items-center justify-center focus-visible:outline-2 disabled:cursor-not-allowed"
-      >
-        <LineSearchIcon size="lg" aria-hidden="true" />
-      </button>
     </form>
   );
 }

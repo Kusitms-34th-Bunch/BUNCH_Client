@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CameraButton } from '../cameraButton';
 import { ProfileImage } from './ProfileImage';
 
-// 스토리용 자리표시 이미지. 실제 기본 이미지(번치 대표 이미지)와 선택한 이미지는 호출하는 쪽이 넘긴다
+// 스토리용 자리표시 이미지. 실제 기본 이미지(번치 대표 이미지)와 선택한 이미지는 호출하는 쪽이 전달
 const defaultImage =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><rect width='160' height='160' fill='%23A7ADFF'/><ellipse cx='80' cy='120' rx='60' ry='36' fill='white'/><circle cx='80' cy='86' r='34' fill='white'/></svg>";
 const pickedImage =

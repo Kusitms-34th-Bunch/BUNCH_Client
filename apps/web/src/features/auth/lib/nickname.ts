@@ -11,11 +11,11 @@ const COMPOSING_ALLOWED = /^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ ]*$/;
 /** 저장·중복 확인에 쓰는 값: NFC 정규화 후 앞뒤 공백 제거 */
 export const normalizeNickname = (value: string) => value.normalize('NFC').trim();
 
-/** 허용되지 않는 문자가 있는지. 자모가 분해된 입력(NFD)도 완성형으로 합친 뒤 검사한다 */
+/** 허용되지 않는 문자가 있는지. 자모가 분해된 입력(NFD)도 완성형으로 합친 뒤 검사 */
 export const hasInvalidNicknameChars = (value: string, composing: boolean) =>
   !(composing ? COMPOSING_ALLOWED : ALLOWED).test(value.normalize('NFC'));
 
-/** 규칙에 맞는 닉네임인지(앞뒤 공백 제거 후 1~12자, 허용 문자만). 공백만 입력하면 빈 값으로 본다 */
+/** 규칙에 맞는 닉네임인지(앞뒤 공백 제거 후 1~12자, 허용 문자만). 공백만 입력하면 빈 값으로 취급 */
 export const isValidNickname = (value: string, composing = false) => {
   if (hasInvalidNicknameChars(value, composing)) return false;
   const length = normalizeNickname(value).length;

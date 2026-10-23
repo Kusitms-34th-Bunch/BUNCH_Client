@@ -7,7 +7,7 @@ function Probe() {
   return <input aria-label="입력" />;
 }
 
-// jsdom에는 visualViewport가 없어 크기 변화를 흉내 내는 대역을 둔다
+// jsdom에는 visualViewport가 없어 크기 변화를 흉내 내는 대역 사용
 class FakeViewport extends EventTarget {
   scale = 1;
 }

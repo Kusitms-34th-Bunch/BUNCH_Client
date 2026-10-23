@@ -10,7 +10,7 @@ export type YearOptionProps = Omit<ComponentProps<'input'>, 'type' | 'children'>
 /**
  * 연도 선택 행: 목록에서 하나만 고르는 라디오(Figma `Year_Option`)
  * 같은 `name`을 주고 호출하는 쪽이 `fieldset`·`legend` 또는 `radiogroup`으로 묶어 질문 전달
- * `className`은 행 전체에, 나머지 props는 native radio에 전달. 선택되면 오른쪽에 체크 아이콘이 생긴다(Figma의 Pressed)
+ * `className`은 행 전체에, 나머지 props는 native radio에 전달. 선택되면 오른쪽에 체크 아이콘 표시(Figma의 Pressed)
  */
 export const YearOption = ({ className, children, ...props }: YearOptionProps) => (
   <label

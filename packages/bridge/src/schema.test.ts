@@ -4,8 +4,8 @@ import { galleryImageSchema, setNativeTabBarParamsSchema } from './schema.ts';
 
 void test('네이티브 탭 ID는 서로 달라야 한다', () => {
   const items = [
-    { id: 'home', label: '홈' },
-    { id: 'search', label: '검색' },
+    { id: 'home', label: '홈', path: '/home' },
+    { id: 'search', label: '검색', path: '/search' },
   ];
   assert.equal(setNativeTabBarParamsSchema.safeParse({ items, selectedId: 'home' }).success, true);
   assert.equal(
@@ -15,6 +15,27 @@ void test('네이티브 탭 ID는 서로 달라야 한다', () => {
     }).success,
     false,
   );
+});
+
+void test('탭 경로는 같은 출처의 절대 경로만 허용한다', () => {
+  const tab = (path: string) => ({
+    items: [
+      { id: 'home', label: '홈', path },
+      { id: 'search', label: '검색', path: '/search' },
+    ],
+    selectedId: 'home',
+  });
+  assert.equal(setNativeTabBarParamsSchema.safeParse(tab('/feed')).success, true);
+  for (const path of [
+    'feed',
+    '//evil.test',
+    '/\\evil.test',
+    'https://evil.test/feed',
+    '/\t/evil.test',
+    '/\n/evil.test',
+  ]) {
+    assert.equal(setNativeTabBarParamsSchema.safeParse(tab(path)).success, false, path);
+  }
 });
 
 void test('갤러리 미리보기는 크기가 제한된 JPEG data URL만 허용한다', () => {

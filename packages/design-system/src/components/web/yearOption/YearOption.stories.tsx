@@ -24,7 +24,7 @@ export const Selected: Story = { args: { defaultChecked: true } };
 
 export const Disabled: Story = { args: { disabled: true } };
 
-// 같은 name의 라디오는 하나만 선택된다. 화면에서는 fieldset·legend로 묶는다
+// 같은 name의 라디오는 하나만 선택. 화면에서는 fieldset·legend로 그룹화
 export const Group: Story = {
   render: () => (
     <fieldset>

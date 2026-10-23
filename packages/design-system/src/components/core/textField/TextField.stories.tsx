@@ -14,7 +14,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-// 값을 호출하는 쪽이 맡는 controlled 예(스토리 전용). onClear는 값을 비운다
+// 값을 호출하는 쪽이 맡는 controlled 예(스토리 전용). onClear는 값 초기화
 const Controlled = ({
   initial = '',
   onClear,
@@ -48,7 +48,7 @@ export const Filled: Story = { render: filled };
 export const Editing: Story = { render, args: { editing: true } };
 export const Disabled: Story = { render, args: { disabled: true } };
 
-// 지우기 변형: 지우기 버튼이 모든 상태에서 보인다
+// 지우기 변형: 모든 상태에서 지우기 버튼 표시
 export const ClearDefault: Story = { render, args: clear };
 export const ClearFocused: Story = { render, args: { ...clear, autoFocus: true } };
 export const ClearFilled: Story = { render: filled, args: clear };

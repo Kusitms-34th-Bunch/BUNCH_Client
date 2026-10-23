@@ -38,7 +38,7 @@ export const LongLabel: Story = {
   args: { children: '아주 긴 문구가 들어와도 줄바꿈되어 모두 보여야 하고 잘리지 않아야 합니다' },
 };
 
-// 설계서: 전체 선택 행 하나가 하위 항목을 모두 선택·해제하고, 하위가 모두 선택되면 전체 행도 선택된다
+// 설계서: 전체 선택 행 하나로 하위 항목을 모두 선택·해제하고, 하위가 모두 선택되면 전체 행도 선택
 const WithChildrenDemo = () => {
   const [items, setItems] = useState([false, false, false]);
   const all = items.every(Boolean);

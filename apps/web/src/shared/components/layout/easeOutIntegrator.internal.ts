@@ -16,14 +16,14 @@ function parameter(value: number, first: number, second: number) {
   return (low + high) / 2;
 }
 
-/** SSGOI의 spring 대신 CSS ease-out(0, 0, .58, 1)을 정해진 시간 동안 재생한다. */
+/** SSGOI의 spring 대신 CSS ease-out(0, 0, .58, 1)을 정해진 시간 동안 재생 */
 export function easeOutIntegrator(durationMs: number): Integrator {
   if (!Number.isFinite(durationMs) || durationMs <= 0) {
     throw new RangeError('durationMs must be a positive finite number');
   }
   return {
     step(state, target, dt) {
-      // position은 곡선의 y이므로 x(시간)로 되돌린 뒤 다음 시점을 구한다.
+      // position은 곡선의 y이므로 x(시간)로 되돌린 뒤 다음 시점 계산
       const time = bezier(parameter(state.position, 0, 1), 0, 0.58);
       const nextTime = Math.max(
         0,

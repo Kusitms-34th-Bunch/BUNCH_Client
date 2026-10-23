@@ -11,7 +11,7 @@ export type TextFieldProps = Omit<
   ComponentProps<'input'>,
   'type' | 'size' | 'ref' | 'aria-label'
 > & {
-  /** 입력창의 접근성 이름. placeholder는 label을 대체하지 못한다 */
+  /** 입력창의 접근성 이름. placeholder로 label 대체 불가 */
   label: string;
   /** 오른쪽 동작 영역(Figma Button 변형, 예: `Button variant="brandSubtle" size="sm"`). 동작·접근성 이름은 호출자 소유 */
   action?: ReactNode;
@@ -19,14 +19,14 @@ export type TextFieldProps = Omit<
   onClear?: () => void;
   /** 지우기 버튼의 접근성 이름 */
   clearLabel?: string;
-  /** Figma Editing 상태: 입력창 내용을 가리고 점 3개 애니메이션을 보인다. 입력값은 유지된다 */
+  /** Figma Editing 상태: 입력창 내용을 가리고 점 3개 애니메이션 표시. 입력값은 유지 */
   editing?: boolean;
-  /** `editing` 동안 스크린 리더가 읽는 문구(화면에는 안 보임). 없으면 말로 알리지 않는다 */
+  /** `editing` 동안 스크린 리더가 읽는 문구(화면에는 안 보임). 없으면 음성 안내 생략 */
   editingLabel?: string;
 };
 
 /**
- * 한 줄 입력창. Figma 변형 3종(기본·버튼·지우기)은 `action`·`onClear`로 고르고, 상태는 입력 상태에서 정해진다
+ * 한 줄 입력창. Figma 변형 3종(기본·버튼·지우기)은 `action`·`onClear`로 고르고, 상태는 입력 상태에서 결정
  * Default·Focused(`focus-within`)·Filled(값)·Disabled(`disabled`, 전체 40% 투명)와 `editing` prop
  */
 export function TextField({
@@ -70,7 +70,7 @@ export function TextField({
           value={value}
           className={cn(
             fieldText,
-            // 포커스되면 안내 문구를 숨겨 캐럿만 보이게 한다(Figma Focused)
+            // 포커스 시 안내 문구를 숨겨 캐럿만 표시(Figma Focused)
             'py-padding-p1 disabled:text-text-disabled focus:outline-none focus:placeholder:text-transparent disabled:cursor-not-allowed',
             editing && 'opacity-0',
           )}
@@ -103,7 +103,7 @@ export function TextField({
           aria-label={clearLabel}
           disabled={disabled}
           onClick={handleClear}
-          // Safari·터치에서 버튼을 누를 때 입력창 포커스가 빠지지 않도록 막는다
+          // Safari·터치에서 버튼을 누를 때 입력창 포커스 이탈 방지
           onMouseDown={(event) => event.preventDefault()}
           className="-my-s4 -mr-s4 size-s16 text-icon-primary focus-visible:outline-border-brand inline-flex shrink-0 cursor-pointer items-center justify-center focus-visible:outline-2 disabled:cursor-not-allowed"
         >

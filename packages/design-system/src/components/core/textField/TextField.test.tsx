@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TextField } from './TextField';
 
 const container = () => screen.getByRole('textbox').parentElement!.parentElement!;
-// `focus-within:border-…`처럼 접두어가 붙은 클래스와 구분해 클래스 단위로 확인한다
+// `focus-within:border-…`처럼 접두어가 붙은 클래스와 구분해 클래스 단위로 확인
 const hasClass = (element: Element, name: string) => element.classList.contains(name);
 
 describe('TextField', () => {

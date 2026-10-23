@@ -15,7 +15,7 @@ const NEXT_PATH = '/next';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
-// 토스트 표시는 DS의 `toast()`가 맡으므로 호출 인자만 확인한다
+// 토스트 표시는 DS의 `toast()` 담당이라 호출 인자만 확인
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: (...args: ToastArgs) => toast(...args),

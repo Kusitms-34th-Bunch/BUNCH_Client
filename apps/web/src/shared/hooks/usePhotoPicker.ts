@@ -29,7 +29,7 @@ function readWebImage(file: File): Promise<string> {
 
 /** 사진 선택과 임시 미리보기(네이티브 갤러리 또는 웹 파일 선택). 서버 저장은 이미지 업로드 API 연결 시 추가 */
 type PhotoPickerOptions = {
-  /** 사진 선택이 실패했을 때 호출. 화면이 자기 방식으로 알릴 때 쓴다(`message`와 별개) */
+  /** 사진 선택이 실패했을 때 호출. 화면이 자기 방식으로 알릴 때 사용(`message`와 별개) */
   onError?: (_error: Error) => void;
 };
 
