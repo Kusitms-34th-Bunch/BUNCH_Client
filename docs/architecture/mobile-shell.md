@@ -4,7 +4,7 @@
 
 ## 왜 이 구조인가
 
-- WebView가 실제 배포 주소를 그대로 열기 때문에 Next.js App Router의 RSC, Server Action, `apps/web`의 BFF(`docs/architecture/data-layer.md`)가 평소처럼 동작한다. 정적 export가 필요 없다.
+- WebView가 실제 배포 주소를 그대로 열기 때문에 Next.js App Router의 RSC, Server Action, `apps/web`의 BFF(`docs/architecture/api-boundary.md`)가 평소처럼 동작한다. 정적 export가 필요 없다.
 - 완전 네이티브(화면마다 RN 컴포넌트로 재구현)보다 비용이 작다. 번치의 가장 차별화된 인터랙션(사진 드래그, 번들 룸 실시간 편집)은 WebView 한 겹을 거치면서 제스처 체감이 둔해질 수 있다는 점은 알려진 트레이드오프다. 다만 웹 구현에 따라 크게 달라지므로, 먼저 `docs/architecture/web-interface-guidelines.md`의 "Drag와 제스처" 기준으로 구현하고 실기기에서 확인한다. 그래도 기준에 못 미치는 화면이 나오면 해당 화면만 네이티브로 옮기는 걸 재검토한다.
 
 ## 소스 배치
@@ -141,7 +141,7 @@ packages/bridge/
 
 ## 인증 — 아직 설계 전
 
-지금 `apps/web`의 BFF는 httpOnly 쿠키에만 의존한다(`docs/architecture/data-layer.md`). WebView는 쿠키 지속성이 불안정할 수 있어, 실제로 로그인 흐름을 이 쉘에 연결하기 전에 쿠키 유실 대응 설계가 필요하다. 참고할 만한 패턴이 있으면 `.agents/notes/`를 먼저 확인한다 — 이 저장소의 확정된 결정이 아니라 리서치 메모이므로, 실제로 적용하기로 결정하면 이 문서와 `data-layer.md`를 함께 갱신한다.
+지금 `apps/web`의 BFF는 httpOnly 쿠키에만 의존한다(`docs/architecture/api-boundary.md`). WebView는 쿠키 지속성이 불안정할 수 있어, 실제로 로그인 흐름을 이 쉘에 연결하기 전에 쿠키 유실 대응 설계가 필요하다. 참고할 만한 패턴이 있으면 `.agents/notes/`를 먼저 확인한다 — 이 저장소의 확정된 결정이 아니라 리서치 메모이므로, 실제로 적용하기로 결정하면 이 문서와 `api-boundary.md`를 함께 갱신한다.
 
 ## 오류 모니터링
 

@@ -23,6 +23,7 @@ const requiredFiles = [
   'docs/architecture/domain-ownership.md',
   'docs/architecture/routing-and-access.md',
   'docs/architecture/data-layer.md',
+  'docs/architecture/api-boundary.md',
   'docs/architecture/design-system.md',
   'docs/architecture/design-system-components.md',
   'docs/architecture/styling-and-tokens.md',

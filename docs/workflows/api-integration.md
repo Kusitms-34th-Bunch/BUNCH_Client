@@ -28,7 +28,7 @@ OPENAPI_SCHEMA_URL=<raw-openapi-json-or-yaml-url> yarn gen:api-types
 ## 앱 연동
 
 - `@app/api-core`는 transport, 오류, query key, 생성 계약만 소유한다.
-- web은 server/browser client 경계를 유지하고 domain 또는 shared API에서 endpoint를 만든다.
+- web은 server/browser client 경계를 유지하고, endpoint·hook·query key는 `docs/architecture/data-layer.md`의 "파일 배치 (web)"에 따라 feature 안에 만든다.
 - admin은 `src/api` 또는 feature 소유 위치에서 endpoint와 TanStack Query hook을 만든다.
 - endpoint 함수는 HTTP 요청과 API contract 변환만 담당한다. query key, cache 갱신, loading·error·empty UI는 앱·feature가 소유한다.
 - 응답을 바꾸는 parameter는 query key에 모두 포함한다. mutation 뒤 cache 갱신 방식은 필요한 UX 근거로 선택한다.

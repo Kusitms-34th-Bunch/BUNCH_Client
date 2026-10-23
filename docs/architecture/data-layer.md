@@ -7,13 +7,82 @@
 - OpenAPI 생성 계약은 `packages/api-core/src/generated/openapi.ts`에 둔다. 생성 파일은 endpoint 경계에서만 사용하고 UI에는 필요한 형태로 좁혀 전달한다.
 - wire 필드명과 도메인 이름이 다르면(예: `pub_date` → `publishedAt`) raw 타입으로 먼저 받고 endpoint 경계에서 명시적으로 매핑한다. 필드명이 다른 응답을 `as`로 단언하면 타입 체크는 통과해도 값이 런타임에 `undefined`가 되는 버그로 이어진다.
 - OpenAPI 생성 타입은 컴파일 타임 계약일 뿐 런타임 값을 보장하지 않는다. 신뢰할 수 없거나 틀리면 위험한 응답(결제, 권한, 외부 연동 응답)은 `@app/api-core`의 `parseResponse(schema, data)`로 zod 검증을 거친 뒤 사용한다. `parseResponse`는 실패 시 `undefined`를 반환하고 `onValidationError` 훅으로 알리므로, 호출부는 실패를 성공처럼 다루지 않고 명시적으로 처리한다.
-- TanStack Query query key는 안정적이고 도메인 의미가 드러나야 한다. `all → lists/list`, `all → details/detail` 계층을 갖는 factory를 사용하며 response 결과를 바꾸는 filter·sort·cursor·id를 모두 포함한다. 일반 목록과 infinite 목록, detail은 서로 다른 prefix를 사용한다.
+- TanStack Query query key는 안정적이고 도메인 의미가 드러나야 한다. key는 feature의 `queries/keys.ts` factory 함수만 만들고, queryOptions·hook·무효화 코드는 그 함수를 호출만 한다(배열을 직접 쓰지 않는다). 모든 key는 `{feature}.all`에서 시작해 도메인 이름 함수(`nicknameAvailability(nickname)`, `mine()` → `latestMine()` 등)로 이어지고, 목록·상세 리소스가 있을 때만 `all → lists/list`, `all → details/detail` 계층(`createQueryKeys`)을 쓴다. response 결과를 바꾸는 filter·sort·cursor·id는 모두 key 함수 인자로 받고, 빈 값 제거 같은 정규화도 key 함수에서 한다. 일반 목록과 infinite 목록은 서로 다른 key를 쓴다.
 - 일반 `useQuery`, `useSuspenseQuery`, infinite query, route prefetch는 화면의 loading 경계와 navigation 요구에 맞춰 선택한다. 구체적인 선택 기준은 아래 "Query 모드 선택"을 따른다.
 - mutation 뒤 캐시 처리는 아래 "Mutation 캐시 동기화" 결정표를 따른다.
 - optimistic update는 아래 3단계 계약을 모두 지킬 수 있을 때만 사용한다. 하나라도 근거 없이 생략되면 성공 응답 뒤 갱신을 선택한다.
   1. 요청 전: 같은 query key로 진행 중인 조회를 취소하고, 현재 캐시 값을 스냅샷으로 남긴 뒤 optimistic 값을 적용한다.
   2. 실패 시: 스냅샷으로 롤백하고 사용자에게 실패를 알린다. 롤백 없이 에러만 삼키는 optimistic update는 리뷰에서 반려한다.
   3. 완료 시(성공·실패 무관): 해당 query key를 invalidate해 서버 응답이 최종적으로 화면을 결정하게 한다.
+
+## 파일 배치 (web)
+
+API 연동 코드는 그 데이터를 쓰는 feature 안에 층별 폴더로 둔다. 폴더는 실제로 쓸 때만 만든다(빈 폴더를 미리 만들지 않는다).
+
+```text
+apps/web/src/features/{feature}/
+  api/           요청 함수(브라우저 → BFF). 백엔드 리소스 단위 파일
+  queries/       keys.ts(key factory), 리소스별 queryOptions·mutation hook
+  model/         (필요할 때) 응답 스키마·도메인 타입·변환
+  hooks/         화면·흐름 hook(서버 상태 아님)
+apps/web/src/shared/query/     QueryClient·Provider, 여러 feature가 함께 쓰는 query(승격 시)
+apps/web/src/app/api/[...path]/route.ts   범용 BFF 프록시
+apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·삭제)
+```
+
+- **`api/`**: HTTP 요청과 계약 변환만 한다. React·TanStack Query·`next/navigation`·디자인 시스템(toast 등)을 import하지 않는다(ESLint 강제). 파일은 백엔드 리소스 단위(`api/nickname.ts`)로 나누고 함수 이름은 네트워크 동사(`get`, `create`, `update`, `remove`)로 시작한다. 경로는 BFF 기준(`/api/…`)이다.
+- **`queries/`**: query key, `queryOptions`·`infiniteQueryOptions`, mutation hook을 둔다. `queryOptions`·`useMutation`·`useQueryClient`·`QueryClient`는 `queries/`와 `src/shared/query/`에서만 import한다(ESLint 강제). 파일 이름은 `api/`와 맞춘다(`api/nickname.ts` ↔ `queries/nickname.ts`).
+- **query hook은 기본으로 만들지 않는다.** 화면이 `useQuery(xxxQueryOptions(…))`처럼 options를 받아 읽는다(`useQuery`·`useSuspenseQuery`·`useInfiniteQuery`는 어디서나 사용 가능). 여러 query 조합이나 가공이 필요할 때만 `queries/`에 `use…Query`를 만든다.
+- **mutation은 항상 `queries/`의 `use…Mutation` hook으로 만든다.** 캐시 동기화(아래 "Mutation 캐시 동기화")를 한곳에 모으기 위해서다. 화면 이동·toast 같은 화면 동작은 hook에 넣지 않고 화면이 `mutate(…, { onSuccess })`로 처리한다.
+- **`hooks/`**: 서버 상태가 아닌 화면·흐름 hook만 둔다.
+- 여러 feature가 같은 요청·query를 실제로 함께 쓰고 계약이 안정되면 `src/shared`(`shared/query/`)로 옮긴다. 인증 세션(로그인·재발급·로그아웃)은 모든 BFF가 쓰는 공용 인프라라 처음부터 `src/shared/api/`에 둔다.
+- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW를 도입하면(결정 기록 007) handler가 같은 fixture를 재사용한다.
+
+### 예시
+
+```ts
+// features/auth/api/nickname.ts — 요청 함수
+export const getNicknameAvailability = (nickname: string) =>
+  bffApi
+    .get('members/nickname-availability', { searchParams: { nickname } })
+    .json()
+    .then(unwrapEnvelope<boolean>);
+
+// features/auth/queries/keys.ts — key factory
+export const authKeys = {
+  all: ['auth'] as const,
+  nicknameAvailability: (nickname: string) =>
+    [...authKeys.all, 'nickname-availability', nickname] as const,
+  onboarding: () => [...authKeys.all, 'onboarding'] as const,
+};
+
+// features/auth/queries/nickname.ts — queryOptions
+export const nicknameAvailabilityQueryOptions = (nickname: string) =>
+  queryOptions({
+    queryKey: authKeys.nicknameAvailability(nickname),
+    queryFn: () => getNicknameAvailability(nickname),
+    enabled: nickname.length > 0,
+  });
+
+// features/auth/queries/profile.ts — mutation hook(캐시 동기화만)
+export const useRegisterProfileMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: registerProfile,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: authKeys.onboarding() }),
+  });
+};
+
+// 화면 — 읽기와 화면 동작
+const { data: available } = useQuery(nicknameAvailabilityQueryOptions(nickname));
+register.mutate(form, { onSuccess: () => router.push(nextPath) });
+```
+
+`bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스다(첫 API 연동 때 `src/shared/api`에 둔다).
+
+### BFF 경로
+
+일반 요청은 범용 BFF 프록시가 백엔드로 전달하므로 API를 붙일 때 Route Handler를 새로 만들지 않는다. BFF 경로 규칙과 전용 Route Handler를 만드는 기준은 `docs/architecture/api-boundary.md`를 따른다.
 
 ## Query 모드 선택
 
@@ -46,13 +115,3 @@
 - web에서는 server-only 경계와 browser client를 분리한다. cookie·secret을 client bundle로 보내지 않는다.
 - admin에서는 route loader와 component query의 책임을 섞지 않고, 필요한 경우 route 수준에서 prefetch한다.
 - 여러 app에서 같은 transport·생성 타입을 써도 endpoint와 query hook은 제품 의미가 같고 안정된 API일 때만 shared package로 승격한다. 공통화 전에는 각 app·feature 가까이에 둔다.
-
-## BFF와 인증 경계 (web)
-
-apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브라우저와 실제 백엔드 사이에 인증 경계를 둔다. `src/shared/api/`의 세 조각이 이 경계를 나눠 가진다.
-
-- **`createAuthorizedRoute`**: Route Handler를 감싸는 wrapper다. httpOnly `accessToken` 쿠키를 읽어 없으면 401을 반환하고, 있으면 handler에 `accessToken`·검증된 `body`·`params`를 넘긴다. handler가 던진 `ApiError`는 그 `status`·`code`로, 그 외 에러는 500으로 일관되게 변환한다. 새 BFF endpoint는 Route Handler를 직접 작성하지 않고 이 wrapper로 만든다.
-- **`serverClient`(`createServerApi`)**: RSC·Route Handler처럼 서버에서 실행되는 코드 전용이다(`server-only` import로 강제). 브라우저 쿠키를 그대로 실어 보낼 때 쓰고, 토큰 갱신·재시도 로직은 없다.
-- **`browserClient`(`createBrowserApi`)**: 브라우저에서 Bearer 토큰으로 호출한다. 401을 받으면 `refreshAccessToken`으로 토큰을 갱신해 재시도하는데, 동시에 여러 요청이 401을 받아도 `navigator.locks`로 갱신 요청을 하나로 묶어(dedupe) 중복 갱신을 막는다. 갱신도 실패하면 `onUnauthorized`로 넘긴다.
-
-이 셋을 섞지 않는다 — server-only 코드에 `browserClient`를 쓰거나 브라우저 코드에서 쿠키를 직접 다루지 않는다. 새 인증이 필요한 화면·API를 추가할 때는 이 BFF 경계를 그대로 재사용하고, 쿠키 이름이나 refresh 정책을 바꾸는 경우에만 옵션을 조정한다.

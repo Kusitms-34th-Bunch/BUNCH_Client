@@ -5,7 +5,7 @@
 - `src/app`은 Next.js route, layout, metadata와 provider 조립을 담당한다.
 - 화면·feature 로직은 `src/features`, 재사용 가능한 인프라는 `src/shared`에 둔다. 디자인 시스템 UI 컴포넌트를 조합해 domain 문구·route·데이터·행동을 붙이는 것은 `src/features`가 맡는다.
 - `shared`는 특정 domain이나 route를 import하지 않는다.
-- feature 폴더는 역할별로 나눈다(예: `components` UI, `constants` 상수, `hooks` 일반 hook, `contexts` context·provider, `lib`·`utils` 순수 함수, `fixtures` API 연결 전 샘플 데이터·테스트 공용 값). 필요한 폴더만 만들고(빈 폴더는 `.gitkeep`), 정해진 목록은 없다. `features/auth`가 역할 폴더 스캐폴딩의 예이고, `api`처럼 아직 기준이 없는 폴더는 데이터 계층 문서(`docs/architecture/data-layer.md`)가 정해진 뒤 추가한다.
+- feature 폴더는 역할별로 나눈다(예: `components` UI, `constants` 상수, `hooks` 일반 hook, `contexts` context·provider, `lib`·`utils` 순수 함수, `fixtures` API 연결 전 샘플 데이터·테스트 공용 값). 필요한 폴더만 만들고(빈 폴더는 `.gitkeep`), 정해진 목록은 없다. `features/auth`가 역할 폴더 스캐폴딩의 예이고, API 연동 파일(`api/`, `queries/`, 필요할 때 `model/`)은 `docs/architecture/data-layer.md`의 "파일 배치 (web)"를 따른다.
 - `components/`에는 UI 컴포넌트와 해당 컴포넌트의 테스트·spec·스타일만 둔다. 공개 컴포넌트 export용 `index.ts`는 예외다. 화면 전용이어도 별도 파일로 분리한 hook은 `hooks/`, 순수 함수는 `lib/`·`utils/`, 라이브러리 연결 래퍼는 `lib/`에 둔다. 상수·타입도 별도 파일이면 각 역할 폴더로 분리한다. 컴포넌트 파일 안의 작은 handler·상수까지 억지로 추출하지 않는다.
 - 역할 폴더가 커지면 같은 역할 안에서 화면(흐름)별 하위 폴더로 묶는다(예: `components/join`, `hooks/join`, `lib/join`). 화면 흐름이 같아도 역할이 다른 파일을 `components/join`에 함께 넣지 않는다. 여러 흐름이 쓰는 파일은 해당 역할 폴더 바로 아래에 둔다. 테스트는 대상 구현 파일 옆에 두고, 컴포넌트 spec은 `docs/workflows/spec-writing.md`를 따른다.
 - 웹 앱에서 import하는 이미지·로티 등 정적 자산은 `src/shared/assets/`에서 종류별로 관리한다(예: `lotties/`). URL로 직접 제공하는 파일은 `public/`에 둔다. 재생 컴포넌트·hook·도메인 로직은 자산과 함께 옮기지 않고 해당 feature에 둔다.
