@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { ApiError } from '@app/api-core';
+import ky from 'ky';
 import { NextRequest } from 'next/server';
 import { describe, expect, it, vi } from 'vitest';
 import { createAuthorizedRoute } from './createAuthorizedRoute';
@@ -110,5 +111,26 @@ describe('createAuthorizedRoute', () => {
     const response = await route(makeRequest({ cookie: 'accessToken=token-1' }), noParams);
 
     expect(response.status).toBe(500);
+  });
+
+  it('백엔드 HTTP 오류는 envelope의 코드와 상태를 그대로 전달한다(브라우저 재발급 판단용)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: false,
+          data: null,
+          error: { code: 'AUTH_001', message: '인증 필요' },
+        }),
+        { status: 401, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    const route = createAuthorizedRoute(() =>
+      ky.get('https://backend.example.com/api/v1/members/me/onboarding', { fetch: fetchMock }),
+    );
+
+    const response = await route(makeRequest({ cookie: 'accessToken=token-1' }), noParams);
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ message: '인증 필요', code: 'AUTH_001' });
   });
 });

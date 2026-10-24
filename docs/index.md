@@ -7,6 +7,7 @@
 - [Domain Ownership](./architecture/domain-ownership.md)
 - [Routing And Access](./architecture/routing-and-access.md)
 - [Data Layer](./architecture/data-layer.md)
+- [API Boundary](./architecture/api-boundary.md)
 - [Components](./architecture/components.md)
 - [Component Patterns](./architecture/component-patterns.md)
 - [Design System](./architecture/design-system.md)

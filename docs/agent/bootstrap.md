@@ -34,6 +34,7 @@
 | 폼·포커스·터치·i18n·hydration 세부 기준     | `docs/architecture/web-interface-guidelines.md`                                               |
 | 애니메이션·전환 추가                        | `docs/architecture/motion.md`                                                                 |
 | API, TanStack Query, 서버·브라우저 경계     | `docs/architecture/data-layer.md`, `docs/workflows/api-integration.md`                        |
+| BFF·인증 쿠키·범용 프록시·CSRF              | `docs/architecture/api-boundary.md`                                                           |
 | 테스트 작성·수정                            | `docs/workflows/testing.md`                                                                   |
 | 커밋 또는 PR 문구                           | `docs/conventions/commit.md`                                                                  |
 | 문서·이슈·PR 본문·분석 보고 작성            | `docs/conventions/writing.md`                                                                 |
