@@ -1,7 +1,11 @@
 import { next } from '@app/lint-config';
 
 // API 연동 파일 경계(docs/architecture/data-layer.md "파일 배치 (web)")
-const QUERY_DEFINITION_FILES = ['src/features/**/queries/**', 'src/shared/query/**'];
+const QUERY_DEFINITION_FILES = [
+  'src/features/**/queries/**',
+  'src/shared/query/**',
+  'src/shared/providers/QueryProvider.tsx',
+];
 const TANSTACK_DEFINITIONS = [
   'QueryClient',
   'QueryClientProvider',
