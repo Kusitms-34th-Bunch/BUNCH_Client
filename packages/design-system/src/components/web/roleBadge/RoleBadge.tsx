@@ -23,7 +23,7 @@ export type RoleBadgeProps = Omit<
 > & {
   memberRole?: RoleBadgeRole;
   size?: RoleBadgeSize;
-  /** 역할 이름(예: "번치장"). 주면 이미지로 읽히고, 없으면 장식으로 숨겨진다 */
+  /** 역할 이름(예: "번치장"), 있으면 이미지로 노출·없으면 장식(aria-hidden) 처리 */
   label?: string;
 };
 
