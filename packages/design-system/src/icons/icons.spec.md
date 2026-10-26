@@ -31,7 +31,7 @@ Line 23종·Fill 8종, 아이콘 31종을 크기별 SVG(small·medium·large, �
 | Graphic Icon/people | `GraphicPeopleIcon` | 40   |
 
 - 온보딩 5종의 색은 Figma 원본(`#A7ADFF`, `#777FF2`, `#454EDF`)을 SVG에 그대로 둔다. 토큰이 아니라 아이콘의 일부다.
-- `size` prop과 크기별 export가 없고 `Omit<IconProps, 'size'>`를 받는다. 접근성 계약은 고정 크기 아이콘과 같다(역할 배지 6종 포함).
+- `size` prop과 크기를 고르는 래퍼가 없고 `Omit<IconProps, 'size'>`를 받는다. 온보딩 5종은 크기별 export도 없고, 역할 배지는 `Small`·`Medium` 이름의 export 둘뿐이다. 접근성 계약은 고정 크기 아이콘과 같다.
 - 온보딩 5종은 레이어 SVG를 Figma 프레임 안의 위치(예: Lock은 프레임 34×34 안의 (4, 2))로 한 캔버스에 조립했다. 위치는 Figma 코드의 중심 offset에서 계산했고 Figma 렌더와 육안으로 대조했다.
 
 ### 역할 배지
