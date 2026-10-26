@@ -57,9 +57,10 @@
 | 배경               | `#F5F5F5`                 | `bg-surface-secondary`                                     |
 | 선택됨 배경·테두리 | `#F1F2FF`, 1px `#A7ADFF`  | `bg-surface-brand-subtle-1`, `ring-surface-brand-subtle-2` |
 | Hover              | 검정 10% 겹침             | `overlay-hover`                                            |
-| 글자               | 14/21 Regular, `#535A61`  | `typography-body-3-regular text-text-tertiary`             |
+| 글자               | 14/21 Regular, `#535A61`  | `typography-body-2-regular text-text-tertiary`             |
 
 - 조합: `Radio`(core)를 그대로 쓴다. dependency 추가 없음.
+- 타이포 이름: 저장소의 `typography-body-*`는 Figma보다 번호가 한 단계 낮다(Figma `Body-3-Regular` 14/21 = 저장소 `body-2-regular`, Figma `Body-4-Regular` 13/18 = 저장소 `body-3-regular`). 이름이 아니라 크기·줄 높이로 골랐다.
 - Storybook state matrix: 선택 전·선택됨·긴 글자(`LongLabel`), 그리고 `fieldset` 그룹 예. Hover와 눌림은 포인터 상태라 정지 화면으로 만들 수 없어 story로 두지 않았다.
 
 ## 확인할 항목

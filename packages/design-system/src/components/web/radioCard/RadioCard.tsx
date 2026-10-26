@@ -23,7 +23,7 @@ export const RadioCard = ({ className, children, ...props }: RadioCardProps) => 
     )}
   >
     <Radio className="has-focus-visible:outline-0" {...props} />
-    <span className="typography-body-3-regular text-text-tertiary min-w-0 truncate">
+    <span className="typography-body-2-regular text-text-tertiary min-w-0 truncate">
       {children}
     </span>
   </label>

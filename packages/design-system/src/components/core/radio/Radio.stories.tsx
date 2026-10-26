@@ -37,7 +37,7 @@ export const Group: Story = {
         ['private', '비공개'],
         ['public', '전체 공개'],
       ].map(([value, text]) => (
-        <label key={value} className="gap-s3 typography-body-3-regular flex items-center">
+        <label key={value} className="gap-s3 typography-body-2-regular flex items-center">
           <Radio name="visibility" value={value} defaultChecked={value === 'private'} />
           {text}
         </label>
