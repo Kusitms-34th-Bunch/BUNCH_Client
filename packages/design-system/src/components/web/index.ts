@@ -12,6 +12,7 @@ export * from './loginButton';
 export * from './option';
 export * from './pageHeader';
 export * from './profileImage';
+export * from './radioCard';
 export * from './stepper';
 export * from './termsLabel';
 export * from './visibilityOption';
