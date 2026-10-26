@@ -52,7 +52,7 @@ export const Gallery: Story = {
         </tbody>
       </table>
       <section className="gap-s4 flex flex-col">
-        <h2 className="pb-s4 typography-title-1-semi-bold">Graphic 5 (컬러, 크기 하나)</h2>
+        <h2 className="pb-s4 typography-title-1-semi-bold">Graphic 11 (컬러, 크기 하나)</h2>
         <ul className="gap-s6 flex flex-wrap items-end">
           {graphicEntries.map(([name, Icon]) => (
             <li key={name} className="gap-s2 typography-label-s flex flex-col items-center">
