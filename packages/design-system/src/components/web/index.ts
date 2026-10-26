@@ -14,5 +14,6 @@ export * from './pageHeader';
 export * from './profileImage';
 export * from './stepper';
 export * from './termsLabel';
+export * from './uploadOptionCard';
 export * from './visibilityOption';
 export * from './yearOption';
