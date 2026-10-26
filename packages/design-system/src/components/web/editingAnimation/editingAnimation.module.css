@@ -1,0 +1,77 @@
+/* Figma EditingAnimation: 30×25 안에서 점 3개가 1.6초 주기로 투명도 0.3~1, 지름 3.17~4.23px, 점 사이 시차 약 0.33초 */
+.root {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 25px;
+  flex-shrink: 0;
+}
+
+.dot {
+  position: absolute;
+  /* 정수 3px 박스·translate 위치: 소수 크기·left는 합성 레이어에서 올림·스냅돼 Figma와 어긋남(배율은 Figma 지름에서 환산) */
+  top: 11px;
+  left: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background-color: var(--semantic-icon-quaternary);
+  animation: editingAnimationDot 1.6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+.dot:nth-child(1) {
+  --x: 2.88px;
+}
+
+.dot:nth-child(2) {
+  --x: 13.5px;
+  animation-delay: -1.267s;
+}
+
+.dot:nth-child(3) {
+  --x: 24.31px;
+  animation-delay: -0.967s;
+}
+
+@keyframes editingAnimationDot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateX(var(--x)) scale(1.057);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateX(var(--x)) scale(1.41);
+  }
+}
+
+/* 강제 색상 모드: 배경색이 덮여 점이 사라지는 것 방지 */
+@media (forced-colors: active) {
+  .dot {
+    background-color: CanvasText;
+    forced-color-adjust: none;
+  }
+}
+
+/* 동작 줄이기: Figma 첫 프레임 모양으로 정지 */
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+
+  .dot:nth-child(1) {
+    opacity: 0.3;
+    transform: translateX(var(--x)) scale(1.057);
+  }
+
+  .dot:nth-child(2) {
+    opacity: 0.54;
+    transform: translateX(var(--x)) scale(1.179);
+  }
+
+  .dot:nth-child(3) {
+    opacity: 0.93;
+    transform: translateX(var(--x)) scale(1.375);
+  }
+}
