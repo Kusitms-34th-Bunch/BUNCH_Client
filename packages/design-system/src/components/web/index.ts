@@ -18,5 +18,6 @@ export * from './radioCard';
 export * from './roleBadge';
 export * from './stepper';
 export * from './termsLabel';
+export * from './uploadOptionCard';
 export * from './visibilityOption';
 export * from './yearOption';
