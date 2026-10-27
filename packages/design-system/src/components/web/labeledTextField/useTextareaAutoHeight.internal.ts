@@ -20,8 +20,8 @@ export function useTextareaAutoHeight(
       element.parentElement?.style.setProperty('--textarea-height', `${height}px`);
     };
     fit();
-    // defaultValue만 쓰는 입력(value가 바뀌지 않음)도 입력할 때마다 높이를 맞춤
-    element.addEventListener('input', fit);
+    // value 없이 쓰는 입력(defaultValue)은 값이 바뀌어도 effect가 다시 돌지 않으므로 입력할 때마다 높이를 맞춤
+    if (value === undefined) element.addEventListener('input', fit);
     if (typeof ResizeObserver === 'undefined' || !element.parentElement) {
       return () => element.removeEventListener('input', fit);
     }

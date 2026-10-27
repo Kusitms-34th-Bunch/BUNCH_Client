@@ -144,6 +144,38 @@ describe('BundleCommentCard', () => {
     expect(container.querySelector('[class*="root"]')).toBeNull();
   });
 
+  it('defaultValue만 쓰는 입력은 입력할 때마다 내용 높이에 맞춘다', () => {
+    renderCard({ defaultValue: '초안' });
+    const input = screen.getByRole<HTMLTextAreaElement>('textbox');
+    let contentHeight = 25;
+    Object.defineProperty(input, 'scrollHeight', { configurable: true, get: () => contentHeight });
+
+    contentHeight = 46;
+    fireEvent.input(input, { target: { value: '두 줄이 되는 긴 코멘트' } });
+
+    expect(input.style.height).toBe('46px');
+  });
+
+  it('value로 제어하는 입력은 input 이벤트가 아니라 value 변경으로 높이를 맞춘다', () => {
+    const { rerender } = render(
+      <BundleCommentCard userName="지예" value="초안" onChange={() => {}} />,
+    );
+    const input = screen.getByRole<HTMLTextAreaElement>('textbox');
+    let contentHeight = 25;
+    Object.defineProperty(input, 'scrollHeight', { configurable: true, get: () => contentHeight });
+
+    contentHeight = 46;
+    fireEvent.input(input);
+
+    expect(input.style.height).not.toBe('46px');
+
+    rerender(
+      <BundleCommentCard userName="지예" value="두 줄이 되는 긴 코멘트" onChange={() => {}} />,
+    );
+
+    expect(input.style.height).toBe('46px');
+  });
+
   it('editing을 켰다 꺼도 defaultValue로 입력한 값이 유지된다', () => {
     const { rerender } = render(<BundleCommentCard userName="지예" defaultValue="초안" />);
     const input = screen.getByRole<HTMLTextAreaElement>('textbox');

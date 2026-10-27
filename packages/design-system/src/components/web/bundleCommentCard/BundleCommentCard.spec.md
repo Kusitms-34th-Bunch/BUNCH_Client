@@ -26,7 +26,7 @@
 
 - Props: `userName`(필수), `currentUser`(기본 `false`, 이름 뒤 "(나)"), `currentUserLabel`(기본 "(나)"), `profileSrc`, `label`(입력창 접근성 이름, 기본 "{이름} 코멘트"), `error`, `editing`, `editingLabel`, `className`(카드와 오류 안내를 묶은 바깥 요소), 그리고 native `<textarea>`의 속성(`value`·`defaultValue`·`onChange`·`placeholder`·`maxLength` 등. `rows`·`aria-label`·`aria-describedby`·`ref`는 제외).
 - 안내 문구(`placeholder`) 기본값은 "코멘트를 남기면 번들을 발행할 수 있어요."다.
-- 값은 `value`(controlled)나 `defaultValue`(uncontrolled) 모두 가능하다. `editing` 동안에도 입력창은 숨겨서 DOM에 남아 있어(`hidden`) uncontrolled로 입력한 값이 사라지지 않고, 호출하는 쪽이 값을 따로 보관하지 않아도 된다. `defaultValue`만 쓰는 입력도 입력할 때마다 높이가 맞춰진다(hook이 `input` 이벤트를 들음).
+- 값은 `value`(controlled)나 `defaultValue`(uncontrolled) 모두 가능하다. `editing` 동안에도 입력창은 숨겨서 DOM에 남아 있어(`hidden`) uncontrolled로 입력한 값이 사라지지 않고, 호출하는 쪽이 값을 따로 보관하지 않아도 된다. `defaultValue`만 쓰는 입력(`value`를 주지 않음)도 입력할 때마다 높이가 맞춰진다(hook이 `value`가 없을 때만 `input` 이벤트를 들어, `value`로 제어하는 `LabeledTextArea`의 동작은 그대로다).
 - 호출자 소유 책임: 이름·안내 문구·오류 문구·읽어 주는 문구의 i18n, 글자 수 제한과 `error` 판단, `editing` 여부(다른 멤버의 작성 상태), 저장.
 
 ## 상태와 동작
