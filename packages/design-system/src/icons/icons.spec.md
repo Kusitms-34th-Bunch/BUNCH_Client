@@ -92,7 +92,7 @@ Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 
 ## 검증
 
-- 아이콘 31종(Line 23·Fill 8) × 3크기 완전성, 생성기 테스트(크기 누락·파일명 형식 오류 실패, 크기별 선 굵기·viewBox 유지, 접근성 속성 한 번만 부여), SVG 안전성·이름 충돌·색상 보존·drift 테스트.
+- 아이콘 33종(Line 25·Fill 8) × 3크기 완전성, 생성기 테스트(크기 누락·파일명 형식 오류 실패, 크기별 선 굵기·viewBox 유지, 접근성 속성 한 번만 부여), SVG 안전성·이름 충돌·색상 보존·drift 테스트.
 - 장식/이름 있는 아이콘, ref·className, Button 슬롯 조합 테스트.
 - Gallery story 하나로 전체 아이콘 × 3크기 비교.
 - `check:generated`, 대상 test·lint·typecheck, Storybook build, 시각 확인 및 UI 접근성 리뷰.
