@@ -54,6 +54,20 @@ describe('CalendarItem', () => {
     expect(document.activeElement).toBe(item);
   });
 
+  it('selected이면서 disabled여도 어두운 배경에 흰 글자를 유지한다', () => {
+    render(
+      <CalendarItem selected disabled>
+        4
+      </CalendarItem>,
+    );
+    const item = screen.getByRole('button');
+
+    expect(item.classList.contains('bg-surface-inversed')).toBe(true);
+    expect(item.classList.contains('text-text-inversed')).toBe(true);
+    expect(item.classList.contains('text-text-quaternary')).toBe(false);
+    expect(item.getAttribute('aria-disabled')).toBe('true');
+  });
+
   it('disabled가 아니면 aria-disabled가 없다', () => {
     render(<CalendarItem>4</CalendarItem>);
 

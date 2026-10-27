@@ -29,7 +29,7 @@
 - Active(기본): 흰 배경(`surface-primary`) + `text-primary` 글자, 원형(`rounded-full`), 46×46px(`size-11.5`).
 - Pressed(`:active`): 칸 위에 `overlay-hover`(검정 10%)를 얹어 글자까지 어두워진다. `disabled`와 `selected`에는 적용하지 않는다.
 - Selected: `surface-inversed` 배경 + `text-inversed` 글자.
-- Disabled: `text-quaternary`(`#BCBEC2`) 글자와 `cursor-not-allowed`. 네이티브 `disabled`가 아니라 `aria-disabled`라 포커스는 받고 눌러도 `onClick`이 호출되지 않는다(캘린더 격자에서 키보드가 이 칸을 건너뛰지 않게 하려는 처리).
+- Disabled: `text-quaternary`(`#BCBEC2`) 글자와 `cursor-not-allowed`. 네이티브 `disabled`가 아니라 `aria-disabled`라 포커스는 받고 눌러도 `onClick`이 호출되지 않는다(캘린더 격자에서 키보드가 이 칸을 건너뛰지 않게 하려는 처리). 선택된 칸이 비활성이면(예: 선택된 날짜가 `minDate` 밖) 선택 모양(어두운 배경에 흰 글자)을 유지하고 `aria-disabled`와 `cursor-not-allowed`만 적용한다(Figma에 없는 조합).
 - hidden: 버튼 없이 같은 크기의 빈 칸(`aria-hidden`)만 그린다. 다른 달의 칸처럼 자리만 차지하는 용도다.
 
 ## 접근성

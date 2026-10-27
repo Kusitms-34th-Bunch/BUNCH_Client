@@ -50,7 +50,9 @@ export const CalendarItem = ({
               'before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-10 before:rounded-full before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
               '[&:not([aria-disabled=true])]:active:before:opacity-100',
             ],
-        disabled && 'text-text-quaternary cursor-not-allowed',
+        // 선택된 칸은 비활성이어도 어두운 배경에 흰 글자를 유지(연한 글자가 어두운 배경에 묻히지 않게 처리)
+        disabled && 'cursor-not-allowed',
+        disabled && !selected && 'text-text-quaternary',
         className,
       )}
     >
