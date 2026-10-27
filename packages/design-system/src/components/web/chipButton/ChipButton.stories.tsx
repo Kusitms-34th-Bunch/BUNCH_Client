@@ -2,8 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { type ChipButtonSize, type ChipButtonVariant, ChipButton } from './ChipButton';
 
-// 번치 캐릭터(Figma 아바타 칩 원본을 24px 원 크롭에 맞춰 96px로 줄인 스토리 전용 이미지)
-const avatar = new URL('./assets/bunch-character.png', import.meta.url).href;
+// 저장소에 아바타 에셋이 없어 그라데이션 SVG를 데이터 주소로 사용
+const avatar =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="%23e6e2ec"/><circle cx="24" cy="20" r="9" fill="%23a7adff"/></svg>';
 
 const meta = {
   title: 'Web/ChipButton',
