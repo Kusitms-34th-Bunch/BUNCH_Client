@@ -13,6 +13,7 @@ export * from './loginButton';
 export * from './option';
 export * from './pageHeader';
 export * from './profileImage';
+export * from './radioCard';
 export * from './roleBadge';
 export * from './stepper';
 export * from './termsLabel';
