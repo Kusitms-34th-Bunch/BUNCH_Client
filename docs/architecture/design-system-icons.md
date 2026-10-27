@@ -34,10 +34,10 @@ svg/fill-circle-check-{small,medium,large}.svg
 
 ## 그래픽 아이콘
 
-온보딩 카드처럼 색이 있고 크기가 하나뿐인 아이콘(Globe·Lock 34px, Chat·Edit·People 40px)은 Line/Fill의 세 크기 규칙에 맞지 않아 `svg-graphic/`에서 따로 만든다.
+온보딩 카드처럼 색이 있고 크기가 고정된 아이콘(Globe·Lock 34px, Chat·Edit·People 40px, 완성된 역할 배지는 16·20px 두 종)은 Line/Fill의 세 크기 규칙에 맞지 않아 `svg-graphic/`에서 따로 만든다.
 
 - 파일은 `graphic-<이름>.svg` 하나이고 width·height가 같은 양수이며 viewBox가 `0 0 <width> <height>`여야 한다. 다르면 생성이 실패한다.
-- 원본 색을 유지하고(`currentColor`로 바꾸지 않는다) 크기별 export나 `size` prop이 없다. 컴포넌트는 `GraphicLockIcon`처럼 `Graphic<이름>Icon`이다.
+- 원본 색을 유지하고(`currentColor`로 바꾸지 않는다) `size` prop이 없다. 컴포넌트는 `GraphicLockIcon`처럼 `Graphic<이름>Icon`이다. 크기가 둘 이상인 그래픽(역할 배지)은 Line/Fill과 같은 규약으로 `GraphicRoleOwnerSmallIcon`처럼 `Small`·`Medium`을 이름에 붙이며, 크기를 고르는 래퍼는 만들지 않는다.
 - 접근성 계약은 고정 크기 아이콘과 같다(기본 장식, `aria-label`·`aria-labelledby`가 있으면 `role="img"`).
 - Figma는 아이콘을 캔버스 크기 프레임 안에 레이어로 배치하므로, 레이어 SVG를 프레임 좌표대로 한 캔버스에 조립해 넣는다(래퍼 노드 export는 주변 캔버스가 섞인다).
 - 색이 SVG에 고정돼 있어 밝은 배경을 전제로 한다. Chat·Edit의 안쪽 틈은 칠하지 않은 투명 구멍이라 배경색이 비친다. 어두운 배경이나 흰색이 아닌 카드 위에서의 모습은 확인하지 못했고, 필요해지면 디자이너와 별도 원본 여부를 정한다.
