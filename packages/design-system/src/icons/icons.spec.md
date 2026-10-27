@@ -10,7 +10,7 @@ Line 24종·Fill 8종, 아이콘 32종을 크기별 SVG(small·medium·large, �
 
 ## Public API
 
-- 고정 크기: `LineSearchSmallIcon`·`LineSearchMediumIcon`·`LineSearchLargeIcon`처럼 크기별 named export 93개. `Omit<IconProps, 'size'>`를 받으며 다른 크기 도형을 import하지 않는다.
+- 고정 크기: `LineSearchSmallIcon`·`LineSearchMediumIcon`·`LineSearchLargeIcon`처럼 크기별 named export 96개. `Omit<IconProps, 'size'>`를 받으며 다른 크기 도형을 import하지 않는다.
 - 동적 크기: `LineSearchIcon`, `FillCircleCheckIcon` 등 기존 named export 32개. 고정 크기가 아닌 경우에 사용한다.
 - `size?: 'sm' | 'md' | 'lg'`(기본 `md`). `sm` 16×16, `md` 20×20, `lg` 24×24이고 크기마다 Figma가 그린 도형·viewBox·선 굵기를 쓴다. `size`는 `Button`의 `sm`·`md`·`lg`와 같은 이름이다. 공개 타입 `IconSize`, `IconProps`.
 - React SVG props, `className`, `ref` 전달. 색은 부모의 `color` 상속.
@@ -101,7 +101,7 @@ Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 ## 고정 크기 export 보완 검증 (2026-10-17)
 
 - 고정 크기 도형 96개와 선택용 래퍼 32개를 생성하며, 갤러리는 선택용 32개로 전체 크기를 표시한다.
-- 93개 고정 export와 기존 size API의 SVG markup·접근성 결과 일치를 검증한다. 정규화 뒤 고정/동적 이름 충돌도 생성 단계에서 거부한다.
+- 96개 고정 export와 기존 size API의 SVG markup·접근성 결과 일치를 검증한다. 정규화 뒤 고정/동적 이름 충돌도 생성 단계에서 거부한다.
 - 최상위 공개 barrel에서 `FillUserMediumIcon`만 export한 Vite production 결과에 Medium 도형만 남고 Small/Large·다른 아이콘이 없는지 검사한다. CSS 보존과 불필요한 UI 의존성 제거도 빌드 회귀 검증에 포함한다.
 - 로컬 macOS·Node26.10.0·Yarn4.17.1·Vite8.1.5, 동일 아이콘 이름순 md만 사용, production ES library·minify·React/ReactDOM 외부 처리·Node gzip 기본값 각 1회. 이전은 `86ce219539636a2d0a0458cfb22341ffce712464` 통합 모듈, 이후는 최상위 공개 barrel import다. 앱 CSS·Next 실제 증분은 미측정.
 
