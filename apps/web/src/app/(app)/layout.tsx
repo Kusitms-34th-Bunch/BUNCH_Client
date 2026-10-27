@@ -3,7 +3,7 @@ import { Toaster } from '@app/design-system';
 import localFont from 'next/font/local';
 import { OverlayProvider } from 'overlay-kit';
 import { AppFrame } from '@/shared/components/layout/AppFrame';
-import { QueryProvider } from '@/shared/query/QueryProvider';
+import { QueryProvider } from '@/shared/providers/QueryProvider';
 import { AppTransitions } from './AppTransitions';
 
 // Pretendard 1.3.9 가변 폰트 한 파일(SIL OFL 1.1). 처음 오는 웹 화면과의 구분: docs/decisions/records/013-pretendard-self-hosting.md

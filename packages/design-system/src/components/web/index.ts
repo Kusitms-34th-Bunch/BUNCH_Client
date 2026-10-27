@@ -1,10 +1,12 @@
 // @generated — run `yarn gen:index` to update
 
+export * from './accordion';
 export * from './bottomNavigation';
 export * from './bunchAvatar';
 export * from './cameraButton';
 export * from './createBunchCard';
 export * from './floatingButton';
+export * from './editingAnimation';
 export * from './inviteCard';
 export * from './inviteMemberCard';
 export * from './label';
@@ -13,7 +15,10 @@ export * from './loginButton';
 export * from './option';
 export * from './pageHeader';
 export * from './profileImage';
+export * from './radioCard';
+export * from './roleBadge';
 export * from './stepper';
 export * from './termsLabel';
+export * from './uploadOptionCard';
 export * from './visibilityOption';
 export * from './yearOption';
