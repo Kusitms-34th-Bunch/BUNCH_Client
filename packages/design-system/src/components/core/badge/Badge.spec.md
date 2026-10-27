@@ -17,6 +17,7 @@
 
 - 클릭 등 상호작용, 아이콘, 숫자 카운트 전용 모양은 디자인에 없어서 만들지 않았다.
 - `green`·`pink`·`yellow` 칩 색은 이 디자인에 없어서 포함하지 않았다.
+- 그 외 색(pink·green·orange)과 Figma의 L·M 크기는 `web/colorBadge`의 `ColorBadge`가 따로 제공한다. 값이 서로 달라 이 컴포넌트는 바꾸지 않았다.
 
 ## Public API
 
