@@ -11,6 +11,8 @@ export * from './inviteMemberCard';
 export * from './label';
 export * from './labeledTextField';
 export * from './loginButton';
+export * from './menu';
+export * from './menuItem';
 export * from './option';
 export * from './pageHeader';
 export * from './profileImage';
