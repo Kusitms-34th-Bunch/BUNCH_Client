@@ -4,6 +4,7 @@ export * from './accordion';
 export * from './bottomNavigation';
 export * from './bunchAvatar';
 export * from './cameraButton';
+export * from './chipButton';
 export * from './createBunchCard';
 export * from './editingAnimation';
 export * from './inviteCard';
