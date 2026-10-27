@@ -11,13 +11,13 @@
 
 ### 제공하는 동작
 
-- 52px 원형 아이콘 버튼. 흰 배경에 그림자가 있고 가운데에 점 세 개(`Line/Icon-L/dots`, 24px) 아이콘이 있다. 눌러서 더보기 메뉴 등을 여는 용도다.
+- 52px 원형 아이콘 버튼. 흰 배경에 그림자가 있고 가운데에 점 세 개(`Line/Icon-L/dots`, 24px) 아이콘이 있다. 눌러서 더보기 메뉴 등을 여는 용도다. 화면 디자인에는 더하기(+) 아이콘 형태도 있어 `icon` prop으로 고른다.
 - 기본, 눌림(`:active`), 비활성(`disabled`) 상태.
 
 ### 제공하지 않는 동작
 
 - 화면 위에 띄우는 위치(`fixed`, 오른쪽·아래 여백)와 메뉴 열기. 호출하는 쪽이 `className`으로 위치를 주고 `onClick`을 처리한다. Figma에 배치 값이 없다.
-- 아이콘 교체. Figma에는 점 세 개 아이콘 하나뿐이라 고정했다(확인할 항목).
+- 임의 아이콘 교체. `icon`은 `more`(점 세 개, 기본)와 `add`(더하기) 두 가지만 받는다.
 - hover 모양. Figma에 없다.
 
 ## Public API
@@ -44,24 +44,24 @@
 
 ## Styling과 의존성
 
-| Figma     | 값                                 | 사용한 토큰·utility                                           |
-| --------- | ---------------------------------- | ------------------------------------------------------------- |
-| 크기·반경 | 52px, radius full                  | `size-13 rounded-full`                                        |
-| 배경      | 흰색                               | `bg-surface-primary`                                          |
-| 그림자    | 0 4 6 `rgba(0,0,0,0.12)`           | `shadow-[0_4px_6px_rgba(0,0,0,0.12)]`(토큰 없음)              |
-| 아이콘    | `Line/Icon-L/dots` 24px, `#121212` | `LineDotsLargeIcon` + `text-icon-primary`                     |
-| 눌림      | 검정 20%                           | `bg-overlay-pressed`(배경 층)                                 |
-| 비활성    | 전체 40% 투명, 아이콘 `#BCBEC2`    | `opacity-(--semantic-opacity-disabled)`, `text-icon-disabled` |
+| Figma     | 값                                 | 사용한 토큰·utility                                                                         |
+| --------- | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| 크기·반경 | 52px, radius full                  | `size-13 rounded-full`                                                                      |
+| 배경      | 흰색                               | `bg-surface-primary`                                                                        |
+| 그림자    | 0 4 6 `rgba(0,0,0,0.12)`           | `shadow-[0_4px_6px_rgba(0,0,0,0.12)]`(토큰 없음)                                            |
+| 아이콘    | `Line/Icon-L/dots` 24px, `#121212` | `LineDotsLargeIcon`(`icon="more"`) / `LineAddLargeIcon`(`icon="add"`) + `text-icon-primary` |
+| 눌림      | 검정 20%                           | `bg-overlay-pressed`(배경 층)                                                               |
+| 비활성    | 전체 40% 투명, 아이콘 `#BCBEC2`    | `opacity-(--semantic-opacity-disabled)`, `text-icon-disabled`                               |
 
 - 눌림 오버레이는 `isolate`와 `before:-z-10`으로 버튼 배경 위, 아이콘 아래에 깐다. `CameraButton`은 아이콘 위까지 덮지만 Figma의 이 버튼은 배경에만 그려져 있어 배경 층으로 했다.
-- dependency 추가 없음. 아이콘은 기존 `LineDotsLargeIcon`을 쓴다.
+- dependency 추가 없음. 아이콘은 기존 `LineDotsLargeIcon`, `LineAddLargeIcon`을 쓴다.
 - Storybook state matrix: `Default`, `Disabled`, 두 상태를 나란히 보는 `States`, 화면 오른쪽 아래에 띄운 예 `Floating`. 눌림은 `:active`라 정지 화면으로 만들 수 없어 story로 두지 않았다.
 
 ## 확인할 항목
 
 - 그림자 토큰 (제안): Figma 그림자(`0 4 6 12%`)에 대응하는 토큰이 없어 임의 값을 썼다. 토큰 승격이 필요하면 디자이너와 정한다.
-- 아이콘 (제안): 점 세 개로 고정했다. 다른 아이콘이 필요한 플로팅 버튼이 생기면 교체 API를 정한다.
-- 이름 (제안): Figma 이름 `FloatingButton`을 그대로 썼다. 점 세 개가 "더보기"를 뜻한다고 보지만 Figma가 용도를 정의하지 않아 `aria-label`은 호출하는 쪽이 정한다.
+- 아이콘 (제안): Figma 컴포넌트에는 점 세 개 하나뿐이지만 화면 디자인에 더하기 형태가 있어 `icon: 'more' | 'add'`로 열었다. 더하기 아이콘의 Figma 컴포넌트 정의는 없어 같은 크기·색을 적용했다(디자이너 확인 항목).
+- 이름 (제안): Figma 이름 `FloatingButton`을 그대로 썼다. 팀원이 제안한 `MoreButton`은 더하기 형태가 있어 쓰지 않았다. 점 세 개가 "더보기"를 뜻한다고 보지만 Figma가 용도를 정의하지 않아 `aria-label`은 호출하는 쪽이 정한다.
 - 눌림 범위 (확인): Figma Pressed의 오버레이를 버튼 배경에만 그려져 있는 것으로 읽었다(아이콘 제외).
 - 위치·그림자 잘림 (미정): 부모에 `overflow: hidden`이 있으면 그림자가 잘린다. 쓰는 화면에서 확인한다.
 

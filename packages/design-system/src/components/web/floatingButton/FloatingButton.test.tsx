@@ -63,6 +63,20 @@ describe('FloatingButton', () => {
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('icon을 주지 않으면 점 세 개, add를 주면 더하기 아이콘을 그린다', () => {
+    const more = render(<FloatingButton aria-label="더보기" />).container.innerHTML;
+    const add = render(<FloatingButton aria-label="사진 추가" icon="add" />).container.innerHTML;
+
+    expect(more).not.toBe(add.replace('사진 추가', '더보기'));
+  });
+
+  it('icon이 바뀌어도 이름은 aria-label이고 아이콘은 숨긴다', () => {
+    const { container } = render(<FloatingButton aria-label="사진 추가" icon="add" />);
+
+    expect(screen.getByRole('button', { name: '사진 추가' })).toBeTruthy();
+    expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('type을 다시 정할 수 있다', () => {
     render(<FloatingButton aria-label="더보기" type="submit" />);
 

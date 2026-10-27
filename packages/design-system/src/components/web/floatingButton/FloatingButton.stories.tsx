@@ -16,12 +16,17 @@ export const Default: Story = {};
 
 export const Disabled: Story = { args: { disabled: true } };
 
+/** 더하기 아이콘: 사진 추가처럼 새로 만드는 동작에 사용 */
+export const Add: Story = { args: { icon: 'add', 'aria-label': '사진 추가' } };
+
 /** 기본·비활성을 나란히 보기(눌림은 버튼을 눌러서 확인) */
 export const States: Story = {
   render: () => (
     <div className="gap-s8 flex items-center">
       <FloatingButton aria-label="더보기" />
       <FloatingButton aria-label="더보기" disabled />
+      <FloatingButton aria-label="사진 추가" icon="add" />
+      <FloatingButton aria-label="사진 추가" icon="add" disabled />
     </div>
   ),
 };
