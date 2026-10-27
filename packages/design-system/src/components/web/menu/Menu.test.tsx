@@ -1,13 +1,15 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { MenuDivider } from '../menuDivider';
 import { MenuItem } from '../menuItem';
 import { Menu } from './Menu';
 
-const renderMenu = (showDivider = false) =>
+const renderMenu = () =>
   render(
-    <Menu aria-label="번들 메뉴" showDivider={showDivider}>
+    <Menu aria-label="번들 메뉴">
       <MenuItem>저장</MenuItem>
       <MenuItem>날짜 바꾸기</MenuItem>
+      <MenuDivider />
       <MenuItem tone="warning">삭제</MenuItem>
     </Menu>,
   );
@@ -43,13 +45,25 @@ describe('Menu', () => {
     expect(document.activeElement).toBe(a);
   });
 
-  it('showDivider면 항목 사이에만 separator를 그린다', () => {
-    renderMenu(true);
-    expect(screen.getAllByRole('separator')).toHaveLength(2);
+  it('MenuDivider를 넣은 위치에만 separator가 생긴다', () => {
+    renderMenu();
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    const children = [...screen.getByRole('menu').children];
+    expect(children.map((el) => el.getAttribute('role'))).toEqual([
+      'menuitem',
+      'menuitem',
+      'separator',
+      'menuitem',
+    ]);
   });
 
-  it('기본은 구분선이 없다', () => {
-    renderMenu();
+  it('MenuDivider가 없으면 구분선이 없다', () => {
+    render(
+      <Menu aria-label="m">
+        <MenuItem>저장</MenuItem>
+        <MenuItem>삭제</MenuItem>
+      </Menu>,
+    );
     expect(screen.queryByRole('separator')).toBeNull();
   });
 });
@@ -79,15 +93,11 @@ describe('Menu 포커스', () => {
     expect(document.activeElement).toBe(menu);
   });
 
-  it('showDivider는 false·null 자식 앞뒤에 선을 남기지 않는다', () => {
-    render(
-      <Menu aria-label="m" showDivider>
-        <MenuItem>저장</MenuItem>
-        {false}
-        {null}
-        <MenuItem>삭제</MenuItem>
-      </Menu>,
-    );
-    expect(screen.getAllByRole('separator')).toHaveLength(1);
+  it('구분선은 방향키 이동에서 건너뛴다', () => {
+    renderMenu();
+    const [, b, c] = screen.getAllByRole('menuitem');
+    b?.focus();
+    fireEvent.keyDown(b as HTMLElement, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(c);
   });
 });

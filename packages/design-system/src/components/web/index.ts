@@ -12,6 +12,7 @@ export * from './label';
 export * from './labeledTextField';
 export * from './loginButton';
 export * from './menu';
+export * from './menuDivider';
 export * from './menuItem';
 export * from './option';
 export * from './pageHeader';

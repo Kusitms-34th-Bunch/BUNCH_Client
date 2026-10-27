@@ -1,27 +1,19 @@
-import { Children, Fragment, type ComponentProps, type KeyboardEvent } from 'react';
+import type { ComponentProps, KeyboardEvent } from 'react';
 import { cn } from '../../../utils';
 
 export type MenuProps = Omit<ComponentProps<'div'>, 'role'> & {
   /** 접근성 이름(예: "번들 메뉴"). 보이는 제목이 없으므로 필수 */
   'aria-label': string;
-  /** 항목 사이 구분선(Figma `showDivider`, 0.4px border-secondary) */
-  showDivider?: boolean;
 };
 
 const itemSelector = '[role="menuitem"]';
 
 /**
- * 메뉴 컨테이너(Figma `Menu`): `MenuItem`을 담는 `role="menu"` 카드
+ * 메뉴 컨테이너(Figma `Menu`): `MenuItem`과 `MenuDivider`를 담는 `role="menu"` 카드
  * 방향키·Home·End로 항목 포커스를 옮김. 메뉴와 항목은 tabIndex=-1이라 Tab으로 들어올 수 없으므로 열 때 호출하는 쪽이 메뉴(ref.focus()) 또는 첫 항목에 포커스를 주어야 함
  * 열고 닫는 위치·상태, Esc·바깥 클릭·Tab 이탈 닫기, 트리거의 aria-haspopup="menu"·aria-expanded도 호출하는 쪽이 맡음
  */
-export const Menu = ({
-  className,
-  children,
-  showDivider = false,
-  onKeyDown,
-  ...props
-}: MenuProps) => {
+export const Menu = ({ className, children, onKeyDown, ...props }: MenuProps) => {
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
     if (event.defaultPrevented) return;
@@ -60,16 +52,7 @@ export const Menu = ({
       onKeyDown={handleKeyDown}
       {...props}
     >
-      {showDivider
-        ? Children.toArray(children).map((child, index) => (
-            <Fragment key={index}>
-              {index > 0 ? (
-                <div role="separator" className="bg-border-secondary h-[0.4px] shrink-0" />
-              ) : null}
-              {child}
-            </Fragment>
-          ))
-        : children}
+      {children}
     </div>
   );
 };
