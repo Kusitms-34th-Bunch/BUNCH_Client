@@ -68,6 +68,18 @@ describe('SuggestedBundleCard', () => {
     expect(screen.queryByText(/ 외 /)).toBeNull();
   });
 
+  it('멤버가 없으면 멤버 목록을 그리지 않는다', () => {
+    renderCard({ members: [] });
+
+    expect(screen.queryByRole('list')).toBeNull();
+  });
+
+  it('maxVisibleMembers가 숫자가 아니면 기본 6칩으로 본다', () => {
+    renderCard({ members: ['a', 'b', 'c', 'd', 'e', 'f', 'g'], maxVisibleMembers: Number.NaN });
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(6);
+  });
+
   it('selected가 아니면 aria-pressed가 false이고 칩은 gray다', () => {
     renderCard();
 

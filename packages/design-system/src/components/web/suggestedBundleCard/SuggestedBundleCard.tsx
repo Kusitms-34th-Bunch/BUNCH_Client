@@ -51,7 +51,7 @@ export const SuggestedBundleCard = ({
   className,
   ...props
 }: SuggestedBundleCardProps) => {
-  const chipCount = Math.max(1, maxVisibleMembers);
+  const chipCount = Number.isFinite(maxVisibleMembers) ? Math.max(1, maxVisibleMembers) : 6;
   const hiddenCount = Math.max(0, members.length - chipCount);
   const chips = members.slice(0, chipCount);
   const lastChip = chips.at(-1);
@@ -100,19 +100,23 @@ export const SuggestedBundleCard = ({
             onClick={onDetailClick}
             className={cn(
               'focus-visible:outline-border-brand relative z-10 flex size-5 shrink-0 cursor-pointer touch-manipulation items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2',
+              // 보이는 크기는 20px로 두고 터치 영역만 40px로 넓힘(Medium 아이콘 기준)
+              "before:absolute before:-inset-2.5 before:content-['']",
               selected ? 'text-text-brand' : 'text-text-tertiary',
             )}
           >
             <LineChevronRightMediumIcon aria-hidden="true" />
           </button>
         </div>
-        <ul aria-label="참여 멤버" className="gap-s3 flex w-full items-center overflow-hidden">
-          {chips.map((chip, index) => (
-            <li key={`${chip}-${index}`} className="shrink-0">
-              <ColorBadge color={chipColor}>{chip}</ColorBadge>
-            </li>
-          ))}
-        </ul>
+        {chips.length > 0 && (
+          <ul aria-label="참여 멤버" className="gap-s3 flex w-full items-center overflow-hidden">
+            {chips.map((chip, index) => (
+              <li key={`${chip}-${index}`} className="shrink-0">
+                <ColorBadge color={chipColor}>{chip}</ColorBadge>
+              </li>
+            ))}
+          </ul>
+        )}
         <div
           className={cn(
             'typography-body-2-regular gap-s6 flex w-full items-center',

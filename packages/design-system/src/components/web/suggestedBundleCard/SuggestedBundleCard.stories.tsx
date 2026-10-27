@@ -46,7 +46,7 @@ export const LongTitle: Story = {
   args: { title: '성수동 러닝 모임과 한강 러닝 크루가 함께한 가을 번들' },
 };
 
-/** 세 상태 나란히 보기(눌림은 카드를 누른 채로 확인) */
+/** 기본·선택 나란히 보기(눌림은 카드를 누른 채로 확인) */
 export const States: Story = {
   decorators: [
     (Story) => (
