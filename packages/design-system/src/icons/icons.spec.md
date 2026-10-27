@@ -20,7 +20,7 @@ Line 23종·Fill 8종, 아이콘 31종을 크기별 SVG(small·medium·large, �
 
 ## 그래픽 아이콘
 
-온보딩 카드용 컬러 그래픽 아이콘 5종을 `svg-graphic/`에서 만든다. Figma `그래픽아이콘`(node `758:6075`).
+온보딩 카드용 컬러 그래픽 아이콘 5종과 역할 배지 6종을 `svg-graphic/`에서 만든다. Figma `그래픽아이콘`(node `758:6075`).
 
 | Figma 이름          | 코드 이름           | 크기 |
 | ------------------- | ------------------- | ---- |
@@ -30,9 +30,21 @@ Line 23종·Fill 8종, 아이콘 31종을 크기별 SVG(small·medium·large, �
 | Graphic Icon/Edit   | `GraphicEditIcon`   | 40   |
 | Graphic Icon/people | `GraphicPeopleIcon` | 40   |
 
-- 색은 Figma 원본(`#A7ADFF`, `#777FF2`, `#454EDF`)을 SVG에 그대로 둔다. 토큰이 아니라 아이콘의 일부다.
-- `size` prop과 크기별 export가 없고 `Omit<IconProps, 'size'>`를 받는다. 접근성 계약은 고정 크기 아이콘과 같다.
-- 레이어 SVG를 Figma 프레임 안의 위치(예: Lock은 프레임 34×34 안의 (4, 2))로 한 캔버스에 조립했다. 위치는 Figma 코드의 중심 offset에서 계산했고 Figma 렌더와 육안으로 대조했다.
+- 온보딩 5종의 색은 Figma 원본(`#A7ADFF`, `#777FF2`, `#454EDF`)을 SVG에 그대로 둔다. 토큰이 아니라 아이콘의 일부다.
+- `size` prop과 크기를 고르는 래퍼가 없고 `Omit<IconProps, 'size'>`를 받는다. 온보딩 5종은 크기별 export도 없고, 역할 배지는 `Small`·`Medium` 이름의 export 둘뿐이다. 접근성 계약은 고정 크기 아이콘과 같다.
+- 온보딩 5종은 레이어 SVG를 Figma 프레임 안의 위치(예: Lock은 프레임 34×34 안의 (4, 2))로 한 캔버스에 조립했다. 위치는 Figma 코드의 중심 offset에서 계산했고 Figma 렌더와 육안으로 대조했다.
+
+### 역할 배지
+
+번들 작성 컴포넌트 `Role Badge`(node `1240:9314`)의 완성된 배지 6종도 같은 방식으로 둔다. 배경 원(`#FFA100`·`#BFBFBF`)과 흰 글리프(왕관·연필)가 한 SVG에 들어 있어서 색을 토큰으로 바꾸지 않는다. 크기는 Line/Fill 고정 크기 이름과 같은 규약으로 `Small`(16)·`Medium`(20)을 이름에 붙인다. 크기를 고르는 래퍼 export는 없고, 크기 선택은 `RoleBadge`가 맡는다.
+
+| Figma 이름 (Role, Size) | 코드 이름                                        | 크기    |
+| ----------------------- | ------------------------------------------------ | ------- |
+| Owner, S / M            | `GraphicRoleOwnerSmallIcon` / `MediumIcon`       | 16 / 20 |
+| CoOwner, S / M          | `GraphicRoleCoOwnerSmallIcon` / `MediumIcon`     | 16 / 20 |
+| DraftAuthor, S / M      | `GraphicRoleDraftAuthorSmallIcon` / `MediumIcon` | 16 / 20 |
+
+- Role Badge 노드를 그대로 내보내면 주변 캔버스(어두운 배경, 점선 프레임)가 섞여서, 배경 원과 글리프 레이어만 남겨 정리했다.
 
 ## 이름과 크기 확정
 
@@ -72,7 +84,7 @@ Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 ## 확인할 항목
 
 - [확정] 이름 정규화와 SVG/터치 영역 분리: 사용자 확인 완료.
-- [미정] 그래픽 아이콘 이름(`Graphic<이름>Icon`)과 두 가지 크기(34·40) 유지 여부: 디자이너 확인. Chat·Edit의 안쪽 도형은 투명 구멍이라 배경색이 비친다.
+- [미정] 온보딩 그래픽 아이콘 5종의 이름(`Graphic<이름>Icon`)과 두 가지 크기(34·40) 유지 여부: 디자이너 확인. Chat·Edit의 안쪽 도형은 투명 구멍이라 배경색이 비친다.
 - [미정] `fill-user` medium의 몸통 상단 y=11은 large의 y=14를 20/24로 축소한 11.667과 약 0.667 viewBox 단위 차이가 난다. 원본 SVG와 생성물 모두 이 차이를 유지한다. 의도한 보정인지 디자이너 확인 전에는 비례 축소로 바꾸지 않는다.
 - [측정] 번들 비용(2026-10-17 재측정): 같은 아이콘을 md로만 사용할 때 이전 구조 대비 gzip 크기는 1개 723B → 1,179B(+456B), 5개 1,327B → 2,671B(+1,344B), 31개 3,177B → 7,704B(+4,527B)다. 이전 구조는 `6f5d8519bb7460c5f071350d6d5d254bac7100de`의 Medium 컴포넌트, 현재 구조는 같은 이름순 아이콘의 `size="md"` 사용이다. 로컬 macOS·Node 26.10.0·Yarn 4.17.1·Vite 8.1.5 production ES library, minify 활성화, React·jsx-runtime 외부 처리, Node gzip 기본값으로 각 1회 측정했다. 세 크기 도형을 런타임에 고르므로 안 쓰는 크기도 포함된다. 이전 소스 gzip 평균이나 개별 gzip 합계는 이 번들 수치와 비교하지 않는다. 여러 크기 동시 사용과 Next 앱 실제 증분은 미측정이다.
 - [미정] Small 터치 영역 32px의 실제 사용 위치와 Large 40px 확정(디자이너 확인 요청 중). IconButton 구현 시 확정하며 이번 작업에서 클릭 가능한 UI를 추가하지 않음.

@@ -25,13 +25,14 @@ apps/web/src/features/{feature}/
   queries/       keys.ts(key factory), 리소스별 queryOptions·mutation hook
   model/         (필요할 때) 응답 스키마·도메인 타입·변환
   hooks/         화면·흐름 hook(서버 상태 아님)
-apps/web/src/shared/query/     QueryClient·Provider, 여러 feature가 함께 쓰는 query(승격 시)
+apps/web/src/shared/query/     QueryClient 설정, 여러 feature가 함께 쓰는 query(승격 시)
+apps/web/src/shared/providers/ QueryProvider(앱 공용 provider)
 apps/web/src/app/api/[...path]/route.ts   범용 BFF 프록시
 apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·삭제)
 ```
 
 - **`api/`**: HTTP 요청과 계약 변환만 한다. React·TanStack Query·`next/navigation`·디자인 시스템(toast 등)을 import하지 않는다(ESLint 강제). 파일은 백엔드 리소스 단위(`api/nickname.ts`)로 나누고 함수 이름은 네트워크 동사(`get`, `create`, `update`, `remove`)로 시작한다. 경로는 BFF 기준(`/api/…`)이다.
-- **`queries/`**: query key, `queryOptions`·`infiniteQueryOptions`, mutation hook을 둔다. `queryOptions`·`useMutation`·`useQueryClient`·`QueryClient`는 `queries/`와 `src/shared/query/`에서만 import한다(ESLint 강제, 타입 import는 어디서나 허용). 파일 이름은 `api/`와 맞춘다(`api/nickname.ts` ↔ `queries/nickname.ts`).
+- **`queries/`**: query key, `queryOptions`·`infiniteQueryOptions`, mutation hook을 둔다. `queryOptions`·`useMutation`·`useQueryClient`·`QueryClient`는 `queries/`, `src/shared/query/`, `QueryProvider`에서만 import한다(ESLint 강제, 타입 import는 어디서나 허용). 파일 이름은 `api/`와 맞춘다(`api/nickname.ts` ↔ `queries/nickname.ts`).
 - **query hook은 기본으로 만들지 않는다.** 화면이 `useQuery(xxxQueryOptions(…))`처럼 options를 받아 읽는다(`useQuery`·`useSuspenseQuery`·`useInfiniteQuery`는 어디서나 사용 가능). 여러 query 조합이나 가공이 필요할 때만 `queries/`에 `use…Query`를 만든다.
 - **mutation은 항상 `queries/`의 `use…Mutation` hook으로 만든다.** 캐시 동기화(아래 "Mutation 캐시 동기화")를 한곳에 모으기 위해서다. 화면 이동·toast 같은 화면 동작은 hook에 넣지 않고 화면이 `mutate(…, { onSuccess })`로 처리한다.
 - **`hooks/`**: 서버 상태가 아닌 화면·흐름 hook만 둔다.
@@ -78,7 +79,7 @@ const { data: available } = useQuery(nicknameAvailabilityQueryOptions(nickname))
 register.mutate(form, { onSuccess: () => router.push(nextPath) });
 ```
 
-`bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스다(첫 API 연동 때 `src/shared/api`에 둔다). QueryClient는 `src/shared/query/`의 `QueryProvider`가 `(app)` layout에서 제공한다(그룹 밖 화면이 query를 쓰게 되면 캐시를 나누지 않도록 `QueryProvider`를 root layout으로 올린다). 서버 prefetch를 쓰게 되면 요청 단위 `getQueryClient` 구조로 바꾼다. 조회는 네트워크 오류·5xx만 1회 재시도하고(`createRetryPolicy`), 4xx와 mutation은 재시도하지 않는다.
+`bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스다(첫 API 연동 때 `src/shared/api`에 둔다). QueryClient는 `src/shared/providers/`의 `QueryProvider`가 `(app)` layout에서 제공한다(그룹 밖 화면이 query를 쓰게 되면 캐시를 나누지 않도록 `QueryProvider`를 root layout으로 올린다). 서버 prefetch를 쓰게 되면 요청 단위 `getQueryClient` 구조로 바꾼다. 조회는 네트워크 오류·5xx만 1회 재시도하고(`createRetryPolicy`), 4xx와 mutation은 재시도하지 않는다.
 
 ### BFF 경로
 
