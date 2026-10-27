@@ -29,6 +29,7 @@ export * from './pageHeader';
 export * from './profileImage';
 export * from './radioCard';
 export * from './roleBadge';
+export * from './selectionField';
 export * from './stepper';
 export * from './suggestedBundleCard';
 export * from './termsLabel';
