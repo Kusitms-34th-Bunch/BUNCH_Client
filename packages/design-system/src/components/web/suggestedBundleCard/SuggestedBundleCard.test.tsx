@@ -80,6 +80,15 @@ describe('SuggestedBundleCard', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(6);
   });
 
+  it('maxVisibleMembers가 소수면 내림해서 외 N명이 정수로 나온다', () => {
+    renderCard({ members: ['a', 'b', 'c', 'd'], maxVisibleMembers: 2.5 });
+
+    expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      'a',
+      'b 외 2명',
+    ]);
+  });
+
   it('selected가 아니면 aria-pressed가 false이고 칩은 gray다', () => {
     renderCard();
 

@@ -51,7 +51,9 @@ export const SuggestedBundleCard = ({
   className,
   ...props
 }: SuggestedBundleCardProps) => {
-  const chipCount = Number.isFinite(maxVisibleMembers) ? Math.max(1, maxVisibleMembers) : 6;
+  const chipCount = Number.isFinite(maxVisibleMembers)
+    ? Math.max(1, Math.floor(maxVisibleMembers))
+    : 6;
   const hiddenCount = Math.max(0, members.length - chipCount);
   const chips = members.slice(0, chipCount);
   const lastChip = chips.at(-1);
