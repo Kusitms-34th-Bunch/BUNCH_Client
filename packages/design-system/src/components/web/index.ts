@@ -3,6 +3,7 @@
 export * from './accordion';
 export * from './bottomNavigation';
 export * from './bunchAvatar';
+export * from './bundleTitle';
 export * from './cameraButton';
 export * from './createBunchCard';
 export * from './editingAnimation';
