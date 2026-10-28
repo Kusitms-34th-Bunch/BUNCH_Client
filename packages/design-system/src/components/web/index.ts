@@ -6,6 +6,7 @@ export * from './bunchAvatar';
 export * from './cameraButton';
 export * from './createBunchCard';
 export * from './editingAnimation';
+export * from './floatingButton';
 export * from './inviteCard';
 export * from './inviteMemberCard';
 export * from './label';
