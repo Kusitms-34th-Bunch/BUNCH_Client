@@ -19,7 +19,7 @@ export * from './radioCard';
 export * from './roleBadge';
 export * from './stepper';
 export * from './termsLabel';
-export * from './uploaderBadge';
 export * from './uploadOptionCard';
+export * from './uploaderBadge';
 export * from './visibilityOption';
 export * from './yearOption';
