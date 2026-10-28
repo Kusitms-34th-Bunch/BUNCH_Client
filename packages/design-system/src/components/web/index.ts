@@ -5,6 +5,7 @@ export * from './addMemberCard';
 export * from './bottomNavigation';
 export * from './bunchAvatar';
 export * from './bundleCommentCard';
+export * from './bundleTitle';
 export * from './calendar';
 export * from './calendarItem';
 export * from './cameraButton';
