@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
-import { LineCloseSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { DeleteButton } from '../deleteButton';
 import { ProfileImage } from '../profileImage';
 import { RoleBadge, type RoleBadgeRole } from '../roleBadge';
 
@@ -53,19 +53,11 @@ export const MemberCard = ({
       <span className="typography-body-2-regular text-text-secondary min-w-0 truncate">{name}</span>
     </div>
     {onDelete !== undefined && (
-      <button
-        type="button"
-        aria-label={deleteLabel ?? `${name} 삭제`}
+      <DeleteButton
+        label={deleteLabel ?? `${name} 삭제`}
         onClick={onDelete}
-        className={cn(
-          'bg-icon-tertiary text-icon-inversed absolute -top-0.75 -right-0.75 flex size-4 cursor-pointer touch-manipulation items-center justify-center rounded-full',
-          // 보이는 16px보다 넓은 32px 터치 영역(design-system-icons.md의 Small 기준)
-          "before:absolute before:-inset-2 before:content-['']",
-          'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
-        )}
-      >
-        <LineCloseSmallIcon aria-hidden="true" className="size-3" />
-      </button>
+        className="absolute -top-0.75 -right-0.75"
+      />
     )}
   </div>
 );
