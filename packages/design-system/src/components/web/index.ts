@@ -7,6 +7,7 @@ export * from './cameraButton';
 export * from './colorBadge';
 export * from './createBunchCard';
 export * from './editingAnimation';
+export * from './errorBanner';
 export * from './floatingButton';
 export * from './inviteCard';
 export * from './inviteMemberCard';
