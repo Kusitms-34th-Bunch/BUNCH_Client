@@ -1,9 +1,10 @@
 'use client';
 
-import { useId, useLayoutEffect, useRef, type ComponentProps } from 'react';
+import { useId, useRef, type ComponentProps } from 'react';
 import { cn } from '../../../utils';
 import inputScale from '../../core/textField/inputScale.module.css';
 import { FieldFooter } from './fieldFooter.internal';
+import { useTextareaAutoHeight } from './useTextareaAutoHeight.internal';
 
 export type LabeledTextAreaProps = Omit<
   ComponentProps<'textarea'>,
@@ -39,29 +40,7 @@ export function LabeledTextArea({
     .filter(Boolean)
     .join(' ');
 
-  // 값이 바뀔 때와 폭이 바뀔 때(회전·글자 크기 변경) 내용 높이에 맞춤(auto로 줄였다가 scrollHeight로 늘림)
-  // 그리기 전에 높이를 맞춰 줄바꿈 프레임에 잘려 보이지 않게 함
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    const fit = () => {
-      element.style.height = 'auto';
-      const height = element.scrollHeight;
-      element.style.height = `${height}px`;
-      element.parentElement?.style.setProperty('--textarea-height', `${height}px`);
-    };
-    fit();
-    if (typeof ResizeObserver === 'undefined' || !element.parentElement) return;
-    let lastWidth = element.parentElement.clientWidth;
-    const observer = new ResizeObserver(() => {
-      const width = element.parentElement?.clientWidth ?? lastWidth;
-      if (width === lastWidth) return;
-      lastWidth = width;
-      fit();
-    });
-    observer.observe(element.parentElement);
-    return () => observer.disconnect();
-  }, [value]);
+  useTextareaAutoHeight(ref, value);
 
   return (
     <div className={cn('gap-s3 flex w-full flex-col', className)}>

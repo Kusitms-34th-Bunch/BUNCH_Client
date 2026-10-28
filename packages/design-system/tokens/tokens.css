@@ -126,6 +126,8 @@
   --primitive-opacity-60: 60%;
   --primitive-opacity-8: 8%;
   --primitive-opacity-80: 80%;
+  --primitive-orange-50: #fff6e6;
+  --primitive-orange-500: #ff9100;
   --primitive-paragraph-indent-0: 0px;
   --primitive-paragraph-spacing-0: 0px;
   --primitive-pink-100: #ffd4f0;
@@ -187,6 +189,8 @@
   --semantic-chip-gray-fg: var(--primitive-gray-scale-gray-600);
   --semantic-chip-green-bg: var(--primitive-green-50);
   --semantic-chip-green-fg: var(--primitive-green-500);
+  --semantic-chip-orange-bg: var(--primitive-orange-50);
+  --semantic-chip-orange-fg: var(--primitive-orange-500);
   --semantic-chip-pink-bg: var(--primitive-pink-50);
   --semantic-chip-pink-fg: var(--primitive-pink-500);
   --semantic-chip-yellow-bg: var(--primitive-yellow-50);
@@ -281,6 +285,7 @@
   --semantic-surface-danger: var(--primitive-red-color-feedback-red-600);
   --semantic-surface-disabled: var(--primitive-gray-scale-gray-200);
   --semantic-surface-inversed: var(--primitive-gray-scale-gray-700);
+  --semantic-surface-inversed-lighter: var(--primitive-gray-scale-gray-600);
   --semantic-surface-primary: var(--primitive-gray-scale-gray-000);
   --semantic-surface-secondary: var(--primitive-gray-scale-gray-100);
   --semantic-surface-tertiary: var(--primitive-gray-scale-gray-200);
@@ -342,6 +347,8 @@
   --color-primitive-green-700: var(--primitive-green-700);
   --color-primitive-green-800: var(--primitive-green-800);
   --color-primitive-green-900: var(--primitive-green-900);
+  --color-primitive-orange-50: var(--primitive-orange-50);
+  --color-primitive-orange-500: var(--primitive-orange-500);
   --color-primitive-pink-100: var(--primitive-pink-100);
   --color-primitive-pink-200: var(--primitive-pink-200);
   --color-primitive-pink-300: var(--primitive-pink-300);
@@ -392,6 +399,8 @@
   --color-chip-gray-fg: var(--semantic-chip-gray-fg);
   --color-chip-green-bg: var(--semantic-chip-green-bg);
   --color-chip-green-fg: var(--semantic-chip-green-fg);
+  --color-chip-orange-bg: var(--semantic-chip-orange-bg);
+  --color-chip-orange-fg: var(--semantic-chip-orange-fg);
   --color-chip-pink-bg: var(--semantic-chip-pink-bg);
   --color-chip-pink-fg: var(--semantic-chip-pink-fg);
   --color-chip-yellow-bg: var(--semantic-chip-yellow-bg);
@@ -474,6 +483,7 @@
   --color-surface-danger: var(--semantic-surface-danger);
   --color-surface-disabled: var(--semantic-surface-disabled);
   --color-surface-inversed: var(--semantic-surface-inversed);
+  --color-surface-inversed-lighter: var(--semantic-surface-inversed-lighter);
   --color-surface-primary: var(--semantic-surface-primary);
   --color-surface-secondary: var(--semantic-surface-secondary);
   --color-surface-tertiary: var(--semantic-surface-tertiary);
