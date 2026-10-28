@@ -1,6 +1,7 @@
 // @generated — run `yarn gen:index` to update
 
 export * from './accordion';
+export * from './addMemberCard';
 export * from './bottomNavigation';
 export * from './bunchAvatar';
 export * from './calendar';
@@ -17,6 +18,7 @@ export * from './inviteMemberCard';
 export * from './label';
 export * from './labeledTextField';
 export * from './loginButton';
+export * from './memberCard';
 export * from './option';
 export * from './pageHeader';
 export * from './profileImage';
