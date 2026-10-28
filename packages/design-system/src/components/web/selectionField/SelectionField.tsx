@@ -1,10 +1,10 @@
-import type { ComponentProps } from 'react';
-import {
-  LineChevronRightMediumIcon,
-  LineCloseMediumIcon,
-  LineMapPinSmallIcon,
-} from '../../../icons';
+'use client';
+
+import { type ComponentProps, useId } from 'react';
+import { LineChevronRightMediumIcon, LineCloseMediumIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { BundleTitle } from '../bundleTitle';
+import { ChipButton } from '../chipButton';
 
 export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'title' | 'onSelect'> & {
   /** 제목 글자: 선택 전에는 안내 문구(예: "위치 추가"), 선택 뒤에는 선택한 값(예: "서울특별시 여의도동") */
@@ -32,8 +32,9 @@ export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'titl
 };
 
 /**
- * 선택 필드(Figma `Selection Field`): 흰 카드에 위치 핀·제목·필수 표시와 오른쪽 아이콘
- * 선택 전에는 화살표와 추천 값(선택), 선택 뒤에는 지우기 버튼이며 `className`은 카드에 적용
+ * 선택 필드(Figma `Selection Field`): 흰 카드에 `BundleTitle`(위치 핀·제목·필수 표시)과 오른쪽 아이콘
+ * 선택 전에는 화살표와 추천 값(`ChipButton`, 선택), 선택 뒤에는 지우기 버튼이며 `className`은 카드에 적용
+ * 필드 버튼은 카드 전체를 덮는 빈 버튼이고 `BundleTitle`(div)이 그 이름(`aria-labelledby`), 제목은 이름으로만 읽히도록 `aria-hidden`
  */
 export const SelectionField = ({
   label,
@@ -50,6 +51,9 @@ export const SelectionField = ({
   className,
   ...props
 }: SelectionFieldProps) => {
+  const generatedId = useId();
+  const titleId = `${generatedId}-title`;
+  const fieldLabelId = `${generatedId}-field`;
   const showSuggestions = !selected && suggestions !== undefined && suggestions.length > 0;
 
   return (
@@ -61,43 +65,29 @@ export const SelectionField = ({
       )}
       {...props}
     >
-      <div className="flex h-6 min-w-0 flex-1 items-center">
-        <button
-          type="button"
-          onClick={onFieldClick}
-          className={cn(
-            'gap-s4 flex h-6 min-w-0 flex-1 cursor-pointer touch-manipulation items-center text-left',
-            // 버튼을 카드 전체로 넓혀 여백을 눌러도 필드가 눌리게 처리(추천 값·지우기 버튼은 그 위)
-            "after:rounded-r5 after:absolute after:inset-0 after:content-['']",
-            'focus-visible:after:outline-border-brand outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2',
-          )}
-        >
-          <span className="gap-s2 text-icon-primary flex min-w-0 items-center">
-            <LineMapPinSmallIcon aria-hidden="true" className="shrink-0" />
-            <span className="gap-s1 flex min-w-0 items-center">
-              {fieldLabel && <span className="sr-only">{fieldLabel}: </span>}
-              <span className="typography-body-2-meduim text-text-secondary truncate">{label}</span>
-              {required && (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className="typography-body-1-semi-bold text-icon-brand shrink-0"
-                  >
-                    *
-                  </span>
-                  <span className="sr-only">{requiredLabel}</span>
-                </>
-              )}
-            </span>
-          </span>
-          {!selected && (
-            <LineChevronRightMediumIcon
-              aria-hidden="true"
-              className="text-icon-primary ml-auto shrink-0"
-            />
-          )}
-        </button>
-        {selected && (
+      {/* 카드 전체를 덮는 빈 버튼, 지우기 버튼·추천 칩은 그 위(z-10)에서 따로 눌림 */}
+      <button
+        type="button"
+        aria-labelledby={fieldLabel ? `${fieldLabelId} ${titleId}` : titleId}
+        onClick={onFieldClick}
+        className="rounded-r5 focus-visible:outline-border-brand absolute inset-0 cursor-pointer touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-offset-2"
+      />
+      {fieldLabel && (
+        <span id={fieldLabelId} aria-hidden="true" className="sr-only">
+          {fieldLabel}:
+        </span>
+      )}
+      <div className="gap-s4 flex h-6 min-w-0 flex-1 items-center">
+        <BundleTitle
+          id={titleId}
+          aria-hidden="true"
+          title={label}
+          required={required}
+          requiredLabel={requiredLabel}
+          // BundleTitle 기본 높이 25px을 Figma 필드 줄 높이 24px에 맞춤
+          className="h-6 min-w-0 flex-1"
+        />
+        {selected ? (
           <button
             type="button"
             aria-label={clearLabel ?? `${label} 지우기`}
@@ -111,6 +101,8 @@ export const SelectionField = ({
           >
             <LineCloseMediumIcon aria-hidden="true" />
           </button>
+        ) : (
+          <LineChevronRightMediumIcon aria-hidden="true" className="text-icon-primary shrink-0" />
         )}
       </div>
       {showSuggestions && (
@@ -121,16 +113,13 @@ export const SelectionField = ({
         >
           {suggestions.map((suggestion, index) => (
             <li key={`${suggestion}-${index}`}>
-              <button
-                type="button"
+              <ChipButton
+                size="M"
                 onClick={() => onSuggestionClick?.(suggestion)}
-                className={cn(
-                  'bg-surface-secondary typography-body-2-regular text-text-tertiary px-s5 pointer-events-auto inline-flex h-9 cursor-pointer touch-manipulation items-center justify-center rounded-full whitespace-nowrap',
-                  'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
-                )}
+                className="pointer-events-auto"
               >
                 {suggestion}
-              </button>
+              </ChipButton>
             </li>
           ))}
         </ul>

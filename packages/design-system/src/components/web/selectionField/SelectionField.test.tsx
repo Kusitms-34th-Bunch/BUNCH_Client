@@ -177,4 +177,36 @@ describe('SelectionField', () => {
     expect((container.firstElementChild as HTMLElement).className).toContain('mt-2');
     expect(screen.getByTestId('field')).toBeTruthy();
   });
+
+  it('필드 버튼은 내용이 없는 빈 버튼이고 aria-labelledby가 BundleTitle을 가리킨다', () => {
+    renderField({ fieldLabel: '위치', required: true });
+    const button = screen.getByRole('button', { name: '위치: 위치 추가 필수' });
+
+    expect(button.textContent).toBe('');
+    const ids = (button.getAttribute('aria-labelledby') ?? '').split(' ');
+    expect(ids).toHaveLength(2);
+    expect(document.getElementById(ids[1] ?? '')?.textContent).toContain('위치 추가');
+  });
+
+  it('필드 버튼 안에는 다른 요소가 없다(버튼 안 div·p 금지)', () => {
+    const { container } = renderField({ suggestions: ['서울'] });
+    const field = container.querySelector('button[aria-labelledby]') as HTMLElement;
+
+    expect(field.children).toHaveLength(0);
+  });
+
+  it('추천 칩은 ChipButton M이고 aria-pressed가 없다', () => {
+    renderField({ suggestions: ['서울특별시'] });
+    const chip = screen.getByRole('button', { name: '서울특별시' });
+
+    expect(chip.classList.contains('h-9')).toBe(true);
+    expect(chip.classList.contains('bg-surface-secondary')).toBe(true);
+    expect(chip.hasAttribute('aria-pressed')).toBe(false);
+  });
+
+  it('제목 줄 높이는 Figma 24px(h-6)로 맞춘다', () => {
+    const { container } = renderField();
+
+    expect(container.querySelector('[id$="-title"]')?.classList.contains('h-6')).toBe(true);
+  });
 });
