@@ -7,7 +7,15 @@ import { BundleTitle, type BundleTitleProps } from '../bundleTitle';
 
 export type BundleTextInputProps = Omit<
   TextFieldProps,
-  'label' | 'action' | 'onClear' | 'clearLabel' | 'className' | 'aria-labelledby' | 'disabled'
+  | 'label'
+  | 'action'
+  | 'onClear'
+  | 'clearLabel'
+  | 'editing'
+  | 'editingLabel'
+  | 'className'
+  | 'aria-labelledby'
+  | 'disabled'
 > &
   Pick<
     BundleTitleProps,

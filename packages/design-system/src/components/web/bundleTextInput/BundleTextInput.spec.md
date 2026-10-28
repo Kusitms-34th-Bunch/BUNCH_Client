@@ -24,7 +24,7 @@
 
 ## Public API
 
-- `title`(필수), `icon`·`required`·`requiredLabel`·`members`·`membersLabel`(`BundleTitle`에 그대로 전달), `errorMessage`, `className`(전체에 적용), 그리고 native `input` 속성(`value`·`defaultValue`·`onChange`·`placeholder`·`maxLength`·`id` 등. `label`·`action`·`onClear`·`clearLabel`·`aria-labelledby`·`disabled` 제외).
+- `title`(필수), `icon`·`required`·`requiredLabel`·`members`·`membersLabel`(`BundleTitle`에 그대로 전달), `errorMessage`, `className`(전체에 적용), 그리고 native `input` 속성(`value`·`defaultValue`·`onChange`·`placeholder`·`maxLength`·`id` 등. `label`·`action`·`onClear`·`clearLabel`·`editing`·`editingLabel`·`aria-labelledby`·`disabled` 제외).
 - 호출자 소유 책임: 값, 검증, 오류 문구, 멤버 데이터.
 
 ## 상태와 동작
