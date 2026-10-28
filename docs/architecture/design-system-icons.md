@@ -1,6 +1,6 @@
 # Design System Icons
 
-Figma의 Line 23종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 93개)를 SVGR로 변환해 **고정 크기 export 93개**와 기존 `size`(`sm`·`md`·`lg`) 선택용 export 31개로 제공한다. 고정 크기가 기본이며 크기가 실행 중 바뀔 때만 `size` API를 사용한다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
+Figma의 Line 25종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 99개)를 SVGR로 변환해 **고정 크기 export 99개**와 기존 `size`(`sm`·`md`·`lg`) 선택용 export 33개로 제공한다. 고정 크기가 기본이며 크기가 실행 중 바뀔 때만 `size` API를 사용한다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
 
 ## 왜 design-system인가
 
@@ -75,7 +75,7 @@ metadata는 변환 전에 제거한다. Line/Fill 세트는 모두 단색이며,
 - 터치 영역은 기존 spacing token `s14`(32), `s16`(40)에 대응한다. SVG 자체에는 padding이나 클릭 동작을 추가하지 않는다.
 - 터치 영역이 이웃 요소의 터치 영역과 겹치지 않는지 확인한다.
 - Large 40×40은 디자이너에게 확인을 요청한 값이다("Large를 40으로 해 줄 수 있는지"). 확정 전에는 Large 아이콘 버튼도 40을 기준으로 하되 바뀔 수 있다.
-- Small(32)의 실제 사용 위치와 최소 터치 영역은 IconButton을 구현할 때 확정한다.
+- Small(32)의 실제 사용 위치와 최소 터치 영역은 아직 확정되지 않았다. `IconButton`(`web/iconButton`)은 Large(24px 아이콘, 40×40 버튼)만 구현했고 Small 아이콘 버튼은 Figma에 없어 만들지 않았다.
 
 ## 색상 계약
 
