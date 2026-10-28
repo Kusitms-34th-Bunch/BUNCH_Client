@@ -20,11 +20,11 @@
 - 글자 수 제한·검증·오류 문구 결정은 호출하는 쪽이 한다(Figma 문구 "입력 가능한 글자수를 초과했어요"는 예시일 뿐 컴포넌트에 고정하지 않음).
 - 오류일 때 입력창 테두리를 바꾸지 않는다(Figma 오류 예시도 기본 테두리).
 - 글자 수 `현재/최대` 표시는 Figma에 없어 만들지 않는다.
-- 지우기·버튼·`editing` 변형과 `disabled`는 받지 않는다(Figma 변형이 Default 하나뿐이고, 비활성이면 제목·오류 문구까지 같이 흐려지는 규칙이 정의돼 있지 않음).
+- 입력창 옵션은 제한하지 않고 core `TextField`가 받는 것을 모두 전달한다(`action`·`onClear`·`clearLabel`·`editing`·`editingLabel`·`disabled` 포함). Figma 변형은 Default 하나뿐이지만 이 변형들은 입력창 쪽 규칙(`TextField.spec.md`)을 그대로 따른다. 다만 `disabled`일 때 흐려지는 것은 입력창뿐이고 제목·오류 문구는 흐려지지 않는다.
 
 ## Public API
 
-- `title`(필수), `icon`·`required`·`requiredLabel`·`members`·`membersLabel`(`BundleTitle`에 그대로 전달), `errorMessage`, `className`(전체에 적용), 그리고 native `input` 속성(`value`·`defaultValue`·`onChange`·`placeholder`·`maxLength`·`id` 등. `label`·`action`·`onClear`·`clearLabel`·`editing`·`editingLabel`·`aria-labelledby`·`disabled` 제외).
+- `title`(필수), `icon`·`required`·`requiredLabel`·`members`·`membersLabel`(`BundleTitle`에 그대로 전달), `errorMessage`, `className`(전체에 적용), 그리고 core `TextField`의 모든 옵션(`value`·`defaultValue`·`onChange`·`placeholder`·`maxLength`·`id`·`disabled`·`action`·`onClear` 등). 이 컴포넌트가 정하는 `label`·`aria-labelledby`와 전체에 적용하는 `className`만 제외.
 - 호출자 소유 책임: 값, 검증, 오류 문구, 멤버 데이터.
 
 ## 상태와 동작

@@ -84,3 +84,27 @@ describe('BundleTextInput', () => {
     expect(root.className).toContain('max-w-86');
   });
 });
+
+describe('BundleTextInput TextField 옵션 전달', () => {
+  it('onClear를 주면 지우기 버튼이 생기고 누르면 호출된다', () => {
+    const onClear = vi.fn();
+    render(<BundleTextInput title="사진" value="값" onChange={() => {}} onClear={onClear} />);
+    fireEvent.click(screen.getByRole('button', { name: '입력 지우기' }));
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('disabled를 입력창에 전달한다', () => {
+    render(<BundleTextInput title="사진" disabled />);
+    expect(screen.getByRole<HTMLInputElement>('textbox').disabled).toBe(true);
+  });
+
+  it('action 영역을 오른쪽에 둔다', () => {
+    render(<BundleTextInput title="사진" action={<button type="button">저장</button>} />);
+    expect(screen.getByRole('button', { name: '저장' })).toBeTruthy();
+  });
+
+  it('editing이면 입력창이 aria-busy가 된다', () => {
+    render(<BundleTextInput title="사진" editing />);
+    expect(screen.getByRole('textbox').getAttribute('aria-busy')).toBe('true');
+  });
+});

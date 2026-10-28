@@ -5,18 +5,7 @@ import { cn } from '../../../utils';
 import { TextField, type TextFieldProps } from '../../core/textField';
 import { BundleTitle, type BundleTitleProps } from '../bundleTitle';
 
-export type BundleTextInputProps = Omit<
-  TextFieldProps,
-  | 'label'
-  | 'action'
-  | 'onClear'
-  | 'clearLabel'
-  | 'editing'
-  | 'editingLabel'
-  | 'className'
-  | 'aria-labelledby'
-  | 'disabled'
-> &
+export type BundleTextInputProps = Omit<TextFieldProps, 'label' | 'className' | 'aria-labelledby'> &
   Pick<
     BundleTitleProps,
     'title' | 'icon' | 'required' | 'requiredLabel' | 'members' | 'membersLabel'
