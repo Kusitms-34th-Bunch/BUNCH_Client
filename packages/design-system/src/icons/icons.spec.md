@@ -6,12 +6,12 @@
 
 ## 목적과 범위
 
-Line 24종·Fill 8종, 아이콘 32종을 크기별 SVG(small·medium·large, 총 96개)에서 SVGR로 변환해 **고정 크기 export 96개**와 `size` 선택용 export 32개로 제공한다. 기존 `size` API를 유지하면서 고정 크기 사용의 번들 비용을 줄인다. 크기별 도형(viewBox·선 굵기 포함)을 확대·축소로 대체하지 않는다. 원본을 확인한 결과 세 크기의 도형 구조는 32종 모두 같지만 선 굵기가 다르다(small 1.2, medium·large 1.5). 런타임 이름 레지스트리나 IconButton은 만들지 않는다. 생성 컴포넌트는 asset 파이프라인이 소유하며 수작업 컴포넌트 scaffold 대상이 아니다.
+Line 26종·Fill 8종, 아이콘 34종을 크기별 SVG(small·medium·large, 총 102개)에서 SVGR로 변환해 **고정 크기 export 102개**와 `size` 선택용 export 34개로 제공한다. 기존 `size` API를 유지하면서 고정 크기 사용의 번들 비용을 줄인다. 크기별 도형(viewBox·선 굵기 포함)을 확대·축소로 대체하지 않는다. 원본을 확인한 결과 세 크기의 도형 구조는 32종 모두 같지만 선 굵기가 다르다(small 1.2, medium·large 1.5). 런타임 이름 레지스트리나 IconButton은 만들지 않는다. 생성 컴포넌트는 asset 파이프라인이 소유하며 수작업 컴포넌트 scaffold 대상이 아니다.
 
 ## Public API
 
-- 고정 크기: `LineSearchSmallIcon`·`LineSearchMediumIcon`·`LineSearchLargeIcon`처럼 크기별 named export 96개. `Omit<IconProps, 'size'>`를 받으며 다른 크기 도형을 import하지 않는다.
-- 동적 크기: `LineSearchIcon`, `FillCircleCheckIcon` 등 기존 named export 32개. 고정 크기가 아닌 경우에 사용한다.
+- 고정 크기: `LineSearchSmallIcon`·`LineSearchMediumIcon`·`LineSearchLargeIcon`처럼 크기별 named export 102개. `Omit<IconProps, 'size'>`를 받으며 다른 크기 도형을 import하지 않는다.
+- 동적 크기: `LineSearchIcon`, `FillCircleCheckIcon` 등 기존 named export 34개. 고정 크기가 아닌 경우에 사용한다.
 - `size?: 'sm' | 'md' | 'lg'`(기본 `md`). `sm` 16×16, `md` 20×20, `lg` 24×24이고 크기마다 Figma가 그린 도형·viewBox·선 굵기를 쓴다. `size`는 `Button`의 `sm`·`md`·`lg`와 같은 이름이다. 공개 타입 `IconSize`, `IconProps`.
 - React SVG props, `className`, `ref` 전달. 색은 부모의 `color` 상속.
 - 별도 상태·이벤트 API 없음. 클릭·키보드·터치 영역은 호출자의 button/link 책임.
@@ -59,7 +59,7 @@ Line 24종·Fill 8종, 아이콘 32종을 크기별 SVG(small·medium·large, �
 
 Copy·Camera·Close의 대소문자도 파일명에서는 kebab-case로 통일한다.
 
-Line: add, alert, bell, camera, chevron-down, chevron-left, chevron-right, chevron-up, circle-check, close, confetti, copy, dots, dots-vertical, heart, home, map-pin, menu, pencil, photo, reload, search, setting, user.
+Line: add, alert, bell, calendar, camera, chevron-down, chevron-left, chevron-right, chevron-up, circle-check, close, confetti, copy, dots, dots-vertical, heart, home, map-pin, menu, pencil, photo, plug-off, reload, search, setting, user.
 
 Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 
@@ -92,7 +92,7 @@ Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 
 ## 검증
 
-- 아이콘 32종(Line 24·Fill 8) × 3크기 완전성, 생성기 테스트(크기 누락·파일명 형식 오류 실패, 크기별 선 굵기·viewBox 유지, 접근성 속성 한 번만 부여), SVG 안전성·이름 충돌·색상 보존·drift 테스트.
+- 아이콘 34종(Line 26·Fill 8) × 3크기 완전성, 생성기 테스트(크기 누락·파일명 형식 오류 실패, 크기별 선 굵기·viewBox 유지, 접근성 속성 한 번만 부여), SVG 안전성·이름 충돌·색상 보존·drift 테스트.
 - 장식/이름 있는 아이콘, ref·className, Button 슬롯 조합 테스트.
 - Gallery story 하나로 전체 아이콘 × 3크기 비교.
 - `check:generated`, 대상 test·lint·typecheck, Storybook build, 시각 확인 및 UI 접근성 리뷰.
@@ -100,8 +100,8 @@ Fill: bell, camera, circle-check, confetti, heart, home, photo, user.
 
 ## 고정 크기 export 보완 검증 (2026-10-17)
 
-- 고정 크기 도형 96개와 선택용 래퍼 32개를 생성하며, 갤러리는 선택용 32개로 전체 크기를 표시한다.
-- 96개 고정 export와 기존 size API의 SVG markup·접근성 결과 일치를 검증한다. 정규화 뒤 고정/동적 이름 충돌도 생성 단계에서 거부한다.
+- 고정 크기 도형 102개와 선택용 래퍼 34개를 생성하며, 갤러리는 선택용 34개로 전체 크기를 표시한다.
+- 102개 고정 export와 기존 size API의 SVG markup·접근성 결과 일치를 검증한다. 정규화 뒤 고정/동적 이름 충돌도 생성 단계에서 거부한다.
 - 최상위 공개 barrel에서 `FillUserMediumIcon`만 export한 Vite production 결과에 Medium 도형만 남고 Small/Large·다른 아이콘이 없는지 검사한다. CSS 보존과 불필요한 UI 의존성 제거도 빌드 회귀 검증에 포함한다.
 - 로컬 macOS·Node26.10.0·Yarn4.17.1·Vite8.1.5, 동일 아이콘 이름순 md만 사용, production ES library·minify·React/ReactDOM 외부 처리·Node gzip 기본값 각 1회. 이전은 `86ce219539636a2d0a0458cfb22341ffce712464` 통합 모듈, 이후는 최상위 공개 barrel import다. 앱 CSS·Next 실제 증분은 미측정.
 
