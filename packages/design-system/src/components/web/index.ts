@@ -1,10 +1,12 @@
 // @generated — run `yarn gen:index` to update
 
 export * from './accordion';
+export * from './addBundlePhoto';
 export * from './addMemberCard';
 export * from './bottomNavigation';
 export * from './bunchAvatar';
 export * from './bundleCommentCard';
+export * from './bundlePhoto';
 export * from './bundleTitle';
 export * from './calendar';
 export * from './calendarItem';
