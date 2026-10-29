@@ -38,6 +38,7 @@ export * from './photoThumbnail';
 export * from './profileImage';
 export * from './radioCard';
 export * from './roleBadge';
+export * from './selectionField';
 export * from './selectionIndicator';
 export * from './stepper';
 export * from './suggestedBundleCard';
