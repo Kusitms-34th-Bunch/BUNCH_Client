@@ -164,3 +164,48 @@ describe('ChipButton', () => {
     expect(screen.getByRole('button').className).toContain(cls);
   });
 });
+
+describe('ChipButton 모션', () => {
+  it('색과 오버레이는 Dissolve·Ease out·300ms로 바뀐다', () => {
+    render(<ChipButton>칩</ChipButton>);
+    const { classList } = screen.getByRole('button');
+    expect(classList.contains('transition-colors')).toBe(true);
+    expect(classList.contains('duration-300')).toBe(true);
+    expect(classList.contains('ease-out')).toBe(true);
+    expect(classList.contains('before:duration-300')).toBe(true);
+    expect(classList.contains('before:duration-75')).toBe(false);
+  });
+
+  it('동작 줄이기에서는 전환을 끈다', () => {
+    render(<ChipButton>칩</ChipButton>);
+    const { classList } = screen.getByRole('button');
+    expect(classList.contains('motion-reduce:transition-none')).toBe(true);
+    expect(classList.contains('motion-reduce:before:transition-none')).toBe(true);
+  });
+
+  it('solid는 누르는 동안(active)에도 Hover 모양이다', () => {
+    render(<ChipButton>칩</ChipButton>);
+    expect(screen.getByRole('button').classList.contains('active:before:opacity-100')).toBe(true);
+  });
+
+  it('avatar는 누르는 동안 흰색 기준 Hover 모양이다', () => {
+    render(<ChipButton variant="avatar">칩</ChipButton>);
+    const { classList } = screen.getByRole('button');
+    expect(classList.contains('active:before:opacity-100')).toBe(true);
+    expect(classList.contains('active:bg-surface-primary')).toBe(true);
+  });
+
+  it('outline은 Figma Hover가 변하지 않아 누르는 동안에도 변화가 없다', () => {
+    render(<ChipButton variant="outline">칩</ChipButton>);
+    expect(screen.getByRole('button').className).not.toContain('active:');
+  });
+
+  it('선택된 칩은 누르는 동안에도 모양이 변하지 않는다', () => {
+    render(
+      <ChipButton selected variant="avatar">
+        칩
+      </ChipButton>,
+    );
+    expect(screen.getByRole('button').className).not.toContain('active:');
+  });
+});
