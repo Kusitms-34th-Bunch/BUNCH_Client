@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
-import { LineCloseSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { DeleteButton } from '../deleteButton';
 import { ProfileImage } from '../profileImage';
 
 const SIZES = { s: 'w-75', m: 'w-82.5' } as const;
@@ -71,19 +71,13 @@ export const BundlePhoto = ({
           </>
         )}
         {onDelete !== undefined && (
-          <button
-            type="button"
-            aria-label={deleteLabel}
+          <DeleteButton
+            label={deleteLabel}
+            size="L"
+            variant="overlay"
             onClick={onDelete}
-            className={cn(
-              'bg-overlay-scrim text-icon-inversed relative ml-auto flex size-6 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full backdrop-blur-[15px]',
-              // 보이는 24px보다 넓은 32px 터치 영역(design-system-icons.md의 Small 기준)
-              "before:absolute before:-inset-1 before:content-['']",
-              'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
-            )}
-          >
-            <LineCloseSmallIcon aria-hidden="true" />
-          </button>
+            className="ml-auto"
+          />
         )}
       </div>
     )}

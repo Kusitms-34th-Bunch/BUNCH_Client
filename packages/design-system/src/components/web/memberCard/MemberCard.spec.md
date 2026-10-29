@@ -31,7 +31,7 @@
 - 카드: 폭 76px(`w-19`), 배경 `surface-secondary`(`#F5F5F5`), 반경 `r4`(8px), 안쪽 여백 가로 14px(`padding-p7`)·세로 8px(`s4`), 요소 간격 10px(`s5`), 가운데 정렬. 높이는 87px(8+40+10+21+8)이다.
 - 프로필: `ProfileImage`를 `size-10`(40px)로 줄이고 1px `border-tertiary` 테두리를 둔다.
 - 이름 줄: 배지(16px)와 이름이 2px(`s1`) 간격으로 가운데 놓인다. 이름은 `typography-body-2-regular`(14/21), `text-secondary`(`#25282D`)이고 카드 폭을 넘으면 말줄임(`truncate`)한다.
-- 삭제 버튼: 16px 원(`icon-tertiary` 배경 `#535A61`), 안의 X는 흰색이며 오른쪽 위로 3px씩 삐져나온다(`-top-0.75 -right-0.75`). 터치 영역은 보이는 16px보다 넓은 32px(`design-system-icons.md`의 Small 기준)이다.
+- 삭제 버튼: 공용 `DeleteButton`(`web/deleteButton`)의 `size="M" variant="default"`(16px 원, `icon-tertiary` 배경 `#535A61`)를 오른쪽 위로 3px씩 삐져나오게(`-top-0.75 -right-0.75`) 둔다. 터치 영역은 보이는 16px보다 넓은 32px이며 카드 밖 위·오른쪽으로 최대 11px 나간다. 카드 사이 간격은 8px 이상으로 두고 부모 `overflow-hidden`에 잘리지 않게 한다. 모양은 `DeleteButton.spec.md`를 따른다.
 - Figma의 `Delete=False` 카드는 반경이 `9px`로 그려져 있어 `r4`(8px)로 통일했다(디자이너 확인).
 
 ## 접근성
@@ -49,7 +49,7 @@
 
 ## 확인할 항목
 
-- Figma의 삭제 버튼 안 X 아이콘은 `Line/Icon-S/Close`를 6px 상자에 넣고 잘라 낸 모양이다. 구현은 같은 아이콘을 12px로 줄여(X 6px) 같은 중심에 놓았고 선 굵기는 줄어든 비율을 따른다.
+- Figma의 삭제 버튼 안 X는 `Line/Icon-S/Close`를 6px 상자에 넣고 잘라 낸 모양이다. `DeleteButton`이 같은 아이콘을 12px로 줄여(X 6px) 같은 중심에 놓고 선 굵기는 `non-scaling-stroke`로 1px에 고정한다(이전에는 줄어든 비율 0.9px).
 - 이름이 길면 말줄임으로 잘린다(배지가 있으면 이름에 쓸 수 있는 폭이 약 30px라 한글 2자 안팎). Figma에는 긴 이름 처리가 없어 전체 이름을 보여 줄지(상세 화면 등)와 2줄 줄바꿈 여부는 디자이너 확인이 필요하다. 스크린 리더는 전체 이름을 읽는다.
 - 역할 배지는 Figma에 왕관(번치장)만 있고 다른 역할은 `RoleBadge`가 제공하는 모양을 그대로 쓴다.
 
