@@ -15,6 +15,7 @@ export * from './cameraButton';
 export * from './chipButton';
 export * from './colorBadge';
 export * from './createBunchCard';
+export * from './deleteButton';
 export * from './editingAnimation';
 export * from './errorBanner';
 export * from './floatingButton';

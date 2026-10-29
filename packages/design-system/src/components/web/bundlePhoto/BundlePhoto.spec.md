@@ -30,7 +30,7 @@
 - 틀: 정사각, 반경 `r4`(8px), 넘치는 부분은 잘라 낸다(`overflow-hidden`). 사진은 `object-cover`로 채운다.
 - Figma는 `Size=M`에만 아바타와 삭제 버튼을 그려 두었지만, 얹힘 여부는 크기와 무관하게 `uploader`·`onDelete`를 줄 때만 나타난다(S에도 줄 수 있다).
 - 위쪽 줄: 사진 위 16px(`s8`) 여백, 가로 정렬 가운데. 아바타 31px(1px `border-tertiary`)이 왼쪽에, 삭제 버튼이 오른쪽 끝(`ml-auto`)에 놓인다. 아바타가 없어도 삭제 버튼은 오른쪽에 있다.
-- 삭제 버튼: 24px 원, 배경 `overlay-scrim`(검정 60%) + 배경 블러 15px, X 아이콘은 흰색(X 8px). 터치 영역은 보이는 24px보다 넓은 32px다.
+- 삭제 버튼: 공용 `DeleteButton`(`web/deleteButton`)의 `size="L" variant="overlay"`를 오른쪽 끝(`ml-auto`)에 둔다(24px 원, 배경 `overlay-scrim`(검정 60%) + 배경 블러 15px, X 흰색 8px, 터치 영역 32px). 모양은 `DeleteButton.spec.md`를 따른다.
 - 사진이 없는 `uploader`는 배경색 원으로 보인다.
 
 ## 접근성
