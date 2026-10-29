@@ -7,6 +7,7 @@ export * from './bottomNavigation';
 export * from './bunchAvatar';
 export * from './bundleCommentCard';
 export * from './bundlePhoto';
+export * from './bundleTextInput';
 export * from './bundleTitle';
 export * from './calendar';
 export * from './calendarItem';
