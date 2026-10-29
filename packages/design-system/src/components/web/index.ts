@@ -11,6 +11,7 @@ export * from './bundleTitle';
 export * from './calendar';
 export * from './calendarItem';
 export * from './cameraButton';
+export * from './chipButton';
 export * from './colorBadge';
 export * from './createBunchCard';
 export * from './editingAnimation';
