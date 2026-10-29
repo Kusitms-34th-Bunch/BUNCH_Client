@@ -25,6 +25,8 @@ export * from './loginButton';
 export * from './memberCard';
 export * from './option';
 export * from './pageHeader';
+export * from './paginationIndicator';
+export * from './paginationIndicatorItem';
 export * from './profileImage';
 export * from './radioCard';
 export * from './roleBadge';
