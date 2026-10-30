@@ -17,12 +17,12 @@ export function TermsDocument({ documentId }: { documentId: TermsDocumentId }) {
           {articles.map(({ title: articleTitle, paragraphs, items }) => (
             <article key={articleTitle} className="gap-s3 flex flex-col">
               <h2 className="typography-body-1-semi-bold text-text-primary">{articleTitle}</h2>
-              <div className="typography-body-3-regular text-text-tertiary [overflow-wrap:anywhere] break-keep">
+              <div className="typography-body-3-regular text-text-tertiary wrap-anywhere break-keep">
                 {paragraphs?.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
                 {items ? (
-                  <ol className="ms-[21px] list-decimal">
+                  <ol className="ms-5.25 list-decimal">
                     {items.map((item) => (
                       <li key={item}>{item}</li>
                     ))}

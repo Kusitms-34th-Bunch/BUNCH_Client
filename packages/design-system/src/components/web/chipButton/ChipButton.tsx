@@ -25,7 +25,7 @@ const chipButton = tv({
     size: {
       S: 'h-8 px-s5 after:-inset-y-1.5',
       M: 'h-9 px-s5 after:-inset-y-1',
-      L: 'h-9.5 px-s6 after:-inset-y-[3px]',
+      L: 'h-9.5 px-s6 after:-inset-y-0.75',
     },
     variant: {
       solid: '',

@@ -9,8 +9,8 @@ const badge = tv({
     color: { brand: '', gray: '' },
     size: {
       lg: 'px-padding-p4 py-padding-p2 typography-body-3-semi-bold',
-      md: 'px-[7px] py-[3px] typography-body-4-semi-bold',
-      sm: 'px-[7px] py-[3px] typography-caption-1-medium',
+      md: 'px-1.75 py-0.75 typography-body-4-semi-bold',
+      sm: 'px-1.75 py-0.75 typography-caption-1-medium',
     },
   },
   compoundVariants: [

@@ -21,6 +21,10 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+export const Camera: Story = {
+  args: { title: '카메라로 찍기', description: '지금 찍은 사진을 바로 올려요.', icon: 'camera' },
+};
+
 /** 긴 글자는 줄바꿈해서 카드 높이가 늘어남 */
 export const LongText: Story = {
   args: {

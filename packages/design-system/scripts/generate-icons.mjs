@@ -62,7 +62,7 @@ export const assertIconDimensions = (svg, fileName) => {
   }
 };
 
-// 그래픽 아이콘은 크기가 하나뿐이라 파일명이 아니라 SVG 자체의 정사각형 크기와 viewBox 일치만 확인한다.
+// 그래픽 아이콘은 크기가 하나뿐이라 파일명 대신 SVG 자체의 정사각형 크기와 viewBox 일치만 확인.
 export const assertGraphicDimensions = (svg, fileName) => {
   const width = Number(getRootAttribute(svg, 'width'));
   const height = Number(getRootAttribute(svg, 'height'));
@@ -182,7 +182,7 @@ export const readGraphicSources = async (sourceDir) => {
     });
 };
 
-// 같은 이름의 SVG 세 개(small·medium·large)를 아이콘 하나로 묶는다. 하나라도 없으면 크기 prop이 일부만 가능해지므로 실패시킨다.
+// 같은 이름의 SVG 세 개(small·medium·large)를 아이콘 하나로 묶음. 하나라도 없으면 크기 prop이 일부만 가능해지므로 실패 처리.
 export const groupIconSources = (sources) => {
   const groups = new Map();
   for (const source of sources) {
@@ -230,7 +230,7 @@ export const assertUniqueComponentNames = (icons, graphicIcons = []) => {
   }
 };
 
-// 크기별 도형(viewBox·선 굵기 포함)을 그대로 담은 내부 컴포넌트. 접근성 속성은 바깥 래퍼가 한 번만 붙인다.
+// 크기별 도형(viewBox·선 굵기 포함)을 그대로 담은 내부 컴포넌트. 접근성 속성은 바깥 래퍼가 한 번만 부착.
 const sizeTemplate = ({ componentName, jsx }, { tpl }) => tpl`
   const ${componentName} = (props: ComponentProps<'svg'>) => ${jsx};
 `;
@@ -269,7 +269,7 @@ const renderSize = async (source, icon, sizeName) => {
   return transformSvg(svg, `${icon.componentName}${innerName}`, innerName);
 };
 
-// 접근성 속성은 바깥 래퍼가 한 번만 붙인다.
+// 접근성 속성은 바깥 래퍼가 한 번만 부착.
 const fixedComponentCode = async ({ innerName, name, outputDir, shapeCode }) => {
   const code = `${GENERATED_TAG}
 import type { ComponentProps } from 'react';
