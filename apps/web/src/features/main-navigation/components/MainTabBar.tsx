@@ -56,8 +56,12 @@ export function MainTabBar() {
   if (inShell && usesNativeBar !== false) return null;
 
   return (
-    <div className="px-padding-p8 pb-s4 shrink-0">
+    <div
+      data-main-tab-bar
+      className="px-padding-p8 pb-s4 pointer-events-none relative z-10 -mt-20 h-20 shrink-0"
+    >
       <BottomNavigation
+        className="pointer-events-auto"
         aria-label="주요 메뉴"
         items={items}
         selectedId={selectedId}
