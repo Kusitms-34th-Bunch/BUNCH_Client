@@ -25,3 +25,4 @@
 - [011: 하단 내비게이션의 글라스 효과는 플랫폼별로 나눠 구현한다](./records/011-bottom-navigation-glass-by-platform.md) (iOS 부분은 012로 대체)
 - [012: iOS 쉘의 하단 탭은 시스템 탭 바를 쓰고 탭마다 WebView를 둔다](./records/012-ios-system-tab-bar.md)
 - [013: Pretendard는 직접 호스팅하고, 앱 화면은 한 파일·처음 오는 웹 화면은 동적 서브셋을 쓴다](./records/013-pretendard-self-hosting.md)
+- [014: 사진 상세의 스와이프·확대는 Swiper(Zoom·Keyboard·A11y 모듈)로 처리한다](./records/014-photo-detail-swiper.md)
