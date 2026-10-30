@@ -108,12 +108,12 @@ describe('저장', () => {
     await runMenu(user, '저장');
 
     expect(screen.getByRole('status').textContent).toBe(PHOTO_BOX_MESSAGES.saving);
-    // 저장하는 동안 필터·사진은 inert라 키보드로도 고를 수 없다
+    // 저장 중 필터·사진은 inert라 키보드 선택도 불가
     expect(screen.getByRole('radiogroup', { name: '멤버 필터' }).closest('[inert]')).not.toBeNull();
-    // 사진마다가 아니라 화면 전체에 dim과 로딩(로티) 하나가 뜬다
+    // 사진마다가 아닌 화면 전체 dim과 로딩(로티) 하나 표시
     await waitFor(() => expect(screen.getAllByTestId('lottie')).toHaveLength(1));
     expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
-    // 포커스를 잃지 않도록 disabled가 아니라 aria-disabled로 막는다
+    // 포커스 유지를 위해 disabled 대신 aria-disabled로 차단
     expect(screen.getByRole('button', { name: '메뉴 열기' }).getAttribute('aria-disabled')).toBe(
       'true',
     );
@@ -339,7 +339,7 @@ describe('저장·삭제 중 안전장치', () => {
 
     await waitFor(() => expect(screen.getByRole('button', { name: '선택' })).toBeTruthy());
     expect(toast).not.toHaveBeenCalled();
-    // 다시 선택 모드에 들어가도 이전 선택이 되살아나지 않고 바로 고를 수 있다
+    // 선택 모드 재진입 시 이전 선택 없이 바로 선택 가능
     await user.click(screen.getByRole('button', { name: '선택' }));
     expect(screen.getByRole('radio', { name: '전체' })).toBeTruthy();
     await user.click(photoButtons()[0]!);

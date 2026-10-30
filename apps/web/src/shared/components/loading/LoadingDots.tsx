@@ -62,7 +62,7 @@ export function LoadingDots() {
   if (loaded === 'failed') return <EditingAnimation />;
 
   return (
-    <span aria-hidden="true" className="block h-[45px] w-28">
+    <span aria-hidden="true" className="block h-11.25 w-28">
       {loaded ? (
         <loaded.Player
           src={loaded.data}
