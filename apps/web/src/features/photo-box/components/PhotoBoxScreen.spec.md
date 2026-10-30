@@ -40,7 +40,7 @@
 - 화면 상태는 `PhotoBoxState`(`loading`·`error`·`no-bunch`·`ready`)다. `usePhotoBoxState`가 호출 지점이고 지금은 fixture(`fixtures/photoBox.fixture.ts`)를 돌려준다. API를 연결하면 이 hook만 TanStack Query 상태에서 만든다.
 - 멤버 필터는 화면 안 상태다(기본 「전체」). 번치를 전환하면 「전체」로 돌려야 하며, 번치 전환이 생길 때 함께 한다.
 - 처리 중(`processing`)·실패(`failed`) 사진과 이미지 로딩 실패(`onError`)는 회색 자리표시이고 접근성 이름은 「처리 중인 사진」·「불러오지 못한 사진」이다.
-- 아코디언은 열림 상태를 스스로 갖는다. 열고 닫는 모션은 Figma에 값이 없어 `Accordion` 기본 동작(즉시)을 쓴다.
+- 아코디언은 열림 상태를 스스로 갖는다. 열고 닫는 모션은 화면 설계서의 값(340ms, `cubic-bezier(0, 0, 0.35, 1)`)이다. 높이는 `Accordion`이, 좌우 여백·모서리는 이 화면이 같은 값으로 전환하고 `prefers-reduced-motion`에서는 즉시 바뀐다.
 
 ## 데이터 의존성
 
@@ -81,7 +81,6 @@
 ## 디자이너 확인 항목
 
 - 칩 높이: Figma 화면 인스턴스는 40px인데 `ChipButton` L 컴포넌트는 38px이다. 화면 값(40)을 따랐다.
-- 아코디언 열고 닫는 모션: Figma의 「아코디언 인터랙션」 프레임에는 시간·easing이 없다. 지금은 즉시 열고 닫는다.
 - 빈 상태·번치 없음 일러스트: Figma가 추후 공유한다고 해서 회색 자리표시다. 빈 상태 자리표시 색(`#efefef`)은 토큰에 없어 `surface-secondary`(`#f5f5f5`)를 썼다.
 - `AccountSwitcher`: 기존 컴포넌트는 색종이 아이콘이었는데 Figma 현재 모습은 번치 대표 이미지라 `avatarSrc`를 추가하고 여백을 Figma(`p-s3 gap-s4`)에 맞췄다.
 - 로딩·오류·처리 중 사진의 모양은 Figma에 없어 이 PR에서 정한 값이다.
