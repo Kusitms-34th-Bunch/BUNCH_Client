@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PhotoBoxData, PhotoBoxPhoto, PhotoBoxState } from '../lib/types';
@@ -130,12 +130,13 @@ describe('PhotoBoxScreen 선택 모드', () => {
     await user.click(screen.getByRole('button', { name: '선택' }));
     const buttons = photoButtons();
 
-    for (const button of buttons.slice(0, MAX_SELECTION)) await user.click(button);
+    // 50번 누르는 반복이라 userEvent 대신 fireEvent로 빠르게 처리
+    for (const button of buttons.slice(0, MAX_SELECTION)) fireEvent.click(button);
     expect(toast).not.toHaveBeenCalled();
 
     await user.click(buttons[MAX_SELECTION]!);
 
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.maxSelection);
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.maxSelection, { fullWidth: true });
     expect(buttons[MAX_SELECTION]!.getAttribute('aria-pressed')).toBe('false');
     expect(screen.getByRole('radio', { name: `전체 (${MAX_SELECTION})` })).toBeTruthy();
   });
@@ -205,21 +206,17 @@ describe('PhotoBoxScreen 선택 메뉴', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('항목을 고르면 고른 사진 순서와 함께 동작을 알리고 메뉴가 닫히며 포커스가 「⋯」로 돌아온다', async () => {
+  it('날짜 바꾸기를 고르면 고른 사진 순서와 함께 알리고 메뉴가 닫히며 포커스가 「⋯」로 돌아온다', async () => {
     const user = userEvent.setup();
-    const onMenuAction = vi.fn();
-    render(<PhotoBoxScreen state={ready()} currentYear={2026} onMenuAction={onMenuAction} />);
+    const onChangeDate = vi.fn();
+    render(<PhotoBoxScreen state={ready()} currentYear={2026} onChangeDate={onChangeDate} />);
     await selectFirst(user, 2);
-    const [first, second] = photoButtons();
-    expect(first).toBeTruthy();
-    expect(second).toBeTruthy();
 
     await user.click(menuButton());
-    await user.click(screen.getByRole('menuitem', { name: '삭제' }));
+    await user.click(screen.getByRole('menuitem', { name: '날짜 바꾸기' }));
 
-    expect(onMenuAction).toHaveBeenCalledTimes(1);
-    expect(onMenuAction).toHaveBeenCalledWith('delete', expect.any(Array));
-    expect((onMenuAction.mock.calls[0]?.[1] as string[]).length).toBe(2);
+    expect(onChangeDate).toHaveBeenCalledTimes(1);
+    expect((onChangeDate.mock.calls[0]?.[0] as string[]).length).toBe(2);
     expect(document.activeElement).toBe(menuButton());
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
   });

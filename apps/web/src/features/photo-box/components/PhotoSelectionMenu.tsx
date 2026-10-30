@@ -8,8 +8,7 @@ import {
 } from '@app/design-system';
 import { Menu, MenuDivider, MenuItem } from '@app/design-system/web';
 import { useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
-
-export type PhotoMenuAction = 'save' | 'bundle' | 'date' | 'delete';
+import type { PhotoMenuAction } from '../hooks/usePhotoSelectionFlow';
 
 type PhotoSelectionMenuProps = {
   /** 열림 여부. `false`로 바꾸면 닫히는 모션을 재생하고 끝나면 `onExited` 호출 */

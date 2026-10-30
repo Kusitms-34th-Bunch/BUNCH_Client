@@ -29,7 +29,7 @@
 
 ## Route와 접근
 
-- Path·params·search: `/photos`. params는 없다. 임시 `preview` search(`loading`·`error`·`no-bunch`·`empty`)로 상태를 눈으로 확인할 수 있고, route 경계(`lib/preview.ts`의 `parsePreview`)에서 허용 값만 통과시킨다. 알 수 없는 값은 무시하고 운영(`NODE_ENV=production`)에서는 아예 열지 않는다. 제거 조건: 목록 API를 연결하는 PR에서 `preview.ts`·`fixtures/`·page의 `searchParams` 읽기·`usePhotoBoxState`의 fixture를 함께 삭제한다. 그 전까지는 운영에서도 `/photos`가 fixture(가짜 번치 데이터)를 보여 주므로 로그인·API 연결 전에는 일반 사용자에게 열리지 않아야 한다.
+- Path·params·search: `/photos`. params는 없다. 임시 `preview` search(`loading`·`error`·`no-bunch`·`empty`)로 상태를 눈으로 확인할 수 있고, route 경계(`lib/preview.ts`의 `parsePreview`)에서 허용 값만 통과시킨다. 알 수 없는 값은 무시하고 운영(`NODE_ENV=production`)에서는 아예 열지 않는다. 제거 조건: 목록 API를 연결하는 PR에서 `preview.ts`·`fixtures/`·page의 `searchParams` 읽기·`usePhotoBox`의 fixture를 함께 삭제한다. 그 전까지는 운영에서도 `/photos`가 fixture(가짜 번치 데이터)를 보여 주므로 로그인·API 연결 전에는 일반 사용자에게 열리지 않아야 한다.
 - 렌더링: `searchParams`를 읽어 `/photos`가 정적 prerender 대신 요청마다 렌더되는 동적 route다. 정적 정보뿐인 화면이라 비용은 작고, `preview`를 없애면 함께 사라진다.
 - 아직 없는 route: 사진 상세 `/photos/[photoId]`는 #128에서 만든다. 그 전에는 직접 URL로 들어가면 not-found이고, 이 화면에서 사진을 눌러도 이동하지 않는다.
 - 접근 권한·guard: 아직 없다(로그인 미구현). 번치 멤버만 볼 수 있어야 하며 서버가 판단한다(`docs/specs/photo-box.md`).
@@ -37,7 +37,7 @@
 
 ## 상태와 흐름
 
-- 화면 상태는 `PhotoBoxState`(`loading`·`error`·`no-bunch`·`ready`)다. `usePhotoBoxState`가 호출 지점이고 지금은 fixture(`fixtures/photoBox.fixture.ts`)를 돌려준다. API를 연결하면 이 hook만 TanStack Query 상태에서 만든다.
+- 화면 상태는 `PhotoBoxState`(`loading`·`error`·`no-bunch`·`ready`)다. `usePhotoBox`가 호출 지점이고 지금은 fixture(`fixtures/photoBox.fixture.ts`)를 돌려준다. API를 연결하면 이 hook만 TanStack Query 상태에서 만든다.
 - 멤버 필터는 화면 안 상태다(기본 「전체」). 번치를 전환하면 「전체」로 돌려야 하며, 번치 전환이 생길 때 함께 한다.
 - 처리 중(`processing`)·실패(`failed`) 사진과 이미지 로딩 실패(`onError`)는 회색 자리표시이고 접근성 이름은 「처리 중인 사진」·「불러오지 못한 사진」이다.
 - 아코디언은 열림 상태를 스스로 갖는다. 열고 닫는 모션은 화면 설계서의 값(340ms, `cubic-bezier(0, 0, 0.35, 1)`)이다. 높이는 `Accordion`이, 좌우 여백·모서리는 이 화면이 같은 값으로 전환하고 `prefers-reduced-motion`에서는 즉시 바뀐다.

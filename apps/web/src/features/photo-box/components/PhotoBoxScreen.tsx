@@ -1,14 +1,14 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { FloatingButton } from '@app/design-system/web';
 import { useMemo, useRef, useState } from 'react';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
+import { usePhotoSelectionFlow } from '../hooks/usePhotoSelectionFlow';
 import { filterByMember, splitPhotos } from '../lib/photoDate';
-import { countSelectedByMember, toggleSelection, type PhotoSelection } from '../lib/selection';
-import { ALL_MEMBERS, type PhotoBoxState } from '../lib/types';
+import { countSelectedByMember, type PhotoSelection } from '../lib/selection';
+import { ALL_MEMBERS, type PhotoBoxActions, type PhotoBoxState } from '../lib/types';
 import { MemberFilter } from './MemberFilter';
 import { NoBunch } from './NoBunch';
 import { PhotoBoxEmpty } from './PhotoBoxEmpty';
@@ -17,11 +17,20 @@ import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
 import { PhotoDateSection } from './PhotoDateSection';
 import { PhotoSelectionProvider } from './PhotoSelectionContext';
-import { PhotoSelectionMenu, type PhotoMenuAction } from './PhotoSelectionMenu';
+import { BundleConfirmDialog, DeleteConfirmDialog } from './PhotoSelectionDialogs';
+import { PhotoSelectionMenu } from './PhotoSelectionMenu';
 import { UndatedPhotos } from './UndatedPhotos';
+
+// API 연결 전 기본 동작: 모두 성공하고 아무것도 사라지지 않음
+const noopActions: PhotoBoxActions = {
+  savePhotos: (ids) => Promise.resolve({ savedIds: ids, failedIds: [] }),
+  deletePhotos: () => Promise.resolve({ removedCount: 0 }),
+};
 
 type PhotoBoxScreenProps = {
   state: PhotoBoxState;
+  /** 저장·삭제 같은 서버·기기 동작 */
+  actions?: PhotoBoxActions | undefined;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
   currentYear?: number | undefined;
   onRetry?: (() => void) | undefined;
@@ -29,27 +38,33 @@ type PhotoBoxScreenProps = {
   onBunchClick?: (() => void) | undefined;
   /** 「+」를 눌렀을 때(올리기 시트는 추후 작업) */
   onUploadClick?: (() => void) | undefined;
-  /** 선택 모드 「⋯」 메뉴에서 항목을 골랐을 때(고른 사진 id를 누른 순서대로 전달). 각 동작은 이어지는 흐름이 맡음 */
-  onMenuAction?: ((_action: PhotoMenuAction, _selection: PhotoSelection) => void) | undefined;
+  /** 「번들 만들기」 확인 창에서 「예」를 눌렀을 때(고른 사진 id를 누른 순서대로 전달, 초안 생성·이동은 번들 작성 이슈) */
+  onCreateBundle?: ((_selection: PhotoSelection) => void) | undefined;
+  /** 「날짜 바꾸기」를 골랐을 때(시트는 추후 작업) */
+  onChangeDate?: ((_selection: PhotoSelection) => void) | undefined;
 };
 
-/** 사진함 탭 화면. 상태(로딩·오류·번치 없음·목록)를 받아 그리고 멤버 필터와 선택 모드를 스스로 관리 */
+/** 사진함 탭 화면. 상태(로딩·오류·번치 없음·목록)를 받아 그리고 멤버 필터와 선택 모드(메뉴·저장·번들·삭제)를 관리 */
 export function PhotoBoxScreen({
   state,
+  actions = noopActions,
   currentYear = new Date().getFullYear(),
   onRetry,
   onBunchClick,
   onUploadClick,
-  onMenuAction,
+  onCreateBundle,
+  onChangeDate,
 }: PhotoBoxScreenProps) {
   const [memberId, setMemberId] = useState<string>(ALL_MEMBERS);
-  const [selecting, setSelecting] = useState(false);
-  const [selection, setSelection] = useState<PhotoSelection>([]);
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
-  const photos = state.kind === 'ready' ? state.data.photos : undefined;
+  const data = state.kind === 'ready' ? state.data : undefined;
+  const photos = data?.photos;
+
+  const flow = usePhotoSelectionFlow({ data, actions, onCreateBundle, onChangeDate });
+  const { selecting, selection } = flow;
 
   const { sections, undated } = useMemo(
     () => splitPhotos(photos ? filterByMember(photos, memberId) : [], currentYear),
@@ -62,20 +77,12 @@ export function PhotoBoxScreen({
   );
 
   const handleToggle = (photoId: string) => {
-    const result = toggleSelection(selection, photoId);
-    if (result.rejected) {
-      toast(PHOTO_BOX_MESSAGES.maxSelection);
-      return;
-    }
-    setSelection(result.selection);
+    flow.toggle(photoId);
     // 고른 사진이 없어지면 「⋯」가 꺼지므로 열려 있던 메뉴도 닫음
-    if (result.selection.length === 0) setMenuOpen(false);
+    if (selection.length === 1 && selection[0] === photoId) setMenuOpen(false);
   };
-
-  const startSelecting = () => setSelecting(true);
-  const stopSelecting = () => {
-    setSelecting(false);
-    setSelection([]);
+  const handleCancel = () => {
+    flow.stop();
     setMenuOpen(false);
     setMenuMounted(false);
   };
@@ -105,8 +112,8 @@ export function PhotoBoxScreen({
           bunch={bunch}
           onBunchClick={onBunchClick}
           selecting={selecting}
-          onSelectClick={startSelecting}
-          onCancelClick={stopSelecting}
+          onSelectClick={flow.start}
+          onCancelClick={handleCancel}
         />
       }
       // 「+」(선택 모드에서는 「⋯」)는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
@@ -119,7 +126,7 @@ export function PhotoBoxScreen({
                 open={menuOpen}
                 onClose={() => setMenuOpen(false)}
                 onExited={() => setMenuMounted(false)}
-                onSelect={(action) => onMenuAction?.(action, selection)}
+                onSelect={flow.handleMenuAction}
                 triggerRef={menuTriggerRef}
               />
             </div>
@@ -130,7 +137,7 @@ export function PhotoBoxScreen({
             aria-label={selecting ? '메뉴 열기' : '사진 올리기'}
             aria-haspopup={selecting ? 'menu' : undefined}
             aria-expanded={selecting ? menuOpen : undefined}
-            disabled={selecting && selection.length === 0}
+            disabled={selecting && (selection.length === 0 || flow.saving)}
             onClick={selecting ? toggleMenu : onUploadClick}
             className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
           />
@@ -139,7 +146,19 @@ export function PhotoBoxScreen({
     >
       <h1 className="sr-only">사진함</h1>
       {selecting ? <HideMainTabBar /> : null}
-      <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
+      {flow.saving ? (
+        <p role="status" className="sr-only">
+          {PHOTO_BOX_MESSAGES.saving}
+        </p>
+      ) : null}
+      <PhotoSelectionProvider
+        value={{
+          active: selecting,
+          selection,
+          savingIds: flow.savingIds,
+          onToggle: handleToggle,
+        }}
+      >
         <div className="flex min-h-full flex-col">
           <MemberFilter
             members={members}
@@ -156,6 +175,18 @@ export function PhotoBoxScreen({
           ) : null}
         </div>
       </PhotoSelectionProvider>
+      <BundleConfirmDialog
+        open={flow.dialog === 'bundle'}
+        onClose={flow.closeDialog}
+        onConfirm={flow.confirmBundle}
+      />
+      <DeleteConfirmDialog
+        open={flow.dialog === 'delete'}
+        count={selection.length}
+        description={PHOTO_BOX_MESSAGES.deleteConfirmDescription(flow.deleteKind ?? 'own')}
+        onClose={flow.closeDialog}
+        onConfirm={() => void flow.confirmDelete()}
+      />
     </PageShell>
   );
 }
