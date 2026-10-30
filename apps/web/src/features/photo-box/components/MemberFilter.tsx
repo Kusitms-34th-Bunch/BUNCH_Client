@@ -9,6 +9,8 @@ type MemberFilterProps = {
   /** 선택된 멤버 id. 「전체」는 `ALL_MEMBERS` */
   selectedId: string;
   onSelect: (_memberId: string) => void;
+  /** 선택 모드에서 칩 이름 뒤에 붙는 고른 사진 수(멤버 id 또는 `ALL_MEMBERS`별). 0장이거나 없으면 숫자 없음 */
+  selectedCounts?: Readonly<Record<string, number>> | undefined;
 };
 
 /**
@@ -16,7 +18,7 @@ type MemberFilterProps = {
  * 방향키로 이동하면 바로 선택되고(radio 관례), Tab은 선택된 칩 하나에만 머묾
  * 칩이 길어지면 가로로 스크롤하며, 사진이 없는 멤버도 칩을 보임
  */
-export function MemberFilter({ members, selectedId, onSelect }: MemberFilterProps) {
+export function MemberFilter({ members, selectedId, onSelect, selectedCounts }: MemberFilterProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const options = [{ id: ALL_MEMBERS, name: '전체', avatarSrc: undefined }, ...members];
 
@@ -71,7 +73,9 @@ export function MemberFilter({ members, selectedId, onSelect }: MemberFilterProp
             onClick={() => onSelect(option.id)}
             onKeyDown={(event) => handleKeyDown(event, index)}
           >
-            {option.name}
+            {selectedCounts?.[option.id]
+              ? `${option.name} (${selectedCounts[option.id]})`
+              : option.name}
           </ChipButton>
         );
       })}

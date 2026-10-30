@@ -28,17 +28,14 @@ describe('PhotoBoxScreen 목록', () => {
     expect(screen.getByRole('button', { name: '선택' })).toBeTruthy();
   });
 
-  it('헤더 버튼은 호출 지점의 콜백을 부른다', async () => {
+  it('번치 이름은 호출 지점의 콜백을 부른다', async () => {
     const user = userEvent.setup();
     const onBunchClick = vi.fn();
-    const onSelectClick = vi.fn();
-    renderScreen(ready(), { onBunchClick, onSelectClick });
+    renderScreen(ready(), { onBunchClick });
 
     await user.click(screen.getByRole('button', { name: '여행가조' }));
-    await user.click(screen.getByRole('button', { name: '선택' }));
 
     expect(onBunchClick).toHaveBeenCalledTimes(1);
-    expect(onSelectClick).toHaveBeenCalledTimes(1);
   });
 
   it('날짜 섹션을 최신 날짜가 위로 보이고 올해가 아니면 연도를 붙인다', () => {

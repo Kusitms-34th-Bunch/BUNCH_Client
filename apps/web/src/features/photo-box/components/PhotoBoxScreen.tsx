@@ -1,9 +1,13 @@
 'use client';
 
+import { toast } from '@app/design-system';
 import { FloatingButton } from '@app/design-system/web';
 import { useMemo, useState } from 'react';
+import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { filterByMember, splitPhotos } from '../lib/photoDate';
+import { countSelectedByMember, toggleSelection, type PhotoSelection } from '../lib/selection';
 import { ALL_MEMBERS, type PhotoBoxState } from '../lib/types';
 import { MemberFilter } from './MemberFilter';
 import { NoBunch } from './NoBunch';
@@ -12,6 +16,7 @@ import { PhotoBoxError } from './PhotoBoxError';
 import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
 import { PhotoDateSection } from './PhotoDateSection';
+import { PhotoSelectionProvider } from './PhotoSelectionContext';
 import { UndatedPhotos } from './UndatedPhotos';
 
 type PhotoBoxScreenProps = {
@@ -21,28 +26,47 @@ type PhotoBoxScreenProps = {
   onRetry?: (() => void) | undefined;
   /** 번치 이름을 눌렀을 때(전환 목록은 추후 작업) */
   onBunchClick?: (() => void) | undefined;
-  /** 「선택」을 눌렀을 때(선택 모드는 별도 이슈) */
-  onSelectClick?: (() => void) | undefined;
   /** 「+」를 눌렀을 때(올리기 시트는 추후 작업) */
   onUploadClick?: (() => void) | undefined;
 };
 
-/** 사진함 탭 화면. 상태(로딩·오류·번치 없음·목록)를 받아 그리고 멤버 필터만 스스로 관리 */
+/** 사진함 탭 화면. 상태(로딩·오류·번치 없음·목록)를 받아 그리고 멤버 필터와 선택 모드를 스스로 관리 */
 export function PhotoBoxScreen({
   state,
   currentYear = new Date().getFullYear(),
   onRetry,
   onBunchClick,
-  onSelectClick,
   onUploadClick,
 }: PhotoBoxScreenProps) {
   const [memberId, setMemberId] = useState<string>(ALL_MEMBERS);
+  const [selecting, setSelecting] = useState(false);
+  const [selection, setSelection] = useState<PhotoSelection>([]);
   const photos = state.kind === 'ready' ? state.data.photos : undefined;
 
   const { sections, undated } = useMemo(
     () => splitPhotos(photos ? filterByMember(photos, memberId) : [], currentYear),
     [photos, memberId, currentYear],
   );
+
+  const selectedCounts = useMemo(
+    () => (selecting && photos ? countSelectedByMember(selection, photos) : undefined),
+    [selecting, selection, photos],
+  );
+
+  const handleToggle = (photoId: string) => {
+    const result = toggleSelection(selection, photoId);
+    if (result.rejected) {
+      toast(PHOTO_BOX_MESSAGES.maxSelection);
+      return;
+    }
+    setSelection(result.selection);
+  };
+
+  const startSelecting = () => setSelecting(true);
+  const stopSelecting = () => {
+    setSelecting(false);
+    setSelection([]);
+  };
 
   if (state.kind === 'loading') return <PhotoBoxSkeleton />;
   if (state.kind === 'error') return <PhotoBoxError onRetry={onRetry} />;
@@ -61,29 +85,46 @@ export function PhotoBoxScreen({
   return (
     <PageShell
       header={
-        <PhotoBoxHeader bunch={bunch} onBunchClick={onBunchClick} onSelectClick={onSelectClick} />
+        <PhotoBoxHeader
+          bunch={bunch}
+          onBunchClick={onBunchClick}
+          selecting={selecting}
+          onSelectClick={startSelecting}
+          onCancelClick={stopSelecting}
+        />
       }
-      // 「+」는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
+      // 「+」(선택 모드에서는 「⋯」)는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
       bottom={
         <div className="relative h-0">
           <FloatingButton
-            icon="add"
-            aria-label="사진 올리기"
-            onClick={onUploadClick}
-            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+0.625rem)] z-10"
+            icon={selecting ? 'more' : 'add'}
+            aria-label={selecting ? '메뉴 열기' : '사진 올리기'}
+            disabled={selecting && selection.length === 0}
+            onClick={selecting ? undefined : onUploadClick}
+            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
           />
         </div>
       }
     >
       <h1 className="sr-only">사진함</h1>
-      <div className="flex min-h-full flex-col">
-        <MemberFilter members={members} selectedId={memberId} onSelect={setMemberId} />
-        {undated.length > 0 ? <UndatedPhotos photos={undated} /> : null}
-        {sections.map((section) => (
-          <PhotoDateSection key={section.dateKey} section={section} />
-        ))}
-        {isEmpty ? <PhotoBoxEmpty reason={memberId === ALL_MEMBERS ? 'bunch' : 'member'} /> : null}
-      </div>
+      {selecting ? <HideMainTabBar /> : null}
+      <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
+        <div className="flex min-h-full flex-col">
+          <MemberFilter
+            members={members}
+            selectedId={memberId}
+            onSelect={setMemberId}
+            selectedCounts={selectedCounts}
+          />
+          {undated.length > 0 ? <UndatedPhotos photos={undated} /> : null}
+          {sections.map((section) => (
+            <PhotoDateSection key={section.dateKey} section={section} />
+          ))}
+          {isEmpty ? (
+            <PhotoBoxEmpty reason={memberId === ALL_MEMBERS ? 'bunch' : 'member'} />
+          ) : null}
+        </div>
+      </PhotoSelectionProvider>
     </PageShell>
   );
 }
