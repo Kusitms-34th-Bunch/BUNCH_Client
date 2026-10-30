@@ -8,15 +8,12 @@ type PhotoSelectionContextValue = {
   active: boolean;
   /** 누른 순서대로 담은 선택한 사진 id */
   selection: PhotoSelection;
-  /** 앨범에 저장하는 중인 사진 id(사진마다 점 3개 로딩) */
-  savingIds: PhotoSelection;
   onToggle: (_photoId: string) => void;
 };
 
 const PhotoSelectionContext = createContext<PhotoSelectionContextValue>({
   active: false,
   selection: [],
-  savingIds: [],
   onToggle: () => {},
 });
 

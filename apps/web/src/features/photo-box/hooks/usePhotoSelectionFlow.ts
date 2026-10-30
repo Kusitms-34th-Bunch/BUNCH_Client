@@ -159,8 +159,6 @@ export function usePhotoSelectionFlow({
   return {
     selecting,
     selection,
-    /** 저장 중인 사진 id(저장하는 동안은 고른 사진 전부) */
-    savingIds: pending === 'save' ? selection : [],
     /** 저장 또는 삭제 요청이 도는 중 */
     busy: pending !== undefined,
     saving: pending === 'save',

@@ -5,7 +5,6 @@ import { useState } from 'react';
 import type { PhotoBoxPhoto } from '../lib/types';
 import { getSelectionOrder } from '../lib/selection';
 import { usePhotoSelection } from './PhotoSelectionContext';
-import { SavingDots } from './SavingDots';
 
 type PhotoCellProps = {
   photo: PhotoBoxPhoto;
@@ -17,7 +16,7 @@ type PhotoCellProps = {
  */
 export function PhotoCell({ photo }: PhotoCellProps) {
   const [broken, setBroken] = useState(false);
-  const { active, selection, savingIds, onToggle } = usePhotoSelection();
+  const { active, selection, onToggle } = usePhotoSelection();
 
   if (photo.status !== 'ready' || broken) {
     const label = photo.status === 'processing' ? '처리 중인 사진' : '불러오지 못한 사진';
@@ -28,26 +27,16 @@ export function PhotoCell({ photo }: PhotoCellProps) {
 
   const order = getSelectionOrder(selection, photo.id);
 
-  const saving = savingIds.includes(photo.id);
-
   return (
-    <div className="relative">
-      <PhotoThumbnail
-        src={photo.src}
-        alt={photo.alt}
-        className="w-full"
-        selectionMode={active}
-        selected={order !== undefined}
-        selectionOrder={order}
-        onClick={active ? () => onToggle(photo.id) : undefined}
-        onImageError={() => setBroken(true)}
-      />
-      {saving ? (
-        // 앨범에 저장하는 동안 사진 위에 점 3개 로딩(디자이너 전달 로티, 상태는 화면의 live region이 한 번에 안내)
-        <span className="bg-overlay-pressed absolute inset-0 flex items-center justify-center">
-          <SavingDots />
-        </span>
-      ) : null}
-    </div>
+    <PhotoThumbnail
+      src={photo.src}
+      alt={photo.alt}
+      className="w-full"
+      selectionMode={active}
+      selected={order !== undefined}
+      selectionOrder={order}
+      onClick={active ? () => onToggle(photo.id) : undefined}
+      onImageError={() => setBroken(true)}
+    />
   );
 }

@@ -4,6 +4,7 @@ import { FloatingButton } from '@app/design-system/web';
 import { useMemo, useRef, useState } from 'react';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { usePhotoSelectionFlow } from '../hooks/usePhotoSelectionFlow';
 import { filterByMember, splitPhotos } from '../lib/photoDate';
@@ -156,14 +157,9 @@ export function PhotoBoxScreen({
             ? PHOTO_BOX_MESSAGES.selectionStatus(selection.length)
             : ''}
       </p>
-      <PhotoSelectionProvider
-        value={{
-          active: selecting,
-          selection,
-          savingIds: flow.savingIds,
-          onToggle: handleToggle,
-        }}
-      >
+      {/* 저장하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12) */}
+      {flow.saving ? <PageLoading /> : null}
+      <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
         <div className="flex min-h-full flex-col">
           <MemberFilter
             members={members}
