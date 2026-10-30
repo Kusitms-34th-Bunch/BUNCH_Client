@@ -21,6 +21,7 @@
 - **switch**: `role="switch"`와 `aria-checked`(또는 `<input type="checkbox" role="switch">`의 `checked`)로 on/off를 표현한다. checkbox와 다른 의미(선택 여부가 아니라 켬/끔)이므로 역할을 구분해서 쓴다.
 - **accordion**: 가능하면 `<details>`/`<summary>`를 쓴다. 커스텀 구현은 헤더 버튼에 `aria-expanded`, `aria-controls`로 패널 id를 연결하고, 패널에는 `role="region"` + `aria-labelledby`를 준다. `aria-expanded`와 패널의 `hidden` 상태는 항상 동기화한다.
 - **확인 dialog(모달)**: `Dialog`·`ConfirmDialog`를 사용한다. 여러 동작 중 하나를 고르는 창(Figma Profile (Stack))은 `ActionDialog`를 사용한다. Base UI Alert Dialog로 응답을 요구하는 `alertdialog` 의미, 포커스 가두기·복원과 ESC 취소를 처리한다. 바깥 터치는 닫지 않는다. 확인은 콜백만 호출하고 호출자가 `open`을 갱신한다. 모달 안의 오류·필수 안내는 본문에 표시하고 액션 Toast는 모달을 닫은 뒤 띄운다. 폼·풍부한 콘텐츠용 일반 Dialog는 이 확인창의 지원 범위 밖이다. 결정·제약은 [ADR 009](../decisions/records/009-confirm-dialog-base-ui.md), API·토큰은 `packages/design-system/src/components/core/dialog/Dialog.spec.md`를 따른다.
+- **바텀시트(모달)**: `@app/design-system/web`의 `BottomSheet` Compound 부품을 사용한다. Base UI Drawer가 `dialog` 의미, 포커스 가두기·복원, ESC·바깥 터치·아래로 끌어 닫기를 처리한다. Figma에 그려진 시트는 디자인 시스템 `web`의 시트 렌더러(`PhotoUploadSheet` 등)를 쓰고, 앱 `features`는 `overlay.open`으로 렌더러를 여는 hook에서 데이터와 동작을 연결한다. 결정은 [ADR 014](../decisions/records/014-bottom-sheet-base-ui-drawer.md)를 따른다. API·토큰·조합 규칙은 `packages/design-system/src/components/web/bottomSheet/BottomSheet.spec.md`를 따른다.
 - **tabs**: 컨테이너는 `role="tablist"`, 각 탭은 `role="tab"` + `aria-selected`, 콘텐츠는 `role="tabpanel"` + `aria-labelledby`(연결된 탭 id)로 구성한다. 비활성 탭의 패널은 `hidden`으로 감춘다 — `aria-selected`만으로는 스크린 리더가 패널을 구분하지 못한다.
 
 ## Variant 선언
