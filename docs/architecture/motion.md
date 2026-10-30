@@ -73,6 +73,7 @@ Figma `공통 모션`(node `1962:18333`)이 정한 값이다. 디자이너가 �
 - 테스트에서는 재생 라이브러리를 mock한다. 애니메이션의 모양은 테스트하지 않는다.
 - 도입 결과 (2026-10-19): `lottie-react` 3.x는 엔진 세 빌드(full·svg·light)를 함께 내보내서 모듈 전체를 동적 `import()`하면 셋이 모두 내려받아진다(합계 약 180KB gzip). 표현식이 없는 로티는 light 빌드만 쓰도록 `export { LottieLight } from 'lottie-react'` 래퍼(`lib/lottieLight.ts`)를 동적 import해서 엔진 하나(약 164KB)와 래퍼(약 47KB)만 내려받는다. 새 로티를 넣을 때 표현식이 있으면 `LottieSvg`로 바꾼다.
 - 자산 위치 (확정): 초대장 로티는 `apps/web/src/shared/assets/lotties/inviteAnimation.json`에 둔다. 재생 컴포넌트에서 JSON을 동적 import한다.
+- 사진함 저장 중 로딩 (2026-10-31): 디자이너가 전달한 `loading.json`(70×28, 4.7KB, 표현식 없음)을 `apps/web/src/shared/assets/lotties/loading.json`에 두고 `features/photo-box/components/SavingDots.tsx`가 light 엔진과 함께 동적 import한다. 사진마다 한 장씩 뜨므로 엔진·JSON은 모듈에서 한 번만 받아 공유하고, 동작 줄이기에서는 첫 프레임에 정지하며, 받지 못하면 DS `EditingAnimation`으로 대체한다. `lib/lottieLight.ts`는 feature 간 import를 피하려고 온보딩 것과 같은 한 줄 재노출을 photo-box에 따로 둔다(세 번째 사용처가 생기면 `shared`로 모은다).
 - 재생 실패 (확정): 로티가 화면 전환을 이끄는 경우(로딩 화면) 라이브러리·자산을 못 받거나 재생 오류가 나면 멈추지 않고 다음 화면으로 넘긴다.
 - 동작 줄이기 (확정): 정지 프레임이 의미가 없는 장면은 로티를 불러오지 않고 짧게 안내만 둔 뒤 넘어간다(`BunchJoinMotion`).
 

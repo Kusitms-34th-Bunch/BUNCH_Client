@@ -1,10 +1,11 @@
 'use client';
 
-import { EditingAnimation, PhotoThumbnail } from '@app/design-system/web';
+import { PhotoThumbnail } from '@app/design-system/web';
 import { useState } from 'react';
 import type { PhotoBoxPhoto } from '../lib/types';
 import { getSelectionOrder } from '../lib/selection';
 import { usePhotoSelection } from './PhotoSelectionContext';
+import { SavingDots } from './SavingDots';
 
 type PhotoCellProps = {
   photo: PhotoBoxPhoto;
@@ -42,9 +43,9 @@ export function PhotoCell({ photo }: PhotoCellProps) {
         onImageError={() => setBroken(true)}
       />
       {saving ? (
-        // 앨범에 저장하는 동안 사진 위에 점 3개 로딩(장식이라 상태는 화면의 live region이 한 번에 안내)
+        // 앨범에 저장하는 동안 사진 위에 점 3개 로딩(디자이너 전달 로티, 상태는 화면의 live region이 한 번에 안내)
         <span className="bg-overlay-pressed absolute inset-0 flex items-center justify-center">
-          <EditingAnimation />
+          <SavingDots />
         </span>
       ) : null}
     </div>
