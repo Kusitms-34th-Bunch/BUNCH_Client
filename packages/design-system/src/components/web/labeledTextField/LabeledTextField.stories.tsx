@@ -8,7 +8,7 @@ const meta = {
   args: { title: '닉네임', option: 'required', maxLength: 12 },
   decorators: [
     (Story) => (
-      <div className="w-[343px]">
+      <div className="w-85.75">
         <Story />
       </div>
     ),

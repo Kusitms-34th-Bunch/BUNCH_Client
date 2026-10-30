@@ -8,7 +8,7 @@ const meta = {
   args: { children: '필수 항목 모두 체크하기' },
   decorators: [
     (Story) => (
-      <div className="w-[343px]">
+      <div className="w-85.75">
         <Story />
       </div>
     ),
