@@ -12,7 +12,7 @@ describe('Accordion', () => {
     expect(screen.queryByRole('region')).toBeNull();
   });
 
-  it('닫는 동안에는 내용을 유지하되 접근성 트리에서 숨기는 클래스를 준다', async () => {
+  it('닫는 동안에는 내용을 유지하되 inert로 포커스·읽기에서 즉시 뺀다', async () => {
     render(
       <Accordion title="사진" defaultOpen>
         내용
@@ -20,10 +20,12 @@ describe('Accordion', () => {
     );
     const panel = screen.getByRole('region', { name: '사진' });
     expect(panel.className.split(' ')).toContain('visible');
+    expect(panel.hasAttribute('inert')).toBe(false);
 
     await userEvent.click(screen.getByRole('button', { name: '사진' }));
 
     expect(panel.hidden).toBe(false);
+    expect(panel.hasAttribute('inert')).toBe(true);
     expect(panel.className.split(' ')).toContain('invisible');
     await waitFor(() => expect(panel.hidden).toBe(true));
   });

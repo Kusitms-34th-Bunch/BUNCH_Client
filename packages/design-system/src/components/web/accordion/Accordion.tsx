@@ -42,7 +42,7 @@ export const Accordion = ({
   const id = useId();
   const [innerOpen, setInnerOpen] = useState(defaultOpen);
   const isOpen = open ?? innerOpen;
-  // 닫는 전환이 끝날 때까지 내용을 유지(그동안에도 visibility로 접근성 트리·탭 순서에서는 제외)
+  // 닫는 전환이 끝날 때까지 내용을 유지(그동안은 inert로 포커스·읽기에서 제외, visibility는 전환이 끝난 시점에 숨김)
   const [mounted, setMounted] = useState(isOpen);
   if (isOpen && !mounted) setMounted(true);
   useEffect(() => {
@@ -112,6 +112,7 @@ export const Accordion = ({
           role="region"
           aria-labelledby={`${id}-header`}
           hidden={!mounted}
+          inert={!isOpen}
           className={cn(
             'grid transition-[grid-template-rows,visibility] duration-340 ease-[cubic-bezier(0,0,0.35,1)] motion-reduce:transition-none starting:grid-rows-[0fr]',
             isOpen ? 'visible grid-rows-[1fr]' : 'invisible grid-rows-[0fr]',
