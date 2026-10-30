@@ -37,7 +37,7 @@ if (isCodeFile && !isGeneratedFile && /:\s*any([^A-Za-z]|$)|<any>|as any/.test(c
   deny('명시적 any 대신 구체적인 타입 또는 unknown을 사용하세요.');
 }
 
-// docs/conventions/coding.md의 주석 명사형 끝맺음 검사(생성기 출력 제외)
+// docs/conventions/coding.md의 주석 명사형 끝맺음 조기 경고(생성기 출력 제외, 최종 검사는 ESLint bunch/comment-noun-ending)
 // 줄 앞·JSX·코드 뒤 주석에서 한글 뒤 `다`로 끝나는 줄(괄호 덧붙임 포함) 차단. `바다` 같은 명사 오탐은 감수
 const isCommentCheckableFile = /\.(ts|tsx|js|jsx|css)$/.test(filePath);
 const sentenceFormComment =
@@ -53,7 +53,7 @@ if (isCommentCheckableFile && !isGeneratedFile && !isGeneratedContent) {
   }
 }
 
-// apps/mobile-shell은 Expo/Metro가 Yarn PnP를 지원하지 않아 pnpm을 쓰는 예외다.
+// apps/mobile-shell은 Expo/Metro가 Yarn PnP를 지원하지 않아 pnpm을 쓰는 예외.
 // docs/architecture/mobile-shell.md, docs/decisions/records/003-mobile-shell-pnpm-exception.md 참고.
 const targetsMobileShell = /apps\/mobile-shell/.test(content);
 
@@ -64,10 +64,10 @@ if (toolName === 'Bash' && !targetsMobileShell && /(^|\s)(npm|pnpm|npx)\s/.test(
 }
 
 // ── git 위험 명령 ────────────────────────────────────────────────────────────
-// 요청 범위 밖 변경이 커밋에 섞이거나, 이력이 덮어써지거나, 커밋·푸시 hook이 우회되는 일을 막는다.
-// 사람이 터미널에서 직접 실행하는 건 막지 않는다. 막힌 이유는 agent에게 전달되고, 필요하면 사용자에게 확인을 받는다.
-// 따옴표 안 문자열(커밋 메시지 등)과 heredoc 본문은 명령이 아니므로 걷어낸 뒤 명령 단위로 본다.
-// ponytail: 정규식 기반이라 `sh -c "git ..."`처럼 따옴표로 감싼 명령은 못 본다. 방어의 한 겹일 뿐이다.
+// 요청 범위 밖 변경의 커밋 혼입, 이력 덮어쓰기, 커밋·푸시 hook 우회 방지.
+// 사람이 터미널에서 직접 실행하는 건 허용. 막힌 이유는 agent에게 전달하고 agent가 사용자 확인.
+// 따옴표 안 문자열(커밋 메시지 등)과 heredoc 본문은 명령이 아니므로 걷어낸 뒤 명령 단위로 검사.
+// ponytail: 정규식 기반이라 `sh -c "git ..."`처럼 따옴표로 감싼 명령은 검사 불가. 방어의 한 겹일 뿐.
 function stripNonCommandText(command) {
   return command
     .replace(/<<-?\s*(['"]?)(\w+)\1[^\n]*\n[\s\S]*?\n[ \t]*\2(?=\n|$)/g, '')
@@ -96,7 +96,7 @@ function gitCommands(command) {
   return commands;
 }
 
-// `-am`, `-fu`처럼 묶인 짧은 옵션 안에 문자가 있는지 본다.
+// `-am`, `-fu`처럼 묶인 짧은 옵션 안의 문자 확인.
 const hasShort = (args, letter) =>
   args.some((arg) => /^-[A-Za-z]+$/.test(arg) && arg.includes(letter));
 const isMainRef = (arg) => /^\+?(?:[^:\s]+:)?(?:refs\/heads\/)?(?:main|master)$/.test(arg);
@@ -108,7 +108,7 @@ if (toolName === 'Bash') {
     deny('HUSKY=0으로 git hook을 끄지 않습니다. hook이 실패하면 원인을 고치세요.');
   }
 
-  // heredoc 본문까지 보려고 걷어내기 전 원문을 검사한다.
+  // heredoc 본문까지 보려고 걷어내기 전 원문 검사.
   const writesMessage = /\bgit\s+(?:-\S+\s+)*commit\b|\bgh\s+pr\s+(?:create|edit)\b/.test(command);
   const aiAttribution =
     /co-authored-by:[^\n]*(?:claude|anthropic|copilot|codex|openai|chatgpt)|generated (?:with|by)[^\n]*(?:claude|codex|copilot|chatgpt)/i;
