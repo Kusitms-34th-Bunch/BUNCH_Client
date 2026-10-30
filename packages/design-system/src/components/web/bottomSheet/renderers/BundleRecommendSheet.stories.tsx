@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button } from '../../../core/button';
+import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { BundleRecommendSheet, type BundleRecommendItem } from './BundleRecommendSheet';
 
 const SAMPLE_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -27,11 +28,19 @@ const bundles: BundleRecommendItem[] = [
     day: 28,
   },
 ];
-
 const meta = {
   title: 'Web/BottomSheet/BundleRecommendSheet',
   component: BundleRecommendSheet,
   parameters: { layout: 'fullscreen' },
+  // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  decorators: [
+    (Story) => (
+      <SheetStoryScreen>
+        <Story />
+      </SheetStoryScreen>
+    ),
+  ],
   args: { open: true, onOpenChange: () => {}, bundles, onSelect: () => {} },
   render: function Render(args) {
     const [open, setOpen] = useState(args.open);

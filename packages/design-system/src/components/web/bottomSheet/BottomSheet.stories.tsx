@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type ReactNode } from 'react';
 import { Button } from '../../core/button';
 import { BottomSheet } from './BottomSheet';
+import { SheetStoryScreen } from './SheetStoryScreen.internal';
 
 // 틀(손잡이·제목·닫기·본문·하단) 동작 예시. Figma 변형별 시트는 PhotoUploadSheet 등 렌더러 story 참고
 const Sheet = ({
@@ -27,10 +28,18 @@ const Sheet = ({
     </>
   );
 };
-
 const meta = {
   title: 'Web/BottomSheet/Frame',
   parameters: { layout: 'fullscreen' },
+  // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  decorators: [
+    (Story) => (
+      <SheetStoryScreen>
+        <Story />
+      </SheetStoryScreen>
+    ),
+  ],
 } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button } from '../../../core/button';
+import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { BunchSwitchSheet, type BunchSwitchItem } from './BunchSwitchSheet';
 
 const bunches: BunchSwitchItem[] = [
@@ -10,11 +11,19 @@ const bunches: BunchSwitchItem[] = [
   { id: '4', name: '홍대 먹짱', status: 'unavailable' },
   { id: '5', name: '큐시즘 밋업', status: 'unavailable' },
 ];
-
 const meta = {
   title: 'Web/BottomSheet/BunchSwitchSheet',
   component: BunchSwitchSheet,
   parameters: { layout: 'fullscreen' },
+  // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  decorators: [
+    (Story) => (
+      <SheetStoryScreen>
+        <Story />
+      </SheetStoryScreen>
+    ),
+  ],
   args: { open: true, onOpenChange: () => {}, bunches, onSelect: () => {}, onAdd: () => {} },
   render: function Render(args) {
     const [open, setOpen] = useState(args.open);

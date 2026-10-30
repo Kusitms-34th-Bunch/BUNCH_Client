@@ -1,12 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button } from '../../../core/button';
+import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { DateChangeSheet } from './DateChangeSheet';
-
 const meta = {
   title: 'Web/BottomSheet/DateChangeSheet',
   component: DateChangeSheet,
   parameters: { layout: 'fullscreen' },
+  // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  decorators: [
+    (Story) => (
+      <SheetStoryScreen>
+        <Story />
+      </SheetStoryScreen>
+    ),
+  ],
   args: { open: true, onOpenChange: () => {}, onSave: () => {} },
   render: function Render(args) {
     const [open, setOpen] = useState(args.open);
