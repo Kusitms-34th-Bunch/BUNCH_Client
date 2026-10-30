@@ -50,7 +50,7 @@ export function MemberFilter({ members, selectedId, onSelect, selectedCounts }: 
     <div
       role="radiogroup"
       aria-label="멤버 필터"
-      className="gap-s3 px-s8 pt-s9 flex [scrollbar-width:none] overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
+      className="gap-s3 px-s8 pt-s9 flex scrollbar-none overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
     >
       {options.map((option, index) => {
         const selected = option.id === selectedId;

@@ -50,7 +50,7 @@ Figma `공통 모션`(node `1962:18333`)이 정한 값이다. 디자이너가 �
 | 팝오버 메뉴 | Smart animation, Gentle, 400ms. 열기 38px 위로 이동·0%→100%, 닫기 38px 아래로 이동·100%→0%(닫기 시간은 Figma에 없음)            | `Menu`의 `open`·`onExited`. Gentle은 스프링 프리셋(stiffness 100·damping 15·mass 1)이라 400ms 구간을 `cubic-bezier(0.22, 0, 0.4, 0.94)`로 근사(오차 0.3% 이내). 닫기도 400ms |
 | 칩 버튼     | 누르는 동안 Hover, 손을 떼면 Selected. 둘 다 Dissolve·Ease out·300ms                                                            | `ChipButton`의 색 transition과 오버레이 투명도 300ms. 눌리는 동안(`active`)과 마우스 호버가 같은 Hover 모양                                                                  |
 | 버튼        | 누르는 동안 Dissolve·Ease out·75ms                                                                                              | 위 "Easing과 duration"의 버튼 눌림 항목                                                                                                                                      |
-| 바텀시트    | `0, 0, 0.35, 1`. 열기 340ms 아래에서 위로·40%→100%, 닫기 160ms 위에서 아래로·100%→40%. 드래그를 놓으면 내려가며 닫힘            | 바텀시트 컴포넌트와 함께 구현(추후 작업 예정)                                                                                                                                |
+| 바텀시트    | `0, 0, 0.35, 1`. 열기 340ms 아래에서 위로·40%→100%, 닫기 160ms 위에서 아래로·100%→40%. 드래그를 놓으면 내려가며 닫힘            | `BottomSheet`의 Popup·Backdrop transition. 끄는 동안은 transition을 끄고 손을 따라 움직인다. `40%→100%`는 토스트와 같은 표기라 투명도로 해석                                 |
 
 - 토스트·메뉴처럼 반복해서 열리는 요소는 `@keyframes`보다 transition을 우선하지만, 메뉴는 열릴 때마다 처음부터 재생하는 모양이라 `@keyframes`를 쓴다(닫는 도중 다시 열면 현재 위치에서 이어지지 않는 점은 수용).
 - Gentle 값(100·15·1)은 Figma 프리셋의 알려진 값 기준이고 노드 데이터에서는 직접 확인하지 못했다. 디자이너가 다른 값을 쓰면 곡선만 바꾼다.

@@ -22,7 +22,7 @@ const ready = (data: PhotoBoxData = photoBoxFixture): PhotoBoxState => ({ kind: 
 const renderScreen = (state: PhotoBoxState = ready()) =>
   render(<PhotoBoxScreen state={state} currentYear={2026} />);
 
-// 선택 모드에서 사진 칸은 aria-pressed를 가진 버튼이다
+// 선택 모드의 사진 칸: aria-pressed를 가진 버튼
 const photoButtons = () =>
   screen.queryAllByRole('button').filter((button) => button.hasAttribute('aria-pressed'));
 
@@ -119,7 +119,7 @@ describe('PhotoBoxScreen 선택 모드', () => {
 
     expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
     const chips = screen.getAllByRole('radio').map((radio) => radio.textContent ?? '');
-    // 고른 사진을 올린 멤버 칩에만 숫자가 붙는다
+    // 고른 사진을 올린 멤버 칩에만 숫자 표시
     expect(chips.some((text) => /\(\d+\)/.test(text) && !text.startsWith('전체'))).toBe(true);
     expect(chips.some((text) => !/\(\d+\)/.test(text))).toBe(true);
   });
@@ -154,7 +154,7 @@ describe('PhotoBoxScreen 선택 모드', () => {
     expect(container.querySelector('[data-hide-main-tab-bar]')).toBeNull();
     expect(photoButtons()).toHaveLength(0);
 
-    // 다시 들어가면 이전 선택이 남아 있지 않다
+    // 재진입 시 이전 선택 초기화
     await user.click(screen.getByRole('button', { name: '선택' }));
     expect(screen.getByRole('radio', { name: '전체' })).toBeTruthy();
   });
@@ -311,7 +311,7 @@ describe('PhotoBoxScreen 선택 상태 안내와 메뉴 키보드', () => {
     await user.click(menuButton());
     expect(document.activeElement).toBe(screen.getAllByRole('menuitem')[0]);
 
-    // 메뉴 항목은 Tab 순서에 없어 다음 Tab은 메뉴 밖(다음 포커스 가능 요소)으로 간다
+    // 메뉴 항목은 Tab 순서에 없어 다음 Tab은 메뉴 밖(다음 포커스 가능 요소)으로 이동
     await user.tab();
 
     expect(menuButton().getAttribute('aria-expanded')).toBe('false');

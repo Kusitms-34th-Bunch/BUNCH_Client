@@ -2,7 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button } from '../button';
 import { toast, Toaster } from '../toast';
-import { ConfirmDialog, Dialog, type ConfirmDialogProps } from './Dialog';
+import { ActionDialog, ConfirmDialog, Dialog, type ConfirmDialogProps } from './Dialog';
+
+// Figma Profile Image 자리표시(56px 원)
+const SampleProfile = () => <div className="bg-surface-brand-subtle-2 size-full" />;
 
 const meta = {
   title: 'Components/Dialog',
@@ -81,4 +84,33 @@ export const ToastWhileOpen: Story = {
       </Dialog.Root>
     </>
   ),
+};
+
+/** Figma Profile (Side by Side): 프로필 이미지 + 두 버튼 */
+export const ProfileSideBySide: Story = {
+  args: { image: <SampleProfile />, cancelLabel: '아니요' },
+};
+
+/** Figma Profile (Stack): 프로필 이미지 + 동작 버튼 세로 + 「취소」 */
+export const ProfileStack: Story = {
+  render: function Render() {
+    const [open, setOpen] = useState(true);
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>열기</Button>
+        <ActionDialog
+          open={open}
+          onOpenChange={setOpen}
+          image={<SampleProfile />}
+          title="현재 선택된 사진이 초기화됩니다"
+          description="새로운 추천 번들을 적용할까요?"
+          actions={[
+            { label: '공동 관리자로 지정하기', onClick: () => setOpen(false) },
+            { label: '관리자 권한 넘기기', onClick: () => setOpen(false) },
+            { label: '번치에서 내보내기', onClick: () => setOpen(false) },
+          ]}
+        />
+      </>
+    );
+  },
 };

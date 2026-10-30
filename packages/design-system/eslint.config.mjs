@@ -5,7 +5,7 @@ export default [
   ...react,
   { files: ['scripts/*.mjs'], ...disableTypeChecked },
   {
-    // core는 모든 앱이 쓰므로 web(apps/web 전용) 구역을 가져오지 않는다
+    // core는 모든 앱이 쓰므로 web(apps/web 전용) 구역 import 금지
     files: ['src/components/core/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [

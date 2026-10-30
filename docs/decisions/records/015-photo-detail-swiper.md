@@ -1,4 +1,4 @@
-# 014: 사진 상세의 스와이프·확대는 Swiper(Zoom·Keyboard·A11y 모듈)로 처리한다
+# 015: 사진 상세의 스와이프·확대는 Swiper(Zoom·Keyboard·A11y 모듈)로 처리한다
 
 - 상태: accepted
 - 구현 상태(2026-10-31 확인): 구현됨(`features/photo-box/components/PhotoDetailScreen.tsx`). headless Chrome에서 마우스 드래그·더블클릭 확대를 확인했고 iOS·안드로이드 쉘 실기기는 미확인.

@@ -18,7 +18,7 @@
 
 - 실제 파일 선택·촬영·업로드. 눌렀을 때의 동작은 호출하는 쪽이 정한다.
 - 비활성 모양과 hover. Figma에 없다.
-- 아이콘 교체. Figma 컴포넌트는 사진 아이콘 하나뿐이라 고정했다(확인할 항목).
+- 아이콘은 `icon`으로 사진(`photo`, 기본)·카메라(`camera`) 중 고른다. Figma 컴포넌트에는 사진 하나뿐이지만 Bottom Sheet 01 변형(`2487:46357`)의 「카메라로 찍기」가 카메라 아이콘을 쓴다. 다른 아이콘은 지원하지 않는다.
 - 글자와 i18n.
 
 ## Public API
@@ -46,27 +46,27 @@
 
 ## Styling과 의존성
 
-| Figma               | 값                   | 사용한 토큰·utility                                   |
-| ------------------- | -------------------- | ----------------------------------------------------- |
-| 높이·반경           | 82px, 8px            | `min-h-20.5 rounded-r4`                               |
-| 안쪽 여백·간격      | 좌우 14px, 10px, 2px | `px-s7 gap-s5 gap-s1`                                 |
-| 배경                | `#F5F5F5`            | `bg-surface-secondary`                                |
-| 원형 배경·안쪽 여백 | 흰색, 10px           | `bg-surface-primary p-s5 rounded-full`                |
-| 사진 아이콘         | 24px, `#121212`      | `FillPhotoLargeIcon` + `text-icon-primary`            |
-| 쉐브론              | 20px, `#BCBEC2`      | `LineChevronRightMediumIcon` + `text-icon-quaternary` |
-| 제목                | 16/24 Medium, -0.25  | `typography-body-1-medium text-text-primary`          |
-| 설명                | 13/18 Regular        | `typography-body-4-regular text-text-tertiary`        |
-| 눌림                | 검정 10%             | `bg-overlay-hover`(배경 층)                           |
+| Figma               | 값                   | 사용한 토큰·utility                                              |
+| ------------------- | -------------------- | ---------------------------------------------------------------- |
+| 높이·반경           | 82px, 8px            | `min-h-20.5 rounded-r4`                                          |
+| 안쪽 여백·간격      | 좌우 14px, 10px, 2px | `px-s7 gap-s5 gap-s1`                                            |
+| 배경                | `#F5F5F5`            | `bg-surface-secondary`                                           |
+| 원형 배경·안쪽 여백 | 흰색, 10px           | `bg-surface-primary p-s5 rounded-full`                           |
+| 사진·카메라 아이콘  | 24px, `#121212`      | `FillPhotoLargeIcon`·`FillCameraLargeIcon` + `text-icon-primary` |
+| 쉐브론              | 20px, `#BCBEC2`      | `LineChevronRightMediumIcon` + `text-icon-quaternary`            |
+| 제목                | 16/24 Medium, -0.25  | `typography-body-1-medium text-text-primary`                     |
+| 설명                | 13/18 Regular        | `typography-body-4-regular text-text-tertiary`                   |
+| 눌림                | 검정 10%             | `bg-overlay-hover`(배경 층)                                      |
 
 - 타이포 이름: Figma `Body-4-Regular`(13/18)와 이름·값이 같은 `body-4-regular`를 쓴다(2026-10-31 토큰 이름을 Figma와 맞춤).
-- dependency 추가 없음. 아이콘은 기존 `FillPhotoLargeIcon`, `LineChevronRightMediumIcon`을 쓴다.
+- dependency 추가 없음. 아이콘은 기존 `FillPhotoLargeIcon`, `FillCameraLargeIcon`, `LineChevronRightMediumIcon`을 쓴다.
 - Storybook state matrix: `Default`, 긴 글자 `LongText`, 두 카드를 나란히 놓은 `List`. 눌림은 `:active`라 정지 화면으로 만들 수 없어 story로 두지 않았다.
 
 ## 확인할 항목
 
 - 설명 색 (확인): Figma는 설명 글자를 변수 없이 `#777`로 칠했다. 같은 값의 토큰이 없어 가까운 `text-tertiary`(`#535A61`)를 썼다(조금 더 어둡다). 디자이너 확인이 필요하다.
 - 제목 색 (확인): Figma는 제목을 변수 없이 `#111318`로 칠했다. 한 단계 차이라 `text-primary`(`#121212`)를 썼다.
-- 아이콘 (제안): Figma에는 사진 아이콘만 있어 고정했다. 카메라 등 다른 방식이 같은 카드를 쓴다면 아이콘 교체 API가 필요하다.
+- 아이콘 (확정): Bottom Sheet 01의 「카메라로 찍기」를 위해 `icon` prop(`photo`·`camera`)을 추가했다.
 - 비활성·hover (제외): Figma에 없어 만들지 않았다.
 - 높이 (제안): Figma의 고정 82px를 최소 높이로 바꿔 긴 글자가 잘리지 않게 했다.
 

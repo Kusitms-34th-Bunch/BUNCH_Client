@@ -13,9 +13,9 @@ import motion from './menuMotion.module.css';
 export type MenuProps = Omit<ComponentProps<'div'>, 'role'> & {
   /** 접근성 이름(예: "번들 메뉴"). 보이는 제목이 없으므로 필수 */
   'aria-label': string;
-  /** 열림 여부. 기본 `true`이고, `false`로 바꾸면 닫히는 모션을 재생한다(Figma 팝오버 메뉴 모션) */
+  /** 열림 여부. 기본 `true`, `false`로 바꾸면 닫히는 모션 재생(Figma 팝오버 메뉴 모션) */
   open?: boolean;
-  /** 닫히는 모션이 끝났을 때. 호출하는 쪽이 이때 메뉴를 화면에서 뺀다 */
+  /** 닫히는 모션이 끝났을 때 호출. 호출하는 쪽이 이때 메뉴를 화면에서 제거 */
   onExited?: () => void;
 };
 

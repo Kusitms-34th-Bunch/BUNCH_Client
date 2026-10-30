@@ -7,7 +7,7 @@ const meta = {
   args: { tag: '[필수]', children: '서비스 이용 약관', onViewTerms: () => {} },
   decorators: [
     (Story) => (
-      <div className="w-[343px]">
+      <div className="w-85.75">
         <Story />
       </div>
     ),

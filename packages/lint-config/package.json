@@ -10,6 +10,9 @@
   "exports": {
     ".": "./index.js"
   },
+  "scripts": {
+    "test": "node --test rules/*.test.js"
+  },
   "dependencies": {
     "@eslint/js": "^9.39.5",
     "@next/eslint-plugin-next": "^16.2.10",

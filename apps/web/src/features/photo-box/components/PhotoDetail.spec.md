@@ -5,7 +5,7 @@
 - Route: `/photos/[photoId]`(`apps/web/src/app/(app)/photos/[photoId]/page.tsx`). 하단 탭이 없는 화면이라 `(main)` 밖에 둔다.
 - Status: 헤더·큰 사진·올린 멤버 배지·좌우 스와이프·확대·더보기 메뉴(저장·날짜 바꾸기·삭제)·없는 사진 처리 구현됨(fixture와 목 동작, headless Chrome 375×812 실측. 실기기 전). 날짜 바꾸기 시트는 호출 지점만 있음.
 - 디자인 출처: Figma `사진함_16·17·18·21·22`와 화면 설계서 상세 보드(`1861:36350`, 날짜 변경 시트는 `1861:36652`). 이슈 #128.
-- 기능 spec: `docs/specs/photo-box.md`의 3.5 사진 상세. 라이브러리 결정: `docs/decisions/records/014-photo-detail-swiper.md`.
+- 기능 spec: `docs/specs/photo-box.md`의 3.5 사진 상세. 라이브러리 결정: `docs/decisions/records/015-photo-detail-swiper.md`.
 
 ## 목적과 범위
 
