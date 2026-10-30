@@ -29,7 +29,11 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 
 const savePhotos = vi.fn<PhotoBoxActions['savePhotos']>();
 const deletePhotos = vi.fn<PhotoBoxActions['deletePhotos']>();
-const actions: PhotoBoxActions = { savePhotos, deletePhotos };
+const actions: PhotoBoxActions = {
+  savePhotos,
+  deletePhotos,
+  changePhotoDates: () => Promise.resolve(),
+};
 
 const ready = (data: PhotoBoxData = photoBoxFixture): PhotoBoxState => ({ kind: 'ready', data });
 
@@ -228,7 +232,7 @@ describe('삭제', () => {
 
     await runMenu(user, '삭제');
     const dialog = screen.getByRole('alertdialog');
-    expect(within(dialog).getByText('선택한 사진 2장을 삭제할까요?')).toBeTruthy();
+    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.deleteConfirmTitle)).toBeTruthy();
     expect(within(dialog).getByText('삭제 이후에는 복구할 수 없어요.')).toBeTruthy();
     // 되돌릴 수 없는 동작이라 처음 포커스는 「취소」
     expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '취소' }));

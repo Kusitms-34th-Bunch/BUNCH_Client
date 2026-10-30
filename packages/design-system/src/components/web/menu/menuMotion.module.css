@@ -1,6 +1,7 @@
 /* Figma 공통 모션(팝오버 메뉴 모션): 열기 400ms Gentle easing, 38px 위로 이동하며 투명도 0%→100%, 닫기는 38px 아래로 이동하며 100%→0% */
 /* Gentle은 Figma 스프링 프리셋(stiffness 100·damping 15·mass 1)이라 400ms 구간을 cubic-bezier(0.22, 0, 0.4, 0.94)로 근사(오차 0.3% 이내) */
 /* 닫기의 시간은 Figma에 따로 없어 열기와 같은 400ms */
+/* 헤더 아래처럼 위쪽에 붙는 메뉴는 --menu-motion-offset을 음수(-38px)로 주어 위에서 아래로 열리게 함(Figma 사진 상세 설명 표) */
 .menu[data-state='open'] {
   animation: menuIn 400ms cubic-bezier(0.22, 0, 0.4, 0.94) both;
 }
@@ -13,7 +14,7 @@
 @keyframes menuIn {
   from {
     opacity: 0;
-    transform: translateY(38px);
+    transform: translateY(var(--menu-motion-offset, 38px));
   }
 
   to {
@@ -30,7 +31,7 @@
 
   to {
     opacity: 0;
-    transform: translateY(38px);
+    transform: translateY(var(--menu-motion-offset, 38px));
   }
 }
 

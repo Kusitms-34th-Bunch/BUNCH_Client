@@ -20,6 +20,16 @@ beforeEach(() => {
 });
 
 describe('PhotoBoxScreen 목록', () => {
+  it('보통 모드에서 사진은 사진 상세로 가는 링크다', () => {
+    renderScreen();
+
+    const links = screen
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('href')?.startsWith('/photos/'));
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0]?.getAttribute('href')).toMatch(/^\/photos\/photo-\d+$/);
+  });
+
   it('화면 제목(h1)과 헤더의 번치 이름·선택 버튼이 있다', () => {
     renderScreen();
 
