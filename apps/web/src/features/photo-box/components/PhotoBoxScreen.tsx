@@ -137,8 +137,10 @@ export function PhotoBoxScreen({
             aria-label={selecting ? '메뉴 열기' : '사진 올리기'}
             aria-haspopup={selecting ? 'menu' : undefined}
             aria-expanded={selecting ? menuOpen : undefined}
-            disabled={selecting && (selection.length === 0 || flow.saving)}
-            onClick={selecting ? toggleMenu : onUploadClick}
+            disabled={selecting && selection.length === 0}
+            // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
+            aria-disabled={selecting && flow.busy ? true : undefined}
+            onClick={selecting ? (flow.busy ? undefined : toggleMenu) : onUploadClick}
             className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
           />
         </div>
@@ -146,11 +148,14 @@ export function PhotoBoxScreen({
     >
       <h1 className="sr-only">사진함</h1>
       {selecting ? <HideMainTabBar /> : null}
-      {flow.saving ? (
-        <p role="status" className="sr-only">
-          {PHOTO_BOX_MESSAGES.saving}
-        </p>
-      ) : null}
+      {/* 선택 모드 진입·선택 개수·저장 중 상태를 알리는 live region(항상 마운트해 문구만 바꿈) */}
+      <p role="status" className="sr-only">
+        {flow.saving
+          ? PHOTO_BOX_MESSAGES.saving
+          : selecting
+            ? PHOTO_BOX_MESSAGES.selectionStatus(selection.length)
+            : ''}
+      </p>
       <PhotoSelectionProvider
         value={{
           active: selecting,

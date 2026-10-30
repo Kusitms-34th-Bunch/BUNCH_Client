@@ -50,7 +50,7 @@
 - 아코디언은 열림 상태를 스스로 갖는다. 열고 닫는 모션은 화면 설계서의 값(340ms, `cubic-bezier(0, 0, 0.35, 1)`)이다. 높이는 `Accordion`이, 좌우 여백·모서리는 이 화면이 같은 값으로 전환하고 `prefers-reduced-motion`에서는 즉시 바뀐다.
 
 - 선택 모드는 화면 안 상태다(`hooks/usePhotoSelectionFlow.ts`). 서버·기기 동작은 `PhotoBoxActions`(`savePhotos`·`deletePhotos`)로 받고, `usePhotoBox`가 목 동작을 준다(저장은 0.8초 뒤 모두 성공, 삭제는 `applyDelete`로 목록에서 반영). API를 연결하면 이 hook만 mutation으로 바꾼다.
-- 선택 모드 동안 `HideMainTabBar`를 렌더해 `(main)` layout이 탭 막대를 숨기고 `--main-tab-bar-*` 변수를 0으로 되돌린다. 「⋯」는 그래서 막대가 없는 Figma 위치(`float-gap` 0)에 놓인다.
+- 선택 모드 동안 `HideMainTabBar`를 렌더해 `(main)` layout이 탭 막대를 숨기고 `--main-tab-bar-*` 변수를 0으로 되돌린다. 「⋯」는 그래서 막대가 없는 Figma 위치(`float-gap`도 0)에 놓인다. iOS 쉘에서는 시스템 탭 바를 숨기는 경로가 없어 선택 모드에도 탭 바가 남는다(`docs/specs/photo-box.md` 확인 항목).
 - 선택 모드를 끝낸 직후의 완료 토스트는 막대가 다시 보이므로 막대 위 10px에 둔다(`TOAST_ABOVE_TAB_BAR_OFFSET`). 사진함 토스트는 모두 목록 폭(343px)으로 펼친다.
 
 ## 데이터 의존성

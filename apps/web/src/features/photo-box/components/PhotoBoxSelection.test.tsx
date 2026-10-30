@@ -269,3 +269,52 @@ describe('PhotoBoxScreen 선택 메뉴', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 });
+
+describe('PhotoBoxScreen 선택 상태 안내와 메뉴 키보드', () => {
+  const statusText = () => screen.getByRole('status').textContent;
+
+  it('선택 모드 진입과 선택 개수를 항상 마운트된 상태 안내로 알린다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    expect(statusText()).toBe('');
+
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    expect(statusText()).toBe(PHOTO_BOX_MESSAGES.selectionStatus(0));
+
+    await user.click(photoButtons()[0]!);
+    await user.click(photoButtons()[1]!);
+    expect(statusText()).toBe(PHOTO_BOX_MESSAGES.selectionStatus(2));
+
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    expect(statusText()).toBe('');
+  });
+
+  it('포커스가 메뉴 밖에 있어도 Esc로 닫을 수 있다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    await user.click(photoButtons()[0]!);
+    await user.click(menuButton());
+    screen.getByRole('button', { name: '취소' }).focus();
+
+    await user.keyboard('{Escape}');
+
+    expect(menuButton().getAttribute('aria-expanded')).toBe('false');
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+  });
+
+  it('Tab으로 메뉴 밖으로 나가면 메뉴가 닫힌다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    await user.click(photoButtons()[0]!);
+    await user.click(menuButton());
+    expect(document.activeElement).toBe(screen.getAllByRole('menuitem')[0]);
+
+    // 메뉴 항목은 Tab 순서에 없어 다음 Tab은 메뉴 밖(다음 포커스 가능 요소)으로 간다
+    await user.tab();
+
+    expect(menuButton().getAttribute('aria-expanded')).toBe('false');
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+  });
+});

@@ -106,12 +106,17 @@ describe('저장', () => {
     await runMenu(user, '저장');
 
     expect(screen.getByRole('status').textContent).toBe(PHOTO_BOX_MESSAGES.saving);
-    expect(screen.getByRole('button', { name: '메뉴 열기' }).hasAttribute('disabled')).toBe(true);
+    // 포커스를 잃지 않도록 disabled가 아니라 aria-disabled로 막는다
+    expect(screen.getByRole('button', { name: '메뉴 열기' }).getAttribute('aria-disabled')).toBe(
+      'true',
+    );
     await user.click(photoButtons()[2]!);
     expect(photoButtons()[2]!.getAttribute('aria-pressed')).toBe('false');
 
     finish({ savedIds: ['bulk-0', 'bulk-1'], failedIds: [] });
-    await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).not.toBe(PHOTO_BOX_MESSAGES.saving),
+    );
   });
 
   it('일부만 저장하면 저장된 사진은 선택에서 빼고 실패한 사진만 남긴다', async () => {
@@ -307,5 +312,110 @@ describe('선택 중 사진이 사라진 경우', () => {
     expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
     expect(photoButtons()[0]!.textContent).toContain('1번째 선택');
     expect(photoButtons()[1]!.textContent).toContain('2번째 선택');
+  });
+});
+
+describe('저장·삭제 중 안전장치', () => {
+  it('저장 중 「취소」로 선택 모드를 끝내면 늦게 온 결과는 선택과 토스트에 반영하지 않는다', async () => {
+    const user = userEvent.setup();
+    let finish!: (_result: SaveResult) => void;
+    savePhotos.mockReturnValue(new Promise<SaveResult>((resolve) => (finish = resolve)));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+    await runMenu(user, '저장');
+
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    finish({ savedIds: ['bulk-0'], failedIds: ['bulk-1'] });
+
+    await waitFor(() => expect(screen.getByRole('button', { name: '선택' })).toBeTruthy());
+    expect(toast).not.toHaveBeenCalled();
+    // 다시 선택 모드에 들어가도 이전 선택이 되살아나지 않고 바로 고를 수 있다
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    expect(screen.getByRole('radio', { name: '전체' })).toBeTruthy();
+    await user.click(photoButtons()[0]!);
+    expect(photoButtons()[0]!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('삭제 요청이 실패하면 오류 토스트를 띄우고 선택을 그대로 둔다', async () => {
+    const user = userEvent.setup();
+    deletePhotos.mockRejectedValue(new Error('network'));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed, { fullWidth: true }),
+    );
+    expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: '메뉴 열기' }).getAttribute('aria-disabled'),
+    ).toBeNull();
+  });
+
+  it('삭제 요청이 도는 동안에는 「⋯」가 막히고 사진도 더 고를 수 없다', async () => {
+    const user = userEvent.setup();
+    let finish!: (_result: { removedCount: number }) => void;
+    deletePhotos.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 1);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    expect(screen.getByRole('button', { name: '메뉴 열기' }).getAttribute('aria-disabled')).toBe(
+      'true',
+    );
+    await user.click(photoButtons()[2]!);
+    expect(photoButtons()[2]!.getAttribute('aria-pressed')).toBe('false');
+    expect(deletePhotos).toHaveBeenCalledTimes(1);
+
+    finish({ removedCount: 1 });
+    await waitFor(() => expect(screen.getByRole('button', { name: '선택' })).toBeTruthy());
+  });
+});
+
+describe('관리자 삭제와 확인 창 시점의 사라진 사진', () => {
+  it('관리자는 다른 멤버가 올린 사진도 확인 창을 거쳐 지울 수 있다', async () => {
+    const user = userEvent.setup();
+    deletePhotos.mockResolvedValue({ removedCount: 2 });
+    renderScreen(ready(dataWith(bulk(3, ['gyeongjin']), { memberId: 'eunwoo', isAdmin: true })));
+    await startSelecting(user, 2);
+
+    await runMenu(user, '삭제');
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    expect(deletePhotos).toHaveBeenCalledWith(['bulk-0', 'bulk-1']);
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteForbidden, expect.anything());
+  });
+
+  it('확인 창을 연 뒤 고른 사진이 사라졌으면 「삭제하기」를 눌러도 지우지 않고 안내한다', async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+    await runMenu(user, '삭제');
+
+    rerender(
+      <PhotoBoxScreen
+        state={ready(dataWith(bulk(3).filter((photo) => photo.id !== 'bulk-0')))}
+        actions={actions}
+        currentYear={2026}
+      />,
+    );
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    expect(deletePhotos).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1), { fullWidth: true });
+    expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
   });
 });
