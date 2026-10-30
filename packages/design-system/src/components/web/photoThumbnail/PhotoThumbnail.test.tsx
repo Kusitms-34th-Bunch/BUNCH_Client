@@ -73,4 +73,29 @@ describe('PhotoThumbnail', () => {
     render(<PhotoThumbnail src={src} alt="사진" selectionMode selected selectionOrder={2} />);
     expect(screen.getByRole('button', { name: '사진 2번째 선택' })).toBeTruthy();
   });
+
+  it('사진은 화면 밖에서 나중에 불러오도록 lazy로 그린다', () => {
+    const { container } = render(<PhotoThumbnail src={src} alt="사진" />);
+    const image = container.querySelector('img') as HTMLImageElement;
+    expect(image.getAttribute('loading')).toBe('lazy');
+    expect(image.getAttribute('decoding')).toBe('async');
+  });
+
+  it('사진을 불러오지 못하면 onImageError를 부른다', () => {
+    const onImageError = vi.fn();
+    const { container } = render(
+      <PhotoThumbnail src={src} alt="사진" onImageError={onImageError} />,
+    );
+    fireEvent.error(container.querySelector('img') as HTMLImageElement);
+    expect(onImageError).toHaveBeenCalledTimes(1);
+  });
+
+  it('선택 모드의 사진도 onImageError를 부른다', () => {
+    const onImageError = vi.fn();
+    const { container } = render(
+      <PhotoThumbnail src={src} alt="사진" selectionMode onImageError={onImageError} />,
+    );
+    fireEvent.error(container.querySelector('img') as HTMLImageElement);
+    expect(onImageError).toHaveBeenCalledTimes(1);
+  });
 });

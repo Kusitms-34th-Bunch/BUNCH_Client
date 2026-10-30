@@ -1,6 +1,9 @@
-import { useId, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ComponentProps, type ReactNode } from 'react';
 import { LineChevronDownSmallIcon, LineChevronUpSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
+
+// 열고 닫는 전환 시간(Figma 화면 설계서: Smart Animate, 340ms, cubic-bezier(0, 0, 0.35, 1))
+const PANEL_DURATION_MS = 340;
 
 export type AccordionHeadingLevel = 2 | 3 | 4 | 5 | 6;
 
@@ -21,6 +24,7 @@ export type AccordionProps = Omit<ComponentProps<'div'>, 'title' | 'onChange'> &
 
 /**
  * 눌러서 내용을 펼치고 접는 목록 항목 헤더(Figma `Accordion`): 제목·개수·설명·쉐브론
+ * 내용은 높이를 0↔내용 높이로 340ms 전환하며 `prefers-reduced-motion`에서는 즉시 전환
  * 열림은 `open`(controlled) 또는 `defaultOpen`(uncontrolled), 둘 사이 전환은 미지원, `title`은 글자 prop
  */
 export const Accordion = ({
@@ -38,6 +42,14 @@ export const Accordion = ({
   const id = useId();
   const [innerOpen, setInnerOpen] = useState(defaultOpen);
   const isOpen = open ?? innerOpen;
+  // 닫는 전환이 끝날 때까지 내용을 유지(그동안은 inert로 포커스·읽기에서 제외, visibility는 전환이 끝난 시점에 숨김)
+  const [mounted, setMounted] = useState(isOpen);
+  if (isOpen && !mounted) setMounted(true);
+  useEffect(() => {
+    if (isOpen) return;
+    const timer = setTimeout(() => setMounted(false), PANEL_DURATION_MS + 50);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
   const hasPanel = children !== undefined && children !== null && children !== false;
   const Heading = `h${headingLevel}` as const;
   const Chevron = isOpen ? LineChevronUpSmallIcon : LineChevronDownSmallIcon;
@@ -95,8 +107,18 @@ export const Accordion = ({
         </button>
       </Heading>
       {hasPanel ? (
-        <div id={`${id}-panel`} role="region" aria-labelledby={`${id}-header`} hidden={!isOpen}>
-          {children}
+        <div
+          id={`${id}-panel`}
+          role="region"
+          aria-labelledby={`${id}-header`}
+          hidden={!mounted}
+          inert={!isOpen}
+          className={cn(
+            'grid transition-[grid-template-rows,visibility] duration-340 ease-[cubic-bezier(0,0,0.35,1)] motion-reduce:transition-none starting:grid-rows-[0fr]',
+            isOpen ? 'visible grid-rows-[1fr]' : 'invisible grid-rows-[0fr]',
+          )}
+        >
+          <div className="min-h-0 overflow-hidden">{children}</div>
         </div>
       ) : null}
     </div>
