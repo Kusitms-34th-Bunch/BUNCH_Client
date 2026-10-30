@@ -3,8 +3,9 @@
 import { toast as sonnerToast } from 'sonner';
 import { type ToastAction, type ToastIcon, Toast } from './Toast';
 
-// 지속 시간: 화면설계서의 Toast Interaction은 노출 3,000ms다(액션 버튼이 있는 토스트도 같다, Toast.spec.md 확인할 항목)
+// 노출 시간: Figma 공통 모션(토스트 모션)은 단순 완료 안내 3초, 액션 버튼 포함 5초
 const DEFAULT_DURATION = 3000;
+const ACTION_DURATION = 5000;
 
 export type ToastOptions = {
   icon?: ToastIcon | undefined;
@@ -46,6 +47,6 @@ export const toast = (
         </Toast>
       </div>
     ),
-    { duration: duration ?? DEFAULT_DURATION },
+    { duration: duration ?? (action ? ACTION_DURATION : DEFAULT_DURATION) },
   );
 };

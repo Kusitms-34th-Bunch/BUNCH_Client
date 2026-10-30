@@ -35,7 +35,8 @@
 | Outline | `surface-primary` + 1px `border-tertiary`          | 흰색 그대로(Figma에서 변화 없음)  | `surface-inversed` + 1px 같은 색 테두리, 흰 글자 |
 | Avatar  | `surface-secondary`                                | #e5e5e5(검정 10%를 **흰색** 위에) | `surface-inversed`, 흰 글자                      |
 
-- 호버 오버레이는 `overlay-hover`(검정 10%)이고 75ms ease-out이며, 선택된 칩에서는 호버 변화가 없다(Figma에 없음).
+- 호버 오버레이는 `overlay-hover`(검정 10%)이고, 선택된 칩에서는 호버 변화가 없다(Figma에 없음).
+- 모션(Figma 공통 모션의 칩버튼 모션, 2026-10-30): 누르는 동안(`active`)이 Hover 모양이고(마우스 호버와 같은 모양) 손을 떼면 Selected로 바뀌며, 둘 다 Dissolve·Ease out·300ms다. 배경·글자·테두리 색은 `transition-colors`로, 오버레이는 투명도로 300ms에 섞인다. 이전에는 호버 75ms였다. Outline은 Figma Hover가 변하지 않아 누르는 동안에도 변화가 없고, 동작 줄이기에서는 전환을 끈다. "Ease out"은 Tailwind `ease-out`(`cubic-bezier(0, 0, 0.2, 1)`)이라 CSS 표준 곡선과 다르다(`docs/architecture/motion.md`).
 - avatar 좌우 여백: S 4/8 · M 6/8 · L 8/10.
 - 아이콘: S·M은 16px(Small), L은 20px(Medium). 개수 글자는 L에서만 16/24(Figma 값).
 

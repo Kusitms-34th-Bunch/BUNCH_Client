@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useRef, useState } from 'react';
 import {
   LineDownloadMediumIcon,
   LinePencilMediumIcon,
   LineTrashcanMediumIcon,
 } from '../../../icons';
+import { Button } from '../../core/button';
 import { MenuDivider } from '../menuDivider';
 import { MenuItem } from '../menuItem';
 import { Menu } from './Menu';
@@ -78,4 +80,44 @@ export const Matrix: Story = {
       ))}
     </div>
   ),
+};
+
+const PopoverDemo = () => {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  return (
+    <div className="gap-s4 flex flex-col items-start">
+      <Button
+        variant="secondary"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        ref={triggerRef}
+        onClick={() => {
+          // 닫히는 동안 메뉴는 inert라 안에 있던 포커스가 사라지므로, 닫기 전에 트리거로 돌려 놓음
+          if (open) triggerRef.current?.focus();
+          setMounted(true);
+          setOpen((prev) => !prev);
+        }}
+      >
+        {open ? '메뉴 닫기' : '메뉴 열기'}
+      </Button>
+      {mounted ? (
+        <Menu aria-label="번들 메뉴" open={open} onExited={() => setMounted(false)}>
+          <MenuItem>저장</MenuItem>
+          <MenuItem>번들 만들기</MenuItem>
+          <MenuItem>날짜 바꾸기</MenuItem>
+          <MenuDivider />
+          <MenuItem tone="warning">삭제</MenuItem>
+        </Menu>
+      ) : null}
+    </div>
+  );
+};
+
+// 열기·닫기 모션 확인용(Figma 팝오버 메뉴 모션: 400ms, 38px 이동 + 투명도). 닫히는 모션이 끝나면 `onExited`로 화면에서 뺌
+export const PopoverMotion: Story = {
+  parameters: { chromatic: { disableSnapshot: true } },
+  render: () => <PopoverDemo />,
 };
