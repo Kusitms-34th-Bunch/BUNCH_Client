@@ -1,7 +1,6 @@
 // docs/conventions/coding.md의 주석 명사형 끝맺음 검사(.claude/hooks/guard-rules.mjs와 같은 판정)
 // 한글 뒤 `다`로 끝나는 줄(괄호 덧붙임·마침표 포함) 차단. `바다` 같은 명사 오탐은 감수
-const sentenceEnding = /[가-힣]다(\([^)]*\))?\.?\s*$/;
-const generatedMarker = /^\s*\/\/\s*@generated/m;
+const sentenceEnding = /[가-힣]다\s*(\([^)]*\))?\.?\s*$/;
 
 /** @type {import('eslint').Rule.RuleModule} */
 export const commentNounEnding = {
@@ -15,9 +14,11 @@ export const commentNounEnding = {
   },
   create(context) {
     const { sourceCode } = context;
-    if (/(^|\/)generated\//.test(context.filename) || generatedMarker.test(sourceCode.text)) {
-      return {};
-    }
+    // 생성 표식은 실제 주석만 인정(문자열 안의 `// @generated` 예시로 검사가 꺼지는 것 방지)
+    const isGenerated = sourceCode
+      .getAllComments()
+      .some((comment) => comment.type === 'Line' && /^\s*@generated/.test(comment.value));
+    if (/(^|\/)generated\//.test(context.filename) || isGenerated) return {};
 
     return {
       Program() {

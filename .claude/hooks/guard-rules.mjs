@@ -41,7 +41,7 @@ if (isCodeFile && !isGeneratedFile && /:\s*any([^A-Za-z]|$)|<any>|as any/.test(c
 // 줄 앞·JSX·코드 뒤 주석에서 한글 뒤 `다`로 끝나는 줄(괄호 덧붙임 포함) 차단. `바다` 같은 명사 오탐은 감수
 const isCommentCheckableFile = /\.(ts|tsx|js|jsx|css)$/.test(filePath);
 const sentenceFormComment =
-  /(^\s*(\/\*+|\*|\{\/\*)|(^|\s)\/\/).*[가-힣]다(\([^)]*\))?\.?\s*(\*\/\}?)?\s*$/;
+  /(^\s*(\/\*+|\*|\{\/\*)|(^|\s)\/\/).*[가-힣]다\s*(\([^)]*\))?\.?\s*(\*\/\}?)?\s*$/;
 const isGeneratedContent = /^\s*\/\/\s*@generated/m.test(content);
 
 if (isCommentCheckableFile && !isGeneratedFile && !isGeneratedContent) {

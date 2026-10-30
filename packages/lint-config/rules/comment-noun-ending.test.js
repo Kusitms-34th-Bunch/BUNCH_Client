@@ -14,11 +14,17 @@ ruleTester.run('comment-noun-ending', commentNounEnding, {
     '// The value is read here',
     { code: '// 위치를 바꾼다', filename: 'src/icons/generated/Icon.tsx' },
     '// @generated — run `yarn gen:index` to update\n// 자동으로 만든다',
+    'const s = `\n// @generated\n`;',
   ].map((test) => (typeof test === 'string' ? { code: test } : test)),
   invalid: [
     { code: '// 위로 끌면 움직이지 않는다', errors: [{ messageId: 'sentence', line: 1 }] },
     { code: '/** 그대로 닫는다 */', errors: [{ messageId: 'sentence', line: 1 }] },
     { code: '// 값을 보정한다(Viewport).', errors: [{ messageId: 'sentence', line: 1 }] },
+    { code: '// 값을 보정한다 (Viewport).', errors: [{ messageId: 'sentence', line: 1 }] },
+    {
+      code: 'const s = `\n// @generated\n`;\n// 위치를 바꾼다',
+      errors: [{ messageId: 'sentence', line: 4 }],
+    },
     { code: 'const a = 1; // 높이를 맞춘다', errors: [{ messageId: 'sentence', line: 1 }] },
     {
       code: '/**\n * 첫 줄 설명\n * 둘째 줄은 문장이다\n */',
