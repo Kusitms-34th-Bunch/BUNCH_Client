@@ -56,7 +56,8 @@ const LIFECYCLE = new Set([
 ]);
 const ALLOWED_LIFECYCLE = { prepare: 'husky' };
 const ALLOWED_NODE_PREFIXES = ['turbo/', '.agents/', '.github/', 'scripts/'];
-const NODE_RUN = /\bnode\s+(?:--?[\w-]+(?:=\S+)?\s+)*(\S+\.(?:[cm]?js))\b/g;
+// 옵션 이름 첫 글자를 `\w`로 고정해 `--x`를 `-`+`-x`로도 읽는 모호성(지수적 역추적) 제거
+const NODE_RUN = /\bnode\s+(?:--?(?:\w[\w-]*)?(?:=\S+)?\s+)*(\S+\.(?:[cm]?js))\b/g;
 const NODE_TEST_FILE = /\.test\.[cm]?js$/;
 const DOWNLOAD_EXEC = /\b(?:curl|wget)\b|base64\s+(?:-d|--decode)|\beval\s/;
 
@@ -277,6 +278,12 @@ function selfTest() {
     ];
     const missing = expected.filter((r) => !rules.has(r));
     if (missing.length) throw new Error(`탐지 못 한 규칙: ${missing.join(', ')}`);
+    // `-- -` 반복 입력의 지수적 역추적 회귀 방지(CodeQL js/redos)
+    const started = Date.now();
+    const runs = [...`node ${'-- -'.repeat(40)}!`.matchAll(NODE_RUN)].length;
+    if (runs !== 0 || Date.now() - started > 1000) {
+      throw new Error('NODE_RUN 정규식이 반복 옵션 입력에서 느리거나 잘못 매치한다');
+    }
     console.log('self-test OK');
   } finally {
     rmSync(dir, { recursive: true, force: true });
