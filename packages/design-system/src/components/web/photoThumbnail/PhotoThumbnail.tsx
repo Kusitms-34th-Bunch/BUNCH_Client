@@ -67,9 +67,14 @@ export const PhotoThumbnail = ({
       aria-pressed={selected}
     >
       {image}
-      {selected ? (
-        <span aria-hidden="true" className="bg-overlay-pressed absolute inset-0" />
-      ) : null}
+      {/* 선택 오버레이는 항상 두고 투명도만 150ms 전환(Figma 화면 설계서: Smart Animate, 0, 0, 0.35, 1) */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'bg-overlay-pressed absolute inset-0 transition-opacity duration-150 ease-[cubic-bezier(0,0,0.35,1)] motion-reduce:transition-none',
+          selected ? 'opacity-100' : 'opacity-0',
+        )}
+      />
       <SelectionIndicator
         selected={selected}
         order={selectionOrder}

@@ -31,14 +31,15 @@ describe('PhotoThumbnail', () => {
     );
     const button = screen.getByRole('button');
     expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelector('.bg-overlay-pressed')).toBeTruthy();
+    expect(container.querySelector('.bg-overlay-pressed.opacity-100')).toBeTruthy();
     expect(button.textContent).toContain('2');
     expect(screen.getByText('2번째 선택')).toBeTruthy();
   });
 
-  it('선택 전에는 오버레이와 순서가 없고 인디케이터만 그린다', () => {
+  it('선택 전에는 오버레이가 투명하고 순서가 없으며 인디케이터만 그린다', () => {
     const { container } = render(<PhotoThumbnail src={src} alt="사진" selectionMode />);
-    expect(container.querySelector('.bg-overlay-pressed')).toBeNull();
+    expect(container.querySelector('.bg-overlay-pressed.opacity-100')).toBeNull();
+    expect(container.querySelector('.bg-overlay-pressed.opacity-0')).toBeTruthy();
     expect(container.querySelector('.rounded-full')).toBeTruthy();
     expect(screen.queryByText(/번째 선택/)).toBeNull();
   });
