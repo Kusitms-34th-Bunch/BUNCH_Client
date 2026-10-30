@@ -1,5 +1,5 @@
-// apps/web의 feature별 `components/index.ts` 배럴을 만든다.
-// route(`src/app`)가 `@/features/<feature>/components`에서 import하는 이름만 내보내서, 내부 부품이 공개 API가 되지 않게 한다.
+// apps/web의 feature별 `components/index.ts` 배럴 생성.
+// route(`src/app`)가 `@/features/<feature>/components`에서 import하는 이름만 내보내 내부 부품의 공개 API화 방지.
 // 사용: node turbo/workflows/gen-feature-barrels.mjs [--check]
 import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
@@ -102,7 +102,7 @@ const main = () => {
   for (const [path, content] of expected) {
     const existing = existsSync(path) ? readFileSync(path, 'utf-8') : null;
     if (existing === content) continue;
-    // 손으로 쓴 index.ts(생성 표식 없음)는 지우지 않는다
+    // 손으로 쓴 index.ts(생성 표식 없음)는 삭제하지 않음
     if (content === null && existing !== null && !existing.startsWith(HEADER)) continue;
     outdated.push(path);
     if (isCheck) continue;

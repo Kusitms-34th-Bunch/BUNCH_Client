@@ -34,7 +34,7 @@ export const Matrix: Story = {
   ),
 };
 
-/** 긴 문구는 줄바꿈 없이 부모 너비에서 잘린다 */
+/** 긴 문구는 줄바꿈 없이 부모 너비에서 잘림 */
 export const LongLabel: Story = {
   render: () => (
     <div className="w-24">

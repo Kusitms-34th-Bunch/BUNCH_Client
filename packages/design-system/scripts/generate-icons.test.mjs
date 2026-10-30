@@ -27,7 +27,7 @@ const writeIcon = async (iconRoot, directory, name, content) => {
   await writeFile(join(sourceDir, name), content);
 };
 
-// 아이콘 하나는 small·medium·large SVG 세 개로 이루어진다.
+// 아이콘 하나는 small·medium·large SVG 세 개로 구성.
 const writeIconSet = async (iconRoot, directory, baseName, body) => {
   for (const [sizeName, size] of Object.entries(SIZES)) {
     await writeIcon(iconRoot, directory, `${baseName}-${sizeName}.svg`, svg(size, body));

@@ -4,7 +4,7 @@ export default [
   { ignores: ['dist/**', 'src/routeTree.gen.ts'] },
   ...react,
   {
-    // web 구역은 apps/web 전용이다
+    // web 구역은 apps/web 전용
     files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
