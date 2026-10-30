@@ -13,159 +13,110 @@ permissions:
   contents: read
 
 jobs:
-  verify:
-    name: Verify
+  # 검사마다 러너를 따로 써서 코어 경합 제거. 한 러너에서 lint·typecheck·test를 함께 돌리면 서로 느려짐
+  checks:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    outputs:
-      suspicious: ${{ steps.suspicious.outcome }}
-      install: ${{ steps.install.outcome }}
-      generated: ${{ steps.generated.outcome }}
-      catalog: ${{ steps.catalog.outcome }}
-      agent-docs: ${{ steps.agent-docs.outcome }}
-      boundaries: ${{ steps.boundaries.outcome }}
-      format: ${{ steps.format.outcome }}
-      lint: ${{ steps.checks.outputs.lint || steps.checks.outcome }}
-      typecheck: ${{ steps.checks.outputs.typecheck || steps.checks.outcome }}
-      test: ${{ steps.checks.outputs.test || steps.checks.outcome }}
-      build: ${{ steps.build.outcome }}
+    strategy:
+      # 하나가 실패해도 나머지 결과까지 확인
+      fail-fast: false
+      matrix:
+        include:
+          - name: Static checks
+            task: static
+          - name: Lint
+            task: lint
+          - name: Typecheck
+            task: typecheck
+          - name: Test
+            task: test
+          - name: Build
+            task: build
 
     steps:
+      # PR의 바뀐 패키지 판정(--affected)에 base 브랜치 이력 필요
       - uses: actions/checkout@v4
-
-      # 의존성 설치(코드가 실행될 수 있는 단계) 전에 변조 징후를 먼저 검사한다. 실패하면 설치하지 않고 멈춘다.
-      - name: Suspicious file guard
-        id: suspicious
-        run: node turbo/workflows/check-suspicious.mjs
-
-      # setup-node의 yarn 캐시가 Yarn 4를 찾으려면 Corepack을 먼저 켠다.
-      - run: corepack enable
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: 24
-          cache: yarn
+          fetch-depth: ${{ github.event_name == 'pull_request' && matrix.task != 'static' && '0' || '1' }}
 
-      - name: Install dependencies
-        id: install
-        run: yarn install --immutable
+      - name: Setup
+        id: setup
+        uses: ./.github/actions/setup
 
-      # Turbo는 입력이 같은 패키지의 lint·typecheck·test·build 결과를 재사용한다. 바뀐 앱만 다시 돌게 캐시를 이어 받는다.
+      # Turbo는 입력이 같은 패키지의 결과를 재사용. 검사별 키로 나눠 job끼리 같은 키를 저장하려다 충돌하지 않게 함
       - name: Restore Turbo cache
         id: turbo-cache
+        if: matrix.task != 'static'
         uses: actions/cache/restore@v4
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
+          key: turbo-${{ runner.os }}-${{ matrix.task }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-${{ matrix.task }}-
 
-      # Turbo는 .next/cache를 build 출력에서 제외하므로 Next 빌드 캐시는 따로 이어 받는다.
+      # Turbo는 .next/cache를 build 출력에서 제외하므로 Next 빌드 캐시는 따로 이어 받음
       - name: Restore Next.js build cache
         id: next-cache
+        if: matrix.task == 'build'
         uses: actions/cache/restore@v4
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
           restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
 
-      # verify와 같은 검사를 실행한다. 독립적인 lint·typecheck·test만 병렬로 실행하고 빌드는 뒤에 실행한다.
-      - name: Generated files check
-        id: generated
-        continue-on-error: true
-        run: yarn check:generated
-
-      - name: Catalog check
-        id: catalog
-        continue-on-error: true
-        run: yarn check:catalog
-
-      - name: Agent docs check
-        id: agent-docs
-        continue-on-error: true
-        run: yarn check:agent-docs
-
-      - name: Boundaries check
-        id: boundaries
-        continue-on-error: true
-        run: yarn check:boundaries
-
-      - name: Format check
-        id: format
-        continue-on-error: true
-        run: yarn format:check
-
-      - name: Lint, type check and test
-        id: checks
-        continue-on-error: true
+      # 빠른 검사 묶음. 하나가 실패해도 끝까지 실행하고 실패한 검사 이름을 주석으로 남김
+      - name: Static checks
+        id: static
+        if: matrix.task == 'static'
         run: |
-          run_check() {
-            local check="$1"
-            local status=0
-            yarn "$check" > "$RUNNER_TEMP/ci-$check.log" 2>&1 || status=$?
-            if [ "$status" -eq 0 ]; then
-              echo success > "$RUNNER_TEMP/ci-$check.outcome"
-            else
-              echo failure > "$RUNNER_TEMP/ci-$check.outcome"
-            fi
-          }
-
-          run_check lint &
-          lint_pid=$!
-          run_check typecheck &
-          typecheck_pid=$!
-          run_check test &
-          test_pid=$!
-          wait "$lint_pid" "$typecheck_pid" "$test_pid"
-
           failed=0
-          for check in lint typecheck test; do
+          for check in check:generated check:catalog check:agent-docs check:boundaries format:check; do
             echo "::group::$check"
-            cat "$RUNNER_TEMP/ci-$check.log"
+            yarn "$check" || { failed=1; echo "::error title=$check::$check 실패"; }
             echo "::endgroup::"
-            outcome=$(cat "$RUNNER_TEMP/ci-$check.outcome")
-            echo "$check=$outcome" >> "$GITHUB_OUTPUT"
-            if [ "$outcome" != success ]; then
-              failed=1
-            fi
           done
           exit "$failed"
 
-      - name: Build
-        id: build
-        continue-on-error: true
-        run: yarn build
+      # PR은 base 대비 바뀐 패키지와 그 의존 패키지만 실행(turbo --affected). develop·main push는 전체 실행
+      - name: Run ${{ matrix.task }}
+        id: task
+        if: matrix.task != 'static'
+        env:
+          TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
+          AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: yarn ${{ matrix.task }} $AFFECTED
 
-      # actions/cache의 자동 저장은 job이 성공해야 실행된다. 이 job은 검사가 하나라도 실패하면 마지막 단계에서 실패하므로,
-      # 설치가 끝난 뒤에는 검사 결과와 상관없이 여기서 직접 저장한다. Turbo는 성공한 작업의 결과만 캐시한다.
+      # actions/cache의 자동 저장은 job 성공 시에만 실행되므로 검사 결과와 상관없이 직접 저장. Turbo는 성공한 작업만 캐시
       - name: Save Turbo cache
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.task != 'static' && steps.turbo-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
+          key: turbo-${{ runner.os }}-${{ matrix.task }}-${{ github.sha }}
 
       - name: Save Next.js build cache
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && matrix.task == 'build' && steps.task.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
 
+  # 필수 체크 이름(ruleset의 `Verify`) 유지용 결과 모음 job
+  verify:
+    name: Verify
+    needs: checks
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
       - name: Fail if any check failed
-        if: always()
         env:
-          OUTCOMES: >-
-            ${{ steps.suspicious.outcome }} ${{ steps.install.outcome }}
-            ${{ steps.generated.outcome }} ${{ steps.catalog.outcome }}
-            ${{ steps.agent-docs.outcome }} ${{ steps.boundaries.outcome }}
-            ${{ steps.format.outcome }} ${{ steps.checks.outcome }}
-            ${{ steps.checks.outputs.lint }}
-            ${{ steps.checks.outputs.typecheck }} ${{ steps.checks.outputs.test }}
-            ${{ steps.build.outcome }}
+          RESULT: ${{ needs.checks.result }}
         run: |
-          case " $OUTCOMES " in
-            *" failure "* | *" cancelled "*) echo "실패한 검증이 있습니다."; exit 1 ;;
-          esac
+          if [ "$RESULT" != success ]; then
+            echo "실패한 검증이 있습니다($RESULT)."
+            exit 1
+          fi
 
   comment:
     name: Result comment
@@ -177,47 +128,51 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      # 같은 실행의 검사 job 결과 조회
+      actions: read
       pull-requests: write
 
     steps:
       - name: Comment CI result on the pull request
         uses: actions/github-script@v7
         env:
-          OUTCOMES: ${{ toJSON(needs.verify.outputs) }}
           VERIFY_RESULT: ${{ needs.verify.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           script: |
-            const outcomes = JSON.parse(process.env.OUTCOMES);
+            const { owner, repo } = context.repo;
             const marker = '<!-- frontend-ci-result -->';
+            // matrix job 이름(ci.yml의 matrix.name)과 표의 이름
             const rows = [
-              ['suspicious', '변조 가드'],
-              ['install', '의존성 설치'],
-              ['generated', '생성물 동기화'],
-              ['catalog', 'catalog'],
-              ['agent-docs', 'agent 문서'],
-              ['boundaries', '경계(boundaries)'],
-              ['format', 'Prettier'],
-              ['lint', 'ESLint'],
-              ['typecheck', 'TypeScript'],
-              ['test', 'Test'],
-              ['build', 'Build'],
+              ['Static checks', '정적 검사(생성물·catalog·agent 문서·경계·Prettier)'],
+              ['Lint', 'ESLint·Tailwind'],
+              ['Typecheck', 'TypeScript'],
+              ['Test', 'Test'],
+              ['Build', 'Build'],
             ];
             const status = { success: '통과', failure: '**실패**', skipped: '건너뜀', cancelled: '취소' };
 
-            // 결과는 job 전체 결과가 success일 때만 통과로 본다. 단계 outcome에 failure가 없어도(앞 단계 실패로 전부 건너뜀 등) 실패일 수 있다.
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              owner,
+              repo,
+              run_id: context.runId,
+              filter: 'latest',
+              per_page: 100,
+            });
+            const conclusion = Object.fromEntries(jobs.map((job) => [job.name, job.conclusion]));
+
+            // 통과 판정은 Verify job 결과 기준. 개별 결과를 못 읽어도 실패를 통과로 보지 않음
             const passed = process.env.VERIFY_RESULT === 'success';
-            const failed = rows.filter(([key]) => outcomes[key] === 'failure');
-            const halted = ['suspicious', 'install'].find((key) => outcomes[key] === 'failure');
+            const failed = rows.filter(([name]) => ['failure', 'cancelled'].includes(conclusion[name]));
 
             let summary;
             if (passed) {
-              summary = `**결과: 통과** — ${rows.length}개 단계 모두 통과`;
+              summary = `**결과: 통과** — ${rows.length}개 검사 모두 통과`;
             } else if (failed.length) {
               const names = failed.map(([, label]) => label).join(', ');
-              summary = `**결과: 실패** — ${rows.length}개 단계 중 ${failed.length}개 실패 (${names})`;
+              summary = `**결과: 실패** — ${rows.length}개 검사 중 ${failed.length}개 실패 (${names})`;
             } else {
-              summary = '**결과: 실패** — 단계별 결과를 확인하지 못했습니다. 실행 로그를 확인하세요.';
+              summary = '**결과: 실패** — 검사별 결과를 확인하지 못했습니다. 실행 로그를 확인하세요.';
             }
 
             const commitUrl = `${context.payload.repository.html_url}/commit/${context.payload.pull_request.head.sha}`;
@@ -226,19 +181,15 @@ jobs:
               '## Frontend CI',
               '',
               summary,
-              ...(halted
-                ? ['', `${rows.find(([key]) => key === halted)[1]} 단계가 실패해서 이후 단계는 실행하지 않았습니다.`]
-                : []),
               '',
-              '| 단계 | 결과 |',
+              '| 검사 | 결과 |',
               '| --- | --- |',
-              ...rows.map(([key, label]) => `| ${label} | ${status[outcomes[key]] ?? '-'} |`),
+              ...rows.map(([name, label]) => `| ${label} | ${status[conclusion[name]] ?? '-'} |`),
               '',
               `[기준 커밋](${commitUrl}) · [실행 로그](${process.env.RUN_URL})`,
             ];
             const body = lines.join('\n');
 
-            const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner,
