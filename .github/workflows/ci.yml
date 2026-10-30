@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  # 검사마다 러너를 따로 써서 코어 경합 제거. 한 러너에서 lint·typecheck·test를 함께 돌리면 서로 느려짐
+  # 무거운 lint·test는 각자 러너, 정적 검사는 lint 러너에·typecheck는 build 러너에 묶어 job 수와 코어 경합을 함께 줄임
   checks:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -23,51 +23,51 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Static checks
-            task: static
           - name: Lint
-            task: lint
-          - name: Typecheck
-            task: typecheck
+            id: lint
+            tasks: lint
           - name: Test
-            task: test
-          - name: Build
-            task: build
+            id: test
+            tasks: test
+          # typecheck와 build는 Next 생성 파일을 공유하므로 같은 러너에서 순서대로 실행
+          - name: Typecheck & Build
+            id: build
+            tasks: typecheck build
 
     steps:
       # PR의 바뀐 패키지 판정(--affected)에 base 브랜치 이력 필요
       - uses: actions/checkout@v4
         with:
-          fetch-depth: ${{ github.event_name == 'pull_request' && matrix.task != 'static' && '0' || '1' }}
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
 
       - name: Setup
         id: setup
         uses: ./.github/actions/setup
 
-      # Turbo는 입력이 같은 패키지의 결과를 재사용. 검사별 키로 나눠 job끼리 같은 키를 저장하려다 충돌하지 않게 함
+      # Turbo는 입력이 같은 패키지의 결과를 재사용. job별 키로 나눠 job끼리 같은 키를 저장하려다 충돌하지 않게 함
       - name: Restore Turbo cache
         id: turbo-cache
-        if: matrix.task != 'static'
         uses: actions/cache/restore@v4
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ matrix.task }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-${{ matrix.task }}-
+          key: turbo-${{ runner.os }}-${{ matrix.id }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-${{ matrix.id }}-
 
       # Turbo는 .next/cache를 build 출력에서 제외하므로 Next 빌드 캐시는 따로 이어 받음
       - name: Restore Next.js build cache
         id: next-cache
-        if: matrix.task == 'build'
+        if: matrix.id == 'build'
         uses: actions/cache/restore@v4
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
           restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
 
-      # 빠른 검사 묶음. 하나가 실패해도 끝까지 실행하고 실패한 검사 이름을 주석으로 남김
+      # 빠른 검사 묶음(Lint job). 하나가 실패해도 끝까지 실행하고 실패한 검사 이름을 주석으로 남김
       - name: Static checks
         id: static
-        if: matrix.task == 'static'
+        if: matrix.id == 'lint'
+        continue-on-error: true
         run: |
           failed=0
           for check in check:generated check:catalog check:agent-docs check:boundaries format:check; do
@@ -78,53 +78,48 @@ jobs:
           exit "$failed"
 
       # PR은 base 대비 바뀐 패키지와 그 의존 패키지만 실행(turbo --affected). develop·main push는 전체 실행
-      - name: Run ${{ matrix.task }}
+      # 앞 작업이 실패해도 다음 작업까지 실행해 결과를 한 번에 확인
+      - name: Run ${{ matrix.tasks }}
         id: task
-        if: matrix.task != 'static'
         env:
           TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
-        run: yarn ${{ matrix.task }} $AFFECTED
+          TASKS: ${{ matrix.tasks }}
+        run: |
+          failed=0
+          for task in $TASKS; do
+            echo "::group::$task"
+            yarn "$task" $AFFECTED || { failed=1; echo "::error title=$task::$task 실패"; }
+            echo "::endgroup::"
+          done
+          exit "$failed"
 
       # actions/cache의 자동 저장은 job 성공 시에만 실행되므로 검사 결과와 상관없이 직접 저장. Turbo는 성공한 작업만 캐시
       - name: Save Turbo cache
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.task != 'static' && steps.turbo-cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ matrix.task }}-${{ github.sha }}
+          key: turbo-${{ runner.os }}-${{ matrix.id }}-${{ github.sha }}
 
       - name: Save Next.js build cache
-        if: ${{ !cancelled() && matrix.task == 'build' && steps.task.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && matrix.id == 'build' && steps.task.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
 
-  # 필수 체크 이름(ruleset의 `Verify`) 유지용 결과 모음 job
+      - name: Fail if static checks failed
+        if: ${{ !cancelled() && steps.static.outcome == 'failure' }}
+        run: |
+          echo "정적 검사가 실패했습니다."
+          exit 1
+
+  # 필수 체크 이름(ruleset의 `Verify`) 유지용 결과 모음 job, PR 결과 댓글도 여기서 작성
   verify:
     name: Verify
     needs: checks
     if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Fail if any check failed
-        env:
-          RESULT: ${{ needs.checks.result }}
-        run: |
-          if [ "$RESULT" != success ]; then
-            echo "실패한 검증이 있습니다($RESULT)."
-            exit 1
-          fi
-
-  comment:
-    name: Result comment
-    needs: verify
-    if: >-
-      !cancelled() && github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -133,10 +128,18 @@ jobs:
       pull-requests: write
 
     steps:
+      # 댓글 실패는 판정에 영향 없음. 포크·Dependabot PR은 토큰이 읽기 전용이라 건너뜀
       - name: Comment CI result on the pull request
+        if: >-
+          !cancelled() && github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'
+        continue-on-error: true
+        # API 지연으로 필수 체크 job 전체가 시간 초과되지 않게 단계 단위 제한
+        timeout-minutes: 2
         uses: actions/github-script@v7
         env:
-          VERIFY_RESULT: ${{ needs.verify.result }}
+          CHECKS_RESULT: ${{ needs.checks.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           script: |
@@ -144,11 +147,9 @@ jobs:
             const marker = '<!-- frontend-ci-result -->';
             // matrix job 이름(ci.yml의 matrix.name)과 표의 이름
             const rows = [
-              ['Static checks', '정적 검사(생성물·catalog·agent 문서·경계·Prettier)'],
-              ['Lint', 'ESLint·Tailwind'],
-              ['Typecheck', 'TypeScript'],
+              ['Lint', '정적 검사(생성물·catalog·agent 문서·경계·Prettier)·ESLint·Tailwind'],
               ['Test', 'Test'],
-              ['Build', 'Build'],
+              ['Typecheck & Build', 'TypeScript·Build'],
             ];
             const status = { success: '통과', failure: '**실패**', skipped: '건너뜀', cancelled: '취소' };
 
@@ -161,8 +162,8 @@ jobs:
             });
             const conclusion = Object.fromEntries(jobs.map((job) => [job.name, job.conclusion]));
 
-            // 통과 판정은 Verify job 결과 기준. 개별 결과를 못 읽어도 실패를 통과로 보지 않음
-            const passed = process.env.VERIFY_RESULT === 'success';
+            // 통과 판정은 검사 job 전체 결과 기준. 개별 결과를 못 읽어도 실패를 통과로 보지 않음
+            const passed = process.env.CHECKS_RESULT === 'success';
             const failed = rows.filter(([name]) => ['failure', 'cancelled'].includes(conclusion[name]));
 
             let summary;
@@ -206,3 +207,12 @@ jobs:
             } else {
               await github.rest.issues.createComment({ owner, repo, issue_number, body });
             }
+
+      - name: Fail if any check failed
+        env:
+          RESULT: ${{ needs.checks.result }}
+        run: |
+          if [ "$RESULT" != success ]; then
+            echo "실패한 검증이 있습니다($RESULT)."
+            exit 1
+          fi
