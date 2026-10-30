@@ -26,6 +26,7 @@ import { UndatedPhotos } from './UndatedPhotos';
 const noopActions: PhotoBoxActions = {
   savePhotos: (ids) => Promise.resolve({ savedIds: ids, failedIds: [] }),
   deletePhotos: () => Promise.resolve({ removedCount: 0 }),
+  changePhotoDates: () => Promise.resolve(),
 };
 
 type PhotoBoxScreenProps = {

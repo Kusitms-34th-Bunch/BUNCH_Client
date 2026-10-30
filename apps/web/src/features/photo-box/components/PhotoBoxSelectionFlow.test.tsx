@@ -29,7 +29,11 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 
 const savePhotos = vi.fn<PhotoBoxActions['savePhotos']>();
 const deletePhotos = vi.fn<PhotoBoxActions['deletePhotos']>();
-const actions: PhotoBoxActions = { savePhotos, deletePhotos };
+const actions: PhotoBoxActions = {
+  savePhotos,
+  deletePhotos,
+  changePhotoDates: () => Promise.resolve(),
+};
 
 const ready = (data: PhotoBoxData = photoBoxFixture): PhotoBoxState => ({ kind: 'ready', data });
 

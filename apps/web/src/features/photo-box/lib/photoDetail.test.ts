@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { PhotoBoxMember, PhotoBoxPhoto } from './types';
-import { formatDetailDate, getDetailOrder, getUploaders, parsePhotoId } from './photoDetail';
+import {
+  formatDetailDate,
+  getDetailOrder,
+  getTakenDate,
+  getUploaders,
+  parsePhotoId,
+} from './photoDetail';
 
 const photo = (
   id: string,
@@ -94,5 +100,20 @@ describe('getUploaders', () => {
     expect(
       getUploaders(photo('p', null, undefined, ['ghost', 'c']), members).map((m) => m.id),
     ).toEqual(['c']);
+  });
+});
+
+describe('getTakenDate', () => {
+  it('촬영 날짜 글자를 기기 시간대의 그날 0시로 바꾼다', () => {
+    const date = getTakenDate('2026-09-05T14:30');
+
+    expect([date?.getFullYear(), date?.getMonth(), date?.getDate(), date?.getHours()]).toEqual([
+      2026, 8, 5, 0,
+    ]);
+  });
+
+  it('날짜를 모르거나 형식이 틀리면 undefined다', () => {
+    expect(getTakenDate(null)).toBeUndefined();
+    expect(getTakenDate('어제')).toBeUndefined();
   });
 });
