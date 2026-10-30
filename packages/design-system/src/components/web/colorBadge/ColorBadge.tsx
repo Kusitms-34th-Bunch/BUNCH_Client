@@ -8,7 +8,7 @@ const colorBadge = tv({
     variant: { weak: '', fill: '' },
     color: { brand: '', gray: '', pink: '', green: '', orange: '' },
     size: {
-      lg: 'rounded-r4 typography-body-2-regular',
+      lg: 'rounded-r4 typography-body-3-regular',
       md: 'rounded-r3 typography-caption-1-regular',
     },
   },

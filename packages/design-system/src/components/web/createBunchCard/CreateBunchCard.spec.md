@@ -46,7 +46,7 @@ Figma 값과 토큰 대응(padding 토큰 `p7`·`p8`·`p10`·`p11`은 spacing �
 | 카드 radius       | 12                                              | `rounded-r6`                                                             |
 | 아이콘 원         | 69×69, 흰색                                     | `size-17.25 rounded-full bg-surface-primary`(69px 토큰 없음, 기본 scale) |
 | 제목              | Heading-2-Semibold(18/27, -0.5), `text-primary` | `typography-heading-2-semibold text-text-primary`                        |
-| 설명              | Body-3-Regular(13/18), `text-tertiary`          | `typography-body-3-regular text-text-tertiary`                           |
+| 설명              | Body-3-Regular(13/18), `text-tertiary`          | `typography-body-4-regular text-text-tertiary`                           |
 | 제목·설명 간격    | 2                                               | `gap-s1`                                                                 |
 
 - 선택·눌림 표시: Figma는 카드와 흰 원의 배경 위에 검정 10% 레이어를 깐다(아이콘은 원색 그대로). 같은 값의 토큰 `overlay-hover`(black alpha 10%)를 배경 layer로 겹친다.

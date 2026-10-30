@@ -55,10 +55,10 @@
 | 사진 아이콘         | 24px, `#121212`      | `FillPhotoLargeIcon` + `text-icon-primary`            |
 | 쉐브론              | 20px, `#BCBEC2`      | `LineChevronRightMediumIcon` + `text-icon-quaternary` |
 | 제목                | 16/24 Medium, -0.25  | `typography-body-1-medium text-text-primary`          |
-| 설명                | 13/18 Regular        | `typography-body-3-regular text-text-tertiary`        |
+| 설명                | 13/18 Regular        | `typography-body-4-regular text-text-tertiary`        |
 | 눌림                | 검정 10%             | `bg-overlay-hover`(배경 층)                           |
 
-- 타이포 이름: 저장소의 `typography-body-*`는 Figma보다 번호가 한 단계 낮다(Figma `Body-4-Regular` 13/18 = 저장소 `body-3-regular`). 이름이 아니라 크기·줄 높이로 골랐다.
+- 타이포 이름: Figma `Body-4-Regular`(13/18)와 이름·값이 같은 `body-4-regular`를 쓴다(2026-10-31 토큰 이름을 Figma와 맞춤).
 - dependency 추가 없음. 아이콘은 기존 `FillPhotoLargeIcon`, `LineChevronRightMediumIcon`을 쓴다.
 - Storybook state matrix: `Default`, 긴 글자 `LongText`, 두 카드를 나란히 놓은 `List`. 눌림은 `:active`라 정지 화면으로 만들 수 없어 story로 두지 않았다.
 

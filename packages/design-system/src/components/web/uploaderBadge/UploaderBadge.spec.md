@@ -50,9 +50,9 @@
 | 반경           | full                      | `rounded-full`                                |
 | 안쪽 여백·간격 | 좌우 8px, 위아래 6px, 8px | `px-s4 py-s3 gap-s4`                          |
 | 사진           | 26px 원                   | `size-6.5 rounded-full object-cover`          |
-| 이름           | 14/21 Regular, `#121212`  | `typography-body-2-regular text-text-primary` |
+| 이름           | 14/21 Regular, `#121212`  | `typography-body-3-regular text-text-primary` |
 
-- 타이포 이름: 저장소의 `typography-body-*`는 Figma보다 번호가 한 단계 낮다(Figma `Body-3-Regular` 14/21 = 저장소 `body-2-regular`). 이름이 아니라 크기·줄 높이로 골랐다.
+- 타이포 이름: Figma `Body-3-Regular`(14/21)와 이름·값이 같은 `body-3-regular`를 쓴다(2026-10-31 토큰 이름을 Figma와 맞춤).
 - 64%는 토큰에 없어 `bg-surface-primary/64`로 투명도만 지정했다(가장 가까운 토큰은 `white-alpha-60`).
 - dependency 추가 없음. `ProfileImage`는 90px 고정에 루트가 `<div>`라 `<span>` 안에 둘 수 없어 쓰지 않고 이 컴포넌트 안에서 26px 원을 직접 그렸다.
 - Storybook state matrix: `Default`(사진 있음), `WithoutAvatar`(사진 없음), 긴 이름 `LongName`, 사진 위에 얹은 `OnPhoto`.

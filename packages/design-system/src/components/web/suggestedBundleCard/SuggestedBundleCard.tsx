@@ -121,7 +121,7 @@ export const SuggestedBundleCard = ({
         )}
         <div
           className={cn(
-            'typography-body-2-regular gap-s6 flex w-full items-center',
+            'typography-body-3-regular gap-s6 flex w-full items-center',
             selected ? 'text-text-brand' : 'text-text-tertiary',
           )}
         >

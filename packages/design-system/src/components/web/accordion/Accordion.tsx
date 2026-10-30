@@ -87,7 +87,7 @@ export const Accordion = ({
           {hasDescription ? (
             <span
               id={`${id}-description`}
-              className="typography-body-3-regular text-text-tertiary w-full"
+              className="typography-body-4-regular text-text-tertiary w-full"
             >
               {description}
             </span>

@@ -28,7 +28,7 @@
 
 - 타일: 배경 `surface-secondary`(`#F5F5F5`), 반경 `r4`(8px), 내용을 가로·세로 가운데에 둔다.
 - 더하기 원: 36px, 흰색(`surface-primary`), 안의 더하기는 Medium(20px) `icon-primary`다.
-- 글자: `typography-body-2-regular`(14/21) `text-primary`, 원과 8px(`s4`) 떨어진다.
+- 글자: `typography-body-3-regular`(14/21) `text-primary`, 원과 8px(`s4`) 떨어진다.
 - Figma는 이 안쪽이 1.05배로 그려져 있어(더하기 21px, 글자 14.7px/22.05, 간격 7.35px) 토큰 값(20px, 14/21, 8px)과 최대 1px 차이가 난다. 토큰을 바꾸지 않고 가장 가까운 값을 썼다.
 
 ## 접근성
@@ -41,7 +41,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-secondary`·`bg-surface-primary`, `rounded-r4`, `gap-s4`, `text-icon-primary`·`text-text-primary`, `typography-body-2-regular`, 크기는 `w-75`·`w-82.5`·`size-9`. 허용되는 dependency 추가 없음.
+- Token: `bg-surface-secondary`·`bg-surface-primary`, `rounded-r4`, `gap-s4`, `text-icon-primary`·`text-text-primary`, `typography-body-3-regular`, 크기는 `w-75`·`w-82.5`·`size-9`. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `Size=S·M`→`size`, `Type=Add`→이 컴포넌트, "사진 추가"→`label`.
 - Storybook state matrix: `Default`, `Small`, `CustomLabel`(그리고 `BundlePhoto`의 `Matrix`에서 나란히 보기).
 

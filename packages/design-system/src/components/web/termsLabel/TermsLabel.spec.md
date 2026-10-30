@@ -51,7 +51,7 @@ Figma 상태 이름은 의미와 다르다. 사용자가 정리해 준 대응은
 
 ## Styling과 의존성
 
-- Token: `px-padding-p4`, `py-padding-p2`, `gap-s3`·`gap-s2`, `typography-body-2-regular`, `text-text-disabled`·`text-text-secondary`, `text-icon-quaternary`, `--semantic-opacity-disabled`·`--semantic-opacity-semi-opaque`, `before:bg-overlay-dim-subtle`. 아이콘은 `FillCircleCheckMediumIcon`, `LineChevronRightMediumIcon`(기존 20px 아이콘).
+- Token: `px-padding-p4`, `py-padding-p2`, `gap-s3`·`gap-s2`, `typography-body-3-regular`, `text-text-disabled`·`text-text-secondary`, `text-icon-quaternary`, `--semantic-opacity-disabled`·`--semantic-opacity-semi-opaque`, `before:bg-overlay-dim-subtle`. 아이콘은 `FillCircleCheckMediumIcon`, `LineChevronRightMediumIcon`(기존 20px 아이콘).
 - dependency 추가 없음.
 - Storybook state matrix: `Default`, `Checked`, `WithoutViewButton`, `List`, `LongLabel`.
 

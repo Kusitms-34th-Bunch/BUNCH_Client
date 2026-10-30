@@ -46,7 +46,7 @@ Figma 값과 토큰 대응(padding 토큰 `p7`·`p8`·`p10`·`p11`은 spacing �
 | 카드 radius       | 14                                          | `rounded-r7`                                   |
 | 아이콘            | 40×40 그래픽 아이콘                         | 호출자가 넘기는 `GraphicPeopleIcon`            |
 | 제목              | Body-1-Medium(16/24, -0.25), `text-primary` | `typography-body-1-medium text-text-primary`   |
-| 설명              | Body-3-Regular(13/18), `text-tertiary`      | `typography-body-3-regular text-text-tertiary` |
+| 설명              | Body-3-Regular(13/18), `text-tertiary`      | `typography-body-4-regular text-text-tertiary` |
 | 제목·설명 간격    | 4                                           | `gap-s2`                                       |
 
 - 선택 표시: Figma는 카드 배경 위에 검정 10% 레이어를 깐다(아이콘은 원색 그대로, 이 카드에는 흰 원이 없다). 같은 값의 토큰 `overlay-hover`(black alpha 10%)를 배경 layer로 겹친다.

@@ -8,8 +8,8 @@ const badge = tv({
     variant: { weak: '', strong: '' },
     color: { brand: '', gray: '' },
     size: {
-      lg: 'px-padding-p4 py-padding-p2 typography-body-2-meduim',
-      md: 'px-[7px] py-[3px] typography-body-3-semi-bold',
+      lg: 'px-padding-p4 py-padding-p2 typography-body-3-semi-bold',
+      md: 'px-[7px] py-[3px] typography-body-4-semi-bold',
       sm: 'px-[7px] py-[3px] typography-caption-1-medium',
     },
   },

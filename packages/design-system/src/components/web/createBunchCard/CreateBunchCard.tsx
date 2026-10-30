@@ -42,7 +42,7 @@ export const CreateBunchCard = ({
     </span>
     <span className="gap-s1 flex w-full flex-col items-center">
       <span className="typography-heading-2-semibold text-text-primary w-full">{title}</span>
-      <span className="typography-body-3-regular text-text-tertiary w-full">{description}</span>
+      <span className="typography-body-4-regular text-text-tertiary w-full">{description}</span>
     </span>
   </button>
 );

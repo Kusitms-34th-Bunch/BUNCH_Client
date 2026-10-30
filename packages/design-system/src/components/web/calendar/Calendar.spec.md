@@ -32,7 +32,7 @@
 
 - 레이아웃: 배경 `surface-primary`, 좌우 여백 16px(`padding-p8`), 요소 간격 24px(`s12`). 헤더(40px 높이) → 격자(요일 줄 21px + 날짜 줄 46px씩)이며 5주 달은 높이가 315px이다.
 - 헤더: 화살표 40px 원(`IconButton` subtle, 눌림은 `IconButton` spec을 따름)과 가운데 제목(`typography-heading-2-semibold`, 18/27, 자간 -0.5px).
-- 요일 줄: 칸 46px, `typography-body-2-regular`(14/21), `text-tertiary`.
+- 요일 줄: 칸 46px, `typography-body-3-regular`(14/21), `text-tertiary`.
 - 날짜 칸: `CalendarItem`. 그 달의 앞뒤 빈 칸은 `hidden` 칸으로 자리만 채운다(줄은 항상 7칸).
 - Selected: 선택된 날짜 하나만 어두운 원이다. 다른 달로 넘어가면 그 달에 선택된 날짜가 없으므로 표시도 없다.
 - Disabled: `minDate`보다 이른 날, `maxDate`보다 늦은 날, `isDateDisabled`가 `true`인 날. 눌러도 `onSelectDate`를 부르지 않는다.
@@ -50,7 +50,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-primary`, `px-padding-p8`·`gap-s12`, `text-text-primary`·`text-text-tertiary`, `typography-heading-2-semibold`·`typography-body-2-regular`, `bg-overlay-hover`. 날짜 칸의 token은 `CalendarItem` spec을 따른다.
+- Token: `bg-surface-primary`, `px-padding-p8`·`gap-s12`, `text-text-primary`·`text-text-tertiary`, `typography-heading-2-semibold`·`typography-body-3-regular`, `bg-overlay-hover`. 날짜 칸의 token은 `CalendarItem` spec을 따른다.
 - 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `Calender`→`Calendar`, `Calender Item`→`CalendarItem`, 헤더의 `Icon Button`→`IconButton`(subtle), `Td`→요일 칸.
 - Storybook state matrix: `Default`, `Interactive`, `DisabledDates`, `KoreanWeekdays`.

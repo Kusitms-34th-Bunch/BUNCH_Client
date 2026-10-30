@@ -29,7 +29,7 @@
 
 - Weak: 배경이 옅고 글자가 진하다. gray는 `surface-secondary`/`text-tertiary`, brand는 `surface-brand-subtle-1`/`text-brand`, pink·green·orange는 `chip-*-bg`/`chip-*-fg`.
 - Fill: gray는 `surface-inversed-lighter` + `text-inversed`, brand는 `surface-brand` + `text-inversed`, pink·green·orange는 Weak의 배경과 글자색을 맞바꾼다(`chip-*-fg` 배경 + `chip-*-bg` 글자).
-- 크기: `lg`는 패딩 8×4, 14/21 Regular(`typography-body-2-regular`), 반경 `r4`(8px). `md`는 패딩 8×4, 12/16 Regular(`typography-caption-1-regular`), 반경 `r3`(6px).
+- 크기: `lg`는 패딩 8×4, 14/21 Regular(`typography-body-3-regular`), 반경 `r4`(8px). `md`는 패딩 8×4, 12/16 Regular(`typography-caption-1-regular`), 반경 `r3`(6px).
 - 긴 텍스트: 줄바꿈하지 않고 `overflow-clip`으로 잘린다(`max-w-full`). 말줄임 표시는 없고 스크린 리더는 전체를 읽으므로 호출자는 짧은 문구만 넘긴다.
 
 ## 접근성

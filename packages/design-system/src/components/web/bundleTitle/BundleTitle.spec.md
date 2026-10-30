@@ -30,7 +30,7 @@
 
 - 줄: 높이 25px(`h-6.25`), 제목 그룹과 아바타 사이 8px(`s4`), 세로 가운데 정렬. 너비는 부모를 채우지 않고 내용에 맞춘다.
 - 제목 그룹: 핀(16px, `icon-primary`)과 제목 사이 4px(`s2`), 제목과 별표 사이 2px(`s1`).
-- 제목: `typography-body-2-meduim`(14/21, 600, 자간 -0.5px — 이름은 철자 오류지만 값이 Figma Body-3-SemiBold와 같다), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다.
+- 제목: `typography-body-3-semi-bold`(14/21, 600, 자간 -0.5px — 이름은 철자 오류지만 값이 Figma Body-3-SemiBold와 같다), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다.
 - 별표: `icon-brand`(`#454EDF`) 16px, 스크린 리더에는 숨기고 "필수"를 따로 읽어 준다.
 - 아바타: 24px 원(1px `border-tertiary`), 앞의 8명까지 오른쪽으로 8px씩 겹친다(뒤에 오는 아바타가 위). 8명이면 너비가 정확히 136px(`24×8 − 8×7`)다.
 
@@ -44,7 +44,7 @@
 
 ## Styling과 의존성
 
-- Token: `text-text-secondary`·`text-icon-primary`·`text-icon-brand`, `gap-s1`·`gap-s2`·`gap-s4`, `border-border-tertiary`, `typography-body-2-meduim`·`typography-body-1-semi-bold`. 허용되는 dependency 추가 없음.
+- Token: `text-text-secondary`·`text-icon-primary`·`text-icon-brand`, `gap-s1`·`gap-s2`·`gap-s4`, `border-border-tertiary`, `typography-body-3-semi-bold`·`typography-body-1-semi-bold`. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `icon`→`icon`, `required`→`required`, `title`→`title`, `showAvatar1~8`→`members`(앞에서부터 개수만큼).
 - Storybook state matrix: `Default`, `WithMembers`, `OneMember`, `MoreThanEight`, `Plain`, `LongTitle`, `Matrix`(핀 × 필수 표시 × 멤버 0·1·3·8명).
 

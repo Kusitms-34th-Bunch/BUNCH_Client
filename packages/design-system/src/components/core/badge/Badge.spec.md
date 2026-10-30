@@ -29,7 +29,7 @@
 ## 상태와 동작
 
 - Variant·color: weak brand `chip-blue-bg`/`chip-blue-fg`, weak gray `chip-gray-bg`/`chip-gray-fg`, strong brand `chip-blue-fg` 배경 + `text-inversed`, strong gray `chip-gray-fg` 배경 + `chip-gray-bg` 글자.
-- 크기: `lg` 패딩 8×4 + `body-2-meduim`(14/21), `md` 패딩 7×3 + `body-3-semi-bold`(13/18), `sm` 패딩 7×3 + `caption-1-medium`(12/16). 반경 `r3`.
+- 크기: `lg` 패딩 8×4 + `body-3-semi-bold`(14/21), `md` 패딩 7×3 + `body-4-semi-bold`(13/18), `sm` 패딩 7×3 + `caption-1-medium`(12/16). 반경 `r3`.
 - 긴 텍스트: 줄바꿈하지 않고 `overflow-clip`으로 잘린다(`max-w-full`).
 
 ## 접근성
@@ -42,7 +42,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-chip-*`, `text-chip-*`, `text-text-inversed`, `rounded-r3`, `px-padding-p4`, `py-padding-p2`, `typography-body-2-meduim`·`body-3-semi-bold`·`caption-1-medium`. 선언은 `tv` + `compoundVariants`.
+- Token: `bg-chip-*`, `text-chip-*`, `text-text-inversed`, `rounded-r3`, `px-padding-p4`, `py-padding-p2`, `typography-body-3-semi-bold`·`body-4-semi-bold`·`caption-1-medium`. 선언은 `tv` + `compoundVariants`.
 - 허용되는 dependency: `tailwind-variants`.
 - Figma 이름 대응: `Weak/Strong`→`weak/strong`, `gray/brand`→`color`, `L/M/S`→`lg/md/sm`, `text`→`children`.
 - Storybook state matrix: `Default`, `Matrix`, `LongLabel`.
