@@ -34,7 +34,7 @@
 - 크기: 높이 54px, 왼쪽 안쪽 여백 16px(Figma 값, 선택 전후 동일), 오른쪽 안쪽 여백 16px(Figma 미정의, 제안), 라디오와 글자 사이 6px, radius 8px. Figma의 폭 167px은 고정값으로 보이지 않아 부모 폭을 채운다(`w-full`).
 - 글자: 14px Regular, `text-tertiary`.
 - 긴 글자: 줄바꿈하지 않고 말줄임(한 줄 카드). `LongLabel` story로 확인한다.
-- 누르는 동안(`:active`): 안의 `Radio`가 Pressed(회색 링)로 보인다.
+- 누르는 동안(`:active`): 안의 `Radio`가 Pressed(회색 링·점)로 보인다. 카드 글자 쪽을 눌러도 같다(`core/radio`의 `label:active` 조건, Chromium 확인).
 
 ## 접근성
 

@@ -27,6 +27,8 @@ export const Radio = ({ className, ...props }: RadioProps) => (
         'peer-checked:border-icon-brand peer-checked:before:bg-icon-brand peer-checked:before:opacity-100',
         // 누르는 동안(선택 전): 회색 링과 점
         'peer-[:active:not(:checked,:disabled)]:border-icon-disabled peer-[:active:not(:checked,:disabled)]:before:bg-icon-disabled peer-[:active:not(:checked,:disabled)]:before:opacity-100',
+        // 감싸는 label(카드)을 누를 때도 같은 눌림 표시(label 본문을 누르면 input에 :active가 걸리지 않음)
+        '[label:active_.peer:not(:checked,:disabled)~&]:border-icon-disabled [label:active_.peer:not(:checked,:disabled)~&]:before:bg-icon-disabled [label:active_.peer:not(:checked,:disabled)~&]:before:opacity-100',
         // 비활성: 흰 배경 위에 hover 겹침
         'peer-disabled:bg-[linear-gradient(var(--color-overlay-hover),var(--color-overlay-hover))]',
         // 강제 색상 모드: 배경색이 덮여 점이 사라지는 것 방지
