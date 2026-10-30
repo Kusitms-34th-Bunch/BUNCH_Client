@@ -58,3 +58,23 @@ export const applyDelete = (
   }
   return { photos: next, removedCount };
 };
+
+const TIME_PART = /^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})/;
+const pad = (value: number) => String(value).padStart(2, '0');
+
+/**
+ * 고른 사진의 촬영 날짜를 `date`(기기 시간대의 그날)로 바꾸되 시각은 그대로 둠(시각이 없으면 00:00)
+ * 사진함은 `takenAt`으로 섹션을 나누고 정렬하므로 바뀐 목록이 곧 재정렬 결과
+ */
+export const applyTakenDate = (
+  photos: readonly PhotoBoxPhoto[],
+  ids: ReadonlySet<string>,
+  date: Date,
+): PhotoBoxPhoto[] => {
+  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return photos.map((photo) => {
+    if (!ids.has(photo.id)) return photo;
+    const time = photo.takenAt ? (TIME_PART.exec(photo.takenAt)?.[1] ?? '00:00') : '00:00';
+    return { ...photo, takenAt: `${day}T${time}` };
+  });
+};

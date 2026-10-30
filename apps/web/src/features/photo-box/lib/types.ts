@@ -72,4 +72,6 @@ export type PhotoBoxActions = {
   savePhotos: (_ids: readonly string[]) => Promise<SaveResult>;
   /** 영구 삭제(휴지통 없음). 권한은 호출 전에 화면이 판단하고 서버가 다시 판단 */
   deletePhotos: (_ids: readonly string[]) => Promise<DeletePhotosResult>;
+  /** 촬영 날짜를 그날(기기 시간대)로 바꿈(시각 유지). 여러 장은 전부 성공 또는 전부 실패라 실패하면 거절함 */
+  changePhotoDates: (_ids: readonly string[], _date: Date) => Promise<void>;
 };

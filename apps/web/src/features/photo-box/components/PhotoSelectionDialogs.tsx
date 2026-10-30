@@ -28,8 +28,6 @@ export function BundleConfirmDialog({ open, onClose, onConfirm }: BundleConfirmD
 
 type DeleteConfirmDialogProps = {
   open: boolean;
-  /** 지울 사진 장수(제목에 표시) */
-  count: number;
   /** 고른 사진 종류에 맞는 안내 문구 */
   description: string;
   onClose: () => void;
@@ -42,7 +40,6 @@ type DeleteConfirmDialogProps = {
  */
 export function DeleteConfirmDialog({
   open,
-  count,
   description,
   onClose,
   onConfirm,
@@ -55,7 +52,7 @@ export function DeleteConfirmDialog({
       }}
     >
       <Dialog.Content>
-        <Dialog.Title>{PHOTO_BOX_MESSAGES.deleteConfirmTitle(count)}</Dialog.Title>
+        <Dialog.Title>{PHOTO_BOX_MESSAGES.deleteConfirmTitle}</Dialog.Title>
         <Dialog.Description>{description}</Dialog.Description>
         <Dialog.Footer>
           <Dialog.Confirm variant="secondary" className="min-w-0 flex-1" onClick={onConfirm}>

@@ -29,6 +29,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "server-only": "^0.0.1",
+    "swiper": "^14.3.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
