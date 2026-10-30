@@ -93,18 +93,24 @@ export const ProfileSideBySide: Story = {
 
 /** Figma Profile (Stack): 프로필 이미지 + 동작 버튼 세로 + 「취소」 */
 export const ProfileStack: Story = {
-  render: () => (
-    <ActionDialog
-      open
-      onOpenChange={() => {}}
-      image={<SampleProfile />}
-      title="현재 선택된 사진이 초기화됩니다"
-      description="새로운 추천 번들을 적용할까요?"
-      actions={[
-        { label: '공동 관리자로 지정하기', onClick: () => {} },
-        { label: '관리자 권한 넘기기', onClick: () => {} },
-        { label: '번치에서 내보내기', onClick: () => {} },
-      ]}
-    />
-  ),
+  render: function Render() {
+    const [open, setOpen] = useState(true);
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>열기</Button>
+        <ActionDialog
+          open={open}
+          onOpenChange={setOpen}
+          image={<SampleProfile />}
+          title="현재 선택된 사진이 초기화됩니다"
+          description="새로운 추천 번들을 적용할까요?"
+          actions={[
+            { label: '공동 관리자로 지정하기', onClick: () => setOpen(false) },
+            { label: '관리자 권한 넘기기', onClick: () => setOpen(false) },
+            { label: '번치에서 내보내기', onClick: () => setOpen(false) },
+          ]}
+        />
+      </>
+    );
+  },
 };

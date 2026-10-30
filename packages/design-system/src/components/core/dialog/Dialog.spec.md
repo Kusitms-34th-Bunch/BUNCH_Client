@@ -43,6 +43,7 @@
 - typography-heading-1-semibold / typography-body-1-regular, text-primary / text-tertiary.
 - Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경 딤은 Figma(`791:11665`의 딤 레이어)대로 overlay-dim-subtle(검정 10%).
 - Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Stack은 위아래 16·좌우 22(내용 폭 267), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
+- Stack 이미지: Figma가 이미지를 높이 72 상자 안에 위아래 8 여백으로 둔다(`my-padding-p4`). 그래서 이미지·제목 사이는 14(8 + `pt-s3` 6)다.
 - Story: Solid, Text, 확인 하나, 긴 글, 상호작용·Toast 공존, ProfileSideBySide, ProfileStack.
 
 ## 확인할 항목
