@@ -15,7 +15,7 @@
     "dev": "yarn workspace @app/web dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
-    "lint": "eslint . && turbo lint && yarn check:tailwind",
+    "lint": "eslint . && yarn check:tailwind && turbo lint",
     "test": "turbo test",
     "storybook": "yarn workspace @app/design-system storybook",
     "build-storybook": "turbo build-storybook",
