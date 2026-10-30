@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { DateChangeSheet } from './DateChangeSheet';
 
 beforeEach(() => {
@@ -69,6 +69,33 @@ describe('DateChangeSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: '열기' }));
 
     await screen.findByRole('dialog');
+    expect(saveButton().getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('닫히는 중 다시 열어도 선택이 지워진다', async () => {
+    // 테스트 DOM은 CSS transition을 돌리지 않으므로 끝나지 않는 닫힘 애니메이션으로 시트를 남겨 둠
+    const closing = {
+      finished: new Promise(() => {}),
+      pending: false,
+      playState: 'running',
+      effect: { getTiming: () => ({ duration: 160, iterations: 1 }) },
+    } as unknown as Animation;
+    // happy-dom에는 getAnimations가 없어 직접 정의
+    Object.defineProperty(Element.prototype, 'getAnimations', {
+      configurable: true,
+      value: () => [closing],
+    });
+    onTestFinished(() => {
+      delete (Element.prototype as Partial<Element>).getAnimations;
+    });
+    render(<Example />);
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: '2026년 10월 1일' }));
+
+    fireEvent.click(screen.getByRole('button', { name: '닫기' }));
+    expect(screen.getByRole('button', { name: '2026년 10월 1일' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '열기', hidden: true }));
+
     expect(saveButton().getAttribute('aria-disabled')).toBe('true');
   });
 });

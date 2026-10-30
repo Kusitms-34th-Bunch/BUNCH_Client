@@ -28,7 +28,13 @@ const bundles: BundleRecommendItem[] = [
 describe('BundleRecommendSheet', () => {
   it('추천 번들 카드를 모두 보여 준다', async () => {
     render(
-      <BundleRecommendSheet open onOpenChange={() => {}} bundles={bundles} onSelect={() => {}} />,
+      <BundleRecommendSheet
+        open
+        onOpenChange={() => {}}
+        bundles={bundles}
+        onSelect={() => {}}
+        onOpenDetail={() => {}}
+      />,
     );
 
     expect(await screen.findByRole('dialog', { name: /빠르게 번들을 만들어보세요/ })).toBeTruthy();
@@ -39,7 +45,13 @@ describe('BundleRecommendSheet', () => {
   it('카드를 누르면 그 번들 id로 onSelect를 부른다', async () => {
     const onSelect = vi.fn();
     render(
-      <BundleRecommendSheet open onOpenChange={() => {}} bundles={bundles} onSelect={onSelect} />,
+      <BundleRecommendSheet
+        open
+        onOpenChange={() => {}}
+        bundles={bundles}
+        onSelect={onSelect}
+        onOpenDetail={() => {}}
+      />,
     );
 
     fireEvent.click(await screen.findByRole('button', { name: '한강 피크닉' }));

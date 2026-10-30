@@ -17,8 +17,8 @@ export type BundleRecommendSheetProps = Omit<
   selectedId?: string | null | undefined;
   /** 카드 선택(선택 상태 보관은 호출자 담당) */
   onSelect: (_id: string) => void;
-  /** 카드 오른쪽 화살표로 상세 이동 */
-  onOpenDetail?: ((_id: string) => void) | undefined;
+  /** 카드 오른쪽 화살표로 상세 이동(화살표가 항상 보여서 필수) */
+  onOpenDetail: (_id: string) => void;
 };
 
 /**
@@ -50,7 +50,7 @@ export const BundleRecommendSheet = ({
             className="shrink-0"
             selected={selectedId === id}
             onCardClick={() => onSelect(id)}
-            onDetailClick={onOpenDetail ? () => onOpenDetail(id) : undefined}
+            onDetailClick={() => onOpenDetail(id)}
           />
         ))}
       </BottomSheet.Body>

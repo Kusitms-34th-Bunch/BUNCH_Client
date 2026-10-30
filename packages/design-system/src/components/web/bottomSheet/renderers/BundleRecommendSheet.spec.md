@@ -16,7 +16,7 @@
 - `open`, `onOpenChange`, `onOpenChangeComplete`: `BottomSheet.Root`와 같음.
 - `bundles`: `id`와 `SuggestedBundleCard` 표시 값(`imageSrc`, `title`, `members`, `photoCount`, `month`, `day`) 목록.
 - `selectedId?`, `onSelect(id)`: 카드 선택. 선택 상태 보관은 호출자 담당.
-- `onOpenDetail?(id)`: 카드 오른쪽 화살표.
+- `onOpenDetail(id)`: 카드 오른쪽 화살표. 화살표가 항상 보여서 필수다.
 
 ## 상태와 동작
 

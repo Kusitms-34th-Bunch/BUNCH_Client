@@ -15,11 +15,23 @@ export type DateChangeSheetProps = Omit<
   saving?: boolean | undefined;
 };
 
-// 시트가 닫히면 Content 안쪽과 함께 선택 초기화(기능명세 3.4.1: 열 때마다 오늘 달·선택 없음)
-const DateChangeBody = ({ onSave, saving }: Pick<DateChangeSheetProps, 'onSave' | 'saving'>) => {
+// 열 때마다 오늘 달·선택 없음(기능명세 3.4.1). 닫히는 중 다시 열어도 초기화되게 열림 전환 시점에 재설정
+const DateChangeBody = ({
+  open,
+  onSave,
+  saving,
+}: Pick<DateChangeSheetProps, 'open' | 'onSave' | 'saving'>) => {
   const hintId = useId();
-  const [today] = useState(() => new Date());
+  const [today, setToday] = useState(() => new Date());
   const [selected, setSelected] = useState<Date | null>(null);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setToday(new Date());
+      setSelected(null);
+    }
+  }
   const canSave = selected !== null && saving !== true;
 
   return (
@@ -64,7 +76,7 @@ export const DateChangeSheet = ({ onSave, saving, ...rootProps }: DateChangeShee
   <BottomSheet.Root {...rootProps}>
     {/* Figma 02: 손잡이 없음, 위 14px, 닫기 왼쪽·「저장」 오른쪽 */}
     <BottomSheet.Content handle={false} className="pt-padding-p7">
-      <DateChangeBody onSave={onSave} saving={saving} />
+      <DateChangeBody open={rootProps.open} onSave={onSave} saving={saving} />
     </BottomSheet.Content>
   </BottomSheet.Root>
 );

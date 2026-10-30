@@ -41,7 +41,7 @@ const meta = {
       </SheetStoryScreen>
     ),
   ],
-  args: { open: true, onOpenChange: () => {}, bundles, onSelect: () => {} },
+  args: { open: true, onOpenChange: () => {}, bundles, onSelect: () => {}, onOpenDetail: () => {} },
   render: function Render(args) {
     const [open, setOpen] = useState(args.open);
     const [selectedId, setSelectedId] = useState<string | null>(null);

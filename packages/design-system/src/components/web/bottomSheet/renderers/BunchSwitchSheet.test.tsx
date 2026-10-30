@@ -51,4 +51,11 @@ describe('BunchSwitchSheet', () => {
 
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
+
+  it('알림 수가 0 이하면 알림 배지를 표시하지 않는다', async () => {
+    renderSheet({ bunches: [{ id: 'run', name: '퇴근런클럽', notificationCount: -1 }] });
+
+    await screen.findByRole('dialog');
+    expect(screen.queryByText(/알림/)).toBeNull();
+  });
 });

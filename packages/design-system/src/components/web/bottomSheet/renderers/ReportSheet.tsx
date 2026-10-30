@@ -28,8 +28,9 @@ export type ReportSheetProps = Omit<
   submitting?: boolean | undefined;
 };
 
-// 시트가 닫히면 Content 안쪽과 함께 선택·입력 초기화
+// 열 때마다 선택·입력 초기화. 닫히는 중 다시 열어도 초기화되게 열림 전환 시점에 재설정
 const ReportBody = ({
+  open,
   title,
   targetLabel,
   targetName,
@@ -37,9 +38,19 @@ const ReportBody = ({
   detailReasonValue,
   onSubmit,
   submitting,
-}: Omit<ReportSheetProps, keyof BottomSheetRootProps | 'children'>) => {
-  const [reason, setReason] = useState<string | null>(null);
+}: Omit<ReportSheetProps, Exclude<keyof BottomSheetRootProps, 'open'> | 'children'>) => {
+  const [selectedReason, setReason] = useState<string | null>(null);
   const [detail, setDetail] = useState('');
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setReason(null);
+      setDetail('');
+    }
+  }
+  // 열린 동안 사유 목록이 바뀌어 사라진 선택은 무효
+  const reason = reasons.some(({ value }) => value === selectedReason) ? selectedReason : null;
   const needsDetail = reason !== null && reason === detailReasonValue;
   const canSubmit =
     reason !== null && (!needsDetail || detail.trim() !== '') && submitting !== true;
@@ -108,7 +119,7 @@ export const ReportSheet = ({
     disablePointerDismissal
   >
     <BottomSheet.Content>
-      <ReportBody {...bodyProps} />
+      <ReportBody open={open} {...bodyProps} />
     </BottomSheet.Content>
   </BottomSheet.Root>
 );

@@ -55,7 +55,7 @@ export const BunchSwitchSheet = ({
                 <ColorBadge color="gray" size="md">
                   접근 불가
                 </ColorBadge>
-              ) : status === 'default' && notificationCount ? (
+              ) : status === 'default' && (notificationCount ?? 0) > 0 ? (
                 <ColorBadge color="pink" size="md">
                   알림 {notificationCount}개
                 </ColorBadge>
