@@ -41,7 +41,7 @@
 
 - Default: 아래쪽 가운데에 나타나 3초 뒤 사라진다(액션이 있으면 5초). 등장은 5px 올라오며 투명도 0%→100%(350ms), 퇴장은 5px 내려가며 100%→0%(200ms, 아래 "움직임").
 - 동시 개수: 한 번에 하나만 보인다. 새 토스트를 띄우면 이전 것을 먼저 닫고 새로 띄워서 노출 시간을 처음부터 센다(기획 명세 2.4.3의 "다시 복사하면 토스트를 다시 띄우고 처음부터 센다").
-- 크기와 간격(Figma): 안쪽 여백 위·아래 8, 왼쪽 12, 오른쪽 8, radius 12, 아이콘(24)과 내용 사이 10, 글자와 버튼 사이 16. 배경은 `surface-inversed` 60% + 2px backdrop blur. 글자는 `body-2-regular`(14/21) 흰색, 버튼은 `Button`(secondary, sm).
+- 크기와 간격(Figma): 안쪽 여백 위·아래 8, 왼쪽 12, 오른쪽 8, radius 12, 아이콘(24)과 내용 사이 10, 글자와 버튼 사이 16. 배경은 `surface-inversed` 60% + 2px backdrop blur. 글자는 `body-3-regular`(14/21) 흰색, 버튼은 `Button`(secondary, sm).
 - 폭: 내용 폭에 맞추되 목록 폭(sonner 기본 356px, 모바일은 화면 폭 − 좌우 여백)을 넘지 않고 가운데에 놓인다. 긴 글자는 줄바꿈된다(디자인은 한 줄 233px 예시만 있다). 짧은 글자(「저장했어요.」)는 그 폭에 맞춰 좁아진다.
 - 표시 위치: 아래쪽 가운데. 아래 여백은 기본 Safe Area + 16px이고, `bottomOffset`을 주면 그만큼 위에 놓인다(항목 높이에 padding으로 포함시켜 sonner가 쌓는 위치에 반영한다).
 - 닫는 방법: 자동 닫힘, 액션 누름, 아래로 스와이프(sonner 기본).
@@ -65,7 +65,7 @@
 
 ## Styling과 의존성
 
-- Token·기존 primitive: 배경 `bg-surface-inversed/60`, 글자 `text-text-inversed`·`typography-body-2-regular`, 아이콘 색 `text-system-success-fg`, 여백 `p4`·`p6`·`s5`·`s8`, radius `r6`. 액션은 `Button`, 아이콘은 `FillCircleCheckLargeIcon`(고정 크기 export).
+- Token·기존 primitive: 배경 `bg-surface-inversed/60`, 글자 `text-text-inversed`·`typography-body-3-regular`, 아이콘 색 `text-system-success-fg`, 여백 `p4`·`p6`·`s5`·`s8`, radius `r6`. 액션은 `Button`, 아이콘은 `FillCircleCheckLargeIcon`(고정 크기 export).
 - 허용되는 dependency: `sonner`. 이 컴포넌트에서만 쓴다.
 - `'use client'`: sonner를 import하는 `Toaster.tsx`와 `showToast.tsx`가 client 모듈이다. `Toast.tsx`는 순수 표시 컴포넌트라 지시어가 없다. 서버 컴포넌트(root layout 등)는 `<Toaster />`를 그대로 import해도 된다(`apps/web` 빌드로 확인).
 - Storybook state matrix: 네 가지 형태를 한 `Matrix` story에 모으고, 긴 글자 story와 실제 `toast()`를 눌러 보는 `Playground` story(스냅샷 제외)를 둔다.

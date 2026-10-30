@@ -33,6 +33,6 @@ export const AddMemberCard = ({
     >
       <LineAddMediumIcon />
     </span>
-    <span className="typography-body-2-regular text-text-quaternary">{label}</span>
+    <span className="typography-body-3-regular text-text-quaternary">{label}</span>
   </button>
 );

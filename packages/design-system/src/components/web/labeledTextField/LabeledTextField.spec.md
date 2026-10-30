@@ -57,7 +57,7 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 
 ## Styling과 의존성
 
-- Token: `gap-s3`·`gap-s2`, `typography-body-2-meduim`(제목 14/21 SemiBold, 접미사 철자는 저장소 토큰 이름 그대로), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-3-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 표시는 `Option`을 쓴다.
+- Token: `gap-s3`·`gap-s2`, `typography-body-3-semi-bold`(제목 14/21 SemiBold, 접미사 철자는 저장소 토큰 이름 그대로), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-4-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 표시는 `Option`을 쓴다.
 - dependency 추가 없음.
 - Storybook state matrix: `Default`, `Focused`, `Filled`, `Editing`, `ErrorState`, `Disabled`, `DisabledWithError`, `OptionalWithoutCounter`.
 

@@ -50,9 +50,9 @@
 | 헤더              | 높이 48, 좌우 16                             | `Header`                                                             |
 | 제목·설명         | Title-1 22/28, 설명 14/21, 위 12 좌우 16     | `PageHeader`                                                         |
 | 링크 영역         | 제목 아래 44, 좌우 16, 항목 간격 6           | `pt-s17 px-padding-p8 gap-s3`                                        |
-| 라벨              | Body-2-SemiBold 14/21                        | `typography-body-2-meduim text-text-primary`                         |
+| 라벨              | Body-2-SemiBold 14/21                        | `typography-body-3-semi-bold text-text-primary`                      |
 | 안내 박스         | `surface-secondary`, radius 6, 16·10, 간격 6 | `bg-surface-secondary rounded-r3 px-padding-p8 py-padding-p5 gap-s3` |
-| 「나중에 할게요」 | Body-3 13/18 밑줄, `text-tertiary`           | `typography-body-3-regular text-text-tertiary underline`             |
+| 「나중에 할게요」 | Body-3 13/18 밑줄, `text-tertiary`           | `typography-body-4-regular text-text-tertiary underline`             |
 
 ## 검증
 

@@ -70,14 +70,14 @@ const InteractiveIndicator = () => {
       <div className="gap-s4 flex">
         <button
           type="button"
-          className="typography-body-2-regular border-border-secondary px-s4 rounded-r3 border"
+          className="typography-body-3-regular border-border-secondary px-s4 rounded-r3 border"
           onClick={() => setCurrent((page) => Math.max(1, page - 1))}
         >
           이전
         </button>
         <button
           type="button"
-          className="typography-body-2-regular border-border-secondary px-s4 rounded-r3 border"
+          className="typography-body-3-regular border-border-secondary px-s4 rounded-r3 border"
           onClick={() => setCurrent((page) => Math.min(total, page + 1))}
         >
           다음

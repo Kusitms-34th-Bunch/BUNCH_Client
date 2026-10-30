@@ -36,7 +36,9 @@ describe('SelectionField', () => {
   it('제목은 SemiBold 14/21 토큰이고 아이콘은 모두 숨겨진다', () => {
     const { container } = renderField();
 
-    expect(screen.getByText('위치 추가').classList.contains('typography-body-2-meduim')).toBe(true);
+    expect(screen.getByText('위치 추가').classList.contains('typography-body-3-semi-bold')).toBe(
+      true,
+    );
     for (const svg of container.querySelectorAll('svg')) {
       expect(svg.getAttribute('aria-hidden')).toBe('true');
     }

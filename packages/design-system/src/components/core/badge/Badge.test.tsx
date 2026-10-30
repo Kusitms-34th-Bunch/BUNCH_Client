@@ -15,7 +15,7 @@ describe('Badge', () => {
 
     expect(badge.className).toContain('bg-chip-blue-bg');
     expect(badge.className).toContain('text-chip-blue-fg');
-    expect(badge.className).toContain('typography-body-2-meduim');
+    expect(badge.className).toContain('typography-body-3-semi-bold');
   });
 
   it.each([
@@ -35,7 +35,7 @@ describe('Badge', () => {
   });
 
   it.each([
-    ['md', 'typography-body-3-semi-bold'],
+    ['md', 'typography-body-4-semi-bold'],
     ['sm', 'typography-caption-1-medium'],
   ] as const)('applies %s typography', (size, typography) => {
     render(<Badge size={size}>TIP</Badge>);

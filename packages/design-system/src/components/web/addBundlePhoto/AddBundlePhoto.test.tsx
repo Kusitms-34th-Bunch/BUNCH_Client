@@ -54,7 +54,7 @@ describe('AddBundlePhoto', () => {
     expect(circle.classList.contains('size-9')).toBe(true);
     expect(circle.classList.contains('bg-surface-primary')).toBe(true);
     expect(circle.classList.contains('rounded-full')).toBe(true);
-    expect(screen.getByText('사진 추가').classList.contains('typography-body-2-regular')).toBe(
+    expect(screen.getByText('사진 추가').classList.contains('typography-body-3-regular')).toBe(
       true,
     );
     expect(screen.getByText('사진 추가').classList.contains('text-text-primary')).toBe(true);

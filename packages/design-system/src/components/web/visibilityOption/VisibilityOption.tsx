@@ -55,7 +55,7 @@ export const VisibilityOption = ({
         <span id={`${baseId}-title`} className="typography-body-1-medium text-text-secondary">
           {title}
         </span>
-        <span id={`${baseId}-description`} className="typography-body-3-regular text-text-primary">
+        <span id={`${baseId}-description`} className="typography-body-4-regular text-text-primary">
           {description}
         </span>
       </span>

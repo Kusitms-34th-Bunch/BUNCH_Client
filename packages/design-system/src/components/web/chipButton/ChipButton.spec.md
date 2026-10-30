@@ -53,7 +53,7 @@
 
 ## Styling과 의존성
 
-- Token: `typography-body-2-regular`(14/21), `typography-body-1-regular`(L 개수 16/24, -0.25), `surface-secondary`·`surface-primary`·`surface-inversed`, `text-tertiary`·`text-inversed`, `border-tertiary`, `bg-overlay-hover`, `px-s5`·`px-s6`·`gap-s2`, `rounded-full`, 높이 38px은 기본 scale `h-9.5`.
+- Token: `typography-body-3-regular`(14/21), `typography-body-1-regular`(L 개수 16/24, -0.25), `surface-secondary`·`surface-primary`·`surface-inversed`, `text-tertiary`·`text-inversed`, `border-tertiary`, `bg-overlay-hover`, `px-s5`·`px-s6`·`gap-s2`, `rounded-full`, 높이 38px은 기본 scale `h-9.5`.
 - Figma `border-strong`(#25282d) token은 repo에 없고 `surface-inversed`와 같은 값이라 후자를 썼다.
 - avatar 원은 `ProfileImage`(div)를 쓰면 `<button>` 안에 `<div>`가 들어가 유효하지 않아, 같은 모양의 `<span>`을 직접 그렸다.
 - 아이콘: `LineCloseSmall/MediumIcon`, `LineChevronDownSmall/MediumIcon`(기존). dependency 추가 없음.

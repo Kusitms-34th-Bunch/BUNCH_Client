@@ -182,7 +182,7 @@ export const Calendar = ({
             <div
               key={index}
               role="columnheader"
-              className="typography-body-2-regular text-text-tertiary flex w-11.5 shrink-0 items-center justify-center"
+              className="typography-body-3-regular text-text-tertiary flex w-11.5 shrink-0 items-center justify-center"
             >
               {label}
             </div>

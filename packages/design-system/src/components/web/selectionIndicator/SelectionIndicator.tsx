@@ -22,7 +22,7 @@ export const SelectionIndicator = ({
   <span
     aria-hidden="true"
     className={cn(
-      'typography-body-2-meduim box-border inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-white text-black',
+      'typography-body-3-semi-bold box-border inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-white text-black',
       selected ? 'bg-white' : 'bg-white/60',
       className,
     )}

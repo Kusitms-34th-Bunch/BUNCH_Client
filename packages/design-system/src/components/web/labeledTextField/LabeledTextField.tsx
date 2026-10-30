@@ -64,7 +64,7 @@ export const LabeledTextField = ({
         <label
           htmlFor={inputId}
           className={cn(
-            'typography-body-2-meduim gap-s2 text-text-secondary flex items-center',
+            'typography-body-3-semi-bold gap-s2 text-text-secondary flex items-center',
             disabled && DISABLED_OPACITY,
           )}
         >
@@ -104,7 +104,7 @@ export const LabeledTextField = ({
           {hasCounter ? (
             <span
               id={counterId}
-              className="typography-body-3-regular text-text-tertiary shrink-0 whitespace-nowrap"
+              className="typography-body-4-regular text-text-tertiary shrink-0 whitespace-nowrap"
             >
               {length}/{maxLength}
             </span>

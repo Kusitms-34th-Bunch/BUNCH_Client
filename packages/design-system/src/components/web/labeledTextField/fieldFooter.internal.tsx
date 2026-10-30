@@ -25,7 +25,7 @@ export function FieldFooter({ errorId, countId, error, count }: FieldFooterProps
             </p>
           ) : null}
           {count ? (
-            <p id={countId} className="typography-body-3-regular text-text-tertiary ml-auto">
+            <p id={countId} className="typography-body-4-regular text-text-tertiary ml-auto">
               {count.current}/{count.max}
             </p>
           ) : null}

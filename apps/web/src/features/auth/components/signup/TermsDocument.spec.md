@@ -47,10 +47,10 @@
 
 | Figma            | 값                                          | 사용한 토큰·utility                                    |
 | ---------------- | ------------------------------------------- | ------------------------------------------------------ |
-| 시행일자·버전    | 헤더 아래 12, Body-2-Regular 14/21, 연한 색 | `pt-s6 typography-body-2-regular text-text-quaternary` |
+| 시행일자·버전    | 헤더 아래 12, Body-2-Regular 14/21, 연한 색 | `pt-s6 typography-body-3-regular text-text-quaternary` |
 | 시행일자 ↔ 조항  | 간격 24, 조항 간격 24                       | `gap-s12`                                              |
 | 조항 제목        | Body-1-SemiBold 16/24                       | `typography-body-1-semi-bold text-text-primary`        |
-| 조항 제목 ↔ 본문 | 간격 6, 본문 Body-2-Regular 14/21           | `gap-s3 typography-body-2-regular text-text-tertiary`  |
+| 조항 제목 ↔ 본문 | 간격 6, 본문 Body-2-Regular 14/21           | `gap-s3 typography-body-3-regular text-text-tertiary`  |
 
 ## 검증
 

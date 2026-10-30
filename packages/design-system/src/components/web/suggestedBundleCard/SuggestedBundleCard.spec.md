@@ -32,7 +32,7 @@
 
 - Default: 흰 배경(`surface-primary`), 반경 `r8`(16px), 안쪽 여백 `s8`(16px), 요소 간격 `s4`(8px). 사진은 높이 178px·반경 `r4`·`object-cover`. 이름은 `typography-body-1-semi-bold`(16/24, 자간 -0.25px) `text-tertiary`.
 - 멤버 칩: `ColorBadge`(lg, weak). Default·Pressed는 `gray`, Selected는 `brand`. 칩 간격 `s3`(6px).
-- 사진 수·날짜: 16px 아이콘 + `typography-body-2-regular`(14/21), 사이 간격 `s6`(12px), 아이콘과 글자 2px. Default `text-tertiary`.
+- 사진 수·날짜: 16px 아이콘 + `typography-body-3-regular`(14/21), 사이 간격 `s6`(12px), 아이콘과 글자 2px. Default `text-tertiary`.
 - Pressed: 카드 어디를 눌러도(`:active`) 카드 전체에 `overlay-hover`(검정 10%)를 얹어 사진·칩·화살표까지 어두워진다.
 - Selected: 이름·화살표·사진 수·날짜가 `text-brand`, 칩 `brand`, 안쪽 1px `border-brand-subtle` 테두리. 안쪽 링이라 선택 전후 레이아웃이 움직이지 않는다.
 - 긴 이름: 한 줄로 줄이고(`truncate`) 화살표는 그대로다. 멤버 칩 줄은 넘치면 잘린다(`overflow-hidden`).
@@ -50,7 +50,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-primary`, `rounded-r8`·`rounded-r4`, `p-s8`, `gap-s4`·`gap-s3`·`gap-s6`, `text-text-tertiary`·`text-text-brand`, `bg-overlay-hover`, `ring-border-brand-subtle`, `typography-body-1-semi-bold`·`typography-body-2-regular`.
+- Token: `bg-surface-primary`, `rounded-r8`·`rounded-r4`, `p-s8`, `gap-s4`·`gap-s3`·`gap-s6`, `text-text-tertiary`·`text-text-brand`, `bg-overlay-hover`, `ring-border-brand-subtle`, `typography-body-1-semi-bold`·`typography-body-3-regular`.
 - 사진 높이 178px는 `h-44.5`, 화살표 20px는 `size-5`다. 눌림 `has-[[data-card-button]:active]`로 카드 버튼의 눌림을 카드에 전달한다.
 - 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `State`→`selected`(+ 눌림은 `:active`), `title`→`title`, `memberChip1~5`·`moreMembersChip`→`members`, `month`·`day`→`month`·`day`.

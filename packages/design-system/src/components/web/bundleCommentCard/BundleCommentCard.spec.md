@@ -35,7 +35,7 @@
 - 머리 줄: 프로필 24px(1px `border-tertiary`) + 이름. 사이 간격 6px(`s3`). 이름은 `typography-body-1-medium`(16/24, 500, 자간 -0.25px) `text-primary`(Figma는 순수 검정)이고 "(나)"는 2px(`s1`) 간격으로 붙는다.
 - Default: 입력창이 비어 안내 문구가 흐린 SemiBold(`placeholder:text-quaternary`, 600, 자간 -0.5px)로 보인다. 높이는 14px 여백 + 머리 24 + 간격 8 + 입력 25(14/21에 위아래 2px) = 87px다.
 - Focused(`focus-within`): 카드 테두리가 `primitive-gray-700`(`#25282D`)로 진해지고 안내 문구가 숨겨져 캐럿만 보인다(Figma의 `border-strong`은 repo에 없고 같은 값의 gray-700을 `TextField`처럼 쓴다).
-- Filled: 입력 글자는 `typography-body-2-regular`(14/21) `text-secondary`(`#25282D`).
+- Filled: 입력 글자는 `typography-body-3-regular`(14/21) `text-secondary`(`#25282D`).
 - Error: 값은 Filled와 같고 카드 아래 4px(`s2`)에 오류 문구(`typography-caption-1-medium` 12/16, +0.25px, `system-fail-text` `#F04D29`, 줄 높이 22px)가 나온다. 입력창은 `aria-invalid`다. 두 줄 코멘트면 카드 높이가 108px, 전체 134px다.
 - Editing: `EditingAnimation`(30×25)을 머리 줄 아래 8px에 놓고 입력창은 `display: none`으로 숨긴다. 카드 높이는 87px다. 입력창에 포커스가 있을 때 `editing`이 켜지면 입력창이 숨겨지며 포커스가 `body`로 떨어지므로, 호출하는 쪽이 그 사이 포커스를 어디로 옮길지 정한다(이 컴포넌트는 포커스를 옮기지 않는다). `editing`이 꺼지면 입력창이 다시 나타나며 높이를 다시 맞춘다.
 - iOS: 포커스 시 확대를 막기 위해 16px로 렌더링한 뒤 14px 크기로 줄이는 `inputScale.textareaSlot`을 `LabeledTextArea`와 같이 쓴다.
@@ -51,7 +51,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-primary`, `border-border-tertiary`, `rounded-r5`, `px-padding-p7`·`py-s7`·`gap-s4`·`gap-s3`·`gap-s2`·`gap-s1`, `typography-body-1-medium`·`typography-body-2-regular`·`typography-caption-1-medium`, `text-text-primary`·`text-text-secondary`·`text-text-quaternary`·`text-system-fail-text`, `border-primitive-gray-700`. 허용되는 dependency 추가 없음.
+- Token: `bg-surface-primary`, `border-border-tertiary`, `rounded-r5`, `px-padding-p7`·`py-s7`·`gap-s4`·`gap-s3`·`gap-s2`·`gap-s1`, `typography-body-1-medium`·`typography-body-3-regular`·`typography-caption-1-medium`, `text-text-primary`·`text-text-secondary`·`text-text-quaternary`·`text-system-fail-text`, `border-primitive-gray-700`. 허용되는 dependency 추가 없음.
 - 입력창 높이 자동 맞춤은 `labeledTextField/useTextareaAutoHeight.internal.ts`를 쓴다(`LabeledTextArea`도 같은 hook으로 바꿨고 동작은 그대로다).
 - Figma 이름 대응: `State=Default·Focused·Filled`→입력 상태, `State=Error`→`error`, `State=Editing`→`editing`, `currentUser`→`currentUser`, `userName`→`userName`.
 - Storybook state matrix: `Default`, `Filled`, `Error`, `Editing`, `OtherMember`, `Interactive`.

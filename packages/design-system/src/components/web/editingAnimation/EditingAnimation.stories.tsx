@@ -18,7 +18,7 @@ export const WithText: Story = {
   render: () => (
     <div className="gap-s4 flex items-center">
       <EditingAnimation />
-      <span className="typography-body-2-meduim">지금 함께 편집하고 있어요</span>
+      <span className="typography-body-3-semi-bold">지금 함께 편집하고 있어요</span>
     </div>
   ),
 };
