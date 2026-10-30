@@ -8,13 +8,16 @@ import {
 } from '../../../icons';
 import { tv } from '../../../utils';
 
-// 눌림이 아닌 호버만 Figma에 있음: 검정 10%(overlay-hover)를 배경 위·글자 아래(-z-10 pseudo, isolate)에 덮음, 75ms ease-out
+// Figma 공통 모션(칩버튼 모션): 누르는 동안 Hover 모양, 손을 떼면 Selected로 바뀌며 둘 다 Dissolve·Ease out·300ms
+// Hover 모양은 검정 10%(overlay-hover)를 배경 위·글자 아래(-z-10 pseudo, isolate)에 덮음. 마우스 호버와 누르는 동안(active) 같은 모양
+// 배경·글자·테두리 색은 transition으로 섞이고(Selected 전환), 오버레이는 투명도로 섞임
 // Figma 실측: Solid 호버 #f5f5f5→#dcdcdc, Avatar 호버는 흰색 기준 #e5e5e5(기본 #f5f5f5와 다름), Outline 호버는 흰색 그대로
 // 터치 영역은 after로 위아래만 44px까지 넓힘(가로는 옆 칩과 겹치지 않게 그대로)
 const chipButton = tv({
   base: [
     'relative isolate inline-flex shrink-0 cursor-pointer touch-manipulation items-center justify-center gap-s2 rounded-full whitespace-nowrap typography-body-2-regular',
-    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-overlay-hover before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-overlay-hover before:opacity-0 before:transition-opacity before:duration-300 before:ease-out motion-reduce:before:transition-none',
+    'transition-colors duration-300 ease-out motion-reduce:transition-none',
     "after:absolute after:inset-x-0 after:content-['']",
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand',
   ],
@@ -35,12 +38,17 @@ const chipButton = tv({
     },
   },
   compoundVariants: [
-    { variant: 'solid', selected: false, class: 'bg-surface-secondary hover:before:opacity-100' },
+    {
+      variant: 'solid',
+      selected: false,
+      class: 'bg-surface-secondary hover:before:opacity-100 active:before:opacity-100',
+    },
     { variant: 'outline', selected: false, class: 'bg-surface-primary' },
     {
       variant: 'avatar',
       selected: false,
-      class: 'bg-surface-secondary hover:bg-surface-primary hover:before:opacity-100',
+      class:
+        'bg-surface-secondary hover:bg-surface-primary hover:before:opacity-100 active:bg-surface-primary active:before:opacity-100',
     },
     // Figma border-strong(#25282d)은 토큰이 없고 surface-inversed와 같은 값
     { variant: 'outline', selected: true, class: 'border-surface-inversed' },
