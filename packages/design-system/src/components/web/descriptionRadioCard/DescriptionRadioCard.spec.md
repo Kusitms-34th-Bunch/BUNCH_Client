@@ -24,7 +24,7 @@
 ## 상태와 동작
 
 - Default: 바탕 `surface-secondary`.
-- Pressed: 바탕에 `overlay-pressed`(20%), 라디오 회색 링(Figma 기준, 카드를 누를 때는 미적용: 확인할 항목 참고). 글자는 그대로.
+- Pressed: 바탕에 `overlay-pressed`(20%), 라디오 회색 링·점(카드 어디를 눌러도 적용). 글자는 그대로.
 - Selected: 바탕 `surface-brand-subtle-1`, 안쪽 1px `border-brand-subtle` 링, 라디오 브랜드색 점.
 - Disabled: 카드 40% 흐림, 제목·설명 `text-disabled`, 누를 수 없음.
 - 긴 제목·설명은 줄바꿈한다(`break-keep`, 공백 없는 긴 영문·URL은 `wrap-break-word`로 끊음).
@@ -50,7 +50,6 @@
 
 - 선택 테두리 (제안): `ProfileRadioCard`와 같은 이유로 안쪽 `ring`을 썼다.
 - 이름 (제안): Figma `Radio Card - Description`을 기존 `RadioCard`와 구분해 `DescriptionRadioCard`로 지었다.
-- 눌림 라디오 (확인): Figma Pressed는 라디오도 회색 링(Control Radio `Pressed`)이지만, 카드(`label`)를 누를 때 안쪽 input에 `:active`가 걸리지 않아 Chromium에서는 흰 원 그대로다. 카드에서 `group-active`로 원을 따로 칠할 수는 있지만 `core/radio`의 눌림 스타일과 중복되고 깨지기 쉬워 보류했다. Firefox·Safari·터치 동작은 확인하지 않았다(기존 `RadioCard` spec의 같은 설명도 확인 필요).
 - 초점 표시 (확인): 키보드 초점 테두리는 20px 라디오 원에만 그려진다(`core/radio`). `VisibilityOption`처럼 카드 전체에 그릴지는 Figma 초점 표현을 확인한 뒤 정한다.
 
 ## 검증
