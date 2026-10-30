@@ -7,7 +7,7 @@ import type { LottieLight } from '@/shared/lib/lottieLight';
 type LottiePlayer = typeof LottieLight;
 type LoadedLottie = { Player: LottiePlayer; data: object };
 
-// 사진마다 점 3개가 뜨므로 엔진과 JSON은 모듈에서 한 번만 받아 모든 인스턴스가 공유(실패하면 다음 표시 때 다시 시도)
+// 엔진과 JSON은 모듈에서 한 번만 받아 다시 표시할 때 재다운로드 방지(실패하면 다음 표시 때 재시도)
 let loading: Promise<LoadedLottie> | undefined;
 const loadLottie = () => {
   loading ??= Promise.all([

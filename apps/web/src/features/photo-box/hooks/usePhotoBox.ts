@@ -4,7 +4,7 @@ import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxState } from '../lib/types
 import { photoBoxFixture } from '../fixtures/photoBox.fixture';
 import { applyDelete } from '../lib/photoActions';
 
-// 목 저장이 끝나기까지의 시간(사진마다 점 3개 로딩이 보이도록)
+// 목 저장이 끝나기까지의 시간(화면 전체 로딩이 보이도록)
 const MOCK_SAVE_DELAY_MS = 800;
 
 type UsePhotoBoxResult = {
