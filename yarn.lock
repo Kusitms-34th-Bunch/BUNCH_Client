@@ -167,6 +167,7 @@ __metadata:
     "@app/lint-config": "workspace:*"
     "@app/ts-config": "workspace:*"
     "@sentry/nextjs": "npm:^11.7.0"
+    "@ssgoi/react": "npm:^7.4.1"
     "@tailwindcss/postcss": "npm:^4.3.3"
     "@tanstack/react-query": "catalog:"
     "@testing-library/dom": "catalog:"
@@ -182,7 +183,9 @@ __metadata:
     eslint: "catalog:"
     happy-dom: "catalog:"
     ky: "catalog:"
+    lottie-react: "npm:^3.1.2"
     next: "npm:^16.2.10"
+    overlay-kit: "npm:^1.9.0"
     react: "catalog:"
     react-dom: "catalog:"
     server-only: "npm:^0.0.1"
@@ -229,7 +232,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/core@npm:^7.21.3, @babel/core@npm:^7.23.7, @babel/core@npm:^7.24.4, @babel/core@npm:^7.28.0, @babel/core@npm:^7.28.5":
+"@babel/core@npm:^7.21.3, @babel/core@npm:^7.23.7, @babel/core@npm:^7.24.4, @babel/core@npm:^7.26.10, @babel/core@npm:^7.28.0, @babel/core@npm:^7.28.5":
   version: 7.29.7
   resolution: "@babel/core@npm:7.29.7"
   dependencies:
@@ -3168,6 +3171,40 @@ __metadata:
   version: 1.2.0
   resolution: "@simple-libs/stream-utils@npm:1.2.0"
   checksum: 10c0/2788ac7b167d1b6c81b8c6fae2f5d9688b1f02ab31e9e15b33c9dc2ae920cf7de87869de10679be8957f9adb645c91c8919e271f3e34b6b4ec56daf725522dc7
+  languageName: node
+  linkType: hard
+
+"@ssgoi/core@npm:^7.4.1":
+  version: 7.4.1
+  resolution: "@ssgoi/core@npm:7.4.1"
+  checksum: 10c0/478b89c27fd7fd4c6ad5ba7937a1e676e5594b08bb8cfeea7b9a5d46c8029a163c4446425aeeda745a50bc7595ef0066d6a6815754753c4bc86b1fdf09a7d9fd
+  languageName: node
+  linkType: hard
+
+"@ssgoi/react@npm:^7.4.1":
+  version: 7.4.1
+  resolution: "@ssgoi/react@npm:7.4.1"
+  dependencies:
+    "@babel/core": "npm:^7.26.10"
+    "@ssgoi/core": "npm:^7.4.1"
+    unplugin: "npm:^2.3.2"
+  peerDependencies:
+    "@remix-run/react": "*"
+    "@tanstack/react-router": "*"
+    next: "*"
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+    react-router: "*"
+  peerDependenciesMeta:
+    "@remix-run/react":
+      optional: true
+    "@tanstack/react-router":
+      optional: true
+    next:
+      optional: true
+    react-router:
+      optional: true
+  checksum: 10c0/f658e2ef098a510e31f8d704b9405be64d08e5d92b95efa0c51cf91bf00dc2ad5af5248bd59e531a8c3addd7828834cc6215cdd140115ca6305324441cd7a103
   languageName: node
   linkType: hard
 
@@ -7393,6 +7430,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lottie-react@npm:^3.1.2":
+  version: 3.1.2
+  resolution: "lottie-react@npm:3.1.2"
+  dependencies:
+    lottie-web: "npm:^5.13.0"
+  peerDependencies:
+    react: ^18.2.0 || ^19.0.0
+    react-dom: ^18.2.0 || ^19.0.0
+  checksum: 10c0/6e89e7ec6a2c93f12d0f3049ebb78178ceab9ac00dce2509ca331caeabeb72af5d976488d1b43d7b1b6e99e19a6c60b57d2d4ebf3f840db0b3f0d0e1bc84a3b5
+  languageName: node
+  linkType: hard
+
+"lottie-web@npm:^5.13.0":
+  version: 5.13.0
+  resolution: "lottie-web@npm:5.13.0"
+  checksum: 10c0/b463ad462169df3f7e04b7f3716274e269842554f1d72b8303ca7245628f2512982a59ae31698b3d57fbcda886228ae160fcb2aa518c6cecd8a95974db2458ee
+  languageName: node
+  linkType: hard
+
 "loupe@npm:^3.1.0, loupe@npm:^3.1.4":
   version: 3.2.1
   resolution: "loupe@npm:3.2.1"
@@ -7859,6 +7915,15 @@ __metadata:
     type-check: "npm:^0.4.0"
     word-wrap: "npm:^1.2.5"
   checksum: 10c0/4afb687a059ee65b61df74dfe87d8d6815cd6883cb8b3d5883a910df72d0f5d029821f37025e4bccf4048873dbdb09acc6d303d27b8f76b1a80dd5a7d5334675
+  languageName: node
+  linkType: hard
+
+"overlay-kit@npm:^1.9.0":
+  version: 1.9.0
+  resolution: "overlay-kit@npm:1.9.0"
+  peerDependencies:
+    react: ^16.8 || ^17 || ^18 || ^19
+  checksum: 10c0/b32a6f8648a075598ee215775b541d3e144c075a233ecc6b1630bee33d72fa39e12d1204919a7f1ea575daf5c1e467d41cfbd8eb3369a5734d141d0f07d5ca2b
   languageName: node
   linkType: hard
 
@@ -9807,7 +9872,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"unplugin@npm:^2.3.5":
+"unplugin@npm:^2.3.2, unplugin@npm:^2.3.5":
   version: 2.3.11
   resolution: "unplugin@npm:2.3.11"
   dependencies:

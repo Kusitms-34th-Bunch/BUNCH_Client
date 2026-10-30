@@ -7,6 +7,7 @@
 - [Domain Ownership](./architecture/domain-ownership.md)
 - [Routing And Access](./architecture/routing-and-access.md)
 - [Data Layer](./architecture/data-layer.md)
+- [API Boundary](./architecture/api-boundary.md)
 - [Components](./architecture/components.md)
 - [Component Patterns](./architecture/component-patterns.md)
 - [Design System](./architecture/design-system.md)
@@ -29,6 +30,7 @@
 
 - [Development](./workflows/development.md)
 - [Local Development](./workflows/local-development.md)
+- [모바일 앱 실행과 테스트](./workflows/mobile-testing.md)
 - [Testing](./workflows/testing.md)
 - [E2E Testing](./workflows/e2e-testing.md)
 - [API Integration](./workflows/api-integration.md)
@@ -41,7 +43,6 @@
 - [Web SEO](./workflows/seo.md)
 - [CI](./workflows/ci.md)
 - [Turbo Generators](./workflows/turbo-generators.md)
-
 - [Code Quality](./code-quality/index.md)
 
 ## Operations

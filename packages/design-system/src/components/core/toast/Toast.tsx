@@ -30,7 +30,7 @@ export type ToastProps = Omit<ComponentProps<'div'>, 'children'> & {
   action?: ToastAction | undefined;
 };
 
-/** 모양만 그린다. 알림 동작(자동 닫힘·큐)은 `toast()`와 `<Toaster />`가 맡는다. */
+/** 모양만 렌더링. 알림 동작(자동 닫힘·큐)은 `toast()`와 `<Toaster />` 담당 */
 export const Toast = ({ icon, action, className, children, ...props }: ToastProps) => {
   const { base, icon: iconSlot, content, message } = toastStyle();
 

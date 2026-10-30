@@ -19,6 +19,25 @@ describe('PageShell', () => {
     expect(body.compareDocumentPosition(bottom) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('기본 배경은 흰색이고 className으로 배경색을 바꿀 수 있다', () => {
+    const { container, rerender } = render(
+      <PageShell>
+        <p>본문</p>
+      </PageShell>,
+    );
+    expect(container.firstElementChild?.className).toContain('bg-surface-primary');
+
+    rerender(
+      <PageShell className="bg-surface-brand-subtle-1">
+        <p>본문</p>
+      </PageShell>,
+    );
+
+    const shell = container.firstElementChild;
+    expect(shell?.className).toContain('bg-surface-brand-subtle-1');
+    expect(shell?.className).not.toContain('bg-surface-primary');
+  });
+
   it('본문만 main 영역에 두고 스크롤을 맡긴다', () => {
     render(
       <PageShell header={<p>헤더</p>} bottom={<p>하단</p>}>
@@ -41,7 +60,7 @@ describe('PageShell', () => {
     );
 
     expect(screen.getByRole('main')).toHaveTextContent('본문');
-    // 빈 header·bottom 영역이 DOM에 남지 않고 main만 있다.
+    // 빈 header·bottom 영역 없이 DOM에 main만 남는지 확인
     expect(container.firstElementChild?.children).toHaveLength(1);
   });
 });

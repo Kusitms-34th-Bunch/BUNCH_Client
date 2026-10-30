@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile-shell",
+    "name": "Bunch",
     "slug": "mobile-shell",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,10 +14,27 @@
           "organization": "bunch-01",
           "project": "bunch-mobile"
         }
+      ],
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "사진함・게시물에 올리거나 프로필로 쓸 사진을 불러올 때 사용해요.",
+          "cameraPermission": "사진을 찍어 사진함과 게시물에 올릴 때 사용해요.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-router",
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/Pretendard-Regular.otf"]
+        }
       ]
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kyeongjooni.mobile-shell"
     },
     "android": {
       "adaptiveIcon": {

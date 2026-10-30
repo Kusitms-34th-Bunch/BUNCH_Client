@@ -28,7 +28,15 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 Figma
 3. 값 변경 시 호출부를 각각 수정하는 비용이 크다.
 4. 이름이 제품 도메인이나 한 화면의 문구에 의존하지 않는다.
 
-font·asset은 라이선스, 크기, preload·cache 전략이 확정된 뒤 도입한다. 외부 CDN font를 기본값으로 추가하지 않는다.
+## 글꼴(Pretendard)
+
+결정 근거는 [013](../decisions/records/013-pretendard-self-hosting.md)이다. 외부 CDN 글꼴을 쓰지 않고 저장소에 둔 파일을 직접 호스팅한다.
+
+- 앱 화면(`apps/web`의 `(app)` route group): `apps/web/src/app/(app)/layout.tsx`가 `apps/web/src/app/fonts/PretendardVariable.woff2`(Pretendard 1.3.9 가변 폰트, 굵기 45~920)를 `next/font/local`로 불러오고, 토큰 변수 `--primitive-font-family-pretendard`와 `body`의 `font-family`를 그 글꼴로 바꾼다. 모달·토스트가 body에 portal로 그려지므로 `:root`에 적용한다. `typography-*` 유틸리티는 바꾸지 않는다.
+- 처음 오는 사용자가 보는 웹 화면(웹 초대장 등): `(app)` group 밖에 두고 Pretendard 동적 서브셋을 쓴다. 해당 화면을 만들 때 붙이며 아직 없다. 큰 파일을 루트 layout에서 불러오지 않는 이유가 이것이다.
+- iOS 쉘 시스템 탭 바 라벨: `apps/mobile-shell/assets/fonts/Pretendard-Regular.otf`를 `app.json`의 `expo-font` plugin으로 넣는다(`docs/architecture/mobile-shell.md`).
+- 라이선스(SIL OFL 1.1)는 글꼴 파일 옆의 `Pretendard-LICENSE.txt`에 둔다. 버전을 올릴 때 웹·쉘 파일과 라이선스를 함께 바꾼다.
+- admin·Storybook은 아직 글꼴을 연결하지 않았다.
 
 ## Tokens Studio 변환
 
@@ -39,7 +47,7 @@ font·asset은 라이선스, 크기, preload·cache 전략이 확정된 뒤 도�
 - Tailwind v4의 `@theme inline`에 색상·간격·radius·shadow·gradient를 연결한다. 예: `text-text-primary`, `bg-surface-primary`, `rounded-r1`, `gap-s1`. 실제 이름은 생성 CSS를 기준으로 확인한다.
 - 소비 앱은 `@app/design-system` workspace 의존성을 선언하고 Tailwind 전역 CSS에서 `@import '@app/design-system/tokens.css';`로 사용한다. Web은 `src/app/globals.css`에서 연결하며 admin·Storybook은 아직 연결하지 않았다. Tailwind의 `border-border-brand`는 속성 `border-`와 색상 이름 `border-brand`의 조합이므로 유지한다.
 - `sync-design-tokens.yml`은 `design-token` 브랜치의 원본 변경을 변환·검증하고 생성 CSS를 같은 브랜치에 커밋한 뒤 `develop`으로 PR한다. 기존 열린 PR은 재사용하고 CSS만 바뀐 Push는 다시 변환하지 않는다. 설정과 secret은 `docs/conventions/git.md`를 따른다.
-- opacity 숫자는 Figma의 0–100 값을 퍼센트로, 길이는 px로 변환한다. 참조 누락·순환·이름 충돌·미지원 타입 및 모드는 실패로 처리한다. 현재 export의 `Primitive/Mode 1`, `Semantic/Mode 1`만 지원하며 theme이나 mode가 추가되면 선택 규칙부터 확정한다. Pretendard 파일은 설치하거나 로드하지 않는다.
+- opacity 숫자는 Figma의 0–100 값을 퍼센트로, 길이는 px로 변환한다. 참조 누락·순환·이름 충돌·미지원 타입 및 모드는 실패로 처리한다. 현재 export의 `Primitive/Mode 1`, `Semantic/Mode 1`만 지원하며 theme이나 mode가 추가되면 선택 규칙부터 확정한다. 글꼴 로드는 아래 "글꼴(Pretendard)"을 따른다.
 - 다른 변수를 참조하는 Tailwind theme은 [공식 `@theme inline` 규칙](https://tailwindcss.com/docs/theme#referencing-other-variables)을 따른다.
 
 ## 스타일 검증

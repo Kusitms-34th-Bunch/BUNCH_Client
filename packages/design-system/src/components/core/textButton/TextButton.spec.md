@@ -38,6 +38,8 @@
 - 나란히 놓기: 버튼은 `shrink-0`라서 같은 flex 행의 두 버튼은 줄어들지 않고 행이 넘칠 수 있다. 좁은 폭에서 나란히 놓을 때는 호출하는 쪽이 `min-w-0 flex-1` 같은 클래스로 폭을 정한다(`SideBySide` story).
 - 알려진 대비 한계(디자인 값, 코드에서 고치지 않음): 비활성 글자(`#969aa0`)는 흰 배경에서 약 2.8:1이다(비활성 UI 요소는 대비 기준의 예외). 눌림 오버레이 위의 `primary`·`warning` 글자 대비는 렌더로 재지 않았다.
 
+- 상태 전환 (확정): 디자이너 공통 지침 `Dissolve / Ease Out / 75ms`를 따른다(2026-10-22 디자이너 공통 지침 변경: 100ms → 75ms). 곡선은 CSS Ease Out인 `cubic-bezier(0, 0, 0.58, 1)`로 명시한다. 누르는 동안 눌림 오버레이의 opacity를 전환하고, 놓으면 같은 시간·곡선으로 복원한다. Disabled ↔ Default는 배경·글자·테두리 색을 전환한다(해당 색상이 있는 variant). 크기·위치는 바꾸지 않으며 `prefers-reduced-motion: reduce`에서는 즉시 전환한다.
+
 ## 접근성
 
 - Semantic element: native `<button>`.

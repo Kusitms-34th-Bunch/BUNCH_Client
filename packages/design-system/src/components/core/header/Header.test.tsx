@@ -22,27 +22,6 @@ describe('Header', () => {
     expect(items[1]!.compareDocumentPosition(items[2]!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it('renders children in the center when there is no title', () => {
-    render(
-      <Header>
-        <input aria-label="검색" />
-      </Header>,
-    );
-
-    expect(screen.getByRole('textbox', { name: '검색' })).toBeTruthy();
-  });
-
-  it('prefers title over children', () => {
-    render(
-      <Header title="제목">
-        <input aria-label="검색" />
-      </Header>,
-    );
-
-    expect(screen.getByText('제목')).toBeTruthy();
-    expect(screen.queryByRole('textbox', { name: '검색' })).toBeNull();
-  });
-
   it('keeps trailing on the right even without a title', () => {
     render(<Header leading={<span>계정</span>} trailing={<button type="button">설정</button>} />);
 

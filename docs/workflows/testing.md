@@ -1,5 +1,7 @@
 # Testing Rules
 
+모바일 앱의 설치·실행과 기기별 수동 확인은 [모바일 앱 실행과 테스트](./mobile-testing.md)를 따른다.
+
 ## 도구와 위치
 
 - unit·component test는 Vitest와 Testing Library를 사용한다. React test 환경은 `happy-dom`이다.

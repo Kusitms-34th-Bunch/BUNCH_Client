@@ -8,6 +8,7 @@
 
 ## 현재 스펙
 
-- [BUNCH PRD (초안)](./bunch-prd.md)
 - [기능: 로그인·가입](./login-signup.md)
 - [기능: 하단 내비게이션](./bottom-navigation.md)
+- [기능: 사진함](./photo-box.md)
+- [기능: 번들 만들기](./bundle-create.md)

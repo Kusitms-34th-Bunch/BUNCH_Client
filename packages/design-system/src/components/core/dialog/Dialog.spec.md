@@ -13,8 +13,8 @@
 
 ## Public API
 
-- `Dialog.Root`: `open: boolean`, `onOpenChange(open: boolean): void`, `children`.
-- `Dialog.Content`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Title은 h2, Description은 p, Footer는 div.
+- `Dialog.Root`: `open: boolean`, `onOpenChange(open: boolean): void`, 선택 `onOpenChangeComplete(open: boolean): void`, `children`. 종료 콜백은 전환이 끝난 후 호출되므로 overlay 제거 시점에 쓴다.
+- `Dialog.Content`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Title은 h2, Description은 p, Footer는 div. Content의 선택 `backdropClassName`으로 딤 전환을 조절한다.
 - `Dialog.Cancel`, `Confirm`: 기존 Button props 중 variant는 primary/secondary/warning으로 제한하고 `appearance?: 'solid' | 'text'`를 받는다. Cancel은 닫힘 요청, Confirm은 onClick만 호출한다.
 - `ConfirmDialog`: Root props + `title`, 선택 `description`, `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
 - controlled 전용. 실제 작업·비동기 상태·확인 후 닫기는 호출자가 소유한다. Base UI 타입은 공개하지 않는다.
@@ -23,8 +23,8 @@
 
 - 바깥 터치는 무시. Cancel·ESC는 실행 없이 닫힘 요청, Confirm은 자동으로 닫지 않는다.
 - Solid: 취소 왼쪽, 확인 오른쪽 동일 폭. Text: 오른쪽 정렬. 취소 문구가 없으면 확인 하나.
-- 긴 제목·설명은 줄바꿈하고 작은 viewport에서 본문을 스크롤한다. 버튼은 축소하지 않는다.
-- 닫힘 애니메이션·로딩 UI는 이번 범위 밖. 비동기 확인 중 중복 실행은 confirmDisabled로 막는다.
+- 긴 제목·설명은 단어 단위로 줄바꿈하고(`break-keep`, 한 단어가 폭보다 길면 `overflow-wrap: break-word`로 끊는다. `break-words`는 tailwind-merge가 `break-keep`을 지워 쓰지 않는다. Figma가 "피드로 / 이동해요."처럼 단어 사이에서 끊는다) 작은 viewport에서 본문을 스크롤한다. 버튼은 축소하지 않는다.
+- 진입·닫힘 모션은 호출자가 Content와 `backdropClassName`으로 지정한다. CSS 전환이 끝나면 Base UI의 `onOpenChangeComplete`를 통해 제거 시점을 알린다. 비동기 확인 중 중복 실행은 confirmDisabled로 막는다.
 
 ## 접근성
 
@@ -40,13 +40,13 @@
 - 폭 311px / 최대 320px, 최대 높이 640px은 Figma 기하 값. 작은 화면은 viewport 여백 안으로 제한.
 - radius-r9, padding-p11(22), padding-p10(20), padding-p8(16), spacing-s4(8).
 - typography-heading-1-semibold / typography-body-1-regular, text-primary / text-tertiary.
-- Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경은 overlay-scrim.
+- Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경 딤은 Figma(`791:11665`의 딤 레이어)대로 overlay-dim-subtle(검정 10%).
 - Story: Solid, Text, 확인 하나, 긴 글, 상호작용·Toast 공존.
 
 ## 확인할 항목
 
 - 확정: 외부 터치 무시, ESC 취소, 첫 초점, controlled 확인 동작은 2026-10-17 대화 합의.
-- 제안: Floated 대체와 scrim은 기존 토큰 사용. 디자인 토큰이 전달되면 재검토.
+- 제안: Floated 대체는 기존 토큰 사용. 딤은 처음 overlay-scrim(60%)이었다가 3단계 화면의 Figma(`overlay-dim-subtle`)에 맞춰 바꿨다.
 - 미정: iOS 실기기 VoiceOver·WebView 스크롤/초점과 Android 뒤로가기는 별도 검증.
 
 ## 사용 예

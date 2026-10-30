@@ -9,9 +9,12 @@ import { TextButton } from '../textButton';
 export type DialogRootProps = {
   open: boolean;
   onOpenChange: (_open: boolean) => void;
+  onOpenChangeComplete?: ((_open: boolean) => void) | undefined;
   children: ReactNode;
 };
-export type DialogContentProps = ComponentProps<'div'>;
+export type DialogContentProps = ComponentProps<'div'> & {
+  backdropClassName?: string;
+};
 export type DialogTitleProps = ComponentProps<'h2'>;
 export type DialogDescriptionProps = ComponentProps<'p'>;
 export type DialogFooterProps = ComponentProps<'div'>;
@@ -20,17 +23,23 @@ export type DialogActionProps = Omit<ButtonProps, 'variant'> & {
   variant?: 'primary' | 'secondary' | 'warning';
 };
 
-const Root = ({ open, onOpenChange, children }: DialogRootProps) => (
-  <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
+const Root = ({ open, onOpenChange, onOpenChangeComplete, children }: DialogRootProps) => (
+  <AlertDialog.Root
+    open={open}
+    onOpenChange={onOpenChange}
+    onOpenChangeComplete={onOpenChangeComplete}
+  >
     {children}
   </AlertDialog.Root>
 );
 
-const Content = ({ className, children, ref, ...props }: DialogContentProps) => {
+const Content = ({ className, backdropClassName, children, ref, ...props }: DialogContentProps) => {
   const popupRef = useRef<HTMLDivElement>(null);
   return (
     <AlertDialog.Portal>
-      <AlertDialog.Backdrop className="bg-overlay-scrim fixed inset-0" />
+      <AlertDialog.Backdrop
+        className={cn('bg-overlay-dim-subtle fixed inset-0', backdropClassName)}
+      />
       <AlertDialog.Popup
         {...props}
         aria-modal="true"
@@ -59,7 +68,7 @@ const Title = ({ className, ...props }: DialogTitleProps) => (
   <AlertDialog.Title
     {...props}
     className={cn(
-      'px-padding-p11 pt-padding-p11 text-text-primary typography-heading-1-semibold break-words',
+      'px-padding-p11 pt-padding-p11 text-text-primary typography-heading-1-semibold [overflow-wrap:break-word] break-keep',
       className,
     )}
   />
@@ -68,7 +77,7 @@ const Description = ({ className, ...props }: DialogDescriptionProps) => (
   <AlertDialog.Description
     {...props}
     className={cn(
-      'px-padding-p11 mt-s4 text-text-tertiary typography-body-1-regular break-words',
+      'px-padding-p11 mt-s4 text-text-tertiary typography-body-1-regular [overflow-wrap:break-word] break-keep',
       className,
     )}
   />
@@ -123,9 +132,11 @@ export const ConfirmDialog = ({
   confirmDisabled,
   open,
   onOpenChange,
+  onOpenChangeComplete,
 }: ConfirmDialogProps) => (
   <Root
     open={open}
+    onOpenChangeComplete={onOpenChangeComplete}
     onOpenChange={(nextOpen) => {
       if (!nextOpen) onCancel?.();
       onOpenChange(nextOpen);

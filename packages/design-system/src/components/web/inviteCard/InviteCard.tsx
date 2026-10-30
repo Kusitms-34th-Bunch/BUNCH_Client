@@ -10,17 +10,17 @@ export type InviteCardProps = Omit<
   description: string;
   /** 초대한 사람 이름 */
   senderName: string;
-  /** 번치 대표 이미지 주소. 없으면 이미지 없는 빈 원으로 보인다 */
+  /** 번치 대표 이미지 주소. 없으면 이미지 없는 빈 원으로 표시 */
   imageSrc?: string | undefined;
-  /** 이미지 설명. 비우면 장식 이미지로 숨겨진다 */
+  /** 이미지 설명. 비우면 장식 이미지로 숨김 처리 */
   imageAlt?: string | undefined;
-  /** 「참여하기」를 눌렀을 때 호출한다. 참여 처리는 호출하는 쪽이 한다 */
+  /** 「참여하기」를 눌렀을 때 호출. 참여 처리는 호출하는 쪽 담당 */
   onJoin?: (() => void) | undefined;
 };
 
 /**
  * 번치 초대장 카드: 번치 이름·소개, 대표 이미지, 보낸 사람, 「참여하기」 버튼
- * 번치 이름은 `h2`라 화면 제목(`h1`) 아래에서 쓴다
+ * 번치 이름은 `h2`라 화면 제목(`h1`) 아래에서 사용
  */
 export const InviteCard = ({
   bunchName,
@@ -55,7 +55,7 @@ export const InviteCard = ({
           >
             {bunchName}
           </h2>
-          <p className="typography-body-1-medium text-text-secondary w-full wrap-break-word">
+          <p className="typography-body-1-medium text-text-secondary line-clamp-2 w-full wrap-break-word">
             {description}
           </p>
         </div>

@@ -53,7 +53,7 @@ describe('Toast', () => {
   });
 });
 
-// sonner는 토스트를 setTimeout으로 한 틱 늦게 반영하고 제거도 타이머로 예약한다. act 하나 안에서는 갱신이 모여 반영되므로 시간을 단계로 나눠 흘려 보낸다.
+// sonner는 토스트를 setTimeout으로 한 틱 늦게 반영하고 제거도 타이머로 예약. act 하나 안에서는 갱신이 모여 반영되므로 시간을 단계로 나눠 진행
 describe('toast()', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -109,15 +109,27 @@ describe('toast()', () => {
     expect(screen.queryByText('3초 뒤 닫힘')).toBeNull();
   });
 
-  it('keeps a toast with an action for 5 seconds', async () => {
+  it('closes a toast with an action after 5 seconds', async () => {
     render(<Toaster />);
-    await show('5초 뒤 닫힘', { action: { label: '공유', onClick: vi.fn() } });
+    await show('액션 5초 뒤 닫힘', { action: { label: '공유', onClick: vi.fn() } });
 
     await advance(4500);
-    expect(screen.queryByText('5초 뒤 닫힘')).toBeTruthy();
+    expect(screen.queryByText('액션 5초 뒤 닫힘')).toBeTruthy();
 
     await advance(1500);
-    expect(screen.queryByText('5초 뒤 닫힘')).toBeNull();
+    expect(screen.queryByText('액션 5초 뒤 닫힘')).toBeNull();
+  });
+
+  it('lets duration override the default for a toast with an action', async () => {
+    render(<Toaster />);
+    await show('액션 2초 뒤 닫힘', {
+      duration: 2000,
+      action: { label: '공유', onClick: vi.fn() },
+    });
+
+    await advance(2500);
+
+    expect(screen.queryByText('액션 2초 뒤 닫힘')).toBeNull();
   });
 
   it('never closes by itself with Infinity', async () => {
@@ -140,6 +152,26 @@ describe('toast()', () => {
 
     expect(onClick).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('액션 후 닫힘')).toBeNull();
+  });
+
+  it('lifts the toast by bottomOffset and stretches it with fullWidth', async () => {
+    render(<Toaster />);
+    await show('위치 확인', { bottomOffset: 32, fullWidth: true });
+
+    const message = within(screen.getByLabelText('알림')).getByText('위치 확인');
+    const toast = message.closest('div[class*="rounded-r6"]') as HTMLElement;
+    expect(toast.className).toContain('w-full');
+    expect((toast.parentElement as HTMLElement).style.paddingBottom).toBe('32px');
+  });
+
+  it('keeps the toast centered at its content width and un-lifted by default', async () => {
+    render(<Toaster />);
+    await show('기본 위치');
+
+    const message = within(screen.getByLabelText('알림')).getByText('기본 위치');
+    const toast = message.closest('div[class*="rounded-r6"]') as HTMLElement;
+    expect(toast.className).toContain('mx-auto');
+    expect((toast.parentElement as HTMLElement).style.paddingBottom).toBe('');
   });
 
   it('replaces the previous toast with the new one', async () => {

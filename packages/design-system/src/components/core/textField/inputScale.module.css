@@ -1,0 +1,36 @@
+/* iOS의 포커스 확대 방지: 16px로 렌더링하되 기존 14px 크기와 행 높이 유지 */
+.inputSlot {
+  flex: 1;
+  min-width: 0;
+}
+
+.inputSlot > input {
+  width: 100%;
+}
+
+.textareaSlot {
+  height: calc(var(--textarea-height) * var(--input-scale, 1));
+}
+
+@supports (-webkit-touch-callout: none) {
+  .inputSlot,
+  .textareaSlot {
+    --input-scale: 0.875;
+  }
+
+  .inputSlot {
+    height: calc(var(--primitive-line-height-21) + 2 * var(--semantic-padding-p1));
+  }
+
+  .inputSlot > input,
+  .textareaSlot > textarea {
+    display: block;
+    width: calc(100% / var(--input-scale));
+    max-width: none;
+    font-size: 16px;
+    line-height: calc(var(--primitive-line-height-21) / var(--input-scale));
+    padding-block: calc(var(--semantic-padding-p1) / var(--input-scale));
+    transform: scale(var(--input-scale));
+    transform-origin: left top;
+  }
+}

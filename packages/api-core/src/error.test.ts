@@ -19,6 +19,18 @@ describe('normalizeError', () => {
     expect(normalizeError(original)).toBe(original);
   });
 
+  it('reads code and message from the server envelope error', () => {
+    const result = normalizeError(
+      fakeHttpError(401, {
+        success: false,
+        data: null,
+        error: { code: 'AUTH_001', message: '인증이 필요합니다', detail: null },
+      }),
+    );
+    expect(result.code).toBe('AUTH_001');
+    expect(result.message).toBe('인증이 필요합니다');
+  });
+
   it('maps a 401 HTTPError to the auth category', () => {
     const result = normalizeError(
       fakeHttpError(401, { message: '인증이 필요합니다', code: 'AUTH-001' }),

@@ -54,19 +54,19 @@
 
 Figma 속성과 토큰 대응표.
 
-| Figma                  | 값                                                                      | 사용한 토큰·utility                        |
-| ---------------------- | ----------------------------------------------------------------------- | ------------------------------------------ |
-| 막대 배경              | `surface-primary`(white)                                                | `bg-surface-primary`                       |
-| 막대 그림자            | `Shadow - Navi Bar`(0 0 24 #00000014)                                   | `shadow-navi-bar`                          |
-| 막대 radius·padding    | full, 4px                                                               | `rounded-full`, `p-s2`                     |
-| 선택 알약 배경         | `surface-secondary`(Figma 코드의 fallback은 #f5f5f5, 토큰 값은 #f7f7f8) | `bg-surface-secondary`                     |
-| 알약 크기              | 80×56, radius full                                                      | `w-s24 h-s20 rounded-full`(80=s24, 56=s20) |
-| 항목 세로 padding·간격 | 6px, 4px                                                                | `py-s3`, `gap-s2`                          |
-| 아이콘                 | Line/Fill Icon-L 24px                                                   | 호출자가 넘기는 `…LargeIcon`(24px)         |
-| 라벨                   | Pretendard Regular 12/16, center                                        | `typography-caption-1-regular`             |
-| 라벨 색                | 미선택 `text-tertiary`, 선택 `text-primary`                             | `text-text-tertiary`, `text-text-primary`  |
+| Figma                  | 값                                           | 사용한 토큰·utility                        |
+| ---------------------- | -------------------------------------------- | ------------------------------------------ |
+| 막대 배경              | `surface-primary`(white)                     | `bg-surface-primary`                       |
+| 막대 그림자            | `Shadow - Navi Bar`(0 0 24 #00000014)        | `shadow-navi-bar`                          |
+| 막대 radius·padding    | full, 4px                                    | `rounded-full`, `p-s2`                     |
+| 선택 알약 배경         | `surface-secondary`(`#f5f5f5`, Figma와 같음) | `bg-surface-secondary`                     |
+| 알약 크기              | 80×56, radius full                           | `w-s24 h-s20 rounded-full`(80=s24, 56=s20) |
+| 항목 세로 padding·간격 | 6px, 4px                                     | `py-s3`, `gap-s2`                          |
+| 아이콘                 | Line/Fill Icon-L 24px                        | 호출자가 넘기는 `…LargeIcon`(24px)         |
+| 라벨                   | Pretendard Regular 12/16, center             | `typography-caption-1-regular`             |
+| 라벨 색                | 미선택 `text-tertiary`, 선택 `text-primary`  | `text-text-tertiary`, `text-text-primary`  |
 
-- 선택 알약 배경만 Figma 코드의 fallback(#f5f5f5)과 토큰 값(#f7f7f8)이 다르다. 토큰 바인딩을 기준으로 했고 디자이너 확인이 필요하다(확인할 항목). dependency 추가 없음. 아이콘은 `../../../icons`가 아니라 호출자가 주입한다.
+- 선택 알약 배경은 토큰 `surface-secondary`를 쓴다. 이 토큰이 Figma 값 `#f5f5f5`와 달랐던 차이는 `gray-100`을 맞춰 해소했다. dependency 추가 없음. 아이콘은 `../../../icons`가 아니라 호출자가 주입한다.
 - Storybook state matrix: `Default`(피드 선택), 탭별 선택 4종을 한 `Matrix`에 모은 story, 긴 라벨, 좁은 폭.
 
 ## 확인할 항목
@@ -77,8 +77,8 @@ Figma 속성과 토큰 대응표.
 - 막대 폭 (제안): Figma는 343px 고정이지만 컴포넌트는 `w-full`로 두고 폭·좌우 여백은 호출자가 정한다. 390px 화면에서 343px이 되는 여백 규칙은 디자이너 확인.
 - 알약 위치 (제안): Figma의 선택 알약은 항목 폭(약 83.75px)이 아니라 80px로 항목 안에 가운데 놓인다. 같은 크기로 구현했다.
 - URL 하위 경로(예: `/bunch/123`)에서도 같은 탭이 선택되게 하는 규칙은 앱 조합의 몫이다. 이 컴포넌트는 `selectedId`만 본다.
-- 선택 알약 배경 (제안): Figma 코드의 fallback은 `#f5f5f5`지만 토큰 `surface-secondary`는 `#f7f7f8`이다. 토큰을 기준으로 구현했다. 디자이너 확인.
-- 마이페이지/MY 라벨: PRD는 「MY」, Figma는 「마이페이지」다. 라벨은 호출자가 정한다.
+- 선택 알약 배경 (확정): 해소: `surface-secondary`가 가리키는 기본 회색 `gray-100`을 Figma 값 `#f5f5f5`로 맞췄다(2026-10-26 디자이너 확인).
+- 마이페이지/MY 라벨: 내부 기획 문서는 「MY」, Figma는 「마이페이지」다. 라벨은 호출자가 정한다.
 
 - 목록 의미 (미검증): Tailwind preflight가 `list-style: none`을 적용해 Safari VoiceOver가 목록 의미(항목 수)를 잃을 수 있다는 알려진 문제가 있다. `jsx-a11y/no-redundant-roles` lint가 `role="list"`를 막으므로 실기기 VoiceOver에서 문제가 확인되면 규칙 예외와 함께 추가한다.
 - 포커스 윤곽선 대비 (미검증): `border-brand`의 비텍스트 대비(3:1)와, 첫·마지막 항목 윤곽선이 막대·`PageShell` 컨테이너 밖에서 잘리는지는 확인하지 못했다.
@@ -90,6 +90,6 @@ Figma 속성과 토큰 대응표.
 - [x] 지원 상태 story 작성(`Default`, `Matrix`, `Interactive`, `LongLabel`, `Narrow`)
 - [x] public export 영향 확인(`yarn gen:index`로 `web/index.ts`에 `bottomNavigation` export 추가, 생성기의 web 구역 선택 동작)
 - [x] 실행 command와 결과: `yarn workspace @app/design-system test`·lint·typecheck, `yarn check:generated`, `format:check` 통과
-- [x] Storybook 렌더 확인(headless Chrome, 375px 장식 폭). 막대 343×64·radius 999·padding 4·그림자 `0 0 24 rgba(0,0,0,.08)`·알약 80×56·아이콘 24·라벨 12/16·선택 `#121212`·미선택 `#535a61`이 Figma 값과 같다. 선택 알약 배경은 토큰 `surface-secondary`(렌더 `#f7f7f8`)이며 Figma 코드의 fallback `#f5f5f5`와 1~2 단계 다르다(토큰 바인딩 기준으로 구현).
+- [x] Storybook 렌더 확인(headless Chrome, 375px 장식 폭). 막대 343×64·radius 999·padding 4·그림자 `0 0 24 rgba(0,0,0,.08)`·알약 80×56·아이콘 24·라벨 12/16·선택 `#121212`·미선택 `#535a61`이 Figma 값과 같다. 선택 알약 배경은 토큰 `surface-secondary`이며 당시에는 렌더가 `#f7f7f8`로 Figma `#f5f5f5`와 1~2 단계 달랐으나 토큰을 `#f5f5f5`로 맞춰 해소했다.
 - [x] 긴 라벨(한 줄 말줄임, 가로 넘침 없음), 280px 폭(항목 68px씩 줄어듦), 키보드 Tab→Tab→Enter로 선택 변경과 포커스 윤곽선(2px `border-brand`) 확인
 - [ ] 픽셀 단위 비교, 390px 실기기, iOS WebView 렌더는 미검증. 첫 항목 알약이 Figma에서는 막대 왼쪽 안쪽 끝(4px)에 붙고 구현은 항목 가운데(약 6px)라 최대 2px 차이가 있다.

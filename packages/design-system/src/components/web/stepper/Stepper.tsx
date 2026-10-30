@@ -7,19 +7,19 @@ export type StepperProps = Omit<
 > & {
   /** 전체 단계 수(1 이상) */
   total: number;
-  /** 현재 진행 중인 단계(1부터). 이 단계의 막대만 채워진다 */
+  /** 현재 진행 중인 단계(1부터). 이 단계의 막대만 채움 */
   current: number;
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
-// NaN·Infinity 같은 잘못된 값은 fallback으로 되돌린다
+// NaN·Infinity 같은 잘못된 값은 fallback으로 대체
 const toInteger = (value: number, fallback: number) =>
   Number.isFinite(value) ? Math.floor(value) : fallback;
 
 /**
- * 단계 진행 표시줄: 높이 4px 막대를 단계 수만큼 같은 폭으로 나눠 보여 준다
- * 막대는 보이는 표시일 뿐이라 진행 상황은 progressbar 값과 `aria-valuetext`로 전달한다
+ * 단계 진행 표시줄: 높이 4px 막대를 단계 수만큼 같은 폭으로 나눠 표시
+ * 막대는 보이는 표시일 뿐이라 진행 상황은 progressbar 값과 `aria-valuetext`로 전달
  */
 export const Stepper = ({
   total,
@@ -48,7 +48,8 @@ export const Stepper = ({
           key={index}
           aria-hidden="true"
           className={cn(
-            'h-s2 min-w-px flex-1 rounded-full',
+            // Figma 진행바 전용 300ms: Tailwind 기본 곡선 대신 CSS ease-out 명시
+            'h-s2 min-w-px flex-1 rounded-full transition-colors duration-300 ease-[ease-out] motion-reduce:transition-none',
             index === step - 1 ? 'bg-surface-brand-subtle-2' : 'bg-surface-disabled',
           )}
         />
