@@ -1,9 +1,12 @@
 name: CodeQL
 
+# 작업 PR에서 먼저 발견하고, push로 develop·main의 기준선(Security 탭 경고) 유지
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -17,7 +20,7 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
