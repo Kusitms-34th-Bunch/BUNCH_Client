@@ -10,6 +10,7 @@ export const PHOTO_BOX_MESSAGES = {
   saveFailedSome: (count: number) => `${count}장은 저장하지 못했어요. 다시 시도해 주세요.`,
   bundleTooMany: '번들에는 사진을 20장까지 담을 수 있어요.',
   bundleConfirmTitle: '이 사진들로 번들을 만들까요?',
+  bundleConfirmDescription: '작성 중인 번들에 담기고, 멤버들과 함께 완성할 수 있어요.',
   deleteFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   deleteForbidden: '내가 올린 사진만 삭제할 수 있어요.',
   deleteConfirmTitle: (count: number) => `선택한 사진 ${count}장을 삭제할까요?`,

@@ -175,6 +175,7 @@ describe('번들 만들기', () => {
     await runMenu(user, '번들 만들기');
     const dialog = screen.getByRole('alertdialog');
     expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.bundleConfirmTitle)).toBeTruthy();
+    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.bundleConfirmDescription)).toBeTruthy();
 
     await user.click(within(dialog).getByRole('button', { name: '예' }));
 

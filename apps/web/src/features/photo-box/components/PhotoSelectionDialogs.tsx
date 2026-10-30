@@ -18,6 +18,7 @@ export function BundleConfirmDialog({ open, onClose, onConfirm }: BundleConfirmD
         if (!next) onClose();
       }}
       title={PHOTO_BOX_MESSAGES.bundleConfirmTitle}
+      description={PHOTO_BOX_MESSAGES.bundleConfirmDescription}
       cancelLabel="아니요"
       confirmLabel="예"
       onConfirm={onConfirm}
