@@ -30,6 +30,7 @@ export * from './memberCard';
 export * from './menu';
 export * from './menuDivider';
 export * from './menuItem';
+export * from './menuLabel';
 export * from './option';
 export * from './pageHeader';
 export * from './paginationIndicator';
