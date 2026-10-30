@@ -4,6 +4,7 @@ import perfectionist from 'eslint-plugin-perfectionist';
 import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import { bunchPlugin } from './rules/comment-noun-ending.js';
 
 export const disableTypeChecked = tseslint.configs.disableTypeChecked;
 
@@ -21,8 +22,10 @@ export const base = tseslint.config(
       import: importPlugin,
       perfectionist,
       'unused-imports': unusedImports,
+      bunch: bunchPlugin,
     },
     rules: {
+      'bunch/comment-noun-ending': 'error',
       '@typescript-eslint/no-unused-vars': 'off',
       'no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',

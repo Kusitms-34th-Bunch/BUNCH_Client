@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system
 - Status: 구현됨(로컬 검증, 실기기 미검증)
-- Figma: `791:11810` (SolidButton / TextButton)
+- Figma: `791:11810` (SolidButton `791:11809` / TextButton `791:11808` / Profile (Side by Side) `2081:45834` / Profile (Stack) `2081:45873`)
 
 ## 목적과 범위
 
@@ -14,16 +14,17 @@
 ## Public API
 
 - `Dialog.Root`: `open: boolean`, `onOpenChange(open: boolean): void`, 선택 `onOpenChangeComplete(open: boolean): void`, `children`. 종료 콜백은 전환이 끝난 후 호출되므로 overlay 제거 시점에 쓴다.
-- `Dialog.Content`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Title은 h2, Description은 p, Footer는 div. Content의 선택 `backdropClassName`으로 딤 전환을 조절한다.
+- `Dialog.Content`, `Media`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Media는 제목 위 56px 원형 이미지 자리 div, Title은 h2, Description은 p, Footer는 div. Content의 선택 `backdropClassName`으로 딤 전환을 조절한다.
 - `Dialog.Cancel`, `Confirm`: 기존 Button props 중 variant는 primary/secondary/warning으로 제한하고 `appearance?: 'solid' | 'text'`를 받는다. Cancel은 닫힘 요청, Confirm은 onClick만 호출한다.
-- `ConfirmDialog`: Root props + `title`, 선택 `description`, `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
+- `ConfirmDialog`: Root props + `title`, 선택 `description`, 선택 `image`(Profile (Side by Side)), `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
+- `ActionDialog`(Profile (Stack)): Root props + `title`, 선택 `description`, 선택 `image`, `actions`(`label`, `onClick`, 선택 `variant`·`disabled`), 선택 `cancelLabel`(기본 `취소`), `onCancel`. 동작 버튼은 세로로 쌓고 기본 variant는 순서대로 primary·secondary·tertiary다. 동작 버튼은 onClick만 호출하고 닫지 않는다.
 - controlled 전용. 실제 작업·비동기 상태·확인 후 닫기는 호출자가 소유한다. Base UI 타입은 공개하지 않는다.
 
 ## 상태와 동작
 
 - 바깥 터치는 무시. Cancel·ESC는 실행 없이 닫힘 요청, Confirm은 자동으로 닫지 않는다.
 - Solid: 취소 왼쪽, 확인 오른쪽 동일 폭. Text: 오른쪽 정렬. 취소 문구가 없으면 확인 하나.
-- 긴 제목·설명은 단어 단위로 줄바꿈하고(`break-keep`, 한 단어가 폭보다 길면 `overflow-wrap: break-word`로 끊는다. `break-words`는 tailwind-merge가 `break-keep`을 지워 쓰지 않는다. Figma가 "피드로 / 이동해요."처럼 단어 사이에서 끊는다) 작은 viewport에서 본문을 스크롤한다. 버튼은 축소하지 않는다.
+- 긴 제목·설명은 단어 단위로 줄바꿈하고(`break-keep`, 한 단어가 폭보다 길면 `wrap-break-word`(`overflow-wrap: break-word`)로 끊는다. `break-words`는 tailwind-merge가 `break-keep`을 지워 쓰지 않는다. Figma가 "피드로 / 이동해요."처럼 단어 사이에서 끊는다) 작은 viewport에서 본문을 스크롤한다. 버튼은 축소하지 않는다.
 - 진입·닫힘 모션은 호출자가 Content와 `backdropClassName`으로 지정한다. CSS 전환이 끝나면 Base UI의 `onOpenChangeComplete`를 통해 제거 시점을 알린다. 비동기 확인 중 중복 실행은 confirmDisabled로 막는다.
 
 ## 접근성
@@ -41,13 +42,17 @@
 - radius-r9, padding-p11(22), padding-p10(20), padding-p8(16), spacing-s4(8).
 - typography-heading-1-semibold / typography-body-1-regular, text-primary / text-tertiary.
 - Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경 딤은 Figma(`791:11665`의 딤 레이어)대로 overlay-dim-subtle(검정 10%).
-- Story: Solid, Text, 확인 하나, 긴 글, 상호작용·Toast 공존.
+- Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Stack은 위아래 16·좌우 22(내용 폭 267), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
+- Stack 이미지: Figma가 이미지를 높이 72 상자 안에 위아래 8 여백으로 둔다(`my-padding-p4`). 그래서 이미지·제목 사이는 14(8 + `pt-s3` 6)다.
+- Story: Solid, Text, 확인 하나, 긴 글, 상호작용·Toast 공존, ProfileSideBySide, ProfileStack.
 
 ## 확인할 항목
 
 - 확정: 외부 터치 무시, ESC 취소, 첫 초점, controlled 확인 동작은 2026-10-17 대화 합의.
 - 제안: Floated 대체는 기존 토큰 사용. 딤은 처음 overlay-scrim(60%)이었다가 3단계 화면의 Figma(`overlay-dim-subtle`)에 맞춰 바꿨다.
 - 미정: iOS 실기기 VoiceOver·WebView 스크롤/초점과 Android 뒤로가기는 별도 검증.
+- 제안: Figma 설명란은 Profile 두 변형 모두 `ConfirmDialog`다. Stack은 확인·취소 한 쌍이 아니라 여러 동작 중 하나를 고르는 창이라 `ActionDialog`로 나눴다. 응답을 요구하는 `alertdialog` 의미와 첫 초점 「취소」는 ConfirmDialog와 같다.
+- 제안: Side by Side 좌우 여백은 Figma 19px(내용 폭 273)이지만 기존 변형과 같은 22px(`padding-p11`)을 유지했다.
 
 ## 사용 예
 

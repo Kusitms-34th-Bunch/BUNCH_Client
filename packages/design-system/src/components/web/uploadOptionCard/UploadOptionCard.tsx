@@ -1,5 +1,9 @@
 import { useId, type ComponentProps } from 'react';
-import { FillPhotoLargeIcon, LineChevronRightMediumIcon } from '../../../icons';
+import {
+  FillCameraLargeIcon,
+  FillPhotoLargeIcon,
+  LineChevronRightMediumIcon,
+} from '../../../icons';
 import { cn } from '../../../utils';
 
 export type UploadOptionCardProps = Omit<
@@ -8,7 +12,11 @@ export type UploadOptionCardProps = Omit<
 > & {
   title: string;
   description: string;
+  /** 왼쪽 원 안 아이콘. 기본값 `photo`(앨범), `camera`는 카메라로 찍기 */
+  icon?: 'photo' | 'camera' | undefined;
 };
+
+const icons = { photo: FillPhotoLargeIcon, camera: FillCameraLargeIcon };
 
 /**
  * 사진 올리기 방식 하나를 보여 주고 눌러서 고르는 카드(Figma `UploadOptionCard`)
@@ -17,10 +25,12 @@ export type UploadOptionCardProps = Omit<
 export const UploadOptionCard = ({
   title,
   description,
+  icon = 'photo',
   className,
   ...props
 }: UploadOptionCardProps) => {
   const id = useId();
+  const Icon = icons[icon];
 
   return (
     <button
@@ -37,9 +47,9 @@ export const UploadOptionCard = ({
       )}
     >
       <span className="bg-surface-primary p-s5 before:bg-overlay-hover relative isolate flex shrink-0 rounded-full before:absolute before:inset-0 before:-z-10 before:rounded-full before:opacity-0 before:transition-opacity before:duration-75 before:ease-out group-active/option:before:opacity-100 motion-reduce:before:transition-none">
-        <FillPhotoLargeIcon className="text-icon-primary" />
+        <Icon className="text-icon-primary" />
       </span>
-      <span className="gap-s1 flex min-w-0 flex-1 flex-col [overflow-wrap:break-word] break-keep">
+      <span className="gap-s1 flex min-w-0 flex-1 flex-col wrap-break-word break-keep">
         <span id={`${id}-title`} className="typography-body-1-medium text-text-primary">
           {title}
         </span>

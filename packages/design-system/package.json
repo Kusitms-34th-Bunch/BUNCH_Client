@@ -27,7 +27,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "tokens:build": "tsx scripts/buildTokens.ts",
-    "tokens:check": "tsx scripts/buildTokens.ts --check"
+    "tokens:check": "tsx scripts/buildTokens.ts --check",
+    "check:tailwind": "node scripts/check-tailwind-classes.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",

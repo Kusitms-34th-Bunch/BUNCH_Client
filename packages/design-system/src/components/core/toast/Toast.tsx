@@ -9,7 +9,7 @@ const toastStyle = tv({
     base: 'flex w-fit max-w-full items-center gap-s5 rounded-r6 bg-surface-inversed/60 py-padding-p4 pr-padding-p4 pl-padding-p6 text-text-inversed backdrop-blur-[2px]',
     icon: 'inline-flex size-6 shrink-0 items-center justify-center text-system-success-fg [&>svg]:size-full',
     // 내용 줄 높이 30px: Figma가 글자만 있는 형태에서도 고정한 값(토큰 없음)
-    content: 'flex min-h-[30px] min-w-0 flex-1 items-center gap-s8',
+    content: 'flex min-h-7.5 min-w-0 flex-1 items-center gap-s8',
     message: 'typography-body-3-regular min-w-0 flex-1 wrap-break-word',
   },
 });
