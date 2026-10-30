@@ -525,7 +525,51 @@
   text-decoration: var(--semantic-text-decoration-none);
 }
 
-@utility typography-body-2-meduim {
+@utility typography-body-2-medium {
+  font-family: var(--primitive-font-family-pretendard);
+  font-weight: var(--semantic-font-weights-pretendard-2);
+  font-size: var(--primitive-font-size-3);
+  line-height: var(--primitive-line-height-22);
+  letter-spacing: var(--semantic-letter-spacing-0);
+  text-indent: var(--primitive-paragraph-indent-0);
+  text-transform: var(--primitive-text-case-none);
+  text-decoration: var(--semantic-text-decoration-none);
+}
+
+@utility typography-body-2-regular {
+  font-family: var(--primitive-font-family-pretendard);
+  font-weight: var(--semantic-font-weights-pretendard-3);
+  font-size: var(--primitive-font-size-3);
+  line-height: var(--primitive-line-height-22);
+  letter-spacing: var(--semantic-letter-spacing-0);
+  text-indent: var(--primitive-paragraph-indent-0);
+  text-transform: var(--primitive-text-case-none);
+  text-decoration: var(--semantic-text-decoration-none);
+}
+
+@utility typography-body-2-semi-bold {
+  font-family: var(--primitive-font-family-pretendard);
+  font-weight: var(--semantic-font-weights-pretendard-1);
+  font-size: var(--primitive-font-size-3);
+  line-height: var(--primitive-line-height-22);
+  letter-spacing: var(--semantic-letter-spacing-0);
+  text-indent: var(--primitive-paragraph-indent-0);
+  text-transform: var(--primitive-text-case-none);
+  text-decoration: var(--semantic-text-decoration-none);
+}
+
+@utility typography-body-3-regular {
+  font-family: var(--primitive-font-family-pretendard);
+  font-weight: var(--semantic-font-weights-pretendard-3);
+  font-size: var(--primitive-font-size-2);
+  line-height: var(--primitive-line-height-21);
+  letter-spacing: var(--semantic-letter-spacing-3);
+  text-indent: var(--primitive-paragraph-indent-0);
+  text-transform: var(--primitive-text-case-none);
+  text-decoration: var(--semantic-text-decoration-none);
+}
+
+@utility typography-body-3-semi-bold {
   font-family: var(--primitive-font-family-pretendard);
   font-weight: var(--semantic-font-weights-pretendard-1);
   font-size: var(--primitive-font-size-2);
@@ -536,18 +580,7 @@
   text-decoration: var(--semantic-text-decoration-none);
 }
 
-@utility typography-body-2-regular {
-  font-family: var(--primitive-font-family-pretendard);
-  font-weight: var(--semantic-font-weights-pretendard-3);
-  font-size: var(--primitive-font-size-2);
-  line-height: var(--primitive-line-height-21);
-  letter-spacing: var(--semantic-letter-spacing-3);
-  text-indent: var(--primitive-paragraph-indent-0);
-  text-transform: var(--primitive-text-case-none);
-  text-decoration: var(--semantic-text-decoration-none);
-}
-
-@utility typography-body-3-regular {
+@utility typography-body-4-regular {
   font-family: var(--primitive-font-family-pretendard);
   font-weight: var(--semantic-font-weights-pretendard-3);
   font-size: var(--primitive-font-size-1);
@@ -558,7 +591,7 @@
   text-decoration: var(--semantic-text-decoration-none);
 }
 
-@utility typography-body-3-semi-bold {
+@utility typography-body-4-semi-bold {
   font-family: var(--primitive-font-family-pretendard);
   font-weight: var(--semantic-font-weights-pretendard-1);
   font-size: var(--primitive-font-size-1);
@@ -615,7 +648,7 @@
 
 @utility typography-heading-2-medium {
   font-family: var(--primitive-font-family-pretendard);
-  font-weight: var(--semantic-font-weights-pretendard-1);
+  font-weight: var(--semantic-font-weights-pretendard-2);
   font-size: var(--primitive-font-size-6);
   line-height: var(--primitive-line-height-27);
   letter-spacing: var(--semantic-letter-spacing-1);
