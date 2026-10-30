@@ -1,9 +1,16 @@
 import type { Metadata } from 'next';
-import { TabPlaceholder } from '@/features/main-navigation/components';
+import { PhotoBox } from '@/features/photo-box/components';
+import { parsePreview } from '@/features/photo-box/lib/preview';
 
-// 임시 탭 화면: 내용이 생길 때까지 검색에서 제외
+// 번치 멤버의 개인 사진 화면이라 검색에서 제외
 export const metadata: Metadata = { title: '사진함', robots: { index: false } };
 
-export default function PhotosPage() {
-  return <TabPlaceholder title="사진함" />;
+type PhotosPageProps = {
+  searchParams: Promise<{ preview?: string | string[] }>;
+};
+
+export default async function PhotosPage({ searchParams }: PhotosPageProps) {
+  const { preview } = await searchParams;
+
+  return <PhotoBox preview={parsePreview(preview)} />;
 }
