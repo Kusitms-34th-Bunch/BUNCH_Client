@@ -25,14 +25,10 @@ jobs:
         include:
           - name: Lint
             id: lint
-            tasks: lint
           - name: Test
             id: test
-            tasks: test
-          # typecheck와 build는 Next 생성 파일을 공유하므로 같은 러너에서 순서대로 실행
           - name: Typecheck & Build
             id: build
-            tasks: typecheck build
 
     steps:
       # PR의 바뀐 패키지 판정(--affected)에 base 브랜치 이력 필요
@@ -63,36 +59,58 @@ jobs:
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
           restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
 
-      # 빠른 검사 묶음(Lint job). 하나가 실패해도 끝까지 실행하고 실패한 검사 이름을 주석으로 남김
-      - name: Static checks
-        id: static
-        if: matrix.id == 'lint'
-        continue-on-error: true
-        run: |
-          failed=0
-          for check in check:generated check:catalog check:agent-docs check:boundaries format:check; do
-            echo "::group::$check"
-            yarn "$check" || { failed=1; echo "::error title=$check::$check 실패"; }
-            echo "::endgroup::"
-          done
-          exit "$failed"
+      # 검사마다 단계를 나눠 Actions·PR 댓글에 검사별 결과 표시. 앞 단계가 실패해도 다음 단계는 실행
+      - name: 생성물 동기화
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
+        run: yarn check:generated
+
+      - name: catalog
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
+        run: yarn check:catalog
+
+      - name: agent 문서
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
+        run: yarn check:agent-docs
+
+      - name: 경계(boundaries)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
+        run: yarn check:boundaries
+
+      - name: Prettier
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
+        run: yarn format:check
 
       # PR은 base 대비 바뀐 패키지와 그 의존 패키지만 실행(turbo --affected). develop·main push는 전체 실행
-      # 앞 작업이 실패해도 다음 작업까지 실행해 결과를 한 번에 확인
-      - name: Run ${{ matrix.tasks }}
-        id: task
+      - name: ESLint·Tailwind
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
         env:
           TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
-          TASKS: ${{ matrix.tasks }}
-        run: |
-          failed=0
-          for task in $TASKS; do
-            echo "::group::$task"
-            yarn "$task" $AFFECTED || { failed=1; echo "::error title=$task::$task 실패"; }
-            echo "::endgroup::"
-          done
-          exit "$failed"
+        run: yarn lint $AFFECTED
+
+      - name: Test
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'test' }}
+        env:
+          TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
+          AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: yarn test $AFFECTED
+
+      # typecheck와 build는 Next 생성 파일을 공유하므로 같은 러너에서 순서대로 실행
+      - name: TypeScript
+        id: typecheck
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'build' }}
+        env:
+          TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
+          AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: yarn typecheck $AFFECTED
+
+      - name: Build
+        id: build
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'build' }}
+        env:
+          TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
+          AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: yarn build $AFFECTED
 
       # actions/cache의 자동 저장은 job 성공 시에만 실행되므로 검사 결과와 상관없이 직접 저장. Turbo는 성공한 작업만 캐시
       - name: Save Turbo cache
@@ -103,17 +121,11 @@ jobs:
           key: turbo-${{ runner.os }}-${{ matrix.id }}-${{ github.sha }}
 
       - name: Save Next.js build cache
-        if: ${{ !cancelled() && matrix.id == 'build' && steps.task.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && matrix.id == 'build' && steps.build.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
-
-      - name: Fail if static checks failed
-        if: ${{ !cancelled() && steps.static.outcome == 'failure' }}
-        run: |
-          echo "정적 검사가 실패했습니다."
-          exit 1
 
   # 필수 체크 이름(ruleset의 `Verify`) 유지용 결과 모음 job, PR 결과 댓글도 여기서 작성
   verify:
@@ -145,11 +157,17 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const marker = '<!-- frontend-ci-result -->';
-            // matrix job 이름(ci.yml의 matrix.name)과 표의 이름
+            // [job 이름(matrix.name), 단계 이름] — ci.yml의 단계 name과 같아야 함
             const rows = [
-              ['Lint', '정적 검사(생성물·catalog·agent 문서·경계·Prettier)·ESLint·Tailwind'],
+              ['Lint', '생성물 동기화'],
+              ['Lint', 'catalog'],
+              ['Lint', 'agent 문서'],
+              ['Lint', '경계(boundaries)'],
+              ['Lint', 'Prettier'],
+              ['Lint', 'ESLint·Tailwind'],
               ['Test', 'Test'],
-              ['Typecheck & Build', 'TypeScript·Build'],
+              ['Typecheck & Build', 'TypeScript'],
+              ['Typecheck & Build', 'Build'],
             ];
             const status = { success: '통과', failure: '**실패**', skipped: '건너뜀', cancelled: '취소' };
 
@@ -160,17 +178,23 @@ jobs:
               filter: 'latest',
               per_page: 100,
             });
-            const conclusion = Object.fromEntries(jobs.map((job) => [job.name, job.conclusion]));
+            // 준비 단계 실패로 검사 단계가 건너뜀이면 job 결과로 표시
+            const resultOf = (jobName, stepName) => {
+              const job = jobs.find((item) => item.name === jobName);
+              const step = job?.steps?.find((item) => item.name === stepName);
+              if (step?.conclusion && step.conclusion !== 'skipped') return step.conclusion;
+              return job?.conclusion === 'failure' ? 'failure' : step?.conclusion;
+            };
 
             // 통과 판정은 검사 job 전체 결과 기준. 개별 결과를 못 읽어도 실패를 통과로 보지 않음
             const passed = process.env.CHECKS_RESULT === 'success';
-            const failed = rows.filter(([name]) => ['failure', 'cancelled'].includes(conclusion[name]));
+            const failed = rows.filter(([job, step]) => ['failure', 'cancelled'].includes(resultOf(job, step)));
 
             let summary;
             if (passed) {
               summary = `**결과: 통과** — ${rows.length}개 검사 모두 통과`;
             } else if (failed.length) {
-              const names = failed.map(([, label]) => label).join(', ');
+              const names = failed.map(([, step]) => step).join(', ');
               summary = `**결과: 실패** — ${rows.length}개 검사 중 ${failed.length}개 실패 (${names})`;
             } else {
               summary = '**결과: 실패** — 검사별 결과를 확인하지 못했습니다. 실행 로그를 확인하세요.';
@@ -185,7 +209,7 @@ jobs:
               '',
               '| 검사 | 결과 |',
               '| --- | --- |',
-              ...rows.map(([name, label]) => `| ${label} | ${status[conclusion[name]] ?? '-'} |`),
+              ...rows.map(([job, step]) => `| ${step} | ${status[resultOf(job, step)] ?? '-'} |`),
               '',
               `[기준 커밋](${commitUrl}) · [실행 로그](${process.env.RUN_URL})`,
             ];

@@ -28,13 +28,15 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 `Frontend CI`는 PR에 단계별 결과 표를 댓글로 남긴다. 같은 PR에서는 새 댓글을 만들지 않고 기존 댓글을 갱신한다. 검사 job이 하나 실패해도 나머지는 끝까지 실행해서(`fail-fast: false`) 한 번에 모두 보여 준다. 각 job에서 `변조 가드`나 `의존성 설치`가 실패하면 그 job은 검사를 실행하지 않고 실패한다. 설치는 코드를 실행할 수 있는 단계라서 가드가 실패하면 하지 않는다.
 
 - `ci.yml`은 `package.json`의 `verify`와 같은 검사를 실행한다. job 구성은 다음과 같다.
-  - `Lint`: 생성물·catalog·agent docs·boundary·format 검사를 먼저 실행한 뒤 `yarn lint`. 하나가 실패해도 끝까지 실행하고 실패한 검사 이름을 Actions 주석으로 남긴다.
+  - `Lint`: 생성물·catalog·agent docs·boundary·format 검사를 먼저 실행한 뒤 `yarn lint`.
   - `Test`: `yarn test`. 가장 무거운 검사라 단독으로 둔다.
   - `Typecheck & Build`: `yarn typecheck` 다음 `yarn build`. 둘은 Next.js 생성 파일을 공유하므로 같은 러너에서 순서대로 실행한다.
 - 무거운 lint와 test를 한 러너에서 함께 돌리면 코어를 나눠 써서 서로 느려진다. 반대로 job을 너무 잘게 나누면 job마다 준비(checkout·설치 약 25초)가 반복되고, 조직의 동시 실행 한도 때문에 대기열이 길어진다. 그래서 정적 검사는 lint 러너에, typecheck는 build 러너에 묶었다.
 - PR에서는 `Lint`·`Test`·`Typecheck & Build`의 Turbo 작업이 base 브랜치 대비 바뀐 패키지와 그 패키지에 의존하는 패키지만 실행한다(`turbo --affected`, `TURBO_SCM_BASE=origin/<base>`). 예를 들어 `packages/design-system`을 바꾸면 design-system과 web만 검사하고, 문서만 바꾸면 Turbo 작업이 없어 바로 통과한다. `turbo.json`, 공통 설정 패키지(`lint-config`·`ts-config`), 의존성처럼 여러 패키지에 걸친 변경은 해당 패키지 전부를 고른다. `develop`·`main` push는 전체를 실행해서 PR에서 빠진 조합을 머지 뒤에 다시 확인한다.
 - 루트 `yarn lint`는 `eslint .`(루트 파일)과 `check:tailwind`를 먼저 실행하고 `turbo lint`를 마지막에 둔다. CI가 붙이는 `--affected`가 `turbo lint`에만 전달되게 하려는 순서다. 두 검사는 각각 몇 초라 PR에서도 전체를 검사한다.
-- `verify`에 검사를 더하거나 빼면 `ci.yml`의 matrix(`tasks`), `Lint` job의 정적 검사 목록(`for check in ...`), 댓글 표(`rows`)를 함께 고친다. 댓글은 같은 실행의 job 목록을 Actions API로 읽어 job 이름으로 결과를 찾으므로, matrix의 `name`과 `rows`의 이름이 같아야 한다.
+- 검사마다 단계(step)를 따로 둔다. 각 단계는 `!cancelled()`와 준비 성공을 조건으로 실행돼서, 앞 단계가 실패해도 다음 검사까지 결과가 나온다. 하나라도 실패하면 그 job은 실패한다.
+- PR 댓글은 같은 실행의 job 목록을 Actions API로 읽어 job 이름과 단계 이름으로 검사별 결과를 찾는다. 준비 단계가 실패해 검사 단계가 건너뜀이면 실패로 표시한다.
+- `verify`에 검사를 더하거나 빼면 `ci.yml`의 검사 단계와 댓글 표(`rows`)를 함께 고친다. `rows`의 job 이름은 matrix `name`, 단계 이름은 단계 `name`과 같아야 한다.
 - 댓글은 같은 저장소 안의 PR에서만 남긴다. 포크와 Dependabot PR은 토큰이 읽기 전용이라 댓글을 쓸 수 없어서 건너뛴다. 이때도 `Verify` 체크의 성공·실패는 그대로 나온다.
 - ruleset의 필수 체크 입력란에는 job 이름인 `Verify`를 지정한다. Actions 화면에서는 `Frontend CI` workflow 안에 표시된다. 댓글은 `Verify` job의 한 단계이고, 댓글 작성이 실패하거나 2분을 넘겨도 판정에는 영향이 없다(`continue-on-error`, 단계 `timeout-minutes: 2`).
 
