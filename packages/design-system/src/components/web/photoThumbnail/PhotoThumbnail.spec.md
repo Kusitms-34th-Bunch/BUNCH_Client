@@ -22,7 +22,7 @@
 ## Public API
 
 - `SelectionIndicator`: `selected`(기본 false), `order`, 그리고 `span` 속성. 기본 `aria-hidden`.
-- `PhotoThumbnail`: `src`·`alt`(필수), `selectionMode`(기본 false), `selected`(기본 false), `selectionOrder`, 그리고 HTML 속성(`onClick` 등).
+- `PhotoThumbnail`: `src`·`alt`(필수), `selectionMode`(기본 false), `selected`(기본 false), `selectionOrder`, `onImageError`(사진을 불러오지 못했을 때, 2026-10-30 추가), 그리고 HTML 속성(`onClick` 등). 사진은 `loading="lazy"`·`decoding="async"`로 그려 긴 목록에서 화면 밖 사진을 나중에 불러온다.
 - Figma 변형: Selected=False·SelectionMode=False(기본) / Selected=False·SelectionMode=True(`selectionMode`) / Selected=True·SelectionMode=True(`selectionMode selected`). SelectionMode=False에서 Selected=True인 변형은 Figma에 없고, 코드에서도 `selected`를 무시한다.
 - 호출자 소유 책임: 사진 주소, 사진 설명(`alt`), 선택 상태와 순서.
 

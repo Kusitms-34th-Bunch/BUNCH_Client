@@ -13,6 +13,8 @@ export type PhotoThumbnailProps = Omit<HTMLAttributes<HTMLElement>, 'children'> 
   selected?: boolean;
   /** 선택된 순서(예: 1). 선택되었을 때 인디케이터 안에 표시 */
   selectionOrder?: ReactNode;
+  /** 사진을 불러오지 못했을 때(호출하는 쪽이 회색 자리표시 등으로 바꿈) */
+  onImageError?: (() => void) | undefined;
 };
 
 const frame = 'relative block aspect-square w-30.75 shrink-0 overflow-hidden';
@@ -28,10 +30,21 @@ export const PhotoThumbnail = ({
   selectionMode = false,
   selected = false,
   selectionOrder,
+  onImageError,
   className,
   ...props
 }: PhotoThumbnailProps) => {
-  const image = <img src={src} alt={alt} className="absolute inset-0 size-full object-cover" />;
+  // 긴 목록에서 화면 밖 사진은 나중에 불러옴(lazy)
+  const image = (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={onImageError}
+      className="absolute inset-0 size-full object-cover"
+    />
+  );
 
   if (!selectionMode) {
     return (
