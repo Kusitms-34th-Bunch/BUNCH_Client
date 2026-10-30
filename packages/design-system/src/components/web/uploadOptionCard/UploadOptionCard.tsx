@@ -43,7 +43,7 @@ export const UploadOptionCard = ({
         <span id={`${id}-title`} className="typography-body-1-medium text-text-primary">
           {title}
         </span>
-        <span id={`${id}-description`} className="typography-body-3-regular text-text-tertiary">
+        <span id={`${id}-description`} className="typography-body-4-regular text-text-tertiary">
           {description}
         </span>
       </span>

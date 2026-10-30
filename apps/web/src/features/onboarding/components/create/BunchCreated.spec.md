@@ -48,7 +48,7 @@
 | 본문 정렬      | 세로 가운데, 이미지와 제목 간격 24                           | `flex-1 justify-center gap-s12`                                   |
 | 제목           | Title-1 SemiBold 22/28 가운데                                | `typography-title-1-semi-bold text-center`                        |
 | 멤버 초대 카드 | 패딩 20, radius 14, 아이콘과 글 간격 16, `surface-secondary` | `p-s10 rounded-r7 gap-s8 bg-surface-secondary`                    |
-| 카드 글        | 제목 Body-1 Medium, 설명 Body-3 Regular `text-tertiary`      | `typography-body-1-medium` / `body-3-regular`                     |
+| 카드 글        | 제목 Body-1 Medium, 설명 Body-3 Regular `text-tertiary`      | `typography-body-1-medium` / `body-4-regular`                     |
 | 카드와 버튼    | 카드 좌우 16, 버튼 위 10                                     | `px-padding-p8`, `pt-s5`                                          |
 | 폭죽 조각      | 23×15, 색 `#26e26a` `#ff86d7` `#fbab22` `#777ff2` `#ff86d7`  | 토큰 없는 장식 색을 인라인 값으로(데이터 `constants/confetti.ts`) |
 

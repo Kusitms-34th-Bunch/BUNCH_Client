@@ -32,7 +32,7 @@ export const WithoutDescription: Story = {
 export const Open: Story = {
   render: (args) => (
     <Accordion {...args} defaultOpen>
-      <p className="typography-body-3-regular text-text-tertiary p-s8">열린 항목의 내용</p>
+      <p className="typography-body-4-regular text-text-tertiary p-s8">열린 항목의 내용</p>
     </Accordion>
   ),
 };
@@ -40,7 +40,7 @@ export const Open: Story = {
 export const OpenWithoutDescription: Story = {
   render: () => (
     <Accordion title="촬영 날짜를 확인할 사진" defaultOpen>
-      <p className="typography-body-3-regular text-text-tertiary p-s8">열린 항목의 내용</p>
+      <p className="typography-body-4-regular text-text-tertiary p-s8">열린 항목의 내용</p>
     </Accordion>
   ),
 };
@@ -54,7 +54,7 @@ export const LongTitle: Story = {
 export const Interactive: Story = {
   render: (args) => (
     <Accordion {...args}>
-      <p className="typography-body-3-regular text-text-tertiary p-s8">
+      <p className="typography-body-4-regular text-text-tertiary p-s8">
         여기에 사진 목록이 들어갑니다.
       </p>
     </Accordion>
@@ -76,11 +76,11 @@ export const List: Story = {
         description="날짜 확인하고 추억 정리하기"
         defaultOpen
       >
-        <p className="typography-body-3-regular text-text-tertiary p-s8">열린 항목의 내용</p>
+        <p className="typography-body-4-regular text-text-tertiary p-s8">열린 항목의 내용</p>
       </Accordion>
       <Accordion title="촬영 날짜를 확인할 사진" />
       <Accordion title="촬영 날짜를 확인할 사진" defaultOpen>
-        <p className="typography-body-3-regular text-text-tertiary p-s8">열린 항목의 내용</p>
+        <p className="typography-body-4-regular text-text-tertiary p-s8">열린 항목의 내용</p>
       </Accordion>
     </div>
   ),

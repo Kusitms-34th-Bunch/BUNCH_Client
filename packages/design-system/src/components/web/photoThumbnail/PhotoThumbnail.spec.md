@@ -46,6 +46,6 @@
 
 ## Styling과 의존성
 
-- Token: `typography-body-2-meduim`(14/21 · -0.5 · 600, 토큰 이름 오타는 repo 그대로), `bg-overlay-pressed`, `top-s4`·`right-s4`(8px), `border-white`·`bg-white`·`text-black`(Figma의 흰색·검정). 폭 123px은 토큰에 없어 기본 scale(`w-30.75`)로 적용했다.
+- Token: `typography-body-3-semi-bold`(14/21 · -0.5 · 600, 토큰 이름 오타는 repo 그대로), `bg-overlay-pressed`, `top-s4`·`right-s4`(8px), `border-white`·`bg-white`·`text-black`(Figma의 흰색·검정). 폭 123px은 토큰에 없어 기본 scale(`w-30.75`)로 적용했다.
 - dependency 추가 없음.
 - Storybook: `Web/SelectionIndicator`(NotSelected, Selected, Matrix), `Web/PhotoThumbnail`(Default, SelectionMode, Selected, Matrix, Interactive: 눌러서 고르면 순서가 붙고 해제하면 뒤 번호가 당겨짐).

@@ -38,13 +38,13 @@ export const ErrorBanner = ({
         {icon}
       </span>
     )}
-    <p className="typography-body-2-regular min-w-0 flex-1">{children}</p>
+    <p className="typography-body-3-regular min-w-0 flex-1">{children}</p>
     {actionLabel && (
       <button
         type="button"
         onClick={onActionClick}
         className={cn(
-          'typography-body-2-regular px-s3 relative shrink-0 cursor-pointer touch-manipulation underline decoration-from-font [text-underline-position:from-font]',
+          'typography-body-3-regular px-s3 relative shrink-0 cursor-pointer touch-manipulation underline decoration-from-font [text-underline-position:from-font]',
           // 보이는 높이는 글자(21px)대로 두고 터치 영역만 배너 높이만큼 넓힘
           "before:absolute before:inset-x-0 before:-inset-y-3 before:content-['']",
           'focus-visible:outline-system-fail-bg focus-visible:outline-2 focus-visible:outline-offset-2',

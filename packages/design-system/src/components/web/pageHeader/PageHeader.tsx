@@ -32,7 +32,7 @@ export const PageHeader = ({
     <div className="gap-s2 flex w-full flex-col">
       <h1 className="typography-title-1-semi-bold text-text-primary break-keep">{title}</h1>
       {description ? (
-        <p className="typography-body-2-regular text-text-tertiary break-keep">{description}</p>
+        <p className="typography-body-3-regular text-text-tertiary break-keep">{description}</p>
       ) : null}
     </div>
   </div>

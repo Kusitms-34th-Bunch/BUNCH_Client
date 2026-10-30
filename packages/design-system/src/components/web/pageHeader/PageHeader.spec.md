@@ -38,7 +38,7 @@
 
 ## Styling과 의존성
 
-- Token: `px-padding-p8`(16), `pt-padding-p6`(12), `gap-s13`(28), `gap-s2`(4), `bg-surface-primary`, `typography-title-1-semi-bold`(22/28), `typography-body-2-regular`(14/21), `text-text-primary`, `text-text-tertiary`. dependency 추가 없음.
+- Token: `px-padding-p8`(16), `pt-padding-p6`(12), `gap-s13`(28), `gap-s2`(4), `bg-surface-primary`, `typography-title-1-semi-bold`(22/28), `typography-body-3-regular`(14/21), `text-text-primary`, `text-text-tertiary`. dependency 추가 없음.
 - Storybook state matrix: `ProgressTitleDescription`, `ProgressTitle`, `TitleDescription`, `TitleOnly`, `LongText`.
 
 ## 확인할 항목

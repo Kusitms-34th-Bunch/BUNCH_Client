@@ -52,7 +52,7 @@ export const BundleTitle = ({
       <div className="gap-s2 text-icon-primary flex min-w-0 items-center">
         {icon && <LineMapPinSmallIcon aria-hidden="true" className="shrink-0" />}
         <div className="gap-s1 flex min-w-0 items-center">
-          <span id={titleId} className="typography-body-2-meduim text-text-secondary truncate">
+          <span id={titleId} className="typography-body-3-semi-bold text-text-secondary truncate">
             {title}
           </span>
           {required && (

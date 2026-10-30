@@ -70,7 +70,7 @@ describe('BundleCommentCard', () => {
     renderCard();
     const { classList } = screen.getByRole('textbox');
 
-    expect(classList.contains('typography-body-2-regular')).toBe(true);
+    expect(classList.contains('typography-body-3-regular')).toBe(true);
     expect(classList.contains('text-text-secondary')).toBe(true);
     expect(classList.contains('placeholder:text-text-quaternary')).toBe(true);
     expect(classList.contains('focus:placeholder:text-transparent')).toBe(true);

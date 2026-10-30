@@ -83,7 +83,7 @@ export function BunchInvite({ inviteLink }: BunchInviteProps) {
           <button
             type="button"
             onClick={leave}
-            className="typography-body-3-regular text-text-tertiary px-padding-p5 py-padding-p4 focus-visible:outline-border-brand cursor-pointer underline focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="typography-body-4-regular text-text-tertiary px-padding-p5 py-padding-p4 focus-visible:outline-border-brand cursor-pointer underline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             나중에 할게요
           </button>
@@ -96,7 +96,7 @@ export function BunchInvite({ inviteLink }: BunchInviteProps) {
       />
       <section className="pt-s17 px-padding-p8 gap-s3 flex flex-col">
         <div className="flex items-center justify-between">
-          <label htmlFor={linkId} className="typography-body-2-meduim text-text-primary">
+          <label htmlFor={linkId} className="typography-body-3-semi-bold text-text-primary">
             {LINK_LABEL}
           </label>
           <button
@@ -109,7 +109,7 @@ export function BunchInvite({ inviteLink }: BunchInviteProps) {
           </button>
         </div>
         <TextField id={linkId} label={LINK_LABEL} readOnly value={inviteLink} />
-        <p className="bg-surface-secondary rounded-r3 px-padding-p8 py-padding-p5 gap-s3 typography-body-2-regular text-text-tertiary flex items-center">
+        <p className="bg-surface-secondary rounded-r3 px-padding-p8 py-padding-p5 gap-s3 typography-body-3-regular text-text-tertiary flex items-center">
           <LineAlertSmallIcon className="text-icon-tertiary shrink-0" />
           번치는 최대 8명까지 함께할 수 있어요.
         </p>

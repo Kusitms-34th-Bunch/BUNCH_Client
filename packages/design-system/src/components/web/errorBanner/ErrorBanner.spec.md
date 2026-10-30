@@ -22,7 +22,7 @@
 
 - Props: `children`(문구), `icon`(기본 연결 끊김 아이콘, `null`이면 숨김), `actionLabel`(없으면 버튼을 그리지 않음), `onActionClick`, 그리고 native `<div>`의 속성(`className`, `role` 등).
 - 이벤트: `onActionClick`만 있다. Controlled / uncontrolled: 해당 없음.
-- 글자: `typography-body-2-regular`(14/21)로 고정이며 `text-sm` 같은 크기 클래스로는 바꿀 수 없다.
+- 글자: `typography-body-3-regular`(14/21)로 고정이며 `text-sm` 같은 크기 클래스로는 바꿀 수 없다.
 - 호출자 소유 책임: 문구와 버튼 글자(i18n), 표시 여부, 위치, 다시 시도했을 때의 동작.
 
 ## 상태와 동작
@@ -43,7 +43,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-system-fail-text`(이름은 text 토큰이지만 값이 Figma 배경색과 같고 배경용 `system-fail` 토큰이 없어 이것을 썼다), `text-system-fail-bg`, `px-s8`·`py-s6`·`gap-s4`·`px-s3`, `typography-body-2-regular`.
+- Token: `bg-system-fail-text`(이름은 text 토큰이지만 값이 Figma 배경색과 같고 배경용 `system-fail` 토큰이 없어 이것을 썼다), `text-system-fail-bg`, `px-s8`·`py-s6`·`gap-s4`·`px-s3`, `typography-body-3-regular`.
 - 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `Page Banner`→`ErrorBanner`, 문구→`children`, `재시도`→`actionLabel`, 아이콘 인스턴스→`icon`.
 - Storybook state matrix: `Default`, `WithoutAction`, `CustomIcon`, `LongMessage`.

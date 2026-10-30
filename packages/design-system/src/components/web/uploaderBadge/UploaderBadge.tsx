@@ -27,6 +27,6 @@ export const UploaderBadge = ({ name, avatarSrc, className, ...props }: Uploader
     >
       {avatarSrc ? <img src={avatarSrc} alt="" className="size-full object-cover" /> : null}
     </span>
-    <span className="typography-body-2-regular text-text-primary min-w-0 truncate">{name}</span>
+    <span className="typography-body-3-regular text-text-primary min-w-0 truncate">{name}</span>
   </span>
 );

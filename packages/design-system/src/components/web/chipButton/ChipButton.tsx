@@ -15,7 +15,7 @@ import { tv } from '../../../utils';
 // 터치 영역은 after로 위아래만 44px까지 넓힘(가로는 옆 칩과 겹치지 않게 그대로)
 const chipButton = tv({
   base: [
-    'relative isolate inline-flex shrink-0 cursor-pointer touch-manipulation items-center justify-center gap-s2 rounded-full whitespace-nowrap typography-body-2-regular',
+    'relative isolate inline-flex shrink-0 cursor-pointer touch-manipulation items-center justify-center gap-s2 rounded-full whitespace-nowrap typography-body-3-regular',
     'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-overlay-hover before:opacity-0 before:transition-opacity before:duration-300 before:ease-out motion-reduce:before:transition-none',
     'transition-colors duration-300 ease-out motion-reduce:transition-none',
     "after:absolute after:inset-x-0 after:content-['']",
