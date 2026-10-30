@@ -13,6 +13,9 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 Figma
 
 - existing utility와 token을 우선 사용한다. 임의 값은 디자인 기준에 직접 대응하거나 기존 scale로 표현할 수 없을 때만 사용한다.
 - 기본 scale로 표현되는 spacing·sizing 값은 임의 값 대신 scale class를 쓴다(`size-[10px]` 대신 `size-2.5`). 같은 임의 값이 반복되면 theme·token 승격을 검토한다.
+- class는 Tailwind 표준형으로 쓴다. 편집기 Tailwind 확장의 `suggestCanonicalClasses` 경고와 같은 판정을 `yarn check:tailwind`(`packages/design-system/scripts/check-tailwind-classes.mjs`)가 web·admin·design-system 소스에서 검사한다. 예: `duration-[340ms]` → `duration-340`, `max-w-[var(--x)]` → `max-w-(--x)`, `w-[343px]` → `w-85.75`.
+  - 실행 위치: `yarn lint`(CI 포함), 커밋 시 `lint-staged`(`--fix`로 자동 수정), Claude Code 저장 훅(`.claude/hooks/lint-check.mjs`).
+  - 기준: 디자인 시스템 토큰을 불러온 Tailwind 4의 `canonicalizeCandidates`(`rem: 16`). `__unstable__` API라 Tailwind를 올리면 `check-tailwind-classes.test.mjs`로 판정 변화를 먼저 확인한다.
 - border-radius, border-width, ring·outline 두께처럼 Figma의 고정 수치에 대응하는 값은 root font-size의 영향을 받지 않도록 `rem` 대신 `px`나 token을 쓴다.
 - 조건부 class는 읽기 가능한 variant 또는 class merge utility로 구성한다. 긴 문자열 결합과 중첩 ternary를 component 안에 쌓지 않는다.
 - `!important`, inline style, 하드코딩된 z-index는 외부 라이브러리 또는 동적 계산 같은 명확한 예외에서만 쓴다.
@@ -48,6 +51,7 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 Figma
 - 소비 앱은 `@app/design-system` workspace 의존성을 선언하고 Tailwind 전역 CSS에서 `@import '@app/design-system/tokens.css';`로 사용한다. Web은 `src/app/globals.css`에서 연결하며 admin·Storybook은 아직 연결하지 않았다. Tailwind의 `border-border-brand`는 속성 `border-`와 색상 이름 `border-brand`의 조합이므로 유지한다.
 - `sync-design-tokens.yml`은 `design-token` 브랜치의 원본 변경을 변환·검증하고 생성 CSS를 같은 브랜치에 커밋한 뒤 `develop`으로 PR한다. 기존 열린 PR은 재사용하고 CSS만 바뀐 Push는 다시 변환하지 않는다. 설정과 secret은 `docs/conventions/git.md`를 따른다.
 - opacity 숫자는 Figma의 0–100 값을 퍼센트로, 길이는 px로 변환한다. 참조 누락·순환·이름 충돌·미지원 타입 및 모드는 실패로 처리한다. 현재 export의 `Primitive/Mode 1`, `Semantic/Mode 1`만 지원하며 theme이나 mode가 추가되면 선택 규칙부터 확정한다. 글꼴 로드는 아래 "글꼴(Pretendard)"을 따른다.
+- 글자 토큰은 이름과 값(크기·굵기·줄 높이·자간)을 Figma 텍스트 스타일과 같게 둔다. 2026-10-31에 Figma 로컬 텍스트 스타일 22개와 토큰의 이름·값이 모두 일치함을 확인했다. Figma 스타일 `Body-3-Semibold`는 `typography-body-3-semi-bold`처럼 kebab-case 이름으로 쓴다. Figma에 스타일이 추가되면 Tokens Studio 원본도 함께 고치고, `tailwind.ts`의 typography 병합 목록과 `tailwind.test.ts`의 개수를 맞춘다.
 - 다른 변수를 참조하는 Tailwind theme은 [공식 `@theme inline` 규칙](https://tailwindcss.com/docs/theme#referencing-other-variables)을 따른다.
 
 ## 스타일 검증
