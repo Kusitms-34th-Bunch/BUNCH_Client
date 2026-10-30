@@ -40,6 +40,8 @@ const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
 
 export const photoBoxFixture: PhotoBoxData = {
   bunch: { id: 'bunch-1', name: '여행가조', imageSrc: DEFAULT_BUNCH_IMAGE },
+  // 확인용 계정: 관리자인 은우(은우가 올린 사진은 내 사진, 다른 멤버 사진은 관리자 권한으로 삭제)
+  viewer: { memberId: 'eunwoo', isAdmin: true },
   members: [
     { id: 'eunwoo', name: '은우', avatarSrc: DEFAULT_BUNCH_IMAGE },
     { id: 'gyeongjin', name: '경진', avatarSrc: DEFAULT_BUNCH_IMAGE },

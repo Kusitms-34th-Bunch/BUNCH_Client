@@ -28,8 +28,16 @@ export type PhotoBoxPhoto = {
   status: PhotoStatus;
 };
 
+/** 지금 사진함을 보는 멤버. 삭제 권한과 확인 창 문구를 정하는 기준 */
+export type PhotoBoxViewer = {
+  memberId: string;
+  /** 관리자(공동 관리자 포함)는 다른 멤버의 사진도 삭제할 수 있음 */
+  isAdmin: boolean;
+};
+
 export type PhotoBoxData = {
   bunch: PhotoBoxBunch;
+  viewer: PhotoBoxViewer;
   members: readonly PhotoBoxMember[];
   photos: readonly PhotoBoxPhoto[];
 };
@@ -43,3 +51,25 @@ export type PhotoBoxState =
 
 /** 멤버 필터에서 「전체」를 가리키는 값 */
 export const ALL_MEMBERS = 'all';
+
+export type SaveResult = {
+  /** 앨범에 저장된 사진 id */
+  savedIds: readonly string[];
+  /** 저장하지 못한 사진 id */
+  failedIds: readonly string[];
+};
+
+export type DeletePhotosResult = {
+  /** 목록에서 사라진 사진 수(함께 올린 사진에서 내 이름만 빠진 경우는 세지 않음) */
+  removedCount: number;
+};
+
+/**
+ * 선택 모드 메뉴가 부르는 서버·기기 동작. 백엔드 명세 전에는 목 동작을 돌려주고, 연결하면 이 hook의 구현만 바꿈
+ */
+export type PhotoBoxActions = {
+  /** 휴대폰 앨범에 저장(보관된 이미지 그대로, 함께 올린 사진은 1장) */
+  savePhotos: (_ids: readonly string[]) => Promise<SaveResult>;
+  /** 영구 삭제(휴지통 없음). 권한은 호출 전에 화면이 판단하고 서버가 다시 판단 */
+  deletePhotos: (_ids: readonly string[]) => Promise<DeletePhotosResult>;
+};
