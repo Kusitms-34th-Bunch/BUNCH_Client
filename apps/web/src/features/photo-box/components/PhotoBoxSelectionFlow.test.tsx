@@ -108,6 +108,8 @@ describe('저장', () => {
     await runMenu(user, '저장');
 
     expect(screen.getByRole('status').textContent).toBe(PHOTO_BOX_MESSAGES.saving);
+    // 저장하는 동안 필터·사진은 inert라 키보드로도 고를 수 없다
+    expect(screen.getByRole('radiogroup', { name: '멤버 필터' }).closest('[inert]')).not.toBeNull();
     // 사진마다가 아니라 화면 전체에 dim과 로딩(로티) 하나가 뜬다
     await waitFor(() => expect(screen.getAllByTestId('lottie')).toHaveLength(1));
     expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
@@ -123,6 +125,7 @@ describe('저장', () => {
       expect(screen.getByRole('status').textContent).not.toBe(PHOTO_BOX_MESSAGES.saving),
     );
     expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
+    expect(screen.getByRole('radiogroup', { name: '멤버 필터' }).closest('[inert]')).toBeNull();
   });
 
   it('일부만 저장하면 저장된 사진은 선택에서 빼고 실패한 사진만 남긴다', async () => {

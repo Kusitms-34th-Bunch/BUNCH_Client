@@ -160,7 +160,8 @@ export function PhotoBoxScreen({
       {/* 저장하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12) */}
       {flow.saving ? <PageLoading /> : null}
       <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
-        <div className="flex min-h-full flex-col">
+        {/* 저장·삭제 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(헤더 「취소」만 열어 둠) */}
+        <div className="flex min-h-full flex-col" inert={flow.busy}>
           <MemberFilter
             members={members}
             selectedId={memberId}
