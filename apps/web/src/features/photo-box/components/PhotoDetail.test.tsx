@@ -1,6 +1,6 @@
 import type * as DesignSystem from '@app/design-system';
 import type { ComponentProps } from 'react';
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PhotoDetailScreen } from './PhotoDetailScreen';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
@@ -70,6 +70,19 @@ describe('PhotoDetail', () => {
     screenProps?.onLeave();
 
     expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list);
+  });
+
+  it('화면에서 사진을 삭제해 목록에서 사라져도 「삭제된 사진이에요」 안내와 이동을 따로 하지 않는다', async () => {
+    render(<PhotoDetail photoId={firstId} />);
+
+    let removedCount = 0;
+    await act(async () => {
+      removedCount = (await screenProps?.actions.deletePhotos([firstId]))?.removedCount ?? 0;
+    });
+
+    expect(removedCount).toBeGreaterThan(0);
+    expect(toast).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('뒤로가기는 돌아갈 기록이 있으면 back, 직접 열었으면 사진함으로 이동한다', () => {

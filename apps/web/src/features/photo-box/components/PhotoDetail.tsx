@@ -2,7 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { PHOTO_BOX_PATHS } from '../constants/paths';
@@ -28,7 +28,11 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
     () => (data ? getDetailOrder(data.photos, new Date().getFullYear()) : []),
     [data],
   );
-  const missing = data !== undefined && !photos.some((photo) => photo.id === photoId);
+  const present = photos.some((photo) => photo.id === photoId);
+  // 화면에 들어온 뒤 삭제로 사진이 사라진 것은 없는 사진 안내 대상이 아니라 화면의 이탈 흐름이 처리
+  const [entered, setEntered] = useState(false);
+  if (data !== undefined && present && !entered) setEntered(true);
+  const missing = data !== undefined && !present && !entered;
 
   useEffect(() => {
     if (!missing) return;
@@ -36,7 +40,7 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
     router.replace(PHOTO_BOX_PATHS.list);
   }, [missing, router]);
 
-  if (!data || missing || photoId === undefined) return <PageLoading />;
+  if (!data || !present || photoId === undefined) return <PageLoading />;
 
   return (
     <PhotoDetailScreen
