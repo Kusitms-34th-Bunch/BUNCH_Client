@@ -14,11 +14,12 @@
 - 목록의 한 항목 헤더(제목, 선택적 개수, 선택적 설명, 쉐브론)를 눌러 안의 내용을 펼치고 접는다.
 - 열림은 `open`(controlled) 또는 `defaultOpen`(uncontrolled)으로 정하고 바뀔 때 `onOpenChange`를 부른다.
 - 펼친 내용은 `children`으로 받는다.
+- 펼친 내용은 `children`으로 받고, 높이를 340ms(`cubic-bezier(0, 0, 0.35, 1)`)로 전환해 열고 닫는다(Figma 사진함 화면 설계서의 펼치기·접기 Interaction). `prefers-reduced-motion`에서는 즉시 전환한다. 닫는 동안에는 내용을 유지하고 visibility로 접근성 트리·탭 순서에서 뺀다.
 
 ### 제공하지 않는 동작
 
-- 펼친 내용의 모양. Figma에는 헤더만 정의돼 있고 펼친 영역이 없어 `children`을 그대로 그린다(여백·배경은 호출하는 쪽).
-- 여러 항목 중 하나만 열리는 그룹 동작, 열고 닫는 전환 애니메이션(Figma에 없음).
+- 여러 항목 중 하나만 열리는 그룹 동작.
+- 여러 항목 중 하나만 열리는 그룹 동작,
 - 개수·문구 계산과 i18n.
 
 ## Public API
