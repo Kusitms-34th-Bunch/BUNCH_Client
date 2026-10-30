@@ -58,8 +58,9 @@ export function MainTabBar() {
   return (
     <div
       data-main-tab-bar
-      // 높이 5rem(h-20, -mt-20)은 (main)/layout.tsx의 --main-tab-bar-height와 같은 값
-      className="px-padding-p8 pb-s4 pointer-events-none relative z-10 -mt-20 h-20 shrink-0"
+      // 높이 4rem(h-16, -mt-16)은 (main)/layout.tsx의 --main-tab-bar-height와 같은 값
+      // 뒤 그라데이션(Figma 사진함_02): 막대 위 11px부터 Safe Area까지, 투명 → 검정 4%(64px) → 검정 10%
+      className="px-padding-p8 pointer-events-none relative z-10 -mt-16 h-16 shrink-0 before:absolute before:inset-x-0 before:-top-[11px] before:-bottom-(--safe-area-bottom) before:-z-10 before:bg-[linear-gradient(to_bottom,rgb(255_255_255/0),rgb(0_0_0/0.04)_64px,rgb(0_0_0/0.1))]"
     >
       <BottomNavigation
         className="pointer-events-auto"

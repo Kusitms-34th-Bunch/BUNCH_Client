@@ -2,7 +2,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 
 /**
  * 탭 화면 내용이 정해지기 전의 임시 화면
- * 실제 화면은 하단 탭 막대가 본문 위에 떠 있으므로 스크롤 끝 여백을 `pb-(--main-tab-bar-height)`로 확보
+ * 하단 탭 막대가 본문 위에 떠 있어도 스크롤 끝 여백은 PageShell이 확보(고정 버튼만 화면이 --main-tab-bar-height로 올림)
  */
 export function TabPlaceholder({ title }: { title: string }) {
   return (
