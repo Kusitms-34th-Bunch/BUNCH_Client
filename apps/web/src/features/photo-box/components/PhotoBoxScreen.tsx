@@ -66,11 +66,14 @@ export function PhotoBoxScreen({
   const [menuMounted, setMenuMounted] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  // 끌어서 날짜를 옮기는 요청이 도는 중(저장·삭제 요청과 같이 다른 동작을 막음)
+  const [dragMoving, setDragMoving] = useState(false);
   const data = state.kind === 'ready' ? state.data : undefined;
   const photos = data?.photos;
 
   const flow = usePhotoSelectionFlow({ data, actions, onCreateBundle });
   const { selecting, selection } = flow;
+  const busy = flow.busy || dragMoving;
 
   const { sections, undated } = useMemo(
     () => splitPhotos(photos ? filterByMember(photos, memberId) : [], currentYear),
@@ -157,8 +160,8 @@ export function PhotoBoxScreen({
             aria-expanded={selecting ? menuOpen : undefined}
             disabled={selecting && selection.length === 0}
             // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
-            aria-disabled={selecting && flow.busy ? true : undefined}
-            onClick={selecting ? (flow.busy ? undefined : toggleMenu) : openUpload}
+            aria-disabled={selecting && busy ? true : undefined}
+            onClick={selecting ? (busy ? undefined : toggleMenu) : openUpload}
             className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
           />
         </div>
@@ -178,7 +181,7 @@ export function PhotoBoxScreen({
       {flow.saving ? <PageLoading /> : null}
       <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
         {/* 저장·삭제 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(헤더 「취소」만 열어 둠) */}
-        <div className="flex min-h-full flex-col" inert={flow.busy}>
+        <div className="flex min-h-full flex-col" inert={busy}>
           <MemberFilter
             members={members}
             selectedId={memberId}
@@ -191,6 +194,7 @@ export function PhotoBoxScreen({
             viewer={state.data.viewer}
             actions={actions}
             enabled={selecting && !flow.busy}
+            onMovingChange={setDragMoving}
           />
           {isEmpty ? (
             <PhotoBoxEmpty reason={memberId === ALL_MEMBERS ? 'bunch' : 'member'} />

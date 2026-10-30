@@ -43,7 +43,8 @@ function SortablePhotoItem({ photo, draggable }: { photo: PhotoBoxPhoto; draggab
 export function PhotoGrid({ photos, label, sectionKey }: PhotoGridProps) {
   const { enabled, draggableIds } = usePhotoDrag();
 
-  if (!enabled || sectionKey === undefined) {
+  // 날짜 섹션은 끌기가 꺼져 있어도 같은 트리를 써서 선택 모드 진입·종료와 저장·삭제 중에 사진 칸이 다시 마운트되지 않게 함
+  if (sectionKey === undefined) {
     return (
       <ul aria-label={label} className="grid grid-cols-3 gap-px">
         {photos.map((photo) => (
@@ -63,7 +64,11 @@ export function PhotoGrid({ photos, label, sectionKey }: PhotoGridProps) {
     >
       <ul aria-label={label} className="grid grid-cols-3 gap-px">
         {photos.map((photo) => (
-          <SortablePhotoItem key={photo.id} photo={photo} draggable={draggableIds.has(photo.id)} />
+          <SortablePhotoItem
+            key={photo.id}
+            photo={photo}
+            draggable={enabled && draggableIds.has(photo.id)}
+          />
         ))}
       </ul>
     </SortableContext>

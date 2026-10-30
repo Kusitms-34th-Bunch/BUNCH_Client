@@ -54,6 +54,8 @@ type PhotoDragAreaProps = {
   actions: PhotoBoxActions;
   /** 선택 모드이고 저장·삭제·날짜 변경이 돌고 있지 않을 때만 끌 수 있음 */
   enabled: boolean;
+  /** 날짜 변경 요청이 도는 동안 true(메뉴·저장·삭제도 함께 막도록 화면이 받음) */
+  onMovingChange?: ((_moving: boolean) => void) | undefined;
 };
 
 /**
@@ -62,7 +64,13 @@ type PhotoDragAreaProps = {
  * 이미 있는 섹션으로만 옮길 수 있고(원래 섹션·섹션 밖은 변경 없음), 실패하면 원래 자리로 돌려 오류 토스트를 띄움
  * 키보드·스크린 리더용 대체 경로는 선택 모드의 날짜 바꾸기 시트이고, 키보드 센서는 두지 않음
  */
-export function PhotoDragArea({ sections, viewer, actions, enabled }: PhotoDragAreaProps) {
+export function PhotoDragArea({
+  sections,
+  viewer,
+  actions,
+  enabled,
+  onMovingChange,
+}: PhotoDragAreaProps) {
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: { delay: LONG_PRESS_MS, tolerance: LONG_PRESS_TOLERANCE_PX },
@@ -134,15 +142,18 @@ export function PhotoDragArea({ sections, viewer, actions, enabled }: PhotoDragA
 
   const move = async (photoId: string, fromKey: string, toKey: string) => {
     setMoving(true);
+    onMovingChange?.(true);
     try {
       await actions.changePhotoDates([photoId], dateFromKey(toKey));
     } catch {
       setMoving(false);
+      onMovingChange?.(false);
       reset();
       toast(PHOTO_BOX_MESSAGES.dateChangeFailed, { fullWidth: true });
       return;
     }
     setMoving(false);
+    onMovingChange?.(false);
     reset();
     toast(PHOTO_BOX_MESSAGES.dateChanged, {
       fullWidth: true,
