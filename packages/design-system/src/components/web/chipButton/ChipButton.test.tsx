@@ -158,7 +158,7 @@ describe('ChipButton', () => {
   it.each([
     ['S', 'after:-inset-y-1.5'],
     ['M', 'after:-inset-y-1'],
-    ['L', 'after:-inset-y-[3px]'],
+    ['L', 'after:-inset-y-0.75'],
   ] as const)('%s 크기는 위아래 터치 영역을 넓힌다(%s)', (size, cls) => {
     render(<ChipButton size={size}>칩</ChipButton>);
     expect(screen.getByRole('button').className).toContain(cls);
