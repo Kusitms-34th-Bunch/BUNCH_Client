@@ -13,10 +13,16 @@ export const PHOTO_BOX_MESSAGES = {
   bundleConfirmDescription: '작성 중인 번들에 담기고, 멤버들과 함께 완성할 수 있어요.',
   deleteFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   deleteForbidden: '내가 올린 사진만 삭제할 수 있어요.',
-  deleteConfirmTitle: (count: number) => `선택한 사진 ${count}장을 삭제할까요?`,
+  deleteConfirmTitle: '선택한 사진을 삭제할까요?',
   // 사진 종류별 원문은 기획 문서에 없어 모든 종류가 같은 기본 문구를 씀(분기 구조는 getDeleteKind가 이미 제공)
   deleteConfirmDescription: (_kind: DeleteKind) => '삭제 이후에는 복구할 수 없어요.',
   deleteDone: (count: number) => `사진함에서 사진 ${count}장이 삭제되었어요.`,
+  deletedPhoto: '삭제된 사진이에요',
+  detailPosition: (index: number, total: number) => `${total}장 중 ${index}번째 사진`,
+  previousPhoto: '이전 사진',
+  zoomIn: '사진 확대',
+  zoomOut: '사진 축소',
+  nextPhoto: '다음 사진',
   selectionStale: (count: number) =>
     `선택한 사진 중 ${count}장이 사진함에서 사라져 선택이 해제됐어요.`,
 } as const;

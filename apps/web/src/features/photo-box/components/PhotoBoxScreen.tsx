@@ -184,7 +184,6 @@ export function PhotoBoxScreen({
       />
       <DeleteConfirmDialog
         open={flow.dialog === 'delete'}
-        count={selection.length}
         description={PHOTO_BOX_MESSAGES.deleteConfirmDescription(flow.deleteKind ?? 'own')}
         onClose={flow.closeDialog}
         onConfirm={() => void flow.confirmDelete()}
