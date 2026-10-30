@@ -28,8 +28,16 @@ export type PhotoBoxPhoto = {
   status: PhotoStatus;
 };
 
+/** 지금 사진함을 보는 멤버. 삭제 권한과 확인 창 문구를 정하는 기준 */
+export type PhotoBoxViewer = {
+  memberId: string;
+  /** 관리자(공동 관리자 포함)는 다른 멤버의 사진도 삭제할 수 있음 */
+  isAdmin: boolean;
+};
+
 export type PhotoBoxData = {
   bunch: PhotoBoxBunch;
+  viewer: PhotoBoxViewer;
   members: readonly PhotoBoxMember[];
   photos: readonly PhotoBoxPhoto[];
 };
