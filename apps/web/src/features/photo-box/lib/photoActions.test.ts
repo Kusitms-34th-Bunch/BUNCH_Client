@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PhotoBoxPhoto, PhotoBoxViewer } from './types';
-import { applyDelete, canDeletePhotos, getDeleteKind } from './photoActions';
+import { applyDelete, applyTakenDate, canDeletePhotos, getDeleteKind } from './photoActions';
 
 const photo = (id: string, uploaderIds: string[]): PhotoBoxPhoto => ({
   id,
@@ -74,5 +74,36 @@ describe('applyDelete', () => {
 
     expect(result.photos.map((p) => p.id)).toEqual(['2']);
     expect(original).toHaveLength(2);
+  });
+});
+
+describe('applyTakenDate', () => {
+  const dated = (id: string, takenAt: string | null): PhotoBoxPhoto => ({
+    ...photo(id, ['me']),
+    takenAt,
+  });
+
+  it('고른 사진의 날짜만 바꾸고 시각은 그대로 둔다', () => {
+    const result = applyTakenDate(
+      [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')],
+      new Set(['1']),
+      new Date(2026, 7, 5),
+    );
+
+    expect(result.map((p) => p.takenAt)).toEqual(['2026-08-05T14:30', '2026-09-26T09:05']);
+  });
+
+  it('촬영 날짜가 없던 사진은 그날 00:00으로 정한다', () => {
+    const result = applyTakenDate([dated('1', null)], new Set(['1']), new Date(2026, 0, 3));
+
+    expect(result[0]?.takenAt).toBe('2026-01-03T00:00');
+  });
+
+  it('원본 목록과 고르지 않은 사진 객체를 바꾸지 않는다', () => {
+    const original = [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')];
+    const result = applyTakenDate(original, new Set(['1']), new Date(2026, 7, 5));
+
+    expect(original[0]?.takenAt).toBe('2026-09-27T14:30');
+    expect(result[1]).toBe(original[1]);
   });
 });

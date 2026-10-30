@@ -12,12 +12,23 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const Example = ({ onSave = () => {} }: { onSave?: (_date: Date) => void }) => {
+const Example = ({
+  onSave = () => {},
+  defaultDate,
+}: {
+  onSave?: (_date: Date) => void;
+  defaultDate?: Date | undefined;
+}) => {
   const [open, setOpen] = useState(true);
   return (
     <>
       <button onClick={() => setOpen(true)}>열기</button>
-      <DateChangeSheet open={open} onOpenChange={setOpen} onSave={onSave} />
+      <DateChangeSheet
+        open={open}
+        onOpenChange={setOpen}
+        onSave={onSave}
+        defaultDate={defaultDate}
+      />
     </>
   );
 };
@@ -97,5 +108,62 @@ describe('DateChangeSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: '열기', hidden: true }));
 
     expect(saveButton().getAttribute('aria-disabled')).toBe('true');
+  });
+
+  describe('defaultDate', () => {
+    const photoDate = new Date(2026, 8, 5, 14, 30);
+
+    it('그 날짜가 있는 달을 열고 그 날짜를 선택한 상태로 보인다', async () => {
+      render(<Example defaultDate={photoDate} />);
+      await screen.findByRole('dialog');
+
+      expect(screen.getByRole('grid', { name: '2026년 9월' })).toBeTruthy();
+      expect(
+        screen
+          .getByRole('button', { name: '2026년 9월 5일' })
+          .parentElement?.getAttribute('aria-selected'),
+      ).toBe('true');
+    });
+
+    it('그 날짜 그대로는 저장할 수 없고 이유를 알린다', async () => {
+      const onSave = vi.fn();
+      render(<Example defaultDate={photoDate} onSave={onSave} />);
+      await screen.findByRole('dialog');
+
+      expect(saveButton().getAttribute('aria-disabled')).toBe('true');
+      expect(
+        document.getElementById(saveButton().getAttribute('aria-describedby') ?? '')?.textContent,
+      ).toBe('다른 날짜를 고르면 저장할 수 있어요');
+      fireEvent.click(saveButton());
+      expect(onSave).not.toHaveBeenCalled();
+    });
+
+    it('다른 날짜를 고르면 저장할 수 있고 그날 0시로 onSave를 부른다', async () => {
+      const onSave = vi.fn();
+      render(<Example defaultDate={photoDate} onSave={onSave} />);
+      await screen.findByRole('dialog');
+
+      fireEvent.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
+      expect(saveButton().getAttribute('aria-disabled')).toBe('false');
+      fireEvent.click(saveButton());
+
+      const saved = onSave.mock.calls[0]?.[0] as Date;
+      expect([saved.getFullYear(), saved.getMonth(), saved.getDate(), saved.getHours()]).toEqual([
+        2026, 8, 12, 0,
+      ]);
+    });
+
+    it('닫았다 다시 열면 처음 날짜로 돌아간다', async () => {
+      render(<Example defaultDate={photoDate} />);
+      await screen.findByRole('dialog');
+      fireEvent.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
+
+      fireEvent.click(screen.getByRole('button', { name: '닫기' }));
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      fireEvent.click(screen.getByRole('button', { name: '열기' }));
+
+      await screen.findByRole('dialog');
+      expect(saveButton().getAttribute('aria-disabled')).toBe('true');
+    });
   });
 });

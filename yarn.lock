@@ -189,6 +189,7 @@ __metadata:
     react: "catalog:"
     react-dom: "catalog:"
     server-only: "npm:^0.0.1"
+    swiper: "npm:^14.3.0"
     tailwindcss: "npm:^4.3.3"
     typescript: "catalog:"
     vite: "catalog:"
@@ -9532,6 +9533,13 @@ __metadata:
   bin:
     svgo: bin/svgo
   checksum: 10c0/c4772b2f5ff164323e37d866d28f05163b78a61c44b3412db724a37175c7cf75261a362df22607c2e4afcc40b96aad77d07e8af1970fb92e5802ee6c76ea2ea4
+  languageName: node
+  linkType: hard
+
+"swiper@npm:^14.3.0":
+  version: 14.3.0
+  resolution: "swiper@npm:14.3.0"
+  checksum: 10c0/1bdea891736f19dbe27bfe292dd555fab1454da47c898e9da5750d953ba3e3120b7ca34842f38e9fcc67d8482c0520226dfd4493fa6d7277c254499e2a5bf2a8
   languageName: node
   linkType: hard
 
