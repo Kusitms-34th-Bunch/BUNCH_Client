@@ -1,14 +1,9 @@
 name: Setup workspace
-description: 변조 가드 → Corepack → Node·Yarn 캐시 → 의존성 설치
+description: Corepack → Node·Yarn 캐시 → 의존성 설치(변조 가드는 호출하는 workflow가 먼저 실행)
 
 runs:
   using: composite
   steps:
-    # 의존성 설치(코드가 실행될 수 있는 단계) 전 변조 징후 선검사. 실패하면 설치하지 않고 중단
-    - name: Suspicious file guard
-      shell: bash
-      run: node turbo/workflows/check-suspicious.mjs
-
     # setup-node의 yarn 캐시가 Yarn 4를 찾도록 Corepack 선활성화
     - shell: bash
       run: corepack enable

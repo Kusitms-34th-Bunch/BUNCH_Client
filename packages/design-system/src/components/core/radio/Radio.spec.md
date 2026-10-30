@@ -31,7 +31,7 @@
 
 - Default: 흰 배경 + 1px `border-tertiary`.
 - Selected(`:checked`): 링이 `icon-brand`, 안쪽 지름 12px 점이 `icon-brand`.
-- Pressed(`:active`, 선택 전·활성일 때): 링과 점이 `icon-disabled`. 선택된 라디오를 누르면 Selected를 유지한다.
+- Pressed(`:active`, 선택 전·활성일 때): 링과 점이 `icon-disabled`. 선택된 라디오를 누르면 Selected를 유지한다. 라디오를 감싼 `label`(카드)을 누를 때도 같은 모양이다. label 본문을 누르면 input에는 `:active`가 걸리지 않아서 `label:active` 조건을 따로 둔다(Chromium 확인).
 - Disabled(`:disabled`): 흰 배경 위에 `overlay-hover`(10%). Figma에는 선택된 Disabled가 없어 별도 모양을 만들지 않았다(확인할 항목).
 - 키보드 포커스(`:focus-visible`): 2px `border-brand` 윤곽선.
 - 동작 줄이기·전환: 전환 효과가 없다.
