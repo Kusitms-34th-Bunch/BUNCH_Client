@@ -70,14 +70,14 @@ export function PhotoBoxScreen({
             icon="add"
             aria-label="사진 올리기"
             onClick={onUploadClick}
-            className="right-s8 bottom-s5 absolute z-10"
+            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+0.75rem)] z-10"
           />
         </div>
       }
     >
       <h1 className="sr-only">사진함</h1>
-      {/* 마지막 줄 사진이 「+」에 가리지 않도록 버튼 높이(52px)와 아래 여백(20px)만큼 하단 여백 */}
-      <div className="flex min-h-full flex-col pb-18">
+      {/* 마지막 줄 사진이 탭 막대에 가리지 않도록 탭 막대 높이만큼 하단 여백(「+」는 마지막 줄 일부를 가려도 됨) */}
+      <div className="flex min-h-full flex-col pb-(--main-tab-bar-height)">
         <MemberFilter members={members} selectedId={memberId} onSelect={setMemberId} />
         {undated.length > 0 ? <UndatedPhotos photos={undated} /> : null}
         {sections.map((section) => (
