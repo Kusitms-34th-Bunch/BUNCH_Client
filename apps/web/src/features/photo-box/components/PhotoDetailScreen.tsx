@@ -4,7 +4,7 @@ import 'swiper/css';
 import 'swiper/css/zoom';
 import type { Swiper as SwiperInstance } from 'swiper/types';
 import { cn, Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
-import { IconButton } from '@app/design-system/web';
+import { DateChangeSheet, IconButton } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
 import { A11y, Keyboard, Zoom } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -14,7 +14,7 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { PhotoBoxActions, PhotoBoxMember, PhotoBoxPhoto, PhotoBoxViewer } from '../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { canDeletePhotos, getDeleteKind } from '../lib/photoActions';
-import { formatDetailDate } from '../lib/photoDetail';
+import { formatDetailDate, getTakenDate } from '../lib/photoDetail';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from './PhotoDetailMenu';
 import { PhotoDetailSlide } from './PhotoDetailSlide';
 import { DeleteConfirmDialog } from './PhotoSelectionDialogs';
@@ -40,8 +40,6 @@ type PhotoDetailScreenProps = {
   onLeave: () => void;
   /** 다른 사진으로 넘어갔을 때(주소를 맞추는 호출 지점) */
   onPhotoChange?: ((_photoId: string) => void) | undefined;
-  /** 「날짜 바꾸기」를 골랐을 때(날짜 변경 시트는 추후 작업) */
-  onChangeDate?: ((_photoId: string) => void) | undefined;
 };
 
 // 사진함 토스트는 목록 폭(343px)으로 펼침(Figma 사진함_18)
@@ -61,7 +59,6 @@ export function PhotoDetailScreen({
   onBack,
   onLeave,
   onPhotoChange,
-  onChangeDate,
 }: PhotoDetailScreenProps) {
   const initialIndex = Math.max(
     0,
@@ -75,7 +72,9 @@ export function PhotoDetailScreen({
   const [menuMounted, setMenuMounted] = useState(false);
   // 확인 창을 연 시점의 사진 id를 고정해 두고 확정 때 그 사진을 지움(그 사이 넘겨져도 다른 사진을 지우지 않음)
   const [deleteTargetId, setDeleteTargetId] = useState<string | undefined>(undefined);
-  const [pending, setPending] = useState<'save' | 'delete' | undefined>(undefined);
+  // 날짜 변경 시트를 연 시점의 사진 id를 고정(시트가 열린 사이 사진이 넘어가도 처음 사진의 날짜를 바꿈)
+  const [dateTargetId, setDateTargetId] = useState<string | undefined>(undefined);
+  const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const swiperRef = useRef<SwiperInstance | null>(null);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -118,6 +117,22 @@ export function PhotoDetailScreen({
     notify(failed ? PHOTO_BOX_MESSAGES.saveFailedAll : PHOTO_BOX_MESSAGES.saveDone);
   };
 
+  // 시트의 「저장」: 성공하면 시트를 닫고 토스트를 띄우며, 실패하면 시트를 그대로 둠(기능 spec 3.4.1)
+  const changeDate = async (date: Date) => {
+    const targetId = dateTargetId;
+    if (!targetId || pending) return;
+    setPending('date');
+    try {
+      await actions.changePhotoDates([targetId], date);
+      setPending(undefined);
+      setDateTargetId(undefined);
+      notify(PHOTO_BOX_MESSAGES.dateChanged);
+    } catch {
+      setPending(undefined);
+      notify(PHOTO_BOX_MESSAGES.dateChangeFailed);
+    }
+  };
+
   const confirmDelete = async () => {
     const targetId = deleteTargetId;
     setDeleteTargetId(undefined);
@@ -140,19 +155,28 @@ export function PhotoDetailScreen({
   const handleMenuSelect = (action: PhotoDetailMenuAction) => {
     if (pending || !activePhoto) return;
     if (action === 'save') void save();
-    else if (action === 'date') onChangeDate?.(activePhoto.id);
+    else if (action === 'date') setDateTargetId(activePhoto.id);
     else if (canManage) setDeleteTargetId(activePhoto.id);
     else notify(PHOTO_BOX_MESSAGES.deleteForbidden);
   };
 
   // 메뉴·확인 창이 열려 있거나 요청이 도는 동안은 방향키가 사진을 넘기지 않게 함(Swiper Keyboard는 문서 단위)
-  const keyboardBlocked = menuOpen || deleteTargetId !== undefined || pending !== undefined;
+  const keyboardBlocked =
+    menuOpen || deleteTargetId !== undefined || dateTargetId !== undefined || pending !== undefined;
   useEffect(() => {
     const keyboard = swiperRef.current?.keyboard;
     if (!keyboard) return;
     if (keyboardBlocked) keyboard.disable();
     else keyboard.enable();
   }, [keyboardBlocked]);
+
+  // 날짜 변경으로 목록 순서가 바뀌면 현재 사진이 있는 슬라이드로 Swiper를 다시 맞춤
+  useEffect(() => {
+    const instance = swiperRef.current;
+    if (!instance || activeIndex < 0 || instance.activeIndex === activeIndex) return;
+    instance.update();
+    instance.slideTo(activeIndex, 0);
+  }, [activeIndex]);
 
   if (!activePhoto) return null;
 
@@ -274,6 +298,17 @@ export function PhotoDetailScreen({
         </button>
       </div>
       {pending === 'save' ? <PageLoading /> : null}
+      <DateChangeSheet
+        open={dateTargetId !== undefined}
+        onOpenChange={(open) => {
+          if (!open && pending !== 'date') setDateTargetId(undefined);
+        }}
+        defaultDate={getTakenDate(
+          (photos.find((photo) => photo.id === dateTargetId) ?? activePhoto).takenAt,
+        )}
+        saving={pending === 'date'}
+        onSave={(date) => void changeDate(date)}
+      />
       <DeleteConfirmDialog
         open={deleteTargetId !== undefined}
         description={PHOTO_BOX_MESSAGES.deleteConfirmDescription(

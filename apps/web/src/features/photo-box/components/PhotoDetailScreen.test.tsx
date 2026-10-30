@@ -2,7 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import type { ReactNode } from 'react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   PhotoBoxActions,
   PhotoBoxMember,
@@ -18,6 +18,8 @@ type SwiperLike = {
   activeIndex: number;
   slidePrev: () => void;
   slideNext: () => void;
+  slideTo: (_index: number, _speed?: number) => void;
+  update: () => void;
   keyboard: { enable: () => void; disable: () => void };
   zoom: { toggle: () => void };
 };
@@ -32,6 +34,8 @@ const swiper: SwiperLike = {
   activeIndex: 0,
   slidePrev: vi.fn(),
   slideNext: vi.fn(),
+  slideTo: vi.fn(),
+  update: vi.fn(),
   keyboard: { enable: vi.fn(), disable: vi.fn() },
   zoom: { toggle: vi.fn() },
 };
@@ -101,12 +105,12 @@ const member: PhotoBoxViewer = { memberId: 'a', isAdmin: false };
 
 const savePhotos = vi.fn<PhotoBoxActions['savePhotos']>();
 const deletePhotos = vi.fn<PhotoBoxActions['deletePhotos']>();
-const actions: PhotoBoxActions = { savePhotos, deletePhotos };
+const changePhotoDates = vi.fn<PhotoBoxActions['changePhotoDates']>();
+const actions: PhotoBoxActions = { savePhotos, deletePhotos, changePhotoDates };
 
 const onBack = vi.fn();
 const onLeave = vi.fn();
 const onPhotoChange = vi.fn();
-const onChangeDate = vi.fn();
 
 const renderScreen = (
   props: Partial<React.ComponentProps<typeof PhotoDetailScreen>> = {},
@@ -123,7 +127,6 @@ const renderScreen = (
       onBack={onBack}
       onLeave={onLeave}
       onPhotoChange={onPhotoChange}
-      onChangeDate={onChangeDate}
       {...props}
     />,
   );
@@ -138,6 +141,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   savePhotos.mockImplementation((ids) => Promise.resolve({ savedIds: ids, failedIds: [] }));
   deletePhotos.mockResolvedValue({ removedCount: 1 });
+  changePhotoDates.mockResolvedValue(undefined);
 });
 
 describe('PhotoDetailScreen 헤더와 사진', () => {
@@ -365,14 +369,80 @@ describe('PhotoDetailScreen 더보기 메뉴', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: '더보기' }));
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
   });
+});
 
-  it('날짜 바꾸기는 현재 사진 id로 호출 지점만 부른다', async () => {
-    const user = userEvent.setup();
-    renderScreen({}, 'p2');
+describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
+  // 달력은 오늘 이후를 막으므로 오늘을 고정하고, 촬영 날짜는 그보다 이른 날로 둠
+  const datePhotos = [photo('d1', '2026-09-05T14:30', ['a']), photo('d2', null, ['a'])];
+
+  const openDateSheet = async (user: ReturnType<typeof userEvent.setup>, id = 'd1') => {
+    renderScreen({ photos: datePhotos }, id);
     await user.click(screen.getByRole('button', { name: '더보기' }));
     await user.click(screen.getByRole('menuitem', { name: '날짜 바꾸기' }));
+    return screen.findByRole('dialog', { name: '날짜 바꾸기' });
+  };
 
-    expect(onChangeDate).toHaveBeenCalledWith('p2');
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 17, 12));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('촬영 날짜를 고른 채 그 달로 열고 그대로는 저장할 수 없다', async () => {
+    const user = userEvent.setup();
+    await openDateSheet(user);
+
+    expect(screen.getByRole('grid', { name: '2026년 9월' })).toBeTruthy();
+    expect(
+      screen
+        .getByRole('button', { name: '2026년 9월 5일' })
+        .parentElement?.getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(screen.getByRole('button', { name: '저장' }).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('촬영 날짜를 모르는 사진은 오늘이 있는 달을 선택 없이 연다', async () => {
+    const user = userEvent.setup();
+    await openDateSheet(user, 'd2');
+
+    expect(screen.getByRole('grid', { name: '2026년 10월' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '저장' }).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('다른 날짜를 고르고 저장하면 날짜를 바꾸고 시트를 닫으며 토스트를 띄운다', async () => {
+    const user = userEvent.setup();
+    await openDateSheet(user);
+
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(changePhotoDates).toHaveBeenCalledTimes(1));
+    const [ids, date] = changePhotoDates.mock.calls[0] as [string[], Date];
+    expect(ids).toEqual(['d1']);
+    expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 8, 12]);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '날짜 바꾸기' })).toBeNull());
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChanged, { fullWidth: true });
+  });
+
+  it('저장하지 못하면 오류 토스트를 띄우고 시트를 그대로 둔다', async () => {
+    const user = userEvent.setup();
+    changePhotoDates.mockRejectedValue(new Error('network'));
+    await openDateSheet(user);
+
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed, { fullWidth: true }),
+    );
+    expect(screen.getByRole('dialog', { name: '날짜 바꾸기' })).toBeTruthy();
+  });
+
+  it('시트가 열린 동안에는 방향키로 사진을 넘기지 않는다', async () => {
+    const user = userEvent.setup();
+    await openDateSheet(user);
+
+    expect(swiper.keyboard.disable).toHaveBeenCalled();
   });
 });
 
