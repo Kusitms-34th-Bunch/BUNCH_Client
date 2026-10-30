@@ -1,12 +1,14 @@
 'use client';
 
-import { FloatingButton } from '@app/design-system/web';
+import { toast } from '@app/design-system';
+import { DateChangeSheet, FloatingButton, PhotoUploadSheet } from '@app/design-system/web';
 import { useMemo, useRef, useState } from 'react';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { usePhotoSelectionFlow } from '../hooks/usePhotoSelectionFlow';
+import { MAX_PHOTOS_IN_BOX } from '../lib/photoActions';
 import { filterByMember, splitPhotos } from '../lib/photoDate';
 import { countSelectedByMember, type PhotoSelection } from '../lib/selection';
 import { ALL_MEMBERS, type PhotoBoxActions, type PhotoBoxState } from '../lib/types';
@@ -16,9 +18,13 @@ import { PhotoBoxEmpty } from './PhotoBoxEmpty';
 import { PhotoBoxError } from './PhotoBoxError';
 import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
-import { PhotoDateSection } from './PhotoDateSection';
+import { PhotoDragArea } from './PhotoDragArea';
 import { PhotoSelectionProvider } from './PhotoSelectionContext';
-import { BundleConfirmDialog, DeleteConfirmDialog } from './PhotoSelectionDialogs';
+import {
+  BundleConfirmDialog,
+  DateChangeConfirmDialog,
+  DeleteConfirmDialog,
+} from './PhotoSelectionDialogs';
 import { PhotoSelectionMenu } from './PhotoSelectionMenu';
 import { UndatedPhotos } from './UndatedPhotos';
 
@@ -38,12 +44,10 @@ type PhotoBoxScreenProps = {
   onRetry?: (() => void) | undefined;
   /** 번치 이름을 눌렀을 때(전환 목록은 추후 작업) */
   onBunchClick?: (() => void) | undefined;
-  /** 「+」를 눌렀을 때(올리기 시트는 추후 작업) */
-  onUploadClick?: (() => void) | undefined;
+  /** 올리기 시트에서 방식을 골랐을 때(앨범·카메라 연동은 사진 올리기 이슈, 시트는 닫고 호출) */
+  onUpload?: ((_source: 'album' | 'camera') => void) | undefined;
   /** 「번들 만들기」 확인 창에서 「예」를 눌렀을 때(고른 사진 id를 누른 순서대로 전달, 초안 생성·이동은 번들 작성 이슈) */
   onCreateBundle?: ((_selection: PhotoSelection) => void) | undefined;
-  /** 「날짜 바꾸기」를 골랐을 때(시트는 추후 작업) */
-  onChangeDate?: ((_selection: PhotoSelection) => void) | undefined;
 };
 
 /** 사진함 탭 화면. 상태(로딩·오류·번치 없음·목록)를 받아 그리고 멤버 필터와 선택 모드(메뉴·저장·번들·삭제)를 관리 */
@@ -53,19 +57,19 @@ export function PhotoBoxScreen({
   currentYear = new Date().getFullYear(),
   onRetry,
   onBunchClick,
-  onUploadClick,
+  onUpload,
   onCreateBundle,
-  onChangeDate,
 }: PhotoBoxScreenProps) {
   const [memberId, setMemberId] = useState<string>(ALL_MEMBERS);
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const data = state.kind === 'ready' ? state.data : undefined;
   const photos = data?.photos;
 
-  const flow = usePhotoSelectionFlow({ data, actions, onCreateBundle, onChangeDate });
+  const flow = usePhotoSelectionFlow({ data, actions, onCreateBundle });
   const { selecting, selection } = flow;
 
   const { sections, undated } = useMemo(
@@ -87,6 +91,18 @@ export function PhotoBoxScreen({
     flow.stop();
     setMenuOpen(false);
     setMenuMounted(false);
+  };
+  // 사진함이 가득 차면 시트를 열지 않고 토스트로만 알림(명세 3.2.1)
+  const openUpload = () => {
+    if ((photos?.length ?? 0) >= MAX_PHOTOS_IN_BOX) {
+      toast(PHOTO_BOX_MESSAGES.photoBoxFull, { fullWidth: true });
+      return;
+    }
+    setUploadOpen(true);
+  };
+  const selectUpload = (source: 'album' | 'camera') => {
+    setUploadOpen(false);
+    onUpload?.(source);
   };
   const toggleMenu = () => {
     setMenuMounted(true);
@@ -142,7 +158,7 @@ export function PhotoBoxScreen({
             disabled={selecting && selection.length === 0}
             // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
             aria-disabled={selecting && flow.busy ? true : undefined}
-            onClick={selecting ? (flow.busy ? undefined : toggleMenu) : onUploadClick}
+            onClick={selecting ? (flow.busy ? undefined : toggleMenu) : openUpload}
             className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
           />
         </div>
@@ -170,9 +186,12 @@ export function PhotoBoxScreen({
             selectedCounts={selectedCounts}
           />
           {undated.length > 0 ? <UndatedPhotos photos={undated} /> : null}
-          {sections.map((section) => (
-            <PhotoDateSection key={section.dateKey} section={section} />
-          ))}
+          <PhotoDragArea
+            sections={sections}
+            viewer={state.data.viewer}
+            actions={actions}
+            enabled={selecting && !flow.busy}
+          />
           {isEmpty ? (
             <PhotoBoxEmpty reason={memberId === ALL_MEMBERS ? 'bunch' : 'member'} />
           ) : null}
@@ -182,6 +201,27 @@ export function PhotoBoxScreen({
         open={flow.dialog === 'bundle'}
         onClose={flow.closeDialog}
         onConfirm={flow.confirmBundle}
+      />
+      <PhotoUploadSheet
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        title={PHOTO_BOX_MESSAGES.uploadSheetTitle(bunch.name)}
+        onSelectAlbum={() => selectUpload('album')}
+        onTakePhoto={() => selectUpload('camera')}
+      />
+      {/* 날짜는 항상 오늘 달을 선택 없이 열고(명세 3.4.1) 저장하면 고른 사진 전부의 날짜를 바꿈 */}
+      <DateChangeSheet
+        open={flow.dialog === 'date'}
+        onOpenChange={(open) => {
+          if (!open) flow.closeDateSheet();
+        }}
+        saving={flow.dateSaving}
+        onSave={flow.saveDate}
+      />
+      <DateChangeConfirmDialog
+        open={flow.dateConfirmOpen}
+        onClose={flow.cancelDateConfirm}
+        onConfirm={flow.confirmDateChange}
       />
       <DeleteConfirmDialog
         open={flow.dialog === 'delete'}

@@ -8,6 +8,12 @@ import { photoBoxFixture } from '../fixtures/photoBox.fixture';
 import { MAX_SELECTION } from '../lib/selection';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
 
+// 끌기 라이브러리의 알림 영역(aria-live=assertive)도 status role이라 사진함 상태 안내만 골라냄
+const pageStatus = () =>
+  screen
+    .getAllByRole('status')
+    .find((element) => element.getAttribute('aria-live') !== 'assertive')!;
+
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -206,18 +212,16 @@ describe('PhotoBoxScreen 선택 메뉴', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('날짜 바꾸기를 고르면 고른 사진 순서와 함께 알리고 메뉴가 닫히며 포커스가 「⋯」로 돌아온다', async () => {
+  it('날짜 바꾸기를 고르면 메뉴가 닫히고 오늘 달을 선택 없이 연 시트가 열린다', async () => {
     const user = userEvent.setup();
-    const onChangeDate = vi.fn();
-    render(<PhotoBoxScreen state={ready()} currentYear={2026} onChangeDate={onChangeDate} />);
+    renderScreen();
     await selectFirst(user, 2);
 
     await user.click(menuButton());
     await user.click(screen.getByRole('menuitem', { name: '날짜 바꾸기' }));
 
-    expect(onChangeDate).toHaveBeenCalledTimes(1);
-    expect((onChangeDate.mock.calls[0]?.[0] as string[]).length).toBe(2);
-    expect(document.activeElement).toBe(menuButton());
+    expect(await screen.findByRole('dialog', { name: '날짜 바꾸기' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '저장' }).getAttribute('aria-disabled')).toBe('true');
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
   });
 
@@ -271,7 +275,7 @@ describe('PhotoBoxScreen 선택 메뉴', () => {
 });
 
 describe('PhotoBoxScreen 선택 상태 안내와 메뉴 키보드', () => {
-  const statusText = () => screen.getByRole('status').textContent;
+  const statusText = () => pageStatus().textContent;
 
   it('선택 모드 진입과 선택 개수를 항상 마운트된 상태 안내로 알린다', async () => {
     const user = userEvent.setup();
