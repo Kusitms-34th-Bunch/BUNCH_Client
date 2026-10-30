@@ -26,7 +26,7 @@
 
 - 줄: 흰 배경(`surface-primary`), 안쪽 여백 16px(`s8`), 아래 1px `border-tertiary`(`#EAEAEA`) 구분선, 폭은 부모를 채운다(Figma 375px). 높이는 16 + 22 + 18 + 16 + 구분선 1 = 73px다.
 - 장소 이름: 15/22, 굵기 600(SemiBold), 자간 -0.25px, `text-secondary`(`#25282D`). 길면 한 줄로 줄인다(`truncate`).
-- 주소: `typography-body-3-regular`(13/18, 400), `#969AA0`(`primitive-gray-500`). 길면 한 줄로 줄인다.
+- 주소: `typography-body-4-regular`(13/18, 400), `#969AA0`(`primitive-gray-500`). 길면 한 줄로 줄인다.
 - Figma는 글자를 줄이지 않고 줄바꿈 없이(`whitespace-nowrap`) 그렸다. 길이가 넘칠 때의 처리는 정의가 없어 말줄임으로 했다(확인 항목).
 
 ## 접근성
@@ -38,7 +38,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-primary`, `p-s8`, `border-border-tertiary`, `text-text-secondary`, `typography-body-3-regular`, `text-primitive-gray-500`, `typography-login-button`(15/22). 허용되는 dependency 추가 없음.
+- Token: `bg-surface-primary`, `p-s8`, `border-border-tertiary`, `text-text-secondary`, `typography-body-4-regular`, `text-primitive-gray-500`, `typography-login-button`(15/22). 허용되는 dependency 추가 없음.
 - 장소 이름의 15/22 SemiBold(자간 -0.25px)와 같은 `typography-*` token이 없어서, 같은 15/22·자간 -0.25인 `typography-login-button`(굵기 500)을 쓰고 굵기만 `font-(--semantic-font-weights-pretendard-1)`(600)로 덮어썼다. Figma의 Body-2-Semibold(15/22)에 해당하는 token은 디자이너·토큰 정리가 필요하다.
 - 주소 색 `#969AA0`은 repo에서 `text-disabled`와 같은 값이지만 비활성의 뜻이 아니라서 `primitive-gray-500`을 썼다(Figma 변수 이름은 `text-quaternary`이고 repo `text-quaternary`는 `#BCBEC2`로 번호가 하나 다르다).
 - Figma 이름 대응: `placeName`→`placeName`, `address`→`address`.

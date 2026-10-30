@@ -26,7 +26,7 @@
 
 ## 상태와 동작
 
-- 안내 문구는 Body-2-Meduim의 굵기·자간(SemiBold, -0.5px)·`text-quaternary`, 입력값은 `typography-body-2-regular`·`text-primary`(`fieldText`, TextField와 공유).
+- 안내 문구는 Body-2-Meduim의 굵기·자간(SemiBold, -0.5px)·`text-quaternary`, 입력값은 `typography-body-3-regular`·`text-primary`(`fieldText`, TextField와 공유).
 - 포커스: 바깥에 1px `primitive-gray-700` 윤곽선(TextField의 포커스 테두리 색), 강제 색상 모드에서는 2px.
 - 비활성: 전체 `opacity-disabled`(40%), 입력 불가.
 

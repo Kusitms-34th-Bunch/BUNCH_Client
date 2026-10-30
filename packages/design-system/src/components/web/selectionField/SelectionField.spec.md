@@ -32,7 +32,7 @@
 - 카드: 흰 배경(`surface-primary`), 1px `border-tertiary`(`#EAEAEA`) 테두리, 반경 `r5`(10px), 좌우 여백 14px(`s7`), 폭은 부모를 채운다(Figma 376px).
 - 한 줄(추천 없음): 세로 여백 10px(`s5`), 높이 46px. 핀(16px, `icon-primary`) + 제목 + 별표가 왼쪽, 아이콘이 오른쪽(Default는 화살표, Selected는 지우기 20px).
 - 추천 있음: 세로 여백 16px(`s8`), 높이 104px. 위 줄(제목 + 화살표) 아래 10px 띄워 추천 칩이 가로로 놓인다. 칩은 `ChipButton` M(높이 36px, 좌우 10px, 원형, 배경 `surface-secondary`, 글자 14/21 `text-tertiary`)이고 칩 사이 6px(`s3`)이다. 줄이 넘치면 줄바꿈한다.
-- 제목: `typography-body-2-meduim`(14/21, 600, 자간 -0.5px — 이름은 철자 오류지만 값이 Figma Body-3-SemiBold와 같다), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다.
+- 제목: `typography-body-3-semi-bold`(14/21, 600, 자간 -0.5px — 이름은 철자 오류지만 값이 Figma Body-3-SemiBold와 같다), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다.
 - 별표: `icon-brand`(`#454EDF`) 16px, 스크린 리더에는 숨기고 "필수"를 따로 읽어 준다.
 - 필드 전체(여백 포함)가 눌리도록 필드 버튼은 카드 전체를 덮는 빈 버튼(`absolute inset-0`)이다. 추천 칩과 지우기 버튼은 그 위(`z-10`)에 있어 따로 눌린다. 추천 칩 줄의 빈 영역도 클릭이 필드 버튼으로 통과한다(`ul`은 `pointer-events-none`, 칩만 `pointer-events-auto`).
 

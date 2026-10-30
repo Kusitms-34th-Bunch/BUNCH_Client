@@ -46,7 +46,7 @@ export function BunchCreated() {
             </span>
             <span className="gap-s2 flex min-w-0 flex-1 flex-col">
               <span className="typography-body-1-medium text-text-primary">멤버 초대하기</span>
-              <span className="typography-body-3-regular text-text-tertiary">
+              <span className="typography-body-4-regular text-text-tertiary">
                 친구를 초대해 함께 시작해 보세요
               </span>
             </span>
@@ -79,7 +79,7 @@ export function BunchCreated() {
             <p
               role="status"
               className={
-                photoUrl ? 'typography-body-3-regular text-text-tertiary text-center' : 'sr-only'
+                photoUrl ? 'typography-body-4-regular text-text-tertiary text-center' : 'sr-only'
               }
             >
               {photoUrl ? '현재 화면에서만 미리 볼 수 있어요.' : ''}
@@ -87,7 +87,7 @@ export function BunchCreated() {
             <p
               role="status"
               className={
-                message ? 'typography-body-3-regular text-text-tertiary text-center' : 'sr-only'
+                message ? 'typography-body-4-regular text-text-tertiary text-center' : 'sr-only'
               }
             >
               {message}

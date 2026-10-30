@@ -13,7 +13,7 @@ describe('BundleTitle', () => {
     renderTitle();
     const title = screen.getByText('사진');
 
-    expect(title.classList.contains('typography-body-2-meduim')).toBe(true);
+    expect(title.classList.contains('typography-body-3-semi-bold')).toBe(true);
     expect(title.classList.contains('text-text-secondary')).toBe(true);
   });
 

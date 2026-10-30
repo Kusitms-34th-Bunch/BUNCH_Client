@@ -53,7 +53,7 @@ describe('LocationListItem', () => {
     renderItem();
     const { classList } = screen.getByText('서울특별시 영등포구 여의동로 330');
 
-    expect(classList.contains('typography-body-3-regular')).toBe(true);
+    expect(classList.contains('typography-body-4-regular')).toBe(true);
     expect(classList.contains('text-primitive-gray-500')).toBe(true);
   });
 

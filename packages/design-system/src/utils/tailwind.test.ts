@@ -61,7 +61,7 @@ describe('토큰 이름 목록이 tokens.css와 같다', () => {
     expect(cn(`shadow-${name}`, 'shadow-none')).toBe('shadow-none');
   });
 
-  it.each(namesOf(/^@utility typography-([a-z0-9-]+)/gm, 19))('typography %s', (name) => {
+  it.each(namesOf(/^@utility typography-([a-z0-9-]+)/gm, 22))('typography %s', (name) => {
     expect(cn(`typography-${name}`, 'typography-label-s')).toBe('typography-label-s');
   });
 });

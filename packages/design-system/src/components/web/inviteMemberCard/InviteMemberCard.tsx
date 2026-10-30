@@ -52,7 +52,7 @@ export const InviteMemberCard = ({
         <span id={`${baseId}-title`} className="typography-body-1-medium text-text-primary">
           {title}
         </span>
-        <span id={`${baseId}-description`} className="typography-body-3-regular text-text-tertiary">
+        <span id={`${baseId}-description`} className="typography-body-4-regular text-text-tertiary">
           {description}
         </span>
       </span>

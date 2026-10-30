@@ -53,7 +53,7 @@ export function BunchBasicInfo() {
       {/* fieldset 위쪽 패딩은 legend 아래에 적용되므로 바깥 래퍼로 간격 조정 */}
       <div className="pt-s15 px-padding-p8">
         <fieldset className="min-w-0">
-          <legend className="typography-body-2-meduim text-text-primary pb-s6">공개 범위</legend>
+          <legend className="typography-body-3-semi-bold text-text-primary pb-s6">공개 범위</legend>
           <div className="gap-s4 flex flex-col">
             <VisibilityOption
               name="visibility"

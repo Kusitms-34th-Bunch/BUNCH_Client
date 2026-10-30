@@ -32,7 +32,7 @@ export const LongLabel: Story = {
 export const Group: Story = {
   render: () => (
     <fieldset className="gap-s4 flex flex-col">
-      <legend className="typography-body-2-meduim pb-s4">공개 범위</legend>
+      <legend className="typography-body-3-semi-bold pb-s4">공개 범위</legend>
       <RadioCard name="visibility" value="private" defaultChecked>
         비공개
       </RadioCard>

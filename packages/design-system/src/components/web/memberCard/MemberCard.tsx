@@ -50,7 +50,7 @@ export const MemberCard = ({
           {...(roleLabel && { label: roleLabel })}
         />
       )}
-      <span className="typography-body-2-regular text-text-secondary min-w-0 truncate">{name}</span>
+      <span className="typography-body-3-regular text-text-secondary min-w-0 truncate">{name}</span>
     </div>
     {onDelete !== undefined && (
       <DeleteButton

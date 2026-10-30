@@ -14,7 +14,7 @@ export function PhotoDateSection({ section }: PhotoDateSectionProps) {
     <section aria-labelledby={headingId}>
       <h2
         id={headingId}
-        className="typography-body-2-meduim text-text-secondary pt-s8 pr-s7 pb-s3 pl-s8"
+        className="typography-body-3-semi-bold text-text-secondary pt-s8 pr-s7 pb-s3 pl-s8"
       >
         {section.label}
       </h2>

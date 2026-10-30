@@ -79,7 +79,7 @@ export function BundleCommentCard({
             aria-label={label ?? `${userName}${currentUser ? ` ${currentUserLabel}` : ''} 코멘트`}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className="typography-body-2-regular text-text-secondary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) focus:outline-none focus:placeholder:text-transparent"
+            className="typography-body-3-regular text-text-secondary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) focus:outline-none focus:placeholder:text-transparent"
             {...props}
           />
         </div>

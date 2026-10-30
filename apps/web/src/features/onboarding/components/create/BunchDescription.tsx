@@ -58,11 +58,11 @@ export function BunchDescription() {
       <section className="pt-s15 px-padding-p8 gap-s4 flex flex-col">
         <div className="gap-s3 flex items-center">
           <Badge size="sm">TIP</Badge>
-          <h2 className="typography-body-2-meduim text-text-primary">이런 소개는 어때요?</h2>
+          <h2 className="typography-body-3-semi-bold text-text-primary">이런 소개는 어때요?</h2>
         </div>
         {/* 토큰이 없는 목록 들여쓰기에 Figma 값 19.5px 적용 */}
         {/* Safari에서 list-style none인 ul의 목록 인식 누락 방지 */}
-        <ul className="bg-surface-secondary rounded-r4 p-s8 gap-s2 typography-body-3-regular text-text-tertiary flex list-disc flex-col">
+        <ul className="bg-surface-secondary rounded-r4 p-s8 gap-s2 typography-body-4-regular text-text-tertiary flex list-disc flex-col">
           {TIPS.map((tip) => (
             <li key={tip} className="ms-[19.5px]">
               {tip}

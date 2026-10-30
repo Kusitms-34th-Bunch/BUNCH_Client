@@ -42,7 +42,7 @@ export const TermsLabel = ({
         aria-hidden="true"
         className="text-icon-quaternary shrink-0 opacity-(--semantic-opacity-disabled) group-[:active:not(:has(input:disabled))]/check:opacity-(--semantic-opacity-semi-opaque) peer-checked:opacity-(--semantic-opacity-semi-opaque)"
       />
-      <span className="typography-body-2-regular gap-s2 text-text-disabled peer-checked:text-text-secondary group-[:active:not(:has(input:disabled))]/check:text-text-secondary flex min-w-0 items-center">
+      <span className="typography-body-3-regular gap-s2 text-text-disabled peer-checked:text-text-secondary group-[:active:not(:has(input:disabled))]/check:text-text-secondary flex min-w-0 items-center">
         {tag ? <span className="shrink-0">{tag}</span> : null}
         <span className="min-w-0">{children}</span>
       </span>

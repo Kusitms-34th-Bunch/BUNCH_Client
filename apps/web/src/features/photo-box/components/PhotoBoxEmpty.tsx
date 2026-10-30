@@ -13,7 +13,7 @@ export function PhotoBoxEmpty({ reason }: PhotoBoxEmptyProps) {
   return (
     <div className="gap-s6 flex flex-1 flex-col items-center justify-center">
       <div aria-hidden="true" className="bg-surface-secondary size-20" />
-      <p className="typography-body-2-meduim text-text-quaternary">{MESSAGES[reason]}</p>
+      <p className="typography-body-3-semi-bold text-text-quaternary">{MESSAGES[reason]}</p>
     </div>
   );
 }

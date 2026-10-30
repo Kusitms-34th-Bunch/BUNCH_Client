@@ -3,4 +3,4 @@
  * 안내 문구는 굵기·자간만 지정(크기·행 높이는 input에서 상속해 iOS 16px 렌더링·축소 보정과 맞춤)
  */
 export const fieldText =
-  'min-w-0 flex-1 truncate typography-body-2-regular text-text-primary placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) placeholder:text-text-quaternary';
+  'min-w-0 flex-1 truncate typography-body-3-regular text-text-primary placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) placeholder:text-text-quaternary';

@@ -40,6 +40,6 @@ export const AddBundlePhoto = ({
     >
       <LineAddMediumIcon />
     </span>
-    <span className="typography-body-2-regular text-text-primary">{label}</span>
+    <span className="typography-body-3-regular text-text-primary">{label}</span>
   </button>
 );

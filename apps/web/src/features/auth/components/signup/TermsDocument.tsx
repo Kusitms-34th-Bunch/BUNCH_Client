@@ -9,7 +9,7 @@ export function TermsDocument({ documentId }: { documentId: TermsDocumentId }) {
   return (
     <SignupFrame title={<h1 className="truncate">{title}</h1>}>
       <div className="px-padding-p8 pt-s6 pb-padding-p8 gap-s12 flex flex-col">
-        <div className="typography-body-2-regular text-text-quaternary gap-x-s4 flex flex-wrap items-center justify-between">
+        <div className="typography-body-3-regular text-text-quaternary gap-x-s4 flex flex-wrap items-center justify-between">
           <span>시행일자: {effectiveDate}</span>
           <span>버전 {version}</span>
         </div>
@@ -17,7 +17,7 @@ export function TermsDocument({ documentId }: { documentId: TermsDocumentId }) {
           {articles.map(({ title: articleTitle, paragraphs, items }) => (
             <article key={articleTitle} className="gap-s3 flex flex-col">
               <h2 className="typography-body-1-semi-bold text-text-primary">{articleTitle}</h2>
-              <div className="typography-body-2-regular text-text-tertiary [overflow-wrap:anywhere] break-keep">
+              <div className="typography-body-3-regular text-text-tertiary [overflow-wrap:anywhere] break-keep">
                 {paragraphs?.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
