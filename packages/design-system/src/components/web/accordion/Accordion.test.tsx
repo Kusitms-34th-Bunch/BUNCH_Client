@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Accordion } from './Accordion';
@@ -10,6 +10,24 @@ describe('Accordion', () => {
     const button = screen.getByRole('button', { name: '촬영 날짜를 확인할 사진' });
     expect(button.getAttribute('aria-expanded')).toBe('false');
     expect(screen.queryByRole('region')).toBeNull();
+  });
+
+  it('닫는 동안에는 내용을 유지하되 inert로 포커스·읽기에서 즉시 뺀다', async () => {
+    render(
+      <Accordion title="사진" defaultOpen>
+        내용
+      </Accordion>,
+    );
+    const panel = screen.getByRole('region', { name: '사진' });
+    expect(panel.className.split(' ')).toContain('visible');
+    expect(panel.hasAttribute('inert')).toBe(false);
+
+    await userEvent.click(screen.getByRole('button', { name: '사진' }));
+
+    expect(panel.hidden).toBe(false);
+    expect(panel.hasAttribute('inert')).toBe(true);
+    expect(panel.className.split(' ')).toContain('invisible');
+    await waitFor(() => expect(panel.hidden).toBe(true));
   });
 
   it('개수는 이름에 포함되고 설명은 이름이 아니라 설명으로 연결된다', () => {
@@ -39,7 +57,8 @@ describe('Accordion', () => {
 
     await userEvent.click(button);
     expect(button.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.queryByRole('region')).toBeNull();
+    // 닫는 전환(340ms)이 끝나면 내용을 걷어냄
+    await waitFor(() => expect(screen.queryByRole('region')).toBeNull());
   });
 
   it('키보드 Enter·Space로도 토글한다', async () => {
