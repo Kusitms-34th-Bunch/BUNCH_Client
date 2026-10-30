@@ -39,6 +39,7 @@ export * from './paginationIndicator';
 export * from './paginationIndicatorItem';
 export * from './photoThumbnail';
 export * from './profileImage';
+export * from './profileListItem';
 export * from './radioButton';
 export * from './radioCard';
 export * from './roleBadge';
