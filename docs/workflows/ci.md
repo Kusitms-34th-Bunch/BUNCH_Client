@@ -30,7 +30,7 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 - `ci.yml`은 `package.json`의 `verify`와 같은 검사를 실행한다. `Static checks` job은 생성물·catalog·agent docs·boundary·format 검사를 차례로 실행하고, 실패한 검사 이름을 Actions 주석으로 남긴다. `yarn lint`, `yarn typecheck`, `yarn test`, `yarn build`는 각자 job에서 실행한다. 한 러너에서 함께 돌리면 코어를 나눠 써서 서로 느려지기 때문이다. job마다 설치(약 15초)가 반복되는 비용은 감수한다.
 - PR에서는 `Lint`·`Typecheck`·`Test`·`Build`가 base 브랜치 대비 바뀐 패키지와 그 패키지에 의존하는 패키지만 실행한다(`turbo --affected`, `TURBO_SCM_BASE=origin/<base>`). 예를 들어 `packages/design-system`을 바꾸면 design-system과 web만 검사하고, 문서만 바꾸면 Turbo 작업이 없어 바로 통과한다. `turbo.json`, 공통 설정 패키지(`lint-config`·`ts-config`), 의존성처럼 여러 패키지에 걸친 변경은 해당 패키지 전부를 고른다. `develop`·`main` push는 전체를 실행해서 PR에서 빠진 조합을 머지 뒤에 다시 확인한다.
 - 루트 `yarn lint`는 `eslint .`(루트 파일)과 `check:tailwind`를 먼저 실행하고 `turbo lint`를 마지막에 둔다. CI가 붙이는 `--affected`가 `turbo lint`에만 전달되게 하려는 순서다. 두 검사는 각각 몇 초라 PR에서도 전체를 검사한다.
-- `verify`에 검사를 더하거나 빼면 `ci.yml`의 matrix와 댓글 표(`rows`)를 함께 고친다. 댓글은 같은 실행의 job 목록을 Actions API로 읽어 job 이름으로 결과를 찾으므로, matrix의 `name`과 `rows`의 이름이 같아야 한다.
+- `verify`에 검사를 더하거나 빼면 `ci.yml`의 matrix, `Static checks`의 검사 목록(`for check in ...`), 댓글 표(`rows`)를 함께 고친다. 댓글은 같은 실행의 job 목록을 Actions API로 읽어 job 이름으로 결과를 찾으므로, matrix의 `name`과 `rows`의 이름이 같아야 한다.
 - 댓글은 같은 저장소 안의 PR에서만 남긴다. 포크와 Dependabot PR은 토큰이 읽기 전용이라 댓글을 쓸 수 없어서 건너뛴다. 이때도 `Verify` 체크의 성공·실패는 그대로 나온다.
 - ruleset의 필수 체크 입력란에는 job 이름인 `Verify`를 지정한다. Actions 화면에서는 `Frontend CI` workflow 안에 표시된다. 댓글 job(`Result comment`)은 필수가 아니다.
 
@@ -67,7 +67,7 @@ yarn e2e
 
 ## CI 실패 시
 
-1. 실패한 job(`Verify`, `E2E` 중 어디인지)을 먼저 확인한다.
+1. 실패한 job을 먼저 확인한다. `Verify`는 결과만 모으므로 `Frontend CI`의 검사 job(`Static checks`·`Lint`·`Typecheck`·`Test`·`Build`)과 `E2E` 중 어느 것이 실패했는지 본다.
 2. `Verify` 실패면 `yarn verify`를 로컬에서 재현해 어떤 하위 명령(`check:suspicious`, `check:generated`, `check:catalog`, `check:agent-docs`, `check:boundaries`, `format:check`, `lint`, `typecheck`, `test`, `build`)이 실패했는지 좁힌다. `Suspicious file guard` 단계가 실패했다면 아래 "변조 가드"를 먼저 확인한다.
 3. `E2E` 실패면 업로드된 `playwright-report`, `test-results` artifact를 확인한다.
 

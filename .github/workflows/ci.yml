@@ -82,7 +82,7 @@ jobs:
         id: task
         if: matrix.task != 'static'
         env:
-          TURBO_SCM_BASE: origin/${{ github.base_ref }}
+          TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
         run: yarn ${{ matrix.task }} $AFFECTED
 
@@ -163,7 +163,7 @@ jobs:
 
             // 통과 판정은 Verify job 결과 기준. 개별 결과를 못 읽어도 실패를 통과로 보지 않음
             const passed = process.env.VERIFY_RESULT === 'success';
-            const failed = rows.filter(([name]) => conclusion[name] === 'failure');
+            const failed = rows.filter(([name]) => ['failure', 'cancelled'].includes(conclusion[name]));
 
             let summary;
             if (passed) {
