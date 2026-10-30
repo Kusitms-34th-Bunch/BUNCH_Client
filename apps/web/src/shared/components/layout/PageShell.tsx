@@ -31,8 +31,11 @@ export function PageShell({
     >
       {header ? <div className="shrink-0">{header}</div> : null}
       {/* min-h-32: 낮은 화면(가로 모드·큰 글꼴)의 본문 0 방지 — 상세는 docs/architecture/mobile-shell.md */}
+      {/* scroll-pb: 하단 탭 막대가 본문 위에 떠 있는 화면에서 키보드 포커스 요소가 막대 밑으로 가려지지 않도록 (변수가 없으면 0) */}
       {/* overscroll-y-contain: WebView 바운스·pull-to-refresh 전파 방지(새로고침 화면에서 재검토) */}
-      <main className="min-h-32 flex-1 overflow-y-auto overscroll-y-contain">{children}</main>
+      <main className="min-h-32 flex-1 scroll-pb-(--main-tab-bar-height,0px) overflow-y-auto overscroll-y-contain">
+        {children}
+      </main>
       {bottom ? <div className="shrink-0">{bottom}</div> : null}
     </div>
   );

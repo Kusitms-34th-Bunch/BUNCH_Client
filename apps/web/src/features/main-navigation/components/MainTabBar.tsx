@@ -58,6 +58,7 @@ export function MainTabBar() {
   return (
     <div
       data-main-tab-bar
+      // 높이 5rem(h-20, -mt-20)은 (main)/layout.tsx의 --main-tab-bar-height와 같은 값
       className="px-padding-p8 pb-s4 pointer-events-none relative z-10 -mt-20 h-20 shrink-0"
     >
       <BottomNavigation
