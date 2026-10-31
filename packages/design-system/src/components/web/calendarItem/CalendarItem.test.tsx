@@ -43,7 +43,7 @@ describe('CalendarItem', () => {
 
     expect(item.getAttribute('aria-disabled')).toBe('true');
     expect((item as HTMLButtonElement).disabled).toBe(false);
-    expect(item.className).toContain('text-text-quaternary');
+    expect(item.className).toContain('text-text-quinary');
 
     fireEvent.click(item);
 
@@ -64,7 +64,7 @@ describe('CalendarItem', () => {
 
     expect(item.classList.contains('bg-surface-inversed')).toBe(true);
     expect(item.classList.contains('text-text-inversed')).toBe(true);
-    expect(item.classList.contains('text-text-quaternary')).toBe(false);
+    expect(item.classList.contains('text-text-quinary')).toBe(false);
     expect(item.getAttribute('aria-disabled')).toBe('true');
   });
 

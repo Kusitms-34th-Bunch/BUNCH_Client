@@ -29,7 +29,7 @@
 - Active(기본): 흰 배경(`surface-primary`) + `text-primary` 글자, 원형(`rounded-full`), 46×46px(`size-11.5`).
 - Pressed(`:active`): 칸 위에 `overlay-hover`(검정 10%)를 얹어 글자까지 어두워진다. `disabled`와 `selected`에는 적용하지 않는다.
 - Selected: `surface-inversed` 배경 + `text-inversed` 글자.
-- Disabled: `text-quaternary`(`#BCBEC2`) 글자와 `cursor-not-allowed`. 네이티브 `disabled`가 아니라 `aria-disabled`라 포커스는 받고 눌러도 `onClick`이 호출되지 않는다(캘린더 격자에서 키보드가 이 칸을 건너뛰지 않게 하려는 처리). 선택된 칸이 비활성이면(예: 선택된 날짜가 `minDate` 밖) 선택 모양(어두운 배경에 흰 글자)을 유지하고 `aria-disabled`와 `cursor-not-allowed`만 적용한다(Figma에 없는 조합).
+- Disabled: `text-quinary`(`#BCBEC2`) 글자와 `cursor-not-allowed`. 네이티브 `disabled`가 아니라 `aria-disabled`라 포커스는 받고 눌러도 `onClick`이 호출되지 않는다(캘린더 격자에서 키보드가 이 칸을 건너뛰지 않게 하려는 처리). 선택된 칸이 비활성이면(예: 선택된 날짜가 `minDate` 밖) 선택 모양(어두운 배경에 흰 글자)을 유지하고 `aria-disabled`와 `cursor-not-allowed`만 적용한다(Figma에 없는 조합).
 - hidden: 버튼 없이 같은 크기의 빈 칸(`aria-hidden`)만 그린다. 다른 달의 칸처럼 자리만 차지하는 용도다.
 
 ## 접근성
@@ -41,14 +41,13 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-primary`·`bg-surface-inversed`, `text-text-primary`·`text-text-inversed`·`text-text-quaternary`, `bg-overlay-hover`, `typography-body-1-medium`. 허용되는 dependency 추가 없음.
+- Token: `bg-surface-primary`·`bg-surface-inversed`, `text-text-primary`·`text-text-inversed`·`text-text-quinary`, `bg-overlay-hover`, `typography-body-1-medium`. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `State=Active·Pressed·Selected·Disabled·hidden`→기본·`:active`·`selected`·`disabled`·`hidden`, `date`→`children`.
 - Storybook state matrix: `Default`, `Selected`, `Disabled`, `Hidden`, `States`.
 
 ## 확인할 항목
 
 - 글자색: Figma Active·Pressed 글자는 변수가 아니라 순수 검정(`#000`)이라 가장 가까운 `text-primary`(`#121212`)를 썼다. 디자이너 확인 항목이다.
-- Disabled 글자는 Figma의 `text-quinary`(`#BCBEC2`)이고 repo에서는 같은 값의 `text-quaternary`다(repo 토큰 번호가 Figma보다 하나 낮음).
 - Pressed의 배경은 Figma에서 흰 바탕 위의 검정 오버레이로 그려져 있어 repo의 `overlay-hover`로 옮겼고, 같은 오버레이로 그려진 `IconButton`의 Pressed를 픽셀로 재 보니 10%(`#E5E5E5`)였다. 다른 버튼과 같은 75ms ease-out 전환(동작 줄이기에서는 끔)을 적용했다.
 
 ## 검증

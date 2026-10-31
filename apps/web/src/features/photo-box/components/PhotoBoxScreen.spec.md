@@ -83,7 +83,7 @@
 | 날짜 제목                             | 14/21 600 자간 -0.5, 위 16·아래 6·좌 16·우 14                                  | `typography-body-3-semi-bold pt-s8 pb-s3 pl-s8 pr-s7`      |
 | 사진 칸                               | 123×123, 사이 1px, 3열                                                         | `grid grid-cols-3 gap-px`, `PhotoThumbnail`                |
 | 「+」                                 | 52, 오른쪽 16, 하단 탭 위 10                                                   | `FloatingButton add`, `right-s8 bottom-s5`                 |
-| 빈 상태                               | 가운데, 80×80 자리표시, 14/21 600 `text-quaternary`, 간격 12                   | `PhotoBoxEmpty`, `text-text-quaternary gap-s6`             |
+| 빈 상태                               | 가운데, 80×80 자리표시, 14/21 600 `text-quinary`, 간격 12                      | `PhotoBoxEmpty`, `text-text-quinary gap-s6`                |
 | 번치 없음                             | 자리표시 172×144(102,227), 제목 16/24, 설명 12/16, 버튼 343×48(y479·537)       | `NoBunch`, `Button`·`Button variant="tertiary"`            |
 
 ## 검증

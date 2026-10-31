@@ -23,6 +23,7 @@ export * from './editingAnimation';
 export * from './errorBanner';
 export * from './floatingButton';
 export * from './followButton';
+export * from './followListItem';
 export * from './iconButton';
 export * from './inviteCard';
 export * from './inviteMemberCard';

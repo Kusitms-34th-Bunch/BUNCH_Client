@@ -52,7 +52,7 @@ export const CalendarItem = ({
             ],
         // 선택된 칸은 비활성이어도 어두운 배경에 흰 글자를 유지(연한 글자가 어두운 배경에 묻히지 않게 처리)
         disabled && 'cursor-not-allowed',
-        disabled && !selected && 'text-text-quaternary',
+        disabled && !selected && 'text-text-quinary',
         className,
       )}
     >

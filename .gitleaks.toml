@@ -1,0 +1,12 @@
+# gitleaks 기본 규칙에 저장소 예외만 추가(security.yml이 저장소 루트의 이 파일을 자동으로 읽음)
+[extend]
+useDefault = true
+
+# 문서의 `Token: bg-surface-brand-subtle-2` 같은 Tailwind 클래스를 generic-api-key가 키로 오인
+# Markdown 파일에서 색 유틸리티 접두사 + 디자인 토큰 계열로 시작하는 값만 제외
+[[allowlists]]
+description = "문서의 Tailwind 디자인 토큰 클래스"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''\.md$''']
+regexes = ['''^(?:bg|text|border|ring|outline|fill|stroke|placeholder|from|via|to)-(?:surface|text|border|icon|overlay|system|chip|primitive)(?:-[a-z0-9]+)+$''']
