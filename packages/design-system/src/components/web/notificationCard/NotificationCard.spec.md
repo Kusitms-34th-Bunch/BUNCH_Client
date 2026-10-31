@@ -47,7 +47,7 @@
 | 제목·시각 양 끝 배치(간격 없음)                            | `justify-between` + 최소 간격 `gap-s4`(긴 제목이 붙지 않게)   |
 | 제목 Body-2-Medium `text-primary`(중요 `system-fail-text`) | `typography-body-2-medium`                                    |
 | 내용 Body-4-Regular `text-tertiary`                        | `typography-body-4-regular text-text-tertiary`                |
-| 시각 Caption-1-Medium `text-quinary`(#bcbec2)              | `typography-caption-1-medium text-text-quaternary`(같은 값)   |
+| 시각 Caption-1-Medium `text-quinary`(#bcbec2)              | `typography-caption-1-medium text-text-quinary`               |
 | 비활성 글자 `text-disabled`, 바깥 `opacity-disabled`       | `text-text-disabled`, `opacity-(--semantic-opacity-disabled)` |
 | 눌림 overlay(검정 바탕 겹침)                               | `overlay-pressed` 바탕 layer                                  |
 | 경고 아이콘 `Line/Icon-M/alert` 20                         | `LineAlertIcon` md                                            |
@@ -56,7 +56,6 @@
 ## 확인할 항목
 
 - 읽지 않음 점 색: Figma는 semantic 토큰이 없는 red-600(#db3c19)이다. 가장 가까운 `system-fail-text`(red-500)를 썼다. 디자이너에게 토큰 지정을 요청한다.
-- 시각 글자: Figma 변수 이름은 `text-quinary`인데 코드 토큰에는 없다. 값이 같은 `text-quaternary`를 썼다.
 - 제목이 긴 경우의 처리(줄바꿈 vs 한 줄 말줄임)는 Figma에 없다. 알림 내용을 모두 보여야 해서 줄바꿈으로 정했다.
 - 비활성 글자 대비: `opacity-disabled`와 `text-disabled`가 겹쳐 아주 옅다(Figma 그대로). 비활성 알림도 내용을 읽어야 한다면 둘 중 하나만 쓰도록 디자이너와 정한다.
 - 비활성 알림이 언제 생기는지(삭제된 번치 등)는 Figma에 없다. 알림 화면 이슈에서 정한다.
