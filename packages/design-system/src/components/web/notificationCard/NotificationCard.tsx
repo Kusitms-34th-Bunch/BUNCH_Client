@@ -79,13 +79,17 @@ export const NotificationCard = ({
         ) : null}
         <span className="min-w-0">{title}</span>
       </span>
-      <span className="flex h-5.5 shrink-0 items-center">
-        <span className="typography-caption-1-medium text-text-quaternary flex items-start whitespace-nowrap">
+      {/* 긴 시각 글자는 카드 절반까지만 차지하고 줄바꿈(제목 폭 확보) */}
+      <span className="flex min-h-5.5 max-w-1/2 shrink-0 items-center">
+        <span className="typography-caption-1-medium text-text-quaternary flex min-w-0 items-start">
           <span className="sr-only">, </span>
-          {time}
+          <span className="min-w-0 text-right break-keep">{time}</span>
           {unread ? (
             <>
-              <span aria-hidden="true" className="bg-system-fail-text size-1 rounded-full" />
+              <span
+                aria-hidden="true"
+                className="bg-system-fail-text size-1 shrink-0 rounded-full"
+              />
               <span className="sr-only">, {unreadLabel || '읽지 않음'}</span>
             </>
           ) : null}
