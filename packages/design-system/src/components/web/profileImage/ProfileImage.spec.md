@@ -41,7 +41,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-brand-subtle-2`, `rounded-full`. 크기 `size-22.5`·`size-16`·`size-10`·`size-8.5`·`size-6`(90·64·40·34·24px)은 토큰에 없어 기본 scale을 쓴다(`BunchAvatar`와 같은 방식). 테두리가 필요한 곳은 `className`으로 준다. 31px(`BundlePhoto`)처럼 Figma 크기 5종이 아닌 지름은 `className`으로 덮어쓴다. dependency 추가 없음.
+- 스타일: `bg-surface-brand-subtle-2`, `rounded-full`. 크기 `size-22.5`·`size-16`·`size-10`·`size-8.5`·`size-6`(90·64·40·34·24px)은 토큰에 없어 기본 scale을 쓴다(`BunchAvatar`와 같은 방식). 테두리가 필요한 곳은 `className`으로 준다. 31px(`BundlePhoto`)처럼 Figma 크기 5종이 아닌 지름은 `className`으로 덮어쓴다. dependency 추가 없음.
 - Storybook state matrix: `Default`, `Picked`, `NoImage`, `Sizes`(5종 × `Default`·`Output`), `WithCameraButton`.
 
 ## 확인할 항목
