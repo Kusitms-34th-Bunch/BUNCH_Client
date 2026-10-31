@@ -24,6 +24,9 @@ type Story = StoryObj<typeof meta>;
 /** Figma `BundleTitle`: 핀·제목·필수 별표 */
 export const Default: Story = {};
 
+/** Figma `Variant=Weak`: Regular 제목(자간 0) */
+export const Weak: Story = { args: { variant: 'weak', required: false } };
+
 /** 멤버 아바타가 오른쪽에 8px씩 겹쳐 놓임(Figma는 최대 8명) */
 export const WithMembers: Story = { args: { members: members(8) } };
 

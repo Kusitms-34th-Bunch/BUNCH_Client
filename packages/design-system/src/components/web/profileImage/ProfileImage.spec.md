@@ -11,7 +11,7 @@
 
 ### 제공하는 동작
 
-- 90px 원형 이미지. 프로필 작성 화면에서 "최초 진입 시 기본 프로필 이미지(번치 대표 이미지)", "이미지 등록 후에는 선택한 이미지"로 바뀐다.
+- 원형 이미지. 크기는 `size`로 고른다: `L` 90px(기본), `M` 64px, `S` 40px, `XS` 34px, `XXS` 24px(Figma `Size`). 프로필 작성 화면에서 "최초 진입 시 기본 프로필 이미지(번치 대표 이미지)", "이미지 등록 후에는 선택한 이미지"로 바뀐다.
 - `BunchAvatar`와 같은 방식으로 이미지는 호출하는 쪽이 `src`로 넘긴다. 기본 이미지든 선택한 이미지든 이 컴포넌트는 `src`를 그릴 뿐이다.
 - `src`가 없으면 `surface-brand-subtle-2`(Figma `Default`의 배경색) 원만 보인다.
 
@@ -23,7 +23,7 @@
 
 ## Public API
 
-- Props: `src`, `alt`(기본 빈 문자열 = 장식), 그리고 native `<div>` 속성(`className` 등. `children`은 받지 않는다).
+- Props: `src`, `alt`(기본 빈 문자열 = 장식), `size`(`L` 기본·`M`·`S`·`XS`·`XXS`), 그리고 native `<div>` 속성(`className` 등. `children`은 받지 않는다).
 - 호출자 소유 책임: 기본·선택 이미지 주소, 이미지 설명 문구(프로필 이미지가 사용자를 식별하는 유일한 단서인 화면에서는 `alt`를 넘긴다), 카메라 버튼 배치, 이미지 로드 실패 시 대체 처리.
 
 ## 상태와 동작
@@ -41,8 +41,8 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-brand-subtle-2`, `rounded-full`. 크기 `size-22.5`(90px)는 토큰에 없어 기본 scale을 쓴다(`BunchAvatar`와 같은 방식). dependency 추가 없음.
-- Storybook state matrix: `Default`, `Picked`, `NoImage`, `WithCameraButton`.
+- Token: `bg-surface-brand-subtle-2`, `rounded-full`. 크기 `size-22.5`·`size-16`·`size-10`·`size-8.5`·`size-6`(90·64·40·34·24px)은 토큰에 없어 기본 scale을 쓴다(`BunchAvatar`와 같은 방식). 테두리가 필요한 곳은 `className`으로 준다. 31px(`BundlePhoto`)처럼 Figma 크기 5종이 아닌 지름은 `className`으로 덮어쓴다. dependency 추가 없음.
+- Storybook state matrix: `Default`, `Picked`, `NoImage`, `Sizes`(5종 × `Default`·`Output`), `WithCameraButton`.
 
 ## 확인할 항목
 

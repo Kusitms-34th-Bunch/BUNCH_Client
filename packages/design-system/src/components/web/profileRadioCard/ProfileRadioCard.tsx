@@ -32,8 +32,9 @@ export const ProfileRadioCard = ({
   >
     <ProfileImage
       src={imageSrc}
+      size="S"
       className={cn(
-        'border-border-tertiary group-has-checked:border-border-brand-subtle size-10 border',
+        'border-border-tertiary group-has-checked:border-border-brand-subtle border',
         'group-[:not(:has(:disabled)):active]:after:bg-overlay-pressed after:absolute after:inset-0 after:opacity-0 group-[:not(:has(:disabled)):active]:after:opacity-100',
       )}
     />

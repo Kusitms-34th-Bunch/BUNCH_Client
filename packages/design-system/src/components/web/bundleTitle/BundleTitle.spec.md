@@ -4,8 +4,8 @@
 
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `BundleTitle`(node `1287:12412`). 변형 없이 한 가지 모양이고 `icon`·`required`·`showAvatar1~8`을 켜고 끈다.
-- 의존: `ProfileImage`(24px로 줄여 사용), 아이콘 `LineMapPinSmallIcon`. `LineMapPin*` 3개 크기는 이 작업에서 Figma(`Line/Icon-{S,M,L}/map-pin`)를 받아 추가했다(이슈 #88 브랜치의 같은 커밋을 가져옴).
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `BundleTitle`(node `1287:12412`). `Variant`는 `Strong`·`Weak`(node `3021:57861`) 두 가지이고 `icon`·`required`·`showAvatar1~8`을 켜고 끈다.
+- 의존: `ProfileImage`(`size="XXS"` 24px), 아이콘 `LineMapPinSmallIcon`. `LineMapPin*` 3개 크기는 이 작업에서 Figma(`Line/Icon-{S,M,L}/map-pin`)를 받아 추가했다(이슈 #88 브랜치의 같은 커밋을 가져옴).
 
 ## 목적과 범위
 
@@ -22,7 +22,7 @@
 
 ## Public API
 
-- Props: `title`(필수), `titleId`(제목 글자 요소의 id), `icon`(기본 `true`), `required`(기본 `false`), `requiredLabel`(기본 "필수"), `members`(`{ name, src? }` 배열, 앞의 8명만 보임), `membersLabel`(아바타 목록 이름, 기본 "멤버"), 그리고 native `<div>`의 속성(`className`은 줄에 적용).
+- Props: `title`(필수), `variant`(`strong` 기본·`weak`), `titleId`(제목 글자 요소의 id), `icon`(기본 `true`), `required`(기본 `false`), `requiredLabel`(기본 "필수"), `members`(`{ name, src? }` 배열, 앞의 8명만 보임), `membersLabel`(아바타 목록 이름, 기본 "멤버"), 그리고 native `<div>`의 속성(`className`은 줄에 적용).
 - `BUNDLE_TITLE_MAX_AVATARS`(8)도 함께 내보낸다.
 - 호출자 소유 책임: 제목·필수·멤버 이름의 i18n, 보여 줄 멤버 선정(8명 초과 처리), 입력창과의 연결.
 
@@ -30,7 +30,7 @@
 
 - 줄: 높이 25px(`h-6.25`), 제목 그룹과 아바타 사이 8px(`s4`), 세로 가운데 정렬. 너비는 부모를 채우지 않고 내용에 맞춘다.
 - 제목 그룹: 핀(16px, `icon-primary`)과 제목 사이 4px(`s2`), 제목과 별표 사이 2px(`s1`).
-- 제목: `typography-body-3-semi-bold`(14/21, 600, 자간 -0.5px — 이름은 철자 오류지만 값이 Figma Body-3-SemiBold와 같다), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다.
+- 제목: `typography-body-3-semi-bold`(14/21, 600, 자간 -0.5px — 이름은 철자 오류지만 값이 Figma Body-3-SemiBold와 같다), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다. `weak`는 `typography-body-3-regular`(14/21, 400, 자간 0)이고 색은 같다.
 - 별표: `icon-brand`(`#454EDF`) 16px, 스크린 리더에는 숨기고 "필수"를 따로 읽어 준다.
 - 아바타: 24px 원(1px `border-tertiary`), 앞의 8명까지 오른쪽으로 8px씩 겹친다(뒤에 오는 아바타가 위). 8명이면 너비가 정확히 136px(`24×8 − 8×7`)다.
 
@@ -44,9 +44,9 @@
 
 ## Styling과 의존성
 
-- Token: `text-text-secondary`·`text-icon-primary`·`text-icon-brand`, `gap-s1`·`gap-s2`·`gap-s4`, `border-border-tertiary`, `typography-body-3-semi-bold`·`typography-body-1-semi-bold`. 허용되는 dependency 추가 없음.
+- Token: `text-text-secondary`·`text-icon-primary`·`text-icon-brand`, `gap-s1`·`gap-s2`·`gap-s4`, `border-border-tertiary`, `typography-body-3-semi-bold`·`typography-body-3-regular`·`typography-body-1-semi-bold`. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `icon`→`icon`, `required`→`required`, `title`→`title`, `showAvatar1~8`→`members`(앞에서부터 개수만큼).
-- Storybook state matrix: `Default`, `WithMembers`, `OneMember`, `MoreThanEight`, `Plain`, `LongTitle`, `Matrix`(핀 × 필수 표시 × 멤버 0·1·3·8명).
+- Storybook state matrix: `Default`, `Weak`, `WithMembers`, `OneMember`, `MoreThanEight`, `Plain`, `LongTitle`, `Matrix`(핀 × 필수 표시 × 멤버 0·1·3·8명).
 
 ## 확인할 항목
 
