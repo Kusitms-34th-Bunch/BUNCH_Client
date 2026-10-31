@@ -61,7 +61,7 @@ export function BundleCommentCard({
     <div className={cn('gap-s2 flex w-full flex-col', className)}>
       <div className="bg-surface-primary border-border-tertiary rounded-r5 px-padding-p7 py-s7 gap-s4 focus-within:border-primitive-gray-700 flex flex-col border forced-colors:focus-within:outline-2 forced-colors:focus-within:outline-offset-2">
         <div className="gap-s3 flex items-center">
-          <ProfileImage src={profileSrc} className="border-border-tertiary size-6 border" />
+          <ProfileImage src={profileSrc} size="XXS" className="border-border-tertiary border" />
           <div className="typography-body-1-medium text-text-primary gap-s1 flex items-center whitespace-nowrap">
             <span>{userName}</span>
             {currentUser && <span>{currentUserLabel}</span>}

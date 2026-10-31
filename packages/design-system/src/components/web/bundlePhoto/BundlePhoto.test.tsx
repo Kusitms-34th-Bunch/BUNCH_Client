@@ -96,6 +96,25 @@ describe('BundlePhoto', () => {
     expect(row.classList.contains('p-s8')).toBe(true);
   });
 
+  it('page를 주면 왼쪽 아래에 16px 여백으로 "현재/전체" 표시가 얹히고 없으면 없다', () => {
+    const { rerender } = renderPhoto();
+
+    expect(screen.queryByRole('img', { name: /\d \/ \d/ })).toBeNull();
+
+    rerender(<BundlePhoto src="/a.png" alt="러닝" page={{ current: 1, total: 4 }} />);
+    const { classList } = screen.getByRole('img', { name: '1 / 4' });
+
+    expect(classList.contains('absolute')).toBe(true);
+    expect(classList.contains('bottom-s8')).toBe(true);
+    expect(classList.contains('left-s8')).toBe(true);
+  });
+
+  it('pageLabel로 페이지 표시를 읽어 주는 글자를 바꾼다', () => {
+    renderPhoto({ page: { current: 2, total: 4 }, pageLabel: '사진 4장 중 2번째' });
+
+    expect(screen.getByRole('img', { name: '사진 4장 중 2번째' })).toBeTruthy();
+  });
+
   it('onDelete를 주면 "사진 삭제" 버튼이 생기고 누르면 호출된다', () => {
     const onDelete = vi.fn();
     renderPhoto({ onDelete });

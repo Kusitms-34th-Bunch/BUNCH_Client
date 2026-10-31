@@ -24,6 +24,23 @@ export const Picked: Story = { args: { src: pickedImage, alt: '선택한 프로�
 
 export const NoImage: Story = { args: { src: undefined } };
 
+const SIZES = ['L', 'M', 'S', 'XS', 'XXS'] as const;
+
+/** Figma `Size`: L 90 · M 64 · S 40 · XS 34 · XXS 24, 위는 `Default` 아래는 `Output` */
+export const Sizes: Story = {
+  render: (args) => (
+    <div className="gap-s8 flex flex-col">
+      {[defaultImage, pickedImage].map((src) => (
+        <div key={src} className="gap-s8 flex items-end">
+          {SIZES.map((size) => (
+            <ProfileImage key={size} {...args} src={src} size={size} />
+          ))}
+        </div>
+      ))}
+    </div>
+  ),
+};
+
 // 설계서 구성: 프로필 이미지 오른쪽 아래에 카메라 버튼(95×90 영역에 67·62 위치)
 export const WithCameraButton: Story = {
   render: (args) => (

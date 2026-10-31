@@ -50,7 +50,7 @@
 | 패딩 12·10, radius `r5`, 테두리 `border-tertiary`, 흰 바탕                                              | `px-padding-p6 py-padding-p5 rounded-r5 border-border-tertiary bg-surface-primary` |
 | 이미지·이름 간격 6                                                                                      | `gap-s3`                                                                           |
 | 왼쪽 묶음·오른쪽 동작 사이(Figma 없음, 양끝 정렬)                                                       | `gap-s4`(8): 긴 이름일 때 최소 간격, 제안                                          |
-| 프로필 이미지 40, 테두리 `border-tertiary`                                                              | `ProfileImage` + `size-10 border`                                                  |
+| 프로필 이미지 40, 테두리 `border-tertiary`                                                              | `ProfileImage` `size="S"` + `border`                                               |
 | 역할 배지 16, 이미지와 12 겹침                                                                          | `RoleBadge` sm + `-ml-3`                                                           |
 | 이름 Body-1-Medium, `text-primary`                                                                      | `typography-body-1-medium text-text-primary`                                       |
 | 점 아이콘 20, `#BCBEC2`                                                                                 | `LineDotsIcon` md + `text-icon-quaternary`                                         |

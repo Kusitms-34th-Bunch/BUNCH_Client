@@ -28,6 +28,15 @@ export const Default: Story = {
   args: { uploader: { name: '지예', src: SAMPLE_AVATAR }, onDelete: () => {} },
 };
 
+/** Figma `Size=M, Type=Photo` 전체: 아바타·삭제 버튼·왼쪽 아래 페이지 표시(`1/4`) */
+export const WithPage: Story = {
+  args: {
+    uploader: { name: '지예', src: SAMPLE_AVATAR },
+    onDelete: () => {},
+    page: { current: 1, total: 4 },
+  },
+};
+
 /** Figma `Size=S, Type=Photo`(300px): 사진만 */
 export const Small: Story = { args: { size: 's' } };
 
@@ -52,6 +61,7 @@ export const Matrix: Story = {
           size="m"
           uploader={{ name: '지예', src: SAMPLE_AVATAR }}
           onDelete={() => {}}
+          page={{ current: 1, total: 4 }}
         />
         <BundlePhoto {...args} size="s" />
       </div>

@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import { cn } from '../../../utils';
 import { DeleteButton } from '../deleteButton';
+import { PageCounter } from '../pageCounter';
 import { ProfileImage } from '../profileImage';
 
 const SIZES = { s: 'w-75', m: 'w-82.5' } as const;
@@ -14,6 +15,13 @@ export type BundlePhotoUploader = {
   src?: string | undefined;
 };
 
+export type BundlePhotoPage = {
+  /** 현재 페이지(1부터) */
+  current: number;
+  /** 전체 페이지 수 */
+  total: number;
+};
+
 export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
   /** 사진 주소 */
   src: string;
@@ -25,6 +33,10 @@ export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
   uploader?: BundlePhotoUploader | undefined;
   /** 아바타를 읽어 주는 글자(기본 "{이름}님이 올린 사진"), 사진 설명 바로 뒤에서 이름만 읽히면 올린 사람인지 알 수 없어서 */
   uploaderLabel?: string | undefined;
+  /** 같은 묶음 안의 위치(Figma `Page Counter`): 주면 왼쪽 아래에 "1/4" 표시가 얹힘 */
+  page?: BundlePhotoPage | undefined;
+  /** 페이지 표시를 읽어 주는 글자(기본 "{현재} / {전체}") */
+  pageLabel?: string | undefined;
   /** 오른쪽 위 삭제 버튼을 눌렀을 때(주면 삭제 버튼이 나타남) */
   onDelete?: (() => void) | undefined;
   /** 삭제 버튼의 접근성 이름(기본 "사진 삭제") */
@@ -33,7 +45,7 @@ export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
 
 /**
  * 번들 사진(Figma `Bundle Photo`, `Type=Photo`): 반경 `r4`의 정사각 사진
- * 올린 멤버 아바타(왼쪽 위)와 삭제 버튼(오른쪽 위)을 사진 위에 얹을 수 있고 `className`은 사진 틀에 적용
+ * 올린 멤버 아바타(왼쪽 위), 삭제 버튼(오른쪽 위), 페이지 표시(왼쪽 아래)를 사진 위에 얹을 수 있고 `className`은 사진 틀에 적용
  */
 export const BundlePhoto = ({
   src,
@@ -41,6 +53,8 @@ export const BundlePhoto = ({
   size = 'm',
   uploader,
   uploaderLabel,
+  page,
+  pageLabel,
   onDelete,
   deleteLabel = '사진 삭제',
   className,
@@ -80,6 +94,14 @@ export const BundlePhoto = ({
           />
         )}
       </div>
+    )}
+    {page !== undefined && (
+      <PageCounter
+        current={page.current}
+        total={page.total}
+        label={pageLabel}
+        className="bottom-s8 left-s8 absolute"
+      />
     )}
   </div>
 );
