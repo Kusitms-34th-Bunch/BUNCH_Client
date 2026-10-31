@@ -300,7 +300,8 @@
   --semantic-text-disabled: var(--primitive-gray-scale-gray-500);
   --semantic-text-inversed: var(--primitive-gray-scale-gray-000);
   --semantic-text-primary: var(--primitive-gray-scale-gray-900);
-  --semantic-text-quaternary: var(--primitive-gray-scale-gray-400);
+  --semantic-text-quaternary: var(--primitive-gray-scale-gray-500);
+  --semantic-text-quinary: var(--primitive-gray-scale-gray-400);
   --semantic-text-secondary: var(--primitive-gray-scale-gray-700);
   --semantic-text-tertiary: var(--primitive-gray-scale-gray-600);
 }
@@ -498,6 +499,7 @@
   --color-text-inversed: var(--semantic-text-inversed);
   --color-text-primary: var(--semantic-text-primary);
   --color-text-quaternary: var(--semantic-text-quaternary);
+  --color-text-quinary: var(--semantic-text-quinary);
   --color-text-secondary: var(--semantic-text-secondary);
   --color-text-tertiary: var(--semantic-text-tertiary);
 }
