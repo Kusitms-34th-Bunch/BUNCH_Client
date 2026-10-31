@@ -5,13 +5,13 @@
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo`(node `1439:31041`). 변형은 `Size=S·M`(`Frame 2147231378`은 M) × `Type=Photo·Add` 4개다. 이 컴포넌트는 `Type=Photo`(M·S)이고 `Type=Add`는 `AddBundlePhoto`로 나눴다.
-- 의존: `ProfileImage`(31px로 줄여 사용), 아이콘 `LineCloseSmallIcon`.
+- 의존: `ProfileImage`(31px로 줄여 사용), `PageCounter`, 아이콘 `LineCloseSmallIcon`.
 
 ## 목적과 범위
 
 ### 제공하는 동작
 
-- 번들에 담긴 사진 한 장을 반경 8px의 정사각으로 보여 준다. 사진 위에 올린 멤버 아바타(왼쪽 위)와 삭제 버튼(오른쪽 위)을 얹을 수 있다.
+- 번들에 담긴 사진 한 장을 반경 8px의 정사각으로 보여 준다. 사진 위에 올린 멤버 아바타(왼쪽 위), 삭제 버튼(오른쪽 위), 페이지 표시 `1/4`(왼쪽 아래)를 얹을 수 있다.
 
 ### 제공하지 않는 동작
 
@@ -21,7 +21,7 @@
 
 ## Public API
 
-- Props: `src`(필수), `alt`(필수, 장식이면 빈 문자열), `size`(`s` 300px·`m` 330px, 기본 `m`), `uploader`(`{ name, src? }`, 주면 아바타), `uploaderLabel`(아바타를 읽어 주는 글자, 기본 "{이름}님이 올린 사진"), `onDelete`(주면 삭제 버튼), `deleteLabel`(기본 "사진 삭제"), 그리고 native `<div>`의 속성(`className`은 사진 틀에 적용).
+- Props: `src`(필수), `alt`(필수, 장식이면 빈 문자열), `size`(`s` 300px·`m` 330px, 기본 `m`), `uploader`(`{ name, src? }`, 주면 아바타), `uploaderLabel`(아바타를 읽어 주는 글자, 기본 "{이름}님이 올린 사진"), `page`(`{ current, total }`, 주면 왼쪽 아래에 페이지 표시), `pageLabel`(기본 "{현재} / {전체}"), `onDelete`(주면 삭제 버튼), `deleteLabel`(기본 "사진 삭제"), 그리고 native `<div>`의 속성(`className`은 사진 틀에 적용).
 - 폭은 `size`가 정하고 높이는 정사각(`aspect-square`)이다. 다른 폭이 필요하면 `className`(예: `w-full`)으로 덮어쓴다. 높이(`h-*`·`size-*`)를 `className`으로 정하면 정사각이 깨지므로 폭만 바꾼다. `<img>`의 `loading="lazy"` 같은 속성은 내보내지 않는다(props가 틀 `<div>`용).
 - 호출자 소유 책임: 사진 주소·설명·이름·삭제 버튼 이름의 i18n, 삭제 확인과 목록 갱신, 사진 배치(그리드).
 
@@ -31,6 +31,7 @@
 - Figma는 `Size=M`에만 아바타와 삭제 버튼을 그려 두었지만, 얹힘 여부는 크기와 무관하게 `uploader`·`onDelete`를 줄 때만 나타난다(S에도 줄 수 있다).
 - 위쪽 줄: 사진 위 16px(`s8`) 여백, 가로 정렬 가운데. 아바타 31px(1px `border-tertiary`)이 왼쪽에, 삭제 버튼이 오른쪽 끝(`ml-auto`)에 놓인다. 아바타가 없어도 삭제 버튼은 오른쪽에 있다.
 - 삭제 버튼: 공용 `DeleteButton`(`web/deleteButton`)의 `size="L" variant="overlay"`를 오른쪽 끝(`ml-auto`)에 둔다(24px 원, 배경 `overlay-scrim`(검정 60%) + 배경 블러 15px, X 흰색 8px, 터치 영역 32px). 모양은 `DeleteButton.spec.md`를 따른다.
+- 페이지 표시: `PageCounter`를 사진 왼쪽 아래 16px(`bottom-s8 left-s8`)에 둔다. Figma는 위쪽 줄 아래에 같은 16px 여백으로 쌓은 구조라 아바타·삭제 버튼과 겹치지 않는다. 페이지 정보를 주는 쪽은 호출자이고 사진이 한 장이면 `page`를 주지 않는다.
 - 사진이 없는 `uploader`는 배경색 원으로 보인다.
 
 ## 접근성
@@ -44,7 +45,7 @@
 
 - Token: `rounded-r4`, `p-s8`, `border-border-tertiary`, `bg-overlay-scrim`, `text-icon-inversed`. 크기는 `w-75`(300px)·`w-82.5`(330px)·`size-7.75`(31px)·`size-6`(24px)로 기본 scale이다. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `Size=S·M`→`size`, `Type=Photo`→이 컴포넌트, `avater`→`uploader`, `Delete Button`→`onDelete`.
-- Storybook state matrix: `Default`, `Small`, `DeleteOnly`, `UploaderOnly`, `UploaderWithoutImage`, `Matrix`(Photo M·S와 Add M·S).
+- Storybook state matrix: `Default`, `WithPage`, `Small`, `DeleteOnly`, `UploaderOnly`, `UploaderWithoutImage`, `Matrix`(Photo M·S와 Add M·S).
 
 ## 확인할 항목
 

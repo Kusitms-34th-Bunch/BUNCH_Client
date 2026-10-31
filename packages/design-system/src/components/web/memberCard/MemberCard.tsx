@@ -40,7 +40,7 @@ export const MemberCard = ({
     )}
     {...props}
   >
-    <ProfileImage src={src} className="border-border-tertiary size-10 border" />
+    <ProfileImage src={src} size="S" className="border-border-tertiary border" />
     <div className="gap-s1 flex max-w-full items-center">
       {memberRole !== undefined && (
         <RoleBadge
