@@ -135,7 +135,7 @@ describe('SelectionFieldGroup', () => {
     const { container } = renderGroup({ onAdd: () => {} });
 
     for (const row of rows(container)) {
-      expect(row.classList.contains('has-[:focus-visible]:z-10')).toBe(true);
+      expect(row.classList.contains('has-focus-visible:z-10')).toBe(true);
     }
   });
 

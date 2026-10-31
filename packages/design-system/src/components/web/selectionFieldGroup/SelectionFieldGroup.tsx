@@ -56,7 +56,7 @@ export const SelectionFieldGroup = ({
   // 행이 맞붙어 있어 포커스된 행을 위로 올려야 윤곽선이 다음 행에 가려지지 않음
   const rowClassName = (index: number) =>
     cn(
-      'has-[:focus-visible]:z-10',
+      'has-focus-visible:z-10',
       'before:bg-surface-primary before:absolute before:inset-x-4 before:top-0 before:h-px before:content-[""]',
       index === 0 && 'before:hidden',
       rowCount > 1 && index === 0 && 'rounded-b-none',
