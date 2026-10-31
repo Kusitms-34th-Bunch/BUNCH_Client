@@ -27,7 +27,7 @@
 ## 상태와 동작
 
 - 카드: 흰 배경(`surface-primary`), 1px `border-secondary`(`#E1E2E5`) 테두리, 반경 `r4`(8px), 안쪽 여백 가로 14px(`padding-p7`)·세로 8px(`s4`), 요소 간격 10px(`s5`). 폭은 내용에 맞춰 70px, 높이는 89px(테두리 포함)이다.
-- 더하기 원: 40px, 배경 `surface-secondary`(`#F5F5F5`), 안의 더하기(Medium 20px)와 아래 글자는 `text-quaternary`(`#BCBEC2`)다(repo에서 Figma `text-quinary`와 같은 값).
+- 더하기 원: 40px, 배경 `surface-secondary`(`#F5F5F5`), 안의 더하기(Medium 20px)와 아래 글자는 `text-quinary`(`#BCBEC2`)다.
 - 글자: `typography-body-3-regular`(14/21).
 
 ## 접근성
@@ -39,7 +39,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-primary`·`bg-surface-secondary`, `border-border-secondary`, `px-padding-p7`·`py-s4`·`gap-s5`, `rounded-r4`, `text-text-quaternary`, `typography-body-3-regular`. 허용되는 dependency 추가 없음.
+- Token: `bg-surface-primary`·`bg-surface-secondary`, `border-border-secondary`, `px-padding-p7`·`py-s4`·`gap-s5`, `rounded-r4`, `text-text-quinary`, `typography-body-3-regular`. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `Variant=add`→`AddMemberCard`, 글자 "추가"→`label`.
 - Storybook state matrix: `Default`, `CustomLabel`(그리고 `MemberCard`의 `Variants`에서 나란히 보기).
 

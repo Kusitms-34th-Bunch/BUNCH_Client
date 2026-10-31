@@ -36,14 +36,14 @@ describe('AddMemberCard', () => {
     expect(container.querySelector('button > span')?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('더하기 원은 40px에 secondary 배경이고 글자와 함께 quaternary 색이다', () => {
+  it('더하기 원은 40px에 secondary 배경이고 글자와 함께 quinary 색이다', () => {
     const { container } = render(<AddMemberCard />);
     const circle = container.querySelector('button > span') as HTMLElement;
 
     expect(circle.classList.contains('size-10')).toBe(true);
     expect(circle.classList.contains('bg-surface-secondary')).toBe(true);
-    expect(circle.classList.contains('text-text-quaternary')).toBe(true);
-    expect(screen.getByText('추가').classList.contains('text-text-quaternary')).toBe(true);
+    expect(circle.classList.contains('text-text-quinary')).toBe(true);
+    expect(screen.getByText('추가').classList.contains('text-text-quinary')).toBe(true);
   });
 
   it('aria-label을 주면 보이는 글자는 그대로 두고 접근성 이름만 구체화한다', () => {

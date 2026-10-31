@@ -6,7 +6,7 @@ const option = tv({
   variants: {
     variant: {
       required: 'text-text-brand',
-      optional: 'text-text-quaternary',
+      optional: 'text-text-quinary',
     },
   },
   defaultVariants: { variant: 'required' },
