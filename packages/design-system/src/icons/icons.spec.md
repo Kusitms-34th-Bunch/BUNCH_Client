@@ -6,7 +6,7 @@
 
 ## 목적과 범위
 
-Line 29종·Fill 8종, 아이콘 37종을 크기별 SVG(small·medium·large, 총 111개)에서 SVGR로 변환해 **고정 크기 export 111개**와 `size` 선택용 export 37개로 제공한다. 기존 `size` API를 유지하면서 고정 크기 사용의 번들 비용을 줄인다. 크기별 도형(viewBox·선 굵기 포함)을 확대·축소로 대체하지 않는다. 원본을 확인한 결과 세 크기의 도형 구조는 32종 모두 같지만 선 굵기가 다르다(small 1.2, medium·large 1.5). 런타임 이름 레지스트리나 IconButton은 만들지 않는다. 생성 컴포넌트는 asset 파이프라인이 소유하며 수작업 컴포넌트 scaffold 대상이 아니다.
+Line 29종·Fill 8종, 아이콘 37종을 크기별 SVG(small·medium·large, 총 111개)에서 SVGR로 변환해 **고정 크기 export 111개**와 `size` 선택용 export 37개로 제공한다. 기존 `size` API를 유지하면서 고정 크기 사용의 번들 비용을 줄인다. 크기별 도형(viewBox·선 굵기 포함)을 확대·축소로 대체하지 않는다. 원본을 확인한 결과 세 크기의 도형 구조는 37종 모두 같지만 선 굵기가 다르다(small 1.2, medium·large 1.5). 런타임 이름 레지스트리나 IconButton은 만들지 않는다. 생성 컴포넌트는 asset 파이프라인이 소유하며 수작업 컴포넌트 scaffold 대상이 아니다.
 
 ## Public API
 
