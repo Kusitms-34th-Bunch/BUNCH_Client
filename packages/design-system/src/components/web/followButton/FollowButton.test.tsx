@@ -38,4 +38,10 @@ describe('FollowButton', () => {
 
     expect(screen.getByRole('button', { name: '맞팔로우' })).toBeTruthy();
   });
+
+  it('빈 글자를 넘기면 기본 글자로 대체한다', () => {
+    render(<FollowButton status="following">{''}</FollowButton>);
+
+    expect(screen.getByRole('button', { name: '팔로잉' })).toBeTruthy();
+  });
 });

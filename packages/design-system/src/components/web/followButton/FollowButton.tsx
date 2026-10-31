@@ -28,6 +28,7 @@ export const FollowButton = ({ status, children, className, ...props }: FollowBu
     className={cn(status !== 'follow' && 'text-text-tertiary', className)}
     {...props}
   >
-    {children ?? LABELS[status]}
+    {/* 빈 글자면 접근성 이름이 비므로 기본 글자로 대체 */}
+    {children === undefined || children === null || children === '' ? LABELS[status] : children}
   </Button>
 );

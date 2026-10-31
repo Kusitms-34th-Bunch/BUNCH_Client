@@ -16,7 +16,7 @@
 ## Public API
 
 - `status`: `follow` | `following` | `requested`(필수).
-- `children?`: 글자 바꾸기. 기본값은 상태별로 `팔로우`·`팔로잉`·`팔로우 요청됨`이다.
+- `children?`: 글자 바꾸기. 기본값은 상태별로 `팔로우`·`팔로잉`·`팔로우 요청됨`이다. 빈 글자(`""`)도 기본값으로 대체한다(접근성 이름이 비지 않게).
 - `Button`의 나머지 속성(`onClick`, `disabled`, `className`, `aria-*` 등). `size`는 `lg` 고정, `variant`·아이콘은 상태가 정한다.
 
 ## 상태와 동작
@@ -49,7 +49,7 @@
 
 ## 검증
 
-- [x] test: 상태별 접근성 이름, 「팔로잉」 화살표, 클릭, 글자 바꾸기
+- [x] test: 상태별 접근성 이름, 「팔로잉」 화살표, 클릭, 글자 바꾸기, 빈 글자 대체
 - [x] Story: Follow, Following, Requested, Disabled
 - [x] Storybook Chromium 치수·색 대조
 - [ ] 스크린 리더·실기기
