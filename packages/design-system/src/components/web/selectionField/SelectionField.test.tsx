@@ -22,21 +22,21 @@ describe('SelectionField', () => {
     expect(onFieldClick).toHaveBeenCalledTimes(1);
   });
 
-  it('카드는 흰 배경에 border-tertiary 1px 테두리, 반경 r5다', () => {
+  it('카드는 secondary 배경에 테두리 없이 반경 r5다', () => {
     const { container } = renderField();
     const { classList } = container.firstElementChild as HTMLElement;
 
-    expect(classList.contains('bg-surface-primary')).toBe(true);
-    expect(classList.contains('border')).toBe(true);
-    expect(classList.contains('border-border-tertiary')).toBe(true);
+    expect(classList.contains('bg-surface-secondary')).toBe(true);
+    expect(classList.contains('bg-surface-primary')).toBe(false);
+    expect(classList.contains('border')).toBe(false);
     expect(classList.contains('rounded-r5')).toBe(true);
     expect(classList.contains('py-s5')).toBe(true);
   });
 
-  it('제목은 SemiBold 14/21 토큰이고 아이콘은 모두 숨겨진다', () => {
+  it('제목은 Regular 14/21 토큰이고 아이콘은 모두 숨겨진다', () => {
     const { container } = renderField();
 
-    expect(screen.getByText('위치 추가').classList.contains('typography-body-3-semi-bold')).toBe(
+    expect(screen.getByText('위치 추가').classList.contains('typography-body-3-regular')).toBe(
       true,
     );
     for (const svg of container.querySelectorAll('svg')) {
@@ -104,12 +104,12 @@ describe('SelectionField', () => {
     expect(screen.getByRole('button', { name: 'Clear location' })).toBeTruthy();
   });
 
-  it('지우기 버튼은 20px 아이콘에 40px 터치 영역을 가진다', () => {
+  it('지우기 버튼은 16px 아이콘에 32px 터치 영역을 가진다', () => {
     renderField({ selected: true });
     const { classList } = screen.getByRole('button', { name: /지우기/ });
 
-    expect(classList.contains('size-5')).toBe(true);
-    expect(classList.contains('before:-inset-2.5')).toBe(true);
+    expect(classList.contains('size-4')).toBe(true);
+    expect(classList.contains('before:-inset-2')).toBe(true);
     expect(classList.contains('z-10')).toBe(true);
   });
 
@@ -135,14 +135,15 @@ describe('SelectionField', () => {
     expect(classList.contains('flex-col')).toBe(true);
   });
 
-  it('추천 칩은 36px 높이의 secondary 배경 원형이고 누르면 그 값으로 onSuggestionClick을 부른다', () => {
+  it('추천 칩은 36px 높이의 흰 배경 원형이고 누르면 그 값으로 onSuggestionClick을 부른다', () => {
     const onSuggestionClick = vi.fn();
     const onFieldClick = vi.fn();
     renderField({ suggestions: ['서울특별시'], onSuggestionClick, onFieldClick });
     const chip = screen.getByRole('button', { name: '서울특별시' });
 
     expect(chip.classList.contains('h-9')).toBe(true);
-    expect(chip.classList.contains('bg-surface-secondary')).toBe(true);
+    expect(chip.classList.contains('bg-surface-primary')).toBe(true);
+    expect(chip.classList.contains('bg-surface-secondary')).toBe(false);
     expect(chip.classList.contains('rounded-full')).toBe(true);
 
     fireEvent.click(chip);
@@ -202,7 +203,6 @@ describe('SelectionField', () => {
     const chip = screen.getByRole('button', { name: '서울특별시' });
 
     expect(chip.classList.contains('h-9')).toBe(true);
-    expect(chip.classList.contains('bg-surface-secondary')).toBe(true);
     expect(chip.hasAttribute('aria-pressed')).toBe(false);
   });
 
