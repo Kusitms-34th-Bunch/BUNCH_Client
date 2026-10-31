@@ -15,6 +15,12 @@ import { photoBoxFixture } from '../fixtures/photoBox.fixture';
 import { MAX_BUNDLE_PHOTOS } from '../lib/photoActions';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
 
+// 끌기 라이브러리의 알림 영역(aria-live=assertive)도 status role이라 사진함 상태 안내만 골라냄
+const pageStatus = () =>
+  screen
+    .getAllByRole('status')
+    .find((element) => element.getAttribute('aria-live') !== 'assertive')!;
+
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 // 로티 재생 라이브러리는 모양을 검증하지 않으므로 mock
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
@@ -111,7 +117,7 @@ describe('저장', () => {
 
     await runMenu(user, '저장');
 
-    expect(screen.getByRole('status').textContent).toBe(PHOTO_BOX_MESSAGES.saving);
+    expect(pageStatus().textContent).toBe(PHOTO_BOX_MESSAGES.saving);
     // 저장 중 필터·사진은 inert라 키보드 선택도 불가
     expect(screen.getByRole('radiogroup', { name: '멤버 필터' }).closest('[inert]')).not.toBeNull();
     // 사진마다가 아닌 화면 전체 dim과 로딩(로티) 하나 표시
@@ -125,9 +131,7 @@ describe('저장', () => {
     expect(photoButtons()[2]!.getAttribute('aria-pressed')).toBe('false');
 
     finish({ savedIds: ['bulk-0', 'bulk-1'], failedIds: [] });
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).not.toBe(PHOTO_BOX_MESSAGES.saving),
-    );
+    await waitFor(() => expect(pageStatus().textContent).not.toBe(PHOTO_BOX_MESSAGES.saving));
     expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
     expect(screen.getByRole('radiogroup', { name: '멤버 필터' }).closest('[inert]')).toBeNull();
   });

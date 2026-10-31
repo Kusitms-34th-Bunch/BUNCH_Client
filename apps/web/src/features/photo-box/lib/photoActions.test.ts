@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { PhotoBoxPhoto, PhotoBoxViewer } from './types';
-import { applyDelete, applyTakenDate, canDeletePhotos, getDeleteKind } from './photoActions';
+import {
+  applyDelete,
+  applyTakenDate,
+  canDeletePhotos,
+  getDeleteKind,
+  needsDateChangeConfirm,
+} from './photoActions';
 
 const photo = (id: string, uploaderIds: string[]): PhotoBoxPhoto => ({
   id,
@@ -105,5 +111,23 @@ describe('applyTakenDate', () => {
 
     expect(original[0]?.takenAt).toBe('2026-09-27T14:30');
     expect(result[1]).toBe(original[1]);
+  });
+});
+
+describe('needsDateChangeConfirm', () => {
+  const admin: PhotoBoxViewer = { memberId: 'me', isAdmin: true };
+  const member: PhotoBoxViewer = { memberId: 'me', isAdmin: false };
+
+  it('관리자가 다른 멤버 사진이나 함께 올린 사진을 포함하면 확인을 거친다', () => {
+    expect(needsDateChangeConfirm([photo('1', ['me']), photo('2', ['you'])], admin)).toBe(true);
+    expect(needsDateChangeConfirm([photo('1', ['me', 'you'])], admin)).toBe(true);
+  });
+
+  it('내가 혼자 올린 사진만이면 관리자도 확인 없이 바꾼다', () => {
+    expect(needsDateChangeConfirm([photo('1', ['me']), photo('2', ['me'])], admin)).toBe(false);
+  });
+
+  it('일반 멤버는 확인을 거치지 않는다', () => {
+    expect(needsDateChangeConfirm([photo('1', ['me', 'you'])], member)).toBe(false);
   });
 });

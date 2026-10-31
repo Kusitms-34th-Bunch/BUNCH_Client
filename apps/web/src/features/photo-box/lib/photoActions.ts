@@ -3,9 +3,22 @@ import type { PhotoBoxPhoto, PhotoBoxViewer } from './types';
 /** 번들 하나에 담을 수 있는 사진 수(명세 3.3.4) */
 export const MAX_BUNDLE_PHOTOS = 20;
 
+/** 번치 하나에 둘 수 있는 사진 수(명세 3.2.7). 가득 차면 올리기 시트를 열지 않음 */
+export const MAX_PHOTOS_IN_BOX = 1000;
+
 /** 일반 멤버는 내가 올린 사진만, 관리자는 모든 사진을 삭제할 수 있음(함께 올린 사진은 올린 멤버 모두가 내 사진) */
 export const canDeletePhotos = (photos: readonly PhotoBoxPhoto[], viewer: PhotoBoxViewer) =>
   viewer.isAdmin || photos.every((photo) => photo.uploaderIds.includes(viewer.memberId));
+
+/**
+ * 날짜를 바꾸기 전에 확인 창을 거치는지: 관리자가 다른 멤버 사진이나 함께 올린 사진을 포함할 때(명세 3.4.1)
+ * 일반 멤버는 내가 올린 사진만 바꿀 수 있어 확인 없이 진행
+ */
+export const needsDateChangeConfirm = (photos: readonly PhotoBoxPhoto[], viewer: PhotoBoxViewer) =>
+  viewer.isAdmin &&
+  photos.some(
+    (photo) => !photo.uploaderIds.includes(viewer.memberId) || photo.uploaderIds.length > 1,
+  );
 
 /**
  * 삭제 확인 창 문구를 가르는 종류(명세 3.3.5)
