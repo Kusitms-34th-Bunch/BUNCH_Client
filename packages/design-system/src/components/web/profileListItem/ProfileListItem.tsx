@@ -52,7 +52,7 @@ export const ProfileListItem = ({
   >
     <div className="gap-s3 flex min-w-0 items-center">
       <div className="flex shrink-0 items-end">
-        <ProfileImage src={imageSrc} className="border-border-tertiary size-10 border" />
+        <ProfileImage src={imageSrc} size="S" className="border-border-tertiary border" />
         {/* Figma: 배지 16px가 이미지와 12px 겹침, relative 이미지 위에 오도록 relative 지정 */}
         {memberRole ? (
           <RoleBadge

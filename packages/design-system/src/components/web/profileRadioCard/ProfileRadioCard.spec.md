@@ -39,7 +39,7 @@
 | -------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | 패딩 12·10, radius `r5`, 바탕 `surface-secondary`, 높이 60           | `px-padding-p6 py-padding-p5 rounded-r5 bg-surface-secondary`         |
 | 이미지·이름 간격 8                                                   | `gap-s4`                                                              |
-| 이미지 40, 테두리 `border-tertiary`(선택 시 `border-brand-subtle`)   | `ProfileImage` + `size-10 border`                                     |
+| 이미지 40, 테두리 `border-tertiary`(선택 시 `border-brand-subtle`)   | `ProfileImage` `size="S"` + `border`                                  |
 | 이름 Body-1-Medium, `text-primary`(비활성 `text-disabled`)           | `typography-body-1-medium`                                            |
 | Control Radio 20                                                     | `Radio`(`core/radio`)                                                 |
 | 선택 바탕 `surface-brand-subtle-1`, 테두리 1px `border-brand-subtle` | `has-checked:bg-surface-brand-subtle-1 has-checked:ring-1 ring-inset` |

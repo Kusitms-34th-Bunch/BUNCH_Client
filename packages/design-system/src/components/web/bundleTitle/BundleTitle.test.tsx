@@ -17,6 +17,15 @@ describe('BundleTitle', () => {
     expect(title.classList.contains('text-text-secondary')).toBe(true);
   });
 
+  it('variant=weak면 제목 글자가 Regular 14/21 토큰이다', () => {
+    renderTitle({ variant: 'weak' });
+    const title = screen.getByText('사진');
+
+    expect(title.classList.contains('typography-body-3-regular')).toBe(true);
+    expect(title.classList.contains('typography-body-3-semi-bold')).toBe(false);
+    expect(title.classList.contains('text-text-secondary')).toBe(true);
+  });
+
   it('줄은 높이 25px(h-6.25)에 간격 8px(gap-s4)이다', () => {
     const { container } = renderTitle();
     const { classList } = container.firstElementChild as HTMLElement;

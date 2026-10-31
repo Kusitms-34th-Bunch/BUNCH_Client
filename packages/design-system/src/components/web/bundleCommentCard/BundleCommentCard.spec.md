@@ -5,7 +5,7 @@
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle CommentCard`(node `1303:16140`). 변형은 `State=Default·Focused·Filled·Error·Editing` 5개다.
-- 의존: `ProfileImage`(24px로 줄여 사용), `EditingAnimation`(Editing), 자동 높이 hook `useTextareaAutoHeight`(`labeledTextField`의 `.internal`, `LabeledTextArea`와 공유하도록 이 작업에서 꺼냄), iOS 확대 방지용 `inputScale.module.css`(`core/textField`).
+- 의존: `ProfileImage`(`size="XXS"` 24px), `EditingAnimation`(Editing), 자동 높이 hook `useTextareaAutoHeight`(`labeledTextField`의 `.internal`, `LabeledTextArea`와 공유하도록 이 작업에서 꺼냄), iOS 확대 방지용 `inputScale.module.css`(`core/textField`).
 
 ## 목적과 범위
 

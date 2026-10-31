@@ -22,6 +22,30 @@ describe('ProfileImage', () => {
     expect(container.querySelector('img')).toBeNull();
   });
 
+  it('size를 안 주면 90px, 주면 크기별 지름이다', () => {
+    const sizes = { L: 'size-22.5', M: 'size-16', S: 'size-10', XS: 'size-8.5', XXS: 'size-6' };
+    const { container, rerender } = render(<ProfileImage />);
+    expect((container.firstElementChild as HTMLElement).classList.contains('size-22.5')).toBe(true);
+
+    for (const [size, className] of Object.entries(sizes)) {
+      rerender(<ProfileImage size={size as keyof typeof sizes} />);
+      const { classList } = container.firstElementChild as HTMLElement;
+
+      expect(classList.contains(className)).toBe(true);
+      expect(Object.values(sizes).filter((value) => classList.contains(value))).toEqual([
+        className,
+      ]);
+    }
+  });
+
+  it('className으로 지름을 덮어쓸 수 있다', () => {
+    const { container } = render(<ProfileImage size="S" className="size-7.75" />);
+    const { classList } = container.firstElementChild as HTMLElement;
+
+    expect(classList.contains('size-7.75')).toBe(true);
+    expect(classList.contains('size-10')).toBe(false);
+  });
+
   it('src가 바뀌면 바뀐 이미지를 그린다', () => {
     const { rerender } = render(<ProfileImage src="/default.png" alt="기본 프로필 사진" />);
     expect(screen.getByRole('img').getAttribute('src')).toBe('/default.png');
