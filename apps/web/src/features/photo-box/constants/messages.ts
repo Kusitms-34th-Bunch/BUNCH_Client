@@ -18,6 +18,13 @@ export const PHOTO_BOX_MESSAGES = {
   deleteConfirmDescription: (_kind: DeleteKind) => '삭제 이후에는 복구할 수 없어요.',
   deleteDone: (count: number) => `사진함에서 사진 ${count}장이 삭제되었어요.`,
   dateChanged: '사진 날짜가 변경되었어요.',
+  undo: '되돌리기',
+  dateForbidden: '내가 올린 사진만 날짜를 바꿀 수 있어요.',
+  // 날짜 바꾸기·끌기 확인 창 문구는 기획 문서에 원문이 없어 임시 문구(기획 확정 후 교체)
+  dateConfirmTitle: '선택한 사진의 날짜를 바꿀까요?',
+  dateConfirmDescription: '다른 멤버가 올린 사진이 포함되어 있어요.',
+  photoBoxFull: '사진함이 가득 찼어요.',
+  uploadSheetTitle: (bunchName: string) => `${bunchName}에 사진 올리기`,
   dateChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   deletedPhoto: '삭제된 사진이에요',
   detailPosition: (index: number, total: number) => `${total}장 중 ${index}번째 사진`,

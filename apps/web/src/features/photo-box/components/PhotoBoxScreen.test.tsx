@@ -6,6 +6,12 @@ import { PHOTO_BOX_PATHS } from '../constants/paths';
 import { photoBoxFixture } from '../fixtures/photoBox.fixture';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
 
+// 끌기 라이브러리의 알림 영역(aria-live=assertive)도 status role이라 사진함 상태 안내만 골라냄
+const pageStatus = () =>
+  screen
+    .getAllByRole('status')
+    .find((element) => element.getAttribute('aria-live') !== 'assertive')!;
+
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 
@@ -92,14 +98,13 @@ describe('PhotoBoxScreen 목록', () => {
     expect(screen.getByRole('img', { name: '불러오지 못한 사진' })).toBeTruthy();
   });
 
-  it('「+」 버튼이 있고 누르면 올리기 호출 지점을 부른다', async () => {
+  it('「+」 버튼이 있고 누르면 사진 올리기 시트가 열린다', async () => {
     const user = userEvent.setup();
-    const onUploadClick = vi.fn();
-    renderScreen(ready(), { onUploadClick });
+    renderScreen();
 
     await user.click(screen.getByRole('button', { name: '사진 올리기' }));
 
-    expect(onUploadClick).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('dialog')).toBeTruthy();
   });
 });
 
@@ -306,7 +311,7 @@ describe('PhotoBoxScreen 로딩·오류', () => {
   it('로딩 중에는 상태 안내를 두고 사진 목록은 없다', () => {
     renderScreen({ kind: 'loading' });
 
-    const status = screen.getByRole('status');
+    const status = pageStatus();
     expect(status.textContent).toContain('사진함을 불러오는 중이에요');
     expect(screen.queryByRole('radiogroup')).toBeNull();
   });

@@ -7,13 +7,14 @@ import {
   MAX_BUNDLE_PHOTOS,
   canDeletePhotos,
   getDeleteKind,
+  needsDateChangeConfirm,
   type DeleteKind,
 } from '../lib/photoActions';
 import { pruneSelection, toggleSelection, type PhotoSelection } from '../lib/selection';
 
 export type PhotoMenuAction = 'save' | 'bundle' | 'date' | 'delete';
 
-type SelectionDialog = 'bundle' | 'delete';
+type SelectionDialog = 'bundle' | 'delete' | 'date';
 
 // 사진함 토스트는 목록 폭(343px)으로 펼침(Figma 사진함_09·11·12). 선택 모드를 끝낸 직후에는 탭 막대가 다시 보이므로 막대 위로 올림
 const notify = (message: string, { aboveTabBar = false } = {}) =>
@@ -28,8 +29,6 @@ type UsePhotoSelectionFlowOptions = {
   actions: PhotoBoxActions;
   /** 「번들 만들기」 확인 뒤 호출(초안 생성과 편집 화면 이동은 번들 작성 이슈가 맡음) */
   onCreateBundle?: ((_selection: PhotoSelection) => void) | undefined;
-  /** 「날짜 바꾸기」를 골랐을 때(날짜 바꾸기 시트는 추후 작업) */
-  onChangeDate?: ((_selection: PhotoSelection) => void) | undefined;
 };
 
 /**
@@ -41,12 +40,13 @@ export function usePhotoSelectionFlow({
   data,
   actions,
   onCreateBundle,
-  onChangeDate,
 }: UsePhotoSelectionFlowOptions) {
   const [selecting, setSelecting] = useState(false);
   const [selection, setSelection] = useState<PhotoSelection>([]);
-  const [pending, setPending] = useState<'save' | 'delete' | undefined>(undefined);
+  const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
   const [dialog, setDialog] = useState<SelectionDialog | undefined>(undefined);
+  // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 확인을 기다리는 날짜(확인 창이 열려 있는 동안만 값이 있음)
+  const [dateToConfirm, setDateToConfirm] = useState<Date | undefined>(undefined);
   // 선택 모드를 끝낼 때마다 올려, 끝나기 전에 시작한 요청의 늦은 결과를 걸러냄
   const sessionRef = useRef(0);
 
@@ -61,6 +61,7 @@ export function usePhotoSelectionFlow({
     setSelecting(false);
     setSelection([]);
     setDialog(undefined);
+    setDateToConfirm(undefined);
   };
 
   const toggle = (photoId: string) => {
@@ -121,7 +122,8 @@ export function usePhotoSelectionFlow({
       if (selection.length > MAX_BUNDLE_PHOTOS) notify(PHOTO_BOX_MESSAGES.bundleTooMany);
       else setDialog('bundle');
     } else if (action === 'date') {
-      onChangeDate?.(selection);
+      if (canDeletePhotos(selectedPhotos, data.viewer)) setDialog('date');
+      else notify(PHOTO_BOX_MESSAGES.dateForbidden);
     } else if (canDeletePhotos(selectedPhotos, data.viewer)) {
       setDialog('delete');
     } else {
@@ -130,6 +132,11 @@ export function usePhotoSelectionFlow({
   };
 
   const closeDialog = () => setDialog(undefined);
+
+  // 저장이 도는 동안은 시트를 닫지 않음
+  const closeDateSheet = () => {
+    if (pending !== 'date') setDialog(undefined);
+  };
 
   const confirmBundle = () => {
     setDialog(undefined);
@@ -156,12 +163,43 @@ export function usePhotoSelectionFlow({
     }
   };
 
+  // 여러 장은 전부 성공 또는 전부 실패: 성공하면 선택 모드를 끝내고 토스트, 실패하면 시트를 그대로 둠
+  const changeDate = async (date: Date) => {
+    const session = sessionRef.current;
+    setPending('date');
+    try {
+      await actions.changePhotoDates(selection, date);
+    } catch {
+      setPending(undefined);
+      if (session === sessionRef.current) notify(PHOTO_BOX_MESSAGES.dateChangeFailed);
+      return;
+    }
+    setPending(undefined);
+    if (session !== sessionRef.current) return;
+    notify(PHOTO_BOX_MESSAGES.dateChanged, { aboveTabBar: true });
+    stop();
+  };
+
+  const saveDate = (date: Date) => {
+    if (pending || !data || !isSelectionCurrent()) return;
+    if (needsDateChangeConfirm(selectedPhotos, data.viewer)) setDateToConfirm(date);
+    else void changeDate(date);
+  };
+
+  const confirmDateChange = () => {
+    const date = dateToConfirm;
+    setDateToConfirm(undefined);
+    if (date && isSelectionCurrent()) void changeDate(date);
+  };
+
   return {
     selecting,
     selection,
-    /** 저장 또는 삭제 요청이 도는 중 */
+    /** 저장·삭제·날짜 변경 요청이 도는 중 */
     busy: pending !== undefined,
     saving: pending === 'save',
+    dateSaving: pending === 'date',
+    dateConfirmOpen: dateToConfirm !== undefined,
     dialog,
     deleteKind,
     start,
@@ -169,6 +207,10 @@ export function usePhotoSelectionFlow({
     toggle,
     handleMenuAction,
     closeDialog,
+    closeDateSheet,
+    saveDate,
+    confirmDateChange,
+    cancelDateConfirm: () => setDateToConfirm(undefined),
     confirmBundle,
     confirmDelete,
   };

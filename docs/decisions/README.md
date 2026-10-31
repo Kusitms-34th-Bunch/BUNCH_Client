@@ -27,3 +27,4 @@
 - [013: Pretendard는 직접 호스팅하고, 앱 화면은 한 파일·처음 오는 웹 화면은 동적 서브셋을 쓴다](./records/013-pretendard-self-hosting.md)
 - [014: 바텀시트의 모달 동작은 Base UI Drawer에 맡긴다](./records/014-bottom-sheet-base-ui-drawer.md)
 - [015: 사진 상세의 스와이프·확대는 Swiper(Zoom·Keyboard·A11y 모듈)로 처리한다](./records/015-photo-detail-swiper.md)
+- [016: 사진을 끌어 날짜 섹션을 옮기는 동작은 @dnd-kit(core·sortable)으로 처리한다](./records/016-photo-drag-dnd-kit.md)
