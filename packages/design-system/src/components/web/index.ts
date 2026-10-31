@@ -36,6 +36,7 @@ export * from './menuDivider';
 export * from './menuItem';
 export * from './menuLabel';
 export * from './menuTabs';
+export * from './notificationCard';
 export * from './option';
 export * from './pageCounter';
 export * from './pageHeader';
