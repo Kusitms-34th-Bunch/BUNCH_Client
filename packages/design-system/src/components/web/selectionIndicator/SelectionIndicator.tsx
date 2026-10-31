@@ -23,6 +23,8 @@ export const SelectionIndicator = ({
     aria-hidden="true"
     className={cn(
       'typography-body-3-semi-bold box-border inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-white text-black',
+      // 선택 전후 배경 전환은 150ms(Figma 화면 설계서 사진 선택 Interaction)
+      'transition-colors duration-150 ease-[cubic-bezier(0,0,0.35,1)] motion-reduce:transition-none',
       selected ? 'bg-white' : 'bg-white/60',
       className,
     )}

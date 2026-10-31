@@ -22,7 +22,7 @@
 ## Public API
 
 - `SelectionIndicator`: `selected`(기본 false), `order`, 그리고 `span` 속성. 기본 `aria-hidden`.
-- `PhotoThumbnail`: `src`·`alt`(필수), `selectionMode`(기본 false), `selected`(기본 false), `selectionOrder`, 그리고 HTML 속성(`onClick` 등).
+- `PhotoThumbnail`: `src`·`alt`(필수), `selectionMode`(기본 false), `selected`(기본 false), `selectionOrder`, `onImageError`(사진을 불러오지 못했을 때, 2026-10-30 추가), 그리고 HTML 속성(`onClick` 등). 사진은 `loading="lazy"`·`decoding="async"`로 그려 긴 목록에서 화면 밖 사진을 나중에 불러온다.
 - Figma 변형: Selected=False·SelectionMode=False(기본) / Selected=False·SelectionMode=True(`selectionMode`) / Selected=True·SelectionMode=True(`selectionMode selected`). SelectionMode=False에서 Selected=True인 변형은 Figma에 없고, 코드에서도 `selected`를 무시한다.
 - 호출자 소유 책임: 사진 주소, 사진 설명(`alt`), 선택 상태와 순서.
 
@@ -49,3 +49,7 @@
 - Token: `typography-body-3-semi-bold`(14/21 · -0.5 · 600, 토큰 이름 오타는 repo 그대로), `bg-overlay-pressed`, `top-s4`·`right-s4`(8px), `border-white`·`bg-white`·`text-black`(Figma의 흰색·검정). 폭 123px은 토큰에 없어 기본 scale(`w-30.75`)로 적용했다.
 - dependency 추가 없음.
 - Storybook: `Web/SelectionIndicator`(NotSelected, Selected, Matrix), `Web/PhotoThumbnail`(Default, SelectionMode, Selected, Matrix, Interactive: 눌러서 고르면 순서가 붙고 해제하면 뒤 번호가 당겨짐).
+
+## 선택 전환
+
+- 선택 오버레이는 항상 두고 투명도만 150ms(`cubic-bezier(0, 0, 0.35, 1)`)로 전환한다. 선택 인디케이터 배경도 같은 값으로 전환하고 `prefers-reduced-motion`에서는 즉시 바뀐다(Figma 사진함 화면 설계서 사진 선택 Interaction).

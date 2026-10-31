@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ConfirmDialog, Dialog } from './Dialog';
+import { ActionDialog, ConfirmDialog, Dialog } from './Dialog';
 
 afterEach(cleanup);
 
@@ -154,5 +154,79 @@ describe('Dialog', () => {
       screen.getByTestId('content'),
     );
     expect(screen.getByRole('button', { name: '완료' })).toBeTruthy();
+  });
+
+  it('shows the profile image above the title (Profile Side by Side)', async () => {
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={() => {}}
+        title="관리자로 지정할까요?"
+        image={<img src="avatar.png" alt="" data-testid="avatar" />}
+        cancelLabel="아니요"
+        confirmLabel="예"
+        onConfirm={() => {}}
+      />,
+    );
+
+    const dialog = await screen.findByRole('alertdialog', { name: '관리자로 지정할까요?' });
+    const avatar = screen.getByTestId('avatar');
+    expect(dialog.contains(avatar)).toBe(true);
+    expect(
+      avatar.compareDocumentPosition(screen.getByRole('heading')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});
+
+describe('ActionDialog', () => {
+  const renderActions = (props: Partial<Parameters<typeof ActionDialog>[0]> = {}) =>
+    render(
+      <ActionDialog
+        open
+        onOpenChange={() => {}}
+        title="경진님을 어떻게 할까요?"
+        actions={[
+          { label: '공동 관리자로 지정하기', onClick: () => {} },
+          { label: '관리자 권한 넘기기', onClick: () => {} },
+          { label: '번치에서 내보내기', onClick: () => {} },
+        ]}
+        {...props}
+      />,
+    );
+
+  it('stacks the actions and focuses cancel first', async () => {
+    renderActions();
+
+    await screen.findByRole('alertdialog', { name: '경진님을 어떻게 할까요?' });
+    const buttons = screen.getAllByRole('button').map((button) => button.textContent);
+    expect(buttons).toEqual([
+      '공동 관리자로 지정하기',
+      '관리자 권한 넘기기',
+      '번치에서 내보내기',
+      '취소',
+    ]);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '취소' })),
+    );
+  });
+
+  it('calls only the pressed action and cancels without running any action', async () => {
+    const onTransfer = vi.fn();
+    const onCancel = vi.fn();
+    const onOpenChange = vi.fn();
+    renderActions({
+      onCancel,
+      onOpenChange,
+      actions: [{ label: '관리자 권한 넘기기', onClick: onTransfer }],
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: '관리자 권한 넘기기' }));
+    expect(onTransfer).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '취소' }));
+    await waitFor(() => expect(onCancel).toHaveBeenCalledTimes(1));
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 });

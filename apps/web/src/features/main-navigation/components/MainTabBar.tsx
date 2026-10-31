@@ -56,8 +56,14 @@ export function MainTabBar() {
   if (inShell && usesNativeBar !== false) return null;
 
   return (
-    <div className="px-padding-p8 pb-s4 shrink-0">
+    <div
+      data-main-tab-bar
+      // 높이 5rem(h-20, -mt-20: 막대 64px + 아래 여백 16px)은 (main)/layout.tsx의 --main-tab-bar-height와 같은 값
+      // 뒤 그라데이션(Figma 사진함_02): 막대 위 11px부터 Safe Area까지, 투명 → 검정 4%(64px) → 검정 10%
+      className="px-padding-p8 pb-s4 pointer-events-none relative z-10 -mt-20 h-20 shrink-0 group-has-data-hide-main-tab-bar/main:hidden before:absolute before:inset-x-0 before:-top-2.75 before:-bottom-(--safe-area-bottom) before:-z-10 before:bg-[linear-gradient(to_bottom,rgb(255_255_255/0),rgb(0_0_0/0.04)_64px,rgb(0_0_0/0.1))]"
+    >
       <BottomNavigation
+        className="pointer-events-auto"
         aria-label="주요 메뉴"
         items={items}
         selectedId={selectedId}

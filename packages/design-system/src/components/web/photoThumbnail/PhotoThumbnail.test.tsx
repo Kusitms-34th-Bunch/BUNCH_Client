@@ -31,14 +31,15 @@ describe('PhotoThumbnail', () => {
     );
     const button = screen.getByRole('button');
     expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelector('.bg-overlay-pressed')).toBeTruthy();
+    expect(container.querySelector('.bg-overlay-pressed.opacity-100')).toBeTruthy();
     expect(button.textContent).toContain('2');
     expect(screen.getByText('2번째 선택')).toBeTruthy();
   });
 
-  it('선택 전에는 오버레이와 순서가 없고 인디케이터만 그린다', () => {
+  it('선택 전에는 오버레이가 투명하고 순서가 없으며 인디케이터만 그린다', () => {
     const { container } = render(<PhotoThumbnail src={src} alt="사진" selectionMode />);
-    expect(container.querySelector('.bg-overlay-pressed')).toBeNull();
+    expect(container.querySelector('.bg-overlay-pressed.opacity-100')).toBeNull();
+    expect(container.querySelector('.bg-overlay-pressed.opacity-0')).toBeTruthy();
     expect(container.querySelector('.rounded-full')).toBeTruthy();
     expect(screen.queryByText(/번째 선택/)).toBeNull();
   });
@@ -72,5 +73,30 @@ describe('PhotoThumbnail', () => {
   it('선택되면 이름에 alt와 순서가 함께 들어간다', () => {
     render(<PhotoThumbnail src={src} alt="사진" selectionMode selected selectionOrder={2} />);
     expect(screen.getByRole('button', { name: '사진 2번째 선택' })).toBeTruthy();
+  });
+
+  it('사진은 화면 밖에서 나중에 불러오도록 lazy로 그린다', () => {
+    const { container } = render(<PhotoThumbnail src={src} alt="사진" />);
+    const image = container.querySelector('img') as HTMLImageElement;
+    expect(image.getAttribute('loading')).toBe('lazy');
+    expect(image.getAttribute('decoding')).toBe('async');
+  });
+
+  it('사진을 불러오지 못하면 onImageError를 부른다', () => {
+    const onImageError = vi.fn();
+    const { container } = render(
+      <PhotoThumbnail src={src} alt="사진" onImageError={onImageError} />,
+    );
+    fireEvent.error(container.querySelector('img') as HTMLImageElement);
+    expect(onImageError).toHaveBeenCalledTimes(1);
+  });
+
+  it('선택 모드의 사진도 onImageError를 부른다', () => {
+    const onImageError = vi.fn();
+    const { container } = render(
+      <PhotoThumbnail src={src} alt="사진" selectionMode onImageError={onImageError} />,
+    );
+    fireEvent.error(container.querySelector('img') as HTMLImageElement);
+    expect(onImageError).toHaveBeenCalledTimes(1);
   });
 });

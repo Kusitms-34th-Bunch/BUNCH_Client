@@ -40,7 +40,7 @@ const SelectableGrid = ({ src, count = 9 }: { src: string; count?: number }) => 
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
 
   return (
-    <div className="gap-s2 grid w-[378px] grid-cols-3">
+    <div className="gap-s2 grid w-94.5 grid-cols-3">
       {Array.from({ length: count }, (_, i) => i + 1).map((id) => {
         const order = selectedIds.indexOf(id) + 1;
         return (

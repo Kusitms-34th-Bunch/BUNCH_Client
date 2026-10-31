@@ -4,37 +4,49 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 
 ## Workflows
 
-| Workflow                  | Trigger                                                                                                      | 역할                                                                                                                                                                                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                  | `pull_request`, `push`(main, develop)                                                                        | `Frontend CI`. 설치 전에 `check-suspicious`(변조 징후 가드)를 먼저 실행한 뒤 `yarn verify`와 같은 검사(생성물·catalog·agent docs·boundary 확인 + format·lint·typecheck·test·build)를 실행하고, 결과를 PR 댓글로 남긴다                                  |
-| `e2e.yml`                 | `pull_request`, `workflow_dispatch`                                                                          | Playwright E2E(chromium). 실패 시 report·result를 artifact로 업로드                                                                                                                                                                                     |
-| `security.yml`            | `pull_request`, `push`(main, develop), `workflow_dispatch`                                                   | gitleaks로 git 이력 전체의 시크릿 스캔. 시크릿이 있으면 실패                                                                                                                                                                                            |
-| `create-work-branch.yml`  | `issues: opened`                                                                                             | 이슈 메타데이터·브랜치 자동 생성 후 Discord 알림 — `docs/conventions/git.md`                                                                                                                                                                            |
-| `pr-metadata.yml`         | `pull_request`(열림·재오픈·ready·제목 수정·동기화)                                                           | PR 타입 라벨·assignee와 릴리스 본문 자동화. develop → main은 타입 검사 제외 — `docs/conventions/git.md`                                                                                                                                                 |
-| `branch-protection.yml`   | `main`을 대상으로 하는 `pull_request`                                                                        | 출발 브랜치가 `develop`이 아니면 실패 — `docs/decisions/records/005-branch-strategy.md`                                                                                                                                                                 |
-| `cache-cleanup.yml`       | `pull_request_target`(닫힘)                                                                                  | PR이 닫히면 그 PR이 만든 Actions 캐시를 삭제한다. `develop`·`main`의 캐시는 건드리지 않는다. PR 코드를 checkout하지 않는다                                                                                                                              |
-| `discord-notify.yml`      | `pull_request`(닫힘)                                                                                         | PR merge Discord 알림, webhook 없으면 스킵. 열림·재오픈·ready 알림은 제목 확정 뒤 `pr-metadata.yml`의 notify job이 보낸다                                                                                                                               |
-| `discord-pr-conflict.yml` | `pull_request_target`(열림·재오픈·갱신), `push`(main, develop)                                               | 충돌 상태(`CONFLICTING`)인 PR을 Discord로 알림. PR 코드를 checkout하지 않는다. webhook 없으면 스킵                                                                                                                                                      |
-| `chromatic.yml`           | 모든 브랜치의 `push`(태그 제외). design-system·`package.json`·`yarn.lock`·`.yarnrc.yml`·workflow 자신의 변경 | 디자인 시스템 Storybook의 시각 변경을 Chromatic에서 검토한다. 설치 전에 변조 가드를 실행하고, `CHROMATIC_PROJECT_TOKEN`이 없으면(포크·Dependabot, 토큰 미등록) 단계를 건너뛰어 job은 성공으로 끝난다. 포크 PR은 이 저장소에 push가 없어 실행되지 않는다 |
+| Workflow                  | Trigger                                                                                                           | 역할                                                                                                                                                                                                                                                    |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                  | `pull_request`, `push`(main, develop)                                                                             | `Frontend CI`. 검사를 matrix job 3개(`Lint`·`Test`·`Typecheck & Build`)로 나눠 각자 러너에서 실행하고, `Verify` job이 결과를 모아 PR 댓글로 남긴다. 각 job은 설치 전에 `check-suspicious`(변조 징후 가드)를 먼저 실행한다                               |
+| `e2e.yml`                 | `pull_request`, `workflow_dispatch`                                                                               | Playwright E2E(chromium). 실패 시 report·result를 artifact로 업로드                                                                                                                                                                                     |
+| `security.yml`            | `pull_request`, `push`(main, develop), `workflow_dispatch`                                                        | gitleaks로 git 이력 전체의 시크릿 스캔. 시크릿이 있으면 실패                                                                                                                                                                                            |
+| `create-work-branch.yml`  | `issues: opened`                                                                                                  | 이슈 메타데이터·브랜치 자동 생성 후 Discord 알림 — `docs/conventions/git.md`                                                                                                                                                                            |
+| `pr-metadata.yml`         | `pull_request`(열림·재오픈·ready·제목 수정·동기화)                                                                | PR 타입 라벨·assignee와 릴리스 본문 자동화. develop → main은 타입 검사 제외 — `docs/conventions/git.md`                                                                                                                                                 |
+| `branch-protection.yml`   | `main`을 대상으로 하는 `pull_request`                                                                             | 출발 브랜치가 `develop`이 아니면 실패 — `docs/decisions/records/005-branch-strategy.md`                                                                                                                                                                 |
+| `cache-cleanup.yml`       | `pull_request_target`(닫힘)                                                                                       | PR이 닫히면 그 PR이 만든 Actions 캐시를 삭제한다. `develop`·`main`의 캐시는 건드리지 않는다. PR 코드를 checkout하지 않는다                                                                                                                              |
+| `discord-notify.yml`      | `pull_request`(닫힘)                                                                                              | PR merge Discord 알림, webhook 없으면 스킵. 열림·재오픈·ready 알림은 제목 확정 뒤 `pr-metadata.yml`의 notify job이 보낸다                                                                                                                               |
+| `discord-pr-conflict.yml` | `pull_request_target`(열림·재오픈·갱신), `push`(main, develop)                                                    | 충돌 상태(`CONFLICTING`)인 PR을 Discord로 알림. PR 코드를 checkout하지 않는다. webhook 없으면 스킵                                                                                                                                                      |
+| `chromatic.yml`           | 모든 브랜치의 `push`(태그 제외). design-system·`package.json`·`yarn.lock`·`.yarnrc.yml`·workflow 자신의 변경      | 디자인 시스템 Storybook의 시각 변경을 Chromatic에서 검토한다. 설치 전에 변조 가드를 실행하고, `CHROMATIC_PROJECT_TOKEN`이 없으면(포크·Dependabot, 토큰 미등록) 단계를 건너뛰어 job은 성공으로 끝난다. 포크 PR은 이 저장소에 push가 없어 실행되지 않는다 |
+| `codeql.yml`              | `pull_request`·`push`(main, develop), `workflow_dispatch`                                                         | CodeQL로 JavaScript·TypeScript 정적 보안 분석. 결과는 Security 탭에 남는다. 공개 저장소 전제(아래)                                                                                                                                                      |
+| `storybook-deploy.yml`    | `push`(develop). design-system·`package.json`·`yarn.lock`·`.yarnrc.yml`·workflow 자신의 변경, `workflow_dispatch` | 디자인 시스템 Storybook을 빌드해 GitHub Pages에 배포한다. 설치 전에 변조 가드를 실행한다. 공개 저장소와 Pages Source 설정 전제(아래)                                                                                                                    |
 
 ## 필수 체크
 
-`Verify`(`Frontend CI`, `ci.yml`)가 branch protection의 required check다. `Secret scan`(`Security`)과 `Metadata`(`PR Metadata`)도 필수 체크로 두면 시크릿이 든 PR과 타입을 읽을 수 없는 일반 작업 PR은 머지되지 않는다. `develop` → `main` 릴리스 PR은 타입 검사를 생략한다(필수 체크 지정은 저장소 관리자가 GitHub에서 설정한다). `Validate Source Branch`(`Branch Protection`)는 **`main`의 ruleset에만** 필수 체크로 지정한다. 이 workflow는 `main` 대상 PR에서만 돌아서, `develop` 대상 PR까지 필수로 걸면 체크가 오지 않아 모든 PR이 대기 상태로 막힌다. 같은 PR·브랜치에 새 commit이 push되면 이전 CI run은 concurrency 설정으로 취소된다.
+`Verify`(`Frontend CI`, `ci.yml`)가 branch protection의 required check다. 이 체크를 넣은 ruleset의 대상은 `develop`·`main`만 둔다. 모든 브랜치를 대상으로 하면 이슈 자동화가 `develop` 최신 커밋으로 작업 브랜치를 만들 때, 그 커밋의 `Verify`가 아직 돌고 있으면 push가 거절된다. `Secret scan`(`Security`)과 `Metadata`(`PR Metadata`)도 필수 체크로 두면 시크릿이 든 PR과 타입을 읽을 수 없는 일반 작업 PR은 머지되지 않는다. `develop` → `main` 릴리스 PR은 타입 검사를 생략한다(필수 체크 지정은 저장소 관리자가 GitHub에서 설정한다). `Validate Source Branch`(`Branch Protection`)는 **`main`의 ruleset에만** 필수 체크로 지정한다. 이 workflow는 `main` 대상 PR에서만 돌아서, `develop` 대상 PR까지 필수로 걸면 체크가 오지 않아 모든 PR이 대기 상태로 막힌다. 같은 PR·브랜치에 새 commit이 push되면 이전 CI run은 concurrency 설정으로 취소된다.
 
 ## CI 결과 댓글
 
-`Frontend CI`는 PR에 단계별 결과 표를 댓글로 남긴다. 같은 PR에서는 새 댓글을 만들지 않고 기존 댓글을 갱신한다. 한 단계가 실패해도 나머지를 끝까지 실행해서 한 번에 모두 보여 준다. 단 `변조 가드`나 `의존성 설치`가 실패하면 그 뒤 단계는 실행하지 않고 "건너뜀"으로 표시한다. 설치는 코드를 실행할 수 있는 단계라서 가드가 실패하면 하지 않는다.
+`Frontend CI`는 PR에 단계별 결과 표를 댓글로 남긴다. 같은 PR에서는 새 댓글을 만들지 않고 기존 댓글을 갱신한다. 검사 job이 하나 실패해도 나머지는 끝까지 실행해서(`fail-fast: false`) 한 번에 모두 보여 준다. 각 job은 `변조 가드`(workflow 단계)와 `의존성 설치`(`.github/actions/setup`)를 먼저 실행하고, 하나라도 실패하면 그 job은 검사를 실행하지 않고 실패한다. 설치는 코드를 실행할 수 있는 단계라서 가드가 실패하면 하지 않는다.
 
-- `ci.yml`은 `package.json`의 `verify`와 같은 검사를 실행한다. 생성물·catalog·agent docs·boundary·format 검사 뒤에 `yarn lint`, `yarn typecheck`, `yarn test`를 같은 runner에서 병렬로 실행한다. 세 검사가 끝나면 각각의 로그와 성공·실패 결과를 모은 뒤 빌드를 별도로 실행한다. Next.js 생성 파일을 공유하는 typecheck와 build는 동시에 실행하지 않는다. `verify`에 검사를 더하거나 빼면 `ci.yml`의 명령, job `outputs`, 댓글 표를 함께 고친다.
+- `ci.yml`은 `package.json`의 `verify`와 같은 검사를 실행한다. job 구성은 다음과 같다.
+  - `Lint`: 생성물·catalog·agent docs·boundary·format 검사를 먼저 실행한 뒤 `yarn lint`.
+  - `Test`: `yarn test`. 가장 무거운 검사라 단독으로 둔다.
+  - `Typecheck & Build`: `yarn typecheck` 다음 `yarn build`. 둘은 Next.js 생성 파일을 공유하므로 같은 러너에서 순서대로 실행한다.
+- 무거운 lint와 test를 한 러너에서 함께 돌리면 코어를 나눠 써서 서로 느려진다. 반대로 job을 너무 잘게 나누면 job마다 준비(checkout·설치 약 25초)가 반복되고, 조직의 동시 실행 한도 때문에 대기열이 길어진다. 그래서 정적 검사는 lint 러너에, typecheck는 build 러너에 묶었다.
+- PR에서는 `Lint`·`Test`·`Typecheck & Build`의 Turbo 작업이 base 브랜치 대비 바뀐 패키지와 그 패키지에 의존하는 패키지만 실행한다(`turbo --affected`, `TURBO_SCM_BASE=origin/<base>`). 예를 들어 `packages/design-system`을 바꾸면 design-system과 web만 검사하고, 문서만 바꾸면 Turbo 작업이 없어 바로 통과한다. `turbo.json`, 공통 설정 패키지(`lint-config`·`ts-config`), 의존성처럼 여러 패키지에 걸친 변경은 해당 패키지 전부를 고른다. `develop`·`main` push는 전체를 실행해서 PR에서 빠진 조합을 머지 뒤에 다시 확인한다.
+- 루트 `yarn lint`는 `eslint .`(루트 파일)과 `check:tailwind`를 먼저 실행하고 `turbo lint`를 마지막에 둔다. CI가 붙이는 `--affected`가 `turbo lint`에만 전달되게 하려는 순서다. 두 검사는 각각 몇 초라 PR에서도 전체를 검사한다.
+- 검사마다 단계(step)를 따로 둔다. 각 단계는 `!cancelled()`와 준비 성공을 조건으로 실행돼서, 앞 단계가 실패해도 다음 검사까지 결과가 나온다. 하나라도 실패하면 그 job은 실패한다.
+- PR 댓글의 검사별 결과는 각 검사 job이 마지막에 단계 결과(`steps.<id>.outcome`)를 `ci-result-<lint|test|build>.json` artifact(보관 1일)로 올리고, `Verify`가 내려받아 만든다. Actions API의 job `steps`는 비어서 돌아와 쓰지 않는다. 표는 변조 가드·의존성 설치(세 job 합산: 하나라도 실패면 실패, 하나라도 생략이면 생략)부터 실행 순서로 11줄이다. 가드나 설치가 실패한 job의 검사는 생략으로 보이고, 그 사실을 표 위에 안내한다. 결과 파일이 없는 job은 `-`로 표시한다.
+- `verify`에 검사를 더하거나 빼면 `ci.yml`의 검사 단계, 결과 기록 단계(`Record check results`)의 JSON, 댓글 표(`rows`)를 함께 고친다. `rows`의 첫 값은 matrix `id`(세 job 합산이면 `all`), 둘째 값은 단계 `id`와 같아야 한다.
 - 댓글은 같은 저장소 안의 PR에서만 남긴다. 포크와 Dependabot PR은 토큰이 읽기 전용이라 댓글을 쓸 수 없어서 건너뛴다. 이때도 `Verify` 체크의 성공·실패는 그대로 나온다.
-- ruleset의 필수 체크 입력란에는 job 이름인 `Verify`를 지정한다. Actions 화면에서는 `Frontend CI` workflow 안에 표시된다. 댓글 job(`Result comment`)은 필수가 아니다.
+- ruleset의 필수 체크 입력란에는 job 이름인 `Verify`를 지정한다. Actions 화면에서는 `Frontend CI` workflow 안에 표시된다. 댓글은 `Verify` job의 한 단계이고, 댓글 작성이 실패하거나 2분을 넘겨도 판정에는 영향이 없다(`continue-on-error`, 단계 `timeout-minutes: 2`).
 
 ## 빌드 캐시
 
 `Frontend CI`는 `actions/cache`로 Turbo 캐시(`.turbo/cache`)와 Next.js 빌드 캐시(`apps/web/.next/cache`)를 이어 받는다. Turbo는 입력이 같은 패키지의 lint·typecheck·test·build 결과를 재사용해서 바뀐 앱만 다시 실행한다. Next 캐시는 Turbo 출력에서 제외되어 있어 따로 둔다.
 
 - 캐시가 없거나 맞지 않으면(첫 실행, 소스·`yarn.lock` 변경으로 Next 캐시 키가 달라진 경우, 7일 이상 미사용으로 만료) 해당 부분을 다시 실행하므로 느려질 뿐 결과는 같다. 캐시 서비스 오류는 경고로만 처리되어 CI를 실패시키지 않는다.
-- 저장은 `actions/cache/save`를 마지막 "Fail if any check failed" 단계 앞에 따로 둔다. 기본 자동 저장은 job이 성공해야 실행되는데, 이 job은 검사가 하나라도 실패하면 실패로 끝나서 고친 뒤 다시 push할 때마다 캐시 없이 시작하게 된다. 설치가 성공한 뒤에는 검사 결과와 상관없이 저장하고(Turbo는 성공한 작업의 결과만 캐시한다), 변조 가드나 설치가 실패하면 저장하지 않는다.
+- Turbo 캐시는 검사 job마다 키를 나눈다(`turbo-<OS>-<lint|test|build>-<SHA>`). 여러 job이 같은 키를 동시에 저장하면 하나만 저장되기 때문이다.
+- 저장은 `actions/cache/save`로 각 job 끝에 따로 둔다. 기본 자동 저장은 job이 성공해야 실행되는데, 검사가 실패한 job은 고친 뒤 다시 push할 때마다 캐시 없이 시작하게 된다. 그래서 검사 결과와 상관없이 저장한다(Turbo는 성공한 작업의 결과만 캐시한다). 변조 가드나 설치가 실패하면 그 job은 저장 전에 멈춘다.
 - Turbo 캐시가 hit한 작업은 다시 실행하지 않고 이전 로그만 재생한다. 입력(소스, 의존성, `turbo.json`)이 같을 때만 hit하므로 검증을 건너뛰는 것은 아니다. 의심스러우면 Actions의 Caches에서 해당 캐시를 지우고 다시 실행한다.
 - Turbo 캐시 키에 커밋 SHA를 쓰므로 실행마다 항목이 새로 저장된다. PR이 닫히면 `cache-cleanup.yml`이 그 PR의 캐시를 지워서 쌓이지 않게 한다. `develop`·`main`에 push되며 저장된 캐시는 정리하지 않고 아래 한도에 의한 삭제에 맡긴다. 저장소 캐시 한도(10GB)를 넘으면 오래된 항목부터 지워진다.
 - Next 캐시는 빌드가 성공한 실행에서만 저장한다. 중간에 실패한 빌드의 부분 캐시가 그 키에 고정되지 않게 하려는 것이다.
@@ -61,8 +73,8 @@ yarn e2e
 
 ## CI 실패 시
 
-1. 실패한 job(`Verify`, `E2E` 중 어디인지)을 먼저 확인한다.
-2. `Verify` 실패면 `yarn verify`를 로컬에서 재현해 어떤 하위 명령(`check:suspicious`, `check:generated`, `check:catalog`, `check:agent-docs`, `check:boundaries`, `format:check`, `lint`, `typecheck`, `test`, `build`)이 실패했는지 좁힌다. `Suspicious file guard` 단계가 실패했다면 아래 "변조 가드"를 먼저 확인한다.
+1. 실패한 job을 먼저 확인한다. `Verify`는 결과만 모으므로 `Frontend CI`의 검사 job(`Lint`·`Test`·`Typecheck & Build`)과 `E2E` 중 어느 것이 실패했는지 본다.
+2. `Verify` 실패면 `yarn verify`를 로컬에서 재현해 어떤 하위 명령(`check:suspicious`, `check:generated`, `check:catalog`, `check:agent-docs`, `check:boundaries`, `format:check`, `lint`, `typecheck`, `test`, `build`)이 실패했는지 좁힌다. `변조 가드` 단계가 실패했다면 아래 "변조 가드"를 먼저 확인한다.
 3. `E2E` 실패면 업로드된 `playwright-report`, `test-results` artifact를 확인한다.
 
 ## 시크릿 스캔
@@ -97,11 +109,14 @@ yarn e2e
 
 ## 아직 활성화되지 않은 템플릿
 
-`.github/workflow-templates/`에는 Storybook Pages 배포, Lighthouse 성능 감사, Vercel 배포, CodeQL workflow 초안이 있다. `.github/workflows/`가 아닌 곳에 있어 실행되지 않으며, 각 파일이 요구하는 전제(secret 설정, 저장소 공개 전환 등)가 갖춰지기 전까지는 도입하지 않는다. 조건이 갖춰지면 해당 템플릿을 `.github/workflows/`로 옮기고 이 문서에 실제 trigger·역할을 추가한다. 자세한 활성화 조건은 `.github/workflow-templates/README.md`를 확인한다.
+`.github/workflow-templates/`에는 Lighthouse 성능 감사와 Vercel 배포 workflow 초안이 있다. `.github/workflows/`가 아닌 곳에 있어 실행되지 않으며, 각 파일이 요구하는 전제(secret 설정, 저장소 공개 전환 등)가 갖춰지기 전까지는 도입하지 않는다. 조건이 갖춰지면 해당 템플릿을 `.github/workflows/`로 옮기고 이 문서에 실제 trigger·역할을 추가한다. 자세한 활성화 조건은 `.github/workflow-templates/README.md`를 확인한다.
 
-Storybook Pages 배포(`storybook-deploy.yml`)도 저장소를 공개로 돌린 뒤에 활성화한다. 비공개 저장소의 Pages는 플랜 제한이 있을 수 있다. 활성화할 때 저장소 Settings → Pages의 Source를 GitHub Actions로 지정하고, 이 문서의 Workflows 표에 trigger와 역할을 추가한다.
+## 공개 저장소 전제
 
-CodeQL(`codeql.yml`)은 저장소를 공개로 돌린 뒤에 활성화한다. 비공개 저장소에서는 code scanning에 GitHub Advanced Security가 필요하다. 비공개인 동안에는 `yarn check:suspicious`, Dependabot, 코드 오너 리뷰가 보안 방어의 중심이다. 활성화하면 이 문서의 Workflows 표에 trigger와 역할을 추가한다.
+`codeql.yml`과 `storybook-deploy.yml`은 저장소가 공개일 때만 동작한다.
+
+- CodeQL: 비공개 저장소의 code scanning에는 GitHub Advanced Security가 필요하다. 결과는 저장소 Security 탭의 Code scanning에 쌓인다.
+- Storybook 배포: 저장소 Settings → Pages의 Source를 GitHub Actions로 지정해야 배포된다. 주소는 `https://<owner>.github.io/<repo>/`이다.
 
 ## Storybook 시각 검토
 

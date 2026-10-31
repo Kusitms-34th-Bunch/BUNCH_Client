@@ -96,4 +96,19 @@ describe('UploadOptionCard', () => {
     expect(button.classList.contains('mt-2')).toBe(true);
     expect(button.getAttribute('type')).toBe('button');
   });
+
+  it('icon으로 카메라 아이콘을 고른다', () => {
+    const { container, rerender } = renderCard();
+    const photoPath = container.querySelector('svg')?.innerHTML;
+
+    rerender(
+      <UploadOptionCard
+        title="카메라로 찍기"
+        description="지금 찍은 사진을 바로 올려요."
+        icon="camera"
+      />,
+    );
+
+    expect(container.querySelector('svg')?.innerHTML).not.toBe(photoPath);
+  });
 });

@@ -1,8 +1,8 @@
-// 저장소 변조(공급망 공격) 징후를 찾는 가드. 의존성 없이 Node 내장 모듈만 쓰므로 `yarn install` 전에 실행한다.
+// 저장소 변조(공급망 공격) 징후를 찾는 가드. 의존성 없이 Node 내장 모듈만 쓰므로 `yarn install` 전에 실행.
 // 알려진 수법(폴더를 열면 자동 실행되는 VS Code task, 공백 뒤에 숨긴 난독화 코드, 폰트로 위장한 JS,
-// dev·install 스크립트에 끼운 node 호출)을 휴리스틱으로 잡는다.
-// ponytail: 휴리스틱이라 우회될 수 있다. 방어의 한 겹일 뿐이고 기본은 브랜치 보호와 CODEOWNERS 리뷰다.
-//   오탐이 늘면 규칙별 허용 목록을 둔다.
+// dev·install 스크립트에 끼운 node 호출)을 휴리스틱으로 검출.
+// ponytail: 휴리스틱이라 우회 가능. 방어의 한 겹일 뿐이고 기본은 브랜치 보호와 CODEOWNERS 리뷰.
+//   오탐이 늘면 규칙별 허용 목록 추가.
 import {
   mkdirSync,
   mkdtempSync,
@@ -56,7 +56,9 @@ const LIFECYCLE = new Set([
 ]);
 const ALLOWED_LIFECYCLE = { prepare: 'husky' };
 const ALLOWED_NODE_PREFIXES = ['turbo/', '.agents/', '.github/', 'scripts/'];
-const NODE_RUN = /\bnode\s+(?:--?[\w-]+(?:=\S+)?\s+)*(\S+\.(?:[cm]?js))\b/g;
+// 옵션은 대시 뒤 이름 첫 글자를 `\w`로 고정해 `--x`를 `-`+`-x`로도 읽는 모호성(지수적 역추적) 제거
+// `--` 단독은 옵션 끝 표시로 따로 허용, `-` 단독(stdin)은 옵션으로 보지 않음
+const NODE_RUN = /\bnode\s+(?:--?\w[\w-]*(?:=\S+)?\s+|--\s+)*(\S+\.(?:[cm]?js))\b/g;
 const NODE_TEST_FILE = /\.test\.[cm]?js$/;
 const DOWNLOAD_EXEC = /\b(?:curl|wget)\b|base64\s+(?:-d|--decode)|\beval\s/;
 
@@ -155,7 +157,7 @@ export function scan(root) {
           );
         for (const m of cmd.matchAll(NODE_RUN)) {
           const path = m[1].replace(/^(?:\.\.?\/)+/, '');
-          // `node --test x.test.mjs`는 허용. 파일 내용은 못 보므로 악의적인 테스트 파일은 코드 오너 리뷰가 막는다.
+          // `node --test x.test.mjs`는 허용. 파일 내용은 못 보므로 악의적인 테스트 파일은 코드 오너 리뷰가 차단.
           if (/\s--test\b/.test(m[0]) && NODE_TEST_FILE.test(path)) continue;
           if (!ALLOWED_NODE_PREFIXES.some((p) => path.startsWith(p))) {
             add(
@@ -244,7 +246,7 @@ function selfTest() {
     // 알려진 수법을 흉내 낸 저장소
     put('.vscode/tasks.json', '{"tasks":[{"runOptions":{"runOn":"folderOpen"}}]}');
     put('.vscode/settings.json', '{"task.allowAutomaticTasks":"on"}');
-    // 예시 식별자를 코드로 만든다(이 파일 자체가 난독화 규칙에 걸리지 않게 한다)
+    // 예시 식별자를 코드로 생성(이 파일 자체가 난독화 규칙에 걸리지 않게)
     const idents = Array.from({ length: 5 }, (_, i) => `_0x${(0x1a2b + i).toString(16)}`).join(',');
     put('api.js', `module.exports = 1;${' '.repeat(120)}var ${idents};`);
     put('fonts/fa-solid-900.eot', 'require("child_process").spawn("node")');
@@ -260,7 +262,7 @@ function selfTest() {
     );
     put('.gitignore', 'node_modules\n');
     const found = scan(dir);
-    // --test 예외가 테스트 파일이 아닌 실행까지 풀어 주지 않는지 확인한다
+    // --test 예외가 테스트 파일이 아닌 실행까지 풀어 주지 않는지 확인
     if (!found.some((f) => f.rule === 'script-node-run' && f.detail.includes('evil.mjs')))
       throw new Error('node --test 예외가 테스트 파일 아닌 실행(evil.mjs)까지 허용했다');
     const rules = new Set(found.map((f) => f.rule));
@@ -277,6 +279,14 @@ function selfTest() {
     ];
     const missing = expected.filter((r) => !rules.has(r));
     if (missing.length) throw new Error(`탐지 못 한 규칙: ${missing.join(', ')}`);
+    // `-- -` 반복 입력의 지수적 역추적 회귀 방지(CodeQL js/redos)
+    const started = Date.now();
+    const runs = [...`node ${'-- -'.repeat(40)}!`.matchAll(NODE_RUN)].length;
+    // `node - <인자>`의 인자는 실행 파일이 아니므로 검출하지 않음
+    const stdinRuns = [...'node - packages/tool.js'.matchAll(NODE_RUN)].length;
+    if (runs !== 0 || stdinRuns !== 0 || Date.now() - started > 1000) {
+      throw new Error('NODE_RUN 정규식이 반복 옵션 입력에서 느리거나 잘못 매치한다');
+    }
     console.log('self-test OK');
   } finally {
     rmSync(dir, { recursive: true, force: true });
