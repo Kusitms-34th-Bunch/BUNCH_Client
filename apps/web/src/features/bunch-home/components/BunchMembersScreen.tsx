@@ -161,6 +161,8 @@ export function BunchMembersScreen({
               className="text-text-secondary gap-s3 flex focus:outline-none"
             >
               <span>멤버</span>
+              {/* 간격은 gap이라 낭독용 띄어쓰기만 따로 둠 */}
+              <span className="sr-only"> </span>
               <span>
                 {members.length}/{BUNCH_MEMBER_LIMIT}명
               </span>

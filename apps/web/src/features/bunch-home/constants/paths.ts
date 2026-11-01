@@ -5,6 +5,8 @@ export const BUNCH_HOME_PATHS = {
   menu: '/bunch/menu',
   /** 번치 프로필 편집(기능명세 5.5, 메인 관리자) */
   profile: '/bunch/menu/profile',
+  /** 차단 목록(기능명세 5.7) */
+  blocked: '/bunch/menu/blocked',
   /** 멤버 관리(기능명세 5.6). 번치 홈 프로필의 멤버 수에서도 들어올 예정이라 메뉴 밖 경로 */
   members: '/bunch/members',
   /** 역할별 권한 안내(화면설계서 1-1) */

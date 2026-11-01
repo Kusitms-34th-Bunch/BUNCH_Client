@@ -83,7 +83,7 @@ describe('BunchMenuScreen', () => {
     );
   });
 
-  it('멤버 관리·멤버 초대는 각 화면으로 가는 링크다', () => {
+  it('멤버 관리·멤버 초대·차단 목록은 각 화면으로 가는 링크다', () => {
     render(
       <BunchMenuScreen bunchName="여행가조" myRole="member" onBack={vi.fn()} onLeave={vi.fn()} />,
     );
@@ -93,6 +93,9 @@ describe('BunchMenuScreen', () => {
     );
     expect(screen.getByRole('link', { name: '멤버 초대' }).getAttribute('href')).toBe(
       BUNCH_HOME_PATHS.invite,
+    );
+    expect(screen.getByRole('link', { name: '차단 목록' }).getAttribute('href')).toBe(
+      BUNCH_HOME_PATHS.blocked,
     );
   });
 

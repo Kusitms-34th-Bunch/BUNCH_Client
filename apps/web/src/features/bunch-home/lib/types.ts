@@ -14,6 +14,14 @@ export type BunchMember = {
   isMe?: boolean | undefined;
 };
 
+/** 내 번치가 차단한 다른 번치(차단 목록 한 줄) */
+export type BlockedBunch = {
+  id: string;
+  name: string;
+  /** 번치 대표 이미지 주소(없으면 배경색 원) */
+  imageSrc?: string | undefined;
+};
+
 /** 번치 전환 목록의 상태. 삭제됐거나 내보내진 번치는 「접근 불가」로 남음 */
 export type BunchAccess = 'active' | 'deleted' | 'removed';
 
