@@ -55,6 +55,14 @@ describe('BundleDraft', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it('사진을 누르면 그 사진의 캡션 화면으로 이동(push)한다', async () => {
+    renderDraft('draft-1');
+
+    await userEvent.click(screen.getByRole('button', { name: '2번째 사진 캡션 보기' }));
+
+    expect(push).toHaveBeenCalledWith('/bunch/drafts/draft-1/photos/draft-photo-2');
+  });
+
   it('돌아갈 기록이 있으면 뒤로가기는 back()을 쓴다', async () => {
     vi.spyOn(window.history, 'length', 'get').mockReturnValue(3);
     renderDraft('draft-1');
