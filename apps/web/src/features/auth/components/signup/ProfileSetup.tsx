@@ -3,8 +3,9 @@
 import { Button, toast } from '@app/design-system';
 import { CameraButton, LabeledTextField, PageHeader, ProfileImage } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { type PointerEvent, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
+import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import {
   CHECK_FAILURE_MESSAGE,
   type CheckNickname,
@@ -40,17 +41,6 @@ type ProfileSetupProps = {
   nextPath: string;
   /** 닉네임 중복 확인 호출. 없으면(서버 연결 전) 확인 생략 */
   checkNickname?: CheckNickname | undefined;
-};
-
-const closeKeyboard = () => {
-  const active = document.activeElement;
-  if (active instanceof HTMLInputElement) active.blur();
-};
-
-// 입력창·라벨·버튼이 아닌 곳을 누르면 키보드 닫기. 버튼은 누르는 중에 닫으면 화면이 밀려 탭이 사라지므로 클릭 뒤에 닫기
-const dismissKeyboard = (event: PointerEvent<HTMLElement>) => {
-  if (event.target instanceof Element && event.target.closest('input, label, button')) return;
-  closeKeyboard();
 };
 
 /**

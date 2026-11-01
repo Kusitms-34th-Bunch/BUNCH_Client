@@ -5,20 +5,20 @@ import { LabeledTextField, PageHeader, VisibilityOption } from '@app/design-syst
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import {
+  BUNCH_NAME_INVALID_MESSAGE,
+  BUNCH_NAME_MAX_LENGTH,
+  hasInvalidBunchNameChars,
+} from '@/shared/lib/bunchProfile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
-
-const NAME_MAX_LENGTH = 12;
-const NAME_PATTERN = /^[A-Za-z0-9가-힣]*$/;
-// 한글 IME 조합 중 자모 허용으로 오류 깜빡임 방지
-const COMPOSING_NAME_PATTERN = /^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ]*$/;
 
 export function BunchBasicInfo() {
   const router = useRouter();
   const { name, setName, visibility, setVisibility } = useCreateBunchDraft();
   const [composing, setComposing] = useState(false);
 
-  const invalid = !(composing ? COMPOSING_NAME_PATTERN : NAME_PATTERN).test(name);
+  const invalid = hasInvalidBunchNameChars(name, composing);
   const canGoNext = name.length > 0 && !invalid && visibility !== null;
 
   return (
@@ -41,8 +41,8 @@ export function BunchBasicInfo() {
           title="번치 이름"
           placeholder="번치 이름을 입력해주세요"
           value={name}
-          maxLength={NAME_MAX_LENGTH}
-          {...(invalid ? { errorMessage: '특수문자를 제외한 영문, 한글만 사용할 수 있어요.' } : {})}
+          maxLength={BUNCH_NAME_MAX_LENGTH}
+          {...(invalid ? { errorMessage: BUNCH_NAME_INVALID_MESSAGE } : {})}
           onChange={(event) => setName(event.target.value)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}

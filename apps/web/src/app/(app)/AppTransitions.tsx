@@ -30,6 +30,8 @@ export const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
 export const BUNCH_ADD_DISSOLVE_DURATION_MS = 150;
 // 화면설계서(번치 상세): 더보기 메뉴 진입 Move in / ← / Ease out / 150ms, 뒤로 가기 Move out / → / 같은 시간
 export const BUNCH_MENU_MOVE_DURATION_MS = 150;
+// 더보기 메뉴 → 하위 화면은 한 단계 들어가는 이동이라 미는 slide 300ms(화면설계서에 정의 없음, 2026-11-01 디자이너 요청)
+export const BUNCH_MENU_SUB_SLIDE_DURATION_MS = 300;
 export const TAB_CROSSFADE_DURATION_MS = 80;
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
@@ -77,6 +79,11 @@ const transition = slide({}, { override: { forward: tuneSlide, backward: tuneSli
 const tuneDissolve = tuneTransition(SIGNUP_DISSOLVE_DURATION_MS / 2);
 const dissolve = fade({}, { override: { forward: tuneDissolve, backward: tuneDissolve } });
 const tuneBundleSlide = tuneTransition(BUNDLE_DETAIL_SLIDE_DURATION_MS);
+const tuneMenuSubSlide = tuneTransition(BUNCH_MENU_SUB_SLIDE_DURATION_MS);
+const menuSubSlide = slide(
+  {},
+  { override: { forward: tuneMenuSubSlide, backward: tuneMenuSubSlide } },
+);
 const bundleSlide = slide(
   {},
   { override: { forward: tuneBundleSlide, backward: tuneBundleSlide } },
@@ -215,6 +222,12 @@ const rules: SsgoiTransitionRule[] = [
     to: BUNCH_HOME_PATHS.menu,
     bidirectional: true,
     transition: bunchMenuMove,
+  },
+  {
+    from: BUNCH_HOME_PATHS.menu,
+    to: BUNCH_HOME_PATHS.profile,
+    bidirectional: true,
+    transition: menuSubSlide,
   },
   {
     from: BUNDLE_SELECT_PATHS.select,

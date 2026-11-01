@@ -4,11 +4,11 @@ import { Badge, Button } from '@app/design-system';
 import { LabeledTextArea, PageHeader } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { BUNCH_DESCRIPTION_MAX_LENGTH } from '@/shared/lib/bunchProfile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
 
-const DESCRIPTION_MAX_LENGTH = 50;
 const TIPS = [
   '만나면 웃음이 끊이지 않는 우리',
   '맛집 탐방에 진심인 사람들',
@@ -45,7 +45,7 @@ export function BunchDescription() {
           label="한 줄 소개"
           placeholder="우리 번치를 간단하게 소개해주세요"
           value={description}
-          maxLength={DESCRIPTION_MAX_LENGTH}
+          maxLength={BUNCH_DESCRIPTION_MAX_LENGTH}
           onChange={(event) => setDescription(event.target.value.replace(/[\r\n]+/g, ' '))}
           // 한 줄 소개의 Enter 줄바꿈 방지(붙여넣은 줄바꿈은 공백 처리)
           enterKeyHint="done"
