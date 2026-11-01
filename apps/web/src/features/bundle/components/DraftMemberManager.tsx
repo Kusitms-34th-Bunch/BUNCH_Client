@@ -49,7 +49,11 @@ export function DraftMemberManager({
   useEffect(() => {
     if (focusId === undefined) return;
     const frame = requestAnimationFrame(() => {
-      root.current?.querySelector<HTMLElement>(`[data-member-action="${focusId}"]`)?.focus();
+      // 삭제 버튼이 없는 카드(권한 없는 참여 멤버가 추가한 경우)는 카드 자체로 대신함
+      const target =
+        root.current?.querySelector<HTMLElement>(`[data-member-action="${focusId}"]`) ??
+        root.current?.querySelector<HTMLElement>(`[data-member-row="${focusId}"]`);
+      target?.focus();
       setFocusId(undefined);
     });
     return () => cancelAnimationFrame(frame);
@@ -118,7 +122,13 @@ export function DraftMemberManager({
               // 내 카드는 참여 멤버 누구에게나 X(스스로 나가기), 다른 멤버는 권한이 있을 때만
               const removable = isMe || canRemoveMember(draft, viewer, member);
               return (
-                <li key={member.id} ref={register(member.id)}>
+                <li
+                  key={member.id}
+                  ref={register(member.id)}
+                  data-member-row={member.id}
+                  tabIndex={-1}
+                  className="outline-none"
+                >
                   <ProfileListItem
                     name={member.name}
                     suffix={isMe ? BUNDLE_MESSAGES.selfSuffix : undefined}
@@ -164,8 +174,9 @@ export function DraftMemberManager({
         onConfirm={(member) => {
           capture();
           actions.removeMember(member.id);
-          setFocusId(member.id);
         }}
+        // 창이 닫힌 뒤에 옮겨야 닫히는 모달에 포커스를 빼앗기지 않음
+        onClosed={(member) => setFocusId(member.id)}
       />
       <LeaveDraftDialog open={leaveOpen} onOpenChange={setLeaveOpen} onConfirm={onLeave} />
     </PageShell>

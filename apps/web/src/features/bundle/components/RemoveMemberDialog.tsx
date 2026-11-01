@@ -1,9 +1,11 @@
 'use client';
 
 import { Dialog, toast } from '@app/design-system';
+import { useEffect, useRef } from 'react';
 import type { DraftMember } from '../lib/types';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 
+// 닫힘 전환(100ms)이 끝난 뒤에 알림과 포커스 이동을 하려는 지연
 const CLOSE_TRANSITION_MS = 150;
 
 type RemoveMemberDialogProps = {
@@ -13,6 +15,8 @@ type RemoveMemberDialogProps = {
   target: DraftMember | undefined;
   /** 「내보내기」를 눌렀을 때 */
   onConfirm: (_member: DraftMember) => void;
+  /** 「내보내기」 뒤 창이 완전히 닫힌 다음(토스트와 같은 시점). 포커스를 옮길 때 씀 */
+  onClosed?: ((_member: DraftMember) => void) | undefined;
 };
 
 /** 멤버 내보내기 확인 창과 「{이름}님이 번들 참여 멤버에서 제외되었어요.」 토스트(작성 화면 카드·참여 멤버 관리 화면이 같이 씀) */
@@ -21,7 +25,13 @@ export function RemoveMemberDialog({
   onOpenChange,
   target,
   onConfirm,
+  onClosed,
 }: RemoveMemberDialogProps) {
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // 화면을 떠나면 대기 중인 알림도 취소
+  useEffect(() => () => clearTimeout(timer.current), []);
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Content>
@@ -37,11 +47,12 @@ export function RemoveMemberDialog({
               if (!target) return;
               onConfirm(target);
               onOpenChange(false);
-              // 모달이 열려 있는 동안은 바깥 live region이 낭독되지 않을 수 있어 닫힌 뒤(닫힘 전환 100ms)에 알림
-              window.setTimeout(
-                () => toast(BUNDLE_MESSAGES.memberRemoved(target.name), { fullWidth: true }),
-                CLOSE_TRANSITION_MS,
-              );
+              // 모달이 열려 있는 동안은 바깥 live region 낭독과 포커스 이동이 막힐 수 있어 닫힌 뒤에 처리
+              clearTimeout(timer.current);
+              timer.current = setTimeout(() => {
+                toast(BUNDLE_MESSAGES.memberRemoved(target.name), { fullWidth: true });
+                onClosed?.(target);
+              }, CLOSE_TRANSITION_MS);
             }}
           >
             {BUNDLE_MESSAGES.removeMemberConfirm}

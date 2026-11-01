@@ -95,6 +95,17 @@ describe('멤버 추가', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
+  it('삭제 버튼이 없는 카드로 옮겨가면 카드 자체로 포커스가 이동한다', async () => {
+    render(<Harness viewer={normal} />);
+
+    await userEvent.click(screen.getByRole('button', { name: '효찬 추가하기' }));
+
+    await waitFor(() => {
+      const rows = within(joined()).getAllByRole('listitem');
+      expect(rows[rows.length - 1]).toHaveFocus();
+    });
+  });
+
   it('추가할 멤버가 없으면 「멤버 추가하기」 영역을 숨긴다', async () => {
     render(<Harness viewer={owner} />);
 
