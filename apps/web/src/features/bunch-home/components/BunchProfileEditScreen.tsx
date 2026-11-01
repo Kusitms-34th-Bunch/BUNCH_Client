@@ -85,9 +85,8 @@ function ProfileForm({
   const [description, setDescription] = useState(initial.description);
   const [isPrivate, setIsPrivate] = useState(initial.isPrivate);
   const [composing, setComposing] = useState(false);
-  const { inputRef, photoUrl, message, handleCameraClick, handleFileChange } = usePhotoPicker({
-    onError: () => toast(PHOTO_UNUSABLE_MESSAGE),
-  });
+  const { inputRef, photoUrl, isPending, message, handleCameraClick, handleFileChange } =
+    usePhotoPicker({ onError: () => toast(PHOTO_UNUSABLE_MESSAGE) });
 
   const imageSrc = photoUrl ?? initial.imageSrc;
   const nameInvalid = hasInvalidBunchNameChars(name, composing);
@@ -96,8 +95,14 @@ function ProfileForm({
     description !== initial.description ||
     isPrivate !== initial.isPrivate ||
     imageSrc !== initial.imageSrc;
+  // 사진을 읽는 중에는 저장하지 않음(이전 사진이 저장되지 않게)
   const canSave =
-    changed && !composing && name.length > 0 && !nameInvalid && description.trim().length > 0;
+    changed &&
+    !isPending &&
+    !composing &&
+    name.length > 0 &&
+    !nameInvalid &&
+    description.trim().length > 0;
   // 비공개였던 번치를 공개로 바꿀 때만 안내(Figma 1873:33513)
   const showPublicNotice = initial.isPrivate && !isPrivate;
 
