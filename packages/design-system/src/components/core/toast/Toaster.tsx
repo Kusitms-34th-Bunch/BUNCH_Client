@@ -7,6 +7,9 @@ import { cn } from '../../../utils';
 const BOTTOM_OFFSET =
   'calc(var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)) + var(--spacing-s8))';
 
+// 위 여백(`position: 'top'`): Safe Area + 헤더 48px + 1px. Figma 사진 캡션 화면의 토스트가 헤더 바로 아래(y 93, 헤더 끝 92)에 놓임
+const TOP_OFFSET = 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 49px)';
+
 // Figma 공통 모션(토스트 모션): Smart animation, easing 0, 0, 0.35, 1, 350ms, 5px 이동 + 투명도 0%↔100%
 // sonner는 --y 변수와 transition으로 움직이므로 항목(li)에서 같은 변수와 transition을 !important로 덮어씀
 // 퇴장은 sonner가 제거 표시 200ms 뒤에 항목을 없애서 350ms를 다 못 쓰고 중간에 끊기므로(실측: 투명도 0.19에서 갑자기 사라짐) 같은 곡선으로 200ms에 끝나게 함
@@ -18,6 +21,9 @@ const TOAST_MOTION = cn(
   'data-[mounted=false]:[--y:translateY(5px)]! data-[removed=true]:[--y:translateY(5px)]!',
   'motion-reduce:[transition:opacity_350ms_cubic-bezier(0,0,0.35,1)]! motion-reduce:data-[removed=true]:[transition:opacity_200ms_cubic-bezier(0,0,0.35,1)]!',
   'motion-reduce:data-[mounted=false]:[--y:translateY(0)]! motion-reduce:data-[removed=true]:[--y:translateY(0)]!',
+  // 위쪽 토스트(`position: 'top'`)는 방향이 반대: 등장은 5px 아래로 내려오며(Slide down), 퇴장은 5px 위로(Slide up) — 화면설계서 사진 캡션 3번
+  'data-[y-position=top]:data-[mounted=false]:[--y:translateY(-5px)]! data-[y-position=top]:data-[removed=true]:[--y:translateY(-5px)]!',
+  'motion-reduce:data-[y-position=top]:data-[mounted=false]:[--y:translateY(0)]! motion-reduce:data-[y-position=top]:data-[removed=true]:[--y:translateY(0)]!',
 );
 
 /** 화면을 그리는 앱의 최상위 layout에 한 번만 배치 */
@@ -25,8 +31,8 @@ export const Toaster = () => (
   <SonnerToaster
     position="bottom-center"
     visibleToasts={1}
-    offset={{ bottom: BOTTOM_OFFSET }}
-    mobileOffset={{ bottom: BOTTOM_OFFSET }}
+    offset={{ bottom: BOTTOM_OFFSET, top: TOP_OFFSET }}
+    mobileOffset={{ bottom: BOTTOM_OFFSET, top: TOP_OFFSET }}
     // 항목(li)을 목록 폭으로 펴서 안의 Toast를 내용 폭으로 가운데 정렬
     toastOptions={{ unstyled: true, className: cn('w-full', TOAST_MOTION) }}
     customAriaLabel="알림"
