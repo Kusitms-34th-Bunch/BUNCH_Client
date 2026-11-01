@@ -28,7 +28,7 @@ describe('BunchListItem', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('접근 불가 번치는 고를 수 없다', () => {
+  it('접근 불가 번치는 흐리게 보이지만 눌러서 안내를 열 수 있다', () => {
     const onClick = vi.fn();
     render(
       <BunchListItem
@@ -39,8 +39,10 @@ describe('BunchListItem', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /홍대 먹짱/ }));
+    const button = screen.getByRole('button', { name: /홍대 먹짱/ });
+    fireEvent.click(button);
 
-    expect(onClick).not.toHaveBeenCalled();
+    expect(button.getAttribute('aria-disabled')).toBeNull();
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
