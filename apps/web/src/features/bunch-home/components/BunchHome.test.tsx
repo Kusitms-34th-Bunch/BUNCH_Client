@@ -117,4 +117,12 @@ describe('BunchHome', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(within(sheet).getByRole('button', { name: /큐시즘 밋업/ })).toBeTruthy();
   });
+  it('헤더 더보기를 누르면 더보기 메뉴로 이동한다', async () => {
+    const user = userEvent.setup();
+    render(<BunchHome />);
+
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+
+    expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.menu);
+  });
 });

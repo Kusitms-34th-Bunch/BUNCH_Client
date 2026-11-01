@@ -1,0 +1,89 @@
+'use client';
+
+import { ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { MenuDivider, MenuLabel } from '@app/design-system/web';
+import { useState } from 'react';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { PageShell } from '@/shared/components/layout/PageShell';
+import type { BunchRole } from '../lib/types';
+import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+
+type BunchMenuScreenProps = {
+  bunchName: string;
+  /** 지금 번치에서 내 역할 */
+  myRole: BunchRole;
+  onBack: () => void;
+  /** 메인 관리자가 아닌 멤버가 나가기 확인 창에서 「나가기」를 눌렀을 때 */
+  onLeave: () => void;
+};
+
+/**
+ * 번치 더보기 메뉴(기능명세 5.4): 역할별 메뉴. 메인 관리자만 프로필 편집·번치 삭제
+ * 각 관리 화면은 후속 이슈라 나가기 확인 창 외 항목은 동작 미연결
+ */
+export function BunchMenuScreen({ bunchName, myRole, onBack, onLeave }: BunchMenuScreenProps) {
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const isOwner = myRole === 'owner';
+
+  return (
+    <PageShell
+      header={
+        <Header
+          leading={
+            // Figma 헤더 뒤로 가기 아이콘 색(가입 단계 헤더와 같은 연한 회색)
+            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
+              <LineChevronLeftLargeIcon />
+            </HeaderIconButton>
+          }
+        />
+      }
+    >
+      <h1 className="sr-only">{`${bunchName} 번치 더보기`}</h1>
+      {/* 항목 사이 4, 묶음과 구분선 사이 12(Figma 1873:34575) */}
+      <div className="gap-s6 pt-padding-p6 flex flex-col">
+        <ul className="gap-s2 px-padding-p8 flex flex-col">
+          {isOwner ? (
+            <li>
+              <MenuLabel>프로필 편집</MenuLabel>
+            </li>
+          ) : null}
+          <li>
+            <MenuLabel>멤버 관리</MenuLabel>
+          </li>
+          <li>
+            <MenuLabel>멤버 초대</MenuLabel>
+          </li>
+          <li>
+            <MenuLabel>차단 목록</MenuLabel>
+          </li>
+        </ul>
+        <MenuDivider className="mx-padding-p8" />
+        <ul className="gap-s2 px-padding-p8 flex flex-col">
+          <li>
+            {/* 메인 관리자는 새 관리자 지정 화면으로 이동(번치 나가기 이슈) */}
+            <MenuLabel onClick={isOwner ? undefined : () => setLeaveOpen(true)}>
+              번치 나가기
+            </MenuLabel>
+          </li>
+          {isOwner ? (
+            <li>
+              <MenuLabel>번치 삭제</MenuLabel>
+            </li>
+          ) : null}
+        </ul>
+      </div>
+      <ConfirmDialog
+        open={leaveOpen}
+        onOpenChange={setLeaveOpen}
+        title={BUNCH_HOME_MESSAGES.leaveTitle(bunchName)}
+        description={BUNCH_HOME_MESSAGES.leaveDescription}
+        cancelLabel="취소"
+        confirmLabel="나가기"
+        onConfirm={() => {
+          setLeaveOpen(false);
+          onLeave();
+        }}
+      />
+    </PageShell>
+  );
+}

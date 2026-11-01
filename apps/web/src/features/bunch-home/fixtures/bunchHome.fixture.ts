@@ -1,4 +1,4 @@
-import type { BunchHomeDetail, BunchSummary, DraftBundle } from '../lib/types';
+import type { BunchHomeDetail, BunchRole, BunchSummary, DraftBundle } from '../lib/types';
 
 // 번치·번들 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
 const sampleImage = (hue: number) => {
@@ -112,3 +112,6 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
     draftBundles: [draft('draft-6', '첫 모임', 120)],
   },
 };
+
+/** 더보기 메뉴의 내 역할(Figma 기본 화면인 메인 관리자). 다른 역할은 테스트에서 확인 */
+export const myRoleFixture: BunchRole = 'owner';

@@ -10,7 +10,7 @@ type BunchHomeHeaderProps = {
   switcherOpen: boolean;
   /** 알림 종(알림 화면은 추후 작업이라 호출 지점만 둠) */
   onNotificationClick?: (() => void) | undefined;
-  /** 더보기(메뉴 항목은 Figma에 없어 호출 지점만 둠) */
+  /** 더보기(더보기 메뉴 화면 열기) */
   onMoreClick?: (() => void) | undefined;
 };
 
