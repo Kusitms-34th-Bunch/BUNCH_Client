@@ -1,7 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recommendation } from '../lib/recommendation';
 import { BUNDLE_SELECT_MESSAGES } from '../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../constants/selectPaths';
@@ -35,6 +35,12 @@ const sectionPhotos = () =>
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+const CREATE_DELAY_MS = 10_000;
 
 describe('사진 고르기', () => {
   it('처음에는 고른 사진이 없어 「번들 만들기」가 비활성이고 「추천 번들」은 켜져 있다', () => {
@@ -78,10 +84,13 @@ describe('사진 고르기', () => {
   });
 
   it('「번들 만들기」를 누르면 생성 중으로 알리고 헤더·하단을 막은 뒤 작성 화면으로 이동한다', async () => {
-    renderSelect(undefined, 50);
+    // 대기를 10초로 두고 직접 넘김: 느린 CI에서 클릭·확인 사이에 대기(예전 50ms)가 먼저 끝나 이동하던 문제 방지
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderSelect(undefined, CREATE_DELAY_MS);
 
-    await userEvent.click(sectionPhotos()[0]!);
-    await userEvent.click(createButton());
+    await user.click(sectionPhotos()[0]!);
+    await user.click(createButton());
 
     expect(screen.getByRole('status')).toHaveTextContent(BUNDLE_SELECT_MESSAGES.creating);
     expect(
@@ -90,9 +99,8 @@ describe('사진 고르기', () => {
     expect(createButton().closest('[inert]')).not.toBeNull();
     expect(router.push).not.toHaveBeenCalled();
 
-    await waitFor(() =>
-      expect(router.push).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.draft('draft-1')),
-    );
+    await act(() => vi.advanceTimersByTimeAsync(CREATE_DELAY_MS));
+    expect(router.push).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.draft('draft-1'));
   });
 
   it('돌아갈 기록이 없으면 뒤로 가기가 번치 홈으로 이동한다', async () => {
