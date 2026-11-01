@@ -31,6 +31,17 @@ export type MenuTabsTabProps = {
   disabled?: boolean | undefined;
   className?: string | undefined;
 };
+export type MenuTabsIconTabProps = {
+  value: string;
+  /** 접근성 이름(아이콘만 보이므로 필수, 예: `사진`) */
+  label: string;
+  /** 선택 전 아이콘(Figma Line 아이콘, Medium 20px) */
+  icon: ReactNode;
+  /** 선택된 아이콘(Figma Fill 아이콘, Medium 20px) */
+  selectedIcon: ReactNode;
+  disabled?: boolean | undefined;
+  className?: string | undefined;
+};
 export type MenuTabsPanelProps = {
   value: string;
   /** 선택되지 않아도 DOM에 유지(입력 상태 보존 등) */
@@ -67,6 +78,31 @@ const Tab = ({ label, count, className, ...props }: MenuTabsTabProps) => (
   </Tabs.Tab>
 );
 
+// 아이콘 탭(Figma `Menu Tap`): 선택되면 Fill 아이콘과 진한 1px 밑줄
+const IconTab = ({ label, icon, selectedIcon, className, ...props }: MenuTabsIconTabProps) => (
+  <Tabs.Tab
+    {...props}
+    aria-label={label}
+    className={cn(
+      'text-icon-quaternary px-padding-p4 py-padding-p5 group relative inline-flex h-10 shrink-0 cursor-pointer touch-manipulation items-center justify-center',
+      // 밑줄은 Figma처럼 높이 안쪽(40px)에 그림
+      'after:bg-border-tertiary after:absolute after:inset-x-0 after:bottom-0 after:h-px',
+      'not-data-disabled:active:bg-overlay-hover',
+      'data-disabled:after:bg-border-disabled data-disabled:cursor-not-allowed data-disabled:opacity-(--semantic-opacity-disabled)',
+      'data-active:text-icon-tertiary data-active:after:bg-icon-tertiary',
+      'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:-outline-offset-2',
+      className,
+    )}
+  >
+    <span aria-hidden="true" className="flex group-data-active:hidden">
+      {icon}
+    </span>
+    <span aria-hidden="true" className="hidden group-data-active:flex">
+      {selectedIcon}
+    </span>
+  </Tabs.Tab>
+);
+
 const Panel = ({ className, ...props }: MenuTabsPanelProps) => (
   // 패널은 tabIndex 0이라 키보드 초점을 받으므로 초점 표시 유지
   <Tabs.Panel
@@ -78,5 +114,5 @@ const Panel = ({ className, ...props }: MenuTabsPanelProps) => (
   />
 );
 
-/** 이름·숫자 탭(Figma `Menu_Tap`): Base UI Tabs가 탭 역할·방향키 이동·패널 연결 담당 */
-export const MenuTabs = { Root, List, Tab, Panel };
+/** 이름·숫자 탭(Figma `Menu_Tap`)과 아이콘 탭(Figma `Menu Tap`): Base UI Tabs가 탭 역할·방향키 이동·패널 연결 담당 */
+export const MenuTabs = { Root, List, Tab, IconTab, Panel };
