@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   # 무거운 lint·test는 각자 러너, 정적 검사는 lint 러너에·typecheck는 build 러너에 묶어 job 수와 코어 경합을 함께 줄임
+  # test는 CI 전체 시간을 정하는 가장 긴 job이라 vitest shard로 3개 러너에 나눔
   checks:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -25,8 +26,15 @@ jobs:
         include:
           - name: Lint
             id: lint
-          - name: Test
-            id: test
+          - name: Test 1/3
+            id: test-1
+            shard: 1
+          - name: Test 2/3
+            id: test-2
+            shard: 2
+          - name: Test 3/3
+            id: test-3
+            shard: 3
           - name: Typecheck & Build
             id: build
 
@@ -99,13 +107,14 @@ jobs:
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
         run: yarn lint $AFFECTED
 
+      # 패키지마다 테스트 파일을 3등분해 이 러너 몫만 실행. 파일이 적은 패키지는 몫이 비어도 통과
       - name: Test
         id: test
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'test' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.shard }}
         env:
           TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
-        run: yarn test $AFFECTED
+        run: yarn test $AFFECTED -- --shard=${{ matrix.shard }}/3 --passWithNoTests
 
       # typecheck와 build는 Next 생성 파일을 공유하므로 같은 러너에서 순서대로 실행
       - name: TypeScript
@@ -198,7 +207,7 @@ jobs:
             const { owner, repo } = context.repo;
             const marker = '<!-- frontend-ci-result -->';
             const fs = require('fs');
-            // [결과 파일(matrix.id) 또는 all(세 job 합산), 단계 id, 표 이름] — ci.yml의 단계 id와 같아야 함
+            // [결과 파일(matrix.id) 또는 묶음(all: 모든 job, test: shard 3개 합산), 단계 id, 표 이름] — ci.yml의 단계 id와 같아야 함
             const rows = [
               ['all', 'guard', '변조 가드'],
               ['all', 'setup', '의존성 설치'],
@@ -214,7 +223,9 @@ jobs:
             ];
             const status = { success: '통과', failure: '**실패**', skipped: '생략', cancelled: '취소' };
 
-            const files = ['lint', 'test', 'build'];
+            const groups = { test: ['test-1', 'test-2', 'test-3'] };
+            const files = ['lint', ...groups.test, 'build'];
+            groups.all = files;
             const results = {};
             for (const id of files) {
               try {
@@ -223,10 +234,10 @@ jobs:
                 results[id] = null;
               }
             }
-            // 가드·설치는 job마다 실행되므로 하나라도 실패하면 실패. 결과 파일이 없으면 알 수 없음(-)
+            // 묶음(가드·설치, test shard)은 하나라도 실패하면 실패. 결과 파일이 없으면 알 수 없음(-)
             const resultOf = (file, step) => {
-              if (file !== 'all') return results[file]?.[step] || undefined;
-              const outcomes = files.map((id) => results[id]?.[step]);
+              if (!groups[file]) return results[file]?.[step] || undefined;
+              const outcomes = groups[file].map((id) => results[id]?.[step]);
               if (outcomes.includes('failure')) return 'failure';
               if (outcomes.includes('cancelled')) return 'cancelled';
               if (outcomes.includes('skipped')) return 'skipped';

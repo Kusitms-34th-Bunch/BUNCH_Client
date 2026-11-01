@@ -14,7 +14,6 @@ import { useRouter } from 'next/navigation';
 import { useId } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { ONBOARDING_PATHS } from '../../constants/paths';
 
 // 보이는 라벨과 입력창의 접근성 이름 일치
 const LINK_LABEL = '초대 링크';
@@ -24,13 +23,19 @@ const TOAST_BOTTOM_OFFSET = 32;
 type BunchInviteProps = {
   /** 멤버에게 보낼 초대 링크 */
   inviteLink: string;
+  /** 닫기·「나중에 할게요」로 갈 경로(번치 만들기 직후는 피드, 멤버 관리에서는 멤버 관리) */
+  leaveHref: string;
+  /** 돌아갈 기록이 있으면 뒤로 가기로 닫음(멤버 관리·더보기 메뉴에서 들어온 경우) */
+  backOnLeave?: boolean | undefined;
 };
 
-export function BunchInvite({ inviteLink }: BunchInviteProps) {
+/** 번치 멤버 초대: 초대 링크 복사·공유. 번치 만들기 완료와 번치 관리 두 곳에서 들어옴 */
+export function BunchInvite({ inviteLink, leaveHref, backOnLeave }: BunchInviteProps) {
   const router = useRouter();
   const linkId = useId();
 
-  const leave = () => router.replace(ONBOARDING_PATHS.feed);
+  const leave = () =>
+    backOnLeave && window.history.length > 1 ? router.back() : router.replace(leaveHref);
 
   const share = async () => {
     if (!navigator.share) {

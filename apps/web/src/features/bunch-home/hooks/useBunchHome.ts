@@ -5,6 +5,7 @@ import {
   bunchSummariesFixture,
   initialBunchDetailFixture,
 } from '../fixtures/bunchHome.fixture';
+import { useBunchMembers } from './useBunchMembers';
 import { useBunchProfileEdits } from './useBunchProfileEdits';
 import { useCurrentBunchId } from './useCurrentBunchId';
 
@@ -25,6 +26,8 @@ export function useBunchHome(): UseBunchHomeResult {
   const [deletedDraftIds, setDeletedDraftIds] = useState<ReadonlySet<string>>(new Set());
   // 프로필 편집에서 저장한 값을 fixture 위에 덮어씀(이름·대표 사진은 전환 목록에도)
   const [profileEdits] = useBunchProfileEdits();
+  // 멤버 관리에서 내보낸 결과를 멤버 수에 반영
+  const { members } = useBunchMembers(currentId);
 
   const data = useMemo<BunchHomeData>(() => {
     const detail = bunchDetailsFixture[currentId] ?? initialBunchDetailFixture;
@@ -39,11 +42,12 @@ export function useBunchHome(): UseBunchHomeResult {
       current: {
         ...detail,
         ...profileEdits[currentId],
+        memberCount: members?.length ?? detail.memberCount,
         draftBundles: detail.draftBundles.filter((bundle) => !deletedDraftIds.has(bundle.id)),
       },
       bunches: [...current, ...others],
     };
-  }, [currentId, bunches, deletedDraftIds, profileEdits]);
+  }, [currentId, bunches, deletedDraftIds, profileEdits, members]);
 
   const actions: BunchHomeActions = {
     switchBunch: setCurrentId,

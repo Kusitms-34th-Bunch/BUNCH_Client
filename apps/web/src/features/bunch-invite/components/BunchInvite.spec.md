@@ -2,7 +2,8 @@
 
 ## 메타데이터
 
-- Route: `/onboarding/create/invite`(`apps/web/src/app/(app)/onboarding/create/invite/page.tsx`)
+- Route: `/onboarding/create/invite`(`apps/web/src/app/(app)/onboarding/create/invite/page.tsx`), `/bunch/members/invite`(`.../bunch/members/invite/page.tsx`, #175)
+- 소유: `features/bunch-invite`. 번치 만들기 완료와 번치 관리(멤버 관리 헤더 「+ 멤버 초대」, 더보기 메뉴 「멤버 초대」) 두 곳에서 같은 화면을 쓴다. 진입 맥락(닫을 때 갈 곳·전환)은 route가 정한다.
 - Status: UI와 복사·공유 동작 구현됨(브라우저 렌더 대조 결과는 검증 항목). 초대 링크는 API가 없어 임시 값이다. 실기기 검증 전
 - 디자인 출처: Figma `Bunch/Invite/Default`(node `791:3364`), `Bunch/Invite/LinkCopied`(node `791:3390`). 화면설계서(node `791:8962`, 진입점 `791:8727`)를 함께 참고했다.
 
@@ -10,21 +11,21 @@
 
 ### 포함
 
-- 번치를 만든 뒤 멤버를 초대하는 화면. 구성: 헤더(왼쪽 닫기 X), 제목·설명, 「초대 링크」 라벨과 복사 아이콘, 읽기 전용 링크 입력창, 최대 인원 안내, 하단 「나중에 할게요」.
+- 번치 멤버를 초대하는 화면. 구성: 헤더(왼쪽 닫기 X), 제목·설명, 「초대 링크」 라벨과 복사 아이콘, 읽기 전용 링크 입력창, 최대 인원 안내, 하단 「나중에 할게요」.
 - 복사 아이콘을 누르면 링크를 클립보드에 복사하고 「초대 링크가 복사되었어요.」 토스트(오른쪽 「공유」 버튼)를 띄운다. 「공유」는 OS 공유 시트(Web Share API)를 연다.
-- 완료 화면(`BunchCreated.spec.md`)의 「멤버 초대하기」 카드가 이 화면으로 이동한다.
+- 완료 화면(`onboarding/components/create/BunchCreated.spec.md`)의 「멤버 초대하기」 카드와 번치 관리의 「멤버 초대」가 이 화면으로 이동한다.
 
 ### 범위 외
 
-- 초대 링크를 만드는 API. 지금은 Figma 예시 값(`fixtures/invite.fixture.ts`의 `inviteLinkFixture`)이다.
+- 초대 링크를 만드는 API. 지금은 Figma 예시 값(`fixtures/invite.fixture.ts`의 `inviteLinkFixture`)이고 두 route가 같은 값을 넘긴다. API를 붙일 때 두 route를 함께 바꾼다.
 - 화면 전환: 완료 → 초대는 SSGOI `slide`(Ease Out·이동 시간 300ms)를 적용하고 뒤로 가기는 반대 방향으로 이동한다. 피드로 나가는 이동에는 전환을 등록하지 않았다. 설정과 검증 범위는 `docs/architecture/motion.md`를 따른다.
 - iPhone 상태 바·홈 인디케이터(기기 요소. Safe Area는 `AppFrame`이 처리한다).
 
 ## Route와 접근
 
-- Path·params·search: `/onboarding/create/invite`. params와 search는 없다.
+- Path·params·search: `/onboarding/create/invite`(번치 만들기), `/bunch/members/invite`(번치 관리). params와 search는 없다. 아래 draft provider·완료 화면 설명은 온보딩 route에만 해당하고, `/bunch/members/invite`는 draft provider 밖이다.
 - 접근 권한·guard: 로그인 접근 조건은 아직 없다. draft를 읽지 않아 입력 순서 가드는 두지 않았다. URL로 바로 열려도 임시 링크가 보인다(링크 API를 붙일 때 번치 식별과 접근 조건을 정한다).
-- Layout·redirect·navigation: `create/layout.tsx`의 draft provider 안이고 `(steps)`의 헤더·진행 표시줄 틀 밖이다. `PageShell`을 한 번 쓴다. 완료 화면에서 `router.push`로 들어오며 뒤로 가기는 완료 화면으로 돌아간다(`createdName` 기록, `BunchCreated.spec.md`). 닫기(X)와 「나중에 할게요」는 `router.replace('/')`로 피드(임시 `/`)로 이동해 뒤로 가기로 돌아오지 않는다.
+- Layout·redirect·navigation: `create/layout.tsx`의 draft provider 안이고 `(steps)`의 헤더·진행 표시줄 틀 밖이다. `PageShell`을 한 번 쓴다. 완료 화면에서 `router.push`로 들어오며 뒤로 가기는 완료 화면으로 돌아간다(`createdName` 기록, `BunchCreated.spec.md`). 닫기(X)와 「나중에 할게요」는 `leaveHref`로 정한다. 번치 만들기에서는 `router.replace`로 피드(임시 `/`)로 이동해 뒤로 가기로 돌아오지 않는다. `/bunch/members/invite`는 `backOnLeave`라 이전 화면(멤버 관리·더보기 메뉴)으로 돌아가고, 기록이 없으면 멤버 관리로 `replace`한다. 메뉴·멤버 관리 ↔ 초대는 메뉴 하위 화면과 같은 미는 slide 300ms다.
 
 ## 상태와 흐름
 
@@ -68,3 +69,4 @@
 - 링크 값 (미정): 설계서의 기본 상태 입력창은 자리 표시 문구(`reqsaieiei///…`)다. 링크 발급 전 상태를 어떻게 보일지 정해야 한다.
 - 닫기·「나중에 할게요」 도착지 (제안): 설계서는 "생성된 번치 홈 화면"이다. 번치 홈이 없어 피드(`/`)로 임시 이동한다.
 - 화면 전환 애니메이션 (구현, 실기기 미검증): 완료 화면 → 이 화면은 Slide In·왼쪽·300ms다. 브라우저의 뒤로 가기(스와이프 포함)는 방향 타입이 붙지 않아 방향 전환이 없다(`docs/architecture/motion.md`). 곡선·시간은 `BunchStartSelect.spec.md`의 확인할 항목(설계서와 다름)을 따른다.
+- `backOnLeave`는 `window.history.length`로만 판단한다. 외부 사이트에서 같은 탭으로 `/bunch/members/invite`에 들어오면 닫기가 앱 밖으로 나간다(다른 상세 화면과 같은 한계).
