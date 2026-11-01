@@ -7,7 +7,7 @@ import {
   LabeledTextField,
   ProfileImage,
 } from '@app/design-system/web';
-import { type ReactNode, type RefObject, useId, useRef, useState } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
@@ -24,14 +24,12 @@ import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 // 기획: 지원하지 않는 형식·손상된 사진은 이 문구의 토스트(가입 프로필 사진과 같음)
 const PHOTO_UNUSABLE_MESSAGE = '이 사진은 사용할 수 없어요.';
 const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
-// Figma(1873:33533) 토스트는 「저장하기」 위 14px. 기본 위치(Safe Area + 16)에서 버튼 48 + 14 - 16만큼 올림
-const TOAST_ABOVE_CTA_OFFSET = 48;
 
 type BunchProfileEditScreenProps = {
   /** 편집할 번치의 저장된 값. 아직 모르거나 메인 관리자가 아니면 undefined(폼을 그리지 않음) */
   initial: BunchProfile | undefined;
   onBack: () => void;
-  /** 저장 직후(토스트를 띄운 뒤) 저장한 값으로 호출. 반영·이동은 호출자 담당 */
+  /** 저장한 값으로 호출. 반영·이동·저장 토스트는 호출자 담당 */
   onSaved: (_profile: BunchProfile) => void;
 };
 
@@ -56,22 +54,17 @@ export function BunchProfileEditScreen({ initial, onBack, onSaved }: BunchProfil
 function EditFrame({
   header,
   bottom,
-  headingRef,
   children,
 }: {
   header: ReactNode;
   bottom?: ReactNode;
-  headingRef?: RefObject<HTMLHeadingElement | null>;
   children?: ReactNode;
 }) {
   return (
     // 화면설계서 4번: 빈 영역이나 CTA를 누르면 키보드 닫기, 다른 입력을 누르면 포커스만 이동
     <div className="flex min-h-0 flex-1 flex-col" onPointerDown={dismissKeyboard}>
       <PageShell header={header} bottom={bottom}>
-        {/* 저장 뒤 비활성이 된 버튼 대신 초점을 받는 자리(tabIndex -1) */}
-        <h1 ref={headingRef} tabIndex={-1} className="sr-only">
-          번치 프로필 편집
-        </h1>
+        <h1 className="sr-only">번치 프로필 편집</h1>
         {children}
       </PageShell>
     </div>
@@ -88,49 +81,34 @@ function ProfileForm({
   onSaved: (_profile: BunchProfile) => void;
 }) {
   const formId = useId();
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const [saved, setSaved] = useState(initial);
   const [name, setName] = useState(initial.name);
   const [description, setDescription] = useState(initial.description);
   const [isPrivate, setIsPrivate] = useState(initial.isPrivate);
   const [composing, setComposing] = useState(false);
-  // 저장 뒤 메인탭으로 돌아가기 전까지 입력을 막아 저장하지 않은 변경이 사라지지 않게 함
-  const [leaving, setLeaving] = useState(false);
   const { inputRef, photoUrl, message, handleCameraClick, handleFileChange } = usePhotoPicker({
     onError: () => toast(PHOTO_UNUSABLE_MESSAGE),
   });
 
-  const imageSrc = photoUrl ?? saved.imageSrc;
+  const imageSrc = photoUrl ?? initial.imageSrc;
   const nameInvalid = hasInvalidBunchNameChars(name, composing);
   const changed =
-    name !== saved.name ||
-    description !== saved.description ||
-    isPrivate !== saved.isPrivate ||
-    imageSrc !== saved.imageSrc;
+    name !== initial.name ||
+    description !== initial.description ||
+    isPrivate !== initial.isPrivate ||
+    imageSrc !== initial.imageSrc;
   const canSave =
     changed && !composing && name.length > 0 && !nameInvalid && description.trim().length > 0;
   // 비공개였던 번치를 공개로 바꿀 때만 안내(Figma 1873:33513)
-  const showPublicNotice = saved.isPrivate && !isPrivate;
+  const showPublicNotice = initial.isPrivate && !isPrivate;
 
-  const save = (submitter: Element | null) => {
+  const save = () => {
     closeKeyboard();
-    // 초점이 있던 저장하기가 곧바로 비활성이 되면 초점이 문서 밖으로 빠지므로 제목으로 옮김
-    if (submitter && document.activeElement === submitter)
-      headingRef.current?.focus({ preventScroll: true });
-    setSaved({ name, description, isPrivate, imageSrc });
-    setLeaving(true);
-    toast(BUNCH_HOME_MESSAGES.profileSaved, {
-      icon: 'success',
-      fullWidth: true,
-      bottomOffset: TOAST_ABOVE_CTA_OFFSET,
-    });
     onSaved({ name, description, isPrivate, imageSrc });
   };
 
   return (
     <EditFrame
       header={header}
-      headingRef={headingRef}
       bottom={
         // Figma Indicator + CTA: 위 14
         <div className="pt-padding-p7 px-padding-p8">
@@ -142,11 +120,9 @@ function ProfileForm({
     >
       <form
         id={formId}
-        inert={leaving}
-        aria-busy={leaving}
         onSubmit={(event) => {
           event.preventDefault();
-          if (canSave) save(event.nativeEvent.submitter);
+          if (canSave) save();
         }}
       >
         {/* 헤더 아래 32, 사진과 입력 사이 32, 입력 사이 16(Figma 1873:33494) */}

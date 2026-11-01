@@ -48,7 +48,7 @@ describe('BunchProfileEditScreen', () => {
     expect(saveButton()).toHaveProperty('disabled', true);
   });
 
-  it('이름을 바꿔 저장하면 토스트를 띄우고 다시 저장하기를 막는다', async () => {
+  it('이름을 바꿔 저장하면 바뀐 값으로 onSaved를 부른다', async () => {
     const user = userEvent.setup();
     renderScreen();
 
@@ -57,16 +57,7 @@ describe('BunchProfileEditScreen', () => {
     expect(saveButton()).toHaveProperty('disabled', false);
     await user.click(saveButton());
 
-    expect(toast).toHaveBeenCalledWith(
-      '번치 프로필을 수정했어요.',
-      expect.objectContaining({ icon: 'success' }),
-    );
     expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ name: 'GTX러닝' }));
-    expect(saveButton()).toHaveProperty('disabled', true);
-    // 비활성이 된 버튼 대신 화면 제목으로 초점 이동
-    expect(document.activeElement).toBe(
-      screen.getByRole('heading', { level: 1, name: '번치 프로필 편집' }),
-    );
   });
 
   it('특수문자 이름과 빈 소개는 저장할 수 없다', async () => {
@@ -148,7 +139,7 @@ describe('BunchProfileEdit', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.menu));
   });
   // 편집 값 저장소가 모듈에 남으므로 이 파일의 마지막 테스트로 둠
-  it('저장하면 잠깐 뒤 바뀐 값으로 번치 메인탭에 돌아간다', async () => {
+  it('저장하면 바로 번치 메인탭으로 이동하고 성공 토스트를 띄운다', async () => {
     sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-run');
     const user = userEvent.setup();
     render(<BunchProfileEdit />);
@@ -156,11 +147,10 @@ describe('BunchProfileEdit', () => {
     await user.click(screen.getByRole('radio', { name: '공개' }));
     await user.click(saveButton());
 
-    expect(replace).not.toHaveBeenCalled();
-    // 이동 전까지 입력 잠금
-    expect(screen.getByRole('textbox', { name: '번치 이름' }).closest('form')?.inert).toBe(true);
-    await waitFor(() => expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.home), {
-      timeout: 2000,
-    });
+    expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.home);
+    expect(toast).toHaveBeenCalledWith(
+      '번치 프로필을 수정했어요.',
+      expect.objectContaining({ icon: 'success' }),
+    );
   });
 });

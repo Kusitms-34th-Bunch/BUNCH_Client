@@ -13,18 +13,12 @@ import { useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { BunchHomeActions, BunchHomeData, BunchSummary, DraftBundle } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { BUNCH_HOME_TOAST_OFFSET } from '../constants/toast';
 import { BunchHomeHeader } from './BunchHomeHeader';
 import { BunchProfile } from './BunchProfile';
 import { BundleEmpty } from './BundleEmpty';
 import { CompletedBundleGrid } from './CompletedBundleGrid';
 import { DraftBundleList } from './DraftBundleList';
-
-/**
- * 전환 토스트를 「+」와 같은 높이(세로 가운데)에 두기 위한 추가 간격(px, Figma `3086:67555`)
- * 「+」 중심 = 막대 영역 80 + 간격 10 + 버튼 절반 26 = 116, 토스트 절반 23을 빼고 기본 위치 16을 빼면 77
- */
-// ponytail: 웹 탭 막대 기준 고정값, iOS 쉘(막대 0)에서는 더 높이 뜸. 토스트가 CSS 변수를 받으면 계산식으로 교체
-const TOAST_BESIDE_FAB_OFFSET = 77;
 
 type BundleTab = 'completed' | 'draft';
 
@@ -79,7 +73,7 @@ export function BunchHomeScreen({
     actions.switchBunch(bunch.id);
     toast(BUNCH_HOME_MESSAGES.switched(bunch.name), {
       fullWidth: true,
-      bottomOffset: TOAST_BESIDE_FAB_OFFSET,
+      bottomOffset: BUNCH_HOME_TOAST_OFFSET,
     });
   };
   // 「새로운 번치 추가하기」: 시트가 다 내려간 뒤 이동(화면설계서 7-1)
