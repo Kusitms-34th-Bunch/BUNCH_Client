@@ -158,7 +158,11 @@ export function BunchHomeScreen({
               />
             </MenuTabs.List>
             {/* 탭 전환 시 내용도 Dissolve / Ease out / 75ms(화면설계서 3번) */}
-            <MenuTabs.Panel value="completed" className={cn(tabChanged && panelFade)}>
+            {/* 페이드는 들어오는 패널에만(나가는 패널에도 붙이면 첫 전환에 이전 내용이 0부터 다시 나타나고 Base UI가 그 애니메이션을 기다려 두 패널이 겹침) */}
+            <MenuTabs.Panel
+              value="completed"
+              className={cn(tabChanged && tab === 'completed' && panelFade)}
+            >
               {current.completedBundles.length > 0 ? (
                 <CompletedBundleGrid bundles={current.completedBundles} />
               ) : (
@@ -171,7 +175,10 @@ export function BunchHomeScreen({
                 </div>
               )}
             </MenuTabs.Panel>
-            <MenuTabs.Panel value="draft" className={cn('pt-s8', tabChanged && panelFade)}>
+            <MenuTabs.Panel
+              value="draft"
+              className={cn('pt-s8', tabChanged && tab === 'draft' && panelFade)}
+            >
               {current.draftBundles.length > 0 ? (
                 <DraftBundleList
                   bundles={current.draftBundles}
