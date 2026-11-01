@@ -50,10 +50,12 @@ reviews:
         route·layout·metadata·server/client boundary만 소유하고, domain mutation·raw API 요청·복잡한 form state가 route에 섞이지 않는지 확인한다.
         secret, cookie, server-only 의존성이 client bundle로 넘어가지 않는지 확인한다.
 
-    - path: 'apps/web/src/domains/**'
+    - path: 'apps/web/src/features/**'
       instructions: |
-        도메인 UI와 사용자 작업의 소유 경계를 검토한다.
-        route-local 코드와 shared 추출이 과하지 않은지, API·권한·상태 규칙이 관련 spec 및 domain 기준과 일치하는지 확인한다.
+        feature가 사용자 작업 단위를 소유하는지, route-local 코드와 shared 추출이 과하지 않은지 검토한다.
+        API·권한·상태 규칙이 가까운 *.spec.md와 docs/specs 기준과 일치하는지 확인한다.
+        API 연결 전 fixture·메모리 저장소 단계에서 서버 동작이 아직 없어 생기는 문구·동작 차이는 지적하지 않는다(가까운 *.spec.md의 범위 외·후속 항목이 근거).
+        constants/messages.ts의 문구는 기획 원문이므로, 아직 연결되지 않은 서버 동작과 다르다는 이유로 바꾸라고 하지 않는다.
 
     - path: 'apps/web/src/shared/api/**'
       instructions: |
