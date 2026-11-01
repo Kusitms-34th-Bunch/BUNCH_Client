@@ -50,8 +50,16 @@ export const Focused: Story = { render: (args) => <Controlled {...args} focusOnM
 // 입력창 Filled: 값 있음
 export const Filled: Story = { render: (args) => <Controlled {...args} initial="으누누" /> };
 
-// 입력창 Editing: 점 3개 애니메이션
-export const Editing: Story = { render: (args) => <Controlled {...args} editing /> };
+// 입력창 Editing: 편집 중 애니메이션 자리(앱이 `editingContent`로 전달)
+export const Editing: Story = {
+  render: (args) => (
+    <Controlled
+      {...args}
+      editing
+      editingContent={<span className="text-icon-quaternary">···</span>}
+    />
+  ),
+};
 
 // 오류 문구는 왼쪽, 글자 수는 오른쪽에 표시
 export const ErrorState: Story = {

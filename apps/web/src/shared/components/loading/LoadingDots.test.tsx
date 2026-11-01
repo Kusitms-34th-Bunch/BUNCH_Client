@@ -66,7 +66,7 @@ describe('LoadingDots', () => {
   );
 
   it(
-    '로티를 받지 못하면 EditingAnimation으로 대체한다',
+    '로티를 받지 못하면 빈 자리만 남긴다',
     async () => {
       stubMotion(false);
       vi.doMock('@/shared/lib/lottieLight', () => {
@@ -76,7 +76,10 @@ describe('LoadingDots', () => {
 
       const { container } = render(<LoadingDots />);
 
-      await waitFor(() => expect(container.querySelector('[class*="_dot_"]')).not.toBeNull());
+      // 로드 실패가 반영될 시간을 준 뒤에도 재생기는 없고 자리(크기 고정)만 남음
+      await waitFor(() =>
+        expect(container.querySelector('span[aria-hidden="true"]')).not.toBeNull(),
+      );
       expect(container.querySelector('[data-testid="lottie"]')).toBeNull();
     },
     SLOW_MODULE_TIMEOUT_MS,
