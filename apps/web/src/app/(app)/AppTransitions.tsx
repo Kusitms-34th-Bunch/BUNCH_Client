@@ -9,11 +9,14 @@ import {
 import { fade, slide } from '@ssgoi/react/view-transitions';
 import { type ReactNode, useMemo, useSyncExternalStore } from 'react';
 import { LOGIN_PATH, SIGNUP_PATHS, SIGNUP_TRANSITION_IDS } from '@/features/auth/constants/paths';
+import { BUNDLE_SELECT_PATHS } from '@/features/bundle/constants/selectPaths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { easeOutIntegrator } from '@/shared/components/layout/easeOutIntegrator.internal';
 
 export const ONBOARDING_TRANSITION_DURATION_MS = 300;
 export const SIGNUP_DISSOLVE_DURATION_MS = 300;
+// 기획: 추천 번들 상세 진입은 Slide In(왼쪽 방향)·나갈 때 Slide Out(오른쪽 방향), Ease In, 200ms
+export const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
 function subscribeMotion(listener: () => void) {
@@ -49,7 +52,18 @@ const transition = slide({}, { override: { forward: tuneSlide, backward: tuneSli
 // 단계마다 절반씩 써서 전체 300ms 유지. 규칙은 두 방향에 모두 적용
 const tuneDissolve = tuneTransition(SIGNUP_DISSOLVE_DURATION_MS / 2);
 const dissolve = fade({}, { override: { forward: tuneDissolve, backward: tuneDissolve } });
+const tuneBundleSlide = tuneTransition(BUNDLE_DETAIL_SLIDE_DURATION_MS);
+const bundleSlide = slide(
+  {},
+  { override: { forward: tuneBundleSlide, backward: tuneBundleSlide } },
+);
 const rules: SsgoiTransitionRule[] = [
+  {
+    from: BUNDLE_SELECT_PATHS.select,
+    to: BUNDLE_SELECT_PATHS.transitionIds.recommendation,
+    bidirectional: true,
+    transition: bundleSlide,
+  },
   { from: SIGNUP_PATHS.terms, to: LOGIN_PATH, transition: dissolve },
   {
     from: SIGNUP_PATHS.profile,
