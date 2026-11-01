@@ -3,6 +3,7 @@
 
 export { BunchBlockedList } from './BunchBlockedList';
 export { BunchHome } from './BunchHome';
+export { BunchLeave } from './BunchLeave';
 export { BunchMembers } from './BunchMembers';
 export { BunchMenu } from './BunchMenu';
 export { BunchProfileEdit } from './BunchProfileEdit';

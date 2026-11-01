@@ -244,6 +244,12 @@ const rules: SsgoiTransitionRule[] = [
   },
   {
     from: BUNCH_HOME_PATHS.menu,
+    to: BUNCH_HOME_PATHS.leave,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  {
+    from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.blocked,
     bidirectional: true,
     transition: menuSubSlide,
