@@ -98,7 +98,12 @@ export function DraftVisibility({ value, editable, onChange, onDenied }: DraftVi
           </div>
         </div>
       </div>
-      <div role="radiogroup" aria-labelledby="draft-visibility-title" className="gap-s4 flex">
+      <div
+        role="radiogroup"
+        aria-labelledby="draft-visibility-title"
+        aria-required="true"
+        className="gap-s4 flex"
+      >
         {OPTIONS.map((option) => (
           <RadioCard
             key={option.value}
