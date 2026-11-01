@@ -22,13 +22,13 @@ type BunchMenuScreenProps = {
   onLeave: () => void;
   /** 메인 관리자의 「번치 나가기」(새 관리자 지정 화면으로) */
   onOwnerLeave?: (() => void) | undefined;
-  /** 나만 남은 번치 안내의 「삭제하기」. 번치 삭제 화면 전까지는 넘기지 않아 창만 닫힘 */
+  /** 나만 남은 번치 안내의 「삭제하기」(번치 삭제 화면으로) */
   onDeleteBunch?: (() => void) | undefined;
 };
 
 /**
  * 번치 더보기 메뉴(기능명세 5.4): 역할별 메뉴. 메인 관리자만 프로필 편집·번치 삭제
- * 나가기는 역할별(일반 멤버·공동 관리자 확인 창, 메인 관리자 지정 화면, 나만 남으면 삭제 안내). 번치 삭제 메뉴는 후속 이슈
+ * 나가기는 역할별(일반 멤버·공동 관리자 확인 창, 메인 관리자 지정 화면, 나만 남으면 삭제 안내)
  */
 export function BunchMenuScreen({
   bunchName,
@@ -123,7 +123,15 @@ export function BunchMenuScreen({
             </li>
             {isOwner ? (
               <li>
-                <MenuLabel>번치 삭제</MenuLabel>
+                <MenuLabel
+                  renderLink={({ className, children }) => (
+                    <Link href={BUNCH_HOME_PATHS.delete} className={className}>
+                      {children}
+                    </Link>
+                  )}
+                >
+                  번치 삭제
+                </MenuLabel>
               </li>
             ) : null}
           </ul>
