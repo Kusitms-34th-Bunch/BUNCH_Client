@@ -88,7 +88,8 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 
 쉘은 화면을 직접 그리지 않지만 iOS에서는 하단 탭을 시스템 탭 바(UITabBar)로 그린다. iOS 26 이상은 시스템이 Liquid Glass로 그리고 끌어서 이동·렌즈 효과도 시스템 동작이다. 근거와 대안은 `docs/decisions/records/012-ios-system-tab-bar.md`다(011의 직접 만든 `GlassView` 막대를 대체).
 
-- 구조: 첫 화면(`app/index.tsx`)은 WebView 하나다. 웹 탭 화면(`apps/web`의 `features/main-navigation/components/MainTabBar.tsx`)이 `setNativeTabBar({ items, selectedId })`를 부르면 쉘이 `(tabs)`로 바꾸고, 탭마다 WebView가 항목의 `path`를 연다. 이미 탭 화면이면 같은 요청은 화면을 옮기지 않는다. `hidden: true`면 하나의 WebView로 돌아간다.
+- 구조: 첫 화면(`app/index.tsx`)은 WebView 하나다. 웹 탭 화면(`apps/web`의 `features/main-navigation/components/MainTabBar.tsx`)이 `setNativeTabBar({ items, selectedId })`를 부르면 쉘이 `(tabs)`로 바꾸고, 탭마다 WebView가 항목의 `path`를 연다. 이미 탭 화면이면 같은 요청은 화면을 옮기지 않는다(숨겨 둔 탭 바는 다시 보인다). `hidden: true`면 하나의 WebView로 돌아간다.
+- 탭 밖 화면(`(main)` 밖의 상세·온보딩)은 같은 탭 WebView에서 열고 시스템 탭 바만 숨긴다. 웹 `NativeTabBarVisibility`가 경로마다 탭 화면 여부를 `setNativeTabBarVisible`로 보내면 쉘이 `NativeTabs`의 `hidden`을 바꾼다(iOS 18 이상은 `setTabBarHidden`). 화면에 보이는 탭 WebView만 보내고, `setNativeTabBar`는 숨김 상태를 바꾸지 않는다(뒤의 탭 WebView가 다시 불러와도 유지). 탭이 아니거나 iOS가 아니면 false를 돌려준다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행돼 탭 바가 남는다.
 - 탭 화면 파일은 `app/(tabs)/`의 `feed`·`photos`·`bunch`·`my` 4개로 고정이다(`src/tabs/tabs.ts`의 `TAB_IDS`). 웹이 이 밖의 ID를 보내면 `setNativeTabBar`가 false를 돌려 웹 막대를 쓴다. 항목이 없는 탭은 숨긴다.
 - 탭 라벨·경로는 웹이 정하고, 아이콘은 쉘이 탭 ID로 정한다. 아이콘은 웹 막대와 같은 디자인 시스템 Line·Fill 아이콘(Large 24px) SVG를 1x·2x·3x PNG로 옮긴 것이다(`assets/tab-icons/`, template으로 시스템이 색을 칠함). 디자인 시스템 아이콘이 바뀌면 다시 변환한다.
 - 선택 색은 text-primary(#121212), 라벨은 Pretendard Regular 12pt다(`app/(tabs)/_layout.tsx`). 미선택 색 text-tertiary(#535a61)도 지정했지만 iOS 26 Liquid Glass 탭 바는 배경에 맞춰 시스템이 정해 적용되지 않았다. 알약 크기·막대 높이·간격은 시스템이 정한다. `itemPositioning`·`itemWidth` 실험에서 iOS 26 알약 폭이 바뀌지 않았다.
