@@ -15,12 +15,12 @@
 
 - `open`, `onOpenChange`, `onOpenChangeComplete`: `BottomSheet.Root`와 같음.
 - `bunches`: `id`, `name`, `imageSrc?`, `notificationCount?`, `status?`(`BunchListItem`과 같음).
-- `onSelect(id)`: 고를 수 있는 번치를 누르면 호출. `onAdd()`: 추가 버튼.
+- `onSelect(id)`: 고를 수 있는(기본) 번치를 누르면 호출. `onUnavailableSelect?(id)`: 접근 불가 번치를 누르면 호출(삭제·내보내짐 안내는 호출자, 기능명세 5.2.3). `onAdd()`: 추가 버튼.
 
 ## 상태와 동작
 
 - `notificationCount`가 1 이상인 기본 번치에 분홍 「알림 N개」, `unavailable`에 회색 「접근 불가」를 표시한다.
-- 현재 번치·접근 불가 번치는 흐림·선택 불가.
+- 현재 번치는 흐림·선택 불가. 접근 불가 번치는 흐림이고 누르면 `onUnavailableSelect`만 부른다(`onSelect`는 부르지 않음).
 - 목록이 길면 본문만 스크롤한다.
 
 ## 접근성
@@ -39,6 +39,6 @@
 
 ## 검증
 
-- [x] test 3개: 알림·접근 불가 표시, 고를 수 있는 번치만 `onSelect`, 추가 버튼
+- [x] test 4개: 알림·접근 불가 표시, 고를 수 있는 번치만 `onSelect`·접근 불가는 `onUnavailableSelect`, 추가 버튼, 알림 0 이하 숨김
 - [x] Story: Default, ManyBunches
 - [x] Storybook: 행 48px, 행 사이 6px, 제목·목록 24px, 이미지 36px

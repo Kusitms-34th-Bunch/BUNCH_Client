@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { MainTabPage } from '@/features/main-navigation/components';
 import { PhotoBox } from '@/features/photo-box/components';
 import { parsePreview } from '@/features/photo-box/lib/preview';
 
@@ -12,5 +13,9 @@ type PhotosPageProps = {
 export default async function PhotosPage({ searchParams }: PhotosPageProps) {
   const { preview } = await searchParams;
 
-  return <PhotoBox preview={parsePreview(preview)} />;
+  return (
+    <MainTabPage tab="photos">
+      <PhotoBox preview={parsePreview(preview)} />
+    </MainTabPage>
+  );
 }

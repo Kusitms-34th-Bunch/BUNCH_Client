@@ -13,6 +13,14 @@
   --safe-area-right: var(--native-safe-area-right, env(safe-area-inset-right, 0px));
 }
 
+/* 앱 화면은 스크롤바를 그리지 않음(데스크톱·개발자 도구에서 막대 자리가 생기지 않게). Tailwind v4에 없는 유틸리티라 직접 정의 */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* 배경이 이미 같은 색인 화면(참여 초대 확인 화면)에서 내용만 페이드 인. 위치 이동은 main(overflow-y-auto)에 스크롤 바가 잠깐 생겨 제외 */
 @keyframes page-content-in {
   from {

@@ -21,13 +21,13 @@
 
 - `default`: 누를 수 있고 누르는 동안 `overlay-hover`(10%).
 - `current`: 흐림(40%), 누를 수 없음, `aria-current="true"`.
-- `unavailable`: 흐림(40%), 이름 `text-disabled`, 표시는 오른쪽 끝, 누를 수 없음.
+- `unavailable`: 흐림(40%), 이름 `text-disabled`, 표시는 오른쪽 끝. 누르면 `onClick`을 불러 호출자가 삭제·내보내짐 안내를 띄운다(기능명세 5.2.3).
 - 긴 이름은 한 줄에서 말줄임(`truncate`).
 
 ## 접근성
 
 - 버튼 이름은 이름, 숨긴 쉼표, 표시 글자를 합친 값이다(예: "여행가조, 알림 5개"). 현재 번치는 숨긴 「, 현재 번치」를 붙인다.
-- 현재·접근 불가 번치는 `disabled` 대신 `aria-disabled`라 Tab으로 초점을 받아 상태를 확인할 수 있고, 눌러도 `onClick`을 부르지 않는다.
+- 현재 번치는 `disabled` 대신 `aria-disabled`라 Tab으로 초점을 받아 상태를 확인할 수 있고, 눌러도 `onClick`을 부르지 않는다. 접근 불가 번치는 누를 수 있는 버튼이고 상태는 「접근 불가」 표시 글자로 전달한다.
 - 이미지는 장식(`alt=""`).
 
 ## Styling과 의존성
@@ -47,6 +47,6 @@
 
 ## 검증
 
-- [x] test 3개: 클릭, 현재 번치 `aria-current`·비활성, 접근 불가 비활성
+- [x] test 3개: 클릭, 현재 번치 `aria-current`·비활성, 접근 불가 클릭
 - [x] Story: Default, WithBadge, Current, Unavailable, LongName
 - [x] Storybook(번치 전환 시트 안): 행 높이 48px, 이미지 36px, 흐림 0.4
