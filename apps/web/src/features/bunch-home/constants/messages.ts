@@ -34,4 +34,11 @@ export const BUNCH_HOME_MESSAGES = {
   removeDescription: (name: string) =>
     `${name}님이 올리신 사진은 사진함에서 삭제되고, 발행된 번들에만 남아요.`,
   removed: (name: string) => `${name}님을 번치에서 내보냈어요.`,
+  // 차단 목록(화면설계서 2236:40175 2~3번)
+  unblockTitle: (bunchName: string) => `${bunchName} 차단을 해제할까요?`,
+  unblockDescription: '서로의 번들과 프로필을 볼 수 있어요. 팔로우는 자동으로 돌아오지 않아요.',
+  unblocked: (bunchName: string) => `${bunchName} 번치를 차단 해제했어요.`,
+  blockedEmptyTitle: '아직 차단한 번치가 없어요',
+  blockedEmptyDescription:
+    '차단은 번치 멤버 모두에게 적용되며,\n서로의 번들・프로필・댓글은 보이지 않아요.',
 } as const;
