@@ -22,7 +22,7 @@ type BunchMenuScreenProps = {
 
 /**
  * 번치 더보기 메뉴(기능명세 5.4): 역할별 메뉴. 메인 관리자만 프로필 편집·번치 삭제
- * 프로필 편집·멤버 관리·멤버 초대는 링크, 나머지 관리 화면은 후속 이슈라 나가기 확인 창 외 동작 미연결
+ * 프로필 편집·멤버 관리·멤버 초대·차단 목록은 링크, 나머지 관리 화면은 후속 이슈라 나가기 확인 창 외 동작 미연결
  */
 export function BunchMenuScreen({ bunchName, myRole, onBack, onLeave }: BunchMenuScreenProps) {
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -82,7 +82,15 @@ export function BunchMenuScreen({ bunchName, myRole, onBack, onLeave }: BunchMen
               </MenuLabel>
             </li>
             <li>
-              <MenuLabel>차단 목록</MenuLabel>
+              <MenuLabel
+                renderLink={({ className, children }) => (
+                  <Link href={BUNCH_HOME_PATHS.blocked} className={className}>
+                    {children}
+                  </Link>
+                )}
+              >
+                차단 목록
+              </MenuLabel>
             </li>
           </ul>
           <MenuDivider className="mx-padding-p8" />
