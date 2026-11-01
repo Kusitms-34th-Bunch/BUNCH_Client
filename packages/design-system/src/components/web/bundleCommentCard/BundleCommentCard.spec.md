@@ -5,7 +5,7 @@
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle CommentCard`(node `1303:16140`). 변형은 `State=Default·Focused·Filled·Error·Editing` 5개다.
-- 의존: `ProfileImage`(`size="XXS"` 24px), `EditingAnimation`(Editing), 자동 높이 hook `useTextareaAutoHeight`(`labeledTextField`의 `.internal`, `LabeledTextArea`와 공유하도록 이 작업에서 꺼냄), iOS 확대 방지용 `inputScale.module.css`(`core/textField`).
+- 의존: `ProfileImage`(`size="XXS"` 24px), 자동 높이 hook `useTextareaAutoHeight`(`labeledTextField`의 `.internal`, `LabeledTextArea`와 공유하도록 이 작업에서 꺼냄), iOS 확대 방지용 `inputScale.module.css`(`core/textField`).
 
 ## 목적과 범위
 
@@ -14,7 +14,7 @@
 - 번들 발행 전에 멤버가 쓰는 코멘트 카드. 멤버 프로필·이름(내 코멘트면 "(나)")과 여러 줄 입력창을 담는다.
 - 입력창은 한 줄로 시작해 줄바꿈되며 높이가 늘어난다.
 - 오류 문구를 주면 카드 아래에 빨간 안내가 나온다(Figma `State=Error`, 예: 글자 수 초과).
-- 다른 멤버가 쓰고 있는 코멘트는 입력창 대신 점 3개 애니메이션으로 보인다(`State=Editing`).
+- 다른 멤버가 쓰고 있는 코멘트는 입력창 대신 편집 중 애니메이션(`editingContent`)으로 보인다(`State=Editing`).
 
 ### 제공하지 않는 동작
 
@@ -37,7 +37,7 @@
 - Focused(`focus-within`): 카드 테두리가 `primitive-gray-700`(`#25282D`)로 진해지고 안내 문구가 숨겨져 캐럿만 보인다(Figma의 `border-strong`은 repo에 없고 같은 값의 gray-700을 `TextField`처럼 쓴다).
 - Filled: 입력 글자는 `typography-body-3-regular`(14/21) `text-secondary`(`#25282D`).
 - Error: 값은 Filled와 같고 카드 아래 4px(`s2`)에 오류 문구(`typography-caption-1-medium` 12/16, +0.25px, `system-fail-text` `#F04D29`, 줄 높이 22px)가 나온다. 입력창은 `aria-invalid`다. 두 줄 코멘트면 카드 높이가 108px, 전체 134px다.
-- Editing: `EditingAnimation`(30×25)을 머리 줄 아래 8px에 놓고 입력창은 `display: none`으로 숨긴다. 카드 높이는 87px다. 입력창에 포커스가 있을 때 `editing`이 켜지면 입력창이 숨겨지며 포커스가 `body`로 떨어지므로, 호출하는 쪽이 그 사이 포커스를 어디로 옮길지 정한다(이 컴포넌트는 포커스를 옮기지 않는다). `editing`이 꺼지면 입력창이 다시 나타나며 높이를 다시 맞춘다.
+- Editing: `editingContent`(앱이 넘기는 로티, 30×25 자리)를 머리 줄 아래 8px에 놓고 입력창은 `display: none`으로 숨긴다. 카드 높이는 87px다. 입력창에 포커스가 있을 때 `editing`이 켜지면 입력창이 숨겨지며 포커스가 `body`로 떨어지므로, 호출하는 쪽이 그 사이 포커스를 어디로 옮길지 정한다(이 컴포넌트는 포커스를 옮기지 않는다). `editing`이 꺼지면 입력창이 다시 나타나며 높이를 다시 맞춘다.
 - iOS: 포커스 시 확대를 막기 위해 16px로 렌더링한 뒤 14px 크기로 줄이는 `inputScale.textareaSlot`을 `LabeledTextArea`와 같이 쓴다.
 
 ## 접근성
@@ -67,4 +67,4 @@
 
 ## 검증
 
-단위 테스트(이름·"(나)"·프로필·입력창 이름, 안내 문구, 오류 안내와 `aria-invalid`·status 한 번 읽힘, Editing의 애니메이션과 입력창 복귀, 클래스, id 파생)와 `LabeledTextArea` 기존 테스트(공유 hook으로 바꾼 뒤에도 통과)를 확인했다. Storybook을 빌드해 Figma 값과 대조했다: Default·Filled·Editing 344×87, Error 344×134(카드 108, 오류 안내 y 112 높이 22), 프로필 24px(15, 15), 이름 16/24 500 자간 -0.25 `#121212`, 입력 14/21 `#25282D`(높이 25, 두 줄은 46), 오류 12/16 500 자간 0.25 `#F04D29`, `EditingAnimation` 30×25(15, 47). 글자 픽셀은 Pretendard가 없어 비교하지 않았고 포커스 시 테두리 색은 Playwright로 눌러서 재지 않았다(클래스만 확인). 스크린 리더, 실기기 터치, 키보드 포커스 모양, 강제 색상 모드는 확인하지 않았다.
+단위 테스트(이름·"(나)"·프로필·입력창 이름, 안내 문구, 오류 안내와 `aria-invalid`·status 한 번 읽힘, Editing의 `editingContent` 자리와 입력창 복귀, 클래스, id 파생)와 `LabeledTextArea` 기존 테스트(공유 hook으로 바꾼 뒤에도 통과)를 확인했다. Storybook을 빌드해 Figma 값과 대조했다: Default·Filled·Editing 344×87, Error 344×134(카드 108, 오류 안내 y 112 높이 22), 프로필 24px(15, 15), 이름 16/24 500 자간 -0.25 `#121212`, 입력 14/21 `#25282D`(높이 25, 두 줄은 46), 오류 12/16 500 자간 0.25 `#F04D29`, `editingContent` 자리 30×25(15, 47). 글자 픽셀은 Pretendard가 없어 비교하지 않았고 포커스 시 테두리 색은 Playwright로 눌러서 재지 않았다(클래스만 확인). 스크린 리더, 실기기 터치, 키보드 포커스 모양, 강제 색상 모드는 확인하지 않았다.

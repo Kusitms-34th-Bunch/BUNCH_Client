@@ -121,27 +121,33 @@ describe('BundleCommentCard', () => {
     ).toBe('true');
   });
 
-  it('editing이면 점 3개 애니메이션을 그리고 입력창은 숨겨서 남긴다', () => {
-    const { container } = renderCard({ editing: true, editingLabel: '지예님이 작성 중' });
+  it('editing이면 editingContent를 그리고 입력창은 숨겨서 남긴다', () => {
+    renderCard({
+      editing: true,
+      editingLabel: '지예님이 작성 중',
+      editingContent: <i data-testid="anim" />,
+    });
 
     // 입력창이 사라지면 uncontrolled 값이 유실되므로 숨김 클래스로만 가림
     expect(screen.getByRole('textbox').parentElement?.classList.contains('hidden')).toBe(true);
     expect(screen.getByRole('img', { name: '지예님이 작성 중' })).toBeTruthy();
-    expect(container.querySelectorAll('[role="img"] > span')).toHaveLength(3);
+    expect(
+      screen.getByRole('img', { name: '지예님이 작성 중' }).contains(screen.getByTestId('anim')),
+    ).toBe(true);
   });
 
-  it('editing이어도 editingLabel이 없으면 애니메이션은 장식으로 숨겨진다', () => {
-    const { container } = renderCard({ editing: true });
+  it('editing이어도 editingLabel이 없으면 애니메이션 자리는 장식으로 숨겨진다', () => {
+    renderCard({ editing: true, editingContent: <i data-testid="anim" /> });
 
     expect(screen.queryByRole('img')).toBeNull();
-    expect(container.querySelector('[aria-hidden="true"]:not(svg)')).toBeTruthy();
+    expect(screen.getByTestId('anim').parentElement?.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('editing이 아니면 입력창이 숨겨지지 않고 애니메이션이 없다', () => {
-    const { container } = renderCard();
+    renderCard({ editingContent: <i data-testid="anim" /> });
 
     expect(screen.getByRole('textbox').parentElement?.classList.contains('hidden')).toBe(false);
-    expect(container.querySelector('[class*="root"]')).toBeNull();
+    expect(screen.queryByTestId('anim')).toBeNull();
   });
 
   it('defaultValue만 쓰는 입력은 입력할 때마다 내용 높이에 맞춘다', () => {

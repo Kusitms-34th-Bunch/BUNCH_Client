@@ -3,7 +3,6 @@
 import { type ComponentProps, type ReactNode, useRef } from 'react';
 import { LineCloseIcon } from '../../../icons';
 import { cn } from '../../../utils';
-import editingDots from './editingDots.module.css';
 import { fieldText } from './fieldText';
 import inputScale from './inputScale.module.css';
 
@@ -19,8 +18,10 @@ export type TextFieldProps = Omit<
   onClear?: () => void;
   /** 지우기 버튼의 접근성 이름 */
   clearLabel?: string;
-  /** Figma Editing 상태: 입력창 내용을 가리고 점 3개 애니메이션 표시. 입력값은 유지 */
+  /** Figma Editing 상태: 입력창 내용을 가리고 `editingContent`(편집 중 애니메이션)를 표시. 입력값은 유지 */
   editing?: boolean;
+  /** `editing` 동안 입력창 자리에 보일 장식 내용(예: 앱이 만든 로티). 보조 기술에는 숨겨지며 없으면 내용만 가림 */
+  editingContent?: ReactNode;
   /** `editing` 동안 스크린 리더가 읽는 문구(화면에는 안 보임). 없으면 음성 안내 생략 */
   editingLabel?: string;
 };
@@ -35,6 +36,7 @@ export function TextField({
   onClear,
   clearLabel = '입력 지우기',
   editing = false,
+  editingContent,
   editingLabel,
   className,
   disabled,
@@ -79,16 +81,12 @@ export function TextField({
           aria-label={label}
           aria-busy={editing || undefined}
         />
-        {editing ? (
+        {editing && editingContent ? (
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 left-0 flex items-center"
           >
-            {[0, 1, 2].map((dot) => (
-              <span key={dot} className={editingDots.slot}>
-                <span className={editingDots.dot} />
-              </span>
-            ))}
+            {editingContent}
           </span>
         ) : null}
         {editingLabel !== undefined ? (

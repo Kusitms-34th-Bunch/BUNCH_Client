@@ -19,7 +19,6 @@ export * from './colorBadge';
 export * from './createBunchCard';
 export * from './deleteButton';
 export * from './descriptionRadioCard';
-export * from './editingAnimation';
 export * from './errorBanner';
 export * from './floatingButton';
 export * from './followButton';
