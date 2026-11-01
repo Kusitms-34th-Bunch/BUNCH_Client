@@ -64,6 +64,8 @@ export { default as FillUserMediumIcon } from './FillUserMediumIcon';
 export * from './FillUserMediumIcon';
 export { default as FillUserSmallIcon } from './FillUserSmallIcon';
 export * from './FillUserSmallIcon';
+export { default as GraphicBundleIllustrationIcon } from './GraphicBundleIllustrationIcon';
+export * from './GraphicBundleIllustrationIcon';
 export { default as GraphicChatIcon } from './GraphicChatIcon';
 export * from './GraphicChatIcon';
 export { default as GraphicEditIcon } from './GraphicEditIcon';
