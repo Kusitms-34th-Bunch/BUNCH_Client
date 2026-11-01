@@ -39,7 +39,7 @@
 
 ## 상태와 흐름
 
-- `useBunchHome`이 호출 지점이고 지금은 fixture와 목 동작(`switchBunch`·`deleteDraftBundle`·`removeBunch`)을 돌려준다. fixture 번치마다 내 역할이 달라(여행가조 메인 관리자, 퇴근런클럽 공동 관리자, 큐시즘 기프 일반 멤버) 번치를 전환하면 더보기 메뉴가 역할에 맞게 바뀐다.
+- `useBunchHome`이 호출 지점이고 지금은 fixture와 목 동작(`switchBunch`·`deleteDraftBundle`·`removeBunch`)을 돌려준다. fixture 번치마다 내 역할이 달라(퇴근런클럽 메인 관리자, 여행가조 공동 관리자, 큐시즘 기프 일반 멤버) 번치를 전환하면 더보기 메뉴가 역할에 맞게 바뀐다.
 - 탭·전환 시트·삭제 대상·접근 불가 안내 대상은 화면 안 상태다.
 
 ## 접근성

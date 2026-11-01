@@ -3,3 +3,4 @@
 
 export { BunchHome } from './BunchHome';
 export { BunchMenu } from './BunchMenu';
+export { BunchProfileEdit } from './BunchProfileEdit';
