@@ -1,6 +1,7 @@
 'use client';
 
 import type { ComponentProps } from 'react';
+import type { BundleTitleMember } from '../bundleTitle';
 import { LineAddSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
 import { SelectionField } from '../selectionField';
@@ -29,6 +30,10 @@ export type SelectionFieldGroupProps = Omit<ComponentProps<'div'>, 'children'> &
   onAdd?: (() => void) | undefined;
   /** "추가" 행의 글자(기본 "추가") */
   addLabel?: string | undefined;
+  /** "추가" 행 글자 오른쪽에 보일 멤버 프로필(다른 멤버가 값을 고르는 중일 때, 앞에서부터 최대 8명). 장식이라 읽어 줄 문구는 호출하는 쪽이 `addLabel`에 반영 */
+  addMembers?: readonly BundleTitleMember[] | undefined;
+  /** `addMembers`가 있을 때 "추가" 행 버튼에 덧붙여 읽어 줄 문구(예: "경진님이 편집 중"), 화면에는 안 보임 */
+  addMembersLabel?: string | undefined;
 };
 
 /**
@@ -46,6 +51,8 @@ export const SelectionFieldGroup = ({
   clearLabel,
   onAdd,
   addLabel = '추가',
+  addMembers,
+  addMembersLabel,
   className,
   ...props
 }: SelectionFieldGroupProps) => {
@@ -95,6 +102,29 @@ export const SelectionFieldGroup = ({
         >
           <LineAddSmallIcon aria-hidden="true" className="text-icon-quaternary shrink-0" />
           {addLabel}
+          {addMembersLabel ? <span className="sr-only">{` ${addMembersLabel}`}</span> : null}
+          {addMembers && addMembers.length > 0 ? (
+            // 버튼 안이라 div(ProfileImage)를 못 써서 같은 모양의 span으로 겹쳐 그림
+            <span aria-hidden="true" className="ml-s1 flex items-center">
+              {addMembers.slice(0, 8).map((member, index) => (
+                <span
+                  key={`${member.name}-${index}`}
+                  className={cn(
+                    'bg-surface-brand-subtle-2 border-border-tertiary relative size-6 shrink-0 overflow-hidden rounded-full border',
+                    index > 0 && '-ml-2',
+                  )}
+                >
+                  {member.src ? (
+                    <img
+                      src={member.src}
+                      alt=""
+                      className="absolute inset-0 size-full object-cover"
+                    />
+                  ) : null}
+                </span>
+              ))}
+            </span>
+          ) : null}
         </button>
       ) : null}
     </div>

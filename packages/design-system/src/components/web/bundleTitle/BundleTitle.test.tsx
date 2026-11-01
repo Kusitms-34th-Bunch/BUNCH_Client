@@ -34,6 +34,14 @@ describe('BundleTitle', () => {
     expect(classList.contains('gap-s4')).toBe(true);
   });
 
+  it("icon='calendar'면 위치 핀 대신 달력 아이콘이 나온다", () => {
+    const { container: pin } = render(<BundleTitle title="위치" />);
+    const { container: calendar } = render(<BundleTitle title="날짜" icon="calendar" />);
+
+    expect(calendar.querySelectorAll('svg')).toHaveLength(1);
+    expect(calendar.querySelector('svg')?.innerHTML).not.toBe(pin.querySelector('svg')?.innerHTML);
+  });
+
   it('기본으로 위치 핀 아이콘이 있고 icon=false면 없다', () => {
     const { container, rerender } = renderTitle();
 
