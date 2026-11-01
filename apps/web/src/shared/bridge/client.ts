@@ -19,6 +19,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     setNativeTabBar: () => Promise.resolve(false),
     // 브라우저에는 햅틱 없음
     tabSelectionHaptic: () => Promise.resolve(),
+    // 브라우저에는 시스템 탭 바 없음
+    setNativeTabBarVisible: () => Promise.resolve(false),
   },
 });
 

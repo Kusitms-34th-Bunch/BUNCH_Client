@@ -61,8 +61,18 @@ const appBridge = bridge({
       tabsStore.set(next);
       router.replace(`/${next.selectedId}` as Href);
     } else if (JSON.stringify(current.items) !== JSON.stringify(next.items)) {
-      tabsStore.set(next);
+      // 탭 바 표시 여부는 화면에 보이는 WebView의 setNativeTabBarVisible만 바꿈(다른 탭 WebView가 다시 불러와도 유지)
+      tabsStore.set({ ...next, barHidden: current.barHidden });
     }
+    return Promise.resolve(true);
+  },
+  // 탭 밖 화면을 같은 탭 WebView에서 여는 동안 탭 바만 숨김(탭 상태 유지, 결정 기록 012). 웹은 화면에 보이는 WebView만 보냄
+  setNativeTabBarVisible: (visible) => {
+    const current = tabsStore.get();
+    if (Platform.OS !== 'ios' || !current || typeof visible !== 'boolean')
+      return Promise.resolve(false);
+    if (current.barHidden === !visible) return Promise.resolve(true);
+    tabsStore.set({ ...current, barHidden: !visible });
     return Promise.resolve(true);
   },
   // 안드로이드 시스템 햅틱(기기 햅틱 설정을 따름). iOS는 시스템 탭 바가 아니면 쓰이지 않아 선택 햅틱으로 대체

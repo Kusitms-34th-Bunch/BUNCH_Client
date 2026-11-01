@@ -39,19 +39,26 @@ function subscribeMotion(listener: () => void) {
 const getReducedMotion = () => window.matchMedia(motionQuery).matches;
 const getServerReducedMotion = () => true;
 
-// 전환 중 나가는 화면은 포커스·보조기술에서 제외(inert), 중단된 이전 전환에서 돌아오는 DOM은 다시 조작 가능하게 처리
+// 나가는 화면은 포커스·보조기술에서 제외(inert)하고 data-page-leaving 표식(AppFrame이 그 화면의 배경 표식을 무시해 상태 바 영역도 함께 전환)
+// 중단된 이전 전환에서 돌아오는 DOM은 다시 조작 가능하게 처리
 const guardOutgoing = (animation: MultiAnimation<'out' | 'in'>) => {
   const incoming = animation.select('in').getMotionTracks()[0];
-  if (incoming) incoming.element.inert = false;
+  if (incoming) {
+    incoming.element.inert = false;
+    delete incoming.element.dataset.pageLeaving;
+  }
   const outgoing = animation.select('out').getMotionTracks()[0];
   if (outgoing) {
     const element = outgoing.element;
     const wasInert = element.inert;
     const dispose = outgoing.onDispose;
     element.inert = true;
+    element.dataset.pageLeaving = '';
     outgoing.onDispose = (context) => {
       dispose?.(context);
-      if (context.owns(element)) element.inert = wasInert;
+      if (!context.owns(element)) return;
+      element.inert = wasInert;
+      delete element.dataset.pageLeaving;
     };
   }
 };
@@ -97,14 +104,11 @@ const tabCrossfadeDirection: TransitionDirection<object, CompositeAnimation<'out
     void from.then((element) => {
       element.style.zIndex = '2';
       element.style.pointerEvents = 'none';
-      // AppFrame이 나가는 탭의 배경 표식을 무시해 상태 바 영역 배경도 같은 시간에 전환
-      element.dataset.pageLeaving = '';
     });
     void to.then((element) => {
       // 연속 탭으로 나가던 화면이 다시 들어오면 이전 전환의 설정 해제
       element.style.opacity = '';
       element.style.pointerEvents = '';
-      delete element.dataset.pageLeaving;
       element.style.position = 'relative';
       element.style.zIndex = '1';
     });
@@ -122,7 +126,6 @@ const tabCrossfadeDirection: TransitionDirection<object, CompositeAnimation<'out
           from.style.opacity = '';
           from.style.zIndex = '';
           from.style.pointerEvents = '';
-          delete from.dataset.pageLeaving;
         },
       }),
       in: new WebAnimation({

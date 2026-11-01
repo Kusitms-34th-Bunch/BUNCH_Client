@@ -91,8 +91,10 @@ export function BunchHomeScreen({
 
   return (
     // 브랜드 배경은 헤더·캐릭터 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
+    // 틀 배경은 위 절반 연보라·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 연보라, 아래는 흰색이 드러남
     <PageShell
       data-app-background="brand-subtle-1"
+      className="from-surface-brand-subtle-1 to-surface-primary bg-linear-to-b from-50% to-50%"
       header={
         <BunchHomeHeader
           bunchName={current.name}
