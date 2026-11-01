@@ -1,0 +1,66 @@
+/** 번들 작성 화면의 사용자 안내 문구(기획 문서 docs/specs/bundle-create.md 4.3) */
+export const BUNDLE_MESSAGES = {
+  headerSaved: '저장 완료',
+  headerSaving: '저장 중',
+  upload: '업로드',
+  offlineBanner: '인터넷 연결을 확인해 주세요.',
+  offlineRetry: '재시도',
+  membersTitle: '참여 멤버',
+  titleLabel: '번들 제목',
+  titlePlaceholder: '번들 제목을 입력해주세요.',
+  titleMax: '제목은 40자까지 쓸 수 있어요.',
+  photosTitle: '사진',
+  captionPlaceholder: '캡션 추가...',
+  locationAdd: '위치 추가',
+  locationField: '위치',
+  dateAdd: '날짜 추가',
+  dateField: '날짜',
+  commentsTitle: '코멘트',
+  commentMax: '코멘트는 400자까지 쓸 수 있어요.',
+  visibilityTitle: '공개 범위',
+  visibilityMembers: '멤버 공개',
+  visibilityPublic: '공개',
+  visibilityHelp: '공개 범위 설명',
+  // 공개 범위 툴팁 원문(Figma `2255:43328`)
+  visibilityTooltip: '비공개 번치에서 번들을 공개로 업로드하면 팔로워만 볼 수 있어요.',
+  leaveQuestion: '작성중인 번들에서 나갈까요?',
+  leave: '나가기',
+  deletedDraft: '삭제된 번들이에요',
+  editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
+  uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
+  uploadIncomplete: '필수 항목을 모두 입력해야 업로드 할 수 있어요.',
+  // 나가기 확인 창 문구는 Figma Dialog `2082:49691` 원문(참여 멤버 일반 기준, 초안 생성자용 문구는 확인 항목)
+  leaveConfirmTitle: '번들에서 나가시겠어요?',
+  leaveConfirmDescription: '번들에서 나가면 작성한 코멘트가 삭제되며, 복구할 수 없어요.',
+  // 업로드 확인 창 문구는 기획 전달 원문(기능 spec 4.3.12의 질문 + 설명)
+  uploadConfirmTitle: '번들을 업로드할까요?',
+  uploadConfirmDescription: '업로드한 번들은 멤버들과 공유되며, 업로드 이후 수정할 수 있어요.',
+  cancel: '취소',
+  // 멤버 내보내기 확인 창은 Figma 「멤버 삭제 프로토타입」 `2091:62913` 원문
+  removeMemberTitle: (name: string) => `${name}님을 번들에서 내보낼까요?`,
+  removeMemberDescription: (name: string) =>
+    // 「삭제되며,」 뒤에서 줄이 바뀜
+    `${name}님이 남긴 코멘트가 삭제되며,\n복구할 수 없어요.`,
+  removeMemberConfirm: '내보내기',
+  // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
+  editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
+  editingLabel: (name: string) => `${name}님이 편집 중`,
+  commentEditingLabel: (name: string) => `${name}님이 작성 중`,
+  roleLabel: { owner: '번치장', coOwner: '공동 번치장', draftAuthor: '초안 작성자' },
+  locationSheetTitle: '위치 검색',
+  locationSearchLabel: '장소나 주소 검색',
+  locationSearchPlaceholder: '장소나 주소를 검색해 주세요',
+  locationGuideTitle: '태그한 위치는 함께 보여요',
+  // Figma 줄바꿈 위치(「해당 게시글을」 뒤)를 \n으로 유지
+  locationGuideDescription:
+    '게시글에 태그한 위치는 해당 게시글을\n보는 다른 사람들에게도 표시돼요.',
+  locationNoResult: '검색 결과가 없어요',
+  locationResultCount: (count: number) => `검색 결과 ${count}건`,
+  searchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  locationFull: '위치는 3개까지 추가할 수 있어요.',
+} as const;
+
+/** 위치를 담을 수 있는 최대 개수(Figma 수정 가이드: 3개가 차면 「추가」 행이 사라짐) */
+export const MAX_LOCATIONS = 3;
+export const TITLE_MAX_LENGTH = 40;
+export const COMMENT_MAX_LENGTH = 400;

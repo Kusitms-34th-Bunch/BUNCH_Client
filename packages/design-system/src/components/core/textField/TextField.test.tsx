@@ -137,13 +137,26 @@ describe('TextField', () => {
       expect((input as HTMLInputElement).value).toBe('부산');
     });
 
-    it('점 3개 애니메이션을 보조 기술에는 숨겨서 그린다', () => {
+    it('editingContent를 입력창 자리에 보조 기술에는 숨겨서 그린다', () => {
+      render(<TextField label="제목" editing editingContent={<i data-testid="anim" />} />);
+
+      const slot = screen.getByTestId('anim').parentElement!;
+      expect(slot.getAttribute('aria-hidden')).toBe('true');
+      expect(slot.parentElement).toBe(screen.getByRole('textbox').parentElement);
+    });
+
+    it('editingContent가 없으면 내용만 가리고 애니메이션 자리는 그리지 않는다', () => {
       render(<TextField label="제목" editing />);
 
-      const dots = screen
-        .getByRole('textbox')
-        .parentElement!.querySelector('[aria-hidden="true"]')!;
-      expect(dots.children).toHaveLength(3);
+      expect(
+        screen.getByRole('textbox').parentElement!.querySelector('[aria-hidden="true"]'),
+      ).toBeNull();
+    });
+
+    it('editing이 아니면 editingContent를 그리지 않는다', () => {
+      render(<TextField label="제목" editingContent={<i data-testid="anim" />} />);
+
+      expect(screen.queryByTestId('anim')).toBeNull();
     });
 
     it('editingLabel을 주면 editing 동안 그 문구를 상태 안내로 읽게 한다', () => {

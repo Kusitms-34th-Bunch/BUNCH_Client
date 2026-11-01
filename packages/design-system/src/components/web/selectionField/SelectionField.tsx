@@ -3,7 +3,7 @@
 import { type ComponentProps, useId } from 'react';
 import { LineChevronRightSmallIcon, LineCloseSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
-import { BundleTitle } from '../bundleTitle';
+import { BundleTitle, type BundleTitleMember } from '../bundleTitle';
 import { ChipButton } from '../chipButton';
 
 export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'title' | 'onSelect'> & {
@@ -13,6 +13,10 @@ export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'titl
   selected?: boolean | undefined;
   /** 어떤 필드인지 알려 주는 이름(예: "위치"), 화면에는 안 보이고 필드 버튼의 접근성 이름 앞에 붙음 */
   fieldLabel?: string | undefined;
+  /** 제목 앞 아이콘(기본 위치 핀, 날짜 필드는 `'calendar'`) */
+  icon?: 'map-pin' | 'calendar' | undefined;
+  /** 제목 오른쪽에 보일 멤버 프로필(다른 멤버가 이 필드를 편집 중일 때 등, 앞에서부터 최대 8명) */
+  members?: readonly BundleTitleMember[] | undefined;
   /** 필수 입력 표시(제목 뒤 별표) */
   required?: boolean | undefined;
   /** 필수 표시를 읽어 주는 글자(기본 "필수") */
@@ -40,6 +44,8 @@ export const SelectionField = ({
   label,
   fieldLabel,
   selected = false,
+  icon = 'map-pin',
+  members,
   required = false,
   requiredLabel = '필수',
   suggestions,
@@ -83,6 +89,8 @@ export const SelectionField = ({
           aria-hidden="true"
           title={label}
           variant="weak"
+          icon={icon}
+          members={members}
           required={required}
           requiredLabel={requiredLabel}
           // BundleTitle 기본 높이 25px을 Figma 필드 줄 높이 24px에 맞춤
