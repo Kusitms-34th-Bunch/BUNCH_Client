@@ -63,12 +63,16 @@ export function DraftScreen({
   const denyEdit = () => notify(BUNDLE_MESSAGES.editOnlyParticipants);
   const blockEditing = () => notify(BUNDLE_MESSAGES.editingBlocked);
 
-  // 안내 순서: 참여 멤버가 아님 → 권한 없음 → 필수 항목 부족(기능 spec 4.3.12), 모두 맞으면 확인 창
+  // 안내 순서: 참여 멤버가 아님 → 권한 없음 → 필수 항목 부족(기능 spec 4.3.12), 막혔으면 안내하고 true
+  const blockUpload = () => {
+    if (!access.participant) denyEdit();
+    else if (!access.canPublish) notify(BUNDLE_MESSAGES.uploadForbidden);
+    else if (blockers.length > 0) notify(BUNDLE_MESSAGES.uploadIncomplete);
+    else return false;
+    return true;
+  };
   const upload = () => {
-    if (!access.participant) return denyEdit();
-    if (!access.canPublish) return notify(BUNDLE_MESSAGES.uploadForbidden);
-    if (blockers.length > 0) return notify(BUNDLE_MESSAGES.uploadIncomplete);
-    setUploadConfirmOpen(true);
+    if (!blockUpload()) setUploadConfirmOpen(true);
   };
 
   return (
@@ -131,7 +135,8 @@ export function DraftScreen({
         cancelLabel={BUNDLE_MESSAGES.cancel}
         onConfirm={() => {
           setUploadConfirmOpen(false);
-          onPublish?.();
+          // 확인창이 열려 있는 사이 멤버·연결·저장 상태가 바뀌었을 수 있어 확정할 때 한 번 더 검사
+          if (!blockUpload()) onPublish?.();
         }}
       />
     </PageShell>

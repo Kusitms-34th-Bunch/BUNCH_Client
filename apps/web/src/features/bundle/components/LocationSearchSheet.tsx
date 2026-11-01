@@ -25,7 +25,8 @@ export function LocationSearchSheet({
   onSelect,
 }: LocationSearchSheetProps) {
   // 검색 전에는 둘 다 undefined, 검색한 뒤에는 결과(빈 목록이면 결과 없음)
-  const [keyword, setKeyword] = useState<string | undefined>(undefined);
+  // 같은 검색어로 다시 검색해도 effect가 다시 돌도록 검색 요청마다 번호(id)를 올림
+  const [search, setSearch] = useState<{ keyword: string; id: number } | undefined>(undefined);
   const [results, setResults] = useState<readonly PlaceResult[] | undefined>(undefined);
   const [wasOpen, setWasOpen] = useState(open);
 
@@ -33,16 +34,16 @@ export function LocationSearchSheet({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setKeyword(undefined);
+      setSearch(undefined);
       setResults(undefined);
     }
   }
 
-  // 키워드가 바뀌면 이전 검색의 늦은 응답은 버리고 마지막 검색만 반영
+  // 검색 요청이 바뀌면 이전 검색의 늦은 응답은 버리고 마지막 검색만 반영
   useEffect(() => {
-    if (keyword === undefined) return;
+    if (search === undefined) return;
     let cancelled = false;
-    searchPlaces(keyword).then(
+    searchPlaces(search.keyword).then(
       (found) => {
         if (!cancelled) setResults(found);
       },
@@ -54,7 +55,7 @@ export function LocationSearchSheet({
     return () => {
       cancelled = true;
     };
-  }, [keyword, searchPlaces]);
+  }, [search, searchPlaces]);
 
   return (
     <BottomSheet.Root open={open} onOpenChange={onOpenChange}>
@@ -68,7 +69,9 @@ export function LocationSearchSheet({
           <SearchField
             inputLabel={BUNDLE_MESSAGES.locationSearchLabel}
             placeholder={BUNDLE_MESSAGES.locationSearchPlaceholder}
-            onSearch={setKeyword}
+            onSearch={(keyword) =>
+              setSearch((current) => ({ keyword, id: (current?.id ?? 0) + 1 }))
+            }
           />
         </div>
         {/* 결과 줄의 구분선이 시트 양끝까지 닿도록 Body 기본 좌우 패딩을 없앰(줄 자체가 16px 패딩을 가짐) */}

@@ -44,26 +44,27 @@ type Options = {
   offline?: boolean;
 };
 
-const renderScreen = ({
+const screenElement = ({
   draft = draftFixture,
   viewer = creator,
   saveStatus = 'saved',
   offline = false,
-}: Options = {}) =>
-  render(
-    <DraftScreen
-      draft={draft}
-      viewer={viewer}
-      saveStatus={saveStatus}
-      offline={offline}
-      actions={actions}
-      currentYear={2026}
-      onBack={onBack}
-      onLeave={onLeave}
-      onRetry={onRetry}
-      onPublish={onPublish}
-    />,
-  );
+}: Options = {}) => (
+  <DraftScreen
+    draft={draft}
+    viewer={viewer}
+    saveStatus={saveStatus}
+    offline={offline}
+    actions={actions}
+    currentYear={2026}
+    onBack={onBack}
+    onLeave={onLeave}
+    onRetry={onRetry}
+    onPublish={onPublish}
+  />
+);
+
+const renderScreen = (options: Options = {}) => render(screenElement(options));
 
 const uploadButton = () => screen.getByRole('button', { name: '업로드' });
 const membersSection = () => within(screen.getByRole('region', { name: '참여 멤버' }));
@@ -186,6 +187,19 @@ describe('업로드 버튼', () => {
     expect(onPublish).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('확인 창이 열려 있는 사이 조건이 깨지면 확정해도 업로드하지 않고 안내한다', async () => {
+    const { rerender } = renderScreen({ viewer: creator });
+
+    await userEvent.click(uploadButton());
+    const dialog = await screen.findByRole('alertdialog');
+    // 확인 창을 연 채로 연결이 끊김
+    rerender(screenElement({ viewer: creator, offline: true }));
+    await userEvent.click(within(dialog).getByRole('button', { name: '업로드' }));
+
+    expect(onPublish).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
   });
 
   it('확인 창에서 「취소」를 누르면 업로드하지 않는다', async () => {
