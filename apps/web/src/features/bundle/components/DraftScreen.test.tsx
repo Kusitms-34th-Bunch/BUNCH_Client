@@ -28,6 +28,7 @@ const actions = {
   addLocation: vi.fn(),
   removeLocation: vi.fn(),
   setDate: vi.fn(),
+  addMember: vi.fn(),
   removeMember: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
 } satisfies DraftActions;
@@ -470,8 +471,8 @@ describe('다른 멤버가 편집 중인 영역', () => {
 });
 
 describe('나가기', () => {
-  it('확인 창에서 「나가기」를 눌러야 나간다', async () => {
-    renderScreen();
+  it('일반 멤버는 확인 창에서 「나가기」를 눌러야 나간다', async () => {
+    renderScreen({ viewer: { memberId: 'eunwoo', bunchRole: 'member' } });
 
     await userEvent.click(screen.getByRole('button', { name: '나가기' }));
     const dialog = await screen.findByRole('alertdialog');

@@ -1,11 +1,11 @@
 'use client';
 
-import { Dialog } from '@app/design-system';
 import { AddMemberCard, BundleTitle, MemberCard } from '@app/design-system/web';
 import { useState } from 'react';
 import type { Draft, DraftMember, DraftViewer } from '../lib/types';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { canRemoveMember, getMemberBadge, type DraftAccess } from '../lib/permissions';
+import { RemoveMemberDialog } from './RemoveMemberDialog';
 
 type DraftMembersProps = {
   draft: Draft;
@@ -67,29 +67,12 @@ export function DraftMembers({
           </li>
         )}
       </ul>
-      <Dialog.Root open={open} onOpenChange={setOpen}>
-        <Dialog.Content>
-          <Dialog.Title>{BUNDLE_MESSAGES.removeMemberTitle(target?.name ?? '')}</Dialog.Title>
-          <Dialog.Description className="whitespace-pre-line">
-            {BUNDLE_MESSAGES.removeMemberDescription(target?.name ?? '')}
-          </Dialog.Description>
-          <Dialog.Footer>
-            <Dialog.Confirm
-              variant="warning"
-              className="min-w-0 flex-1"
-              onClick={() => {
-                if (target) onRemoveMember(target.id);
-                setOpen(false);
-              }}
-            >
-              {BUNDLE_MESSAGES.removeMemberConfirm}
-            </Dialog.Confirm>
-            <Dialog.Cancel variant="secondary" className="min-w-0 flex-1">
-              {BUNDLE_MESSAGES.cancel}
-            </Dialog.Cancel>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog.Root>
+      <RemoveMemberDialog
+        open={open}
+        onOpenChange={setOpen}
+        target={target}
+        onConfirm={(member) => onRemoveMember(member.id)}
+      />
     </section>
   );
 }

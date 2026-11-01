@@ -1,4 +1,4 @@
-import type { Draft, DraftViewer, PlaceResult } from '../lib/types';
+import type { Draft, DraftMember, DraftViewer, PlaceResult } from '../lib/types';
 
 // 초안 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
 const samplePhoto = (hue: number) => {
@@ -15,6 +15,42 @@ const DEFAULT_AVATAR = '/images/default-bunch.png';
 
 // 확인용 계정: 번치장이자 초안 생성자인 지예(Figma 최종 화면의 「지예 (나)」)
 export const draftViewerFixture: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
+
+/** 번치 멤버 전체. 참여 멤버가 아닌 멤버는 「멤버 추가하기」에 나옴(번치 멤버 API 연결 전 목 값) */
+export const bunchMembersFixture: readonly DraftMember[] = [
+  { id: 'jiye', name: '지예', avatarSrc: DEFAULT_AVATAR, bunchRole: 'owner', isCreator: true },
+  {
+    id: 'gyeongjin',
+    name: '경진',
+    avatarSrc: DEFAULT_AVATAR,
+    bunchRole: 'coOwner',
+    isCreator: false,
+  },
+  { id: 'eunwoo', name: '은우', avatarSrc: DEFAULT_AVATAR, bunchRole: 'member', isCreator: false },
+  { id: 'suin', name: '수인', avatarSrc: DEFAULT_AVATAR, bunchRole: 'member', isCreator: false },
+  { id: 'hyochan', name: '효찬', avatarSrc: DEFAULT_AVATAR, bunchRole: 'member', isCreator: false },
+  {
+    id: 'gyeongjun',
+    name: '경준',
+    avatarSrc: DEFAULT_AVATAR,
+    bunchRole: 'member',
+    isCreator: false,
+  },
+  {
+    id: 'jaehyeon',
+    name: '재현',
+    avatarSrc: DEFAULT_AVATAR,
+    bunchRole: 'member',
+    isCreator: false,
+  },
+  {
+    id: 'seohyeon',
+    name: '서현',
+    avatarSrc: DEFAULT_AVATAR,
+    bunchRole: 'member',
+    isCreator: false,
+  },
+];
 
 export const draftFixture: Draft = {
   id: 'draft-1',
