@@ -211,4 +211,16 @@ describe('SelectionField', () => {
 
     expect(container.querySelector('[id$="-title"]')?.classList.contains('h-6')).toBe(true);
   });
+
+  it('members를 주면 제목 오른쪽에 그 멤버 프로필을 보인다', () => {
+    const { container } = renderField({ members: [{ name: '경진', src: '/a.png' }] });
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/a.png');
+  });
+
+  it('members가 없으면 프로필을 그리지 않는다', () => {
+    const { container } = renderField();
+
+    expect(container.querySelector('img')).toBeNull();
+  });
 });

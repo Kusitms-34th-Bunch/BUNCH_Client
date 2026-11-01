@@ -22,7 +22,7 @@
 
 ## Public API
 
-- Props: `title`(필수), `variant`(`strong` 기본·`weak`), `titleId`(제목 글자 요소의 id), `icon`(기본 `true`), `required`(기본 `false`), `requiredLabel`(기본 "필수"), `members`(`{ name, src? }` 배열, 앞의 8명만 보임), `membersLabel`(아바타 목록 이름, 기본 "멤버"), 그리고 native `<div>`의 속성(`className`은 줄에 적용).
+- Props: `title`(필수), `variant`(`strong` 기본·`weak`), `titleId`(제목 글자 요소의 id), `icon`(기본 `true`=위치 핀, `'calendar'`=달력, `false`=없음. Figma 날짜 줄은 같은 `BundleTitle`의 아이콘만 달력으로 바꿔 씀), `required`(기본 `false`), `requiredLabel`(기본 "필수"), `members`(`{ name, src? }` 배열, 앞의 8명만 보임), `membersLabel`(아바타 목록 이름, 기본 "멤버"), 그리고 native `<div>`의 속성(`className`은 줄에 적용).
 - `BUNDLE_TITLE_MAX_AVATARS`(8)도 함께 내보낸다.
 - 호출자 소유 책임: 제목·필수·멤버 이름의 i18n, 보여 줄 멤버 선정(8명 초과 처리), 입력창과의 연결.
 

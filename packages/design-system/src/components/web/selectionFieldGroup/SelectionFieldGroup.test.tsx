@@ -187,4 +187,17 @@ describe('SelectionFieldGroup', () => {
     expect((container.firstElementChild as HTMLElement).className).toContain('mt-2');
     expect(screen.getByTestId('group')).toBeTruthy();
   });
+
+  it('addMembers를 주면 「추가」 행 글자 오른쪽에 프로필을 보이고 접근성 이름은 바뀌지 않는다', () => {
+    renderGroup({ onAdd: vi.fn(), addMembers: [{ name: '경진', src: '/a.png' }] });
+
+    const add = screen.getByRole('button', { name: '추가' });
+    expect(add.querySelector('img')?.getAttribute('src')).toBe('/a.png');
+  });
+
+  it('addMembers가 없으면 「추가」 행에 프로필이 없다', () => {
+    renderGroup({ onAdd: vi.fn() });
+
+    expect(screen.getByRole('button', { name: '추가' }).querySelector('img')).toBeNull();
+  });
 });
