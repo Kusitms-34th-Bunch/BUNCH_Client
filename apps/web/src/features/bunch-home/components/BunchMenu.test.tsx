@@ -76,6 +76,20 @@ describe('BunchMenuScreen', () => {
     expect(onLeave).toHaveBeenCalledTimes(1);
   });
 
+  it('역할을 아직 모르면(첫 hydration) 메뉴를 그리지 않는다', () => {
+    render(
+      <BunchMenuScreen
+        bunchName={undefined}
+        myRole={undefined}
+        onBack={vi.fn()}
+        onLeave={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+    expect(screen.getByRole('heading', { level: 1, name: '번치 더보기' })).toBeTruthy();
+  });
+
   it('메인 관리자의 번치 나가기는 확인 창을 열지 않는다', async () => {
     const user = userEvent.setup();
     render(

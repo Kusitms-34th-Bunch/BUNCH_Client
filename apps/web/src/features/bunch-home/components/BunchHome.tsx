@@ -15,7 +15,6 @@ export function BunchHome() {
       data={data}
       actions={actions}
       onAddBunch={() => router.push(BUNCH_HOME_PATHS.startBunch)}
-      onOpenMenu={() => router.push(BUNCH_HOME_PATHS.menu)}
     />
   );
 }

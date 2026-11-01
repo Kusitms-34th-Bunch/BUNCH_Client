@@ -26,7 +26,7 @@
 
 - Path: `/bunch/menu`. params·search 없음. 탭 경로 밖이라 iOS 앱에서는 시스템 탭 바가 숨는다(결정 기록 012).
 - 접근 권한·guard: 아직 없다(로그인·번치 API 미연결). 이름·역할은 번치 홈에서 고른 fixture 번치(`useCurrentBunchId`)를 따른다. 여행가조 메인 관리자, 퇴근런클럽 공동 관리자, 큐시즘 기프 일반 멤버다. 서버가 요청 시점의 역할로 다시 판단해야 한다.
-- 진입: 번치 홈 헤더 「더보기」(`router.push`). 화면설계서(`1892:37780`)대로 메뉴가 번치 홈 위를 덮으며 들어오고(Move in / ← / Ease out / 150ms), 뒤로 가면 위에서 빠진다(Move out / →). 전환 경계는 page의 `data-ssgoi-transition`, 규칙은 `AppTransitions`다(`docs/architecture/motion.md`).
+- 진입: 번치 홈 헤더 「더보기」 링크(`Link`, 새 탭 열기·가운데 클릭 지원). 화면설계서(`1892:37780`)대로 메뉴가 번치 홈 위를 덮으며 들어오고(Move in / ← / Ease out / 150ms), 뒤로 가면 위에서 빠진다(Move out / →). 전환 경계는 page의 `data-ssgoi-transition`, 규칙은 `AppTransitions`다(`docs/architecture/motion.md`).
 - 뒤로 가기: 기록이 있으면 `router.back()`, 직접 진입이라 없으면 번치 홈으로 `replace`. 기록 유무는 `window.history.length > 1`로만 판단한다(사진 상세와 같은 방식).
 - Layout: `(app)` layout 안에서 `PageShell` 한 번. `robots: noindex`.
 
@@ -44,7 +44,7 @@
 
 ## 검증
 
-- [x] test 8개(`BunchMenu.test.tsx`): 역할별 항목과 순서, 나가기 확인 창 취소(첫 초점·초점 복귀)·확인, 메인 관리자는 확인 창 없음, 직접 진입 뒤로 가기, 고른 번치의 역할로 메뉴 표시. 번치 홈 「더보기」 이동 test 1개(`BunchHome.test.tsx`).
+- [x] test 9개(`BunchMenu.test.tsx`): 역할별 항목과 순서, 나가기 확인 창 취소(첫 초점·초점 복귀)·확인, 메인 관리자는 확인 창 없음, 직접 진입 뒤로 가기, 고른 번치의 역할로 메뉴 표시. 역할을 모를 때 목록 없음 test 포함. 번치 홈 「더보기」 링크 test 1개(`BunchHome.test.tsx`).
 - [x] 개발 서버 렌더와 Figma 대조(Chrome, 앱 폭 430px): 메인 관리자 메뉴의 위치·간격·글자색, 일반 멤버 확인 창 문구·배치. 일반 멤버(큐시즘 기프)로 전환한 뒤 4개 메뉴 확인, 공동 관리자 화면은 test로만 확인
 - [ ] 실기기
 
@@ -52,5 +52,5 @@
 
 - 권한 차이(디자인): Figma에서는 일반 멤버도 「차단 목록」을 본다. `docs/specs/bunch-home.md` 권한 표에서 다른 번치 차단·해제는 일반 멤버 불가다. 목록 보기만 허용하는지 확인한다. 지금은 Figma를 따른다.
 - 멤버 초대: 어느 화면으로 갈지(온보딩의 초대 화면 재사용 또는 새 화면) 정해지지 않았다.
-- 새로고침·직접 진입: 서버 렌더와 첫 hydration은 기본 번치(여행가조, 메인 관리자)라 다른 번치를 고른 상태면 첫 프레임에 메인 관리자 메뉴가 잠깐 보였다가 바뀐다. 번치·역할 API 연결 때 서버 데이터로 해소된다.
+- 새로고침·직접 진입: 서버 렌더와 첫 hydration은 저장된 번치를 몰라(`useCurrentBunchId`가 null) 메뉴 목록을 그리지 않고, 마운트 직후 역할에 맞는 메뉴를 그린다. 다른 역할의 메뉴가 잠깐 보이지는 않지만 목록이 한 프레임 늦게 나타난다. 번치·역할 API 연결 때 서버 데이터로 바꾼다.
 - 나가기 뒤 기록: 지금은 `replace('/bunch')`라 기록이 `/bunch`, `/bunch`로 겹친다. 번치 나가기 이슈에서 이동 대상을 정할 때 함께 정한다.

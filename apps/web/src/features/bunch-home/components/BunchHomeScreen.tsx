@@ -40,8 +40,6 @@ type BunchHomeScreenProps = {
   onOpenDraft?: ((_bundleId: string) => void) | undefined;
   /** 전환 시트의 「새로운 번치 추가하기」 */
   onAddBunch?: (() => void) | undefined;
-  /** 헤더 더보기(더보기 메뉴 열기) */
-  onOpenMenu?: (() => void) | undefined;
 };
 
 /** 번치 탭 홈: 번치 프로필, 완성된·작성 중인 번들 탭, 번치 전환 시트, 접근 불가 번치 안내 */
@@ -51,7 +49,6 @@ export function BunchHomeScreen({
   onCreateBundle,
   onOpenDraft,
   onAddBunch,
-  onOpenMenu,
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
   const [tab, setTab] = useState<BundleTab>('completed');
@@ -104,7 +101,6 @@ export function BunchHomeScreen({
           bunchImageSrc={current.imageSrc}
           onBunchClick={() => setSheetOpen(true)}
           switcherOpen={sheetOpen}
-          onMoreClick={onOpenMenu}
         />
       }
       // 「+」는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치

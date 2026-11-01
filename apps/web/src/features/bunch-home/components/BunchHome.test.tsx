@@ -119,12 +119,11 @@ describe('BunchHome', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(within(sheet).getByRole('button', { name: /큐시즘 밋업/ })).toBeTruthy();
   });
-  it('헤더 더보기를 누르면 더보기 메뉴로 이동한다', async () => {
-    const user = userEvent.setup();
+  it('헤더 더보기는 더보기 메뉴로 가는 링크다(새 탭 열기 지원)', () => {
     render(<BunchHome />);
 
-    await user.click(screen.getByRole('button', { name: '더보기' }));
-
-    expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.menu);
+    expect(screen.getByRole('link', { name: '더보기' }).getAttribute('href')).toBe(
+      BUNCH_HOME_PATHS.menu,
+    );
   });
 });

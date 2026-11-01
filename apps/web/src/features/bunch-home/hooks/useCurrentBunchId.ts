@@ -8,9 +8,9 @@ const listeners = new Set<() => void>();
 // 저장소를 읽거나 쓸 수 없는 환경(사생활 보호 모드·용량 초과)의 대체 값
 let memoryId: string | null = null;
 
-// fixture에 없는 ID(직접 바꾼 저장값 등)는 기본 번치로
+// fixture에 없는 ID(직접 바꾼 저장값, constructor 같은 상속 속성 이름)는 기본 번치로
 const known = (bunchId: string | null) =>
-  bunchId !== null && bunchId in bunchDetailsFixture ? bunchId : initialId;
+  bunchId !== null && Object.hasOwn(bunchDetailsFixture, bunchId) ? bunchId : initialId;
 
 const read = () => {
   if (memoryId !== null) return known(memoryId);
@@ -36,7 +36,7 @@ const write = (bunchId: string) => {
   listeners.forEach((listener) => listener());
 };
 
-/** 지금 번치 ID와 바꾸는 함수. 서버 렌더와 첫 hydration은 기본 번치 */
-export function useCurrentBunchId(): readonly [string, (_bunchId: string) => void] {
-  return [useSyncExternalStore(subscribe, read, () => initialId), write];
+/** 지금 번치 ID와 바꾸는 함수. 서버 렌더와 첫 hydration은 저장값을 모르므로 null */
+export function useCurrentBunchId(): readonly [string | null, (_bunchId: string) => void] {
+  return [useSyncExternalStore(subscribe, read, () => null), write];
 }

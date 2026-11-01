@@ -17,7 +17,9 @@ type UseBunchHomeResult = {
  * 연결하면 이 hook만 TanStack Query 상태(로딩·오류 포함)와 mutation으로 바꿈
  */
 export function useBunchHome(): UseBunchHomeResult {
-  const [currentId, setCurrentId] = useCurrentBunchId();
+  const [storedId, setCurrentId] = useCurrentBunchId();
+  // 첫 hydration은 기본 번치(번치 홈은 역할별 항목이 없어 그대로 그림)
+  const currentId = storedId ?? initialBunchDetailFixture.id;
   const [bunches, setBunches] = useState(bunchSummariesFixture);
   const [deletedDraftIds, setDeletedDraftIds] = useState<ReadonlySet<string>>(new Set());
 

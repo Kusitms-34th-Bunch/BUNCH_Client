@@ -1,4 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
+import { createElement } from 'react';
+import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useCurrentBunchId } from './useCurrentBunchId';
 
@@ -13,6 +15,26 @@ describe('useCurrentBunchId', () => {
     const { result } = renderHook(() => useCurrentBunchId());
 
     expect(result.current[0]).toBe('bunch-trip');
+  });
+
+  it.each(['constructor', 'toString', '__proto__'])(
+    '상속 속성 이름(%s) 저장값도 기본 번치로 읽는다',
+    (stored) => {
+      sessionStorage.setItem('bunch-home:current-bunch-id', stored);
+      const { result } = renderHook(() => useCurrentBunchId());
+
+      expect(result.current[0]).toBe('bunch-trip');
+    },
+  );
+
+  it('서버 렌더에서는 저장값을 모르므로 null이다', () => {
+    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-gift');
+    function Probe() {
+      const [id] = useCurrentBunchId();
+      return String(id);
+    }
+
+    expect(renderToString(createElement(Probe))).toBe('null');
   });
 
   // 메모리 대체 값이 모듈에 남으므로 이 파일의 마지막 테스트로 둠
