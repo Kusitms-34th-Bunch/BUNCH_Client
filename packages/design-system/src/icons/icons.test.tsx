@@ -27,6 +27,7 @@ const GRAPHIC_SIZES: Record<string, number> = {
   GraphicRoleOwnerMediumIcon: 20,
   GraphicRoleCoOwnerMediumIcon: 20,
   GraphicRoleDraftAuthorMediumIcon: 20,
+  GraphicBundleIllustrationIcon: 216,
 };
 
 const SIZES: [IconSize, number][] = [
@@ -58,7 +59,7 @@ describe('Icons', () => {
   });
 
   it('fixed exports preserve the exact geometry and accessibility of every size', () => {
-    expect(Object.keys(icons)).toHaveLength(159);
+    expect(Object.keys(icons)).toHaveLength(160);
     for (const [name, Icon] of Object.entries(dynamicIcons)) {
       for (const [size, label] of [
         ['sm', 'Small'],
