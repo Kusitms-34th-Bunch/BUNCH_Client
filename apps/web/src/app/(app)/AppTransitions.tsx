@@ -230,6 +230,32 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: menuSubSlide,
   },
+  // 멤버 관리와 권한 안내도 메뉴 하위 화면과 같은 미는 slide(화면설계서에 전환 정의 없음)
+  {
+    from: BUNCH_HOME_PATHS.menu,
+    to: BUNCH_HOME_PATHS.members,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  {
+    from: BUNCH_HOME_PATHS.members,
+    to: BUNCH_HOME_PATHS.roles,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  // 멤버 초대는 멤버 관리 헤더와 더보기 메뉴 두 곳에서 들어옴
+  {
+    from: BUNCH_HOME_PATHS.members,
+    to: BUNCH_HOME_PATHS.invite,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  {
+    from: BUNCH_HOME_PATHS.menu,
+    to: BUNCH_HOME_PATHS.invite,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
   {
     from: BUNDLE_SELECT_PATHS.select,
     to: BUNDLE_SELECT_PATHS.transitionIds.recommendation,

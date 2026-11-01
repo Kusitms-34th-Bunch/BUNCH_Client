@@ -4,7 +4,6 @@
 export { BunchBasicInfo } from './create/BunchBasicInfo';
 export { BunchCreated } from './create/BunchCreated';
 export { BunchDescription } from './create/BunchDescription';
-export { BunchInvite } from './invite/BunchInvite';
 export { BunchJoin } from './join/BunchJoin';
 export { BunchJoinInvitation } from './join/BunchJoinInvitation';
 export { BunchJoinMotion } from './join/BunchJoinMotion';

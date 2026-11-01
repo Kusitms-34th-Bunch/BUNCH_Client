@@ -20,4 +20,18 @@ export const BUNCH_HOME_MESSAGES = {
   leaveTitle: (bunchName: string) => `${bunchName} 번치를 나갈까요?`,
   leaveDescription:
     '사진함에 직접 올린 사진은 삭제되지만, 이미 발행된 번들의 사진은 그대로 남아요.',
+  // 멤버 관리(화면설계서 2198:42965 2~4번)
+  appointTitle: (name: string) => `${name}님을 공동 관리자로 지정할까요?`,
+  appointDescription: '번치를 함께 관리할 수 있어요.',
+  appointed: (name: string) => `${name}님이 공동 관리자가 되었어요.`,
+  revokeTitle: (name: string) => `${name}님의 공동 관리자 권한을 해제할까요?`,
+  revokeDescription: '해제 시 일반 멤버로 바뀌어요.',
+  revoked: (name: string) => `${name}님의 공동 관리자 권한을 해제했어요.`,
+  transferTitle: (name: string) => `${name}님에게 관리자 권한을 넘길까요?`,
+  transferDescription: '넘긴 뒤에는 일반 멤버로 번치에 남아요.',
+  transferred: (name: string) => `${name}님이 관리자가 되었어요.`,
+  removeTitle: (name: string, bunchName: string) => `${name}님을 ${bunchName}에서 내보낼까요?`,
+  removeDescription: (name: string) =>
+    `${name}님이 올리신 사진은 사진함에서 삭제되고, 발행된 번들에만 남아요.`,
+  removed: (name: string) => `${name}님을 번치에서 내보냈어요.`,
 } as const;

@@ -83,6 +83,19 @@ describe('BunchMenuScreen', () => {
     );
   });
 
+  it('멤버 관리·멤버 초대는 각 화면으로 가는 링크다', () => {
+    render(
+      <BunchMenuScreen bunchName="여행가조" myRole="member" onBack={vi.fn()} onLeave={vi.fn()} />,
+    );
+
+    expect(screen.getByRole('link', { name: '멤버 관리' }).getAttribute('href')).toBe(
+      BUNCH_HOME_PATHS.members,
+    );
+    expect(screen.getByRole('link', { name: '멤버 초대' }).getAttribute('href')).toBe(
+      BUNCH_HOME_PATHS.invite,
+    );
+  });
+
   it('역할을 아직 모르면(첫 hydration) 메뉴를 그리지 않는다', () => {
     render(
       <BunchMenuScreen
