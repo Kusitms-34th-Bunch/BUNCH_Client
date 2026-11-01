@@ -17,6 +17,8 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 }));
 
 beforeEach(() => {
+  // 지금 번치는 sessionStorage에 유지되므로 테스트마다 기본 번치로
+  sessionStorage.clear();
   push.mockClear();
   toast.mockClear();
 });
@@ -116,5 +118,12 @@ describe('BunchHome', () => {
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(within(sheet).getByRole('button', { name: /큐시즘 밋업/ })).toBeTruthy();
+  });
+  it('헤더 더보기는 더보기 메뉴로 가는 링크다(새 탭 열기 지원)', () => {
+    render(<BunchHome />);
+
+    expect(screen.getByRole('link', { name: '더보기' }).getAttribute('href')).toBe(
+      BUNCH_HOME_PATHS.menu,
+    );
   });
 });

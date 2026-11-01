@@ -14,4 +14,7 @@ export const BUNCH_HOME_MESSAGES = {
     access === 'deleted'
       ? '관리자가 번치를 삭제하여 더 이상 접근할 수 없어요.'
       : '번치 멤버 목록에서 제외되어 더 이상 번치에 참여할 수 없어요.',
+  leaveTitle: (bunchName: string) => `${bunchName} 번치를 나갈까요?`,
+  leaveDescription:
+    '사진함에 직접 올린 사진은 삭제되지만, 이미 발행된 번들의 사진은 그대로 남아요.',
 } as const;

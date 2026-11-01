@@ -68,6 +68,7 @@ export const initialBunchDetailFixture: BunchHomeDetail = {
   imageSrc: DEFAULT_BUNCH_IMAGE,
   description: '틈만 나면 떠나는 여행 좋아하는 4명',
   isPrivate: false,
+  myRole: 'owner',
   followerCount: 23,
   followingCount: 8,
   memberCount: 4,
@@ -85,6 +86,7 @@ export const initialBunchDetailFixture: BunchHomeDetail = {
   ],
 };
 
+// 번치마다 내 역할(myRole)이 달라 번치 전환으로 역할별 더보기 메뉴 확인
 export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
   'bunch-run': {
     id: 'bunch-run',
@@ -92,6 +94,7 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
     imageSrc: DEFAULT_BUNCH_IMAGE,
     description: '2024년부터 매주 화・목 퇴근 후 함께 뛰는 러닝크루 셋',
     isPrivate: true,
+    myRole: 'coOwner',
     followerCount: 23,
     followingCount: 8,
     memberCount: 3,
@@ -105,6 +108,7 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
     imageSrc: DEFAULT_BUNCH_IMAGE,
     description: '큐시즘 기획·프론트 모임',
     isPrivate: false,
+    myRole: 'member',
     followerCount: 12,
     followingCount: 4,
     memberCount: 6,
