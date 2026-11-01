@@ -39,7 +39,7 @@ type BunchMembersScreenProps = {
   onBack: () => void;
 };
 
-/** 내가 이 멤버를 관리할 수 있는지(Figma 권한 표 3289:79956: 공동 관리자는 메인 관리자 외 내보내기만) */
+/** 내가 이 멤버를 관리할 수 있는지(Figma 권한 표 2500:54066: 공동 관리자는 메인 관리자 외 내보내기만) */
 const canManage = (myRole: BunchRole | undefined, member: BunchMember) =>
   !member.isMe && (myRole === 'owner' || (myRole === 'coOwner' && member.role !== 'owner'));
 

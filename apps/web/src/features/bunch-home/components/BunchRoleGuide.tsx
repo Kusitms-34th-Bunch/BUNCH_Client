@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Header, LineChevronLeftLargeIcon, LineCloseSmallIcon } from '@app/design-system';
+import { cn, Header, LineChevronLeftLargeIcon, LineCloseSmallIcon } from '@app/design-system';
 import { RoleBadge, type RoleBadgeRole } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
@@ -28,7 +28,7 @@ type PermissionTable = {
   note: string;
 };
 
-// Figma 3289:79956 권한 표 그대로(서버 판단 기준이 아닌 안내용, 화면설계서 1-1)
+// Figma 2500:54066 권한 표 그대로(서버 판단 기준이 아닌 안내용, 화면설계서 1-1)
 const TABLES: readonly PermissionTable[] = [
   {
     title: '번치',
@@ -47,7 +47,7 @@ const TABLES: readonly PermissionTable[] = [
     title: '번들',
     roles: ['owner', 'coOwner', 'draftAuthor'],
     rows: [
-      { label: '번들 업로드', values: ['some', 'some', 'all'] },
+      { label: '작성 중인 번들 업로드', values: ['some', 'some', 'all'] },
       { label: '작성 중인 번들 삭제', values: ['some', 'some', 'all'] },
       { label: '멤버 내보내기', noted: true, values: ['some', 'some', 'all'] },
       { label: '발행된 번들 수정・삭제', values: ['all', 'none', 'none'] },
@@ -91,8 +91,17 @@ const Asterisk = () => (
   </span>
 );
 
-const LegendItem = ({ icon, children }: { icon: ReactNode; children: ReactNode }) => (
-  <li className="p-s2 gap-s2 flex w-27.5 items-center">
+// 아이콘과 글자 사이: 역할 배지 4, 허용 기호 6(Figma 2553:32530·2553:32540)
+const LegendItem = ({
+  icon,
+  wide,
+  children,
+}: {
+  icon: ReactNode;
+  wide?: boolean;
+  children: ReactNode;
+}) => (
+  <li className={cn('p-s2 flex w-27.5 items-center', wide ? 'gap-s3' : 'gap-s2')}>
     {icon}
     {children}
   </li>
@@ -123,7 +132,7 @@ export function BunchRoleGuide() {
       }
     >
       <h1 className="sr-only">역할별 권한</h1>
-      {/* 헤더 아래 12, 묶음 사이 36, 표 묶음 사이 28(Figma 3289:79956) */}
+      {/* 헤더 아래 12, 묶음 사이 36, 표 묶음 사이 28(Figma 2500:54066) */}
       <div className="pt-s6 px-padding-p8 pb-s8 gap-s15 text-text-secondary flex flex-col">
         <section aria-labelledby="role-guide-legend">
           <h2
@@ -143,6 +152,7 @@ export function BunchRoleGuide() {
             {(['all', 'some', 'none'] as const).map((allowance) => (
               <LegendItem
                 key={allowance}
+                wide
                 icon={
                   <span aria-hidden="true" className="text-icon-tertiary flex">
                     <AllowanceMark allowance={allowance} />
