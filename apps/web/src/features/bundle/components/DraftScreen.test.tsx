@@ -28,6 +28,7 @@ const actions = {
   addLocation: vi.fn(),
   removeLocation: vi.fn(),
   setDate: vi.fn(),
+  addMember: vi.fn(),
   removeMember: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
 } satisfies DraftActions;
@@ -44,8 +45,11 @@ type Options = {
   offline?: boolean;
 };
 
+// 초안은 공개 범위를 고르지 않은 채 시작하므로, 업로드할 수 있는 상태를 기본으로 두려고 공개를 골라 둠
+const publishable: Draft = { ...draftFixture, visibility: 'public' };
+
 const screenElement = ({
-  draft = draftFixture,
+  draft = publishable,
   viewer = creator,
   saveStatus = 'saved',
   offline = false,
@@ -229,6 +233,15 @@ describe('업로드 버튼', () => {
     expect(onPublish).not.toHaveBeenCalled();
   });
 
+  it('공개 범위를 고르지 않으면 비활성이고 누르면 입력을 안내한다', async () => {
+    renderScreen({ draft: draftFixture });
+
+    expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(uploadButton());
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+    expect(onPublish).not.toHaveBeenCalled();
+  });
+
   it('필수 항목이 부족하면 비활성이고 누르면 입력을 안내한다', async () => {
     renderScreen({ draft: { ...draftFixture, title: '' } });
 
@@ -279,6 +292,13 @@ describe('입력', () => {
       .getAllByRole('textbox', { name: /코멘트$/ })
       .map((textbox) => textbox.getAttribute('aria-label'));
     expect(names[0]).toBe('은우 (나) 코멘트');
+  });
+
+  it('공개 범위는 처음에는 아무것도 골라져 있지 않다', () => {
+    renderScreen({ draft: draftFixture });
+
+    expect(screen.getByRole('radio', { name: '공개' })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: '멤버 공개' })).not.toBeChecked();
   });
 
   it('공개 범위를 바꾸면 setVisibility를 호출한다', async () => {
@@ -470,8 +490,8 @@ describe('다른 멤버가 편집 중인 영역', () => {
 });
 
 describe('나가기', () => {
-  it('확인 창에서 「나가기」를 눌러야 나간다', async () => {
-    renderScreen();
+  it('일반 멤버는 확인 창에서 「나가기」를 눌러야 나간다', async () => {
+    renderScreen({ viewer: { memberId: 'eunwoo', bunchRole: 'member' } });
 
     await userEvent.click(screen.getByRole('button', { name: '나가기' }));
     const dialog = await screen.findByRole('alertdialog');

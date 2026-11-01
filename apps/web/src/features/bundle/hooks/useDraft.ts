@@ -1,9 +1,21 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Draft, DraftViewer, PlaceResult, SaveStatus } from '../lib/types';
+import type {
+  Draft,
+  DraftMember,
+  DraftViewer,
+  DraftVisibility,
+  PlaceResult,
+  SaveStatus,
+} from '../lib/types';
 import { MAX_LOCATIONS } from '../constants/messages';
-import { draftFixture, draftViewerFixture, placeFixture } from '../fixtures/draft.fixture';
+import {
+  bunchMembersFixture,
+  draftFixture,
+  draftViewerFixture,
+  placeFixture,
+} from '../fixtures/draft.fixture';
 
 // 입력이 멈추고 이만큼 지나면 저장 완료로 봄(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」)
 const SAVE_DELAY_MS = 1000;
@@ -20,15 +32,24 @@ const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
 
 export type DraftState =
   | { kind: 'missing' }
-  | { kind: 'ready'; draft: Draft; viewer: DraftViewer; saveStatus: SaveStatus };
+  | {
+      kind: 'ready';
+      draft: Draft;
+      viewer: DraftViewer;
+      /** 번치 멤버 전체(참여하지 않은 멤버 포함) */
+      bunchMembers: readonly DraftMember[];
+      saveStatus: SaveStatus;
+    };
 
 export type DraftActions = {
   setTitle: (_title: string) => void;
   setComment: (_memberId: string, _text: string) => void;
-  setVisibility: (_visibility: Draft['visibility']) => void;
+  setVisibility: (_visibility: DraftVisibility) => void;
   addLocation: (_place: PlaceResult) => void;
   removeLocation: (_locationId: string) => void;
   setDate: (_date: string | null) => void;
+  /** 번치 멤버를 참여 멤버 맨 아래에 더함(이미 참여 중이거나 번치 멤버가 아니면 무시) */
+  addMember: (_memberId: string) => void;
   /** 참여 멤버를 내보냄(그 멤버의 코멘트도 함께 삭제) */
   removeMember: (_memberId: string) => void;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
@@ -80,6 +101,13 @@ export function useDraft(draftId: string | undefined): {
         locations: current.locations.filter((location) => location.id !== locationId),
       })),
     setDate: (date) => update((current) => ({ ...current, date })),
+    addMember: (memberId) =>
+      update((current) => {
+        const member = bunchMembersFixture.find((candidate) => candidate.id === memberId);
+        return !member || current.members.some((joined) => joined.id === memberId)
+          ? current
+          : { ...current, members: [...current.members, member] };
+      }),
     removeMember: (memberId) =>
       update((current) => ({
         ...current,
@@ -91,7 +119,13 @@ export function useDraft(draftId: string | undefined): {
 
   return {
     state: exists
-      ? { kind: 'ready', draft, viewer: draftViewerFixture, saveStatus }
+      ? {
+          kind: 'ready',
+          draft,
+          viewer: draftViewerFixture,
+          bunchMembers: bunchMembersFixture,
+          saveStatus,
+        }
       : { kind: 'missing' },
     actions,
   };

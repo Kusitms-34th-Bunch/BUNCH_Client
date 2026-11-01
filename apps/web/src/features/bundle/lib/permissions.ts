@@ -48,3 +48,7 @@ export const getMemberBadge = (member: DraftMember): MemberBadge | undefined => 
   if (member.isCreator) return 'draftAuthor';
   return undefined;
 };
+
+/** 내가 이 초안의 생성자인지: 생성자가 나가면 작성 중인 번들이 삭제됨 */
+export const isDraftCreator = (draft: Draft, viewer: DraftViewer): boolean =>
+  draft.members.some((member) => member.id === viewer.memberId && member.isCreator);

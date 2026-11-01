@@ -45,18 +45,18 @@
 
 ## Styling과 의존성
 
-| Figma                                                                                                   | 구현                                                                               |
-| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| 패딩 12·10, radius `r5`, 테두리 `border-tertiary`, 흰 바탕                                              | `px-padding-p6 py-padding-p5 rounded-r5 border-border-tertiary bg-surface-primary` |
-| 이미지·이름 간격 6                                                                                      | `gap-s3`                                                                           |
-| 왼쪽 묶음·오른쪽 동작 사이(Figma 없음, 양끝 정렬)                                                       | `gap-s4`(8): 긴 이름일 때 최소 간격, 제안                                          |
-| 프로필 이미지 40, 테두리 `border-tertiary`                                                              | `ProfileImage` `size="S"` + `border`                                               |
-| 역할 배지 16, 이미지와 12 겹침                                                                          | `RoleBadge` sm + `-ml-3`                                                           |
-| 이름 Body-1-Medium, `text-primary`                                                                      | `typography-body-1-medium text-text-primary`                                       |
-| 점 아이콘 20, `#BCBEC2`                                                                                 | `LineDotsIcon` md + `text-icon-quaternary`                                         |
-| 눌림 원 20, black 20%                                                                                   | `before:bg-overlay-pressed`                                                        |
-| (호출자 예시, Story) 「차단해제」 SolidButton 32, 바탕 `surface-tertiary`, 글자 `text-tertiary` Label-S | `Button` `variant="secondarySubtle" size="sm"`                                     |
-| 흐림 `opacity-disabled`(40)                                                                             | `opacity-(--semantic-opacity-disabled)`                                            |
+| Figma                                                                                                     | 구현                                                                                |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 패딩 12·10, radius `r5`, 테두리 `border-tertiary`, 흰 바탕                                                | `px-padding-p6 py-padding-p5 rounded-r5 border-border-tertiary bg-surface-primary`  |
+| 이미지·이름 간격 6                                                                                        | `gap-s3`                                                                            |
+| 왼쪽 묶음·오른쪽 동작 사이(Figma 없음, 양끝 정렬)                                                         | `gap-s4`(8): 긴 이름일 때 최소 간격, 제안                                           |
+| 프로필 이미지 40, 테두리 `border-tertiary`. 이미지·배지 영역은 배지 유무와 상관없이 폭 44(`Profile` 래퍼) | `ProfileImage` `size="S"` + `border`, 래퍼 `min-w-11`(배지가 없어도 이름 위치 유지) |
+| 역할 배지 16, 이미지와 12 겹침                                                                            | `RoleBadge` sm + `-ml-3`                                                            |
+| 이름 Body-1-Medium, `text-primary`                                                                        | `typography-body-1-medium text-text-primary`                                        |
+| 점 아이콘 20, `#BCBEC2`                                                                                   | `LineDotsIcon` md + `text-icon-quaternary`                                          |
+| 눌림 원 20, black 20%                                                                                     | `before:bg-overlay-pressed`                                                         |
+| (호출자 예시, Story) 「차단해제」 SolidButton 32, 바탕 `surface-tertiary`, 글자 `text-tertiary` Label-S   | `Button` `variant="secondarySubtle" size="sm"`                                      |
+| 흐림 `opacity-disabled`(40)                                                                               | `opacity-(--semantic-opacity-disabled)`                                             |
 
 ## 확인할 항목
 

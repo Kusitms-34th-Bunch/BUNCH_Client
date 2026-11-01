@@ -1,6 +1,7 @@
 import type { Draft, SaveStatus } from './types';
 
-export type PublishBlocker = 'title' | 'photos' | 'members' | 'comments' | 'saving' | 'offline';
+export type PublishBlocker =
+  'title' | 'photos' | 'visibility' | 'members' | 'comments' | 'saving' | 'offline';
 
 type PublishContext = {
   saveStatus: SaveStatus;
@@ -11,13 +12,14 @@ type PublishContext = {
 const MIN_MEMBERS = 2;
 
 /**
- * 발행 조건 중 아직 채우지 못한 것(위치·날짜·캡션은 조건이 아님, 공개 범위는 항상 골라져 있음)
+ * 발행 조건 중 아직 채우지 못한 것(위치·날짜·캡션은 조건이 아니고 공개 범위는 하나를 골라야 함)
  * 비어 있으면 필수 항목을 모두 채운 것
  */
 export const getPublishBlockers = (draft: Draft, context: PublishContext): PublishBlocker[] => {
   const blockers: PublishBlocker[] = [];
   if (draft.title.trim() === '') blockers.push('title');
   if (draft.photos.length < 1) blockers.push('photos');
+  if (draft.visibility === null) blockers.push('visibility');
   if (draft.members.length < MIN_MEMBERS) blockers.push('members');
   const everyoneCommented = draft.members.every((member) =>
     draft.comments.some((comment) => comment.memberId === member.id && comment.text.trim() !== ''),
