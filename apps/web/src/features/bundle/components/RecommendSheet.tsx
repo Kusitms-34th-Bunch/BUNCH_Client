@@ -35,7 +35,7 @@ export function RecommendSheet({
 
   return (
     <BottomSheet.Root open={open} onOpenChange={onOpenChange}>
-      <BottomSheet.Content className="bg-surface-secondary h-[calc(100dvh-var(--safe-area-top,env(safe-area-inset-top,0px))-var(--spacing-s12))]">
+      <BottomSheet.Content className="bg-surface-secondary relative h-[calc(100dvh-var(--safe-area-top,env(safe-area-inset-top,0px))-var(--spacing-s12))]">
         <BottomSheet.Header>
           <BottomSheet.Title
             className={
@@ -60,8 +60,9 @@ export function RecommendSheet({
           </BottomSheet.Body>
         ) : (
           <>
+            {/* 「적용하기」를 목록 위에 띄우므로 맨 아래 카드가 버튼에 가리지 않게 목록 끝에 버튼 높이만큼 여백 */}
             <BottomSheet.Body>
-              <ul className="gap-s7 flex flex-col pb-4">
+              <ul className="gap-s7 flex flex-col pb-20">
                 {recommendations.map((item) => (
                   <li key={item.id}>
                     <SuggestedBundleCard
@@ -80,8 +81,13 @@ export function RecommendSheet({
                 ))}
               </ul>
             </BottomSheet.Body>
-            <BottomSheet.Footer>
-              <Button disabled={pickedId === undefined} onClick={onApply}>
+            {/* Figma `Frame 179`: 버튼 줄 배경은 위가 투명하고 아래로 갈수록 흰색(위에서 약 57%부터 완전한 흰색)이며, 목록 위에 띄우되 빈 곳은 스크롤을 통과시킴 */}
+            <BottomSheet.Footer className="from-surface-primary/0 to-surface-primary pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-b to-[56.809%] pb-[calc(var(--safe-area-bottom,env(safe-area-inset-bottom,0px))+var(--spacing-s4))]">
+              <Button
+                className="pointer-events-auto"
+                disabled={pickedId === undefined}
+                onClick={onApply}
+              >
                 {BUNDLE_SELECT_MESSAGES.apply}
               </Button>
             </BottomSheet.Footer>

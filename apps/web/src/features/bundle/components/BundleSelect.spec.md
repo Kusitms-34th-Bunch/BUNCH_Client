@@ -47,6 +47,7 @@
 - 사용 컴포넌트: `Header`, `Button`(`tertiary`·`primary`), `BottomSheet`, `SuggestedBundleCard`, `ConfirmDialog`, `PhotoThumbnail`, `ChipButton`(사진함 `MemberFilter`), `Accordion`(사진함 `UndatedPhotos`).
 - 날짜 제목은 13px SemiBold(Figma `Body-4-SemiBold`)라 사진함의 14px과 다르다.
 - 고른 개수는 항상 마운트된 `role="status"`로 알린다. 사진 칸은 선택 상태·순서를 읽어 주는 사진함의 칸을 그대로 쓴다.
+- 시트 하단 「적용하기」 줄은 Figma `Frame 179`처럼 위가 투명하고 아래로 갈수록 흰색인 그라데이션 배경으로 목록 위에 띄우고, 목록 끝에 버튼 높이만큼 여백을 둬 마지막 카드가 가려지지 않는다. 빈 곳은 터치가 목록으로 통과한다.
 - 시트 제목은 시각 제목이 없는 빈 상태에서도 `sr-only`로 두어 `dialog` 이름을 유지한다.
 
 ## 검증

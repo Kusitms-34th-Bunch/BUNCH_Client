@@ -39,4 +39,5 @@ export const recommendationFixture: readonly Recommendation[] = [
     ['지예', '경진', '수인', '은우', '경준', '효찬', '다온'],
     ready.slice(3, 9),
   ),
+  recommendation('rec-3', '한강 피크닉', ['지예', '수인', '효찬', '경준'], ready.slice(6, 12)),
 ];
