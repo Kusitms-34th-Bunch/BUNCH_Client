@@ -1,3 +1,0 @@
-# False positive: ProfileImage design token class bg-surface-brand-subtle-2, not an API key.
-fbdcf7fb51fa4d9b7c38d3bdf5187a02a9da929e:packages/design-system/src/components/web/profileImage/ProfileImage.spec.md:generic-api-key:44
-ad3875c1fb88eae88c3afaa9143c324245f9ef63:packages/design-system/src/components/web/profileImage/ProfileImage.spec.md:generic-api-key:44

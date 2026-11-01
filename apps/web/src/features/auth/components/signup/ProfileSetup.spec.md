@@ -54,16 +54,16 @@
 - Keyboard·focus·accessible name: 닉네임·출생연도는 `LabeledTextField`의 제목이 입력창 이름이고 필수는 `aria-required`, 오류는 `role="alert"`와 `aria-invalid`로 알린다. 성별은 `role="group"`(이름 「성별」)이고 두 버튼은 `aria-pressed`로 선택 상태를 전달한다. 사진 변경 버튼 이름은 「프로필 사진 변경」이고 프로필 이미지는 장식이다(선택한 사진도 마찬가지). 선택 중에도 버튼을 비활성으로 바꾸지 않아 포커스를 잃지 않으며, 중복 선택은 hook이 막는다. `PageHeader` 제목이 `h1`, `main`은 `PageShell`이 하나만 만든다. 공개 안내 문구는 출생연도 입력과 성별 그룹의 `aria-describedby`로 연결하고, 출생연도에는 「숫자 4자리로 입력해 주세요.」(화면에는 보이지 않음)도 함께 연결한다.
 - Responsive·긴 텍스트·overflow: 좌우 16px이고 375px에서 가로 넘침이 없다. 본문은 `main`에서 스크롤되고 시작하기는 아래에 고정된다.
 
-| Figma          | 값                                        | 사용한 토큰·utility                      |
-| -------------- | ----------------------------------------- | ---------------------------------------- |
-| 제목·설명 영역 | 헤더 아래, 높이 65                        | `PageHeader`                             |
-| 제목 ↔ 프로필  | 간격 48                                   | `pt-s18`                                 |
-| 프로필 이미지  | 90×90, 영역 95×90, 이미지 왼쪽 3          | `ProfileImage`(`left-0.75`)              |
-| 사진 변경 버튼 | 28×28, 영역 안 (67, 62)                   | `CameraButton`(`left-16.75 top-15.5`)    |
-| 프로필 ↔ 입력  | 간격 32, 입력 사이 16, 좌우 16            | `pt-s14 gap-s8 px-padding-p8`            |
-| 성별 버튼      | 168×40 두 개, 간격 8, 제목과 간격 6       | `Button`(tertiary·md) `flex-1`, `gap-s4` |
-| 공개 안내 문구 | Caption-1-Medium 12/16, `text-quaternary` | `typography-caption-1-medium`            |
-| 시작하기 버튼  | 343×48, 위 14                             | `Button`(primary·lg) `pt-padding-p7`     |
+| Figma          | 값                                     | 사용한 토큰·utility                      |
+| -------------- | -------------------------------------- | ---------------------------------------- |
+| 제목·설명 영역 | 헤더 아래, 높이 65                     | `PageHeader`                             |
+| 제목 ↔ 프로필  | 간격 48                                | `pt-s18`                                 |
+| 프로필 이미지  | 90×90, 영역 95×90, 이미지 왼쪽 3       | `ProfileImage`(`left-0.75`)              |
+| 사진 변경 버튼 | 28×28, 영역 안 (67, 62)                | `CameraButton`(`left-16.75 top-15.5`)    |
+| 프로필 ↔ 입력  | 간격 32, 입력 사이 16, 좌우 16         | `pt-s14 gap-s8 px-padding-p8`            |
+| 성별 버튼      | 168×40 두 개, 간격 8, 제목과 간격 6    | `Button`(tertiary·md) `flex-1`, `gap-s4` |
+| 공개 안내 문구 | Caption-1-Medium 12/16, `text-quinary` | `typography-caption-1-medium`            |
+| 시작하기 버튼  | 343×48, 위 14                          | `Button`(primary·lg) `pt-padding-p7`     |
 
 ## 검증
 

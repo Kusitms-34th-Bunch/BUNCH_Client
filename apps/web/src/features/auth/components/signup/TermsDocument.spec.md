@@ -45,12 +45,12 @@
 - Keyboard·focus·accessible name: 약관 이름이 `h1`이고(헤더 안, `truncate`) 조항 제목이 `h2`다. 번호 항목은 순서 있는 목록(`ol`)이다. `main`은 `PageShell`이 하나만 만든다.
 - Responsive·긴 텍스트·overflow: 좌우 16px이고 375px에서 가로 넘침이 없다. 본문은 `break-keep`로 줄바꿈되고 공백 없는 긴 글자(URL 등)는 폭을 넘으면 끊긴다(Figma는 줄바꿈 위치를 직접 정했지만 화면 폭에 맞춰 자연스럽게 감싼다). 시행일자·버전 줄은 폭이 모자라면 줄을 바꾼다.
 
-| Figma            | 값                                          | 사용한 토큰·utility                                    |
-| ---------------- | ------------------------------------------- | ------------------------------------------------------ |
-| 시행일자·버전    | 헤더 아래 12, Body-2-Regular 14/21, 연한 색 | `pt-s6 typography-body-3-regular text-text-quaternary` |
-| 시행일자 ↔ 조항  | 간격 24, 조항 간격 24                       | `gap-s12`                                              |
-| 조항 제목        | Body-1-SemiBold 16/24                       | `typography-body-1-semi-bold text-text-primary`        |
-| 조항 제목 ↔ 본문 | 간격 6, 본문 Body-2-Regular 14/21           | `gap-s3 typography-body-3-regular text-text-tertiary`  |
+| Figma            | 값                                          | 사용한 토큰·utility                                   |
+| ---------------- | ------------------------------------------- | ----------------------------------------------------- |
+| 시행일자·버전    | 헤더 아래 12, Body-2-Regular 14/21, 연한 색 | `pt-s6 typography-body-3-regular text-text-quinary`   |
+| 시행일자 ↔ 조항  | 간격 24, 조항 간격 24                       | `gap-s12`                                             |
+| 조항 제목        | Body-1-SemiBold 16/24                       | `typography-body-1-semi-bold text-text-primary`       |
+| 조항 제목 ↔ 본문 | 간격 6, 본문 Body-2-Regular 14/21           | `gap-s3 typography-body-3-regular text-text-tertiary` |
 
 ## 검증
 
@@ -65,7 +65,7 @@
 
 - 임시 문구의 오탈자 정리 (제안): Figma 서비스 이용약관의 「제 2조 (목적)」은 개인정보 처리방침의 「제 2조 (용어의 정의)」와 같은 내용이라 「용어의 정의」로, 「무단 계시」는 「무단 게시」로, 인용부호는 “ ”로 바로잡아 넣었다. 최종 문구가 오면 모두 교체된다.
 - 헤더 제목 위치 (제안): 제목을 헤더에 놓고 `h1`로 만들었다. 헤더의 뒤로 가기 아이콘은 Figma대로 연한 회색(`tone="subtle"`)이고 근거와 확인할 점은 약관 동의 화면 spec과 같다.
-- 시행일자·버전 글자 색 (디자인 확인): Figma는 `text-quaternary`(`#bcbec2`)이고 흰 배경 대비가 약 1.8:1이라 읽기 어렵다. Figma 값을 따랐다.
+- 시행일자·버전 글자 색 (디자인 확인): Figma는 `text-quinary`(`#bcbec2`)이고 흰 배경 대비가 약 1.8:1이라 읽기 어렵다. Figma 값을 따랐다.
 - 키보드 스크롤 (미검증): 본문에 포커스 가능한 요소가 없어, iOS WebView에서 키보드·보조 기기로 `main`이 스크롤되는지 확인하지 못했다. 안 되면 본문 래퍼에 `tabIndex`와 이름을 준다.
 - 뒤로 가기 (기획 확인): 설계서는 이전 페이지로 이동이다. 직접 URL로 들어와 기록이 없으면 뒤로 가기가 동작하지 않는다.
 - 404 화면 (미정): 잘못된 `termId`는 Next 기본 404가 된다. 앱에 `not-found.tsx`가 없어 돌아갈 경로를 주지 않는다. 앱 전체 공백이라 이 화면에서 따로 만들지 않았다.

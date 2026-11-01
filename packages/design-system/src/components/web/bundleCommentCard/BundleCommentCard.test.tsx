@@ -72,7 +72,7 @@ describe('BundleCommentCard', () => {
 
     expect(classList.contains('typography-body-3-regular')).toBe(true);
     expect(classList.contains('text-text-secondary')).toBe(true);
-    expect(classList.contains('placeholder:text-text-quaternary')).toBe(true);
+    expect(classList.contains('placeholder:text-text-quinary')).toBe(true);
     expect(classList.contains('focus:placeholder:text-transparent')).toBe(true);
     expect(classList.contains('resize-none')).toBe(true);
   });

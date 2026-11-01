@@ -31,7 +31,7 @@ describe('Option', () => {
     const optional = screen.getByText('선택').className;
 
     expect(required).toContain('text-text-brand');
-    expect(optional).toContain('text-text-quaternary');
+    expect(optional).toContain('text-text-quinary');
   });
 
   it('className과 native 속성을 받는다', () => {

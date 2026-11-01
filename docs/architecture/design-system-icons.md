@@ -1,6 +1,6 @@
 # Design System Icons
 
-Figma의 Line 28종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 108개)를 SVGR로 변환해 **고정 크기 export 108개**와 기존 `size`(`sm`·`md`·`lg`) 선택용 export 36개로 제공한다. 고정 크기가 기본이며 크기가 실행 중 바뀔 때만 `size` API를 사용한다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
+Figma의 Line 29종·Fill 8종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 111개)를 SVGR로 변환해 **고정 크기 export 111개**와 기존 `size`(`sm`·`md`·`lg`) 선택용 export 37개로 제공한다. 고정 크기가 기본이며 크기가 실행 중 바뀔 때만 `size` API를 사용한다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
 
 ## 왜 design-system인가
 
@@ -34,7 +34,7 @@ svg/fill-circle-check-{small,medium,large}.svg
 
 ## 그래픽 아이콘
 
-온보딩 카드처럼 색이 있고 크기가 고정된 아이콘(Globe·Lock 34px, Chat·Edit·People 40px, 완성된 역할 배지는 16·20px 두 종)은 Line/Fill의 세 크기 규칙에 맞지 않아 `svg-graphic/`에서 따로 만든다.
+온보딩 카드처럼 색이 있고 크기가 고정된 아이콘(Globe·Lock 34px, Chat·Edit·People 40px, 완성된 역할 배지는 16·20px 두 종, 번들 폴더 일러스트 216px)은 Line/Fill의 세 크기 규칙에 맞지 않아 `svg-graphic/`에서 따로 만든다.
 
 - 파일은 `graphic-<이름>.svg` 하나이고 width·height가 같은 양수이며 viewBox가 `0 0 <width> <height>`여야 한다. 다르면 생성이 실패한다.
 - 원본 색을 유지하고(`currentColor`로 바꾸지 않는다) `size` prop이 없다. 컴포넌트는 `GraphicLockIcon`처럼 `Graphic<이름>Icon`이다. 크기가 둘 이상인 그래픽(역할 배지)은 Line/Fill과 같은 규약으로 `GraphicRoleOwnerSmallIcon`처럼 `Small`·`Medium`을 이름에 붙이며, 크기를 고르는 래퍼는 만들지 않는다.

@@ -79,7 +79,7 @@ yarn e2e
 
 ## 시크릿 스캔
 
-`security.yml`은 전체 이력(`fetch-depth: 0`)을 gitleaks로 스캔해서 커밋된 토큰·키·`.env` 값을 찾는다. 저장소를 공개로 돌린 뒤에도 그대로 둔다. `gitleaks-action`은 조직 저장소에서 라이선스 키가 필요해 쓰지 않고, 공식 이미지를 digest로 고정해 직접 실행한다. `--redact`라서 시크릿 값은 로그에 찍히지 않고, `--verbose`로 규칙·파일·줄·커밋·fingerprint가 나온다. 탐지를 예외로 둘 때만 저장소 루트의 `.gitleaksignore`에 fingerprint를 이유와 함께 추가한다. 시크릿이 실제로 노출됐다면 예외가 아니라 해당 키를 폐기하고 교체한다.
+`security.yml`은 전체 이력(`fetch-depth: 0`)을 gitleaks로 스캔해서 커밋된 토큰·키·`.env` 값을 찾는다. 저장소를 공개로 돌린 뒤에도 그대로 둔다. `gitleaks-action`은 조직 저장소에서 라이선스 키가 필요해 쓰지 않고, 공식 이미지를 digest로 고정해 직접 실행한다. `--redact`라서 시크릿 값은 로그에 찍히지 않고, `--verbose`로 규칙·파일·줄·커밋·fingerprint가 나온다. 반복되는 오탐 유형(문서의 디자인 토큰 Tailwind 클래스)은 저장소 루트의 `.gitleaks.toml` 허용 목록으로 제외한다. 허용 목록은 기본 규칙을 유지한 채 해당 규칙·파일·값 형태가 모두 맞을 때만 뺀다. 한 번뿐인 오탐은 `.gitleaksignore`에 fingerprint를 이유와 함께 추가한다. fingerprint에는 커밋 해시가 들어가서 같은 줄을 다시 고치면 다시 걸린다. 시크릿이 실제로 노출됐다면 예외가 아니라 해당 키를 폐기하고 교체한다.
 
 의존성 취약점은 workflow로 따로 스캔하지 않는다. 저장소를 공개로 돌리면 Dependabot alerts와 security updates를 무료로 쓸 수 있어(`.github/dependabot.yml`) 같은 취약점 DB를 중복해서 보게 된다.
 

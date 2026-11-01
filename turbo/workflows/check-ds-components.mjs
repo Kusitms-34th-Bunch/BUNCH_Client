@@ -19,6 +19,8 @@ const problems = [];
 
 for (const COMPONENTS_DIR of zoneDirs)
   for (const dir of readdirSync(COMPONENTS_DIR)) {
+    // 도구가 만드는 숨김 폴더(예: 에이전트 상태 `.omc`)는 컴포넌트가 아니라 제외
+    if (dir.startsWith('.')) continue;
     if (!statSync(join(COMPONENTS_DIR, dir)).isDirectory()) continue;
 
     // generator는 폴더를 camelCase, 파일을 PascalCase로 생성. 대소문자 구분이 없는 macOS·Windows에서 만든 폴더가 Linux CI에서야 드러나지 않게 이름 형식도 확인.

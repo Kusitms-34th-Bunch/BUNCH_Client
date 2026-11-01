@@ -29,7 +29,7 @@ export const LocationListItem = ({
     <span className="typography-login-button text-text-secondary w-full truncate font-(--semantic-font-weights-pretendard-1)">
       {placeName}
     </span>
-    <span className="typography-body-4-regular text-primitive-gray-500 w-full truncate">
+    <span className="typography-body-4-regular text-text-quaternary w-full truncate">
       {address}
     </span>
   </span>
