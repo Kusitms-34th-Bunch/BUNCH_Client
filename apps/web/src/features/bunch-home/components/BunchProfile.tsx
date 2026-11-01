@@ -33,7 +33,7 @@ export function BunchProfile({ bunch, onPlacesClick }: BunchProfileProps) {
           {bunch.description}
         </p>
       </div>
-      <div className="gap-s4 flex items-center justify-between">
+      <div className="gap-s4 flex flex-wrap items-center justify-between">
         <ul className="gap-s6 typography-body-2-regular text-text-tertiary flex min-w-0 items-center whitespace-nowrap">
           {COUNTS.map(({ key, label }) => (
             <li key={key} className="gap-s1 flex items-center">
@@ -42,6 +42,7 @@ export function BunchProfile({ bunch, onPlacesClick }: BunchProfileProps) {
             </li>
           ))}
         </ul>
+        {/* 좁은 폭에서 수치가 길면 flex-wrap으로 버튼이 다음 줄로 내려감 */}
         {/* Figma 깃발 아이콘은 디자인 시스템 아이콘에 없어 글자만 표시(spec 확인할 항목) */}
         <Button
           variant="tertiary"
