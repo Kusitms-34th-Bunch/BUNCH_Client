@@ -97,7 +97,7 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
     myRole: 'owner',
     followerCount: 23,
     followingCount: 8,
-    memberCount: 3,
+    memberCount: 5,
     completedBundles: [],
     draftBundles: [],
   },
