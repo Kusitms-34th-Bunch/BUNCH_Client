@@ -70,9 +70,33 @@ export const BUNDLE_MESSAGES = {
   locationResultCount: (count: number) => `검색 결과 ${count}건`,
   searchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   locationFull: '위치는 3개까지 추가할 수 있어요.',
+  // 사진 상세(캡션 화면·크게 보기, 기능 spec 4.3.4~4.3.6, Figma `1782:32837`·`2082:49108`·`2091:61896`)
+  captionLabel: '사진 캡션',
+  captionTooLong: '캡션은 200자까지 쓸 수 있어요',
+  photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
+  photoOpenLabel: (current: number) => `${current}번째 사진 캡션 보기`,
+  photoViewerTitle: '사진 크게 보기',
+  photoViewLabel: (current: number) => `${current}번째 사진 크게 보기`,
+  removePhotoLabel: (current: number) => `${current}번째 사진 빼기`,
+  photoRemoved: (left: number) => `사진을 뺐어요. ${left}장이 남았어요.`,
+  movePhotoBefore: '사진을 앞으로 옮기기',
+  movePhotoAfter: '사진을 뒤로 옮기기',
+  photoMoved: (position: number, total: number) => `${total}장 중 ${position}번째로 옮겼어요.`,
+  photoDragStart: '사진을 끌고 있어요.',
+  photoDragCancel: '끌기를 취소했어요.',
+  removePhotoBlockedTitle: '사진을 삭제할 수 없어요',
+  removePhotoBlockedDescription: '번들에는 최소 1장의 사진이 있어야 해요.',
+  removePhotoBlockedConfirm: '확인',
+  removeCaptionedTitle: '캡션이 작성된 사진이에요',
+  removeCaptionedDescription: '사진을 삭제하면 작성된 캡션도 함께 삭제되며, 복구할 수 없어요.',
+  removeCaptionedConfirm: '삭제하기',
+  photoDeleted: '사진함에서 삭제된 사진이에요.',
 } as const;
 
 /** 위치를 담을 수 있는 최대 개수(Figma 수정 가이드: 3개가 차면 「추가」 행이 사라짐) */
 export const MAX_LOCATIONS = 3;
 export const TITLE_MAX_LENGTH = 40;
 export const COMMENT_MAX_LENGTH = 400;
+/** 캡션 최대 글자 수와 번들 한 개에 담을 수 있는 사진 수(기능 spec 4.3.4·4.3.7) */
+export const CAPTION_MAX_LENGTH = 200;
+export const MAX_PHOTOS = 20;
