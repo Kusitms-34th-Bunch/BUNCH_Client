@@ -32,6 +32,8 @@ const LONG_PRESS_MS = 500;
 const LONG_PRESS_TOLERANCE_PX = 8;
 // 확인 창 닫힘 전환이 끝난 뒤에 포커스를 옮기려는 지연
 const CLOSE_TRANSITION_MS = 150;
+// 끌다가 목록 가장자리에 닿았을 때 자동 스크롤: 라이브러리 기본(acceleration 10)은 사진이 너무 빨리 지나가 느리게 함
+const AUTO_SCROLL = { acceleration: 3, threshold: { x: 0.15, y: 0 } } as const;
 // 「+ 사진 추가」 카드도 사진을 뺄 때 함께 움직이도록 등록하는 id(사진 id와 겹치지 않는 값)
 const ADD_CARD_ID = 'add-photo-card';
 // 이동이 끝난 뒤 스크롤 스냅을 되돌리기 전에 두는 여유
@@ -104,7 +106,8 @@ function PhotoItem({
       className={cn(
         'relative shrink-0 snap-start select-none [-webkit-touch-callout:none]',
         '[&_img]:pointer-events-none',
-        isDragging && 'z-10 scale-105 opacity-90',
+        // 떠오른 사진: 95%로 줄이고 사진함 끌기(`PhotoDragArea`)와 같은 70% 불투명도
+        isDragging && 'z-10 scale-95 opacity-70',
       )}
     >
       <BundlePhoto
@@ -185,6 +188,8 @@ export function DraftPhotoCaption({
   const snapTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 앱이 백그라운드로 가면 끌던 사진을 놓은 것으로 보고 끌기 영역을 새로 만듦
   const [dragEpoch, setDragEpoch] = useState(0);
+  // 끄는 동안은 스크롤 스냅을 꺼서 자동 스크롤이 사진 단위로 튀지 않게 함
+  const [dragging, setDragging] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
 
   const current = Math.min(activeIndex, Math.max(0, total - 1));
@@ -236,7 +241,10 @@ export function DraftPhotoCaption({
 
   useEffect(() => {
     const cancelDrag = () => {
-      if (document.visibilityState === 'hidden') setDragEpoch((epoch) => epoch + 1);
+      if (document.visibilityState === 'hidden') {
+        setDragEpoch((epoch) => epoch + 1);
+        setDragging(false);
+      }
     };
     document.addEventListener('visibilitychange', cancelDrag);
     return () => document.removeEventListener('visibilitychange', cancelDrag);
@@ -308,6 +316,7 @@ export function DraftPhotoCaption({
   };
 
   const handleDragEnd = ({ active: dragged, over }: DragEndEvent) => {
+    setDragging(false);
     if (!over || dragged.id === over.id) return;
     const to = photos.findIndex((photo) => photo.id === over.id);
     if (to >= 0) move(String(dragged.id), to);
@@ -350,7 +359,10 @@ export function DraftPhotoCaption({
         key={dragEpoch}
         sensors={sensors}
         collisionDetection={closestCenter}
+        autoScroll={AUTO_SCROLL}
+        onDragStart={() => setDragging(true)}
         onDragEnd={handleDragEnd}
+        onDragCancel={() => setDragging(false)}
         accessibility={{
           screenReaderInstructions: { draggable: '' },
           announcements: {
@@ -375,7 +387,10 @@ export function DraftPhotoCaption({
                 ),
               )
             }
-            className="gap-s6 px-padding-p8 scroll-px-padding-p8 pt-s8 flex snap-x snap-mandatory scrollbar-none overflow-x-auto [&::-webkit-scrollbar]:hidden"
+            className={cn(
+              'gap-s6 px-padding-p8 scroll-px-padding-p8 pt-s8 flex snap-x scrollbar-none overflow-x-auto [&::-webkit-scrollbar]:hidden',
+              dragging ? 'snap-none' : 'snap-mandatory',
+            )}
           >
             {photos.map((photo, index) => (
               <PhotoItem
