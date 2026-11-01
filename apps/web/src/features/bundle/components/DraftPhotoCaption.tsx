@@ -176,7 +176,8 @@ export function DraftPhotoCaption({
     photos.findIndex((photo) => photo.id === initialPhotoId),
   );
   const [activeIndex, setActiveIndex] = useState(initialIndex);
-  const [captionFocused, setCaptionFocused] = useState(false);
+  // 커서가 있는 입력란의 사진 id. 사진이 바뀌어 입력란이 교체될 때 blur가 오지 않아도 보는 사진과 달라져 저절로 풀림
+  const [focusedPhotoId, setFocusedPhotoId] = useState<string | undefined>(undefined);
   const [removeDialog, setRemoveDialog] = useState<
     { kind: 'last' | 'captioned'; photoId: string } | undefined
   >(undefined);
@@ -324,7 +325,11 @@ export function DraftPhotoCaption({
 
   // 캡션 입력란이 편집 잠금으로 사라지면 포커스·blur 이벤트가 없어도 끌기를 막지 않도록 입력 중인지는 잠금과 함께 봄
   const dragDisabled =
-    !access.canEdit || total < 2 || (captionFocused && !(active && isLocked(active.id)));
+    !access.canEdit ||
+    total < 2 ||
+    (focusedPhotoId !== undefined &&
+      focusedPhotoId === activeId &&
+      !(active && isLocked(active.id)));
   const editorNames = active ? editorNamesOf(active.id) : [];
   const addable = access.canEdit && total < MAX_PHOTOS;
   // 화면설계서 1-1: 사진 왼쪽 위에는 올린 멤버가 아니라 그 사진을 편집 중인 멤버의 프로필을 보임
@@ -424,8 +429,8 @@ export function DraftPhotoCaption({
             readOnly={!access.canEdit}
             editorNames={editorNames}
             onChange={changeCaption}
-            onFocus={() => setCaptionFocused(true)}
-            onBlur={() => setCaptionFocused(false)}
+            onFocus={() => setFocusedPhotoId(active.id)}
+            onBlur={() => setFocusedPhotoId(undefined)}
             onDenied={denyEdit}
             onEditingBlocked={blockEditing}
           />
