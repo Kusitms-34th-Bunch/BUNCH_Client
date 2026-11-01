@@ -34,6 +34,15 @@ export const BUNCH_HOME_MESSAGES = {
   removeDescription: (name: string) =>
     `${name}님이 올리신 사진은 사진함에서 삭제되고, 발행된 번들에만 남아요.`,
   removed: (name: string) => `${name}님을 번치에서 내보냈어요.`,
+  // 번치 나가기(화면설계서 2236:40773)
+  left: (bunchName: string) => `${bunchName} 번치를 나왔어요.`,
+  transferredAndLeft: (name: string) => `${name}님을 관리자로 지정하고 나갔어요.`,
+  aloneTitle: '혼자 있는 번치는 나갈 수 없어요',
+  aloneDescription: '더 이상 사용하지 않는 번치는 삭제할 수 있어요.',
+  leaveTransferTitle: '관리자 권한을 넘길 멤버를 정해주세요.',
+  leaveTransferDescription: '선택한 멤버가 새로운 관리자가 돼요.',
+  noBunchTitle: '참여 중인 번치가 없어요',
+  noBunchDescription: '새 번치를 만들거나 초대받은 번치에 참여해보세요.',
   // 차단 목록(화면설계서 2236:40175 2~3번)
   unblockTitle: (bunchName: string) => `${bunchName} 차단을 해제할까요?`,
   unblockDescription: '서로의 번들과 프로필을 볼 수 있어요. 팔로우는 자동으로 돌아오지 않아요.',

@@ -19,11 +19,11 @@ describe('useBunchProfileEdits', () => {
       }),
     );
 
-    expect(home.current.data.current).toMatchObject({
+    expect(home.current.data?.current).toMatchObject({
       name: '여행가조2',
       description: '새 소개',
       isPrivate: true,
     });
-    expect(home.current.data.bunches[0]?.name).toBe('여행가조2');
+    expect(home.current.data?.bunches[0]?.name).toBe('여행가조2');
   });
 });

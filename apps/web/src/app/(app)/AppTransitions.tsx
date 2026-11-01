@@ -223,6 +223,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchMenuMove,
   },
+  // 메인 관리자가 지정 화면에서 번치 탭으로 두 칸 되돌아갈 때도 메뉴처럼 Move out(정방향 진입은 없음)
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.leave,
+    bidirectional: true,
+    transition: bunchMenuMove,
+  },
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.profile,
@@ -239,6 +246,12 @@ const rules: SsgoiTransitionRule[] = [
   {
     from: BUNCH_HOME_PATHS.members,
     to: BUNCH_HOME_PATHS.roles,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  {
+    from: BUNCH_HOME_PATHS.menu,
+    to: BUNCH_HOME_PATHS.leave,
     bidirectional: true,
     transition: menuSubSlide,
   },
