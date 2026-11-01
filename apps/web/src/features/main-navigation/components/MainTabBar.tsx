@@ -72,6 +72,10 @@ export function MainTabBar() {
             href={MAIN_TAB_PATHS[item.id as MainTabId]}
             className={state.className}
             aria-current={state['aria-current']}
+            // 탭을 누를 때마다 선택 햅틱(지금 탭 포함, iOS 시스템 탭 바와 같은 기준). 메서드가 없는 이전 쉘은 브라우저 폴백(동작 없음)
+            onClick={() => {
+              if (inShell) void appBridge.tabSelectionHaptic().catch(() => {});
+            }}
           >
             {state.children}
           </Link>
