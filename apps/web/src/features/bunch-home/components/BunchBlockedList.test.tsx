@@ -1,13 +1,17 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BlockedBunch } from '../lib/types';
 import { useBlockedBunches } from '../hooks/useBlockedBunches';
+import { BunchBlockedList } from './BunchBlockedList';
 import { BunchBlockedListScreen } from './BunchBlockedListScreen';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ back: vi.fn(), replace: vi.fn() }) }));
+
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: (...args: ToastArgs) => toast(...args),
@@ -22,6 +26,7 @@ const onUnblock = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
 });
 
 const renderScreen = (blocked: readonly BlockedBunch[] | undefined, canUnblock = true) =>
@@ -99,6 +104,55 @@ describe('BunchBlockedListScreen', () => {
 
     expect(screen.queryByRole('list')).toBeNull();
     expect(screen.queryByRole('heading', { name: '아직 차단한 번치가 없어요' })).toBeNull();
+  });
+});
+
+describe('BunchBlockedListScreen 해제 뒤 초점', () => {
+  function Local() {
+    const [blocked, setBlocked] = useState(BLOCKED);
+    return (
+      <BunchBlockedListScreen
+        blocked={blocked}
+        canUnblock
+        onUnblock={(id) => setBlocked((current) => current.filter((bunch) => bunch.id !== id))}
+        onBack={vi.fn()}
+      />
+    );
+  }
+
+  it('목록이 남으면 사라진 「차단해제」 대신 개수 줄로 초점을 옮긴다', async () => {
+    const user = userEvent.setup();
+    render(<Local />);
+
+    await user.click(screen.getByRole('button', { name: '야간러너스 차단해제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: '해제하기' }));
+
+    await waitFor(() => expect(document.activeElement).toHaveTextContent('차단된 번치 1개'));
+    // 실제 브라우저에서 p가 초점을 받으려면 tabindex 필요(테스트 환경은 없어도 초점을 줌)
+    expect(document.activeElement).toHaveAttribute('tabindex', '-1');
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  });
+});
+
+// 모듈 저장소를 바꾸는 테스트보다 먼저 실행(같은 번치의 fixture 그대로 사용)
+describe('BunchBlockedList 역할', () => {
+  const renderAs = (bunchId: string) => {
+    sessionStorage.setItem('bunch-home:current-bunch-id', bunchId);
+    render(<BunchBlockedList />);
+  };
+
+  it('메인 관리자 번치에서는 「차단해제」가 보인다', () => {
+    renderAs('bunch-run');
+
+    expect(screen.getAllByRole('button', { name: /차단해제$/ })).toHaveLength(2);
+  });
+
+  it('일반 멤버 번치에서는 목록만 보이고 「차단해제」가 없다', () => {
+    renderAs('bunch-gift');
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /차단해제$/ })).toBeNull();
   });
 });
 
