@@ -28,6 +28,8 @@ export const SIGNUP_DISSOLVE_DURATION_MS = 300;
 // 기획: 추천 번들 상세 진입은 Slide In(왼쪽 방향)·나갈 때 Slide Out(오른쪽 방향), Ease In, 200ms
 export const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
 export const BUNCH_ADD_DISSOLVE_DURATION_MS = 150;
+// 화면설계서(번치 상세): 더보기 메뉴 진입 Move in / ← / Ease out / 150ms, 뒤로 가기 Move out / → / 같은 시간
+export const BUNCH_MENU_MOVE_DURATION_MS = 150;
 export const TAB_CROSSFADE_DURATION_MS = 80;
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
@@ -84,6 +86,58 @@ const tuneBunchAddDissolve = tuneTransition(BUNCH_ADD_DISSOLVE_DURATION_MS / 2);
 const bunchAddDissolve = fade(
   {},
   { override: { forward: tuneBunchAddDissolve, backward: tuneBunchAddDissolve } },
+);
+// 더보기 메뉴는 번치 홈 위를 덮으며 들어오고(Move in), 돌아갈 때 위에서 빠짐(Move out). 아래 화면은 움직이지 않음
+// 움직이는 화면을 위로 올리고 transform만 바꿈(SSGOI가 나가는 화면을 absolute로 겹침)
+const moveDirection = (
+  moving: 'in' | 'out',
+): TransitionDirection<object, CompositeAnimation<'out' | 'in'>> => ({
+  prepare: ({ from, to }) => {
+    void from.then((element) => {
+      element.style.zIndex = moving === 'out' ? '2' : '1';
+      element.style.pointerEvents = 'none';
+    });
+    void to.then((element) => {
+      // 진입 도중 뒤로 가서 나가던 화면이 다시 들어오면 이전 전환의 설정 해제
+      element.style.pointerEvents = '';
+      element.style.transform = moving === 'in' ? 'translateX(100%)' : '';
+      element.style.position = 'relative';
+      element.style.zIndex = moving === 'in' ? '2' : '1';
+    });
+    return {};
+  },
+  animation: ({ from, to }) =>
+    new CompositeAnimation({
+      out: new WebAnimation({
+        element: from,
+        integrator: easeOutIntegrator(BUNCH_MENU_MOVE_DURATION_MS),
+        style: (progress) =>
+          moving === 'out' ? { transform: `translateX(${progress * 100}%)` } : {},
+        onDispose: (context) => {
+          if (!context.owns(from)) return;
+          from.style.transform = '';
+          from.style.zIndex = '';
+          from.style.pointerEvents = '';
+        },
+      }),
+      in: new WebAnimation({
+        element: to,
+        integrator: easeOutIntegrator(BUNCH_MENU_MOVE_DURATION_MS),
+        style: (progress) =>
+          moving === 'in' ? { transform: `translateX(${(1 - progress) * 100}%)` } : {},
+        onDispose: (context) => {
+          if (!context.owns(to)) return;
+          to.style.transform = '';
+          if (to.style.position === 'relative') to.style.position = '';
+          to.style.zIndex = '';
+        },
+      }),
+    }),
+});
+const tuneBunchMenuMove = tuneTransition(BUNCH_MENU_MOVE_DURATION_MS);
+const bunchMenuMove = defineTransition(
+  { forward: moveDirection('in'), backward: moveDirection('out') },
+  { override: { forward: tuneBunchMenuMove, backward: tuneBunchMenuMove } },
 );
 // 결정 기록 017: 하단 탭 사이 80ms 등속 크로스페이드. 들어오는 탭은 아래에 불투명하게 두고 위로 올린 나가는 탭만 페이드
 // 두 탭을 함께 페이드하면 같은 자리의 같은 헤더가 중간에 흐려지므로 위 화면만 투명도를 바꿈(SSGOI가 나가는 화면을 absolute로 겹침)
@@ -156,6 +210,12 @@ const tabRules: SsgoiTransitionRule[] = tabPaths.flatMap((from) =>
 const rules: SsgoiTransitionRule[] = [
   ...tabRules,
   { from: BUNCH_HOME_PATHS.home, to: ONBOARDING_PATHS.start, transition: bunchAddDissolve },
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.menu,
+    bidirectional: true,
+    transition: bunchMenuMove,
+  },
   {
     from: BUNDLE_SELECT_PATHS.select,
     to: BUNDLE_SELECT_PATHS.transitionIds.recommendation,

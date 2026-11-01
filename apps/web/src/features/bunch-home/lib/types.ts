@@ -1,5 +1,8 @@
 import type { BundleCardMember } from '@app/design-system/web';
 
+/** 지금 번치에서 내 역할(기능명세 5장 권한 표). 메뉴 항목과 할 수 있는 일이 달라짐 */
+export type BunchRole = 'owner' | 'coOwner' | 'member';
+
 /** 번치 전환 목록의 상태. 삭제됐거나 내보내진 번치는 「접근 불가」로 남음 */
 export type BunchAccess = 'active' | 'deleted' | 'removed';
 
@@ -38,6 +41,8 @@ export type BunchHomeDetail = {
   description: string;
   /** 비공개 번치면 이름 옆 자물쇠 */
   isPrivate: boolean;
+  /** 이 번치에서 내 역할(더보기 메뉴 항목이 달라짐) */
+  myRole: BunchRole;
   followerCount: number;
   followingCount: number;
   memberCount: number;
