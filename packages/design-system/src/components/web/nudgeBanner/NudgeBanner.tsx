@@ -1,10 +1,10 @@
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps } from 'react';
 import { LineChevronRightMediumIcon } from '../../../icons';
 import { cn } from '../../../utils';
 
 export type NudgeBannerProps = Omit<ComponentProps<'button'>, 'children' | 'type'> & {
-  /** 안내 글자(접근성 이름, 예: `작성 중인 번들을 완성해 보세요!`) */
-  children: ReactNode;
+  /** 안내 글자(접근성 이름, 링크·버튼을 넣지 않도록 문자열만, 예: `작성 중인 번들을 완성해 보세요!`) */
+  children: string;
 };
 
 /**

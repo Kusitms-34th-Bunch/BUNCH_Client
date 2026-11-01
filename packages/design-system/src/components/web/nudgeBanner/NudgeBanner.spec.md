@@ -15,7 +15,7 @@
 
 ## Public API
 
-- `children`: 안내 글자(필수, 접근성 이름).
+- `children`: 안내 글자(필수, 접근성 이름). 버튼 안에 링크·버튼이 들어가지 않도록 문자열만 받는다.
 - `button`의 나머지 속성(`onClick`, `disabled`, `className`, `aria-*` 등). `type`은 `button` 고정.
 
 ## 상태와 동작
