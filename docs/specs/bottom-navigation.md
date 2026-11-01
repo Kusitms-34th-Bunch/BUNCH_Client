@@ -121,6 +121,7 @@
 - iOS WebView에서 `backdrop-filter` 렌더와 성능.
 - (해결) 탭 조합은 `features/main-navigation`, 현재 탭 판정은 client component `MainTabBar`의 `usePathname`이다.
 - iOS 탭 WebView 여러 개의 메모리, 탭 사이 로그인 쿠키 공유, 번치 전환 같은 상태를 다른 탭에 알리는 방법.
-- (미정) iOS 탭 화면에서 나오는 길: 쉘은 `setNativeTabBar({ hidden: true })`를 받으면 하나의 WebView로 돌아가지만, 웹이 이를 보내는 곳이 아직 없다. 탭 WebView에서 `(main)` 밖(로그인·온보딩)으로 가면 시스템 탭 바 아래에 그 화면이 뜬다. 로그아웃·인증 만료 이동에서 보낼지, 탭 막대가 사라질 때 보낼지 첫 실제 탭 화면 전에 정한다.
+- (해결, #165) iOS 탭 화면에서 탭 밖 화면(`(main)` 밖)으로 가면 같은 탭 WebView에서 시스템 탭 바만 숨긴다. `NativeTabBarVisibility`가 경로마다 탭 화면인지 보내고, 화면에 보이는 WebView만 보낸다. 한계(선택 모드, 온보딩 목적지 `/`)는 결정 기록 012.
+- (미정) 로그아웃·인증 만료로 탭 영역을 떠날 때 `setNativeTabBar({ hidden: true })`를 보낼 곳과 하나의 WebView가 열 경로(지금은 `/` 고정). 로그아웃 흐름을 만들 때 정한다.
 - (미정) iOS 탭 진입 위치: 쉘은 탭 화면으로 바꿀 때 각 탭의 루트 경로를 연다. `/bunch/123`처럼 하위 경로에서 진입하면 `/bunch`로 떨어지고 첫 WebView를 버리며 다시 불러온다. 진입 요청에 현재 경로를 넣을지, 탭 루트 진입만 지원할지 정한다.
 - 탭 WebView 안에서 다른 탭 경로로 링크 이동하면 시스템 탭 선택은 그대로이고 내용만 바뀐다. 탭 사이 이동은 시스템 탭 바로만 하도록 링크를 두지 않는다.

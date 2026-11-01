@@ -36,6 +36,8 @@ export type AppBridgeMethods = {
   share: (_params: ShareParams) => Promise<void>;
   /** iOS 쉘의 시스템 탭 화면 시작·종료. 미지원 환경(브라우저·안드로이드)에서는 false 반환 */
   setNativeTabBar: (_params: SetNativeTabBarParams) => Promise<boolean>;
+  /** iOS 탭 화면의 시스템 탭 바 표시 여부(탭 밖 화면을 여는 동안 숨김). 화면에 보이는 WebView만 호출, 탭 화면이 아니거나 미지원 환경이면 false */
+  setNativeTabBarVisible: (_visible: boolean) => Promise<boolean>;
   /** 웹 탭 막대를 누를 때의 선택 햅틱(안드로이드 쉘). iOS 시스템 탭 바는 쉘이 직접 처리 */
   tabSelectionHaptic: () => Promise<void>;
 };

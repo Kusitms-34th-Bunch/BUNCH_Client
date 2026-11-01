@@ -19,6 +19,7 @@ export default function TabsLayout() {
 
   return (
     <NativeTabs
+      hidden={tabs.barHidden ?? false}
       tintColor={TEXT_PRIMARY}
       iconColor={{ default: TEXT_TERTIARY, selected: TEXT_PRIMARY }}
       labelStyle={{
