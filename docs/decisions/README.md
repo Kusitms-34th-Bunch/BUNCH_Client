@@ -28,3 +28,4 @@
 - [014: 바텀시트의 모달 동작은 Base UI Drawer에 맡긴다](./records/014-bottom-sheet-base-ui-drawer.md)
 - [015: 사진 상세의 스와이프·확대는 Swiper(Zoom·Keyboard·A11y 모듈)로 처리한다](./records/015-photo-detail-swiper.md)
 - [016: 사진을 끌어 날짜 섹션을 옮기는 동작은 @dnd-kit(core·sortable)으로 처리한다](./records/016-photo-drag-dnd-kit.md)
+- [017: 웹 하단 탭 전환은 짧은 동시 크로스페이드로 하고, iOS 앱은 시스템 기본 전환을 유지한다](./records/017-tab-switch-crossfade.md) (미구현)
