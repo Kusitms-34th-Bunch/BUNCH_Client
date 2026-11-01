@@ -97,8 +97,8 @@ export const BundleCard = ({
           {members.length > 0 ? <span className="sr-only">, 참여자 {members.length}명</span> : null}
         </button>
         {visibleCount > 0 && members.length > 0 ? (
-          // 얼굴은 장식(인원 수는 카드 버튼의 숨은 글자로 전달), 8px씩 겹침
-          <div aria-hidden="true" className="flex">
+          // 얼굴은 장식(인원 수는 카드 버튼의 숨은 글자로 전달), 8px씩 겹치고 좁은 폭에서는 잘림
+          <div aria-hidden="true" className="flex overflow-hidden">
             {members.slice(0, visibleCount).map((member, index) => (
               <ProfileImage
                 key={`${member.name}-${index}`}
