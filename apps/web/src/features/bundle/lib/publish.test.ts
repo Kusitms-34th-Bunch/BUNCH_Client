@@ -36,6 +36,10 @@ describe('getPublishBlockers', () => {
     expect(getPublishBlockers({ ...complete, title: '   ' }, ready)).toEqual(['title']);
   });
 
+  it('공개 범위를 골라야 한다', () => {
+    expect(getPublishBlockers({ ...complete, visibility: null }, ready)).toEqual(['visibility']);
+  });
+
   it('사진이 1장 이상 있어야 한다', () => {
     expect(getPublishBlockers({ ...complete, photos: [] }, ready)).toEqual(['photos']);
   });

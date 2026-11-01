@@ -29,9 +29,10 @@ export const BUNDLE_MESSAGES = {
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
   uploadIncomplete: '필수 항목을 모두 입력해야 업로드 할 수 있어요.',
-  // 나가기 확인 창 문구는 Figma Dialog `2082:49691` 원문(참여 멤버 일반 기준, 초안 생성자용 문구는 확인 항목)
+  // 스스로 나가기 확인 창 문구는 Figma Dialog `2082:49691`·기능명세서 4.3.2 원문(초안 생성자도 같은 문구)
   leaveConfirmTitle: '번들에서 나가시겠어요?',
-  leaveConfirmDescription: '번들에서 나가면 작성한 코멘트가 삭제되며, 복구할 수 없어요.',
+  // 「삭제되며,」 뒤에서 줄이 바뀜
+  leaveConfirmDescription: '번들에서 나가면 작성한 코멘트가 삭제되며,\n복구할 수 없어요.',
   // 업로드 확인 창 문구는 기획 전달 원문(기능 spec 4.3.12의 질문 + 설명)
   uploadConfirmTitle: '번들을 업로드할까요?',
   uploadConfirmDescription: '업로드한 번들은 멤버들과 공유되며, 업로드 이후 수정할 수 있어요.',
@@ -42,6 +43,17 @@ export const BUNDLE_MESSAGES = {
     // 「삭제되며,」 뒤에서 줄이 바뀜
     `${name}님이 남긴 코멘트가 삭제되며,\n복구할 수 없어요.`,
   removeMemberConfirm: '내보내기',
+  memberRemoved: (name: string) => `${name}님이 번들 참여 멤버에서 제외되었어요.`,
+  memberAdded: (name: string) => `${name}님이 번들 참여 멤버에 추가되었어요.`,
+  // 참여 멤버 관리 화면(기능 spec 4.3.2)
+  addMembersTitle: '멤버 추가하기',
+  addMemberButton: '추가하기',
+  addMemberLabel: (name: string) => `${name} 추가하기`,
+  removeMemberLabel: (name: string) => `${name} 내보내기`,
+  leaveMemberLabel: '번들에서 나가기',
+  selfSuffix: '(나)',
+  // 초안 생성자가 나가면 작성 중인 번들이 삭제되어 알림(확인 창 문구는 일반 멤버와 같음)
+  draftDeleted: '작성 중인 번들을 삭제했어요.',
   // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
   editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
   editingLabel: (name: string) => `${name}님이 편집 중`,
