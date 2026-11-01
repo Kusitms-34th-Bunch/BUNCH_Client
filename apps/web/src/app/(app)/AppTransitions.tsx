@@ -242,6 +242,19 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: menuSubSlide,
   },
+  // 멤버 초대는 멤버 관리 헤더와 더보기 메뉴 두 곳에서 들어옴
+  {
+    from: BUNCH_HOME_PATHS.members,
+    to: BUNCH_HOME_PATHS.invite,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  {
+    from: BUNCH_HOME_PATHS.menu,
+    to: BUNCH_HOME_PATHS.invite,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
   {
     from: BUNDLE_SELECT_PATHS.select,
     to: BUNDLE_SELECT_PATHS.transitionIds.recommendation,

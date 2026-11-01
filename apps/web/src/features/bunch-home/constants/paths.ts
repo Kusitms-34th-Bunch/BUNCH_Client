@@ -9,6 +9,8 @@ export const BUNCH_HOME_PATHS = {
   members: '/bunch/members',
   /** 역할별 권한 안내(화면설계서 1-1) */
   roles: '/bunch/members/roles',
+  /** 멤버 초대(멤버 관리 헤더·더보기 메뉴, 화면은 bunch-invite feature) */
+  invite: '/bunch/members/invite',
   // 번치 추가는 번치 시작 선택 화면으로 이동(기능명세 5.2.4, 화면설계서 8). URL 계약만 두고 onboarding feature는 import하지 않음
   startBunch: '/onboarding?from=bunch',
 } as const;

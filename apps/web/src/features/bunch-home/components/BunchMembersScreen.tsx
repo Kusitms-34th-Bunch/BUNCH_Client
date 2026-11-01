@@ -4,8 +4,10 @@ import {
   ActionDialog,
   type ActionDialogAction,
   Header,
+  LineAddSmallIcon,
   LineChevronLeftLargeIcon,
   LineChevronRightSmallIcon,
+  TextButton,
   toast,
 } from '@app/design-system';
 import { ProfileImage, ProfileListItem } from '@app/design-system/web';
@@ -37,6 +39,8 @@ type BunchMembersScreenProps = {
   myRole: BunchRole | undefined;
   actions: BunchMemberActions;
   onBack: () => void;
+  /** 헤더 「+ 멤버 초대」 */
+  onInvite: () => void;
 };
 
 /** 내가 이 멤버를 관리할 수 있는지(Figma 권한 표 2500:54066: 공동 관리자는 메인 관리자 외 내보내기만) */
@@ -53,6 +57,7 @@ export function BunchMembersScreen({
   myRole,
   actions,
   onBack,
+  onInvite,
 }: BunchMembersScreenProps) {
   const [target, setTarget] = useState<BunchMember | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -127,12 +132,20 @@ export function BunchMembersScreen({
       header={
         <Header
           leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            // Figma 뒤로 가기와 제목 사이 8: 40px 버튼의 오른쪽 여백(8)만큼 제목을 당김(버튼 터치 영역은 그대로)
+            <span className="-mr-s4 flex shrink-0">
+              <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
+                <LineChevronLeftLargeIcon />
+              </HeaderIconButton>
+            </span>
           }
           title={bunchName}
-          // Figma 오른쪽 「+ 멤버 초대」는 멤버 초대 화면이 생기면 연결과 함께 표시(동작 없는 버튼을 두지 않음)
+          // Figma 「+ 멤버 초대」(TextButton sm)
+          trailing={
+            <TextButton size="sm" leftIcon={<LineAddSmallIcon />} onClick={onInvite}>
+              멤버 초대
+            </TextButton>
+          }
         />
       }
     >

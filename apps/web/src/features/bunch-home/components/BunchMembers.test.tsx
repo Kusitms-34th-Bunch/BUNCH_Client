@@ -17,6 +17,7 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
+const onInvite = vi.fn();
 const actions: BunchMemberActions = { setRole: vi.fn(), transferOwner: vi.fn(), remove: vi.fn() };
 
 beforeEach(() => {
@@ -36,6 +37,7 @@ const renderScreen = (myRole: BunchRole, members = withMe(myRole)) =>
       myRole={myRole}
       actions={actions}
       onBack={vi.fn()}
+      onInvite={onInvite}
     />,
   );
 
@@ -53,6 +55,14 @@ describe('BunchMembersScreen', () => {
     );
     expect(screen.getByRole('img', { name: '메인 관리자' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: '공동 관리자' })).toBeInTheDocument();
+  });
+
+  it('헤더 「멤버 초대」를 누르면 초대 화면으로 간다', async () => {
+    renderScreen('member');
+
+    await userEvent.click(screen.getByRole('button', { name: '멤버 초대' }));
+
+    expect(onInvite).toHaveBeenCalledTimes(1);
   });
 
   it('메인 관리자는 나를 뺀 모두를, 공동 관리자는 메인 관리자를 뺀 남을, 일반 멤버는 아무도 관리하지 못한다', () => {
@@ -155,6 +165,7 @@ describe('BunchMembersScreen + useBunchMembers', () => {
         myRole={myRole}
         actions={live}
         onBack={vi.fn()}
+        onInvite={vi.fn()}
       />
     );
   }

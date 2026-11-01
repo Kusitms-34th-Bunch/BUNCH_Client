@@ -29,6 +29,7 @@ export function BunchMembers() {
       onBack={() =>
         window.history.length > 1 ? router.back() : router.replace(BUNCH_HOME_PATHS.menu)
       }
+      onInvite={() => router.push(BUNCH_HOME_PATHS.invite)}
     />
   );
 }
