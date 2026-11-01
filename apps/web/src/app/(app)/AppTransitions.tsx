@@ -9,11 +9,13 @@ import {
 import { fade, slide } from '@ssgoi/react/view-transitions';
 import { type ReactNode, useMemo, useSyncExternalStore } from 'react';
 import { LOGIN_PATH, SIGNUP_PATHS, SIGNUP_TRANSITION_IDS } from '@/features/auth/constants/paths';
+import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { easeOutIntegrator } from '@/shared/components/layout/easeOutIntegrator.internal';
 
 export const ONBOARDING_TRANSITION_DURATION_MS = 300;
 export const SIGNUP_DISSOLVE_DURATION_MS = 300;
+export const BUNCH_ADD_DISSOLVE_DURATION_MS = 150;
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
 function subscribeMotion(listener: () => void) {
@@ -49,7 +51,14 @@ const transition = slide({}, { override: { forward: tuneSlide, backward: tuneSli
 // 단계마다 절반씩 써서 전체 300ms 유지. 규칙은 두 방향에 모두 적용
 const tuneDissolve = tuneTransition(SIGNUP_DISSOLVE_DURATION_MS / 2);
 const dissolve = fade({}, { override: { forward: tuneDissolve, backward: tuneDissolve } });
+// 화면설계서(번치 메인 8): 「새로운 번치 추가하기」 → 번치 시작 선택은 Dissolve / Ease out / 150ms, 같은 방식으로 단계마다 절반
+const tuneBunchAddDissolve = tuneTransition(BUNCH_ADD_DISSOLVE_DURATION_MS / 2);
+const bunchAddDissolve = fade(
+  {},
+  { override: { forward: tuneBunchAddDissolve, backward: tuneBunchAddDissolve } },
+);
 const rules: SsgoiTransitionRule[] = [
+  { from: BUNCH_HOME_PATHS.home, to: ONBOARDING_PATHS.start, transition: bunchAddDissolve },
   { from: SIGNUP_PATHS.terms, to: LOGIN_PATH, transition: dissolve },
   {
     from: SIGNUP_PATHS.profile,

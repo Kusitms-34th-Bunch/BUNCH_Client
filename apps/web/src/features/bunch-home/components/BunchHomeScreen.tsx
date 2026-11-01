@@ -2,6 +2,7 @@
 
 import {
   ConfirmDialog,
+  cn,
   FillPhotoMediumIcon,
   LinePencilMediumIcon,
   LinePhotoMediumIcon,
@@ -19,13 +20,16 @@ import { CompletedBundleGrid } from './CompletedBundleGrid';
 import { DraftBundleList } from './DraftBundleList';
 
 /**
- * 전환 토스트를 「+」 위 16px에 두기 위한 추가 간격(px, 화면설계서 1-2-1)
- * 「+」 윗변 = 막대 영역 80px + 간격 10px + 버튼 52px = 142px, 기본 위치(Safe Area + 16px)에서 142 + 16 − 16 = 142px를 더 올림
+ * 전환 토스트를 「+」와 같은 높이(세로 가운데)에 두기 위한 추가 간격(px, Figma `3086:67555`)
+ * 「+」 중심 = 막대 영역 80 + 간격 10 + 버튼 절반 26 = 116, 토스트 절반 23을 빼고 기본 위치 16을 빼면 77
  */
 // ponytail: 웹 탭 막대 기준 고정값, iOS 쉘(막대 0)에서는 더 높이 뜸. 토스트가 CSS 변수를 받으면 계산식으로 교체
-const TOAST_ABOVE_FAB_OFFSET = 142;
+const TOAST_BESIDE_FAB_OFFSET = 77;
 
 type BundleTab = 'completed' | 'draft';
+
+// 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
+const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
 
 type BunchHomeScreenProps = {
   data: BunchHomeData;
@@ -48,6 +52,10 @@ export function BunchHomeScreen({
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
   const [tab, setTab] = useState<BundleTab>('completed');
+  // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
+  const [switched, setSwitched] = useState(false);
+  // 탭을 한 번이라도 바꿨는지(첫 진입·되돌아올 때는 탭 디졸브를 재생하지 않음)
+  const [tabChanged, setTabChanged] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DraftBundle | null>(null);
   // 접근 불가 번치 안내(기능명세 5.2.3). 닫히는 모션이 끝난 뒤 대상을 비워 문구 유지
@@ -67,15 +75,18 @@ export function BunchHomeScreen({
     if (!bunch) return;
     setSheetOpen(false);
     setTab('completed');
+    setSwitched(true);
     actions.switchBunch(bunch.id);
     toast(BUNCH_HOME_MESSAGES.switched(bunch.name), {
       fullWidth: true,
-      bottomOffset: TOAST_ABOVE_FAB_OFFSET,
+      bottomOffset: TOAST_BESIDE_FAB_OFFSET,
     });
   };
+  // 「새로운 번치 추가하기」: 시트가 다 내려간 뒤 이동(화면설계서 7-1)
+  const [addAfterClose, setAddAfterClose] = useState(false);
   const addBunch = () => {
+    setAddAfterClose(true);
     setSheetOpen(false);
-    onAddBunch?.();
   };
 
   return (
@@ -102,7 +113,14 @@ export function BunchHomeScreen({
         </div>
       }
     >
-      <div className="flex min-h-full flex-col">
+      {/* 번치 전환 시 새 번치 내용을 Dissolve / Ease out / 150ms로 표시(화면설계서 7). key로 다시 그려 재생 */}
+      <div
+        key={current.id}
+        className={cn(
+          'flex min-h-full flex-col',
+          switched && 'animate-[page-content-in_150ms_ease-out] motion-reduce:animate-none',
+        )}
+      >
         {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터 에셋은 아직 없어 회색 자리표시이고 흰 시트에 32px 걸침 */}
         <div className="bg-surface-brand-subtle-1 relative h-34.5 shrink-0">
           <div
@@ -114,7 +132,10 @@ export function BunchHomeScreen({
           <BunchProfile bunch={current} />
           <MenuTabs.Root
             value={tab}
-            onValueChange={(value) => setTab(value as BundleTab)}
+            onValueChange={(value) => {
+              setTabChanged(true);
+              setTab(value as BundleTab);
+            }}
             className="flex flex-1 flex-col"
           >
             <MenuTabs.List aria-label="번들">
@@ -134,7 +155,8 @@ export function BunchHomeScreen({
                 selectedIcon={<LinePencilMediumIcon />}
               />
             </MenuTabs.List>
-            <MenuTabs.Panel value="completed">
+            {/* 탭 전환 시 내용도 Dissolve / Ease out / 75ms(화면설계서 3번) */}
+            <MenuTabs.Panel value="completed" className={cn(tabChanged && panelFade)}>
               {current.completedBundles.length > 0 ? (
                 <CompletedBundleGrid bundles={current.completedBundles} />
               ) : (
@@ -147,7 +169,7 @@ export function BunchHomeScreen({
                 </div>
               )}
             </MenuTabs.Panel>
-            <MenuTabs.Panel value="draft" className="pt-s8">
+            <MenuTabs.Panel value="draft" className={cn('pt-s8', tabChanged && panelFade)}>
               {current.draftBundles.length > 0 ? (
                 <DraftBundleList
                   bundles={current.draftBundles}
@@ -167,6 +189,11 @@ export function BunchHomeScreen({
       <BunchSwitchSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        onOpenChangeComplete={(open) => {
+          if (open || !addAfterClose) return;
+          setAddAfterClose(false);
+          onAddBunch?.();
+        }}
         bunches={bunches.map((bunch) => ({
           id: bunch.id,
           name: bunch.name,

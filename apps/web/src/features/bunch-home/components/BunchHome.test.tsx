@@ -69,14 +69,16 @@ describe('BunchHome', () => {
     expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.', expect.anything());
   });
 
-  it('「새로운 번치 추가하기」는 번치 만들기 화면으로 이동한다', async () => {
+  it('「새로운 번치 추가하기」는 시트를 닫은 뒤 번치 시작 선택으로 이동한다', async () => {
     const user = userEvent.setup();
     render(<BunchHome />);
 
     const sheet = await openSwitcher(user);
     await user.click(within(sheet).getByRole('button', { name: '새로운 번치 추가하기' }));
 
-    expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.startBunch);
+    // 시트가 닫힌 뒤 이동
+    await waitFor(() => expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.startBunch));
+    expect(screen.queryByRole('dialog', { name: '번치 전환하기' })).toBeNull();
   });
 
   it('전환 목록에서 지금 번치가 맨 위에 있다', async () => {

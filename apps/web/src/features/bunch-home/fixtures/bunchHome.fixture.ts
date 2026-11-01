@@ -11,6 +11,9 @@ const sampleImage = (hue: number) => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
+// 번치 대표 이미지가 없을 때의 뭉치 기본 이미지(기능명세 5.1.2, 사진함 fixture와 같은 파일)
+const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
+
 const members = (count: number) =>
   Array.from({ length: count }, (_, index) => ({ name: `멤버 ${index + 1}` }));
 
@@ -22,16 +25,47 @@ const draft = (id: string, title: string, hue: number): DraftBundle => ({
 });
 
 export const bunchSummariesFixture: readonly BunchSummary[] = [
-  { id: 'bunch-run', name: '퇴근런클럽', alertCount: 0, access: 'active' },
-  { id: 'bunch-trip', name: '여행가조', alertCount: 5, access: 'active' },
-  { id: 'bunch-gift', name: '큐시즘 기프', alertCount: 5, access: 'active' },
-  { id: 'bunch-food', name: '홍대 먹짱', alertCount: 0, access: 'deleted' },
-  { id: 'bunch-meetup', name: '큐시즘 밋업', alertCount: 0, access: 'removed' },
+  {
+    id: 'bunch-run',
+    name: '퇴근런클럽',
+    imageSrc: DEFAULT_BUNCH_IMAGE,
+    alertCount: 0,
+    access: 'active',
+  },
+  {
+    id: 'bunch-trip',
+    name: '여행가조',
+    imageSrc: DEFAULT_BUNCH_IMAGE,
+    alertCount: 5,
+    access: 'active',
+  },
+  {
+    id: 'bunch-gift',
+    name: '큐시즘 기프',
+    imageSrc: DEFAULT_BUNCH_IMAGE,
+    alertCount: 5,
+    access: 'active',
+  },
+  {
+    id: 'bunch-food',
+    name: '홍대 먹짱',
+    imageSrc: DEFAULT_BUNCH_IMAGE,
+    alertCount: 0,
+    access: 'deleted',
+  },
+  {
+    id: 'bunch-meetup',
+    name: '큐시즘 밋업',
+    imageSrc: DEFAULT_BUNCH_IMAGE,
+    alertCount: 0,
+    access: 'removed',
+  },
 ];
 
 export const initialBunchDetailFixture: BunchHomeDetail = {
   id: 'bunch-trip',
   name: '여행가조',
+  imageSrc: DEFAULT_BUNCH_IMAGE,
   description: '틈만 나면 떠나는 여행 좋아하는 4명',
   isPrivate: false,
   followerCount: 23,
@@ -55,6 +89,7 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
   'bunch-run': {
     id: 'bunch-run',
     name: '퇴근런클럽',
+    imageSrc: DEFAULT_BUNCH_IMAGE,
     description: '2024년부터 매주 화・목 퇴근 후 함께 뛰는 러닝크루 셋',
     isPrivate: true,
     followerCount: 23,
@@ -67,6 +102,7 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
   'bunch-gift': {
     id: 'bunch-gift',
     name: '큐시즘 기프',
+    imageSrc: DEFAULT_BUNCH_IMAGE,
     description: '큐시즘 기획·프론트 모임',
     isPrivate: false,
     followerCount: 12,
