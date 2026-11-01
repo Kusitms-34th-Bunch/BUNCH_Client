@@ -230,6 +230,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchMenuMove,
   },
+  // 번치를 삭제하면 확인 화면에서 번치 탭으로 세 칸 되돌아감(정방향 진입은 없음)
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.deleteConfirm,
+    bidirectional: true,
+    transition: bunchMenuMove,
+  },
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.profile,
@@ -252,6 +259,19 @@ const rules: SsgoiTransitionRule[] = [
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.leave,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  // 번치 삭제 안내 → 확인 문구 입력도 한 단계씩 들어가는 slide
+  {
+    from: BUNCH_HOME_PATHS.menu,
+    to: BUNCH_HOME_PATHS.delete,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  {
+    from: BUNCH_HOME_PATHS.delete,
+    to: BUNCH_HOME_PATHS.deleteConfirm,
     bidirectional: true,
     transition: menuSubSlide,
   },
