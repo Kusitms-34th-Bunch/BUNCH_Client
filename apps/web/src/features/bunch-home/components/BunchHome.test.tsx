@@ -17,6 +17,8 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 }));
 
 beforeEach(() => {
+  // 지금 번치는 sessionStorage에 유지되므로 테스트마다 기본 번치로
+  sessionStorage.clear();
   push.mockClear();
   toast.mockClear();
 });

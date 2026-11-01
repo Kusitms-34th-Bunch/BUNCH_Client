@@ -41,6 +41,8 @@ export type BunchHomeDetail = {
   description: string;
   /** 비공개 번치면 이름 옆 자물쇠 */
   isPrivate: boolean;
+  /** 이 번치에서 내 역할(더보기 메뉴 항목이 달라짐) */
+  myRole: BunchRole;
   followerCount: number;
   followingCount: number;
   memberCount: number;

@@ -5,6 +5,7 @@ import {
   bunchSummariesFixture,
   initialBunchDetailFixture,
 } from '../fixtures/bunchHome.fixture';
+import { useCurrentBunchId } from './useCurrentBunchId';
 
 type UseBunchHomeResult = {
   data: BunchHomeData;
@@ -16,7 +17,7 @@ type UseBunchHomeResult = {
  * 연결하면 이 hook만 TanStack Query 상태(로딩·오류 포함)와 mutation으로 바꿈
  */
 export function useBunchHome(): UseBunchHomeResult {
-  const [currentId, setCurrentId] = useState(initialBunchDetailFixture.id);
+  const [currentId, setCurrentId] = useCurrentBunchId();
   const [bunches, setBunches] = useState(bunchSummariesFixture);
   const [deletedDraftIds, setDeletedDraftIds] = useState<ReadonlySet<string>>(new Set());
 

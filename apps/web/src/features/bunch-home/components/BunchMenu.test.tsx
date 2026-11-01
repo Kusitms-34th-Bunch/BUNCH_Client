@@ -10,6 +10,7 @@ const back = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, back }) }));
 
 beforeEach(() => {
+  sessionStorage.clear();
   replace.mockClear();
   back.mockClear();
 });
@@ -96,5 +97,11 @@ describe('BunchMenu', () => {
 
     expect(back).not.toHaveBeenCalled();
     expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.home);
+  });
+  it('번치 홈에서 고른 번치의 내 역할로 메뉴를 보여 준다', () => {
+    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-gift');
+    render(<BunchMenu />);
+
+    expect(menuNames()).toEqual(['멤버 관리', '멤버 초대', '차단 목록', '번치 나가기']);
   });
 });
