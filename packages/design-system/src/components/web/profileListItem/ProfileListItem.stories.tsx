@@ -25,7 +25,7 @@ export const WithButton: Story = {
   args: {
     name: '야간러너스',
     action: (
-      <Button variant="secondary" size="sm" className="text-text-tertiary">
+      <Button variant="secondarySubtle" size="sm">
         차단해제
       </Button>
     ),
@@ -58,7 +58,7 @@ export const DisabledWithButton: Story = {
     name: '야간러너스',
     disabled: true,
     action: (
-      <Button variant="secondary" size="sm" className="text-text-tertiary">
+      <Button variant="secondarySubtle" size="sm">
         차단해제
       </Button>
     ),

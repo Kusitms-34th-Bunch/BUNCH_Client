@@ -38,18 +38,18 @@
 
 ## Styling과 의존성
 
-| Figma                                                         | 구현                                                                 |
-| ------------------------------------------------------------- | -------------------------------------------------------------------- |
-| 흰 바탕, 패딩 8, 테두리·radius 없음                           | `bg-surface-primary p-padding-p4`                                    |
-| 이미지·이름 간격 6, 이름·자물쇠 간격 4, 이름·보조 글자 간격 2 | `gap-s3`, `gap-s2`, `gap-s1`                                         |
-| 왼쪽 묶음·오른쪽 동작 사이(Figma 없음, 양끝 정렬)             | `gap-s4`(8): 긴 이름일 때 최소 간격                                  |
-| 프로필 이미지 40                                              | `ProfileImage` + `size-10 border border-border-tertiary`             |
-| 이름 Body-3-Semibold `text-secondary`                         | `typography-body-3-semi-bold text-text-secondary`                    |
-| 보조 글자 Caption-1-Regular `text-quaternary`(#969aa0)        | `typography-caption-1-regular text-text-quaternary`                  |
-| 자물쇠 `Line/Icon-S/Lock` 16, #535a61                         | `LineLockSmallIcon` + `text-icon-tertiary`                           |
-| 자물쇠 원 24, `surface-secondary`, radius `r10`               | `size-6 rounded-full bg-surface-secondary`                           |
-| 버튼 사이 간격 8                                              | `gap-s4`                                                             |
-| (호출자 예시, Story) SolidButton 32, 좌우 12, Label-S         | `Button` `size="sm"`, `primary` / `secondary` + `text-text-tertiary` |
+| Figma                                                         | 구현                                                     |
+| ------------------------------------------------------------- | -------------------------------------------------------- |
+| 흰 바탕, 패딩 8, 테두리·radius 없음                           | `bg-surface-primary p-padding-p4`                        |
+| 이미지·이름 간격 6, 이름·자물쇠 간격 4, 이름·보조 글자 간격 2 | `gap-s3`, `gap-s2`, `gap-s1`                             |
+| 왼쪽 묶음·오른쪽 동작 사이(Figma 없음, 양끝 정렬)             | `gap-s4`(8): 긴 이름일 때 최소 간격                      |
+| 프로필 이미지 40                                              | `ProfileImage` + `size-10 border border-border-tertiary` |
+| 이름 Body-3-Semibold `text-secondary`                         | `typography-body-3-semi-bold text-text-secondary`        |
+| 보조 글자 Caption-1-Regular `text-quaternary`(#969aa0)        | `typography-caption-1-regular text-text-quaternary`      |
+| 자물쇠 `Line/Icon-S/Lock` 16, #535a61                         | `LineLockSmallIcon` + `text-icon-tertiary`               |
+| 자물쇠 원 24, `surface-secondary`, radius `r10`               | `size-6 rounded-full bg-surface-secondary`               |
+| 버튼 사이 간격 8                                              | `gap-s4`                                                 |
+| (호출자 예시, Story) SolidButton 32, 좌우 12, Label-S         | `Button` `size="sm"`, `primary` / `secondarySubtle`      |
 
 ## 확인할 항목
 

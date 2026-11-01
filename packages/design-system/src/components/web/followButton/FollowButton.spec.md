@@ -22,7 +22,7 @@
 ## 상태와 동작
 
 - `follow`: `primary`(바탕 `surface-inversed`, 글자 `text-inversed`).
-- `following`: `secondary` 바탕(`surface-tertiary`), 글자 `text-tertiary`, 글자 뒤 24px 아래 화살표.
+- `following`: `Button` `secondarySubtle`(바탕 `surface-tertiary`, 글자 `text-tertiary`), 글자 뒤 24px 아래 화살표.
 - `requested`: `following`과 같은 색, 화살표 없음.
 - 눌림·비활성·초점 표시는 `Button`과 같다.
 - 폭은 호출자가 정한다(Figma 344px, 화면에서는 `w-full`).
@@ -35,16 +35,16 @@
 
 ## Styling과 의존성
 
-| Figma                                                      | 구현                                                  |
-| ---------------------------------------------------------- | ----------------------------------------------------- |
-| SolidButton 높이 48, 좌우 24, 간격 8, radius `r4`, Label-L | `Button` `size="lg"`                                  |
-| Follow: `surface-inversed`·`text-inversed`                 | `Button` `variant="primary"`                          |
-| Following·Request: `surface-tertiary`·`text-tertiary`      | `Button` `variant="secondary"` + `text-text-tertiary` |
-| 아래 화살표 24                                             | `LineChevronDownIcon` lg(`rightIcon`)                 |
+| Figma                                                      | 구현                                  |
+| ---------------------------------------------------------- | ------------------------------------- |
+| SolidButton 높이 48, 좌우 24, 간격 8, radius `r4`, Label-L | `Button` `size="lg"`                  |
+| Follow: `surface-inversed`·`text-inversed`                 | `Button` `variant="primary"`          |
+| Following·Request: `surface-tertiary`·`text-tertiary`      | `Button` `variant="secondarySubtle"`  |
+| 아래 화살표 24                                             | `LineChevronDownIcon` lg(`rightIcon`) |
 
 ## 확인할 항목
 
-- 글자색 (제안): `Button` `secondary`는 글자가 `text-primary`라 이 버튼에서만 `text-tertiary`로 덮었다. `ProfileListItem`의 「차단해제」와 같은 조합이 반복되므로, `Button` 변형 추가를 디자이너와 정한다.
+- 글자색: 같은 조합이 「차단해제」·「거절」에서도 반복되어 `Button`에 `secondarySubtle`을 추가해 쓴다. Figma `SolidButton` 세트에는 없는 변형이라 디자이너 확인이 필요하다(`Button` spec 참고).
 - 「팔로잉」을 눌렀을 때의 동작(언팔로우 메뉴 등)과 「팔로우 요청됨」의 취소 여부는 Figma에 없다. 호출 화면 이슈에서 정한다.
 
 ## 검증

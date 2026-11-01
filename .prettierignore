@@ -16,6 +16,9 @@ pnpm-lock.yaml
 turbo/generators/templates/**/*.hbs
 apps/admin/src/routeTree.gen.ts
 apps/web/next-env.d.ts
+# expo prebuild가 만드는 네이티브 폴더(apps/mobile-shell/.gitignore, Prettier는 하위 .gitignore를 읽지 않음)
+apps/mobile-shell/ios/
+apps/mobile-shell/android/
 # Tokens Studio 원본과 생성 CSS는 tokens:check로 검증한다.
 packages/design-system/tokens/tokens.json
 packages/design-system/tokens/tokens.css

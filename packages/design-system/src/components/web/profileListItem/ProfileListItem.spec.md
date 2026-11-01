@@ -55,13 +55,13 @@
 | 이름 Body-1-Medium, `text-primary`                                                                      | `typography-body-1-medium text-text-primary`                                       |
 | 점 아이콘 20, `#BCBEC2`                                                                                 | `LineDotsIcon` md + `text-icon-quaternary`                                         |
 | 눌림 원 20, black 20%                                                                                   | `before:bg-overlay-pressed`                                                        |
-| (호출자 예시, Story) 「차단해제」 SolidButton 32, 바탕 `surface-tertiary`, 글자 `text-tertiary` Label-S | `Button` `variant="secondary" size="sm"` + `text-text-tertiary`                    |
+| (호출자 예시, Story) 「차단해제」 SolidButton 32, 바탕 `surface-tertiary`, 글자 `text-tertiary` Label-S | `Button` `variant="secondarySubtle" size="sm"`                                     |
 | 흐림 `opacity-disabled`(40)                                                                             | `opacity-(--semantic-opacity-disabled)`                                            |
 
 ## 확인할 항목
 
 - Disabled의 뜻 (제안): Figma에 쓰임 설명이 없다. 행을 흐리게 하고 더보기만 막았다. 예를 들어 "탈퇴한 멤버"처럼 정해지면 문구나 접근성 안내를 추가한다.
-- 「차단해제」 글자색 (제안): 기존 `Button` `secondary`는 글자가 `text-primary`라, 이 행에서만 `text-tertiary`로 덮었다. 같은 모양이 반복되면 Button 변형 추가를 검토한다.
+- 「차단해제」 글자색: `Button` `secondarySubtle`(회색 바탕·`text-tertiary` 글자)을 쓴다. Figma `SolidButton` 세트에는 없는 변형이라 디자이너 확인이 필요하다(`Button` spec 참고).
 - 「추가하기」 칩 (제안): Figma에 숨겨진 `ChipButton`이 있어 `action` 슬롯으로 받을 수 있게만 했다.
 - 점 아이콘 대비 (확인): Figma 색 `#BCBEC2`(`icon-quaternary`)는 흰 바탕에서 비텍스트 대비 3:1에 못 미칠 수 있다(계산 전). 더보기가 유일한 진입점이라 디자이너 확인이 필요하다.
 

@@ -20,12 +20,7 @@ const followButton = (name: string) => (
 );
 
 const followingButton = (name: string) => (
-  <Button
-    variant="secondary"
-    size="sm"
-    className="text-text-tertiary"
-    aria-label={`${name} 팔로잉`}
-  >
+  <Button variant="secondarySubtle" size="sm" aria-label={`${name} 팔로잉`}>
     팔로잉
   </Button>
 );
@@ -35,12 +30,7 @@ const requestButtons = (name: string) => (
     <Button variant="primary" size="sm" aria-label={`${name} 승인`}>
       승인
     </Button>
-    <Button
-      variant="secondary"
-      size="sm"
-      className="text-text-tertiary"
-      aria-label={`${name} 거절`}
-    >
+    <Button variant="secondarySubtle" size="sm" aria-label={`${name} 거절`}>
       거절
     </Button>
   </>
