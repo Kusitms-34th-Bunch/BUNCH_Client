@@ -79,9 +79,9 @@ export function DraftMemberManager({
       }
     >
       <h1 className="sr-only">참여 멤버 관리</h1>
-      <div ref={root} className="px-padding-p8 pb-s16 flex flex-col gap-8.75">
+      <div ref={root} className="px-padding-p8 pb-s16 gap-s14 flex flex-col pt-1.25">
         {access.canAddMember && addable.length > 0 && (
-          <section aria-labelledby="add-members-title" className="flex flex-col gap-2.75">
+          <section aria-labelledby="add-members-title" className="gap-s5 flex flex-col">
             <h2 id="add-members-title" className="typography-body-1-medium text-text-primary">
               {BUNDLE_MESSAGES.addMembersTitle}
             </h2>
@@ -107,7 +107,7 @@ export function DraftMemberManager({
             </ul>
           </section>
         )}
-        <section aria-labelledby="joined-members-title" className="flex flex-col gap-2.75">
+        <section aria-labelledby="joined-members-title" className="gap-s5 flex flex-col">
           <h2 id="joined-members-title" className="typography-body-1-medium text-text-primary">
             {BUNDLE_MESSAGES.membersTitle}
           </h2>
@@ -144,7 +144,7 @@ export function DraftMemberManager({
                             }
                           }}
                           // 아이콘 20px·누르는 영역 40px(ProfileListItem의 더보기 버튼과 같은 배치)
-                          className="text-icon-quaternary -m-s5 p-s5 focus-visible:outline-border-brand relative inline-flex shrink-0 cursor-pointer touch-manipulation rounded-full focus-visible:outline-2"
+                          className="text-icon-primary -m-s5 p-s5 focus-visible:outline-border-brand relative inline-flex shrink-0 cursor-pointer touch-manipulation rounded-full focus-visible:outline-2"
                         >
                           <LineCloseMediumIcon aria-hidden="true" />
                         </button>
