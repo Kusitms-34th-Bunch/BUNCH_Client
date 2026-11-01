@@ -5,10 +5,16 @@ import { ONBOARDING_PATHS } from '../../constants/paths';
 import { BunchStartSelect } from './BunchStartSelect';
 
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+const back = vi.fn();
+const replace = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
 
 describe('BunchStartSelect', () => {
-  beforeEach(() => push.mockClear());
+  beforeEach(() => {
+    push.mockClear();
+    back.mockClear();
+    replace.mockClear();
+  });
 
   it('화면 제목과 본문 영역(main)을 가진다', () => {
     render(<BunchStartSelect />);
@@ -19,10 +25,32 @@ describe('BunchStartSelect', () => {
     expect(screen.getByRole('main')).toBeTruthy();
   });
 
-  it('헤더에 닫기 버튼이 있다(동작은 아직 연결하지 않았다)', () => {
+  it('첫 진입에서는 닫기 버튼이 있지만 동작은 아직 연결하지 않았다', async () => {
     render(<BunchStartSelect />);
 
-    expect(within(screen.getByRole('banner')).getByRole('button', { name: '닫기' })).toBeTruthy();
+    await userEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: '닫기' }));
+
+    expect(back).not.toHaveBeenCalled();
+  });
+
+  it('번치 홈에서 들어오면 닫기가 이전 화면으로 돌아간다', async () => {
+    window.history.pushState(null, '', '/onboarding?from=bunch');
+    render(<BunchStartSelect closeBackHref="/bunch" />);
+
+    await userEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: '닫기' }));
+
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  it('이전 기록 없이 바로 들어오면 닫기가 지정 경로로 대체 이동한다', async () => {
+    const length = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
+    render(<BunchStartSelect closeBackHref="/bunch" />);
+
+    await userEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: '닫기' }));
+
+    expect(replace).toHaveBeenCalledWith('/bunch');
+    expect(back).not.toHaveBeenCalled();
+    length.mockRestore();
   });
 
   it('시작 방식 카드 두 개를 보여 준다', () => {
