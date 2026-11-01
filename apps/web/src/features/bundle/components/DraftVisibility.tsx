@@ -8,7 +8,8 @@ import type { DraftVisibility as Visibility } from '../lib/types';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 
 type DraftVisibilityProps = {
-  value: Visibility;
+  /** 고른 공개 범위. 아직 고르지 않았으면 null */
+  value: Visibility | null;
   /** 고를 수 있는지(참여 멤버만) */
   editable: boolean;
   onChange: (_value: Visibility) => void;
@@ -22,7 +23,7 @@ const OPTIONS: readonly { value: Visibility; label: string }[] = [
 ];
 
 /**
- * 공개 범위: 「멤버 공개」·「공개」 중 하나(항상 하나가 골라져 있고 해제할 수 없음)
+ * 공개 범위: 「멤버 공개」·「공개」 중 하나(처음에는 고르지 않은 상태이고, 한 번 고르면 바꿀 수만 있고 해제는 없음)
  * 제목 옆 안내 아이콘을 누르면 「공개」의 의미를 알려 주는 툴팁(Figma `2255:43328`)이 아이콘 위에 열리고,
  * 아이콘을 다시 누르거나 바깥을 누르거나 Esc를 누르면 닫힘
  */

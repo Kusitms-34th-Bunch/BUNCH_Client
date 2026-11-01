@@ -107,7 +107,7 @@ export const draftFixture: Draft = {
       text: '오늘도 완주 성공! 우리 이러다가 진짜 마라톤 나가는 거 아니야?ㅋㅋㅋ',
     },
   ],
-  visibility: 'public',
+  visibility: null,
   editing: {},
 };
 

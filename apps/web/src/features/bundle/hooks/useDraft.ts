@@ -1,7 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Draft, DraftMember, DraftViewer, PlaceResult, SaveStatus } from '../lib/types';
+import type {
+  Draft,
+  DraftMember,
+  DraftViewer,
+  DraftVisibility,
+  PlaceResult,
+  SaveStatus,
+} from '../lib/types';
 import { MAX_LOCATIONS } from '../constants/messages';
 import {
   bunchMembersFixture,
@@ -37,7 +44,7 @@ export type DraftState =
 export type DraftActions = {
   setTitle: (_title: string) => void;
   setComment: (_memberId: string, _text: string) => void;
-  setVisibility: (_visibility: Draft['visibility']) => void;
+  setVisibility: (_visibility: DraftVisibility) => void;
   addLocation: (_place: PlaceResult) => void;
   removeLocation: (_locationId: string) => void;
   setDate: (_date: string | null) => void;
