@@ -27,6 +27,7 @@
 - Pressed: 바탕에 `overlay-pressed`(20%), 라디오 회색 링·점(카드 어디를 눌러도 적용). 글자는 그대로.
 - Selected: 바탕 `surface-brand-subtle-1`, 안쪽 1px `border-brand-subtle` 링, 라디오 브랜드색 점.
 - Disabled: 카드 40% 흐림, 제목·설명 `text-disabled`, 누를 수 없음.
+- 전환(화면설계서 `2145:39607` 5번): 눌림은 While Pressing / Dissolve / Ease out / 75ms, 선택은 On Click / Dissolve / Ease out / 75ms. 눌림 layer의 투명도와 바탕색·링(`box-shadow`)을 75ms ease-out으로 바꾼다. 동작 줄이기에서는 즉시 바뀐다.
 - 긴 제목·설명은 줄바꿈한다(`break-keep`, 공백 없는 긴 영문·URL은 `wrap-break-word`로 끊음).
 
 ## 접근성
