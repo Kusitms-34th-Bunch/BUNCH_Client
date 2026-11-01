@@ -20,6 +20,8 @@ apps/mobile-shell/
     (tabs)/
       _layout.tsx       iOS 시스템 탭 바(NativeTabs)
       feed.tsx photos.tsx bunch.tsx my.tsx   탭마다 WebView
+  modules/
+    tab-crossfade/      탭 전환 80ms 크로스페이드·선택 햅틱(로컬 Expo 모듈, iOS ObjC)
   assets/
     tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
     fonts/              Pretendard Regular(탭 라벨), 라이선스
@@ -92,6 +94,10 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 선택 색은 text-primary(#121212), 라벨은 Pretendard Regular 12pt다(`app/(tabs)/_layout.tsx`). 미선택 색 text-tertiary(#535a61)도 지정했지만 iOS 26 Liquid Glass 탭 바는 배경에 맞춰 시스템이 정해 적용되지 않았다. 알약 크기·막대 높이·간격은 시스템이 정한다. `itemPositioning`·`itemWidth` 실험에서 iOS 26 알약 폭이 바뀌지 않았다.
 - 쉘은 iOS일 때만 `setNativeTabBar`에 true를 돌려준다. 브라우저·안드로이드는 false라 웹 `BottomNavigation`을 쓴다. 웹 막대는 응답 전에는 그리지 않아 쉘에서 잠깐 보였다 사라지지 않는다.
 - 탭 화면 아래 여백: 탭 안의 `SafeAreaProvider`가 탭 바 높이를 포함한 아래 Safe Area를 재서 웹에 넘긴다. 그래서 웹 본문은 탭 바 위에서 끝나고 탭 바 뒤로 내용이 비치지는 않는다. 내용을 탭 바 뒤까지 펼치려면 웹이 아래 여백을 본문 안 여백으로 바꿔야 한다(미구현).
+- 탭 전환은 80ms 등속 크로스페이드다(결정 기록 017, 웹 탭 막대와 같은 값). expo-router 네이티브 탭과 react-native-screens 4.26.2에는 전환 애니메이션 설정이 없다. 그래서 로컬 Expo 모듈 `modules/tab-crossfade`가 앱 시작 때 탭 컨트롤러(`RNSTabBarController`, 자기 자신이 delegate)에 `tabBarController:animationControllerForTransitionFromViewController:toViewController:`를 런타임으로 추가한다. 들어오는 탭을 아래에 두고 위의 나가는 탭만 투명도 1→0으로 바꾼다. 화면에서 떨어졌다 다시 붙은 WebView는 약 60ms 동안 빈 화면이라, 들어오는 탭 페이지가 프레임을 두 번 그린 뒤(`requestAnimationFrame` 두 번, 페이지와 분리된 content world에서 실행, 최대 150ms) 페이드를 시작한다. 동작 줄이기 설정이면 시스템 기본(즉시 전환)이다. 라이브러리 내부 클래스 이름에 기대므로 react-native-screens를 올릴 때 클래스 이름과 delegate 구조를 다시 확인한다. 이름이 바뀌거나 링크 방식이 바뀌어(`use_frameworks!` 동적 링크) 앱 시작 때 클래스를 찾지 못하면 추가가 조용히 빠져 즉시 전환으로 돌아간다. 모듈을 바꾸면 `pod install`과 재빌드가 필요하다.
+- 탭 햅틱: 사용자가 탭을 누를 때마다(지금 탭을 다시 눌러도) 선택 햅틱을 준다. 코드로 탭을 바꿀 때는 울리지 않는다.
+  - iOS: 같은 모듈이 사용자 탭에서만 불리는 `tabBarController:shouldSelectViewController:`를 감싸, 원래 처리 뒤 선택이 허용됐거나 지금 탭 재선택이면 `UISelectionFeedbackGenerator`를 울린다. 라이브러리가 막은 선택에는 울리지 않는다. 이 메서드를 상위 클래스에서 물려받는 구조로 바뀌면 감싸지 않는다.
+  - 안드로이드: 웹 탭 막대(`MainTabBar`)가 누를 때 bridge `tabSelectionHaptic`을 부르고, 쉘은 `expo-haptics`의 `performAndroidHapticsAsync(Segment_Tick)`(기기 햅틱 설정을 따름)로 처리한다. 이 메서드가 없는 이전 쉘에서는 웹의 브라우저 폴백(동작 없음)이 실행된다.
 - 탭 WebView 4개는 처음에 함께 만들어진다(expo-router 네이티브 탭은 모든 탭을 미리 그림). 탭마다 웹 상태가 따로라 번치 전환·로그아웃처럼 다른 탭에도 알려야 하는 변화는 아직 연결하지 않았다.
 - 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 첫 화면 → 탭 화면 전환, 탭 이동, 아이콘·선택 색·라벨 크기. 확인하지 못한 것: 실기기, 끌어서 이동·렌즈 효과의 실제 터치, VoiceOver, 탭 사이 로그인 쿠키 공유, 메모리, `hidden: true`로 돌아가기, 안드로이드에서 탭 WebView 여러 개의 뒤로가기 처리.
 

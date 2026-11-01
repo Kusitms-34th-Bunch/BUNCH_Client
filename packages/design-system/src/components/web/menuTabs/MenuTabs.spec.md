@@ -28,7 +28,7 @@
 - 기본: 글자 `text-tertiary`.
 - 선택: 글자 `text-primary`, 아래 2px 선 `chip-gray-fg`.
 - 탭 폭은 글자에 맞춘다(Figma 120px은 「팔로워 120」 + 좌우 22에 맞는 값).
-- 아이콘 탭: 36×40(아이콘 20, 좌우 8·위아래 10). 기본은 Line 아이콘 `icon-quaternary`와 1px 밑줄 `border-tertiary`, 선택은 Fill 아이콘 `icon-tertiary`와 밑줄 `icon-tertiary`, 누르는 동안 `overlay-hover`, 비활성은 흐림(40%)과 밑줄 `border-disabled`. 밑줄은 Figma처럼 높이 안쪽에 그린다.
+- 아이콘 탭: 36×40(아이콘 20, 좌우 8·위아래 10). 기본은 Line 아이콘 `icon-quaternary`와 1px 밑줄 `border-tertiary`, 선택은 Fill 아이콘 `icon-tertiary`와 밑줄 `icon-tertiary`, 누르는 동안 `overlay-hover`, 비활성은 흐림(40%)과 밑줄 `border-disabled`. 밑줄은 Figma처럼 높이 안쪽에 그린다. 탭을 바꾸면 아이콘(겹쳐 둔 Line·Fill의 투명도)·색·밑줄이 Dissolve / Ease out / 75ms로 바뀐다(화면설계서 `1892:37781` 3번). 동작 줄이기에서는 즉시 바뀐다.
 - 키보드: 좌우 방향키로 초점 이동(끝에서 처음으로 돌아감), Enter·Space로 선택(Base UI 기본 `activateOnFocus: false`). 탭을 바꿀 때 목록을 불러오는 화면이라 방향키만으로 선택하지 않는다. 호출자가 `MenuTabs.List`에 `activateOnFocus`를 넘겨 바꿀 수 있다.
 
 ## 접근성

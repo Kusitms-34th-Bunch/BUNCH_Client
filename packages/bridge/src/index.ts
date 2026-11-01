@@ -36,6 +36,8 @@ export type AppBridgeMethods = {
   share: (_params: ShareParams) => Promise<void>;
   /** iOS 쉘의 시스템 탭 화면 시작·종료. 미지원 환경(브라우저·안드로이드)에서는 false 반환 */
   setNativeTabBar: (_params: SetNativeTabBarParams) => Promise<boolean>;
+  /** 웹 탭 막대를 누를 때의 선택 햅틱(안드로이드 쉘). iOS 시스템 탭 바는 쉘이 직접 처리 */
+  tabSelectionHaptic: () => Promise<void>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */

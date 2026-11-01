@@ -13,7 +13,7 @@ export type BunchListItemProps = Omit<
   imageSrc?: string | undefined;
   /** 이름 옆 표시(예: 알림 개수 `ColorBadge`). `unavailable`이면 오른쪽 끝에 배치 */
   badge?: ReactNode;
-  /** `current`(지금 보고 있는 번치)와 `unavailable`(접근 불가)은 흐리게 표시하고 선택 불가 */
+  /** `current`(지금 보고 있는 번치)는 흐림·선택 불가, `unavailable`(접근 불가)은 흐림이지만 눌러서 안내를 열 수 있음 */
   status?: BunchListItemStatus | undefined;
 };
 
@@ -30,10 +30,11 @@ export const BunchListItem = ({
   onClick,
   ...props
 }: BunchListItemProps) => {
-  const isSelectable = status === 'default';
+  // 접근 불가 번치는 누르면 호출자가 안내를 띄움(기능명세 5.2.3)
+  const isSelectable = status !== 'current';
 
   return (
-    // disabled 대신 aria-disabled: 현재·접근 불가 번치도 초점 이동으로 상태 확인
+    // disabled 대신 aria-disabled: 현재 번치도 초점 이동으로 상태 확인
     <button
       type="button"
       {...props}
@@ -43,7 +44,8 @@ export const BunchListItem = ({
       className={cn(
         'rounded-r4 px-padding-p5 py-padding-p3 gap-s5 relative isolate flex w-full touch-manipulation items-center text-left',
         'before:rounded-r4 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
-        'not-aria-disabled:cursor-pointer not-aria-disabled:active:before:opacity-100 aria-disabled:cursor-not-allowed aria-disabled:opacity-(--semantic-opacity-disabled)',
+        'not-aria-disabled:cursor-pointer not-aria-disabled:active:before:opacity-100 aria-disabled:cursor-not-allowed',
+        status !== 'default' && 'opacity-(--semantic-opacity-disabled)',
         'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
         className,
       )}

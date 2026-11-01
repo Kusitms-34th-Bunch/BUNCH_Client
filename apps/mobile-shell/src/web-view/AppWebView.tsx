@@ -1,4 +1,5 @@
 import { bridge, createWebView } from '@webview-bridge/react-native';
+import * as Haptics from 'expo-haptics';
 import { router, type Href } from 'expo-router';
 import { useEffect, useRef, type ComponentRef } from 'react';
 import {
@@ -64,6 +65,11 @@ const appBridge = bridge({
     }
     return Promise.resolve(true);
   },
+  // 안드로이드 시스템 햅틱(기기 햅틱 설정을 따름). iOS는 시스템 탭 바가 아니면 쓰이지 않아 선택 햅틱으로 대체
+  tabSelectionHaptic: () =>
+    Platform.OS === 'android'
+      ? Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Segment_Tick)
+      : Haptics.selectionAsync(),
 } satisfies AppBridgeMethods);
 
 const { WebView } = createWebView({

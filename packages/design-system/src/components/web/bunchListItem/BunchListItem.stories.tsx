@@ -27,7 +27,7 @@ export const WithBadge: Story = {
 /** 지금 보고 있는 번치: 흐림·선택 불가 */
 export const Current: Story = { args: { name: '퇴근런클럽', status: 'current' } };
 
-/** 접근 불가: 흐림·이름 disabled 색, 표시는 오른쪽 끝 */
+/** 접근 불가: 흐림·이름 disabled 색, 표시는 오른쪽 끝. 누르면 안내(호출자 담당) */
 export const Unavailable: Story = {
   args: {
     name: '홍대 먹짱',

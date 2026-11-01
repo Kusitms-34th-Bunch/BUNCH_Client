@@ -87,6 +87,8 @@ const IconTab = ({ label, icon, selectedIcon, className, ...props }: MenuTabsIco
       'text-icon-quaternary px-padding-p4 py-padding-p5 group relative inline-flex h-10 shrink-0 cursor-pointer touch-manipulation items-center justify-center',
       // 밑줄은 Figma처럼 높이 안쪽(40px)에 그림
       'after:bg-border-tertiary after:absolute after:inset-x-0 after:bottom-0 after:h-px',
+      // 탭 전환: Dissolve / Ease out / 75ms(화면설계서 번치 메인 3번)
+      'transition-colors duration-75 ease-[ease-out] after:transition-colors after:duration-75 after:ease-[ease-out] motion-reduce:transition-none motion-reduce:after:transition-none',
       'not-data-disabled:active:bg-overlay-hover',
       'data-disabled:after:bg-border-disabled data-disabled:cursor-not-allowed data-disabled:opacity-(--semantic-opacity-disabled)',
       'data-active:text-icon-tertiary data-active:after:bg-icon-tertiary',
@@ -94,11 +96,20 @@ const IconTab = ({ label, icon, selectedIcon, className, ...props }: MenuTabsIco
       className,
     )}
   >
-    <span aria-hidden="true" className="flex group-data-active:hidden">
-      {icon}
-    </span>
-    <span aria-hidden="true" className="hidden group-data-active:flex">
-      {selectedIcon}
+    {/* 두 아이콘을 겹쳐 두고 투명도로 교차(Dissolve) */}
+    <span className="grid *:col-start-1 *:row-start-1">
+      <span
+        aria-hidden="true"
+        className="flex transition-opacity duration-75 ease-[ease-out] group-data-active:opacity-0 motion-reduce:transition-none"
+      >
+        {icon}
+      </span>
+      <span
+        aria-hidden="true"
+        className="flex opacity-0 transition-opacity duration-75 ease-[ease-out] group-data-active:opacity-100 motion-reduce:transition-none"
+      >
+        {selectedIcon}
+      </span>
     </span>
   </Tabs.Tab>
 );

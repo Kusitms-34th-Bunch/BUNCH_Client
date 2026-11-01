@@ -38,8 +38,12 @@ const Content = ({ className, backdropClassName, children, ref, ...props }: Dial
   const popupRef = useRef<HTMLDivElement>(null);
   return (
     <AlertDialog.Portal>
+      {/* 모달 모션(BunchMood.spec): 딤 100ms 페이드 인, 닫힘은 패널과 같은 100ms 페이드 아웃 */}
       <AlertDialog.Backdrop
-        className={cn('bg-overlay-dim-subtle fixed inset-0', backdropClassName)}
+        className={cn(
+          'bg-overlay-dim-subtle fixed inset-0 transition-opacity duration-100 ease-[cubic-bezier(0,0,0.15,1)] data-ending-style:opacity-0 data-ending-style:ease-[cubic-bezier(0.35,0,1,1)] data-starting-style:opacity-0 motion-reduce:transition-none',
+          backdropClassName,
+        )}
       />
       <AlertDialog.Popup
         {...props}
@@ -56,6 +60,8 @@ const Content = ({ className, backdropClassName, children, ref, ...props }: Dial
         }
         className={cn(
           'bg-surface-primary rounded-r9 fixed top-1/2 left-1/2 flex max-h-[min(640px,calc(100dvh-32px))] w-77.75 max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto outline-none',
+          // 패널: 중앙에서 scale 1.3→1·opacity 0→1 200ms, 닫힘은 크기 유지·100ms 페이드 아웃
+          'transition-[scale,opacity] duration-200 ease-[cubic-bezier(0.03,0.4,0.1,1)] data-ending-style:opacity-0 data-ending-style:duration-100 data-ending-style:ease-[cubic-bezier(0.35,0,1,1)] data-starting-style:scale-130 data-starting-style:opacity-0 motion-reduce:transition-none',
           className,
         )}
       >

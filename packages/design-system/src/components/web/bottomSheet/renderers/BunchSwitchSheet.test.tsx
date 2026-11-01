@@ -31,9 +31,10 @@ describe('BunchSwitchSheet', () => {
     expect(screen.getByText('접근 불가')).toBeTruthy();
   });
 
-  it('고를 수 있는 번치만 onSelect를 부른다', async () => {
+  it('고를 수 있는 번치만 onSelect를 부르고, 접근 불가 번치는 onUnavailableSelect를 부른다', async () => {
     const onSelect = vi.fn();
-    renderSheet({ onSelect });
+    const onUnavailableSelect = vi.fn();
+    renderSheet({ onSelect, onUnavailableSelect });
 
     fireEvent.click(await screen.findByRole('button', { name: /여행가조/ }));
     fireEvent.click(screen.getByRole('button', { name: /퇴근런클럽.*현재 번치/ }));
@@ -41,6 +42,7 @@ describe('BunchSwitchSheet', () => {
 
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith('trip');
+    expect(onUnavailableSelect).toHaveBeenCalledWith('gone');
   });
 
   it('「새로운 번치 추가하기」는 onAdd를 부른다', async () => {
