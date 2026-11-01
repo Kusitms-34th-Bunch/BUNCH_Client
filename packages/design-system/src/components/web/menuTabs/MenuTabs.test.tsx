@@ -56,4 +56,35 @@ describe('MenuTabs', () => {
 
     expect(screen.getByRole('tab', { name: '팔로워' })).toBeTruthy();
   });
+
+  it('아이콘 탭은 label이 접근성 이름이고 선택되면 채운 아이콘을 보여 준다', () => {
+    render(
+      <MenuTabs.Root defaultValue="photos">
+        <MenuTabs.List aria-label="보기">
+          <MenuTabs.IconTab
+            value="photos"
+            label="사진"
+            icon={<svg data-testid="line" />}
+            selectedIcon={<svg data-testid="fill" />}
+          />
+          <MenuTabs.IconTab
+            value="bundles"
+            label="번들"
+            icon={<svg data-testid="line" />}
+            selectedIcon={<svg data-testid="fill" />}
+          />
+        </MenuTabs.List>
+      </MenuTabs.Root>,
+    );
+
+    const photos = screen.getByRole('tab', { name: '사진' });
+    expect(photos.getAttribute('aria-selected')).toBe('true');
+    // 두 아이콘은 장식이고 보이는 쪽은 CSS(data-active)가 고름
+    expect(photos.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole('tab', { name: '번들' }));
+
+    expect(screen.getByRole('tab', { name: '번들' }).getAttribute('aria-selected')).toBe('true');
+    expect(photos.getAttribute('aria-selected')).toBe('false');
+  });
 });
