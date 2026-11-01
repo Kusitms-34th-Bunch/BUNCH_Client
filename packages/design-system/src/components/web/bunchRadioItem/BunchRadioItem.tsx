@@ -56,7 +56,8 @@ export const BunchRadioItem = ({
           <ColorBadge
             color="pink"
             size="md"
-            className="px-padding-p2 py-padding-p1 rounded-r2 gap-s1 group-has-checked:bg-[linear-gradient(var(--color-overlay-hover),var(--color-overlay-hover))]"
+            // 좁은 행: 이름이 먼저 말줄임, 칩은 max-w-full 해제로 글자 유지
+            className="px-padding-p2 py-padding-p1 rounded-r2 gap-s1 max-w-none group-has-checked:bg-[linear-gradient(var(--color-overlay-hover),var(--color-overlay-hover))]"
           >
             <span className="sr-only">, </span>
             <span>알림</span>
