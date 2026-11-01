@@ -15,10 +15,7 @@ beforeEach(() => {
   back.mockClear();
 });
 
-const menuNames = () =>
-  screen
-    .getAllByRole('listitem')
-    .map((item) => within(item).getByRole('button').textContent?.trim());
+const menuNames = () => screen.getAllByRole('listitem').map((item) => item.textContent?.trim());
 
 describe('BunchMenuScreen', () => {
   it('메인 관리자는 프로필 편집·번치 삭제를 포함한 6개 메뉴를 본다', () => {
@@ -74,6 +71,16 @@ describe('BunchMenuScreen', () => {
     await user.click(within(dialog).getByRole('button', { name: '나가기' }));
 
     expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('메인 관리자의 프로필 편집은 편집 화면으로 가는 링크다', () => {
+    render(
+      <BunchMenuScreen bunchName="여행가조" myRole="owner" onBack={vi.fn()} onLeave={vi.fn()} />,
+    );
+
+    expect(screen.getByRole('link', { name: '프로필 편집' }).getAttribute('href')).toBe(
+      BUNCH_HOME_PATHS.profile,
+    );
   });
 
   it('역할을 아직 모르면(첫 hydration) 메뉴를 그리지 않는다', () => {

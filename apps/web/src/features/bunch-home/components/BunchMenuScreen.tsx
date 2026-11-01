@@ -2,11 +2,13 @@
 
 import { ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { MenuDivider, MenuLabel } from '@app/design-system/web';
+import Link from 'next/link';
 import { useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { BunchRole } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { BUNCH_HOME_PATHS } from '../constants/paths';
 
 type BunchMenuScreenProps = {
   /** 지금 번치 이름(첫 hydration처럼 아직 모르면 undefined) */
@@ -46,7 +48,15 @@ export function BunchMenuScreen({ bunchName, myRole, onBack, onLeave }: BunchMen
           <ul className="gap-s2 px-padding-p8 flex flex-col">
             {isOwner ? (
               <li>
-                <MenuLabel>프로필 편집</MenuLabel>
+                <MenuLabel
+                  renderLink={({ className, children }) => (
+                    <Link href={BUNCH_HOME_PATHS.profile} className={className}>
+                      {children}
+                    </Link>
+                  )}
+                >
+                  프로필 편집
+                </MenuLabel>
               </li>
             ) : null}
             <li>
