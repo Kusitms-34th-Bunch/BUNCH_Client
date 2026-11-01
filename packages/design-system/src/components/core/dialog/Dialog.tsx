@@ -236,7 +236,7 @@ export const ActionDialog = ({
   >
     {/* Figma Stack: 위아래 16px·좌우 22px(내용 폭 267px), 내용·버튼 사이 24px */}
     <Content className="px-padding-p11 py-padding-p8">
-      {image ? <Media className="my-padding-p4 mx-0">{image}</Media> : null}
+      {image ? <Media className="m-0">{image}</Media> : null}
       <Title className="pt-s3 px-0">{title}</Title>
       {description ? <Description className="mt-s3 px-0">{description}</Description> : null}
       <Footer className="mt-s12 flex-col p-0">
