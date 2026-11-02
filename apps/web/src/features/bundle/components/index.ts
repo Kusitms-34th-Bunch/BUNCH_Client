@@ -3,6 +3,7 @@
 
 export { BundleDraft } from './BundleDraft';
 export { BundleDraftMembers } from './BundleDraftMembers';
+export { BundleDraftPhotoAdd } from './BundleDraftPhotoAdd';
 export { BundleDraftPhotoCaption } from './BundleDraftPhotoCaption';
 export { BundleDraftPhotoViewer } from './BundleDraftPhotoViewer';
 export { BundleSelect } from './BundleSelect';

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   Draft,
   DraftMember,
+  DraftPhoto,
   DraftViewer,
   DraftVisibility,
   PlaceResult,
@@ -59,6 +60,8 @@ export type DraftActions = {
   removePhoto: (_photoId: string) => void;
   /** 사진을 다른 자리(0부터)로 옮김(캡션은 사진을 따라감) */
   movePhoto: (_photoId: string, _toIndex: number) => void;
+  /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈(빠진 사진의 캡션도 함께 사라짐) */
+  replacePhotos: (_photos: readonly DraftPhoto[]) => void;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
 };
 
@@ -130,6 +133,7 @@ export function useDraft(draftId: string | undefined): {
       update((current) => ({ ...current, photos: removePhoto(current.photos, photoId) })),
     movePhoto: (photoId, toIndex) =>
       update((current) => ({ ...current, photos: movePhoto(current.photos, photoId, toIndex) })),
+    replacePhotos: (photos) => update((current) => ({ ...current, photos })),
     searchPlaces,
   };
 

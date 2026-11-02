@@ -97,6 +97,21 @@ describe('UploadOptionCard', () => {
     expect(button.getAttribute('type')).toBe('button');
   });
 
+  it('icon으로 사용자 아이콘을 고른다', () => {
+    const { container, rerender } = renderCard();
+    const photoPath = container.querySelector('svg')?.innerHTML;
+
+    rerender(
+      <UploadOptionCard
+        title="내 갤러리에서 가져오기"
+        description="휴대폰에 저장된 사진을 선택해요."
+        icon="user"
+      />,
+    );
+
+    expect(container.querySelector('svg')?.innerHTML).not.toBe(photoPath);
+  });
+
   it('icon으로 카메라 아이콘을 고른다', () => {
     const { container, rerender } = renderCard();
     const photoPath = container.querySelector('svg')?.innerHTML;

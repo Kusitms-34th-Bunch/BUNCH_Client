@@ -25,6 +25,14 @@ export const Camera: Story = {
   args: { title: '카메라로 찍기', description: '지금 찍은 사진을 바로 올려요.', icon: 'camera' },
 };
 
+export const User: Story = {
+  args: {
+    title: '내 갤러리에서 가져오기',
+    description: '휴대폰에 저장된 사진을 선택해요.',
+    icon: 'user',
+  },
+};
+
 /** 긴 글자는 줄바꿈해서 카드 높이가 늘어남 */
 export const LongText: Story = {
   args: {
