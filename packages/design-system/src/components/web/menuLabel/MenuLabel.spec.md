@@ -46,7 +46,7 @@
 ## 확인할 항목
 
 - 화살표 색: Figma 변수 `icon-quaternary`(#bcbec2)와 같다(2026-11-01 확인).
-- 앞 아이콘 색 (제안): 이 컴포넌트의 Figma 변수에 아이콘 색이 `icon-quaternary`·`icon-disabled`만 있어 화살표와 같은 `icon-quaternary`를 썼다. 기본 컴포넌트는 앞 아이콘이 꺼져 있어 켠 상태의 색을 화면으로 확인하지 못했다.
+- 앞 아이콘 색 (제안): 이 컴포넌트의 Figma 변수에 아이콘 색이 `icon-quaternary`·`icon-disabled`만 있어 화살표와 같은 `icon-quaternary`를 썼다. 기본 컴포넌트는 앞 아이콘이 꺼져 있어 켠 상태의 색을 화면으로 확인하지 못했다. Bottom Sheet 09(`3740:78862`)의 인스턴스는 앞 아이콘이 #25282D(`icon-secondary`)라 `PinnedPlaceSheet`는 아이콘에 색을 따로 준다. 기본값을 바꿀지 디자이너 확인 필요. 아이콘에 직접 준 색은 비활성(`group-disabled`)의 `icon-disabled`보다 우선하므로, 비활성 항목에서는 이 방식으로 덮지 않는다.
 
 ## 검증
 

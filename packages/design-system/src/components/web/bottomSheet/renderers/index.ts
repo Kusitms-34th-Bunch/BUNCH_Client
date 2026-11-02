@@ -6,4 +6,5 @@ export * from './BundleRecommendSheet';
 export * from './DateChangeSheet';
 export * from './MoreMenuSheet';
 export * from './PhotoUploadSheet';
+export * from './PinnedPlaceSheet';
 export * from './ReportSheet';
