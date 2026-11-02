@@ -21,6 +21,8 @@ export type DraftPhoto = {
   takenAt: string | null;
   /** 올린 멤버 id */
   uploaderId: string;
+  /** 사진함의 어느 사진인지(사진함에서 가져온 사진). 사진 추가 화면이 지금 번들 사진을 선택된 채 여는 기준이고, 없으면 사진함에 대응하는 사진이 없음 */
+  sourcePhotoId?: string | undefined;
 };
 
 export type DraftLocation = {

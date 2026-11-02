@@ -81,6 +81,7 @@ export const draftFixture: Draft = {
       caption: '퇴근하자마자 한강 집합! 힘들었지만 뛰고 나니 뿌듯했던 하루',
       takenAt: '2026-06-20T19:02',
       uploaderId: 'jiye',
+      sourcePhotoId: 'photo-1',
     },
     {
       id: 'draft-photo-2',
@@ -89,6 +90,7 @@ export const draftFixture: Draft = {
       caption: '',
       takenAt: '2026-06-20T19:15',
       uploaderId: 'gyeongjin',
+      sourcePhotoId: 'photo-2',
     },
     {
       id: 'draft-photo-3',
@@ -97,6 +99,7 @@ export const draftFixture: Draft = {
       caption: '',
       takenAt: '2026-06-20T19:40',
       uploaderId: 'eunwoo',
+      sourcePhotoId: 'photo-3',
     },
   ],
   locations: [
