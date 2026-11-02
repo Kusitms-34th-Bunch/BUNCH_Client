@@ -29,7 +29,7 @@ type UsePhotoSelectionFlowOptions = {
   actions: PhotoBoxActions;
   /** 「번들 만들기」 확인 뒤 호출(초안 생성과 편집 화면 이동은 번들 작성 이슈가 맡음) */
   onCreateBundle?: ((_selection: PhotoSelection) => void) | undefined;
-  /** 사진을 지우고 선택 모드를 끝낸 직후. 눌렀던 메뉴·선택 칸이 사라져 초점이 갈 곳을 잃으므로 화면이 초점을 옮기는 호출 지점 */
+  /** 삭제 요청이 끝나 선택 모드를 닫은 직후(사라진 사진이 0장인 경우도 포함). 눌렀던 메뉴·선택 칸이 사라져 초점이 갈 곳을 잃으므로 화면이 초점을 옮기는 호출 지점 */
   onDeleted?: (() => void) | undefined;
 };
 
@@ -159,7 +159,8 @@ export function usePhotoSelectionFlow({
         notify(PHOTO_BOX_MESSAGES.deleteDone(removedCount), { aboveTabBar: true });
       }
       stop();
-      if (removedCount > 0) onDeleted?.();
+      // 0장이어도 선택 모드는 끝나 눌렀던 선택 칸이 사라지므로 초점을 옮김
+      onDeleted?.();
     } catch {
       setPending(undefined);
       // 실패하면 선택을 그대로 두어 바로 다시 시도할 수 있게 함
