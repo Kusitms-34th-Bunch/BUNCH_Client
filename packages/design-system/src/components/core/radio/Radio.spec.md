@@ -29,6 +29,7 @@
 
 ## 상태와 동작
 
+- 선택 전환: 가운데 점이 절반 크기에서 커지며 나타나고(`scale` 0.5 → 1, 투명도 0 → 1), 해제되면 반대로 줄며 사라진다. 테두리 색도 함께 150ms ease-out으로 바뀐다(2026-11-02 사용자 결정, Figma에 정의 없음, `docs/architecture/motion.md`). 동작 줄이기에서는 바로 바뀐다.
 - Default: 흰 배경 + 1px `border-tertiary`.
 - Selected(`:checked`): 링이 `icon-brand`, 안쪽 지름 12px 점이 `icon-brand`.
 - Pressed(`:active`, 선택 전·활성일 때): 링과 점이 `icon-disabled`. 선택된 라디오를 누르면 Selected를 유지한다. 라디오를 감싼 `label`(카드)을 누를 때도 같은 모양이다. label 본문을 누르면 input에는 `:active`가 걸리지 않아서 `label:active` 조건을 따로 둔다(Chromium 확인).
