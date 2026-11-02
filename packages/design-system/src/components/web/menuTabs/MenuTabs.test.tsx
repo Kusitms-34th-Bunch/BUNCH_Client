@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MenuTabs } from './MenuTabs';
 
@@ -86,5 +87,11 @@ describe('MenuTabs', () => {
 
     expect(screen.getByRole('tab', { name: '번들' }).getAttribute('aria-selected')).toBe('true');
     expect(photos.getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('서버 HTML에도 선택 밑줄 위치를 넣는 스크립트를 둔다(hydration 전 밑줄 표시)', () => {
+    const html = renderToString(<Example />);
+
+    expect(html).toContain('<script');
   });
 });

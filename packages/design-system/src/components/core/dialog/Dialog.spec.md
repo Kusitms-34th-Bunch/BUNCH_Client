@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system
 - Status: 구현됨(로컬 검증, 실기기 미검증)
-- Figma: `791:11810` (SolidButton `791:11809` / TextButton `791:11808` / Profile (Side by Side) `2081:45834` / Profile (Stack) `2081:45873`)
+- Figma: `791:11810` (SolidButton `791:11809` / TextButton `791:11808` / Profile (Side by Side) `2081:45834` / Profile (Stack) `2081:45873` / Label `3537:65744`)
 
 ## 목적과 범위
 
@@ -16,7 +16,7 @@
 - `Dialog.Root`: `open: boolean`, `onOpenChange(open: boolean): void`, 선택 `onOpenChangeComplete(open: boolean): void`, `children`. 종료 콜백은 전환이 끝난 후 호출되므로 overlay 제거 시점에 쓴다.
 - `Dialog.Content`, `Media`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Media는 제목 위 56px 원형 이미지 자리 div, Title은 h2, Description은 p, Footer는 div. Content의 선택 `backdropClassName`으로 딤 전환을 조절한다.
 - `Dialog.Cancel`, `Confirm`: 기존 Button props 중 variant는 primary/secondary/warning으로 제한하고 `appearance?: 'solid' | 'text'`를 받는다. Cancel은 닫힘 요청, Confirm은 onClick만 호출한다.
-- `ConfirmDialog`: Root props + `title`, 선택 `description`, 선택 `image`(Profile (Side by Side)), `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
+- `ConfirmDialog`: Root props + `title`, 선택 `description`, 선택 `image`(Profile (Side by Side)), 선택 `children`(Label, 설명 아래 내용), `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
 - `ActionDialog`(Profile (Stack)): Root props + `title`, 선택 `description`, 선택 `image`, `actions`(`label`, `onClick`, 선택 `variant`·`disabled`), 선택 `cancelLabel`(기본 `취소`), `onCancel`. 동작 버튼은 세로로 쌓고 기본 variant는 순서대로 primary·secondary·tertiary다. 동작 버튼은 onClick만 호출하고 닫지 않는다.
 - controlled 전용. 실제 작업·비동기 상태·확인 후 닫기는 호출자가 소유한다. Base UI 타입은 공개하지 않는다.
 
@@ -43,6 +43,9 @@
 - typography-heading-1-semibold / typography-body-1-regular, text-primary / text-tertiary.
 - Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경 딤은 Figma(`791:11665`의 딤 레이어)대로 overlay-dim-subtle(검정 10%).
 - Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Stack은 위아래 16·좌우 22(내용 폭 267), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
+- Label 변형: `ConfirmDialog`의 `children`(설명 아래 내용 자리)에 번치 줄 목록을 넣는다. 내용이 있으면 제목·설명 사이 18(`mt-s9`), 설명·내용 사이 16(`mt-s8`), 좌우 22. 목록 의미와 줄 사이 6은 호출자가 정한다(Story는 web `BunchLabel`의 `InConfirmDialog`, core가 web을 import하지 않게).
+  - 지원 조합은 제목·설명·내용(Label)이다. 이미지와 내용을 함께 쓰거나 설명 없이 내용만 쓰는 모습은 Figma에 없다.
+  - 내용이 길면 내용만 스크롤하고 버튼은 늘 보인다. 첫 초점이 「취소」라 내용은 열릴 때 읽히지 않으므로, 목록에는 `aria-label`로 이름을 붙이고 설명 문구가 목록을 가리키게 쓴다.
 - Stack 이미지: Figma(`2081:45873`, 2026-11-02 확인)는 이미지를 내용 맨 위에 두고 이미지·제목 사이 6(`pt-s3`)이다. 예전 72 상자 안 위아래 8 여백은 없어졌다.
 - Story: Solid, Text, 확인 하나, 긴 글, 상호작용·Toast 공존, ProfileSideBySide, ProfileStack.
 

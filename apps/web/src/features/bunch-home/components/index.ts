@@ -10,5 +10,8 @@ export { BunchMenu } from './BunchMenu';
 export { BunchNotifications } from './BunchNotifications';
 export { BunchProfileEdit } from './BunchProfileEdit';
 export { BunchRoleGuide } from './BunchRoleGuide';
+export { FollowRequests } from './FollowRequests';
+export { MyBunchFollows } from './MyBunchFollows';
 export { OtherBunch } from './OtherBunch';
+export { OtherBunchFollows } from './OtherBunchFollows';
 export { OtherBunchMembers } from './OtherBunchMembers';

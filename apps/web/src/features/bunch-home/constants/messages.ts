@@ -68,6 +68,7 @@ export const BUNCH_HOME_MESSAGES = {
   // 다른 번치 프로필(화면설계서 2500:68583)
   privateBunchTitle: '비공개 번치예요',
   privateBunchDescription: '번들을 보려면 이 번치를 팔로우하세요.',
+  privateListDescription: '목록을 보려면 이 번치를 팔로우하세요.',
   followingPublic: '공개 번치',
   followingPrivate: '비공개 번치',
   requestPending: '요청 대기 중인 비공개 번치',
@@ -77,6 +78,14 @@ export const BUNCH_HOME_MESSAGES = {
   followRequested: (bunchName: string) => `${bunchName} 번치에 팔로우를 요청했어요.`,
   unfollowed: (bunchName: string) => `${bunchName} 번치 팔로우를 취소했어요.`,
   requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
+  // 팔로워·팔로잉 목록과 팔로우 요청(화면설계서 2500:71333·2500:72664)
+  followRequestsBanner: (count: number) => `팔로우 요청 ${count}`,
+  pendingRequests: (count: number) => `대기 중인 요청 ${count}개`,
+  requestApproved: (bunchName: string) => `${bunchName} 번치의 팔로우 요청을 승인했어요.`,
+  requestRejected: (bunchName: string) => `${bunchName} 번치의 팔로우를 거절했어요.`,
+  followersEmpty: '아직 팔로워가 없어요.',
+  followingEmpty: '아직 팔로우하는 번치가 없어요.',
+  requestsEmpty: '대기 중인 팔로우 요청이 없어요.',
   noBunchTitle: '참여 중인 번치가 없어요',
   noBunchDescription: '새 번치를 만들거나 초대받은 번치에 참여해보세요.',
   // 차단 목록(화면설계서 2236:40175 2~3번)

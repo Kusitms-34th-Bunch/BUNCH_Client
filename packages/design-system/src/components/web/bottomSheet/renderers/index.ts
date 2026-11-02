@@ -7,4 +7,5 @@ export * from './DateChangeSheet';
 export * from './MoreMenuSheet';
 export * from './PhotoImportSheet';
 export * from './PhotoUploadSheet';
+export * from './PinnedPlaceSheet';
 export * from './ReportSheet';
