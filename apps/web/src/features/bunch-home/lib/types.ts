@@ -95,3 +95,24 @@ export type BunchNotification = {
   /** 처음 받았을 때 읽지 않음이면 true(읽음 처리는 저장소가 덮어씀) */
   unread: boolean;
 };
+
+/** 내 번치(지금 번치)가 다른 번치를 팔로우하는 상태. 비공개 번치는 요청 뒤 승인까지 「요청됨」 */
+export type FollowStatus = 'none' | 'requested' | 'following';
+
+/** 다른 번치 프로필(기능명세 5.10). 팔로워 수는 팔로우 상태에 따라 화면이 다시 계산 */
+export type OtherBunch = Pick<
+  BunchHomeDetail,
+  | 'id'
+  | 'name'
+  | 'imageSrc'
+  | 'description'
+  | 'isPrivate'
+  | 'followerCount'
+  | 'followingCount'
+  | 'memberCount'
+  | 'completedBundles'
+> & {
+  /** 처음 받은 팔로우 상태(팔로우 처리 결과는 저장소가 덮어씀) */
+  followStatus: FollowStatus;
+  members: readonly BunchMember[];
+};

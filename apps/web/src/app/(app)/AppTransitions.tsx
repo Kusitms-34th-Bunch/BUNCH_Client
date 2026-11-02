@@ -189,6 +189,25 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 다른 번치 프로필(지금 입구는 피드 임시 링크)과 그 멤버 목록도 한 단계 들어가는 drill
+  {
+    from: MAIN_TAB_PATHS.feed,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    to: BUNCH_HOME_PATHS.notifications,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunchMembers,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
   // 알림 아이콘 → 알림 목록도 메뉴와 같은 drill(화면설계서 2236:41816 3번 Move in ←과 방향 같음)
   {
     from: BUNCH_HOME_PATHS.home,
