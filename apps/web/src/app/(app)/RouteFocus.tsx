@@ -7,13 +7,14 @@ import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 const tabPaths: readonly string[] = Object.values(MAIN_TAB_PATHS);
 // 전환 중 나가는 화면(AppTransitions)과 열린 모달 바깥(Base UI)은 inert
 const OUTSIDE = '[inert], [data-page-leaving]';
+const SELECTED_TAB = '[data-main-tab-bar] [aria-current="page"]';
 
 const findHeading = () =>
   [...document.querySelectorAll('h1')].find((heading) => !heading.closest(OUTSIDE));
 
 /**
  * 다른 화면으로 이동하면(앞으로·뒤로) 새 화면의 h1으로 초점(docs/architecture/web-interface-guidelines.md)
- * 처음 로드는 브라우저 기본, 하단 탭 루트끼리 이동은 누른 탭에 초점 유지
+ * 처음 로드는 브라우저 기본, 하단 탭을 눌러 탭 루트끼리 이동하면 누른 탭에 초점 유지
  */
 export function RouteFocus() {
   const pathname = usePathname();
@@ -22,7 +23,10 @@ export function RouteFocus() {
   useEffect(() => {
     const from = previous.current;
     previous.current = pathname;
-    if (from === pathname || (tabPaths.includes(from) && tabPaths.includes(pathname))) return;
+    if (from === pathname) return;
+    // 하단 탭을 눌러 옮겼으면 누른(지금 선택된) 탭에 초점 유지. 뒤로·앞으로 가기는 이전 탭에 초점이 남아 새 화면 h1으로
+    const tabSwitch = tabPaths.includes(from) && tabPaths.includes(pathname);
+    if (tabSwitch && document.activeElement?.closest(SELECTED_TAB)) return;
 
     // 이동을 누른 요소(나가는 화면·닫히는 모달 안)와 이 컴포넌트가 준 제목 초점은 남은 초점으로 보지 않음
     const pressed = document.activeElement;

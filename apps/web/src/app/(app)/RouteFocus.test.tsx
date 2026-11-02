@@ -156,16 +156,43 @@ describe('RouteFocus', () => {
     );
   });
 
-  it('하단 탭끼리 이동하면 누른 탭의 초점을 그대로 둔다', async () => {
+  // 탭 막대는 (main) 레이아웃에 있어 화면이 바뀌어도 남고, 지금 탭에 aria-current="page"
+  function TabScreen({ selected, title }: { selected: '/feed' | '/photos'; title: string }) {
+    return (
+      <>
+        <h1>{title}</h1>
+        <nav data-main-tab-bar="">
+          {(['/feed', '/photos'] as const).map((path) => (
+            <a key={path} href={path} {...(path === selected && { 'aria-current': 'page' })}>
+              {path === '/feed' ? '피드' : '사진함'}
+            </a>
+          ))}
+        </nav>
+      </>
+    );
+  }
+
+  it('하단 탭을 눌러 옮기면 누른 탭의 초점을 그대로 둔다', async () => {
     navigation.pathname = '/feed';
-    const { rerender } = renderScreen(<Screen title="피드" />);
-    const tab = screen.getByRole('button', { name: '누른 버튼' });
-    tab.focus();
+    const { rerender } = renderScreen(<TabScreen selected="/feed" title="피드" />);
+    const photosTab = screen.getByRole('link', { name: '사진함' });
+    photosTab.focus();
 
-    navigate(rerender, '/photos', <Screen title="사진함" />);
+    navigate(rerender, '/photos', <TabScreen selected="/photos" title="사진함" />);
 
     await new Promise((resolve) => requestAnimationFrame(resolve));
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    expect(tab).toHaveFocus();
+    expect(photosTab).toHaveFocus();
+  });
+
+  it('뒤로 가기로 탭 루트에 돌아오면 이전 탭에 남은 초점 대신 새 화면 h1으로 옮긴다', async () => {
+    navigation.pathname = '/photos';
+    const { rerender } = renderScreen(<TabScreen selected="/photos" title="사진함" />);
+    // 앞서 누른 사진함 탭에 초점이 남은 채로 브라우저 뒤로 가기
+    screen.getByRole('link', { name: '사진함' }).focus();
+
+    navigate(rerender, '/feed', <TabScreen selected="/feed" title="피드" />);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '피드' })).toHaveFocus());
   });
 });
