@@ -26,7 +26,7 @@
 
 - Path: `/bunch/menu`. params·search 없음. 탭 경로 밖이라 iOS 앱에서는 시스템 탭 바가 숨는다(결정 기록 012).
 - 접근 권한·guard: 아직 없다(로그인·번치 API 미연결). 이름·역할은 번치 홈에서 고른 fixture 번치(`useCurrentBunchId`)를 따른다. 퇴근런클럽(비공개) 메인 관리자, 여행가조 공동 관리자, 큐시즘 기프 일반 멤버다. 프로필 편집의 공개 전환 안내를 보려면 비공개인 번치가 메인 관리자여야 해서 이렇게 둔다. 서버가 요청 시점의 역할로 다시 판단해야 한다.
-- 진입: 번치 홈 헤더 「더보기」 링크(`Link`, 새 탭 열기·가운데 클릭 지원). 화면설계서(`1892:37780`)대로 메뉴가 번치 홈 위를 덮으며 들어오고(Move in / ← / Ease out / 150ms), 뒤로 가면 위에서 빠진다(Move out / →). 전환 경계는 page의 `data-ssgoi-transition`, 규칙은 `AppTransitions`다(`docs/architecture/motion.md`).
+- 진입: 번치 홈 헤더 「더보기」 링크(`Link`, 새 탭 열기·가운데 클릭 지원). 메뉴는 SSGOI `drill` 프리셋으로 오른쪽에서 들어오고 번치 홈은 왼쪽으로 20% 함께 밀린다. 뒤로 가면 반대로 움직인다(Ease out / 200ms. 화면설계서 `1892:37780`의 150ms보다 길게 했고, 뒤 화면이 움직이는 점도 설계서와 다름). 전환 경계는 page의 `data-ssgoi-transition`, 규칙은 `AppTransitions`다(`docs/architecture/motion.md`).
 - 뒤로 가기: 기록이 있으면 `router.back()`, 직접 진입이라 없으면 번치 홈으로 `replace`. 기록 유무는 `window.history.length > 1`로만 판단한다(사진 상세와 같은 방식).
 - Layout: `(app)` layout 안에서 `PageShell` 한 번. `robots: noindex`.
 

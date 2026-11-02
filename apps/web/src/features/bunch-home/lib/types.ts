@@ -84,3 +84,14 @@ export type BunchHomeActions = {
   /** 접근 불가 번치를 전환 목록에서 지움(「번치 목록에서 삭제」) */
   removeBunch: (_bunchId: string) => void;
 };
+
+/** 번치 알림 한 건(기능명세 5.12). 시각 글자 형식은 API 연결 때 정함 */
+export type BunchNotification = {
+  id: string;
+  title: string;
+  description: string;
+  /** 시각 글자(예: 「방금 전」) */
+  time: string;
+  /** 처음 받았을 때 읽지 않음이면 true(읽음 처리는 저장소가 덮어씀) */
+  unread: boolean;
+};

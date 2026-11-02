@@ -16,7 +16,7 @@ export function AppFrame({ children }: AppFrameProps) {
   return (
     <div
       data-app-frame
-      className="has-[[data-app-background=brand-subtle-1]:not([data-page-leaving],[data-page-leaving]_*)]:bg-surface-brand-subtle-1 bg-surface-primary mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col pt-(--safe-area-top) pr-(--safe-area-right) pb-(--safe-area-bottom) pl-(--safe-area-left) has-data-app-background-instant:transition-none motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:has-data-main-tab-bar:duration-80 motion-safe:has-data-main-tab-bar:ease-linear"
+      className="has-[[data-app-background=brand-subtle-1]:not([data-page-leaving],[data-page-leaving]_*)]:bg-surface-brand-subtle-1 has-[[data-app-background=secondary]:not([data-page-leaving],[data-page-leaving]_*)]:bg-surface-secondary bg-surface-primary mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col pt-(--safe-area-top) pr-(--safe-area-right) pb-(--safe-area-bottom) pl-(--safe-area-left) has-data-app-background-instant:transition-none motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:has-data-main-tab-bar:duration-80 motion-safe:has-data-main-tab-bar:ease-linear"
     >
       {children}
     </div>

@@ -48,6 +48,10 @@ export const BUNCH_HOME_MESSAGES = {
   aloneDescription: '더 이상 사용하지 않는 번치는 삭제할 수 있어요.',
   leaveTransferTitle: '관리자 권한을 넘길 멤버를 정해주세요.',
   leaveTransferDescription: '선택한 멤버가 새로운 관리자가 돼요.',
+  // 알림 목록(Figma 1892:36947)
+  notificationSettingsNudge: '알림 받기를 설정하고 유용한 알림을 받아보세요.',
+  readAllDone: '모든 알림을 읽음으로 바꿨어요.',
+  nothingToRead: '읽지 않은 알림이 없어요.',
   // 번치 삭제(화면설계서 2236:41816)
   deleteTitle: (bunchName: string) => `${bunchName}${objectParticle(bunchName)} 삭제할까요?`,
   deletedItems: ['사진함 속 사진', '작성 중이거나 발행된 번들', '팔로우・좋아요・댓글'],
