@@ -37,9 +37,9 @@ const SIZES: [IconSize, number][] = [
 ];
 
 describe('Icons', () => {
-  it('Line 29종과 Fill 8종을 아이콘 하나씩 제공한다', () => {
-    expect(Object.keys(dynamicIcons)).toHaveLength(37);
-    expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Line'))).toHaveLength(29);
+  it('Line 30종과 Fill 8종을 아이콘 하나씩 제공한다', () => {
+    expect(Object.keys(dynamicIcons)).toHaveLength(38);
+    expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Line'))).toHaveLength(30);
     expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Fill'))).toHaveLength(8);
   });
 
@@ -59,7 +59,7 @@ describe('Icons', () => {
   });
 
   it('fixed exports preserve the exact geometry and accessibility of every size', () => {
-    expect(Object.keys(icons)).toHaveLength(160);
+    expect(Object.keys(icons)).toHaveLength(164);
     for (const [name, Icon] of Object.entries(dynamicIcons)) {
       for (const [size, label] of [
         ['sm', 'Small'],

@@ -133,6 +133,8 @@ export type ConfirmDialogProps = Omit<DialogRootProps, 'children'> & {
   description?: string;
   /** 제목 위 프로필 이미지(Figma Profile (Side by Side)) */
   image?: ReactNode;
+  /** 설명 아래 내용(Figma Label: 번치 줄 목록). 목록 의미·간격은 호출자 담당 */
+  children?: ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
   onConfirm: () => void;
@@ -144,6 +146,7 @@ export const ConfirmDialog = ({
   title,
   description,
   image,
+  children,
   confirmLabel,
   cancelLabel,
   onConfirm,
@@ -166,8 +169,15 @@ export const ConfirmDialog = ({
       {image ? <Media>{image}</Media> : null}
       {/* 이미지가 있으면 Figma Profile 간격(이미지·제목·설명 사이 6px) 적용 */}
       <Title className={image ? 'pt-s3' : undefined}>{title}</Title>
+      {/* 내용이 있으면 Figma Label 간격(제목·설명 사이 18, 설명·내용 사이 16) */}
       {description ? (
-        <Description className={image ? 'mt-s3' : undefined}>{description}</Description>
+        <Description className={image ? 'mt-s3' : children ? 'mt-s9' : undefined}>
+          {description}
+        </Description>
+      ) : null}
+      {/* 내용이 길면 내용만 스크롤하고 버튼은 늘 보임. 위아래 4px은 초점 테두리가 잘리지 않을 여백(간격은 16 유지) */}
+      {children ? (
+        <div className="mt-s6 px-padding-p11 -mb-1 min-h-0 overflow-y-auto py-1">{children}</div>
       ) : null}
       <Footer>
         {cancelLabel ? (
