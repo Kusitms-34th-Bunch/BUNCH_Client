@@ -266,6 +266,10 @@ describe('삭제', () => {
       }),
     );
     expect(screen.getByRole('button', { name: '선택' })).toBeTruthy();
+    // 눌렀던 메뉴·선택 칸이 사라지므로 초점은 body가 아니라 화면 제목으로 감
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 })),
+    );
   });
 
   it('사라진 사진이 0장이면 토스트를 띄우지 않는다', async () => {
@@ -281,6 +285,10 @@ describe('삭제', () => {
 
     await waitFor(() => expect(screen.getByRole('button', { name: '선택' })).toBeTruthy());
     expect(toast).not.toHaveBeenCalled();
+    // 사라진 사진이 0장이어도 선택 모드는 끝나므로 초점은 화면 제목으로 감
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 })),
+    );
   });
 
   it('일반 멤버가 다른 멤버 사진을 섞어 고르면 지우지 않고 안내한다', async () => {

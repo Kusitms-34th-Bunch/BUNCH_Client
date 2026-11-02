@@ -40,13 +40,15 @@
 ## 상태와 흐름
 
 - 상태는 `useDraft`(layout `DraftProvider`)의 `photos`이고 `setPhotoCaption`·`removePhoto`·`movePhoto`로 바꾼다. 바꾸면 작성 화면이 「저장 중」이 되고 반영은 바로 보인다. 이 흐름을 벗어나거나 새로고침하면 초기화된다.
-- 사진 로직(캡션 자르기, 빼기 종류, 이동)은 `lib/photos.ts`의 순수 함수다.
+- 사진 로직(캡션 자르기, 빼기 종류, 이동)은 `lib/photos.ts`의 순수 함수다. 화면은 흐름별 hook으로 나뉜다: 가운데 사진 번호·스크롤·스냅·포커스(`usePhotoListScroll`), 사진 빼기와 삭제 이동(`usePhotoRemoval`, 스크롤 보정이 이동보다 먼저 실행되는 순서에 의존), 끌어서 순서 바꾸기(`usePhotoReorder`). 사진 한 장은 `DraftPhotoCard`, 키보드 옮기기 버튼은 `PhotoMoveButtons`.
+- 사진을 뺀 뒤 초점은 같은 자리에 온 사진의 「크게 보기」 버튼으로 간다. `web-interface-guidelines.md`의 「같은 화면에서 항목이 사라지면 가장 가까운 요약 줄이나 제목」에서 가장 가까운 항목이 이웃 사진이고, 제목으로 보내면 읽기 위치를 잃어서다. 남은 장수는 낭독(`role="status"`)으로 알린다.
 - 끌기는 `@dnd-kit/core`·`sortable`(기록 016)이고 `MouseSensor`·`TouchSensor`만 쓴다. 놓으면 `movePhoto(id, 놓인 사진의 자리)`를 한 번 호출하고 옮긴 사진이 가운데 오게 스크롤한다.
 
 ## UI와 접근성
 
 - 사용 컴포넌트: `Header`·`HeaderIconButton`(`PageShell`), `BundlePhoto`(올린 멤버·카운터), `DeleteButton`(L, overlay), `AddBundlePhoto`, 확인 창 `ConfirmDialog`·`Dialog`, 크게 보기는 photo-box의 `PhotoDetailSlide`·`PhotoDetailMenu`(「날짜 바꾸기」 없는 `withDate={false}`)와 Swiper.
 - 사진 전체를 덮는 버튼(「N번째 사진 크게 보기」)이 키보드·스크린 리더의 진입점이고, X는 그 위에 따로 얹어 각각 누를 수 있다. 정렬 항목은 `useSortable`의 `attributes`(role·tabindex)를 붙이지 않고 포인터 센서만 쓴다.
+- 화면 제목 `h1`(「번들 사진」, `sr-only`)을 하나 둔다. 코어 `Header`의 제목은 `h1`이 아니라서, 화면 이동 뒤 초점이 가는 곳(`RouteFocus`, `web-interface-guidelines.md`의 「화면 이동 뒤 초점」)으로 따로 둔다.
 - 현재 사진 위치는 `role="status"`(「N장 중 M번째 사진」)로 알리고, 크게 보기는 포커스가 있을 때만 보이는 이전·다음·확대 버튼을 둔다(기록 015).
 - 빼면 눌렀던 X가 사라지므로 같은 자리에 온 사진의 「크게 보기」 버튼(크게 보기에서는 ⋯)으로 포커스를 옮기고, 캡션 화면은 「사진을 뺐어요. N장이 남았어요.」를 낭독한다(확인 창을 거치면 창이 닫힌 뒤). 옮긴 결과와 빼기 낭독은 같은 자리를 보는 동안만 위치 낭독보다 앞서고, 다른 사진으로 넘기면 위치 낭독으로 돌아온다.
 - X 버튼 이름은 「N번째 사진 빼기」로 번호를 넣어 구분한다.
