@@ -1,6 +1,6 @@
 import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
-import { MAX_PHOTOS } from '../constants/messages';
 import type { Draft, DraftPhoto, DraftViewer } from './types';
+import { MAX_PHOTOS } from '../constants/messages';
 import { getPhotoEditors } from './photos';
 
 /** 사진함 사진으로 번들 사진을 만들 때의 id: 사진함 사진 id에 `draft-`를 붙임(같은 사진을 다시 더해도 같은 id) */

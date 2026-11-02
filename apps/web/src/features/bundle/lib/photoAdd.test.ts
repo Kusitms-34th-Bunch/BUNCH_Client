@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
+import type { Draft, DraftPhoto } from './types';
 import { draftFixture } from '../fixtures/draft.fixture';
 import {
   applySelection,
@@ -12,7 +13,6 @@ import {
   toDraftPhoto,
   toDraftPhotoId,
 } from './photoAdd';
-import type { Draft, DraftPhoto } from './types';
 
 const draftPhoto = (id: string, sourcePhotoId?: string, caption = ''): DraftPhoto => ({
   id,
