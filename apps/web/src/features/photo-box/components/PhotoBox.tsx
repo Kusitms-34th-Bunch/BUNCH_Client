@@ -43,16 +43,15 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
 
   return (
     <>
-      <PhotoBoxScreen state={state} actions={actions} onCreateBundle={createBundle} />
-      {/* 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
-      {creating ? (
-        <>
-          <p role="status" className="sr-only">
-            {PHOTO_BOX_MESSAGES.bundleCreating}
-          </p>
-          <PageLoading />
-        </>
-      ) : null}
+      {/* 만드는 동안은 아래 화면을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(레이아웃은 그대로 두려고 contents) */}
+      <div className="contents" inert={creating}>
+        <PhotoBoxScreen state={state} actions={actions} onCreateBundle={createBundle} />
+      </div>
+      {/* 안내 live region은 항상 마운트하고 문구만 바꿈. 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
+      <p role="status" className="sr-only">
+        {creating ? PHOTO_BOX_MESSAGES.bundleCreating : ''}
+      </p>
+      {creating ? <PageLoading /> : null}
     </>
   );
 }
