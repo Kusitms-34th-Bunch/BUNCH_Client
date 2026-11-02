@@ -6,6 +6,7 @@ export * from './addMemberCard';
 export * from './bottomNavigation';
 export * from './bottomSheet';
 export * from './bunchAvatar';
+export * from './bunchLabel';
 export * from './bunchListItem';
 export * from './bunchRadioItem';
 export * from './bundleCard';
