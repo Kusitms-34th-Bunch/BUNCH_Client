@@ -54,7 +54,7 @@ export type MenuTabsPanelProps = {
 
 const Root = (props: MenuTabsRootProps) => <Tabs.Root {...props} />;
 
-// 선택 밑줄은 탭마다 그리지 않고 하나를 선택된 탭 위치로 옮김(밑줄 이동 200ms ease-out, 사용자 결정 2026-11-02)
+// 선택 밑줄은 탭마다 그리지 않고 하나를 선택된 탭 위치로 옮김(밑줄 이동 250ms ease-out, 사용자 결정 2026-11-02)
 const INDICATOR = {
   text: 'h-0.5 bg-chip-gray-fg',
   icon: 'h-px bg-icon-tertiary',
@@ -67,7 +67,7 @@ const List = ({ className, variant = 'text', children, ...props }: MenuTabsListP
     <Tabs.Indicator
       renderBeforeHydration
       className={cn(
-        'pointer-events-none absolute bottom-0 left-(--active-tab-left) w-(--active-tab-width) transition-[left,width] duration-200 ease-out motion-reduce:transition-none',
+        'pointer-events-none absolute bottom-0 left-(--active-tab-left) w-(--active-tab-width) transition-[left,width] duration-250 ease-out motion-reduce:transition-none',
         // 강제 색상 모드는 배경색을 덮으므로 시스템 글자색으로 그림
         'forced-colors:bg-[CanvasText] forced-colors:forced-color-adjust-none',
         INDICATOR[variant],

@@ -29,7 +29,7 @@
 - 선택: 글자 `text-primary`, 아래 2px 선 `chip-gray-fg`.
 - 탭 폭은 글자에 맞춘다(Figma 120px은 「팔로워 120」 + 좌우 22에 맞는 값).
 - 아이콘 탭: 36×40(아이콘 20, 좌우 8·위아래 10). 기본은 Line 아이콘 `icon-quaternary`와 1px 밑줄 `border-tertiary`, 선택은 Fill 아이콘 `icon-tertiary`와 밑줄 `icon-tertiary`, 누르는 동안 `overlay-hover`, 비활성은 흐림(40%)과 밑줄 `border-disabled`. 밑줄은 Figma처럼 높이 안쪽에 그린다. 탭을 바꾸면 아이콘(겹쳐 둔 Line·Fill의 투명도)·색은 Dissolve / Ease out / 75ms로 바뀐다(화면설계서 `1892:37781` 3번). 동작 줄이기에서는 즉시 바뀐다.
-- 선택 밑줄은 탭마다 그리지 않고 `List` 안의 Base UI `Tabs.Indicator` 하나가 선택된 탭 위치·폭(`--active-tab-left`·`--active-tab-width`)으로 200ms ease-out에 걸쳐 미끄러진다(2026-11-02 사용자 결정. 화면설계서의 밑줄 Dissolve와 달라 디자이너 확인 필요). `List`의 `variant`로 모양을 고른다: `text`(기본, 2px `chip-gray-fg`), `icon`(1px `icon-tertiary`, 탭마다 있는 회색 1px 선 위). 동작 줄이기에서는 바로 옮긴다. 첫 화면에서 밑줄이 늦게 나타나지 않도록 `renderBeforeHydration`(서버 HTML의 인라인 스크립트)을 켠다. CSP를 도입하면 이 스크립트를 허용해야 한다. 강제 색상(고대비) 모드에서는 밑줄을 `CanvasText`로 그린다. 선택된 탭을 비활성으로 만들면 밑줄은 흐려지지 않는다(지금 사용처 없음).
+- 선택 밑줄은 탭마다 그리지 않고 `List` 안의 Base UI `Tabs.Indicator` 하나가 선택된 탭 위치·폭(`--active-tab-left`·`--active-tab-width`)으로 250ms ease-out에 걸쳐 미끄러진다(2026-11-02 사용자 결정, 이동 거리가 길어 200ms에서 늘림. 화면설계서의 밑줄 Dissolve와 달라 디자이너 확인 필요). `List`의 `variant`로 모양을 고른다: `text`(기본, 2px `chip-gray-fg`), `icon`(1px `icon-tertiary`, 탭마다 있는 회색 1px 선 위). 동작 줄이기에서는 바로 옮긴다. 첫 화면에서 밑줄이 늦게 나타나지 않도록 `renderBeforeHydration`(서버 HTML의 인라인 스크립트)을 켠다. CSP를 도입하면 이 스크립트를 허용해야 한다. 강제 색상(고대비) 모드에서는 밑줄을 `CanvasText`로 그린다. 선택된 탭을 비활성으로 만들면 밑줄은 흐려지지 않는다(지금 사용처 없음).
 - 키보드: 좌우 방향키로 초점 이동(끝에서 처음으로 돌아감), Enter·Space로 선택(Base UI 기본 `activateOnFocus: false`). 탭을 바꿀 때 목록을 불러오는 화면이라 방향키만으로 선택하지 않는다. 호출자가 `MenuTabs.List`에 `activateOnFocus`를 넘겨 바꿀 수 있다.
 
 ## 접근성
