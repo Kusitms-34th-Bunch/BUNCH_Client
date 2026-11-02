@@ -68,6 +68,7 @@ export const BUNCH_HOME_MESSAGES = {
   // 다른 번치 프로필(화면설계서 2500:68583)
   privateBunchTitle: '비공개 번치예요',
   privateBunchDescription: '번들을 보려면 이 번치를 팔로우하세요.',
+  privateListDescription: '목록을 보려면 이 번치를 팔로우하세요.',
   followingPublic: '공개 번치',
   followingPrivate: '비공개 번치',
   requestPending: '요청 대기 중인 비공개 번치',

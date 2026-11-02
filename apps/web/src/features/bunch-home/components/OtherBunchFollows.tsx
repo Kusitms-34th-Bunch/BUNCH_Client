@@ -18,7 +18,7 @@ export function OtherBunchFollows({
   const router = useRouter();
   const bunch = findOtherBunch(bunchId);
   // 내가 이 번치를 팔로우하면 팔로워 수도 프로필처럼 한 명 늘어남
-  const { followerCount } = useBunchFollow(bunch);
+  const { status, followerCount } = useBunchFollow(bunch);
   const { followers, following, follow, unfollow } = useFollowList(bunch?.id);
   if (!bunch) notFound();
 
@@ -30,6 +30,7 @@ export function OtherBunchFollows({
       followers={followers}
       following={following}
       initialTab={initialTab}
+      locked={bunch.isPrivate && status !== 'following'}
       onBack={() =>
         window.history.length > 1
           ? router.back()

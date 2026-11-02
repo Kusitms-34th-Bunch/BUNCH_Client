@@ -82,6 +82,10 @@ describe('OtherBunch 비공개 번치', () => {
     const user = userEvent.setup();
     render(<OtherBunch bunchId="bunch-book" />);
 
+    // 승인 전에는 수치만 보이고 팔로워·팔로잉·멤버 목록 링크는 없음
+    expect(screen.getByText('팔로워').parentElement).toHaveTextContent('32팔로워');
+    expect(screen.queryByRole('link', { name: /팔로워|팔로잉|멤버/ })).toBeNull();
+
     expect(screen.getByRole('region', { name: '비공개 번치예요' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: '번들' })).toBeNull();
 
@@ -108,10 +112,19 @@ describe('OtherBunch 비공개 번치', () => {
 
 describe('OtherBunchMembers', () => {
   it('그 번치의 멤버를 관리 동작 없이 보여 준다', () => {
+    render(<OtherBunchMembers bunchId="bunch-camping" />);
+
+    expect(screen.getByRole('heading', { level: 1, name: '캠핑러버 멤버' })).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(4);
+    expect(screen.queryByRole('button', { name: /관리|더보기/ })).toBeNull();
+  });
+
+  it('팔로우 승인 전의 비공개 번치는 멤버 명단 대신 안내를 보인다', () => {
     render(<OtherBunchMembers bunchId="bunch-book" />);
 
-    expect(screen.getByRole('heading', { level: 1, name: '책방산책 멤버' })).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(6);
-    expect(screen.queryByRole('button', { name: /관리|더보기/ })).toBeNull();
+    expect(screen.getByRole('region', { name: '비공개 번치예요' })).toHaveTextContent(
+      '목록을 보려면 이 번치를 팔로우하세요.',
+    );
+    expect(screen.queryByRole('listitem')).toBeNull();
   });
 });

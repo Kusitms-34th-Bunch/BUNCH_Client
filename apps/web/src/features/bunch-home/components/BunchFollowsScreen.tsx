@@ -7,6 +7,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { FollowBunch, FollowStatus } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { PrivateBunchNotice } from './PrivateBunchNotice';
 
 export type FollowsTab = 'followers' | 'following';
 
@@ -20,6 +21,8 @@ type BunchFollowsScreenProps = {
   following: readonly FollowBunch[];
   /** 프로필에서 누른 수(팔로워·팔로잉)의 탭 */
   initialTab: FollowsTab;
+  /** 팔로우 승인 전의 비공개 번치: 목록 대신 안내(주소로 직접 들어온 경우) */
+  locked?: boolean | undefined;
   /** 내 번치의 대기 중인 팔로우 요청 수. 0이거나 없으면 「팔로우 요청」 줄을 숨김 */
   pendingRequestCount?: number | undefined;
   onOpenRequests?: (() => void) | undefined;
@@ -56,6 +59,7 @@ export function BunchFollowsScreen({
   followers,
   following,
   initialTab,
+  locked = false,
   pendingRequestCount = 0,
   onOpenRequests,
   onBack,
@@ -129,7 +133,12 @@ export function BunchFollowsScreen({
       }
     >
       <h1 className="sr-only">{bunchName ? `${bunchName} 팔로워·팔로잉` : '팔로워·팔로잉'}</h1>
-      {bunchName !== undefined ? (
+      {locked ? (
+        <PrivateBunchNotice
+          description={BUNCH_HOME_MESSAGES.privateListDescription}
+          className="mx-padding-p8 mt-s6"
+        />
+      ) : bunchName !== undefined ? (
         // 탭 아래 12, 요청 줄과 목록 사이 12(Figma 2500:73493)
         <MenuTabs.Root
           value={tab}

@@ -1,14 +1,9 @@
 'use client';
 
-import {
-  Header,
-  LineBellLargeIcon,
-  LineChevronLeftLargeIcon,
-  LineLockLargeIcon,
-} from '@app/design-system';
+import { Header, LineBellLargeIcon, LineChevronLeftLargeIcon } from '@app/design-system';
 import { FollowButton } from '@app/design-system/web';
 import Link from 'next/link';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { FollowStatus, OtherBunch } from '../lib/types';
@@ -18,6 +13,7 @@ import { headerIconLinkClass } from './BunchHomeHeader';
 import { BunchProfile } from './BunchProfile';
 import { CompletedBundleGrid } from './CompletedBundleGrid';
 import { FollowCancelSheet } from './FollowCancelSheet';
+import { PrivateBunchNotice } from './PrivateBunchNotice';
 
 type OtherBunchScreenProps = {
   bunch: OtherBunch;
@@ -48,7 +44,6 @@ export function OtherBunchScreen({
   // 시트를 연 때의 상태(취소한 뒤 닫히는 동안 문구가 바뀌지 않게)
   const [sheetFor, setSheetFor] = useState<FollowStatus>('following');
   const locked = bunch.isPrivate && status !== 'following';
-  const lockedTitleId = useId();
   // 버튼 이름만 바뀌면 스크린 리더가 결과를 놓칠 수 있어 상태 영역으로도 알림
   const [announcement, setAnnouncement] = useState('');
   const follow = () => {
@@ -99,11 +94,16 @@ export function OtherBunchScreen({
             <BunchProfile
               bunch={{ ...bunch, followerCount }}
               showPlaces={false}
-              countHrefs={{
-                followerCount: BUNCH_HOME_PATHS.otherBunchFollows(bunch.id),
-                followingCount: followingTab(BUNCH_HOME_PATHS.otherBunchFollows(bunch.id)),
-                memberCount: BUNCH_HOME_PATHS.otherBunchMembers(bunch.id),
-              }}
+              // 비공개 번치는 승인 전에 수치만 보이고 목록은 열 수 없음(기능명세 5.10)
+              countHrefs={
+                locked
+                  ? undefined
+                  : {
+                      followerCount: BUNCH_HOME_PATHS.otherBunchFollows(bunch.id),
+                      followingCount: followingTab(BUNCH_HOME_PATHS.otherBunchFollows(bunch.id)),
+                      memberCount: BUNCH_HOME_PATHS.otherBunchMembers(bunch.id),
+                    }
+              }
             />
             <div className="px-padding-p8">
               <FollowButton
@@ -119,23 +119,10 @@ export function OtherBunchScreen({
             </div>
           </div>
           {locked ? (
-            // Figma 3086:68654: 회색 상자 r12·위아래 40, 자물쇠 원 40과 글자 사이 20
-            <section
-              aria-labelledby={lockedTitleId}
-              className="mx-padding-p8 bg-surface-secondary rounded-r6 py-padding-p18 px-padding-p8 gap-s10 flex flex-col items-center text-center"
-            >
-              <span className="bg-surface-tertiary rounded-r10 text-icon-tertiary flex size-10 items-center justify-center">
-                <LineLockLargeIcon />
-              </span>
-              <div>
-                <h2 id={lockedTitleId} className="typography-body-1-medium text-text-primary">
-                  {BUNCH_HOME_MESSAGES.privateBunchTitle}
-                </h2>
-                <p className="typography-body-4-regular text-text-tertiary break-keep">
-                  {BUNCH_HOME_MESSAGES.privateBunchDescription}
-                </p>
-              </div>
-            </section>
+            <PrivateBunchNotice
+              description={BUNCH_HOME_MESSAGES.privateBunchDescription}
+              className="mx-padding-p8"
+            />
           ) : (
             <section aria-label="번들">
               <CompletedBundleGrid bundles={bunch.completedBundles} />

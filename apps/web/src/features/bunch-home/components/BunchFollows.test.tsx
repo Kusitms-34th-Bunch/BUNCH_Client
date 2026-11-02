@@ -69,12 +69,25 @@ describe('다른 번치 팔로워·팔로잉', () => {
     const user = userEvent.setup();
     const { OtherBunchFollows } = await import('./OtherBunchFollows');
     const { OtherBunch } = await import('./OtherBunch');
-    const { unmount } = render(<OtherBunchFollows bunchId="bunch-book" initialTab="following" />);
+    const { unmount } = render(
+      <OtherBunchFollows bunchId="bunch-camping" initialTab="followers" />,
+    );
 
-    await user.click(screen.getByRole('button', { name: '캠핑러버 팔로우' }));
+    await user.click(screen.getByRole('button', { name: '책방산책 팔로우' }));
     unmount();
-    render(<OtherBunch bunchId="bunch-camping" />);
-    expect(screen.getByRole('button', { name: '팔로잉' })).toBeInTheDocument();
+    render(<OtherBunch bunchId="bunch-book" />);
+    expect(screen.getByRole('button', { name: '팔로우 요청됨' })).toBeInTheDocument();
+  });
+
+  it('팔로우 승인 전의 비공개 번치는 주소로 들어와도 목록 대신 안내를 보인다', async () => {
+    const { OtherBunchFollows } = await import('./OtherBunchFollows');
+    render(<OtherBunchFollows bunchId="bunch-book" initialTab="followers" />);
+
+    expect(screen.getByRole('region', { name: '비공개 번치예요' })).toHaveTextContent(
+      '목록을 보려면 이 번치를 팔로우하세요.',
+    );
+    expect(screen.queryByRole('tab')).toBeNull();
+    expect(screen.queryByRole('listitem')).toBeNull();
   });
 
   it('없는 번치는 404로 보낸다', async () => {
