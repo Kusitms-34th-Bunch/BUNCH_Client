@@ -2,7 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
@@ -13,6 +13,7 @@ import { BUNDLE_PATHS } from '../constants/paths';
 import { useDraftContext } from '../contexts/draftContext';
 import { useRedirectMissingDraft } from '../hooks/useDraftExit';
 import { getDraftAccess } from '../lib/permissions';
+import { clearPhotoAddEntry, isPhotoAddEntry } from '../lib/photoAddEntry';
 import { DraftPhotoAdd } from './DraftPhotoAdd';
 
 /**
@@ -23,6 +24,9 @@ export function BundleDraftPhotoAdd() {
   const router = useRouter();
   const { state, actions } = useDraftContext();
   const { state: photoState } = usePhotoBox();
+  // 캡션 화면에서 앱 안으로 들어왔을 때만 이전 기록(캡션 화면)으로 돌아감. 직접 주소·새로고침이면 기록을 믿지 않음
+  const [fromCaption] = useState(isPhotoAddEntry);
+  useEffect(() => clearPhotoAddEntry, []);
 
   const readyDraft = state.kind === 'ready' ? state.draft : undefined;
   const canEdit = state.kind === 'ready' && getDraftAccess(state.draft, state.viewer).canEdit;
@@ -47,9 +51,14 @@ export function BundleDraftPhotoAdd() {
   }
 
   const { draft, viewer } = state;
-  // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
+  // 앱 안에서 온 게 아니면 첫 사진의 캡션 화면으로 이동(적용으로 사진이 모두 바뀌어도 첫 장은 있음)
+  const firstPhotoId = draft.photos[0]?.id;
   const goBack = () =>
-    window.history.length > 1 ? router.back() : router.replace(BUNDLE_PATHS.draft(draft.id));
+    fromCaption && window.history.length > 1
+      ? router.back()
+      : router.replace(
+          firstPhotoId ? BUNDLE_PATHS.photo(draft.id, firstPhotoId) : BUNDLE_PATHS.draft(draft.id),
+        );
   return (
     <DraftPhotoAdd
       draft={draft}

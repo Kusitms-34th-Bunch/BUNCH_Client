@@ -8,6 +8,7 @@ import { useDraftContext } from '../contexts/draftContext';
 import { useRedirectMissingDraft, useRedirectMissingPhoto } from '../hooks/useDraftExit';
 import { usePhotoAddress } from '../hooks/usePhotoAddress';
 import { usePhotoGalleryImport } from '../hooks/usePhotoGalleryImport';
+import { markPhotoAddEntry } from '../lib/photoAddEntry';
 import { DraftPhotoCaption } from './DraftPhotoCaption';
 
 type BundleDraftPhotoCaptionProps = {
@@ -54,7 +55,10 @@ export function BundleDraftPhotoCaption({ photoId }: BundleDraftPhotoCaptionProp
       }
       onPhotoChange={sync}
       onOpenViewer={(id) => router.push(BUNDLE_PATHS.photoViewer(draft.id, id))}
-      onImportFromBunchBox={() => router.push(BUNDLE_PATHS.photoAdd(draft.id))}
+      onImportFromBunchBox={() => {
+        markPhotoAddEntry();
+        router.push(BUNDLE_PATHS.photoAdd(draft.id));
+      }}
       onImportFromGallery={importFromGallery}
     />
   );

@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Draft, DraftPhoto, DraftViewer } from '../lib/types';
@@ -123,6 +123,17 @@ describe('DraftPhotoCaption 구성', () => {
 
     expect(onImportFromGallery).toHaveBeenCalledWith(MAX_PHOTOS - draftFixture.photos.length);
     expect(onImportFromBunchBox).not.toHaveBeenCalled();
+  });
+
+  it('시트 카드를 연타해도 고른 출처는 한 번만 처리한다', async () => {
+    renderCaption();
+
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
+    const card = await screen.findByRole('button', { name: '번치 사진함에서 가져오기' });
+    fireEvent.click(card);
+    fireEvent.click(card);
+
+    expect(onImportFromBunchBox).toHaveBeenCalledTimes(1);
   });
 
   it('사진을 누르면 크게 보기로 간다', async () => {

@@ -4,7 +4,7 @@ import { cn, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system'
 import { AddBundlePhoto, PhotoImportSheet } from '@app/design-system/web';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { DraftActions } from '../hooks/useDraft';
@@ -79,6 +79,11 @@ export function DraftPhotoCaption({
   // 커서가 있는 입력란의 사진 id. 사진이 바뀌어 입력란이 교체될 때 blur가 오지 않아도 보는 사진과 달라져 저절로 풀림
   const [focusedPhotoId, setFocusedPhotoId] = useState<string | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
+  // 시트 카드를 연타해도 고른 출처를 한 번만 처리(시트가 다시 열릴 때 풀림)
+  const importChosen = useRef(false);
+  useEffect(() => {
+    if (importOpen) importChosen.current = false;
+  }, [importOpen]);
   // 옮기거나 뺀 결과 낭독은 그 자리를 보는 동안만 우선하고, 다른 사진으로 넘기면 위치 낭독으로 돌아감
   const [announcement, setAnnouncement] = useState<{ text: string; index: number } | undefined>(
     undefined,
@@ -246,10 +251,14 @@ export function DraftPhotoCaption({
         open={importOpen}
         onOpenChange={setImportOpen}
         onSelectBunchBox={() => {
+          if (importChosen.current) return;
+          importChosen.current = true;
           setImportOpen(false);
           onImportFromBunchBox();
         }}
         onSelectGallery={() => {
+          if (importChosen.current) return;
+          importChosen.current = true;
           setImportOpen(false);
           onImportFromGallery(MAX_PHOTOS - total);
         }}
