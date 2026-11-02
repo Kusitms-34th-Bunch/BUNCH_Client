@@ -1,29 +1,20 @@
 'use client';
 
-import 'swiper/css';
-import 'swiper/css/zoom';
-import type { Swiper as SwiperInstance } from 'swiper/types';
-import { cn, Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
+import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
 import { DateChangeSheet, IconButton } from '@app/design-system/web';
-import { useEffect, useRef, useState } from 'react';
-import { A11y, Keyboard, Zoom } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/react';
+import { useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { PhotoBoxActions, PhotoBoxMember, PhotoBoxPhoto, PhotoBoxViewer } from '../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
+import { usePhotoViewer } from '../hooks/usePhotoViewer';
 import { canDeletePhotos, getDeleteKind } from '../lib/photoActions';
 import { formatDetailDate, getTakenDate } from '../lib/photoDetail';
+import { getViewerHeaderClass } from '../lib/photoViewerStyle';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from './PhotoDetailMenu';
-import { PhotoDetailSlide } from './PhotoDetailSlide';
 import { DeleteConfirmDialog } from './PhotoSelectionDialogs';
-
-// 단일 탭과 더블탭(확대)을 구분하기 위해 단일 탭 처리를 잠깐 미룸
-const TAP_DELAY_MS = 250;
-// 현재 사진 앞뒤 이만큼만 그리고 나머지는 빈 슬라이드(사진이 많아도 가볍게 유지)
-const RENDER_RANGE = 1;
-const MAX_ZOOM = 3;
+import { PhotoViewerSwiper } from './PhotoViewerSwiper';
 
 type PhotoDetailScreenProps = {
   /** 사진함 순서(`getDetailOrder`)로 정렬된 사진 */
@@ -60,13 +51,6 @@ export function PhotoDetailScreen({
   onLeave,
   onPhotoChange,
 }: PhotoDetailScreenProps) {
-  const initialIndex = Math.max(
-    0,
-    photos.findIndex((photo) => photo.id === initialPhotoId),
-  );
-  const [activeId, setActiveId] = useState(photos[initialIndex]?.id ?? initialPhotoId);
-  const [tapHidden, setTapHidden] = useState(false);
-  const [zoomed, setZoomed] = useState(false);
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
@@ -76,31 +60,25 @@ export function PhotoDetailScreen({
   const [dateTargetId, setDateTargetId] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
-  const swiperRef = useRef<SwiperInstance | null>(null);
-  const tapTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const activeIndex = photos.findIndex((photo) => photo.id === activeId);
+  // 사진 넘기기·헤더 숨김·Swiper 보정은 `usePhotoViewer`가 맡음. 메뉴·확인 창·요청 중에는 방향키로 넘기지 않음
+  const photoViewer = usePhotoViewer({
+    photos,
+    initialPhotoId,
+    onPhotoChange,
+    keyboardBlocked:
+      menuOpen ||
+      deleteTargetId !== undefined ||
+      dateTargetId !== undefined ||
+      pending !== undefined,
+  });
+  const { activeIndex, chromeHidden } = photoViewer;
   const activePhoto = photos[activeIndex];
-  const chromeHidden = tapHidden || zoomed;
   const canManage = activePhoto ? canDeletePhotos([activePhoto], viewer) : false;
 
   const toggleMenu = () => {
     setMenuMounted(true);
     setMenuOpen((open) => !open);
-  };
-
-  // 단일 탭만 헤더·배지를 토글(더블탭은 확대라 토글하지 않음)
-  const handleTap = () => {
-    clearTimeout(tapTimer.current);
-    tapTimer.current = setTimeout(() => setTapHidden((hidden) => !hidden), TAP_DELAY_MS);
-  };
-  const handleDoubleTap = () => clearTimeout(tapTimer.current);
-
-  const handleSlideChange = (swiper: SwiperInstance) => {
-    const next = photos[swiper.activeIndex];
-    if (!next || next.id === activeId) return;
-    setActiveId(next.id);
-    onPhotoChange?.(next.id);
   };
 
   const save = async () => {
@@ -160,38 +138,12 @@ export function PhotoDetailScreen({
     else notify(PHOTO_BOX_MESSAGES.deleteForbidden);
   };
 
-  // 메뉴·확인 창이 열려 있거나 요청이 도는 동안은 방향키가 사진을 넘기지 않게 함(Swiper Keyboard는 문서 단위)
-  const keyboardBlocked =
-    menuOpen || deleteTargetId !== undefined || dateTargetId !== undefined || pending !== undefined;
-  useEffect(() => {
-    const keyboard = swiperRef.current?.keyboard;
-    if (!keyboard) return;
-    if (keyboardBlocked) keyboard.disable();
-    else keyboard.enable();
-  }, [keyboardBlocked]);
-
-  // 날짜 변경으로 목록 순서가 바뀌면 현재 사진이 있는 슬라이드로 Swiper를 다시 맞춤
-  useEffect(() => {
-    const instance = swiperRef.current;
-    if (!instance || activeIndex < 0 || instance.activeIndex === activeIndex) return;
-    instance.update();
-    instance.slideTo(activeIndex, 0);
-  }, [activeIndex]);
-
   if (!activePhoto) return null;
-
-  const headerFade = cn(
-    'relative transition-opacity duration-200 ease-[cubic-bezier(0,0,0.35,1)] motion-reduce:transition-none',
-    // 숨긴 상태에서도 키보드·스크린 리더로 접근: 포커스가 들어오면 다시 보임
-    chromeHidden
-      ? 'pointer-events-none opacity-0 focus-within:pointer-events-auto focus-within:opacity-100'
-      : 'opacity-100',
-  );
 
   return (
     <PageShell
       header={
-        <div className={headerFade}>
+        <div className={getViewerHeaderClass(chromeHidden)}>
           <Header
             leading={
               <HeaderIconButton label="뒤로 가기" onClick={onBack}>
@@ -234,69 +186,12 @@ export function PhotoDetailScreen({
           : PHOTO_BOX_MESSAGES.detailPosition(activeIndex + 1, photos.length)}
       </p>
       {/* 저장·삭제 중에는 사진 영역을 inert로 막음(더보기가 포커스를 잃지 않도록 헤더는 열어 둠) */}
-      <div className="relative h-full" inert={pending !== undefined}>
-        <Swiper
-          modules={[Zoom, Keyboard, A11y]}
-          className="h-full"
-          initialSlide={initialIndex}
-          slidesPerView={1}
-          resistance={false}
-          zoom={{ maxRatio: MAX_ZOOM, toggle: true }}
-          keyboard={{ enabled: true }}
-          a11y={{
-            prevSlideMessage: PHOTO_BOX_MESSAGES.previousPhoto,
-            nextSlideMessage: PHOTO_BOX_MESSAGES.nextPhoto,
-          }}
-          onSwiper={(swiper: SwiperInstance) => {
-            swiperRef.current = swiper;
-          }}
-          onSlideChange={handleSlideChange}
-          onZoomChange={(_swiper: SwiperInstance, scale: number) => setZoomed(scale > 1)}
-          onTap={handleTap}
-          onDoubleTap={handleDoubleTap}
-        >
-          {photos.map((photo, index) => (
-            <SwiperSlide
-              key={photo.id}
-              aria-hidden={Math.abs(index - activeIndex) <= RENDER_RANGE ? undefined : true}
-            >
-              {Math.abs(index - activeIndex) <= RENDER_RANGE ? (
-                <PhotoDetailSlide photo={photo} members={members} chromeHidden={chromeHidden} />
-              ) : null}
-            </SwiperSlide>
-          ))}
-        </Swiper>
-        {/* 스와이프의 단일 포인터 대체: 키보드·스크린 리더 사용자가 쓰는 이전·다음 버튼(포커스가 있을 때만 보임) */}
-        <button
-          type="button"
-          onClick={() => {
-            if (activeIndex > 0) swiperRef.current?.slidePrev();
-          }}
-          aria-disabled={activeIndex <= 0 ? true : undefined}
-          className="focus-visible:bg-surface-primary focus-visible:text-text-primary focus-visible:left-s8 focus-visible:top-s8 focus-visible:rounded-r4 focus-visible:px-s6 focus-visible:py-s4 sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-10"
-        >
-          {PHOTO_BOX_MESSAGES.previousPhoto}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (activeIndex < photos.length - 1) swiperRef.current?.slideNext();
-          }}
-          aria-disabled={activeIndex >= photos.length - 1 ? true : undefined}
-          className="focus-visible:bg-surface-primary focus-visible:text-text-primary focus-visible:right-s8 focus-visible:top-s8 focus-visible:rounded-r4 focus-visible:px-s6 focus-visible:py-s4 sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-10"
-        >
-          {PHOTO_BOX_MESSAGES.nextPhoto}
-        </button>
-        {/* 키보드·스크린 리더 사용자의 확대·축소 수단(포커스가 있을 때만 보임) */}
-        <button
-          type="button"
-          aria-pressed={zoomed}
-          onClick={() => swiperRef.current?.zoom.toggle()}
-          className="focus-visible:bg-surface-primary focus-visible:text-text-primary focus-visible:left-s8 focus-visible:bottom-s8 focus-visible:rounded-r4 focus-visible:px-s6 focus-visible:py-s4 sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-10"
-        >
-          {zoomed ? PHOTO_BOX_MESSAGES.zoomOut : PHOTO_BOX_MESSAGES.zoomIn}
-        </button>
-      </div>
+      <PhotoViewerSwiper
+        viewer={photoViewer}
+        photos={photos}
+        members={members}
+        inert={pending !== undefined}
+      />
       {pending === 'save' ? <PageLoading /> : null}
       <DateChangeSheet
         open={dateTargetId !== undefined}

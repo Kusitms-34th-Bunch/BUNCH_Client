@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { replaceUrl } from '@/shared/lib/replaceUrl';
 import { BUNDLE_SELECT_MESSAGES } from '../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../constants/selectPaths';
 import { useBundleSelect } from '../contexts/bundleSelectContext';
@@ -55,13 +56,7 @@ export function RecommendViewer({ recommendationId, photoId }: RecommendViewerPr
           : router.replace(BUNDLE_SELECT_PATHS.recommendation(recommendation.id))
       }
       // 넘길 때마다 Next 이동 없이 주소만 맞춰 새로고침·공유가 현재 사진을 가리키게 함
-      onPhotoChange={(id) =>
-        window.history.replaceState(
-          window.history.state,
-          '',
-          BUNDLE_SELECT_PATHS.viewer(recommendation.id, id),
-        )
-      }
+      onPhotoChange={(id) => replaceUrl(BUNDLE_SELECT_PATHS.viewer(recommendation.id, id))}
     />
   );
 }

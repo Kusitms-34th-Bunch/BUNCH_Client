@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { replaceUrl } from '@/shared/lib/replaceUrl';
 import { parsePhotoId } from '../lib/draftId';
 
 // 보던 사진 id를 이 history 항목에 적어 두는 키
@@ -43,11 +44,7 @@ export function usePhotoAddress(
     (photoId: string) => {
       setCurrentPhotoId(photoId);
       if (draftId === undefined) return;
-      window.history.replaceState(
-        { ...(window.history.state as object | null), [PHOTO_ID_KEY]: photoId },
-        '',
-        toPath(draftId, photoId),
-      );
+      replaceUrl(toPath(draftId, photoId), { [PHOTO_ID_KEY]: photoId });
     },
     [draftId, toPath],
   );
