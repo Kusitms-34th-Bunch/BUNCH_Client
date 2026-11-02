@@ -18,6 +18,7 @@ import {
 import { type ReactNode, useMemo, useSyncExternalStore } from 'react';
 import { LOGIN_PATH, SIGNUP_PATHS, SIGNUP_TRANSITION_IDS } from '@/features/auth/constants/paths';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
+import { BUNDLE_PATHS } from '@/features/bundle/constants/paths';
 import { BUNDLE_SELECT_PATHS } from '@/features/bundle/constants/selectPaths';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
@@ -230,6 +231,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchMenuMove,
   },
+  // 번치를 삭제하면 확인 화면에서 번치 탭으로 세 칸 되돌아감(정방향 진입은 없음)
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.deleteConfirm,
+    bidirectional: true,
+    transition: bunchMenuMove,
+  },
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.profile,
@@ -252,6 +260,19 @@ const rules: SsgoiTransitionRule[] = [
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.leave,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  // 번치 삭제 안내 → 확인 문구 입력도 한 단계씩 들어가는 slide
+  {
+    from: BUNCH_HOME_PATHS.menu,
+    to: BUNCH_HOME_PATHS.delete,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  {
+    from: BUNCH_HOME_PATHS.delete,
+    to: BUNCH_HOME_PATHS.deleteConfirm,
     bidirectional: true,
     transition: menuSubSlide,
   },
@@ -279,6 +300,19 @@ const rules: SsgoiTransitionRule[] = [
     to: BUNDLE_SELECT_PATHS.transitionIds.recommendation,
     bidirectional: true,
     transition: bundleSlide,
+  },
+  // 번들 작성 화면 ↔ 참여 멤버 관리·사진 캡션 화면은 온보딩과 같은 슬라이드(300ms). 뒤로 가기는 방향이 반대
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.members,
+    bidirectional: true,
+    transition,
+  },
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.photo,
+    bidirectional: true,
+    transition,
   },
   { from: SIGNUP_PATHS.terms, to: LOGIN_PATH, transition: dissolve },
   {
