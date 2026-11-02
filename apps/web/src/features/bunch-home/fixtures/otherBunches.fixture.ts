@@ -45,3 +45,7 @@ export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
     members: members(['지안', '루아', '하윤', '서진', '다온', '이든']),
   },
 };
+
+// URL 값이라 `__proto__` 같은 상속 속성 이름은 없는 번치로 처리
+export const findOtherBunch = (bunchId: string): OtherBunch | undefined =>
+  Object.hasOwn(otherBunchesFixture, bunchId) ? otherBunchesFixture[bunchId] : undefined;

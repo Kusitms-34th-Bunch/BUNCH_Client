@@ -7,7 +7,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
 import { ROLE_LABELS } from '../constants/roles';
-import { otherBunchesFixture } from '../fixtures/otherBunches.fixture';
+import { findOtherBunch } from '../fixtures/otherBunches.fixture';
 
 /**
  * `/bunches/[bunchId]/members` 다른 번치의 멤버 목록(화면설계서 2500:71333 4번)
@@ -15,7 +15,7 @@ import { otherBunchesFixture } from '../fixtures/otherBunches.fixture';
  */
 export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
   const router = useRouter();
-  const bunch = otherBunchesFixture[bunchId];
+  const bunch = findOtherBunch(bunchId);
   if (!bunch) notFound();
 
   return (

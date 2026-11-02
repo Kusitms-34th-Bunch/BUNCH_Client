@@ -90,8 +90,10 @@ describe('OtherBunch 비공개 번치', () => {
     expect(screen.getByRole('button', { name: '팔로우' })).toBeInTheDocument();
   });
 
-  it('없는 번치는 404로 보낸다', () => {
+  it('없는 번치와 상속 속성 이름은 404로 보낸다', () => {
     expect(() => render(<OtherBunch bunchId="unknown" />)).toThrow('NEXT_NOT_FOUND');
+    expect(() => render(<OtherBunch bunchId="__proto__" />)).toThrow('NEXT_NOT_FOUND');
+    expect(() => render(<OtherBunchMembers bunchId="constructor" />)).toThrow('NEXT_NOT_FOUND');
     expect(notFound).toHaveBeenCalled();
   });
 });

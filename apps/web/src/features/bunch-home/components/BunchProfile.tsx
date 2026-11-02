@@ -47,7 +47,7 @@ export function BunchProfile({
         </p>
       </div>
       <div className="gap-s4 flex min-h-8 flex-wrap items-center justify-between">
-        <ul className="gap-s6 typography-body-2-regular text-text-tertiary flex min-w-0 items-center whitespace-nowrap">
+        <ul className="gap-s6 typography-body-2-regular text-text-tertiary flex min-w-0 flex-wrap items-center whitespace-nowrap">
           {COUNTS.map(({ key, label }) => {
             const count = (
               <>

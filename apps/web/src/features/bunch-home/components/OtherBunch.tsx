@@ -2,7 +2,7 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
-import { otherBunchesFixture } from '../fixtures/otherBunches.fixture';
+import { findOtherBunch } from '../fixtures/otherBunches.fixture';
 import { useBunchFollow } from '../hooks/useBunchFollow';
 import { OtherBunchScreen } from './OtherBunchScreen';
 
@@ -12,7 +12,7 @@ import { OtherBunchScreen } from './OtherBunchScreen';
  */
 export function OtherBunch({ bunchId }: { bunchId: string }) {
   const router = useRouter();
-  const bunch = otherBunchesFixture[bunchId];
+  const bunch = findOtherBunch(bunchId);
   const { status, followerCount, follow, unfollow } = useBunchFollow(bunch);
   if (!bunch) notFound();
 
