@@ -39,7 +39,9 @@ export function BunchNotificationsScreen({
   const frame = useRef(0);
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
   const readAll = () => {
-    const hasUnread = notifications?.some((notification) => notification.unread) ?? false;
+    // 번치를 아직 모르면(hydration 전) 읽을 목록이 없어 결과도 알리지 않음
+    if (!notifications) return;
+    const hasUnread = notifications.some((notification) => notification.unread);
     onReadAll();
     // 같은 문구를 다시 채워도 읽히도록 비운 뒤 다음 프레임에 채움
     setStatus('');

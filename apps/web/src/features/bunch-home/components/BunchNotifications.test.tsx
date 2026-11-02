@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBunchHome } from '../hooks/useBunchHome';
 import { BunchHomeHeader } from './BunchHomeHeader';
 import { BunchNotifications } from './BunchNotifications';
+import { BunchNotificationsScreen } from './BunchNotificationsScreen';
 
 const back = vi.fn();
 const replace = vi.fn();
@@ -12,6 +13,27 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ back, replace, push: vi.
 beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
+});
+
+describe('BunchNotificationsScreen', () => {
+  it('목록을 아직 모르면 「모두 읽음」을 눌러도 읽음 처리와 결과 안내를 하지 않는다', async () => {
+    const onReadAll = vi.fn();
+    render(
+      <BunchNotificationsScreen
+        bunchName={undefined}
+        notifications={undefined}
+        onBack={vi.fn()}
+        onReadAll={onReadAll}
+        onOpen={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: '모두 읽음' }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(onReadAll).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
 });
 
 describe('알림 입구', () => {
