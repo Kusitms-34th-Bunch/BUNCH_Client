@@ -230,6 +230,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchMenuMove,
   },
+  // 화면설계서(2236:41816 3번): 알림 아이콘 → 알림 목록 Move in / ← / Ease out / 150ms, 뒤로 가기 Move out
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.notifications,
+    bidirectional: true,
+    transition: bunchMenuMove,
+  },
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.profile,

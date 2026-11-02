@@ -6,5 +6,6 @@ export { BunchHome } from './BunchHome';
 export { BunchLeave } from './BunchLeave';
 export { BunchMembers } from './BunchMembers';
 export { BunchMenu } from './BunchMenu';
+export { BunchNotifications } from './BunchNotifications';
 export { BunchProfileEdit } from './BunchProfileEdit';
 export { BunchRoleGuide } from './BunchRoleGuide';

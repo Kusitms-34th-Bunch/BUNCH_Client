@@ -7,6 +7,8 @@ export const BUNCH_HOME_PATHS = {
   profile: '/bunch/menu/profile',
   /** 메인 관리자의 새 관리자 지정 뒤 나가기(기능명세 5.8) */
   leave: '/bunch/menu/leave',
+  /** 알림 목록(기능명세 5.12). 번치 홈 헤더 알림에서 들어감 */
+  notifications: '/bunch/notifications',
   /** 차단 목록(기능명세 5.7) */
   blocked: '/bunch/menu/blocked',
   /** 멤버 관리(기능명세 5.6). 번치 홈 프로필의 멤버 수에서도 들어올 예정이라 메뉴 밖 경로 */
