@@ -17,6 +17,12 @@ export const BUNCH_HOME_PATHS = {
   otherBunch: (bunchId: string) => `/bunches/${bunchId}`,
   /** 다른 번치 멤버 목록(화면설계서 2500:71333 4번) */
   otherBunchMembers: (bunchId: string) => `/bunches/${bunchId}/members`,
+  /** 다른 번치 팔로워·팔로잉 목록(기능명세 5.11). 팔로잉 탭으로 열려면 followingTab */
+  otherBunchFollows: (bunchId: string) => `/bunches/${bunchId}/follows`,
+  /** 내 번치(지금 번치) 팔로워·팔로잉 목록(기능명세 5.11) */
+  follows: '/bunch/follows',
+  /** 내 번치의 대기 중인 팔로우 요청(화면설계서 2500:72664 2번) */
+  followRequests: '/bunch/follows/requests',
   /** 차단 목록(기능명세 5.7) */
   blocked: '/bunch/menu/blocked',
   /** 멤버 관리(기능명세 5.6). 번치 홈 프로필의 멤버 수에서도 들어올 예정이라 메뉴 밖 경로 */
@@ -36,5 +42,9 @@ export const BUNCH_HOME_PATHS = {
   transitionIds: {
     otherBunch: '/bunches/profile',
     otherBunchMembers: '/bunches/profile/members',
+    otherBunchFollows: '/bunches/profile/follows',
   },
 } as const;
+
+/** 팔로워·팔로잉 목록을 팔로잉 탭으로 여는 주소(프로필의 「팔로잉」 수) */
+export const followingTab = (followsPath: string) => `${followsPath}?tab=following`;

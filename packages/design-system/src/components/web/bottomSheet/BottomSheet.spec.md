@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system `web` 구역(apps/web 모바일 화면 전용)
 - Status: 구현됨(로컬 검증, 실기기 미검증)
-- Figma: Bottom Sheet 세트 `2500:50688`(변형 01~08)
+- Figma: Bottom Sheet 세트 `2500:50688`(변형 01~09)
 
 ## 목적과 범위
 
@@ -85,7 +85,7 @@
 
 ## 조합 규칙
 
-- Figma에 그려진 시트(Bottom Sheet 01~08)는 이 폴더의 `renderers/`에 시트 렌더러로 둔다. 새 렌더러는 기존 렌더러 파일 4개(`.tsx`·`.test.tsx`·`.stories.tsx`·`.spec.md`)를 복사해서 시작한다. 렌더러는 이 부품을 조합하고 문구·목록·콜백만 props로 받는다. API 호출·저장 상태는 넣지 않는다.
+- Figma에 그려진 시트(Bottom Sheet 01~09)는 이 폴더의 `renderers/`에 시트 렌더러로 둔다. 새 렌더러는 기존 렌더러 파일 4개(`.tsx`·`.test.tsx`·`.stories.tsx`·`.spec.md`)를 복사해서 시작한다. 렌더러는 이 부품을 조합하고 문구·목록·콜백만 props로 받는다. API 호출·저장 상태는 넣지 않는다.
 
   | Figma | 렌더러                 |
   | ----- | ---------------------- |
@@ -96,6 +96,7 @@
   | 05    | `AdminTransferSheet`   |
   | 06    | `MoreMenuSheet`        |
   | 07·08 | `ReportSheet`          |
+  | 09    | `PinnedPlaceSheet`     |
 
 - 렌더러를 디자인 시스템에 두는 이유: `apps/web`에는 Storybook이 없어 Figma 대조를 디자인 시스템 story에서 한다. 더보기·신고·번치 전환은 여러 기능이 쓴다.
 - 화면에 닫기 버튼이 없는 시트(Figma 01 등)도 숨긴 닫기 버튼을 둔다. 끌기·바깥 터치는 스크린 리더로 닿기 어렵기 때문이다. 「취소하기」 같은 하단 닫기 버튼이 있으면 생략한다.

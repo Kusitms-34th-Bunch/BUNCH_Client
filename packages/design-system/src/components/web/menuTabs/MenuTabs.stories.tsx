@@ -57,7 +57,7 @@ const photoIcons = { icon: <LinePhotoMediumIcon />, selectedIcon: <FillPhotoMedi
 export const IconTabs: Story = {
   render: () => (
     <MenuTabs.Root defaultValue="photos">
-      <MenuTabs.List aria-label="보기">
+      <MenuTabs.List aria-label="보기" variant="icon">
         <MenuTabs.IconTab value="photos" label="사진" {...photoIcons} />
         <MenuTabs.IconTab value="bundles" label="번들" {...photoIcons} />
         <MenuTabs.IconTab value="saved" label="저장" {...photoIcons} disabled />

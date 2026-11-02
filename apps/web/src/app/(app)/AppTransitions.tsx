@@ -208,6 +208,25 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 프로필의 팔로워·팔로잉 수 → 목록, 목록의 「팔로우 요청」 → 요청 목록도 한 단계 들어가는 drill
+  {
+    from: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunchFollows,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.follows,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: BUNCH_HOME_PATHS.follows,
+    to: BUNCH_HOME_PATHS.followRequests,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
   // 알림 아이콘 → 알림 목록도 메뉴와 같은 drill(화면설계서 2236:41816 3번 Move in ←과 방향 같음)
   {
     from: BUNCH_HOME_PATHS.home,

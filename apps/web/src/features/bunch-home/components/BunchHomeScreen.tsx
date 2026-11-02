@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { BunchHomeActions, BunchHomeData, BunchSummary, DraftBundle } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { BUNCH_HOME_PATHS, followingTab } from '../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../constants/toast';
 import { BunchHomeHeader } from './BunchHomeHeader';
 import { BunchProfile } from './BunchProfile';
@@ -125,7 +126,13 @@ export function BunchHomeScreen({
           />
         </div>
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">
-          <BunchProfile bunch={current} />
+          <BunchProfile
+            bunch={current}
+            countHrefs={{
+              followerCount: BUNCH_HOME_PATHS.follows,
+              followingCount: followingTab(BUNCH_HOME_PATHS.follows),
+            }}
+          />
           <MenuTabs.Root
             value={tab}
             onValueChange={(value) => {
@@ -134,7 +141,7 @@ export function BunchHomeScreen({
             }}
             className="flex flex-1 flex-col"
           >
-            <MenuTabs.List aria-label="번들">
+            <MenuTabs.List aria-label="번들" variant="icon">
               <MenuTabs.IconTab
                 value="completed"
                 label="완성된 번들"
