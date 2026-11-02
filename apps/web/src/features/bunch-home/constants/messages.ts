@@ -1,5 +1,12 @@
 import type { BunchSummary } from '../lib/types';
 
+// 마지막 글자에 받침이 있으면 「을」, 없거나 한글이 아니면 「를」(퇴근런클럽을, 여행가조를)
+// ponytail: 영문·숫자로 끝나는 이름은 발음과 상관없이 「를」, 발음 규칙이 필요하면 그때 확장
+const objectParticle = (word: string) => {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code <= 11171 && code % 28 !== 0 ? '을' : '를';
+};
+
 export const BUNCH_HOME_MESSAGES = {
   switched: (bunchName: string) => `${bunchName} 번치로 전환했어요.`,
   completedEmptyTitle: '추억은 많은데, 번들은 아직!',
@@ -45,6 +52,19 @@ export const BUNCH_HOME_MESSAGES = {
   notificationSettingsNudge: '알림 받기를 설정하고 유용한 알림을 받아보세요.',
   readAllDone: '모든 알림을 읽음으로 바꿨어요.',
   nothingToRead: '읽지 않은 알림이 없어요.',
+  // 번치 삭제(화면설계서 2236:41816)
+  deleteTitle: (bunchName: string) => `${bunchName}${objectParticle(bunchName)} 삭제할까요?`,
+  deletedItems: ['사진함 속 사진', '작성 중이거나 발행된 번들', '팔로우・좋아요・댓글'],
+  deleteWarning: [
+    '번치를 삭제하면 모든 활동 내역이 영구적으로 삭제되며,',
+    '어떠한 경우에도 복구할 수 없어요.',
+  ],
+  deleteConfirmTitle: '정말 삭제할까요?',
+  deleteConfirmDescription: "확인을 위해 아래에 '삭제하기'를 입력해주세요.",
+  deleteConfirmPhrase: '삭제하기',
+  // 앞의 「*」는 화면이 장식으로 붙임(스크린 리더에서 「별표」로 읽히지 않게)
+  deleteConfirmHint: '‘삭제하기’를 정확히 입력하면 삭제 버튼이 활성화돼요.',
+  deleted: (bunchName: string) => `${bunchName} 번치를 삭제했어요.`,
   noBunchTitle: '참여 중인 번치가 없어요',
   noBunchDescription: '새 번치를 만들거나 초대받은 번치에 참여해보세요.',
   // 차단 목록(화면설계서 2236:40175 2~3번)

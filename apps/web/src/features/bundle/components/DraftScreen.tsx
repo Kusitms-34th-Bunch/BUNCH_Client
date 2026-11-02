@@ -34,6 +34,8 @@ type DraftScreenProps = {
   onPublish?: (() => void) | undefined;
   /** 참여 멤버 관리 화면으로 가는 「추가」 카드(해당 화면 연결 전에는 생략) */
   onAddMember?: (() => void) | undefined;
+  /** 사진이나 캡션을 눌렀을 때(그 사진의 캡션 화면으로 이동하는 호출 지점) */
+  onOpenPhoto?: ((_photoId: string) => void) | undefined;
 };
 
 const notify = (message: string) => toast(message, { fullWidth: true });
@@ -54,6 +56,7 @@ export function DraftScreen({
   onRetry,
   onPublish,
   onAddMember,
+  onOpenPhoto,
 }: DraftScreenProps) {
   const [uploadConfirmOpen, setUploadConfirmOpen] = useState(false);
   const access = getDraftAccess(draft, viewer);
@@ -103,7 +106,7 @@ export function DraftScreen({
         onDenied={denyEdit}
         onEditingBlocked={blockEditing}
       />
-      <DraftPhotos draft={draft} onEditingBlocked={blockEditing} />
+      <DraftPhotos draft={draft} onEditingBlocked={blockEditing} onOpenPhoto={onOpenPhoto} />
       <DraftPlaceDate
         draft={draft}
         actions={actions}

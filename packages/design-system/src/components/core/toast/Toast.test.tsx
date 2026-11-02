@@ -164,6 +164,14 @@ describe('toast()', () => {
     expect((toast.parentElement as HTMLElement).style.paddingBottom).toBe('32px');
   });
 
+  it('places the toast in the top list with position top', async () => {
+    render(<Toaster />);
+    await show('위쪽 토스트', { position: 'top' });
+
+    const list = within(screen.getByLabelText('알림')).getByText('위쪽 토스트').closest('ol');
+    expect(list?.getAttribute('data-y-position')).toBe('top');
+  });
+
   it('keeps the toast centered at its content width and un-lifted by default', async () => {
     render(<Toaster />);
     await show('기본 위치');

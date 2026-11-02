@@ -30,6 +30,8 @@
   - `options.action?: { label: string; onClick: () => void }` — 오른쪽 액션 버튼. 누르면 `onClick` 뒤에 토스트를 닫는다.
   - `options.duration?: number` — 자동으로 닫히는 시간(ms). 기본값은 3000이고 액션이 있으면 5000이다(Figma 공통 모션). `Infinity`면 닫히지 않는다.
   - `options.bottomOffset?: number` — 기본 위치(Safe Area + 16px)에서 더 위로 올리는 간격(px). 화면 아래에 고정 버튼이 있을 때 가리지 않도록 호출하는 화면이 정한다.
+  - `options.position?: 'top' | 'bottom'` — 뜨는 자리(기본 `bottom`). `top`은 헤더 바로 아래(Safe Area + 49px)에 놓인다. 사진 캡션 화면(Figma `1782:32928`·`1782:32995`, y 93)처럼 입력 중 키보드에 가려지면 안 되는 안내에 쓴다.
+  - `position: 'top'`일 때 `bottomOffset`은 위로 올리는 간격이라 의미가 없고 무시해도 된다(위쪽은 헤더 아래 고정).
   - `options.fullWidth?: boolean` — 내용 폭 대신 목록 폭으로 편다(글자 왼쪽, 액션 버튼 오른쪽 끝). 「공유」 버튼이 있는 복사 완료 토스트(Figma `Bunch/Invite/LinkCopied`, node `791:3390`)가 이 모양이다.
 - `<Toaster />`: 화면을 그리는 앱의 최상위 layout에 한 번만 둔다(둔 layout 밖의 화면에서는 토스트가 뜨지 않는다. `apps/web`은 `(app)/layout.tsx`에 둔다). props가 없다. 위치·개수·간격은 이 컴포넌트가 정한다.
 - `Toast`(표시 전용 컴포넌트): `icon`, `action`, `children` + native `div` 속성. story와 test에서 형태를 그대로 그릴 때 쓰며, 앱은 `toast()`와 `<Toaster />`만 쓰는 것을 기본으로 한다. barrel(`export *`)로 함께 공개되지만 알림 동작은 없다.
@@ -43,7 +45,8 @@
 - 동시 개수: 한 번에 하나만 보인다. 새 토스트를 띄우면 이전 것을 먼저 닫고 새로 띄워서 노출 시간을 처음부터 센다(기획 명세 2.4.3의 "다시 복사하면 토스트를 다시 띄우고 처음부터 센다").
 - 크기와 간격(Figma): 안쪽 여백 위·아래 8, 왼쪽 12, 오른쪽 8, radius 12, 아이콘(24)과 내용 사이 10, 글자와 버튼 사이 16. 배경은 `surface-inversed` 60% + 2px backdrop blur. 글자는 `body-3-regular`(14/21) 흰색, 버튼은 `Button`(secondary, sm).
 - 폭: 내용 폭에 맞추되 목록 폭(sonner 기본 356px, 모바일은 화면 폭 − 좌우 여백)을 넘지 않고 가운데에 놓인다. 긴 글자는 줄바꿈된다(디자인은 한 줄 233px 예시만 있다). 짧은 글자(「저장했어요.」)는 그 폭에 맞춰 좁아진다.
-- 표시 위치: 아래쪽 가운데. 아래 여백은 기본 Safe Area + 16px이고, `bottomOffset`을 주면 그만큼 위에 놓인다(항목 높이에 padding으로 포함시켜 sonner가 쌓는 위치에 반영한다).
+- 위쪽 토스트의 움직임: 등장은 5px 아래로 내려오며 0%→100%, 퇴장은 5px 위로 올라가며 100%→0%(Slide down / Slide up, 같은 곡선·시간, 화면설계서 사진 캡션 3번). 아래 토스트와 방향만 반대다.
+- 표시 위치: 기본은 아래쪽 가운데이고 `position: 'top'`이면 위쪽 가운데(헤더 아래). 아래 여백은 기본 Safe Area + 16px이고, `bottomOffset`을 주면 그만큼 위에 놓인다(항목 높이에 padding으로 포함시켜 sonner가 쌓는 위치에 반영한다).
 - 닫는 방법: 자동 닫힘, 액션 누름, 아래로 스와이프(sonner 기본).
 - 지원하지 않는 상태: loading, disabled, error 색. 해당 상태가 디자인에 생기면 변형을 추가한다.
 - 긴 텍스트·overflow: 줄바꿈하며 토스트가 세로로 늘어난다. 버튼은 줄어들지 않는다.

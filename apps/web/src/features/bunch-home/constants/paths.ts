@@ -9,6 +9,10 @@ export const BUNCH_HOME_PATHS = {
   leave: '/bunch/menu/leave',
   /** 알림 목록(기능명세 5.12). 번치 홈 헤더 알림에서 들어감 */
   notifications: '/bunch/notifications',
+  /** 번치 삭제 안내(기능명세 5.9, 메인 관리자) */
+  delete: '/bunch/menu/delete',
+  /** 번치 삭제 확인 문구 입력(화면설계서 2236:41816 2번) */
+  deleteConfirm: '/bunch/menu/delete/confirm',
   /** 차단 목록(기능명세 5.7) */
   blocked: '/bunch/menu/blocked',
   /** 멤버 관리(기능명세 5.6). 번치 홈 프로필의 멤버 수에서도 들어올 예정이라 메뉴 밖 경로 */

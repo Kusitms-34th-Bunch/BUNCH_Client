@@ -1,7 +1,7 @@
 # 016: 사진을 끌어 날짜 섹션을 옮기는 동작은 @dnd-kit(core·sortable)으로 처리한다
 
 - 상태: accepted
-- 구현 상태(2026-10-31 확인): 구현됨(`features/photo-box/components/PhotoDragArea.tsx`). headless Chrome에서 마우스 길게 누르기 → 끌기 → 놓기 → 되돌리기를 확인했고 터치·iOS·안드로이드 쉘 실기기는 미확인.
+- 구현 상태(2026-10-31 확인): 구현됨(`features/photo-box/components/PhotoDragArea.tsx`). 번들 사진 순서 바꾸기(`features/bundle/components/DraftPhotoCaption.tsx`)도 `@dnd-kit/sortable`로 가로 목록을 정렬한다(길게 누르기 500ms, 키보드 대체는 「앞으로·뒤로 옮기기」 버튼). headless Chrome에서 마우스 길게 누르기 → 끌기 → 놓기 → 되돌리기를 확인했고 터치·iOS·안드로이드 쉘 실기기는 미확인.
 
 ## 배경
 

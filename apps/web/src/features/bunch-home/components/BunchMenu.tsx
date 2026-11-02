@@ -46,6 +46,7 @@ export function BunchMenu() {
         });
       }}
       onOwnerLeave={() => router.push(BUNCH_HOME_PATHS.leave)}
+      onDeleteBunch={() => router.push(BUNCH_HOME_PATHS.delete)}
     />
   );
 }
