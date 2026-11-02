@@ -1,7 +1,7 @@
 import type { BunchHomeDetail, BunchSummary, DraftBundle } from '../lib/types';
 
 // 번치·번들 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
-const sampleImage = (hue: number) => {
+export const sampleImage = (hue: number) => {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="246" height="326">` +
     `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
@@ -12,7 +12,7 @@ const sampleImage = (hue: number) => {
 };
 
 // 번치 대표 이미지가 없을 때의 뭉치 기본 이미지(기능명세 5.1.2, 사진함 fixture와 같은 파일)
-const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
+export const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
 
 const members = (count: number) =>
   Array.from({ length: count }, (_, index) => ({ name: `멤버 ${index + 1}` }));

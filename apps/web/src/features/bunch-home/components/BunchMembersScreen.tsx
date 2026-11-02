@@ -19,15 +19,10 @@ import type { BunchMemberActions } from '../hooks/useBunchMembers';
 import type { BunchMember, BunchRole } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
+import { ROLE_LABELS } from '../constants/roles';
 
 /** 번치 최대 인원(기능명세 5.6, 초대 안내 「번치는 최대 8명까지」) */
 const BUNCH_MEMBER_LIMIT = 8;
-
-const ROLE_LABELS: Record<BunchRole, string> = {
-  owner: '메인 관리자',
-  coOwner: '공동 관리자',
-  member: '일반 멤버',
-};
 
 type ConfirmKind = 'appoint' | 'revoke' | 'transfer' | 'remove';
 

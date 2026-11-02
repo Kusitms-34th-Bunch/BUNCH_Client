@@ -13,6 +13,10 @@ export const BUNCH_HOME_PATHS = {
   delete: '/bunch/menu/delete',
   /** 번치 삭제 확인 문구 입력(화면설계서 2236:41816 2번) */
   deleteConfirm: '/bunch/menu/delete/confirm',
+  /** 다른 번치 프로필(기능명세 5.10) */
+  otherBunch: (bunchId: string) => `/bunches/${bunchId}`,
+  /** 다른 번치 멤버 목록(화면설계서 2500:71333 4번) */
+  otherBunchMembers: (bunchId: string) => `/bunches/${bunchId}/members`,
   /** 차단 목록(기능명세 5.7) */
   blocked: '/bunch/menu/blocked',
   /** 멤버 관리(기능명세 5.6). 번치 홈 프로필의 멤버 수에서도 들어올 예정이라 메뉴 밖 경로 */
@@ -26,4 +30,11 @@ export const BUNCH_HOME_PATHS = {
   // 번치 없음(5.1.7)의 새 번치 만들기·초대 링크 참여. URL 계약만 두고 onboarding feature는 import하지 않음
   createBunch: '/onboarding/create',
   joinBunch: '/onboarding/join',
+  // 다른 번치 프로필의 임시 입구(피드 탭). URL 계약만 두고 main-navigation feature는 import하지 않음
+  feed: '/feed',
+  /** 동적 route의 전환 경계 id(규칙과 각 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
+  transitionIds: {
+    otherBunch: '/bunches/profile',
+    otherBunchMembers: '/bunches/profile/members',
+  },
 } as const;
