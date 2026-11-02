@@ -13,6 +13,13 @@
   --safe-area-right: var(--native-safe-area-right, env(safe-area-inset-right, 0px));
 }
 
+/* 화면 이동 뒤 초점을 받는 제목(RouteFocus)은 조작 요소가 아니라 테두리를 그리지 않음 */
+@layer base {
+  h1[tabindex='-1']:focus {
+    outline: none;
+  }
+}
+
 /* 앱 화면은 스크롤바를 그리지 않음(데스크톱·개발자 도구에서 막대 자리가 생기지 않게). Tailwind v4에 없는 유틸리티라 직접 정의 */
 @utility scrollbar-none {
   scrollbar-width: none;
