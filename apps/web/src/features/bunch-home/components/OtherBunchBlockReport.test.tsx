@@ -17,6 +17,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
+// 메뉴 시트가 다 닫힌 뒤 다음 시트가 열려(닫힘 애니메이션) 부하가 큰 전체 실행에서는 기본 1초보다 오래 걸릴 수 있음
+const SHEET_WAIT = { timeout: 3000 };
+
 const useBunch = (bunchId: string) =>
   sessionStorage.setItem('bunch-home:current-bunch-id', bunchId);
 
@@ -46,7 +49,11 @@ describe('다른 번치 차단', () => {
     // 팔로우 중이던 번치를 차단하면 팔로우도 해제
     await user.click(screen.getByRole('button', { name: '팔로우' }));
     await user.click(within(await openMore(user)).getByRole('button', { name: '차단하기' }));
-    const confirm = await screen.findByRole('dialog', { name: '캠핑러버 번치를 차단할까요?' });
+    const confirm = await screen.findByRole(
+      'dialog',
+      { name: '캠핑러버 번치를 차단할까요?' },
+      SHEET_WAIT,
+    );
     expect(confirm).toHaveTextContent('차단하면 번치의 모든 멤버가');
     await user.click(within(confirm).getByRole('button', { name: '차단하기' }));
 
@@ -70,10 +77,17 @@ describe('다른 번치 차단', () => {
     render(<OtherBunch bunchId="bunch-camping" />);
 
     await user.click(within(await openMore(user)).getByRole('button', { name: '차단하기' }));
-    const confirm = await screen.findByRole('dialog', { name: '캠핑러버 번치를 차단할까요?' });
+    const confirm = await screen.findByRole(
+      'dialog',
+      { name: '캠핑러버 번치를 차단할까요?' },
+      SHEET_WAIT,
+    );
     await user.click(within(confirm).getByRole('button', { name: '취소' }));
 
-    expect(screen.getByRole('heading', { level: 1, name: '캠핑러버' })).toBeInTheDocument();
+    // 시트가 닫히는 동안 뒤 화면은 접근성 트리에서 숨겨져 있어 닫힌 뒤를 기다림
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '캠핑러버' }, SHEET_WAIT),
+    ).toBeInTheDocument();
     expect(toast).not.toHaveBeenCalled();
   });
 
@@ -133,7 +147,11 @@ describe('다른 번치 신고', () => {
     render(<OtherBunch bunchId="bunch-camping" />);
 
     await user.click(within(await openMore(user)).getByRole('button', { name: '신고하기' }));
-    const sheet = await screen.findByRole('dialog', { name: '캠핑러버 번치를 신고해요' });
+    const sheet = await screen.findByRole(
+      'dialog',
+      { name: '캠핑러버 번치를 신고해요' },
+      SHEET_WAIT,
+    );
     expect(sheet).toHaveTextContent('현재 활동 번치: 큐시즘 기프');
     const submit = within(sheet).getByRole('button', { name: '신고하기' });
     expect(submit).toBeDisabled();
