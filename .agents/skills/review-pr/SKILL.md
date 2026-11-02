@@ -27,7 +27,7 @@ description: GitHub PR의 변경 diff를 독립 리뷰해 변경 줄에 inline �
 
 1. PR 제목, base, 설명을 읽고 변경된 수작업 소스의 범위를 먼저 파악한다.
 2. 독립 `bunch-reviewer`에게 PR diff만 맡긴다. 작성과 승인을 같은 맥락에서 하지 않는다.
-3. `docs/agent/bootstrap.md`의 "필수 호출 기준"에 해당하는 변경(route·API 계약·UI)은 해당 전용 reviewer도 호출한다. 호출하지 않았다면 호출했다고 쓰지 않는다.
+3. `docs/agent/bootstrap.md`의 "필수 호출 기준" 표에 해당하는 변경은 해당 전용 reviewer도 호출한다. 호출하지 않았다면 호출했다고 쓰지 않는다.
 4. 기존 thread를 읽는다. `gh repo view --json nameWithOwner`로 `OWNER/REPO`를 얻고 `gh api --paginate repos/OWNER/REPO/pulls/<번호>/comments`, `.../pulls/<번호>/reviews`, `.../issues/<번호>/comments`를 모두 본다. CodeRabbit·팀원이 이미 다룬 지적은 새로 쓰지 않는다. REST로는 resolved 여부를 알 수 없다고 결과에 적는다.
 5. PR 설명의 주장(동작, 라우팅, 테스트 완료)을 diff·설정·호출부와 대조하고, 불일치가 확인될 때만 질문한다.
 6. 모드는 `strict`가 기본이다. 확실한 버그, 보안, 접근성, 데이터·권한, 사용자 흐름 회귀, 경계 위반만 남긴다. `--broad`를 명시하면 유지보수성, 타입 안정성, 빈·오류 상태, 테스트 리스크도 후보에 넣는다.
