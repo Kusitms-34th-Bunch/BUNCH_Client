@@ -3,6 +3,7 @@
 export * from './AdminTransferSheet';
 export * from './BunchSwitchSheet';
 export * from './BundleRecommendSheet';
+export * from './ConfirmSheet';
 export * from './DateChangeSheet';
 export * from './MoreMenuSheet';
 export * from './PhotoUploadSheet';
