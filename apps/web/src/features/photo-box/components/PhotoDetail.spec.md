@@ -48,7 +48,7 @@
 
 ## UI와 접근성
 
-- Component mapping: 헤더는 `core`의 `Header`+`HeaderIconButton`·`IconButton`, 배지는 `UploaderBadge`, 메뉴는 공통 `PhotoActionMenu`(DS `Menu`), 삭제 확인 창은 `DeleteConfirmDialog`, 로딩은 `PageLoading`, 스와이프·확대는 Swiper.
+- Component mapping: 헤더는 `core`의 `Header`+`HeaderIconButton`·`IconButton`, 배지는 `UploaderBadge`, 메뉴는 공통 `PhotoActionMenu`(DS `Menu`), 삭제 확인 창은 `DeleteConfirmDialog`, 로딩은 `PageLoading`, 스와이프·확대는 Swiper(`PhotoViewerSwiper`, 지금 보는 사진·헤더 숨김·키보드 차단·슬라이드 보정은 `usePhotoViewer`. 추천 사진 뷰어와 번들 사진 크게 보기도 같은 두 부품을 쓰고 헤더·메뉴·삭제는 화면마다 다름). 주소만 바꾸는 호출은 `shared/lib/replaceUrl`로 `history.state`(Next 내부 값)를 지우지 않는다.
 - Semantic·heading: 화면 제목 `h1`(「사진 상세」, 화면에는 숨김), 현재 위치(「N장 중 M번째 사진」)는 항상 마운트된 `role="status"`, 사진은 `alt`가 있는 `img`, 처리 중·실패 사진은 이름이 있는 자리표시.
 - 키보드: 방향키 좌우로 사진을 넘기고(Swiper `Keyboard`), 포커스 가능한 「이전 사진」·「다음 사진」 버튼(평소 숨김, 포커스 때 보임, 처음·끝에서는 `aria-disabled`라 포커스를 잃지 않음)과 「사진 확대/축소」 버튼(`aria-pressed`)이 스와이프·핀치의 대체다. 메뉴·삭제 확인 창이 열려 있거나 저장·삭제가 도는 동안은 방향키 이동을 끈다. 헤더를 숨긴 상태에서도 포커스가 들어오면 다시 보인다(`focus-within`).
 - 요청 중: 저장·삭제가 도는 동안 사진 영역은 `inert`이고(헤더는 더보기 포커스를 유지하려고 열어 둠), 삭제는 확인 창을 연 시점의 사진을 지운다(그 사이 넘겨져도 다른 사진을 지우지 않음). 현재 사진 앞뒤가 아닌 빈 슬라이드는 `aria-hidden`이다.

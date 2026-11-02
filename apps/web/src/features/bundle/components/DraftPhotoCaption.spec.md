@@ -40,7 +40,8 @@
 ## 상태와 흐름
 
 - 상태는 `useDraft`(layout `DraftProvider`)의 `photos`이고 `setPhotoCaption`·`removePhoto`·`movePhoto`로 바꾼다. 바꾸면 작성 화면이 「저장 중」이 되고 반영은 바로 보인다. 이 흐름을 벗어나거나 새로고침하면 초기화된다.
-- 사진 로직(캡션 자르기, 빼기 종류, 이동)은 `lib/photos.ts`의 순수 함수다.
+- 사진 로직(캡션 자르기, 빼기 종류, 이동)은 `lib/photos.ts`의 순수 함수다. 화면은 흐름별 hook으로 나뉜다: 가운데 사진 번호·스크롤·스냅·포커스(`usePhotoListScroll`), 사진 빼기와 삭제 이동(`usePhotoRemoval`, 스크롤 보정이 이동보다 먼저 실행되는 순서에 의존), 끌어서 순서 바꾸기(`usePhotoReorder`). 사진 한 장은 `DraftPhotoCard`, 키보드 옮기기 버튼은 `PhotoMoveButtons`.
+- 사진을 뺀 뒤 초점은 같은 자리에 온 사진의 「크게 보기」 버튼으로 간다. `web-interface-guidelines.md`의 「같은 화면에서 항목이 사라지면 가장 가까운 요약 줄이나 제목」에서 가장 가까운 항목이 이웃 사진이고, 제목으로 보내면 읽기 위치를 잃어서다. 남은 장수는 낭독(`role="status"`)으로 알린다.
 - 끌기는 `@dnd-kit/core`·`sortable`(기록 016)이고 `MouseSensor`·`TouchSensor`만 쓴다. 놓으면 `movePhoto(id, 놓인 사진의 자리)`를 한 번 호출하고 옮긴 사진이 가운데 오게 스크롤한다.
 
 ## UI와 접근성
