@@ -266,6 +266,10 @@ describe('삭제', () => {
       }),
     );
     expect(screen.getByRole('button', { name: '선택' })).toBeTruthy();
+    // 눌렀던 메뉴·선택 칸이 사라지므로 초점은 body가 아니라 화면 제목으로 감
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 })),
+    );
   });
 
   it('사라진 사진이 0장이면 토스트를 띄우지 않는다', async () => {
