@@ -11,8 +11,8 @@ type BunchProfileProps = {
   onPlacesClick?: (() => void) | undefined;
   /** 「가볼 곳」 표시(다른 번치 프로필은 Figma 3086:68423에 없어 숨김) */
   showPlaces?: boolean | undefined;
-  /** 멤버 수를 누르면 갈 멤버 목록(화면설계서 2500:71333 4번). 없으면 글자만 */
-  membersHref?: string | undefined;
+  /** 수를 누르면 갈 목록(팔로워·팔로잉 5.11, 멤버 화면설계서 2500:71333 4번). 없는 수는 글자만 */
+  countHrefs?: Partial<Record<(typeof COUNTS)[number]['key'], string>> | undefined;
 };
 
 const COUNTS = [
@@ -26,7 +26,7 @@ export function BunchProfile({
   bunch,
   onPlacesClick,
   showPlaces = true,
-  membersHref,
+  countHrefs,
 }: BunchProfileProps) {
   return (
     <div className="gap-s8 px-s8 flex flex-col">
@@ -57,11 +57,12 @@ export function BunchProfile({
                 <span>{label}</span>
               </>
             );
+            const href = countHrefs?.[key];
             return (
               <li key={key}>
-                {key === 'memberCount' && membersHref ? (
+                {href ? (
                   <Link
-                    href={membersHref}
+                    href={href}
                     className="gap-s1 focus-visible:outline-border-brand relative flex items-center rounded-sm before:absolute before:-inset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     {count}

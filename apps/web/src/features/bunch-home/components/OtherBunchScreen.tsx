@@ -13,7 +13,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { FollowStatus, OtherBunch } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
-import { BUNCH_HOME_PATHS } from '../constants/paths';
+import { BUNCH_HOME_PATHS, followingTab } from '../constants/paths';
 import { headerIconLinkClass } from './BunchHomeHeader';
 import { BunchProfile } from './BunchProfile';
 import { CompletedBundleGrid } from './CompletedBundleGrid';
@@ -99,7 +99,11 @@ export function OtherBunchScreen({
             <BunchProfile
               bunch={{ ...bunch, followerCount }}
               showPlaces={false}
-              membersHref={BUNCH_HOME_PATHS.otherBunchMembers(bunch.id)}
+              countHrefs={{
+                followerCount: BUNCH_HOME_PATHS.otherBunchFollows(bunch.id),
+                followingCount: followingTab(BUNCH_HOME_PATHS.otherBunchFollows(bunch.id)),
+                memberCount: BUNCH_HOME_PATHS.otherBunchMembers(bunch.id),
+              }}
             />
             <div className="px-padding-p8">
               <FollowButton

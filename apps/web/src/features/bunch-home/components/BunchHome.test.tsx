@@ -34,6 +34,13 @@ describe('BunchHome', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: '여행가조' })).toBeTruthy();
     expect(screen.getByText('팔로워').previousSibling?.textContent).toBe('23');
+    // 팔로워·팔로잉 수는 내 번치의 목록으로(누른 쪽 탭)
+    expect(screen.getByRole('link', { name: '23 팔로워' }).getAttribute('href')).toBe(
+      '/bunch/follows',
+    );
+    expect(screen.getByRole('link', { name: '8 팔로잉' }).getAttribute('href')).toBe(
+      '/bunch/follows?tab=following',
+    );
     expect(screen.getByRole('tab', { name: '완성된 번들' }).getAttribute('aria-selected')).toBe(
       'true',
     );

@@ -59,9 +59,17 @@ describe('OtherBunch 공개 번치', () => {
     );
   });
 
-  it('멤버 수는 그 번치의 멤버 목록으로 가는 링크다', () => {
+  it('팔로워·팔로잉·멤버 수는 그 번치의 각 목록으로 가는 링크다', () => {
     render(<OtherBunch bunchId="bunch-camping" />);
 
+    expect(screen.getByRole('link', { name: '23 팔로워' })).toHaveAttribute(
+      'href',
+      '/bunches/bunch-camping/follows',
+    );
+    expect(screen.getByRole('link', { name: '8 팔로잉' })).toHaveAttribute(
+      'href',
+      '/bunches/bunch-camping/follows?tab=following',
+    );
     expect(screen.getByRole('link', { name: '4 멤버' })).toHaveAttribute(
       'href',
       '/bunches/bunch-camping/members',
