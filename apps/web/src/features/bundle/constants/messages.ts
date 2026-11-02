@@ -92,6 +92,15 @@ export const BUNDLE_MESSAGES = {
   removeCaptionedDescription: '사진을 삭제하면 작성된 캡션도 함께 삭제되며, 복구할 수 없어요.',
   removeCaptionedConfirm: '삭제하기',
   photoDeleted: '사진함에서 삭제된 사진이에요.',
+  // 사진 추가 화면(기능 spec 4.3.7, Figma `1782:33283`·`2060:38500`·`1782:32859`·`2091:62148`)
+  photoAddTitle: '사진 추가',
+  photoAddApply: '적용하기',
+  photoAddApplied: '변경사항이 적용되었어요.',
+  photoAddRemoveTitle: (count: number) => `사진 ${count}장이 번들에서 빠져요`,
+  photoAddRemoveDescription: '빠진 사진의 캡션도 함께 지워져요.',
+  photoAddLeaveTitle: '저장하지 않고 나갈까요?',
+  photoAddLeaveDescription: '변경한 내용이 반영되지 않아요.',
+  photoAddLeaveConfirm: '나가기',
 } as const;
 
 /** 위치를 담을 수 있는 최대 개수(Figma 수정 가이드: 3개가 차면 「추가」 행이 사라짐) */

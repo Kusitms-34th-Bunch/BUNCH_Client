@@ -28,6 +28,8 @@ const actions = {
 const onBack = vi.fn();
 const onPhotoChange = vi.fn();
 const onOpenViewer = vi.fn();
+const onImportFromBunchBox = vi.fn();
+const onImportFromGallery = vi.fn();
 
 type Options = {
   draft?: Draft;
@@ -49,6 +51,8 @@ const renderCaption = ({
       onBack={onBack}
       onPhotoChange={onPhotoChange}
       onOpenViewer={onOpenViewer}
+      onImportFromBunchBox={onImportFromBunchBox}
+      onImportFromGallery={onImportFromGallery}
     />,
   );
 
@@ -99,6 +103,26 @@ describe('DraftPhotoCaption 구성', () => {
     renderCaption({ draft, initialPhotoId: 'p0' });
 
     expect(screen.queryByRole('button', { name: '사진 추가' })).not.toBeInTheDocument();
+  });
+
+  it('「사진 추가」를 누르면 가져올 곳을 고르는 시트가 열리고 사진함을 고르면 닫고 이동을 요청한다', async () => {
+    renderCaption();
+
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
+    await userEvent.click(await screen.findByRole('button', { name: '번치 사진함에서 가져오기' }));
+
+    expect(onImportFromBunchBox).toHaveBeenCalledTimes(1);
+    expect(onImportFromGallery).not.toHaveBeenCalled();
+  });
+
+  it('내 갤러리를 고르면 더 담을 수 있는 장수와 함께 호출 지점을 부른다', async () => {
+    renderCaption();
+
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
+    await userEvent.click(await screen.findByRole('button', { name: '내 갤러리에서 가져오기' }));
+
+    expect(onImportFromGallery).toHaveBeenCalledWith(MAX_PHOTOS - draftFixture.photos.length);
+    expect(onImportFromBunchBox).not.toHaveBeenCalled();
   });
 
   it('사진을 누르면 크게 보기로 간다', async () => {

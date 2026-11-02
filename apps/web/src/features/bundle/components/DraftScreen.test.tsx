@@ -33,6 +33,7 @@ const actions = {
   setPhotoCaption: vi.fn(),
   removePhoto: vi.fn(),
   movePhoto: vi.fn(),
+  replacePhotos: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
 } satisfies DraftActions;
 

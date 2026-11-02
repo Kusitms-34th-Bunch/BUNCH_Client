@@ -298,6 +298,12 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition,
   },
+  {
+    from: BUNDLE_PATHS.transitionIds.photo,
+    to: BUNDLE_PATHS.transitionIds.photoAdd,
+    bidirectional: true,
+    transition: bundleSlide,
+  },
   { from: SIGNUP_PATHS.terms, to: LOGIN_PATH, transition: dissolve },
   {
     from: SIGNUP_PATHS.profile,
