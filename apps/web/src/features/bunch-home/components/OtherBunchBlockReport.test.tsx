@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, renderHook, screen, waitFor, within } from '@testing-library/react';
+import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -101,6 +101,19 @@ describe('다른 번치 차단', () => {
     const menu = await openMore(user);
     expect(within(menu).queryByRole('button', { name: '차단하기' })).toBeNull();
     expect(within(menu).getByRole('button', { name: '신고하기' })).toBeInTheDocument();
+  });
+
+  it('멤버 관리에서 관리자를 넘겨 일반 멤버가 되면 「차단하기」가 없다', async () => {
+    useBunch('bunch-run');
+    const user = userEvent.setup();
+    const { OtherBunch } = await import('./OtherBunch');
+    const { useBunchMembers } = await import('../hooks/useBunchMembers');
+    const { result } = renderHook(() => useBunchMembers('bunch-run'));
+    act(() => result.current.actions.transferOwner('member-kyungjun'));
+    render(<OtherBunch bunchId="bunch-camping" />);
+
+    const menu = await openMore(user);
+    expect(within(menu).queryByRole('button', { name: '차단하기' })).toBeNull();
   });
 
   it('서버 렌더는 차단 여부를 몰라 프로필 내용 없이 헤더만 그린다', async () => {
