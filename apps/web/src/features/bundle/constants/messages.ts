@@ -75,6 +75,7 @@ export const BUNDLE_MESSAGES = {
   captionTooLong: '캡션은 200자까지 쓸 수 있어요',
   photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
   photoOpenLabel: (current: number) => `${current}번째 사진 캡션 보기`,
+  photoCaptionTitle: '번들 사진',
   photoViewerTitle: '사진 크게 보기',
   photoViewLabel: (current: number) => `${current}번째 사진 크게 보기`,
   removePhotoLabel: (current: number) => `${current}번째 사진 빼기`,

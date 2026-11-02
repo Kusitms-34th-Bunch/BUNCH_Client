@@ -353,6 +353,8 @@ export function DraftPhotoCaption({
         />
       }
     >
+      {/* 화면 이동 뒤 초점이 가는 제목(web-interface-guidelines 「화면 이동 뒤 초점」): 코어 Header의 제목은 h1이 아니라 따로 둠 */}
+      <h1 className="sr-only">{BUNDLE_MESSAGES.photoCaptionTitle}</h1>
       <p role="status" className="sr-only">
         {announcement && announcement.index === current
           ? announcement.text
