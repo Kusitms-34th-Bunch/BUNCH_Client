@@ -1,0 +1,46 @@
+import { useSyncExternalStore } from 'react';
+import type { FollowStatus, OtherBunch } from '../lib/types';
+
+// 팔로우 API 연결 전 팔로우 처리 결과를 담는 임시 저장소(메모리, 새로고침하면 fixture로 돌아감)
+// 연결하면 팔로우·요청·취소 mutation과 프로필 query 갱신으로 대체
+const EMPTY: Readonly<Record<string, FollowStatus>> = {};
+let changed = EMPTY;
+const listeners = new Set<() => void>();
+
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+const setStatus = (bunchId: string, status: FollowStatus) => {
+  changed = { ...changed, [bunchId]: status };
+  listeners.forEach((listener) => listener());
+};
+
+/**
+ * 다른 번치의 지금 팔로우 상태와 바꾸는 동작. 팔로워 수는 처음 상태와 비교해 내 번치 한 명만큼 더하거나 뺌
+ * 공개 번치는 바로 팔로우, 비공개 번치는 요청(승인은 상대 번치 몫)
+ */
+export function useBunchFollow(bunch: OtherBunch | undefined) {
+  const all = useSyncExternalStore(
+    subscribe,
+    () => changed,
+    () => EMPTY,
+  );
+  const status = bunch ? (all[bunch.id] ?? bunch.followStatus) : 'none';
+  const following = (value: FollowStatus) => (value === 'following' ? 1 : 0);
+  const followerCount = bunch
+    ? bunch.followerCount + following(status) - following(bunch.followStatus)
+    : 0;
+  return {
+    status,
+    followerCount,
+    follow: () => {
+      if (bunch) setStatus(bunch.id, bunch.isPrivate ? 'requested' : 'following');
+    },
+    /** 언팔로우와 요청 취소 모두 「팔로우 안 함」으로 */
+    unfollow: () => {
+      if (bunch) setStatus(bunch.id, 'none');
+    },
+  };
+}

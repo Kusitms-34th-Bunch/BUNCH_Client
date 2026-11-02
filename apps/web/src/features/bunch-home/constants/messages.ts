@@ -65,6 +65,18 @@ export const BUNCH_HOME_MESSAGES = {
   // 앞의 「*」는 화면이 장식으로 붙임(스크린 리더에서 「별표」로 읽히지 않게)
   deleteConfirmHint: '‘삭제하기’를 정확히 입력하면 삭제 버튼이 활성화돼요.',
   deleted: (bunchName: string) => `${bunchName} 번치를 삭제했어요.`,
+  // 다른 번치 프로필(화면설계서 2500:68583)
+  privateBunchTitle: '비공개 번치예요',
+  privateBunchDescription: '번들을 보려면 이 번치를 팔로우하세요.',
+  followingPublic: '공개 번치',
+  followingPrivate: '비공개 번치',
+  requestPending: '요청 대기 중인 비공개 번치',
+  unfollowQuestion: '팔로우를 취소할까요?',
+  cancelRequestQuestion: '팔로우 요청을 취소할까요?',
+  followed: (bunchName: string) => `${bunchName} 번치를 팔로우했어요.`,
+  followRequested: (bunchName: string) => `${bunchName} 번치에 팔로우를 요청했어요.`,
+  unfollowed: (bunchName: string) => `${bunchName} 번치 팔로우를 취소했어요.`,
+  requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
   noBunchTitle: '참여 중인 번치가 없어요',
   noBunchDescription: '새 번치를 만들거나 초대받은 번치에 참여해보세요.',
   // 차단 목록(화면설계서 2236:40175 2~3번)

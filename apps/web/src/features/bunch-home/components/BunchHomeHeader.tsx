@@ -12,7 +12,7 @@ type BunchHomeHeaderProps = {
 };
 
 // 24px 아이콘, 터치 영역은 before로 40px까지 넓힘(아이콘 사이 16px 간격 유지)
-const trailingIconClass =
+export const headerIconLinkClass =
   'text-icon-primary focus-visible:outline-border-brand relative flex size-6 cursor-pointer touch-manipulation items-center justify-center rounded-full before:absolute before:-inset-2 focus-visible:outline-2 focus-visible:outline-offset-2';
 
 /** 번치 홈 상단 헤더: 번치 전환(이미지·이름·화살표), 알림, 더보기. 배경은 캐릭터 영역과 같은 brand-subtle */
@@ -40,11 +40,11 @@ export function BunchHomeHeader({
           <Link
             href={BUNCH_HOME_PATHS.notifications}
             aria-label="알림"
-            className={trailingIconClass}
+            className={headerIconLinkClass}
           >
             <LineBellLargeIcon />
           </Link>
-          <Link href={BUNCH_HOME_PATHS.menu} aria-label="더보기" className={trailingIconClass}>
+          <Link href={BUNCH_HOME_PATHS.menu} aria-label="더보기" className={headerIconLinkClass}>
             <LineDotsLargeIcon />
           </Link>
         </>
