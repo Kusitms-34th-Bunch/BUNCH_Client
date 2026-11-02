@@ -81,6 +81,8 @@ register.mutate(form, { onSuccess: () => router.push(nextPath) });
 
 `bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스다(첫 API 연동 때 `src/shared/api`에 둔다). QueryClient는 `src/shared/providers/`의 `QueryProvider`가 `(app)` layout에서 제공한다(그룹 밖 화면이 query를 쓰게 되면 캐시를 나누지 않도록 `QueryProvider`를 root layout으로 올린다). 서버 prefetch를 쓰게 되면 요청 단위 `getQueryClient` 구조로 바꾼다. 조회는 네트워크 오류·5xx만 1회 재시도하고(`createRetryPolicy`), 4xx와 mutation은 재시도하지 않는다.
 
+조회의 기본 `staleTime`은 5분이고, 포커스 갱신(`refetchOnWindowFocus`)은 기본값(켜짐)을 유지한다. 5분 안에 화면이나 앱으로 돌아오면 다시 요청하지 않는다. 5분이 지난 뒤 돌아오면 새로 가져온다. 거의 바뀌지 않는 데이터는 그 `queryOptions`에서 `staleTime`을 늘린다. 다른 사용자의 행동으로 바뀌는 데이터(알림, 팔로우 요청 등)는 줄인다. 전역 기본값은 바꾸지 않는다.
+
 ### BFF 경로
 
 일반 요청은 범용 BFF 프록시가 백엔드로 전달하므로 API를 붙일 때 Route Handler를 새로 만들지 않는다. BFF 경로 규칙과 전용 Route Handler를 만드는 기준은 `docs/architecture/api-boundary.md`를 따른다.
