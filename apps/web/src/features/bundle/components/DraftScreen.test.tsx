@@ -30,6 +30,9 @@ const actions = {
   setDate: vi.fn(),
   addMember: vi.fn(),
   removeMember: vi.fn(),
+  setPhotoCaption: vi.fn(),
+  removePhoto: vi.fn(),
+  movePhoto: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
 } satisfies DraftActions;
 
@@ -102,7 +105,16 @@ describe('DraftScreen 구성', () => {
     renderScreen({
       draft: {
         ...draftFixture,
-        photos: [{ id: 'p', src: '/p.jpg', alt: '캡션 없는 사진', caption: '' }],
+        photos: [
+          {
+            id: 'p',
+            src: '/p.jpg',
+            alt: '캡션 없는 사진',
+            caption: '',
+            takenAt: null,
+            uploaderId: 'jiye',
+          },
+        ],
       },
     });
     expect(screen.getByText(BUNDLE_MESSAGES.captionPlaceholder)).toBeInTheDocument();

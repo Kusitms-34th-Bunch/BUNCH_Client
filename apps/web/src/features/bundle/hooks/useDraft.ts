@@ -16,6 +16,7 @@ import {
   draftViewerFixture,
   placeFixture,
 } from '../fixtures/draft.fixture';
+import { movePhoto, removePhoto, setPhotoCaption } from '../lib/photos';
 
 // 입력이 멈추고 이만큼 지나면 저장 완료로 봄(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」)
 const SAVE_DELAY_MS = 1000;
@@ -52,6 +53,12 @@ export type DraftActions = {
   addMember: (_memberId: string) => void;
   /** 참여 멤버를 내보냄(그 멤버의 코멘트도 함께 삭제) */
   removeMember: (_memberId: string) => void;
+  /** 사진 캡션을 바꿈(최대 글자 수 보정은 호출하는 쪽이 함) */
+  setPhotoCaption: (_photoId: string, _caption: string) => void;
+  /** 사진을 번들에서 뺌(1장이면 무시, 캡션도 함께 사라짐) */
+  removePhoto: (_photoId: string) => void;
+  /** 사진을 다른 자리(0부터)로 옮김(캡션은 사진을 따라감) */
+  movePhoto: (_photoId: string, _toIndex: number) => void;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
 };
 
@@ -114,6 +121,15 @@ export function useDraft(draftId: string | undefined): {
         members: current.members.filter((member) => member.id !== memberId),
         comments: current.comments.filter((comment) => comment.memberId !== memberId),
       })),
+    setPhotoCaption: (photoId, caption) =>
+      update((current) => ({
+        ...current,
+        photos: setPhotoCaption(current.photos, photoId, caption),
+      })),
+    removePhoto: (photoId) =>
+      update((current) => ({ ...current, photos: removePhoto(current.photos, photoId) })),
+    movePhoto: (photoId, toIndex) =>
+      update((current) => ({ ...current, photos: movePhoto(current.photos, photoId, toIndex) })),
     searchPlaces,
   };
 

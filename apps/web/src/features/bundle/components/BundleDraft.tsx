@@ -39,6 +39,7 @@ export function BundleDraft() {
       onLeave={() => leaveDraft(isDraftCreator(state.draft, state.viewer))}
       onRetry={recheck}
       onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}
+      onOpenPhoto={(photoId) => router.push(BUNDLE_PATHS.photo(draftId, photoId))}
     />
   );
 }

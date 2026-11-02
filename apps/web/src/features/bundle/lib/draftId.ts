@@ -4,3 +4,6 @@ const DRAFT_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 /** route 경계에서 초안 id 형식을 검증. 틀리면 undefined */
 export const parseDraftId = (value: string): string | undefined =>
   DRAFT_ID_PATTERN.test(value) ? value : undefined;
+
+/** route 경계에서 사진 id 형식을 검증(초안 id와 같은 규칙). 틀리면 undefined */
+export const parsePhotoId = (value: string): string | undefined => parseDraftId(value);

@@ -17,6 +17,10 @@ export type DraftPhoto = {
   alt: string;
   /** 사진 캡션(없으면 빈 문자열) */
   caption: string;
+  /** 촬영 날짜·시각('YYYY-MM-DDTHH:mm'). 확인하지 못했으면 null */
+  takenAt: string | null;
+  /** 올린 멤버 id */
+  uploaderId: string;
 };
 
 export type DraftLocation = {
@@ -36,6 +40,8 @@ export type DraftEditing = {
   title?: string | undefined;
   /** 사진을 편집 중인 멤버 모두 */
   photoMemberIds?: readonly string[] | undefined;
+  /** 사진 한 장 단위의 잠금: 사진 id → 그 사진을 편집 중인 멤버 */
+  photoEditors?: Readonly<Record<string, readonly string[]>> | undefined;
   location?: string | undefined;
   date?: string | undefined;
   /** 코멘트를 쓰는 중인 멤버(잠그지 않고 표시만) */
