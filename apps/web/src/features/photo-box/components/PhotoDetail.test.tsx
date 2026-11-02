@@ -98,14 +98,20 @@ describe('PhotoDetail', () => {
     vi.restoreAllMocks();
   });
 
-  it('사진을 넘기면 Next 이동 없이 주소만 현재 사진으로 바꾼다', () => {
+  it('사진을 넘기면 Next 이동 없이 주소만 현재 사진으로 바꾸고 history.state는 지우지 않는다', () => {
+    window.history.replaceState({ __NA: true }, '', '/');
     const replaceState = vi.spyOn(window.history, 'replaceState');
     render(<PhotoDetail photoId={firstId} />);
 
     screenProps?.onPhotoChange?.('photo-7');
 
-    expect(replaceState).toHaveBeenCalledWith(null, '', PHOTO_BOX_PATHS.detail('photo-7'));
+    expect(replaceState).toHaveBeenCalledWith(
+      { __NA: true },
+      '',
+      PHOTO_BOX_PATHS.detail('photo-7'),
+    );
     expect(replace).not.toHaveBeenCalled();
     replaceState.mockRestore();
+    window.history.replaceState(null, '', '/');
   });
 });

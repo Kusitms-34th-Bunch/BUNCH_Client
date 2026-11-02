@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { replaceUrl } from '@/shared/lib/replaceUrl';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { PHOTO_BOX_PATHS } from '../constants/paths';
 import { usePhotoBox } from '../hooks/usePhotoBox';
@@ -55,7 +56,7 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
       }
       onLeave={() => router.replace(PHOTO_BOX_PATHS.list)}
       // 넘길 때마다 Next 이동 없이 주소만 맞춰 새로고침·공유가 현재 사진을 가리키게 함
-      onPhotoChange={(id) => window.history.replaceState(null, '', PHOTO_BOX_PATHS.detail(id))}
+      onPhotoChange={(id) => replaceUrl(PHOTO_BOX_PATHS.detail(id))}
     />
   );
 }

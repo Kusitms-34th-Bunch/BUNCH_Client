@@ -109,6 +109,15 @@ describe('DraftPhotoCaption 구성', () => {
     expect(onOpenViewer).toHaveBeenCalledWith('draft-photo-2');
   });
 
+  it('화면 제목 h1을 하나 둔다(이동 뒤 초점이 가는 곳)', () => {
+    renderCaption();
+
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      BUNDLE_MESSAGES.photoCaptionTitle,
+    );
+  });
+
   it('뒤로 가기를 누르면 돌아간다', async () => {
     renderCaption();
 

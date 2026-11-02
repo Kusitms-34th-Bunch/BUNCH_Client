@@ -2,7 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { DateChangeSheet, FloatingButton, PhotoUploadSheet } from '@app/design-system/web';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -34,6 +34,9 @@ const noopActions: PhotoBoxActions = {
   deletePhotos: () => Promise.resolve({ removedCount: 0 }),
   changePhotoDates: () => Promise.resolve(),
 };
+
+// 확인 창 닫힘 전환(100ms)이 끝난 뒤에 초점을 옮기려는 지연
+const DIALOG_CLOSE_MS = 150;
 
 type PhotoBoxScreenProps = {
   state: PhotoBoxState;
@@ -71,7 +74,19 @@ export function PhotoBoxScreen({
   const data = state.kind === 'ready' ? state.data : undefined;
   const photos = data?.photos;
 
-  const flow = usePhotoSelectionFlow({ data, actions, onCreateBundle });
+  // 사진을 지우면 눌렀던 메뉴·선택 칸이 사라지므로 화면 제목으로 초점을 옮김(web-interface-guidelines 「같은 화면에서 항목이 사라지면」, 확인 창이 닫힌 뒤)
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(focusTimer.current), []);
+  const focusHeading = () => {
+    clearTimeout(focusTimer.current);
+    focusTimer.current = setTimeout(
+      () => headingRef.current?.focus({ preventScroll: true }),
+      DIALOG_CLOSE_MS,
+    );
+  };
+
+  const flow = usePhotoSelectionFlow({ data, actions, onCreateBundle, onDeleted: focusHeading });
   const { selecting, selection } = flow;
   const busy = flow.busy || dragMoving;
 
@@ -167,7 +182,9 @@ export function PhotoBoxScreen({
         </div>
       }
     >
-      <h1 className="sr-only">사진함</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="sr-only">
+        사진함
+      </h1>
       {selecting ? <HideMainTabBar /> : null}
       {/* 선택 모드 진입·선택 개수·저장 중 상태를 알리는 live region(항상 마운트해 문구만 바꿈) */}
       <p role="status" className="sr-only">
