@@ -37,6 +37,18 @@
 - 실제 도달 경로가 없는 이론적 취약점("만약 이 함수가 이렇게 쓰인다면")을 확정된 finding처럼 보고하지 않는다. 확실하지 않으면 finding을 낮추고 근거와 함께 남긴다.
 - 배포 설정, WAF, CDN처럼 저장소 밖에 있는 통제를 코드만 보고 있다/없다고 단정하지 않는다.
 
+## BUNCH 고유 표면
+
+공통 확인 항목과 별개로 이 서비스에만 있는 경계다. 가장 비싼 사고는 **승인되지 않은 번치에 다른 번치의 사진·번들·명단이 보이는 것**과 **세션·토큰이 브라우저 코드나 다른 사용자에게 새는 것**이다. `security-reviewer`(`docs/agent/roles/security-reviewer.md`)가 이 절을 기준으로 본다.
+
+- **공개 범위·관계·역할**: 비공개 번치는 승인된 팔로워가 아니면 수치까지만, 차단 관계면 프로필·번들·명단 모두 볼 수 없다(기능명세 5.10). 역할별 권한은 `docs/specs/bunch-home.md`의 표를 따른다. API를 연결한 화면은 이 판정을 클라이언트 숨김(링크 제거, 조건부 렌더)만으로 하지 않는지, 잠긴 화면에서 목록 query를 보내지 않는지(`enabled: false`), 서버가 같은 조건으로 거절하는지 본다. API 연결 전 fixture·메모리 저장소 화면의 클라이언트 판정은 알려진 단계적 한계라 finding으로 올리지 않고, 화면 규칙과 어긋나는지만 본다.
+- **BFF·인증 쿠키**: `docs/architecture/api-boundary.md`가 기준이다. 새 Route Handler가 `createAuthorizedRoute`·`createServerApi`를 거치는지, 범용 프록시(`src/app/api/[...path]`)의 경로 정규화·헤더 걸러내기·쿠키 미전달이 약해지지 않았는지, `src/proxy.ts`의 상태 변경 요청 `Sec-Fetch-Site` 검사가 우회되지 않는지, 토큰을 브라우저 코드가 읽거나 저장하지 않는지 본다.
+- **초대 링크·코드**(`features/bunch-invite`, `features/onboarding`): 코드가 추측 가능하거나 URL·로그·Sentry로 새지 않는지, 만료·재사용 처리를 클라이언트만 믿지 않는지 본다.
+- **사진 업로드**(`features/photo-box`, `features/bundle`, `shared/hooks/usePhotoPicker`): 파일 형식·크기를 확장자만으로 판단하지 않는지, 업로드 전후로 위치(EXIF GPS) 같은 메타데이터가 다른 번치에 공개되는 경로가 없는지 본다. 크기 제한은 백엔드(파일 6MB·요청 7MB)와 맞춘다.
+- **web ↔ 네이티브 bridge**(`packages/bridge`, `apps/web/src/shared/bridge`, `apps/mobile-shell`): 메시지를 스키마(`packages/bridge/src/schema.ts`)로 검증하는지, 웹 페이지가 네이티브 권한(카메라·사진·파일)을 사용자 동작 없이 부르거나 임의 URL을 열게 하는 경로가 없는지 본다.
+- **오류 수집**(`apps/web/src/shared/config/sentry.ts`): 사진·초대 코드·토큰·사용자 입력 같은 내용이 아니라 식별자만 보내는지 본다.
+- **환경 변수**: 서버 전용 값(`API_BASE_URL` 등)에 `NEXT_PUBLIC_`·`VITE_`를 붙이지 않는지 본다.
+
 ## 심각도
 
 심각도의 정본은 `docs/code-quality/review.md`의 Finding 기준이다. 보안 영역에는 아래 표로 적용한다.
