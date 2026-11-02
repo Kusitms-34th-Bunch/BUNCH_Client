@@ -19,6 +19,8 @@ export type MenuTabsRootProps = {
 export type MenuTabsListProps = {
   /** 방향키로 초점을 옮길 때 바로 선택할지. 기본 false(Enter·Space로 선택) */
   activateOnFocus?: boolean | undefined;
+  /** 선택 밑줄 모양: `text`는 `Tab`의 2px 선, `icon`은 `IconTab`의 1px 선. 기본 `text` */
+  variant?: 'text' | 'icon' | undefined;
   className?: string | undefined;
   children: ReactNode;
 } & ({ 'aria-label': string } | { 'aria-labelledby': string });
@@ -52,8 +54,26 @@ export type MenuTabsPanelProps = {
 
 const Root = (props: MenuTabsRootProps) => <Tabs.Root {...props} />;
 
-const List = ({ className, ...props }: MenuTabsListProps) => (
-  <Tabs.List {...props} className={cn('flex', className)} />
+// 선택 밑줄은 탭마다 그리지 않고 하나를 선택된 탭 위치로 옮김(밑줄 이동 200ms ease-out, 사용자 결정 2026-11-02)
+const INDICATOR = {
+  text: 'h-0.5 bg-chip-gray-fg',
+  icon: 'h-px bg-icon-tertiary',
+} as const;
+
+const List = ({ className, variant = 'text', children, ...props }: MenuTabsListProps) => (
+  <Tabs.List {...props} className={cn('relative flex', className)}>
+    {children}
+    {/* renderBeforeHydration: 서버 HTML에도 밑줄 위치를 넣어 첫 화면에서 밑줄이 늦게 나타나지 않게 함(인라인 스크립트) */}
+    <Tabs.Indicator
+      renderBeforeHydration
+      className={cn(
+        'pointer-events-none absolute bottom-0 left-(--active-tab-left) w-(--active-tab-width) transition-[left,width] duration-200 ease-out motion-reduce:transition-none',
+        // 강제 색상 모드는 배경색을 덮으므로 시스템 글자색으로 그림
+        'forced-colors:bg-[CanvasText] forced-colors:forced-color-adjust-none',
+        INDICATOR[variant],
+      )}
+    />
+  </Tabs.List>
 );
 
 const Tab = ({ label, count, className, ...props }: MenuTabsTabProps) => (
@@ -62,7 +82,8 @@ const Tab = ({ label, count, className, ...props }: MenuTabsTabProps) => (
     className={cn(
       'typography-body-1-medium text-text-tertiary gap-s4 px-padding-p11 inline-flex h-10 shrink-0 cursor-pointer touch-manipulation items-center justify-center border-b-2 border-transparent',
       'data-disabled:cursor-not-allowed data-disabled:opacity-(--semantic-opacity-disabled)',
-      'data-active:text-text-primary data-active:border-chip-gray-fg',
+      // 선택 밑줄은 List의 Indicator가 그림(투명 선은 높이 유지용)
+      'data-active:text-text-primary',
       'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:-outline-offset-2',
       className,
     )}
@@ -91,7 +112,8 @@ const IconTab = ({ label, icon, selectedIcon, className, ...props }: MenuTabsIco
       'transition-colors duration-75 ease-[ease-out] after:transition-colors after:duration-75 after:ease-[ease-out] motion-reduce:transition-none motion-reduce:after:transition-none',
       'not-data-disabled:active:bg-overlay-hover',
       'data-disabled:after:bg-border-disabled data-disabled:cursor-not-allowed data-disabled:opacity-(--semantic-opacity-disabled)',
-      'data-active:text-icon-tertiary data-active:after:bg-icon-tertiary',
+      // 선택 밑줄(진한 1px)은 List의 Indicator가 회색 선 위에 그림
+      'data-active:text-icon-tertiary',
       'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:-outline-offset-2',
       className,
     )}

@@ -141,7 +141,7 @@ export function BunchHomeScreen({
             }}
             className="flex flex-1 flex-col"
           >
-            <MenuTabs.List aria-label="번들">
+            <MenuTabs.List aria-label="번들" variant="icon">
               <MenuTabs.IconTab
                 value="completed"
                 label="완성된 번들"
