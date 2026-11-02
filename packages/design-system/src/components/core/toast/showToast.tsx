@@ -1,6 +1,7 @@
 'use client';
 
 import { toast as sonnerToast } from 'sonner';
+import { cn } from '../../../utils';
 import { type ToastAction, type ToastIcon, Toast } from './Toast';
 
 // 노출 시간: Figma 공통 모션(토스트 모션)은 단순 완료 안내 3초, 액션 버튼 포함 5초
@@ -33,7 +34,7 @@ export const toast = (
       <div style={bottomOffset ? { paddingBottom: bottomOffset } : undefined}>
         <Toast
           // Toaster가 항목을 목록 폭(w-full)으로 펴 두므로, 기본은 내용 폭의 Toast를 그 안에서 가운데 정렬
-          className={fullWidth ? 'w-full' : 'mx-auto'}
+          className={cn('pointer-events-auto', fullWidth ? 'w-full' : 'mx-auto')}
           icon={icon}
           action={
             action && {

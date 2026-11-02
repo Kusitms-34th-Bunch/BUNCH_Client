@@ -34,7 +34,9 @@ export const Toaster = () => (
     offset={{ bottom: BOTTOM_OFFSET, top: TOP_OFFSET }}
     mobileOffset={{ bottom: BOTTOM_OFFSET, top: TOP_OFFSET }}
     // 항목(li)을 목록 폭으로 펴서 안의 Toast를 내용 폭으로 가운데 정렬
-    toastOptions={{ unstyled: true, className: cn('w-full', TOAST_MOTION) }}
+    // 목록·항목의 빈 자리(목록 폭, bottomOffset 여백)는 터치를 통과시켜 아래 탭 막대·버튼을 막지 않음. 보이는 Toast만 받음
+    className="pointer-events-none"
+    toastOptions={{ unstyled: true, className: cn('pointer-events-none w-full', TOAST_MOTION) }}
     customAriaLabel="알림"
   />
 );
