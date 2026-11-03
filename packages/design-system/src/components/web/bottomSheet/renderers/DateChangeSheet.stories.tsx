@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { useArgs } from 'storybook/preview-api';
 import { Button } from '../../../core/button';
 import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { DateChangeSheet } from './DateChangeSheet';
@@ -18,7 +19,9 @@ const meta = {
   ],
   args: { open: true, onOpenChange: () => {}, onSave: () => {} },
   render: function Render(args) {
-    const [open, setOpen] = useState(args.open);
+    // Controls의 open과 시트 열림을 같은 값으로(초기값 복사가 아님)
+    const [{ open }, updateArgs] = useArgs<typeof args>();
+    const setOpen = (nextOpen: boolean) => updateArgs({ open: nextOpen });
     const [saved, setSaved] = useState<string | null>(null);
     return (
       <>
