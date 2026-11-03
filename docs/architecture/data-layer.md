@@ -6,8 +6,11 @@
 - endpoint 함수는 React, TanStack Query, route, toast에 의존하지 않고 HTTP 요청과 앱이 소비할 계약 변환만 담당한다. query hook은 endpoint를 호출하고 cache·enabled·select 정책을, 화면은 사용자 상태 표현을 소유한다.
 - OpenAPI 생성 계약은 `packages/api-core/src/generated/openapi.ts`에 둔다. 생성 파일은 endpoint 경계에서만 사용하고 UI에는 필요한 형태로 좁혀 전달한다.
 - wire 필드명과 도메인 이름이 다르면(예: `pub_date` → `publishedAt`) raw 타입으로 먼저 받고 endpoint 경계에서 명시적으로 매핑한다. 필드명이 다른 응답을 `as`로 단언하면 타입 체크는 통과해도 값이 런타임에 `undefined`가 되는 버그로 이어진다.
-- 모든 endpoint 응답은 zod 스키마로 검사한 뒤 쓴다. 생성 타입은 컴파일 타임 계약일 뿐이고, 사진함·번들·번치 홈처럼 Swagger에 아직 없는 계약은 노션 명세로 직접 쓴 타입이라 실제 서버와 어긋나기 쉽다.
-  - 스키마는 feature `model/`에 두고 타입은 `z.infer`로 얻는다. Swagger에 올라오면 `satisfies z.ZodType<생성 타입>`을 붙여 노션 명세와 생성 계약이 다르면 컴파일에서 드러나게 한다.
+- 모든 endpoint 응답은 zod 스키마로 검사한 뒤 쓴다. 생성 타입은 컴파일 타임 계약일 뿐이라 서버가 실제로 다른 값을 보내도 막지 못한다.
+  - 스키마는 feature `model/`에 두고 타입은 `z.infer`로 얻는다. Swagger에 있는 응답은 `schema satisfies z.ZodType<ApiContract<생성 타입>>`(`@app/api-core`)으로 생성 계약과 묶는다.
+  - `ApiContract`는 생성 타입의 최상위 선택 필드를 생략과 null 모두 허용하도록 넓힌다. 서버가 둘 중 어느 쪽으로 보낼지 생성 타입만으로는 알 수 없어서다. 선택 필드는 스키마에서 `.nullish()`로 받는다. 중첩 객체의 선택 필드는 넓히지 않으므로, 중첩 응답을 처음 연동할 때 필요하면 넓힌다.
+  - 이 검사는 스키마 결과가 계약에 들어맞는지만 보는 단방향 검사다. 필수 필드 누락, 값 타입 오류, 계약에 없는 enum 값은 컴파일에서 잡는다. 계약에 없는 필드 추가, 계약보다 좁은 enum, 빠뜨린 선택 필드는 잡지 못하므로 스키마를 쓸 때 생성 타입과 직접 대조한다. 계약상 선택인 필드를 화면 때문에 필수로 받으면 그 이유를 스키마 주석에 남긴다.
+  - Swagger에 아직 없는 응답만 노션 명세로 스키마를 쓰고, 올라오면 같은 방식으로 묶는다.
   - web은 `src/shared/api/bffApi.ts`의 `requestData(request, schema, context)`로 요청한다. envelope 해제, 스키마 검사, 오류 변환을 한곳에서 한다. HTTP 오류·실패 envelope·네트워크 오류·계약 위반은 모두 `ApiError`로 던지고, 계약 위반은 code `INVALID_RESPONSE`(category `validation`, 재시도 없음)다. category `validation`은 4xx 요청 오류에도 쓰이므로 계약 위반은 code로 구분한다. 어느 응답인지와 어긋난 위치는 화면 문구가 아니라 `data`(`context`, `issues`)에 담긴다. 계약 위반을 오류 수집(Sentry)으로 보내는 것은 아직 하지 않았고 후속 과제다.
   - enum은 명세 값만 받는 닫힌 목록으로 둔다. 서버가 새 값을 보내면 화면이 추측하지 않고 계약 위반으로 드러난다.
   - `requestData`는 `data`가 있는 응답 전용이다. 본문 없는 204 응답은 본문을 읽지 않는 요청 함수가 따로 필요하고, 첫 204 mutation을 연동할 때 만든다.
