@@ -65,7 +65,7 @@ Serena(semantic code navigation)와 agent-browser(라이브 브라우저 조작)
 
 ## future-skills: 아직 안 쓰는 참고 자료
 
-`.agents/future-skills/`에는 지금 당장 쓰지 않지만 나중에 필요해질 가능성이 있는 서드파티 skill·라이브러리 lookup을 보관한다. 라우팅에 연결돼 있지 않아 agent가 평소엔 읽지 않는다 — 새 의존성이 필요할 때(`docs/conventions/package-management.md`) 또는 브리프 기반 신규 화면 생성처럼 지금 안 하는 작업이 실제로 필요해질 때 찾아본다. 활성화 절차는 `.agents/future-skills/README.md`에 있다.
+`.agents/future-skills/`에는 지금 당장 쓰지 않지만 나중에 필요해질 가능성이 있는 서드파티 디자인 생성 skill(`taste-*`)을 보관한다. 라우팅에 연결돼 있지 않아 agent가 평소엔 읽지 않는다 — 브리프 기반 신규 화면 생성처럼 지금 안 하는 작업이 실제로 필요해질 때 찾아본다. 라이브러리 선택 기준은 이 폴더가 아니라 `docs/conventions/libraries.md`에 있고 구현 skill이 그 문서를 가리킨다. 활성화 절차는 `.agents/future-skills/README.md`에 있다.
 
 ## 문서를 최신으로 유지하기
 

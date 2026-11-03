@@ -11,7 +11,7 @@
 - `@app/api-core`는 UI와 라우팅에 의존하지 않는다.
 - `turbo.json`의 boundary 규칙을 우회하는 경로 alias나 상대 import를 만들지 않는다.
 - 의존성은 실제 소유 workspace에 추가한다. app 전용 UI·router·runtime 의존성은 app에, 여러 app이 함께 쓰는 구현만 shared package에 둔다.
-- 새 라이브러리가 필요하면 추측으로 고르기 전에 `.agents/future-skills/`에 관련 lookup(`pick-ui-library`, `library-picks` 등)이 있는지 먼저 확인한다. 없으면 직접 조사하고, 실제로 도입하면 이 문서나 관련 architecture 문서에 선택 근거를 남긴다.
+- 라이브러리가 필요해 보이면 추측으로 고르기 전에 `docs/conventions/libraries.md`에서 이미 도입한 것과 상황별 후보를 먼저 확인한다. 없으면 직접 조사하고, 실제로 도입하면 그 문서의 「도입한 것」 표에 더하고 선택 근거를 남긴다.
 - shared package 사이 의존성은 public package name으로 선언한다. workspace 내부 소스를 깊은 상대 경로로 import하지 않는다.
 - dependency 또는 lockfile 변경 뒤에는 `yarn install`과 영향 workspace의 lint·typecheck·test를 확인한다. 가능한 경우 `yarn workspace <name> <script>`로 범위를 좁힌다.
 - generator의 source·template 의존성은 generator가 소유하며, 생성물이 아직 사용하지 않는 runtime 의존성을 미리 추가하지 않는다.

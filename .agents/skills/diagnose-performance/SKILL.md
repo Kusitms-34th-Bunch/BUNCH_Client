@@ -22,6 +22,7 @@ LCP/FCP/CLS/TBT, bundle size, request 수는 서로 다른 지표이므로 사�
 
 - 독립 요청 병렬화, 실제 진입 시점 lazy/dynamic import, derived state의 render 계산, event 기반 side effect, 무거운 목록 분리는 근거가 있을 때 선택한다.
 - memoization, `startTransition`, Set/Map, cache는 측정된 비용과 trade-off가 있을 때만 적용한다.
+- 긴 목록 가상화처럼 라이브러리가 필요한 개선은 `docs/conventions/libraries.md`의 후보와 도입 전 확인 항목을 따른다.
 - async UI는 공간을 예약하고 loading/error/empty를 숨겨 속도가 빨라 보이게 만들지 않는다.
 
 ## 검증과 출력

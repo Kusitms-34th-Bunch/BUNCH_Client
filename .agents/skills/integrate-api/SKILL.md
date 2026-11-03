@@ -33,6 +33,7 @@ description: 이 저장소의 데이터 계층 기준으로 API endpoint, TanSta
 2. 대상 app의 `AGENTS.md`, 가까운 endpoint·query key·hook·UI·test
 3. 필요할 때 `packages/api-core/src`와 생성 OpenAPI 타입
 4. route·feature가 문서화되어 있으면 가까운 `*.spec.md`
+5. Suspense 방식(`useSuspenseQuery`)으로 로딩·오류·다시 시도 경계를 만들게 되면 `docs/conventions/libraries.md`의 suspensive 후보
 
 ## 소유와 파일 배치
 
