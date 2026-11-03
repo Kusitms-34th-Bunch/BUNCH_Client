@@ -16,7 +16,7 @@
 
 - `label`: 멤버 이름(필수, 라디오 접근성 이름). 네이티브 `name`은 라디오 그룹 이름으로 쓰므로 멤버 이름은 `label`로 받는다.
 - `imageSrc?`: 프로필 이미지 주소(없으면 기본 배경색 원). 이미지는 장식이다.
-- `memberRole?`·`roleLabel?`: 이미지 오른쪽 아래 역할 배지(`RoleBadge`)와 역할 이름. 배지는 장식이고 `roleLabel`은 라디오 이름 뒤에 읽힌다(예: `경진, 메인 관리자`).
+- `memberRole?`·`roleLabel?`: 이미지 오른쪽 아래 역할 배지(`RoleBadge`)와 역할 이름. 배지는 장식이고 `roleLabel`은 `memberRole`이 있을 때만 라디오 이름 뒤에 읽힌다(예: `경진, 메인 관리자`).
 - native `<input type="radio">` 속성(`name`, `value`, `checked`, `defaultChecked`, `onChange`, `disabled` 등). `className`은 카드(`<label>`)에 적용한다.
 
 ## 상태와 동작
@@ -29,7 +29,7 @@
 
 ## 접근성
 
-- 카드 전체가 `<label>`이라 어디를 눌러도 선택된다. 라디오의 접근성 이름은 멤버 이름이다.
+- 카드 전체가 `<label>`이라 어디를 눌러도 선택된다. 라디오의 접근성 이름은 멤버 이름이고, `memberRole`과 `roleLabel`이 함께 있으면 뒤에 역할 이름이 붙는다(예: `경진, 메인 관리자`). `roleLabel`만 있으면 붙지 않는다.
 - 키보드: 같은 그룹 안에서 방향키로 이동·선택(네이티브 라디오).
 - 초점 표시는 라디오 원에 `outline`(`core/radio`).
 - 선택 상태는 색만이 아니라 라디오 점으로도 보인다.
