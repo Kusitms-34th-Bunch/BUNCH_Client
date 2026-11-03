@@ -244,8 +244,8 @@ export const ActionDialog = ({
       onOpenChange(nextOpen);
     }}
   >
-    {/* Figma Stack: 위아래 16px·좌우 22px(내용 폭 267px), 내용·버튼 사이 24px */}
-    <Content className="px-padding-p11 py-padding-p8">
+    {/* Figma Stack: 위 22px·아래 16px·좌우 22px(내용 폭 267px), 내용·버튼 사이 24px */}
+    <Content className="px-padding-p11 pt-padding-p11 pb-padding-p8">
       {image ? <Media className="m-0">{image}</Media> : null}
       <Title className="pt-s3 px-0">{title}</Title>
       {description ? <Description className="mt-s3 px-0">{description}</Description> : null}

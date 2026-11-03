@@ -42,7 +42,7 @@
 - radius-r9, padding-p11(22), padding-p10(20), padding-p8(16), spacing-s4(8).
 - typography-heading-1-semibold / typography-body-1-regular, text-primary / text-tertiary.
 - Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경 딤은 Figma(`791:11665`의 딤 레이어)대로 overlay-dim-subtle(검정 10%).
-- Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Stack은 위아래 16·좌우 22(내용 폭 267), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
+- Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Stack은 위 22·아래 16·좌우 22(내용 폭 267, 2026-11-02 위 여백 16→22), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
 - Label 변형: `ConfirmDialog`의 `children`(설명 아래 내용 자리)에 번치 줄 목록을 넣는다. 내용이 있으면 제목·설명 사이 18(`mt-s9`), 설명·내용 사이 16(`mt-s8`), 좌우 22. 목록 의미와 줄 사이 6은 호출자가 정한다(Story는 web `BunchLabel`의 `InConfirmDialog`, core가 web을 import하지 않게).
   - 지원 조합은 제목·설명·내용(Label)이다. 이미지와 내용을 함께 쓰거나 설명 없이 내용만 쓰는 모습은 Figma에 없다.
   - 내용이 길면 내용만 스크롤하고 버튼은 늘 보인다. 첫 초점이 「취소」라 내용은 열릴 때 읽히지 않으므로, 목록에는 `aria-label`로 이름을 붙이고 설명 문구가 목록을 가리키게 쓴다.
