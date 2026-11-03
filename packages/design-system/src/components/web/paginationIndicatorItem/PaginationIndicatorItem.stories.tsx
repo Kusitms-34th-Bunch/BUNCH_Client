@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { PaginationIndicatorItem } from './PaginationIndicatorItem';
 
 const meta = {
-  title: 'Web/PaginationIndicatorItem',
+  title: 'Web/Navigation/PaginationIndicatorItem',
   component: PaginationIndicatorItem,
 } satisfies Meta<typeof PaginationIndicatorItem>;
 

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { LabeledTextArea } from './LabeledTextArea';
 
 const meta = {
-  title: 'Web/LabeledTextArea',
+  title: 'Web/Input/LabeledTextArea',
   component: LabeledTextArea,
   args: {
     label: '한 줄 소개',

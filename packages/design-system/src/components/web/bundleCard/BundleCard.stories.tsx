@@ -8,7 +8,7 @@ const members = (count: number) =>
   Array.from({ length: count }, (_, index) => ({ name: `멤버${index + 1}` }));
 
 const meta = {
-  title: 'Web/BundleCard',
+  title: 'Web/Card/BundleCard',
   component: BundleCard,
   args: {
     title: '머그샷',

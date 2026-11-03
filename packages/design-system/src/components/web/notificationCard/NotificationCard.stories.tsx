@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { NotificationCard } from './NotificationCard';
 
 const meta = {
-  title: 'Web/NotificationCard',
+  title: 'Web/Card/NotificationCard',
   component: NotificationCard,
   parameters: { layout: 'padded' },
   args: {

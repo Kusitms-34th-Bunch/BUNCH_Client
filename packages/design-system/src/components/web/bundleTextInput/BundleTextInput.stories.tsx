@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { BundleTextInput } from './BundleTextInput';
 
 const meta = {
-  title: 'Web/BundleTextInput',
+  title: 'Web/Input/BundleTextInput',
   component: BundleTextInput,
   args: { title: '사진' },
   decorators: [

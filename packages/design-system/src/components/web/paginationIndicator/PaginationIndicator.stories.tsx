@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { PaginationIndicator } from './PaginationIndicator';
 
 const meta = {
-  title: 'Web/PaginationIndicator',
+  title: 'Web/Navigation/PaginationIndicator',
   component: PaginationIndicator,
   args: { total: 8, current: 1 },
 } satisfies Meta<typeof PaginationIndicator>;

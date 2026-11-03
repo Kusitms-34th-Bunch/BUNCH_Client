@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LabeledTextField, type LabeledTextFieldProps } from './LabeledTextField';
 
 const meta = {
-  title: 'Web/LabeledTextField',
+  title: 'Web/Input/LabeledTextField',
   component: LabeledTextField,
   args: { title: '닉네임', option: 'required', maxLength: 12 },
   decorators: [

@@ -7,7 +7,7 @@ const SAMPLE_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 
 const meta = {
-  title: 'Web/SuggestedBundleCard',
+  title: 'Web/Card/SuggestedBundleCard',
   component: SuggestedBundleCard,
   args: {
     imageSrc: SAMPLE_IMAGE,

@@ -3,7 +3,7 @@ import { GraphicEditIcon } from '../../../icons';
 import { CreateBunchCard } from './CreateBunchCard';
 
 const meta = {
-  title: 'Web/CreateBunchCard',
+  title: 'Web/Card/CreateBunchCard',
   component: CreateBunchCard,
   args: {
     title: '새 번치 만들기',

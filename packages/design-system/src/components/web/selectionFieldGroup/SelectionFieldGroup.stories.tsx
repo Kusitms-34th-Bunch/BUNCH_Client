@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { SelectionFieldGroup, type SelectionFieldGroupItem } from './SelectionFieldGroup';
 
 const meta = {
-  title: 'Web/SelectionFieldGroup',
+  title: 'Web/Selection/SelectionFieldGroup',
   component: SelectionFieldGroup,
   args: { fieldLabel: '위치', items: [] },
   parameters: { layout: 'padded' },

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Accordion } from './Accordion';
 
 const meta = {
-  title: 'Web/Accordion',
+  title: 'Web/Feedback/Accordion',
   component: Accordion,
   args: {
     title: '촬영 날짜를 확인할 사진',

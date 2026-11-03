@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FloatingButton } from './FloatingButton';
 
 const meta = {
-  title: 'Web/FloatingButton',
+  title: 'Web/Button/FloatingButton',
   component: FloatingButton,
   args: { 'aria-label': '더보기' },
   parameters: { layout: 'padded' },

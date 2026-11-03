@@ -3,7 +3,7 @@ import { Button } from '../../core/button';
 import { FollowListItem } from './FollowListItem';
 
 const meta = {
-  title: 'Web/FollowListItem',
+  title: 'Web/ListItem/FollowListItem',
   component: FollowListItem,
   args: { name: '야간러너스', isPrivate: true },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],

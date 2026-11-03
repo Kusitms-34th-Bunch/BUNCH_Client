@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CameraButton } from './CameraButton';
 
 const meta = {
-  title: 'Web/CameraButton',
+  title: 'Web/Button/CameraButton',
   component: CameraButton,
   args: { 'aria-label': '프로필 사진 변경' },
   argTypes: { disabled: { control: 'boolean' } },

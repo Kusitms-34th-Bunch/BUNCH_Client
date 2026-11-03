@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DescriptionRadioCard } from './DescriptionRadioCard';
 
 const meta = {
-  title: 'Web/DescriptionRadioCard',
+  title: 'Web/Selection/DescriptionRadioCard',
   component: DescriptionRadioCard,
   args: {
     title: '공개',

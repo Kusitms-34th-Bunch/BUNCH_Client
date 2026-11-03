@@ -5,7 +5,7 @@ import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { PhotoImportSheet } from './PhotoImportSheet';
 
 const meta = {
-  title: 'Web/BottomSheet/PhotoImportSheet',
+  title: 'Web/Overlay/BottomSheet/PhotoImportSheet',
   component: PhotoImportSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습

@@ -13,7 +13,7 @@ const SAMPLE_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 
 const meta = {
-  title: 'Web/BundlePhoto',
+  title: 'Web/Photo/BundlePhoto',
   component: BundlePhoto,
   args: { src: SAMPLE_PHOTO, alt: '러닝하는 사람들' },
   parameters: { layout: 'padded' },

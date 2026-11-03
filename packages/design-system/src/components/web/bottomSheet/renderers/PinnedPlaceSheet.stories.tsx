@@ -4,7 +4,7 @@ import { Button } from '../../../core/button';
 import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { PinnedPlaceSheet } from './PinnedPlaceSheet';
 const meta = {
-  title: 'Web/BottomSheet/PinnedPlaceSheet',
+  title: 'Web/Overlay/BottomSheet/PinnedPlaceSheet',
   component: PinnedPlaceSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습

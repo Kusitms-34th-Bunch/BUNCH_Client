@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { SelectionIndicator } from './SelectionIndicator';
 
 const meta = {
-  title: 'Web/SelectionIndicator',
+  title: 'Web/Selection/SelectionIndicator',
   component: SelectionIndicator,
   args: { order: 1 },
   decorators: [

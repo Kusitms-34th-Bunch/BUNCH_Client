@@ -9,7 +9,7 @@ const pickedImage =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><rect width='160' height='160' fill='%23FFD8A8'/><circle cx='80' cy='70' r='30' fill='%23F59F00'/><rect x='30' y='110' width='100' height='60' rx='30' fill='%23F59F00'/></svg>";
 
 const meta = {
-  title: 'Web/ProfileImage',
+  title: 'Web/Profile/ProfileImage',
   component: ProfileImage,
   args: { src: defaultImage, alt: '기본 프로필 사진' },
 } satisfies Meta<typeof ProfileImage>;

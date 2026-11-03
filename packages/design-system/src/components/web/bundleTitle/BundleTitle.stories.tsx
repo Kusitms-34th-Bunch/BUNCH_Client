@@ -11,7 +11,7 @@ const members = (count: number): BundleTitleMember[] =>
   NAMES.slice(0, count).map((name) => ({ name, src: SAMPLE_IMAGE }));
 
 const meta = {
-  title: 'Web/BundleTitle',
+  title: 'Web/Input/BundleTitle',
   component: BundleTitle,
   args: { title: '사진', required: true },
   parameters: { layout: 'padded' },

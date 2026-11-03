@@ -7,7 +7,7 @@ const sample =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="246" height="246"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%236fa8c7"/><stop offset="1" stop-color="%23d8c3a5"/></linearGradient></defs><rect width="246" height="246" fill="url(%23g)"/></svg>';
 
 const meta = {
-  title: 'Web/PhotoThumbnail',
+  title: 'Web/Photo/PhotoThumbnail',
   component: PhotoThumbnail,
   args: { src: sample, alt: '바닷가를 달리는 사람들' },
 } satisfies Meta<typeof PhotoThumbnail>;

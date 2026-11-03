@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ProfileRadioCard } from './ProfileRadioCard';
 
 const meta = {
-  title: 'Web/ProfileRadioCard',
+  title: 'Web/Selection/ProfileRadioCard',
   component: ProfileRadioCard,
   args: { label: '경진', name: 'member', value: '1' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],

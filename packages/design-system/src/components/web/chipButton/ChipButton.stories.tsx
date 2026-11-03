@@ -7,7 +7,7 @@ const avatar =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="%23e6e2ec"/><circle cx="24" cy="20" r="9" fill="%23a7adff"/></svg>';
 
 const meta = {
-  title: 'Web/ChipButton',
+  title: 'Web/Button/ChipButton',
   component: ChipButton,
   args: { children: '서울특별시', avatarSrc: avatar },
 } satisfies Meta<typeof ChipButton>;

@@ -4,7 +4,7 @@ import { Button } from '../../../core/button';
 import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { ConfirmSheet } from './ConfirmSheet';
 const meta = {
-  title: 'Web/BottomSheet/ConfirmSheet',
+  title: 'Web/Overlay/BottomSheet/ConfirmSheet',
   component: ConfirmSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습

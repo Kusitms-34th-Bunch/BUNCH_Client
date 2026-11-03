@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { NudgeBanner } from './NudgeBanner';
 
 const meta = {
-  title: 'Web/NudgeBanner',
+  title: 'Web/Feedback/NudgeBanner',
   component: NudgeBanner,
   args: { children: '작성 중인 번들을 완성해 보세요!' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],
