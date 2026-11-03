@@ -116,6 +116,45 @@ describe('다른 번치 차단', () => {
     expect(within(menu).queryByRole('button', { name: '차단하기' })).toBeNull();
   });
 
+  it('팔로우 요청 중인 비공개 번치를 차단하면 요청도 취소된다', async () => {
+    useBunch('bunch-run');
+    const user = userEvent.setup();
+    const { OtherBunch } = await import('./OtherBunch');
+    const { useBunchFollow } = await import('../hooks/useBunchFollow');
+    const { otherBunchesFixture } = await import('../fixtures/otherBunches.fixture');
+    render(<OtherBunch bunchId="bunch-book" />);
+
+    await user.click(screen.getByRole('button', { name: '팔로우' }));
+    const { result: before } = renderHook(() => useBunchFollow(otherBunchesFixture['bunch-book']));
+    expect(before.current.status).toBe('requested');
+
+    await user.click(within(await openMore(user)).getByRole('button', { name: '차단하기' }));
+    const confirm = await screen.findByRole(
+      'dialog',
+      { name: '책방산책 번치를 차단할까요?' },
+      SHEET_WAIT,
+    );
+    await user.click(within(confirm).getByRole('button', { name: '차단하기' }));
+
+    const { result: after } = renderHook(() => useBunchFollow(otherBunchesFixture['bunch-book']));
+    expect(after.current.status).toBe('none');
+  });
+
+  it('차단을 해제하면 프로필이 다시 보인다', async () => {
+    useBunch('bunch-run');
+    const { OtherBunch } = await import('./OtherBunch');
+    const { useBlockedBunches } = await import('../hooks/useBlockedBunches');
+    const { result } = renderHook(() => useBlockedBunches('bunch-run'));
+    act(() => result.current.block({ id: 'bunch-camping', name: '캠핑러버' }));
+    render(<OtherBunch bunchId="bunch-camping" />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '볼 수 없는 번치예요' }),
+    ).toBeInTheDocument();
+
+    act(() => result.current.unblock('bunch-camping'));
+    expect(await screen.findByRole('heading', { level: 1, name: '캠핑러버' })).toBeInTheDocument();
+  });
+
   it('서버 렌더는 차단 여부를 몰라 프로필 내용 없이 헤더만 그린다', async () => {
     useBunch('bunch-run');
     const { OtherBunch } = await import('./OtherBunch');
@@ -125,6 +164,21 @@ describe('다른 번치 차단', () => {
     expect(html).not.toContain('캠핑러버');
     expect(html).not.toContain('더보기');
     expect(html).not.toContain('<h1');
+  });
+
+  it('팔로워·팔로잉·멤버 목록도 서버 렌더에서는 목록 없이 헤더만 그린다', async () => {
+    useBunch('bunch-run');
+    const { OtherBunchFollows } = await import('./OtherBunchFollows');
+    const { OtherBunchMembers } = await import('./OtherBunchMembers');
+
+    for (const html of [
+      renderToString(<OtherBunchFollows bunchId="bunch-camping" initialTab="followers" />),
+      renderToString(<OtherBunchMembers bunchId="bunch-camping" />),
+    ]) {
+      expect(html).toContain('뒤로 가기');
+      expect(html).not.toContain('<li');
+      expect(html).not.toContain('role="tab"');
+    }
   });
 
   it('차단한 번치의 팔로워·팔로잉·멤버 목록도 접근 제한 화면이다', async () => {
@@ -176,9 +230,12 @@ describe('다른 번치 신고', () => {
 
     await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
     await user.click(submit);
-    expect(toast).toHaveBeenCalledWith('신고를 접수했어요.', { fullWidth: true });
+    // 접수 안내는 시트가 다 닫힌 뒤(jsdom은 닫힘 애니메이션이 없어 순서만 확인)
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: '캠핑러버 번치를 신고해요' })).toBeNull(),
+    );
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('신고를 접수했어요.', { fullWidth: true }),
     );
   });
 });

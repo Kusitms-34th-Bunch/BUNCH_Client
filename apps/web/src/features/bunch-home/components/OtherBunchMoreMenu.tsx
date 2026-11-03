@@ -35,6 +35,7 @@ export function OtherBunchMoreMenu({
   const [open, setOpen] = useState<Sheet | null>(null);
   // 메뉴에서 고른 다음 시트(메뉴가 닫힌 뒤 연다)
   const next = useRef<Sheet | null>(null);
+  const reported = useRef(false);
   const openAfterMenu = (sheet: Sheet) => {
     next.current = sheet;
     setOpen(null);
@@ -77,6 +78,7 @@ export function OtherBunchMoreMenu({
         confirmLabel="차단하기"
         onConfirm={() => {
           setOpen(null);
+          // 차단하면 화면이 접근 제한으로 바뀌어 이 메뉴가 사라지므로 닫힘을 기다리지 않음
           onBlock();
           toast(BUNCH_HOME_MESSAGES.blockedDone(bunchName), { fullWidth: true });
         }}
@@ -91,6 +93,12 @@ export function OtherBunchMoreMenu({
         onSubmit={(value) => {
           setOpen(null);
           onReport(value);
+          reported.current = true;
+        }}
+        // 접수 안내는 시트가 다 닫힌 뒤(열린 시트 뒤에서 낭독이 묻히지 않게, ADR 014)
+        onOpenChangeComplete={(isOpen) => {
+          if (isOpen || !reported.current) return;
+          reported.current = false;
           toast(BUNCH_HOME_MESSAGES.reportedDone, { fullWidth: true });
         }}
       />
