@@ -2,7 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderToString } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -22,6 +22,11 @@ const SHEET_WAIT = { timeout: 3000 };
 
 const useBunch = (bunchId: string) =>
   sessionStorage.setItem('bunch-home:current-bunch-id', bunchId);
+
+// 첫 테스트가 화면 모듈 전체의 첫 변환 비용을 떠안아 부하가 큰 전체 실행에서 5초 제한을 넘던 것 방지(변환 결과는 resetModules 뒤에도 재사용)
+beforeAll(async () => {
+  await import('./OtherBunch');
+});
 
 // 차단·팔로우 결과는 모듈 저장소에 남으므로 테스트마다 모듈을 새로 불러 처음 상태로
 beforeEach(() => {
