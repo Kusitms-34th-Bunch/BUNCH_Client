@@ -55,7 +55,7 @@
 
 ## UI와 접근성
 
-- Component mapping: 헤더는 `core`의 `Header`+`HeaderIconButton`·`TextButton`, 배너는 `ErrorBanner`, 멤버는 `MemberCard`·`AddMemberCard`, 제목은 `BundleTextInput`, 사진은 `BundlePhoto`, 위치·날짜는 `SelectionFieldGroup`·`SelectionField`와 `BottomSheet`·`SearchField`·`LocationListItem`·`DateChangeSheet`, 코멘트는 `BundleCommentCard`, 공개 범위는 `RadioCard`, 나가기 확인은 `Dialog`.
+- Component mapping: 헤더는 `core`의 `Header`+`HeaderIconButton`·`TextButton`, 배너는 `ErrorBanner`, 멤버는 `MemberCard`·`AddMemberCard`, 제목은 `BundleTextInput`, 사진은 `BundlePhotoEditor`, 위치·날짜는 `SelectionFieldGroup`·`SelectionField`와 `BottomSheet`·`SearchField`·`LocationListItem`·`DateChangeSheet`, 코멘트는 `BundleCommentCard`, 공개 범위는 `RadioCard`, 나가기 확인은 `Dialog`.
 - Semantic·heading: 화면 제목 `h1`(「번들 작성」, 화면에는 숨김), 각 영역은 `BundleTitle`을 `aria-labelledby`로 가리키는 `section`. 저장 상태와 사진 위치(「N장 중 M번째 사진」)는 `role="status"`.
 - 키보드: 위치·날짜 줄과 지우기, 추천 칩, 라디오, 「나가기」 모두 `button`·`radio`다. 확인 창은 최초 포커스가 「취소」(Dialog 기본)에 있다.
 - 읽기 전용: 제목·코멘트 입력란은 `readOnly`라 포커스는 받되 고칠 수 없다. 참여 멤버가 아니면 닿았을 때 안내한다.

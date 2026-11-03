@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { AddBundlePhoto } from './AddBundlePhoto';
+import { AddBundlePhotoEditor } from './AddBundlePhotoEditor';
 
 const meta = {
-  title: 'Web/Photo/AddBundlePhoto',
-  component: AddBundlePhoto,
+  title: 'Web/Photo/AddBundlePhotoEditor',
+  component: AddBundlePhotoEditor,
   parameters: { layout: 'padded' },
-} satisfies Meta<typeof AddBundlePhoto>;
+} satisfies Meta<typeof AddBundlePhotoEditor>;
 
 export default meta;
 

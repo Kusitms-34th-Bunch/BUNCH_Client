@@ -1,10 +1,11 @@
-# 컴포넌트: BundlePhoto
+# 컴포넌트: BundlePhotoEditor
 
 ## 메타데이터
 
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo`(node `1439:31041`). 변형은 `Size=S·M`(`Frame 2147231378`은 M) × `Type=Photo·Add` 4개다. 이 컴포넌트는 `Type=Photo`(M·S)이고 `Type=Add`는 `AddBundlePhoto`로 나눴다.
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo Editor`(node `1439:31041`). 변형은 `Size=S·M`(`Frame 2147231378`은 M) × `Type=Photo·Add` 4개다. 이 컴포넌트는 `Type=Photo`(M·S)이고 `Type=Add`는 `AddBundlePhotoEditor`로 나눴다.
+- 이름 변경 (2026-11-04): Figma 컴포넌트가 `Bundle Photo`에서 `Bundle Photo Editor`로 바뀌어 코드 이름도 `BundlePhoto`·`AddBundlePhoto`에서 `BundlePhotoEditor`·`AddBundlePhotoEditor`로 맞췄다(모양 변경 없음).
 - 의존: `ProfileImage`(31px로 줄여 사용), `PageCounter`, 아이콘 `LineCloseSmallIcon`.
 
 ## 목적과 범위
@@ -17,7 +18,7 @@
 
 - 사진 누르기(확대·선택)와 눌림·호버 모양은 Figma에 없어서 만들지 않았다(사진 틀은 `<div>`다).
 - 사진 불러오기 실패·로딩 표시는 Figma에 없다.
-- 사진 추가 타일은 `AddBundlePhoto`다.
+- 사진 추가 타일은 `AddBundlePhotoEditor`다.
 
 ## Public API
 

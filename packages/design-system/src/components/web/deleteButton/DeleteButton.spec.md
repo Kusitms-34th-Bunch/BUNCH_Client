@@ -5,7 +5,7 @@
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 값과 대조함. 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Delete Button`(node `1741:14500`). 변형 `Size` × `Variant`(Default·Overlay) 4개. 이슈 #94.
-- 이 컴포넌트를 쓰는 곳: `BundlePhoto`(size L · overlay)와 `MemberCard`(size M · default)의 삭제 버튼이 이 컴포넌트로 교체됐다.
+- 이 컴포넌트를 쓰는 곳: `BundlePhotoEditor`(size L · overlay)와 `MemberCard`(size M · default)의 삭제 버튼이 이 컴포넌트로 교체됐다.
 
 ## 목적과 범위
 

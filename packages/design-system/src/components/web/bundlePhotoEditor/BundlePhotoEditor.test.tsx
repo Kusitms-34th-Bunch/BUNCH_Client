@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { BundlePhoto, type BundlePhotoProps } from './BundlePhoto';
+import { BundlePhotoEditor, type BundlePhotoEditorProps } from './BundlePhotoEditor';
 
-const renderPhoto = (props?: Partial<BundlePhotoProps>) =>
-  render(<BundlePhoto src="photo.png" alt="러닝하는 사람들" {...props} />);
+const renderPhoto = (props?: Partial<BundlePhotoEditorProps>) =>
+  render(<BundlePhotoEditor src="photo.png" alt="러닝하는 사람들" {...props} />);
 
-describe('BundlePhoto', () => {
+describe('BundlePhotoEditor', () => {
   it('사진을 alt와 함께 그린다', () => {
     renderPhoto();
     const image = screen.getByRole('img', { name: '러닝하는 사람들' });
@@ -29,7 +29,7 @@ describe('BundlePhoto', () => {
     expect(frame.classList.contains('rounded-r4')).toBe(true);
     expect(frame.classList.contains('overflow-hidden')).toBe(true);
 
-    rerender(<BundlePhoto src="photo.png" alt="사진" size="s" />);
+    rerender(<BundlePhotoEditor src="photo.png" alt="사진" size="s" />);
 
     expect((container.firstElementChild as HTMLElement).classList.contains('w-75')).toBe(true);
     expect((container.firstElementChild as HTMLElement).classList.contains('w-82.5')).toBe(false);
@@ -76,7 +76,7 @@ describe('BundlePhoto', () => {
     expect(screen.getByRole('img', { name: 'Uploaded by Jiye' })).toBeTruthy();
 
     rerender(
-      <BundlePhoto
+      <BundlePhotoEditor
         src="photo.png"
         alt="사진"
         uploader={{ name: '지예' }}
@@ -101,7 +101,7 @@ describe('BundlePhoto', () => {
 
     expect(screen.queryByRole('img', { name: /\d \/ \d/ })).toBeNull();
 
-    rerender(<BundlePhoto src="/a.png" alt="러닝" page={{ current: 1, total: 4 }} />);
+    rerender(<BundlePhotoEditor src="/a.png" alt="러닝" page={{ current: 1, total: 4 }} />);
     const { classList } = screen.getByRole('img', { name: '1 / 4' });
 
     expect(classList.contains('absolute')).toBe(true);

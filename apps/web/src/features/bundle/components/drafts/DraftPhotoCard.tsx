@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@app/design-system';
-import { BundlePhoto, DeleteButton } from '@app/design-system/web';
+import { BundlePhotoEditor, DeleteButton } from '@app/design-system/web';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useEffect, useRef } from 'react';
@@ -80,7 +80,7 @@ export function DraftPhotoCard({
         isDragging && 'z-10 scale-95 opacity-70',
       )}
     >
-      <BundlePhoto
+      <BundlePhotoEditor
         src={photo.src}
         alt={photo.alt}
         size="m"

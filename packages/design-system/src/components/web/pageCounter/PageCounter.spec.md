@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Page Counter`(node `3043:65937`). 변형 없이 한 가지 모양이고 숫자 두 개(현재·전체)만 바뀐다. `Bundle Photo`(node `1439:31041`)의 `Size=M, Type=Photo` 왼쪽 아래에서 쓰인다.
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Page Counter`(node `3043:65937`). 변형 없이 한 가지 모양이고 숫자 두 개(현재·전체)만 바뀐다. `Bundle Photo Editor`(node `1439:31041`)의 `Size=M, Type=Photo` 왼쪽 아래에서 쓰인다.
 
 ## 목적과 범위
 
@@ -15,7 +15,7 @@
 ### 제공하지 않는 동작
 
 - 페이지를 넘기는 동작은 없다(표시용). 사진을 넘기는 UI와 현재 값은 호출하는 쪽이 정한다.
-- 사진 위의 위치는 정하지 않는다. `BundlePhoto`는 왼쪽 아래에 둔다.
+- 사진 위의 위치는 정하지 않는다. `BundlePhotoEditor`는 왼쪽 아래에 둔다.
 - 값 범위 보정(0, 전체보다 큰 현재 등)은 하지 않고 받은 숫자를 그대로 보여 준다.
 
 ## Public API

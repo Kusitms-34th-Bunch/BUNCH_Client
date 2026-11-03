@@ -1,10 +1,11 @@
-# 컴포넌트: AddBundlePhoto
+# 컴포넌트: AddBundlePhotoEditor
 
 ## 메타데이터
 
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo`(node `1439:31041`) 중 `Type=Add`(`Size=M` node `1439:31092`, `Size=S` node `1439:31101`). 같은 `Bundle Photo`의 `Type=Photo`와 요소(`div`와 `button`)가 달라 `BundlePhoto`와 나눴다.
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo Editor`(node `1439:31041`) 중 `Type=Add`(`Size=M` node `1439:31092`, `Size=S` node `1439:31101`). 같은 `Bundle Photo Editor`의 `Type=Photo`와 요소(`div`와 `button`)가 달라 `BundlePhotoEditor`와 나눴다.
+- 이름 변경 (2026-11-04): Figma 컴포넌트가 `Bundle Photo`에서 `Bundle Photo Editor`로 바뀌어 코드 이름도 `BundlePhoto`·`AddBundlePhoto`에서 `BundlePhotoEditor`·`AddBundlePhotoEditor`로 맞췄다(모양 변경 없음).
 - 의존: 아이콘 `LineAddMediumIcon`.
 
 ## 목적과 범위
@@ -43,7 +44,7 @@
 
 - Token: `bg-surface-secondary`·`bg-surface-primary`, `rounded-r4`, `gap-s4`, `text-icon-primary`·`text-text-primary`, `typography-body-3-regular`, 크기는 `w-75`·`w-82.5`·`size-9`. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `Size=S·M`→`size`, `Type=Add`→이 컴포넌트, "사진 추가"→`label`.
-- Storybook state matrix: `Default`, `Small`, `CustomLabel`(그리고 `BundlePhoto`의 `Matrix`에서 나란히 보기).
+- Storybook state matrix: `Default`, `Small`, `CustomLabel`(그리고 `BundlePhotoEditor`의 `Matrix`에서 나란히 보기).
 
 ## 확인할 항목
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { cn, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
-import { AddBundlePhoto, PhotoImportSheet } from '@app/design-system/web';
+import { AddBundlePhotoEditor, PhotoImportSheet } from '@app/design-system/web';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { useEffect, useRef, useState } from 'react';
@@ -219,7 +219,7 @@ export function DraftPhotoCaption({
             ))}
             {addable && (
               <li ref={removal.register(ADD_CARD_ID)} className="shrink-0 snap-start">
-                <AddBundlePhoto size="m" onClick={() => setImportOpen(true)} />
+                <AddBundlePhotoEditor size="m" onClick={() => setImportOpen(true)} />
               </li>
             )}
           </ul>

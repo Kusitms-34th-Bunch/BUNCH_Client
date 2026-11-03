@@ -1,13 +1,13 @@
 'use client';
 
 import { cn } from '@app/design-system';
-import { BundlePhoto, BundleTitle } from '@app/design-system/web';
+import { BundlePhotoEditor, BundleTitle } from '@app/design-system/web';
 import { type ReactNode, useState } from 'react';
 import { EditingLottie } from '@/shared/components/loading/EditingLottie';
 import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 
-// BundlePhoto `s`(300px)와 사진 사이 간격 12px: 가로로 넘긴 거리를 사진 번호로 바꾸는 기준
+// BundlePhotoEditor `s`(300px)와 사진 사이 간격 12px: 가로로 넘긴 거리를 사진 번호로 바꾸는 기준
 const PHOTO_STEP = 300 + 12;
 
 const CAPTION_ROW = 'px-padding-p8 py-padding-p1 flex h-11.5 items-center overflow-hidden';
@@ -74,7 +74,7 @@ export function DraftPhotos({ draft, onEditingBlocked, onOpenPhoto }: DraftPhoto
       >
         {draft.photos.map((photo) => (
           <li key={photo.id} className="relative snap-start">
-            <BundlePhoto src={photo.src} alt={photo.alt} size="s" />
+            <BundlePhotoEditor src={photo.src} alt={photo.alt} size="s" />
             {onOpenPhoto && (
               <button
                 type="button"

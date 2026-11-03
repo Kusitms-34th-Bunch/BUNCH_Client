@@ -6,35 +6,35 @@ import { ProfileImage } from '../profileImage';
 
 const SIZES = { s: 'w-75', m: 'w-82.5' } as const;
 
-export type BundlePhotoSize = keyof typeof SIZES;
+export type BundlePhotoEditorSize = keyof typeof SIZES;
 
-export type BundlePhotoUploader = {
+export type BundlePhotoEditorUploader = {
   /** 올린 멤버 이름(아바타의 대체 텍스트) */
   name: string;
   /** 프로필 이미지 주소(없으면 배경색 원) */
   src?: string | undefined;
 };
 
-export type BundlePhotoPage = {
+export type BundlePhotoEditorPage = {
   /** 현재 페이지(1부터) */
   current: number;
   /** 전체 페이지 수 */
   total: number;
 };
 
-export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
+export type BundlePhotoEditorProps = Omit<ComponentProps<'div'>, 'children'> & {
   /** 사진 주소 */
   src: string;
   /** 사진 설명(꾸미는 사진이면 빈 문자열) */
   alt: string;
   /** 정사각 크기: `s` 300px, `m` 330px(기본), 폭 변경은 `className` 덮어쓰기 */
-  size?: BundlePhotoSize | undefined;
+  size?: BundlePhotoEditorSize | undefined;
   /** 사진을 올린 멤버(Figma `avater`): 주면 왼쪽 위에 31px 아바타가 얹힘 */
-  uploader?: BundlePhotoUploader | undefined;
+  uploader?: BundlePhotoEditorUploader | undefined;
   /** 아바타를 읽어 주는 글자(기본 "{이름}님이 올린 사진"), 사진 설명 바로 뒤에서 이름만 읽히면 올린 사람인지 알 수 없어서 */
   uploaderLabel?: string | undefined;
   /** 같은 묶음 안의 위치(Figma `Page Counter`): 주면 왼쪽 아래에 "1/4" 표시가 얹힘 */
-  page?: BundlePhotoPage | undefined;
+  page?: BundlePhotoEditorPage | undefined;
   /** 페이지 표시를 읽어 주는 글자(기본 "{현재} / {전체}") */
   pageLabel?: string | undefined;
   /** 오른쪽 위 삭제 버튼을 눌렀을 때(주면 삭제 버튼이 나타남) */
@@ -44,10 +44,10 @@ export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
 };
 
 /**
- * 번들 사진(Figma `Bundle Photo`, `Type=Photo`): 반경 `r4`의 정사각 사진
+ * 번들 사진(Figma `Bundle Photo Editor`, `Type=Photo`): 반경 `r4`의 정사각 사진
  * 올린 멤버 아바타(왼쪽 위), 삭제 버튼(오른쪽 위), 페이지 표시(왼쪽 아래)를 사진 위에 얹을 수 있고 `className`은 사진 틀에 적용
  */
-export const BundlePhoto = ({
+export const BundlePhotoEditor = ({
   src,
   alt,
   size = 'm',
@@ -59,7 +59,7 @@ export const BundlePhoto = ({
   deleteLabel = '사진 삭제',
   className,
   ...props
-}: BundlePhotoProps) => (
+}: BundlePhotoEditorProps) => (
   <div
     className={cn(
       'rounded-r4 relative aspect-square shrink-0 overflow-hidden',

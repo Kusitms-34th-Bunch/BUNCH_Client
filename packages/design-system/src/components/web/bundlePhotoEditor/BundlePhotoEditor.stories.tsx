@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { AddBundlePhoto } from '../addBundlePhoto';
-import { BundlePhoto } from './BundlePhoto';
+import { AddBundlePhotoEditor } from '../addBundlePhotoEditor';
+import { BundlePhotoEditor } from './BundlePhotoEditor';
 
 /** 예시 사진(하늘과 길의 그라데이션) */
 const SAMPLE_PHOTO = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -13,11 +13,11 @@ const SAMPLE_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 
 const meta = {
-  title: 'Web/Photo/BundlePhoto',
-  component: BundlePhoto,
+  title: 'Web/Photo/BundlePhotoEditor',
+  component: BundlePhotoEditor,
   args: { src: SAMPLE_PHOTO, alt: '러닝하는 사람들' },
   parameters: { layout: 'padded' },
-} satisfies Meta<typeof BundlePhoto>;
+} satisfies Meta<typeof BundlePhotoEditor>;
 
 export default meta;
 
@@ -51,23 +51,23 @@ export const UploaderWithoutImage: Story = {
   args: { uploader: { name: '지예' }, onDelete: () => {} },
 };
 
-/** Figma `Bundle Photo` 4종(Photo M·S, Add M·S)과 얹힘 조합을 한눈에 보기 */
+/** Figma `Bundle Photo Editor` 4종(Photo M·S, Add M·S)과 얹힘 조합을 한눈에 보기 */
 export const Matrix: Story = {
   render: (args) => (
     <div className="gap-s8 flex flex-col">
       <div className="gap-s8 flex items-start">
-        <BundlePhoto
+        <BundlePhotoEditor
           {...args}
           size="m"
           uploader={{ name: '지예', src: SAMPLE_AVATAR }}
           onDelete={() => {}}
           page={{ current: 1, total: 4 }}
         />
-        <BundlePhoto {...args} size="s" />
+        <BundlePhotoEditor {...args} size="s" />
       </div>
       <div className="gap-s8 flex items-start">
-        <AddBundlePhoto size="m" />
-        <AddBundlePhoto size="s" />
+        <AddBundlePhotoEditor size="m" />
+        <AddBundlePhotoEditor size="s" />
       </div>
     </div>
   ),
