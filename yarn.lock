@@ -66,7 +66,7 @@ __metadata:
     typescript: "catalog:"
     vite: "catalog:"
     vitest: "catalog:"
-    zod: "npm:^4.4.3"
+    zod: "catalog:"
   languageName: unknown
   linkType: soft
 
@@ -81,7 +81,7 @@ __metadata:
     eslint: "catalog:"
     globals: "npm:^17.13.0"
     typescript: "catalog:"
-    zod: "npm:^4.4.3"
+    zod: "npm:^4.6.5"
   languageName: unknown
   linkType: soft
 
@@ -198,7 +198,7 @@ __metadata:
     typescript: "catalog:"
     vite: "catalog:"
     vitest: "catalog:"
-    zod: "npm:^4.6.5"
+    zod: "catalog:"
   languageName: unknown
   linkType: soft
 
