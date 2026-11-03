@@ -25,6 +25,8 @@ describe('getBunchMembers', () => {
           { memberId: 7, nickname: '지예', imageUrl: 'https://cdn.example/7.jpg', role: 'OWNER' },
           { memberId: 8, nickname: '경진', imageUrl: null, role: 'MEMBER' },
           { memberId: 9, nickname: '수인', imageUrl: '', role: 'CO_OWNER' },
+          // 생성 계약상 사진 필드는 생략될 수도 있음
+          { memberId: 10, nickname: '하율', role: 'MEMBER' },
         ]),
       ),
     );
@@ -33,6 +35,7 @@ describe('getBunchMembers', () => {
       { id: '7', name: '지예', avatarSrc: 'https://cdn.example/7.jpg' },
       { id: '8', name: '경진', avatarSrc: undefined },
       { id: '9', name: '수인', avatarSrc: undefined },
+      { id: '10', name: '하율', avatarSrc: undefined },
     ]);
   });
 

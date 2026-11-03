@@ -1,17 +1,19 @@
+import type { ApiContract } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
 import type { PhotoBoxMember } from '../lib/types';
 
 /**
- * `GET /api/v1/bunches/{bunchId}/members` 응답의 멤버 한 명(노션 API 명세 기준, 역할은 닫힌 목록이라 새 값은 계약 위반)
- * Swagger에 올라오면 `satisfies z.ZodType<생성 타입>`으로 생성 계약과 묶음
+ * `GET /api/v1/bunches/{id}/members` 응답의 멤버 한 명. `satisfies`로 Swagger 생성 계약과 묶어 어긋나면 컴파일 오류
+ * 이름은 계약상 선택이지만 사진함에 필수라 빠지면 계약 위반, 역할은 닫힌 목록, 사진은 생략·null 모두 허용
  */
 const bunchMemberResponseSchema = z.object({
   memberId: z.number().int().positive(),
   nickname: z.string(),
-  imageUrl: z.string().nullable(),
+  imageUrl: z.string().nullish(),
   role: z.enum(['OWNER', 'CO_OWNER', 'MEMBER']),
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['BunchMemberResponse']>>;
 
 export const bunchMembersResponseSchema = z.array(bunchMemberResponseSchema);
 
