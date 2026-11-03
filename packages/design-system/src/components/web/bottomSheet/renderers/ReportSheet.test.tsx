@@ -15,9 +15,8 @@ const renderSheet = (props: Partial<Parameters<typeof ReportSheet>[0]> = {}) =>
     <ReportSheet
       open
       onOpenChange={() => {}}
-      title="여행가조 번치를 신고해요"
-      targetLabel="신고하는 번치"
-      targetName="퇴근런클럽"
+      title="여행가조 번치를 신고할까요?"
+      description="퇴근런클럽 계정으로 신고해요"
       reasons={reasons}
       onSubmit={() => {}}
       {...props}
@@ -30,7 +29,7 @@ describe('ReportSheet', () => {
   it('사유를 고르기 전에는 「신고하기」가 비활성이다', async () => {
     renderSheet();
 
-    expect(await screen.findByRole('dialog', { name: '여행가조 번치를 신고해요' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: '여행가조 번치를 신고할까요?' })).toBeTruthy();
     expect(submitButton().disabled).toBe(true);
   });
 
@@ -51,6 +50,11 @@ describe('ReportSheet', () => {
 
     fireEvent.click(await screen.findByRole('radio', { name: '기타' }));
     expect(submitButton().disabled).toBe(true);
+    // 기능명세 5.10.7: 상세 사유 필수, 최대 200자(글자 수 표시는 없음)
+    const detail = screen.getByRole('textbox', { name: /상세 사유/ });
+    expect(detail.getAttribute('aria-required')).toBe('true');
+    expect(detail.getAttribute('maxlength')).toBe('200');
+    expect(screen.queryByText(/\/200/)).toBeNull();
 
     fireEvent.change(screen.getByRole('textbox', { name: /상세 사유/ }), {
       target: { value: '  광고 글 반복  ' },
@@ -69,9 +73,8 @@ describe('ReportSheet', () => {
       <ReportSheet
         open
         onOpenChange={() => {}}
-        title="여행가조 번치를 신고해요"
-        targetLabel="신고하는 번치"
-        targetName="퇴근런클럽"
+        title="여행가조 번치를 신고할까요?"
+        description="퇴근런클럽 계정으로 신고해요"
         reasons={[{ value: 'etc', label: '기타' }]}
         onSubmit={() => {}}
       />,
@@ -104,9 +107,8 @@ describe('ReportSheet', () => {
           <ReportSheet
             open={open}
             onOpenChange={setOpen}
-            title="여행가조 번치를 신고해요"
-            targetLabel="신고하는 번치"
-            targetName="퇴근런클럽"
+            title="여행가조 번치를 신고할까요?"
+            description="퇴근런클럽 계정으로 신고해요"
             reasons={reasons}
             onSubmit={() => {}}
           />

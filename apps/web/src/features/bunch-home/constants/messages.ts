@@ -92,9 +92,9 @@ export const BUNCH_HOME_MESSAGES = {
   blockedDone: (bunchName: string) => `${bunchName} 번치를 차단했어요.`,
   blockedBunchTitle: '볼 수 없는 번치예요',
   blockedBunchDescription: '해당 번치의 프로필 정보를 불러올 수 없어요.',
-  reportTitle: (bunchName: string) => `${bunchName} 번치를 신고해요`,
-  reportTargetLabel: '현재 활동 번치',
-  reportedDone: '신고를 접수했어요.',
+  reportTitle: (bunchName: string) => `${bunchName} 번치를 신고할까요?`,
+  reportDescription: (myBunchName: string) => `${myBunchName} 계정으로 신고해요`,
+  reportedDone: '신고가 접수됐어요.',
   noBunchTitle: '참여 중인 번치가 없어요',
   noBunchDescription: '새 번치를 만들거나 초대받은 번치에 참여해보세요.',
   // 차단 목록(화면설계서 2236:40175 2~3번)

@@ -7,8 +7,6 @@ import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { findOtherBunch } from '../../fixtures/otherBunches.fixture';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
 import { useBunchFollow } from '../../hooks/useBunchFollow';
-import { useBunchMembers } from '../../hooks/useBunchMembers';
-import { isAdminRole } from '../../lib/roles';
 import { BlockedBunchScreen } from './BlockedBunchScreen';
 import { OtherBunchMoreMenu } from './OtherBunchMoreMenu';
 import { OtherBunchScreen } from './OtherBunchScreen';
@@ -22,8 +20,6 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   const bunch = findOtherBunch(bunchId);
   const { status, followerCount, follow, unfollow } = useBunchFollow(bunch);
   const { me, access, block } = useBlockRelation(bunchId);
-  // 멤버 관리에서 바뀐 역할 우선(권한 표: 차단은 메인·공동 관리자, 차단 목록 화면과 같은 기준)
-  const myRole = useBunchMembers(me?.id).myRole ?? me?.myRole;
   // 이 화면에서 차단해 접근 제한 화면으로 바뀌면 제목으로 초점
   const [justBlocked, setJustBlocked] = useState(false);
   if (!bunch) notFound();
@@ -39,13 +35,12 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
       status={status}
       followerCount={followerCount}
       onBack={back}
-      // 내 번치(역할)를 알기 전에는 메뉴 항목이 바뀔 수 있어 더보기를 숨김
+      // 내 번치(신고 명의)를 알기 전에는 더보기를 숨김
       more={
         me && (
           <OtherBunchMoreMenu
             bunchName={bunch.name}
             bunchImageSrc={bunch.imageSrc}
-            canBlock={isAdminRole(myRole)}
             reporterName={me.name}
             onBlock={() => {
               // 차단하면 팔로우 관계도 해제(화면설계서 2500:67470 2번)

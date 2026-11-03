@@ -7,6 +7,9 @@ import { LabeledTextField } from '../../labeledTextField';
 import { RadioButton } from '../../radioButton';
 import { BottomSheet, type BottomSheetRootProps } from '../BottomSheet';
 
+// 기능명세 5.10.7: 상세 사유 최대 200자
+const REPORT_DETAIL_MAX_LENGTH = 200;
+
 export type ReportReason = { value: string; label: string };
 
 export type ReportSubmitValue = { reason: string; detail: string };
@@ -15,12 +18,10 @@ export type ReportSheetProps = Omit<
   BottomSheetRootProps,
   'children' | 'disablePointerDismissal'
 > & {
-  /** 예: `여행가조 번치를 신고해요` */
+  /** 예: `여행가조 번치를 신고할까요?` */
   title: string;
-  /** 부제의 앞부분. 예: `신고하는 번치` */
-  targetLabel: string;
-  /** 부제의 대상 이름. 예: `퇴근런클럽` */
-  targetName: string;
+  /** 누구 이름으로 신고하는지. 예: `퇴근런클럽 계정으로 신고해요` */
+  description: string;
   reasons: ReportReason[];
   /** 이 사유를 고르면 상세 사유 입력 표시·필수(Figma 07). 없으면 입력칸 없음(Figma 08) */
   detailReasonValue?: string | undefined;
@@ -33,8 +34,7 @@ export type ReportSheetProps = Omit<
 const ReportBody = ({
   open,
   title,
-  targetLabel,
-  targetName,
+  description,
   reasons,
   detailReasonValue,
   onSubmit,
@@ -60,9 +60,7 @@ const ReportBody = ({
     <>
       <BottomSheet.Header>
         <BottomSheet.Title>{title}</BottomSheet.Title>
-        <BottomSheet.Description>
-          {targetLabel}: <span className="text-text-tertiary">{targetName}</span>
-        </BottomSheet.Description>
+        <BottomSheet.Description>{description}</BottomSheet.Description>
         <BottomSheet.Close />
       </BottomSheet.Header>
       <BottomSheet.Body className="flex flex-col">
@@ -96,6 +94,9 @@ const ReportBody = ({
               <LabeledTextField
                 className="mt-s8"
                 title="상세 사유"
+                option="required"
+                maxLength={REPORT_DETAIL_MAX_LENGTH}
+                showCounter={false}
                 placeholder="신고 이유를 입력해주세요."
                 value={detail}
                 onChange={(event) => setDetail(event.target.value)}

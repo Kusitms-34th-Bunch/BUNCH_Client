@@ -36,7 +36,7 @@ const openMore = async (user: ReturnType<typeof userEvent.setup>) => {
 };
 
 describe('다른 번치 차단', () => {
-  it('관리자는 확인 뒤 차단하고, 프로필 대신 접근 제한 화면과 차단 목록에 반영된다', async () => {
+  it('확인 뒤 차단하고, 프로필 대신 접근 제한 화면과 차단 목록에 반영된다', async () => {
     // 퇴근런클럽: 메인 관리자
     useBunch('bunch-run');
     const user = userEvent.setup();
@@ -91,29 +91,16 @@ describe('다른 번치 차단', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('일반 멤버에게는 「차단하기」가 없다', async () => {
-    // 큐시즘 기프: 일반 멤버
+  it('일반 멤버도 「차단하기」와 「신고하기」를 쓸 수 있다', async () => {
+    // 큐시즘 기프: 일반 멤버(기능명세 5.10.4, 차단은 멤버 누구나)
     useBunch('bunch-gift');
     const user = userEvent.setup();
     const { OtherBunch } = await import('./OtherBunch');
     render(<OtherBunch bunchId="bunch-camping" />);
 
     const menu = await openMore(user);
-    expect(within(menu).queryByRole('button', { name: '차단하기' })).toBeNull();
+    expect(within(menu).getByRole('button', { name: '차단하기' })).toBeInTheDocument();
     expect(within(menu).getByRole('button', { name: '신고하기' })).toBeInTheDocument();
-  });
-
-  it('멤버 관리에서 관리자를 넘겨 일반 멤버가 되면 「차단하기」가 없다', async () => {
-    useBunch('bunch-run');
-    const user = userEvent.setup();
-    const { OtherBunch } = await import('./OtherBunch');
-    const { useBunchMembers } = await import('../../hooks/useBunchMembers');
-    const { result } = renderHook(() => useBunchMembers('bunch-run'));
-    act(() => result.current.actions.transferOwner('member-kyungjun'));
-    render(<OtherBunch bunchId="bunch-camping" />);
-
-    const menu = await openMore(user);
-    expect(within(menu).queryByRole('button', { name: '차단하기' })).toBeNull();
   });
 
   it('팔로우 요청 중인 비공개 번치를 차단하면 요청도 취소된다', async () => {
@@ -216,10 +203,10 @@ describe('다른 번치 신고', () => {
     await user.click(within(await openMore(user)).getByRole('button', { name: '신고하기' }));
     const sheet = await screen.findByRole(
       'dialog',
-      { name: '캠핑러버 번치를 신고해요' },
+      { name: '캠핑러버 번치를 신고할까요?' },
       SHEET_WAIT,
     );
-    expect(sheet).toHaveTextContent('현재 활동 번치: 큐시즘 기프');
+    expect(sheet).toHaveTextContent('큐시즘 기프 계정으로 신고해요');
     const submit = within(sheet).getByRole('button', { name: '신고하기' });
     expect(submit).toBeDisabled();
 
@@ -232,10 +219,10 @@ describe('다른 번치 신고', () => {
     await user.click(submit);
     // 접수 안내는 시트가 다 닫힌 뒤(jsdom은 닫힘 애니메이션이 없어 순서만 확인)
     await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: '캠핑러버 번치를 신고해요' })).toBeNull(),
+      expect(screen.queryByRole('dialog', { name: '캠핑러버 번치를 신고할까요?' })).toBeNull(),
     );
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('신고를 접수했어요.', { fullWidth: true }),
+      expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.', { fullWidth: true }),
     );
   });
 });

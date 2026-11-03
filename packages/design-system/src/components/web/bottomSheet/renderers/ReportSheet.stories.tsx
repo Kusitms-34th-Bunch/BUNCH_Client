@@ -23,9 +23,8 @@ const meta = {
   args: {
     open: true,
     onOpenChange: () => {},
-    title: '여행가조 번치를 신고해요',
-    targetLabel: '신고하는 번치',
-    targetName: '퇴근런클럽',
+    title: '여행가조 번치를 신고할까요?',
+    description: '퇴근런클럽 계정으로 신고해요',
     reasons,
     onSubmit: () => {},
   },

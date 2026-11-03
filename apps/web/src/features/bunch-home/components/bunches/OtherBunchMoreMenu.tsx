@@ -12,8 +12,6 @@ type Sheet = 'menu' | 'block' | 'report';
 type OtherBunchMoreMenuProps = {
   bunchName: string;
   bunchImageSrc?: string | undefined;
-  /** 다른 번치 차단은 공동·메인 관리자만(역할별 권한). 아니면 「차단하기」를 숨김 */
-  canBlock: boolean;
   /** 신고하는 쪽(지금 내 번치) 이름. 아직 모르면 빈 글자 */
   reporterName: string;
   onBlock: () => void;
@@ -27,7 +25,6 @@ type OtherBunchMoreMenuProps = {
 export function OtherBunchMoreMenu({
   bunchName,
   bunchImageSrc,
-  canBlock,
   reporterName,
   onBlock,
   onReport,
@@ -64,9 +61,8 @@ export function OtherBunchMoreMenu({
           next.current = null;
         }}
         items={[
-          ...(canBlock
-            ? [{ id: 'block', label: '차단하기', onSelect: () => openAfterMenu('block') }]
-            : []),
+          // 기능명세 5.10.4: 차단은 멤버 누구나(해제는 메인·공동 관리자)
+          { id: 'block', label: '차단하기', onSelect: () => openAfterMenu('block') },
           { id: 'report', label: '신고하기', onSelect: () => openAfterMenu('report') },
         ]}
       />
@@ -86,8 +82,7 @@ export function OtherBunchMoreMenu({
       <ReportSheet
         {...sheetProps('report')}
         title={BUNCH_HOME_MESSAGES.reportTitle(bunchName)}
-        targetLabel={BUNCH_HOME_MESSAGES.reportTargetLabel}
-        targetName={reporterName}
+        description={BUNCH_HOME_MESSAGES.reportDescription(reporterName)}
         reasons={BUNCH_REPORT_REASONS}
         detailReasonValue={BUNCH_REPORT_OTHER}
         onSubmit={(value) => {
