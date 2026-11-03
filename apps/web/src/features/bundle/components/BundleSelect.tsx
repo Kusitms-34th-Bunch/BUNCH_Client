@@ -2,15 +2,9 @@
 
 import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
-import { MemberFilter } from '@/features/photo-box/components/MemberFilter';
+import { useEffect } from 'react';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
-import { PhotoBoxEmpty } from '@/features/photo-box/components/PhotoBoxEmpty';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
-import { PhotoSelectionProvider } from '@/features/photo-box/components/PhotoSelectionContext';
-import { UndatedPhotos } from '@/features/photo-box/components/UndatedPhotos';
-import { filterByMember, splitPhotos } from '@/features/photo-box/lib/photoDate';
-import { ALL_MEMBERS } from '@/features/photo-box/lib/types';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -18,7 +12,7 @@ import { BUNDLE_SELECT_MESSAGES } from '../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../constants/selectPaths';
 import { useBundleSelect } from '../contexts/bundleSelectContext';
 import { RecommendSheet } from './RecommendSheet';
-import { SelectDateSection } from './SelectDateSection';
+import { SelectPhotoList } from './SelectPhotoList';
 
 type BundleSelectProps = {
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
@@ -34,12 +28,6 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   const router = useRouter();
   const select = useBundleSelect();
   const { photoState, selection, memberId, creating, scrollTarget } = select;
-  const data = photoState.kind === 'ready' ? photoState.data : undefined;
-
-  const { sections, undated } = useMemo(
-    () => splitPhotos(data ? filterByMember(data.photos, memberId) : [], currentYear),
-    [data, memberId, currentYear],
-  );
 
   // 추천 번들을 적용하면 그 날짜 섹션으로 스크롤하고 제목에 포커스(요청마다 한 번, 끝나면 대상을 비움)
   const { clearScrollTarget } = select;
@@ -62,9 +50,6 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
       </PageShell>
     );
   }
-
-  const isEmpty = sections.length === 0 && undated.length === 0;
-  const hasPhotos = photoState.data.photos.length > 0;
 
   return (
     <PageShell
@@ -120,23 +105,16 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
       </p>
       {/* 번들을 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
       {creating ? <PageLoading /> : null}
-      <PhotoSelectionProvider value={{ active: true, selection, onToggle: select.toggle }}>
-        <div className="flex min-h-full flex-col" inert={creating}>
-          <MemberFilter
-            members={photoState.data.members}
-            selectedId={memberId}
-            onSelect={select.setMemberId}
-            selectedCounts={select.selectedCounts}
-          />
-          {undated.length > 0 ? <UndatedPhotos photos={undated} /> : null}
-          {sections.map((section) => (
-            <SelectDateSection key={section.dateKey} section={section} />
-          ))}
-          {isEmpty ? (
-            <PhotoBoxEmpty reason={hasPhotos || memberId !== ALL_MEMBERS ? 'member' : 'bunch'} />
-          ) : null}
-        </div>
-      </PhotoSelectionProvider>
+      <SelectPhotoList
+        data={photoState.data}
+        selection={selection}
+        selectedCounts={select.selectedCounts}
+        memberId={memberId}
+        onMemberChange={select.setMemberId}
+        onToggle={select.toggle}
+        currentYear={currentYear}
+        inert={creating}
+      />
       <RecommendSheet
         open={select.sheetOpen}
         onOpenChange={(open) => (open ? select.openSheet() : select.closeSheet())}

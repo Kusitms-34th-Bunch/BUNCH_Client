@@ -2,6 +2,7 @@ import { useId, type ComponentProps } from 'react';
 import {
   FillCameraLargeIcon,
   FillPhotoLargeIcon,
+  FillUserLargeIcon,
   LineChevronRightMediumIcon,
 } from '../../../icons';
 import { cn } from '../../../utils';
@@ -12,11 +13,11 @@ export type UploadOptionCardProps = Omit<
 > & {
   title: string;
   description: string;
-  /** 왼쪽 원 안 아이콘. 기본값 `photo`(앨범), `camera`는 카메라로 찍기 */
-  icon?: 'photo' | 'camera' | undefined;
+  /** 왼쪽 원 안 아이콘. 기본값 `photo`(앨범), `camera`는 카메라로 찍기, `user`는 내 갤러리에서 가져오기 */
+  icon?: 'photo' | 'camera' | 'user' | undefined;
 };
 
-const icons = { photo: FillPhotoLargeIcon, camera: FillCameraLargeIcon };
+const icons = { photo: FillPhotoLargeIcon, camera: FillCameraLargeIcon, user: FillUserLargeIcon };
 
 /**
  * 사진 올리기 방식 하나를 보여 주고 눌러서 고르는 카드(Figma `UploadOptionCard`)
