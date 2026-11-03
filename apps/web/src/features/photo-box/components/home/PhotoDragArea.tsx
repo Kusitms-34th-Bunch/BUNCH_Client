@@ -20,6 +20,7 @@ import { useMemo, useState } from 'react';
 import type { PhotoSection } from '../../lib/photoDate';
 import type { PhotoBoxActions, PhotoBoxViewer } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
+import { PhotoDragProvider } from '../../contexts/PhotoDragContext';
 import {
   type SectionItems,
   canDragPhoto,
@@ -29,7 +30,6 @@ import {
   needsDragConfirm,
   toSectionItems,
 } from '../../lib/photoDrag';
-import { PhotoDragProvider } from '../PhotoDragContext';
 import { DateChangeConfirmDialog } from '../PhotoSelectionDialogs';
 import { PhotoDateSection } from './PhotoDateSection';
 

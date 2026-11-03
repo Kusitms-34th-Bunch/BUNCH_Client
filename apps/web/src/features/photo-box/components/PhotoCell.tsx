@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { PhotoBoxPhoto } from '../lib/types';
 import { PHOTO_BOX_PATHS } from '../constants/paths';
+import { usePhotoSelection } from '../contexts/PhotoSelectionContext';
 import { getSelectionOrder } from '../lib/selection';
-import { usePhotoSelection } from './PhotoSelectionContext';
 
 type PhotoCellProps = {
   photo: PhotoBoxPhoto;

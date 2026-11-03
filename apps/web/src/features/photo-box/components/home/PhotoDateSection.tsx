@@ -3,7 +3,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { useId } from 'react';
 import type { PhotoSection } from '../../lib/photoDate';
-import { usePhotoDrag } from '../PhotoDragContext';
+import { usePhotoDrag } from '../../contexts/PhotoDragContext';
 import { PhotoGrid } from '../PhotoGrid';
 
 type PhotoDateSectionProps = {

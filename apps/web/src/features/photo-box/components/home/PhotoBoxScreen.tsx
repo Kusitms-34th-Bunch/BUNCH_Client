@@ -7,6 +7,7 @@ import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
+import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
 import { usePhotoSelectionFlow } from '../../hooks/usePhotoSelectionFlow';
 import { MAX_PHOTOS_IN_BOX } from '../../lib/photoActions';
 import { filterByMember, splitPhotos } from '../../lib/photoDate';
@@ -16,7 +17,6 @@ import { MemberFilter } from '../MemberFilter';
 import { NoBunch } from '../NoBunch';
 import { PhotoBoxEmpty } from '../PhotoBoxEmpty';
 import { PhotoBoxError } from '../PhotoBoxError';
-import { PhotoSelectionProvider } from '../PhotoSelectionContext';
 import {
   BundleConfirmDialog,
   DateChangeConfirmDialog,
