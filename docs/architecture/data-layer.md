@@ -37,7 +37,7 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 - **mutation은 항상 `queries/`의 `use…Mutation` hook으로 만든다.** 캐시 동기화(아래 "Mutation 캐시 동기화")를 한곳에 모으기 위해서다. 화면 이동·toast 같은 화면 동작은 hook에 넣지 않고 화면이 `mutate(…, { onSuccess })`로 처리한다.
 - **`hooks/`**: 서버 상태가 아닌 화면·흐름 hook만 둔다.
 - 여러 feature가 같은 요청·query를 실제로 함께 쓰고 계약이 안정되면 `src/shared`(`shared/query/`)로 옮긴다. 인증 세션(로그인·재발급·로그아웃)은 모든 BFF가 쓰는 공용 인프라라 처음부터 `src/shared/api/`에 둔다.
-- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW를 도입하면(결정 기록 007) handler가 같은 fixture를 재사용한다.
+- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/ids.ts`로 화면 문자열 id로 바꾼다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
 
 ### 예시
 
