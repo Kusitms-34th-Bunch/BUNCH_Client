@@ -3,4 +3,6 @@ export const photoBoxKeys = {
   all: ['photo-box'] as const,
   // 번치를 아직 모르면 undefined(요청하지 않는 skipToken 상태의 key)
   members: (bunchId: string | undefined) => [...photoBoxKeys.all, 'members', bunchId] as const,
+  // 사진 목록(날짜별·날짜 없음·멤버 필터)·상세·사용량은 모두 이 아래에 두어 삭제 뒤 한 번에 무효화
+  photos: (bunchId: string) => [...photoBoxKeys.all, 'photos', bunchId] as const,
 };
