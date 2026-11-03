@@ -160,7 +160,7 @@ function ProfileForm({
               value={name}
               maxLength={BUNCH_NAME_MAX_LENGTH}
               autoComplete="off"
-              {...(nameInvalid ? { errorMessage: BUNCH_NAME_INVALID_MESSAGE } : {})}
+              errorMessage={nameInvalid ? BUNCH_NAME_INVALID_MESSAGE : undefined}
               onChange={(event) => setName(event.target.value)}
               onCompositionStart={() => setComposing(true)}
               onCompositionEnd={() => setComposing(false)}

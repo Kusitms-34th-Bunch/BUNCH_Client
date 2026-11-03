@@ -42,7 +42,7 @@ export function BunchBasicInfo() {
           placeholder="번치 이름을 입력해주세요"
           value={name}
           maxLength={BUNCH_NAME_MAX_LENGTH}
-          {...(invalid ? { errorMessage: BUNCH_NAME_INVALID_MESSAGE } : {})}
+          errorMessage={invalid ? BUNCH_NAME_INVALID_MESSAGE : undefined}
           onChange={(event) => setName(event.target.value)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}

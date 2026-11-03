@@ -15,9 +15,9 @@ export type LabeledTextFieldProps = Omit<
   /** 입력창 위에 보이는 제목이자 입력창의 접근성 이름 */
   title: string;
   /** 제목 옆 필수·선택 표시 */
-  option?: OptionVariant;
+  option?: OptionVariant | undefined;
   /** 오류 문구. 있으면 입력창 아래 왼쪽에 빨간 글자로 표시하고 입력창에 `aria-invalid` 적용 */
-  errorMessage?: string;
+  errorMessage?: string | undefined;
   /** 행 전체에 적용되는 class */
   className?: string;
 };

@@ -140,7 +140,7 @@ export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
             value={nickname}
             maxLength={NICKNAME_MAX_LENGTH}
             autoComplete="off"
-            {...(nicknameError ? { errorMessage: nicknameError } : {})}
+            errorMessage={nicknameError}
             onChange={(event) => setNickname(event.target.value)}
             onCompositionStart={() => setComposing(true)}
             onCompositionEnd={() => setComposing(false)}
@@ -158,11 +158,11 @@ export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
             autoComplete="off"
             aria-describedby={`${birthYearHintId} ${noteId}`}
             value={birthYear}
-            {...(showBirthYearError
-              ? {
-                  errorMessage: `${BIRTH_YEAR_MIN}년부터 ${getBirthYearMax(currentYear)}년 사이로 입력해 주세요.`,
-                }
-              : {})}
+            errorMessage={
+              showBirthYearError
+                ? `${BIRTH_YEAR_MIN}년부터 ${getBirthYearMax(currentYear)}년 사이로 입력해 주세요.`
+                : undefined
+            }
             onChange={(event) => setBirthYear(sanitizeBirthYear(event.target.value))}
             onFocus={() => setBirthYearBlurred(false)}
             onBlur={() => setBirthYearBlurred(true)}
