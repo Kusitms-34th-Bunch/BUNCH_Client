@@ -7,10 +7,8 @@ import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
-import { bunchDetailsFixture, initialBunchDetailFixture } from '../../fixtures/bunchHome.fixture';
-import { useBunchMembers } from '../../hooks/useBunchMembers';
 import { useBunchProfileEdits } from '../../hooks/useBunchProfileEdits';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
+import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { BunchProfileEditScreen } from './BunchProfileEditScreen';
 
 /**
@@ -20,14 +18,11 @@ import { BunchProfileEditScreen } from './BunchProfileEditScreen';
 export function BunchProfileEdit() {
   const router = useRouter();
   const backOr = useBackOr();
-  const [currentId] = useCurrentBunchId();
   const [edits, saveEdit] = useBunchProfileEdits();
   // 첫 hydration은 저장된 번치를 몰라 폼을 그리지 않음(다른 번치 값이 잠깐 보이지 않게)
-  const bunch =
-    currentId === null ? undefined : (bunchDetailsFixture[currentId] ?? initialBunchDetailFixture);
   // 멤버 관리에서 메인 관리자를 넘겼으면 바뀐 역할 기준
-  const { myRole } = useBunchMembers(bunch?.id);
-  const isOwner = (myRole ?? bunch?.myRole) === 'owner';
+  const { bunch, myRole } = useCurrentBunch();
+  const isOwner = myRole === 'owner';
 
   useEffect(() => {
     if (bunch && !isOwner) router.replace(BUNCH_HOME_PATHS.menu);

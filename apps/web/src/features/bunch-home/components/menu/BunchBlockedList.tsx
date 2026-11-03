@@ -2,10 +2,9 @@
 
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { bunchDetailsFixture, initialBunchDetailFixture } from '../../fixtures/bunchHome.fixture';
 import { useBlockedBunches } from '../../hooks/useBlockedBunches';
-import { useBunchMembers } from '../../hooks/useBunchMembers';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
+import { useCurrentBunch } from '../../hooks/useCurrentBunch';
+import { isAdminRole } from '../../lib/roles';
 import { BunchBlockedListScreen } from './BunchBlockedListScreen';
 
 /**
@@ -13,19 +12,14 @@ import { BunchBlockedListScreen } from './BunchBlockedListScreen';
  */
 export function BunchBlockedList() {
   const backOr = useBackOr();
-  const [currentId] = useCurrentBunchId();
   // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음(다른 번치 목록이 잠깐 보이지 않게)
-  const bunch =
-    currentId === null ? undefined : (bunchDetailsFixture[currentId] ?? initialBunchDetailFixture);
+  const { bunch, myRole } = useCurrentBunch();
   const { blocked, unblock } = useBlockedBunches(bunch?.id);
-  // 멤버 관리에서 바뀐 역할 우선(권한 표: 차단·해제는 메인·공동 관리자)
-  const { myRole } = useBunchMembers(bunch?.id);
-  const role = myRole ?? bunch?.myRole;
 
   return (
     <BunchBlockedListScreen
       blocked={blocked}
-      canUnblock={role === 'owner' || role === 'coOwner'}
+      canUnblock={isAdminRole(myRole)}
       onUnblock={unblock}
       onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
     />

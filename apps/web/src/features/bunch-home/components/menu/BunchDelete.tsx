@@ -7,9 +7,7 @@ import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
-import { bunchDetailsFixture, initialBunchDetailFixture } from '../../fixtures/bunchHome.fixture';
-import { useBunchMembers } from '../../hooks/useBunchMembers';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
+import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { leaveBunch } from '../../hooks/useLeftBunches';
 import { BunchDeleteScreen } from './BunchDeleteScreen';
 
@@ -21,15 +19,11 @@ import { BunchDeleteScreen } from './BunchDeleteScreen';
 export function BunchDelete({ step }: { step: 'info' | 'confirm' }) {
   const router = useRouter();
   const backOr = useBackOr();
-  const [currentId, setCurrentId] = useCurrentBunchId();
   // 삭제 뒤 화면이 빠지는 동안에도 다음 번치가 아니라 삭제한 번치를 그림
   const [deletedId, setDeletedId] = useState<string | null>(null);
-  const bunchId = deletedId ?? currentId;
   // 첫 hydration은 저장된 번치를 몰라 본문을 그리지 않음
-  const bunch =
-    bunchId === null ? undefined : (bunchDetailsFixture[bunchId] ?? initialBunchDetailFixture);
-  const { members, myRole } = useBunchMembers(bunch?.id);
-  const isOwner = (myRole ?? bunch?.myRole) === 'owner';
+  const { bunch, setCurrentId, members, myRole } = useCurrentBunch(deletedId);
+  const isOwner = myRole === 'owner';
   // 화면설계서 2번: 나를 맨 앞에 「(나)」로
   const memberNames = [...(members ?? [])]
     .sort((a, b) => Number(Boolean(b.isMe)) - Number(Boolean(a.isMe)))

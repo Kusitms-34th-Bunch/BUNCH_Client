@@ -3,10 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { bunchDetailsFixture, initialBunchDetailFixture } from '../../fixtures/bunchHome.fixture';
-import { useBunchMembers } from '../../hooks/useBunchMembers';
 import { useBunchProfileEdits } from '../../hooks/useBunchProfileEdits';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
+import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { BunchMembersScreen } from './BunchMembersScreen';
 
 /**
@@ -15,12 +13,9 @@ import { BunchMembersScreen } from './BunchMembersScreen';
 export function BunchMembers() {
   const router = useRouter();
   const backOr = useBackOr();
-  const [currentId] = useCurrentBunchId();
   const [edits] = useBunchProfileEdits();
   // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음(다른 번치 멤버가 잠깐 보이지 않게)
-  const bunch =
-    currentId === null ? undefined : (bunchDetailsFixture[currentId] ?? initialBunchDetailFixture);
-  const { members, myRole, actions } = useBunchMembers(bunch?.id);
+  const { bunch, members, myRole, actions } = useCurrentBunch();
 
   return (
     <BunchMembersScreen

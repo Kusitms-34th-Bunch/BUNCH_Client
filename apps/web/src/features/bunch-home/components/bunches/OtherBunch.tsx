@@ -8,6 +8,7 @@ import { findOtherBunch } from '../../fixtures/otherBunches.fixture';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
 import { useBunchFollow } from '../../hooks/useBunchFollow';
 import { useBunchMembers } from '../../hooks/useBunchMembers';
+import { isAdminRole } from '../../lib/roles';
 import { BlockedBunchScreen } from './BlockedBunchScreen';
 import { OtherBunchMoreMenu } from './OtherBunchMoreMenu';
 import { OtherBunchScreen } from './OtherBunchScreen';
@@ -44,7 +45,7 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
           <OtherBunchMoreMenu
             bunchName={bunch.name}
             bunchImageSrc={bunch.imageSrc}
-            canBlock={myRole === 'owner' || myRole === 'coOwner'}
+            canBlock={isAdminRole(myRole)}
             reporterName={me.name}
             onBlock={() => {
               // 차단하면 팔로우 관계도 해제(화면설계서 2500:67470 2번)

@@ -2,9 +2,8 @@
 
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { bunchDetailsFixture, initialBunchDetailFixture } from '../../fixtures/bunchHome.fixture';
 import { useBunchNotifications } from '../../hooks/useBunchNotifications';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
+import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { BunchNotificationsScreen } from './BunchNotificationsScreen';
 
 /**
@@ -13,10 +12,8 @@ import { BunchNotificationsScreen } from './BunchNotificationsScreen';
  */
 export function BunchNotifications() {
   const backOr = useBackOr();
-  const [currentId] = useCurrentBunchId();
   // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음
-  const bunch =
-    currentId === null ? undefined : (bunchDetailsFixture[currentId] ?? initialBunchDetailFixture);
+  const { bunch } = useCurrentBunch();
   const { notifications, readOne, readAll } = useBunchNotifications(bunch?.id);
 
   return (

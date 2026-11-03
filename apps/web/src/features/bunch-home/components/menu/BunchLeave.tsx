@@ -7,9 +7,7 @@ import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
-import { bunchDetailsFixture, initialBunchDetailFixture } from '../../fixtures/bunchHome.fixture';
-import { useBunchMembers } from '../../hooks/useBunchMembers';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
+import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { leaveBunch } from '../../hooks/useLeftBunches';
 import { BunchLeaveScreen } from './BunchLeaveScreen';
 
@@ -20,12 +18,8 @@ import { BunchLeaveScreen } from './BunchLeaveScreen';
 export function BunchLeave() {
   const router = useRouter();
   const backOr = useBackOr();
-  const [currentId, setCurrentId] = useCurrentBunchId();
   // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음
-  const bunch =
-    currentId === null ? undefined : (bunchDetailsFixture[currentId] ?? initialBunchDetailFixture);
-  const { members, myRole } = useBunchMembers(bunch?.id);
-  const role = myRole ?? bunch?.myRole;
+  const { bunch, setCurrentId, members, myRole: role } = useCurrentBunch();
   // Figma 1892:36323은 역할과 상관없이 이름순(멤버 관리의 역할순과 다름)
   const candidates = members
     ?.filter((member) => !member.isMe)
