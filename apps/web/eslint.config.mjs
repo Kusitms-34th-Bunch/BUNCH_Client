@@ -18,7 +18,8 @@ const TANSTACK_DEFINITIONS = [
 
 export default [
   ...next,
-  { ignores: ['.next/**'] },
+  // mockServiceWorker.js는 msw init 생성 파일
+  { ignores: ['.next/**', 'public/mockServiceWorker.js'] },
   {
     // 화면은 options를 받아 읽기만 하고, 정의·캐시 조작은 queries/에서만
     files: ['src/**/*.{ts,tsx}'],
