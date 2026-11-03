@@ -111,6 +111,7 @@ __metadata:
     prettier: "npm:^3.9.5"
     react: "catalog:"
     react-dom: "catalog:"
+    react-simplikit: "catalog:"
     sonner: "npm:^2.0.8"
     storybook: "catalog:"
     tailwind-merge: "npm:^3.6.0"
@@ -192,6 +193,7 @@ __metadata:
     overlay-kit: "npm:^1.9.0"
     react: "catalog:"
     react-dom: "catalog:"
+    react-simplikit: "catalog:"
     server-only: "npm:^0.0.1"
     swiper: "npm:^14.3.0"
     tailwindcss: "npm:^4.3.3"
@@ -8784,6 +8786,15 @@ __metadata:
   version: 17.0.2
   resolution: "react-is@npm:17.0.2"
   checksum: 10c0/2bdb6b93fbb1820b024b496042cce405c57e2f85e777c9aabd55f9b26d145408f9f74f5934676ffdc46f3dcff656d78413a6e43968e7b3f92eea35b3052e9053
+  languageName: node
+  linkType: hard
+
+"react-simplikit@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "react-simplikit@npm:0.4.0"
+  peerDependencies:
+    react: "*"
+  checksum: 10c0/e807cacae55a091f6ec0f651e4d63dd31cb2046b247ea53abe7c3d7f05c23f589bcd7dec0800688fb7c728310789fb727c784bc3c7440f9214ba2f1698e4f225
   languageName: node
   linkType: hard
 

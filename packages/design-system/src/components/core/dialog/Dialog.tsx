@@ -2,6 +2,7 @@
 
 import { AlertDialog } from '@base-ui/react/alert-dialog';
 import { useRef, type ComponentProps, type ReactNode } from 'react';
+import { mergeRefs } from 'react-simplikit';
 import { cn } from '../../../utils';
 import { Button, type ButtonProps } from '../button';
 import { TextButton } from '../textButton';
@@ -48,11 +49,7 @@ const Content = ({ className, backdropClassName, children, ref, ...props }: Dial
       <AlertDialog.Popup
         {...props}
         aria-modal="true"
-        ref={(element) => {
-          popupRef.current = element;
-          if (typeof ref === 'function') return ref(element);
-          if (ref) ref.current = element;
-        }}
+        ref={mergeRefs(popupRef, ref)}
         initialFocus={() =>
           popupRef.current?.querySelector<HTMLElement>('[data-dialog-cancel]:not(:disabled)') ??
           popupRef.current?.querySelector<HTMLElement>('[data-dialog-confirm]:not(:disabled)') ??

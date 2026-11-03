@@ -23,6 +23,7 @@ const catalogDependencies = new Set([
   `ky`,
   `react`,
   `react-dom`,
+  `react-simplikit`,
   `rolldown`,
   `storybook`,
   `typescript`,

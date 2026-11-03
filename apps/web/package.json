@@ -31,6 +31,7 @@
     "overlay-kit": "^1.9.0",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-simplikit": "catalog:",
     "server-only": "^0.0.1",
     "swiper": "^14.3.0",
     "zod": "catalog:"
