@@ -5,6 +5,7 @@
 - `src/app`은 Next.js route, layout, metadata와 provider 조립을 담당한다.
 - 화면·feature 로직은 `src/features`, 재사용 가능한 인프라는 `src/shared`에 둔다. 디자인 시스템 UI 컴포넌트를 조합해 domain 문구·route·데이터·행동을 붙이는 것은 `src/features`가 맡는다.
 - `shared`는 특정 domain이나 route를 import하지 않는다.
+- `src/mocks`는 가짜 백엔드(MSW handler, 가짜 DB, 켜는 게이트)만 둔다. 화면 코드(`features`)는 import하지 않고, `app/layout.tsx`의 `ApiMockingGate`와 테스트 setup(`vitest.setup.ts`)만 쓴다. handler는 UI feature가 아니라 백엔드 resource 단위로 나눈다(`handlers/members.ts`).
 - `shared/config`에는 특정 영역에 속하지 않는 환경 변수와 라이브러리 초기화·옵션 객체(예: Sentry), `shared/lib`에는 feature `lib/`와 같이 순수 함수와 라이브러리 연결 래퍼를 둔다. 앱 전체가 기대는 인프라이거나 파일이 여러 개로 늘어날 설정은 영역 폴더(`api/`, `query/`, `bridge/`)로 두고, 그 영역의 환경 변수도 영역 폴더에서 읽는다. 앱 공용 provider는 `shared/providers/`에 두고 조립은 layout이 맡는다.
 - feature 폴더는 역할별로 나눈다(예: `components` UI, `constants` 상수, `hooks` 일반 hook, `contexts` context·provider, `lib`·`utils` 순수 함수, `fixtures` API 연결 전 샘플 데이터·테스트 공용 값). 필요한 폴더만 만들고(빈 폴더는 `.gitkeep`), 정해진 목록은 없다. `features/auth`가 역할 폴더 스캐폴딩의 예이고, API 연동 파일(`api/`, `queries/`, 필요할 때 `model/`)은 `docs/architecture/data-layer.md`의 "파일 배치 (web)"를 따른다.
 - 폴더 이름은 같은 종류를 여러 개 모으면 복수(`components/`, `hooks/`, `providers/`, feature의 `queries/`), 영역·인프라를 부르면 단수(`api/`, `query/`, `config/`, `lib/`)로 짓는다.

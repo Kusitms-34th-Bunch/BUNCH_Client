@@ -35,6 +35,7 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 
 - 일반 요청은 범용 프록시(`src/app/api/[...path]/route.ts`)가 전달한다. BFF 경로는 백엔드 경로에서 `/api/v1`을 뺀 경로다(예: BFF `GET /api/members/nickname-availability` → 백엔드 `GET /api/v1/members/nickname-availability`). 그래서 API를 붙일 때 Route Handler를 새로 만들지 않는다.
 - 전용 Route Handler는 인증(쿠키 발급·삭제), 여러 백엔드 응답 조합·가공, 응답에서 민감한 값을 걸러야 할 때만 만들고 `createAuthorizedRoute`·`createServerApi`를 쓴다. 전용 Route Handler가 있는 경로는 프록시보다 우선한다.
+- MSW 가짜 서버(`src/mocks/`, `NEXT_PUBLIC_API_MOCKING=enabled`)는 브라우저 → BFF 요청(`/api/…`)을 BFF 앞에서 가로채므로 쿠키와 로그인이 필요 없다. BFF Route Handler와 서버 컴포넌트의 서버 요청(`serverClient`)은 가로채지 않는다.
 - 화면용 집계는 기본으로 두지 않는다. 요청이 서로 의존해 느리거나(측정으로 확인), 필요 없는 큰 데이터·민감한 필드를 걸러야 할 때만 더한다. 묶은 응답은 TanStack Query의 데이터 단위 무효화를 어렵게 만든다.
 - 집계가 필요하면 가벼운 순서로 고른다: ① 백엔드에 화면용 API 요청 ② Server Component에서 `serverClient`로 병렬 호출(Route Handler를 거치지 않음) ③ 브라우저에서 다시 불러야 하는 조합만 전용 Route Handler(`createAuthorizedRoute`).
 - 이 BFF는 화면 데이터 집계보다 토큰을 브라우저에서 떼어 내는 인증 경계가 주 역할이다(백엔드가 쿠키를 쓰지 않고 CORS가 꺼져 있음). 비즈니스 로직은 두지 않는다.
