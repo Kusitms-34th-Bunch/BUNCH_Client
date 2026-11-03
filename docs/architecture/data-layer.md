@@ -12,13 +12,14 @@
   - enum은 명세 값만 받는 닫힌 목록으로 둔다. 서버가 새 값을 보내면 화면이 추측하지 않고 계약 위반으로 드러난다.
   - `requestData`는 `data`가 있는 응답 전용이다. 본문 없는 204 응답은 본문을 읽지 않는 요청 함수가 따로 필요하고, 첫 204 mutation을 연동할 때 만든다.
   - 재발급까지 실패한 401은 `ApiError`(category `auth`)로만 전달된다. 로그인 화면으로 보내는 처리(`createBrowserApi`의 `onUnauthorized`)는 아직 없고 로그인 API 연동 때 연결한다.
-- TanStack Query query key는 안정적이고 도메인 의미가 드러나야 한다. key는 feature의 `queries/keys.ts` factory 함수만 만들고, queryOptions·hook·무효화 코드는 그 함수를 호출만 한다(배열을 직접 쓰지 않는다). 모든 key는 `{feature}.all`에서 시작해 도메인 이름 함수(`nicknameAvailability(nickname)`, `mine()` → `latestMine()` 등)로 이어지고, 목록·상세 리소스가 있을 때만 `all → lists/list`, `all → details/detail` 계층(`createQueryKeys`)을 쓴다. response 결과를 바꾸는 filter·sort·cursor·id는 모두 key 함수 인자로 받고, 빈 값 제거 같은 정규화도 key 함수에서 한다. 일반 목록과 infinite 목록은 서로 다른 key를 쓴다.
+- TanStack Query query key는 안정적이고 도메인 의미가 드러나야 한다. key는 feature의 `queries/keys.ts` factory 함수만 만들고, queryOptions·hook·무효화 코드는 그 함수를 호출만 한다(배열을 직접 쓰지 않는다). 모든 key는 `{feature}.all`에서 시작해 도메인 이름 함수(`nicknameAvailability(nickname)`, `mine()` → `latestMine()` 등)로 이어지고, 목록·상세 리소스가 있을 때만 `all → lists/list`, `all → details/detail` 계층(`createQueryKeys`)을 쓴다. response 결과를 바꾸는 filter·sort·cursor·id는 모두 key 함수 인자로 받고, 빈 값 제거 같은 정규화도 key 함수에서 한다. 일반 목록과 infinite 목록은 서로 다른 key를 쓰되 같은 prefix 아래에 둔다(예: `list(bunchId)` 아래 `list(bunchId, params)`와 `[...list(bunchId), 'infinite', params]`). 그러면 prefix 하나로 두 목록을 함께 invalidate할 수 있다.
 - 일반 `useQuery`, `useSuspenseQuery`, infinite query, route prefetch는 화면의 loading 경계와 navigation 요구에 맞춰 선택한다. 구체적인 선택 기준은 아래 "Query 모드 선택"을 따른다.
 - mutation 뒤 캐시 처리는 아래 "Mutation 캐시 동기화" 결정표를 따른다.
 - optimistic update는 아래 3단계 계약을 모두 지킬 수 있을 때만 사용한다. 하나라도 근거 없이 생략되면 성공 응답 뒤 갱신을 선택한다.
   1. 요청 전: 같은 query key로 진행 중인 조회를 취소하고, 현재 캐시 값을 스냅샷으로 남긴 뒤 optimistic 값을 적용한다.
   2. 실패 시: 스냅샷으로 롤백하고 사용자에게 실패를 알린다. 롤백 없이 에러만 삼키는 optimistic update는 리뷰에서 반려한다.
   3. 완료 시(성공·실패 무관): 해당 query key를 invalidate해 서버 응답이 최종적으로 화면을 결정하게 한다.
+  - 같은 데이터가 일반 목록과 infinite 목록에 함께 캐시돼 있으면 prefix로 `getQueriesData`(스냅샷)·`setQueriesData`(적용)를 하고, 두 캐시 모양(배열과 `pages`)을 모두 처리하는 갱신 함수 하나를 `lib/`에 순수 함수로 둔다.
 
 ## 파일 배치 (web)
 
@@ -40,6 +41,7 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 - **`queries/`**: query key, `queryOptions`·`infiniteQueryOptions`, mutation hook을 둔다. `queryOptions`·`useMutation`·`useQueryClient`·`QueryClient`는 `queries/`, `src/shared/query/`, `QueryProvider`에서만 import한다(ESLint 강제, 타입 import는 어디서나 허용). 파일 이름은 `api/`와 맞춘다(`api/nickname.ts` ↔ `queries/nickname.ts`).
 - **query hook은 기본으로 만들지 않는다.** 화면이 `useQuery(xxxQueryOptions(…))`처럼 options를 받아 읽는다(`useQuery`·`useSuspenseQuery`·`useInfiniteQuery`는 어디서나 사용 가능). 여러 query 조합이나 가공이 필요할 때만 `queries/`에 `use…Query`를 만든다.
 - **mutation은 항상 `queries/`의 `use…Mutation` hook으로 만든다.** 캐시 동기화(아래 "Mutation 캐시 동기화")를 한곳에 모으기 위해서다. 화면 이동·toast 같은 화면 동작은 hook에 넣지 않고 화면이 `mutate(…, { onSuccess })`로 처리한다.
+- **mutation 실패 알림은 공통 처리로 선언한다.** mutation에 `meta: { errorMessage }`(사용자 문구)를 주면 QueryClient의 `MutationCache.onError`가 그 문구를 toast로 띄운다. meta 타입은 TanStack Query `Register`로 고정한다. 서버 `error.message`는 문구 키라 그대로 보여 주지 않는다. code마다 다른 문구가 필요하거나 입력 칸 아래에 오류를 보여 주는 화면은 meta 없이 `mutate(…, { onError })`로 직접 처리한다. 성공 toast와 화면 이동은 계속 화면이 맡는다. 구현 상태: 아직 없고, 첫 mutation(#199 사진 업로드·삭제)을 연동할 때 `src/shared/query/queryClient.ts`에 추가한다.
 - **`hooks/`**: 서버 상태가 아닌 화면·흐름 hook만 둔다.
 - 여러 feature가 같은 요청·query를 실제로 함께 쓰고 계약이 안정되면 `src/shared`(`shared/query/`)로 옮긴다. 인증 세션(로그인·재발급·로그아웃)은 모든 BFF가 쓰는 공용 인프라라 처음부터 `src/shared/api/`에 둔다.
 - API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/ids.ts`로 화면 문자열 id로 바꾼다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
@@ -132,6 +134,7 @@ register.mutate(form, { onSuccess: () => router.push(nextPath) });
 - `setQueryData`는 정확히 하나의 key만 갱신한다. 그 key가 다른 child key의 prefix이기도 하면 `exact: true`를 지정하거나, child도 함께 stale해질 때는 child prefix를 명시적으로 invalidate한다.
 - 화면이 mutation을 완료로 취급하기 전에 refetch가 시작돼야 하면 invalidate를 `await`한다.
 - mutation 직후 navigate하고 목적지의 loader·guard가 그 cache를 읽는다면, navigate 전에 `setQueryData`로 값을 확정하거나 invalidate를 `await`한다. 구독자가 없는 query는 invalidate가 stale 표시만 하고, fire-and-forget이면 loader가 갱신 전 cache를 읽어 이전 화면으로 되돌려 보내는 레이스가 생긴다(다른 프로젝트에서 WebKit E2E에서만 재현된 사례).
+- 한 mutation이 여러 key를 함께 무효화해야 하면(예: 번들 발행 뒤 초안 목록과 번치 홈 번들 목록·개수) 무효화를 함수 하나로 묶어 mutation hook과 다른 화면이 같은 범위를 쓰게 한다. 같은 feature의 key만 다루면 그 feature의 `queries/`에, 다른 feature의 key까지 다루면 feature 내부를 서로 import하지 않도록 `src/shared/query/`에 둔다.
 - 아직 소유하는 query가 없는 데이터를 위해 미리 query key나 cache 항목을 만들지 않는다.
 - 일반적인 mutation 성공 처리에는 `resetQueries`, `removeQueries`를 사용하지 않는다.
 - 서버 상태를 local state 또는 전역 store에 불필요하게 복제하지 않는다.
