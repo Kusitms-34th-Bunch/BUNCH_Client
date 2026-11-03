@@ -32,7 +32,7 @@ export const MenuLabel = (props: MenuLabelProps) => {
   const { children, className, leftIcon, showChevron = true } = props;
   const state: MenuLabelLinkState = {
     className: cn(
-      'rounded-r4 p-padding-p5 gap-s4 group relative isolate flex w-full cursor-pointer touch-manipulation items-center justify-between text-left',
+      'rounded-r4 px-s2 py-padding-p5 gap-s4 group relative isolate flex w-full cursor-pointer touch-manipulation items-center justify-between text-left',
       'before:rounded-r4 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
       // 비활성은 눌림 없이 전체 40%(Figma Disabled)
       'not-disabled:active:before:opacity-100 disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',
@@ -50,7 +50,7 @@ export const MenuLabel = (props: MenuLabelProps) => {
               {leftIcon}
             </span>
           ) : null}
-          <span className="typography-body-1-medium text-text-secondary group-disabled:text-text-disabled min-w-0 wrap-break-word break-keep">
+          <span className="typography-body-2-medium text-text-secondary group-disabled:text-text-disabled min-w-0 wrap-break-word break-keep">
             {children}
           </span>
         </span>
