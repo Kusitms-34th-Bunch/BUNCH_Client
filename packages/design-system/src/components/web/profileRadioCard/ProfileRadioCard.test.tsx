@@ -26,6 +26,16 @@ describe('ProfileRadioCard', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
+  it('역할이 있을 때만 배지를 그린다', () => {
+    const { container, rerender } = render(
+      <ProfileRadioCard label="경진" name="member" value="1" />,
+    );
+    expect(container.querySelector('svg')).toBeNull();
+
+    rerender(<ProfileRadioCard label="경진" name="member" value="1" memberRole="owner" />);
+    expect(container.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+  });
+
   it('카드를 누르면 선택되고, 그룹 안에서 하나만 선택된다', () => {
     render(
       <>

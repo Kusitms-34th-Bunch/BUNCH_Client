@@ -36,4 +36,18 @@ describe('RadioButton', () => {
 
     expect(screen.getByRole<HTMLInputElement>('radio', { name: '기타' }).checked).toBe(true);
   });
+
+  it('선택하면 가운데 점이 작게 시작해 커지고, 동작 줄이기에서는 전환을 끈다', () => {
+    const { container } = render(
+      <RadioButton name="reason" value="spam">
+        스팸
+      </RadioButton>,
+    );
+    const dot = container.querySelector('[aria-hidden="true"]')?.className ?? '';
+
+    expect(dot).toContain('before:scale-50');
+    expect(dot).toContain('peer-checked:before:scale-100');
+    expect(dot).toContain('before:transition-[opacity,scale]');
+    expect(dot).toContain('motion-reduce:before:transition-none');
+  });
 });

@@ -164,6 +164,17 @@ describe('toast()', () => {
     expect((toast.parentElement as HTMLElement).style.paddingBottom).toBe('32px');
   });
 
+  it('lets only the visible toast take touches, not the list or bottomOffset gap', async () => {
+    render(<Toaster />);
+    await show('터치 확인', { bottomOffset: 32, fullWidth: true });
+
+    const message = within(screen.getByLabelText('알림')).getByText('터치 확인');
+    const toast = message.closest('div[class*="rounded-r6"]') as HTMLElement;
+    expect(toast.className).toContain('pointer-events-auto');
+    // 목록 항목(bottomOffset 여백 포함)은 터치를 통과시킴
+    expect(toast.closest('li')?.className).toContain('pointer-events-none');
+  });
+
   it('places the toast in the top list with position top', async () => {
     render(<Toaster />);
     await show('위쪽 토스트', { position: 'top' });
