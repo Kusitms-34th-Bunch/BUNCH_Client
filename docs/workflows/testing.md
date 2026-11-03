@@ -28,6 +28,7 @@
 - 기준 예시는 `features/photo-box/api/bunchMembers.test.ts`(요청 함수)와 `queries/bunchMembers.test.tsx`(query)다.
   - 요청 함수: 가짜 서버 응답의 화면 모양 변환, 오류 code, 한 test만의 응답(`server.use`), 계약 위반(`INVALID_RESPONSE`)을 확인한다. 요청 입력은 handler 안에서 `params`·`request`를 받아 확인한다.
   - query: `src/shared/query/testing.tsx`의 `createQueryWrapper(createTestQueryClient())`로 감싼 `renderHook(() => useQuery(options))`로 성공·오류 상태와 캐시 key를 확인한다. 테스트 client는 앱 설정에서 재시도만 끈 것이다.
+  - 쓰기(`features/photo-box/api/photos.test.ts`, `queries/photos.test.tsx`): 요청 함수는 가짜 DB(`mockDb.get()`)가 실제로 바뀌었는지와 실패 때 그대로인지, 보낸 본문(handler 밖 변수에 담아 test 본문에서 단언. handler 안의 `expect`는 실패가 500 응답으로 바뀌어 원인이 가려진다), 오류 status별 `ApiError`(`it.each`)를 확인한다. mutation hook은 캐시에 값을 넣어 둔 client로 `await act(() => mutateAsync(…))` 뒤 `getQueryState(key)?.isInvalidated`가 무효화할 key는 참, 다른 번치·다른 리소스 key는 거짓인지와, 실패 때 `meta.errorMessage` 토스트를 확인한다(호출 여부를 spy하지 않고 캐시 상태를 본다).
   - 요청 함수·query test에서는 endpoint 모듈을 `vi.mock`해 응답 모양을 손으로 만들지 않는다. envelope 해제·스키마 검사·오류 변환을 건너뛰기 때문이다(화면 test는 위처럼 endpoint 모듈을 mock해도 된다).
 - 파일: handler는 `src/mocks/handlers/`(백엔드 resource별), 가짜 DB와 시작 데이터는 `src/mocks/db/`, 응답 형식(`ok`·`fail`·`noContent`)과 멱등 키 재생은 `src/mocks/lib/`다. 오류 코드와 메시지는 백엔드 명세를 따르고 명세에 없는 값은 추측하지 않는다.
 - 브라우저: `NEXT_PUBLIC_API_MOCKING=enabled`로 빌드·실행하면 서비스 워커(`public/mockServiceWorker.js`, `msw init`으로 생성)가 켜지고 화면은 준비된 뒤에 그려진다. 가짜 DB는 IndexedDB에 남아 새로고침해도 유지된다. 값이 비어 있으면 MSW 코드는 번들에 들어가지 않는다(빌드 뒤 `.next/static`에서 `mockServiceWorker`를 검색해 확인). 운영 배포에서는 이 변수를 설정하지 않는다.

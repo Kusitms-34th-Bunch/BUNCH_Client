@@ -44,19 +44,20 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 - **`queries/`**: query key, `queryOptions`·`infiniteQueryOptions`, mutation hook을 둔다. `queryOptions`·`useMutation`·`useQueryClient`·`QueryClient`는 `queries/`, `src/shared/query/`, `QueryProvider`에서만 import한다(ESLint 강제, 타입 import는 어디서나 허용). 파일 이름은 `api/`와 맞춘다(`api/nickname.ts` ↔ `queries/nickname.ts`).
 - **query hook은 기본으로 만들지 않는다.** 화면이 `useQuery(xxxQueryOptions(…))`처럼 options를 받아 읽는다(`useQuery`·`useSuspenseQuery`·`useInfiniteQuery`는 어디서나 사용 가능). 여러 query 조합이나 가공이 필요할 때만 `queries/`에 `use…Query`를 만든다.
 - **mutation은 항상 `queries/`의 `use…Mutation` hook으로 만든다.** 캐시 동기화(아래 "Mutation 캐시 동기화")를 한곳에 모으기 위해서다. 화면 이동·toast 같은 화면 동작은 hook에 넣지 않고 화면이 `mutate(…, { onSuccess })`로 처리한다.
-- **mutation 실패 알림은 공통 처리로 선언한다.** mutation에 `meta: { errorMessage }`(사용자 문구)를 주면 QueryClient의 `MutationCache.onError`가 그 문구를 toast로 띄운다. meta 타입은 TanStack Query `Register`로 고정한다. 서버 `error.message`는 문구 키라 그대로 보여 주지 않는다. code마다 다른 문구가 필요하거나 입력 칸 아래에 오류를 보여 주는 화면은 meta 없이 `mutate(…, { onError })`로 직접 처리한다. 성공 toast와 화면 이동은 계속 화면이 맡는다. 구현 상태: 아직 없고, 첫 mutation(#199 사진 업로드·삭제)을 연동할 때 `src/shared/query/queryClient.ts`에 추가한다.
+- **mutation 실패 알림은 공통 처리로 선언한다.** mutation에 `meta: { errorMessage }`(사용자 문구)를 주면 QueryClient의 `MutationCache.onError`가 그 문구를 toast로 띄운다. meta 타입은 TanStack Query `Register`로 고정한다. 서버 `error.message`는 문구 키라 그대로 보여 주지 않는다. code마다 다른 문구가 필요하거나 입력 칸 아래에 오류를 보여 주는 화면은 meta 없이 `mutate(…, { onError })`로 직접 처리한다. 성공 toast와 화면 이동은 계속 화면이 맡는다. 구현은 `src/shared/query/queryClient.ts`의 `MutationCache`와 `Register.mutationMeta`다.
 - **`hooks/`**: 서버 상태가 아닌 화면·흐름 hook만 둔다.
 - 여러 feature가 같은 요청·query를 실제로 함께 쓰고 계약이 안정되면 `src/shared`(`shared/query/`)로 옮긴다. 인증 세션(로그인·재발급·로그아웃)은 모든 BFF가 쓰는 공용 인프라라 처음부터 `src/shared/api/`에 둔다.
 - API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/ids.ts`로 화면 문자열 id로 바꾼다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
 
 ### 예시
 
-실제 기준 예시는 사진함의 번치 멤버 목록이다. 새 API는 이 파일들을 따라 만든다.
+실제 기준 예시는 사진함의 번치 멤버 목록(조회)과 사진 삭제(쓰기)다. 새 API는 이 파일들을 따라 만든다.
 
 - `features/photo-box/model/bunchMembers.ts`: 응답 zod 스키마와 `toPhotoBoxMember`(숫자 id → 문자열, 쓰는 화면의 기존 타입으로 변환. 화면 타입을 새로 만들지 않는다)
 - `features/photo-box/api/bunchMembers.ts`: `requestData`로 요청과 변환
 - `features/photo-box/queries/keys.ts`, `queries/bunchMembers.ts`: key factory와 `queryOptions`
 - `api/bunchMembers.test.ts`, `queries/bunchMembers.test.tsx`: MSW 가짜 서버로 확인하는 테스트(`docs/workflows/testing.md`)
+- 쓰기: `model/photos.ts`(응답 스키마), `api/photos.ts`(`requestData(bffApi.post(…, { json }))`, 화면 id → 서버 숫자), `queries/photos.ts`(`useDeletePhotosMutation`: 실패 문구 `meta`, 성공 뒤 사진 목록 prefix 무효화를 반환), `src/mocks/handlers/photos.ts`(본문 검사와 가짜 DB 변경), 각 test. 사진 목록 query는 아직 없고 #199에서 무효화 prefix `photoBoxKeys.photos(bunchId)` 아래에 추가한다(미리 key를 만들지 않는 규칙의 예외: mutation이 무효화할 prefix)
 
 ```ts
 // model/bunchMembers.ts — 서버 응답 모양과 화면 모양
@@ -91,18 +92,27 @@ export const bunchMembersQueryOptions = (bunchId: string | undefined) =>
     queryFn: bunchId ? () => getBunchMembers(bunchId) : skipToken,
   });
 
-// features/auth/queries/profile.ts — mutation hook(캐시 동기화만)
-export const useRegisterProfileMutation = () => {
+// queries/photos.ts — mutation hook(캐시 동기화와 실패 문구만)
+export const useDeletePhotosMutation = (bunchId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: registerProfile,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: authKeys.onboarding() }),
+    mutationFn: (photoIds: readonly string[]) => removePhotos(bunchId, photoIds),
+    meta: { errorMessage: PHOTO_BOX_MESSAGES.deleteFailed },
+    // 반환해서 mutateAsync·isPending이 활성 목록 재요청 완료까지 대기
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) }),
   });
 };
 
 // 화면 — 읽기와 화면 동작
 const { data: members, error } = useQuery(bunchMembersQueryOptions(bunchId));
-register.mutate(form, { onSuccess: () => router.push(nextPath) });
+const remove = useDeletePhotosMutation(bunchId);
+remove.mutate(selectedIds, {
+  // 함께 올린 사진은 남으므로 고른 장수가 아니라 실제로 사라진 장수, 0장이면 토스트 없음
+  onSuccess: ({ deletedCount }) => {
+    if (deletedCount > 0) toast(PHOTO_BOX_MESSAGES.deleteDone(deletedCount));
+  },
+});
+// 중복 제출은 remove.isPending을 버튼 disabled에 연결해 막는다
 ```
 
 `bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스이고 `requestData`와 함께 `src/shared/api/bffApi.ts`에 있다. QueryClient는 `src/shared/providers/`의 `QueryProvider`가 `(app)` layout에서 제공한다(그룹 밖 화면이 query를 쓰게 되면 캐시를 나누지 않도록 `QueryProvider`를 root layout으로 올린다). 서버 prefetch를 쓰게 되면 요청 단위 `getQueryClient` 구조로 바꾼다. 조회는 네트워크 오류·5xx만 1회 재시도하고(`createRetryPolicy`), 4xx와 mutation은 재시도하지 않는다.
