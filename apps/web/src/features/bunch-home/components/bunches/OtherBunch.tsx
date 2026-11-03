@@ -21,7 +21,7 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   const backOr = useBackOr();
   const bunch = findOtherBunch(bunchId);
   const { status, followerCount, follow, unfollow } = useBunchFollow(bunch);
-  const { me, checking, isBlocked, block } = useBlockRelation(bunchId);
+  const { me, access, block } = useBlockRelation(bunchId);
   // 멤버 관리에서 바뀐 역할 우선(권한 표: 차단은 메인·공동 관리자, 차단 목록 화면과 같은 기준)
   const myRole = useBunchMembers(me?.id).myRole ?? me?.myRole;
   // 이 화면에서 차단해 접근 제한 화면으로 바뀌면 제목으로 초점
@@ -30,8 +30,8 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
 
   // 직접 진입이라 돌아갈 기록이 없으면 피드로(지금 입구가 피드 임시 링크)
   const back = () => backOr(BUNCH_HOME_PATHS.feed);
-  if (checking) return <BlockedBunchScreen onBack={back} checking />;
-  if (isBlocked) return <BlockedBunchScreen onBack={back} focusTitle={justBlocked} />;
+  if (access === 'checking') return <BlockedBunchScreen onBack={back} checking />;
+  if (access === 'blocked') return <BlockedBunchScreen onBack={back} focusTitle={justBlocked} />;
 
   return (
     <OtherBunchScreen

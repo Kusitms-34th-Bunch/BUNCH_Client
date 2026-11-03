@@ -23,13 +23,13 @@ export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
   const backOr = useBackOr();
   const bunch = findOtherBunch(bunchId);
   const { status } = useBunchFollow(bunch);
-  const { checking, isBlocked } = useBlockRelation(bunchId);
+  const { access } = useBlockRelation(bunchId);
   if (!bunch) notFound();
   // 기록이 없으면 프로필로, 차단한 번치면 프로필도 접근 제한이라 피드로
   const back = () =>
-    backOr(isBlocked ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
-  if (checking) return <BlockedBunchScreen onBack={back} checking />;
-  if (isBlocked) return <BlockedBunchScreen onBack={back} />;
+    backOr(access === 'blocked' ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
+  if (access !== 'visible')
+    return <BlockedBunchScreen onBack={back} checking={access === 'checking'} />;
   // 비공개 번치는 팔로우 승인 전에 멤버 명단을 볼 수 없음(기능명세 5.10)
   const locked = bunch.isPrivate && status !== 'following';
 

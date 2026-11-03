@@ -23,14 +23,14 @@ export function OtherBunchFollows({
   // 내가 이 번치를 팔로우하면 팔로워 수도 프로필처럼 한 명 늘어남
   const { status, followerCount } = useBunchFollow(bunch);
   const { followers, following, follow, unfollow } = useFollowList(bunch?.id);
-  const { checking, isBlocked } = useBlockRelation(bunchId);
+  const { access } = useBlockRelation(bunchId);
   if (!bunch) notFound();
 
   // 기록이 없으면 프로필로, 차단한 번치면 프로필도 접근 제한이라 피드로
   const back = () =>
-    backOr(isBlocked ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
-  if (checking) return <BlockedBunchScreen onBack={back} checking />;
-  if (isBlocked) return <BlockedBunchScreen onBack={back} />;
+    backOr(access === 'blocked' ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
+  if (access !== 'visible')
+    return <BlockedBunchScreen onBack={back} checking={access === 'checking'} />;
 
   return (
     <BunchFollowsScreen
