@@ -11,7 +11,7 @@
 
 기능 ID(BUNCH·MEMBER·FEED·NOTI·DRAFT·PROFILE)와 명세서 절 번호(5.2.3 등)로 원본과 대조한다. 번들 만들기·공동 편집은 `docs/specs/bundle-create.md`, 사진함은 `docs/specs/photo-box.md`가 맡는다.
 
-이 spec은 web·백엔드·알림(푸시)에 걸쳐 `docs/specs/`에 둔다. 번치 메인은 `apps/web/src/features/bunch-home/`(#162)에 있고, 화면 spec은 그 폴더의 `components/BunchHomeScreen.spec.md`다.
+이 spec은 web·백엔드·알림(푸시)에 걸쳐 `docs/specs/`에 둔다. 번치 메인은 `apps/web/src/features/bunch-home/`(#162)에 있고, 화면 spec은 그 폴더의 `components/home/BunchHomeScreen.spec.md`다.
 
 ## 목적
 
