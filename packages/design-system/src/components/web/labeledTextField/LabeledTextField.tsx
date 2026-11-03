@@ -18,6 +18,8 @@ export type LabeledTextFieldProps = Omit<
   option?: OptionVariant | undefined;
   /** 오류 문구. 있으면 입력창 아래 왼쪽에 빨간 글자로 표시하고 입력창에 `aria-invalid` 적용 */
   errorMessage?: string | undefined;
+  /** `maxLength`의 "현재/최대" 글자 수 표시. 기본 `true`, `false`면 입력 제한만(Figma에 글자 수가 없는 칸) */
+  showCounter?: boolean | undefined;
   /** 행 전체에 적용되는 class */
   className?: string;
 };
@@ -25,7 +27,7 @@ export type LabeledTextFieldProps = Omit<
 /**
  * 제목 + 필수·선택 표시 + 입력창 + 글자 수/오류 문구(Figma `Labled_Text_Field`)
  * 입력창은 Figma 기본 변형의 core `TextField`(지우기·버튼 없음)이고, 나머지 props는 input에 전달
- * `maxLength`를 주면 오른쪽 아래에 "현재/최대" 글자 수를 표시하고 입력도 그 길이로 제한
+ * `maxLength`를 주면 입력을 그 길이로 제한하고 오른쪽 아래에 "현재/최대" 글자 수 표시(`showCounter={false}`면 제한만)
  */
 export const LabeledTextField = ({
   title,
@@ -36,6 +38,7 @@ export const LabeledTextField = ({
   value,
   defaultValue,
   maxLength,
+  showCounter = true,
   onChange,
   disabled,
   'aria-describedby': ariaDescribedBy,
@@ -51,7 +54,7 @@ export const LabeledTextField = ({
   const [uncontrolledLength, setUncontrolledLength] = useState(String(defaultValue ?? '').length);
   const length = value === undefined ? uncontrolledLength : String(value).length;
 
-  const hasCounter = maxLength !== undefined;
+  const hasCounter = maxLength !== undefined && showCounter;
   // 호출자가 준 aria-describedby(예: 도움말)도 오류 문구·글자 수와 함께 유지
   const describedBy =
     [errorMessage ? errorId : null, hasCounter ? counterId : null, ariaDescribedBy]
@@ -69,7 +72,16 @@ export const LabeledTextField = ({
           )}
         >
           {title}
-          {option ? <Option variant={option} /> : null}
+          {/* 필수는 Figma 별표(입력칸의 aria-required가 낭독), 선택은 「선택」 글자 */}
+          {option === 'required' ? (
+            <span
+              aria-hidden="true"
+              className="typography-body-1-semi-bold text-icon-brand shrink-0"
+            >
+              *
+            </span>
+          ) : null}
+          {option === 'optional' ? <Option variant="optional" /> : null}
         </label>
         <TextField
           {...props}

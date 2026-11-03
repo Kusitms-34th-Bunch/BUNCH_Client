@@ -81,6 +81,13 @@ export const DisabledWithError: Story = {
   ),
 };
 
+/** 글자 수 없이 입력만 제한(신고 상세 사유처럼 Figma에 글자 수가 없는 칸) */
+export const LimitWithoutCounter: Story = {
+  render: (args) => (
+    <Controlled {...args} title="상세 사유" option="required" maxLength={200} showCounter={false} />
+  ),
+};
+
 export const OptionalWithoutCounter: Story = {
   render: (args) => (
     <Controlled {...args} title="한 줄 소개" option="optional" maxLength={undefined} />
