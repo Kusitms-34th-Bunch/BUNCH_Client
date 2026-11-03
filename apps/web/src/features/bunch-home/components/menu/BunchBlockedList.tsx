@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { bunchDetailsFixture, initialBunchDetailFixture } from '../../fixtures/bunchHome.fixture';
 import { useBlockedBunches } from '../../hooks/useBlockedBunches';
@@ -12,7 +12,7 @@ import { BunchBlockedListScreen } from './BunchBlockedListScreen';
  * `/bunch/menu/blocked` 차단 목록: 차단 API 연결 전이라 번치 홈에서 고른 번치의 fixture와 메모리 저장소 사용
  */
 export function BunchBlockedList() {
-  const router = useRouter();
+  const backOr = useBackOr();
   const [currentId] = useCurrentBunchId();
   // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음(다른 번치 목록이 잠깐 보이지 않게)
   const bunch =
@@ -27,9 +27,7 @@ export function BunchBlockedList() {
       blocked={blocked}
       canUnblock={role === 'owner' || role === 'coOwner'}
       onUnblock={unblock}
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(BUNCH_HOME_PATHS.menu)
-      }
+      onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
     />
   );
 }

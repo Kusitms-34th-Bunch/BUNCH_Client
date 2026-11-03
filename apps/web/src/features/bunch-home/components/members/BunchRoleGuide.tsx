@@ -3,9 +3,9 @@
 import type { ReactNode } from 'react';
 import { cn, Header, LineChevronLeftLargeIcon, LineCloseSmallIcon } from '@app/design-system';
 import { RoleBadge, type RoleBadgeRole } from '@app/design-system/web';
-import { useRouter } from 'next/navigation';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 
 type Allowance = 'all' | 'some' | 'none';
@@ -111,7 +111,7 @@ const LegendItem = ({
  * 역할별 권한 안내(화면설계서 1-1): 설정 변경 없이 보기만 하는 표. 뒤로 가기는 이전 화면
  */
 export function BunchRoleGuide() {
-  const router = useRouter();
+  const backOr = useBackOr();
 
   return (
     <PageShell
@@ -121,9 +121,7 @@ export function BunchRoleGuide() {
             <HeaderIconButton
               label="뒤로 가기"
               tone="subtle"
-              onClick={() =>
-                window.history.length > 1 ? router.back() : router.replace(BUNCH_HOME_PATHS.members)
-              }
+              onClick={() => backOr(BUNCH_HOME_PATHS.members)}
             >
               <LineChevronLeftLargeIcon />
             </HeaderIconButton>

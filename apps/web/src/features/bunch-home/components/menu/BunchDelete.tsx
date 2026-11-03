@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
@@ -19,6 +20,7 @@ import { BunchDeleteScreen } from './BunchDeleteScreen';
  */
 export function BunchDelete({ step }: { step: 'info' | 'confirm' }) {
   const router = useRouter();
+  const backOr = useBackOr();
   const [currentId, setCurrentId] = useCurrentBunchId();
   // 삭제 뒤 화면이 빠지는 동안에도 다음 번치가 아니라 삭제한 번치를 그림
   const [deletedId, setDeletedId] = useState<string | null>(null);
@@ -39,10 +41,7 @@ export function BunchDelete({ step }: { step: 'info' | 'confirm' }) {
     if (bunch && members && !isOwner && !deleting.current) router.replace(BUNCH_HOME_PATHS.menu);
   }, [bunch, members, isOwner, router]);
 
-  const back = () =>
-    window.history.length > 1
-      ? router.back()
-      : router.replace(step === 'info' ? BUNCH_HOME_PATHS.menu : BUNCH_HOME_PATHS.delete);
+  const back = () => backOr(step === 'info' ? BUNCH_HOME_PATHS.menu : BUNCH_HOME_PATHS.delete);
 
   return (
     <BunchDeleteScreen

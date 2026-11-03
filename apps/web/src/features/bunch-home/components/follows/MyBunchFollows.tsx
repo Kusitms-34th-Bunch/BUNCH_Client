@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useBunchHome } from '../../hooks/useBunchHome';
 import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
@@ -14,6 +15,7 @@ import { BunchFollowsScreen, type FollowsTab } from '../BunchFollowsScreen';
  */
 export function MyBunchFollows({ initialTab }: { initialTab: FollowsTab }) {
   const router = useRouter();
+  const backOr = useBackOr();
   // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음(다른 번치 목록이 잠깐 보이지 않게)
   const [storedId] = useCurrentBunchId();
   const { data } = useBunchHome();
@@ -31,9 +33,7 @@ export function MyBunchFollows({ initialTab }: { initialTab: FollowsTab }) {
       initialTab={initialTab}
       pendingRequestCount={pending.length}
       onOpenRequests={() => router.push(BUNCH_HOME_PATHS.followRequests)}
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(BUNCH_HOME_PATHS.home)
-      }
+      onBack={() => backOr(BUNCH_HOME_PATHS.home)}
       onFollow={follow}
       onUnfollow={unfollow}
     />

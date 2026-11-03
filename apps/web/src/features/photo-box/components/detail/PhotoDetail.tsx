@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { replaceUrl } from '@/shared/lib/replaceUrl';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PHOTO_BOX_PATHS } from '../../constants/paths';
@@ -23,6 +24,7 @@ type PhotoDetailProps = {
  */
 export function PhotoDetail({ photoId }: PhotoDetailProps) {
   const router = useRouter();
+  const backOr = useBackOr();
   const { state, actions } = usePhotoBox();
   const data = state.kind === 'ready' ? state.data : undefined;
   const photos = useMemo(
@@ -51,9 +53,7 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
       initialPhotoId={photoId}
       actions={actions}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 사진함으로 이동
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(PHOTO_BOX_PATHS.list)
-      }
+      onBack={() => backOr(PHOTO_BOX_PATHS.list)}
       onLeave={() => router.replace(PHOTO_BOX_PATHS.list)}
       // 넘길 때마다 Next 이동 없이 주소만 맞춰 새로고침·공유가 현재 사진을 가리키게 함
       onPhotoChange={(id) => replaceUrl(PHOTO_BOX_PATHS.detail(id))}

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useRedirectMissingDraft, useRedirectMissingPhoto } from '../../hooks/useDraftExit';
@@ -23,6 +24,7 @@ type BundleDraftPhotoCaptionProps = {
  */
 export function BundleDraftPhotoCaption({ photoId }: BundleDraftPhotoCaptionProps) {
   const router = useRouter();
+  const backOr = useBackOr();
   const { state, actions } = useDraftContext();
   const { state: boxState } = usePhotoBox();
   const importFromGallery = usePhotoGalleryImport(
@@ -50,9 +52,7 @@ export function BundleDraftPhotoCaption({ photoId }: BundleDraftPhotoCaptionProp
       actions={actions}
       initialPhotoId={initialPhotoId}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(BUNDLE_PATHS.draft(draft.id))
-      }
+      onBack={() => backOr(BUNDLE_PATHS.draft(draft.id))}
       onPhotoChange={sync}
       onOpenViewer={(id) => router.push(BUNDLE_PATHS.photoViewer(draft.id, id))}
       onImportFromBunchBox={() => {

@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { replaceUrl } from '@/shared/lib/replaceUrl';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
@@ -23,6 +24,7 @@ type RecommendViewerProps = {
  */
 export function RecommendViewer({ recommendationId, photoId }: RecommendViewerProps) {
   const router = useRouter();
+  const backOr = useBackOr();
   const { photoState, recommendations, openSheet } = useBundleSelect();
   const data = photoState.kind === 'ready' ? photoState.data : undefined;
   const recommendation = recommendations.find((item) => item.id === recommendationId);
@@ -50,11 +52,7 @@ export function RecommendViewer({ recommendationId, photoId }: RecommendViewerPr
       photos={photos}
       members={data.members}
       initialPhotoId={photoId}
-      onBack={() =>
-        window.history.length > 1
-          ? router.back()
-          : router.replace(BUNDLE_SELECT_PATHS.recommendation(recommendation.id))
-      }
+      onBack={() => backOr(BUNDLE_SELECT_PATHS.recommendation(recommendation.id))}
       // 넘길 때마다 Next 이동 없이 주소만 맞춰 새로고침·공유가 현재 사진을 가리키게 함
       onPhotoChange={(id) => replaceUrl(BUNDLE_SELECT_PATHS.viewer(recommendation.id, id))}
     />

@@ -2,9 +2,10 @@
 
 import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { ProfileListItem } from '@app/design-system/web';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { ROLE_LABELS } from '../../constants/roles';
@@ -19,16 +20,14 @@ import { BlockedBunchScreen } from './BlockedBunchScreen';
  * 확인용이라 관리 동작 없음, 역할은 이미지 배지로
  */
 export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
-  const router = useRouter();
+  const backOr = useBackOr();
   const bunch = findOtherBunch(bunchId);
   const { status } = useBunchFollow(bunch);
   const { checking, isBlocked } = useBlockRelation(bunchId);
   if (!bunch) notFound();
   // 기록이 없으면 프로필로, 차단한 번치면 프로필도 접근 제한이라 피드로
   const back = () =>
-    window.history.length > 1
-      ? router.back()
-      : router.replace(isBlocked ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
+    backOr(isBlocked ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
   if (checking) return <BlockedBunchScreen onBack={back} checking />;
   if (isBlocked) return <BlockedBunchScreen onBack={back} />;
   // 비공개 번치는 팔로우 승인 전에 멤버 명단을 볼 수 없음(기능명세 5.10)

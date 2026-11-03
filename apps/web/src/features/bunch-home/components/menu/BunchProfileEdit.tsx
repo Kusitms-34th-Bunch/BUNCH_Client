@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
@@ -18,6 +19,7 @@ import { BunchProfileEditScreen } from './BunchProfileEditScreen';
  */
 export function BunchProfileEdit() {
   const router = useRouter();
+  const backOr = useBackOr();
   const [currentId] = useCurrentBunchId();
   const [edits, saveEdit] = useBunchProfileEdits();
   // 첫 hydration은 저장된 번치를 몰라 폼을 그리지 않음(다른 번치 값이 잠깐 보이지 않게)
@@ -36,9 +38,7 @@ export function BunchProfileEdit() {
       // 번치가 바뀌면 입력 상태를 새 초기값으로
       key={bunch?.id}
       initial={bunch && isOwner ? { ...bunch, ...edits[bunch.id] } : undefined}
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(BUNCH_HOME_PATHS.menu)
-      }
+      onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
       onSaved={(profile) => {
         if (!bunch) return;
         saveEdit(bunch.id, profile);

@@ -8,6 +8,7 @@ import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
@@ -26,6 +27,7 @@ type BundleSelectProps = {
  */
 export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleSelectProps) {
   const router = useRouter();
+  const backOr = useBackOr();
   const select = useBundleSelect();
   const { photoState, selection, memberId, creating, scrollTarget } = select;
 
@@ -61,11 +63,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
               <HeaderIconButton
                 label={BUNDLE_SELECT_MESSAGES.back}
                 // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로 가면 고른 사진은 버려짐)
-                onClick={() =>
-                  window.history.length > 1
-                    ? router.back()
-                    : router.replace(BUNDLE_SELECT_PATHS.bunchHome)
-                }
+                onClick={() => backOr(BUNDLE_SELECT_PATHS.bunchHome)}
               >
                 <LineChevronLeftLargeIcon aria-hidden="true" />
               </HeaderIconButton>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { bunchDetailsFixture, initialBunchDetailFixture } from '../../fixtures/bunchHome.fixture';
 import { useBunchMembers } from '../../hooks/useBunchMembers';
@@ -13,6 +14,7 @@ import { BunchMembersScreen } from './BunchMembersScreen';
  */
 export function BunchMembers() {
   const router = useRouter();
+  const backOr = useBackOr();
   const [currentId] = useCurrentBunchId();
   const [edits] = useBunchProfileEdits();
   // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음(다른 번치 멤버가 잠깐 보이지 않게)
@@ -26,9 +28,7 @@ export function BunchMembers() {
       members={members}
       myRole={myRole}
       actions={actions}
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(BUNCH_HOME_PATHS.menu)
-      }
+      onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
       onInvite={() => router.push(BUNCH_HOME_PATHS.invite)}
     />
   );

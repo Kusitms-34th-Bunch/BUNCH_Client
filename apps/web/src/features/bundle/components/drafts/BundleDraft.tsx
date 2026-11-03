@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useLeaveDraft, useRedirectMissingDraft } from '../../hooks/useDraftExit';
@@ -16,6 +17,7 @@ import { DraftScreen } from './DraftScreen';
  */
 export function BundleDraft() {
   const router = useRouter();
+  const backOr = useBackOr();
   const { state, actions } = useDraftContext();
   const { online, recheck } = useOnlineStatus();
   const leaveDraft = useLeaveDraft();
@@ -33,9 +35,7 @@ export function BundleDraft() {
       offline={!online}
       actions={actions}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(BUNDLE_PATHS.bunchHome)
-      }
+      onBack={() => backOr(BUNDLE_PATHS.bunchHome)}
       onLeave={() => leaveDraft(isDraftCreator(state.draft, state.viewer))}
       onRetry={recheck}
       onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}

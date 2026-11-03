@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
@@ -18,6 +19,7 @@ import { BunchLeaveScreen } from './BunchLeaveScreen';
  */
 export function BunchLeave() {
   const router = useRouter();
+  const backOr = useBackOr();
   const [currentId, setCurrentId] = useCurrentBunchId();
   // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음
   const bunch =
@@ -39,9 +41,7 @@ export function BunchLeave() {
   return (
     <BunchLeaveScreen
       candidates={canTransfer ? candidates : undefined}
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(BUNCH_HOME_PATHS.menu)
-      }
+      onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
       onTransferAndLeave={(member) => {
         if (!bunch) return;
         leaving.current = true;

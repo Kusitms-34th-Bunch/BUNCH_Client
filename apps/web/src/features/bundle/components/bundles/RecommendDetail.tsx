@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
@@ -21,6 +22,7 @@ type RecommendDetailProps = {
  */
 export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
   const router = useRouter();
+  const backOr = useBackOr();
   const { photoState, recommendations, openSheet } = useBundleSelect();
   const photos = photoState.kind === 'ready' ? photoState.data.photos : undefined;
   const recommendation = recommendations.find((item) => item.id === recommendationId);
@@ -48,9 +50,7 @@ export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
         getRecommendationPhotos(recommendation, photos),
         new Date().getFullYear(),
       )}
-      onBack={() =>
-        window.history.length > 1 ? router.back() : router.replace(BUNDLE_SELECT_PATHS.select)
-      }
+      onBack={() => backOr(BUNDLE_SELECT_PATHS.select)}
     />
   );
 }

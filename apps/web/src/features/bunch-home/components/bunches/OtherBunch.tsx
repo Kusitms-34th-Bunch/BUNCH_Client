@@ -1,7 +1,8 @@
 'use client';
 
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { useState } from 'react';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { findOtherBunch } from '../../fixtures/otherBunches.fixture';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
@@ -16,7 +17,7 @@ import { OtherBunchScreen } from './OtherBunchScreen';
  * 팔로우·차단·신고 명의는 지금 번치(번치 전환 기준). 없는 번치는 404, 차단한 번치는 접근 제한 화면
  */
 export function OtherBunch({ bunchId }: { bunchId: string }) {
-  const router = useRouter();
+  const backOr = useBackOr();
   const bunch = findOtherBunch(bunchId);
   const { status, followerCount, follow, unfollow } = useBunchFollow(bunch);
   const { me, checking, isBlocked, block } = useBlockRelation(bunchId);
@@ -27,8 +28,7 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   if (!bunch) notFound();
 
   // 직접 진입이라 돌아갈 기록이 없으면 피드로(지금 입구가 피드 임시 링크)
-  const back = () =>
-    window.history.length > 1 ? router.back() : router.replace(BUNCH_HOME_PATHS.feed);
+  const back = () => backOr(BUNCH_HOME_PATHS.feed);
   if (checking) return <BlockedBunchScreen onBack={back} checking />;
   if (isBlocked) return <BlockedBunchScreen onBack={back} focusTitle={justBlocked} />;
 

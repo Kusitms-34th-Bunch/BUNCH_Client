@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useRedirectMissingDraft, useRedirectMissingPhoto } from '../../hooks/useDraftExit';
@@ -18,7 +18,7 @@ type BundleDraftPhotoViewerProps = {
  * 주소의 사진이 초안에 없으면 안내 토스트 뒤 작성 화면으로 돌아가고, 사진을 넘기면 주소가 따라 바뀜
  */
 export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps) {
-  const router = useRouter();
+  const backOr = useBackOr();
   const { state, actions } = useDraftContext();
   const ready = state.kind === 'ready';
   const draftId = ready ? state.draft.id : undefined;
@@ -42,11 +42,7 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
       actions={actions}
       initialPhotoId={initialPhotoId}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 그 사진의 캡션 화면으로 이동
-      onBack={() =>
-        window.history.length > 1
-          ? router.back()
-          : router.replace(BUNDLE_PATHS.photo(draft.id, currentPhotoId ?? initialPhotoId))
-      }
+      onBack={() => backOr(BUNDLE_PATHS.photo(draft.id, currentPhotoId ?? initialPhotoId))}
       onPhotoChange={sync}
     />
   );
