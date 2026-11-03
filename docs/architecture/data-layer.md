@@ -6,7 +6,12 @@
 - endpoint 함수는 React, TanStack Query, route, toast에 의존하지 않고 HTTP 요청과 앱이 소비할 계약 변환만 담당한다. query hook은 endpoint를 호출하고 cache·enabled·select 정책을, 화면은 사용자 상태 표현을 소유한다.
 - OpenAPI 생성 계약은 `packages/api-core/src/generated/openapi.ts`에 둔다. 생성 파일은 endpoint 경계에서만 사용하고 UI에는 필요한 형태로 좁혀 전달한다.
 - wire 필드명과 도메인 이름이 다르면(예: `pub_date` → `publishedAt`) raw 타입으로 먼저 받고 endpoint 경계에서 명시적으로 매핑한다. 필드명이 다른 응답을 `as`로 단언하면 타입 체크는 통과해도 값이 런타임에 `undefined`가 되는 버그로 이어진다.
-- OpenAPI 생성 타입은 컴파일 타임 계약일 뿐 런타임 값을 보장하지 않는다. 신뢰할 수 없거나 틀리면 위험한 응답(결제, 권한, 외부 연동 응답)은 `@app/api-core`의 `parseResponse(schema, data)`로 zod 검증을 거친 뒤 사용한다. `parseResponse`는 실패 시 `undefined`를 반환하고 `onValidationError` 훅으로 알리므로, 호출부는 실패를 성공처럼 다루지 않고 명시적으로 처리한다.
+- 모든 endpoint 응답은 zod 스키마로 검사한 뒤 쓴다. 생성 타입은 컴파일 타임 계약일 뿐이고, 사진함·번들·번치 홈처럼 Swagger에 아직 없는 계약은 노션 명세로 직접 쓴 타입이라 실제 서버와 어긋나기 쉽다.
+  - 스키마는 feature `model/`에 두고 타입은 `z.infer`로 얻는다. Swagger에 올라오면 `satisfies z.ZodType<생성 타입>`을 붙여 노션 명세와 생성 계약이 다르면 컴파일에서 드러나게 한다.
+  - web은 `src/shared/api/bffApi.ts`의 `requestData(request, schema, context)`로 요청한다. envelope 해제, 스키마 검사, 오류 변환을 한곳에서 한다. HTTP 오류·실패 envelope·네트워크 오류·계약 위반은 모두 `ApiError`로 던지고, 계약 위반은 code `INVALID_RESPONSE`(category `validation`, 재시도 없음)다. category `validation`은 4xx 요청 오류에도 쓰이므로 계약 위반은 code로 구분한다. 어느 응답인지와 어긋난 위치는 화면 문구가 아니라 `data`(`context`, `issues`)에 담긴다. 계약 위반을 오류 수집(Sentry)으로 보내는 것은 아직 하지 않았고 후속 과제다.
+  - enum은 명세 값만 받는 닫힌 목록으로 둔다. 서버가 새 값을 보내면 화면이 추측하지 않고 계약 위반으로 드러난다.
+  - `requestData`는 `data`가 있는 응답 전용이다. 본문 없는 204 응답은 본문을 읽지 않는 요청 함수가 따로 필요하고, 첫 204 mutation을 연동할 때 만든다.
+  - 재발급까지 실패한 401은 `ApiError`(category `auth`)로만 전달된다. 로그인 화면으로 보내는 처리(`createBrowserApi`의 `onUnauthorized`)는 아직 없고 로그인 API 연동 때 연결한다.
 - TanStack Query query key는 안정적이고 도메인 의미가 드러나야 한다. key는 feature의 `queries/keys.ts` factory 함수만 만들고, queryOptions·hook·무효화 코드는 그 함수를 호출만 한다(배열을 직접 쓰지 않는다). 모든 key는 `{feature}.all`에서 시작해 도메인 이름 함수(`nicknameAvailability(nickname)`, `mine()` → `latestMine()` 등)로 이어지고, 목록·상세 리소스가 있을 때만 `all → lists/list`, `all → details/detail` 계층(`createQueryKeys`)을 쓴다. response 결과를 바꾸는 filter·sort·cursor·id는 모두 key 함수 인자로 받고, 빈 값 제거 같은 정규화도 key 함수에서 한다. 일반 목록과 infinite 목록은 서로 다른 key를 쓴다.
 - 일반 `useQuery`, `useSuspenseQuery`, infinite query, route prefetch는 화면의 loading 경계와 navigation 요구에 맞춰 선택한다. 구체적인 선택 기준은 아래 "Query 모드 선택"을 따른다.
 - mutation 뒤 캐시 처리는 아래 "Mutation 캐시 동기화" 결정표를 따른다.
@@ -41,28 +46,44 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 
 ### 예시
 
-```ts
-// features/auth/api/nickname.ts — 요청 함수
-export const getNicknameAvailability = (nickname: string) =>
-  bffApi
-    .get('members/nickname-availability', { searchParams: { nickname } })
-    .json()
-    .then(unwrapEnvelope<boolean>);
+실제 기준 예시는 사진함의 번치 멤버 목록이다. 새 API는 이 파일들을 따라 만든다.
 
-// features/auth/queries/keys.ts — key factory
-export const authKeys = {
-  all: ['auth'] as const,
-  nicknameAvailability: (nickname: string) =>
-    [...authKeys.all, 'nickname-availability', nickname] as const,
-  onboarding: () => [...authKeys.all, 'onboarding'] as const,
+- `features/photo-box/model/bunchMembers.ts`: 응답 zod 스키마와 `toPhotoBoxMember`(숫자 id → 문자열, 쓰는 화면의 기존 타입으로 변환. 화면 타입을 새로 만들지 않는다)
+- `features/photo-box/api/bunchMembers.ts`: `requestData`로 요청과 변환
+- `features/photo-box/queries/keys.ts`, `queries/bunchMembers.ts`: key factory와 `queryOptions`
+- `api/bunchMembers.test.ts`, `queries/bunchMembers.test.tsx`: MSW 가짜 서버로 확인하는 테스트(`docs/workflows/testing.md`)
+
+```ts
+// model/bunchMembers.ts — 서버 응답 모양과 화면 모양
+const bunchMemberResponseSchema = z.object({
+  memberId: z.number().int().positive(),
+  nickname: z.string(),
+  imageUrl: z.string().nullable(),
+  role: z.enum(['OWNER', 'CO_OWNER', 'MEMBER']),
+});
+export const bunchMembersResponseSchema = z.array(bunchMemberResponseSchema);
+
+// api/bunchMembers.ts — 요청 함수
+export const getBunchMembers = async (bunchId: string) => {
+  const members = await requestData(
+    bffApi.get(`bunches/${encodeURIComponent(bunchId)}/members`),
+    bunchMembersResponseSchema,
+    'bunch members',
+  );
+  return members.map(toPhotoBoxMember);
 };
 
-// features/auth/queries/nickname.ts — queryOptions
-export const nicknameAvailabilityQueryOptions = (nickname: string) =>
+// queries/keys.ts — key factory
+export const photoBoxKeys = {
+  all: ['photo-box'] as const,
+  members: (bunchId: string | undefined) => [...photoBoxKeys.all, 'members', bunchId] as const,
+};
+
+// queries/bunchMembers.ts — queryOptions(입력이 없으면 skipToken으로 요청하지 않음)
+export const bunchMembersQueryOptions = (bunchId: string | undefined) =>
   queryOptions({
-    queryKey: authKeys.nicknameAvailability(nickname),
-    queryFn: () => getNicknameAvailability(nickname),
-    enabled: nickname.length > 0,
+    queryKey: photoBoxKeys.members(bunchId),
+    queryFn: bunchId ? () => getBunchMembers(bunchId) : skipToken,
   });
 
 // features/auth/queries/profile.ts — mutation hook(캐시 동기화만)
@@ -75,11 +96,11 @@ export const useRegisterProfileMutation = () => {
 };
 
 // 화면 — 읽기와 화면 동작
-const { data: available } = useQuery(nicknameAvailabilityQueryOptions(nickname));
+const { data: members, error } = useQuery(bunchMembersQueryOptions(bunchId));
 register.mutate(form, { onSuccess: () => router.push(nextPath) });
 ```
 
-`bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스다(첫 API 연동 때 `src/shared/api`에 둔다). QueryClient는 `src/shared/providers/`의 `QueryProvider`가 `(app)` layout에서 제공한다(그룹 밖 화면이 query를 쓰게 되면 캐시를 나누지 않도록 `QueryProvider`를 root layout으로 올린다). 서버 prefetch를 쓰게 되면 요청 단위 `getQueryClient` 구조로 바꾼다. 조회는 네트워크 오류·5xx만 1회 재시도하고(`createRetryPolicy`), 4xx와 mutation은 재시도하지 않는다.
+`bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스이고 `requestData`와 함께 `src/shared/api/bffApi.ts`에 있다. QueryClient는 `src/shared/providers/`의 `QueryProvider`가 `(app)` layout에서 제공한다(그룹 밖 화면이 query를 쓰게 되면 캐시를 나누지 않도록 `QueryProvider`를 root layout으로 올린다). 서버 prefetch를 쓰게 되면 요청 단위 `getQueryClient` 구조로 바꾼다. 조회는 네트워크 오류·5xx만 1회 재시도하고(`createRetryPolicy`), 4xx와 mutation은 재시도하지 않는다.
 
 조회의 기본 `staleTime`은 5분이고, 포커스 갱신(`refetchOnWindowFocus`)은 기본값(켜짐)을 유지한다. 5분 안에 화면이나 앱으로 돌아오면 다시 요청하지 않는다. 5분이 지난 뒤 돌아오면 새로 가져온다. 거의 바뀌지 않는 데이터는 그 `queryOptions`에서 `staleTime`을 늘린다. 다른 사용자의 행동으로 바뀌는 데이터(알림, 팔로우 요청 등)는 줄인다. 전역 기본값은 바꾸지 않는다.
 
