@@ -54,7 +54,7 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 실제 기준 예시는 사진함의 번치 멤버 목록(조회)과 사진 삭제(쓰기)다. 새 API는 이 파일들을 따라 만든다.
 
 - `features/photo-box/model/bunchMembers.ts`: 응답 zod 스키마와 `toPhotoBoxMember`(숫자 id → 문자열, 쓰는 화면의 기존 타입으로 변환. 화면 타입을 새로 만들지 않는다)
-- `features/photo-box/api/bunchMembers.ts`: `requestData`로 요청과 변환
+- `features/photo-box/api/bunchMembers.ts`: `requestData`로 요청과 변환. 조회 함수는 마지막 인자로 `signal`을 받아 ky에 넘긴다(mutation은 받지 않음. Query도 mutation에는 signal을 주지 않고, 끊어도 서버 처리는 계속돼 결과만 잃음)
 - `features/photo-box/queries/keys.ts`, `queries/bunchMembers.ts`: key factory와 `queryOptions`
 - `api/bunchMembers.test.ts`, `queries/bunchMembers.test.tsx`: MSW 가짜 서버로 확인하는 테스트(`docs/workflows/testing.md`)
 - 쓰기: `model/photos.ts`(응답 스키마), `api/photos.ts`(`requestData(bffApi.post(…, { json }))`, 화면 id → 서버 숫자), `queries/photos.ts`(`useDeletePhotosMutation`: 실패 문구 `meta`, 성공 뒤 사진 목록 prefix 무효화를 반환), `src/mocks/handlers/photos.ts`(본문 검사와 가짜 DB 변경), 각 test. 사진 목록 query는 아직 없고 #199에서 무효화 prefix `photoBoxKeys.photos(bunchId)` 아래에 추가한다(미리 key를 만들지 않는 규칙의 예외: mutation이 무효화할 prefix)
@@ -69,10 +69,10 @@ const bunchMemberResponseSchema = z.object({
 });
 export const bunchMembersResponseSchema = z.array(bunchMemberResponseSchema);
 
-// api/bunchMembers.ts — 요청 함수
-export const getBunchMembers = async (bunchId: string) => {
+// api/bunchMembers.ts — 요청 함수(조회는 Query의 signal을 받아 ky에 넘김)
+export const getBunchMembers = async (bunchId: string, signal?: AbortSignal) => {
   const members = await requestData(
-    bffApi.get(`bunches/${encodeURIComponent(bunchId)}/members`),
+    bffApi.get(`bunches/${encodeURIComponent(bunchId)}/members`, { signal: signal ?? null }),
     bunchMembersResponseSchema,
     'bunch members',
   );
@@ -89,7 +89,8 @@ export const photoBoxKeys = {
 export const bunchMembersQueryOptions = (bunchId: string | undefined) =>
   queryOptions({
     queryKey: photoBoxKeys.members(bunchId),
-    queryFn: bunchId ? () => getBunchMembers(bunchId) : skipToken,
+    // 화면 이탈·key 변경 때 Query가 signal로 진행 중 요청을 취소
+    queryFn: bunchId ? ({ signal }) => getBunchMembers(bunchId, signal) : skipToken,
   });
 
 // queries/photos.ts — mutation hook(캐시 동기화와 실패 문구만)

@@ -9,5 +9,5 @@ import { photoBoxKeys } from './keys';
 export const bunchMembersQueryOptions = (bunchId: string | undefined) =>
   queryOptions({
     queryKey: photoBoxKeys.members(bunchId),
-    queryFn: bunchId ? () => getBunchMembers(bunchId) : skipToken,
+    queryFn: bunchId ? ({ signal }) => getBunchMembers(bunchId, signal) : skipToken,
   });
