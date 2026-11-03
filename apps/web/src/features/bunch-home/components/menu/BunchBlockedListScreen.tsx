@@ -90,7 +90,8 @@ export function BunchBlockedListScreen({
             ))}
           </ul>
         </div>
-      ) : blocked ? (
+      ) : null}
+      {blocked?.length === 0 ? (
         // 화면설계서 3번: 안내 이미지(최종본 전달 전 자리표시)와 문구, 별도 동작 없음
         // Figma 1873:33828은 본문 세로 가운데보다 약 38 위라 아래 여백 72로 맞춤
         <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">

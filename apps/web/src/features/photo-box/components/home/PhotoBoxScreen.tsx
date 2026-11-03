@@ -141,6 +141,13 @@ export function PhotoBoxScreen({
   const { bunch, members } = state.data;
   const isEmpty = sections.length === 0 && undated.length === 0;
 
+  let statusMessage = '';
+  if (flow.saving) statusMessage = PHOTO_BOX_MESSAGES.saving;
+  else if (selecting) statusMessage = PHOTO_BOX_MESSAGES.selectionStatus(selection.length);
+  // 선택 모드면 메뉴(저장·삭제 중에는 무시), 아니면 사진 올리기
+  let floatingAction: (() => void) | undefined = openUpload;
+  if (selecting) floatingAction = busy ? undefined : toggleMenu;
+
   return (
     <PageShell
       header={
@@ -176,7 +183,7 @@ export function PhotoBoxScreen({
             disabled={selecting && selection.length === 0}
             // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
             aria-disabled={selecting && busy ? true : undefined}
-            onClick={selecting ? (busy ? undefined : toggleMenu) : openUpload}
+            onClick={floatingAction}
             className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
           />
         </div>
@@ -188,11 +195,7 @@ export function PhotoBoxScreen({
       {selecting ? <HideMainTabBar /> : null}
       {/* 선택 모드 진입·선택 개수·저장 중 상태를 알리는 live region(항상 마운트해 문구만 바꿈) */}
       <p role="status" className="sr-only">
-        {flow.saving
-          ? PHOTO_BOX_MESSAGES.saving
-          : selecting
-            ? PHOTO_BOX_MESSAGES.selectionStatus(selection.length)
-            : ''}
+        {statusMessage}
       </p>
       {/* 저장하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12) */}
       {flow.saving ? <PageLoading /> : null}

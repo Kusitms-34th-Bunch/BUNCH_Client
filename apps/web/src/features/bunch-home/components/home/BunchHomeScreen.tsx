@@ -15,6 +15,7 @@ import type { BunchHomeActions, BunchHomeData, BunchSummary, DraftBundle } from 
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
+import { switchStatus } from '../../lib/bunchSwitch';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
@@ -209,12 +210,7 @@ export function BunchHomeScreen({
           name: bunch.name,
           imageSrc: bunch.imageSrc,
           notificationCount: bunch.alertCount,
-          status:
-            bunch.access !== 'active'
-              ? 'unavailable'
-              : bunch.id === current.id
-                ? 'current'
-                : 'default',
+          status: switchStatus(bunch, current.id),
         }))}
         onSelect={selectBunch}
         onUnavailableSelect={openUnavailable}

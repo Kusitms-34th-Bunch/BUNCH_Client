@@ -148,6 +148,11 @@ export function DraftPhotoCaption({
     return member ? { name: member.name, src: member.avatarSrc } : undefined;
   };
 
+  // 순서를 옮긴 직후에는 옮긴 결과, 아니면 지금 사진 위치
+  let statusMessage = '';
+  if (announcement && announcement.index === current) statusMessage = announcement.text;
+  else if (active) statusMessage = BUNDLE_MESSAGES.photoPosition(current + 1, total);
+
   return (
     <PageShell
       header={
@@ -164,11 +169,7 @@ export function DraftPhotoCaption({
       {/* 화면 이동 뒤 초점이 가는 제목(web-interface-guidelines 「화면 이동 뒤 초점」): 코어 Header의 제목은 h1이 아니라 따로 둠 */}
       <h1 className="sr-only">{BUNDLE_MESSAGES.photoCaptionTitle}</h1>
       <p role="status" className="sr-only">
-        {announcement && announcement.index === current
-          ? announcement.text
-          : active
-            ? BUNDLE_MESSAGES.photoPosition(current + 1, total)
-            : ''}
+        {statusMessage}
       </p>
       <DndContext
         key={reorder.dragEpoch}
