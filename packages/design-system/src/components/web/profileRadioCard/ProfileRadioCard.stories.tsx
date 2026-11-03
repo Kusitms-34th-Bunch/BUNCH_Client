@@ -18,6 +18,9 @@ export const Selected: Story = { args: { defaultChecked: true } };
 
 export const Disabled: Story = { args: { disabled: true } };
 
+/** 이미지 오른쪽 아래 역할 배지 */
+export const WithRole: Story = { args: { memberRole: 'owner', roleLabel: '메인 관리자' } };
+
 /** 관리자 지정처럼 멤버 중 한 명 고르기 */
 export const Group: Story = {
   render: () => (

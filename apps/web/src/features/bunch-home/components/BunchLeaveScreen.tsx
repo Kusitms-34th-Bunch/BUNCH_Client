@@ -7,6 +7,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { BunchMember } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { ROLE_LABELS } from '../constants/roles';
 
 type BunchLeaveScreenProps = {
   /** 관리자로 지정할 수 있는 멤버(나 제외). 아직 모르면 목록을 그리지 않음 */
@@ -69,6 +70,8 @@ export function BunchLeaveScreen({
                   value={member.id}
                   label={member.name}
                   imageSrc={member.imageSrc}
+                  memberRole={member.role === 'member' ? undefined : member.role}
+                  roleLabel={member.role === 'member' ? undefined : ROLE_LABELS[member.role]}
                   checked={member.id === selectedId}
                   onChange={() => setSelectedId(member.id)}
                 />

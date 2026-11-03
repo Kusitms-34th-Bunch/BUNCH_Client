@@ -16,6 +16,8 @@ describe('AdminTransferSheet', () => {
     expect(document.getElementById(sheet.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
       '경진님이 번치 관리와 번들 발행 권한을 갖게 돼요.',
     );
+    expect(sheet.textContent).toContain('나가면 해당 번치에 더 이상 접근할 수 없어요.');
+    expect(sheet.textContent).toContain('함께 남긴 사진과 발행된 번들은 번치에 그대로 남아요.');
   });
 
   it('「취소」는 닫기 요청, 「지정하고 나가기」는 onConfirm만 부른다', async () => {

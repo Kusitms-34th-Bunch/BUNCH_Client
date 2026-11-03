@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '../../../../utils';
 import { Button } from '../../../core/button';
 import { LabeledTextField } from '../../labeledTextField';
 import { RadioButton } from '../../radioButton';
@@ -64,7 +65,7 @@ const ReportBody = ({
         </BottomSheet.Description>
         <BottomSheet.Close />
       </BottomSheet.Header>
-      <BottomSheet.Body className="gap-s8 flex flex-col">
+      <BottomSheet.Body className="flex flex-col">
         <fieldset className="gap-s2 py-padding-p2 flex min-w-0 flex-col">
           <legend className="sr-only">신고 사유</legend>
           {reasons.map(({ value, label }) => (
@@ -79,13 +80,28 @@ const ReportBody = ({
             </RadioButton>
           ))}
         </fieldset>
-        {needsDetail ? (
-          <LabeledTextField
-            title="상세 사유"
-            placeholder="신고 이유를 입력해주세요."
-            value={detail}
-            onChange={(event) => setDetail(event.target.value)}
-          />
+        {/* 상세 사유는 자리가 벌어지며 나타나고 접히며 사라짐(150ms ease-out, 번치 프로필 편집 안내와 같은 방식). 접힌 동안은 초점·낭독에서 뺌 */}
+        {detailReasonValue !== undefined ? (
+          <div
+            aria-hidden={!needsDetail}
+            inert={!needsDetail}
+            className={cn(
+              'grid transition-[grid-template-rows,opacity,visibility] duration-150 ease-out motion-reduce:transition-none',
+              needsDetail
+                ? 'visible grid-rows-[1fr] opacity-100'
+                : 'invisible grid-rows-[0fr] opacity-0',
+            )}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <LabeledTextField
+                className="mt-s8"
+                title="상세 사유"
+                placeholder="신고 이유를 입력해주세요."
+                value={detail}
+                onChange={(event) => setDetail(event.target.value)}
+              />
+            </div>
+          </div>
         ) : null}
       </BottomSheet.Body>
       <BottomSheet.Footer>

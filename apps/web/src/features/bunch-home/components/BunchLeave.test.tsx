@@ -92,7 +92,8 @@ describe('BunchLeaveScreen', () => {
       />,
     );
 
-    await user.click(screen.getByRole('radio', { name: '경진' }));
+    // 공동 관리자라 역할 이름이 라디오 이름 뒤에 붙음
+    await user.click(screen.getByRole('radio', { name: /^경진\s?, 공동 관리자$/ }));
     await user.click(screen.getByRole('button', { name: '관리자로 지정하기' }));
     const sheet = await screen.findByRole('dialog', {
       name: '경진님을 관리자로 지정하고 나갈까요?',

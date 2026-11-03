@@ -38,7 +38,7 @@
 ## UI와 접근성
 
 - Component mapping: 헤더는 `Header` + `HeaderIconButton`(subtle), 항목은 DS `MenuLabel`(Figma `Menu Label` `1873:34286`), 구분선은 `MenuDivider`, 확인 창은 `ConfirmDialog`.
-- 간격: 헤더 아래 12(`pt-padding-p6`), 좌우 16(`px-padding-p8`), 항목 사이 4(`gap-s2`), 묶음과 구분선 사이 12(`gap-s6`). Figma `1873:34575` 값과 같다.
+- 간격: 헤더 아래 12(`pt-padding-p6`), 좌우 16(`px-padding-p8`), 항목 사이 4(`gap-s2`), 묶음과 구분선 사이 12(`gap-s6`). Figma `1873:34575` 값과 같다. 항목 안 여백·글자는 DS `MenuLabel`을 따른다(2026-11-03 컴포넌트 변경으로 좌우 4·15/22, 이 화면 Figma는 아직 예전 `Label - Status`라 글자 시작이 26이 아니라 20).
 - 구조: 묶음마다 `ul`/`li`, 항목은 `button`. 헤더에 제목이 없어 화면 제목은 `sr-only` `h1`(「{번치 이름} 번치 더보기」)로 둔다.
 - 확인 창 첫 초점은 「취소」(`ConfirmDialog`).
 

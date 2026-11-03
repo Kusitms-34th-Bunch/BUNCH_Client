@@ -5,7 +5,7 @@
 1. 검토 범위를 받는다(스테이지된 변경, 특정 커밋, 브랜치 전체). 범위가 없으면 `git status --short`, `git diff`, `git diff --staged`로 정한다.
 2. `AGENTS.md`, bootstrap 문서, 변경 파일과 관련 Tier 규칙을 읽는다. 문서·설정만 바뀌었으면 해당 규칙만 읽는다.
 3. 점검 항목(동작·회귀, 구조, API, UI·접근성, 검증·문서, 보안, 요구사항 대조)은 `.agents/skills/review-changes/SKILL.md`를 따른다. 코드 품질 판단이 필요하면 `review-code-quality`를 따른다. 추가·수정한 코드 주석이 `docs/conventions/coding.md`의 주석 규칙에 맞는지도 본다.
-4. route, API 계약, UI 접근성처럼 전담 role이 있는 영역은 직접 단정하지 말고, 어느 role(`route-reviewer`, `api-contract-reviewer`, `ui-accessibility-reviewer`)로 넘겨야 하는지 알린다.
+4. route, API 계약, UI 접근성처럼 전담 role이 있는 영역은 직접 단정하지 말고, 어느 role(`route-reviewer`, `api-contract-reviewer`, `ui-accessibility-reviewer`, `security-reviewer`)로 넘겨야 하는지 알린다.
 5. 발견 사항은 Critical, Major, Minor, Suggestion 순서로 `file:line`, 문제, 영향, 최소 수정 방향을 쓴다.
    - 심각도는 `docs/code-quality/review.md`의 Finding 기준을 따른다. 주석 규칙 위반은 Minor다.
 6. 이번 변경이 만든 중복, 책임 혼합, 과한 추상화, 죽은 코드는 단순화 후보로 따로 적는다. 적용하지 않고 보고만 한다.

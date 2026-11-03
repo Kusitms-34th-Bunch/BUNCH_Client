@@ -3,7 +3,7 @@
 import { Header, LineBellLargeIcon, LineChevronLeftLargeIcon } from '@app/design-system';
 import { FollowButton } from '@app/design-system/web';
 import Link from 'next/link';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { FollowStatus, OtherBunch } from '../lib/types';
@@ -22,6 +22,8 @@ type OtherBunchScreenProps = {
   /** 팔로우 상태를 반영한 팔로워 수 */
   followerCount: number;
   onBack: () => void;
+  /** 헤더 알림 옆 더보기(차단·신고) */
+  more?: ReactNode;
   onFollow: () => void;
   /** 언팔로우·팔로우 요청 취소 */
   onUnfollow: () => void;
@@ -37,6 +39,7 @@ export function OtherBunchScreen({
   status,
   followerCount,
   onBack,
+  more,
   onFollow,
   onUnfollow,
 }: OtherBunchScreenProps) {
@@ -67,15 +70,17 @@ export function OtherBunchScreen({
               <LineChevronLeftLargeIcon />
             </HeaderIconButton>
           }
-          // 더보기(차단·신고)는 다른 번치 차단·신고 단위에서 추가
           trailing={
-            <Link
-              href={BUNCH_HOME_PATHS.notifications}
-              aria-label="알림"
-              className={headerIconLinkClass}
-            >
-              <LineBellLargeIcon />
-            </Link>
+            <>
+              <Link
+                href={BUNCH_HOME_PATHS.notifications}
+                aria-label="알림"
+                className={headerIconLinkClass}
+              >
+                <LineBellLargeIcon />
+              </Link>
+              {more}
+            </>
           }
         />
       }

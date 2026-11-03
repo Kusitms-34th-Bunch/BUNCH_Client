@@ -24,11 +24,13 @@ export const Radio = ({ className, ...props }: RadioProps) => (
       className={cn(
         'bg-surface-primary border-border-tertiary pointer-events-none relative size-full rounded-full border',
         'before:absolute before:top-1/2 before:left-1/2 before:size-3 before:-translate-x-1/2 before:-translate-y-1/2 before:rounded-full before:opacity-0',
-        'peer-checked:border-icon-brand peer-checked:before:bg-icon-brand peer-checked:before:opacity-100',
+        'peer-checked:border-icon-brand peer-checked:before:bg-icon-brand peer-checked:before:scale-100 peer-checked:before:opacity-100',
+        // 선택 전환: 가운데 점이 작게 시작해 커지며 나타남(150ms ease-out, 2026-11-02 사용자 결정), 테두리 색도 같이
+        'transition-colors duration-150 ease-out before:scale-50 before:transition-[opacity,scale] before:duration-150 before:ease-out motion-reduce:transition-none motion-reduce:before:transition-none',
         // 누르는 동안(선택 전): 회색 링과 점
-        'peer-[:active:not(:checked,:disabled)]:border-icon-disabled peer-[:active:not(:checked,:disabled)]:before:bg-icon-disabled peer-[:active:not(:checked,:disabled)]:before:opacity-100',
+        'peer-[:active:not(:checked,:disabled)]:border-icon-disabled peer-[:active:not(:checked,:disabled)]:before:bg-icon-disabled peer-[:active:not(:checked,:disabled)]:before:scale-100 peer-[:active:not(:checked,:disabled)]:before:opacity-100',
         // 감싸는 label(카드)을 누를 때도 같은 눌림 표시(label 본문을 누르면 input에 :active가 걸리지 않음)
-        '[label:active_.peer:not(:checked,:disabled)~&]:border-icon-disabled [label:active_.peer:not(:checked,:disabled)~&]:before:bg-icon-disabled [label:active_.peer:not(:checked,:disabled)~&]:before:opacity-100',
+        '[label:active_.peer:not(:checked,:disabled)~&]:border-icon-disabled [label:active_.peer:not(:checked,:disabled)~&]:before:bg-icon-disabled [label:active_.peer:not(:checked,:disabled)~&]:before:scale-100 [label:active_.peer:not(:checked,:disabled)~&]:before:opacity-100',
         // 비활성: 흰 배경 위에 hover 겹침
         'peer-disabled:bg-[linear-gradient(var(--color-overlay-hover),var(--color-overlay-hover))]',
         // 강제 색상 모드: 배경색이 덮여 점이 사라지는 것 방지

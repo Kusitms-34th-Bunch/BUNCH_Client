@@ -11,6 +11,31 @@ describe('ProfileRadioCard', () => {
     expect(screen.getByRole('radio', { name: '경진' })).toBeTruthy();
   });
 
+  it('역할 이름은 라디오 이름 뒤에 읽히고 배지는 장식이다', () => {
+    render(
+      <ProfileRadioCard
+        label="경진"
+        name="member"
+        value="1"
+        memberRole="owner"
+        roleLabel="메인 관리자"
+      />,
+    );
+
+    expect(screen.getByRole('radio', { name: /^경진\s?, 메인 관리자$/ })).toBeTruthy();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
+  it('역할이 있을 때만 배지를 그린다', () => {
+    const { container, rerender } = render(
+      <ProfileRadioCard label="경진" name="member" value="1" />,
+    );
+    expect(container.querySelector('svg')).toBeNull();
+
+    rerender(<ProfileRadioCard label="경진" name="member" value="1" memberRole="owner" />);
+    expect(container.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+  });
+
   it('카드를 누르면 선택되고, 그룹 안에서 하나만 선택된다', () => {
     render(
       <>

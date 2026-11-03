@@ -19,6 +19,7 @@
 
 ## 상태와 동작
 
+- 선택 전환: 가운데 점이 절반 크기에서 커지며 나타나고(`scale` 0.5 → 1, 투명도 0 → 1), 해제되면 반대로 줄며 사라진다. 테두리 색도 함께 150ms ease-out으로 바뀐다(2026-11-02 사용자 결정, Figma에 정의 없음, `docs/architecture/motion.md`). 동작 줄이기에서는 바로 바뀐다.
 - 기본: 흰 원, 0.8px `border-tertiary` 테두리.
 - 선택: 1px `icon-tertiary` 링, 지름 9.6px `icon-tertiary` 점.
 - 비활성: 행 전체 `opacity-disabled`(40%), 누를 수 없음. Figma에 없는 상태라 제안 값이다.
