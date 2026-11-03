@@ -133,6 +133,27 @@ remove.mutate(selectedIds, {
 - Suspense 계열 query는 `enabled`, `placeholderData`, 커스텀 `throwOnError`를 지원하지 않는다. suspense 데이터는 렌더가 재개된 뒤에만 존재하므로, 응답 필드 자체가 nullable이 아니라면 `data ?? []`처럼 불필요한 방어 코드를 추가하지 않는다.
 - 같은 query key를 finite query와 infinite query에 함께 쓰지 않는다.
 
+## 미리 불러오기 (web)
+
+다음 화면의 데이터를 미리 받는 방법은 두 단계로 도입한다. 도입 여부는 `docs/workflows/performance.md`의 "WebView 첫 화면 속도"대로 측정한 뒤 정한다. 지금은 둘 다 구현하지 않았다(설계 단계).
+
+### 1단계: 브라우저에서 미리 받기 (먼저)
+
+- 이동 가능성이 높은 순간(셀을 누르기 시작할 때, 탭이 화면에 뜰 때 등)에 `queryClient.prefetchQuery(xxxQueryOptions(…))`를 부른다. 화면이 쓰는 것과 같은 `queryOptions`를 다시 쓰므로 key·요청·검사가 갈라지지 않는다.
+- `queryClient`는 `queries/`에서만 쓸 수 있으므로 미리 받기도 `queries/`의 hook(`usePrefetch…`)으로 만들고 화면은 그 hook만 부른다.
+- 요청이 브라우저 → BFF로 나가므로 MSW 가짜 서버와 401 재발급이 그대로 동작한다.
+- 이미 받은 데이터가 `staleTime`(5분) 안이면 다시 요청하지 않으므로, 같은 화면을 오가는 곳에서 비용이 작다. 한 화면에서 수십 개를 미리 받는 곳(사진 격자 셀마다 등)에는 쓰지 않는다.
+
+### 2단계: 서버에서 미리 받기와 스트리밍 SSR (실제 서버 연동 뒤)
+
+서버 컴포넌트가 백엔드를 직접 불러 `dehydrate` → `HydrationBoundary`로 브라우저 캐시에 넘긴다. 첫 화면이 데이터와 함께 그려지고, `Suspense` 경계 단위로 준비된 부분부터 보낸다. 도입할 때 아래를 함께 바꾼다.
+
+- MSW는 서버 요청을 가로채지 않는다. 백엔드 연동 전이거나 MSW로 진행하는 UT에서는 서버에서 미리 받기가 동작하지 않으므로, 실제 서버가 준비된 화면에만 쓴다.
+- 서버 컴포넌트는 쿠키를 고쳐 쓸 수 없어 access 토큰이 만료돼도 재발급하지 못한다. 서버 쪽 요청이 401이면 미리 받기를 건너뛰고(오류로 렌더를 막지 않음), 브라우저가 평소처럼 받아 재발급 흐름을 탄다.
+- `api/` 함수는 마지막 인자로 client를 받게 바꾼다(기본값 `bffApi`). 서버 client는 `createServerApi({ accessToken, baseUrl: API_BASE_URL + 'api/v1/' })`로 만들어 BFF와 같은 상대 경로(`bunches/1/members`)를 쓰게 하고, zod 검사와 화면 모양 변환은 그대로 다시 쓴다. 그래서 `api/` 함수의 경로는 지금처럼 BFF 기준 상대 경로로 쓰고, 전체 URL이나 `/api/` 접두사를 직접 넣지 않는다.
+- QueryClient는 서버에서 요청마다 새로 만들고 브라우저에서는 하나를 유지하는 `getQueryClient` 구조로 바꾼다(위 `QueryProvider` 설명).
+- 서버에서 받은 데이터도 `staleTime` 안에서는 브라우저가 다시 요청하지 않는다. 서버와 브라우저가 같은 요청을 중복 소유하지 않게 한 화면의 같은 데이터는 한쪽에서만 미리 받는다(`docs/architecture/routing-and-access.md`).
+
 ## Mutation 캐시 동기화
 
 | mutation 결과와 화면 흐름                           | 캐시 처리                                                   |
