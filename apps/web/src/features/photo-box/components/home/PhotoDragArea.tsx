@@ -202,10 +202,10 @@ export function PhotoDragArea({
       accessibility={{
         screenReaderInstructions: { draggable: '' },
         announcements: {
-          onDragStart: () => '사진을 끌고 있어요.',
+          onDragStart: () => PHOTO_BOX_MESSAGES.dragStart,
           onDragOver: () => undefined,
           onDragEnd: () => undefined,
-          onDragCancel: () => '끌기를 취소했어요.',
+          onDragCancel: () => PHOTO_BOX_MESSAGES.dragCancel,
         },
       }}
     >

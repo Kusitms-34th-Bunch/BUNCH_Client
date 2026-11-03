@@ -15,15 +15,16 @@ import {
   BUNCH_DESCRIPTION_MAX_LENGTH,
   BUNCH_NAME_INVALID_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
+  DEFAULT_BUNCH_IMAGE,
   hasInvalidBunchNameChars,
 } from '@/shared/lib/bunchProfile';
+import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import type { BunchProfileEdit as BunchProfile } from '../../hooks/useBunchProfileEdits';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 
 // 기획: 지원하지 않는 형식·손상된 사진은 이 문구의 토스트(가입 프로필 사진과 같음)
 const PHOTO_UNUSABLE_MESSAGE = '이 사진은 사용할 수 없어요.';
-const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
 
 type BunchProfileEditScreenProps = {
   /** 편집할 번치의 저장된 값. 아직 모르거나 메인 관리자가 아니면 undefined(폼을 그리지 않음) */
@@ -145,7 +146,7 @@ function ProfileForm({
             <input
               ref={inputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={WEB_IMAGE_ACCEPT}
               className="hidden"
               onChange={handleFileChange}
             />

@@ -69,7 +69,6 @@ export const BUNDLE_MESSAGES = {
   locationNoResult: '검색 결과가 없어요',
   locationResultCount: (count: number) => `검색 결과 ${count}건`,
   searchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  locationFull: '위치는 3개까지 추가할 수 있어요.',
   // 사진 상세(캡션 화면·크게 보기, 기능 spec 4.3.4~4.3.6, Figma `1782:32837`·`2082:49108`·`2091:61896`)
   captionLabel: '사진 캡션',
   captionTooLong: '캡션은 200자까지 쓸 수 있어요',

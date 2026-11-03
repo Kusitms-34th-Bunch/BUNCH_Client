@@ -6,13 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
+import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
+import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
 import { BunchConfetti } from '../BunchConfetti';
-
-// 디자인 시스템에 자산이 없는 기본 대표 이미지
-const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
 
 export function BunchCreated() {
   const router = useRouter();
@@ -71,7 +70,7 @@ export function BunchCreated() {
             <input
               ref={inputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={WEB_IMAGE_ACCEPT}
               aria-label="번치 대표 사진 파일 선택"
               className="hidden"
               onChange={handleFileChange}

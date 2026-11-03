@@ -5,6 +5,8 @@ import { CameraButton, LabeledTextField, PageHeader, ProfileImage } from '@app/d
 import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
 import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
+import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
+import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import {
   CHECK_FAILURE_MESSAGE,
@@ -33,8 +35,6 @@ import { SignupFrame } from './SignupFrame';
 
 // 기획: 지원하지 않는 형식·손상된 사진은 이 문구의 토스트
 const PHOTO_UNUSABLE_MESSAGE = '이 사진은 사용할 수 없어요.';
-// 기본 프로필 이미지는 번치 대표 이미지(구름 마스코트)
-const DEFAULT_PROFILE_IMAGE = '/images/default-bunch.png';
 
 type ProfileSetupProps = {
   /** 시작하기를 누르면 이동할 경로. 이동 대상은 호출하는 route가 결정 */
@@ -112,7 +112,7 @@ export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
         <div className="pt-s18 gap-s4 flex flex-col items-center">
           <div className="relative h-22.5 w-23.75">
             <ProfileImage
-              src={photoUrl ?? DEFAULT_PROFILE_IMAGE}
+              src={photoUrl ?? DEFAULT_BUNCH_IMAGE}
               className="absolute top-0 left-0.75"
             />
             <CameraButton
@@ -127,7 +127,7 @@ export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
           <input
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept={WEB_IMAGE_ACCEPT}
             className="hidden"
             onChange={handleFileChange}
           />

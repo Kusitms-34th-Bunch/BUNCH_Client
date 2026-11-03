@@ -36,7 +36,7 @@ export const followBunchesFixture: Readonly<Record<string, FollowBunch>> = {
 const EMPTY: BunchFollows = { followers: [], following: [], requests: [] };
 
 // 수는 번치 fixture 값, 목록은 그중 일부(목록 페이지 나누기는 API 연결 때). 비공개인 퇴근런클럽에만 대기 중인 요청(화면설계서 2500:72664)
-export const bunchFollowsFixture: Readonly<Record<string, BunchFollows>> = {
+const bunchFollowsFixture: Readonly<Record<string, BunchFollows>> = {
   'bunch-run': {
     followers: ['bunch-walk', 'bunch-camping', 'bunch-running', 'bunch-night', 'bunch-reading'],
     following: ['bunch-walk', 'bunch-hiking'],

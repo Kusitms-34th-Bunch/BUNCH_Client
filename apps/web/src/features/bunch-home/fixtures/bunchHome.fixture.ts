@@ -1,3 +1,4 @@
+import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
 import type { BunchHomeDetail, BunchSummary, DraftBundle } from '../lib/types';
 
 // 번치·번들 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
@@ -11,8 +12,8 @@ export const sampleImage = (hue: number) => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
-// 번치 대표 이미지가 없을 때의 뭉치 기본 이미지(기능명세 5.1.2, 사진함 fixture와 같은 파일)
-export const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
+// 번치 대표 이미지가 없을 때의 기본 이미지(다른 fixture도 여기서 가져감)
+export { DEFAULT_BUNCH_IMAGE };
 
 const members = (count: number) =>
   Array.from({ length: count }, (_, index) => ({ name: `멤버 ${index + 1}` }));
