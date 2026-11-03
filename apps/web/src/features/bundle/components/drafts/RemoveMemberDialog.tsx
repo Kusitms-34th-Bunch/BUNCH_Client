@@ -42,7 +42,6 @@ export function RemoveMemberDialog({
         <Dialog.Footer>
           <Dialog.Confirm
             variant="warning"
-            className="min-w-0 flex-1"
             onClick={() => {
               if (!target) return;
               onConfirm(target);
@@ -57,9 +56,7 @@ export function RemoveMemberDialog({
           >
             {BUNDLE_MESSAGES.removeMemberConfirm}
           </Dialog.Confirm>
-          <Dialog.Cancel variant="secondary" className="min-w-0 flex-1">
-            {BUNDLE_MESSAGES.cancel}
-          </Dialog.Cancel>
+          <Dialog.Cancel variant="secondary">{BUNDLE_MESSAGES.cancel}</Dialog.Cancel>
         </Dialog.Footer>
       </Dialog.Content>
     </Dialog.Root>

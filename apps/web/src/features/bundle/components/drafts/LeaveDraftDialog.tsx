@@ -23,12 +23,10 @@ export function LeaveDraftDialog({ open, onOpenChange, onConfirm }: LeaveDraftDi
           {BUNDLE_MESSAGES.leaveConfirmDescription}
         </Dialog.Description>
         <Dialog.Footer>
-          <Dialog.Confirm variant="warning" className="min-w-0 flex-1" onClick={onConfirm}>
+          <Dialog.Confirm variant="warning" onClick={onConfirm}>
             {BUNDLE_MESSAGES.leave}
           </Dialog.Confirm>
-          <Dialog.Cancel variant="secondary" className="min-w-0 flex-1">
-            {BUNDLE_MESSAGES.cancel}
-          </Dialog.Cancel>
+          <Dialog.Cancel variant="secondary">{BUNDLE_MESSAGES.cancel}</Dialog.Cancel>
         </Dialog.Footer>
       </Dialog.Content>
     </Dialog.Root>

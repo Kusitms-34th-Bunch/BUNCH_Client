@@ -105,7 +105,11 @@ const Footer = ({ className, ...props }: DialogFooterProps) => (
     className={cn('gap-s4 p-padding-p8 pt-padding-p10 flex shrink-0 justify-end', className)}
   />
 );
-const Cancel = ({ appearance = 'solid', variant, ...props }: DialogActionProps) => (
+// solid 버튼은 Footer 안에서 같은 폭으로 나눠 가짐
+const solidWidth = (appearance: DialogActionProps['appearance'], className: string | undefined) =>
+  cn(appearance === 'solid' && 'min-w-0 flex-1', className);
+
+const Cancel = ({ appearance = 'solid', variant, className, ...props }: DialogActionProps) => (
   <AlertDialog.Close
     data-dialog-cancel=""
     render={
@@ -116,13 +120,24 @@ const Cancel = ({ appearance = 'solid', variant, ...props }: DialogActionProps) 
       )
     }
     {...props}
+    className={solidWidth(appearance, className)}
   />
 );
-const Confirm = ({ appearance = 'solid', variant, ...props }: DialogActionProps) =>
+const Confirm = ({ appearance = 'solid', variant, className, ...props }: DialogActionProps) =>
   appearance === 'text' ? (
-    <TextButton data-dialog-confirm="" variant={variant ?? 'secondary'} {...props} />
+    <TextButton
+      data-dialog-confirm=""
+      variant={variant ?? 'secondary'}
+      className={className}
+      {...props}
+    />
   ) : (
-    <Button data-dialog-confirm="" variant={variant ?? 'primary'} {...props} />
+    <Button
+      data-dialog-confirm=""
+      variant={variant ?? 'primary'}
+      className={solidWidth(appearance, className)}
+      {...props}
+    />
   );
 
 // eslint-disable-next-line react-refresh/only-export-components -- Compound API 부품 구성
@@ -180,20 +195,8 @@ export const ConfirmDialog = ({
         <div className="mt-s6 px-padding-p11 -mb-1 min-h-0 overflow-y-auto py-1">{children}</div>
       ) : null}
       <Footer>
-        {cancelLabel ? (
-          <Cancel
-            appearance={appearance}
-            className={appearance === 'solid' ? 'min-w-0 flex-1' : undefined}
-          >
-            {cancelLabel}
-          </Cancel>
-        ) : null}
-        <Confirm
-          appearance={appearance}
-          disabled={confirmDisabled}
-          onClick={onConfirm}
-          className={appearance === 'solid' ? 'min-w-0 flex-1' : undefined}
-        >
+        {cancelLabel ? <Cancel appearance={appearance}>{cancelLabel}</Cancel> : null}
+        <Confirm appearance={appearance} disabled={confirmDisabled} onClick={onConfirm}>
           {confirmLabel}
         </Confirm>
       </Footer>

@@ -41,12 +41,10 @@ export function RemovePhotoDialogs({ kind, onClose, onConfirm }: RemovePhotoDial
           <Dialog.Title>{BUNDLE_MESSAGES.removeCaptionedTitle}</Dialog.Title>
           <Dialog.Description>{BUNDLE_MESSAGES.removeCaptionedDescription}</Dialog.Description>
           <Dialog.Footer>
-            <Dialog.Confirm variant="warning" className="min-w-0 flex-1" onClick={onConfirm}>
+            <Dialog.Confirm variant="warning" onClick={onConfirm}>
               {BUNDLE_MESSAGES.removeCaptionedConfirm}
             </Dialog.Confirm>
-            <Dialog.Cancel variant="secondary" className="min-w-0 flex-1">
-              {BUNDLE_MESSAGES.cancel}
-            </Dialog.Cancel>
+            <Dialog.Cancel variant="secondary">{BUNDLE_MESSAGES.cancel}</Dialog.Cancel>
           </Dialog.Footer>
         </Dialog.Content>
       </Dialog.Root>
