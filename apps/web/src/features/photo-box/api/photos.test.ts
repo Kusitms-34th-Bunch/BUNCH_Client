@@ -2,26 +2,39 @@ import { INVALID_RESPONSE_CODE } from '@app/api-core';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { mockDb } from '@/mocks/db';
-import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
+import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { removePhotos } from './photos';
 
 const bunchId = String(MOCK_BUNCH_ID);
 const photoIdsInDb = () => mockDb.get().photos.map((photo) => photo.photoId);
+// 시작 데이터: 내가 혼자 올린 사진(S4), 다른 멤버가 올린 사진(S2)
+const myPhoto = String(MOCK_PHOTO_IDS.S4);
+const otherPhoto = String(MOCK_PHOTO_IDS.S2);
 
 // 쓰기 요청은 가짜 DB가 실제로 바뀌는지, 보낸 본문이 계약 모양인지까지 확인
 describe('removePhotos', () => {
   it('혼자 올린 사진은 사라지고 함께 올린 사진은 내 표시만 빠진다', async () => {
-    // 시작 데이터: 1은 나 혼자, 3은 나와 다른 멤버가 함께 올린 사진
-    await expect(removePhotos(bunchId, ['1', '3'])).resolves.toEqual({
+    // 다른 멤버가 같은 사진을 함께 올려 합쳐진 상태를 만듦
+    const mergedId = MOCK_PHOTO_IDS.S5;
+    mockDb.update((current) => ({
+      ...current,
+      photos: current.photos.map((photo) =>
+        photo.photoId === mergedId
+          ? { ...photo, uploaderIds: [MOCK_MEMBER_IDS.memberA, MOCK_MY_MEMBER_ID] }
+          : photo,
+      ),
+    }));
+
+    await expect(removePhotos(bunchId, [myPhoto, String(mergedId)])).resolves.toEqual({
       deletedCount: 1,
       uploaderRemovedCount: 1,
     });
 
-    expect(photoIdsInDb()).not.toContain(1);
-    const merged = mockDb.get().photos.find((photo) => photo.photoId === 3);
-    expect(merged?.uploaderIds).not.toContain(MOCK_MY_MEMBER_ID);
+    expect(photoIdsInDb()).not.toContain(MOCK_PHOTO_IDS.S4);
+    const merged = mockDb.get().photos.find((photo) => photo.photoId === mergedId);
+    expect(merged?.uploaderIds).toEqual([MOCK_MEMBER_IDS.memberA]);
   });
 
   it('화면 문자열 id를 서버 숫자 id로 바꿔 본문에 담는다', async () => {
@@ -41,7 +54,7 @@ describe('removePhotos', () => {
   it('서버 숫자로 바꿀 수 없는 id는 요청하지 않고 오류다', async () => {
     const before = photoIdsInDb();
 
-    await expect(removePhotos(bunchId, ['1', 'temp-1'])).rejects.toMatchObject({
+    await expect(removePhotos(bunchId, [myPhoto, 'temp-1'])).rejects.toMatchObject({
       name: 'ApiError',
       category: 'validation',
     });
@@ -49,24 +62,34 @@ describe('removePhotos', () => {
   });
 
   it('일반 멤버가 남의 사진을 섞으면 거부되고 아무것도 지우지 않는다', async () => {
+    const before = photoIdsInDb();
+
+    await expect(removePhotos(bunchId, [myPhoto, otherPhoto])).rejects.toMatchObject({
+      status: 403,
+    });
+    expect(photoIdsInDb()).toEqual(before);
+  });
+
+  it('관리자는 남의 사진도 지울 수 있다', async () => {
     mockDb.update((current) => ({
       ...current,
       memberships: current.memberships.map((membership) =>
-        membership.memberId === MOCK_MY_MEMBER_ID ? { ...membership, role: 'MEMBER' } : membership,
+        membership.memberId === MOCK_MY_MEMBER_ID ? { ...membership, role: 'OWNER' } : membership,
       ),
     }));
-    const before = photoIdsInDb();
 
-    // 시작 데이터: 2는 다른 멤버가 올린 사진
-    await expect(removePhotos(bunchId, ['1', '2'])).rejects.toMatchObject({ status: 403 });
-    expect(photoIdsInDb()).toEqual(before);
+    await expect(removePhotos(bunchId, [otherPhoto])).resolves.toEqual({
+      deletedCount: 1,
+      uploaderRemovedCount: 0,
+    });
+    expect(photoIdsInDb()).not.toContain(MOCK_PHOTO_IDS.S2);
   });
 
   // 오류 코드와 전부 거부 여부는 서버 확인 전이라 가짜 서버 기준
   it('이미 사라진 사진이 섞이면 RESOURCE_001이고 아무것도 지우지 않는다', async () => {
     const before = photoIdsInDb();
 
-    await expect(removePhotos(bunchId, ['1', '999'])).rejects.toMatchObject({
+    await expect(removePhotos(bunchId, [myPhoto, '999'])).rejects.toMatchObject({
       status: 404,
       code: 'RESOURCE_001',
     });
