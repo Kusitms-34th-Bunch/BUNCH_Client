@@ -1,7 +1,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
-import { usePhotoBoxFixture } from '@/features/photo-box/hooks/usePhotoBoxFixture';
 import { BUNDLE_SELECT_PATHS } from '../constants/selectPaths';
+import { usePhotoBoxFixture } from './usePhotoBoxFixture';
 
 // 번들 만들기 화면 테스트의 대역: 사진은 사진함 샘플, 초안 생성은 API 대신 샘플 초안으로 이동
 // 실제 사진 API·초안 생성 요청은 photo-box와 useCreateBundle 테스트가 가짜 서버로 확인

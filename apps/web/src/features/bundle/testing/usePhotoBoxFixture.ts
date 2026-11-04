@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import type { PhotoBoxPreview } from '../lib/preview';
-import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxState } from '../lib/types';
-import { photoBoxFixture } from '../fixtures/photoBox.fixture';
-import { applyDelete, applyTakenDate } from '../lib/photoActions';
+import type { PhotoBoxPreview } from '@/features/photo-box/lib/preview';
+import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxState } from '@/features/photo-box/lib/types';
+import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
+import { applyDelete, applyTakenDate } from '@/features/photo-box/lib/photoActions';
 
 // 목 저장이 끝나기까지의 시간(화면 전체 로딩이 보이도록)
 const MOCK_SAVE_DELAY_MS = 800;
@@ -15,8 +15,7 @@ type UsePhotoBoxResult = {
 };
 
 /**
- * 번들 만들기 화면이 쓰는 fixture 기반 사진함 상태와 목 동작. 번들 연동 이슈에서 API 기반 `usePhotoBox`로 바꾸고 이 hook은 없앰
- * 사진함 화면과 사진 크게 보기는 API 기반 `usePhotoBox`를 사용
+ * 번들 화면 테스트용 대역: 사진함 샘플 사진과 목 동작(실제 사진 API는 photo-box 테스트가 가짜 서버로 확인)
  */
 export function usePhotoBoxFixture(preview?: PhotoBoxPreview): UsePhotoBoxResult {
   const [photos, setPhotos] = useState<readonly PhotoBoxPhoto[]>(photoBoxFixture.photos);

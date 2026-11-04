@@ -34,7 +34,7 @@
 
 ## 상태와 흐름
 
-- 상태는 `useDraft`(layout `DraftProvider`)의 `members`·`comments`이고, 번치 멤버 전체는 `bunchMembers`(fixture)다. 더하거나 뺀 내용은 바로 반영되어 작성 화면의 참여 멤버 카드와 코멘트 목록에 나타난다.
+- 상태는 `useDraft`(layout `DraftProvider`)의 `members`·`comments`이고, 번치 멤버 전체는 `bunchMembers`(번치 멤버 API)다. 더하거나 뺀 내용은 서버(참여자 추가·제외 API) 응답으로 반영되어 작성 화면의 참여 멤버 카드와 코멘트 목록에 나타난다.
 - 이 흐름을 벗어나면(작성 화면 밖으로 나가면) 상태는 초기화된다. 새로고침해도 초기화된다.
 
 ## UI와 접근성

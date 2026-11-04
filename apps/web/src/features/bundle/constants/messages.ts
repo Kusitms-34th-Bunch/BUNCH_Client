@@ -26,6 +26,12 @@ export const BUNDLE_MESSAGES = {
   leaveQuestion: '작성중인 번들에서 나갈까요?',
   leave: '나가기',
   deletedDraft: '삭제된 번들이에요',
+  // 서버 저장·발행 실패 안내(서버 연동 때 추가한 문구)
+  fieldLocked: '다른 멤버가 편집 중이라 저장하지 못했어요.',
+  saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  publishFailed: '번들을 업로드하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  publishConflict: '다른 멤버가 내용을 바꿨어요. 확인한 뒤 다시 업로드해 주세요.',
+  published: '번들이 업로드되었어요.',
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
   uploadIncomplete: '필수 항목을 모두 입력해야 업로드 할 수 있어요.',
