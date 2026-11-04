@@ -2,6 +2,7 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
+import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
 import type { PhotoBoxMember } from '../lib/types';
 
 /**
@@ -17,12 +18,13 @@ const bunchMemberResponseSchema = z.object({
 
 export const bunchMembersResponseSchema = z.array(bunchMemberResponseSchema);
 
-/** 사진함이 쓰는 멤버 모양으로 변환(문자열 id, 사진 없으면 undefined). 역할은 사진함이 쓰지 않아 버림 */
+/** 사진함이 쓰는 멤버 모양으로 변환(문자열 id, 사진 없으면 기본 이미지, 역할은 관리자 판단용으로 유지) */
 export const toPhotoBoxMember = (
   member: z.infer<typeof bunchMemberResponseSchema>,
 ): PhotoBoxMember => ({
   id: toDomainId(member.memberId),
   name: member.nickname,
-  // 빈 문자열도 사진 없음으로(깨진 이미지 방지)
-  avatarSrc: member.imageUrl || undefined,
+  // 사진이 없거나 빈 문자열이면 기본 이미지(깨진 이미지 방지)
+  avatarSrc: member.imageUrl || DEFAULT_BUNCH_IMAGE,
+  role: member.role,
 });

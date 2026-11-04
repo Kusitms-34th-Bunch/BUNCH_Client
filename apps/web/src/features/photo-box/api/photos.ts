@@ -2,7 +2,13 @@ import type { components } from '@app/api-core/generated';
 import { ApiError } from '@app/api-core';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { toWireId } from '@/shared/api/ids';
-import { photoDeleteResponseSchema } from '../model/photos';
+import {
+  datedPhotosPageSchema,
+  photoDeleteResponseSchema,
+  toDatedPhotoBoxPhoto,
+  toUndatedPhotoBoxPhoto,
+  undatedPhotosPageSchema,
+} from '../model/photos';
 
 /**
  * 고른 사진 삭제. 멤버는 내가 올린 사진만, 관리자는 모든 사진(docs/specs/photo-box.md 3.3.5)
@@ -21,4 +27,53 @@ export const removePhotos = async (bunchId: string, photoIds: readonly string[])
     photoDeleteResponseSchema,
     'delete photos',
   );
+};
+
+type PhotoPageParams = {
+  bunchId: string;
+  /** 올린 사람 필터(없으면 전체) */
+  memberId?: string | undefined;
+  cursor?: string | undefined;
+  signal?: AbortSignal | undefined;
+};
+
+const toSearchParams = ({ memberId, cursor }: PhotoPageParams) => {
+  const searchParams: Record<string, string> = {};
+  if (memberId) searchParams.memberId = memberId;
+  if (cursor) searchParams.cursor = cursor;
+  return searchParams;
+};
+
+/** 날짜를 아는 사진 한 페이지(최신순, 서버 기본 60장) */
+export const getDatedPhotosPage = async (params: PhotoPageParams) => {
+  const page = await requestData(
+    bffApi.get(`bunches/${encodeURIComponent(params.bunchId)}/photos`, {
+      searchParams: toSearchParams(params),
+      signal: params.signal ?? null,
+    }),
+    datedPhotosPageSchema,
+    'dated photos',
+  );
+  return {
+    totalCount: page.totalCount,
+    photos: page.photos.map(toDatedPhotoBoxPhoto),
+    nextCursor: page.nextCursor ?? null,
+  };
+};
+
+/** 날짜를 모르는 사진 한 페이지 */
+export const getUndatedPhotosPage = async (params: PhotoPageParams) => {
+  const page = await requestData(
+    bffApi.get(`bunches/${encodeURIComponent(params.bunchId)}/photos/undated`, {
+      searchParams: toSearchParams(params),
+      signal: params.signal ?? null,
+    }),
+    undatedPhotosPageSchema,
+    'undated photos',
+  );
+  return {
+    totalCount: page.totalCount,
+    photos: page.photos.map(toUndatedPhotoBoxPhoto),
+    nextCursor: page.nextCursor ?? null,
+  };
 };

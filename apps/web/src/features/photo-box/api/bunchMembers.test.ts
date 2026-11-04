@@ -18,7 +18,7 @@ describe('getBunchMembers', () => {
     );
   });
 
-  it('서버 멤버를 사진함 모양(문자열 id, 사진 없으면 undefined)으로 바꾼다', async () => {
+  it('서버 멤버를 사진함 모양(문자열 id, 사진 없으면 기본 이미지)으로 바꾼다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/members', () =>
         ok([
@@ -32,10 +32,10 @@ describe('getBunchMembers', () => {
     );
 
     await expect(getBunchMembers('1')).resolves.toEqual([
-      { id: '7', name: '지예', avatarSrc: 'https://cdn.example/7.jpg' },
-      { id: '8', name: '경진', avatarSrc: undefined },
-      { id: '9', name: '수인', avatarSrc: undefined },
-      { id: '10', name: '하율', avatarSrc: undefined },
+      { id: '7', name: '지예', avatarSrc: 'https://cdn.example/7.jpg', role: 'OWNER' },
+      { id: '8', name: '경진', avatarSrc: '/images/default-bunch.png', role: 'MEMBER' },
+      { id: '9', name: '수인', avatarSrc: '/images/default-bunch.png', role: 'CO_OWNER' },
+      { id: '10', name: '하율', avatarSrc: '/images/default-bunch.png', role: 'MEMBER' },
     ]);
   });
 
