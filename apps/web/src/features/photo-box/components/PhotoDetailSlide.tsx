@@ -19,7 +19,9 @@ type PhotoDetailSlideProps = {
  * 처리 중이거나 불러오지 못한 사진은 회색 정사각형 자리표시
  */
 export function PhotoDetailSlide({ photo, members, chromeHidden }: PhotoDetailSlideProps) {
-  const [broken, setBroken] = useState(false);
+  // 불러오지 못한 주소를 기억해 썸네일에서 원본으로 바뀌면 다시 시도(주소별로 판단)
+  const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
+  const broken = brokenSrc === photo.src;
   const uploaders = getUploaders(photo, members);
   const showPlaceholder = photo.status !== 'ready' || broken;
 
@@ -40,7 +42,7 @@ export function PhotoDetailSlide({ photo, members, chromeHidden }: PhotoDetailSl
             alt={photo.alt}
             className="block h-auto w-full"
             draggable={false}
-            onError={() => setBroken(true)}
+            onError={() => setBrokenSrc(photo.src)}
           />
         )}
         {uploaders.length > 0 ? (

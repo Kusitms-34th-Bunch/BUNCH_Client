@@ -3,7 +3,7 @@ import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { createBrowserApi } from '@/shared/api/browserClient';
 import { mockDb } from '../db';
-import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID } from '../db/seed';
+import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail } from '../lib/envelope';
 import { server } from '../server';
 
@@ -29,9 +29,9 @@ describe('가짜 서버 세션', () => {
 });
 
 describe('가짜 서버 내 프로필', () => {
-  it('시연하는 사람(메인 관리자)과 기본 번치를 돌려준다', async () => {
+  it('시연하는 사람(일반 멤버)과 기본 번치를 돌려준다', async () => {
     const me = unwrapEnvelope<MyProfile>(await api().get('members/me').json());
-    expect(me).toMatchObject({ memberId: MOCK_MY_MEMBER_ID, nickname: '지예' });
+    expect(me).toMatchObject({ memberId: MOCK_MY_MEMBER_ID, nickname: '큐시즘' });
     expect(me.defaultBunch?.id).toBe(MOCK_BUNCH_ID);
   });
 });
@@ -41,8 +41,9 @@ describe('가짜 서버 번치 멤버 목록', () => {
     const members = unwrapEnvelope<BunchMember[]>(
       await api().get(`bunches/${MOCK_BUNCH_ID}/members`).json(),
     );
-    expect(members).toHaveLength(8);
-    expect(members[0]).toMatchObject({ memberId: MOCK_MY_MEMBER_ID, role: 'OWNER' });
+    expect(members).toHaveLength(5);
+    expect(members[0]).toMatchObject({ memberId: MOCK_MEMBER_IDS.admin, role: 'OWNER' });
+    expect(members.find((member) => member.memberId === MOCK_MY_MEMBER_ID)?.role).toBe('MEMBER');
     expect(members.filter((member) => member.role === 'OWNER')).toHaveLength(1);
   });
 

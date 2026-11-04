@@ -41,7 +41,7 @@
 
 ## Route와 접근
 
-- Path·params·search: `/photos`. params는 없다. 임시 `preview` search(`loading`·`error`·`no-bunch`·`empty`)로 상태를 눈으로 확인할 수 있고, route 경계(`lib/preview.ts`의 `parsePreview`)에서 허용 값만 통과시킨다. 알 수 없는 값은 무시하고 운영(`NODE_ENV=production`)에서는 아예 열지 않는다. 제거 조건: 목록 API를 연결하는 PR에서 `preview.ts`·`fixtures/`·page의 `searchParams` 읽기·`usePhotoBox`의 fixture를 함께 삭제한다. 그 전까지는 운영에서도 `/photos`가 fixture(가짜 번치 데이터)를 보여 주므로 로그인·API 연결 전에는 일반 사용자에게 열리지 않아야 한다.
+- Path·params·search: `/photos`. params는 없다. 임시 `preview` search(`loading`·`error`·`no-bunch`·`empty`)로 상태를 눈으로 확인할 수 있고, route 경계(`lib/preview.ts`의 `parsePreview`)에서 허용 값만 통과시킨다. 알 수 없는 값은 무시하고 운영(`NODE_ENV=production`)에서는 아예 열지 않는다. 제거 조건: 번들 연동 이슈에서 번들 만들기 화면이 쓰는 `usePhotoBoxFixture`를 API 기반으로 바꾸면 `preview.ts`·`fixtures/`·page의 `searchParams` 읽기를 함께 삭제한다. 사진함 화면과 사진 크게 보기는 이미 API(개발·시연에서는 가짜 서버)를 쓴다.
 - 렌더링: `searchParams`를 읽어 `/photos`가 정적 prerender 대신 요청마다 렌더되는 동적 route다. 정적 정보뿐인 화면이라 비용은 작고, `preview`를 없애면 함께 사라진다.
 - 아직 없는 route: 사진 상세 `/photos/[photoId]`는 #128에서 만든다. 그 전에는 직접 URL로 들어가면 not-found이고, 이 화면에서 사진을 눌러도 이동하지 않는다.
 - 접근 권한·guard: 아직 없다(로그인 미구현). 번치 멤버만 볼 수 있어야 하며 서버가 판단한다(`docs/specs/photo-box.md`).
@@ -49,12 +49,12 @@
 
 ## 상태와 흐름
 
-- 화면 상태는 `PhotoBoxState`(`loading`·`error`·`no-bunch`·`ready`)다. `usePhotoBox`가 호출 지점이고 지금은 fixture(`fixtures/photoBox.fixture.ts`)를 돌려준다. API를 연결하면 이 hook만 TanStack Query 상태에서 만든다.
+- 화면 상태는 `PhotoBoxState`(`loading`·`error`·`no-bunch`·`ready`)다. `usePhotoBox`가 호출 지점이고 내 프로필(기본 번치)·멤버·사진 목록 query를 합쳐 만든다. 날짜를 아는 사진과 모르는 사진은 따로 받아 한 목록으로 합치고, 목록은 마지막 쪽까지 이어서 불러온다.
 - 멤버 필터는 화면 안 상태다(기본 「전체」). 번치를 전환하면 「전체」로 돌려야 하며, 번치 전환이 생길 때 함께 한다.
 - 처리 중(`processing`)·실패(`failed`) 사진과 이미지 로딩 실패(`onError`)는 회색 자리표시이고 접근성 이름은 「처리 중인 사진」·「불러오지 못한 사진」이다.
 - 아코디언은 열림 상태를 스스로 갖는다. 열고 닫는 모션은 화면 설계서의 값(340ms, `cubic-bezier(0, 0, 0.35, 1)`)이다. 높이는 `Accordion`이, 좌우 여백·모서리는 이 화면이 같은 값으로 전환하고 `prefers-reduced-motion`에서는 즉시 바뀐다.
 
-- 선택 모드는 화면 안 상태다(`hooks/usePhotoSelectionFlow.ts`). 서버·기기 동작은 `PhotoBoxActions`(`savePhotos`·`deletePhotos`)로 받고, `usePhotoBox`가 목 동작을 준다(저장은 0.8초 뒤 모두 성공, 삭제는 `applyDelete`로 목록에서 반영). API를 연결하면 이 hook만 mutation으로 바꾼다.
+- 선택 모드는 화면 안 상태다(`hooks/usePhotoSelectionFlow.ts`). 서버·기기 동작은 `PhotoBoxActions`(`savePhotos`·`deletePhotos`)로 받고, `usePhotoBox`가 준다. 삭제는 mutation 뒤 사진 목록을 다시 불러와 반영하고, 저장은 목 동작(0.8초 뒤 모두 성공)이며, 날짜 변경은 서버 반영 전이라 이 세션의 목록에만 덮어 보인다(새로고침하면 원래 날짜).
 - 선택 모드 동안 `HideMainTabBar`를 렌더해 `(main)` layout이 탭 막대를 숨기고 `--main-tab-bar-*` 변수를 0으로 되돌린다. 「⋯」는 막대가 있을 때와 같은 10px 간격(`float-gap`)으로 화면 끝 위에 놓인다(Figma 사진함_07은 간격 0이지만 막대와 같은 간격으로 맞추기로 했다). iOS 쉘에서는 시스템 탭 바를 숨기는 경로가 없어 선택 모드에도 탭 바가 남는다(`docs/specs/photo-box.md` 확인 항목).
 - 선택 모드를 끝낸 직후의 완료 토스트는 막대가 다시 보이므로 막대 위 10px에 둔다(`TOAST_ABOVE_TAB_BAR_OFFSET`). 사진함 토스트는 모두 목록 폭(343px)으로 펼친다.
 

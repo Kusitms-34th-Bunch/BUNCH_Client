@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
-import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
+import { usePhotoBoxFixture } from '@/features/photo-box/hooks/usePhotoBoxFixture';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -23,7 +23,7 @@ import { DraftPhotoAdd } from './DraftPhotoAdd';
 export function BundleDraftPhotoAdd() {
   const router = useRouter();
   const { state, actions } = useDraftContext();
-  const { state: photoState } = usePhotoBox();
+  const { state: photoState } = usePhotoBoxFixture();
   // 캡션 화면에서 앱 안으로 들어왔을 때만 이전 기록(캡션 화면)으로 돌아감. 직접 주소·새로고침이면 기록을 믿지 않음
   const [fromCaption] = useState(isPhotoAddEntry);
   useEffect(() => clearPhotoAddEntry, []);

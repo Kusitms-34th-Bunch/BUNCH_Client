@@ -37,8 +37,8 @@ const state: PhotoBoxState = {
     photos,
   },
 };
-vi.mock('@/features/photo-box/hooks/usePhotoBox', () => ({
-  usePhotoBox: () => ({ state, actions: {} }),
+vi.mock('@/features/photo-box/hooks/usePhotoBoxFixture', () => ({
+  usePhotoBoxFixture: () => ({ state, actions: {} }),
 }));
 
 beforeEach(() => {

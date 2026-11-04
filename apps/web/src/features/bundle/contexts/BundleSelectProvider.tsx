@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
+import { usePhotoBoxFixture } from '@/features/photo-box/hooks/usePhotoBoxFixture';
 import {
   countSelectedByMember,
   toggleSelection,
@@ -42,7 +42,7 @@ export function BundleSelectProvider({
   createDelayMs = MOCK_CREATE_DELAY_MS,
 }: BundleSelectProviderProps) {
   const router = useRouter();
-  const { state: photoState } = usePhotoBox();
+  const { state: photoState } = usePhotoBoxFixture();
   const photos = photoState.kind === 'ready' ? photoState.data.photos : undefined;
 
   const [selection, setSelection] = useState<PhotoSelection>([]);
