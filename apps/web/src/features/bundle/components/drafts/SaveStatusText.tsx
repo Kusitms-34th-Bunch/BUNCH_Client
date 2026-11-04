@@ -30,6 +30,14 @@ export function SaveStatusText({ status }: { status: SaveStatus }) {
     };
   }, [status]);
 
+  if (status === 'failed') {
+    return (
+      <span role="status" className={TEXT_STYLE}>
+        {BUNDLE_MESSAGES.headerSaveFailed}
+      </span>
+    );
+  }
+
   if (status === 'saved') {
     return (
       <span role="status" className={TEXT_STYLE}>

@@ -265,9 +265,66 @@ describe('useDraft 저장', () => {
     await act(() => new Promise((resolve) => setTimeout(resolve, 3500)));
     expect(calls).toBe(1);
     expect(ready(result.current.state).draft.visibility).toBe('public');
+    // 저장을 포기한 상태는 「저장 중」에 고정되지 않고 「저장 실패」로 보임
+    expect(ready(result.current.state).saveStatus).toBe('failed');
     expect(
       toast.mock.calls.filter(([message]) => message === BUNDLE_MESSAGES.saveFailed),
     ).toHaveLength(1);
+  }, 15_000);
+
+  it('서버가 앞뒤 공백을 지워 저장해도 입력란에는 친 원문이 남는다(입력 중 띄어쓰기 보존)', async () => {
+    const { id, result } = await renderReady();
+
+    act(() => result.current.actions.setTitle('여름 '));
+
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('여름'), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+    expect(ready(result.current.state).draft.title).toBe('여름 ');
+
+    // 이어서 쓰면 띄어쓰기를 유지한 채 이어지는 입력
+    act(() => result.current.actions.setTitle('여름 바다'));
+    expect(ready(result.current.state).draft.title).toBe('여름 바다');
+  });
+
+  it('다른 곳에서 제목이 바뀌면 입력 원문 대신 서버 값을 보인다', async () => {
+    const { id, result } = await renderReady();
+    act(() => result.current.actions.setTitle('여름 '));
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('여름'), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+
+    // 다른 멤버가 제목을 바꾼 상황: 상세를 다시 받으면 서버 값이 보임
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({
+        ...bundle,
+        title: '다른 멤버의 제목',
+        titleVersion: bundle.titleVersion + 1,
+        revision: bundle.revision + 1,
+      })),
+    }));
+    await act(async () => {
+      await result.current.actions.publish();
+    });
+
+    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('다른 멤버의 제목'));
+  });
+
+  it('서버 오류(5xx)는 일시 오류로 보고 다시 시도해 저장한다', async () => {
+    const { id, result } = await renderReady();
+    let calls = 0;
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => {
+        calls += 1;
+        return calls === 1 ? fail(500, 'COMMON_500') : undefined;
+      }),
+    );
+
+    act(() => result.current.actions.setVisibility('members'));
+
+    await waitFor(() => expect(serverBundle(id)?.visibility).toBe('PRIVATE'), {
+      timeout: 9000,
+    });
+    expect(calls).toBeGreaterThanOrEqual(2);
   }, 15_000);
 
   it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {

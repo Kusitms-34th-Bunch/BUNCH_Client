@@ -42,15 +42,13 @@ const RETRY_DELAY_MS = 3000;
 const MAX_RETRIES = 5;
 // 버전 충돌은 최신 상세를 받은 직후 바로 이어서 저장
 const CONFLICT_RETRY_DELAY_MS = 200;
-// 다시 시도해도 같은 결과인 오류(다른 사람이 발행·삭제, 인증·권한, 잘못된 입력)
-const PERMANENT_CODES: ReadonlySet<string> = new Set([
-  'BUNDLE_002',
-  'AUTH_001',
-  'AUTH_002',
-  'RESOURCE_001',
-  'COMMON_001',
-  'COMMON_002',
-]);
+// 다시 시도하면 될 수 있는 오류: 편집권 거부(BUNDLE_004), 응답이 없는 네트워크 오류, 서버 오류(5xx)
+// 그 밖의 거절(다른 사람이 발행·삭제, 인증·권한, 잘못된 입력 등 4xx)은 같은 요청을 다시 보내도 같은 결과
+const isRetryable = (error: unknown) => {
+  const { code, status } = (error as { code?: string; status?: number } | null) ?? {};
+  if (code === 'BUNDLE_004') return true;
+  return status === undefined || status >= 500;
+};
 
 /** 장소 검색 API 연결 전 목 검색(이름·주소에 키워드가 들어 있으면 결과). 렌더마다 바뀌지 않도록 hook 밖에 둠 */
 const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
@@ -166,6 +164,13 @@ export function useDraft(draftId: string | undefined): {
   const [flushing, setFlushing] = useState(false);
   // 내가 발행해 서버가 발행본으로 바꾼 뒤에는 「없는 초안」 안내 없이 이동을 기다림
   const [publishedByMe, setPublishedByMe] = useState(false);
+  // 저장을 포기한 상태(권한·상태 오류 또는 재시도 소진): 헤더가 「저장 실패」를 보이고 입력하면 다시 시도
+  const [stalled, setStalled] = useState(false);
+  // 입력란에 방금 친 원문: 서버가 앞뒤 공백을 지워 돌려줘도 입력 중 띄어쓰기가 사라지지 않게 보여 줌
+  const [typed, setTyped] = useState<{
+    title?: string;
+    captions?: Readonly<Record<string, string>>;
+  }>({});
 
   // 비동기 저장 루프가 항상 최신 값을 읽도록 ref에 둠(렌더 밖 이벤트·타이머에서만 읽고 씀)
   const pendingRef = useRef<Pending>({});
@@ -251,6 +256,7 @@ export function useDraft(draftId: string | undefined): {
     let stop = false;
     const giveUp = () => {
       stop = true;
+      if (alive.current) setStalled(true);
       if (!notified.current) {
         notified.current = true;
         toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
@@ -275,7 +281,10 @@ export function useDraft(draftId: string | undefined): {
               }
               return;
             }
-            detailRef.current = result;
+            // 늦게 도착한 낡은 응답이 최신 revision 기준을 덮지 않게 함
+            if (!detailRef.current || result.revision >= detailRef.current.revision) {
+              detailRef.current = result;
+            }
             failures.current = 0;
             onSaved();
           } catch (error) {
@@ -285,7 +294,7 @@ export function useDraft(draftId: string | undefined): {
               const latest = await refetchDetail();
               if (latest.data) detailRef.current = latest.data;
               retryAfter = CONFLICT_RETRY_DELAY_MS;
-            } else if (code !== undefined && PERMANENT_CODES.has(code)) {
+            } else if (!isRetryable(error)) {
               giveUp();
               // 삭제·발행·권한 변화는 상세를 다시 받아 화면이 알맞은 상태로 바뀌게 함
               void refetchDetail();
@@ -355,7 +364,7 @@ export function useDraft(draftId: string | undefined): {
           await run(
             () => {
               const photo = (detailRef.current ?? base).photos.find((p) => p.id === photoId);
-              // 서버에 없는 사진(화면에서만 바뀐 사진)의 캡션은 서버로 보낼 수 없어 보관만 함
+              // 서버에 없는 사진(화면에서만 바뀐 사진)의 캡션은 서버로 보낼 수 없어 저장하지 않음(사진 구성 서버 연동은 후속)
               if (!photo) return Promise.resolve(detailRef.current ?? base);
               return withLease(`PHOTO:${photoId}`, (leaseToken) =>
                 saveCaption.mutateAsync({
@@ -385,6 +394,14 @@ export function useDraft(draftId: string | undefined): {
         clearTimeout(timer.current);
         timer.current = setTimeout(() => void flushRef.current(), retryAfter * failures.current);
       }
+    }
+    // 포기하는 동안 새 입력이 들어왔으면(again) 처음부터 다시 시도
+    if (stop && again.current && !settled && alive.current) {
+      failures.current = 0;
+      notified.current = false;
+      setStalled(false);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => void flushRef.current(), 0);
     }
     return settled;
   }, [
@@ -420,6 +437,7 @@ export function useDraft(draftId: string | undefined): {
     // 입력이 새로 바뀌면 이전 실패와 안내를 잊고 처음부터 다시 시도
     failures.current = 0;
     notified.current = false;
+    setStalled(false);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => void flushRef.current(), delay);
   }, []);
@@ -439,7 +457,14 @@ export function useDraft(draftId: string | undefined): {
   const draft = useMemo<Draft | undefined>(() => {
     if (!detail || !bunchMembers || !myId) return undefined;
     const base = toDraft({ detail, bunchMembers, locations, myMemberId: myId });
-    const captionOf = (photo: DraftPhoto) => pending.captions?.[photo.id] ?? photo.caption;
+    // 저장이 끝난 입력은 서버가 정리한 값(앞뒤 공백 제거)과 같을 때만 친 원문을 계속 보여 줌(다른 곳에서 바뀌면 서버 값)
+    const shownCaption = (photo: DraftPhoto) => {
+      const typedValue = typed.captions?.[photo.id];
+      return typedValue !== undefined && typedValue.trim() === photo.caption
+        ? typedValue
+        : photo.caption;
+    };
+    const captionOf = (photo: DraftPhoto) => pending.captions?.[photo.id] ?? shownCaption(photo);
     const photos = (localPhotos ?? base.photos).map((photo) => ({
       ...photo,
       caption: captionOf(photo),
@@ -447,7 +472,9 @@ export function useDraft(draftId: string | undefined): {
     const hasMyComment = base.comments.some((comment) => comment.memberId === myId);
     return {
       ...base,
-      title: pending.title ?? base.title,
+      title:
+        pending.title ??
+        (typed.title !== undefined && typed.title.trim() === base.title ? typed.title : base.title),
       date: pending.date === undefined ? base.date : pending.date,
       visibility: pending.visibility ?? base.visibility,
       photos,
@@ -462,7 +489,7 @@ export function useDraft(draftId: string | undefined): {
               )
             : [...base.comments, { memberId: myId, text: pending.comment }],
     };
-  }, [detail, bunchMembers, locations, myId, pending, localPhotos]);
+  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed]);
 
   const busy =
     flushing ||
@@ -474,6 +501,7 @@ export function useDraft(draftId: string | undefined): {
   const actions: DraftActions = {
     setTitle: (title) => {
       change((current) => ({ ...current, title }));
+      setTyped((current) => ({ ...current, title }));
       schedule(SAVE_DELAY_MS);
     },
     setComment: (memberId, text) => {
@@ -511,6 +539,10 @@ export function useDraft(draftId: string | undefined): {
       }),
     setPhotoCaption: (photoId, caption) => {
       change((current) => ({ ...current, captions: { ...current.captions, [photoId]: caption } }));
+      setTyped((current) => ({
+        ...current,
+        captions: { ...current.captions, [photoId]: caption },
+      }));
       schedule(SAVE_DELAY_MS);
       setLocalPhotos((current) => current && setPhotoCaption(current, photoId, caption));
     },
@@ -523,7 +555,10 @@ export function useDraft(draftId: string | undefined): {
     publish: async () => {
       clearTimeout(timer.current);
       // 저장하지 못한 입력이 남아 있으면 발행하지 않음(서버는 저장된 내용만 발행함)
-      if (!(await flush())) {
+      // 진행 중이던 저장이 막 끝나는 순간 들어온 입력이 남을 수 있어 한 번 더 확인
+      let saved = await flush();
+      if (!saved) saved = await flush();
+      if (!saved) {
         toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
         return 'failed';
       }
@@ -575,7 +610,7 @@ export function useDraft(draftId: string | undefined): {
       draft,
       viewer,
       bunchMembers: members,
-      saveStatus: busy ? 'saving' : 'saved',
+      saveStatus: stalled ? 'failed' : busy ? 'saving' : 'saved',
     };
   }
 

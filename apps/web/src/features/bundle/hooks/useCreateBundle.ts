@@ -40,13 +40,18 @@ export function useCreateBundle() {
     mutation.mutate(
       { photoIds, idempotencyKey: attempt.current.key },
       {
-        onSuccess: (bundle) => router.push(BUNDLE_SELECT_PATHS.draft(bundle.id)),
+        onSuccess: (bundle) => {
+          // 같은 사진으로 다시 만들면 새 초안이 되도록 키를 비움(이동이 끝날 때까지는 submitted가 중복을 막음)
+          attempt.current = undefined;
+          router.push(BUNDLE_SELECT_PATHS.draft(bundle.id));
+        },
         onError: (error) => {
           // 실패하면 다시 시도할 수 있게 풂(성공은 이동이 끝날 때까지 유지)
           submitted.current = false;
           const code = (error as { code?: string }).code;
-          // 서버가 요청 자체를 거절한 경우는 다음 시도를 새 요청으로(같은 키면 거절이 다시 재생될 수 있음)
-          if (code !== undefined) attempt.current = undefined;
+          // 서버가 요청을 거절한 경우(4xx)는 다음 시도를 새 요청으로(같은 키면 거절이 다시 재생될 수 있음), 응답이 없거나 5xx면 키를 유지
+          const status = (error as { status?: number }).status;
+          if (status !== undefined && status >= 400 && status < 500) attempt.current = undefined;
           if (code === 'BUNDLE_001') {
             // 번치 인원 부족과 초안 한도가 같은 코드라, 번치 멤버가 모자라면 인원 안내 아니면 한도 안내
             notify(
