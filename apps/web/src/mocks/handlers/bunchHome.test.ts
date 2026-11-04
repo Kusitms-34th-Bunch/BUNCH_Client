@@ -146,7 +146,7 @@ describe('가짜 서버 번들 현황과 번치 홈', () => {
   });
 
   it('없는 번치는 RESOURCE_001이다', async () => {
-    expect((await get<unknown>('/api/bunches/999/home')).json.error?.code).toBe('RESOURCE_001');
+    expect((await get<unknown>('/api/bunches/999/home')).json.error?.code).toBe('BUNCH_009');
   });
 });
 
@@ -190,16 +190,19 @@ describe('가짜 서버 번치 발행 번들 목록', () => {
     expect(json.data.items).toHaveLength(1);
   });
 
-  it.each(['?size=0', '?size=51', '?page=-1'])('%s는 COMMON_001(400)이다', async (query) => {
-    const { status, json } = await get<PublishedPage>(`${base}/published-bundles${query}`);
+  it.each(['?size=0', '?size=51', '?page=-1', '?page='])(
+    '%s는 COMMON_001(400)이다',
+    async (query) => {
+      const { status, json } = await get<PublishedPage>(`${base}/published-bundles${query}`);
 
-    expect(status).toBe(400);
-    expect(json.error?.code).toBe('COMMON_001');
-  });
+      expect(status).toBe(400);
+      expect(json.error?.code).toBe('COMMON_001');
+    },
+  );
 
-  it('없는 번치는 RESOURCE_001, 소속이 아니면 AUTH_002이다', async () => {
+  it('없는 번치는 BUNCH_009, 소속이 아니면 AUTH_002이다', async () => {
     expect((await get<PublishedPage>('/api/bunches/999/published-bundles')).json.error?.code).toBe(
-      'RESOURCE_001',
+      'BUNCH_009',
     );
     mockDb.update((current) => ({ ...current, memberships: [] }));
     expect((await get<PublishedPage>(`${base}/published-bundles`)).json.error?.code).toBe(

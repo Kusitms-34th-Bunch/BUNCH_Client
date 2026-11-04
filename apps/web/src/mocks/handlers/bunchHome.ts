@@ -10,13 +10,18 @@ import { toSnapshot } from './bundles';
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
 
-// 번치 존재(404)·내 소속(403) 순서로 확인
-const findBunch = (bunchIdParam: string | readonly string[] | undefined) => {
+// 번치 존재(404)·내 소속(403) 순서로 확인, 없는 번치의 오류 코드는 명세마다 달라 호출하는 쪽이 정함
+// (번치 홈·발행 번들 목록은 BUNCH_009, 번들 목록·현황은 RESOURCE_001)
+type NotFoundCode = 'BUNCH_009' | 'RESOURCE_001';
+const findBunch = (
+  bunchIdParam: string | readonly string[] | undefined,
+  notFoundCode: NotFoundCode,
+) => {
   const bunchId = toWireId(bunchIdParam);
   if (bunchId === undefined) return { error: fail(400, 'COMMON_001') };
   const state = mockDb.get();
   const bunch = state.bunches.find((item) => item.id === bunchId);
-  if (!bunch) return { error: fail(404, 'RESOURCE_001') };
+  if (!bunch) return { error: fail(404, notFoundCode) };
   const mine = state.memberships.find(
     (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
   );
@@ -35,6 +40,8 @@ const counts = (state: MockDbState, bunchId: number) => {
 
 const parseNonNegativeInt = (value: string | null, fallback: number) => {
   if (value === null) return fallback;
+  // 빈 문자열은 숫자 0이 아니라 잘못된 입력
+  if (value.trim() === '') return NaN;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : NaN;
 };
@@ -42,7 +49,7 @@ const parseNonNegativeInt = (value: string | null, fallback: number) => {
 export const bunchHomeHandlers = [
   // GET /api/v1/bunches/{bunchId}/home
   http.get('/api/bunches/:bunchId/home', ({ params }) => {
-    const found = findBunch(params.bunchId);
+    const found = findBunch(params.bunchId, 'BUNCH_009');
     if ('error' in found) return found.error;
     const { bunch, mine, state, bunchId } = found;
     const isOwner = mine.role === 'OWNER';
@@ -85,7 +92,7 @@ export const bunchHomeHandlers = [
   // GET /api/v1/bunches/{bunchId}/bundles?status=&page=&size=
   // 초안은 수정 최신순(updatedAt, id 내림차순), 발행본은 발행 최신순(publishedAt, id 내림차순)
   http.get('/api/bunches/:bunchId/bundles', ({ params, request }) => {
-    const found = findBunch(params.bunchId);
+    const found = findBunch(params.bunchId, 'RESOURCE_001');
     if ('error' in found) return found.error;
     const { bunchId, mine, state } = found;
     const url = new URL(request.url);
@@ -121,7 +128,7 @@ export const bunchHomeHandlers = [
   // GET /api/v1/bunches/{bunchId}/published-bundles?page=&size= (서버 PR #62 미병합 계약, 번치 홈 「완성된 번들」용)
   // 내 번치(INTERNAL)는 공개 범위와 상관없이 발행본 전체, 발행 최신순(publishedAt, id 내림차순), 초안은 포함하지 않음
   http.get('/api/bunches/:bunchId/published-bundles', ({ params, request }) => {
-    const found = findBunch(params.bunchId);
+    const found = findBunch(params.bunchId, 'BUNCH_009');
     if ('error' in found) return found.error;
     const { bunchId, state } = found;
     const url = new URL(request.url);
@@ -154,7 +161,7 @@ export const bunchHomeHandlers = [
 
   // GET /api/v1/bunches/{bunchId}/bundles/summary
   http.get('/api/bunches/:bunchId/bundles/summary', ({ params }) => {
-    const found = findBunch(params.bunchId);
+    const found = findBunch(params.bunchId, 'RESOURCE_001');
     if ('error' in found) return found.error;
     return ok(counts(found.state, found.bunchId));
   }),
