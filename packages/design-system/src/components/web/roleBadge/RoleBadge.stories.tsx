@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { RoleBadge } from './RoleBadge';
 
 const meta = {
-  title: 'Web/RoleBadge',
+  title: 'Web/Profile/RoleBadge',
   component: RoleBadge,
   args: { memberRole: 'owner', size: 'sm', label: '번치장' },
 } satisfies Meta<typeof RoleBadge>;

@@ -4,7 +4,7 @@ import { ChipButton } from '../chipButton';
 import { ProfileListItem } from './ProfileListItem';
 
 const meta = {
-  title: 'Web/ProfileListItem',
+  title: 'Web/ListItem/ProfileListItem',
   component: ProfileListItem,
   args: { name: '은우링링링' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],

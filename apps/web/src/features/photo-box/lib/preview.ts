@@ -1,5 +1,5 @@
 /** 목록 API 연결 전에 화면 상태를 눈으로 확인하기 위한 임시 미리보기 값(`/photos?preview=loading` 등) */
-export const PHOTO_BOX_PREVIEWS = ['loading', 'error', 'no-bunch', 'empty'] as const;
+const PHOTO_BOX_PREVIEWS = ['loading', 'error', 'no-bunch', 'empty'] as const;
 
 export type PhotoBoxPreview = (typeof PHOTO_BOX_PREVIEWS)[number];
 

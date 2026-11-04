@@ -3,7 +3,7 @@ import { LineAlertIcon } from '../../../icons';
 import { ErrorBanner } from './ErrorBanner';
 
 const meta = {
-  title: 'Web/ErrorBanner',
+  title: 'Web/Feedback/ErrorBanner',
   component: ErrorBanner,
   args: { children: '연결이 끊겼어요.', actionLabel: '재시도' },
   parameters: { layout: 'padded' },

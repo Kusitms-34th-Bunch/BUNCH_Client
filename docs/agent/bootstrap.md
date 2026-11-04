@@ -22,6 +22,7 @@
 | 작업                                        | 문서                                                                                          |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | 폴더 배치, import, 공유 범위 판단           | `docs/architecture/app-structure.md`                                                          |
+| 라이브러리 선택·도입(직접 만들기 전 확인)   | `docs/conventions/libraries.md`                                                               |
 | package 추가·workspace 경계·Turbo generator | `docs/architecture/repo-structure.md`, `turbo.json`                                           |
 | 새 도메인·기능의 구현 범위 정리             | `docs/workflows/feature-intake.md`, `docs/architecture/domain-ownership.md`                   |
 | route·접근·redirect 판단                    | `docs/architecture/routing-and-access.md`                                                     |

@@ -8,7 +8,7 @@ const reasons = ['스팸', '음란・부적절한 내용', '괴롭힘・욕설',
   (label) => ({ value: label, label }),
 );
 const meta = {
-  title: 'Web/BottomSheet/ReportSheet',
+  title: 'Web/Overlay/BottomSheet/ReportSheet',
   component: ReportSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
@@ -23,9 +23,8 @@ const meta = {
   args: {
     open: true,
     onOpenChange: () => {},
-    title: '여행가조 번치를 신고해요',
-    targetLabel: '신고하는 번치',
-    targetName: '퇴근런클럽',
+    title: '여행가조 번치를 신고할까요?',
+    description: '퇴근런클럽 계정으로 신고해요',
     reasons,
     onSubmit: () => {},
   },

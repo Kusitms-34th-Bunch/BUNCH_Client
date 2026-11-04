@@ -5,6 +5,7 @@ import { CreateBunchCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 
 /**
@@ -18,6 +19,7 @@ export function BunchStartSelect({
   closeBackHref?: string | undefined;
 }) {
   const router = useRouter();
+  const backOr = useBackOr();
 
   return (
     <PageShell
@@ -26,14 +28,7 @@ export function BunchStartSelect({
           leading={
             <HeaderIconButton
               label="닫기"
-              onClick={
-                closeBackHref
-                  ? () => {
-                      if (window.history.length > 1) router.back();
-                      else router.replace(closeBackHref);
-                    }
-                  : undefined
-              }
+              onClick={closeBackHref ? () => backOr(closeBackHref) : undefined}
             >
               <LineCloseLargeIcon />
             </HeaderIconButton>

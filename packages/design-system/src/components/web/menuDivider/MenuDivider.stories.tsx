@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MenuDivider } from './MenuDivider';
 
 const meta = {
-  title: 'Web/MenuDivider',
+  title: 'Web/Overlay/MenuDivider',
   component: MenuDivider,
   decorators: [
     (Story) => (

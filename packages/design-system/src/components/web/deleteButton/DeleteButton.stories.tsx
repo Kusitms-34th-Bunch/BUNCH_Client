@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DeleteButton } from './DeleteButton';
 
 const meta = {
-  title: 'Web/DeleteButton',
+  title: 'Web/Button/DeleteButton',
   component: DeleteButton,
   args: { label: '삭제' },
 } satisfies Meta<typeof DeleteButton>;

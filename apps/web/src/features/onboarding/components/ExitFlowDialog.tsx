@@ -34,15 +34,10 @@ export function ExitFlowDialog({
         <Dialog.Description>{description}</Dialog.Description>
         <Dialog.Footer>
           {/* 동일한 버튼 폭에서 「계속 참여하기」가 잘리지 않도록 좌우 여백 축소 */}
-          <Dialog.Confirm
-            variant="secondary"
-            className="px-s6 min-w-0 flex-1"
-            disabled={!open}
-            onClick={onExit}
-          >
+          <Dialog.Confirm variant="secondary" className="px-s6" disabled={!open} onClick={onExit}>
             나가기
           </Dialog.Confirm>
-          <Dialog.Cancel variant="primary" className="px-s6 min-w-0 flex-1" disabled={!open}>
+          <Dialog.Cancel variant="primary" className="px-s6" disabled={!open}>
             {cancelLabel}
           </Dialog.Cancel>
         </Dialog.Footer>

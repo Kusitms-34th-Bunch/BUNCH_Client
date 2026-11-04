@@ -35,7 +35,10 @@ export const BUNDLE_MESSAGES = {
   leaveConfirmDescription: '번들에서 나가면 작성한 코멘트가 삭제되며,\n복구할 수 없어요.',
   // 업로드 확인 창 문구는 기획 전달 원문(기능 spec 4.3.12의 질문 + 설명)
   uploadConfirmTitle: '번들을 업로드할까요?',
-  uploadConfirmDescription: '업로드한 번들은 멤버들과 공유되며, 업로드 이후 수정할 수 있어요.',
+  uploadConfirmDescription: '업로드 이후에는 관리자만 수정할 수 있어요.',
+  // 다른 멤버가 편집 중일 때의 업로드 확인 창(기획 전달 원문, 업로드는 막지 않음)
+  uploadEditingTitle: '편집 중인 멤버가 있어요',
+  uploadEditingDescription: '지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있어요.',
   cancel: '취소',
   // 멤버 내보내기 확인 창은 Figma 「멤버 삭제 프로토타입」 `2091:62913` 원문
   removeMemberTitle: (name: string) => `${name}님을 번들에서 내보낼까요?`,
@@ -69,7 +72,6 @@ export const BUNDLE_MESSAGES = {
   locationNoResult: '검색 결과가 없어요',
   locationResultCount: (count: number) => `검색 결과 ${count}건`,
   searchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  locationFull: '위치는 3개까지 추가할 수 있어요.',
   // 사진 상세(캡션 화면·크게 보기, 기능 spec 4.3.4~4.3.6, Figma `1782:32837`·`2082:49108`·`2091:61896`)
   captionLabel: '사진 캡션',
   captionTooLong: '캡션은 200자까지 쓸 수 있어요',

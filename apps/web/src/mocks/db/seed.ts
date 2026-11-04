@@ -1,4 +1,4 @@
-import type { MockDbState, MockMember, MockMembership } from './types';
+import type { MockDbState, MockMember, MockMembership, MockPhoto } from './types';
 
 /** 시연하는 사람(번치 메인 관리자), 로그인 없이 이 회원으로 접속한 것으로 간주 */
 export const MOCK_MY_MEMBER_ID = 1;
@@ -16,6 +16,12 @@ const membership = (memberId: number, role: MockMembership['role']): MockMembers
   bunchId: MOCK_BUNCH_ID,
   memberId,
   role,
+});
+
+const photo = (photoId: number, uploaderIds: number[]): MockPhoto => ({
+  photoId,
+  bunchId: MOCK_BUNCH_ID,
+  uploaderIds,
 });
 
 // 시작 데이터, 화면 fixture의 번치 「여행가조」와 같은 구성
@@ -40,5 +46,11 @@ export const createSeed = (): MockDbState => ({
     membership(6, 'MEMBER'),
     membership(7, 'MEMBER'),
     membership(8, 'MEMBER'),
+  ],
+  photos: [
+    photo(1, [MOCK_MY_MEMBER_ID]),
+    photo(2, [2]),
+    // 두 멤버가 같은 사진을 올려 합쳐진 사진
+    photo(3, [MOCK_MY_MEMBER_ID, 3]),
   ],
 });

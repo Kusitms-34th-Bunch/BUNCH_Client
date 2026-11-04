@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FollowButton } from './FollowButton';
 
 const meta = {
-  title: 'Web/FollowButton',
+  title: 'Web/Button/FollowButton',
   component: FollowButton,
   args: { status: 'follow', className: 'w-full' },
   decorators: [(Story) => <div className="w-86">{Story()}</div>],

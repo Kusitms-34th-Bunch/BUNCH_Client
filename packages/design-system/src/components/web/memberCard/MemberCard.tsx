@@ -43,12 +43,7 @@ export const MemberCard = ({
     <ProfileImage src={src} size="S" className="border-border-tertiary border" />
     <div className="gap-s1 flex max-w-full items-center">
       {memberRole !== undefined && (
-        <RoleBadge
-          memberRole={memberRole}
-          size="sm"
-          className="shrink-0"
-          {...(roleLabel && { label: roleLabel })}
-        />
+        <RoleBadge memberRole={memberRole} size="sm" className="shrink-0" label={roleLabel} />
       )}
       <span className="typography-body-3-regular text-text-secondary min-w-0 truncate">{name}</span>
     </div>

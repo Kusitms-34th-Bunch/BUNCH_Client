@@ -1,4 +1,4 @@
-import type { Draft, SaveStatus } from './types';
+import type { Draft, DraftEditing, SaveStatus } from './types';
 
 export type PublishBlocker =
   'title' | 'photos' | 'visibility' | 'members' | 'comments' | 'saving' | 'offline';
@@ -29,3 +29,17 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
   if (context.offline) blockers.push('offline');
   return blockers;
 };
+
+/**
+ * 나 말고 편집 중인 멤버가 있는지(제목·사진·위치·날짜, 코멘트 작성 중 포함). 업로드는 막지 않고 확인 창만 바꿈
+ * 기획: 지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있음(서버 동작은 발행 API 연동 때 확인)
+ */
+export const hasOtherEditors = (editing: DraftEditing, myId: string): boolean =>
+  [
+    editing.title,
+    editing.location,
+    editing.date,
+    ...(editing.photoMemberIds ?? []),
+    ...Object.values(editing.photoEditors ?? {}).flat(),
+    ...(editing.commentMemberIds ?? []),
+  ].some((memberId) => memberId !== undefined && memberId !== myId);

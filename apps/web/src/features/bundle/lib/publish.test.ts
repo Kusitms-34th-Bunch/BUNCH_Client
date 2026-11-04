@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Draft, DraftMember } from './types';
-import { getPublishBlockers } from './publish';
+import { getPublishBlockers, hasOtherEditors } from './publish';
 
 const member = (id: string): DraftMember => ({
   id,
@@ -69,5 +69,24 @@ describe('getPublishBlockers', () => {
     expect(getPublishBlockers(complete, { saveStatus: 'saved', offline: true })).toEqual([
       'offline',
     ]);
+  });
+});
+
+describe('hasOtherEditors', () => {
+  it('아무도 편집 중이 아니면 거짓이다', () => {
+    expect(hasOtherEditors({}, 'me')).toBe(false);
+  });
+
+  it('제목·위치·날짜·사진·코멘트 중 하나라도 다른 멤버가 편집 중이면 참이다', () => {
+    expect(hasOtherEditors({ title: 'other' }, 'me')).toBe(true);
+    expect(hasOtherEditors({ location: 'other' }, 'me')).toBe(true);
+    expect(hasOtherEditors({ date: 'other' }, 'me')).toBe(true);
+    expect(hasOtherEditors({ photoMemberIds: ['other'] }, 'me')).toBe(true);
+    expect(hasOtherEditors({ photoEditors: { p1: ['other'] } }, 'me')).toBe(true);
+    expect(hasOtherEditors({ commentMemberIds: ['other'] }, 'me')).toBe(true);
+  });
+
+  it('나만 편집 중이면 거짓이다', () => {
+    expect(hasOtherEditors({ title: 'me', commentMemberIds: ['me'] }, 'me')).toBe(false);
   });
 });

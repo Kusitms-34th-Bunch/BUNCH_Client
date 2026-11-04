@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { PageCounter } from './PageCounter';
 
 const meta = {
-  title: 'Web/PageCounter',
+  title: 'Web/Navigation/PageCounter',
   component: PageCounter,
   args: { current: 1, total: 4 },
   // 반투명 알약이라 밝은 사진 위에서 보이도록 어두운 배경

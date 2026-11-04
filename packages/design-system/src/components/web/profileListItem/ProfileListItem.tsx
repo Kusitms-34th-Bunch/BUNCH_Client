@@ -57,7 +57,7 @@ export const ProfileListItem = ({
         {memberRole ? (
           <RoleBadge
             memberRole={memberRole}
-            {...(roleLabel ? { label: roleLabel } : {})}
+            label={roleLabel}
             className="relative -ml-3 shrink-0"
           />
         ) : null}

@@ -1,9 +1,9 @@
 import { galleryImageSchema } from '@app/bridge';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { galleryBridge, isNativeShell } from '@/shared/bridge/client';
+import { WEB_IMAGE_TYPES } from '@/shared/lib/imageFile';
 
 const MAX_WEB_FILE_SIZE = 3 * 1024 * 1024;
-const WEB_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 function readWebImage(file: File): Promise<string> {
   if (!WEB_IMAGE_TYPES.includes(file.type) || file.size > MAX_WEB_FILE_SIZE) {

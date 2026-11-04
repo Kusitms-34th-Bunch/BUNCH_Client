@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Label } from './Label';
 
 const meta = {
-  title: 'Web/Label',
+  title: 'Web/Input/Label',
   component: Label,
   args: { children: '필수 항목 모두 체크하기' },
   decorators: [

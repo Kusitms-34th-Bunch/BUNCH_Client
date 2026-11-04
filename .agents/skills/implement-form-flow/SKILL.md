@@ -7,7 +7,7 @@ description: 저장소의 컴포넌트·데이터 계층 기준으로 접근성 
 
 ## 읽기와 입력
 
-`docs/conventions/coding.md`, `docs/architecture/components.md`, `docs/architecture/data-layer.md`, `.agents/guides/form-flow.md`, 가까운 form·mutation·test를 읽는다.
+`docs/conventions/coding.md`, `docs/architecture/components.md`, `docs/architecture/data-layer.md`, `.agents/guides/form-flow.md`, 가까운 form·mutation·test를 읽는다. 다단계 흐름·인증 번호 입력·시트 안 입력처럼 라이브러리가 맡을 만한 부분은 직접 만들기 전에 `docs/conventions/libraries.md`(use-funnel·input-otp·overlay-kit 등)를 확인한다.
 
 아래가 확인되지 않으면 submit 동작을 추측하지 않는다.
 

@@ -12,7 +12,7 @@ const bunches: BunchSwitchItem[] = [
   { id: '5', name: '큐시즘 밋업', status: 'unavailable' },
 ];
 const meta = {
-  title: 'Web/BottomSheet/BunchSwitchSheet',
+  title: 'Web/Overlay/BottomSheet/BunchSwitchSheet',
   component: BunchSwitchSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습

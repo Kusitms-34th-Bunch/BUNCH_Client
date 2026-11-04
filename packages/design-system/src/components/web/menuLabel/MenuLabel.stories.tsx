@@ -3,7 +3,7 @@ import { LineTrashcanIcon } from '../../../icons';
 import { MenuLabel, type MenuLabelButtonProps } from './MenuLabel';
 
 const meta = {
-  title: 'Web/MenuLabel',
+  title: 'Web/ListItem/MenuLabel',
   component: MenuLabel,
   args: { children: '프로필 편집' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],

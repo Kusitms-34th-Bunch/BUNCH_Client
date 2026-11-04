@@ -3,7 +3,7 @@ import { ColorBadge } from '../colorBadge';
 import { BunchListItem } from './BunchListItem';
 
 const meta = {
-  title: 'Web/BunchListItem',
+  title: 'Web/ListItem/BunchListItem',
   component: BunchListItem,
   args: { name: '여행가조' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],

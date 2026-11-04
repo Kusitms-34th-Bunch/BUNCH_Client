@@ -44,6 +44,7 @@
 - DS 컴포넌트를 묶어 domain 문구, route, 데이터, 사용자 행동을 붙이는 조합은 앱의 `src/features/<feature>/`에 둔다(예: 탭 4개의 라벨·경로·현재 탭 판정).
 - 화면 틀(`AppFrame`, `PageShell`)과 route shell처럼 앱 전용 layout은 디자인 시스템에 두지 않는다.
 - 한 화면에서만 쓰는 일회성 배치(Figma 컴포넌트가 아닌 화면 조립)는 DS가 아니라 page·feature 가까이에 둔다.
+- `web` 컴포넌트의 Storybook title은 `Web/<종류>/<이름>`이다. 종류는 Button, Selection, Input, ListItem, Card, Profile, Photo, Navigation, Overlay, Feedback 중 하나다(렌더러는 틀 아래, 예: `Web/Overlay/BottomSheet/ConfirmSheet`). 폴더는 종류로 나누지 않고 구역 바로 아래에 둔다. 생성기는 `Components/<이름>`을 만들므로 `web`이면 title을 고친다. 새로 만들기 전에 같은 종류 아래에 비슷한 컴포넌트가 있는지 먼저 본다.
 - 어드민 전용 UI가 DS 수준의 검증(Storybook·Chromatic)이 필요해지면 그때 `src/components/admin/`을 추가한다. 비어 있는 구역은 미리 만들지 않는다.
 
 ## 생성 구조

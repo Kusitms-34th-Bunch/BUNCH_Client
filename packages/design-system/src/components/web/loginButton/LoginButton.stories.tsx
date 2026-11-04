@@ -9,7 +9,7 @@ const labels: Record<LoginButtonBrand, string> = {
 const brands = Object.keys(labels) as LoginButtonBrand[];
 
 const meta = {
-  title: 'Web/LoginButton',
+  title: 'Web/Button/LoginButton',
   component: LoginButton,
   args: { brand: 'google', children: labels.google },
   argTypes: {

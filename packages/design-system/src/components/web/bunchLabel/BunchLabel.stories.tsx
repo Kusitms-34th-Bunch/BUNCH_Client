@@ -3,7 +3,7 @@ import { ConfirmDialog } from '../../core/dialog';
 import { BunchLabel } from './BunchLabel';
 
 const meta = {
-  title: 'Web/BunchLabel',
+  title: 'Web/Profile/BunchLabel',
   component: BunchLabel,
   args: { name: '퇴근런클럽', onClick: () => {} },
   decorators: [

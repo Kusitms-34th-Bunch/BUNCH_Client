@@ -35,7 +35,7 @@ const items: BottomNavigationItem[] = [
 ];
 
 const meta = {
-  title: 'Web/BottomNavigation',
+  title: 'Web/Navigation/BottomNavigation',
   component: BottomNavigation,
   args: { 'aria-label': '주요 메뉴', items, selectedId: 'feed' },
   argTypes: {

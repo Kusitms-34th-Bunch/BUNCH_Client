@@ -32,7 +32,7 @@ const tabCount = (name: RegExp) => screen.getByRole('tab', { name }).textContent
 describe('다른 번치 팔로워·팔로잉', () => {
   it('누른 수의 탭으로 열리고, 탭을 바꿔 다른 목록을 본다', async () => {
     const user = userEvent.setup();
-    const { OtherBunchFollows } = await import('./OtherBunchFollows');
+    const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
     render(<OtherBunchFollows bunchId="bunch-camping" initialTab="following" />);
 
     expect(screen.getByRole('tab', { name: '팔로잉 8' })).toHaveAttribute('aria-selected', 'true');
@@ -46,7 +46,7 @@ describe('다른 번치 팔로워·팔로잉', () => {
 
   it('목록 버튼으로 바로 팔로우·언팔로우하고 토스트로 알린다', async () => {
     const user = userEvent.setup();
-    const { OtherBunchFollows } = await import('./OtherBunchFollows');
+    const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
     render(<OtherBunchFollows bunchId="bunch-camping" initialTab="following" />);
 
     // 비공개 번치는 요청
@@ -67,8 +67,8 @@ describe('다른 번치 팔로워·팔로잉', () => {
 
   it('목록에서 바꾼 팔로우 상태는 그 번치 프로필과 같다', async () => {
     const user = userEvent.setup();
-    const { OtherBunchFollows } = await import('./OtherBunchFollows');
-    const { OtherBunch } = await import('./OtherBunch');
+    const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
+    const { OtherBunch } = await import('./bunches/OtherBunch');
     const { unmount } = render(
       <OtherBunchFollows bunchId="bunch-camping" initialTab="followers" />,
     );
@@ -80,7 +80,7 @@ describe('다른 번치 팔로워·팔로잉', () => {
   });
 
   it('팔로우 승인 전의 비공개 번치는 주소로 들어와도 목록 대신 안내를 보인다', async () => {
-    const { OtherBunchFollows } = await import('./OtherBunchFollows');
+    const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
     render(<OtherBunchFollows bunchId="bunch-book" initialTab="followers" />);
 
     expect(screen.getByRole('region', { name: '비공개 번치예요' })).toHaveTextContent(
@@ -91,7 +91,7 @@ describe('다른 번치 팔로워·팔로잉', () => {
   });
 
   it('없는 번치는 404로 보낸다', async () => {
-    const { OtherBunchFollows } = await import('./OtherBunchFollows');
+    const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
     expect(() => render(<OtherBunchFollows bunchId="__proto__" initialTab="followers" />)).toThrow(
       'NEXT_NOT_FOUND',
     );
@@ -106,7 +106,7 @@ describe('내 번치 팔로워·팔로잉과 팔로우 요청', () => {
 
   it('대기 요청이 있으면 팔로워 탭 맨 위 「팔로우 요청 N」 줄에서 요청 목록으로 간다', async () => {
     const user = userEvent.setup();
-    const { MyBunchFollows } = await import('./MyBunchFollows');
+    const { MyBunchFollows } = await import('./follows/MyBunchFollows');
     render(<MyBunchFollows initialTab="followers" />);
 
     expect(tabCount(/^팔로워/)).toBe('팔로워 23');
@@ -120,8 +120,8 @@ describe('내 번치 팔로워·팔로잉과 팔로우 요청', () => {
 
   it('승인하면 요청에서 빠지고 팔로워 맨 위에 더해지며, 거절하면 팔로워에 없다', async () => {
     const user = userEvent.setup();
-    const { FollowRequests } = await import('./FollowRequests');
-    const { MyBunchFollows } = await import('./MyBunchFollows');
+    const { FollowRequests } = await import('./follows/FollowRequests');
+    const { MyBunchFollows } = await import('./follows/MyBunchFollows');
     const { unmount } = render(<FollowRequests />);
 
     expect(screen.getByText('대기 중인 요청 3개')).toBeInTheDocument();
@@ -149,8 +149,8 @@ describe('내 번치 팔로워·팔로잉과 팔로우 요청', () => {
 
   it('요청을 모두 처리하면 빈 안내를 보이고 팔로워 탭의 요청 줄이 사라진다', async () => {
     const user = userEvent.setup();
-    const { FollowRequests } = await import('./FollowRequests');
-    const { MyBunchFollows } = await import('./MyBunchFollows');
+    const { FollowRequests } = await import('./follows/FollowRequests');
+    const { MyBunchFollows } = await import('./follows/MyBunchFollows');
     const { unmount } = render(<FollowRequests />);
 
     for (const name of ['서핑크루', '맛집탐방대', '침대조아']) {
@@ -165,7 +165,7 @@ describe('내 번치 팔로워·팔로잉과 팔로우 요청', () => {
 
   it('팔로잉 목록에서 언팔로우하면 팔로잉 수가 바로 준다', async () => {
     const user = userEvent.setup();
-    const { MyBunchFollows } = await import('./MyBunchFollows');
+    const { MyBunchFollows } = await import('./follows/MyBunchFollows');
     render(<MyBunchFollows initialTab="following" />);
 
     expect(tabCount(/^팔로잉/)).toBe('팔로잉 8');

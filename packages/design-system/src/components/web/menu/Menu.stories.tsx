@@ -11,7 +11,7 @@ import { MenuItem } from '../menuItem';
 import { Menu } from './Menu';
 
 const meta = {
-  title: 'Web/Menu',
+  title: 'Web/Overlay/Menu',
   component: Menu,
   args: { 'aria-label': '번들 메뉴' },
   render: (args) => (

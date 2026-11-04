@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { RadioButton } from './RadioButton';
 
 const meta = {
-  title: 'Web/RadioButton',
+  title: 'Web/Selection/RadioButton',
   component: RadioButton,
   args: { children: '스팸', name: 'story' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],

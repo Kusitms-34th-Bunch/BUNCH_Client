@@ -16,7 +16,7 @@ import {
   type TransitionDirection,
   WebAnimation,
 } from '@ssgoi/react/view-transitions';
-import { type ReactNode, useMemo, useSyncExternalStore } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { LOGIN_PATH, SIGNUP_PATHS, SIGNUP_TRANSITION_IDS } from '@/features/auth/constants/paths';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { BUNDLE_PATHS } from '@/features/bundle/constants/paths';
@@ -24,6 +24,7 @@ import { BUNDLE_SELECT_PATHS } from '@/features/bundle/constants/selectPaths';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { easeOutIntegrator } from '@/shared/components/layout/easeOutIntegrator.internal';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 export const ONBOARDING_TRANSITION_DURATION_MS = 300;
 export const SIGNUP_DISSOLVE_DURATION_MS = 300;
@@ -35,15 +36,6 @@ export const BUNCH_MENU_SUB_SLIDE_DURATION_MS = 300;
 // 더보기 메뉴·알림 목록 진입 drill 시간. 화면설계서 Move in / ← / Ease out / 150ms가 빨라 보여 200ms(2026-11-02 사용자 결정)
 export const BUNCH_DRILL_DURATION_MS = 200;
 export const TAB_CROSSFADE_DURATION_MS = 80;
-
-const motionQuery = '(prefers-reduced-motion: reduce)';
-function subscribeMotion(listener: () => void) {
-  const query = window.matchMedia(motionQuery);
-  query.addEventListener('change', listener);
-  return () => query.removeEventListener('change', listener);
-}
-const getReducedMotion = () => window.matchMedia(motionQuery).matches;
-const getServerReducedMotion = () => true;
 
 // 나가는 화면은 포커스·보조기술에서 제외(inert)하고 data-page-leaving 표식(AppFrame이 그 화면의 배경 표식을 무시해 상태 바 영역도 함께 전환)
 // 중단된 이전 전환에서 돌아오는 DOM은 다시 조작 가능하게 처리
@@ -344,11 +336,7 @@ const rules: SsgoiTransitionRule[] = [
 ];
 
 export function AppTransitions({ children }: { children: ReactNode }) {
-  const reducedMotion = useSyncExternalStore(
-    subscribeMotion,
-    getReducedMotion,
-    getServerReducedMotion,
-  );
+  const reducedMotion = useReducedMotion();
   const config = useMemo<SsgoiConfig>(
     () => ({ transitions: reducedMotion ? [] : rules }),
     [reducedMotion],

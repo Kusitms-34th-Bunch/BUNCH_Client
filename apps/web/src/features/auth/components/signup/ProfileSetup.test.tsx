@@ -120,7 +120,7 @@ describe('ProfileSetup', () => {
   it('필수 표시와 선택 표시를 각 항목 옆에 보여 준다', () => {
     render(<ProfileSetup nextPath={NEXT_PATH} />);
 
-    expect(screen.getByText('필수')).toBeTruthy();
+    expect(screen.getByText('*').getAttribute('aria-hidden')).toBe('true');
     expect(screen.getAllByText('선택')).toHaveLength(2);
     expect(nickname().getAttribute('aria-required')).toBe('true');
   });

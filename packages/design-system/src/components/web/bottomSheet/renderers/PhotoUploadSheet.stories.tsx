@@ -4,7 +4,7 @@ import { Button } from '../../../core/button';
 import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { PhotoUploadSheet } from './PhotoUploadSheet';
 const meta = {
-  title: 'Web/BottomSheet/PhotoUploadSheet',
+  title: 'Web/Overlay/BottomSheet/PhotoUploadSheet',
   component: PhotoUploadSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습

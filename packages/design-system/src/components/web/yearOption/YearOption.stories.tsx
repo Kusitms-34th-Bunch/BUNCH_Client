@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { YearOption } from './YearOption';
 
 const meta = {
-  title: 'Web/YearOption',
+  title: 'Web/Selection/YearOption',
   component: YearOption,
   args: { name: 'year', children: '2012' },
   decorators: [

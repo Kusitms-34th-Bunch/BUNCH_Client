@@ -8,7 +8,7 @@ const SAMPLE_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 
 const meta = {
-  title: 'Web/BundleCommentCard',
+  title: 'Web/Card/BundleCommentCard',
   component: BundleCommentCard,
   args: { userName: '지예', currentUser: true, profileSrc: SAMPLE_IMAGE, readOnly: false },
   parameters: { layout: 'padded' },

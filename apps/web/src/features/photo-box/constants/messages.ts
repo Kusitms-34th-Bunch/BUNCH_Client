@@ -4,6 +4,8 @@ import type { DeleteKind } from '../lib/photoActions';
 export const PHOTO_BOX_MESSAGES = {
   maxSelection: '사진은 한 번에 50장까지 고를 수 있어요.',
   saving: '사진을 앨범에 저장하는 중이에요',
+  dragStart: '사진을 끌고 있어요.',
+  dragCancel: '끌기를 취소했어요.',
   selectionStatus: (count: number) => (count === 0 ? '선택 모드' : `${count}장 선택됨`),
   saveDone: '이미지 저장이 완료되었어요.',
   saveFailedAll: '일시적인 오류가 발생했어요. 다시 시도해 주세요',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Option } from './Option';
 
 const meta = {
-  title: 'Web/Option',
+  title: 'Web/Selection/Option',
   component: Option,
   argTypes: { variant: { control: 'inline-radio', options: ['required', 'optional'] } },
 } satisfies Meta<typeof Option>;

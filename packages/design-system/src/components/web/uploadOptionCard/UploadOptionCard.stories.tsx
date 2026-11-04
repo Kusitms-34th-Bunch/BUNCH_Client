@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { UploadOptionCard } from './UploadOptionCard';
 
 const meta = {
-  title: 'Web/UploadOptionCard',
+  title: 'Web/Card/UploadOptionCard',
   component: UploadOptionCard,
   args: { title: '앨범에서 선택', description: '여러 장을 한 번에 올려요' },
   parameters: { layout: 'padded' },

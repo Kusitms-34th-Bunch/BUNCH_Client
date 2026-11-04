@@ -1,29 +1,27 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { parseResponse } from './validate';
+import { ApiError } from './error';
+import { INVALID_RESPONSE_CODE, parseOrThrow } from './validate';
 
 const schema = z.object({ id: z.number(), name: z.string() });
 
-describe('parseResponse', () => {
+describe('parseOrThrow', () => {
   it('returns parsed data on success', () => {
-    const result = parseResponse(schema, { id: 1, name: 'a' });
-    expect(result).toEqual({ id: 1, name: 'a' });
+    expect(parseOrThrow(schema, { id: 1, name: 'a' })).toEqual({ id: 1, name: 'a' });
   });
 
-  it('returns undefined and reports on failure', () => {
-    const onValidationError = vi.fn();
-    const result = parseResponse(
-      schema,
-      { id: 'not a number' },
-      { context: 'getUser', onValidationError },
-    );
+  it('throws a validation ApiError with the context and issues in data', () => {
+    let thrown: unknown;
+    try {
+      parseOrThrow(schema, { id: 'not a number' }, 'getUser');
+    } catch (error) {
+      thrown = error;
+    }
 
-    expect(result).toBeUndefined();
-    expect(onValidationError).toHaveBeenCalledTimes(1);
-    expect(onValidationError).toHaveBeenCalledWith(expect.any(z.ZodError), 'getUser');
-  });
-
-  it('does not throw when onValidationError is omitted', () => {
-    expect(() => parseResponse(schema, {})).not.toThrow();
+    expect(thrown).toBeInstanceOf(ApiError);
+    expect(thrown).toMatchObject({ category: 'validation', code: INVALID_RESPONSE_CODE });
+    const { data } = thrown as ApiError;
+    expect(data).toMatchObject({ context: 'getUser' });
+    expect((data as { issues: { path: unknown[] }[] }).issues[0]?.path).toEqual(['id']);
   });
 });

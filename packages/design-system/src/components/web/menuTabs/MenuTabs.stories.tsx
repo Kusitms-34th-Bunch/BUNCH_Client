@@ -3,7 +3,7 @@ import { FillPhotoMediumIcon, LinePhotoMediumIcon } from '../../../icons';
 import { MenuTabs } from './MenuTabs';
 
 const meta = {
-  title: 'Web/MenuTabs',
+  title: 'Web/Navigation/MenuTabs',
   parameters: { layout: 'padded' },
 } satisfies Meta;
 

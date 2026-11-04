@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LabeledTextField, type LabeledTextFieldProps } from './LabeledTextField';
 
 const meta = {
-  title: 'Web/LabeledTextField',
+  title: 'Web/Input/LabeledTextField',
   component: LabeledTextField,
   args: { title: '닉네임', option: 'required', maxLength: 12 },
   decorators: [
@@ -78,6 +78,13 @@ export const Disabled: Story = { render: (args) => <Controlled {...args} disable
 export const DisabledWithError: Story = {
   render: (args) => (
     <Controlled {...args} disabled errorMessage="입력 가능한 글자수를 초과했어요" />
+  ),
+};
+
+/** 글자 수 없이 입력만 제한(신고 상세 사유처럼 Figma에 글자 수가 없는 칸) */
+export const LimitWithoutCounter: Story = {
+  render: (args) => (
+    <Controlled {...args} title="상세 사유" option="required" maxLength={200} showCounter={false} />
   ),
 };
 

@@ -4,7 +4,7 @@ import { GraphicPeopleIcon } from '../../../icons';
 import { InviteMemberCard } from './InviteMemberCard';
 
 const meta = {
-  title: 'Web/InviteMemberCard',
+  title: 'Web/Card/InviteMemberCard',
   component: InviteMemberCard,
   args: {
     name: 'start',

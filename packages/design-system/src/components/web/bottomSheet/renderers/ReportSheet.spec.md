@@ -14,9 +14,9 @@
 ## Public API
 
 - `open`, `onOpenChange`, `onOpenChangeComplete`: `BottomSheet.Root`와 같음. 바깥 터치 닫기는 항상 막는다.
-- `title`: 예 `여행가조 번치를 신고해요`. `targetLabel`·`targetName`: 부제 「신고하는 번치: 퇴근런클럽」.
+- `title`: 예 `여행가조 번치를 신고할까요?`. `description`: 누구 이름으로 신고하는지, 예 `퇴근런클럽 계정으로 신고해요`(2026-11-04 Figma 변경 전에는 「신고하는 번치: 퇴근런클럽」처럼 라벨과 이름을 따로 받았다).
 - `reasons`: `value`, `label` 목록.
-- `detailReasonValue?`: 이 사유를 고르면 상세 사유 입력을 보이고 필수로 한다(07). 없으면 입력 없음(08).
+- `detailReasonValue?`: 이 사유를 고르면 상세 사유 입력을 보이고 필수로 한다(07, 제목 옆 필수 표시 `*`, 최대 200자. Figma에 글자 수가 없어 입력만 제한하고 글자 수는 표시하지 않음(`showCounter={false}`, 사용자 결정). 기능명세 5.10.7). 없으면 입력 없음(08).
 - `onSubmit({ reason, detail })`: 「신고하기」. `detail`은 앞뒤 공백을 지운 값이고 입력이 없으면 빈 문자열. 닫기는 호출자 담당.
 - `submitting?`: 제출 중 비활성.
 
@@ -38,8 +38,10 @@
 
 ## 확인할 항목
 
+- 부제 대비 (확인 필요): 부제는 Figma대로 `text-quaternary`(#969aa0)라 흰 바탕 대비가 약 2.8:1로 WCAG 4.5:1에 못 미친다. 누구 이름으로 신고하는지 알리는 정보라 토큰 단위로 디자이너 확인이 필요하다(2026-11-04 접근성 리뷰).
+
 - 닫기 버튼 (제안): Figma 07·08에 없지만 끌기·ESC를 못 쓰는 사용자를 위해 추가했다. 디자이너 확인 필요.
-- 필수 표시 (제안): Figma는 「상세 사유 *」(브랜드 색 별표), `LabeledTextField`의 필수 표시는 「필수」 칩이라 표시 없이 제목만 썼다.
+- 필수 표시 (해결): Figma 「상세 사유 *」대로 `LabeledTextField` `option="required"`의 브랜드 색 별표를 쓴다(2026-11-04 `Labled_Text_Field` 원본도 별표로 바뀜).
 - 입력 중 닫힘 (미정): 끌기·ESC는 입력 중에도 닫는다. 닫기 전 확인은 feature에서 정한다.
 - 「신고하기」 비활성 이유 (제안): `Button`의 `disabled`를 그대로 써 이유를 안내하지 않는다. 사유 목록이 바로 위에 있어 순서상 알 수 있다고 판단했다. 상세 입력 칸이 나타날 때 알림(live region)도 없다.
 

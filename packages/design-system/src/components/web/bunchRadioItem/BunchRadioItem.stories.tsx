@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BunchRadioItem } from './BunchRadioItem';
 
 const meta = {
-  title: 'Web/BunchRadioItem',
+  title: 'Web/Selection/BunchRadioItem',
   component: BunchRadioItem,
   args: { label: '퇴근런클럽', name: 'bunch', value: '1', alertCount: 5 },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],

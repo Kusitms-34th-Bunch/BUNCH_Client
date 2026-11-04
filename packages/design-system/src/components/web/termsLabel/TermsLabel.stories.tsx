@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TermsLabel } from './TermsLabel';
 
 const meta = {
-  title: 'Web/TermsLabel',
+  title: 'Web/Input/TermsLabel',
   component: TermsLabel,
   args: { tag: '[필수]', children: '서비스 이용 약관', onViewTerms: () => {} },
   decorators: [
