@@ -1,3 +1,4 @@
+import { ApiError } from '@app/api-core';
 import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { type LeaseGrant, leaseGrantSchema } from '../model/bundle';
@@ -52,5 +53,32 @@ export const fakeLeaseTransport: LeaseTransport = {
   },
 };
 
+// 실서버에는 편집권 REST 경로가 없어(STOMP) 가짜 서버 모드가 아니면 요청을 보내지 않고 실패시킴
+// 4xx 오류로 던져 저장 흐름이 다시 시도하지 않고 「저장 실패」로 알리게 함
+const unavailable = (): never => {
+  throw new ApiError({
+    category: 'validation',
+    status: 400,
+    code: 'LEASE_UNAVAILABLE',
+    message: 'lease transport is not available without STOMP',
+  });
+};
+
+export const unavailableLeaseTransport: LeaseTransport = {
+  acquire: () => Promise.resolve().then(unavailable),
+  heartbeat: () => Promise.resolve().then(unavailable),
+  release: () => Promise.resolve(),
+};
+
+// NEXT_PUBLIC_API_MOCKING은 빌드 때 값이 박혀 꺼진 빌드에서는 가짜 구현이 번들에서 빠짐
+const current = (): LeaseTransport =>
+  process.env.NEXT_PUBLIC_API_MOCKING === 'enabled'
+    ? fakeLeaseTransport
+    : unavailableLeaseTransport;
+
 /** 화면이 쓰는 편집권 통로(후속 작업에서 STOMP 구현으로 교체) */
-export const leaseTransport: LeaseTransport = fakeLeaseTransport;
+export const leaseTransport: LeaseTransport = {
+  acquire: (...args) => current().acquire(...args),
+  heartbeat: (...args) => current().heartbeat(...args),
+  release: (...args) => current().release(...args),
+};

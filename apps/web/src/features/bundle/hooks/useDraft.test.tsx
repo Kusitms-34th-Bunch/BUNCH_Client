@@ -1,7 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { delay, http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
@@ -327,6 +327,36 @@ describe('useDraft 저장', () => {
     expect(calls).toBeGreaterThanOrEqual(2);
   }, 15_000);
 
+  it('화면에서만 바뀐 사진 구성이 있으면 업로드를 막고 안내한다', async () => {
+    const { id, result } = await renderReady();
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    act(() => result.current.actions.removePhoto(photoId));
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('blocked');
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadPhotosUnsynced, { fullWidth: true });
+    expect(serverBundle(id)?.status).toBe('DRAFT');
+  });
+
+  it('이미 발행됨·본문 불일치(BUNDLE_002)는 충돌과 같은 안내로 알린다', async () => {
+    const { result } = await renderReady();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => fail(409, 'BUNDLE_002')),
+    );
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('failed');
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict, { fullWidth: true });
+  });
+
   it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {
     const { result } = await renderReady();
     server.use(
@@ -476,5 +506,27 @@ describe('useDraft 발행', () => {
     // 발행한 뒤에는 「삭제된 번들」 안내 없이 화면 이동을 기다림
     expect(result.current.state.kind).toBe('loading');
     expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, expect.anything());
+  });
+});
+
+describe('useDraft 편집권 통로가 없는 환경', () => {
+  beforeEach(() => {
+    // 가짜 서버 모드가 아닌 빌드: 편집권 요청을 보내지 않고 실패
+    vi.stubEnv('NEXT_PUBLIC_API_MOCKING', '');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('제목 저장은 다시 시도하지 않고 「저장 실패」로 알린다', async () => {
+    const { id, result } = await renderReady();
+
+    act(() => result.current.actions.setTitle('제목'));
+
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('failed'), SAVE_WAIT);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+    expect(serverBundle(id)?.title).toBe('');
+    // 입력은 그대로 남음
+    expect(ready(result.current.state).draft.title).toBe('제목');
   });
 });

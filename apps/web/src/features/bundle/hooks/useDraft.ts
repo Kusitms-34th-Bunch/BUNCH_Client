@@ -553,6 +553,17 @@ export function useDraft(draftId: string | undefined): {
     replacePhotos: (photos) => setLocalPhotos(photos),
     searchPlaces,
     publish: async () => {
+      // 사진 빼기·순서 이동·추가는 서버에 저장되지 않아 업로드하면 화면과 다른 사진이 발행됨, 서버 연동 전에는 막음
+      const serverPhotos = detailRef.current?.photos;
+      if (
+        localPhotos !== undefined &&
+        serverPhotos !== undefined &&
+        (localPhotos.length !== serverPhotos.length ||
+          localPhotos.some((photo, index) => photo.id !== serverPhotos[index]?.id))
+      ) {
+        toast(BUNDLE_MESSAGES.uploadPhotosUnsynced, { fullWidth: true });
+        return 'blocked';
+      }
       clearTimeout(timer.current);
       // 저장하지 못한 입력이 남아 있으면 발행하지 않음(서버는 저장된 내용만 발행함)
       // 진행 중이던 저장이 막 끝나는 순간 들어온 입력이 남을 수 있어 한 번 더 확인
@@ -574,9 +585,12 @@ export function useDraft(draftId: string | undefined): {
           return 'blocked';
         }
         toast(
-          readVersionConflict(error) === undefined && errorCode(error) !== 'BUNDLE_003'
-            ? BUNDLE_MESSAGES.publishFailed
-            : BUNDLE_MESSAGES.publishConflict,
+          // 충돌(BUNDLE_003)과 이미 발행됨·본문 불일치(BUNDLE_002)는 최신 내용을 확인하고 다시 해야 하는 같은 상황
+          readVersionConflict(error) !== undefined ||
+            errorCode(error) === 'BUNDLE_003' ||
+            errorCode(error) === 'BUNDLE_002'
+            ? BUNDLE_MESSAGES.publishConflict
+            : BUNDLE_MESSAGES.publishFailed,
           { fullWidth: true },
         );
         return 'failed';

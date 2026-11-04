@@ -35,6 +35,8 @@ export const BUNDLE_MESSAGES = {
   published: '번들이 업로드되었어요.',
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
+  // 사진 구성 변경이 서버에 저장되지 않는 동안의 임시 안내(기획 원문 없음)
+  uploadPhotosUnsynced: '사진을 빼거나 옮긴 내용은 아직 저장되지 않아 업로드할 수 없어요.',
   uploadUnsaved: '저장하지 못한 내용이 있어요. 내용을 다시 바꾸면 저장을 다시 시도해요.',
   uploadSaving: '저장이 끝난 뒤에 업로드할 수 있어요.',
   uploadIncomplete: '필수 항목을 모두 입력해야 업로드 할 수 있어요.',
