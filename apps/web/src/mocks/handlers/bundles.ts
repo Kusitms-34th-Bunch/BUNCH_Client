@@ -193,7 +193,9 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
   const { bundle, isCreator, isAdmin, isParticipant } = scope;
   const body = await readJson(request);
   if (!body) return fail(400, 'COMMON_001');
-  const { value, expectedVersion, mode, leaseToken } = body;
+  const { expectedVersion, mode, leaseToken } = body;
+  // 날짜는 value를 생략하면 해제(null)
+  const value = kind === 'date' && body.value === undefined ? null : body.value;
   const bundlePhotoId = kind === 'caption' ? toWireId(params.photoId) : undefined;
   if (
     !isVersion(expectedVersion) ||
