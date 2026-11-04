@@ -1,25 +1,20 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { usePhotoBoxFixture } from '@/features/photo-box/hooks/usePhotoBoxFixture';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import {
   countSelectedByMember,
+  pruneSelection,
   toggleSelection,
   type PhotoSelection,
 } from '@/features/photo-box/lib/selection';
 import { ALL_MEMBERS } from '@/features/photo-box/lib/types';
 import { BUNDLE_SELECT_MESSAGES, MAX_SELECT_PHOTOS } from '../constants/selectMessages';
-import { BUNDLE_SELECT_PATHS } from '../constants/selectPaths';
 import { recommendationFixture } from '../fixtures/recommendation.fixture';
+import { useCreateBundle } from '../hooks/useCreateBundle';
 import { applyRecommendation, getApplyDateKey, type Recommendation } from '../lib/recommendation';
 import { BundleSelectContext, type BundleSelectValue } from './bundleSelectContext';
-
-// 목 번들 생성이 끝나기까지의 시간(화면 전체 로딩이 보이도록)
-const MOCK_CREATE_DELAY_MS = 800;
-// 초안 생성 API 연결 전에는 샘플 초안으로 이동
-const SAMPLE_DRAFT_ID = 'draft-1';
 
 const notify = (message: string) => toast(message, { fullWidth: true });
 
@@ -27,22 +22,19 @@ type BundleSelectProviderProps = {
   children: ReactNode;
   /** 추천 번들 목록. 기본은 샘플(빈 목록이면 시트가 빈 상태) */
   recommendations?: readonly Recommendation[] | undefined;
-  /** 목 번들 생성이 끝나기까지의 시간(테스트에서 줄임) */
-  createDelayMs?: number | undefined;
 };
 
 /**
  * 번들 만들기 흐름(사진 선택 → 추천 번들 시트 → 상세 → 뷰어)의 상태를 route layout에서 한 번 들고 있는 provider
  * 상세·뷰어로 이동해도 고른 사진과 시트 열림이 유지되고, 이 흐름을 벗어나면 함께 사라져 선택을 버림(기획 4.1)
- * 사진·추천 목록 API 연결 전에는 사진함 fixture와 추천 fixture이고, 연결하면 이 provider의 데이터 출처만 바꿈
+ * 사진은 사진함 API, 추천 번들은 목록 API가 없어 fixture이고(연결하면 이 provider의 데이터 출처만 바꿈) 「번들 만들기」는 초안 생성 API
  */
 export function BundleSelectProvider({
   children,
   recommendations = recommendationFixture,
-  createDelayMs = MOCK_CREATE_DELAY_MS,
 }: BundleSelectProviderProps) {
-  const router = useRouter();
-  const { state: photoState } = usePhotoBoxFixture();
+  const { state: photoState } = usePhotoBox();
+  const { create: createBundle, creating } = useCreateBundle();
   const photos = photoState.kind === 'ready' ? photoState.data.photos : undefined;
 
   const [selection, setSelection] = useState<PhotoSelection>([]);
@@ -51,11 +43,7 @@ export function BundleSelectProvider({
   const [pickedId, setPickedId] = useState<string | undefined>(undefined);
   const [changeOpen, setChangeOpen] = useState(false);
   const [scrollTarget, setScrollTarget] = useState<BundleSelectValue['scrollTarget']>(undefined);
-  const [creating, setCreating] = useState(false);
   const nonce = useRef(0);
-  const createTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  useEffect(() => () => clearTimeout(createTimer.current), []);
 
   const selectedCounts = useMemo(
     () => (photos && selection.length > 0 ? countSelectedByMember(selection, photos) : {}),
@@ -106,13 +94,19 @@ export function BundleSelectProvider({
     } else commit(picked);
   };
 
+  // 실행 직전 고른 사진이 사진함에서 사라졌는지 확인하고, 사라졌으면 선택에서 빼고 중단(기획 4.1.3)
   const create = () => {
-    if (creating || selection.length === 0) return;
-    setCreating(true);
-    createTimer.current = setTimeout(
-      () => router.push(BUNDLE_SELECT_PATHS.draft(SAMPLE_DRAFT_ID)),
-      createDelayMs,
+    if (creating || selection.length === 0 || !photos) return;
+    const { selection: kept, removedCount } = pruneSelection(
+      selection,
+      new Set(photos.map((photo) => photo.id)),
     );
+    if (removedCount > 0) {
+      setSelection(kept);
+      notify(BUNDLE_SELECT_MESSAGES.selectionStale(removedCount));
+      return;
+    }
+    createBundle(selection);
   };
 
   const value: BundleSelectValue = {
