@@ -19,11 +19,14 @@ export const bunchHomeResponseSchema = z.object({
     visibility: z.enum(['PUBLIC', 'PRIVATE']),
     introduction: z.string().nullish(),
   }),
-  myMembership: z.object({
-    membershipId: z.number().int().positive(),
-    role: roleSchema,
-    joinedAt: z.string(),
-  }),
+  // 내 번치가 아닌 번치(EXTERNAL)를 조회하면 소속·개수는 null이라 nullable로 받고, 변환에서 걸러냄
+  myMembership: z
+    .object({
+      membershipId: z.number().int().positive(),
+      role: roleSchema,
+      joinedAt: z.string(),
+    })
+    .nullish(),
   permissions: z.object({
     canEditProfile: z.boolean(),
     canDeleteBunch: z.boolean(),
@@ -33,15 +36,15 @@ export const bunchHomeResponseSchema = z.object({
     canInvite: z.boolean(),
     canLeave: z.boolean(),
   }),
-  profileVersion: z.number().int().nonnegative(),
-  membershipVersion: z.number().int().nonnegative(),
+  profileVersion: z.number().int().nonnegative().nullish(),
+  membershipVersion: z.number().int().nonnegative().nullish(),
   memberCount: z.number().int().nonnegative(),
   followerCount: z.number().int().nonnegative(),
   followingCount: z.number().int().nonnegative(),
-  draftCount: z.number().int().nonnegative(),
-  publishedCount: z.number().int().nonnegative(),
+  draftCount: z.number().int().nonnegative().nullish(),
+  publishedCount: z.number().int().nonnegative().nullish(),
   stage: z.number().int().nonnegative(),
-  unreadCount: z.number().int().nonnegative(),
+  unreadCount: z.number().int().nonnegative().nullish(),
 });
 
 /** `GET /api/v1/bunches/{bunchId}/published-bundles` 응답(발행 최신순) */
@@ -51,7 +54,7 @@ export const publishedBundlesPageSchema = z.object({
       id: z.number().int().positive(),
       bunchId: z.number().int().positive(),
       title: z.string(),
-      coverImageUrl: z.string().refine(isSafeImageUrl).nullish(),
+      coverImageUrl: z.string().nullish(),
       date: z.string().nullish(),
       location: z.unknown().nullish(),
       publishedAt: z.string().nullish(),
@@ -63,34 +66,44 @@ export const publishedBundlesPageSchema = z.object({
   hasNext: z.boolean(),
 });
 
-type Home = z.infer<typeof bunchHomeResponseSchema>;
+export type Home = z.infer<typeof bunchHomeResponseSchema>;
 type PublishedPage = z.infer<typeof publishedBundlesPageSchema>;
 
-const ROLE: Readonly<Record<Home['myMembership']['role'], BunchRole>> = {
+const ROLE: Readonly<Record<z.infer<typeof roleSchema>, BunchRole>> = {
   OWNER: 'owner',
   CO_OWNER: 'coOwner',
   MEMBER: 'member',
 };
 
+// 안전하지 않은 이미지 주소는 항목 하나 때문에 홈 전체가 실패하지 않도록 기본 이미지로 대체
+const safeImage = (url: string | null | undefined) =>
+  url && isSafeImageUrl(url) ? url : DEFAULT_BUNCH_IMAGE;
+
 /**
- * 서버 응답을 번치 홈 화면의 프로필·번들 모양으로 변환
+ * 서버 응답을 번치 홈 화면의 프로필·번들 모양으로 변환, 내 번치가 아니면(소속 null) undefined
  * 작성 중인 번들 목록은 이번 범위가 아니라 비워 둠(UT 이후 초안 목록 API로 연결)
  */
-export const toBunchHomeDetail = (home: Home, published: PublishedPage): BunchHomeDetail => ({
-  id: toDomainId(home.bunch.id),
-  name: home.bunch.name,
-  // 대표 이미지가 없으면 기본 번치 이미지
-  imageSrc: home.bunch.imageUrl || DEFAULT_BUNCH_IMAGE,
-  description: home.bunch.introduction ?? '',
-  isPrivate: home.bunch.visibility === 'PRIVATE',
-  myRole: ROLE[home.myMembership.role],
-  followerCount: home.followerCount,
-  followingCount: home.followingCount,
-  memberCount: home.memberCount,
-  completedBundles: published.items.map((bundle) => ({
-    id: toDomainId(bundle.id),
-    title: bundle.title,
-    coverSrc: bundle.coverImageUrl || DEFAULT_BUNCH_IMAGE,
-  })),
-  draftBundles: [],
-});
+export const toBunchHomeDetail = (
+  home: Home,
+  published: PublishedPage,
+): BunchHomeDetail | undefined => {
+  if (!home.myMembership) return undefined;
+  return {
+    id: toDomainId(home.bunch.id),
+    name: home.bunch.name,
+    // 대표 이미지가 없으면 기본 번치 이미지
+    imageSrc: safeImage(home.bunch.imageUrl),
+    description: home.bunch.introduction ?? '',
+    isPrivate: home.bunch.visibility === 'PRIVATE',
+    myRole: ROLE[home.myMembership.role],
+    followerCount: home.followerCount,
+    followingCount: home.followingCount,
+    memberCount: home.memberCount,
+    completedBundles: published.items.map((bundle) => ({
+      id: toDomainId(bundle.id),
+      title: bundle.title,
+      coverSrc: safeImage(bundle.coverImageUrl),
+    })),
+    draftBundles: [],
+  };
+};

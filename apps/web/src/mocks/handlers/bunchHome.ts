@@ -28,8 +28,8 @@ const counts = (state: MockDbState, bunchId: number) => {
   const bundles = state.bundles.filter((bundle) => bundle.bunchId === bunchId);
   const draftCount = bundles.filter((bundle) => bundle.status === 'DRAFT').length;
   const publishedCount = bundles.length - draftCount;
-  // 현재 dev 기준 Stage: 발행본 0~3개=1, 4~7개=2, 8~11개=3, 12~15개=4, 16개 이상=5(PR #55는 1~4로 바뀔 예정)
-  const stage = Math.min(5, Math.floor(publishedCount / 4) + 1);
+  // 명세(PR #62) Stage: 발행본 0~1개=1, 2~5개=2, 6~9개=3, 10개 이상=4
+  const stage = publishedCount >= 10 ? 4 : publishedCount >= 6 ? 3 : publishedCount >= 2 ? 2 : 1;
   return { draftCount, publishedCount, stage };
 };
 

@@ -101,18 +101,20 @@ describe('가짜 서버 번들 현황과 번치 홈', () => {
     }>(`${base}/bundles/summary`);
 
     expect(status).toBe(200);
-    expect(json.data).toEqual({ draftCount: 1, publishedCount: 2, stage: 1 });
+    expect(json.data).toEqual({ draftCount: 1, publishedCount: 2, stage: 2 });
   });
 
-  it('발행본이 4개가 되면 Stage가 오른다(현재 dev 기준 4~7개=2)', async () => {
+  it('발행본이 6개가 되면 Stage가 오른다(명세 기준 0~1=1, 2~5=2, 6~9=3, 10개 이상=4)', async () => {
     addBundle(3, 'PUBLISHED', '2026-11-04T01:00:00.000Z');
     addBundle(4, 'PUBLISHED', '2026-11-04T02:00:00.000Z');
+    addBundle(5, 'PUBLISHED', '2026-11-04T03:00:00.000Z');
+    addBundle(6, 'PUBLISHED', '2026-11-04T04:00:00.000Z');
 
     const { json } = await get<{ stage: number; publishedCount: number }>(
       `${base}/bundles/summary`,
     );
 
-    expect(json.data).toMatchObject({ publishedCount: 4, stage: 2 });
+    expect(json.data).toMatchObject({ publishedCount: 6, stage: 3 });
   });
 
   it('번치 홈은 프로필·내 역할·권한·개수를 한 번에 돌려준다', async () => {
@@ -125,7 +127,7 @@ describe('가짜 서버 번들 현황과 번치 홈', () => {
       memberCount: 5,
       draftCount: 0,
       publishedCount: 2,
-      stage: 1,
+      stage: 2,
     });
     expect(json.data.bunch.introduction).toBe('여행 안 갈 바엔 죽을란다');
   });

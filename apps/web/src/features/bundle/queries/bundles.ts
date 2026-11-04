@@ -162,7 +162,11 @@ export const usePublishBundleMutation = (
     onSuccess: async (bundle: BundleDetail) => {
       sync.onSuccess(bundle);
       // 반환해서 mutateAsync가 번치 홈 재요청 시작까지 이어지게 함
-      await queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHomeScope(bunchId) });
+      // 번치 홈이 화면에 없어도 바로 다시 받아, 홈으로 돌아왔을 때 옛 목록이 먼저 보이지 않게 함
+      await queryClient.invalidateQueries({
+        queryKey: sharedKeys.bunchHomeScope(bunchId),
+        refetchType: 'all',
+      });
     },
   });
 };

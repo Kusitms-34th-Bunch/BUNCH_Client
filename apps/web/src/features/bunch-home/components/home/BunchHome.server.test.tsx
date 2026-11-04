@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
-import { fail } from '@/mocks/lib/envelope';
+import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -75,6 +75,36 @@ describe('BunchHome 서버 데이터', () => {
     await userEvent.click(retry);
 
     expect(await screen.findByRole('heading', { name: /여행쥬아/ })).toBeInTheDocument();
+  });
+
+  it('안전하지 않은 표지 주소의 번들은 기본 이미지로 보이고 홈은 그대로 나온다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/published-bundles', () =>
+        ok({
+          items: [
+            {
+              id: 5,
+              bunchId: 1,
+              title: '표지가 이상한 번들',
+              coverImageUrl: 'javascript:alert(1)',
+              date: null,
+              location: null,
+              publishedAt: '2026-11-04T09:00:00.000Z',
+            },
+          ],
+          page: 0,
+          size: 50,
+          totalElements: 1,
+          hasNext: false,
+        }),
+      ),
+    );
+    renderHome();
+
+    expect(await screen.findByAltText(/표지가 이상한 번들/)).toBeInTheDocument();
+    expect(screen.getByAltText(/표지가 이상한 번들/).getAttribute('src') ?? '').not.toContain(
+      'javascript',
+    );
   });
 
   it('소속 번치가 없으면 번치 없음 화면이다', async () => {

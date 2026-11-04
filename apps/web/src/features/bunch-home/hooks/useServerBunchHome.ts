@@ -32,11 +32,12 @@ export function useServerBunchHome({ enabled = true }: Options = {}): ServerBunc
   const ready = useMemo(() => {
     if (!home.data || !published.data) return undefined;
     const current = toBunchHomeDetail(home.data, published.data);
+    if (!current) return undefined;
     const summary: BunchSummary = {
       id: current.id,
       name: current.name,
       imageSrc: current.imageSrc,
-      alertCount: home.data.unreadCount,
+      alertCount: home.data.unreadCount ?? 0,
       access: 'active',
     };
     return { current, summary };
@@ -44,8 +45,10 @@ export function useServerBunchHome({ enabled = true }: Options = {}): ServerBunc
 
   if (profile.data && !profile.data.bunch) return { kind: 'no-bunch' };
   if (ready) return { kind: 'ready', ...ready };
+  // 내 번치가 아닌 응답(소속 null)이라 변환하지 못한 경우도 처음부터 못 받은 오류로 봄
+  const unusable = home.data && published.data && !ready;
   // 이미 받은 값이 있으면 재조회 실패로 화면을 덮지 않고, 처음부터 못 받았을 때만 오류
-  if (profile.isError || home.isError || published.isError) {
+  if (unusable || profile.isError || home.isError || published.isError) {
     return {
       kind: 'error',
       retry: () => {
