@@ -22,6 +22,7 @@ import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { BUNDLE_PATHS } from '@/features/bundle/constants/paths';
 import { BUNDLE_SELECT_PATHS } from '@/features/bundle/constants/selectPaths';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
+import { MY_PATHS } from '@/features/my/constants/paths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { easeOutIntegrator } from '@/shared/components/layout/easeOutIntegrator.internal';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
@@ -236,6 +237,13 @@ const rules: SsgoiTransitionRule[] = [
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.profile,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
+  // MY 프로필 행 → 개인 프로필 수정도 번치 프로필 편집과 같은 미는 slide(화면설계서에 전환 정의 없음, 2026-11-05 사용자 결정)
+  {
+    from: MY_PATHS.home,
+    to: MY_PATHS.profile,
     bidirectional: true,
     transition: menuSubSlide,
   },

@@ -5,9 +5,9 @@ import { MenuLabel, ProfileImage } from '@app/design-system/web';
 import Link from 'next/link';
 import { useId, type ReactNode } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import type { MyProfile } from '../lib/types';
-import { MY_MESSAGES } from '../constants/messages';
-import { MY_PATHS } from '../constants/paths';
+import type { MyProfile } from '../../lib/types';
+import { MY_MESSAGES } from '../../constants/messages';
+import { MY_PATHS } from '../../constants/paths';
 
 type MenuItem = { label: string; href?: string };
 

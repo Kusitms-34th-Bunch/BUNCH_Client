@@ -61,8 +61,11 @@ export function usePhotoPicker({ onError }: PhotoPickerOptions = {}) {
       }
     } catch (error) {
       const failure = error instanceof Error ? error : new Error('사진을 선택하지 못했어요.');
-      if (isMounted.current) setMessage(failure.message);
-      onError?.(failure);
+      // 화면을 떠난 뒤 실패하면 알리지 않음(이동한 화면에 토스트가 뜨는 것 방지)
+      if (isMounted.current) {
+        setMessage(failure.message);
+        onError?.(failure);
+      }
     } finally {
       isPicking.current = false;
       if (isMounted.current) setIsPending(false);
