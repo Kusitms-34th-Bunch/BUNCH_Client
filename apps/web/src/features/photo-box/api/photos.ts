@@ -1,10 +1,11 @@
 import type { components } from '@app/api-core/generated';
 import { ApiError } from '@app/api-core';
 import { bffApi, requestData } from '@/shared/api/bffApi';
-import { toWireId } from '@/shared/api/ids';
+import { toDomainId, toWireId } from '@/shared/api/ids';
 import {
   datedPhotosPageSchema,
   photoDeleteResponseSchema,
+  photoDetailSchema,
   toDatedPhotoBoxPhoto,
   toUndatedPhotoBoxPhoto,
   undatedPhotosPageSchema,
@@ -76,4 +77,16 @@ export const getUndatedPhotosPage = async (params: PhotoPageParams) => {
     photos: page.photos.map(toUndatedPhotoBoxPhoto),
     nextCursor: page.nextCursor ?? null,
   };
+};
+
+/** 사진 한 장의 원본 이미지 주소(크게 보기용). 없는 사진은 RESOURCE_001 */
+export const getPhotoDetail = async (bunchId: string, photoId: string, signal?: AbortSignal) => {
+  const detail = await requestData(
+    bffApi.get(`bunches/${encodeURIComponent(bunchId)}/photos/${encodeURIComponent(photoId)}`, {
+      signal: signal ?? null,
+    }),
+    photoDetailSchema,
+    'photo detail',
+  );
+  return { id: toDomainId(detail.photoId), imageSrc: detail.imageUrl };
 };

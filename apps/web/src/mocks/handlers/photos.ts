@@ -173,4 +173,32 @@ export const photoHandlers = [
     }));
     return ok({ deletedCount, uploaderRemovedCount });
   }),
+
+  // GET /api/v1/bunches/{bunchId}/photos/{photoId}
+  // 원본 이미지 주소와 올린 사람(같은 사진을 함께 올린 멤버 모두). 날짜를 모르면 capturedDate는 생략
+  // msw는 먼저 맞는 handler를 쓰므로 /photos/undated 뒤에 둠
+  http.get('/api/bunches/:bunchId/photos/:photoId', ({ params }) => {
+    const bunchId = toWireId(params.bunchId);
+    const photoId = toWireId(params.photoId);
+    if (bunchId === undefined || photoId === undefined) return fail(400, 'COMMON_001');
+
+    const { bunches, memberships, members, photos } = mockDb.get();
+    if (!bunches.some((bunch) => bunch.id === bunchId)) return fail(404, 'RESOURCE_001');
+    const bunchMemberships = memberships.filter((membership) => membership.bunchId === bunchId);
+    if (!bunchMemberships.some((membership) => membership.memberId === MOCK_MY_MEMBER_ID)) {
+      return fail(403, 'AUTH_002');
+    }
+    const photo = photos.find((item) => item.bunchId === bunchId && item.photoId === photoId);
+    if (!photo) return fail(404, 'RESOURCE_001');
+
+    return ok({
+      photoId: photo.photoId,
+      imageUrl: photo.imageUrl,
+      ...(photo.capturedDate ? { capturedDate: photo.capturedDate } : {}),
+      uploaders: photo.uploaderIds.flatMap((memberId) => {
+        const member = members.find((item) => item.memberId === memberId);
+        return member ? [{ memberId, nickname: member.nickname, imageUrl: member.imageUrl }] : [];
+      }),
+    });
+  }),
 ];

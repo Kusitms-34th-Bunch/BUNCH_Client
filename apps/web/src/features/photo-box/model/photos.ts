@@ -94,3 +94,22 @@ export const toUndatedPhotoBoxPhoto = (
   uploaderIds: photo.uploaderIds.map(toDomainId),
   status: 'ready',
 });
+
+const photoDetailUploaderSchema = z.object({
+  memberId: z.number().int().positive(),
+  nickname: z.string().nullish(),
+  imageUrl: z.string().nullish(),
+}) satisfies z.ZodType<ApiContract<components['schemas']['PhotoDetailUploader']>>;
+
+/** `GET /api/v1/bunches/{bunchId}/photos/{photoId}` 응답. 크게 보기는 원본 이미지 주소만 씀 */
+export const photoDetailSchema = z.object({
+  photoId: z.number().int().positive(),
+  imageUrl: z.string().min(1),
+  capturedDate: z.string().nullish(),
+  uploaders: z.array(photoDetailUploaderSchema),
+}) satisfies z.ZodType<
+  // 중첩 배열은 계약 검사가 선택 필드를 다루지 못해 uploaders는 위 스키마에서 따로 검사
+  Omit<ApiContract<components['schemas']['PhotoDetailResponse']>, 'uploaders'> & {
+    uploaders: unknown;
+  }
+>;

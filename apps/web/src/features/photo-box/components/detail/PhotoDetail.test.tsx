@@ -56,6 +56,16 @@ describe('PhotoDetail', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it('처음에는 썸네일을 넘기고 원본을 받으면 보는 사진을 원본으로 바꾼다', async () => {
+    render(<PhotoDetail photoId={firstId} />);
+
+    await loaded();
+    const srcOf = (id: string) => screenProps?.photos.find((photo) => photo.id === id)?.src;
+    await waitFor(() => expect(srcOf(firstId)).toBe('/mock/photos/S4.jpg'));
+    // 멀리 있는 사진은 아직 받지 않아 썸네일 그대로
+    expect(srcOf(String(MOCK_PHOTO_IDS.O1))).toBe('/mock/photos/O1-thumb.jpg');
+  });
+
   it('없는 사진이면 「삭제된 사진이에요」 토스트 뒤 사진함으로 이동한다', async () => {
     render(<PhotoDetail photoId="9999" />);
 
