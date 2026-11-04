@@ -1,7 +1,8 @@
 'use client';
 
+import { ApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -12,6 +13,7 @@ import { PHOTO_BOX_PATHS } from '../../constants/paths';
 import { usePhotoBox } from '../../hooks/usePhotoBox';
 import { getDetailOrder } from '../../lib/photoDetail';
 import { photoDetailQueryOptions } from '../../queries/photoDetail';
+import { useInvalidatePhotos } from '../../queries/photos';
 import { PhotoDetailScreen } from './PhotoDetailScreen';
 
 // 같은 결과면 같은 Map을 돌려주도록 모듈 상수 함수로 둠(렌더마다 새 Map이 생기지 않게)
@@ -51,6 +53,13 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
     ),
     combine: toOriginalSrcMap,
   });
+  // 목록에는 있는데 보는 사진의 상세가 없다고 오면 다른 곳에서 막 지운 사진(RESOURCE_001)
+  const currentDetail = useQuery(
+    photoDetailQueryOptions(currentIndex < 0 ? undefined : data?.bunch.id, currentId ?? ''),
+  );
+  const goneOnServer =
+    currentDetail.error instanceof ApiError && currentDetail.error.code === 'RESOURCE_001';
+  const invalidatePhotos = useInvalidatePhotos(data?.bunch.id);
   const photosWithOriginal = useMemo(
     () => photos.map((photo) => ({ ...photo, src: originals.get(photo.id) ?? photo.src })),
     [photos, originals],
@@ -67,16 +76,27 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   }, [unavailable, router]);
 
   useEffect(() => {
+    if (!goneOnServer) return;
+    toast(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    void invalidatePhotos();
+    router.replace(PHOTO_BOX_PATHS.list);
+  }, [goneOnServer, invalidatePhotos, router]);
+
+  useEffect(() => {
     if (!missing) return;
     toast(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
     router.replace(PHOTO_BOX_PATHS.list);
   }, [missing, router]);
 
-  if (!data || !present || photoId === undefined) return <PageLoading />;
+  // 삭제로 사진이 사라진 직후에는 마지막 화면을 유지해 로딩으로 바뀌는 깜빡임 없이 이탈 흐름(토스트·이동)이 이어지게 함
+  const [lastPhotos, setLastPhotos] = useState(photosWithOriginal);
+  if (present && lastPhotos !== photosWithOriginal) setLastPhotos(photosWithOriginal);
+
+  if (!data || photoId === undefined || (!present && !entered)) return <PageLoading />;
 
   return (
     <PhotoDetailScreen
-      photos={photosWithOriginal}
+      photos={present ? photosWithOriginal : lastPhotos}
       members={data.members}
       viewer={data.viewer}
       initialPhotoId={photoId}

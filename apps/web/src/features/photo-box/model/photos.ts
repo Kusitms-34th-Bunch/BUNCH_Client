@@ -95,6 +95,9 @@ export const toUndatedPhotoBoxPhoto = (
   status: 'ready',
 });
 
+// 운영 응답은 신뢰 경계 밖이라 img src에는 https 주소나 같은 출처 경로(//로 시작하지 않는)만 허용
+const isSafeImageUrl = (url: string) => /^https:\/\/\S+$/.test(url) || /^\/(?!\/)\S*$/.test(url);
+
 const photoDetailUploaderSchema = z.object({
   memberId: z.number().int().positive(),
   nickname: z.string().nullish(),
@@ -104,7 +107,7 @@ const photoDetailUploaderSchema = z.object({
 /** `GET /api/v1/bunches/{bunchId}/photos/{photoId}` 응답. 크게 보기는 원본 이미지 주소만 씀 */
 export const photoDetailSchema = z.object({
   photoId: z.number().int().positive(),
-  imageUrl: z.string().min(1),
+  imageUrl: z.string().refine(isSafeImageUrl, 'https 주소 또는 같은 출처 경로만 허용'),
   capturedDate: z.string().nullish(),
   uploaders: z.array(photoDetailUploaderSchema),
 }) satisfies z.ZodType<

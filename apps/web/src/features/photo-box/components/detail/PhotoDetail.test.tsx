@@ -1,9 +1,12 @@
 import type * as DesignSystem from '@app/design-system';
 import type { ComponentProps, ReactElement } from 'react';
 import { act, render as baseRender, screen, waitFor } from '@testing-library/react';
+import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { fail } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { PhotoDetailScreen } from './PhotoDetailScreen';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
@@ -75,6 +78,19 @@ describe('PhotoDetail', () => {
     expect(screenProps).toBeUndefined();
   });
 
+  it('목록에는 있는데 상세가 없다고 오면 「삭제된 사진이에요」 안내 뒤 사진함으로 이동한다', async () => {
+    server.use(
+      // undated 목록 경로도 같은 패턴에 맞으므로 그 요청은 다음 handler에 넘김
+      http.get('/api/bunches/:bunchId/photos/:photoId', ({ params }) =>
+        params.photoId === 'undated' ? undefined : fail(404, 'RESOURCE_001'),
+      ),
+    );
+    render(<PhotoDetail photoId={firstId} />);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list));
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+  });
+
   it('번치를 불러오지 못하면 로딩에 머물지 않고 사진함으로 이동한다', async () => {
     mockDb.update((current) => ({ ...current, memberships: [] }));
     render(<PhotoDetail photoId={firstId} />);
@@ -109,6 +125,8 @@ describe('PhotoDetail', () => {
     });
 
     expect(removedCount).toBe(1);
+    // 사진이 목록에서 빠져도 로딩 화면으로 바뀌지 않고 마지막 화면을 유지
+    expect(screen.getByTestId('detail-screen')).toBeTruthy();
     expect(toast).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
   });

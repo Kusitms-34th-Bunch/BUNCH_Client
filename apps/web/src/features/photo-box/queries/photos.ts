@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { removePhotos } from '../api/photos';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { photoBoxKeys } from './keys';
@@ -19,4 +20,14 @@ export const useDeletePhotosMutation = (bunchId: string | undefined) => {
     // 반환해서 mutateAsync·isPending이 활성 목록 재요청 완료까지 대기
     onSuccess: () => queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) }),
   });
+};
+
+/** 그 번치의 사진 목록·상세 캐시를 모두 무효화(다른 사람이 지운 사진을 발견했을 때 목록을 새로 받음) */
+export const useInvalidatePhotos = (bunchId: string | undefined) => {
+  const queryClient = useQueryClient();
+  // 효과의 의존성으로 쓰이므로 번치가 같으면 같은 함수를 돌려줌
+  return useCallback(
+    () => queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) }),
+    [queryClient, bunchId],
+  );
 };
