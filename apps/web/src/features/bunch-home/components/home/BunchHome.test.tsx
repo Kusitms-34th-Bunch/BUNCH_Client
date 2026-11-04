@@ -2,8 +2,12 @@ import type * as DesignSystem from '@app/design-system';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BunchHome } from './BunchHome';
+
+// 샘플 모드도 서버 hook을 호출하므로 QueryClient가 필요함
+const wrapper = createQueryWrapper(createTestQueryClient());
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
@@ -30,7 +34,7 @@ const openSwitcher = async (user: ReturnType<typeof userEvent.setup>) => {
 
 describe('BunchHome', () => {
   it('번치 이름이 페이지 제목이고 팔로워·팔로잉·멤버 수와 완성된 번들 그리드를 보여 준다', () => {
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     expect(screen.getByRole('heading', { level: 1, name: '여행가조' })).toBeTruthy();
     expect(screen.getByText('팔로워').previousSibling?.textContent).toBe('23');
@@ -49,7 +53,7 @@ describe('BunchHome', () => {
 
   it('작성 중인 번들 탭에서 삭제를 확인하면 카드가 사라진다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     await user.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
     await user.click(screen.getByRole('button', { name: '머그샷 삭제' }));
@@ -62,7 +66,7 @@ describe('BunchHome', () => {
 
   it('전환 시트에서 다른 번치를 고르면 화면이 바뀌고 토스트로 알린다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     const sheet = await openSwitcher(user);
     expect(
@@ -80,7 +84,7 @@ describe('BunchHome', () => {
 
   it('「새로운 번치 추가하기」는 시트를 닫은 뒤 번치 시작 선택으로 이동한다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     const sheet = await openSwitcher(user);
     await user.click(within(sheet).getByRole('button', { name: '새로운 번치 추가하기' }));
@@ -92,7 +96,7 @@ describe('BunchHome', () => {
 
   it('전환 목록에서 지금 번치가 맨 위에 있다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     const sheet = await openSwitcher(user);
     const rows = within(sheet).getAllByRole('button', { name: /,|여행가조|퇴근런클럽/ });
@@ -101,7 +105,7 @@ describe('BunchHome', () => {
 
   it('접근 불가 번치를 누르면 전환하지 않고 안내를 띄우며, 「번치 목록에서 삭제」로 목록에서 지운다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     const sheet = await openSwitcher(user);
     await user.click(within(sheet).getByRole('button', { name: /홍대 먹짱/ }));
@@ -116,7 +120,7 @@ describe('BunchHome', () => {
 
   it('안내를 Esc로 닫으면 목록에 남긴다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     const sheet = await openSwitcher(user);
     await user.click(within(sheet).getByRole('button', { name: /큐시즘 밋업/ }));
@@ -127,7 +131,7 @@ describe('BunchHome', () => {
     expect(within(sheet).getByRole('button', { name: /큐시즘 밋업/ })).toBeTruthy();
   });
   it('「+」는 번들 만들기 화면으로 이동한다', async () => {
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     await userEvent.click(screen.getByRole('button', { name: '번들 만들기' }));
 
@@ -136,7 +140,7 @@ describe('BunchHome', () => {
   });
 
   it('헤더 더보기는 더보기 메뉴로 가는 링크다(새 탭 열기 지원)', () => {
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     expect(screen.getByRole('link', { name: '더보기' }).getAttribute('href')).toBe(
       BUNCH_HOME_PATHS.menu,

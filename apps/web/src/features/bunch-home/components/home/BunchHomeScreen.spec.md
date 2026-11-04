@@ -24,7 +24,7 @@
 
 ### 범위 외(추후 작업 예정)
 
-- 서버 연동, 로딩·오류 상태: 번치·번들 API 계약이 없다. 연결하면 `useBunchHome`만 TanStack Query로 바꾸고 로딩·오류 화면을 추가한다.
+- 서버 연동: 번치 프로필·권한·개수(`GET /bunches/{id}/home`)와 완성된 번들(`GET /bunches/{id}/published-bundles`)은 `useServerBunchHome`이 내 기본 번치 기준으로 받는다(서버 PR #62 미병합 계약, 가짜 서버가 명세대로 응답). 로딩은 `PageLoading`, 오류는 「다시 시도」가 있는 `BunchHomeError`, 소속 번치가 없으면 번치 없음 화면이다. 번들 발행 뒤에는 번치 홈 key 전체(`sharedKeys.bunchHomeScope`)를 무효화해 새 번들이 맨 앞에 쌓인다. 번치 전환 목록(서버 모드는 내 기본 번치 하나)·팔로우·알림·멤버 관리·작성 중인 번들 목록은 샘플이며 `docs/workflows/usability-test.md`에 모아 두었다.
 - 작성 중인 번들 열기: 번들 작성 이슈에서 연결한다(호출 지점 `onOpenDraft`만 있음). 「첫 번들 만들기」·「+」는 `/bunch/bundles/new`(번들 만들기 사진 선택)로 이동한다.
 - 알림·「가볼 곳」: 화면이 없어 버튼만 있다. 더보기는 `/bunch/menu`로 가는 링크다(#169, `BunchMenuScreen.spec.md`).
 - 완성된 번들 그리드 칸: 번들 상세가 없어 누를 수 없는 사진이다.

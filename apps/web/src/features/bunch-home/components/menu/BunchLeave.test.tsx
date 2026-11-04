@@ -1,11 +1,15 @@
 import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BunchMember } from '../../lib/types';
 import { useBunchHome } from '../../hooks/useBunchHome';
 import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
 import { leaveBunch } from '../../hooks/useLeftBunches';
 import { BunchHome } from '../home/BunchHome';
+
+// 샘플 모드도 서버 hook을 호출하므로 QueryClient가 필요함
+const wrapper = createQueryWrapper(createTestQueryClient());
 import { BunchLeaveScreen } from './BunchLeaveScreen';
 import { BunchMenuScreen } from './BunchMenuScreen';
 
@@ -127,7 +131,7 @@ describe('나간 뒤 번치 홈', () => {
       leaveBunch('bunch-trip');
       leaveBunch('bunch-gift');
     });
-    render(<BunchHome />);
+    render(<BunchHome source="sample" />, { wrapper });
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: '참여 중인 번치가 없어요' })).toBeInTheDocument(),

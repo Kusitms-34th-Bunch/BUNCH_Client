@@ -118,6 +118,40 @@ export const bunchHomeHandlers = [
     });
   }),
 
+  // GET /api/v1/bunches/{bunchId}/published-bundles?page=&size= (서버 PR #62 미병합 계약, 번치 홈 「완성된 번들」용)
+  // 내 번치(INTERNAL)는 공개 범위와 상관없이 발행본 전체, 발행 최신순(publishedAt, id 내림차순), 초안은 포함하지 않음
+  http.get('/api/bunches/:bunchId/published-bundles', ({ params, request }) => {
+    const found = findBunch(params.bunchId);
+    if ('error' in found) return found.error;
+    const { bunchId, state } = found;
+    const url = new URL(request.url);
+    const page = parseNonNegativeInt(url.searchParams.get('page'), 0);
+    const size = parseNonNegativeInt(url.searchParams.get('size'), DEFAULT_PAGE_SIZE);
+    if (Number.isNaN(page) || Number.isNaN(size) || size < 1 || size > MAX_PAGE_SIZE) {
+      return fail(400, 'COMMON_001');
+    }
+    const published = state.bundles
+      .filter((bundle) => bundle.bunchId === bunchId && bundle.status === 'PUBLISHED')
+      .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? '') || b.id - a.id);
+    return ok({
+      items: published.slice(page * size, (page + 1) * size).map((bundle) => ({
+        id: bundle.id,
+        bunchId: bundle.bunchId,
+        title: bundle.title,
+        // 표지는 번들 첫 사진
+        coverImageUrl: bundle.photos[0]?.imageUrl ?? null,
+        date: bundle.date,
+        // 명세: 저장 정보가 없어 null
+        location: null,
+        publishedAt: bundle.publishedAt,
+      })),
+      page,
+      size,
+      totalElements: published.length,
+      hasNext: (page + 1) * size < published.length,
+    });
+  }),
+
   // GET /api/v1/bunches/{bunchId}/bundles/summary
   http.get('/api/bunches/:bunchId/bundles/summary', ({ params }) => {
     const found = findBunch(params.bunchId);

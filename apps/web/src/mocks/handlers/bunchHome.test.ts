@@ -147,3 +147,61 @@ describe('가짜 서버 번들 현황과 번치 홈', () => {
     expect((await get<unknown>('/api/bunches/999/home')).json.error?.code).toBe('RESOURCE_001');
   });
 });
+
+type PublishedPage = {
+  items: {
+    id: number;
+    title: string;
+    coverImageUrl: string | null;
+    date: string | null;
+    location: null;
+    publishedAt: string | null;
+  }[];
+  page: number;
+  size: number;
+  totalElements: number;
+  hasNext: boolean;
+};
+
+describe('가짜 서버 번치 발행 번들 목록', () => {
+  it('발행본만 발행 최신순으로, 표지·날짜·발행 시각과 함께 돌려준다', async () => {
+    addBundle(3, 'PUBLISHED', '2026-11-04T01:00:00.000Z');
+    addBundle(4, 'DRAFT', '2026-11-04T02:00:00.000Z');
+
+    const { json } = await get<PublishedPage>(`${base}/published-bundles`);
+
+    expect(json.data.items.map((item) => item.id)).toEqual([3, 1, 2]);
+    expect(json.data).toMatchObject({ page: 0, size: 20, totalElements: 3, hasNext: false });
+    expect(json.data.items[1]).toMatchObject({
+      title: '강릉 커피 투어 ☕',
+      coverImageUrl: '/mock/photos/C1.jpg',
+      date: '2026-09-20',
+      location: null,
+      publishedAt: '2026-09-21T09:00:00.000Z',
+    });
+  });
+
+  it('다음 쪽이 있으면 hasNext가 true다', async () => {
+    const { json } = await get<PublishedPage>(`${base}/published-bundles?size=1`);
+
+    expect(json.data).toMatchObject({ size: 1, totalElements: 2, hasNext: true });
+    expect(json.data.items).toHaveLength(1);
+  });
+
+  it.each(['?size=0', '?size=51', '?page=-1'])('%s는 COMMON_001(400)이다', async (query) => {
+    const { status, json } = await get<PublishedPage>(`${base}/published-bundles${query}`);
+
+    expect(status).toBe(400);
+    expect(json.error?.code).toBe('COMMON_001');
+  });
+
+  it('없는 번치는 RESOURCE_001, 소속이 아니면 AUTH_002이다', async () => {
+    expect((await get<PublishedPage>('/api/bunches/999/published-bundles')).json.error?.code).toBe(
+      'RESOURCE_001',
+    );
+    mockDb.update((current) => ({ ...current, memberships: [] }));
+    expect((await get<PublishedPage>(`${base}/published-bundles`)).json.error?.code).toBe(
+      'AUTH_002',
+    );
+  });
+});
