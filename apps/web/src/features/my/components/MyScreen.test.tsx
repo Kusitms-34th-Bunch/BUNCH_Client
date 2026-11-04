@@ -1,6 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { MY_PATHS } from '../constants/paths';
 import { MyScreen } from './MyScreen';
 
 const renderScreen = () => render(<MyScreen profile={{ nickname: '으누' }} />);
@@ -11,7 +10,7 @@ describe('MyScreen', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'MY' })).toBeTruthy();
     expect(screen.getByRole('link', { name: '으누 프로필 수정' }).getAttribute('href')).toBe(
-      MY_PATHS.profile,
+      '/my/profile',
     );
   });
 
@@ -37,10 +36,10 @@ describe('MyScreen', () => {
     expect(items('고객지원')).toEqual(['문의하기', '로그아웃', '탈퇴하기']);
 
     const href = (name: string) => screen.getByRole('link', { name }).getAttribute('href');
-    expect(href('알림 설정')).toBe(MY_PATHS.notifications);
-    expect(href('서비스 이용약관')).toBe(MY_PATHS.termsOfService);
-    expect(href('개인정보 처리방침')).toBe(MY_PATHS.privacyPolicy);
-    expect(href('탈퇴하기')).toBe(MY_PATHS.withdrawal);
+    expect(href('알림 설정')).toBe('/my/notifications');
+    expect(href('서비스 이용약관')).toBe('/my/terms/service');
+    expect(href('개인정보 처리방침')).toBe('/my/terms/privacy');
+    expect(href('탈퇴하기')).toBe('/my/withdrawal');
   });
 
   it('문의하기·로그아웃은 화면 이동이 아닌 버튼이다', () => {
