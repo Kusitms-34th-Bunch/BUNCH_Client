@@ -59,6 +59,7 @@ export * from './selectionIndicator';
 export * from './stepper';
 export * from './suggestedBundleCard';
 export * from './termsLabel';
+export * from './toggleListItem';
 export * from './uploadOptionCard';
 export * from './uploaderBadge';
 export * from './visibilityOption';
