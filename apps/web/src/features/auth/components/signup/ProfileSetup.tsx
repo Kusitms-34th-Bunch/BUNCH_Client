@@ -1,36 +1,16 @@
 'use client';
 
 import { Button, toast } from '@app/design-system';
-import { CameraButton, LabeledTextField, PageHeader, ProfileImage } from '@app/design-system/web';
+import { CameraButton, PageHeader, ProfileImage } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useId, useState } from 'react';
+import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
+import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
+import { EMPTY_PROFILE_VALUES, useProfileFields } from '@/shared/hooks/useProfileFields';
+import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
 import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
-import {
-  CHECK_FAILURE_MESSAGE,
-  type CheckNickname,
-  useNicknameAvailability,
-} from '../../hooks/useNicknameAvailability';
-import { useScrollFocusedIntoView } from '../../hooks/useScrollFocusedIntoView';
-import {
-  BIRTH_YEAR_MIN,
-  getBirthYearMax,
-  isBirthYearInRange,
-  isCompleteBirthYear,
-  isValidBirthYear,
-  sanitizeBirthYear,
-} from '../../lib/birthYear';
-import {
-  hasInvalidNicknameChars,
-  isValidNickname,
-  NICKNAME_INVALID_MESSAGE,
-  NICKNAME_MAX_LENGTH,
-  NICKNAME_TAKEN_MESSAGE,
-  normalizeNickname,
-} from '../../lib/nickname';
-import { type Gender, GenderField } from './GenderField';
 import { SignupFrame } from './SignupFrame';
 
 // 기획: 지원하지 않는 형식·손상된 사진은 이 문구의 토스트
@@ -50,44 +30,10 @@ type ProfileSetupProps = {
 export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
   const router = useRouter();
   useScrollFocusedIntoView();
-  const noteId = useId();
-  const birthYearHintId = useId();
+  const fields = useProfileFields(EMPTY_PROFILE_VALUES, checkNickname);
   const { inputRef, photoUrl, handleCameraClick, handleFileChange } = usePhotoPicker({
     onError: () => toast(PHOTO_UNUSABLE_MESSAGE),
   });
-
-  const [nickname, setNickname] = useState('');
-  const [composing, setComposing] = useState(false);
-  const [birthYear, setBirthYear] = useState('');
-  const [birthYearBlurred, setBirthYearBlurred] = useState(false);
-  const [gender, setGender] = useState<Gender | null>(null);
-
-  // 오류 표시는 조합 중인 자모를 허용하고, 시작하기·중복 확인은 조합이 끝난 완성 값만 인정
-  const nicknameInvalid = hasInvalidNicknameChars(nickname, composing);
-  const nicknameValid = isValidNickname(nickname);
-  const availability = useNicknameAvailability(
-    nicknameValid ? normalizeNickname(nickname) : '',
-    checkNickname,
-  );
-  const nicknameError = nicknameInvalid
-    ? NICKNAME_INVALID_MESSAGE
-    : availability === 'taken'
-      ? NICKNAME_TAKEN_MESSAGE
-      : availability === 'failed'
-        ? CHECK_FAILURE_MESSAGE
-        : undefined;
-  const nicknameConfirmed =
-    nicknameValid && (availability === 'idle' || availability === 'available');
-
-  const currentYear = new Date().getFullYear();
-  const birthYearComplete = isCompleteBirthYear(birthYear);
-  const birthYearIncomplete = birthYear !== '' && !birthYearComplete;
-  // 4자리를 다 쓴 뒤 범위를 벗어났거나, 포커스를 벗어났는데 4자리가 아닐 때 안내
-  const showBirthYearError =
-    (birthYearComplete && !isBirthYearInRange(birthYear, currentYear)) ||
-    (birthYearIncomplete && birthYearBlurred);
-
-  const canStart = nicknameConfirmed && isValidBirthYear(birthYear, currentYear);
 
   const start = () => {
     closeKeyboard();
@@ -99,7 +45,7 @@ export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
       <SignupFrame
         bottom={
           <div className="px-padding-p8 pt-padding-p7">
-            <Button className="w-full" disabled={!canStart} onClick={start}>
+            <Button className="w-full" disabled={!fields.isValid} onClick={start}>
               BUNCH 시작하기
             </Button>
           </div>
@@ -132,54 +78,8 @@ export function ProfileSetup({ nextPath, checkNickname }: ProfileSetupProps) {
             onChange={handleFileChange}
           />
         </div>
-        <div className="pt-s14 px-padding-p8 gap-s8 flex flex-col">
-          <LabeledTextField
-            title="닉네임"
-            option="required"
-            placeholder="EX) 지원"
-            value={nickname}
-            maxLength={NICKNAME_MAX_LENGTH}
-            autoComplete="off"
-            errorMessage={nicknameError}
-            onChange={(event) => setNickname(event.target.value)}
-            onCompositionStart={() => setComposing(true)}
-            onCompositionEnd={() => setComposing(false)}
-            // 일부 모바일 키보드의 조합 종료 없는 포커스 이탈 처리
-            onBlur={() => setComposing(false)}
-          />
-          <span id={birthYearHintId} className="sr-only">
-            숫자 4자리로 입력해 주세요.
-          </span>
-          <LabeledTextField
-            title="출생연도"
-            option="optional"
-            placeholder="EX)1998"
-            inputMode="numeric"
-            autoComplete="off"
-            aria-describedby={`${birthYearHintId} ${noteId}`}
-            value={birthYear}
-            errorMessage={
-              showBirthYearError
-                ? `${BIRTH_YEAR_MIN}년부터 ${getBirthYearMax(currentYear)}년 사이로 입력해 주세요.`
-                : undefined
-            }
-            onChange={(event) => setBirthYear(sanitizeBirthYear(event.target.value))}
-            onFocus={() => setBirthYearBlurred(false)}
-            onBlur={() => setBirthYearBlurred(true)}
-          />
-          <div className="gap-s4 flex flex-col">
-            <GenderField
-              value={gender}
-              describedBy={noteId}
-              onChange={(next) => {
-                setGender(next);
-                closeKeyboard();
-              }}
-            />
-            <p id={noteId} className="typography-caption-1-medium text-text-quinary">
-              출생연도와 성별은 다른 사용자에게 공개되지 않아요.
-            </p>
-          </div>
+        <div className="pt-s14 px-padding-p8">
+          <ProfileFields fields={fields} />
         </div>
       </SignupFrame>
     </div>

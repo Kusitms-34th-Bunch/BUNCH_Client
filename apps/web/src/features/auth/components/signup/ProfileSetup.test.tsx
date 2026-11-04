@@ -3,8 +3,8 @@ import { toast } from '@app/design-system';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CHECK_FAILURE_MESSAGE } from '../../hooks/useNicknameAvailability';
-import { NICKNAME_INVALID_MESSAGE, NICKNAME_TAKEN_MESSAGE } from '../../lib/nickname';
+import { CHECK_FAILURE_MESSAGE } from '@/shared/hooks/useNicknameAvailability';
+import { NICKNAME_INVALID_MESSAGE, NICKNAME_TAKEN_MESSAGE } from '@/shared/lib/nickname';
 import { ProfileSetup } from './ProfileSetup';
 
 const replace = vi.fn();
