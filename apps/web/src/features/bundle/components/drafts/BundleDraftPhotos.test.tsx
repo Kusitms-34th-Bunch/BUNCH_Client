@@ -24,6 +24,14 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
+// 초안 화면 동작은 샘플 초안 대역으로 확인하고, 서버 연동은 useDraft 테스트가 가짜 서버로 확인
+vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
+  usePhotoBox: (await import('../../testing/selectScreenDoubles')).usePhotoBoxDouble,
+}));
+vi.mock('../../hooks/useDraft', async () => ({
+  useDraft: (await import('../../testing/useDraftFixture')).useDraftFixture,
+}));
+
 const back = vi.fn();
 const replace = vi.fn();
 const push = vi.fn();

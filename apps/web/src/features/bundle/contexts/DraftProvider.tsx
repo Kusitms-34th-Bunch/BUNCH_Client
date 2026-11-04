@@ -15,6 +15,15 @@ type DraftProviderProps = {
  * 이 초안 흐름을 벗어나면 사라지고, 초안 API 연결 전에는 fixture와 메모리 상태
  */
 export function DraftProvider({ draftId, children }: DraftProviderProps) {
+  // 초안 id가 바뀌면 새로 마운트해 이전 초안의 보관 입력·화면 전용 변경이 새 초안으로 넘어가지 않게 함
+  return (
+    <DraftProviderBody key={draftId ?? 'none'} draftId={draftId}>
+      {children}
+    </DraftProviderBody>
+  );
+}
+
+function DraftProviderBody({ draftId, children }: DraftProviderProps) {
   const value = useDraft(draftId);
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>;
 }

@@ -89,4 +89,7 @@ export const createSeed = (): MockDbState => ({
     membership(me, 'MEMBER'),
   ],
   photos: photos(),
+  // UT 시작 데이터(상태 A)에는 초안이 없고, 기존 발행 번들은 번치 홈 연동 이슈에서 추가
+  bundles: [],
+  bundleLeases: [],
 });

@@ -1,0 +1,186 @@
+import type { components } from '@app/api-core/generated';
+import { ApiError } from '@app/api-core';
+import { bffApi, requestData } from '@/shared/api/bffApi';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
+import { toWireId } from '@/shared/api/ids';
+import { type BundleDetail, bundleSnapshotSchema, toBundleDetail } from '../model/bundle';
+
+type Schemas = components['schemas'];
+
+const bundlePath = (bunchId: string, bundleId: string) =>
+  `bunches/${encodeURIComponent(bunchId)}/bundles/${encodeURIComponent(bundleId)}`;
+
+// 화면 id가 서버 숫자로 바뀌지 않으면 요청 전에 막음(잘못된 id를 서버에 보내지 않음)
+const wireIdOrThrow = (id: string) => {
+  const wire = toWireId(id);
+  if (wire === undefined) throw new ApiError({ category: 'validation', message: 'invalid id' });
+  return wire;
+};
+
+const requestBundle = async (request: ReturnType<typeof bffApi.get>, context: string) =>
+  toBundleDetail(await requestData(request, bundleSnapshotSchema, context));
+
+/** 초안 생성: 같은 번치의 사진 1~20장(고른 순서), 같은 멱등 키로 다시 보내면 같은 초안 */
+export const createBundle = async (
+  bunchId: string,
+  photoIds: readonly string[],
+  idempotencyKey: string,
+) =>
+  requestBundle(
+    bffApi.post(`bunches/${encodeURIComponent(bunchId)}/bundles`, {
+      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      json: {
+        photoIds: photoIds.map(wireIdOrThrow),
+      } satisfies Schemas['CreateBundleRequest'],
+    }),
+    'create bundle',
+  );
+
+/** 번들 상세. 없는 번들은 RESOURCE_001, 번치 멤버가 아니면 AUTH_002 */
+export const getBundle = (bunchId: string, bundleId: string, signal?: AbortSignal) =>
+  requestBundle(bffApi.get(bundlePath(bunchId, bundleId), { signal: signal ?? null }), 'bundle');
+
+type SaveBase = {
+  bunchId: string;
+  bundleId: string;
+  /** 저장하려는 필드의 최신 서버 버전(어긋나면 BUNDLE_003) */
+  expectedVersion: number;
+  /** 서버 상태와 같아야 함(발행 뒤 늦게 도착한 초안 저장은 BUNDLE_002) */
+  mode: 'DRAFT' | 'PUBLISHED';
+};
+
+const saveText = (
+  path: string,
+  {
+    value,
+    expectedVersion,
+    mode,
+    leaseToken,
+  }: Omit<SaveBase, 'bunchId' | 'bundleId'> & {
+    value: string;
+    leaseToken?: string | undefined;
+  },
+  context: string,
+) =>
+  requestBundle(
+    bffApi.put(path, {
+      json: {
+        value,
+        expectedVersion,
+        mode,
+        ...(leaseToken === undefined ? {} : { leaseToken }),
+      } satisfies Schemas['BundleTextRequest'],
+    }),
+    context,
+  );
+
+/** 제목 저장(초안은 편집권 token 필요) */
+export const saveBundleTitle = (input: SaveBase & { value: string; leaseToken?: string }) =>
+  saveText(`${bundlePath(input.bunchId, input.bundleId)}/title`, input, 'save title');
+
+/** 사진 캡션 저장(초안은 그 사진의 편집권 token 필요) */
+export const saveBundleCaption = (
+  input: SaveBase & { bundlePhotoId: string; value: string; leaseToken?: string },
+) =>
+  saveText(
+    `${bundlePath(input.bunchId, input.bundleId)}/photos/${encodeURIComponent(input.bundlePhotoId)}/caption`,
+    input,
+    'save caption',
+  );
+
+/** 내 코멘트 저장(편집권 없음, 본인 코멘트만) */
+export const saveBundleComment = (input: SaveBase & { value: string }) =>
+  saveText(`${bundlePath(input.bunchId, input.bundleId)}/comments/me`, input, 'save comment');
+
+/** 공개 범위 저장(편집권 없음) */
+export const saveBundleVisibility = ({
+  bunchId,
+  bundleId,
+  value,
+  expectedVersion,
+  mode,
+}: SaveBase & { value: 'PUBLIC' | 'PRIVATE' }) =>
+  requestBundle(
+    bffApi.put(`${bundlePath(bunchId, bundleId)}/visibility`, {
+      json: { value, expectedVersion, mode } satisfies Schemas['BundleVisibilityRequest'],
+    }),
+    'save visibility',
+  );
+
+/** 날짜 저장(null이면 해제, 초안은 편집권 token 필요) */
+export const saveBundleDate = ({
+  bunchId,
+  bundleId,
+  value,
+  expectedVersion,
+  mode,
+  leaseToken,
+}: SaveBase & { value: string | null; leaseToken?: string }) =>
+  requestBundle(
+    bffApi.put(`${bundlePath(bunchId, bundleId)}/date`, {
+      json: {
+        ...(value === null ? {} : { value }),
+        expectedVersion,
+        mode,
+        ...(leaseToken === undefined ? {} : { leaseToken }),
+      } satisfies Schemas['BundleDateRequest'],
+    }),
+    'save date',
+  );
+
+/** 참여자 추가: 같은 번치의 현재 멤버, 초안 참여자만 호출 */
+export const addBundleParticipant = async (bunchId: string, bundleId: string, memberId: string) =>
+  requestBundle(
+    bffApi.post(`${bundlePath(bunchId, bundleId)}/participants`, {
+      json: { memberId: wireIdOrThrow(memberId) } satisfies Schemas['BundleParticipantRequest'],
+    }),
+    'add participant',
+  );
+
+/** 참여자 제외: 생성자나 관리자만, 제외되는 멤버의 코멘트도 함께 삭제됨 */
+export const removeBundleParticipant = async (
+  bunchId: string,
+  bundleId: string,
+  memberId: string,
+) =>
+  requestBundle(
+    bffApi.delete(
+      `${bundlePath(bunchId, bundleId)}/participants/${encodeURIComponent(String(wireIdOrThrow(memberId)))}`,
+    ),
+    'remove participant',
+  );
+
+/** 발행: 최신 revision을 보내고 같은 멱등 키로 다시 보내면 같은 결과 */
+export const publishBundle = (
+  bunchId: string,
+  bundleId: string,
+  expectedRevision: number,
+  idempotencyKey: string,
+): Promise<BundleDetail> =>
+  requestBundle(
+    bffApi.post(`${bundlePath(bunchId, bundleId)}/publish`, {
+      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      json: { expectedRevision } satisfies Schemas['PublishBundleRequest'],
+    }),
+    'publish bundle',
+  );
+
+/** 버전 충돌(BUNDLE_003)에서 서버의 현재 값과 버전을 읽음, 다른 오류면 undefined */
+export const readVersionConflict = (
+  error: unknown,
+): { value: unknown; version: number } | undefined => {
+  if (!(error instanceof ApiError) || error.code !== 'BUNDLE_003') return undefined;
+  const body = error.data as { error?: { detail?: { value?: unknown; version?: unknown } } };
+  const detail = body?.error?.detail;
+  return typeof detail?.version === 'number'
+    ? { value: detail.value, version: detail.version }
+    : undefined;
+};
+
+/** 발행 차단(BUNDLE_005)의 사유 목록, 다른 오류면 undefined */
+export const readPublishBlockers = (error: unknown): readonly string[] | undefined => {
+  if (!(error instanceof ApiError) || error.code !== 'BUNDLE_005') return undefined;
+  const body = error.data as { error?: { detail?: { reasons?: unknown } } };
+  const reasons = body?.error?.detail?.reasons;
+  return Array.isArray(reasons) ? reasons.filter((r): r is string => typeof r === 'string') : [];
+};

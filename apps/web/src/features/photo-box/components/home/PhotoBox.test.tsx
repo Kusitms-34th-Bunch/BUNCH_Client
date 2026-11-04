@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { delay, http } from 'msw';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockDb } from '@/mocks/db';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -17,14 +18,16 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-afterEach(() => {
-  vi.useRealTimers();
-});
-
 describe('PhotoBox 번들 만들기 연결', () => {
-  it('사진을 골라 「번들 만들기」를 확인하면 화면 전체 로딩 뒤 초안 작성 화면으로 이동한다', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  it('사진을 골라 「번들 만들기」를 확인하면 로딩을 보이고 초안을 만든 뒤 작성 화면으로 이동한다', async () => {
+    // 응답을 잠시 늦춰 생성 중 화면을 확인(undefined를 돌려주면 기본 가짜 서버 handler가 응답)
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles', async () => {
+        await delay(300);
+        return undefined;
+      }),
+    );
+    const user = userEvent.setup();
     render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
 
     // 프로필·멤버·사진 목록 요청이 끝나 사진함이 나올 때까지 기다림
@@ -39,10 +42,11 @@ describe('PhotoBox 번들 만들기 연결', () => {
 
     expect(router.push).not.toHaveBeenCalled();
     expect(screen.getByText(PHOTO_BOX_MESSAGES.bundleCreating)).toBeInTheDocument();
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(800);
-    });
-    expect(router.push).toHaveBeenCalledWith('/bunch/drafts/draft-1');
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+    const [bundle] = mockDb.get().bundles;
+    expect(router.push).toHaveBeenCalledWith(`/bunch/drafts/${bundle?.id}`);
+    // 고른 사진 한 장으로 초안이 만들어짐(어느 사진인지는 사진함 정렬 순서에 따름)
+    expect(bundle?.photos).toHaveLength(1);
   });
 });
 

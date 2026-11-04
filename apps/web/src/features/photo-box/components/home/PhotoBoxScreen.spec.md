@@ -41,7 +41,7 @@
 
 ## Route와 접근
 
-- Path·params·search: `/photos`. params는 없다. 임시 `preview` search(`loading`·`error`·`no-bunch`·`empty`)로 상태를 눈으로 확인할 수 있고, route 경계(`lib/preview.ts`의 `parsePreview`)에서 허용 값만 통과시킨다. 알 수 없는 값은 무시하고 운영(`NODE_ENV=production`)에서는 아예 열지 않는다. 제거 조건: 번들 연동 이슈에서 번들 만들기 화면이 쓰는 `usePhotoBoxFixture`를 API 기반으로 바꾸면 `preview.ts`·`fixtures/`·page의 `searchParams` 읽기를 함께 삭제한다. 사진함 화면과 사진 크게 보기는 이미 API(개발·시연에서는 가짜 서버)를 쓴다.
+- Path·params·search: `/photos`. params는 없다. 임시 `preview` search(`loading`·`error`·`no-bunch`·`empty`)로 상태를 눈으로 확인할 수 있고, route 경계(`lib/preview.ts`의 `parsePreview`)에서 허용 값만 통과시킨다. 알 수 없는 값은 무시하고 운영(`NODE_ENV=production`)에서는 아예 열지 않는다. 제거 조건: 번들 화면 테스트의 샘플 사진(`photoBox.fixture`)이 필요 없어지면 `preview.ts`·`fixtures/`·page의 `searchParams` 읽기를 함께 삭제한다. 사진함 화면·사진 크게 보기·번들 만들기 화면은 이미 사진함 API(개발·시연에서는 가짜 서버)를 쓴다.
 - 렌더링: `searchParams`를 읽어 `/photos`가 정적 prerender 대신 요청마다 렌더되는 동적 route다. 정적 정보뿐인 화면이라 비용은 작고, `preview`를 없애면 함께 사라진다.
 - 아직 없는 route: 사진 상세 `/photos/[photoId]`는 #128에서 만든다. 그 전에는 직접 URL로 들어가면 not-found이고, 이 화면에서 사진을 눌러도 이동하지 않는다.
 - 접근 권한·guard: 아직 없다(로그인 미구현). 번치 멤버만 볼 수 있어야 하며 서버가 판단한다(`docs/specs/photo-box.md`).

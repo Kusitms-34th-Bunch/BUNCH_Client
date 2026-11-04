@@ -34,13 +34,13 @@
 
 - 이 화면 뒤의 임시 이동 `/bunch/drafts/draft-1`은 작성 화면(#152, PR #160)이 머지돼야 열린다. 그 전에는 404다.
 - 사진함을 못 불러오면(오류·번치 없음) 상세·뷰어는 사진 선택 화면으로 돌아가 그 화면의 안내를 보인다. 적용하면 멤버 필터를 「전체」로 되돌려 고른 사진이 가려지지 않게 하고, 추천 사진이 모두 사라졌으면 기존 선택을 지우지 않고 「추천 번들이 삭제됐어요. 다시 확인해 주세요.」만 안내한다.
-- 사진 상태는 사진함 `usePhotoBoxFixture`(목 데이터, 번들 연동 이슈에서 API 기반으로 교체)를 그대로 쓴다. 로딩은 `PageLoading`(기존 로티 dim), 오류·번치 없음은 사진함의 화면을 쓴다.
+- 사진 상태는 사진함 `usePhotoBox`(사진함 API)를 그대로 쓴다. 로딩은 `PageLoading`(기존 로티 dim), 오류·번치 없음은 사진함의 화면을 쓴다.
 - 「번들 만들기」는 로딩(`PageLoading`)을 보이고 본문을 `inert`로 막은 뒤 목 지연 후 샘플 초안(`draft-1`)으로 이동한다. 초안 생성 API 연결 전의 임시 동작이다.
 
 ## 데이터 의존성
 
-- 사진·멤버: `@/features/photo-box`의 `usePhotoBoxFixture`, 순수 함수(`splitPhotos`, `filterByMember`, `toggleSelection`, `countSelectedByMember`)와 `MemberFilter`·`UndatedPhotos`·`PhotoCell`·`PhotoSelectionProvider`·`PhotoDetailSlide`. 사진 목록의 출처가 사진함이고 선택 모드 UI가 같아 가져다 쓴다. 이 PR이 feature 사이의 첫 import라, 세 번째 사용처가 생기면 `shared`로 올리는 것을 제안한다.
-- 추천 번들: `fixtures/recommendation.fixture.ts`(사진함 샘플 사진을 추천 순서로 나눔). 번들명은 기획의 제목 생성 로직이 내려줄 값이라 임시 이름이다.
+- 사진·멤버: `@/features/photo-box`의 `usePhotoBox`, 순수 함수(`splitPhotos`, `filterByMember`, `toggleSelection`, `countSelectedByMember`)와 `MemberFilter`·`UndatedPhotos`·`PhotoCell`·`PhotoSelectionProvider`·`PhotoDetailSlide`. 사진 목록의 출처가 사진함이고 선택 모드 UI가 같아 가져다 쓴다. 이 PR이 feature 사이의 첫 import라, 세 번째 사용처가 생기면 `shared`로 올리는 것을 제안한다.
+- 추천 번들: `fixtures/recommendation.fixture.ts`(가짜 서버 시작 데이터의 사진 1~13번을 추천 순서로 나눔, 추천 목록 API가 없어 샘플). 번들명은 기획의 제목 생성 로직이 내려줄 값이라 임시 이름이다.
 
 ## UI와 접근성
 

@@ -9,6 +9,16 @@ import { RecommendDetail } from './RecommendDetail';
 
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
+vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
+  usePhotoBox: (await import('../../testing/selectScreenDoubles')).usePhotoBoxDouble,
+}));
+vi.mock('../../hooks/useCreateBundle', async () => ({
+  useCreateBundle: (await import('../../testing/selectScreenDoubles')).useCreateBundleDouble,
+}));
+vi.mock('../../fixtures/recommendation.fixture', async () => ({
+  recommendationFixture: (await import('../../testing/selectScreenDoubles'))
+    .legacyRecommendationFixture,
+}));
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;

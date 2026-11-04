@@ -8,6 +8,8 @@ import type { Recommendation } from '../lib/recommendation';
 export type BundleSelectValue = {
   /** 사진함 목록(번들에 담을 사진의 출처) */
   photoState: PhotoBoxState;
+  /** 오류 화면의 「다시 시도」 */
+  retry: () => void;
   recommendations: readonly Recommendation[];
   /** 누른 순서대로 담은 선택한 사진 id */
   selection: PhotoSelection;
