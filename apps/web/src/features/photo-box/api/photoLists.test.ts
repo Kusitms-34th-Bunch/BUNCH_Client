@@ -80,6 +80,50 @@ describe('getDatedPhotosPage', () => {
     expect(page.photos[0]?.takenAt).toBe('2026-10-18T09:05');
   });
 
+  it('범위를 벗어난 시각 문자열은 성공으로 넘기지 않는다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({
+          totalCount: 1,
+          photos: [
+            {
+              photoId: 7,
+              thumbnailUrl: 'a.jpg',
+              capturedDate: '2026-10-18',
+              capturedTime: '29:99',
+              uploaderIds: [1],
+            },
+          ],
+        }),
+      ),
+    );
+
+    await expect(getDatedPhotosPage({ bunchId })).rejects.toMatchObject({
+      code: INVALID_RESPONSE_CODE,
+    });
+  });
+
+  it('Date 범위를 넘는 큰 사진 id가 있어도 목록 전체가 실패하지 않는다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({
+          totalCount: 1,
+          photos: [
+            {
+              photoId: 9_000_000_000_000_000,
+              thumbnailUrl: 'a.jpg',
+              capturedDate: '2026-10-18',
+              uploaderIds: [1],
+            },
+          ],
+        }),
+      ),
+    );
+
+    const page = await getDatedPhotosPage({ bunchId });
+    expect(page.photos).toHaveLength(1);
+  });
+
   it('시각이 없으면 자정으로 둔다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/photos', () =>

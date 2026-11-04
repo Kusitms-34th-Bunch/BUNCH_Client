@@ -1,7 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
 import type { ComponentProps, ReactElement } from 'react';
 import { act, render as baseRender, screen, waitFor } from '@testing-library/react';
-import { http } from 'msw';
+import { delay, http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_PHOTO_IDS } from '@/mocks/db/seed';
@@ -61,13 +61,39 @@ describe('PhotoDetail', () => {
   });
 
   it('처음에는 썸네일을 넘기고 원본을 받으면 보는 사진을 원본으로 바꾼다', async () => {
+    // 상세 응답을 잠시 늦춰 원본이 오기 전 상태를 확인(undefined를 돌려주면 기본 가짜 서버 handler가 응답)
+    server.use(
+      http.get('/api/bunches/:bunchId/photos/:photoId', async ({ params }) => {
+        if (params.photoId === 'undated') return undefined;
+        await delay(400);
+        return undefined;
+      }),
+    );
     render(<PhotoDetail photoId={firstId} />);
 
     await loaded();
     const srcOf = (id: string) => screenProps?.photos.find((photo) => photo.id === id)?.src;
+    expect(srcOf(firstId)).toBe('/mock/photos/S4-thumb.jpg');
     await waitFor(() => expect(srcOf(firstId)).toBe('/mock/photos/S4.jpg'));
     // 멀리 있는 사진은 아직 받지 않아 썸네일 그대로
     expect(srcOf(String(MOCK_PHOTO_IDS.O1))).toBe('/mock/photos/O1-thumb.jpg');
+  });
+
+  it('보는 중에 다른 곳에서 지워져 목록에서 사라지면 안내하고 사진함으로 이동한다', async () => {
+    const client = createTestQueryClient();
+    baseRender(<PhotoDetail photoId={firstId} />, { wrapper: createQueryWrapper(client) });
+    await loaded();
+    expect(replace).not.toHaveBeenCalled();
+
+    // 다른 멤버가 지운 것처럼 서버 사진을 없애고 목록을 다시 받게 함
+    mockDb.update((current) => ({
+      ...current,
+      photos: current.photos.filter((photo) => photo.photoId !== MOCK_PHOTO_IDS.S4),
+    }));
+    await act(() => client.invalidateQueries({ queryKey: ['photo-box', 'photos'] }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list));
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
   });
 
   it('없는 사진이면 「삭제된 사진이에요」 토스트 뒤 사진함으로 이동한다', async () => {

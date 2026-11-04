@@ -130,6 +130,76 @@ describe('usePhotoBox', () => {
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
   });
 
+  it('날짜 있는 목록과 없는 목록에 같은 사진이 있으면 한 번만 보인다', async () => {
+    const row = {
+      photoId: 1,
+      thumbnailUrl: '/mock/photos/S1-thumb.jpg',
+      uploaderIds: [1],
+    };
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({ totalCount: 1, photos: [{ ...row, capturedDate: '2026-10-18' }] }),
+      ),
+      http.get('/api/bunches/:bunchId/photos/undated', () => ok({ totalCount: 1, photos: [row] })),
+    );
+    const { result } = renderPhotoBox();
+
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    const photos = readyData(result.current.state).photos;
+    expect(photos).toHaveLength(1);
+    // 날짜 있는 쪽이 남음
+    expect(photos[0]?.takenAt).toBe('2026-10-18T00:00');
+  });
+
+  it('목록이 여러 쪽이어도 마지막 쪽까지 모아 전체를 돌려준다', async () => {
+    const photo = (photoId: number) => ({
+      photoId,
+      thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
+      capturedDate: '2026-10-18',
+      uploaderIds: [1],
+    });
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor');
+        if (cursor === null) return ok({ totalCount: 3, photos: [photo(1)], nextCursor: 'p2' });
+        if (cursor === 'p2') return ok({ totalCount: 3, photos: [photo(2)], nextCursor: 'p3' });
+        return ok({ totalCount: 3, photos: [photo(3)] });
+      }),
+    );
+    const { result } = renderPhotoBox();
+
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    expect(
+      readyData(result.current.state)
+        .photos.map((p) => p.id)
+        .sort(),
+    ).toEqual(['1', '2', '3']);
+  });
+
+  it('cursor가 A→B→A로 순환해도 무한 반복하지 않고 받은 사진은 남긴다', async () => {
+    let calls = 0;
+    const photo = (photoId: number) => ({
+      photoId,
+      thumbnailUrl: '/mock/photos/S1-thumb.jpg',
+      capturedDate: '2026-10-18',
+      uploaderIds: [1],
+    });
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', ({ request }) => {
+        calls += 1;
+        const cursor = new URL(request.url).searchParams.get('cursor');
+        if (cursor === null) return ok({ totalCount: 3, photos: [photo(1)], nextCursor: 'A' });
+        if (cursor === 'A') return ok({ totalCount: 3, photos: [photo(2)], nextCursor: 'B' });
+        return ok({ totalCount: 3, photos: [photo(3)], nextCursor: 'A' });
+      }),
+    );
+    const { result } = renderPhotoBox();
+
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    expect(calls).toBe(3);
+    expect(readyData(result.current.state).photos).toHaveLength(3);
+  });
+
   it('이미 받은 목록이 있으면 삭제 뒤 재조회가 실패해도 오류 화면으로 덮지 않는다', async () => {
     const { result } = renderPhotoBox();
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
@@ -140,5 +210,7 @@ describe('usePhotoBox', () => {
     });
 
     expect(result.current.state.kind).toBe('ready');
+    // 최신 목록을 받지 못했다는 사실은 화면이 안내하도록 알림
+    await waitFor(() => expect(result.current.stale).toBe(true));
   });
 });

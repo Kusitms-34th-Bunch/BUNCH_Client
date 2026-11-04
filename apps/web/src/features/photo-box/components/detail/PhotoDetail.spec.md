@@ -43,7 +43,7 @@
 
 ## 데이터 의존성
 
-- Query: 없음(fixture). 연결 시 사진 상세는 목록 query 캐시에서 읽고 삭제·저장 후 목록 query를 무효화한다(`docs/specs/photo-box.md`의 후보 키).
+- Query: 사진 상세는 `photoDetailQueryOptions`(키 `photoBoxKeys.photoDetail`, `staleTime: Infinity`)로 원본 주소를 받고 목록 query 캐시는 읽지 않는다. 삭제 뒤에는 목록·상세 key를 함께 무효화한다. 저장은 목 동작이다.
 - API 계약 확인 항목: 사진 상세에 필요한 필드(원본 URL, 올린 멤버들의 현재 프로필, 촬영 날짜와 출처), 삭제 시 「내 이름만 빠짐」과 「사라짐」의 구분 응답.
 
 ## UI와 접근성

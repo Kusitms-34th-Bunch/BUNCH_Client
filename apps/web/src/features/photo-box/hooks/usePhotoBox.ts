@@ -18,6 +18,8 @@ type UsePhotoBoxResult = {
   actions: PhotoBoxActions;
   /** 오류 화면의 「다시 시도」 */
   retry: () => void;
+  /** 이미 받은 목록은 있는데 최신 목록을 다시 받지 못한 상태(삭제 뒤 재조회 실패 등), 화면이 안내함 */
+  stale: boolean;
 };
 
 type DateChange = { ids: ReadonlySet<string>; date: Date };
@@ -31,22 +33,26 @@ export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
   const {
     data: profile,
     isError: profileError,
+    isRefetchError: profileRefetchError,
     refetch: refetchProfile,
   } = useQuery(myProfileQueryOptions());
   const bunchId = profile?.bunch?.id;
   const {
     data: members,
     isError: membersError,
+    isRefetchError: membersRefetchError,
     refetch: refetchMembers,
   } = useQuery(bunchMembersQueryOptions(bunchId));
   const {
     data: dated,
     isError: datedError,
+    isRefetchError: datedRefetchError,
     refetch: refetchDated,
   } = useQuery(datedPhotosQueryOptions(bunchId));
   const {
     data: undated,
     isError: undatedError,
+    isRefetchError: undatedRefetchError,
     refetch: refetchUndated,
   } = useQuery(undatedPhotosQueryOptions(bunchId));
   const [dateChanges, setDateChanges] = useState<readonly DateChange[]>([]);
@@ -59,7 +65,8 @@ export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
     const me = members.find((member) => member.id === profile.memberId);
     const photos = dateChanges.reduce<readonly PhotoBoxPhoto[]>(
       (current, change) => applyTakenDate(current, change.ids, change.date),
-      [...dated, ...undated],
+      // 두 요청 사이에 촬영 날짜가 바뀌면 같은 사진이 양쪽에 있을 수 있어 id로 한 번만 남김(날짜 있는 쪽 우선)
+      [...new Map([...undated, ...dated].map((photo) => [photo.id, photo])).values()],
     );
     return {
       bunch,
@@ -76,6 +83,8 @@ export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
     (datedError && !dated) ||
     (undatedError && !undated);
   // 다시 시도: 실패한 요청만 다시 보냄
+  const stale =
+    profileRefetchError || membersRefetchError || datedRefetchError || undatedRefetchError;
   const retry = () => {
     if (profileError) void refetchProfile();
     if (membersError) void refetchMembers();
@@ -106,5 +115,5 @@ export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
     },
   };
 
-  return { state, actions, retry };
+  return { state, actions, retry, stale };
 }

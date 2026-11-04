@@ -10,11 +10,14 @@ type PageRequest = (_cursor: string | undefined) => Promise<PhotosPage>;
 const fetchAllPages = async (request: PageRequest) => {
   const photos: PhotosPage['photos'] = [];
   let cursor: string | undefined;
+  // 이미 받은 cursor가 다시 오면(같은 cursor 반복·A→B→A 순환) 무한 반복하지 않고 중단
+  const seen = new Set<string>();
   do {
     const page = await request(cursor);
-    // 같은 cursor를 되풀이하는 응답이면 무한 반복하지 않고 중단
-    if (page.nextCursor !== null && page.nextCursor === cursor) break;
+    // 그 쪽에서 받은 사진은 남기고, 이미 본 cursor가 다시 오면 거기서 끝냄
     photos.push(...page.photos);
+    if (page.nextCursor !== null && seen.has(page.nextCursor)) break;
+    if (page.nextCursor !== null) seen.add(page.nextCursor);
     cursor = page.nextCursor ?? undefined;
   } while (cursor);
   return photos;

@@ -4,7 +4,7 @@ import { ApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { replaceUrl } from '@/shared/lib/replaceUrl';
@@ -68,6 +68,9 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   const [entered, setEntered] = useState(false);
   if (data !== undefined && present && !entered) setEntered(true);
   const missing = data !== undefined && !present && !entered;
+  // 들어온 뒤 다른 곳에서 지워져 지금 보는 사진이 목록에서 사라진 경우(내가 삭제하는 동안은 삭제 흐름이 처리)
+  const deleting = useRef(false);
+  const vanished = entered && data !== undefined && currentIndex < 0;
   // 오류·번치 없음은 상세에서 보여 줄 화면이 없어 사진함으로 보냄(사진함이 오류 화면과 다시 시도를 가짐)
   const unavailable = state.kind === 'error' || state.kind === 'no-bunch';
 
@@ -83,6 +86,12 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   }, [goneOnServer, invalidatePhotos, router]);
 
   useEffect(() => {
+    if (!vanished || deleting.current) return;
+    toast(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    router.replace(PHOTO_BOX_PATHS.list);
+  }, [vanished, router]);
+
+  useEffect(() => {
     if (!missing) return;
     toast(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
     router.replace(PHOTO_BOX_PATHS.list);
@@ -92,6 +101,19 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   const [lastPhotos, setLastPhotos] = useState(photosWithOriginal);
   if (present && lastPhotos !== photosWithOriginal) setLastPhotos(photosWithOriginal);
 
+  // 내가 사진을 지우는 동안에는 목록에서 사라져도 별도 안내 없이 화면의 이탈 흐름(토스트·이동)에 맡김
+  const guardedActions = {
+    ...actions,
+    deletePhotos: async (ids: readonly string[]) => {
+      deleting.current = true;
+      try {
+        return await actions.deletePhotos(ids);
+      } finally {
+        deleting.current = false;
+      }
+    },
+  };
+
   if (!data || photoId === undefined || (!present && !entered)) return <PageLoading />;
 
   return (
@@ -100,7 +122,7 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
       members={data.members}
       viewer={data.viewer}
       initialPhotoId={photoId}
-      actions={actions}
+      actions={guardedActions}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 사진함으로 이동
       onBack={() => backOr(PHOTO_BOX_PATHS.list)}
       onLeave={() => router.replace(PHOTO_BOX_PATHS.list)}

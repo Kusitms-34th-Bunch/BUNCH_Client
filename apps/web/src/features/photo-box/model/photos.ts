@@ -17,7 +17,7 @@ export type PhotoDeleteResult = z.infer<typeof photoDeleteResponseSchema>;
 
 // 서버 확인 전: Swagger는 시각을 객체(LocalTime), 명세 문서는 'HH:mm:ss' 문자열로 적어 둘 다 받음
 const capturedTimeSchema = z.union([
-  z.string().regex(/^\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/),
+  z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?$/),
   z.object({
     hour: z.number().int().min(0).max(23).optional(),
     minute: z.number().int().min(0).max(59).optional(),
@@ -71,7 +71,10 @@ const toHourMinute = (time: z.infer<typeof capturedTimeSchema> | null | undefine
 };
 
 // 서버가 업로드 시각을 주지 않아 id(오래된 순 발급)를 초로 바꿔 같은 촬영 시각의 정렬 기준으로 씀
-const toUploadedAt = (photoId: number) => new Date(photoId * 1000).toISOString().slice(0, 19);
+// Date가 표현하는 최대 시각(8.64e15ms)을 넘는 id는 같은 값으로 묶어 변환 오류로 목록 전체가 실패하지 않게 함
+const MAX_UPLOAD_ID = 8.64e12;
+const toUploadedAt = (photoId: number) =>
+  new Date(Math.min(photoId, MAX_UPLOAD_ID) * 1000).toISOString().slice(0, 19);
 
 export const toDatedPhotoBoxPhoto = (photo: z.infer<typeof datedPhotoSchema>): PhotoBoxPhoto => ({
   id: toDomainId(photo.photoId),
