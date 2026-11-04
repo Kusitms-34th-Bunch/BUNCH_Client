@@ -1,43 +1,24 @@
-import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
-import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
 import type { Recommendation } from '../lib/recommendation';
 
-// 추천 번들 API 연결 전 샘플: 사진함 샘플 사진을 추천 순서대로 나눠 담음(번들명은 기획의 제목 생성 로직이 내려줄 값)
-const ready: readonly PhotoBoxPhoto[] = photoBoxFixture.photos.filter(
-  (photo) => photo.status === 'ready' && photo.takenAt !== null,
-);
-
-const dateOf = (photo: PhotoBoxPhoto | undefined) => {
-  const [, month = 1, day = 1] = (photo?.takenAt?.slice(0, 10) ?? '').split('-').map(Number);
-  return { month, day };
-};
-
-const recommendation = (
-  id: string,
-  title: string,
-  memberNames: readonly string[],
-  photos: readonly PhotoBoxPhoto[],
-): Recommendation => ({
-  id,
-  title,
-  imageSrc: photos[0]?.src ?? '',
-  memberNames,
-  photoIds: photos.map((photo) => photo.id),
-  ...dateOf(photos[0]),
-});
-
+// 추천 번들 목록 API가 아직 없어 UT 시작 데이터(가짜 서버 사진 1~13번)에 맞춘 샘플
+// 사진 id는 가짜 서버 시드 순서(10월 18일 1~6, 17일 7~10, 3일 11~13)이고, 번들 제목은 서버의 제목 생성 로직이 내려줄 값
 export const recommendationFixture: readonly Recommendation[] = [
-  recommendation(
-    'rec-1',
-    '성수동 러닝 모임',
-    ['지예', '경진', '수인', '은우', '경준'],
-    ready.slice(0, 6),
-  ),
-  recommendation(
-    'rec-2',
-    '성수동 러닝 모임',
-    ['지예', '경진', '수인', '은우', '경준', '효찬', '다온'],
-    ready.slice(3, 9),
-  ),
-  recommendation('rec-3', '한강 피크닉', ['지예', '수인', '효찬', '경준'], ready.slice(6, 12)),
+  {
+    id: 'rec-1',
+    title: '설악산 단풍 여행',
+    imageSrc: '/mock/photos/S1-thumb.jpg',
+    memberNames: ['지예', '경진', '은우', '수인', '큐시즘'],
+    photoIds: ['1', '2', '3', '4', '5', '6'],
+    month: 10,
+    day: 18,
+  },
+  {
+    id: 'rec-2',
+    title: '속초에서 보낸 주말',
+    imageSrc: '/mock/photos/P1-thumb.jpg',
+    memberNames: ['경진', '은우', '큐시즘', '지예', '수인'],
+    photoIds: ['7', '8', '9', '10', '11', '12', '13'],
+    month: 10,
+    day: 17,
+  },
 ];

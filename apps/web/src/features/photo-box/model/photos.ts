@@ -2,6 +2,7 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
+import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import type { PhotoBoxPhoto } from '../lib/types';
 
 /**
@@ -97,9 +98,6 @@ export const toUndatedPhotoBoxPhoto = (
   uploaderIds: photo.uploaderIds.map(toDomainId),
   status: 'ready',
 });
-
-// 운영 응답은 신뢰 경계 밖이라 img src에는 https 주소나 같은 출처 경로(//나 /로 시작하지 않는)만 허용
-const isSafeImageUrl = (url: string) => /^https:\/\/\S+$/.test(url) || /^\/(?![/\\])\S*$/.test(url);
 
 const photoDetailUploaderSchema = z.object({
   memberId: z.number().int().positive(),

@@ -72,6 +72,10 @@ export function DraftScreen({
   const blockUpload = () => {
     if (!access.participant) denyEdit();
     else if (!access.canPublish) notify(BUNDLE_MESSAGES.uploadForbidden);
+    // 저장이 끝나지 않아 막힌 경우는 입력 부족과 다른 안내
+    else if (blockers.includes('unsaved')) notify(BUNDLE_MESSAGES.uploadUnsaved);
+    else if (blockers.length === 1 && blockers[0] === 'saving')
+      notify(BUNDLE_MESSAGES.uploadSaving);
     else if (blockers.length > 0) notify(BUNDLE_MESSAGES.uploadIncomplete);
     else return false;
     return true;

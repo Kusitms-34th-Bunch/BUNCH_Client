@@ -1,5 +1,4 @@
 // 백엔드 API 명세의 응답 모양, ID는 서버 숫자(long)이고 화면 모델 변환은 endpoint 경계 담당
-// 번들 모양은 번들 연동 이슈에서 추가
 
 export type MemberRole = 'OWNER' | 'CO_OWNER' | 'MEMBER';
 
@@ -42,9 +41,67 @@ export type MockPhoto = {
   imageUrl: string;
 };
 
+export type BundleVisibility = 'PUBLIC' | 'PRIVATE';
+
+/** 번들에 담긴 사진 한 장(번들 사진 ID와 사진함 원본 ID는 다름) */
+export type MockBundlePhoto = {
+  id: number;
+  photoId: number | null;
+  imageAssetId: number;
+  imageUrl: string;
+  position: number;
+  addedBy: number;
+  addedAt: string;
+  caption: string;
+  captionVersion: number;
+  captionUpdatedBy: number | null;
+  captionUpdatedAt: string | null;
+};
+
+export type MockBundleComment = {
+  memberId: number;
+  content: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** 번들(초안·발행본). 필드마다 버전이 있고 revision은 내용이 바뀔 때마다 오름 */
+export type MockBundle = {
+  id: number;
+  bunchId: number;
+  createdBy: number;
+  status: 'DRAFT' | 'PUBLISHED';
+  title: string;
+  titleVersion: number;
+  visibility: BundleVisibility | null;
+  visibilityVersion: number;
+  date: string | null;
+  dateVersion: number;
+  revision: number;
+  photos: MockBundlePhoto[];
+  participants: { memberId: number; joinedAt: string }[];
+  comments: MockBundleComment[];
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+};
+
+/** 편집권(STOMP 대신 가짜 서버가 관리). target은 TITLE·DATE·PHOTO:{번들 사진 ID} */
+export type MockLease = {
+  bundleId: number;
+  target: string;
+  memberId: number;
+  token: string;
+  leaseVersion: number;
+  expiresAt: string;
+};
+
 export type MockDbState = {
   members: MockMember[];
   bunches: MockBunch[];
   memberships: MockMembership[];
   photos: MockPhoto[];
+  bundles: MockBundle[];
+  bundleLeases: MockLease[];
 };
