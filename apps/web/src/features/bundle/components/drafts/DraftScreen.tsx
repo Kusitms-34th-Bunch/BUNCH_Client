@@ -7,7 +7,7 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer, SaveStatus } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { getDraftAccess } from '../../lib/permissions';
-import { getPublishBlockers } from '../../lib/publish';
+import { getPublishBlockers, hasOtherEditors } from '../../lib/publish';
 import { DraftComments } from './DraftComments';
 import { DraftHeader } from './DraftHeader';
 import { DraftLeave } from './DraftLeave';
@@ -59,6 +59,8 @@ export function DraftScreen({
   onOpenPhoto,
 }: DraftScreenProps) {
   const [uploadConfirmOpen, setUploadConfirmOpen] = useState(false);
+  // 어느 확인 창을 띄울지는 「업로드」를 누른 순간 기준(창이 열린 뒤 편집 상태가 바뀌어도 그대로)
+  const [othersEditingOnUpload, setOthersEditingOnUpload] = useState(false);
   const access = getDraftAccess(draft, viewer);
   const blockers = getPublishBlockers(draft, { saveStatus, offline });
   const uploadReady = access.canPublish && blockers.length === 0;
@@ -75,7 +77,9 @@ export function DraftScreen({
     return true;
   };
   const upload = () => {
-    if (!blockUpload()) setUploadConfirmOpen(true);
+    if (blockUpload()) return;
+    setOthersEditingOnUpload(hasOtherEditors(draft.editing, viewer.memberId));
+    setUploadConfirmOpen(true);
   };
 
   return (
@@ -132,8 +136,16 @@ export function DraftScreen({
       <ConfirmDialog
         open={uploadConfirmOpen}
         onOpenChange={setUploadConfirmOpen}
-        title={BUNDLE_MESSAGES.uploadConfirmTitle}
-        description={BUNDLE_MESSAGES.uploadConfirmDescription}
+        title={
+          othersEditingOnUpload
+            ? BUNDLE_MESSAGES.uploadEditingTitle
+            : BUNDLE_MESSAGES.uploadConfirmTitle
+        }
+        description={
+          othersEditingOnUpload
+            ? BUNDLE_MESSAGES.uploadEditingDescription
+            : BUNDLE_MESSAGES.uploadConfirmDescription
+        }
         confirmLabel={BUNDLE_MESSAGES.upload}
         cancelLabel={BUNDLE_MESSAGES.cancel}
         onConfirm={() => {

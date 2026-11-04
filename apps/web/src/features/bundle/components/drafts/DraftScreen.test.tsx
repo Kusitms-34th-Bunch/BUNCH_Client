@@ -195,9 +195,7 @@ describe('업로드 버튼', () => {
     await userEvent.click(uploadButton());
     const dialog = await screen.findByRole('alertdialog');
     expect(within(dialog).getByText('번들을 업로드할까요?')).toBeInTheDocument();
-    expect(
-      within(dialog).getByText('업로드한 번들은 멤버들과 공유되며, 업로드 이후 수정할 수 있어요.'),
-    ).toBeInTheDocument();
+    expect(dialog).toHaveAccessibleDescription('업로드 이후에는 관리자만 수정할 수 있어요.');
     expect(onPublish).not.toHaveBeenCalled();
 
     await userEvent.click(within(dialog).getByRole('button', { name: '업로드' }));
@@ -217,6 +215,44 @@ describe('업로드 버튼', () => {
 
     expect(onPublish).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+  });
+
+  it('다른 멤버가 편집 중이면 편집 중 확인 창을 띄우고, 업로드는 막지 않는다', async () => {
+    // 코멘트를 작성 중인 멤버도 편집 중으로 셈
+    renderScreen({
+      viewer: creator,
+      draft: { ...publishable, editing: { commentMemberIds: ['gyeongjin'] } },
+    });
+
+    await userEvent.click(uploadButton());
+    const dialog = await screen.findByRole('alertdialog', { name: '편집 중인 멤버가 있어요' });
+    expect(
+      within(dialog).getByText('지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있어요.'),
+    ).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: '업로드' }));
+
+    expect(onPublish).toHaveBeenCalledTimes(1);
+  });
+
+  it('어느 확인 창인지는 「업로드」를 누른 순간 기준이라 창이 열린 뒤 편집이 끝나도 그대로다', async () => {
+    const editingDraft: Draft = { ...publishable, editing: { title: 'gyeongjin' } };
+    const { rerender } = renderScreen({ viewer: creator, draft: editingDraft });
+
+    await userEvent.click(uploadButton());
+    await screen.findByRole('alertdialog', { name: '편집 중인 멤버가 있어요' });
+    rerender(screenElement({ viewer: creator, draft: publishable }));
+
+    expect(
+      screen.getByRole('alertdialog', { name: '편집 중인 멤버가 있어요' }),
+    ).toBeInTheDocument();
+
+    // 닫은 뒤 다시 누르면 그때 상태(편집 끝남)로 기본 창
+    await userEvent.click(screen.getByRole('button', { name: '취소' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    await userEvent.click(uploadButton());
+    expect(
+      await screen.findByRole('alertdialog', { name: '번들을 업로드할까요?' }),
+    ).toBeInTheDocument();
   });
 
   it('확인 창에서 「취소」를 누르면 업로드하지 않는다', async () => {
