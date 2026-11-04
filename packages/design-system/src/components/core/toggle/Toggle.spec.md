@@ -21,7 +21,7 @@
 
 ## Public API
 
-- Props: native `<input type="checkbox">`의 속성(`type`·`role`·`children` 제외). `className`은 바깥 래퍼에 적용한다.
+- Props: native `<input type="checkbox">`의 속성(`type`·`role`·`children` 제외). `className`·`style`은 바깥 래퍼에 적용한다.
 - 제어 방식: `checked` + `onChange` 또는 `defaultChecked` 모두 쓸 수 있다.
 - 호출자 소유 책임: 접근성 이름, 켜짐 값 저장.
 

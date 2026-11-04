@@ -5,10 +5,11 @@ export type ToggleProps = Omit<ComponentProps<'input'>, 'type' | 'role' | 'child
 
 /**
  * 52×28 켬·끔 토글(Figma `Toggle`): native 체크박스에 `role="switch"`를 주고 트랙과 노브는 따로 그림
- * 켜짐은 노브가 오른쪽, 꺼짐은 왼쪽. 접근성 이름은 호출하는 쪽 담당, `className`은 바깥 래퍼에 적용
+ * 켜짐은 노브가 오른쪽, 꺼짐은 왼쪽. 접근성 이름은 호출하는 쪽 담당, `className`·`style`은 바깥 래퍼에 적용
  */
-export const Toggle = ({ className, ...props }: ToggleProps) => (
+export const Toggle = ({ className, style, ...props }: ToggleProps) => (
   <span
+    style={style}
     className={cn(
       'has-focus-visible:outline-border-brand h-s13 w-s19 relative inline-flex shrink-0 touch-manipulation rounded-full has-focus-visible:outline-2 has-focus-visible:outline-offset-2',
       className,

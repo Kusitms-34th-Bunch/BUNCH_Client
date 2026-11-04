@@ -6,10 +6,11 @@ export type CheckboxProps = Omit<ComponentProps<'input'>, 'type' | 'children'>;
 
 /**
  * 24px 사각 체크박스(Figma `Checkbox`): native 체크박스를 투명하게 덮고 보이는 상자와 체크는 따로 그림
- * 접근성 이름·그룹(`fieldset`)은 호출하는 쪽 담당, `className`은 바깥 래퍼에 적용
+ * 접근성 이름·그룹(`fieldset`)은 호출하는 쪽 담당, `className`·`style`은 바깥 래퍼에 적용
  */
-export const Checkbox = ({ className, ...props }: CheckboxProps) => (
+export const Checkbox = ({ className, style, ...props }: CheckboxProps) => (
   <span
+    style={style}
     className={cn(
       'has-focus-visible:outline-border-brand rounded-r2 size-s12 relative inline-flex shrink-0 touch-manipulation has-focus-visible:outline-2 has-focus-visible:outline-offset-2',
       className,

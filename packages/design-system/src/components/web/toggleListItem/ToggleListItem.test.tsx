@@ -24,6 +24,15 @@ describe('ToggleListItem', () => {
     );
   });
 
+  it('호출하는 쪽의 aria-describedby는 설명 뒤에 이어 붙인다', () => {
+    render(<ToggleListItem title={TITLE} description={DESCRIPTION} aria-describedby="extra" />);
+
+    const ids = screen.getByRole('switch', { name: TITLE }).getAttribute('aria-describedby');
+    const [descriptionRef, extraRef] = ids?.split(' ') ?? [];
+    expect(document.getElementById(descriptionRef ?? '')?.textContent).toBe(DESCRIPTION);
+    expect(extraRef).toBe('extra');
+  });
+
   it('행의 글자를 눌러도 토글이 켜지고 onChange를 부른다', async () => {
     const onChange = vi.fn();
     render(<ToggleListItem title={TITLE} description={DESCRIPTION} onChange={onChange} />);
@@ -44,10 +53,13 @@ describe('ToggleListItem', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('className은 행에 적용한다', () => {
-    const { container } = render(<ToggleListItem title={TITLE} className="mt-2" />);
+  it('className·style은 행에 적용한다', () => {
+    const { container } = render(
+      <ToggleListItem title={TITLE} className="mt-2" style={{ marginBottom: 4 }} />,
+    );
 
     expect(container.firstElementChild?.tagName).toBe('LABEL');
     expect(container.firstElementChild?.classList.contains('mt-2')).toBe(true);
+    expect((container.firstElementChild as HTMLElement).style.marginBottom).toBe('4px');
   });
 });

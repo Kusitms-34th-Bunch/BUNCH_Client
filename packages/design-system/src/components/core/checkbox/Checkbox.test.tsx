@@ -67,10 +67,13 @@ describe('Checkbox', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('보이는 상자와 체크는 보조기기에서 숨기고 className은 바깥 래퍼에 적용한다', () => {
-    const { container } = render(<Checkbox aria-label="전체 선택" className="ml-2" />);
+  it('보이는 상자와 체크는 보조기기에서 숨기고 className·style은 바깥 래퍼에 적용한다', () => {
+    const { container } = render(
+      <Checkbox aria-label="전체 선택" className="ml-2" style={{ marginTop: 4 }} />,
+    );
 
     expect(container.firstElementChild?.classList.contains('ml-2')).toBe(true);
+    expect((container.firstElementChild as HTMLElement).style.marginTop).toBe('4px');
     expect(container.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
   });
 });

@@ -21,7 +21,7 @@
 
 ## Public API
 
-- Props: `title`, `description?`, 그 밖에는 `Toggle`과 같다(input에 전달). `className`은 행에 적용한다.
+- Props: `title`, `description?`, 그 밖에는 `Toggle`과 같다(input에 전달). `className`·`style`은 행에 적용한다.
 - 제어 방식: `checked` + `onChange` 또는 `defaultChecked`.
 
 ## 상태와 동작
@@ -32,7 +32,7 @@
 
 ## 접근성
 
-- 토글의 접근성 이름은 제목(`aria-labelledby`), 설명은 `aria-describedby`로 연결한다. 설명이 없으면 연결하지 않는다.
+- 토글의 접근성 이름은 제목(`aria-labelledby`), 설명은 `aria-describedby`로 연결한다. 설명이 없으면 연결하지 않고, 호출하는 쪽이 준 `aria-describedby`는 설명 뒤에 이어 붙인다.
 - Keyboard·focus: Tab으로 토글에 들어가고 Space로 켜고 끈다. 포커스 윤곽선은 토글에 그린다.
 
 ## Styling과 의존성

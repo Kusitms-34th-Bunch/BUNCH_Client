@@ -11,18 +11,21 @@ export type ToggleListItemProps = ToggleProps & {
 
 /**
  * 제목·설명과 토글을 한 줄로 묶은 설정 행(Figma `Toggle_List`): 행 전체가 토글의 label이라 어디를 눌러도 켜고 끔
- * `className`은 행에, 나머지 props는 토글 input에 전달. 비활성이면 행 전체를 40%로 흐리게
+ * `className`·`style`은 행에, 나머지 props는 토글 input에 전달. 비활성이면 행 전체를 40%로 흐리게
  */
 export const ToggleListItem = ({
   title,
   description,
   className,
+  style,
+  'aria-describedby': ariaDescribedBy,
   ...props
 }: ToggleListItemProps) => {
   const titleId = useId();
   const descriptionId = useId();
   return (
     <label
+      style={style}
       className={cn(
         'group/toggle-row gap-s6 px-padding-p4 py-padding-p3 flex w-full cursor-pointer touch-manipulation items-center',
         'has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-(--semantic-opacity-disabled)',
@@ -47,7 +50,9 @@ export const ToggleListItem = ({
       </span>
       <Toggle
         aria-labelledby={titleId}
-        aria-describedby={description ? descriptionId : undefined}
+        aria-describedby={
+          [description && descriptionId, ariaDescribedBy].filter(Boolean).join(' ') || undefined
+        }
         {...props}
       />
     </label>
