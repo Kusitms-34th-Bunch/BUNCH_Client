@@ -2,6 +2,7 @@ import { INVALID_RESPONSE_CODE } from '@app/api-core';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { mockDb } from '@/mocks/db';
+import { mockDrafts } from '@/mocks/db/drafts';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
@@ -75,7 +76,7 @@ describe('번들 API', () => {
     const error = await catchError(createBundle(bunchId, ['temp-1'], createIdempotencyKey()));
 
     expect(error).toMatchObject({ name: 'ApiError', category: 'validation' });
-    expect(mockDb.get().bundles).toHaveLength(0);
+    expect(mockDrafts()).toHaveLength(0);
   });
 
   it('상세 조회는 같은 번들을 돌려주고 없는 번들은 RESOURCE_001이다', async () => {

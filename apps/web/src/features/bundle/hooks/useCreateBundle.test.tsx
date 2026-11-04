@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
+import { mockDrafts } from '@/mocks/db/drafts';
 import { MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
@@ -43,7 +44,7 @@ describe('useCreateBundle', () => {
     act(() => result.current.create(photoIds));
 
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
-    const [bundle] = mockDb.get().bundles;
+    const [bundle] = mockDrafts();
     expect(router.push).toHaveBeenCalledWith(`/bunch/drafts/${bundle?.id}`);
     expect(bundle?.photos.map((photo) => photo.photoId)).toEqual([
       MOCK_PHOTO_IDS.S4,
@@ -63,7 +64,7 @@ describe('useCreateBundle', () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
     act(() => result.current.create(photoIds));
 
-    expect(mockDb.get().bundles).toHaveLength(1);
+    expect(mockDrafts()).toHaveLength(1);
   });
 
   it('고른 사진이 없으면 요청하지 않는다', async () => {
@@ -72,7 +73,7 @@ describe('useCreateBundle', () => {
 
     act(() => result.current.create([]));
 
-    expect(mockDb.get().bundles).toHaveLength(0);
+    expect(mockDrafts()).toHaveLength(0);
     expect(result.current.creating).toBe(false);
   });
 

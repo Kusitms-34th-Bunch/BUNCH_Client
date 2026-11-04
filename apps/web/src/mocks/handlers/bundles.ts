@@ -99,7 +99,7 @@ const dateChips = (bundle: MockBundle, state: MockDbState): string[] => {
 };
 
 // 번들 한 건의 응답(BundleSnapshot). 편집권 token은 공개하지 않음
-const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: string) => {
+export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: string) => {
   const isCreator = bundle.createdBy === MOCK_MY_MEMBER_ID;
   const isAdmin = myRole !== 'MEMBER';
   const participant = bundle.participants.some((p) => p.memberId === MOCK_MY_MEMBER_ID);
@@ -143,7 +143,7 @@ const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: string) => {
   };
 };
 
-const myRoleIn = (state: MockDbState, bunchId: number) =>
+export const myRoleIn = (state: MockDbState, bunchId: number) =>
   state.memberships.find(
     (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
   )?.role ?? 'MEMBER';
