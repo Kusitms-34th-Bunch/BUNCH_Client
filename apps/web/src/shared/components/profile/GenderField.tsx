@@ -16,10 +16,17 @@ type GenderFieldProps = {
   onChange: (_value: Gender | null) => void;
   /** 그룹에 연결할 설명 요소 id(예: 공개 여부 안내) */
   describedBy?: string;
+  /** 제목 옆 「선택」 표시(기본 표시) */
+  showOptional?: boolean | undefined;
 };
 
 // 여성·남성 중 하나 선택, 다시 누르면 해제(선택은 Figma 눌림 모양 유지)
-export function GenderField({ value, onChange, describedBy }: GenderFieldProps) {
+export function GenderField({
+  value,
+  onChange,
+  describedBy,
+  showOptional = true,
+}: GenderFieldProps) {
   const titleId = useId();
 
   return (
@@ -31,7 +38,7 @@ export function GenderField({ value, onChange, describedBy }: GenderFieldProps) 
     >
       <div className="typography-body-3-semi-bold gap-s2 text-text-secondary flex items-center">
         <span id={titleId}>성별</span>
-        <Option variant="optional" />
+        {showOptional ? <Option variant="optional" /> : null}
       </div>
       <div className="gap-s4 flex">
         {GENDERS.map((gender) => {

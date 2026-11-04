@@ -50,7 +50,7 @@ hook을 새로 만들기 전에 react-simplikit에 있는지 먼저 본다(2026-
 - 바깥 누르면 닫기(`PhotoActionMenu`, `DraftVisibility`): 누르는 순간(`pointerdown`) 닫고 같은 effect에서 Esc도 처리한다. `useOutsideClickEffect`는 손을 뗀 뒤(`click`)에 반응한다.
 - 클라이언트 렌더 판단(`useBlockRelation`): `useSyncExternalStore`라 앱 안 이동으로 마운트될 때는 첫 렌더부터 참이다. `useIsClient`는 마운트마다 첫 렌더가 거짓이라 확인 중 화면이 한 번씩 깜빡인다.
 - 동작 줄이기 구독(`shared/hooks/useReducedMotion`): react-simplikit에 없다.
-- 입력칸을 키보드 위로 올리기(`features/auth/hooks/useScrollFocusedIntoView`): 포커스된 입력칸만 스크롤하는 용도라 화면 전체를 띄우는 `useAvoidKeyboard`와 목적이 다르다.
+- 입력칸을 키보드 위로 올리기(`shared/hooks/useScrollFocusedIntoView`): 포커스된 입력칸만 스크롤하는 용도라 화면 전체를 띄우는 `useAvoidKeyboard`와 목적이 다르다.
 - 네트워크 상태(`features/bundle/hooks/useOnlineStatus`): `useSyncExternalStore`에 다시 확인(`recheck`)을 더했다. `useNetworkStatus`는 `useState`+`useEffect`다.
 - 화면 가림 감지(`usePhotoReorder`, `NativeTabBarVisibility`): `visibilitychange`를 각자 effect 안에서 다른 처리와 함께 구독한다. 새로 필요하면 `usePageVisibility`·`useVisibilityEvent`를 먼저 본다.
 
