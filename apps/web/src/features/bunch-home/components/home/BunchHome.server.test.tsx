@@ -77,6 +77,52 @@ describe('BunchHome 서버 데이터', () => {
     expect(await screen.findByRole('heading', { name: /여행쥬아/ })).toBeInTheDocument();
   });
 
+  it('내 번치가 아닌 응답(소속 null)은 오류 화면이고 「다시 시도」로 다시 받는다', async () => {
+    let external = true;
+    server.use(
+      http.get('/api/bunches/:bunchId/home', () =>
+        external
+          ? ok({
+              bunch: {
+                id: 1,
+                name: '여행쥬아',
+                imageUrl: null,
+                characterType: 'TYPE_1',
+                visibility: 'PRIVATE',
+                introduction: null,
+              },
+              myMembership: null,
+              permissions: {
+                canEditProfile: false,
+                canDeleteBunch: false,
+                canManageRoles: false,
+                canTransferOwner: false,
+                canBlock: false,
+                canInvite: false,
+                canLeave: false,
+              },
+              profileVersion: null,
+              membershipVersion: null,
+              memberCount: 5,
+              followerCount: 3,
+              followingCount: 2,
+              draftCount: null,
+              publishedCount: null,
+              stage: 1,
+              unreadCount: null,
+            })
+          : undefined,
+      ),
+    );
+    renderHome();
+
+    const retry = await screen.findByRole('button', { name: '다시 시도' });
+    external = false;
+    await userEvent.click(retry);
+
+    expect(await screen.findByRole('heading', { name: /여행쥬아/ })).toBeInTheDocument();
+  });
+
   it('안전하지 않은 표지 주소의 번들은 기본 이미지로 보이고 홈은 그대로 나온다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/published-bundles', () =>

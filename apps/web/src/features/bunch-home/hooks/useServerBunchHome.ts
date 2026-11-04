@@ -53,8 +53,9 @@ export function useServerBunchHome({ enabled = true }: Options = {}): ServerBunc
       kind: 'error',
       retry: () => {
         if (profile.isError) void profile.refetch();
-        if (home.isError) void home.refetch();
-        if (published.isError) void published.refetch();
+        // 응답은 받았지만 쓸 수 없는 경우(isError 아님)에도 다시 받음
+        if (home.isError || unusable) void home.refetch();
+        if (published.isError || unusable) void published.refetch();
       },
     };
   }
