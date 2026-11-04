@@ -2,6 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import type { ComponentProps, ReactElement } from 'react';
 import { act, render as baseRender, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockDb } from '@/mocks/db';
 import { MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { PhotoDetailScreen } from './PhotoDetailScreen';
@@ -71,6 +72,14 @@ describe('PhotoDetail', () => {
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list));
     expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    expect(screenProps).toBeUndefined();
+  });
+
+  it('번치를 불러오지 못하면 로딩에 머물지 않고 사진함으로 이동한다', async () => {
+    mockDb.update((current) => ({ ...current, memberships: [] }));
+    render(<PhotoDetail photoId={firstId} />);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list));
     expect(screenProps).toBeUndefined();
   });
 

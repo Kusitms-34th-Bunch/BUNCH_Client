@@ -112,4 +112,33 @@ describe('usePhotoBox', () => {
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
     expect(readyData(result.current.state).viewer.isAdmin).toBe(false);
   });
+
+  it('다시 시도하면 실패했던 요청만 다시 보내 준비 상태가 된다', async () => {
+    let fail500 = true;
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () => {
+        if (fail500) return fail(500, 'COMMON_500');
+        return ok({ totalCount: 0, photos: [] });
+      }),
+    );
+    const { result } = renderPhotoBox();
+    await waitFor(() => expect(result.current.state.kind).toBe('error'));
+
+    fail500 = false;
+    act(() => result.current.retry());
+
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+  });
+
+  it('이미 받은 목록이 있으면 삭제 뒤 재조회가 실패해도 오류 화면으로 덮지 않는다', async () => {
+    const { result } = renderPhotoBox();
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+
+    server.use(http.get('/api/bunches/:bunchId/photos', () => fail(500, 'COMMON_500')));
+    await act(async () => {
+      await result.current.actions.deletePhotos([String(MOCK_PHOTO_IDS.S4)]);
+    });
+
+    expect(result.current.state.kind).toBe('ready');
+  });
 });

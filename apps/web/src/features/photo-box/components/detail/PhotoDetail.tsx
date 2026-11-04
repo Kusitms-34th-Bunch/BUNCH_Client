@@ -14,6 +14,14 @@ import { getDetailOrder } from '../../lib/photoDetail';
 import { photoDetailQueryOptions } from '../../queries/photoDetail';
 import { PhotoDetailScreen } from './PhotoDetailScreen';
 
+// 같은 결과면 같은 Map을 돌려주도록 모듈 상수 함수로 둠(렌더마다 새 Map이 생기지 않게)
+const toOriginalSrcMap = (
+  results: readonly { data?: { id: string; imageSrc: string } | undefined }[],
+) =>
+  new Map(
+    results.flatMap((result) => (result.data ? [[result.data.id, result.data.imageSrc]] : [])),
+  );
+
 type PhotoDetailProps = {
   /** route에서 형식을 검증한 사진 id. 형식이 틀렸으면 undefined */
   photoId: string | undefined;
@@ -41,10 +49,7 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
     queries: (currentIndex < 0 ? [] : nearIds).map((id) =>
       photoDetailQueryOptions(data?.bunch.id, id),
     ),
-    combine: (results) =>
-      new Map(
-        results.flatMap((result) => (result.data ? [[result.data.id, result.data.imageSrc]] : [])),
-      ),
+    combine: toOriginalSrcMap,
   });
   const photosWithOriginal = useMemo(
     () => photos.map((photo) => ({ ...photo, src: originals.get(photo.id) ?? photo.src })),
@@ -54,6 +59,12 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   const [entered, setEntered] = useState(false);
   if (data !== undefined && present && !entered) setEntered(true);
   const missing = data !== undefined && !present && !entered;
+  // 오류·번치 없음은 상세에서 보여 줄 화면이 없어 사진함으로 보냄(사진함이 오류 화면과 다시 시도를 가짐)
+  const unavailable = state.kind === 'error' || state.kind === 'no-bunch';
+
+  useEffect(() => {
+    if (unavailable) router.replace(PHOTO_BOX_PATHS.list);
+  }, [unavailable, router]);
 
   useEffect(() => {
     if (!missing) return;
