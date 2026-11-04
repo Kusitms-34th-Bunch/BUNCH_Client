@@ -48,7 +48,7 @@ export const MOCK_PHOTO_IDS = Object.fromEntries(
   PHOTO_SEEDS.map((photo, index) => [photo.label, index + 1]),
 ) as Record<PhotoLabel, number>;
 
-// 시연용 사진(얼굴이 나오지 않는 사진, EXIF 제거)은 public/mock/photos에 둠. 썸네일 300x400, 원본 1086x1448
+// 시연용 사진(얼굴이 나오지 않는 사진, EXIF 제거)은 public/mock/photos에 둠. 썸네일 543x724, 원본 1086x1448
 const PHOTO_DIR = '/mock/photos';
 
 const photos = (): MockPhoto[] =>
