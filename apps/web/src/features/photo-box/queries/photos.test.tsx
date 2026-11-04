@@ -2,7 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MOCK_BUNCH_ID } from '@/mocks/db/seed';
+import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -43,7 +43,7 @@ describe('useDeletePhotosMutation', () => {
     });
 
     // onSuccess가 무효화를 반환하므로 mutateAsync가 끝나면 캐시 상태가 확정됨
-    await act(() => result.current.mutateAsync(['1']));
+    await act(() => result.current.mutateAsync([String(MOCK_PHOTO_IDS.S4)]));
 
     expect(isInvalidated(keys.photos)).toBe(true);
     expect(isInvalidated(keys.otherBunchPhotos)).toBe(false);

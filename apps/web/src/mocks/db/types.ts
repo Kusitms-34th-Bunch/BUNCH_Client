@@ -1,5 +1,5 @@
 // 백엔드 API 명세의 응답 모양, ID는 서버 숫자(long)이고 화면 모델 변환은 endpoint 경계 담당
-// 사진은 삭제 예시에 필요한 필드만, 나머지 사진·번들 모양은 각 연동 이슈에서 추가
+// 번들 모양은 번들 연동 이슈에서 추가
 
 export type MemberRole = 'OWNER' | 'CO_OWNER' | 'MEMBER';
 
@@ -18,6 +18,9 @@ export type MockBunch = {
   name: string;
   characterType: CharacterType;
   imageUrl: string | null;
+  introduction: string;
+  /** 가짜 DB 내부 표현, 응답 값은 번치 홈 계약 확정 때 정함 */
+  isPrivate: boolean;
 };
 
 export type MockMembership = {
@@ -31,6 +34,12 @@ export type MockPhoto = {
   photoId: number;
   bunchId: number;
   uploaderIds: number[];
+  /** 촬영 날짜('YYYY-MM-DD'), 날짜를 모르면 null */
+  capturedDate: string | null;
+  /** 촬영 시각('HH:mm:ss'), 시각을 모르면 null */
+  capturedTime: string | null;
+  thumbnailUrl: string;
+  imageUrl: string;
 };
 
 export type MockDbState = {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
+import { usePhotoBoxFixture } from '@/features/photo-box/hooks/usePhotoBoxFixture';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
@@ -26,7 +26,7 @@ export function BundleDraftPhotoCaption({ photoId }: BundleDraftPhotoCaptionProp
   const router = useRouter();
   const backOr = useBackOr();
   const { state, actions } = useDraftContext();
-  const { state: boxState } = usePhotoBox();
+  const { state: boxState } = usePhotoBoxFixture();
   const importFromGallery = usePhotoGalleryImport(
     boxState.kind === 'ready' ? boxState.data.photos.length : 0,
   );
