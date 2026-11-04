@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   createSeed,
@@ -95,5 +97,13 @@ describe('UT 시나리오 시드', () => {
     const { photos } = createSeed();
     expect(new Set(photos.map((photo) => photo.thumbnailUrl)).size).toBe(photos.length);
     expect(photos.every((photo) => photo.imageUrl !== photo.thumbnailUrl)).toBe(true);
+  });
+
+  it('썸네일과 원본 주소가 모두 public 폴더의 실제 파일을 가리킨다', () => {
+    const publicDir = join(process.cwd(), 'public');
+    for (const { thumbnailUrl, imageUrl } of createSeed().photos) {
+      expect(existsSync(join(publicDir, thumbnailUrl)), thumbnailUrl).toBe(true);
+      expect(existsSync(join(publicDir, imageUrl)), imageUrl).toBe(true);
+    }
   });
 });

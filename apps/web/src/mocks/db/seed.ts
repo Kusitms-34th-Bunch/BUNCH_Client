@@ -1,5 +1,4 @@
 import type { MockDbState, MockMember, MockMembership, MockPhoto } from './types';
-import { placeholderImage } from './placeholderImage';
 
 export const MOCK_BUNCH_ID = 1;
 
@@ -27,19 +26,19 @@ const membership = (memberId: number, role: MockMembership['role']): MockMembers
 
 // 날짜 그룹: S는 10월 18일, P는 10월 17일(지정 날짜 4장), O는 10월 3일
 const PHOTO_SEEDS = [
-  { label: 'S1', date: '2026-10-18', time: '09:10:00', uploaderIds: [admin], hue: 200 },
-  { label: 'S2', date: '2026-10-18', time: '09:40:00', uploaderIds: [memberA], hue: 210 },
-  { label: 'S3', date: '2026-10-18', time: '11:05:00', uploaderIds: [memberB], hue: 220 },
-  { label: 'S4', date: '2026-10-18', time: '13:20:00', uploaderIds: [me], hue: 230 },
-  { label: 'S5', date: '2026-10-18', time: '15:45:00', uploaderIds: [memberA], hue: 240 },
-  { label: 'S6', date: '2026-10-18', time: '18:30:00', uploaderIds: [memberC], hue: 250 },
-  { label: 'P1', date: '2026-10-17', time: '07:05:00', uploaderIds: [memberA], hue: 30 },
-  { label: 'P2', date: '2026-10-17', time: '12:30:00', uploaderIds: [memberB], hue: 45 },
-  { label: 'P3', date: '2026-10-17', time: '15:10:00', uploaderIds: [me], hue: 60 },
-  { label: 'P4', date: '2026-10-17', time: '17:40:00', uploaderIds: [memberB], hue: 15 },
-  { label: 'O1', date: '2026-10-03', time: '10:00:00', uploaderIds: [admin], hue: 150 },
-  { label: 'O2', date: '2026-10-03', time: '12:00:00', uploaderIds: [memberC], hue: 160 },
-  { label: 'O3', date: '2026-10-03', time: '16:30:00', uploaderIds: [memberA], hue: 170 },
+  { label: 'S1', date: '2026-10-18', time: '09:10:00', uploaderIds: [admin] },
+  { label: 'S2', date: '2026-10-18', time: '09:40:00', uploaderIds: [memberA] },
+  { label: 'S3', date: '2026-10-18', time: '11:05:00', uploaderIds: [memberB] },
+  { label: 'S4', date: '2026-10-18', time: '13:20:00', uploaderIds: [me] },
+  { label: 'S5', date: '2026-10-18', time: '15:45:00', uploaderIds: [memberA] },
+  { label: 'S6', date: '2026-10-18', time: '18:30:00', uploaderIds: [memberC] },
+  { label: 'P1', date: '2026-10-17', time: '07:05:00', uploaderIds: [memberA] },
+  { label: 'P2', date: '2026-10-17', time: '12:30:00', uploaderIds: [memberB] },
+  { label: 'P3', date: '2026-10-17', time: '15:10:00', uploaderIds: [me] },
+  { label: 'P4', date: '2026-10-17', time: '17:40:00', uploaderIds: [memberB] },
+  { label: 'O1', date: '2026-10-03', time: '10:00:00', uploaderIds: [admin] },
+  { label: 'O2', date: '2026-10-03', time: '12:00:00', uploaderIds: [memberC] },
+  { label: 'O3', date: '2026-10-03', time: '16:30:00', uploaderIds: [memberA] },
 ] as const;
 
 type PhotoLabel = (typeof PHOTO_SEEDS)[number]['label'];
@@ -49,6 +48,9 @@ export const MOCK_PHOTO_IDS = Object.fromEntries(
   PHOTO_SEEDS.map((photo, index) => [photo.label, index + 1]),
 ) as Record<PhotoLabel, number>;
 
+// 시연용 사진(얼굴이 나오지 않는 사진, EXIF 제거)은 public/mock/photos에 둠. 썸네일 300x400, 원본 1086x1448
+const PHOTO_DIR = '/mock/photos';
+
 const photos = (): MockPhoto[] =>
   PHOTO_SEEDS.map((photo, index) => ({
     photoId: index + 1,
@@ -56,8 +58,8 @@ const photos = (): MockPhoto[] =>
     uploaderIds: [...photo.uploaderIds],
     capturedDate: photo.date,
     capturedTime: photo.time,
-    thumbnailUrl: placeholderImage(photo.label, photo.hue, 300),
-    imageUrl: placeholderImage(photo.label, photo.hue, 1024),
+    thumbnailUrl: `${PHOTO_DIR}/${photo.label}-thumb.jpg`,
+    imageUrl: `${PHOTO_DIR}/${photo.label}.jpg`,
   }));
 
 // UT 시나리오 시작 데이터(상태 A): 비공개 번치 「여행쥬아」와 멤버 5명, 사진 13장
