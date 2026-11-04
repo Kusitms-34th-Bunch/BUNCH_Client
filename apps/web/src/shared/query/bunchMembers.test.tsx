@@ -7,7 +7,7 @@ import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { bunchMembersQueryOptions } from './bunchMembers';
-import { photoBoxKeys } from './keys';
+import { sharedKeys } from './keys';
 
 const bunchId = String(MOCK_BUNCH_ID);
 
@@ -20,7 +20,7 @@ describe('bunchMembersQueryOptions', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.length).toBeGreaterThan(0);
-    expect(client.getQueryData(photoBoxKeys.members(bunchId))).toEqual(result.current.data);
+    expect(client.getQueryData(sharedKeys.bunchMembers(bunchId))).toEqual(result.current.data);
   });
 
   it('번치를 아직 모르면 요청하지 않는다', () => {
@@ -52,7 +52,7 @@ describe('bunchMembersQueryOptions', () => {
     // 구독자가 없어진 query는 Query가 signal로 요청을 끊음
     await waitFor(() => expect(signals.get('1')?.aborted).toBe(true));
     // 취소는 오류가 아니라 요청 전 상태로 되돌림(오류 화면·재시도 없음)
-    expect(client.getQueryState(photoBoxKeys.members('1'))).toMatchObject({
+    expect(client.getQueryState(sharedKeys.bunchMembers('1'))).toMatchObject({
       status: 'pending',
       fetchStatus: 'idle',
     });

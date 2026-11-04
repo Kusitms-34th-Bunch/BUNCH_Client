@@ -35,6 +35,7 @@ const actions = {
   movePhoto: vi.fn(),
   replacePhotos: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
+  publish: vi.fn(() => Promise.resolve('published' as const)),
 } satisfies DraftActions;
 
 const onBack = vi.fn();

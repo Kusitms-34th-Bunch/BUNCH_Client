@@ -73,7 +73,8 @@ export type DraftViewer = {
   bunchRole: BunchRole;
 };
 
-export type SaveStatus = 'saved' | 'saving';
+/** 저장 실패는 서버가 거절하거나 재시도를 모두 썼을 때(입력은 지우지 않고 다음 입력에서 다시 시도) */
+export type SaveStatus = 'saved' | 'saving' | 'failed';
 
 export type PlaceResult = {
   id: string;

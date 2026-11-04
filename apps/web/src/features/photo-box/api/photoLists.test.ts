@@ -5,7 +5,6 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { getMyProfile } from './myProfile';
 import { getDatedPhotosPage, getUndatedPhotosPage } from './photos';
 
 const bunchId = String(MOCK_BUNCH_ID);
@@ -200,19 +199,5 @@ describe('getUndatedPhotosPage', () => {
 
     const dated = await getDatedPhotosPage({ bunchId });
     expect(dated.totalCount).toBe(11);
-  });
-});
-
-describe('getMyProfile', () => {
-  it('시연하는 사람의 id와 기본 번치를 화면 모양으로 돌려준다', async () => {
-    await expect(getMyProfile()).resolves.toEqual({
-      memberId: String(MOCK_MEMBER_IDS.me),
-      bunch: { id: bunchId, name: '여행쥬아', imageSrc: '/images/default-bunch.png' },
-    });
-  });
-
-  it('기본 번치가 없으면 bunch는 null이다', async () => {
-    mockDb.update((current) => ({ ...current, memberships: [] }));
-    await expect(getMyProfile()).resolves.toMatchObject({ bunch: null });
   });
 });

@@ -9,6 +9,6 @@ export const BUNDLE_SELECT_PATHS = {
   transitionIds: { recommendation: '/bunch/bundles/new/recommendation' },
   /** 번치 홈: 직접 주소로 들어와 돌아갈 기록이 없을 때의 이동 위치 */
   bunchHome: '/bunch',
-  /** 만든 초안의 작성 화면. 초안 생성 API 연결 전에는 샘플 초안 id를 씀 */
+  /** 만든 초안의 작성 화면 */
   draft: (draftId: string) => `/bunch/drafts/${draftId}`,
 } as const;

@@ -1,7 +1,7 @@
 import type { Draft, DraftEditing, SaveStatus } from './types';
 
 export type PublishBlocker =
-  'title' | 'photos' | 'visibility' | 'members' | 'comments' | 'saving' | 'offline';
+  'title' | 'photos' | 'visibility' | 'members' | 'comments' | 'saving' | 'unsaved' | 'offline';
 
 type PublishContext = {
   saveStatus: SaveStatus;
@@ -26,6 +26,7 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
   );
   if (!everyoneCommented) blockers.push('comments');
   if (context.saveStatus === 'saving') blockers.push('saving');
+  if (context.saveStatus === 'failed') blockers.push('unsaved');
   if (context.offline) blockers.push('offline');
   return blockers;
 };

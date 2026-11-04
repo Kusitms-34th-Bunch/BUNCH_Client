@@ -10,6 +10,16 @@ import { BundleSelect } from './BundleSelect';
 
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
+vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
+  usePhotoBox: (await import('../../testing/selectScreenDoubles')).usePhotoBoxDouble,
+}));
+vi.mock('../../hooks/useCreateBundle', async () => ({
+  useCreateBundle: (await import('../../testing/selectScreenDoubles')).useCreateBundleDouble,
+}));
+vi.mock('../../fixtures/recommendation.fixture', async () => ({
+  recommendationFixture: (await import('../../testing/selectScreenDoubles'))
+    .legacyRecommendationFixture,
+}));
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -19,9 +29,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
-const renderSelect = (recommendations?: readonly Recommendation[], createDelayMs = 0) =>
+const renderSelect = (recommendations?: readonly Recommendation[]) =>
   render(
-    <BundleSelectProvider createDelayMs={createDelayMs} recommendations={recommendations}>
+    <BundleSelectProvider recommendations={recommendations}>
       <BundleSelect currentYear={2026} />
     </BundleSelectProvider>,
   );
@@ -87,7 +97,7 @@ describe('사진 고르기', () => {
     // 대기를 10초로 두고 직접 넘김: 느린 CI에서 클릭·확인 사이에 대기(예전 50ms)가 먼저 끝나 이동하던 문제 방지
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderSelect(undefined, CREATE_DELAY_MS);
+    renderSelect();
 
     await user.click(sectionPhotos()[0]!);
     await user.click(createButton());

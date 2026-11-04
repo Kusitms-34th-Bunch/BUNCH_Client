@@ -9,6 +9,17 @@ import { BundleSelect } from './BundleSelect';
 
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
+// 30장짜리 사진 상태로 20장 상한을 확인
+vi.mock('@/features/photo-box/hooks/usePhotoBox', () => ({
+  usePhotoBox: () => ({ state, actions: {} }),
+}));
+vi.mock('../../hooks/useCreateBundle', async () => ({
+  useCreateBundle: (await import('../../testing/selectScreenDoubles')).useCreateBundleDouble,
+}));
+vi.mock('../../fixtures/recommendation.fixture', async () => ({
+  recommendationFixture: (await import('../../testing/selectScreenDoubles'))
+    .legacyRecommendationFixture,
+}));
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -37,9 +48,6 @@ const state: PhotoBoxState = {
     photos,
   },
 };
-vi.mock('@/features/photo-box/hooks/usePhotoBoxFixture', () => ({
-  usePhotoBoxFixture: () => ({ state, actions: {} }),
-}));
 
 beforeEach(() => {
   vi.clearAllMocks();

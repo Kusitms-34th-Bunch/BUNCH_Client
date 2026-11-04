@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { photoBoxKeys } from './keys';
@@ -26,7 +27,7 @@ const createSeededClient = () => {
   const keys = {
     photos: [...photoBoxKeys.photos(bunchId), 'dated'],
     otherBunchPhotos: photoBoxKeys.photos('2'),
-    members: photoBoxKeys.members(bunchId),
+    members: sharedKeys.bunchMembers(bunchId),
   };
   Object.values(keys).forEach((key) => client.setQueryData(key, []));
   const isInvalidated = (key: readonly unknown[]) => client.getQueryState(key)?.isInvalidated;
