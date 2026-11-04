@@ -33,7 +33,7 @@ export function BundleSelectProvider({
   children,
   recommendations = recommendationFixture,
 }: BundleSelectProviderProps) {
-  const { state: photoState } = usePhotoBox();
+  const { state: photoState, retry } = usePhotoBox();
   const { create: createBundle, creating } = useCreateBundle();
   const photos = photoState.kind === 'ready' ? photoState.data.photos : undefined;
 
@@ -111,6 +111,7 @@ export function BundleSelectProvider({
 
   const value: BundleSelectValue = {
     photoState,
+    retry,
     recommendations,
     selection,
     selectedCounts,

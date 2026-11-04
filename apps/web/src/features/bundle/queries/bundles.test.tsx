@@ -25,7 +25,7 @@ const createDraft = async (wrapper: ReturnType<typeof createQueryWrapper>) => {
   const { result } = renderHook(() => useCreateBundleMutation(bunchId), { wrapper });
   let id = '';
   await act(async () => {
-    id = (await result.current.mutateAsync(photoIds)).id;
+    id = (await result.current.mutateAsync({ photoIds })).id;
   });
   return id;
 };

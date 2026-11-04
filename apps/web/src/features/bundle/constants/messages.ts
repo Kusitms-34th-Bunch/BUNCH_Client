@@ -34,6 +34,7 @@ export const BUNDLE_MESSAGES = {
   published: '번들이 업로드되었어요.',
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
+  uploadSaving: '저장이 끝난 뒤에 업로드할 수 있어요.',
   uploadIncomplete: '필수 항목을 모두 입력해야 업로드 할 수 있어요.',
   // 스스로 나가기 확인 창 문구는 Figma Dialog `2082:49691`·기능명세서 4.3.2 원문(초안 생성자도 같은 문구)
   leaveConfirmTitle: '번들에서 나가시겠어요?',

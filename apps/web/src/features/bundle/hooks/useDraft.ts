@@ -37,8 +37,20 @@ import {
 
 // 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 공개 범위·날짜는 고르는 즉시 저장
 const SAVE_DELAY_MS = 1000;
-// 저장이 실패한 뒤 같은 입력으로 다시 시도하기까지의 시간
+// 편집권 거부·일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
 const RETRY_DELAY_MS = 3000;
+const MAX_RETRIES = 5;
+// 버전 충돌은 최신 상세를 받은 직후 바로 이어서 저장
+const CONFLICT_RETRY_DELAY_MS = 200;
+// 다시 시도해도 같은 결과인 오류(다른 사람이 발행·삭제, 인증·권한, 잘못된 입력)
+const PERMANENT_CODES: ReadonlySet<string> = new Set([
+  'BUNDLE_002',
+  'AUTH_001',
+  'AUTH_002',
+  'RESOURCE_001',
+  'COMMON_001',
+  'COMMON_002',
+]);
 
 /** 장소 검색 API 연결 전 목 검색(이름·주소에 키워드가 들어 있으면 결과). 렌더마다 바뀌지 않도록 hook 밖에 둠 */
 const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
@@ -53,7 +65,8 @@ const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
 export type DraftState =
   | { kind: 'missing' }
   | { kind: 'loading' }
-  | { kind: 'error' }
+  /** 오류 화면의 「다시 시도」: 실패한 요청만 다시 보냄 */
+  | { kind: 'error'; retry: () => void }
   | {
       kind: 'ready';
       draft: Draft;
@@ -120,13 +133,22 @@ export function useDraft(draftId: string | undefined): {
 } {
   // 서버 번들 ID는 숫자라 숫자로 바꿀 수 없는 주소는 없는 초안으로 처리
   const bundleId = draftId !== undefined && toWireId(draftId) !== undefined ? draftId : undefined;
-  const { data: profile, isError: profileError } = useQuery(myProfileQueryOptions());
+  const {
+    data: profile,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useQuery(myProfileQueryOptions());
   const bunchId = profile?.bunch?.id;
-  const { data: bunchMembers, isError: membersError } = useQuery(bunchMembersQueryOptions(bunchId));
+  const {
+    data: bunchMembers,
+    isError: membersError,
+    refetch: refetchMembers,
+  } = useQuery(bunchMembersQueryOptions(bunchId));
   const {
     data: detail,
     error: detailError,
     isError: detailIsError,
+    refetch: refetchDetail,
   } = useQuery(bundleQueryOptions(bunchId, bundleId));
 
   const saveTitle = useSaveTitleMutation(bunchId, bundleId);
@@ -150,9 +172,12 @@ export function useDraft(draftId: string | undefined): {
   const detailRef = useRef<BundleDetail | undefined>(undefined);
   const myIdRef = useRef<string | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const running = useRef(false);
+  const inflight = useRef<Promise<boolean> | undefined>(undefined);
   const again = useRef(false);
   const alive = useRef(true);
+  // 연속으로 실패한 저장 횟수와 이번 실패에서 이미 안내했는지(입력이 새로 바뀌면 처음부터)
+  const failures = useRef(0);
+  const notified = useRef(false);
   // 타이머가 항상 최신 flush를 부르도록 ref로 한 번 거침(flush가 자기 자신을 예약하므로)
   const flushRef = useRef<() => Promise<boolean>>(() => Promise.resolve(true));
 
@@ -165,6 +190,8 @@ export function useDraft(draftId: string | undefined): {
     return () => {
       alive.current = false;
       clearTimeout(timer.current);
+      // 입력 후 바로 화면을 떠나도 잃지 않도록 남은 입력을 한 번 저장(재시도는 하지 않음)
+      if (!isEmpty(pendingRef.current)) void flushRef.current();
     };
   }, []);
 
@@ -215,15 +242,20 @@ export function useDraft(draftId: string | undefined): {
     [bunchId, bundleId],
   );
 
-  // 보관 중인 입력을 필드별로 저장. 충돌은 최신 상세를 받은 뒤 같은 입력으로 다시, 실패는 잠시 뒤 다시 시도
-  const flush = useCallback(async (): Promise<boolean> => {
-    if (running.current) {
-      again.current = true;
-      return false;
-    }
-    running.current = true;
+  // 보관 중인 입력을 필드별로 저장하고 끝난 뒤 입력이 모두 비었는지 돌려줌
+  // 충돌은 최신 상세를 받아 같은 입력으로 다시, 편집권 거부·일시 오류는 정해진 횟수까지 다시 시도하고,
+  // 권한·상태 오류는 재시도하지 않음(어느 경우도 입력은 지우지 않고 한 번만 안내)
+  const runFlush = useCallback(async (): Promise<boolean> => {
     setFlushing(true);
     let retryAfter: number | undefined;
+    let stop = false;
+    const giveUp = () => {
+      stop = true;
+      if (!notified.current) {
+        notified.current = true;
+        toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+      }
+    };
     try {
       do {
         again.current = false;
@@ -231,23 +263,33 @@ export function useDraft(draftId: string | undefined): {
         const snapshot = pendingRef.current;
         if (!base || isEmpty(snapshot)) break;
         const common = { mode: 'DRAFT' as const };
-        const run = async (
-          save: () => Promise<BundleDetail | 'locked'>,
-          onSaved: () => void,
-          onLocked: () => void,
-        ) => {
+        // 필드 하나 저장: 성공하면 입력을 비우고 최신 응답을 기준으로 삼음
+        const run = async (save: () => Promise<BundleDetail | 'locked'>, onSaved: () => void) => {
           try {
             const result = await save();
             if (result === 'locked') {
-              onLocked();
-              toast(BUNDLE_MESSAGES.fieldLocked, { fullWidth: true });
-            } else {
-              detailRef.current = result;
-              onSaved();
+              retryAfter = RETRY_DELAY_MS;
+              if (!notified.current) {
+                notified.current = true;
+                toast(BUNDLE_MESSAGES.fieldLocked, { fullWidth: true });
+              }
+              return;
             }
+            detailRef.current = result;
+            failures.current = 0;
+            onSaved();
           } catch (error) {
-            if (readVersionConflict(error) !== undefined) retryAfter = 200;
-            else retryAfter = RETRY_DELAY_MS;
+            const code = errorCode(error);
+            if (code === 'BUNDLE_003' || readVersionConflict(error) !== undefined) {
+              // 최신 상세를 받아 그 버전으로 이어서 저장
+              const latest = await refetchDetail();
+              if (latest.data) detailRef.current = latest.data;
+              retryAfter = CONFLICT_RETRY_DELAY_MS;
+            } else if (code !== undefined && PERMANENT_CODES.has(code)) {
+              giveUp();
+              // 삭제·발행·권한 변화는 상세를 다시 받아 화면이 알맞은 상태로 바뀌게 함
+              void refetchDetail();
+            } else retryAfter = RETRY_DELAY_MS;
           }
         };
 
@@ -264,10 +306,9 @@ export function useDraft(draftId: string | undefined): {
                 }),
               ),
             () => clearField('title', value),
-            () => clearField('title', value),
           );
         }
-        if (snapshot.visibility !== undefined) {
+        if (snapshot.visibility !== undefined && !stop) {
           const value = snapshot.visibility;
           await run(
             () =>
@@ -277,10 +318,9 @@ export function useDraft(draftId: string | undefined): {
                 expectedVersion: (detailRef.current ?? base).visibilityVersion,
               }),
             () => clearField('visibility', value),
-            () => clearField('visibility', value),
           );
         }
-        if (snapshot.date !== undefined) {
+        if (snapshot.date !== undefined && !stop) {
           const value = snapshot.date;
           await run(
             () =>
@@ -293,10 +333,9 @@ export function useDraft(draftId: string | undefined): {
                 }),
               ),
             () => clearField('date', value),
-            () => clearField('date', value),
           );
         }
-        if (snapshot.comment !== undefined) {
+        if (snapshot.comment !== undefined && !stop) {
           const value = snapshot.comment;
           await run(
             () => {
@@ -309,13 +348,14 @@ export function useDraft(draftId: string | undefined): {
               });
             },
             () => clearField('comment', value),
-            () => clearField('comment', value),
           );
         }
         for (const [photoId, value] of Object.entries(snapshot.captions ?? {})) {
+          if (stop) break;
           await run(
             () => {
               const photo = (detailRef.current ?? base).photos.find((p) => p.id === photoId);
+              // 서버에 없는 사진(화면에서만 바뀐 사진)의 캡션은 서버로 보낼 수 없어 보관만 함
               if (!photo) return Promise.resolve(detailRef.current ?? base);
               return withLease(`PHOTO:${photoId}`, (leaseToken) =>
                 saveCaption.mutateAsync({
@@ -328,23 +368,29 @@ export function useDraft(draftId: string | undefined): {
               );
             },
             () => clearCaption(photoId, value),
-            () => clearCaption(photoId, value),
           );
         }
-      } while (again.current && retryAfter === undefined);
+      } while (again.current && retryAfter === undefined && !stop);
     } finally {
-      running.current = false;
       if (alive.current) setFlushing(false);
     }
-    if (retryAfter !== undefined && alive.current && !isEmpty(pendingRef.current)) {
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => void flushRef.current(), retryAfter);
-      return false;
+    const settled = isEmpty(pendingRef.current);
+    if (settled) {
+      failures.current = 0;
+      notified.current = false;
+    } else if (retryAfter !== undefined && !stop && alive.current) {
+      failures.current += 1;
+      if (failures.current > MAX_RETRIES) giveUp();
+      else {
+        clearTimeout(timer.current);
+        timer.current = setTimeout(() => void flushRef.current(), retryAfter * failures.current);
+      }
     }
-    return isEmpty(pendingRef.current);
+    return settled;
   }, [
     clearCaption,
     clearField,
+    refetchDetail,
     saveCaption,
     saveComment,
     saveDate,
@@ -353,11 +399,27 @@ export function useDraft(draftId: string | undefined): {
     withLease,
   ]);
 
+  // 저장은 한 번에 하나만: 진행 중이면 그 결과를 함께 기다리고 끝난 뒤 한 번 더 확인하도록 표시
+  const flush = useCallback((): Promise<boolean> => {
+    if (inflight.current) {
+      again.current = true;
+      return inflight.current;
+    }
+    const promise = runFlush().finally(() => {
+      inflight.current = undefined;
+    });
+    inflight.current = promise;
+    return promise;
+  }, [runFlush]);
+
   useEffect(() => {
     flushRef.current = flush;
   }, [flush]);
 
   const schedule = useCallback((delay: number) => {
+    // 입력이 새로 바뀌면 이전 실패와 안내를 잊고 처음부터 다시 시도
+    failures.current = 0;
+    notified.current = false;
     clearTimeout(timer.current);
     timer.current = setTimeout(() => void flushRef.current(), delay);
   }, []);
@@ -487,16 +549,26 @@ export function useDraft(draftId: string | undefined): {
     },
   };
 
+  // 기본 번치가 없거나 내가 그 번치 멤버가 아니면 이 초안을 볼 수 없어 없는 초안과 같은 안내로 이동
+  const noAccess =
+    (profile !== undefined && !profile.bunch) ||
+    (bunchMembers !== undefined && profile !== undefined && viewer === undefined);
   const missing =
     bundleId === undefined ||
+    noAccess ||
     (detailIsError && ['RESOURCE_001', 'AUTH_002'].includes(errorCode(detailError) ?? '')) ||
     (detail?.status === 'PUBLISHED' && !publishedByMe);
   const failed =
     profileError || membersError || (detailIsError && !missing && detail === undefined);
+  const retry = () => {
+    if (profileError) void refetchProfile();
+    if (membersError) void refetchMembers();
+    if (detailIsError) void refetchDetail();
+  };
 
   let state: DraftState = { kind: 'loading' };
   if (missing) state = { kind: 'missing' };
-  else if (failed) state = { kind: 'error' };
+  else if (failed) state = { kind: 'error', retry };
   else if (draft && viewer && !publishedByMe) {
     state = {
       kind: 'ready',

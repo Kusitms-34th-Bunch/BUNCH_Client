@@ -1,8 +1,11 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { delay, http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { fail } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { createBundle } from '../api/bundles';
@@ -77,6 +80,17 @@ describe('useDraft 상태', () => {
 
     const gone = renderDraft('999');
     await waitFor(() => expect(gone.result.current.state.kind).toBe('missing'));
+  });
+
+  it('기본 번치가 없거나 내가 번치 멤버가 아니면 로딩에 머물지 않고 없는 초안이다', async () => {
+    const id = await newDraft();
+    mockDb.update((current) => ({
+      ...current,
+      memberships: current.memberships.filter((membership) => membership.memberId !== me),
+    }));
+    const { result } = renderDraft(id);
+
+    await waitFor(() => expect(result.current.state.kind).toBe('missing'));
   });
 
   it('이미 발행된 번들은 없는 초안으로 처리한다', async () => {
@@ -198,7 +212,7 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).draft.title).toBe('내 제목');
   });
 
-  it('다른 멤버가 편집권을 쥔 대상은 저장하지 못하고 안내한 뒤 서버 값으로 돌아간다', async () => {
+  it('다른 멤버가 편집권을 쥔 대상은 한 번만 안내하고 입력을 지키며 풀리면 이어서 저장한다', async () => {
     const { id, result } = await renderReady();
     mockDb.update((current) => ({
       ...current,
@@ -209,19 +223,81 @@ describe('useDraft 저장', () => {
           memberId: memberA,
           token: '00000000-0000-4000-8000-000000000001',
           leaseVersion: 1,
-          expiresAt: new Date(Date.now() + 60_000).toISOString(),
+          // 첫 저장 시도 직후 만료되어 다음 시도에서는 얻을 수 있음
+          expiresAt: new Date(Date.now() + 1500).toISOString(),
         },
       ],
     }));
 
-    act(() => result.current.actions.setTitle('덮어쓰려는 제목'));
+    act(() => result.current.actions.setTitle('이어서 쓰는 제목'));
 
     await waitFor(
       () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.fieldLocked, { fullWidth: true }),
       SAVE_WAIT,
     );
-    await waitFor(() => expect(ready(result.current.state).draft.title).toBe(''), SAVE_WAIT);
-    expect(serverBundle(id)?.title).toBe('');
+    // 거부되는 동안에도 입력은 화면에서 사라지지 않음
+    expect(ready(result.current.state).draft.title).toBe('이어서 쓰는 제목');
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('이어서 쓰는 제목'), {
+      timeout: 9000,
+    });
+    expect(
+      toast.mock.calls.filter(([message]) => message === BUNDLE_MESSAGES.fieldLocked),
+    ).toHaveLength(1);
+  }, 15_000);
+
+  it('권한·상태 오류는 다시 시도하지 않고 한 번만 안내하며 입력은 그대로 둔다', async () => {
+    const { result } = await renderReady();
+    let calls = 0;
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => {
+        calls += 1;
+        return fail(403, 'AUTH_002');
+      }),
+    );
+
+    act(() => result.current.actions.setVisibility('public'));
+
+    await waitFor(
+      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, { fullWidth: true }),
+      SAVE_WAIT,
+    );
+    // 재시도 간격(3초)보다 오래 기다려도 요청은 한 번뿐
+    await act(() => new Promise((resolve) => setTimeout(resolve, 3500)));
+    expect(calls).toBe(1);
+    expect(ready(result.current.state).draft.visibility).toBe('public');
+    expect(
+      toast.mock.calls.filter(([message]) => message === BUNDLE_MESSAGES.saveFailed),
+    ).toHaveLength(1);
+  }, 15_000);
+
+  it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {
+    const { result } = await renderReady();
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/visibility', async () => {
+        await delay(300);
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.setVisibility('members'));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    // 저장은 성공했고 발행 조건(제목·코멘트 등)만 모자라 blocked
+    expect(outcome).toBe('blocked');
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, expect.anything());
+  });
+
+  it('입력 직후 화면을 떠나도 남은 입력을 한 번 저장한다', async () => {
+    const { id, result, unmount } = await renderReady();
+
+    act(() => result.current.actions.setTitle('떠나기 직전 제목'));
+    unmount();
+
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('떠나기 직전 제목'), SAVE_WAIT);
   });
 });
 

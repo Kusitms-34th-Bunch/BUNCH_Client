@@ -27,7 +27,7 @@ export function BundleDraft() {
 
   useRedirectMissingDraft(state.kind === 'missing');
 
-  if (state.kind === 'error') return <PhotoBoxError />;
+  if (state.kind === 'error') return <PhotoBoxError onRetry={state.retry} />;
   if (state.kind !== 'ready' || draftId === undefined) return <PageLoading />;
 
   return (

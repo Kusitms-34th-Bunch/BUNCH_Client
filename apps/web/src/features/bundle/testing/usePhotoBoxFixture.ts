@@ -12,6 +12,7 @@ const MOCK_CHANGE_DATE_DELAY_MS = 500;
 type UsePhotoBoxResult = {
   state: PhotoBoxState;
   actions: PhotoBoxActions;
+  retry: () => void;
 };
 
 /**
@@ -46,5 +47,5 @@ export function usePhotoBoxFixture(preview?: PhotoBoxPreview): UsePhotoBoxResult
     },
   };
 
-  return { state, actions };
+  return { state, actions, retry: () => undefined };
 }

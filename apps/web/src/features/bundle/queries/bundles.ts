@@ -26,14 +26,21 @@ export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string
 /**
  * 초안 생성. 성공하면 응답으로 상세 캐시를 채워 이동 직후 바로 보여 줌
  * 실패 문구는 코드별(BUNDLE_001 등)로 달라 meta 없이 화면이 `mutate(…, { onError })`로 처리
- * 같은 멱등 키 재전송 규칙상 호출마다 새 키를 만들므로 중복 요청은 화면이 막음
+ * 멱등 키를 주지 않으면 호출마다 새로 만듦(중복 요청은 화면이 막음)
  */
 export const useCreateBundleMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (photoIds: readonly string[]) => {
+    mutationFn: ({
+      photoIds,
+      idempotencyKey = createIdempotencyKey(),
+    }: {
+      photoIds: readonly string[];
+      /** 응답이 유실된 뒤 다시 보내도 초안이 둘이 되지 않도록 호출하는 쪽이 같은 키를 유지 */
+      idempotencyKey?: string;
+    }) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
-      return createBundle(bunchId, photoIds, createIdempotencyKey());
+      return createBundle(bunchId, photoIds, idempotencyKey);
     },
     onSuccess: (bundle) =>
       queryClient.setQueryData(bundleKeys.detail(bundle.bunchId, bundle.id), bundle),
@@ -46,9 +53,19 @@ const useBundleCacheSync = (bunchId: string | undefined, bundleId: string | unde
   const queryClient = useQueryClient();
   const key = bundleKeys.detail(bunchId, bundleId);
   return {
-    onSuccess: (bundle: BundleDetail) => queryClient.setQueryData(key, bundle),
+    // 응답이 뒤바뀌어 도착해도 더 최신 revision을 낡은 응답으로 덮지 않음
+    onSuccess: (bundle: BundleDetail) =>
+      queryClient.setQueryData<BundleDetail>(key, (old) =>
+        old && old.revision > bundle.revision ? old : bundle,
+      ),
     onError: (error: unknown) => {
-      if (readVersionConflict(error) !== undefined) {
+      // 충돌 응답의 detail 모양과 상관없이 버전·상태 불일치(BUNDLE_003·BUNDLE_002)는 최신 상세를 다시 받음
+      const code = (error as { code?: string } | null)?.code;
+      if (
+        readVersionConflict(error) !== undefined ||
+        code === 'BUNDLE_003' ||
+        code === 'BUNDLE_002'
+      ) {
         return queryClient.invalidateQueries({ queryKey: key });
       }
       return undefined;

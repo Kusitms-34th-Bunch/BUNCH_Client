@@ -1,6 +1,6 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_PHOTO_IDS } from '@/mocks/db/seed';
@@ -118,5 +118,33 @@ describe('useCreateBundle', () => {
       expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.createFailed, { fullWidth: true }),
     );
     expect(result.current.creating).toBe(false);
+  });
+
+  it('네트워크 오류 뒤 같은 사진으로 다시 만들면 같은 멱등 키로 보내고, 서버가 거절한 뒤에는 새 키를 쓴다', async () => {
+    const { result } = renderCreate();
+    await loaded(result);
+    const keys: (string | null)[] = [];
+    let attempt = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        attempt += 1;
+        if (attempt === 1) return HttpResponse.error();
+        if (attempt === 2) return fail(409, 'BUNDLE_001');
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.create(photoIds));
+    await waitFor(() => expect(keys).toHaveLength(1));
+    await waitFor(() => expect(result.current.creating).toBe(false));
+    act(() => result.current.create(photoIds));
+    await waitFor(() => expect(keys).toHaveLength(2));
+    await waitFor(() => expect(result.current.creating).toBe(false));
+    act(() => result.current.create(photoIds));
+    await waitFor(() => expect(keys).toHaveLength(3));
+
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[1]);
   });
 });

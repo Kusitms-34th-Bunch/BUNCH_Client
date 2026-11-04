@@ -29,7 +29,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   const router = useRouter();
   const backOr = useBackOr();
   const select = useBundleSelect();
-  const { photoState, selection, memberId, creating, scrollTarget } = select;
+  const { photoState, retry, selection, memberId, creating, scrollTarget } = select;
 
   // 추천 번들을 적용하면 그 날짜 섹션으로 스크롤하고 제목에 포커스(요청마다 한 번, 끝나면 대상을 비움)
   const { clearScrollTarget } = select;
@@ -43,7 +43,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   }, [scrollTarget, clearScrollTarget]);
 
   if (photoState.kind === 'loading') return <PageLoading />;
-  if (photoState.kind === 'error') return <PhotoBoxError />;
+  if (photoState.kind === 'error') return <PhotoBoxError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (
       <PageShell>
