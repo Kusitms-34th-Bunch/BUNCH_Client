@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { PhotoBoxPreview } from '../lib/preview';
 import type { PhotoBoxActions, PhotoBoxData, PhotoBoxPhoto, PhotoBoxState } from '../lib/types';
 import { applyTakenDate } from '../lib/photoActions';
-import { bunchMembersQueryOptions } from '../queries/bunchMembers';
-import { myProfileQueryOptions } from '../queries/myProfile';
 import { datedPhotosQueryOptions, undatedPhotosQueryOptions } from '../queries/photoLists';
 import { useDeletePhotosMutation } from '../queries/photos';
 
