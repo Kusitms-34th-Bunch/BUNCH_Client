@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoBox } from './PhotoBox';
 
@@ -21,9 +22,10 @@ describe('PhotoBox 번들 만들기 연결', () => {
   it('사진을 골라 「번들 만들기」를 확인하면 화면 전체 로딩 뒤 초안 작성 화면으로 이동한다', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    render(<PhotoBox />);
+    render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
 
-    await user.click(screen.getByRole('button', { name: '선택' }));
+    // 프로필·멤버·사진 목록 요청이 끝나 사진함이 나올 때까지 기다림
+    await user.click(await screen.findByRole('button', { name: '선택' }));
     const photo = screen
       .queryAllByRole('button')
       .find((button) => button.hasAttribute('aria-pressed'))!;

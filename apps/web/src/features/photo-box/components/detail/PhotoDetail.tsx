@@ -20,7 +20,6 @@ type PhotoDetailProps = {
 /**
  * `/photos/[photoId]` 사진 상세: 사진 데이터와 동작을 가져와 화면에 연결
  * 없는 사진(삭제됨·잘못된 id)은 「삭제된 사진이에요」 토스트 뒤 사진함으로 이동
- * 목록 API 연결 전에는 fixture와 목 동작이고, 연결하면 이 호출 지점만 바꿈
  */
 export function PhotoDetail({ photoId }: PhotoDetailProps) {
   const router = useRouter();
