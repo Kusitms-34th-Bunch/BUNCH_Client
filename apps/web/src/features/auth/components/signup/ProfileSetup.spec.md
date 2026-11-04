@@ -13,7 +13,7 @@
 - 가입 마지막 단계에서 닉네임(필수)과 프로필 사진·출생연도·성별(선택)을 입력하는 화면의 UI.
 - 구성: 헤더(뒤로 가기, `SignupFrame`), 제목·설명(`PageHeader`), 프로필 이미지와 사진 변경 버튼(누르면 사진 선택, 아래 항목), 닉네임·출생연도(`LabeledTextField`), 성별(여성·남성 선택), 공개 안내 문구, 하단 고정 「BUNCH 시작하기」 버튼.
 - 프로필 사진: 카메라 버튼을 누르면 온보딩 번치 사진과 같은 `usePhotoPicker`로 사진을 고른다. 앱(쉘)에서는 네이티브 갤러리(`pickGalleryImage`, 1:1 편집·JPEG)를, 일반 브라우저에서는 파일 선택(JPEG·PNG·WebP, 3MB 이하)을 쓴다. 고른 사진은 프로필 이미지 자리에 보여 주고(저장하지 않는다) 취소하면 이전 사진을 유지한다. 사진을 쓸 수 없으면 기획 문구 「이 사진은 사용할 수 없어요.」를 토스트로 알린다. 그 밖에 기획에 없는 안내 문구는 두지 않는다.
-- 닉네임: 한글·영문·숫자와 사이 공백만 허용하고 특수문자·이모지는 오류(「특수문자를 제외한 영문, 한글만 사용할 수 있어요.」)이며, 최대 12자와 글자 수(`n/12`)를 보인다. 앞뒤 공백은 지운 길이로 판단하고(저장 전에 NFC 정규화), 공백만 입력하면 빈 값으로 본다. 한글 조합 중인 자모는 오류로 보지 않지만 시작하기와 중복 확인은 조합이 끝난 완성된 값에서만 켠다. 규칙은 `lib/nickname.ts`가 가진다.
+- 닉네임: 한글·영문·숫자와 사이 공백만 허용하고 특수문자·이모지는 오류(「특수문자를 제외한 영문, 한글만 사용할 수 있어요.」)이며, 최대 12자와 글자 수(`n/12`)를 보인다. 앞뒤 공백은 지운 길이로 판단하고(저장 전에 NFC 정규화), 공백만 입력하면 빈 값으로 본다. 한글 조합 중인 자모는 오류로 보지 않지만 시작하기와 중복 확인은 조합이 끝난 완성된 값에서만 켠다. 규칙은 `src/shared/lib/nickname.ts`가 가진다(MY 프로필 수정과 공유).
 - 닉네임 중복 확인: 입력을 멈추고 0.5초 뒤 확인하고(`useNicknameAvailability`), 확인 중이거나 사용 중(「이미 사용 중인 닉네임이에요.」)이거나 확인에 실패하면 시작하기가 비활성이다. 확인 함수(`checkNickname`)를 넘길 때만 동작하고, 지금은 넘기지 않아 확인하지 않는다.
 - 출생연도: 숫자 키보드로 4자리를 직접 입력한다(숫자만, 최대 4자리). 범위는 1930년부터 (현재 연도 − 14)년까지(2026년 기준 2012). 범위를 벗어나거나(4자리를 쓴 직후), 4자리가 아닌 채 포커스를 벗어나면 안내하고 시작하기를 비활성화한다. 비어 있으면 선택 안 함이다.
 - 성별: 여성·남성 중 하나이고 다시 누르면 해제된다. 선택한 버튼은 Figma 눌림 모양(10% 어두운 오버레이, 진한 글자)을 유지하고 비선택은 흰 바탕에 연한 글자다.
@@ -50,7 +50,7 @@
 
 ## UI와 접근성
 
-- Component mapping: `web`의 `PageHeader`·`ProfileImage`·`CameraButton`·`LabeledTextField`·`Option`, `core`의 `Button`·`Header`(`SignupFrame`). 성별(`GenderField`)은 `Button`(tertiary·md)에 `aria-pressed`를 붙인 이 화면 전용 UI다.
+- Component mapping: `web`의 `PageHeader`·`ProfileImage`·`CameraButton`·`LabeledTextField`·`Option`, `core`의 `Button`·`Header`(`SignupFrame`). 입력 칸 묶음은 `src/shared/components/profile/ProfileFields`(값·검증은 `useProfileFields`)이고 MY 프로필 수정과 함께 쓴다. 성별(`GenderField`)은 `Button`(tertiary·md)에 `aria-pressed`를 붙인 UI다.
 - Keyboard·focus·accessible name: 닉네임·출생연도는 `LabeledTextField`의 제목이 입력창 이름이고 필수는 `aria-required`, 오류는 `role="alert"`와 `aria-invalid`로 알린다. 성별은 `role="group"`(이름 「성별」)이고 두 버튼은 `aria-pressed`로 선택 상태를 전달한다. 사진 변경 버튼 이름은 「프로필 사진 변경」이고 프로필 이미지는 장식이다(선택한 사진도 마찬가지). 선택 중에도 버튼을 비활성으로 바꾸지 않아 포커스를 잃지 않으며, 중복 선택은 hook이 막는다. `PageHeader` 제목이 `h1`, `main`은 `PageShell`이 하나만 만든다. 공개 안내 문구는 출생연도 입력과 성별 그룹의 `aria-describedby`로 연결하고, 출생연도에는 「숫자 4자리로 입력해 주세요.」(화면에는 보이지 않음)도 함께 연결한다.
 - Responsive·긴 텍스트·overflow: 좌우 16px이고 375px에서 가로 넘침이 없다. 본문은 `main`에서 스크롤되고 시작하기는 아래에 고정된다.
 
@@ -70,7 +70,7 @@
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/signup/profile`이 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)
 - [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
 - [x] 상태별 UI: 닉네임 문자·길이·공백·조합·중복(확인 중·사용 중·실패), 출생연도 입력·범위·4자리 미만, 성별 선택·해제, 시작하기 활성 조건과 이동, 키보드 닫기를 테스트로 확인
-- [x] 관련 test: `ProfileSetup.test.tsx`, `lib/nickname.test.ts`, `lib/birthYear.test.ts`, `hooks/useNicknameAvailability.test.tsx`
+- [x] 관련 test: `ProfileSetup.test.tsx`, `src/shared/lib/nickname.test.ts`, `src/shared/lib/birthYear.test.ts`, `src/shared/hooks/useNicknameAvailability.test.tsx`
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
 - [x] 헤드리스 Chromium(375×812)에서 제목·사진·카메라 버튼·필드·성별 버튼·안내 문구·시작하기 위치와 크기를 Figma 값(상태 바 62px 제외)과 대조했고, 오류·입력 완료·성별 선택 상태의 색을 확인함. 입력창 높이가 48px(Figma 47px)라 아래 요소가 1~2px 밀린다(`inputScale` 보정 결과). 실기기·키보드 자동 스크롤은 확인하지 못함
 

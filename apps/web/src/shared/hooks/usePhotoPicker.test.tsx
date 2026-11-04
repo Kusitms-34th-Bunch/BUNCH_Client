@@ -60,6 +60,27 @@ it('선택 중 중복 호출을 막고 실패 후 다시 선택할 수 있다', 
   await waitFor(() => expect(result.current.photoUrl).toBe(imageUrl));
 });
 
+it('화면을 떠난 뒤 선택이 실패하면 onError를 부르지 않는다', async () => {
+  let reject: (_error: Error) => void = () => {};
+  native.pickGalleryImage.mockImplementationOnce(
+    () =>
+      new Promise((_resolve, rejectPick) => {
+        reject = rejectPick;
+      }),
+  );
+  const onError = vi.fn();
+  const { result, unmount } = renderHook(() => usePhotoPicker({ onError }));
+  act(() => result.current.handleCameraClick());
+  unmount();
+
+  await act(async () => {
+    reject(new Error('picker failed'));
+    await Promise.resolve();
+  });
+
+  expect(onError).not.toHaveBeenCalled();
+});
+
 it('잘못된 네이티브 응답을 이미지로 사용하지 않는다', async () => {
   native.pickGalleryImage.mockResolvedValue({ dataUrl: 'file:///private/photo.jpg' });
   const { result } = renderHook(usePhotoPicker);
