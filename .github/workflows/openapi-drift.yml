@@ -1,0 +1,123 @@
+name: OpenAPI Drift
+
+# 커밋된 생성 타입(packages/api-core/src/generated/openapi.ts)이 실제 스펙과 어긋났는지 매일 확인. PR 차단 검사 아님
+on:
+  schedule:
+    # 매일 09:00 KST
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: openapi-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: OpenAPI 타입 드리프트
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GENERATED_PATH: packages/api-core/src/generated/openapi.ts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # 스펙 주소가 없으면 설치 전에 중단
+      - name: 스펙 주소 확인
+        env:
+          OPENAPI_SCHEMA_URL: ${{ secrets.OPENAPI_SCHEMA_URL }}
+        run: |
+          if [ -z "$OPENAPI_SCHEMA_URL" ]; then
+            echo "::error::repo secret OPENAPI_SCHEMA_URL이 비어 있습니다. raw OpenAPI JSON/YAML 주소(예: …/v3/api-docs)를 설정하세요."
+            exit 1
+          fi
+          # 생성 스크립트는 응답 형식을 검사하지 않으므로 Swagger UI HTML 주소를 먼저 거름
+          # 공개 로그에 스펙 서버 주소가 남지 않도록 curl 오류 메시지(호스트 포함)는 버림
+          content_type=$(curl -fsL -o /dev/null -w '%{content_type}' "$OPENAPI_SCHEMA_URL" 2>/dev/null) || {
+            echo "::error::OPENAPI_SCHEMA_URL 요청에 실패했습니다(러너에서 접근 가능한 주소인지 확인)."
+            exit 1
+          }
+          case "$content_type" in
+            text/html*)
+              echo "::error::OPENAPI_SCHEMA_URL이 HTML을 반환합니다. Swagger UI가 아니라 raw schema 주소를 쓰세요."
+              exit 1
+              ;;
+          esac
+
+      - name: 변조 가드
+        run: node turbo/workflows/check-suspicious.mjs
+
+      - name: 의존성 설치
+        uses: ./.github/actions/setup
+
+      # 스크립트는 env를 .env 파일보다 먼저 읽으므로 .env 파일 불필요
+      - name: 타입 생성
+        env:
+          OPENAPI_SCHEMA_URL: ${{ secrets.OPENAPI_SCHEMA_URL }}
+        run: yarn gen:api-types
+
+      # openapi-typescript 출력은 포맷되지 않음(큰따옴표·4칸). 커밋본은 Prettier 적용본이라 같은 포맷으로 맞춤
+      - name: 포맷
+        run: yarn prettier --write "$GENERATED_PATH"
+
+      # 보고 형식은 Frontend CI 결과 댓글(ci.yml)과 같음: 제목 → 결과 한 줄 → 상세 → 기준 커밋·실행 로그
+      - name: 드리프트 확인
+        id: diff
+        env:
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          footer="[기준 커밋](${COMMIT_URL}) · [실행 로그](${RUN_URL})"
+          if git diff --quiet -- "$GENERATED_PATH"; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## OpenAPI Drift"
+              echo ""
+              echo "**결과: 통과** — 커밋된 생성 타입이 스펙과 같습니다"
+              echo ""
+              echo "$footer"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "drift=true" >> "$GITHUB_OUTPUT"
+          git diff -- "$GENERATED_PATH" > openapi-drift.diff
+          read -r added removed _ < <(git diff --numstat -- "$GENERATED_PATH")
+          {
+            echo "## OpenAPI Drift"
+            echo ""
+            echo "**결과: 실패** — 커밋된 생성 타입이 스펙과 다릅니다 (추가 ${added}줄, 삭제 ${removed}줄)"
+            echo ""
+            echo "로컬에서 \`yarn gen:api-types\`와 \`yarn prettier --write $GENERATED_PATH\`를 실행해 갱신한 뒤 커밋하세요. 전체 diff는 artifact \`openapi-drift-diff\`에 있습니다."
+            echo ""
+            echo "### 경로 변경"
+            echo ""
+            echo '```diff'
+            grep -E "^[+-]  '/" openapi-drift.diff || echo "(없음)"
+            echo '```'
+            echo ""
+            echo "### operation 변경"
+            echo ""
+            echo '```diff'
+            { grep -E "^[+-]  [A-Za-z0-9_]+: \{" openapi-drift.diff || echo "(없음)"; } | head -100
+            echo '```'
+            echo ""
+            echo "$footer"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: diff 업로드
+        if: steps.diff.outputs.drift == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-drift-diff
+          path: openapi-drift.diff
+          retention-days: 3
+
+      - name: 드리프트 시 실패
+        if: steps.diff.outputs.drift == 'true'
+        run: |
+          echo "::error file=${GENERATED_PATH}::커밋된 생성 타입이 스펙과 다릅니다. Summary와 artifact를 확인하세요."
+          exit 1
