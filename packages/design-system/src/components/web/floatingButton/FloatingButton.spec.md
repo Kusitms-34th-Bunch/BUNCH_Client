@@ -32,6 +32,7 @@
 - Default: 흰 배경(`surface-primary`) + 그림자, 아이콘 `icon-primary`(`#121212`).
 - Pressed(`:active`): 버튼 배경에 `overlay-pressed`(검정 20%)를 배경 층으로 깐다. 아이콘은 어두워지지 않는다. 75ms Ease Out 전환(동작 줄이기에서는 끔).
 - Disabled(`disabled`): 그림자까지 포함한 전체에 `opacity-disabled`(40%)와 `cursor-not-allowed`, 아이콘은 `icon-disabled`(`#bcbec2`). 눌러도 동작하지 않는다.
+- 아이콘 전환: `icon`이 바뀌면 두 아이콘을 겹쳐 둔 채 200ms Ease Out 크로스페이드로 바꾼다(동작 줄이기에서는 즉시). 사진함 선택 모드 진입처럼 버튼이 제자리에서 역할을 바꿀 때 튀지 않게 하려는 것으로, Figma에 정의는 없다.
 - 크기: 52×52px, 안쪽 여백 10px(24px 아이콘을 가운데에 둔다).
 - 그림자: `0 4px 6px rgba(0,0,0,0.12)`.
 

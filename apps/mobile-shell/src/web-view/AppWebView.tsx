@@ -118,6 +118,11 @@ export function AppWebView({ uri }: { uri: string }) {
       injectedJavaScriptBeforeContentLoaded={safeAreaScript}
       // WebView 자체 inset 보정 해제(웹이 여백을 적용하므로 이중 적용 방지)
       contentInsetAdjustmentBehavior="never"
+      // 스크롤은 웹 화면 안쪽 영역(PageShell main)이 맡으므로 문서 전체가 당겨지며 바깥 흰 배경이 드러나지 않게
+      bounces={false}
+      overScrollMode="never"
+      // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
+      allowsLinkPreview={false}
       allowsBackForwardNavigationGestures
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;

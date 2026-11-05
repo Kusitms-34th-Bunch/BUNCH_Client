@@ -29,7 +29,7 @@ export type BottomSheetCloseProps = Omit<ComponentProps<'button'>, 'children'> &
 export type BottomSheetBodyProps = ComponentProps<'div'>;
 export type BottomSheetFooterProps = ComponentProps<'div'>;
 
-// Figma 공통 모션(docs/architecture/motion.md): 열기 340ms·닫기 160ms, 아래→위 이동·투명도 40%→100%
+// Figma 바텀시트 모션(docs/architecture/motion.md): 열기 340ms·닫기 240ms, 아래→위 이동·투명도 40%→100%
 const ease = 'ease-[cubic-bezier(0,0,0.35,1)]';
 const safeAreaBottom = 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))';
 
@@ -63,7 +63,7 @@ const Content = ({
     <Drawer.Backdrop
       className={cn(
         'bg-overlay-dim-subtle fixed inset-0 opacity-[calc(1-var(--drawer-swipe-progress,0))]',
-        `transition-opacity duration-340 ${ease} data-ending-style:duration-160`,
+        `transition-opacity duration-340 ${ease} data-ending-style:duration-240`,
         'data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0',
         backdropClassName,
       )}
@@ -77,7 +77,7 @@ const Content = ({
           'max-h-[calc(100dvh-var(--safe-area-top,env(safe-area-inset-top,0px))-var(--spacing-s12))]',
           // 위로 끌 때의 음수 값 무시(아래 방향만 추적)
           'translate-y-[max(0px,var(--drawer-swipe-movement-y,0px))]',
-          `transition-[translate,opacity] duration-340 ${ease} data-ending-style:duration-160`,
+          `transition-[translate,opacity] duration-340 ${ease} data-ending-style:duration-240`,
           'data-starting-style:translate-y-full data-starting-style:opacity-40',
           'data-ending-style:translate-y-full data-ending-style:opacity-40',
           'data-swiping:duration-0 data-swiping:select-none',

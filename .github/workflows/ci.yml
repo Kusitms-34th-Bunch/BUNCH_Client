@@ -135,10 +135,12 @@ jobs:
           ANALYZE: 'true'
         run: yarn build $AFFECTED
 
-      # web 클라이언트 JS 크기(gzip)를 Summary에 기록, 기준선보다 10% 넘게 커지면 경고만(실패 아님). web을 빌드하지 않은 PR이면 건너뜀
+      # web 클라이언트 JS 크기(gzip)를 Summary와 PR 결과 댓글(bundle-size.md)에 기록, 기준선보다 10% 넘게 커지면 경고만(실패 아님). web을 빌드하지 않은 PR이면 건너뜀
       - name: 웹 번들 크기
         continue-on-error: true
         if: ${{ !cancelled() && steps.build.outcome == 'success' && hashFiles('apps/web/.next/build-manifest.json') != '' }}
+        env:
+          BUNDLE_SIZE_REPORT: bundle-size.md
         run: node scripts/report-web-bundle-size.mjs
 
       # actions/cache의 자동 저장은 job 성공 시에만 실행되므로 검사 결과와 상관없이 직접 저장. Turbo는 성공한 작업만 캐시
@@ -174,7 +176,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ci-result-${{ matrix.id }}
-          path: ci-result-${{ matrix.id }}.json
+          # bundle-size.md는 build job에서 web을 빌드했을 때만 있음
+          path: |
+            ci-result-${{ matrix.id }}.json
+            bundle-size.md
           retention-days: 1
 
   # 필수 체크 이름(ruleset의 `Verify`) 유지용 결과 모음 job, PR 결과 댓글도 여기서 작성
@@ -283,6 +288,12 @@ jobs:
               '',
               `[기준 커밋](${commitUrl}) · [실행 로그](${process.env.RUN_URL})`,
             ];
+            // build job이 web을 빌드했으면 번들 크기 요약을 표 아래에 붙임(자세한 표는 실행 로그의 Summary)
+            try {
+              lines.splice(-2, 0, '', fs.readFileSync('ci-results/bundle-size.md', 'utf8').trim());
+            } catch {
+              // web을 빌드하지 않은 PR이면 파일이 없음
+            }
             const body = lines.join('\n');
 
             const issue_number = context.issue.number;

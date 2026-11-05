@@ -12,6 +12,7 @@ import {
   drill,
   fade,
   MultiAnimation as CompositeAnimation,
+  sheet,
   slide,
   type TransitionDirection,
   WebAnimation,
@@ -34,32 +35,37 @@ export const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
 export const BUNCH_ADD_DISSOLVE_DURATION_MS = 150;
 // 더보기 메뉴 → 하위 화면은 한 단계 들어가는 이동이라 미는 slide 300ms(화면설계서에 정의 없음, 2026-11-01 디자이너 요청)
 export const BUNCH_MENU_SUB_SLIDE_DURATION_MS = 300;
-// 더보기 메뉴·알림 목록 진입 drill 시간. 화면설계서 Move in / ← / Ease out / 150ms가 빨라 보여 200ms(2026-11-02 사용자 결정)
-export const BUNCH_DRILL_DURATION_MS = 200;
+// 더보기 메뉴·알림 목록 진입 drill 시간. 화면설계서 Move in / ← / Ease out / 150ms가 빨라 보여 200ms(2026-11-02), 다시 250ms(2026-11-06 사용자 결정)
+export const BUNCH_DRILL_DURATION_MS = 250;
 export const TAB_CROSSFADE_DURATION_MS = 80;
 
 // 나가는 화면은 포커스·보조기술에서 제외(inert)하고 data-page-leaving 표식(AppFrame이 그 화면의 배경 표식을 무시해 상태 바 영역도 함께 전환)
 // 중단된 이전 전환에서 돌아오는 DOM은 다시 조작 가능하게 처리
-const guardOutgoing = (animation: MultiAnimation<'out' | 'in'>) => {
-  const incoming = animation.select('in').getMotionTracks()[0];
+const guardPair = (
+  incoming: HTMLElement | undefined,
+  outgoing: HTMLElement | undefined,
+  track: WebAnimation | undefined,
+) => {
   if (incoming) {
-    incoming.element.inert = false;
-    delete incoming.element.dataset.pageLeaving;
+    incoming.inert = false;
+    delete incoming.dataset.pageLeaving;
+    delete incoming.dataset.sheetMoving;
   }
+  if (!outgoing || !track) return;
+  const wasInert = outgoing.inert;
+  const dispose = track.onDispose;
+  outgoing.inert = true;
+  outgoing.dataset.pageLeaving = '';
+  track.onDispose = (context) => {
+    dispose?.(context);
+    if (!context.owns(outgoing)) return;
+    outgoing.inert = wasInert;
+    delete outgoing.dataset.pageLeaving;
+  };
+};
+const guardOutgoing = (animation: MultiAnimation<'out' | 'in'>) => {
   const outgoing = animation.select('out').getMotionTracks()[0];
-  if (outgoing) {
-    const element = outgoing.element;
-    const wasInert = element.inert;
-    const dispose = outgoing.onDispose;
-    element.inert = true;
-    element.dataset.pageLeaving = '';
-    outgoing.onDispose = (context) => {
-      dispose?.(context);
-      if (!context.owns(element)) return;
-      element.inert = wasInert;
-      delete element.dataset.pageLeaving;
-    };
-  }
+  guardPair(animation.select('in').getMotionTracks()[0]?.element, outgoing?.element, outgoing);
 };
 const tuneTransition =
   (durationMs: number) =>
@@ -90,12 +96,50 @@ const bunchAddDissolve = fade(
   { override: { forward: tuneBunchAddDissolve, backward: tuneBunchAddDissolve } },
 );
 // 번치 탭 ↔ 더보기 메뉴·알림 목록(앞으로 들어가는 이동): SSGOI drill(parallax) 프리셋
-// 들어오는 화면은 오른쪽에서, 뒤 화면은 왼쪽으로 20% 함께 밀림. 시간·곡선만 Ease out / 200ms로 맞춤
+// 들어오는 화면은 오른쪽에서, 뒤 화면은 왼쪽으로 20% 함께 밀림. 시간·곡선만 Ease out / 250ms로 맞춤
 const tuneBunchDrill = tuneTransition(BUNCH_DRILL_DURATION_MS);
 const bunchDrill = drill(
   {},
   {
     override: { forward: tuneBunchDrill, backward: tuneBunchDrill },
+  },
+);
+// sheet 프리셋은 움직이는 화면(sheet)만 track이라 뒤 화면은 경계 id로 찾아 나가는 화면 표식(상태 바 색 즉시 전환)
+// 중단된 이전 전환의 노드가 남아 있을 수 있어 같은 id 중 가장 나중에 붙은 노드 사용
+const guardSheet =
+  (opening: boolean, behindId: string) =>
+  ({
+    animation,
+    context,
+  }: {
+    animation: MultiAnimation<'overlay' | 'sheet' | 'background'>;
+    context: { positionedParent: HTMLElement };
+  }) => {
+    const track = animation.select('sheet').getMotionTracks()[0];
+    if (!track) return;
+    const sheetElement = track.element;
+    const behind = [
+      ...context.positionedParent.querySelectorAll<HTMLElement>(
+        `[data-ssgoi-transition="${behindId}"]`,
+      ),
+    ].at(-1);
+    if (opening) guardPair(sheetElement, behind, track);
+    else guardPair(behind, sheetElement, track);
+    // 움직이는 동안 AppFrame이 상태 바 영역 색을 시트 도착에 맞춰 천천히 바꾸도록 표식
+    sheetElement.dataset.sheetMoving = '';
+    const dispose = track.onDispose;
+    track.onDispose = (disposal) => {
+      dispose?.(disposal);
+      if (disposal.owns(sheetElement)) delete sheetElement.dataset.sheetMoving;
+    };
+  };
+const bunchSheet = sheet(
+  {},
+  {
+    override: {
+      forward: guardSheet(true, BUNCH_HOME_PATHS.home),
+      backward: guardSheet(false, BUNCH_HOME_PATHS.home),
+    },
   },
 );
 // 결정 기록 017: 하단 탭 사이 80ms 등속 크로스페이드. 들어오는 탭은 아래에 불투명하게 두고 위로 올린 나가는 탭만 페이드
@@ -169,6 +213,13 @@ const tabRules: SsgoiTransitionRule[] = tabPaths.flatMap((from) =>
 const rules: SsgoiTransitionRule[] = [
   ...tabRules,
   { from: BUNCH_HOME_PATHS.home, to: ONBOARDING_PATHS.start, transition: bunchAddDissolve },
+  // 번치 홈 플로팅 버튼 → 번들 만들기는 모달처럼 아래에서 올라오고 닫으면 내려가는 sheet 프리셋(SSGOI 데모의 Home → Create)
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNDLE_SELECT_PATHS.select,
+    bidirectional: true,
+    transition: bunchSheet,
+  },
   {
     from: BUNCH_HOME_PATHS.home,
     to: BUNCH_HOME_PATHS.menu,

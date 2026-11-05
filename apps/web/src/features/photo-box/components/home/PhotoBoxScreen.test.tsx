@@ -92,9 +92,13 @@ describe('PhotoBoxScreen 목록', () => {
     };
     renderScreen(ready({ ...photoBoxFixture, photos: [only] }));
 
-    fireEvent.error(screen.getByRole('img', { name: '깨진 사진' }));
+    // 사진은 장식이고 이름은 덮은 상세 링크가 가짐
+    expect(screen.getByRole('link', { name: '깨진 사진' })).toBeTruthy();
+    const image = document.querySelector('img[src="/missing.jpg"]');
+    if (!image) throw new Error('사진 없음');
+    fireEvent.error(image);
 
-    expect(screen.queryByRole('img', { name: '깨진 사진' })).toBeNull();
+    expect(screen.queryByRole('link', { name: '깨진 사진' })).toBeNull();
     expect(screen.getByRole('img', { name: '불러오지 못한 사진' })).toBeTruthy();
   });
 

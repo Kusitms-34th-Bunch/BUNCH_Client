@@ -75,11 +75,8 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
       bottom={
         <div
           inert={creating}
-          className="bg-surface-primary gap-s5 pt-padding-p7 px-padding-p8 flex"
-          style={{
-            paddingBottom:
-              'calc(var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)) + var(--spacing-s4))',
-          }}
+          // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
+          className="bg-surface-primary gap-s5 pt-padding-p7 px-padding-p8 pb-s4 flex"
         >
           <Button variant="tertiary" className="shrink-0" onClick={select.openSheet}>
             {BUNDLE_SELECT_MESSAGES.recommend}
