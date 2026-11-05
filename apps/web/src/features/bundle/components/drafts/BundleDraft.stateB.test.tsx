@@ -46,7 +46,7 @@ describe('UT 상태 B 초안 화면', () => {
 
     expect(screen.getByDisplayValue('속초 첫째 날 🌊')).toBeInTheDocument();
     expect(screen.getByText('속초해수욕장')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /은우님이 편집 중/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /은우님이 편집 중/ }).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /경진님이 편집 중/ })).toBeInTheDocument();
   });
 

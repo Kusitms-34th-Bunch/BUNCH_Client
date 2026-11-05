@@ -198,6 +198,7 @@ export function useDraft(draftId: string | undefined): {
   const photoQueue = useRef<Promise<void>>(Promise.resolve());
   const photoOps = useRef(0);
   const photoFailed = useRef(false);
+  const photoFailures = useRef(0);
   const shownPhotosRef = useRef<readonly DraftPhoto[]>([]);
   const myIdRef = useRef<string | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -541,22 +542,32 @@ export function useDraft(draftId: string | undefined): {
         (photo.sourcePhotoId !== undefined && candidate.sourcePhotoId === photo.sourcePhotoId),
     )?.id;
 
+  // 사진 변경 응답으로 최신 상세를 갱신, 이미 더 최신 revision이면 유지(캡션·제목 저장과 동시에 돌 수 있음)
+  const adoptDetail = (next: BundleDetail) => {
+    const current = detailRef.current;
+    if (!current || next.revision >= current.revision) detailRef.current = next;
+  };
+
   const applyPhotoChanges = async ({ add, remove }: { add: string[]; remove: string[] }) => {
-    detailRef.current = await changePhotos.mutateAsync({
-      addPhotoIds: add,
-      removeBundlePhotoIds: remove,
-      mode: detailRef.current?.status ?? 'DRAFT',
-      idempotencyKey: createIdempotencyKey(),
-    });
+    adoptDetail(
+      await changePhotos.mutateAsync({
+        addPhotoIds: add,
+        removeBundlePhotoIds: remove,
+        mode: detailRef.current?.status ?? 'DRAFT',
+        idempotencyKey: createIdempotencyKey(),
+      }),
+    );
   };
 
   const applyPhotoMove = async ({ photoId, previous, next }: PhotoMovePlan) => {
-    detailRef.current = await movePhotoMutation.mutateAsync({
-      bundlePhotoId: photoId,
-      previousBundlePhotoId: previous,
-      nextBundlePhotoId: next,
-      mode: detailRef.current?.status ?? 'DRAFT',
-    });
+    adoptDetail(
+      await movePhotoMutation.mutateAsync({
+        bundlePhotoId: photoId,
+        previousBundlePhotoId: previous,
+        nextBundlePhotoId: next,
+        mode: detailRef.current?.status ?? 'DRAFT',
+      }),
+    );
   };
 
   // 한 번에 하나씩 보냄, 한 번 실패하면 남은 변경은 건너뛰고(서버와 어긋난 상태) 한 번만 안내하며 서버 값으로 되돌림
@@ -567,6 +578,7 @@ export function useDraft(draftId: string | undefined): {
       .then(() => (photoFailed.current ? undefined : run()))
       .catch((error: unknown) => {
         photoFailed.current = true;
+        photoFailures.current += 1;
         toast(
           errorCode(error) === 'BUNDLE_004'
             ? BUNDLE_MESSAGES.editingBlocked
@@ -644,7 +656,7 @@ export function useDraft(draftId: string | undefined): {
       showPhotos(next);
       enqueuePhotoOp(async () => {
         const serverId = serverPhotoId(target);
-        if (serverId === undefined) return;
+        if (serverId === undefined) throw new Error('photo is not on the server');
         await applyPhotoChanges({ add: [], remove: [serverId] });
       });
     },
@@ -659,7 +671,9 @@ export function useDraft(draftId: string | undefined): {
         const movingId = moving && serverPhotoId(moving);
         const previousId = previous && serverPhotoId(previous);
         const nextId = following && serverPhotoId(following);
-        if (movingId === undefined || (previous && !previousId) || (following && !nextId)) return;
+        if (movingId === undefined || (previous && !previousId) || (following && !nextId)) {
+          throw new Error('photo is not on the server');
+        }
         await applyPhotoMove({
           photoId: movingId,
           previous: previousId ?? null,
@@ -693,7 +707,12 @@ export function useDraft(draftId: string | undefined): {
     searchPlaces,
     publish: async () => {
       // 보내는 중인 사진 변경이 끝난 뒤의 서버 구성으로 발행함
+      const failuresBefore = photoFailures.current;
       await photoQueue.current;
+      if (photoFailures.current !== failuresBefore) {
+        toast(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
+        return 'blocked';
+      }
       clearTimeout(timer.current);
       // 저장하지 못한 입력이 남아 있으면 발행하지 않음(서버는 저장된 내용만 발행함)
       // 진행 중이던 저장이 막 끝나는 순간 들어온 입력이 남을 수 있어 한 번 더 확인

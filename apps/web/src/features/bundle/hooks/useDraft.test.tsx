@@ -571,6 +571,27 @@ describe('useDraft 발행', () => {
     }));
   };
 
+  it('사진 변경이 실패하면 화면과 다른 서버 구성을 발행하지 않고 안내한다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', () => fail(500, 'COMMON_500')),
+    );
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    act(() => result.current.actions.removePhoto(photoId));
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('blocked');
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
+    expect(serverBundle(id)?.status).toBe('DRAFT');
+    // 화면도 서버 구성으로 돌아와 있음
+    expect(ready(result.current.state).draft.photos).toHaveLength(2);
+  });
+
   it('사진 구성을 바꾼 직후 업로드해도 바뀐 구성이 발행된다', async () => {
     const { id, result } = await renderReady();
     await fill(result, id);

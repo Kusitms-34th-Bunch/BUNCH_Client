@@ -47,12 +47,12 @@ export function FacilitatorTool({ navigate = browserNavigate }: FacilitatorToolP
 
   return (
     <>
-      {/* 보이지 않는 열기 영역: 읽히거나 포커스되지 않고, 헤더 위쪽 가장자리에만 둠 */}
+      {/* 보이지 않는 열기 영역: 읽히거나 포커스되지 않고, 화면 맨 위 가장자리에만 둠 */}
       <div
         aria-hidden
         data-testid="facilitator-tap-area"
         className="fixed top-0 left-1/2 z-[100] w-40 -translate-x-1/2"
-        // 상단 Safe Area(없으면 12px)만 덮어 헤더의 버튼을 가리지 않음
+        // 상단 Safe Area(없으면 12px)만 덮음, Safe Area가 없는 환경에서는 헤더 맨 위 가장자리 12px의 터치도 이 영역이 받음
         style={{ height: 'max(12px, env(safe-area-inset-top))' }}
         onPointerDown={() => {
           if (sequence.tap()) setOpen(true);

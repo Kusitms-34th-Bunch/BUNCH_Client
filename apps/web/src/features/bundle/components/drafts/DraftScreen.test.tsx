@@ -390,7 +390,7 @@ describe('위치와 날짜', () => {
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
 
     toast.mockClear();
-    await userEvent.click(screen.getByRole('button', { name: /경진님이 편집 중/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^추가.*경진님이 편집 중/ }));
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
   });
 
@@ -539,8 +539,8 @@ describe('다른 멤버가 편집 중인 영역', () => {
     });
 
     // 위치 「추가」 행에 프로필 이미지가 붙고, 위치·날짜 줄 모두 점 애니메이션은 없음
-    expect(screen.getByRole('group', { name: '위치' })).toBeInTheDocument();
-    const locationGroup = within(screen.getByRole('group', { name: '위치' }));
+    expect(screen.getByRole('group', { name: /위치$/ })).toBeInTheDocument();
+    const locationGroup = within(screen.getByRole('group', { name: /위치$/ }));
     expect(
       locationGroup.getByRole('button', { name: /^추가.*경진님이 편집 중/ }),
     ).toBeInTheDocument();
