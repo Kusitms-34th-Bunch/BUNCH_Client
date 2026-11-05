@@ -47,7 +47,7 @@ UT는 가짜 서버(서비스 워커)가 필요해 **브라우저·홈 화면 �
 - GitHub Actions 러너(CI와 같은 환경)에서 설치·빌드하고 결과물만 Vercel에 올리므로 Vercel 빌드 환경의 Yarn PnP 불확실성을 피한다.
 - 토큰은 `vercel pull`·`deploy` 단계에만 주고, 저장소 코드를 실행하는 빌드 단계에는 주지 않는다. `vercel` CLI는 65.1.0으로 고정했다(토큰이 있는 단계가 매번 최신 패키지를 실행하지 않도록).
 - `vercel pull`이 받은 프로젝트 환경 변수는 빌드 단계(저장소 코드 실행)에서 보인다. **UT 프로젝트에는 비밀 값을 환경 변수로 넣지 않는다.**
-- workflow는 `vercel pull` 뒤 프로젝트 이름이 `bunch-ut`인지 확인하고 아니면 멈춘다(운영 프로젝트 ID를 UT secret에 잘못 넣어도 가짜 서버 빌드가 운영에 올라가지 않게). 프로젝트 이름을 바꾸면 workflow의 `EXPECTED_PROJECT_NAME`도 바꾼다.
+- workflow는 배포 전에 Vercel API로 프로젝트 이름을 받아 `bunch-ut`인지 확인하고 아니면(이름을 받지 못하는 경우도) 멈춘다(운영 프로젝트 ID를 UT secret에 잘못 넣어도 가짜 서버 빌드가 운영에 올라가지 않게). 프로젝트 이름을 바꾸면 workflow의 `EXPECTED_PROJECT_NAME`도 바꾼다.
 - Vercel에 GitHub를 연결해 직접 빌드하는 방식(`apps/web/vercel.json`의 명령과 `ENABLE_EXPERIMENTAL_COREPACK=1`, `NEXT_PUBLIC_API_MOCKING=enabled` 환경 변수가 필요)은 쓰지 않는다. Actions와 함께 켜면 같은 커밋이 두 번 배포된다.
 
 **CLI로 직접 올릴 때**(`vercel --prod`): **로컬 작업 폴더에서 바로 올리지 않는다.** 로컬 폴더에는 `.env.pr-review`(GitHub 토큰)·`.env.openapi.local` 같은 gitignore 대상 비밀 파일이 있을 수 있다. 업로드 제외 규칙이 이를 걸러 주는지 확인하지 않았으므로 새로 clone한 깨끗한 폴더에서 배포한다.

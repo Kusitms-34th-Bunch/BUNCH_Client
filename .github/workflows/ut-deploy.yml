@@ -54,24 +54,33 @@ jobs:
           test -n "$VERCEL_PROJECT_ID" || { echo "VERCEL_UT_PROJECT_ID secret이 없습니다."; exit 1; }
           test -n "$VERCEL_TOKEN" || { echo "VERCEL_TOKEN secret이 없습니다."; exit 1; }
 
+      # 운영 프로젝트 ID를 UT secret에 잘못 넣으면 가짜 서버 빌드가 운영에 --prod로 올라간다.
+      # 프로젝트 이름을 Vercel API에서 직접 받아 UT 프로젝트가 아니면(이름을 못 받는 경우도) 멈춘다. 저장소 코드는 실행하지 않는 인라인 스크립트다.
+      - name: UT 프로젝트 확인
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          EXPECTED_PROJECT_NAME: bunch-ut
+        run: |
+          node -e '
+            const { VERCEL_TOKEN, VERCEL_PROJECT_ID, VERCEL_ORG_ID, EXPECTED_PROJECT_NAME } = process.env;
+            const url = "https://api.vercel.com/v9/projects/" + VERCEL_PROJECT_ID + "?teamId=" + VERCEL_ORG_ID;
+            fetch(url, { headers: { Authorization: "Bearer " + VERCEL_TOKEN } })
+              .then(async (res) => {
+                if (!res.ok) throw new Error("프로젝트 조회 실패(HTTP " + res.status + "). secret의 ID와 토큰 권한을 확인하세요.");
+                const { name } = await res.json();
+                if (name !== EXPECTED_PROJECT_NAME) {
+                  throw new Error("UT 프로젝트(" + EXPECTED_PROJECT_NAME + ")가 아닌 프로젝트(" + name + ")입니다. VERCEL_UT_PROJECT_ID를 확인하세요.");
+                }
+                console.log("UT 프로젝트 확인: " + name);
+              })
+              .catch((error) => { console.error(error.message); process.exit(1); });
+          '
+
       # 저장소 루트에서 실행(프로젝트의 Root Directory가 apps/web이라 CLI는 루트에서 부른다)
       - name: Vercel 프로젝트 설정 받기
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: yarn dlx vercel@65.1.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      # 운영 프로젝트 ID를 UT secret에 잘못 넣으면 가짜 서버 빌드가 운영에 --prod로 올라간다. 받은 프로젝트 이름이 UT 프로젝트가 아니면 멈춘다.
-      - name: UT 프로젝트 확인
-        env:
-          EXPECTED_PROJECT_NAME: bunch-ut
-        run: |
-          name=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.vercel/project.json','utf8')).projectName ?? '')")
-          if [ -z "$name" ]; then
-            echo "::warning::.vercel/project.json에 projectName이 없어 이름을 확인하지 못했습니다."
-          elif [ "$name" != "$EXPECTED_PROJECT_NAME" ]; then
-            echo "UT 프로젝트(${EXPECTED_PROJECT_NAME})가 아닌 프로젝트(${name})입니다. VERCEL_UT_PROJECT_ID를 확인하세요."
-            exit 1
-          fi
 
       # 빌드는 저장소 코드를 실행하므로 토큰을 주지 않는다. 가짜 서버 환경 변수는 여기서 고정한다.
       - name: 빌드(가짜 서버 켬)
@@ -84,7 +93,11 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           REF: ${{ inputs.ref || github.ref_name }}
+        # bash를 명시해 파이프의 앞 명령이 실패해도 단계가 실패하게 한다(기본 셸은 pipefail이 꺼져 있음)
+        shell: bash
         run: |
-          url=$(yarn dlx vercel@65.1.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tail -n 1)
+          out=$(yarn dlx vercel@65.1.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          url=$(printf '%s\n' "$out" | tail -n 1)
+          test -n "$url" || { echo "배포 URL을 받지 못했습니다."; exit 1; }
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "UT 배포: $url (ref: $REF)" >> "$GITHUB_STEP_SUMMARY"
