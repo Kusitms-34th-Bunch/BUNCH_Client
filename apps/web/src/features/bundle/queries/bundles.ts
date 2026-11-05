@@ -6,7 +6,9 @@ import {
   addBundleParticipant,
   changeBundlePhotos,
   createBundle,
+  deleteBundle,
   getBundle,
+  leaveBundle,
   moveBundlePhoto,
   publishBundle,
   readVersionConflict,
@@ -45,8 +47,50 @@ export const useCreateBundleMutation = (bunchId: string | undefined) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
       return createBundle(bunchId, photoIds, idempotencyKey);
     },
-    onSuccess: (bundle) =>
-      queryClient.setQueryData(bundleKeys.detail(bundle.bunchId, bundle.id), bundle),
+    onSuccess: async (bundle) => {
+      queryClient.setQueryData(bundleKeys.detail(bundle.bunchId, bundle.id), bundle);
+      // 번치 홈의 작성 중인 번들·개수가 새 초안을 포함하게 화면에 없어도 바로 다시 받음
+      await queryClient.invalidateQueries({
+        queryKey: sharedKeys.bunchHomeScope(bundle.bunchId),
+        refetchType: 'all',
+      });
+    },
+  });
+};
+
+// 번들이 사라지는 동작(삭제·나가기) 뒤: 상세 캐시를 비우고 번치 홈 데이터를 바로 다시 받음
+const useBundleGone = (bunchId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return async (bundleId: string) => {
+    queryClient.removeQueries({ queryKey: bundleKeys.detail(bunchId, bundleId) });
+    await queryClient.invalidateQueries({
+      queryKey: sharedKeys.bunchHomeScope(bunchId),
+      refetchType: 'all',
+    });
+  };
+};
+
+/** 번들 삭제(생성자·번치 관리자, 번치 홈 「작성 중인 번들」의 삭제 버튼) */
+export const useDeleteBundleMutation = (bunchId: string | undefined) => {
+  const gone = useBundleGone(bunchId);
+  return useMutation({
+    mutationFn: (bundleId: string) => {
+      if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
+      return deleteBundle(bunchId, bundleId);
+    },
+    onSuccess: (_data, bundleId) => gone(bundleId),
+  });
+};
+
+/** 초안 나가기(작성 화면의 「나가기」). 생성자가 나가면 초안이 삭제됨 */
+export const useLeaveBundleMutation = (bunchId: string | undefined) => {
+  const gone = useBundleGone(bunchId);
+  return useMutation({
+    mutationFn: (bundleId: string) => {
+      if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
+      return leaveBundle(bunchId, bundleId);
+    },
+    onSuccess: (_data, bundleId) => gone(bundleId),
   });
 };
 

@@ -1,5 +1,6 @@
 import type { components } from '@app/api-core/generated';
 import { ApiError } from '@app/api-core';
+import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
@@ -217,6 +218,27 @@ export const moveBundlePhoto = ({
     ),
     'move bundle photo',
   );
+
+/** 번들 삭제: 생성자나 번치 관리자만, 번들·참여자·코멘트·편집권이 사라지고 사진함 원본은 그대로(응답 data는 null) */
+export const deleteBundle = async (bunchId: string, bundleId: string) => {
+  await requestData(bffApi.delete(bundlePath(bunchId, bundleId)), z.null(), 'delete bundle');
+};
+
+/**
+ * 초안 나가기: 초안 참여자만(발행본은 BUNDLE_002)
+ * 생성자가 나가면 초안이 삭제되어 null, 일반 참여자는 참여·코멘트가 지워진 최신 상세를 돌려줌
+ */
+export const leaveBundle = async (
+  bunchId: string,
+  bundleId: string,
+): Promise<BundleDetail | null> => {
+  const data = await requestData(
+    bffApi.post(`${bundlePath(bunchId, bundleId)}/leave`),
+    bundleSnapshotSchema.nullable(),
+    'leave bundle',
+  );
+  return data === null ? null : toBundleDetail(data);
+};
 
 /** 발행: 최신 revision을 보내고 같은 멱등 키로 다시 보내면 같은 결과 */
 export const publishBundle = (

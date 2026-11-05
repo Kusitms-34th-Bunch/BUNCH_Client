@@ -68,6 +68,8 @@ export const BUNDLE_MESSAGES = {
   selfSuffix: '(나)',
   // 초안 생성자가 나가면 작성 중인 번들이 삭제되어 알림(확인 창 문구는 일반 멤버와 같음)
   draftDeleted: '작성 중인 번들을 삭제했어요.',
+  // 기획 원문 없는 임시 안내: 나가기를 서버에 보내지 못했을 때
+  leaveFailed: '번들에서 나가지 못했어요. 잠시 후 다시 시도해 주세요.',
   // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
   editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
   editingLabel: (name: string) => `${name}님이 편집 중`,

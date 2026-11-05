@@ -9,6 +9,8 @@ import { leaseTransport } from '../api/leases';
 import {
   bundleQueryOptions,
   useCreateBundleMutation,
+  useDeleteBundleMutation,
+  useLeaveBundleMutation,
   usePublishBundleMutation,
   useSaveTitleMutation,
   useSaveVisibilityMutation,
@@ -145,6 +147,35 @@ describe('번들 query·mutation', () => {
     });
     expect(client.getQueryState(sharedKeys.bunchHome(bunchId))?.isInvalidated).toBe(true);
     expect(client.getQueryState(sharedKeys.publishedBundles(bunchId))?.isInvalidated).toBe(true);
+  });
+
+  it('초안을 만들거나 삭제하거나 나가면 번치 홈 데이터(작성 중인 번들 포함)를 무효화한다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const homeKeys = [
+      sharedKeys.bunchHome(bunchId),
+      sharedKeys.publishedBundles(bunchId),
+      sharedKeys.draftBundles(bunchId),
+    ];
+    const seedHome = () => homeKeys.forEach((key) => client.setQueryData(key, { stale: true }));
+    const invalidated = () =>
+      homeKeys.every((key) => client.getQueryState(key)?.isInvalidated === true);
+
+    seedHome();
+    const { result: deleting } = renderHook(() => useDeleteBundleMutation(bunchId), { wrapper });
+    await act(async () => {
+      await deleting.current.mutateAsync(id);
+    });
+    expect(invalidated()).toBe(true);
+    expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toBeUndefined();
+
+    const second = await createDraft(wrapper);
+    seedHome();
+    const { result: leaving } = renderHook(() => useLeaveBundleMutation(bunchId), { wrapper });
+    await act(async () => {
+      await leaving.current.mutateAsync(second);
+    });
+    expect(invalidated()).toBe(true);
   });
 
   it('조건이 모자란 발행은 실패하고 캐시는 초안 그대로다', async () => {

@@ -1,7 +1,12 @@
 'use client';
 
+import { toast } from '@app/design-system';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useDeleteBundleMutation } from '@/features/bundle/queries/bundles';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
+import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useBunchHome } from '../../hooks/useBunchHome';
 import { useServerBunchHome } from '../../hooks/useServerBunchHome';
@@ -19,7 +24,19 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
   const router = useRouter();
   const sample = useBunchHome();
   const server = useServerBunchHome({ enabled: source === 'server' });
-  const actions = sample.actions;
+  const { data: profile } = useQuery({ ...myProfileQueryOptions(), enabled: source === 'server' });
+  const deleteBundle = useDeleteBundleMutation(profile?.bunch?.id);
+  // 서버 모드는 작성 중인 번들 삭제를 서버에 보냄(나머지 동작은 아직 샘플)
+  const actions =
+    source === 'server'
+      ? {
+          ...sample.actions,
+          deleteDraftBundle: (bundleId: string) =>
+            deleteBundle.mutate(bundleId, {
+              onError: () => toast(BUNCH_HOME_MESSAGES.deleteDraftFailed, { fullWidth: true }),
+            }),
+        }
+      : sample.actions;
 
   if (source === 'server') {
     if (server.kind === 'loading') {
@@ -56,6 +73,7 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
       actions={actions}
       onAddBunch={() => router.push(BUNCH_HOME_PATHS.startBunch)}
       onCreateBundle={() => router.push(BUNCH_HOME_PATHS.createBundle)}
+      onOpenDraft={(bundleId) => router.push(BUNCH_HOME_PATHS.draft(bundleId))}
     />
   );
 }

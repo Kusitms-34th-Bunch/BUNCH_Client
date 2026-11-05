@@ -1,7 +1,8 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { DraftProvider } from '../../contexts/DraftProvider';
 import { BundleDraft } from './BundleDraft';
@@ -18,6 +19,12 @@ vi.mock('../../hooks/useDraft', async () => ({
   useDraft: (await import('../../testing/useDraftFixture')).useDraftFixture,
 }));
 
+// 나가기의 서버 반영은 대역으로 두고(가짜 서버 연동은 queries·mocks 테스트가 확인), 화면 흐름만 확인
+const leaveBundle = vi.fn<(_bundleId: string) => Promise<unknown>>(() => Promise.resolve(null));
+vi.mock('../../queries/bundles', () => ({
+  useLeaveBundleMutation: () => ({ mutateAsync: leaveBundle }),
+}));
+
 const back = vi.fn();
 const replace = vi.fn();
 const push = vi.fn();
@@ -31,6 +38,7 @@ const renderDraft = (draftId: string | undefined) =>
     <DraftProvider draftId={draftId}>
       <BundleDraft />
     </DraftProvider>,
+    { wrapper: createQueryWrapper(createTestQueryClient()) },
   );
 
 beforeEach(() => {
@@ -94,8 +102,23 @@ describe('BundleDraft', () => {
     expect(within(dialog).getByText(BUNDLE_MESSAGES.leaveConfirmTitle)).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
 
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
+    expect(leaveBundle).toHaveBeenCalledWith('draft-1');
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.draftDeleted, { fullWidth: true });
-    expect(replace).toHaveBeenCalledWith('/bunch');
+  });
+
+  it('나가기를 서버에 보내지 못하면 이동하지 않고 안내한다', async () => {
+    leaveBundle.mockRejectedValueOnce(new Error('network'));
+    renderDraft('draft-1');
+
+    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.leaveFailed, { fullWidth: true }),
+    );
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('「추가」 카드는 참여 멤버 관리 화면으로 이동(push)한다', async () => {
