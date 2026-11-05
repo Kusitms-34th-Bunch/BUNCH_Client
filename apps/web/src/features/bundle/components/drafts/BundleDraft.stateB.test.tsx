@@ -47,7 +47,11 @@ describe('UT 상태 B 초안 화면', () => {
     expect(screen.getByDisplayValue('속초 첫째 날 🌊')).toBeInTheDocument();
     expect(screen.getByText('속초해수욕장')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /은우님이 편집 중/ }).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: /경진님이 편집 중/ })).toBeInTheDocument();
+    // 처음 가운데는 1번 사진이라 완성된 캡션이 보이고, 편집 중 표시는 2번 사진이 가운데로 올 때만 캡션 자리에 뜸
+    expect(screen.getByText(/아침 7시 영금정/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^경진님이 편집 중$/ })).not.toBeInTheDocument();
+    // 「사진」 라벨 옆에는 편집 중인 멤버로 경진이 보임
+    expect(screen.getAllByRole('img', { name: /경진/ }).length).toBeGreaterThan(0);
   });
 
   it('위치를 지우려 하면 막히고 위치는 그대로다', async () => {

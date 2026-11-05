@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
@@ -525,12 +525,41 @@ describe('다른 멤버가 편집 중인 영역', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('사진을 편집 중이면 캡션 자리에 편집 중 표시를 보이고 누르면 안내한다', async () => {
-    renderScreen({ draft: { ...draftFixture, editing: { photoMemberIds: ['gyeongjin'] } } });
+  it('가운데 사진을 편집 중이면 캡션 자리에 편집 중 표시를 보이고 누르면 안내한다', async () => {
+    renderScreen({
+      draft: {
+        ...draftFixture,
+        editing: {
+          photoMemberIds: ['gyeongjin'],
+          photoEditors: { [draftFixture.photos[0]!.id]: ['gyeongjin'] },
+        },
+      },
+    });
 
     expect(screen.queryByText(draftFixture.photos[0]!.caption)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '경진님이 편집 중' }));
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+  });
+
+  it('다른 사진을 편집 중이면 가운데 사진의 캡션 자리는 그대로이고, 그 사진이 가운데로 오면 편집 중 표시가 뜬다', () => {
+    renderScreen({
+      draft: {
+        ...draftFixture,
+        editing: {
+          photoMemberIds: ['gyeongjin'],
+          photoEditors: { [draftFixture.photos[1]!.id]: ['gyeongjin'] },
+        },
+      },
+    });
+
+    // 첫 사진이 가운데라 자기 캡션을 그대로 보이고, 편집 중 버튼은 캡션 자리에 없음
+    expect(screen.getByText(draftFixture.photos[0]!.caption)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '경진님이 편집 중' })).not.toBeInTheDocument();
+
+    // 편집 중인 두 번째 사진이 가운데로 오면 캡션 자리에 편집 중 표시
+    const list = screen.getByAltText(draftFixture.photos[0]!.alt).closest('ul')!;
+    fireEvent.scroll(list, { target: { scrollLeft: 312 } });
+    expect(screen.getByRole('button', { name: '경진님이 편집 중' })).toBeInTheDocument();
   });
 
   it('다른 멤버가 위치·날짜를 편집 중이면 그 멤버의 프로필만 보인다', () => {
