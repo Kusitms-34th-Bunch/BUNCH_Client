@@ -6,8 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { createTapSequence } from './tapSequence';
 import { resetToStateA, restoreStateB } from './utStateB';
 
-// 화면 맨 위 가운데의 보이지 않는 영역을 이 횟수만큼 연달아 누르면 열림(참여자가 우연히 열지 않도록 넉넉히)
-const OPEN_TAP_COUNT = 7;
+// 작성 화면 맨 위 가운데의 보이지 않는 영역을 이 횟수만큼 연달아 누르면 열림(참여자가 우연히 열지 않도록 넉넉히)
+const OPEN_TAP_COUNT = 5;
 // 번치 홈의 캐릭터 자리(`data-facilitator-trigger="bunch-character"`)는 5번
 const CHARACTER_TAP_COUNT = 5;
 const CHARACTER_SELECTOR = '[data-facilitator-trigger="bunch-character"]';
@@ -27,7 +27,7 @@ const browserNavigate = (path: string) => {
 };
 
 /**
- * UT 진행자 장치(참여자 화면에는 보이지 않음): 번치 홈의 캐릭터를 5번, 화면 맨 위 가운데를 7번 연달아 누르면 작은 창이 열림
+ * UT 진행자 장치(참여자 화면에는 보이지 않음): 번치 홈의 캐릭터를 5번, 작성 화면 맨 위 가운데(헤더 저장 상태 자리)를 5번 연달아 누르면 작은 창이 열림
  * - 상태 B로 되돌리기: 작성 화면에서만, 지금 초안을 UT 상태 B로 되돌림
  * - 상태 A로 초기화: 가짜 DB를 시작 데이터로 되돌리고 번치 홈에서 다시 시작
  * `mocks/scenario`와 함께 UT가 끝나면 지움(ApiMockingGate의 불러오는 한 곳)
@@ -61,17 +61,19 @@ export function FacilitatorTool({ navigate = browserNavigate }: FacilitatorToolP
 
   return (
     <>
-      {/* 보이지 않는 열기 영역: 읽히거나 포커스되지 않고, 화면 맨 위 가장자리에만 둠 */}
-      <div
-        aria-hidden
-        data-testid="facilitator-tap-area"
-        className="fixed top-0 left-1/2 z-[100] w-40 -translate-x-1/2"
-        // 상단 Safe Area(없으면 12px)만 덮음, Safe Area가 없는 환경에서는 헤더 맨 위 가장자리 12px의 터치도 이 영역이 받음
-        style={{ height: 'max(12px, env(safe-area-inset-top))' }}
-        onPointerDown={() => {
-          if (sequence.tap()) setOpen(true);
-        }}
-      />
+      {/* 보이지 않는 열기 영역(작성 화면에서만): 읽히거나 포커스되지 않음 */}
+      {draftId !== undefined && (
+        <div
+          aria-hidden
+          data-testid="facilitator-tap-area"
+          className="fixed top-0 left-1/2 z-[100] w-40 -translate-x-1/2"
+          // 상단 Safe Area와 헤더 가운데(저장 상태 글자뿐이라 눌러도 반응 없는 자리)를 덮음, 뒤로 가기·업로드 버튼은 양 끝이라 가리지 않음
+          style={{ height: 'calc(env(safe-area-inset-top) + 48px)' }}
+          onPointerDown={() => {
+            if (sequence.tap()) setOpen(true);
+          }}
+        />
+      )}
       <ActionDialog
         open={open}
         onOpenChange={setOpen}

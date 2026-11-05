@@ -12,11 +12,24 @@ const navigate = vi.fn();
 const WAIT = { timeout: 4000 };
 
 const tapArea = () => screen.getByTestId('facilitator-tap-area');
+const DRAFT_PATH = '/bunch/drafts/1';
 const tap = (times: number) => {
   for (let i = 0; i < times; i += 1) fireEvent.pointerDown(tapArea());
 };
 const open = () => {
-  tap(7);
+  tap(5);
+  return screen.findByRole('alertdialog', { name: '진행자 메뉴' });
+};
+
+// 작성 화면이 아닌 번치 홈에서 캐릭터 자리를 5번 눌러 여는 흐름
+const openFromCharacter = () => {
+  render(
+    <>
+      <FacilitatorTool navigate={navigate} />
+      <div data-testid="character" data-facilitator-trigger="bunch-character" />
+    </>,
+  );
+  for (let i = 0; i < 5; i += 1) fireEvent.pointerDown(screen.getByTestId('character'));
   return screen.findByRole('alertdialog', { name: '진행자 메뉴' });
 };
 
@@ -36,11 +49,12 @@ beforeEach(() => {
 });
 
 describe('진행자 장치', () => {
-  it('보이지 않는 영역을 7번 연달아 누르면 열리고, 6번까지는 열리지 않는다', async () => {
+  it('작성 화면의 보이지 않는 영역을 5번 연달아 누르면 열리고, 4번까지는 열리지 않는다', async () => {
+    pathname = DRAFT_PATH;
     render(<FacilitatorTool navigate={navigate} />);
 
     expect(tapArea()).toHaveAttribute('aria-hidden', 'true');
-    tap(6);
+    tap(4);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 
     expect(await open()).toBeInTheDocument();
@@ -61,6 +75,12 @@ describe('진행자 장치', () => {
     expect(await screen.findByRole('alertdialog', { name: '진행자 메뉴' })).toBeInTheDocument();
   });
 
+  it('작성 화면이 아니면 위쪽 열기 영역이 없다', () => {
+    render(<FacilitatorTool navigate={navigate} />);
+
+    expect(screen.queryByTestId('facilitator-tap-area')).not.toBeInTheDocument();
+  });
+
   it('표식이 없는 곳을 연달아 눌러도 열리지 않는다', () => {
     render(
       <>
@@ -75,9 +95,7 @@ describe('진행자 장치', () => {
   });
 
   it('작성 화면이 아니면 「상태 B로 되돌리기」는 비활성이고 「상태 A로 초기화」는 쓸 수 있다', async () => {
-    render(<FacilitatorTool navigate={navigate} />);
-
-    await open();
+    await openFromCharacter();
 
     expect(screen.getByRole('button', { name: '상태 B로 되돌리기' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '상태 A로 초기화' })).toBeEnabled();
@@ -106,9 +124,7 @@ describe('진행자 장치', () => {
   it('「상태 A로 초기화」를 누르면 가짜 DB가 시작 데이터로 돌아가고 번치 홈에서 다시 시작한다', async () => {
     await createStateB();
     sessionStorage.setItem('x', '1');
-    render(<FacilitatorTool navigate={navigate} />);
-
-    await open();
+    await openFromCharacter();
     fireEvent.click(screen.getByRole('button', { name: '상태 A로 초기화' }));
 
     expect(mockDb.get().bundles.every((bundle) => bundle.status === 'PUBLISHED')).toBe(true);
