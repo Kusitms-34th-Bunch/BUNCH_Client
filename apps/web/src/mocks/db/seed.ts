@@ -1,4 +1,4 @@
-import type { MockDbState, MockMember, MockMembership, MockPhoto } from './types';
+import type { MockBundle, MockDbState, MockMember, MockMembership, MockPhoto } from './types';
 
 export const MOCK_BUNCH_ID = 1;
 
@@ -51,6 +51,74 @@ export const MOCK_PHOTO_IDS = Object.fromEntries(
 // 시연용 사진(얼굴이 나오지 않는 사진, EXIF 제거)은 public/mock/photos에 둠. 썸네일 543x724, 원본 1086x1448
 const PHOTO_DIR = '/mock/photos';
 
+// 번치 홈의 기존 발행 번들(UT 시나리오 더미 데이터 C1·C2): 대표 사진 1장, 참여 멤버 전원 코멘트 작성 완료
+const PUBLISHED_SEEDS = [
+  {
+    id: 1,
+    title: '강릉 커피 투어 ☕',
+    date: '2026-09-20',
+    image: 'C1',
+    createdBy: admin,
+    participants: [admin, memberA, me],
+    publishedAt: '2026-09-21T09:00:00.000Z',
+  },
+  {
+    id: 2,
+    title: '망원 한강 피크닉 🧺',
+    date: '2026-08-29',
+    image: 'C2',
+    createdBy: memberB,
+    participants: [memberB, memberC, me],
+    publishedAt: '2026-08-30T09:00:00.000Z',
+  },
+] as const;
+
+const publishedBundles = (): MockBundle[] =>
+  PUBLISHED_SEEDS.map((seed) => {
+    const at = seed.publishedAt;
+    return {
+      id: seed.id,
+      bunchId: MOCK_BUNCH_ID,
+      createdBy: seed.createdBy,
+      status: 'PUBLISHED',
+      title: seed.title,
+      titleVersion: 1,
+      visibility: 'PRIVATE',
+      visibilityVersion: 1,
+      date: seed.date,
+      dateVersion: 1,
+      locations: [],
+      locationsVersion: 0,
+      revision: 10,
+      photos: [
+        {
+          id: seed.id,
+          photoId: null,
+          imageAssetId: 9000 + seed.id,
+          imageUrl: `${PHOTO_DIR}/${seed.image}.jpg`,
+          position: 0,
+          addedBy: seed.createdBy,
+          addedAt: at,
+          caption: '',
+          captionVersion: 0,
+          captionUpdatedBy: null,
+          captionUpdatedAt: null,
+        },
+      ],
+      participants: seed.participants.map((memberId) => ({ memberId, joinedAt: at })),
+      comments: seed.participants.map((memberId) => ({
+        memberId,
+        content: '함께해서 즐거웠어요!',
+        version: 1,
+        createdAt: at,
+        updatedAt: at,
+      })),
+      createdAt: at,
+      updatedAt: at,
+      publishedAt: at,
+    };
+  });
+
 const photos = (): MockPhoto[] =>
   PHOTO_SEEDS.map((photo, index) => ({
     photoId: index + 1,
@@ -79,6 +147,9 @@ export const createSeed = (): MockDbState => ({
       imageUrl: null,
       introduction: '여행 안 갈 바엔 죽을란다',
       isPrivate: true,
+      // UT 시나리오에 값이 없어 임의로 정한 시작 값
+      followerCount: 3,
+      followingCount: 2,
     },
   ],
   memberships: [
@@ -89,7 +160,7 @@ export const createSeed = (): MockDbState => ({
     membership(me, 'MEMBER'),
   ],
   photos: photos(),
-  // UT 시작 데이터(상태 A)에는 초안이 없고, 기존 발행 번들은 번치 홈 연동 이슈에서 추가
-  bundles: [],
+  // UT 시작 데이터(상태 A): 초안은 없고 번치 홈에는 기존 발행 번들 2개가 있음
+  bundles: publishedBundles(),
   bundleLeases: [],
 });

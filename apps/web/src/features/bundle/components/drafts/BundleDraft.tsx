@@ -22,8 +22,8 @@ export function BundleDraft() {
   const backOr = useBackOr();
   const { state, actions } = useDraftContext();
   const { online, recheck } = useOnlineStatus();
-  const leaveDraft = useLeaveDraft();
   const draftId = state.kind === 'ready' ? state.draft.id : undefined;
+  const leaveDraft = useLeaveDraft(draftId);
 
   useRedirectMissingDraft(state.kind === 'missing');
 
@@ -39,7 +39,7 @@ export function BundleDraft() {
       actions={actions}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)
       onBack={() => backOr(BUNDLE_PATHS.bunchHome)}
-      onLeave={() => leaveDraft(isDraftCreator(state.draft, state.viewer))}
+      onLeave={() => void leaveDraft(isDraftCreator(state.draft, state.viewer))}
       onRetry={recheck}
       // 발행하면 번치 홈으로 이동해 새 번들을 확인(기능 spec 4.3.12)
       onPublish={() =>

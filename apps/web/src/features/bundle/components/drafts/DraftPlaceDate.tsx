@@ -71,9 +71,14 @@ export function DraftPlaceDate({
       ) : (
         <SelectionFieldGroup
           items={draft.locations.map((location) => ({ id: location.id, value: location.name }))}
-          fieldLabel={BUNDLE_MESSAGES.locationField}
-          groupLabel={BUNDLE_MESSAGES.locationField}
-          onItemClear={(id) => guard(() => actions.removeLocation(id))()}
+          // 편집 중인 멤버가 있으면 이름을 필드·그룹 이름에 넣어 칩에서도 잠겼다는 사실이 읽히게 함
+          fieldLabel={fieldNameWith(BUNDLE_MESSAGES.locationField, locationEditor)}
+          groupLabel={fieldNameWith(BUNDLE_MESSAGES.locationField, locationEditor)}
+          onItemClear={(id) =>
+            guard(() =>
+              draft.editing.location ? onEditingBlocked() : actions.removeLocation(id),
+            )()
+          }
           onAdd={draft.locations.length < MAX_LOCATIONS ? openLocation : undefined}
           addMembers={toProfiles(locationEditor)}
           {...(locationEditor && {

@@ -18,8 +18,11 @@ export type MockBunch = {
   characterType: CharacterType;
   imageUrl: string | null;
   introduction: string;
-  /** 가짜 DB 내부 표현, 응답 값은 번치 홈 계약 확정 때 정함 */
+  /** 가짜 DB 내부 표현, 번치 홈 응답에서 visibility(PUBLIC·PRIVATE)로 바뀜 */
   isPrivate: boolean;
+  /** 번치 홈의 팔로워·팔로잉 수(관계 API가 없어 시작 데이터 값) */
+  followerCount: number;
+  followingCount: number;
 };
 
 export type MockMembership = {
@@ -42,6 +45,14 @@ export type MockPhoto = {
 };
 
 export type BundleVisibility = 'PUBLIC' | 'PRIVATE';
+
+/** 번들에 저장된 장소(검색은 BFF가 하고 서버는 저장만 하는 방향의 모양: provider, externalId, name, address) */
+export type MockLocation = {
+  provider: string;
+  externalId: string;
+  name: string;
+  address: string;
+};
 
 /** 번들에 담긴 사진 한 장(번들 사진 ID와 사진함 원본 ID는 다름) */
 export type MockBundlePhoto = {
@@ -78,6 +89,8 @@ export type MockBundle = {
   visibilityVersion: number;
   date: string | null;
   dateVersion: number;
+  locations: MockLocation[];
+  locationsVersion: number;
   revision: number;
   photos: MockBundlePhoto[];
   participants: { memberId: number; joinedAt: string }[];
@@ -87,7 +100,7 @@ export type MockBundle = {
   publishedAt: string | null;
 };
 
-/** 편집권(STOMP 대신 가짜 서버가 관리). target은 TITLE·DATE·PHOTO:{번들 사진 ID} */
+/** 편집권(STOMP 대신 가짜 서버가 관리). target은 TITLE·DATE·LOCATION·PHOTO:{번들 사진 ID} */
 export type MockLease = {
   bundleId: number;
   target: string;

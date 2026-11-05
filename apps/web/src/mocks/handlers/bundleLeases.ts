@@ -6,7 +6,7 @@ import { findScope, LEASE_TTL_MS, liveLeases, readJson, UUID } from './bundles';
 
 // 실서버의 편집권은 STOMP(/app/…/lease/*) 통신, 이 경로는 가짜 서버 전용 대체 통로
 // 응답 모양(LEASE_GRANTED·LEASE_HEARTBEAT의 data)과 거부 규칙만 명세 기준
-const TARGET = /^(TITLE|DATE|PHOTO:[1-9]\d*)$/;
+const TARGET = /^(TITLE|DATE|LOCATION|PHOTO:[1-9]\d*)$/;
 
 const parseTarget = (body: Record<string, unknown> | null) =>
   typeof body?.target === 'string' && TARGET.test(body.target) ? body.target : undefined;

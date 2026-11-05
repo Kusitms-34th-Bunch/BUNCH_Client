@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -22,10 +23,18 @@ import { leaseTransport, type LeaseTarget } from '../api/leases';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
 import { placeFixture } from '../fixtures/draft.fixture';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
-import { movePhoto, removePhoto, setPhotoCaption } from '../lib/photos';
+import {
+  movePhoto,
+  type PhotoMovePlan,
+  planPhotoMoves,
+  removePhoto,
+  setPhotoCaption,
+} from '../lib/photos';
 import {
   bundleQueryOptions,
   useAddParticipantMutation,
+  useChangePhotosMutation,
+  useMovePhotoMutation,
   usePublishBundleMutation,
   useRemoveParticipantMutation,
   useSaveCaptionMutation,
@@ -36,6 +45,9 @@ import {
 } from '../queries/bundles';
 
 // 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 공개 범위·날짜는 고르는 즉시 저장
+// 위치가 없을 때 쓰는 고정된 빈 목록(렌더마다 새 배열이 되어 draft를 다시 만들지 않게 함)
+const NO_LOCATIONS: readonly DraftLocation[] = [];
+
 const SAVE_DELAY_MS = 1000;
 // 편집권 거부·일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
 const RETRY_DELAY_MS = 3000;
@@ -154,14 +166,21 @@ export function useDraft(draftId: string | undefined): {
   const saveDate = useSaveDateMutation(bunchId, bundleId);
   const saveCaption = useSaveCaptionMutation(bunchId, bundleId);
   const saveComment = useSaveCommentMutation(bunchId, bundleId);
+  const changePhotos = useChangePhotosMutation(bunchId, bundleId);
+  const movePhotoMutation = useMovePhotoMutation(bunchId, bundleId);
   const addParticipant = useAddParticipantMutation(bunchId, bundleId);
   const removeParticipant = useRemoveParticipantMutation(bunchId, bundleId);
   const publishMutation = usePublishBundleMutation(bunchId, bundleId);
 
   const [pending, setPending] = useState<Pending>({});
-  const [locations, setLocations] = useState<readonly DraftLocation[]>([]);
+  // 화면에서 위치를 바꾸기 전에는 서버에 저장된 위치를 보이고, 바꾼 뒤에는 화면 값(위치 저장은 장소 검색 이슈에서 연결)
+  const [editedLocations, setEditedLocations] = useState<readonly DraftLocation[] | undefined>(
+    undefined,
+  );
+  const locations = editedLocations ?? detail?.locations ?? NO_LOCATIONS;
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   const [flushing, setFlushing] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
   // 내가 발행해 서버가 발행본으로 바꾼 뒤에는 「없는 초안」 안내 없이 이동을 기다림
   const [publishedByMe, setPublishedByMe] = useState(false);
   // 저장을 포기한 상태(권한·상태 오류 또는 재시도 소진): 헤더가 「저장 실패」를 보이고 입력하면 다시 시도
@@ -175,6 +194,12 @@ export function useDraft(draftId: string | undefined): {
   // 비동기 저장 루프가 항상 최신 값을 읽도록 ref에 둠(렌더 밖 이벤트·타이머에서만 읽고 씀)
   const pendingRef = useRef<Pending>({});
   const detailRef = useRef<BundleDetail | undefined>(undefined);
+  // 사진 빼기·이동·추가는 순서대로 하나씩 서버에 보내고, 모두 끝나면 화면 값(localPhotos)을 버리고 서버 값을 보임
+  const photoQueue = useRef<Promise<void>>(Promise.resolve());
+  const photoOps = useRef(0);
+  const photoFailed = useRef(false);
+  const photoFailures = useRef(0);
+  const shownPhotosRef = useRef<readonly DraftPhoto[]>([]);
   const myIdRef = useRef<string | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const inflight = useRef<Promise<boolean> | undefined>(undefined);
@@ -494,9 +519,83 @@ export function useDraft(draftId: string | undefined): {
   const busy =
     flushing ||
     !isEmpty(pending) ||
+    photoBusy ||
     addParticipant.isPending ||
     removeParticipant.isPending ||
     publishMutation.isPending;
+
+  // 화면에 보이는 사진 목록(서버 값 또는 보내는 중인 화면 값), 연속 조작이 렌더를 기다리지 않고 이어지게 ref로도 둠
+  useEffect(() => {
+    shownPhotosRef.current = draft?.photos ?? [];
+  }, [draft?.photos]);
+
+  const showPhotos = (photos: readonly DraftPhoto[]) => {
+    shownPhotosRef.current = photos;
+    setLocalPhotos(photos);
+  };
+
+  // 화면 사진을 서버의 번들 사진 ID로 바꿈(보내는 중에 새로 생긴 사진은 사진함 원본 ID로 찾음)
+  const serverPhotoId = (photo: DraftPhoto) =>
+    detailRef.current?.photos.find(
+      (candidate) =>
+        candidate.id === photo.id ||
+        (photo.sourcePhotoId !== undefined && candidate.sourcePhotoId === photo.sourcePhotoId),
+    )?.id;
+
+  // 사진 변경 응답으로 최신 상세를 갱신, 이미 더 최신 revision이면 유지(캡션·제목 저장과 동시에 돌 수 있음)
+  const adoptDetail = (next: BundleDetail) => {
+    const current = detailRef.current;
+    if (!current || next.revision >= current.revision) detailRef.current = next;
+  };
+
+  const applyPhotoChanges = async ({ add, remove }: { add: string[]; remove: string[] }) => {
+    adoptDetail(
+      await changePhotos.mutateAsync({
+        addPhotoIds: add,
+        removeBundlePhotoIds: remove,
+        mode: detailRef.current?.status ?? 'DRAFT',
+        idempotencyKey: createIdempotencyKey(),
+      }),
+    );
+  };
+
+  const applyPhotoMove = async ({ photoId, previous, next }: PhotoMovePlan) => {
+    adoptDetail(
+      await movePhotoMutation.mutateAsync({
+        bundlePhotoId: photoId,
+        previousBundlePhotoId: previous,
+        nextBundlePhotoId: next,
+        mode: detailRef.current?.status ?? 'DRAFT',
+      }),
+    );
+  };
+
+  // 한 번에 하나씩 보냄, 한 번 실패하면 남은 변경은 건너뛰고(서버와 어긋난 상태) 한 번만 안내하며 서버 값으로 되돌림
+  const enqueuePhotoOp = (run: () => Promise<void>) => {
+    photoOps.current += 1;
+    setPhotoBusy(true);
+    photoQueue.current = photoQueue.current
+      .then(() => (photoFailed.current ? undefined : run()))
+      .catch((error: unknown) => {
+        photoFailed.current = true;
+        photoFailures.current += 1;
+        toast(
+          errorCode(error) === 'BUNDLE_004'
+            ? BUNDLE_MESSAGES.editingBlocked
+            : BUNDLE_MESSAGES.photosChangeFailed,
+          { fullWidth: true },
+        );
+      })
+      .finally(() => {
+        photoOps.current -= 1;
+        if (photoOps.current > 0) return;
+        photoFailed.current = false;
+        if (alive.current) {
+          setLocalPhotos(undefined);
+          setPhotoBusy(false);
+        }
+      });
+  };
 
   const actions: DraftActions = {
     setTitle: (title) => {
@@ -515,13 +614,16 @@ export function useDraft(draftId: string | undefined): {
       schedule(0);
     },
     addLocation: (place) =>
-      setLocations((current) =>
-        current.length >= MAX_LOCATIONS
-          ? current
-          : [...current, { id: place.id, name: place.name }],
-      ),
+      setEditedLocations((current) => {
+        const base = current ?? detailRef.current?.locations ?? NO_LOCATIONS;
+        return base.length >= MAX_LOCATIONS ? base : [...base, { id: place.id, name: place.name }];
+      }),
     removeLocation: (locationId) =>
-      setLocations((current) => current.filter((location) => location.id !== locationId)),
+      setEditedLocations((current) =>
+        (current ?? detailRef.current?.locations ?? NO_LOCATIONS).filter(
+          (location) => location.id !== locationId,
+        ),
+      ),
     setDate: (date) => {
       change((current) => ({ ...current, date }));
       schedule(0);
@@ -546,22 +648,69 @@ export function useDraft(draftId: string | undefined): {
       schedule(SAVE_DELAY_MS);
       setLocalPhotos((current) => current && setPhotoCaption(current, photoId, caption));
     },
-    removePhoto: (photoId) =>
-      setLocalPhotos((current) => removePhoto(current ?? draft?.photos ?? [], photoId)),
-    movePhoto: (photoId, toIndex) =>
-      setLocalPhotos((current) => movePhoto(current ?? draft?.photos ?? [], photoId, toIndex)),
-    replacePhotos: (photos) => setLocalPhotos(photos),
+    removePhoto: (photoId) => {
+      const current = shownPhotosRef.current;
+      const target = current.find((photo) => photo.id === photoId);
+      const next = removePhoto(current, photoId);
+      if (!target || next === current) return;
+      showPhotos(next);
+      enqueuePhotoOp(async () => {
+        const serverId = serverPhotoId(target);
+        if (serverId === undefined) throw new Error('photo is not on the server');
+        await applyPhotoChanges({ add: [], remove: [serverId] });
+      });
+    },
+    movePhoto: (photoId, toIndex) => {
+      const current = shownPhotosRef.current;
+      const next = movePhoto(current, photoId, toIndex);
+      if (next.every((photo, index) => photo.id === current[index]?.id)) return;
+      showPhotos(next);
+      const index = next.findIndex((photo) => photo.id === photoId);
+      const [moving, previous, following] = [next[index], next[index - 1], next[index + 1]];
+      enqueuePhotoOp(async () => {
+        const movingId = moving && serverPhotoId(moving);
+        const previousId = previous && serverPhotoId(previous);
+        const nextId = following && serverPhotoId(following);
+        if (movingId === undefined || (previous && !previousId) || (following && !nextId)) {
+          throw new Error('photo is not on the server');
+        }
+        await applyPhotoMove({
+          photoId: movingId,
+          previous: previousId ?? null,
+          next: nextId ?? null,
+        });
+      });
+    },
+    replacePhotos: (photos) => {
+      const current = shownPhotosRef.current;
+      const currentIds = new Set(current.map((photo) => photo.id));
+      const keptIds = new Set(photos.map((photo) => photo.id));
+      const added = photos.filter((photo) => !currentIds.has(photo.id));
+      const removed = current.filter((photo) => !keptIds.has(photo.id));
+      showPhotos(photos);
+      enqueuePhotoOp(async () => {
+        const add = added.flatMap((photo) => (photo.sourcePhotoId ? [photo.sourcePhotoId] : []));
+        const remove = removed.flatMap((photo) => serverPhotoId(photo) ?? []);
+        if (add.length > 0 || remove.length > 0) await applyPhotoChanges({ add, remove });
+        // 새 사진은 서버가 맨 뒤에 붙이므로, 고른 순서와 다르면 이동으로 맞춤
+        const latest = detailRef.current;
+        if (!latest) return;
+        const desired = photos.flatMap((photo) => serverPhotoId(photo) ?? []);
+        for (const plan of planPhotoMoves(
+          latest.photos.map((photo) => photo.id),
+          desired,
+        )) {
+          await applyPhotoMove(plan);
+        }
+      });
+    },
     searchPlaces,
     publish: async () => {
-      // 사진 빼기·순서 이동·추가는 서버에 저장되지 않아 업로드하면 화면과 다른 사진이 발행됨, 서버 연동 전에는 막음
-      const serverPhotos = detailRef.current?.photos;
-      if (
-        localPhotos !== undefined &&
-        serverPhotos !== undefined &&
-        (localPhotos.length !== serverPhotos.length ||
-          localPhotos.some((photo, index) => photo.id !== serverPhotos[index]?.id))
-      ) {
-        toast(BUNDLE_MESSAGES.uploadPhotosUnsynced, { fullWidth: true });
+      // 보내는 중인 사진 변경이 끝난 뒤의 서버 구성으로 발행함
+      const failuresBefore = photoFailures.current;
+      await photoQueue.current;
+      if (photoFailures.current !== failuresBefore) {
+        toast(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
         return 'blocked';
       }
       clearTimeout(timer.current);

@@ -43,7 +43,7 @@ type DraftPhotosProps = {
 
 /**
  * 사진 가로 목록(옆 사진이 일부 보임)과 가운데 사진의 캡션(높이 46px 고정, 2줄까지, 넘치면 「…」, 없으면 「캡션 추가...」)
- * 다른 멤버가 편집 중이면 캡션 자리에 편집 중 애니메이션을 보이고 누르면 안내
+ * 「사진」 라벨 옆에는 어느 사진이든 편집 중인 멤버를 모아 보이고, 캡션 자리의 편집 중 애니메이션은 지금 가운데 사진을 편집 중일 때만 보임(누르면 안내)
  * 사진이나 캡션을 누르면 캡션 화면으로 가며, 순서·추가·빼기와 캡션 입력은 그 화면의 일이라 이 화면에서는 보기만 함
  */
 export function DraftPhotos({ draft, onEditingBlocked, onOpenPhoto }: DraftPhotosProps) {
@@ -51,10 +51,15 @@ export function DraftPhotos({ draft, onEditingBlocked, onOpenPhoto }: DraftPhoto
   const total = draft.photos.length;
   const current = Math.min(activeIndex, Math.max(0, total - 1));
   const active = draft.photos[current];
-  const editors = (draft.editing.photoMemberIds ?? []).flatMap((id) => {
-    const member = draft.members.find((candidate) => candidate.id === id);
-    return member ? [{ name: member.name, src: member.avatarSrc }] : [];
-  });
+  const toEditors = (ids: readonly string[]) =>
+    ids.flatMap((id) => {
+      const member = draft.members.find((candidate) => candidate.id === id);
+      return member ? [{ name: member.name, src: member.avatarSrc }] : [];
+    });
+  // 라벨 옆: 사진을 편집 중인 멤버 전체(어느 사진인지는 알려 주지 않음)
+  const editors = toEditors(draft.editing.photoMemberIds ?? []);
+  // 캡션 자리: 지금 가운데 사진 한 장을 편집 중인 멤버만
+  const captionEditors = toEditors(active ? (draft.editing.photoEditors?.[active.id] ?? []) : []);
 
   return (
     <section aria-labelledby="draft-photos-title" className="pt-s15 gap-s3 flex flex-col">
@@ -89,11 +94,11 @@ export function DraftPhotos({ draft, onEditingBlocked, onOpenPhoto }: DraftPhoto
       {active && (
         <>
           {/* Figma placeholder: 높이 46px 고정(위아래 2px, 세로 가운데), 편집 중에도 같은 자리를 씀 */}
-          {editors.length > 0 ? (
+          {captionEditors.length > 0 ? (
             <button
               type="button"
               aria-label={BUNDLE_MESSAGES.editingLabel(
-                editors.map((editor) => editor.name).join(', '),
+                captionEditors.map((editor) => editor.name).join(', '),
               )}
               onClick={onEditingBlocked}
               className="px-padding-p8 py-padding-p1 flex h-11.5 w-full cursor-pointer touch-manipulation items-center text-left"
