@@ -65,8 +65,9 @@ for (const screen of SCREENS) {
 
     const { violations, incomplete } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
 
-    // 요소 문구(태그를 지운 html)로 예외 대상인지 판정
-    const textOf = (html: string) => html.replace(/<[^>]+>/g, '').trim();
+    // 요소 html 안에 예외 문구가 그 요소의 글자로 그대로 들어 있는지로 판정(html을 가공하지 않음)
+    const knownTextOf = (html: string) =>
+      screen.knownLowContrast.find((text) => html.includes(`>${text}</`));
     const known: string[] = [];
     const found = violations
       .map(({ id, impact, nodes }) => ({
@@ -74,12 +75,12 @@ for (const screen of SCREENS) {
         impact,
         nodes: nodes
           .filter((node) => {
-            const isKnown =
-              id === 'color-contrast' &&
-              isKnownLowContrast(node) &&
-              screen.knownLowContrast.includes(textOf(node.html));
-            if (isKnown) known.push(textOf(node.html));
-            return !isKnown;
+            const text =
+              id === 'color-contrast' && isKnownLowContrast(node)
+                ? knownTextOf(node.html)
+                : undefined;
+            if (text) known.push(text);
+            return !text;
           })
           .map((node) => node.html.slice(0, 200)),
       }))
