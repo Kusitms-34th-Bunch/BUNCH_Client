@@ -176,6 +176,8 @@ describe('번들 query·mutation', () => {
       await leaving.current.mutateAsync(second);
     });
     expect(invalidated()).toBe(true);
+    // 나가기는 작성 화면이 떠 있어 상세 캐시를 지우지 않음(지우면 그 화면이 「삭제된 번들」을 다시 받음)
+    expect(client.getQueryData(bundleKeys.detail(bunchId, second))).toBeDefined();
   });
 
   it('조건이 모자란 발행은 실패하고 캐시는 초안 그대로다', async () => {

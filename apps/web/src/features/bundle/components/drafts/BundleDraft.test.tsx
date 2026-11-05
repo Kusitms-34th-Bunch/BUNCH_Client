@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -105,6 +105,28 @@ describe('BundleDraft', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
     expect(leaveBundle).toHaveBeenCalledWith('draft-1');
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.draftDeleted, { fullWidth: true });
+  });
+
+  it('나가기를 연달아 눌러도 서버에는 한 번만 보내고, 끝나면 한 번만 이동한다', async () => {
+    let finish!: () => void;
+    leaveBundle.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve(null);
+        }),
+    );
+    renderDraft('draft-1');
+
+    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+    const dialog = await screen.findByRole('alertdialog');
+    const confirm = within(dialog).getByRole('button', { name: '나가기' });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    expect(leaveBundle).toHaveBeenCalledTimes(1);
+
+    finish();
+    await waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
+    expect(toast).toHaveBeenCalledTimes(1);
   });
 
   it('나가기를 서버에 보내지 못하면 이동하지 않고 안내한다', async () => {

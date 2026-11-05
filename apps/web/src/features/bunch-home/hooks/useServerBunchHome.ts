@@ -37,8 +37,9 @@ export function useServerBunchHome({ enabled = true }: Options = {}): ServerBunc
   const members = useQuery(bunchMembersQueryOptions(bunchId));
 
   const ready = useMemo(() => {
-    if (!home.data || !published.data || !drafts.data || !members.data) return undefined;
-    const current = toBunchHomeDetail(home.data, published.data, drafts.data, members.data);
+    if (!home.data || !published.data || !drafts.data) return undefined;
+    // 번치 멤버는 작성 중인 번들 카드의 얼굴에만 쓰여, 못 받아도 얼굴만 비우고 홈은 보임
+    const current = toBunchHomeDetail(home.data, published.data, drafts.data, members.data ?? []);
     if (!current) return undefined;
     const summary: BunchSummary = {
       id: current.id,
@@ -53,16 +54,9 @@ export function useServerBunchHome({ enabled = true }: Options = {}): ServerBunc
   if (profile.data && !profile.data.bunch) return { kind: 'no-bunch' };
   if (ready) return { kind: 'ready', ...ready };
   // 내 번치가 아닌 응답(소속 null)이라 변환하지 못한 경우도 처음부터 못 받은 오류로 봄
-  const unusable = home.data && published.data && drafts.data && members.data && !ready;
+  const unusable = home.data && published.data && drafts.data && !ready;
   // 이미 받은 값이 있으면 재조회 실패로 화면을 덮지 않고, 처음부터 못 받았을 때만 오류
-  if (
-    unusable ||
-    profile.isError ||
-    home.isError ||
-    published.isError ||
-    drafts.isError ||
-    members.isError
-  ) {
+  if (unusable || profile.isError || home.isError || published.isError || drafts.isError) {
     return {
       kind: 'error',
       retry: () => {
@@ -71,7 +65,6 @@ export function useServerBunchHome({ enabled = true }: Options = {}): ServerBunc
         if (home.isError || unusable) void home.refetch();
         if (published.isError || unusable) void published.refetch();
         if (drafts.isError || unusable) void drafts.refetch();
-        if (members.isError) void members.refetch();
       },
     };
   }

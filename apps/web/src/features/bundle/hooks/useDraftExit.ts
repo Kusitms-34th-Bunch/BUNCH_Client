@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft } from '../lib/types';
 import { BUNDLE_MESSAGES } from '../constants/messages';
@@ -18,12 +18,16 @@ export function useLeaveDraft(draftId: string | undefined) {
   const router = useRouter();
   const { data: profile } = useQuery(myProfileQueryOptions());
   const { mutateAsync } = useLeaveBundleMutation(profile?.bunch?.id);
+  // 확인 창은 서버 응답 동안 열려 있어 「나가기」를 연달아 눌러도 한 번만 보냄
+  const leaving = useRef(false);
   return useCallback(
     async (creator: boolean) => {
-      if (draftId === undefined) return;
+      if (draftId === undefined || leaving.current) return;
+      leaving.current = true;
       try {
         await mutateAsync(draftId);
       } catch {
+        leaving.current = false;
         toast(BUNDLE_MESSAGES.leaveFailed, { fullWidth: true });
         return;
       }

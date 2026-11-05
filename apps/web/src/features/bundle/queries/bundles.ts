@@ -47,10 +47,10 @@ export const useCreateBundleMutation = (bunchId: string | undefined) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
       return createBundle(bunchId, photoIds, idempotencyKey);
     },
-    onSuccess: async (bundle) => {
+    onSuccess: (bundle) => {
       queryClient.setQueryData(bundleKeys.detail(bundle.bunchId, bundle.id), bundle);
-      // 번치 홈의 작성 중인 번들·개수가 새 초안을 포함하게 화면에 없어도 바로 다시 받음
-      await queryClient.invalidateQueries({
+      // 번치 홈의 작성 중인 번들·개수가 새 초안을 포함하게 화면에 없어도 바로 다시 받되, 작성 화면 이동은 재조회를 기다리지 않음
+      void queryClient.invalidateQueries({
         queryKey: sharedKeys.bunchHomeScope(bundle.bunchId),
         refetchType: 'all',
       });
@@ -58,11 +58,15 @@ export const useCreateBundleMutation = (bunchId: string | undefined) => {
   });
 };
 
-// 번들이 사라지는 동작(삭제·나가기) 뒤: 상세 캐시를 비우고 번치 홈 데이터를 바로 다시 받음
-const useBundleGone = (bunchId: string | undefined) => {
+// 번들이 사라지는 동작(삭제·나가기) 뒤: 번치 홈 데이터를 바로 다시 받고, 상세 캐시는 화면이 없을 때만 비움
+// (나가기는 작성 화면이 이동 전까지 떠 있어, 지우면 그 화면이 비어 있는 상세를 다시 받아 「삭제된 번들」 안내가 겹칠 수 있음)
+const useBundleGone = (
+  bunchId: string | undefined,
+  { removeDetail }: { removeDetail: boolean },
+) => {
   const queryClient = useQueryClient();
   return async (bundleId: string) => {
-    queryClient.removeQueries({ queryKey: bundleKeys.detail(bunchId, bundleId) });
+    if (removeDetail) queryClient.removeQueries({ queryKey: bundleKeys.detail(bunchId, bundleId) });
     await queryClient.invalidateQueries({
       queryKey: sharedKeys.bunchHomeScope(bunchId),
       refetchType: 'all',
@@ -72,7 +76,7 @@ const useBundleGone = (bunchId: string | undefined) => {
 
 /** 번들 삭제(생성자·번치 관리자, 번치 홈 「작성 중인 번들」의 삭제 버튼) */
 export const useDeleteBundleMutation = (bunchId: string | undefined) => {
-  const gone = useBundleGone(bunchId);
+  const gone = useBundleGone(bunchId, { removeDetail: true });
   return useMutation({
     mutationFn: (bundleId: string) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
@@ -84,7 +88,7 @@ export const useDeleteBundleMutation = (bunchId: string | undefined) => {
 
 /** 초안 나가기(작성 화면의 「나가기」). 생성자가 나가면 초안이 삭제됨 */
 export const useLeaveBundleMutation = (bunchId: string | undefined) => {
-  const gone = useBundleGone(bunchId);
+  const gone = useBundleGone(bunchId, { removeDetail: false });
   return useMutation({
     mutationFn: (bundleId: string) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));

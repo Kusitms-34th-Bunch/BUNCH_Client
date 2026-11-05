@@ -31,10 +31,13 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
     source === 'server'
       ? {
           ...sample.actions,
-          deleteDraftBundle: (bundleId: string) =>
+          // 삭제 요청 중에는 다시 보내지 않음(같은 카드를 연달아 누르면 두 번째가 404로 실패해 성공한 삭제가 실패로 보임)
+          deleteDraftBundle: (bundleId: string) => {
+            if (deleteBundle.isPending) return;
             deleteBundle.mutate(bundleId, {
               onError: () => toast(BUNCH_HOME_MESSAGES.deleteDraftFailed, { fullWidth: true }),
-            }),
+            });
+          },
         }
       : sample.actions;
 
