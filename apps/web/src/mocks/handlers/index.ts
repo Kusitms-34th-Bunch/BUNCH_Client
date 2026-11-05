@@ -1,5 +1,6 @@
 import { bunchHomeHandlers } from './bunchHome';
 import { bundleLeaseHandlers } from './bundleLeases';
+import { bundlePhotoHandlers } from './bundlePhotos';
 import { bundleHandlers } from './bundles';
 import { memberHandlers } from './members';
 import { photoHandlers } from './photos';
@@ -13,4 +14,5 @@ export const handlers = [
   ...bunchHomeHandlers,
   ...bundleHandlers,
   ...bundleLeaseHandlers,
+  ...bundlePhotoHandlers,
 ];

@@ -152,7 +152,7 @@ export const myRoleIn = (state: MockDbState, bunchId: number) =>
     (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
   )?.role ?? 'MEMBER';
 
-const snapshotOf = (bundleId: number) => {
+export const snapshotOf = (bundleId: number) => {
   const state = mockDb.get();
   const bundle = state.bundles.find((item) => item.id === bundleId);
   if (!bundle) return fail(404, 'RESOURCE_001');
@@ -160,7 +160,7 @@ const snapshotOf = (bundleId: number) => {
 };
 
 // 번들 한 건을 고치고 내용이 바뀌었으니 revision·updatedAt을 올림(편집 변경은 모두 이 함수로 반영)
-const changeBundle = (bundleId: number, change: (_bundle: MockBundle) => MockBundle) =>
+export const changeBundle = (bundleId: number, change: (_bundle: MockBundle) => MockBundle) =>
   mockDb.update((current) => ({
     ...current,
     bundles: current.bundles.map((bundle) =>
