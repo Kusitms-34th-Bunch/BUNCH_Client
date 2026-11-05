@@ -45,6 +45,7 @@
   "devDependencies": {
     "@app/lint-config": "workspace:*",
     "@app/ts-config": "workspace:*",
+    "@axe-core/playwright": "^4.14.0",
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
     "@playwright/test": "catalog:",

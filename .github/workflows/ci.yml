@@ -131,7 +131,15 @@ jobs:
         env:
           TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          # web 빌드에 모듈별 크기(.next/analyze/client.json)를 함께 기록해 번들 크기 보고가 커진 원인을 표로 남김
+          ANALYZE: 'true'
         run: yarn build $AFFECTED
+
+      # web 클라이언트 JS 크기(gzip)를 Summary에 기록, 기준선보다 10% 넘게 커지면 경고만(실패 아님). web을 빌드하지 않은 PR이면 건너뜀
+      - name: 웹 번들 크기
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && hashFiles('apps/web/.next/build-manifest.json') != '' }}
+        run: node scripts/report-web-bundle-size.mjs
 
       # actions/cache의 자동 저장은 job 성공 시에만 실행되므로 검사 결과와 상관없이 직접 저장. Turbo는 성공한 작업만 캐시
       - name: Save Turbo cache

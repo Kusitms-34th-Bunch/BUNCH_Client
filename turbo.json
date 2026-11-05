@@ -28,6 +28,7 @@
         "NEXT_PUBLIC_SENTRY_DSN",
         "NEXT_PUBLIC_SENTRY_ENVIRONMENT",
         "NEXT_PUBLIC_API_MOCKING",
+        "ANALYZE",
         "SENTRY_ORG",
         "SENTRY_PROJECT",
         "SENTRY_AUTH_TOKEN",
