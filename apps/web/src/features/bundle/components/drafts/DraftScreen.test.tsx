@@ -376,6 +376,24 @@ describe('위치와 날짜', () => {
     expect(actions.removeLocation).toHaveBeenCalledWith('location-1');
   });
 
+  it('다른 멤버가 위치를 편집 중이면 지우기·추가가 모두 막히고 안내한다', async () => {
+    renderScreen({
+      draft: {
+        ...draftFixture,
+        locations: [{ id: 'sokcho', name: '속초해수욕장' }],
+        editing: { location: 'gyeongjin' },
+      },
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: '속초해수욕장 지우기' }));
+    expect(actions.removeLocation).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+
+    toast.mockClear();
+    await userEvent.click(screen.getByRole('button', { name: /경진님이 편집 중/ }));
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+  });
+
   it('위치가 3개면 「추가」 행이 사라진다', () => {
     renderScreen({
       draft: {

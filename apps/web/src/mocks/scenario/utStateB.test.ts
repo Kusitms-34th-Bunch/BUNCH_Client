@@ -13,6 +13,7 @@ type Snapshot = {
   photos: { id: number; photoId: number; caption: string }[];
   participants: { memberId: number }[];
   comments: { memberId: number; content: string }[];
+  locations?: { provider: string; externalId: string; name: string }[];
   leases: { target: string; memberId: number }[];
   publishBlockers: string[];
 };
@@ -58,17 +59,26 @@ describe('UT 상태 B 시나리오', () => {
     expect(json.data.photos.map((photo) => photo.photoId)).toEqual([P1, P2, P3, P4]);
   });
 
-  it('P2는 멤버 A가 편집 중으로 고정되고 내가 편집권을 얻을 수 없다', async () => {
+  it('P2 캡션은 멤버 A가, 위치는 멤버 B가 편집 중으로 고정되고 내가 편집권을 얻을 수 없다', async () => {
     const { json } = await create([P1, P2, P3, P4]);
     const second = json.data.photos.find((photo) => photo.photoId === P2)!;
 
     expect(json.data.leases).toEqual([
       expect.objectContaining({ target: `PHOTO:${second.id}`, memberId: memberA }),
+      expect.objectContaining({ target: 'LOCATION', memberId: memberB }),
     ]);
-    const acquire = await call('POST', `${base}/${json.data.id}/leases/acquire`, {
-      target: `PHOTO:${second.id}`,
-    });
-    expect(acquire.status).toBe(409);
+    for (const target of [`PHOTO:${second.id}`, 'LOCATION']) {
+      const acquire = await call('POST', `${base}/${json.data.id}/leases/acquire`, { target });
+      expect(acquire.status).toBe(409);
+    }
+  });
+
+  it('위치는 속초해수욕장 한 곳이 저장되어 있다', async () => {
+    const { json } = await create([P1, P2, P3, P4]);
+
+    expect(json.data.locations).toEqual([
+      expect.objectContaining({ name: '속초해수욕장', provider: 'KAKAO' }),
+    ]);
   });
 
   it('P1~P4가 아닌 사진 구성은 덧입히지 않는다', async () => {
@@ -80,6 +90,7 @@ describe('UT 상태 B 시나리오', () => {
       expect(draft.date).toBeNull();
       expect(draft.comments).toEqual([]);
       expect(draft.leases).toEqual([]);
+      expect(draft.locations ?? []).toEqual([]);
     }
   });
 });

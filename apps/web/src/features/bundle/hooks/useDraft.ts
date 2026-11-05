@@ -36,6 +36,9 @@ import {
 } from '../queries/bundles';
 
 // 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 공개 범위·날짜는 고르는 즉시 저장
+// 위치가 없을 때 쓰는 고정된 빈 목록(렌더마다 새 배열이 되어 draft를 다시 만들지 않게 함)
+const NO_LOCATIONS: readonly DraftLocation[] = [];
+
 const SAVE_DELAY_MS = 1000;
 // 편집권 거부·일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
 const RETRY_DELAY_MS = 3000;
@@ -159,7 +162,11 @@ export function useDraft(draftId: string | undefined): {
   const publishMutation = usePublishBundleMutation(bunchId, bundleId);
 
   const [pending, setPending] = useState<Pending>({});
-  const [locations, setLocations] = useState<readonly DraftLocation[]>([]);
+  // 화면에서 위치를 바꾸기 전에는 서버에 저장된 위치를 보이고, 바꾼 뒤에는 화면 값(위치 저장은 장소 검색 이슈에서 연결)
+  const [editedLocations, setEditedLocations] = useState<readonly DraftLocation[] | undefined>(
+    undefined,
+  );
+  const locations = editedLocations ?? detail?.locations ?? NO_LOCATIONS;
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   const [flushing, setFlushing] = useState(false);
   // 내가 발행해 서버가 발행본으로 바꾼 뒤에는 「없는 초안」 안내 없이 이동을 기다림
@@ -515,13 +522,16 @@ export function useDraft(draftId: string | undefined): {
       schedule(0);
     },
     addLocation: (place) =>
-      setLocations((current) =>
-        current.length >= MAX_LOCATIONS
-          ? current
-          : [...current, { id: place.id, name: place.name }],
-      ),
+      setEditedLocations((current) => {
+        const base = current ?? detailRef.current?.locations ?? NO_LOCATIONS;
+        return base.length >= MAX_LOCATIONS ? base : [...base, { id: place.id, name: place.name }];
+      }),
     removeLocation: (locationId) =>
-      setLocations((current) => current.filter((location) => location.id !== locationId)),
+      setEditedLocations((current) =>
+        (current ?? detailRef.current?.locations ?? NO_LOCATIONS).filter(
+          (location) => location.id !== locationId,
+        ),
+      ),
     setDate: (date) => {
       change((current) => ({ ...current, date }));
       schedule(0);

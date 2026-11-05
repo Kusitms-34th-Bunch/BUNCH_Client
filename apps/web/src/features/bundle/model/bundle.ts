@@ -20,6 +20,14 @@ const bundlePhotoSchema = z.object({
   captionUpdatedAt: z.string().nullish(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundlePhotoResponse']>>;
 
+// ponytail: 위치 저장은 명세에 없는 가짜 서버 확장(장소 검색 이슈에서 계약이 정해지면 생성 타입으로 맞춤)이라 선택 필드로 받음
+const bundleLocationSchema = z.object({
+  provider: z.string(),
+  externalId: z.string(),
+  name: z.string(),
+  address: z.string().nullish(),
+});
+
 const bundleParticipantSchema = z.object({
   memberId: z.number().int().positive(),
   joinedAt: z.string(),
@@ -61,6 +69,8 @@ export const bundleSnapshotSchema = z.object({
   visibilityVersion: z.number().int().nonnegative(),
   date: z.string().nullish(),
   dateVersion: z.number().int().nonnegative(),
+  locations: z.array(bundleLocationSchema).optional(),
+  locationsVersion: z.number().int().nonnegative().optional(),
   revision: z.number().int().nonnegative(),
   photos: z.array(bundlePhotoSchema),
   participants: z.array(bundleParticipantSchema),
@@ -106,6 +116,8 @@ export type BundleDetail = {
   /** 'YYYY-MM-DD', 고르지 않았으면 null */
   date: string | null;
   dateVersion: number;
+  /** 서버에 저장된 장소(가짜 서버 확장, 없으면 빈 목록) */
+  locations: readonly { id: string; name: string }[];
   /** 내용이 바뀔 때마다 오르는 버전, 발행 요청의 expectedRevision */
   revision: number;
   /** 번들 사진(순서대로), id는 번들 사진 ID이고 sourcePhotoId가 사진함 원본 */
@@ -141,6 +153,10 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   visibilityVersion: snapshot.visibilityVersion,
   date: snapshot.date ?? null,
   dateVersion: snapshot.dateVersion,
+  locations: (snapshot.locations ?? []).map((location) => ({
+    id: `${location.provider}:${location.externalId}`,
+    name: location.name,
+  })),
   revision: snapshot.revision,
   photos: [...snapshot.photos]
     .sort((a, b) => a.position - b.position)

@@ -72,6 +72,33 @@ describe('useDraft 상태', () => {
     expect(saveStatus).toBe('saved');
   });
 
+  it('UT 상태 B 초안은 저장된 위치와 다른 멤버의 편집 중 표시를 함께 보인다', async () => {
+    const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
+    const created = await createBundle(
+      bunchId,
+      [P1, P2, P3, P4].map(String),
+      createIdempotencyKey(),
+    );
+    const { result } = renderDraft(created.id);
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    const { draft } = ready(result.current.state);
+
+    expect(draft.locations.map((location) => location.name)).toEqual(['속초해수욕장']);
+    expect(draft.editing.location).toBe(String(memberB));
+    expect(draft.date).toBe('2026-10-17');
+    const second = draft.photos.find((photo) => photo.sourcePhotoId === String(P2))!;
+    expect(draft.editing.photoEditors?.[second.id]).toEqual([String(memberA)]);
+  });
+
+  it('화면에서 위치를 바꾸면 그 뒤로는 화면 값이다', async () => {
+    const { result } = await renderReady();
+    act(() => {
+      result.current.actions.addLocation({ id: 'x', name: '장소 X', address: '주소 X' });
+    });
+
+    expect(ready(result.current.state).draft.locations.map((l) => l.name)).toEqual(['장소 X']);
+  });
+
   it('없는 번들·숫자가 아닌 id·번치 멤버가 아닌 경우는 없는 초안이다', async () => {
     const invalid = renderDraft('abc');
     expect(invalid.result.current.state.kind).toBe('missing');

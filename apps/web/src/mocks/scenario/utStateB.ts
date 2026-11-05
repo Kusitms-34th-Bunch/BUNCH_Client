@@ -13,6 +13,13 @@ const NEVER_EXPIRES_AT = '2999-12-31T00:00:00.000Z';
 const TITLE = '속초 첫째 날 🌊';
 const DATE = '2026-10-17';
 const CAPTIONS = { P1: '도착하자마자 바다부터!', P2: '여기서 한참 놀았어요' } as const;
+// ponytail: 위치는 속초해수욕장 한 곳, 주소는 임의 값
+const LOCATION = {
+  provider: 'KAKAO',
+  externalId: 'mock-sokcho-beach',
+  name: '속초해수욕장',
+  address: '강원 속초시 조양동',
+} as const;
 const COMMENTS = [
   { memberId: memberA, content: '속초 바다 너무 좋았어요!' },
   { memberId: memberB, content: '다음에 또 가요 :)' },
@@ -47,6 +54,8 @@ export const applyUtStateB = (bundle: MockBundle): Applied => {
     titleVersion: 1,
     date: DATE,
     dateVersion: 1,
+    locations: [LOCATION],
+    locationsVersion: 1,
     photos: bundle.photos.map((photo) =>
       photo.id === first?.id
         ? {
@@ -65,20 +74,22 @@ export const applyUtStateB = (bundle: MockBundle): Applied => {
         bundle.participants.some((participant) => participant.memberId === comment.memberId),
       ).map((comment) => ({ ...comment, version: 1, createdAt: at, updatedAt: at })),
     ],
-    revision: bundle.revision + 4,
+    revision: bundle.revision + 5,
   };
 
-  const leases: MockLease[] = second
-    ? [
-        {
-          bundleId: bundle.id,
-          target: `PHOTO:${second.id}`,
-          memberId: memberA,
-          token: '00000000-0000-4000-8000-00000000000a',
-          leaseVersion: 1,
-          expiresAt: NEVER_EXPIRES_AT,
-        },
-      ]
-    : [];
+  const fixedLease = (target: string, memberId: number, token: string): MockLease => ({
+    bundleId: bundle.id,
+    target,
+    memberId,
+    token,
+    leaseVersion: 1,
+    expiresAt: NEVER_EXPIRES_AT,
+  });
+  const leases: MockLease[] = [
+    ...(second
+      ? [fixedLease(`PHOTO:${second.id}`, memberA, '00000000-0000-4000-8000-00000000000a')]
+      : []),
+    fixedLease('LOCATION', memberB, '00000000-0000-4000-8000-00000000000b'),
+  ];
   return { bundle: next, leases };
 };

@@ -116,6 +116,9 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     visibilityVersion: bundle.visibilityVersion,
     date: bundle.date,
     dateVersion: bundle.dateVersion,
+    // ponytail: 위치 저장·편집권(LOCATION)은 명세에 없는 가짜 서버 확장, 장소 검색 이슈에서 계약이 정해지면 맞춤
+    locations: bundle.locations,
+    locationsVersion: bundle.locationsVersion,
     revision: bundle.revision,
     photos: [...bundle.photos].sort((a, b) => a.position - b.position),
     participants: [...bundle.participants].sort((a, b) => a.joinedAt.localeCompare(b.joinedAt)),
@@ -430,6 +433,8 @@ export const bundleHandlers = [
           visibilityVersion: 0,
           date: null,
           dateVersion: 0,
+          locations: [],
+          locationsVersion: 0,
           revision: 1,
           photos,
           participants: participantIds.map((memberId) => ({ memberId, joinedAt: at })),

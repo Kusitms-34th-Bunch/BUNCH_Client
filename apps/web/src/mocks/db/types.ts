@@ -46,6 +46,14 @@ export type MockPhoto = {
 
 export type BundleVisibility = 'PUBLIC' | 'PRIVATE';
 
+/** 번들에 저장된 장소(검색은 BFF가 하고 서버는 저장만 하는 방향의 모양: provider, externalId, name, address) */
+export type MockLocation = {
+  provider: string;
+  externalId: string;
+  name: string;
+  address: string;
+};
+
 /** 번들에 담긴 사진 한 장(번들 사진 ID와 사진함 원본 ID는 다름) */
 export type MockBundlePhoto = {
   id: number;
@@ -81,6 +89,8 @@ export type MockBundle = {
   visibilityVersion: number;
   date: string | null;
   dateVersion: number;
+  locations: MockLocation[];
+  locationsVersion: number;
   revision: number;
   photos: MockBundlePhoto[];
   participants: { memberId: number; joinedAt: string }[];
@@ -90,7 +100,7 @@ export type MockBundle = {
   publishedAt: string | null;
 };
 
-/** 편집권(STOMP 대신 가짜 서버가 관리). target은 TITLE·DATE·PHOTO:{번들 사진 ID} */
+/** 편집권(STOMP 대신 가짜 서버가 관리). target은 TITLE·DATE·LOCATION·PHOTO:{번들 사진 ID} */
 export type MockLease = {
   bundleId: number;
   target: string;

@@ -73,7 +73,11 @@ export function DraftPlaceDate({
           items={draft.locations.map((location) => ({ id: location.id, value: location.name }))}
           fieldLabel={BUNDLE_MESSAGES.locationField}
           groupLabel={BUNDLE_MESSAGES.locationField}
-          onItemClear={(id) => guard(() => actions.removeLocation(id))()}
+          onItemClear={(id) =>
+            guard(() =>
+              draft.editing.location ? onEditingBlocked() : actions.removeLocation(id),
+            )()
+          }
           onAdd={draft.locations.length < MAX_LOCATIONS ? openLocation : undefined}
           addMembers={toProfiles(locationEditor)}
           {...(locationEditor && {
