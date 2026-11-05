@@ -5,6 +5,7 @@ name: UT Deploy
 # - 가짜 서버(NEXT_PUBLIC_API_MOCKING=enabled)로 빌드해 UT 전용 Vercel 프로젝트에 올린다. 운영 프로젝트 ID를 secret에 넣지 않는다.
 # - UT 기간에는 main에 머지하지 않는다(머지하면 참여자 화면이 바뀜). UT가 끝나면 push 트리거를 지우거나 이 workflow를 제거한다.
 # - Vercel을 GitHub 저장소와 연결해 자동 배포하는 설정은 꺼 둔다(같은 커밋이 두 번 배포되지 않게).
+# - vercel CLI는 토큰이 있는 단계에서 실행되므로 버전을 고정한다(14일 이상 지난 버전). 올릴 때는 이 파일의 vercel@ 버전을 직접 바꾼다.
 on:
   push:
     branches: [main]
@@ -35,6 +36,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
+          # 이 job은 저장소에 push하지 않으므로 GITHUB_TOKEN을 .git/config에 남기지 않는다
+          persist-credentials: false
 
       # 의존성 설치(코드가 실행될 수 있는 단계) 전 변조 징후 선검사. 실패하면 설치하지 않고 중단
       - name: 변조 가드
@@ -55,13 +58,26 @@ jobs:
       - name: Vercel 프로젝트 설정 받기
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: yarn dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+        run: yarn dlx vercel@65.1.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      # 운영 프로젝트 ID를 UT secret에 잘못 넣으면 가짜 서버 빌드가 운영에 --prod로 올라간다. 받은 프로젝트 이름이 UT 프로젝트가 아니면 멈춘다.
+      - name: UT 프로젝트 확인
+        env:
+          EXPECTED_PROJECT_NAME: bunch-ut
+        run: |
+          name=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.vercel/project.json','utf8')).projectName ?? '')")
+          if [ -z "$name" ]; then
+            echo "::warning::.vercel/project.json에 projectName이 없어 이름을 확인하지 못했습니다."
+          elif [ "$name" != "$EXPECTED_PROJECT_NAME" ]; then
+            echo "UT 프로젝트(${EXPECTED_PROJECT_NAME})가 아닌 프로젝트(${name})입니다. VERCEL_UT_PROJECT_ID를 확인하세요."
+            exit 1
+          fi
 
       # 빌드는 저장소 코드를 실행하므로 토큰을 주지 않는다. 가짜 서버 환경 변수는 여기서 고정한다.
       - name: 빌드(가짜 서버 켬)
         env:
           NEXT_PUBLIC_API_MOCKING: enabled
-        run: yarn dlx vercel@latest build --prod
+        run: yarn dlx vercel@65.1.0 build --prod
 
       - name: 배포
         id: deploy
@@ -69,6 +85,6 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           REF: ${{ inputs.ref || github.ref_name }}
         run: |
-          url=$(yarn dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tail -n 1)
+          url=$(yarn dlx vercel@65.1.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tail -n 1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "UT 배포: $url (ref: $REF)" >> "$GITHUB_STEP_SUMMARY"
