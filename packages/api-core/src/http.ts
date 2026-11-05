@@ -8,8 +8,8 @@ export interface HttpClientOptions {
 }
 
 /**
- * 앱별 인증·세션 정책을 주입할 수 있는 공통 HTTP transport를 만든다.
- * endpoint 함수 밖에서 직접 사용하지 않는다.
+ * 앱별 인증·세션 정책을 주입할 수 있는 공통 HTTP transport 생성
+ * endpoint 함수 밖에서 직접 사용 금지
  */
 export const createHttpClient = ({
   baseUrl,

@@ -3,7 +3,6 @@
 ## 메타데이터
 
 - 소유 경계: page-local / app-shared / design-system
-- Owner:
 - Status:
 
 ## 목적과 범위
@@ -38,6 +37,10 @@
 - Token·기존 primitive:
 - 허용되는 dependency:
 - Storybook state matrix:
+
+## 확인할 항목
+
+- 항목 (확정 | 제안 | 미정): 내용과 확인할 사람. 디자인에 없어 프런트엔드가 추가한 동작은 `제안`으로 쓴다
 
 ## 검증
 

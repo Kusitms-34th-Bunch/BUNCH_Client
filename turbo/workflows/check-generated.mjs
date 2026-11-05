@@ -2,8 +2,17 @@ import { spawnSync } from 'node:child_process';
 
 const checks = [
   {
+    name: 'Design-system icons',
+    command: ['workspace', '@app/design-system', 'icons:check'],
+  },
+  {
     name: 'Design-system barrel exports',
     command: ['workspace', '@app/design-system', 'gen:index:check'],
+  },
+  {
+    name: 'Web feature component barrels',
+    bin: process.execPath,
+    command: ['turbo/workflows/gen-feature-barrels.mjs', '--check'],
   },
   {
     name: 'Design-system component structure',

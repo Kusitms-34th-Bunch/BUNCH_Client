@@ -1,0 +1,14 @@
+.reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin-inline: auto;
+  pointer-events: none;
+  background: var(--semantic-surface-brand-subtle-1);
+  /* 로티 원 중심(314/734)을 Safe Area 안의 본문 좌표에 정렬 */
+  --reveal-y: calc(
+    var(--safe-area-top) + (100% - var(--safe-area-top) - var(--safe-area-bottom)) * 0.428
+  );
+}

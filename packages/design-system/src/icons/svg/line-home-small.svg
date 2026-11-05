@@ -1,0 +1,14 @@
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Line/Icon-S/home" clip-path="url(#clip0_0_430)">
+<g id="Vector">
+</g>
+<path id="Vector_2" d="M3.33333 8H2L8 2L14 8H12.6667" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
+<path id="Vector_3" d="M3.33398 8V12.6667C3.33398 13.0203 3.47446 13.3594 3.72451 13.6095C3.97456 13.8595 4.3137 14 4.66732 14H11.334C11.6876 14 12.0267 13.8595 12.2768 13.6095C12.5268 13.3594 12.6673 13.0203 12.6673 12.6667V8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
+<path id="Vector_4" d="M6 14.0003V10.0003C6 9.6467 6.14048 9.30757 6.39052 9.05752C6.64057 8.80747 6.97971 8.66699 7.33333 8.66699H8.66667C9.02029 8.66699 9.35943 8.80747 9.60948 9.05752C9.85952 9.30757 10 9.6467 10 10.0003V14.0003" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
+</g>
+<defs>
+<clipPath id="clip0_0_430">
+<rect width="16" height="16" fill="currentColor"/>
+</clipPath>
+</defs>
+</svg>

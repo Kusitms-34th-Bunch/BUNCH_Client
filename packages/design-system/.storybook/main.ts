@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/react-vite';
+import tailwindcss from '@tailwindcss/vite';
 import { createLogger } from 'vite';
 
 const logger = createLogger();
@@ -11,7 +12,22 @@ logger.warnOnce = (message, options) => {
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   framework: '@storybook/react-vite',
-  viteFinal: (config) => ({ ...config, customLogger: logger }),
+  viteFinal: (config) => ({
+    ...config,
+    customLogger: logger,
+    optimizeDeps: {
+      ...config.optimizeDeps,
+      include: [
+        ...(config.optimizeDeps?.include ?? []),
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'react/jsx-dev-runtime',
+        'react/jsx-runtime',
+      ],
+    },
+    plugins: [...(config.plugins ?? []), tailwindcss()],
+  }),
 };
 
 export default config;

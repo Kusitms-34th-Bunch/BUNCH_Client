@@ -81,7 +81,7 @@
   --primitive-gradient-02: linear-gradient(270deg, #e2e4ff 0%, #ffffff 50%, #f1f2ff 100%);
   --primitive-gray-scale-gray-000: #ffffff;
   --primitive-gray-scale-gray-050: #f9fafa;
-  --primitive-gray-scale-gray-100: #f7f7f8;
+  --primitive-gray-scale-gray-100: #f5f5f5;
   --primitive-gray-scale-gray-200: #EAEAEA;
   --primitive-gray-scale-gray-300: #e1e2e5;
   --primitive-gray-scale-gray-400: #bcbec2;
@@ -126,6 +126,8 @@
   --primitive-opacity-60: 60%;
   --primitive-opacity-8: 8%;
   --primitive-opacity-80: 80%;
+  --primitive-orange-50: #fff6e6;
+  --primitive-orange-500: #ff9100;
   --primitive-paragraph-indent-0: 0px;
   --primitive-paragraph-spacing-0: 0px;
   --primitive-pink-100: #ffd4f0;
@@ -187,6 +189,8 @@
   --semantic-chip-gray-fg: var(--primitive-gray-scale-gray-600);
   --semantic-chip-green-bg: var(--primitive-green-50);
   --semantic-chip-green-fg: var(--primitive-green-500);
+  --semantic-chip-orange-bg: var(--primitive-orange-50);
+  --semantic-chip-orange-fg: var(--primitive-orange-500);
   --semantic-chip-pink-bg: var(--primitive-pink-50);
   --semantic-chip-pink-fg: var(--primitive-pink-500);
   --semantic-chip-yellow-bg: var(--primitive-yellow-50);
@@ -276,17 +280,18 @@
   --semantic-spacing-s8: var(--primitive-dimension-16);
   --semantic-spacing-s9: var(--primitive-dimension-18);
   --semantic-surface-brand: var(--primitive-bunch-500);
-  --semantic-surface-brand-subtle-1: var(--primitive-bunch-100);
+  --semantic-surface-brand-subtle-1: var(--primitive-bunch-50);
   --semantic-surface-brand-subtle-2: var(--primitive-bunch-300);
   --semantic-surface-danger: var(--primitive-red-color-feedback-red-600);
   --semantic-surface-disabled: var(--primitive-gray-scale-gray-200);
   --semantic-surface-inversed: var(--primitive-gray-scale-gray-700);
+  --semantic-surface-inversed-lighter: var(--primitive-gray-scale-gray-600);
   --semantic-surface-primary: var(--primitive-gray-scale-gray-000);
   --semantic-surface-secondary: var(--primitive-gray-scale-gray-100);
   --semantic-surface-tertiary: var(--primitive-gray-scale-gray-200);
   --semantic-system-fail-bg: var(--primitive-red-color-feedback-red-50);
   --semantic-system-fail-border: var(--primitive-red-color-feedback-red-300);
-  --semantic-system-fail-fg: var(--primitive-red-color-feedback-red-700);
+  --semantic-system-fail-text: var(--primitive-red-color-feedback-red-500);
   --semantic-system-success-bg: var(--primitive-green-50);
   --semantic-system-success-border: var(--primitive-green-300);
   --semantic-system-success-fg: var(--primitive-green-700);
@@ -295,7 +300,8 @@
   --semantic-text-disabled: var(--primitive-gray-scale-gray-500);
   --semantic-text-inversed: var(--primitive-gray-scale-gray-000);
   --semantic-text-primary: var(--primitive-gray-scale-gray-900);
-  --semantic-text-quaternary: var(--primitive-gray-scale-gray-400);
+  --semantic-text-quaternary: var(--primitive-gray-scale-gray-500);
+  --semantic-text-quinary: var(--primitive-gray-scale-gray-400);
   --semantic-text-secondary: var(--primitive-gray-scale-gray-700);
   --semantic-text-tertiary: var(--primitive-gray-scale-gray-600);
 }
@@ -342,6 +348,8 @@
   --color-primitive-green-700: var(--primitive-green-700);
   --color-primitive-green-800: var(--primitive-green-800);
   --color-primitive-green-900: var(--primitive-green-900);
+  --color-primitive-orange-50: var(--primitive-orange-50);
+  --color-primitive-orange-500: var(--primitive-orange-500);
   --color-primitive-pink-100: var(--primitive-pink-100);
   --color-primitive-pink-200: var(--primitive-pink-200);
   --color-primitive-pink-300: var(--primitive-pink-300);
@@ -392,6 +400,8 @@
   --color-chip-gray-fg: var(--semantic-chip-gray-fg);
   --color-chip-green-bg: var(--semantic-chip-green-bg);
   --color-chip-green-fg: var(--semantic-chip-green-fg);
+  --color-chip-orange-bg: var(--semantic-chip-orange-bg);
+  --color-chip-orange-fg: var(--semantic-chip-orange-fg);
   --color-chip-pink-bg: var(--semantic-chip-pink-bg);
   --color-chip-pink-fg: var(--semantic-chip-pink-fg);
   --color-chip-yellow-bg: var(--semantic-chip-yellow-bg);
@@ -474,12 +484,13 @@
   --color-surface-danger: var(--semantic-surface-danger);
   --color-surface-disabled: var(--semantic-surface-disabled);
   --color-surface-inversed: var(--semantic-surface-inversed);
+  --color-surface-inversed-lighter: var(--semantic-surface-inversed-lighter);
   --color-surface-primary: var(--semantic-surface-primary);
   --color-surface-secondary: var(--semantic-surface-secondary);
   --color-surface-tertiary: var(--semantic-surface-tertiary);
   --color-system-fail-bg: var(--semantic-system-fail-bg);
   --color-system-fail-border: var(--semantic-system-fail-border);
-  --color-system-fail-fg: var(--semantic-system-fail-fg);
+  --color-system-fail-text: var(--semantic-system-fail-text);
   --color-system-success-bg: var(--semantic-system-success-bg);
   --color-system-success-border: var(--semantic-system-success-border);
   --color-system-success-fg: var(--semantic-system-success-fg);
@@ -488,6 +499,7 @@
   --color-text-inversed: var(--semantic-text-inversed);
   --color-text-primary: var(--semantic-text-primary);
   --color-text-quaternary: var(--semantic-text-quaternary);
+  --color-text-quinary: var(--semantic-text-quinary);
   --color-text-secondary: var(--semantic-text-secondary);
   --color-text-tertiary: var(--semantic-text-tertiary);
 }
@@ -525,7 +537,51 @@
   text-decoration: var(--semantic-text-decoration-none);
 }
 
-@utility typography-body-2-meduim {
+@utility typography-body-2-medium {
+  font-family: var(--primitive-font-family-pretendard);
+  font-weight: var(--semantic-font-weights-pretendard-2);
+  font-size: var(--primitive-font-size-3);
+  line-height: var(--primitive-line-height-22);
+  letter-spacing: var(--semantic-letter-spacing-0);
+  text-indent: var(--primitive-paragraph-indent-0);
+  text-transform: var(--primitive-text-case-none);
+  text-decoration: var(--semantic-text-decoration-none);
+}
+
+@utility typography-body-2-regular {
+  font-family: var(--primitive-font-family-pretendard);
+  font-weight: var(--semantic-font-weights-pretendard-3);
+  font-size: var(--primitive-font-size-3);
+  line-height: var(--primitive-line-height-22);
+  letter-spacing: var(--semantic-letter-spacing-0);
+  text-indent: var(--primitive-paragraph-indent-0);
+  text-transform: var(--primitive-text-case-none);
+  text-decoration: var(--semantic-text-decoration-none);
+}
+
+@utility typography-body-2-semi-bold {
+  font-family: var(--primitive-font-family-pretendard);
+  font-weight: var(--semantic-font-weights-pretendard-1);
+  font-size: var(--primitive-font-size-3);
+  line-height: var(--primitive-line-height-22);
+  letter-spacing: var(--semantic-letter-spacing-0);
+  text-indent: var(--primitive-paragraph-indent-0);
+  text-transform: var(--primitive-text-case-none);
+  text-decoration: var(--semantic-text-decoration-none);
+}
+
+@utility typography-body-3-regular {
+  font-family: var(--primitive-font-family-pretendard);
+  font-weight: var(--semantic-font-weights-pretendard-3);
+  font-size: var(--primitive-font-size-2);
+  line-height: var(--primitive-line-height-21);
+  letter-spacing: var(--semantic-letter-spacing-3);
+  text-indent: var(--primitive-paragraph-indent-0);
+  text-transform: var(--primitive-text-case-none);
+  text-decoration: var(--semantic-text-decoration-none);
+}
+
+@utility typography-body-3-semi-bold {
   font-family: var(--primitive-font-family-pretendard);
   font-weight: var(--semantic-font-weights-pretendard-1);
   font-size: var(--primitive-font-size-2);
@@ -536,18 +592,7 @@
   text-decoration: var(--semantic-text-decoration-none);
 }
 
-@utility typography-body-2-regular {
-  font-family: var(--primitive-font-family-pretendard);
-  font-weight: var(--semantic-font-weights-pretendard-3);
-  font-size: var(--primitive-font-size-2);
-  line-height: var(--primitive-line-height-21);
-  letter-spacing: var(--semantic-letter-spacing-3);
-  text-indent: var(--primitive-paragraph-indent-0);
-  text-transform: var(--primitive-text-case-none);
-  text-decoration: var(--semantic-text-decoration-none);
-}
-
-@utility typography-body-3-regular {
+@utility typography-body-4-regular {
   font-family: var(--primitive-font-family-pretendard);
   font-weight: var(--semantic-font-weights-pretendard-3);
   font-size: var(--primitive-font-size-1);
@@ -558,7 +603,7 @@
   text-decoration: var(--semantic-text-decoration-none);
 }
 
-@utility typography-body-3-semi-bold {
+@utility typography-body-4-semi-bold {
   font-family: var(--primitive-font-family-pretendard);
   font-weight: var(--semantic-font-weights-pretendard-1);
   font-size: var(--primitive-font-size-1);
@@ -615,7 +660,7 @@
 
 @utility typography-heading-2-medium {
   font-family: var(--primitive-font-family-pretendard);
-  font-weight: var(--semantic-font-weights-pretendard-1);
+  font-weight: var(--semantic-font-weights-pretendard-2);
   font-size: var(--primitive-font-size-6);
   line-height: var(--primitive-line-height-27);
   letter-spacing: var(--semantic-letter-spacing-1);

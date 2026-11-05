@@ -1,11 +1,11 @@
 # Styling And Design Tokens
 
-Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 여러 app이 공유하는 제품 비의존 UI primitive 경계다. 아직 확정되지 않은 색상·타이포그래피 체계를 token package나 임의 theme 이름으로 먼저 만들지 않는다. 실제 비주얼 아이덴티티가 정해지면 `.agents/templates/design-system-identity.md`로 정리한다.
+Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 Figma에 정의된 UI 컴포넌트와 token의 경계이며, 컴포넌트는 제품 문구·route·데이터를 직접 알지 않는다. 아직 확정되지 않은 색상·타이포그래피 체계를 token package나 임의 theme 이름으로 먼저 만들지 않는다. 실제 비주얼 아이덴티티가 정해지면 `.agents/templates/design-system-identity.md`로 정리한다.
 
 ## 소유 경계
 
 - global reset, app shell, route 전용 layout은 각 app이 소유한다.
-- 여러 app에서 같은 의미와 API로 재사용되는 UI primitive는 `packages/design-system`에 둔다.
+- Figma에 컴포넌트로 정의된 UI는 사용처 수와 관계없이 `packages/design-system`에 둔다.
 - 색상, spacing, typography, radius, shadow, z-index가 여러 곳에서 같은 의미로 반복되고 디자인 기준이 확정되면 design-system token으로 승격한다.
 - 제품 도메인 상태, route 전용 여백, 화면 문맥의 색상·copy는 app 또는 feature에 남긴다.
 
@@ -13,6 +13,9 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 여�
 
 - existing utility와 token을 우선 사용한다. 임의 값은 디자인 기준에 직접 대응하거나 기존 scale로 표현할 수 없을 때만 사용한다.
 - 기본 scale로 표현되는 spacing·sizing 값은 임의 값 대신 scale class를 쓴다(`size-[10px]` 대신 `size-2.5`). 같은 임의 값이 반복되면 theme·token 승격을 검토한다.
+- class는 Tailwind 표준형으로 쓴다. 편집기 Tailwind 확장의 `suggestCanonicalClasses` 경고와 같은 판정을 `yarn check:tailwind`(`packages/design-system/scripts/check-tailwind-classes.mjs`)가 web·admin·design-system 소스에서 검사한다. 예: `duration-[340ms]` → `duration-340`, `max-w-[var(--x)]` → `max-w-(--x)`, `w-[343px]` → `w-85.75`.
+  - 실행 위치: `yarn lint`(CI 포함), 커밋 시 `lint-staged`(`--fix`로 자동 수정), Claude Code 저장 훅(`.claude/hooks/lint-check.mjs`).
+  - 기준: 디자인 시스템 토큰을 불러온 Tailwind 4의 `canonicalizeCandidates`(`rem: 16`). `__unstable__` API라 Tailwind를 올리면 `check-tailwind-classes.test.mjs`로 판정 변화를 먼저 확인한다.
 - border-radius, border-width, ring·outline 두께처럼 Figma의 고정 수치에 대응하는 값은 root font-size의 영향을 받지 않도록 `rem` 대신 `px`나 token을 쓴다.
 - 조건부 class는 읽기 가능한 variant 또는 class merge utility로 구성한다. 긴 문자열 결합과 중첩 ternary를 component 안에 쌓지 않는다.
 - `!important`, inline style, 하드코딩된 z-index는 외부 라이브러리 또는 동적 계산 같은 명확한 예외에서만 쓴다.
@@ -28,7 +31,15 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 여�
 3. 값 변경 시 호출부를 각각 수정하는 비용이 크다.
 4. 이름이 제품 도메인이나 한 화면의 문구에 의존하지 않는다.
 
-font·asset은 라이선스, 크기, preload·cache 전략이 확정된 뒤 도입한다. 외부 CDN font를 기본값으로 추가하지 않는다.
+## 글꼴(Pretendard)
+
+결정 근거는 [013](../decisions/records/013-pretendard-self-hosting.md)이다. 외부 CDN 글꼴을 쓰지 않고 저장소에 둔 파일을 직접 호스팅한다.
+
+- 앱 화면(`apps/web`의 `(app)` route group)과 404: `apps/web/src/app/fonts/pretendard.ts`가 `apps/web/src/app/fonts/PretendardVariable.woff2`(Pretendard 1.3.9 가변 폰트, 굵기 45~920)를 `next/font/local`로 불러오고 `(app)/layout.tsx`와 루트 `not-found.tsx`가 그 스타일을 넣어, 토큰 변수 `--primitive-font-family-pretendard`와 `body`의 `font-family`를 그 글꼴로 바꾼다. 모달·토스트가 body에 portal로 그려지므로 `:root`에 적용한다. `typography-*` 유틸리티는 바꾸지 않는다.
+- 처음 오는 사용자가 보는 웹 화면(웹 초대장 등): `(app)` group 밖에 두고 Pretendard 동적 서브셋을 쓴다. 해당 화면을 만들 때 붙이며 아직 없다. 큰 파일을 루트 layout에서 불러오지 않는 이유가 이것이다.
+- iOS 쉘 시스템 탭 바 라벨: `apps/mobile-shell/assets/fonts/Pretendard-Regular.otf`를 `app.json`의 `expo-font` plugin으로 넣는다(`docs/architecture/mobile-shell.md`).
+- 라이선스(SIL OFL 1.1)는 글꼴 파일 옆의 `Pretendard-LICENSE.txt`에 둔다. 버전을 올릴 때 웹·쉘 파일과 라이선스를 함께 바꾼다.
+- admin·Storybook은 아직 글꼴을 연결하지 않았다.
 
 ## Tokens Studio 변환
 
@@ -37,9 +48,10 @@ font·asset은 라이선스, 크기, preload·cache 전략이 확정된 뒤 도�
 - 기존 `yarn check:generated`가 `tokens:check`도 실행하므로 local verify와 CI에서 오래된 생성 CSS를 발견한다.
 - 내부 CSS 변수는 `--primitive-<경로>`, `--semantic-<경로>`로 구분하며 그룹과 토큰 이름에 반복된 접두어를 제거한다. 예: `Border.border-brand` → `--semantic-border-brand`, `Bunch.color-primitive-bunch-500` → `--primitive-bunch-500`. Semantic alias는 Primitive 변수에 대한 `var(...)` 참조로 남긴다. Composite typography는 `typography-title-1-bold` 같은 `@utility`로 생성한다.
 - Tailwind v4의 `@theme inline`에 색상·간격·radius·shadow·gradient를 연결한다. 예: `text-text-primary`, `bg-surface-primary`, `rounded-r1`, `gap-s1`. 실제 이름은 생성 CSS를 기준으로 확인한다.
-- 소비 앱은 `@app/design-system` workspace 의존성을 선언하고 Tailwind 전역 CSS에서 `@import '@app/design-system/tokens.css';`로 사용한다. Web은 `src/app/globals.css`에서 연결하며 admin·Storybook은 아직 연결하지 않았다. Tailwind의 `border-border-brand`는 속성 `border-`와 색상 이름 `border-brand`의 조합이므로 유지한다.
+- 소비 앱은 `@app/design-system` workspace 의존성을 선언하고 Tailwind 전역 CSS에서 `@import '@app/design-system/tokens.css';`로 사용한다. Web은 `src/app/globals.css`에서 연결하며 admin·Storybook은 아직 연결하지 않았다. 스크롤 영역은 `scrollbar-none` 유틸리티(같은 파일, Tailwind v4에 없어 직접 정의)로 스크롤바를 그리지 않는다. `PageShell`의 `main`과 가로 스크롤 칩에 쓴다. Tailwind의 `border-border-brand`는 속성 `border-`와 색상 이름 `border-brand`의 조합이므로 유지한다.
 - `sync-design-tokens.yml`은 `design-token` 브랜치의 원본 변경을 변환·검증하고 생성 CSS를 같은 브랜치에 커밋한 뒤 `develop`으로 PR한다. 기존 열린 PR은 재사용하고 CSS만 바뀐 Push는 다시 변환하지 않는다. 설정과 secret은 `docs/conventions/git.md`를 따른다.
-- opacity 숫자는 Figma의 0–100 값을 퍼센트로, 길이는 px로 변환한다. 참조 누락·순환·이름 충돌·미지원 타입 및 모드는 실패로 처리한다. 현재 export의 `Primitive/Mode 1`, `Semantic/Mode 1`만 지원하며 theme이나 mode가 추가되면 선택 규칙부터 확정한다. Pretendard 파일은 설치하거나 로드하지 않는다.
+- opacity 숫자는 Figma의 0–100 값을 퍼센트로, 길이는 px로 변환한다. 참조 누락·순환·이름 충돌·미지원 타입 및 모드는 실패로 처리한다. 현재 export의 `Primitive/Mode 1`, `Semantic/Mode 1`만 지원하며 theme이나 mode가 추가되면 선택 규칙부터 확정한다. 글꼴 로드는 아래 "글꼴(Pretendard)"을 따른다.
+- 글자 토큰은 이름과 값(크기·굵기·줄 높이·자간)을 Figma 텍스트 스타일과 같게 둔다. 2026-10-31에 Figma 로컬 텍스트 스타일 22개와 토큰의 이름·값이 모두 일치함을 확인했다. Figma 스타일 `Body-3-Semibold`는 `typography-body-3-semi-bold`처럼 kebab-case 이름으로 쓴다. Figma에 스타일이 추가되면 Tokens Studio 원본도 함께 고치고, `tailwind.ts`의 typography 병합 목록과 `tailwind.test.ts`의 개수를 맞춘다.
 - 다른 변수를 참조하는 Tailwind theme은 [공식 `@theme inline` 규칙](https://tailwindcss.com/docs/theme#referencing-other-variables)을 따른다.
 
 ## 스타일 검증

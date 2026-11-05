@@ -16,6 +16,7 @@ agent가 현재 저장소의 사실을 찾고 동일한 규칙을 Codex와 Claud
 3. 문서 링크와 script·package·workspace·skill 경로가 실제 존재하는지 확인한다.
 4. `docs/`가 정책 source of truth이고 `.agents/`가 실행 지침인지, adapter가 공통 문서를 참조하는지 확인한다.
 5. 같은 규칙이 여러 위치에 복제돼 drift를 만들지 않는지 확인한다.
+6. 작업 위치·세션 라우팅 변경이면 `docs/workflows/development.md`의 판단 표를 bootstrap → before-change → git → deliver-work·handoff에서 따라갈 수 있는지 확인한다. 단일 작업, 기존 작업 보존, 독립 작업 병렬화, 선행 의존, 기존 worktree·세션 재사용, 읽기 전용 요청을 대입해 결과를 점검한다. 문서에 따른 판단 검토와 실제 프로세스 실행 검증을 구분한다.
 
 ## Skill 검토 기준
 

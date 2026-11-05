@@ -1,6 +1,7 @@
-import { ApiError, isApiError } from '@app/api-core';
 import { NextResponse, type NextRequest } from 'next/server';
+import { ACCESS_TOKEN_COOKIE } from './authCookies';
 import { parseRequestBody } from './requestBody';
+import { toErrorResponse } from './routeError';
 
 export interface AuthorizedRouteContext<Body = unknown, Params = Record<string, string>> {
   accessToken: string;
@@ -20,14 +21,17 @@ export const createAuthorizedRoute = <Body = unknown, Params = Record<string, st
   handler: (_ctx: AuthorizedRouteContext<Body, Params>) => Promise<unknown>,
   options: CreateAuthorizedRouteOptions = {},
 ) => {
-  const accessTokenCookieName = options.accessTokenCookieName ?? 'accessToken';
+  const accessTokenCookieName = options.accessTokenCookieName ?? ACCESS_TOKEN_COOKIE;
 
   return async (...[request, context]: RouteHandlerArgs<Params>): Promise<Response> => {
     const accessToken = request.cookies.get(accessTokenCookieName)?.value;
 
     if (!accessToken) {
       return NextResponse.json(
-        { message: options.unauthorizedMessage ?? '인증이 필요합니다' },
+        {
+          message: options.unauthorizedMessage ?? '인증이 필요합니다',
+          code: 'BFF_UNAUTHENTICATED',
+        },
         { status: 401 },
       );
     }
@@ -41,19 +45,7 @@ export const createAuthorizedRoute = <Body = unknown, Params = Record<string, st
       if (result === undefined) return new NextResponse(null, { status: 204 });
       return NextResponse.json(result);
     } catch (error) {
-      if (isApiError(error)) {
-        return NextResponse.json(
-          { message: error.message, code: error.code },
-          { status: error.status ?? 500 },
-        );
-      }
-
-      const normalized = new ApiError({
-        message: 'Internal Server Error',
-        category: 'unknown',
-        cause: error,
-      });
-      return NextResponse.json({ message: normalized.message }, { status: 500 });
+      return toErrorResponse(error);
     }
   };
 };

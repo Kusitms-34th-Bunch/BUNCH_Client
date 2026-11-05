@@ -54,6 +54,10 @@ describe('design token CSS', () => {
     const raw = JSON.parse(readFileSync('tokens/tokens.json', 'utf8')) as Record<string, unknown>;
     const css = buildTokenCss(raw);
     expect(css).toContain('--semantic-text-primary: var(--primitive-gray-scale-gray-900);');
+    expect(css).toContain(
+      '--semantic-system-fail-text: var(--primitive-red-color-feedback-red-500);',
+    );
+    expect(css).toContain('--color-system-fail-text: var(--semantic-system-fail-text);');
     expect(css).toContain('@utility typography-title-1-bold');
     expect(css).toContain('line-height: var(--primitive-line-height-31);');
     expect(css).toContain('--primitive-shadow-navi-bar: 0px 0px 24px 0px #00000014;');

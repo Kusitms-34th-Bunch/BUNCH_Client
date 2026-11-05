@@ -1,5 +1,7 @@
 # Testing Rules
 
+모바일 앱의 설치·실행과 기기별 수동 확인은 [모바일 앱 실행과 테스트](./mobile-testing.md)를 따른다.
+
 ## 도구와 위치
 
 - unit·component test는 Vitest와 Testing Library를 사용한다. React test 환경은 `happy-dom`이다.
@@ -18,6 +20,21 @@
 - component test는 render → 사용자 interaction → 관찰 가능한 output 순으로 작성한다. 하나의 `it`에는 하나의 핵심 동작을 둔다.
 - hook은 input/action → state transition → 공개된 result를 검증한다. UI markup과 style은 hook test의 범위가 아니다.
 - API·Query test는 request input, response/error mapping, cache에 보이는 결과 중 하나 이상을 검증한다.
+
+## MSW 가짜 서버
+
+- API 요청 코드(endpoint 함수, query)는 MSW 가짜 서버(`src/mocks/`)로 요청 입력과 응답 매핑을 함께 확인한다. 가짜 서버는 BFF 경로(`/api/…`, 백엔드 경로에서 `/api/v1`을 뺀 경로)를 가로챈다. 화면 test는 기존처럼 endpoint 모듈을 mock해도 된다.
+- Vitest: `vitest.setup.ts`가 `server.listen({ onUnhandledFrame: 'error' })`로 켜고, handler가 없는 요청은 test를 실패시킨다. test마다 handler 덮어쓰기(`server.resetHandlers`)·가짜 DB(`mockDb.reset`)·멱등 키가 초기화된다. 한 test에서만 다른 응답이 필요하면 `server.use(http.get(…))`를 쓰고, 오류 응답은 `fail(status, code)`로 만든다.
+- 기준 예시는 `features/photo-box/api/bunchMembers.test.ts`(요청 함수)와 `queries/bunchMembers.test.tsx`(query)다.
+  - 요청 함수: 가짜 서버 응답의 화면 모양 변환, 오류 code, 한 test만의 응답(`server.use`), 계약 위반(`INVALID_RESPONSE`)을 확인한다. 요청 입력은 handler 안에서 `params`·`request`를 받아 확인한다.
+  - query: `src/shared/query/testing.tsx`의 `createQueryWrapper(createTestQueryClient())`로 감싼 `renderHook(() => useQuery(options))`로 성공·오류 상태와 캐시 key를 확인한다. 요청 취소는 `delay('infinite')` handler에서 `request.signal`을 모아 두고 key를 바꾼 뒤 `aborted`를 확인한다. 테스트 client는 앱 설정에서 재시도만 끈 것이다.
+  - 쓰기(`features/photo-box/api/photos.test.ts`, `queries/photos.test.tsx`): 요청 함수는 가짜 DB(`mockDb.get()`)가 실제로 바뀌었는지와 실패 때 그대로인지, 보낸 본문(handler 밖 변수에 담아 test 본문에서 단언. handler 안의 `expect`는 실패가 500 응답으로 바뀌어 원인이 가려진다), 오류 status별 `ApiError`(`it.each`)를 확인한다. mutation hook은 캐시에 값을 넣어 둔 client로 `await act(() => mutateAsync(…))` 뒤 `getQueryState(key)?.isInvalidated`가 무효화할 key는 참, 다른 번치·다른 리소스 key는 거짓인지와, 실패 때 `meta.errorMessage` 토스트를 확인한다(호출 여부를 spy하지 않고 캐시 상태를 본다).
+  - 요청 함수·query test에서는 endpoint 모듈을 `vi.mock`해 응답 모양을 손으로 만들지 않는다. envelope 해제·스키마 검사·오류 변환을 건너뛰기 때문이다(화면 test는 위처럼 endpoint 모듈을 mock해도 된다).
+- 파일: handler는 `src/mocks/handlers/`(백엔드 resource별), 가짜 DB와 시작 데이터는 `src/mocks/db/`, 응답 형식(`ok`·`fail`·`noContent`)과 멱등 키 재생은 `src/mocks/lib/`다. 오류 코드와 메시지는 백엔드 명세를 따르고 명세에 없는 값은 추측하지 않는다.
+- 브라우저: `NEXT_PUBLIC_API_MOCKING=enabled`로 빌드·실행하면 서비스 워커(`public/mockServiceWorker.js`, `msw init`으로 생성)가 켜지고 화면은 준비된 뒤에 그려진다. 가짜 DB는 IndexedDB에 남아 새로고침해도 유지된다. 값이 비어 있으면 MSW 코드는 번들에 들어가지 않는다(빌드 뒤 `.next/static`에서 `mockServiceWorker`를 검색해 확인). 운영 배포에서는 이 변수를 설정하지 않는다.
+- 서비스 워커는 HTTPS·localhost 브라우저와 홈 화면 앱에서 동작하고, `http://IP` 접속과 네이티브 쉘 WebView에서는 동작하지 않을 수 있다. 실제 폰·HTTPS 환경은 사용 전에 확인한다.
+- MSW 3에서는 처리하지 않은 요청 옵션이 `onUnhandledFrame`이다(2.x의 `onUnhandledRequest`가 아니다).
+- happy-dom 한계: ky `afterResponse` hook이 있는 `createBrowserApi`로 본문 없는 204 응답을 받으면 happy-dom이 스트림 오류를 내므로 204 확인은 `fetch`를 쓴다(실제 브라우저는 문제없음).
 
 ## Worst-case 데이터
 
@@ -41,7 +58,7 @@
 - mock은 네트워크·시간·브라우저 경계에 한정하고, 내부 구현을 과도하게 mock하지 않는다.
 - 비동기 UI는 임의의 대기 시간 대신 `findBy*`, `waitFor`처럼 관찰 가능한 완료 조건을 기다린다.
 - timer, storage, navigation 같은 경계는 필요한 부분만 mock하고, fake timer 사용 뒤에는 원래 timer로 복원한다.
-- 테스트는 로컬 `.env` 값에 의존하지 않는다. 화면·컴포넌트 test는 endpoint 모듈을 mock하고, endpoint 래퍼 test는 transport 함수만 mock한다. 실제 API origin을 test에 적지 않는다(URL 조립 자체를 검증할 때만 예외). env 필수값 검사가 test의 import 경로에서 실행되면 로컬에서는 통과하고 CI에서만 깨진다.
+- 테스트는 로컬 `.env` 값에 의존하지 않는다. 화면·컴포넌트 test는 endpoint 모듈을 mock하고, endpoint 래퍼 test는 transport 함수만 mock한다. 실제 API origin을 test에 적지 않는다(URL 조립 자체를 검증할 때만 예외). env 필수값 검사가 test의 import 경로에서 실행되면 로컬에서는 통과하고 CI에서만 깨진다. 아래 "MSW 가짜 서버"를 쓰는 test는 transport mock 대신 상대 BFF 경로(`/api/…`)를 호출하고 응답은 handler가 정하며, 한 test에서 둘을 섞지 않는다.
 - 실패한 테스트를 `skip` 또는 `only`로 숨기지 않는다.
 - 외부 라이브러리 내부 동작이나 단순 정적 마크업만을 위한 snapshot 테스트는 피한다.
 - 기대값을 구현과 같은 방식으로 다시 계산해서 assert하지 않는다. 기대값은 known-good 값, spec, 예제처럼 구현과 독립된 출처에서 가져온다.

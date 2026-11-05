@@ -1,0 +1,31 @@
+import type { ReactNode } from 'react';
+import { Toaster } from '@app/design-system';
+import { OverlayProvider } from 'overlay-kit';
+import { NativeTabBarVisibility } from '@/features/main-navigation/components';
+import { AppFrame } from '@/shared/components/layout/AppFrame';
+import { QueryProvider } from '@/shared/providers/QueryProvider';
+import { pretendardFontStyle } from '../fonts/pretendard';
+import { AppTransitions } from './AppTransitions';
+import { RouteFocus } from './RouteFocus';
+
+// 일반 화면 틀(폭·Safe Area·높이) — 전체 화면 캔버스 화면은 이 group 밖에 배치
+// Toaster: `toast()`가 띄우는 알림을 그리는 자리(앱에 한 번만 배치)
+// OverlayProvider: `overlay.open()`으로 여는 모달·바텀시트를 그리는 자리(overlay-kit)
+// QueryProvider: 서버 상태 캐시(TanStack Query). 모달 안 화면도 쓰도록 OverlayProvider 바깥에 배치
+// NativeTabBarVisibility: iOS 쉘에서 탭 밖 화면을 여는 동안 시스템 탭 바 숨김(모든 화면에서 경로를 따라야 해 여기 배치)
+// RouteFocus: 다른 화면으로 이동하면 새 화면의 h1으로 초점(모든 화면 공통이라 여기 배치)
+export default function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <QueryProvider>
+      <OverlayProvider>
+        <style>{pretendardFontStyle}</style>
+        <AppFrame>
+          <AppTransitions>{children}</AppTransitions>
+        </AppFrame>
+        <NativeTabBarVisibility />
+        <RouteFocus />
+        <Toaster />
+      </OverlayProvider>
+    </QueryProvider>
+  );
+}

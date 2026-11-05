@@ -1,7 +1,8 @@
 import { base, disableTypeChecked } from '@app/lint-config';
 export default [
   {
-    ignores: ['apps/**', 'packages/**', '.yarn/**', '.pnp.*'],
+    // .agents/notes: git에 올리지 않는 개인 메모(.gitignore)
+    ignores: ['apps/**', 'packages/**', '.yarn/**', '.pnp.*', '.worktrees/**', '.agents/notes/**'],
   },
   ...base,
   {

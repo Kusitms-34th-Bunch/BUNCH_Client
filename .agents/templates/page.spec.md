@@ -3,7 +3,6 @@
 ## 메타데이터
 
 - Route:
-- Owner:
 - Status:
 
 ## 목적과 범위

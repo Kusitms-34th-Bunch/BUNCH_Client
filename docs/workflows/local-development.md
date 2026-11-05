@@ -4,14 +4,15 @@
 
 - Node.js: root `package.json`의 `engines`
 - Package manager: root `package.json`의 `packageManager`에 명시된 Yarn 4 PnP
+- 예외: `apps/mobile-shell`은 자체 `package.json`에 명시된 pnpm 사용
 - Task runner: `turbo.json`
 
 의존성 또는 `yarn.lock`을 바꾼 뒤에는 `yarn install`을 명시적으로 실행한다.
 
 ## Environment variables
 
-- 예시 파일은 `apps/web/.env.example`, `apps/admin/.env.example`에만 커밋하고 실제 `.env*` 값은 커밋하지 않는다.
-- Next.js는 `NEXT_PUBLIC_*`, Vite는 `VITE_*`만 browser bundle에 노출한다. 비밀값은 이 접두사를 사용하지 않는다.
+- 예시 파일은 각 앱의 `.env.example`만 커밋하고 실제 `.env*` 값은 커밋하지 않는다.
+- Next.js의 `NEXT_PUBLIC_*`, Vite의 `VITE_*`, Expo의 `EXPO_PUBLIC_*`는 클라이언트 번들에 노출한다. 비밀값은 이 접두사를 사용하지 않는다.
 - 각 앱의 `build` task는 해당 앱의 `.env*` 변경을 Turbo cache input으로 포함한다.
 
 ## Applications
@@ -22,6 +23,9 @@
 | `@app/admin` | `yarn workspace @app/admin dev` | `5173`            |
 
 admin은 Vite `strictPort`를 사용한다. E2E는 같은 `5173` 포트를 사용한다.
+
+모바일 쉘은 웹 서버(`3000`)와 Metro(`8081`)를 함께 사용한다.
+최초 빌드·시뮬레이터·실기기·Expo Go 실행은 [모바일 앱 실행과 테스트](./mobile-testing.md)를 따른다.
 
 ## Targeted verification
 

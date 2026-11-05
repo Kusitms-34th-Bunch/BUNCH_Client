@@ -16,7 +16,7 @@
 | 화면 조립과 route-local UI                           | page/route 가까이        |
 | 여러 화면의 사용자 작업                              | feature/domain           |
 | 앱 공용 UI                                           | 해당 app 공용 영역       |
-| cross-app UI primitive                               | `packages/design-system` |
+| Figma에 정의된 UI 컴포넌트                           | `packages/design-system` |
 
 ## 구현 체크리스트
 

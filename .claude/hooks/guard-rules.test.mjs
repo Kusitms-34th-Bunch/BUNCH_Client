@@ -1,4 +1,4 @@
-// guard-rules.mjs의 git 규칙 확인. 실행: node --test .claude/hooks/guard-rules.test.mjs
+// guard-rules.mjs의 git·주석 규칙 확인. 실행: node --test .claude/hooks/guard-rules.test.mjs
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
@@ -86,5 +86,48 @@ for (const command of denied) {
 for (const command of allowed) {
   test(`허용한다: ${command.split('\n')[0]}`, () => {
     assert.equal(isDenied(command), false);
+  });
+}
+
+function isEditDenied(filePath, newString) {
+  const result = spawnSync('node', [hook], {
+    input: JSON.stringify({
+      tool_name: 'Edit',
+      tool_input: { file_path: filePath, new_string: newString },
+    }),
+    encoding: 'utf8',
+  });
+
+  return result.stdout.includes('"permissionDecision":"deny"');
+}
+
+const deniedComments = [
+  ['a.ts', '// 화면을 먼저 옮긴다'],
+  ['a.tsx', '/** 항목이 없는 탭은 숨긴다 */'],
+  ['a.ts', ' * 쉘에서도 막는다.'],
+  ['a.css', '/* 그림자를 줄였다 */'],
+  ['a.tsx', '{/* 임시 진입점을 숨긴다 */}'],
+  ['a.ts', 'reset(); // 값을 비운다'],
+  ['a.ts', '// 연타를 막는다(iOS)'],
+  ['a.ts', "const marker = '@generated';\n// 생성 표시를 찾는다"],
+];
+
+const allowedComments = [
+  ['a.ts', '// 화면 이동 뒤 비움(한 프레임 깜빡임 방지)'],
+  ['a.tsx', '/** 항목이 없는 탭은 숨김 */'],
+  ['a.ts', "const label = '저장했다';"],
+  ['a.md', '// 문서 예시는 검사하지 않는다'],
+  ['src/index.ts', '// @generated — run `yarn gen:index`\n// 공개 컴포넌트만 내보낸다'],
+];
+
+for (const [filePath, newString] of deniedComments) {
+  test(`막는다(주석): ${newString}`, () => {
+    assert.equal(isEditDenied(filePath, newString), true);
+  });
+}
+
+for (const [filePath, newString] of allowedComments) {
+  test(`허용한다(주석): ${newString.split('\n')[0]}`, () => {
+    assert.equal(isEditDenied(filePath, newString), false);
   });
 }

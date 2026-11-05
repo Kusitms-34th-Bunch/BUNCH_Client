@@ -33,6 +33,7 @@ description: 이 저장소의 데이터 계층 기준으로 API endpoint, TanSta
 2. 대상 app의 `AGENTS.md`, 가까운 endpoint·query key·hook·UI·test
 3. 필요할 때 `packages/api-core/src`와 생성 OpenAPI 타입
 4. route·feature가 문서화되어 있으면 가까운 `*.spec.md`
+5. Suspense 방식(`useSuspenseQuery`)으로 로딩·오류·다시 시도 경계를 만들게 되면 `docs/conventions/libraries.md`의 suspensive 후보
 
 ## 소유와 파일 배치
 
@@ -101,6 +102,7 @@ export const memberQueryKeys = {
 - 모든 response-changing parameter가 key에 포함되고 mutation cache 영향이 명확하다.
 - transport와 UI, generated type과 view model의 경계가 분리되어 있다.
 - 관련 unit/component test와 범위에 맞는 `yarn lint`, `yarn typecheck`, 대상 test/build가 실행됐거나 미실행 이유가 기록됐다.
+- 완료를 보고하기 전에 `bunch-api-contract-reviewer`를 호출한다(`docs/agent/bootstrap.md`의 필수 호출 기준). 호출하지 않았다면 호출했다고 쓰지 않는다.
 
 ## 출력
 

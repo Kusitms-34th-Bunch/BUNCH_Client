@@ -59,7 +59,6 @@ jobs:
           LABEL_NAME: ${{ steps.work.outputs.label }}
           LABEL_COLOR: ${{ steps.work.outputs.label_color }}
           LABEL_DESCRIPTION: ${{ steps.work.outputs.label_description }}
-          TYPE_LABELS: ${{ steps.work.outputs.label_names }}
         with:
           script: |
             const pullRequest = context.payload.pull_request;
@@ -132,21 +131,7 @@ jobs:
               repo,
               issue_number: pullRequest.number,
             });
-            const typeLabelNames = new Set(process.env.TYPE_LABELS.split('|'));
-
-            await Promise.all(
-              currentLabels
-                .filter((label) => typeLabelNames.has(label.name) && label.name !== labelName)
-                .map((label) =>
-                  github.rest.issues.removeLabel({
-                    owner,
-                    repo,
-                    issue_number: pullRequest.number,
-                    name: label.name,
-                  }),
-                ),
-            );
-
+            // 이미 붙은 다른 라벨(직접 추가한 타입 라벨 포함)은 지우지 않는다.
             if (!currentLabels.some((label) => label.name === labelName)) {
               await github.rest.issues.addLabels({
                 owner,
@@ -155,3 +140,43 @@ jobs:
                 labels: [labelName],
               });
             }
+
+  notify:
+    name: Notify
+    needs: metadata
+    # metadata가 건너뛰어지거나 실패해도 알림은 보낸다. 제목은 이벤트 값이 아니라 현재 값을 읽는다.
+    if: ${{ !cancelled() && contains(fromJSON('["opened","reopened","ready_for_review"]'), github.event.action) }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_ACTION: ${{ github.event.action }}
+
+    steps:
+      - name: Send notification
+        shell: bash
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo 'DISCORD_WEBHOOK_URL is not configured; skipping.'
+            exit 0
+          fi
+
+          pr=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")
+
+          if [ "$PR_ACTION" = 'ready_for_review' ]; then
+            status='👀 PR ready for review'
+          else
+            status='🆕 PR opened'
+          fi
+
+          jq -n \
+            --arg status "$status" \
+            --argjson pr "$pr" \
+            '{content: "\($status): [#\($pr.number) \($pr.title)](\($pr.html_url)) by @\($pr.user.login)"}' |
+            curl --fail-with-body --connect-timeout 10 --max-time 30 --request POST "$DISCORD_WEBHOOK_URL" \
+              --header 'Content-Type: application/json' \
+              --data @-

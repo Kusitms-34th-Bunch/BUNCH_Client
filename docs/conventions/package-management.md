@@ -11,8 +11,9 @@
 - `@app/api-core`는 UI와 라우팅에 의존하지 않는다.
 - `turbo.json`의 boundary 규칙을 우회하는 경로 alias나 상대 import를 만들지 않는다.
 - 의존성은 실제 소유 workspace에 추가한다. app 전용 UI·router·runtime 의존성은 app에, 여러 app이 함께 쓰는 구현만 shared package에 둔다.
-- 새 라이브러리가 필요하면 추측으로 고르기 전에 `.agents/future-skills/`에 관련 lookup(`pick-ui-library`, `library-picks` 등)이 있는지 먼저 확인한다. 없으면 직접 조사하고, 실제로 도입하면 이 문서나 관련 architecture 문서에 선택 근거를 남긴다.
+- 라이브러리가 필요해 보이면 추측으로 고르기 전에 `docs/conventions/libraries.md`에서 이미 도입한 것과 상황별 후보를 먼저 확인한다. 없으면 직접 조사하고, 실제로 도입하면 그 문서의 「도입한 것」 표에 더하고 선택 근거를 남긴다.
 - shared package 사이 의존성은 public package name으로 선언한다. workspace 내부 소스를 깊은 상대 경로로 import하지 않는다.
 - dependency 또는 lockfile 변경 뒤에는 `yarn install`과 영향 workspace의 lint·typecheck·test를 확인한다. 가능한 경우 `yarn workspace <name> <script>`로 범위를 좁힌다.
 - generator의 source·template 의존성은 generator가 소유하며, 생성물이 아직 사용하지 않는 runtime 의존성을 미리 추가하지 않는다.
 - `yarn.lock` 충돌은 손으로 병합하지 않는다. 한쪽 브랜치의 `yarn.lock`을 그대로 채택한 뒤(`git checkout --ours` 또는 `--theirs`, merge/rebase에 따라 방향이 반대이므로 확신이 없으면 `git checkout <기준 브랜치> -- yarn.lock`) `yarn install`로 다시 생성한다. lockfile은 `package.json`과 `.yarnrc.yml`의 결정론적 함수이므로, 직접 병합하면 parsing은 통과해도 실제 의존성 그래프와 어긋난 파일이 만들어지기 쉽다.
+- 모달·바텀시트를 `overlay.open()`으로 여는 상태 관리는 `apps/web`의 `overlay-kit`(1.9.0)을 쓴다. UI는 그리지 않으므로 디자인 시스템 컴포넌트(`Dialog` 등)를 컨트롤러 안에서 그린다. 디자인 시스템에는 의존성을 넣지 않는다. `OverlayProvider`는 `(app)/layout.tsx`에 한 번 둔다. 그 안에서 그려지는 모달은 route별 provider(예: `CreateBunchDraftProvider`) 밖이라 값은 열 때 함수에 담아 넘긴다.

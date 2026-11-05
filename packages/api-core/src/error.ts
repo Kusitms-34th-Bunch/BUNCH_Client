@@ -39,13 +39,18 @@ const categoryFromStatus = (status: number): ApiErrorCategory => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
+// 서버 envelope(`{ success, data, error: { code, message } }`)과 BFF 응답(`{ code, message }`) 모두 지원
+const errorBody = (data: unknown) => (isRecord(data) && isRecord(data.error) ? data.error : data);
+
 const extractMessage = (data: unknown, fallback: string) => {
-  if (isRecord(data) && typeof data.message === 'string') return data.message;
+  const body = errorBody(data);
+  if (isRecord(body) && typeof body.message === 'string') return body.message;
   return fallback;
 };
 
 const extractCode = (data: unknown) => {
-  if (isRecord(data) && typeof data.code === 'string') return data.code;
+  const body = errorBody(data);
+  if (isRecord(body) && typeof body.code === 'string') return body.code;
   return undefined;
 };
 

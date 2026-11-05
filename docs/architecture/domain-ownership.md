@@ -34,6 +34,6 @@
 
 - 같은 entity를 쓴다고 같은 domain은 아니다. 사용자 행동, 권한, 변경 이유가 다르면 feature를 분리한다.
 - domain끼리 직접 서로의 내부 파일을 import하지 않는다. 공통 계약이 필요하면 상위 page/route에서 조합하거나 안정된 shared boundary를 만든다.
-- UI primitive는 제품 용어·API·권한을 모를 때만 `@app/design-system`으로 승격한다.
+- UI 컴포넌트는 제품 용어·API·권한을 모르게 만들어 `@app/design-system`에 두고, domain 문구·권한·데이터를 붙인 조합은 owner feature에 둔다.
 - app 공용 component·hook은 같은 app에서 실제 재사용과 같은 변경 이유가 확인될 때만 올린다.
 - domain을 삭제할 때 route, feature, endpoint, query key, fixture, spec, domain 문서가 같은 변경에서 제거되는지 확인한다.

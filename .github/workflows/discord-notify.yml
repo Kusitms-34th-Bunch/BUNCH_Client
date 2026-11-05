@@ -1,14 +1,16 @@
 name: Discord PR Notify
 
+# 열림·재오픈·리뷰 준비 알림은 제목이 확정된 뒤 보내려고 pr-metadata.yml의 notify job에서 보낸다.
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review, closed]
+    types: [closed]
 
 permissions:
   contents: read
 
 jobs:
   notify:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -16,7 +18,6 @@ jobs:
       PR_URL: ${{ github.event.pull_request.html_url }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-      PR_MERGED: ${{ github.event.pull_request.merged }}
 
     steps:
       - name: Send notification
@@ -27,21 +28,8 @@ jobs:
             exit 0
           fi
 
-          if [ "${{ github.event.action }}" = 'closed' ] && [ "$PR_MERGED" != 'true' ]; then
-            echo 'Pull request was closed without merging; skipping.'
-            exit 0
-          fi
-
-          if [ "$PR_MERGED" = 'true' ]; then
-            status='✅ PR merged'
-          elif [ "${{ github.event.action }}" = 'ready_for_review' ]; then
-            status='👀 PR ready for review'
-          else
-            status='🆕 PR opened'
-          fi
-
           jq -n \
-            --arg content "$status: [#$PR_NUMBER $PR_TITLE]($PR_URL) by @$PR_AUTHOR" \
+            --arg content "✅ PR merged: [#$PR_NUMBER $PR_TITLE]($PR_URL) by @$PR_AUTHOR" \
             '{content: $content}' |
             curl --fail-with-body --connect-timeout 10 --max-time 30 --request POST "$DISCORD_WEBHOOK_URL" \
               --header 'Content-Type: application/json' \

@@ -1,0 +1,56 @@
+'use client';
+
+import { toast } from '@app/design-system';
+import { useRouter } from 'next/navigation';
+import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useBackOr } from '@/shared/hooks/useBackOr';
+import { BUNDLE_MESSAGES } from '../../constants/messages';
+import { BUNDLE_PATHS } from '../../constants/paths';
+import { useDraftContext } from '../../contexts/draftContext';
+import { useLeaveDraft, useRedirectMissingDraft } from '../../hooks/useDraftExit';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { isDraftCreator } from '../../lib/permissions';
+import { DraftScreen } from './DraftScreen';
+
+/**
+ * `/bunch/drafts/[draftId]` 번들 작성 화면: layout의 `DraftProvider`가 든 초안 상태와 동작을 화면에 연결
+ * 없는 초안(삭제됨·발행됨·잘못된 id)은 「삭제된 번들이에요」 토스트 뒤 번치 홈으로 이동
+ */
+export function BundleDraft() {
+  const router = useRouter();
+  const backOr = useBackOr();
+  const { state, actions } = useDraftContext();
+  const { online, recheck } = useOnlineStatus();
+  const draftId = state.kind === 'ready' ? state.draft.id : undefined;
+  const leaveDraft = useLeaveDraft(draftId);
+
+  useRedirectMissingDraft(state.kind === 'missing');
+
+  if (state.kind === 'error') return <PhotoBoxError onRetry={state.retry} />;
+  if (state.kind !== 'ready' || draftId === undefined) return <PageLoading />;
+
+  return (
+    <DraftScreen
+      draft={state.draft}
+      viewer={state.viewer}
+      saveStatus={state.saveStatus}
+      offline={!online}
+      actions={actions}
+      // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)
+      onBack={() => backOr(BUNDLE_PATHS.bunchHome)}
+      onLeave={() => void leaveDraft(isDraftCreator(state.draft, state.viewer))}
+      onRetry={recheck}
+      // 발행하면 번치 홈으로 이동해 새 번들을 확인(기능 spec 4.3.12)
+      onPublish={() =>
+        void actions.publish().then((outcome) => {
+          if (outcome !== 'published') return;
+          toast(BUNDLE_MESSAGES.published, { fullWidth: true });
+          router.replace(BUNDLE_PATHS.bunchHome);
+        })
+      }
+      onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}
+      onOpenPhoto={(photoId) => router.push(BUNDLE_PATHS.photo(draftId, photoId))}
+    />
+  );
+}
