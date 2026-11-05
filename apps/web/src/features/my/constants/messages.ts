@@ -14,7 +14,4 @@ export const MY_MESSAGES = {
   profileEditTitle: '개인 프로필 수정',
   profileEditSubmit: '프로필 수정하기',
   profileEdited: '프로필을 수정했어요.',
-  // 가입 프로필과 같은 기획 문구
-  photoChange: '프로필 사진 변경',
-  photoUnusable: '이 사진은 사용할 수 없어요.',
 } as const;

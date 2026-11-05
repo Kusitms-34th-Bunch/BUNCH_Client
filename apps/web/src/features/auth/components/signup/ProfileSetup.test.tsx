@@ -16,25 +16,6 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: vi.fn(),
 }));
 
-type PickerOptions = { onError?: (_error: Error) => void };
-const picker = vi.hoisted(() => {
-  const options: PickerOptions = {};
-  return {
-    photoUrl: undefined as string | undefined,
-    isPending: false,
-    options,
-    inputRef: { current: null },
-    handleCameraClick: vi.fn(),
-    handleFileChange: vi.fn(),
-  };
-});
-vi.mock('@/shared/hooks/usePhotoPicker', () => ({
-  usePhotoPicker: (options: PickerOptions) => {
-    picker.options = options;
-    return picker;
-  },
-}));
-
 const NEXT_PATH = '/next';
 const nickname = () => screen.getByRole('textbox', { name: '닉네임' });
 const birthYear = () => screen.getByRole('textbox', { name: '출생연도' });
@@ -46,10 +27,7 @@ describe('ProfileSetup', () => {
   beforeEach(() => {
     replace.mockClear();
     back.mockClear();
-    picker.photoUrl = undefined;
-    picker.isPending = false;
     vi.mocked(toast).mockClear();
-    picker.handleCameraClick.mockClear();
   });
 
   it('화면 제목(h1)과 본문 영역(main), 헤더의 뒤로 가기 버튼을 가진다', async () => {
@@ -67,39 +45,28 @@ describe('ProfileSetup', () => {
   });
 
   describe('프로필 사진', () => {
-    it('사진 변경 버튼을 누르면 사진 선택을 시작한다', async () => {
+    it('사진 변경 버튼을 누르면 「프로필 사진 설정」 선택지를 연다(기본 이미지라 기본 이미지 선택지는 없음)', async () => {
       render(<ProfileSetup nextPath={NEXT_PATH} />);
 
       await userEvent.click(screen.getByRole('button', { name: '프로필 사진 변경' }));
 
-      expect(picker.handleCameraClick).toHaveBeenCalledTimes(1);
+      const dialog = await screen.findByRole('alertdialog', { name: '프로필 사진 설정' });
+      expect(within(dialog).getByRole('button', { name: '앨범에서 사진 선택하기' })).toBeTruthy();
+      expect(within(dialog).queryByRole('button', { name: '기본 이미지 적용하기' })).toBeNull();
     });
 
     it('사진 변경 버튼은 누르는 중에는 키보드를 닫지 않고, 클릭 뒤에 닫는다', async () => {
       render(<ProfileSetup nextPath={NEXT_PATH} />);
-      await userEvent.click(nickname());
+      const input = nickname();
+      await userEvent.click(input);
       const camera = screen.getByRole('button', { name: '프로필 사진 변경' });
 
       fireEvent.pointerDown(camera);
-      expect(document.activeElement).toBe(nickname());
+      expect(document.activeElement).toBe(input);
 
+      // 선택지가 열리면 뒤 화면은 보조기기에서 숨겨지므로 미리 잡아 둔 입력과 비교
       fireEvent.click(camera);
-      expect(document.activeElement).not.toBe(nickname());
-    });
-
-    it('선택한 사진을 프로필 이미지로 보여 준다', () => {
-      picker.photoUrl = 'data:image/jpeg;base64,YWJj';
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
-
-      expect(document.querySelector(`img[src="${picker.photoUrl}"]`)).toBeTruthy();
-    });
-
-    it('사진을 사용할 수 없으면 기획의 문구로 토스트를 띄운다', () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
-
-      picker.options.onError?.(new Error('실패'));
-
-      expect(toast).toHaveBeenCalledWith('이 사진은 사용할 수 없어요.');
+      expect(document.activeElement).not.toBe(input);
     });
   });
 
