@@ -6,7 +6,9 @@
 
 - unit·component test는 Vitest와 Testing Library를 사용한다. React test 환경은 `happy-dom`이다.
 - 테스트는 대상 파일 가까이에 `Foo.test.tsx`, `useFoo.test.ts` 형태로 둔다. 공용 setup은 각 앱 루트의 `vitest.setup.ts`에 둔다.
-- E2E는 Playwright의 루트 `e2e/`에서 관리한다. 현재 대상은 admin Chromium 흐름이다.
+- E2E는 Playwright의 루트 `e2e/`에서 관리한다. 대상은 admin Chromium 흐름(`e2e/admin`)과 web 핵심 흐름 smoke(`e2e/web`, 모바일 크기 Chromium)다. web은 `NEXT_PUBLIC_API_MOCKING=enabled`로 띄운 dev 서버(포트 3200)의 MSW 가짜 서버로 확인하므로 실제 로그인·백엔드 동작은 대상이 아니다. web 프로젝트만 돌리려면 `yarn e2e --project=web-chromium`을 쓴다. 프로젝트를 골라도 `webServer`의 admin(5173)·web(3200) 서버가 모두 뜨므로 두 포트가 비어 있어야 한다.
+- web smoke 화면(번치 홈·사진함·마이페이지·개인 프로필 수정·알림 설정)은 `e2e/web/a11y.spec.ts`가 `@axe-core/playwright`로 검사한다. 태그는 WCAG 2.2 A·AA와 best-practice(랜드마크·제목 구조 포함)이고, 화면마다 데이터가 그려진 요소를 기다린 뒤 움직임 줄이기와 글꼴 로드 완료 상태에서 기본 상태 하나만 본다. axe가 자동 판정하는 부분만 확인하므로 키보드 동선·포커스 이동·스크린 리더 읽기, 입력 오류·오버레이 같은 다른 상태는 사람이 확인한다. axe가 판정하지 못한 항목은 테스트 annotation(`axe incomplete`)으로 남긴다.
+- 알려진 위반은 흰 배경(#FFFFFF) 위 Figma 보조 글자색 `text-quaternary`(#969AA0)·`text-quinary`(#BCBEC2)의 대비 부족뿐이다(#226에서 디자이너에게 확인 요청). 화면별로 해당 요소 문구(마이페이지 묶음 제목 3개, 개인 프로필 수정 비공개 안내 1개)를 고정해 다른 요소가 같은 색을 쓰거나 색이 고쳐지면 실패하므로, 그때 예외 목록을 갱신하거나 지운다. 새 화면을 smoke에 넣으면 이 목록에도 추가한다. 로그인·가입·온보딩·사진 상세는 아직 대상이 아니다.
 
 `src/test`는 provider render helper, 공통 fixture처럼 반복되는 기반이 실제로 생겼을 때 만든다. 특정 화면의 mock·handler·fixture는 test 가까이에 두고 실제 반복 계약이 확인된 뒤에만 공통화한다.
 
@@ -32,7 +34,7 @@
   - 요청 함수·query test에서는 endpoint 모듈을 `vi.mock`해 응답 모양을 손으로 만들지 않는다. envelope 해제·스키마 검사·오류 변환을 건너뛰기 때문이다(화면 test는 위처럼 endpoint 모듈을 mock해도 된다).
 - 파일: handler는 `src/mocks/handlers/`(백엔드 resource별), 가짜 DB와 시작 데이터는 `src/mocks/db/`, 응답 형식(`ok`·`fail`·`noContent`)과 멱등 키 재생은 `src/mocks/lib/`다. 오류 코드와 메시지는 백엔드 명세를 따르고 명세에 없는 값은 추측하지 않는다.
 - 브라우저: `NEXT_PUBLIC_API_MOCKING=enabled`로 빌드·실행하면 서비스 워커(`public/mockServiceWorker.js`, `msw init`으로 생성)가 켜지고 화면은 준비된 뒤에 그려진다. 가짜 DB는 IndexedDB에 남아 새로고침해도 유지된다. 값이 비어 있으면 MSW 코드는 번들에 들어가지 않는다(빌드 뒤 `.next/static`에서 `mockServiceWorker`를 검색해 확인). 운영 배포에서는 이 변수를 설정하지 않는다.
-- 서비스 워커는 HTTPS·localhost 브라우저와 홈 화면 앱에서 동작하고, `http://IP` 접속과 네이티브 쉘 WebView에서는 동작하지 않을 수 있다. 실제 폰·HTTPS 환경은 사용 전에 확인한다.
+- 서비스 워커는 HTTPS·localhost 브라우저와 홈 화면 앱에서 동작하고, `http://IP` 접속에서는 동작하지 않을 수 있다. 실제 폰·HTTPS 환경은 사용 전에 확인한다.
 - MSW 3에서는 처리하지 않은 요청 옵션이 `onUnhandledFrame`이다(2.x의 `onUnhandledRequest`가 아니다).
 - happy-dom 한계: ky `afterResponse` hook이 있는 `createBrowserApi`로 본문 없는 204 응답을 받으면 happy-dom이 스트림 오류를 내므로 204 확인은 `fetch`를 쓴다(실제 브라우저는 문제없음).
 

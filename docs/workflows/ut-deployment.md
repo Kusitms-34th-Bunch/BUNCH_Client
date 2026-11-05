@@ -2,7 +2,7 @@
 
 UT 시나리오와 가짜 서버 세팅은 [usability-test.md](./usability-test.md)를 본다.
 
-UT는 가짜 서버(서비스 워커)가 필요해 **브라우저·홈 화면 앱(PWA)** 으로 진행한다. 네이티브 쉘(Expo)의 WebView에서는 서비스 워커를 쓸 수 없어(`mocks/browser.ts` 주석) 가짜 서버가 켜지지 않는다.
+UT는 가짜 서버(MSW 서비스 워커)가 필요하다. 시연 방식은 두 가지다: **iPhone에서 네이티브 쉘(Expo Go)로 시연**(UT 최종 방식, 아래 「Expo Go로 시연」)하거나 **브라우저·홈 화면 앱(PWA)** 으로 시연한다. 쉘의 WebView는 서비스 워커를 쓸 수 없을 것으로 알려져 있었지만, iPhone Expo Go(SDK 58)에서 가짜 서버가 문제없이 동작하는 것을 확인했다.
 
 ## 배포
 
@@ -71,6 +71,45 @@ UT는 가짜 서버(서비스 워커)가 필요해 **브라우저·홈 화면 �
 - preview/production 분리, `vercel` CLI 버전 갱신 방식(지금은 65.1.0으로 고정, 올릴 때 workflow의 버전을 직접 바꿈), 자동 배포 범위, 요금제(Hobby 이후)와 계정 소유(개인 → 팀)를 팀과 정한다.
 
 배포 뒤 확인할 것: 주소가 폰에서 열린다, 개발자 도구(또는 원격 디버깅)에서 서비스 워커가 등록된다, `/manifest.webmanifest`가 응답한다, 번치 홈에 「여행쥬아」와 기존 번들 2개가 보인다(가짜 서버가 켜진 증거).
+
+## Expo Go로 시연(iPhone, 네이티브 쉘)
+
+네이티브 화면(iOS 시스템 탭 바)을 보여 주기 위해 `apps/mobile-shell`을 Expo Go로 실행해 시연한다. 쉘은 `react-native-webview`로 배포된 UT 주소를 열 뿐이라 웹 화면과 가짜 서버(MSW)는 PWA와 같다. 쉘 코드는 PC의 개발 서버(Metro)가 폰으로 내려 주므로 **빌드와 PR 머지가 필요 없다.**
+
+### 왜 SDK를 58로 올렸나
+
+- 앱스토어의 Expo Go는 **최신 SDK만 지원**한다(실물 iPhone에는 옛 Expo Go를 설치할 방법이 없다). 쉘이 SDK 57일 때 최신 Expo Go가 SDK 58이어서 "SDK가 맞지 않는다"며 열리지 않았다.
+- 유료 Apple Developer 계정이 없어 개발 빌드(EAS)·TestFlight·기기 등록 설치를 쓸 수 없고, PC가 Windows라 Xcode 무료 서명도 불가능해서 iPhone에서는 Expo Go가 유일한 경로다.
+- 그래서 `apps/mobile-shell`을 Expo SDK 58로 올렸다(`expo ~58.0.23`, `react-native 0.88.1`, `react-native-webview 14.0.1`, `expo-router ~58.0.30`, `@sentry/react-native ~8.28.0` 등). 업그레이드는 `expo install`로 했고 `expo-doctor` 20개 검사, 타입 검사, 쉘 테스트 30개, iOS JS 번들 생성(`expo export`)을 통과했다. 아래 실행 방법으로 iPhone Expo Go에서 쉘과 가짜 서버가 동작하는 것도 확인했다.
+
+### 실행 방법(Windows PC + iPhone)
+
+준비물: 같은 Wi-Fi의 PC와 iPhone, 앱스토어에서 받은 **최신 Expo Go**, 배포된 UT 주소(Actions 실행 요약 또는 Vercel 대시보드).
+
+1. 의존성 설치: `apps/mobile-shell`에서 `pnpm install --frozen-lockfile`
+2. 주소 설정: `apps/mobile-shell/.env.local`(커밋하지 않는 파일)에 UT 주소를 넣는다.
+   ```
+   EXPO_PUBLIC_DEV_WEB_URL=https://<UT 배포 주소>
+   EXPO_PUBLIC_WEB_URL=https://<UT 배포 주소>
+   ```
+   개발 실행(`__DEV__`)은 앞의 값을 쓴다. `EXPO_PUBLIC_*`는 번들링할 때 들어가므로 값을 바꾸면 Metro를 끄고 `--clear`로 다시 시작한다.
+3. 개발 서버 시작: `pnpm exec expo start --go --lan --clear`
+4. iPhone의 카메라로 터미널의 QR을 스캔해 Expo Go에서 연다. 연결이 안 되면 Windows 방화벽이 Node를 막고 있는지 확인한다.
+
+### 시연 때 주의할 것
+
+- **개발 서버(Metro)를 시연 내내 켜 둔다.** PC가 꺼지거나 Wi-Fi가 끊기면 쉘이 멈춘다. PC와 iPhone은 같은 Wi-Fi여야 한다.
+- **시연 폰의 Expo Go 자동 업데이트를 꺼 둔다**(설정 → App Store → 앱 업데이트). 앱스토어의 Expo Go가 다음 SDK(59)로 올라가면 SDK 58 쉘을 다시 열 수 없다. 시연 직전에는 앱스토어에서 Expo Go를 업데이트하지 않는다.
+- 시연 전에 QR로 쉘이 열리고 번치 홈에 「여행쥬아」와 기존 번들 2개가 보이는지 확인한다.
+- Expo Go에서는 쉘의 자체 iOS 네이티브 모듈(탭 전환 크로스페이드, 탭 햅틱)과 `expo-font` config plugin(탭 라벨 글꼴)이 적용되지 않는다. 쉘이 이 모듈을 JS에서 쓰지 않아 앱이 죽지는 않고 해당 효과만 빠진다. 탭 햅틱은 Expo Go일 때 JS(`expo-haptics`)로 대신 울린다. iOS 시스템 탭 바와 WebView는 Expo Go에서도 동작한다.
+- 진행자 장치(번치 홈 캐릭터 5번, 작성 화면 헤더 5번)와 Safe Area, 이미지 로딩은 시연 폰에서 한 번 확인한다.
+- 시연용 `.env.local`은 커밋하지 않는다. 실제 배포 주소를 저장소에 하드코딩하지 않는다.
+
+### 아직 확인하지 않은 것
+
+- 안정 API인 `expo-router/native-tabs`로의 전환(ADR 012의 계획)은 하지 않았다. 지금 쉘은 검증된 `expo-router/unstable-native-tabs`를 그대로 쓰고, SDK 58에도 두 경로가 모두 있다. UT 이후에 전환한다.
+- 시연 중 장시간 사용(메모리, WebView 여러 개)과 네트워크 불안정 상황은 확인하지 않았다.
+- 개발 빌드(EAS)로 시연하는 방법은 Apple Developer 계정이 준비된 뒤의 후속 선택지다.
 
 ## 홈 화면 추가
 

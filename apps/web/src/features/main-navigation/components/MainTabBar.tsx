@@ -53,14 +53,16 @@ export function MainTabBar() {
       .catch(() => setUsesNativeBar(false));
   }, [inShell, selectedId]);
 
+  // iOS 시스템 탭 바를 쓰면 웹 막대 대신 표식만 남겨 (main) 레이아웃·AppFrame이 본문을 탭 바 뒤까지 펼치게 함
+  if (inShell && usesNativeBar === true) return <span hidden data-native-tab-bar="" />;
   if (inShell && usesNativeBar !== false) return null;
 
   return (
     <div
       data-main-tab-bar
-      // 높이 5rem(h-20, -mt-20: 막대 64px + 아래 여백 16px)은 (main)/layout.tsx의 --main-tab-bar-height와 같은 값
-      // 뒤 그라데이션(Figma 사진함_02): 막대 위 11px부터 Safe Area까지, 투명 → 검정 4%(64px) → 검정 10%
-      className="px-padding-p8 pb-s4 pointer-events-none relative z-10 -mt-20 h-20 shrink-0 group-has-data-hide-main-tab-bar/main:hidden before:absolute before:inset-x-0 before:-top-2.75 before:-bottom-(--safe-area-bottom) before:-z-10 before:bg-[linear-gradient(to_bottom,rgb(255_255_255/0),rgb(0_0_0/0.04)_64px,rgb(0_0_0/0.1))]"
+      // 높이 5rem(막대 64px + 아래 여백 16px) + 아래 Safe Area: 본문을 화면 끝까지 펼치고 막대가 Safe Area를 직접 비켜 섬((main)/layout.tsx의 --main-tab-bar-height와 같은 값)
+      // 뒤 그라데이션(Figma 사진함_02): 막대 위 11px부터 화면 끝까지, 투명 → 검정 4%(64px) → 검정 10%
+      className="px-padding-p8 pointer-events-none relative z-10 -mt-[calc(5rem+var(--safe-area-bottom))] h-[calc(5rem+var(--safe-area-bottom))] shrink-0 pb-[calc(var(--spacing-s4)+var(--safe-area-bottom))] group-has-data-hide-main-tab-bar/main:hidden before:absolute before:inset-x-0 before:-top-2.75 before:bottom-0 before:-z-10 before:bg-[linear-gradient(to_bottom,rgb(255_255_255/0),rgb(0_0_0/0.04)_64px,rgb(0_0_0/0.1))]"
     >
       <BottomNavigation
         className="pointer-events-auto"

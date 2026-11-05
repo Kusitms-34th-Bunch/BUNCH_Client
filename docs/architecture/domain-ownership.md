@@ -33,7 +33,7 @@
 ## 분리와 승격
 
 - 같은 entity를 쓴다고 같은 domain은 아니다. 사용자 행동, 권한, 변경 이유가 다르면 feature를 분리한다.
-- domain끼리 직접 서로의 내부 파일을 import하지 않는다. 공통 계약이 필요하면 상위 page/route에서 조합하거나 안정된 shared boundary를 만든다.
+- domain끼리 직접 서로의 내부 파일을 import하지 않는다. 공통 계약이 필요하면 상위 page/route에서 조합하거나 안정된 shared boundary를 만든다. web은 `apps/web/eslint.config.mjs`의 feature 경계 규칙(`@typescript-eslint/no-restricted-imports`)이 다른 `@/features/<이름>` import를 막는다. 기존 사용처(bundle → photo-box, bunch-home → bundle, photo-box → bundle)만 예외 목록에 두고, shared로 옮기며 줄인다. 새 예외는 추가하지 않는다. 검사 대상은 `@/features/...` 정적 import·export이며 상대 경로(`../../<feature>`), 동적 `import()`, `vi.mock` 문자열은 잡지 않는다(지금 사용처는 없거나 예외 안). bundle ↔ photo-box는 서로 import하는 순환이라 줄일 때 먼저 푼다.
 - UI 컴포넌트는 제품 용어·API·권한을 모르게 만들어 `@app/design-system`에 두고, domain 문구·권한·데이터를 붙인 조합은 owner feature에 둔다.
 - app 공용 component·hook은 같은 app에서 실제 재사용과 같은 변경 이유가 확인될 때만 올린다.
 - domain을 삭제할 때 route, feature, endpoint, query key, fixture, spec, domain 문서가 같은 변경에서 제거되는지 확인한다.

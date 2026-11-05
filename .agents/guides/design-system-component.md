@@ -1,10 +1,10 @@
 # 디자인 시스템 컴포넌트 가이드
 
-`packages/design-system`은 여러 app이 같은 UI 계약을 공유할 때만 사용한다. 구현은 `create-ds-component`, 앱 내부 재사용은 `create-app-component`를 사용한다.
+`packages/design-system`에 둘지와 구역(`core`·`web`)은 `docs/architecture/design-system-components.md`의 "배치 기준"을 따른다. 구현은 `create-ds-component`, 앱 내부 재사용 조립은 `create-app-component`를 사용한다.
 
 ## 도입 판단
 
-- 두 app 또는 package가 같은 component API와 시각·접근성 계약을 필요로 하는지 먼저 확인한다.
+- `docs/architecture/design-system-components.md`의 "배치 기준"으로 디자인 시스템에 둘지와 구역을 먼저 정한다.
 - 한 화면 전용 조립, domain copy, route·API state는 design system에 넣지 않는다.
 - 기존 primitive·token으로 해결 가능한지 확인하고 새 component는 마지막 선택으로 둔다.
 

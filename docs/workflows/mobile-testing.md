@@ -23,7 +23,7 @@ pnpm install --frozen-lockfile
 | 같은 Wi-Fi의 iPhone  | `http://<개발 PC LAN IP>:3000` |
 | 배포 웹              | 접근 가능한 HTTPS 주소         |
 
-실제 iPhone의 `localhost`는 PC를 가리키지 않는다.
+실제 iPhone의 `localhost`는 PC를 가리키지 않는다. LAN 주소로 열면 Next.js 개발 서버가 다른 출처의 `/_next` 개발 리소스를 막아 화면이 비므로, `apps/web/next.config.mjs`의 `allowedDevOrigins`가 개발 서버를 켤 때 개발 PC의 실제 LAN IPv4 주소를 읽어 허용한다. `192.168.*.*` 같은 패턴은 `192.168.evil.com` 같은 도메인과도 맞아 개발 소스가 노출될 수 있어 쓰지 않는다. Wi-Fi를 바꿔 주소가 달라지면 개발 서버를 다시 시작한다. 가짜 서버 데이터(`NEXT_PUBLIC_API_MOCKING=enabled yarn dev`)는 `localhost`나 HTTPS 주소에서만 확인한다. `http://<개발 PC LAN IP>:3000`은 보안 컨텍스트가 아니라 MSW 서비스 워커가 등록되지 않을 수 있고, 그러면 화면은 그려지지만 요청이 실제 BFF로 나간다.
 PC의 LAN IP는 macOS에서 `ipconfig getifaddr en0`, Windows에서 `ipconfig`, Linux에서 `ip addr`로 확인한다.
 환경변수 파일은 커밋하지 않는다.
 
@@ -44,6 +44,7 @@ yarn dev
 
 실제 iPhone은 PC와 같은 Wi-Fi에 연결하고 QR을 연다. Mac의 시뮬레이터는 터미널에서 `i`를 누른다.
 Expo Go에서는 앱 고유 설정·네이티브 모듈을 모두 검증할 수 없다.
+앱스토어의 Expo Go는 최신 SDK만 지원하므로 쉘의 SDK가 최신보다 낮으면 열리지 않는다(쉘은 SDK 58). UT에서 Expo Go로 시연하는 절차는 [UT 배포와 홈 화면 앱](./ut-deployment.md)을 따른다.
 iOS 시스템 탭 바(expo-router 네이티브 탭)와 탭 라벨 글꼴(`app.json`의 `expo-font` plugin)은 번치 개발 앱 기준이다. 이 의존성이나 `app.json`을 바꾸면 `pnpm exec expo prebuild -p ios`와 `pod install` 뒤 개발 앱을 다시 빌드해야 반영된다.
 
 ## iOS 개발 앱 실행 (macOS)

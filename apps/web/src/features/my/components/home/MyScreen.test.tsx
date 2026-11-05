@@ -27,8 +27,11 @@ describe('MyScreen', () => {
   it('메뉴를 묶음별로 보여 주고 화면 이동 메뉴는 각 경로로 연결한다', () => {
     renderScreen();
 
+    // 묶음 제목(h2) 바로 다음 목록의 항목
     const items = (title: string) =>
-      within(screen.getByRole('region', { name: title }))
+      within(
+        screen.getByRole('heading', { level: 2, name: title }).nextElementSibling as HTMLElement,
+      )
         .getAllByRole('listitem')
         .map((item) => item.textContent);
     expect(items('알림')).toEqual(['알림 설정']);

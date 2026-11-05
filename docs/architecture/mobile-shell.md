@@ -50,8 +50,10 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 네이티브 쉘은 `react-native-safe-area-context`의 `useSafeAreaInsets()`로 측정한 값을 `src/safe-area-script.ts`의 `buildSafeAreaScript`로 `--native-safe-area-*`에 넣는다. 첫 로드는 `injectedJavaScriptBeforeContentLoaded`가, 이미 열린 페이지에서 값이 바뀌면 `injectJavaScript`가 맡는다.
 - 첫 로드의 주입은 hydration 전에 `<html>`의 `style`을 변경한다. 서버가 알 수 없는 기기별 값이므로 웹 루트 layout의 `<html>`에만 `suppressHydrationWarning`을 적용한다. 하위 화면의 hydration 경고는 억제하지 않는다.
 - WebView의 `contentInsetAdjustmentBehavior`는 `"never"`로 둔다. 켜 두면 WebView가 자기 inset을 더해 같은 여백이 두 번 들어간다. 이 prop은 iOS 전용이라 Android에서는 적용되지 않으며, Android는 실기기로 따로 확인한다.
+- 상태 바 아이콘은 어두운 색(`StatusBar style="dark"`)으로 고정한다. 앱(`userInterfaceStyle: "light"`)과 웹이 밝은 화면만 있어, 기기 다크 모드를 따르는 `auto`면 Android 다크 모드에서 흰 아이콘이 흰 화면에 묻힌다.
+- 문서 전체의 튐(`bounces`, Android `overScrollMode`)은 끈다. 스크롤은 웹 화면 안쪽 영역(`PageShell`의 `main`)이 맡으므로, 켜 두면 화면 위쪽에서 아래로 당길 때 헤더까지 함께 내려가며 WebView 바깥의 흰 배경이 드러난다. 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(`allowsLinkPreview`, iOS)도 꺼서 앱처럼 보이게 한다.
 - 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
-- 초대장처럼 Safe Area까지 배경이 이어지는 화면은 route에 `data-app-background`(연보라 `brand-subtle-1`, 회색 `secondary`)를 지정한다. `AppFrame`이 CSS `:has()`로 같은 배경을 칠하며 여백 크기는 바꾸지 않는다. 로티 화면은 배경 전환이 시작될 때 같은 표식을 `PageShell`에 전달해 본문과 Safe Area를 함께 300ms ease-out으로 전환한다. 동작 줄이기에서는 배경 전환 효과를 끈다. 화면이 제거되면 배경도 해제된다.
+- 초대장처럼 Safe Area까지 배경이 이어지는 화면은 route에 `data-app-background`(연보라 `brand-subtle-1`, 회색 `secondary`)를 지정한다. `AppFrame`이 CSS `:has()`로 같은 배경을 칠하며 여백 크기는 바꾸지 않는다. 로티 화면은 배경 전환이 시작될 때 같은 표식을 `PageShell`에 전달해 본문과 Safe Area를 함께 300ms ease-out으로 전환한다. 동작 줄이기에서는 배경 전환 효과를 끈다. 화면이 제거되면 배경도 해제된다. 아래 Safe Area는 `AppFrame`의 마지막 자식 요소가 차지한다. 쉘에서는 이 높이에 시스템 탭 바가 포함되므로, 위만 연보라이고 아래 내용은 흰색인 화면(번치 홈, 다른 번치)은 `data-app-background-bottom="primary"`를 함께 지정해 탭 바 뒤를 흰색으로 둔다.
 - 앱은 `app.json`의 `orientation: "portrait"`로 세로에 고정되어 있어, iPhone 기준으로 앱 안에서는 가로 모드가 생기지 않는다(`ios.supportsTablet: true`인 iPad에서도 세로로 고정되는지는 확인하지 못했다). 일반 브라우저의 가로 모드를 위해 좌우 Safe Area를 적용하고, `PageShell`의 본문은 최소 높이(8rem)를 가진다. header·bottom·Safe Area를 뺀 높이가 그보다 작으면 본문 대신 틀 전체가 넘쳐 페이지가 스크롤된다. 이때 하단 영역(CTA)은 문서를 스크롤해야 보이고, main 위에서 스크롤하면 `overscroll-y-contain` 때문에 문서로 이어지지 않아 닿기 어려울 수 있다. 하단을 항상 보이게 하는 sticky 방식과 문서 스크롤 하나로 통일하는 방식은 이득이 불분명하거나 범위가 커서 택하지 않았고, 이 한계는 실기기와 낮은 화면에서 확인한 뒤 다시 정한다.
 - 확인한 것: 브라우저에서 네이티브 값이 한 번만 적용되고 가로 모드·낮은 화면의 최소 높이 정책이 동작하는 것, 네이티브의 TypeScript 검사·iOS JS 번들 생성·값 변환 테스트. 확인하지 못한 것: iOS·Android 실기기와 시뮬레이터에서 실제 값이 들어가는지, 마운트 뒤 값이 바뀐 상태에서 새 문서를 로드할 때 `injectedJavaScriptBeforeContentLoaded`의 새 값이 쓰이는지, Android 시스템 바(edge-to-edge) 처리, 소프트 키보드와 `dvh`. 이 부분은 실기기 확인 전까지 통과로 보지 않는다.
 
@@ -82,7 +84,7 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 의존성 설치·관리는 `apps/mobile-shell` 안에서 `pnpm install`로 따로 한다.
 - 네이티브 모듈 추가는 `pnpm exec expo install <package> --pnpm`을 쓴다. 설치된 Expo SDK와 호환되는 버전을 Expo가 직접 고른다.
 - pnpm은 react-native를 peer 조합마다 따로 설치할 수 있다. 두 벌이 번들에 들어가면 앱 시작이 `"main" has not been registered`로 멈춘다. expo-router를 처음 넣을 때 기존 잠금 파일에 증분으로 설치하면서 이 상태가 생겼고, 잠금 파일을 되돌린 뒤 한 번에 다시 풀자 한 벌로 돌아왔다(정확한 해석 차이는 특정하지 못함). 의존성을 바꾼 뒤에는 `ls node_modules/.pnpm | grep '^react-native@'`로 한 벌인지 확인한다.
-- pnpm 11의 최소 공개 기간 정책(공개 후 하루가 지나야 설치)을 예외 없이 지킨다. `expo install`이 갓 나온 패치를 고르면서 `pnpm-workspace.yaml`에 `minimumReleaseAgeExclude`를 자동으로 넣을 수 있으니, 넣었다면 지우고 정책을 통과하는 패치로 범위를 맞춘다(예: `expo-router` `~57.0.28`).
+- pnpm 11의 최소 공개 기간 정책(공개 후 하루가 지나야 설치)을 예외 없이 지킨다. `expo install`이 갓 나온 패치를 고르면서 `pnpm-workspace.yaml`에 `minimumReleaseAgeExclude`를 자동으로 넣을 수 있으니, 넣었다면 지우고 정책을 통과하는 패치로 범위를 맞춘다(예: `expo-router` `~58.0.30`).
 
 ## iOS 시스템 탭 바
 
@@ -94,10 +96,11 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 탭 라벨·경로는 웹이 정하고, 아이콘은 쉘이 탭 ID로 정한다. 아이콘은 웹 막대와 같은 디자인 시스템 Line·Fill 아이콘(Large 24px) SVG를 1x·2x·3x PNG로 옮긴 것이다(`assets/tab-icons/`, template으로 시스템이 색을 칠함). 디자인 시스템 아이콘이 바뀌면 다시 변환한다.
 - 선택 색은 text-primary(#121212), 라벨은 Pretendard Regular 12pt다(`app/(tabs)/_layout.tsx`). 미선택 색 text-tertiary(#535a61)도 지정했지만 iOS 26 Liquid Glass 탭 바는 배경에 맞춰 시스템이 정해 적용되지 않았다. 알약 크기·막대 높이·간격은 시스템이 정한다. `itemPositioning`·`itemWidth` 실험에서 iOS 26 알약 폭이 바뀌지 않았다.
 - 쉘은 iOS일 때만 `setNativeTabBar`에 true를 돌려준다. 브라우저·안드로이드는 false라 웹 `BottomNavigation`을 쓴다. 웹 막대는 응답 전에는 그리지 않아 쉘에서 잠깐 보였다 사라지지 않는다.
-- 탭 화면 아래 여백: 탭 안의 `SafeAreaProvider`가 탭 바 높이를 포함한 아래 Safe Area를 재서 웹에 넘긴다. 그래서 웹 본문은 탭 바 위에서 끝나고 탭 바 뒤로 내용이 비치지는 않는다. 내용을 탭 바 뒤까지 펼치려면 웹이 아래 여백을 본문 안 여백으로 바꿔야 한다(미구현).
+- 탭 화면 아래 여백: 탭 안의 `SafeAreaProvider`가 탭 바 높이를 포함한 아래 Safe Area를 재서 웹에 넘긴다. 시스템 탭 바를 쓰는 동안 웹 `MainTabBar`는 막대 대신 `data-native-tab-bar` 표식만 남긴다. 그러면 `AppFrame`이 아래 Safe Area 요소의 높이를 0으로 해 본문을 탭 바 뒤까지 펼치고, `(main)` 레이아웃은 본문 안쪽 아래 여백을 `탭 바 높이 + 36px`, 떠 있는 버튼 기준을 탭 바 높이로 둔다(웹 막대와 같은 방식). 선택 모드처럼 `HideMainTabBar`가 있으면 시스템 탭 바도 숨기고, 본문은 화면 끝까지 둔 채 안쪽 아래 여백을 아래 Safe Area(홈 인디케이터)로 바꾼다. 웹 탭 막대(브라우저·PWA)도 같은 방식으로 본문을 화면 끝까지 펼치고 막대가 아래 Safe Area만큼 올라선다. 탭 바를 숨겼을 때 쉘이 넘기는 아래 Safe Area가 탭 바 높이를 빼고 다시 재지는지는 실기기에서 확인하지 않았다.
 - 탭 전환은 80ms 등속 크로스페이드다(결정 기록 017, 웹 탭 막대와 같은 값). expo-router 네이티브 탭과 react-native-screens 4.26.2에는 전환 애니메이션 설정이 없다. 그래서 로컬 Expo 모듈 `modules/tab-crossfade`가 앱 시작 때 탭 컨트롤러(`RNSTabBarController`, 자기 자신이 delegate)에 `tabBarController:animationControllerForTransitionFromViewController:toViewController:`를 런타임으로 추가한다. 들어오는 탭을 아래에 두고 위의 나가는 탭만 투명도 1→0으로 바꾼다. 화면에서 떨어졌다 다시 붙은 WebView는 약 60ms 동안 빈 화면이라, 들어오는 탭 페이지가 프레임을 두 번 그린 뒤(`requestAnimationFrame` 두 번, 페이지와 분리된 content world에서 실행, 최대 150ms) 페이드를 시작한다. 동작 줄이기 설정이면 시스템 기본(즉시 전환)이다. 라이브러리 내부 클래스 이름에 기대므로 react-native-screens를 올릴 때 클래스 이름과 delegate 구조를 다시 확인한다. 이름이 바뀌거나 링크 방식이 바뀌어(`use_frameworks!` 동적 링크) 앱 시작 때 클래스를 찾지 못하면 추가가 조용히 빠져 즉시 전환으로 돌아간다. 모듈을 바꾸면 `pod install`과 재빌드가 필요하다.
 - 탭 햅틱: 사용자가 탭을 누를 때마다(지금 탭을 다시 눌러도) 선택 햅틱을 준다. 코드로 탭을 바꿀 때는 울리지 않는다.
   - iOS: 같은 모듈이 사용자 탭에서만 불리는 `tabBarController:shouldSelectViewController:`를 감싸, 원래 처리 뒤 선택이 허용됐거나 지금 탭 재선택이면 `UISelectionFeedbackGenerator`를 울린다. 라이브러리가 막은 선택에는 울리지 않는다. 이 메서드를 상위 클래스에서 물려받는 구조로 바뀌면 감싸지 않는다.
+  - iOS Expo Go: 이 네이티브 모듈이 실리지 않으므로 `app/(tabs)/_layout.tsx`가 `NativeTabs`의 `tabPress`에서 `expo-haptics`의 `selectionAsync()`로 대신 울린다. 개발·배포 앱에서 두 번 울리지 않도록 `expo-constants`의 실행 환경이 Expo Go(`StoreClient`)일 때만 붙인다. 지금 탭을 다시 눌렀을 때도 `tabPress`가 오는지는 실기기에서 확인하지 않았다.
   - 안드로이드: 웹 탭 막대(`MainTabBar`)가 누를 때 bridge `tabSelectionHaptic`을 부르고, 쉘은 `expo-haptics`의 `performAndroidHapticsAsync(Segment_Tick)`(기기 햅틱 설정을 따름)로 처리한다. 이 메서드가 없는 이전 쉘에서는 웹의 브라우저 폴백(동작 없음)이 실행된다.
 - 탭 WebView 4개는 처음에 함께 만들어진다(expo-router 네이티브 탭은 모든 탭을 미리 그림). 탭마다 웹 상태가 따로라 번치 전환·로그아웃처럼 다른 탭에도 알려야 하는 변화는 아직 연결하지 않았다.
 - 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 첫 화면 → 탭 화면 전환, 탭 이동, 아이콘·선택 색·라벨 크기. 확인하지 못한 것: 실기기, 끌어서 이동·렌즈 효과의 실제 터치, VoiceOver, 탭 사이 로그인 쿠키 공유, 메모리, `hidden: true`로 돌아가기, 안드로이드에서 탭 WebView 여러 개의 뒤로가기 처리.
@@ -139,7 +142,7 @@ packages/bridge/
 ## 갤러리 사진 선택
 
 - `pickGalleryImage(options?: { edit?: boolean }): Promise<GalleryImage | null>`은 `expo-image-picker`로 사진 한 장을 선택한다. 촬영은 제공하지 않는다. 취소는 `null`, 읽기·크기 제한 실패는 reject이며 웹은 기존 사진을 유지한다.
-- SDK 57 호환 버전은 `expo install`로 설치한다. 사진 전용 시스템 선택기는 전체 앨범 권한을 먼저 요청하지 않는다. 앱 권한 설명은 `app.json`에서 관리하며 카메라·마이크 권한은 추가하지 않는다. [Expo ImagePicker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/)를 기준으로 한다.
+- SDK 58 호환 버전은 `expo install`로 설치한다. 사진 전용 시스템 선택기는 전체 앨범 권한을 먼저 요청하지 않는다. 앱 권한 설명은 `app.json`에서 관리하며 카메라·마이크 권한은 추가하지 않는다. [Expo ImagePicker](https://docs.expo.dev/versions/v58.0.0/sdk/imagepicker/)를 기준으로 한다.
 - `src/gallery-image.ts`는 기본으로 시스템 정사각형 편집 후 JPEG base64를 반환한다. `edit: false`면 시스템 편집 없이 원본을 `expo-image-manipulator`로 긴 변 2048px 이하로 줄여 JPEG(압축 0.8)로 반환하고, 웹이 직접 자른다(프로필 사진의 원형 조정 화면). 옵션을 모르는 이전 앱은 옵션을 무시하고 정사각형 편집 결과를 돌려주며, 웹 조정 화면이 그 결과를 그대로 다시 자른다. 네이티브 `file://` 경로는 웹에서 직접 읽지 않는다. 브리지 응답은 `galleryImageSchema`로 data URL 형식과 약 4MiB 전송 상한을 검증한다.
 - 현재 사용처는 번치 생성 완료 화면, 번치 프로필 편집, 가입·MY 프로필 사진이며 모두 미리보기까지다. 이미지 API 확정 후 업로드 결과 ID/URL로 저장 계약을 연결한다. `exif: false`만으로 파일 메타데이터 제거를 보장하지 않으며 업로드 단계에서 별도 확정한다.
 - 웹 fallback은 파일 input으로 선택하고 브라우저 디코딩 성공 후 표시한다. 기본 규칙은 JPEG·PNG·WebP 최대 3MiB, 프로필 사진은 JPEG·PNG·HEIC·WebP 최대 10MiB(`PROFILE_IMAGE_RULES`, 브라우저가 HEIC를 읽지 못하면 같은 안내로 거절). 네이티브 편집 UI·HEIC 지원을 대체하지 않는다. 사진을 영구 저장하거나 localStorage에 남기지 않는다.
@@ -162,7 +165,7 @@ packages/bridge/
 
 ## 검증 명령
 
-- `apps/mobile-shell`: `pnpm exec tsc --noEmit`, `pnpm test`. lint의 현재 제약은 [모바일 앱 실행과 테스트](../workflows/mobile-testing.md)를 확인한다.
+- `apps/mobile-shell`: `pnpm exec tsc --noEmit`, `pnpm test`. 같은 검사를 `.github/workflows/mobile-shell.yml`이 쉘·bridge 변경 PR에서 실행한다. lint의 현재 제약은 [모바일 앱 실행과 테스트](../workflows/mobile-testing.md)를 확인한다.
 - Sentry JavaScript 이벤트 정제: `apps/mobile-shell`에서 `pnpm test`
 - `packages/bridge`: `yarn workspace @app/bridge typecheck`, `lint`
 - WebView가 가리키는 주소는 개발 시 `EXPO_PUBLIC_DEV_WEB_URL`, Release에서 `EXPO_PUBLIC_WEB_URL`을 자동 선택한다. `apps/mobile-shell/.env.example`을 확인한다.

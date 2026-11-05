@@ -184,7 +184,8 @@ export function PhotoBoxScreen({
             // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
             aria-disabled={selecting && busy ? true : undefined}
             onClick={floatingAction}
-            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
+            // 선택 모드에서 탭 바가 숨으면 탭 바 숨김과 비슷하게 200ms ease-out으로 내려감(아이콘은 FloatingButton이 크로스페이드)
+            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10 motion-safe:transition-[bottom] motion-safe:duration-200 motion-safe:ease-out"
           />
         </div>
       }

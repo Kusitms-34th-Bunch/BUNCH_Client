@@ -15,6 +15,10 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # 브라우저·시스템 라이브러리·글꼴이 든 Playwright 공식 이미지에서 실행해 매번 설치하지 않음
+    # 태그는 @playwright/test(.yarnrc.yml catalog) 버전과 같아야 함(다르면 브라우저 실행 파일을 못 찾아 실패)
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
 
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +30,11 @@ jobs:
           node-version: 24
           cache: yarn
 
+      # 이미지에 든 Node·Yarn 1.x가 아니라 setup-node·Corepack 버전이 잡혔는지 로그로 확인
+      - run: node --version && yarn --version
+
       - run: yarn install --immutable
       - run: yarn e2e:typecheck
-      - run: yarn exec playwright install --with-deps chromium
       - run: yarn e2e
 
       - name: Upload Playwright report

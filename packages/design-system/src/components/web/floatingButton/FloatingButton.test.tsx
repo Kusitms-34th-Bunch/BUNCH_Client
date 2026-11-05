@@ -77,6 +77,22 @@ describe('FloatingButton', () => {
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('icon을 바꾸면 같은 아이콘 요소를 유지한 채 보이는 아이콘만 바꾼다(크로스페이드)', () => {
+    const { container, rerender } = render(<FloatingButton aria-label="사진 추가" icon="add" />);
+    const before = [...container.querySelectorAll('svg')];
+
+    rerender(<FloatingButton aria-label="메뉴 열기" icon="more" />);
+    const after = [...container.querySelectorAll('svg')];
+
+    expect(after).toEqual(before);
+    expect(container.querySelector('[data-icon="more"]')?.classList.contains('opacity-100')).toBe(
+      true,
+    );
+    expect(container.querySelector('[data-icon="add"]')?.classList.contains('opacity-0')).toBe(
+      true,
+    );
+  });
+
   it('type을 다시 정할 수 있다', () => {
     render(<FloatingButton aria-label="더보기" type="submit" />);
 

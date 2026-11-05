@@ -65,7 +65,7 @@
 | 제목과 메뉴, 메뉴 좌우   | 4, 12                                               | `gap-s2`, `px-padding-p6`                                                      |
 | 메뉴 한 줄               | `Menu Label`(오른쪽 화살표)                         | `MenuLabel`                                                                    |
 
-- Keyboard·focus·accessible name: 제목 「MY」가 `h1`, 묶음 제목은 `h2`이고 각 묶음은 그 제목을 이름으로 가진 `section`이다. 프로필 행 링크 이름은 「{닉네임} 프로필 수정」(뒷부분은 화면에 보이지 않음)이고 이미지는 장식이다. 포커스 윤곽선은 프로필 행 안쪽 2px `border-brand`, 메뉴는 `MenuLabel` 기본.
+- Keyboard·focus·accessible name: 제목 「MY」가 `h1`, 묶음 제목은 `h2`다. 묶음은 이름 없는 `section`이라 랜드마크가 아니다(「알림」 묶음에 이름을 붙이면 토스트 영역 「알림」과 같은 이름의 랜드마크가 생겨 axe `landmark-unique` 위반). 프로필 행 링크 이름은 「{닉네임} 프로필 수정」(뒷부분은 화면에 보이지 않음)이고 이미지는 장식이다. 포커스 윤곽선은 프로필 행 안쪽 2px `border-brand`, 메뉴는 `MenuLabel` 기본.
 - Responsive·긴 텍스트·overflow: 닉네임은 한 줄 말줄임(최대 12자라 실제로는 거의 잘리지 않음), 화살표는 줄어들지 않는다. 메뉴가 화면보다 길면 `PageShell` 본문이 스크롤된다.
 
 ## 검증
