@@ -9,6 +9,13 @@ export const galleryImageSchema = z.object({
 });
 export type GalleryImage = z.infer<typeof galleryImageSchema>;
 
+/** 갤러리 선택 옵션. `edit`가 false면 시스템 정사각형 편집 없이 원본(긴 변을 줄인 JPEG)을 전달, 웹이 직접 자름 */
+export const pickGalleryImageOptionsSchema = z
+  .object({ edit: z.boolean().optional() })
+  .strict()
+  .optional();
+export type PickGalleryImageOptions = z.infer<typeof pickGalleryImageOptionsSchema>;
+
 /** 가입할 때 요청하는 시스템 권한 */
 export const permissionKindSchema = z.enum(['photo', 'camera', 'notification']);
 export type PermissionKind = z.infer<typeof permissionKindSchema>;

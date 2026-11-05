@@ -138,13 +138,13 @@ packages/bridge/
 
 ## 갤러리 사진 선택
 
-- `pickGalleryImage(): Promise<GalleryImage | null>`은 `expo-image-picker`로 사진 한 장을 선택한다. 촬영은 제공하지 않는다. 취소는 `null`, 읽기·크기 제한 실패는 reject이며 웹은 기존 사진을 유지한다.
+- `pickGalleryImage(options?: { edit?: boolean }): Promise<GalleryImage | null>`은 `expo-image-picker`로 사진 한 장을 선택한다. 촬영은 제공하지 않는다. 취소는 `null`, 읽기·크기 제한 실패는 reject이며 웹은 기존 사진을 유지한다.
 - SDK 57 호환 버전은 `expo install`로 설치한다. 사진 전용 시스템 선택기는 전체 앨범 권한을 먼저 요청하지 않는다. 앱 권한 설명은 `app.json`에서 관리하며 카메라·마이크 권한은 추가하지 않는다. [Expo ImagePicker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/)를 기준으로 한다.
-- `src/gallery-image.ts`에서 시스템 정사각형 편집 후 JPEG base64를 반환한다. 네이티브 `file://` 경로는 웹에서 직접 읽지 않는다. 브리지 응답은 `galleryImageSchema`로 data URL 형식과 약 4MiB 전송 상한을 검증한다.
-- 현재는 번치 생성 완료 화면의 임시 미리보기다. 이미지·생성 API 확정 후 업로드 결과 ID/URL로 저장 계약을 연결한다. `exif: false`만으로 파일 메타데이터 제거를 보장하지 않으며 업로드 단계에서 별도 확정한다.
-- 웹 개발 fallback은 파일 input(JPEG·PNG·WebP, 최대 3MiB)으로 선택하고 브라우저 디코딩 성공 후 표시한다. 네이티브 편집 UI·HEIC 지원을 대체하지 않는다. 사진을 영구 저장하거나 localStorage에 남기지 않는다.
+- `src/gallery-image.ts`는 기본으로 시스템 정사각형 편집 후 JPEG base64를 반환한다. `edit: false`면 시스템 편집 없이 원본을 `expo-image-manipulator`로 긴 변 2048px 이하로 줄여 JPEG(압축 0.8)로 반환하고, 웹이 직접 자른다(프로필 사진의 원형 조정 화면). 옵션을 모르는 이전 앱은 옵션을 무시하고 정사각형 편집 결과를 돌려주며, 웹 조정 화면이 그 결과를 그대로 다시 자른다. 네이티브 `file://` 경로는 웹에서 직접 읽지 않는다. 브리지 응답은 `galleryImageSchema`로 data URL 형식과 약 4MiB 전송 상한을 검증한다.
+- 현재 사용처는 번치 생성 완료 화면, 번치 프로필 편집, 가입·MY 프로필 사진이며 모두 미리보기까지다. 이미지 API 확정 후 업로드 결과 ID/URL로 저장 계약을 연결한다. `exif: false`만으로 파일 메타데이터 제거를 보장하지 않으며 업로드 단계에서 별도 확정한다.
+- 웹 fallback은 파일 input으로 선택하고 브라우저 디코딩 성공 후 표시한다. 기본 규칙은 JPEG·PNG·WebP 최대 3MiB, 프로필 사진은 JPEG·PNG·HEIC·WebP 최대 10MiB(`PROFILE_IMAGE_RULES`, 브라우저가 HEIC를 읽지 못하면 같은 안내로 거절). 네이티브 편집 UI·HEIC 지원을 대체하지 않는다. 사진을 영구 저장하거나 localStorage에 남기지 않는다.
 - WebView 내부 이동은 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)만 허용하고 외부 주소는 OS로 전달한다. 외부 페이지가 갤러리 등 네이티브 브리지에 접근하지 못하도록 하는 경계다. 인증 redirect는 별도 계약 확정 후 연결한다.
-- 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다. 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`은 initialBridge 메서드도 포함). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
+- 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다(`expo-image-picker`, `expo-image-manipulator`). 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`은 initialBridge 메서드도 포함). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
 
 ## 인증 — 아직 설계 전
 

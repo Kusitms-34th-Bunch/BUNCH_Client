@@ -22,6 +22,7 @@
 | API 가짜 서버                                                                             | `msw`                                          | web(개발)           | ADR 007, `docs/workflows/testing.md`            |
 | 오류 수집                                                                                 | `@sentry/nextjs`                               | web                 | ADR 006                                         |
 | web↔앱 통신                                                                               | `@webview-bridge/web`                          | web                 | `docs/architecture/mobile-shell.md`             |
+| 앱 쉘에서 고른 사진 줄이기(웹이 직접 자를 원본 전달)                                      | `expo-image-manipulator`                       | mobile-shell        | `docs/architecture/mobile-shell.md`             |
 | 브라우저·모바일 hook과 유틸(목록 끝 감지, 키보드 회피, 디바운스, 길게 누르기, ref 합치기) | `react-simplikit`                              | web·design-system   | 아래 「react-simplikit」                        |
 
 ## 후보 (조건이 생기면 검토)
