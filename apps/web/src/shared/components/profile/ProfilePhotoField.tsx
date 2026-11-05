@@ -1,5 +1,3 @@
-'use client';
-
 import { ActionDialog, toast } from '@app/design-system';
 import { CameraButton, ProfileImage } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
@@ -12,6 +10,7 @@ import { PhotoCropScreen } from './PhotoCropScreen';
 
 // 작은 사진은 바로 조정 화면으로, 오래 걸릴 때만 「사진을 불러오는 중」(화면 설계서 MY(2) 6번)
 const LOADING_DELAY_MS = 300;
+const CROP_FAILED_MESSAGE = '사진을 자르지 못했어요. 다시 골라 주세요.';
 
 type ProfilePhotoFieldProps = {
   /** 지금 보이는 프로필 사진. 없으면 BUNCH 기본 이미지 */
@@ -133,6 +132,10 @@ export function ProfilePhotoField({ value, onChange }: ProfilePhotoFieldProps) {
           onComplete={(dataUrl) => {
             closeCrop();
             onChange(dataUrl);
+          }}
+          onFail={() => {
+            closeCrop();
+            toast(CROP_FAILED_MESSAGE);
           }}
         />
       ) : null}

@@ -111,6 +111,7 @@ describe('ProfilePhotoField', () => {
   it('조정을 마치면 자른 사진을 넘기고 초점을 카메라 버튼으로 되돌린다', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage: vi.fn(),
+      fillRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D);
     vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(
       'data:image/jpeg;base64,CROP',
@@ -179,6 +180,25 @@ describe('ProfilePhotoField', () => {
     act(() => picker.options.onSelect?.(PHOTO));
 
     expect(screen.queryByRole('dialog', { name: '프로필 사진 조정' })).toBeNull();
+  });
+
+  it('사진을 자르지 못하면 조정 화면을 닫고 사진은 그대로 둔 채 안내한다', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const onChange = vi.fn();
+    render(<ProfilePhotoField value={undefined} onChange={onChange} />);
+
+    act(() => picker.options.onSelect?.(PHOTO));
+    const image = document.querySelector(`img[src="${PHOTO}"]`);
+    if (!image) throw new Error('조정 사진 없음');
+    Object.defineProperty(image, 'naturalWidth', { value: 504 });
+    Object.defineProperty(image, 'naturalHeight', { value: 504 });
+    fireEvent.load(image);
+    await userEvent.click(screen.getByRole('button', { name: '완료' }));
+
+    expect(screen.queryByRole('dialog', { name: '프로필 사진 조정' })).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith('사진을 자르지 못했어요. 다시 골라 주세요.');
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '프로필 사진 변경' }));
   });
 
   it('사진을 쓸 수 없으면 규칙 문구로 토스트를 띄운다', () => {

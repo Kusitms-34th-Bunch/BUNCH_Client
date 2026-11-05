@@ -1,5 +1,3 @@
-'use client';
-
 import { Header, LineChevronLeftLargeIcon, TextButton } from '@app/design-system';
 import {
   useEffect,
@@ -29,13 +27,15 @@ type PhotoCropScreenProps = {
   onCancel: () => void;
   /** 원 영역을 자른 정사각 JPEG(512px) data URL */
   onComplete: (_dataUrl: string) => void;
+  /** 자르기용 canvas를 만들지 못함(메모리 부족 등) */
+  onFail: () => void;
 };
 
 /**
  * 프로필 사진 조정(화면 설계서 MY(2) 5·6번): 사진을 끌어 원 안에 맞추고 「완료」로 자름
  * body에 그리고 열린 동안 나머지 body 자식은 inert. 사진 교체 시 `key`로 새로 그리기와 닫힌 뒤 초점 복귀는 호출하는 쪽
  */
-export function PhotoCropScreen({ src, onCancel, onComplete }: PhotoCropScreenProps) {
+export function PhotoCropScreen({ src, onCancel, onComplete, onFail }: PhotoCropScreenProps) {
   const titleId = useId();
   const hintId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -119,19 +119,25 @@ export function PhotoCropScreen({ src, onCancel, onComplete }: PhotoCropScreenPr
     const canvas = document.createElement('canvas');
     canvas.width = CROP_OUTPUT_SIZE;
     canvas.height = CROP_OUTPUT_SIZE;
-    canvas
-      .getContext('2d')
-      ?.drawImage(
-        image,
-        rect.x,
-        rect.y,
-        rect.size,
-        rect.size,
-        0,
-        0,
-        CROP_OUTPUT_SIZE,
-        CROP_OUTPUT_SIZE,
-      );
+    const context = canvas.getContext('2d');
+    if (!context) {
+      onFail();
+      return;
+    }
+    // JPEG는 투명을 검정으로 합성하므로 투명 PNG·WebP를 위해 흰 바탕을 먼저 칠함
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, CROP_OUTPUT_SIZE, CROP_OUTPUT_SIZE);
+    context.drawImage(
+      image,
+      rect.x,
+      rect.y,
+      rect.size,
+      rect.size,
+      0,
+      0,
+      CROP_OUTPUT_SIZE,
+      CROP_OUTPUT_SIZE,
+    );
     onComplete(canvas.toDataURL('image/jpeg', 0.9));
   };
 
@@ -157,7 +163,7 @@ export function PhotoCropScreen({ src, onCancel, onComplete }: PhotoCropScreenPr
       onKeyDown={(event) => {
         if (event.key === 'Escape') onCancel();
       }}
-      className="fixed inset-0 z-40 mx-auto flex max-w-(--app-max-width) flex-col bg-(--primitive-gray-scale-gray-900) pt-(--safe-area-top) pb-(--safe-area-bottom)"
+      className="bg-primitive-gray-900 fixed inset-0 z-40 mx-auto flex max-w-(--app-max-width) flex-col pt-(--safe-area-top) pb-(--safe-area-bottom)"
     >
       <h2 id={titleId} className="sr-only">
         프로필 사진 조정
