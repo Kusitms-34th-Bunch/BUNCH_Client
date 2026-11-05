@@ -197,7 +197,7 @@ describe('ProfilePhotoField', () => {
 
     expect(screen.queryByRole('dialog', { name: '프로필 사진 조정' })).toBeNull();
     expect(onChange).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('사진을 자르지 못했어요. 다시 골라 주세요.');
+    expect(toast).toHaveBeenCalledWith('이 사진은 사용할 수 없어요.');
     expect(document.activeElement).toBe(screen.getByRole('button', { name: '프로필 사진 변경' }));
   });
 

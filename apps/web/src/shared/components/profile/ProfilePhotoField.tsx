@@ -10,7 +10,8 @@ import { PhotoCropScreen } from './PhotoCropScreen';
 
 // 작은 사진은 바로 조정 화면으로, 오래 걸릴 때만 「사진을 불러오는 중」(화면 설계서 MY(2) 6번)
 const LOADING_DELAY_MS = 300;
-const CROP_FAILED_MESSAGE = '사진을 자르지 못했어요. 다시 골라 주세요.';
+// 기획 문구(이전 가입 사진 오류 문구)
+const CROP_FAILED_MESSAGE = '이 사진은 사용할 수 없어요.';
 
 type ProfilePhotoFieldProps = {
   /** 지금 보이는 프로필 사진. 없으면 BUNCH 기본 이미지 */

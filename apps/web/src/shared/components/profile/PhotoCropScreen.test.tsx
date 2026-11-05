@@ -74,6 +74,17 @@ describe('PhotoCropScreen', () => {
     expect(onComplete).not.toHaveBeenCalled();
   });
 
+  it('사진을 디코딩하지 못하면 실패를 알린다', () => {
+    const onFail = vi.fn();
+    render(<PhotoCropScreen src={SRC} onCancel={vi.fn()} onComplete={vi.fn()} onFail={onFail} />);
+    const image = document.querySelector('img');
+    if (!image) throw new Error('img 없음');
+
+    fireEvent.error(image);
+
+    expect(onFail).toHaveBeenCalledTimes(1);
+  });
+
   it('방향키로 사진을 옮기되 원이 사진 밖으로 나가지 않게 막는다', () => {
     render(<PhotoCropScreen src={SRC} onCancel={vi.fn()} onComplete={vi.fn()} onFail={vi.fn()} />);
     // 배율 0.5 → 그려진 크기 504×252, 가로로만 (504-252)/2 = 126까지

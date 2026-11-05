@@ -147,7 +147,7 @@ Entry와 소셜 로그인 (1.2.1~1.2.6, AUTH-01·02·06)
 | `openAppSettings`     | -                                    | -                                   | 1.4.2   |
 
 - 초대 정보 보관 위치(앱 저장소 / WebView 저장소)와 이를 읽는 bridge는 확인할 항목이다(1.5.1). 명세는 "앱이 보관"이라고 하지만 WKWebView 저장소가 지워질 수 있는지 확인이 필요하다.
-- 앨범 선택과 1:1 편집(결정 2026-11-05, #217): 편집은 웹 원형 조정 화면(`shared/components/profile/PhotoCropScreen`)을 브라우저와 앱에서 함께 쓴다. 앱은 시스템 편집을 끄고(`pickGalleryImage({ edit: false })`) 줄인 JPEG를 넘기며 HEIC도 이때 JPEG가 된다. 브라우저는 HEIC를 읽지 못하면 형식 안내로 거절한다. 결과는 canvas로 다시 그린 512px JPEG라 원본 EXIF가 남지 않는다. 확대(핀치)는 MY Figma에 정의가 없어 이동만 지원한다.
+- 앨범 선택과 1:1 편집(결정 2026-11-05, #217): 편집은 웹 원형 조정 화면(`shared/components/profile/PhotoCropScreen`)을 브라우저와 앱에서 함께 쓴다. 앱은 시스템 편집을 끄고(`pickGalleryImage({ edit: false })`) 줄인 JPEG를 넘기며 HEIC도 이때 JPEG가 된다. 브라우저는 HEIC를 읽지 못하면 형식 안내로 거절한다. 결과는 canvas로 다시 그린 512px JPEG라 원본 EXIF가 남지 않는다. 확대(핀치)는 MY Figma에 정의가 없어 지금은 이동만 지원하며, 위 필수 요구사항의 「확대」를 유지할지는 아래 기획 확인 4번에서 정한다.
 
 ## 영향받는 컴포넌트
 

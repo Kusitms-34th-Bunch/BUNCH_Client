@@ -27,7 +27,7 @@ type PhotoCropScreenProps = {
   onCancel: () => void;
   /** 원 영역을 자른 정사각 JPEG(512px) data URL */
   onComplete: (_dataUrl: string) => void;
-  /** 자르기용 canvas를 만들지 못함(메모리 부족 등) */
+  /** 사진을 디코딩하지 못했거나 자르기용 canvas를 만들지 못함(메모리 부족 등) */
   onFail: () => void;
 };
 
@@ -202,6 +202,8 @@ export function PhotoCropScreen({ src, onCancel, onComplete, onFail }: PhotoCrop
                   height: event.currentTarget.naturalHeight,
                 })
               }
+              // 앱이 넘긴 사진은 디코딩 확인 전이라 실패하면 빈 조정 화면 대신 닫음
+              onError={onFail}
               className="pointer-events-none absolute max-w-none select-none"
               style={{ ...imageBox, visibility: natural ? 'visible' : 'hidden' }}
             />
