@@ -28,9 +28,7 @@
       [
         "expo-font",
         {
-          "fonts": [
-            "./assets/fonts/Pretendard-Regular.otf"
-          ]
+          "fonts": ["./assets/fonts/Pretendard-Regular.otf"]
         }
       ],
       "expo-status-bar"
