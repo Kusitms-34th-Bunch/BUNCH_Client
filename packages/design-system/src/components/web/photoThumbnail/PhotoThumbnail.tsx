@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes } from 'react';
 import { cn } from '../../../utils';
 import { SelectionIndicator } from '../selectionIndicator';
 
@@ -12,7 +12,7 @@ export type PhotoThumbnailProps = Omit<HTMLAttributes<HTMLElement>, 'children'> 
   /** 선택 여부(Figma `Selected`). 선택 모드에서만 의미가 있음 */
   selected?: boolean;
   /** 선택된 순서(예: 1). 선택되었을 때 인디케이터 안에 표시 */
-  selectionOrder?: ReactNode;
+  selectionOrder?: number | undefined;
   /** 사진을 불러오지 못했을 때(호출하는 쪽이 회색 자리표시 등으로 바꿈) */
   onImageError?: (() => void) | undefined;
 };

@@ -39,6 +39,7 @@ describe('PhotoThumbnail', () => {
   it('선택 모드를 켜고 꺼도 같은 사진 요소를 유지한다(다시 그리며 깜빡이지 않음)', () => {
     const { container, rerender } = render(<PhotoThumbnail src={src} alt="사진" />);
     const image = container.querySelector('img');
+    expect(image).not.toBeNull();
     rerender(<PhotoThumbnail src={src} alt="사진" selectionMode />);
     expect(container.querySelector('img')).toBe(image);
     rerender(<PhotoThumbnail src={src} alt="사진" />);
