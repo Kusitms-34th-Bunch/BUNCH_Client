@@ -74,17 +74,15 @@ try {
   }
 
   const yarnCommand = process.platform === 'win32' ? 'yarn.cmd' : 'yarn';
-  const result = spawnSync(
-    yarnCommand,
-    ['exec', 'openapi-typescript', inputPath, '-o', outputPath],
-    {
-      cwd: repositoryRoot,
-      stdio: 'inherit',
-    },
-  );
+  const run = (args) => {
+    const result = spawnSync(yarnCommand, args, { cwd: repositoryRoot, stdio: 'inherit' });
+    if (result.error) throw result.error;
+    return result.status ?? 1;
+  };
 
-  if (result.error) throw result.error;
-  process.exitCode = result.status ?? 1;
+  // openapi-typescript 출력은 큰따옴표·4칸이라 커밋본(Prettier 적용)과 맞추려고 생성 직후 포맷
+  const status = run(['exec', 'openapi-typescript', inputPath, '-o', outputPath]);
+  process.exitCode = status === 0 ? run(['exec', 'prettier', '--write', outputPath]) : status;
 } catch (error) {
   console.error(error instanceof Error ? error.message : 'OpenAPI 타입 생성에 실패했습니다.');
   process.exitCode = 1;
