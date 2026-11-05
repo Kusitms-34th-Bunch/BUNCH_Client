@@ -32,6 +32,9 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_UT_PROJECT_ID }}
+      # 저장소는 Yarn PnP라 node_modules가 없고, Vercel의 Next.js 빌더는 node_modules/next에서 버전을 찾아 NEXT_NO_VERSION으로 실패한다.
+      # 이 workflow에서만 node_modules 방식으로 설치한다(.yarnrc.yml의 nodeLinker: pnp는 그대로, Yarn은 이 환경 변수를 우선 적용).
+      YARN_NODE_LINKER: node-modules
     steps:
       - uses: actions/checkout@v4
         with:
