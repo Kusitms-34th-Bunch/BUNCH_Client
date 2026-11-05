@@ -15,7 +15,7 @@ description: 명확한 소유 경계와 집중 테스트를 갖춘 앱 공용 Re
 ## 진행
 
 1. props는 관찰 가능한 UI 계약만 노출하고, page·route·domain 상태를 숨은 전역 의존성으로 만들지 않는다.
-2. 디자인 시스템 primitive를 우선 조합하고, cross-app 재사용이 검증될 때만 design-system으로 이동한다.
+2. 디자인 시스템 primitive를 우선 조합한다. Figma에 컴포넌트로 정의된 UI면 사용처 수와 관계없이 `create-ds-component`로 디자인 시스템에 둔다(결정 010).
 3. variant·상태·event·empty content의 동작을 타입으로 제한하고, 기본값과 오류 상태를 명확히 한다.
 4. 접근 가능한 name, keyboard 동작, focus, disabled·error 상태와 className·ref forwarding 필요성을 확인한다.
 5. interactive 또는 분기 있는 컴포넌트는 가까이에 동작 중심 test를 둔다.

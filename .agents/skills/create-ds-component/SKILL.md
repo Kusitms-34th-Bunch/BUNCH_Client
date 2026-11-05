@@ -8,7 +8,7 @@ description: 저장소 generator, test, Storybook story, 생성 export 검증으
 ## 먼저 확인
 
 - `docs/architecture/design-system-components.md`, `docs/architecture/components.md`, `.agents/guides/design-system-component.md`, package export와 가까운 story·test를 읽는다.
-- 최소 두 app 또는 package에서 같은 API·스타일 계약이 필요한지 확인한다. 도메인 문구·API·route 상태는 포함하지 않는다.
+- Figma에 컴포넌트로 정의된 UI인지 확인한다. 사용처 수와 관계없이 디자인 시스템에 두고, 구역(`core`·`web`)은 `docs/architecture/design-system-components.md`의 "배치 기준"으로 고른다. 도메인 문구·API·route 상태는 포함하지 않는다.
 - 코드 주석은 `docs/conventions/coding.md`의 주석 규칙을 따른다.
 - overlay·입력 부품은 `@base-ui/react`처럼 이미 도입한 라이브러리를 먼저 조합한다(`docs/conventions/libraries.md`).
 
