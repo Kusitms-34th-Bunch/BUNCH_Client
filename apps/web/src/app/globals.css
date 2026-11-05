@@ -18,6 +18,28 @@
   h1[tabindex='-1']:focus {
     outline: none;
   }
+
+  /* 앱처럼: 입력 칸 밖의 글자 선택·복사와 길게 누르기 메뉴(사진 저장·링크 미리보기)를 막음 */
+  html {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* 입력 칸만 다시 허용. 다른 글의 선택이 필요하면 Tailwind select-text(길게 누르기 메뉴는 계속 막힘) */
+  input,
+  textarea,
+  [contenteditable]:not([contenteditable='false']) {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+
+  /* 링크·사진을 꾹 누르면 iOS가 끌어서 옮기려고 들어 올리는 효과와 브라우저 기본 끌기를 막음(사진함 끌기 선택과 겹치지 않게) */
+  a,
+  img {
+    -webkit-user-drag: none;
+  }
 }
 
 /* 앱 화면은 스크롤바를 그리지 않음(데스크톱·개발자 도구에서 막대 자리가 생기지 않게). Tailwind v4에 없는 유틸리티라 직접 정의 */
