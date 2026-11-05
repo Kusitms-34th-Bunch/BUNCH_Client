@@ -46,9 +46,13 @@ jobs:
         run: node turbo/workflows/check-suspicious.mjs
 
       # packageManager(pnpm@…)를 Corepack이 읽도록 setup-node보다 먼저 활성화
-      - run: corepack enable
+      - name: Corepack 활성화
+        id: corepack
+        run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - name: Node 설정
+        id: node
+        uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
@@ -77,6 +81,8 @@ jobs:
         working-directory: .
         env:
           GUARD: ${{ steps.guard.outcome }}
+          COREPACK: ${{ steps.corepack.outcome }}
+          SETUP_NODE: ${{ steps.node.outcome }}
           INSTALL: ${{ steps.install.outcome }}
           TEST: ${{ steps.test.outcome }}
           TYPECHECK: ${{ steps.typecheck.outcome }}
@@ -90,8 +96,8 @@ jobs:
               *) echo "건너뜀" ;;
             esac
           }
-          if [ "$GUARD" = success ] && [ "$INSTALL" = success ] && [ "$TEST" = success ] && [ "$TYPECHECK" = success ]; then
-            result="**결과: 통과** — 4개 단계 모두 통과"
+          if [ "$GUARD" = success ] && [ "$COREPACK" = success ] && [ "$SETUP_NODE" = success ] && [ "$INSTALL" = success ] && [ "$TEST" = success ] && [ "$TYPECHECK" = success ]; then
+            result="**결과: 통과** — 6개 단계 모두 통과"
           else
             result="**결과: 실패** — 아래 표에서 실패한 단계를 확인하세요"
           fi
@@ -103,6 +109,8 @@ jobs:
             echo "| 단계 | 결과 |"
             echo "| --- | --- |"
             echo "| 변조 가드 | $(label "$GUARD") |"
+            echo "| Corepack 활성화 | $(label "$COREPACK") |"
+            echo "| Node 설정 | $(label "$SETUP_NODE") |"
             echo "| 의존성 설치 | $(label "$INSTALL") |"
             echo "| Test | $(label "$TEST") |"
             echo "| TypeScript | $(label "$TYPECHECK") |"

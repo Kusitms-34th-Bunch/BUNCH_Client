@@ -8,7 +8,7 @@
 - 테스트는 대상 파일 가까이에 `Foo.test.tsx`, `useFoo.test.ts` 형태로 둔다. 공용 setup은 각 앱 루트의 `vitest.setup.ts`에 둔다.
 - E2E는 Playwright의 루트 `e2e/`에서 관리한다. 대상은 admin Chromium 흐름(`e2e/admin`)과 web 핵심 흐름 smoke(`e2e/web`, 모바일 크기 Chromium)다. web은 `NEXT_PUBLIC_API_MOCKING=enabled`로 띄운 dev 서버(포트 3200)의 MSW 가짜 서버로 확인하므로 실제 로그인·백엔드 동작은 대상이 아니다. web 프로젝트만 돌리려면 `yarn e2e --project=web-chromium`을 쓴다. 프로젝트를 골라도 `webServer`의 admin(5173)·web(3200) 서버가 모두 뜨므로 두 포트가 비어 있어야 한다.
 - web smoke 화면(번치 홈·사진함·마이페이지·개인 프로필 수정·알림 설정)은 `e2e/web/a11y.spec.ts`가 `@axe-core/playwright`로 검사한다. 태그는 WCAG 2.2 A·AA와 best-practice(랜드마크·제목 구조 포함)이고, 화면마다 데이터가 그려진 요소를 기다린 뒤 움직임 줄이기와 글꼴 로드 완료 상태에서 기본 상태 하나만 본다. axe가 자동 판정하는 부분만 확인하므로 키보드 동선·포커스 이동·스크린 리더 읽기, 입력 오류·오버레이 같은 다른 상태는 사람이 확인한다. axe가 판정하지 못한 항목은 테스트 annotation(`axe incomplete`)으로 남긴다.
-- 알려진 위반은 흰 배경(#FFFFFF) 위 Figma 보조 글자색 `text-quaternary`(#969AA0)·`text-quinary`(#BCBEC2)의 대비 부족뿐이다(#226에서 디자이너에게 확인 요청). 화면별 개수(마이페이지 3, 개인 프로필 수정 1)를 고정해 같은 색을 쓰는 새 요소가 생기거나 색이 고쳐지면 실패하므로, 그때 예외 목록을 갱신하거나 지운다. 새 화면을 smoke에 넣으면 이 목록에도 추가한다. 로그인·가입·온보딩·사진 상세는 아직 대상이 아니다.
+- 알려진 위반은 흰 배경(#FFFFFF) 위 Figma 보조 글자색 `text-quaternary`(#969AA0)·`text-quinary`(#BCBEC2)의 대비 부족뿐이다(#226에서 디자이너에게 확인 요청). 화면별로 해당 요소 문구(마이페이지 묶음 제목 3개, 개인 프로필 수정 비공개 안내 1개)를 고정해 다른 요소가 같은 색을 쓰거나 색이 고쳐지면 실패하므로, 그때 예외 목록을 갱신하거나 지운다. 새 화면을 smoke에 넣으면 이 목록에도 추가한다. 로그인·가입·온보딩·사진 상세는 아직 대상이 아니다.
 
 `src/test`는 provider render helper, 공통 fixture처럼 반복되는 기반이 실제로 생겼을 때 만든다. 특정 화면의 mock·handler·fixture는 test 가까이에 두고 실제 반복 계약이 확인된 뒤에만 공통화한다.
 

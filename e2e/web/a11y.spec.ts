@@ -6,7 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
 
 // 알려진 위반(#226, 디자이너 확인 요청): Figma 보조 글자색이 흰 배경에서 대비 부족
-// text-quaternary #969AA0 2.82:1, text-quinary #BCBEC2 1.86:1. 화면별 개수를 고정해 새 요소가 같은 색을 쓰거나 색이 고쳐지면 실패
+// text-quaternary #969AA0 2.82:1, text-quinary #BCBEC2 1.86:1. 화면별로 요소 문구를 고정해 다른 요소가 같은 색을 쓰거나 색이 고쳐지면 실패
 type ContrastData = { fgColor?: string; bgColor?: string };
 const KNOWN_LOW_CONTRAST_COLORS = new Set(['#969aa0', '#bcbec2']);
 const isKnownLowContrast = (node: { any: { id: string; data: unknown }[] }) => {
@@ -19,38 +19,38 @@ const isKnownLowContrast = (node: { any: { id: string; data: unknown }[] }) => {
 const SCREENS: {
   name: string;
   path: string;
-  knownLowContrast: number;
+  knownLowContrast: string[];
   ready: (_page: Page) => ReturnType<Page['locator']>;
 }[] = [
   {
     name: '번치 홈',
     path: '/bunch',
-    knownLowContrast: 0,
+    knownLowContrast: [],
     ready: (page) => page.getByRole('heading', { level: 1, name: '여행쥬아' }),
   },
   // 사진함 자리표시에도 h1이 있어 날짜별 묶음 제목으로 목록이 그려졌는지 확인(MSW fixture에 사진이 있어야 함)
   {
     name: '사진함',
     path: '/photos',
-    knownLowContrast: 0,
+    knownLowContrast: [],
     ready: (page) => page.getByRole('heading', { level: 2 }).first(),
   },
   {
     name: '마이페이지',
     path: '/my',
-    knownLowContrast: 3,
+    knownLowContrast: ['알림', '약관 및 정책', '고객지원'],
     ready: (page) => page.getByRole('link', { name: '알림 설정' }),
   },
   {
     name: '개인 프로필 수정',
     path: '/my/profile',
-    knownLowContrast: 1,
+    knownLowContrast: ['출생연도와 성별은 다른 사용자에게 공개되지 않아요.'],
     ready: (page) => page.getByRole('button', { name: '프로필 사진 변경' }),
   },
   {
     name: '알림 설정',
     path: '/my/notifications',
-    knownLowContrast: 0,
+    knownLowContrast: [],
     ready: (page) => page.getByRole('switch', { name: '앱 푸시 알림' }),
   },
 ];
@@ -65,15 +65,20 @@ for (const screen of SCREENS) {
 
     const { violations, incomplete } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
 
-    let known = 0;
+    // 요소 문구(태그를 지운 html)로 예외 대상인지 판정
+    const textOf = (html: string) => html.replace(/<[^>]+>/g, '').trim();
+    const known: string[] = [];
     const found = violations
       .map(({ id, impact, nodes }) => ({
         id,
         impact,
         nodes: nodes
           .filter((node) => {
-            const isKnown = id === 'color-contrast' && isKnownLowContrast(node);
-            if (isKnown) known += 1;
+            const isKnown =
+              id === 'color-contrast' &&
+              isKnownLowContrast(node) &&
+              screen.knownLowContrast.includes(textOf(node.html));
+            if (isKnown) known.push(textOf(node.html));
             return !isKnown;
           })
           .map((node) => node.html.slice(0, 200)),
@@ -86,8 +91,8 @@ for (const screen of SCREENS) {
       description: incomplete.map(({ id, nodes }) => `${id} ${nodes.length}`).join(', ') || '없음',
     });
     expect(found).toEqual([]);
-    expect(known, '알려진 대비 위반 개수가 바뀌었으면 예외 목록을 갱신').toBe(
-      screen.knownLowContrast,
+    expect(known.toSorted(), '알려진 대비 위반이 고쳐졌으면 예외 목록에서 지움').toEqual(
+      screen.knownLowContrast.toSorted(),
     );
   });
 }

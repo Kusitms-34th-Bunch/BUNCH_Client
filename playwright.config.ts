@@ -46,7 +46,8 @@ export default defineConfig({
       command: 'yarn workspace @app/web exec next dev --webpack --hostname 127.0.0.1 --port 3200',
       url: webBaseUrl,
       env: { NEXT_PUBLIC_API_MOCKING: 'enabled' },
-      reuseExistingServer: !process.env.CI,
+      // 이미 떠 있는 서버는 MSW가 켜졌는지 알 수 없어 재사용하지 않음(포트가 쓰이고 있으면 오류)
+      reuseExistingServer: false,
       stdout: process.env.CI ? 'pipe' : 'ignore',
       stderr: 'pipe',
       timeout: 180_000,

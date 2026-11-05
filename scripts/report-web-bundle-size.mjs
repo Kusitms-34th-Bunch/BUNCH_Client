@@ -33,8 +33,19 @@ const listJs = (dir) =>
   });
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-// 모든 화면이 처음에 함께 받는 공통 JS(프레임워크·런타임). polyfill은 nomodule이라 최신 브라우저·WebView가 받지 않아 제외
-const shared = (manifest.rootMainFiles ?? []).reduce((sum, file) => sum + gzipSize(file), 0);
+// 모든 화면이 처음에 함께 받는 공통 JS: 프레임워크·런타임(rootMainFiles)과 root·(app) layout 청크
+// polyfill은 nomodule이라 최신 브라우저·WebView가 받지 않아 제외
+const layoutChunks = ['static/chunks/app', 'static/chunks/app/(app)'].flatMap((dir) =>
+  existsSync(join(nextDir, dir))
+    ? readdirSync(join(nextDir, dir))
+        .filter((name) => /^layout-.*\.js$/.test(name))
+        .map((name) => `${dir}/${name}`)
+    : [],
+);
+const shared = [...(manifest.rootMainFiles ?? []), ...layoutChunks].reduce(
+  (sum, file) => sum + gzipSize(file),
+  0,
+);
 // 화면별로 나뉜 청크까지 포함한 전체 클라이언트 JS
 const total = listJs(join(nextDir, 'static/chunks')).reduce(
   (sum, path) => sum + gzipSync(readFileSync(path)).length,
@@ -72,6 +83,11 @@ const ownerSizes = Object.fromEntries(
 const current = { sharedFirstLoadGzip: shared, totalClientJsGzip: total, owners: ownerSizes };
 
 if (process.argv.includes('--update')) {
+  // 분석 파일 없이 저장하면 패키지별 기준선이 비어 이후 모든 항목이 새로 커진 것으로 보임
+  if (!existsSync(analysisPath)) {
+    console.log('.next/analyze/client.json이 없습니다. ANALYZE=true로 빌드한 뒤 갱신하세요.');
+    process.exit(1);
+  }
   writeFileSync(baselinePath, `${JSON.stringify(current, null, 2)}\n`);
   console.log(`기준선을 갱신했습니다: ${JSON.stringify(current)}`);
   process.exit(0);
@@ -145,7 +161,7 @@ const summary = [
   ...ownerSection,
   '패키지·소스 폴더 크기는 모듈마다 따로 잰 gzip이라 합이 전체 크기와 맞지 않습니다. 증가량 비교용입니다.',
   '',
-  `기준선보다 ${TOLERANCE * 100}% 넘게 커지면 경고만 하고 실패시키지 않습니다. 의도한 증가면 \`ANALYZE=true yarn workspace @app/web build\` 뒤 \`node scripts/report-web-bundle-size.mjs --update\`로 기준선을 갱신해 커밋합니다.`,
+  `기준선보다 ${TOLERANCE * 100}% 넘게 커지면 경고만 하고 실패시키지 않습니다. 의도한 증가면 \`SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= ANALYZE=true yarn workspace @app/web build\` 뒤 \`node scripts/report-web-bundle-size.mjs --update\`로 기준선을 갱신해 커밋합니다.`,
   '',
 ].join('\n');
 

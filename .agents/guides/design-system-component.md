@@ -1,10 +1,10 @@
 # 디자인 시스템 컴포넌트 가이드
 
-`packages/design-system`에는 Figma에 컴포넌트로 정의된 UI를 사용처 수와 관계없이 둔다. 배치 기준(`core`·`web` 구역)은 `docs/architecture/design-system-components.md`의 "배치 기준"을 따른다. 구현은 `create-ds-component`, Figma 컴포넌트가 아닌 앱 내부 재사용 조립은 `create-app-component`를 사용한다.
+`packages/design-system`에 둘지와 구역(`core`·`web`)은 `docs/architecture/design-system-components.md`의 "배치 기준"을 따른다. 구현은 `create-ds-component`, 앱 내부 재사용 조립은 `create-app-component`를 사용한다.
 
 ## 도입 판단
 
-- Figma에 컴포넌트로 정의된 UI인지 먼저 확인한다. 맞으면 사용처가 한 앱뿐이어도 디자인 시스템에 두고, "BUNCH 사용자 앱에서만 의미가 있는가?"로 `core`·`web` 구역을 고른다.
+- `docs/architecture/design-system-components.md`의 "배치 기준"으로 디자인 시스템에 둘지와 구역을 먼저 정한다.
 - 한 화면 전용 조립, domain copy, route·API state는 design system에 넣지 않는다.
 - 기존 primitive·token으로 해결 가능한지 확인하고 새 component는 마지막 선택으로 둔다.
 
