@@ -150,6 +150,74 @@ export const removeBundleParticipant = async (
     'remove participant',
   );
 
+/**
+ * 사진 구성 변경: 추가할 사진함 원본 ID와 제거할 번들 사진 ID를 한 번에 병합, 최종 1~20장
+ * 같은 멱등 키·같은 본문은 처음 결과를 돌려주고, 다른 멤버가 편집 중인 사진을 빼면 BUNDLE_004
+ */
+export const changeBundlePhotos = ({
+  bunchId,
+  bundleId,
+  addPhotoIds,
+  removeBundlePhotoIds,
+  mode,
+  idempotencyKey,
+}: {
+  bunchId: string;
+  bundleId: string;
+  addPhotoIds: readonly string[];
+  removeBundlePhotoIds: readonly string[];
+  mode: 'DRAFT' | 'PUBLISHED';
+  idempotencyKey: string;
+}): Promise<BundleDetail> =>
+  requestBundle(
+    bffApi.post(`${bundlePath(bunchId, bundleId)}/photos/changes`, {
+      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      json: {
+        addPhotoIds: addPhotoIds.map(wireIdOrThrow),
+        removeBundlePhotoIds: removeBundlePhotoIds.map(wireIdOrThrow),
+        mode,
+      } satisfies Schemas['BundlePhotoChangesRequest'],
+    }),
+    'change bundle photos',
+  );
+
+/**
+ * 사진 순서 이동: 이동 대상을 뺀 목록에서 서로 인접한 앞뒤 사진 사이로 옮김(맨 앞이면 previous, 맨 뒤면 next가 null)
+ * 앞뒤가 최신 목록과 맞지 않으면 BUNDLE_006, 다른 멤버가 편집 중이면 BUNDLE_004
+ */
+export const moveBundlePhoto = ({
+  bunchId,
+  bundleId,
+  bundlePhotoId,
+  previousBundlePhotoId,
+  nextBundlePhotoId,
+  mode,
+}: {
+  bunchId: string;
+  bundleId: string;
+  bundlePhotoId: string;
+  previousBundlePhotoId: string | null;
+  nextBundlePhotoId: string | null;
+  mode: 'DRAFT' | 'PUBLISHED';
+}): Promise<BundleDetail> =>
+  requestBundle(
+    bffApi.post(
+      `${bundlePath(bunchId, bundleId)}/photos/${encodeURIComponent(String(wireIdOrThrow(bundlePhotoId)))}/move`,
+      {
+        json: {
+          ...(previousBundlePhotoId !== null && {
+            previousBundlePhotoId: wireIdOrThrow(previousBundlePhotoId),
+          }),
+          ...(nextBundlePhotoId !== null && {
+            nextBundlePhotoId: wireIdOrThrow(nextBundlePhotoId),
+          }),
+          mode,
+        } satisfies Schemas['MoveBundlePhotoRequest'],
+      },
+    ),
+    'move bundle photo',
+  );
+
 /** 발행: 최신 revision을 보내고 같은 멱등 키로 다시 보내면 같은 결과 */
 export const publishBundle = (
   bunchId: string,

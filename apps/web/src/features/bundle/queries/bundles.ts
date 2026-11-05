@@ -4,8 +4,10 @@ import { sharedKeys } from '@/shared/query/keys';
 import type { BundleDetail } from '../model/bundle';
 import {
   addBundleParticipant,
+  changeBundlePhotos,
   createBundle,
   getBundle,
+  moveBundlePhoto,
   publishBundle,
   readVersionConflict,
   removeBundleParticipant,
@@ -141,6 +143,43 @@ export const useRemoveParticipantMutation = (
       return removeBundleParticipant(ids.bunchId, ids.bundleId, memberId);
     },
     ...useBundleCacheSync(bunchId, bundleId),
+  });
+
+type PhotoChangeInput = Omit<Parameters<typeof changeBundlePhotos>[0], 'bunchId' | 'bundleId'>;
+type PhotoMoveInput = Omit<Parameters<typeof moveBundlePhoto>[0], 'bunchId' | 'bundleId'>;
+
+// 사진 구성은 실패한 이유와 상관없이(편집권·anchor 충돌 등) 최신 상세를 다시 받아 화면을 서버에 맞춤
+const usePhotoCacheSync = (bunchId: string | undefined, bundleId: string | undefined) => {
+  const queryClient = useQueryClient();
+  const sync = useBundleCacheSync(bunchId, bundleId);
+  return {
+    onSuccess: sync.onSuccess,
+    onError: () =>
+      queryClient.invalidateQueries({ queryKey: bundleKeys.detail(bunchId, bundleId) }),
+  };
+};
+
+/** 사진 구성 변경(추가·제거). 성공 응답으로 상세 캐시를 바로 갱신 */
+export const useChangePhotosMutation = (
+  bunchId: string | undefined,
+  bundleId: string | undefined,
+) =>
+  useMutation({
+    mutationFn: (input: PhotoChangeInput) => {
+      const ids = requireIds(bunchId, bundleId);
+      return changeBundlePhotos({ ...ids, ...input });
+    },
+    ...usePhotoCacheSync(bunchId, bundleId),
+  });
+
+/** 사진 순서 이동 */
+export const useMovePhotoMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
+  useMutation({
+    mutationFn: (input: PhotoMoveInput) => {
+      const ids = requireIds(bunchId, bundleId);
+      return moveBundlePhoto({ ...ids, ...input });
+    },
+    ...usePhotoCacheSync(bunchId, bundleId),
   });
 
 /**
