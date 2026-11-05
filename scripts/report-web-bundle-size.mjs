@@ -95,6 +95,7 @@ if (process.argv.includes('--update')) {
 
 const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : {};
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
+const changes = [];
 const rows = [
   ['공통 첫 로드 JS', 'sharedFirstLoadGzip'],
   ['전체 클라이언트 JS', 'totalClientJsGzip'],
@@ -109,6 +110,7 @@ const rows = [
   }
   const change =
     ratio === undefined ? '기준선 없음' : `${ratio >= 0 ? '+' : ''}${(ratio * 100).toFixed(1)}%`;
+  changes.push(`${label} ${kb(current[key])} (${change}${over ? ' ⚠️' : ''})`);
   return `| ${label} | ${kb(current[key])} | ${typeof base === 'number' ? kb(base) : '-'} | ${change}${over ? ' ⚠️' : ''} |`;
 });
 
@@ -118,6 +120,7 @@ const ownerRows = (entries) =>
       `| \`${owner}\` | ${kb(size)} | ${delta === undefined ? '-' : `${delta >= 0 ? '+' : ''}${kb(delta)}`} |`,
   );
 const ownerSection = [];
+let grownOwners = [];
 if (Object.keys(ownerSizes).length > 0) {
   const baseOwners = baseline.owners ?? {};
   const grown = Object.entries(ownerSizes)
@@ -125,6 +128,7 @@ if (Object.keys(ownerSizes).length > 0) {
     .filter(([, , delta]) => delta >= 1024)
     .sort(([, , a], [, , b]) => b - a)
     .slice(0, 10);
+  grownOwners = grown;
   ownerSection.push(
     '### 기준선보다 많이 커진 항목',
     '',
@@ -167,5 +171,15 @@ const summary = [
 
 console.log(summary);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
-// CI가 PR 결과 댓글에 붙일 수 있게 같은 표를 파일로도 남김(경로를 줄 때만)
-if (process.env.BUNDLE_SIZE_REPORT) writeFileSync(process.env.BUNDLE_SIZE_REPORT, summary);
+// PR 결과 댓글용 짧은 요약(경로를 줄 때만): 두 크기와 1KB 넘게 커진 항목 3개까지, 자세한 표는 실행 Summary
+if (process.env.BUNDLE_SIZE_REPORT) {
+  const grownText = grownOwners
+    .slice(0, 3)
+    .map(([owner, , delta]) => `\`${owner}\` +${kb(delta)}`)
+    .join(', ');
+  const brief = [
+    `**웹 번들 크기(gzip)**: ${changes.join(' · ')}`,
+    ...(grownText ? [`커진 항목: ${grownText}`] : []),
+  ].join('\n\n');
+  writeFileSync(process.env.BUNDLE_SIZE_REPORT, `${brief}\n`);
+}

@@ -288,10 +288,9 @@ jobs:
               '',
               `[기준 커밋](${commitUrl}) · [실행 로그](${process.env.RUN_URL})`,
             ];
-            // build job이 web을 빌드했으면 번들 크기 표를 댓글 아래에 붙임(제목은 한 단계 낮춤)
+            // build job이 web을 빌드했으면 번들 크기 요약을 표 아래에 붙임(자세한 표는 실행 로그의 Summary)
             try {
-              const bundle = fs.readFileSync('ci-results/bundle-size.md', 'utf8').replace(/^(#+) /gm, '#$1 ');
-              lines.push('', bundle.trim());
+              lines.splice(-2, 0, '', fs.readFileSync('ci-results/bundle-size.md', 'utf8').trim());
             } catch {
               // web을 빌드하지 않은 PR이면 파일이 없음
             }
