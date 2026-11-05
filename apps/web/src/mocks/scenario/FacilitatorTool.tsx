@@ -66,7 +66,7 @@ export function FacilitatorTool({ navigate = browserNavigate }: FacilitatorToolP
         <div
           aria-hidden
           data-testid="facilitator-tap-area"
-          className="fixed top-0 left-1/2 z-[100] w-40 -translate-x-1/2"
+          className="fixed top-0 left-1/2 z-100 w-40 -translate-x-1/2"
           // 상단 Safe Area와 헤더 가운데(저장 상태 글자뿐이라 눌러도 반응 없는 자리)를 덮음, 뒤로 가기·업로드 버튼은 양 끝이라 가리지 않음
           style={{ height: 'calc(env(safe-area-inset-top) + 48px)' }}
           onPointerDown={() => {
