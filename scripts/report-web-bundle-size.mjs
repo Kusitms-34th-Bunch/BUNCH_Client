@@ -167,3 +167,5 @@ const summary = [
 
 console.log(summary);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+// CI가 PR 결과 댓글에 붙일 수 있게 같은 표를 파일로도 남김(경로를 줄 때만)
+if (process.env.BUNDLE_SIZE_REPORT) writeFileSync(process.env.BUNDLE_SIZE_REPORT, summary);
