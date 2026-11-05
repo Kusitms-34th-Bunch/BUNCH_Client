@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { leaseTransport } from '../api/leases';
 import {
@@ -97,6 +99,52 @@ describe('번들 query·mutation', () => {
       visibility: 'PUBLIC',
       visibilityVersion: 1,
     });
+  });
+
+  it('발행에 성공하면 번치 홈 데이터(프로필·완성된 번들)를 무효화한다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    // 발행 조건을 채운 초안: 제목·공개 범위, 참여자 전원 코멘트
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) =>
+        String(bundle.id) === id
+          ? {
+              ...bundle,
+              title: '발행할 번들',
+              titleVersion: 1,
+              visibility: 'PRIVATE' as const,
+              visibilityVersion: 1,
+              comments: bundle.participants.map((p) => ({
+                memberId: p.memberId,
+                content: '코멘트',
+                version: 1,
+                createdAt: bundle.createdAt,
+                updatedAt: bundle.createdAt,
+              })),
+              participants:
+                bundle.participants.length >= 2
+                  ? bundle.participants
+                  : [...bundle.participants, { memberId: 2, joinedAt: bundle.createdAt }],
+            }
+          : bundle,
+      ),
+    }));
+    // 번치 홈 데이터가 캐시에 있는 상태
+    client.setQueryData(sharedKeys.bunchHome(bunchId), { stale: true });
+    client.setQueryData(sharedKeys.publishedBundles(bunchId), { stale: true });
+    const revision = mockDb.get().bundles.find((bundle) => String(bundle.id) === id)!.revision;
+    const { result } = renderHook(() => usePublishBundleMutation(bunchId, id), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(revision);
+    });
+
+    expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toMatchObject({
+      status: 'PUBLISHED',
+    });
+    expect(client.getQueryState(sharedKeys.bunchHome(bunchId))?.isInvalidated).toBe(true);
+    expect(client.getQueryState(sharedKeys.publishedBundles(bunchId))?.isInvalidated).toBe(true);
   });
 
   it('조건이 모자란 발행은 실패하고 캐시는 초안 그대로다', async () => {

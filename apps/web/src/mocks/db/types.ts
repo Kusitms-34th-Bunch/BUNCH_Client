@@ -18,8 +18,11 @@ export type MockBunch = {
   characterType: CharacterType;
   imageUrl: string | null;
   introduction: string;
-  /** 가짜 DB 내부 표현, 응답 값은 번치 홈 계약 확정 때 정함 */
+  /** 가짜 DB 내부 표현, 번치 홈 응답에서 visibility(PUBLIC·PRIVATE)로 바뀜 */
   isPrivate: boolean;
+  /** 번치 홈의 팔로워·팔로잉 수(관계 API가 없어 시작 데이터 값) */
+  followerCount: number;
+  followingCount: number;
 };
 
 export type MockMembership = {

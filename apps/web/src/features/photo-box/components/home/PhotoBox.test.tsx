@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { delay, http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { mockDb } from '@/mocks/db';
+import { mockDrafts } from '@/mocks/db/drafts';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -43,7 +43,7 @@ describe('PhotoBox 번들 만들기 연결', () => {
     expect(router.push).not.toHaveBeenCalled();
     expect(screen.getByText(PHOTO_BOX_MESSAGES.bundleCreating)).toBeInTheDocument();
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
-    const [bundle] = mockDb.get().bundles;
+    const [bundle] = mockDrafts();
     expect(router.push).toHaveBeenCalledWith(`/bunch/drafts/${bundle?.id}`);
     // 고른 사진 한 장으로 초안이 만들어짐(어느 사진인지는 사진함 정렬 순서에 따름)
     expect(bundle?.photos).toHaveLength(1);

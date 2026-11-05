@@ -1,5 +1,6 @@
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { sharedKeys } from '@/shared/query/keys';
 import type { BundleDetail } from '../model/bundle';
 import {
   addBundleParticipant,
@@ -143,17 +144,29 @@ export const useRemoveParticipantMutation = (
   });
 
 /**
- * 발행. 성공 응답으로 상세 캐시를 발행본으로 바꾸고, 충돌(BUNDLE_003)이면 최신 상세를 다시 받음
- * 번치 홈의 발행 번들 목록·개수 무효화는 번치 홈 연동 이슈에서 이 mutation에 묶음
+ * 발행. 성공 응답으로 상세 캐시를 발행본으로 바꾸고 번치 홈 데이터 전체(프로필 개수·완성된 번들)를 무효화해 새 번들이 앞에 쌓이게 함
+ * 충돌(BUNDLE_003)이면 최신 상세를 다시 받음
  */
 export const usePublishBundleMutation = (
   bunchId: string | undefined,
   bundleId: string | undefined,
-) =>
-  useMutation({
+) => {
+  const queryClient = useQueryClient();
+  const sync = useBundleCacheSync(bunchId, bundleId);
+  return useMutation({
     mutationFn: (expectedRevision: number) => {
       const ids = requireIds(bunchId, bundleId);
       return publishBundle(ids.bunchId, ids.bundleId, expectedRevision, createIdempotencyKey());
     },
-    ...useBundleCacheSync(bunchId, bundleId),
+    onError: sync.onError,
+    onSuccess: async (bundle: BundleDetail) => {
+      sync.onSuccess(bundle);
+      // 반환해서 mutateAsync가 번치 홈 재요청 시작까지 이어지게 함
+      // 번치 홈이 화면에 없어도 바로 다시 받아, 홈으로 돌아왔을 때 옛 목록이 먼저 보이지 않게 함
+      await queryClient.invalidateQueries({
+        queryKey: sharedKeys.bunchHomeScope(bunchId),
+        refetchType: 'all',
+      });
+    },
   });
+};

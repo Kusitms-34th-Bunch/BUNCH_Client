@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { mockDb } from '../db';
+import { mockDrafts } from '../db/drafts';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID, MOCK_PHOTO_IDS } from '../db/seed';
 
 const { memberA, memberB, admin } = MOCK_MEMBER_IDS;
@@ -110,7 +111,7 @@ describe('가짜 서버 번들 초안 생성', () => {
     const other = await create([MOCK_PHOTO_IDS.S5], key);
 
     expect(replay.json.data.id).toBe(first.json.data.id);
-    expect(mockDb.get().bundles).toHaveLength(1);
+    expect(mockDrafts()).toHaveLength(1);
     expect(other.status).toBe(409);
     expect(other.json.error?.code).toBe('REQUEST_001');
   });
@@ -131,7 +132,7 @@ describe('가짜 서버 번들 초안 생성', () => {
     const result = await create([MOCK_PHOTO_IDS.S4, 999]);
 
     expect(result.status).toBe(404);
-    expect(mockDb.get().bundles).toHaveLength(0);
+    expect(mockDrafts()).toHaveLength(0);
   });
 
   it('번치 멤버가 1명뿐이거나 초안이 10개면 BUNDLE_001이다', async () => {
