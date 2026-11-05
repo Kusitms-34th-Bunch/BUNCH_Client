@@ -44,4 +44,4 @@
 
 - 실기기에서 탭 WebView 여러 개의 메모리·시작 시간이 문제가 되면 탭을 처음 열 때 만드는 방식(lazy)이나 WebView 수를 줄이는 방식을 검토한다.
 - 디자인이 알약 크기·간격을 iOS에서도 정확히 맞춰야 한다고 정하면 직접 만든 막대(011 방식)로 돌아갈지 다시 정한다.
-- expo-router 네이티브 탭이 안정 API(SDK 58의 `expo-router/native-tabs`)가 되면 SDK를 올리면서 import 경로를 바꾼다.
+- expo-router 네이티브 탭이 안정 API(SDK 58의 `expo-router/native-tabs`)가 되면 SDK를 올리면서 import 경로를 바꾼다. 쉘은 SDK 58로 올렸고(이슈 #227) SDK 58에는 `expo-router/native-tabs`와 `expo-router/unstable-native-tabs`가 모두 있다. UT 시연에서 검증한 `unstable-native-tabs` 경로를 그대로 두고, 안정 경로 전환은 UT 이후에 한다.

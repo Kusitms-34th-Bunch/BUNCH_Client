@@ -30,7 +30,8 @@
         {
           "fonts": ["./assets/fonts/Pretendard-Regular.otf"]
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "ios": {
       "supportsTablet": true,
