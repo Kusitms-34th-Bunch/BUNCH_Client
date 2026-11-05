@@ -32,7 +32,7 @@
   - 요청 함수·query test에서는 endpoint 모듈을 `vi.mock`해 응답 모양을 손으로 만들지 않는다. envelope 해제·스키마 검사·오류 변환을 건너뛰기 때문이다(화면 test는 위처럼 endpoint 모듈을 mock해도 된다).
 - 파일: handler는 `src/mocks/handlers/`(백엔드 resource별), 가짜 DB와 시작 데이터는 `src/mocks/db/`, 응답 형식(`ok`·`fail`·`noContent`)과 멱등 키 재생은 `src/mocks/lib/`다. 오류 코드와 메시지는 백엔드 명세를 따르고 명세에 없는 값은 추측하지 않는다.
 - 브라우저: `NEXT_PUBLIC_API_MOCKING=enabled`로 빌드·실행하면 서비스 워커(`public/mockServiceWorker.js`, `msw init`으로 생성)가 켜지고 화면은 준비된 뒤에 그려진다. 가짜 DB는 IndexedDB에 남아 새로고침해도 유지된다. 값이 비어 있으면 MSW 코드는 번들에 들어가지 않는다(빌드 뒤 `.next/static`에서 `mockServiceWorker`를 검색해 확인). 운영 배포에서는 이 변수를 설정하지 않는다.
-- 서비스 워커는 HTTPS·localhost 브라우저와 홈 화면 앱에서 동작하고, `http://IP` 접속과 네이티브 쉘 WebView에서는 동작하지 않을 수 있다. 실제 폰·HTTPS 환경은 사용 전에 확인한다.
+- 서비스 워커는 HTTPS·localhost 브라우저와 홈 화면 앱에서 동작하고, `http://IP` 접속에서는 동작하지 않을 수 있다. 실제 폰·HTTPS 환경은 사용 전에 확인한다.
 - MSW 3에서는 처리하지 않은 요청 옵션이 `onUnhandledFrame`이다(2.x의 `onUnhandledRequest`가 아니다).
 - happy-dom 한계: ky `afterResponse` hook이 있는 `createBrowserApi`로 본문 없는 204 응답을 받으면 happy-dom이 스트림 오류를 내므로 204 확인은 `fetch`를 쓴다(실제 브라우저는 문제없음).
 
