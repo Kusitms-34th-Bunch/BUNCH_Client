@@ -1,0 +1,111 @@
+name: Mobile Shell CI
+
+# apps/mobile-shell은 pnpm으로 따로 설치하는 예외(결정 003)라 Frontend CI가 검사하지 않음
+# 쉘 코드나 쉘이 복사해 쓰는 bridge 계약이 바뀔 때만 실행
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile-shell/**'
+      - 'packages/bridge/**'
+      - '.github/workflows/mobile-shell.yml'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/mobile-shell/**'
+      - 'packages/bridge/**'
+      - '.github/workflows/mobile-shell.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-shell-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Mobile Shell
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/mobile-shell
+    env:
+      # setup-node의 pnpm 캐시 조회가 저장소 루트(packageManager: yarn)에서 돌아도 Corepack이 막지 않도록
+      COREPACK_ENABLE_STRICT: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # 의존성 설치(코드가 실행될 수 있는 단계) 전 변조 징후 선검사
+      - name: 변조 가드
+        id: guard
+        working-directory: .
+        run: node turbo/workflows/check-suspicious.mjs
+
+      # packageManager(pnpm@…)를 Corepack이 읽도록 setup-node보다 먼저 활성화
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/mobile-shell/pnpm-lock.yaml
+
+      # 검사에 필요 없는 Sentry CLI 바이너리 다운로드는 생략
+      - name: 의존성 설치
+        id: install
+        env:
+          SENTRYCLI_SKIP_DOWNLOAD: '1'
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        id: test
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: pnpm test
+
+      - name: TypeScript
+        id: typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: pnpm exec tsc --noEmit
+
+      # 보고 형식은 Frontend CI 결과 댓글(ci.yml)과 같음: 제목 → 결과 한 줄 → 단계 표 → 기준 커밋·실행 로그
+      - name: 결과 요약
+        if: always()
+        working-directory: .
+        env:
+          GUARD: ${{ steps.guard.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          TEST: ${{ steps.test.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          label() {
+            case "$1" in
+              success) echo "통과" ;;
+              failure) echo "실패" ;;
+              *) echo "건너뜀" ;;
+            esac
+          }
+          if [ "$GUARD" = success ] && [ "$INSTALL" = success ] && [ "$TEST" = success ] && [ "$TYPECHECK" = success ]; then
+            result="**결과: 통과** — 4개 단계 모두 통과"
+          else
+            result="**결과: 실패** — 아래 표에서 실패한 단계를 확인하세요"
+          fi
+          {
+            echo "## Mobile Shell CI"
+            echo ""
+            echo "$result"
+            echo ""
+            echo "| 단계 | 결과 |"
+            echo "| --- | --- |"
+            echo "| 변조 가드 | $(label "$GUARD") |"
+            echo "| 의존성 설치 | $(label "$INSTALL") |"
+            echo "| Test | $(label "$TEST") |"
+            echo "| TypeScript | $(label "$TYPECHECK") |"
+            echo ""
+            echo "[기준 커밋](${COMMIT_URL}) · [실행 로그](${RUN_URL})"
+          } >> "$GITHUB_STEP_SUMMARY"

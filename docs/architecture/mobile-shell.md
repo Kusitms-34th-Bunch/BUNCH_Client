@@ -162,7 +162,7 @@ packages/bridge/
 
 ## 검증 명령
 
-- `apps/mobile-shell`: `pnpm exec tsc --noEmit`, `pnpm test`. lint의 현재 제약은 [모바일 앱 실행과 테스트](../workflows/mobile-testing.md)를 확인한다.
+- `apps/mobile-shell`: `pnpm exec tsc --noEmit`, `pnpm test`. 같은 검사를 `.github/workflows/mobile-shell.yml`이 쉘·bridge 변경 PR에서 실행한다. lint의 현재 제약은 [모바일 앱 실행과 테스트](../workflows/mobile-testing.md)를 확인한다.
 - Sentry JavaScript 이벤트 정제: `apps/mobile-shell`에서 `pnpm test`
 - `packages/bridge`: `yarn workspace @app/bridge typecheck`, `lint`
 - WebView가 가리키는 주소는 개발 시 `EXPO_PUBLIC_DEV_WEB_URL`, Release에서 `EXPO_PUBLIC_WEB_URL`을 자동 선택한다. `apps/mobile-shell/.env.example`을 확인한다.
