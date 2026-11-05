@@ -52,9 +52,16 @@ UT는 가짜 서버(서비스 워커)가 필요해 **브라우저·홈 화면 �
 
 **CLI로 직접 올릴 때**(`vercel --prod`): **로컬 작업 폴더에서 바로 올리지 않는다.** 로컬 폴더에는 `.env.pr-review`(GitHub 토큰)·`.env.openapi.local` 같은 gitignore 대상 비밀 파일이 있을 수 있다. 업로드 제외 규칙이 이를 걸러 주는지 확인하지 않았으므로 새로 clone한 깨끗한 폴더에서 배포한다.
 
+### 첫 리허설 결과
+
+- 수동 실행(ref=develop) 1차: 프로젝트 확인과 `vercel pull`은 통과했고, Root Directory 설정과 설치 명령(`cd ../.. && yarn install --immutable`)도 정상이었다.
+- `vercel build`에서 `NEXT_NO_VERSION`(Next.js 버전을 찾지 못함)으로 실패했다. 원인은 Yarn PnP다. 저장소에 `node_modules`가 없어 Vercel의 Next.js 빌더가 `node_modules/next`를 찾지 못한다.
+- 대응: workflow에 `YARN_NODE_LINKER=node-modules`를 넣어 이 workflow에서만 `node_modules` 방식으로 설치한다(`.yarnrc.yml`의 `nodeLinker: pnp`는 그대로 둔다). 이 우회가 빌드·배포 전체를 통과시키는지는 다음 리허설에서 확인한다.
+- 처음 workflow를 실행했을 때 `workflow_dispatch` 요청이 HTTP 500으로 한 번 실패했다. 이후 정상 실행되어 GitHub 쪽 일시 오류로 본다.
+
 ### 아직 확인하지 않은 것
 
-- `ut-deploy.yml`은 한 번도 실행해 보지 않았다. 처음 실행에서 `vercel pull`·`build`가 저장소 루트에서 Root Directory(`apps/web`) 설정과 함께 동작하는지, `yarn dlx vercel@65.1.0`이 Yarn PnP 저장소에서 실행되는지, 배포 URL 출력이 요약에 제대로 남는지 확인한다. main 머지로 처음 실행되지 않도록 develop 머지 뒤 수동 리허설을 먼저 한다.
+- `YARN_NODE_LINKER=node-modules` 우회로 `vercel build`·`deploy`가 끝까지 통과하는지(1차 리허설은 `vercel build`에서 멈췄고 그 앞 단계는 통과), 배포 URL 출력이 요약에 제대로 남는지는 다음 리허설에서 확인한다. main 머지로 처음 실행되지 않도록 develop 기준 수동 리허설을 먼저 통과시킨다.
 - Hobby의 한도(일일 배포 수 등)와 요금제 조건은 현재 정책을 확인하지 못했다.
 - 이름·아이콘이 의도대로 보이는지, 서비스 워커·가짜 서버가 켜지는지는 실기기에서 확인한다.
 
