@@ -9,4 +9,6 @@ export const sharedKeys = {
     [...sharedKeys.bunchHomeScope(bunchId), 'profile'] as const,
   publishedBundles: (bunchId: string | undefined) =>
     [...sharedKeys.bunchHomeScope(bunchId), 'published'] as const,
+  draftBundles: (bunchId: string | undefined) =>
+    [...sharedKeys.bunchHomeScope(bunchId), 'drafts'] as const,
 };

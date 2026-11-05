@@ -15,7 +15,7 @@ import { DraftMemberManager } from './DraftMemberManager';
 export function BundleDraftMembers() {
   const backOr = useBackOr();
   const { state, actions } = useDraftContext();
-  const leaveDraft = useLeaveDraft();
+  const leaveDraft = useLeaveDraft(state.kind === 'ready' ? state.draft.id : undefined);
 
   useRedirectMissingDraft(state.kind === 'missing');
 
@@ -29,7 +29,7 @@ export function BundleDraftMembers() {
       actions={actions}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
       onBack={() => backOr(BUNDLE_PATHS.draft(state.draft.id))}
-      onLeave={() => leaveDraft(isDraftCreator(state.draft, state.viewer))}
+      onLeave={() => void leaveDraft(isDraftCreator(state.draft, state.viewer))}
     />
   );
 }

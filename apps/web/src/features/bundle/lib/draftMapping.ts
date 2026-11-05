@@ -25,6 +25,7 @@ export const toDraftEditing = (
   const editing: {
     title?: string;
     date?: string;
+    location?: string;
     photoMemberIds?: string[];
     photoEditors?: Record<string, string[]>;
   } = {};
@@ -32,6 +33,7 @@ export const toDraftEditing = (
     if (lease.memberId === myMemberId) continue;
     if (lease.target === 'TITLE') editing.title = lease.memberId;
     else if (lease.target === 'DATE') editing.date = lease.memberId;
+    else if (lease.target === 'LOCATION') editing.location = lease.memberId;
     else if (lease.target.startsWith('PHOTO:')) {
       const photoId = lease.target.slice('PHOTO:'.length);
       editing.photoEditors = {

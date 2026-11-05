@@ -66,8 +66,24 @@ export const publishedBundlesPageSchema = z.object({
   hasNext: z.boolean(),
 });
 
+// `GET /bunches/{id}/bundles?status=DRAFT`의 항목은 번들 전체(BundleSnapshot)지만 번치 홈 카드에는 제목·대표 사진·참여 멤버만 필요해 그만큼만 받음
+export const draftBundlesPageSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      title: z.string(),
+      photos: z.array(z.object({ imageUrl: z.string(), position: z.number().int().nonnegative() })),
+      participants: z.array(z.object({ memberId: z.number().int().positive() })),
+    }),
+  ),
+});
+
 export type Home = z.infer<typeof bunchHomeResponseSchema>;
 type PublishedPage = z.infer<typeof publishedBundlesPageSchema>;
+type DraftPage = z.infer<typeof draftBundlesPageSchema>;
+
+/** 참여 멤버 카드에 쓰는 번치 멤버(이름·프로필 이미지, id로 찾음) */
+export type DraftMemberSource = { id: string; name: string; avatarSrc: string };
 
 const ROLE: Readonly<Record<z.infer<typeof roleSchema>, BunchRole>> = {
   OWNER: 'owner',
@@ -75,17 +91,22 @@ const ROLE: Readonly<Record<z.infer<typeof roleSchema>, BunchRole>> = {
   MEMBER: 'member',
 };
 
+// 기획 원문 없는 임시 이름: 제목을 아직 쓰지 않은 작성 중인 번들 카드
+const UNTITLED_DRAFT = '제목 없는 번들';
+
 // 안전하지 않은 이미지 주소는 항목 하나 때문에 홈 전체가 실패하지 않도록 기본 이미지로 대체
 const safeImage = (url: string | null | undefined) =>
   url && isSafeImageUrl(url) ? url : DEFAULT_BUNCH_IMAGE;
 
 /**
  * 서버 응답을 번치 홈 화면의 프로필·번들 모양으로 변환, 내 번치가 아니면(소속 null) undefined
- * 작성 중인 번들 목록은 이번 범위가 아니라 비워 둠(UT 이후 초안 목록 API로 연결)
+ * 작성 중인 번들은 초안 목록(최근 수정순)의 대표 사진(첫 사진)과 참여 멤버로 카드를 만듦
  */
 export const toBunchHomeDetail = (
   home: Home,
   published: PublishedPage,
+  drafts: DraftPage,
+  members: readonly DraftMemberSource[],
 ): BunchHomeDetail | undefined => {
   if (!home.myMembership) return undefined;
   return {
@@ -104,6 +125,18 @@ export const toBunchHomeDetail = (
       title: bundle.title,
       coverSrc: safeImage(bundle.coverImageUrl),
     })),
-    draftBundles: [],
+    draftBundles: drafts.items.map((bundle) => {
+      const first = [...bundle.photos].sort((a, b) => a.position - b.position)[0];
+      return {
+        id: toDomainId(bundle.id),
+        // 제목은 아직 안 쓴 초안일 수 있어 비어 있으면 임시 이름(기획 원문 없음)
+        title: bundle.title.trim() === '' ? UNTITLED_DRAFT : bundle.title,
+        coverSrc: safeImage(first?.imageUrl),
+        members: bundle.participants.flatMap(({ memberId }) => {
+          const member = members.find((candidate) => candidate.id === toDomainId(memberId));
+          return member ? [{ name: member.name, imageSrc: safeImage(member.avatarSrc) }] : [];
+        }),
+      };
+    }),
   };
 };

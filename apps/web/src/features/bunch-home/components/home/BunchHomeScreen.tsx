@@ -123,6 +123,8 @@ export function BunchHomeScreen({
         <div className="bg-surface-brand-subtle-1 relative h-34.5 shrink-0">
           <div
             aria-hidden="true"
+            // UT 진행자 장치가 연속 터치를 읽는 표식, 이 화면의 동작과는 무관(UT가 끝나면 지움)
+            data-facilitator-trigger="bunch-character"
             className="right-s8 bg-surface-tertiary absolute top-7.5 z-10 size-30"
           />
         </div>

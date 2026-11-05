@@ -15,6 +15,8 @@ export const BUNCH_HOME_MESSAGES = {
   deleteDraftTitle: '작성 중인 번들을 삭제할까요?',
   deleteDraftDescription:
     '삭제한 번들은 다시 복구할 수 없지만, 사용된 사진은 사진함에 그대로 남아요.',
+  // 기획 원문 없는 임시 안내: 작성 중인 번들 삭제를 서버에 보내지 못했을 때
+  deleteDraftFailed: '번들을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
   unavailableTitle: ({ name, access }: BunchSummary) =>
     access === 'deleted' ? `${name} 번치가 삭제됐어요` : `${name} 번치에서 내보내졌어요`,
   unavailableDescription: ({ access }: BunchSummary) =>

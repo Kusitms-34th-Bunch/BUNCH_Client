@@ -35,8 +35,8 @@ export const BUNDLE_MESSAGES = {
   published: '번들이 업로드되었어요.',
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
-  // 사진 구성 변경이 서버에 저장되지 않는 동안의 임시 안내(기획 원문 없음)
-  uploadPhotosUnsynced: '사진을 빼거나 옮긴 내용은 아직 저장되지 않아 업로드할 수 없어요.',
+  // 사진 빼기·이동·추가를 서버에 보내지 못했을 때의 임시 안내(기획 원문 없음)
+  photosChangeFailed: '사진 구성을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.',
   uploadUnsaved: '저장하지 못한 내용이 있어요. 내용을 다시 바꾸면 저장을 다시 시도해요.',
   uploadSaving: '저장이 끝난 뒤에 업로드할 수 있어요.',
   uploadIncomplete: '필수 항목을 모두 입력해야 업로드 할 수 있어요.',
@@ -68,6 +68,8 @@ export const BUNDLE_MESSAGES = {
   selfSuffix: '(나)',
   // 초안 생성자가 나가면 작성 중인 번들이 삭제되어 알림(확인 창 문구는 일반 멤버와 같음)
   draftDeleted: '작성 중인 번들을 삭제했어요.',
+  // 기획 원문 없는 임시 안내: 나가기를 서버에 보내지 못했을 때
+  leaveFailed: '번들에서 나가지 못했어요. 잠시 후 다시 시도해 주세요.',
   // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
   editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
   editingLabel: (name: string) => `${name}님이 편집 중`,

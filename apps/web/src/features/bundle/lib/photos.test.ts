@@ -6,6 +6,7 @@ import {
   getPhotoEditors,
   getRemovePhotoKind,
   movePhoto,
+  planPhotoMoves,
   removePhoto,
   setPhotoCaption,
 } from './photos';
@@ -105,5 +106,27 @@ describe('getPhotoEditors', () => {
 
   it('편집 중인 멤버가 없으면 빈 목록이다', () => {
     expect(getPhotoEditors(draft, viewer, 'b')).toEqual([]);
+  });
+});
+
+describe('planPhotoMoves', () => {
+  it('이미 같은 순서면 이동이 없다', () => {
+    expect(planPhotoMoves(['a', 'b', 'c'], ['a', 'b', 'c'])).toEqual([]);
+  });
+
+  it('앞선 이동을 반영한 앞뒤 사진으로 이동을 만든다', () => {
+    expect(planPhotoMoves(['a', 'b', 'c'], ['c', 'a', 'b'])).toEqual([
+      { photoId: 'c', previous: null, next: 'a' },
+    ]);
+    expect(planPhotoMoves(['a', 'b', 'c'], ['c', 'b', 'a'])).toEqual([
+      { photoId: 'c', previous: null, next: 'a' },
+      { photoId: 'b', previous: 'c', next: 'a' },
+    ]);
+  });
+
+  it('원하는 순서에 없는 사진은 뒤에 그대로 두고 모르는 사진은 건너뛴다', () => {
+    expect(planPhotoMoves(['a', 'b', 'c'], ['b', 'x', 'a'])).toEqual([
+      { photoId: 'b', previous: null, next: 'a' },
+    ]);
   });
 });

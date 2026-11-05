@@ -1,10 +1,13 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createBundle } from '@/features/bundle/api/bundles';
 import { mockDb } from '@/mocks/db';
+import { MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { BunchHome } from './BunchHome';
@@ -17,6 +20,14 @@ beforeEach(() => {
   push.mockClear();
   sessionStorage.clear();
 });
+
+// 작성 중인 번들 카드의 열기 버튼(같은 제목의 「삭제」 버튼과 구분)
+const findDraftCard = async (title: string) => {
+  const buttons = await screen.findAllByRole('button', { name: new RegExp(title) });
+  const card = buttons.find((button) => !/삭제$/.test(button.getAttribute('aria-label') ?? ''));
+  if (!card) throw new Error(`카드 없음: ${title}`);
+  return card;
+};
 
 const renderHome = () => {
   const client = createTestQueryClient();
@@ -121,6 +132,55 @@ describe('BunchHome 서버 데이터', () => {
     await userEvent.click(retry);
 
     expect(await screen.findByRole('heading', { name: /여행쥬아/ })).toBeInTheDocument();
+  });
+
+  it('작성 중인 번들 탭에 서버의 초안이 카드로 보이고 누르면 작성 화면으로 이동한다', async () => {
+    const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
+    const created = await createBundle('1', [P1, P2, P3, P4].map(String), createIdempotencyKey());
+    renderHome();
+
+    await screen.findByAltText(/강릉 커피 투어/);
+    await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
+    // 상태 B 초안의 제목으로 카드가 보임
+    await userEvent.click(await findDraftCard('속초 첫째 날'));
+
+    expect(push).toHaveBeenCalledWith(`/bunch/drafts/${created.id}`);
+  });
+
+  it('제목을 아직 쓰지 않은 초안은 임시 이름으로 보인다', async () => {
+    await createBundle(
+      '1',
+      [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
+      createIdempotencyKey(),
+    );
+    renderHome();
+
+    await screen.findByAltText(/강릉 커피 투어/);
+    await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
+
+    expect(await findDraftCard('제목 없는 번들')).toBeInTheDocument();
+  });
+
+  it('작성 중인 번들을 삭제하면 서버에서 지워지고 카드가 사라진다', async () => {
+    const created = await createBundle(
+      '1',
+      [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
+      createIdempotencyKey(),
+    );
+    renderHome();
+
+    await screen.findByAltText(/강릉 커피 투어/);
+    await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
+    await userEvent.click(await screen.findByRole('button', { name: /제목 없는 번들 삭제/ }));
+    const dialog = await screen.findByRole('alertdialog', { name: '작성 중인 번들을 삭제할까요?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+
+    await waitFor(() =>
+      expect(mockDb.get().bundles.some((bundle) => String(bundle.id) === created.id)).toBe(false),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /제목 없는 번들 삭제/ })).toBeNull(),
+    );
   });
 
   it('안전하지 않은 표지 주소의 번들은 기본 이미지로 보이고 홈은 그대로 나온다', async () => {

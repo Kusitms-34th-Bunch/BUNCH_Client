@@ -1,7 +1,11 @@
 import { bffApi, requestData } from '@/shared/api/bffApi';
-import { bunchHomeResponseSchema, publishedBundlesPageSchema } from '../model/bunchHome';
+import {
+  bunchHomeResponseSchema,
+  draftBundlesPageSchema,
+  publishedBundlesPageSchema,
+} from '../model/bunchHome';
 
-// 번치 홈 「완성된 번들」은 한 번에 받을 수 있는 최대 쪽 크기만 불러옴(더 불러오기는 UT 이후)
+// 번치 홈 「완성된 번들」·「작성 중인 번들」은 한 번에 받을 수 있는 최대 쪽 크기만 불러옴(더 불러오기는 UT 이후)
 const PUBLISHED_PAGE_SIZE = 50;
 
 const bunchPath = (bunchId: string) => `bunches/${encodeURIComponent(bunchId)}`;
@@ -23,4 +27,15 @@ export const getPublishedBundles = (bunchId: string, signal?: AbortSignal) =>
     }),
     publishedBundlesPageSchema,
     'published bundles',
+  );
+
+/** 작성 중인 번들 첫 쪽(최근 수정순) */
+export const getDraftBundles = (bunchId: string, signal?: AbortSignal) =>
+  requestData(
+    bffApi.get(`${bunchPath(bunchId)}/bundles`, {
+      searchParams: { status: 'DRAFT', page: 0, size: PUBLISHED_PAGE_SIZE },
+      signal: signal ?? null,
+    }),
+    draftBundlesPageSchema,
+    'draft bundles',
   );

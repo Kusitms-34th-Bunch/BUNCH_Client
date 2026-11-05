@@ -6,6 +6,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
+import { onDraftCreated } from '../scenario/draftCreated';
 
 // 백엔드 명세(번들 초안 생성·수정·발행·편집권) 기준, 명세에 없는 부분은 `ponytail:`로 표시
 const MAX_PHOTOS = 20;
@@ -115,6 +116,9 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     visibilityVersion: bundle.visibilityVersion,
     date: bundle.date,
     dateVersion: bundle.dateVersion,
+    // ponytail: 위치 저장·편집권(LOCATION)은 명세에 없는 가짜 서버 확장, 장소 검색 이슈에서 계약이 정해지면 맞춤
+    locations: bundle.locations,
+    locationsVersion: bundle.locationsVersion,
     revision: bundle.revision,
     photos: [...bundle.photos].sort((a, b) => a.position - b.position),
     participants: [...bundle.participants].sort((a, b) => a.joinedAt.localeCompare(b.joinedAt)),
@@ -148,7 +152,7 @@ export const myRoleIn = (state: MockDbState, bunchId: number) =>
     (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
   )?.role ?? 'MEMBER';
 
-const snapshotOf = (bundleId: number) => {
+export const snapshotOf = (bundleId: number) => {
   const state = mockDb.get();
   const bundle = state.bundles.find((item) => item.id === bundleId);
   if (!bundle) return fail(404, 'RESOURCE_001');
@@ -156,7 +160,7 @@ const snapshotOf = (bundleId: number) => {
 };
 
 // 번들 한 건을 고치고 내용이 바뀌었으니 revision·updatedAt을 올림(편집 변경은 모두 이 함수로 반영)
-const changeBundle = (bundleId: number, change: (_bundle: MockBundle) => MockBundle) =>
+export const changeBundle = (bundleId: number, change: (_bundle: MockBundle) => MockBundle) =>
   mockDb.update((current) => ({
     ...current,
     bundles: current.bundles.map((bundle) =>
@@ -429,6 +433,8 @@ export const bundleHandlers = [
           visibilityVersion: 0,
           date: null,
           dateVersion: 0,
+          locations: [],
+          locationsVersion: 0,
           revision: 1,
           photos,
           participants: participantIds.map((memberId) => ({ memberId, joinedAt: at })),
@@ -437,7 +443,13 @@ export const bundleHandlers = [
           updatedAt: at,
           publishedAt: null,
         };
-        mockDb.update((latest) => ({ ...latest, bundles: [...latest.bundles, bundle] }));
+        // 시나리오가 있으면 초안을 덧입힘(없으면 그대로)
+        const scenario = onDraftCreated(bundle);
+        mockDb.update((latest) => ({
+          ...latest,
+          bundles: [...latest.bundles, scenario.bundle],
+          bundleLeases: [...latest.bundleLeases, ...scenario.leases],
+        }));
         return { status: 200, body: { id } };
       },
     );

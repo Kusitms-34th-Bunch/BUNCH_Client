@@ -1,5 +1,6 @@
 import type { components } from '@app/api-core/generated';
 import { ApiError } from '@app/api-core';
+import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
@@ -149,6 +150,95 @@ export const removeBundleParticipant = async (
     ),
     'remove participant',
   );
+
+/**
+ * 사진 구성 변경: 추가할 사진함 원본 ID와 제거할 번들 사진 ID를 한 번에 병합, 최종 1~20장
+ * 같은 멱등 키·같은 본문은 처음 결과를 돌려주고, 다른 멤버가 편집 중인 사진을 빼면 BUNDLE_004
+ */
+export const changeBundlePhotos = ({
+  bunchId,
+  bundleId,
+  addPhotoIds,
+  removeBundlePhotoIds,
+  mode,
+  idempotencyKey,
+}: {
+  bunchId: string;
+  bundleId: string;
+  addPhotoIds: readonly string[];
+  removeBundlePhotoIds: readonly string[];
+  mode: 'DRAFT' | 'PUBLISHED';
+  idempotencyKey: string;
+}): Promise<BundleDetail> =>
+  requestBundle(
+    bffApi.post(`${bundlePath(bunchId, bundleId)}/photos/changes`, {
+      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      json: {
+        addPhotoIds: addPhotoIds.map(wireIdOrThrow),
+        removeBundlePhotoIds: removeBundlePhotoIds.map(wireIdOrThrow),
+        mode,
+      } satisfies Schemas['BundlePhotoChangesRequest'],
+    }),
+    'change bundle photos',
+  );
+
+/**
+ * 사진 순서 이동: 이동 대상을 뺀 목록에서 서로 인접한 앞뒤 사진 사이로 옮김(맨 앞이면 previous, 맨 뒤면 next가 null)
+ * 앞뒤가 최신 목록과 맞지 않으면 BUNDLE_006, 다른 멤버가 편집 중이면 BUNDLE_004
+ */
+export const moveBundlePhoto = ({
+  bunchId,
+  bundleId,
+  bundlePhotoId,
+  previousBundlePhotoId,
+  nextBundlePhotoId,
+  mode,
+}: {
+  bunchId: string;
+  bundleId: string;
+  bundlePhotoId: string;
+  previousBundlePhotoId: string | null;
+  nextBundlePhotoId: string | null;
+  mode: 'DRAFT' | 'PUBLISHED';
+}): Promise<BundleDetail> =>
+  requestBundle(
+    bffApi.post(
+      `${bundlePath(bunchId, bundleId)}/photos/${encodeURIComponent(String(wireIdOrThrow(bundlePhotoId)))}/move`,
+      {
+        json: {
+          ...(previousBundlePhotoId !== null && {
+            previousBundlePhotoId: wireIdOrThrow(previousBundlePhotoId),
+          }),
+          ...(nextBundlePhotoId !== null && {
+            nextBundlePhotoId: wireIdOrThrow(nextBundlePhotoId),
+          }),
+          mode,
+        } satisfies Schemas['MoveBundlePhotoRequest'],
+      },
+    ),
+    'move bundle photo',
+  );
+
+/** 번들 삭제: 생성자나 번치 관리자만, 번들·참여자·코멘트·편집권이 사라지고 사진함 원본은 그대로(응답 data는 null) */
+export const deleteBundle = async (bunchId: string, bundleId: string) => {
+  await requestData(bffApi.delete(bundlePath(bunchId, bundleId)), z.null(), 'delete bundle');
+};
+
+/**
+ * 초안 나가기: 초안 참여자만(발행본은 BUNDLE_002)
+ * 생성자가 나가면 초안이 삭제되어 null, 일반 참여자는 참여·코멘트가 지워진 최신 상세를 돌려줌
+ */
+export const leaveBundle = async (
+  bunchId: string,
+  bundleId: string,
+): Promise<BundleDetail | null> => {
+  const data = await requestData(
+    bffApi.post(`${bundlePath(bunchId, bundleId)}/leave`),
+    bundleSnapshotSchema.nullable(),
+    'leave bundle',
+  );
+  return data === null ? null : toBundleDetail(data);
+};
 
 /** 발행: 최신 revision을 보내고 같은 멱등 키로 다시 보내면 같은 결과 */
 export const publishBundle = (

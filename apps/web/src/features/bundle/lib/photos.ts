@@ -50,3 +50,28 @@ export const movePhoto = (
   if (to === from) return photos;
   return [...rest.slice(0, to), target, ...rest.slice(to)];
 };
+
+export type PhotoMovePlan = { photoId: string; previous: string | null; next: string | null };
+
+/**
+ * 현재 순서를 원하는 순서로 맞추는 이동 목록, 각 이동의 앞뒤 사진은 앞선 이동을 반영한 목록 기준
+ * (서버는 이동 대상을 뺀 목록에서 서로 인접한 앞뒤 사진 사이로만 옮길 수 있음)
+ */
+export const planPhotoMoves = (
+  current: readonly string[],
+  desired: readonly string[],
+): PhotoMovePlan[] => {
+  const order = [...current];
+  const plans: PhotoMovePlan[] = [];
+  // 현재 목록에 없는 사진은 옮길 수 없어 건너뜀
+  const known = desired.filter((photoId) => current.includes(photoId));
+  known.forEach((photoId, index) => {
+    if (order[index] === photoId) return;
+    const from = order.indexOf(photoId);
+    if (from < 0) return;
+    order.splice(from, 1);
+    order.splice(index, 0, photoId);
+    plans.push({ photoId, previous: order[index - 1] ?? null, next: order[index + 1] ?? null });
+  });
+  return plans;
+};

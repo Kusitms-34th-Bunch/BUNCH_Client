@@ -72,6 +72,33 @@ describe('useDraft 상태', () => {
     expect(saveStatus).toBe('saved');
   });
 
+  it('UT 상태 B 초안은 저장된 위치와 다른 멤버의 편집 중 표시를 함께 보인다', async () => {
+    const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
+    const created = await createBundle(
+      bunchId,
+      [P1, P2, P3, P4].map(String),
+      createIdempotencyKey(),
+    );
+    const { result } = renderDraft(created.id);
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    const { draft } = ready(result.current.state);
+
+    expect(draft.locations.map((location) => location.name)).toEqual(['속초해수욕장']);
+    expect(draft.editing.location).toBe(String(memberB));
+    expect(draft.date).toBe('2026-10-17');
+    const second = draft.photos.find((photo) => photo.sourcePhotoId === String(P2))!;
+    expect(draft.editing.photoEditors?.[second.id]).toEqual([String(memberA)]);
+  });
+
+  it('화면에서 위치를 바꾸면 그 뒤로는 화면 값이다', async () => {
+    const { result } = await renderReady();
+    act(() => {
+      result.current.actions.addLocation({ id: 'x', name: '장소 X', address: '주소 X' });
+    });
+
+    expect(ready(result.current.state).draft.locations.map((l) => l.name)).toEqual(['장소 X']);
+  });
+
   it('없는 번들·숫자가 아닌 id·번치 멤버가 아닌 경우는 없는 초안이다', async () => {
     const invalid = renderDraft('abc');
     expect(invalid.result.current.state.kind).toBe('missing');
@@ -327,21 +354,6 @@ describe('useDraft 저장', () => {
     expect(calls).toBeGreaterThanOrEqual(2);
   }, 15_000);
 
-  it('화면에서만 바뀐 사진 구성이 있으면 업로드를 막고 안내한다', async () => {
-    const { id, result } = await renderReady();
-    const photoId = ready(result.current.state).draft.photos[0]!.id;
-    act(() => result.current.actions.removePhoto(photoId));
-
-    let outcome: string | undefined;
-    await act(async () => {
-      outcome = await result.current.actions.publish();
-    });
-
-    expect(outcome).toBe('blocked');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadPhotosUnsynced, { fullWidth: true });
-    expect(serverBundle(id)?.status).toBe('DRAFT');
-  });
-
   it('이미 발행됨·본문 불일치(BUNDLE_002)는 충돌과 같은 안내로 알린다', async () => {
     const { result } = await renderReady();
     server.use(
@@ -435,14 +447,95 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     await expect(result.current.actions.searchPlaces('여의도')).resolves.not.toHaveLength(0);
   });
 
-  it('사진을 빼도 서버는 그대로이고 화면 목록만 바뀐다(서버 반영은 후속)', async () => {
+  it('사진을 빼면 서버 구성이 바뀌고 화면도 서버 값을 보인다', async () => {
     const { id, result } = await renderReady();
     const photoId = ready(result.current.state).draft.photos[0]!.id;
 
     act(() => result.current.actions.removePhoto(photoId));
-
+    // 보내는 동안에도 화면은 바로 줄어 있음
     expect(ready(result.current.state).draft.photos).toHaveLength(1);
-    expect(serverBundle(id)?.photos).toHaveLength(2);
+
+    await waitFor(() => expect(serverBundle(id)?.photos).toHaveLength(1), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+    expect(ready(result.current.state).draft.photos.map((photo) => photo.sourcePhotoId)).toEqual([
+      String(MOCK_PHOTO_IDS.S5),
+    ]);
+  });
+
+  it('사진 순서를 옮기면 서버 순서가 바뀐다', async () => {
+    const { id, result } = await renderReady();
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+
+    act(() => result.current.actions.movePhoto(photoId, 1));
+
+    await waitFor(
+      () =>
+        expect(serverBundle(id)?.photos.map((p) => p.photoId)).toEqual([
+          MOCK_PHOTO_IDS.S5,
+          MOCK_PHOTO_IDS.S4,
+        ]),
+      SAVE_WAIT,
+    );
+    await waitFor(
+      () =>
+        expect(
+          ready(result.current.state).draft.photos.map((photo) => photo.sourcePhotoId),
+        ).toEqual([String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S4)]),
+      SAVE_WAIT,
+    );
+  });
+
+  it('사진을 추가하면 서버가 맨 뒤에 붙이고, 고른 순서가 다르면 이동으로 맞춘다', async () => {
+    const { id, result } = await renderReady();
+    const current = ready(result.current.state).draft.photos;
+    const added = {
+      id: 'temp-added',
+      src: '/mock/photos/S1.jpg',
+      alt: '추가한 사진',
+      caption: '',
+      takenAt: null,
+      uploaderId: String(me),
+      sourcePhotoId: String(MOCK_PHOTO_IDS.S1),
+    };
+
+    // 새 사진을 맨 앞에 둔 선택 결과
+    act(() => result.current.actions.replacePhotos([added, ...current]));
+
+    await waitFor(
+      () =>
+        expect(serverBundle(id)?.photos.map((p) => p.photoId)).toEqual([
+          MOCK_PHOTO_IDS.S1,
+          MOCK_PHOTO_IDS.S4,
+          MOCK_PHOTO_IDS.S5,
+        ]),
+      SAVE_WAIT,
+    );
+  });
+
+  it('다른 멤버가 편집 중인 사진을 빼려 하면 서버가 거절해 안내하고 서버 구성으로 돌아온다', async () => {
+    const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
+    const created = await createBundle(
+      bunchId,
+      [P1, P2, P3, P4].map(String),
+      createIdempotencyKey(),
+    );
+    const view = renderDraft(created.id);
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const locked = ready(view.result.current.state).draft.photos.find(
+      (photo) => photo.sourcePhotoId === String(P2),
+    )!;
+
+    act(() => view.result.current.actions.removePhoto(locked.id));
+
+    await waitFor(
+      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true }),
+      SAVE_WAIT,
+    );
+    await waitFor(
+      () => expect(ready(view.result.current.state).draft.photos).toHaveLength(4),
+      SAVE_WAIT,
+    );
+    expect(serverBundle(created.id)?.photos).toHaveLength(4);
   });
 });
 
@@ -477,6 +570,43 @@ describe('useDraft 발행', () => {
       })),
     }));
   };
+
+  it('사진 변경이 실패하면 화면과 다른 서버 구성을 발행하지 않고 안내한다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', () => fail(500, 'COMMON_500')),
+    );
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    act(() => result.current.actions.removePhoto(photoId));
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('blocked');
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
+    expect(serverBundle(id)?.status).toBe('DRAFT');
+    // 화면도 서버 구성으로 돌아와 있음
+    expect(ready(result.current.state).draft.photos).toHaveLength(2);
+  });
+
+  it('사진 구성을 바꾼 직후 업로드해도 바뀐 구성이 발행된다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    act(() => result.current.actions.removePhoto(photoId));
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('published');
+    expect(serverBundle(id)?.status).toBe('PUBLISHED');
+    expect(serverBundle(id)?.photos).toHaveLength(1);
+  });
 
   it('조건이 모자란 발행은 안내하고 blocked를 돌려준다', async () => {
     const { result } = await renderReady();

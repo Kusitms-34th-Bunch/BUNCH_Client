@@ -87,6 +87,8 @@ const publishedBundles = (): MockBundle[] =>
       visibilityVersion: 1,
       date: seed.date,
       dateVersion: 1,
+      locations: [],
+      locationsVersion: 0,
       revision: 10,
       photos: [
         {

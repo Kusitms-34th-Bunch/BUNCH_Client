@@ -3,6 +3,8 @@ export const BUNCH_HOME_PATHS = {
   home: '/bunch',
   /** 번들 만들기 사진 선택 화면(번들 작성 흐름의 시작, 「+」·「첫 번들 만들기」에서 들어감) */
   createBundle: '/bunch/bundles/new',
+  /** 작성 중인 번들 공동 편집(작성) 화면(번치 홈 「작성 중인 번들」 카드에서 들어감) */
+  draft: (draftId: string) => `/bunch/drafts/${draftId}`,
   /** 더보기 메뉴(기능명세 5.4) */
   menu: '/bunch/menu',
   /** 번치 프로필 편집(기능명세 5.5, 메인 관리자) */
