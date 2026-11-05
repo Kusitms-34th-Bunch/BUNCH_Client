@@ -79,7 +79,8 @@ export const PhotoThumbnail = ({
         />
         {/* 이름은 사진 설명 + 선택 순서. 엔진마다 span 사이 공백 처리가 달라 한 글로 묶음 */}
         <span className="sr-only">
-          {selected && selectionOrder !== undefined ? `${alt}, ${selectionOrder}번째 선택` : alt}
+          {alt}
+          {selected && selectionOrder !== undefined ? <>, {selectionOrder}번째 선택</> : null}
         </span>
       </button>
     </span>
