@@ -8,46 +8,58 @@ UT는 가짜 서버(서비스 워커)가 필요해 **브라우저·홈 화면 �
 
 웹(`apps/web`) 하나만 Vercel 프로젝트로 만든다(admin은 UT에 쓰지 않음). 공유 패키지(`design-system`·`api-core`·`bridge`)는 `build` 스크립트 없이 소스(`.ts`)를 그대로 가져가므로 따로 빌드하지 않고 웹 빌드가 함께 컴파일한다. 다만 Yarn PnP가 루트의 `.pnp.cjs` 하나로 워크스페이스를 연결하므로 **설치는 저장소 루트에서** 해야 한다. 이 설정은 `apps/web/vercel.json`에 있다(`installCommand`, `buildCommand`).
 
-### Vercel 프로젝트 설정(계정에서 직접)
+배포는 **main 브랜치 기준**이다. `.github/workflows/ut-deploy.yml`이 main에 push(develop → main 머지)되면 자동으로 배포하고, 수동 실행으로 리허설·재배포·롤백을 한다.
 
-| 항목                                                                 | 값                                                                                                    |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| 프로젝트                                                             | **UT 전용** 새 프로젝트(운영과 분리)                                                                  |
-| Root Directory                                                       | `apps/web`                                                                                            |
-| Include source files outside of the Root Directory in the Build Step | 켬                                                                                                    |
-| Framework Preset                                                     | Next.js(`vercel.json`에도 지정됨)                                                                     |
-| Node.js Version                                                      | 24.x(`package.json`의 `engines.node >=24`)                                                            |
-| Install / Build Command                                              | `apps/web/vercel.json`이 지정하므로 대시보드에서 덮어쓰지 않는다                                      |
-| 환경 변수                                                            | `NEXT_PUBLIC_API_MOCKING=enabled`(Production), `ENABLE_EXPERIMENTAL_COREPACK=1`(Yarn 4를 쓰려면 필요) |
-| Deployment Protection                                                | 참여자 폰에서 열려야 하므로 끄거나 프로덕션 도메인으로 배포                                           |
+### Vercel 프로젝트(계정에서 직접, 한 번만)
 
-- `NEXT_PUBLIC_API_MOCKING`은 빌드 때 코드에 들어가므로 값을 바꾸면 **다시 배포**해야 한다. 운영 프로젝트에는 넣지 않는다(켜면 진행자 장치와 가짜 DB 초기화가 노출됨). 이 값은 `vercel.json`에 넣지 않는다(같은 설정을 쓰는 다른 프로젝트에도 켜지므로).
-- UT 빌드(`NEXT_PUBLIC_API_MOCKING=enabled`)는 검색에 노출되지 않도록 `noindex`가 켜진다(`app/layout.tsx`).
+개인 계정(Hobby)에서 시작했다. Hobby는 조직 소유 비공개 저장소를 Vercel에 연결하지 못하는 것으로 알고 있어, **Git 연결 없이 CLI로 프로젝트를 만든다**(`yarn dlx vercel@latest link`: 새 프로젝트 `bunch-ut`, Git 연결 No, 코드 위치 `apps/web`). Hobby는 비상업 용도 요금제라 UT에는 맞지만 정식 운영에는 맞지 않는다(UT 이후 팀과 정한다).
+
+| 항목                                                                 | 값                                                                                              |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 프로젝트                                                             | **UT 전용**(운영과 분리), 이름 `bunch-ut`                                                       |
+| Git 연결                                                             | 없음(Actions로 배포)                                                                            |
+| Root Directory                                                       | `apps/web`                                                                                      |
+| Include source files outside of the Root Directory in the Build Step | 켬                                                                                              |
+| Node.js Version                                                      | 24.x(`package.json`의 `engines.node >=24`)                                                      |
+| Framework Preset                                                     | Next.js(`vercel.json`에도 지정됨)                                                               |
+| Install / Build Command                                              | `apps/web/vercel.json`이 지정하므로 대시보드에서 덮어쓰지 않는다                                |
+| 환경 변수                                                            | **넣지 않는다.** 가짜 서버 변수(`NEXT_PUBLIC_API_MOCKING`)는 workflow가 빌드 단계에서 고정한다  |
+| Deployment Protection                                                | 참여자 폰에서 열려야 하므로 프로덕션 접속에 Vercel 로그인이 걸려 있지 않은지 시크릿 창으로 확인 |
+
+`vercel link`는 `.vercel/project.json`(프로젝트 ID·계정 ID)을 만든다. `.vercel`은 gitignore 대상이다. 이 명령이 `.gitignore` 끝에 `.vercel`과 `.env*`를 덧붙이는데, `.env*`는 `.env.example` 예외를 뒤집으므로 **덧붙은 부분은 지운다.**
+
+### GitHub secret(저장소 Settings → Secrets and variables → Actions)
+
+| secret                 | 값                                                                   |
+| ---------------------- | -------------------------------------------------------------------- |
+| `VERCEL_TOKEN`         | Vercel 계정 Settings → Tokens에서 만든 토큰                          |
+| `VERCEL_ORG_ID`        | `.vercel/project.json`의 `orgId`(Hobby도 `team_…` 형태)              |
+| `VERCEL_UT_PROJECT_ID` | `.vercel/project.json`의 `projectId`(운영 프로젝트 ID를 넣지 않는다) |
 
 ### 배포 방법
 
-두 가지 중 **하나만** 쓴다(같은 커밋이 두 번 배포되지 않게).
+- **자동**: develop → main PR이 머지되면 `UT Deploy`가 실행된다.
+- **수동**: Actions 탭 → UT Deploy → Run workflow에서 ref를 골라 실행한다(기본 develop). main 머지 전에 develop으로 **리허설**하거나, 실패했을 때 다시 올리거나 이전 커밋으로 되돌릴 때 쓴다. workflow 파일이 기본 브랜치(develop)에 있어야 Actions 탭에 보인다.
+- 완료되면(약 3~5분) 실행 요약에 배포 주소가 남고 Vercel 대시보드에도 보인다.
 
-**A. GitHub Actions(`ut-deploy.yml`) — 권장**
+**UT 기간에는 main에 머지하지 않는다.** main 머지가 곧 UT 주소 갱신이라 참여자 화면이 바뀐다.
 
-- Actions 탭 → UT Deploy → Run workflow에서 배포할 ref(기본 develop)를 골라 **수동으로** 실행한다. UT 도중 develop 푸시로 화면이 바뀌지 않는다.
-- GitHub Actions 러너(CI와 같은 환경)에서 설치·빌드하고 결과물만 Vercel에 올리므로 Vercel 빌드 환경의 Yarn PnP 불확실성을 피한다. `NEXT_PUBLIC_API_MOCKING=enabled`는 workflow가 빌드 단계에서 고정한다.
-- 저장소 secret 3개가 필요하다: `VERCEL_TOKEN`(Vercel 계정 토큰), `VERCEL_ORG_ID`(팀 ID), `VERCEL_UT_PROJECT_ID`(UT 프로젝트 ID, 운영 프로젝트 ID를 넣지 않는다). ID는 UT 프로젝트의 Settings에서 확인한다.
-- 이 방식을 쓰면 Vercel 프로젝트의 GitHub 연결(Git 자동 배포)은 끈다.
+- GitHub Actions 러너(CI와 같은 환경)에서 설치·빌드하고 결과물만 Vercel에 올리므로 Vercel 빌드 환경의 Yarn PnP 불확실성을 피한다.
 - 토큰은 `vercel pull`·`deploy` 단계에만 주고, 저장소 코드를 실행하는 빌드 단계에는 주지 않는다.
+- Vercel에 GitHub를 연결해 직접 빌드하는 방식(`apps/web/vercel.json`의 명령과 `ENABLE_EXPERIMENTAL_COREPACK=1`, `NEXT_PUBLIC_API_MOCKING=enabled` 환경 변수가 필요)은 쓰지 않는다. Actions와 함께 켜면 같은 커밋이 두 번 배포된다.
 
-**B. Vercel에 GitHub 저장소 연결**
-
-- develop 기준으로 Vercel이 직접 설치·빌드한다. 위 「Vercel 프로젝트 설정」 표가 그대로 적용된다. Yarn PnP가 막히면 A로 바꾼다.
-
-**CLI로 직접 올릴 때**(`vercel link`, `vercel --prod`): **로컬 작업 폴더에서 바로 올리지 않는다.** 로컬 폴더에는 `.env.pr-review`(GitHub 토큰)·`.env.openapi.local` 같은 gitignore 대상 비밀 파일이 있을 수 있다. 업로드 제외 규칙이 이를 걸러 주는지 확인하지 않았으므로 새로 clone한 깨끗한 폴더에서 배포한다. `vercel link`가 만드는 `.vercel`은 gitignore에 넣어 두었다.
+**CLI로 직접 올릴 때**(`vercel --prod`): **로컬 작업 폴더에서 바로 올리지 않는다.** 로컬 폴더에는 `.env.pr-review`(GitHub 토큰)·`.env.openapi.local` 같은 gitignore 대상 비밀 파일이 있을 수 있다. 업로드 제외 규칙이 이를 걸러 주는지 확인하지 않았으므로 새로 clone한 깨끗한 폴더에서 배포한다.
 
 ### 아직 확인하지 않은 것
 
-- 위 설정으로 Vercel에서 설치·빌드가 통과하는지(처음 배포하며 확인). 특히 Yarn PnP가 Vercel 빌드 환경에서 동작하는지가 가장 불확실하다. 막히면 Vercel 환경 변수에 `YARN_NODE_LINKER=node-modules`를 추가해 그 환경에서만 `node_modules` 방식으로 설치해 본다.
-- 그래도 안 되면 CLI로 `vercel build` 후 `vercel deploy --prebuilt`로 올린다(`.github/workflow-templates/vercel-deploy.yml`이 쓰는 방식).
-- `ut-deploy.yml`은 한 번도 실행해 보지 않았다. 처음 실행에서 `vercel pull`·`build`가 저장소 루트에서 Root Directory(`apps/web`) 설정과 함께 동작하는지, `yarn dlx vercel@latest`가 Yarn PnP 저장소에서 실행되는지, 배포 URL 출력이 요약에 제대로 남는지 확인한다.
-- UT 이후에는 이 workflow를 정리한다(preview/production 분리, 자동 배포 여부, `vercel@latest` 버전 고정은 그때 정한다).
+- `ut-deploy.yml`은 한 번도 실행해 보지 않았다. 처음 실행에서 `vercel pull`·`build`가 저장소 루트에서 Root Directory(`apps/web`) 설정과 함께 동작하는지, `yarn dlx vercel@latest`가 Yarn PnP 저장소에서 실행되는지, 배포 URL 출력이 요약에 제대로 남는지 확인한다. main 머지로 처음 실행되지 않도록 develop 머지 뒤 수동 리허설을 먼저 한다.
+- Hobby의 한도(일일 배포 수 등)와 요금제 조건은 현재 정책을 확인하지 못했다.
+- 이름·아이콘이 의도대로 보이는지, 서비스 워커·가짜 서버가 켜지는지는 실기기에서 확인한다.
+
+### UT 이후 정리할 것
+
+- push(main) 트리거를 끄거나 workflow를 제거한다(main이 운영에 쓰이면 계속 UT 프로젝트를 갱신하게 됨).
+- preview/production 분리, `vercel@latest` 버전 고정, 자동 배포 범위, 요금제(Hobby 이후)와 계정 소유(개인 → 팀)를 팀과 정한다.
 
 배포 뒤 확인할 것: 주소가 폰에서 열린다, 개발자 도구(또는 원격 디버깅)에서 서비스 워커가 등록된다, `/manifest.webmanifest`가 응답한다, 번치 홈에 「여행쥬아」와 기존 번들 2개가 보인다(가짜 서버가 켜진 증거).
 
