@@ -2,12 +2,15 @@
 
 import { ActionDialog, toast } from '@app/design-system';
 import { usePathname } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createTapSequence } from './tapSequence';
 import { resetToStateA, restoreStateB } from './utStateB';
 
 // 화면 맨 위 가운데의 보이지 않는 영역을 이 횟수만큼 연달아 누르면 열림(참여자가 우연히 열지 않도록 넉넉히)
 const OPEN_TAP_COUNT = 7;
+// 번치 홈의 캐릭터 자리(`data-facilitator-trigger="bunch-character"`)는 5번
+const CHARACTER_TAP_COUNT = 5;
+const CHARACTER_SELECTOR = '[data-facilitator-trigger="bunch-character"]';
 const TAP_GAP_MS = 1000;
 // 가짜 DB가 IndexedDB에 쓰기까지의 지연(300ms)보다 길게 기다린 뒤 새로 불러와야 바뀐 값이 남음
 const PERSIST_WAIT_MS = 700;
@@ -24,7 +27,7 @@ const browserNavigate = (path: string) => {
 };
 
 /**
- * UT 진행자 장치(참여자 화면에는 보이지 않음): 위쪽 가운데를 연달아 누르면 작은 창이 열림
+ * UT 진행자 장치(참여자 화면에는 보이지 않음): 번치 홈의 캐릭터를 5번, 화면 맨 위 가운데를 7번 연달아 누르면 작은 창이 열림
  * - 상태 B로 되돌리기: 작성 화면에서만, 지금 초안을 UT 상태 B로 되돌림
  * - 상태 A로 초기화: 가짜 DB를 시작 데이터로 되돌리고 번치 홈에서 다시 시작
  * `mocks/scenario`와 함께 UT가 끝나면 지움(ApiMockingGate의 불러오는 한 곳)
@@ -37,6 +40,17 @@ export function FacilitatorTool({ navigate = browserNavigate }: FacilitatorToolP
     [],
   );
   const draftId = DRAFT_PATH.exec(pathname)?.[1];
+
+  // 번치 홈 캐릭터를 연달아 누르면 열림(화면 코드는 표식만 두고 터치 판정은 여기서 함)
+  useEffect(() => {
+    const characterTaps = createTapSequence({ count: CHARACTER_TAP_COUNT, gapMs: TAP_GAP_MS });
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest(CHARACTER_SELECTOR)) return;
+      if (characterTaps.tap()) setOpen(true);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, []);
 
   const finish = (message: string, path: string) => {
     setOpen(false);

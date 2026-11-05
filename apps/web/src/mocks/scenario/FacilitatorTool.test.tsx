@@ -46,6 +46,34 @@ describe('진행자 장치', () => {
     expect(await open()).toBeInTheDocument();
   });
 
+  it('번치 홈의 캐릭터를 5번 연달아 누르면 열리고, 4번까지는 열리지 않는다', async () => {
+    render(
+      <>
+        <FacilitatorTool navigate={navigate} />
+        <div data-testid="character" data-facilitator-trigger="bunch-character" />
+      </>,
+    );
+
+    for (let i = 0; i < 4; i += 1) fireEvent.pointerDown(screen.getByTestId('character'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    fireEvent.pointerDown(screen.getByTestId('character'));
+
+    expect(await screen.findByRole('alertdialog', { name: '진행자 메뉴' })).toBeInTheDocument();
+  });
+
+  it('표식이 없는 곳을 연달아 눌러도 열리지 않는다', () => {
+    render(
+      <>
+        <FacilitatorTool navigate={navigate} />
+        <div data-testid="other" />
+      </>,
+    );
+
+    for (let i = 0; i < 8; i += 1) fireEvent.pointerDown(screen.getByTestId('other'));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
   it('작성 화면이 아니면 「상태 B로 되돌리기」는 비활성이고 「상태 A로 초기화」는 쓸 수 있다', async () => {
     render(<FacilitatorTool navigate={navigate} />);
 
