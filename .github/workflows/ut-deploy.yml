@@ -1,0 +1,103 @@
+name: UT Deploy
+
+# UT용 임시 배포 workflow(UT 이후 팀과 상의해 정리 예정).
+# - main에 push(develop → main 머지)되면 자동으로 배포하고, 수동 실행(workflow_dispatch)으로 리허설·재배포·롤백을 한다.
+# - 가짜 서버(NEXT_PUBLIC_API_MOCKING=enabled)로 빌드해 UT 전용 Vercel 프로젝트에 올린다. 운영 프로젝트 ID를 secret에 넣지 않는다.
+# - UT 기간에는 main에 머지하지 않는다(머지하면 참여자 화면이 바뀜). UT가 끝나면 push 트리거를 지우거나 이 workflow를 제거한다.
+# - Vercel을 GitHub 저장소와 연결해 자동 배포하는 설정은 꺼 둔다(같은 커밋이 두 번 배포되지 않게).
+# - vercel CLI는 토큰이 있는 단계에서 실행되므로 버전을 고정한다(14일 이상 지난 버전). 올릴 때는 이 파일의 vercel@ 버전을 직접 바꾼다.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 수동 실행에서 배포할 브랜치·태그·커밋(기본 develop)
+        required: true
+        default: develop
+        type: string
+
+concurrency:
+  group: ut-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy UT build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_UT_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          # 이 job은 저장소에 push하지 않으므로 GITHUB_TOKEN을 .git/config에 남기지 않는다
+          persist-credentials: false
+
+      # 의존성 설치(코드가 실행될 수 있는 단계) 전 변조 징후 선검사. 실패하면 설치하지 않고 중단
+      - name: 변조 가드
+        run: node turbo/workflows/check-suspicious.mjs
+
+      - name: 의존성 설치
+        uses: ./.github/actions/setup
+
+      - name: 배포 secret 확인
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          test -n "$VERCEL_ORG_ID" || { echo "VERCEL_ORG_ID secret이 없습니다."; exit 1; }
+          test -n "$VERCEL_PROJECT_ID" || { echo "VERCEL_UT_PROJECT_ID secret이 없습니다."; exit 1; }
+          test -n "$VERCEL_TOKEN" || { echo "VERCEL_TOKEN secret이 없습니다."; exit 1; }
+
+      # 운영 프로젝트 ID를 UT secret에 잘못 넣으면 가짜 서버 빌드가 운영에 --prod로 올라간다.
+      # 프로젝트 이름을 Vercel API에서 직접 받아 UT 프로젝트가 아니면(이름을 못 받는 경우도) 멈춘다. 저장소 코드는 실행하지 않는 인라인 스크립트다.
+      - name: UT 프로젝트 확인
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          EXPECTED_PROJECT_NAME: bunch-ut
+        run: |
+          node -e '
+            const { VERCEL_TOKEN, VERCEL_PROJECT_ID, VERCEL_ORG_ID, EXPECTED_PROJECT_NAME } = process.env;
+            const url = "https://api.vercel.com/v9/projects/" + VERCEL_PROJECT_ID + "?teamId=" + VERCEL_ORG_ID;
+            fetch(url, { headers: { Authorization: "Bearer " + VERCEL_TOKEN } })
+              .then(async (res) => {
+                if (!res.ok) throw new Error("프로젝트 조회 실패(HTTP " + res.status + "). secret의 ID와 토큰 권한을 확인하세요.");
+                const { name } = await res.json();
+                if (name !== EXPECTED_PROJECT_NAME) {
+                  throw new Error("UT 프로젝트(" + EXPECTED_PROJECT_NAME + ")가 아닌 프로젝트(" + name + ")입니다. VERCEL_UT_PROJECT_ID를 확인하세요.");
+                }
+                console.log("UT 프로젝트 확인: " + name);
+              })
+              .catch((error) => { console.error(error.message); process.exit(1); });
+          '
+
+      # 저장소 루트에서 실행(프로젝트의 Root Directory가 apps/web이라 CLI는 루트에서 부른다)
+      - name: Vercel 프로젝트 설정 받기
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: yarn dlx vercel@65.1.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      # 빌드는 저장소 코드를 실행하므로 토큰을 주지 않는다. 가짜 서버 환경 변수는 여기서 고정한다.
+      - name: 빌드(가짜 서버 켬)
+        env:
+          NEXT_PUBLIC_API_MOCKING: enabled
+        run: yarn dlx vercel@65.1.0 build --prod
+
+      - name: 배포
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          REF: ${{ inputs.ref || github.ref_name }}
+        # bash를 명시해 파이프의 앞 명령이 실패해도 단계가 실패하게 한다(기본 셸은 pipefail이 꺼져 있음)
+        shell: bash
+        run: |
+          out=$(yarn dlx vercel@65.1.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          url=$(printf '%s\n' "$out" | tail -n 1)
+          test -n "$url" || { echo "배포 URL을 받지 못했습니다."; exit 1; }
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "UT 배포: $url (ref: $REF)" >> "$GITHUB_STEP_SUMMARY"

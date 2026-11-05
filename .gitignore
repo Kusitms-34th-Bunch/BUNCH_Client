@@ -12,6 +12,7 @@ dist/
 .next/
 next-env.d.ts
 .turbo/
+.vercel
 .tanstack/
 coverage/
 playwright-report/
