@@ -61,6 +61,7 @@ export function OtherBunchScreen({
   return (
     <PageShell
       data-app-background="brand-subtle-1"
+      data-app-background-bottom="primary"
       className="from-surface-brand-subtle-1 to-surface-primary bg-linear-to-b from-50% to-50%"
       header={
         <Header

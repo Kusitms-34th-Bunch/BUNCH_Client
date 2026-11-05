@@ -90,6 +90,7 @@ export function BunchHomeScreen({
     // 틀 배경은 위 절반 연보라·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 연보라, 아래는 흰색이 드러남
     <PageShell
       data-app-background="brand-subtle-1"
+      data-app-background-bottom="primary"
       className="from-surface-brand-subtle-1 to-surface-primary bg-linear-to-b from-50% to-50%"
       header={
         <BunchHomeHeader

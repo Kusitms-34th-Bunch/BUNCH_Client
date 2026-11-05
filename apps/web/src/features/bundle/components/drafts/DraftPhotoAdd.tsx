@@ -113,11 +113,8 @@ export function DraftPhotoAdd({
       }
       bottom={
         <div
-          className="bg-surface-primary pt-padding-p7 px-padding-p8"
-          style={{
-            paddingBottom:
-              'calc(var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)) + var(--spacing-s4))',
-          }}
+          // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
+          className="bg-surface-primary pt-padding-p7 px-padding-p8 pb-s4"
         >
           <Button className="w-full" disabled={!applicable} onClick={apply}>
             {BUNDLE_MESSAGES.photoAddApply}

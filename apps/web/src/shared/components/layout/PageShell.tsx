@@ -10,6 +10,8 @@ type PageShellProps = {
   className?: string;
   /** Safe Area까지 이어질 배경 표식(AppFrame에서 처리) */
   'data-app-background'?: 'brand-subtle-1' | 'secondary' | undefined;
+  /** 아래 Safe Area만 다른 색일 때(위는 data-app-background, 아래 내용은 흰색인 화면) */
+  'data-app-background-bottom'?: 'primary' | undefined;
   children: ReactNode;
 };
 
@@ -23,10 +25,12 @@ export function PageShell({
   className,
   children,
   'data-app-background': appBackground,
+  'data-app-background-bottom': appBackgroundBottom,
 }: PageShellProps) {
   return (
     <div
       data-app-background={appBackground}
+      data-app-background-bottom={appBackgroundBottom}
       className={cn('bg-surface-primary flex min-h-0 flex-1 flex-col', className)}
     >
       {header ? <div className="shrink-0">{header}</div> : null}
