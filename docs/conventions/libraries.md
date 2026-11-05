@@ -20,6 +20,8 @@
 | 런타임 스키마 검증                                                                        | `zod`                                          | api-core·web·bridge | `docs/architecture/data-layer.md`               |
 | 변형 있는 Tailwind class                                                                  | `tailwind-variants`(+`tailwind-merge`, `clsx`) | design-system       | `docs/architecture/design-system-components.md` |
 | API 가짜 서버                                                                             | `msw`                                          | web(개발)           | ADR 007, `docs/workflows/testing.md`            |
+| 화면 접근성 자동 검사(E2E 안에서 axe 실행)                                                | `@axe-core/playwright`                         | 루트(E2E)           | `docs/workflows/testing.md`                     |
+| 번들 구성 분석(모듈별 크기, CI 번들 크기 보고의 원인 표)                                  | `@next/bundle-analyzer`                        | web(개발·CI 빌드)   | `docs/workflows/performance.md`                 |
 | 오류 수집                                                                                 | `@sentry/nextjs`                               | web                 | ADR 006                                         |
 | web↔앱 통신                                                                               | `@webview-bridge/web`                          | web                 | `docs/architecture/mobile-shell.md`             |
 | 앱 쉘에서 고른 사진 줄이기(웹이 직접 자를 원본 전달)                                      | `expo-image-manipulator`                       | mobile-shell        | `docs/architecture/mobile-shell.md`             |

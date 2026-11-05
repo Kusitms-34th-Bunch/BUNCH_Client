@@ -54,15 +54,11 @@ jobs:
       - name: 의존성 설치
         uses: ./.github/actions/setup
 
-      # 스크립트는 env를 .env 파일보다 먼저 읽으므로 .env 파일 불필요
+      # 스크립트는 env를 .env 파일보다 먼저 읽으므로 .env 파일 불필요. 생성 뒤 Prettier까지 적용해 커밋본과 같은 포맷
       - name: 타입 생성
         env:
           OPENAPI_SCHEMA_URL: ${{ secrets.OPENAPI_SCHEMA_URL }}
         run: yarn gen:api-types
-
-      # openapi-typescript 출력은 포맷되지 않음(큰따옴표·4칸). 커밋본은 Prettier 적용본이라 같은 포맷으로 맞춤
-      - name: 포맷
-        run: yarn prettier --write "$GENERATED_PATH"
 
       # 보고 형식은 Frontend CI 결과 댓글(ci.yml)과 같음: 제목 → 결과 한 줄 → 상세 → 기준 커밋·실행 로그
       - name: 드리프트 확인
@@ -91,7 +87,7 @@ jobs:
             echo ""
             echo "**결과: 실패** — 커밋된 생성 타입이 스펙과 다릅니다 (추가 ${added}줄, 삭제 ${removed}줄)"
             echo ""
-            echo "로컬에서 \`yarn gen:api-types\`와 \`yarn prettier --write $GENERATED_PATH\`를 실행해 갱신한 뒤 커밋하세요. 전체 diff는 artifact \`openapi-drift-diff\`에 있습니다."
+            echo "로컬에서 \`yarn gen:api-types\`를 실행해 갱신한 뒤 커밋하세요(포맷까지 적용됨). 전체 diff는 artifact \`openapi-drift-diff\`에 있습니다."
             echo ""
             echo "### 경로 변경"
             echo ""

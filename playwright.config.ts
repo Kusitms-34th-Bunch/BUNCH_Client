@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const adminBaseUrl = 'http://127.0.0.1:5173';
+// 3000은 로컬 개발 서버가 쓰므로 비켜 둠
+const webBaseUrl = 'http://127.0.0.1:3200';
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,13 +22,35 @@ export default defineConfig({
       testMatch: /admin\/.*\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], baseURL: adminBaseUrl },
     },
+    {
+      // 사용자 앱은 WebView 화면이라 모바일 크기로 확인
+      name: 'web-chromium',
+      testMatch: /web\/.*\.spec\.ts/,
+      use: { ...devices['Pixel 7'], baseURL: webBaseUrl },
+      // dev 서버가 화면을 처음 열 때 컴파일하므로 CI의 첫 이동이 느림
+      timeout: 120_000,
+      expect: { timeout: 30_000 },
+    },
   ],
-  webServer: {
-    command: 'yarn workspace @app/admin dev --host 127.0.0.1 --port 5173 --strictPort',
-    url: adminBaseUrl,
-    reuseExistingServer: !process.env.CI,
-    stdout: process.env.CI ? 'pipe' : 'ignore',
-    stderr: 'pipe',
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: 'yarn workspace @app/admin dev --host 127.0.0.1 --port 5173 --strictPort',
+      url: adminBaseUrl,
+      reuseExistingServer: !process.env.CI,
+      stdout: process.env.CI ? 'pipe' : 'ignore',
+      stderr: 'pipe',
+      timeout: 120_000,
+    },
+    {
+      // 실제 백엔드 없이 MSW 가짜 서버로 화면 흐름만 확인
+      command: 'yarn workspace @app/web exec next dev --webpack --hostname 127.0.0.1 --port 3200',
+      url: webBaseUrl,
+      env: { NEXT_PUBLIC_API_MOCKING: 'enabled' },
+      // 이미 떠 있는 서버는 MSW가 켜졌는지 알 수 없어 재사용하지 않음(포트가 쓰이고 있으면 오류)
+      reuseExistingServer: false,
+      stdout: process.env.CI ? 'pipe' : 'ignore',
+      stderr: 'pipe',
+      timeout: 180_000,
+    },
+  ],
 });

@@ -39,6 +39,7 @@
   "devDependencies": {
     "@app/lint-config": "workspace:*",
     "@app/ts-config": "workspace:*",
+    "@next/bundle-analyzer": "^16.4.5",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",

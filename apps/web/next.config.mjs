@@ -1,4 +1,12 @@
+import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs/config';
+
+// ANALYZE=true 빌드에서만 모듈별 크기를 .next/analyze/client.json으로 기록(번들 크기 보고가 원인 표에 사용)
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+  analyzerMode: 'json',
+  openAnalyzer: false,
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -16,7 +24,7 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   org: process.env.SENTRY_ORG ?? 'bunch-01',
   project: process.env.SENTRY_PROJECT ?? 'javascript-nextjs',
   silent: true,
