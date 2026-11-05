@@ -26,14 +26,28 @@ UT는 가짜 서버(서비스 워커)가 필요해 **브라우저·홈 화면 �
 
 ### 배포 방법
 
-- **권장: Vercel에 GitHub 저장소를 연결**해 develop 기준으로 배포한다. 커밋된 파일만 쓰므로 로컬의 비밀 파일이 올라갈 일이 없다.
-- Vercel CLI(`vercel link`, `vercel --prod`)를 쓴다면 **로컬 작업 폴더에서 바로 올리지 않는다.** 로컬 폴더에는 `.env.pr-review`(GitHub 토큰)·`.env.openapi.local` 같은 gitignore 대상 비밀 파일이 있을 수 있다. 업로드 제외 규칙이 이를 걸러 주는지 확인하지 않았으므로, 새로 clone한 깨끗한 폴더에서 배포한다. `vercel link`가 만드는 `.vercel`은 gitignore에 넣어 두었다.
+두 가지 중 **하나만** 쓴다(같은 커밋이 두 번 배포되지 않게).
+
+**A. GitHub Actions(`ut-deploy.yml`) — 권장**
+
+- Actions 탭 → UT Deploy → Run workflow에서 배포할 ref(기본 develop)를 골라 **수동으로** 실행한다. UT 도중 develop 푸시로 화면이 바뀌지 않는다.
+- GitHub Actions 러너(CI와 같은 환경)에서 설치·빌드하고 결과물만 Vercel에 올리므로 Vercel 빌드 환경의 Yarn PnP 불확실성을 피한다. `NEXT_PUBLIC_API_MOCKING=enabled`는 workflow가 빌드 단계에서 고정한다.
+- 저장소 secret 3개가 필요하다: `VERCEL_TOKEN`(Vercel 계정 토큰), `VERCEL_ORG_ID`(팀 ID), `VERCEL_UT_PROJECT_ID`(UT 프로젝트 ID, 운영 프로젝트 ID를 넣지 않는다). ID는 UT 프로젝트의 Settings에서 확인한다.
+- 이 방식을 쓰면 Vercel 프로젝트의 GitHub 연결(Git 자동 배포)은 끈다.
+- 토큰은 `vercel pull`·`deploy` 단계에만 주고, 저장소 코드를 실행하는 빌드 단계에는 주지 않는다.
+
+**B. Vercel에 GitHub 저장소 연결**
+
+- develop 기준으로 Vercel이 직접 설치·빌드한다. 위 「Vercel 프로젝트 설정」 표가 그대로 적용된다. Yarn PnP가 막히면 A로 바꾼다.
+
+**CLI로 직접 올릴 때**(`vercel link`, `vercel --prod`): **로컬 작업 폴더에서 바로 올리지 않는다.** 로컬 폴더에는 `.env.pr-review`(GitHub 토큰)·`.env.openapi.local` 같은 gitignore 대상 비밀 파일이 있을 수 있다. 업로드 제외 규칙이 이를 걸러 주는지 확인하지 않았으므로 새로 clone한 깨끗한 폴더에서 배포한다. `vercel link`가 만드는 `.vercel`은 gitignore에 넣어 두었다.
 
 ### 아직 확인하지 않은 것
 
 - 위 설정으로 Vercel에서 설치·빌드가 통과하는지(처음 배포하며 확인). 특히 Yarn PnP가 Vercel 빌드 환경에서 동작하는지가 가장 불확실하다. 막히면 Vercel 환경 변수에 `YARN_NODE_LINKER=node-modules`를 추가해 그 환경에서만 `node_modules` 방식으로 설치해 본다.
 - 그래도 안 되면 CLI로 `vercel build` 후 `vercel deploy --prebuilt`로 올린다(`.github/workflow-templates/vercel-deploy.yml`이 쓰는 방식).
-- 자동 배포(GitHub Actions)는 하지 않는다. 템플릿은 있지만 secret과 모노레포 빌드 검증이 필요해 UT 이후로 미룬다.
+- `ut-deploy.yml`은 한 번도 실행해 보지 않았다. 처음 실행에서 `vercel pull`·`build`가 저장소 루트에서 Root Directory(`apps/web`) 설정과 함께 동작하는지, `yarn dlx vercel@latest`가 Yarn PnP 저장소에서 실행되는지, 배포 URL 출력이 요약에 제대로 남는지 확인한다.
+- UT 이후에는 이 workflow를 정리한다(preview/production 분리, 자동 배포 여부, `vercel@latest` 버전 고정은 그때 정한다).
 
 배포 뒤 확인할 것: 주소가 폰에서 열린다, 개발자 도구(또는 원격 디버깅)에서 서비스 워커가 등록된다, `/manifest.webmanifest`가 응답한다, 번치 홈에 「여행쥬아」와 기존 번들 2개가 보인다(가짜 서버가 켜진 증거).
 
