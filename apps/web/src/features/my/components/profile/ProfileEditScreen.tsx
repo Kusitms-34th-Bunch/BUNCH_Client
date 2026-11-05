@@ -1,17 +1,14 @@
 'use client';
 
 import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
-import { CameraButton, ProfileImage } from '@app/design-system/web';
 import { useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
+import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
 import { type ProfileValues, useProfileFields } from '@/shared/hooks/useProfileFields';
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
-import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
-import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import { normalizeNickname } from '@/shared/lib/nickname';
 import type { MyProfile } from '../../lib/types';
@@ -38,13 +35,12 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
   useScrollFocusedIntoView();
   const initial = toProfileValues(profile);
   const fields = useProfileFields(initial);
-  const { inputRef, photoUrl, handleCameraClick, handleFileChange } = usePhotoPicker({
-    onError: () => toast(MY_MESSAGES.photoUnusable),
-  });
+  // 바꾼 사진은 미리보기만(서버 반영은 프로필 수정 API 연결 시)
+  const [photo, setPhoto] = useState(profile.imageSrc);
   // 저장 중 중복 탭 방지(화면 설계서 7번)
   const [submitting, setSubmitting] = useState(false);
 
-  const changed = photoUrl !== undefined || !isSameValues(fields.values, initial);
+  const changed = photo !== profile.imageSrc || !isSameValues(fields.values, initial);
   const canSubmit = changed && fields.isValid && !submitting;
 
   const submit = () => {
@@ -83,27 +79,7 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
         <h1 className="sr-only">{MY_MESSAGES.profileEditTitle}</h1>
         {/* 헤더 아래 48, 사진과 입력 칸 사이 32(Figma 개인 프로필 편집(1)) */}
         <div className="pt-s18 flex flex-col items-center">
-          <div className="relative h-22.5 w-23.75">
-            <ProfileImage
-              src={photoUrl ?? profile.imageSrc ?? DEFAULT_BUNCH_IMAGE}
-              className="absolute top-0 left-0.75"
-            />
-            <CameraButton
-              aria-label={MY_MESSAGES.photoChange}
-              className="absolute top-15.5 left-16.75"
-              onClick={() => {
-                closeKeyboard();
-                handleCameraClick();
-              }}
-            />
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept={WEB_IMAGE_ACCEPT}
-            className="hidden"
-            onChange={handleFileChange}
-          />
+          <ProfilePhotoField value={photo} onChange={setPhoto} />
         </div>
         <div className="pt-s14 px-padding-p8">
           <ProfileFields fields={fields} showOptional={false} />

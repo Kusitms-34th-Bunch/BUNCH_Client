@@ -3,6 +3,7 @@ import type {
   GalleryImage,
   PermissionKind,
   PermissionStatus,
+  PickGalleryImageOptions,
   SetNativeTabBarParams,
   ShareParams,
 } from './schema';
@@ -13,6 +14,7 @@ export {
   nativeTabBarItemSchema,
   permissionKindSchema,
   permissionStatusSchema,
+  pickGalleryImageOptionsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
 } from './schema';
@@ -22,14 +24,15 @@ export type {
   NativeTabBarItem,
   PermissionKind,
   PermissionStatus,
+  PickGalleryImageOptions,
   SetNativeTabBarParams,
   ShareParams,
 } from './schema';
 
 /** 네이티브 구현과 웹 호출부가 공유하는 bridge 메서드 계약 */
 export type AppBridgeMethods = {
-  /** 갤러리 사진의 임시 미리보기. 취소 시 null */
-  pickGalleryImage: () => Promise<GalleryImage | null>;
+  /** 갤러리 사진의 임시 미리보기. 취소 시 null. 옵션을 모르는 이전 앱은 무시하고 정사각형 편집 결과를 돌려줌 */
+  pickGalleryImage: (_options?: PickGalleryImageOptions) => Promise<GalleryImage | null>;
   /** 시스템 권한 팝업 요청. 이미 정해진 권한은 팝업 없이 현재 상태 반환 */
   requestPermission: (_kind: PermissionKind) => Promise<PermissionStatus>;
   /** 네이티브 공유 시트 호출, 일반 브라우저에서는 Web Share API로 대체 */

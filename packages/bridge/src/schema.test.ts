@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { galleryImageSchema, setNativeTabBarParamsSchema } from './schema.ts';
+import {
+  galleryImageSchema,
+  pickGalleryImageOptionsSchema,
+  setNativeTabBarParamsSchema,
+} from './schema.ts';
 
 void test('네이티브 탭 ID는 서로 달라야 한다', () => {
   const items = [
@@ -52,4 +56,12 @@ void test('갤러리 미리보기는 크기가 제한된 JPEG data URL만 허용
   ]) {
     assert.equal(galleryImageSchema.safeParse({ dataUrl }).success, false);
   }
+});
+
+void test('갤러리 선택 옵션은 edit 불리언만 허용하고 생략할 수 있다', () => {
+  assert.equal(pickGalleryImageOptionsSchema.safeParse(undefined).success, true);
+  assert.equal(pickGalleryImageOptionsSchema.safeParse({}).success, true);
+  assert.equal(pickGalleryImageOptionsSchema.safeParse({ edit: false }).success, true);
+  assert.equal(pickGalleryImageOptionsSchema.safeParse({ edit: 'no' }).success, false);
+  assert.equal(pickGalleryImageOptionsSchema.safeParse({ edit: false, extra: 1 }).success, false);
 });

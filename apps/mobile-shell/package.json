@@ -13,6 +13,7 @@
     "expo-dev-client": "~57.0.20",
     "expo-font": "~57.0.4",
     "expo-haptics": "~57.0.3",
+    "expo-image-manipulator": "~57.0.21",
     "expo-image-picker": "~57.0.20",
     "expo-linking": "~57.0.13",
     "expo-notifications": "~57.0.23",
@@ -30,7 +31,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/web-url.test.mjs src/tabs/*.test.mjs",
+    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/web-url.test.mjs src/gallery-resize.test.mjs src/tabs/*.test.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
