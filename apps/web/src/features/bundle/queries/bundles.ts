@@ -76,6 +76,7 @@ const useBundleGone = (
 
 /** 번들 삭제(생성자·번치 관리자, 번치 홈 「작성 중인 번들」의 삭제 버튼) */
 export const useDeleteBundleMutation = (bunchId: string | undefined) => {
+  const queryClient = useQueryClient();
   const gone = useBundleGone(bunchId, { removeDetail: true });
   return useMutation({
     mutationFn: (bundleId: string) => {
@@ -83,6 +84,12 @@ export const useDeleteBundleMutation = (bunchId: string | undefined) => {
       return deleteBundle(bunchId, bundleId);
     },
     onSuccess: (_data, bundleId) => gone(bundleId),
+    // 이미 다른 멤버가 지웠거나 권한이 없어 실패해도 서버 기준 목록으로 맞춤(사라진 카드가 남아 같은 실패가 반복되지 않게)
+    onError: () =>
+      queryClient.invalidateQueries({
+        queryKey: sharedKeys.bunchHomeScope(bunchId),
+        refetchType: 'all',
+      }),
   });
 };
 

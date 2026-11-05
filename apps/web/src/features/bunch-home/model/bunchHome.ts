@@ -134,7 +134,7 @@ export const toBunchHomeDetail = (
         coverSrc: safeImage(first?.imageUrl),
         members: bundle.participants.flatMap(({ memberId }) => {
           const member = members.find((candidate) => candidate.id === toDomainId(memberId));
-          return member ? [{ name: member.name, imageSrc: member.avatarSrc }] : [];
+          return member ? [{ name: member.name, imageSrc: safeImage(member.avatarSrc) }] : [];
         }),
       };
     }),

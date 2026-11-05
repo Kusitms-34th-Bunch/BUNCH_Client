@@ -180,6 +180,18 @@ describe('번들 query·mutation', () => {
     expect(client.getQueryData(bundleKeys.detail(bunchId, second))).toBeDefined();
   });
 
+  it('삭제에 실패해도(이미 지워진 초안) 번치 홈 데이터를 서버 기준으로 다시 받는다', async () => {
+    const { client, wrapper } = setup();
+    client.setQueryData(sharedKeys.draftBundles(bunchId), { stale: true });
+    const { result } = renderHook(() => useDeleteBundleMutation(bunchId), { wrapper });
+
+    await act(async () => {
+      await expect(result.current.mutateAsync('999999')).rejects.toBeDefined();
+    });
+
+    expect(client.getQueryState(sharedKeys.draftBundles(bunchId))?.isInvalidated).toBe(true);
+  });
+
   it('조건이 모자란 발행은 실패하고 캐시는 초안 그대로다', async () => {
     const { client, wrapper } = setup();
     const id = await createDraft(wrapper);
