@@ -217,6 +217,8 @@ export type ActionDialogProps = Omit<DialogRootProps, 'children'> & {
   actions: ActionDialogAction[];
   /** 맨 아래 텍스트 버튼. 기본값 `취소` */
   cancelLabel?: string;
+  /** 맨 아래 취소 모양. 기본 `text`, `solid`는 회색 채운 버튼(Figma Stack에서 취소가 SolidButton인 화면) */
+  cancelAppearance?: 'text' | 'solid';
   onCancel?: () => void;
 };
 const defaultActionVariants = ['primary', 'secondary', 'tertiary'] as const;
@@ -231,6 +233,7 @@ export const ActionDialog = ({
   image,
   actions,
   cancelLabel = '취소',
+  cancelAppearance = 'text',
   onCancel,
   open,
   onOpenChange,
@@ -262,9 +265,14 @@ export const ActionDialog = ({
             {action.label}
           </Button>
         ))}
-        <Cancel appearance="text" className="text-text-tertiary w-full">
-          {cancelLabel}
-        </Cancel>
+        {cancelAppearance === 'solid' ? (
+          // 세로 쌓기라 가로 나눔용 flex-1을 끔(높이 48 유지), 글자색은 Figma text-tertiary
+          <Cancel className="text-text-tertiary w-full flex-none">{cancelLabel}</Cancel>
+        ) : (
+          <Cancel appearance="text" className="text-text-tertiary w-full">
+            {cancelLabel}
+          </Cancel>
+        )}
       </Footer>
     </Content>
   </Root>

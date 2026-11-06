@@ -17,7 +17,7 @@
 - `Dialog.Content`, `Media`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Media는 제목 위 56px 원형 이미지 자리 div, Title은 h2, Description은 p, Footer는 div. Content의 선택 `backdropClassName`으로 딤 전환을 조절한다.
 - `Dialog.Cancel`, `Confirm`: 기존 Button props 중 variant는 primary/secondary/warning으로 제한하고 `appearance?: 'solid' | 'text'`를 받는다. Cancel은 닫힘 요청, Confirm은 onClick만 호출한다.
 - `ConfirmDialog`: Root props + `title`, 선택 `description`, 선택 `image`(Profile (Side by Side)), 선택 `children`(Label, 설명 아래 내용), `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
-- `ActionDialog`(Profile (Stack)): Root props + `title`, 선택 `description`, 선택 `image`, `actions`(`label`, `onClick`, 선택 `variant`·`disabled`), 선택 `cancelLabel`(기본 `취소`), `onCancel`. 동작 버튼은 세로로 쌓고 기본 variant는 순서대로 primary·secondary·tertiary다. 동작 버튼은 onClick만 호출하고 닫지 않는다.
+- `ActionDialog`(Profile (Stack)): Root props + `title`, 선택 `description`, 선택 `image`, `actions`(`label`, `onClick`, 선택 `variant`·`disabled`), 선택 `cancelLabel`(기본 `취소`), 선택 `cancelAppearance`(기본 `text`, `solid`면 취소를 회색 채운 버튼(높이 48, 글자 `text-tertiary`)으로, 회원 탈퇴 관리자 안내 `4096:75577`·`4164:88350`처럼 Figma Stack에서 취소가 SolidButton인 화면. 세로로 쌓으므로 가로 나눔용 `flex-1`은 끈다), `onCancel`. 동작 버튼은 세로로 쌓고 기본 variant는 순서대로 primary·secondary·tertiary다. 동작 버튼은 onClick만 호출하고 닫지 않는다.
 - controlled 전용. 실제 작업·비동기 상태·확인 후 닫기는 호출자가 소유한다. Base UI 타입은 공개하지 않는다.
 
 ## 상태와 동작

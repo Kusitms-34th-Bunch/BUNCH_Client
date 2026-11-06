@@ -12,7 +12,8 @@ type BundleEmptyProps = {
 export function BundleEmpty({ title, showCreateButton = false, onCreateBundle }: BundleEmptyProps) {
   return (
     <div className="gap-s8 mx-auto flex w-fit flex-col items-center text-center">
-      <div className="flex flex-col items-center">
+      {/* 제목과 안내 문구 사이 4px(디자이너 요청, 2026-11-06, 이전 0px) */}
+      <div className="gap-s2 flex flex-col items-center">
         <p className="typography-body-1-medium text-text-secondary">{title}</p>
         <p className="typography-body-4-regular text-text-tertiary">
           {BUNCH_HOME_MESSAGES.emptyDescription}

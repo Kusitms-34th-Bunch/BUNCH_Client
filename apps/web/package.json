@@ -29,6 +29,7 @@
     "lottie-react": "^3.1.2",
     "next": "^16.4.3",
     "overlay-kit": "^1.9.0",
+    "posthog-js": "^1.446.3",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-simplikit": "catalog:",

@@ -245,6 +245,18 @@ describe('ActionDialog', () => {
     );
   });
 
+  it('draws cancel as a filled button when cancelAppearance is solid', async () => {
+    renderActions({ cancelAppearance: 'solid' });
+
+    const cancel = await screen.findByRole('button', { name: '취소' });
+    expect(cancel.className).toContain('bg-surface-tertiary');
+    // 세로로 쌓여도 높이가 줄지 않고(flex-1 없음), 글자는 Figma text-tertiary
+    expect(cancel.className).toContain('text-text-tertiary');
+    expect(cancel.className).not.toContain('text-text-primary');
+    expect(cancel.className).not.toMatch(/(^|\s)flex-1(\s|$)/);
+    await waitFor(() => expect(document.activeElement).toBe(cancel));
+  });
+
   it('calls only the pressed action and cancels without running any action', async () => {
     const onTransfer = vi.fn();
     const onCancel = vi.fn();

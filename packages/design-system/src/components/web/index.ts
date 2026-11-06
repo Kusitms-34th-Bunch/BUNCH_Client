@@ -32,6 +32,7 @@ export * from './inviteCard';
 export * from './inviteMemberCard';
 export * from './label';
 export * from './labeledTextField';
+export * from './locationCard';
 export * from './locationListItem';
 export * from './loginButton';
 export * from './memberCard';
