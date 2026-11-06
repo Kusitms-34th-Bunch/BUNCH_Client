@@ -6,6 +6,10 @@ import { createTV } from 'tailwind-variants';
 // 목록은 tokens.css와 동기화(tailwind.test.ts가 누락 검증)
 const spacing = [
   ...Array.from({ length: 18 }, (_, index) => `padding-p${index + 1}`),
+  // Figma 변수 이름 그대로(p19 복제본 2개가 p19-2·p19-3으로 남음)
+  'padding-p19',
+  'padding-p19-2',
+  'padding-p19-3',
   ...Array.from({ length: 25 }, (_, index) => `s${index + 1}`),
 ];
 const radius = ['full', ...Array.from({ length: 10 }, (_, index) => `r${index + 1}`)];
