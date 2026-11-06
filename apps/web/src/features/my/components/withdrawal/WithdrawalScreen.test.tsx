@@ -1,12 +1,13 @@
 import type * as DesignSystem from '@app/design-system';
 import { toast } from '@app/design-system';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper } from '@/shared/query/testing';
+import { resetOwnedBunches, transferOwnership } from '../../hooks/useOwnedBunches';
 import { reloadTo } from '../../lib/navigation';
 import { WithdrawalScreen } from './WithdrawalScreen';
 
@@ -29,8 +30,12 @@ beforeEach(() => {
   vi.mocked(toast).mockClear();
 });
 
-const renderScreen = (hasOwnedBunch = false) =>
-  render(<WithdrawalScreen hasOwnedBunch={hasOwnedBunch} />, { wrapper: createQueryWrapper() });
+const renderScreen = (hasOwnedBunch = false) => {
+  // 메인 관리자 번치가 없음은 빈 목록, 있음은 fixture
+  if (!hasOwnedBunch) resetOwnedBunches([]);
+  else resetOwnedBunches();
+  return render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+};
 
 const agreeAndNext = async () => {
   await userEvent.click(screen.getByRole('checkbox', { name: '안내 사항을 모두 확인했어요.' }));
@@ -122,6 +127,16 @@ describe('WithdrawalScreen', () => {
 
     expect(push).toHaveBeenCalledWith('/my/withdrawal/transfer');
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  });
+
+  it('권한을 모두 넘긴 뒤 「다음」을 누르면 최종 확인으로 간다', async () => {
+    renderScreen(true);
+
+    act(() => transferOwnership({ 'owned-1': 'm-1', 'owned-2': 'm-5' }));
+    await agreeAndNext();
+
+    expect(await screen.findByRole('alertdialog', { name: '정말 탈퇴하시겠어요?' })).toBeTruthy();
+    expect(screen.queryByRole('alertdialog', { name: '관리자로 있는 번치가 있어요' })).toBeNull();
   });
 
   it('권한 이전 안내에서 「취소」를 누르면 이동하지 않고 닫는다', async () => {

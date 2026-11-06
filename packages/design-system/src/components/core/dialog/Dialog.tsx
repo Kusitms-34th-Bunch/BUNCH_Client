@@ -266,7 +266,8 @@ export const ActionDialog = ({
           </Button>
         ))}
         {cancelAppearance === 'solid' ? (
-          <Cancel className="w-full">{cancelLabel}</Cancel>
+          // 세로 쌓기라 가로 나눔용 flex-1을 끔(높이 48 유지), 글자색은 Figma text-tertiary
+          <Cancel className="text-text-tertiary w-full flex-none">{cancelLabel}</Cancel>
         ) : (
           <Cancel appearance="text" className="text-text-tertiary w-full">
             {cancelLabel}
