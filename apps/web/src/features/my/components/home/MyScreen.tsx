@@ -8,7 +8,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
-import { openExternal, reloadTo } from '../../lib/navigation';
+import { openExternal } from '../../lib/navigation';
 import { useLogoutMutation } from '../../queries/session';
 
 type ConfirmKind = 'contact' | 'logout';
@@ -115,10 +115,8 @@ export function MyScreen({ profile, contactUrl }: MyScreenProps) {
         // 요청 중과 성공 뒤 문서를 다시 여는 동안 다시 누르지 못하게 막음
         confirmDisabled={logout.isPending || logout.isSuccess}
         onConfirm={() =>
-          logout.mutate(undefined, {
-            onSuccess: () => reloadTo(MY_PATHS.login),
-            onError: () => setConfirm(null),
-          })
+          // 성공 뒤 이동은 useLogoutMutation이 처리, 실패하면 창만 닫음
+          logout.mutate(undefined, { onError: () => setConfirm(null) })
         }
       />
     </PageShell>

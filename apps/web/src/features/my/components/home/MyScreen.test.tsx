@@ -156,4 +156,26 @@ describe('MyScreen', () => {
     finish();
     await waitFor(() => expect(reloadTo).toHaveBeenCalledWith('/login'));
   });
+
+  it('로그아웃 요청 중 화면이 사라져도 성공하면 로그인 화면으로 간다', async () => {
+    let finish: () => void = () => {};
+    server.use(
+      http.post(
+        '/api/auth/logout',
+        () => new Promise<Response>((resolve) => (finish = () => resolve(HttpResponse.json({})))),
+      ),
+    );
+    const { unmount } = renderScreen();
+
+    await userEvent.click(screen.getByRole('button', { name: '로그아웃' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '로그아웃할까요?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: '로그아웃' }));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: '로그아웃' })).toBeDisabled(),
+    );
+    unmount();
+    finish();
+
+    await waitFor(() => expect(reloadTo).toHaveBeenCalledWith('/login'));
+  });
 });

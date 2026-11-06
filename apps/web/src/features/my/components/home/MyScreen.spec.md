@@ -49,7 +49,7 @@
 ## 데이터 의존성
 
 - Query와 enabled 조건: 없음. 화면은 `profile`(`nickname`, `imageSrc?`)과 `contactUrl?`을 prop으로 받는다.
-- Mutation: `useLogoutMutation`(`queries/session.ts`) → `logout`(`api/session.ts`). 캐시 무효화 없이 문서를 새로 연다.
+- Mutation: `useLogoutMutation`(`queries/session.ts`) → `logout`(`api/session.ts`). 캐시 무효화 없이 문서를 새로 연다. 이동은 mutation 정의의 `onSuccess`가 맡아, 요청 중 화면이 사라져도 성공하면 로그인 화면으로 간다.
 - API 계약 확인 항목: `MemberResponse`의 `nickname`은 계약상 선택이다. 가입을 마친 회원에게 늘 있는지 연결할 때 확인한다.
 
 ## UI와 접근성
