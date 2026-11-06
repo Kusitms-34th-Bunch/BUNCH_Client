@@ -4,3 +4,4 @@
 export { MyScreen } from './home/MyScreen';
 export { NotificationSettingsScreen } from './notifications/NotificationSettingsScreen';
 export { ProfileEditScreen } from './profile/ProfileEditScreen';
+export { WithdrawalScreen } from './withdrawal/WithdrawalScreen';

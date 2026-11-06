@@ -18,7 +18,6 @@
 ### 범위 외
 
 - 내 정보 API(`GET /members/me`) 연결과 loading·error 상태. 이 이슈는 UI만 만들고 page가 Figma 예시 값(`myProfileFixture`)을 넘긴다.
-- 탈퇴하기 화면. 경로만 연결해 두었고 MY 탈퇴 이슈에서 만든다. 그전까지 링크를 누르면 404다.
 - 다른 탭 WebView에 로그아웃 알리기(iOS 쉘). 로그아웃한 탭 WebView만 문서를 새로 불러온다. 나머지 탭 WebView는 이전 사용자의 화면·캐시를 가진 채 남고, 다시 로그인하면 다시 받기 전까지 그 데이터가 보일 수 있다(`docs/architecture/mobile-shell.md`의 탭 WebView 상태 공유 항목). 쉘이 탭 WebView를 모두 다시 불러오는 방식은 후속으로 다룬다.
 - 로그아웃 뒤 기록 정리. `location.replace`는 현재 기록 항목만 바꿔 그 앞의 화면으로 뒤로 갈 수 있다. 접근 guard와 401 시 로그인 이동(`onUnauthorized`)을 연결할 때 함께 다룬다. 같은 탭의 `sessionStorage`(지금 번치 id)도 그때 정리한다.
 
