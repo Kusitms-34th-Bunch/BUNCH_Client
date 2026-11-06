@@ -36,6 +36,14 @@ UT는 가짜 서버(MSW 서비스 워커)가 필요하다. 시연 방식은 두 
 | `VERCEL_ORG_ID`        | `.vercel/project.json`의 `orgId`(Hobby도 `team_…` 형태)              |
 | `VERCEL_UT_PROJECT_ID` | `.vercel/project.json`의 `projectId`(운영 프로젝트 ID를 넣지 않는다) |
 
+### 클릭 흐름 수집 키(선택, 같은 Secrets 화면)
+
+| secret           | 값                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------ |
+| `UT_POSTHOG_KEY` | PostHog 프로젝트 토큰(`phc_…`). 브라우저에 공개되는 키라 비밀은 아니지만 다른 배포 값과 함께 secret으로 둔다 |
+
+비어 있으면 클릭 흐름을 수집하지 않는다. 넣거나 바꾼 뒤에는 다시 배포해야 반영된다. PostHog 프로젝트 Settings → Privacy의 **Discard client IP data**가 켜져 있는지도 확인한다(ADR 018). 이 값은 빌드 단계(저장소 코드 실행)에 전달되므로 공개 키 말고 다른 비밀을 넣지 않는다. 수집 내용과 보는 법은 [usability-test.md](./usability-test.md)의 「클릭 흐름 수집(PostHog)」을 본다.
+
 ### 배포 방법
 
 - **자동**: develop → main PR이 머지되면 `UT Deploy`가 실행된다.
