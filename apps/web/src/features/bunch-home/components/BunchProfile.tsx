@@ -1,4 +1,4 @@
-import { Button, LineLockSmallIcon } from '@app/design-system';
+import { Button, FillFlagSmallIcon, LineLockSmallIcon } from '@app/design-system';
 import Link from 'next/link';
 import type { BunchHomeDetail } from '../lib/types';
 
@@ -7,9 +7,9 @@ type BunchProfileProps = {
     BunchHomeDetail,
     'name' | 'description' | 'isPrivate' | 'followerCount' | 'followingCount' | 'memberCount'
   >;
-  /** 「가볼 곳」(화면이 아직 없어 호출 지점만 둠) */
+  /** 「콕한 장소」(화면이 아직 없어 호출 지점만 둠) */
   onPlacesClick?: (() => void) | undefined;
-  /** 「가볼 곳」 표시(다른 번치 프로필은 Figma 3086:68423에 없어 숨김) */
+  /** 「콕한 장소」 표시(다른 번치 프로필은 Figma 3086:68423에 없어 숨김) */
   showPlaces?: boolean | undefined;
   /** 수를 누르면 갈 목록(팔로워·팔로잉 5.11, 멤버 화면설계서 2500:71333 4번). 없는 수는 글자만 */
   countHrefs?: Partial<Record<(typeof COUNTS)[number]['key'], string>> | undefined;
@@ -21,7 +21,7 @@ const COUNTS = [
   { key: 'memberCount', label: '멤버' },
 ] as const;
 
-/** 번치 이름(페이지 제목)·비공개 표시·소개, 팔로워·팔로잉·멤버 수와 「가볼 곳」 */
+/** 번치 이름(페이지 제목)·비공개 표시·소개, 팔로워·팔로잉·멤버 수와 「콕한 장소」 */
 export function BunchProfile({
   bunch,
   onPlacesClick,
@@ -75,15 +75,15 @@ export function BunchProfile({
           })}
         </ul>
         {/* 좁은 폭에서 수치가 길면 flex-wrap으로 버튼이 다음 줄로 내려감. 버튼이 없어도 줄 높이 32(Figma 3086:68423) */}
-        {/* Figma 깃발 아이콘은 디자인 시스템 아이콘에 없어 글자만 표시(spec 확인할 항목) */}
         {showPlaces ? (
           <Button
             variant="tertiary"
             size="sm"
             className="text-text-tertiary shrink-0"
+            leftIcon={<FillFlagSmallIcon />}
             onClick={onPlacesClick}
           >
-            가볼 곳
+            콕한 장소
           </Button>
         ) : null}
       </div>
