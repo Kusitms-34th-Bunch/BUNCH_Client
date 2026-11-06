@@ -3,6 +3,7 @@
 import { ActionDialog, toast } from '@app/design-system';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { startNewAnalyticsUser } from '@/shared/config/posthog';
 import { createTapSequence } from './tapSequence';
 import { resetToStateA, restoreStateB } from './utStateB';
 
@@ -97,6 +98,8 @@ export function FacilitatorTool({ navigate = browserNavigate }: FacilitatorToolP
             onClick: () => {
               resetToStateA();
               sessionStorage.clear();
+              // 다음 회차 클릭 흐름을 새 사용자로 나눔(키가 없으면 아무것도 안 함)
+              startNewAnalyticsUser().catch(() => {});
               finish('상태 A로 초기화했어요', '/bunch');
             },
           },
