@@ -29,3 +29,4 @@
 - [015: 사진 상세의 스와이프·확대는 Swiper(Zoom·Keyboard·A11y 모듈)로 처리한다](./records/015-photo-detail-swiper.md)
 - [016: 사진을 끌어 날짜 섹션을 옮기는 동작은 @dnd-kit(core·sortable)으로 처리한다](./records/016-photo-drag-dnd-kit.md)
 - [017: 하단 탭 전환은 웹과 iOS 앱 모두 80ms 크로스페이드로 한다](./records/017-tab-switch-crossfade.md)
+- [018: 웹 제품 분석에 PostHog를 쓰고 화면 녹화는 하지 않는다](./records/018-web-posthog-product-analytics.md)
