@@ -23,6 +23,40 @@ export const MY_MESSAGES = {
     failed: '로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.',
   },
   cancel: '취소',
+  // 회원 탈퇴(화면 설계서 MY(5))
+  withdrawal: {
+    title: '탈퇴하기 전에 확인해 주세요',
+    description: '회원 탈퇴 시 아래 내용이 적용되며, 복구할 수 없어요.',
+    deletedTitle: '삭제되는 정보',
+    deleted: [
+      {
+        title: '계정과 개인정보',
+        description: '닉네임, 프로필 사진 등 계정 정보가 영구 삭제돼요.',
+      },
+      {
+        title: '사진함에 올린 내 사진',
+        description: '모든 번치의 사진함에서 내가 올린 사진이 삭제돼요.',
+      },
+      { title: '작성 중인 번들', description: '내가 최초로 생성한 작성 중인 번들이 삭제돼요.' },
+      {
+        title: '번들 속 코멘트',
+        description: '내 이름은 ‘작성자’로 표시되고, 작성한 코멘트는 숨겨져요.',
+      },
+      { title: '댓글', description: '내 이름은 ‘작성자’로 표시되고, 작성한 댓글은 숨겨져요.' },
+    ],
+    keptTitle: '남는 기록',
+    kept: [{ title: '번들', description: '업로드된 번들과 번들 속 사진은 그대로 남아요.' }],
+    agree: '안내 사항을 모두 확인했어요.',
+    next: '다음',
+    confirmTitle: '정말 탈퇴하시겠어요?',
+    confirmDescription: '계정이 영구 삭제되며, 복구할 수 없어요.',
+    confirm: '탈퇴하기',
+    ownerTitle: '관리자로 있는 번치가 있어요',
+    ownerDescription: '번치의 관리자 권한을 다른 멤버에게 넘긴 뒤 탈퇴할 수 있어요.',
+    ownerTransfer: '권한 넘기러 가기',
+    // 화면 설계서에 없는 실패 문구(다른 실패 토스트와 같은 형태)
+    failed: '탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  },
   // 개인 프로필 수정(화면 설계서 MY(1) 7·8번)
   profileEditTitle: '개인 프로필 수정',
   profileEditSubmit: '프로필 수정하기',

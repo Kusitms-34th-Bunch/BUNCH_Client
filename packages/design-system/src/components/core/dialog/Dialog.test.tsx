@@ -245,6 +245,14 @@ describe('ActionDialog', () => {
     );
   });
 
+  it('draws cancel as a filled button when cancelAppearance is solid', async () => {
+    renderActions({ cancelAppearance: 'solid' });
+
+    const cancel = await screen.findByRole('button', { name: '취소' });
+    expect(cancel.className).toContain('bg-surface-tertiary');
+    await waitFor(() => expect(document.activeElement).toBe(cancel));
+  });
+
   it('calls only the pressed action and cancels without running any action', async () => {
     const onTransfer = vi.fn();
     const onCancel = vi.fn();

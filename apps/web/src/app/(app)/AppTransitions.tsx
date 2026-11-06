@@ -305,6 +305,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: menuSubSlide,
   },
+  // MY 회원 탈퇴도 같은 미는 slide(화면설계서에 전환 정의 없음)
+  {
+    from: MY_PATHS.home,
+    to: MY_PATHS.withdrawal,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
   // MY 약관 두 화면도 같은 미는 slide(화면설계서에 전환 정의 없음). 동적 route라 고정 id 사용
   {
     from: MY_PATHS.home,
