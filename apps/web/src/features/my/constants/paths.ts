@@ -19,5 +19,5 @@ export const MY_PATHS = {
   transitionIds: { terms: '/my/terms' },
 } as const;
 
-/** 문의하기 「열기」로 여는 카카오톡 채널(QR 유입 표시 `?from=qr`는 뺌) */
-export const MY_CONTACT_URL = 'https://pf.kakao.com/_QpxnxeX';
+/** 문의하기 「열기」로 여는 카카오톡 채널 친구 추가 화면 */
+export const MY_CONTACT_URL = 'https://pf.kakao.com/_QpxnxeX/friend';
