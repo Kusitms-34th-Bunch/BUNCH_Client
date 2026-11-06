@@ -49,7 +49,7 @@ export function BundleCommentCard({
   className,
   id,
   value,
-  placeholder = '코멘트를 남기면 번들을 발행할 수 있어요.',
+  placeholder = '코멘트를 남기면 번들을 업로드할 수 있어요.',
   ...props
 }: BundleCommentCardProps) {
   const generatedId = useId();

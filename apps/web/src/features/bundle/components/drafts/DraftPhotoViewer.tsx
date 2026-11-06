@@ -31,15 +31,24 @@ const MOCK_SAVE_MS = 900;
 const notify = (message: string) => toast(message, { fullWidth: true });
 
 // 크게 보기 슬라이드가 쓰는 사진함 사진 모양으로 바꿈(번들 사진은 항상 보이는 상태)
-const toViewerPhoto = (photo: DraftPhoto): PhotoBoxPhoto => ({
-  id: photo.id,
-  src: photo.src,
-  alt: photo.alt,
-  takenAt: photo.takenAt,
-  uploadedAt: photo.takenAt ?? '',
-  uploaderIds: [photo.uploaderId],
-  status: 'ready',
-});
+// 배지와 헤더 날짜는 사진함 원본의 올린 멤버·촬영 날짜를 씀(번들 사진의 `uploaderId`는 번들에 담은 사람이라 사진 소유자가 아님)
+const toViewerPhoto = (photo: DraftPhoto, source: PhotoSource | undefined): PhotoBoxPhoto => {
+  const takenAt = source ? source.takenAt : photo.takenAt;
+  return {
+    id: photo.id,
+    src: photo.src,
+    alt: photo.alt,
+    takenAt,
+    uploadedAt: takenAt ?? '',
+    uploaderIds: source ? source.uploaderIds : [photo.uploaderId],
+    status: 'ready',
+  };
+};
+
+/** 번들 사진의 사진함 원본에서 가져온 촬영 날짜와 올린 멤버 */
+export type PhotoSource = Pick<PhotoBoxPhoto, 'takenAt' | 'uploaderIds'>;
+
+const UNKNOWN_SOURCE: PhotoSource = { takenAt: null, uploaderIds: [] };
 
 type DraftPhotoViewerProps = {
   draft: Draft;
@@ -47,6 +56,12 @@ type DraftPhotoViewerProps = {
   actions: Pick<DraftActions, 'removePhoto'>;
   /** 처음 보여 줄 사진 id */
   initialPhotoId: string;
+  /** 사진함 원본 사진 id별 촬영 날짜·올린 멤버. 없으면 번들에 담은 사람과 날짜 없음으로 보임 */
+  sources?: ReadonlyMap<string, PhotoSource> | undefined;
+  /** 사진함 데이터를 받는 중이면 배지와 헤더 날짜를 비워 둠(사진 보기와 삭제는 막지 않음) */
+  sourcesPending?: boolean | undefined;
+  /** 올린 멤버를 찾을 번치 멤버(번들 참여자가 아닌 소유자도 포함). 없으면 번들 참여자 */
+  bunchMembers?: readonly PhotoBoxMember[] | undefined;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
   currentYear?: number | undefined;
   onBack: () => void;
@@ -64,18 +79,32 @@ export function DraftPhotoViewer({
   viewer,
   actions,
   initialPhotoId,
+  sources,
+  sourcesPending = false,
+  bunchMembers,
   currentYear = new Date().getFullYear(),
   onBack,
   onPhotoChange,
 }: DraftPhotoViewerProps) {
   const access = getDraftAccess(draft, viewer);
   const photos = draft.photos;
-  const viewerPhotos = photos.map(toViewerPhoto);
-  const members: readonly PhotoBoxMember[] = draft.members.map((member) => ({
-    id: member.id,
-    name: member.name,
-    avatarSrc: member.avatarSrc,
-  }));
+  // 사진함 데이터를 받는 동안과 받은 뒤 원본이 없는 사진은 배지·날짜를 비움(번들에 담은 사람을 소유자로 잘못 보이지 않게)
+  // 사진함 데이터를 받지 못한 경우(`sources` 없음)만 번들에 담은 사람·번들의 날짜로 보임
+  const viewerPhotos = photos.map((photo) => {
+    if (sourcesPending) return toViewerPhoto(photo, UNKNOWN_SOURCE);
+    if (!sources) return toViewerPhoto(photo, undefined);
+    return toViewerPhoto(
+      photo,
+      (photo.sourcePhotoId ? sources.get(photo.sourcePhotoId) : undefined) ?? UNKNOWN_SOURCE,
+    );
+  });
+  const members: readonly PhotoBoxMember[] =
+    bunchMembers ??
+    draft.members.map((member) => ({
+      id: member.id,
+      name: member.name,
+      avatarSrc: member.avatarSrc,
+    }));
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
@@ -158,7 +187,11 @@ export function DraftPhotoViewer({
                 <LineChevronLeftLargeIcon aria-hidden="true" />
               </HeaderIconButton>
             }
-            title={formatDetailDate(activePhoto.takenAt, currentYear)}
+            title={
+              sourcesPending
+                ? ''
+                : formatDetailDate(viewerPhotos[activeIndex]?.takenAt ?? null, currentYear)
+            }
             trailing={
               <IconButton
                 ref={menuTriggerRef}

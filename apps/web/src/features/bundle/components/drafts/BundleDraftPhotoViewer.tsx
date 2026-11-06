@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
@@ -28,6 +30,23 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
     BUNDLE_PATHS.photoViewer,
     ready ? state.draft.photos.map((photo) => photo.id) : undefined,
   );
+  // 배지와 헤더 날짜는 사진함 원본(올린 멤버·촬영 날짜)에서 가져옴. 사진함 목록을 이미 받았으면 캐시를 그대로 씀
+  const { state: photoBox } = usePhotoBox();
+  const photoBoxData = photoBox.kind === 'ready' ? photoBox.data : undefined;
+  const sources = useMemo(
+    () =>
+      photoBoxData
+        ? new Map(
+            photoBoxData.photos.map((photo) => [
+              photo.id,
+              { takenAt: photo.takenAt, uploaderIds: photo.uploaderIds },
+            ]),
+          )
+        : undefined,
+    [photoBoxData],
+  );
+  // 사진함 데이터는 보조 정보라 기다리지 않고 화면을 먼저 보임(받는 동안 배지·날짜는 비워 둠)
+  const sourcesPending = photoBox.kind === 'loading';
   const present = useRedirectMissingPhoto(ready ? state.draft : undefined, initialPhotoId);
 
   useRedirectMissingDraft(state.kind === 'missing');
@@ -41,6 +60,9 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
       viewer={viewer}
       actions={actions}
       initialPhotoId={initialPhotoId}
+      sources={sources}
+      sourcesPending={sourcesPending}
+      bunchMembers={photoBoxData?.members}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 그 사진의 캡션 화면으로 이동
       onBack={() => backOr(BUNDLE_PATHS.photo(draft.id, currentPhotoId ?? initialPhotoId))}
       onPhotoChange={sync}
