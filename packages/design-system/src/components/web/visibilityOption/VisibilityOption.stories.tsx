@@ -4,7 +4,7 @@ import { GraphicGlobeIcon, GraphicLockIcon } from '../../../icons';
 import { VisibilityOption } from './VisibilityOption';
 
 const meta = {
-  title: 'Web/VisibilityOption',
+  title: 'Web/Selection/VisibilityOption',
   component: VisibilityOption,
   args: {
     name: 'visibility',

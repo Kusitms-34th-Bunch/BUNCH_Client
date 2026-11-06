@@ -177,6 +177,40 @@ describe('Dialog', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
+
+  it('shows extra content below the description and keeps cancel focused first (Label)', async () => {
+    const onPick = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={() => {}}
+        title="관리자로 있는 번치가 있어요"
+        description="아래 번치의 관리자 권한을 다른 멤버에게 넘긴 뒤 탈퇴할 수 있어요."
+        cancelLabel="취소"
+        confirmLabel="이전 완료"
+        onConfirm={() => {}}
+      >
+        <button type="button" onClick={onPick}>
+          퇴근런클럽
+        </button>
+      </ConfirmDialog>,
+    );
+
+    const dialog = await screen.findByRole('alertdialog', { name: '관리자로 있는 번치가 있어요' });
+    const item = screen.getByRole('button', { name: '퇴근런클럽' });
+    expect(dialog.contains(item)).toBe(true);
+    expect(
+      screen.getByText(/관리자 권한을 다른 멤버에게/).compareDocumentPosition(item) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '취소' })),
+    );
+    fireEvent.click(item);
+    expect(onPick).toHaveBeenCalledTimes(1);
+    // 내용의 버튼은 다이얼로그를 닫지 않음
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
+  });
 });
 
 describe('ActionDialog', () => {
@@ -209,6 +243,18 @@ describe('ActionDialog', () => {
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole('button', { name: '취소' })),
     );
+  });
+
+  it('draws cancel as a filled button when cancelAppearance is solid', async () => {
+    renderActions({ cancelAppearance: 'solid' });
+
+    const cancel = await screen.findByRole('button', { name: '취소' });
+    expect(cancel.className).toContain('bg-surface-tertiary');
+    // 세로로 쌓여도 높이가 줄지 않고(flex-1 없음), 글자는 Figma text-tertiary
+    expect(cancel.className).toContain('text-text-tertiary');
+    expect(cancel.className).not.toContain('text-text-primary');
+    expect(cancel.className).not.toMatch(/(^|\s)flex-1(\s|$)/);
+    await waitFor(() => expect(document.activeElement).toBe(cancel));
   });
 
   it('calls only the pressed action and cancels without running any action', async () => {

@@ -5,21 +5,31 @@ import { CreateBunchCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 
 /**
  * 회원가입 뒤 번치를 새로 만들지, 초대받은 번치에 참여할지 고르는 시작 화면
- * 닫기(X)는 도착지·확인 모달 미정으로 동작 미연결
+ * 닫기(X)는 번치 홈에서 들어온 경우만 이전 화면으로, 첫 진입은 도착지·확인 모달 미정으로 미연결
  */
-export function BunchStartSelect() {
+export function BunchStartSelect({
+  closeBackHref,
+}: {
+  /** 있으면 닫기(X)가 이전 화면으로. 이전 기록이 없으면(직접 진입) 이 경로로 대체 이동 */
+  closeBackHref?: string | undefined;
+}) {
   const router = useRouter();
+  const backOr = useBackOr();
 
   return (
     <PageShell
       header={
         <Header
           leading={
-            <HeaderIconButton label="닫기">
+            <HeaderIconButton
+              label="닫기"
+              onClick={closeBackHref ? () => backOr(closeBackHref) : undefined}
+            >
               <LineCloseLargeIcon />
             </HeaderIconButton>
           }

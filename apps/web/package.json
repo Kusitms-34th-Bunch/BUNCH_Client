@@ -27,17 +27,20 @@
     "@webview-bridge/web": "^1.8.0",
     "ky": "catalog:",
     "lottie-react": "^3.1.2",
-    "next": "^16.2.10",
+    "next": "^16.4.3",
     "overlay-kit": "^1.9.0",
+    "posthog-js": "^1.446.3",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-simplikit": "catalog:",
     "server-only": "^0.0.1",
     "swiper": "^14.3.0",
-    "zod": "^4.6.5"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@app/lint-config": "workspace:*",
     "@app/ts-config": "workspace:*",
+    "@next/bundle-analyzer": "^16.4.5",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",
@@ -50,9 +53,15 @@
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "happy-dom": "catalog:",
+    "msw": "^3.0.3",
     "tailwindcss": "^4.3.3",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

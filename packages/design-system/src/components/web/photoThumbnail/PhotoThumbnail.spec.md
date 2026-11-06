@@ -22,21 +22,23 @@
 ## Public API
 
 - `SelectionIndicator`: `selected`(기본 false), `order`, 그리고 `span` 속성. 기본 `aria-hidden`.
-- `PhotoThumbnail`: `src`·`alt`(필수), `selectionMode`(기본 false), `selected`(기본 false), `selectionOrder`, `onImageError`(사진을 불러오지 못했을 때, 2026-10-30 추가), 그리고 HTML 속성(`onClick` 등). 사진은 `loading="lazy"`·`decoding="async"`로 그려 긴 목록에서 화면 밖 사진을 나중에 불러온다.
+- `PhotoThumbnail`: `src`·`alt`(필수), `selectionMode`(기본 false), `selected`(기본 false), `selectionOrder`(숫자, 접근성 이름에 글로 들어가므로 요소는 받지 않음), `onImageError`(사진을 불러오지 못했을 때, 2026-10-30 추가), 그리고 HTML 속성(`onClick` 등). 사진은 `loading="lazy"`·`decoding="async"`로 그려 긴 목록에서 화면 밖 사진을 나중에 불러온다.
 - Figma 변형: Selected=False·SelectionMode=False(기본) / Selected=False·SelectionMode=True(`selectionMode`) / Selected=True·SelectionMode=True(`selectionMode selected`). SelectionMode=False에서 Selected=True인 변형은 Figma에 없고, 코드에서도 `selected`를 무시한다.
 - 호출자 소유 책임: 사진 주소, 사진 설명(`alt`), 선택 상태와 순서.
 
 ## 상태와 동작
 
-| Figma 변형                          | 코드                                                               |
-| ----------------------------------- | ------------------------------------------------------------------ |
-| Selected=False, SelectionMode=False | `<span>` 안의 사진만. 인디케이터 없음                              |
-| Selected=False, SelectionMode=True  | `<button aria-pressed="false">` + 반투명 인디케이터                |
-| Selected=True, SelectionMode=True   | `<button aria-pressed="true">` + 어두운 오버레이 + 순서 인디케이터 |
+| Figma 변형                          | 코드                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------- |
+| Selected=False, SelectionMode=False | `<span>` 안의 사진만. 인디케이터 없음                                                    |
+| Selected=False, SelectionMode=True  | `<span>` 틀 위에 덮은 `<button aria-pressed="false">` + 반투명 인디케이터                |
+| Selected=True, SelectionMode=True   | `<span>` 틀 위에 덮은 `<button aria-pressed="true">` + 어두운 오버레이 + 순서 인디케이터 |
+
+- 구조: 루트는 언제나 `<span>`이고 사진(`img`)은 모드가 바뀌어도 같은 요소로 남는다(선택 모드 전환 때 깜빡임 방지). 선택 모드에서는 `className`이 바깥 `span`에, 나머지 HTML 속성(`onClick` 등)은 사진 위에 덮은 `button`에 간다. 선택 모드가 아니면 둘 다 `span`에 간다.
 
 ## 접근성
 
-- 선택 모드의 사진은 `<button type="button" aria-pressed>`이고 이름은 `alt`에서 오며, 선택되고 순서가 있으면 이름 뒤에 화면 밖 글자 "N번째 선택"이 붙는다(`aria-pressed`와 정보가 겹치지만 순서는 이 글자로만 전달된다). 인디케이터는 장식(`aria-hidden`)이다. `aria-pressed`는 `selected`로 고정한다.
+- 선택 모드의 사진은 `<button type="button" aria-pressed>`이고 이름은 `alt`에서 오며, 선택되고 순서가 있으면 이름 뒤에 쉼표와 화면 밖 글자 "N번째 선택"이 붙는다(예: "사진, 2번째 선택". 엔진마다 글자 사이 공백 처리가 달라 한 글로 만든다)(`aria-pressed`와 정보가 겹치지만 순서는 이 글자로만 전달된다). 인디케이터는 장식(`aria-hidden`)이다. `aria-pressed`는 `selected`로 고정한다.
 - 선택 모드가 꺼진 사진은 `<span>`이라 포커스·키보드 경로가 없다. `onClick`을 직접 주면 키보드로 쓸 수 없는 클릭 대상이 되므로, 눌러서 여는 동작은 호출하는 쪽이 `<button>`·`<a>`로 감싸서 만든다.
 - "N번째 선택" 문구는 한국어로 고정이다(다국어 도입 시 처리).
 - 선택 모드가 아닌 사진은 일반 이미지(`alt`)이고 포커스를 받지 않는다.

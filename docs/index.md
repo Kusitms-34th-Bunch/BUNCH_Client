@@ -32,6 +32,7 @@
 - [Local Development](./workflows/local-development.md)
 - [모바일 앱 실행과 테스트](./workflows/mobile-testing.md)
 - [Testing](./workflows/testing.md)
+- [사용성 테스트(UT) 세팅](./workflows/usability-test.md)
 - [E2E Testing](./workflows/e2e-testing.md)
 - [API Integration](./workflows/api-integration.md)
 - [Feature Intake](./workflows/feature-intake.md)

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { LocationListItem } from './LocationListItem';
 
 const meta = {
-  title: 'Web/LocationListItem',
+  title: 'Web/ListItem/LocationListItem',
   component: LocationListItem,
   args: { placeName: '여의도한강공원', address: '서울특별시 영등포구 여의동로 330' },
   parameters: { layout: 'padded' },

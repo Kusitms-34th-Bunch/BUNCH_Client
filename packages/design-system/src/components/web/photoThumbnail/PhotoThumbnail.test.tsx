@@ -33,7 +33,17 @@ describe('PhotoThumbnail', () => {
     expect(button.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.bg-overlay-pressed.opacity-100')).toBeTruthy();
     expect(button.textContent).toContain('2');
-    expect(screen.getByText('2번째 선택')).toBeTruthy();
+    expect(screen.getByText('사진, 2번째 선택')).toBeTruthy();
+  });
+
+  it('선택 모드를 켜고 꺼도 같은 사진 요소를 유지한다(다시 그리며 깜빡이지 않음)', () => {
+    const { container, rerender } = render(<PhotoThumbnail src={src} alt="사진" />);
+    const image = container.querySelector('img');
+    expect(image).not.toBeNull();
+    rerender(<PhotoThumbnail src={src} alt="사진" selectionMode />);
+    expect(container.querySelector('img')).toBe(image);
+    rerender(<PhotoThumbnail src={src} alt="사진" />);
+    expect(container.querySelector('img')).toBe(image);
   });
 
   it('선택 전에는 오버레이가 투명하고 순서가 없으며 인디케이터만 그린다', () => {
@@ -72,7 +82,7 @@ describe('PhotoThumbnail', () => {
 
   it('선택되면 이름에 alt와 순서가 함께 들어간다', () => {
     render(<PhotoThumbnail src={src} alt="사진" selectionMode selected selectionOrder={2} />);
-    expect(screen.getByRole('button', { name: '사진 2번째 선택' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '사진, 2번째 선택' })).toBeTruthy();
   });
 
   it('사진은 화면 밖에서 나중에 불러오도록 lazy로 그린다', () => {

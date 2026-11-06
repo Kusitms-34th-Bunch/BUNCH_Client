@@ -6,7 +6,7 @@ const sample =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><rect width='160' height='160' fill='%23A7ADFF'/><ellipse cx='80' cy='120' rx='60' ry='36' fill='white'/><circle cx='80' cy='86' r='34' fill='white'/></svg>";
 
 const meta = {
-  title: 'Web/InviteCard',
+  title: 'Web/Card/InviteCard',
   component: InviteCard,
   args: {
     bunchName: '여행가조',

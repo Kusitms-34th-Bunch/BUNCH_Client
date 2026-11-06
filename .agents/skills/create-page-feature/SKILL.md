@@ -33,6 +33,7 @@ route, 권한, 완료 이동, API 계약이 모호하면 route scaffold만 만�
 4. 가까운 route, page, layout, test, `*.spec.md`
 5. API가 있으면 `docs/architecture/data-layer.md`와 `integrate-api` 기준
 6. `docs/conventions/coding.md`의 주석 규칙
+7. 시트·토스트·끌기·긴 목록·다단계 흐름이 있으면 직접 만들기 전에 `docs/conventions/libraries.md`
 
 ## App별 route 책임
 

@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system
 - Status: 구현됨(로컬 검증, 실기기 미검증)
-- Figma: `791:11810` (SolidButton `791:11809` / TextButton `791:11808` / Profile (Side by Side) `2081:45834` / Profile (Stack) `2081:45873`)
+- Figma: `791:11810` (SolidButton `791:11809` / TextButton `791:11808` / Profile (Side by Side) `2081:45834` / Profile (Stack) `2081:45873` / Label `3537:65744`)
 
 ## 목적과 범위
 
@@ -16,16 +16,16 @@
 - `Dialog.Root`: `open: boolean`, `onOpenChange(open: boolean): void`, 선택 `onOpenChangeComplete(open: boolean): void`, `children`. 종료 콜백은 전환이 끝난 후 호출되므로 overlay 제거 시점에 쓴다.
 - `Dialog.Content`, `Media`, `Title`, `Description`, `Footer`: 네이티브 속성·ref·className 확장. Content는 div, Media는 제목 위 56px 원형 이미지 자리 div, Title은 h2, Description은 p, Footer는 div. Content의 선택 `backdropClassName`으로 딤 전환을 조절한다.
 - `Dialog.Cancel`, `Confirm`: 기존 Button props 중 variant는 primary/secondary/warning으로 제한하고 `appearance?: 'solid' | 'text'`를 받는다. Cancel은 닫힘 요청, Confirm은 onClick만 호출한다.
-- `ConfirmDialog`: Root props + `title`, 선택 `description`, 선택 `image`(Profile (Side by Side)), `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
-- `ActionDialog`(Profile (Stack)): Root props + `title`, 선택 `description`, 선택 `image`, `actions`(`label`, `onClick`, 선택 `variant`·`disabled`), 선택 `cancelLabel`(기본 `취소`), `onCancel`. 동작 버튼은 세로로 쌓고 기본 variant는 순서대로 primary·secondary·tertiary다. 동작 버튼은 onClick만 호출하고 닫지 않는다.
+- `ConfirmDialog`: Root props + `title`, 선택 `description`, 선택 `image`(Profile (Side by Side)), 선택 `children`(Label, 설명 아래 내용), `confirmLabel`, 선택 `cancelLabel`, `onConfirm`, `onCancel`, `appearance`, `confirmDisabled`.
+- `ActionDialog`(Profile (Stack)): Root props + `title`, 선택 `description`, 선택 `image`, `actions`(`label`, `onClick`, 선택 `variant`·`disabled`), 선택 `cancelLabel`(기본 `취소`), 선택 `cancelAppearance`(기본 `text`, `solid`면 취소를 회색 채운 버튼(높이 48, 글자 `text-tertiary`)으로, 회원 탈퇴 관리자 안내 `4096:75577`·`4164:88350`처럼 Figma Stack에서 취소가 SolidButton인 화면. 세로로 쌓으므로 가로 나눔용 `flex-1`은 끈다), `onCancel`. 동작 버튼은 세로로 쌓고 기본 variant는 순서대로 primary·secondary·tertiary다. 동작 버튼은 onClick만 호출하고 닫지 않는다.
 - controlled 전용. 실제 작업·비동기 상태·확인 후 닫기는 호출자가 소유한다. Base UI 타입은 공개하지 않는다.
 
 ## 상태와 동작
 
 - 바깥 터치는 무시. Cancel·ESC는 실행 없이 닫힘 요청, Confirm은 자동으로 닫지 않는다.
-- Solid: 취소 왼쪽, 확인 오른쪽 동일 폭. Text: 오른쪽 정렬. 취소 문구가 없으면 확인 하나.
+- Solid: 취소 왼쪽, 확인 오른쪽 동일 폭. compound로 조립할 때도 solid `Dialog.Cancel`·`Dialog.Confirm`은 기본으로 Footer 폭을 나눠 가진다(`min-w-0 flex-1`). Text: 오른쪽 정렬. 취소 문구가 없으면 확인 하나.
 - 긴 제목·설명은 단어 단위로 줄바꿈하고(`break-keep`, 한 단어가 폭보다 길면 `wrap-break-word`(`overflow-wrap: break-word`)로 끊는다. `break-words`는 tailwind-merge가 `break-keep`을 지워 쓰지 않는다. Figma가 "피드로 / 이동해요."처럼 단어 사이에서 끊는다) 작은 viewport에서 본문을 스크롤한다. 버튼은 축소하지 않는다.
-- 진입·닫힘 모션은 호출자가 Content와 `backdropClassName`으로 지정한다. CSS 전환이 끝나면 Base UI의 `onOpenChangeComplete`를 통해 제거 시점을 알린다. 비동기 확인 중 중복 실행은 confirmDisabled로 막는다.
+- 진입·닫힘 모션은 기본으로 들어 있다(공통 모달 모션). 패널은 scale 1.3→1·opacity 0→1 200ms `cubic-bezier(0.03,0.4,0.1,1)`, 딤은 100ms `cubic-bezier(0,0,0.15,1)`, 닫힘은 둘 다 100ms `cubic-bezier(0.35,0,1,1)` 페이드 아웃이다. 동작 줄이기에서는 즉시 처리한다. 호출자는 Content `className`과 `backdropClassName`으로 덮어쓸 수 있다. CSS 전환이 끝나면 Base UI의 `onOpenChangeComplete`를 통해 제거 시점을 알린다. 비동기 확인 중 중복 실행은 confirmDisabled로 막는다.
 
 ## 접근성
 
@@ -42,8 +42,11 @@
 - radius-r9, padding-p11(22), padding-p10(20), padding-p8(16), spacing-s4(8).
 - typography-heading-1-semibold / typography-body-1-regular, text-primary / text-tertiary.
 - Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경 딤은 Figma(`791:11665`의 딤 레이어)대로 overlay-dim-subtle(검정 10%).
-- Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Stack은 위아래 16·좌우 22(내용 폭 267), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
-- Stack 이미지: Figma가 이미지를 높이 72 상자 안에 위아래 8 여백으로 둔다(`my-padding-p4`). 그래서 이미지·제목 사이는 14(8 + `pt-s3` 6)다.
+- Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Stack은 위 22·아래 16·좌우 22(내용 폭 267, 2026-11-02 위 여백 16→22), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
+- Label 변형: `ConfirmDialog`의 `children`(설명 아래 내용 자리)에 번치 줄 목록을 넣는다. 내용이 있으면 제목·설명 사이 18(`mt-s9`), 설명·내용 사이 16(`mt-s8`), 좌우 22. 목록 의미와 줄 사이 6은 호출자가 정한다(Story는 web `BunchLabel`의 `InConfirmDialog`, core가 web을 import하지 않게).
+  - 지원 조합은 제목·설명·내용(Label)이다. 이미지와 내용을 함께 쓰거나 설명 없이 내용만 쓰는 모습은 Figma에 없다.
+  - 내용이 길면 내용만 스크롤하고 버튼은 늘 보인다. 첫 초점이 「취소」라 내용은 열릴 때 읽히지 않으므로, 목록에는 `aria-label`로 이름을 붙이고 설명 문구가 목록을 가리키게 쓴다.
+- Stack 이미지: Figma(`2081:45873`, 2026-11-02 확인)는 이미지를 내용 맨 위에 두고 이미지·제목 사이 6(`pt-s3`)이다. 예전 72 상자 안 위아래 8 여백은 없어졌다.
 - Story: Solid, Text, 확인 하나, 긴 글, 상호작용·Toast 공존, ProfileSideBySide, ProfileStack.
 
 ## 확인할 항목

@@ -55,12 +55,10 @@ export function DeleteConfirmDialog({
         <Dialog.Title>{PHOTO_BOX_MESSAGES.deleteConfirmTitle}</Dialog.Title>
         <Dialog.Description>{description}</Dialog.Description>
         <Dialog.Footer>
-          <Dialog.Confirm variant="secondary" className="min-w-0 flex-1" onClick={onConfirm}>
+          <Dialog.Confirm variant="secondary" onClick={onConfirm}>
             삭제하기
           </Dialog.Confirm>
-          <Dialog.Cancel variant="primary" className="min-w-0 flex-1">
-            취소
-          </Dialog.Cancel>
+          <Dialog.Cancel variant="primary">취소</Dialog.Cancel>
         </Dialog.Footer>
       </Dialog.Content>
     </Dialog.Root>
@@ -93,12 +91,10 @@ export function DateChangeConfirmDialog({
         <Dialog.Title>{PHOTO_BOX_MESSAGES.dateConfirmTitle}</Dialog.Title>
         <Dialog.Description>{PHOTO_BOX_MESSAGES.dateConfirmDescription}</Dialog.Description>
         <Dialog.Footer>
-          <Dialog.Confirm variant="secondary" className="min-w-0 flex-1" onClick={onConfirm}>
+          <Dialog.Confirm variant="secondary" onClick={onConfirm}>
             바꾸기
           </Dialog.Confirm>
-          <Dialog.Cancel variant="primary" className="min-w-0 flex-1">
-            취소
-          </Dialog.Cancel>
+          <Dialog.Cancel variant="primary">취소</Dialog.Cancel>
         </Dialog.Footer>
       </Dialog.Content>
     </Dialog.Root>

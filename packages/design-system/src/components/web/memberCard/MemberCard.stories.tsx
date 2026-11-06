@@ -8,7 +8,7 @@ const SAMPLE_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 
 const meta = {
-  title: 'Web/MemberCard',
+  title: 'Web/Card/MemberCard',
   component: MemberCard,
   args: { name: '지예', src: SAMPLE_IMAGE },
 } satisfies Meta<typeof MemberCard>;

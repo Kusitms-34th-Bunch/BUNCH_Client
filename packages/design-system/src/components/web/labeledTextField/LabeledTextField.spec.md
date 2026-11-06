@@ -11,7 +11,7 @@
 
 ### 제공하는 동작
 
-- 부모 폭을 채우는 입력 행(Figma 기준 343px): 제목 + 필수·선택 표시(`Option`) + 입력창 + 오른쪽 아래 글자 수 또는 왼쪽 아래 오류 문구.
+- 부모 폭을 채우는 입력 행(Figma 기준 343px): 제목 + 필수 표시(별표 `*`, `icon-brand` 16px) 또는 선택 표시(`Option` 「선택」) + 입력창 + 오른쪽 아래 글자 수 또는 왼쪽 아래 오류 문구.
 - 입력창은 core `TextField`를 그대로 쓴다. 나머지 props는 입력창(`input`)에 전달된다.
 - 글자 수: `maxLength`를 주면 오른쪽 아래에 "현재/최대"(예: `0/12`)를 보이고, 입력은 그 길이로 제한된다. controlled(`value`) 길이 또는 uncontrolled 입력의 실시간 길이를 센다.
 - 지우기 버튼과 버튼 영역은 없다. Figma의 입력창이 기본 변형이라 지우기(Delete)·버튼 변형은 쓰지 않고 `onClear`·`action`도 받지 않는다.
@@ -28,19 +28,19 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 
 ## Public API
 
-- Props: `title`(필수, 제목이자 입력창 접근성 이름), `option`(`required` / `optional`), `maxLength`, `errorMessage`, `className`(전체 영역), `disabled`, `editing`, `value`·`defaultValue`·`onChange`·`id`·`name` 등 `TextField`의 나머지 props. `action`·`onClear`·`label`은 받지 않는다(`label`은 `title`이 대신한다).
+- Props: `title`(필수, 제목이자 입력창 접근성 이름), `option`(`required` / `optional`), `maxLength`, `showCounter`(기본 `true`, `false`면 글자 수 없이 입력만 제한), `errorMessage`, `className`(전체 영역), `disabled`, `editing`, `value`·`defaultValue`·`onChange`·`id`·`name` 등 `TextField`의 나머지 props. `action`·`onClear`·`label`은 받지 않는다(`label`은 `title`이 대신한다).
 - 호출자 소유 책임: 제목·오류 문구(i18n), 입력 규칙과 검증, 값 처리.
 
 ## 상태와 동작
 
-| Figma 상태 | 코드에서 표현                                                                            |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| `Default`  | 값이 없고 포커스도 없는 입력창(placeholder)                                              |
-| `Focused`  | 값이 없는 채로 포커스. 강한 테두리로 바뀌고 안내 문구가 사라져 캐럿만 보인다             |
-| `Filled`   | 값이 있는 입력창                                                                         |
-| `Editing`  | `editing` prop. 입력창 내용을 가리고 점 3개 애니메이션을 보인다(core `TextField`의 상태) |
-| `Error`    | `errorMessage`가 있음. 왼쪽 아래 빨간 문구 + 오른쪽 아래 글자 수                         |
-| `Disabled` | `disabled`. 제목·입력창·글자 수·오류 문구 전체가 `opacity-disabled`(40%)                 |
+| Figma 상태 | 코드에서 표현                                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| `Default`  | 값이 없고 포커스도 없는 입력창(placeholder)                                                                       |
+| `Focused`  | 값이 없는 채로 포커스. 강한 테두리로 바뀌고 안내 문구가 사라져 캐럿만 보인다                                      |
+| `Filled`   | 값이 있는 입력창                                                                                                  |
+| `Editing`  | `editing` prop. 입력창 내용을 가리고 `editingContent`(앱이 넘기는 편집 중 로티)를 보인다(core `TextField`의 상태) |
+| `Error`    | `errorMessage`가 있음. 왼쪽 아래 빨간 문구 + 오른쪽 아래 글자 수                                                  |
+| `Disabled` | `disabled`. 제목·입력창·글자 수·오류 문구 전체가 `opacity-disabled`(40%)                                          |
 
 - 글자 수 영역이 없으면(`maxLength`와 `errorMessage` 모두 없음) 입력창만 남는다(전체 높이 72px). 글자 수가 있으면 96px이다.
 - 오류 문구는 입력창 폭에서 남는 공간을 채우고 글자 수는 오른쪽에 붙어 줄어들지 않는다(Figma `gap-6`, 오류 문구 `flex-1`). 긴 오류 문구는 줄바꿈된다.
@@ -57,9 +57,9 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 
 ## Styling과 의존성
 
-- Token: `gap-s3`·`gap-s2`, `typography-body-3-semi-bold`(제목 14/21 SemiBold, 접미사 철자는 저장소 토큰 이름 그대로), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-4-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 표시는 `Option`을 쓴다.
+- Token: `gap-s3`·`gap-s2`, `typography-body-3-semi-bold`(제목 14/21 SemiBold, 접미사 철자는 저장소 토큰 이름 그대로), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-4-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 선택 표시는 `Option`, 필수 별표는 `typography-body-1-semi-bold text-icon-brand`(Figma `Wanted Sans` 16/22는 저장소에 없어 Pretendard, `BundleTitle`과 같음)를 쓴다. 필수 표시는 2026-11-04 Figma에서 「필수」 글자가 별표로 바뀌었다.
 - dependency 추가 없음.
-- Storybook state matrix: `Default`, `Focused`, `Filled`, `Editing`, `ErrorState`, `Disabled`, `DisabledWithError`, `OptionalWithoutCounter`.
+- Storybook state matrix: `Default`, `Focused`, `Filled`, `Editing`, `ErrorState`, `Disabled`, `DisabledWithError`, `LimitWithoutCounter`, `OptionalWithoutCounter`.
 
 ## 확인할 항목
 
@@ -67,10 +67,10 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 - 글자 수와 입력 제한 (제안): 설계서는 최대 12자와 글자 수 실시간 갱신을 요구한다. `maxLength`를 입력 길이 제한과 글자 수 표시에 함께 쓴다. Figma `Error` 시안은 제한을 넘은 문구("입력 가능한 글자수를 초과했어요")를 보여 주는데, 입력이 제한되면 그 문구가 필요 없을 수 있다. 제한 없이 넘길 수 있게 하려면 글자 수만 받는 prop을 따로 연다.
 - 안내 문구 숨김 (확정): 입력창이 포커스되면 placeholder를 숨긴다(Figma `Focused`, 사용자 확인). core `TextField`의 스타일이라 이 입력창을 쓰는 곳 모두 같다.
 - 지우기 버튼 (확정, 사용자 결정): Figma 입력창이 기본 변형이라 지우기 버튼이 없다. 지우기가 필요한 화면은 core `TextField`의 지우기 변형을 직접 쓴다.
-- `Editing` (확정, 사용자 확인): Figma 입력창의 `Editing`은 점 3개 애니메이션이다. `editing` prop으로 켜고 켜는 시점(예: 로딩)은 화면이 정한다. 점의 크기·주기·시차는 Figma 모션 값을 측정해 옮겼다.
+- `Editing` (확정, 사용자 확인): Figma 입력창의 `Editing`은 점 3개 애니메이션이고 디자이너가 전달한 `editing.json` 로티로 쓰기로 확정했다. 컴포넌트는 `editing`과 `editingContent`만 받고 켜는 시점은 화면이 정한다.
 - 오류 시 입력창 모양 (제안): Figma가 테두리·배경을 바꾸지 않아 그대로 두었다. 오류를 문구 색만으로 전달하지 않도록 `aria-invalid`와 문구를 함께 쓴다.
 - 이름 (확정): Figma `Labled_Text_Field`의 오탈자를 바로잡아 `LabeledTextField`로 했다.
-- 접근성 이름 (제안): 입력창은 `aria-label`로 제목만("닉네임") 이름을 갖고 화면의 라벨은 "닉네임 필수"라서 보이는 글자와 이름이 정확히 같지는 않다. "필수"가 이름에 들어가면 `aria-required`와 겹쳐 중복 안내되므로 지금 구조를 유지한다. 음성 제어에서 "필수"를 함께 말해야 하는지는 확인이 필요하다.
+- 접근성 이름 (제안): 입력창은 `aria-label`로 제목만("닉네임") 이름을 갖고 화면의 라벨은 "닉네임 *"(별표는 낭독에서 뺌)이라서 보이는 글자와 이름이 정확히 같지는 않다. "필수"가 이름에 들어가면 `aria-required`와 겹쳐 중복 안내되므로 지금 구조를 유지한다. 음성 제어에서 "필수"를 함께 말해야 하는지는 확인이 필요하다.
 - 글자 수 읽힘 (제안): `aria-describedby`에 오류 문구와 글자 수("3/12")가 들어가 포커스할 때 숫자만 읽혀 맥락이 부족할 수 있다. 입력 중 갱신은 읽히지 않는다(live region 없음). 필요하면 접근성 전용 문구를 추가한다.
 - 오류 알림 (확인): `role="alert"`는 오류 문구가 나중에 나타날 때 읽힌다. 처음부터 있는 오류는 포커스할 때 `aria-describedby`로 읽힌다. 타이핑마다 오류 문구가 바뀌면 연속으로 읽힐 수 있어 호출하는 쪽이 갱신 빈도를 관리한다.
 - 비활성과 오류 (확인): Figma Disabled대로 오류 문구까지 40% 투명해진다. 비활성이면서 오류인 경우 오류 문구도 흐려진다.

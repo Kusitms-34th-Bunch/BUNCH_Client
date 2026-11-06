@@ -133,11 +133,7 @@ export function PhotoActionMenu<Id extends string>({
       {items.map((item) => (
         <Fragment key={item.id}>
           {item.dividerBefore ? <MenuDivider /> : null}
-          <MenuItem
-            {...(item.tone ? { tone: item.tone } : {})}
-            icon={item.icon}
-            onClick={() => choose(item.id)}
-          >
+          <MenuItem tone={item.tone} icon={item.icon} onClick={() => choose(item.id)}>
             {item.label}
           </MenuItem>
         </Fragment>

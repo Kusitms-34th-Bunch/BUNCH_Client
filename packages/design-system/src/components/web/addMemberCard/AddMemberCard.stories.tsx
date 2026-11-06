@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AddMemberCard } from './AddMemberCard';
 
 const meta = {
-  title: 'Web/AddMemberCard',
+  title: 'Web/Card/AddMemberCard',
   component: AddMemberCard,
 } satisfies Meta<typeof AddMemberCard>;
 

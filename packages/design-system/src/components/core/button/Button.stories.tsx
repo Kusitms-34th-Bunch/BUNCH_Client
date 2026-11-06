@@ -4,6 +4,7 @@ import { Button, type ButtonSize, type ButtonVariant } from './Button';
 const variants: ButtonVariant[] = [
   'primary',
   'secondary',
+  'secondarySubtle',
   'tertiary',
   'warning',
   'brand',

@@ -45,11 +45,11 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 
 ## Styling과 의존성
 
-| Figma        | 값                                                                                                                   | 사용한 토큰·utility                                                                                           |
-| ------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 입력창       | 테두리 `border-secondary`, radius 10, 좌우 16, 위아래 10                                                             | `rounded-r5 border border-border-secondary px-padding-p8 py-padding-p5`                                       |
-| 입력 글자    | Body-2-Regular(14/21), `text-primary`, 안내 Body-2-Meduim(SemiBold, -0.5px)·`text-quaternary`(2026-10-22 Figma 변경) | `typography-body-3-regular text-text-primary`, 안내 문구는 굵기·자간만(`TextField`의 `fieldText`와 같은 방식) |
-| 라벨·안내 줄 | 라벨은 `LabeledTextField`와 같고 안내 줄은 `FieldFooter`                                                             | 같은 utility                                                                                                  |
+| Figma        | 값                                                                                                                | 사용한 토큰·utility                                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 입력창       | 테두리 `border-secondary`, radius 10, 좌우 16, 위아래 10                                                          | `rounded-r5 border border-border-secondary px-padding-p8 py-padding-p5`                                       |
+| 입력 글자    | Body-2-Regular(14/21), `text-primary`, 안내 Body-2-Meduim(SemiBold, -0.5px)·`text-quinary`(2026-10-22 Figma 변경) | `typography-body-3-regular text-text-primary`, 안내 문구는 굵기·자간만(`TextField`의 `fieldText`와 같은 방식) |
+| 라벨·안내 줄 | 라벨은 `LabeledTextField`와 같고 안내 줄은 `FieldFooter`                                                          | 같은 utility                                                                                                  |
 
 - dependency 추가 없음. 높이 조절은 `useLayoutEffect`로 `scrollHeight`를 읽는다(`field-sizing`을 쓰지 않아 iOS WebView 지원 여부와 무관하다).
 

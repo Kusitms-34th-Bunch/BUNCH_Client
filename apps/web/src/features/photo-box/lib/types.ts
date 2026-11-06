@@ -3,6 +3,8 @@ export type PhotoBoxMember = {
   name: string;
   /** 프로필 이미지 주소(없으면 배경색 원) */
   avatarSrc?: string | undefined;
+  /** 번치 안의 역할(멤버 목록 API에서 온 멤버만 있고, 관리자 여부 판단에 씀) */
+  role?: 'OWNER' | 'CO_OWNER' | 'MEMBER';
 };
 
 export type PhotoBoxBunch = {

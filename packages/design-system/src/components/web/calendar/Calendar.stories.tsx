@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Calendar, type CalendarProps } from './Calendar';
 
 const meta = {
-  title: 'Web/Calendar',
+  title: 'Web/Selection/Calendar',
   component: Calendar,
   args: { defaultMonth: new Date(2026, 9, 1), selected: new Date(2026, 9, 20) },
   parameters: { layout: 'padded' },

@@ -1,3 +1,5 @@
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import * as Haptics from 'expo-haptics';
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useSyncExternalStore } from 'react';
@@ -11,6 +13,13 @@ const TEXT_PRIMARY = '#121212';
 const TEXT_TERTIARY = '#535a61';
 const LABEL = { fontFamily: 'Pretendard-Regular', fontSize: 12 } as const;
 
+// 탭 햅틱은 쉘의 네이티브 모듈(modules/tab-crossfade)이 울리지만 Expo Go에는 그 모듈이 없어 JS로 대신 울림
+// 개발·배포 앱에서 함께 울리면 두 번 나므로 Expo Go일 때만
+const inExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const screenListeners = inExpoGo
+  ? { tabPress: () => void Haptics.selectionAsync().catch(() => {}) }
+  : undefined;
+
 /** iOS 시스템 탭 바(iOS 26 이상은 Liquid Glass). 라벨은 웹이 보낸 항목, 아이콘은 쉘의 디자인 시스템 아이콘. 항목이 없는 탭은 숨김 */
 export default function TabsLayout() {
   const tabs = useSyncExternalStore(tabsStore.subscribe, tabsStore.get);
@@ -19,6 +28,8 @@ export default function TabsLayout() {
 
   return (
     <NativeTabs
+      hidden={tabs.barHidden ?? false}
+      screenListeners={screenListeners}
       tintColor={TEXT_PRIMARY}
       iconColor={{ default: TEXT_TERTIARY, selected: TEXT_PRIMARY }}
       labelStyle={{

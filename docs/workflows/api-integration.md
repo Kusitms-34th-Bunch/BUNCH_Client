@@ -17,8 +17,8 @@
 ## 계약 생성
 
 1. backend가 제공하는 raw OpenAPI JSON 또는 YAML 주소를 확인한다. Swagger UI HTML 주소는 사용하지 않는다.
-2. 실제 schema URL은 repository에 기록하지 않는다. 일회성 환경변수 또는 gitignore된 `.env.local`·`.env.openapi.local`에만 둔다.
-3. `yarn gen:api-types`를 실행해 `packages/api-core/src/generated/openapi.ts`를 생성하고, 변경된 계약 파일은 함께 검토·커밋한다.
+2. 실제 schema URL은 repository에 기록하지 않는다. 일회성 환경변수 또는 gitignore된 `.env.local`·`.env.openapi.local`(`.env.openapi.example`을 복사해 `OPENAPI_SCHEMA_URL`에 raw 주소를 넣음)에만 둔다. Spring 서버의 raw 주소는 Swagger UI 주소의 `/swagger-ui/index.html`을 `/v3/api-docs`로 바꾼 것이다.
+3. `yarn gen:api-types`를 실행해 `packages/api-core/src/generated/openapi.ts`를 생성하고, 변경된 계약 파일은 함께 검토·커밋한다. 스크립트가 생성 직후 Prettier까지 적용하므로 따로 포맷하지 않는다.
 4. 생성 타입은 endpoint 경계에서만 사용한다. component prop이나 디자인 시스템 API에 `paths`, `components`를 직접 노출하지 않는다.
 
 ```sh

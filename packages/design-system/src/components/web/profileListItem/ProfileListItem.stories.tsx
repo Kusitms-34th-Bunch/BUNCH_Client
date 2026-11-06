@@ -4,7 +4,7 @@ import { ChipButton } from '../chipButton';
 import { ProfileListItem } from './ProfileListItem';
 
 const meta = {
-  title: 'Web/ProfileListItem',
+  title: 'Web/ListItem/ProfileListItem',
   component: ProfileListItem,
   args: { name: '은우링링링' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],
@@ -25,7 +25,7 @@ export const WithButton: Story = {
   args: {
     name: '야간러너스',
     action: (
-      <Button variant="secondary" size="sm" className="text-text-tertiary">
+      <Button variant="secondarySubtle" size="sm">
         차단해제
       </Button>
     ),
@@ -58,7 +58,7 @@ export const DisabledWithButton: Story = {
     name: '야간러너스',
     disabled: true,
     action: (
-      <Button variant="secondary" size="sm" className="text-text-tertiary">
+      <Button variant="secondarySubtle" size="sm">
         차단해제
       </Button>
     ),

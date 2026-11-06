@@ -6,7 +6,7 @@ const sample =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><rect width='52' height='52' fill='%23A7ADFF'/><circle cx='26' cy='21' r='9' fill='white'/><ellipse cx='26' cy='46' rx='16' ry='13' fill='white'/></svg>";
 
 const meta = {
-  title: 'Web/UploaderBadge',
+  title: 'Web/Profile/UploaderBadge',
   component: UploaderBadge,
   args: { name: '경진', avatarSrc: sample },
 } satisfies Meta<typeof UploaderBadge>;

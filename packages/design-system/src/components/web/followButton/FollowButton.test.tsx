@@ -24,6 +24,17 @@ describe('FollowButton', () => {
     expect(screen.getByRole('button').querySelector('svg')).toBeNull();
   });
 
+  it('팔로잉·요청됨은 회색 글자(text-tertiary), 팔로우는 아니다', () => {
+    const { rerender } = render(<FollowButton status="following" />);
+    expect(screen.getByRole('button').className.split(' ')).toContain('text-text-tertiary');
+
+    rerender(<FollowButton status="requested" />);
+    expect(screen.getByRole('button').className.split(' ')).toContain('text-text-tertiary');
+
+    rerender(<FollowButton status="follow" />);
+    expect(screen.getByRole('button').className.split(' ')).not.toContain('text-text-tertiary');
+  });
+
   it('누르면 onClick을 부른다', () => {
     const onClick = vi.fn();
     render(<FollowButton status="follow" onClick={onClick} />);

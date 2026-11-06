@@ -29,7 +29,7 @@
 - 진입: 폭죽 조각이 나타나 날아가다 사라진다. 끝나면 조각은 DOM에서 치운다. 화면이 먼저 사라지면 재생을 취소한다.
 - 움직임 줄이기(`prefers-reduced-motion: reduce`): 폭죽을 그리지 않는다. 문구·버튼은 그대로다.
 - `Element.animate`를 지원하지 않는 환경: 폭죽을 그리지 않는다.
-- 「멤버 초대하기」: `/onboarding/create/invite`로 `router.push`한다(`BunchInvite.spec.md`). 「내 번치로 이동하기」: 피드(임시 `/`)로 `router.replace`한다. 카메라: 네이티브 갤러리를 바로 열고 선택 후 현재 화면의 대표 사진을 교체한다. 일반 브라우저에서는 개발용 파일 선택창을 연다.
+- 「멤버 초대하기」: `/onboarding/create/invite`로 `router.push`한다(`features/bunch-invite/components/BunchInvite.spec.md`). 「내 번치로 이동하기」: 피드(임시 `/`)로 `router.replace`한다. 카메라: 네이티브 갤러리를 바로 열고 선택 후 현재 화면의 대표 사진을 교체한다. 일반 브라우저에서는 개발용 파일 선택창을 연다.
 
 ## 데이터 의존성
 

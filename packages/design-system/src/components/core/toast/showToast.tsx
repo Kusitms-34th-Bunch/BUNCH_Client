@@ -1,6 +1,7 @@
 'use client';
 
 import { toast as sonnerToast } from 'sonner';
+import { cn } from '../../../utils';
 import { type ToastAction, type ToastIcon, Toast } from './Toast';
 
 // 노출 시간: Figma 공통 모션(토스트 모션)은 단순 완료 안내 3초, 액션 버튼 포함 5초
@@ -16,12 +17,14 @@ export type ToastOptions = {
   bottomOffset?: number | undefined;
   /** 내용 폭 대신 목록 폭(화면 폭 − 좌우 여백)으로 펼침. 글자는 왼쪽, 액션 버튼은 오른쪽 끝 배치 */
   fullWidth?: boolean | undefined;
+  /** 뜨는 자리. 기본은 아래(`bottom`)이고 `top`은 헤더 바로 아래(Figma 사진 캡션 화면처럼 입력 중 키보드에 가리지 않아야 할 때) */
+  position?: 'top' | 'bottom' | undefined;
 };
 
 /** 토스트 표시. 새 토스트는 이전 토스트를 대체해 노출 시간을 처음부터 다시 계산 */
 export const toast = (
   message: string,
-  { icon, action, duration, bottomOffset, fullWidth }: ToastOptions = {},
+  { icon, action, duration, bottomOffset, fullWidth, position = 'bottom' }: ToastOptions = {},
 ) => {
   sonnerToast.dismiss();
 
@@ -31,7 +34,7 @@ export const toast = (
       <div style={bottomOffset ? { paddingBottom: bottomOffset } : undefined}>
         <Toast
           // Toaster가 항목을 목록 폭(w-full)으로 펴 두므로, 기본은 내용 폭의 Toast를 그 안에서 가운데 정렬
-          className={fullWidth ? 'w-full' : 'mx-auto'}
+          className={cn('pointer-events-auto', fullWidth ? 'w-full' : 'mx-auto')}
           icon={icon}
           action={
             action && {
@@ -47,6 +50,9 @@ export const toast = (
         </Toast>
       </div>
     ),
-    { duration: duration ?? (action ? ACTION_DURATION : DEFAULT_DURATION) },
+    {
+      duration: duration ?? (action ? ACTION_DURATION : DEFAULT_DURATION),
+      position: position === 'top' ? 'top-center' : 'bottom-center',
+    },
   );
 };

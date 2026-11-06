@@ -8,7 +8,7 @@ const SAMPLE_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 
 const meta = {
-  title: 'Web/BundleCommentCard',
+  title: 'Web/Card/BundleCommentCard',
   component: BundleCommentCard,
   args: { userName: '지예', currentUser: true, profileSrc: SAMPLE_IMAGE, readOnly: false },
   parameters: { layout: 'padded' },
@@ -43,7 +43,12 @@ export const Error: Story = {
 
 /** Figma `State=Editing`: 다른 멤버가 쓰는 중 */
 export const Editing: Story = {
-  args: { editing: true, editingLabel: '지예님이 작성 중', currentUser: false },
+  args: {
+    editing: true,
+    editingLabel: '지예님이 작성 중',
+    editingContent: <span className="text-icon-quaternary">···</span>,
+    currentUser: false,
+  },
 };
 
 /** 내 코멘트가 아니면 이름 뒤에 "(나)"가 없음 */

@@ -12,8 +12,8 @@
 
 - 가입 마지막 단계에서 닉네임(필수)과 프로필 사진·출생연도·성별(선택)을 입력하는 화면의 UI.
 - 구성: 헤더(뒤로 가기, `SignupFrame`), 제목·설명(`PageHeader`), 프로필 이미지와 사진 변경 버튼(누르면 사진 선택, 아래 항목), 닉네임·출생연도(`LabeledTextField`), 성별(여성·남성 선택), 공개 안내 문구, 하단 고정 「BUNCH 시작하기」 버튼.
-- 프로필 사진: 카메라 버튼을 누르면 온보딩 번치 사진과 같은 `usePhotoPicker`로 사진을 고른다. 앱(쉘)에서는 네이티브 갤러리(`pickGalleryImage`, 1:1 편집·JPEG)를, 일반 브라우저에서는 파일 선택(JPEG·PNG·WebP, 3MB 이하)을 쓴다. 고른 사진은 프로필 이미지 자리에 보여 주고(저장하지 않는다) 취소하면 이전 사진을 유지한다. 사진을 쓸 수 없으면 기획 문구 「이 사진은 사용할 수 없어요.」를 토스트로 알린다. 그 밖에 기획에 없는 안내 문구는 두지 않는다.
-- 닉네임: 한글·영문·숫자와 사이 공백만 허용하고 특수문자·이모지는 오류(「특수문자를 제외한 영문, 한글만 사용할 수 있어요.」)이며, 최대 12자와 글자 수(`n/12`)를 보인다. 앞뒤 공백은 지운 길이로 판단하고(저장 전에 NFC 정규화), 공백만 입력하면 빈 값으로 본다. 한글 조합 중인 자모는 오류로 보지 않지만 시작하기와 중복 확인은 조합이 끝난 완성된 값에서만 켠다. 규칙은 `lib/nickname.ts`가 가진다.
+- 프로필 사진: MY 프로필 수정과 같은 `shared/components/profile/ProfilePhotoField`를 쓴다(#217). 카메라 버튼 → 「프로필 사진 설정」 선택지(앨범에서 사진 선택하기 / 기본 이미지 적용하기 / 취소, 기본 이미지면 두 번째 없음) → 원형 조정 화면 → 미리보기. 형식은 JPEG·PNG·HEIC·WebP 10MB 이하이고 어긋나면 「JPEG・PNG・HEIC・WebP, 10MB 이하만 가능해요.」 토스트(MY Figma 기준으로 통일, 이전 가입 기준 3MB·「이 사진은 사용할 수 없어요.」를 대체). 고른 사진은 저장하지 않고 미리보기만 한다.
+- 닉네임: 한글·영문·숫자와 사이 공백만 허용하고 특수문자·이모지는 오류(「특수문자를 제외한 영문, 한글만 사용할 수 있어요.」)이며, 최대 12자와 글자 수(`n/12`)를 보인다. 앞뒤 공백은 지운 길이로 판단하고(저장 전에 NFC 정규화), 공백만 입력하면 빈 값으로 본다. 한글 조합 중인 자모는 오류로 보지 않지만 시작하기와 중복 확인은 조합이 끝난 완성된 값에서만 켠다. 규칙은 `src/shared/lib/nickname.ts`가 가진다(MY 프로필 수정과 공유).
 - 닉네임 중복 확인: 입력을 멈추고 0.5초 뒤 확인하고(`useNicknameAvailability`), 확인 중이거나 사용 중(「이미 사용 중인 닉네임이에요.」)이거나 확인에 실패하면 시작하기가 비활성이다. 확인 함수(`checkNickname`)를 넘길 때만 동작하고, 지금은 넘기지 않아 확인하지 않는다.
 - 출생연도: 숫자 키보드로 4자리를 직접 입력한다(숫자만, 최대 4자리). 범위는 1930년부터 (현재 연도 − 14)년까지(2026년 기준 2012). 범위를 벗어나거나(4자리를 쓴 직후), 4자리가 아닌 채 포커스를 벗어나면 안내하고 시작하기를 비활성화한다. 비어 있으면 선택 안 함이다.
 - 성별: 여성·남성 중 하나이고 다시 누르면 해제된다. 선택한 버튼은 Figma 눌림 모양(10% 어두운 오버레이, 진한 글자)을 유지하고 비선택은 흰 바탕에 연한 글자다.
@@ -22,7 +22,7 @@
 
 ### 범위 외
 
-- 프로필 사진의 선택지 바텀시트(앨범 선택 / 기본 이미지 적용 / 취소), 별도 편집 화면, 허용 형식 확장(HEIC), 권한 거부 안내 모달, 서버 저장. 지금은 카메라 버튼으로 사진을 골라 이 화면에서 미리 보는 것까지만 연결했다.
+- 프로필 사진의 권한 거부 안내 모달(시스템 사진 선택기는 권한이 필요 없어 띄울 경우가 없음, `ProfilePhotoField.spec.md`)과 서버 저장.
 - 닉네임 중복 확인의 실제 호출(서버), 가입 완료 저장, 저장 실패 토스트, 접근 제어(가입 중이며 약관 동의 완료인 사용자만).
 - 입력값의 임시 보관. 뒤로 가기 후 다시 들어오면 입력이 비어 있다.
 - iPhone 상태 바·홈 인디케이터(기기 요소, Safe Area는 `AppFrame`이 처리한다).
@@ -50,27 +50,27 @@
 
 ## UI와 접근성
 
-- Component mapping: `web`의 `PageHeader`·`ProfileImage`·`CameraButton`·`LabeledTextField`·`Option`, `core`의 `Button`·`Header`(`SignupFrame`). 성별(`GenderField`)은 `Button`(tertiary·md)에 `aria-pressed`를 붙인 이 화면 전용 UI다.
+- Component mapping: `web`의 `PageHeader`·`ProfileImage`·`CameraButton`·`LabeledTextField`·`Option`, `core`의 `Button`·`Header`(`SignupFrame`). 입력 칸 묶음은 `src/shared/components/profile/ProfileFields`(값·검증은 `useProfileFields`)이고 MY 프로필 수정과 함께 쓴다. 성별(`GenderField`)은 `Button`(tertiary·md)에 `aria-pressed`를 붙인 UI다.
 - Keyboard·focus·accessible name: 닉네임·출생연도는 `LabeledTextField`의 제목이 입력창 이름이고 필수는 `aria-required`, 오류는 `role="alert"`와 `aria-invalid`로 알린다. 성별은 `role="group"`(이름 「성별」)이고 두 버튼은 `aria-pressed`로 선택 상태를 전달한다. 사진 변경 버튼 이름은 「프로필 사진 변경」이고 프로필 이미지는 장식이다(선택한 사진도 마찬가지). 선택 중에도 버튼을 비활성으로 바꾸지 않아 포커스를 잃지 않으며, 중복 선택은 hook이 막는다. `PageHeader` 제목이 `h1`, `main`은 `PageShell`이 하나만 만든다. 공개 안내 문구는 출생연도 입력과 성별 그룹의 `aria-describedby`로 연결하고, 출생연도에는 「숫자 4자리로 입력해 주세요.」(화면에는 보이지 않음)도 함께 연결한다.
 - Responsive·긴 텍스트·overflow: 좌우 16px이고 375px에서 가로 넘침이 없다. 본문은 `main`에서 스크롤되고 시작하기는 아래에 고정된다.
 
-| Figma          | 값                                        | 사용한 토큰·utility                      |
-| -------------- | ----------------------------------------- | ---------------------------------------- |
-| 제목·설명 영역 | 헤더 아래, 높이 65                        | `PageHeader`                             |
-| 제목 ↔ 프로필  | 간격 48                                   | `pt-s18`                                 |
-| 프로필 이미지  | 90×90, 영역 95×90, 이미지 왼쪽 3          | `ProfileImage`(`left-0.75`)              |
-| 사진 변경 버튼 | 28×28, 영역 안 (67, 62)                   | `CameraButton`(`left-16.75 top-15.5`)    |
-| 프로필 ↔ 입력  | 간격 32, 입력 사이 16, 좌우 16            | `pt-s14 gap-s8 px-padding-p8`            |
-| 성별 버튼      | 168×40 두 개, 간격 8, 제목과 간격 6       | `Button`(tertiary·md) `flex-1`, `gap-s4` |
-| 공개 안내 문구 | Caption-1-Medium 12/16, `text-quaternary` | `typography-caption-1-medium`            |
-| 시작하기 버튼  | 343×48, 위 14                             | `Button`(primary·lg) `pt-padding-p7`     |
+| Figma          | 값                                     | 사용한 토큰·utility                      |
+| -------------- | -------------------------------------- | ---------------------------------------- |
+| 제목·설명 영역 | 헤더 아래, 높이 65                     | `PageHeader`                             |
+| 제목 ↔ 프로필  | 간격 48                                | `pt-s18`                                 |
+| 프로필 이미지  | 90×90, 영역 95×90, 이미지 왼쪽 3       | `ProfileImage`(`left-0.75`)              |
+| 사진 변경 버튼 | 28×28, 영역 안 (67, 62)                | `CameraButton`(`left-16.75 top-15.5`)    |
+| 프로필 ↔ 입력  | 간격 32, 입력 사이 16, 좌우 16         | `pt-s14 gap-s8 px-padding-p8`            |
+| 성별 버튼      | 168×40 두 개, 간격 8, 제목과 간격 6    | `Button`(tertiary·md) `flex-1`, `gap-s4` |
+| 공개 안내 문구 | Caption-1-Medium 12/16, `text-quinary` | `typography-caption-1-medium`            |
+| 시작하기 버튼  | 343×48, 위 14                          | `Button`(primary·lg) `pt-padding-p7`     |
 
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/signup/profile`이 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)
 - [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
 - [x] 상태별 UI: 닉네임 문자·길이·공백·조합·중복(확인 중·사용 중·실패), 출생연도 입력·범위·4자리 미만, 성별 선택·해제, 시작하기 활성 조건과 이동, 키보드 닫기를 테스트로 확인
-- [x] 관련 test: `ProfileSetup.test.tsx`, `lib/nickname.test.ts`, `lib/birthYear.test.ts`, `hooks/useNicknameAvailability.test.tsx`
+- [x] 관련 test: `ProfileSetup.test.tsx`, `src/shared/lib/nickname.test.ts`, `src/shared/lib/birthYear.test.ts`, `src/shared/hooks/useNicknameAvailability.test.tsx`
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
 - [x] 헤드리스 Chromium(375×812)에서 제목·사진·카메라 버튼·필드·성별 버튼·안내 문구·시작하기 위치와 크기를 Figma 값(상태 바 62px 제외)과 대조했고, 오류·입력 완료·성별 선택 상태의 색을 확인함. 입력창 높이가 48px(Figma 47px)라 아래 요소가 1~2px 밀린다(`inputScale` 보정 결과). 실기기·키보드 자동 스크롤은 확인하지 못함
 
@@ -87,7 +87,7 @@
 - 성별 비선택 글자색 (확정): Figma 성별 버튼은 `text-tertiary`(`#535a61`)이고 `Button`의 tertiary 기본(진한 글자)과 달라 이 화면에서 덮어썼다. 선택은 Tertiary Pressed(10% 어두운 오버레이)로 표현했다.
 - 접근 조건 (미정): 가입 중이며 약관 동의를 마친 사용자만 들어오는 guard와, 약관 화면 뒤로 가기·건너뛰기 루프(`login-signup.md` 확인할 항목 기획 1번)는 인증 BFF 이후에 정한다.
 - 가입 뒤 도착지 (제안): 도착지는 지금 번치 시작 선택(`/onboarding`)으로 고정이다. 기능 spec의 도착지 규칙(1.2.8: 보관한 초대 정보 → 마지막 번치 홈 → 가장 최근 번치 홈 → 번치 시작 선택)의 초대 맥락·마지막 번치 판단은 인증·번치 연동 때 연결한다. 함수 prop인 `checkNickname`도 서버 컴포넌트인 page가 넘길 수 없어, 연결할 때는 client 쪽(query hook 등)에서 주입한다.
-- 프로필 사진 (부분 연결): 기능 spec은 「앨범에서 사진 선택 / 기본 이미지 적용 / 취소」 선택지와 원형 가이드가 있는 편집 화면, 허용 형식 JPEG·PNG·HEIC·WebP, 저장 시 1:1과 메타데이터 제외, 권한 거부 시 「권한 설정이 필요해요」 모달을 요구한다. 지금은 쉘의 갤러리 선택기(1:1 편집, EXIF 제외)와 웹 파일 선택으로 고르고 미리 보는 것까지만 연결했고, 선택한 사진을 기본 이미지로 되돌리는 방법·바텀시트·권한 모달·HEIC·저장은 없다.
+- 프로필 사진 (부분 연결): 선택지·기본 이미지 되돌리기·원형 조정 화면·JPEG·PNG·HEIC·WebP 형식은 공용 `ProfilePhotoField`로 연결했다(#217). 확대(핀치)는 지원하지 않고 이동만 된다. 권한 모달은 띄울 경우가 없어 만들지 않았고(`ProfilePhotoField.spec.md` 결정 2), 서버 저장은 이미지 API 연결 때 붙인다.
 - 성별 선택 표시 (디자인 확인): 선택은 10% 어두운 오버레이와 진한 글자로만 구분되어 대비가 낮다(스크린 리더에는 `aria-pressed`로 전달). Figma 모양을 따랐다.
 - 출생연도 자동 완성 (확인): 입력 목적 식별(`bday-year`) 대신 `autoComplete="off"`를 썼다. 저장된 값이 채워지는 것을 막으려는 선택이다.
 - 중복 확인 중 표시 (제안): 확인 중에는 시작하기가 비활성이라는 것 외에 표시가 없다.

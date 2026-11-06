@@ -34,7 +34,7 @@ describe('LabeledTextField', () => {
 
   it('필수·선택 표시를 제목 옆에 보여 주고 필수면 aria-required를 건다', () => {
     const { rerender } = render(<LabeledTextField title="닉네임" option="required" />);
-    expect(screen.getByText('필수')).toBeTruthy();
+    expect(screen.getByText('*').getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('textbox').getAttribute('aria-required')).toBe('true');
 
     rerender(<LabeledTextField title="닉네임" option="optional" />);
@@ -45,7 +45,7 @@ describe('LabeledTextField', () => {
   it('option이 없으면 필수·선택 표시를 그리지 않는다', () => {
     render(<LabeledTextField title="닉네임" />);
 
-    expect(screen.queryByText('필수')).toBeNull();
+    expect(screen.queryByText('*')).toBeNull();
     expect(screen.queryByText('선택')).toBeNull();
   });
 
@@ -163,5 +163,14 @@ describe('LabeledTextField', () => {
     render(<LabeledTextField title="닉네임" aria-invalid="true" />);
 
     expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('showCounter가 false면 글자 수 없이 입력만 maxLength로 제한한다', () => {
+    render(<LabeledTextField title="상세 사유" maxLength={200} showCounter={false} />);
+
+    expect(screen.getByRole('textbox', { name: '상세 사유' }).getAttribute('maxlength')).toBe(
+      '200',
+    );
+    expect(screen.queryByText(/\/200/)).toBeNull();
   });
 });

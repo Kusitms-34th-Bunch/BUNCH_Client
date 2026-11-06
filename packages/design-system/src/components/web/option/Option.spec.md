@@ -25,7 +25,7 @@
 
 ## 상태와 동작
 
-- `required`: 글자 `text-brand`(`#454edf`). `optional`: 글자 `text-quaternary`(`#bcbec2`).
+- `required`: 글자 `text-brand`(`#454edf`). `optional`: 글자 `text-quinary`(`#bcbec2`).
 - 글자는 12px Medium(`typography-caption-1-medium`)이고 줄바꿈하지 않는다.
 
 ## 접근성
@@ -36,7 +36,7 @@
 
 ## Styling과 의존성
 
-- Token: `typography-caption-1-medium`, `text-text-brand`, `text-text-quaternary`. dependency 추가 없음.
+- Token: `typography-caption-1-medium`, `text-text-brand`, `text-text-quinary`. dependency 추가 없음.
 - Storybook state matrix: `Required`, `Optional`, `Both`.
 
 ## 확인할 항목

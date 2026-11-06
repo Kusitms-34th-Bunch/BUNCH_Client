@@ -1,10 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '../../../../utils';
 import { Button } from '../../../core/button';
 import { LabeledTextField } from '../../labeledTextField';
 import { RadioButton } from '../../radioButton';
 import { BottomSheet, type BottomSheetRootProps } from '../BottomSheet';
+
+// 기능명세 5.10.7: 상세 사유 최대 200자
+const REPORT_DETAIL_MAX_LENGTH = 200;
 
 export type ReportReason = { value: string; label: string };
 
@@ -14,12 +18,10 @@ export type ReportSheetProps = Omit<
   BottomSheetRootProps,
   'children' | 'disablePointerDismissal'
 > & {
-  /** 예: `여행가조 번치를 신고해요` */
+  /** 예: `여행가조 번치를 신고할까요?` */
   title: string;
-  /** 부제의 앞부분. 예: `신고하는 번치` */
-  targetLabel: string;
-  /** 부제의 대상 이름. 예: `퇴근런클럽` */
-  targetName: string;
+  /** 누구 이름으로 신고하는지. 예: `퇴근런클럽 계정으로 신고해요` */
+  description: string;
   reasons: ReportReason[];
   /** 이 사유를 고르면 상세 사유 입력 표시·필수(Figma 07). 없으면 입력칸 없음(Figma 08) */
   detailReasonValue?: string | undefined;
@@ -32,8 +34,7 @@ export type ReportSheetProps = Omit<
 const ReportBody = ({
   open,
   title,
-  targetLabel,
-  targetName,
+  description,
   reasons,
   detailReasonValue,
   onSubmit,
@@ -59,12 +60,10 @@ const ReportBody = ({
     <>
       <BottomSheet.Header>
         <BottomSheet.Title>{title}</BottomSheet.Title>
-        <BottomSheet.Description>
-          {targetLabel}: <span className="text-text-tertiary">{targetName}</span>
-        </BottomSheet.Description>
+        <BottomSheet.Description>{description}</BottomSheet.Description>
         <BottomSheet.Close />
       </BottomSheet.Header>
-      <BottomSheet.Body className="gap-s8 flex flex-col">
+      <BottomSheet.Body className="flex flex-col">
         <fieldset className="gap-s2 py-padding-p2 flex min-w-0 flex-col">
           <legend className="sr-only">신고 사유</legend>
           {reasons.map(({ value, label }) => (
@@ -79,13 +78,31 @@ const ReportBody = ({
             </RadioButton>
           ))}
         </fieldset>
-        {needsDetail ? (
-          <LabeledTextField
-            title="상세 사유"
-            placeholder="신고 이유를 입력해주세요."
-            value={detail}
-            onChange={(event) => setDetail(event.target.value)}
-          />
+        {/* 상세 사유는 자리가 벌어지며 나타나고 접히며 사라짐(150ms ease-out, 번치 프로필 편집 안내와 같은 방식). 접힌 동안은 초점·낭독에서 뺌 */}
+        {detailReasonValue !== undefined ? (
+          <div
+            aria-hidden={!needsDetail}
+            inert={!needsDetail}
+            className={cn(
+              'grid transition-[grid-template-rows,opacity,visibility] duration-150 ease-out motion-reduce:transition-none',
+              needsDetail
+                ? 'visible grid-rows-[1fr] opacity-100'
+                : 'invisible grid-rows-[0fr] opacity-0',
+            )}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <LabeledTextField
+                className="mt-s8"
+                title="상세 사유"
+                option="required"
+                maxLength={REPORT_DETAIL_MAX_LENGTH}
+                showCounter={false}
+                placeholder="신고 이유를 입력해주세요."
+                value={detail}
+                onChange={(event) => setDetail(event.target.value)}
+              />
+            </div>
+          </div>
         ) : null}
       </BottomSheet.Body>
       <BottomSheet.Footer>

@@ -5,7 +5,7 @@
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Member Card`(node `1266:11811`). 변형은 `Variant=default, Delete=True·False`와 `Variant=add` 3개다. 이 컴포넌트는 `default`(삭제 여부 포함)이고 `add`는 `AddMemberCard`로 나눴다.
-- 의존: `ProfileImage`(40px로 줄여 사용), `RoleBadge`(sm), 아이콘 `LineCloseSmallIcon`.
+- 의존: `ProfileImage`(`size="S"` 40px), `RoleBadge`(sm), 아이콘 `LineCloseSmallIcon`.
 
 ## 목적과 범위
 
@@ -29,7 +29,7 @@
 ## 상태와 동작
 
 - 카드: 폭 76px(`w-19`), 배경 `surface-secondary`(`#F5F5F5`), 반경 `r4`(8px), 안쪽 여백 가로 14px(`padding-p7`)·세로 8px(`s4`), 요소 간격 10px(`s5`), 가운데 정렬. 높이는 87px(8+40+10+21+8)이다.
-- 프로필: `ProfileImage`를 `size-10`(40px)로 줄이고 1px `border-tertiary` 테두리를 둔다.
+- 프로필: `ProfileImage`를 `size="S"`(40px)로 쓰고 1px `border-tertiary` 테두리를 둔다.
 - 이름 줄: 배지(16px)와 이름이 2px(`s1`) 간격으로 가운데 놓인다. 이름은 `typography-body-3-regular`(14/21), `text-secondary`(`#25282D`)이고 카드 폭을 넘으면 말줄임(`truncate`)한다.
 - 삭제 버튼: 공용 `DeleteButton`(`web/deleteButton`)의 `size="M" variant="default"`(16px 원, `icon-tertiary` 배경 `#535A61`)를 오른쪽 위로 3px씩 삐져나오게(`-top-0.75 -right-0.75`) 둔다. 터치 영역은 보이는 16px보다 넓은 32px이며 카드 밖 위·오른쪽으로 최대 11px 나간다. 카드 사이 간격은 8px 이상으로 두고 부모 `overflow-hidden`에 잘리지 않게 한다. 모양은 `DeleteButton.spec.md`를 따른다.
 - Figma의 `Delete=False` 카드는 반경이 `9px`로 그려져 있어 `r4`(8px)로 통일했다(디자이너 확인).

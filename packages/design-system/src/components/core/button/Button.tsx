@@ -22,6 +22,8 @@ const button = tv({
     variant: {
       primary: { base: 'bg-surface-inversed text-text-inversed' },
       secondary: { base: 'bg-surface-tertiary text-text-primary' },
+      // Figma SolidButton 세트에 없음: 화면 인스턴스(팔로잉·차단해제 등)에서 글자색만 바꾼 조합
+      secondarySubtle: { base: 'bg-surface-tertiary text-text-tertiary' },
       // 비활성에서도 테두리 자리 유지(크기 변동 방지)
       tertiary: {
         base: 'border border-border-secondary bg-surface-primary text-text-primary disabled:border-transparent',

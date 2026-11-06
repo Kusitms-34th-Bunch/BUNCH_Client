@@ -31,7 +31,9 @@ export const RadioButton = ({ children, className, ...props }: RadioButtonProps)
         className={cn(
           'bg-surface-primary border-border-tertiary pointer-events-none relative size-full rounded-full border-[0.8px]',
           'before:bg-icon-tertiary before:absolute before:top-1/2 before:left-1/2 before:size-[9.6px] before:-translate-1/2 before:rounded-full before:opacity-0',
-          'peer-checked:border-icon-tertiary peer-checked:border peer-checked:before:opacity-100',
+          'peer-checked:border-icon-tertiary peer-checked:border peer-checked:before:scale-100 peer-checked:before:opacity-100',
+          // 선택 전환: 가운데 점이 작게 시작해 커지며 나타남(150ms ease-out, 2026-11-02 사용자 결정), 테두리 색도 같이
+          'transition-colors duration-150 ease-out before:scale-50 before:transition-[opacity,scale] before:duration-150 before:ease-out motion-reduce:transition-none motion-reduce:before:transition-none',
           'forced-colors:border-[CanvasText] forced-colors:forced-color-adjust-none forced-colors:peer-checked:before:bg-[CanvasText]',
           'forced-colors:peer-disabled:border-[GrayText] forced-colors:peer-disabled:before:bg-[GrayText]',
         )}

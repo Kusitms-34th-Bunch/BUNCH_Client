@@ -1,9 +1,9 @@
 'use client';
 
 import { type ComponentProps, useId } from 'react';
-import { LineChevronRightMediumIcon, LineCloseMediumIcon } from '../../../icons';
+import { LineChevronRightSmallIcon, LineCloseSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
-import { BundleTitle } from '../bundleTitle';
+import { BundleTitle, type BundleTitleMember } from '../bundleTitle';
 import { ChipButton } from '../chipButton';
 
 export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'title' | 'onSelect'> & {
@@ -13,6 +13,10 @@ export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'titl
   selected?: boolean | undefined;
   /** 어떤 필드인지 알려 주는 이름(예: "위치"), 화면에는 안 보이고 필드 버튼의 접근성 이름 앞에 붙음 */
   fieldLabel?: string | undefined;
+  /** 제목 앞 아이콘(기본 위치 핀, 날짜 필드는 `'calendar'`) */
+  icon?: 'map-pin' | 'calendar' | undefined;
+  /** 제목 오른쪽에 보일 멤버 프로필(다른 멤버가 이 필드를 편집 중일 때 등, 앞에서부터 최대 8명) */
+  members?: readonly BundleTitleMember[] | undefined;
   /** 필수 입력 표시(제목 뒤 별표) */
   required?: boolean | undefined;
   /** 필수 표시를 읽어 주는 글자(기본 "필수") */
@@ -32,7 +36,7 @@ export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'titl
 };
 
 /**
- * 선택 필드(Figma `Selection Field`): 흰 카드에 `BundleTitle`(위치 핀·제목·필수 표시)과 오른쪽 아이콘
+ * 선택 필드(Figma `Selection Field`): 회색 카드에 `BundleTitle`(위치 핀·제목·필수 표시, Weak)과 오른쪽 아이콘
  * 선택 전에는 화살표와 추천 값(`ChipButton`, 선택), 선택 뒤에는 지우기 버튼이며 `className`은 카드에 적용
  * 필드 버튼은 카드 전체를 덮는 빈 버튼이고 `BundleTitle`(div)이 그 이름(`aria-labelledby`), 제목은 이름으로만 읽히도록 `aria-hidden`
  */
@@ -40,6 +44,8 @@ export const SelectionField = ({
   label,
   fieldLabel,
   selected = false,
+  icon = 'map-pin',
+  members,
   required = false,
   requiredLabel = '필수',
   suggestions,
@@ -59,7 +65,7 @@ export const SelectionField = ({
   return (
     <div
       className={cn(
-        'bg-surface-primary border-border-tertiary rounded-r5 px-s7 relative flex w-full border',
+        'bg-surface-secondary rounded-r5 px-s7 relative flex w-full',
         showSuggestions ? 'py-s8 gap-s5 flex-col' : 'py-s5 items-center',
         className,
       )}
@@ -82,6 +88,9 @@ export const SelectionField = ({
           id={titleId}
           aria-hidden="true"
           title={label}
+          variant="weak"
+          icon={icon}
+          members={members}
           required={required}
           requiredLabel={requiredLabel}
           // BundleTitle 기본 높이 25px을 Figma 필드 줄 높이 24px에 맞춤
@@ -93,16 +102,16 @@ export const SelectionField = ({
             aria-label={clearLabel ?? `${label} 지우기`}
             onClick={onClear}
             className={cn(
-              'text-icon-primary relative z-10 flex size-5 shrink-0 cursor-pointer touch-manipulation items-center justify-center',
-              // 보이는 20px보다 넓은 40px 터치 영역(design-system-icons.md의 Medium 기준)
-              "before:absolute before:-inset-2.5 before:content-['']",
+              'text-icon-primary relative z-10 flex size-4 shrink-0 cursor-pointer touch-manipulation items-center justify-center',
+              // 보이는 16px보다 넓은 32px 터치 영역(design-system-icons.md의 Small 기준)
+              "before:absolute before:-inset-2 before:content-['']",
               'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
             )}
           >
-            <LineCloseMediumIcon aria-hidden="true" />
+            <LineCloseSmallIcon aria-hidden="true" />
           </button>
         ) : (
-          <LineChevronRightMediumIcon aria-hidden="true" className="text-icon-primary shrink-0" />
+          <LineChevronRightSmallIcon aria-hidden="true" className="text-icon-primary shrink-0" />
         )}
       </div>
       {showSuggestions && (
@@ -116,7 +125,8 @@ export const SelectionField = ({
               <ChipButton
                 size="M"
                 onClick={() => onSuggestionClick?.(suggestion)}
-                className="pointer-events-auto"
+                // 회색 카드 위에서 보이도록 칩은 흰 배경(Figma `surface-primary`)
+                className="bg-surface-primary pointer-events-auto"
               >
                 {suggestion}
               </ChipButton>

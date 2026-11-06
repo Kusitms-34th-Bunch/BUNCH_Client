@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system `web` 구역(apps/web 모바일 화면 전용)
 - Status: 구현됨(로컬 검증, 실기기 미검증)
-- Figma: Bottom Sheet 세트 `2500:50688`(변형 01~08)
+- Figma: Bottom Sheet 세트 `2500:50688`(변형 01~09)
 
 ## 목적과 범위
 
@@ -32,7 +32,7 @@
 
 ## 상태와 동작
 
-- 열기·닫기: Figma 공통 모션. `cubic-bezier(0,0,0.35,1)`, 열기 340ms·닫기 160ms, 아래에서 위로 이동하며 투명도 40%→100%. 동작 줄이기에서는 이동 없이 투명도만 바뀌도록 의도했다(브라우저 에뮬레이션 미확인).
+- 열기·닫기: Figma 공통 모션. `cubic-bezier(0,0,0.35,1)`, 열기 340ms·닫기 240ms(2026-11-06 Figma 「바텀시트 모션」에서 160ms → 240ms로 바뀜), 아래에서 위로 이동하며 투명도 40%→100%. 동작 줄이기에서는 이동 없이 투명도만 바뀌도록 의도했다(브라우저 에뮬레이션 미확인).
 - 끌어내리기: 손잡이뿐 아니라 시트 어디서든 아래로 끌면 따라 내려오고, 놓으면 속도·거리에 따라 닫힌다(Base UI 기본). 배경 딤은 끄는 만큼 옅어진다. 위로 끌면 움직이지 않는다(Figma에 위로 늘어나는 동작이 없음).
 - 바깥 터치: 기본은 닫는다. 입력 중인 시트는 `disablePointerDismissal`로 막는다.
 - 높이: 내용 높이만큼, 최대는 화면 위 safe area + 24px까지. 넘치면 `Body`만 스크롤하고 제목·하단 버튼은 고정된다.
@@ -85,17 +85,18 @@
 
 ## 조합 규칙
 
-- Figma에 그려진 시트(Bottom Sheet 01~08)는 이 폴더의 `renderers/`에 시트 렌더러로 둔다. 새 렌더러는 기존 렌더러 파일 4개(`.tsx`·`.test.tsx`·`.stories.tsx`·`.spec.md`)를 복사해서 시작한다. 렌더러는 이 부품을 조합하고 문구·목록·콜백만 props로 받는다. API 호출·저장 상태는 넣지 않는다.
+- Figma에 그려진 시트(Bottom Sheet 01~09)는 이 폴더의 `renderers/`에 시트 렌더러로 둔다. 새 렌더러는 기존 렌더러 파일 4개(`.tsx`·`.test.tsx`·`.stories.tsx`·`.spec.md`)를 복사해서 시작한다. 렌더러는 이 부품을 조합하고 문구·목록·콜백만 props로 받는다. API 호출·저장 상태는 넣지 않는다.
 
-  | Figma | 렌더러                 |
-  | ----- | ---------------------- |
-  | 01    | `PhotoUploadSheet`     |
-  | 02    | `DateChangeSheet`      |
-  | 03    | `BundleRecommendSheet` |
-  | 04    | `BunchSwitchSheet`     |
-  | 05    | `AdminTransferSheet`   |
-  | 06    | `MoreMenuSheet`        |
-  | 07·08 | `ReportSheet`          |
+  | Figma | 렌더러                               |
+  | ----- | ------------------------------------ |
+  | 01    | `PhotoUploadSheet`                   |
+  | 02    | `DateChangeSheet`                    |
+  | 03    | `BundleRecommendSheet`               |
+  | 04    | `BunchSwitchSheet`                   |
+  | 05    | `ConfirmSheet`, `AdminTransferSheet` |
+  | 06    | `MoreMenuSheet`                      |
+  | 07·08 | `ReportSheet`                        |
+  | 09    | `PinnedPlaceSheet`                   |
 
 - 렌더러를 디자인 시스템에 두는 이유: `apps/web`에는 Storybook이 없어 Figma 대조를 디자인 시스템 story에서 한다. 더보기·신고·번치 전환은 여러 기능이 쓴다.
 - 화면에 닫기 버튼이 없는 시트(Figma 01 등)도 숨긴 닫기 버튼을 둔다. 끌기·바깥 터치는 스크린 리더로 닿기 어렵기 때문이다. 「취소하기」 같은 하단 닫기 버튼이 있으면 생략한다.

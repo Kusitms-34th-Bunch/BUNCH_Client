@@ -34,6 +34,8 @@ const DOWNWARD_MOTION = { '--menu-motion-offset': '-38px' } as CSSProperties;
 type PhotoDetailMenuProps = {
   /** 「날짜 바꾸기」·「삭제」는 올린 멤버·관리자만 보임 */
   canManage: boolean;
+  /** 「날짜 바꾸기」를 보일지(기본 보임). 번들 사진은 날짜를 번들 화면 밖에서 바꾸지 않아 감추고, 그 메뉴는 「삭제」 앞 구분선도 없음(Figma `1782:32912`) */
+  withDate?: boolean;
   open: boolean;
   onClose: () => void;
   onExited: () => void;
@@ -42,8 +44,12 @@ type PhotoDetailMenuProps = {
 };
 
 /** 사진 상세의 더보기 메뉴: 저장(모두), 날짜 바꾸기·삭제(올린 멤버·관리자만) */
-export function PhotoDetailMenu({ canManage, ...props }: PhotoDetailMenuProps) {
-  const items = canManage ? [SAVE, DATE, DELETE] : [SAVE];
+export function PhotoDetailMenu({ canManage, withDate = true, ...props }: PhotoDetailMenuProps) {
+  const items = canManage
+    ? withDate
+      ? [SAVE, DATE, DELETE]
+      : [SAVE, { ...DELETE, dividerBefore: false }]
+    : [SAVE];
 
   return <PhotoActionMenu label="사진 메뉴" items={items} style={DOWNWARD_MOTION} {...props} />;
 }

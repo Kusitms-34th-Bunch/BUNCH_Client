@@ -29,7 +29,7 @@ const Sheet = ({
   );
 };
 const meta = {
-  title: 'Web/BottomSheet/Frame',
+  title: 'Web/Overlay/BottomSheet/Frame',
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
   globals: { viewport: { value: 'mobile2', isRotated: false } },

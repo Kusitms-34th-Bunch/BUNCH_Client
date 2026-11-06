@@ -4,8 +4,8 @@ import { cn } from '@app/design-system';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { PhotoBoxPhoto } from '../lib/types';
+import { usePhotoDrag } from '../contexts/PhotoDragContext';
 import { PhotoCell } from './PhotoCell';
-import { usePhotoDrag } from './PhotoDragContext';
 
 type PhotoGridProps = {
   photos: readonly PhotoBoxPhoto[];

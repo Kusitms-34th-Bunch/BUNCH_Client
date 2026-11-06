@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useArgs } from 'storybook/preview-api';
 import { Button } from '../../../core/button';
 import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { BunchSwitchSheet, type BunchSwitchItem } from './BunchSwitchSheet';
@@ -12,7 +12,7 @@ const bunches: BunchSwitchItem[] = [
   { id: '5', name: '큐시즘 밋업', status: 'unavailable' },
 ];
 const meta = {
-  title: 'Web/BottomSheet/BunchSwitchSheet',
+  title: 'Web/Overlay/BottomSheet/BunchSwitchSheet',
   component: BunchSwitchSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
@@ -26,7 +26,9 @@ const meta = {
   ],
   args: { open: true, onOpenChange: () => {}, bunches, onSelect: () => {}, onAdd: () => {} },
   render: function Render(args) {
-    const [open, setOpen] = useState(args.open);
+    // Controls의 open과 시트 열림을 같은 값으로(초기값 복사가 아님)
+    const [{ open }, updateArgs] = useArgs<typeof args>();
+    const setOpen = (nextOpen: boolean) => updateArgs({ open: nextOpen });
     return (
       <>
         <Button size="md" onClick={() => setOpen(true)}>

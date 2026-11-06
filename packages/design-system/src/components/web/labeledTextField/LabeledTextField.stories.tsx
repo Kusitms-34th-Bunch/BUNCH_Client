@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LabeledTextField, type LabeledTextFieldProps } from './LabeledTextField';
 
 const meta = {
-  title: 'Web/LabeledTextField',
+  title: 'Web/Input/LabeledTextField',
   component: LabeledTextField,
   args: { title: '닉네임', option: 'required', maxLength: 12 },
   decorators: [
@@ -50,8 +50,16 @@ export const Focused: Story = { render: (args) => <Controlled {...args} focusOnM
 // 입력창 Filled: 값 있음
 export const Filled: Story = { render: (args) => <Controlled {...args} initial="으누누" /> };
 
-// 입력창 Editing: 점 3개 애니메이션
-export const Editing: Story = { render: (args) => <Controlled {...args} editing /> };
+// 입력창 Editing: 편집 중 애니메이션 자리(앱이 `editingContent`로 전달)
+export const Editing: Story = {
+  render: (args) => (
+    <Controlled
+      {...args}
+      editing
+      editingContent={<span className="text-icon-quaternary">···</span>}
+    />
+  ),
+};
 
 // 오류 문구는 왼쪽, 글자 수는 오른쪽에 표시
 export const ErrorState: Story = {
@@ -70,6 +78,13 @@ export const Disabled: Story = { render: (args) => <Controlled {...args} disable
 export const DisabledWithError: Story = {
   render: (args) => (
     <Controlled {...args} disabled errorMessage="입력 가능한 글자수를 초과했어요" />
+  ),
+};
+
+/** 글자 수 없이 입력만 제한(신고 상세 사유처럼 Figma에 글자 수가 없는 칸) */
+export const LimitWithoutCounter: Story = {
+  render: (args) => (
+    <Controlled {...args} title="상세 사유" option="required" maxLength={200} showCounter={false} />
   ),
 };
 

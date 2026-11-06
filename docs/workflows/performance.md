@@ -29,7 +29,18 @@
 - package public API와 bundle 최적화가 충돌하면 package 경계를 먼저 지킨다.
 - 반복 검색, 대량 변환, date formatting처럼 hot path가 확인된 경우에만 자료구조·계산 캐싱을 바꾼다.
 - 큰 asset과 third-party SDK는 번들 분석 결과를 보고 조정한다.
+- web 클라이언트 JS 크기는 Frontend CI가 빌드 뒤 `scripts/report-web-bundle-size.mjs`로 기록한다. 공통 첫 로드 JS(프레임워크·런타임과 root·`(app)` layout 청크)와 전체 클라이언트 JS(gzip)를 `apps/web/bundle-size-baseline.json`과 비교해 10% 넘게 커지면 경고만 하고 실패시키지 않는다. CI 빌드는 `ANALYZE=true`라 `@next/bundle-analyzer`가 모듈별 크기를 `.next/analyze/client.json`에 남기고, 보고는 이를 패키지·소스 폴더(`src/features/<이름>` 등)별로 묶어 기준선보다 1KB 넘게 커진 항목과 가장 큰 항목을 표로 보여 준다. 표는 실행 화면의 Summary에 나오고, PR의 CI 결과 댓글에는 두 크기의 변화와 1KB 넘게 커진 항목 3개까지만 짧게 붙는다(web을 빌드하지 않은 PR은 빠짐). 초기 로딩이 느려졌을 때 무엇이 커졌는지 이 표에서 먼저 찾는다. 항목 크기는 모듈마다 따로 잰 gzip이라 합이 전체 크기와 맞지 않으므로 증가량 비교에만 쓴다. 의도한 증가면 CI와 같은 조건으로 `SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= ANALYZE=true yarn workspace @app/web build`를 실행한 뒤 `node scripts/report-web-bundle-size.mjs --update`로 기준선을 갱신해 함께 커밋한다. Sentry 토큰이 있으면 청크에 코드가 더 들어가 기준선이 CI보다 커지고, turbo 캐시로 복원된 `.next`는 이전 파일이 섞일 수 있어 workspace 빌드를 직접 돌린다. 측정 단계가 실패해도 job은 실패하지 않는다.
 - 아이콘·컴포넌트 라이브러리를 새로 추가할 때, 그 라이브러리가 barrel entry(`export * from './module'`)로 수천 개 모듈을 재노출하면 import 하나가 개발 서버 부팅과 cold start에 수백 ms를 더한다. apps/web에서는 `next.config`의 `experimental.optimizePackageImports`에 등록해 타입·자동완성은 유지한 채 직접 import로 변환되게 하고, admin처럼 Next.js가 아닌 곳에서는 라이브러리의 서브패스에서 직접 import한다.
+
+## WebView 첫 화면 속도 (apps/web + apps/mobile-shell)
+
+WebView는 화면을 그리기 전에 네트워크로 HTML·JS를 받아야 해서, 같은 화면이라도 네이티브보다 첫 표시가 늦다. 이 지연은 코드 최적화만으로 없앨 수 없으므로 아래 두 방법을 측정한 뒤 고른다.
+
+- 다음 화면 미리 받기(프리로드): 사용자가 갈 수 있는 화면이 정해져 있으면 미리 받아 둔다. 데이터·메모리 비용이 들므로 진입 빈도와 중요도가 높은 화면에만 쓴다.
+  - 웹: Next.js `Link`는 운영 빌드에서 화면에 보이는 링크의 경로를 기본으로 미리 받는다. 한 화면에 링크가 많아 비용이 커지는 곳(사진 격자 등)만 `prefetch={false}`로 끈다. 데이터까지 미리 받는 방법과 단계는 `docs/architecture/data-layer.md`의 "미리 불러오기"를 따른다.
+  - 쉘: iOS 탭 WebView 4개는 처음부터 함께 만들어진다(`docs/architecture/mobile-shell.md`). 탭 밖 화면을 위해 WebView를 더 미리 띄우는 것은 메모리 비용이 커서, 첫 진입 지연을 측정한 뒤에만 검토한다.
+- 스트리밍 SSR: 서버가 화면을 조각으로 나눠 보내 전체를 기다리지 않고 준비된 부분부터 그린다. App Router에서는 route의 `loading.tsx`나 하위 트리의 `Suspense` 경계가 그 단위다(아래 "Next.js 서버 컴포넌트"). 지금 화면은 fixture라 쓰지 않고, 서버 데이터를 서버 컴포넌트에서 받게 될 때 `data-layer.md` "미리 불러오기" 2단계와 함께 적용한다.
+- 측정: 개선 전후를 같은 기기·네트워크에서 WebView 안의 첫 화면 표시 시간(FCP·LCP)과 화면 전환 체감으로 비교한다. 브라우저 측정을 WebView 결과로 대신하지 않는다.
 
 ## 이미지 (apps/web)
 

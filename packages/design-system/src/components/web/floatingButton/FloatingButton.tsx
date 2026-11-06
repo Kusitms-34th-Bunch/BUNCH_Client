@@ -23,13 +23,12 @@ export const FloatingButton = ({
   className,
   ...props
 }: FloatingButtonProps) => {
-  const Icon = icons[icon];
   return (
     <button
       type={type}
       className={cn(
         // 그림자는 Figma 값(0 4 6 12%)과 같은 토큰이 없어 임의 값 적용
-        'bg-surface-primary text-icon-primary relative isolate inline-flex size-13 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full shadow-[0_4px_6px_rgba(0,0,0,0.12)]',
+        'bg-surface-primary text-icon-primary relative isolate inline-grid size-13 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-full shadow-[0_4px_6px_rgba(0,0,0,0.12)]',
         'before:bg-overlay-pressed before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-full before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
         'not-disabled:active:before:opacity-100',
         'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
@@ -38,7 +37,21 @@ export const FloatingButton = ({
       )}
       {...props}
     >
-      <Icon aria-hidden="true" />
+      {/* 아이콘이 바뀔 때 두 아이콘을 겹쳐 200ms 크로스페이드(동작 줄이기에서는 즉시) */}
+      {(Object.keys(icons) as FloatingButtonIcon[]).map((name) => {
+        const Icon = icons[name];
+        return (
+          <Icon
+            key={name}
+            aria-hidden="true"
+            data-icon={name}
+            className={cn(
+              'col-start-1 row-start-1 motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-out',
+              name === icon ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        );
+      })}
     </button>
   );
 };

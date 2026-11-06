@@ -29,6 +29,8 @@ route는 raw API 요청, domain mutation, 복잡한 form state, 재사용 UI 구
 ## URL과 data
 
 - path와 search parameter는 외부 입력이다. type assertion이 아니라 route 경계 validation과 fallback을 둔다.
+- web의 404는 루트 `app/not-found.tsx` 하나다. 없는 주소와 화면이 `notFound()`를 부른 경우(예: 없는 번치 id)를 모두 받고, 안내와 번치 탭 링크를 보여 준다. `(app)` layout 밖에서 그려지므로 앱 틀(`AppFrame`), Pretendard 글꼴(`app/fonts/pretendard.ts`), iOS 쉘 탭 바 숨김(`NativeTabBarVisibility`)을 직접 갖춘다. provider(Query·overlay·toast)와 `RouteFocus`·전환은 없으므로 404 화면에 toast·query를 넣으려면 먼저 함께 옮긴다.
+- 기록이 없을 때 대체 경로로 가는 web 화면의 뒤로 가기는 `shared/hooks/useBackOr`로 처리한다. 앱 안에서 들어와 기록이 있으면 `router.back()`, 링크로 바로 들어와 없으면 화면마다 정한 대체 경로로 `replace`한다. 진입 조건이 더 붙는 경우(예: 초대 화면의 `backOnLeave`)와 여러 칸 되돌리기(`history.go(-n)`)는 화면이 직접 처리한다. 기록 유무는 `window.history.length > 1`로만 판단해서, 같은 탭에서 외부 사이트를 거쳐 들어오면 `back()`이 앱 밖으로 나간다.
 - response를 바꾸는 search parameter는 query key에 포함한다.
 - loader·server data와 component query가 같은 request를 중복 소유하지 않게 한다. prefetch는 navigation 체감 개선 근거가 있을 때 사용한다.
 - lazy loading은 측정된 초기 bundle 또는 interaction 비용을 줄일 때만 사용한다. fallback·error state 없이 route만 lazy하게 만들지 않는다.

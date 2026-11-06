@@ -173,7 +173,7 @@
 - 인증과 인가: BFF 쿠키 세션. 권한(올린 멤버·관리자)은 서버가 요청마다 판단하고, 웹은 응답의 권한 값으로 메뉴 표시만 정한다.
 - 업로드는 multipart다. 1장 30MB까지 BFF를 거치므로 배포처의 요청 본문 크기 제한을 함께 확인한다(`docs/architecture/api-boundary.md`). presigned URL 직접 업로드로 갈지도 확인할 항목이다.
 - 실패 시 오류 코드와 정확한 문구: 서버 코드를 확인한 뒤 채운다. 화면 문구는 위 요구사항의 문구를 쓴다.
-- Query key 후보(`docs/architecture/data-layer.md` 규칙): `photoKeys.list(bunchId, memberFilter)`(infinite), `photoKeys.undated(bunchId, memberFilter)`, `photoKeys.detail(photoId)`, `bunchKeys.members(bunchId)`. 업로드·삭제·날짜 변경 뒤에는 `photoKeys.all`을 invalidate한다.
+- Query key 후보(`docs/architecture/data-layer.md` 규칙): `photoKeys.list(bunchId, memberFilter)`(infinite), `photoKeys.undated(bunchId, memberFilter)`, `photoKeys.detail(photoId)`, `photoBoxKeys.members(bunchId)`(다른 feature가 쓰게 되면 `shared/query`로 승격). 업로드·삭제·날짜 변경 뒤에는 `photoKeys.all`을 invalidate한다.
 
 ## Bridge 계약(제안)
 

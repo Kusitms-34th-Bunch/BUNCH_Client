@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { SelectionField } from './SelectionField';
 
 const meta = {
-  title: 'Web/SelectionField',
+  title: 'Web/Selection/SelectionField',
   component: SelectionField,
   args: { label: '위치 추가', required: true },
   parameters: { layout: 'padded' },

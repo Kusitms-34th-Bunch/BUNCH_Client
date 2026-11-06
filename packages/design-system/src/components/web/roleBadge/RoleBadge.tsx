@@ -21,10 +21,10 @@ export type RoleBadgeProps = Omit<
   ComponentProps<'svg'>,
   'children' | 'role' | 'size' | 'aria-label' | 'aria-hidden' | 'aria-labelledby' | 'tabIndex'
 > & {
-  memberRole?: RoleBadgeRole;
-  size?: RoleBadgeSize;
+  memberRole?: RoleBadgeRole | undefined;
+  size?: RoleBadgeSize | undefined;
   /** 역할 이름(예: "번치장"), 있으면 이미지로 노출·없으면 장식(aria-hidden) 처리 */
-  label?: string;
+  label?: string | undefined;
 };
 
 /**

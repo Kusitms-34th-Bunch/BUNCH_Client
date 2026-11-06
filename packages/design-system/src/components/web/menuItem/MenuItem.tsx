@@ -7,9 +7,9 @@ export type MenuItemProps = Omit<ComponentProps<'button'>, 'disabled' | 'type' |
   /** 접근성 이름이 되는 글자(예: "저장") */
   children: ReactNode;
   /** Figma Default·Warning. warning은 삭제처럼 되돌리기 어려운 동작에 사용 */
-  tone?: MenuItemTone;
+  tone?: MenuItemTone | undefined;
   /** 글자 앞 아이콘(Medium 20px). 장식이라 호출하는 쪽이 aria-hidden 아이콘 전달 */
-  icon?: ReactNode;
+  icon?: ReactNode | undefined;
 };
 
 /**

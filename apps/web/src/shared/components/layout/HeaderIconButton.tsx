@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react';
 
-// 아이콘 색(currentColor), subtle은 Figma 가입 단계 헤더의 연한 회색
-const TONES = { primary: 'text-icon-primary', subtle: 'text-icon-quaternary' } as const;
+// 아이콘 색(currentColor), subtle은 Figma 가입 단계 헤더의 연한 회색, tertiary는 어두운 배경 화면(사진 조정)
+const TONES = {
+  primary: 'text-icon-primary',
+  subtle: 'text-icon-quaternary',
+  tertiary: 'text-icon-tertiary',
+} as const;
 
 type HeaderIconButtonProps = {
   /** 접근성 이름(아이콘만 있어서 필수) */

@@ -29,10 +29,10 @@ export const AddMemberCard = ({
   >
     <span
       aria-hidden="true"
-      className="bg-surface-secondary text-text-quaternary flex size-10 items-center justify-center rounded-full"
+      className="bg-surface-secondary text-text-quinary flex size-10 items-center justify-center rounded-full"
     >
       <LineAddMediumIcon />
     </span>
-    <span className="typography-body-3-regular text-text-quaternary">{label}</span>
+    <span className="typography-body-3-regular text-text-quinary">{label}</span>
   </button>
 );

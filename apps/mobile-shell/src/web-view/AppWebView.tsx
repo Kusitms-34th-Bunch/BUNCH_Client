@@ -1,4 +1,5 @@
 import { bridge, createWebView } from '@webview-bridge/react-native';
+import * as Haptics from 'expo-haptics';
 import { router, type Href } from 'expo-router';
 import { useEffect, useRef, type ComponentRef } from 'react';
 import {
@@ -60,10 +61,25 @@ const appBridge = bridge({
       tabsStore.set(next);
       router.replace(`/${next.selectedId}` as Href);
     } else if (JSON.stringify(current.items) !== JSON.stringify(next.items)) {
-      tabsStore.set(next);
+      // 탭 바 표시 여부는 화면에 보이는 WebView의 setNativeTabBarVisible만 바꿈(다른 탭 WebView가 다시 불러와도 유지)
+      tabsStore.set({ ...next, barHidden: current.barHidden });
     }
     return Promise.resolve(true);
   },
+  // 탭 밖 화면을 같은 탭 WebView에서 여는 동안 탭 바만 숨김(탭 상태 유지, 결정 기록 012). 웹은 화면에 보이는 WebView만 보냄
+  setNativeTabBarVisible: (visible) => {
+    const current = tabsStore.get();
+    if (Platform.OS !== 'ios' || !current || typeof visible !== 'boolean')
+      return Promise.resolve(false);
+    if (current.barHidden === !visible) return Promise.resolve(true);
+    tabsStore.set({ ...current, barHidden: !visible });
+    return Promise.resolve(true);
+  },
+  // 안드로이드 시스템 햅틱(기기 햅틱 설정을 따름). iOS는 시스템 탭 바가 아니면 쓰이지 않아 선택 햅틱으로 대체
+  tabSelectionHaptic: () =>
+    Platform.OS === 'android'
+      ? Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Segment_Tick)
+      : Haptics.selectionAsync(),
 } satisfies AppBridgeMethods);
 
 const { WebView } = createWebView({
@@ -102,6 +118,11 @@ export function AppWebView({ uri }: { uri: string }) {
       injectedJavaScriptBeforeContentLoaded={safeAreaScript}
       // WebView 자체 inset 보정 해제(웹이 여백을 적용하므로 이중 적용 방지)
       contentInsetAdjustmentBehavior="never"
+      // 스크롤은 웹 화면 안쪽 영역(PageShell main)이 맡으므로 문서 전체가 당겨지며 바깥 흰 배경이 드러나지 않게
+      bounces={false}
+      overScrollMode="never"
+      // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
+      allowsLinkPreview={false}
       allowsBackForwardNavigationGestures
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;

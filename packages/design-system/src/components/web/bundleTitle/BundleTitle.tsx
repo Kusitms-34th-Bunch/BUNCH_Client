@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { LineMapPinSmallIcon } from '../../../icons';
+import { LineCalendarSmallIcon, LineMapPinSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
 import { ProfileImage } from '../profileImage';
 
@@ -16,10 +16,12 @@ export type BundleTitleMember = {
 export type BundleTitleProps = Omit<ComponentProps<'div'>, 'children' | 'title'> & {
   /** 제목 글자(예: "사진") */
   title: string;
+  /** Figma `Variant`: `strong`은 SemiBold 제목(기본), `weak`는 Regular 제목(선택된 값처럼 덜 강조할 때) */
+  variant?: 'strong' | 'weak' | undefined;
   /** 제목 글자 요소의 id(입력창 등이 `aria-labelledby`로 이 제목을 가리킬 때) */
   titleId?: string | undefined;
-  /** 제목 앞 위치 핀 아이콘을 보일지(기본 `true`) */
-  icon?: boolean | undefined;
+  /** 제목 앞 아이콘: `true`·`'map-pin'`은 위치 핀(기본), `'calendar'`는 달력(Figma 날짜 줄), `false`는 숨김 */
+  icon?: boolean | 'map-pin' | 'calendar' | undefined;
   /** 필수 입력 표시(제목 뒤 별표) */
   required?: boolean | undefined;
   /** 필수 표시를 읽어 주는 글자(기본 "필수") */
@@ -36,6 +38,7 @@ export type BundleTitleProps = Omit<ComponentProps<'div'>, 'children' | 'title'>
  */
 export const BundleTitle = ({
   title,
+  variant = 'strong',
   titleId,
   icon = true,
   required = false,
@@ -50,9 +53,18 @@ export const BundleTitle = ({
   return (
     <div className={cn('gap-s4 flex h-6.25 items-center', className)} {...props}>
       <div className="gap-s2 text-icon-primary flex min-w-0 items-center">
-        {icon && <LineMapPinSmallIcon aria-hidden="true" className="shrink-0" />}
+        {icon === 'calendar' && <LineCalendarSmallIcon aria-hidden="true" className="shrink-0" />}
+        {(icon === true || icon === 'map-pin') && (
+          <LineMapPinSmallIcon aria-hidden="true" className="shrink-0" />
+        )}
         <div className="gap-s1 flex min-w-0 items-center">
-          <span id={titleId} className="typography-body-3-semi-bold text-text-secondary truncate">
+          <span
+            id={titleId}
+            className={cn(
+              'text-text-secondary truncate',
+              variant === 'weak' ? 'typography-body-3-regular' : 'typography-body-3-semi-bold',
+            )}
+          >
             {title}
           </span>
           {required && (
@@ -75,7 +87,8 @@ export const BundleTitle = ({
               <ProfileImage
                 src={member.src}
                 alt={member.name}
-                className="border-border-tertiary size-6 border"
+                size="XXS"
+                className="border-border-tertiary border"
               />
               {/* 사진이 없으면 ProfileImage가 img를 그리지 않아 이름이 사라지므로 글자로 대신 전달 */}
               {!member.src && <span className="sr-only">{member.name}</span>}

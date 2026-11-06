@@ -4,6 +4,8 @@ import type { DeleteKind } from '../lib/photoActions';
 export const PHOTO_BOX_MESSAGES = {
   maxSelection: '사진은 한 번에 50장까지 고를 수 있어요.',
   saving: '사진을 앨범에 저장하는 중이에요',
+  dragStart: '사진을 끌고 있어요.',
+  dragCancel: '끌기를 취소했어요.',
   selectionStatus: (count: number) => (count === 0 ? '선택 모드' : `${count}장 선택됨`),
   saveDone: '이미지 저장이 완료되었어요.',
   saveFailedAll: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
@@ -12,6 +14,8 @@ export const PHOTO_BOX_MESSAGES = {
   bundleConfirmTitle: '이 사진들로 번들을 만들까요?',
   bundleConfirmDescription: '작성 중인 번들에 담기고, 멤버들과 함께 완성할 수 있어요.',
   deleteFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  // 기획에 원문이 없는 임시 문구: 삭제 뒤 목록을 다시 받지 못해 지운 사진이 남아 보일 수 있을 때
+  listStale: '최신 사진 목록을 불러오지 못했어요. 사진함을 다시 열어 확인해 주세요.',
   deleteForbidden: '내가 올린 사진만 삭제할 수 있어요.',
   deleteConfirmTitle: '선택한 사진을 삭제할까요?',
   // 사진 종류별 원문은 기획 문서에 없어 모든 종류가 같은 기본 문구를 씀(분기 구조는 getDeleteKind가 이미 제공)
@@ -23,6 +27,7 @@ export const PHOTO_BOX_MESSAGES = {
   // 날짜 바꾸기·끌기 확인 창 문구는 기획 문서에 원문이 없어 임시 문구(기획 확정 후 교체)
   dateConfirmTitle: '선택한 사진의 날짜를 바꿀까요?',
   dateConfirmDescription: '다른 멤버가 올린 사진이 포함되어 있어요.',
+  bundleCreating: '번들을 만들고 있어요.',
   photoBoxFull: '사진함이 가득 찼어요.',
   uploadSheetTitle: (bunchName: string) => `${bunchName}에 사진 올리기`,
   dateChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',

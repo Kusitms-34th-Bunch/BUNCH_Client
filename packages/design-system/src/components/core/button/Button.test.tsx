@@ -114,6 +114,7 @@ describe('Button', () => {
   it.each([
     ['primary', 'bg-surface-inversed'],
     ['secondary', 'bg-surface-tertiary'],
+    ['secondarySubtle', 'bg-surface-tertiary'],
     ['tertiary', 'bg-surface-primary'],
     ['warning', 'bg-surface-danger'],
     ['brand', 'bg-surface-brand'],
@@ -132,6 +133,14 @@ describe('Button', () => {
     render(<Button size={size}>확인</Button>);
 
     expect(screen.getByRole('button').className.split(' ')).toContain(height);
+  });
+
+  it('secondarySubtle은 secondary와 같은 바탕에 글자만 text-tertiary다', () => {
+    render(<Button variant="secondarySubtle">팔로잉</Button>);
+
+    const classes = screen.getByRole('button').className.split(' ');
+    expect(classes).toContain('text-text-tertiary');
+    expect(classes).not.toContain('text-text-primary');
   });
 
   it('tertiary는 비활성에서 테두리를 투명하게 둬서 크기가 변하지 않는다', () => {

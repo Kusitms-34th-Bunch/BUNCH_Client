@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useArgs } from 'storybook/preview-api';
 import { Button } from '../../../core/button';
 import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { MoreMenuSheet } from './MoreMenuSheet';
 const meta = {
-  title: 'Web/BottomSheet/MoreMenuSheet',
+  title: 'Web/Overlay/BottomSheet/MoreMenuSheet',
   component: MoreMenuSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
@@ -18,7 +18,9 @@ const meta = {
   ],
   args: { open: true, onOpenChange: () => {}, items: [] },
   render: function Render(args) {
-    const [open, setOpen] = useState(args.open);
+    // Controls의 open과 시트 열림을 같은 값으로(초기값 복사가 아님)
+    const [{ open }, updateArgs] = useArgs<typeof args>();
+    const setOpen = (nextOpen: boolean) => updateArgs({ open: nextOpen });
     const close = () => setOpen(false);
     return (
       <>

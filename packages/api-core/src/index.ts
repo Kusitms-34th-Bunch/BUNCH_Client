@@ -1,3 +1,4 @@
+export * from './contract';
 export * from './envelope';
 export * from './error';
 export * from './http';

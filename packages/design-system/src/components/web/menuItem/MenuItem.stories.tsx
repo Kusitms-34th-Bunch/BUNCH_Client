@@ -3,7 +3,7 @@ import { LineDownloadMediumIcon, LineTrashcanMediumIcon } from '../../../icons';
 import { MenuItem } from './MenuItem';
 
 const meta = {
-  title: 'Web/MenuItem',
+  title: 'Web/Overlay/MenuItem',
   component: MenuItem,
   args: { children: '저장' },
   decorators: [

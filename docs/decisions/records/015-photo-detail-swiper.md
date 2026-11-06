@@ -1,7 +1,7 @@
 # 015: 사진 상세의 스와이프·확대는 Swiper(Zoom·Keyboard·A11y 모듈)로 처리한다
 
 - 상태: accepted
-- 구현 상태(2026-10-31 확인): 구현됨(`features/photo-box/components/PhotoDetailScreen.tsx`). headless Chrome에서 마우스 드래그·더블클릭 확대를 확인했고 iOS·안드로이드 쉘 실기기는 미확인.
+- 구현 상태(2026-10-31 확인): 구현됨(`features/photo-box/components/detail/PhotoDetailScreen.tsx`). 번들 사진 크게 보기(`features/bundle/components/drafts/DraftPhotoViewer.tsx`)와 추천 사진 뷰어도 같은 Swiper 구성을 쓴다. 세 화면의 공통 부분은 `features/photo-box/hooks/usePhotoViewer.ts`와 `components/PhotoViewerSwiper.tsx`에 모았다(2026-11-02, 이슈 #188). headless Chrome에서 마우스 드래그·더블클릭 확대를 확인했고 iOS·안드로이드 쉘 실기기는 미확인.
 
 ## 배경
 

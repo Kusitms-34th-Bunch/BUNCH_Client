@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ProfileRadioCard } from './ProfileRadioCard';
 
 const meta = {
-  title: 'Web/ProfileRadioCard',
+  title: 'Web/Selection/ProfileRadioCard',
   component: ProfileRadioCard,
   args: { label: '경진', name: 'member', value: '1' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],
@@ -17,6 +17,9 @@ export const Default: Story = {};
 export const Selected: Story = { args: { defaultChecked: true } };
 
 export const Disabled: Story = { args: { disabled: true } };
+
+/** 이미지 오른쪽 아래 역할 배지 */
+export const WithRole: Story = { args: { memberRole: 'owner', roleLabel: '메인 관리자' } };
 
 /** 관리자 지정처럼 멤버 중 한 명 고르기 */
 export const Group: Story = {

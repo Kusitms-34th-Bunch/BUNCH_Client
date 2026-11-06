@@ -11,7 +11,7 @@
 ### 제공하는 동작
 
 - 여러 앱이 같은 모양과 접근성 계약으로 쓰는 공용 버튼. 글자 하나와 선택적인 앞·뒤 아이콘을 가진다.
-- 변형 6개(`primary`, `secondary`, `tertiary`, `warning`, `brand`, `brandSubtle`) × 크기 3개(`lg`, `md`, `sm`).
+- 변형 7개(`primary`, `secondary`, `secondarySubtle`, `tertiary`, `warning`, `brand`, `brandSubtle`) × 크기 3개(`lg`, `md`, `sm`).
 - 기본, 눌림(`:active`), 비활성(`disabled`) 상태.
 
 ### 제공하지 않는 동작
@@ -30,7 +30,7 @@
 
 ## 상태와 동작
 
-- Default: 변형별 배경·글자색. `tertiary`만 1px 테두리를 가진다.
+- Default: 변형별 배경·글자색. `tertiary`만 1px 테두리를 가진다. `secondarySubtle`은 `secondary`와 바탕(`surface-tertiary`)이 같고 글자만 `text-tertiary`다.
 - Variant·size: 크기는 높이 48/40/32, 좌우 패딩 24/16/12, 요소 간격 8/8/6, 아이콘 24/20/16, 글자 `label-l/m/s`.
 - 눌림: 글자 아래에 검정 오버레이를 깐다. `warning`만 20%(`overlay-pressed`), 나머지는 10%(`overlay-hover`). 이 차이는 Figma 스크린샷 픽셀(10%와 20%)로 확인한 값이며, 의도한 규칙인지 디자이너 확인이 필요하다.
 - 비활성: 모든 변형이 `surface-disabled` 배경과 `text-disabled` 글자색. `tertiary`는 테두리를 투명하게 둬서 크기가 바뀌지 않는다(Figma에서는 비활성 `tertiary`가 테두리 없이 2px 좁다).
@@ -62,6 +62,7 @@
 - `brandSubtle` 배경 토큰 (해소, 2026-10-19): 위 "토큰 차이"와 같다. 저장소와 Figma가 `#f1f2ff`로 같다.
 - 눌림 오버레이 (미정): Warning만 20%인 것이 의도인지 디자이너에게 확인한다.
 - 이름 (제안): Figma `SolidButton`은 코드에서 `Button`, 오타 `Scondary`는 `secondary`로 쓴다.
+- `secondarySubtle` (디자이너 확인 필요): Figma `SolidButton` 세트(`115:761`)에는 없다. 팔로잉·팔로우 요청됨·차단해제·거절 버튼 화면에서 `Scondary` 인스턴스의 글자색만 `text-tertiary`로 바꾼 조합이 반복되어 코드에 먼저 추가했다. 세트에 변형으로 추가하거나 다른 이름으로 정하면 맞춰 바꾼다.
 - Figma에 없는 추가 (제안): focus-visible outline, 긴 글자 말줄임, `touch-manipulation`, `type="button"` 기본값. 필요 없으면 제거한다.
 - 터치 영역 (미정): `md`(40px)·`sm`(32px)이 44px 미만인 점의 정책을 디자이너·기획과 정한다.
 

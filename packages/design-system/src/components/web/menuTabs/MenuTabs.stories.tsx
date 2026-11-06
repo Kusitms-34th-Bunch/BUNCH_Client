@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { FillPhotoMediumIcon, LinePhotoMediumIcon } from '../../../icons';
 import { MenuTabs } from './MenuTabs';
 
 const meta = {
-  title: 'Web/MenuTabs',
+  title: 'Web/Navigation/MenuTabs',
   parameters: { layout: 'padded' },
 } satisfies Meta;
 
@@ -45,6 +46,21 @@ export const WithDisabledTab: Story = {
       <MenuTabs.List aria-label="팔로우 목록">
         <MenuTabs.Tab value="followers" label="팔로워" count={120} />
         <MenuTabs.Tab value="following" label="팔로잉" count={0} disabled />
+      </MenuTabs.List>
+    </MenuTabs.Root>
+  ),
+};
+
+const photoIcons = { icon: <LinePhotoMediumIcon />, selectedIcon: <FillPhotoMediumIcon /> };
+
+/** Figma `Menu Tap`: 아이콘만 있는 탭. 선택되면 Fill 아이콘과 진한 밑줄, 마지막 탭은 비활성 */
+export const IconTabs: Story = {
+  render: () => (
+    <MenuTabs.Root defaultValue="photos">
+      <MenuTabs.List aria-label="보기" variant="icon">
+        <MenuTabs.IconTab value="photos" label="사진" {...photoIcons} />
+        <MenuTabs.IconTab value="bundles" label="번들" {...photoIcons} />
+        <MenuTabs.IconTab value="saved" label="저장" {...photoIcons} disabled />
       </MenuTabs.List>
     </MenuTabs.Root>
   ),

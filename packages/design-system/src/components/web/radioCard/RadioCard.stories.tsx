@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { RadioCard } from './RadioCard';
 
 const meta = {
-  title: 'Web/RadioCard',
+  title: 'Web/Selection/RadioCard',
   component: RadioCard,
   args: { name: 'visibility', children: '비공개' },
   parameters: { layout: 'padded' },

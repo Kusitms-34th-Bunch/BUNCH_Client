@@ -22,13 +22,14 @@
 | 작업                                        | 문서                                                                                          |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | 폴더 배치, import, 공유 범위 판단           | `docs/architecture/app-structure.md`                                                          |
+| 라이브러리 선택·도입(직접 만들기 전 확인)   | `docs/conventions/libraries.md`                                                               |
 | package 추가·workspace 경계·Turbo generator | `docs/architecture/repo-structure.md`, `turbo.json`                                           |
 | 새 도메인·기능의 구현 범위 정리             | `docs/workflows/feature-intake.md`, `docs/architecture/domain-ownership.md`                   |
 | route·접근·redirect 판단                    | `docs/architecture/routing-and-access.md`                                                     |
 | React/TypeScript/스타일 작성                | `docs/conventions/coding.md`                                                                  |
 | 코드 품질·리팩터링 판단                     | `docs/code-quality/`                                                                          |
 | hook 추출·구성                              | `docs/code-quality/component-logic.md`, `.agents/guides/hook.md`                              |
-| 보안 경계·취약점 검토                       | `docs/workflows/security-review.md`                                                           |
+| 보안 경계·취약점 검토                       | `docs/workflows/security-review.md`, `docs/agent/roles/security-reviewer.md`                  |
 | 컴포넌트 배치·API·접근성 판단               | `docs/architecture/components.md`                                                             |
 | 컴포넌트 조합 패턴 선택                     | `docs/architecture/component-patterns.md`                                                     |
 | 폼·포커스·터치·i18n·hydration 세부 기준     | `docs/architecture/web-interface-guidelines.md`                                               |
@@ -85,6 +86,7 @@
 | api-contract-reviewer     | `docs/agent/roles/api-contract-reviewer.md`     | `integrate-api`, `implement-form-flow`                                                                                          |
 | ui-accessibility-reviewer | `docs/agent/roles/ui-accessibility-reviewer.md` | `implement-from-figma`, `create-ds-component`, `create-app-component`, `implement-form-flow`, `create-page-feature`(UI 포함 시) |
 | route-reviewer            | `docs/agent/roles/route-reviewer.md`            | `create-page-feature`                                                                                                           |
+| security-reviewer         | `docs/agent/roles/security-reviewer.md`         | 아래 필수 호출 기준(보안 경계 변경)                                                                                             |
 | e2e-planner               | `docs/agent/roles/e2e-planner.md`               | `plan-e2e`                                                                                                                      |
 
 Claude Code와 Codex의 adapter는 각각 `.claude/agents/`, `.codex/agents/`에 둔다.
@@ -102,13 +104,14 @@ Claude Code와 Codex의 adapter는 각각 `.claude/agents/`, `.codex/agents/`에
 
 아래 표에 해당하는 변경이면, 완료를 보고하기 전에 메인 세션이 해당 role을 최소 한 번 호출한다. 사용자가 실시간으로 결과를 확인해준 것은 이 호출을 대체하지 않는다 — 사용자 피드백은 의도한 대로 나왔는지 확인하는 것이고, 전용 agent는 문서화된 규칙만으로 회귀·경계·계약 위반을 독립적으로 다시 보는 것이라 목적이 다르다.
 
-| 작업 유형                       | 필수 호출                 |
-| ------------------------------- | ------------------------- |
-| route·layout·접근 조건 변경     | route-reviewer            |
-| API 계약·query·mutation 변경    | api-contract-reviewer     |
-| UI·Figma 구현, 접근성 관련 변경 | ui-accessibility-reviewer |
+| 작업 유형                                                               | 필수 호출                 |
+| ----------------------------------------------------------------------- | ------------------------- |
+| route·layout·접근 조건 변경                                             | route-reviewer            |
+| API 계약·query·mutation 변경                                            | api-contract-reviewer     |
+| UI·Figma 구현, 접근성 관련 변경                                         | ui-accessibility-reviewer |
+| 인증·BFF·공개 범위·권한, 초대·업로드, bridge, 오류 수집, 환경 변수 변경 | security-reviewer         |
 
-단순 오탈자 수정, 문서 전용 변경, 한 파일의 사소한 조정에는 이 표를 적용하지 않는다. 이 표와 별개로 `prepare-commit`(코드 변경 커밋)과 `prepare-pull-request`(PR)는 계획·초안을 내기 전에 `bunch-reviewer`를 호출하되, 같은 변경을 이미 리뷰했으면 결과를 재사용하고 바뀐 부분만 다시 맡긴다. 기준은 각 skill 문서를 따른다. debugger와 e2e-planner는 완료 게이트가 아니라 조사·설계가 필요한 시점에 그때그때 호출한다.
+단순 오탈자 수정, 문서 전용 변경, 한 파일의 사소한 조정에는 이 표를 적용하지 않는다. 단, 보안 경계(인증·BFF·공개 범위·권한, 초대·업로드, bridge, 오류 수집, 환경 변수)를 바꾸면 한 파일·한 줄이어도 security-reviewer를 호출한다. 이 표와 별개로 `prepare-commit`(코드 변경 커밋)과 `prepare-pull-request`(PR)는 계획·초안을 내기 전에 `bunch-reviewer`를 호출하되, 같은 변경을 이미 리뷰했으면 결과를 재사용하고 바뀐 부분만 다시 맡긴다. 기준은 각 skill 문서를 따른다. debugger와 e2e-planner는 완료 게이트가 아니라 조사·설계가 필요한 시점에 그때그때 호출한다.
 
 ## Skills
 

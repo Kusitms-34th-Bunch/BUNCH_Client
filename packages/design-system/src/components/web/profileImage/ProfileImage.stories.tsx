@@ -9,7 +9,7 @@ const pickedImage =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><rect width='160' height='160' fill='%23FFD8A8'/><circle cx='80' cy='70' r='30' fill='%23F59F00'/><rect x='30' y='110' width='100' height='60' rx='30' fill='%23F59F00'/></svg>";
 
 const meta = {
-  title: 'Web/ProfileImage',
+  title: 'Web/Profile/ProfileImage',
   component: ProfileImage,
   args: { src: defaultImage, alt: '기본 프로필 사진' },
 } satisfies Meta<typeof ProfileImage>;
@@ -23,6 +23,23 @@ export const Default: Story = {};
 export const Picked: Story = { args: { src: pickedImage, alt: '선택한 프로필 사진' } };
 
 export const NoImage: Story = { args: { src: undefined } };
+
+const SIZES = ['L', 'M', 'S', 'XS', 'XXS'] as const;
+
+/** Figma `Size`: L 90 · M 64 · S 40 · XS 34 · XXS 24, 위는 `Default` 아래는 `Output` */
+export const Sizes: Story = {
+  render: (args) => (
+    <div className="gap-s8 flex flex-col">
+      {[defaultImage, pickedImage].map((src) => (
+        <div key={src} className="gap-s8 flex items-end">
+          {SIZES.map((size) => (
+            <ProfileImage key={size} {...args} src={src} size={size} />
+          ))}
+        </div>
+      ))}
+    </div>
+  ),
+};
 
 // 설계서 구성: 프로필 이미지 오른쪽 아래에 카메라 버튼(95×90 영역에 67·62 위치)
 export const WithCameraButton: Story = {

@@ -66,7 +66,7 @@ describe('PageShell', () => {
 });
 
 describe('AppFrame', () => {
-  it('Safe Area 변수로 상하 여백을 적용하고 하위 화면을 그대로 그린다', () => {
+  it('Safe Area 변수로 상하좌우 여백을 두고 하위 화면을 그대로 그린다', () => {
     const { container } = render(
       <AppFrame>
         <p>화면</p>
@@ -74,11 +74,13 @@ describe('AppFrame', () => {
     );
 
     expect(screen.getByText('화면')).toBeInTheDocument();
-    expect(container.firstElementChild).toHaveClass(
+    const frame = container.firstElementChild;
+    expect(frame).toHaveClass(
       'pt-(--safe-area-top)',
       'pr-(--safe-area-right)',
-      'pb-(--safe-area-bottom)',
       'pl-(--safe-area-left)',
     );
+    // 아래 Safe Area는 화면이 다른 색을 줄 수 있도록 마지막 자식 요소가 차지
+    expect(frame?.lastElementChild).toHaveClass('h-(--safe-area-bottom)');
   });
 });

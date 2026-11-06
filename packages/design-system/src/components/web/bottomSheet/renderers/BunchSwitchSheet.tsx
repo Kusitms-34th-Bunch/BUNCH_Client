@@ -20,17 +20,21 @@ export type BunchSwitchSheetProps = Omit<
   'children' | 'disablePointerDismissal'
 > & {
   bunches: BunchSwitchItem[];
+  /** 고를 수 있는(기본) 번치를 눌렀을 때 */
   onSelect: (_id: string) => void;
+  /** 접근 불가 번치를 눌렀을 때(삭제·내보내짐 안내는 호출자 담당). 없으면 눌러도 동작 없음 */
+  onUnavailableSelect?: ((_id: string) => void) | undefined;
   onAdd: () => void;
 };
 
 /**
  * 번치 전환 시트(Figma Bottom Sheet 04, `2487:46353`): 번치 목록 + 「새로운 번치 추가하기」
- * 현재 번치·접근 불가 번치는 흐림·선택 불가(`BunchListItem` status)
+ * 현재 번치는 흐림·선택 불가, 접근 불가 번치는 흐림이고 누르면 `onUnavailableSelect`(`BunchListItem` status)
  */
 export const BunchSwitchSheet = ({
   bunches,
   onSelect,
+  onUnavailableSelect,
   onAdd,
   ...rootProps
 }: BunchSwitchSheetProps) => (
@@ -49,7 +53,7 @@ export const BunchSwitchSheet = ({
             imageSrc={imageSrc}
             status={status}
             className="shrink-0"
-            onClick={() => onSelect(id)}
+            onClick={() => (status === 'unavailable' ? onUnavailableSelect?.(id) : onSelect(id))}
             badge={
               status === 'unavailable' ? (
                 <ColorBadge color="gray" size="md">

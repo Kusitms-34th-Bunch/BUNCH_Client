@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { useArgs } from 'storybook/preview-api';
 import { Button } from '../../../core/button';
 import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { BundleRecommendSheet, type BundleRecommendItem } from './BundleRecommendSheet';
@@ -29,7 +30,7 @@ const bundles: BundleRecommendItem[] = [
   },
 ];
 const meta = {
-  title: 'Web/BottomSheet/BundleRecommendSheet',
+  title: 'Web/Overlay/BottomSheet/BundleRecommendSheet',
   component: BundleRecommendSheet,
   parameters: { layout: 'fullscreen' },
   // Figma처럼 모바일 폭의 앱 화면 위로 시트가 올라오는 모습
@@ -43,7 +44,9 @@ const meta = {
   ],
   args: { open: true, onOpenChange: () => {}, bundles, onSelect: () => {}, onOpenDetail: () => {} },
   render: function Render(args) {
-    const [open, setOpen] = useState(args.open);
+    // Controls의 open과 시트 열림을 같은 값으로(초기값 복사가 아님)
+    const [{ open }, updateArgs] = useArgs<typeof args>();
+    const setOpen = (nextOpen: boolean) => updateArgs({ open: nextOpen });
     const [selectedId, setSelectedId] = useState<string | null>(null);
     return (
       <>

@@ -2,6 +2,7 @@
 
 import { AlertDialog } from '@base-ui/react/alert-dialog';
 import { useRef, type ComponentProps, type ReactNode } from 'react';
+import { mergeRefs } from 'react-simplikit';
 import { cn } from '../../../utils';
 import { Button, type ButtonProps } from '../button';
 import { TextButton } from '../textButton';
@@ -38,17 +39,17 @@ const Content = ({ className, backdropClassName, children, ref, ...props }: Dial
   const popupRef = useRef<HTMLDivElement>(null);
   return (
     <AlertDialog.Portal>
+      {/* 모달 모션(BunchMood.spec): 딤 100ms 페이드 인, 닫힘은 패널과 같은 100ms 페이드 아웃 */}
       <AlertDialog.Backdrop
-        className={cn('bg-overlay-dim-subtle fixed inset-0', backdropClassName)}
+        className={cn(
+          'bg-overlay-dim-subtle fixed inset-0 transition-opacity duration-100 ease-[cubic-bezier(0,0,0.15,1)] data-ending-style:opacity-0 data-ending-style:ease-[cubic-bezier(0.35,0,1,1)] data-starting-style:opacity-0 motion-reduce:transition-none',
+          backdropClassName,
+        )}
       />
       <AlertDialog.Popup
         {...props}
         aria-modal="true"
-        ref={(element) => {
-          popupRef.current = element;
-          if (typeof ref === 'function') return ref(element);
-          if (ref) ref.current = element;
-        }}
+        ref={mergeRefs(popupRef, ref)}
         initialFocus={() =>
           popupRef.current?.querySelector<HTMLElement>('[data-dialog-cancel]:not(:disabled)') ??
           popupRef.current?.querySelector<HTMLElement>('[data-dialog-confirm]:not(:disabled)') ??
@@ -56,6 +57,8 @@ const Content = ({ className, backdropClassName, children, ref, ...props }: Dial
         }
         className={cn(
           'bg-surface-primary rounded-r9 fixed top-1/2 left-1/2 flex max-h-[min(640px,calc(100dvh-32px))] w-77.75 max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto outline-none',
+          // 패널: 중앙에서 scale 1.3→1·opacity 0→1 200ms, 닫힘은 크기 유지·100ms 페이드 아웃
+          'transition-[scale,opacity] duration-200 ease-[cubic-bezier(0.03,0.4,0.1,1)] data-ending-style:opacity-0 data-ending-style:duration-100 data-ending-style:ease-[cubic-bezier(0.35,0,1,1)] data-starting-style:scale-130 data-starting-style:opacity-0 motion-reduce:transition-none',
           className,
         )}
       >
@@ -99,7 +102,11 @@ const Footer = ({ className, ...props }: DialogFooterProps) => (
     className={cn('gap-s4 p-padding-p8 pt-padding-p10 flex shrink-0 justify-end', className)}
   />
 );
-const Cancel = ({ appearance = 'solid', variant, ...props }: DialogActionProps) => (
+// solid 버튼은 Footer 안에서 같은 폭으로 나눠 가짐
+const solidWidth = (appearance: DialogActionProps['appearance'], className: string | undefined) =>
+  cn(appearance === 'solid' && 'min-w-0 flex-1', className);
+
+const Cancel = ({ appearance = 'solid', variant, className, ...props }: DialogActionProps) => (
   <AlertDialog.Close
     data-dialog-cancel=""
     render={
@@ -110,13 +117,24 @@ const Cancel = ({ appearance = 'solid', variant, ...props }: DialogActionProps) 
       )
     }
     {...props}
+    className={solidWidth(appearance, className)}
   />
 );
-const Confirm = ({ appearance = 'solid', variant, ...props }: DialogActionProps) =>
+const Confirm = ({ appearance = 'solid', variant, className, ...props }: DialogActionProps) =>
   appearance === 'text' ? (
-    <TextButton data-dialog-confirm="" variant={variant ?? 'secondary'} {...props} />
+    <TextButton
+      data-dialog-confirm=""
+      variant={variant ?? 'secondary'}
+      className={className}
+      {...props}
+    />
   ) : (
-    <Button data-dialog-confirm="" variant={variant ?? 'primary'} {...props} />
+    <Button
+      data-dialog-confirm=""
+      variant={variant ?? 'primary'}
+      className={solidWidth(appearance, className)}
+      {...props}
+    />
   );
 
 // eslint-disable-next-line react-refresh/only-export-components -- Compound API 부품 구성
@@ -127,6 +145,8 @@ export type ConfirmDialogProps = Omit<DialogRootProps, 'children'> & {
   description?: string;
   /** 제목 위 프로필 이미지(Figma Profile (Side by Side)) */
   image?: ReactNode;
+  /** 설명 아래 내용(Figma Label: 번치 줄 목록). 목록 의미·간격은 호출자 담당 */
+  children?: ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
   onConfirm: () => void;
@@ -138,6 +158,7 @@ export const ConfirmDialog = ({
   title,
   description,
   image,
+  children,
   confirmLabel,
   cancelLabel,
   onConfirm,
@@ -160,24 +181,19 @@ export const ConfirmDialog = ({
       {image ? <Media>{image}</Media> : null}
       {/* 이미지가 있으면 Figma Profile 간격(이미지·제목·설명 사이 6px) 적용 */}
       <Title className={image ? 'pt-s3' : undefined}>{title}</Title>
+      {/* 내용이 있으면 Figma Label 간격(제목·설명 사이 18, 설명·내용 사이 16) */}
       {description ? (
-        <Description className={image ? 'mt-s3' : undefined}>{description}</Description>
+        <Description className={image ? 'mt-s3' : children ? 'mt-s9' : undefined}>
+          {description}
+        </Description>
+      ) : null}
+      {/* 내용이 길면 내용만 스크롤하고 버튼은 늘 보임. 위아래 4px은 초점 테두리가 잘리지 않을 여백(간격은 16 유지) */}
+      {children ? (
+        <div className="mt-s6 px-padding-p11 -mb-1 min-h-0 overflow-y-auto py-1">{children}</div>
       ) : null}
       <Footer>
-        {cancelLabel ? (
-          <Cancel
-            appearance={appearance}
-            className={appearance === 'solid' ? 'min-w-0 flex-1' : undefined}
-          >
-            {cancelLabel}
-          </Cancel>
-        ) : null}
-        <Confirm
-          appearance={appearance}
-          disabled={confirmDisabled}
-          onClick={onConfirm}
-          className={appearance === 'solid' ? 'min-w-0 flex-1' : undefined}
-        >
+        {cancelLabel ? <Cancel appearance={appearance}>{cancelLabel}</Cancel> : null}
+        <Confirm appearance={appearance} disabled={confirmDisabled} onClick={onConfirm}>
           {confirmLabel}
         </Confirm>
       </Footer>
@@ -201,6 +217,8 @@ export type ActionDialogProps = Omit<DialogRootProps, 'children'> & {
   actions: ActionDialogAction[];
   /** 맨 아래 텍스트 버튼. 기본값 `취소` */
   cancelLabel?: string;
+  /** 맨 아래 취소 모양. 기본 `text`, `solid`는 회색 채운 버튼(Figma Stack에서 취소가 SolidButton인 화면) */
+  cancelAppearance?: 'text' | 'solid';
   onCancel?: () => void;
 };
 const defaultActionVariants = ['primary', 'secondary', 'tertiary'] as const;
@@ -215,6 +233,7 @@ export const ActionDialog = ({
   image,
   actions,
   cancelLabel = '취소',
+  cancelAppearance = 'text',
   onCancel,
   open,
   onOpenChange,
@@ -228,9 +247,9 @@ export const ActionDialog = ({
       onOpenChange(nextOpen);
     }}
   >
-    {/* Figma Stack: 위아래 16px·좌우 22px(내용 폭 267px), 내용·버튼 사이 24px */}
-    <Content className="px-padding-p11 py-padding-p8">
-      {image ? <Media className="my-padding-p4 mx-0">{image}</Media> : null}
+    {/* Figma Stack: 위 22px·아래 16px·좌우 22px(내용 폭 267px), 내용·버튼 사이 24px */}
+    <Content className="px-padding-p11 pt-padding-p11 pb-padding-p8">
+      {image ? <Media className="m-0">{image}</Media> : null}
       <Title className="pt-s3 px-0">{title}</Title>
       {description ? <Description className="mt-s3 px-0">{description}</Description> : null}
       <Footer className="mt-s12 flex-col p-0">
@@ -246,9 +265,14 @@ export const ActionDialog = ({
             {action.label}
           </Button>
         ))}
-        <Cancel appearance="text" className="text-text-tertiary w-full">
-          {cancelLabel}
-        </Cancel>
+        {cancelAppearance === 'solid' ? (
+          // 세로 쌓기라 가로 나눔용 flex-1을 끔(높이 48 유지), 글자색은 Figma text-tertiary
+          <Cancel className="text-text-tertiary w-full flex-none">{cancelLabel}</Cancel>
+        ) : (
+          <Cancel appearance="text" className="text-text-tertiary w-full">
+            {cancelLabel}
+          </Cancel>
+        )}
       </Footer>
     </Content>
   </Root>

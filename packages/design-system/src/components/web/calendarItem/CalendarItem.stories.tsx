@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CalendarItem } from './CalendarItem';
 
 const meta = {
-  title: 'Web/CalendarItem',
+  title: 'Web/Selection/CalendarItem',
   component: CalendarItem,
   args: { children: '4' },
 } satisfies Meta<typeof CalendarItem>;

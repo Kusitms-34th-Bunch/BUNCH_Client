@@ -1,9 +1,8 @@
 'use client';
 
-import { useId, useRef, type ComponentProps } from 'react';
+import { useId, useRef, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '../../../utils';
 import inputScale from '../../core/textField/inputScale.module.css';
-import { EditingAnimation } from '../editingAnimation';
 import { useTextareaAutoHeight } from '../labeledTextField/useTextareaAutoHeight.internal';
 import { ProfileImage } from '../profileImage';
 
@@ -23,8 +22,10 @@ export type BundleCommentCardProps = Omit<
   label?: string | undefined;
   /** 있으면 카드 아래에 빨간 안내로 보이고 입력창을 잘못된 값(aria-invalid)으로 표시(Figma `State=Error`). 문구는 호출자가 결정 */
   error?: string | undefined;
-  /** 다른 멤버가 쓰고 있는 코멘트(Figma `State=Editing`): 입력창 대신 점 3개 애니메이션 표시, 입력값은 호출자가 유지 */
+  /** 다른 멤버가 쓰고 있는 코멘트(Figma `State=Editing`): 입력창 대신 `editingContent`(편집 중 애니메이션, 30×25 자리) 표시, 입력값은 호출자가 유지 */
   editing?: boolean | undefined;
+  /** `editing` 동안 이름 아래에 보일 내용(예: 앱이 만든 로티). 없으면 자리만 둠 */
+  editingContent?: ReactNode;
   /** `editing` 동안 스크린 리더가 읽는 문구(예: "지예님이 작성 중"), 없으면 장식 처리 */
   editingLabel?: string | undefined;
   /** 카드 바깥 요소(카드와 오류 안내를 묶은 영역)에 적용할 클래스 */
@@ -43,11 +44,12 @@ export function BundleCommentCard({
   label,
   error,
   editing = false,
+  editingContent,
   editingLabel,
   className,
   id,
   value,
-  placeholder = '코멘트를 남기면 번들을 발행할 수 있어요.',
+  placeholder = '코멘트를 남기면 번들을 업로드할 수 있어요.',
   ...props
 }: BundleCommentCardProps) {
   const generatedId = useId();
@@ -61,13 +63,22 @@ export function BundleCommentCard({
     <div className={cn('gap-s2 flex w-full flex-col', className)}>
       <div className="bg-surface-primary border-border-tertiary rounded-r5 px-padding-p7 py-s7 gap-s4 focus-within:border-primitive-gray-700 flex flex-col border forced-colors:focus-within:outline-2 forced-colors:focus-within:outline-offset-2">
         <div className="gap-s3 flex items-center">
-          <ProfileImage src={profileSrc} className="border-border-tertiary size-6 border" />
+          <ProfileImage src={profileSrc} size="XXS" className="border-border-tertiary border" />
           <div className="typography-body-1-medium text-text-primary gap-s1 flex items-center whitespace-nowrap">
             <span>{userName}</span>
             {currentUser && <span>{currentUserLabel}</span>}
           </div>
         </div>
-        {editing && <EditingAnimation {...(editingLabel && { label: editingLabel })} />}
+        {editing && (
+          <span
+            className="block h-6.25 w-7.5"
+            {...(editingLabel?.trim()
+              ? { role: 'img', 'aria-label': editingLabel }
+              : { 'aria-hidden': true })}
+          >
+            {editingContent}
+          </span>
+        )}
         {/* editing 중에도 입력창을 숨겨서 남겨 uncontrolled 값과 포커스 순서가 사라지지 않게 처리 */}
         <div className={cn(inputScale.textareaSlot, editing && 'hidden')}>
           <textarea
@@ -79,7 +90,7 @@ export function BundleCommentCard({
             aria-label={label ?? `${userName}${currentUser ? ` ${currentUserLabel}` : ''} 코멘트`}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className="typography-body-3-regular text-text-secondary placeholder:text-text-quaternary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) focus:outline-none focus:placeholder:text-transparent"
+            className="typography-body-3-regular text-text-secondary placeholder:text-text-quinary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) focus:outline-none focus:placeholder:text-transparent"
             {...props}
           />
         </div>

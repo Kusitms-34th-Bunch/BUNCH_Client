@@ -14,6 +14,7 @@ const requiredFiles = [
   'docs/agent/roles/api-contract-reviewer.md',
   'docs/agent/roles/ui-accessibility-reviewer.md',
   'docs/agent/roles/route-reviewer.md',
+  'docs/agent/roles/security-reviewer.md',
   'docs/agent/roles/e2e-planner.md',
   'docs/index.md',
   'docs/architecture/components.md',
@@ -84,6 +85,7 @@ const roleNames = [
   'api-contract-reviewer',
   'ui-accessibility-reviewer',
   'route-reviewer',
+  'security-reviewer',
   'e2e-planner',
 ];
 const skillNames = [

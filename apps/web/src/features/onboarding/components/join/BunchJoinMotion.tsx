@@ -1,8 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import styles from './BunchJoinMotion.module.css';
 import { InviteAnimation } from './InviteAnimation';
@@ -14,16 +15,6 @@ const REDUCED_MOTION_HOLD_MS = 800;
 const TINT_FRAME = 80;
 const HAND_OFF_FRAME = 89;
 
-const MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-function subscribeMotion(listener: () => void) {
-  const query = window.matchMedia(MOTION_QUERY);
-  query.addEventListener('change', listener);
-  return () => query.removeEventListener('change', listener);
-}
-const getReducedMotion = () => window.matchMedia(MOTION_QUERY).matches;
-// hydration 불일치 방지를 위해 서버·첫 렌더에서는 로티 생략
-const getServerReducedMotion = () => true;
-
 /** 번치 조회 API 미연결 상태에서 로티의 마지막 움직임까지 재생 후 초대 확인 화면으로 replace 이동 */
 export function BunchJoinMotion() {
   const router = useRouter();
@@ -32,11 +23,8 @@ export function BunchJoinMotion() {
   const [revealFrame, setRevealFrame] = useState<number | null>(null);
   const progress = Math.min(((revealFrame ?? TINT_FRAME) - TINT_FRAME) / 8, 1);
   const revealProgress = 1 - (1 - progress) ** 3;
-  const reducedMotion = useSyncExternalStore(
-    subscribeMotion,
-    getReducedMotion,
-    getServerReducedMotion,
-  );
+  // 서버·첫 렌더에서는 동작 줄이기로 취급해 로티 생략(hydration 불일치 방지)
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     mounted.current = true;
