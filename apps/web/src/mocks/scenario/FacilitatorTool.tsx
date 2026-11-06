@@ -15,6 +15,10 @@ const CHARACTER_SELECTOR = '[data-facilitator-trigger="bunch-character"]';
 const TAP_GAP_MS = 1000;
 // 가짜 DB가 IndexedDB에 쓰기까지의 지연(300ms)보다 길게 기다린 뒤 새로 불러와야 바뀐 값이 남음
 const PERSIST_WAIT_MS = 700;
+// 분석 사용자 교체를 기다리는 최대 시간(SDK를 못 받아도 회차 진행은 막지 않음)
+const ANALYTICS_WAIT_MS = 2000;
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const DRAFT_PATH = /^\/bunch\/drafts\/(\d+)(?:\/|$)/;
 
@@ -53,11 +57,12 @@ export function FacilitatorTool({ navigate = browserNavigate }: FacilitatorToolP
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, []);
 
-  const finish = (message: string, path: string) => {
+  const finish = (message: string, path: string, pending: Promise<unknown> = Promise.resolve()) => {
     setOpen(false);
     toast(message, { fullWidth: true });
-    // 저장이 끝난 뒤 새로 불러와 화면의 입력·캐시를 모두 비움
-    setTimeout(() => navigate(path), PERSIST_WAIT_MS);
+    // 저장(과 분석 사용자 교체)이 끝난 뒤 새로 불러와 화면의 입력·캐시를 모두 비움
+    const analytics = Promise.race([pending.catch(() => {}), wait(ANALYTICS_WAIT_MS)]);
+    void Promise.all([wait(PERSIST_WAIT_MS), analytics]).then(() => navigate(path));
   };
 
   return (
@@ -98,9 +103,8 @@ export function FacilitatorTool({ navigate = browserNavigate }: FacilitatorToolP
             onClick: () => {
               resetToStateA();
               sessionStorage.clear();
-              // 다음 회차 클릭 흐름을 새 사용자로 나눔(키가 없으면 아무것도 안 함)
-              startNewAnalyticsUser().catch(() => {});
-              finish('상태 A로 초기화했어요', '/bunch');
+              // 다음 회차 클릭 흐름을 새 사용자로 나눔(키가 없으면 아무것도 안 함), 교체 뒤에 이동
+              finish('상태 A로 초기화했어요', '/bunch', startNewAnalyticsUser());
             },
           },
         ]}

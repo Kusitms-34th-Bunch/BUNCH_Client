@@ -1,9 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { startNewAnalyticsUser } from '@/shared/config/posthog';
 import { mockDb } from '../db';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '../db/seed';
 import { FacilitatorTool } from './FacilitatorTool';
+
+vi.mock('@/shared/config/posthog', () => ({
+  startNewAnalyticsUser: vi.fn(() => Promise.resolve()),
+}));
 
 let pathname = '/bunch';
 vi.mock('next/navigation', () => ({ usePathname: () => pathname }));
@@ -46,6 +51,7 @@ const createStateB = async () => {
 beforeEach(() => {
   pathname = '/bunch';
   navigate.mockClear();
+  vi.mocked(startNewAnalyticsUser).mockClear();
 });
 
 describe('진행자 장치', () => {
@@ -130,5 +136,7 @@ describe('진행자 장치', () => {
     expect(mockDb.get().bundles.every((bundle) => bundle.status === 'PUBLISHED')).toBe(true);
     expect(sessionStorage.getItem('x')).toBeNull();
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/bunch'), WAIT);
+    // 다음 회차 클릭 기록이 앞 회차 사용자에 섞이지 않게 분석 사용자를 바꾼 뒤 이동
+    expect(startNewAnalyticsUser).toHaveBeenCalledTimes(1);
   });
 });
