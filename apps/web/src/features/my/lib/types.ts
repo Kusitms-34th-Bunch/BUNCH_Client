@@ -21,3 +21,21 @@ export type NotificationSettings = {
 
 /** 기기의 BUNCH 알림 권한 */
 export type DeviceNotificationPermission = 'granted' | 'denied';
+
+/** 권한을 넘겨받을 수 있는 멤버(나 제외) */
+export type TransferCandidate = {
+  id: string;
+  name: string;
+  /** 프로필 이미지 주소(없으면 배경색 원) */
+  imageSrc?: string | undefined;
+  /** 공동 관리자면 역할 배지, 일반 멤버는 배지 없음 */
+  role: 'coOwner' | 'member';
+};
+
+/** 내가 메인 관리자인 번치(탈퇴 전 권한 이전 대상) */
+export type OwnedBunch = {
+  id: string;
+  name: string;
+  imageSrc?: string | undefined;
+  candidates: readonly TransferCandidate[];
+};

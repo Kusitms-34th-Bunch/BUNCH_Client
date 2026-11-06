@@ -17,12 +17,8 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
+import { useOwnedBunches } from '../../hooks/useOwnedBunches';
 import { useWithdrawMutation } from '../../queries/session';
-
-type WithdrawalScreenProps = {
-  /** 내가 메인 관리자인 번치가 있는지(메인 관리자 확인 API 연결 전에는 fixture) */
-  hasOwnedBunch: boolean;
-};
 
 type DialogKind = 'confirm' | 'owner';
 
@@ -32,7 +28,7 @@ const text = MY_MESSAGES.withdrawal;
  * 회원 탈퇴 안내(화면 설계서 MY(5) 1~4번): 삭제되는 정보·남는 기록, 확인 체크 뒤 「다음」
  * 메인 관리자인 번치가 있으면 권한 이전 안내, 없으면 최종 확인 뒤 탈퇴
  */
-export function WithdrawalScreen({ hasOwnedBunch }: WithdrawalScreenProps) {
+export function WithdrawalScreen() {
   const router = useRouter();
   const backOr = useBackOr();
   const agreeId = useId();
@@ -40,6 +36,8 @@ export function WithdrawalScreen({ hasOwnedBunch }: WithdrawalScreenProps) {
   const [agreed, setAgreed] = useState(false);
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const withdraw = useWithdrawMutation();
+  // 권한을 넘기고 돌아오면 줄어든 목록으로 다시 판단(화면 설계서 5-3)
+  const hasOwnedBunch = useOwnedBunches().length > 0;
   const pending = withdraw.isPending || withdraw.isSuccess;
 
   return (

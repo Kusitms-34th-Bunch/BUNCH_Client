@@ -57,6 +57,18 @@ export const MY_MESSAGES = {
     // 화면 설계서에 없는 실패 문구(다른 실패 토스트와 같은 형태)
     failed: '탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.',
   },
+  // 관리자 권한 이전(화면 설계서 MY(5) 4~5번). 화면 제목은 Figma에 없어 낭독용
+  transfer: {
+    title: '관리자 권한 넘기기',
+    members: '멤버',
+    coOwner: '공동 관리자',
+    next: '다음',
+    // 「다음」이 막힌 이유와 남은 번치 수(낭독용, Figma에 보이는 문구 없음)
+    progress: (picked: number, total: number) =>
+      picked === total
+        ? '모든 번치의 새 관리자를 골랐어요.'
+        : `모든 번치에서 새 관리자를 골라 주세요. ${total}개 중 ${picked}개 골랐어요.`,
+  },
   // 개인 프로필 수정(화면 설계서 MY(1) 7·8번)
   profileEditTitle: '개인 프로필 수정',
   profileEditSubmit: '프로필 수정하기',
