@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { EditingLottie } from '@/shared/components/loading/EditingLottie';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
+import scale from './photoCaptionScale.module.css';
 
 type PhotoCaptionFieldProps = {
   value: string;
@@ -35,14 +36,18 @@ export function PhotoCaptionField({
   onEditingBlocked,
 }: PhotoCaptionFieldProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const slotRef = useRef<HTMLDivElement>(null);
   const locked = editorNames.length > 0;
 
   // 내용에 맞게 높이를 늘림(`field-sizing`을 못 쓰는 WebView 대비)
+  // iOS에서는 확대 방지로 줄여 그리므로 바깥 칸 높이는 같은 값에 배율을 곱해 CSS가 정함
   useLayoutEffect(() => {
     const field = ref.current;
     if (!field) return;
     field.style.height = 'auto';
-    field.style.height = `${field.scrollHeight}px`;
+    const height = field.scrollHeight;
+    field.style.height = `${height}px`;
+    slotRef.current?.style.setProperty('--textarea-height', `${height}px`);
   }, [value, locked]);
 
   if (locked) {
@@ -59,18 +64,20 @@ export function PhotoCaptionField({
   }
 
   return (
-    <textarea
-      ref={ref}
-      rows={1}
-      value={value}
-      readOnly={readOnly}
-      aria-label={BUNDLE_MESSAGES.captionLabel}
-      // 읽기만 하는 사람에게는 입력을 권하는 안내를 보이지 않음
-      placeholder={readOnly ? undefined : BUNDLE_MESSAGES.captionPlaceholder}
-      onFocus={readOnly ? onDenied : onFocus}
-      onBlur={onBlur}
-      onChange={(event) => onChange(event.target.value)}
-      className="typography-body-3-regular py-padding-p1 text-text-primary placeholder:text-text-quinary block w-full resize-none overflow-hidden bg-transparent outline-none"
-    />
+    <div ref={slotRef} className={scale.slot}>
+      <textarea
+        ref={ref}
+        rows={1}
+        value={value}
+        readOnly={readOnly}
+        aria-label={BUNDLE_MESSAGES.captionLabel}
+        // 읽기만 하는 사람에게는 입력을 권하는 안내를 보이지 않음
+        placeholder={readOnly ? undefined : BUNDLE_MESSAGES.captionPlaceholder}
+        onFocus={readOnly ? onDenied : onFocus}
+        onBlur={onBlur}
+        onChange={(event) => onChange(event.target.value)}
+        className="typography-body-3-regular py-padding-p1 text-text-primary placeholder:text-text-quinary block w-full resize-none overflow-hidden bg-transparent outline-none"
+      />
+    </div>
   );
 }

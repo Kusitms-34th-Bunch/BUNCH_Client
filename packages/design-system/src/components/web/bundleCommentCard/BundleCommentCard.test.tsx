@@ -36,7 +36,7 @@ describe('BundleCommentCard', () => {
   it('안내 문구 기본값이 있고 placeholder로 바꿀 수 있다', () => {
     const { rerender } = renderCard();
 
-    expect(screen.getByPlaceholderText('코멘트를 남기면 번들을 발행할 수 있어요.')).toBeTruthy();
+    expect(screen.getByPlaceholderText('코멘트를 남기면 번들을 업로드할 수 있어요.')).toBeTruthy();
 
     rerender(<BundleCommentCard userName="지예" placeholder="Leave a comment" />);
 
