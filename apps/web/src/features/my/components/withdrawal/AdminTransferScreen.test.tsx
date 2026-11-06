@@ -94,7 +94,7 @@ describe('AdminTransferScreen', () => {
     // 주소로 바로 들어왔으면 탈퇴 안내로 교체 이동
     expect(replace).toHaveBeenCalledWith('/my/withdrawal');
     // 돌아가는 동안 목록은 그대로
-    expect(screen.getByRole('button', { name: '퇴근런클럽' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^퇴근런클럽/ })).toBeTruthy();
   });
 
   it('탈퇴 안내에서 들어왔으면 완료 뒤 뒤로 가기로 돌아간다', async () => {
@@ -109,6 +109,19 @@ describe('AdminTransferScreen', () => {
 
     expect(back).toHaveBeenCalledTimes(1);
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('새 관리자를 고른 번치는 접혔을 때 고른 멤버를 함께 읽는다', async () => {
+    render(<AdminTransferScreen />);
+    await openBunch('퇴근런클럽');
+    await pick('퇴근런클럽', '서현');
+
+    await userEvent.click(screen.getByRole('button', { name: /^퇴근런클럽/ }));
+
+    expect(
+      screen.getByRole('button', { name: /^퇴근런클럽\s?, 새 관리자: 서현$/ }),
+    ).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: '야르렁모임' })).toBeTruthy();
   });
 
   it('뒤로 가기는 기록이 없으면 탈퇴 안내로 간다', async () => {

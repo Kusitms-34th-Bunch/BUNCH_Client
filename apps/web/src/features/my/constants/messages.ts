@@ -62,6 +62,8 @@ export const MY_MESSAGES = {
     title: '관리자 권한 넘기기',
     members: '멤버',
     coOwner: '공동 관리자',
+    // 고른 뒤 접힌 번치 카드에 붙여 읽는 문구(색만으로 전하지 않음)
+    selected: (name: string) => `새 관리자: ${name}`,
     next: '다음',
     // 「다음」이 막힌 이유와 남은 번치 수(낭독용, Figma에 보이는 문구 없음)
     progress: (picked: number, total: number) =>

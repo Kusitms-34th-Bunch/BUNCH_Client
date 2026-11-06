@@ -35,6 +35,9 @@ export const Open: Story = { args: { defaultOpen: true } };
 
 export const Disabled: Story = { args: { disabled: true } };
 
+/** Figma `Status=Selected`: 안에서 고른 뒤 접힌 상태. 펼치면 기본 모양으로 돌아감 */
+export const Selected: Story = { args: { selected: true, selectedLabel: '새 관리자: 서현' } };
+
 export const LongName: Story = {
   args: { name: '퇴근하고 한강까지 같이 달리는 아주 긴 이름의 러닝 모임' },
 };
