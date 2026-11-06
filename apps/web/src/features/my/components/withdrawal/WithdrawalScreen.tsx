@@ -17,7 +17,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
-import { useOwnedBunches } from '../../hooks/useOwnedBunches';
+import { markTransferFromGuide, useOwnedBunches } from '../../hooks/useOwnedBunches';
 import { useWithdrawMutation } from '../../queries/session';
 
 type DialogKind = 'confirm' | 'owner';
@@ -121,6 +121,7 @@ export function WithdrawalScreen() {
             label: text.ownerTransfer,
             onClick: () => {
               setDialog(null);
+              markTransferFromGuide();
               router.push(MY_PATHS.withdrawalTransfer);
             },
           },

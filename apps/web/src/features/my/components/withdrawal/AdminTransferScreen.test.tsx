@@ -1,7 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getOwnedBunches, resetOwnedBunches } from '../../hooks/useOwnedBunches';
+import {
+  getOwnedBunches,
+  markTransferFromGuide,
+  resetOwnedBunches,
+} from '../../hooks/useOwnedBunches';
 import { AdminTransferScreen } from './AdminTransferScreen';
 
 const back = vi.fn();
@@ -87,10 +91,24 @@ describe('AdminTransferScreen', () => {
     expect(getOwnedBunches()).toEqual([]);
     // 돌아가는 동안 다시 누를 수 없음
     expect(next).toBeDisabled();
-    // 기록이 없으면 탈퇴 안내로 replace
+    // 주소로 바로 들어왔으면 탈퇴 안내로 교체 이동
     expect(replace).toHaveBeenCalledWith('/my/withdrawal');
     // 돌아가는 동안 목록은 그대로
     expect(screen.getByRole('button', { name: '퇴근런클럽' })).toBeTruthy();
+  });
+
+  it('탈퇴 안내에서 들어왔으면 완료 뒤 뒤로 가기로 돌아간다', async () => {
+    markTransferFromGuide();
+    render(<AdminTransferScreen />);
+    await openBunch('퇴근런클럽');
+    await openBunch('야르렁모임');
+    await pick('퇴근런클럽', '서현');
+    await pick('야르렁모임', '경준');
+
+    await userEvent.click(screen.getByRole('button', { name: '다음' }));
+
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('뒤로 가기는 기록이 없으면 탈퇴 안내로 간다', async () => {

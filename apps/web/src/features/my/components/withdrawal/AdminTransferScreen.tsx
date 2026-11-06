@@ -2,13 +2,18 @@
 
 import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { BunchAccordion, ProfileRadioCard } from '@app/design-system/web';
+import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
-import { getOwnedBunches, transferOwnership } from '../../hooks/useOwnedBunches';
+import {
+  consumeTransferFromGuide,
+  getOwnedBunches,
+  transferOwnership,
+} from '../../hooks/useOwnedBunches';
 
 const text = MY_MESSAGES.transfer;
 
@@ -17,7 +22,10 @@ const text = MY_MESSAGES.transfer;
  * 모든 번치를 고르면 「다음」으로 권한을 넘기고 탈퇴 안내로 복귀
  */
 export function AdminTransferScreen() {
+  const router = useRouter();
   const backOr = useBackOr();
+  // 탈퇴 안내에서 왔으면 완료 뒤 뒤로 가기, 주소로 바로 들어왔으면 탈퇴 안내로 교체 이동
+  const [fromGuide] = useState(consumeTransferFromGuide);
   const progressId = useId();
   // 넘긴 뒤 저장소가 비어도 돌아가는 전환 동안 목록을 유지하도록 들어올 때 값으로 고정
   const [bunches] = useState(getOwnedBunches);
@@ -57,7 +65,8 @@ export function AdminTransferScreen() {
             onClick={() => {
               setDone(true);
               transferOwnership(selections);
-              backOr(MY_PATHS.withdrawal);
+              if (fromGuide) router.back();
+              else router.replace(MY_PATHS.withdrawal);
             }}
           >
             {text.next}

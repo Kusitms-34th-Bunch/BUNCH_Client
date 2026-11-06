@@ -26,6 +26,21 @@ export const resetOwnedBunches = (next: readonly OwnedBunch[] = ownedBunchesFixt
   listeners.forEach((listener) => listener());
 };
 
+// 탈퇴 안내에서 들어왔는지(완료 뒤 뒤로 가기로 돌아갈지, 탈퇴 안내로 바로 갈지 판단)
+let enteredFromGuide = false;
+
+/** 탈퇴 안내의 「권한 넘기러 가기」가 이동 직전에 표시 */
+export const markTransferFromGuide = () => {
+  enteredFromGuide = true;
+};
+
+/** 권한 이전 화면이 들어올 때 한 번 읽고 지움 */
+export const consumeTransferFromGuide = () => {
+  const entered = enteredFromGuide;
+  enteredFromGuide = false;
+  return entered;
+};
+
 /** 내가 메인 관리자인 번치. 서버 렌더는 fixture */
 export function useOwnedBunches() {
   return useSyncExternalStore(subscribe, getOwnedBunches, () => ownedBunchesFixture);
