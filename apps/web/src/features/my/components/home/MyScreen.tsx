@@ -1,17 +1,20 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { Header, LineChevronRightLargeIcon } from '@app/design-system';
+import { ConfirmDialog, Header, LineChevronRightLargeIcon } from '@app/design-system';
 import { MenuLabel, ProfileImage } from '@app/design-system/web';
 import Link from 'next/link';
+import { type ReactNode, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
+import { openExternal } from '../../lib/navigation';
+import { useLogoutMutation } from '../../queries/session';
 
-type MenuItem = { label: string; href?: string };
+type ConfirmKind = 'contact' | 'logout';
+type MenuItem = { label: string; href?: string; dialog?: ConfirmKind };
 
-// 화면 이동 메뉴는 링크, 문의하기·로그아웃은 확인 창을 여는 버튼(확인 창은 후속 MY 이슈에서 연결)
+// 화면 이동 메뉴는 링크, 문의하기·로그아웃은 확인 창을 여는 버튼
 const MENU_SECTIONS: { title: string; items: MenuItem[] }[] = [
   {
     title: MY_MESSAGES.sections.notifications,
@@ -27,18 +30,27 @@ const MENU_SECTIONS: { title: string; items: MenuItem[] }[] = [
   {
     title: MY_MESSAGES.sections.support,
     items: [
-      { label: MY_MESSAGES.menu.contact },
-      { label: MY_MESSAGES.menu.logout },
+      { label: MY_MESSAGES.menu.contact, dialog: 'contact' },
+      { label: MY_MESSAGES.menu.logout, dialog: 'logout' },
       { label: MY_MESSAGES.menu.withdrawal, href: MY_PATHS.withdrawal },
     ],
   },
 ];
 
+type MyScreenProps = {
+  profile: MyProfile;
+  /** 문의하기 카카오톡 상담 채널 주소. 없으면 확인 창의 「열기」를 막음(출시 전 주소 확정 때 넣음) */
+  contactUrl?: string | undefined;
+};
+
 /**
- * MY 탭 첫 화면(화면 설계서 MY(1)): 내 프로필과 메뉴 묶음 3개
+ * MY 탭 첫 화면(화면 설계서 MY(1)·(4)): 내 프로필과 메뉴 묶음 3개, 문의하기·로그아웃 확인 창
  * 프로필은 호출하는 쪽이 전달(내 정보 API 연결 전에는 fixture)
  */
-export function MyScreen({ profile }: { profile: MyProfile }) {
+export function MyScreen({ profile, contactUrl }: MyScreenProps) {
+  const [confirm, setConfirm] = useState<ConfirmKind | null>(null);
+  const logout = useLogoutMutation();
+
   return (
     <PageShell header={<Header title={<h1 className="truncate">{MY_MESSAGES.title}</h1>} />}>
       {/* 헤더 아래 12, 프로필과 메뉴 사이 20(Figma 4096:75220) */}
@@ -57,7 +69,7 @@ export function MyScreen({ profile }: { profile: MyProfile }) {
         <div className="gap-s6 flex flex-col">
           {MENU_SECTIONS.map((section) => (
             <MenuSection key={section.title} title={section.title}>
-              {section.items.map(({ label, href }) => (
+              {section.items.map(({ label, href, dialog }) => (
                 <li key={label}>
                   {href ? (
                     <MenuLabel
@@ -70,7 +82,7 @@ export function MyScreen({ profile }: { profile: MyProfile }) {
                       {label}
                     </MenuLabel>
                   ) : (
-                    <MenuLabel>{label}</MenuLabel>
+                    <MenuLabel onClick={() => setConfirm(dialog ?? null)}>{label}</MenuLabel>
                   )}
                 </li>
               ))}
@@ -78,6 +90,35 @@ export function MyScreen({ profile }: { profile: MyProfile }) {
           ))}
         </div>
       </div>
+      <ConfirmDialog
+        open={confirm === 'contact'}
+        onOpenChange={(open) => setConfirm(open ? 'contact' : null)}
+        title={MY_MESSAGES.contact.title}
+        description={MY_MESSAGES.contact.description}
+        cancelLabel={MY_MESSAGES.cancel}
+        confirmLabel={MY_MESSAGES.contact.confirm}
+        confirmDisabled={!contactUrl}
+        onConfirm={() => {
+          setConfirm(null);
+          if (contactUrl) openExternal(contactUrl);
+        }}
+      />
+      <ConfirmDialog
+        open={confirm === 'logout'}
+        // 요청 중에는 취소·ESC로 닫지 않음(닫힌 뒤 로그아웃이 끝나 화면이 바뀌는 혼란 방지)
+        onOpenChange={(open) => {
+          if (!logout.isPending) setConfirm(open ? 'logout' : null);
+        }}
+        title={MY_MESSAGES.logout.title}
+        cancelLabel={MY_MESSAGES.cancel}
+        confirmLabel={MY_MESSAGES.logout.confirm}
+        // 요청 중과 성공 뒤 문서를 다시 여는 동안 다시 누르지 못하게 막음
+        confirmDisabled={logout.isPending || logout.isSuccess}
+        onConfirm={() =>
+          // 성공 뒤 이동은 useLogoutMutation이 처리, 실패하면 창만 닫음
+          logout.mutate(undefined, { onError: () => setConfirm(null) })
+        }
+      />
     </PageShell>
   );
 }

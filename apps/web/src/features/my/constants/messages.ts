@@ -10,6 +10,19 @@ export const MY_MESSAGES = {
     logout: '로그아웃',
     withdrawal: '탈퇴하기',
   },
+  // 문의하기·로그아웃 확인 창(화면 설계서 MY(4) 3·4번)
+  contact: {
+    title: "'카카오톡'에서 열기",
+    description: '오픈채팅 상담 채널로 이동해요.',
+    confirm: '열기',
+  },
+  logout: {
+    title: '로그아웃할까요?',
+    confirm: '로그아웃',
+    // 화면 설계서에 없는 실패 문구(다른 실패 토스트와 같은 형태)
+    failed: '로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  },
+  cancel: '취소',
   // 개인 프로필 수정(화면 설계서 MY(1) 7·8번)
   profileEditTitle: '개인 프로필 수정',
   profileEditSubmit: '프로필 수정하기',

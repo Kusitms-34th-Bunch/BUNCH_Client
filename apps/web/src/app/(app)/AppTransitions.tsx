@@ -305,6 +305,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: menuSubSlide,
   },
+  // MY 약관 두 화면도 같은 미는 slide(화면설계서에 전환 정의 없음). 동적 route라 고정 id 사용
+  {
+    from: MY_PATHS.home,
+    to: MY_PATHS.transitionIds.terms,
+    bidirectional: true,
+    transition: menuSubSlide,
+  },
   // 멤버 관리와 권한 안내도 메뉴 하위 화면과 같은 미는 slide(화면설계서에 전환 정의 없음)
   {
     from: BUNCH_HOME_PATHS.menu,

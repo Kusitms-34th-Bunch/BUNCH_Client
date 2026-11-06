@@ -11,4 +11,8 @@ export const MY_PATHS = {
   privacyPolicy: '/my/terms/privacy',
   /** 회원 탈퇴(화면 설계서 MY(5)) */
   withdrawal: '/my/withdrawal',
+  /** 로그아웃 뒤 이동할 로그인 화면. URL 계약만 두고 auth feature는 import하지 않음 */
+  login: '/login',
+  /** 동적 route의 전환 경계 id(규칙과 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
+  transitionIds: { terms: '/my/terms' },
 } as const;
