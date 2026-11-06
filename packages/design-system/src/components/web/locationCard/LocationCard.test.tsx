@@ -61,4 +61,13 @@ describe('LocationCard', () => {
     expect(screen.getByText('봄날카페').className).toContain('truncate');
     expect(screen.getByText('제주 제주시 애월읍').className).toContain('truncate');
   });
+
+  it('키보드는 카드 버튼에서 더보기 버튼 순서로 이동한다', async () => {
+    render(<LocationCard {...base} onClick={vi.fn()} onMore={vi.fn()} />);
+
+    await userEvent.tab();
+    expect(document.activeElement?.textContent).toContain('봄날카페');
+    await userEvent.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '봄날카페 더보기' }));
+  });
 });
