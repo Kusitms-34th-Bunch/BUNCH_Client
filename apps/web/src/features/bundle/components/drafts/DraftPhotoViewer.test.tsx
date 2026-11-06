@@ -91,6 +91,66 @@ describe('DraftPhotoViewer 구성', () => {
     expect(screen.getByText('경진')).toBeInTheDocument();
   });
 
+  it('사진함 원본이 있으면 번들에 담은 사람이 아니라 사진 소유자와 촬영 날짜를 보여 준다', () => {
+    // draft-photo-2의 원본(photo-2): 번들에 담은 사람은 경진이지만 올린 사람은 서현, 촬영 날짜는 6월 5일
+    render(
+      <DraftPhotoViewer
+        draft={draftFixture}
+        viewer={creator}
+        actions={actions}
+        initialPhotoId="draft-photo-2"
+        sources={new Map([['photo-2', { takenAt: '2026-06-05T10:00', uploaderIds: ['seohyeon'] }]])}
+        bunchMembers={[{ id: 'seohyeon', name: '서현' }]}
+        currentYear={2026}
+        onBack={onBack}
+        onPhotoChange={onPhotoChange}
+      />,
+    );
+
+    expect(screen.getByRole('banner')).toHaveTextContent('6월 5일 금요일');
+    expect(screen.getByText('서현')).toBeInTheDocument();
+    expect(screen.queryByText('경진')).not.toBeInTheDocument();
+  });
+
+  it('사진함 데이터를 받는 동안에도 화면은 보이고 배지와 날짜만 비운다', () => {
+    render(
+      <DraftPhotoViewer
+        draft={draftFixture}
+        viewer={creator}
+        actions={actions}
+        initialPhotoId="draft-photo-2"
+        sourcesPending
+        currentYear={2026}
+        onBack={onBack}
+        onPhotoChange={onPhotoChange}
+      />,
+    );
+
+    expect(screen.getAllByTestId('slide')).toHaveLength(3);
+    expect(screen.getByRole('button', { name: '더보기' })).toBeInTheDocument();
+    expect(screen.getByRole('banner')).not.toHaveTextContent('날짜 미확인');
+    expect(screen.queryByText('경진')).not.toBeInTheDocument();
+  });
+
+  it('사진함 목록에 원본이 없는 사진은 번들에 담은 사람을 소유자로 보이지 않는다', () => {
+    render(
+      <DraftPhotoViewer
+        draft={draftFixture}
+        viewer={creator}
+        actions={actions}
+        initialPhotoId="draft-photo-2"
+        sources={new Map()}
+        bunchMembers={[]}
+        currentYear={2026}
+        onBack={onBack}
+        onPhotoChange={onPhotoChange}
+      />,
+    );
+
+    expect(screen.queryByText('경진')).not.toBeInTheDocument();
+    expect(screen.getByRole('banner')).toHaveTextContent('날짜 미확인');
+  });
+
   it('뒤로 가기를 누르면 돌아간다', async () => {
     renderViewer();
 
