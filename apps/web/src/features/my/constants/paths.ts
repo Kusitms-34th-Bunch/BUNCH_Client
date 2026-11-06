@@ -18,3 +18,6 @@ export const MY_PATHS = {
   /** 동적 route의 전환 경계 id(규칙과 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
   transitionIds: { terms: '/my/terms' },
 } as const;
+
+/** 문의하기 「열기」로 여는 카카오톡 채널(QR 유입 표시 `?from=qr`는 뺌) */
+export const MY_CONTACT_URL = 'https://pf.kakao.com/_QpxnxeX';
