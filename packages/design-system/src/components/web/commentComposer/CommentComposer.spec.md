@@ -21,7 +21,7 @@
 
 ## Public API
 
-- Props: `CommentInput`의 props 전부 + `replyTarget`(닉네임), `onCancelReply`, `cancelReplyLabel`(기본 「답글 그만 쓰기」). `className`은 영역 전체에 적용.
+- Props: `CommentInput`의 props 전부 + `replyTarget`(닉네임)과 `onCancelReply`(둘은 함께 넘김, 답글 중에는 닫기 콜백 필수), `cancelReplyLabel`(기본 「답글 그만 쓰기」). `className`은 영역 전체에 적용.
 - Figma 이름 대응: Figma 변형 이름은 반대로 붙어 있다. `Mode=Comment`가 답글 대상 줄이 있는 모양이고 `Mode=Reply`가 입력칸만 있는 모양이다. 코드는 `replyTarget` 유무로 구분한다.
 
 ## 상태와 동작

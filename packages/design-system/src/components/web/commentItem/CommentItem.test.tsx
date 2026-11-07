@@ -60,4 +60,12 @@ describe('CommentItem', () => {
     await userEvent.click(screen.getByRole('button', { name: '수인 댓글 더보기' }));
     expect(onMore).toHaveBeenCalledTimes(1);
   });
+
+  it('삭제된 답글의 더보기는 「작성자 댓글 더보기」이고 moreLabel로 바꿀 수 있다', () => {
+    const { rerender } = render(<CommentItem {...base} deleted reply onMore={vi.fn()} />);
+    expect(screen.getByRole('button', { name: '작성자 댓글 더보기' })).toBeTruthy();
+
+    rerender(<CommentItem {...base} deleted reply onMore={vi.fn()} moreLabel="삭제된 답글 메뉴" />);
+    expect(screen.getByRole('button', { name: '삭제된 답글 메뉴' })).toBeTruthy();
+  });
 });

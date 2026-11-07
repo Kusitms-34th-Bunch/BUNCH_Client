@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { CommentComposer } from './CommentComposer';
+import { CommentComposer, type CommentComposerProps } from './CommentComposer';
 
 const meta = {
   title: 'Web/Feed/CommentComposer',
@@ -23,11 +23,11 @@ const meta = {
     const [value, setValue] = useState(args.value);
     return <CommentComposer {...args} value={value} onValueChange={setValue} />;
   },
-} satisfies Meta<typeof CommentComposer>;
+} satisfies Meta<CommentComposerProps>;
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<CommentComposerProps>;
 
 /** Figma `Mode=Reply`(입력칸만) */
 export const Comment: Story = {};

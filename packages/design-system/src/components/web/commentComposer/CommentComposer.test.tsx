@@ -29,4 +29,17 @@ describe('CommentComposer', () => {
     await userEvent.click(screen.getByRole('button', { name: '답글 그만 쓰기' }));
     expect(onCancelReply).toHaveBeenCalledTimes(1);
   });
+
+  it('label을 넘기면 답글 중에도 기본 이름 대신 label을 쓴다', () => {
+    render(
+      <CommentComposer
+        {...inputProps}
+        replyTarget="수인"
+        onCancelReply={vi.fn()}
+        label="답글 입력"
+      />,
+    );
+
+    expect(screen.getByRole('textbox', { name: '답글 입력' })).toBeTruthy();
+  });
 });
