@@ -74,7 +74,10 @@ export function BunchMood() {
       }
     >
       <div className="flex min-h-full flex-col">
-        <PageHeader title={TITLE} className="pt-s13" />
+        <PageHeader
+          title={TITLE}
+          className="pt-s13 animate-step-title-in motion-reduce:animate-none"
+        />
         {/* 브라우저별 fieldset flex 정렬 차이로 바깥 div에서 가운데 정렬 */}
         <div className="px-padding-p8 pb-padding-p18 flex flex-1 flex-col justify-center">
           <fieldset className="min-w-0">

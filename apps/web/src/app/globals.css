@@ -59,3 +59,19 @@
     opacity: 1;
   }
 }
+
+/* 번치 만들기 단계 제목: 5px 아래에서 올라오며 나타남(Figma 1998:35008, 600ms Slow 근사 곡선) */
+@keyframes step-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-step-title-in {
+  animation: step-title-in 600ms cubic-bezier(0.24, 0.3, 0.14, 1) both;
+}
