@@ -39,7 +39,10 @@ export function BunchDescription() {
         </div>
       }
     >
-      <PageHeader title="번치를 소개해주세요" className="pt-s13" />
+      <PageHeader
+        title="번치를 소개해주세요"
+        className="pt-s13 animate-step-title-in motion-reduce:animate-none"
+      />
       <div className="pt-s15 px-padding-p8">
         <LabeledTextArea
           label="한 줄 소개"

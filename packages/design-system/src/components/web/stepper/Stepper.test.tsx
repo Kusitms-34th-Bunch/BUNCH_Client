@@ -16,13 +16,19 @@ describe('Stepper', () => {
     ).toBe(true);
   });
 
-  it('단계 수만큼 막대를 그리고 현재 단계의 막대만 채운다', () => {
+  it('단계 수만큼 막대를 그리고 현재 단계까지 누적해 채운다', () => {
     render(<Stepper total={3} current={2} />);
 
     const items = Array.from(screen.getByRole('progressbar').children);
     expect(items).toHaveLength(3);
-    expect(items.map((item) => item.className.includes('bg-surface-brand-subtle-2'))).toEqual([
-      false,
+    expect(items.map((item) => item.getAttribute('data-filled'))).toEqual([
+      'true',
+      'true',
+      'false',
+    ]);
+    // 보이는 채움(안쪽 span)도 같은 기준
+    expect(items.map((item) => item.firstElementChild?.className.includes('scale-x-100'))).toEqual([
+      true,
       true,
       false,
     ]);

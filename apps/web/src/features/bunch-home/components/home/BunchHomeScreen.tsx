@@ -10,6 +10,7 @@ import {
 } from '@app/design-system';
 import { BunchSwitchSheet, FloatingButton, MenuTabs } from '@app/design-system/web';
 import { useState } from 'react';
+import type { CharacterType } from '@/shared/lib/bunchProfile';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { BunchHomeActions, BunchHomeData, BunchSummary, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -23,6 +24,18 @@ import { BundleEmpty } from './BundleEmpty';
 import { DraftBundleList } from './DraftBundleList';
 
 type BundleTab = 'completed' | 'draft';
+
+// 성격별 위쪽 배경(Figma 번치 메인 1873:29989). TYPE_1 연보라는 brand-subtle-1과 같은 값
+const BACKGROUNDS = {
+  TYPE_1: {
+    app: 'brand-subtle-1',
+    frame: 'from-surface-brand-subtle-1',
+    top: 'bg-surface-brand-subtle-1',
+  },
+  TYPE_2: { app: 'orange-50', frame: 'from-primitive-orange-50', top: 'bg-primitive-orange-50' },
+  TYPE_3: { app: 'pink-50', frame: 'from-primitive-pink-50', top: 'bg-primitive-pink-50' },
+  TYPE_4: { app: 'green-50', frame: 'from-primitive-green-50', top: 'bg-primitive-green-50' },
+} as const satisfies Record<CharacterType, { app: string; frame: string; top: string }>;
 
 // 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
 const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
@@ -47,6 +60,7 @@ export function BunchHomeScreen({
   onAddBunch,
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
+  const background = BACKGROUNDS[current.characterType];
   const [tab, setTab] = useState<BundleTab>('completed');
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
@@ -86,18 +100,19 @@ export function BunchHomeScreen({
   };
 
   return (
-    // 브랜드 배경은 헤더·캐릭터 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
-    // 틀 배경은 위 절반 연보라·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 연보라, 아래는 흰색이 드러남
+    // 성격별 배경은 헤더·캐릭터 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
+    // 틀 배경은 위 절반 성격 색·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 성격 색, 아래는 흰색이 드러남
     <PageShell
-      data-app-background="brand-subtle-1"
+      data-app-background={background.app}
       data-app-background-bottom="primary"
-      className="from-surface-brand-subtle-1 to-surface-primary bg-linear-to-b from-50% to-50%"
+      className={cn('to-surface-primary bg-linear-to-b from-50% to-50%', background.frame)}
       header={
         <BunchHomeHeader
           bunchName={current.name}
           bunchImageSrc={current.imageSrc}
           onBunchClick={() => setSheetOpen(true)}
           switcherOpen={sheetOpen}
+          className={background.top}
         />
       }
       // 「+」는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
@@ -121,7 +136,7 @@ export function BunchHomeScreen({
         )}
       >
         {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터 에셋은 아직 없어 회색 자리표시이고 흰 시트에 32px 걸침 */}
-        <div className="bg-surface-brand-subtle-1 relative h-34.5 shrink-0">
+        <div className={cn('relative h-34.5 shrink-0', background.top)}>
           <div
             aria-hidden="true"
             // UT 진행자 장치가 연속 터치를 읽는 표식, 이 화면의 동작과는 무관(UT가 끝나면 지움)

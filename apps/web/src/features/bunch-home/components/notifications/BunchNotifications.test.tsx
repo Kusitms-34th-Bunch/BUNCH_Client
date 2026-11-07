@@ -38,7 +38,14 @@ describe('BunchNotificationsScreen', () => {
 
 describe('알림 입구', () => {
   it('번치 홈 헤더의 「알림」은 알림 목록으로 가는 링크다', () => {
-    render(<BunchHomeHeader bunchName="여행가조" onBunchClick={vi.fn()} switcherOpen={false} />);
+    render(
+      <BunchHomeHeader
+        bunchName="여행가조"
+        onBunchClick={vi.fn()}
+        switcherOpen={false}
+        className="bg-surface-brand-subtle-1"
+      />,
+    );
 
     expect(screen.getByRole('link', { name: '알림' })).toHaveAttribute(
       'href',

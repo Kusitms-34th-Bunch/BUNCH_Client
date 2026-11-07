@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
-import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
+import {
+  CHARACTER_TYPES,
+  DEFAULT_BUNCH_IMAGE,
+  DEFAULT_BUNCH_IMAGES,
+} from '@/shared/lib/bunchProfile';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import type { BunchHomeDetail, BunchRole } from '../lib/types';
 
@@ -15,7 +19,7 @@ export const bunchHomeResponseSchema = z.object({
     id: z.number().int().positive(),
     name: z.string(),
     imageUrl: z.string().nullish(),
-    characterType: z.enum(['TYPE_1', 'TYPE_2', 'TYPE_3', 'TYPE_4']),
+    characterType: z.enum(CHARACTER_TYPES),
     visibility: z.enum(['PUBLIC', 'PRIVATE']),
     introduction: z.string().nullish(),
   }),
@@ -95,8 +99,8 @@ const ROLE: Readonly<Record<z.infer<typeof roleSchema>, BunchRole>> = {
 const UNTITLED_DRAFT = '제목 없는 번들';
 
 // 안전하지 않은 이미지 주소는 항목 하나 때문에 홈 전체가 실패하지 않도록 기본 이미지로 대체
-const safeImage = (url: string | null | undefined) =>
-  url && isSafeImageUrl(url) ? url : DEFAULT_BUNCH_IMAGE;
+const safeImage = (url: string | null | undefined, fallback = DEFAULT_BUNCH_IMAGE) =>
+  url && isSafeImageUrl(url) ? url : fallback;
 
 /**
  * 서버 응답을 번치 홈 화면의 프로필·번들 모양으로 변환, 내 번치가 아니면(소속 null) undefined
@@ -112,8 +116,9 @@ export const toBunchHomeDetail = (
   return {
     id: toDomainId(home.bunch.id),
     name: home.bunch.name,
-    // 대표 이미지가 없으면 기본 번치 이미지
-    imageSrc: safeImage(home.bunch.imageUrl),
+    // 대표 이미지가 없으면 성격별 기본 이미지
+    imageSrc: safeImage(home.bunch.imageUrl, DEFAULT_BUNCH_IMAGES[home.bunch.characterType]),
+    characterType: home.bunch.characterType,
     description: home.bunch.introduction ?? '',
     isPrivate: home.bunch.visibility === 'PRIVATE',
     myRole: ROLE[home.myMembership.role],

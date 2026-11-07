@@ -1,8 +1,11 @@
 'use client';
 
 import { LoginButton } from '@app/design-system/web';
-import Image from 'next/image';
+import Image, { type StaticImageData } from 'next/image';
+import symbolSvg from '@/shared/assets/images/login/symbol.svg';
+import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import {
   LOGIN_PENDING_MESSAGE,
   type SignIn,
@@ -10,9 +13,12 @@ import {
   useSocialLogin,
 } from '../../hooks/useSocialLogin';
 
-// 앱 아이콘·로고·슬로건은 임시 디자인이라 최종 확정본으로 교체 예정
-const APP_ICON = '/images/app-icon.png';
-const BUNCH_LOGO = '/images/bunch-logo.svg';
+// SVG import 타입이 any라 정적 이미지로 명시
+const SYMBOL = symbolSvg as StaticImageData;
+const WORDMARK = wordmarkSvg as StaticImageData;
+// 배경 영상(Figma 4744:90759, 원본 47MB를 H.264 CRF 18로 다시 압축해 약 2.7MB)과 첫 프레임 포스터
+const BACKGROUND_VIDEO = '/videos/login.mp4';
+const BACKGROUND_POSTER = '/videos/login-poster.jpg';
 
 // 순서가 곧 노출 순서(카카오 → Google → Apple)
 const PROVIDERS: { provider: SocialProvider; label: string }[] = [
@@ -34,53 +40,70 @@ type LoginEntryProps = {
  */
 export function LoginEntry({ signIn, nextPath }: LoginEntryProps) {
   const { pendingProvider, login } = useSocialLogin(signIn, nextPath);
+  const reducedMotion = useReducedMotion();
 
   return (
-    <PageShell
-      bottom={
-        <div className="px-padding-p8 pb-s10 gap-s4 flex flex-col">
-          {PROVIDERS.map(({ provider, label }) => {
-            const isPending = pendingProvider === provider;
-            return (
-              <LoginButton
-                key={provider}
-                brand={provider}
-                // 어느 로그인이 진행 중인지 보이도록 진행 중인 버튼은 두고 나머지만 비활성화
-                disabled={pendingProvider !== null && !isPending}
-                aria-busy={isPending || undefined}
-                onClick={() => void login(provider)}
-              >
-                {label}
-              </LoginButton>
-            );
-          })}
-          {/* 진행 중인 버튼은 aria-busy만으로는 읽히지 않는 경우가 많아 상태를 음성으로 안내(화면에는 숨김) */}
-          <p role="status" className="sr-only">
-            {pendingProvider ? LOGIN_PENDING_MESSAGE : ''}
-          </p>
-        </div>
-      }
-    >
-      <div className="px-padding-p8 flex min-h-full flex-col items-center justify-center">
-        <div className="gap-s12 flex flex-col items-center">
-          <Image
-            src={APP_ICON}
-            alt=""
-            width={120}
-            height={120}
-            priority
-            className="rounded-r10 size-30 object-cover"
+    <>
+      {/* 화면 전체(Safe Area 포함)를 덮는 배경. 동작 줄이기 설정이면 영상을 받지 않고 첫 프레임만 보임 */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-y-0 left-1/2 w-full max-w-(--app-max-width) -translate-x-1/2 bg-cover bg-center"
+        style={{ backgroundImage: `url(${BACKGROUND_POSTER})` }}
+      >
+        {/* iOS 자동 재생 조건: muted·playsInline */}
+        {reducedMotion ? null : (
+          <video
+            src={BACKGROUND_VIDEO}
+            poster={BACKGROUND_POSTER}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="size-full object-cover"
           />
-          <div className="gap-s6 flex flex-col items-center">
+        )}
+        {/* Figma 겹침: 위 절반 검정 30%, 61%부터 60%(30%는 토큰이 없어 가장 가까운 40%) */}
+        <div className="from-primitive-black-alpha-40 to-primitive-black-alpha-60 absolute inset-0 bg-linear-to-b from-50% to-61%" />
+      </div>
+      <PageShell
+        className="relative bg-transparent"
+        bottom={
+          <div className="px-padding-p8 pb-padding-p7 gap-s4 flex flex-col">
+            {PROVIDERS.map(({ provider, label }) => {
+              const isPending = pendingProvider === provider;
+              return (
+                <LoginButton
+                  key={provider}
+                  brand={provider}
+                  // 어느 로그인이 진행 중인지 보이도록 진행 중인 버튼은 두고 나머지만 비활성화
+                  disabled={pendingProvider !== null && !isPending}
+                  aria-busy={isPending || undefined}
+                  onClick={() => void login(provider)}
+                >
+                  {label}
+                </LoginButton>
+              );
+            })}
+            {/* 진행 중인 버튼은 aria-busy만으로는 읽히지 않는 경우가 많아 상태를 음성으로 안내(화면에는 숨김) */}
+            <p role="status" className="sr-only">
+              {pendingProvider ? LOGIN_PENDING_MESSAGE : ''}
+            </p>
+          </div>
+        }
+      >
+        {/* 로고는 버튼 바로 위(Figma 버튼과 34px, 가까운 토큰 32px) */}
+        <div className="px-padding-p8 pb-s14 gap-s3 flex min-h-full flex-col items-center justify-end">
+          <Image src={SYMBOL} alt="" width={40} height={34} priority />
+          <div className="gap-s4 flex flex-col items-center">
             <h1>
-              <Image src={BUNCH_LOGO} alt="Bunch" width={136} height={40} className="h-10 w-auto" />
+              <Image src={WORDMARK} alt="Bunch" width={166} height={45} priority />
             </h1>
-            <p className="typography-body-1-medium text-text-tertiary text-center break-keep">
-              함께한 순간을, 우리 그룹의 기록으로
+            <p className="typography-caption-1-medium text-text-inversed text-center font-semibold break-keep">
+              함께한 순간이 뭉쳐, 우리가 되는 곳
             </p>
           </div>
         </div>
-      </div>
-    </PageShell>
+      </PageShell>
+    </>
   );
 }

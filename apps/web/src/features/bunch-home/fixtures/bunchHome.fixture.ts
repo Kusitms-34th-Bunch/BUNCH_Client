@@ -1,4 +1,4 @@
-import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
+import { DEFAULT_BUNCH_IMAGE, DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
 import type { BunchHomeDetail, BunchSummary, DraftBundle } from '../lib/types';
 
 // 번치·번들 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
@@ -66,7 +66,8 @@ export const bunchSummariesFixture: readonly BunchSummary[] = [
 export const initialBunchDetailFixture: BunchHomeDetail = {
   id: 'bunch-trip',
   name: '여행가조',
-  imageSrc: DEFAULT_BUNCH_IMAGE,
+  imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_3,
+  characterType: 'TYPE_3',
   description: '틈만 나면 떠나는 여행 좋아하는 4명',
   isPrivate: false,
   myRole: 'coOwner',
@@ -92,7 +93,8 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
   'bunch-run': {
     id: 'bunch-run',
     name: '퇴근런클럽',
-    imageSrc: DEFAULT_BUNCH_IMAGE,
+    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2,
+    characterType: 'TYPE_2',
     description: '2024년부터 매주 화・목 퇴근 후 함께 뛰는 러닝크루 셋',
     isPrivate: true,
     myRole: 'owner',
@@ -106,7 +108,8 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
   'bunch-gift': {
     id: 'bunch-gift',
     name: '큐시즘 기프',
-    imageSrc: DEFAULT_BUNCH_IMAGE,
+    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_4,
+    characterType: 'TYPE_4',
     description: '큐시즘 기획·프론트 모임',
     isPrivate: false,
     myRole: 'member',

@@ -11,8 +11,8 @@ export type SignIn = (_provider: SocialProvider) => Promise<SocialLoginResult>;
 
 export const LOGIN_FAILURE_MESSAGE = '로그인에 실패했어요. 다시 시도해 주세요';
 
-// 기획 명세: 오류 토스트는 하단 버튼 바로 위. 버튼 영역(버튼 3개 160px + 아래 여백 20px)에서 12px 위로 배치(기본 위치는 Safe Area + 16px)
-const FAILURE_TOAST_BOTTOM_OFFSET = 176;
+// 기획 명세: 오류 토스트는 하단 버튼 바로 위. 버튼 영역(버튼 3개 160px + 아래 여백 14px)에서 12px 위로 배치(기본 위치는 Safe Area + 16px)
+const FAILURE_TOAST_BOTTOM_OFFSET = 170;
 
 export const LOGIN_PENDING_MESSAGE = '로그인하는 중이에요';
 

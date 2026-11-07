@@ -119,7 +119,7 @@ describe('CreateBunchFrame', () => {
           <button
             onClick={() => {
               setName('퇴근런클럽');
-              setMood('mood-4');
+              setMood('TYPE_4');
             }}
           >
             채우기

@@ -16,6 +16,7 @@ export function CreateBunchDraftProvider({
     description: string;
     mood: Mood;
     createdName: string;
+    createdMood: Mood;
   }>;
 }) {
   const [name, setName] = useState(initial?.name ?? '');
@@ -23,12 +24,14 @@ export function CreateBunchDraftProvider({
   const [description, setDescription] = useState(initial?.description ?? '');
   const [mood, setMood] = useState<Mood | null>(initial?.mood ?? null);
   const [createdName, setCreatedName] = useState<string | null>(initial?.createdName ?? null);
+  const [createdMood, setCreatedMood] = useState<Mood | null>(initial?.createdMood ?? null);
 
   // 이전 완료 후 새로 입력할 때 옛 이름이 완료 화면에 남는 현상 방지
   const edits =
     <T,>(set: Dispatch<SetStateAction<T>>): Dispatch<SetStateAction<T>> =>
     (value) => {
       setCreatedName(null);
+      setCreatedMood(null);
       set(value);
     };
 
@@ -39,14 +42,16 @@ export function CreateBunchDraftProvider({
     setDescription('');
     setMood(null);
     setCreatedName(null);
+    setCreatedMood(null);
   }, []);
 
-  const finish = useCallback((name: string) => {
+  const finish = useCallback((name: string, mood: Mood | null) => {
     setName('');
     setVisibility(null);
     setDescription('');
     setMood(null);
     setCreatedName(name);
+    setCreatedMood(mood);
   }, []);
 
   return (
@@ -61,6 +66,7 @@ export function CreateBunchDraftProvider({
         mood,
         setMood: edits(setMood),
         createdName,
+        createdMood,
         reset,
         finish,
       }}
