@@ -79,7 +79,7 @@ export const CommentInput = ({
           disabled={disabled}
           rows={1}
           className={cn(
-            'typography-body-3-regular text-text-primary py-padding-p1 block max-h-[calc(5.5rem/var(--input-scale,1))] w-full resize-none bg-transparent outline-none',
+            'typography-body-3-regular text-text-primary py-padding-p1 block max-h-[calc(5.5rem/var(--input-scale,1))] w-full resize-none scrollbar-none bg-transparent outline-none [&::-webkit-scrollbar]:hidden',
             'placeholder:text-text-quinary placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1)',
           )}
         />
