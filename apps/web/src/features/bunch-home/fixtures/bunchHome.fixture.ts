@@ -108,8 +108,8 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
   'bunch-gift': {
     id: 'bunch-gift',
     name: '큐시즘 기프',
-    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_1,
-    characterType: 'TYPE_1',
+    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_4,
+    characterType: 'TYPE_4',
     description: '큐시즘 기획·프론트 모임',
     isPrivate: false,
     myRole: 'member',

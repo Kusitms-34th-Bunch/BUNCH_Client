@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { OverlayProvider } from 'overlay-kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONBOARDING_PATHS } from '../../constants/paths';
+import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { CreateBunchDraftProvider } from '../../contexts/CreateBunchDraftProvider';
 import { BunchMood } from './BunchMood';
 
@@ -82,6 +83,26 @@ describe('BunchMood', () => {
     await userEvent.click(submitButton());
 
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['개성 넘치는 모임', 'TYPE_1'],
+    ['활발한 모임', 'TYPE_2'],
+    ['낭만적인 모임', 'TYPE_3'],
+    ['차분한 모임', 'TYPE_4'],
+  ])('「%s」를 고르면 성격 값이 서버 캐릭터 타입 %s가 된다', async (label, type) => {
+    const MoodProbe = () => <output aria-label="성격 값">{useCreateBunchDraft().mood}</output>;
+    render(
+      <>
+        <BunchMood />
+        <MoodProbe />
+      </>,
+      { wrapper: AfterDescription },
+    );
+
+    await userEvent.click(screen.getByRole('radio', { name: label }));
+
+    expect(screen.getByLabelText('성격 값').textContent).toBe(type);
   });
 
   it('이전은 이전 화면으로 돌아간다', async () => {

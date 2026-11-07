@@ -13,6 +13,22 @@ describe('getMyProfile', () => {
     });
   });
 
+  it.each(['TYPE_2', 'TYPE_3', 'TYPE_4'] as const)(
+    '대표 이미지가 없는 %s 번치는 그 성격의 기본 이미지를 쓴다',
+    async (type) => {
+      mockDb.update((current) => ({
+        ...current,
+        bunches: current.bunches.map((bunch) => ({ ...bunch, characterType: type })),
+      }));
+
+      const profile = await getMyProfile();
+
+      expect(profile.bunch?.imageSrc).toBe(
+        `/images/default-bunch/${type.replace('TYPE_', 'type-')}.svg`,
+      );
+    },
+  );
+
   it('기본 번치가 없으면 bunch는 null이다', async () => {
     mockDb.update((current) => ({ ...current, memberships: [] }));
     await expect(getMyProfile()).resolves.toMatchObject({ bunch: null });

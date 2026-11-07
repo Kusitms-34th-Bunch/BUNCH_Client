@@ -60,6 +60,7 @@ describe('LoginEntry', () => {
     const { container } = render(<LoginEntry nextPath={NEXT_PATH} />);
     const video = container.querySelector('video')!;
 
+    expect(video.autoplay).toBe(true);
     expect(video.muted).toBe(true);
     expect(video.hasAttribute('playsinline')).toBe(true);
     expect(video.loop).toBe(true);
@@ -76,6 +77,9 @@ describe('LoginEntry', () => {
       const { container } = render(<LoginEntry nextPath={NEXT_PATH} />);
 
       expect(container.querySelector('video')).toBeNull();
+      expect(
+        (container.querySelector('[aria-hidden="true"]') as HTMLElement).style.backgroundImage,
+      ).toContain('/videos/login-poster.jpg');
     } finally {
       vi.unstubAllGlobals();
     }
