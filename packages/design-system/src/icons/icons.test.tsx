@@ -28,6 +28,9 @@ const GRAPHIC_SIZES: Record<string, number> = {
   GraphicRoleCoOwnerMediumIcon: 20,
   GraphicRoleDraftAuthorMediumIcon: 20,
   GraphicBundleIllustrationIcon: 216,
+  GraphicCommentSendIcon: 30,
+  GraphicCommentSendDisabledIcon: 30,
+  GraphicCommentSendPressedIcon: 30,
 };
 
 const SIZES: [IconSize, number][] = [
@@ -37,9 +40,9 @@ const SIZES: [IconSize, number][] = [
 ];
 
 describe('Icons', () => {
-  it('Line 31종과 Fill 10종을 아이콘 하나씩 제공한다', () => {
-    expect(Object.keys(dynamicIcons)).toHaveLength(41);
-    expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Line'))).toHaveLength(31);
+  it('Line 33종과 Fill 10종을 아이콘 하나씩 제공한다', () => {
+    expect(Object.keys(dynamicIcons)).toHaveLength(43);
+    expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Line'))).toHaveLength(33);
     expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Fill'))).toHaveLength(10);
   });
 
@@ -59,7 +62,7 @@ describe('Icons', () => {
   });
 
   it('fixed exports preserve the exact geometry and accessibility of every size', () => {
-    expect(Object.keys(icons)).toHaveLength(176);
+    expect(Object.keys(icons)).toHaveLength(187);
     for (const [name, Icon] of Object.entries(dynamicIcons)) {
       for (const [size, label] of [
         ['sm', 'Small'],
@@ -78,7 +81,7 @@ describe('Icons', () => {
     }
   });
 
-  it('그래픽 아이콘 11종이 Figma 크기(16·20·34·40px)와 원본 색, 장식 기본값을 갖는다', () => {
+  it('그래픽 아이콘 15종이 Figma 크기(16·20·30·34·40·216px)와 원본 색, 장식 기본값을 갖는다', () => {
     expect(Object.keys(graphicIcons).sort()).toEqual(Object.keys(GRAPHIC_SIZES).sort());
     for (const [name, Icon] of Object.entries(graphicIcons)) {
       const pixels = GRAPHIC_SIZES[name];

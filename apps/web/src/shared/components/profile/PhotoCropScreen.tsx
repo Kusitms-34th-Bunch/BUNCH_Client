@@ -171,7 +171,7 @@ export function PhotoCropScreen({ src, onCancel, onComplete, onFail }: PhotoCrop
       <Header
         className="bg-transparent"
         leading={
-          <HeaderIconButton label="뒤로 가기" tone="tertiary" onClick={onCancel}>
+          <HeaderIconButton label="뒤로 가기" tone="inversed" onClick={onCancel}>
             <LineChevronLeftLargeIcon />
           </HeaderIconButton>
         }

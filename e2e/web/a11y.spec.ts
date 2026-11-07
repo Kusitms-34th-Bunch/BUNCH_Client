@@ -38,7 +38,7 @@ const SCREENS: {
   {
     name: '마이페이지',
     path: '/my',
-    knownLowContrast: ['알림', '약관 및 정책', '고객지원'],
+    knownLowContrast: [],
     ready: (page) => page.getByRole('link', { name: '알림 설정' }),
   },
   {
