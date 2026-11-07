@@ -1,0 +1,40 @@
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
+import { toBunchHomeDetail, type Home } from './bunchHome';
+
+const home = (bunch: Partial<Home['bunch']> = {}): Home => ({
+  bunch: { id: 1, name: '퇴근런클럽', characterType: 'TYPE_2', visibility: 'PUBLIC', ...bunch },
+  myMembership: { membershipId: 1, role: 'OWNER', joinedAt: '2026-11-07T00:00:00Z' },
+  permissions: {
+    canEditProfile: true,
+    canDeleteBunch: true,
+    canManageRoles: true,
+    canTransferOwner: true,
+    canBlock: true,
+    canInvite: true,
+    canLeave: true,
+  },
+  memberCount: 1,
+  followerCount: 0,
+  followingCount: 0,
+  stage: 0,
+});
+const empty = { items: [], page: 0, size: 20, totalElements: 0, hasNext: false };
+const detail = (bunch?: Partial<Home['bunch']>) =>
+  toBunchHomeDetail(home(bunch), empty, { items: [] }, []);
+
+describe('toBunchHomeDetail', () => {
+  it('번치 성격을 그대로 넘기고 대표 이미지가 없으면 성격별 기본 이미지를 쓴다', () => {
+    expect(detail()).toMatchObject({
+      characterType: 'TYPE_2',
+      imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2,
+    });
+    expect(detail({ characterType: 'TYPE_4' })?.imageSrc).toBe(DEFAULT_BUNCH_IMAGES.TYPE_4);
+  });
+
+  it('올린 대표 이미지가 있으면 성격과 상관없이 그 이미지를 쓴다', () => {
+    expect(detail({ imageUrl: 'https://cdn.example.com/bunch.png' })?.imageSrc).toBe(
+      'https://cdn.example.com/bunch.png',
+    );
+  });
+});

@@ -1,4 +1,5 @@
 import type { BundleCardMember } from '@app/design-system/web';
+import type { CharacterType } from '@/shared/lib/bunchProfile';
 
 /** 지금 번치에서 내 역할(기능명세 5장 권한 표). 메뉴 항목과 할 수 있는 일이 달라짐 */
 export type BunchRole = 'owner' | 'coOwner' | 'member';
@@ -57,6 +58,8 @@ export type BunchHomeDetail = {
   name: string;
   /** 헤더 번치 이미지 주소 */
   imageSrc?: string | undefined;
+  /** 번치 성격(서버 characterType). 홈 위쪽 배경색을 정함 */
+  characterType: CharacterType;
   description: string;
   /** 비공개 번치면 이름 옆 자물쇠 */
   isPrivate: boolean;

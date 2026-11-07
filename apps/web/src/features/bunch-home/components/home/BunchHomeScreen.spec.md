@@ -12,7 +12,8 @@
 
 ### 포함
 
-- 헤더: 번치 이미지·이름·전환 화살표(`AccountSwitcher`), 알림, 더보기. 배경은 캐릭터 영역과 같은 `surface-brand-subtle-1`이다.
+- 헤더: 번치 이미지·이름·전환 화살표(`AccountSwitcher`), 알림, 더보기. 배경은 캐릭터 영역과 같은 번치 성격 색이다.
+- 성격 색(Figma `1873:29989`): 서버 `characterType`이 `TYPE_1`이면 bunch-50(`surface-brand-subtle-1`), `TYPE_2` orange-50, `TYPE_3` pink-50, `TYPE_4` green-50. 헤더, 캐릭터 영역, 위쪽 Safe Area(`data-app-background`)가 같은 색이다. 대표 이미지가 없으면 성격별 기본 이미지(`public/images/default-bunch/type-1~4.svg`)를 쓴다. 캐릭터 그래픽(오른쪽 위)은 에셋이 없어 회색 자리표시로 남아 있다.
 - 캐릭터 영역: 헤더 아래 118px. 캐릭터 에셋이 아직 없어 120px 회색 자리표시를 오른쪽에 두고 흰 시트에 32px 걸친다.
 - 프로필: 번치 이름(페이지 `h1`), 비공개면 자물쇠(「비공개 번치」), 소개, 팔로워·팔로잉·멤버 수, 「콕한 장소」 버튼(깃발 아이콘 `FillFlagSmallIcon`).
 - 번들 탭(`MenuTabs.IconTab` 두 개, 반씩 차지): 완성된 번들(사진 아이콘), 작성 중인 번들(연필 아이콘). 탭을 바꾸면 탭 아이콘과 내용이 Dissolve / Ease out / 75ms로 바뀐다(화면설계서 3번, 첫 진입·되돌아올 때는 재생 안 함). 선택 밑줄은 250ms ease-out으로 미끄러진다(사용자 결정, `docs/architecture/motion.md`).

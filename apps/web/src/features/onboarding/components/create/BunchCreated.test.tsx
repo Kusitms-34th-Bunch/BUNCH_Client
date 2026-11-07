@@ -28,7 +28,7 @@ const AfterMood = ({ children }: { children: ReactNode }) => (
       name: '퇴근런클럽',
       visibility: 'public',
       description: '퇴근 후 달리는 모임',
-      mood: 'mood-1',
+      mood: 'TYPE_1',
     }}
   >
     {children}
@@ -58,6 +58,46 @@ describe('BunchCreated', () => {
     gallery.mockReset();
     replace.mockClear();
     push.mockClear();
+  });
+
+  it('사진을 고르기 전에는 고른 성격의 기본 대표 이미지를 보여 준다', () => {
+    const { container } = render(<BunchCreated />, { wrapper: AfterMood });
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      '/images/default-bunch/type-1.svg',
+    );
+  });
+
+  it('완료 뒤 성격 입력값은 비워 다음 번치 만들기로 넘어가지 않고, 완료 화면 이미지는 유지한다', () => {
+    const MoodProbe = () => (
+      <output aria-label="성격 입력값">{useCreateBunchDraft().mood ?? '없음'}</output>
+    );
+    const { container } = render(
+      <>
+        <BunchCreated />
+        <MoodProbe />
+      </>,
+      { wrapper: AfterMood },
+    );
+
+    expect(screen.getByLabelText('성격 입력값').textContent).toBe('없음');
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      '/images/default-bunch/type-1.svg',
+    );
+  });
+
+  it('초대 화면에서 돌아오면(입력값은 비고 완료 기록만 남음) 완료 기록의 성격 이미지를 보여 준다', () => {
+    const { container } = render(<BunchCreated />, {
+      wrapper: ({ children }) => (
+        <CreateBunchDraftProvider initial={{ createdName: '퇴근런클럽', createdMood: 'TYPE_2' }}>
+          {children}
+        </CreateBunchDraftProvider>
+      ),
+    });
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      '/images/default-bunch/type-2.svg',
+    );
   });
 
   it('입력한 번치 이름과 완료 문구를 제목으로 보여 준다', () => {

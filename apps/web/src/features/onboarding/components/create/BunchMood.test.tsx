@@ -39,7 +39,7 @@ describe('BunchMood', () => {
     renderStep();
 
     expect(
-      screen.getByRole('heading', { level: 1, name: '우리 번치는 어떤 분위기인가요?' }),
+      screen.getByRole('heading', { level: 1, name: '우리 번치는 어떤 성격의 모임인가요?' }),
     ).toBeTruthy();
   });
 
@@ -50,25 +50,25 @@ describe('BunchMood', () => {
     expect(radios).toHaveLength(4);
     expect(radios.every((radio) => !(radio as HTMLInputElement).checked)).toBe(true);
     expect((submitButton() as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByRole('group', { name: '우리 번치는 어떤 분위기인가요?' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: '우리 번치는 어떤 성격의 모임인가요?' })).toBeTruthy();
   });
 
   it('카드를 고르면 번치 만들기가 활성화되고 다른 카드를 고르면 기존 선택이 해제된다', async () => {
     renderStep();
 
-    await userEvent.click(screen.getByRole('radio', { name: '분위기 2' }));
-    expect(screen.getByRole('radio', { name: '분위기 2' })).toHaveProperty('checked', true);
+    await userEvent.click(screen.getByRole('radio', { name: '활발한 모임' }));
+    expect(screen.getByRole('radio', { name: '활발한 모임' })).toHaveProperty('checked', true);
     expect((submitButton() as HTMLButtonElement).disabled).toBe(false);
 
-    await userEvent.click(screen.getByRole('radio', { name: '분위기 3' }));
-    expect(screen.getByRole('radio', { name: '분위기 3' })).toHaveProperty('checked', true);
-    expect(screen.getByRole('radio', { name: '분위기 2' })).toHaveProperty('checked', false);
+    await userEvent.click(screen.getByRole('radio', { name: '낭만적인 모임' }));
+    expect(screen.getByRole('radio', { name: '낭만적인 모임' })).toHaveProperty('checked', true);
+    expect(screen.getByRole('radio', { name: '활발한 모임' })).toHaveProperty('checked', false);
   });
 
-  it('분위기를 고른 뒤 번치 만들기를 누르면 완료 화면으로 이동한다', async () => {
+  it('성격을 고른 뒤 번치 만들기를 누르면 완료 화면으로 이동한다', async () => {
     renderStep();
 
-    await userEvent.click(screen.getByRole('radio', { name: '분위기 1' }));
+    await userEvent.click(screen.getByRole('radio', { name: '개성 넘치는 모임' }));
     await userEvent.click(submitButton());
 
     // 뒤로 가기를 통한 중복 생성 방지를 위해 replace 확인
@@ -76,7 +76,7 @@ describe('BunchMood', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('분위기를 고르기 전에는 번치 만들기를 눌러도 이동하지 않는다', async () => {
+  it('성격을 고르기 전에는 번치 만들기를 눌러도 이동하지 않는다', async () => {
     renderStep();
 
     await userEvent.click(submitButton());

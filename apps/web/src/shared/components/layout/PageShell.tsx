@@ -9,7 +9,14 @@ type PageShellProps = {
   /** 바깥 틀에 더하는 class. 배경색이 흰색이 아닌 화면은 여기서 `bg-*`로 변경 */
   className?: string;
   /** Safe Area까지 이어질 배경 표식(AppFrame에서 처리) */
-  'data-app-background'?: 'brand-subtle-1' | 'secondary' | undefined;
+  'data-app-background'?:
+    | 'brand-subtle-1'
+    | 'secondary'
+    // 번치 성격별 홈 배경(TYPE_2~4, TYPE_1은 brand-subtle-1)
+    | 'orange-50'
+    | 'pink-50'
+    | 'green-50'
+    | undefined;
   /** 아래 Safe Area만 다른 색일 때(위는 data-app-background, 아래 내용은 흰색인 화면) */
   'data-app-background-bottom'?: 'primary' | undefined;
   children: ReactNode;
