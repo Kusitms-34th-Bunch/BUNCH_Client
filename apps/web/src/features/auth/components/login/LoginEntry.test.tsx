@@ -182,12 +182,13 @@ describe('LoginEntry', () => {
     expect(google().hasAttribute('disabled')).toBe(true);
   });
 
-  it('소셜 로그인이 연결되지 않은 동안에는 눌러도 아무 일도 일어나지 않는다', async () => {
+  it('앱 밖(브라우저)에서 눌러 쉘 로그인을 쓸 수 없으면 실패 토스트를 보이고 처음 상태로 돌아온다', async () => {
     render(<LoginEntry nextPath={NEXT_PATH} />);
 
     await userEvent.click(kakao());
 
-    expect(toast).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
+    expect(push).not.toHaveBeenCalled();
     expect(kakao().hasAttribute('aria-busy')).toBe(false);
     expect(google().hasAttribute('disabled')).toBe(false);
     expect(apple().hasAttribute('disabled')).toBe(false);

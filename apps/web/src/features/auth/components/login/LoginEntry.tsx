@@ -12,6 +12,7 @@ import {
   type SocialProvider,
   useSocialLogin,
 } from '../../hooks/useSocialLogin';
+import { signInWithSocial } from '../../lib/socialSignIn';
 
 // SVG import 타입이 any라 정적 이미지로 명시
 const SYMBOL = symbolSvg as StaticImageData;
@@ -28,7 +29,7 @@ const PROVIDERS: { provider: SocialProvider; label: string }[] = [
 ];
 
 type LoginEntryProps = {
-  /** 소셜 로그인 호출. 없으면(연결 전) 버튼을 눌러도 동작 없음 */
+  /** 소셜 로그인 호출. 기본은 쉘 SDK → BFF 로그인, 테스트에서 대체 */
   signIn?: SignIn | undefined;
   /** 로그인 성공 시 이동할 경로. 라우트가 정해 전달 */
   nextPath: string;
@@ -37,8 +38,9 @@ type LoginEntryProps = {
 /**
  * 앱을 처음 연 사람이 소셜 계정으로 시작하는 로그인(Entry) 화면
  * 회원가입 버튼 없음. 성공하면 `nextPath`(지금은 약관)로 이동만 처리(가입 상태별 분기·접근 제어는 미연결)
+ * 로그인은 쉘의 소셜 SDK로 받은 토큰을 BFF에 보내는 `signInWithSocial`이 처리(브라우저에서는 실패 토스트)
  */
-export function LoginEntry({ signIn, nextPath }: LoginEntryProps) {
+export function LoginEntry({ signIn = signInWithSocial, nextPath }: LoginEntryProps) {
   const { pendingProvider, login } = useSocialLogin(signIn, nextPath);
   const reducedMotion = useReducedMotion();
 

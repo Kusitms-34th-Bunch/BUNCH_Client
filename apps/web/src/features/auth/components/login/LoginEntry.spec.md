@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/login`(`apps/web/src/app/(app)/login/page.tsx`)
-- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 소셜 로그인 연동·가입 상태별 분기·접근 제어는 연결하지 않음. 성공하면 약관으로 이동만 함
+- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 아직 없어 앱에서도 실패 토스트가 나옴. 가입 상태별 분기·접근 제어는 연결하지 않음. 성공하면 약관으로 이동만 함
 - 디자인 출처: Figma `로그인`(node `4744:90759`, 배경 영상 디자인. 이전 `796:4634`). 화면설계서(node `796:5339`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.2 Entry).
 
 ## 목적과 범위
@@ -17,7 +17,7 @@
 
 ### 범위 외
 
-- 소셜 SDK 호출(bridge `socialLogin`, 쉘 네이티브)과 서버 로그인(인증 BFF). 연결 전에는 `signIn`이 없어 버튼을 눌러도 아무 일도 일어나지 않는다(진행 상태·토스트도 없다). 실패·취소·성공 처리와 실패 토스트는 `signIn`을 연결할 때 실제로 나온다.
+- 쉘의 네이티브 소셜 SDK(카카오·Google·Apple). 쉘의 `socialLogin`은 지금 항상 실패하는 자리라, 앱에서도 버튼을 누르면 실패 토스트가 나온다. 웹의 호출과 BFF 로그인은 연결돼 있다.
 - 로그인 결과에 따른 분기(가입 중 → 프로필, 가입 완료 → 도착지). 지금은 성공하면 항상 약관으로 간다과 앱 실행 시 세션 확인·스플래시.
 - 초대 정보 보관·전달.
 - iPhone 상태 바·홈 인디케이터. 기기 요소라 웹이 그리지 않는다(Safe Area는 `AppFrame`이 처리한다).
@@ -35,14 +35,15 @@
 - Empty: 해당 없음.
 - Error·retry: 실패 시 토스트와 버튼 복귀. 토스트는 기획 명세대로 하단 버튼 바로 위에 놓는다(`bottomOffset: 170`, 기본 위치 Safe Area + 16px에서 버튼 영역(버튼 160 + 아래 14) 위 12px까지. 계산값이고 화면에서 토스트를 띄워 재지는 않음). 다시 눌러 재시도할 수 있다. 오류 원인은 따로 기록하지 않는다(Sentry 전송 없음).
 - Disabled·invalid: 다른 소셜 로그인이 진행 중인 버튼.
-- Success·완료 후 이동: 성공하면 `nextPath`(약관 `/signup/terms`)로 `router.push`하고 이동할 때까지 버튼을 잠근 채 둔다(약관에서 뒤로 가면 로그인으로 돌아온다. 기획의 「로그인 해제」는 인증 연결 때 붙인다). 가입 상태별 분기는 인증 BFF가 생긴 뒤에 붙는다. 소셜 로그인 호출(`signIn`)이 아직 없어 실제로는 이동이 일어나지 않는다.
+- Success·완료 후 이동: 성공하면 `nextPath`(약관 `/signup/terms`)로 `router.push`하고 이동할 때까지 버튼을 잠근 채 둔다(약관에서 뒤로 가면 로그인으로 돌아온다. 기획의 「로그인 해제」는 인증 연결 때 붙인다). 가입 상태별 분기는 `/members/me/onboarding` 연결 때 붙는다. 쉘 SDK가 없어 실제로는 항상 실패해 이동이 일어나지 않는다.
 
 ## 데이터 의존성
 
 - Query와 enabled 조건: 없음.
 - Mutation·cache 영향: 없음. 연결 시 로그인 성공 뒤 `auth.session`을 invalidate한 뒤 이동한다(`docs/specs/login-signup.md` API 계약).
 - API 계약 확인 항목: 소셜 로그인 요청의 method·path·필드, 쿠키 설정 주체(`docs/specs/login-signup.md` 확인할 항목 백엔드 1~3).
-- 연결 지점: `LoginEntry`의 `signIn` prop(테스트용·연결용)과 `useSocialLogin`이 받는 `SignIn` 함수 타입(`(provider) => Promise<'success' | 'cancelled'>`). 실제 연동은 이 함수를 구현해 넘기면 된다. 서버 컴포넌트인 page에서 함수를 prop으로 넘길 수 없으므로, 연결할 때는 `LoginEntry` 안에서 bridge·BFF 호출을 가져온다.
+- 연결 지점: `LoginEntry`의 `signIn` prop(기본값 `signInWithSocial`, 테스트에서 대체)과 `useSocialLogin`이 받는 `SignIn` 함수 타입(`(provider) => Promise<'success' | 'cancelled'>`). 서버 컴포넌트인 page에서 함수를 prop으로 넘길 수 없어 `LoginEntry`가 `features/auth/lib/socialSignIn.ts`를 직접 가져온다.
+- `signInWithSocial`: 앱 쉘이 아니거나 쉘이 `socialLogin`을 지원하지 않으면 던진다(실패 토스트). 쉘 결과를 `socialLoginResultSchema`로 검사하고 요청한 provider와 같은지 확인한 뒤 `POST /api/auth/login`(`features/auth/api/login.ts`)으로 `provider`·`idToken`·`nonce`를 보낸다. `cancelled`는 BFF를 부르지 않고 취소로 돌려준다. 토큰·nonce는 저장·기록하지 않는다. 로그인 창은 사용자가 끝낼 때까지 기다리므로 타임아웃이 없는 `loginBridge`를 쓴다.
 
 ## UI와 접근성
 
@@ -65,7 +66,7 @@
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/login`이 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)
 - [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
 - [x] 상태별 UI: 기본·진행 중(누른 버튼 / 나머지 비활성)·실패·취소·성공 잠금을 테스트로 확인. 진행 중 버튼의 실제 모양은 눈으로 확인하지 못함
-- [x] 관련 test: `LoginEntry.test.tsx`(제목·슬로건·main, 배경 영상 자동 재생 조건(`muted`·`playsInline`·`loop`)과 낭독 제외, 동작 줄이기 시 영상 없음, 버튼 순서, 소셜별 호출, 진행 중 상태, 연타 방지, 실패·취소·성공, 재시도, 연결 전에는 무반응, 진행 중 상태 안내)
+- [x] 관련 test: `LoginEntry.test.tsx`(제목·슬로건·main, 배경 영상 자동 재생 조건(`muted`·`playsInline`·`loop`)과 낭독 제외, 동작 줄이기 시 영상 없음, 버튼 순서, 소셜별 호출, 진행 중 상태, 연타 방지, 실패·취소·성공, 재시도, 앱 밖에서 누르면 실패 토스트, 진행 중 상태 안내)와 `socialSignIn.test.ts`(토큰·nonce 전달, Google nonce 생략, 취소, 쉘 밖·미지원, SDK 오류, 계약 위반·provider 불일치, BFF 실패. bridge와 `bffApi`는 가짜로 대체)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
 - [x] Chromium(dev 서버, 창 1280×577)에서 영상 자동 재생, 앱 폭 전체를 덮는 배경, 심볼↔워드마크 6·워드마크↔슬로건 8·슬로건↔버튼 32·버튼 아래 14를 측정함. 375×812 화면과 실기기(iOS WebView 자동 재생)는 확인하지 못함
 
@@ -83,4 +84,4 @@
 - 실패 토스트 위치 (확정): 기획 명세가 오류 토스트를 "하단 버튼 바로 위"에 두라고 해서(`Toast.spec.md` 표시 위치) `bottomOffset`으로 버튼 영역 위 12px에 놓았다. 12px 간격은 기획·Figma에 없어 정한 값이다(디자이너 확인). Figma 설계서는 「오류 메시지 노출」이라고만 적었다. 버튼 영역 높이가 바뀌면(버튼 추가, 아래 여백 변경) 이 값도 함께 바꾼다.
 - 취소 안내 (기획 확인): 로그인 창을 닫았을 때 토스트를 보일지 명세가 충돌한다(`docs/specs/login-signup.md` 기획 확인 4번). 지금은 토스트 없이 버튼만 처음 상태로 돌린다.
 - 접근 조건 (미정): 로그인 상태일 때 어디로 보낼지는 인증 BFF와 도착지 규칙이 정해진 뒤 연결한다.
-- 노출 전 선행 조건: 소셜 로그인이 연결되기 전에는 버튼이 눌려도 반응이 없다. UT·배포에 노출하기 전에 연동하거나 이 route를 노출하지 않는다. 정적 페이지로 생성되어 색인될 수 있으므로 metadata·색인 방지(`docs/workflows/seo.md`)도 이 노출 정책에 포함해 정한다.
+- 노출 전 선행 조건: 쉘의 소셜 SDK가 연결되기 전에는 버튼을 눌러도 실패 토스트만 나온다. UT·배포에 노출하기 전에 연동하거나 이 route를 노출하지 않는다. 정적 페이지로 생성되어 색인될 수 있으므로 metadata·색인 방지(`docs/workflows/seo.md`)도 이 노출 정책에 포함해 정한다.
