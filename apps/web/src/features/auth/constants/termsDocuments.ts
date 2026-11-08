@@ -52,4 +52,38 @@ export const TERMS_DOCUMENTS: Record<TermsDocumentId, TermsDocumentContent> = {
       { title: '제 4조 (회원의 의무 및 데이터 보존)', paragraphs: [duty] },
     ],
   },
+  // 임시 문구(기획: 선택 약관 원문은 확인 중). 출생연도·성별 수집 동의
+  demographics: {
+    title: '추가 개인정보 수집 및 이용 동의',
+    effectiveDate: '2025. 01. 01',
+    version: '1.0',
+    articles: [
+      {
+        title: '제 1조 (목적)',
+        paragraphs: [
+          '회사는 서비스 개선을 위한 통계 분석을 목적으로 출생연도와 성별을 선택적으로 수집합니다.',
+        ],
+      },
+      {
+        title: '제 2조 (수집 항목)',
+        items: [
+          '출생연도(네 자리 연도)',
+          '성별(여성 또는 남성)',
+          '입력 시점(가입 완료 때 입력한 값)',
+        ],
+      },
+      {
+        title: '제 3조 (이용 범위)',
+        paragraphs: [
+          '수집한 출생연도와 성별은 통계 분석에만 활용하며, 다른 사용자에게 공개되지 않습니다.',
+        ],
+      },
+      {
+        title: '제 4조 (동의하지 않는 경우)',
+        paragraphs: [
+          '이 항목에 동의하지 않아도 서비스를 이용할 수 있으며, 출생연도와 성별은 입력하지 않습니다.',
+        ],
+      },
+    ],
+  },
 };

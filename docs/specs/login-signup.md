@@ -246,6 +246,8 @@ Entry와 소셜 로그인 (1.2.1~1.2.6, AUTH-01·02·06)
 6. 닉네임 중복 확인의 호출 제한.
 7. `GET /members/me/onboarding`을 가입 중(`IN_PROGRESS`) 토큰으로도 호출할 수 있는지, `defaultBunchId`가 「마지막으로 쓴 번치가 유효하지 않으면 가장 최근 번치」 규칙(1.2.8)을 이미 반영하는지, 가입 완료인데 약관 미동의인 응답이 있을 수 있는지. 웹은 로그인 뒤 이 응답으로 도착 화면을 정한다(#259, guard 없음).
 
+8. 선택 약관(`DEMOGRAPHICS`)에 동의하지 않은 경우 `POST /auth/terms/agreements`에 `agreed: false`로 보내야 하는지, 아예 빼도 되는지. 지금 웹은 동의했을 때만 보낸다.
+
 ### 기술·환경
 
 1. 앱 식별자(bundle identifier)와 카카오·Google·Apple 앱 등록 정보가 없다. 쉘 네이티브 구현의 선행 조건이다.
