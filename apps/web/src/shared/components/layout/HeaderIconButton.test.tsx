@@ -36,5 +36,13 @@ describe('HeaderIconButton', () => {
     expect(primary).not.toContain('text-icon-quaternary');
     expect(subtle).toContain('text-icon-quaternary');
     expect(subtle).not.toContain('text-icon-primary');
+
+    rerender(
+      <HeaderIconButton label="닫기" tone="inversed">
+        <svg />
+      </HeaderIconButton>,
+    );
+    // 어두운 배경(사진 조정)의 흰 아이콘
+    expect(screen.getByRole('button', { name: '닫기' }).className).toContain('text-icon-inversed');
   });
 });

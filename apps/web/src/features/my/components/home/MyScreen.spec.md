@@ -55,19 +55,19 @@
 
 - Component mapping:
 
-| Figma                    | 값                                                  | 사용한 컴포넌트·토큰                                                           |
-| ------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 헤더                     | `Header`(Varient=Icon), 제목 MY                     | `Header` + `h1`                                                                |
-| 헤더와 프로필 사이       | 12                                                  | `pt-padding-p6`                                                                |
-| 프로필 행                | 좌우 16, 위아래 10, 높이 84                         | `px-padding-p8 py-padding-p5`                                                  |
-| 프로필 이미지            | 64(M), 테두리 `#EAEAEA`                             | `ProfileImage size="M"` + `border-border-tertiary border`                      |
-| 이미지와 닉네임          | 10                                                  | `gap-s5`                                                                       |
-| 닉네임                   | Body-1-SemiBold, `#000000`                          | `typography-body-1-semi-bold text-text-primary`                                |
-| 오른쪽 화살표            | 24(L), `#BCBEC2`                                    | `LineChevronRightLargeIcon`, `text-icon-quaternary`                            |
-| 프로필과 메뉴, 묶음 사이 | 20, 12                                              | `gap-s10`, `gap-s6`                                                            |
-| 묶음 제목                | Body-4-SemiBold `text-quaternary`, 좌우 16·위아래 6 | `typography-body-4-semi-bold text-text-quaternary px-padding-p8 py-padding-p3` |
-| 제목과 메뉴, 메뉴 좌우   | 4, 12                                               | `gap-s2`, `px-padding-p6`                                                      |
-| 메뉴 한 줄               | `Menu Label`(오른쪽 화살표)                         | `MenuLabel`                                                                    |
+| Figma                    | 값                                                                                     | 사용한 컴포넌트·토큰                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 헤더                     | `Header`(Varient=Icon), 제목 MY                                                        | `Header` + `h1`                                                              |
+| 헤더와 프로필 사이       | 12                                                                                     | `pt-padding-p6`                                                              |
+| 프로필 행                | 좌우 16, 위아래 10, 높이 84                                                            | `px-padding-p8 py-padding-p5`                                                |
+| 프로필 이미지            | 64(M), 테두리 `#EAEAEA`                                                                | `ProfileImage size="M"` + `border-border-tertiary border`                    |
+| 이미지와 닉네임          | 10                                                                                     | `gap-s5`                                                                     |
+| 닉네임                   | Body-1-SemiBold, `#000000`                                                             | `typography-body-1-semi-bold text-text-primary`                              |
+| 오른쪽 화살표            | 24(L), `#BCBEC2`                                                                       | `LineChevronRightLargeIcon`, `text-icon-quaternary`                          |
+| 프로필과 메뉴, 묶음 사이 | 20, 12                                                                                 | `gap-s10`, `gap-s6`                                                          |
+| 묶음 제목                | Body-4-SemiBold `text-tertiary`(디자인 변경, 이전 `text-quaternary`), 좌우 16·위아래 6 | `typography-body-4-semi-bold text-text-tertiary px-padding-p8 py-padding-p3` |
+| 제목과 메뉴, 메뉴 좌우   | 4, 12                                                                                  | `gap-s2`, `px-padding-p6`                                                    |
+| 메뉴 한 줄               | `Menu Label`(오른쪽 화살표)                                                            | `MenuLabel`                                                                  |
 
 - Keyboard·focus·accessible name: 제목 「MY」가 `h1`, 묶음 제목은 `h2`다. 묶음은 이름 없는 `section`이라 랜드마크가 아니다(「알림」 묶음에 이름을 붙이면 토스트 영역 「알림」과 같은 이름의 랜드마크가 생겨 axe `landmark-unique` 위반). 프로필 행 링크 이름은 「{닉네임} 프로필 수정」(뒷부분은 화면에 보이지 않음)이고 이미지는 장식이다. 포커스 윤곽선은 프로필 행 안쪽 2px `border-brand`, 메뉴는 `MenuLabel` 기본.
 - Responsive·긴 텍스트·overflow: 닉네임은 한 줄 말줄임(최대 12자라 실제로는 거의 잘리지 않음), 화살표는 줄어들지 않는다. 메뉴가 화면보다 길면 `PageShell` 본문이 스크롤된다.

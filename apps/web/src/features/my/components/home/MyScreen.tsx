@@ -134,7 +134,7 @@ function MenuSection({ title, children }: { title: string; children: ReactNode }
   return (
     // 이름 붙은 region으로 두면 토스트 영역(「알림」)과 같은 이름의 랜드마크가 생겨 h2 제목만 둔 묶음으로
     <section className="gap-s2 flex flex-col">
-      <h2 className="typography-body-4-semi-bold text-text-quaternary px-padding-p8 py-padding-p3">
+      <h2 className="typography-body-4-semi-bold text-text-tertiary px-padding-p8 py-padding-p3">
         {title}
       </h2>
       <ul className="px-padding-p6 flex flex-col">{children}</ul>
