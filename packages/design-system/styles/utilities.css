@@ -1,0 +1,9 @@
+/* Tailwind v4에 없어 직접 정의하는 유틸리티(tokens.css는 생성물이라 별도 파일) */
+
+/* 스크롤바를 그리지 않음(데스크톱·개발자 도구에서 막대 자리가 생기지 않게) */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

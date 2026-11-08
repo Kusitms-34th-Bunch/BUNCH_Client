@@ -208,4 +208,16 @@ describe('ChipButton 모션', () => {
     );
     expect(screen.getByRole('button').className).not.toContain('active:');
   });
+
+  it('rightIcon에 요소를 주면 화살표 대신 그 요소를 그린다', () => {
+    render(
+      <ChipButton rightIcon={<svg data-testid="custom-icon" aria-hidden="true" />}>
+        콕하기
+      </ChipButton>,
+    );
+    const chip = screen.getByRole('button', { name: '콕하기' });
+
+    expect(chip.querySelector('[data-testid="custom-icon"]')).toBeTruthy();
+    expect(chip.querySelectorAll('svg')).toHaveLength(1);
+  });
 });
