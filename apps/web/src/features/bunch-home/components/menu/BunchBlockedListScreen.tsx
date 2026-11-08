@@ -2,7 +2,9 @@
 
 import { ActionDialog, Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { ProfileImage, ProfileListItem } from '@app/design-system/web';
+import Image, { type StaticImageData } from 'next/image';
 import { useId, useRef, useState } from 'react';
+import blockedListEmpty from '@/shared/assets/images/empty/blocked-list-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { BlockedBunch } from '../../lib/types';
@@ -92,25 +94,26 @@ export function BunchBlockedListScreen({
         </div>
       ) : null}
       {blocked?.length === 0 ? (
-        // 화면설계서 3번: 안내 이미지(최종본 전달 전 자리표시)와 문구, 별도 동작 없음
+        // 화면설계서 3번: 안내 이미지와 문구, 별도 동작 없음(Figma 4331:59751: 이미지 130×109, 이미지와 문구 16, 제목·설명 4)
         // Figma 1873:33828은 본문 세로 가운데보다 약 38 위라 아래 여백 72로 맞춤
         <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">
-          <div className="gap-s9 flex flex-col items-center text-center">
-            <div aria-hidden="true" className="bg-surface-tertiary h-36 w-43" />
-            <div className="gap-s3 flex flex-col items-center">
+          <div className="gap-s8 flex flex-col items-center text-center">
+            {/* SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김 */}
+            <Image src={blockedListEmpty as StaticImageData} alt="" width={130} height={109} />
+            <div className="gap-s2 flex flex-col items-center">
               <h2
                 ref={(node) => {
                   focusRef.current = node;
                 }}
                 tabIndex={-1}
                 aria-describedby={emptyDescriptionId}
-                className="typography-body-1-medium text-text-secondary focus:outline-none"
+                className="typography-body-1-medium text-text-tertiary focus:outline-none"
               >
                 {BUNCH_HOME_MESSAGES.blockedEmptyTitle}
               </h2>
               <p
                 id={emptyDescriptionId}
-                className="typography-caption-1-regular text-text-tertiary whitespace-pre-line"
+                className="typography-body-4-regular text-text-quaternary whitespace-pre-line"
               >
                 {BUNCH_HOME_MESSAGES.blockedEmptyDescription}
               </p>

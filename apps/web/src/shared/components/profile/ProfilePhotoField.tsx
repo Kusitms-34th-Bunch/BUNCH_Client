@@ -3,7 +3,7 @@ import { CameraButton, ProfileImage } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
 import { isNativeShell } from '../../bridge/client';
 import { usePhotoPicker } from '../../hooks/usePhotoPicker';
-import { DEFAULT_BUNCH_IMAGE } from '../../lib/bunchProfile';
+import { defaultProfileImage } from '../../lib/bunchProfile';
 import { PROFILE_IMAGE_RULES } from '../../lib/imageFile';
 import { closeKeyboard } from '../../lib/keyboard';
 import { PhotoCropScreen } from './PhotoCropScreen';
@@ -18,13 +18,19 @@ type ProfilePhotoFieldProps = {
   value: string | undefined;
   /** 조정을 마친 사진(512px JPEG data URL), 기본 이미지로 바꾸면 undefined. 저장은 호출하는 쪽 */
   onChange: (_value: string | undefined) => void;
+  /** 사진이 없을 때 보일 기본 이미지(지금 번치 타입에 맞춘 것). 가입 중처럼 번치가 없으면 타입 1 */
+  defaultSrc?: string;
 };
 
 /**
  * 프로필 사진과 사진 변경 흐름(가입 프로필·MY 프로필 수정 공통, 화면 설계서 MY(2))
  * 카메라 버튼 → 「프로필 사진 설정」 선택지 → 앨범 선택 → 원형 조정 → 미리보기. 앱도 시스템 편집 없이 이 조정 화면 사용
  */
-export function ProfilePhotoField({ value, onChange }: ProfilePhotoFieldProps) {
+export function ProfilePhotoField({
+  value,
+  onChange,
+  defaultSrc = defaultProfileImage(),
+}: ProfilePhotoFieldProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cropSrc, setCropSrc] = useState<string>();
   const [showLoading, setShowLoading] = useState(false);
@@ -99,7 +105,7 @@ export function ProfilePhotoField({ value, onChange }: ProfilePhotoFieldProps) {
   return (
     <>
       <div ref={photoRef} className="relative h-22.5 w-23.75">
-        <ProfileImage src={value ?? DEFAULT_BUNCH_IMAGE} className="absolute top-0 left-0.75" />
+        <ProfileImage src={value ?? defaultSrc} className="absolute top-0 left-0.75" />
         <CameraButton
           aria-label="프로필 사진 변경"
           className="absolute top-15.5 left-16.75"

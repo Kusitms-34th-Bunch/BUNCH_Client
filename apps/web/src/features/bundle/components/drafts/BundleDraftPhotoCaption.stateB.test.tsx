@@ -56,10 +56,11 @@ beforeEach(() => {
 });
 
 describe('UT 상태 B 사진 상세 화면(사진 빼기)', () => {
-  it('캡션이 없는 3번 사진은 바로 빼지고 서버 구성도 바뀐다', async () => {
+  it('3번 사진은 확인 창에서 「삭제하기」를 누르면 빼지고 서버 구성도 바뀐다', async () => {
     const id = await renderCaptionScreen(P3);
 
     await userEvent.click(await screen.findByRole('button', { name: '3번째 사진 빼기' }, WAIT));
+    await userEvent.click(await screen.findByRole('button', { name: '삭제하기' }, WAIT));
 
     await waitFor(() => expect(serverPhotos(id)).toHaveLength(3), WAIT);
     expect(serverPhotos(id).map((photo) => photo.photoId)).toEqual([P1, P2, P4]);

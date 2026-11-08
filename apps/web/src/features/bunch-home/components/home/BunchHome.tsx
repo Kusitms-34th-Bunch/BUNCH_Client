@@ -75,6 +75,7 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
       data={data}
       actions={actions}
       onAddBunch={() => router.push(BUNCH_HOME_PATHS.startBunch)}
+      onOpenPlaces={() => router.push(BUNCH_HOME_PATHS.places)}
       onCreateBundle={() => router.push(BUNCH_HOME_PATHS.createBundle)}
       onOpenDraft={(bundleId) => router.push(BUNCH_HOME_PATHS.draft(bundleId))}
     />

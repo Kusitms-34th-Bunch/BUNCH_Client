@@ -74,7 +74,7 @@ describe('ProfileSetup', () => {
     render(<ProfileSetup nextPath={NEXT_PATH} />);
 
     expect(screen.getByRole('button', { name: '프로필 사진 변경' })).toBeTruthy();
-    expect(document.querySelector('img[src="/images/default-bunch.png"]')).toBeTruthy();
+    expect(document.querySelector('img[src="/images/default-bunch/type-1.svg"]')).toBeTruthy();
   });
 
   it('처음에는 시작하기 버튼이 비활성이고 글자 수는 0/12다', () => {

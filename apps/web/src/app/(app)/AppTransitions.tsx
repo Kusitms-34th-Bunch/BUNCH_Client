@@ -265,6 +265,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 콕한 장소도 번치 홈에서 한 단계 들어가는 drill
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.places,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
   {
     from: BUNCH_HOME_PATHS.follows,
     to: BUNCH_HOME_PATHS.followRequests,

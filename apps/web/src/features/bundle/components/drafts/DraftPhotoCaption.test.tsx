@@ -254,20 +254,23 @@ describe('DraftPhotoCaption 캡션', () => {
 });
 
 describe('DraftPhotoCaption 사진 빼기', () => {
-  it('캡션이 없는 사진은 확인 없이 바로 뺀다', async () => {
+  it('캡션이 없는 사진도 확인 창을 거쳐 「삭제하기」를 눌러야 뺀다', async () => {
     renderCaption();
 
     await userEvent.click(screen.getByRole('button', { name: '2번째 사진 빼기' }));
+    expect(screen.getByText(BUNDLE_MESSAGES.removeConfirmTitle)).toBeInTheDocument();
+    expect(screen.getByText(BUNDLE_MESSAGES.removeConfirmDescription)).toBeInTheDocument();
+    expect(actions.removePhoto).not.toHaveBeenCalled();
 
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));
     expect(actions.removePhoto).toHaveBeenCalledWith('draft-photo-2');
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
-  it('캡션이 있는 사진은 확인 창을 거쳐 「삭제하기」를 눌러야 뺀다', async () => {
+  it('캡션이 있는 사진도 같은 확인 창을 거쳐 「삭제하기」를 눌러야 뺀다', async () => {
     renderCaption();
 
     await userEvent.click(screen.getByRole('button', { name: '1번째 사진 빼기' }));
-    expect(screen.getByText(BUNDLE_MESSAGES.removeCaptionedTitle)).toBeInTheDocument();
+    expect(screen.getByText(BUNDLE_MESSAGES.removeConfirmTitle)).toBeInTheDocument();
     expect(actions.removePhoto).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));

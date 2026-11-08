@@ -7,7 +7,7 @@ type BunchProfileProps = {
     BunchHomeDetail,
     'name' | 'description' | 'isPrivate' | 'followerCount' | 'followingCount' | 'memberCount'
   >;
-  /** 「콕한 장소」(화면이 아직 없어 호출 지점만 둠) */
+  /** 「콕한 장소」 버튼 누름(콕한 장소 화면으로 이동, 번치 홈이 연결) */
   onPlacesClick?: (() => void) | undefined;
   /** 「콕한 장소」 표시(다른 번치 프로필은 Figma 3086:68423에 없어 숨김) */
   showPlaces?: boolean | undefined;

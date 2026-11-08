@@ -48,17 +48,18 @@ beforeEach(() => {
 });
 
 describe('usePhotoRemoval', () => {
-  it('캡션이 없는 사진은 바로 빼며, 스냅 끄기 → 지우기 → 새 자리 활성 번호 → 포커스 예약 → (다음 렌더에서) 스크롤 순서로 처리한다', () => {
+  it('확인 창에서 「삭제하기」를 누르면 스냅 끄기 → 지우기 → 새 자리 활성 번호 → 포커스 예약 → (다음 렌더에서) 스크롤 순서로 처리한다', () => {
     const { result, rerender } = setup(three);
 
     act(() => result.current.requestRemove(three[1]!));
+    act(() => result.current.confirmRemove());
     rerender();
 
     expect(calls).toEqual([
       'pauseSnap',
       'removePhoto:b',
       'setActiveIndex:1',
-      'focus:1:0',
+      'focus:1:150',
       'scrollToIndex:1',
     ]);
     expect(announce).toHaveBeenCalledWith({ text: '사진을 뺐어요. 2장이 남았어요.', index: 1 });
@@ -70,6 +71,9 @@ describe('usePhotoRemoval', () => {
 
     act(() => result.current.requestRemove(three[1]!));
     expect(list.scrollToIndex).not.toHaveBeenCalled();
+    act(() => result.current.confirmRemove());
+    // 확정으로 다시 그려지는 렌더에서 한 번만 보정
+    expect(list.scrollToIndex).toHaveBeenCalledTimes(1);
     rerender();
     expect(list.scrollToIndex).toHaveBeenCalledTimes(1);
     rerender();
@@ -81,24 +85,51 @@ describe('usePhotoRemoval', () => {
     const { result, rerender } = setup(three);
 
     act(() => result.current.requestRemove(three[2]!));
+    act(() => result.current.confirmRemove());
     rerender();
 
     expect(calls).toContain('setActiveIndex:1');
     expect(calls).toContain('scrollToIndex:1');
   });
 
-  it('캡션이 있는 사진은 확인 창을 열고, 확정하면 확인 창이 닫히는 시간(150ms) 뒤에 포커스를 옮긴다', () => {
+  it('사진을 빼려면 확인 창을 열고, 확정하면 확인 창이 닫히는 시간(150ms) 뒤에 포커스를 옮긴다', () => {
     list.current = 0;
     const { result } = setup(three);
 
     act(() => result.current.requestRemove(three[0]!));
-    expect(result.current.removeDialog).toEqual({ kind: 'captioned', photoId: 'a' });
+    expect(result.current.removeDialog).toEqual({ kind: 'confirm', photoId: 'a' });
     expect(removePhoto).not.toHaveBeenCalled();
 
     act(() => result.current.confirmRemove());
     expect(removePhoto).toHaveBeenCalledWith('a');
     expect(list.focusPhotoView).toHaveBeenCalledWith(0, 150);
     expect(result.current.removeDialog).toBeUndefined();
+  });
+
+  it('확인 창이 떠 있는 사이 한 장만 남으면 확정해도 빼지 않고 안내 창으로 바꾼다', () => {
+    const { result, rerender } = renderHook(
+      ({ photos }: { photos: readonly DraftPhoto[] }) =>
+        usePhotoRemoval({
+          photos,
+          removePhoto,
+          list,
+          canEdit: true,
+          isLocked: () => false,
+          onDenied,
+          onBlocked,
+          announce,
+        }),
+      { initialProps: { photos: three } },
+    );
+    act(() => result.current.requestRemove(three[0]!));
+    expect(result.current.removeDialog).toEqual({ kind: 'confirm', photoId: 'a' });
+
+    // 그 사이 다른 멤버가 두 장을 빼 한 장만 남음
+    rerender({ photos: [three[0]!] });
+    act(() => result.current.confirmRemove());
+
+    expect(removePhoto).not.toHaveBeenCalled();
+    expect(result.current.removeDialog).toEqual({ kind: 'last', photoId: 'a' });
   });
 
   it('마지막 한 장이면 빼지 않고 안내 창만 연다', () => {
