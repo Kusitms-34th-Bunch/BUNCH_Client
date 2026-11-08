@@ -10,13 +10,14 @@ import {
 } from '@app/design-system';
 import { BunchSwitchSheet, FloatingButton, MenuTabs } from '@app/design-system/web';
 import { useState } from 'react';
-import type { CharacterType } from '@/shared/lib/bunchProfile';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { BunchHomeActions, BunchHomeData, BunchSummary, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
 import { switchStatus } from '../../lib/bunchSwitch';
+import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
+import { BunchCharacter } from '../BunchCharacter';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
@@ -24,18 +25,6 @@ import { BundleEmpty } from './BundleEmpty';
 import { DraftBundleList } from './DraftBundleList';
 
 type BundleTab = 'completed' | 'draft';
-
-// 성격별 위쪽 배경(Figma 번치 메인 1873:29989). TYPE_1 연보라는 brand-subtle-1과 같은 값
-const BACKGROUNDS = {
-  TYPE_1: {
-    app: 'brand-subtle-1',
-    frame: 'from-surface-brand-subtle-1',
-    top: 'bg-surface-brand-subtle-1',
-  },
-  TYPE_2: { app: 'orange-50', frame: 'from-primitive-orange-50', top: 'bg-primitive-orange-50' },
-  TYPE_3: { app: 'pink-50', frame: 'from-primitive-pink-50', top: 'bg-primitive-pink-50' },
-  TYPE_4: { app: 'green-50', frame: 'from-primitive-green-50', top: 'bg-primitive-green-50' },
-} as const satisfies Record<CharacterType, { app: string; frame: string; top: string }>;
 
 // 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
 const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
@@ -60,7 +49,7 @@ export function BunchHomeScreen({
   onAddBunch,
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
-  const background = BACKGROUNDS[current.characterType];
+  const background = BUNCH_BACKGROUNDS[current.characterType];
   const [tab, setTab] = useState<BundleTab>('completed');
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
@@ -135,13 +124,12 @@ export function BunchHomeScreen({
           switched && 'animate-[page-content-in_150ms_ease-out] motion-reduce:animate-none',
         )}
       >
-        {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터 에셋은 아직 없어 회색 자리표시이고 흰 시트에 32px 걸침 */}
+        {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터는 120px 상자(Character Wrapper) 안 가로 중앙·아래 12px 위에 놓이고 상자는 흰 시트에 32px 걸침 */}
         <div className={cn('relative h-34.5 shrink-0', background.top)}>
-          <div
-            aria-hidden="true"
-            // UT 진행자 장치가 연속 터치를 읽는 표식, 이 화면의 동작과는 무관(UT가 끝나면 지움)
-            data-facilitator-trigger="bunch-character"
-            className="right-s8 bg-surface-tertiary absolute top-7.5 z-10 size-30"
+          <BunchCharacter
+            characterType={current.characterType}
+            stage={current.stage}
+            facilitatorTrigger
           />
         </div>
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">

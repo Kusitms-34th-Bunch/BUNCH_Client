@@ -86,10 +86,10 @@ export function LocationSearchSheet({
           </p>
           {results === undefined && (
             <div className="gap-s2 px-s8 flex flex-1 flex-col items-center justify-center text-center">
-              <p className="typography-body-1-medium text-text-quaternary">
+              <p className="typography-body-1-medium text-text-tertiary">
                 {BUNDLE_MESSAGES.locationGuideTitle}
               </p>
-              <p className="typography-body-3-regular text-text-quinary whitespace-pre-line">
+              <p className="typography-body-4-regular text-text-quaternary whitespace-pre-line">
                 {BUNDLE_MESSAGES.locationGuideDescription}
               </p>
             </div>

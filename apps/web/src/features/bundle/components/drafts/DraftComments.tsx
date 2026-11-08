@@ -55,6 +55,16 @@ export function DraftComments({ draft, viewer, editable, onChange, onDenied }: D
                   writing ? BUNDLE_MESSAGES.commentEditingLabel(member.name) : undefined
                 }
                 error={text.length >= COMMENT_MAX_LENGTH ? BUNDLE_MESSAGES.commentMax : undefined}
+                // 남의 카드는 터치·클릭해도 포커스(테두리 강조)가 생기지 않고 Tab 순서에서도 제외
+                tabIndex={mine ? undefined : -1}
+                onMouseDown={
+                  mine
+                    ? undefined
+                    : (event) => {
+                        event.preventDefault();
+                        if (!editable) onDenied();
+                      }
+                }
                 onFocus={editable ? undefined : onDenied}
                 onChange={(event) => onChange(member.id, event.target.value)}
               />

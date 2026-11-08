@@ -48,13 +48,12 @@ export function RecommendSheet({
           </BottomSheet.Title>
         </BottomSheet.Header>
         {empty ? (
-          <BottomSheet.Body className="gap-s3 flex flex-col items-center justify-center text-center">
-            {/* Figma는 이 자리에 회색 사각형(일러스트 자리표시)만 있어 같은 크기의 장식 블록으로 둠 */}
-            <div aria-hidden="true" className="bg-surface-tertiary mb-s4 size-28" />
-            <p className="typography-body-1-semi-bold text-text-quaternary">
+          // Figma 4744:89611: 일러스트 없이 문구만 가운데에 두고, 제목·설명 간격 4
+          <BottomSheet.Body className="gap-s2 flex flex-col items-center justify-center text-center">
+            <p className="typography-body-1-medium text-text-tertiary">
               {BUNDLE_SELECT_MESSAGES.emptyTitle}
             </p>
-            <p className="typography-body-3-regular text-text-quaternary">
+            <p className="typography-body-4-regular text-text-quaternary">
               {BUNDLE_SELECT_MESSAGES.emptyDescription}
             </p>
           </BottomSheet.Body>
