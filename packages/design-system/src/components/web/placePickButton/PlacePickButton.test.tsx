@@ -20,4 +20,14 @@ describe('PlacePickButton', () => {
     expect(picked.className).toContain('bg-surface-inversed');
     expect(picked.className).not.toContain('text-text-secondary');
   });
+
+  it('label·pickedLabel을 주면 그 글자가 이름이 된다', () => {
+    const { rerender } = render(
+      <PlacePickButton picked={false} label="담기" pickedLabel="담았어요" />,
+    );
+    expect(screen.getByRole('button', { name: '담기' })).toBeTruthy();
+
+    rerender(<PlacePickButton picked label="담기" pickedLabel="담았어요" />);
+    expect(screen.getByRole('button', { name: '담았어요' })).toBeTruthy();
+  });
 });

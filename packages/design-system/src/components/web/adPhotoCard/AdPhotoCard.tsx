@@ -110,7 +110,8 @@ export const AdPhotoCard = (props: AdPhotoCardProps) => {
   return (
     <article
       aria-label={`광고 ${title}`}
-      className={cn(frame, 'flex flex-col', className)}
+      // 사진을 받기 전·실패 시에도 흰 글자가 보이게 어두운 바탕
+      className={cn(frame, 'bg-surface-inversed flex flex-col', className)}
       {...rest}
     >
       {/* 숨김으로 바뀔 때 낭독되도록 미리 둔 빈 알림 영역 */}
