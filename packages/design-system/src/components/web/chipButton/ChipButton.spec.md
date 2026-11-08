@@ -24,6 +24,7 @@
 
 - `children`(필수 글자), `size`(`S` 기본·`M`·`L`), `variant`(`solid` 기본·`outline`·`avatar`), `selected`(생략 가능, 값을 주면 토글 칩), `count`, `leftIcon`, `rightIcon`, `avatarSrc`, 그리고 native `<button>` 속성(`disabled`·`type` 제외).
 - Figma `leftIcon`·`rightIcon`의 기본값은 켜짐이지만, 아이콘 없는 칩이 흔해서 코드 기본값은 꺼짐이다. Figma 변형은 모두 표현할 수 있다.
+- `rightIcon`은 `true`면 아래 화살표, 아이콘 요소를 주면 그 아이콘을 그린다(Figma에서 아이콘을 바꿔 끼운 인스턴스, 예: 콕하기의 손가락 `PlacePickButton`). 넘기는 아이콘에 `aria-hidden`을 붙인다.
 - avatar에서는 왼쪽에 원 이미지를 그리고 `leftIcon`은 쓰지 않는다. `avatarSrc`가 없으면 배경색 원만 그린다.
 - 호출자 소유 책임: 글자·개수, 선택 상태, 이미지 주소, 선택 규칙.
 
