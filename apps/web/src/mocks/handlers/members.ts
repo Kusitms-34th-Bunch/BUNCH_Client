@@ -42,7 +42,12 @@ export const memberHandlers = [
 
   // POST /api/v1/members/me/registration: multipart 본문은 읽지 않고 가입 완료만 돌려줌(가짜 서버는 이미 가입을 마친 상태)
   http.post('/api/members/me/registration', () =>
-    ok({ memberId: MOCK_MY_MEMBER_ID, signupStatus: 'COMPLETED', nickname: '큐시즘', imageUrl: null }),
+    ok({
+      memberId: MOCK_MY_MEMBER_ID,
+      signupStatus: 'COMPLETED',
+      nickname: '큐시즘',
+      imageUrl: null,
+    }),
   ),
 
   // GET /api/v1/members/me/onboarding: 가짜 서버는 가입을 마친 시연 사용자를 가정(가입 중 시나리오는 server.use로 덮어씀)
