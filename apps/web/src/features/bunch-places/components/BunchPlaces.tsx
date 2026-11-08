@@ -31,16 +31,25 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
   // 프로필 이미지가 없는 멤버는 지금 번치 타입의 기본 이미지
   const defaultImage = useDefaultProfileImage();
 
+  // 클립보드 쓰기는 누른 순간에 하고(사용자 제스처), 결과 토스트는 시트가 닫힌 뒤 화면이 부름
   const copyAddress = async (place: KokPlace) => {
     try {
       await navigator.clipboard.writeText(copyTextOf(place));
+      return true;
+    } catch {
+      // 권한 거부·비보안 컨텍스트의 복사 실패
+      return false;
+    }
+  };
+
+  const copyDone = (copied: boolean) => {
+    if (copied) {
       toast(PLACES_MESSAGES.addressCopied, {
         icon: 'success',
         fullWidth: true,
         bottomOffset: TOAST_BOTTOM_OFFSET,
       });
-    } catch {
-      // 권한 거부·비보안 컨텍스트의 복사 실패 안내
+    } else {
       toast(PLACES_MESSAGES.error, { fullWidth: true, bottomOffset: TOAST_BOTTOM_OFFSET });
     }
   };
@@ -63,7 +72,8 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
       }))}
       places={places}
       onBack={() => backOr(backHref)}
-      onCopyAddress={(place) => void copyAddress(place)}
+      onCopyAddress={copyAddress}
+      onCopyDone={copyDone}
       onRemove={removePlace}
       onBrowseFeed={() => router.push(feedHref)}
     />

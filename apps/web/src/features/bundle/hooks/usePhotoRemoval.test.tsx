@@ -106,6 +106,32 @@ describe('usePhotoRemoval', () => {
     expect(result.current.removeDialog).toBeUndefined();
   });
 
+  it('확인 창이 떠 있는 사이 한 장만 남으면 확정해도 빼지 않고 안내 창으로 바꾼다', () => {
+    const { result, rerender } = renderHook(
+      ({ photos }: { photos: readonly DraftPhoto[] }) =>
+        usePhotoRemoval({
+          photos,
+          removePhoto,
+          list,
+          canEdit: true,
+          isLocked: () => false,
+          onDenied,
+          onBlocked,
+          announce,
+        }),
+      { initialProps: { photos: three } },
+    );
+    act(() => result.current.requestRemove(three[0]!));
+    expect(result.current.removeDialog).toEqual({ kind: 'confirm', photoId: 'a' });
+
+    // 그 사이 다른 멤버가 두 장을 빼 한 장만 남음
+    rerender({ photos: [three[0]!] });
+    act(() => result.current.confirmRemove());
+
+    expect(removePhoto).not.toHaveBeenCalled();
+    expect(result.current.removeDialog).toEqual({ kind: 'last', photoId: 'a' });
+  });
+
   it('마지막 한 장이면 빼지 않고 안내 창만 연다', () => {
     const only = photo('only', '유일');
     const { result } = setup([only]);

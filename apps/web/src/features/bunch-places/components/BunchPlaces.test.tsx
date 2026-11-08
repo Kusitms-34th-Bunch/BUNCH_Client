@@ -74,6 +74,10 @@ describe('BunchPlaces', () => {
     act(() => options?.action?.onClick());
 
     expect(await screen.findByText('해리단길')).toBeInTheDocument();
+    // 되돌려 다시 생긴 카드로 초점이 옮겨짐
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '해리단길 더보기' })).toHaveFocus(),
+    );
     expect(screen.getByRole('radio', { name: '전체 12' })).toBeInTheDocument();
   });
 

@@ -7,11 +7,15 @@ import { sortByRecent } from '../lib/places';
 import { BunchPlacesScreen } from './BunchPlacesScreen';
 
 const onBack = vi.fn();
-const onCopyAddress = vi.fn();
+const onCopyAddress = vi.fn<(_place: KokPlace) => Promise<boolean>>();
+const onCopyDone = vi.fn();
 const onRemove = vi.fn();
 const onBrowseFeed = vi.fn();
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  onCopyAddress.mockResolvedValue(true);
+});
 
 const renderScreen = (
   places: readonly KokPlace[] = sortByRecent(placesFixture),
@@ -23,6 +27,7 @@ const renderScreen = (
       places={places}
       onBack={onBack}
       onCopyAddress={onCopyAddress}
+      onCopyDone={onCopyDone}
       onRemove={onRemove}
       onBrowseFeed={onBrowseFeed}
     />,
@@ -116,7 +121,7 @@ describe('BunchPlacesScreen', () => {
   });
 
   describe('더보기 시트', () => {
-    it('「주소 복사하기」를 고르면 시트가 닫힌 뒤 복사를 요청한다', async () => {
+    it('「주소 복사하기」를 고르면 누른 순간 복사하고 결과 알림은 시트가 닫힌 뒤 요청한다', async () => {
       const user = userEvent.setup();
       renderScreen();
 
@@ -124,8 +129,21 @@ describe('BunchPlacesScreen', () => {
       expect(onCopyAddress).not.toHaveBeenCalled();
       await user.click(await screen.findByRole('button', { name: '주소 복사하기' }));
 
-      await waitFor(() => expect(onCopyAddress).toHaveBeenCalledOnce());
+      // 클립보드 쓰기는 사용자 제스처 안이어야 해서 시트가 닫히기 전에 이미 불림
+      expect(onCopyAddress).toHaveBeenCalledOnce();
       expect(onCopyAddress.mock.calls[0]?.[0]).toMatchObject({ id: 'bomnal-cafe' });
+      await waitFor(() => expect(onCopyDone).toHaveBeenCalledWith(true));
+    });
+
+    it('복사에 실패하면 실패 결과를 알린다', async () => {
+      onCopyAddress.mockResolvedValue(false);
+      const user = userEvent.setup();
+      renderScreen();
+
+      await user.click(screen.getByRole('button', { name: '봄날카페 더보기' }));
+      await user.click(await screen.findByRole('button', { name: '주소 복사하기' }));
+
+      await waitFor(() => expect(onCopyDone).toHaveBeenCalledWith(false));
     });
 
     it('「콕에서 빼기」를 고르면 시트가 닫힌 뒤 그 장소를 빼 달라고 요청한다', async () => {

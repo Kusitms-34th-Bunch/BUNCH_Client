@@ -22,8 +22,10 @@ type BunchPlacesScreenProps = {
   /** 최근에 콕한 순으로 정렬된 목록 */
   places: readonly KokPlace[];
   onBack: () => void;
-  /** 「주소 복사하기」(시트가 닫힌 뒤 호출) */
-  onCopyAddress: (_place: KokPlace) => void;
+  /** 「주소 복사하기」를 누른 순간 바로 호출(클립보드 쓰기는 사용자 제스처 안이어야 함). 복사했는지를 돌려줌 */
+  onCopyAddress: (_place: KokPlace) => Promise<boolean>;
+  /** 복사 결과 알림(시트가 닫힌 뒤 호출) */
+  onCopyDone: (_copied: boolean) => void;
   /** 「콕에서 빼기」(시트·모달이 닫힌 뒤 호출) */
   onRemove: (_place: KokPlace) => void;
   /** 번들에서 담아 온 장소 카드를 누름. 없으면 카드는 눌리지 않음(번들 상세가 생기면 연결) */
@@ -40,6 +42,7 @@ export function BunchPlacesScreen({
   places,
   onBack,
   onCopyAddress,
+  onCopyDone,
   onRemove,
   onOpenBundle,
   onBrowseFeed,
@@ -55,17 +58,34 @@ export function BunchPlacesScreen({
   const listRef = useRef<HTMLUListElement>(null);
   const emptyRef = useRef<HTMLHeadingElement>(null);
   const focusIndex = useRef<number | null>(null);
+  // 되돌려 다시 생긴 카드를 알아보기 위해 직전 목록의 장소 id를 기억
+  const previousIds = useRef(new Set(places.map((place) => place.id)));
 
   const counts = countByMember(places);
   const visible = filterByMember(places, selectedId);
 
   useEffect(() => {
+    const previous = previousIds.current;
+    previousIds.current = new Set(places.map((place) => place.id));
     const index = focusIndex.current;
-    if (index === null) return;
-    focusIndex.current = null;
-    const buttons = listRef.current?.querySelectorAll<HTMLElement>('button[aria-label$="더보기"]');
-    if (buttons && buttons.length > 0) buttons[Math.min(index, buttons.length - 1)]?.focus();
-    else emptyRef.current?.focus();
+    if (index !== null) {
+      focusIndex.current = null;
+      const buttons = listRef.current?.querySelectorAll<HTMLElement>(
+        'button[aria-label$="더보기"]',
+      );
+      if (buttons && buttons.length > 0) buttons[Math.min(index, buttons.length - 1)]?.focus();
+      else emptyRef.current?.focus();
+      return;
+    }
+    // 되돌리기로 다시 생긴 카드로 초점을 옮김(토스트가 사라져도 읽던 자리를 잃지 않게)
+    const restored = places.find((place) => !previous.has(place.id));
+    if (restored) {
+      listRef.current
+        ?.querySelector<HTMLElement>(
+          `[data-place-id="${restored.id}"] button[aria-label$="더보기"]`,
+        )
+        ?.focus();
+    }
   }, [places]);
 
   const removePlace = (place: KokPlace) => {
@@ -131,7 +151,7 @@ export function BunchPlacesScreen({
         // Figma 4096:76101: 칩 아래 24(칩 영역 아래 여백 4 포함), 카드 사이 4, 좌우 16
         <ul ref={listRef} className="gap-s2 px-padding-p8 pb-s8 flex flex-col pt-6">
           {visible.map((place) => (
-            <li key={place.id}>
+            <li key={place.id} data-place-id={place.id}>
               <LocationCard
                 placeName={place.name}
                 address={place.address ?? ''}
@@ -191,7 +211,11 @@ export function BunchPlacesScreen({
               leftIcon={<LineCopyMediumIcon aria-hidden />}
               onClick={() => {
                 const target = menuTarget;
-                if (target) afterClose.current = () => onCopyAddress(target);
+                if (target) {
+                  // 클립보드 쓰기는 누른 순간(사용자 제스처 안)에 하고, 결과 알림만 시트가 닫힌 뒤로 미룸
+                  const copied = onCopyAddress(target);
+                  afterClose.current = () => void copied.then(onCopyDone);
+                }
                 setMenuOpen(false);
               }}
             >

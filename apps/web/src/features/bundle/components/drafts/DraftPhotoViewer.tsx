@@ -241,6 +241,10 @@ export function DraftPhotoViewer({
           if (removeDialog && photos.some((photo) => photo.id === removeDialog.photoId)) {
             if (getPhotoEditors(draft, viewer, removeDialog.photoId).length > 0) {
               notify(BUNDLE_MESSAGES.editingBlocked);
+            } else if (getRemovePhotoKind(photos) === 'last') {
+              // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
+              setRemoveDialog({ kind: 'last', photoId: removeDialog.photoId });
+              return;
             } else {
               removeAndContinue(removeDialog.photoId);
             }

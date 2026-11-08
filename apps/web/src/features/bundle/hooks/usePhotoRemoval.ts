@@ -86,7 +86,11 @@ export function usePhotoRemoval({
     // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 다시 확인
     if (removeDialog && photos.some((photo) => photo.id === removeDialog.photoId)) {
       if (isLocked(removeDialog.photoId)) onBlocked();
-      else removeAndFocus(removeDialog.photoId);
+      else if (getRemovePhotoKind(photos) === 'last') {
+        // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
+        setRemoveDialog({ kind: 'last', photoId: removeDialog.photoId });
+        return;
+      } else removeAndFocus(removeDialog.photoId);
     }
     setRemoveDialog(undefined);
   };
