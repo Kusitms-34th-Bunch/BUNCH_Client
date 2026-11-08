@@ -189,6 +189,28 @@ describe('GET /api/dev/kakao/callback', () => {
     expect(session.requestLogin).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [
+      '서버 오류 코드 없이 상태만 있으면 상태를',
+      new ApiError({ message: 'x', category: 'server', status: 500 }),
+      'backend_http_500',
+    ],
+    [
+      '네트워크 오류면 그 구분을',
+      new ApiError({ message: 'x', category: 'network' }),
+      'backend_network',
+    ],
+    ['알 수 없는 오류면 일반 구분을', new Error('boom'), 'backend_login_failed'],
+  ])('백엔드 로그인이 실패했을 때 %s 알린다', async (_name, failure, expected) => {
+    stubTokenExchange({ ok: true, body: { id_token: 'kakao-id-token' } });
+    session.requestLogin.mockRejectedValue(failure);
+
+    const response = await callback(get('/api/dev/kakao/callback?code=c&state=st-1', flowCookie()));
+
+    expect(redirectedTo(response).searchParams.get('devLoginError')).toBe(expected);
+    expect(response.cookies.get('accessToken')).toBeUndefined();
+  });
+
   it('백엔드가 로그인을 거부하면 서버 오류 코드만 알리고 쿠키는 발급하지 않는다', async () => {
     stubTokenExchange({ ok: true, body: { id_token: 'kakao-id-token' } });
     session.requestLogin.mockRejectedValue(

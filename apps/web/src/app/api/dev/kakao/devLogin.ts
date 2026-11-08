@@ -1,5 +1,5 @@
 import 'server-only';
-import { isApiError } from '@app/api-core';
+import { normalizeError } from '@app/api-core';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
@@ -130,11 +130,16 @@ export const exchangeCodeForIdToken = async ({
   return parsed.data.id_token;
 };
 
-/** 백엔드 로그인 실패는 서버 오류 코드(AUTH_009 등)만 화면에 내보냄(원인 파악용) */
-export const backendErrorCode = (error: unknown) =>
-  isApiError(error) && error.code && /^[A-Z]+_\d+$/.test(error.code)
-    ? `backend_${error.code}`
-    : 'backend_login_failed';
+/**
+ * 백엔드 로그인 실패 원인(원인 파악용): 서버 오류 코드(AUTH_009 등)가 있으면 그 코드, 없으면 HTTP 상태, 그 밖은 일반 구분
+ * 백엔드 호출은 원본 HTTP 오류를 던지므로 먼저 `normalizeError`로 코드·상태를 꺼냄. 메시지·본문은 내보내지 않음
+ */
+export const backendErrorCode = (error: unknown) => {
+  const normalized = normalizeError(error);
+  if (normalized.code && /^[A-Z]+_\d+$/.test(normalized.code)) return `backend_${normalized.code}`;
+  if (normalized.status) return `backend_http_${normalized.status}`;
+  return normalized.category === 'network' ? 'backend_network' : 'backend_login_failed';
+};
 
 export const loginErrorRedirect = (request: NextRequest, code: string) => {
   const url = new URL('/login', request.nextUrl.origin);
