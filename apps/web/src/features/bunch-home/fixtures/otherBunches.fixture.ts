@@ -1,5 +1,6 @@
+import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
 import type { BunchMember, OtherBunch } from '../lib/types';
-import { DEFAULT_BUNCH_IMAGE, sampleImage } from './bunchHome.fixture';
+import { sampleImage } from './bunchHome.fixture';
 
 // 번치 API 연결 전 다른 번치 예시(Figma 3086:68423 공개 여행 번치, 3086:68654 비공개 책방산책)
 const members = (names: readonly string[]): BunchMember[] =>
@@ -13,7 +14,9 @@ export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
   'bunch-camping': {
     id: 'bunch-camping',
     name: '캠핑러버',
-    imageSrc: DEFAULT_BUNCH_IMAGE,
+    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2,
+    characterType: 'TYPE_2',
+    stage: 1,
     description: '주말마다 캠핑장을 찾아다니는 넷',
     isPrivate: false,
     followerCount: 23,
@@ -30,7 +33,9 @@ export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
   'bunch-book': {
     id: 'bunch-book',
     name: '책방산책',
-    imageSrc: DEFAULT_BUNCH_IMAGE,
+    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_4,
+    characterType: 'TYPE_4',
+    stage: 1,
     description: '책과 커피를 기록하는 모임',
     isPrivate: true,
     followerCount: 32,

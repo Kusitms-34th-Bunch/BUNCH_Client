@@ -1,7 +1,7 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { CHARACTER_TYPES, DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
+import { CHARACTER_TYPES, defaultProfileImage } from '@/shared/lib/bunchProfile';
 import { bffApi, requestData } from './bffApi';
 import { toDomainId } from './ids';
 
@@ -40,9 +40,10 @@ export const getMyProfile = async (signal?: AbortSignal) => {
       ? {
           id: toDomainId(profile.defaultBunch.id),
           name: profile.defaultBunch.name,
+          characterType: profile.defaultBunch.characterType,
           imageSrc:
             profile.defaultBunch.imageUrl ||
-            DEFAULT_BUNCH_IMAGES[profile.defaultBunch.characterType],
+            defaultProfileImage(profile.defaultBunch.characterType),
         }
       : null,
   };

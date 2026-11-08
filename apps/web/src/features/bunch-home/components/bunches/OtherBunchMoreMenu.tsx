@@ -1,8 +1,10 @@
 'use client';
 
 import { LineDotsLargeIcon, toast } from '@app/design-system';
-import { ConfirmSheet, MoreMenuSheet, ProfileImage, ReportSheet } from '@app/design-system/web';
+import { ConfirmSheet, MoreMenuSheet, ReportSheet } from '@app/design-system/web';
+import Image from 'next/image';
 import { useRef, useState } from 'react';
+import blockSheetIllustration from '@/shared/assets/images/empty/block-bunch-sheet.png';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_REPORT_OTHER, BUNCH_REPORT_REASONS } from '../../constants/report';
 import { headerIconLinkClass } from '../BunchHomeHeader';
@@ -11,7 +13,6 @@ type Sheet = 'menu' | 'block' | 'report';
 
 type OtherBunchMoreMenuProps = {
   bunchName: string;
-  bunchImageSrc?: string | undefined;
   /** 신고하는 쪽(지금 내 번치) 이름. 아직 모르면 빈 글자 */
   reporterName: string;
   onBlock: () => void;
@@ -24,7 +25,6 @@ type OtherBunchMoreMenuProps = {
  */
 export function OtherBunchMoreMenu({
   bunchName,
-  bunchImageSrc,
   reporterName,
   onBlock,
   onReport,
@@ -70,7 +70,16 @@ export function OtherBunchMoreMenu({
         {...sheetProps('block')}
         title={BUNCH_HOME_MESSAGES.blockQuestion(bunchName)}
         notice={BUNCH_HOME_MESSAGES.blockNotice}
-        illustration={<ProfileImage src={bunchImageSrc} className="size-23" />}
+        // Figma 4713:86366: 92px 자리에 일러스트(object-contain)
+        illustration={
+          <Image
+            src={blockSheetIllustration}
+            alt=""
+            width={92}
+            height={92}
+            className="size-full object-contain"
+          />
+        }
         confirmLabel="차단하기"
         onConfirm={() => {
           setOpen(null);

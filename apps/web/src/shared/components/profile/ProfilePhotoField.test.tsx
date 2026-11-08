@@ -212,6 +212,6 @@ describe('ProfilePhotoField', () => {
   it('지금 사진이 없으면 BUNCH 기본 이미지를 보여 준다', () => {
     render(<ProfilePhotoField value={undefined} onChange={vi.fn()} />);
 
-    expect(document.querySelector('img[src="/images/default-bunch.png"]')).toBeTruthy();
+    expect(document.querySelector('img[src="/images/default-bunch/type-1.svg"]')).toBeTruthy();
   });
 });

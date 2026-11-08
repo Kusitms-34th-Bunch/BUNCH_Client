@@ -42,7 +42,7 @@ export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
     isError: membersError,
     isRefetchError: membersRefetchError,
     refetch: refetchMembers,
-  } = useQuery(bunchMembersQueryOptions(bunchId));
+  } = useQuery(bunchMembersQueryOptions(bunchId, profile?.bunch?.characterType));
   const {
     data: dated,
     isError: datedError,

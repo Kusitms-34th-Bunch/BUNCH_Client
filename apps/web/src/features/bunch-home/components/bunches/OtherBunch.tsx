@@ -40,7 +40,6 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
         me && (
           <OtherBunchMoreMenu
             bunchName={bunch.name}
-            bunchImageSrc={bunch.imageSrc}
             reporterName={me.name}
             onBlock={() => {
               // 차단하면 팔로우 관계도 해제(화면설계서 2500:67470 2번)

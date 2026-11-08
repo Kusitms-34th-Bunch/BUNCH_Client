@@ -7,6 +7,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useDefaultProfileImage } from '@/shared/hooks/useDefaultProfileImage';
 import { type ProfileValues, useProfileFields } from '@/shared/hooks/useProfileFields';
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
@@ -32,6 +33,7 @@ const isSameValues = (a: ProfileValues, b: ProfileValues) =>
  */
 export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
   const backOr = useBackOr();
+  const defaultImage = useDefaultProfileImage();
   useScrollFocusedIntoView();
   const initial = toProfileValues(profile);
   const fields = useProfileFields(initial);
@@ -79,7 +81,7 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
         <h1 className="sr-only">{MY_MESSAGES.profileEditTitle}</h1>
         {/* 헤더 아래 48, 사진과 입력 칸 사이 32(Figma 개인 프로필 편집(1)) */}
         <div className="pt-s18 flex flex-col items-center">
-          <ProfilePhotoField value={photo} onChange={setPhoto} />
+          <ProfilePhotoField value={photo} onChange={setPhoto} defaultSrc={defaultImage} />
         </div>
         <div className="pt-s14 px-padding-p8">
           <ProfileFields fields={fields} showOptional={false} />

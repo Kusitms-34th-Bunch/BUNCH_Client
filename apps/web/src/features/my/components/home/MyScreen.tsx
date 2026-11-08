@@ -5,6 +5,7 @@ import { MenuLabel, ProfileImage } from '@app/design-system/web';
 import Link from 'next/link';
 import { type ReactNode, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useDefaultProfileImage } from '@/shared/hooks/useDefaultProfileImage';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
@@ -50,6 +51,7 @@ type MyScreenProps = {
 export function MyScreen({ profile, contactUrl }: MyScreenProps) {
   const [confirm, setConfirm] = useState<ConfirmKind | null>(null);
   const logout = useLogoutMutation();
+  const defaultImage = useDefaultProfileImage();
 
   return (
     <PageShell header={<Header title={<h1 className="truncate">{MY_MESSAGES.title}</h1>} />}>
@@ -59,7 +61,11 @@ export function MyScreen({ profile, contactUrl }: MyScreenProps) {
           href={MY_PATHS.profile}
           className="px-padding-p8 py-padding-p5 gap-s5 before:bg-overlay-hover focus-visible:outline-border-brand relative isolate flex touch-manipulation items-center before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 active:before:opacity-100 motion-reduce:before:transition-none"
         >
-          <ProfileImage src={profile.imageSrc} size="M" className="border-border-tertiary border" />
+          <ProfileImage
+            src={profile.imageSrc ?? defaultImage}
+            size="M"
+            className="border-border-tertiary border"
+          />
           <span className="typography-body-1-semi-bold text-text-primary min-w-0 flex-1 truncate">
             {profile.nickname}
             <span className="sr-only"> {MY_MESSAGES.profileEdit}</span>

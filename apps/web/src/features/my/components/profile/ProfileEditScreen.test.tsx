@@ -2,6 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper } from '@/shared/query/testing';
 import { ProfileEditScreen } from './ProfileEditScreen';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -18,7 +19,9 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
 const renderScreen = () =>
-  render(<ProfileEditScreen profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }} />);
+  render(<ProfileEditScreen profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }} />, {
+    wrapper: createQueryWrapper(),
+  });
 const submitButton = () =>
   screen.getByRole<HTMLButtonElement>('button', { name: '프로필 수정하기' });
 const nicknameInput = () => screen.getByRole<HTMLInputElement>('textbox', { name: /닉네임/ });

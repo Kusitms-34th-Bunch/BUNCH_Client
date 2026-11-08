@@ -9,7 +9,12 @@ describe('getMyProfile', () => {
   it('시연하는 사람의 id와 기본 번치를 화면 모양으로 돌려준다(대표 이미지가 없으면 성격별 기본 이미지)', async () => {
     await expect(getMyProfile()).resolves.toEqual({
       memberId: String(MOCK_MEMBER_IDS.me),
-      bunch: { id: bunchId, name: '여행쥬아', imageSrc: '/images/default-bunch/type-1.svg' },
+      bunch: {
+        id: bunchId,
+        name: '여행쥬아',
+        characterType: 'TYPE_1',
+        imageSrc: '/images/default-bunch/type-1.svg',
+      },
     });
   });
 
