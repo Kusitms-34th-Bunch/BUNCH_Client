@@ -53,7 +53,7 @@ export function FeedHeader({
             >
               <LineBellLargeIcon />
             </Link>
-            {/* 지금 번치를 모르는 첫 hydration 동안은 자리만 둠 */}
+            {/* 지금 번치를 모르는 동안(응답 전·실패)은 이미지를 그리지 않음 */}
             {viewer ? (
               <Link
                 href={bunchHomeHref}
@@ -67,9 +67,7 @@ export function FeedHeader({
                   className="outline-border-tertiary size-7 outline -outline-offset-1"
                 />
               </Link>
-            ) : (
-              <span aria-hidden="true" className="size-7" />
-            )}
+            ) : null}
           </span>
         )
       }
