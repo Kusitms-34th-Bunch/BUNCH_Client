@@ -61,9 +61,8 @@ export const CommentInput = ({
       onSubmit={submit}
       className={cn(
         // Figma 높이 42(위아래 6 + 버튼 30). 여러 줄이 되면 알약 모양 대신 둥근 사각형이 되도록 반경 24
-        'bg-surface-secondary rounded-r10 pl-padding-p6 pr-padding-p4 py-padding-p3 gap-s2 flex items-end',
-        // 입력 중 표시: SearchField와 같은 1px 짙은 선(Figma Focused에는 없음, 확인할 항목)
-        'focus-within:outline-primitive-gray-700 focus-within:outline-1 forced-colors:focus-within:outline-2',
+        // 입력 중 테두리 없음(Figma Focused, 디자인 확인). 고대비 모드만 초점 표시를 남김
+        'bg-surface-secondary rounded-r10 pl-padding-p6 pr-padding-p4 py-padding-p3 gap-s2 flex items-end forced-colors:focus-within:outline-2',
         className,
       )}
     >
@@ -79,7 +78,7 @@ export const CommentInput = ({
           disabled={disabled}
           rows={1}
           className={cn(
-            'typography-body-3-regular text-text-primary py-padding-p1 block max-h-[calc(5.5rem/var(--input-scale,1))] w-full resize-none scrollbar-none bg-transparent outline-none [&::-webkit-scrollbar]:hidden',
+            'typography-body-3-regular text-text-primary py-padding-p1 block max-h-[calc(5.5rem/var(--input-scale,1))] w-full resize-none scrollbar-none bg-transparent outline-none',
             'placeholder:text-text-quinary placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1)',
           )}
         />

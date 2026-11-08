@@ -50,6 +50,24 @@ describe('NotificationSettingsScreen', () => {
     expect(toggle('앱 푸시 알림').checked).toBe(true);
   });
 
+  it('받을 알림을 모두 끄면 앱 푸시 알림도 꺼진다', async () => {
+    renderScreen();
+
+    for (const title of TYPE_TITLES.slice(0, -1)) await userEvent.click(toggle(title));
+    expect(toggle('앱 푸시 알림').checked).toBe(true);
+
+    await userEvent.click(toggle(TYPE_TITLES.at(-1) ?? ''));
+    expect(toggle('앱 푸시 알림').checked).toBe(false);
+    expect(toggle('앱 푸시 알림')).toHaveFocus();
+    expect(screen.getByRole('status')).toHaveTextContent('앱 푸시 알림도 꺼졌어요');
+    expect(typeToggles().every((input) => !input.checked)).toBe(true);
+
+    // 앱 푸시를 다시 켜도 종류는 모두 꺼진 채
+    await userEvent.click(toggle('앱 푸시 알림'));
+    expect(toggle('앱 푸시 알림').checked).toBe(true);
+    expect(typeToggles().every((input) => !input.checked && !input.disabled)).toBe(true);
+  });
+
   it('전체를 끄면 종류별 값은 유지한 채 막고, 다시 켜면 그 값으로 돌아온다', async () => {
     renderScreen();
     await userEvent.click(toggle('뭉치 성장'));
