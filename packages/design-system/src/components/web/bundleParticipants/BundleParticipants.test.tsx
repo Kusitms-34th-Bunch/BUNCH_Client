@@ -24,6 +24,7 @@ describe('BundleParticipants', () => {
     expect(screen.getByRole('img', { name: '참여 멤버 3명' })).toBeTruthy();
 
     rerender(<BundleParticipants members={[]} />);
+    expect(screen.queryByRole('img')).toBeNull();
     expect(screen.queryByRole('button')).toBeNull();
   });
 });

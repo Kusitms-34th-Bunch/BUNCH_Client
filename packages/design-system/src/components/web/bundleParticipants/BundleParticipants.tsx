@@ -50,7 +50,8 @@ export const BundleParticipants = ({
 
   if (!props.onClick)
     return (
-      <span role="img" aria-label={name} className={cn(base, className)}>
+      // 나머지 속성(id·aria-*·data-* 등)을 그대로 넘김. 버튼 전용 속성은 걸러지지 않음
+      <span {...props} role="img" aria-label={name} className={cn(base, className)}>
         {content}
       </span>
     );

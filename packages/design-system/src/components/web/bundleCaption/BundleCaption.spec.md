@@ -25,16 +25,15 @@
 ## Styling과 의존성
 
 - 본문 Body-3-Regular 14/21 `text-tertiary`, `line-clamp-2`. 더보기 14 `text-quinary`, 같은 배경색으로 둘째 줄 끝을 덮는다.
-- 넘침은 `ResizeObserver`로 다시 잰다. 글꼴이 늦게 불러와져 줄 수가 바뀌는 경우는 다시 재지 않는다(확인할 항목).
+- 넘침은 `ResizeObserver`와 글꼴 로딩 완료(`document.fonts.ready`) 때 다시 잰다.
 - Storybook: `Long`, `Short`.
 
 ## 확인할 항목
 
 - 「..더보기」 `#BCBEC2`는 `#F5F5F5` 위에서 1.6:1로 글자 대비 기준에 못 미친다(Figma 값). 누르는 요소라 디자이너 확인.
-- 글꼴 로딩 뒤 줄 수가 바뀌면 더보기 표시가 어긋날 수 있다(`document.fonts.ready` 재측정은 실제 화면에서 문제가 보이면 추가).
 - Figma `ReadMore` 줄 높이 19.25는 토큰이 없어 본문 21에 맞췄다.
 
 ## 검증
 
-- 단위 테스트: 넘칠 때 펼치기와 내용이 바뀌면 다시 접힘, 넘치지 않으면 버튼 없음(jsdom은 높이를 흉내 냄).
+- 단위 테스트: 넘칠 때 펼치기와 내용이 바뀌면 다시 접힘(A→B→A 포함), 넘치지 않으면 버튼 없음(jsdom은 높이를 흉내 냄).
 - Storybook(Chromium) 측정: 폭 344에서 접힌 상자 70(본문 42), 펼치면 91.

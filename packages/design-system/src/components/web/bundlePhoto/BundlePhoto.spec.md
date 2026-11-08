@@ -11,7 +11,7 @@
 ## 목적과 범위
 
 - 폭에 맞춘 4:5 사진을 좌우로 넘긴다(가로 스크롤 스냅). 오른쪽·아래 16에 「현재/전체」(`PageCounter`).
-- `thumbnail`: 모서리 24 카드. 첫 사진(`Type=Info`)에만 어두운 막(`overlay-dim-subtle`), 위 그라데이션(높이 100)과 번치(`author`, 흰 글자), 아래 그라데이션(높이 124)과 `BundleInfo` `overlay`를 얹는다. 첫 사진에서는 순번을 숨기고 다음 사진(`Type=Photo`)부터 보인다.
+- `thumbnail`: 모서리 24 카드. 첫 사진(`Type=Info`)에만 어두운 막(`overlay-dim-subtle`), 위 그라데이션(높이 100)과 번치(`author`, 흰 글자), 아래 그라데이션(높이 124)과 `BundleInfo` `overlay`를 얹는다. 썸네일은 첫 사진에서 순번을 숨기고(정보 유무와 무관) 다음 사진(`Type=Photo`)부터 보인다.
 - `detail`: 사진만.
 - 사진이 1장이면 순번을 숨긴다.
 

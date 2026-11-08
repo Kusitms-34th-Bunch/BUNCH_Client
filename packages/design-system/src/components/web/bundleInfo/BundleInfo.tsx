@@ -44,7 +44,7 @@ export const BundleInfo = ({
     <div className={cn('flex flex-col', overlay ? 'gap-s3' : 'gap-s5', className)} {...props}>
       <Title
         className={cn(
-          'break-keep',
+          'wrap-break-word break-keep',
           overlay
             ? 'typography-body-1-semi-bold text-text-inversed'
             : 'typography-heading-1-semibold text-text-secondary',

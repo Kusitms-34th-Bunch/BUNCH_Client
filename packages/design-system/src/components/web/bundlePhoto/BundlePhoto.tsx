@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, type ComponentProps } from 'react';
 import { cn } from '../../../utils';
 import { BundleInfo, type BundleInfoProps } from '../bundleInfo';
@@ -144,7 +146,7 @@ export const BundlePhoto = ({
           </div>
         ))}
       </div>
-      {total > 1 && !(cover && current === 0) ? (
+      {total > 1 && !(thumbnail && current === 0) ? (
         <PageCounter
           current={current + 1}
           total={total}

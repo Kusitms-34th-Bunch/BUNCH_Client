@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, type ComponentProps, type MouseEvent } from 'react';
 import { FillHeartLargeIcon, LineHeartLargeIcon } from '../../../icons';
 import { cn } from '../../../utils';
@@ -53,6 +55,8 @@ export const LikeButton = ({
       <Heart
         key={bounceKey}
         aria-hidden
+        // 끝나면 모션 class를 지워 나중에 liked가 바뀌어 하트가 바뀌어도 다시 재생하지 않음
+        onAnimationEnd={() => setBounceKey(0)}
         className={cn(
           liked ? 'text-icon-warning' : 'text-icon-secondary',
           bounceKey > 0 && likeMotion.bounce,

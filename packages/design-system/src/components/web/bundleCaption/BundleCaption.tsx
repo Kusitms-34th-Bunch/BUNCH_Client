@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import { cn } from '../../../utils';
 
@@ -20,19 +22,28 @@ export const BundleCaption = ({
 }: BundleCaptionProps) => {
   const textRef = useRef<HTMLParagraphElement>(null);
   const [overflowing, setOverflowing] = useState(false);
-  // 펼친 캡션을 기억해 내용이 바뀌면 자동으로 접힘
-  const [expandedContent, setExpandedContent] = useState<string | null>(null);
-  const expanded = expandedContent === content;
+  const [expanded, setExpanded] = useState(false);
+  // 내용이 바뀌면(다른 사진) 접음. 렌더 중 이전 값과 비교하는 React 권장 방식
+  const [shownContent, setShownContent] = useState(content);
+  if (shownContent !== content) {
+    setShownContent(content);
+    setExpanded(false);
+  }
 
   useEffect(() => {
     const element = textRef.current;
     if (!element || expanded) return;
     const measure = () => setOverflowing(element.scrollHeight > element.clientHeight + 1);
     measure();
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
+    // 글꼴이 늦게 들어와 줄 수가 바뀌어도 다시 잼
+    let active = true;
+    void document.fonts?.ready.then(() => active && measure());
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(element);
+    return () => {
+      active = false;
+      observer?.disconnect();
+    };
   }, [content, expanded]);
 
   return (
@@ -57,7 +68,7 @@ export const BundleCaption = ({
           type="button"
           aria-label={moreLabel.replace(/^\.+/, '')}
           onClick={() => {
-            setExpandedContent(content);
+            setExpanded(true);
             textRef.current?.focus();
           }}
           className="bg-surface-secondary typography-body-3-regular text-text-quinary right-padding-p7 bottom-padding-p7 focus-visible:outline-border-brand pl-s1 absolute cursor-pointer touch-manipulation before:absolute before:-inset-x-2 before:-inset-y-3 focus-visible:outline-2"

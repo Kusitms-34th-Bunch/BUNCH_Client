@@ -27,6 +27,10 @@ describe('BundleCaption', () => {
     rerender(<BundleCaption content="둘째 사진 캡션" />);
     expect(screen.getByText('둘째 사진 캡션').className).toContain('line-clamp-2');
     expect(screen.getByRole('button', { name: '더보기' })).toBeTruthy();
+
+    // 다른 캡션을 거쳐 처음 캡션으로 돌아와도 접힌 상태
+    rerender(<BundleCaption content="첫 사진 캡션" />);
+    expect(screen.getByText('첫 사진 캡션').className).toContain('line-clamp-2');
   });
 
   it('2줄 이하면 더보기가 없다', () => {
