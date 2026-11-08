@@ -83,17 +83,18 @@ export function DraftVisibility({ value, editable, onChange, onDenied }: DraftVi
             hidden={!tooltipOpen}
             className="right-s4 absolute bottom-[calc(100%+19px)] z-10 w-69.75 max-w-[calc(100dvw-32px)]"
           >
-            <div className="flex flex-col items-end">
-              <p className="typography-caption-1-medium bg-surface-inversed/60 text-text-inversed rounded-r6 px-padding-p8 py-s4 -mb-3 flex min-h-9 w-full items-center backdrop-blur-[2px]">
+            {/* 말풍선과 꼬리가 겹치는 12px이 반투명 두 겹으로 진해지지 않도록, 둘을 불투명 색으로 그린 뒤 묶음 전체에 60%를 한 번만 적용 */}
+            <div className="relative pb-1.25">
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 flex flex-col items-end opacity-60 backdrop-blur-[2px]"
+              >
+                <div className="bg-surface-inversed rounded-r6 -mb-3 w-full flex-1" />
+                <Image src="/images/tooltip-tail.svg" alt="" width={14} height={17} />
+              </div>
+              <p className="typography-caption-1-medium text-text-inversed px-padding-p8 py-s4 relative flex min-h-9 w-full items-center">
                 {BUNDLE_MESSAGES.visibilityTooltip}
               </p>
-              <Image
-                src="/images/tooltip-tail.svg"
-                alt=""
-                width={14}
-                height={17}
-                aria-hidden="true"
-              />
             </div>
           </div>
         </div>
