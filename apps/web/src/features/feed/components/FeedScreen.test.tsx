@@ -1,6 +1,9 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fail } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { feedFixture } from '../fixtures/feed.fixture';
@@ -104,6 +107,21 @@ describe('FeedScreen', () => {
       feedFixture.following = following;
       feedFixture.public = publicBundles;
     }
+  });
+
+  it('내 정보를 받는 중에는 번치 이미지 자리, 실패하면 알림만 보인다', async () => {
+    server.use(http.get('/api/members/me', () => new Promise<never>(() => {})));
+    const { unmount } = render(<FeedScreen links={links} />, {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    expect(screen.getByTestId('feed-bunch-placeholder')).toBeInTheDocument();
+    unmount();
+
+    server.use(http.get('/api/members/me', () => fail(500, 'COMMON_500')));
+    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+    await waitFor(() => expect(screen.queryByTestId('feed-bunch-placeholder')).toBeNull());
+    expect(screen.getByRole('link', { name: '알림' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /번치 홈/ })).toBeNull();
   });
 
   it('소속 번치가 없으면 헤더에 로고만, 공개 구간만 보이고 좋아요는 안내 토스트', async () => {

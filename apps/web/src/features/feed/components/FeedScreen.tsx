@@ -30,7 +30,7 @@ type FeedScreenProps = {
 export function FeedScreen({ links }: FeedScreenProps) {
   const router = useRouter();
   // 지금 번치는 내 정보의 기본 번치(번치 홈과 같은 기준). 받기 전은 undefined, 소속 번치가 없으면 null
-  const { data: profile } = useQuery(myProfileQueryOptions());
+  const { data: profile, isPending: viewerPending } = useQuery(myProfileQueryOptions());
   const viewer: FeedViewer | undefined =
     profile === undefined
       ? undefined
@@ -90,6 +90,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
       header={
         <FeedHeader
           viewer={viewer}
+          viewerPending={viewerPending}
           onLogoClick={() =>
             topRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
           }

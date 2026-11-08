@@ -14,6 +14,8 @@ const iconLinkClass =
 
 type FeedHeaderProps = {
   viewer: FeedViewer | undefined;
+  /** 내 정보를 받는 중(번치 이미지 자리에 회색 원을 둬 응답 뒤 알림이 밀리지 않게 함) */
+  viewerPending: boolean;
   /** 로고를 눌렀을 때(맨 위로) */
   onLogoClick: () => void;
   notificationsHref: string;
@@ -26,6 +28,7 @@ type FeedHeaderProps = {
  */
 export function FeedHeader({
   viewer,
+  viewerPending,
   onLogoClick,
   notificationsHref,
   bunchHomeHref,
@@ -53,7 +56,7 @@ export function FeedHeader({
             >
               <LineBellLargeIcon />
             </Link>
-            {/* 지금 번치를 모르는 동안(응답 전·실패)은 이미지를 그리지 않음 */}
+            {/* 받는 중에는 같은 크기의 회색 원, 요청이 실패하면 그리지 않음 */}
             {viewer ? (
               <Link
                 href={bunchHomeHref}
@@ -67,6 +70,12 @@ export function FeedHeader({
                   className="outline-border-tertiary size-7 outline -outline-offset-1"
                 />
               </Link>
+            ) : viewerPending ? (
+              <span
+                aria-hidden="true"
+                data-testid="feed-bunch-placeholder"
+                className="bg-surface-secondary size-7 rounded-full"
+              />
             ) : null}
           </span>
         )
