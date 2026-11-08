@@ -2,8 +2,9 @@
 
 import { LineDotsLargeIcon, toast } from '@app/design-system';
 import { ConfirmSheet, MoreMenuSheet, ReportSheet } from '@app/design-system/web';
-import Image from 'next/image';
+import Image, { type StaticImageData } from 'next/image';
 import { useRef, useState } from 'react';
+import blockedBunch from '@/shared/assets/images/empty/blocked-bunch.svg';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_REPORT_OTHER, BUNCH_REPORT_REASONS } from '../../constants/report';
 import { headerIconLinkClass } from '../BunchHomeHeader';
@@ -72,7 +73,7 @@ export function OtherBunchMoreMenu({
         // Figma 4713:86366: 92px 자리에 일러스트(object-contain)
         illustration={
           <Image
-            src="/images/block-bunch-sheet.png"
+            src={blockedBunch as StaticImageData}
             alt=""
             width={92}
             height={92}
