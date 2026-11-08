@@ -6,7 +6,7 @@ import { PageLoading } from './PageLoading';
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 describe('PageLoading', () => {
-  it('화면 전체를 dim으로 덮고 로딩 점을 가운데에 하나만 보인다', async () => {
+  it('화면 전체를 dim으로 덮고 로딩 표시를 가운데에 하나만 보인다', async () => {
     const { container, findAllByTestId } = render(<PageLoading />);
     const overlay = container.firstElementChild as HTMLElement;
 
