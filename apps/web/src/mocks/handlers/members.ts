@@ -33,6 +33,18 @@ export const memberHandlers = [
     });
   }),
 
+  // GET /api/v1/members/me/onboarding: 가짜 서버는 가입을 마친 시연 사용자를 가정(가입 중 시나리오는 server.use로 덮어씀)
+  http.get('/api/members/me/onboarding', () => {
+    const { memberships } = mockDb.get();
+    const membership = memberships.find((item) => item.memberId === MOCK_MY_MEMBER_ID);
+    return ok({
+      memberId: MOCK_MY_MEMBER_ID,
+      signupStatus: 'COMPLETED',
+      termsAccepted: true,
+      ...(membership ? { defaultBunchId: membership.bunchId } : {}),
+    });
+  }),
+
   // GET /api/v1/bunches/{bunchId}/members
   http.get('/api/bunches/:bunchId/members', ({ params }) => {
     const bunchId = toWireId(params.bunchId);

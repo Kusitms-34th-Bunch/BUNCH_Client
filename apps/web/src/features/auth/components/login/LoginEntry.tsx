@@ -12,6 +12,7 @@ import {
   type SocialProvider,
   useSocialLogin,
 } from '../../hooks/useSocialLogin';
+import { fetchPostLoginPath, type PostLoginDestinations } from '../../lib/postLoginPath';
 import { signInWithSocial } from '../../lib/socialSignIn';
 
 // SVG import 타입이 any라 정적 이미지로 명시
@@ -31,17 +32,23 @@ const PROVIDERS: { provider: SocialProvider; label: string }[] = [
 type LoginEntryProps = {
   /** 소셜 로그인 호출. 기본은 쉘 SDK → BFF 로그인, 테스트에서 대체 */
   signIn?: SignIn | undefined;
-  /** 로그인 성공 시 이동할 경로. 라우트가 정해 전달 */
-  nextPath: string;
+  /** 가입을 마친 사용자의 도착 화면 경로(다른 feature 소유라 route가 전달) */
+  destinations: PostLoginDestinations;
+  /** 로그인 성공 뒤 이동할 경로를 정함. 기본은 서버의 가입 상태에 따른 도착 화면, 테스트에서 대체 */
+  resolveNextPath?: (() => Promise<string>) | undefined;
 };
 
 /**
  * 앱을 처음 연 사람이 소셜 계정으로 시작하는 로그인(Entry) 화면
- * 회원가입 버튼 없음. 성공하면 `nextPath`(지금은 약관)로 이동만 처리(가입 상태별 분기·접근 제어는 미연결)
+ * 회원가입 버튼 없음. 성공하면 서버의 가입 상태에 따라 약관·프로필·번치 홈·번치 시작 선택으로 이동(접근 제어는 미연결)
  * 로그인은 쉘의 소셜 SDK로 받은 토큰을 BFF에 보내는 `signInWithSocial`이 처리(브라우저에서는 실패 토스트)
  */
-export function LoginEntry({ signIn = signInWithSocial, nextPath }: LoginEntryProps) {
-  const { pendingProvider, login } = useSocialLogin(signIn, nextPath);
+export function LoginEntry({
+  signIn = signInWithSocial,
+  destinations,
+  resolveNextPath = () => fetchPostLoginPath(destinations),
+}: LoginEntryProps) {
+  const { pendingProvider, login } = useSocialLogin(signIn, resolveNextPath);
   const reducedMotion = useReducedMotion();
 
   return (

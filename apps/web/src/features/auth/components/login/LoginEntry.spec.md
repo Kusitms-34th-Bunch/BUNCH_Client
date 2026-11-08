@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/login`(`apps/web/src/app/(app)/login/page.tsx`)
-- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 아직 없어 앱에서도 실패 토스트가 나옴. 가입 상태별 분기·접근 제어는 연결하지 않음. 성공하면 약관으로 이동만 함
+- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 아직 없어 앱에서도 실패 토스트가 나옴. 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어(guard)와 앱 실행 시 세션 확인은 연결하지 않음
 - 디자인 출처: Figma `로그인`(node `4744:90759`, 배경 영상 디자인. 이전 `796:4634`). 화면설계서(node `796:5339`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.2 Entry).
 
 ## 목적과 범위
@@ -18,7 +18,7 @@
 ### 범위 외
 
 - 쉘의 네이티브 소셜 SDK(카카오·Google·Apple). 쉘의 `socialLogin`은 지금 항상 실패하는 자리라, 앱에서도 버튼을 누르면 실패 토스트가 나온다. 웹의 호출과 BFF 로그인은 연결돼 있다.
-- 로그인 결과에 따른 분기(가입 중 → 프로필, 가입 완료 → 도착지). 지금은 성공하면 항상 약관으로 간다과 앱 실행 시 세션 확인·스플래시.
+- 앱 실행 시 세션 확인·스플래시와 단계별 접근 제어(로그인 뒤 분기 자체는 포함, 아래 Success 참고).
 - 초대 정보 보관·전달.
 - iPhone 상태 바·홈 인디케이터. 기기 요소라 웹이 그리지 않는다(Safe Area는 `AppFrame`이 처리한다).
 
@@ -35,12 +35,15 @@
 - Empty: 해당 없음.
 - Error·retry: 실패 시 토스트와 버튼 복귀. 토스트는 기획 명세대로 하단 버튼 바로 위에 놓는다(`bottomOffset: 170`, 기본 위치 Safe Area + 16px에서 버튼 영역(버튼 160 + 아래 14) 위 12px까지. 계산값이고 화면에서 토스트를 띄워 재지는 않음). 다시 눌러 재시도할 수 있다. 오류 원인은 따로 기록하지 않는다(Sentry 전송 없음).
 - Disabled·invalid: 다른 소셜 로그인이 진행 중인 버튼.
-- Success·완료 후 이동: 성공하면 `nextPath`(약관 `/signup/terms`)로 `router.push`하고 이동할 때까지 버튼을 잠근 채 둔다(약관에서 뒤로 가면 로그인으로 돌아온다. 기획의 「로그인 해제」는 인증 연결 때 붙인다). 가입 상태별 분기는 `/members/me/onboarding` 연결 때 붙는다. 쉘 SDK가 없어 실제로는 항상 실패해 이동이 일어나지 않는다.
+- Success·완료 후 이동: 로그인에 성공하면 `GET /members/me/onboarding`으로 가입 상태를 읽어 도착 화면을 정하고(`lib/postLoginPath.ts`), 정해질 때까지 버튼을 잠근 채 둔 뒤 `router.push`한다(약관에서 뒤로 가면 로그인으로 돌아온다. 기획의 「로그인 해제」는 아직 없다). 규칙(기획 1.2.7·1.2.8): 가입 중이고 약관 미동의 → 약관 `/signup/terms`, 가입 중이고 동의 → 프로필 `/signup/profile`, 가입 완료이고 기본 번치(`defaultBunchId`) 있음 → 번치 홈 `/bunch`, 가입 완료이고 번치 없음 → 번치 시작 선택 `/onboarding`. 가입 완료 사용자의 두 경로는 다른 feature 소유라 `login/page.tsx`가 `destinations` prop으로 넘긴다. 마지막으로 쓴 번치가 유효한지의 판단(없으면 가장 최근 번치)은 서버가 `defaultBunchId`에 반영한다고 가정한다(확인할 항목).
+- 가입 상태 조회 실패: 로그인은 됐지만 어디로 보낼지 모르므로 이동하지 않고 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」(기획 1.1.1 세션 확인 실패 문구)를 보이고 버튼이 처음 상태로 돌아온다. 쿠키는 이미 저장돼 있어 다시 누르면 이어진다. 로그인 실패 문구와는 다르다.
+- 초대 정보가 있으면 가장 먼저 초대 참여로 가야 하나(기획 1.2.8) 초대 정보 보관을 만들 때 붙인다. 쉘 SDK가 없어 실제로는 로그인이 항상 실패해 이 이동은 일어나지 않는다.
 
 ## 데이터 의존성
 
 - Query와 enabled 조건: 없음.
-- Mutation·cache 영향: 없음. 연결 시 로그인 성공 뒤 `auth.session`을 invalidate한 뒤 이동한다(`docs/specs/login-signup.md` API 계약).
+- Mutation·cache 영향: 로그인 호출과 가입 상태 조회는 TanStack Query를 거치지 않고 함수로 직접 호출한다(캐시 없음). `auth.session` 같은 session query는 세션 확인·guard를 만들 때 함께 정하고, 그때 로그인 성공 뒤 invalidate를 붙인다.
+- API: `GET /api/v1/members/me/onboarding`(`features/auth/api/onboarding.ts`, 응답 `signupStatus`·`termsAccepted`·`defaultBunchId?`를 스키마로 검사).
 - API 계약 확인 항목: 소셜 로그인 요청의 method·path·필드, 쿠키 설정 주체(`docs/specs/login-signup.md` 확인할 항목 백엔드 1~3).
 - 연결 지점: `LoginEntry`의 `signIn` prop(기본값 `signInWithSocial`, 테스트에서 대체)과 `useSocialLogin`이 받는 `SignIn` 함수 타입(`(provider) => Promise<'success' | 'cancelled'>`). 서버 컴포넌트인 page에서 함수를 prop으로 넘길 수 없어 `LoginEntry`가 `features/auth/lib/socialSignIn.ts`를 직접 가져온다.
 - `signInWithSocial`: 앱 쉘이 아니거나 쉘이 `socialLogin`을 지원하지 않으면 던진다(실패 토스트). 쉘 결과를 `socialLoginResultSchema`로 검사하고 요청한 provider와 같은지 확인한 뒤 `POST /api/auth/login`(`features/auth/api/login.ts`)으로 `provider`·`idToken`·`nonce`를 보낸다. `cancelled`는 BFF를 부르지 않고 취소로 돌려준다. 토큰·nonce는 저장·기록하지 않는다. 로그인 창은 사용자가 끝낼 때까지 기다리므로 타임아웃이 없는 `loginBridge`를 쓴다.
@@ -83,5 +86,8 @@
 - 로그인 중 모양 (디자인 확인): 선택한 버튼의 로딩 표시는 Figma에 없다(`docs/specs/login-signup.md` 디자인 확인 4번).
 - 실패 토스트 위치 (확정): 기획 명세가 오류 토스트를 "하단 버튼 바로 위"에 두라고 해서(`Toast.spec.md` 표시 위치) `bottomOffset`으로 버튼 영역 위 12px에 놓았다. 12px 간격은 기획·Figma에 없어 정한 값이다(디자이너 확인). Figma 설계서는 「오류 메시지 노출」이라고만 적었다. 버튼 영역 높이가 바뀌면(버튼 추가, 아래 여백 변경) 이 값도 함께 바꾼다.
 - 취소 안내 (기획 확인): 로그인 창을 닫았을 때 토스트를 보일지 명세가 충돌한다(`docs/specs/login-signup.md` 기획 확인 4번). 지금은 토스트 없이 버튼만 처음 상태로 돌린다.
-- 접근 조건 (미정): 로그인 상태일 때 어디로 보낼지는 인증 BFF와 도착지 규칙이 정해진 뒤 연결한다.
+- 접근 조건 (미정): 로그인 뒤 분기는 연결됐지만 guard가 없다. 로그인 상태에서 `/login`에 다시 들어와도 막지 않고, 가입 중 사용자가 `/bunch`·`/onboarding`·`/signup/profile`에 주소로 바로 들어가는 것도 막지 않는다(서버가 가입 중 사용자의 요청을 거부하는지는 확인하지 못했다). 세션 확인과 guard를 만들 때 함께 정한다.
+- 로그인 화면 history (한계): 로그인 뒤 `router.push`로 이동해 어느 도착지에서든 뒤로 가면 로그인 화면이 다시 보인다(가입 완료 사용자도). 가입 중 사용자의 약관에서 뒤로 가면 Entry로 돌아오는 것은 기획(1.3.5)과 맞다. 가입 완료 사용자에게는 `replace`가 더 맞을 수 있으며, guard가 로그인 상태의 `/login` 접근을 막으면 함께 해소된다.
+- 가입 상태 조합 (서버 확인): 가입 완료인데 약관 미동의인 응답은 서버 불변식상 없다고 보고 `signupStatus`만으로 분기한다. `IN_PROGRESS`(가입 중) 토큰으로 `GET /members/me/onboarding`이 허용되는지, 새 `signupStatus` 값이 추가될 계획이 있는지 백엔드에 확인해야 한다. 허용되지 않으면 신규 사용자 모두가 이 조회에서 막힌다.
+- 조회 실패의 원인 구분 (한계): 가입 상태 조회가 계약 위반이나 새 enum 값 같은 영구 실패여도 일시 오류 문구로만 보인다. 원인은 기록하지 않는다(오류 수집 연결 때 정한다).
 - 노출 전 선행 조건: 쉘의 소셜 SDK가 연결되기 전에는 버튼을 눌러도 실패 토스트만 나온다. UT·배포에 노출하기 전에 연동하거나 이 route를 노출하지 않는다. 정적 페이지로 생성되어 색인될 수 있으므로 metadata·색인 방지(`docs/workflows/seo.md`)도 이 노출 정책에 포함해 정한다.

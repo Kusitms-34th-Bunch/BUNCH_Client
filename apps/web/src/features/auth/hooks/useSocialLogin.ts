@@ -10,6 +10,8 @@ export type SocialLoginResult = 'success' | 'cancelled';
 export type SignIn = (_provider: SocialProvider) => Promise<SocialLoginResult>;
 
 export const LOGIN_FAILURE_MESSAGE = '로그인에 실패했어요. 다시 시도해 주세요';
+/** 로그인은 됐지만 가입 상태를 읽지 못해 어디로 보낼지 모를 때(기획 1.1.1의 세션 확인 실패 문구) */
+export const STATUS_CHECK_FAILURE_MESSAGE = '일시적인 오류가 발생했어요. 다시 시도해 주세요';
 
 // 기획 명세: 오류 토스트는 하단 버튼 바로 위. 버튼 영역(버튼 3개 160px + 아래 여백 14px)에서 12px 위로 배치(기본 위치는 Safe Area + 16px)
 const FAILURE_TOAST_BOTTOM_OFFSET = 170;
@@ -19,10 +21,11 @@ export const LOGIN_PENDING_MESSAGE = '로그인하는 중이에요';
 /**
  * 소셜 로그인 버튼 3개가 함께 쓰는 진행 상태
  * 하나가 진행 중이면 다른 시도는 무시(연타·동시 로그인 방지), 취소·실패하면 처음 상태로 복귀
- * 성공하면 `nextPath`로 이동하고, 이동할 때까지 잠금 유지(가입 상태에 따른 분기는 인증 BFF 연결 뒤 추가)
- * `signIn`이 없으면(소셜 SDK·인증 BFF 연결 전) 버튼을 눌러도 동작 없음
+ * 로그인에 성공하면 `resolveNextPath`로 도착 화면(가입 상태에 따라 다름)을 정해 이동하고, 이동할 때까지 잠금 유지
+ * 가입 상태를 읽지 못하면 로그인 화면에 머물며 토스트만 보임(이미 로그인된 상태라 다시 누르면 바로 이어짐)
+ * `signIn`이 없으면 버튼을 눌러도 동작 없음
  */
-export function useSocialLogin(signIn: SignIn | undefined, nextPath: string) {
+export function useSocialLogin(signIn: SignIn | undefined, resolveNextPath: () => Promise<string>) {
   const router = useRouter();
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(null);
   // 같은 틱의 연타 방지를 위해 ref로 먼저 잠금(state는 다음 렌더에야 반영)
@@ -35,8 +38,17 @@ export function useSocialLogin(signIn: SignIn | undefined, nextPath: string) {
 
     let keepLocked = false;
     try {
-      keepLocked = (await signIn(provider)) === 'success';
-      if (keepLocked) router.push(nextPath);
+      if ((await signIn(provider)) === 'success') {
+        let nextPath: string;
+        try {
+          nextPath = await resolveNextPath();
+        } catch {
+          toast(STATUS_CHECK_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });
+          return;
+        }
+        keepLocked = true;
+        router.push(nextPath);
+      }
     } catch {
       toast(LOGIN_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });
     } finally {
