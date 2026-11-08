@@ -1,6 +1,7 @@
 // @generated — run `yarn gen:index` to update
 
 export * from './accordion';
+export * from './adPhotoCard';
 export * from './addBundlePhotoEditor';
 export * from './addMemberCard';
 export * from './bottomNavigation';
@@ -60,6 +61,8 @@ export * from './pageHeader';
 export * from './paginationIndicator';
 export * from './paginationIndicatorItem';
 export * from './photoThumbnail';
+export * from './placePickButton';
+export * from './placePickItem';
 export * from './profileImage';
 export * from './profileListItem';
 export * from './profileRadioCard';
