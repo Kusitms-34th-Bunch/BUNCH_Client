@@ -73,6 +73,16 @@
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
 - [x] Chromium(dev 서버, 창 1280×577)에서 영상 자동 재생, 앱 폭 전체를 덮는 배경, 심볼↔워드마크 6·워드마크↔슬로건 8·슬로건↔버튼 32·버튼 아래 14를 측정함. 375×812 화면과 실기기(iOS WebView 자동 재생)는 확인하지 못함
 
+## 개발 전용 카카오 웹 로그인 (삭제 예정)
+
+쉘의 네이티브 SDK(실기기·개발 앱 필요) 없이 노트북 브라우저에서 실서버 로그인 흐름(로그인 → 가입 상태 분기 → 약관 → 프로필)을 확인하기 위한 임시 장치다. 제품 로그인은 기획대로 네이티브 SDK만 쓰고, 이 장치는 운영 배포에 켜지 않는다.
+
+- 켜기: `apps/web/.env.local`에 서버 전용 `DEV_WEB_LOGIN=enabled`(`NEXT_PUBLIC_`를 붙이지 않음), `KAKAO_REST_API_KEY`(필요하면 `KAKAO_CLIENT_SECRET`)를 둔다. 카카오 콘솔에서 Redirect URI(`http://localhost:3000/api/dev/kakao/callback`, 배포 주소로 확인하면 그 주소의 같은 경로), 카카오 로그인·OpenID Connect를 켠다. mock(`NEXT_PUBLIC_API_MOCKING`)은 끄고 `API_BASE_URL`은 실서버로 둔다.
+- 동작: 로그인 화면 맨 위의 「카카오 웹 로그인 (개발용)」 링크 → `/api/dev/kakao/authorize`(state·nonce를 httpOnly 쿠키에 두고 `openid` scope로 카카오 인가 화면) → `/api/dev/kakao/callback`(state 확인, 서버가 인가 코드를 ID 토큰으로 교환해 기존 `requestLogin`·`setAuthCookies`로 세션 발급) → `/bunch`(가드가 가입 상태에 맞는 화면으로 보냄).
+- 실패: 로그인 화면으로 돌아오고 위쪽에 `웹 로그인 실패: <코드>`가 보인다. 코드는 `invalid_state`, `access_denied`, `KOE…`(카카오 오류 코드, 예: KOE303 redirect_uri 불일치·KOE320 인가 코드 재사용·KOE010 클라이언트 시크릿 누락), `no_id_token`(OpenID Connect 꺼짐), `backend_<서버 코드>`(백엔드가 거부, 예: `backend_AUTH_009`)다.
+- 백엔드 확인: 웹 로그인으로 받은 ID 토큰의 `aud`는 REST API 키이고 앱 SDK는 네이티브 앱 키라서, 서버가 `aud`로 REST API 키도 허용해야 이 흐름이 통과한다(개발 서버 설정).
+- 삭제 방법: `app/api/dev/`(폴더 전체), `features/auth/components/dev/`(폴더 전체), `components/index.ts`의 `DevWebLogin` export(생성 배럴이라 `yarn gen:feature-index`), `app/(app)/login/page.tsx`의 `DEV_WEB_LOGIN`·`<DevWebLogin />`, `.env.example`의 세 변수, 이 절을 지운다.
+
 ## 확인할 항목
 
 - 브랜딩 위치 (결정): Figma는 위에서 459px 절대 배치이고 버튼과 34px 떨어져 있다. 화면 높이가 달라도 버튼과의 거리가 유지되도록 버튼 위에 붙였다(간격은 가까운 토큰 32px).
