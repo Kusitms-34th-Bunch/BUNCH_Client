@@ -1,7 +1,7 @@
-import { getOnboarding, type OnboardingState } from '../api/onboarding';
+import type { OnboardingState } from '../api/onboarding';
 import { SIGNUP_PATHS } from '../constants/paths';
 
-/** 다른 feature가 소유한 도착 화면 경로. 가져오기 제한 때문에 route(page)가 조합해 전달 */
+/** 다른 feature가 소유한 도착 화면 경로. 가져오기 제한 때문에 route(page·layout)가 조합해 전달 */
 export type PostLoginDestinations = {
   /** 번치 홈(기본 번치가 있는 가입 완료 사용자) */
   bunchHome: string;
@@ -23,7 +23,3 @@ export const resolvePostLoginPath = (
   }
   return hasDefaultBunch ? destinations.bunchHome : destinations.bunchStart;
 };
-
-/** 서버의 가입 상태를 읽어 도착 화면을 정함. 조회에 실패하면 던짐 */
-export const fetchPostLoginPath = async (destinations: PostLoginDestinations): Promise<string> =>
-  resolvePostLoginPath(await getOnboarding(), destinations);

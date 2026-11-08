@@ -25,7 +25,10 @@ export const LOGIN_PENDING_MESSAGE = '로그인하는 중이에요';
  * 가입 상태를 읽지 못하면 로그인 화면에 머물며 토스트만 보임(이미 로그인된 상태라 다시 누르면 바로 이어짐)
  * `signIn`이 없으면 버튼을 눌러도 동작 없음
  */
-export function useSocialLogin(signIn: SignIn | undefined, resolveNextPath: () => Promise<string>) {
+export function useSocialLogin(
+  signIn: SignIn | undefined,
+  resolveNextPath: () => Promise<string | { path: string; replace: boolean }>,
+) {
   const router = useRouter();
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(null);
   // 같은 틱의 연타 방지를 위해 ref로 먼저 잠금(state는 다음 렌더에야 반영)
@@ -39,15 +42,17 @@ export function useSocialLogin(signIn: SignIn | undefined, resolveNextPath: () =
     let keepLocked = false;
     try {
       if ((await signIn(provider)) === 'success') {
-        let nextPath: string;
+        let next: string | { path: string; replace: boolean };
         try {
-          nextPath = await resolveNextPath();
+          next = await resolveNextPath();
         } catch {
           toast(STATUS_CHECK_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });
           return;
         }
         keepLocked = true;
-        router.push(nextPath);
+        const { path, replace } = typeof next === 'string' ? { path: next, replace: false } : next;
+        if (replace) router.replace(path);
+        else router.push(path);
       }
     } catch {
       toast(LOGIN_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });

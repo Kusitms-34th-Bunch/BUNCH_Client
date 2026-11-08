@@ -6,14 +6,15 @@ import symbolSvg from '@/shared/assets/images/login/symbol.svg';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import type { PostLoginDestinations } from '../../lib/postLoginPath';
 import {
   LOGIN_PENDING_MESSAGE,
   type SignIn,
   type SocialProvider,
   useSocialLogin,
 } from '../../hooks/useSocialLogin';
-import { fetchPostLoginPath, type PostLoginDestinations } from '../../lib/postLoginPath';
 import { signInWithSocial } from '../../lib/socialSignIn';
+import { usePostLoginPath } from '../../queries/session';
 
 // SVG import 타입이 any라 정적 이미지로 명시
 const SYMBOL = symbolSvg as StaticImageData;
@@ -35,20 +36,21 @@ type LoginEntryProps = {
   /** 가입을 마친 사용자의 도착 화면 경로(다른 feature 소유라 route가 전달) */
   destinations: PostLoginDestinations;
   /** 로그인 성공 뒤 이동할 경로를 정함. 기본은 서버의 가입 상태에 따른 도착 화면, 테스트에서 대체 */
-  resolveNextPath?: (() => Promise<string>) | undefined;
+  resolveNextPath?: (() => Promise<string | { path: string; replace: boolean }>) | undefined;
 };
 
 /**
  * 앱을 처음 연 사람이 소셜 계정으로 시작하는 로그인(Entry) 화면
- * 회원가입 버튼 없음. 성공하면 서버의 가입 상태에 따라 약관·프로필·번치 홈·번치 시작 선택으로 이동(접근 제어는 미연결)
+ * 회원가입 버튼 없음. 성공하면 서버의 가입 상태에 따라 약관·프로필·번치 홈·번치 시작 선택으로 이동(접근 제어는 `AuthGate`)
  * 로그인은 쉘의 소셜 SDK로 받은 토큰을 BFF에 보내는 `signInWithSocial`이 처리(브라우저에서는 실패 토스트)
  */
 export function LoginEntry({
   signIn = signInWithSocial,
   destinations,
-  resolveNextPath = () => fetchPostLoginPath(destinations),
+  resolveNextPath,
 }: LoginEntryProps) {
-  const { pendingProvider, login } = useSocialLogin(signIn, resolveNextPath);
+  const resolvePostLogin = usePostLoginPath(destinations);
+  const { pendingProvider, login } = useSocialLogin(signIn, resolveNextPath ?? resolvePostLogin);
   const reducedMotion = useReducedMotion();
 
   return (

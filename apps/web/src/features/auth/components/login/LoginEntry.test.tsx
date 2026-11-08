@@ -1,7 +1,9 @@
 import type * as DesignSystem from '@app/design-system';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { act, render as renderUi, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper } from '@/shared/query/testing';
 import {
   LOGIN_FAILURE_MESSAGE,
   LOGIN_PENDING_MESSAGE,
@@ -11,9 +13,13 @@ import {
 import { LoginEntry } from './LoginEntry';
 
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+const replace = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace }) }));
 const NEXT_PATH = '/next';
 const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
+
+// 로그인 뒤 도착 화면 조회가 세션 캐시(Query)를 쓰므로 Provider 안에서 그림
+const render = (ui: ReactElement) => renderUi(ui, { wrapper: createQueryWrapper() });
 const resolveNextPath = () => Promise.resolve(NEXT_PATH);
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -49,6 +55,7 @@ describe('LoginEntry', () => {
   beforeEach(() => {
     toast.mockClear();
     push.mockClear();
+    replace.mockClear();
   });
 
   it('로고를 제목으로, 슬로건과 본문 영역(main)을 가진다', () => {
@@ -228,6 +235,21 @@ describe('LoginEntry', () => {
 
     resolvePath('/signup/profile');
     await waitFor(() => expect(push).toHaveBeenCalledWith('/signup/profile'));
+  });
+
+  it('이동 방법이 replace이면 기록을 남기지 않고 이동한다(가입 완료 사용자)', async () => {
+    render(
+      <LoginEntry
+        destinations={DESTINATIONS}
+        signIn={() => Promise.resolve('success')}
+        resolveNextPath={() => Promise.resolve({ path: '/bunch', replace: true })}
+      />,
+    );
+
+    await userEvent.click(kakao());
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('로그인은 됐지만 가입 상태를 읽지 못하면 안내 토스트를 보이고 이동 없이 처음 상태로 돌아온다', async () => {
