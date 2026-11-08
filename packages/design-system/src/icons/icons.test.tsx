@@ -40,10 +40,10 @@ const SIZES: [IconSize, number][] = [
 ];
 
 describe('Icons', () => {
-  it('Line 33종과 Fill 10종을 아이콘 하나씩 제공한다', () => {
-    expect(Object.keys(dynamicIcons)).toHaveLength(43);
+  it('Line 33종과 Fill 11종을 아이콘 하나씩 제공한다', () => {
+    expect(Object.keys(dynamicIcons)).toHaveLength(44);
     expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Line'))).toHaveLength(33);
-    expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Fill'))).toHaveLength(10);
+    expect(Object.keys(dynamicIcons).filter((name) => name.startsWith('Fill'))).toHaveLength(11);
   });
 
   it('모든 아이콘이 세 크기의 도형과 장식 기본값을 갖는다', () => {
@@ -62,7 +62,7 @@ describe('Icons', () => {
   });
 
   it('fixed exports preserve the exact geometry and accessibility of every size', () => {
-    expect(Object.keys(icons)).toHaveLength(187);
+    expect(Object.keys(icons)).toHaveLength(191);
     for (const [name, Icon] of Object.entries(dynamicIcons)) {
       for (const [size, label] of [
         ['sm', 'Small'],

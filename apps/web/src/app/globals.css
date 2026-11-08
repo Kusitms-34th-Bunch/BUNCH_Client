@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import '@app/design-system/tokens.css';
+@import '@app/design-system/utilities.css';
 /* 앱 밖 패키지라 자동 감지되지 않아 디자인 시스템 컴포넌트의 Tailwind class 스캔 등록 */
 @source '../../../../packages/design-system/src';
 
@@ -39,14 +40,6 @@
   a,
   img {
     -webkit-user-drag: none;
-  }
-}
-
-/* 앱 화면은 스크롤바를 그리지 않음(데스크톱·개발자 도구에서 막대 자리가 생기지 않게). Tailwind v4에 없는 유틸리티라 직접 정의 */
-@utility scrollbar-none {
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
   }
 }
 
