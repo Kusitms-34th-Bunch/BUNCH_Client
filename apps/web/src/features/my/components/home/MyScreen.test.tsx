@@ -127,7 +127,7 @@ describe('MyScreen', () => {
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(reloadTo).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
     // 창을 연 「로그아웃」 메뉴로 포커스가 돌아옴
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole('button', { name: '로그아웃' })),

@@ -110,7 +110,7 @@ describe('WithdrawalScreen', () => {
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(reloadTo).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
     // 체크는 그대로라 바로 다시 시도할 수 있음
     expect(screen.getByRole('checkbox', { name: '안내 사항을 모두 확인했어요.' })).toBeChecked();
   });
@@ -137,6 +137,24 @@ describe('WithdrawalScreen', () => {
 
     expect(await screen.findByRole('alertdialog', { name: '정말 탈퇴하시겠어요?' })).toBeTruthy();
     expect(screen.queryByRole('alertdialog', { name: '관리자로 있는 번치가 있어요' })).toBeNull();
+  });
+
+  it('권한을 넘기고 돌아오면 확인 체크를 유지해 「다음」이 바로 풀려 있다', () => {
+    resetOwnedBunches();
+    transferOwnership({ 'owned-1': 'm-1', 'owned-2': 'm-5' });
+    render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+
+    expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: '다음' }).disabled).toBe(false);
+  });
+
+  it('나 혼자 있는 번치는 권한을 넘길 번치로 보지 않는다', async () => {
+    resetOwnedBunches([{ id: 'solo', name: '혼자', candidates: [] }]);
+    render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+
+    await agreeAndNext();
+
+    expect(await screen.findByRole('alertdialog', { name: '정말 탈퇴하시겠어요?' })).toBeTruthy();
   });
 
   it('권한 이전 안내에서 「취소」를 누르면 이동하지 않고 닫는다', async () => {

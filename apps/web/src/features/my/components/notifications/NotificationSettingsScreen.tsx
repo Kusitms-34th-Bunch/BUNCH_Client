@@ -36,6 +36,9 @@ export function NotificationSettingsScreen({
   const backOr = useBackOr();
   const typesLabelId = useId();
   const deviceOffMessageId = useId();
+  const pushId = useId();
+  // 받을 알림을 모두 꺼서 앱 푸시가 자동으로 꺼졌는지(낭독 안내용)
+  const [autoOff, setAutoOff] = useState(false);
   const [push, setPush] = useState(settings.push);
   const [types, setTypes] = useState(settings.types);
 
@@ -68,12 +71,16 @@ export function NotificationSettingsScreen({
       {/* 헤더(또는 배너) 아래 12, 전체 토글과 받을 알림 사이 32(Figma 4096:75318) */}
       <div className="px-padding-p8 pt-padding-p6 gap-s14 flex flex-col">
         <ToggleListItem
+          id={pushId}
           title={text.push.title}
           description={text.push.description}
           checked={push}
           disabled={deviceOff}
           aria-describedby={disabledReason}
-          onChange={(event) => setPush(event.currentTarget.checked)}
+          onChange={(event) => {
+            setPush(event.currentTarget.checked);
+            setAutoOff(false);
+          }}
         />
         <section aria-labelledby={typesLabelId} className="gap-s3 flex flex-col">
           <h2
@@ -93,13 +100,24 @@ export function NotificationSettingsScreen({
                 aria-describedby={disabledReason}
                 onChange={(event) => {
                   const { checked } = event.currentTarget;
-                  setTypes((prev) => ({ ...prev, [type]: checked }));
+                  const next = { ...types, [type]: checked };
+                  setTypes(next);
+                  // 받을 알림이 모두 꺼지면 앱 푸시도 끔(기능명세서 7.3.3 상세 3)
+                  if (!Object.values(next).some(Boolean)) {
+                    setPush(false);
+                    setAutoOff(true);
+                    // 방금 누른 토글이 비활성이 돼 초점이 사라지지 않게 앱 푸시 토글로 옮김
+                    document.getElementById(pushId)?.focus();
+                  }
                 }}
               />
             ))}
           </div>
         </section>
       </div>
+      <p role="status" className="sr-only">
+        {autoOff ? text.pushAutoOff : ''}
+      </p>
     </PageShell>
   );
 }

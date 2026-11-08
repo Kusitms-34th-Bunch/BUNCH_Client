@@ -17,7 +17,11 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
-import { markTransferFromGuide, useOwnedBunches } from '../../hooks/useOwnedBunches';
+import {
+  consumeKeepAgreed,
+  markTransferFromGuide,
+  useOwnedBunches,
+} from '../../hooks/useOwnedBunches';
 import { useWithdrawMutation } from '../../queries/session';
 
 type DialogKind = 'confirm' | 'owner';
@@ -33,7 +37,8 @@ export function WithdrawalScreen() {
   const backOr = useBackOr();
   const agreeId = useId();
   const agreeTextId = useId();
-  const [agreed, setAgreed] = useState(false);
+  // 마이페이지에서 들어오면 해제, 권한을 넘기고 돌아오면 체크 유지(기능명세서 7.6.1 로직 1)
+  const [agreed, setAgreed] = useState(consumeKeepAgreed);
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const withdraw = useWithdrawMutation();
   // 권한을 넘기고 돌아오면 줄어든 목록으로 다시 판단(화면 설계서 5-3)

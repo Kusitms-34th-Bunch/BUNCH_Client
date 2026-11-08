@@ -110,6 +110,37 @@ describe('ProfileEditScreen', () => {
     expect(replace).toHaveBeenCalledWith('/my');
   });
 
+  it('바꾼 내용이 있으면 뒤로 가기 전에 확인하고, 「취소」는 입력을 두고 「나가기」는 MY로 간다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.type(nicknameInput(), '짱');
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '저장하지 않고 나갈까요?' });
+    expect(within(dialog).getByText('변경한 내용이 반영되지 않아요.')).toBeTruthy();
+
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    expect(replace).not.toHaveBeenCalled();
+    expect(nicknameInput().value).toBe('으누짱');
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '나가기' }),
+    );
+    expect(replace).toHaveBeenCalledWith('/my');
+  });
+
+  it('저장한 뒤에는 뒤로 가기에 나가기 확인을 띄우지 않는다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.type(nicknameInput(), '짱');
+    await user.click(submitButton());
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
   it('제목과 사진 변경 버튼의 이름을 가진다', () => {
     renderScreen();
 
