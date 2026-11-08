@@ -108,6 +108,7 @@ describe('BundleDraftPhotoCaption', () => {
     renderCaption('draft-photo-2');
 
     await userEvent.click(screen.getByRole('button', { name: '2번째 사진 빼기' }));
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));
 
     expect(screen.getAllByRole('img', { name: /한강에서 달리는 사람들/ })).toHaveLength(2);
     expect(toast).not.toHaveBeenCalled();

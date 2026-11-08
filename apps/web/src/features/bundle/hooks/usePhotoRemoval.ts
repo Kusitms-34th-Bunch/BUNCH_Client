@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import type { DraftPhoto } from '../lib/types';
 import type { PhotoListScroll } from './usePhotoListScroll';
 import { BUNDLE_MESSAGES } from '../constants/messages';
-import { getRemovePhotoKind } from '../lib/photos';
+import { getRemovePhotoKind, type RemovePhotoKind } from '../lib/photos';
 import { SLOW_MOVE, useMoveAnimation } from './useMoveAnimation';
 
 // 확인 창 닫힘 전환이 끝난 뒤에 포커스를 옮기려는 지연
@@ -12,7 +12,7 @@ const CLOSE_TRANSITION_MS = 150;
 // 이동이 끝난 뒤 스크롤 스냅을 되돌리기 전에 두는 여유
 const SNAP_RESTORE_GAP_MS = 50;
 
-type RemoveDialog = { kind: 'last' | 'captioned'; photoId: string };
+type RemoveDialog = { kind: RemovePhotoKind; photoId: string };
 
 type UsePhotoRemovalOptions = {
   photos: readonly DraftPhoto[];
@@ -78,9 +78,8 @@ export function usePhotoRemoval({
   const requestRemove = (photo: DraftPhoto) => {
     if (!canEdit) return onDenied();
     if (isLocked(photo.id)) return onBlocked();
-    const kind = getRemovePhotoKind(photos, photo);
-    if (kind === 'direct') removeAndFocus(photo.id, 0);
-    else setRemoveDialog({ kind, photoId: photo.id });
+    // 사진 한 장을 빼려면 항상 확인을 거침(1장이면 안내만)
+    setRemoveDialog({ kind: getRemovePhotoKind(photos), photoId: photo.id });
   };
 
   const confirmRemove = () => {

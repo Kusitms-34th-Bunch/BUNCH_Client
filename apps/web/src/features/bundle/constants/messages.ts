@@ -103,9 +103,9 @@ export const BUNDLE_MESSAGES = {
   removePhotoBlockedTitle: '사진을 삭제할 수 없어요',
   removePhotoBlockedDescription: '번들에는 최소 1장의 사진이 있어야 해요.',
   removePhotoBlockedConfirm: '확인',
-  removeCaptionedTitle: '캡션이 작성된 사진이에요',
-  removeCaptionedDescription: '사진을 삭제하면 작성된 캡션도 함께 삭제되며, 복구할 수 없어요.',
-  removeCaptionedConfirm: '삭제하기',
+  removeConfirmTitle: '사진을 삭제할까요?',
+  removeConfirmDescription: '사진과 작성한 캡션이 모두 삭제돼요.',
+  removeConfirmConfirm: '삭제하기',
   photoDeleted: '사진함에서 삭제된 사진이에요.',
   // 사진 추가 화면(기능 spec 4.3.7, Figma `1782:33283`·`2060:38500`·`1782:32859`·`2091:62148`)
   photoAddTitle: '사진 추가',
