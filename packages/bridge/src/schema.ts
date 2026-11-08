@@ -24,6 +24,31 @@ export type PermissionKind = z.infer<typeof permissionKindSchema>;
 export const permissionStatusSchema = z.enum(['granted', 'denied', 'undetermined']);
 export type PermissionStatus = z.infer<typeof permissionStatusSchema>;
 
+/** 쉘이 네이티브 SDK로 로그인시키는 소셜 서비스 */
+export const socialProviderSchema = z.enum(['kakao', 'google', 'apple']);
+export type SocialProvider = z.infer<typeof socialProviderSchema>;
+
+/**
+ * 소셜 로그인 결과: 서버 로그인에 쓸 ID 토큰을 웹에 넘기고, 서버 호출과 쿠키 저장은 웹 BFF가 맡음
+ * 사용자가 로그인 창을 닫으면 실패가 아니라 `cancelled`, SDK·네트워크 오류는 reject
+ * 카카오·Apple은 서버가 nonce를 요구하므로 함께 전달(인증 BFF 입력 검증과 같은 규칙)
+ */
+export const socialLoginResultSchema = z.discriminatedUnion('status', [
+  z
+    .object({
+      status: z.literal('success'),
+      provider: socialProviderSchema,
+      idToken: z.string().min(1),
+      nonce: z.string().min(1).optional(),
+    })
+    .refine((result) => result.provider === 'google' || result.nonce !== undefined, {
+      message: 'Apple·Kakao 로그인에는 nonce가 필요합니다.',
+      path: ['nonce'],
+    }),
+  z.object({ status: z.literal('cancelled') }),
+]);
+export type SocialLoginResult = z.infer<typeof socialLoginResultSchema>;
+
 export const shareParamsSchema = z.object({
   url: z.url(),
   title: z.string().optional(),

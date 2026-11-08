@@ -149,6 +149,15 @@ packages/bridge/
 - WebView 내부 이동은 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)만 허용하고 외부 주소는 OS로 전달한다. 외부 페이지가 갤러리 등 네이티브 브리지에 접근하지 못하도록 하는 경계다. 인증 redirect는 별도 계약 확정 후 연결한다.
 - 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다(`expo-image-picker`, `expo-image-manipulator`). 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`은 initialBridge 메서드도 포함). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
 
+## 소셜 로그인 bridge
+
+- `socialLogin(provider: 'kakao' | 'google' | 'apple'): Promise<SocialLoginResult>`는 쉘의 네이티브 SDK로 로그인시키고 서버 로그인에 쓸 ID 토큰을 웹에 넘기는 계약이다(`packages/bridge`의 `socialLoginResultSchema`). 서버 호출과 인증 쿠키 저장은 웹 BFF(`/api/auth/login`)가 맡고, 쉘은 토큰만 전달한다.
+- 결과는 `{ status: 'success', provider, idToken, nonce? }` 또는 `{ status: 'cancelled' }`다. 사용자가 로그인 창을 닫은 것은 실패가 아니라 `cancelled`이고, SDK·네트워크 오류는 reject다. 카카오·Apple은 `nonce`가 필수, Google은 선택이며 BFF 입력 검증과 같은 규칙이다.
+- 로그인 창은 사용자가 끝낼 때까지 기다려야 하므로 웹은 타임아웃을 끈 전용 `loginBridge`를 쓴다. 브라우저(쉘 밖)에서는 `initialBridge`가 reject하며 호출부가 로그인 실패로 처리한다.
+- 토큰 취급 규칙(SDK 연결 때 적용): 쉘은 반환 직전에 `socialLoginResultSchema.parse`로 검증하고 웹도 받은 직후 같은 검증을 한다. 토큰·nonce는 로그·`console`·오류 메시지에 넣지 않고, SDK 오류는 토큰이 없는 일반화된 메시지로 바꿔 던진다. 웹은 토큰을 저장하지 않고 곧바로 BFF로 보내며 `localStorage`·쿼리스트링·전역 상태에 두지 않는다.
+- nonce 책임(확정 전, 백엔드 확인 필요): 쉘이 암호학적 난수(`Math.random()` 금지)로 만들어 SDK에 넣고 토큰과 함께 돌려주며, 토큰의 nonce 클레임과의 대조와 replay 방지(일회성 소비·만료)는 백엔드 몫으로 가정한다. 서버 발급 nonce 여부와 SDK에 넣는 값(raw 또는 SHA-256 해시)과 웹에 돌려주는 값이 어느 쪽인지는 백엔드와 SDK 연동 때 정하고 이 문서에 적는다.
+- 쉘 구현(`src/social-login.ts`)은 SDK 연동 전이라 항상 reject하는 자리만 있다. SDK를 연결하면 이 문서와 확인 범위를 갱신한다. 실기기 동작은 확인하지 못했다.
+
 ## 인증 — 아직 설계 전
 
 지금 `apps/web`의 BFF는 httpOnly 쿠키에만 의존한다(`docs/architecture/api-boundary.md`). WebView는 쿠키 지속성이 불안정할 수 있어, 실제로 로그인 흐름을 이 쉘에 연결하기 전에 쿠키 유실 대응 설계가 필요하다. 쿠키 유실 대응은 아직 결정 전이며, 정하면 이 문서와 `api-boundary.md`를 함께 갱신한다.
