@@ -154,9 +154,10 @@ packages/bridge/
 - `socialLogin(provider: 'kakao' | 'google' | 'apple'): Promise<SocialLoginResult>`는 쉘의 네이티브 SDK로 로그인시키고 서버 로그인에 쓸 ID 토큰을 웹에 넘기는 계약이다(`packages/bridge`의 `socialLoginResultSchema`). 서버 호출과 인증 쿠키 저장은 웹 BFF(`/api/auth/login`)가 맡고, 쉘은 토큰만 전달한다.
 - 결과는 `{ status: 'success', provider, idToken, nonce? }` 또는 `{ status: 'cancelled' }`다. 사용자가 로그인 창을 닫은 것은 실패가 아니라 `cancelled`이고, SDK·네트워크 오류는 reject다. 카카오·Apple은 `nonce`가 필수, Google은 선택이며 BFF 입력 검증과 같은 규칙이다.
 - 로그인 창은 사용자가 끝낼 때까지 기다려야 하므로 웹은 타임아웃을 끈 전용 `loginBridge`를 쓴다. 브라우저(쉘 밖)에서는 `initialBridge`가 reject하며 호출부가 로그인 실패로 처리한다.
-- 토큰 취급 규칙(SDK 연결 때 적용): 쉘은 반환 직전에 `socialLoginResultSchema.parse`로 검증하고 웹도 받은 직후 같은 검증을 한다. 토큰·nonce는 로그·`console`·오류 메시지에 넣지 않고, SDK 오류는 토큰이 없는 일반화된 메시지로 바꿔 던진다. 웹은 토큰을 저장하지 않고 곧바로 BFF로 보내며 `localStorage`·쿼리스트링·전역 상태에 두지 않는다.
-- nonce 책임(확정 전, 백엔드 확인 필요): 쉘이 암호학적 난수(`Math.random()` 금지)로 만들어 SDK에 넣고 토큰과 함께 돌려주며, 토큰의 nonce 클레임과의 대조와 replay 방지(일회성 소비·만료)는 백엔드 몫으로 가정한다. 서버 발급 nonce 여부와 SDK에 넣는 값(raw 또는 SHA-256 해시)과 웹에 돌려주는 값이 어느 쪽인지는 백엔드와 SDK 연동 때 정하고 이 문서에 적는다.
-- 쉘 구현(`src/social-login.ts`)은 SDK 연동 전이라 항상 reject하는 자리만 있다. SDK를 연결하면 이 문서와 확인 범위를 갱신한다. 실기기 동작은 확인하지 못했다.
+- 토큰 취급 규칙: 쉘은 반환 직전에 `socialLoginResultSchema.parse`로 검증하고 웹도 받은 직후 같은 검증을 한다. 토큰·nonce는 로그·`console`·오류 메시지에 넣지 않고, SDK 오류는 토큰이 없는 일반 문구로 바꿔 던진다(`src/social-login-core.ts`). 웹은 토큰을 저장하지 않고 곧바로 BFF로 보내며 `localStorage`·쿼리스트링·전역 상태에 두지 않는다.
+- nonce 책임: 쉘이 암호학적 난수(`expo-crypto`의 `randomUUID`)를 로그인마다 새로 만들어 카카오 로그인 요청에 실어 보내고, 같은 값(원본)을 ID 토큰과 함께 웹에 돌려준다. 웹은 그 원본 nonce를 BFF로 보내며, 백엔드가 토큰의 nonce 클레임과 대조하고 같은 토큰의 재사용을 거부한다(API 명세서). Apple은 SDK 요청에 해시를 넣어야 할 수 있어 연동 때 따로 정한다.
+- 쉘 구현: 카카오만 연결했다(`src/social-login.ts`가 `@react-native-kakao/core`·`user`와 `expo-crypto`를 묶고, 흐름은 `src/social-login-core.ts`에 있어 Node 테스트로 확인한다). Google·Apple은 SDK 연동 전이라 실패로 돌려준다. 사용자가 로그인 창을 닫거나(iOS 오류 코드 `Cancelled`) 동의를 거절하면(`AccessDenied`) `cancelled`로 돌려준다. **실기기·시뮬레이터에서 동작을 확인하지 못했다**(취소 오류 코드가 실제로 그 값인지, ID 토큰이 오는지 포함). 취소 코드는 iOS 기준이며 Android는 확인 전이다(다른 코드면 취소가 실패로 처리돼 같은 토스트가 뜬다).
+- 카카오 설정: `apps/mobile-shell/.env.local`에 `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY`(카카오 콘솔의 네이티브 앱 키)를 넣는다. `app.config.js`가 `app.json`에 `@react-native-kakao/core` plugin(`nativeAppKey`, `ios.handleKakaoOpenUrl: true`)을 더해 Info.plist에 `kakao{앱 키}` URL scheme과 카카오톡 앱 실행 허용 목록을 쓰고, 앱 실행 때 같은 변수로 SDK를 시작한다. 키가 없으면 로컬은 경고만 하고 카카오 설정 없이 진행하며, EAS 빌드는 멈춘다(설정이 빠진 앱이 조용히 만들어지지 않도록). 카카오 콘솔에서 iOS 번들 ID 등록, 카카오 로그인 사용, OpenID Connect를 켜야 ID 토큰이 온다. 네이티브 모듈과 plugin이 추가돼 **개발 앱을 다시 빌드**해야 하고 Expo Go에서는 쓸 수 없다(로그인은 실패로 처리된다). EAS 클라우드 빌드는 `.env.local`을 올리지 않으므로 EAS 환경변수에도 같은 이름으로 등록한다.
 
 ## 인증 — 아직 설계 전
 
