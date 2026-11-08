@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryWrapper } from '@/shared/query/testing';
@@ -88,6 +88,40 @@ describe('BunchPlaces', () => {
     );
   });
 
+  it('멤버 칩을 고른 상태에서 마지막 카드를 빼면 초점이 앞 카드로 옮겨진다', async () => {
+    const user = userEvent.setup();
+    renderPlaces();
+    await user.click(screen.getByRole('radio', { name: '수인 2' }));
+
+    await openMenu(user, '양양 서피비치', '콕에서 빼기');
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '전주 한옥마을 더보기' })).toHaveFocus(),
+    );
+  });
+
+  it('볼 수 없는 번들 모달로 빼도 초점이 같은 자리에 온 다음 카드로 옮겨진다', async () => {
+    const user = userEvent.setup();
+    renderPlaces();
+    const card = screen
+      .getAllByRole('listitem')
+      .find((item) => item.textContent?.includes('안목해변 커피거리'))!;
+    const cardButton = within(card)
+      .getAllByRole('button')
+      .find((button) => !button.getAttribute('aria-label')?.includes('더보기'))!;
+
+    await user.click(cardButton);
+    await user.click(
+      await within(await screen.findByRole('alertdialog')).findByRole('button', {
+        name: '콕에서 빼기',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '연남동 책방 더보기' })).toHaveFocus(),
+    );
+  });
+
   it('마지막 장소까지 빼면 빈 상태를 보이고 「피드 둘러보기」로 피드에 간다', async () => {
     const user = userEvent.setup();
     renderPlaces();
@@ -95,9 +129,9 @@ describe('BunchPlaces', () => {
 
     await openMenu(user, '협재해변', '콕에서 빼기');
 
-    expect(
-      await screen.findByRole('heading', { name: '아직 콕한 장소가 없어요' }),
-    ).toBeInTheDocument();
+    const heading = await screen.findByRole('heading', { name: '아직 콕한 장소가 없어요' });
+    // 뺀 카드가 사라져 초점이 갈 곳이 없으면 빈 상태 제목으로 옮김
+    await waitFor(() => expect(heading).toHaveFocus());
     await user.click(screen.getByRole('button', { name: '피드 둘러보기' }));
     expect(push).toHaveBeenCalledWith('/feed');
   });
