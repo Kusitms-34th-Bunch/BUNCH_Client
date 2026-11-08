@@ -11,15 +11,16 @@ import {
 } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 import {
-  consumeKeepAgreed,
+  clearKeepAgreed,
   markTransferFromGuide,
+  peekKeepAgreed,
   useOwnedBunches,
 } from '../../hooks/useOwnedBunches';
 import { useWithdrawMutation } from '../../queries/session';
@@ -38,7 +39,8 @@ export function WithdrawalScreen() {
   const agreeId = useId();
   const agreeTextId = useId();
   // 마이페이지에서 들어오면 해제, 권한을 넘기고 돌아오면 체크 유지(기능명세서 7.6.1 로직 1)
-  const [agreed, setAgreed] = useState(consumeKeepAgreed);
+  const [agreed, setAgreed] = useState(peekKeepAgreed);
+  useEffect(clearKeepAgreed, []);
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const withdraw = useWithdrawMutation();
   // 권한을 넘기고 돌아오면 줄어든 목록으로 다시 판단(화면 설계서 5-3)

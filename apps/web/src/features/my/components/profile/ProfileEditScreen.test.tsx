@@ -133,6 +133,21 @@ describe('ProfileEditScreen', () => {
     expect(replace).toHaveBeenCalledWith('/my');
   });
 
+  it('MY에서 들어왔으면 「나가기」 뒤 그 기록으로 돌아간다(MY 기록을 쌓지 않음)', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
+    renderScreen();
+    await user.type(nicknameInput(), '짱');
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '나가기' }),
+    );
+
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('저장한 뒤에는 뒤로 가기에 나가기 확인을 띄우지 않는다', async () => {
     const user = userEvent.setup();
     renderScreen();

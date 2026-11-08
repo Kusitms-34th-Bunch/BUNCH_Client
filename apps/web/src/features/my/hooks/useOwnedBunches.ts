@@ -20,10 +20,16 @@ const subscribe = (listener: () => void) => {
 
 export const getOwnedBunches = () => owned;
 
-/** 고른 멤버에게 권한을 넘긴 번치를 목록에서 뺌(번치 ID → 새 메인 관리자 ID) */
-export const transferOwnership = (selections: Readonly<Record<string, string>>) => {
+/**
+ * 고른 멤버에게 권한을 넘긴 번치를 목록에서 뺌(번치 ID → 새 메인 관리자 ID)
+ * 탈퇴 안내에서 체크하고 들어온 경우만 돌아가서 체크를 유지(주소로 바로 들어오면 유지 안 함)
+ */
+export const transferOwnership = (
+  selections: Readonly<Record<string, string>>,
+  { fromGuide = false }: { fromGuide?: boolean } = {},
+) => {
   owned = owned.filter((bunch) => !(bunch.id in selections));
-  keepAgreed = true;
+  keepAgreed = fromGuide;
   listeners.forEach((listener) => listener());
 };
 
@@ -34,11 +40,11 @@ export const resetOwnedBunches = (next: readonly OwnedBunch[] = ownedBunchesFixt
   listeners.forEach((listener) => listener());
 };
 
-/** 탈퇴 안내가 들어올 때 한 번 읽고 지움 */
-export const consumeKeepAgreed = () => {
-  const kept = keepAgreed;
+/** 탈퇴 안내가 처음 그릴 때 읽음. 렌더 중에는 바꾸지 않고 `clearKeepAgreed`로 effect에서 지움 */
+export const peekKeepAgreed = () => keepAgreed;
+
+export const clearKeepAgreed = () => {
   keepAgreed = false;
-  return kept;
 };
 
 // 탈퇴 안내에서 들어왔는지(완료 뒤 뒤로 가기로 돌아갈지, 탈퇴 안내로 바로 갈지 판단)

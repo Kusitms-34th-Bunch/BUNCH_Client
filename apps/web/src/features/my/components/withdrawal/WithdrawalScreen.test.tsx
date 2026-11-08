@@ -141,11 +141,24 @@ describe('WithdrawalScreen', () => {
 
   it('권한을 넘기고 돌아오면 확인 체크를 유지해 「다음」이 바로 풀려 있다', () => {
     resetOwnedBunches();
-    transferOwnership({ 'owned-1': 'm-1', 'owned-2': 'm-5' });
-    render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+    transferOwnership({ 'owned-1': 'm-1', 'owned-2': 'm-5' }, { fromGuide: true });
+    const { unmount } = render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
 
     expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '다음' }).disabled).toBe(false);
+
+    // 한 번만 유지하고 다음 진입부터는 해제
+    unmount();
+    render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+    expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(false);
+  });
+
+  it('권한 이전 화면에 주소로 바로 들어와 넘겼으면 체크를 유지하지 않는다', () => {
+    resetOwnedBunches();
+    transferOwnership({ 'owned-1': 'm-1', 'owned-2': 'm-5' });
+    render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+
+    expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(false);
   });
 
   it('나 혼자 있는 번치는 권한을 넘길 번치로 보지 않는다', async () => {
