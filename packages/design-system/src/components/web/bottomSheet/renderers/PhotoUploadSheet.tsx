@@ -24,13 +24,13 @@ export const PhotoUploadSheet = ({
   ...rootProps
 }: PhotoUploadSheetProps) => (
   <BottomSheet.Root {...rootProps}>
-    {/* Figma 01 간격(손잡이 아래 14, 제목·카드 사이 10) 적용 */}
+    {/* Figma 01 간격(손잡이 아래 14, 제목·카드 사이 12) 적용 */}
     <BottomSheet.Content className="gap-0">
       <BottomSheet.Header className="pt-padding-p7">
         <BottomSheet.Title className="typography-heading-2-semibold">{title}</BottomSheet.Title>
         <BottomSheet.Close className="focus-visible:-m-s5 focus-visible:p-s5 sr-only focus-visible:not-sr-only" />
       </BottomSheet.Header>
-      <BottomSheet.Body className="mt-s5 gap-s3 pb-s10 flex flex-col">
+      <BottomSheet.Body className="mt-s6 gap-s3 pb-s10 flex flex-col">
         <UploadOptionCard
           title="앨범에서 선택"
           description="여러 장을 한 번에 올려요."

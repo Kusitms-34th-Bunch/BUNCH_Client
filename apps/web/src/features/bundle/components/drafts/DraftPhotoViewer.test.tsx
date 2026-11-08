@@ -206,10 +206,13 @@ describe('DraftPhotoViewer ⋯ 메뉴', () => {
 });
 
 describe('DraftPhotoViewer 삭제', () => {
-  it('캡션이 없는 사진은 바로 빼고 이웃 사진으로 이어서 본다', async () => {
+  it('확인 창에서 「삭제하기」를 누르면 빼고 이웃 사진으로 이어서 본다', async () => {
     renderViewer({ initialPhotoId: 'draft-photo-2' });
 
     await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
+    expect(screen.getByText(BUNDLE_MESSAGES.removeConfirmTitle)).toBeInTheDocument();
+    expect(actions.removePhoto).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));
 
     expect(actions.removePhoto).toHaveBeenCalledWith('draft-photo-2');
     expect(onPhotoChange).toHaveBeenCalledWith('draft-photo-3');
@@ -219,16 +222,17 @@ describe('DraftPhotoViewer 삭제', () => {
     renderViewer({ initialPhotoId: 'draft-photo-3' });
 
     await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));
 
     expect(actions.removePhoto).toHaveBeenCalledWith('draft-photo-3');
     expect(onPhotoChange).toHaveBeenCalledWith('draft-photo-2');
   });
 
-  it('캡션이 있는 사진은 확인 창에서 「삭제하기」를 눌러야 뺀다', async () => {
+  it('캡션이 있는 사진도 같은 확인 창에서 「삭제하기」를 눌러야 뺀다', async () => {
     renderViewer({ initialPhotoId: 'draft-photo-1' });
 
     await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
-    expect(screen.getByText(BUNDLE_MESSAGES.removeCaptionedTitle)).toBeInTheDocument();
+    expect(screen.getByText(BUNDLE_MESSAGES.removeConfirmTitle)).toBeInTheDocument();
     expect(actions.removePhoto).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));
