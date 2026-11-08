@@ -5,7 +5,6 @@ import { LazyLottie } from '@/shared/components/loading/LazyLottie';
 import { createLottieLoader } from '@/shared/lib/lottieLoader';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { useInView } from '../hooks/useInView';
-import motion from './caughtUpMotion.module.css';
 
 const loadConfetti = createLottieLoader(
   () => import('@/shared/assets/lotties/feedCaughtUpConfetti.json'),
@@ -21,7 +20,10 @@ const loadCheck = createLottieLoader(
 export function FeedCaughtUp({ kind }: { kind: 'following' | 'all' }) {
   const [ref, inView] = useInView<HTMLDivElement>();
   // 글자는 처음부터 DOM에 두고(화면 낭독) 보이기 전에는 투명, 보이면 아이콘과 함께 나타남. 동작 줄이기면 그대로 보임
-  const textMotion = inView ? motion.fadeIn : 'opacity-0 motion-reduce:opacity-100';
+  // 체크 모션의 투명도 구간(0.233s)과 같은 페이드, 키프레임은 globals.css의 page-content-in(디자이너 확인)
+  const textMotion = inView
+    ? 'animate-[page-content-in_233ms_linear_both] motion-reduce:animate-none'
+    : 'opacity-0 motion-reduce:opacity-100';
   if (kind === 'following') {
     return (
       <div ref={ref} className="py-s14 px-padding-p8 flex flex-col items-center">
