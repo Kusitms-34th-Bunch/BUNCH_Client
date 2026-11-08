@@ -1,0 +1,104 @@
+import type * as DesignSystem from '@app/design-system';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper } from '@/shared/query/testing';
+import { BunchPlaces } from './BunchPlaces';
+
+type ToastArgs = Parameters<typeof DesignSystem.toast>;
+const toast = vi.fn<(..._args: ToastArgs) => void>();
+const push = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ back: vi.fn(), replace: vi.fn(), push }),
+}));
+vi.mock('@app/design-system', async (importOriginal) => ({
+  ...(await importOriginal<typeof DesignSystem>()),
+  toast: (...args: ToastArgs) => toast(...args),
+}));
+
+beforeEach(() => vi.clearAllMocks());
+
+const renderPlaces = () =>
+  render(<BunchPlaces backHref="/bunch" feedHref="/feed" />, { wrapper: createQueryWrapper() });
+
+const openMenu = async (user: ReturnType<typeof userEvent.setup>, place: string, item: string) => {
+  await user.click(screen.getByRole('button', { name: `${place} 더보기` }));
+  await user.click(await screen.findByRole('button', { name: item }));
+};
+
+describe('BunchPlaces', () => {
+  it('주소를 클립보드에 복사하고 토스트로 알린다', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    renderPlaces();
+
+    await openMenu(user, '봄날카페', '주소 복사하기');
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('제주 제주시 애월읍'));
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        '주소를 복사했어요.',
+        expect.objectContaining({ icon: 'success' }),
+      ),
+    );
+  });
+
+  it('복사에 실패하면 오류 토스트를 보인다', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
+    renderPlaces();
+
+    await openMenu(user, '봄날카페', '주소 복사하기');
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+        expect.anything(),
+      ),
+    );
+  });
+
+  it('콕에서 빼면 목록과 칩 숫자가 바로 줄고, 토스트의 「되돌리기」로 원래대로 돌린다', async () => {
+    const user = userEvent.setup();
+    renderPlaces();
+    expect(screen.getByRole('radio', { name: '전체 12' })).toBeInTheDocument();
+
+    await openMenu(user, '해리단길', '콕에서 빼기');
+
+    await waitFor(() => expect(screen.queryByText('해리단길')).toBeNull());
+    expect(screen.getByRole('radio', { name: '전체 11' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '은우 4' })).toBeInTheDocument();
+    const [, options] = toast.mock.calls.find(([message]) => message === '콕한 장소에서 뺐어요')!;
+    expect(options?.action?.label).toBe('되돌리기');
+
+    act(() => options?.action?.onClick());
+
+    expect(await screen.findByText('해리단길')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '전체 12' })).toBeInTheDocument();
+  });
+
+  it('콕에서 빼면 초점이 같은 자리에 온 다음 카드의 더보기 버튼으로 옮겨진다', async () => {
+    const user = userEvent.setup();
+    renderPlaces();
+
+    await openMenu(user, '해리단길', '콕에서 빼기');
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '성수 연무장길 더보기' })).toHaveFocus(),
+    );
+  });
+
+  it('마지막 장소까지 빼면 빈 상태를 보이고 「피드 둘러보기」로 피드에 간다', async () => {
+    const user = userEvent.setup();
+    renderPlaces();
+    await user.click(screen.getByRole('radio', { name: '지예 1' }));
+
+    await openMenu(user, '협재해변', '콕에서 빼기');
+
+    expect(
+      await screen.findByRole('heading', { name: '아직 콕한 장소가 없어요' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '피드 둘러보기' }));
+    expect(push).toHaveBeenCalledWith('/feed');
+  });
+});

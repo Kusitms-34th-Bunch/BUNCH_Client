@@ -38,6 +38,8 @@ type BunchHomeScreenProps = {
   onOpenDraft?: ((_bundleId: string) => void) | undefined;
   /** 전환 시트의 「새로운 번치 추가하기」 */
   onAddBunch?: (() => void) | undefined;
+  /** 프로필의 「콕한 장소」 버튼 */
+  onOpenPlaces?: (() => void) | undefined;
 };
 
 /** 번치 탭 홈: 번치 프로필, 완성된·작성 중인 번들 탭, 번치 전환 시트, 접근 불가 번치 안내 */
@@ -47,6 +49,7 @@ export function BunchHomeScreen({
   onCreateBundle,
   onOpenDraft,
   onAddBunch,
+  onOpenPlaces,
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
   const background = BUNCH_BACKGROUNDS[current.characterType];
@@ -135,6 +138,7 @@ export function BunchHomeScreen({
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">
           <BunchProfile
             bunch={current}
+            onPlacesClick={onOpenPlaces}
             countHrefs={{
               followerCount: BUNCH_HOME_PATHS.follows,
               followingCount: followingTab(BUNCH_HOME_PATHS.follows),

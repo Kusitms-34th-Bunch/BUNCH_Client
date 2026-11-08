@@ -162,6 +162,15 @@ describe('BunchHome', () => {
     expect(BUNCH_HOME_PATHS.createBundle).toBe('/bunch/bundles/new');
   });
 
+  it('「콕한 장소」는 콕한 장소 화면으로 이동한다', async () => {
+    render(<BunchHome source="sample" />, { wrapper });
+
+    await userEvent.click(screen.getByRole('button', { name: '콕한 장소' }));
+
+    expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.places);
+    expect(BUNCH_HOME_PATHS.places).toBe('/bunch/places');
+  });
+
   it('헤더 더보기는 더보기 메뉴로 가는 링크다(새 탭 열기 지원)', () => {
     render(<BunchHome source="sample" />, { wrapper });
 
