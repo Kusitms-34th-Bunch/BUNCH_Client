@@ -1,6 +1,8 @@
+import { isApiError } from '@app/api-core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sharedKeys } from '@/shared/query/keys';
 import { logout } from '../api/logout';
+import { registerMember } from '../api/registration';
 import { saveTermsAgreements } from '../api/terms';
 import { LOGIN_PATH } from '../constants/paths';
 import { STATUS_CHECK_FAILURE_MESSAGE } from '../hooks/useSocialLogin';
@@ -31,3 +33,24 @@ export const useLeaveSignupMutation = () =>
     meta: { errorMessage: STATUS_CHECK_FAILURE_MESSAGE },
     onSuccess: () => reloadTo(LOGIN_PATH),
   });
+
+/**
+ * 가입 완료(프로필 저장). 실패 처리는 화면이 함(닉네임 중복은 입력란 아래 문구, 그 밖은 토스트)
+ * 성공하면 가입 상태(`sharedKeys.session()`)를 다시 읽고 기다린 뒤 이동하게 함: 가드가 옛 상태(가입 중)로 이동을 되돌리지 않도록
+ * 다시 읽기에 실패하면 실패로 처리(같은 프로필의 재시도는 서버가 기존 결과를 돌려줌)
+ * 이동은 하지 않음: 가입 완료 사용자의 도착 화면은 가드(`AuthGate`)가 정함
+ */
+export const useRegisterMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: registerMember,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: sharedKeys.session() }, { throwOnError: true }),
+    // 이미 가입을 마친 계정(USER_003)이거나 약관 버전이 바뀐 경우(AUTH_016)는 서버 상태가 달라졌으므로 다시 읽어 가드가 알맞은 화면으로 보냄
+    onError: (error) => {
+      if (isApiError(error) && (error.code === 'USER_003' || error.code === 'AUTH_016')) {
+        void queryClient.invalidateQueries({ queryKey: sharedKeys.session() });
+      }
+    },
+  });
+};

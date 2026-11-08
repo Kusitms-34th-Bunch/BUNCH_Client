@@ -29,13 +29,13 @@ describe('birthYear', () => {
   });
 
   describe('isBirthYearInRange', () => {
-    it('1930년부터 현재 연도 − 14년까지 포함한다', () => {
-      expect(isBirthYearInRange('1930', 2026)).toBe(true);
+    it('1950년부터 현재 연도 − 14년까지 포함한다', () => {
+      expect(isBirthYearInRange('1950', 2026)).toBe(true);
       expect(isBirthYearInRange('2012', 2026)).toBe(true);
     });
 
     it('범위 밖이거나 4자리가 아니면 벗어난 것으로 본다', () => {
-      expect(isBirthYearInRange('1929', 2026)).toBe(false);
+      expect(isBirthYearInRange('1949', 2026)).toBe(false);
       expect(isBirthYearInRange('2013', 2026)).toBe(false);
       expect(isBirthYearInRange('199', 2026)).toBe(false);
     });

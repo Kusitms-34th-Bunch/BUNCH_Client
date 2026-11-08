@@ -66,6 +66,10 @@ export function TermsAgreement() {
         </div>
       }
     >
+      {/* 저장 중 상태를 스크린 리더에 알림(화면에는 숨김) */}
+      <p role="status" className="sr-only">
+        {agreeToTerms.isPending ? '약관 동의를 저장하는 중이에요' : ''}
+      </p>
       <PageHeader
         title="시작하기 전에 확인해 주세요!"
         description="서비스 이용에 필요한 필수 내용만 확인할게요."

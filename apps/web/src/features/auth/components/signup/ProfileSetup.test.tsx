@@ -1,11 +1,27 @@
 import type * as DesignSystem from '@app/design-system';
+import type { ComponentProps, ReactElement } from 'react';
+import { ApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  act,
+  fireEvent,
+  render as renderUi,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ok } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
 import { CHECK_FAILURE_MESSAGE } from '@/shared/hooks/useNicknameAvailability';
 import { NICKNAME_INVALID_MESSAGE, NICKNAME_TAKEN_MESSAGE } from '@/shared/lib/nickname';
-import { ProfileSetup } from './ProfileSetup';
+import { createQueryWrapper } from '@/shared/query/testing';
+import { TermsAgreementProvider } from '../../contexts/TermsAgreementProvider';
+import { sessionQueryOptions } from '../../queries/session';
+import { ProfileSetup as ProfileSetupScreen } from './ProfileSetup';
 
 const replace = vi.fn();
 const back = vi.fn();
@@ -16,7 +32,34 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: vi.fn(),
 }));
 
-const NEXT_PATH = '/next';
+// 가입 저장·중복 확인 API는 호출 인자만 확인
+const registration = vi.hoisted(() => ({
+  registerMember: vi.fn<(_input: unknown) => Promise<unknown>>(),
+  checkNicknameAvailability: vi.fn<(_nickname: string) => Promise<boolean>>(),
+}));
+vi.mock('../../api/registration', () => registration);
+
+// 선택 약관(추가 개인정보) 동의 여부와 가입 저장 mutation이 쓰는 Provider 안에서 그림. 기본은 동의(출생연도·성별 보임)
+const render = (ui: ReactElement, { demographics = true } = {}) => {
+  const Query = createQueryWrapper();
+  return renderUi(ui, {
+    wrapper: ({ children }) => (
+      <Query>
+        <TermsAgreementProvider initial={{ demographics }}>{children}</TermsAgreementProvider>
+      </Query>
+    ),
+  });
+};
+// 중복 확인은 각 테스트가 필요할 때만 켬(기본은 확인하지 않음)
+const ProfileSetup = (props: ComponentProps<typeof ProfileSetupScreen>) => (
+  <ProfileSetupScreen checkNickname={null} {...props} />
+);
+// 저장 요청이 끝나 처리 중 표시가 풀린 상태(성공해도 이 화면은 이동하지 않음: 가입 상태를 다시 읽은 가드가 이동)
+const saved = () =>
+  waitFor(() => {
+    expect(registration.registerMember).toHaveBeenCalled();
+    expect(start().getAttribute('aria-busy')).toBeNull();
+  });
 const nickname = () => screen.getByRole('textbox', { name: '닉네임' });
 const birthYear = () => screen.getByRole('textbox', { name: '출생연도' });
 const start = () => screen.getByRole('button', { name: 'BUNCH 시작하기' });
@@ -28,10 +71,17 @@ describe('ProfileSetup', () => {
     replace.mockClear();
     back.mockClear();
     vi.mocked(toast).mockClear();
+    registration.registerMember.mockReset();
+    registration.registerMember.mockResolvedValue({
+      memberId: 1,
+      signupStatus: 'COMPLETED',
+      nickname: '지원',
+      imageUrl: null,
+    });
   });
 
   it('화면 제목(h1)과 본문 영역(main), 헤더의 뒤로 가기 버튼을 가진다', async () => {
-    render(<ProfileSetup nextPath={NEXT_PATH} />);
+    render(<ProfileSetup />);
 
     expect(
       screen.getByRole('heading', { level: 1, name: '먼저 나를 소개해 볼까요?' }),
@@ -46,7 +96,7 @@ describe('ProfileSetup', () => {
 
   describe('프로필 사진', () => {
     it('사진 변경 버튼을 누르면 「프로필 사진 설정」 선택지를 연다(기본 이미지라 기본 이미지 선택지는 없음)', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.click(screen.getByRole('button', { name: '프로필 사진 변경' }));
 
@@ -56,7 +106,7 @@ describe('ProfileSetup', () => {
     });
 
     it('사진 변경 버튼은 누르는 중에는 키보드를 닫지 않고, 클릭 뒤에 닫는다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
       const input = nickname();
       await userEvent.click(input);
       const camera = screen.getByRole('button', { name: '프로필 사진 변경' });
@@ -71,21 +121,21 @@ describe('ProfileSetup', () => {
   });
 
   it('기본 프로필 이미지와 사진 변경 버튼을 보여 준다', () => {
-    render(<ProfileSetup nextPath={NEXT_PATH} />);
+    render(<ProfileSetup />);
 
     expect(screen.getByRole('button', { name: '프로필 사진 변경' })).toBeTruthy();
     expect(document.querySelector('img[src="/images/default-bunch/type-1.svg"]')).toBeTruthy();
   });
 
   it('처음에는 시작하기 버튼이 비활성이고 글자 수는 0/12다', () => {
-    render(<ProfileSetup nextPath={NEXT_PATH} />);
+    render(<ProfileSetup />);
 
     expect(start().hasAttribute('disabled')).toBe(true);
     expect(screen.getByText('0/12')).toBeTruthy();
   });
 
   it('필수 표시와 선택 표시를 각 항목 옆에 보여 준다', () => {
-    render(<ProfileSetup nextPath={NEXT_PATH} />);
+    render(<ProfileSetup />);
 
     expect(screen.getByText('*').getAttribute('aria-hidden')).toBe('true');
     expect(screen.getAllByText('선택')).toHaveLength(2);
@@ -94,7 +144,7 @@ describe('ProfileSetup', () => {
 
   describe('닉네임', () => {
     it('입력하면 글자 수가 갱신되고 시작하기가 활성화된다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '지원');
 
@@ -103,7 +153,7 @@ describe('ProfileSetup', () => {
     });
 
     it('12자까지만 입력할 수 있다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '가나다라마바사아자차카타파');
 
@@ -112,7 +162,7 @@ describe('ProfileSetup', () => {
     });
 
     it('특수문자가 있으면 오류 문구를 보이고 시작하기를 비활성화한다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '지@원');
 
@@ -122,7 +172,7 @@ describe('ProfileSetup', () => {
     });
 
     it('허용되지 않는 문자를 지우면 오류가 사라진다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '지원!');
       expect(screen.getByRole('alert')).toBeTruthy();
@@ -133,7 +183,7 @@ describe('ProfileSetup', () => {
     });
 
     it('이모지는 허용하지 않는다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '지원😀');
 
@@ -141,7 +191,7 @@ describe('ProfileSetup', () => {
     });
 
     it('공백만 입력하면 빈 값으로 보아 시작하기가 비활성이다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '   ');
 
@@ -150,7 +200,7 @@ describe('ProfileSetup', () => {
     });
 
     it('한글 조합 중인 자모는 오류로 보지 않지만 시작할 수는 없고, 조합이 끝나면 다시 검사한다', () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       fireEvent.compositionStart(nickname());
       fireEvent.change(nickname(), { target: { value: '지ㅇ' } });
@@ -162,7 +212,7 @@ describe('ProfileSetup', () => {
     });
 
     it('조합이 끝난 완성된 글자는 조합 중에도 시작할 수 있다', () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       fireEvent.compositionStart(nickname());
       fireEvent.change(nickname(), { target: { value: '지원' } });
@@ -183,7 +233,7 @@ describe('ProfileSetup', () => {
 
     it('확인 중에는 시작하기가 비활성이다', async () => {
       const check = vi.fn(() => Promise.resolve(true));
-      render(<ProfileSetup nextPath={NEXT_PATH} checkNickname={check} />);
+      render(<ProfileSetup checkNickname={check} />);
 
       await type();
 
@@ -192,7 +242,7 @@ describe('ProfileSetup', () => {
 
     it('사용할 수 있는 닉네임이면 시작하기가 활성화된다', async () => {
       const check = vi.fn(() => Promise.resolve(true));
-      render(<ProfileSetup nextPath={NEXT_PATH} checkNickname={check} />);
+      render(<ProfileSetup checkNickname={check} />);
 
       await type();
       await settle();
@@ -203,7 +253,7 @@ describe('ProfileSetup', () => {
 
     it('이미 사용 중이면 오류 문구를 보이고 시작하기를 비활성화한다', async () => {
       const check = vi.fn(() => Promise.resolve(false));
-      render(<ProfileSetup nextPath={NEXT_PATH} checkNickname={check} />);
+      render(<ProfileSetup checkNickname={check} />);
 
       await type();
       await settle();
@@ -214,7 +264,7 @@ describe('ProfileSetup', () => {
 
     it('조합 중인 자모로는 중복 확인을 호출하지 않는다', async () => {
       const check = vi.fn(() => Promise.resolve(true));
-      render(<ProfileSetup nextPath={NEXT_PATH} checkNickname={check} />);
+      render(<ProfileSetup checkNickname={check} />);
 
       fireEvent.compositionStart(nickname());
       fireEvent.change(nickname(), { target: { value: '지ㅇ' } });
@@ -225,7 +275,7 @@ describe('ProfileSetup', () => {
 
     it('확인에 실패하면 안내 문구가 남고 시작하기가 비활성인 채로 남는다', async () => {
       const check = vi.fn(() => Promise.reject(new Error('network')));
-      render(<ProfileSetup nextPath={NEXT_PATH} checkNickname={check} />);
+      render(<ProfileSetup checkNickname={check} />);
 
       await type();
       await settle();
@@ -244,7 +294,7 @@ describe('ProfileSetup', () => {
     afterEach(() => vi.useRealTimers());
 
     it('숫자 키보드로 입력하고 숫자만 4자리까지 받는다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(birthYear(), '19a9-812');
 
@@ -259,7 +309,7 @@ describe('ProfileSetup', () => {
     });
 
     it('비어 있어도 시작할 수 있다(선택 입력)', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '지원');
 
@@ -267,7 +317,7 @@ describe('ProfileSetup', () => {
     });
 
     it('범위 안의 4자리를 입력하면 시작할 수 있다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '지원');
       await userEvent.type(birthYear(), '1998');
@@ -276,14 +326,14 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(false);
     });
 
-    it('1930년보다 이르거나 현재 연도 − 14년보다 늦으면 안내하고 시작할 수 없다', async () => {
-      const max = 2012;
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+    it('1950년보다 이르거나 현재 연도 − 14년보다 늦으면 안내하고 시작할 수 없다', async () => {
+      const max = new Date().getFullYear() - 14;
+      render(<ProfileSetup />);
       await userEvent.type(nickname(), '지원');
 
-      await userEvent.type(birthYear(), '1929');
+      await userEvent.type(birthYear(), '1949');
       expect(screen.getByRole('alert').textContent).toBe(
-        `1930년부터 ${max}년 사이로 입력해 주세요.`,
+        `1950년부터 ${max}년 사이로 입력해 주세요.`,
       );
       expect(start().hasAttribute('disabled')).toBe(true);
 
@@ -294,7 +344,7 @@ describe('ProfileSetup', () => {
     });
 
     it('4자리를 다 쓰기 전에는 안내하지 않다가 포커스를 벗어나면 안내한다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
       await userEvent.type(nickname(), '지원');
 
       await userEvent.type(birthYear(), '199');
@@ -308,14 +358,14 @@ describe('ProfileSetup', () => {
 
   describe('성별', () => {
     it('처음에는 아무것도 선택되어 있지 않다', () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       expect(female().getAttribute('aria-pressed')).toBe('false');
       expect(male().getAttribute('aria-pressed')).toBe('false');
     });
 
     it('하나만 선택되고 다른 항목을 누르면 선택이 옮겨 간다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.click(female());
       expect(female().getAttribute('aria-pressed')).toBe('true');
@@ -327,7 +377,7 @@ describe('ProfileSetup', () => {
     });
 
     it('선택한 항목을 다시 누르면 해제된다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.click(female());
       await userEvent.click(female());
@@ -336,7 +386,7 @@ describe('ProfileSetup', () => {
     });
 
     it('선택하지 않아도 시작할 수 있다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
       await userEvent.type(nickname(), '지원');
 
@@ -344,8 +394,10 @@ describe('ProfileSetup', () => {
     });
 
     it('공개 안내 문구를 출생연도 입력과 성별 그룹의 설명으로 연결한다', () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
-      const note = screen.getByText('출생연도와 성별은 다른 사용자에게 공개되지 않아요.');
+      render(<ProfileSetup />);
+      const note = screen.getByText(
+        '출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, 다른 사용자에게 공개되지 않아요.',
+      );
 
       expect(birthYear().getAttribute('aria-describedby')).toContain(note.id);
       expect(screen.getByRole('group', { name: '성별' }).getAttribute('aria-describedby')).toBe(
@@ -354,25 +406,215 @@ describe('ProfileSetup', () => {
     });
 
     it('공개되지 않는다는 안내 문구를 성별 아래에 보여 준다', () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
 
-      expect(screen.getByText('출생연도와 성별은 다른 사용자에게 공개되지 않아요.')).toBeTruthy();
+      expect(
+        screen.getByText(
+          '출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, 다른 사용자에게 공개되지 않아요.',
+        ),
+      ).toBeTruthy();
     });
   });
 
-  it('시작하기를 누르면 지정한 경로로 이동한다', async () => {
-    render(<ProfileSetup nextPath={NEXT_PATH} />);
-    await userEvent.type(nickname(), '지원');
+  it('시작하기를 누르면 프로필을 저장하고 직접 이동하지는 않는다(도착 화면은 가드가 정함)', async () => {
+    render(<ProfileSetup />);
+    await userEvent.type(nickname(), ' 지원 ');
 
     await userEvent.click(start());
 
-    expect(replace).toHaveBeenCalledWith(NEXT_PATH);
-    expect(replace).toHaveBeenCalledTimes(1);
+    await saved();
+    expect(replace).not.toHaveBeenCalled();
+    expect(registration.registerMember).toHaveBeenCalledTimes(1);
+    // 앞뒤 공백은 지우고, 출생연도·성별을 입력하지 않았으면 보내지 않음
+    expect(registration.registerMember.mock.calls[0]?.[0]).toEqual({
+      nickname: '지원',
+      demographicsConsent: true,
+    });
+  });
+
+  describe('선택 약관(추가 개인정보)에 따른 입력', () => {
+    it('동의했으면 출생연도·성별과 통계 분석 안내 문구를 보여 준다', () => {
+      render(<ProfileSetup />);
+
+      expect(birthYear()).toBeTruthy();
+      expect(female()).toBeTruthy();
+      expect(
+        screen.getByText(
+          '출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, 다른 사용자에게 공개되지 않아요.',
+        ),
+      ).toBeTruthy();
+    });
+
+    it('동의하지 않았으면 닉네임만 보여 준다', () => {
+      render(<ProfileSetup />, { demographics: false });
+
+      expect(nickname()).toBeTruthy();
+      expect(screen.queryByRole('textbox', { name: '출생연도' })).toBeNull();
+      expect(screen.queryByRole('button', { name: '여성' })).toBeNull();
+      expect(screen.queryByText(/통계 분석/)).toBeNull();
+    });
+
+    it('동의했으면 입력한 출생연도·성별을 닉네임과 함께 저장한다', async () => {
+      render(<ProfileSetup />);
+      await userEvent.type(nickname(), '지원');
+      await userEvent.type(birthYear(), '1998');
+      await userEvent.click(female());
+
+      await userEvent.click(start());
+
+      await saved();
+      expect(replace).not.toHaveBeenCalled();
+      expect(registration.registerMember.mock.calls[0]?.[0]).toEqual({
+        nickname: '지원',
+        demographicsConsent: true,
+        birthYear: 1998,
+        gender: 'female',
+      });
+    });
+
+    it('동의하지 않았으면 출생연도·성별 없이 저장한다', async () => {
+      render(<ProfileSetup />, { demographics: false });
+      await userEvent.type(nickname(), '지원');
+
+      await userEvent.click(start());
+
+      await saved();
+      expect(replace).not.toHaveBeenCalled();
+      expect(registration.registerMember.mock.calls[0]?.[0]).toEqual({
+        nickname: '지원',
+        demographicsConsent: false,
+      });
+    });
+  });
+
+  describe('가입 저장 실패', () => {
+    it('저장하는 동안에는 처리 중으로 표시하고 다시 눌러도 한 번만 저장한다', async () => {
+      let finish!: () => void;
+      registration.registerMember.mockImplementation(
+        () => new Promise((resolve) => (finish = () => resolve({}))),
+      );
+      render(<ProfileSetup />);
+      await userEvent.type(nickname(), '지원');
+
+      await userEvent.click(start());
+      await waitFor(() => expect(start().getAttribute('aria-busy')).toBe('true'));
+      await userEvent.click(start());
+
+      expect(registration.registerMember).toHaveBeenCalledTimes(1);
+      expect(replace).not.toHaveBeenCalled();
+      act(() => finish());
+      await saved();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('저장하는 사이 다른 사람이 닉네임을 먼저 쓰면 입력란 아래에 알리고 이동하지 않는다', async () => {
+      registration.registerMember.mockRejectedValue(
+        new ApiError({
+          message: 'error.user_002',
+          category: 'validation',
+          status: 409,
+          code: 'USER_002',
+        }),
+      );
+      render(<ProfileSetup />);
+      await userEvent.type(nickname(), '지원');
+
+      await userEvent.click(start());
+
+      expect(await screen.findByText(NICKNAME_TAKEN_MESSAGE)).toBeTruthy();
+      expect(start().hasAttribute('disabled')).toBe(true);
+      expect(replace).not.toHaveBeenCalled();
+      expect(toast).not.toHaveBeenCalled();
+      // 시작하기가 비활성이 되므로 닉네임 입력으로 포커스를 돌려줌
+      expect(document.activeElement).toBe(nickname());
+
+      // 닉네임을 바꾸면 다시 시작할 수 있음
+      await userEvent.type(nickname(), '2');
+      expect(start().hasAttribute('disabled')).toBe(false);
+    });
+
+    it('저장하는 동안 스크린 리더에 저장 중임을 알린다', async () => {
+      let finish!: () => void;
+      registration.registerMember.mockImplementation(
+        () => new Promise((resolve) => (finish = () => resolve({}))),
+      );
+      render(<ProfileSetup />);
+      await userEvent.type(nickname(), '지원');
+      expect(screen.getByRole('status').textContent).toBe('');
+
+      await userEvent.click(start());
+      await waitFor(() =>
+        expect(screen.getByRole('status').textContent).toBe('프로필을 저장하는 중이에요'),
+      );
+
+      act(() => finish());
+      await waitFor(() => expect(screen.getByRole('status').textContent).toBe(''));
+    });
+
+    it.each([
+      ['이미 가입을 마친 계정(USER_003)', 'USER_003'],
+      ['약관 버전이 바뀐 경우(AUTH_016)', 'AUTH_016'],
+    ])(
+      '%s이면 토스트와 함께 가입 상태를 다시 읽어 가드가 알맞은 화면으로 보내게 한다',
+      async (_name, code) => {
+        registration.registerMember.mockRejectedValue(
+          new ApiError({ message: 'error', category: 'validation', status: 409, code }),
+        );
+        // 가드(AuthGate)처럼 가입 상태 query를 구독해야 다시 읽기가 일어남
+        let reads = 0;
+        server.use(
+          http.get('/api/members/me/onboarding', () => {
+            reads += 1;
+            return ok({ memberId: 1, signupStatus: 'IN_PROGRESS', termsAccepted: true });
+          }),
+        );
+        function SessionObserver() {
+          useQuery(sessionQueryOptions());
+          return null;
+        }
+        render(
+          <>
+            <SessionObserver />
+            <ProfileSetup />
+          </>,
+        );
+        await waitFor(() => expect(reads).toBe(1));
+        await userEvent.type(nickname(), '지원');
+
+        await userEvent.click(start());
+
+        await waitFor(() => expect(reads).toBe(2));
+        expect(toast).toHaveBeenCalled();
+      },
+    );
+
+    it('그 밖의 실패는 토스트로 알리고 입력을 둔 채 다시 시도할 수 있다', async () => {
+      registration.registerMember.mockRejectedValueOnce(
+        new ApiError({ message: 'error', category: 'server', status: 500 }),
+      );
+      render(<ProfileSetup />);
+      await userEvent.type(nickname(), '지원');
+
+      await userEvent.click(start());
+
+      await waitFor(() =>
+        expect(toast).toHaveBeenCalledWith(
+          '일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요',
+        ),
+      );
+      expect(replace).not.toHaveBeenCalled();
+      expect((nickname() as HTMLInputElement).value).toBe('지원');
+      expect(start().hasAttribute('disabled')).toBe(false);
+
+      await userEvent.click(start());
+      await saved();
+      expect(replace).not.toHaveBeenCalled();
+    });
   });
 
   describe('키보드', () => {
     it('빈 영역을 누르면 입력창 포커스가 풀려 키보드가 닫힌다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
       await userEvent.click(nickname());
       expect(document.activeElement).toBe(nickname());
 
@@ -382,7 +624,7 @@ describe('ProfileSetup', () => {
     });
 
     it('시작하기를 누르면 입력창 포커스가 풀린다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
       await userEvent.type(nickname(), '지원');
 
       await userEvent.click(start());
@@ -391,7 +633,7 @@ describe('ProfileSetup', () => {
     });
 
     it('성별 버튼을 누르는 중에는 키보드를 닫지 않아 탭이 사라지고, 선택이 끝나면 닫힌다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
       await userEvent.click(nickname());
 
       fireEvent.pointerDown(female());
@@ -402,8 +644,8 @@ describe('ProfileSetup', () => {
       expect(document.activeElement).not.toBe(nickname());
     });
 
-    it('시작하기를 누르는 중에는 키보드를 닫지 않고, 눌러서 이동할 때 닫는다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+    it('시작하기를 누르는 중에는 키보드를 닫지 않고, 누르면 저장을 시작하며 닫는다', async () => {
+      render(<ProfileSetup />);
       await userEvent.type(nickname(), '지원');
 
       fireEvent.pointerDown(start());
@@ -411,12 +653,14 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(false);
 
       fireEvent.click(start());
-      expect(replace).toHaveBeenCalledWith(NEXT_PATH);
+      // 키보드는 저장을 시작할 때 바로 닫힘
       expect(document.activeElement).not.toBe(nickname());
+      await saved();
+      expect(replace).not.toHaveBeenCalled();
     });
 
     it('다른 입력창을 누르면 포커스가 그대로 옮겨 간다', async () => {
-      render(<ProfileSetup nextPath={NEXT_PATH} />);
+      render(<ProfileSetup />);
       await userEvent.click(nickname());
 
       await userEvent.click(birthYear());
