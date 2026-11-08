@@ -33,7 +33,7 @@
 ## 상태와 흐름
 
 - 초기 진입: 모두 체크 해제 상태이고 시작하기 버튼은 비활성이다. 약관 목록은 앱 상수(`constants/terms.ts`)이고 서버 버전은 시작하기 때 읽는다.
-- Loading·Empty: 시작하기를 누른 동안 버튼이 `aria-busy`이고 다시 누를 수 없다. Empty는 해당 없음.
+- Loading·Empty: 시작하기를 누른 동안 버튼이 `aria-busy`이고 다시 누를 수 없으며, 동의를 저장하는 동안에는 `PageLoading`이 화면 전체를 덮는다. Empty는 해당 없음.
 - Error·retry: 저장에 실패하면 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」(공통 처리)를 보이고 체크 상태를 유지한 채 이동·권한 요청 없이 머문다. 다시 눌러 재시도한다. 로그아웃(뒤로 가기)이 실패해도 같은 토스트와 함께 머문다.
 - Disabled·invalid: 필수 약관 하나라도 체크하지 않으면 시작하기 버튼이 비활성(`disabled`)이다. 선택 약관만 체크해도 비활성이다. 안내 문구는 없다.
 - Success·완료 후 이동: 시작하기를 누르면 ① `GET /auth/terms`로 현재 버전을 읽고 ② `POST /auth/terms/agreements`로 필수 3종(`SERVICE`·`PRIVACY`·`AGE_OVER_14`)과 동의한 선택 약관(`DEMOGRAPHICS`)을 한 번에 저장하고 ③ 가입 상태(`sharedKeys.session()`)를 다시 읽어 기다린 뒤 ④ `usePermissionRequests`가 사진 → 카메라 → 알림 순서로 bridge `requestPermission`을 한 권한씩 호출하고(허용·거부·실패 모두 다음으로 진행) ⑤ 프로필(`SIGNUP_PATHS.profile`)로 `push`한다. 선택 약관은 동의했을 때만 보낸다(동의 안 함을 따로 받는지 명세에 없다, 백엔드 확인). 권한 요청 중 화면을 벗어나면 이동을 생략한다. 뒤로 가기는 `POST /api/auth/logout`으로 로그인 상태를 풀고 로그인 화면을 새로 연다(기획 1.3.5, 가입 중 계정과 진행 상태는 서버에 남는다).

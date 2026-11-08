@@ -546,9 +546,12 @@ describe('ProfileSetup', () => {
       await waitFor(() =>
         expect(screen.getByRole('status').textContent).toBe('프로필을 저장하는 중이에요'),
       );
+      // 저장 중에는 페이지 전체 로딩(PageLoading)으로 화면을 덮고, 끝나면 걷음
+      expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
 
       act(() => finish());
       await waitFor(() => expect(screen.getByRole('status').textContent).toBe(''));
+      expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
     });
 
     it.each([

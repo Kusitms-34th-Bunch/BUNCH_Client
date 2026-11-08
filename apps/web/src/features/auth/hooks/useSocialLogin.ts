@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
 export type SocialProvider = 'kakao' | 'google' | 'apple';
-/** 사용자가 소셜 로그인 창을 닫은 경우는 실패가 아니라 `cancelled`로 반환 */
+/** 사용자가 소셜 로그인 창을 닫은 경우는 `cancelled`로 반환(화면에서는 실패와 같은 토스트) */
 export type SocialLoginResult = 'success' | 'cancelled';
 export type SignIn = (_provider: SocialProvider) => Promise<SocialLoginResult>;
 
@@ -41,7 +41,11 @@ export function useSocialLogin(
 
     let keepLocked = false;
     try {
-      if ((await signIn(provider)) === 'success') {
+      const result = await signIn(provider);
+      if (result === 'cancelled') {
+        // 기획 1.2.6: 로그인 창을 닫아도 실패와 같은 안내 토스트
+        toast(LOGIN_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });
+      } else {
         let next: string | { path: string; replace: boolean };
         try {
           next = await resolveNextPath();

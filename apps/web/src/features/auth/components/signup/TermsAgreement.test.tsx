@@ -231,6 +231,25 @@ describe('TermsAgreement', () => {
     expect(start().hasAttribute('disabled')).toBe(false);
   });
 
+  it('동의를 저장하는 동안에는 페이지 전체 로딩으로 화면을 덮고, 끝나면 걷는다', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      http.post('/api/auth/terms/agreements', async () => {
+        await gate;
+        return ok(null);
+      }),
+    );
+    renderPage(REQUIRED);
+
+    await userEvent.click(start());
+
+    await waitFor(() => expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull());
+    expect(screen.getByRole('status').textContent).toBe('약관 동의를 저장하는 중이에요');
+    release();
+    await waitFor(() => expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull());
+  });
+
   it('권한을 요청하는 동안에는 처리 중으로 표시하고 다시 눌러도 실행하지 않는다', async () => {
     const bodies = captureAgreements();
     permissions.isRequesting = true;

@@ -4,6 +4,7 @@ import { Button } from '@app/design-system';
 import { Label, PageHeader, TermsLabel } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { SIGNUP_PATHS } from '../../constants/paths';
 import { TERMS_ITEMS } from '../../constants/terms';
 import { useTermsAgreement } from '../../contexts/termsAgreementContext';
@@ -70,6 +71,7 @@ export function TermsAgreement() {
       <p role="status" className="sr-only">
         {agreeToTerms.isPending ? '약관 동의를 저장하는 중이에요' : ''}
       </p>
+      {busy ? <PageLoading /> : null}
       <PageHeader
         title="시작하기 전에 확인해 주세요!"
         description="서비스 이용에 필요한 필수 내용만 확인할게요."

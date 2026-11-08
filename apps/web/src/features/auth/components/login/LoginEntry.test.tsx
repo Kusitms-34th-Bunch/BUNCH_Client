@@ -180,7 +180,7 @@ describe('LoginEntry', () => {
     expect(signIn).toHaveBeenLastCalledWith('apple');
   });
 
-  it('사용자가 로그인 창을 닫으면 토스트 없이 처음 상태로 돌아온다', async () => {
+  it('사용자가 로그인 창을 닫으면 실패와 같은 토스트를 보이고 처음 상태로 돌아온다', async () => {
     const { signIn, settle } = deferredSignIn();
     render(
       <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
@@ -190,7 +190,7 @@ describe('LoginEntry', () => {
     await settle('cancelled');
 
     expect(push).not.toHaveBeenCalled();
-    expect(toast).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
     expect(google().hasAttribute('aria-busy')).toBe(false);
     expect(kakao().hasAttribute('disabled')).toBe(false);
   });

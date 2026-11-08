@@ -5,6 +5,7 @@ import { Button, toast } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
 import { useRef, useState } from 'react';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { EMPTY_PROFILE_VALUES, useProfileFields } from '@/shared/hooks/useProfileFields';
@@ -76,6 +77,7 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
       <p role="status" className="sr-only">
         {register.isPending ? '프로필을 저장하는 중이에요' : ''}
       </p>
+      {register.isPending ? <PageLoading /> : null}
       <SignupFrame
         bottom={
           <div className="px-padding-p8 pt-padding-p7">
