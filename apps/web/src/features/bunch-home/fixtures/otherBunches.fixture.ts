@@ -3,10 +3,11 @@ import type { BunchMember, OtherBunch } from '../lib/types';
 import { sampleImage } from './bunchHome.fixture';
 
 // 번치 API 연결 전 다른 번치 예시(Figma 3086:68423 공개 여행 번치, 3086:68654 비공개 책방산책)
-const members = (names: readonly string[]): BunchMember[] =>
+const members = (names: readonly string[], imageSrc: string): BunchMember[] =>
   names.map((name, index) => ({
     id: `${name}-${index}`,
     name,
+    imageSrc,
     role: index === 0 ? 'owner' : index === 1 ? 'coOwner' : 'member',
   }));
 
@@ -28,7 +29,7 @@ export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
       coverSrc: sampleImage(hue),
     })),
     followStatus: 'none',
-    members: members(['솔', '하람', '도윤', '서아']),
+    members: members(['솔', '하람', '도윤', '서아'], DEFAULT_BUNCH_IMAGES.TYPE_2),
   },
   'bunch-book': {
     id: 'bunch-book',
@@ -47,7 +48,7 @@ export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
       coverSrc: sampleImage(hue),
     })),
     followStatus: 'none',
-    members: members(['지안', '루아', '하윤', '서진', '다온', '이든']),
+    members: members(['지안', '루아', '하윤', '서진', '다온', '이든'], DEFAULT_BUNCH_IMAGES.TYPE_4),
   },
 };
 
