@@ -123,6 +123,29 @@ describe('createBrowserApi', () => {
     expect(onUnauthorized).not.toHaveBeenCalled();
   });
 
+  it('같은 /api/auth/ 아래여도 약관 API의 401은 재발급 뒤 재시도한다(로그인·재발급·로그아웃만 제외)', async () => {
+    const paths: string[] = [];
+    let termsCalls = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: Request | string) => {
+        const path = new URL(
+          typeof input === 'string' ? input : input.url,
+          'https://app.example.com',
+        ).pathname;
+        paths.push(path);
+        if (path === '/api/auth/reissue') return Promise.resolve(json({}));
+        termsCalls += 1;
+        return Promise.resolve(termsCalls === 1 ? json({}, 401) : json({ ok: true }));
+      }),
+    );
+
+    const api = createBrowserApi({ baseUrl: 'https://app.example.com/api/' });
+
+    expect(await api.get('auth/terms').json()).toEqual({ ok: true });
+    expect(paths).toEqual(['/api/auth/terms', '/api/auth/reissue', '/api/auth/terms']);
+  });
+
   it('재발급은 됐지만 재시도도 401이면 onUnauthorized를 부른다', async () => {
     vi.stubGlobal(
       'fetch',

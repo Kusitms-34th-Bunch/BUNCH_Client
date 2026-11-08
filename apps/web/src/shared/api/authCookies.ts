@@ -2,7 +2,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 
 export const ACCESS_TOKEN_COOKIE = 'accessToken';
 export const REFRESH_TOKEN_COOKIE = 'refreshToken';
-// refresh 쿠키는 재발급·로그아웃 Route Handler에만 전송
+// refresh 쿠키는 `/api/auth` 아래 요청에만 전송(재발급·로그아웃과 프록시를 거치는 약관 API 포함, 프록시는 브라우저 쿠키를 백엔드로 넘기지 않음)
 export const REFRESH_TOKEN_PATH = '/api/auth';
 
 export interface TokenPair {
