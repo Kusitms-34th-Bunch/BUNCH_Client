@@ -70,15 +70,11 @@ export function OtherBunchMoreMenu({
         {...sheetProps('block')}
         title={BUNCH_HOME_MESSAGES.blockQuestion(bunchName)}
         notice={BUNCH_HOME_MESSAGES.blockNotice}
-        // Figma 4713:86366: 92px 자리에 일러스트(object-contain)
+        // Figma 5402:122972: 92px 자리 가운데에 일러스트 72×72
         illustration={
-          <Image
-            src={blockedBunch as StaticImageData}
-            alt=""
-            width={92}
-            height={92}
-            className="size-full object-contain"
-          />
+          <div className="flex size-full items-center justify-center">
+            <Image src={blockedBunch as StaticImageData} alt="" width={72} height={72} />
+          </div>
         }
         confirmLabel="차단하기"
         onConfirm={() => {

@@ -94,12 +94,12 @@ export function BunchBlockedListScreen({
         </div>
       ) : null}
       {blocked?.length === 0 ? (
-        // 화면설계서 3번: 안내 이미지와 문구, 별도 동작 없음(Figma 4331:59751: 이미지 130×109, 이미지와 문구 16, 제목·설명 4)
+        // 화면설계서 3번: 안내 이미지와 문구, 별도 동작 없음(Figma 5991:161676: 이미지 72×72, 이미지와 문구 16, 제목·설명 4)
         // Figma 1873:33828은 본문 세로 가운데보다 약 38 위라 아래 여백 72로 맞춤
         <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">
           <div className="gap-s8 flex flex-col items-center text-center">
             {/* SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김 */}
-            <Image src={blockedListEmpty as StaticImageData} alt="" width={130} height={109} />
+            <Image src={blockedListEmpty as StaticImageData} alt="" width={72} height={72} />
             <div className="gap-s2 flex flex-col items-center">
               <h2
                 ref={(node) => {

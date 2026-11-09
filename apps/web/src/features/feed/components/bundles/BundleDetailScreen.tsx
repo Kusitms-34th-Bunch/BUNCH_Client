@@ -9,8 +9,10 @@ import {
   CommentComposer,
   CommentItem,
 } from '@app/design-system/web';
+import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import commentEmpty from '@/shared/assets/images/empty/comment-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -197,9 +199,12 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
             ))}
           </ul>
         ) : (
-          <p className="typography-body-2-regular text-text-quinary flex h-64 items-center justify-center">
-            {text.noComments}
-          </p>
+          // Figma 5367:103541: 일러스트 72×72와 문구(13/18) 사이 12, 영역 256 안에서 가운데
+          <div className="gap-s6 flex h-64 flex-col items-center justify-center">
+            {/* SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김 */}
+            <Image src={commentEmpty as StaticImageData} alt="" width={72} height={72} />
+            <p className="typography-body-4-regular text-text-quinary">{text.noComments}</p>
+          </div>
         )}
       </section>
       <BundleSheets sheet={sheet} onClose={() => setSheet(null)} />
