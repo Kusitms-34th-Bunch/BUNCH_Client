@@ -76,6 +76,7 @@ export const initialBunchDetailFixture: BunchHomeDetail = {
     id: `bundle-${index + 1}`,
     title: `완성된 번들 ${index + 1}`,
     coverSrc: sampleImage(hue),
+    memberOnly: index === 2,
   })),
   draftBundles: [
     draft('draft-1', '머그샷', 205),

@@ -151,6 +151,7 @@ export const bunchHomeHandlers = [
         // 명세: 저장 정보가 없어 null
         location: null,
         publishedAt: bundle.publishedAt,
+        visibility: bundle.visibility,
       })),
       page,
       size,

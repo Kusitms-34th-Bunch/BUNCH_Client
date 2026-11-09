@@ -42,6 +42,8 @@ export type CompletedBundle = {
   id: string;
   title: string;
   coverSrc: string;
+  /** 멤버 공개 번들이면 사진 오른쪽 위에 표시(Figma `Image` `Show Icon`) */
+  memberOnly?: boolean | undefined;
 };
 
 /** 작성 중인 번들(목록 한 줄) */
