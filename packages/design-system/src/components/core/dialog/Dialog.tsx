@@ -3,7 +3,7 @@
 import { AlertDialog } from '@base-ui/react/alert-dialog';
 import { useRef, type ComponentProps, type ReactNode } from 'react';
 import { mergeRefs } from 'react-simplikit';
-import { cn } from '../../../utils';
+import { blockKeysWhileClosing, cn } from '../../../utils';
 import { Button, type ButtonProps } from '../button';
 import { TextButton } from '../textButton';
 
@@ -48,6 +48,14 @@ const Content = ({ className, backdropClassName, children, ref, ...props }: Dial
       />
       <AlertDialog.Popup
         {...props}
+        onKeyDownCapture={(event) => {
+          blockKeysWhileClosing(event);
+          props.onKeyDownCapture?.(event);
+        }}
+        onKeyUpCapture={(event) => {
+          blockKeysWhileClosing(event);
+          props.onKeyUpCapture?.(event);
+        }}
         aria-modal="true"
         ref={mergeRefs(popupRef, ref)}
         initialFocus={() =>
@@ -58,7 +66,8 @@ const Content = ({ className, backdropClassName, children, ref, ...props }: Dial
         className={cn(
           'bg-surface-primary rounded-r9 fixed top-1/2 left-1/2 flex max-h-[min(640px,calc(100dvh-32px))] w-77.75 max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto outline-none',
           // 패널: 중앙에서 scale 1.3→1·opacity 0→1 200ms, 닫힘은 크기 유지·100ms 페이드 아웃
-          'transition-[scale,opacity] duration-200 ease-[cubic-bezier(0.03,0.4,0.1,1)] data-ending-style:opacity-0 data-ending-style:duration-100 data-ending-style:ease-[cubic-bezier(0.35,0,1,1)] data-starting-style:scale-130 data-starting-style:opacity-0 motion-reduce:transition-none',
+          // 닫히는 동안 버튼을 다시 눌러 동작이 두 번 실행되지 않게 막음
+          'transition-[scale,opacity] duration-200 ease-[cubic-bezier(0.03,0.4,0.1,1)] data-ending-style:pointer-events-none data-ending-style:opacity-0 data-ending-style:duration-100 data-ending-style:ease-[cubic-bezier(0.35,0,1,1)] data-starting-style:scale-130 data-starting-style:opacity-0 motion-reduce:transition-none',
           className,
         )}
       >

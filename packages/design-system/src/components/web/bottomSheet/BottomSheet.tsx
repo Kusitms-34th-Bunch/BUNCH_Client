@@ -4,7 +4,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { Drawer } from '@base-ui/react/drawer';
 import { LineCloseIcon } from '../../../icons';
-import { cn } from '../../../utils';
+import { blockKeysWhileClosing, cn } from '../../../utils';
 
 export type BottomSheetRootProps = {
   open: boolean;
@@ -64,13 +64,23 @@ const Content = ({
       className={cn(
         'bg-overlay-dim-subtle fixed inset-0 opacity-[calc(1-var(--drawer-swipe-progress,0))]',
         `transition-opacity duration-340 ${ease} data-ending-style:duration-240`,
-        'data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0',
+        // 닫히는 동안 두 번째 탭이 아래 화면으로 넘어가지 않게 받음(Base UI 인라인 none을 덮어씀)
+        'data-ending-style:pointer-events-auto! data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0',
         backdropClassName,
       )}
     />
     <Drawer.Viewport className="fixed inset-0 flex items-end justify-center">
       <Drawer.Popup
         {...props}
+        data-bottom-sheet=""
+        onKeyDownCapture={(event) => {
+          blockKeysWhileClosing(event);
+          props.onKeyDownCapture?.(event);
+        }}
+        onKeyUpCapture={(event) => {
+          blockKeysWhileClosing(event);
+          props.onKeyUpCapture?.(event);
+        }}
         style={{ paddingBottom: `calc(${safeAreaBottom} + var(--spacing-s4))`, ...style }}
         className={cn(
           'bg-surface-primary rounded-t-r10 gap-s8 flex w-full max-w-(--app-max-width,100%) flex-col outline-none',
