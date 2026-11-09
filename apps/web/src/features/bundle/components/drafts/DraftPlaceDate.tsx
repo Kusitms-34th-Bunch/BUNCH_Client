@@ -1,7 +1,7 @@
 'use client';
 
 import { DateChangeSheet, SelectionField } from '@app/design-system/web';
-import { useState } from 'react';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../../constants/messages';
@@ -37,15 +37,36 @@ export function DraftPlaceDate({
   onDenied,
   onEditingBlocked,
 }: DraftPlaceDateProps) {
-  const [locationOpen, setLocationOpen] = useState(false);
-  const [dateOpen, setDateOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
 
   const guard = (action: () => void) => () => (editable ? action() : onDenied());
   // 편집 중인 멤버가 있으면 시트를 열지 않고 안내(위치·날짜는 시트를 연 동안이 편집 중)
-  const openLocation = guard(() =>
-    draft.editing.location ? onEditingBlocked() : setLocationOpen(true),
-  );
-  const openDate = guard(() => (draft.editing.date ? onEditingBlocked() : setDateOpen(true)));
+  const openLocation = guard(() => {
+    if (draft.editing.location) return onEditingBlocked();
+    openOverlay((rootProps, close) => (
+      <LocationSearchSheet
+        {...rootProps}
+        searchPlaces={actions.searchPlaces}
+        onSelect={(place) => {
+          actions.addLocation(place);
+          close();
+        }}
+      />
+    ));
+  });
+  const openDate = guard(() => {
+    if (draft.editing.date) return onEditingBlocked();
+    openOverlay((rootProps, close) => (
+      <DateChangeSheet
+        {...rootProps}
+        defaultDate={draft.date === null ? null : (parseDraftDate(draft.date) ?? null)}
+        onSave={(date) => {
+          actions.setDate(toDraftDateString(date));
+          close();
+        }}
+      />
+    ));
+  });
 
   // 다른 멤버가 위치·날짜를 고르는 중이면 그 멤버의 프로필만 보임(애니메이션 없음, Figma `3043:64938`)
   const editorOf = (memberId: string | undefined) =>
@@ -111,24 +132,6 @@ export function DraftPlaceDate({
           if (picked) guard(() => actions.setDate(picked.value))();
         }}
         onClear={guard(() => actions.setDate(null))}
-      />
-      <LocationSearchSheet
-        open={locationOpen}
-        onOpenChange={setLocationOpen}
-        searchPlaces={actions.searchPlaces}
-        onSelect={(place) => {
-          actions.addLocation(place);
-          setLocationOpen(false);
-        }}
-      />
-      <DateChangeSheet
-        open={dateOpen}
-        onOpenChange={setDateOpen}
-        defaultDate={draft.date === null ? null : (parseDraftDate(draft.date) ?? null)}
-        onSave={(date) => {
-          actions.setDate(toDraftDateString(date));
-          setDateOpen(false);
-        }}
       />
     </section>
   );

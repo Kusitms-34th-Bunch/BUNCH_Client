@@ -70,4 +70,26 @@ describe('ConfirmSheet', () => {
     );
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '차단하기' }).disabled).toBe(true);
   });
+
+  it('안내 상자 없이 부제만 넘기면 줄바꿈을 유지하고, 그림 자리 크기를 바꿀 수 있다', async () => {
+    render(
+      <ConfirmSheet
+        open
+        onOpenChange={() => {}}
+        title="이 장소를 숨길까요?"
+        description={'첫 줄\n둘째 줄'}
+        illustration={<img alt="" data-testid="illust" />}
+        illustrationClassName="size-18"
+        confirmLabel="숨기기"
+        onConfirm={() => {}}
+      />,
+    );
+
+    const sheet = await screen.findByRole('dialog', { name: '이 장소를 숨길까요?' });
+    const description = document.getElementById(sheet.getAttribute('aria-describedby') ?? '');
+    expect(description?.textContent).toBe('첫 줄\n둘째 줄');
+    expect(description?.classList.contains('whitespace-pre-line')).toBe(true);
+    expect(screen.getByTestId('illust').parentElement?.classList.contains('size-18')).toBe(true);
+    expect(screen.getByTestId('illust').parentElement?.classList.contains('size-23')).toBe(false);
+  });
 });

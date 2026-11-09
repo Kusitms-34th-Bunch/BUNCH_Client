@@ -29,6 +29,9 @@ describe('BundleRecommendSheet', () => {
   it('추천 번들 카드를 모두 보여 준다', async () => {
     render(
       <BundleRecommendSheet
+        emptyLabel="추천 번들"
+        emptyTitle="아직 추천할 번들이 없어요"
+        emptyDescription="함께한 순간이 쌓이면 번들을 추천해 드릴게요."
         open
         onOpenChange={() => {}}
         bundles={bundles}
@@ -46,6 +49,9 @@ describe('BundleRecommendSheet', () => {
     const onSelect = vi.fn();
     render(
       <BundleRecommendSheet
+        emptyLabel="추천 번들"
+        emptyTitle="아직 추천할 번들이 없어요"
+        emptyDescription="함께한 순간이 쌓이면 번들을 추천해 드릴게요."
         open
         onOpenChange={() => {}}
         bundles={bundles}
@@ -57,5 +63,24 @@ describe('BundleRecommendSheet', () => {
     fireEvent.click(await screen.findByRole('button', { name: '한강 피크닉' }));
 
     expect(onSelect).toHaveBeenCalledWith('b');
+  });
+
+  it('추천이 없으면 제목 없이 빈 상태를 보여 준다', async () => {
+    render(
+      <BundleRecommendSheet
+        emptyLabel="추천 번들"
+        emptyTitle="아직 추천할 번들이 없어요"
+        emptyDescription="함께한 순간이 쌓이면 번들을 추천해 드릴게요."
+        open
+        onOpenChange={() => {}}
+        bundles={[]}
+        onSelect={() => {}}
+        onOpenDetail={() => {}}
+      />,
+    );
+
+    expect(await screen.findByRole('dialog', { name: '추천 번들' })).toBeTruthy();
+    expect(screen.getByText('아직 추천할 번들이 없어요')).toBeTruthy();
+    expect(screen.queryByText(/빠르게 번들을 만들어보세요/)).toBeNull();
   });
 });

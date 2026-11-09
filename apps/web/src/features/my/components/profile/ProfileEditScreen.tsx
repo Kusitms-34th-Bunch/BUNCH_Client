@@ -9,6 +9,7 @@ import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useDefaultProfileImage } from '@/shared/hooks/useDefaultProfileImage';
 import { type ProfileValues, useProfileFields } from '@/shared/hooks/useProfileFields';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import { normalizeNickname } from '@/shared/lib/nickname';
@@ -41,13 +42,28 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
   const [photo, setPhoto] = useState(profile.imageSrc);
   // 저장 중 중복 탭 방지(화면 설계서 7번)
   const [submitting, setSubmitting] = useState(false);
-  const [leaveOpen, setLeaveOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
 
   const changed = photo !== profile.imageSrc || !isSameValues(fields.values, initial);
   const canSubmit = changed && fields.isValid && !submitting;
   // 바꾼 내용이 있으면 나가기 전에 확인(기능명세서 7.2.1 상세 7)
   // 저장 뒤 돌아가는 전환 중에는 묻지 않음
-  const back = () => (changed && !submitting ? setLeaveOpen(true) : backOr(MY_PATHS.home));
+  const back = () => {
+    if (!changed || submitting) return backOr(MY_PATHS.home);
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={MY_MESSAGES.profileLeave.title}
+        description={MY_MESSAGES.profileLeave.description}
+        confirmLabel={MY_MESSAGES.profileLeave.confirm}
+        cancelLabel={MY_MESSAGES.cancel}
+        onConfirm={() => {
+          close();
+          backOr(MY_PATHS.home);
+        }}
+      />
+    ));
+  };
 
   const submit = () => {
     setSubmitting(true);
@@ -87,19 +103,6 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
           <ProfileFields fields={fields} showOptional={false} />
         </div>
       </PageShell>
-      <ConfirmDialog
-        open={leaveOpen}
-        onOpenChange={setLeaveOpen}
-        title={MY_MESSAGES.profileLeave.title}
-        description={MY_MESSAGES.profileLeave.description}
-        confirmLabel={MY_MESSAGES.profileLeave.confirm}
-        cancelLabel={MY_MESSAGES.cancel}
-        onConfirm={() => {
-          setLeaveOpen(false);
-          backOr(MY_PATHS.home);
-        }}
-        onCancel={() => setLeaveOpen(false)}
-      />
     </div>
   );
 }

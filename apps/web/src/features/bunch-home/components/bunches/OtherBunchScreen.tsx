@@ -5,6 +5,7 @@ import { FollowButton } from '@app/design-system/web';
 import { type ReactNode, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { FollowStatus, OtherBunch } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
@@ -43,9 +44,7 @@ export function OtherBunchScreen({
   onFollow,
   onUnfollow,
 }: OtherBunchScreenProps) {
-  const [sheetOpen, setSheetOpen] = useState(false);
-  // 시트를 연 때의 상태(취소한 뒤 닫히는 동안 문구가 바뀌지 않게)
-  const [sheetFor, setSheetFor] = useState<FollowStatus>('following');
+  const openOverlay = useScreenOverlay();
   const background = BUNCH_BACKGROUNDS[bunch.characterType];
   const locked = bunch.isPrivate && status !== 'following';
   // 버튼 이름만 바뀌면 스크린 리더가 결과를 놓칠 수 있어 상태 영역으로도 알림
@@ -58,6 +57,37 @@ export function OtherBunchScreen({
         : BUNCH_HOME_MESSAGES.followed(bunch.name),
     );
   };
+
+  // 시트를 연 때의 상태로 그려 취소한 뒤 닫히는 동안 문구가 바뀌지 않음
+  const openCancelSheet = (sheetFor: FollowStatus) =>
+    openOverlay((rootProps, close) => (
+      <FollowCancelSheet
+        {...rootProps}
+        bunchName={bunch.name}
+        status={
+          sheetFor === 'requested'
+            ? BUNCH_HOME_MESSAGES.requestPending
+            : bunch.isPrivate
+              ? BUNCH_HOME_MESSAGES.followingPrivate
+              : BUNCH_HOME_MESSAGES.followingPublic
+        }
+        question={
+          sheetFor === 'requested'
+            ? BUNCH_HOME_MESSAGES.cancelRequestQuestion
+            : BUNCH_HOME_MESSAGES.unfollowQuestion
+        }
+        confirmLabel={sheetFor === 'requested' ? '팔로우 요청 취소' : '팔로우 취소'}
+        onConfirm={() => {
+          close();
+          onUnfollow();
+          setAnnouncement(
+            sheetFor === 'requested'
+              ? BUNCH_HOME_MESSAGES.requestCanceled(bunch.name)
+              : BUNCH_HOME_MESSAGES.unfollowed(bunch.name),
+          );
+        }}
+      />
+    ));
 
   return (
     <PageShell
@@ -105,8 +135,7 @@ export function OtherBunchScreen({
                 aria-haspopup={status === 'none' ? undefined : 'dialog'}
                 onClick={() => {
                   if (status === 'none') return follow();
-                  setSheetFor(status);
-                  setSheetOpen(true);
+                  openCancelSheet(status);
                 }}
               />
             </div>
@@ -127,33 +156,6 @@ export function OtherBunchScreen({
       <p role="status" className="sr-only">
         {announcement}
       </p>
-      <FollowCancelSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        bunchName={bunch.name}
-        status={
-          sheetFor === 'requested'
-            ? BUNCH_HOME_MESSAGES.requestPending
-            : bunch.isPrivate
-              ? BUNCH_HOME_MESSAGES.followingPrivate
-              : BUNCH_HOME_MESSAGES.followingPublic
-        }
-        question={
-          sheetFor === 'requested'
-            ? BUNCH_HOME_MESSAGES.cancelRequestQuestion
-            : BUNCH_HOME_MESSAGES.unfollowQuestion
-        }
-        confirmLabel={sheetFor === 'requested' ? '팔로우 요청 취소' : '팔로우 취소'}
-        onConfirm={() => {
-          setSheetOpen(false);
-          onUnfollow();
-          setAnnouncement(
-            sheetFor === 'requested'
-              ? BUNCH_HOME_MESSAGES.requestCanceled(bunch.name)
-              : BUNCH_HOME_MESSAGES.unfollowed(bunch.name),
-          );
-        }}
-      />
     </PageShell>
   );
 }

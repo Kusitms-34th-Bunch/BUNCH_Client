@@ -17,6 +17,7 @@ import { useBackOr } from '@/shared/hooks/useBackOr';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
 import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
+import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useHoldScrollOnLeave } from '../../hooks/useHoldScrollOnLeave';
@@ -25,7 +26,6 @@ import { useLikeToggle } from '../../hooks/useLikeToggle';
 import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { formatElapsedTime } from '../../lib/elapsedTime';
 import { withRo } from '../../lib/josa';
-import { BundleSheets, type BundleSheet } from './BundleSheets';
 import { MemberComments } from './MemberComments';
 
 type BundleDetailScreenProps = {
@@ -54,7 +54,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const composerRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [replyTarget, setReplyTarget] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<BundleSheet | null>(null);
+  const { openPlaces, openMembers } = useBundleSheets();
   const bundle = getBundleDetailFixture(bundleId);
 
   useHoldScrollOnLeave(commentsRef);
@@ -148,14 +148,14 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
           )
         }
         members={hideLeftMemberImages(bundle.members)}
-        onMembers={() => setSheet({ kind: 'members', members: bundle.members })}
+        onMembers={() => openMembers(bundle.members)}
         className="px-padding-p8 py-s4"
       />
       <BundleInfo
         title={bundle.title}
         titleAs="h1"
         location={bundle.location}
-        onLocationClick={() => setSheet({ kind: 'places', places: bundle.places })}
+        onLocationClick={() => openPlaces(bundle.places)}
         date={bundle.date}
         memberOnly={bundle.memberOnly}
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
@@ -202,7 +202,6 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
           </p>
         )}
       </section>
-      <BundleSheets sheet={sheet} onClose={() => setSheet(null)} />
     </PageShell>
   );
 }

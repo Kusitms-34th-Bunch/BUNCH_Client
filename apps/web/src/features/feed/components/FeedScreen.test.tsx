@@ -1,12 +1,13 @@
-import { configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { feedFixture } from '../fixtures/feed.fixture';
+import { clearHiddenAds } from '../lib/hiddenAds';
 import { FeedScreen } from './FeedScreen';
 
 const push = vi.fn();
@@ -32,14 +33,64 @@ const renderFeed = (bunch: { id: string; name: string } | null) => {
   return render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });
 };
 
-const cards = () => screen.getAllByRole('article');
+// 번들 카드만(광고 카드 제외)
+const cards = () =>
+  screen
+    .getAllByRole('article')
+    .filter((card) => !card.getAttribute('aria-label')?.startsWith('광고'));
 
 beforeEach(() => {
+  clearHiddenAds();
   push.mockClear();
   toast.mockClear();
 });
 
 describe('FeedScreen', () => {
+  it('숨긴 광고는 안내 뒤 목록에서 빠지고, 초점은 끝 안내로 옮긴다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+    const ad = screen.getByRole('article', { name: '광고 플로디스튜디오' });
+
+    await user.click(within(ad).getByRole('button', { name: /더보기/ }));
+    const sheet = await screen.findByRole('dialog', { name: /^이 장소를 숨길까요?/ });
+    await user.click(within(sheet).getByRole('button', { name: '숨기기' }));
+    await screen.findByText('장소를 숨김 처리 했어요');
+
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+
+    expect(screen.queryByText('장소를 숨김 처리 했어요')).toBeNull();
+    expect(screen.getByRole('group', { name: '모든 피드를 확인했어요' })).toHaveFocus();
+  });
+
+  it('공개 구간 끝에 광고 카드가 보이고, 숨긴 뒤 다시 들어오면 없다', async () => {
+    const user = userEvent.setup();
+    const bunch = { id: 'bunch-trip', name: '여행가조' };
+    const first = renderFeed(bunch);
+    const ad = screen.getByRole('article', { name: '광고 플로디스튜디오' });
+    expect(cards().at(-1)?.compareDocumentPosition(ad)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(ad.compareDocumentPosition(screen.getByText('모든 피드를 확인했어요'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    await user.click(within(ad).getByRole('button', { name: /더보기/ }));
+    const sheet = await screen.findByRole('dialog', { name: /^이 장소를 숨길까요?/ });
+    await user.click(within(sheet).getByRole('button', { name: '숨기기' }));
+    expect(await screen.findByText('장소를 숨김 처리 했어요')).toBeTruthy();
+
+    first.unmount();
+    renderFeed(bunch);
+    expect(screen.queryByRole('article', { name: '광고 플로디스튜디오' })).toBeNull();
+  });
+
   it('카드의 위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
     const user = userEvent.setup();
     renderFeed({ id: 'bunch-trip', name: '여행가조' });
@@ -180,9 +231,10 @@ describe('FeedScreen', () => {
   });
 
   it('두 구간이 모두 비면 끝 안내만 보인다', () => {
-    const { following, public: publicBundles } = feedFixture;
+    const { following, public: publicBundles, ads } = feedFixture;
     feedFixture.following = [];
     feedFixture.public = [];
+    feedFixture.ads = [];
     try {
       renderFeed({ id: 'bunch-trip', name: '여행가조' });
       expect(screen.queryAllByRole('article')).toHaveLength(0);
@@ -191,6 +243,7 @@ describe('FeedScreen', () => {
     } finally {
       feedFixture.following = following;
       feedFixture.public = publicBundles;
+      feedFixture.ads = ads;
     }
   });
 

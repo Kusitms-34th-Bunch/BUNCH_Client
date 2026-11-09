@@ -2,7 +2,9 @@
 
 import { Button, ConfirmDialog, toast } from '@app/design-system';
 import { useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer, SaveStatus } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -71,12 +73,11 @@ export function DraftScreen({
   onImportFromBunchBox,
   onImportFromGallery,
 }: DraftScreenProps) {
-  const [leaveOpen, setLeaveOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
   // 내가 지금 입력 중인 영역(제목·내 코멘트): 내 멤버 카드의 초록 점과 제목·코멘트 옆 프로필에 보임
   const [selfEditing, setSelfEditing] = useState<'title' | 'comment' | undefined>(undefined);
   const endSelfEditing = (field: 'title' | 'comment') =>
     setSelfEditing((current) => (current === field ? undefined : current));
-  const [editingDialogOpen, setEditingDialogOpen] = useState(false);
   const access = getDraftAccess(draft, viewer);
   // 공개 범위는 업로드를 누른 뒤 다음 화면에서 고르므로 이 화면의 조건에서는 뺌
   const blockers = getPublishBlockers(draft, { saveStatus, offline }).filter(
@@ -100,10 +101,27 @@ export function DraftScreen({
     return true;
   };
   // 나 말고 편집 중인 멤버가 있으면 확인 창을 거치고(계속하기), 아니면 바로 공개 범위 화면으로
+  // 창이 열려 있는 사이 멤버·연결·저장 상태가 바뀌었을 수 있어 넘어가기 전에 한 번 더 검사
+  const continueUpload = usePreservedCallback(() => {
+    if (!blockUpload()) onUpload?.();
+  });
   const upload = () => {
     if (blockUpload()) return;
-    if (hasOtherEditors(draft.editing, viewer.memberId)) setEditingDialogOpen(true);
-    else onUpload?.();
+    if (!hasOtherEditors(draft.editing, viewer.memberId)) return onUpload?.();
+    // 나 말고 편집 중인 멤버가 있을 때만(Figma `5699:106129`), 「계속하기」를 눌러야 공개 범위 화면으로 감
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={BUNDLE_MESSAGES.uploadEditingTitle}
+        description={BUNDLE_MESSAGES.uploadEditingDescription}
+        confirmLabel={BUNDLE_MESSAGES.uploadEditingContinue}
+        cancelLabel={BUNDLE_MESSAGES.cancel}
+        onConfirm={() => {
+          close();
+          continueUpload();
+        }}
+      />
+    ));
   };
 
   return (
@@ -114,7 +132,18 @@ export function DraftScreen({
           offline={offline}
           canLeave={access.participant}
           onBack={onBack}
-          onLeave={() => setLeaveOpen(true)}
+          onLeave={() =>
+            openOverlay((rootProps, close) => (
+              <LeaveDraftDialog
+                {...rootProps}
+                onConfirm={() => {
+                  close();
+                  onLeave();
+                }}
+                creator={isDraftCreator(draft, viewer)}
+              />
+            ))
+          }
           onRetry={onRetry}
         />
       }
@@ -181,26 +210,6 @@ export function DraftScreen({
         currentYear={currentYear}
         onDenied={denyEdit}
         onEditingBlocked={blockEditing}
-      />
-      <LeaveDraftDialog
-        open={leaveOpen}
-        onOpenChange={setLeaveOpen}
-        onConfirm={onLeave}
-        creator={isDraftCreator(draft, viewer)}
-      />
-      {/* 나 말고 편집 중인 멤버가 있을 때만(Figma `5699:106129`), 「계속하기」를 눌러야 공개 범위 화면으로 감 */}
-      <ConfirmDialog
-        open={editingDialogOpen}
-        onOpenChange={setEditingDialogOpen}
-        title={BUNDLE_MESSAGES.uploadEditingTitle}
-        description={BUNDLE_MESSAGES.uploadEditingDescription}
-        confirmLabel={BUNDLE_MESSAGES.uploadEditingContinue}
-        cancelLabel={BUNDLE_MESSAGES.cancel}
-        onConfirm={() => {
-          setEditingDialogOpen(false);
-          // 창이 열려 있는 사이 멤버·연결·저장 상태가 바뀌었을 수 있어 넘어가기 전에 한 번 더 검사
-          if (!blockUpload()) onUpload?.();
-        }}
       />
     </PageShell>
   );

@@ -8,19 +8,21 @@ import {
   LineSparklesSmallIcon,
   TextButton,
 } from '@app/design-system';
+import { BundleRecommendSheet } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { BUNDLE_SELECT_MESSAGES, MAX_RECOMMEND_CHIPS } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
 import { SelectPhotoList } from '../SelectPhotoList';
-import { RecommendSheet } from './RecommendSheet';
 
 type BundleSelectProps = {
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
@@ -38,11 +40,97 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   const select = useBundleSelect();
   const { photoState, retry, selection, memberId, memberIds, creating, scrollTarget } = select;
 
+  const openOverlay = useScreenOverlay();
+  // 추천 상세로 가면 돌아왔을 때 시트를 다시 올림
+  const reopenOnReturn = useRef(false);
+  const { openSheet, closeSheet, sheetOpen } = select;
+  useEffect(
+    () => () => {
+      if (reopenOnReturn.current) openSheet();
+    },
+    [openSheet],
+  );
+
+  // 확인 창은 「취소」·Esc가 시트를 다시 올리고, 「변경하기」만 기존 선택을 풀고 추천 사진으로 바꿈
+  const openChangeConfirm = (id: string) => {
+    let confirmed = false;
+    openOverlay(
+      (rootProps, close) => (
+        <ConfirmDialog
+          {...rootProps}
+          title={BUNDLE_SELECT_MESSAGES.changeTitle}
+          description={BUNDLE_SELECT_MESSAGES.changeDescription}
+          confirmLabel={BUNDLE_SELECT_MESSAGES.changeConfirm}
+          cancelLabel={BUNDLE_SELECT_MESSAGES.cancel}
+          onConfirm={() => {
+            confirmed = true;
+            close();
+            confirmChange(id);
+          }}
+        />
+      ),
+      () => {
+        if (!confirmed) openSheet();
+      },
+    );
+  };
+
+  // 창이 열린 사이 사진함이 바뀔 수 있어 누를 때의 최신 사진으로 판단
+  const pickRecommendation = usePreservedCallback(select.pickRecommendation);
+  const confirmChange = usePreservedCallback(select.confirmChange);
+
+  const openRecommend = usePreservedCallback(() => {
+    // 시트가 다 닫힌 뒤 확인 창을 열어 초점이 두 창 사이에서 엉키지 않게 함
+    let confirmId: string | undefined;
+    openOverlay(
+      (rootProps, close) => (
+        <RecommendOverlay
+          {...rootProps}
+          initialPickedId={select.pickedId}
+          bundles={select.recommendations.map((item) => ({
+            id: item.id,
+            imageSrc: item.imageSrc,
+            title: item.title,
+            members: [...item.memberNames],
+            photoCount: item.photoIds.length,
+            month: item.month,
+            day: item.day,
+          }))}
+          onPick={(id) => {
+            const result = pickRecommendation(id);
+            if (result === 'deleted') return;
+            if (result === 'confirm') confirmId = id;
+            close();
+          }}
+          onOpenDetail={(id) => {
+            reopenOnReturn.current = true;
+            router.push(BUNDLE_SELECT_PATHS.recommendation(id));
+          }}
+          maxVisibleMembers={MAX_RECOMMEND_CHIPS}
+          emptyLabel={BUNDLE_SELECT_MESSAGES.sheetLabel}
+          emptyTitle={BUNDLE_SELECT_MESSAGES.emptyTitle}
+          emptyDescription={BUNDLE_SELECT_MESSAGES.emptyDescription}
+        />
+      ),
+      () => {
+        if (confirmId) openChangeConfirm(confirmId);
+      },
+    );
+  });
+
   // 멤버를 고르지 않고 들어오면(새로고침·직접 주소) 첫 단계로 돌려보냄
   const noMembers = memberIds.length === 0;
   useEffect(() => {
     if (noMembers) router.replace(BUNDLE_SELECT_PATHS.members);
   }, [noMembers, router]);
+
+  // 시트 요청은 사진을 다 받은 뒤 처리(추천 상세에서 돌아온 경우 포함)
+  const ready = !noMembers && photoState.kind === 'ready';
+  useEffect(() => {
+    if (!sheetOpen || !ready) return;
+    closeSheet();
+    openRecommend();
+  }, [sheetOpen, ready, closeSheet, openRecommend]);
 
   // 추천 번들을 적용하면 그 날짜 섹션으로 스크롤하고 제목에 포커스(요청마다 한 번, 끝나면 대상을 비움)
   const { clearScrollTarget } = select;
@@ -145,25 +233,29 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
         currentYear={currentYear}
         inert={creating}
       />
-      <RecommendSheet
-        open={select.sheetOpen}
-        onOpenChange={(open) => (open ? select.openSheet() : select.closeSheet())}
-        recommendations={select.recommendations}
-        pickedId={select.pickedId}
-        onPick={select.pickRecommendation}
-        onDetail={(id) => router.push(BUNDLE_SELECT_PATHS.recommendation(id))}
-      />
-      {/* 확인 창은 「취소」·Esc가 시트를 다시 올리고, 「변경하기」만 기존 선택을 풀고 추천 사진으로 바꿈 */}
-      <ConfirmDialog
-        open={select.changeOpen}
-        onOpenChange={() => undefined}
-        title={BUNDLE_SELECT_MESSAGES.changeTitle}
-        description={BUNDLE_SELECT_MESSAGES.changeDescription}
-        confirmLabel={BUNDLE_SELECT_MESSAGES.changeConfirm}
-        cancelLabel={BUNDLE_SELECT_MESSAGES.cancel}
-        onConfirm={select.confirmChange}
-        onCancel={select.cancelChange}
-      />
     </PageShell>
+  );
+}
+
+type RecommendOverlayProps = Omit<
+  ComponentProps<typeof BundleRecommendSheet>,
+  'selectedId' | 'onSelect'
+> & {
+  initialPickedId: string | undefined;
+  onPick: (_id: string) => void;
+};
+
+/** 시트가 열린 채 카드를 눌러도(사진이 사라진 추천) 선택 모양이 바뀌게 함(overlay는 열 때의 값으로 그려짐) */
+function RecommendOverlay({ initialPickedId, onPick, ...props }: RecommendOverlayProps) {
+  const [pickedId, setPickedId] = useState(initialPickedId);
+  return (
+    <BundleRecommendSheet
+      {...props}
+      selectedId={pickedId}
+      onSelect={(id) => {
+        setPickedId(id);
+        onPick(id);
+      }}
+    />
   );
 }

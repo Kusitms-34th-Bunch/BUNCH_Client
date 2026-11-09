@@ -14,8 +14,6 @@ export const BUNDLE_SELECT_MESSAGES = {
   memberRoleLabel: { owner: '번치장', coOwner: '공동 관리자' },
   membersStatus: (count: number) => (count === 0 ? '추가한 멤버가 없어요.' : `${count}명 추가됨`),
   back: '뒤로 가기',
-  // Figma: 두 줄로 나뉘는 시트 제목(「추천 사진으로」 뒤에서 줄바꿈)
-  sheetTitle: '추천 사진으로\n빠르게 번들을 만들어보세요!',
   sheetLabel: '추천 번들',
   emptyTitle: '아직 추천할 번들이 없어요',
   emptyDescription: '함께한 순간이 쌓이면 번들을 추천해 드릴게요.',

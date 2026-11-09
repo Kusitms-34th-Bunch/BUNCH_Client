@@ -62,3 +62,8 @@ export const LongName: Story = {
   args: { name: '아주아주아주아주긴이름을가진사용자입니다', meta: '1일 전' },
   render: (args) => <FollowListItem {...args} action={requestButtons(args.name)} />,
 };
+
+/** 이미지·이름이 프로필로 가는 버튼(오른쪽 동작과 따로 눌림) */
+export const ProfileClickable: Story = {
+  args: { onProfileClick: () => undefined, action: followButton('야간러너스') },
+};

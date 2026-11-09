@@ -21,15 +21,25 @@ export const FEED_MESSAGES = {
   commentPlaceholderAs: (bunchRo: string) => `${bunchRo} 댓글 달기`,
   replyPlaceholder: '답글 달기',
   replyPlaceholderAs: (bunchRo: string) => `${bunchRo} 답글 달기`,
-  placeSheetTitle: '어느 장소를 콕할까요?',
-  membersSheetTitle: '참여 멤버',
-  sheetCancel: '취소',
   roleLabels: { owner: '메인 관리자', coOwner: '공동 관리자' },
   pickCancelTitle: '이 장소의 콕을 삭제할까요?',
   pickCancelDescription: (name: string, particle: string) =>
     `‘${name}’${particle} 번치의 콕한 장소에서 삭제돼요.`,
   pickCancelNo: '아니요',
   pickCancelConfirm: '삭제하기',
+  adHide: '숨기기',
+  adHideTitle: '이 장소를 숨길까요?',
+  adHiddenCardLabel: (title: string) => `광고 ${title}, 장소를 숨김 처리 했어요`,
+  adHideDescription:
+    'BUNCH 팀이 번치가 모이기 좋은 곳을 직접 골라 소개해요.\n현재 업체로부터 비용을 받고 있지 않아요.',
+  memberBunchesTitle: '참여중인 번치',
+  privateBunch: '비공개 번치',
+  followLabels: { none: '팔로우', following: '팔로잉', requested: '요청됨' },
+  followActions: { none: '', following: ', 누르면 팔로우 취소', requested: ', 누르면 요청 취소' },
+  followed: (bunchName: string) => `${bunchName} 번치를 팔로우했어요.`,
+  followRequested: (bunchName: string) => `${bunchName} 번치에 팔로우를 요청했어요.`,
+  unfollowed: (bunchName: string) => `${bunchName} 번치 팔로우를 취소했어요.`,
+  requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
   /** 내 정보를 받지 못해 번치 명의 행동을 할 수 없을 때 */
   actionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
 } as const;

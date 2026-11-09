@@ -3,9 +3,9 @@
 import { ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { MenuDivider, MenuLabel } from '@app/design-system/web';
 import Link from 'next/link';
-import { useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { BunchRole } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -39,8 +39,35 @@ export function BunchMenuScreen({
   onOwnerLeave,
   onDeleteBunch,
 }: BunchMenuScreenProps) {
-  const [leaveOpen, setLeaveOpen] = useState(false);
-  const [aloneOpen, setAloneOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
+  const openLeave = () =>
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={BUNCH_HOME_MESSAGES.leaveTitle(bunchName ?? '')}
+        description={BUNCH_HOME_MESSAGES.leaveDescription}
+        cancelLabel="취소"
+        confirmLabel="나가기"
+        onConfirm={() => {
+          close();
+          onLeave();
+        }}
+      />
+    ));
+  const openAlone = () =>
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={BUNCH_HOME_MESSAGES.aloneTitle}
+        description={BUNCH_HOME_MESSAGES.aloneDescription}
+        cancelLabel="취소"
+        confirmLabel="삭제하기"
+        onConfirm={() => {
+          close();
+          onDeleteBunch?.();
+        }}
+      />
+    ));
   const isOwner = myRole === 'owner';
 
   return (
@@ -113,9 +140,9 @@ export function BunchMenuScreen({
             <li>
               <MenuLabel
                 onClick={() => {
-                  if (alone) setAloneOpen(true);
+                  if (alone) openAlone();
                   else if (isOwner) onOwnerLeave?.();
-                  else setLeaveOpen(true);
+                  else openLeave();
                 }}
               >
                 번치 나가기
@@ -137,30 +164,6 @@ export function BunchMenuScreen({
           </ul>
         </div>
       ) : null}
-      <ConfirmDialog
-        open={leaveOpen}
-        onOpenChange={setLeaveOpen}
-        title={BUNCH_HOME_MESSAGES.leaveTitle(bunchName ?? '')}
-        description={BUNCH_HOME_MESSAGES.leaveDescription}
-        cancelLabel="취소"
-        confirmLabel="나가기"
-        onConfirm={() => {
-          setLeaveOpen(false);
-          onLeave();
-        }}
-      />
-      <ConfirmDialog
-        open={aloneOpen}
-        onOpenChange={setAloneOpen}
-        title={BUNCH_HOME_MESSAGES.aloneTitle}
-        description={BUNCH_HOME_MESSAGES.aloneDescription}
-        cancelLabel="취소"
-        confirmLabel="삭제하기"
-        onConfirm={() => {
-          setAloneOpen(false);
-          onDeleteBunch?.();
-        }}
-      />
     </PageShell>
   );
 }

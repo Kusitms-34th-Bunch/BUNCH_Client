@@ -3,10 +3,11 @@
 import { ActionDialog, Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { ProfileImage, ProfileListItem } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
-import { useId, useRef, useState } from 'react';
+import { useId, useRef } from 'react';
 import blockedListEmpty from '@/shared/assets/images/empty/blocked-list-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { BlockedBunch } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 
@@ -28,10 +29,37 @@ export function BunchBlockedListScreen({
   onUnblock,
   onBack,
 }: BunchBlockedListScreenProps) {
-  const [target, setTarget] = useState<BlockedBunch | null>(null);
-  const [open, setOpen] = useState(false);
-  // 확인 창이 다 닫힌 뒤 띄울 토스트(열린 창 뒤에서 낭독이 묻히지 않게)
-  const doneMessage = useRef<string | null>(null);
+  const openOverlay = useScreenOverlay();
+  // Figma 2141:37877: 이미지 + 「해제하기」·「취소」 세로 배치(설계의 「번치에서 내보내기」는 번치 단위 차단과 맞지 않아 뺌)
+  const openUnblock = (target: BlockedBunch) => {
+    let done = false;
+    openOverlay(
+      (rootProps, close) => (
+        <ActionDialog
+          {...rootProps}
+          image={<ProfileImage src={target.imageSrc} size="M" className="size-14" />}
+          title={BUNCH_HOME_MESSAGES.unblockTitle(target.name)}
+          description={BUNCH_HOME_MESSAGES.unblockDescription}
+          actions={[
+            {
+              label: '해제하기',
+              onClick: () => {
+                onUnblock(target.id);
+                done = true;
+                close();
+              },
+            },
+          ]}
+        />
+      ),
+      () => {
+        if (!done) return;
+        // 해제하면 돌아갈 「차단해제」 버튼이 사라지므로 개수 줄(목록이 비면 빈 상태 제목)로
+        focusRef.current?.focus();
+        toast(BUNCH_HOME_MESSAGES.unblocked(target.name), { icon: 'success', fullWidth: true });
+      },
+    );
+  };
   // 해제한 행이 사라지면 초점을 받는 자리(목록이 비면 빈 상태 제목). 개수 줄과 빈 상태는 동시에 그려지지 않음
   const focusRef = useRef<HTMLElement>(null);
   const emptyDescriptionId = useId();
@@ -78,10 +106,7 @@ export function BunchBlockedListScreen({
                         variant="secondary"
                         className="text-text-tertiary"
                         aria-label={`${bunch.name} 차단해제`}
-                        onClick={() => {
-                          setTarget(bunch);
-                          setOpen(true);
-                        }}
+                        onClick={() => openUnblock(bunch)}
                       >
                         차단해제
                       </Button>
@@ -121,42 +146,6 @@ export function BunchBlockedListScreen({
           </div>
         </div>
       ) : null}
-
-      {/* Figma 2141:37877: 이미지 + 「해제하기」·「취소」 세로 배치(설계의 「번치에서 내보내기」는 번치 단위 차단과 맞지 않아 뺌) */}
-      <ActionDialog
-        open={open}
-        onOpenChange={(next) => {
-          if (!next) setOpen(false);
-        }}
-        onOpenChangeComplete={(next) => {
-          if (next) return;
-          setTarget(null);
-          if (!doneMessage.current) return;
-          // 해제하면 돌아갈 「차단해제」 버튼이 사라지므로 개수 줄(목록이 비면 빈 상태 제목)로
-          focusRef.current?.focus();
-          toast(doneMessage.current, { icon: 'success', fullWidth: true });
-          doneMessage.current = null;
-        }}
-        image={
-          target ? <ProfileImage src={target.imageSrc} size="M" className="size-14" /> : undefined
-        }
-        title={target ? BUNCH_HOME_MESSAGES.unblockTitle(target.name) : ''}
-        description={target ? BUNCH_HOME_MESSAGES.unblockDescription : ''}
-        actions={
-          target
-            ? [
-                {
-                  label: '해제하기',
-                  onClick: () => {
-                    onUnblock(target.id);
-                    doneMessage.current = BUNCH_HOME_MESSAGES.unblocked(target.name);
-                    setOpen(false);
-                  },
-                },
-              ]
-            : []
-        }
-      />
     </PageShell>
   );
 }
