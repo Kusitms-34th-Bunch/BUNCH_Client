@@ -23,8 +23,6 @@ export type DraftPhoto = {
   uploaderId: string;
   /** 사진함의 어느 사진인지(사진함에서 가져온 사진). 사진 추가 화면이 지금 번들 사진을 선택된 채 여는 기준이고, 없으면 사진함에 대응하는 사진이 없음 */
   sourcePhotoId?: string | undefined;
-  /** 이 사진을 픽한 멤버 id(서버 필드가 없어 초안을 보는 동안만 유지, 나가거나 새로고침하면 사라짐) */
-  pickedBy?: readonly string[] | undefined;
 };
 
 export type DraftLocation = {

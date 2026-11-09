@@ -24,15 +24,15 @@ describe('AddBundlePhotoEditor', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('기본은 330px(m) 정사각, xs는 130px이다', () => {
+  it('기본은 330px(m) 정사각, s는 300px이다', () => {
     const { rerender } = render(<AddBundlePhotoEditor />);
 
     expect(screen.getByRole('button').classList.contains('w-82.5')).toBe(true);
     expect(screen.getByRole('button').classList.contains('aspect-square')).toBe(true);
 
-    rerender(<AddBundlePhotoEditor size="xs" />);
+    rerender(<AddBundlePhotoEditor size="s" />);
 
-    expect(screen.getByRole('button').classList.contains('w-32.5')).toBe(true);
+    expect(screen.getByRole('button').classList.contains('w-75')).toBe(true);
     expect(screen.getByRole('button').classList.contains('w-82.5')).toBe(false);
   });
 
@@ -67,5 +67,19 @@ describe('AddBundlePhotoEditor', () => {
     expect(button.getAttribute('type')).toBe('submit');
     expect(button.classList.contains('w-full')).toBe(true);
     expect(button.classList.contains('w-82.5')).toBe(false);
+  });
+
+  it('xs는 130px에 반경 r2, 26px 더하기 원과 13px 글자로 그린다', () => {
+    render(<AddBundlePhotoEditor size="xs" />);
+    const tile = screen.getByRole('button');
+    const circle = tile.querySelector('span') as HTMLElement;
+    const label = screen.getByText('사진 추가');
+
+    expect(tile.classList.contains('w-32.5')).toBe(true);
+    expect(tile.classList.contains('rounded-r2')).toBe(true);
+    expect(tile.classList.contains('gap-s3')).toBe(true);
+    expect(circle.classList.contains('size-6.5')).toBe(true);
+    expect(label.classList.contains('typography-body-4-regular')).toBe(true);
+    expect(label.classList.contains('text-text-tertiary')).toBe(true);
   });
 });

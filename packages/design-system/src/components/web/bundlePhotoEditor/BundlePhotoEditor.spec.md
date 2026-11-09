@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo Editor`(`xs`는 현재 node `4910:100400`의 `State=Filled` 130px, `m`은 지금은 Figma에서 사라진 `1439:31041`의 `Size=M`으로 캡션 화면이 아직 씀). 변형은 `Size=S·M`(`Frame 2147231378`은 M) × `Type=Photo·Add` 4개다. 이 컴포넌트는 `Type=Photo`(M·S)이고 `Type=Add`는 `AddBundlePhotoEditor`로 나눴다.
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo Editor`(node `1439:31041`). 변형은 `Size=S·M`(`Frame 2147231378`은 M) × `Type=Photo·Add` 4개다. 이 컴포넌트는 `Type=Photo`(M·S)이고 `Type=Add`는 `AddBundlePhotoEditor`로 나눴다.
 - 이름 변경 (2026-11-04): Figma 컴포넌트가 `Bundle Photo`에서 `Bundle Photo Editor`로 바뀌어 코드 이름도 `BundlePhoto`·`AddBundlePhoto`에서 `BundlePhotoEditor`·`AddBundlePhotoEditor`로 맞췄다(모양 변경 없음).
 - 의존: `ProfileImage`(31px로 줄여 사용), `PageCounter`, 아이콘 `LineCloseSmallIcon`.
 
@@ -22,7 +22,7 @@
 
 ## Public API
 
-- Props: `src`(필수), `alt`(필수, 장식이면 빈 문자열), `size`(`xs` 130px·`m` 330px, 기본 `m`), `uploader`(`{ name, src? }`, 주면 아바타), `uploaderLabel`(아바타를 읽어 주는 글자, 기본 "{이름}님이 올린 사진"), `page`(`{ current, total }`, 주면 왼쪽 아래에 페이지 표시), `pageLabel`(기본 "{현재} / {전체}"), `onDelete`(주면 삭제 버튼), `deleteLabel`(기본 "사진 삭제"), 그리고 native `<div>`의 속성(`className`은 사진 틀에 적용).
+- Props: `src`(필수), `alt`(필수, 장식이면 빈 문자열), `size`(`s` 300px·`m` 330px, 기본 `m`), `uploader`(`{ name, src? }`, 주면 아바타), `uploaderLabel`(아바타를 읽어 주는 글자, 기본 "{이름}님이 올린 사진"), `page`(`{ current, total }`, 주면 왼쪽 아래에 페이지 표시), `pageLabel`(기본 "{현재} / {전체}"), `onDelete`(주면 삭제 버튼), `deleteLabel`(기본 "사진 삭제"), 그리고 native `<div>`의 속성(`className`은 사진 틀에 적용).
 - 폭은 `size`가 정하고 높이는 정사각(`aspect-square`)이다. 다른 폭이 필요하면 `className`(예: `w-full`)으로 덮어쓴다. 높이(`h-*`·`size-*`)를 `className`으로 정하면 정사각이 깨지므로 폭만 바꾼다. `<img>`의 `loading="lazy"` 같은 속성은 내보내지 않는다(props가 틀 `<div>`용).
 - 호출자 소유 책임: 사진 주소·설명·이름·삭제 버튼 이름의 i18n, 삭제 확인과 목록 갱신, 사진 배치(그리드).
 
@@ -44,7 +44,7 @@
 
 ## Styling과 의존성
 
-- Token: `rounded-r4`, `p-s8`, `border-border-tertiary`, `bg-overlay-scrim`, `text-icon-inversed`. 크기는 `w-32.5`(130px)·`w-82.5`(330px)·`size-7.75`(31px)·`size-6`(24px)로 기본 scale이다. 허용되는 dependency 추가 없음.
+- Token: `rounded-r4`, `p-s8`, `border-border-tertiary`, `bg-overlay-scrim`, `text-icon-inversed`. 크기는 `w-75`(300px)·`w-82.5`(330px)·`size-7.75`(31px)·`size-6`(24px)로 기본 scale이다. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `Size=S·M`→`size`, `Type=Photo`→이 컴포넌트, `avater`→`uploader`, `Delete Button`→`onDelete`.
 - Storybook state matrix: `Default`, `WithPage`, `Small`, `DeleteOnly`, `UploaderOnly`, `UploaderWithoutImage`, `Matrix`(Photo M·S와 Add M·S).
 
@@ -57,3 +57,8 @@
 ## 검증
 
 단위 테스트(사진·`alt`·크기·`className` 덮어쓰기, `uploader`·`onDelete`의 유무와 이름, 클릭, 클래스)와 Storybook 렌더로 치수를 Figma 값과 대조했다: `m` 330×330, `s` 300×300, 아바타 31px(16, 16, 테두리 `#EAEAEA`), 삭제 버튼 24px(290, 19.5, 검정 60% + 블러 15px), X 아이콘 8px. 사진은 Figma의 샘플 사진이 아니라 그라데이션이라 사진 픽셀은 비교하지 않았다. 스크린 리더, 실기기 터치, 키보드 포커스 윤곽선의 실제 모양은 확인하지 않았다.
+
+## 소형 `xs`(#267, Figma `Bundle Photo Editor` `4910:100400` `State=Filled`)
+
+- 130px 정사각, 반경 `r2`(4px). 삭제 버튼은 `DeleteButton` M(16px, `icon-tertiary`)이 오른쪽 위 모서리 밖 4px(`-top-1 -right-1`)로 걸친다. 사진만 자르고 버튼은 자르지 않도록 틀을 둘로 나눴다.
+- 올린 멤버 아바타·페이지 표시는 이 크기에 없다(Figma에 없음).

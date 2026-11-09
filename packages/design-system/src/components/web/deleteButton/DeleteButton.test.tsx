@@ -54,8 +54,8 @@ describe('DeleteButton', () => {
   });
 
   it.each([
-    ['M', 'size-3'],
-    ['L', 'size-4'],
+    ['M', 'size-2'],
+    ['L', 'size-3'],
   ] as const)('%s 크기의 X 아이콘은 %s이고 선 굵기를 1px로 고정한다', (size, iconSize) => {
     const { container } = render(<DeleteButton label="삭제" size={size} />);
     const classList = container.querySelector('svg')?.classList;

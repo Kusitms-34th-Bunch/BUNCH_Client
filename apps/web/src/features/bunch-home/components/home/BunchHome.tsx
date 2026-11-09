@@ -1,8 +1,9 @@
 'use client';
 
-import { toast } from '@app/design-system';
+import { ConfirmDialog, toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useDeleteBundleMutation } from '@/features/bundle/queries/bundles';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -14,6 +15,9 @@ import { BunchHomeError } from './BunchHomeError';
 import { BunchHomeScreen } from './BunchHomeScreen';
 import { NoBunchScreen } from './NoBunchScreen';
 
+// 번들은 번치 멤버가 2명 이상일 때 만들 수 있음(기획)
+const MIN_MEMBERS_FOR_BUNDLE = 2;
+
 type BunchHomeProps = {
   /** server: 프로필·완성된 번들을 서버에서 받음(기본), sample: 샘플 데이터(번치 전환 등 서버가 없는 동작을 확인하는 테스트) */
   source?: 'server' | 'sample';
@@ -22,6 +26,8 @@ type BunchHomeProps = {
 /** `/bunch` 번치 탭 화면: 상태와 동작을 가져와 화면에 연결, 참여 번치가 없으면 번치 없음(「+」·「첫 번들 만들기」는 번들 만들기 화면으로 이동, 작성 중인 번들 열기는 아직 동작 없음) */
 export function BunchHome({ source = 'server' }: BunchHomeProps) {
   const router = useRouter();
+  // 번치에 나 혼자일 때 「+」·「첫 번들 만들기」를 막고 멤버 초대를 안내하는 창
+  const [needMembersOpen, setNeedMembersOpen] = useState(false);
   const sample = useBunchHome();
   const server = useServerBunchHome({ enabled: source === 'server' });
   const { data: profile } = useQuery({ ...myProfileQueryOptions(), enabled: source === 'server' });
@@ -71,13 +77,29 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
     );
   }
   return (
-    <BunchHomeScreen
-      data={data}
-      actions={actions}
-      onAddBunch={() => router.push(BUNCH_HOME_PATHS.startBunch)}
-      onOpenPlaces={() => router.push(BUNCH_HOME_PATHS.places)}
-      onCreateBundle={() => router.push(BUNCH_HOME_PATHS.createBundle)}
-      onOpenDraft={(bundleId) => router.push(BUNCH_HOME_PATHS.draft(bundleId))}
-    />
+    <>
+      <BunchHomeScreen
+        data={data}
+        actions={actions}
+        onAddBunch={() => router.push(BUNCH_HOME_PATHS.startBunch)}
+        onOpenPlaces={() => router.push(BUNCH_HOME_PATHS.places)}
+        // 멤버가 2명 미만이면 번들 만들기로 들어가지 않고 초대 안내(번들은 멤버가 2명 이상일 때 만들 수 있음)
+        onCreateBundle={() =>
+          data.current.memberCount < MIN_MEMBERS_FOR_BUNDLE
+            ? setNeedMembersOpen(true)
+            : router.push(BUNCH_HOME_PATHS.createBundle)
+        }
+        onOpenDraft={(bundleId) => router.push(BUNCH_HOME_PATHS.draft(bundleId))}
+      />
+      <ConfirmDialog
+        open={needMembersOpen}
+        onOpenChange={setNeedMembersOpen}
+        title={BUNCH_HOME_MESSAGES.needMembersTitle}
+        description={BUNCH_HOME_MESSAGES.needMembersDescription}
+        confirmLabel={BUNCH_HOME_MESSAGES.needMembersInvite}
+        cancelLabel={BUNCH_HOME_MESSAGES.needMembersCancel}
+        onConfirm={() => router.push(BUNCH_HOME_PATHS.invite)}
+      />
+    </>
   );
 }

@@ -29,8 +29,8 @@
 ## 상태와 동작
 
 - 줄: 높이 25px(`h-6.25`), 제목 그룹과 아바타 사이 8px(`s4`), 세로 가운데 정렬. 너비는 부모를 채우지 않고 내용에 맞춘다.
-- 제목 그룹: 핀(16px, `icon-primary`)과 제목 사이 6px(`s3`), 제목과 별표 사이 2px(`s1`).
-- 제목: `typography-body-3-semibold`(14/21, 600, 자간 -0.5px, Figma `Body-3-Semibold`), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다. `weak`는 `typography-body-3-regular`(14/21, 400, 자간 0)이고 색은 같다.
+- 제목 그룹: 핀(16px, `icon-primary`)과 제목 사이 6px(`s3`, Figma `3021:57860` 기준으로 4px에서 바꿈), 제목과 별표 사이 2px(`s1`).
+- 제목: `typography-body-3-semibold`(14/21, 600, 자간 -0.5px — 이름은 철자 오류지만 값이 Figma Body-3-Semibold와 같다), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다. `weak`는 `typography-body-3-regular`(14/21, 400, 자간 0)이고 색은 같다.
 - 별표: `icon-brand`(`#454EDF`) 16px, 스크린 리더에는 숨기고 "필수"를 따로 읽어 준다.
 - 아바타: 24px 원(1px `border-tertiary`), 앞의 8명까지 오른쪽으로 8px씩 겹친다(뒤에 오는 아바타가 위). 8명이면 너비가 정확히 136px(`24×8 − 8×7`)다.
 

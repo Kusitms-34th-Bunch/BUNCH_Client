@@ -80,13 +80,6 @@ describe('BundleDraftPhotoCaption', () => {
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 
-  it('없는 초안은 「삭제된 번들이에요」를 안내하고 번치 홈으로 이동한다', () => {
-    renderCaption('draft-photo-1', 'deleted-draft');
-
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, { fullWidth: true });
-    expect(replace).toHaveBeenCalledWith('/bunch');
-  });
-
   it('사진을 누르면 그 사진의 크게 보기 주소로 이동(push)한다', async () => {
     renderCaption('draft-photo-1');
 
@@ -139,13 +132,13 @@ describe('BundleDraftPhotoViewer', () => {
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 
-  it('돌아갈 기록이 없으면 뒤로 가기는 그 사진의 캡션 화면으로 이동(replace)한다', async () => {
+  it('돌아갈 기록이 없으면 뒤로 가기는 작성 화면으로 이동(replace)한다', async () => {
     vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
     renderViewer('draft-photo-2');
 
     await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
-    expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1/photos/draft-photo-2');
+    expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 });
 

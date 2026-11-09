@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo Editor`의 `State=Empty`(`xs`, node `4910:100410`, 130px, 원 26px·아이콘 17px·간격 6px·`Body-4-Regular`·`text-tertiary`, 아이콘은 Small 16px 사용)와 지금은 Figma에서 사라진 `1439:31092`(`m`, 캡션 화면이 아직 씀). 같은 `Bundle Photo Editor`의 `Type=Photo`와 요소(`div`와 `button`)가 달라 `BundlePhotoEditor`와 나눴다.
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Bundle Photo Editor`(node `1439:31041`) 중 `Type=Add`(`Size=M` node `1439:31092`, `Size=S` node `1439:31101`). 같은 `Bundle Photo Editor`의 `Type=Photo`와 요소(`div`와 `button`)가 달라 `BundlePhotoEditor`와 나눴다.
 - 이름 변경 (2026-11-04): Figma 컴포넌트가 `Bundle Photo`에서 `Bundle Photo Editor`로 바뀌어 코드 이름도 `BundlePhoto`·`AddBundlePhoto`에서 `BundlePhotoEditor`·`AddBundlePhotoEditor`로 맞췄다(모양 변경 없음).
 - 의존: 아이콘 `LineAddMediumIcon`.
 
@@ -21,7 +21,7 @@
 
 ## Public API
 
-- Props: `size`(`xs` 130px·`m` 330px, 기본 `m`), `label`(기본 "사진 추가"), 그리고 native `<button>`의 속성(`type`은 기본 `button`, `onClick`·`className`·`aria-label` 등. `disabled`는 받지 않음).
+- Props: `size`(`s` 300px·`m` 330px, 기본 `m`), `label`(기본 "사진 추가"), 그리고 native `<button>`의 속성(`type`은 기본 `button`, `onClick`·`className`·`aria-label` 등. `disabled`는 받지 않음).
 - 폭은 `size`가 정하고 높이는 정사각이다. 다른 폭은 `className`(예: `w-full`)으로 덮어쓴다.
 - 호출자 소유 책임: 글자의 i18n, 동작, 배치. 사진 개수가 상한에 닿았을 때는 타일을 숨긴다(이 컴포넌트는 `disabled`를 받지 않고 `aria-disabled`를 넘겨도 클릭을 막지 않는다). 긴 글자의 줄바꿈 처리(`break-keep` 등)는 없다.
 
@@ -42,7 +42,7 @@
 
 ## Styling과 의존성
 
-- Token: `bg-surface-secondary`·`bg-surface-primary`, `rounded-r4`, `gap-s4`, `text-icon-primary`·`text-text-primary`, `typography-body-3-regular`, 크기는 `w-32.5`·`w-82.5`·`size-6.5`·`size-9`, `xs`는 `gap-s3`·`typography-body-4-regular`·`text-text-tertiary`. 허용되는 dependency 추가 없음.
+- Token: `bg-surface-secondary`·`bg-surface-primary`, `rounded-r4`, `gap-s4`, `text-icon-primary`·`text-text-primary`, `typography-body-3-regular`, 크기는 `w-75`·`w-82.5`·`size-9`. 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `Size=S·M`→`size`, `Type=Add`→이 컴포넌트, "사진 추가"→`label`.
 - Storybook state matrix: `Default`, `Small`, `CustomLabel`(그리고 `BundlePhotoEditor`의 `Matrix`에서 나란히 보기).
 
@@ -54,3 +54,7 @@
 ## 검증
 
 단위 테스트(이름, 클릭, `label`, 크기·클래스, 포커스 윤곽선 클래스, `type`)와 Storybook 렌더로 치수를 Figma 값과 대조했다: `m` 330×330에서 더하기 원 36px이 가운데(147)에 놓이고 `s` 300×300에서 132, 타일 배경 `#F5F5F5`, 반경 8px, 글자 14/21 `#121212`. 안쪽 요소의 세로 위치는 Figma(1.05배)와 최대 약 1px 차이가 난다. 글자 픽셀은 Pretendard가 없어 비교하지 않았다. 스크린 리더, 실기기 터치, 키보드 포커스 윤곽선의 실제 모양은 확인하지 않았다.
+
+## 소형 `xs`(#267, Figma `Bundle Photo Editor` `4910:100400` `State=Empty`)
+
+- 130px 정사각, 반경 `r2`(4px), 흰 더하기 원 26px(`size-6.5`)과 더하기 아이콘 16px(Figma 16.8px), 글자 `typography-body-4-regular`(13/18) `text-tertiary`, 원·글자 간격 6px(`s3`). `s`·`m`의 36px 원·14px 글자와 다르다.

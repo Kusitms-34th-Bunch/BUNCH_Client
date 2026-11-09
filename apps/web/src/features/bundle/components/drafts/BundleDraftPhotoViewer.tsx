@@ -6,7 +6,7 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
-import { useRedirectMissingDraft, useRedirectMissingPhoto } from '../../hooks/useDraftExit';
+import { useRedirectMissingPhoto } from '../../hooks/useDraftExit';
 import { usePhotoAddress } from '../../hooks/usePhotoAddress';
 import { DraftPhotoViewer } from './DraftPhotoViewer';
 
@@ -24,7 +24,7 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
   const { state, actions } = useDraftContext();
   const ready = state.kind === 'ready';
   const draftId = ready ? state.draft.id : undefined;
-  const { initialPhotoId, currentPhotoId, sync } = usePhotoAddress(
+  const { initialPhotoId, sync } = usePhotoAddress(
     photoId,
     draftId,
     BUNDLE_PATHS.photoViewer,
@@ -49,8 +49,6 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
   const sourcesPending = photoBox.kind === 'loading';
   const present = useRedirectMissingPhoto(ready ? state.draft : undefined, initialPhotoId);
 
-  useRedirectMissingDraft(state.kind === 'missing');
-
   if (state.kind !== 'ready' || !present || initialPhotoId === undefined) return <PageLoading />;
 
   const { draft, viewer } = state;
@@ -64,7 +62,8 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
       sourcesPending={sourcesPending}
       bunchMembers={photoBoxData?.members}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 그 사진의 캡션 화면으로 이동
-      onBack={() => backOr(BUNDLE_PATHS.photo(draft.id, currentPhotoId ?? initialPhotoId))}
+      // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동(작성 화면에서 사진을 눌러 들어오는 화면)
+      onBack={() => backOr(BUNDLE_PATHS.draft(draft.id))}
       onPhotoChange={sync}
     />
   );

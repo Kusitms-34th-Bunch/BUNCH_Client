@@ -140,4 +140,11 @@ describe('BundleTitle', () => {
     expect((container.firstElementChild as HTMLElement).className).toContain('mt-2');
     expect(screen.getByTestId('row')).toBeTruthy();
   });
+
+  it('아이콘과 제목 사이는 6px(gap-s3)이다', () => {
+    const { container } = render(<BundleTitle title="사진" />);
+    const group = container.querySelector('.text-icon-primary') as HTMLElement;
+
+    expect(group.classList.contains('gap-s3')).toBe(true);
+  });
 });

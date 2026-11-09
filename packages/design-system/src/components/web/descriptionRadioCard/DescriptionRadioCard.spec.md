@@ -11,7 +11,7 @@
 
 - 제목과 설명이 있는 선택 카드(예: 공개 범위 「공개 / 누구나 우리 번치와 번들을 볼 수 있어요.」). 라디오는 왼쪽이다.
 - 기존 컴포넌트와 대조한 결과 따로 만들었다.
-  - `RadioCard`(Figma `Radio Card` `1379:22093`): 제목은 `text-tertiary`, 높이 78, radius 8, 비활성 없음.
+  - `RadioCard`(Figma `Radio Card` `1379:22093`): 글자 한 줄, 높이 54, radius 8, 비활성 없음.
   - `VisibilityOption`(`633:2410`): 아이콘 원이 있고 라디오가 보이지 않는다.
 - 그룹(`fieldset`·`legend`)과 선택 값은 호출자가 맡는다.
 
@@ -37,15 +37,15 @@
 
 ## Styling과 의존성
 
-| Figma                                                   | 구현                                              |
-| ------------------------------------------------------- | ------------------------------------------------- |
-| 패딩 12, radius `r5`, 바탕 `surface-secondary`, 높이 63 | `p-padding-p6 rounded-r5 bg-surface-secondary`    |
-| 라디오·글자 간격 10                                     | `gap-s5`                                          |
-| 제목·설명 간격 2                                        | `gap-s1`                                          |
-| 제목 Body-3-Semibold, `text-primary`                    | `typography-body-3-semibold text-text-primary`    |
-| 설명 Caption-1-Regular, `text-tertiary`                 | `typography-caption-1-regular text-text-tertiary` |
-| Control Radio 20                                        | `Radio`(`core/radio`)                             |
-| 선택·눌림·흐림                                          | `ProfileRadioCard`와 같음                         |
+| Figma                                                                  | 구현                                                  |
+| ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| 좌우 패딩 16·위아래 18, radius `r4`, 바탕 `surface-secondary`, 높이 78 | `px-padding-p8 py-s9 rounded-r4 bg-surface-secondary` |
+| 라디오·글자 간격 14                                                    | `gap-s7`                                              |
+| 제목·설명 간격 4                                                       | `gap-s2`                                              |
+| 제목 Body-2-Medium(15/22), `text-tertiary`                             | `typography-body-2-medium text-text-tertiary`         |
+| 설명 Caption-1-Regular, `text-tertiary`                                | `typography-caption-1-regular text-text-tertiary`     |
+| Control Radio 20                                                       | `Radio`(`core/radio`)                                 |
+| 선택·눌림·흐림                                                         | `ProfileRadioCard`와 같음                             |
 
 ## 확인할 항목
 

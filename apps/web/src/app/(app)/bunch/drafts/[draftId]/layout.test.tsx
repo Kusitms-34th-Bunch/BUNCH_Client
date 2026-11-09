@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import BundleDraftLayout from './layout';
+
+// 안내 창 화면은 이 test의 대상이 아니므로 비움
+vi.mock('@/features/bundle/components', () => ({ DraftMissingGate: () => null }));
 
 type Provider = { props: { draftId: string | undefined } };
 

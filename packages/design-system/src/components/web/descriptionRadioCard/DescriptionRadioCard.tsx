@@ -29,9 +29,9 @@ export const DescriptionRadioCard = ({
   return (
     <label
       className={cn(
-        'bg-surface-secondary rounded-r5 p-padding-p6 gap-s5 group relative isolate flex w-full cursor-pointer touch-manipulation items-center',
+        'bg-surface-secondary rounded-r4 px-padding-p8 py-s9 gap-s7 group relative isolate flex w-full cursor-pointer touch-manipulation items-center',
         // 눌림은 글자 뒤 layer로 겹쳐 글자는 그대로 유지. While Pressing / Dissolve / Ease out / 75ms(화면설계서 2145:39607)
-        'before:rounded-r5 before:bg-overlay-pressed before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out not-has-disabled:active:before:opacity-100',
+        'before:rounded-r4 before:bg-overlay-pressed before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out not-has-disabled:active:before:opacity-100',
         // 선택: On Click / Dissolve / Ease out / 75ms
         'transition-[background-color,box-shadow] duration-75 ease-out motion-reduce:transition-none motion-reduce:before:transition-none',
         'has-checked:bg-surface-brand-subtle-1 has-checked:ring-border-brand-subtle has-checked:ring-1 has-checked:ring-inset',
@@ -45,10 +45,10 @@ export const DescriptionRadioCard = ({
         aria-describedby={description ? `${baseId}-description` : undefined}
         {...props}
       />
-      <span className="gap-s1 flex min-w-0 flex-1 flex-col wrap-break-word break-keep">
+      <span className="gap-s2 flex min-w-0 flex-1 flex-col wrap-break-word break-keep">
         <span
           id={`${baseId}-title`}
-          className="typography-body-3-semibold text-text-primary group-has-disabled:text-text-disabled"
+          className="typography-body-2-medium text-text-tertiary group-has-disabled:text-text-disabled"
         >
           {title}
         </span>

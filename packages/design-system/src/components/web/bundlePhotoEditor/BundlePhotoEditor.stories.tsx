@@ -37,8 +37,8 @@ export const WithPage: Story = {
   },
 };
 
-/** Figma `State=Filled`(130px): 사진만. 삭제 버튼은 호출하는 쪽이 모서리에 얹음 */
-export const ExtraSmall: Story = { args: { size: 'xs' } };
+/** Figma `Size=S, Type=Photo`(300px): 사진만 */
+export const Small: Story = { args: { size: 's' } };
 
 /** 삭제 버튼만(아바타 없이, Figma `avater=false`) */
 export const DeleteOnly: Story = { args: { onDelete: () => {} } };
@@ -63,11 +63,11 @@ export const Matrix: Story = {
           onDelete={() => {}}
           page={{ current: 1, total: 4 }}
         />
-        <BundlePhotoEditor {...args} size="xs" />
+        <BundlePhotoEditor {...args} size="s" />
       </div>
       <div className="gap-s8 flex items-start">
         <AddBundlePhotoEditor size="m" />
-        <AddBundlePhotoEditor size="xs" />
+        <AddBundlePhotoEditor size="s" />
       </div>
     </div>
   ),

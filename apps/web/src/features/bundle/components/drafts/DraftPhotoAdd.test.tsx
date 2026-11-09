@@ -77,7 +77,7 @@ describe('DraftPhotoAdd', () => {
     await userEvent.click(applyButton());
 
     expect(await screen.findByText('사진 1장이 번들에서 빠져요')).toBeInTheDocument();
-    expect(screen.getByText('빠진 사진의 픽도 함께 사라져요.')).toBeInTheDocument();
+    expect(screen.getByText('빠진 사진의 캡션도 함께 지워져요.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '취소' }));
 
     expect(actions.replacePhotos).not.toHaveBeenCalled();

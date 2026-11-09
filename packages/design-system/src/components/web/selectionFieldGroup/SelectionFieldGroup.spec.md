@@ -61,3 +61,7 @@
 - [x] public export 영향 확인(`yarn workspace @app/design-system gen:index`로 `web` barrel에 `selectionFieldGroup` 추가)
 - [ ] 실행 command와 결과
 - [ ] Storybook 렌더를 Figma와 대조(미실행)
+
+## 행 핸들·래퍼 슬롯(#267)
+
+- `itemHandle(item, index)`는 각 행의 `handle`로 넘어가고, `itemWrapper(item, index, row)`는 행 모양을 그대로 받아 감싼다. 드래그 정렬은 `@dnd-kit` 의존을 디자인 시스템에 들이지 않으려고 호출하는 쪽(web `SortableLocationGroup`)이 이 두 슬롯으로 붙인다.

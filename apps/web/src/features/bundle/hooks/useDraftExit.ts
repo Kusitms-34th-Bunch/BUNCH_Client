@@ -38,16 +38,6 @@ export function useLeaveDraft(draftId: string | undefined) {
   );
 }
 
-/** 없는 초안(삭제됨·발행됨·잘못된 id)은 「삭제된 번들이에요」 토스트 뒤 번치 홈으로 이동 */
-export function useRedirectMissingDraft(missing: boolean) {
-  const router = useRouter();
-  useEffect(() => {
-    if (!missing) return;
-    toast(BUNDLE_MESSAGES.deletedDraft, { fullWidth: true });
-    router.replace(BUNDLE_PATHS.bunchHome);
-  }, [missing, router]);
-}
-
 /**
  * 주소의 사진이 처음부터 초안에 없으면 「사진함에서 삭제된 사진이에요.」 토스트 뒤 작성 화면으로 이동하고 false를 돌려줌
  * 초안이 처음 준비된 때 한 번만 판단해(그 전에는 undefined), 화면을 보는 동안 그 사진을 빼도 쫓겨나지 않음

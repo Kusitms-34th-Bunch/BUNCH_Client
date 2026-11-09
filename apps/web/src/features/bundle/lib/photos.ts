@@ -11,7 +11,7 @@ export const clampCaption = (value: string): { text: string; exceeded: boolean }
 export const getPhotoEditors = (draft: Draft, viewer: DraftViewer, photoId: string) =>
   (draft.editing.photoEditors?.[photoId] ?? []).filter((memberId) => memberId !== viewer.memberId);
 
-/** 사진 빼기가 어떻게 진행되는지: 1장이면 막고, 아니면 항상 확인을 거침(Figma `5664:90517`·`5664:90500`) */
+/** 사진 빼기가 어떻게 진행되는지: 1장이면 막고, 아니면 항상 확인을 거침(Figma 4850:62115) */
 export type RemovePhotoKind = 'last' | 'confirm';
 
 export const getRemovePhotoKind = (photos: readonly DraftPhoto[]): RemovePhotoKind =>

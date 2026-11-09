@@ -200,4 +200,36 @@ describe('SelectionFieldGroup', () => {
 
     expect(screen.getByRole('button', { name: '추가' }).querySelector('img')).toBeNull();
   });
+
+  it('itemHandle을 주면 행마다 핸들이 제목 앞에 놓이고 핀 아이콘은 그리지 않는다', () => {
+    renderGroup({
+      items: [
+        { id: 'a', value: '서울특별시 여의도동' },
+        { id: 'b', value: '부산광역시 해운대구' },
+      ],
+      itemHandle: (item, index) => (
+        <button type="button" aria-label={`${item.value} 순서 바꾸기 ${index + 1}`} />
+      ),
+    });
+
+    expect(screen.getByRole('button', { name: '서울특별시 여의도동 순서 바꾸기 1' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '부산광역시 해운대구 순서 바꾸기 2' })).toBeTruthy();
+  });
+
+  it('itemWrapper는 행 모양을 그대로 받아 감싼다', () => {
+    const { container } = renderGroup({
+      items: [
+        { id: 'a', value: '서울특별시 여의도동' },
+        { id: 'b', value: '부산광역시 해운대구' },
+      ],
+      itemWrapper: (item, _index, row) => <div data-testid={`wrap-${item.id}`}>{row}</div>,
+    });
+
+    expect(screen.getByTestId('wrap-a')).toBeTruthy();
+    expect(screen.getByTestId('wrap-b')).toBeTruthy();
+    // 감싼 안에 행의 지우기 버튼이 그대로 있음
+    expect(
+      container.querySelectorAll('[data-testid^="wrap-"] button[aria-label$="지우기"]'),
+    ).toHaveLength(2);
+  });
 });

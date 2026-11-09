@@ -21,8 +21,10 @@ import type { BundleDetail } from '../model/bundle';
 import { readPublishBlockers, readVersionConflict } from '../api/bundles';
 import { leaseTransport, type LeaseTarget } from '../api/leases';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
+import { UPLOAD_TOAST_OFFSET } from '../constants/toast';
 import { placeFixture } from '../fixtures/draft.fixture';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
+import { moveLocation } from '../lib/locations';
 import {
   movePhoto,
   type PhotoMovePlan,
@@ -73,7 +75,8 @@ const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
 };
 
 export type DraftState =
-  | { kind: 'missing' }
+  /** 삭제됐거나 없는 초안(deleted), 다른 멤버가 업로드한 초안(published) */
+  | { kind: 'missing'; reason: 'deleted' | 'published' }
   | { kind: 'loading' }
   /** 오류 화면의 「다시 시도」: 실패한 요청만 다시 보냄 */
   | { kind: 'error'; retry: () => void }
@@ -86,6 +89,9 @@ export type DraftState =
       saveStatus: SaveStatus;
     };
 
+// 발행 요청 중 나는 안내는 하단 「업로드」 버튼 위로 띄움
+const UPLOAD_TOAST = { fullWidth: true, bottomOffset: UPLOAD_TOAST_OFFSET } as const;
+
 /** 발행 시도 결과(화면은 성공일 때만 이동하고 나머지는 안내가 이미 나감) */
 export type PublishOutcome = 'published' | 'blocked' | 'failed';
 
@@ -95,6 +101,8 @@ export type DraftActions = {
   setVisibility: (_visibility: DraftVisibility) => void;
   addLocation: (_place: PlaceResult) => void;
   removeLocation: (_locationId: string) => void;
+  /** 위치를 다른 자리로 옮김(햄버거를 잡고 끌어 순서 바꾸기, 자리는 0부터) */
+  moveLocation: (_locationId: string, _toIndex: number) => void;
   setDate: (_date: string | null) => void;
   /** 번치 멤버를 참여 멤버 맨 아래에 더함(이미 참여 중이거나 번치 멤버가 아니면 무시) */
   addMember: (_memberId: string) => void;
@@ -104,8 +112,6 @@ export type DraftActions = {
   setPhotoCaption: (_photoId: string, _caption: string) => void;
   /** 사진을 번들에서 뺌(1장이면 무시, 캡션도 함께 사라짐). 서버 반영은 후속이라 이 화면에서만 바뀜 */
   removePhoto: (_photoId: string) => void;
-  /** 내 픽을 넣거나 뺌. 서버 필드가 없어 초안을 보는 동안만 유지 */
-  togglePick: (_photoId: string) => void;
   /** 사진을 다른 자리(0부터)로 옮김(캡션은 사진을 따라감). 서버 반영은 후속이라 이 화면에서만 바뀜 */
   movePhoto: (_photoId: string, _toIndex: number) => void;
   /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜 */
@@ -180,12 +186,13 @@ export function useDraft(draftId: string | undefined): {
     undefined,
   );
   const locations = editedLocations ?? detail?.locations ?? NO_LOCATIONS;
-  const [picks, setPicks] = useState<Readonly<Record<string, readonly string[]>>>({});
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   const [flushing, setFlushing] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   // 내가 발행해 서버가 발행본으로 바꾼 뒤에는 「없는 초안」 안내 없이 이동을 기다림
   const [publishedByMe, setPublishedByMe] = useState(false);
+  // 발행 요청을 보내는 동안: 응답 전에 캐시가 먼저 PUBLISHED로 바뀌어도 내가 올리는 중이라 「업로드됐어요」 창을 띄우지 않음
+  const [publishing, setPublishing] = useState(false);
   // 저장을 포기한 상태(권한·상태 오류 또는 재시도 소진): 헤더가 「저장 실패」를 보이고 입력하면 다시 시도
   const [stalled, setStalled] = useState(false);
   // 입력란에 방금 친 원문: 서버가 앞뒤 공백을 지워 돌려줘도 입력 중 띄어쓰기가 사라지지 않게 보여 줌
@@ -496,7 +503,6 @@ export function useDraft(draftId: string | undefined): {
     const photos = (localPhotos ?? base.photos).map((photo) => ({
       ...photo,
       caption: captionOf(photo),
-      pickedBy: picks[photo.id] ?? [],
     }));
     const hasMyComment = base.comments.some((comment) => comment.memberId === myId);
     return {
@@ -518,7 +524,7 @@ export function useDraft(draftId: string | undefined): {
               )
             : [...base.comments, { memberId: myId, text: pending.comment }],
     };
-  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed, picks]);
+  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed]);
 
   const busy =
     flushing ||
@@ -628,6 +634,10 @@ export function useDraft(draftId: string | undefined): {
           (location) => location.id !== locationId,
         ),
       ),
+    moveLocation: (locationId, toIndex) =>
+      setEditedLocations((current) =>
+        moveLocation(current ?? detailRef.current?.locations ?? NO_LOCATIONS, locationId, toIndex),
+      ),
     setDate: (date) => {
       change((current) => ({ ...current, date }));
       schedule(0);
@@ -651,19 +661,6 @@ export function useDraft(draftId: string | undefined): {
       }));
       schedule(SAVE_DELAY_MS);
       setLocalPhotos((current) => current && setPhotoCaption(current, photoId, caption));
-    },
-    togglePick: (photoId) => {
-      const memberId = myIdRef.current;
-      if (!memberId) return;
-      setPicks((current) => {
-        const list = current[photoId] ?? [];
-        return {
-          ...current,
-          [photoId]: list.includes(memberId)
-            ? list.filter((id) => id !== memberId)
-            : [...list, memberId],
-        };
-      });
     },
     removePhoto: (photoId) => {
       const current = shownPhotosRef.current;
@@ -727,7 +724,7 @@ export function useDraft(draftId: string | undefined): {
       const failuresBefore = photoFailures.current;
       await photoQueue.current;
       if (photoFailures.current !== failuresBefore) {
-        toast(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.photosChangeFailed, UPLOAD_TOAST);
         return 'blocked';
       }
       clearTimeout(timer.current);
@@ -736,18 +733,20 @@ export function useDraft(draftId: string | undefined): {
       let saved = await flush();
       if (!saved) saved = await flush();
       if (!saved) {
-        toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.saveFailed, UPLOAD_TOAST);
         return 'failed';
       }
       const latest = detailRef.current;
       if (!latest) return 'failed';
+      setPublishing(true);
       try {
         await publishMutation.mutateAsync(latest.revision);
         setPublishedByMe(true);
         return 'published';
       } catch (error) {
+        setPublishing(false);
         if (readPublishBlockers(error) !== undefined) {
-          toast(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+          toast(BUNDLE_MESSAGES.uploadIncomplete, UPLOAD_TOAST);
           return 'blocked';
         }
         toast(
@@ -757,7 +756,7 @@ export function useDraft(draftId: string | undefined): {
             errorCode(error) === 'BUNDLE_002'
             ? BUNDLE_MESSAGES.publishConflict
             : BUNDLE_MESSAGES.publishFailed,
-          { fullWidth: true },
+          UPLOAD_TOAST,
         );
         return 'failed';
       }
@@ -772,7 +771,7 @@ export function useDraft(draftId: string | undefined): {
     bundleId === undefined ||
     noAccess ||
     (detailIsError && ['RESOURCE_001', 'AUTH_002'].includes(errorCode(detailError) ?? '')) ||
-    (detail?.status === 'PUBLISHED' && !publishedByMe);
+    (detail?.status === 'PUBLISHED' && !publishedByMe && !publishing);
   const failed =
     profileError || membersError || (detailIsError && !missing && detail === undefined);
   const retry = () => {
@@ -782,8 +781,13 @@ export function useDraft(draftId: string | undefined): {
   };
 
   let state: DraftState = { kind: 'loading' };
-  if (missing) state = { kind: 'missing' };
-  else if (failed) state = { kind: 'error', retry };
+  if (missing) {
+    state = {
+      kind: 'missing',
+      reason:
+        detail?.status === 'PUBLISHED' && !publishedByMe && !publishing ? 'published' : 'deleted',
+    };
+  } else if (failed) state = { kind: 'error', retry };
   else if (draft && viewer && !publishedByMe) {
     state = {
       kind: 'ready',

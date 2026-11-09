@@ -214,12 +214,19 @@ const tabRules: SsgoiTransitionRule[] = tabPaths.flatMap((from) =>
 const rules: SsgoiTransitionRule[] = [
   ...tabRules,
   { from: BUNCH_HOME_PATHS.home, to: ONBOARDING_PATHS.start, transition: bunchAddDissolve },
-  // 번치 홈 플로팅 버튼 → 번들 만들기는 모달처럼 아래에서 올라오고 닫으면 내려가는 sheet 프리셋(SSGOI 데모의 Home → Create)
+  // 번치 홈 플로팅 버튼 → 번들 만들기(멤버 선택)는 모달처럼 아래에서 올라오고 닫으면 내려가는 sheet 프리셋(SSGOI 데모의 Home → Create)
   {
     from: BUNCH_HOME_PATHS.home,
-    to: BUNDLE_SELECT_PATHS.select,
+    to: BUNDLE_SELECT_PATHS.members,
     bidirectional: true,
     transition: bunchSheet,
+  },
+  // 멤버 선택 → 사진 선택은 옆으로 넘어가는 슬라이드
+  {
+    from: BUNDLE_SELECT_PATHS.members,
+    to: BUNDLE_SELECT_PATHS.select,
+    bidirectional: true,
+    transition: bundleSlide,
   },
   {
     from: BUNCH_HOME_PATHS.home,
@@ -418,15 +425,30 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition,
   },
+  // 작성 화면 → 대표 사진 투표(「픽하기 >」)도 참여 멤버 관리와 같은 슬라이드
   {
     from: BUNDLE_PATHS.transitionIds.draft,
-    to: BUNDLE_PATHS.transitionIds.photo,
+    to: BUNDLE_PATHS.transitionIds.pick,
+    bidirectional: true,
+    transition,
+  },
+  // 작성 화면 → 공개 범위(업로드 직전)도 같은 슬라이드
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.visibility,
+    bidirectional: true,
+    transition,
+  },
+  // 작성 화면 → 사진 상세(크게 보기)도 같은 슬라이드
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.viewer,
     bidirectional: true,
     transition,
   },
   {
     from: BUNDLE_PATHS.transitionIds.draft,
-    to: BUNDLE_PATHS.transitionIds.pick,
+    to: BUNDLE_PATHS.transitionIds.photo,
     bidirectional: true,
     transition,
   },

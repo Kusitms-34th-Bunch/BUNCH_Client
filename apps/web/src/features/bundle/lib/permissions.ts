@@ -9,6 +9,8 @@ export type DraftAccess = {
   canAddMember: boolean;
   /** 초안 생성자이거나 참여 중인 관리자(공동 관리자 포함)라 발행할 수 있는지 */
   canPublish: boolean;
+  /** 사진을 더할 수 있는지: 발행과 같이 초안 생성자·관리자·공동 관리자(참여 멤버)만 */
+  canAddPhoto: boolean;
 };
 
 const isAdminRole = (role: BunchRole) => role === 'owner' || role === 'coOwner';
@@ -17,11 +19,13 @@ const isAdminRole = (role: BunchRole) => role === 'owner' || role === 'coOwner';
 export const getDraftAccess = (draft: Draft, viewer: DraftViewer): DraftAccess => {
   const me = draft.members.find((member) => member.id === viewer.memberId);
   const participant = me !== undefined;
+  const privileged = participant && (me.isCreator || isAdminRole(viewer.bunchRole));
   return {
     participant,
     canEdit: participant,
     canAddMember: participant,
-    canPublish: participant && (me.isCreator || isAdminRole(viewer.bunchRole)),
+    canPublish: privileged,
+    canAddPhoto: privileged,
   };
 };
 

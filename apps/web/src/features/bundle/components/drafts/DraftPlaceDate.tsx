@@ -1,16 +1,20 @@
 'use client';
 
-import { DateChangeSheet, SelectionField, SelectionFieldGroup } from '@app/design-system/web';
+import { DateChangeSheet, SelectionField } from '@app/design-system/web';
 import { useState } from 'react';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../../constants/messages';
 import { formatDraftDate, parseDraftDate, toDraftDateString } from '../../lib/draftDate';
 import { LocationSearchSheet } from './LocationSearchSheet';
+import { SortableLocationGroup } from './SortableLocationGroup';
 
 type DraftPlaceDateProps = {
   draft: Draft;
-  actions: Pick<DraftActions, 'addLocation' | 'removeLocation' | 'setDate' | 'searchPlaces'>;
+  actions: Pick<
+    DraftActions,
+    'addLocation' | 'removeLocation' | 'moveLocation' | 'setDate' | 'searchPlaces'
+  >;
   /** 위치·날짜를 고칠 수 있는지(참여 멤버만) */
   editable: boolean;
   /** 날짜 형식(올해 여부)의 기준 연도 */
@@ -60,7 +64,7 @@ export function DraftPlaceDate({
   }));
 
   return (
-    <section className="pt-s13 px-padding-p8 gap-s3 flex flex-col">
+    <section className="pt-s13 pb-padding-p14 px-padding-p8 gap-s3 flex flex-col">
       {draft.locations.length === 0 ? (
         <SelectionField
           label={BUNDLE_MESSAGES.locationAdd}
@@ -69,8 +73,14 @@ export function DraftPlaceDate({
           onFieldClick={openLocation}
         />
       ) : (
-        <SelectionFieldGroup
+        <SortableLocationGroup
           items={draft.locations.map((location) => ({ id: location.id, value: location.name }))}
+          // 하나뿐이거나 다른 멤버가 편집 중·권한이 없으면 끌 수 없음(눌렀을 때 이유를 안내)
+          disabled={!editable || draft.locations.length < 2 || Boolean(draft.editing.location)}
+          onBlockedPress={
+            !editable ? onDenied : draft.editing.location ? onEditingBlocked : undefined
+          }
+          onMove={actions.moveLocation}
           // 편집 중인 멤버가 있으면 이름을 필드·그룹 이름에 넣어 칩에서도 잠겼다는 사실이 읽히게 함
           fieldLabel={fieldNameWith(BUNDLE_MESSAGES.locationField, locationEditor)}
           groupLabel={fieldNameWith(BUNDLE_MESSAGES.locationField, locationEditor)}

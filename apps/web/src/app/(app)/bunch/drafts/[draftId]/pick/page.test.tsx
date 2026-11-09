@@ -4,7 +4,7 @@ import BundleDraftPickPage, { metadata } from './page';
 vi.mock('@/features/bundle/components', () => ({ BundleDraftPick: () => null }));
 
 describe('/bunch/drafts/[draftId]/pick page', () => {
-  it('전환 경계(data-ssgoi-transition)를 픽하기 id로 지정한다', () => {
+  it('전환 경계(data-ssgoi-transition)를 대표 사진 투표 경로로 지정한다', () => {
     expect(BundleDraftPickPage().props).toMatchObject({
       'data-ssgoi-transition': '/bunch/drafts/pick',
     });
