@@ -44,7 +44,7 @@ export type DeleteButtonProps = Omit<
 /**
  * 삭제 버튼(Figma `Delete Button`): 작은 원 안의 X 아이콘 버튼
  * 사진·카드 모서리에 얹어 쓰므로 위치는 호출하는 쪽이 `className`으로 정함(예: `absolute -top-0.75 -right-0.75`, `ml-auto`)
- * X는 Figma처럼 M 6px · L 8px 크기이고 선 굵기는 크기와 상관없이 1px로 고정(`non-scaling-stroke`)
+ * X 아이콘 박스는 Figma처럼 M 8px · L 12px(Small 아이콘의 X가 그 박스에서 4px · 6px)이고 선 굵기는 크기와 상관없이 1px로 고정(`non-scaling-stroke`)
  */
 export const DeleteButton = ({
   label,
@@ -62,7 +62,7 @@ export const DeleteButton = ({
     <LineCloseSmallIcon
       aria-hidden="true"
       className={cn(
-        size === 'L' ? 'size-4' : 'size-3',
+        size === 'L' ? 'size-3' : 'size-2',
         '[&_path]:stroke-1 [&_path]:[vector-effect:non-scaling-stroke]',
       )}
     />

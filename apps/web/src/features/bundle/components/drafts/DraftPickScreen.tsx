@@ -108,7 +108,7 @@ export function DraftPickScreen({
         aria-label={BUNDLE_MESSAGES.pickPhotos}
         aria-roledescription={BUNDLE_MESSAGES.pickCarousel}
         onKeyDown={handleListKeyDown}
-        className="gap-s5 px-padding-p18 pt-s8 scroll-px-padding-p18 focus-visible:outline-border-brand flex snap-x snap-mandatory scrollbar-none overflow-x-auto [&::-webkit-scrollbar]:hidden"
+        className="gap-s5 pt-s8 focus-visible:outline-border-brand flex snap-x snap-mandatory scrollbar-none overflow-x-auto px-[calc(50%-147.5px)] [&::-webkit-scrollbar]:hidden"
         onScroll={(event) =>
           setActiveIndex(Math.max(0, Math.round(event.currentTarget.scrollLeft / PHOTO_STEP)))
         }

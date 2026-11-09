@@ -52,6 +52,14 @@ describe('DraftPickScreen', () => {
     expect(screen.getByRole('button', { name: '이 사진 픽하기' })).toBeInTheDocument();
   });
 
+  it('사진 목록 좌우 여백은 폭에서 계산해 첫 장과 마지막 장이 어떤 폭에서도 가운데에 선다', () => {
+    renderScreen();
+
+    const list = screen.getByRole('list', { name: '번들 사진' });
+    // 사진 폭 295의 절반(147.5px)을 뺀 좌우 여백
+    expect(list.className).toContain('px-[calc(50%-147.5px)]');
+  });
+
   it('아무도 픽하지 않은 사진에는 픽한 멤버 영역이 없다', () => {
     renderScreen();
 
