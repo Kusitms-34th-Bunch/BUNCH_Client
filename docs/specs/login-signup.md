@@ -118,7 +118,20 @@ Entry와 소셜 로그인 (1.2.1~1.2.6, AUTH-01·02·06)
 
 ## API 계약
 
-백엔드 명세가 아직 없다. 아래는 화면이 필요로 하는 동작 목록이며 method·path·필드는 **확인할 항목**이다. 확정되면 `.agents/templates/api-contract-map.md`로 정리하고 `assess-api-contract`로 넘긴다.
+아래 동작은 구현돼 있다. 웹은 BFF(`/api/*`)를 거쳐 백엔드를 호출하며 method·path는 다음과 같다. 약관 조회와 닉네임 확인, 가입(multipart)은 Swagger에 응답 타입이 없어 API 명세서 기준이다.
+
+| 동작                   | BFF 호출                                 |
+| ---------------------- | ---------------------------------------- |
+| 소셜 로그인            | `POST /api/auth/login`                   |
+| 로그아웃               | `POST /api/auth/logout`                  |
+| 토큰 재발급            | `POST /api/auth/reissue`(401 때 자동)    |
+| 세션(가입 상태) 확인   | `GET /api/members/me/onboarding`         |
+| 약관 조회              | `GET /api/auth/terms`                    |
+| 약관 동의 저장         | `POST /api/auth/terms/agreements`        |
+| 닉네임 중복 확인       | `GET /api/members/nickname-availability` |
+| 프로필 저장(가입 완료) | `POST /api/members/me/registration`      |
+
+아래 표는 화면이 필요로 하는 동작 목록이다.
 
 | 동작                   | 입력                                           | 출력                                                             | 사용 화면    |
 | ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------- | ------------ |
@@ -133,7 +146,7 @@ Entry와 소셜 로그인 (1.2.1~1.2.6, AUTH-01·02·06)
 - 인증과 인가: 현재 `apps/web`은 httpOnly `accessToken` 쿠키를 BFF(`createAuthorizedRoute`)가 읽는다. 로그인 요청은 토큰이 없는 상태에서 호출되므로 이 wrapper를 그대로 쓸 수 없다. 로그인·세션 생성용 public route의 형태가 필요하다(확인할 항목).
 - 가입 중 사용자의 접근 제한(번치 생성·참여 등)은 서버가 요청마다 확인한다(1.2.7).
 - 실패 시 오류 코드와 정확한 문구: 서버가 주는 코드를 확인한 뒤 채운다. 화면 문구는 위 "상태"에 적은 명세 원문을 쓴다.
-- Query key 후보: `auth.session`, `terms.list`·`terms.detail(termId)`, `nickname.check(nickname)`. 닉네임 중복은 입력에 따라 응답이 달라지므로 nickname을 key에 포함한다. 로그인·약관 저장·프로필 저장은 mutation이고, 성공 뒤 `auth.session`을 invalidate한 뒤 이동한다(이동 목적지의 guard가 session을 읽으므로 `await`한다).
+- Query key: 가입 상태만 `sharedKeys.session()`이다. 약관 조회와 닉네임 확인은 query key 없이 함수·hook으로 호출한다. 로그인 뒤에는 가입 상태를 직접 읽어 `setQueryData`로 채우고, 약관 저장·가입 완료는 무효화하고 기다린 뒤 이동한다.
 
 ## Bridge 계약(제안)
 

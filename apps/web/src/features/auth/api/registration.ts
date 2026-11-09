@@ -1,4 +1,5 @@
-import { normalizeError } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
+import { type ApiContract, normalizeError } from '@app/api-core';
 import { z } from 'zod';
 import type { Gender } from '@/shared/components/profile/GenderField';
 import { bffApi, requestData } from '@/shared/api/bffApi';
@@ -26,7 +27,7 @@ const registrationSchema = z.object({
   signupStatus: z.enum(['IN_PROGRESS', 'COMPLETED']),
   nickname: z.string(),
   imageUrl: z.string().nullish(),
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['RegistrationResponse']>>;
 
 const SERVER_GENDER = { female: 'FEMALE', male: 'MALE' } as const satisfies Record<Gender, string>;
 

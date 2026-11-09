@@ -9,7 +9,7 @@ const SERVER_TERM_TYPES = ['SERVICE', 'PRIVACY', 'AGE_OVER_14', 'DEMOGRAPHICS'] 
 const termsSchema = z.object({
   terms: z.array(
     z.object({
-      type: z.enum(SERVER_TERM_TYPES),
+      type: z.string(),
       version: z.string().min(1),
       required: z.boolean(),
     }),
@@ -25,7 +25,12 @@ export const getTermVersions = async (signal?: AbortSignal): Promise<TermVersion
     termsSchema,
     'terms',
   );
-  return Object.fromEntries(terms.map(({ type, version }) => [type, version]));
+  // 서버가 새 약관 종류를 추가해도 앱이 쓰는 종류만 골라 약관 전체가 막히지 않게 함
+  return Object.fromEntries(
+    terms
+      .filter(({ type }) => (SERVER_TERM_TYPES as readonly string[]).includes(type))
+      .map(({ type, version }) => [type, version]),
+  );
 };
 
 /**

@@ -26,6 +26,16 @@ const captureAgreements = (status = 200) => {
 };
 
 describe('getTermVersions', () => {
+  it('서버가 앱이 모르는 약관 종류를 추가해도 아는 종류만 골라 쓴다', async () => {
+    respondWithTerms([...REQUIRED_TERMS, { type: 'MARKETING', version: 'm-1', required: false }]);
+
+    await expect(getTermVersions()).resolves.toEqual({
+      SERVICE: 's-1',
+      PRIVACY: 'p-1',
+      AGE_OVER_14: 'a-1',
+    });
+  });
+
   it('약관 종류별 현재 버전을 돌려준다', async () => {
     respondWithTerms([
       ...REQUIRED_TERMS,
@@ -40,10 +50,7 @@ describe('getTermVersions', () => {
     });
   });
 
-  it('알 수 없는 약관 종류이거나 버전이 비어 있으면 계약 위반으로 던진다', async () => {
-    respondWithTerms([{ type: 'MARKETING', version: 'm-1', required: false }]);
-    await expect(getTermVersions()).rejects.toThrow();
-
+  it('버전이 비어 있으면 계약 위반으로 던진다', async () => {
     respondWithTerms([{ type: 'SERVICE', version: '', required: true }]);
     await expect(getTermVersions()).rejects.toThrow();
   });
