@@ -1,9 +1,9 @@
-import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { FeedBundleDetail, FeedComment, FeedMemberComment } from '../lib/types';
 import { feedFixture } from './feed.fixture';
 
 // 번들 상세 API 연결 전 Figma 예시 값
-const AVATAR = DEFAULT_BUNCH_IMAGES.TYPE_3;
+const AVATAR = DEFAULT_PROFILE_IMAGE;
 const COMMENT =
   '퇴근하고 뛰는 게 이렇게 상쾌할 줄이야! 하루 종일 책상 앞에 앉아 있다가 밖으로 나오니 선선한 바람부터 기분 좋게 느껴졌다. 처음에는 몸이 무겁고 피곤해서 그냥 집에 갈까 고민했는데,';
 const REPLY =

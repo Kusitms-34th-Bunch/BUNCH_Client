@@ -5,7 +5,7 @@ export const ALL_MEMBERS = 'all';
 export type PlaceMember = {
   id: string;
   name: string;
-  /** 프로필 이미지 주소(없으면 현재 번치 타입의 기본 이미지로 채움) */
+  /** 프로필 이미지 주소(없으면 기본 프로필 이미지로 채움) */
   avatarSrc?: string | undefined;
 };
 

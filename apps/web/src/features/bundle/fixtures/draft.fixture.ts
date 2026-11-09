@@ -1,4 +1,4 @@
-import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { Draft, DraftMember, DraftViewer, PlaceResult } from '../lib/types';
 
 // 초안 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
@@ -13,7 +13,7 @@ const samplePhoto = (hue: number) => {
 };
 
 // 멤버 기본 이미지는 번치 타입을 따름(여행가조 TYPE_3)
-const DEFAULT_AVATAR = DEFAULT_BUNCH_IMAGES.TYPE_3;
+const DEFAULT_AVATAR = DEFAULT_PROFILE_IMAGE;
 
 // 확인용 계정: 번치장이자 초안 생성자인 지예(Figma 최종 화면의 「지예 (나)」)
 export const draftViewerFixture: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };

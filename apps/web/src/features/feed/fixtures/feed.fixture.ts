@@ -1,4 +1,4 @@
-import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
+import { DEFAULT_BUNCH_IMAGES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { FeedBundle, FeedData } from '../lib/types';
 
 // 피드 API 연결 전 Figma 예시 값(사진은 public/mock/photos)
@@ -8,7 +8,7 @@ const members = (count: number) =>
   Array.from({ length: count }, (_, index) => ({
     id: `member-${index + 1}`,
     name: `멤버 ${index + 1}`,
-    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_3,
+    imageSrc: DEFAULT_PROFILE_IMAGE,
     role: index === 0 ? ('owner' as const) : undefined,
   }));
 const photos = (...names: string[]) => names.map((name) => ({ src: `/mock/photos/${name}.jpg` }));
@@ -47,7 +47,7 @@ export const feedFixture: FeedData = {
       ],
       photos: photos('S1', 'S2'),
       // 나간 멤버가 앞에 있고 원래 이미지가 남은 예시
-      members: [{ name: '', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2, left: true }, ...members(2)],
+      members: [{ name: '', imageSrc: DEFAULT_PROFILE_IMAGE, left: true }, ...members(2)],
     }),
   ],
   public: [

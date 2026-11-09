@@ -34,7 +34,7 @@ export function useServerBunchHome({ enabled = true }: Options = {}): ServerBunc
   const home = useQuery(bunchHomeQueryOptions(bunchId));
   const published = useQuery(publishedBundlesQueryOptions(bunchId));
   const drafts = useQuery(draftBundlesQueryOptions(bunchId));
-  const members = useQuery(bunchMembersQueryOptions(bunchId, profile.data?.bunch?.characterType));
+  const members = useQuery(bunchMembersQueryOptions(bunchId));
 
   const ready = useMemo(() => {
     if (!home.data || !published.data || !drafts.data) return undefined;

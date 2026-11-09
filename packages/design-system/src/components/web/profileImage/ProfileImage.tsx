@@ -13,7 +13,7 @@ const SIZES = {
 export type ProfileImageSize = keyof typeof SIZES;
 
 export type ProfileImageProps = Omit<ComponentProps<'div'>, 'children'> & {
-  /** 보여 줄 이미지 주소: 처음에는 기본 프로필 이미지(번치 대표 이미지), 사용자가 고른 뒤에는 선택한 이미지. 없으면 배경색 원만 표시 */
+  /** 보여 줄 이미지 주소: 처음에는 기본 프로필 이미지, 사용자가 고른 뒤에는 선택한 이미지. 없으면 배경색 원만 표시 */
   src?: string | undefined;
   /** 이미지 설명. 비우면 장식 이미지로 숨김 처리 */
   alt?: string | undefined;
