@@ -15,7 +15,14 @@ export function useFeedViewer(toastOptions: ToastOptions = { bottomOffset: FEED_
     profile === undefined
       ? undefined
       : profile.bunch
-        ? { bunchId: profile.bunch.id, name: profile.bunch.name, imageSrc: profile.bunch.imageSrc }
+        ? {
+            bunchId: profile.bunch.id,
+            name: profile.bunch.name,
+            imageSrc: profile.bunch.imageSrc,
+            characterType: profile.bunch.characterType,
+            memberName: profile.nickname ?? undefined,
+            memberImageSrc: profile.imageSrc ?? undefined,
+          }
         : null;
 
   const asBunch = (action: () => void) => {

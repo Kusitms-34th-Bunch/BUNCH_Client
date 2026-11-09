@@ -225,4 +225,107 @@ describe('BundleDetailScreen', () => {
     expect(screen.getByRole('button', { name: '뒤로 가기' })).toBeTruthy();
     expect(screen.queryByRole('textbox')).toBeNull();
   });
+
+  it('댓글은 맨 위에, 답글은 그 댓글 아래에 등록하고 수와 「답글 N」을 올린다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    const input = () => screen.getByRole('textbox', { name: /달기/ });
+    const send = () => screen.getByRole('button', { name: '보내기' });
+
+    await user.type(input(), '   ');
+    expect(send()).toBeDisabled();
+    await user.clear(input());
+    await user.type(input(), '  첫 댓글  ');
+    await user.click(send());
+
+    const items = () =>
+      within(screen.getByRole('region', { name: '댓글' })).getAllByRole('listitem');
+    expect(within(items()[0]!).getByText('첫 댓글')).toBeTruthy();
+    expect(input()).toHaveValue('');
+    expect(screen.getByRole('button', { name: /댓글 5/ })).toBeTruthy();
+    await waitFor(() => expect(items()[0]).toHaveFocus());
+    expect(screen.getByRole('status')).toHaveTextContent('댓글을 등록했어요');
+
+    await user.click(screen.getByRole('button', { name: '수인님 댓글의 답글 1개' }));
+    await user.type(input(), '답글이에요');
+    await user.click(send());
+
+    expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull();
+    expect(screen.getByRole('button', { name: '수인님 댓글의 답글 2개' })).toBeTruthy();
+    // 원댓글(2번째) 아래 기존 답글 다음
+    expect(within(items()[3]!).getByText('답글이에요')).toBeTruthy();
+  });
+
+  it('내 댓글은 더보기 → 「삭제」 → 확인 뒤 「삭제된 댓글입니다」로 바뀌고 토스트를 띄운다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    const mores = screen.getAllByRole('button', { name: /댓글 더보기/ });
+    // fixture에서 내 댓글은 하나뿐(남의 댓글 신고는 구현 단위 5)
+    expect(mores).toHaveLength(1);
+
+    await user.click(mores[0]!);
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '댓글을 삭제할까요?' });
+    expect(within(dialog).getByText('데이터가 삭제되며 복구 불가능해요.')).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('댓글을 삭제했어요', { position: 'top' }),
+    );
+    expect(screen.queryAllByRole('button', { name: /댓글 더보기/ })).toHaveLength(0);
+    expect(screen.getAllByText('삭제된 댓글입니다')).toHaveLength(3);
+  });
+
+  it('답글을 쓰던 댓글을 지우면 답글 상태가 풀린다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-3');
+    await user.type(screen.getByRole('textbox', { name: /달기/ }), '내 댓글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await user.click(screen.getByRole('button', { name: /댓글에 답글 달기/ }));
+    expect(screen.getByText('님에게 답글 남기는 중')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /댓글 더보기/ }));
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }));
+
+    await waitFor(() => expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull());
+    expect(screen.getByRole('listitem', { name: '삭제된 댓글' })).toHaveFocus();
+    expect(toast).toHaveBeenCalledWith('댓글을 삭제했어요', { position: 'top' });
+  });
+
+  it('삭제 확인 창의 「취소」는 댓글을 그대로 둔다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(screen.getByRole('button', { name: /댓글 더보기/ }));
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(screen.getByRole('button', { name: /댓글 더보기/ })).toBeTruthy();
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('보내기를 연타해도 한 번만 등록한다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-3');
+
+    await user.type(screen.getByRole('textbox', { name: /달기/ }), '한 번');
+    await user.dblClick(screen.getByRole('button', { name: '보내기' }));
+
+    expect(screen.getAllByText('한 번')).toHaveLength(1);
+  });
+
+  it('소속 번치가 없으면 댓글을 등록하지 않고 안내한다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-3', { bunch: null });
+
+    await user.type(screen.getByRole('textbox', { name: '댓글 달기' }), '안녕');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { position: 'top' });
+    expect(screen.getByText('아직 작성된 댓글이 없어요')).toBeTruthy();
+  });
 });

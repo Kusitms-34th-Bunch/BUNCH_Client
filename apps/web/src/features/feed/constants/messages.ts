@@ -21,6 +21,18 @@ export const FEED_MESSAGES = {
   commentPlaceholderAs: (bunchRo: string) => `${bunchRo} 댓글 달기`,
   replyPlaceholder: '답글 달기',
   replyPlaceholderAs: (bunchRo: string) => `${bunchRo} 답글 달기`,
+  /** 닉네임을 모를 때 내 댓글 작성자 */
+  me: '나',
+  commentAdded: '댓글을 등록했어요',
+  commentLabel: (author: string) => `${author}님의 댓글`,
+  deletedCommentLabel: '삭제된 댓글',
+  replyAdded: '답글을 등록했어요',
+  commentMenuTitle: '댓글 더보기',
+  deleteComment: '삭제',
+  cancel: '취소',
+  deleteCommentTitle: '댓글을 삭제할까요?',
+  deleteCommentDescription: '데이터가 삭제되며 복구 불가능해요.',
+  commentDeleted: '댓글을 삭제했어요',
   roleLabels: { owner: '메인 관리자', coOwner: '공동 관리자' },
   pickCancelTitle: '이 장소의 콕을 삭제할까요?',
   pickCancelDescription: (name: string, particle: string) =>
