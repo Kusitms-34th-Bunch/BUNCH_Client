@@ -100,20 +100,15 @@ export function LoginEntry({
           </div>
         }
       >
-        {/* 로고는 버튼 바로 위(Figma 버튼과 34px, 가까운 토큰 32px) */}
+        {/* 워드마크는 버튼 바로 위(Figma 5878:77389: 워드마크 아래 40, 버튼 간격 8, 버튼 아래 14). 새 디자인에는 슬로건이 없다 */}
         {/* `data-dev-login-trigger`: 개발 전용 토큰 로그인(`DevTokenLogin`)이 로고를 3번 누르는 동작을 셀 때 쓰는 표시(꺼져 있으면 아무 일도 없음) */}
         <div
           data-dev-login-trigger
-          className="px-padding-p8 pb-s14 gap-s3 flex min-h-full flex-col items-center justify-end"
+          className="px-padding-p8 pb-padding-p18 flex min-h-full flex-col items-center justify-end"
         >
-          <div className="gap-s4 flex flex-col items-center">
-            <h1>
-              <Image src={WORDMARK} alt="Bunch" width={171} height={43} priority />
-            </h1>
-            <p className="typography-caption-1-medium text-text-inversed text-center font-semibold break-keep">
-              함께한 순간이 뭉쳐, 우리가 되는 곳
-            </p>
-          </div>
+          <h1>
+            <Image src={WORDMARK} alt="Bunch" width={171} height={43} priority />
+          </h1>
         </div>
       </PageShell>
     </>
