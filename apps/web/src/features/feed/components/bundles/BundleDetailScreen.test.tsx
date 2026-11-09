@@ -8,9 +8,6 @@ import { BundleDetailScreen } from './BundleDetailScreen';
 const push = vi.fn();
 const toast = vi.fn();
 // 테스트 환경은 이미지 import가 next와 달라 StaticImageData 모양으로 대체
-vi.mock('@/shared/assets/images/profile/deleted-user.png', () => ({
-  default: { src: '/deleted-user.png' },
-}));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, back: vi.fn(), replace: vi.fn() }),
 }));
