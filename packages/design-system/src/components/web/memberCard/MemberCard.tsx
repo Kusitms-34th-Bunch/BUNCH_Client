@@ -17,10 +17,14 @@ export type MemberCardProps = Omit<ComponentProps<'div'>, 'children' | 'title'> 
   onDelete?: (() => void) | undefined;
   /** 삭제 버튼의 접근성 이름(기본 "{이름} 삭제") */
   deleteLabel?: string | undefined;
+  /** 지금 편집 중인 멤버(Figma `Status Badge`): 프로필 사진 오른쪽 아래에 초록 점 */
+  editing?: boolean | undefined;
+  /** 편집 중임을 읽어 줄 글자(예: "지예님이 편집 중"). 없으면 점은 장식 */
+  editingLabel?: string | undefined;
 };
 
 /**
- * 멤버 카드(Figma `Member Card`, `Variant=default`): 76px 폭에 프로필 사진·역할 배지·이름
+ * 멤버 카드(Figma `Member Card`, `Variant=default`): 76px 폭에 프로필 사진·역할 배지·이름, 편집 중이면 사진 오른쪽 아래 초록 점
  * 삭제 버튼은 `onDelete`를 줄 때만 오른쪽 위에 겹치며 `className`은 카드에 적용
  */
 export const MemberCard = ({
@@ -30,6 +34,8 @@ export const MemberCard = ({
   roleLabel,
   onDelete,
   deleteLabel,
+  editing,
+  editingLabel,
   className,
   ...props
 }: MemberCardProps) => (
@@ -40,7 +46,18 @@ export const MemberCard = ({
     )}
     {...props}
   >
-    <ProfileImage src={src} size="S" className="border-border-tertiary border" />
+    <div className="relative flex items-start">
+      <ProfileImage src={src} size="S" className="border-border-tertiary border" />
+      {editing ? (
+        // Figma 10px 원, 프로필 사진 오른쪽 아래 모서리에 붙음
+        <span
+          role={editingLabel ? 'img' : undefined}
+          aria-label={editingLabel}
+          aria-hidden={editingLabel ? undefined : true}
+          className="bg-primitive-green-400 absolute right-0 bottom-0 size-2.5 rounded-full"
+        />
+      ) : null}
+    </div>
     <div className="gap-s1 flex max-w-full items-center">
       {memberRole !== undefined && (
         <RoleBadge memberRole={memberRole} size="sm" className="shrink-0" label={roleLabel} />
