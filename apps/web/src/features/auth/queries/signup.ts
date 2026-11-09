@@ -19,7 +19,11 @@ export const useAgreeToTermsMutation = () => {
     meta: { errorMessage: STATUS_CHECK_FAILURE_MESSAGE },
     // 다시 읽기에 실패하면 mutation도 실패로 처리(성공으로 두면 옛 상태로 프로필 이동이 가드에 되돌려짐, 같은 버전 재저장은 서버가 중복 이력을 만들지 않음)
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: sharedKeys.session() }, { throwOnError: true }),
+      queryClient.invalidateQueries(
+        // 구독하는 곳이 없어도 다시 읽도록 `all`(가드가 이 화면에서 빠지는 구조가 돼도 기다림이 유지됨)
+        { queryKey: sharedKeys.session(), refetchType: 'all' },
+        { throwOnError: true },
+      ),
   });
 };
 
@@ -45,7 +49,11 @@ export const useRegisterMutation = () => {
   return useMutation({
     mutationFn: registerMember,
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: sharedKeys.session() }, { throwOnError: true }),
+      queryClient.invalidateQueries(
+        // 구독하는 곳이 없어도 다시 읽도록 `all`(가드가 이 화면에서 빠지는 구조가 돼도 기다림이 유지됨)
+        { queryKey: sharedKeys.session(), refetchType: 'all' },
+        { throwOnError: true },
+      ),
     // 이미 가입을 마친 계정(USER_003)이거나 약관 버전이 바뀐 경우(AUTH_016)는 서버 상태가 달라졌으므로 다시 읽어 가드가 알맞은 화면으로 보냄
     onError: (error) => {
       if (isApiError(error) && (error.code === 'USER_003' || error.code === 'AUTH_016')) {
