@@ -119,6 +119,10 @@ describe('FeedScreen', () => {
     const pendingLike = within(cards()[0]!).getByRole('button', { name: /좋아요/ });
     await userEvent.click(pendingLike);
     expect(pendingLike).toHaveAttribute('aria-pressed', 'true');
+    const pendingUnliked = within(cards()[1]!).getByRole('button', { name: /좋아요/ });
+    await userEvent.click(pendingUnliked);
+    expect(pendingUnliked).toHaveAttribute('aria-pressed', 'false');
+    expect(pendingUnliked).toHaveAccessibleName('좋아요 4');
     expect(toast).not.toHaveBeenCalled();
     unmount();
 
@@ -127,6 +131,37 @@ describe('FeedScreen', () => {
     await waitFor(() => expect(screen.queryByTestId('feed-bunch-placeholder')).toBeNull());
     expect(screen.getByRole('link', { name: '알림' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /번치 홈/ })).toBeNull();
+
+    // 실패 뒤 좋아요는 바뀌지 않고 오류를 안내
+    const failedLike = within(cards()[1]!).getByRole('button', { name: /좋아요/ });
+    await userEvent.click(failedLike);
+    expect(failedLike).toHaveAttribute('aria-pressed', 'false');
+    expect(toast).toHaveBeenCalledWith(
+      '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+      expect.anything(),
+    );
+  });
+
+  it('소속 번치가 없어지면 화면에서 바꾼 좋아요를 보이지 않는다', async () => {
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: 'me',
+      bunch: { id: 'bunch-trip', name: '여행가조' },
+    });
+    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });
+    const publicCard = () => cards().at(-1)!;
+    await userEvent.click(within(publicCard()).getByRole('button', { name: /좋아요/ }));
+    expect(within(publicCard()).getByRole('button', { name: /좋아요/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: null });
+    await waitFor(() => expect(cards()).toHaveLength(1));
+    expect(within(publicCard()).getByRole('button', { name: /좋아요/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('소속 번치가 없으면 헤더에 로고만, 공개 구간만 보이고 좋아요는 안내 토스트', async () => {

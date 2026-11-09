@@ -49,8 +49,11 @@ export function FeedScreen({ links }: FeedScreenProps) {
   const publicBundles = feedFixture.public;
 
   const toggleLike = (bundle: FeedBundle) => {
-    // 번치 유무를 모르면(응답 전·실패) 누가 좋아요하는지 정할 수 없어 바꾸지 않음
-    if (viewer === undefined) return;
+    // 번치 유무를 모르면 누가 좋아요하는지 정할 수 없어 바꾸지 않음. 받는 중은 조용히, 실패는 안내
+    if (viewer === undefined) {
+      if (!viewerPending) toast(text.actionFailed, { bottomOffset: FEED_TOAST_OFFSET });
+      return;
+    }
     if (viewer === null) {
       toast(text.joinRequired, { bottomOffset: FEED_TOAST_OFFSET });
       return;
@@ -59,7 +62,8 @@ export function FeedScreen({ links }: FeedScreenProps) {
   };
 
   const renderCard = (bundle: FeedBundle) => {
-    const isLiked = liked[bundle.id] ?? bundle.liked;
+    // 소속 번치가 없으면 이전에 화면에서 바꾼 좋아요를 보이지 않음
+    const isLiked = viewer === null ? bundle.liked : (liked[bundle.id] ?? bundle.liked);
     const ownBunch = viewer?.bunchId === bundle.bunch.id;
     return (
       <li key={bundle.id}>
