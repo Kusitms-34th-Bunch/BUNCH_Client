@@ -11,12 +11,12 @@ describe('BundlePickPhoto', () => {
     expect(image.classList.contains('object-cover')).toBe(true);
   });
 
-  it('틀은 295×396(w-73.75·h-99)에 반경 r3로 넘치는 부분을 자른다', () => {
+  it('틀은 295×393(w-73.75·h-98.25)에 반경 r3로 넘치는 부분을 자른다', () => {
     const { container } = render(<BundlePickPhoto src="/photo.jpg" alt="" />);
     const frame = container.firstElementChild as HTMLElement;
 
     expect(frame.classList.contains('w-73.75')).toBe(true);
-    expect(frame.classList.contains('h-99')).toBe(true);
+    expect(frame.classList.contains('h-98.25')).toBe(true);
     expect(frame.classList.contains('rounded-r3')).toBe(true);
     expect(frame.classList.contains('overflow-clip')).toBe(true);
   });
