@@ -51,29 +51,55 @@ const PICK_FACE = 'outline-border-tertiary outline -outline-offset-1';
  */
 const PickAvatars = ({ pickers }: { pickers: NonNullable<BundlePhotoItem['pickers']> }) => {
   const [expanded, setExpanded] = useState(false);
-  // 떠다니는 모션은 이 사진이 보일 때 시작(화면 밖에서 끝나지 않게), 다시 보이면 또 재생
-  const rootRef = useRef<HTMLDivElement>(null);
+  // 접히는 모션이 끝날 때까지 목록 유지
+  const [closing, setClosing] = useState(false);
+  // 떠다니는 모션은 얼굴이 보일 때 시작(가려진 채 끝나지 않게), 다시 보이면 또 재생
+  // 움직이는 얼굴 대신 고정된 칸을 관찰(2px 움직임이 판정을 바꿔 재생이 반복되지 않게)
+  const facesRef = useRef<HTMLSpanElement>(null);
   const [visible, setVisible] = useState(false);
   const float = visible ? pickMotion.float : undefined;
   const [first, ...rest] = pickers;
+  const pressable = rest.length > 0;
 
   useEffect(() => {
-    const root = rootRef.current;
-    if (!root || typeof IntersectionObserver === 'undefined') return;
+    const faces = facesRef.current;
+    if (!faces || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(([entry]) => setVisible(!!entry?.isIntersecting), {
       threshold: 0.5,
     });
-    observer.observe(root);
+    observer.observe(faces);
     return () => observer.disconnect();
-  }, []);
-  const stacked = expanded ? pickers.slice(0, 1) : pickers.slice(0, PICK_LAYERS.length);
+    // 1명 ↔ 2명이면 칸이 다시 만들어짐
+  }, [pressable]);
+  const listed = expanded || closing;
+  const stacked = listed ? pickers.slice(0, 1) : pickers.slice(0, PICK_LAYERS.length);
+  const label = `pick ${pickers.map((picker) => picker.name).join(', ')}`;
+  const badge = (
+    <>
+      <span ref={facesRef} className="relative -mb-2.5 block h-10.5">
+        <span className={cn('block h-full', float)}>
+          {stacked
+            .map((picker, index) => (
+              <ProfileImage
+                key={`${picker.name}-${index}`}
+                size="S"
+                src={picker.imageSrc}
+                alt=""
+                className={cn(PICK_FACE, 'absolute', listed ? 'top-0 left-1' : PICK_LAYERS[index])}
+              />
+            ))
+            .reverse()}
+        </span>
+      </span>
+      <span className="bg-overlay-scrim px-s5 py-s1 typography-body-3-regular text-text-inversed relative rounded-full text-center backdrop-blur-[2px]">
+        pick
+      </span>
+    </>
+  );
 
   return (
-    <div
-      ref={rootRef}
-      className="top-padding-p8 bottom-padding-p8 pointer-events-none absolute left-5 flex w-11.75 flex-col justify-end"
-    >
-      {expanded && first ? (
+    <div className="top-padding-p8 bottom-padding-p8 pointer-events-none absolute left-5 flex w-11.75 flex-col justify-end">
+      {listed && first ? (
         <ul
           aria-hidden="true"
           tabIndex={-1}
@@ -82,8 +108,12 @@ const PickAvatars = ({ pickers }: { pickers: NonNullable<BundlePhotoItem['picker
           {rest.map((picker, index) => (
             <li
               key={`${picker.name}-${index}`}
-              className={pickMotion.rise}
-              style={{ animationDelay: `${index * 30}ms` }}
+              className={closing ? pickMotion.fall : pickMotion.rise}
+              // 펼칠 때는 버튼 쪽부터, 접을 때는 위쪽부터. 버튼 옆 얼굴이 마지막에 끝남
+              style={{ animationDelay: `${(closing ? rest.length - 1 - index : index) * 30}ms` }}
+              onAnimationEnd={(event) => {
+                if (index === 0 && event.target === event.currentTarget) setClosing(false);
+              }}
             >
               <span
                 className={cn('block', float)}
@@ -95,34 +125,24 @@ const PickAvatars = ({ pickers }: { pickers: NonNullable<BundlePhotoItem['picker
           ))}
         </ul>
       ) : null}
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-label={`pick ${pickers.map((picker) => picker.name).join(', ')}`}
-        onClick={() => setExpanded(!expanded)}
-        className="focus-visible:outline-border-inversed pointer-events-auto relative flex shrink-0 cursor-pointer touch-manipulation flex-col rounded-full focus-visible:outline-2"
-      >
-        <span className={cn('relative -mb-2.5 block h-10.5', float)}>
-          {stacked
-            .map((picker, index) => (
-              <ProfileImage
-                key={`${picker.name}-${index}`}
-                size="S"
-                src={picker.imageSrc}
-                alt=""
-                className={cn(
-                  PICK_FACE,
-                  'absolute',
-                  expanded ? 'top-0 left-1' : PICK_LAYERS[index],
-                )}
-              />
-            ))
-            .reverse()}
-        </span>
-        <span className="bg-overlay-scrim px-s5 py-s1 typography-body-3-regular text-text-inversed relative rounded-full text-center backdrop-blur-[2px]">
-          pick
-        </span>
-      </button>
+      {pressable ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-label={label}
+          onClick={() => {
+            setClosing(expanded);
+            setExpanded(!expanded);
+          }}
+          className="focus-visible:outline-border-inversed pointer-events-auto relative flex shrink-0 cursor-pointer touch-manipulation flex-col rounded-full focus-visible:outline-2"
+        >
+          {badge}
+        </button>
+      ) : (
+        <div role="img" aria-label={label} className="relative flex shrink-0 flex-col">
+          {badge}
+        </div>
+      )}
     </div>
   );
 };

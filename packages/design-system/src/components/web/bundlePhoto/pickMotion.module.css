@@ -8,6 +8,11 @@
   animation: pick-rise 200ms ease-out both;
 }
 
+/* 접을 때 내려가며 사라짐. 같은 keyframes를 reverse로 쓰면 이름이 같아 재시작되지 않고 animationend도 오지 않음 */
+.fall {
+  animation: pick-fall 200ms ease-in both;
+}
+
 @keyframes pick-float {
   from {
     transform: translateY(0);
@@ -28,9 +33,22 @@
   }
 }
 
+@keyframes pick-fall {
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .float,
   .rise {
     animation: none;
+  }
+
+  /* 움직임 없이 바로 접힘. 목록을 지우는 animationend가 필요해 none 대신 1ms */
+  .fall {
+    animation-duration: 1ms;
+    animation-delay: 0s !important;
   }
 }
