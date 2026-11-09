@@ -79,7 +79,7 @@ checkout에는 `contents: read`, 라벨·assignee·본문 수정에는 `issues: 
 
 - `pre-commit`: staged 파일에 `lint-staged`(eslint·prettier)를 실행한다.
 - `commit-msg`: `commitlint`로 커밋 메시지 형식과 AI 출처 문구 금지를 검사한다.
-- `pre-push`: `yarn typecheck`와 `yarn test`를 실행한다. 약 10초 안팎이며, 빌드는 오래 걸릴 수 있어 넣지 않았다.
+- `pre-push`: `yarn typecheck`와, vitest를 쓰는 workspace(web·admin·design-system·api-core)에서 `origin/develop` 대비 바뀐 파일과 관련된 테스트만 실행한다(`vitest run --changed`). 작은 변경은 10초 안팎이다. 전체 테스트와 `node --test` 패키지(bridge·lint-config)는 CI가 맡는다. `package.json`·vitest 설정이 바뀌면 vitest가 그 workspace 전체를 다시 돌려 1분 넘게 걸릴 수 있다. 로컬에 `origin/develop`이 없으면 `yarn test` 전체를 실행한다. 비교 기준이 오래되면 범위가 넓어지니 가끔 `git fetch origin develop`을 한다. 빌드는 오래 걸릴 수 있어 넣지 않았다.
 
 실패하면 원인을 고치고 다시 시도한다. 최종 관문은 CI다.
 

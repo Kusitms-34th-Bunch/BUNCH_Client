@@ -32,6 +32,7 @@ export function BunchProfileEdit() {
     <BunchProfileEditScreen
       // 번치가 바뀌면 입력 상태를 새 초기값으로
       key={bunch?.id}
+      characterType={bunch?.characterType}
       initial={bunch && isOwner ? { ...bunch, ...edits[bunch.id] } : undefined}
       onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
       onSaved={(profile) => {

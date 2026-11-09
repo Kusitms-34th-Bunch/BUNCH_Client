@@ -121,5 +121,5 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 
 ### 온보딩 단계 진행바
 
-- 화면설계서(Figma node `791:8480`)의 「진행바만 인터랙션 O」에 따라 단계 변경 시 진행바 색상만 CSS `ease-out`·300ms로 전환한다. 제목·본문에는 이 효과를 적용하지 않는다.
-- `CreateBunchFrame`이 같은 `Stepper` 요소를 유지하고 `current`만 바꾼다. `ease-[ease-out]`은 Tailwind 기본 ease-out 곡선 대신 CSS 표준 곡선을 명시하며, 모션 감소 설정에서는 전환을 끈다. 전체 페이지의 300ms 슬라이드와 별도이다.
+- Header Animation(Figma `1998:35008`, Smart animation·Slow·600ms): 진행바는 현재 단계까지 누적해 채우고 새 막대가 왼쪽에서 오른쪽으로 늘어난다(Fill Right). 제목은 5px 아래에서 올라오며 나타난다(Slide Up). 곡선은 둘 다 Slow 근사 `cubic-bezier(0.24, 0.3, 0.14, 1)`이다. Figma가 지정한 곡선이라 공통 규칙의 「진행바는 `linear`」의 예외다. 이전 기준(화면설계서 `791:8480` 「진행바만 인터랙션 O」, 색만 300ms)을 대체한다.
+- `CreateBunchFrame`이 같은 `Stepper` 요소를 유지하고 `current`만 바꾼다. 첫 표시는 `@starting-style`로 채운다. 제목은 단계 화면마다 새로 마운트되므로 `PageHeader`에 `animate-step-title-in`(`globals.css`의 keyframe·`@utility`)을 건다. `@starting-style`을 지원하지 않는 브라우저(Safari 17.5·Chrome 117 미만)에서는 첫 표시 채움 없이 채운 상태로 바로 보인다. 모션 감소 설정에서는 둘 다 끈다. 전체 페이지의 300ms 슬라이드와 별도이다.

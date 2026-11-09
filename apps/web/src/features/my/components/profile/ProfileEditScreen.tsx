@@ -1,12 +1,13 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useDefaultProfileImage } from '@/shared/hooks/useDefaultProfileImage';
 import { type ProfileValues, useProfileFields } from '@/shared/hooks/useProfileFields';
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
@@ -32,6 +33,7 @@ const isSameValues = (a: ProfileValues, b: ProfileValues) =>
  */
 export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
   const backOr = useBackOr();
+  const defaultImage = useDefaultProfileImage();
   useScrollFocusedIntoView();
   const initial = toProfileValues(profile);
   const fields = useProfileFields(initial);
@@ -39,9 +41,13 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
   const [photo, setPhoto] = useState(profile.imageSrc);
   // 저장 중 중복 탭 방지(화면 설계서 7번)
   const [submitting, setSubmitting] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   const changed = photo !== profile.imageSrc || !isSameValues(fields.values, initial);
   const canSubmit = changed && fields.isValid && !submitting;
+  // 바꾼 내용이 있으면 나가기 전에 확인(기능명세서 7.2.1 상세 7)
+  // 저장 뒤 돌아가는 전환 중에는 묻지 않음
+  const back = () => (changed && !submitting ? setLeaveOpen(true) : backOr(MY_PATHS.home));
 
   const submit = () => {
     setSubmitting(true);
@@ -58,11 +64,7 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
           <Header
             leading={
               // Figma 헤더 뒤로 가기 아이콘 색(#bcbec2), 가입 단계와 같은 연한 회색
-              <HeaderIconButton
-                label="뒤로 가기"
-                tone="subtle"
-                onClick={() => backOr(MY_PATHS.home)}
-              >
+              <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={back}>
                 <LineChevronLeftLargeIcon />
               </HeaderIconButton>
             }
@@ -79,12 +81,25 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
         <h1 className="sr-only">{MY_MESSAGES.profileEditTitle}</h1>
         {/* 헤더 아래 48, 사진과 입력 칸 사이 32(Figma 개인 프로필 편집(1)) */}
         <div className="pt-s18 flex flex-col items-center">
-          <ProfilePhotoField value={photo} onChange={setPhoto} />
+          <ProfilePhotoField value={photo} onChange={setPhoto} defaultSrc={defaultImage} />
         </div>
         <div className="pt-s14 px-padding-p8">
           <ProfileFields fields={fields} showOptional={false} />
         </div>
       </PageShell>
+      <ConfirmDialog
+        open={leaveOpen}
+        onOpenChange={setLeaveOpen}
+        title={MY_MESSAGES.profileLeave.title}
+        description={MY_MESSAGES.profileLeave.description}
+        confirmLabel={MY_MESSAGES.profileLeave.confirm}
+        cancelLabel={MY_MESSAGES.cancel}
+        onConfirm={() => {
+          setLeaveOpen(false);
+          backOr(MY_PATHS.home);
+        }}
+        onCancel={() => setLeaveOpen(false)}
+      />
     </div>
   );
 }

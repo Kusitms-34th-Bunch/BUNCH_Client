@@ -233,10 +233,17 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
-  // 다른 번치 프로필(지금 입구는 피드 임시 링크)과 그 멤버 목록도 한 단계 들어가는 drill
+  // 다른 번치 프로필(피드 카드의 번치에서 들어감)과 그 멤버 목록도 한 단계 들어가는 drill
   {
     from: MAIN_TAB_PATHS.feed,
     to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 피드 헤더 알림도 번치 홈 알림과 같은 drill
+  {
+    from: MAIN_TAB_PATHS.feed,
+    to: BUNCH_HOME_PATHS.notifications,
     bidirectional: true,
     transition: bunchDrill,
   },
@@ -262,6 +269,13 @@ const rules: SsgoiTransitionRule[] = [
   {
     from: BUNCH_HOME_PATHS.home,
     to: BUNCH_HOME_PATHS.follows,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 콕한 장소도 번치 홈에서 한 단계 들어가는 drill
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.places,
     bidirectional: true,
     transition: bunchDrill,
   },

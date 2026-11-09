@@ -33,6 +33,8 @@ export const BUNCH_HOME_PATHS = {
   members: '/bunch/members',
   /** 역할별 권한 안내(화면설계서 1-1) */
   roles: '/bunch/members/roles',
+  /** 콕한 장소(기능명세 8.1, 번치 홈 프로필의 「콕한 장소」 버튼, 화면은 bunch-places feature). URL 계약만 두고 feature는 import하지 않음 */
+  places: '/bunch/places',
   /** 멤버 초대(멤버 관리 헤더·더보기 메뉴, 화면은 bunch-invite feature) */
   invite: '/bunch/members/invite',
   // 번치 추가는 번치 시작 선택 화면으로 이동(기능명세 5.2.4, 화면설계서 8). URL 계약만 두고 onboarding feature는 import하지 않음
@@ -40,7 +42,7 @@ export const BUNCH_HOME_PATHS = {
   // 번치 없음(5.1.7)의 새 번치 만들기·초대 링크 참여. URL 계약만 두고 onboarding feature는 import하지 않음
   createBunch: '/onboarding/create',
   joinBunch: '/onboarding/join',
-  // 다른 번치 프로필의 임시 입구(피드 탭). URL 계약만 두고 main-navigation feature는 import하지 않음
+  // 차단된 번치·다른 번치 화면에서 돌아갈 곳(피드 탭). URL 계약만 두고 main-navigation feature는 import하지 않음
   feed: '/feed',
   /** 동적 route의 전환 경계 id(규칙과 각 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
   transitionIds: {

@@ -6,12 +6,33 @@ import { getMyProfile } from './myProfile';
 const bunchId = '1';
 
 describe('getMyProfile', () => {
-  it('시연하는 사람의 id와 기본 번치를 화면 모양으로 돌려준다', async () => {
+  it('시연하는 사람의 id와 기본 번치를 화면 모양으로 돌려준다(대표 이미지가 없으면 성격별 기본 이미지)', async () => {
     await expect(getMyProfile()).resolves.toEqual({
       memberId: String(MOCK_MEMBER_IDS.me),
-      bunch: { id: bunchId, name: '여행쥬아', imageSrc: '/images/default-bunch.png' },
+      bunch: {
+        id: bunchId,
+        name: '여행쥬아',
+        characterType: 'TYPE_1',
+        imageSrc: '/images/default-bunch/type-1.svg',
+      },
     });
   });
+
+  it.each(['TYPE_2', 'TYPE_3', 'TYPE_4'] as const)(
+    '대표 이미지가 없는 %s 번치는 그 성격의 기본 이미지를 쓴다',
+    async (type) => {
+      mockDb.update((current) => ({
+        ...current,
+        bunches: current.bunches.map((bunch) => ({ ...bunch, characterType: type })),
+      }));
+
+      const profile = await getMyProfile();
+
+      expect(profile.bunch?.imageSrc).toBe(
+        `/images/default-bunch/${type.replace('TYPE_', 'type-')}.svg`,
+      );
+    },
+  );
 
   it('기본 번치가 없으면 bunch는 null이다', async () => {
     mockDb.update((current) => ({ ...current, memberships: [] }));

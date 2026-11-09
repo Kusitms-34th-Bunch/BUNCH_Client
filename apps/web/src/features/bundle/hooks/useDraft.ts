@@ -153,7 +153,7 @@ export function useDraft(draftId: string | undefined): {
     data: bunchMembers,
     isError: membersError,
     refetch: refetchMembers,
-  } = useQuery(bunchMembersQueryOptions(bunchId));
+  } = useQuery(bunchMembersQueryOptions(bunchId, profile?.bunch?.characterType));
   const {
     data: detail,
     error: detailError,

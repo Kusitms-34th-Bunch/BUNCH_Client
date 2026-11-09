@@ -1,3 +1,4 @@
+import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
 import type { PhotoBoxData, PhotoBoxPhoto, PhotoStatus } from '../lib/types';
 
 // 사진 목록·멤버 목록 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
@@ -36,19 +37,20 @@ const photo = (
 
 const range = (count: number) => Array.from({ length: count }, (_, i) => i);
 
-const DEFAULT_BUNCH_IMAGE = '/images/default-bunch.png';
+// 여행가조는 TYPE_3(번치 홈 fixture와 같음): 번치와 멤버의 기본 이미지가 번치 타입을 따름
+const SAMPLE_BUNCH_IMAGE = DEFAULT_BUNCH_IMAGES.TYPE_3;
 
 export const photoBoxFixture: PhotoBoxData = {
-  bunch: { id: 'bunch-1', name: '여행가조', imageSrc: DEFAULT_BUNCH_IMAGE },
+  bunch: { id: 'bunch-1', name: '여행가조', imageSrc: SAMPLE_BUNCH_IMAGE },
   // 확인용 계정: 관리자인 은우(은우가 올린 사진은 내 사진, 다른 멤버 사진은 관리자 권한으로 삭제)
   viewer: { memberId: 'eunwoo', isAdmin: true },
   members: [
-    { id: 'eunwoo', name: '은우', avatarSrc: DEFAULT_BUNCH_IMAGE },
-    { id: 'gyeongjin', name: '경진', avatarSrc: DEFAULT_BUNCH_IMAGE },
-    { id: 'suin', name: '수인', avatarSrc: DEFAULT_BUNCH_IMAGE },
-    { id: 'jiye', name: '지예', avatarSrc: DEFAULT_BUNCH_IMAGE },
-    { id: 'hyochan', name: '효찬', avatarSrc: DEFAULT_BUNCH_IMAGE },
-    { id: 'gyeongjun', name: '경준', avatarSrc: DEFAULT_BUNCH_IMAGE },
+    { id: 'eunwoo', name: '은우', avatarSrc: SAMPLE_BUNCH_IMAGE },
+    { id: 'gyeongjin', name: '경진', avatarSrc: SAMPLE_BUNCH_IMAGE },
+    { id: 'suin', name: '수인', avatarSrc: SAMPLE_BUNCH_IMAGE },
+    { id: 'jiye', name: '지예', avatarSrc: SAMPLE_BUNCH_IMAGE },
+    { id: 'hyochan', name: '효찬', avatarSrc: SAMPLE_BUNCH_IMAGE },
+    { id: 'gyeongjun', name: '경준', avatarSrc: SAMPLE_BUNCH_IMAGE },
   ],
   photos: [
     // 9월 27일(일): 여러 멤버, 함께 올린 사진 1장, 처리 중 1장

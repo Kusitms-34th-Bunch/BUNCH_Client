@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactElement } from 'react';
 import type { VariantProps } from 'tailwind-variants';
 import {
   LineChevronDownMediumIcon,
@@ -77,8 +77,8 @@ export type ChipButtonProps = Omit<ComponentProps<'button'>, 'disabled' | 'type'
   count?: number | string;
   /** 왼쪽 닫기(×) 아이콘(Figma `leftIcon`). avatar에서는 쓰지 않음 */
   leftIcon?: boolean;
-  /** 오른쪽 아래 화살표(chevron-down) 아이콘(Figma `rightIcon`) */
-  rightIcon?: boolean;
+  /** 오른쪽 아이콘(Figma `rightIcon`). `true`면 아래 화살표(chevron-down), 요소를 주면 그 아이콘(예: 콕하기의 손가락). 장식이라 `aria-hidden`을 붙여 넘김 */
+  rightIcon?: boolean | ReactElement;
   /** avatar의 24px 원 이미지 주소. 없으면 배경색 원만 보임. 장식이라 접근성 이름에는 쓰지 않음 */
   avatarSrc?: string | undefined;
 };
@@ -129,7 +129,11 @@ export const ChipButton = ({
           <span className={large ? 'typography-body-1-regular' : undefined}>({count})</span>
         ) : null}
       </span>
-      {rightIcon ? <ChevronIcon aria-hidden="true" className="shrink-0" /> : null}
+      {rightIcon === true ? (
+        <ChevronIcon aria-hidden="true" className="shrink-0" />
+      ) : (
+        rightIcon || null
+      )}
     </button>
   );
 };

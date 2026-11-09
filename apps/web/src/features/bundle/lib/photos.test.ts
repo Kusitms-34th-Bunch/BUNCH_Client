@@ -40,16 +40,12 @@ describe('clampCaption', () => {
 
 describe('getRemovePhotoKind', () => {
   it('1장이면 막는다', () => {
-    expect(getRemovePhotoKind([photo('a', '가')], photo('a', '가'))).toBe('last');
+    expect(getRemovePhotoKind([photo('a', '가')])).toBe('last');
   });
 
-  it('캡션이 없거나 공백뿐이면 바로 뺀다', () => {
-    expect(getRemovePhotoKind(photos, photo('b'))).toBe('direct');
-    expect(getRemovePhotoKind(photos, photo('b', '  \n'))).toBe('direct');
-  });
-
-  it('캡션이 있으면 확인을 거친다', () => {
-    expect(getRemovePhotoKind(photos, photos[0] as DraftPhoto)).toBe('captioned');
+  it('2장 이상이면 캡션이 있든 없든 항상 확인을 거친다', () => {
+    expect(getRemovePhotoKind(photos)).toBe('confirm');
+    expect(getRemovePhotoKind([photo('a'), photo('b', '   ')])).toBe('confirm');
   });
 });
 

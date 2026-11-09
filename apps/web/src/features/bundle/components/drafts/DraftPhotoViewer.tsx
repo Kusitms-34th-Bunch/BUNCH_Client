@@ -20,7 +20,7 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { getDraftAccess } from '../../lib/permissions';
-import { getPhotoEditors, getRemovePhotoKind } from '../../lib/photos';
+import { getPhotoEditors, getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
 import { RemovePhotoDialogs } from './RemovePhotoDialogs';
 
 // 확인 창 닫힘 전환이 끝난 뒤에 포커스를 옮기려는 지연
@@ -110,7 +110,7 @@ export function DraftPhotoViewer({
   const [menuMounted, setMenuMounted] = useState(false);
   // 확인 창을 연 시점의 사진 id를 고정해 그 사이 넘겨져도 다른 사진을 빼지 않음
   const [removeDialog, setRemoveDialog] = useState<
-    { kind: 'last' | 'captioned'; photoId: string } | undefined
+    { kind: RemovePhotoKind; photoId: string } | undefined
   >(undefined);
   const [saving, setSaving] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -155,9 +155,7 @@ export function DraftPhotoViewer({
     if (getPhotoEditors(draft, viewer, activePhoto.id).length > 0) {
       return notify(BUNDLE_MESSAGES.editingBlocked);
     }
-    const kind = getRemovePhotoKind(photos, activePhoto);
-    if (kind === 'direct') removeAndContinue(activePhoto.id);
-    else setRemoveDialog({ kind, photoId: activePhoto.id });
+    setRemoveDialog({ kind: getRemovePhotoKind(photos), photoId: activePhoto.id });
   };
 
   // 저장 중에는 딤과 로딩 점을 보이고 끝나면 완료 토스트(앨범 저장 API 연결 전에는 목 지연)
@@ -243,6 +241,10 @@ export function DraftPhotoViewer({
           if (removeDialog && photos.some((photo) => photo.id === removeDialog.photoId)) {
             if (getPhotoEditors(draft, viewer, removeDialog.photoId).length > 0) {
               notify(BUNDLE_MESSAGES.editingBlocked);
+            } else if (getRemovePhotoKind(photos) === 'last') {
+              // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
+              setRemoveDialog({ kind: 'last', photoId: removeDialog.photoId });
+              return;
             } else {
               removeAndContinue(removeDialog.photoId);
             }

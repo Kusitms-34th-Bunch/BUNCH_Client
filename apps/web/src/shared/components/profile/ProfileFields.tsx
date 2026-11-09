@@ -65,7 +65,7 @@ export function ProfileFields({ fields, showOptional = true }: ProfileFieldsProp
             closeKeyboard();
           }}
         />
-        <p id={noteId} className="typography-caption-1-medium text-text-quinary">
+        <p id={noteId} className="typography-caption-1-medium text-text-quaternary">
           출생연도와 성별은 다른 사용자에게 공개되지 않아요.
         </p>
       </div>

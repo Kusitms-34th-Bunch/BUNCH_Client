@@ -4,4 +4,3 @@
 export { MainTabBar } from './MainTabBar';
 export { MainTabPage } from './MainTabPage';
 export { NativeTabBarVisibility } from './NativeTabBarVisibility';
-export { TabPlaceholder } from './TabPlaceholder';

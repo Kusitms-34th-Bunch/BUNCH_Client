@@ -39,20 +39,20 @@
 
 ## Styling
 
-| Figma            | 값                                | 사용한 토큰·utility                                       |
-| ---------------- | --------------------------------- | --------------------------------------------------------- |
-| 조정 화면 배경   | `surface-inversed-strong` #121212 | `bg-primitive-gray-900`(같은 값, semantic 토큰 없음)      |
-| 원 밖 어둡게     | 사진 위 `overlay-scrim` 60%       | `bg-overlay-scrim` + 원 자리 `mask-image` radial-gradient |
-| 원·정사각 안내선 | 252px, 흰색 60% 1px               | `border-surface-primary/60`                               |
-| 모서리 꺾쇠      | 20px, 흰색, 안내선 3px 밖         | `size-5 border-2 border-surface-primary`, `-0.75` 위치    |
-| 뒤로 가기 아이콘 | `icon-tertiary`                   | `HeaderIconButton tone="tertiary"`(이번에 추가)           |
-| 완료             | Label-S `text-inversed`           | `TextButton size="sm"` + `text-text-inversed`             |
-| 안내 문구        | Body-3-Regular `text-quinary`     | `typography-body-3-regular text-text-quinary`             |
+| Figma            | 값                                                 | 사용한 토큰·utility                                       |
+| ---------------- | -------------------------------------------------- | --------------------------------------------------------- |
+| 조정 화면 배경   | `surface-inversed-strong` #121212                  | `bg-primitive-gray-900`(같은 값, semantic 토큰 없음)      |
+| 원 밖 어둡게     | 사진 위 `overlay-scrim` 60%                        | `bg-overlay-scrim` + 원 자리 `mask-image` radial-gradient |
+| 원·정사각 안내선 | 252px, 흰색 60% 1px                                | `border-surface-primary/60`                               |
+| 모서리 꺾쇠      | 20px, 흰색, 안내선 3px 밖                          | `size-5 border-2 border-surface-primary`, `-0.75` 위치    |
+| 뒤로 가기 아이콘 | `icon-inversed`(디자인 변경, 이전 `icon-tertiary`) | `HeaderIconButton tone="inversed"`                        |
+| 완료             | Label-S `text-inversed`                            | `TextButton size="sm"` + `text-text-inversed`             |
+| 안내 문구        | Body-3-Regular `text-quinary`                      | `typography-body-3-regular text-text-quinary`             |
 
 ## 확인할 항목
 
 - 조정 화면 배경 토큰: Figma `Surface/surface-inversed-strong`이 내보낸 토큰에 없어 primitive를 썼다. 토큰 export에 추가되면 바꾼다.
-- 뒤로 가기 아이콘 대비: Figma `icon-tertiary`(#535A61)는 #121212 배경에서 약 2.6:1로 비텍스트 기준 3:1에 못 미친다. 디자이너 확인 뒤 정한다.
+- 뒤로 가기 아이콘 대비 (해결): 디자이너가 `icon-tertiary`(약 2.6:1)를 `icon-inversed`(흰색)로 바꿨다.
 - 스크린 리더: 열린 동안 뒤 화면이 inert라 그 사이의 토스트가 읽히는지, 방향키 이동에 위치 안내가 없는 점, 데스크톱에서 클릭 뒤 Esc가 동작하는지 VoiceOver·브라우저로 확인한다.
 - 앱 쉘 원본 디코딩 메모리: `expo-image-manipulator`는 줄이기 전에 원본 전체를 디코딩한다. 48MP급 사진을 메모리가 적은 기기에서 고를 때 실패하는지 실기기에서 확인하고, 문제가 되면 디코딩 단계에서 줄이는 방법을 찾는다.
 - 앱 쉘 전송 크기: 2048px JPEG(0.8)가 4MiB 전송 상한을 넘거나 원본 크기를 모르면 실패 토스트만 보인다. 실기기에서 확인한다.

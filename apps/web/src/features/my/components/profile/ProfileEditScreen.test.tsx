@@ -2,6 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper } from '@/shared/query/testing';
 import { ProfileEditScreen } from './ProfileEditScreen';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -18,7 +19,9 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
 const renderScreen = () =>
-  render(<ProfileEditScreen profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }} />);
+  render(<ProfileEditScreen profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }} />, {
+    wrapper: createQueryWrapper(),
+  });
 const submitButton = () =>
   screen.getByRole<HTMLButtonElement>('button', { name: '프로필 수정하기' });
 const nicknameInput = () => screen.getByRole<HTMLInputElement>('textbox', { name: /닉네임/ });
@@ -108,6 +111,52 @@ describe('ProfileEditScreen', () => {
 
     expect(back).not.toHaveBeenCalled();
     expect(replace).toHaveBeenCalledWith('/my');
+  });
+
+  it('바꾼 내용이 있으면 뒤로 가기 전에 확인하고, 「취소」는 입력을 두고 「나가기」는 MY로 간다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.type(nicknameInput(), '짱');
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '저장하지 않고 나갈까요?' });
+    expect(within(dialog).getByText('변경한 내용이 반영되지 않아요.')).toBeTruthy();
+
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    expect(replace).not.toHaveBeenCalled();
+    expect(nicknameInput().value).toBe('으누짱');
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '나가기' }),
+    );
+    expect(replace).toHaveBeenCalledWith('/my');
+  });
+
+  it('MY에서 들어왔으면 「나가기」 뒤 그 기록으로 돌아간다(MY 기록을 쌓지 않음)', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
+    renderScreen();
+    await user.type(nicknameInput(), '짱');
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '나가기' }),
+    );
+
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('저장한 뒤에는 뒤로 가기에 나가기 확인을 띄우지 않는다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.type(nicknameInput(), '짱');
+    await user.click(submitButton());
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
   it('제목과 사진 변경 버튼의 이름을 가진다', () => {

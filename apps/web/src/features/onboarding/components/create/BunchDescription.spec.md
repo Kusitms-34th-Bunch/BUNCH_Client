@@ -17,7 +17,7 @@
 ### 범위 외
 
 - 번치 생성 API, 소개 문구의 서버 검증.
-- 단계 사이 제목·본문 애니메이션. 화면설계서 `791:8480`의 「진행바만 인터랙션 O」에 따라 진행 표시줄 색상만 CSS ease-out·300ms로 전환한다. 공통 `CreateBunchFrame`이 진행바를 유지한다.
+- 단계 사이 본문 애니메이션. 진행 표시줄 채움과 제목 등장은 Header Animation(Figma `1998:35008`, 600ms Slow)을 따른다(`docs/architecture/motion.md`). 공통 `CreateBunchFrame`이 진행바를 유지한다.
 
 ## Route와 접근
 

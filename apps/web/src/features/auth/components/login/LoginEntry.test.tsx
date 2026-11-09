@@ -52,8 +52,37 @@ describe('LoginEntry', () => {
     render(<LoginEntry nextPath={NEXT_PATH} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Bunch' })).toBeTruthy();
-    expect(screen.getByText('함께한 순간을, 우리 그룹의 기록으로')).toBeTruthy();
+    expect(screen.getByText('함께한 순간이 뭉쳐, 우리가 되는 곳')).toBeTruthy();
     expect(screen.getByRole('main')).toBeTruthy();
+  });
+
+  it('배경 영상은 소리 없이 반복 재생되고(iOS 자동 재생 조건) 화면 낭독에서 빠진다', () => {
+    const { container } = render(<LoginEntry nextPath={NEXT_PATH} />);
+    const video = container.querySelector('video')!;
+
+    expect(video.autoplay).toBe(true);
+    expect(video.muted).toBe(true);
+    expect(video.hasAttribute('playsinline')).toBe(true);
+    expect(video.loop).toBe(true);
+    expect(video.closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  it('동작 줄이기 설정이면 배경 영상을 그리지 않는다(첫 프레임 배경만 남음)', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    try {
+      const { container } = render(<LoginEntry nextPath={NEXT_PATH} />);
+
+      expect(container.querySelector('video')).toBeNull();
+      expect(
+        (container.querySelector('[aria-hidden="true"]') as HTMLElement).style.backgroundImage,
+      ).toContain('/videos/login-poster.jpg');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('로그인 버튼을 카카오 → Google → Apple 순서로만 보여 준다', () => {

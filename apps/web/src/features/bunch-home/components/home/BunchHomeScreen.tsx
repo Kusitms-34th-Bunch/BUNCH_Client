@@ -16,6 +16,8 @@ import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
 import { switchStatus } from '../../lib/bunchSwitch';
+import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
+import { BunchCharacter } from '../BunchCharacter';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
@@ -36,6 +38,8 @@ type BunchHomeScreenProps = {
   onOpenDraft?: ((_bundleId: string) => void) | undefined;
   /** 전환 시트의 「새로운 번치 추가하기」 */
   onAddBunch?: (() => void) | undefined;
+  /** 프로필의 「콕한 장소」 버튼 */
+  onOpenPlaces?: (() => void) | undefined;
 };
 
 /** 번치 탭 홈: 번치 프로필, 완성된·작성 중인 번들 탭, 번치 전환 시트, 접근 불가 번치 안내 */
@@ -45,8 +49,10 @@ export function BunchHomeScreen({
   onCreateBundle,
   onOpenDraft,
   onAddBunch,
+  onOpenPlaces,
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
+  const background = BUNCH_BACKGROUNDS[current.characterType];
   const [tab, setTab] = useState<BundleTab>('completed');
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
@@ -86,18 +92,19 @@ export function BunchHomeScreen({
   };
 
   return (
-    // 브랜드 배경은 헤더·캐릭터 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
-    // 틀 배경은 위 절반 연보라·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 연보라, 아래는 흰색이 드러남
+    // 성격별 배경은 헤더·캐릭터 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
+    // 틀 배경은 위 절반 성격 색·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 성격 색, 아래는 흰색이 드러남
     <PageShell
-      data-app-background="brand-subtle-1"
+      data-app-background={background.app}
       data-app-background-bottom="primary"
-      className="from-surface-brand-subtle-1 to-surface-primary bg-linear-to-b from-50% to-50%"
+      className={cn('to-surface-primary bg-linear-to-b from-50% to-50%', background.frame)}
       header={
         <BunchHomeHeader
           bunchName={current.name}
           bunchImageSrc={current.imageSrc}
           onBunchClick={() => setSheetOpen(true)}
           switcherOpen={sheetOpen}
+          className={background.top}
         />
       }
       // 「+」는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
@@ -120,18 +127,18 @@ export function BunchHomeScreen({
           switched && 'animate-[page-content-in_150ms_ease-out] motion-reduce:animate-none',
         )}
       >
-        {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터 에셋은 아직 없어 회색 자리표시이고 흰 시트에 32px 걸침 */}
-        <div className="bg-surface-brand-subtle-1 relative h-34.5 shrink-0">
-          <div
-            aria-hidden="true"
-            // UT 진행자 장치가 연속 터치를 읽는 표식, 이 화면의 동작과는 무관(UT가 끝나면 지움)
-            data-facilitator-trigger="bunch-character"
-            className="right-s8 bg-surface-tertiary absolute top-7.5 z-10 size-30"
+        {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터는 120px 상자(Character Wrapper) 안 가로 중앙·아래 12px 위에 놓이고 상자는 흰 시트에 32px 걸침 */}
+        <div className={cn('relative h-34.5 shrink-0', background.top)}>
+          <BunchCharacter
+            characterType={current.characterType}
+            stage={current.stage}
+            facilitatorTrigger
           />
         </div>
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">
           <BunchProfile
             bunch={current}
+            onPlacesClick={onOpenPlaces}
             countHrefs={{
               followerCount: BUNCH_HOME_PATHS.follows,
               followingCount: followingTab(BUNCH_HOME_PATHS.follows),

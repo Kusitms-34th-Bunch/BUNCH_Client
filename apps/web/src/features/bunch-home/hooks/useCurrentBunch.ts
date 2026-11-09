@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { defaultProfileImage } from '@/shared/lib/bunchProfile';
 import { bunchDetailsFixture, initialBunchDetailFixture } from '../fixtures/bunchHome.fixture';
 import { useBunchMembers } from './useBunchMembers';
 import { useCurrentBunchId } from './useCurrentBunchId';
@@ -11,6 +13,16 @@ export function useCurrentBunch(pinnedId?: string | null) {
   const bunchId = pinnedId ?? currentId;
   const bunch =
     bunchId === null ? undefined : (bunchDetailsFixture[bunchId] ?? initialBunchDetailFixture);
-  const { members, myRole, actions } = useBunchMembers(bunch?.id);
+  const { members: rawMembers, myRole, actions } = useBunchMembers(bunch?.id);
+  // 프로필 사진이 없는 멤버는 지금 번치 타입의 기본 이미지(실제 API는 members 응답에서 같은 규칙으로 채움)
+  const characterType = bunch?.characterType;
+  const members = useMemo(
+    () =>
+      rawMembers?.map((member) => ({
+        ...member,
+        imageSrc: member.imageSrc ?? defaultProfileImage(characterType),
+      })),
+    [rawMembers, characterType],
+  );
   return { bunch, setCurrentId, members, actions, myRole: myRole ?? bunch?.myRole };
 }

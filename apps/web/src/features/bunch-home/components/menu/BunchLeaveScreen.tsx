@@ -2,7 +2,9 @@
 
 import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { AdminTransferSheet, PageHeader, ProfileRadioCard } from '@app/design-system/web';
+import Image, { type StaticImageData } from 'next/image';
 import { useId, useState } from 'react';
+import ownerAssign from '@/shared/assets/images/empty/owner-assign.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { BunchMember } from '../../lib/types';
@@ -85,8 +87,13 @@ export function BunchLeaveScreen({
           open={sheetOpen}
           onOpenChange={setSheetOpen}
           memberName={selected.name}
-          // 안내 그림은 최종본 전달 전 자리표시
-          illustration={<div className="bg-surface-tertiary size-full" />}
+          // Figma 4359:86965: 안내 그림 80×82(시트의 92px 자리 가운데)
+          illustration={
+            <div className="flex size-full items-center justify-center">
+              {/* SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김 */}
+              <Image src={ownerAssign as StaticImageData} alt="" width={80} height={82} />
+            </div>
+          }
           onConfirm={() => {
             setSheetOpen(false);
             onTransferAndLeave(selected);

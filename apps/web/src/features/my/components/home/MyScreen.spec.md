@@ -43,7 +43,7 @@
 - Loading·Empty·Error·retry: 데이터를 불러오지 않아 없다. API를 연결할 때 정한다.
 - 메뉴 눌림: `MenuLabel` 기본 동작(누르는 동안 `overlay-hover`, 75ms). 프로필 행도 같은 눌림을 쓴다.
 - 문의하기: 확인 창(`ConfirmDialog`) 「'카카오톡'에서 열기」 / 「오픈채팅 상담 채널로 이동해요.」 / 취소·열기. 「열기」는 `contactUrl`을 연다(`https:` 주소만 열고 그 밖은 무시). iOS 쉘에서는 같은 WebView 이동을 쉘이 가로채 카카오톡 앱(없으면 브라우저)으로 열고, 브라우저는 새 탭으로 연다. 주소가 없으면 「열기」를 막는다. page는 카카오톡 채널 주소(`MY_CONTACT_URL`)를 넘긴다.
-- 로그아웃: 확인 창 「로그아웃할까요?」 / 취소·로그아웃. 「로그아웃」은 `POST /api/auth/logout`(BFF가 백엔드 세션 폐기를 시도하고 결과와 관계없이 쿠키 삭제)을 보내고, 요청 중에는 다시 누를 수 없다. 성공하면 `/login`을 `location.replace`로 새로 연다(메모리의 사용자 데이터를 비우고, 뒤로 가기로 돌아오지 않음). 실패(네트워크 등)하면 확인 창을 닫고 「로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.」 토스트(공통 mutation 실패 처리)를 띄운다.
+- 로그아웃: 확인 창 「로그아웃할까요?」 / 취소·로그아웃. 「로그아웃」은 `POST /api/auth/logout`(BFF가 백엔드 세션 폐기를 시도하고 결과와 관계없이 쿠키 삭제)을 보내고, 요청 중에는 다시 누를 수 없다. 성공하면 `/login`을 `location.replace`로 새로 연다(메모리의 사용자 데이터를 비우고, 뒤로 가기로 돌아오지 않음). 실패(네트워크 등)하면 확인 창을 닫고 「일시적인 오류가 발생했어요. 다시 시도해 주세요」 토스트(기능명세서 7.5.2, 공통 mutation 실패 처리)를 띄운다.
 
 ## 데이터 의존성
 
@@ -55,19 +55,19 @@
 
 - Component mapping:
 
-| Figma                    | 값                                                  | 사용한 컴포넌트·토큰                                                           |
-| ------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 헤더                     | `Header`(Varient=Icon), 제목 MY                     | `Header` + `h1`                                                                |
-| 헤더와 프로필 사이       | 12                                                  | `pt-padding-p6`                                                                |
-| 프로필 행                | 좌우 16, 위아래 10, 높이 84                         | `px-padding-p8 py-padding-p5`                                                  |
-| 프로필 이미지            | 64(M), 테두리 `#EAEAEA`                             | `ProfileImage size="M"` + `border-border-tertiary border`                      |
-| 이미지와 닉네임          | 10                                                  | `gap-s5`                                                                       |
-| 닉네임                   | Body-1-SemiBold, `#000000`                          | `typography-body-1-semi-bold text-text-primary`                                |
-| 오른쪽 화살표            | 24(L), `#BCBEC2`                                    | `LineChevronRightLargeIcon`, `text-icon-quaternary`                            |
-| 프로필과 메뉴, 묶음 사이 | 20, 12                                              | `gap-s10`, `gap-s6`                                                            |
-| 묶음 제목                | Body-4-SemiBold `text-quaternary`, 좌우 16·위아래 6 | `typography-body-4-semi-bold text-text-quaternary px-padding-p8 py-padding-p3` |
-| 제목과 메뉴, 메뉴 좌우   | 4, 12                                               | `gap-s2`, `px-padding-p6`                                                      |
-| 메뉴 한 줄               | `Menu Label`(오른쪽 화살표)                         | `MenuLabel`                                                                    |
+| Figma                    | 값                                                                                     | 사용한 컴포넌트·토큰                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 헤더                     | `Header`(Varient=Icon), 제목 MY                                                        | `Header` + `h1`                                                              |
+| 헤더와 프로필 사이       | 12                                                                                     | `pt-padding-p6`                                                              |
+| 프로필 행                | 좌우 16, 위아래 10, 높이 84                                                            | `px-padding-p8 py-padding-p5`                                                |
+| 프로필 이미지            | 64(M), 테두리 `#EAEAEA`                                                                | `ProfileImage size="M"` + `border-border-tertiary border`                    |
+| 이미지와 닉네임          | 10                                                                                     | `gap-s5`                                                                     |
+| 닉네임                   | Body-1-SemiBold, `#000000`                                                             | `typography-body-1-semi-bold text-text-primary`                              |
+| 오른쪽 화살표            | 24(L), `#BCBEC2`                                                                       | `LineChevronRightLargeIcon`, `text-icon-quaternary`                          |
+| 프로필과 메뉴, 묶음 사이 | 20, 12                                                                                 | `gap-s10`, `gap-s6`                                                          |
+| 묶음 제목                | Body-4-SemiBold `text-tertiary`(디자인 변경, 이전 `text-quaternary`), 좌우 16·위아래 6 | `typography-body-4-semi-bold text-text-tertiary px-padding-p8 py-padding-p3` |
+| 제목과 메뉴, 메뉴 좌우   | 4, 12                                                                                  | `gap-s2`, `px-padding-p6`                                                    |
+| 메뉴 한 줄               | `Menu Label`(오른쪽 화살표)                                                            | `MenuLabel`                                                                  |
 
 - Keyboard·focus·accessible name: 제목 「MY」가 `h1`, 묶음 제목은 `h2`다. 묶음은 이름 없는 `section`이라 랜드마크가 아니다(「알림」 묶음에 이름을 붙이면 토스트 영역 「알림」과 같은 이름의 랜드마크가 생겨 axe `landmark-unique` 위반). 프로필 행 링크 이름은 「{닉네임} 프로필 수정」(뒷부분은 화면에 보이지 않음)이고 이미지는 장식이다. 포커스 윤곽선은 프로필 행 안쪽 2px `border-brand`, 메뉴는 `MenuLabel` 기본.
 - Responsive·긴 텍스트·overflow: 닉네임은 한 줄 말줄임(최대 12자라 실제로는 거의 잘리지 않음), 화살표는 줄어들지 않는다. 메뉴가 화면보다 길면 `PageShell` 본문이 스크롤된다.
@@ -85,7 +85,6 @@
 ## 확인할 항목
 
 - 문의하기 확인 창 모양 (제안): Figma는 iOS 시스템 Alert(파란 「열기」)로 그렸다. 웹에서는 시스템 창을 띄울 수 없어 다른 확인 창과 같은 `ConfirmDialog`에 같은 문구를 썼다.
-- 로그아웃 실패 문구 (제안): 화면 설계서에 없어 다른 실패 토스트와 같은 형태로 정했다.
 
 - 닉네임 색 (제안): Figma는 변수 없이 `#000000`이다. 가장 가까운 `text-primary`를 썼다.
 - 프로필 행 눌림 (제안): Figma에는 프로필 행의 눌림 모양이 없다. 메뉴와 같은 `overlay-hover`를 넣었다.
