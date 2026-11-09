@@ -87,16 +87,19 @@
 
 - Figma에 그려진 시트(Bottom Sheet 01~09)는 이 폴더의 `renderers/`에 시트 렌더러로 둔다. 새 렌더러는 기존 렌더러 파일 4개(`.tsx`·`.test.tsx`·`.stories.tsx`·`.spec.md`)를 복사해서 시작한다. 렌더러는 이 부품을 조합하고 문구·목록·콜백만 props로 받는다. API 호출·저장 상태는 넣지 않는다.
 
-  | Figma | 렌더러                               |
-  | ----- | ------------------------------------ |
-  | 01    | `PhotoUploadSheet`                   |
-  | 02    | `DateChangeSheet`                    |
-  | 03    | `BundleRecommendSheet`               |
-  | 04    | `BunchSwitchSheet`                   |
-  | 05    | `ConfirmSheet`, `AdminTransferSheet` |
-  | 06    | `MoreMenuSheet`                      |
-  | 07·08 | `ReportSheet`                        |
-  | 09    | `PinnedPlaceSheet`                   |
+  | Figma                  | 렌더러                                 |
+  | ---------------------- | -------------------------------------- |
+  | 01                     | `PhotoUploadSheet`                     |
+  | 02                     | `DateChangeSheet`                      |
+  | `5664:100243`(03 대체) | `BundleRecommendSheet`                 |
+  | 04                     | `BunchSwitchSheet`                     |
+  | 05                     | `ConfirmSheet`, `AdminTransferSheet`   |
+  | 06                     | `MoreMenuSheet`                        |
+  | 07·08                  | `ReportSheet`                          |
+  | 09                     | `PinnedPlaceSheet`                     |
+  | `5367:112296`          | `PlacePickSheet`                       |
+  | `5367:112757`          | `BundleMembersSheet`                   |
+  | Figma 시트 없음        | `PlaceSearchSheet`, `PhotoImportSheet` |
 
 - 렌더러를 디자인 시스템에 두는 이유: `apps/web`에는 Storybook이 없어 Figma 대조를 디자인 시스템 story에서 한다. 더보기·신고·번치 전환은 여러 기능이 쓴다.
 - 화면에 닫기 버튼이 없는 시트(Figma 01 등)도 숨긴 닫기 버튼을 둔다. 끌기·바깥 터치는 스크린 리더로 닿기 어렵기 때문이다. 「취소하기」 같은 하단 닫기 버튼이 있으면 생략한다.
@@ -104,7 +107,8 @@
   - `not-sr-only`가 padding·margin을 지우므로 누르는 영역(40px)을 `focus-visible`에서 다시 준다.
 - 선택처럼 열 때마다 초기화할 state는 `BottomSheet.Content` 안쪽 컴포넌트에 둔다. 닫히면 내용이 내려가 함께 사라진다. `Root`의 직접 자식에 두면 닫혀도 남는다.
 - 앱 `features`는 렌더러를 여는 hook만 만든다. 데이터 연결과 동작(저장, 이동, 토스트)은 hook이 맡는다.
-  - hook은 `overlay-kit`의 `overlay.open(({ isOpen, close, unmount }) => …)`로 연다. 예: `features/onboarding/hooks/useExitFlowDialog.tsx`.
+  - hook은 `apps/web`의 `useScreenOverlay`로 연다. 예: `features/feed/hooks/useBundleSheets.tsx`.
+  - 열 때의 값으로 그려져 부모가 다시 그려져도 바뀌지 않는다. 열린 동안 바뀌는 값은 안쪽 컴포넌트의 state로 둔다(예: 콕 표시, 저장 중).
   - 연결: `open={isOpen}`, `onOpenChange={(open) => !open && close()}`, `onOpenChangeComplete={(open) => !open && unmount()}`. `unmount`는 닫힘 모션이 끝난 뒤 실행된다.
 - 시트 안 버튼이 다른 화면(앨범·카메라 등)을 열면 먼저 `open`을 `false`로 바꾼다. 열어 둔 채 띄우면 초점 가두기·스크롤 잠금과 겹친다.
 

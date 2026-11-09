@@ -61,3 +61,15 @@ export const WithDescription: Story = {
 };
 export const WithoutIllustration: Story = { args: { illustration: undefined } };
 export const Confirming: Story = { args: { confirming: true } };
+
+/** 안내 상자 없이 그림 72px와 두 줄 부제(광고 숨기기, Figma `5991:164178`) */
+export const WithoutNotice: Story = {
+  args: {
+    title: '이 장소를 숨길까요?',
+    description:
+      'BUNCH 팀이 번치가 모이기 좋은 곳을 직접 골라 소개해요.\n현재 업체로부터 비용을 받고 있지 않아요.',
+    notice: undefined,
+    illustrationClassName: 'size-18',
+    confirmLabel: '숨기기',
+  },
+};
