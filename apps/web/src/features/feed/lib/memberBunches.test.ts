@@ -3,13 +3,13 @@ import { sortMemberBunches } from './memberBunches';
 
 describe('sortMemberBunches', () => {
   it('한글 → 영문(대소문자 무시) → 숫자 순이고 원본을 바꾸지 않는다', () => {
-    const bunches = ['365러닝', 'zeta', '하늘', 'Alpha', '가람', 'beta'].map((name) => ({ name }));
+    const bunches = ['365러닝', 'Beta', '하늘', 'zeta', '가람', 'alpha'].map((name) => ({ name }));
 
     expect(sortMemberBunches(bunches).map(({ name }) => name)).toEqual([
       '가람',
       '하늘',
-      'Alpha',
-      'beta',
+      'alpha',
+      'Beta',
       'zeta',
       '365러닝',
     ]);

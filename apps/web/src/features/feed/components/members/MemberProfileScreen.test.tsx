@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -122,8 +123,25 @@ describe('MemberProfileScreen', () => {
     expect(screen.queryByRole('button', { name: /캠핑러버/ })).toBeNull();
   });
 
-  it('없는 멤버면 안내만 보여 준다', () => {
-    renderProfile(undefined, 'unknown');
+  it('내 정보 조회가 실패하면 줄과 버튼을 보이고, 팔로우를 누르면 오류를 안내한다', async () => {
+    const user = userEvent.setup();
+    server.use(http.get('/api/members/me', () => fail(500, 'COMMON_500')));
+    render(<MemberProfileScreen memberId="member-2" links={links} />, {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+
+    const follow = await screen.findByRole('button', { name: '캠핑러버 팔로우' });
+    expect(profileButton(/^캠핑러버$/)).toBeTruthy();
+    await user.click(follow);
+
+    expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요', {
+      fullWidth: true,
+    });
+    expect(screen.getByRole('button', { name: '캠핑러버 팔로우' })).toBeTruthy();
+  });
+
+  it.each(['unknown', 'member-999'])('없는 멤버(%s)면 안내만 보여 준다', (memberId) => {
+    renderProfile(undefined, memberId);
 
     expect(
       screen.getByRole('heading', { level: 1, name: '삭제되었거나 볼 수 없는 내용이에요' }),
