@@ -84,7 +84,7 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
           <ProfilePhotoField value={photo} onChange={setPhoto} defaultSrc={defaultImage} />
         </div>
         <div className="pt-s14 px-padding-p8">
-          <ProfileFields fields={fields} showOptional={false} />
+          <ProfileFields fields={fields} />
         </div>
       </PageShell>
       <ConfirmDialog

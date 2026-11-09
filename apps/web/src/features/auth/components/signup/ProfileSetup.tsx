@@ -103,7 +103,7 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
           <ProfileFields
             fields={fields}
             showDemographics={showDemographics}
-            note="출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, 다른 사용자에게 공개되지 않아요."
+            note={`출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며,\n다른 사용자에게 공개되지 않아요.`}
           />
         </div>
       </SignupFrame>

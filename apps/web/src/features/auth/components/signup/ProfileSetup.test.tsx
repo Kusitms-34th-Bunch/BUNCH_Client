@@ -134,11 +134,11 @@ describe('ProfileSetup', () => {
     expect(screen.getByText('0/12')).toBeTruthy();
   });
 
-  it('필수 표시와 선택 표시를 각 항목 옆에 보여 준다', () => {
+  it('닉네임 옆에만 필수 표시를 보이고 출생연도·성별 옆에는 선택 표시를 두지 않는다(Figma)', () => {
     render(<ProfileSetup />);
 
     expect(screen.getByText('*').getAttribute('aria-hidden')).toBe('true');
-    expect(screen.getAllByText('선택')).toHaveLength(2);
+    expect(screen.queryByText('선택')).toBeNull();
     expect(nickname().getAttribute('aria-required')).toBe('true');
   });
 
@@ -443,6 +443,17 @@ describe('ProfileSetup', () => {
           '출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, 다른 사용자에게 공개되지 않아요.',
         ),
       ).toBeTruthy();
+    });
+
+    it('안내 문구는 「활용되며,」 뒤에서 줄이 바뀐다(Figma 두 문단)', () => {
+      render(<ProfileSetup />);
+
+      const note = screen.getByText(/통계 분석에만 활용되며/);
+
+      expect(note.textContent).toBe(
+        '출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며,\n다른 사용자에게 공개되지 않아요.',
+      );
+      expect(note.className).toContain('whitespace-pre-line');
     });
 
     it('동의하지 않았으면 닉네임만 보여 준다', () => {

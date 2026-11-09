@@ -47,7 +47,7 @@
 | 헤더와 사진 사이    | 49                               | `pt-s18`(48)                            |
 | 사진·사진 변경      | 90, 버튼 28(64,62)               | `ProfilePhotoField`(가입과 같은 배치)   |
 | 사진과 입력 칸 사이 | 32                               | `pt-s14`                                |
-| 입력 칸             | 닉네임(필수, n/12)·출생연도·성별 | `ProfileFields showOptional={false}`    |
+| 입력 칸             | 닉네임(필수, n/12)·출생연도·성별 | `ProfileFields`                         |
 | 수정하기            | Primary L, 위 여백 14            | `Button`, `px-padding-p8 pt-padding-p7` |
 
 - Keyboard·focus·accessible name: 숨긴 `h1` 「개인 프로필 수정」, 사진 변경 버튼 이름 「프로필 사진 변경」. 입력 칸 접근성은 `ProfileFields`(가입과 같음). 빈 영역을 누르면 키보드를 닫고, 포커스된 입력 칸은 보이게 스크롤한다. 출생연도·성별은 「선택」 글자를 숨기지만, 닉네임만 `aria-required`라 보조기기에는 둘이 필수가 아닌 칸으로 전달된다.

@@ -10,11 +10,9 @@ import { GenderField } from './GenderField';
 type ProfileFieldsProps = {
   /** `useProfileFields`가 돌려준 값·오류·변경 함수 */
   fields: ProfileFieldsState;
-  /** 출생연도·성별 제목 옆 「선택」 표시. 가입은 표시, MY 수정은 표시하지 않음(Figma) */
-  showOptional?: boolean | undefined;
   /** 출생연도·성별과 비공개 안내를 보임. 가입은 선택 약관에 동의했을 때만 보이고, MY 수정은 항상 보임(기본) */
   showDemographics?: boolean | undefined;
-  /** 출생연도·성별 아래 안내 문구. 기본은 비공개 안내이고 가입은 통계 분석 용도를 함께 안내(Figma) */
+  /** 출생연도·성별 아래 안내 문구. 기본은 비공개 안내이고 가입은 통계 분석 용도를 함께 안내(Figma). 줄바꿈 문자(`\n`)는 그대로 줄이 바뀜 */
   note?: string | undefined;
 };
 
@@ -24,7 +22,6 @@ type ProfileFieldsProps = {
  */
 export function ProfileFields({
   fields,
-  showOptional = true,
   showDemographics = true,
   note = '출생연도와 성별은 다른 사용자에게 공개되지 않아요.',
 }: ProfileFieldsProps) {
@@ -55,7 +52,6 @@ export function ProfileFields({
           </span>
           <LabeledTextField
             title="출생연도"
-            option={showOptional ? 'optional' : undefined}
             placeholder="EX)1998"
             inputMode="numeric"
             autoComplete="off"
@@ -70,13 +66,15 @@ export function ProfileFields({
             <GenderField
               value={values.gender}
               describedBy={noteId}
-              showOptional={showOptional}
               onChange={(next) => {
                 fields.setGender(next);
                 closeKeyboard();
               }}
             />
-            <p id={noteId} className="typography-caption-1-medium text-text-quaternary">
+            <p
+              id={noteId}
+              className="typography-caption-1-medium text-text-quaternary whitespace-pre-line"
+            >
               {note}
             </p>
           </div>
