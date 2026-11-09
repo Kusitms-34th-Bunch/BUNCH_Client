@@ -64,4 +64,18 @@ export const feedFixture: FeedData = {
       commentCount: 0,
     }),
   ],
+  // Figma 예시. 실제 자리(번들 카드 6개마다)는 서버가 정함(구현 단위 10)
+  ads: [
+    {
+      id: 'ad-flody',
+      title: '플로디스튜디오',
+      imageSrc: '/mock/photos/AD1.jpg',
+      logoSrc: '/images/feed/bunch-spot-logo.png',
+      tagline: '여기서 뭉쳐봐요!',
+      description: '도자기 원데이 클래스',
+      location: '서울숲역 도보 7분 , 뚝섬역 도보 9분',
+      tags: ['최대 4인', '1인 5~6만원', '예약 가능', '프라이빗 클래스'],
+      picked: false,
+    },
+  ],
 };
