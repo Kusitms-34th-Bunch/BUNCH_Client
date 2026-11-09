@@ -69,7 +69,7 @@
 | 컴포넌트                                         | 변경 사항                                                                                  |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
 | `BottomNavigation`(디자인 시스템 web 구역)       | 새로 만든다. 위치 `packages/design-system/src/components/web/bottomNavigation/`            |
-| 탭 조합(`apps/web/src/features/main-navigation`) | 만들었다(`MainTabBar`, 탭 정의, 임시 탭 화면 `TabPlaceholder`)                             |
+| 탭 조합(`apps/web/src/features/main-navigation`) | 만들었다(`MainTabBar`, 탭 정의)                                                            |
 | `PageShell`, `AppFrame`                          | 변경 없음. `bottom` slot과 Safe Area를 그대로 쓴다                                         |
 | Line·Fill Home·Photo·Confetti·User 아이콘        | 있음. 변경 없음                                                                            |
 | `docs/architecture/app-structure.md`의 소유 방식 | 갱신했다. `(app)/(main)` layout이 page 아래에 막대를 붙이고 page는 자기 `PageShell`을 쓴다 |
@@ -85,7 +85,7 @@
 | 탭 조합과 iOS 시스템 탭 바: 탭 4개의 라벨·경로·현재 탭 판정, 임시 탭 화면, iOS 쉘 시스템 탭 바(탭마다 WebView) | feat | ios-system-tab-bar   | `BottomNavigation`                                 | #71                                       |
 
 - #37의 `GlassView` 막대와 `nativeTabPress` 이벤트는 #71에서 시스템 탭 바로 바꾸면서 지웠다. bridge의 `setNativeTabBar` 항목에는 탭 경로(`path`)가 들어간다.
-- 탭 화면 본문은 아직 임시다(`TabPlaceholder`). 각 탭 화면을 구현할 때 이 route를 채운다.
+- 탭 화면 본문은 각 탭 화면을 구현할 때 route를 채운다(피드는 `features/feed`).
 - 남은 순서: 각 탭 화면 구현 → 탭 사이 상태 동기화(번치 전환 등) → 실기기 확인. 구현은 `implement-from-figma`·`create-page-feature`, 쉘은 별도 지침(`docs/architecture/mobile-shell.md`)이다. UI는 `bunch-ui-accessibility-reviewer`, route 변경은 `bunch-route-reviewer`를 부른다.
 
 ## 완료 기준

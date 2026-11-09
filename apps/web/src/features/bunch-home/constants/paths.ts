@@ -42,7 +42,7 @@ export const BUNCH_HOME_PATHS = {
   // 번치 없음(5.1.7)의 새 번치 만들기·초대 링크 참여. URL 계약만 두고 onboarding feature는 import하지 않음
   createBunch: '/onboarding/create',
   joinBunch: '/onboarding/join',
-  // 다른 번치 프로필의 임시 입구(피드 탭). URL 계약만 두고 main-navigation feature는 import하지 않음
+  // 차단된 번치·다른 번치 화면에서 돌아갈 곳(피드 탭). URL 계약만 두고 main-navigation feature는 import하지 않음
   feed: '/feed',
   /** 동적 route의 전환 경계 id(규칙과 각 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
   transitionIds: {
