@@ -1,0 +1,54 @@
+/* 얼굴이 살짝 떠다님(위아래 2px, Figma에 없음, 기획 요청). WCAG 2.2.2에 맞게 5초 안에 멈춤(1.2s × 4 = 4.8s, 짝수 번이라 제자리에서 끝남) */
+.float {
+  animation: pick-float 1.2s ease-in-out 4 alternate;
+}
+
+/* 펼칠 때 아래에서 올라오며 나타남 */
+.rise {
+  animation: pick-rise 200ms ease-out both;
+}
+
+/* 접을 때 내려가며 사라짐. 같은 keyframes를 reverse로 쓰면 이름이 같아 재시작되지 않고 animationend도 오지 않음 */
+.fall {
+  animation: pick-fall 200ms ease-in both;
+}
+
+@keyframes pick-float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes pick-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pick-fall {
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .rise {
+    animation: none;
+  }
+
+  /* 움직임 없이 바로 접힘. 목록을 지우는 animationend가 필요해 none 대신 1ms */
+  .fall {
+    animation-duration: 1ms;
+    animation-delay: 0s !important;
+  }
+}

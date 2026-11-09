@@ -33,7 +33,12 @@ describe('FeedBundleCard', () => {
 
     await user.click(within(card).getByRole('button', { name: '여행가조 2일 전' }));
     await user.click(within(card).getByRole('button', { name: '참여 멤버 1명' }));
-    await user.click(within(card).getByRole('button', { name: '제주 여행 사진 1/2 열기' }));
+    // 사진이 여러 장이어도 카드에는 대표 사진 한 장
+    expect(within(card).getAllByRole('button', { name: /사진 열기$/ })).toHaveLength(1);
+    const images = [...card.querySelectorAll('img')].map((image) => image.getAttribute('src'));
+    expect(images).toContain('a.jpg');
+    expect(images).not.toContain('b.jpg');
+    await user.click(within(card).getByRole('button', { name: '제주 여행 사진 열기' }));
     await user.click(within(card).getByRole('button', { name: '위치 애월읍' }));
     await user.click(within(card).getByRole('button', { name: '좋아요 4' }));
     await user.click(within(card).getByRole('button', { name: '댓글 3' }));
@@ -70,6 +75,6 @@ describe('FeedBundleCard', () => {
           null,
       );
     }
-    expect(names).toEqual(['여행가조2일 전', '제주 여행 사진 1/1 열기', '위치 애월읍', '좋아요0']);
+    expect(names).toEqual(['여행가조2일 전', '제주 여행 사진 열기', '위치 애월읍', '좋아요0']);
   });
 });

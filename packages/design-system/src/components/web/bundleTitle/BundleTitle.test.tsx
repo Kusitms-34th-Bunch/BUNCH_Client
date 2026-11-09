@@ -13,7 +13,7 @@ describe('BundleTitle', () => {
     renderTitle();
     const title = screen.getByText('사진');
 
-    expect(title.classList.contains('typography-body-3-semi-bold')).toBe(true);
+    expect(title.classList.contains('typography-body-3-semibold')).toBe(true);
     expect(title.classList.contains('text-text-secondary')).toBe(true);
   });
 
@@ -22,7 +22,7 @@ describe('BundleTitle', () => {
     const title = screen.getByText('사진');
 
     expect(title.classList.contains('typography-body-3-regular')).toBe(true);
-    expect(title.classList.contains('typography-body-3-semi-bold')).toBe(false);
+    expect(title.classList.contains('typography-body-3-semibold')).toBe(false);
     expect(title.classList.contains('text-text-secondary')).toBe(true);
   });
 

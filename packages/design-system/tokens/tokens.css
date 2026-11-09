@@ -167,16 +167,6 @@
   --primitive-white-alpha-5: color-mix(in srgb, #ffffff var(--primitive-opacity-5), transparent);
   --primitive-white-alpha-60: color-mix(in srgb, #ffffff var(--primitive-opacity-60), transparent);
   --primitive-white-alpha-80: color-mix(in srgb, #ffffff var(--primitive-opacity-80), transparent);
-  --primitive-yellow-100: #fff3b3;
-  --primitive-yellow-200: #ffeb80;
-  --primitive-yellow-300: #ffe34d;
-  --primitive-yellow-400: #ffda26;
-  --primitive-yellow-50: #fffbe6;
-  --primitive-yellow-500: #ffd200;
-  --primitive-yellow-600: #f0c000;
-  --primitive-yellow-700: #d9a900;
-  --primitive-yellow-800: #bf9000;
-  --primitive-yellow-900: #9c7200;
 }
 
 /* Semantic: references preserve design intent. */
@@ -402,16 +392,6 @@
   --color-primitive-white-alpha-5: var(--primitive-white-alpha-5);
   --color-primitive-white-alpha-60: var(--primitive-white-alpha-60);
   --color-primitive-white-alpha-80: var(--primitive-white-alpha-80);
-  --color-primitive-yellow-100: var(--primitive-yellow-100);
-  --color-primitive-yellow-200: var(--primitive-yellow-200);
-  --color-primitive-yellow-300: var(--primitive-yellow-300);
-  --color-primitive-yellow-400: var(--primitive-yellow-400);
-  --color-primitive-yellow-50: var(--primitive-yellow-50);
-  --color-primitive-yellow-500: var(--primitive-yellow-500);
-  --color-primitive-yellow-600: var(--primitive-yellow-600);
-  --color-primitive-yellow-700: var(--primitive-yellow-700);
-  --color-primitive-yellow-800: var(--primitive-yellow-800);
-  --color-primitive-yellow-900: var(--primitive-yellow-900);
   --color-border-brand: var(--semantic-border-brand);
   --color-border-brand-subtle: var(--semantic-border-brand-subtle);
   --color-border-disabled: var(--semantic-border-disabled);
@@ -591,7 +571,7 @@
   text-decoration: var(--semantic-text-decoration-none);
 }
 
-@utility typography-body-2-semi-bold {
+@utility typography-body-2-semibold {
   font-family: var(--primitive-font-family-pretendard);
   font-weight: var(--semantic-font-weights-pretendard-1);
   font-size: var(--primitive-font-size-3);
@@ -613,7 +593,7 @@
   text-decoration: var(--semantic-text-decoration-none);
 }
 
-@utility typography-body-3-semi-bold {
+@utility typography-body-3-semibold {
   font-family: var(--primitive-font-family-pretendard);
   font-weight: var(--semantic-font-weights-pretendard-1);
   font-size: var(--primitive-font-size-2);

@@ -15,11 +15,11 @@ export const Default: Story = {};
 
 const COLORS: ColorBadgeColor[] = ['gray', 'brand', 'pink', 'green', 'orange'];
 
-/** Figma Badge 20종: 크기 2 × 색 5 × Weak·Fill */
+/** Figma Badge 30종: 크기 3 × 색 5 × Weak·Fill */
 export const Matrix: Story = {
   render: () => (
     <div className="gap-s4 flex flex-col">
-      {(['lg', 'md'] as const).map((size) =>
+      {(['lg', 'md', 'sm'] as const).map((size) =>
         (['weak', 'fill'] as const).map((variant) => (
           <div key={`${size}-${variant}`} className="gap-s4 flex items-center">
             {COLORS.map((color) => (

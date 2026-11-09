@@ -15,23 +15,29 @@ describe('BundleCard', () => {
     expect(screen.getByRole('button', { name: /^머그샷\s*,\s*참여자 10명$/ })).toBeTruthy();
   });
 
-  it('얼굴은 최대 인원까지만 그리고 장식으로 숨긴다', () => {
-    const { container, rerender } = render(
+  it('얼굴은 3명까지 그리고 넘는 인원은 「외 N명」으로 보이며, 전체를 장식으로 숨긴다', () => {
+    const { container } = render(
       <BundleCard title="머그샷" imageSrc="/photo.jpg" members={members} onCardClick={() => {}} />,
     );
-    const faces = () => container.querySelectorAll('[aria-hidden="true"] > div');
-    expect(faces()).toHaveLength(8);
 
-    rerender(
+    expect(screen.getByText('외 7명')).toBeTruthy();
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(
+      container.querySelectorAll('[aria-hidden="true"] > [role="img"] > span > *'),
+    ).toHaveLength(3);
+  });
+
+  it('3명 이하면 「외 N명」이 없다', () => {
+    render(
       <BundleCard
         title="머그샷"
         imageSrc="/photo.jpg"
-        members={members}
-        maxVisibleMembers={3}
+        members={members.slice(0, 3)}
         onCardClick={() => {}}
       />,
     );
-    expect(faces()).toHaveLength(3);
+
+    expect(screen.queryByText(/^외 /)).toBeNull();
   });
 
   it('카드와 삭제 버튼을 따로 누른다', () => {

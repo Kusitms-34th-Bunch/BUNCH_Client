@@ -37,7 +37,7 @@
 
 - 사진을 받기 전이나 받지 못했을 때도 흰 글자가 보이게 카드 바탕은 `surface-inversed`(어두운 회색)다(Figma에 없음).
 - 그라데이션은 Figma 값을 그대로 썼다(위 검정 35%→0 높이 112, 아래 60%→50%→8%→0 높이 136, 토큰 없음).
-- 배지는 `primitive-white-alpha-20` 배경에 흰 글자, 태그는 `ColorBadge` gray(md, 좌우 6·위아래 2).
+- 배지는 `primitive-white-alpha-20` 배경에 흰 글자, 태그는 `ColorBadge` gray(sm).
 - 숨김 모션: 0.567s 동안 크기 0 → 1.2 → 1(`cubic-bezier(0.55,0.06,0.36,1)`), 투명도는 앞 0.233s에 0 → 1. Figma는 2초 반복 미리보기라 한 번만 재생한다.
 - Storybook: `Default`(콕하기를 누르면 바뀜), `Hidden`.
 

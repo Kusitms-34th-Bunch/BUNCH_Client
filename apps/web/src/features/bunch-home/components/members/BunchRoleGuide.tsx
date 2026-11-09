@@ -172,7 +172,7 @@ export function BunchRoleGuide() {
         <div className="gap-s13 flex flex-col">
           {TABLES.map((table) => (
             <section key={table.title} className="gap-s7 flex flex-col">
-              <h2 className="bg-surface-secondary rounded-r5 px-padding-p8 py-padding-p5 typography-body-2-semi-bold text-text-tertiary">
+              <h2 className="bg-surface-secondary rounded-r5 px-padding-p8 py-padding-p5 typography-body-2-semibold text-text-tertiary">
                 {table.title}
               </h2>
               <div>

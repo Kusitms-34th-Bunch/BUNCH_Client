@@ -62,7 +62,7 @@ export const BundleTitle = ({
             id={titleId}
             className={cn(
               'text-text-secondary truncate',
-              variant === 'weak' ? 'typography-body-3-regular' : 'typography-body-3-semi-bold',
+              variant === 'weak' ? 'typography-body-3-regular' : 'typography-body-3-semibold',
             )}
           >
             {title}

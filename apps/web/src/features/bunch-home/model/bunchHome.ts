@@ -58,6 +58,8 @@ export const publishedBundlesPageSchema = z.object({
       date: z.string().nullish(),
       location: z.unknown().nullish(),
       publishedAt: z.string().nullish(),
+      // 명세에 아직 없는 필드(백엔드 확인 필요). 표시용이라 모르는 값이어도 목록을 깨지 않게 문자열로 받음
+      visibility: z.string().nullish(),
     }),
   ),
   page: z.number().int().nonnegative(),
@@ -128,6 +130,7 @@ export const toBunchHomeDetail = (
       id: toDomainId(bundle.id),
       title: bundle.title,
       coverSrc: safeImage(bundle.coverImageUrl, fallback),
+      memberOnly: bundle.visibility === 'PRIVATE',
     })),
     draftBundles: drafts.items.map((bundle) => {
       const first = [...bundle.photos].sort((a, b) => a.position - b.position)[0];

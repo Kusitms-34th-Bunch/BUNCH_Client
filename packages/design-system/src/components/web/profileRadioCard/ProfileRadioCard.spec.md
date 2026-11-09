@@ -22,7 +22,7 @@
 ## 상태와 동작
 
 - Default: 바탕 `surface-primary`, 라디오 빈 원.
-- Pressed(누르는 동안): 카드 바탕과 프로필 이미지에 `overlay-pressed`(20%)를 겹치고, 라디오는 회색 링·점(`core/radio`의 눌림, 카드 어디를 눌러도 적용)이다. 이름 글자는 어두워지지 않는다.
+- Pressed(누르는 동안): 카드 바탕과 프로필 이미지에 `overlay-hover`(10%)를 겹치고, 라디오는 회색 링·점(`core/radio`의 눌림, 카드 어디를 눌러도 적용)이다. 이름 글자는 어두워지지 않는다.
 - Selected: 바탕 `surface-brand-subtle-1`, 카드 테두리 없음, 프로필 이미지 테두리 `border-brand-subtle`, 라디오 브랜드색 점.
 - Disabled: 카드 40% 흐림, 이름 `text-disabled`, 누를 수 없음.
 - 긴 이름은 한 줄에서 말줄임하고 `title`로 전체를 보여 준다. 터치·키보드 사용자는 툴팁을 볼 수 없어서, 동명이인이나 긴 이름을 구분할 방법은 호출 화면이 정한다(스크린 리더는 전체 이름을 읽음).
@@ -40,12 +40,12 @@
 | ------------------------------------------------------------------ | ----------------------------------------------------------- |
 | 패딩 12·10, radius `r5`, 바탕 `surface-primary`, 높이 60           | `px-padding-p6 py-padding-p5 rounded-r5 bg-surface-primary` |
 | 이미지·이름 간격 6                                                 | `gap-s3`                                                    |
-| 역할 배지 16, 이미지와 12 겹침                                     | `RoleBadge` + `-ml-3`(눌림은 `brightness-80`)               |
+| 역할 배지 16, 이미지와 12 겹침                                     | `RoleBadge` + `-ml-3`(눌림은 `brightness-90`)               |
 | 이미지 40, 테두리 `border-tertiary`(선택 시 `border-brand-subtle`) | `ProfileImage` `size="S"` + `border`                        |
 | 이름 Body-1-Medium, `text-primary`(비활성 `text-disabled`)         | `typography-body-1-medium`                                  |
 | Control Radio 20                                                   | `Radio`(`core/radio`)                                       |
 | 선택 바탕 `surface-brand-subtle-1`                                 | `has-checked:bg-surface-brand-subtle-1`                     |
-| 눌림 `overlay-pressed`(20%)                                        | 바탕 겹침 layer(글자는 그대로)                              |
+| 눌림 `overlay-hover`(10%)                                          | 바탕 겹침 layer(글자는 그대로)                              |
 | 흐림 `opacity-disabled`(40)                                        | `opacity-(--semantic-opacity-disabled)`                     |
 
 ## 확인할 항목

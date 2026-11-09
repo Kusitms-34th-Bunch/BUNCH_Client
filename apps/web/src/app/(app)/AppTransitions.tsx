@@ -22,6 +22,7 @@ import { LOGIN_PATH, SIGNUP_PATHS, SIGNUP_TRANSITION_IDS } from '@/features/auth
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { BUNDLE_PATHS } from '@/features/bundle/constants/paths';
 import { BUNDLE_SELECT_PATHS } from '@/features/bundle/constants/selectPaths';
+import { FEED_PATHS } from '@/features/feed/constants/paths';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 import { MY_PATHS } from '@/features/my/constants/paths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
@@ -247,15 +248,28 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
-  // 피드 헤더 알림도 번치 홈 알림과 같은 drill
+  // 피드 카드 → 번들 상세, 상세의 번치 → 번치 탭·다른 번치 프로필도 한 단계씩 들어가는 drill
   {
     from: MAIN_TAB_PATHS.feed,
-    to: BUNCH_HOME_PATHS.notifications,
+    to: FEED_PATHS.transitionIds.bundle,
     bidirectional: true,
     transition: bunchDrill,
   },
   {
-    from: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    from: FEED_PATHS.transitionIds.bundle,
+    to: BUNCH_HOME_PATHS.home,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.bundle,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 피드 헤더 알림도 번치 홈 알림과 같은 drill
+  {
+    from: MAIN_TAB_PATHS.feed,
     to: BUNCH_HOME_PATHS.notifications,
     bidirectional: true,
     transition: bunchDrill,
@@ -440,6 +454,12 @@ const rules: SsgoiTransitionRule[] = [
   },
   {
     from: BUNDLE_PATHS.transitionIds.photo,
+    to: BUNDLE_PATHS.transitionIds.photoAdd,
+    bidirectional: true,
+    transition: bundleSlide,
+  },
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.photoAdd,
     bidirectional: true,
     transition: bundleSlide,

@@ -1,19 +1,19 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { FeedBundleCard } from '@app/design-system/web';
-import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { myProfileQueryOptions } from '@/shared/query/myProfile';
-import type { FeedBundle, FeedViewer } from '../lib/types';
+import type { FeedBundle } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { FEED_PATHS } from '../constants/paths';
-import { FEED_TOAST_OFFSET } from '../constants/toast';
 import { feedFixture } from '../fixtures/feed.fixture';
 import { useClientNow } from '../hooks/useClientNow';
+import { useFeedViewer } from '../hooks/useFeedViewer';
+import { useHoldScrollOnLeave } from '../hooks/useHoldScrollOnLeave';
+import { useLikeToggle } from '../hooks/useLikeToggle';
+import { useScrollInHistory } from '../hooks/useScrollInHistory';
 import { formatElapsedTime } from '../lib/elapsedTime';
 import { FeedCaughtUp } from './FeedCaughtUp';
 import { FeedHeader } from './FeedHeader';
@@ -29,41 +29,21 @@ type FeedScreenProps = {
  */
 export function FeedScreen({ links }: FeedScreenProps) {
   const router = useRouter();
-  // 지금 번치는 내 정보의 기본 번치(번치 홈과 같은 기준). 받기 전은 undefined, 소속 번치가 없으면 null
-  const { data: profile, isPending: viewerPending } = useQuery(myProfileQueryOptions());
-  const viewer: FeedViewer | undefined =
-    profile === undefined
-      ? undefined
-      : profile.bunch
-        ? { bunchId: profile.bunch.id, name: profile.bunch.name, imageSrc: profile.bunch.imageSrc }
-        : null;
+  const { viewer, viewerPending, asBunch } = useFeedViewer();
   const reducedMotion = useReducedMotion();
   const topRef = useRef<HTMLDivElement>(null);
   // 경과 시간은 브라우저에서만 계산(서버 렌더와 시계·시간대가 달라 글자가 어긋나지 않게)
   const now = useClientNow();
-  // 좋아요는 화면에서만 바꿈(서버 반영·되돌리기는 구현 단위 3)
-  const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const likes = useLikeToggle(viewer);
+
+  useScrollInHistory(topRef);
+  useHoldScrollOnLeave(topRef);
 
   // 소속 번치가 없으면 공개 구간만(기능명세서 6.1.7)
   const following = viewer === null ? [] : feedFixture.following;
   const publicBundles = feedFixture.public;
 
-  const toggleLike = (bundle: FeedBundle) => {
-    // 번치 유무를 모르면 누가 좋아요하는지 정할 수 없어 바꾸지 않음. 받는 중은 조용히, 실패는 안내
-    if (viewer === undefined) {
-      if (!viewerPending) toast(text.actionFailed, { bottomOffset: FEED_TOAST_OFFSET });
-      return;
-    }
-    if (viewer === null) {
-      toast(text.joinRequired, { bottomOffset: FEED_TOAST_OFFSET });
-      return;
-    }
-    setLiked((current) => ({ ...current, [bundle.id]: !(current[bundle.id] ?? bundle.liked) }));
-  };
-
   const renderCard = (bundle: FeedBundle) => {
-    // 소속 번치가 없으면 이전에 화면에서 바꾼 좋아요를 보이지 않음
-    const isLiked = viewer === null ? bundle.liked : (liked[bundle.id] ?? bundle.liked);
     const ownBunch = viewer?.bunchId === bundle.bunch.id;
     return (
       <li key={bundle.id}>
@@ -81,9 +61,9 @@ export function FeedScreen({ links }: FeedScreenProps) {
           location={bundle.location}
           date={bundle.date}
           onPhotoClick={() => router.push(FEED_PATHS.bundle(bundle.id))}
-          liked={isLiked}
-          likeCount={bundle.likeCount + (isLiked === bundle.liked ? 0 : isLiked ? 1 : -1)}
-          onLike={() => toggleLike(bundle)}
+          liked={likes.isLiked(bundle)}
+          likeCount={likes.likeCount(bundle)}
+          onLike={() => asBunch(() => likes.toggle(bundle))}
           commentCount={bundle.commentCount}
           onComment={() => router.push(FEED_PATHS.bundleComments(bundle.id))}
         />

@@ -52,7 +52,7 @@ export const BundleAuthorInfo = (props: BundleAuthorInfoProps) => {
             className="outline-border-tertiary outline -outline-offset-1"
           />
           <div className="gap-s2 flex min-w-0 flex-1 flex-col items-start">
-            <ColorBadge size="md" color="gray" className="px-padding-p3 py-padding-p1">
+            <ColorBadge size="sm" color="gray">
               {badge}
             </ColorBadge>
             <p className="px-padding-p2 typography-caption-1-medium text-text-tertiary w-full truncate">
@@ -90,7 +90,7 @@ export const BundleAuthorInfo = (props: BundleAuthorInfoProps) => {
           className="outline-border-tertiary outline -outline-offset-1"
         />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="typography-body-2-semi-bold text-text-primary -mb-0.5 truncate">
+          <span className="typography-body-2-semibold text-text-primary -mb-0.5 truncate">
             {bunchName}
           </span>
           {/* Figma 시간 줄은 글자 16에 높이 18 */}

@@ -1,0 +1,14 @@
+import { describe, expect, it } from 'vitest';
+import { withRo } from './josa';
+
+describe('withRo', () => {
+  it.each([
+    ['여행가조', '여행가조로'],
+    ['퇴근런클럽', '퇴근런클럽으로'],
+    ['서울', '서울로'],
+    ['BUNCH', 'BUNCH로'],
+    ['123', '123로'],
+  ])('%s → %s', (word, expected) => {
+    expect(withRo(word)).toBe(expected);
+  });
+});

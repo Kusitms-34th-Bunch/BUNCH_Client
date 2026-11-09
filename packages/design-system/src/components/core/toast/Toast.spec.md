@@ -69,15 +69,13 @@
 
 ## Styling과 의존성
 
-- Token·기존 primitive: 배경 `bg-surface-inversed/60`, 글자 `text-text-inversed`·`typography-body-3-regular`, 아이콘 색 `text-system-success-fg`, 여백 `p4`·`p6`·`s5`·`s8`, radius `r6`. 액션은 `Button`, 아이콘은 `FillCircleCheckLargeIcon`(고정 크기 export).
+- Token·기존 primitive: 배경 `bg-surface-inversed-alpha-60`, 글자 `text-text-inversed`·`typography-body-3-regular`, 아이콘 색 `text-icon-success`, 여백 `p4`·`p6`·`s5`·`s8`, radius `r6`. 액션은 `Button`, 아이콘은 `FillCircleCheckLargeIcon`(고정 크기 export).
 - 허용되는 dependency: `sonner`. 이 컴포넌트에서만 쓴다.
 - `'use client'`: sonner를 import하는 `Toaster.tsx`와 `showToast.tsx`가 client 모듈이다. `Toast.tsx`는 순수 표시 컴포넌트라 지시어가 없다. 서버 컴포넌트(root layout 등)는 `<Toaster />`를 그대로 import해도 된다(`apps/web` 빌드로 확인).
 - Storybook state matrix: 네 가지 형태를 한 `Matrix` story에 모으고, 긴 글자 story와 실제 `toast()`를 눌러 보는 `Playground` story(스냅샷 제외)를 둔다.
 
 ## 확인할 항목
 
-- 배경 토큰 (제안): Figma는 `surface/surface-inversed-alpha-60`(#25282d, 60%)을 쓰는데 `tokens.json`에 이 이름이 없다. 같은 색이 나오도록 `surface-inversed`에 투명도 60%를 적용했다. 디자이너가 토큰을 `design-token` 브랜치로 내보내면 그 토큰으로 바꾼다.
-- 성공 아이콘 색 (미정): Figma의 `system-success-fg`는 #00dd4b인데 저장소의 같은 이름 토큰은 `green-700`(#00a638)이다. 토큰이 아직 동기화되지 않은 것으로 보이며, 하드코딩하지 않고 저장소 토큰을 쓴다. 화면 색이 Figma보다 어둡게 보일 수 있다. 디자이너 확인.
 - 지속 시간·모션 (확정, 2026-10-30): Figma 공통 모션(`1962:18333`)의 토스트 모션을 따른다. 노출은 단순 완료 안내 3초, 액션 버튼 포함 5초, 등장·퇴장은 Smart animation·`0, 0, 0.35, 1`·350ms·5px 이동·투명도 0%↔100%다. 이전(2026-10-19)에는 화면설계서(등장·퇴장 200ms, 노출 3,000ms)와 기획 명세 2.4.3("5초") 사이에서 3초로 통일했는데, 디자이너의 공통 모션이 기준이 되면서 액션이 있는 토스트는 5초로 돌아왔다. 퇴장은 sonner 제거 시점(200ms) 한계로 200ms에 끝난다.
 - 표시 위치 (확정): 기획 명세에서 "화면 아래쪽", 오류 토스트는 "하단 버튼 바로 위"라고 했다. 아래쪽 가운데를 기본으로 하고, 화면 하단에 고정 버튼이 있을 때의 간격은 호출하는 화면이 `bottomOffset`으로 정한다(2026-10-18, 초대 화면에서 필요). 폭도 Figma 초대 화면은 화면 폭 가까이 펴져 있어 `fullWidth`로 연다. Figma의 좌우 여백은 왼쪽 19·오른쪽 12로 비대칭이라 목록 폭(좌우 16px)을 쓴다.
 - 동시 개수 (제안): 한 번에 하나, 새 토스트가 이전 것을 대체. 쌓아 보여줄 필요가 있는지 기획 확인.

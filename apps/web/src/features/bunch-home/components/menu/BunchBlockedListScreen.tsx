@@ -57,7 +57,7 @@ export function BunchBlockedListScreen({
               focusRef.current = node;
             }}
             tabIndex={-1}
-            className="typography-body-3-semi-bold text-text-tertiary gap-s3 flex focus:outline-none"
+            className="typography-body-3-semibold text-text-tertiary gap-s3 flex focus:outline-none"
           >
             <span>차단된 번치</span>
             {/* 간격은 gap이라 낭독용 띄어쓰기만 따로 둠 */}

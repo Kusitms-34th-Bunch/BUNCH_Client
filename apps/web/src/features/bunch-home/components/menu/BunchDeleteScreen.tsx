@@ -70,7 +70,7 @@ export function BunchDeleteScreen({
           <PageHeader title={BUNCH_HOME_MESSAGES.deleteTitle(bunchName)} />
           <div className="gap-s6 px-padding-p8 flex flex-col">
             <section className="bg-surface-secondary rounded-r5 p-padding-p8 gap-s3 flex flex-col">
-              <h2 className="typography-body-2-semi-bold text-text-primary">삭제되는 항목</h2>
+              <h2 className="typography-body-2-semibold text-text-primary">삭제되는 항목</h2>
               <ul className="typography-body-3-regular text-text-tertiary ps-s10 list-disc">
                 {BUNCH_HOME_MESSAGES.deletedItems.map((item) => (
                   <li key={item}>{item}</li>
@@ -117,17 +117,17 @@ export function BunchDeleteScreen({
               </p>
             </form>
             <section className="bg-surface-secondary rounded-r5 pt-padding-p6 pb-padding-p8 px-padding-p8 gap-s4 flex flex-col">
-              <h2 className="typography-body-2-semi-bold text-text-secondary">삭제할 번치 정보</h2>
+              <h2 className="typography-body-2-semibold text-text-secondary">삭제할 번치 정보</h2>
               <dl className="typography-body-3-regular text-text-tertiary gap-s2 flex flex-col">
                 <div className="gap-s2 flex">
                   <dt className="shrink-0 after:content-[':']">번치명</dt>
-                  <dd className="typography-body-3-semi-bold min-w-0 wrap-break-word">
+                  <dd className="typography-body-3-semibold min-w-0 wrap-break-word">
                     {bunchName}
                   </dd>
                 </div>
                 <div className="gap-s2 flex">
                   <dt className="shrink-0 after:content-[':']">소속 멤버</dt>
-                  <dd className="typography-body-3-semi-bold min-w-0 wrap-break-word">
+                  <dd className="typography-body-3-semibold min-w-0 wrap-break-word">
                     {memberNames.join(', ')}
                   </dd>
                 </div>

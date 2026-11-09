@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { LineTrashcanSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
-import { ProfileImage } from '../profileImage';
+import { BundleParticipants } from '../bundleParticipants';
 
 export type BundleCardMember = {
   /** 멤버 이름(목록 key와 숨은 인원 수 계산에 사용) */
@@ -15,10 +15,8 @@ export type BundleCardProps = Omit<ComponentProps<'div'>, 'children' | 'title'> 
   title: string;
   /** 번들 대표 사진 주소 */
   imageSrc: string;
-  /** 참여 멤버. 앞에서부터 `maxVisibleMembers`명까지 얼굴 표시 */
+  /** 참여 멤버. 앞의 3명 얼굴과 넘는 인원 「외 N명」 표시 */
   members: BundleCardMember[];
-  /** 얼굴을 보여 줄 최대 인원(기본 8명) */
-  maxVisibleMembers?: number | undefined;
   /** 카드를 눌렀을 때(번들 열기) */
   onCardClick: () => void;
   /** 삭제 버튼을 눌렀을 때. 없으면 삭제 버튼 숨김 */
@@ -35,17 +33,12 @@ export const BundleCard = ({
   title,
   imageSrc,
   members,
-  maxVisibleMembers = 8,
   onCardClick,
   onDelete,
   deleteLabel,
   className,
   ...props
 }: BundleCardProps) => {
-  const visibleCount = Number.isFinite(maxVisibleMembers)
-    ? Math.max(0, Math.floor(maxVisibleMembers))
-    : 8;
-
   return (
     <div
       {...props}
@@ -96,19 +89,10 @@ export const BundleCard = ({
           <span className="block truncate">{title}</span>
           {members.length > 0 ? <span className="sr-only">, 참여자 {members.length}명</span> : null}
         </button>
-        {visibleCount > 0 && members.length > 0 ? (
-          // 얼굴은 장식(인원 수는 카드 버튼의 숨은 글자로 전달), 8px씩 겹치고 좁은 폭에서는 잘림
-          <div aria-hidden="true" className="flex overflow-hidden">
-            {members.slice(0, visibleCount).map((member, index) => (
-              <ProfileImage
-                key={`${member.name}-${index}`}
-                src={member.imageSrc}
-                size="XXS"
-                className={cn('border-border-tertiary border', index > 0 && '-ml-2')}
-              />
-            ))}
-          </div>
-        ) : null}
+        {/* 인원 수는 카드 버튼의 숨은 글자로 전달해 장식으로 숨김(Figma `Member Avatar Group`) */}
+        <div aria-hidden="true" className="flex">
+          <BundleParticipants members={members} />
+        </div>
       </div>
     </div>
   );

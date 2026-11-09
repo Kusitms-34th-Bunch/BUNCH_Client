@@ -8,6 +8,7 @@ const objectParticle = (word: string) => {
 };
 
 export const BUNCH_HOME_MESSAGES = {
+  bundleMemberOnly: '멤버 공개',
   switched: (bunchName: string) => `${bunchName} 번치로 전환했어요.`,
   completedEmptyTitle: '추억은 많은데, 번들은 아직!',
   draftEmptyTitle: '아직 작성 중인 번들이 없어요',

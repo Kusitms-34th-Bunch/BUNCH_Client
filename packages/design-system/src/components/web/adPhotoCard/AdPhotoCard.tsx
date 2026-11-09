@@ -193,7 +193,7 @@ export const AdPhotoCard = (props: AdPhotoCardProps) => {
           <ul className="gap-s3 flex flex-wrap">
             {tags.map((tag, index) => (
               <li key={`${tag}-${index}`}>
-                <ColorBadge size="md" color="gray" className="px-padding-p3 py-padding-p1">
+                <ColorBadge size="sm" color="gray">
                   {tag}
                 </ColorBadge>
               </li>

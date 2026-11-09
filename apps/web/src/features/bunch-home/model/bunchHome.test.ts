@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toBunchHomeDetail, type Home } from './bunchHome';
+import { publishedBundlesPageSchema, toBunchHomeDetail, type Home } from './bunchHome';
 
 const home = (bunch: Partial<Home['bunch']> = {}): Home => ({
   bunch: { id: 1, name: '퇴근런클럽', characterType: 'TYPE_2', visibility: 'PUBLIC', ...bunch },
@@ -23,6 +23,31 @@ const detail = (bunch?: Partial<Home['bunch']>) =>
   toBunchHomeDetail(home(bunch), empty, { items: [] }, []);
 
 describe('toBunchHomeDetail', () => {
+  it('공개 범위가 PRIVATE인 번들만 멤버 공개로 표시하고 값이 없거나 모르는 값이면 표시하지 않는다', () => {
+    const item = (id: number, visibility?: string) => ({
+      id,
+      bunchId: 1,
+      title: `번들 ${id}`,
+      visibility,
+    });
+    const detail = toBunchHomeDetail(
+      home(),
+      { ...empty, items: [item(1, 'PRIVATE'), item(2, 'PUBLIC'), item(3), item(4, 'FOLLOWERS')] },
+      { items: [] },
+      [],
+    );
+
+    expect(detail?.completedBundles.map((bundle) => bundle.memberOnly)).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ]);
+    expect(
+      publishedBundlesPageSchema.safeParse({ ...empty, items: [item(4, 'FOLLOWERS')] }).success,
+    ).toBe(true);
+  });
+
   it('번치 성격을 그대로 넘기고 대표 이미지가 없으면 성격별 기본 이미지를 쓴다', () => {
     expect(detail()).toMatchObject({
       characterType: 'TYPE_2',

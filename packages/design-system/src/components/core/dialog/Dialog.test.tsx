@@ -176,6 +176,8 @@ describe('Dialog', () => {
       avatar.compareDocumentPosition(screen.getByRole('heading')) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    // Figma 내용 폭 273이라 좌우 19
+    expect(screen.getByRole('heading').className).toContain('px-4.75');
   });
 
   it('shows extra content below the description and keeps cancel focused first (Label)', async () => {

@@ -50,8 +50,8 @@
 | Figma     | 값                                               | 토큰·클래스                                                                    |
 | --------- | ------------------------------------------------ | ------------------------------------------------------------------------------ |
 | 프로필    | 34, 테두리 1 `#EAEAEA`                           | `ProfileImage size="XS"`, `outline outline-border-tertiary -outline-offset-1`  |
-| 닉네임    | Body-3-SemiBold 14/21 `#25282D`                  | `typography-body-3-semi-bold text-text-secondary`                              |
-| 배지      | Caption-1-Regular 12/16, 좌우 6·위아래 2, 반경 6 | `ColorBadge size="md"` + `px-padding-p3 py-padding-p1`                         |
+| 닉네임    | Body-3-Semibold 14/21 `#25282D`                  | `typography-body-3-semibold text-text-secondary`                               |
+| 배지      | Caption-1-Regular 12/16, 좌우 6·위아래 2, 반경 6 | `ColorBadge size="sm"`                                                         |
 | 날짜      | Caption-1-Regular `#969AA0`                      | `typography-caption-1-regular text-text-quaternary`                            |
 | 본문      | Body-3-Regular 14/21 `#25282D`                   | `typography-body-3-regular text-text-secondary whitespace-pre-line`            |
 | 답글 버튼 | Body-4-Regular 13/18 `#969AA0`, 아이콘 16        | `typography-body-4-regular text-text-quaternary`, `LineMessageCircleSmallIcon` |
@@ -62,7 +62,6 @@
 
 ## 확인할 항목
 
-- 배지 여백: `ColorBadge` `md`의 기본 여백(좌우 8·위아래 4)이 Figma(좌우 6·위아래 2)와 달라 className으로 맞췄다.
 - 회색 글자 대비 2.8:1(Figma 값).
 - 누를 수 있는 회색 요소(더보기·답글 버튼)의 대비가 낮다. 눌러야 하는 요소만이라도 `tertiary` 계열로 올릴지 디자이너 확인.
 
