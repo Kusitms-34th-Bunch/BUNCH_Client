@@ -266,6 +266,10 @@ export function DraftPhotoCaption({
       />
       <RemovePhotoDialogs
         kind={removal.removeDialog?.kind}
+        picked={
+          (photos.find((photo) => photo.id === removal.removeDialog?.photoId)?.pickedBy?.length ??
+            0) > 0
+        }
         onClose={removal.closeDialog}
         onConfirm={removal.confirmRemove}
       />

@@ -235,6 +235,9 @@ export function DraftPhotoViewer({
       {saving ? <PageLoading /> : null}
       <RemovePhotoDialogs
         kind={removeDialog?.kind}
+        picked={
+          (photos.find((photo) => photo.id === removeDialog?.photoId)?.pickedBy?.length ?? 0) > 0
+        }
         onClose={() => setRemoveDialog(undefined)}
         onConfirm={() => {
           // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 다시 확인

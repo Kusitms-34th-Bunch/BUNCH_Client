@@ -20,7 +20,7 @@ describe('BundlePhotoEditor', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
-  it('기본은 330px(m) 정사각에 반경 r4이고 s는 300px이다', () => {
+  it('기본은 330px(m) 정사각에 반경 r4이고 xs는 130px이다', () => {
     const { container, rerender } = renderPhoto();
     const frame = container.firstElementChild as HTMLElement;
 
@@ -29,9 +29,9 @@ describe('BundlePhotoEditor', () => {
     expect(frame.classList.contains('rounded-r4')).toBe(true);
     expect(frame.classList.contains('overflow-hidden')).toBe(true);
 
-    rerender(<BundlePhotoEditor src="photo.png" alt="사진" size="s" />);
+    rerender(<BundlePhotoEditor src="photo.png" alt="사진" size="xs" />);
 
-    expect((container.firstElementChild as HTMLElement).classList.contains('w-75')).toBe(true);
+    expect((container.firstElementChild as HTMLElement).classList.contains('w-32.5')).toBe(true);
     expect((container.firstElementChild as HTMLElement).classList.contains('w-82.5')).toBe(false);
   });
 

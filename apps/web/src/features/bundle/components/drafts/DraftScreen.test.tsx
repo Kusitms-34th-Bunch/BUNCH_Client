@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
@@ -32,6 +32,7 @@ const actions = {
   removeMember: vi.fn(),
   setPhotoCaption: vi.fn(),
   removePhoto: vi.fn(),
+  togglePick: vi.fn(),
   movePhoto: vi.fn(),
   replacePhotos: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
@@ -48,6 +49,7 @@ type Options = {
   viewer?: DraftViewer;
   saveStatus?: 'saved' | 'saving';
   offline?: boolean;
+  onImportFromBunchBox?: () => void;
 };
 
 // 초안은 공개 범위를 고르지 않은 채 시작하므로, 업로드할 수 있는 상태를 기본으로 두려고 공개를 골라 둠
@@ -58,6 +60,7 @@ const screenElement = ({
   viewer = creator,
   saveStatus = 'saved',
   offline = false,
+  onImportFromBunchBox,
 }: Options = {}) => (
   <DraftScreen
     draft={draft}
@@ -70,6 +73,7 @@ const screenElement = ({
     onLeave={onLeave}
     onRetry={onRetry}
     onPublish={onPublish}
+    onImportFromBunchBox={onImportFromBunchBox}
   />
 );
 
@@ -90,10 +94,14 @@ describe('DraftScreen 구성', () => {
     expect(screen.getByText('참여 멤버')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue(draftFixture.title);
     expect(screen.getAllByRole('img', { name: /한강에서 달리는 사람들/ })).toHaveLength(3);
-    expect(screen.getByText(draftFixture.photos[0]!.caption)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: BUNDLE_MESSAGES.pickLink })).toHaveAttribute(
+      'href',
+      `/bunch/drafts/${draftFixture.id}/pick`,
+    );
+    expect(screen.getByText(BUNDLE_MESSAGES.commentNotice)).toBeInTheDocument();
     expect(screen.getByText('서울특별시 여의도동')).toBeInTheDocument();
     expect(screen.getByText('날짜 추가')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '공개' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '전체 공개' })).toBeChecked();
     expect(screen.getByRole('radio', { name: '멤버 공개' })).not.toBeChecked();
     expect(screen.getByRole('button', { name: '나가기' })).toBeInTheDocument();
   });
@@ -103,23 +111,56 @@ describe('DraftScreen 구성', () => {
     expect(within(screen.getByRole('banner')).getByRole('status')).toHaveTextContent('저장 중');
   });
 
-  it('캡션이 없는 사진은 「캡션 추가...」를 보여 준다', () => {
+  it('사진 줄의 X는 확인 창을 거쳐 사진을 빼고, 픽한 사진이면 픽도 지워진다고 알린다', async () => {
+    const [first, ...rest] = draftFixture.photos;
     renderScreen({
-      draft: {
-        ...draftFixture,
-        photos: [
-          {
-            id: 'p',
-            src: '/p.jpg',
-            alt: '캡션 없는 사진',
-            caption: '',
-            takenAt: null,
-            uploaderId: 'jiye',
-          },
-        ],
-      },
+      draft: { ...draftFixture, photos: [{ ...first!, pickedBy: ['gyeongjin'] }, ...rest] },
     });
-    expect(screen.getByText(BUNDLE_MESSAGES.captionPlaceholder)).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
+    expect(screen.getByText(BUNDLE_MESSAGES.removePickedDescription)).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removeConfirmConfirm }),
+    );
+
+    expect(actions.removePhoto).toHaveBeenCalledWith(first!.id);
+    // 지운 자리에 있는 칸의 첫 버튼으로 초점이 옮겨 감(이 렌더는 호출만 기록하고 사진 열기 버튼이 없어 X가 첫 버튼)
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('확인 창이 열린 사이 한 장만 남으면 빼지 않고 안내 창으로 바꾼다', async () => {
+    const { rerender } = renderScreen();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
+    rerender(
+      screenElement({
+        draft: { ...publishable, photos: draftFixture.photos.slice(0, 1) },
+      }),
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removeConfirmConfirm }),
+    );
+
+    expect(actions.removePhoto).not.toHaveBeenCalled();
+    expect(screen.getByText(BUNDLE_MESSAGES.removePhotoBlockedTitle)).toBeInTheDocument();
+  });
+
+  it('추가 칸은 시트를 열고 사진함을 고르면 사진 추가로 간다', async () => {
+    const onImportFromBunchBox = vi.fn();
+    renderScreen({ onImportFromBunchBox });
+
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
+    await userEvent.click(await screen.findByRole('button', { name: /사진함/ }));
+
+    expect(onImportFromBunchBox).toHaveBeenCalledTimes(1);
   });
 
   it('연결이 끊기면 배너를 보이고 「재시도」가 동작한다', async () => {
@@ -347,7 +388,7 @@ describe('입력', () => {
   it('공개 범위는 처음에는 아무것도 골라져 있지 않다', () => {
     renderScreen({ draft: draftFixture });
 
-    expect(screen.getByRole('radio', { name: '공개' })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: '전체 공개' })).not.toBeChecked();
     expect(screen.getByRole('radio', { name: '멤버 공개' })).not.toBeChecked();
   });
 
@@ -525,7 +566,7 @@ describe('다른 멤버가 편집 중인 영역', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('가운데 사진을 편집 중이면 캡션 자리에 편집 중 표시를 보이고 누르면 안내한다', async () => {
+  it('다른 멤버가 편집 중인 사진은 X를 눌러도 빼지 못하고 안내한다', async () => {
     renderScreen({
       draft: {
         ...draftFixture,
@@ -536,30 +577,12 @@ describe('다른 멤버가 편집 중인 영역', () => {
       },
     });
 
-    expect(screen.queryByText(draftFixture.photos[0]!.caption)).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: '경진님이 편집 중' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
+
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
-  });
-
-  it('다른 사진을 편집 중이면 가운데 사진의 캡션 자리는 그대로이고, 그 사진이 가운데로 오면 편집 중 표시가 뜬다', () => {
-    renderScreen({
-      draft: {
-        ...draftFixture,
-        editing: {
-          photoMemberIds: ['gyeongjin'],
-          photoEditors: { [draftFixture.photos[1]!.id]: ['gyeongjin'] },
-        },
-      },
-    });
-
-    // 첫 사진이 가운데라 자기 캡션을 그대로 보이고, 편집 중 버튼은 캡션 자리에 없음
-    expect(screen.getByText(draftFixture.photos[0]!.caption)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '경진님이 편집 중' })).not.toBeInTheDocument();
-
-    // 편집 중인 두 번째 사진이 가운데로 오면 캡션 자리에 편집 중 표시
-    const list = screen.getByAltText(draftFixture.photos[0]!.alt).closest('ul')!;
-    fireEvent.scroll(list, { target: { scrollLeft: 312 } });
-    expect(screen.getByRole('button', { name: '경진님이 편집 중' })).toBeInTheDocument();
+    expect(actions.removePhoto).not.toHaveBeenCalled();
   });
 
   it('다른 멤버가 위치·날짜를 편집 중이면 그 멤버의 프로필만 보인다', () => {

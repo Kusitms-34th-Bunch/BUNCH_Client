@@ -9,6 +9,8 @@ export const BUNDLE_PATHS = {
   photo: (draftId: string, photoId: string) => `/bunch/drafts/${draftId}/photos/${photoId}`,
   /** 사진 추가(사진함에서 고르기) 화면 */
   photoAdd: (draftId: string) => `/bunch/drafts/${draftId}/photos/add`,
+  /** 픽하기 화면 */
+  pick: (draftId: string) => `/bunch/drafts/${draftId}/pick`,
   /** 사진 크게 보기 */
   photoViewer: (draftId: string, photoId: string) =>
     `/bunch/drafts/${draftId}/photos/${photoId}/viewer`,
@@ -18,5 +20,6 @@ export const BUNDLE_PATHS = {
     members: '/bunch/drafts/members',
     photo: '/bunch/drafts/photo',
     photoAdd: '/bunch/drafts/photo-add',
+    pick: '/bunch/drafts/pick',
   },
 } as const;

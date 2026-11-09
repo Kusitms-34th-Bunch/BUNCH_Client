@@ -206,6 +206,19 @@ describe('DraftPhotoViewer ⋯ 메뉴', () => {
 });
 
 describe('DraftPhotoViewer 삭제', () => {
+  it('멤버가 픽한 사진은 픽도 함께 지워진다고 알린다', async () => {
+    renderViewer({
+      draft: {
+        ...draftFixture,
+        photos: draftFixture.photos.map((photo) => ({ ...photo, pickedBy: ['jiye'] })),
+      },
+    });
+
+    await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
+
+    expect(screen.getByText(BUNDLE_MESSAGES.removePickedDescription)).toBeInTheDocument();
+  });
+
   it('확인 창에서 「삭제하기」를 누르면 빼고 이웃 사진으로 이어서 본다', async () => {
     renderViewer({ initialPhotoId: 'draft-photo-2' });
 

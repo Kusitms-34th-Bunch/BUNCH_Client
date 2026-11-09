@@ -1,0 +1,90 @@
+/* 픽 모션(Figma `픽하기_모션` `5699:103708`): 3.4초 시연 타임라인에서 탭 이후 구간만 한 번 재생 */
+.photoPulse {
+  animation: photo-pulse 1050ms linear;
+}
+
+.photoDim {
+  animation: photo-dim 1050ms linear;
+}
+
+.buttonPress {
+  animation: button-press 350ms ease-out;
+}
+
+.countIn {
+  animation: count-in 200ms ease-out 1250ms both;
+}
+
+.chipPop {
+  animation: chip-pop 340ms ease-out 1250ms both;
+}
+
+.chipShift {
+  animation: chip-shift 250ms ease-in-out 1070ms both;
+}
+
+@keyframes photo-pulse {
+  12.4% {
+    transform: scale(0.985);
+  }
+  33.3%,
+  61.9% {
+    transform: scale(1);
+  }
+  71.4% {
+    transform: scale(0.99);
+  }
+}
+
+@keyframes photo-dim {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  12.4%,
+  60% {
+    opacity: 1;
+  }
+}
+
+@keyframes button-press {
+  29% {
+    transform: scale(0.96);
+  }
+}
+
+@keyframes count-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes chip-pop {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  59% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+/* 칩이 늘며 가운데 정렬로 밀린 자리에서 새 칩 자리를 내주듯 이동 */
+@keyframes chip-shift {
+  from {
+    transform: translateX(-23.5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photoPulse,
+  .photoDim,
+  .buttonPress,
+  .countIn,
+  .chipPop,
+  .chipShift {
+    animation: none;
+  }
+}

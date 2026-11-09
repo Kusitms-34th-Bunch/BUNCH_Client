@@ -24,15 +24,15 @@ describe('AddBundlePhotoEditor', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('기본은 330px(m) 정사각, s는 300px이다', () => {
+  it('기본은 330px(m) 정사각, xs는 130px이다', () => {
     const { rerender } = render(<AddBundlePhotoEditor />);
 
     expect(screen.getByRole('button').classList.contains('w-82.5')).toBe(true);
     expect(screen.getByRole('button').classList.contains('aspect-square')).toBe(true);
 
-    rerender(<AddBundlePhotoEditor size="s" />);
+    rerender(<AddBundlePhotoEditor size="xs" />);
 
-    expect(screen.getByRole('button').classList.contains('w-75')).toBe(true);
+    expect(screen.getByRole('button').classList.contains('w-32.5')).toBe(true);
     expect(screen.getByRole('button').classList.contains('w-82.5')).toBe(false);
   });
 

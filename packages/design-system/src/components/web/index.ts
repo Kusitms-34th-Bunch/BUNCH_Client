@@ -19,6 +19,7 @@ export * from './bundleInfo';
 export * from './bundleParticipants';
 export * from './bundlePhoto';
 export * from './bundlePhotoEditor';
+export * from './bundlePickPhoto';
 export * from './bundleTextInput';
 export * from './bundleTitle';
 export * from './calendar';

@@ -462,6 +462,23 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     ]);
   });
 
+  it('내 픽을 넣고 빼며 다른 사진에는 영향이 없다', async () => {
+    const { result } = await renderReady();
+    const state = ready(result.current.state);
+    const [first, second] = state.draft.photos;
+
+    act(() => result.current.actions.togglePick(first!.id));
+    let photos = ready(result.current.state).draft.photos;
+    expect(photos.find((photo) => photo.id === first!.id)?.pickedBy).toEqual([
+      state.viewer.memberId,
+    ]);
+    expect(photos.find((photo) => photo.id === second!.id)?.pickedBy).toEqual([]);
+
+    act(() => result.current.actions.togglePick(first!.id));
+    photos = ready(result.current.state).draft.photos;
+    expect(photos.find((photo) => photo.id === first!.id)?.pickedBy).toEqual([]);
+  });
+
   it('사진 순서를 옮기면 서버 순서가 바뀐다', async () => {
     const { id, result } = await renderReady();
     const photoId = ready(result.current.state).draft.photos[0]!.id;

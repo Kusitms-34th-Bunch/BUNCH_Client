@@ -269,12 +269,6 @@ const rules: SsgoiTransitionRule[] = [
   },
   {
     from: BUNCH_HOME_PATHS.transitionIds.otherBunch,
-    to: BUNCH_HOME_PATHS.notifications,
-    bidirectional: true,
-    transition: bunchDrill,
-  },
-  {
-    from: BUNCH_HOME_PATHS.transitionIds.otherBunch,
     to: BUNCH_HOME_PATHS.transitionIds.otherBunchMembers,
     bidirectional: true,
     transition: bunchDrill,
@@ -431,7 +425,19 @@ const rules: SsgoiTransitionRule[] = [
     transition,
   },
   {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.pick,
+    bidirectional: true,
+    transition,
+  },
+  {
     from: BUNDLE_PATHS.transitionIds.photo,
+    to: BUNDLE_PATHS.transitionIds.photoAdd,
+    bidirectional: true,
+    transition: bundleSlide,
+  },
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.photoAdd,
     bidirectional: true,
     transition: bundleSlide,

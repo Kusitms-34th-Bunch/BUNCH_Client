@@ -17,14 +17,22 @@ type DraftVisibilityProps = {
   onDenied: () => void;
 };
 
-const OPTIONS: readonly { value: Visibility; label: string }[] = [
-  { value: 'members', label: BUNDLE_MESSAGES.visibilityMembers },
-  { value: 'public', label: BUNDLE_MESSAGES.visibilityPublic },
+const OPTIONS: readonly { value: Visibility; title: string; description: string }[] = [
+  {
+    value: 'public',
+    title: BUNDLE_MESSAGES.visibilityPublic,
+    description: BUNDLE_MESSAGES.visibilityPublicDescription,
+  },
+  {
+    value: 'members',
+    title: BUNDLE_MESSAGES.visibilityMembers,
+    description: BUNDLE_MESSAGES.visibilityMembersDescription,
+  },
 ];
 
 /**
- * 공개 범위: 「멤버 공개」·「공개」 중 하나(처음에는 고르지 않은 상태이고, 한 번 고르면 바꿀 수만 있고 해제는 없음)
- * 제목 옆 안내 아이콘을 누르면 「공개」의 의미를 알려 주는 툴팁(Figma `2255:43328`)이 아이콘 위에 열리고,
+ * 공개 범위: 「전체 공개」·「멤버 공개」 중 하나(처음에는 고르지 않은 상태이고, 한 번 고르면 바꿀 수만 있고 해제는 없음)
+ * 제목 옆 안내 아이콘을 누르면 공개의 의미를 알려 주는 툴팁(Figma `2255:43328`)이 아이콘 위에 열리고,
  * 아이콘을 다시 누르거나 바깥을 누르거나 Esc를 누르면 닫힘
  */
 export function DraftVisibility({ value, editable, onChange, onDenied }: DraftVisibilityProps) {
@@ -103,18 +111,18 @@ export function DraftVisibility({ value, editable, onChange, onDenied }: DraftVi
         role="radiogroup"
         aria-labelledby="draft-visibility-title"
         aria-required="true"
-        className="gap-s4 flex"
+        className="gap-s2 flex flex-col"
       >
         {OPTIONS.map((option) => (
           <RadioCard
             key={option.value}
             name="draft-visibility"
             value={option.value}
+            title={option.title}
+            description={option.description}
             checked={value === option.value}
             onChange={() => (editable ? onChange(option.value) : onDenied())}
-          >
-            {option.label}
-          </RadioCard>
+          />
         ))}
       </div>
     </section>

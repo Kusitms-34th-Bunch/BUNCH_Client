@@ -60,7 +60,7 @@ export function DraftPlaceDate({
   }));
 
   return (
-    <section className="pt-padding-p7 px-padding-p8 gap-s3 flex flex-col">
+    <section className="pt-s13 px-padding-p8 gap-s3 flex flex-col">
       {draft.locations.length === 0 ? (
         <SelectionField
           label={BUNDLE_MESSAGES.locationAdd}

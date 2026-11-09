@@ -266,6 +266,21 @@ describe('DraftPhotoCaption 사진 빼기', () => {
     expect(actions.removePhoto).toHaveBeenCalledWith('draft-photo-2');
   });
 
+  it('멤버가 픽한 사진은 픽도 함께 지워진다고 알린다', async () => {
+    renderCaption({
+      draft: {
+        ...draftFixture,
+        photos: draftFixture.photos.map((photo) =>
+          photo.id === 'draft-photo-2' ? { ...photo, pickedBy: ['jiye'] } : photo,
+        ),
+      },
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: '2번째 사진 빼기' }));
+
+    expect(screen.getByText(BUNDLE_MESSAGES.removePickedDescription)).toBeInTheDocument();
+  });
+
   it('캡션이 있는 사진도 같은 확인 창을 거쳐 「삭제하기」를 눌러야 뺀다', async () => {
     renderCaption();
 

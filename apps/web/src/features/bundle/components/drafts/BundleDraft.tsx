@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
+import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -10,7 +11,9 @@ import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useLeaveDraft, useRedirectMissingDraft } from '../../hooks/useDraftExit';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { usePhotoGalleryImport } from '../../hooks/usePhotoGalleryImport';
 import { isDraftCreator } from '../../lib/permissions';
+import { markPhotoAddEntry } from '../../lib/photoAddEntry';
 import { DraftScreen } from './DraftScreen';
 
 /**
@@ -24,6 +27,10 @@ export function BundleDraft() {
   const { online, recheck } = useOnlineStatus();
   const draftId = state.kind === 'ready' ? state.draft.id : undefined;
   const leaveDraft = useLeaveDraft(draftId);
+  const { state: boxState } = usePhotoBox();
+  const importFromGallery = usePhotoGalleryImport(
+    boxState.kind === 'ready' ? boxState.data.photos.length : 0,
+  );
 
   useRedirectMissingDraft(state.kind === 'missing');
 
@@ -51,6 +58,11 @@ export function BundleDraft() {
       }
       onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}
       onOpenPhoto={(photoId) => router.push(BUNDLE_PATHS.photo(draftId, photoId))}
+      onImportFromBunchBox={() => {
+        markPhotoAddEntry();
+        router.push(BUNDLE_PATHS.photoAdd(draftId));
+      }}
+      onImportFromGallery={importFromGallery}
     />
   );
 }

@@ -104,6 +104,8 @@ export type DraftActions = {
   setPhotoCaption: (_photoId: string, _caption: string) => void;
   /** 사진을 번들에서 뺌(1장이면 무시, 캡션도 함께 사라짐). 서버 반영은 후속이라 이 화면에서만 바뀜 */
   removePhoto: (_photoId: string) => void;
+  /** 내 픽을 넣거나 뺌. 서버 필드가 없어 초안을 보는 동안만 유지 */
+  togglePick: (_photoId: string) => void;
   /** 사진을 다른 자리(0부터)로 옮김(캡션은 사진을 따라감). 서버 반영은 후속이라 이 화면에서만 바뀜 */
   movePhoto: (_photoId: string, _toIndex: number) => void;
   /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜 */
@@ -178,6 +180,7 @@ export function useDraft(draftId: string | undefined): {
     undefined,
   );
   const locations = editedLocations ?? detail?.locations ?? NO_LOCATIONS;
+  const [picks, setPicks] = useState<Readonly<Record<string, readonly string[]>>>({});
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   const [flushing, setFlushing] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -493,6 +496,7 @@ export function useDraft(draftId: string | undefined): {
     const photos = (localPhotos ?? base.photos).map((photo) => ({
       ...photo,
       caption: captionOf(photo),
+      pickedBy: picks[photo.id] ?? [],
     }));
     const hasMyComment = base.comments.some((comment) => comment.memberId === myId);
     return {
@@ -514,7 +518,7 @@ export function useDraft(draftId: string | undefined): {
               )
             : [...base.comments, { memberId: myId, text: pending.comment }],
     };
-  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed]);
+  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed, picks]);
 
   const busy =
     flushing ||
@@ -647,6 +651,19 @@ export function useDraft(draftId: string | undefined): {
       }));
       schedule(SAVE_DELAY_MS);
       setLocalPhotos((current) => current && setPhotoCaption(current, photoId, caption));
+    },
+    togglePick: (photoId) => {
+      const memberId = myIdRef.current;
+      if (!memberId) return;
+      setPicks((current) => {
+        const list = current[photoId] ?? [];
+        return {
+          ...current,
+          [photoId]: list.includes(memberId)
+            ? list.filter((id) => id !== memberId)
+            : [...list, memberId],
+        };
+      });
     },
     removePhoto: (photoId) => {
       const current = shownPhotosRef.current;

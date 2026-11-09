@@ -4,7 +4,7 @@ import { DeleteButton } from '../deleteButton';
 import { PageCounter } from '../pageCounter';
 import { ProfileImage } from '../profileImage';
 
-const SIZES = { s: 'w-75', m: 'w-82.5' } as const;
+const SIZES = { xs: 'w-32.5', m: 'w-82.5' } as const;
 
 export type BundlePhotoEditorSize = keyof typeof SIZES;
 
@@ -27,7 +27,7 @@ export type BundlePhotoEditorProps = Omit<ComponentProps<'div'>, 'children'> & {
   src: string;
   /** 사진 설명(꾸미는 사진이면 빈 문자열) */
   alt: string;
-  /** 정사각 크기: `s` 300px, `m` 330px(기본), 폭 변경은 `className` 덮어쓰기 */
+  /** 정사각 크기: `xs` 130px(Figma `State=Filled`), `m` 330px(기본), 폭 변경은 `className` 덮어쓰기 */
   size?: BundlePhotoEditorSize | undefined;
   /** 사진을 올린 멤버(Figma `avater`): 주면 왼쪽 위에 31px 아바타가 얹힘 */
   uploader?: BundlePhotoEditorUploader | undefined;
@@ -44,7 +44,7 @@ export type BundlePhotoEditorProps = Omit<ComponentProps<'div'>, 'children'> & {
 };
 
 /**
- * 번들 사진(Figma `Bundle Photo Editor`, `Type=Photo`): 반경 `r4`의 정사각 사진
+ * 번들 사진(Figma `Bundle Photo Editor`, `State=Filled`): 반경 `r4`의 정사각 사진
  * 올린 멤버 아바타(왼쪽 위), 삭제 버튼(오른쪽 위), 페이지 표시(왼쪽 아래)를 사진 위에 얹을 수 있고 `className`은 사진 틀에 적용
  */
 export const BundlePhotoEditor = ({

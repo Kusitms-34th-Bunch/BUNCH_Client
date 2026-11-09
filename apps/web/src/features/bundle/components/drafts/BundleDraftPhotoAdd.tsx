@@ -24,8 +24,8 @@ export function BundleDraftPhotoAdd() {
   const router = useRouter();
   const { state, actions } = useDraftContext();
   const { state: photoState, retry } = usePhotoBox();
-  // 캡션 화면에서 앱 안으로 들어왔을 때만 이전 기록(캡션 화면)으로 돌아감. 직접 주소·새로고침이면 기록을 믿지 않음
-  const [fromCaption] = useState(isPhotoAddEntry);
+  // 캡션·작성 화면에서 앱 안으로 들어왔을 때만 이전 기록으로 돌아감. 직접 주소·새로고침이면 기록을 믿지 않음
+  const [fromApp] = useState(isPhotoAddEntry);
   useEffect(() => clearPhotoAddEntry, []);
 
   const readyDraft = state.kind === 'ready' ? state.draft : undefined;
@@ -54,7 +54,7 @@ export function BundleDraftPhotoAdd() {
   // 앱 안에서 온 게 아니면 첫 사진의 캡션 화면으로 이동(적용으로 사진이 모두 바뀌어도 첫 장은 있음)
   const firstPhotoId = draft.photos[0]?.id;
   const goBack = () =>
-    fromCaption && window.history.length > 1
+    fromApp && window.history.length > 1
       ? router.back()
       : router.replace(
           firstPhotoId ? BUNDLE_PATHS.photo(draft.id, firstPhotoId) : BUNDLE_PATHS.draft(draft.id),

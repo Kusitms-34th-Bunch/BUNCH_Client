@@ -34,14 +34,18 @@ type DraftScreenProps = {
   onPublish?: (() => void) | undefined;
   /** 참여 멤버 관리 화면으로 가는 「추가」 카드(해당 화면 연결 전에는 생략) */
   onAddMember?: (() => void) | undefined;
-  /** 사진이나 캡션을 눌렀을 때(그 사진의 캡션 화면으로 이동하는 호출 지점) */
+  /** 사진을 눌렀을 때(그 사진의 캡션 화면으로 이동하는 호출 지점) */
   onOpenPhoto?: ((_photoId: string) => void) | undefined;
+  /** 사진 추가 시트에서 사진함을 골랐을 때 */
+  onImportFromBunchBox?: (() => void) | undefined;
+  /** 사진 추가 시트에서 갤러리를 골랐을 때(더 올릴 수 있는 장수) */
+  onImportFromGallery?: ((_remaining: number) => void) | undefined;
 };
 
 const notify = (message: string) => toast(message, { fullWidth: true });
 
 /**
- * 번들 작성(공동 편집) 화면: 고정 헤더와 연결 끊김 배너 아래로 참여 멤버, 제목, 사진, 위치·날짜, 코멘트, 공개 범위, 나가기
+ * 번들 작성(공동 편집) 화면: 고정 헤더와 연결 끊김 배너 아래로 참여 멤버, 제목, 사진, 코멘트, 위치·날짜, 공개 범위, 나가기
  * 참여 멤버가 아니면 보기만 하고 고치려 하면 안내하며, 「업로드」는 권한과 필수 항목이 모두 맞을 때만 동작
  */
 export function DraftScreen({
@@ -57,6 +61,8 @@ export function DraftScreen({
   onPublish,
   onAddMember,
   onOpenPhoto,
+  onImportFromBunchBox,
+  onImportFromGallery,
 }: DraftScreenProps) {
   const [uploadConfirmOpen, setUploadConfirmOpen] = useState(false);
   // 어느 확인 창을 띄울지는 「업로드」를 누른 순간 기준(창이 열린 뒤 편집 상태가 바뀌어도 그대로)
@@ -114,14 +120,15 @@ export function DraftScreen({
         onDenied={denyEdit}
         onEditingBlocked={blockEditing}
       />
-      <DraftPhotos draft={draft} onEditingBlocked={blockEditing} onOpenPhoto={onOpenPhoto} />
-      <DraftPlaceDate
+      <DraftPhotos
         draft={draft}
-        actions={actions}
-        editable={access.canEdit}
-        currentYear={currentYear}
-        onDenied={denyEdit}
+        viewer={viewer}
+        canEdit={access.canEdit}
+        onRemovePhoto={actions.removePhoto}
         onEditingBlocked={blockEditing}
+        onOpenPhoto={onOpenPhoto}
+        onImportFromBunchBox={onImportFromBunchBox}
+        onImportFromGallery={onImportFromGallery}
       />
       <DraftComments
         draft={draft}
@@ -129,6 +136,18 @@ export function DraftScreen({
         editable={access.canEdit}
         onChange={actions.setComment}
         onDenied={denyEdit}
+      />
+      <p className="pt-s4 px-padding-p8 gap-s1 typography-caption-1-medium text-text-quaternary flex">
+        <span aria-hidden="true">{BUNDLE_MESSAGES.commentNoticeMark}</span>
+        {BUNDLE_MESSAGES.commentNotice}
+      </p>
+      <DraftPlaceDate
+        draft={draft}
+        actions={actions}
+        editable={access.canEdit}
+        currentYear={currentYear}
+        onDenied={denyEdit}
+        onEditingBlocked={blockEditing}
       />
       <DraftVisibility
         value={draft.visibility}

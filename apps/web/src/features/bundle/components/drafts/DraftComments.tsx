@@ -25,7 +25,7 @@ export function DraftComments({ draft, viewer, editable, onChange, onDenied }: D
   return (
     <section
       aria-labelledby="draft-comments-title"
-      className="pt-s18 px-padding-p8 gap-s3 flex flex-col"
+      className="pt-s13 px-padding-p8 gap-s3 flex flex-col"
     >
       <BundleTitle
         title={BUNDLE_MESSAGES.commentsTitle}

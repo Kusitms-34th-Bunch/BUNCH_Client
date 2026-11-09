@@ -90,6 +90,20 @@ export function useDraftFixture(draftId: string | undefined): {
       })),
     removePhoto: (photoId) =>
       update((current) => ({ ...current, photos: removePhoto(current.photos, photoId) })),
+    togglePick: (photoId) =>
+      update((current) => ({
+        ...current,
+        photos: current.photos.map((photo) => {
+          if (photo.id !== photoId) return photo;
+          const list = photo.pickedBy ?? [];
+          return {
+            ...photo,
+            pickedBy: list.includes(draftViewerFixture.memberId)
+              ? list.filter((id) => id !== draftViewerFixture.memberId)
+              : [...list, draftViewerFixture.memberId],
+          };
+        }),
+      })),
     movePhoto: (photoId, toIndex) =>
       update((current) => ({ ...current, photos: movePhoto(current.photos, photoId, toIndex) })),
     replacePhotos: (photos) => update((current) => ({ ...current, photos })),
