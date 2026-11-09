@@ -310,7 +310,6 @@
   --semantic-system-fail-text: var(--primitive-red-color-feedback-red-500);
   --semantic-system-success-bg: var(--primitive-green-50);
   --semantic-system-success-border: var(--primitive-green-300);
-  --semantic-system-success-fg: var(--primitive-green-700);
   --semantic-system-success-text: var(--primitive-green-600);
   --semantic-text-brand: var(--primitive-bunch-500);
   --semantic-text-decoration-none: none;
@@ -526,7 +525,6 @@
   --color-system-fail-text: var(--semantic-system-fail-text);
   --color-system-success-bg: var(--semantic-system-success-bg);
   --color-system-success-border: var(--semantic-system-success-border);
-  --color-system-success-fg: var(--semantic-system-success-fg);
   --color-system-success-text: var(--semantic-system-success-text);
   --color-text-brand: var(--semantic-text-brand);
   --color-text-disabled: var(--semantic-text-disabled);
