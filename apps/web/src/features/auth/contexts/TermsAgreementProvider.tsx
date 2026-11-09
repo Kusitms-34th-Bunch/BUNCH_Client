@@ -7,7 +7,10 @@ import { TermsAgreementContext } from './termsAgreementContext';
 const withAll = (value: boolean) =>
   Object.fromEntries(TERMS_ITEMS.map(({ id }) => [id, value])) as Record<TermsId, boolean>;
 
-/** 약관 체크 상태 임시 보관(signup layout 소유, 새로고침 시 초기화) */
+/**
+ * 약관 체크 상태 임시 보관(signup layout 소유, 새로고침 시 초기화)
+ * 선택 약관 동의 여부는 프로필 화면의 출생연도·성별 입력 노출 판단에도 사용
+ */
 export function TermsAgreementProvider({
   children,
   initial,
@@ -30,9 +33,10 @@ export function TermsAgreementProvider({
   }, []);
 
   const allAgreed = TERMS_ITEMS.every(({ id }) => agreed[id]);
+  const requiredAgreed = TERMS_ITEMS.every(({ id, required }) => !required || agreed[id]);
 
   return (
-    <TermsAgreementContext value={{ agreed, allAgreed, setAgreed, setAllAgreed }}>
+    <TermsAgreementContext value={{ agreed, allAgreed, requiredAgreed, setAgreed, setAllAgreed }}>
       {children}
     </TermsAgreementContext>
   );

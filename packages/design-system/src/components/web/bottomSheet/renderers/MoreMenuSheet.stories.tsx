@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useArgs } from 'storybook/preview-api';
+import { LineCopyMediumIcon, LineTrashcanMediumIcon } from '../../../../icons';
 import { Button } from '../../../core/button';
 import { SheetStoryScreen } from '../SheetStoryScreen.internal';
 import { MoreMenuSheet } from './MoreMenuSheet';
@@ -46,3 +47,24 @@ type Story = StoryObj<typeof meta>;
 
 /** Figma 06: 차단하기·신고하기 + 취소하기 */
 export const Default: Story = {};
+
+/** 앞 아이콘 항목(오른쪽 화살표 없음)과 「취소」 글자(콕한 장소 메뉴) */
+export const WithIcons: Story = {
+  args: {
+    cancelLabel: '취소',
+    items: [
+      {
+        id: 'copy',
+        label: '주소 복사하기',
+        leftIcon: <LineCopyMediumIcon aria-hidden />,
+        onSelect: () => {},
+      },
+      {
+        id: 'remove',
+        label: '콕에서 빼기',
+        leftIcon: <LineTrashcanMediumIcon aria-hidden />,
+        onSelect: () => {},
+      },
+    ],
+  },
+};

@@ -3,3 +3,4 @@
 
 export { BundleDetailScreen } from './bundles/BundleDetailScreen';
 export { FeedScreen } from './FeedScreen';
+export { MemberProfileScreen } from './members/MemberProfileScreen';

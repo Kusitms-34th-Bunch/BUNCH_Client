@@ -3,9 +3,10 @@
 import { ConfirmDialog, toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useDeleteBundleMutation } from '@/features/bundle/queries/bundles';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -27,7 +28,7 @@ type BunchHomeProps = {
 export function BunchHome({ source = 'server' }: BunchHomeProps) {
   const router = useRouter();
   // 번치에 나 혼자일 때 「+」·「첫 번들 만들기」를 막고 멤버 초대를 안내하는 창
-  const [needMembersOpen, setNeedMembersOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
   const sample = useBunchHome();
   const server = useServerBunchHome({ enabled: source === 'server' });
   const { data: profile } = useQuery({ ...myProfileQueryOptions(), enabled: source === 'server' });
@@ -46,6 +47,12 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
           },
         }
       : sample.actions;
+
+  const notReady = source === 'server' && server.kind !== 'ready';
+  // 화면 상태가 바뀌어(로딩·오류) 창이 의미를 잃으면 모두 닫음
+  useEffect(() => {
+    if (notReady) openOverlay.closeAll();
+  }, [notReady, openOverlay]);
 
   if (source === 'server') {
     if (server.kind === 'loading') {
@@ -86,19 +93,22 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
         // 멤버가 2명 미만이면 번들 만들기로 들어가지 않고 초대 안내(번들은 멤버가 2명 이상일 때 만들 수 있음)
         onCreateBundle={() =>
           data.current.memberCount < MIN_MEMBERS_FOR_BUNDLE
-            ? setNeedMembersOpen(true)
+            ? openOverlay((rootProps, close) => (
+                <ConfirmDialog
+                  {...rootProps}
+                  title={BUNCH_HOME_MESSAGES.needMembersTitle}
+                  description={BUNCH_HOME_MESSAGES.needMembersDescription}
+                  confirmLabel={BUNCH_HOME_MESSAGES.needMembersInvite}
+                  cancelLabel={BUNCH_HOME_MESSAGES.needMembersCancel}
+                  onConfirm={() => {
+                    close();
+                    router.push(BUNCH_HOME_PATHS.invite);
+                  }}
+                />
+              ))
             : router.push(BUNCH_HOME_PATHS.createBundle)
         }
         onOpenDraft={(bundleId) => router.push(BUNCH_HOME_PATHS.draft(bundleId))}
-      />
-      <ConfirmDialog
-        open={needMembersOpen}
-        onOpenChange={setNeedMembersOpen}
-        title={BUNCH_HOME_MESSAGES.needMembersTitle}
-        description={BUNCH_HOME_MESSAGES.needMembersDescription}
-        confirmLabel={BUNCH_HOME_MESSAGES.needMembersInvite}
-        cancelLabel={BUNCH_HOME_MESSAGES.needMembersCancel}
-        onConfirm={() => router.push(BUNCH_HOME_PATHS.invite)}
       />
     </>
   );

@@ -12,7 +12,7 @@ const stubMotion = (reduce: boolean) =>
   }));
 
 // 로딩 캐시가 모듈 단위라 테스트마다 모듈을 새로 불러옴
-const loadComponent = async () => (await import('./LoadingDots')).LoadingDots;
+const loadComponent = async () => (await import('./LoadingRipple')).LoadingRipple;
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -24,7 +24,7 @@ afterEach(() => {
 // 모듈을 새로 불러오는 테스트라 첫 실행은 디자인 시스템 번들 변환 때문에 느림
 const SLOW_MODULE_TIMEOUT_MS = 20000;
 
-describe('LoadingDots', () => {
+describe('LoadingRipple', () => {
   it(
     '받은 로티를 재생하고 반복한다',
     async () => {
@@ -35,9 +35,9 @@ describe('LoadingDots', () => {
           return <span data-testid="lottie" />;
         },
       }));
-      const LoadingDots = await loadComponent();
+      const LoadingRipple = await loadComponent();
 
-      const { findByTestId } = render(<LoadingDots />);
+      const { findByTestId } = render(<LoadingRipple />);
       await findByTestId('lottie');
 
       expect(playerProps.at(-1)).toMatchObject({ autoplay: true, loop: true });
@@ -55,9 +55,9 @@ describe('LoadingDots', () => {
           return <span data-testid="lottie" />;
         },
       }));
-      const LoadingDots = await loadComponent();
+      const LoadingRipple = await loadComponent();
 
-      const { findByTestId } = render(<LoadingDots />);
+      const { findByTestId } = render(<LoadingRipple />);
       await findByTestId('lottie');
 
       expect(playerProps.at(-1)).toMatchObject({ autoplay: false, loop: false });
@@ -72,9 +72,9 @@ describe('LoadingDots', () => {
       vi.doMock('@/shared/lib/lottieLight', () => {
         throw new Error('load failed');
       });
-      const LoadingDots = await loadComponent();
+      const LoadingRipple = await loadComponent();
 
-      const { container } = render(<LoadingDots />);
+      const { container } = render(<LoadingRipple />);
 
       // 로드 실패가 반영될 시간을 준 뒤에도 재생기는 없고 자리(크기 고정)만 남음
       await waitFor(() =>

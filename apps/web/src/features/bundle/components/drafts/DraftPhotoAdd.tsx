@@ -2,10 +2,12 @@
 
 import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { useMemo, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { countSelectedByMember, toggleSelection } from '@/features/photo-box/lib/selection';
 import { ALL_MEMBERS, type PhotoBoxData } from '@/features/photo-box/lib/types';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -55,8 +57,7 @@ export function DraftPhotoAdd({
   const initial = useMemo(() => getInitialSelection(draft.photos), [draft.photos]);
   const [selection, setSelection] = useState<readonly string[]>(initial);
   const [memberId, setMemberId] = useState<string>(ALL_MEMBERS);
-  const [removeOpen, setRemoveOpen] = useState(false);
-  const [leaveOpen, setLeaveOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
 
   const max = getMaxSelectable(draft.photos);
   const changed = !isSameSelection(initial, selection);
@@ -78,8 +79,7 @@ export function DraftPhotoAdd({
     else setSelection(result.selection);
   };
 
-  const commit = () => {
-    setRemoveOpen(false);
+  const commit = usePreservedCallback(() => {
     // 확인 창이 떠 있는 사이 다른 멤버가 빠질 사진을 편집하기 시작했을 수 있어 적용 직전에 한 번 더 확인
     if (
       removed.some(
@@ -92,13 +92,41 @@ export function DraftPhotoAdd({
     actions.replacePhotos(applySelection(draft.photos, selection, data.photos));
     notify(BUNDLE_MESSAGES.photoAddApplied);
     onApplied();
-  };
+  });
   const apply = () => {
     if (!applicable) return;
-    if (removed.length > 0) setRemoveOpen(true);
-    else commit();
+    if (removed.length === 0) return commit();
+    // 확인 창은 「취소」·Esc로 닫고 선택을 그대로 둠
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={BUNDLE_MESSAGES.photoAddRemoveTitle(removed.length)}
+        description={BUNDLE_MESSAGES.photoAddRemoveDescription}
+        confirmLabel={BUNDLE_MESSAGES.photoAddApply}
+        cancelLabel={BUNDLE_MESSAGES.cancel}
+        onConfirm={() => {
+          close();
+          commit();
+        }}
+      />
+    ));
   };
-  const back = () => (changed ? setLeaveOpen(true) : onBack());
+  const back = () => {
+    if (!changed) return onBack();
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={BUNDLE_MESSAGES.photoAddLeaveTitle}
+        description={BUNDLE_MESSAGES.photoAddLeaveDescription}
+        confirmLabel={BUNDLE_MESSAGES.photoAddLeaveConfirm}
+        cancelLabel={BUNDLE_MESSAGES.cancel}
+        onConfirm={() => {
+          close();
+          onBack();
+        }}
+      />
+    ));
+  };
 
   return (
     <PageShell
@@ -134,30 +162,6 @@ export function DraftPhotoAdd({
         onMemberChange={setMemberId}
         onToggle={toggle}
         currentYear={currentYear}
-      />
-      {/* 확인 창은 「취소」·Esc로 닫고 선택을 그대로 둠 */}
-      <ConfirmDialog
-        open={removeOpen}
-        onOpenChange={setRemoveOpen}
-        title={BUNDLE_MESSAGES.photoAddRemoveTitle(removed.length)}
-        description={BUNDLE_MESSAGES.photoAddRemoveDescription}
-        confirmLabel={BUNDLE_MESSAGES.photoAddApply}
-        cancelLabel={BUNDLE_MESSAGES.cancel}
-        onConfirm={commit}
-        onCancel={() => setRemoveOpen(false)}
-      />
-      <ConfirmDialog
-        open={leaveOpen}
-        onOpenChange={setLeaveOpen}
-        title={BUNDLE_MESSAGES.photoAddLeaveTitle}
-        description={BUNDLE_MESSAGES.photoAddLeaveDescription}
-        confirmLabel={BUNDLE_MESSAGES.photoAddLeaveConfirm}
-        cancelLabel={BUNDLE_MESSAGES.cancel}
-        onConfirm={() => {
-          setLeaveOpen(false);
-          onBack();
-        }}
-        onCancel={() => setLeaveOpen(false)}
       />
     </PageShell>
   );

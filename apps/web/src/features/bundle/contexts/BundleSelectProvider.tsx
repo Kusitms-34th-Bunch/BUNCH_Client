@@ -45,7 +45,6 @@ export function BundleSelectProvider({
   const [memberId, setMemberId] = useState<string>(ALL_MEMBERS);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pickedId, setPickedId] = useState<string | undefined>(undefined);
-  const [changeOpen, setChangeOpen] = useState(false);
   const [scrollTarget, setScrollTarget] = useState<BundleSelectValue['scrollTarget']>(undefined);
   const nonce = useRef(0);
 
@@ -57,7 +56,6 @@ export function BundleSelectProvider({
   const openSheet = useCallback(() => setSheetOpen(true), []);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
   const clearScrollTarget = useCallback(() => setScrollTarget(undefined), []);
-  const picked = recommendations.find((item) => item.id === pickedId);
 
   const toggle = useCallback(
     (photoId: string) => {
@@ -76,14 +74,12 @@ export function BundleSelectProvider({
     setMemberId((current) => (current === id ? ALL_MEMBERS : current));
   }, []);
 
-  // 추천 사진 전부를 추천 순서대로 선택하고 시트를 닫은 뒤 그 날짜 섹션으로 스크롤, 토스트로 장수를 알림
+  // 추천 사진 전부를 추천 순서대로 선택하고 그 날짜 섹션으로 스크롤, 토스트로 장수를 알림
   const commit = (recommendation: Recommendation) => {
     const next = applyRecommendation(recommendation, photos ?? []);
     setSelection(next);
     // 필터가 걸려 있으면 고른 사진이 목록에서 가려질 수 있어 「전체」로 되돌림
     setMemberId(ALL_MEMBERS);
-    setSheetOpen(false);
-    setChangeOpen(false);
     const dateKey = getApplyDateKey(recommendation, photos ?? []);
     if (dateKey) {
       nonce.current += 1;
@@ -95,18 +91,17 @@ export function BundleSelectProvider({
   // 카드를 누르면 바로 적용(Figma 시트에는 「적용하기」 버튼이 없음)
   const pickRecommendation = (id: string) => {
     const target = recommendations.find((item) => item.id === id);
-    if (!target) return;
+    if (!target) return 'deleted';
     setPickedId(id);
     // 추천 사진이 모두 사라졌으면 기존 선택을 지우지 않고 안내만 함
     if (applyRecommendation(target, photos ?? []).length === 0) {
       notify(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
-      return;
+      return 'deleted';
     }
     // 이미 고른 사진이 있으면 뒤의 시트를 내리고 변경 확인(기획 4.2.4)
-    if (selection.length > 0) {
-      setSheetOpen(false);
-      setChangeOpen(true);
-    } else commit(target);
+    if (selection.length > 0) return 'confirm';
+    commit(target);
+    return 'applied';
   };
 
   // 실행 직전 고른 사진이 사진함에서 사라졌는지 확인하고, 사라졌으면 선택에서 빼고 중단(기획 4.1.3)
@@ -134,7 +129,6 @@ export function BundleSelectProvider({
     memberId,
     sheetOpen,
     pickedId,
-    changeOpen,
     scrollTarget,
     creating,
     clearScrollTarget,
@@ -144,13 +138,15 @@ export function BundleSelectProvider({
     openSheet,
     closeSheet,
     pickRecommendation,
-    confirmChange: () => {
-      if (picked) commit(picked);
-    },
-    // 취소하면 시트를 다시 올리고 카드 선택과 기존 선택을 그대로 둠
-    cancelChange: () => {
-      setChangeOpen(false);
-      setSheetOpen(true);
+    confirmChange: (id) => {
+      const target = recommendations.find((item) => item.id === id);
+      if (!target) return;
+      // 확인 창이 떠 있는 사이 추천 사진이 모두 사라졌으면 기존 선택을 지우지 않고 안내만 함
+      if (applyRecommendation(target, photos ?? []).length === 0) {
+        notify(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
+        return;
+      }
+      commit(target);
     },
     create,
   };

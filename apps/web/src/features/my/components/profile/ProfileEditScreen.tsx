@@ -9,6 +9,7 @@ import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useDefaultProfileImage } from '@/shared/hooks/useDefaultProfileImage';
 import { type ProfileValues, useProfileFields } from '@/shared/hooks/useProfileFields';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import { normalizeNickname } from '@/shared/lib/nickname';
@@ -16,19 +17,18 @@ import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 
+// 출생연도·성별은 편집 화면에서 다루지 않음(Figma 개인 프로필 편집)
 const toProfileValues = (profile: MyProfile): ProfileValues => ({
   nickname: profile.nickname,
-  birthYear: profile.birthYear === undefined ? '' : String(profile.birthYear),
-  gender: profile.gender ?? null,
+  birthYear: '',
+  gender: null,
 });
 
 const isSameValues = (a: ProfileValues, b: ProfileValues) =>
-  normalizeNickname(a.nickname) === normalizeNickname(b.nickname) &&
-  a.birthYear === b.birthYear &&
-  a.gender === b.gender;
+  normalizeNickname(a.nickname) === normalizeNickname(b.nickname);
 
 /**
- * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임·출생연도·성별과 프로필 사진
+ * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임과 프로필 사진(출생연도·성별은 없음, Figma 개인 프로필 편집)
  * 바뀐 값이 있고 모두 유효할 때만 수정하기 활성, 누르면 MY로 돌아가 토스트(저장 API 연결 전이라 이동만)
  */
 export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
@@ -41,13 +41,28 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
   const [photo, setPhoto] = useState(profile.imageSrc);
   // 저장 중 중복 탭 방지(화면 설계서 7번)
   const [submitting, setSubmitting] = useState(false);
-  const [leaveOpen, setLeaveOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
 
   const changed = photo !== profile.imageSrc || !isSameValues(fields.values, initial);
   const canSubmit = changed && fields.isValid && !submitting;
   // 바꾼 내용이 있으면 나가기 전에 확인(기능명세서 7.2.1 상세 7)
   // 저장 뒤 돌아가는 전환 중에는 묻지 않음
-  const back = () => (changed && !submitting ? setLeaveOpen(true) : backOr(MY_PATHS.home));
+  const back = () => {
+    if (!changed || submitting) return backOr(MY_PATHS.home);
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={MY_MESSAGES.profileLeave.title}
+        description={MY_MESSAGES.profileLeave.description}
+        confirmLabel={MY_MESSAGES.profileLeave.confirm}
+        cancelLabel={MY_MESSAGES.cancel}
+        onConfirm={() => {
+          close();
+          backOr(MY_PATHS.home);
+        }}
+      />
+    ));
+  };
 
   const submit = () => {
     setSubmitting(true);
@@ -84,22 +99,9 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
           <ProfilePhotoField value={photo} onChange={setPhoto} defaultSrc={defaultImage} />
         </div>
         <div className="pt-s14 px-padding-p8">
-          <ProfileFields fields={fields} showOptional={false} />
+          <ProfileFields fields={fields} showDemographics={false} />
         </div>
       </PageShell>
-      <ConfirmDialog
-        open={leaveOpen}
-        onOpenChange={setLeaveOpen}
-        title={MY_MESSAGES.profileLeave.title}
-        description={MY_MESSAGES.profileLeave.description}
-        confirmLabel={MY_MESSAGES.profileLeave.confirm}
-        cancelLabel={MY_MESSAGES.cancel}
-        onConfirm={() => {
-          setLeaveOpen(false);
-          backOr(MY_PATHS.home);
-        }}
-        onCancel={() => setLeaveOpen(false)}
-      />
     </div>
   );
 }

@@ -42,7 +42,16 @@ const meta = {
       </SheetStoryScreen>
     ),
   ],
-  args: { open: true, onOpenChange: () => {}, bundles, onSelect: () => {}, onOpenDetail: () => {} },
+  args: {
+    open: true,
+    onOpenChange: () => {},
+    bundles,
+    onSelect: () => {},
+    onOpenDetail: () => {},
+    emptyLabel: '추천 번들',
+    emptyTitle: '아직 추천할 번들이 없어요',
+    emptyDescription: '함께한 순간이 쌓이면 번들을 추천해 드릴게요.',
+  },
   render: function Render(args) {
     // Controls의 open과 시트 열림을 같은 값으로(초기값 복사가 아님)
     const [{ open }, updateArgs] = useArgs<typeof args>();
@@ -76,3 +85,6 @@ export const ManyBundles: Story = {
     bundles: Array.from({ length: 5 }, (_, index) => ({ ...bundles[0]!, id: String(index) })),
   },
 };
+
+/** 추천이 없으면 제목 없이 문구만 */
+export const Empty: Story = { args: { bundles: [] } };

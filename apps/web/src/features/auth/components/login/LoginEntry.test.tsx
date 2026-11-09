@@ -1,17 +1,26 @@
 import type * as DesignSystem from '@app/design-system';
-import { act, render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { act, render as renderUi, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryWrapper } from '@/shared/query/testing';
 import {
   LOGIN_FAILURE_MESSAGE,
   LOGIN_PENDING_MESSAGE,
+  STATUS_CHECK_FAILURE_MESSAGE,
   type SocialLoginResult,
 } from '../../hooks/useSocialLogin';
 import { LoginEntry } from './LoginEntry';
 
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+const replace = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace }) }));
 const NEXT_PATH = '/next';
+const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
+
+// 로그인 뒤 도착 화면 조회가 세션 캐시(Query)를 쓰므로 Provider 안에서 그림
+const render = (ui: ReactElement) => renderUi(ui, { wrapper: createQueryWrapper() });
+const resolveNextPath = () => Promise.resolve(NEXT_PATH);
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -46,10 +55,11 @@ describe('LoginEntry', () => {
   beforeEach(() => {
     toast.mockClear();
     push.mockClear();
+    replace.mockClear();
   });
 
   it('로고를 제목으로, 슬로건과 본문 영역(main)을 가진다', () => {
-    render(<LoginEntry nextPath={NEXT_PATH} />);
+    render(<LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Bunch' })).toBeTruthy();
     expect(screen.getByText('함께한 순간이 뭉쳐, 우리가 되는 곳')).toBeTruthy();
@@ -57,7 +67,9 @@ describe('LoginEntry', () => {
   });
 
   it('배경 영상은 소리 없이 반복 재생되고(iOS 자동 재생 조건) 화면 낭독에서 빠진다', () => {
-    const { container } = render(<LoginEntry nextPath={NEXT_PATH} />);
+    const { container } = render(
+      <LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />,
+    );
     const video = container.querySelector('video')!;
 
     expect(video.autoplay).toBe(true);
@@ -74,7 +86,9 @@ describe('LoginEntry', () => {
       removeEventListener: () => {},
     }));
     try {
-      const { container } = render(<LoginEntry nextPath={NEXT_PATH} />);
+      const { container } = render(
+        <LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />,
+      );
 
       expect(container.querySelector('video')).toBeNull();
       expect(
@@ -86,7 +100,7 @@ describe('LoginEntry', () => {
   });
 
   it('로그인 버튼을 카카오 → Google → Apple 순서로만 보여 준다', () => {
-    render(<LoginEntry nextPath={NEXT_PATH} />);
+    render(<LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />);
 
     expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
       '카카오 로그인',
@@ -101,7 +115,9 @@ describe('LoginEntry', () => {
     ['apple', apple],
   ] as const)('%s 버튼을 누르면 그 소셜로 로그인을 시작한다', async (provider, button) => {
     const { signIn } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
 
     await userEvent.click(button());
 
@@ -111,7 +127,9 @@ describe('LoginEntry', () => {
 
   it('진행 중에는 누른 버튼만 진행 표시가 되고 나머지 둘은 비활성화된다', async () => {
     const { signIn } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
 
     await userEvent.click(google());
 
@@ -123,7 +141,9 @@ describe('LoginEntry', () => {
 
   it('진행 중에 같은 버튼을 다시 눌러도 첫 탭만 처리한다', async () => {
     const { signIn } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
 
     await userEvent.dblClick(kakao());
     await userEvent.click(kakao());
@@ -133,7 +153,9 @@ describe('LoginEntry', () => {
 
   it('실패하면 안내 토스트를 보이고 버튼이 처음 상태로 돌아온다', async () => {
     const { signIn, settle } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
 
     await userEvent.click(kakao());
     await settle(new Error('인증 실패'));
@@ -146,7 +168,9 @@ describe('LoginEntry', () => {
 
   it('실패한 뒤에는 다시 로그인을 시도할 수 있다', async () => {
     const { signIn, settle } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
 
     await userEvent.click(kakao());
     await settle(new Error('인증 실패'));
@@ -156,38 +180,105 @@ describe('LoginEntry', () => {
     expect(signIn).toHaveBeenLastCalledWith('apple');
   });
 
-  it('사용자가 로그인 창을 닫으면 토스트 없이 처음 상태로 돌아온다', async () => {
+  it('사용자가 로그인 창을 닫으면 실패와 같은 토스트를 보이고 처음 상태로 돌아온다', async () => {
     const { signIn, settle } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
 
     await userEvent.click(google());
     await settle('cancelled');
 
     expect(push).not.toHaveBeenCalled();
-    expect(toast).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
     expect(google().hasAttribute('aria-busy')).toBe(false);
     expect(kakao().hasAttribute('disabled')).toBe(false);
   });
 
   it('성공하면 다음 화면으로 이동하고 이동이 끝날 때까지 버튼을 잠근 채 둔다', async () => {
     const { signIn, settle } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
 
     await userEvent.click(kakao());
     await settle('success');
 
-    expect(push).toHaveBeenCalledWith(NEXT_PATH);
+    await waitFor(() => expect(push).toHaveBeenCalledWith(NEXT_PATH));
     expect(toast).not.toHaveBeenCalled();
     expect(kakao().getAttribute('aria-busy')).toBe('true');
     expect(google().hasAttribute('disabled')).toBe(true);
   });
 
-  it('소셜 로그인이 연결되지 않은 동안에는 눌러도 아무 일도 일어나지 않는다', async () => {
-    render(<LoginEntry nextPath={NEXT_PATH} />);
+  it('로그인 뒤 도착 화면을 정하는 동안에도 버튼을 잠근 채 두고, 정해지면 그 화면으로 이동한다', async () => {
+    let resolvePath!: (_path: string) => void;
+    const pendingPath = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolvePath = resolve;
+        }),
+    );
+    render(
+      <LoginEntry
+        destinations={DESTINATIONS}
+        signIn={() => Promise.resolve('success')}
+        resolveNextPath={pendingPath}
+      />,
+    );
+
+    await userEvent.click(kakao());
+    await waitFor(() => expect(pendingPath).toHaveBeenCalledTimes(1));
+
+    expect(push).not.toHaveBeenCalled();
+    expect(kakao().getAttribute('aria-busy')).toBe('true');
+    expect(google().hasAttribute('disabled')).toBe(true);
+
+    resolvePath('/signup/profile');
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/signup/profile'));
+  });
+
+  it('이동 방법이 replace이면 기록을 남기지 않고 이동한다(가입 완료 사용자)', async () => {
+    render(
+      <LoginEntry
+        destinations={DESTINATIONS}
+        signIn={() => Promise.resolve('success')}
+        resolveNextPath={() => Promise.resolve({ path: '/bunch', replace: true })}
+      />,
+    );
 
     await userEvent.click(kakao());
 
-    expect(toast).not.toHaveBeenCalled();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('로그인은 됐지만 가입 상태를 읽지 못하면 안내 토스트를 보이고 이동 없이 처음 상태로 돌아온다', async () => {
+    render(
+      <LoginEntry
+        destinations={DESTINATIONS}
+        signIn={() => Promise.resolve('success')}
+        resolveNextPath={() => Promise.reject(new Error('조회 실패'))}
+      />,
+    );
+
+    await userEvent.click(kakao());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(STATUS_CHECK_FAILURE_MESSAGE, expect.anything()),
+    );
+    expect(toast).not.toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
+    expect(push).not.toHaveBeenCalled();
+    expect(kakao().hasAttribute('aria-busy')).toBe(false);
+    expect(google().hasAttribute('disabled')).toBe(false);
+  });
+
+  it('앱 밖(브라우저)에서 눌러 쉘 로그인을 쓸 수 없으면 실패 토스트를 보이고 처음 상태로 돌아온다', async () => {
+    render(<LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />);
+
+    await userEvent.click(kakao());
+
+    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
+    expect(push).not.toHaveBeenCalled();
     expect(kakao().hasAttribute('aria-busy')).toBe(false);
     expect(google().hasAttribute('disabled')).toBe(false);
     expect(apple().hasAttribute('disabled')).toBe(false);
@@ -195,7 +286,9 @@ describe('LoginEntry', () => {
 
   it('진행 중에는 상태를 말로 알리고, 끝나면 비운다', async () => {
     const { signIn, settle } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
     expect(screen.getByRole('status').textContent).toBe('');
 
     await userEvent.click(apple());
@@ -207,7 +300,9 @@ describe('LoginEntry', () => {
 
   it('실패 토스트는 하단 버튼 영역 위로 올려 띄운다', async () => {
     const { signIn, settle } = deferredSignIn();
-    render(<LoginEntry signIn={signIn} nextPath={NEXT_PATH} />);
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
 
     await userEvent.click(kakao());
     await settle(new Error('인증 실패'));
@@ -216,7 +311,7 @@ describe('LoginEntry', () => {
   });
 
   it('앱 아이콘은 장식이라 이름이 없고 로고만 이미지 이름을 가진다', () => {
-    render(<LoginEntry nextPath={NEXT_PATH} />);
+    render(<LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />);
 
     expect(screen.getAllByRole('img').map((img) => img.getAttribute('alt'))).toEqual(['Bunch']);
   });

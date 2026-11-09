@@ -16,7 +16,8 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { PhotoSection } from '../../lib/photoDate';
 import type { PhotoBoxActions, PhotoBoxViewer } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
@@ -45,8 +46,6 @@ const collisionDetection: CollisionDetection = (args) => {
 
 // 요청이 도는 동안 끌 수 있는 사진이 없다는 값(참조를 고정해 context 값이 불필요하게 바뀌지 않게 함)
 const NO_DRAGGABLE: ReadonlySet<string> = new Set();
-
-type Move = { photoId: string; fromKey: string; toKey: string };
 
 type PhotoDragAreaProps = {
   sections: readonly PhotoSection[];
@@ -83,7 +82,8 @@ export function PhotoDragArea({
   // 끄는 동안과 날짜 변경 요청이 도는 동안만 값이 있는 미리보기 순서
   const [preview, setPreview] = useState<SectionItems | undefined>(undefined);
   // 관리자가 다른 멤버 사진을 놓았을 때 확인을 기다리는 이동(확인 창이 열려 있는 동안만 값이 있음)
-  const [moveToConfirm, setMoveToConfirm] = useState<Move | undefined>(undefined);
+  const [moveToConfirm, setMoveToConfirm] = useState(false);
+  const openOverlay = useScreenOverlay();
   // 날짜 변경 요청이 도는 동안은 새로 끌지 못하게 막음(미리보기와 요청 결과가 엉키지 않도록)
   const [moving, setMoving] = useState(false);
 
@@ -116,12 +116,16 @@ export function PhotoDragArea({
   const reset = () => {
     setActiveId(undefined);
     setPreview(undefined);
-    setMoveToConfirm(undefined);
+    setMoveToConfirm(false);
   };
 
   // 선택 모드가 끝나거나 저장·삭제가 시작되어 끌 수 없게 되면 끌던 상태를 걷음
-  const dragging = activeId !== undefined || preview !== undefined || moveToConfirm !== undefined;
+  const dragging = activeId !== undefined || preview !== undefined || moveToConfirm;
   if (!enabled && !moving && dragging) reset();
+  // 화면 상태가 바뀌어(끌 수 없게 됨) 창이 의미를 잃으면 모두 닫음
+  useEffect(() => {
+    if (!enabled) openOverlay.closeAll();
+  }, [enabled, openOverlay]);
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveId(String(active.id));
@@ -182,7 +186,22 @@ export function PhotoDragArea({
     // 확인이 필요하면 놓은 자리에 둔 채 확인 창을 띄움
     const photo = photoById.get(photoId);
     if (photo && needsDragConfirm(photo, viewer)) {
-      setMoveToConfirm({ photoId, fromKey, toKey });
+      setMoveToConfirm(true);
+      // 「취소」와 Esc만 onOpenChange로 오고(확인 버튼은 닫기 동작이 없음), 취소하면 놓은 자리를 걷고 원래 자리로 돌림
+      openOverlay((rootProps, close) => (
+        <DateChangeConfirmDialog
+          {...rootProps}
+          onOpenChange={(open) => {
+            if (!open) reset();
+            rootProps.onOpenChange(open);
+          }}
+          onConfirm={() => {
+            setMoveToConfirm(false);
+            close();
+            void move(photoId, fromKey, toKey);
+          }}
+        />
+      ));
       return;
     }
     // 요청이 도는 동안은 놓은 자리에 그대로 두었다가 결과가 오면 걷음
@@ -214,16 +233,6 @@ export function PhotoDragArea({
           <PhotoDateSection key={section.dateKey} section={section} />
         ))}
       </PhotoDragProvider>
-      <DateChangeConfirmDialog
-        open={moveToConfirm !== undefined}
-        // 「취소」와 Esc만 onClose로 오고(확인 버튼은 닫기 동작이 없음), 취소하면 놓은 자리를 걷고 원래 자리로 돌림
-        onClose={reset}
-        onConfirm={() => {
-          const target = moveToConfirm;
-          setMoveToConfirm(undefined);
-          if (target) void move(target.photoId, target.fromKey, target.toKey);
-        }}
-      />
       <DragOverlay>
         {activePhoto ? (
           <PhotoThumbnail

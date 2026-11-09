@@ -52,7 +52,7 @@
 
 ## UI와 접근성
 
-- Component mapping: `PageShell`, `Header`+`HeaderIconButton`, `PlaceMemberFilter`(feature, `ChipButton` solid·avatar 변형, radio 그룹), `LocationCard`, `BottomSheet`+`MenuLabel`(왼쪽 아이콘, 오른쪽 화살표 없음)과 `Button`(취소), `ConfirmDialog`(solid: 취소 왼쪽·콕에서 빼기 오른쪽), `toast`.
+- Component mapping: `PageShell`, `Header`+`HeaderIconButton`, `PlaceMemberFilter`(feature, `ChipButton` solid·avatar 변형, radio 그룹), `LocationCard`, `MoreMenuSheet`(왼쪽 아이콘, 오른쪽 화살표 없음, 「취소」), `ConfirmDialog`(solid: 취소 왼쪽·콕에서 빼기 오른쪽), `toast`.
 - 칩: 높이 40, 칩 사이 6, 「전체」 좌우 12, 멤버 칩 왼쪽 8·오른쪽 10, 프로필 이미지 24. 선택 칩은 `surface-inversed` + 흰 글자. 방향키로 옮기면 바로 선택되고 Tab은 선택된 칩 하나에만 머문다(photo-box의 `MemberFilter`와 같은 방식이며, 이름 뒤 숫자를 괄호 없이 붙여 feature 간 import를 피해 따로 둔다).
 - 간격: 헤더 아래 칩 위 16, 칩 아래 첫 카드 24, 카드 사이 4, 좌우 16.
 - Keyboard·focus·accessible name: 더보기 버튼 이름은 「{장소 이름} 더보기」. 카드 버튼과 더보기는 따로 포커스된다. 시트·모달은 열기 전 초점으로 돌아간다(Base UI).
@@ -68,7 +68,7 @@
 
 - 「콕에서 빼기」 뒤 초점은 같은 자리에 온 다음 카드의 더보기 버튼(없으면 빈 상태 제목)으로, 「되돌리기」 뒤에는 다시 생긴 카드의 더보기 버튼으로 옮긴다. 토스트의 「되돌리기」는 사라질 때까지 5초이고 Tab으로 가려면 문서 끝까지 지나야 한다(디자인 시스템 토스트 공통, 액션 토스트의 키보드 도달성은 따로 정한다).
 - 카드 이동(8.1.5)은 번들 상세 route가 생길 때 연결한다(`onOpenBundle`). 이동 전 서버 재확인과 실패 토스트도 그때 정한다.
-- 시트 항목이 Figma처럼 아이콘이 있고 오른쪽 화살표는 없어 `MoreMenuSheet`를 쓰지 않고 `BottomSheet`로 직접 구성했다. 같은 모양이 다른 곳에 생기면 `MoreMenuSheet`에 아이콘 항목을 추가해 공용으로 올린다.
-- 취소 버튼 문구: 기능명세는 「취소」, 디자인 시스템 `MoreMenuSheet`는 「취소하기」다. 이 화면은 기능명세와 화면설계서를 따라 「취소」로 둔다.
+- 시트 항목이 Figma처럼 아이콘이 있고 오른쪽 화살표는 없어 `MoreMenuSheet`의 `leftIcon` 항목을 쓴다.
+- 취소 버튼 문구: 기능명세는 「취소」, 디자인 시스템 `MoreMenuSheet` 기본값은 「취소하기」다. 이 화면은 기능명세와 화면설계서를 따라 `cancelLabel`로 「취소」를 넘긴다.
 - 칩 프로필 이미지: Figma는 멤버별 사진이고, 지금은 번치 타입별 기본 이미지로 채운다(API 응답의 멤버 이미지로 대체).
 - 번치마다 다른 콕한 장소: 지금은 모든 번치가 같은 예시를 본다.

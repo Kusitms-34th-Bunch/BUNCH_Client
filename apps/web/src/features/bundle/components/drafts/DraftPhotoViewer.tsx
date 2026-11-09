@@ -3,6 +3,7 @@
 import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
 import { IconButton } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '@/features/photo-box/lib/types';
 import {
   PhotoDetailMenu,
@@ -22,10 +23,8 @@ import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
 import { getDraftAccess } from '../../lib/permissions';
 import { getPhotoEditors, getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
-import { RemovePhotoDialogs } from './RemovePhotoDialogs';
+import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 
-// 확인 창 닫힘 전환이 끝난 뒤에 포커스를 옮기려는 지연
-const CLOSE_TRANSITION_MS = 150;
 // 앨범 저장 API 연결 전의 목 저장 시간: 저장 중에는 화면 전체에 딤과 로딩 점을 보임(화면설계서 5번 「저장 진행 중 로딩 애니메이션」)
 const MOCK_SAVE_MS = 900;
 
@@ -110,27 +109,18 @@ export function DraftPhotoViewer({
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
-  // 확인 창을 연 시점의 사진 id를 고정해 그 사이 넘겨져도 다른 사진을 빼지 않음
-  const [removeDialog, setRemoveDialog] = useState<
-    { kind: RemovePhotoKind; photoId: string } | undefined
-  >(undefined);
+  const openRemove = useRemovePhotoDialog();
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
-  const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(
-    () => () => {
-      clearTimeout(focusTimer.current);
-      clearTimeout(saveTimer.current);
-    },
-    [],
-  );
+  useEffect(() => () => clearTimeout(saveTimer.current), []);
 
   const photoViewer = usePhotoViewer({
     photos,
     initialPhotoId,
     onPhotoChange,
-    keyboardBlocked: menuOpen || removeDialog !== undefined || saving,
+    keyboardBlocked: menuOpen || removeDialogOpen || saving,
   });
   const { activeId, activeIndex, chromeHidden, showPhoto } = photoViewer;
   const activePhoto = photos[activeIndex];
@@ -146,9 +136,40 @@ export function DraftPhotoViewer({
     const neighbor = photos[index + 1] ?? photos[index - 1];
     actions.removePhoto(photoId);
     if (neighbor && photoId === activeId) showPhoto(neighbor.id);
-    // 빼면 메뉴를 연 ⋯ 근처에서 계속 쓰도록 포커스를 ⋯로 돌림(확인 창은 닫힌 뒤)
-    clearTimeout(focusTimer.current);
-    focusTimer.current = setTimeout(() => menuTriggerRef.current?.focus(), CLOSE_TRANSITION_MS);
+  };
+
+  // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 최신 값으로 다시 확인
+  // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
+  const confirmRemove = usePreservedCallback((photoId: string) => {
+    if (!photos.some((photo) => photo.id === photoId)) return false;
+    if (getPhotoEditors(draft, viewer, photoId).length > 0) {
+      notify(BUNDLE_MESSAGES.editingBlocked);
+      return false;
+    }
+    if (getRemovePhotoKind(photos) === 'last') return true;
+    removeAndContinue(photoId);
+    return false;
+  });
+  const isPickedNow = usePreservedCallback(isPicked);
+
+  // 연 시점의 사진 id를 고정해 그 사이 넘겨져도 다른 사진을 빼지 않음
+  const showRemoveDialog = (kind: RemovePhotoKind, photoId: string) => {
+    let showLast = false;
+    setRemoveDialogOpen(true);
+    openRemove({
+      kind,
+      isPicked: () => isPickedNow(photoId),
+      onConfirm: () => {
+        showLast = confirmRemove(photoId);
+      },
+      // 앞 창이 다 닫힌 뒤 열어 초점이 두 창 사이에서 엉키지 않게 함
+      onClosed: (confirmed) => {
+        if (showLast) return showRemoveDialog('last', photoId);
+        setRemoveDialogOpen(false);
+        // 빼면 메뉴를 연 ⋯ 근처에서 계속 쓰도록 포커스를 ⋯로 돌림
+        if (confirmed) menuTriggerRef.current?.focus();
+      },
+    });
   };
 
   const requestRemove = () => {
@@ -157,7 +178,7 @@ export function DraftPhotoViewer({
     if (getPhotoEditors(draft, viewer, activePhoto.id).length > 0) {
       return notify(BUNDLE_MESSAGES.editingBlocked);
     }
-    setRemoveDialog({ kind: getRemovePhotoKind(photos), photoId: activePhoto.id });
+    showRemoveDialog(getRemovePhotoKind(photos), activePhoto.id);
   };
 
   // 저장 중에는 딤과 로딩 점을 보이고 끝나면 완료 토스트(앨범 저장 API 연결 전에는 목 지연)
@@ -235,26 +256,6 @@ export function DraftPhotoViewer({
         inert={saving}
       />
       {saving ? <PageLoading /> : null}
-      <RemovePhotoDialogs
-        kind={removeDialog?.kind}
-        picked={removeDialog ? isPicked(removeDialog.photoId) : false}
-        onClose={() => setRemoveDialog(undefined)}
-        onConfirm={() => {
-          // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 다시 확인
-          if (removeDialog && photos.some((photo) => photo.id === removeDialog.photoId)) {
-            if (getPhotoEditors(draft, viewer, removeDialog.photoId).length > 0) {
-              notify(BUNDLE_MESSAGES.editingBlocked);
-            } else if (getRemovePhotoKind(photos) === 'last') {
-              // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
-              setRemoveDialog({ kind: 'last', photoId: removeDialog.photoId });
-              return;
-            } else {
-              removeAndContinue(removeDialog.photoId);
-            }
-          }
-          setRemoveDialog(undefined);
-        }}
-      />
     </PageShell>
   );
 }
