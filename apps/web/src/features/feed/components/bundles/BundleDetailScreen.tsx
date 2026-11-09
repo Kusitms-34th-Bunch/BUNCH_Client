@@ -6,6 +6,8 @@ import {
   LineAlertMediumIcon,
   LineChevronLeftLargeIcon,
   LineDotsLargeIcon,
+  LineLockMediumIcon,
+  LinePencilMediumIcon,
   LineTrashcanMediumIcon,
   toast,
 } from '@app/design-system';
@@ -34,12 +36,14 @@ import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
 import { FEED_TOAST_OFFSET } from '../../constants/toast';
 import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
+import { useBundleEdits } from '../../hooks/useBundleEdits';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useHoldScrollOnLeave } from '../../hooks/useHoldScrollOnLeave';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
+import { bundleEdits } from '../../lib/bundleEdits';
 import {
   addComment,
   addReply,
@@ -84,7 +88,7 @@ const safeAreaBottom = () => {
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * API 연결 전 fixture라 댓글 등록·삭제·신고는 화면에서만 바뀜(구현 단위 10). 우리 번치 메인 관리자의 수정·삭제 메뉴는 구현 단위 6
+ * API 연결 전 fixture라 댓글·신고·번들 삭제·공개 범위는 화면에서만 바뀜(구현 단위 10). 「수정하기」는 메뉴만 있고 수정 화면이 생기면 이동을 붙임
  */
 export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDetailScreenProps) {
   const router = useRouter();
@@ -108,7 +112,10 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const [replyTarget, setReplyTarget] = useState<{ id: string; author: string } | null>(null);
   const { openPlaces, openMembers } = useBundleSheets();
   const openOverlay = useScreenOverlay();
-  const bundle = getBundleDetailFixture(bundleId);
+  const { isDeleted, memberOnlyOf } = useBundleEdits();
+  // 화면에서 지운 번들은 없는 번들과 같은 안내. 들어올 때 기준이라 여기서 지운 뒤 떠나는 동안 안내로 바뀌지 않음
+  const [deletedOnEnter] = useState(() => isDeleted(bundleId));
+  const bundle = deletedOnEnter ? undefined : getBundleDetailFixture(bundleId);
   // ponytail: 화면 안에서만 바뀜. 댓글 API(구현 단위 10)를 연결하면 상세 query 캐시로 대체
   const [comments, setComments] = useState<readonly FeedComment[]>(bundle?.comments ?? []);
   const [addedCount, setAddedCount] = useState(0);
@@ -132,8 +139,13 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     [],
   );
 
+  // scrollIntoView는 전환 중 가로로 밀린 화면을 보이려고 바깥 틀까지 가로 스크롤하므로 세로 스크롤 main만 움직임
   const goToComments = useCallback(() => {
-    commentsRef.current?.scrollIntoView({ block: 'start' });
+    const section = commentsRef.current;
+    const main = section?.closest('main');
+    if (section && main) {
+      main.scrollTop += section.getBoundingClientRect().top - main.getBoundingClientRect().top;
+    }
     focusInput();
   }, [focusInput]);
 
@@ -323,10 +335,80 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
       toast(text.reported, { bottomOffset: FEED_TOAST_OFFSET });
     });
 
-  // 헤더 더보기(기능명세서 6.2.11): 다른 번치 번들, 우리 번치 번들의 메인 관리자가 아닌 역할은 「신고」. 메인 관리자의 수정·삭제는 구현 단위 6
+  // 번들 삭제(Figma `5367:122187`): 창이 다 닫힌 뒤 지우고 이전 화면으로 가서 알림(이 화면은 떠나므로 피드 위치)
+  const openDeleteBundle = () => {
+    let confirmed = false;
+    openOverlay(
+      (rootProps, close) => (
+        <ConfirmDialog
+          {...rootProps}
+          title={text.deleteBundleTitle}
+          description={text.deleteBundleDescription}
+          cancelLabel={text.cancel}
+          confirmLabel={text.deleteBundleConfirm}
+          onConfirm={() => {
+            confirmed = true;
+            close();
+          }}
+        />
+      ),
+      () => {
+        if (!confirmed) return;
+        bundleEdits.remove(bundle.id);
+        backOr(FEED_PATHS.home);
+        toast(text.bundleDeleted, { fullWidth: true, bottomOffset: FEED_TOAST_OFFSET });
+      },
+    );
+  };
+
+  // 메인 관리자 헤더 더보기(Figma `5367:123992`): 「수정하기」/「공개 범위 설정」/「삭제하기」/「취소」
+  const openOwnerMenu = () => {
+    let next: (() => void) | undefined;
+    openOverlay(
+      (rootProps, close) => (
+        <MoreMenuSheet
+          {...rootProps}
+          title={text.bundleMore}
+          cancelLabel={text.cancel}
+          items={[
+            {
+              id: 'edit',
+              label: text.edit,
+              leftIcon: <LinePencilMediumIcon aria-hidden />,
+              // ponytail: 번들 수정 화면(기능명세서 6.2.12)이 없어 시트만 닫음. 다음 이슈에서 이동 연결
+              onSelect: close,
+            },
+            {
+              id: 'visibility',
+              label: text.visibilitySetting,
+              leftIcon: <LineLockMediumIcon aria-hidden />,
+              onSelect: () => {
+                next = () => router.push(FEED_PATHS.bundleVisibility(bundle.id));
+                close();
+              },
+            },
+            {
+              id: 'delete',
+              label: text.deleteBundle,
+              tone: 'danger',
+              leftIcon: <LineTrashcanMediumIcon aria-hidden />,
+              onSelect: () => {
+                next = openDeleteBundle;
+                close();
+              },
+            },
+          ]}
+        />
+      ),
+      () => next?.(),
+    );
+  };
+
+  // 헤더 더보기(기능명세서 6.2.11): 다른 번치 번들, 우리 번치 번들의 메인 관리자가 아닌 역할은 「신고」, 메인 관리자는 관리 메뉴
   // 내 정보를 받기 전에는 갈래를 알 수 없어 버튼을 그리지 않음(메인 관리자에게 보였다 사라지지 않게)
   const ownBundle = viewer?.bunchId === bundle.bunch.id;
-  const canReportBundle = viewer !== undefined && (!ownBundle || bundle.myRole !== 'owner');
+  // ponytail: 메뉴 노출과 삭제·공개 범위 변경을 화면 판단에만 기댐. API 연결 때 서버의 메인 관리자 확인으로 옮기고 실패하면 안내
+  const isOwner = ownBundle && bundle.myRole === 'owner';
 
   // 내 댓글 더보기(Figma `5367:121393`): 「삭제」/「취소」. 시트가 다 닫힌 뒤 확인 창(`5367:121647`)
   const openCommentMenu = (comment: FeedComment) => {
@@ -368,10 +450,10 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   return (
     <PageShell
       header={header(
-        canReportBundle ? (
+        viewer !== undefined ? (
           <HeaderIconButton
             label={text.bundleMore}
-            onClick={() => openReportMenu(text.bundleMore, reportBundle)}
+            onClick={isOwner ? openOwnerMenu : () => openReportMenu(text.bundleMore, reportBundle)}
           >
             <LineDotsLargeIcon />
           </HeaderIconButton>
@@ -416,7 +498,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
         location={bundle.location}
         onLocationClick={() => openPlaces(bundle.places)}
         date={bundle.date}
-        memberOnly={bundle.memberOnly}
+        memberOnly={memberOnlyOf(bundle.id, bundle.memberOnly)}
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
       />
       <BundlePhoto variant="detail" photos={bundle.photos} />
