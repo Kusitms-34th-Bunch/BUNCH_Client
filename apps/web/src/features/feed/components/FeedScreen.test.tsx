@@ -29,7 +29,7 @@ const links = {
 const renderFeed = (bunch: { id: string; name: string } | null) => {
   const client = createTestQueryClient();
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch });
-  render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });
+  return render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });
 };
 
 const cards = () => screen.getAllByRole('article');
@@ -58,6 +58,31 @@ describe('FeedScreen', () => {
     expect(within(cards()[1]!).getByText('5시간 전')).toBeInTheDocument();
   });
 
+  it('사진을 눌러 나갈 때 스크롤을 붙잡아 두고, 그 history 항목으로 돌아왔을 때만 복원한다', async () => {
+    const user = userEvent.setup();
+    const bunch = { id: 'bunch-trip', name: '여행가조' };
+    const first = renderFeed(bunch);
+    const main = first.container.querySelector('main')!;
+    const photo = within(cards()[0]!).getByRole('button', { name: /사진 열기/ });
+
+    main.scrollTop = 300;
+    await user.click(photo);
+    expect(main.scrollTop).toBe(0);
+    expect(main.firstElementChild).toHaveStyle({ transform: 'translateY(-300px)' });
+    // 이동을 기다리는 사이 다시 눌러도 저장한 값 유지
+    await user.click(photo);
+    expect(main.firstElementChild).toHaveStyle({ transform: 'translateY(-300px)' });
+    first.unmount();
+
+    const back = renderFeed(bunch);
+    expect(back.container.querySelector('main')!.scrollTop).toBe(300);
+    back.unmount();
+
+    // 탭으로 새로 들어온 피드는 새 history 항목이라 저장값이 없음
+    window.history.pushState(null, '');
+    expect(renderFeed(bunch).container.querySelector('main')!.scrollTop).toBe(0);
+  });
+
   it('헤더에 알림과 지금 번치(번치 홈)가 있고, 카드에서 누르는 곳마다 다른 화면으로 간다', async () => {
     const user = userEvent.setup();
     renderFeed({ id: 'bunch-trip', name: '여행가조' });
@@ -74,7 +99,7 @@ describe('FeedScreen', () => {
     const [own, other] = cards();
     await user.click(within(own!).getByRole('button', { name: '여행가조 2일 전' }));
     await user.click(within(other!).getByRole('button', { name: '책방산책 5시간 전' }));
-    await user.click(within(own!).getByRole('button', { name: /사진 1\/4 열기/ }));
+    await user.click(within(own!).getByRole('button', { name: /사진 열기/ }));
     await user.click(within(own!).getByRole('button', { name: '댓글 4' }));
     expect(push.mock.calls.map(([path]: unknown[]) => path as string)).toEqual([
       '/bunch',
