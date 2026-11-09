@@ -14,17 +14,48 @@ describe('BundlePhoto', () => {
     expect(onPhotoClick).toHaveBeenCalledWith(1);
   });
 
-  it('넘기면 순번이 바뀌고 바뀐 순번을 알린다', () => {
-    const onIndexChange = vi.fn();
-    render(<BundlePhoto photos={photos} variant="detail" onIndexChange={onIndexChange} />);
-    const list = screen.getByRole('group', { name: '번들 사진' });
+  it('상세는 사진마다 순번이 있고, pick한 멤버가 있는 사진에만 pick 버튼이 있다', () => {
+    render(<BundlePhoto variant="detail" photos={[{ src: 'a.jpg' }, { src: 'b.jpg' }]} />);
 
-    expect(screen.getByRole('img', { name: '1 / 3' })).toBeTruthy();
-    Object.defineProperty(list, 'clientWidth', { value: 375 });
-    list.scrollLeft = 750;
-    fireEvent.scroll(list);
-    expect(screen.getByRole('img', { name: '3 / 3' })).toBeTruthy();
-    expect(onIndexChange).toHaveBeenCalledWith(2);
+    expect(screen.getByRole('group', { name: '번들 사진' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: '1 / 2' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: '2 / 2' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^pick / })).toBeNull();
+  });
+
+  it.each([
+    [1, 1],
+    [2, 2],
+    [3, 3],
+    [5, 3],
+  ])('pick이 %d명이면 얼굴 %d개를 겹친다', (count, faces) => {
+    const pickers = Array.from({ length: count }, (_, index) => ({ name: `멤버${index}` }));
+    render(<BundlePhoto variant="detail" photos={[{ src: 'a.jpg', pickers }]} />);
+
+    expect(
+      screen.getByRole('button', { name: /^pick / }).querySelectorAll('[class*="absolute"]'),
+    ).toHaveLength(faces);
+  });
+
+  it('pick을 누르면 전체 멤버가 펼쳐지고 다시 누르면 접힌다', async () => {
+    const pickers = ['은우', '경진', '수인', '효찬', '경준'].map((name) => ({ name }));
+    const { container } = render(
+      <BundlePhoto variant="detail" photos={[{ src: 'a.jpg', pickers }]} />,
+    );
+    const button = screen.getByRole('button', { name: 'pick 은우, 경진, 수인, 효찬, 경준' });
+
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(container.querySelector('ul')).toBeNull();
+
+    await userEvent.click(button);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    // 맨 아래 얼굴은 버튼 안, 나머지 4명이 위로 펼쳐짐
+    expect(container.querySelectorAll('ul > li')).toHaveLength(4);
+    expect(button.querySelectorAll('[class*="absolute"]')).toHaveLength(1);
+
+    await userEvent.click(button);
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(container.querySelector('ul')).toBeNull();
   });
 
   it('제목·위치·날짜는 썸네일의 첫 사진에만, 순번은 2장 이상일 때만 보인다', () => {

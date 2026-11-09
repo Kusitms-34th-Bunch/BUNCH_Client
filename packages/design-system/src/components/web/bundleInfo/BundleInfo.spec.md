@@ -16,7 +16,7 @@
 
 ## Public API
 
-- Props: `title`(필수), `location`, `onLocationClick`(없으면 위치는 글자), `date`, `variant`(`detail` 기본·`overlay`), `titleAs`(기본 `h2`), native `<div>` 속성.
+- Props: `title`(필수), `location`, `onLocationClick`(없으면 위치는 글자), `date`, `variant`(`detail` 기본·`overlay`), `locked`(멤버 공개 자물쇠, detail만)·`lockedLabel`, `titleAs`(기본 `h2`), native `<div>` 속성.
 - 위치·날짜 글자의 형식(「애월읍 외 1곳」, 「2026년 7월 9일」)은 호출자가 만든다.
 
 ## 접근성

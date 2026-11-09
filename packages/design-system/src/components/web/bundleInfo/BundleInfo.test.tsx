@@ -21,6 +21,14 @@ describe('BundleInfo', () => {
     expect(screen.getByText('2026년 7월 9일')).toBeTruthy();
   });
 
+  it('멤버 공개면 상세 제목 옆에 자물쇠를 보이고, 사진 위 변형에서는 숨긴다', () => {
+    const { rerender } = render(<BundleInfo title="제주 여행" locked />);
+    expect(screen.getByRole('img', { name: '멤버 공개' })).toBeTruthy();
+
+    rerender(<BundleInfo title="제주 여행" locked variant="overlay" />);
+    expect(screen.queryByRole('img', { name: '멤버 공개' })).toBeNull();
+  });
+
   it('위치·날짜가 없으면 줄을 숨긴다', () => {
     render(<BundleInfo title="제주 여행" titleAs="h3" />);
 

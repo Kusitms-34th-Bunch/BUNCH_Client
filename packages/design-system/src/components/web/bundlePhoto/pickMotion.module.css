@@ -1,0 +1,36 @@
+/* 얼굴이 살짝 떠다님(위아래 2px, Figma에 없음, 기획 요청). WCAG 2.2.2에 맞게 5초 안에 멈춤(1.2s × 4 = 4.8s, 짝수 번이라 제자리에서 끝남) */
+.float {
+  animation: pick-float 1.2s ease-in-out 4 alternate;
+}
+
+/* 펼칠 때 아래에서 올라오며 나타남 */
+.rise {
+  animation: pick-rise 200ms ease-out both;
+}
+
+@keyframes pick-float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes pick-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .rise {
+    animation: none;
+  }
+}
