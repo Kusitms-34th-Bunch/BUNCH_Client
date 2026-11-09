@@ -40,6 +40,46 @@ beforeEach(() => {
 });
 
 describe('FeedScreen', () => {
+  it('카드의 위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
+    const user = userEvent.setup();
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+
+    await user.click(within(cards()[0]!).getByRole('button', { name: /위치/ }));
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
+    );
+
+    await user.click(within(cards()[0]!).getByRole('button', { name: /참여 멤버/ }));
+    const sheet = await screen.findByRole('dialog', { name: '참여 멤버' });
+    expect(within(sheet).getAllByRole('listitem')).toHaveLength(7);
+    expect(within(sheet).getByText('작성자')).toBeTruthy();
+  });
+
+  it('둘째 카드의 시트는 그 카드의 장소와 멤버를 보여 준다', async () => {
+    const user = userEvent.setup();
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+    const second = within(cards()[1]!);
+
+    await user.click(second.getByRole('button', { name: /위치/ }));
+    expect(await screen.findByText('망원동 책방')).toBeTruthy();
+    expect(screen.queryByText('애월 한담해변')).toBeNull();
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    await waitFor(() => expect(screen.queryByText('망원동 책방')).toBeNull());
+
+    await user.click(second.getByRole('button', { name: /참여 멤버/ }));
+    const sheet = await screen.findByRole('dialog', { name: '참여 멤버' });
+    expect(within(sheet).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('나간 멤버의 얼굴은 원래 이미지 대신 기본 이미지다', () => {
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+
+    const members = within(cards()[1]!).getByRole('button', { name: /참여 멤버/ });
+    expect(members.querySelector('img')?.getAttribute('src')).toContain('deleted-user');
+  });
+
   it('팔로우한 번치 구간 → 구간 안내 → 공개 구간 → 끝 안내 순서로 보인다', () => {
     renderFeed({ id: 'bunch-trip', name: '여행가조' });
 

@@ -2,7 +2,7 @@
 
 import { FeedBundleCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import type { FeedBundle } from '../lib/types';
@@ -14,7 +14,9 @@ import { useFeedViewer } from '../hooks/useFeedViewer';
 import { useHoldScrollOnLeave } from '../hooks/useHoldScrollOnLeave';
 import { useLikeToggle } from '../hooks/useLikeToggle';
 import { useScrollInHistory } from '../hooks/useScrollInHistory';
+import { hideLeftMemberImages } from '../lib/deletedUserImage';
 import { formatElapsedTime } from '../lib/elapsedTime';
+import { BundleSheets, type BundleSheet } from './bundles/BundleSheets';
 import { FeedCaughtUp } from './FeedCaughtUp';
 import { FeedHeader } from './FeedHeader';
 
@@ -35,6 +37,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
   // 경과 시간은 브라우저에서만 계산(서버 렌더와 시계·시간대가 달라 글자가 어긋나지 않게)
   const now = useClientNow();
   const likes = useLikeToggle(viewer);
+  const [sheet, setSheet] = useState<BundleSheet | null>(null);
 
   useScrollInHistory(topRef);
   useHoldScrollOnLeave(topRef);
@@ -55,10 +58,12 @@ export function FeedScreen({ links }: FeedScreenProps) {
           onBunchClick={() =>
             router.push(ownBunch ? links.bunchHome : links.otherBunch(bundle.bunch.id))
           }
-          members={bundle.members}
+          members={hideLeftMemberImages(bundle.members)}
+          onMembers={() => setSheet({ kind: 'members', members: bundle.members })}
           photos={bundle.photos}
           title={bundle.title}
           location={bundle.location}
+          onLocationClick={() => setSheet({ kind: 'places', places: bundle.places })}
           date={bundle.date}
           onPhotoClick={() => router.push(FEED_PATHS.bundle(bundle.id))}
           liked={likes.isLiked(bundle)}
@@ -98,6 +103,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
         ) : null}
         <FeedCaughtUp kind="all" />
       </div>
+      <BundleSheets sheet={sheet} onClose={() => setSheet(null)} />
     </PageShell>
   );
 }

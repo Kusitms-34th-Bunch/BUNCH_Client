@@ -1,5 +1,24 @@
 export type FeedBunch = { id: string; name: string; imageSrc?: string | undefined };
 
+/** 번들에 등록된 장소 */
+export type FeedPlace = {
+  id: string;
+  name: string;
+  address?: string | undefined;
+  /** 현재 번치의 콕한 장소에 담겨 있음(다른 멤버·다른 번들에서 콕한 것 포함) */
+  picked: boolean;
+};
+
+/** 번들 참여 멤버(업로드 시점 멤버) */
+export type FeedBundleMember = {
+  name: string;
+  imageSrc?: string | undefined;
+  /** 역할 배지(일반 멤버는 없음) */
+  role?: 'owner' | 'coOwner' | undefined;
+  /** 나간·탈퇴한 멤버: 기본 이미지 + 「작성자」 */
+  left?: boolean | undefined;
+};
+
 export type FeedBundle = {
   id: string;
   /** 번들을 올린 번치 */
@@ -9,6 +28,8 @@ export type FeedBundle = {
   title: string;
   /** 위치 글자(「{첫 위치} 외 N곳」은 서버가 만든 값) */
   location?: string | undefined;
+  /** 등록된 장소(콕하기 시트) */
+  places: FeedPlace[];
   /** 날짜 글자(예: 「2026년 7월 9일」) */
   date?: string | undefined;
   photos: {
@@ -17,7 +38,7 @@ export type FeedBundle = {
     /** 이 사진을 pick한 멤버 */
     pickers?: { name: string; imageSrc?: string | undefined }[] | undefined;
   }[];
-  members: { name: string; imageSrc?: string | undefined }[];
+  members: FeedBundleMember[];
   /** 현재 번치가 좋아요했는지 */
   liked: boolean;
   likeCount: number;

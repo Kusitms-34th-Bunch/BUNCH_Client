@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { withRo } from './josa';
+import { subjectParticle, withRo } from './josa';
 
 describe('withRo', () => {
   it.each([
@@ -10,5 +10,16 @@ describe('withRo', () => {
     ['123', '123로'],
   ])('%s → %s', (word, expected) => {
     expect(withRo(word)).toBe(expected);
+  });
+});
+
+describe('subjectParticle', () => {
+  it.each([
+    ['애월 한담해변', '이'],
+    ['제주 바다', '가'],
+    ['서울', '이'],
+    ['BUNCH', '가'],
+  ])('%s → %s', (word, expected) => {
+    expect(subjectParticle(word)).toBe(expected);
   });
 });
