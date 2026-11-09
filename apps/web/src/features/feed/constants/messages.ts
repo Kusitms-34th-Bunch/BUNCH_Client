@@ -32,7 +32,8 @@ export const FEED_MESSAGES = {
   cancel: '취소',
   deleteCommentTitle: '댓글을 삭제할까요?',
   deleteCommentDescription: '데이터가 삭제되며 복구 불가능해요.',
-  commentDeleted: '댓글을 삭제했어요',
+  // Figma `6079:178315` 문구(기능명세서 「댓글을 삭제했어요」와 다름, 화면은 Figma 기준)
+  commentDeleted: '댓글이 삭제 되었어요.',
   roleLabels: { owner: '메인 관리자', coOwner: '공동 관리자' },
   pickCancelTitle: '이 장소의 콕을 삭제할까요?',
   pickCancelDescription: (name: string, particle: string) =>

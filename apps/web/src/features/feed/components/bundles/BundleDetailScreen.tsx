@@ -53,7 +53,21 @@ type BundleDetailScreenProps = {
 };
 
 const COMMENT_MAX_LENGTH = 200;
-const TOAST_OPTIONS = { position: 'top' } as const;
+// Figma `6079:178315`: 토스트는 입력란 바로 위 12px, 좌우 16씩 띄운 폭
+const TOAST_GAP = 12;
+// Toaster의 기본 아래 여백(Safe Area + 16)
+const TOAST_BASE_OFFSET = 16;
+
+// Toaster가 쓰는 하단 Safe Area(px). 키보드가 열리면 입력란은 Safe Area 없이 내려가지만 토스트 여백에는 남음
+const safeAreaBottom = () => {
+  const probe = document.createElement('div');
+  probe.style.cssText =
+    'position:fixed;visibility:hidden;height:var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))';
+  document.body.append(probe);
+  const height = probe.offsetHeight;
+  probe.remove();
+  return height;
+};
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
@@ -63,12 +77,20 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const router = useRouter();
   const backOr = useBackOr();
   const now = useClientNow();
-  // 입력란 높이가 변하고 키보드도 올라오므로 토스트는 헤더 아래
-  const { viewer, asBunch } = useFeedViewer({ position: 'top' });
+  const composerRef = useRef<HTMLDivElement>(null);
+  // 입력란 위치(답글 상태·줄 수·키보드)가 바뀌므로 토스트를 띄우는 순간 화면 아래에서의 거리로 잼
+  const toastOptions = () => {
+    const top = composerRef.current?.getBoundingClientRect().top;
+    const fromBottom = top === undefined ? 0 : window.innerHeight - top;
+    return {
+      fullWidth: true,
+      bottomOffset: Math.max(0, fromBottom + TOAST_GAP - TOAST_BASE_OFFSET - safeAreaBottom()),
+    };
+  };
+  const { viewer, asBunch } = useFeedViewer(toastOptions);
   const likes = useLikeToggle(viewer);
   const keyboardOpen = useKeyboardOpen();
   const commentsRef = useRef<HTMLElement>(null);
-  const composerRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [replyTarget, setReplyTarget] = useState<{ id: string; author: string } | null>(null);
   const { openPlaces, openMembers } = useBundleSheets();
@@ -83,6 +105,10 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     setAnnouncement((current) => (current === message ? `${message}\u00a0` : message));
   // 등록·삭제가 반영된 뒤 초점을 옮길 댓글
   const focusCommentId = useRef<string | null>(null);
+  // 지운 결과(답글 상태 해제로 입력란 높이도 바뀜)가 그려진 뒤 띄울 토스트
+  const pendingToast = useRef<string | null>(null);
+  // 화면에서 등록한 댓글 ID(시각은 같은 밀리초에 겹칠 수 있어 순번을 씀)
+  const localId = useRef(0);
 
   useHoldScrollOnLeave(commentsRef);
 
@@ -105,6 +131,10 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     const item = document.getElementById(`comment-${id}`);
     item?.scrollIntoView?.({ block: 'nearest' });
     item?.focus({ preventScroll: true });
+    const message = pendingToast.current;
+    if (!message) return;
+    pendingToast.current = null;
+    toast(message, toastOptions());
   }, [comments]);
 
   useEffect(() => {
@@ -150,7 +180,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
       if (!viewer || !content) return;
       const time = Date.now();
       const comment: FeedComment = {
-        id: `local-${time}`,
+        id: `local-${(localId.current += 1)}`,
         author: viewer.memberName ?? text.me,
         avatarSrc: viewer.memberImageSrc,
         bunchName: viewer.name,
@@ -196,7 +226,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
         // 삭제된 댓글에는 답글을 달 수 없으므로 그 댓글에 쓰던 답글 상태를 풂
         setReplyTarget((target) => (target?.id === comment.id ? null : target));
         focusCommentId.current = comment.id;
-        toast(text.commentDeleted, TOAST_OPTIONS);
+        pendingToast.current = text.commentDeleted;
       },
     );
   };

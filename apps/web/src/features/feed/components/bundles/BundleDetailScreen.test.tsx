@@ -147,8 +147,11 @@ describe('BundleDetailScreen', () => {
     const like = screen.getByRole('button', { name: /좋아요/ });
     await user.click(like);
     expect(like).toHaveAttribute('aria-pressed', 'false');
-    // 입력란을 가리지 않게 헤더 아래
-    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { position: 'top' });
+    // 입력란 바로 위, 좌우 16씩 띄운 폭(Figma 6079:178315)
+    expect(toast).toHaveBeenCalledWith(
+      '번치에 참여하면 할 수 있어요.',
+      expect.objectContaining({ fullWidth: true }),
+    );
   });
 
   it('말풍선을 누르면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
@@ -270,7 +273,10 @@ describe('BundleDetailScreen', () => {
     await user.click(within(dialog).getByRole('button', { name: '삭제' }));
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('댓글을 삭제했어요', { position: 'top' }),
+      expect(toast).toHaveBeenCalledWith(
+        '댓글이 삭제 되었어요.',
+        expect.objectContaining({ fullWidth: true }),
+      ),
     );
     expect(screen.queryAllByRole('button', { name: /댓글 더보기/ })).toHaveLength(0);
     expect(screen.getAllByText('삭제된 댓글입니다')).toHaveLength(3);
@@ -291,7 +297,10 @@ describe('BundleDetailScreen', () => {
 
     await waitFor(() => expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull());
     expect(screen.getByRole('listitem', { name: '삭제된 댓글' })).toHaveFocus();
-    expect(toast).toHaveBeenCalledWith('댓글을 삭제했어요', { position: 'top' });
+    expect(toast).toHaveBeenCalledWith(
+      '댓글이 삭제 되었어요.',
+      expect.objectContaining({ fullWidth: true }),
+    );
   });
 
   it('삭제 확인 창의 「취소」는 댓글을 그대로 둔다', async () => {
@@ -325,7 +334,10 @@ describe('BundleDetailScreen', () => {
     await user.type(screen.getByRole('textbox', { name: '댓글 달기' }), '안녕');
     await user.click(screen.getByRole('button', { name: '보내기' }));
 
-    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { position: 'top' });
+    expect(toast).toHaveBeenCalledWith(
+      '번치에 참여하면 할 수 있어요.',
+      expect.objectContaining({ fullWidth: true }),
+    );
     expect(screen.getByText('아직 작성된 댓글이 없어요')).toBeTruthy();
   });
 });
