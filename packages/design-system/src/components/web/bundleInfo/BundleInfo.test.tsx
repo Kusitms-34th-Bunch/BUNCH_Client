@@ -27,6 +27,9 @@ describe('BundleInfo', () => {
 
     rerender(<BundleInfo title="제주 여행" memberOnly variant="overlay" />);
     expect(screen.queryByRole('img', { name: '멤버 공개' })).toBeNull();
+
+    rerender(<BundleInfo title="제주 여행" />);
+    expect(screen.queryByRole('img', { name: '멤버 공개' })).toBeNull();
   });
 
   it('위치·날짜가 없으면 줄을 숨긴다', () => {

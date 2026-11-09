@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -58,21 +58,27 @@ describe('FeedScreen', () => {
     expect(within(cards()[1]!).getByText('5시간 전')).toBeInTheDocument();
   });
 
-  it('사진을 눌러 나갈 때 스크롤을 붙잡아 두고, 그 history 항목으로 돌아왔을 때만 복원한다', async () => {
+  it('스크롤을 그 history 항목에 저장해 돌아오면 복원하고, 떠날 때만 화면을 붙잡는다', async () => {
     const user = userEvent.setup();
     const bunch = { id: 'bunch-trip', name: '여행가조' };
+    window.history.replaceState(null, '');
     const first = renderFeed(bunch);
     const main = first.container.querySelector('main')!;
-    const photo = within(cards()[0]!).getByRole('button', { name: /사진 열기/ });
+    const content = main.firstElementChild as HTMLElement;
 
     main.scrollTop = 300;
-    await user.click(photo);
-    expect(main.scrollTop).toBe(0);
-    expect(main.firstElementChild).toHaveStyle({ transform: 'translateY(-300px)' });
-    // 이동을 기다리는 사이 다시 눌러도 저장한 값 유지
-    await user.click(photo);
-    expect(main.firstElementChild).toHaveStyle({ transform: 'translateY(-300px)' });
+    fireEvent.scroll(main);
+    await waitFor(() =>
+      expect((window.history.state as { feedScroll?: number }).feedScroll).toBe(300),
+    );
+    // 이동이 취소되어도 피드가 밀린 채 남지 않게, 누르기만 해서는 그대로
+    await user.click(within(cards()[0]!).getByRole('button', { name: /사진 열기/ }));
+    expect(main.scrollTop).toBe(300);
+    expect(content.style.transform).toBe('');
+
     first.unmount();
+    expect(main.scrollTop).toBe(0);
+    expect(content.style.transform).toBe('translateY(-300px)');
 
     const back = renderFeed(bunch);
     expect(back.container.querySelector('main')!.scrollTop).toBe(300);
@@ -81,6 +87,20 @@ describe('FeedScreen', () => {
     // 탭으로 새로 들어온 피드는 새 history 항목이라 저장값이 없음
     window.history.pushState(null, '');
     expect(renderFeed(bunch).container.querySelector('main')!.scrollTop).toBe(0);
+  });
+
+  it('Strict Mode에서 돌아와도 복원한 스크롤에 붙잡기 값이 겹치지 않는다', () => {
+    configure({ reactStrictMode: true });
+    try {
+      window.history.replaceState({ feedScroll: 300 }, '');
+      const { container } = renderFeed({ id: 'bunch-trip', name: '여행가조' });
+      const main = container.querySelector('main')!;
+
+      expect(main.scrollTop).toBe(300);
+      expect((main.firstElementChild as HTMLElement).style.transform).toBe('');
+    } finally {
+      configure({ reactStrictMode: false });
+    }
   });
 
   it('헤더에 알림과 지금 번치(번치 홈)가 있고, 카드에서 누르는 곳마다 다른 화면으로 간다', async () => {

@@ -5,10 +5,11 @@ import { ChipButton } from '@app/design-system/web';
 import { useState } from 'react';
 import type { FeedMemberComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
+import { DELETED_USER_IMAGE } from '../../lib/deletedUserImage';
 
 /**
  * 멤버별 코멘트(기능명세서 6.2.5, Figma `5367:103515`): 참여 멤버 칩(가로 스크롤, 처음엔 첫 멤버)과 선택한 멤버의 코멘트
- * 나간·탈퇴한 멤버는 「작성자」, 내용 대신 「삭제된 코멘트입니다」
+ * 나간·탈퇴한 멤버는 기본 이미지와 「작성자」, 내용 대신 「삭제된 코멘트입니다」
  */
 export function MemberComments({ members }: { members: FeedMemberComment[] }) {
   const [selectedId, setSelectedId] = useState(members[0]?.id);
@@ -28,7 +29,7 @@ export function MemberComments({ members }: { members: FeedMemberComment[] }) {
             key={member.id}
             size="M"
             variant="avatar"
-            avatarSrc={member.left ? undefined : member.imageSrc}
+            avatarSrc={member.left ? DELETED_USER_IMAGE : member.imageSrc}
             selected={member.id === selectedId}
             onClick={() => setSelectedId(member.id)}
           >

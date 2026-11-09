@@ -10,7 +10,7 @@ import {
   CommentItem,
 } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -19,8 +19,10 @@ import { FEED_PATHS } from '../../constants/paths';
 import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
 import { useClientNow } from '../../hooks/useClientNow';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
+import { useHoldScrollOnLeave } from '../../hooks/useHoldScrollOnLeave';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
+import { DELETED_USER_IMAGE } from '../../lib/deletedUserImage';
 import { formatElapsedTime } from '../../lib/elapsedTime';
 import { withRo } from '../../lib/josa';
 import { MemberComments } from './MemberComments';
@@ -53,18 +55,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const [replyTarget, setReplyTarget] = useState<string | null>(null);
   const bundle = getBundleDetailFixture(bundleId);
 
-  // 나가는 화면은 DOM에 다시 붙으며 스크롤이 0이 되어 맨 위로 튀므로 스크롤을 transform으로 옮겨 둠(뒤로 가기 경로와 무관)
-  useLayoutEffect(() => {
-    const main = commentsRef.current?.closest('main');
-    return () => {
-      if (!main?.scrollTop) return;
-      for (const child of main.children) {
-        if (child instanceof HTMLElement)
-          child.style.transform = `translateY(${-main.scrollTop}px)`;
-      }
-      main.scrollTop = 0;
-    };
-  }, []);
+  useHoldScrollOnLeave(commentsRef);
 
   // 입력란은 CommentComposer 안쪽이라 감싼 요소에서 찾음
   const focusInput = useCallback(
@@ -183,7 +174,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
               <li key={comment.id}>
                 <CommentItem
                   author={comment.author}
-                  avatarSrc={comment.avatarSrc}
+                  avatarSrc={comment.deleted ? DELETED_USER_IMAGE : comment.avatarSrc}
                   bunchName={comment.bunchName}
                   bunchColor={comment.bunchColor}
                   date={comment.date}
