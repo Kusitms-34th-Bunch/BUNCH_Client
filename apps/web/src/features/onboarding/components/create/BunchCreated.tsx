@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
-import { defaultProfileImage } from '@/shared/lib/bunchProfile';
+import { defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
@@ -24,7 +24,7 @@ export function BunchCreated() {
   const [createdName] = useState(draft.createdName ?? draft.name);
   // 초대 화면에서 돌아올 때 완료 기록의 성격 사용(입력값은 완료 때 비워짐)
   const [createdMood] = useState(draft.createdMood ?? draft.mood);
-  const defaultImage = defaultProfileImage(createdMood);
+  const defaultImage = defaultBunchImage(createdMood);
 
   // 완료 기록을 남기고 입력값을 초기화해 뒤로 가기 시 중복 생성 방지
   useEffect(() => {

@@ -12,10 +12,10 @@ export function NoBunch() {
 
   return (
     <div className="gap-s17 px-s8 flex min-h-full flex-col items-center justify-center">
-      {/* Figma 4744:89798: 일러스트 103×91, 일러스트와 문구 16, 제목·설명 4 */}
+      {/* Figma 5991:162053: 일러스트 72×72, 일러스트와 문구 16, 제목·설명 4 */}
       <div className="gap-s8 flex flex-col items-center">
         {/* SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김 */}
-        <Image src={bunchEmpty as StaticImageData} alt="" width={103} height={91} />
+        <Image src={bunchEmpty as StaticImageData} alt="" width={72} height={72} />
         <div className="gap-s2 flex flex-col items-center text-center">
           <p className="typography-body-1-medium text-text-tertiary">참여 중인 번치가 없어요</p>
           <p className="typography-body-4-regular text-text-quaternary">

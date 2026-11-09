@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { likeStore } from '../../lib/likeStore';
@@ -65,7 +66,7 @@ describe('BundleDetailScreen', () => {
     renderDetail('bundle-2');
 
     const first = screen.getByRole('button', { name: /^참여 멤버 3명/ }).querySelector('img');
-    expect(first?.getAttribute('src')).toContain('deleted-user');
+    expect(first?.getAttribute('src')).toBe(DEFAULT_PROFILE_IMAGE);
   });
 
   it('제목·멤버 공개 뱃지·사진·댓글을 보여 주고, 입력란에 지금 번치 이름이 들어간다', () => {
@@ -97,7 +98,7 @@ describe('BundleDetailScreen', () => {
     expect(region.queryByText(/퇴근하고 뛰는 게/)).toBeNull();
 
     const leftChip = region.getByRole('button', { name: '작성자' });
-    expect(leftChip.querySelector('img')?.getAttribute('src')).toContain('deleted-user');
+    expect(leftChip.querySelector('img')?.getAttribute('src')).toBe(DEFAULT_PROFILE_IMAGE);
     await user.click(leftChip);
     expect(region.getByText('삭제된 코멘트입니다')).toBeTruthy();
   });
@@ -172,7 +173,7 @@ describe('BundleDetailScreen', () => {
     const comments = within(screen.getByRole('region', { name: '댓글' })).getAllByRole('listitem');
     const images = comments.map((item) => item.querySelector('img')?.getAttribute('src') ?? '');
 
-    expect(images.filter((src) => src.includes('deleted-user'))).toHaveLength(2);
+    expect(images.filter((src) => src === DEFAULT_PROFILE_IMAGE)).toHaveLength(2);
   });
 
   it('댓글이 없으면 빈 안내를 보인다', () => {
