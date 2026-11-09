@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { FeedComment } from './types';
-import { addComment, addReply, badgeColorOf, formatCommentDate, markDeleted } from './comments';
+import {
+  addComment,
+  addReply,
+  badgeColorOf,
+  formatCommentDate,
+  hideComment,
+  markDeleted,
+} from './comments';
 
 const list: FeedComment[] = [
   { id: 'a', author: '수인', content: '원댓글', replyCount: 1 },
@@ -36,5 +43,11 @@ describe('comments', () => {
     expect(badgeColorOf('TYPE_3')).toBe('pink');
     expect(badgeColorOf(undefined)).toBe('gray');
     expect(formatCommentDate(new Date(2026, 0, 5).getTime())).toBe('2026.01.05');
+  });
+
+  it('신고한 원댓글은 답글과 함께 숨기고 숨긴 수를 돌려준다', () => {
+    expect(hideComment(list, 'a')).toEqual({ comments: [list[2]], hiddenCount: 2 });
+    expect(hideComment(list, 'a-1').comments.map(({ id }) => id)).toEqual(['a', 'b']);
+    expect(hideComment(list, 'a-1').comments[0]?.replyCount).toBe(0);
   });
 });

@@ -29,6 +29,16 @@ export const FEED_MESSAGES = {
   replyAdded: '답글을 등록했어요',
   commentMenuTitle: '댓글 더보기',
   deleteComment: '삭제',
+  report: '신고',
+  bundleMore: '번들 더보기',
+  /** 같은 작성자 이름이 겹쳐도 내 댓글 메뉴를 구분 */
+  myCommentMore: '내 댓글 더보기',
+  /** 같은 작성자의 댓글이 여럿이어도 구분되게 내용 앞부분을 붙임 */
+  commentMore: (author: string, preview: string) => `${author} 댓글 더보기: ${preview}`,
+  reportCommentTitle: '이 댓글을 신고할까요?',
+  reportBundleTitle: '이 게시글을 신고할까요?',
+  reportAs: (bunchName: string) => `${bunchName} 계정으로 신고해요`,
+  reported: '신고가 접수됐어요.',
   cancel: '취소',
   deleteCommentTitle: '댓글을 삭제할까요?',
   deleteCommentDescription: '데이터가 삭제되며 복구 불가능해요.',

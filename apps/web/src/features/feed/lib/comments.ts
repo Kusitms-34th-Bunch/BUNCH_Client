@@ -42,6 +42,19 @@ export const addReply = (
   return next;
 };
 
+/** 신고한 댓글은 바로 숨김. 원댓글이면 아래 답글도, 답글이면 원댓글의 「답글 N」에서도 뺌(차단과 같은 규칙). 숨긴 수와 함께 돌려줌 */
+export const hideComment = (comments: readonly FeedComment[], commentId: string) => {
+  const parentId = comments.find(({ id }) => id === commentId)?.parentId;
+  const next = comments
+    .filter(({ id, parentId: parent }) => id !== commentId && parent !== commentId)
+    .map((comment) =>
+      comment.id === parentId
+        ? { ...comment, replyCount: Math.max(0, (comment.replyCount ?? 0) - 1) }
+        : comment,
+    );
+  return { comments: next, hiddenCount: comments.length - next.length };
+};
+
 /** 지운 댓글은 목록에 남기고 내용·배지·날짜를 지움(답글과 「답글 N」의 수는 그대로) */
 export const markDeleted = (comments: readonly FeedComment[], commentId: string, author: string) =>
   comments.map((comment) =>
