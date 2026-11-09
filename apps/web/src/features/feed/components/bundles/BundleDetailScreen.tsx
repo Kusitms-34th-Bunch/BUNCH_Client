@@ -25,6 +25,7 @@ import { useLikeToggle } from '../../hooks/useLikeToggle';
 import { DELETED_USER_IMAGE } from '../../lib/deletedUserImage';
 import { formatElapsedTime } from '../../lib/elapsedTime';
 import { withRo } from '../../lib/josa';
+import { BundleSheets, type BundleSheet } from './BundleSheets';
 import { MemberComments } from './MemberComments';
 
 type BundleDetailScreenProps = {
@@ -39,7 +40,7 @@ const COMMENT_MAX_LENGTH = 200;
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * API 연결 전 fixture. 댓글 등록·답글 등록·삭제(구현 단위 4), 더보기(5·6), 시트(7)는 각 단위에서 추가
+ * API 연결 전 fixture. 댓글 등록·답글 등록·삭제(구현 단위 4), 더보기(5·6)는 각 단위에서 추가
  */
 export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDetailScreenProps) {
   const router = useRouter();
@@ -53,6 +54,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const composerRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [replyTarget, setReplyTarget] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<BundleSheet | null>(null);
   const bundle = getBundleDetailFixture(bundleId);
 
   useHoldScrollOnLeave(commentsRef);
@@ -146,12 +148,14 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
           )
         }
         members={bundle.members}
+        onMembers={() => setSheet({ kind: 'members', members: bundle.members })}
         className="px-padding-p8 py-s4"
       />
       <BundleInfo
         title={bundle.title}
         titleAs="h1"
         location={bundle.location}
+        onLocationClick={() => setSheet({ kind: 'places', places: bundle.places })}
         date={bundle.date}
         memberOnly={bundle.memberOnly}
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
@@ -198,6 +202,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
           </p>
         )}
       </section>
+      <BundleSheets sheet={sheet} onClose={() => setSheet(null)} />
     </PageShell>
   );
 }

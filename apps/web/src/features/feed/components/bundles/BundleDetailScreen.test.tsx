@@ -39,6 +39,21 @@ beforeEach(() => {
 });
 
 describe('BundleDetailScreen', () => {
+  it('위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(screen.getByRole('button', { name: /^위치/ }));
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
+    );
+
+    await user.click(screen.getByRole('button', { name: /^참여 멤버 \d+명/ }));
+    expect(await screen.findByRole('dialog', { name: '참여 멤버' })).toBeTruthy();
+  });
+
   it('제목·멤버 공개 뱃지·사진·댓글을 보여 주고, 입력란에 지금 번치 이름이 들어간다', () => {
     renderDetail();
 

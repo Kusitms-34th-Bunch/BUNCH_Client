@@ -21,6 +21,15 @@ export const FEED_MESSAGES = {
   commentPlaceholderAs: (bunchRo: string) => `${bunchRo} 댓글 달기`,
   replyPlaceholder: '답글 달기',
   replyPlaceholderAs: (bunchRo: string) => `${bunchRo} 답글 달기`,
+  placeSheetTitle: '어느 장소를 콕할까요?',
+  membersSheetTitle: '참여 멤버',
+  sheetCancel: '취소',
+  roleLabels: { owner: '메인 관리자', coOwner: '공동 관리자' },
+  pickCancelTitle: '이 장소의 콕을 삭제할까요?',
+  pickCancelDescription: (name: string, particle: string) =>
+    `‘${name}’${particle} 번치의 콕한 장소에서 삭제돼요.`,
+  pickCancelNo: '아니요',
+  pickCancelConfirm: '삭제하기',
   /** 내 정보를 받지 못해 번치 명의 행동을 할 수 없을 때 */
   actionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
 } as const;

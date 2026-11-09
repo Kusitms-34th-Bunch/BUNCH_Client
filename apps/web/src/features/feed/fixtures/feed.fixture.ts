@@ -8,6 +8,7 @@ const members = (count: number) =>
   Array.from({ length: count }, (_, index) => ({
     name: `멤버 ${index + 1}`,
     imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_3,
+    role: index === 0 ? ('owner' as const) : undefined,
   }));
 const photos = (...names: string[]) => names.map((name) => ({ src: `/mock/photos/${name}.jpg` }));
 
@@ -16,6 +17,10 @@ const bundle = (overrides: Partial<FeedBundle> & Pick<FeedBundle, 'id'>): FeedBu
   publishedAt: hoursAgo(48),
   title: '제주 3박4일 여행 아카이빙',
   location: '애월읍 외 1곳',
+  places: [
+    { id: 'place-handam', name: '애월 한담해변', address: '제주 제주시 애월읍', picked: false },
+    { id: 'place-halla', name: '한라산', address: '제주 서귀포시 토평동', picked: true },
+  ],
   date: '2026년 7월 9일',
   photos: photos('P1', 'P2', 'P3', 'P4'),
   members: members(7),
@@ -27,7 +32,8 @@ const bundle = (overrides: Partial<FeedBundle> & Pick<FeedBundle, 'id'>): FeedBu
 
 export const feedFixture: FeedData = {
   following: [
-    bundle({ id: 'bundle-1', liked: true }),
+    // 나간 멤버가 있는 예시
+    bundle({ id: 'bundle-1', liked: true, members: [...members(6), { name: '', left: true }] }),
     bundle({
       id: 'bundle-2',
       // 팔로우한 비공개 번치의 번들도 이 구간에 나옴
@@ -45,6 +51,7 @@ export const feedFixture: FeedData = {
       publishedAt: hoursAgo(24 * 10),
       title: '여름밤 바닷가 캠핑',
       location: undefined,
+      places: [],
       photos: photos('C1'),
       members: members(2),
       likeCount: 12,

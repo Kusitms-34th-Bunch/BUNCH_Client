@@ -40,6 +40,22 @@ beforeEach(() => {
 });
 
 describe('FeedScreen', () => {
+  it('카드의 위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
+    const user = userEvent.setup();
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+
+    await user.click(within(cards()[0]!).getByRole('button', { name: /위치/ }));
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
+    );
+
+    await user.click(within(cards()[0]!).getByRole('button', { name: /참여 멤버/ }));
+    const sheet = await screen.findByRole('dialog', { name: '참여 멤버' });
+    expect(within(sheet).getByText('작성자')).toBeTruthy();
+  });
+
   it('팔로우한 번치 구간 → 구간 안내 → 공개 구간 → 끝 안내 순서로 보인다', () => {
     renderFeed({ id: 'bunch-trip', name: '여행가조' });
 
