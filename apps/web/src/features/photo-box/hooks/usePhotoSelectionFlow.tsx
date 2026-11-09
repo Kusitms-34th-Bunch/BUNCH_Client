@@ -1,6 +1,14 @@
 import { toast } from '@app/design-system';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { PhotoBoxActions, PhotoBoxData } from '../lib/types';
+import {
+  BundleConfirmDialog,
+  DateChangeConfirmDialog,
+  DeleteConfirmDialog,
+} from '../components/PhotoSelectionDialogs';
+import { SavingDateSheet } from '../components/SavingDateSheet';
 import { TOAST_ABOVE_TAB_BAR_OFFSET } from '../constants/layout';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import {
@@ -13,8 +21,6 @@ import {
 import { pruneSelection, toggleSelection, type PhotoSelection } from '../lib/selection';
 
 export type PhotoMenuAction = 'save' | 'bundle' | 'date' | 'delete';
-
-type SelectionDialog = 'bundle' | 'delete' | 'date';
 
 // 사진함 토스트는 목록 폭(343px)으로 펼침(Figma 사진함_09·11·12). 선택 모드를 끝낸 직후에는 탭 막대가 다시 보이므로 막대 위로 올림
 const notify = (message: string, { aboveTabBar = false } = {}) =>
@@ -47,9 +53,12 @@ export function usePhotoSelectionFlow({
   const [selecting, setSelecting] = useState(false);
   const [selection, setSelection] = useState<PhotoSelection>([]);
   const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
-  const [dialog, setDialog] = useState<SelectionDialog | undefined>(undefined);
-  // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 확인을 기다리는 날짜(확인 창이 열려 있는 동안만 값이 있음)
-  const [dateToConfirm, setDateToConfirm] = useState<Date | undefined>(undefined);
+  const noData = !data;
+  const openOverlay = useScreenOverlay();
+  // 화면 상태가 바뀌어(목록을 못 받음) 창이 의미를 잃으면 모두 닫음
+  useEffect(() => {
+    if (noData) openOverlay.closeAll();
+  }, [noData, openOverlay]);
   // 선택 모드를 끝낼 때마다 올려, 끝나기 전에 시작한 요청의 늦은 결과를 걸러냄
   const sessionRef = useRef(0);
 
@@ -63,8 +72,6 @@ export function usePhotoSelectionFlow({
     sessionRef.current += 1;
     setSelecting(false);
     setSelection([]);
-    setDialog(undefined);
-    setDateToConfirm(undefined);
   };
 
   const toggle = (photoId: string) => {
@@ -123,31 +130,46 @@ export function usePhotoSelectionFlow({
       void save();
     } else if (action === 'bundle') {
       if (selection.length > MAX_BUNDLE_PHOTOS) notify(PHOTO_BOX_MESSAGES.bundleTooMany);
-      else setDialog('bundle');
+      else
+        openOverlay((rootProps, close) => (
+          <BundleConfirmDialog
+            {...rootProps}
+            onConfirm={() => {
+              close();
+              confirmBundle();
+            }}
+          />
+        ));
     } else if (action === 'date') {
-      if (canDeletePhotos(selectedPhotos, data.viewer)) setDialog('date');
-      else notify(PHOTO_BOX_MESSAGES.dateForbidden);
+      // 날짜는 항상 오늘 달을 선택 없이 열고(명세 3.4.1) 저장하면 고른 사진 전부의 날짜를 바꿈
+      if (canDeletePhotos(selectedPhotos, data.viewer)) {
+        openOverlay((rootProps, close) => (
+          <SavingDateSheet {...rootProps} close={close} beforeSave={checkDate} save={applyDate} />
+        ));
+      } else notify(PHOTO_BOX_MESSAGES.dateForbidden);
     } else if (canDeletePhotos(selectedPhotos, data.viewer)) {
-      setDialog('delete');
+      const description = PHOTO_BOX_MESSAGES.deleteConfirmDescription(deleteKind ?? 'own');
+      openOverlay((rootProps, close) => (
+        <DeleteConfirmDialog
+          {...rootProps}
+          description={description}
+          onConfirm={() => {
+            close();
+            void confirmDelete();
+          }}
+        />
+      ));
     } else {
       notify(PHOTO_BOX_MESSAGES.deleteForbidden);
     }
   };
 
-  const closeDialog = () => setDialog(undefined);
-
-  // 저장이 도는 동안은 시트를 닫지 않음
-  const closeDateSheet = () => {
-    if (pending !== 'date') setDialog(undefined);
-  };
-
-  const confirmBundle = () => {
-    setDialog(undefined);
+  // 창이 열려 있는 사이 목록이 바뀔 수 있어 확정할 때의 최신 값으로 다시 확인
+  const confirmBundle = usePreservedCallback(() => {
     if (isSelectionCurrent()) onCreateBundle?.(selection);
-  };
+  });
 
-  const confirmDelete = async () => {
-    setDialog(undefined);
+  const confirmDelete = usePreservedCallback(async () => {
     if (pending || !isSelectionCurrent()) return;
     const session = sessionRef.current;
     setPending('delete');
@@ -166,7 +188,7 @@ export function usePhotoSelectionFlow({
       // 실패하면 선택을 그대로 두어 바로 다시 시도할 수 있게 함
       if (session === sessionRef.current) notify(PHOTO_BOX_MESSAGES.deleteFailed);
     }
-  };
+  });
 
   // 여러 장은 전부 성공 또는 전부 실패: 성공하면 선택 모드를 끝내고 토스트, 실패하면 시트를 그대로 둠
   const changeDate = async (date: Date) => {
@@ -177,25 +199,41 @@ export function usePhotoSelectionFlow({
     } catch {
       setPending(undefined);
       if (session === sessionRef.current) notify(PHOTO_BOX_MESSAGES.dateChangeFailed);
-      return;
+      return false;
     }
     setPending(undefined);
-    if (session !== sessionRef.current) return;
+    if (session !== sessionRef.current) return true;
     notify(PHOTO_BOX_MESSAGES.dateChanged, { aboveTabBar: true });
     stop();
+    return true;
   };
 
-  const saveDate = (date: Date) => {
-    if (pending || !data || !isSelectionCurrent()) return;
-    if (needsDateChangeConfirm(selectedPhotos, data.viewer)) setDateToConfirm(date);
-    else void changeDate(date);
-  };
+  // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸)
+  const askDateConfirm = () =>
+    new Promise<boolean>((resolve) => {
+      openOverlay(
+        (rootProps, close) => (
+          <DateChangeConfirmDialog
+            {...rootProps}
+            onConfirm={() => {
+              resolve(true);
+              close();
+            }}
+          />
+        ),
+        () => resolve(false),
+      );
+    });
 
-  const confirmDateChange = () => {
-    const date = dateToConfirm;
-    setDateToConfirm(undefined);
-    if (date && isSelectionCurrent()) void changeDate(date);
-  };
+  const checkDate = usePreservedCallback(async () => {
+    if (pending || !data || !isSelectionCurrent()) return false;
+    return !needsDateChangeConfirm(selectedPhotos, data.viewer) || (await askDateConfirm());
+  });
+
+  // 확인 창을 거치는 사이 목록이 바뀔 수 있어 저장할 때의 최신 값으로 다시 확인
+  const applyDate = usePreservedCallback(async (date: Date) =>
+    isSelectionCurrent() ? changeDate(date) : false,
+  );
 
   return {
     selecting,
@@ -203,20 +241,9 @@ export function usePhotoSelectionFlow({
     /** 저장·삭제·날짜 변경 요청이 도는 중 */
     busy: pending !== undefined,
     saving: pending === 'save',
-    dateSaving: pending === 'date',
-    dateConfirmOpen: dateToConfirm !== undefined,
-    dialog,
-    deleteKind,
     start,
     stop,
     toggle,
     handleMenuAction,
-    closeDialog,
-    closeDateSheet,
-    saveDate,
-    confirmDateChange,
-    cancelDateConfirm: () => setDateToConfirm(undefined),
-    confirmBundle,
-    confirmDelete,
   };
 }

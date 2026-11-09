@@ -1,11 +1,10 @@
 'use client';
 
 import { Dialog } from '@app/design-system';
+import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 
-type LeaveDraftDialogProps = {
-  open: boolean;
-  onOpenChange: (_open: boolean) => void;
+type LeaveDraftDialogProps = ScreenOverlayProps & {
   /** 「나가기」를 눌렀을 때 */
   onConfirm: () => void;
   /** 번들을 만든 멤버가 나가는 경우(번들이 삭제된다는 문구) */
@@ -17,13 +16,12 @@ type LeaveDraftDialogProps = {
  * 초안 생성자는 번들이 삭제된다는 문구를 보고, 되돌릴 수 없는 동작이라 최초 포커스는 「취소」(Dialog 기본)에 두며 바깥 누름은 무시
  */
 export function LeaveDraftDialog({
-  open,
-  onOpenChange,
   onConfirm,
   creator = false,
+  ...rootProps
 }: LeaveDraftDialogProps) {
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root {...rootProps}>
       <Dialog.Content>
         <Dialog.Title>
           {creator ? BUNDLE_MESSAGES.leaveCreatorTitle : BUNDLE_MESSAGES.leaveConfirmTitle}

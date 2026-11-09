@@ -11,6 +11,8 @@ export type FeedPlace = {
 
 /** 번들 참여 멤버(업로드 시점 멤버) */
 export type FeedBundleMember = {
+  /** 멤버 프로필로 갈 때 쓰는 ID. 나간·탈퇴한 멤버는 없음 */
+  id?: string | undefined;
   name: string;
   imageSrc?: string | undefined;
   /** 역할 배지(일반 멤버는 없음) */
@@ -45,8 +47,24 @@ export type FeedBundle = {
   commentCount: number;
 };
 
-/** 팔로우한 번치 구간과 공개 구간(앞 구간에 나온 번들은 서버가 뺌) */
-export type FeedData = { following: FeedBundle[]; public: FeedBundle[] };
+/** 광고(BUNCH SPOT) 카드 */
+export type FeedAd = {
+  id: string;
+  /** 장소 이름 */
+  title: string;
+  imageSrc: string;
+  logoSrc?: string | undefined;
+  /** 홍보 문구 */
+  tagline: string;
+  description?: string | undefined;
+  location?: string | undefined;
+  tags?: readonly string[] | undefined;
+  /** 현재 번치의 콕한 장소에 담겨 있음 */
+  picked: boolean;
+};
+
+/** 팔로우한 번치 구간과 공개 구간(앞 구간에 나온 번들은 서버가 뺌), 공개 구간 끝의 광고 */
+export type FeedData = { following: FeedBundle[]; public: FeedBundle[]; ads: FeedAd[] };
 
 /** 피드를 보는 사람의 지금 번치. 소속 번치가 없으면 null, 아직 모르면(첫 hydration) undefined */
 export type FeedViewer = { bunchId: string; name: string; imageSrc?: string | undefined } | null;
@@ -80,4 +98,22 @@ export type FeedBundleDetail = FeedBundle & {
   memberOnly: boolean;
   memberComments: FeedMemberComment[];
   comments: FeedComment[];
+};
+
+export type FeedFollowStatus = 'none' | 'following' | 'requested';
+
+/** 멤버가 참여 중인 번치(팔로우 상태는 현재 번치 기준) */
+export type FeedMemberBunch = {
+  id: string;
+  name: string;
+  imageSrc?: string | undefined;
+  isPrivate: boolean;
+  followStatus: FeedFollowStatus;
+};
+
+export type FeedMemberProfile = {
+  id: string;
+  name: string;
+  imageSrc?: string | undefined;
+  bunches: FeedMemberBunch[];
 };

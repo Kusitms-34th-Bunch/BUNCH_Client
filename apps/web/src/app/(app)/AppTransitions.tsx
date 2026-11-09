@@ -267,6 +267,31 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 참여 멤버 시트 → 멤버 프로필 → 번치 프로필도 한 단계씩 들어가는 drill
+  {
+    from: MAIN_TAB_PATHS.feed,
+    to: FEED_PATHS.transitionIds.member,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.bundle,
+    to: FEED_PATHS.transitionIds.member,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.member,
+    to: BUNCH_HOME_PATHS.home,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.member,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
   // 피드 헤더 알림도 번치 홈 알림과 같은 drill
   {
     from: MAIN_TAB_PATHS.feed,

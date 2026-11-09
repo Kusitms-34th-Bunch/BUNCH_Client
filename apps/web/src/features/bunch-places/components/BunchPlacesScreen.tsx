@@ -8,10 +8,11 @@ import {
   LineCopyMediumIcon,
   LineTrashcanMediumIcon,
 } from '@app/design-system';
-import { BottomSheet, LocationCard, MenuLabel } from '@app/design-system/web';
+import { LocationCard, MoreMenuSheet } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { PLACES_MESSAGES } from '../constants/messages';
 import { countByMember, filterByMember } from '../lib/places';
 import { ALL_MEMBERS, type KokPlace, type PlaceMember } from '../lib/types';
@@ -48,12 +49,7 @@ export function BunchPlacesScreen({
   onBrowseFeed,
 }: BunchPlacesScreenProps) {
   const [selectedId, setSelectedId] = useState(ALL_MEMBERS);
-  const [menuTarget, setMenuTarget] = useState<KokPlace | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [dialogTarget, setDialogTarget] = useState<KokPlace | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  // 시트·모달이 다 닫힌 뒤 할 일(토스트가 열린 창 뒤에 가려지거나 낭독이 묻히지 않게)
-  const afterClose = useRef<(() => void) | null>(null);
+  const openOverlay = useScreenOverlay();
   // 뺀 카드가 사라지면 초점이 body로 떨어지므로 같은 자리에 온 다음 카드(없으면 빈 상태 제목)로 옮김
   const listRef = useRef<HTMLUListElement>(null);
   const emptyRef = useRef<HTMLHeadingElement>(null);
@@ -96,10 +92,66 @@ export function BunchPlacesScreen({
     onRemove(place);
   };
 
-  const runAfterClose = () => {
-    const task = afterClose.current;
-    afterClose.current = null;
-    task?.();
+  // 더보기 시트(화면설계서 3-1·5·6): 주소 복사하기 / 콕에서 빼기 / 취소
+  // 항목을 누르면 닫고, 동작은 닫힌 뒤 실행(토스트가 열린 창 뒤에 가려지거나 낭독이 묻히지 않게)
+  const openMenu = (place: KokPlace) => {
+    let afterClose: (() => void) | undefined;
+    openOverlay(
+      (rootProps, close) => (
+        <MoreMenuSheet
+          {...rootProps}
+          title={`${place.name} ${PLACES_MESSAGES.menuTitle}`}
+          cancelLabel={PLACES_MESSAGES.cancel}
+          items={[
+            {
+              id: 'copy',
+              label: PLACES_MESSAGES.copyAddress,
+              leftIcon: <LineCopyMediumIcon aria-hidden />,
+              onSelect: () => {
+                // 클립보드 쓰기는 누른 순간(사용자 제스처 안)에 하고, 결과 알림만 시트가 닫힌 뒤로 미룸
+                const copied = onCopyAddress(place);
+                afterClose = () => void copied.then(onCopyDone);
+                close();
+              },
+            },
+            {
+              id: 'remove',
+              label: PLACES_MESSAGES.removeFromPlaces,
+              leftIcon: <LineTrashcanMediumIcon aria-hidden />,
+              onSelect: () => {
+                afterClose = () => removePlace(place);
+                close();
+              },
+            },
+          ]}
+        />
+      ),
+      () => afterClose?.(),
+    );
+  };
+
+  // 볼 수 없는 번들 모달(화면설계서 4번, Figma 4164:96354): 취소 왼쪽·콕에서 빼기 오른쪽
+  const openUnavailable = (place: KokPlace) => {
+    let confirmed = false;
+    openOverlay(
+      (rootProps, close) => (
+        <ConfirmDialog
+          {...rootProps}
+          title={PLACES_MESSAGES.unavailableTitle}
+          description={PLACES_MESSAGES.unavailableDescription}
+          appearance="solid"
+          cancelLabel={PLACES_MESSAGES.cancel}
+          confirmLabel={PLACES_MESSAGES.removeFromPlaces}
+          onConfirm={() => {
+            confirmed = true;
+            close();
+          }}
+        />
+      ),
+      () => {
+        if (confirmed) removePlace(place);
+      },
+    );
   };
 
   const sourceProps = (place: KokPlace) => {
@@ -116,10 +168,7 @@ export function BunchPlacesScreen({
 
   const clickHandler = (place: KokPlace) => {
     if (place.source.kind === 'unavailable') {
-      return () => {
-        setDialogTarget(place);
-        setDialogOpen(true);
-      };
+      return () => openUnavailable(place);
     }
     if (place.source.kind === 'bundle' && onOpenBundle) return () => onOpenBundle(place);
     // 광고에서 콕한 장소는 담아 온 번들이 없어 눌러도 이동하지 않음(기능명세 8.1.3 상세 동작 4)
@@ -157,10 +206,7 @@ export function BunchPlacesScreen({
                 address={place.address ?? ''}
                 {...sourceProps(place)}
                 onClick={clickHandler(place)}
-                onMore={() => {
-                  setMenuTarget(place);
-                  setMenuOpen(true);
-                }}
+                onMore={() => openMenu(place)}
               />
             </li>
           ))}
@@ -187,81 +233,6 @@ export function BunchPlacesScreen({
           </div>
         </div>
       )}
-
-      {/* 더보기 시트(화면설계서 3-1·5·6): 주소 복사하기 / 콕에서 빼기 / 취소. 항목을 누르면 닫고, 동작은 닫힌 뒤 실행 */}
-      <BottomSheet.Root
-        open={menuOpen}
-        onOpenChange={setMenuOpen}
-        onOpenChangeComplete={(next) => {
-          if (next) return;
-          setMenuTarget(null);
-          runAfterClose();
-        }}
-      >
-        <BottomSheet.Content>
-          <BottomSheet.Title className="sr-only">
-            {menuTarget
-              ? `${menuTarget.name} ${PLACES_MESSAGES.menuTitle}`
-              : PLACES_MESSAGES.menuTitle}
-          </BottomSheet.Title>
-          <BottomSheet.Body className="gap-s4 flex flex-col">
-            <MenuLabel
-              className="shrink-0"
-              showChevron={false}
-              leftIcon={<LineCopyMediumIcon aria-hidden />}
-              onClick={() => {
-                const target = menuTarget;
-                if (target) {
-                  // 클립보드 쓰기는 누른 순간(사용자 제스처 안)에 하고, 결과 알림만 시트가 닫힌 뒤로 미룸
-                  const copied = onCopyAddress(target);
-                  afterClose.current = () => void copied.then(onCopyDone);
-                }
-                setMenuOpen(false);
-              }}
-            >
-              {PLACES_MESSAGES.copyAddress}
-            </MenuLabel>
-            <MenuLabel
-              className="shrink-0"
-              showChevron={false}
-              leftIcon={<LineTrashcanMediumIcon aria-hidden />}
-              onClick={() => {
-                const target = menuTarget;
-                if (target) afterClose.current = () => removePlace(target);
-                setMenuOpen(false);
-              }}
-            >
-              {PLACES_MESSAGES.removeFromPlaces}
-            </MenuLabel>
-          </BottomSheet.Body>
-          <BottomSheet.Footer>
-            <Button variant="secondary" onClick={() => setMenuOpen(false)}>
-              {PLACES_MESSAGES.cancel}
-            </Button>
-          </BottomSheet.Footer>
-        </BottomSheet.Content>
-      </BottomSheet.Root>
-
-      {/* 볼 수 없는 번들 모달(화면설계서 4번, Figma 4164:96354): 취소 왼쪽·콕에서 빼기 오른쪽 */}
-      <ConfirmDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onOpenChangeComplete={(next) => {
-          if (next) return;
-          setDialogTarget(null);
-          runAfterClose();
-        }}
-        title={PLACES_MESSAGES.unavailableTitle}
-        description={PLACES_MESSAGES.unavailableDescription}
-        appearance="solid"
-        cancelLabel={PLACES_MESSAGES.cancel}
-        confirmLabel={PLACES_MESSAGES.removeFromPlaces}
-        onConfirm={() => {
-          const target = dialogTarget;
-          if (target) afterClose.current = () => removePlace(target);
-          setDialogOpen(false);
-        }}
-      />
     </PageShell>
   );
 }

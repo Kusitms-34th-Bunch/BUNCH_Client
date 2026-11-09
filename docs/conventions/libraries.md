@@ -62,7 +62,7 @@ hook을 새로 만들기 전에 react-simplikit에 있는지 먼저 본다(2026-
 
 - 토스트를 직접 만들거나 대화상자로 대신하기 → 디자인 시스템 `toast`(`sonner`).
 - `div`로 만든 드롭다운·대화상자·시트에 포커스 처리를 직접 하기 → 디자인 시스템 `Dialog`·`BottomSheet`(`@base-ui/react`).
-- 시트·대화상자 열림 상태를 화면 state와 props로 여러 겹 내려 보내기 → 시트 렌더러를 `overlay.open`으로 열기(`overlay-kit`).
+- 시트·대화상자 열림 상태를 화면 state로 두기 → `useScreenOverlay`(`overlay-kit`의 `overlay.open` 감싼 hook)로 열기. 이 hook은 다 닫히면 언마운트하고, 화면을 떠나면 열린 창을 지운다. 서버 상태로 저절로 뜨는 창(`DraftMissingGate`)과 경로를 따라가는 개발 도구(`FacilitatorTool`)는 사용자 동작으로 여는 창이 아니라 예외다.
 - 끌기·스와이프를 pointer 이벤트로 직접 계산하기 → `@dnd-kit`·`swiper`.
 - 숫자를 다시 렌더링해 바뀌는 모션 흉내 내기 → 후보 `@number-flow/react`.
 - 1,000개 넘는 목록을 그대로 그리기 → 측정 뒤 후보 virtualization.

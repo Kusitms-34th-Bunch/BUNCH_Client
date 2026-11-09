@@ -28,6 +28,7 @@ const renderSheet = (searchPlaces: (_keyword: string) => Promise<readonly PlaceR
     <LocationSearchSheet
       open
       onOpenChange={vi.fn()}
+      onOpenChangeComplete={vi.fn()}
       searchPlaces={searchPlaces}
       onSelect={vi.fn()}
     />,
