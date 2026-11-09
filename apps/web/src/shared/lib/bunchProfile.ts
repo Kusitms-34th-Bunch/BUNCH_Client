@@ -5,19 +5,18 @@ export const BUNCH_DESCRIPTION_MAX_LENGTH = 50;
 export const CHARACTER_TYPES = ['TYPE_1', 'TYPE_2', 'TYPE_3', 'TYPE_4'] as const;
 export type CharacterType = (typeof CHARACTER_TYPES)[number];
 
-/** 캐릭터 타입별 기본 대표 이미지(Figma 4359:61135·86853·86859·86865) */
+/** 번치 타입별 기본 대표 이미지(색이 타입을 나타냄, Figma 5931:161617·161619·161622·161624) */
 export const DEFAULT_BUNCH_IMAGES: Readonly<Record<CharacterType, string>> = {
   TYPE_1: '/images/default-bunch/type-1.svg',
   TYPE_2: '/images/default-bunch/type-2.svg',
   TYPE_3: '/images/default-bunch/type-3.svg',
   TYPE_4: '/images/default-bunch/type-4.svg',
 };
-/**
- * 사진이 없을 때 보이는 기본 이미지(번치 대표 이미지·멤버·내 프로필 공통, 기능명세 5.1.2)
- * 지금 있는 번치의 캐릭터 타입에 맞추고, 가입한 번치가 없거나 모르면 타입 1
- */
-export const defaultProfileImage = (type?: CharacterType | null) =>
+/** 번치 대표 사진이 없을 때 보이는 기본 이미지. 번치 타입에 맞추고 타입을 모르면 타입 1 */
+export const defaultBunchImage = (type?: CharacterType | null) =>
   DEFAULT_BUNCH_IMAGES[type ?? 'TYPE_1'];
+/** 사진이 없는 사용자(멤버·내 프로필)의 기본 이미지. 번치 타입과 관계없이 하나(Figma 5931:166793) */
+export const DEFAULT_PROFILE_IMAGE = '/images/default-profile.svg';
 
 export const BUNCH_NAME_INVALID_MESSAGE = '특수문자를 제외한 영문, 한글만 사용할 수 있어요.';
 

@@ -2,7 +2,6 @@
 
 import { LoginButton } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
-import symbolSvg from '@/shared/assets/images/login/symbol.svg';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
@@ -17,7 +16,6 @@ import { signInWithSocial } from '../../lib/socialSignIn';
 import { usePostLoginPath } from '../../queries/session';
 
 // SVG import 타입이 any라 정적 이미지로 명시
-const SYMBOL = symbolSvg as StaticImageData;
 const WORDMARK = wordmarkSvg as StaticImageData;
 // 배경 영상(Figma 4744:90759, 원본 47MB를 H.264 CRF 18로 다시 압축해 약 2.7MB)과 첫 프레임 포스터
 const BACKGROUND_VIDEO = '/videos/login.mp4';
@@ -102,21 +100,15 @@ export function LoginEntry({
           </div>
         }
       >
-        {/* 로고는 버튼 바로 위(Figma 버튼과 34px, 가까운 토큰 32px) */}
+        {/* 워드마크는 버튼 바로 위(Figma 5878:77389: 워드마크 아래 40, 버튼 간격 8, 버튼 아래 14). 새 디자인은 슬로건 없음 */}
         {/* `data-dev-login-trigger`: 개발 전용 토큰 로그인(`DevTokenLogin`)이 로고를 3번 누르는 동작을 셀 때 쓰는 표시(꺼져 있으면 아무 일도 없음) */}
         <div
           data-dev-login-trigger
-          className="px-padding-p8 pb-s14 gap-s3 flex min-h-full flex-col items-center justify-end"
+          className="px-padding-p8 pb-padding-p18 flex min-h-full flex-col items-center justify-end"
         >
-          <Image src={SYMBOL} alt="" width={40} height={34} priority />
-          <div className="gap-s4 flex flex-col items-center">
-            <h1>
-              <Image src={WORDMARK} alt="Bunch" width={166} height={45} priority />
-            </h1>
-            <p className="typography-caption-1-medium text-text-inversed text-center font-semibold break-keep">
-              함께한 순간이 뭉쳐, 우리가 되는 곳
-            </p>
-          </div>
+          <h1>
+            <Image src={WORDMARK} alt="Bunch" width={171} height={43} priority />
+          </h1>
         </div>
       </PageShell>
     </>

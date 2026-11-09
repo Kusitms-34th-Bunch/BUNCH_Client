@@ -58,11 +58,10 @@ describe('LoginEntry', () => {
     replace.mockClear();
   });
 
-  it('로고를 제목으로, 슬로건과 본문 영역(main)을 가진다', () => {
+  it('워드마크를 제목으로, 본문 영역(main)을 가진다', () => {
     render(<LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Bunch' })).toBeTruthy();
-    expect(screen.getByText('함께한 순간이 뭉쳐, 우리가 되는 곳')).toBeTruthy();
     expect(screen.getByRole('main')).toBeTruthy();
   });
 
