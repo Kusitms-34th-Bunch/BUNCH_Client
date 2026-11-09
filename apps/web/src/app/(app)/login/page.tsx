@@ -16,7 +16,7 @@ export default function LoginPage() {
       className="bg-surface-primary flex h-full min-h-0 flex-1 flex-col"
     >
       <LoginEntry destinations={DESTINATIONS} />
-      {DEV_TOKEN_LOGIN ? <DevTokenLogin /> : null}
+      {DEV_TOKEN_LOGIN ? <DevTokenLogin destinations={DESTINATIONS} /> : null}
     </div>
   );
 }
