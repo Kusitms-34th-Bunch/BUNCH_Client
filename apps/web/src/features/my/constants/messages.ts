@@ -93,7 +93,6 @@ export const MY_MESSAGES = {
         title: '번들 소식',
         description: '번들 추천부터 제작, 업로드까지의 소식을 알려줘요.',
       },
-      growth: { title: '뭉치 성장', description: '뭉치가 새로운 모습으로 변하면 알려줘요.' },
       member: {
         title: '멤버 및 권한 소식',
         description: '번치의 멤버 구성과 역할이 바뀌면 알려줘요.',
