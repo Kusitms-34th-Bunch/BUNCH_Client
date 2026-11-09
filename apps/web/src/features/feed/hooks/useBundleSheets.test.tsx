@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { FeedBundleMember, FeedPlace } from '../lib/types';
@@ -142,7 +143,7 @@ describe('useBundleSheets', () => {
     expect(items.map((item) => item.textContent)).toEqual(['은우', '경진', '작성자']);
     expect(within(items[0]!).getByRole('img', { name: '메인 관리자' })).toBeTruthy();
     // 나간 멤버는 기본 이미지이고 역할 배지 없음
-    expect(items[2]!.querySelector('img')?.getAttribute('src')).toContain('deleted-user');
+    expect(items[2]!.querySelector('img')?.getAttribute('src')).toBe(DEFAULT_PROFILE_IMAGE);
     expect(within(items[2]!).queryByRole('img', { name: '공동 관리자' })).toBeNull();
     // 나간 멤버는 누를 수 없고 나머지는 멤버 프로필 링크
     expect(within(items[0]!).getByRole('link').getAttribute('href')).toBe('/members/m-1');

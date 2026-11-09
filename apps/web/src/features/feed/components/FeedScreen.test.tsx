@@ -4,6 +4,7 @@ import { http } from 'msw';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { feedFixture } from '../fixtures/feed.fixture';
@@ -128,7 +129,7 @@ describe('FeedScreen', () => {
     renderFeed({ id: 'bunch-trip', name: '여행가조' });
 
     const members = within(cards()[1]!).getByRole('button', { name: /참여 멤버/ });
-    expect(members.querySelector('img')?.getAttribute('src')).toContain('deleted-user');
+    expect(members.querySelector('img')?.getAttribute('src')).toBe(DEFAULT_PROFILE_IMAGE);
   });
 
   it('팔로우한 번치 구간 → 구간 안내 → 공개 구간 → 끝 안내 순서로 보인다', () => {

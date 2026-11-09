@@ -47,7 +47,7 @@ export const feedFixture: FeedData = {
       ],
       photos: photos('S1', 'S2'),
       // 나간 멤버가 앞에 있고 원래 이미지가 남은 예시
-      members: [{ name: '', imageSrc: DEFAULT_PROFILE_IMAGE, left: true }, ...members(2)],
+      members: [{ name: '', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2, left: true }, ...members(2)],
     }),
   ],
   public: [
