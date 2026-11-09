@@ -345,7 +345,9 @@ describe('ProfileSetup', () => {
 
     it('공개 안내 문구를 출생연도 입력과 성별 그룹의 설명으로 연결한다', () => {
       render(<ProfileSetup nextPath={NEXT_PATH} />);
-      const note = screen.getByText('출생연도와 성별은 다른 사용자에게 공개되지 않아요.');
+      const note = screen.getByText(
+        '출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, 다른 사용자에게 공개되지 않아요.',
+      );
 
       expect(birthYear().getAttribute('aria-describedby')).toContain(note.id);
       expect(screen.getByRole('group', { name: '성별' }).getAttribute('aria-describedby')).toBe(
@@ -356,7 +358,11 @@ describe('ProfileSetup', () => {
     it('공개되지 않는다는 안내 문구를 성별 아래에 보여 준다', () => {
       render(<ProfileSetup nextPath={NEXT_PATH} />);
 
-      expect(screen.getByText('출생연도와 성별은 다른 사용자에게 공개되지 않아요.')).toBeTruthy();
+      expect(
+        screen.getByText(
+          '출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, 다른 사용자에게 공개되지 않아요.',
+        ),
+      ).toBeTruthy();
     });
   });
 

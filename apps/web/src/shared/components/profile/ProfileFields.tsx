@@ -66,7 +66,9 @@ export function ProfileFields({ fields, showOptional = true }: ProfileFieldsProp
           }}
         />
         <p id={noteId} className="typography-caption-1-medium text-text-quaternary">
-          출생연도와 성별은 다른 사용자에게 공개되지 않아요.
+          {'출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, '}
+          <br />
+          다른 사용자에게 공개되지 않아요.
         </p>
       </div>
     </div>
