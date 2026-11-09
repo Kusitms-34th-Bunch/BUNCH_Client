@@ -14,6 +14,7 @@ describe('formatElapsedTime', () => {
     [23 * 60 + 59, '23시간 전'],
     [24 * 60, '1일 전'],
     [7 * 24 * 60 + 23 * 60, '7일 전'],
+    [8 * 24 * 60 - 1, '7일 전'],
   ])('%d분 지나면 「%s」', (minutes, expected) => {
     expect(formatElapsedTime(ago(minutes), now)).toBe(expected);
   });

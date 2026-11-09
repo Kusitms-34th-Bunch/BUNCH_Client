@@ -115,6 +115,11 @@ describe('FeedScreen', () => {
       wrapper: createQueryWrapper(createTestQueryClient()),
     });
     expect(screen.getByTestId('feed-bunch-placeholder')).toBeInTheDocument();
+    // 번치 유무를 모르는 동안 좋아요는 바뀌지 않음
+    const pendingLike = within(cards()[0]!).getByRole('button', { name: /좋아요/ });
+    await userEvent.click(pendingLike);
+    expect(pendingLike).toHaveAttribute('aria-pressed', 'true');
+    expect(toast).not.toHaveBeenCalled();
     unmount();
 
     server.use(http.get('/api/members/me', () => fail(500, 'COMMON_500')));

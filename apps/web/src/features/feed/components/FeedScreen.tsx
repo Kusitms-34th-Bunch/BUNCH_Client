@@ -49,6 +49,8 @@ export function FeedScreen({ links }: FeedScreenProps) {
   const publicBundles = feedFixture.public;
 
   const toggleLike = (bundle: FeedBundle) => {
+    // 번치 유무를 모르면(응답 전·실패) 누가 좋아요하는지 정할 수 없어 바꾸지 않음
+    if (viewer === undefined) return;
     if (viewer === null) {
       toast(text.joinRequired, { bottomOffset: FEED_TOAST_OFFSET });
       return;
