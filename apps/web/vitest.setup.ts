@@ -1,5 +1,8 @@
 import '@testing-library/jest-dom/vitest';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { render } from '@testing-library/react';
+import { OverlayProvider } from 'overlay-kit';
+import { createElement } from 'react';
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 import { mockDb } from './src/mocks/db';
 import { resetIdempotency } from './src/mocks/lib/idempotency';
 import { server } from './src/mocks/server';
@@ -16,3 +19,8 @@ afterEach(() => {
   resetIdempotency();
 });
 afterAll(() => server.close());
+// `overlay.open`으로 여는 시트·대화상자를 그리는 자리(앱의 layout과 같은 역할)
+// 서버 코드 테스트(node 환경)에는 DOM이 없어 건너뜀
+beforeEach(() => {
+  if (typeof document !== 'undefined') render(createElement(OverlayProvider));
+});

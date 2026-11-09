@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { OverlayProvider } from 'overlay-kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
@@ -13,7 +12,7 @@ const back = vi.fn();
 const replace = vi.fn();
 const Providers = ({ children }: { children: ReactNode }) => (
   <CreateBunchDraftProvider>
-    <OverlayProvider>{children}</OverlayProvider>
+    <>{children}</>
   </CreateBunchDraftProvider>
 );
 // 3단계 가드 통과를 위한 1·2단계 완료 상태
@@ -21,7 +20,7 @@ const AfterDescription = ({ children }: { children: ReactNode }) => (
   <CreateBunchDraftProvider
     initial={{ name: '퇴근런클럽', visibility: 'public', description: '퇴근 후 달리는 모임' }}
   >
-    <OverlayProvider>{children}</OverlayProvider>
+    <>{children}</>
   </CreateBunchDraftProvider>
 );
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));

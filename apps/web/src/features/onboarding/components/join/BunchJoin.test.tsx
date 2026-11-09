@@ -2,7 +2,6 @@ import type * as DesignSystem from '@app/design-system';
 import type { ReactNode } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { OverlayProvider } from 'overlay-kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { BunchJoin } from './BunchJoin';
@@ -18,9 +17,7 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
-const Providers = ({ children }: { children: ReactNode }) => (
-  <OverlayProvider>{children}</OverlayProvider>
-);
+const Providers = ({ children }: { children: ReactNode }) => <>{children}</>;
 const renderJoin = (props: Parameters<typeof BunchJoin>[0] = {}) =>
   render(<BunchJoin {...props} />, { wrapper: Providers });
 

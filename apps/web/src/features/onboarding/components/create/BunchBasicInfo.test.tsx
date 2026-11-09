@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { OverlayProvider } from 'overlay-kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { CreateBunchDraftProvider } from '../../contexts/CreateBunchDraftProvider';
@@ -12,7 +11,7 @@ const back = vi.fn();
 const replace = vi.fn();
 const Providers = ({ children }: { children: ReactNode }) => (
   <CreateBunchDraftProvider>
-    <OverlayProvider>{children}</OverlayProvider>
+    <>{children}</>
   </CreateBunchDraftProvider>
 );
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
