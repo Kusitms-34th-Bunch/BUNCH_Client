@@ -1,11 +1,9 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useLeaveDraft, useRedirectMissingDraft } from '../../hooks/useDraftExit';
@@ -41,14 +39,8 @@ export function BundleDraft() {
       onBack={() => backOr(BUNDLE_PATHS.bunchHome)}
       onLeave={() => void leaveDraft(isDraftCreator(state.draft, state.viewer))}
       onRetry={recheck}
-      // 발행하면 번치 홈으로 이동해 새 번들을 확인(기능 spec 4.3.12)
-      onPublish={() =>
-        void actions.publish().then((outcome) => {
-          if (outcome !== 'published') return;
-          toast(BUNDLE_MESSAGES.published, { fullWidth: true });
-          router.replace(BUNDLE_PATHS.bunchHome);
-        })
-      }
+      // 조건을 채우면 공개 범위 화면으로 가서 거기서 업로드(기능 spec 4.3.12)
+      onUpload={() => router.push(BUNDLE_PATHS.visibility(draftId))}
       onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}
       onOpenPhoto={(photoId) => router.push(BUNDLE_PATHS.photo(draftId, photoId))}
     />

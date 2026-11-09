@@ -6,6 +6,7 @@ export { BundleDraftMembers } from './drafts/BundleDraftMembers';
 export { BundleDraftPhotoAdd } from './drafts/BundleDraftPhotoAdd';
 export { BundleDraftPhotoCaption } from './drafts/BundleDraftPhotoCaption';
 export { BundleDraftPhotoViewer } from './drafts/BundleDraftPhotoViewer';
+export { BundleDraftVisibility } from './drafts/BundleDraftVisibility';
 export { BundleMemberSelect } from './bundles/BundleMemberSelect';
 export { BundleSelect } from './bundles/BundleSelect';
 export { BundleSelectLayout } from './bundles/BundleSelectLayout';

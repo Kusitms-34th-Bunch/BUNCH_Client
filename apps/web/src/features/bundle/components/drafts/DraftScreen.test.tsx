@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
@@ -41,7 +41,7 @@ const actions = {
 const onBack = vi.fn();
 const onLeave = vi.fn();
 const onRetry = vi.fn();
-const onPublish = vi.fn();
+const onUpload = vi.fn();
 
 type Options = {
   draft?: Draft;
@@ -69,7 +69,7 @@ const screenElement = ({
     onBack={onBack}
     onLeave={onLeave}
     onRetry={onRetry}
-    onPublish={onPublish}
+    onUpload={onUpload}
   />
 );
 
@@ -93,9 +93,14 @@ describe('DraftScreen 구성', () => {
     expect(screen.getByText(draftFixture.photos[0]!.caption)).toBeInTheDocument();
     expect(screen.getByText('서울특별시 여의도동')).toBeInTheDocument();
     expect(screen.getByText('날짜 추가')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '공개' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: '멤버 공개' })).not.toBeChecked();
-    expect(screen.getByRole('button', { name: '나가기' })).toBeInTheDocument();
+    // 공개 범위·나가기 영역은 화면에서 빠지고, 나가기는 헤더 더보기로, 업로드는 아래 고정 버튼으로 옮김
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.queryByText('공개 범위')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('banner')).getByRole('button', { name: '더보기' }),
+    ).toBeInTheDocument();
+    expect(within(screen.getByRole('banner')).queryByRole('button', { name: '업로드' })).toBeNull();
+    expect(uploadButton()).toBeInTheDocument();
   });
 
   it('저장 중이면 헤더가 「저장 중」으로 바뀐다', () => {
@@ -154,11 +159,11 @@ describe('역할별 권한', () => {
     expect(membersSection().getByRole('button', { name: '추가' })).toBeInTheDocument();
   });
 
-  it('참여 멤버가 아니면 「추가」 카드와 「나가기」가 없다', () => {
+  it('참여 멤버가 아니면 「추가」 카드와 더보기(번들 나가기)가 없다', () => {
     renderScreen({ viewer: outsider });
 
     expect(membersSection().queryByRole('button', { name: '추가' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '나가기' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '더보기' })).not.toBeInTheDocument();
   });
 
   it('참여 멤버가 아닌 사람이 편집하려 하면 안내하고 값은 바뀌지 않는다', async () => {
@@ -167,8 +172,6 @@ describe('역할별 권한', () => {
     await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
 
-    await userEvent.click(screen.getByRole('radio', { name: '멤버 공개' }));
-    expect(actions.setVisibility).not.toHaveBeenCalled();
     expect(actions.setTitle).not.toHaveBeenCalled();
   });
 
@@ -189,36 +192,26 @@ describe('역할별 권한', () => {
 });
 
 describe('업로드 버튼', () => {
-  it('권한과 필수 항목이 모두 맞으면 활성이고 확인 창에서 「업로드」를 눌러야 onPublish를 호출한다', async () => {
+  it('권한과 필수 항목이 모두 맞으면 활성이고 누르면 바로 공개 범위 화면으로 넘어간다', async () => {
     renderScreen({ viewer: creator });
 
     expect(uploadButton()).not.toHaveAttribute('aria-disabled');
     await userEvent.click(uploadButton());
-    const dialog = await screen.findByRole('alertdialog');
-    expect(within(dialog).getByText('번들을 업로드할까요?')).toBeInTheDocument();
-    expect(dialog).toHaveAccessibleDescription('업로드 이후에는 관리자만 수정할 수 있어요.');
-    expect(onPublish).not.toHaveBeenCalled();
 
-    await userEvent.click(within(dialog).getByRole('button', { name: '업로드' }));
-    expect(onPublish).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(onUpload).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('확인 창이 열려 있는 사이 조건이 깨지면 확정해도 업로드하지 않고 안내한다', async () => {
-    const { rerender } = renderScreen({ viewer: creator });
+  it('공개 범위는 다음 화면에서 고르므로 고르지 않아도 업로드를 시작할 수 있다', async () => {
+    renderScreen({ draft: draftFixture });
 
+    expect(uploadButton()).not.toHaveAttribute('aria-disabled');
     await userEvent.click(uploadButton());
-    const dialog = await screen.findByRole('alertdialog');
-    // 확인 창을 연 채로 연결이 끊김
-    rerender(screenElement({ viewer: creator, offline: true }));
-    await userEvent.click(within(dialog).getByRole('button', { name: '업로드' }));
-
-    expect(onPublish).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+    expect(onUpload).toHaveBeenCalledTimes(1);
   });
 
-  it('다른 멤버가 편집 중이면 편집 중 확인 창을 띄우고, 업로드는 막지 않는다', async () => {
+  it('다른 멤버가 편집 중이면 확인 창을 띄우고 「계속하기」를 눌러야 넘어간다', async () => {
     // 코멘트를 작성 중인 멤버도 편집 중으로 셈
     renderScreen({
       viewer: creator,
@@ -230,40 +223,34 @@ describe('업로드 버튼', () => {
     expect(
       within(dialog).getByText('지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있어요.'),
     ).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: '업로드' }));
+    expect(onUpload).not.toHaveBeenCalled();
 
-    expect(onPublish).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(dialog).getByRole('button', { name: '계속하기' }));
+    expect(onUpload).toHaveBeenCalledTimes(1);
   });
 
-  it('어느 확인 창인지는 「업로드」를 누른 순간 기준이라 창이 열린 뒤 편집이 끝나도 그대로다', async () => {
-    const editingDraft: Draft = { ...publishable, editing: { title: 'gyeongjin' } };
-    const { rerender } = renderScreen({ viewer: creator, draft: editingDraft });
-
-    await userEvent.click(uploadButton());
-    await screen.findByRole('alertdialog', { name: '편집 중인 멤버가 있어요' });
-    rerender(screenElement({ viewer: creator, draft: publishable }));
-
-    expect(
-      screen.getByRole('alertdialog', { name: '편집 중인 멤버가 있어요' }),
-    ).toBeInTheDocument();
-
-    // 닫은 뒤 다시 누르면 그때 상태(편집 끝남)로 기본 창
-    await userEvent.click(screen.getByRole('button', { name: '취소' }));
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
-    await userEvent.click(uploadButton());
-    expect(
-      await screen.findByRole('alertdialog', { name: '번들을 업로드할까요?' }),
-    ).toBeInTheDocument();
-  });
-
-  it('확인 창에서 「취소」를 누르면 업로드하지 않는다', async () => {
-    renderScreen({ viewer: creator });
+  it('편집 중 확인 창에서 「취소」를 누르면 넘어가지 않는다', async () => {
+    renderScreen({ viewer: creator, draft: { ...publishable, editing: { title: 'gyeongjin' } } });
 
     await userEvent.click(uploadButton());
     const dialog = await screen.findByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: '취소' }));
 
-    expect(onPublish).not.toHaveBeenCalled();
+    expect(onUpload).not.toHaveBeenCalled();
+  });
+
+  it('확인 창이 열려 있는 사이 조건이 깨지면 계속해도 넘어가지 않고 안내한다', async () => {
+    const editingDraft: Draft = { ...publishable, editing: { title: 'gyeongjin' } };
+    const { rerender } = renderScreen({ viewer: creator, draft: editingDraft });
+
+    await userEvent.click(uploadButton());
+    const dialog = await screen.findByRole('alertdialog');
+    // 확인 창을 연 채로 연결이 끊김
+    rerender(screenElement({ viewer: creator, draft: editingDraft, offline: true }));
+    await userEvent.click(within(dialog).getByRole('button', { name: '계속하기' }));
+
+    expect(onUpload).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
   });
 
   it('권한이 없는 참여 멤버는 흐리게 보이고 누르면 이유를 안내한다', async () => {
@@ -272,7 +259,7 @@ describe('업로드 버튼', () => {
     expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(uploadButton());
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadForbidden, { fullWidth: true });
-    expect(onPublish).not.toHaveBeenCalled();
+    expect(onUpload).not.toHaveBeenCalled();
   });
 
   it('참여 멤버가 아니면 「참여 멤버만 편집할 수 있어요」를 안내한다', async () => {
@@ -280,16 +267,7 @@ describe('업로드 버튼', () => {
 
     await userEvent.click(uploadButton());
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
-    expect(onPublish).not.toHaveBeenCalled();
-  });
-
-  it('공개 범위를 고르지 않으면 비활성이고 누르면 입력을 안내한다', async () => {
-    renderScreen({ draft: draftFixture });
-
-    expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
-    await userEvent.click(uploadButton());
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
-    expect(onPublish).not.toHaveBeenCalled();
+    expect(onUpload).not.toHaveBeenCalled();
   });
 
   it('필수 항목이 부족하면 비활성이고 누르면 입력을 안내한다', async () => {
@@ -298,7 +276,7 @@ describe('업로드 버튼', () => {
     expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(uploadButton());
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
-    expect(onPublish).not.toHaveBeenCalled();
+    expect(onUpload).not.toHaveBeenCalled();
   });
 
   it('저장 중이거나 연결이 끊겨 있으면 업로드할 수 없다', async () => {
@@ -309,7 +287,7 @@ describe('업로드 버튼', () => {
     renderScreen({ offline: true });
     expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(uploadButton());
-    expect(onPublish).not.toHaveBeenCalled();
+    expect(onUpload).not.toHaveBeenCalled();
   });
 });
 
@@ -342,20 +320,6 @@ describe('입력', () => {
       .getAllByRole('textbox', { name: /코멘트$/ })
       .map((textbox) => textbox.getAttribute('aria-label'));
     expect(names[0]).toBe('은우 (나) 코멘트');
-  });
-
-  it('공개 범위는 처음에는 아무것도 골라져 있지 않다', () => {
-    renderScreen({ draft: draftFixture });
-
-    expect(screen.getByRole('radio', { name: '공개' })).not.toBeChecked();
-    expect(screen.getByRole('radio', { name: '멤버 공개' })).not.toBeChecked();
-  });
-
-  it('공개 범위를 바꾸면 setVisibility를 호출한다', async () => {
-    renderScreen();
-
-    await userEvent.click(screen.getByRole('radio', { name: '멤버 공개' }));
-    expect(actions.setVisibility).toHaveBeenCalledWith('members');
   });
 
   it('다른 멤버가 코멘트를 쓰는 중이면 점 애니메이션만 보이고 잠그지는 않는다', () => {
@@ -427,48 +391,6 @@ describe('위치와 날짜', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '6월 20일 지우기' }));
     expect(actions.setDate).toHaveBeenCalledWith(null);
-  });
-});
-
-describe('공개 범위 툴팁', () => {
-  it('안내 아이콘을 누르면 툴팁이 열리고 다시 누르거나 Esc를 누르면 닫힌다', async () => {
-    renderScreen();
-    const help = screen.getByRole('button', { name: '공개 범위 설명' });
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-
-    await userEvent.click(help);
-    expect(screen.getByRole('tooltip')).toHaveTextContent(BUNDLE_MESSAGES.visibilityTooltip);
-
-    await userEvent.click(help);
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-
-    await userEvent.click(help);
-    await userEvent.keyboard('{Escape}');
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-  });
-
-  it('닫혀 있어도 버튼의 설명으로 항상 연결돼 스크린 리더가 읽을 수 있다', () => {
-    renderScreen();
-
-    const help = screen.getByRole('button', { name: '공개 범위 설명' });
-    expect(help).toHaveAccessibleDescription(BUNDLE_MESSAGES.visibilityTooltip);
-  });
-
-  it('포커스가 아이콘 밖으로 나가면 닫힌다', async () => {
-    renderScreen();
-
-    await userEvent.click(screen.getByRole('button', { name: '공개 범위 설명' }));
-    expect(screen.getByRole('tooltip')).toBeInTheDocument();
-    await userEvent.tab();
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-  });
-
-  it('바깥을 누르면 닫힌다', async () => {
-    renderScreen();
-
-    await userEvent.click(screen.getByRole('button', { name: '공개 범위 설명' }));
-    await userEvent.click(screen.getByRole('radio', { name: '멤버 공개' }));
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 });
 
@@ -587,11 +509,17 @@ describe('다른 멤버가 편집 중인 영역', () => {
 });
 
 describe('나가기', () => {
+  // 헤더 「⋯」 더보기에서 「번들 나가기」를 골라 확인 창을 엶
+  const openLeaveDialog = async () => {
+    await userEvent.click(screen.getByRole('button', { name: '더보기' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: '번들 나가기' }));
+    return screen.findByRole('alertdialog');
+  };
+
   it('일반 멤버는 확인 창에서 「나가기」를 눌러야 나간다', async () => {
     renderScreen({ viewer: { memberId: 'eunwoo', bunchRole: 'member' } });
 
-    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
-    const dialog = await screen.findByRole('alertdialog');
+    const dialog = await openLeaveDialog();
     expect(within(dialog).getByText('번들에서 나가시겠어요?')).toBeInTheDocument();
     expect(onLeave).not.toHaveBeenCalled();
 
@@ -599,11 +527,20 @@ describe('나가기', () => {
     expect(onLeave).toHaveBeenCalledTimes(1);
   });
 
+  it('초안 생성자가 나가면 번들이 삭제된다는 문구를 본다', async () => {
+    renderScreen({ viewer: creator });
+
+    const dialog = await openLeaveDialog();
+    expect(within(dialog).getByText('번들에서 나갈까요?')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/번들을 만든 멤버가 나가면 번들이 삭제되고/),
+    ).toBeInTheDocument();
+  });
+
   it('「취소」를 누르면 나가지 않고 현재 화면에 남는다', async () => {
     renderScreen();
 
-    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
-    const dialog = await screen.findByRole('alertdialog');
+    const dialog = await openLeaveDialog();
     await userEvent.click(within(dialog).getByRole('button', { name: '취소' }));
 
     expect(onLeave).not.toHaveBeenCalled();

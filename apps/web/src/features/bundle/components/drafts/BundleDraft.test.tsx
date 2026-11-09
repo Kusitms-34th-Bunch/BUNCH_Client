@@ -97,9 +97,10 @@ describe('BundleDraft', () => {
   it('초안 생성자가 나가기를 확인하면 초안 삭제 토스트와 함께 번치 홈으로 이동(replace)한다', async () => {
     renderDraft('draft-1');
 
-    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+    await userEvent.click(screen.getByRole('button', { name: '더보기' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: '번들 나가기' }));
     const dialog = await screen.findByRole('alertdialog');
-    expect(within(dialog).getByText(BUNDLE_MESSAGES.leaveConfirmTitle)).toBeInTheDocument();
+    expect(within(dialog).getByText(BUNDLE_MESSAGES.leaveCreatorTitle)).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
@@ -117,7 +118,8 @@ describe('BundleDraft', () => {
     );
     renderDraft('draft-1');
 
-    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+    await userEvent.click(screen.getByRole('button', { name: '더보기' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: '번들 나가기' }));
     const dialog = await screen.findByRole('alertdialog');
     const confirm = within(dialog).getByRole('button', { name: '나가기' });
     fireEvent.click(confirm);
@@ -133,7 +135,8 @@ describe('BundleDraft', () => {
     leaveBundle.mockRejectedValueOnce(new Error('network'));
     renderDraft('draft-1');
 
-    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+    await userEvent.click(screen.getByRole('button', { name: '더보기' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: '번들 나가기' }));
     const dialog = await screen.findByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
 

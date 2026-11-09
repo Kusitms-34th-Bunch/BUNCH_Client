@@ -411,6 +411,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition,
   },
+  // 작성 화면 → 공개 범위(업로드 직전)도 같은 슬라이드
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.visibility,
+    bidirectional: true,
+    transition,
+  },
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.photo,

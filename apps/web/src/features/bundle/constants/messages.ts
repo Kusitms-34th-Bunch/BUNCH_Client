@@ -42,12 +42,30 @@ export const BUNDLE_MESSAGES = {
   uploadIncomplete: '필수 항목을 모두 입력해야 업로드 할 수 있어요.',
   // 스스로 나가기 확인 창 문구는 Figma Dialog `2082:49691`·기능명세서 4.3.2 원문(초안 생성자도 같은 문구)
   leaveConfirmTitle: '번들에서 나가시겠어요?',
+  // 초안 생성자가 나갈 때는 번들이 삭제됨을 알림(Figma `5699:106127`)
+  leaveCreatorTitle: '번들에서 나갈까요?',
+  leaveCreatorDescription: '번들을 만든 멤버가 나가면 번들이 삭제되고,\n되돌릴 수 없어요.',
   // 「삭제되며,」 뒤에서 줄이 바뀜
   leaveConfirmDescription: '번들에서 나가면 작성한 코멘트가 삭제되며,\n복구할 수 없어요.',
   // 업로드 확인 창 문구는 기획 전달 원문(기능 spec 4.3.12의 질문 + 설명)
   uploadConfirmTitle: '번들을 업로드할까요?',
   uploadConfirmDescription: '업로드 이후에는 관리자만 수정할 수 있어요.',
   // 다른 멤버가 편집 중일 때의 업로드 확인 창(기획 전달 원문, 업로드는 막지 않음)
+  // Figma 작성 화면 더보기 메뉴(`5699:105934`): 번들 나가기는 헤더 ⋯로 옮김
+  menuLabel: '번들 메뉴',
+  menuOpenLabel: '더보기',
+  leaveMenuItem: '번들 나가기',
+  uploadEditingContinue: '계속하기',
+  // Figma 공개 범위 화면(`5699:105991`·`106016`·`106041`)
+  visibilityScreenTitle: '번들의 공개 범위를 설정해 주세요',
+  visibilityAll: '전체 공개',
+  visibilityAllDescription: '번치의 모든 사용자가 볼 수 있어요',
+  visibilityPartial: '일부 공개',
+  visibilityPartialDescription: '우리 번치의 팔로워도 볼 수 있어요',
+  visibilityMembersDescription: '우리 번치 멤버만 볼 수 있어요',
+  visibilityNotice: '* 업로드 이후에는 관리자만 수정하거나 삭제할 수 있어요.',
+  uploading: '업로드 중',
+  visibilityRequired: '공개 범위를 선택해 주세요.',
   uploadEditingTitle: '편집 중인 멤버가 있어요',
   uploadEditingDescription: '지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있어요.',
   cancel: '취소',
