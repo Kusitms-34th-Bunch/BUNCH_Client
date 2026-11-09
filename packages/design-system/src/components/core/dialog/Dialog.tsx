@@ -178,12 +178,12 @@ export const ConfirmDialog = ({
     }}
   >
     <Content>
-      {image ? <Media>{image}</Media> : null}
-      {/* 이미지가 있으면 Figma Profile 간격(이미지·제목·설명 사이 6px) 적용 */}
-      <Title className={image ? 'pt-s3' : undefined}>{title}</Title>
+      {/* 이미지가 있으면 Figma Profile (Side by Side): 이미지·제목·설명 사이 6, 내용 폭 273이라 좌우 19 */}
+      {image ? <Media className="mx-4.75">{image}</Media> : null}
+      <Title className={image ? 'pt-s3 px-4.75' : undefined}>{title}</Title>
       {/* 내용이 있으면 Figma Label 간격(제목·설명 사이 18, 설명·내용 사이 16) */}
       {description ? (
-        <Description className={image ? 'mt-s3' : children ? 'mt-s9' : undefined}>
+        <Description className={image ? 'mt-s3 px-4.75' : children ? 'mt-s9' : undefined}>
           {description}
         </Description>
       ) : null}

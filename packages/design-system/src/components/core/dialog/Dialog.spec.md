@@ -42,7 +42,7 @@
 - radius-r9, padding-p11(22), padding-p10(20), padding-p8(16), spacing-s4(8).
 - typography-heading-1-semibold / typography-body-1-regular, text-primary / text-tertiary.
 - Floated 미수출 토큰은 같은 흰색 surface-primary로 대체. 배경 딤은 Figma(`791:11665`의 딤 레이어)대로 overlay-dim-subtle(검정 10%).
-- Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Stack은 위 22·아래 16·좌우 22(내용 폭 267, 2026-11-02 위 여백 16→22), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
+- Profile 변형: 이미지 위 16(`mt-padding-p8`), 이미지·제목·설명 사이 6(`pt-s3`·`mt-s3`). Side by Side는 내용 좌우 19. Stack은 위 22·아래 16·좌우 22(내용 폭 267, 2026-11-02 위 여백 16→22), 내용·버튼 사이 24(`mt-s12`), 버튼 사이 8.
 - Label 변형: `ConfirmDialog`의 `children`(설명 아래 내용 자리)에 번치 줄 목록을 넣는다. 내용이 있으면 제목·설명 사이 18(`mt-s9`), 설명·내용 사이 16(`mt-s8`), 좌우 22. 목록 의미와 줄 사이 6은 호출자가 정한다(Story는 web `BunchLabel`의 `InConfirmDialog`, core가 web을 import하지 않게).
   - 지원 조합은 제목·설명·내용(Label)이다. 이미지와 내용을 함께 쓰거나 설명 없이 내용만 쓰는 모습은 Figma에 없다.
   - 내용이 길면 내용만 스크롤하고 버튼은 늘 보인다. 첫 초점이 「취소」라 내용은 열릴 때 읽히지 않으므로, 목록에는 `aria-label`로 이름을 붙이고 설명 문구가 목록을 가리키게 쓴다.
@@ -55,7 +55,7 @@
 - 제안: Floated 대체는 기존 토큰 사용. 딤은 처음 overlay-scrim(60%)이었다가 3단계 화면의 Figma(`overlay-dim-subtle`)에 맞춰 바꿨다.
 - 미정: iOS 실기기 VoiceOver·WebView 스크롤/초점과 Android 뒤로가기는 별도 검증.
 - 제안: Figma 설명란은 Profile 두 변형 모두 `ConfirmDialog`다. Stack은 확인·취소 한 쌍이 아니라 여러 동작 중 하나를 고르는 창이라 `ActionDialog`로 나눴다. 응답을 요구하는 `alertdialog` 의미와 첫 초점 「취소」는 ConfirmDialog와 같다.
-- 제안: Side by Side 좌우 여백은 Figma 19px(내용 폭 273)이지만 기존 변형과 같은 22px(`padding-p11`)을 유지했다.
+- 확인: Side by Side 좌우 19(`mx-4.75`·`px-4.75`)는 Figma가 내용 폭을 273으로 고정해 생긴 값이다. 토큰이 아니고 다른 변형은 22(`padding-p11`)라, 의도인지 디자이너에게 확인한다.
 
 ## 사용 예
 
