@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PhotoCropScreen } from './PhotoCropScreen';
 
-vi.mock('../loading/LoadingDots', () => ({ LoadingDots: () => null }));
+vi.mock('../loading/LoadingRipple', () => ({ LoadingRipple: () => null }));
 
 const SRC = 'data:image/jpeg;base64,AAAA';
 

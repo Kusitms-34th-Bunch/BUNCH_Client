@@ -53,6 +53,20 @@ afterEach(() => {
 });
 
 describe('toBackendPath', () => {
+  it('토큰·쿠키를 다루지 않는 약관 API만 auth 아래에서 허용한다', () => {
+    expect(toBackendPath(['auth', 'terms'])).toBe('api/v1/auth/terms');
+    expect(toBackendPath(['auth', 'terms', 'agreements'])).toBe('api/v1/auth/terms/agreements');
+    // 정확히 일치하는 경로만 허용(하위·상위·우회 조각은 거부)
+    expect(toBackendPath(['auth', 'terms', 'agreements', 'x'])).toBeUndefined();
+    expect(toBackendPath(['auth', 'terms', '..', 'reissue'])).toBeUndefined();
+    expect(toBackendPath(['auth', 'termsx'])).toBeUndefined();
+    expect(toBackendPath(['auth'])).toBeUndefined();
+    // 대소문자만 바꾼 우회
+    expect(toBackendPath(['Auth', 'login'])).toBeUndefined();
+    expect(toBackendPath(['AUTH', 'reissue'])).toBeUndefined();
+    expect(toBackendPath(['Auth', 'terms'])).toBeUndefined();
+  });
+
   it('BFF 경로 조각을 백엔드 /api/v1 경로로 바꾸고 조각은 인코딩한다', () => {
     expect(toBackendPath(['members', 'nickname-availability'])).toBe(
       'api/v1/members/nickname-availability',
@@ -65,6 +79,8 @@ describe('toBackendPath', () => {
   it('인증 경로·빈 경로·경로 조작 조각은 거부한다', () => {
     expect(toBackendPath([])).toBeUndefined();
     expect(toBackendPath(['auth', 'reissue'])).toBeUndefined();
+    expect(toBackendPath(['auth', 'login'])).toBeUndefined();
+    expect(toBackendPath(['auth', 'logout'])).toBeUndefined();
     expect(toBackendPath(['members', '..', 'admin'])).toBeUndefined();
     expect(toBackendPath(['members', '.'])).toBeUndefined();
     expect(toBackendPath(['members', 'a/b'])).toBeUndefined();

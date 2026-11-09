@@ -4,7 +4,34 @@ import {
   galleryImageSchema,
   pickGalleryImageOptionsSchema,
   setNativeTabBarParamsSchema,
+  socialLoginResultSchema,
+  socialProviderSchema,
 } from './schema.ts';
+
+void test('소셜 서비스는 카카오·Google·Apple만 허용한다', () => {
+  for (const provider of ['kakao', 'google', 'apple']) {
+    assert.equal(socialProviderSchema.safeParse(provider).success, true, provider);
+  }
+  assert.equal(socialProviderSchema.safeParse('naver').success, false);
+});
+
+void test('소셜 로그인 성공은 ID 토큰이 필요하고 카카오·Apple은 nonce도 필요하다', () => {
+  const parse = (value: unknown) => socialLoginResultSchema.safeParse(value).success;
+  assert.equal(parse({ status: 'success', provider: 'google', idToken: 'token' }), true);
+  assert.equal(
+    parse({ status: 'success', provider: 'kakao', idToken: 'token', nonce: 'nonce' }),
+    true,
+  );
+  assert.equal(parse({ status: 'success', provider: 'kakao', idToken: 'token' }), false);
+  assert.equal(parse({ status: 'success', provider: 'apple', idToken: 'token' }), false);
+  assert.equal(parse({ status: 'success', provider: 'google', idToken: '' }), false);
+  assert.equal(parse({ status: 'success', provider: 'naver', idToken: 'token' }), false);
+});
+
+void test('소셜 로그인 취소는 별도 결과이며 토큰을 싣지 않는다', () => {
+  assert.equal(socialLoginResultSchema.safeParse({ status: 'cancelled' }).success, true);
+  assert.equal(socialLoginResultSchema.safeParse({ status: 'failed' }).success, false);
+});
 
 void test('네이티브 탭 ID는 서로 달라야 한다', () => {
   const items = [

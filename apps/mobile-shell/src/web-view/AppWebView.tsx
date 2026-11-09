@@ -22,6 +22,7 @@ import {
 import { pickGalleryImage } from '../gallery-image';
 import { requestPermission } from '../permissions';
 import { buildSafeAreaScript } from '../safe-area-script';
+import { socialLogin } from '../social-login';
 import { canShowTabs } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { isAppWebUrl, resolveWebUrl } from '../web-url';
@@ -38,6 +39,7 @@ export const WEB_URL = resolveWebUrl(
 const appBridge = bridge({
   pickGalleryImage,
   requestPermission,
+  socialLogin,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
     await Share.share({ message: title ? `${title}\n${url}` : url, url });

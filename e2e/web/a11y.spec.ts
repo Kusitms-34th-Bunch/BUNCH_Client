@@ -44,9 +44,7 @@ const SCREENS: {
   {
     name: '개인 프로필 수정',
     path: '/my/profile',
-    knownLowContrast: [
-      '출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며, <br>다른 사용자에게 공개되지 않아요.',
-    ],
+    knownLowContrast: [],
     ready: (page) => page.getByRole('button', { name: '프로필 사진 변경' }),
   },
   {
