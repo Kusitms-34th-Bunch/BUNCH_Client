@@ -36,6 +36,8 @@ export const getMyProfile = async (signal?: AbortSignal) => {
   );
   return {
     memberId: toDomainId(profile.memberId),
+    nickname: profile.nickname ?? null,
+    imageSrc: profile.imageUrl ?? null,
     bunch: profile.defaultBunch
       ? {
           id: toDomainId(profile.defaultBunch.id),
