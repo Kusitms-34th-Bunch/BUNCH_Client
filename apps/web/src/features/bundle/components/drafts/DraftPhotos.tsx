@@ -113,7 +113,8 @@ export function DraftPhotos({
             <BundlePhotoEditor
               src={photo.src}
               alt={photo.alt}
-              className="pointer-events-none relative w-32.5 [&_button]:pointer-events-auto"
+              size="xs"
+              className="pointer-events-none [&_button]:pointer-events-auto"
               deleteLabel={BUNDLE_MESSAGES.removePhotoLabel(index + 1)}
               onDelete={() => requestRemove(photo.id)}
             />
@@ -122,7 +123,7 @@ export function DraftPhotos({
         {access.canAddPhoto && total < MAX_PHOTOS ? (
           <li className="shrink-0">
             <AddBundlePhotoEditor
-              className="w-32.5"
+              size="xs"
               onClick={() => {
                 importChosen.current = false;
                 setImportOpen(true);

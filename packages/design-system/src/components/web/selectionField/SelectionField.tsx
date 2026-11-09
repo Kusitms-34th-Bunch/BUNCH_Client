@@ -88,8 +88,8 @@ export const SelectionField = ({
       )}
       <div className="gap-s4 flex h-6 min-w-0 flex-1 items-center">
         {handle ? (
-          // 핸들과 제목 사이는 아이콘 자리와 같은 4px(행 간격 8px에서 뺌)
-          <span className="-mr-s2 relative z-10 flex shrink-0 items-center">{handle}</span>
+          // 핸들과 제목 사이는 아이콘 자리와 같은 6px(행 간격 8px에서 뺌)
+          <span className="-mr-s1 relative z-10 flex shrink-0 items-center">{handle}</span>
         ) : null}
         <BundleTitle
           id={titleId}

@@ -152,4 +152,32 @@ describe('BundlePhotoEditor', () => {
 
     expect(screen.getByTestId('frame')).toBeTruthy();
   });
+
+  it('xs는 130px 정사각에 사진 반경 r2이고 삭제 버튼이 오른쪽 위 모서리 밖 4px로 걸친다', () => {
+    const onDelete = vi.fn();
+    const { container } = render(
+      <BundlePhotoEditor src="/p.jpg" alt="사진" size="xs" onDelete={onDelete} />,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    const image = screen.getByRole('img', { name: '사진' });
+
+    expect(root.classList.contains('w-32.5')).toBe(true);
+    expect(root.classList.contains('overflow-hidden')).toBe(false);
+    // 사진만 자르고 반경은 r2(4px)
+    expect(image.parentElement?.classList.contains('rounded-r2')).toBe(true);
+    expect(image.parentElement?.classList.contains('overflow-hidden')).toBe(true);
+
+    const button = screen.getByRole('button', { name: '사진 삭제' });
+    expect(button.classList.contains('-top-1')).toBe(true);
+    expect(button.classList.contains('-right-1')).toBe(true);
+    expect(button.classList.contains('size-4')).toBe(true);
+    fireEvent.click(button);
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('xs는 삭제 콜백이 없으면 삭제 버튼을 그리지 않는다', () => {
+    render(<BundlePhotoEditor src="/p.jpg" alt="사진" size="xs" />);
+
+    expect(screen.queryByRole('button')).toBeNull();
+  });
 });

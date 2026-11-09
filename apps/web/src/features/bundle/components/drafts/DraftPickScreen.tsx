@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { BundlePickPhoto } from '@app/design-system/web';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -113,18 +114,12 @@ export function DraftPickScreen({
         }
       >
         {photos.map((photo, index) => (
-          <li key={photo.id} className="h-99 w-73.75 shrink-0 snap-center">
-            {/* Figma Bundle Pick Photo: 295×396, 반경 r3. 가운데가 아닌 사진은 흐림(opacity-disabled) */}
-            {/* 사진함 원본 주소를 그대로 보여 주는 장식 아닌 사진이라 Image 최적화 대상이 아님(번들 사진 목록과 같은 방식) */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <li key={photo.id} className="shrink-0 snap-center">
+            {/* 가운데가 아닌 사진은 흐림(opacity-disabled) */}
+            <BundlePickPhoto
               src={photo.src}
               alt={photo.alt}
-              className={
-                index === current
-                  ? 'rounded-r3 size-full object-cover'
-                  : 'rounded-r3 size-full object-cover opacity-(--semantic-opacity-disabled)'
-              }
+              className={index === current ? undefined : 'opacity-(--semantic-opacity-disabled)'}
             />
           </li>
         ))}

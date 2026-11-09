@@ -52,7 +52,7 @@ export const BundleTitle = ({
 
   return (
     <div className={cn('gap-s4 flex h-6.25 items-center', className)} {...props}>
-      <div className="gap-s2 text-icon-primary flex min-w-0 items-center">
+      <div className="gap-s3 text-icon-primary flex min-w-0 items-center">
         {icon === 'calendar' && <LineCalendarSmallIcon aria-hidden="true" className="shrink-0" />}
         {(icon === true || icon === 'map-pin') && (
           <LineMapPinSmallIcon aria-hidden="true" className="shrink-0" />
