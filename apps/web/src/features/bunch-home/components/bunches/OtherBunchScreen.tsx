@@ -1,8 +1,7 @@
 'use client';
 
-import { cn, Header, LineBellLargeIcon, LineChevronLeftLargeIcon } from '@app/design-system';
+import { cn, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { FollowButton } from '@app/design-system/web';
-import Link from 'next/link';
 import { type ReactNode, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -11,7 +10,6 @@ import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchCharacter } from '../BunchCharacter';
-import { headerIconLinkClass } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
 import { PrivateBunchNotice } from '../PrivateBunchNotice';
@@ -74,18 +72,7 @@ export function OtherBunchScreen({
               <LineChevronLeftLargeIcon />
             </HeaderIconButton>
           }
-          trailing={
-            <>
-              <Link
-                href={BUNCH_HOME_PATHS.notifications}
-                aria-label="알림"
-                className={headerIconLinkClass}
-              >
-                <LineBellLargeIcon />
-              </Link>
-              {more}
-            </>
-          }
+          trailing={more}
         />
       }
     >
