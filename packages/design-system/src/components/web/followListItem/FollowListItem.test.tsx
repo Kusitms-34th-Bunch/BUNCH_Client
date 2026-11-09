@@ -31,6 +31,37 @@ describe('FollowListItem', () => {
     expect(screen.getByText('1일 전')).toBeTruthy();
   });
 
+  it('onProfileClick이 있으면 이미지·이름이 버튼이고 오른쪽 동작과 따로 눌린다', () => {
+    const onProfileClick = vi.fn();
+    const onFollow = vi.fn();
+    render(
+      <FollowListItem
+        name="야간러너스"
+        isPrivate
+        onProfileClick={onProfileClick}
+        action={
+          <button type="button" onClick={onFollow}>
+            팔로우
+          </button>
+        }
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^야간러너스.*비공개 계정$/ }));
+    expect(onProfileClick).toHaveBeenCalledOnce();
+    expect(onFollow).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '팔로우' }));
+    expect(onProfileClick).toHaveBeenCalledOnce();
+    expect(onFollow).toHaveBeenCalledOnce();
+  });
+
+  it('onProfileClick이 없으면 이미지·이름은 버튼이 아니다', () => {
+    render(<FollowListItem name="야간러너스" />);
+
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
   it('오른쪽 동작을 누를 수 있다', () => {
     const onApprove = vi.fn();
     render(

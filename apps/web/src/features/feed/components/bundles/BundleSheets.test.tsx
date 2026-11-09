@@ -7,7 +7,9 @@ import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testin
 import type { FeedBundleMember, FeedPlace } from '../../lib/types';
 import { BundleSheets, type BundleSheet } from './BundleSheets';
 
+const push = vi.fn();
 const toast = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   toast: (...args: unknown[]) => {
@@ -20,8 +22,8 @@ const places: FeedPlace[] = [
   { id: 'b', name: '제주 바다', address: '제주 서귀포시', picked: true },
 ];
 const members: FeedBundleMember[] = [
-  { name: '은우', role: 'owner' },
-  { name: '경진' },
+  { id: 'm-1', name: '은우', role: 'owner' },
+  { id: 'm-2', name: '경진' },
   { name: '탈퇴', role: 'coOwner', left: true },
 ];
 const SHEETS = {
@@ -64,7 +66,10 @@ const setup = async (
 const pickButton = (place: string) =>
   screen.getByRole('button', { description: place, name: /콕/ });
 
-beforeEach(() => toast.mockClear());
+beforeEach(() => {
+  push.mockClear();
+  toast.mockClear();
+});
 
 describe('BundleSheets', () => {
   it('장소마다 이름·주소와 담긴 상태를 보여 준다', async () => {
@@ -179,8 +184,55 @@ describe('BundleSheets', () => {
     // 나간 멤버는 기본 이미지이고 역할 배지 없음
     expect(items[2]!.querySelector('img')?.getAttribute('src')).toContain('deleted-user');
     expect(within(items[2]!).queryByRole('img', { name: '공동 관리자' })).toBeNull();
-    // 멤버 프로필은 구현 단위 8이라 어느 행도 버튼이 아님
-    expect(within(screen.getByRole('list')).queryByRole('button')).toBeNull();
+    // 나간 멤버는 누를 수 없고 나머지는 멤버 프로필 링크
+    expect(within(items[0]!).getByRole('link').getAttribute('href')).toBe('/members/m-1');
+    expect(within(items[2]!).queryByRole('link')).toBeNull();
+  });
+
+  it('멤버를 누르면 시트가 닫힌 뒤 멤버 프로필로 이동한다', async () => {
+    const user = await setup('멤버');
+
+    await user.click(screen.getByRole('link', { name: /경진/ }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/members/m-2'));
+    expect(screen.queryByRole('heading', { name: '참여 멤버' })).toBeNull();
+  });
+
+  it('시트가 닫히는 중 다시 열면 대기 중인 멤버 이동을 버린다', async () => {
+    let finish = () => {};
+    const closing = {
+      finished: new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+      pending: false,
+      playState: 'running',
+      effect: { getTiming: () => ({ duration: 240, iterations: 1 }) },
+    } as unknown as Animation;
+    Object.defineProperty(Element.prototype, 'getAnimations', {
+      configurable: true,
+      value: () => [closing],
+    });
+    onTestFinished(() => {
+      delete (Element.prototype as Partial<Element>).getAnimations;
+    });
+    await setup('멤버');
+
+    fireEvent.click(screen.getByRole('link', { name: /경진/ }));
+    fireEvent.click(screen.getByRole('button', { name: '멤버', hidden: true }));
+    fireEvent.click(screen.getByRole('button', { name: '취소' }));
+    finish();
+
+    await waitFor(() => expect(screen.queryByRole('heading', { name: '참여 멤버' })).toBeNull());
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('보조 키로 누르면 시트를 닫지 않고 앱 이동도 하지 않는다', async () => {
+    await setup('멤버');
+
+    fireEvent.click(screen.getByRole('link', { name: /경진/ }), { metaKey: true });
+
+    expect(screen.getByRole('heading', { name: '참여 멤버' })).toBeTruthy();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('「취소」를 누르면 시트가 닫힌다', async () => {

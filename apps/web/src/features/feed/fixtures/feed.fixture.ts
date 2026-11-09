@@ -6,6 +6,7 @@ const HOUR = 3_600_000;
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * HOUR).toISOString();
 const members = (count: number) =>
   Array.from({ length: count }, (_, index) => ({
+    id: `member-${index + 1}`,
     name: `멤버 ${index + 1}`,
     imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_3,
     role: index === 0 ? ('owner' as const) : undefined,
