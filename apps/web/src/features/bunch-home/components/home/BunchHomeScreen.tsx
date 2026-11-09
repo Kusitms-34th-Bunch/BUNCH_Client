@@ -101,7 +101,6 @@ export function BunchHomeScreen({
       header={
         <BunchHomeHeader
           bunchName={current.name}
-          bunchImageSrc={current.imageSrc}
           onBunchClick={() => setSheetOpen(true)}
           switcherOpen={sheetOpen}
           className={background.top}
