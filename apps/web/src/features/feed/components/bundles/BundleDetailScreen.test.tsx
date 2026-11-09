@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import { likeStore } from '../../lib/likeStore';
 import { BundleDetailScreen } from './BundleDetailScreen';
 
 const push = vi.fn();
@@ -35,6 +36,7 @@ const renderDetail = (
 
 beforeEach(() => {
   push.mockClear();
+  likeStore.clear();
   toast.mockClear();
 });
 
