@@ -44,7 +44,7 @@
 ## Styling과 의존성
 
 - 카드 목록 좌우 16, 카드 사이 32(`gap-s14`), 위 16. 구간 안내 위아래 32, 선과 글자 사이 9(`gap-2.25`, 토큰 없음), 선은 `border-tertiary`. 끝 안내 위아래 40
-- 로고는 Figma에서 받은 `shared/assets/images/logo/wordmark-dark.svg`(69×19)
+- 로고는 Figma에서 받은 `shared/assets/images/logo/wordmark-dark.svg`(76×19, Figma `4940:99533`)
 - 로티는 안내가 처음 화면에 보일 때(`useInView`, IntersectionObserver) `LazyLottie`(`loop={false}`, 동작 줄이기 장면 `stillFrame`)로 `feedCaughtUp*.json`을 받아 한 번 재생. 스크롤해 다시 보일 때는 재생하지 않고, 피드에 다시 들어오면 다시 재생. 안내 글자(구간 안내는 양옆 선 포함)도 그때 0.233초 동안 투명 → 선명으로 나타난다(체크 모션의 투명도 구간과 같음, Figma에는 없지만 디자이너 확인). 글자는 처음부터 DOM에 있어 화면 낭독은 모션과 무관하고, 동작 줄이기면 모션 없이 보인다
 
 ## 확인할 항목

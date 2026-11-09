@@ -18,7 +18,7 @@
 ### 범위 외(후속)
 
 - 서버 처리와 실패 토스트: 차단 API 연결 때 한다. 지금은 메모리 저장소(`useBlockedBunches`)라 새로고침하면 fixture로 돌아간다.
-- 빈 상태 안내 이미지: Figma 4331:59751의 SVG(130×109, `src/shared/assets/images/empty/blocked-list-empty.svg`)다. 이미지와 문구 16, 제목 16/24 500 `text-tertiary`, 설명 13/18 `text-quaternary`.
+- 빈 상태 안내 이미지: Figma 5991:161676의 SVG(72×72, `src/shared/assets/images/empty/blocked-list-empty.svg`)다. 이미지와 문구 16, 제목 16/24 500 `text-tertiary`, 설명 13/18 `text-quaternary`.
 - 다른 번치 차단(다른 번치 프로필의 더보기, 단위 9).
 
 ## 역할

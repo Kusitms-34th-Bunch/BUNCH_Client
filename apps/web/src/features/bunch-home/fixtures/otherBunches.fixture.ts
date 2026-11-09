@@ -1,4 +1,4 @@
-import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
+import { DEFAULT_BUNCH_IMAGES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { BunchMember, OtherBunch } from '../lib/types';
 import { sampleImage } from './bunchHome.fixture';
 
@@ -29,7 +29,7 @@ export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
       coverSrc: sampleImage(hue),
     })),
     followStatus: 'none',
-    members: members(['솔', '하람', '도윤', '서아'], DEFAULT_BUNCH_IMAGES.TYPE_2),
+    members: members(['솔', '하람', '도윤', '서아'], DEFAULT_PROFILE_IMAGE),
   },
   'bunch-book': {
     id: 'bunch-book',
@@ -48,7 +48,7 @@ export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
       coverSrc: sampleImage(hue),
     })),
     followStatus: 'none',
-    members: members(['지안', '루아', '하윤', '서진', '다온', '이든'], DEFAULT_BUNCH_IMAGES.TYPE_4),
+    members: members(['지안', '루아', '하윤', '서진', '다온', '이든'], DEFAULT_PROFILE_IMAGE),
   },
 };
 

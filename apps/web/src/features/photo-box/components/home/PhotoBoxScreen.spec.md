@@ -74,17 +74,17 @@
 - 로딩은 `role="status"`와 「사진함을 불러오는 중이에요」, 오류는 `role="alert"`.
 - Responsive·긴 텍스트: 칩 줄은 가로 스크롤, 375px에서 본문 가로 넘침이 없다. 번치 이름은 한 줄로 줄임.
 
-| Figma(`사진함_02`·`번치 Empty Space`) | 값                                                                                                            | 사용한 토큰·utility                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 헤더                                  | 375×48, 좌우 16, `AccountSwitcher` 이름 18/27, 「선택」 32 높이                                               | `Header`, `AccountSwitcher p-s3`, `TextButton sm`          |
-| 칩 줄                                 | 위 18, 칩 높이 40(화면 인스턴스), 칩 간격 6, 좌우 16                                                          | `ChipButton size="L" h-10`, `gap-s3 px-s8 pt-s9`           |
-| 아코디언(접힘)                        | 343×81, radius 8, 칩 줄과 16, 좌우 16                                                                         | `Accordion`, `mx-s8 mt-s6 rounded-r4`(칩 줄 아래 4px 포함) |
-| 아코디언(펼침)                        | 좌우 여백·radius 없이 전체 폭, 사진 3열이 바로 아래                                                           | `Accordion`, `mt-s6`(좌우 여백·radius 제거)                |
-| 날짜 제목                             | 14/21 600 자간 -0.5, 위 16·아래 6·좌 16·우 14                                                                 | `typography-body-3-semibold pt-s8 pb-s3 pl-s8 pr-s7`       |
-| 사진 칸                               | 123×123, 사이 1px, 3열                                                                                        | `grid grid-cols-3 gap-px`, `PhotoThumbnail`                |
-| 「+」                                 | 52, 오른쪽 16, 하단 탭 위 10                                                                                  | `FloatingButton add`, `right-s8 bottom-s5`                 |
-| 빈 상태                               | 가운데, 일러스트 83×83(`photo-empty.svg`)과 15/22 400 `text-tertiary`, 간격 번치 16·멤버 12                   | `PhotoBoxEmpty`, `gap-s8`·`gap-s6`                         |
-| 번치 없음                             | 일러스트 103×91(`bunch-empty.svg`), 제목 16/24 500, 설명 13/18, 일러스트와 문구 16·제목과 설명 4, 버튼 343×48 | `NoBunch`, `Button`·`Button variant="tertiary"`            |
+| Figma(`사진함_02`·`번치 Empty Space`) | 값                                                                                                           | 사용한 토큰·utility                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| 헤더                                  | 375×48, 좌우 16, `AccountSwitcher` 이름 18/27, 「선택」 32 높이                                              | `Header`, `AccountSwitcher p-s3`, `TextButton sm`          |
+| 칩 줄                                 | 위 18, 칩 높이 40(화면 인스턴스), 칩 간격 6, 좌우 16                                                         | `ChipButton size="L" h-10`, `gap-s3 px-s8 pt-s9`           |
+| 아코디언(접힘)                        | 343×81, radius 8, 칩 줄과 16, 좌우 16                                                                        | `Accordion`, `mx-s8 mt-s6 rounded-r4`(칩 줄 아래 4px 포함) |
+| 아코디언(펼침)                        | 좌우 여백·radius 없이 전체 폭, 사진 3열이 바로 아래                                                          | `Accordion`, `mt-s6`(좌우 여백·radius 제거)                |
+| 날짜 제목                             | 14/21 600 자간 -0.5, 위 16·아래 6·좌 16·우 14                                                                | `typography-body-3-semibold pt-s8 pb-s3 pl-s8 pr-s7`       |
+| 사진 칸                               | 123×123, 사이 1px, 3열                                                                                       | `grid grid-cols-3 gap-px`, `PhotoThumbnail`                |
+| 「+」                                 | 52, 오른쪽 16, 하단 탭 위 10                                                                                 | `FloatingButton add`, `right-s8 bottom-s5`                 |
+| 빈 상태                               | 가운데, 일러스트 72×72(`photo-empty.svg`)와 15/22 400 `text-tertiary`, 간격 번치 16·멤버 12                  | `PhotoBoxEmpty`, `gap-s8`·`gap-s6`                         |
+| 번치 없음                             | 일러스트 72×72(`bunch-empty.svg`), 제목 16/24 500, 설명 13/18, 일러스트와 문구 16·제목과 설명 4, 버튼 343×48 | `NoBunch`, `Button`·`Button variant="tertiary"`            |
 
 ## 검증
 
@@ -99,7 +99,7 @@
 ## 디자이너 확인 항목
 
 - 칩 높이: Figma 화면 인스턴스는 40px인데 `ChipButton` L 컴포넌트는 38px이다. 화면 값(40)을 따랐다.
-- 빈 상태·번치 없음 일러스트: Figma 4744:89798·4744:90114·1861:33542의 SVG를 `src/shared/assets/images/empty/`에 두고 `next/image`로 표시한다(장식이라 `alt=""`).
+- 빈 상태·번치 없음 일러스트: Figma 5991:162053·5991:162448·5878:79966의 SVG를 `src/shared/assets/images/empty/`에 두고 `next/image`로 표시한다(장식이라 `alt=""`).
 - `AccountSwitcher`: Figma에서 대표 이미지가 삭제되어 이름과 화살표만 보인다(`977:8709`).
 - 로딩·오류·처리 중 사진의 모양은 Figma에 없어 이 PR에서 정한 값이다.
 - 삭제 확인 창 문구: Figma와 기획 문서에는 기본 문구(Figma는 「선택한 사진 N장을 삭제할까요?」, 장수는 빼기로 해 「선택한 사진을 삭제할까요? / 삭제 이후에는 복구할 수 없어요.」)만 있고, 사진 종류별(관리자가 다른 멤버 사진, 함께 올린 사진, 섞임, 작성 중인 번들에 쓰인 사진) 원문이 없다. `getDeleteKind`로 종류는 나눠 두었고 지금은 모든 종류가 기본 문구를 쓴다.

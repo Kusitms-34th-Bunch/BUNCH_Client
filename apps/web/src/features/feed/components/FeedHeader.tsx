@@ -43,7 +43,7 @@ export function FeedHeader({
           // 로고 높이 19px, 누르는 영역은 before로 위아래 12px씩 넓혀 43px
           className="focus-visible:outline-border-brand rounded-r2 relative flex cursor-pointer touch-manipulation before:absolute before:inset-x-0 before:-inset-y-3 focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <Image src={WORDMARK} alt="" width={69} height={19} priority />
+          <Image src={WORDMARK} alt="" width={76} height={19} priority />
         </button>
       }
       trailing={
