@@ -1,6 +1,6 @@
 'use client';
 
-import { ConfirmDialog } from '@app/design-system';
+import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
@@ -29,8 +29,6 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
   const backOr = useBackOr();
   const { state, actions } = useDraftContext();
   const [uploading, setUploading] = useState(false);
-  // 업로드가 끝나면 로딩을 걷고 「업로드가 완료되었어요」 창을 띄움(확인하면 번치 홈으로 이동)
-  const [done, setDone] = useState(false);
   // 업로드하는 동안 초안이 사라져도 공개 범위 화면을 그대로 보이도록 업로드 시점의 선택을 보관
   const [frozen, setFrozen] = useState<DraftVisibility | null>(null);
   // 같은 틱에 연달아 눌러도 한 번만 보내도록 ref로 막음(state 갱신 전에는 uploading이 아직 false)
@@ -47,7 +45,7 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
       (blocker) => blocker === 'visibility',
     );
   // 업로드 중에는 발행으로 초안 상태가 바뀌어도 작성 화면으로 돌려보내지 않음
-  const notReady = state.kind === 'ready' && !contentReady && !uploading && !done;
+  const notReady = state.kind === 'ready' && !contentReady && !uploading;
   const draftId = draft?.id;
 
   useEffect(() => {
@@ -55,9 +53,8 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
   }, [notReady, draftId, router]);
 
   if (state.kind === 'error') return <PhotoBoxError onRetry={state.retry} />;
-  const busy = uploading || done;
-  // 업로드 중·완료 창이 떠 있는 동안은 초안이 사라져도 이 화면을 유지
-  if (!busy && (state.kind !== 'ready' || !draft || notReady)) return <PageLoading />;
+  // 업로드 중에는 초안이 사라져도 이 화면(과 로딩)을 유지
+  if (!uploading && (state.kind !== 'ready' || !draft || notReady)) return <PageLoading />;
 
   const upload = () => {
     if (!draft || submitted.current || draft.visibility === null) return;
@@ -66,8 +63,8 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
     setUploading(true);
     void actions.publish().then((outcome) => {
       if (outcome === 'published') {
-        setUploading(false);
-        setDone(true);
+        toast(BUNDLE_MESSAGES.published, { fullWidth: true });
+        router.replace(BUNDLE_PATHS.bunchHome);
         return;
       }
       // 실패하면 다시 시도할 수 있게 풂(성공은 이동이 끝날 때까지 유지)
@@ -78,25 +75,14 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
   };
 
   return (
-    <>
-      <DraftVisibilityScreen
-        value={busy ? frozen : (draft?.visibility ?? null)}
-        bunchPrivate={bunchPrivate}
-        uploading={uploading}
-        onChange={actions.setVisibility}
-        // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
-        onBack={() => backOr(BUNDLE_PATHS.draft(draft?.id ?? ''))}
-        onUpload={upload}
-      />
-      {/* 확인해야 번치 홈으로 이동(창 밖을 눌러도 닫히지 않음) */}
-      <ConfirmDialog
-        open={done}
-        onOpenChange={() => undefined}
-        appearance="text"
-        title={BUNDLE_MESSAGES.published}
-        confirmLabel={BUNDLE_MESSAGES.missingDraftConfirm}
-        onConfirm={() => router.replace(BUNDLE_PATHS.bunchHome)}
-      />
-    </>
+    <DraftVisibilityScreen
+      value={uploading ? frozen : (draft?.visibility ?? null)}
+      bunchPrivate={bunchPrivate}
+      uploading={uploading}
+      onChange={actions.setVisibility}
+      // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
+      onBack={() => backOr(BUNDLE_PATHS.draft(draft?.id ?? ''))}
+      onUpload={upload}
+    />
   );
 }

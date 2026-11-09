@@ -54,7 +54,7 @@ export const BUNDLE_MESSAGES = {
   saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
   publishFailed: '번들을 업로드하지 못했어요. 잠시 후 다시 시도해 주세요.',
   publishConflict: '다른 멤버가 내용을 바꿨어요. 확인한 뒤 다시 업로드해 주세요.',
-  // 업로드 완료 안내 창 제목(「확인」을 누르면 번치 홈으로 이동)
+  // 업로드 완료 토스트(번치 홈으로 이동하며 띄움)
   published: '업로드가 완료되었어요',
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
