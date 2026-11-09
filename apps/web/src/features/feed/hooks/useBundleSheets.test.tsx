@@ -94,10 +94,8 @@ describe('useBundleSheets', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(toast).not.toHaveBeenCalled();
 
-    // 초점은 시트를 연 버튼으로 돌아감
-    await waitFor(() => expect(screen.getByRole('button', { name: '위치' })).toHaveFocus());
-
-    await user.click(screen.getByRole('button', { name: '위치' }));
+    // 창이 닫히면 시트가 다시 올라오고(화면설계서) 뺀 장소는 「콕하기」
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
     expect(pickButton('제주 바다').textContent).toBe('콕하기');
 
     // 취소한 장소는 다시 콕할 수 있음
@@ -112,7 +110,7 @@ describe('useBundleSheets', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
 
-  it('확인 창의 「아니요」는 창만 닫고 시트를 다시 열지 않으며 콕을 유지한다', async () => {
+  it('확인 창의 「아니요」는 창을 닫고 시트를 다시 올리며 콕을 유지한다', async () => {
     const user = await setup('위치');
 
     await user.click(pickButton('제주 바다'));
@@ -120,8 +118,7 @@ describe('useBundleSheets', () => {
     await user.click(within(dialog).getByRole('button', { name: '아니요' }));
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: '위치' }));
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
     expect(pickButton('제주 바다').textContent).toBe('콕 했어요');
   });
 
