@@ -14,10 +14,12 @@ export type BundleSelectValue = {
   /** 누른 순서대로 담은 선택한 사진 id */
   selection: PhotoSelection;
   selectedCounts: Readonly<Record<string, number>>;
+  /** 함께 만들 멤버 id(나 제외, 추가한 순서). 사진 선택 화면의 멤버 칩 범위 */
+  memberIds: readonly string[];
   memberId: string;
   /** 추천 번들 시트가 열려 있는지(상세·뷰어를 다녀와도 유지) */
   sheetOpen: boolean;
-  /** 시트에서 고른 추천 번들 id */
+  /** 마지막으로 누른 추천 번들 id(시트를 다시 열면 선택 모양으로 보임) */
   pickedId: string | undefined;
   /** 「추천 번들 사진으로 변경할까요?」 확인 창이 열려 있는지 */
   changeOpen: boolean;
@@ -27,11 +29,12 @@ export type BundleSelectValue = {
   /** 스크롤을 마친 뒤 대상을 비움(상세·뷰어를 다녀와 다시 마운트돼도 되풀이하지 않음) */
   clearScrollTarget: () => void;
   setMemberId: (_memberId: string) => void;
+  toggleMember: (_memberId: string) => void;
   toggle: (_photoId: string) => void;
   openSheet: () => void;
   closeSheet: () => void;
-  togglePicked: (_recommendationId: string) => void;
-  apply: () => void;
+  /** 추천 번들 카드를 누르면 바로 적용(고른 사진이 있으면 변경 확인 창을 거침) */
+  pickRecommendation: (_recommendationId: string) => void;
   confirmChange: () => void;
   cancelChange: () => void;
   create: () => void;

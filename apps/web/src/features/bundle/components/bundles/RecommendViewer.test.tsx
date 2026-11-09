@@ -38,9 +38,14 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
-const renderViewer = (recommendationId: string | undefined, photoId: string | undefined) =>
+// 앞 단계(멤버 선택)에서 멤버를 고른 상태로 시작
+const renderViewer = (
+  recommendationId: string | undefined,
+  photoId: string | undefined,
+  initialMemberIds: readonly string[] = ['gyeongjin'],
+) =>
   render(
-    <BundleSelectProvider>
+    <BundleSelectProvider initialMemberIds={initialMemberIds}>
       <RecommendViewer recommendationId={recommendationId} photoId={photoId} />
     </BundleSelectProvider>,
   );
@@ -70,6 +75,14 @@ describe('RecommendViewer', () => {
     await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.recommendation('rec-1'));
+  });
+
+  it('멤버를 고르지 않고 들어오면 안내 없이 멤버 선택으로 보낸다', () => {
+    renderViewer('rec-1', 'photo-999', []);
+
+    expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.members);
+    expect(router.replace).not.toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('추천에 없는 사진이면 안내 토스트 뒤 사진 선택 화면으로 돌아간다', () => {
