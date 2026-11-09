@@ -87,19 +87,14 @@ export const CommentItem = ({
               <div className="gap-s3 flex min-w-0 items-center">
                 <span
                   className={cn(
-                    'typography-body-3-semi-bold truncate',
+                    'typography-body-3-semibold truncate',
                     deleted ? 'text-text-quaternary' : 'text-text-secondary',
                   )}
                 >
                   {name}
                 </span>
                 {!deleted && bunchName ? (
-                  <ColorBadge
-                    color={bunchColor}
-                    size="md"
-                    // Figma 배지 여백 좌우 6·위아래 2(ColorBadge 기본보다 작음)
-                    className="px-padding-p3 py-padding-p1"
-                  >
+                  <ColorBadge color={bunchColor} size="sm">
                     {bunchName}
                   </ColorBadge>
                 ) : null}

@@ -52,6 +52,6 @@
 
 ## Styling과 의존성
 
-- Token: `rounded-r8`·`rounded-r6`, `p-s4`·`gap-s2`·`gap-s4`·`px-s8`·`py-s5`, `bg-surface-primary`, `bg-border-secondary`, `bg-overlay-hover`, `text-text-secondary`, `text-system-fail-text`, `typography-login-button`(15/22) + `font-(--semantic-font-weights-pretendard-1)`(600). 15/22 SemiBold typography token이 없어 LoginButton과 같은 조합을 쓴다.
+- Token: `rounded-r8`·`rounded-r6`, `p-s4`·`gap-s2`·`gap-s4`·`px-s8`·`py-s5`, `bg-surface-primary`, `bg-border-secondary`, `bg-overlay-hover`, `text-text-secondary`, `text-system-fail-text`, `typography-body-2-semibold`(15/22) + `font-(--semantic-font-weights-pretendard-1)`(600). 15/22 SemiBold typography token이 없어 LoginButton과 같은 조합을 쓴다.
 - 아이콘: `LineDownloadMediumIcon`, `LineTrashcanMediumIcon`(이 이슈에서 S·M·L 추가). dependency 추가 없음.
 - Storybook: `Web/Menu`(Default, WithDivider, WithIcons, Matrix, PopoverMotion), `Web/MenuDivider`(Default), `Web/MenuItem`(Default, Warning, WithIcon, WarningWithIcon).

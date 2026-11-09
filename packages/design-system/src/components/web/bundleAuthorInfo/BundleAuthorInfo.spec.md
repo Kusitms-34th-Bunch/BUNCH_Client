@@ -26,12 +26,12 @@
 
 ## Styling과 의존성
 
-| Figma     | 값                                                    | 토큰·클래스                                                         |
-| --------- | ----------------------------------------------------- | ------------------------------------------------------------------- |
-| 이름      | Body-2-SemiBold 15/22 `#121212`, 아래 -2              | `typography-body-2-semi-bold text-text-primary -mb-0.5`             |
-| 시간      | Caption-1-Regular 12/16, 높이 18                      | `typography-caption-1-regular text-text-tertiary h-4.5`             |
-| 광고 배지 | Caption-1-Regular, 좌우 6·위아래 2, 반경 6, `#F5F5F5` | `ColorBadge size="md" color="gray"` + `px-padding-p3 py-padding-p1` |
-| 홍보 문구 | Caption-1-Medium 12/16 자간 0.25, 좌우 4              | `typography-caption-1-medium text-text-tertiary px-padding-p2`      |
+| Figma     | 값                                                    | 토큰·클래스                                                    |
+| --------- | ----------------------------------------------------- | -------------------------------------------------------------- |
+| 이름      | Body-2-Semibold 15/22 `#121212`, 아래 -2              | `typography-body-2-semibold text-text-primary -mb-0.5`         |
+| 시간      | Caption-1-Regular 12/16, 높이 18                      | `typography-caption-1-regular text-text-tertiary h-4.5`        |
+| 광고 배지 | Caption-1-Regular, 좌우 6·위아래 2, 반경 6, `#F5F5F5` | `ColorBadge size="sm" color="gray"`                            |
+| 홍보 문구 | Caption-1-Medium 12/16 자간 0.25, 좌우 4              | `typography-caption-1-medium text-text-tertiary px-padding-p2` |
 
 - Storybook: `Default`, `LongName`, `Ad`.
 
