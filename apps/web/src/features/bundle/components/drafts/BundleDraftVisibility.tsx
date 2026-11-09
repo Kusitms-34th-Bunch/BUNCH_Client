@@ -81,7 +81,10 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
       uploading={uploading}
       onChange={actions.setVisibility}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
-      onBack={() => backOr(BUNDLE_PATHS.draft(draft?.id ?? ''))}
+      onBack={() => {
+        // 업로드 중에는 초안이 사라져 돌아갈 곳을 만들 수 없음
+        if (draftId !== undefined && !uploading) backOr(BUNDLE_PATHS.draft(draftId));
+      }}
       onUpload={upload}
     />
   );

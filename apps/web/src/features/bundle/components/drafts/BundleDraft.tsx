@@ -6,6 +6,7 @@ import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useLeaveDraft } from '../../hooks/useDraftExit';
@@ -38,28 +39,34 @@ export function BundleDraft() {
 
   return (
     <>
+      {/* 이동하는 동안 로딩이 화면을 덮고, 아래 화면은 키보드로도 닿지 않게 하며 낭독으로 알림 */}
+      <p role="status" className="sr-only">
+        {moving ? BUNDLE_MESSAGES.moving : ''}
+      </p>
       {moving ? <PageLoading /> : null}
-      <DraftScreen
-        draft={state.draft}
-        viewer={state.viewer}
-        saveStatus={state.saveStatus}
-        offline={!online}
-        actions={actions}
-        // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)
-        onBack={() => backOr(BUNDLE_PATHS.bunchHome)}
-        onLeave={() => void leaveDraft(isDraftCreator(state.draft, state.viewer))}
-        onRetry={recheck}
-        // 조건을 채우면 공개 범위 화면으로 가서 거기서 업로드(기능 spec 4.3.12)
-        onUpload={() => startMoving(() => router.push(BUNDLE_PATHS.visibility(draftId)))}
-        onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}
-        onOpenPhoto={(photoId) => router.push(BUNDLE_PATHS.photoViewer(draftId, photoId))}
-        onOpenPick={() => router.push(BUNDLE_PATHS.pick(draftId))}
-        onImportFromBunchBox={() => {
-          markPhotoAddEntry();
-          router.push(BUNDLE_PATHS.photoAdd(draftId));
-        }}
-        onImportFromGallery={importFromGallery}
-      />
+      <div inert={moving} className="contents">
+        <DraftScreen
+          draft={state.draft}
+          viewer={state.viewer}
+          saveStatus={state.saveStatus}
+          offline={!online}
+          actions={actions}
+          // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)
+          onBack={() => backOr(BUNDLE_PATHS.bunchHome)}
+          onLeave={() => void leaveDraft(isDraftCreator(state.draft, state.viewer))}
+          onRetry={recheck}
+          // 조건을 채우면 공개 범위 화면으로 가서 거기서 업로드(기능 spec 4.3.12)
+          onUpload={() => startMoving(() => router.push(BUNDLE_PATHS.visibility(draftId)))}
+          onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}
+          onOpenPhoto={(photoId) => router.push(BUNDLE_PATHS.photoViewer(draftId, photoId))}
+          onOpenPick={() => router.push(BUNDLE_PATHS.pick(draftId))}
+          onImportFromBunchBox={() => {
+            markPhotoAddEntry();
+            router.push(BUNDLE_PATHS.photoAdd(draftId));
+          }}
+          onImportFromGallery={importFromGallery}
+        />
+      </div>
     </>
   );
 }

@@ -193,9 +193,12 @@ export function DraftPickScreen({
         aria-roledescription={BUNDLE_MESSAGES.pickCarousel}
         onKeyDown={handleListKeyDown}
         className="gap-s5 pt-s8 focus-visible:outline-border-brand flex snap-x snap-mandatory scrollbar-none overflow-x-auto px-[calc(50%-147.5px)] [&::-webkit-scrollbar]:hidden"
-        onScroll={(event) =>
-          setActiveIndex(Math.max(0, Math.round(event.currentTarget.scrollLeft / PHOTO_STEP)))
-        }
+        onScroll={(event) => {
+          const next = Math.max(0, Math.round(event.currentTarget.scrollLeft / PHOTO_STEP));
+          // 다른 사진으로 넘기면 모션을 끝냄(돌아왔을 때 처음부터 다시 재생되지 않게)
+          if (next !== activeIndex) setFx(null);
+          setActiveIndex(next);
+        }}
       >
         {photos.map((photo, index) => (
           <li

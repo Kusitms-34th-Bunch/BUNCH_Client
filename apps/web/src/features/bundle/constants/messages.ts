@@ -88,6 +88,8 @@ export const BUNDLE_MESSAGES = {
   visibilityMembersDescription: '우리 번치 멤버만 볼 수 있어요',
   visibilityNotice: '* 업로드 이후에는 관리자만 수정하거나 삭제할 수 있어요.',
   uploading: '업로드 중',
+  // 공개 범위 화면으로 넘어가는 동안 낭독용 안내
+  moving: '불러오는 중',
   visibilityRequired: '공개 범위를 선택해 주세요.',
   uploadEditingTitle: '편집 중인 멤버가 있어요',
   uploadEditingDescription: '지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있어요.',

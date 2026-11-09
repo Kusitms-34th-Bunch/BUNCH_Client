@@ -5,7 +5,7 @@ import { DescriptionRadioCard } from '@app/design-system/web';
 import { useId } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { RippleLoadingOverlay } from '@/shared/components/loading/RippleLoading';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { DraftVisibility } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { UPLOAD_TOAST_OFFSET } from '../../constants/toast';
@@ -97,7 +97,7 @@ export function DraftVisibilityScreen({
       <p role="status" className="sr-only">
         {uploading ? BUNDLE_MESSAGES.uploading : ''}
       </p>
-      {uploading ? <RippleLoadingOverlay /> : null}
+      {uploading ? <PageLoading /> : null}
       <div
         role="radiogroup"
         aria-labelledby={titleId}
