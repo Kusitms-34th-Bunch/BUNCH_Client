@@ -4,9 +4,11 @@ import { cn, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system'
 import { AddBundlePhotoEditor, PhotoImportSheet } from '@app/design-system/web';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../../constants/messages';
@@ -20,7 +22,6 @@ import { clampCaption, getPhotoEditors } from '../../lib/photos';
 import { DraftPhotoCard } from './DraftPhotoCard';
 import { PhotoCaptionField } from './PhotoCaptionField';
 import { PhotoMoveButtons } from './PhotoMoveButtons';
-import { RemovePhotoDialogs } from './RemovePhotoDialogs';
 
 // 캡션 화면의 토스트는 헤더 바로 아래에 뜸(Figma `1782:32928`·`1782:32995`, 입력 중 키보드에 가려지지 않게)
 const notify = (message: string) => toast(message, { fullWidth: true, position: 'top' });
@@ -79,12 +80,26 @@ export function DraftPhotoCaption({
   const activeId = active?.id;
   // 커서가 있는 입력란의 사진 id. 사진이 바뀌어 입력란이 교체될 때 blur가 오지 않아도 보는 사진과 달라져 저절로 풀림
   const [focusedPhotoId, setFocusedPhotoId] = useState<string | undefined>(undefined);
-  const [importOpen, setImportOpen] = useState(false);
-  // 시트 카드를 연타해도 고른 출처를 한 번만 처리(시트가 다시 열릴 때 풀림)
-  const importChosen = useRef(false);
-  useEffect(() => {
-    if (importOpen) importChosen.current = false;
-  }, [importOpen]);
+  const openOverlay = useScreenOverlay();
+  // 시트가 열린 사이 장수가 바뀌어도 고른 순간의 남은 장수로 가져옴
+  const importFromGallery = usePreservedCallback(() => onImportFromGallery(MAX_PHOTOS - total));
+  const openImport = () => {
+    // 시트 카드를 연타해도 고른 출처를 한 번만 처리
+    let chosen = false;
+    const choose = (close: () => void, action: () => void) => {
+      if (chosen) return;
+      chosen = true;
+      close();
+      action();
+    };
+    openOverlay((rootProps, close) => (
+      <PhotoImportSheet
+        {...rootProps}
+        onSelectBunchBox={() => choose(close, onImportFromBunchBox)}
+        onSelectGallery={() => choose(close, importFromGallery)}
+      />
+    ));
+  };
   // 옮기거나 뺀 결과 낭독은 그 자리를 보는 동안만 우선하고, 다른 사진으로 넘기면 위치 낭독으로 돌아감
   const [announcement, setAnnouncement] = useState<{ text: string; index: number } | undefined>(
     undefined,
@@ -104,12 +119,14 @@ export function DraftPhotoCaption({
   const denyEdit = () => notify(BUNDLE_MESSAGES.editOnlyParticipants);
   const blockEditing = () => notify(BUNDLE_MESSAGES.editingBlocked);
 
+  const isPicked = useIsPhotoPicked(draft);
   const removal = usePhotoRemoval({
     photos,
     removePhoto: actions.removePhoto,
     list: { current, setActiveIndex, scrollToIndex, pauseSnap, focusPhotoView },
     canEdit: access.canEdit,
     isLocked,
+    isPicked,
     onDenied: denyEdit,
     onBlocked: blockEditing,
     announce: setAnnouncement,
@@ -141,7 +158,6 @@ export function DraftPhotoCaption({
       !(active && isLocked(active.id)));
   const editorNames = active ? editorNamesOf(active.id) : [];
   const addable = access.canAddPhoto && total < MAX_PHOTOS;
-  const isPicked = useIsPhotoPicked(draft);
   // 화면설계서 1-1: 사진 왼쪽 위에는 올린 멤버가 아니라 그 사진을 편집 중인 멤버의 프로필을 보임
   const editorOf = (photo: DraftPhoto) => {
     const member = draft.members.find(
@@ -221,7 +237,7 @@ export function DraftPhotoCaption({
             ))}
             {addable && (
               <li ref={removal.register(ADD_CARD_ID)} className="shrink-0 snap-start">
-                <AddBundlePhotoEditor size="m" onClick={() => setImportOpen(true)} />
+                <AddBundlePhotoEditor size="m" onClick={openImport} />
               </li>
             )}
           </ul>
@@ -250,28 +266,6 @@ export function DraftPhotoCaption({
           )}
         </div>
       )}
-      <PhotoImportSheet
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onSelectBunchBox={() => {
-          if (importChosen.current) return;
-          importChosen.current = true;
-          setImportOpen(false);
-          onImportFromBunchBox();
-        }}
-        onSelectGallery={() => {
-          if (importChosen.current) return;
-          importChosen.current = true;
-          setImportOpen(false);
-          onImportFromGallery(MAX_PHOTOS - total);
-        }}
-      />
-      <RemovePhotoDialogs
-        kind={removal.removeDialog?.kind}
-        picked={removal.removeDialog ? isPicked(removal.removeDialog.photoId) : false}
-        onClose={removal.closeDialog}
-        onConfirm={removal.confirmRemove}
-      />
     </PageShell>
   );
 }

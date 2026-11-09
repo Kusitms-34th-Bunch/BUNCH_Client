@@ -7,13 +7,15 @@ import {
   BundleTitle,
   PhotoImportSheet,
 } from '@app/design-system/web';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftAccess } from '../../lib/permissions';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../../constants/messages';
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
-import { getRemovePhotoKind, getPhotoEditors, type RemovePhotoKind } from '../../lib/photos';
-import { RemovePhotoDialogs } from './RemovePhotoDialogs';
+import { getRemovePhotoKind, getPhotoEditors } from '../../lib/photos';
+import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 
 type DraftPhotosProps = {
   draft: Draft;
@@ -54,14 +56,29 @@ export function DraftPhotos({
 }: DraftPhotosProps) {
   const total = draft.photos.length;
   const isPicked = useIsPhotoPicked(draft);
-  const [importOpen, setImportOpen] = useState(false);
-  // 시트 선택이 두 번 처리되지 않게(닫히는 동안 다시 눌러도 한 번만)
-  const importChosen = useRef(false);
+  const openOverlay = useScreenOverlay();
+  // 시트가 열린 사이 장수가 바뀌어도 고른 순간의 남은 장수로 가져옴
+  const importFromGallery = usePreservedCallback(() => onImportFromGallery(MAX_PHOTOS - total));
+  const isPickedNow = usePreservedCallback(isPicked);
+  const openImport = () => {
+    // 시트 카드를 연타해도 고른 출처를 한 번만 처리
+    let chosen = false;
+    const choose = (close: () => void, action: () => void) => {
+      if (chosen) return;
+      chosen = true;
+      close();
+      action();
+    };
+    openOverlay((rootProps, close) => (
+      <PhotoImportSheet
+        {...rootProps}
+        onSelectBunchBox={() => choose(close, onImportFromBunchBox)}
+        onSelectGallery={() => choose(close, importFromGallery)}
+      />
+    ));
+  };
   const listRef = useRef<HTMLUListElement>(null);
-  // 확인 창을 연 시점의 사진 id를 고정해 그 사이 목록이 바뀌어도 다른 사진을 지우지 않음
-  const [removeDialog, setRemoveDialog] = useState<
-    { kind: RemovePhotoKind; photoId: string } | undefined
-  >(undefined);
+  const openRemove = useRemovePhotoDialog();
 
   // 라벨 옆: 사진을 편집 중인 멤버 전체(어느 사진인지는 알려 주지 않음)
   const editors = (draft.editing.photoMemberIds ?? []).flatMap((id) => {
@@ -72,7 +89,16 @@ export function DraftPhotos({
   const requestRemove = (photoId: string) => {
     if (!access.canEdit) return onDenied();
     if (getPhotoEditors(draft, viewer, photoId).length > 0) return onEditingBlocked();
-    setRemoveDialog({ kind: getRemovePhotoKind(draft.photos), photoId });
+    // 연 시점의 사진 id를 고정해 그 사이 목록이 바뀌어도 다른 사진을 지우지 않음
+    openRemove({
+      kind: getRemovePhotoKind(draft.photos),
+      isPicked: () => isPickedNow(photoId),
+      onConfirm: () => onRemovePhoto(photoId),
+      // 지운 사진의 X에 있던 포커스가 사라지므로 창이 다 닫힌 뒤 목록의 첫 버튼으로 옮김
+      onClosed: (confirmed) => {
+        if (confirmed) listRef.current?.querySelector<HTMLElement>('button')?.focus();
+      },
+    });
   };
 
   return (
@@ -124,48 +150,13 @@ export function DraftPhotos({
         ))}
         {access.canAddPhoto && total < MAX_PHOTOS ? (
           <li className="shrink-0">
-            <AddBundlePhotoEditor
-              size="xs"
-              onClick={() => {
-                importChosen.current = false;
-                setImportOpen(true);
-              }}
-            />
+            <AddBundlePhotoEditor size="xs" onClick={openImport} />
           </li>
         ) : null}
       </ul>
       <p role="status" className="sr-only">
         {BUNDLE_MESSAGES.photoCount(total)}
       </p>
-      <PhotoImportSheet
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onSelectBunchBox={() => {
-          if (importChosen.current) return;
-          importChosen.current = true;
-          setImportOpen(false);
-          onImportFromBunchBox();
-        }}
-        onSelectGallery={() => {
-          if (importChosen.current) return;
-          importChosen.current = true;
-          setImportOpen(false);
-          onImportFromGallery(MAX_PHOTOS - total);
-        }}
-      />
-      <RemovePhotoDialogs
-        kind={removeDialog?.kind}
-        picked={removeDialog ? isPicked(removeDialog.photoId) : false}
-        onClose={() => setRemoveDialog(undefined)}
-        onConfirm={() => {
-          if (removeDialog) onRemovePhoto(removeDialog.photoId);
-          setRemoveDialog(undefined);
-          // 지운 사진의 X에 있던 포커스가 사라지므로 목록의 첫 버튼으로 옮김(상태가 반영된 다음 그림)
-          requestAnimationFrame(() =>
-            listRef.current?.querySelector<HTMLElement>('button')?.focus(),
-          );
-        }}
-      />
     </section>
   );
 }

@@ -5,6 +5,7 @@ import { BundlePickPhoto } from '@app/design-system/web';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftMember, DraftPhoto } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { chunk, hasPicked, pickersOf, type Picks } from '../../lib/picks';
@@ -105,7 +106,7 @@ export function DraftPickScreen({
   onBack,
 }: DraftPickScreenProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [deletedOpen, setDeletedOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
   const listRef = useRef<HTMLUListElement>(null);
   // 픽하기 모션: 어느 사진에서 시작했는지와 픽하기 전 픽한 수(3.4초 뒤 사라짐)
   const [fx, setFx] = useState<{ photoId: string; prevCount: number } | null>(null);
@@ -117,12 +118,31 @@ export function DraftPickScreen({
 
   // 보던 사진이 목록에서 사라지면 안내(처음 그릴 때는 비교할 이전 사진이 없음)
   const shownId = useRef<string | undefined>(undefined);
+  // 창이 떠 있는 사이 또 지워져도 안내 창을 겹치지 않음
+  const deletedNoticeOpen = useRef(false);
   useEffect(() => {
     if (shownId.current !== undefined && !photos.some((photo) => photo.id === shownId.current)) {
-      setDeletedOpen(true);
+      if (!deletedNoticeOpen.current) {
+        deletedNoticeOpen.current = true;
+        openOverlay(
+          (rootProps, close) => (
+            <ConfirmDialog
+              {...rootProps}
+              appearance="text"
+              title={BUNDLE_MESSAGES.pickDeletedTitle}
+              description={BUNDLE_MESSAGES.pickDeletedDescription}
+              confirmLabel={BUNDLE_MESSAGES.missingDraftConfirm}
+              onConfirm={close}
+            />
+          ),
+          () => {
+            deletedNoticeOpen.current = false;
+          },
+        );
+      }
     }
     shownId.current = active?.id;
-  }, [photos, active?.id]);
+  }, [photos, active?.id, openOverlay]);
 
   const pickers = (active ? pickersOf(picks, active.id) : []).filter((id) =>
     members.some((member) => member.id === id),
@@ -300,15 +320,6 @@ export function DraftPickScreen({
           ))}
         </div>
       ) : null}
-      <ConfirmDialog
-        open={deletedOpen}
-        onOpenChange={setDeletedOpen}
-        appearance="text"
-        title={BUNDLE_MESSAGES.pickDeletedTitle}
-        description={BUNDLE_MESSAGES.pickDeletedDescription}
-        confirmLabel={BUNDLE_MESSAGES.missingDraftConfirm}
-        onConfirm={() => setDeletedOpen(false)}
-      />
     </PageShell>
   );
 }

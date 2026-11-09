@@ -1,12 +1,12 @@
 'use client';
 
 import { AddMemberCard, BundleTitle, MemberCard } from '@app/design-system/web';
-import { useState } from 'react';
-import type { Draft, DraftMember, DraftViewer } from '../../lib/types';
+import { useEffect, useRef } from 'react';
+import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { canRemoveMember, getMemberBadge, type DraftAccess } from '../../lib/permissions';
 import { getEditingMemberIds } from '../../lib/publish';
-import { RemoveMemberDialog } from './RemoveMemberDialog';
+import { useRemoveMemberDialog } from './RemoveMemberDialog';
 
 type DraftMembersProps = {
   draft: Draft;
@@ -29,9 +29,21 @@ export function DraftMembers({
   onAddMember,
   onRemoveMember,
 }: DraftMembersProps) {
-  // 닫히는 동안에도 제목의 이름이 남도록 대상은 유지하고 열림만 따로 관리
-  const [target, setTarget] = useState<DraftMember | undefined>(undefined);
-  const [open, setOpen] = useState(false);
+  const openRemove = useRemoveMemberDialog();
+  const listRef = useRef<HTMLUListElement>(null);
+  // 내보내면 누른 X가 사라지므로, 목록에서 빠진 뒤(서버 응답 뒤일 수 있음) 같은 자리부터 다음 버튼으로 초점을 옮김
+  const pendingFocus = useRef<{ id: string; index: number } | undefined>(undefined);
+  const memberIds = draft.members.map(({ id }) => id).join(',');
+  useEffect(() => {
+    const pending = pendingFocus.current;
+    if (!pending || memberIds.split(',').includes(pending.id)) return;
+    pendingFocus.current = undefined;
+    const items = [...(listRef.current?.querySelectorAll('li') ?? [])];
+    const target = [...items.slice(pending.index), ...items.slice(0, pending.index).reverse()]
+      .map((item) => item.querySelector<HTMLElement>('button'))
+      .find(Boolean);
+    target?.focus();
+  }, [memberIds]);
   const editingIds = new Set(getEditingMemberIds(draft.editing));
   if (selfEditing) editingIds.add(viewer.memberId);
 
@@ -44,8 +56,11 @@ export function DraftMembers({
         className="px-padding-p8"
       />
       {/* 카드 오른쪽 위 삭제 버튼이 3px 바깥으로 나와 위 여백을 둠 */}
-      <ul className="gap-s4 px-padding-p8 -mt-1 flex scrollbar-none overflow-x-auto pt-1 [&::-webkit-scrollbar]:hidden">
-        {draft.members.map((member) => {
+      <ul
+        ref={listRef}
+        className="gap-s4 px-padding-p8 -mt-1 flex scrollbar-none overflow-x-auto pt-1 [&::-webkit-scrollbar]:hidden"
+      >
+        {draft.members.map((member, index) => {
           const badge = getMemberBadge(member);
           const removable = canRemoveMember(draft, viewer, member);
           return (
@@ -61,10 +76,14 @@ export function DraftMembers({
                 }
                 onDelete={
                   removable
-                    ? () => {
-                        setTarget(member);
-                        setOpen(true);
-                      }
+                    ? () =>
+                        openRemove(
+                          member,
+                          ({ id }) => onRemoveMember(id),
+                          () => {
+                            pendingFocus.current = { id: member.id, index };
+                          },
+                        )
                     : undefined
                 }
               />
@@ -77,12 +96,6 @@ export function DraftMembers({
           </li>
         )}
       </ul>
-      <RemoveMemberDialog
-        open={open}
-        onOpenChange={setOpen}
-        target={target}
-        onConfirm={(member) => onRemoveMember(member.id)}
-      />
     </section>
   );
 }
