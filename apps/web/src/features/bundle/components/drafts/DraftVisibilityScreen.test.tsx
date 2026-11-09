@@ -72,7 +72,10 @@ describe('DraftVisibilityScreen', () => {
     const upload = screen.getByRole('button', { name: '업로드' });
     expect(upload).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(upload);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.visibilityRequired, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.visibilityRequired, {
+      fullWidth: true,
+      bottomOffset: 66,
+    });
     expect(onUpload).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('radio', { name: '멤버 공개' }));
     expect(onChange).toHaveBeenCalledWith('members');

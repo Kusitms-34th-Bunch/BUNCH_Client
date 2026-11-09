@@ -11,6 +11,7 @@ import { useRef, useState } from 'react';
 import type { DraftAccess } from '../../lib/permissions';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../../constants/messages';
+import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
 import { getRemovePhotoKind, getPhotoEditors, type RemovePhotoKind } from '../../lib/photos';
 import { RemovePhotoDialogs } from './RemovePhotoDialogs';
 
@@ -52,6 +53,7 @@ export function DraftPhotos({
   onImportFromGallery,
 }: DraftPhotosProps) {
   const total = draft.photos.length;
+  const isPicked = useIsPhotoPicked(draft);
   const [importOpen, setImportOpen] = useState(false);
   // 시트 선택이 두 번 처리되지 않게(닫히는 동안 다시 눌러도 한 번만)
   const importChosen = useRef(false);
@@ -153,6 +155,7 @@ export function DraftPhotos({
       />
       <RemovePhotoDialogs
         kind={removeDialog?.kind}
+        picked={removeDialog ? isPicked(removeDialog.photoId) : false}
         onClose={() => setRemoveDialog(undefined)}
         onConfirm={() => {
           if (removeDialog) onRemovePhoto(removeDialog.photoId);

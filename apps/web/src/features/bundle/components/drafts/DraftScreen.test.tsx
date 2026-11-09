@@ -6,6 +6,7 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { draftFixture } from '../../fixtures/draft.fixture';
+import { resetDraftPicks, seedDraftPicks } from '../../hooks/useDraftPicks';
 import { DraftScreen } from './DraftScreen';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -89,6 +90,7 @@ const membersSection = () => within(screen.getByRole('region', { name: '참여 �
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetDraftPicks();
 });
 
 describe('DraftScreen 구성', () => {
@@ -244,7 +246,10 @@ describe('업로드 버튼', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: '계속하기' }));
 
     expect(onUpload).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
+      fullWidth: true,
+      bottomOffset: 66,
+    });
   });
 
   it('권한이 없는 참여 멤버는 흐리게 보이고 누르면 이유를 안내한다', async () => {
@@ -252,7 +257,10 @@ describe('업로드 버튼', () => {
 
     expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(uploadButton());
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadForbidden, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadForbidden, {
+      fullWidth: true,
+      bottomOffset: 66,
+    });
     expect(onUpload).not.toHaveBeenCalled();
   });
 
@@ -260,7 +268,10 @@ describe('업로드 버튼', () => {
     renderScreen({ viewer: outsider });
 
     await userEvent.click(uploadButton());
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, {
+      fullWidth: true,
+      bottomOffset: 66,
+    });
     expect(onUpload).not.toHaveBeenCalled();
   });
 
@@ -269,7 +280,10 @@ describe('업로드 버튼', () => {
 
     expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(uploadButton());
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
+      fullWidth: true,
+      bottomOffset: 66,
+    });
     expect(onUpload).not.toHaveBeenCalled();
   });
 
@@ -603,6 +617,47 @@ describe('다른 멤버가 편집 중인 영역', () => {
 
     await userEvent.click(within(dialog).getByRole('button', { name: '삭제하기' }));
     expect(actions.removePhoto).toHaveBeenCalledWith(draftFixture.photos[0]!.id);
+  });
+
+  it('삭제 확인 창의 설명은 「삭제한 사진은 복구할 수 없어요.」이다', async () => {
+    renderScreen();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
+
+    expect(
+      await screen.findByRole('alertdialog', { name: '사진을 삭제할까요?' }),
+    ).toHaveAccessibleDescription('삭제한 사진은 복구할 수 없어요.');
+  });
+
+  it('멤버가 픽한 사진을 지우려 하면 「멤버들이 픽한 사진이에요」 확인 창이 뜨고 삭제하기로 지운다', async () => {
+    seedDraftPicks(draftFixture.id, { [draftFixture.photos[0]!.id]: ['gyeongjin'] });
+    renderScreen();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
+    const dialog = await screen.findByRole('alertdialog', { name: '멤버들이 픽한 사진이에요' });
+    expect(dialog).toHaveAccessibleDescription(
+      '사진을 삭제하면 픽도 함께 삭제되며, 복구할 수 없어요.',
+    );
+
+    await userEvent.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+    expect(actions.removePhoto).toHaveBeenCalledWith(draftFixture.photos[0]!.id);
+  });
+
+  it('픽이 없는 다른 사진은 기본 삭제 확인 창을 본다', async () => {
+    seedDraftPicks(draftFixture.id, { [draftFixture.photos[0]!.id]: ['gyeongjin'] });
+    renderScreen();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(2) }),
+    );
+
+    expect(
+      await screen.findByRole('alertdialog', { name: '사진을 삭제할까요?' }),
+    ).toBeInTheDocument();
   });
 
   it('마지막 한 장은 지울 수 없다고 안내하고 지우지 않는다', async () => {

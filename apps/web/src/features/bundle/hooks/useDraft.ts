@@ -21,6 +21,7 @@ import type { BundleDetail } from '../model/bundle';
 import { readPublishBlockers, readVersionConflict } from '../api/bundles';
 import { leaseTransport, type LeaseTarget } from '../api/leases';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
+import { UPLOAD_TOAST_OFFSET } from '../constants/toast';
 import { placeFixture } from '../fixtures/draft.fixture';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
 import { moveLocation } from '../lib/locations';
@@ -87,6 +88,9 @@ export type DraftState =
       bunchMembers: readonly DraftMember[];
       saveStatus: SaveStatus;
     };
+
+// 발행 요청 중 나는 안내는 하단 「업로드」 버튼 위로 띄움
+const UPLOAD_TOAST = { fullWidth: true, bottomOffset: UPLOAD_TOAST_OFFSET } as const;
 
 /** 발행 시도 결과(화면은 성공일 때만 이동하고 나머지는 안내가 이미 나감) */
 export type PublishOutcome = 'published' | 'blocked' | 'failed';
@@ -720,7 +724,7 @@ export function useDraft(draftId: string | undefined): {
       const failuresBefore = photoFailures.current;
       await photoQueue.current;
       if (photoFailures.current !== failuresBefore) {
-        toast(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.photosChangeFailed, UPLOAD_TOAST);
         return 'blocked';
       }
       clearTimeout(timer.current);
@@ -729,7 +733,7 @@ export function useDraft(draftId: string | undefined): {
       let saved = await flush();
       if (!saved) saved = await flush();
       if (!saved) {
-        toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.saveFailed, UPLOAD_TOAST);
         return 'failed';
       }
       const latest = detailRef.current;
@@ -742,7 +746,7 @@ export function useDraft(draftId: string | undefined): {
       } catch (error) {
         setPublishing(false);
         if (readPublishBlockers(error) !== undefined) {
-          toast(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+          toast(BUNDLE_MESSAGES.uploadIncomplete, UPLOAD_TOAST);
           return 'blocked';
         }
         toast(
@@ -752,7 +756,7 @@ export function useDraft(draftId: string | undefined): {
             errorCode(error) === 'BUNDLE_002'
             ? BUNDLE_MESSAGES.publishConflict
             : BUNDLE_MESSAGES.publishFailed,
-          { fullWidth: true },
+          UPLOAD_TOAST,
         );
         return 'failed';
       }

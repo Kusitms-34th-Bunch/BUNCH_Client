@@ -66,7 +66,7 @@ export const BUNDLE_MESSAGES = {
   leaveConfirmTitle: '번들에서 나가시겠어요?',
   // 초안 생성자가 나갈 때는 번들이 삭제됨을 알림(Figma `5699:106127`)
   leaveCreatorTitle: '번들에서 나갈까요?',
-  leaveCreatorDescription: '번들을 만든 멤버가 나가면 번들이 삭제되고,\n되돌릴 수 없어요.',
+  leaveCreatorDescription: '번들을 만든 멤버가 나가면 번들이 삭제되고, 되돌릴 수 없어요.',
   // 「삭제되며,」 뒤에서 줄이 바뀜
   leaveConfirmDescription: '번들에서 나가면 작성한 코멘트가 삭제되며,\n복구할 수 없어요.',
   // 업로드 확인 창 문구는 기획 전달 원문(기능 spec 4.3.12의 질문 + 설명)
@@ -152,7 +152,10 @@ export const BUNDLE_MESSAGES = {
   removePhotoBlockedDescription: '번들에는 최소 1장의 사진이 있어야 해요.',
   removePhotoBlockedConfirm: '확인',
   removeConfirmTitle: '사진을 삭제할까요?',
-  removeConfirmDescription: '사진과 작성한 캡션이 모두 삭제돼요.',
+  removeConfirmDescription: '삭제한 사진은 복구할 수 없어요.',
+  // 멤버가 픽한 사진을 지울 때(Figma `5699:104483`): 제목·설명을 바꾸고 버튼은 같음
+  removePickedTitle: '멤버들이 픽한 사진이에요',
+  removePickedDescription: '사진을 삭제하면 픽도 함께 삭제되며, 복구할 수 없어요.',
   removeConfirmConfirm: '삭제하기',
   photoDeleted: '사진함에서 삭제된 사진이에요.',
   // 사진 추가 화면(기능 spec 4.3.7, Figma `1782:33283`·`2060:38500`·`1782:32859`·`2091:62148`)

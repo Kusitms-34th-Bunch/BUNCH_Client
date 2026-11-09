@@ -6,6 +6,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer, SaveStatus } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
+import { UPLOAD_TOAST_OFFSET } from '../../constants/toast';
 import { getDraftAccess, isDraftCreator } from '../../lib/permissions';
 import { getPublishBlockers, hasOtherEditors } from '../../lib/publish';
 import { DraftComments } from './DraftComments';
@@ -44,6 +45,9 @@ type DraftScreenProps = {
 };
 
 const notify = (message: string) => toast(message, { fullWidth: true });
+// 하단 「업로드」 버튼을 눌러 나는 안내는 버튼을 가리지 않게 그 위로 띄움
+const notifyUpload = (message: string) =>
+  toast(message, { fullWidth: true, bottomOffset: UPLOAD_TOAST_OFFSET });
 
 /**
  * 번들 작성(공동 편집) 화면: 고정 헤더와 연결 끊김 배너 아래로 참여 멤버, 제목, 사진, 코멘트, 위치·날짜(Figma `5664:100786`)
@@ -85,13 +89,13 @@ export function DraftScreen({
 
   // 안내 순서: 참여 멤버가 아님 → 권한 없음 → 필수 항목 부족(기능 spec 4.3.12), 막혔으면 안내하고 true
   const blockUpload = () => {
-    if (!access.participant) denyEdit();
-    else if (!access.canPublish) notify(BUNDLE_MESSAGES.uploadForbidden);
+    if (!access.participant) notifyUpload(BUNDLE_MESSAGES.editOnlyParticipants);
+    else if (!access.canPublish) notifyUpload(BUNDLE_MESSAGES.uploadForbidden);
     // 저장이 끝나지 않아 막힌 경우는 입력 부족과 다른 안내
-    else if (blockers.includes('unsaved')) notify(BUNDLE_MESSAGES.uploadUnsaved);
+    else if (blockers.includes('unsaved')) notifyUpload(BUNDLE_MESSAGES.uploadUnsaved);
     else if (blockers.length === 1 && blockers[0] === 'saving')
-      notify(BUNDLE_MESSAGES.uploadSaving);
-    else if (blockers.length > 0) notify(BUNDLE_MESSAGES.uploadIncomplete);
+      notifyUpload(BUNDLE_MESSAGES.uploadSaving);
+    else if (blockers.length > 0) notifyUpload(BUNDLE_MESSAGES.uploadIncomplete);
     else return false;
     return true;
   };
