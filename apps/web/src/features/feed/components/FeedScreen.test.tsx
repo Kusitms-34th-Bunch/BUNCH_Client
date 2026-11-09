@@ -1,4 +1,13 @@
-import { act, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  cleanup,
+  act,
+  configure,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
@@ -7,6 +16,7 @@ import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { feedFixture } from '../fixtures/feed.fixture';
+import { bundleEdits } from '../lib/bundleEdits';
 import { clearHiddenAds } from '../lib/hiddenAds';
 import { likeStore } from '../lib/likeStore';
 import { FeedScreen } from './FeedScreen';
@@ -43,6 +53,7 @@ const cards = () =>
 beforeEach(() => {
   clearHiddenAds();
   likeStore.clear();
+  bundleEdits.clear();
   push.mockClear();
   toast.mockClear();
 });
@@ -317,5 +328,28 @@ describe('FeedScreen', () => {
     await user.click(like);
     expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', expect.anything());
     expect(like).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('지웠거나 「멤버 공개」로 바꾼 번들은 피드에서 빠진다', () => {
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+    const before = cards().length;
+    cleanup();
+
+    bundleEdits.remove('bundle-1');
+    bundleEdits.setMemberOnly('bundle-2', true);
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+
+    expect(cards()).toHaveLength(before - 2);
+  });
+
+  it('처음부터 멤버 공개인 번들은 저장소에 같은 값이 있어도 피드에 남는다', () => {
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+    const before = cards().length;
+    cleanup();
+
+    bundleEdits.setMemberOnly('bundle-1', true);
+    renderFeed({ id: 'bunch-trip', name: '여행가조' });
+
+    expect(cards()).toHaveLength(before);
   });
 });

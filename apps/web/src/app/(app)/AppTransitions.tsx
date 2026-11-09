@@ -280,6 +280,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 번들 상세 → 공개 범위 설정도 한 단계 들어가는 drill
+  {
+    from: FEED_PATHS.transitionIds.bundle,
+    to: FEED_PATHS.transitionIds.bundleVisibility,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
   {
     from: FEED_PATHS.transitionIds.member,
     to: BUNCH_HOME_PATHS.home,
