@@ -52,6 +52,8 @@ export function DraftMenu({ onLeave }: DraftMenuProps) {
         aria-label={BUNDLE_MESSAGES.menuOpenLabel}
         aria-haspopup="menu"
         aria-expanded={open}
+        // 터치 영역(양옆 8px)이 화면 가장자리에서 16px 안쪽에 아이콘이 오도록 바깥으로 뺌
+        className="-mr-s4"
         onClick={toggle}
       >
         <LineDotsLargeIcon aria-hidden="true" />

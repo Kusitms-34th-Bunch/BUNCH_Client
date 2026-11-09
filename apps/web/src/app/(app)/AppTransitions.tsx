@@ -425,6 +425,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition,
   },
+  // 작성 화면 → 사진 상세(크게 보기)도 같은 슬라이드
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.viewer,
+    bidirectional: true,
+    transition,
+  },
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.photo,

@@ -47,7 +47,7 @@ export function BundleDraft() {
       // 조건을 채우면 공개 범위 화면으로 가서 거기서 업로드(기능 spec 4.3.12)
       onUpload={() => router.push(BUNDLE_PATHS.visibility(draftId))}
       onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}
-      onOpenPhoto={(photoId) => router.push(BUNDLE_PATHS.photo(draftId, photoId))}
+      onOpenPhoto={(photoId) => router.push(BUNDLE_PATHS.photoViewer(draftId, photoId))}
       onOpenPick={() => router.push(BUNDLE_PATHS.pick(draftId))}
       onImportFromBunchBox={() => {
         markPhotoAddEntry();

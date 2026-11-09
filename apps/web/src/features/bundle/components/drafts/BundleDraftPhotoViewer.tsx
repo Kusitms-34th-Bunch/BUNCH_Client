@@ -24,7 +24,7 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
   const { state, actions } = useDraftContext();
   const ready = state.kind === 'ready';
   const draftId = ready ? state.draft.id : undefined;
-  const { initialPhotoId, currentPhotoId, sync } = usePhotoAddress(
+  const { initialPhotoId, sync } = usePhotoAddress(
     photoId,
     draftId,
     BUNDLE_PATHS.photoViewer,
@@ -62,7 +62,8 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
       sourcesPending={sourcesPending}
       bunchMembers={photoBoxData?.members}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 그 사진의 캡션 화면으로 이동
-      onBack={() => backOr(BUNDLE_PATHS.photo(draft.id, currentPhotoId ?? initialPhotoId))}
+      // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동(작성 화면에서 사진을 눌러 들어오는 화면)
+      onBack={() => backOr(BUNDLE_PATHS.draft(draft.id))}
       onPhotoChange={sync}
     />
   );

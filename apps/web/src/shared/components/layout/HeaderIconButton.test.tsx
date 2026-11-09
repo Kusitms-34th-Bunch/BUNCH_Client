@@ -45,4 +45,16 @@ describe('HeaderIconButton', () => {
     // 어두운 배경(사진 조정)의 흰 아이콘
     expect(screen.getByRole('button', { name: '닫기' }).className).toContain('text-icon-inversed');
   });
+
+  it('40px 터치 영역은 양옆 8px씩 레이아웃 폭 밖으로 빼 24px 아이콘 옆 8px에서 제목이 시작한다', () => {
+    render(
+      <HeaderIconButton label="뒤로 가기">
+        <svg />
+      </HeaderIconButton>,
+    );
+    const button = screen.getByRole('button', { name: '뒤로 가기' });
+
+    expect(button.className).toContain('-mx-s4');
+    expect(button.className).toContain('size-s16');
+  });
 });

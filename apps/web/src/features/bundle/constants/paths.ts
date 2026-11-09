@@ -22,6 +22,7 @@ export const BUNDLE_PATHS = {
     members: '/bunch/drafts/members',
     visibility: '/bunch/drafts/visibility',
     pick: '/bunch/drafts/pick',
+    viewer: '/bunch/drafts/viewer',
     photo: '/bunch/drafts/photo',
     photoAdd: '/bunch/drafts/photo-add',
   },

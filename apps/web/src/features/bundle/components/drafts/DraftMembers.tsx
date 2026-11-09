@@ -12,6 +12,8 @@ type DraftMembersProps = {
   draft: Draft;
   viewer: DraftViewer;
   access: DraftAccess;
+  /** 내가 제목·코멘트를 입력 중인지(내 카드에도 초록 점) */
+  selfEditing?: boolean | undefined;
   /** 「추가」 카드를 눌렀을 때(참여 멤버 관리 화면 연결 전에는 생략) */
   onAddMember?: (() => void) | undefined;
   /** 내보내기 확인 창에서 「내보내기」를 눌렀을 때 */
@@ -23,13 +25,15 @@ export function DraftMembers({
   draft,
   viewer,
   access,
+  selfEditing = false,
   onAddMember,
   onRemoveMember,
 }: DraftMembersProps) {
   // 닫히는 동안에도 제목의 이름이 남도록 대상은 유지하고 열림만 따로 관리
   const [target, setTarget] = useState<DraftMember | undefined>(undefined);
   const [open, setOpen] = useState(false);
-  const editingIds = getEditingMemberIds(draft.editing);
+  const editingIds = new Set(getEditingMemberIds(draft.editing));
+  if (selfEditing) editingIds.add(viewer.memberId);
 
   return (
     <section aria-labelledby="draft-members-title" className="pt-padding-p7 gap-s3 flex flex-col">

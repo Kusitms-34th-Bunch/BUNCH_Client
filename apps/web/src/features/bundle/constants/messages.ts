@@ -11,6 +11,8 @@ export const BUNDLE_MESSAGES = {
   titlePlaceholder: '번들 제목을 입력해주세요.',
   titleMax: '제목은 40자까지 쓸 수 있어요.',
   // 사진 제목 옆 「픽하기 >」: 대표 사진 투표 화면으로(Figma `5367:146358`)
+  // 코멘트 카드 아래 안내 문구(Figma `5730:142491`, 별표 한 칸 뒤 문구)
+  commentsNotice: '코멘트와 픽하기는 업로드 이후 수정이 불가해요',
   pickLink: '픽하기',
   // 대표 사진 투표 화면(Figma `5699:103571`~`103708`)
   pickTitle: '마음에 드는 사진을 픽해보세요',
@@ -135,7 +137,7 @@ export const BUNDLE_MESSAGES = {
   captionLabel: '사진 캡션',
   captionTooLong: '캡션은 200자까지 쓸 수 있어요',
   photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
-  photoOpenLabel: (current: number) => `${current}번째 사진 캡션 보기`,
+  photoOpenLabel: (current: number) => `${current}번째 사진 상세 보기`,
   photoCaptionTitle: '번들 사진',
   photoViewerTitle: '사진 크게 보기',
   photoViewLabel: (current: number) => `${current}번째 사진 크게 보기`,

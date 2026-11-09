@@ -68,6 +68,10 @@ export function DraftScreen({
   onImportFromGallery,
 }: DraftScreenProps) {
   const [leaveOpen, setLeaveOpen] = useState(false);
+  // 내가 지금 입력 중인 영역(제목·내 코멘트): 내 멤버 카드의 초록 점과 제목·코멘트 옆 프로필에 보임
+  const [selfEditing, setSelfEditing] = useState<'title' | 'comment' | undefined>(undefined);
+  const endSelfEditing = (field: 'title' | 'comment') =>
+    setSelfEditing((current) => (current === field ? undefined : current));
   const [editingDialogOpen, setEditingDialogOpen] = useState(false);
   const access = getDraftAccess(draft, viewer);
   // 공개 범위는 업로드를 누른 뒤 다음 화면에서 고르므로 이 화면의 조건에서는 뺌
@@ -129,11 +133,16 @@ export function DraftScreen({
         draft={draft}
         viewer={viewer}
         access={access}
+        selfEditing={selfEditing !== undefined}
         onAddMember={onAddMember}
         onRemoveMember={actions.removeMember}
       />
       <DraftTitleField
         draft={draft}
+        viewer={viewer}
+        selfEditing={selfEditing === 'title'}
+        onEditStart={() => setSelfEditing('title')}
+        onEditEnd={() => endSelfEditing('title')}
         editable={access.canEdit}
         onChange={actions.setTitle}
         onDenied={denyEdit}
@@ -151,6 +160,16 @@ export function DraftScreen({
         onImportFromBunchBox={onImportFromBunchBox}
         onImportFromGallery={onImportFromGallery}
       />
+      <DraftComments
+        draft={draft}
+        viewer={viewer}
+        selfWriting={selfEditing === 'comment'}
+        onWriteStart={() => setSelfEditing('comment')}
+        onWriteEnd={() => endSelfEditing('comment')}
+        editable={access.canEdit}
+        onChange={actions.setComment}
+        onDenied={denyEdit}
+      />
       <DraftPlaceDate
         draft={draft}
         actions={actions}
@@ -158,13 +177,6 @@ export function DraftScreen({
         currentYear={currentYear}
         onDenied={denyEdit}
         onEditingBlocked={blockEditing}
-      />
-      <DraftComments
-        draft={draft}
-        viewer={viewer}
-        editable={access.canEdit}
-        onChange={actions.setComment}
-        onDenied={denyEdit}
       />
       <LeaveDraftDialog
         open={leaveOpen}

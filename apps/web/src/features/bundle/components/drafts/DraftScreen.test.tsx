@@ -351,6 +351,62 @@ describe('편집 중 표시', () => {
   });
 });
 
+describe('내가 입력 중일 때 표시', () => {
+  it('제목에 포커스가 있는 동안 내 카드에 초록 점이 붙고 제목 옆에 내 프로필이 보이며, 벗어나면 사라진다', async () => {
+    renderScreen({ viewer: creator });
+    expect(
+      membersSection().queryByRole('img', { name: '지예님이 편집 중' }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+    expect(membersSection().getByRole('img', { name: '지예님이 편집 중' })).toBeInTheDocument();
+    expect(screen.getByLabelText('편집 중인 멤버')).toBeInTheDocument();
+
+    await userEvent.tab();
+    expect(
+      membersSection().queryByRole('img', { name: '지예님이 편집 중' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('내 코멘트에 포커스가 있는 동안 내 카드에 초록 점이 붙고 코멘트 제목 옆에 내 프로필이 보인다', async () => {
+    renderScreen({ viewer: creator });
+    expect(screen.queryByLabelText('코멘트를 쓰는 멤버')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('textbox', { name: /지예.*코멘트/ }));
+    expect(membersSection().getByRole('img', { name: '지예님이 편집 중' })).toBeInTheDocument();
+    expect(screen.getByLabelText('코멘트를 쓰는 멤버')).toBeInTheDocument();
+
+    await userEvent.tab();
+    expect(screen.queryByLabelText('코멘트를 쓰는 멤버')).not.toBeInTheDocument();
+  });
+
+  it('제목에서 코멘트로 옮기면 표시도 제목에서 코멘트로 옮겨 간다', async () => {
+    renderScreen({ viewer: creator });
+
+    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+    await userEvent.click(screen.getByRole('textbox', { name: /지예.*코멘트/ }));
+
+    expect(screen.queryByLabelText('편집 중인 멤버')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('코멘트를 쓰는 멤버')).toBeInTheDocument();
+    expect(membersSection().getAllByRole('img', { name: '지예님이 편집 중' })).toHaveLength(1);
+  });
+});
+
+describe('영역 순서와 안내', () => {
+  it('코멘트 카드 다음에 위치·날짜가 오고, 코멘트 아래에 수정 불가 안내가 있다', () => {
+    renderScreen();
+
+    const notice = screen.getByText('코멘트와 픽하기는 업로드 이후 수정이 불가해요');
+    const comments = screen.getByRole('textbox', { name: /경진.*코멘트/ });
+    const place = screen.getByText('날짜 추가');
+    // 코멘트 카드 → 안내 → 위치·날짜 순서
+    expect(
+      comments.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(notice.compareDocumentPosition(place) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
 describe('위치와 날짜', () => {
   it('위치를 지우면 removeLocation을 호출한다', async () => {
     renderScreen();
