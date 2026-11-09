@@ -42,7 +42,7 @@
 
 - Query와 enabled 조건: 약관 목록·원문은 앱 상수다. 서버의 현재 버전(`GET /api/auth/terms`, `features/auth/api/terms.ts`)은 시작하기 때 한 번 읽는다(query 캐시 없음).
 - Mutation·cache 영향: 동의 저장은 `useAgreeToTermsMutation`(`queries/signup.ts`)이고 성공하면 `sharedKeys.session()`을 무효화하고 기다린다(`AuthGate`가 옛 상태로 프로필 이동을 되돌리지 않도록). 선택 약관 동의는 서버에 미리 저장되지 않고 이 저장 요청에 실린다. 뒤로 가기는 `useLeaveSignupMutation`(로그아웃 뒤 `reloadTo`).
-- API 계약 확인 항목: 선택 약관(`DEMOGRAPHICS`)에 동의하지 않았을 때 `agreed: false`를 보내야 하는지(지금은 보내지 않음), `GET /auth/terms` 응답 모양(Swagger에 타입이 없어 명세서 기준). BFF는 백엔드 `auth/` 아래라도 약관 두 경로만 범용 프록시로 허용한다(`backendProxy.ts`).
+- API 계약 확인 항목: 선택 약관(`DEMOGRAPHICS`)에 동의하지 않으면 `agreed: false`로 보내지 않고 항목을 뺀다(백엔드 확인 2026-11-10). 남은 확인 항목은 `GET /auth/terms` 응답 모양(Swagger에 타입이 없어 명세서 기준). BFF는 백엔드 `auth/` 아래라도 약관 두 경로만 범용 프록시로 허용한다(`backendProxy.ts`).
 
 ## UI와 접근성
 
