@@ -17,6 +17,7 @@
 - native `<button>` 속성(`onClick`, `disabled`, `className` 등). `type`은 `button`으로 고정한다.
 - `leftIcon`(선택): 글자 앞 20px 장식 아이콘. Figma `Show Left Icon`은 교체 가능한 아이콘(기본 휴지통)이라 아이콘 자산은 호출자가 넘긴다(`TextButton`의 `leftIcon`과 같은 방식). 접근성 이름에서 뺀다.
 - `showChevron`(선택, 기본 `true`): 오른쪽 화살표 표시. Figma `Show Right Icon`.
+- `tone`(선택, 기본 `default`): `danger`면 글자와 앞 아이콘이 `system-fail-text`다. 삭제처럼 되돌릴 수 없는 항목에 쓴다(Figma 번들 댓글 더보기 `5367:121622`).
 - `renderLink({ className, children })`(선택): 화면 이동 항목을 링크로 그린다. 호출자가 `className`·`children`을 링크 요소(예: Next `Link`)에 그대로 붙인다. 이때 버튼 속성은 쓰지 않는다. 하단 탭(`BottomNavigation`)의 `renderItem`과 같은 방식이다.
 
 ## 상태와 동작
@@ -44,6 +45,8 @@
 | Disabled `opacity-disabled`·`text-disabled`·`icon-disabled`    | `disabled:opacity-(--semantic-opacity-disabled)`, `group-disabled:text-text-disabled`·`text-icon-disabled` |
 
 ## 확인할 항목
+
+- `danger` 글자(`system-fail-text` #f04d29, 15px 중간 굵기)는 흰 바탕에서 약 3.6:1로 AA 4.5:1에 못 미친다(계산값). Figma 지정 색이라 그대로 두었고, 휴지통 아이콘이 함께 있어 색만으로 뜻을 전하지는 않는다. `TextButton` warning(약 3.7:1)과 함께 어두운 빨강 토큰을 디자인에 요청할 대상
 
 - 디자인 변경 (반영, 2026-11-03 확인): 좌우 패딩 10→4, 글자 Body-1-Medium→Body-2-Medium, 높이 44→42. Bottom Sheet 06(`2487:46356`)은 새 값을 쓰고, 번치 더보기 화면(`1873:34575`)은 아직 다른 컴포넌트 `Label - Status`(좌우 16+10, 16/24)다.
 - 화살표 색: Figma 변수 `icon-quaternary`(#bcbec2)와 같다(2026-11-01 확인).

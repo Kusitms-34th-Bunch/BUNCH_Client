@@ -68,3 +68,20 @@ export const WithIcons: Story = {
     ],
   },
 };
+
+/** 번들 댓글 더보기(Figma `5367:121622`): 「삭제」(빨강) + 「취소」 */
+export const Danger: Story = {
+  args: {
+    title: '댓글 더보기',
+    cancelLabel: '취소',
+    items: [
+      {
+        id: 'delete',
+        label: '삭제',
+        tone: 'danger',
+        leftIcon: <LineTrashcanMediumIcon aria-hidden />,
+        onSelect: () => {},
+      },
+    ],
+  },
+};

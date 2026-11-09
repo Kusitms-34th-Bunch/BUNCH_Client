@@ -90,7 +90,8 @@ const Content = ({
           `transition-[translate,opacity] duration-340 ${ease} data-ending-style:duration-240`,
           'data-starting-style:translate-y-full data-starting-style:opacity-40',
           'data-ending-style:translate-y-full data-ending-style:opacity-40',
-          'data-swiping:duration-0 data-swiping:select-none',
+          // 끄는 동안 Base UI가 넣는 transform(위로도 고무줄처럼 따라옴)을 끄고 위 translate 값(아래 방향만)으로만 움직임
+          'data-swiping:transform-none! data-swiping:duration-0 data-swiping:select-none',
           'motion-reduce:transition-opacity motion-reduce:data-ending-style:translate-y-0 motion-reduce:data-starting-style:translate-y-0',
           className,
         )}

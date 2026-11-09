@@ -4,13 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import { likeStore } from '../../lib/likeStore';
 import { BundleDetailScreen } from './BundleDetailScreen';
 
 const push = vi.fn();
+const back = vi.fn();
+const replace = vi.fn();
 const toast = vi.fn();
 // 테스트 환경은 이미지 import가 next와 달라 StaticImageData 모양으로 대체
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push, back: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push, back, replace }),
 }));
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -36,6 +39,7 @@ const renderDetail = (
 
 beforeEach(() => {
   push.mockClear();
+  likeStore.clear();
   toast.mockClear();
 });
 
@@ -146,8 +150,11 @@ describe('BundleDetailScreen', () => {
     const like = screen.getByRole('button', { name: /좋아요/ });
     await user.click(like);
     expect(like).toHaveAttribute('aria-pressed', 'false');
-    // 입력란을 가리지 않게 헤더 아래
-    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { position: 'top' });
+    // 입력란 바로 위, 좌우 16씩 띄운 폭(Figma 6079:178315)
+    expect(toast).toHaveBeenCalledWith(
+      '번치에 참여하면 할 수 있어요.',
+      expect.objectContaining({ fullWidth: true }),
+    );
   });
 
   it('말풍선을 누르면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
@@ -223,5 +230,172 @@ describe('BundleDetailScreen', () => {
     ).toBeTruthy();
     expect(screen.getByRole('button', { name: '뒤로 가기' })).toBeTruthy();
     expect(screen.queryByRole('textbox')).toBeNull();
+  });
+
+  it('댓글은 맨 위에, 답글은 그 댓글 아래에 등록하고 수와 「답글 N」을 올린다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    const input = () => screen.getByRole('textbox', { name: /달기/ });
+    const send = () => screen.getByRole('button', { name: '보내기' });
+
+    await user.type(input(), '   ');
+    expect(send()).toBeDisabled();
+    await user.clear(input());
+    await user.type(input(), '  첫 댓글  ');
+    await user.click(send());
+
+    const items = () =>
+      within(screen.getByRole('region', { name: '댓글' })).getAllByRole('listitem');
+    expect(within(items()[0]!).getByText('첫 댓글')).toBeTruthy();
+    expect(input()).toHaveValue('');
+    expect(screen.getByRole('button', { name: /댓글 5/ })).toBeTruthy();
+    await waitFor(() => expect(items()[0]).toHaveFocus());
+    expect(screen.getByRole('status')).toHaveTextContent('댓글을 등록했어요');
+
+    await user.click(screen.getByRole('button', { name: '수인님 댓글의 답글 1개' }));
+    await user.type(input(), '답글이에요');
+    await user.click(send());
+
+    expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull();
+    expect(screen.getByRole('button', { name: '수인님 댓글의 답글 2개' })).toBeTruthy();
+    // 원댓글(2번째) 아래 기존 답글 다음
+    expect(within(items()[3]!).getByText('답글이에요')).toBeTruthy();
+  });
+
+  it('내 댓글은 더보기 → 「삭제」 → 확인 뒤 「삭제된 댓글입니다」로 바뀌고 토스트를 띄운다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    await user.click(screen.getByRole('button', { name: '내 댓글 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '댓글을 삭제할까요?' });
+    expect(within(dialog).getByText('데이터가 삭제되며 복구 불가능해요.')).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        '댓글이 삭제 되었어요.',
+        expect.objectContaining({ fullWidth: true }),
+      ),
+    );
+    expect(screen.queryByRole('button', { name: '내 댓글 더보기' })).toBeNull();
+    expect(screen.getAllByText('삭제된 댓글입니다')).toHaveLength(3);
+  });
+
+  it('답글을 쓰던 댓글을 지우면 답글 상태가 풀린다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-3');
+    await user.type(screen.getByRole('textbox', { name: /달기/ }), '내 댓글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await user.click(screen.getByRole('button', { name: /댓글에 답글 달기/ }));
+    expect(screen.getByText('님에게 답글 남기는 중')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '내 댓글 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }));
+
+    await waitFor(() => expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull());
+    expect(screen.getByRole('listitem', { name: '삭제된 댓글' })).toHaveFocus();
+    expect(toast).toHaveBeenCalledWith(
+      '댓글이 삭제 되었어요.',
+      expect.objectContaining({ fullWidth: true }),
+    );
+  });
+
+  it('삭제 확인 창의 「취소」는 댓글을 그대로 둔다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(screen.getByRole('button', { name: '내 댓글 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(screen.getByRole('button', { name: '내 댓글 더보기' })).toBeTruthy();
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('보내기를 연타해도 한 번만 등록한다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-3');
+
+    await user.type(screen.getByRole('textbox', { name: /달기/ }), '한 번');
+    await user.dblClick(screen.getByRole('button', { name: '보내기' }));
+
+    expect(screen.getAllByText('한 번')).toHaveLength(1);
+  });
+
+  it('소속 번치가 없으면 댓글을 등록하지 않고 안내한다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-3', { bunch: null });
+
+    await user.type(screen.getByRole('textbox', { name: '댓글 달기' }), '안녕');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    expect(toast).toHaveBeenCalledWith(
+      '번치에 참여하면 할 수 있어요.',
+      expect.objectContaining({ fullWidth: true }),
+    );
+    expect(screen.getByText('아직 작성된 댓글이 없어요')).toBeTruthy();
+  });
+
+  it('남의 댓글은 더보기 → 「신고」 → 사유를 골라 신고하면 답글과 함께 숨기고 알린다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    const region = screen.getByRole('region', { name: '댓글' });
+    expect(within(region).getAllByRole('listitem')).toHaveLength(4);
+
+    await user.click(screen.getByRole('button', { name: /^수인 댓글 더보기: / }));
+    await user.click(await screen.findByRole('button', { name: '신고' }));
+    const sheet = await screen.findByRole('dialog', { name: '이 댓글을 신고할까요?' });
+    expect(within(sheet).getByText('여행가조 계정으로 신고해요')).toBeTruthy();
+    await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
+    await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        '신고가 접수됐어요.',
+        expect.objectContaining({ fullWidth: true }),
+      ),
+    );
+    // 원댓글(c-1)과 그 답글(c-2)이 함께 빠짐
+    expect(within(region).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /댓글 2/ })).toBeTruthy();
+  });
+
+  it('다른 번치 번들은 헤더 더보기 → 「신고」 → 신고하면 이전 화면으로 가서 알린다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-2');
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '신고' }));
+    const sheet = await screen.findByRole('dialog', { name: '이 게시글을 신고할까요?' });
+    await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
+    await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.', expect.anything()),
+    );
+    // 직접 들어온 경우(기록 없음)는 피드로 바꿔 들어감
+    expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+  });
+
+  it('소속 번치가 없으면 신고 시트를 열지 않고 안내한다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-2', { bunch: null });
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '신고' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', expect.anything()),
+    );
+    expect(screen.queryByRole('dialog', { name: '이 게시글을 신고할까요?' })).toBeNull();
+  });
+
+  it('우리 번치 번들의 메인 관리자에게는 헤더 더보기가 없다(수정·삭제는 다음 단위)', () => {
+    renderDetail('bundle-1');
+    expect(screen.queryByRole('button', { name: '번들 더보기' })).toBeNull();
   });
 });

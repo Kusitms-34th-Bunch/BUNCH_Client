@@ -85,4 +85,16 @@ describe('MenuLabel', () => {
     expect(button).toHaveProperty('disabled', true);
     expect(onClick).not.toHaveBeenCalled();
   });
+
+  it('tone="danger"면 글자와 앞 아이콘이 실패 색이다', () => {
+    render(
+      <MenuLabel tone="danger" leftIcon={<LineTrashcanIcon />}>
+        삭제
+      </MenuLabel>,
+    );
+
+    const label = screen.getByText('삭제');
+    expect(label.className).toContain('text-system-fail-text');
+    expect(label.previousElementSibling?.className).toContain('text-system-fail-text');
+  });
 });

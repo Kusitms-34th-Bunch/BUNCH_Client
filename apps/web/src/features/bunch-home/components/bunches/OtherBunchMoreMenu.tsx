@@ -5,8 +5,8 @@ import { ConfirmSheet, MoreMenuSheet, ReportSheet } from '@app/design-system/web
 import Image, { type StaticImageData } from 'next/image';
 import blockedBunch from '@/shared/assets/images/empty/blocked-bunch.svg';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
-import { BUNCH_REPORT_OTHER, BUNCH_REPORT_REASONS } from '../../constants/report';
 import { headerIconLinkClass } from '../BunchHomeHeader';
 
 type OtherBunchMoreMenuProps = {
@@ -59,8 +59,8 @@ export function OtherBunchMoreMenu({
           {...rootProps}
           title={BUNCH_HOME_MESSAGES.reportTitle(bunchName)}
           description={BUNCH_HOME_MESSAGES.reportDescription(reporterName)}
-          reasons={BUNCH_REPORT_REASONS}
-          detailReasonValue={BUNCH_REPORT_OTHER}
+          reasons={REPORT_REASONS}
+          detailReasonValue={REPORT_OTHER}
           onSubmit={(value) => {
             close();
             onReport(value);

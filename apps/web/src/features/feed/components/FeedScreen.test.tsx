@@ -9,6 +9,7 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { feedFixture } from '../fixtures/feed.fixture';
 import { clearHiddenAds } from '../lib/hiddenAds';
+import { likeStore } from '../lib/likeStore';
 import { FeedScreen } from './FeedScreen';
 
 const push = vi.fn();
@@ -42,6 +43,7 @@ const cards = () =>
 
 beforeEach(() => {
   clearHiddenAds();
+  likeStore.clear();
   push.mockClear();
   toast.mockClear();
 });

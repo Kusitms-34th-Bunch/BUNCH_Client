@@ -1,3 +1,5 @@
+import type { CharacterType } from '@/shared/lib/bunchProfile';
+
 export type FeedBunch = { id: string; name: string; imageSrc?: string | undefined };
 
 /** 번들에 등록된 장소 */
@@ -67,7 +69,16 @@ export type FeedAd = {
 export type FeedData = { following: FeedBundle[]; public: FeedBundle[]; ads: FeedAd[] };
 
 /** 피드를 보는 사람의 지금 번치. 소속 번치가 없으면 null, 아직 모르면(첫 hydration) undefined */
-export type FeedViewer = { bunchId: string; name: string; imageSrc?: string | undefined } | null;
+export type FeedViewer = {
+  bunchId: string;
+  name: string;
+  imageSrc?: string | undefined;
+  /** 번치 성격(댓글 번치 배지 색) */
+  characterType?: CharacterType | undefined;
+  /** 내 닉네임과 프로필 이미지(댓글 작성자) */
+  memberName?: string | undefined;
+  memberImageSrc?: string | undefined;
+} | null;
 
 /** 번들 상세의 참여 멤버와 코멘트 */
 export type FeedMemberComment = {
@@ -89,13 +100,19 @@ export type FeedComment = {
   date?: string | undefined;
   content?: string | undefined;
   reply?: boolean | undefined;
+  /** 답글이면 원댓글 ID */
+  parentId?: string | undefined;
   deleted?: boolean | undefined;
   replyCount?: number | undefined;
+  /** 내가 쓴 댓글(더보기에서 삭제) */
+  mine?: boolean | undefined;
 };
 
 export type FeedBundleDetail = FeedBundle & {
   /** 멤버 공개 번들(제목 옆 뱃지) */
   memberOnly: boolean;
+  /** 이 번들이 우리 번치 번들일 때 내 역할(메뉴 갈래, 기능명세서 6.2.11) */
+  myRole?: 'owner' | 'coOwner' | 'member' | undefined;
   memberComments: FeedMemberComment[];
   comments: FeedComment[];
 };

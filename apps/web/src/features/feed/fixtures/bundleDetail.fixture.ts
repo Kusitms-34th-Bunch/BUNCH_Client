@@ -36,9 +36,11 @@ const comments: FeedComment[] = [
     date: '2025.06.08',
     content: REPLY,
     reply: true,
+    parentId: 'c-1',
+    mine: true,
   },
   { id: 'c-3', author: '작성자', deleted: true },
-  { id: 'c-4', author: '작성자', deleted: true, reply: true },
+  { id: 'c-4', author: '작성자', deleted: true, reply: true, parentId: 'c-3' },
 ];
 
 // 첫 사진 8명(펼침 예시), 둘째 2명, 셋째 1명, 나머지는 없음
@@ -61,6 +63,8 @@ export function getBundleDetailFixture(bundleId: string): FeedBundleDetail | und
     })),
     // 첫 번들은 멤버 공개와 댓글 있는 예시, 나머지는 공개와 댓글 없는 예시(Figma 번들_Empty)
     memberOnly: first,
+    // 첫 번들(여행가조)은 우리 번치 번들이고 나는 메인 관리자인 예시(헤더 메뉴는 구현 단위 6)
+    myRole: first ? 'owner' : undefined,
     memberComments,
     comments: first ? comments : [],
     commentCount: first ? comments.length : 0,

@@ -12,6 +12,8 @@ type MenuLabelBaseProps = {
   leftIcon?: ReactNode;
   /** 오른쪽 화살표 표시(Figma `Show Right Icon`, 기본 표시) */
   showChevron?: boolean;
+  /** `danger`: 삭제처럼 되돌릴 수 없는 동작(글자·앞 아이콘 `system-fail-text`, Figma 번들 댓글 더보기) */
+  tone?: 'default' | 'danger' | undefined;
   className?: string | undefined;
 };
 
@@ -29,7 +31,8 @@ export type MenuLabelProps = MenuLabelButtonProps | MenuLabelLinkProps;
  * 팝오버 메뉴의 `MenuItem`(role="menuitem")과 달리 일반 버튼, `renderLink`면 링크. 누르는 동안 overlay-hover(10%)
  */
 export const MenuLabel = (props: MenuLabelProps) => {
-  const { children, className, leftIcon, showChevron = true } = props;
+  const { children, className, leftIcon, showChevron = true, tone = 'default' } = props;
+  const danger = tone === 'danger';
   const state: MenuLabelLinkState = {
     className: cn(
       'rounded-r4 px-s2 py-padding-p5 gap-s4 group relative isolate flex w-full cursor-pointer touch-manipulation items-center justify-between text-left',
@@ -45,12 +48,20 @@ export const MenuLabel = (props: MenuLabelProps) => {
           {leftIcon ? (
             <span
               aria-hidden="true"
-              className="text-icon-quaternary group-disabled:text-icon-disabled flex shrink-0"
+              className={cn(
+                'group-disabled:text-icon-disabled flex shrink-0',
+                danger ? 'text-system-fail-text' : 'text-icon-quaternary',
+              )}
             >
               {leftIcon}
             </span>
           ) : null}
-          <span className="typography-body-2-medium text-text-secondary group-disabled:text-text-disabled min-w-0 wrap-break-word break-keep">
+          <span
+            className={cn(
+              'typography-body-2-medium group-disabled:text-text-disabled min-w-0 wrap-break-word break-keep',
+              danger ? 'text-system-fail-text' : 'text-text-secondary',
+            )}
+          >
             {children}
           </span>
         </span>
@@ -67,6 +78,7 @@ export const MenuLabel = (props: MenuLabelProps) => {
     className: _className,
     leftIcon: _leftIcon,
     showChevron: _showChevron,
+    tone: _tone,
     renderLink: _renderLink,
     ...buttonProps
   } = props;
