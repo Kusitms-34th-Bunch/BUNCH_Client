@@ -77,3 +77,81 @@ export const createKakaoLogin = ({ appKey, initialize, login, randomNonce }: Kak
     return inFlight;
   };
 };
+
+// ---- Google ----
+
+export type GoogleSignInResult =
+  { type: 'success'; data: { idToken: string | null } } | { type: 'cancelled' };
+
+export type GoogleLoginDeps = {
+  /** iOS OAuth 클라이언트 ID(`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`) */
+  iosClientId: string | undefined;
+  /** 웹(서버) OAuth 클라이언트 ID(`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`). 정하면 ID 토큰의 `aud`가 이 값이고, Android는 ID 토큰을 받으려면 필요 */
+  webClientId: string | undefined;
+  configure: (_options: { iosClientId: string; webClientId?: string }) => void;
+  signIn: () => Promise<GoogleSignInResult>;
+};
+
+export type GoogleLoginOutcome =
+  { status: 'success'; provider: 'google'; idToken: string } | { status: 'cancelled' };
+
+// 라이브러리가 취소를 응답으로 돌려주지만, 일부 경로는 이 코드로 reject함
+const GOOGLE_CANCEL_CODES = new Set(['SIGN_IN_CANCELLED', '-5', '12501']);
+
+/** 사용자가 로그인을 취소했는지(오류 코드만 봄) */
+export const isGoogleCancelled = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  GOOGLE_CANCEL_CODES.has(String((error as { code: unknown }).code));
+
+/**
+ * Google 로그인 함수를 만듦. 설정은 처음 한 번만 하고, 로그인이 진행 중이면 같은 결과를 공유
+ * Google은 ID 토큰만 서버에 보내면 되어 nonce가 없음. 오류 메시지에는 SDK 원문·토큰을 넣지 않음
+ */
+export const createGoogleLogin = ({
+  iosClientId,
+  webClientId,
+  configure,
+  signIn,
+}: GoogleLoginDeps) => {
+  let configured = false;
+
+  const run = async (): Promise<GoogleLoginOutcome> => {
+    if (!iosClientId) {
+      throw new Error('구글 클라이언트 ID(EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID)가 설정되지 않았어요.');
+    }
+    if (!configured) {
+      try {
+        configure({ iosClientId, ...(webClientId ? { webClientId } : {}) });
+      } catch {
+        throw new Error('구글 SDK를 시작하지 못했어요.');
+      }
+      configured = true;
+    }
+
+    let result: GoogleSignInResult;
+    try {
+      result = await signIn();
+    } catch (error) {
+      if (isGoogleCancelled(error)) return { status: 'cancelled' };
+      throw new Error('구글 로그인에 실패했어요.');
+    }
+
+    if (result.type === 'cancelled') return { status: 'cancelled' };
+    if (!result.data.idToken) {
+      throw new Error(
+        '구글 ID 토큰을 받지 못했어요. 구글 콘솔의 웹 클라이언트 ID(EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) 설정을 확인해 주세요.',
+      );
+    }
+    return { status: 'success', provider: 'google', idToken: result.data.idToken };
+  };
+
+  let inFlight: Promise<GoogleLoginOutcome> | undefined;
+  return () => {
+    inFlight ??= run().finally(() => {
+      inFlight = undefined;
+    });
+    return inFlight;
+  };
+};

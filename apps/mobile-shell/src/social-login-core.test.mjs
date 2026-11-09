@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createKakaoLogin, isKakaoCancelled } from './social-login-core.ts';
+import {
+  createGoogleLogin,
+  createKakaoLogin,
+  isGoogleCancelled,
+  isKakaoCancelled,
+} from './social-login-core.ts';
 
 const setup = (overrides = {}) => {
   const calls = { initialize: [], login: [] };
@@ -113,4 +118,96 @@ test('취소 판별은 오류 코드만 본다', () => {
   assert.equal(isKakaoCancelled(new Error('Cancelled')), false);
   assert.equal(isKakaoCancelled(undefined), false);
   assert.equal(isKakaoCancelled('Cancelled'), false);
+});
+
+const setupGoogle = (overrides = {}) => {
+  const calls = { configure: [], signIn: 0 };
+  const googleLogin = createGoogleLogin({
+    iosClientId: 'ios-client',
+    webClientId: 'web-client',
+    configure: (options) => calls.configure.push(options),
+    signIn: () => {
+      calls.signIn += 1;
+      return Promise.resolve({ type: 'success', data: { idToken: 'google-id-token' } });
+    },
+    ...overrides,
+  });
+  return { googleLogin, calls };
+};
+
+test('구글: 성공하면 ID 토큰을 돌려주고 nonce는 없다', async () => {
+  const { googleLogin } = setupGoogle();
+
+  assert.deepEqual(await googleLogin(), {
+    status: 'success',
+    provider: 'google',
+    idToken: 'google-id-token',
+  });
+});
+
+test('구글: SDK 설정은 처음 한 번만 하고 클라이언트 ID를 넘긴다', async () => {
+  const { googleLogin, calls } = setupGoogle();
+
+  await googleLogin();
+  await googleLogin();
+
+  assert.deepEqual(calls.configure, [{ iosClientId: 'ios-client', webClientId: 'web-client' }]);
+});
+
+test('구글: 웹 클라이언트 ID가 없으면 iOS 클라이언트 ID만 넘긴다', async () => {
+  const { googleLogin, calls } = setupGoogle({ webClientId: undefined });
+
+  await googleLogin();
+
+  assert.deepEqual(calls.configure, [{ iosClientId: 'ios-client' }]);
+});
+
+test('구글: 취소 응답과 취소 오류 코드는 실패가 아닌 취소로 돌려준다', async () => {
+  const response = setupGoogle({ signIn: () => Promise.resolve({ type: 'cancelled' }) });
+  assert.deepEqual(await response.googleLogin(), { status: 'cancelled' });
+
+  const rejected = setupGoogle({
+    signIn: () => Promise.reject(Object.assign(new Error('native'), { code: 'SIGN_IN_CANCELLED' })),
+  });
+  assert.deepEqual(await rejected.googleLogin(), { status: 'cancelled' });
+});
+
+test('구글: 그 밖의 SDK 오류는 원문 없이 일반 문구로 던진다', async () => {
+  const { googleLogin } = setupGoogle({
+    signIn: () => Promise.reject(Object.assign(new Error('secret-detail'), { code: 'X' })),
+  });
+
+  await assert.rejects(googleLogin, (error) => {
+    assert.equal(error.message, '구글 로그인에 실패했어요.');
+    return true;
+  });
+});
+
+test('구글: ID 토큰이 없으면 웹 클라이언트 ID 확인 안내와 함께 던진다', async () => {
+  const { googleLogin } = setupGoogle({
+    signIn: () => Promise.resolve({ type: 'success', data: { idToken: null } }),
+  });
+
+  await assert.rejects(googleLogin, /EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID/);
+});
+
+test('구글: iOS 클라이언트 ID가 없으면 설정하지 않고 안내와 함께 던진다', async () => {
+  const { googleLogin, calls } = setupGoogle({ iosClientId: undefined });
+
+  await assert.rejects(googleLogin, /EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID/);
+  assert.deepEqual(calls.configure, []);
+});
+
+test('구글: 진행 중에 다시 호출해도 로그인 창을 한 번만 띄운다', async () => {
+  const { googleLogin, calls } = setupGoogle();
+
+  await Promise.all([googleLogin(), googleLogin()]);
+
+  assert.equal(calls.signIn, 1);
+});
+
+test('구글: 취소 판별은 오류 코드만 본다', () => {
+  assert.equal(isGoogleCancelled({ code: 'SIGN_IN_CANCELLED' }), true);
+  assert.equal(isGoogleCancelled({ code: 'OTHER' }), false);
+  assert.equal(isGoogleCancelled(new Error('SIGN_IN_CANCELLED')), false);
 });
