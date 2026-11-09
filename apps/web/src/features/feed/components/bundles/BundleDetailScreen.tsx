@@ -22,7 +22,7 @@ import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useHoldScrollOnLeave } from '../../hooks/useHoldScrollOnLeave';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
-import { DELETED_USER_IMAGE } from '../../lib/deletedUserImage';
+import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { formatElapsedTime } from '../../lib/elapsedTime';
 import { withRo } from '../../lib/josa';
 import { BundleSheets, type BundleSheet } from './BundleSheets';
@@ -147,7 +147,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
               : links.otherBunch(bundle.bunch.id),
           )
         }
-        members={bundle.members}
+        members={hideLeftMemberImages(bundle.members)}
         onMembers={() => setSheet({ kind: 'members', members: bundle.members })}
         className="px-padding-p8 py-s4"
       />

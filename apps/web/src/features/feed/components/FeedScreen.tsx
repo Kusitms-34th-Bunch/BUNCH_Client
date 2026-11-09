@@ -14,6 +14,7 @@ import { useFeedViewer } from '../hooks/useFeedViewer';
 import { useHoldScrollOnLeave } from '../hooks/useHoldScrollOnLeave';
 import { useLikeToggle } from '../hooks/useLikeToggle';
 import { useScrollInHistory } from '../hooks/useScrollInHistory';
+import { hideLeftMemberImages } from '../lib/deletedUserImage';
 import { formatElapsedTime } from '../lib/elapsedTime';
 import { BundleSheets, type BundleSheet } from './bundles/BundleSheets';
 import { FeedCaughtUp } from './FeedCaughtUp';
@@ -57,7 +58,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
           onBunchClick={() =>
             router.push(ownBunch ? links.bunchHome : links.otherBunch(bundle.bunch.id))
           }
-          members={bundle.members}
+          members={hideLeftMemberImages(bundle.members)}
           onMembers={() => setSheet({ kind: 'members', members: bundle.members })}
           photos={bundle.photos}
           title={bundle.title}

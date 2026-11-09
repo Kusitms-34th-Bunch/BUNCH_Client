@@ -45,13 +45,23 @@ describe('BundleDetailScreen', () => {
 
     await user.click(screen.getByRole('button', { name: /^위치/ }));
     expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    expect(screen.getByText('애월 한담해변')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '취소' }));
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
     );
 
     await user.click(screen.getByRole('button', { name: /^참여 멤버 \d+명/ }));
-    expect(await screen.findByRole('dialog', { name: '참여 멤버' })).toBeTruthy();
+    const sheet = await screen.findByRole('dialog', { name: '참여 멤버' });
+    expect(within(sheet).getAllByRole('listitem')).toHaveLength(7);
+    expect(within(sheet).getByText('작성자')).toBeTruthy();
+  });
+
+  it('나간 멤버의 얼굴은 원래 이미지 대신 기본 이미지다', () => {
+    renderDetail('bundle-2');
+
+    const first = screen.getByRole('button', { name: /^참여 멤버 3명/ }).querySelector('img');
+    expect(first?.getAttribute('src')).toContain('deleted-user');
   });
 
   it('제목·멤버 공개 뱃지·사진·댓글을 보여 주고, 입력란에 지금 번치 이름이 들어간다', () => {

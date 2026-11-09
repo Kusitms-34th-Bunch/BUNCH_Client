@@ -40,8 +40,13 @@ export const feedFixture: FeedData = {
       bunch: { id: 'bunch-book', name: '책방산책', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_1 },
       publishedAt: hoursAgo(5),
       title: '노을 지는 동네 책방 투어',
+      location: '망원동',
+      places: [
+        { id: 'place-bookshop', name: '망원동 책방', address: '서울 마포구 망원동', picked: false },
+      ],
       photos: photos('S1', 'S2'),
-      members: members(3),
+      // 나간 멤버가 앞에 있고 원래 이미지가 남은 예시
+      members: [{ name: '', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2, left: true }, ...members(2)],
     }),
   ],
   public: [
