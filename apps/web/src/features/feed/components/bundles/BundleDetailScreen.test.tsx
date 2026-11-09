@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sharedKeys } from '@/shared/query/keys';
@@ -38,7 +38,7 @@ beforeEach(() => {
 });
 
 describe('BundleDetailScreen', () => {
-  it('제목·자물쇠·사진·댓글을 보여 주고, 입력란에 지금 번치 이름이 들어간다', () => {
+  it('제목·멤버 공개 뱃지·사진·댓글을 보여 주고, 입력란에 지금 번치 이름이 들어간다', () => {
     renderDetail();
 
     expect(
@@ -46,7 +46,9 @@ describe('BundleDetailScreen', () => {
     ).toBeTruthy();
     expect(screen.getByRole('img', { name: '멤버 공개' })).toBeTruthy();
     expect(screen.getByRole('img', { name: '1 / 4' })).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: /^pick / })).toHaveLength(3);
+    // fixture의 셋째 사진은 1명이라 버튼이 아님
+    expect(screen.getAllByRole('button', { name: /^pick / })).toHaveLength(2);
+    expect(screen.getByRole('img', { name: /^pick / })).toBeTruthy();
     const comments = within(screen.getByRole('region', { name: '댓글' }));
     expect(comments.getAllByRole('listitem')).toHaveLength(4);
     expect(screen.getByRole('textbox', { name: '여행가조로 댓글 달기' })).toBeTruthy();
@@ -115,7 +117,19 @@ describe('BundleDetailScreen', () => {
     const like = screen.getByRole('button', { name: /좋아요/ });
     await user.click(like);
     expect(like).toHaveAttribute('aria-pressed', 'false');
-    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', {});
+    // 입력란을 가리지 않게 헤더 아래
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { position: 'top' });
+  });
+
+  it('말풍선을 누르면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    renderDetail();
+
+    await user.click(screen.getByRole('button', { name: /^댓글/ }));
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(screen.getByRole('textbox'));
   });
 
   it('댓글이 없으면 빈 안내를 보인다', () => {
@@ -123,13 +137,29 @@ describe('BundleDetailScreen', () => {
     expect(screen.getByText('아직 작성된 댓글이 없어요')).toBeTruthy();
   });
 
-  it('?focus=comments로 들어오면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', () => {
+  it('?focus=comments로 들어오면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
     renderDetail('bundle-1', { focusComments: true });
 
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(document.activeElement).toBe(screen.getByRole('textbox'));
+  });
+
+  it('스크롤한 채 화면을 떠나면 나가는 화면이 튀지 않게 스크롤을 transform으로 옮긴다', () => {
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: null });
+    const { container, unmount } = render(
+      <BundleDetailScreen bundleId="bundle-1" focusComments={false} links={links} />,
+      { wrapper: createQueryWrapper(client) },
+    );
+    const main = container.querySelector('main')!;
+    const firstChild = main.firstElementChild as HTMLElement;
+    main.scrollTop = 400;
+
+    unmount();
+    expect(main.scrollTop).toBe(0);
+    expect(firstChild.style.transform).toBe('translateY(-400px)');
   });
 
   it('없는 번들이면 볼 수 없다는 안내와 뒤로 가기만 있다', () => {

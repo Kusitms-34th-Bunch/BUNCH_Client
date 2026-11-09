@@ -35,8 +35,8 @@ export const DateOnly: Story = { args: { location: undefined } };
 /** 제목만 */
 export const TitleOnly: Story = { args: { location: undefined, date: undefined } };
 
-/** 멤버 공개: 제목 옆 자물쇠 */
-export const Locked: Story = { args: { locked: true } };
+/** 멤버 공개: 제목 옆 뱃지 */
+export const MemberOnly: Story = { args: { memberOnly: true } };
 
 /** 사진 위(피드 카드 첫 사진) */
 export const Overlay: Story = {

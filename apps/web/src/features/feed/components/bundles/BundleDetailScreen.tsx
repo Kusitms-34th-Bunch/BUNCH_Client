@@ -10,7 +10,7 @@ import {
   CommentItem,
 } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -19,6 +19,7 @@ import { FEED_PATHS } from '../../constants/paths';
 import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
 import { useClientNow } from '../../hooks/useClientNow';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
+import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
 import { formatElapsedTime } from '../../lib/elapsedTime';
 import { withRo } from '../../lib/josa';
@@ -42,24 +43,46 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const router = useRouter();
   const backOr = useBackOr();
   const now = useClientNow();
-  // 하단 탭이 없는 화면이라 토스트를 올리지 않음
-  const { viewer, asBunch } = useFeedViewer(null);
+  // 입력란 높이가 변하고 키보드도 올라오므로 토스트는 헤더 아래
+  const { viewer, asBunch } = useFeedViewer({ position: 'top' });
   const likes = useLikeToggle(viewer);
+  const keyboardOpen = useKeyboardOpen();
   const commentsRef = useRef<HTMLElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [replyTarget, setReplyTarget] = useState<string | null>(null);
   const bundle = getBundleDetailFixture(bundleId);
 
+  // 나가는 화면은 DOM에 다시 붙으며 스크롤이 0이 되어 맨 위로 튀므로 스크롤을 transform으로 옮겨 둠(뒤로 가기 경로와 무관)
+  useLayoutEffect(() => {
+    const main = commentsRef.current?.closest('main');
+    return () => {
+      if (!main?.scrollTop) return;
+      for (const child of main.children) {
+        if (child instanceof HTMLElement)
+          child.style.transform = `translateY(${-main.scrollTop}px)`;
+      }
+      main.scrollTop = 0;
+    };
+  }, []);
+
   // 입력란은 CommentComposer 안쪽이라 감싼 요소에서 찾음
-  const focusInput = () =>
-    composerRef.current?.querySelector('textarea')?.focus({ preventScroll: true });
+  const focusInput = useCallback(
+    () => composerRef.current?.querySelector('textarea')?.focus({ preventScroll: true }),
+    [],
+  );
+
+  const goToComments = useCallback(() => {
+    commentsRef.current?.scrollIntoView({ block: 'start' });
+    focusInput();
+  }, [focusInput]);
 
   useEffect(() => {
     if (!focusComments) return;
-    commentsRef.current?.scrollIntoView({ block: 'start' });
-    focusInput();
-  }, [focusComments]);
+    // effect에서 바로 주면 RouteFocus가 이동 전에 남은 초점으로 보고 제목으로 옮기므로 다음 프레임에
+    const frame = requestAnimationFrame(goToComments);
+    return () => cancelAnimationFrame(frame);
+  }, [focusComments, goToComments]);
 
   const header = (
     <Header
@@ -103,7 +126,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     <PageShell
       header={header}
       bottom={
-        <div ref={composerRef}>
+        <div ref={composerRef} data-keyboard-open={keyboardOpen ? '' : undefined}>
           {replyTarget ? (
             <CommentComposer
               {...composerProps}
@@ -139,7 +162,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
         titleAs="h1"
         location={bundle.location}
         date={bundle.date}
-        locked={bundle.locked}
+        memberOnly={bundle.memberOnly}
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
       />
       <BundlePhoto variant="detail" photos={bundle.photos} />
@@ -149,6 +172,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
         likeCount={likes.likeCount(bundle)}
         onLike={() => asBunch(() => likes.toggle(bundle))}
         commentCount={bundle.commentCount}
+        onComment={goToComments}
         className="pb-padding-p8 pt-6"
       />
       <div aria-hidden="true" className="bg-surface-secondary h-2" />

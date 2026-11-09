@@ -60,7 +60,7 @@ export function getBundleDetailFixture(bundleId: string): FeedBundleDetail | und
       pickers: pickers(PICK_COUNTS[index] ?? 0),
     })),
     // 첫 번들은 멤버 공개와 댓글 있는 예시, 나머지는 공개와 댓글 없는 예시(Figma 번들_Empty)
-    locked: first,
+    memberOnly: first,
     memberComments,
     comments: first ? comments : [],
     commentCount: first ? comments.length : 0,

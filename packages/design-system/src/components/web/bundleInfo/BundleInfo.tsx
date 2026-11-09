@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { FillCalendarSmallIcon, FillMapPinSmallIcon, LineLockSmallIcon } from '../../../icons';
+import { FillCalendarSmallIcon, FillMapPinSmallIcon, LineMemberSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
 
 export type BundleInfoProps = Omit<ComponentProps<'div'>, 'children' | 'title'> & {
@@ -13,10 +13,10 @@ export type BundleInfoProps = Omit<ComponentProps<'div'>, 'children' | 'title'> 
   date?: string | undefined;
   /** detail: 상세 화면 흰 배경(제목 20) · overlay: 사진 위 흰 글자(제목 16, 위치·날짜 80% 불투명) */
   variant?: 'detail' | 'overlay' | undefined;
-  /** 멤버 공개 번들이면 제목 옆 자물쇠(detail만). 낭독 글자는 `lockedLabel` */
-  locked?: boolean | undefined;
-  /** 자물쇠의 접근성 이름. 기본값 「멤버 공개」 */
-  lockedLabel?: string | undefined;
+  /** 멤버 공개 번들이면 제목 옆 뱃지(detail만). 낭독 글자는 `memberOnlyLabel` */
+  memberOnly?: boolean | undefined;
+  /** 뱃지의 접근성 이름. 기본값 「멤버 공개」 */
+  memberOnlyLabel?: string | undefined;
   /** 제목 요소 태그. 기본 h2 */
   titleAs?: 'h1' | 'h2' | 'h3' | 'p' | undefined;
 };
@@ -31,8 +31,8 @@ export const BundleInfo = ({
   onLocationClick,
   date,
   variant = 'detail',
-  locked = false,
-  lockedLabel = '멤버 공개',
+  memberOnly = false,
+  memberOnlyLabel = '멤버 공개',
   titleAs: Title = 'h2',
   className,
   ...props
@@ -48,7 +48,7 @@ export const BundleInfo = ({
 
   return (
     <div className={cn('flex flex-col', overlay ? 'gap-s3' : 'gap-s5', className)} {...props}>
-      <div className="flex items-start gap-1">
+      <div className="flex items-center gap-1">
         <Title
           className={cn(
             'min-w-0 wrap-break-word break-keep',
@@ -59,13 +59,13 @@ export const BundleInfo = ({
         >
           {title}
         </Title>
-        {locked && !overlay ? (
+        {memberOnly && !overlay ? (
           <span
             role="img"
-            aria-label={lockedLabel}
+            aria-label={memberOnlyLabel}
             className="bg-overlay-pressed text-icon-inversed flex size-6 shrink-0 items-center justify-center rounded-full"
           >
-            <LineLockSmallIcon aria-hidden />
+            <LineMemberSmallIcon aria-hidden />
           </span>
         ) : null}
       </div>

@@ -55,8 +55,8 @@ export type FeedComment = {
 };
 
 export type FeedBundleDetail = FeedBundle & {
-  /** 멤버 공개 번들(제목 옆 자물쇠) */
-  locked: boolean;
+  /** 멤버 공개 번들(제목 옆 뱃지) */
+  memberOnly: boolean;
   memberComments: FeedMemberComment[];
   comments: FeedComment[];
 };
