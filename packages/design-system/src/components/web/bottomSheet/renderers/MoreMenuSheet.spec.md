@@ -15,6 +15,7 @@
 
 - `open`, `onOpenChange`, `onOpenChangeComplete`: `BottomSheet.Root`와 같음.
 - `items`: `id`, `label`, `onSelect` 목록. 항목을 눌러도 시트는 닫지 않는다.
+- 항목의 `tone?`: `danger`면 빨간 글자·아이콘(`MenuLabel`의 `tone`, 댓글 「삭제」).
 - 항목의 `leftIcon?`: 앞 아이콘. 있으면 오른쪽 화살표를 뺀다(콕한 장소 메뉴). `cancelLabel?`: 아래 버튼 글자(기본 `취소하기`).
 - `title?`: 화면에 보이지 않는 시트 이름. 기본값 `더보기`.
 

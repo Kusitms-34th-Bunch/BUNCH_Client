@@ -36,9 +36,11 @@ const comments: FeedComment[] = [
     date: '2025.06.08',
     content: REPLY,
     reply: true,
+    parentId: 'c-1',
+    mine: true,
   },
   { id: 'c-3', author: '작성자', deleted: true },
-  { id: 'c-4', author: '작성자', deleted: true, reply: true },
+  { id: 'c-4', author: '작성자', deleted: true, reply: true, parentId: 'c-3' },
 ];
 
 // 첫 사진 8명(펼침 예시), 둘째 2명, 셋째 1명, 나머지는 없음

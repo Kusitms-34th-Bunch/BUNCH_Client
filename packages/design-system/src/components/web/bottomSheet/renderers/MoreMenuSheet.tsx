@@ -10,6 +10,8 @@ export type MoreMenuItem = {
   label: string;
   /** 앞 아이콘. 있으면 오른쪽 화살표를 빼는 모양(Figma Menu Label 앞 아이콘) */
   leftIcon?: ReactNode;
+  /** `danger`: 삭제처럼 되돌릴 수 없는 항목(빨간 글자·아이콘) */
+  tone?: 'default' | 'danger' | undefined;
   onSelect: () => void;
 };
 
@@ -38,12 +40,13 @@ export const MoreMenuSheet = ({
     <BottomSheet.Content>
       <BottomSheet.Title className="sr-only">{title}</BottomSheet.Title>
       <BottomSheet.Body className="gap-s4 flex flex-col">
-        {items.map(({ id, label, leftIcon, onSelect }) => (
+        {items.map(({ id, label, leftIcon, tone, onSelect }) => (
           <MenuLabel
             key={id}
             className="shrink-0"
             showChevron={!leftIcon}
             leftIcon={leftIcon}
+            tone={tone}
             onClick={onSelect}
           >
             {label}

@@ -1,6 +1,12 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import {
+  ConfirmDialog,
+  Header,
+  LineChevronLeftLargeIcon,
+  LineTrashcanMediumIcon,
+  toast,
+} from '@app/design-system';
 import {
   BundleAuthorInfo,
   BundleEngagement,
@@ -8,12 +14,15 @@ import {
   BundlePhoto,
   CommentComposer,
   CommentItem,
+  MoreMenuSheet,
 } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import type { FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
 import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
@@ -23,6 +32,13 @@ import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useHoldScrollOnLeave } from '../../hooks/useHoldScrollOnLeave';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
+import {
+  addComment,
+  addReply,
+  badgeColorOf,
+  formatCommentDate,
+  markDeleted,
+} from '../../lib/comments';
 import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { formatElapsedTime } from '../../lib/elapsedTime';
 import { withRo } from '../../lib/josa';
@@ -37,25 +53,62 @@ type BundleDetailScreenProps = {
 };
 
 const COMMENT_MAX_LENGTH = 200;
+// Figma `6079:178315`: 토스트는 입력란 바로 위 12px, 좌우 16씩 띄운 폭
+const TOAST_GAP = 12;
+// Toaster의 기본 아래 여백(Safe Area + 16)
+const TOAST_BASE_OFFSET = 16;
+
+// Toaster가 쓰는 하단 Safe Area(px). 키보드가 열리면 입력란은 Safe Area 없이 내려가지만 토스트 여백에는 남음
+const safeAreaBottom = () => {
+  const probe = document.createElement('div');
+  probe.style.cssText =
+    'position:fixed;visibility:hidden;height:var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))';
+  document.body.append(probe);
+  const height = probe.offsetHeight;
+  probe.remove();
+  return height;
+};
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * API 연결 전 fixture. 댓글 등록·답글 등록·삭제(구현 단위 4), 더보기(5·6)는 각 단위에서 추가
+ * API 연결 전 fixture라 댓글 등록·삭제는 화면에서만 바뀜(구현 단위 10). 남의 댓글 신고(5), 번들 더보기(5·6)는 각 단위에서 추가
  */
 export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDetailScreenProps) {
   const router = useRouter();
   const backOr = useBackOr();
   const now = useClientNow();
-  // 입력란 높이가 변하고 키보드도 올라오므로 토스트는 헤더 아래
-  const { viewer, asBunch } = useFeedViewer({ position: 'top' });
+  const composerRef = useRef<HTMLDivElement>(null);
+  // 입력란 위치(답글 상태·줄 수·키보드)가 바뀌므로 토스트를 띄우는 순간 화면 아래에서의 거리로 잼
+  const toastOptions = () => {
+    const top = composerRef.current?.getBoundingClientRect().top;
+    const fromBottom = top === undefined ? 0 : window.innerHeight - top;
+    return {
+      fullWidth: true,
+      bottomOffset: Math.max(0, fromBottom + TOAST_GAP - TOAST_BASE_OFFSET - safeAreaBottom()),
+    };
+  };
+  const { viewer, asBunch } = useFeedViewer(toastOptions);
   const likes = useLikeToggle(viewer);
   const keyboardOpen = useKeyboardOpen();
   const commentsRef = useRef<HTMLElement>(null);
-  const composerRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
-  const [replyTarget, setReplyTarget] = useState<string | null>(null);
+  const [replyTarget, setReplyTarget] = useState<{ id: string; author: string } | null>(null);
   const { openPlaces, openMembers } = useBundleSheets();
+  const openOverlay = useScreenOverlay();
   const bundle = getBundleDetailFixture(bundleId);
+  // ponytail: 화면 안에서만 바뀜. 댓글 API(구현 단위 10)를 연결하면 상세 query 캐시로 대체
+  const [comments, setComments] = useState<readonly FeedComment[]>(bundle?.comments ?? []);
+  const [addedCount, setAddedCount] = useState(0);
+  const [announcement, setAnnouncement] = useState('');
+  // 같은 문구를 이어서 알려도 다시 읽히도록 끝에 보이지 않는 공백을 번갈아 붙임
+  const announce = (message: string) =>
+    setAnnouncement((current) => (current === message ? `${message}\u00a0` : message));
+  // 등록·삭제가 반영된 뒤 초점을 옮길 댓글
+  const focusCommentId = useRef<string | null>(null);
+  // 지운 결과(답글 상태 해제로 입력란 높이도 바뀜)가 그려진 뒤 띄울 토스트
+  const pendingToast = useRef<string | null>(null);
+  // 화면에서 등록한 댓글 ID(시각은 같은 밀리초에 겹칠 수 있어 순번을 씀)
+  const localId = useRef(0);
 
   useHoldScrollOnLeave(commentsRef);
 
@@ -69,6 +122,20 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     commentsRef.current?.scrollIntoView({ block: 'start' });
     focusInput();
   }, [focusInput]);
+
+  // 등록·삭제한 댓글로 초점을 옮김(키보드를 내리고 결과 자리를 알림)
+  useEffect(() => {
+    const id = focusCommentId.current;
+    if (!id) return;
+    focusCommentId.current = null;
+    const item = document.getElementById(`comment-${id}`);
+    item?.scrollIntoView?.({ block: 'nearest' });
+    item?.focus({ preventScroll: true });
+    const message = pendingToast.current;
+    if (!message) return;
+    pendingToast.current = null;
+    toast(message, toastOptions());
+  }, [comments]);
 
   useEffect(() => {
     if (!focusComments) return;
@@ -106,11 +173,97 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     : bunchRo
       ? text.commentPlaceholderAs(bunchRo)
       : text.commentPlaceholder;
+  const submit = (value: string) =>
+    asBunch(() => {
+      const content = value.trim();
+      // 보내면 입력란을 바로 비워 보내기가 꺼지므로 연타해도 한 번만 등록됨
+      if (!viewer || !content) return;
+      const time = Date.now();
+      const comment: FeedComment = {
+        id: `local-${(localId.current += 1)}`,
+        author: viewer.memberName ?? text.me,
+        avatarSrc: viewer.memberImageSrc,
+        bunchName: viewer.name,
+        bunchColor: badgeColorOf(viewer.characterType),
+        date: formatCommentDate(time),
+        content,
+        mine: true,
+        ...(replyTarget && { reply: true, parentId: replyTarget.id }),
+      };
+      const next = replyTarget
+        ? addReply(comments, replyTarget.id, comment)
+        : addComment(comments, comment);
+      // 원댓글을 못 찾으면(이미 사라짐) 등록하지 않음
+      if (next === comments) return;
+      setComments(next);
+      setAddedCount((count) => count + 1);
+      setDraft('');
+      setReplyTarget(null);
+      announce(replyTarget ? text.replyAdded : text.commentAdded);
+      focusCommentId.current = comment.id;
+    });
+
+  const openDeleteConfirm = (comment: FeedComment) => {
+    let confirmed = false;
+    openOverlay(
+      (rootProps, close) => (
+        <ConfirmDialog
+          {...rootProps}
+          title={text.deleteCommentTitle}
+          description={text.deleteCommentDescription}
+          cancelLabel={text.cancel}
+          confirmLabel={text.deleteComment}
+          onConfirm={() => {
+            confirmed = true;
+            close();
+          }}
+        />
+      ),
+      // 창이 다 닫힌 뒤 지우고 알려 토스트가 창 뒤에 묻히지 않게 함. 더보기가 사라지므로 그 댓글로 초점
+      () => {
+        if (!confirmed) return;
+        setComments((current) => markDeleted(current, comment.id, text.leftMember));
+        // 삭제된 댓글에는 답글을 달 수 없으므로 그 댓글에 쓰던 답글 상태를 풂
+        setReplyTarget((target) => (target?.id === comment.id ? null : target));
+        focusCommentId.current = comment.id;
+        pendingToast.current = text.commentDeleted;
+      },
+    );
+  };
+
+  // 내 댓글 더보기(Figma `5367:121393`): 「삭제」/「취소」. 시트가 다 닫힌 뒤 확인 창(`5367:121647`)
+  const openCommentMenu = (comment: FeedComment) => {
+    let chosen = false;
+    openOverlay(
+      (rootProps, close) => (
+        <MoreMenuSheet
+          {...rootProps}
+          title={text.commentMenuTitle}
+          cancelLabel={text.cancel}
+          items={[
+            {
+              id: 'delete',
+              label: text.deleteComment,
+              tone: 'danger',
+              leftIcon: <LineTrashcanMediumIcon aria-hidden />,
+              onSelect: () => {
+                chosen = true;
+                close();
+              },
+            },
+          ]}
+        />
+      ),
+      () => {
+        if (chosen) openDeleteConfirm(comment);
+      },
+    );
+  };
+
   const composerProps = {
     value: draft,
     onValueChange: setDraft,
-    // 등록은 구현 단위 4. 지금은 번치 확인만
-    onSubmit: () => asBunch(() => undefined),
+    onSubmit: submit,
     placeholder,
     maxLength: COMMENT_MAX_LENGTH,
   };
@@ -123,7 +276,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
           {replyTarget ? (
             <CommentComposer
               {...composerProps}
-              replyTarget={replyTarget}
+              replyTarget={replyTarget.author}
               // 닫기 버튼이 사라지므로 초점을 입력란으로
               onCancelReply={() => {
                 setReplyTarget(null);
@@ -166,16 +319,28 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
         liked={likes.isLiked(bundle)}
         likeCount={likes.likeCount(bundle)}
         onLike={() => asBunch(() => likes.toggle(bundle))}
-        commentCount={bundle.commentCount}
+        commentCount={bundle.commentCount + addedCount}
         onComment={goToComments}
         className="pb-padding-p8 pt-6"
       />
       <div aria-hidden="true" className="bg-surface-secondary h-2" />
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
       <section ref={commentsRef} aria-label={text.commentsTitle}>
-        {bundle.comments.length > 0 ? (
+        {comments.length > 0 ? (
           <ul className="px-padding-p8 pt-padding-p8">
-            {bundle.comments.map((comment) => (
-              <li key={comment.id}>
+            {comments.map((comment) => (
+              <li
+                key={comment.id}
+                id={`comment-${comment.id}`}
+                tabIndex={-1}
+                // 등록·삭제 뒤 초점이 오면 어떤 댓글인지 읽히게 이름을 붙임
+                aria-label={
+                  comment.deleted ? text.deletedCommentLabel : text.commentLabel(comment.author)
+                }
+                className="focus-visible:outline-border-brand rounded-r4 focus-visible:outline-2"
+              >
                 <CommentItem
                   author={comment.author}
                   avatarSrc={comment.deleted ? DELETED_USER_IMAGE : comment.avatarSrc}
@@ -186,11 +351,19 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
                   reply={comment.reply}
                   deleted={comment.deleted}
                   replyCount={comment.replyCount}
-                  onReply={() =>
-                    asBunch(() => {
-                      setReplyTarget(comment.author);
-                      focusInput();
-                    })
+                  // 삭제된 댓글에는 답글을 달 수 없음
+                  onReply={
+                    comment.deleted
+                      ? undefined
+                      : () =>
+                          asBunch(() => {
+                            setReplyTarget({ id: comment.id, author: comment.author });
+                            focusInput();
+                          })
+                  }
+                  // 내 댓글만 삭제 메뉴(남의 댓글 신고는 구현 단위 5)
+                  onMore={
+                    comment.mine && !comment.deleted ? () => openCommentMenu(comment) : undefined
                   }
                 />
               </li>
