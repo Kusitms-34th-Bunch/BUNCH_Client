@@ -55,3 +55,12 @@ export const clearAuthCookies = (response: NextResponse, request: NextRequest) =
   response.cookies.set(ACCESS_TOKEN_COOKIE, '', cookieOptions(request, '/'));
   response.cookies.set(REFRESH_TOKEN_COOKIE, '', cookieOptions(request, REFRESH_TOKEN_PATH));
 };
+
+/** access 토큰만 발급(개발 전용 토큰 로그인용, refresh 토큰이 없어 만료되면 다시 발급받아야 함) */
+export const setAccessTokenCookie = (
+  response: NextResponse,
+  request: NextRequest,
+  accessToken: string,
+) => {
+  response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, cookieOptions(request, '/', accessToken));
+};

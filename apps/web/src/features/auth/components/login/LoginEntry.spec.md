@@ -73,6 +73,15 @@
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
 - [x] Chromium(dev 서버, 창 1280×577)에서 영상 자동 재생, 앱 폭 전체를 덮는 배경, 심볼↔워드마크 6·워드마크↔슬로건 8·슬로건↔버튼 32·버튼 아래 14를 측정함. 375×812 화면과 실기기(iOS WebView 자동 재생)는 확인하지 못함
 
+## 개발 전용 토큰 로그인
+
+쉘의 네이티브 SDK(실기기·Mac 필요) 없이 닉네임만으로 실서버 계정의 access 토큰을 받아, 가입 이후 API까지 확인하는 장치다. 백엔드 `POST /api/v1/auth/dev/token`(요청 `{ nickname }`, 응답 `{ memberId, accessToken }`)을 쓴다.
+
+- 켜기: `apps/web/.env.local`에 서버 전용 `DEV_TOKEN_LOGIN=enabled`(`NEXT_PUBLIC_`를 붙이지 않음)와 `API_BASE_URL`. 운영 빌드(`NODE_ENV=production`)에서는 변수가 켜져 있어도 동작하지 않는다. 가짜 서버(`NEXT_PUBLIC_API_MOCKING`)는 꺼야 실서버로 간다.
+- 동작: 로그인 화면 맨 위의 닉네임 입력과 「개발용 로그인」 → `POST /api/dev/token`(서버가 백엔드에서 토큰을 받아 `accessToken` httpOnly 쿠키로 저장, 204) → 화면을 새로 불러오면 `AuthGate`가 가입 상태에 맞는 화면으로 보낸다.
+- 한계: refresh 토큰이 없어 access 토큰이 만료되면 재발급이 되지 않으므로 다시 발급받는다. 브라우저에서 백엔드를 직접 부르면 CORS로 막히므로(사전 요청 401) 반드시 BFF를 거친다.
+- 삭제 방법: `app/api/dev/`, `features/auth/components/dev/`, `shared/api/devToken.ts`, `authCookies.ts`의 `setAccessTokenCookie`, `components/index.ts`의 `DevTokenLogin` export(`yarn gen:feature-index`), `app/(app)/login/page.tsx`의 `DEV_TOKEN_LOGIN`·`<DevTokenLogin />`, `.env.example`의 `DEV_TOKEN_LOGIN`.
+
 ## 확인할 항목
 
 - 브랜딩 위치 (결정): Figma는 위에서 459px 절대 배치이고 버튼과 34px 떨어져 있다. 화면 높이가 달라도 버튼과의 거리가 유지되도록 버튼 위에 붙였다(간격은 가까운 토큰 32px).
