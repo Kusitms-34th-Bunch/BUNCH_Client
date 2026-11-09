@@ -49,7 +49,12 @@ describe('POST /api/dev/token', () => {
       value: 'a.e30.s',
       httpOnly: true,
     });
-    expect(response.cookies.get('refreshToken')).toBeUndefined();
+    // 이전 계정의 refresh 쿠키는 비워 재발급 때 계정이 섞이지 않게 함
+    expect(response.cookies.get('refreshToken')).toMatchObject({
+      value: '',
+      path: '/api/auth',
+      maxAge: 0,
+    });
   });
 
   it('닉네임이 비어 있으면 400', async () => {

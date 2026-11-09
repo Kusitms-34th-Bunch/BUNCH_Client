@@ -72,6 +72,8 @@ export function DevTokenLogin({ destinations }: { destinations: PostLoginDestina
         개발용 로그인 닉네임
         <input
           value={nickname}
+          maxLength={30}
+          autoComplete="off"
           onChange={(event) => setNickname(event.target.value)}
           className="typography-body-3-regular rounded-s2 px-s3 py-s2 text-text-primary bg-white"
         />
