@@ -159,7 +159,7 @@ describe('BunchHome', () => {
     await userEvent.click(screen.getByRole('button', { name: '번들 만들기' }));
 
     expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.createBundle);
-    expect(BUNCH_HOME_PATHS.createBundle).toBe('/bunch/bundles/new');
+    expect(BUNCH_HOME_PATHS.createBundle).toBe('/bunch/bundles/new/members');
   });
 
   it('「콕한 장소」는 콕한 장소 화면으로 이동한다', async () => {

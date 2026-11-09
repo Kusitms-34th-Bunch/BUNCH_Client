@@ -8,19 +8,30 @@ type LeaveDraftDialogProps = {
   onOpenChange: (_open: boolean) => void;
   /** 「나가기」를 눌렀을 때 */
   onConfirm: () => void;
+  /** 번들을 만든 멤버가 나가는 경우(번들이 삭제된다는 문구) */
+  creator?: boolean | undefined;
 };
 
 /**
- * 번들 나가기 확인 창(작성 화면 맨 아래 「나가기」·참여 멤버 관리 화면의 내 카드 X가 같이 씀)
- * 초안 생성자도 같은 문구를 보고, 되돌릴 수 없는 동작이라 최초 포커스는 「취소」(Dialog 기본)에 두며 바깥 누름은 무시
+ * 번들 나가기 확인 창(작성 화면 헤더 더보기의 「번들 나가기」·참여 멤버 관리 화면의 내 카드 X가 같이 씀)
+ * 초안 생성자는 번들이 삭제된다는 문구를 보고, 되돌릴 수 없는 동작이라 최초 포커스는 「취소」(Dialog 기본)에 두며 바깥 누름은 무시
  */
-export function LeaveDraftDialog({ open, onOpenChange, onConfirm }: LeaveDraftDialogProps) {
+export function LeaveDraftDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  creator = false,
+}: LeaveDraftDialogProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Content>
-        <Dialog.Title>{BUNDLE_MESSAGES.leaveConfirmTitle}</Dialog.Title>
+        <Dialog.Title>
+          {creator ? BUNDLE_MESSAGES.leaveCreatorTitle : BUNDLE_MESSAGES.leaveConfirmTitle}
+        </Dialog.Title>
         <Dialog.Description className="whitespace-pre-line">
-          {BUNDLE_MESSAGES.leaveConfirmDescription}
+          {creator
+            ? BUNDLE_MESSAGES.leaveCreatorDescription
+            : BUNDLE_MESSAGES.leaveConfirmDescription}
         </Dialog.Description>
         <Dialog.Footer>
           <Dialog.Confirm variant="warning" onClick={onConfirm}>

@@ -366,7 +366,10 @@ describe('useDraft 저장', () => {
     });
 
     expect(outcome).toBe('failed');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict, {
+      fullWidth: true,
+      bottomOffset: 65,
+    });
   });
 
   it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {
@@ -586,7 +589,10 @@ describe('useDraft 발행', () => {
     });
 
     expect(outcome).toBe('blocked');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed, {
+      fullWidth: true,
+      bottomOffset: 65,
+    });
     expect(serverBundle(id)?.status).toBe('DRAFT');
     // 화면도 서버 구성으로 돌아와 있음
     expect(ready(result.current.state).draft.photos).toHaveLength(2);
@@ -617,7 +623,10 @@ describe('useDraft 발행', () => {
     });
 
     expect(outcome).toBe('blocked');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
+      fullWidth: true,
+      bottomOffset: 65,
+    });
   });
 
   it('저장하지 못한 입력까지 저장한 뒤 발행하고 발행되면 서버 상태가 발행본이 된다', async () => {
@@ -635,7 +644,6 @@ describe('useDraft 발행', () => {
     expect(serverBundle(id)).toMatchObject({ status: 'PUBLISHED', title: '설악산 단풍 여행' });
     // 발행한 뒤에는 「삭제된 번들」 안내 없이 화면 이동을 기다림
     expect(result.current.state.kind).toBe('loading');
-    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, expect.anything());
   });
 });
 

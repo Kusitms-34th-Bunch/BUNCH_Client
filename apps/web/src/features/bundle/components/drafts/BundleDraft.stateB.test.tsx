@@ -47,9 +47,8 @@ describe('UT 상태 B 초안 화면', () => {
     expect(screen.getByDisplayValue('속초 첫째 날 🌊')).toBeInTheDocument();
     expect(screen.getByText('속초해수욕장')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /은우님이 편집 중/ }).length).toBeGreaterThan(0);
-    // 처음 가운데는 1번 사진이라 완성된 캡션이 보이고, 편집 중 표시는 2번 사진이 가운데로 올 때만 캡션 자리에 뜸
-    expect(screen.getByText(/아침 7시 영금정/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^경진님이 편집 중$/ })).not.toBeInTheDocument();
+    // 사진별 캡션은 작성 화면에서 보이지 않음
+    expect(screen.queryByText(/아침 7시 영금정/)).not.toBeInTheDocument();
     // 「사진」 라벨 옆에는 편집 중인 멤버로 경진이 보임
     expect(screen.getAllByRole('img', { name: /경진/ }).length).toBeGreaterThan(0);
   });
@@ -62,17 +61,15 @@ describe('UT 상태 B 초안 화면', () => {
     expect(screen.getByText('속초해수욕장')).toBeInTheDocument();
   });
 
-  it('공개 범위와 내 코멘트를 채우고 업로드를 몇 번 눌러도 편집 중 확인 창이 뜬다', async () => {
+  it('내 코멘트를 채우고 업로드를 몇 번 눌러도 편집 중 확인 창이 뜬다', async () => {
     const id = await renderStateB();
 
-    await userEvent.click(screen.getByRole('radio', { name: '멤버 공개' }));
     await userEvent.type(
       screen.getByRole('textbox', { name: /큐시즘 \(나\) 코멘트/ }),
       '재밌었어요',
     );
     await waitFor(() => {
       const stored = mockDb.get().bundles.find((bundle) => String(bundle.id) === id);
-      expect(stored?.visibility).toBe('PRIVATE');
       expect(stored?.comments.some((comment) => comment.content === '재밌었어요')).toBe(true);
     }, WAIT);
 

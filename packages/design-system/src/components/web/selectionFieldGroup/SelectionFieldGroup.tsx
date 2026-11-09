@@ -1,6 +1,6 @@
 'use client';
 
-import type { ComponentProps } from 'react';
+import { Fragment, type ComponentProps, type ReactNode } from 'react';
 import type { BundleTitleMember } from '../bundleTitle';
 import { LineAddSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
@@ -26,6 +26,11 @@ export type SelectionFieldGroupProps = Omit<ComponentProps<'div'>, 'children'> &
   onItemClear?: ((_id: string) => void) | undefined;
   /** 지우기 버튼의 접근성 이름을 만드는 함수(기본 "{값} 지우기"). 같은 값이 여러 행일 때 구별하도록 행 순서(0부터)도 받음 */
   clearLabel?: ((_value: string, _index: number) => string) | undefined;
+  /** 행의 제목 앞 아이콘 자리에 놓을 핸들(예: 드래그로 순서를 바꾸는 햄버거). 행 순서(0부터)도 받음 */
+  itemHandle?: ((_item: SelectionFieldGroupItem, _index: number) => ReactNode) | undefined;
+  /** 행을 감싸는 요소(예: 정렬 가능한 래퍼). 행 모양은 그대로 `row`로 받아 안에 넣어야 함 */
+  itemWrapper?:
+    ((_item: SelectionFieldGroupItem, _index: number, _row: ReactNode) => ReactNode) | undefined;
   /** 주면 맨 아래에 "추가" 행이 나타나고 누르면 호출됨(장소 검색 화면을 여는 곳, 최대 개수에서는 호출하는 쪽이 주지 않음) */
   onAdd?: (() => void) | undefined;
   /** "추가" 행의 글자(기본 "추가") */
@@ -49,6 +54,8 @@ export const SelectionFieldGroup = ({
   onItemClick,
   onItemClear,
   clearLabel,
+  itemHandle,
+  itemWrapper,
   onAdd,
   addLabel = '추가',
   addMembers,
@@ -78,18 +85,26 @@ export const SelectionFieldGroup = ({
       className={cn('flex w-full flex-col', className)}
       {...props}
     >
-      {items.map((item, index) => (
-        <SelectionField
-          key={item.id}
-          label={item.value}
-          selected
-          fieldLabel={fieldLabel}
-          clearLabel={clearLabel?.(item.value, index)}
-          onFieldClick={() => onItemClick?.(item.id)}
-          onClear={() => onItemClear?.(item.id)}
-          className={rowClassName(index)}
-        />
-      ))}
+      {items.map((item, index) => {
+        const row = (
+          <SelectionField
+            key={item.id}
+            label={item.value}
+            selected
+            fieldLabel={fieldLabel}
+            clearLabel={clearLabel?.(item.value, index)}
+            handle={itemHandle?.(item, index)}
+            onFieldClick={() => onItemClick?.(item.id)}
+            onClear={() => onItemClear?.(item.id)}
+            className={rowClassName(index)}
+          />
+        );
+        return itemWrapper ? (
+          <Fragment key={item.id}>{itemWrapper(item, index, row)}</Fragment>
+        ) : (
+          row
+        );
+      })}
       {onAdd ? (
         <button
           type="button"

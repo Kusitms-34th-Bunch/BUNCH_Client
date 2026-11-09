@@ -19,6 +19,7 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
+import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
 import { getDraftAccess } from '../../lib/permissions';
 import { getPhotoEditors, getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
 import { RemovePhotoDialogs } from './RemovePhotoDialogs';
@@ -88,6 +89,7 @@ export function DraftPhotoViewer({
 }: DraftPhotoViewerProps) {
   const access = getDraftAccess(draft, viewer);
   const photos = draft.photos;
+  const isPicked = useIsPhotoPicked(draft);
   // 사진함 데이터를 받는 동안과 받은 뒤 원본이 없는 사진은 배지·날짜를 비움(번들에 담은 사람을 소유자로 잘못 보이지 않게)
   // 사진함 데이터를 받지 못한 경우(`sources` 없음)만 번들에 담은 사람·번들의 날짜로 보임
   const viewerPhotos = photos.map((photo) => {
@@ -235,6 +237,7 @@ export function DraftPhotoViewer({
       {saving ? <PageLoading /> : null}
       <RemovePhotoDialogs
         kind={removeDialog?.kind}
+        picked={removeDialog ? isPicked(removeDialog.photoId) : false}
         onClose={() => setRemoveDialog(undefined)}
         onConfirm={() => {
           // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 다시 확인

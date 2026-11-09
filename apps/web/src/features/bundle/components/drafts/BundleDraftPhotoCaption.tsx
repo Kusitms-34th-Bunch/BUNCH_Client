@@ -6,7 +6,7 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
-import { useRedirectMissingDraft, useRedirectMissingPhoto } from '../../hooks/useDraftExit';
+import { useRedirectMissingPhoto } from '../../hooks/useDraftExit';
 import { usePhotoAddress } from '../../hooks/usePhotoAddress';
 import { usePhotoGalleryImport } from '../../hooks/usePhotoGalleryImport';
 import { markPhotoAddEntry } from '../../lib/photoAddEntry';
@@ -39,8 +39,6 @@ export function BundleDraftPhotoCaption({ photoId }: BundleDraftPhotoCaptionProp
     ready ? state.draft.photos.map((photo) => photo.id) : undefined,
   );
   const present = useRedirectMissingPhoto(ready ? state.draft : undefined, initialPhotoId);
-
-  useRedirectMissingDraft(state.kind === 'missing');
 
   if (state.kind !== 'ready' || !present || initialPhotoId === undefined) return <PageLoading />;
 

@@ -236,13 +236,13 @@ describe('스스로 나가기', () => {
     );
   });
 
-  it('초안 생성자도 같은 문구의 모달을 본다', async () => {
+  it('초안 생성자는 번들이 삭제된다는 문구의 모달을 본다', async () => {
     render(<Harness viewer={owner} />);
 
     await userEvent.click(screen.getByRole('button', { name: '번들에서 나가기' }));
     const dialog = await screen.findByRole('alertdialog');
 
-    expect(within(dialog).getByText(BUNDLE_MESSAGES.leaveConfirmTitle)).toBeInTheDocument();
+    expect(within(dialog).getByText(BUNDLE_MESSAGES.leaveCreatorTitle)).toBeInTheDocument();
   });
 
   it('「취소」를 누르면 나가지 않고 화면에 남는다', async () => {

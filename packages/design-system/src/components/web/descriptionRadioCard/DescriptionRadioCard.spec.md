@@ -37,15 +37,15 @@
 
 ## Styling과 의존성
 
-| Figma                                                   | 구현                                              |
-| ------------------------------------------------------- | ------------------------------------------------- |
-| 패딩 12, radius `r5`, 바탕 `surface-secondary`, 높이 63 | `p-padding-p6 rounded-r5 bg-surface-secondary`    |
-| 라디오·글자 간격 10                                     | `gap-s5`                                          |
-| 제목·설명 간격 2                                        | `gap-s1`                                          |
-| 제목 Body-3-Semibold, `text-primary`                    | `typography-body-3-semi-bold text-text-primary`   |
-| 설명 Caption-1-Regular, `text-tertiary`                 | `typography-caption-1-regular text-text-tertiary` |
-| Control Radio 20                                        | `Radio`(`core/radio`)                             |
-| 선택·눌림·흐림                                          | `ProfileRadioCard`와 같음                         |
+| Figma                                                                  | 구현                                                  |
+| ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| 좌우 패딩 16·위아래 18, radius `r4`, 바탕 `surface-secondary`, 높이 78 | `px-padding-p8 py-s9 rounded-r4 bg-surface-secondary` |
+| 라디오·글자 간격 14                                                    | `gap-s7`                                              |
+| 제목·설명 간격 4                                                       | `gap-s2`                                              |
+| 제목 Body-2-Medium(15/22), `text-tertiary`                             | `typography-body-2-medium text-text-tertiary`         |
+| 설명 Caption-1-Regular, `text-tertiary`                                | `typography-caption-1-regular text-text-tertiary`     |
+| Control Radio 20                                                       | `Radio`(`core/radio`)                                 |
+| 선택·눌림·흐림                                                         | `ProfileRadioCard`와 같음                             |
 
 ## 확인할 항목
 

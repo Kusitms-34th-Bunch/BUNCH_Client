@@ -13,6 +13,25 @@ describe('MemberCard', () => {
     expect(container.querySelector('img')?.getAttribute('src')).toBe('avatar.png');
   });
 
+  it('편집 중이 아니면 초록 점이 없고, 편집 중이면 프로필 오른쪽 아래에 10px 점이 붙는다', () => {
+    const { container, rerender } = renderCard();
+    expect(container.querySelector('.bg-primitive-green-400')).toBeNull();
+
+    rerender(<MemberCard name="지예" src="avatar.png" editing />);
+    const dot = container.querySelector('.bg-primitive-green-400') as HTMLElement;
+    expect(dot.classList.contains('size-2.5')).toBe(true);
+    expect(dot.classList.contains('bottom-0')).toBe(true);
+    expect(dot.classList.contains('right-0')).toBe(true);
+    // 이름이 없으면 장식이라 보조 기술에서 숨김
+    expect(dot.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('editingLabel을 주면 점이 이미지로 읽힌다', () => {
+    renderCard({ editing: true, editingLabel: '지예님이 편집 중' });
+
+    expect(screen.getByRole('img', { name: '지예님이 편집 중' })).toBeTruthy();
+  });
+
   it('src가 없으면 사진 없이 배경 원만 그린다', () => {
     const { container } = renderCard({ src: undefined });
 
@@ -30,7 +49,7 @@ describe('MemberCard', () => {
 
   it('프로필 사진은 40px 원에 테두리가 있다', () => {
     const { container } = renderCard();
-    const profile = container.firstElementChild?.firstElementChild as HTMLElement;
+    const profile = container.querySelector('.size-10') as HTMLElement;
 
     expect(profile.classList.contains('size-10')).toBe(true);
     // ProfileImage 기본 90px 크기가 남지 않고 덮여야 함

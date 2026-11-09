@@ -36,11 +36,17 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
  * 기획: 지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있음(서버 동작은 발행 API 연동 때 확인)
  */
 export const hasOtherEditors = (editing: DraftEditing, myId: string): boolean =>
-  [
-    editing.title,
-    editing.location,
-    editing.date,
-    ...(editing.photoMemberIds ?? []),
-    ...Object.values(editing.photoEditors ?? {}).flat(),
-    ...(editing.commentMemberIds ?? []),
-  ].some((memberId) => memberId !== undefined && memberId !== myId);
+  [...getEditingMemberIds(editing)].some((memberId) => memberId !== myId);
+
+/** 지금 무엇이든 편집 중인 멤버 id(제목·사진·위치·날짜·코멘트). 멤버 카드의 초록 점 기준 */
+export const getEditingMemberIds = (editing: DraftEditing): ReadonlySet<string> =>
+  new Set(
+    [
+      editing.title,
+      editing.location,
+      editing.date,
+      ...(editing.photoMemberIds ?? []),
+      ...Object.values(editing.photoEditors ?? {}).flat(),
+      ...(editing.commentMemberIds ?? []),
+    ].filter((memberId): memberId is string => memberId !== undefined),
+  );

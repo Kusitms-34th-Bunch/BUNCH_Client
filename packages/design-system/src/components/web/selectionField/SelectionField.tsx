@@ -1,6 +1,6 @@
 'use client';
 
-import { type ComponentProps, useId } from 'react';
+import { type ComponentProps, type ReactNode, useId } from 'react';
 import { LineChevronRightSmallIcon, LineCloseSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
 import { BundleTitle, type BundleTitleMember } from '../bundleTitle';
@@ -15,6 +15,8 @@ export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'titl
   fieldLabel?: string | undefined;
   /** 제목 앞 아이콘(기본 위치 핀, 날짜 필드는 `'calendar'`) */
   icon?: 'map-pin' | 'calendar' | undefined;
+  /** 제목 앞 아이콘 자리에 대신 놓을 요소(예: 순서를 바꾸는 햄버거 핸들). 주면 `icon`은 그리지 않고, 카드 전체 버튼 위에서 따로 눌림 */
+  handle?: ReactNode;
   /** 제목 오른쪽에 보일 멤버 프로필(다른 멤버가 이 필드를 편집 중일 때 등, 앞에서부터 최대 8명) */
   members?: readonly BundleTitleMember[] | undefined;
   /** 필수 입력 표시(제목 뒤 별표) */
@@ -45,6 +47,7 @@ export const SelectionField = ({
   fieldLabel,
   selected = false,
   icon = 'map-pin',
+  handle,
   members,
   required = false,
   requiredLabel = '필수',
@@ -84,12 +87,16 @@ export const SelectionField = ({
         </span>
       )}
       <div className="gap-s4 flex h-6 min-w-0 flex-1 items-center">
+        {handle ? (
+          // 핸들과 제목 사이는 아이콘 자리와 같은 6px(행 간격 8px에서 뺌)
+          <span className="-mr-s1 relative z-10 flex shrink-0 items-center">{handle}</span>
+        ) : null}
         <BundleTitle
           id={titleId}
           aria-hidden="true"
           title={label}
           variant="weak"
-          icon={icon}
+          icon={handle ? false : icon}
           members={members}
           required={required}
           requiredLabel={requiredLabel}
