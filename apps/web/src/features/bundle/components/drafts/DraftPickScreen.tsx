@@ -8,11 +8,72 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import type { DraftMember, DraftPhoto } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { chunk, hasPicked, pickersOf, type Picks } from '../../lib/picks';
+import styles from './pickMotion.module.css';
 
 // 사진 폭 295 + 간격 10: 가로로 넘긴 거리를 사진 번호로 바꾸는 기준(Figma `5699:103586`)
 const PHOTO_STEP = 295 + 10;
 // 한 줄에 보이는 픽한 멤버 수(Figma `5699:103593`)
 const PICKERS_PER_ROW = 4;
+// 픽하기 모션 길이(ms, Figma 5699:103708의 3.4초)
+const PICK_MOTION_MS = 3400;
+// 글린트 모듈 13칸의 [left, top] px(Figma 노드 순서, 10px 칸, 70×70 안)
+const GLINT_CELLS = [
+  [30, 0],
+  [30, 10],
+  [20, 20],
+  [40, 20],
+  [0, 30],
+  [10, 30],
+  [30, 30],
+  [50, 30],
+  [60, 30],
+  [20, 40],
+  [40, 40],
+  [30, 50],
+  [30, 60],
+] as const;
+// 내 칩 옆 작은 글린트 모듈 13칸(2px 칸, 14×14 안)
+const MINI_CELLS = [
+  [6, 0],
+  [6, 2],
+  [4, 4],
+  [8, 4],
+  [0, 6],
+  [2, 6],
+  [6, 6],
+  [10, 6],
+  [12, 6],
+  [4, 8],
+  [8, 8],
+  [6, 10],
+  [6, 12],
+] as const;
+// 노드별 키프레임 클래스(순서는 위 칸과 같음)
+const GLINT_CLASSES = [
+  styles.glintModule0,
+  styles.glintModule1,
+  styles.glintModule2,
+  styles.glintModule3,
+  styles.glintModule4,
+  styles.glintModule5,
+  styles.glintModule6,
+  styles.glintModule7,
+  styles.glintModule8,
+  styles.glintModule9,
+  styles.glintModule10,
+  styles.glintModule11,
+  styles.glintModule12,
+];
+const SPARK_CLASSES = [
+  styles.spark0,
+  styles.spark1,
+  styles.spark2,
+  styles.spark3,
+  styles.spark4,
+  styles.spark5,
+  styles.spark6,
+  styles.spark7,
+];
 
 type DraftPickScreenProps = {
   photos: readonly DraftPhoto[];
@@ -46,6 +107,10 @@ export function DraftPickScreen({
   const [activeIndex, setActiveIndex] = useState(0);
   const [deletedOpen, setDeletedOpen] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
+  // 픽하기 모션: 어느 사진에서 시작했는지와 픽하기 전 픽한 수(3.4초 뒤 사라짐)
+  const [fx, setFx] = useState<{ photoId: string; prevCount: number } | null>(null);
+  const fxTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(fxTimer.current), []);
   const total = photos.length;
   const current = Math.min(activeIndex, Math.max(0, total - 1));
   const active = photos[current];
@@ -76,6 +141,25 @@ export function DraftPickScreen({
       behavior: reduced ? 'auto' : 'smooth',
     });
   };
+  const handlePick = () => {
+    if (!active) return;
+    if (!editable) {
+      onDenied();
+      return;
+    }
+    // 픽할 때만 모션(해제에는 없음), 동작 줄이기면 생략
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    if (!picked && !reduced) {
+      setFx({ photoId: active.id, prevCount: ordered.length });
+      clearTimeout(fxTimer.current);
+      fxTimer.current = setTimeout(() => setFx(null), PICK_MOTION_MS);
+    } else {
+      clearTimeout(fxTimer.current);
+      setFx(null);
+    }
+    onToggle(active.id);
+  };
+  const fxOn = fx !== null && active?.id === fx.photoId && picked;
   const nameOf = (memberId: string) => members.find((member) => member.id === memberId)?.name ?? '';
 
   return (
@@ -114,13 +198,39 @@ export function DraftPickScreen({
         }
       >
         {photos.map((photo, index) => (
-          <li key={photo.id} className="shrink-0 snap-center">
+          <li
+            key={photo.id}
+            className={`relative shrink-0 snap-center ${fxOn && index === current ? styles.fx : ''}`}
+          >
             {/* 가운데가 아닌 사진은 흐림(opacity-disabled) */}
             <BundlePickPhoto
               src={photo.src}
               alt={photo.alt}
-              className={index === current ? undefined : 'opacity-(--semantic-opacity-disabled)'}
+              className={
+                index !== current
+                  ? 'opacity-(--semantic-opacity-disabled)'
+                  : fxOn
+                    ? styles.photo
+                    : undefined
+              }
             />
+            {fxOn && index === current ? (
+              <div aria-hidden="true">
+                <span className={styles.dim} />
+                <span className={styles.glint}>
+                  {GLINT_CELLS.map(([left, top], i) => (
+                    <span
+                      key={i}
+                      className={`${styles.glintModule} ${GLINT_CLASSES[i]}`}
+                      style={{ left, top }}
+                    />
+                  ))}
+                </span>
+                {SPARK_CLASSES.map((cls, i) => (
+                  <span key={i} className={`${styles.spark} ${cls}`} />
+                ))}
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -128,33 +238,55 @@ export function DraftPickScreen({
         {active ? BUNDLE_MESSAGES.photoPosition(current + 1, total) : ''}
       </p>
       {active ? (
-        <div className="pt-s5 px-padding-p8 flex flex-col items-center">
+        <div className={`pt-s5 px-padding-p8 flex flex-col items-center ${fxOn ? styles.fx : ''}`}>
           <Button
             variant={picked ? 'brand' : 'brandSubtle'}
             size="md"
-            className="w-73.75"
-            onClick={() => (editable ? onToggle(active.id) : onDenied())}
+            className={fxOn ? `w-73.75 ${styles.button}` : 'w-73.75'}
+            onClick={handlePick}
           >
             {picked ? BUNDLE_MESSAGES.pickedButton : BUNDLE_MESSAGES.pickButton}
           </Button>
         </div>
       ) : null}
       {ordered.length > 0 ? (
-        <div className="pt-s14 px-padding-p18 gap-s6 flex flex-col items-center">
-          <p className="typography-body-4-regular text-text-quaternary text-center">
-            {BUNDLE_MESSAGES.pickedCount(ordered.length)}
-          </p>
-          {chunk(ordered, PICKERS_PER_ROW).map((row) => (
+        <div
+          className={`pt-s14 px-padding-p18 gap-s6 flex flex-col items-center ${fxOn ? styles.fx : ''}`}
+        >
+          <div className="relative">
+            <p
+              className={`typography-body-4-regular text-text-quaternary text-center ${fxOn ? styles.countNew : ''}`}
+            >
+              {BUNDLE_MESSAGES.pickedCount(ordered.length)}
+            </p>
+            {/* 모션 중 사라지는 이전 픽한 수(화면 낭독은 새 수만 읽음) */}
+            {fxOn && fx.prevCount > 0 ? (
+              <p
+                aria-hidden="true"
+                className={`typography-body-4-regular text-text-quaternary text-center ${styles.countOld}`}
+              >
+                {BUNDLE_MESSAGES.pickedCount(fx.prevCount)}
+              </p>
+            ) : null}
+          </div>
+          {chunk(ordered, PICKERS_PER_ROW).map((row, rowIndex) => (
             <ul key={row.join('-')} className="gap-s3 flex flex-wrap items-center justify-center">
               {row.map((memberId) => (
                 <li
                   key={memberId}
-                  className={
+                  className={`${
                     memberId === viewerId
-                      ? 'bg-surface-brand-subtle-1 text-text-brand px-padding-p4 py-padding-p2 rounded-r4 typography-body-3-regular'
+                      ? 'bg-surface-brand-subtle-1 text-text-brand px-padding-p4 py-padding-p2 rounded-r4 typography-body-3-regular relative'
                       : 'bg-surface-secondary text-text-tertiary px-padding-p4 py-padding-p2 rounded-r4 typography-body-3-regular'
-                  }
+                  } ${fxOn ? (memberId === viewerId ? styles.badgeMe : rowIndex === 0 ? styles.badgeOther : '') : ''}`}
                 >
+                  {fxOn && memberId === viewerId ? (
+                    <span aria-hidden="true" className={styles.mini}>
+                      {MINI_CELLS.map(([left, top], i) => (
+                        <span key={i} className={styles.miniModule} style={{ left, top }} />
+                      ))}
+                    </span>
+                  ) : null}
                   {nameOf(memberId)}
                   {memberId === viewerId ? (
                     <span className="sr-only">{BUNDLE_MESSAGES.pickedByMe}</span>
