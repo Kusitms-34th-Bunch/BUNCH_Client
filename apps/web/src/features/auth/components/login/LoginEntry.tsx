@@ -100,7 +100,7 @@ export function LoginEntry({
           </div>
         }
       >
-        {/* 워드마크는 버튼 바로 위(Figma 5878:77389: 워드마크 아래 40, 버튼 간격 8, 버튼 아래 14). 새 디자인에는 슬로건이 없다 */}
+        {/* 워드마크는 버튼 바로 위(Figma 5878:77389: 워드마크 아래 40, 버튼 간격 8, 버튼 아래 14). 새 디자인은 슬로건 없음 */}
         {/* `data-dev-login-trigger`: 개발 전용 토큰 로그인(`DevTokenLogin`)이 로고를 3번 누르는 동작을 셀 때 쓰는 표시(꺼져 있으면 아무 일도 없음) */}
         <div
           data-dev-login-trigger
