@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { sharedKeys } from '@/shared/query/keys';
@@ -120,6 +120,30 @@ describe('useBundleSheets', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
     expect(pickButton('제주 바다').textContent).toBe('콕 했어요');
+  });
+
+  it('확인 창이 열린 동안 소속 번치가 없어지면 다시 올라온 시트는 그 상태로 그린다', async () => {
+    const user = userEvent.setup();
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: 'me',
+      bunch: { id: 'bunch-trip', name: '여행가조' },
+    });
+    render(<Harness />, { wrapper: createQueryWrapper(client) });
+    await user.click(screen.getByRole('button', { name: '위치' }));
+
+    await user.click(pickButton('제주 바다'));
+    const dialog = await screen.findByRole('alertdialog', { name: '이 장소의 콕을 삭제할까요?' });
+    act(() => {
+      client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: null });
+    });
+    await user.click(within(dialog).getByRole('button', { name: '아니요' }));
+
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    expect(pickButton('제주 바다').textContent).toBe('콕하기');
+    await user.click(pickButton('애월 한담해변'));
+    expect(pickButton('애월 한담해변').textContent).toBe('콕하기');
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { position: 'top' });
   });
 
   it('소속 번치가 없으면 담긴 표시가 없고 눌러도 바뀌지 않으며 안내한다', async () => {

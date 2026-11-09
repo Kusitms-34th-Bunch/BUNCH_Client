@@ -5,6 +5,7 @@ import { BundleMembersSheet, PlacePickSheet } from '@app/design-system/web';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { useScreenOverlay, type ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
 import type { FeedBundleMember, FeedPlace } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
@@ -93,6 +94,10 @@ export function useBundleSheets() {
       () => openPlaces(places),
     );
 
+  // 확인 창이 닫힌 뒤 다시 열 때도 그 시점의 소속 번치로 그리도록 열 때마다 최신 값을 읽음
+  const hasBunch = usePreservedCallback(() => viewer !== null);
+  const asLatestBunch = usePreservedCallback(asBunch);
+
   function openPlaces(places: FeedPlace[]) {
     let cancelTarget: FeedPlace | undefined;
     openOverlay(
@@ -104,8 +109,8 @@ export function useBundleSheets() {
           onPicked={(placeId) => {
             picks.current = { ...picks.current, [placeId]: true };
           }}
-          hasBunch={viewer !== null}
-          asBunch={asBunch}
+          hasBunch={hasBunch()}
+          asBunch={asLatestBunch}
           onCancelPick={(place) => {
             cancelTarget = place;
             close();
