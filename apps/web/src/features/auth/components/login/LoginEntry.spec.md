@@ -78,7 +78,7 @@
 쉘의 네이티브 SDK(실기기·Mac 필요) 없이 닉네임만으로 실서버 계정의 access 토큰을 받아, 가입 이후 API까지 확인하는 장치다. 백엔드 `POST /api/v1/auth/dev/token`(요청 `{ nickname }`, 응답 `{ memberId, accessToken }`)을 쓴다.
 
 - 켜기: `apps/web/.env.local`에 서버 전용 `DEV_TOKEN_LOGIN=enabled`(`NEXT_PUBLIC_`를 붙이지 않음)와 `API_BASE_URL`. 운영 빌드(`NODE_ENV=production`)에서는 변수가 켜져 있어도 동작하지 않는다. 가짜 서버(`NEXT_PUBLIC_API_MOCKING`)는 꺼야 실서버로 간다.
-- 동작: 로그인 화면 맨 위의 닉네임 입력과 「개발용 로그인」 → `POST /api/dev/token`(서버가 백엔드에서 토큰을 받아 `accessToken` httpOnly 쿠키로 저장, 204) → 화면을 새로 불러오면 `AuthGate`가 가입 상태에 맞는 화면으로 보낸다.
+- 동작: 로그인 화면의 로고를 1.5초 안에 3번 연달아 누르면 맨 위에 닉네임 입력과 「개발용 로그인」이 나타난다(평소에는 숨김). 입력 후 → `POST /api/dev/token`(서버가 백엔드에서 토큰을 받아 `accessToken` httpOnly 쿠키로 저장, 204) → 화면을 새로 불러오면 `AuthGate`가 가입 상태에 맞는 화면으로 보낸다.
 - 한계: refresh 토큰이 없어 access 토큰이 만료되면 재발급이 되지 않으므로 다시 발급받는다. 브라우저에서 백엔드를 직접 부르면 CORS로 막히므로(사전 요청 401) 반드시 BFF를 거친다.
 - 삭제 방법: `app/api/dev/`, `features/auth/components/dev/`, `shared/api/devToken.ts`, `authCookies.ts`의 `setAccessTokenCookie`, `components/index.ts`의 `DevTokenLogin` export(`yarn gen:feature-index`), `app/(app)/login/page.tsx`의 `DEV_TOKEN_LOGIN`·`<DevTokenLogin />`, `.env.example`의 `DEV_TOKEN_LOGIN`.
 

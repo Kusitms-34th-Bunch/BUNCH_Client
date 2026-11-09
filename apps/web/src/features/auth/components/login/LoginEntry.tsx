@@ -103,7 +103,11 @@ export function LoginEntry({
         }
       >
         {/* 로고는 버튼 바로 위(Figma 버튼과 34px, 가까운 토큰 32px) */}
-        <div className="px-padding-p8 pb-s14 gap-s3 flex min-h-full flex-col items-center justify-end">
+        {/* `data-dev-login-trigger`: 개발 전용 토큰 로그인(`DevTokenLogin`)이 로고를 3번 누르는 동작을 셀 때 쓰는 표시(꺼져 있으면 아무 일도 없음) */}
+        <div
+          data-dev-login-trigger
+          className="px-padding-p8 pb-s14 gap-s3 flex min-h-full flex-col items-center justify-end"
+        >
           <Image src={SYMBOL} alt="" width={40} height={34} priority />
           <div className="gap-s4 flex flex-col items-center">
             <h1>
