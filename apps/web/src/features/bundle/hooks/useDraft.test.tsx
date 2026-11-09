@@ -368,7 +368,7 @@ describe('useDraft 저장', () => {
     expect(outcome).toBe('failed');
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict, {
       fullWidth: true,
-      bottomOffset: 66,
+      bottomOffset: 65,
     });
   });
 
@@ -591,7 +591,7 @@ describe('useDraft 발행', () => {
     expect(outcome).toBe('blocked');
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed, {
       fullWidth: true,
-      bottomOffset: 66,
+      bottomOffset: 65,
     });
     expect(serverBundle(id)?.status).toBe('DRAFT');
     // 화면도 서버 구성으로 돌아와 있음
@@ -625,7 +625,7 @@ describe('useDraft 발행', () => {
     expect(outcome).toBe('blocked');
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
       fullWidth: true,
-      bottomOffset: 66,
+      bottomOffset: 65,
     });
   });
 

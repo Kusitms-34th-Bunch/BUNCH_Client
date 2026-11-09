@@ -248,7 +248,7 @@ describe('업로드 버튼', () => {
     expect(onUpload).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
       fullWidth: true,
-      bottomOffset: 66,
+      bottomOffset: 65,
     });
   });
 
@@ -259,7 +259,7 @@ describe('업로드 버튼', () => {
     await userEvent.click(uploadButton());
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadForbidden, {
       fullWidth: true,
-      bottomOffset: 66,
+      bottomOffset: 65,
     });
     expect(onUpload).not.toHaveBeenCalled();
   });
@@ -270,7 +270,7 @@ describe('업로드 버튼', () => {
     await userEvent.click(uploadButton());
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, {
       fullWidth: true,
-      bottomOffset: 66,
+      bottomOffset: 65,
     });
     expect(onUpload).not.toHaveBeenCalled();
   });
@@ -282,7 +282,7 @@ describe('업로드 버튼', () => {
     await userEvent.click(uploadButton());
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
       fullWidth: true,
-      bottomOffset: 66,
+      bottomOffset: 65,
     });
     expect(onUpload).not.toHaveBeenCalled();
   });

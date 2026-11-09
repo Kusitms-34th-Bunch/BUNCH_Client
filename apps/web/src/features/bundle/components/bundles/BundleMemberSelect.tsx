@@ -61,7 +61,7 @@ export function BundleMemberSelect() {
       }
       bottom={
         // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
-        <div className="bg-surface-primary pt-padding-p7 px-padding-p8 pb-s4">
+        <div className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t">
           <Button
             className="w-full"
             disabled={addedCount === 0}

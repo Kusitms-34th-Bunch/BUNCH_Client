@@ -120,7 +120,7 @@ export function DraftScreen({
       }
       bottom={
         // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
-        <div className="bg-surface-primary pt-padding-p7 px-padding-p8 pb-s4">
+        <div className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t">
           {/* 조건을 못 채우면 흐리게 두되 눌렀을 때 이유를 안내하도록 disabled 대신 aria-disabled */}
           <Button
             className="aria-disabled:bg-surface-disabled aria-disabled:text-text-disabled w-full aria-disabled:cursor-not-allowed"

@@ -74,7 +74,7 @@ describe('DraftVisibilityScreen', () => {
     await userEvent.click(upload);
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.visibilityRequired, {
       fullWidth: true,
-      bottomOffset: 66,
+      bottomOffset: 65,
     });
     expect(onUpload).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('radio', { name: '멤버 공개' }));

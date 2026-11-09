@@ -107,7 +107,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
         <div
           inert={creating}
           // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
-          className="bg-surface-primary gap-s5 pt-padding-p7 px-padding-p8 pb-s4 flex"
+          className="bg-surface-primary border-border-tertiary gap-s5 pt-padding-p7 px-padding-p8 pb-s4 flex border-t"
         >
           <Button
             variant="tertiary"
