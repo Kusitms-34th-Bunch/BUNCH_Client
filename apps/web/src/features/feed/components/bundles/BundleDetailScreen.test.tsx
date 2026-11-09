@@ -403,6 +403,7 @@ describe('BundleDetailScreen', () => {
 
     await user.click(screen.getByRole('button', { name: '번들 더보기' }));
     expect(await screen.findByRole('button', { name: '삭제하기' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '수정하기' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: '신고' })).toBeNull();
     await user.click(screen.getByRole('button', { name: '공개 범위 설정' }));
 

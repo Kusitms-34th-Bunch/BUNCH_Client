@@ -7,6 +7,7 @@ import {
   LineChevronLeftLargeIcon,
   LineDotsLargeIcon,
   LineLockMediumIcon,
+  LinePencilMediumIcon,
   LineTrashcanMediumIcon,
   toast,
 } from '@app/design-system';
@@ -85,7 +86,7 @@ const safeAreaBottom = () => {
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * API 연결 전 fixture라 댓글·신고·번들 삭제·공개 범위는 화면에서만 바뀜(구현 단위 10). 「수정하기」는 수정 화면이 생기면 메뉴에 붙임
+ * API 연결 전 fixture라 댓글·신고·번들 삭제·공개 범위는 화면에서만 바뀜(구현 단위 10). 「수정하기」는 메뉴만 있고 수정 화면이 생기면 이동을 붙임
  */
 export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDetailScreenProps) {
   const router = useRouter();
@@ -348,12 +349,12 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
         if (!confirmed) return;
         bundleEdits.remove(bundle.id);
         backOr(FEED_PATHS.home);
-        toast(text.bundleDeleted, { bottomOffset: FEED_TOAST_OFFSET });
+        toast(text.bundleDeleted, { fullWidth: true, bottomOffset: FEED_TOAST_OFFSET });
       },
     );
   };
 
-  // 메인 관리자 헤더 더보기(Figma `5367:123992`): 「공개 범위 설정」/「삭제하기」/「취소」. 「수정하기」는 수정 화면이 생기면 붙임
+  // 메인 관리자 헤더 더보기(Figma `5367:123992`): 「수정하기」/「공개 범위 설정」/「삭제하기」/「취소」
   const openOwnerMenu = () => {
     let next: (() => void) | undefined;
     openOverlay(
@@ -363,6 +364,13 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
           title={text.bundleMore}
           cancelLabel={text.cancel}
           items={[
+            {
+              id: 'edit',
+              label: text.edit,
+              leftIcon: <LinePencilMediumIcon aria-hidden />,
+              // ponytail: 번들 수정 화면(기능명세서 6.2.12)이 없어 시트만 닫음. 다음 이슈에서 이동 연결
+              onSelect: close,
+            },
             {
               id: 'visibility',
               label: text.visibilitySetting,
