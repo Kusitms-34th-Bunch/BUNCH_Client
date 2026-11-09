@@ -137,8 +137,13 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     [],
   );
 
+  // scrollIntoView는 전환 중 가로로 밀린 화면을 보이려고 바깥 틀까지 가로 스크롤하므로 세로 스크롤 main만 움직임
   const goToComments = useCallback(() => {
-    commentsRef.current?.scrollIntoView({ block: 'start' });
+    const section = commentsRef.current;
+    const main = section?.closest('main');
+    if (section && main) {
+      main.scrollTop += section.getBoundingClientRect().top - main.getBoundingClientRect().top;
+    }
     focusInput();
   }, [focusInput]);
 

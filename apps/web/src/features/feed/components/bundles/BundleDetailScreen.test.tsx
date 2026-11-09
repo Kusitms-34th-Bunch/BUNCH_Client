@@ -162,12 +162,12 @@ describe('BundleDetailScreen', () => {
 
   it('말풍선을 누르면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
     const user = userEvent.setup();
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
     renderDetail();
+    const section = screen.getByRole('region', { name: '댓글' });
+    vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
 
     await user.click(screen.getByRole('button', { name: /^댓글/ }));
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(section.closest('main')!.scrollTop).toBe(500);
     expect(document.activeElement).toBe(screen.getByRole('textbox'));
   });
 
@@ -188,9 +188,15 @@ describe('BundleDetailScreen', () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
     renderDetail('bundle-1', { focusComments: true });
+    const section = screen.getByRole('region', { name: '댓글' });
+    vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
 
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(section.closest('main')!.scrollTop).toBe(500);
+    // 전환 중 바깥 틀을 가로로 밀지 않게 scrollIntoView를 쓰지 않음
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    // jsdom에 원래 없는 메서드라 다음 테스트로 남지 않게 지움
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
   });
 
   it('스크롤한 채 화면을 떠나면 나가는 화면이 튀지 않게 스크롤을 transform으로 옮긴다', () => {
