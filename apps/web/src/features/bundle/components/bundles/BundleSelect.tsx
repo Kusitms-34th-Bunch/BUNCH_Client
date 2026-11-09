@@ -1,6 +1,13 @@
 'use client';
 
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import {
+  Button,
+  ConfirmDialog,
+  Header,
+  LineChevronLeftLargeIcon,
+  LineSparklesSmallIcon,
+  TextButton,
+} from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
@@ -21,15 +28,21 @@ type BundleSelectProps = {
 };
 
 /**
- * `/bunch/bundles/new` 번들 만들기 첫 화면: 사진함 사진을 날짜별로 보며 순서대로 고르고, 추천 번들로 한 번에 고름
- * 헤더·하단 두 버튼은 고정이고 「추천 번들」은 고른 사진과 관계없이 늘 켜져 있으며 「번들 만들기」는 1장 이상 골라야 켜짐
- * 목데이터 단계라 「번들 만들기」는 로딩 뒤 샘플 초안의 작성 화면으로 이동
+ * `/bunch/bundles/new` 번들 만들기 두 번째 단계: 멤버를 고른 뒤 사진함 사진을 날짜별로 보며 순서대로 고르고, 추천 번들로 한 번에 고름
+ * 헤더 오른쪽 「추천 번들 보기」는 고른 사진과 관계없이 늘 켜져 있고, 하단 「이전」은 멤버 선택으로, 「다음」은 1장 이상 골라야 켜지며 초안을 만듦
+ * 멤버를 고르지 않고 직접 주소로 들어오면 멤버 선택으로 되돌림(새로고침하면 선택이 사라지므로 같은 처리)
  */
 export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleSelectProps) {
   const router = useRouter();
   const backOr = useBackOr();
   const select = useBundleSelect();
-  const { photoState, retry, selection, memberId, creating, scrollTarget } = select;
+  const { photoState, retry, selection, memberId, memberIds, creating, scrollTarget } = select;
+
+  // 멤버를 고르지 않고 들어오면(새로고침·직접 주소) 첫 단계로 돌려보냄
+  const noMembers = memberIds.length === 0;
+  useEffect(() => {
+    if (noMembers) router.replace(BUNDLE_SELECT_PATHS.members);
+  }, [noMembers, router]);
 
   // 추천 번들을 적용하면 그 날짜 섹션으로 스크롤하고 제목에 포커스(요청마다 한 번, 끝나면 대상을 비움)
   const { clearScrollTarget } = select;
@@ -42,7 +55,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
     clearScrollTarget();
   }, [scrollTarget, clearScrollTarget]);
 
-  if (photoState.kind === 'loading') return <PageLoading />;
+  if (noMembers || photoState.kind === 'loading') return <PageLoading />;
   if (photoState.kind === 'error') return <PhotoBoxError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (
@@ -52,6 +65,15 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
       </PageShell>
     );
   }
+
+  // 멤버 칩은 「전체」와 앞 단계에서 고른 멤버, 그리고 나(항상 참여)만 보임
+  const { members, viewer } = photoState.data;
+  const data = {
+    ...photoState.data,
+    members: members.filter(
+      (member) => member.id === viewer.memberId || memberIds.includes(member.id),
+    ),
+  };
 
   return (
     <PageShell
@@ -69,6 +91,15 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
               </HeaderIconButton>
             }
             title={BUNDLE_SELECT_MESSAGES.title}
+            trailing={
+              <TextButton
+                size="sm"
+                leftIcon={<LineSparklesSmallIcon aria-hidden="true" />}
+                onClick={select.openSheet}
+              >
+                {BUNDLE_SELECT_MESSAGES.viewRecommend}
+              </TextButton>
+            }
           />
         </div>
       }
@@ -76,17 +107,21 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
         <div
           inert={creating}
           // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
-          className="bg-surface-primary gap-s5 pt-padding-p7 px-padding-p8 pb-s4 flex"
+          className="bg-surface-primary border-border-tertiary gap-s5 pt-padding-p7 px-padding-p8 pb-s4 flex border-t"
         >
-          <Button variant="tertiary" className="shrink-0" onClick={select.openSheet}>
-            {BUNDLE_SELECT_MESSAGES.recommend}
+          <Button
+            variant="tertiary"
+            className="min-w-0 flex-1"
+            onClick={() => backOr(BUNDLE_SELECT_PATHS.members)}
+          >
+            {BUNDLE_SELECT_MESSAGES.previous}
           </Button>
           <Button
             className="min-w-0 flex-1"
             disabled={selection.length === 0}
             onClick={select.create}
           >
-            {BUNDLE_SELECT_MESSAGES.create}
+            {BUNDLE_SELECT_MESSAGES.next}
           </Button>
         </div>
       }
@@ -101,7 +136,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
       {/* 번들을 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
       {creating ? <PageLoading /> : null}
       <SelectPhotoList
-        data={photoState.data}
+        data={data}
         selection={selection}
         selectedCounts={select.selectedCounts}
         memberId={memberId}
@@ -115,9 +150,8 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
         onOpenChange={(open) => (open ? select.openSheet() : select.closeSheet())}
         recommendations={select.recommendations}
         pickedId={select.pickedId}
-        onPick={select.togglePicked}
+        onPick={select.pickRecommendation}
         onDetail={(id) => router.push(BUNDLE_SELECT_PATHS.recommendation(id))}
-        onApply={select.apply}
       />
       {/* 확인 창은 「취소」·Esc가 시트를 다시 올리고, 「변경하기」만 기존 선택을 풀고 추천 사진으로 바꿈 */}
       <ConfirmDialog

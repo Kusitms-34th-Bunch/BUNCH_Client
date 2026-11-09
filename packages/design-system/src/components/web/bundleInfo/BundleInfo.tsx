@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { FillCalendarSmallIcon, FillMapPinSmallIcon } from '../../../icons';
+import { FillCalendarSmallIcon, FillMapPinSmallIcon, LineMemberSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
 
 export type BundleInfoProps = Omit<ComponentProps<'div'>, 'children' | 'title'> & {
@@ -13,6 +13,10 @@ export type BundleInfoProps = Omit<ComponentProps<'div'>, 'children' | 'title'> 
   date?: string | undefined;
   /** detail: 상세 화면 흰 배경(제목 20) · overlay: 사진 위 흰 글자(제목 16, 위치·날짜 80% 불투명) */
   variant?: 'detail' | 'overlay' | undefined;
+  /** 멤버 공개 번들이면 제목 옆 뱃지(detail만). 낭독 글자는 `memberOnlyLabel` */
+  memberOnly?: boolean | undefined;
+  /** 뱃지의 접근성 이름. 기본값 「멤버 공개」 */
+  memberOnlyLabel?: string | undefined;
   /** 제목 요소 태그. 기본 h2 */
   titleAs?: 'h1' | 'h2' | 'h3' | 'p' | undefined;
 };
@@ -27,6 +31,8 @@ export const BundleInfo = ({
   onLocationClick,
   date,
   variant = 'detail',
+  memberOnly = false,
+  memberOnlyLabel = '멤버 공개',
   titleAs: Title = 'h2',
   className,
   ...props
@@ -42,16 +48,27 @@ export const BundleInfo = ({
 
   return (
     <div className={cn('flex flex-col', overlay ? 'gap-s3' : 'gap-s5', className)} {...props}>
-      <Title
-        className={cn(
-          'wrap-break-word break-keep',
-          overlay
-            ? 'typography-body-1-semi-bold text-text-inversed'
-            : 'typography-heading-1-semibold text-text-secondary',
-        )}
-      >
-        {title}
-      </Title>
+      <div className="flex items-center gap-1">
+        <Title
+          className={cn(
+            'min-w-0 wrap-break-word break-keep',
+            overlay
+              ? 'typography-body-1-semi-bold text-text-inversed'
+              : 'typography-heading-1-semibold text-text-secondary',
+          )}
+        >
+          {title}
+        </Title>
+        {memberOnly && !overlay ? (
+          <span
+            role="img"
+            aria-label={memberOnlyLabel}
+            className="bg-overlay-pressed text-icon-inversed flex size-6 shrink-0 items-center justify-center rounded-full"
+          >
+            <LineMemberSmallIcon aria-hidden />
+          </span>
+        ) : null}
+      </div>
       {location || date ? (
         <div className="gap-s3 flex flex-col">
           {location ? (

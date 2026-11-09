@@ -8,6 +8,28 @@ export const FEED_MESSAGES = {
   allDone: '모든 피드를 확인했어요',
   /** 소속 번치가 없을 때 번치 명의 행동(기능명세서 6.1.7) */
   joinRequired: '번치에 참여하면 할 수 있어요.',
+  back: '뒤로 가기',
+  bundleUnavailable: '삭제되었거나 볼 수 없는 내용이에요',
+  commentsTitle: '댓글',
+  noComments: '아직 작성된 댓글이 없어요',
+  memberCommentsLabel: '멤버별 코멘트',
+  memberChipsLabel: '참여 멤버',
+  memberCommentOf: (name: string) => `${name}의 코멘트: `,
+  leftMember: '작성자',
+  deletedMemberComment: '삭제된 코멘트입니다',
+  commentPlaceholder: '댓글 달기',
+  commentPlaceholderAs: (bunchRo: string) => `${bunchRo} 댓글 달기`,
+  replyPlaceholder: '답글 달기',
+  replyPlaceholderAs: (bunchRo: string) => `${bunchRo} 답글 달기`,
+  placeSheetTitle: '어느 장소를 콕할까요?',
+  membersSheetTitle: '참여 멤버',
+  sheetCancel: '취소',
+  roleLabels: { owner: '메인 관리자', coOwner: '공동 관리자' },
+  pickCancelTitle: '이 장소의 콕을 삭제할까요?',
+  pickCancelDescription: (name: string, particle: string) =>
+    `‘${name}’${particle} 번치의 콕한 장소에서 삭제돼요.`,
+  pickCancelNo: '아니요',
+  pickCancelConfirm: '삭제하기',
   /** 내 정보를 받지 못해 번치 명의 행동을 할 수 없을 때 */
   actionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
 } as const;

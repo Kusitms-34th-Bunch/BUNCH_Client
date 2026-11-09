@@ -12,7 +12,7 @@ export function BunchHomeError({ onRetry }: BunchHomeErrorProps) {
     <PageShell>
       <h1 className="sr-only">번치</h1>
       <div className="gap-s8 px-s8 flex h-full flex-col items-center justify-center">
-        <p role="alert" className="typography-body-3-semi-bold text-text-secondary text-center">
+        <p role="alert" className="typography-body-3-semibold text-text-secondary text-center">
           일시적인 오류가 발생했어요. 다시 시도해 주세요
         </p>
         <Button variant="tertiary" size="md" onClick={onRetry}>

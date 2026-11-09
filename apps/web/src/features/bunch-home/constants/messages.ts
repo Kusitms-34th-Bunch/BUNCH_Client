@@ -8,6 +8,7 @@ const objectParticle = (word: string) => {
 };
 
 export const BUNCH_HOME_MESSAGES = {
+  bundleMemberOnly: '멤버 공개',
   switched: (bunchName: string) => `${bunchName} 번치로 전환했어요.`,
   completedEmptyTitle: '추억은 많은데, 번들은 아직!',
   draftEmptyTitle: '아직 작성 중인 번들이 없어요',
@@ -17,6 +18,11 @@ export const BUNCH_HOME_MESSAGES = {
     '삭제한 번들은 다시 복구할 수 없지만, 사용된 사진은 사진함에 그대로 남아요.',
   // 기획 원문 없는 임시 안내: 작성 중인 번들 삭제를 서버에 보내지 못했을 때
   deleteDraftFailed: '번들을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  // 번치에 나 혼자일 때 번들 만들기를 막는 안내 창(Figma `5618:81971`)
+  needMembersTitle: '함께할 멤버가 없어요',
+  needMembersDescription: '번들은 번치의 멤버가 2명 이상일 때 만들 수 있어요.',
+  needMembersInvite: '초대하기',
+  needMembersCancel: '취소',
   unavailableTitle: ({ name, access }: BunchSummary) =>
     access === 'deleted' ? `${name} 번치가 삭제됐어요` : `${name} 번치에서 내보내졌어요`,
   unavailableDescription: ({ access }: BunchSummary) =>

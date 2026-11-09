@@ -11,6 +11,7 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../../constants/messages';
 import { ADD_CARD_ID, AUTO_SCROLL } from '../../constants/photoList';
+import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
 import { usePhotoListScroll } from '../../hooks/usePhotoListScroll';
 import { usePhotoRemoval } from '../../hooks/usePhotoRemoval';
 import { usePhotoReorder } from '../../hooks/usePhotoReorder';
@@ -139,7 +140,8 @@ export function DraftPhotoCaption({
       focusedPhotoId === activeId &&
       !(active && isLocked(active.id)));
   const editorNames = active ? editorNamesOf(active.id) : [];
-  const addable = access.canEdit && total < MAX_PHOTOS;
+  const addable = access.canAddPhoto && total < MAX_PHOTOS;
+  const isPicked = useIsPhotoPicked(draft);
   // 화면설계서 1-1: 사진 왼쪽 위에는 올린 멤버가 아니라 그 사진을 편집 중인 멤버의 프로필을 보임
   const editorOf = (photo: DraftPhoto) => {
     const member = draft.members.find(
@@ -266,6 +268,7 @@ export function DraftPhotoCaption({
       />
       <RemovePhotoDialogs
         kind={removal.removeDialog?.kind}
+        picked={removal.removeDialog ? isPicked(removal.removeDialog.photoId) : false}
         onClose={removal.closeDialog}
         onConfirm={removal.confirmRemove}
       />

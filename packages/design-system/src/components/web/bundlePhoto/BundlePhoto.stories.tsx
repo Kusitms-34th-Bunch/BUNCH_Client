@@ -36,8 +36,21 @@ export const Thumbnail: Story = {
   },
 };
 
-/** Figma `State=Detail`: 사진만 */
+/** Figma `Bundle Photo Card` `Type=Photo`: 둥근 카드를 넘기고 옆 사진이 살짝 보임 */
 export const Detail: Story = { args: { variant: 'detail' } };
+
+/** 사진 왼쪽 아래 pick: 누르면 전체 멤버를 펼침 */
+export const Picked: Story = {
+  args: {
+    variant: 'detail',
+    photos: photos.map((photo) => ({
+      ...photo,
+      pickers: ['은우', '경진', '수인', '효찬', '경준', '지예', '민수', '하율'].map((name) => ({
+        name,
+      })),
+    })),
+  },
+};
 
 /** 사진 1장이면 순번 없음 */
 export const SinglePhoto: Story = { args: { variant: 'detail', photos: photos.slice(0, 1) } };

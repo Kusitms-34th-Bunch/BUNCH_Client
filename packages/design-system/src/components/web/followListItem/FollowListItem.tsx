@@ -42,7 +42,7 @@ export const FollowListItem = ({
     <div className="gap-s3 flex min-w-0 items-center">
       <ProfileImage src={imageSrc} className="border-border-tertiary size-10 shrink-0 border" />
       <div className="gap-s1 flex min-w-0 flex-col">
-        <p className="typography-body-3-semi-bold text-text-secondary gap-s2 flex min-w-0 items-center">
+        <p className="typography-body-3-semibold text-text-secondary gap-s2 flex min-w-0 items-center">
           <span title={name} className="truncate">
             {name}
           </span>

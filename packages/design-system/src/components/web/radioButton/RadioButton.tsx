@@ -39,7 +39,7 @@ export const RadioButton = ({ children, className, ...props }: RadioButtonProps)
         )}
       />
     </span>
-    <span className="typography-body-3-semi-bold text-text-secondary min-w-0 wrap-break-word break-keep">
+    <span className="typography-body-3-semibold text-text-secondary min-w-0 wrap-break-word break-keep">
       {children}
     </span>
   </label>

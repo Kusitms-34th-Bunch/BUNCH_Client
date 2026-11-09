@@ -16,7 +16,7 @@
 
 ## Public API
 
-- Props: `title`(필수), `location`, `onLocationClick`(없으면 위치는 글자), `date`, `variant`(`detail` 기본·`overlay`), `titleAs`(기본 `h2`), native `<div>` 속성.
+- Props: `title`(필수), `location`, `onLocationClick`(없으면 위치는 글자), `date`, `variant`(`detail` 기본·`overlay`), `memberOnly`(멤버 공개 뱃지, detail만, Figma `showMemberOnlyBadge`)·`memberOnlyLabel`, `titleAs`(기본 `h2`), native `<div>` 속성.
 - 위치·날짜 글자의 형식(「애월읍 외 1곳」, 「2026년 7월 9일」)은 호출자가 만든다.
 
 ## 접근성
@@ -26,11 +26,12 @@
 
 ## Styling과 의존성
 
-- 아이콘 `FillMapPinSmallIcon`·`FillCalendarSmallIcon`. `FillCalendar*` 세 크기는 이번에 Figma(`3225:61379·61381·61383`)에서 받아 추가했다.
-- Storybook: `Default`, `LocationOnly`, `DateOnly`, `TitleOnly`, `Overlay`.
+- 아이콘 `FillMapPinSmallIcon`·`FillCalendarSmallIcon`, 멤버 공개 뱃지 `LineMemberSmallIcon`(Figma `Line/Icon-S/Member`). `FillCalendar*` 세 크기는 이번에 Figma(`3225:61379·61381·61383`)에서 받아 추가했다.
+- Storybook: `Default`, `LocationOnly`, `DateOnly`, `TitleOnly`, `MemberOnly`, `Overlay`.
 
 ## 확인할 항목
 
+- 멤버 공개 뱃지는 `overlay-pressed` 배경(흰 화면에서 약 `#CCCCCC`) 위 흰 아이콘이라 약 1.6:1로 그래픽 기준(3:1)에 못 미친다(Figma 값, 디자이너 확인). 이름은 「멤버 공개」로 읽힌다.
 - 상세의 핀·달력 아이콘 `#BCBEC2`는 흰 배경에서 1.8:1로 그래픽 기준(3:1)에 못 미친다(Figma 값).
 
 ## 검증

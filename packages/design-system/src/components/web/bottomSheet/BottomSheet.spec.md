@@ -51,24 +51,24 @@
 
 - `@base-ui/react` 1.9.0 Drawer(이미 설치, Dialog와 같은 패키지), `LineCloseIcon`, `cn`.
 
-| Figma                                   | 구현                                               |
-| --------------------------------------- | -------------------------------------------------- |
-| 배경 `surface/surface-primary`          | `bg-surface-primary`                               |
-| 위 모서리 `radius-r10`(24)              | `rounded-t-r10`                                    |
-| 손잡이 영역 padding 10, 막대 52×7       | `p-padding-p5`, `h-1.75 w-13 rounded-full`         |
-| 손잡이 색 `#d9d9d9`(토큰 없음)          | `bg-border-secondary`(#e1e2e5, 가장 가까운 토큰)   |
-| 섹션 간격 `spacing-s8`(16)              | `gap-s8`                                           |
-| 좌우 여백 `padding-p8`(16)              | `px-padding-p8`                                    |
-| 제목 Heading-1-Semibold, `text-primary` | `typography-heading-1-semibold text-text-primary`  |
-| 부제 Body-3-Semibold, `text-quaternary` | `typography-body-3-semi-bold text-text-quaternary` |
-| 제목·부제 간격 `spacing-s2`(4)          | `mt-s2`                                            |
-| 닫기 `Line/Icon-M/Close` 20             | `LineCloseIcon size="md"`, `text-icon-primary`     |
-| 하단 위 여백 `padding-p7`(14), 간격 8   | `pt-padding-p7 gap-s4`                             |
-| 하단 버튼 SolidButton 48                | 기존 `Button`(secondary·tertiary·primary)          |
-| 배경 딤(Figma에 없음)                   | `bg-overlay-dim-subtle`(Dialog와 같음)             |
+| Figma                                   | 구현                                              |
+| --------------------------------------- | ------------------------------------------------- |
+| 배경 `surface/surface-primary`          | `bg-surface-primary`                              |
+| 위 모서리 `radius-r10`(24)              | `rounded-t-r10`                                   |
+| 손잡이 영역 padding 10, 막대 52×7       | `p-padding-p5`, `h-1.75 w-13 rounded-full`        |
+| 손잡이 색 `#d9d9d9`(토큰 없음)          | `bg-border-secondary`(#e1e2e5, 가장 가까운 토큰)  |
+| 섹션 간격 `spacing-s8`(16)              | `gap-s8`                                          |
+| 좌우 여백 `padding-p8`(16)              | `px-padding-p8`                                   |
+| 제목 Heading-1-Semibold, `text-primary` | `typography-heading-1-semibold text-text-primary` |
+| 부제 Body-3-Semibold, `text-quaternary` | `typography-body-3-semibold text-text-quaternary` |
+| 제목·부제 간격 `spacing-s2`(4)          | `mt-s2`                                           |
+| 닫기 `Line/Icon-M/Close` 20             | `LineCloseIcon size="md"`, `text-icon-primary`    |
+| 하단 위 여백 `padding-p7`(14), 간격 8   | `pt-padding-p7 gap-s4`                            |
+| 하단 버튼 SolidButton 48                | 기존 `Button`(secondary·tertiary·primary)         |
+| 배경 딤(Figma에 없음)                   | `bg-overlay-dim-subtle`(Dialog와 같음)            |
 
 - Story: Default, HiddenClose, PointerDismissalDisabled, LongBody(틀 동작). Figma 변형별 모습은 각 시트 렌더러 story에서 확인한다.
-- 부제 글자 토큰 (확정): Figma `Body-3-Semibold`(14/600/21/-0.5)와 값이 같은 `typography-body-3-semi-bold`를 쓴다. 이름도 같다.
+- 부제 글자 토큰 (확정): Figma `Body-3-Semibold`(14/600/21/-0.5)와 값이 같은 `typography-body-3-semibold`를 쓴다. 이름도 같다.
 
 ## 확인할 항목
 

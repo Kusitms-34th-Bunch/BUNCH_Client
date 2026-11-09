@@ -1,5 +1,7 @@
 /** 번들 만들기(사진 선택·추천 번들) 흐름의 route 경로 */
 export const BUNDLE_SELECT_PATHS = {
+  /** 번들 만들기의 첫 단계: 함께 만들 멤버 고르기(번치 홈 「+」의 진입 위치) */
+  members: '/bunch/bundles/new/members',
   select: '/bunch/bundles/new',
   recommendation: (recommendationId: string) =>
     `/bunch/bundles/new/recommendations/${recommendationId}`,

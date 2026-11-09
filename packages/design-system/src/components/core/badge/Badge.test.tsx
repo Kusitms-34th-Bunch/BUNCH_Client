@@ -15,7 +15,7 @@ describe('Badge', () => {
 
     expect(badge.className).toContain('bg-chip-blue-bg');
     expect(badge.className).toContain('text-chip-blue-fg');
-    expect(badge.className).toContain('typography-body-3-semi-bold');
+    expect(badge.className).toContain('typography-body-3-semibold');
   });
 
   it.each([

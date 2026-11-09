@@ -31,7 +31,7 @@ export const ProfileRadioCard = ({
     className={cn(
       'bg-surface-primary rounded-r5 px-padding-p6 py-padding-p5 gap-s3 group flex w-full cursor-pointer touch-manipulation items-center',
       // 눌림은 바탕 layer로 겹쳐 글자는 그대로 유지
-      'not-has-disabled:active:bg-[linear-gradient(var(--color-overlay-pressed),var(--color-overlay-pressed))]',
+      'not-has-disabled:active:bg-[linear-gradient(var(--color-overlay-hover),var(--color-overlay-hover))]',
       'has-checked:bg-surface-brand-subtle-1',
       'has-disabled:cursor-not-allowed has-disabled:opacity-(--semantic-opacity-disabled)',
       className,
@@ -43,14 +43,14 @@ export const ProfileRadioCard = ({
         size="S"
         className={cn(
           'border-border-tertiary group-has-checked:border-border-brand-subtle border',
-          'group-[:not(:has(:disabled)):active]:after:bg-overlay-pressed after:absolute after:inset-0 after:opacity-0 group-[:not(:has(:disabled)):active]:after:opacity-100',
+          'group-[:not(:has(:disabled)):active]:after:bg-overlay-hover after:absolute after:inset-0 after:opacity-0 group-[:not(:has(:disabled)):active]:after:opacity-100',
         )}
       />
-      {/* Figma: 배지 16px가 이미지와 12px 겹침, 눌림은 검정 20% 겹침과 같은 밝기 80% */}
+      {/* Figma: 배지 16px가 이미지와 12px 겹침, 눌림은 검정 10% 겹침과 같은 밝기 90% */}
       {memberRole ? (
         <RoleBadge
           memberRole={memberRole}
-          className="relative -ml-3 shrink-0 group-[:not(:has(:disabled)):active]:brightness-80"
+          className="relative -ml-3 shrink-0 group-[:not(:has(:disabled)):active]:brightness-90"
         />
       ) : null}
     </span>

@@ -47,7 +47,7 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
       <PageShell>
         <h1 className="sr-only">BUNCH</h1>
         <div className="gap-s8 px-s8 flex h-full flex-col items-center justify-center">
-          <p role="alert" className="typography-body-3-semi-bold text-text-secondary text-center">
+          <p role="alert" className="typography-body-3-semibold text-text-secondary text-center">
             {STATUS_CHECK_FAILURE_MESSAGE}
           </p>
           <Button

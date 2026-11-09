@@ -28,7 +28,7 @@ export function GenderField({ value, onChange, describedBy }: GenderFieldProps) 
       aria-describedby={describedBy}
       className="gap-s3 flex w-full flex-col"
     >
-      <span id={titleId} className="typography-body-3-semi-bold text-text-secondary">
+      <span id={titleId} className="typography-body-3-semibold text-text-secondary">
         성별
       </span>
       <div className="gap-s4 flex">

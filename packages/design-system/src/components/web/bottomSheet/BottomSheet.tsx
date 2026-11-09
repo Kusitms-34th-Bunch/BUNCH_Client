@@ -120,7 +120,7 @@ const Description = ({ className, ...props }: BottomSheetDescriptionProps) => (
   <Drawer.Description
     {...props}
     className={cn(
-      'mt-s2 text-text-quaternary typography-body-3-semi-bold col-start-1 wrap-break-word break-keep',
+      'mt-s2 text-text-quaternary typography-body-3-semibold col-start-1 wrap-break-word break-keep',
       className,
     )}
   />

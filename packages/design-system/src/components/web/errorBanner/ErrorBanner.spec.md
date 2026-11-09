@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system (`web`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Page Banner`(node `1782:29900`). 변형 없이 한 가지 모양이다. Figma 이름은 위치(페이지 위)만 말하고 용도를 말해 주지 않아서, 오류 색(`system-fail`)을 쓰는 오류 안내 전용이라는 점이 드러나도록 `ErrorBanner`로 이름을 붙였다.
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Page Banner`의 변형 01(node `1782:29900`). 변형 02(「알림 설정이 꺼져 있어요.」, node `3462:62059`)는 MY 알림 설정 전용 `DeviceNotificationOffBanner`가 맡는다. Figma 이름은 위치(페이지 위)만 말하고 용도를 말해 주지 않아서, 오류 색(`system-fail`)을 쓰는 오류 안내 전용이라는 점이 드러나도록 `ErrorBanner`로 이름을 붙였다.
 - 의존: 아이콘 `LinePlugOffMediumIcon`. `LinePlugOff*` 3개 크기는 이 작업에서 Figma(`Line/Icon-{S,M,L}/plug-off`)를 받아 추가했다.
 
 ## 목적과 범위
@@ -15,7 +15,7 @@
 
 ### 제공하지 않는 동작
 
-- 닫기 버튼, 자동 사라짐, 위치 고정(`fixed`/`sticky`), 성공·안내 같은 다른 색 변형은 Figma에 없어서 만들지 않았다. 위치와 표시 시점은 호출하는 쪽이 정한다.
+- 닫기 버튼, 자동 사라짐, 위치 고정(`fixed`/`sticky`), 성공 같은 다른 색 변형은 Figma에 없어서 만들지 않았다. 회색 안내 변형 02는 쓰는 곳이 한 화면뿐이라 넣지 않았다. 위치와 표시 시점은 호출하는 쪽이 정한다.
 - 눌림·비활성 같은 버튼 상태도 Figma에 없다.
 
 ## Public API

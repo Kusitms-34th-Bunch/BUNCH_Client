@@ -11,7 +11,6 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
-import { useRedirectMissingDraft } from '../../hooks/useDraftExit';
 import { getDraftAccess } from '../../lib/permissions';
 import { clearPhotoAddEntry, isPhotoAddEntry } from '../../lib/photoAddEntry';
 import { DraftPhotoAdd } from './DraftPhotoAdd';
@@ -29,10 +28,9 @@ export function BundleDraftPhotoAdd() {
   useEffect(() => clearPhotoAddEntry, []);
 
   const readyDraft = state.kind === 'ready' ? state.draft : undefined;
-  const canEdit = state.kind === 'ready' && getDraftAccess(state.draft, state.viewer).canEdit;
+  const canEdit = state.kind === 'ready' && getDraftAccess(state.draft, state.viewer).canAddPhoto;
   const draftId = readyDraft?.id;
 
-  useRedirectMissingDraft(state.kind === 'missing');
   useEffect(() => {
     if (draftId === undefined || canEdit) return;
     toast(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });

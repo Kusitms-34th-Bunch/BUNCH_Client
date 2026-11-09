@@ -9,7 +9,12 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftMember, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { useMoveAnimation } from '../../hooks/useMoveAnimation';
-import { canRemoveMember, getDraftAccess, getMemberBadge } from '../../lib/permissions';
+import {
+  canRemoveMember,
+  getDraftAccess,
+  getMemberBadge,
+  isDraftCreator,
+} from '../../lib/permissions';
 import { LeaveDraftDialog } from './LeaveDraftDialog';
 import { RemoveMemberDialog } from './RemoveMemberDialog';
 
@@ -178,7 +183,12 @@ export function DraftMemberManager({
         // 창이 닫힌 뒤에 옮겨야 닫히는 모달에 포커스를 빼앗기지 않음
         onClosed={(member) => setFocusId(member.id)}
       />
-      <LeaveDraftDialog open={leaveOpen} onOpenChange={setLeaveOpen} onConfirm={onLeave} />
+      <LeaveDraftDialog
+        open={leaveOpen}
+        onOpenChange={setLeaveOpen}
+        onConfirm={onLeave}
+        creator={isDraftCreator(draft, viewer)}
+      />
     </PageShell>
   );
 }

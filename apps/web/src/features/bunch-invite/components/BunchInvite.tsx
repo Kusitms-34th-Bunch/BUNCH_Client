@@ -101,7 +101,7 @@ export function BunchInvite({ inviteLink, leaveHref, backOnLeave }: BunchInviteP
       />
       <section className="pt-s17 px-padding-p8 gap-s3 flex flex-col">
         <div className="flex items-center justify-between">
-          <label htmlFor={linkId} className="typography-body-3-semi-bold text-text-primary">
+          <label htmlFor={linkId} className="typography-body-3-semibold text-text-primary">
             {LINK_LABEL}
           </label>
           <button

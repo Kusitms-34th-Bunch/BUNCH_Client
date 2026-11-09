@@ -148,7 +148,7 @@ export function BunchMembersScreen({
       {/* 헤더 아래 16, 요약 줄과 목록 사이 12, 행 사이 8(Figma 2500:65206) */}
       {members ? (
         <div className="pt-padding-p8 px-padding-p8 pb-s8 gap-s6 flex flex-col">
-          <div className="typography-body-3-semi-bold flex items-center justify-between">
+          <div className="typography-body-3-semibold flex items-center justify-between">
             {/* 처리한 행이나 「⋯」가 사라지면 초점을 받는 자리 */}
             <p
               ref={summaryRef}

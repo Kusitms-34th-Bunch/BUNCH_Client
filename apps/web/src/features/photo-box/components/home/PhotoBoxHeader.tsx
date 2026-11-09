@@ -13,7 +13,7 @@ type PhotoBoxHeaderProps = {
   onCancelClick?: (() => void) | undefined;
 };
 
-/** 상단 고정 헤더: 번치 대표 이미지·이름·전환 화살표와 「선택」(선택 모드에서는 「취소」) */
+/** 상단 고정 헤더: 번치 이름·전환 화살표와 「선택」(선택 모드에서는 「취소」) */
 export function PhotoBoxHeader({
   bunch,
   onBunchClick,
@@ -23,9 +23,7 @@ export function PhotoBoxHeader({
 }: PhotoBoxHeaderProps) {
   return (
     <Header
-      leading={
-        <AccountSwitcher label={bunch.name} avatarSrc={bunch.imageSrc} onClick={onBunchClick} />
-      }
+      leading={<AccountSwitcher label={bunch.name} onClick={onBunchClick} />}
       trailing={
         <TextButton size="sm" onClick={selecting ? onCancelClick : onSelectClick}>
           {selecting ? '취소' : '선택'}

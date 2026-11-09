@@ -15,7 +15,7 @@ export type FeedBundleCardProps = Omit<ComponentProps<'article'>, 'children' | '
   /** 참여 멤버와 묶음을 눌렀을 때(참여 멤버 시트) */
   members: BundleParticipant[];
   onMembers?: (() => void) | undefined;
-  /** 사진과 첫 사진 위의 제목·위치·날짜 */
+  /** 번들 사진. 카드에는 첫 장(대표 사진)만 보이고 그 위에 제목·위치·날짜 */
   photos: BundlePhotoProps['photos'];
   title: string;
   location?: string | undefined;
@@ -28,7 +28,7 @@ export type FeedBundleCardProps = Omit<ComponentProps<'article'>, 'children' | '
 } & Pick<BundleEngagementProps, 'liked' | 'likeCount' | 'onLike' | 'commentCount' | 'onComment'>;
 
 /**
- * 피드 번들 카드(Figma `Bundle Feed Card`): 둥근 사진(첫 사진 위 번치·제목·위치·날짜) · 좋아요·댓글 수·참여 멤버
+ * 피드 번들 카드(Figma `Bundle Feed Card`): 둥근 대표 사진(위에 번치·제목·위치·날짜) · 좋아요·댓글 수·참여 멤버
  * 카드 전체가 하나의 버튼이 아니라 누르는 곳마다 다른 버튼(번치·참여 멤버·사진·위치·하트·말풍선). 좌우 여백은 호출자 담당
  */
 export const FeedBundleCard = ({
@@ -59,12 +59,12 @@ export const FeedBundleCard = ({
     {...props}
   >
     <BundlePhoto
-      photos={photos}
+      photos={photos.slice(0, 1)}
       author={{ name: bunchName, imageSrc: bunchImageSrc, time, onClick: onBunchClick }}
       info={{ title, location, onLocationClick, date, titleAs }}
       onPhotoClick={onPhotoClick}
       // 피드의 카드끼리 구분되게 제목을 넣음
-      photoLabel={(index, total) => `${title} 사진 ${index + 1}/${total} 열기`}
+      photoLabel={() => `${title} 사진 열기`}
     />
     <BundleEngagement
       liked={liked}
