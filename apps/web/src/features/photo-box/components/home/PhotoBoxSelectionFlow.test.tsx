@@ -238,8 +238,10 @@ describe('삭제', () => {
     const dialog = screen.getByRole('alertdialog');
     expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.deleteConfirmTitle)).toBeTruthy();
     expect(within(dialog).getByText('삭제 이후에는 복구할 수 없어요.')).toBeTruthy();
-    // 되돌릴 수 없는 동작이라 처음 포커스는 「취소」
-    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '취소' }));
+    // 되돌릴 수 없는 동작이라 처음 포커스는 「취소」(overlay가 다음 렌더에 열어 초점이 늦게 옮겨짐)
+    await waitFor(() =>
+      expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '취소' })),
+    );
 
     await user.click(within(dialog).getByRole('button', { name: '취소' }));
 
