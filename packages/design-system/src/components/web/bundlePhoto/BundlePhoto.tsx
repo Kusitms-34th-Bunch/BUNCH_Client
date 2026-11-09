@@ -216,7 +216,7 @@ export const BundlePhoto = ({
                     className="outline-border-tertiary outline -outline-offset-1"
                   />
                   <span className="text-text-inversed flex min-w-0 flex-col">
-                    <span className="typography-body-2-semi-bold -mb-0.5 truncate">
+                    <span className="typography-body-2-semibold -mb-0.5 truncate">
                       {author.name}
                     </span>
                     <span className="typography-caption-1-regular flex h-4.5 items-center">

@@ -35,12 +35,12 @@
 | Figma                                       | 구현                                            |
 | ------------------------------------------- | ----------------------------------------------- |
 | 행 패딩 8·4, 간격 8, radius `r4`            | `px-padding-p4 py-padding-p2 gap-s4 rounded-r4` |
-| Body-3-Semibold 14/600/21, `text-secondary` | `typography-body-3-semi-bold`                   |
+| Body-3-Semibold 14/600/21, `text-secondary` | `typography-body-3-semibold`                    |
 | 컨트롤 SVG 값                               | CSS로 그림(`border-tertiary`, `icon-tertiary`)  |
 
 ## 확인할 항목
 
-- 글자 토큰 (확정): Figma `Body-3-Semibold`(14/600/21/-0.5)와 이름·값이 같은 `typography-body-3-semi-bold`를 쓴다.
+- 글자 토큰 (확정): Figma `Body-3-Semibold`(14/600/21/-0.5)와 이름·값이 같은 `typography-body-3-semibold`를 쓴다.
 - 누름 상태 (미정): Figma에 Pressed가 없어 만들지 않았다.
 
 ## 검증

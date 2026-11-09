@@ -45,7 +45,7 @@ export function LabeledTextArea({
   return (
     <div className={cn('gap-s3 flex w-full flex-col', className)}>
       <div className="gap-s2 flex flex-col">
-        <label htmlFor={inputId} className="typography-body-3-semi-bold text-text-secondary">
+        <label htmlFor={inputId} className="typography-body-3-semibold text-text-secondary">
           {label}
         </label>
         <div className="rounded-r5 border-border-secondary bg-surface-primary px-padding-p8 py-padding-p5 focus-within:border-primitive-gray-700 border forced-colors:focus-within:outline-2 forced-colors:focus-within:outline-offset-2">

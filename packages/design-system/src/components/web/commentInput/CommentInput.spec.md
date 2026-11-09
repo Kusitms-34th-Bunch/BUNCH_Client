@@ -30,7 +30,7 @@
 
 | 상태             | 모양                                                                       |
 | ---------------- | -------------------------------------------------------------------------- |
-| 빈 칸            | 안내 문구(Body-3-SemiBold, `text-quinary`), 보내기 회색(`#EAEAEA`, 비활성) |
+| 빈 칸            | 안내 문구(Body-3-Semibold, `text-quinary`), 보내기 회색(`#EAEAEA`, 비활성) |
 | 입력됨           | 입력 글자(Body-3-Regular, `text-primary`), 보내기 브랜드색(`#454EDF`)      |
 | 보내기 누르는 중 | 브랜드색 위 검정 20%                                                       |
 | 여러 줄          | 반경 24로 둥근 사각형, 보내기는 아래쪽에 붙음, 4줄(88px) 넘으면 스크롤     |
@@ -49,7 +49,7 @@
 | 칸        | `surface-secondary`, 왼쪽 12·오른쪽 8·위아래 6, 간격 4 | `bg-surface-secondary pl-padding-p6 pr-padding-p4 py-padding-p3 gap-s2`                                                                                                                   |
 | 반경      | full                                                   | `rounded-r10`(24, 한 줄에서는 알약 모양과 같음)                                                                                                                                           |
 | 입력 글자 | Body-3-Regular 14/21 `#121212`, 위아래 2               | `typography-body-3-regular text-text-primary py-padding-p1`                                                                                                                               |
-| 안내 문구 | Body-3-SemiBold 14/21 `#BCBEC2`                        | 크기·줄 높이는 본문을 따르고 굵기·자간만 `placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1)`, 색 `placeholder:text-text-quinary` |
+| 안내 문구 | Body-3-Semibold 14/21 `#BCBEC2`                        | 크기·줄 높이는 본문을 따르고 굵기·자간만 `placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1)`, 색 `placeholder:text-text-quinary` |
 | 보내기    | 30×30 그래픽 3종                                       | `GraphicCommentSend*Icon`(아이콘 파이프라인 `svg-graphic`)                                                                                                                                |
 
 - 보내기 그래픽 3종을 이번에 아이콘 파이프라인에 추가했다(`icons.spec.md`).

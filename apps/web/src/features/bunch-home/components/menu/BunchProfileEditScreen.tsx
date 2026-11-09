@@ -193,7 +193,7 @@ function ProfileForm({
               onChange={(event) => setDescription(event.target.value)}
             />
             <fieldset className="min-w-0">
-              <legend className="typography-body-3-semi-bold text-text-secondary pb-s6">
+              <legend className="typography-body-3-semibold text-text-secondary pb-s6">
                 공개 범위
               </legend>
               <div className="gap-s5 flex flex-col">

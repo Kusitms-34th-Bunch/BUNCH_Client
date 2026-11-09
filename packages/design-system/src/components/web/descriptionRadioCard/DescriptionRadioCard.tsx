@@ -48,7 +48,7 @@ export const DescriptionRadioCard = ({
       <span className="gap-s1 flex min-w-0 flex-1 flex-col wrap-break-word break-keep">
         <span
           id={`${baseId}-title`}
-          className="typography-body-3-semi-bold text-text-primary group-has-disabled:text-text-disabled"
+          className="typography-body-3-semibold text-text-primary group-has-disabled:text-text-disabled"
         >
           {title}
         </span>

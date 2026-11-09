@@ -8,7 +8,7 @@ import { BUNDLE_MESSAGES } from '../../constants/messages';
 const DOT_INTERVAL_MS = 600;
 const DOT_STATES = ['', '.', '..'] as const;
 // Figma 헤더 저장 상태는 14/21 SemiBold(자간 -0.5)라 Header 제목 기본(heading-2)보다 작음
-const TEXT_STYLE = 'typography-body-3-semi-bold';
+const TEXT_STYLE = 'typography-body-3-semibold';
 
 /**
  * 헤더의 저장 상태: 「저장 완료」, 저장 중에는 「저장 중」 뒤에 점이 차례로 나타남
