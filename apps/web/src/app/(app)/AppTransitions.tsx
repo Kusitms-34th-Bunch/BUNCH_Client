@@ -411,6 +411,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition,
   },
+  // 작성 화면 → 대표 사진 투표(「픽하기 >」)도 참여 멤버 관리와 같은 슬라이드
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.pick,
+    bidirectional: true,
+    transition,
+  },
   // 작성 화면 → 공개 범위(업로드 직전)도 같은 슬라이드
   {
     from: BUNDLE_PATHS.transitionIds.draft,

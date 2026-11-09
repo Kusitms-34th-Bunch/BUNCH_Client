@@ -1,0 +1,206 @@
+/*
+ * Figma Loading / Core Glints / Ripple(5483:718): 중심에서 바깥으로 한 번 퍼지는 파동 → 시계 방향 90° 회전 → 반복, 1.9s 루프
+ * 모듈 13개(10px)를 십자 모양으로 놓고 모듈마다 켜지는 시점만 다름. 4방향 대칭이라 회전을 되돌려도 이음새가 없음
+ * 시간 위치와 이징은 Figma 모션 데이터(get_motion_context) 그대로
+ */
+.root {
+  position: relative;
+  width: 90px;
+  height: 90px;
+}
+
+.pattern {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 70px;
+  height: 70px;
+  transform-origin: 50% 50%;
+  animation: rotate 1.9s infinite;
+}
+
+.module {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--primitive-gray-scale-gray-400);
+  opacity: 0.18;
+  transform: scale(0.75);
+}
+
+/* 십자 바깥 네 끝: 가장 늦게 켜짐 */
+.tip {
+  animation: pulse-tip 1.9s infinite;
+}
+
+/* 십자의 팔: 두 번째로 늦게 켜짐 */
+.arm {
+  animation: pulse-arm 1.9s infinite;
+}
+
+/* 가운데를 감싸는 대각 네 개 */
+.diagonal {
+  animation: pulse-diagonal 1.9s infinite;
+}
+
+/* 한가운데: 처음부터 바로 켜짐 */
+.center {
+  animation: pulse-center 1.9s infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: linear;
+  }
+  55.26% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  84.21% {
+    transform: rotate(90deg);
+    animation-timing-function: linear;
+  }
+  100% {
+    transform: rotate(90deg);
+  }
+}
+
+@keyframes pulse-tip {
+  0% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: linear;
+  }
+  31.58% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  42.11% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  52.63% {
+    opacity: 0.55;
+    transform: scale(0.9);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  63.16% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0.18;
+    transform: scale(0.75);
+  }
+}
+
+@keyframes pulse-arm {
+  0% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: linear;
+  }
+  21.05% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  31.58% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  42.11% {
+    opacity: 0.55;
+    transform: scale(0.9);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  52.63% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0.18;
+    transform: scale(0.75);
+  }
+}
+
+@keyframes pulse-diagonal {
+  0% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: linear;
+  }
+  10.53% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.05% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  31.58% {
+    opacity: 0.55;
+    transform: scale(0.9);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  42.11% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0.18;
+    transform: scale(0.75);
+  }
+}
+
+@keyframes pulse-center {
+  0% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  10.53% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  21.05% {
+    opacity: 0.55;
+    transform: scale(0.9);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  31.58% {
+    opacity: 0.18;
+    transform: scale(0.75);
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0.18;
+    transform: scale(0.75);
+  }
+}
+
+/* 동작 줄이기: 움직이지 않고 십자 모양만 보임 */
+@media (prefers-reduced-motion: reduce) {
+  .pattern,
+  .tip,
+  .arm,
+  .diagonal,
+  .center {
+    animation: none;
+  }
+
+  .module {
+    opacity: 1;
+    transform: none;
+  }
+}

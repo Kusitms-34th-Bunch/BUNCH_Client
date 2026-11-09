@@ -635,7 +635,6 @@ describe('useDraft 발행', () => {
     expect(serverBundle(id)).toMatchObject({ status: 'PUBLISHED', title: '설악산 단풍 여행' });
     // 발행한 뒤에는 「삭제된 번들」 안내 없이 화면 이동을 기다림
     expect(result.current.state.kind).toBe('loading');
-    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, expect.anything());
   });
 });
 

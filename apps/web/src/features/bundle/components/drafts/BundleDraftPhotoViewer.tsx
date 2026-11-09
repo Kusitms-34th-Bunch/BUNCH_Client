@@ -6,7 +6,7 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
-import { useRedirectMissingDraft, useRedirectMissingPhoto } from '../../hooks/useDraftExit';
+import { useRedirectMissingPhoto } from '../../hooks/useDraftExit';
 import { usePhotoAddress } from '../../hooks/usePhotoAddress';
 import { DraftPhotoViewer } from './DraftPhotoViewer';
 
@@ -48,8 +48,6 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
   // 사진함 데이터는 보조 정보라 기다리지 않고 화면을 먼저 보임(받는 동안 배지·날짜는 비워 둠)
   const sourcesPending = photoBox.kind === 'loading';
   const present = useRedirectMissingPhoto(ready ? state.draft : undefined, initialPhotoId);
-
-  useRedirectMissingDraft(state.kind === 'missing');
 
   if (state.kind !== 'ready' || !present || initialPhotoId === undefined) return <PageLoading />;
 

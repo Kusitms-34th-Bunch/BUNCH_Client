@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { RippleLoadingOverlay } from '@/shared/components/loading/RippleLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
-import { useRedirectMissingDraft } from '../../hooks/useDraftExit';
 import { getDraftAccess } from '../../lib/permissions';
 import { getPublishBlockers } from '../../lib/publish';
 import { DraftVisibilityScreen } from './DraftVisibilityScreen';
@@ -32,8 +32,6 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
   // 같은 틱에 연달아 눌러도 한 번만 보내도록 ref로 막음(state 갱신 전에는 uploading이 아직 false)
   const submitted = useRef(false);
 
-  useRedirectMissingDraft(state.kind === 'missing');
-
   const draft = state.kind === 'ready' ? state.draft : undefined;
   const viewer = state.kind === 'ready' ? state.viewer : undefined;
   // 저장 중·연결 같은 일시 상태가 아니라 내용 조건(제목·사진·멤버·코멘트)과 권한만 봄
@@ -52,6 +50,8 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
     if (notReady && draftId !== undefined) router.replace(BUNDLE_PATHS.draft(draftId));
   }, [notReady, draftId, router]);
 
+  // 업로드가 끝나 초안이 사라지는 동안에도 파동 로딩을 이어서 보임(끝나면 번치 홈으로 이동)
+  if (uploading) return <RippleLoadingOverlay />;
   if (state.kind === 'error') return <PhotoBoxError onRetry={state.retry} />;
   if (state.kind !== 'ready' || !draft || notReady) return <PageLoading />;
 

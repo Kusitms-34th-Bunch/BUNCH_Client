@@ -10,6 +10,20 @@ export const BUNDLE_MESSAGES = {
   titleLabel: '번들 제목',
   titlePlaceholder: '번들 제목을 입력해주세요.',
   titleMax: '제목은 40자까지 쓸 수 있어요.',
+  // 사진 제목 옆 「픽하기 >」: 대표 사진 투표 화면으로(Figma `5367:146358`)
+  pickLink: '픽하기',
+  // 대표 사진 투표 화면(Figma `5699:103571`~`103708`)
+  pickTitle: '마음에 드는 사진을 픽해보세요',
+  pickNotice: '번들이 업로드되면 누가 픽했는지 보여요.',
+  pickPhotos: '번들 사진',
+  pickCarousel: '사진 넘기기, 좌우 방향키로 이동',
+  pickedByMe: ' (나)',
+  pickButton: '이 사진 픽하기',
+  pickedButton: '사진을 픽했어요',
+  pickedCount: (count: number) => `${count}명이 픽했어요`,
+  pickDeletedTitle: '삭제된 사진이에요',
+  pickDeletedDescription: '삭제된 사진은 픽할 수 없어요.',
+  photoCount: (count: number) => `사진 ${count}장`,
   photosTitle: '사진',
   captionPlaceholder: '캡션 추가...',
   locationAdd: '위치 추가',
@@ -26,7 +40,13 @@ export const BUNDLE_MESSAGES = {
   visibilityTooltip: '비공개 번치에서 번들을 공개로 업로드하면 팔로워만 볼 수 있어요.',
   leaveQuestion: '작성중인 번들에서 나갈까요?',
   leave: '나가기',
-  deletedDraft: '삭제된 번들이에요',
+  // 작성 중 번들이 없어졌을 때의 안내 창(Figma `5618:81986`·`81997`)
+  deletedDraftTitle: '번들이 삭제됐어요',
+  deletedDraftDescription: '작성 중이던 번들이 삭제되어 더 이상 편집할 수 없어요.',
+  publishedDraftTitle: '번들이 업로드됐어요',
+  // 시안은 「○○님이」로 업로드한 멤버 이름을 보이지만 초안 응답에 그 정보가 없어 이름 없이 안내
+  publishedDraftDescription: '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
+  missingDraftConfirm: '확인',
   // 서버 저장·발행 실패 안내(서버 연동 때 추가한 문구)
   fieldLocked: '다른 멤버가 편집 중이라 저장하지 못했어요.',
   saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
@@ -93,6 +113,14 @@ export const BUNDLE_MESSAGES = {
   editingLabel: (name: string) => `${name}님이 편집 중`,
   commentEditingLabel: (name: string) => `${name}님이 작성 중`,
   roleLabel: { owner: '번치장', coOwner: '공동 번치장', draftAuthor: '초안 작성자' },
+  // 위치 순서 바꾸기(햄버거 핸들을 잡고 끌기, Figma `5367:146358`)
+  locationReorderLabel: (name: string) => `${name} 순서 바꾸기`,
+  locationDragInstructions:
+    '순서를 바꾸려면 Space로 잡고 위아래 방향키로 옮긴 뒤 Space로 놓으세요. Esc로 취소해요.',
+  locationDragStart: (name: string) => `${name} 위치를 잡았어요.`,
+  locationDragOver: (position: number, total: number) => `${total}곳 중 ${position}번째 자리예요.`,
+  locationDragEnd: (position: number, total: number) => `${total}곳 중 ${position}번째로 옮겼어요.`,
+  locationDragCancel: '순서 바꾸기를 취소했어요.',
   locationSheetTitle: '위치 검색',
   locationSearchLabel: '장소나 주소 검색',
   locationSearchPlaceholder: '장소나 주소를 검색해 주세요',

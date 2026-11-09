@@ -18,6 +18,10 @@ type DraftCommentsProps = {
  * 다른 멤버가 쓰는 중이면 점 애니메이션만 보이고 잠그지는 않음
  */
 export function DraftComments({ draft, viewer, editable, onChange, onDenied }: DraftCommentsProps) {
+  // 제목 옆 프로필은 지금 코멘트를 쓰는 멤버만(Figma: 쓰는 사람이 없으면 아무도 보이지 않음)
+  const writers = draft.members.filter((member) =>
+    (draft.editing.commentMemberIds ?? []).includes(member.id),
+  );
   const members = [...draft.members].sort(
     (a, b) => Number(b.id === viewer.memberId) - Number(a.id === viewer.memberId),
   );
@@ -32,8 +36,12 @@ export function DraftComments({ draft, viewer, editable, onChange, onDenied }: D
         titleId="draft-comments-title"
         icon={false}
         required
-        members={draft.members.map((member) => ({ name: member.name, src: member.avatarSrc }))}
-        membersLabel="참여 멤버"
+        members={
+          writers.length > 0
+            ? writers.map((member) => ({ name: member.name, src: member.avatarSrc }))
+            : undefined
+        }
+        membersLabel="코멘트를 쓰는 멤버"
       />
       <ul className="gap-s3 flex flex-col">
         {members.map((member) => {

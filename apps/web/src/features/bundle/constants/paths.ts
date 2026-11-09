@@ -3,6 +3,8 @@ export const BUNDLE_PATHS = {
   bunchHome: '/bunch',
   /** 공동 편집(작성) 화면 */
   draft: (draftId: string) => `/bunch/drafts/${draftId}`,
+  /** 대표 사진 투표(「마음에 드는 사진을 픽해보세요」) 화면 */
+  pick: (draftId: string) => `/bunch/drafts/${draftId}/pick`,
   /** 업로드 직전 공개 범위 고르기 화면 */
   visibility: (draftId: string) => `/bunch/drafts/${draftId}/visibility`,
   /** 참여 멤버 관리 화면 */
@@ -19,6 +21,7 @@ export const BUNDLE_PATHS = {
     draft: '/bunch/drafts/draft',
     members: '/bunch/drafts/members',
     visibility: '/bunch/drafts/visibility',
+    pick: '/bunch/drafts/pick',
     photo: '/bunch/drafts/photo',
     photoAdd: '/bunch/drafts/photo-add',
   },

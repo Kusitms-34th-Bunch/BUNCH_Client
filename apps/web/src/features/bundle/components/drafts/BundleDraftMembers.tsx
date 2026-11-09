@@ -4,7 +4,7 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
-import { useLeaveDraft, useRedirectMissingDraft } from '../../hooks/useDraftExit';
+import { useLeaveDraft } from '../../hooks/useDraftExit';
 import { isDraftCreator } from '../../lib/permissions';
 import { DraftMemberManager } from './DraftMemberManager';
 
@@ -16,8 +16,6 @@ export function BundleDraftMembers() {
   const backOr = useBackOr();
   const { state, actions } = useDraftContext();
   const leaveDraft = useLeaveDraft(state.kind === 'ready' ? state.draft.id : undefined);
-
-  useRedirectMissingDraft(state.kind === 'missing');
 
   if (state.kind !== 'ready') return <PageLoading />;
 

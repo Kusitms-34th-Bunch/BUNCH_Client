@@ -33,8 +33,14 @@ type DraftScreenProps = {
   onUpload?: (() => void) | undefined;
   /** 참여 멤버 관리 화면으로 가는 「추가」 카드(해당 화면 연결 전에는 생략) */
   onAddMember?: (() => void) | undefined;
-  /** 사진이나 캡션을 눌렀을 때(그 사진의 캡션 화면으로 이동하는 호출 지점) */
+  /** 사진을 눌렀을 때(그 사진의 상세로 이동하는 호출 지점) */
   onOpenPhoto?: ((_photoId: string) => void) | undefined;
+  /** 「픽하기 >」를 눌렀을 때(대표 사진 투표 화면으로 이동) */
+  onOpenPick?: (() => void) | undefined;
+  /** 사진 추가 시트의 「번치 사진함에서 가져오기」 */
+  onImportFromBunchBox: () => void;
+  /** 사진 추가 시트의 「내 갤러리에서 가져오기」(더 담을 수 있는 장수와 함께) */
+  onImportFromGallery: (_maxCount: number) => void;
 };
 
 const notify = (message: string) => toast(message, { fullWidth: true });
@@ -57,6 +63,9 @@ export function DraftScreen({
   onUpload,
   onAddMember,
   onOpenPhoto,
+  onOpenPick,
+  onImportFromBunchBox,
+  onImportFromGallery,
 }: DraftScreenProps) {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [editingDialogOpen, setEditingDialogOpen] = useState(false);
@@ -130,7 +139,18 @@ export function DraftScreen({
         onDenied={denyEdit}
         onEditingBlocked={blockEditing}
       />
-      <DraftPhotos draft={draft} onEditingBlocked={blockEditing} onOpenPhoto={onOpenPhoto} />
+      <DraftPhotos
+        draft={draft}
+        viewer={viewer}
+        access={access}
+        onRemovePhoto={actions.removePhoto}
+        onDenied={denyEdit}
+        onEditingBlocked={blockEditing}
+        onOpenPhoto={onOpenPhoto}
+        onOpenPick={onOpenPick}
+        onImportFromBunchBox={onImportFromBunchBox}
+        onImportFromGallery={onImportFromGallery}
+      />
       <DraftPlaceDate
         draft={draft}
         actions={actions}

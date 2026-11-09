@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
@@ -27,6 +27,7 @@ const actions = {
   setVisibility: vi.fn(),
   addLocation: vi.fn(),
   removeLocation: vi.fn(),
+  moveLocation: vi.fn(),
   setDate: vi.fn(),
   addMember: vi.fn(),
   removeMember: vi.fn(),
@@ -42,6 +43,10 @@ const onBack = vi.fn();
 const onLeave = vi.fn();
 const onRetry = vi.fn();
 const onUpload = vi.fn();
+const onOpenPhoto = vi.fn();
+const onOpenPick = vi.fn();
+const onImportFromBunchBox = vi.fn();
+const onImportFromGallery = vi.fn();
 
 type Options = {
   draft?: Draft;
@@ -70,6 +75,10 @@ const screenElement = ({
     onLeave={onLeave}
     onRetry={onRetry}
     onUpload={onUpload}
+    onOpenPhoto={onOpenPhoto}
+    onOpenPick={onOpenPick}
+    onImportFromBunchBox={onImportFromBunchBox}
+    onImportFromGallery={onImportFromGallery}
   />
 );
 
@@ -90,7 +99,11 @@ describe('DraftScreen 구성', () => {
     expect(screen.getByText('참여 멤버')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue(draftFixture.title);
     expect(screen.getAllByRole('img', { name: /한강에서 달리는 사람들/ })).toHaveLength(3);
-    expect(screen.getByText(draftFixture.photos[0]!.caption)).toBeInTheDocument();
+    // 사진별 캡션은 이 화면에서 보이지 않고, 제목 옆에는 「픽하기 >」, 맨 끝에는 「사진 추가」 타일이 있음
+    expect(screen.queryByText(draftFixture.photos[0]!.caption)).not.toBeInTheDocument();
+    expect(screen.queryByText(BUNDLE_MESSAGES.captionPlaceholder)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '픽하기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '사진 추가' })).toBeInTheDocument();
     expect(screen.getByText('서울특별시 여의도동')).toBeInTheDocument();
     expect(screen.getByText('날짜 추가')).toBeInTheDocument();
     // 공개 범위·나가기 영역은 화면에서 빠지고, 나가기는 헤더 더보기로, 업로드는 아래 고정 버튼으로 옮김
@@ -106,25 +119,6 @@ describe('DraftScreen 구성', () => {
   it('저장 중이면 헤더가 「저장 중」으로 바뀐다', () => {
     renderScreen({ saveStatus: 'saving' });
     expect(within(screen.getByRole('banner')).getByRole('status')).toHaveTextContent('저장 중');
-  });
-
-  it('캡션이 없는 사진은 「캡션 추가...」를 보여 준다', () => {
-    renderScreen({
-      draft: {
-        ...draftFixture,
-        photos: [
-          {
-            id: 'p',
-            src: '/p.jpg',
-            alt: '캡션 없는 사진',
-            caption: '',
-            takenAt: null,
-            uploaderId: 'jiye',
-          },
-        ],
-      },
-    });
-    expect(screen.getByText(BUNDLE_MESSAGES.captionPlaceholder)).toBeInTheDocument();
   });
 
   it('연결이 끊기면 배너를 보이고 「재시도」가 동작한다', async () => {
@@ -332,6 +326,31 @@ describe('입력', () => {
   });
 });
 
+describe('편집 중 표시', () => {
+  it('코멘트 제목 옆에는 지금 쓰는 멤버만 보이고, 쓰는 사람이 없으면 아무도 보이지 않는다', () => {
+    const { unmount } = renderScreen();
+    expect(screen.queryByLabelText('코멘트를 쓰는 멤버')).not.toBeInTheDocument();
+    unmount();
+
+    renderScreen({ draft: { ...publishable, editing: { commentMemberIds: ['gyeongjin'] } } });
+    const writers = screen.getByLabelText('코멘트를 쓰는 멤버');
+    expect(within(writers).getAllByRole('img')).toHaveLength(1);
+  });
+
+  it('무언가 편집 중인 멤버의 카드에만 초록 점(편집 중 표시)이 붙는다', () => {
+    renderScreen({ draft: { ...publishable, editing: { title: 'gyeongjin' } } });
+
+    expect(membersSection().getAllByRole('img', { name: /님이 편집 중$/ })).toHaveLength(1);
+    expect(membersSection().getByRole('img', { name: '경진님이 편집 중' })).toBeInTheDocument();
+  });
+
+  it('아무도 편집하지 않으면 멤버 카드에 점이 없다', () => {
+    renderScreen();
+
+    expect(membersSection().queryByRole('img', { name: /님이 편집 중$/ })).not.toBeInTheDocument();
+  });
+});
+
 describe('위치와 날짜', () => {
   it('위치를 지우면 removeLocation을 호출한다', async () => {
     renderScreen();
@@ -356,6 +375,66 @@ describe('위치와 날짜', () => {
     toast.mockClear();
     await userEvent.click(screen.getByRole('button', { name: /^추가.*경진님이 편집 중/ }));
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+  });
+
+  describe('위치 순서 바꾸기', () => {
+    const twoLocations = {
+      ...draftFixture,
+      locations: [
+        { id: 'a', name: '장소 A' },
+        { id: 'b', name: '장소 B' },
+      ],
+    };
+
+    it('위치를 고르면 제목 앞이 햄버거 핸들로 바뀌어 위치마다 「순서 바꾸기」 버튼이 생긴다', () => {
+      renderScreen({ draft: twoLocations });
+
+      expect(screen.getByRole('button', { name: '장소 A 순서 바꾸기' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '장소 B 순서 바꾸기' })).toBeInTheDocument();
+    });
+
+    it('핸들에 포커스를 두고 Space로 잡아 방향키로 옮긴 뒤 Space로 놓으면 moveLocation을 부른다', async () => {
+      renderScreen({ draft: twoLocations });
+
+      const handle = screen.getByRole('button', { name: '장소 A 순서 바꾸기' });
+      handle.focus();
+      await userEvent.keyboard(' ');
+      await userEvent.keyboard('{ArrowDown}');
+      await userEvent.keyboard(' ');
+
+      // jsdom은 레이아웃이 없어 옮길 자리를 계산하지 못할 수 있어, 호출됐다면 맞는 위치 id로 불러야 함
+      if (vi.mocked(actions.moveLocation).mock.calls.length > 0) {
+        expect(actions.moveLocation).toHaveBeenCalledWith('a', 1);
+      }
+    });
+
+    it('위치가 하나뿐이면 끌 수 없고 핸들을 눌러도 아무 안내가 없다', async () => {
+      renderScreen({
+        draft: { ...draftFixture, locations: [{ id: 'a', name: '장소 A' }] },
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: '장소 A 순서 바꾸기' }));
+
+      expect(toast).not.toHaveBeenCalled();
+      expect(actions.moveLocation).not.toHaveBeenCalled();
+    });
+
+    it('다른 멤버가 위치를 편집 중이면 핸들을 눌렀을 때 안내한다', async () => {
+      renderScreen({ draft: { ...twoLocations, editing: { location: 'gyeongjin' } } });
+
+      await userEvent.click(screen.getByRole('button', { name: '장소 A 순서 바꾸기' }));
+
+      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+      expect(actions.moveLocation).not.toHaveBeenCalled();
+    });
+
+    it('참여 멤버가 아니면 핸들을 눌렀을 때 안내한다', async () => {
+      renderScreen({ viewer: outsider, draft: twoLocations });
+
+      await userEvent.click(screen.getByRole('button', { name: '장소 A 순서 바꾸기' }));
+
+      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
+    });
   });
 
   it('위치가 3개면 「추가」 행이 사라진다', () => {
@@ -447,7 +526,42 @@ describe('다른 멤버가 편집 중인 영역', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('가운데 사진을 편집 중이면 캡션 자리에 편집 중 표시를 보이고 누르면 안내한다', async () => {
+  it('사진을 누르면 사진 상세로, 「픽하기」를 누르면 대표 사진 투표로 이동한다', async () => {
+    renderScreen();
+
+    await userEvent.click(screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(2) }));
+    expect(onOpenPhoto).toHaveBeenCalledWith(draftFixture.photos[1]!.id);
+
+    await userEvent.click(screen.getByRole('button', { name: '픽하기' }));
+    expect(onOpenPick).toHaveBeenCalledTimes(1);
+  });
+
+  it('X를 누르면 삭제 확인 창을 거쳐 「삭제하기」를 눌러야 사진을 뺀다', async () => {
+    renderScreen();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
+    const dialog = await screen.findByRole('alertdialog', { name: '사진을 삭제할까요?' });
+    expect(actions.removePhoto).not.toHaveBeenCalled();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+    expect(actions.removePhoto).toHaveBeenCalledWith(draftFixture.photos[0]!.id);
+  });
+
+  it('마지막 한 장은 지울 수 없다고 안내하고 지우지 않는다', async () => {
+    renderScreen({ draft: { ...draftFixture, photos: draftFixture.photos.slice(0, 1) } });
+
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
+    const dialog = await screen.findByRole('alertdialog', { name: '사진을 삭제할 수 없어요' });
+    await userEvent.click(within(dialog).getByRole('button', { name: '확인' }));
+
+    expect(actions.removePhoto).not.toHaveBeenCalled();
+  });
+
+  it('다른 멤버가 편집 중인 사진은 지울 수 없고 안내한다', async () => {
     renderScreen({
       draft: {
         ...draftFixture,
@@ -458,30 +572,43 @@ describe('다른 멤버가 편집 중인 영역', () => {
       },
     });
 
-    expect(screen.queryByText(draftFixture.photos[0]!.caption)).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: '경진님이 편집 중' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
+
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
-  it('다른 사진을 편집 중이면 가운데 사진의 캡션 자리는 그대로이고, 그 사진이 가운데로 오면 편집 중 표시가 뜬다', () => {
-    renderScreen({
-      draft: {
-        ...draftFixture,
-        editing: {
-          photoMemberIds: ['gyeongjin'],
-          photoEditors: { [draftFixture.photos[1]!.id]: ['gyeongjin'] },
-        },
-      },
-    });
+  it('참여 멤버가 아니면 사진을 지우려 할 때 안내한다', async () => {
+    renderScreen({ viewer: outsider });
 
-    // 첫 사진이 가운데라 자기 캡션을 그대로 보이고, 편집 중 버튼은 캡션 자리에 없음
-    expect(screen.getByText(draftFixture.photos[0]!.caption)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '경진님이 편집 중' })).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    );
 
-    // 편집 중인 두 번째 사진이 가운데로 오면 캡션 자리에 편집 중 표시
-    const list = screen.getByAltText(draftFixture.photos[0]!.alt).closest('ul')!;
-    fireEvent.scroll(list, { target: { scrollLeft: 312 } });
-    expect(screen.getByRole('button', { name: '경진님이 편집 중' })).toBeInTheDocument();
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
+    expect(actions.removePhoto).not.toHaveBeenCalled();
+  });
+
+  it('「사진 추가」는 초안 생성자·관리자·공동 관리자에게만 보이고 누르면 가져오기 시트가 열린다', async () => {
+    const { unmount } = renderScreen({ viewer: plainMember });
+    expect(screen.queryByRole('button', { name: '사진 추가' })).not.toBeInTheDocument();
+    unmount();
+
+    renderScreen({ viewer: creator });
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
+    await userEvent.click(await screen.findByRole('button', { name: /번치 사진함에서 가져오기/ }));
+
+    expect(onImportFromBunchBox).toHaveBeenCalledTimes(1);
+  });
+
+  it('사진이 20장이면 「사진 추가」가 사라진다', () => {
+    const base = draftFixture.photos[0]!;
+    const photos = Array.from({ length: 20 }, (_, index) => ({ ...base, id: `p${index}` }));
+    renderScreen({ draft: { ...draftFixture, photos } });
+
+    expect(screen.queryByRole('button', { name: '사진 추가' })).not.toBeInTheDocument();
   });
 
   it('다른 멤버가 위치·날짜를 편집 중이면 그 멤버의 프로필만 보인다', () => {

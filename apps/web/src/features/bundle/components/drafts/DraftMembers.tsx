@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { Draft, DraftMember, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { canRemoveMember, getMemberBadge, type DraftAccess } from '../../lib/permissions';
+import { getEditingMemberIds } from '../../lib/publish';
 import { RemoveMemberDialog } from './RemoveMemberDialog';
 
 type DraftMembersProps = {
@@ -17,7 +18,7 @@ type DraftMembersProps = {
   onRemoveMember: (_memberId: string) => void;
 };
 
-/** 참여 멤버 가로 목록: 역할 배지, 권한이 있을 때만 삭제 버튼(누르면 내보내기 확인 창), 맨 끝 「추가」 카드 */
+/** 참여 멤버 가로 목록: 역할 배지, 편집 중인 멤버의 초록 점, 권한이 있을 때만 삭제 버튼(누르면 내보내기 확인 창), 맨 끝 「추가」 카드 */
 export function DraftMembers({
   draft,
   viewer,
@@ -28,6 +29,7 @@ export function DraftMembers({
   // 닫히는 동안에도 제목의 이름이 남도록 대상은 유지하고 열림만 따로 관리
   const [target, setTarget] = useState<DraftMember | undefined>(undefined);
   const [open, setOpen] = useState(false);
+  const editingIds = getEditingMemberIds(draft.editing);
 
   return (
     <section aria-labelledby="draft-members-title" className="pt-padding-p7 gap-s3 flex flex-col">
@@ -49,6 +51,10 @@ export function DraftMembers({
                 src={member.avatarSrc}
                 memberRole={badge}
                 roleLabel={badge ? BUNDLE_MESSAGES.roleLabel[badge] : undefined}
+                editing={editingIds.has(member.id)}
+                editingLabel={
+                  editingIds.has(member.id) ? BUNDLE_MESSAGES.editingLabel(member.name) : undefined
+                }
                 onDelete={
                   removable
                     ? () => {

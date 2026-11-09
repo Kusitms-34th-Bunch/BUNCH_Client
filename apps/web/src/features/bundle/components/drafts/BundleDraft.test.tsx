@@ -46,54 +46,6 @@ beforeEach(() => {
 });
 
 describe('BundleDraft', () => {
-  it('없는 초안은 「삭제된 번들이에요」를 안내하고 번치 홈으로 이동(replace)한다', () => {
-    renderDraft('deleted-draft');
-
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, { fullWidth: true });
-    expect(replace).toHaveBeenCalledWith('/bunch');
-  });
-
-  it('형식이 틀려 undefined로 넘어온 id도 같은 안내로 처리한다', () => {
-    renderDraft(undefined);
-
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, { fullWidth: true });
-    expect(replace).toHaveBeenCalledWith('/bunch');
-  });
-
-  it('있는 초안은 안내 없이 화면을 보여 준다', () => {
-    renderDraft('draft-1');
-
-    expect(screen.getByRole('button', { name: '업로드' })).toBeInTheDocument();
-    expect(toast).not.toHaveBeenCalled();
-    expect(replace).not.toHaveBeenCalled();
-  });
-
-  it('사진을 누르면 그 사진의 캡션 화면으로 이동(push)한다', async () => {
-    renderDraft('draft-1');
-
-    await userEvent.click(screen.getByRole('button', { name: '2번째 사진 캡션 보기' }));
-
-    expect(push).toHaveBeenCalledWith('/bunch/drafts/draft-1/photos/draft-photo-2');
-  });
-
-  it('돌아갈 기록이 있으면 뒤로가기는 back()을 쓴다', async () => {
-    vi.spyOn(window.history, 'length', 'get').mockReturnValue(3);
-    renderDraft('draft-1');
-
-    await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
-    expect(back).toHaveBeenCalledTimes(1);
-    expect(replace).not.toHaveBeenCalled();
-  });
-
-  it('돌아갈 기록이 없으면 뒤로가기는 번치 홈으로 이동(replace)한다', async () => {
-    vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
-    renderDraft('draft-1');
-
-    await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
-    expect(replace).toHaveBeenCalledWith('/bunch');
-    expect(back).not.toHaveBeenCalled();
-  });
-
   it('초안 생성자가 나가기를 확인하면 초안 삭제 토스트와 함께 번치 홈으로 이동(replace)한다', async () => {
     renderDraft('draft-1');
 

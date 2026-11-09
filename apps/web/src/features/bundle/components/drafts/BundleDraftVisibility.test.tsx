@@ -65,11 +65,4 @@ describe('BundleDraftVisibility', () => {
 
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
-
-  it('없는 초안은 「삭제된 번들이에요」를 안내하고 번치 홈으로 이동(replace)한다', () => {
-    renderVisibility('deleted-draft');
-
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, { fullWidth: true });
-    expect(replace).toHaveBeenCalledWith('/bunch');
-  });
 });

@@ -80,13 +80,6 @@ describe('BundleDraftPhotoCaption', () => {
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 
-  it('없는 초안은 「삭제된 번들이에요」를 안내하고 번치 홈으로 이동한다', () => {
-    renderCaption('draft-photo-1', 'deleted-draft');
-
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, { fullWidth: true });
-    expect(replace).toHaveBeenCalledWith('/bunch');
-  });
-
   it('사진을 누르면 그 사진의 크게 보기 주소로 이동(push)한다', async () => {
     renderCaption('draft-photo-1');
 

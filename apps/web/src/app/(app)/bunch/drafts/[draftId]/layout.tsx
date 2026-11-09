@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { DraftMissingGate } from '@/features/bundle/components';
 import { DraftProvider } from '@/features/bundle/contexts/DraftProvider';
 import { parseDraftId } from '@/features/bundle/lib/draftId';
 
@@ -11,5 +12,11 @@ type BundleDraftLayoutProps = {
 export default async function BundleDraftLayout({ children, params }: BundleDraftLayoutProps) {
   const { draftId } = await params;
 
-  return <DraftProvider draftId={parseDraftId(draftId)}>{children}</DraftProvider>;
+  return (
+    <DraftProvider draftId={parseDraftId(draftId)}>
+      {/* 번들이 삭제됐거나 다른 멤버가 업로드하면 어느 화면에서든 안내 창 */}
+      <DraftMissingGate />
+      {children}
+    </DraftProvider>
+  );
 }

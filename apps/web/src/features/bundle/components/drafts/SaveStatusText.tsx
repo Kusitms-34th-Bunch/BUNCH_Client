@@ -7,8 +7,8 @@ import { BUNDLE_MESSAGES } from '../../constants/messages';
 // 점이 0개 → 1개 → 2개 → 0개로 600ms마다 바뀜(Figma 화면 설계서 「저장 중」 Interaction)
 const DOT_INTERVAL_MS = 600;
 const DOT_STATES = ['', '.', '..'] as const;
-// Figma 헤더 저장 상태는 14/21 SemiBold(자간 -0.5)라 Header 제목 기본(heading-2)보다 작음
-const TEXT_STYLE = 'typography-body-3-semi-bold';
+// Figma 헤더 저장 상태는 18/27 SemiBold(자간 -0.5, Heading-2-Semibold)
+const TEXT_STYLE = 'typography-heading-2-semibold';
 
 /**
  * 헤더의 저장 상태: 「저장 완료」, 저장 중에는 「저장 중」 뒤에 점이 차례로 나타남

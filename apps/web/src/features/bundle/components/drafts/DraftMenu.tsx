@@ -1,6 +1,6 @@
 'use client';
 
-import { LineDotsLargeIcon, LinePlugOffMediumIcon } from '@app/design-system';
+import { LineDotsLargeIcon, LineTransitionLeftMediumIcon } from '@app/design-system';
 import { IconButton } from '@app/design-system/web';
 import { useRef, useState, type CSSProperties } from 'react';
 import {
@@ -14,7 +14,7 @@ type DraftMenuAction = 'leave';
 const LEAVE: PhotoActionMenuItem<DraftMenuAction> = {
   id: 'leave',
   label: BUNDLE_MESSAGES.leaveMenuItem,
-  icon: <LinePlugOffMediumIcon aria-hidden="true" />,
+  icon: <LineTransitionLeftMediumIcon aria-hidden="true" />,
   tone: 'warning',
 };
 
