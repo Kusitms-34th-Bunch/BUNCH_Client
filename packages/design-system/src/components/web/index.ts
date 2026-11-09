@@ -12,7 +12,6 @@ export * from './bunchLabel';
 export * from './bunchListItem';
 export * from './bunchRadioItem';
 export * from './bundleAuthorInfo';
-export * from './bundleCaption';
 export * from './bundleCard';
 export * from './bundleCommentCard';
 export * from './bundleEngagement';
