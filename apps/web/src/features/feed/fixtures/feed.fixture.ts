@@ -70,7 +70,7 @@ export const feedFixture: FeedData = {
       id: 'ad-flody',
       title: '플로디스튜디오',
       imageSrc: '/mock/photos/AD1.jpg',
-      logoSrc: '/images/feed/bunch-spot-logo.png',
+      logoSrc: '/images/feed/bunch-spot-logo.svg',
       tagline: '여기서 뭉쳐봐요!',
       description: '도자기 원데이 클래스',
       location: '서울숲역 도보 7분 , 뚝섬역 도보 9분',
