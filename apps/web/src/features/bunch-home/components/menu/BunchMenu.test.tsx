@@ -50,7 +50,9 @@ describe('BunchMenuScreen', () => {
 
     await user.click(screen.getByRole('button', { name: '번치 나가기' }));
     const dialog = await screen.findByRole('alertdialog', { name: '여행가조 번치를 나갈까요?' });
-    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '취소' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '취소' })),
+    );
     await user.click(within(dialog).getByRole('button', { name: '취소' }));
 
     expect(onLeave).not.toHaveBeenCalled();
