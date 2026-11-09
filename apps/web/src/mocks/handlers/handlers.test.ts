@@ -36,6 +36,23 @@ describe('가짜 서버 내 프로필', () => {
   });
 });
 
+describe('가짜 서버 가입 상태', () => {
+  it('가입을 마친 시연 사람과 기본 번치를 돌려준다', async () => {
+    const onboarding = unwrapEnvelope<{
+      memberId: number;
+      signupStatus: string;
+      termsAccepted: boolean;
+      defaultBunchId?: number;
+    }>(await api().get('members/me/onboarding').json());
+    expect(onboarding).toEqual({
+      memberId: MOCK_MY_MEMBER_ID,
+      signupStatus: 'COMPLETED',
+      termsAccepted: true,
+      defaultBunchId: MOCK_BUNCH_ID,
+    });
+  });
+});
+
 describe('가짜 서버 번치 멤버 목록', () => {
   it('번치의 활성 멤버와 역할을 돌려준다', async () => {
     const members = unwrapEnvelope<BunchMember[]>(

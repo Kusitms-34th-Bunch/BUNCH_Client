@@ -37,22 +37,23 @@ export function useProfileFields(initial: ProfileValues, checkNickname?: CheckNi
   const [birthYear, setBirthYear] = useState(initial.birthYear);
   const [birthYearBlurred, setBirthYearBlurred] = useState(false);
   const [gender, setGender] = useState(initial.gender);
+  // 저장할 때 서버가 중복이라고 알려 준 닉네임(입력 때의 확인 이후에 누가 먼저 썼을 수 있음)
+  const [takenNicknames, setTakenNicknames] = useState<string[]>([]);
 
   const nicknameInvalid = hasInvalidNicknameChars(nickname, composing);
   const nicknameValid = isValidNickname(nickname);
-  const availability = useNicknameAvailability(
-    nicknameValid ? normalizeNickname(nickname) : '',
-    checkNickname,
-  );
+  const normalizedNickname = nicknameValid ? normalizeNickname(nickname) : '';
+  const takenAtSave = takenNicknames.includes(normalizedNickname);
+  const availability = useNicknameAvailability(normalizedNickname, checkNickname);
   const nicknameError = nicknameInvalid
     ? NICKNAME_INVALID_MESSAGE
-    : availability === 'taken'
+    : availability === 'taken' || takenAtSave
       ? NICKNAME_TAKEN_MESSAGE
       : availability === 'failed'
         ? CHECK_FAILURE_MESSAGE
         : undefined;
   const nicknameConfirmed =
-    nicknameValid && (availability === 'idle' || availability === 'available');
+    nicknameValid && !takenAtSave && (availability === 'idle' || availability === 'available');
 
   const currentYear = new Date().getFullYear();
   const birthYearComplete = isCompleteBirthYear(birthYear);
@@ -74,6 +75,8 @@ export function useProfileFields(initial: ProfileValues, checkNickname?: CheckNi
     setBirthYear: (value: string) => setBirthYear(sanitizeBirthYear(value)),
     setBirthYearBlurred,
     setGender,
+    /** 저장 응답이 닉네임 중복이었을 때: 지금 닉네임을 사용할 수 없음으로 표시 */
+    markNicknameTaken: () => setTakenNicknames((previous) => [...previous, normalizedNickname]),
   };
 }
 

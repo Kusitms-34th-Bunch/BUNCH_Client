@@ -14,11 +14,13 @@ type SignupFrameProps = {
   bottom?: ReactNode;
   /** 직접 진입이라 돌아갈 기록이 없을 때 뒤로 가기로 갈 경로(없으면 기록만 따라감) */
   backFallback?: string | undefined;
+  /** 있으면 뒤로 가기를 이 동작이 대신함(약관 화면의 로그아웃 등) */
+  onBack?: (() => void) | undefined;
   children: ReactNode;
 };
 
 /** 가입 단계 공통 틀: 고정 헤더(뒤로 가기)와 하단 고정 영역 */
-export function SignupFrame({ title, bottom, backFallback, children }: SignupFrameProps) {
+export function SignupFrame({ title, bottom, backFallback, onBack, children }: SignupFrameProps) {
   const router = useRouter();
   const backOr = useBackOr();
 
@@ -31,7 +33,11 @@ export function SignupFrame({ title, bottom, backFallback, children }: SignupFra
             <HeaderIconButton
               label="뒤로 가기"
               tone="subtle"
-              onClick={() => (backFallback ? backOr(backFallback) : router.back())}
+              onClick={() => {
+                if (onBack) onBack();
+                else if (backFallback) backOr(backFallback);
+                else router.back();
+              }}
             >
               <LineChevronLeftLargeIcon />
             </HeaderIconButton>

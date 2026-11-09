@@ -11,12 +11,19 @@ const FORWARDED_REQUEST_HEADERS = ['accept', 'content-type'];
 // Set-Cookie 등은 버리고 본문 해석에 필요한 헤더만 전달
 const FORWARDED_RESPONSE_HEADERS = ['cache-control', 'content-disposition', 'content-type'];
 
+// 백엔드 `auth/` 아래지만 토큰·쿠키를 다루지 않는 약관 API만 프록시 허용(정확히 일치하는 경로만)
+const PROXIED_AUTH_PATHS = ['auth/terms', 'auth/terms/agreements'];
+
 /**
  * BFF 경로 조각 → 백엔드 경로(`/api/x` → `api/v1/x`). 쓸 수 없으면 undefined
- * 인증 경로는 쿠키 발급이 필요해 `/api/auth/*` Route Handler만 사용, `.`·`..`·구분자가 든 조각은 경로 조작으로 차단
+ * 인증 경로는 쿠키 발급이 필요해 `/api/auth/*` Route Handler만 사용(약관 API 제외), `.`·`..`·구분자가 든 조각은 경로 조작으로 차단
  */
 export const toBackendPath = (segments: string[]): string | undefined => {
-  if (segments.length === 0 || segments[0] === 'auth') return undefined;
+  if (segments.length === 0) return undefined;
+  // `Auth/…`처럼 대소문자만 바꿔 우회하지 못하도록 소문자로 비교(허용 목록은 정확히 일치해야 함)
+  if (segments[0]?.toLowerCase() === 'auth' && !PROXIED_AUTH_PATHS.includes(segments.join('/'))) {
+    return undefined;
+  }
 
   const isSafe = (segment: string) =>
     segment !== '' &&

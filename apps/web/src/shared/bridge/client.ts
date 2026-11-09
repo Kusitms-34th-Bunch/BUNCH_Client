@@ -15,6 +15,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     },
     // 브라우저에는 시스템 권한 팝업 없음. 호출부에서 먼저 isNativeShell()로 확인 필요
     requestPermission: () => Promise.resolve('undetermined'),
+    // 브라우저에는 소셜 로그인 SDK 없음. 쉘에서만 로그인할 수 있어 호출부가 실패로 처리
+    socialLogin: () => Promise.reject(new Error('네이티브 쉘에서만 소셜 로그인을 할 수 있어요.')),
     // 브라우저에서는 웹 탭 막대 사용
     setNativeTabBar: () => Promise.resolve(false),
     // 브라우저에는 햅틱 없음
@@ -31,6 +33,12 @@ export const isNativeShell = () => typeof window !== 'undefined' && 'ReactNative
 export const galleryBridge = linkBridge<AppBridge, AppPostMessageSchema>({
   timeout: 0,
   throwOnError: ['pickGalleryImage'],
+});
+
+/** 소셜 로그인 창은 사용자가 끝낼 때까지 기다려야 하므로 타임아웃 없음, SDK 오류는 reject로 전달 */
+export const loginBridge = linkBridge<AppBridge, AppPostMessageSchema>({
+  timeout: 0,
+  throwOnError: ['socialLogin'],
 });
 
 /** 시스템 권한 팝업은 사용자가 응답할 때까지 기다려야 하므로 타임아웃 없음 */

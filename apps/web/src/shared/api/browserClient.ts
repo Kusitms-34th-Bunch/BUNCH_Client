@@ -20,8 +20,9 @@ const reissueSession = async () => {
   return session.ok;
 };
 
-// 로그인·재발급·로그아웃 자체의 401은 재발급 대상 아님(재발급 반복 방지)
-const isAuthRoute = (request: Request) => new URL(request.url).pathname.startsWith('/api/auth/');
+// 로그인·재발급·로그아웃 자체의 401은 재발급 대상 아님(재발급 반복 방지). 같은 `/api/auth/` 아래여도 약관 API는 일반 요청이라 재발급 대상
+const COOKIE_AUTH_PATHS = new Set(['/api/auth/login', '/api/auth/reissue', '/api/auth/logout']);
+const isAuthRoute = (request: Request) => COOKIE_AUTH_PATHS.has(new URL(request.url).pathname);
 
 /**
  * 브라우저 → BFF 클라이언트. 토큰은 httpOnly 쿠키라 브라우저가 다루지 않음

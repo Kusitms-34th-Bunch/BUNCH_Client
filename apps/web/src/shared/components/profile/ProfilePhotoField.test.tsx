@@ -10,7 +10,7 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: vi.fn(),
 }));
-vi.mock('../loading/LoadingDots', () => ({ LoadingDots: () => null }));
+vi.mock('../loading/LoadingRipple', () => ({ LoadingRipple: () => null }));
 
 type PickerOptions = {
   onError?: (_error: Error) => void;
