@@ -111,6 +111,8 @@ export type FeedComment = {
 export type FeedBundleDetail = FeedBundle & {
   /** 멤버 공개 번들(제목 옆 뱃지) */
   memberOnly: boolean;
+  /** 이 번들이 우리 번치 번들일 때 내 역할(메뉴 갈래, 기능명세서 6.2.11) */
+  myRole?: 'owner' | 'coOwner' | 'member' | undefined;
   memberComments: FeedMemberComment[];
   comments: FeedComment[];
 };

@@ -3,7 +3,9 @@
 import {
   ConfirmDialog,
   Header,
+  LineAlertMediumIcon,
   LineChevronLeftLargeIcon,
+  LineDotsLargeIcon,
   LineTrashcanMediumIcon,
   toast,
 } from '@app/design-system';
@@ -15,16 +17,20 @@ import {
   CommentComposer,
   CommentItem,
   MoreMenuSheet,
+  ReportSheet,
 } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import type { FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
+import { FEED_TOAST_OFFSET } from '../../constants/toast';
 import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
@@ -37,6 +43,7 @@ import {
   addReply,
   badgeColorOf,
   formatCommentDate,
+  hideComment,
   markDeleted,
 } from '../../lib/comments';
 import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
@@ -58,6 +65,10 @@ const TOAST_GAP = 12;
 // Toaster의 기본 아래 여백(Safe Area + 16)
 const TOAST_BASE_OFFSET = 16;
 
+// 버튼 이름에 붙일 댓글 앞부분: 줄바꿈을 공백으로, 이모지가 반으로 잘리지 않게 글자 단위로 20자
+const previewOf = (content = '') =>
+  Array.from(content.replace(/\s+/g, ' ').trim()).slice(0, 20).join('');
+
 // Toaster가 쓰는 하단 Safe Area(px). 키보드가 열리면 입력란은 Safe Area 없이 내려가지만 토스트 여백에는 남음
 const safeAreaBottom = () => {
   const probe = document.createElement('div');
@@ -71,7 +82,7 @@ const safeAreaBottom = () => {
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * API 연결 전 fixture라 댓글 등록·삭제는 화면에서만 바뀜(구현 단위 10). 남의 댓글 신고(5), 번들 더보기(5·6)는 각 단위에서 추가
+ * API 연결 전 fixture라 댓글 등록·삭제·신고는 화면에서만 바뀜(구현 단위 10). 우리 번치 메인 관리자의 수정·삭제 메뉴는 구현 단위 6
  */
 export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDetailScreenProps) {
   const router = useRouter();
@@ -99,6 +110,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   // ponytail: 화면 안에서만 바뀜. 댓글 API(구현 단위 10)를 연결하면 상세 query 캐시로 대체
   const [comments, setComments] = useState<readonly FeedComment[]>(bundle?.comments ?? []);
   const [addedCount, setAddedCount] = useState(0);
+  const [hiddenCount, setHiddenCount] = useState(0);
   const [announcement, setAnnouncement] = useState('');
   // 같은 문구를 이어서 알려도 다시 읽히도록 끝에 보이지 않는 공백을 번갈아 붙임
   const announce = (message: string) =>
@@ -128,7 +140,8 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     const id = focusCommentId.current;
     if (!id) return;
     focusCommentId.current = null;
-    const item = document.getElementById(`comment-${id}`);
+    // 숨겨 사라진 댓글이면 댓글 영역으로
+    const item = document.getElementById(`comment-${id}`) ?? commentsRef.current;
     item?.scrollIntoView?.({ block: 'nearest' });
     item?.focus({ preventScroll: true });
     const message = pendingToast.current;
@@ -144,20 +157,35 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     return () => cancelAnimationFrame(frame);
   }, [focusComments, goToComments]);
 
-  const header = (
+  // 남의 댓글 신고: 접수되면 그 댓글(원댓글이면 답글까지)을 바로 숨기고 그 자리 다음 댓글로 초점
+  // 시트가 닫힌 시점의 최신 목록으로 계산
+  const hideReported = usePreservedCallback((comment: FeedComment) => {
+    const { comments: next, hiddenCount: count } = hideComment(comments, comment.id);
+    const index = comments.findIndex(({ id }) => id === comment.id);
+    focusCommentId.current = next[index]?.id ?? next[index - 1]?.id ?? 'none';
+    pendingToast.current = text.reported;
+    setComments(next);
+    setHiddenCount((value) => value + count);
+    setReplyTarget((target) =>
+      target && !next.some(({ id }) => id === target.id) ? null : target,
+    );
+  });
+
+  const header = (trailing?: ReactNode) => (
     <Header
       leading={
         <HeaderIconButton label={text.back} onClick={() => backOr(FEED_PATHS.home)}>
           <LineChevronLeftLargeIcon />
         </HeaderIconButton>
       }
+      trailing={trailing}
     />
   );
 
   // API 연결 전 임시 안내. 연결하면 없는 ID는 route에서 notFound()(routing-and-access.md), 볼 수 없는 번들만 이 안내
   if (!bundle) {
     return (
-      <PageShell header={header}>
+      <PageShell header={header()}>
         <h1 className="typography-body-2-regular text-text-quinary flex h-full items-center justify-center">
           {text.bundleUnavailable}
         </h1>
@@ -231,6 +259,73 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     );
   };
 
+  // 신고 사유 시트(Figma `5367:121909`·`5367:122444`, 번치 신고와 같은 구성). 접수되면 닫힌 뒤 onReported
+  const openReport = (title: string, onReported: () => void) =>
+    asBunch(() => {
+      let reported = false;
+      openOverlay(
+        (rootProps, close) => (
+          <ReportSheet
+            {...rootProps}
+            title={title}
+            description={text.reportAs(viewer?.name ?? '')}
+            reasons={REPORT_REASONS}
+            detailReasonValue={REPORT_OTHER}
+            onSubmit={() => {
+              reported = true;
+              close();
+            }}
+          />
+        ),
+        () => {
+          if (reported) onReported();
+        },
+      );
+    });
+
+  const reportComment = (comment: FeedComment) =>
+    openReport(text.reportCommentTitle, () => hideReported(comment));
+
+  // 남의 댓글 더보기(Figma `5367:110378`): 「신고」/「취소」. 시트가 다 닫힌 뒤 신고 시트
+  const openReportMenu = (title: string, onSelect: () => void) => {
+    let chosen = false;
+    openOverlay(
+      (rootProps, close) => (
+        <MoreMenuSheet
+          {...rootProps}
+          title={title}
+          cancelLabel={text.cancel}
+          items={[
+            {
+              id: 'report',
+              label: text.report,
+              leftIcon: <LineAlertMediumIcon aria-hidden />,
+              onSelect: () => {
+                chosen = true;
+                close();
+              },
+            },
+          ]}
+        />
+      ),
+      () => {
+        if (chosen) onSelect();
+      },
+    );
+  };
+
+  // 번들 신고: 접수되면 이전 화면(피드)으로 가서 알림(이 화면은 떠나므로 피드 위치)
+  const reportBundle = () =>
+    openReport(text.reportBundleTitle, () => {
+      backOr(FEED_PATHS.home);
+      toast(text.reported, { bottomOffset: FEED_TOAST_OFFSET });
+    });
+
+  // 헤더 더보기(기능명세서 6.2.11): 다른 번치 번들, 우리 번치 번들의 메인 관리자가 아닌 역할은 「신고」. 메인 관리자의 수정·삭제는 구현 단위 6
+  // 내 정보를 받기 전에는 갈래를 알 수 없어 버튼을 그리지 않음(메인 관리자에게 보였다 사라지지 않게)
+  const ownBundle = viewer?.bunchId === bundle.bunch.id;
+  const canReportBundle = viewer !== undefined && (!ownBundle || bundle.myRole !== 'owner');
+
   // 내 댓글 더보기(Figma `5367:121393`): 「삭제」/「취소」. 시트가 다 닫힌 뒤 확인 창(`5367:121647`)
   const openCommentMenu = (comment: FeedComment) => {
     let chosen = false;
@@ -270,7 +365,16 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
 
   return (
     <PageShell
-      header={header}
+      header={header(
+        canReportBundle ? (
+          <HeaderIconButton
+            label={text.bundleMore}
+            onClick={() => openReportMenu(text.bundleMore, reportBundle)}
+          >
+            <LineDotsLargeIcon />
+          </HeaderIconButton>
+        ) : undefined,
+      )}
       bottom={
         <div ref={composerRef} data-keyboard-open={keyboardOpen ? '' : undefined}>
           {replyTarget ? (
@@ -319,7 +423,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
         liked={likes.isLiked(bundle)}
         likeCount={likes.likeCount(bundle)}
         onLike={() => asBunch(() => likes.toggle(bundle))}
-        commentCount={bundle.commentCount + addedCount}
+        commentCount={bundle.commentCount + addedCount - hiddenCount}
         onComment={goToComments}
         className="pb-padding-p8 pt-6"
       />
@@ -327,7 +431,12 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
       <p role="status" className="sr-only">
         {announcement}
       </p>
-      <section ref={commentsRef} aria-label={text.commentsTitle}>
+      <section
+        ref={commentsRef}
+        aria-label={text.commentsTitle}
+        tabIndex={-1}
+        className="focus:outline-none"
+      >
         {comments.length > 0 ? (
           <ul className="px-padding-p8 pt-padding-p8">
             {comments.map((comment) => (
@@ -361,9 +470,18 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
                             focusInput();
                           })
                   }
-                  // 내 댓글만 삭제 메뉴(남의 댓글 신고는 구현 단위 5)
+                  moreLabel={
+                    comment.mine
+                      ? text.myCommentMore
+                      : text.commentMore(comment.author, previewOf(comment.content))
+                  }
+                  // 내 댓글은 삭제, 남의 댓글은 신고. 삭제된 댓글은 메뉴 없음
                   onMore={
-                    comment.mine && !comment.deleted ? () => openCommentMenu(comment) : undefined
+                    comment.deleted
+                      ? undefined
+                      : comment.mine
+                        ? () => openCommentMenu(comment)
+                        : () => openReportMenu(text.commentMenuTitle, () => reportComment(comment))
                   }
                 />
               </li>
