@@ -10,7 +10,7 @@ import { GenderField } from './GenderField';
 type ProfileFieldsProps = {
   /** `useProfileFields`가 돌려준 값·오류·변경 함수 */
   fields: ProfileFieldsState;
-  /** 출생연도·성별과 비공개 안내를 보임. 가입은 선택 약관에 동의했을 때만 보이고, MY 수정은 항상 보임(기본) */
+  /** 출생연도·성별과 비공개 안내를 보임. 가입은 선택 약관에 동의했을 때만 보임(MY 수정에는 없음, 기본은 보임) */
   showDemographics?: boolean | undefined;
   /** 출생연도·성별 아래 안내 문구. 기본은 비공개 안내이고 가입은 통계 분석 용도를 함께 안내(Figma). 줄바꿈 문자(`\n`)는 그대로 줄이 바뀜 */
   note?: string | undefined;

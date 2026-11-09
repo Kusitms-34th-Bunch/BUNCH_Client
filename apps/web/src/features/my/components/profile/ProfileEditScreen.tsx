@@ -16,19 +16,18 @@ import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 
+// 출생연도·성별은 편집 화면에서 다루지 않음(Figma 개인 프로필 편집)
 const toProfileValues = (profile: MyProfile): ProfileValues => ({
   nickname: profile.nickname,
-  birthYear: profile.birthYear === undefined ? '' : String(profile.birthYear),
-  gender: profile.gender ?? null,
+  birthYear: '',
+  gender: null,
 });
 
 const isSameValues = (a: ProfileValues, b: ProfileValues) =>
-  normalizeNickname(a.nickname) === normalizeNickname(b.nickname) &&
-  a.birthYear === b.birthYear &&
-  a.gender === b.gender;
+  normalizeNickname(a.nickname) === normalizeNickname(b.nickname);
 
 /**
- * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임·출생연도·성별과 프로필 사진
+ * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임과 프로필 사진(출생연도·성별은 없음, Figma 개인 프로필 편집)
  * 바뀐 값이 있고 모두 유효할 때만 수정하기 활성, 누르면 MY로 돌아가 토스트(저장 API 연결 전이라 이동만)
  */
 export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
@@ -84,7 +83,7 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
           <ProfilePhotoField value={photo} onChange={setPhoto} defaultSrc={defaultImage} />
         </div>
         <div className="pt-s14 px-padding-p8">
-          <ProfileFields fields={fields} />
+          <ProfileFields fields={fields} showDemographics={false} />
         </div>
       </PageShell>
       <ConfirmDialog
