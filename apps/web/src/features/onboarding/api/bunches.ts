@@ -25,7 +25,7 @@ export const checkBunchNameAvailability = async (name: string, signal?: AbortSig
 };
 
 /** `POST /bunches`·`PUT·DELETE /bunches/{id}/profile-image` 응답 */
-const bunchSchema = z.object({
+export const bunchSchema = z.object({
   id: z.number().int().positive(),
   name: z.string(),
   characterType: z.enum(['TYPE_1', 'TYPE_2', 'TYPE_3', 'TYPE_4']),
@@ -40,7 +40,7 @@ export type CreatedBunch = {
   imageUrl?: string;
 };
 
-const toCreatedBunch = (bunch: z.infer<typeof bunchSchema>): CreatedBunch => ({
+export const toCreatedBunch = (bunch: z.infer<typeof bunchSchema>): CreatedBunch => ({
   id: toDomainId(bunch.id),
   name: bunch.name,
   characterType: bunch.characterType,

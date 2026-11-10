@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/onboarding/join/complete`(`apps/web/src/app/(app)/onboarding/join/complete/page.tsx`)
-- Status: UI 구현됨(headless Chromium에서 Figma 값을 대조함). 참여가 실제로 이뤄지지 않는 거짓 성공 흐름이다(참여 API 없음). 실기기 검증 전
+- Status: UI 구현됨(headless Chromium에서 Figma 값을 대조함). 참여 요청 응답의 번치 이름·대표 이미지를 보여 준다(이슈 #308). 실서버 검증 전, 실기기 검증 전
 - 디자인 출처: Figma `Bunch/Join/Success`(node `791:3089`). 화면설계서(node `791:9342`)를 함께 참고했다.
 
 ## 목적과 범위
@@ -15,18 +15,18 @@
 
 ### 범위 외
 
-- 참여 요청과 번치 정보 API. 번치 이름·이미지는 route가 넘긴다(지금은 `fixtures/join.fixture.ts`).
+- 참여 요청(`BunchJoinInvitation.spec.md`). 이 화면은 그 응답으로 받은 번치(`JoinInvitationProvider.joinedBunch`)를 읽기만 한다.
 - 번치 메인 화면(없음).
 
 ## Route와 접근
 
 - Path·params·search: `/onboarding/join/complete`. params·search는 없다.
-- 접근 권한·guard: 아직 없다. 참여하지 않고 URL로 바로 열어도 「합류했어요!」가 보인다(거짓 성공). API가 생기면 참여 결과가 있을 때만 열리게 한다.
+- 접근 권한·guard: 참여한 번치(`joinedBunch`)가 없으면(직접 진입·새로고침) 화면을 그리지 않고 링크 입력으로 `router.replace`한다. 참여하지 않았는데 「합류했어요!」가 보이는 거짓 성공 화면을 막는다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 닫기·「번치로 이동하기」는 `router.replace`로 이동한다.
 
 ## UI와 접근성
 
-- Component mapping: `core`의 `Header`(닫기, `HeaderIconButton`), `Button`. 이미지는 `next/image`(`fill`, 167px, 장식이라 `alt=""`)이고 크기·모양은 `InviteCard`의 이미지와 같다(토큰 없는 167px). 폭죽은 `components/BunchConfetti`(공용, `prefers-reduced-motion`이면 그리지 않는다).
+- Component mapping: `core`의 `Header`(닫기, `HeaderIconButton`), `Button`. 이미지는 서버가 돌려준 외부 주소라 `<img>`(167px 원, 장식이라 `alt=""`, `next/image` 최적화를 쓰지 않음)이고 크기·모양은 `InviteCard`의 이미지와 같다(토큰 없는 167px). 폭죽은 `components/BunchConfetti`(공용, `prefers-reduced-motion`이면 그리지 않는다).
 - Keyboard·focus·accessible name: 닫기, 「번치로 이동하기」. 제목 `h1`에 번치 이름이 들어간다.
 - Responsive·긴 텍스트: 제목·안내는 가운데 정렬이고 단어 단위로 줄바꿈한다(`break-keep`).
 
@@ -48,8 +48,8 @@
 
 ## 확인할 항목
 
-- 브라우저·기기 뒤로 가기 (미구현·설계서와 다름): 설계서는 뒤로 가기를 피드로 보내지만 「참여하기」가 `replace`로 이동해 기록이 `[입력, 완료]`라 브라우저 뒤로 가기는 입력 화면으로 간다. 이미 참여한 사용자가 같은 흐름을 반복할 수 있다. 참여 API로 결과가 정해지면 입력 화면을 기록에서 빼거나(`replace`) 모바일 쉘 뒤로 가기에서 피드로 보낸다.
+- 브라우저·기기 뒤로 가기 (허용, 설계서와 다름): 설계서는 뒤로 가기를 피드로 보내지만 「참여하기」가 `replace`로 이동해 기록이 `[입력, 완료]`라 브라우저 뒤로 가기는 링크 입력 화면으로 간다. 거기서 같은 링크를 다시 확인하면 서버가 `ALREADY_MEMBER`로 알려 토스트 뒤 번치로 이동하므로 재참여는 생기지 않는다.
 - 복구 경로: 이 화면에서 나갈 수 있는 곳은 피드(`/`)뿐이다.
-- 거짓 성공 흐름 (확정 필요): 참여 API 없이 완료 화면이 뜬다. 노출 전에 API를 연결하거나 route를 노출하지 않는다.
+- 거짓 성공 흐름 (해소): 참여한 번치(`joinedBunch`)가 없으면 화면을 그리지 않고 링크 입력으로 되돌려, 참여하지 않았는데 완료 화면이 뜨는 일이 없다.
 - 닫기(X) 아이콘 (확인): 설계서 본문은 "상단 뒤로가기"인데 Figma는 X 아이콘이다. Figma 값(X, 「닫기」)을 썼다. 도착지는 둘 다 피드다.
 - 도착지 (임시): 「번치로 이동하기」는 피드(`/`)다. 번치 메인 화면이 생기면 바꾼다.
