@@ -7,21 +7,21 @@
   },
   "files.eol": "\n",
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "eslint.nodePath": ".yarn/sdks",
   "eslint.workingDirectories": [{ "mode": "auto" }],
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
   "npm.packageManager": "yarn",
-  "prettier.prettierPath": ".yarn/sdks/prettier/index.cjs",
+  "oxc.path.oxfmt": ".vscode/oxfmt.sh",
   "js/ts.tsdk.path": ".yarn/sdks/typescript/lib",
   "js/ts.tsdk.promptToUseWorkspaceVersion": true
 }

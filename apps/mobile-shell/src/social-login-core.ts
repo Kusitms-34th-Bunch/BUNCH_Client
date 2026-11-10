@@ -81,7 +81,8 @@ export const createKakaoLogin = ({ appKey, initialize, login, randomNonce }: Kak
 // ---- Google ----
 
 export type GoogleSignInResult =
-  { type: 'success'; data: { idToken: string | null } } | { type: 'cancelled' };
+  | { type: 'success'; data: { idToken: string | null } }
+  | { type: 'cancelled' };
 
 export type GoogleLoginDeps = {
   /** iOS OAuth 클라이언트 ID(`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`) */
@@ -93,7 +94,8 @@ export type GoogleLoginDeps = {
 };
 
 export type GoogleLoginOutcome =
-  { status: 'success'; provider: 'google'; idToken: string } | { status: 'cancelled' };
+  | { status: 'success'; provider: 'google'; idToken: string }
+  | { status: 'cancelled' };
 
 // 라이브러리가 취소를 응답으로 돌려주지만, 일부 경로는 이 코드로 reject함
 const GOOGLE_CANCEL_CODES = new Set(['SIGN_IN_CANCELLED', '-5', '12501']);

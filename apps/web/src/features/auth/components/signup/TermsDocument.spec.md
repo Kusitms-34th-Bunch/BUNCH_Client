@@ -2,9 +2,9 @@
 
 ## 메타데이터
 
-- Route: `/signup/terms/[termId]`(`apps/web/src/app/(app)/signup/terms/[termId]/page.tsx`). `termId`는 `service`(서비스 이용약관)·`privacy`(개인정보 처리방침)
+- Route: `/signup/terms/[termId]`(`apps/web/src/app/(app)/signup/terms/[termId]/page.tsx`). `termId`는 `service`(서비스 이용약관)·`privacy`(개인정보 처리방침)·`demographics`(추가 개인정보 수집 및 이용 동의, 선택)
 - Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함). 문구는 임시이며 실기기 검증 전
-- 디자인 출처: Figma `서비스 이용약관`(node `916:7802`), `개인정보 처리방침`(node `916:7823`). 화면설계서(node `916:7706`·`916:7727`). 기능 spec은 `docs/specs/login-signup.md`(1.3.2).
+- 디자인 출처: Figma `서비스 이용약관`(node `916:7802`), `개인정보 처리방침`(node `916:7823`). 화면설계서(node `916:7706`·`916:7727`). 기능 spec은 `docs/specs/login-signup.md`(1.3.2, 기능명세서 1110판 2026-11-10 기준).
 
 ## 목적과 범위
 
@@ -24,7 +24,7 @@
 
 ## Route와 접근
 
-- Path·params·search: `/signup/terms/service`, `/signup/terms/privacy`. `generateStaticParams`로 이 둘만 정적으로 만들고(`dynamicParams = false`) 그 밖의 값은 404다.
+- Path·params·search: `/signup/terms/service`, `/signup/terms/privacy`, `/signup/terms/demographics`. `generateStaticParams`로 이 셋만 정적으로 만들고(`dynamicParams = false`) 그 밖의 값은 404다.
 - 접근 권한·guard: 아직 없다(약관 동의 화면과 같다).
 - Layout·redirect·navigation: `(app)/signup/layout.tsx`(체크 상태 provider) 안에서 `SignupFrame`을 쓴다. 뒤로 가기는 `router.back()`이다.
 
@@ -72,3 +72,4 @@
 - 뒤로 가기 (기획 확인): 설계서는 이전 페이지로 이동이다. 직접 URL로 들어와 기록이 없으면 뒤로 가기가 동작하지 않는다.
 - 404 화면 (미정): 잘못된 `termId`는 Next 기본 404가 된다. 앱에 `not-found.tsx`가 없어 돌아갈 경로를 주지 않는다. 앱 전체 공백이라 이 화면에서 따로 만들지 않았다.
 - 최신 버전 (미정): 항상 최신 적용 버전을 보여주려면 서버에서 받아야 한다.
+- 원문 내용 (1110판, 구현은 아직 이전 기준): 1.3.2는 원문 3개를 정했다. 서비스 이용 약관은 마이페이지 7.4.1과 같은 문서다. 개인정보는 필수 수집 항목 동의서(수집 항목·목적·보관 기간)다. [선택]은 선택 수집 항목 동의서다(출생연도·성별, 목적, 보관 기간, 동의하지 않아도 가입할 수 있다는 안내, 「문의하기」 철회 안내(7.5.1)). 지금 `privacy`는 처리방침 임시 문구이고, `demographics`에는 보관 기간과 철회 안내가 없다.

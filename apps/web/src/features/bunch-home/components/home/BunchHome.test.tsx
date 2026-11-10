@@ -82,7 +82,7 @@ describe('BunchHome', () => {
     expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.');
   });
 
-  it('번치 성격에 따라 헤더·캐릭터 영역·위쪽 Safe Area 배경이 바뀐다', async () => {
+  it('번치 성격에 따라 헤더·프로필 이미지 영역·위쪽 Safe Area 배경이 바뀐다', async () => {
     const user = userEvent.setup();
     const { container } = render(<BunchHome source="sample" />, { wrapper });
     const background = () => ({

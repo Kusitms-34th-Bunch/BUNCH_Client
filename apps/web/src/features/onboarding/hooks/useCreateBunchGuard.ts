@@ -18,12 +18,12 @@ const STEPS: { path: string; done: (_draft: CreateBunchDraft) => boolean }[] = [
 ];
 
 // 클라이언트 draft로 첫 진입 시에만 검사해 완료·중단 시 초기화에 따른 재이동 방지
-// 완료 기록이 있으면 입력값이 없어도 완료 화면 진입 허용
+// 생성 결과가 있으면 입력값이 없어도 완료 화면 진입 허용
 export function useCreateBunchGuard(before: number) {
   const router = useRouter();
   const draft = useCreateBunchDraft();
   const [redirectTo] = useState(() =>
-    before === STEPS.length && draft.createdName !== null
+    before === STEPS.length && draft.createdBunch !== null
       ? undefined
       : STEPS.slice(0, before).find((step) => !step.done(draft))?.path,
   );

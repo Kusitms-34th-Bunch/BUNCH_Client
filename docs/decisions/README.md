@@ -32,3 +32,4 @@
 - [018: 웹 제품 분석에 PostHog를 쓰고 화면 녹화는 하지 않는다](./records/018-web-posthog-product-analytics.md)
 - [019: 화면 접근 제어는 `(app)` layout의 클라이언트 가드가 서버의 가입 상태로 한다](./records/019-client-auth-gate.md)
 - [020: 토스트 위치는 화면 요소의 앵커로 정하고, 화면 이동 뒤 토스트는 도착 화면에서 띄운다](./records/020-toast-anchor-position.md)
+- [021: 포맷터는 Prettier 대신 oxfmt를 쓴다](./records/021-oxfmt-formatter.md)

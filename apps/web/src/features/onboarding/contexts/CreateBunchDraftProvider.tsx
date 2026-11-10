@@ -1,6 +1,15 @@
 'use client';
 
-import { useCallback, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import {
+  useCallback,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
+import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import type { CreatedBunch } from '../api/bunches';
 import { CreateBunchDraftContext, type Mood, type Visibility } from './createBunchDraftContext';
 
 // create layout에서 단계 간 임시 입력값 유지. 새로고침이나 흐름 이탈 시 초기화
@@ -15,23 +24,24 @@ export function CreateBunchDraftProvider({
     visibility: Visibility;
     description: string;
     mood: Mood;
-    createdName: string;
-    createdMood: Mood;
+    createdBunch: CreatedBunch;
   }>;
 }) {
   const [name, setName] = useState(initial?.name ?? '');
   const [visibility, setVisibility] = useState<Visibility | null>(initial?.visibility ?? null);
   const [description, setDescription] = useState(initial?.description ?? '');
   const [mood, setMood] = useState<Mood | null>(initial?.mood ?? null);
-  const [createdName, setCreatedName] = useState<string | null>(initial?.createdName ?? null);
-  const [createdMood, setCreatedMood] = useState<Mood | null>(initial?.createdMood ?? null);
+  const [createdBunch, setCreatedBunch] = useState<CreatedBunch | null>(
+    initial?.createdBunch ?? null,
+  );
+  const [takenName, setTakenName] = useState<string | null>(null);
+  const attempt = useRef<{ signature: string; key: string } | undefined>(undefined);
 
-  // 이전 완료 후 새로 입력할 때 옛 이름이 완료 화면에 남는 현상 방지
+  // 이전 완료 후 새로 입력할 때 옛 번치가 완료 화면에 남는 현상 방지
   const edits =
     <T,>(set: Dispatch<SetStateAction<T>>): Dispatch<SetStateAction<T>> =>
     (value) => {
-      setCreatedName(null);
-      setCreatedMood(null);
+      setCreatedBunch(null);
       set(value);
     };
 
@@ -41,17 +51,31 @@ export function CreateBunchDraftProvider({
     setVisibility(null);
     setDescription('');
     setMood(null);
-    setCreatedName(null);
-    setCreatedMood(null);
+    setCreatedBunch(null);
+    setTakenName(null);
+    attempt.current = undefined;
   }, []);
 
-  const finish = useCallback((name: string, mood: Mood | null) => {
+  const finish = useCallback((created: CreatedBunch) => {
     setName('');
     setVisibility(null);
     setDescription('');
     setMood(null);
-    setCreatedName(name);
-    setCreatedMood(mood);
+    setCreatedBunch(created);
+    setTakenName(null);
+    // 성공한 요청의 키는 다음 번치 만들기에 쓰지 않음
+    attempt.current = undefined;
+  }, []);
+
+  const idempotencyKeyFor = useCallback((signature: string) => {
+    if (attempt.current?.signature !== signature) {
+      attempt.current = { signature, key: createIdempotencyKey() };
+    }
+    return attempt.current.key;
+  }, []);
+
+  const discardIdempotencyKey = useCallback(() => {
+    attempt.current = undefined;
   }, []);
 
   return (
@@ -65,10 +89,14 @@ export function CreateBunchDraftProvider({
         setDescription: edits(setDescription),
         mood,
         setMood: edits(setMood),
-        createdName,
-        createdMood,
+        createdBunch,
+        takenName,
+        markNameTaken: setTakenName,
         reset,
         finish,
+        updateCreatedBunch: setCreatedBunch,
+        idempotencyKeyFor,
+        discardIdempotencyKey,
       }}
     >
       {children}

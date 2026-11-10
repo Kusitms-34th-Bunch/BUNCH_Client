@@ -47,7 +47,7 @@ export const BUNCH_HOME_MESSAGES = {
   transferred: (name: string) => `${name}님이 관리자가 되었어요.`,
   removeTitle: (name: string, bunchName: string) => `${name}님을 ${bunchName}에서 내보낼까요?`,
   removeDescription: (name: string) =>
-    `${name}님이 올리신 사진은 사진함에서 삭제되고, 발행된 번들에만 남아요.`,
+    `${name}님이 올린 사진은 사진함에서 삭제되고, 발행된 번들에만 남아요.`,
   removed: (name: string) => `${name}님을 번치에서 내보냈어요.`,
   // 번치 나가기(화면설계서 2236:40773)
   left: (bunchName: string) => `${bunchName} 번치를 나왔어요.`,

@@ -144,6 +144,38 @@ describe('BunchInvite', () => {
     expect(back).not.toHaveBeenCalled();
   });
 
+  it('링크를 불러오는 중이면 페이지 전체 로딩을 덮고 복사 버튼은 잠근다', () => {
+    render(<BunchInvite inviteLink={undefined} loading leaveHref={LEAVE} />);
+
+    expect(screen.getByRole('status').textContent).toBe('초대 링크를 불러오는 중이에요');
+    // 링크가 채워지면 풀리도록 입력란은 비어 있는 채로 뒤에 둠
+    expect(screen.getByRole('textbox', { name: '초대 링크' })).toHaveProperty('value', '');
+    expect(screen.getByRole('button', { name: '초대 링크 복사' })).toHaveProperty('disabled', true);
+  });
+
+  it('다시 불러오는 동안에도 버튼을 그대로 둔다(로딩 덮개가 누름을 막음)', () => {
+    render(
+      <BunchInvite inviteLink={undefined} loading onRetry={() => undefined} leaveHref={LEAVE} />,
+    );
+
+    expect(screen.getByRole('button', { name: '다시 불러오기' })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('초대 링크를 불러오는 중이에요');
+  });
+
+  it('링크를 불러오지 못하면 다시 불러오기를 보이고, 누르면 다시 요청한다. 나중에 할게요는 계속 쓸 수 있다', async () => {
+    const onRetry = vi.fn();
+    render(<BunchInvite inviteLink={undefined} onRetry={onRetry} leaveHref={LEAVE} />);
+
+    expect(screen.getByText('초대 링크를 불러오지 못했어요.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '초대 링크 복사' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('status').textContent).toContain('다시 불러오기를 눌러 주세요');
+    await userEvent.click(screen.getByRole('button', { name: '다시 불러오기' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByRole('button', { name: '나중에 할게요' }));
+    expect(replace).toHaveBeenCalledWith(LEAVE);
+  });
+
   // 기록을 쌓으므로 이 파일의 마지막 테스트로 둠
   it('번치 관리에서 들어오면(backOnLeave) 닫기가 이전 화면으로 돌아간다', async () => {
     window.history.pushState({}, '', '/bunch/members/invite');

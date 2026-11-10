@@ -30,7 +30,8 @@ export type SelectionFieldGroupProps = Omit<ComponentProps<'div'>, 'children'> &
   itemHandle?: ((_item: SelectionFieldGroupItem, _index: number) => ReactNode) | undefined;
   /** 행을 감싸는 요소(예: 정렬 가능한 래퍼). 행 모양은 그대로 `row`로 받아 안에 넣어야 함 */
   itemWrapper?:
-    ((_item: SelectionFieldGroupItem, _index: number, _row: ReactNode) => ReactNode) | undefined;
+    | ((_item: SelectionFieldGroupItem, _index: number, _row: ReactNode) => ReactNode)
+    | undefined;
   /** 주면 맨 아래에 "추가" 행이 나타나고 누르면 호출됨(장소 검색 화면을 여는 곳, 최대 개수에서는 호출하는 쪽이 주지 않음) */
   onAdd?: (() => void) | undefined;
   /** "추가" 행의 글자(기본 "추가") */
