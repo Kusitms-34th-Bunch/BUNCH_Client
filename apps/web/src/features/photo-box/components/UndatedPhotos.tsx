@@ -2,7 +2,7 @@
 
 import { cn } from '@app/design-system';
 import { Accordion } from '@app/design-system/web';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { PhotoBoxPhoto } from '../lib/types';
 import { PhotoGrid } from './PhotoGrid';
 
@@ -15,7 +15,7 @@ type UndatedPhotosProps = {
  * 접힌 모양은 좌우 16px 여백의 둥근 카드, 펼치면 여백 없이 전체 폭(Figma 사진함_02·03)
  * 열고 닫는 340ms 전환은 `Accordion`이 맡고, 여백·모서리 변화도 같은 값으로 전환
  */
-export function UndatedPhotos({ photos }: UndatedPhotosProps) {
+export const UndatedPhotos = memo(function UndatedPhotos({ photos }: UndatedPhotosProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -34,4 +34,4 @@ export function UndatedPhotos({ photos }: UndatedPhotosProps) {
       <PhotoGrid photos={photos} label="촬영 날짜를 확인할 사진" />
     </Accordion>
   );
-}
+});

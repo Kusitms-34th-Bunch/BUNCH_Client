@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { PhotoSelection } from '@/features/photo-box/lib/selection';
 import { MemberFilter } from '@/features/photo-box/components/MemberFilter';
 import { PhotoBoxEmpty } from '@/features/photo-box/components/PhotoBoxEmpty';
+import { PhotoDragSelect } from '@/features/photo-box/components/PhotoDragSelect';
 import { UndatedPhotos } from '@/features/photo-box/components/UndatedPhotos';
 import { PhotoSelectionProvider } from '@/features/photo-box/contexts/PhotoSelectionContext';
 import { filterByMember, splitPhotos } from '@/features/photo-box/lib/photoDate';
@@ -47,7 +48,7 @@ export function SelectPhotoList({
 
   return (
     <PhotoSelectionProvider value={{ active: true, selection, onToggle }}>
-      <div className="flex min-h-full flex-col" inert={inert}>
+      <PhotoDragSelect className="flex min-h-full flex-col" inert={inert}>
         <MemberFilter
           members={data.members}
           selectedId={memberId}
@@ -61,7 +62,7 @@ export function SelectPhotoList({
         {isEmpty ? (
           <PhotoBoxEmpty reason={hasPhotos || memberId !== ALL_MEMBERS ? 'member' : 'bunch'} />
         ) : null}
-      </div>
+      </PhotoDragSelect>
     </PhotoSelectionProvider>
   );
 }
