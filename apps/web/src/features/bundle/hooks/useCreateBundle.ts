@@ -23,9 +23,7 @@ export function useCreateBundle() {
   const router = useRouter();
   const { data: profile } = useQuery(myProfileQueryOptions());
   const bunchId = profile?.bunch?.id;
-  const { data: members } = useQuery(
-    bunchMembersQueryOptions(bunchId, profile?.bunch?.characterType),
-  );
+  const { data: members } = useQuery(bunchMembersQueryOptions(bunchId));
   const mutation = useCreateBundleMutation(bunchId);
   // 같은 틱에 연달아 호출돼도 한 번만 보내도록 ref로 막음(state 갱신 전에는 isPending이 아직 false)
   const submitted = useRef(false);

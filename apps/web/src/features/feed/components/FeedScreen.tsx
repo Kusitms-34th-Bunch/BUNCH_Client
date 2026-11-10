@@ -8,7 +8,9 @@ import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import type { FeedBundle } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { FEED_PATHS } from '../constants/paths';
+import { getBundleDetailFixture } from '../fixtures/bundleDetail.fixture';
 import { feedFixture } from '../fixtures/feed.fixture';
+import { useBundleEdits } from '../hooks/useBundleEdits';
 import { useBundleSheets } from '../hooks/useBundleSheets';
 import { useClientNow } from '../hooks/useClientNow';
 import { useFeedViewer } from '../hooks/useFeedViewer';
@@ -45,8 +47,12 @@ export function FeedScreen({ links }: FeedScreenProps) {
   useHoldScrollOnLeave(topRef);
 
   // 소속 번치가 없으면 공개 구간만(기능명세서 6.1.7)
-  const following = viewer === null ? [] : feedFixture.following;
-  const publicBundles = feedFixture.public;
+  // 화면에서 지웠거나 「멤버 공개」로 바꾼 번들은 피드에서 뺌(기능명세서 6.2.12 로직 5·6.2.13)
+  const { isDeleted, becameMemberOnly } = useBundleEdits();
+  const shown = ({ id }: { id: string }) =>
+    !isDeleted(id) && !becameMemberOnly(id, getBundleDetailFixture(id)?.memberOnly ?? false);
+  const following = viewer === null ? [] : feedFixture.following.filter(shown);
+  const publicBundles = feedFixture.public.filter(shown);
   // 숨긴 광고는 안내를 잠깐 보인 뒤 접혀 사라지고, 피드에 다시 들어와도 없음
   const [hiddenAds, setHiddenAds] = useState(readHiddenAds);
   const endRef = useRef<HTMLDivElement>(null);

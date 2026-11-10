@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
-import { CHARACTER_TYPES, defaultProfileImage } from '@/shared/lib/bunchProfile';
+import {
+  CHARACTER_TYPES,
+  DEFAULT_PROFILE_IMAGE,
+  defaultBunchImage,
+} from '@/shared/lib/bunchProfile';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import type { BunchHomeDetail, BunchRole } from '../lib/types';
 
@@ -111,8 +115,8 @@ export const toBunchHomeDetail = (
   members: readonly DraftMemberSource[],
 ): BunchHomeDetail | undefined => {
   if (!home.myMembership) return undefined;
-  // 사진이 없는 곳은 이 번치 타입의 기본 이미지
-  const fallback = defaultProfileImage(home.bunch.characterType);
+  // 대표 이미지·번들 표지가 없으면 이 번치 타입의 기본 이미지(멤버 사진은 기본 프로필 이미지)
+  const fallback = defaultBunchImage(home.bunch.characterType);
   return {
     id: toDomainId(home.bunch.id),
     name: home.bunch.name,
@@ -142,7 +146,7 @@ export const toBunchHomeDetail = (
         members: bundle.participants.flatMap(({ memberId }) => {
           const member = members.find((candidate) => candidate.id === toDomainId(memberId));
           return member
-            ? [{ name: member.name, imageSrc: safeImage(member.avatarSrc, fallback) }]
+            ? [{ name: member.name, imageSrc: safeImage(member.avatarSrc, DEFAULT_PROFILE_IMAGE) }]
             : [];
         }),
       };

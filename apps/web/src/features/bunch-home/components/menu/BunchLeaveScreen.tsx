@@ -41,11 +41,11 @@ export function BunchLeaveScreen({
       <AdminTransferSheet
         {...rootProps}
         memberName={member.name}
-        // Figma 4359:86965: 안내 그림 80×82(시트의 92px 자리 가운데)
+        // Figma 5991:163239: 안내 그림 72×72(시트의 92px 자리 가운데)
         illustration={
           <div className="flex size-full items-center justify-center">
             {/* SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김 */}
-            <Image src={ownerAssign as StaticImageData} alt="" width={80} height={82} />
+            <Image src={ownerAssign as StaticImageData} alt="" width={72} height={72} />
           </div>
         }
         onConfirm={() => {

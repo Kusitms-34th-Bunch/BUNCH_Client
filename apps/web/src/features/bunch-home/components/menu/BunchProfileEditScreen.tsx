@@ -16,7 +16,7 @@ import {
   BUNCH_NAME_INVALID_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
   type CharacterType,
-  defaultProfileImage,
+  defaultBunchImage,
   hasInvalidBunchNameChars,
 } from '@/shared/lib/bunchProfile';
 import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
@@ -152,7 +152,7 @@ function ProfileForm({
         <div className="pt-s14 px-padding-p8 gap-s14 pb-s8 flex flex-col items-center">
           <div className="relative h-22.5 w-23.75 shrink-0">
             <ProfileImage
-              src={imageSrc ?? defaultProfileImage(characterType)}
+              src={imageSrc ?? defaultBunchImage(characterType)}
               className="absolute top-0 left-0.75"
             />
             <CameraButton

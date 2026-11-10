@@ -28,7 +28,7 @@
 ## 상태와 흐름
 
 - 초기 진입: 아무 카드도 선택되지 않고 「번치 만들기」는 비활성이다. 2단계에서 돌아온 경우 이미 고른 카드가 남아 있다.
-- 선택: 카드 전체가 눌린다. 누르는 동안 카드 전체에 검정 10%(`overlay-hover`)가 겹친다. 선택된 카드는 같은 색 계열 300의 1px 안쪽 테두리(outline)로 표시된다.
+- 선택: 카드 전체가 눌린다. 누르는 동안 카드 전체에 검정 10%(`overlay-hover`)가 겹친다. 선택된 카드는 `border-primary`(#BCBEC2) 1px 안쪽 테두리(outline)로 표시된다(Figma `4746:64643`). 카드 배경은 네 타입 모두 `surface-secondary`고, 타입은 가운데 패턴 색(보라·주황·분홍·초록)으로 구분한다.
 - 성격 값은 서버 캐릭터 타입과 같다: 개성 넘치는 모임 `TYPE_1`(bunch), 활발한 모임 `TYPE_2`(orange), 낭만적인 모임 `TYPE_3`(pink), 차분한 모임 `TYPE_4`(green). 이 값이 완료 화면 기본 대표 이미지와 번치 홈 배경색을 정한다.
 - 헤더 뒤로 가기: 이동 없이 모달을 연다. 모달 안에서 최초 초점은 「계속 만들기」다.
 - 모달 모션: 패널은 중앙에서 opacity 0→1·scale 1.3→1로 200ms·`cubic-bezier(0.03, 0.4, 0.1, 1)`을 적용해 나타난다. 딤은 100ms·`cubic-bezier(0, 0, 0.15, 1)`로 페이드 인한다. 닫힐 때는 위치와 크기를 유지하고 패널과 딤이 100ms·`cubic-bezier(0.35, 0, 1, 1)`로 페이드 아웃한다. Base UI의 전환 종료 콜백에서 overlay를 제거하고 「나가기」의 입력 초기화·피드 이동을 실행한다. 「계속 만들기」·ESC는 입력과 현재 화면을 유지한다. 모션 감소 설정에서는 진입·닫힘 모두 즉시 처리한다.
@@ -45,22 +45,22 @@
 
 ## UI와 접근성
 
-- Component mapping: `CreateBunchFrame`(헤더·진행 표시줄, `BunchBasicInfo.spec.md`), `PageHeader`(제목만), `fieldset`·`legend`(화면 안 숨김)+라디오 카드(이 화면 안의 `label`, 캐릭터 이미지 `src/shared/assets/images/bunch-character/type-1~4.svg`, import해 `next/image`로 표시), `Button`(`secondary` 이전 / `primary` 번치 만들기), 모달은 `Dialog` 부품 조합이고 `overlay-kit`의 `overlay.open`(`useExitCreateBunchDialog`)으로 연다.
+- Component mapping: `CreateBunchFrame`(헤더·진행 표시줄, `BunchBasicInfo.spec.md`), `PageHeader`(제목만), `fieldset`·`legend`(화면 안 숨김)+라디오 카드(이 화면 안의 `label`, 패턴 이미지 `src/shared/assets/images/bunch-mood/type-1~4.svg`를 import해 `next/image`로 표시), `Button`(`secondary` 이전 / `primary` 번치 만들기), 모달은 `Dialog` 부품 조합이고 `overlay-kit`의 `overlay.open`(`useExitCreateBunchDialog`)으로 연다.
 - Keyboard·focus·accessible name: 카드는 숨긴 라디오라 방향키로 선택을 옮기고 초점 시 윤곽선이 보인다. 카드 이름은 보이는 글자(「개성 넘치는 모임」 등)이고 캐릭터 이미지는 장식(`alt=""`)이다. 그룹 이름은 화면 질문과 같은 「우리 번치는 어떤 성격의 모임인가요?」(숨김 legend)다. 「번치 만들기」는 비활성일 때 native `disabled`다.
 - 모달: `role="alertdialog"`, 제목·설명 자동 연결. `ConfirmDialog`는 ESC를 취소 쪽(`onCancel`)으로 처리해 「나가기」를 취소 자리에 두면 ESC로 나가지므로, `Dialog.Confirm`(나가기)·`Dialog.Cancel`(계속 만들기)을 조합했다.
 - Responsive·긴 텍스트·overflow: 카드는 `grid-cols-2`로 폭에 맞춰 늘어난다(375px에서 165.5px). 가로 넘침 없음.
 
-| Figma       | 값                                                          | 사용한 토큰·utility                                         |
-| ----------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
-| 카드 영역   | 세로 가운데 정렬, 아래 40, 좌우 16, 카드 간격 12            | `flex-1 justify-center pb-padding-p18 px-padding-p8 gap-s6` |
-| 카드        | 166/165×192, 안쪽 여백 12, radius 8                         | `grid-cols-2 h-48 p-padding-p6 rounded-r4`                  |
-| 카드 내용   | 캐릭터 상자 130×92(이미지 높이 90) + 간격 18 + 글자         | `w-32.5 h-23 gap-s9`                                        |
-| 카드 색     | bunch·orange·pink·green 50                                  | `bg-primitive-*-50`                                         |
-| 선택 테두리 | 같은 색 300, 1px                                            | `has-checked:outline-primitive-*-300`                       |
-| 눌림        | 검정 겹침                                                   | `active:after:` `overlay-hover`(black alpha 10)             |
-| 글자        | Body-4-SemiBold 13/18 `#25282d`                             | `typography-body-4-semi-bold text-text-secondary`           |
-| 하단 버튼   | 위 10, 좌우 16, 간격 10, 「이전」 88px                      | `pt-s5 px-padding-p8 gap-s5`, `w-22`                        |
-| 모달        | 폭 311, radius 20, 제목 20/26, 설명 16/24, 버튼 2개 같은 폭 | 기존 `Dialog`(`Dialog.spec.md`)                             |
+| Figma       | 값                                                          | 사용한 토큰·utility                                          |
+| ----------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
+| 카드 영역   | 세로 가운데 정렬, 아래 40, 좌우 16, 카드 간격 12            | `flex-1 justify-center pb-padding-p18 px-padding-p8 gap-s6`  |
+| 카드        | 166/165×192, 안쪽 여백 12, radius 8                         | `grid-cols-2 h-48 p-padding-p6 rounded-r4`                   |
+| 카드 내용   | 패턴 108×108 + 간격 8 + 글자                                | `gap-s4`, `src/shared/assets/images/bunch-mood/type-1~4.svg` |
+| 카드 색     | surface-secondary(#F5F5F5)                                  | `bg-surface-secondary`                                       |
+| 선택 테두리 | border-primary, 1px                                         | `has-checked:outline-border-primary`                         |
+| 눌림        | 검정 겹침                                                   | `active:after:` `overlay-hover`(black alpha 10)              |
+| 글자        | Body-4-SemiBold 13/18 `#25282d`                             | `typography-body-4-semi-bold text-text-secondary`            |
+| 하단 버튼   | 위 10, 좌우 16, 간격 10, 「이전」 88px                      | `pt-s5 px-padding-p8 gap-s5`, `w-22`                         |
+| 모달        | 폭 311, radius 20, 제목 20/26, 설명 16/24, 버튼 2개 같은 폭 | 기존 `Dialog`(`Dialog.spec.md`)                              |
 
 ## 검증
 
@@ -74,7 +74,7 @@
 
 ## 확인할 항목
 
-- 선택 표시 (미정, 디자이너 확인): 선택은 같은 색 계열의 1px 테두리로만 보인다. 테두리 대 카드 배경 대비는 약 1.6~2:1(hex 근사)로 비텍스트 3:1에 못 미친다. 스크린 리더는 라디오 선택 상태로 읽는다. 보이는 보조 표시(체크 등)는 Figma에 없어 넣지 않았다.
+- 선택 표시 (미정, 디자이너 확인): 선택은 `border-primary`(#BCBEC2) 1px 테두리로만 보이고(Figma `4746:64643`), 네 카드 배경이 같아 색 단서도 없다. 테두리 대 카드 배경 대비는 약 1.6~1.7:1(hex 근사)로 비텍스트 3:1에 못 미친다. 스크린 리더는 라디오 선택 상태로 읽는다. 보이는 보조 표시(체크 등)는 Figma에 없어 넣지 않았다.
 - 낭만적인 모임 글자 굵기 (Figma 불일치): Figma 03 카드만 Regular이고 나머지는 SemiBold다. 네 카드를 SemiBold로 맞췄다.
 - 눌림 겹침 투명도 (추정): Figma Pressed는 검정 겹침이며 캡처 밝기로 10%(`overlay-hover`)로 봤다.
 - 질문 문구 (확정): 성격 선택 화면(`4746:62416`)의 「어떤 성격의 모임인가요?」를 썼다. 모달 프레임(`791:11665`) 뒤 화면은 옛 문구 「어떤 분위기인가요?」로 남아 있다.

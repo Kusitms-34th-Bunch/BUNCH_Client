@@ -41,12 +41,12 @@ export function BlockedBunchScreen({
       }
     >
       {checking ? null : (
-        /* Figma 4746:95143: 이미지 114×108과 글자 사이 18, 제목·설명 사이 6
+        /* Figma 5991:164581: 이미지 72×72와 글자 사이 18, 제목·설명 사이 6
           화면 전체의 세로 가운데라 본문 기준 약 38 위(차단 목록 빈 상태와 같이 아래 여백 72) */
         <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">
           <div className="gap-s9 flex flex-col items-center text-center">
             {/* SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김 */}
-            <Image src={blockedBunch as StaticImageData} alt="" width={114} height={108} />
+            <Image src={blockedBunch as StaticImageData} alt="" width={72} height={72} />
             <div className="gap-s3 flex flex-col items-center">
               <h1
                 ref={titleRef}

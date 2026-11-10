@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { FeedBundleMember, FeedPlace } from '../lib/types';
@@ -94,10 +95,8 @@ describe('useBundleSheets', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(toast).not.toHaveBeenCalled();
 
-    // 초점은 시트를 연 버튼으로 돌아감
-    await waitFor(() => expect(screen.getByRole('button', { name: '위치' })).toHaveFocus());
-
-    await user.click(screen.getByRole('button', { name: '위치' }));
+    // 창이 닫히면 시트가 다시 올라오고(화면설계서) 뺀 장소는 「콕하기」
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
     expect(pickButton('제주 바다').textContent).toBe('콕하기');
 
     // 취소한 장소는 다시 콕할 수 있음
@@ -112,7 +111,7 @@ describe('useBundleSheets', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
 
-  it('확인 창의 「아니요」는 창만 닫고 시트를 다시 열지 않으며 콕을 유지한다', async () => {
+  it('확인 창의 「아니요」는 창을 닫고 시트를 다시 올리며 콕을 유지한다', async () => {
     const user = await setup('위치');
 
     await user.click(pickButton('제주 바다'));
@@ -120,9 +119,32 @@ describe('useBundleSheets', () => {
     await user.click(within(dialog).getByRole('button', { name: '아니요' }));
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: '위치' }));
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
     expect(pickButton('제주 바다').textContent).toBe('콕 했어요');
+  });
+
+  it('확인 창이 열린 동안 소속 번치가 없어지면 다시 올라온 시트는 그 상태로 그린다', async () => {
+    const user = userEvent.setup();
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: 'me',
+      bunch: { id: 'bunch-trip', name: '여행가조' },
+    });
+    render(<Harness />, { wrapper: createQueryWrapper(client) });
+    await user.click(screen.getByRole('button', { name: '위치' }));
+
+    await user.click(pickButton('제주 바다'));
+    const dialog = await screen.findByRole('alertdialog', { name: '이 장소의 콕을 삭제할까요?' });
+    act(() => {
+      client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: null });
+    });
+    await user.click(within(dialog).getByRole('button', { name: '아니요' }));
+
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    expect(pickButton('제주 바다').textContent).toBe('콕하기');
+    await user.click(pickButton('애월 한담해변'));
+    expect(pickButton('애월 한담해변').textContent).toBe('콕하기');
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { position: 'top' });
   });
 
   it('소속 번치가 없으면 담긴 표시가 없고 눌러도 바뀌지 않으며 안내한다', async () => {
@@ -142,7 +164,7 @@ describe('useBundleSheets', () => {
     expect(items.map((item) => item.textContent)).toEqual(['은우', '경진', '작성자']);
     expect(within(items[0]!).getByRole('img', { name: '메인 관리자' })).toBeTruthy();
     // 나간 멤버는 기본 이미지이고 역할 배지 없음
-    expect(items[2]!.querySelector('img')?.getAttribute('src')).toContain('deleted-user');
+    expect(items[2]!.querySelector('img')?.getAttribute('src')).toBe(DEFAULT_PROFILE_IMAGE);
     expect(within(items[2]!).queryByRole('img', { name: '공동 관리자' })).toBeNull();
     // 나간 멤버는 누를 수 없고 나머지는 멤버 프로필 링크
     expect(within(items[0]!).getByRole('link').getAttribute('href')).toBe('/members/m-1');

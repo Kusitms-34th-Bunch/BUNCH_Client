@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { useDefaultProfileImage } from '@/shared/hooks/useDefaultProfileImage';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { KokPlace } from '../lib/types';
 import { PLACES_MESSAGES } from '../constants/messages';
 import { useBunchPlaces } from '../hooks/useBunchPlaces';
@@ -28,8 +28,6 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
   const router = useRouter();
   const backOr = useBackOr();
   const { members, places, remove, restore } = useBunchPlaces();
-  // 프로필 이미지가 없는 멤버는 지금 번치 타입의 기본 이미지
-  const defaultImage = useDefaultProfileImage();
 
   // 클립보드 쓰기는 누른 순간에 하고(사용자 제스처), 결과 토스트는 시트가 닫힌 뒤 화면이 부름
   const copyAddress = async (place: KokPlace) => {
@@ -68,7 +66,7 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
     <BunchPlacesScreen
       members={members.map((member) => ({
         ...member,
-        avatarSrc: member.avatarSrc ?? defaultImage,
+        avatarSrc: member.avatarSrc ?? DEFAULT_PROFILE_IMAGE,
       }))}
       places={places}
       onBack={() => backOr(backHref)}

@@ -2,7 +2,9 @@
 
 import { cn, ConfirmDialog } from '@app/design-system';
 import { AdPhotoCard, ConfirmSheet } from '@app/design-system/web';
+import Image, { type StaticImageData } from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import placeHidden from '@/shared/assets/images/empty/place-hidden.svg';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { FeedAd } from '../lib/types';
@@ -73,7 +75,16 @@ export function FeedAdCard({
             </>
           }
           description={text.adHideDescription}
-          illustration={<img src="/images/feed/ad-hide.png" alt="" className="size-full" />}
+          // Figma 5367:102664: 72×72(일러스트 자리 size-18)
+          illustration={
+            <Image
+              src={placeHidden as StaticImageData}
+              alt=""
+              width={72}
+              height={72}
+              className="size-full"
+            />
+          }
           illustrationClassName="size-18"
           confirmLabel={text.adHide}
           onConfirm={() => {

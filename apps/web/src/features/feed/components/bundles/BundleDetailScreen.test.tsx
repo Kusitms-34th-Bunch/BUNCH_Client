@@ -1,8 +1,10 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import { bundleEdits } from '../../lib/bundleEdits';
 import { likeStore } from '../../lib/likeStore';
 import { BundleDetailScreen } from './BundleDetailScreen';
 
@@ -38,7 +40,10 @@ const renderDetail = (
 
 beforeEach(() => {
   push.mockClear();
+  back.mockClear();
+  replace.mockClear();
   likeStore.clear();
+  bundleEdits.clear();
   toast.mockClear();
 });
 
@@ -65,7 +70,7 @@ describe('BundleDetailScreen', () => {
     renderDetail('bundle-2');
 
     const first = screen.getByRole('button', { name: /^참여 멤버 3명/ }).querySelector('img');
-    expect(first?.getAttribute('src')).toContain('deleted-user');
+    expect(first?.getAttribute('src')).toBe(DEFAULT_PROFILE_IMAGE);
   });
 
   it('제목·멤버 공개 뱃지·사진·댓글을 보여 주고, 입력란에 지금 번치 이름이 들어간다', () => {
@@ -97,7 +102,7 @@ describe('BundleDetailScreen', () => {
     expect(region.queryByText(/퇴근하고 뛰는 게/)).toBeNull();
 
     const leftChip = region.getByRole('button', { name: '작성자' });
-    expect(leftChip.querySelector('img')?.getAttribute('src')).toContain('deleted-user');
+    expect(leftChip.querySelector('img')?.getAttribute('src')).toBe(DEFAULT_PROFILE_IMAGE);
     await user.click(leftChip);
     expect(region.getByText('삭제된 코멘트입니다')).toBeTruthy();
   });
@@ -158,12 +163,12 @@ describe('BundleDetailScreen', () => {
 
   it('말풍선을 누르면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
     const user = userEvent.setup();
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
     renderDetail();
+    const section = screen.getByRole('region', { name: '댓글' });
+    vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
 
     await user.click(screen.getByRole('button', { name: /^댓글/ }));
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(section.closest('main')!.scrollTop).toBe(500);
     expect(document.activeElement).toBe(screen.getByRole('textbox'));
   });
 
@@ -172,7 +177,7 @@ describe('BundleDetailScreen', () => {
     const comments = within(screen.getByRole('region', { name: '댓글' })).getAllByRole('listitem');
     const images = comments.map((item) => item.querySelector('img')?.getAttribute('src') ?? '');
 
-    expect(images.filter((src) => src.includes('deleted-user'))).toHaveLength(2);
+    expect(images.filter((src) => src === DEFAULT_PROFILE_IMAGE)).toHaveLength(2);
   });
 
   it('댓글이 없으면 빈 안내를 보인다', () => {
@@ -184,9 +189,15 @@ describe('BundleDetailScreen', () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
     renderDetail('bundle-1', { focusComments: true });
+    const section = screen.getByRole('region', { name: '댓글' });
+    vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
 
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(section.closest('main')!.scrollTop).toBe(500);
+    // 전환 중 바깥 틀을 가로로 밀지 않게 scrollIntoView를 쓰지 않음
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    // jsdom에 원래 없는 메서드라 다음 테스트로 남지 않게 지움
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
   });
 
   it('스크롤한 채 화면을 떠나면 나가는 화면이 튀지 않게 스크롤을 transform으로 옮긴다', () => {
@@ -272,7 +283,7 @@ describe('BundleDetailScreen', () => {
 
     await waitFor(() =>
       expect(toast).toHaveBeenCalledWith(
-        '댓글이 삭제 되었어요.',
+        '댓글을 삭제했어요',
         expect.objectContaining({ fullWidth: true }),
       ),
     );
@@ -296,7 +307,7 @@ describe('BundleDetailScreen', () => {
     await waitFor(() => expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull());
     expect(screen.getByRole('listitem', { name: '삭제된 댓글' })).toHaveFocus();
     expect(toast).toHaveBeenCalledWith(
-      '댓글이 삭제 되었어요.',
+      '댓글을 삭제했어요',
       expect.objectContaining({ fullWidth: true }),
     );
   });
@@ -393,8 +404,60 @@ describe('BundleDetailScreen', () => {
     expect(screen.queryByRole('dialog', { name: '이 게시글을 신고할까요?' })).toBeNull();
   });
 
-  it('우리 번치 번들의 메인 관리자에게는 헤더 더보기가 없다(수정·삭제는 다음 단위)', () => {
+  it('메인 관리자는 헤더 더보기에서 공개 범위 설정으로 간다', async () => {
+    const user = userEvent.setup();
     renderDetail('bundle-1');
-    expect(screen.queryByRole('button', { name: '번들 더보기' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    expect(await screen.findByRole('button', { name: '삭제하기' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '수정하기' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '신고' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: '공개 범위 설정' }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/bundles/bundle-1/visibility'));
+  });
+
+  it('메인 관리자가 번들을 삭제하면 이전 화면으로 가서 알린다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-1');
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '삭제하기' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '게시글을 삭제할까요?' });
+    expect(within(dialog).getByText('데이터가 삭제되며 복구 불가능해요.')).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('번들을 삭제했어요', expect.anything()));
+    expect(bundleEdits.read().deleted.has('bundle-1')).toBe(true);
+    expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+  });
+
+  it('삭제 확인 창의 「취소」는 번들을 그대로 둔다', async () => {
+    const user = userEvent.setup();
+    renderDetail('bundle-1');
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '삭제하기' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '취소' }),
+    );
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(bundleEdits.read().deleted.size).toBe(0);
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('지운 번들에 다시 들어오면 볼 수 없다는 안내를 보인다', () => {
+    bundleEdits.remove('bundle-2');
+    renderDetail('bundle-2');
+    expect(
+      screen.getByRole('heading', { name: '삭제되었거나 볼 수 없는 내용이에요' }),
+    ).toBeTruthy();
+  });
+
+  it('공개 범위를 바꾸면 상세 뱃지에 반영된다', () => {
+    bundleEdits.setMemberOnly('bundle-1', false);
+    renderDetail('bundle-1');
+    expect(screen.queryByRole('img', { name: '멤버 공개' })).toBeNull();
   });
 });

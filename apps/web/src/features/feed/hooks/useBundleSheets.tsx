@@ -5,6 +5,7 @@ import { BundleMembersSheet, PlacePickSheet } from '@app/design-system/web';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { useScreenOverlay, type ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
 import type { FeedBundleMember, FeedPlace } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
@@ -74,22 +75,30 @@ export function useBundleSheets() {
   // 화면에 있는 동안 시트를 다시 열어도 콕한 상태를 유지
   const picks = useRef<PickStates>({});
 
-  const openPickCancel = (place: FeedPlace) =>
-    openOverlay((rootProps, close) => (
-      <ConfirmDialog
-        {...rootProps}
-        title={text.pickCancelTitle}
-        description={text.pickCancelDescription(place.name, subjectParticle(place.name))}
-        cancelLabel={text.pickCancelNo}
-        confirmLabel={text.pickCancelConfirm}
-        onConfirm={() => {
-          picks.current = { ...picks.current, [place.id]: false };
-          close();
-        }}
-      />
-    ));
+  // 콕 취소 확인 창(화면설계서 피드 2번): 무엇을 고르든 창이 다 닫힌 뒤 콕하기 시트를 다시 올려 이어서 고르게 함
+  const openPickCancel = (place: FeedPlace, places: FeedPlace[]) =>
+    openOverlay(
+      (rootProps, close) => (
+        <ConfirmDialog
+          {...rootProps}
+          title={text.pickCancelTitle}
+          description={text.pickCancelDescription(place.name, subjectParticle(place.name))}
+          cancelLabel={text.pickCancelNo}
+          confirmLabel={text.pickCancelConfirm}
+          onConfirm={() => {
+            picks.current = { ...picks.current, [place.id]: false };
+            close();
+          }}
+        />
+      ),
+      () => openPlaces(places),
+    );
 
-  const openPlaces = (places: FeedPlace[]) => {
+  // 확인 창이 닫힌 뒤 다시 열 때도 그 시점의 소속 번치로 그리도록 열 때마다 최신 값을 읽음
+  const hasBunch = usePreservedCallback(() => viewer !== null);
+  const asLatestBunch = usePreservedCallback(asBunch);
+
+  function openPlaces(places: FeedPlace[]) {
     let cancelTarget: FeedPlace | undefined;
     openOverlay(
       (rootProps, close) => (
@@ -100,8 +109,8 @@ export function useBundleSheets() {
           onPicked={(placeId) => {
             picks.current = { ...picks.current, [placeId]: true };
           }}
-          hasBunch={viewer !== null}
-          asBunch={asBunch}
+          hasBunch={hasBunch()}
+          asBunch={asLatestBunch}
           onCancelPick={(place) => {
             cancelTarget = place;
             close();
@@ -110,10 +119,10 @@ export function useBundleSheets() {
       ),
       // 시트가 다 닫힌 뒤 확인 창을 열어 초점이 위치 버튼으로 돌아가게 함
       () => {
-        if (cancelTarget) openPickCancel(cancelTarget);
+        if (cancelTarget) openPickCancel(cancelTarget, places);
       },
     );
-  };
+  }
 
   const openMembers = (members: FeedBundleMember[]) => {
     let memberHref: string | undefined;
