@@ -38,7 +38,7 @@ export function BunchProfileEdit() {
         if (!bunch) return;
         saveEdit(bunch.id, profile);
         router.replace(BUNCH_HOME_PATHS.home);
-        // 메인탭의 「+」 옆 높이(번치 전환 토스트와 같은 자리)
+        // 저장하면 번치 탭으로 이동하므로 도착 화면의 전환·로딩이 끝난 뒤 탭 막대 위에 뜸
         toastAfterNavigation(BUNCH_HOME_MESSAGES.profileSaved, {
           icon: 'success',
         });
