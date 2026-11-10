@@ -55,3 +55,13 @@ export const dateFromKey = (dateKey: string): Date => {
   const [year, month, day] = dateKey.split('-').map(Number) as [number, number, number];
   return new Date(year, month - 1, day);
 };
+
+// 이만큼 안 움직이고 놓은 끌기는 끌기가 아니라 조금 길게 누른 탭으로 봄
+const TAP_SLOP_PX = 8;
+
+/**
+ * 길게 누르기 시간(300ms)을 넘겨 끌기가 시작됐지만 거의 움직이지 않고 놓았는지
+ * 끌기 라이브러리는 끌기가 시작되면 뒤따르는 클릭을 막으므로, 실기기에서 손가락을 조금 오래 댄 탭이 선택으로 이어지지 않는 일을 막으려고 탭으로 되살림
+ */
+export const isTapLikeDrag = (delta: { x: number; y: number }) =>
+  Math.abs(delta.x) < TAP_SLOP_PX && Math.abs(delta.y) < TAP_SLOP_PX;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { memo, useId } from 'react';
 import type { PhotoSection } from '@/features/photo-box/lib/photoDate';
 import { PhotoCell } from '@/features/photo-box/components/PhotoCell';
 
@@ -9,7 +9,9 @@ type SelectDateSectionProps = {
 };
 
 /** 촬영 날짜 제목(13px SemiBold)과 3열 사진 격자. 사진 칸은 선택 모드의 사진함 칸을 그대로 쓰며 적용 뒤 스크롤 대상이 되도록 id를 가짐 */
-export function SelectDateSection({ section }: SelectDateSectionProps) {
+export const SelectDateSection = memo(function SelectDateSection({
+  section,
+}: SelectDateSectionProps) {
   const headingId = useId();
 
   return (
@@ -31,4 +33,4 @@ export function SelectDateSection({ section }: SelectDateSectionProps) {
       </ul>
     </section>
   );
-}
+});
