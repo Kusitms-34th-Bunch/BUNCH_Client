@@ -8,6 +8,9 @@ import { BunchDelete } from './BunchDelete';
 import { BunchDeleteScreen } from './BunchDeleteScreen';
 import { BunchMenuScreen } from './BunchMenuScreen';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 const back = vi.fn();
 const replace = vi.fn();
 const push = vi.fn();
@@ -151,11 +154,11 @@ describe('BunchDelete', () => {
 
     expect(go).toHaveBeenCalledTimes(1);
     expect(go).toHaveBeenCalledWith(-3);
-    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).toHaveBeenCalledTimes(1);
     // 빠지는 화면은 다음 번치가 아니라 삭제한 번치를 그대로 보여 줌
     expect(screen.getByText('퇴근런클럽')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치를 삭제했어요.', expect.anything());
+    expect(toastAfterNavigation).toHaveBeenCalledWith('퇴근런클럽 번치를 삭제했어요.');
     const { result } = renderHook(() => useCurrentBunchId());
     expect(result.current[0]).toBe('bunch-trip');
     go.mockRestore();

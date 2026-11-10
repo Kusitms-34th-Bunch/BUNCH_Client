@@ -9,6 +9,9 @@ import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { draftFixture } from '../../fixtures/draft.fixture';
 import { DraftPhotoAdd } from './DraftPhotoAdd';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 vi.mock('@app/design-system', async (importOriginal) => ({
@@ -66,7 +69,7 @@ describe('DraftPhotoAdd', () => {
       'draft-photo-3',
       'draft-photo-4',
     ]);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoAddApplied, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoAddApplied);
     expect(onApplied).toHaveBeenCalledTimes(1);
   });
 
@@ -77,7 +80,7 @@ describe('DraftPhotoAdd', () => {
     await userEvent.click(applyButton());
 
     expect(await screen.findByText('사진 1장이 번들에서 빠져요')).toBeInTheDocument();
-    expect(screen.getByText('빠진 사진의 캡션도 함께 지워져요.')).toBeInTheDocument();
+    expect(screen.getByText('빠진 사진의 픽도 함께 사라져요.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '취소' }));
 
     expect(actions.replacePhotos).not.toHaveBeenCalled();
@@ -131,7 +134,7 @@ describe('DraftPhotoAdd', () => {
 
     await userEvent.click(sectionPhotos()[0]!);
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.maxPhotos, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.maxPhotos);
     expect(applyButton()).toBeDisabled();
   });
 
@@ -149,7 +152,7 @@ describe('DraftPhotoAdd', () => {
 
     await userEvent.click(sectionPhotos()[0]!);
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
     await waitFor(() => expect(applyButton()).toBeDisabled());
   });
 });

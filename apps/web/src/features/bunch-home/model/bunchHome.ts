@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
-import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
+import {
+  CHARACTER_TYPES,
+  DEFAULT_PROFILE_IMAGE,
+  defaultBunchImage,
+} from '@/shared/lib/bunchProfile';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import type { BunchHomeDetail, BunchRole } from '../lib/types';
 
@@ -15,7 +19,7 @@ export const bunchHomeResponseSchema = z.object({
     id: z.number().int().positive(),
     name: z.string(),
     imageUrl: z.string().nullish(),
-    characterType: z.enum(['TYPE_1', 'TYPE_2', 'TYPE_3', 'TYPE_4']),
+    characterType: z.enum(CHARACTER_TYPES),
     visibility: z.enum(['PUBLIC', 'PRIVATE']),
     introduction: z.string().nullish(),
   }),
@@ -58,6 +62,8 @@ export const publishedBundlesPageSchema = z.object({
       date: z.string().nullish(),
       location: z.unknown().nullish(),
       publishedAt: z.string().nullish(),
+      // 명세에 아직 없는 필드(백엔드 확인 필요). 표시용이라 모르는 값이어도 목록을 깨지 않게 문자열로 받음
+      visibility: z.string().nullish(),
     }),
   ),
   page: z.number().int().nonnegative(),
@@ -95,8 +101,8 @@ const ROLE: Readonly<Record<z.infer<typeof roleSchema>, BunchRole>> = {
 const UNTITLED_DRAFT = '제목 없는 번들';
 
 // 안전하지 않은 이미지 주소는 항목 하나 때문에 홈 전체가 실패하지 않도록 기본 이미지로 대체
-const safeImage = (url: string | null | undefined) =>
-  url && isSafeImageUrl(url) ? url : DEFAULT_BUNCH_IMAGE;
+const safeImage = (url: string | null | undefined, fallback: string) =>
+  url && isSafeImageUrl(url) ? url : fallback;
 
 /**
  * 서버 응답을 번치 홈 화면의 프로필·번들 모양으로 변환, 내 번치가 아니면(소속 null) undefined
@@ -109,11 +115,15 @@ export const toBunchHomeDetail = (
   members: readonly DraftMemberSource[],
 ): BunchHomeDetail | undefined => {
   if (!home.myMembership) return undefined;
+  // 대표 이미지·번들 표지가 없으면 이 번치 타입의 기본 이미지(멤버 사진은 기본 프로필 이미지)
+  const fallback = defaultBunchImage(home.bunch.characterType);
   return {
     id: toDomainId(home.bunch.id),
     name: home.bunch.name,
-    // 대표 이미지가 없으면 기본 번치 이미지
-    imageSrc: safeImage(home.bunch.imageUrl),
+    // 대표 이미지가 없으면 성격별 기본 이미지
+    imageSrc: safeImage(home.bunch.imageUrl, fallback),
+    characterType: home.bunch.characterType,
+    stage: home.stage,
     description: home.bunch.introduction ?? '',
     isPrivate: home.bunch.visibility === 'PRIVATE',
     myRole: ROLE[home.myMembership.role],
@@ -123,7 +133,8 @@ export const toBunchHomeDetail = (
     completedBundles: published.items.map((bundle) => ({
       id: toDomainId(bundle.id),
       title: bundle.title,
-      coverSrc: safeImage(bundle.coverImageUrl),
+      coverSrc: safeImage(bundle.coverImageUrl, fallback),
+      memberOnly: bundle.visibility === 'PRIVATE',
     })),
     draftBundles: drafts.items.map((bundle) => {
       const first = [...bundle.photos].sort((a, b) => a.position - b.position)[0];
@@ -131,10 +142,12 @@ export const toBunchHomeDetail = (
         id: toDomainId(bundle.id),
         // 제목은 아직 안 쓴 초안일 수 있어 비어 있으면 임시 이름(기획 원문 없음)
         title: bundle.title.trim() === '' ? UNTITLED_DRAFT : bundle.title,
-        coverSrc: safeImage(first?.imageUrl),
+        coverSrc: safeImage(first?.imageUrl, fallback),
         members: bundle.participants.flatMap(({ memberId }) => {
           const member = members.find((candidate) => candidate.id === toDomainId(memberId));
-          return member ? [{ name: member.name, imageSrc: safeImage(member.avatarSrc) }] : [];
+          return member
+            ? [{ name: member.name, imageSrc: safeImage(member.avatarSrc, DEFAULT_PROFILE_IMAGE) }]
+            : [];
         }),
       };
     }),

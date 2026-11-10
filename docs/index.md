@@ -24,6 +24,7 @@
 - [Commit](./conventions/commit.md)
 - [Git](./conventions/git.md)
 - [Package Management](./conventions/package-management.md)
+- [라이브러리 선택 기준](./conventions/libraries.md)
 - [Writing](./conventions/writing.md)
 
 ## Workflows
@@ -32,11 +33,13 @@
 - [Local Development](./workflows/local-development.md)
 - [모바일 앱 실행과 테스트](./workflows/mobile-testing.md)
 - [Testing](./workflows/testing.md)
-- [사용성 테스트(UT) 세팅](./workflows/usability-test.md)
+- [웹 배포(Vercel)와 홈 화면 앱(PWA)](./workflows/web-deployment.md)
+- [가짜 서버와 서버 연동 현황](./workflows/mock-server-status.md)
 - [E2E Testing](./workflows/e2e-testing.md)
 - [API Integration](./workflows/api-integration.md)
 - [Feature Intake](./workflows/feature-intake.md)
 - [Feature Specification](./workflows/spec-writing.md)
+- [Figma 참조](./workflows/figma-references.md)
 - [Pull Request Review](./workflows/pr-review.md)
 - [Security Review](./workflows/security-review.md)
 - [Verification](./workflows/verification.md)

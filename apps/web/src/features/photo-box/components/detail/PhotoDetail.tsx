@@ -1,13 +1,13 @@
 'use client';
 
 import { ApiError } from '@app/api-core';
-import { toast } from '@app/design-system';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { replaceUrl } from '@/shared/lib/replaceUrl';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PHOTO_BOX_PATHS } from '../../constants/paths';
 import { usePhotoBox } from '../../hooks/usePhotoBox';
@@ -80,20 +80,20 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
 
   useEffect(() => {
     if (!goneOnServer) return;
-    toast(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    toastAfterNavigation(PHOTO_BOX_MESSAGES.deletedPhoto);
     void invalidatePhotos();
     router.replace(PHOTO_BOX_PATHS.list);
   }, [goneOnServer, invalidatePhotos, router]);
 
   useEffect(() => {
     if (!vanished || deleting.current) return;
-    toast(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    toastAfterNavigation(PHOTO_BOX_MESSAGES.deletedPhoto);
     router.replace(PHOTO_BOX_PATHS.list);
   }, [vanished, router]);
 
   useEffect(() => {
     if (!missing) return;
-    toast(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    toastAfterNavigation(PHOTO_BOX_MESSAGES.deletedPhoto);
     router.replace(PHOTO_BOX_PATHS.list);
   }, [missing, router]);
 

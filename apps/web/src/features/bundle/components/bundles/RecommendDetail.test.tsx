@@ -7,6 +7,9 @@ import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { BundleSelectProvider } from '../../contexts/BundleSelectProvider';
 import { RecommendDetail } from './RecommendDetail';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
@@ -28,9 +31,13 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
-const renderDetail = (recommendationId: string | undefined) =>
+// 앞 단계(멤버 선택)에서 멤버를 고른 상태로 시작
+const renderDetail = (
+  recommendationId: string | undefined,
+  initialMemberIds: readonly string[] = ['gyeongjin'],
+) =>
   render(
-    <BundleSelectProvider>
+    <BundleSelectProvider initialMemberIds={initialMemberIds}>
       <RecommendDetail recommendationId={recommendationId} />
     </BundleSelectProvider>,
   );
@@ -71,16 +78,22 @@ describe('RecommendDetail', () => {
   it('없는 추천이면 안내 토스트 뒤 사진 선택 화면으로 돌아간다', () => {
     renderDetail('nope');
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation, {
-      fullWidth: true,
-    });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
+  });
+
+  it('멤버를 고르지 않고 들어오면 안내 없이 멤버 선택으로 보낸다', () => {
+    renderDetail('nope', []);
+
+    expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.members);
+    expect(router.replace).not.toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
   });
 
   it('형식이 틀린 id(undefined)도 같은 안내로 처리한다', () => {
     renderDetail(undefined);
 
-    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).toHaveBeenCalledTimes(1);
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
   });
 });

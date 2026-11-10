@@ -1,0 +1,2141 @@
+/*
+ * 대표 사진 투표 「픽하기」 모션(Figma `픽하기_모션` 5699:103708, 3.4초 한 번)
+ * Figma 모션 데이터(get_motion_context)에서 생성한 키프레임: 시점·값·이징은 데이터 그대로
+ * 사진 눌림 → 하얀 글린트가 모였다 떠오름 → 스파크 → 픽한 수·칩 변화 → 작은 글린트 순서
+ * 이 파일은 손으로 고치지 않고 모션 데이터가 바뀌면 다시 만든다
+ */
+.fx {
+  --pick-duration: 3.4s;
+}
+
+@keyframes photo-scale {
+  0% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  16.18% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  20% {
+    scale: 0.985;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  26.47% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  35.29% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  38.24% {
+    scale: 0.99;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes button-scale {
+  0% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  14.71% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  17.65% {
+    scale: 0.96;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes countNew-translate {
+  0% {
+    translate: 0 8px;
+    animation-timing-function: linear;
+  }
+  52.94% {
+    translate: 0 8px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  59.41% {
+    translate: 0 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0 0px;
+  }
+}
+
+@keyframes countNew-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  52.94% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  57.94% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes badgeMe-scale {
+  0% {
+    scale: 0;
+    animation-timing-function: linear;
+  }
+  52.94% {
+    scale: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  58.82% {
+    scale: 1.12;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  62.94% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes badgeMe-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  52.94% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  55.29% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes badgeOther-translate {
+  0% {
+    translate: -23.5px 0;
+    animation-timing-function: linear;
+  }
+  47.65% {
+    translate: -23.5px 0;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  55% {
+    translate: 0px 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0;
+  }
+}
+
+@keyframes dim-scale {
+  0% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  16.18% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  20% {
+    scale: 0.985;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  26.47% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  35.29% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  38.24% {
+    scale: 0.99;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes dim-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  16.18% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  33.82% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  60.29% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  86.76% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes glint-translate {
+  0% {
+    translate: 0 0px;
+    animation-timing-function: linear;
+  }
+  63.24% {
+    translate: 0 0px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  73.53% {
+    translate: 0 -20px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0 -20px;
+  }
+}
+
+@keyframes glint-rotate {
+  0% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  49.41% {
+    rotate: 0rad;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  63.24% {
+    rotate: 1.5708rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 1.5708rad;
+  }
+}
+
+@keyframes glint-scale {
+  0% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  40.59% {
+    scale: 1.03;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  63.24% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  73.53% {
+    scale: 0.85;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 0.85;
+  }
+}
+
+@keyframes glint-opacity {
+  0% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  64.71% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  73.53% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes glintModule0-translate {
+  0% {
+    translate: -1.0319px 20.072px;
+    animation-timing-function: linear;
+  }
+  17.76% {
+    translate: -1.0319px 20.072px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -1.2899px 25.09px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  26.82% {
+    translate: -1.2899px 25.09px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.59% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule0-rotate {
+  0% {
+    rotate: -0.7854rad;
+    animation-timing-function: linear;
+  }
+  26.82% {
+    rotate: -0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.59% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule0-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  17.76% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  23.06% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  26.82% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  34.82% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule0-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  17.76% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  20.71% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule1-translate {
+  0% {
+    translate: -39.7855px -55.8386px;
+    animation-timing-function: linear;
+  }
+  18.85% {
+    translate: -39.7855px -55.8386px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -49.7319px -69.7982px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  27.18% {
+    translate: -49.7319px -69.7982px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.71% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule1-rotate {
+  0% {
+    rotate: -0.7854rad;
+    animation-timing-function: linear;
+  }
+  27.18% {
+    rotate: -0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.71% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule1-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  18.85% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  24.15% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  27.18% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  34.94% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule1-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  18.85% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.79% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule2-translate {
+  0% {
+    translate: 36.4736px -8.2693px;
+    animation-timing-function: linear;
+  }
+  18.21% {
+    translate: 36.4736px -8.2693px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: 45.592px -10.3367px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  26.47% {
+    translate: 45.592px -10.3367px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.47% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule2-rotate {
+  0% {
+    rotate: -0.7854rad;
+    animation-timing-function: linear;
+  }
+  26.47% {
+    rotate: -0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.47% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule2-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  18.21% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  23.5% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  26.47% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  34.71% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule2-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  18.21% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.15% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule3-translate {
+  0% {
+    translate: 56.1546px 32.3805px;
+    animation-timing-function: linear;
+  }
+  17.97% {
+    translate: 56.1546px 32.3805px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: 70.1933px 40.4756px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  27.53% {
+    translate: 70.1933px 40.4756px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.82% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule3-rotate {
+  0% {
+    rotate: 0.7854rad;
+    animation-timing-function: linear;
+  }
+  27.53% {
+    rotate: 0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.82% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule3-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  17.97% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  23.26% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  27.53% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  35.06% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule3-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  17.97% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  20.91% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule4-translate {
+  0% {
+    translate: 34.691px -5.6662px;
+    animation-timing-function: linear;
+  }
+  18.41% {
+    translate: 34.691px -5.6662px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: 43.3638px -7.0828px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  30.35% {
+    translate: 43.3638px -7.0828px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.76% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule4-rotate {
+  0% {
+    rotate: 0.7854rad;
+    animation-timing-function: linear;
+  }
+  30.35% {
+    rotate: 0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.76% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule4-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  18.41% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  23.71% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  30.35% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule4-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  18.41% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.35% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule5-translate {
+  0% {
+    translate: -22.9435px 44.6337px;
+    animation-timing-function: linear;
+  }
+  18.56% {
+    translate: -22.9435px 44.6337px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -28.6793px 55.7921px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  30.71% {
+    translate: -28.6793px 55.7921px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.88% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule5-rotate {
+  0% {
+    rotate: -0.7854rad;
+    animation-timing-function: linear;
+  }
+  30.71% {
+    rotate: -0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.88% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule5-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  18.56% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  23.85% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  30.71% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.12% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule5-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  18.56% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.5% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule6-translate {
+  0% {
+    translate: -44.5386px 18.7983px;
+    animation-timing-function: linear;
+  }
+  18.85% {
+    translate: -44.5386px 18.7983px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -55.6732px 23.4979px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  27.88% {
+    translate: -55.6732px 23.4979px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.94% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule6-rotate {
+  0% {
+    rotate: -0.7854rad;
+    animation-timing-function: linear;
+  }
+  27.88% {
+    rotate: -0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  36.94% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule6-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  18.85% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  24.15% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  27.88% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  35.18% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule6-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  18.85% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.79% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule7-translate {
+  0% {
+    translate: -33.6734px -37.6171px;
+    animation-timing-function: linear;
+  }
+  18.44% {
+    translate: -33.6734px -37.6171px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -42.0917px -47.0214px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  28.24% {
+    translate: -42.0917px -47.0214px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.06% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule7-rotate {
+  0% {
+    rotate: 0.7854rad;
+    animation-timing-function: linear;
+  }
+  28.24% {
+    rotate: 0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.06% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule7-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  18.44% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  23.74% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  28.24% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  35.29% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule7-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  18.44% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.38% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule8-translate {
+  0% {
+    translate: -20.6887px 11.1601px;
+    animation-timing-function: linear;
+  }
+  17.82% {
+    translate: -20.6887px 11.1601px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -25.8608px 13.9502px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  28.59% {
+    translate: -25.8608px 13.9502px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.18% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule8-rotate {
+  0% {
+    rotate: 0.7854rad;
+    animation-timing-function: linear;
+  }
+  28.59% {
+    rotate: 0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.18% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule8-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  17.82% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  23.12% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  28.59% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  35.41% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule8-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  17.82% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  20.76% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule9-translate {
+  0% {
+    translate: -32.4754px -44.6399px;
+    animation-timing-function: linear;
+  }
+  18.56% {
+    translate: -32.4754px -44.6399px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -40.5942px -55.7999px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  30% {
+    translate: -40.5942px -55.7999px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.65% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule9-rotate {
+  0% {
+    rotate: 0.7854rad;
+    animation-timing-function: linear;
+  }
+  30% {
+    rotate: 0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.65% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule9-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  18.56% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  23.85% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  30% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  35.88% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule9-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  18.56% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.5% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule10-translate {
+  0% {
+    translate: -34.6213px -11.2266px;
+    animation-timing-function: linear;
+  }
+  19.03% {
+    translate: -34.6213px -11.2266px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -43.2767px -14.0332px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  28.94% {
+    translate: -43.2767px -14.0332px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.29% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule10-rotate {
+  0% {
+    rotate: -0.7854rad;
+    animation-timing-function: linear;
+  }
+  28.94% {
+    rotate: -0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.29% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule10-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  19.03% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  24.32% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  28.94% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  35.53% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule10-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  19.03% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.97% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule11-translate {
+  0% {
+    translate: 45.1373px 27.1527px;
+    animation-timing-function: linear;
+  }
+  19% {
+    translate: 45.1373px 27.1527px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: 56.4217px 33.9409px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  29.29% {
+    translate: 56.4217px 33.9409px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.41% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule11-rotate {
+  0% {
+    rotate: -0.7854rad;
+    animation-timing-function: linear;
+  }
+  29.29% {
+    rotate: -0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.41% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule11-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  19% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  24.29% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  29.29% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  35.65% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule11-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  19% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.94% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glintModule12-translate {
+  0% {
+    translate: -50.8098px 8.2081px;
+    animation-timing-function: linear;
+  }
+  18.82% {
+    translate: -50.8098px 8.2081px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  25.29% {
+    translate: -63.5122px 10.2601px;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  29.65% {
+    translate: -63.5122px 10.2601px;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.53% {
+    translate: 0px 0px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0px 0px;
+  }
+}
+
+@keyframes glintModule12-rotate {
+  0% {
+    rotate: 0.7854rad;
+    animation-timing-function: linear;
+  }
+  29.65% {
+    rotate: 0.7854rad;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  37.53% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 0rad;
+  }
+}
+
+@keyframes glintModule12-scale {
+  0% {
+    scale: 0.3;
+    animation-timing-function: linear;
+  }
+  18.82% {
+    scale: 0.3;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  24.12% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  29.65% {
+    scale: 0.9;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  35.76% {
+    scale: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes glintModule12-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  18.82% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  21.76% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes countOld-translate {
+  0% {
+    translate: 0 0px;
+    animation-timing-function: linear;
+  }
+  50.59% {
+    translate: 0 0px;
+    animation-timing-function: cubic-bezier(0.42, 0, 1, 1);
+  }
+  56.47% {
+    translate: 0 -8px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 0 -8px;
+  }
+}
+
+@keyframes countOld-opacity {
+  0% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  50.59% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 1, 1);
+  }
+  55% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes mini-rotate {
+  0% {
+    rotate: 0rad;
+    animation-timing-function: linear;
+  }
+  57.94% {
+    rotate: 0rad;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  71.18% {
+    rotate: 1.5708rad;
+    animation-timing-function: linear;
+  }
+  100% {
+    rotate: 1.5708rad;
+  }
+}
+
+@keyframes mini-scale {
+  0% {
+    scale: 0;
+    animation-timing-function: linear;
+  }
+  57.94% {
+    scale: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  62.94% {
+    scale: 1.2;
+    animation-timing-function: cubic-bezier(0.42, 0, 1, 1);
+  }
+  69.71% {
+    scale: 0.6;
+    animation-timing-function: linear;
+  }
+  100% {
+    scale: 0.6;
+  }
+}
+
+@keyframes mini-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  57.94% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  59.41% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  66.76% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.42, 0, 1, 1);
+  }
+  71.18% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark0-translate {
+  0% {
+    translate: 35.1074px 14.542px;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    translate: 35.1074px 14.542px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  47.06% {
+    translate: 55.4328px 22.961px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 55.4328px 22.961px;
+  }
+}
+
+@keyframes spark0-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  35.88% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  37.65% {
+    opacity: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark1-translate {
+  0% {
+    translate: 14.542px 35.1074px;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    translate: 14.542px 35.1074px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  47.06% {
+    translate: 19.1342px 46.194px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 19.1342px 46.194px;
+  }
+}
+
+@keyframes spark1-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  35.88% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  37.65% {
+    opacity: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark2-translate {
+  0% {
+    translate: -14.542px 35.1074px;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    translate: -14.542px 35.1074px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  47.06% {
+    translate: -22.961px 55.4328px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: -22.961px 55.4328px;
+  }
+}
+
+@keyframes spark2-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  35.88% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  37.65% {
+    opacity: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark3-translate {
+  0% {
+    translate: -35.1074px 14.542px;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    translate: -35.1074px 14.542px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  47.06% {
+    translate: -46.194px 19.1342px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: -46.194px 19.1342px;
+  }
+}
+
+@keyframes spark3-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  35.88% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  37.65% {
+    opacity: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark4-translate {
+  0% {
+    translate: -35.1074px -14.542px;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    translate: -35.1074px -14.542px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  47.06% {
+    translate: -55.4328px -22.961px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: -55.4328px -22.961px;
+  }
+}
+
+@keyframes spark4-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  35.88% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  37.65% {
+    opacity: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark5-translate {
+  0% {
+    translate: -14.542px -35.1074px;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    translate: -14.542px -35.1074px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  47.06% {
+    translate: -19.1342px -46.194px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: -19.1342px -46.194px;
+  }
+}
+
+@keyframes spark5-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  35.88% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  37.65% {
+    opacity: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark6-translate {
+  0% {
+    translate: 14.542px -35.1074px;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    translate: 14.542px -35.1074px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  47.06% {
+    translate: 22.961px -55.4328px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 22.961px -55.4328px;
+  }
+}
+
+@keyframes spark6-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  35.88% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  37.65% {
+    opacity: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark7-translate {
+  0% {
+    translate: 35.1074px -14.542px;
+    animation-timing-function: linear;
+  }
+  36.47% {
+    translate: 35.1074px -14.542px;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  47.06% {
+    translate: 46.194px -19.1342px;
+    animation-timing-function: linear;
+  }
+  100% {
+    translate: 46.194px -19.1342px;
+  }
+}
+
+@keyframes spark7-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  35.88% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  37.65% {
+    opacity: 0.9;
+    animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  }
+  47.06% {
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.photo {
+  animation: photo-scale var(--pick-duration) linear 1 both;
+}
+
+.button {
+  animation: button-scale var(--pick-duration) linear 1 both;
+}
+
+.countNew {
+  animation:
+    countNew-translate var(--pick-duration) linear 1 both,
+    countNew-opacity var(--pick-duration) linear 1 both;
+}
+
+.badgeMe {
+  animation:
+    badgeMe-scale var(--pick-duration) linear 1 both,
+    badgeMe-opacity var(--pick-duration) linear 1 both;
+}
+
+.badgeOther {
+  animation: badgeOther-translate var(--pick-duration) linear 1 both;
+}
+
+.dim {
+  animation:
+    dim-scale var(--pick-duration) linear 1 both,
+    dim-opacity var(--pick-duration) linear 1 both;
+}
+
+.glint {
+  animation:
+    glint-translate var(--pick-duration) linear 1 both,
+    glint-rotate var(--pick-duration) linear 1 both,
+    glint-scale var(--pick-duration) linear 1 both,
+    glint-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule0 {
+  animation:
+    glintModule0-translate var(--pick-duration) linear 1 both,
+    glintModule0-rotate var(--pick-duration) linear 1 both,
+    glintModule0-scale var(--pick-duration) linear 1 both,
+    glintModule0-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule1 {
+  animation:
+    glintModule1-translate var(--pick-duration) linear 1 both,
+    glintModule1-rotate var(--pick-duration) linear 1 both,
+    glintModule1-scale var(--pick-duration) linear 1 both,
+    glintModule1-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule2 {
+  animation:
+    glintModule2-translate var(--pick-duration) linear 1 both,
+    glintModule2-rotate var(--pick-duration) linear 1 both,
+    glintModule2-scale var(--pick-duration) linear 1 both,
+    glintModule2-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule3 {
+  animation:
+    glintModule3-translate var(--pick-duration) linear 1 both,
+    glintModule3-rotate var(--pick-duration) linear 1 both,
+    glintModule3-scale var(--pick-duration) linear 1 both,
+    glintModule3-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule4 {
+  animation:
+    glintModule4-translate var(--pick-duration) linear 1 both,
+    glintModule4-rotate var(--pick-duration) linear 1 both,
+    glintModule4-scale var(--pick-duration) linear 1 both,
+    glintModule4-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule5 {
+  animation:
+    glintModule5-translate var(--pick-duration) linear 1 both,
+    glintModule5-rotate var(--pick-duration) linear 1 both,
+    glintModule5-scale var(--pick-duration) linear 1 both,
+    glintModule5-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule6 {
+  animation:
+    glintModule6-translate var(--pick-duration) linear 1 both,
+    glintModule6-rotate var(--pick-duration) linear 1 both,
+    glintModule6-scale var(--pick-duration) linear 1 both,
+    glintModule6-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule7 {
+  animation:
+    glintModule7-translate var(--pick-duration) linear 1 both,
+    glintModule7-rotate var(--pick-duration) linear 1 both,
+    glintModule7-scale var(--pick-duration) linear 1 both,
+    glintModule7-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule8 {
+  animation:
+    glintModule8-translate var(--pick-duration) linear 1 both,
+    glintModule8-rotate var(--pick-duration) linear 1 both,
+    glintModule8-scale var(--pick-duration) linear 1 both,
+    glintModule8-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule9 {
+  animation:
+    glintModule9-translate var(--pick-duration) linear 1 both,
+    glintModule9-rotate var(--pick-duration) linear 1 both,
+    glintModule9-scale var(--pick-duration) linear 1 both,
+    glintModule9-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule10 {
+  animation:
+    glintModule10-translate var(--pick-duration) linear 1 both,
+    glintModule10-rotate var(--pick-duration) linear 1 both,
+    glintModule10-scale var(--pick-duration) linear 1 both,
+    glintModule10-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule11 {
+  animation:
+    glintModule11-translate var(--pick-duration) linear 1 both,
+    glintModule11-rotate var(--pick-duration) linear 1 both,
+    glintModule11-scale var(--pick-duration) linear 1 both,
+    glintModule11-opacity var(--pick-duration) linear 1 both;
+}
+
+.glintModule12 {
+  animation:
+    glintModule12-translate var(--pick-duration) linear 1 both,
+    glintModule12-rotate var(--pick-duration) linear 1 both,
+    glintModule12-scale var(--pick-duration) linear 1 both,
+    glintModule12-opacity var(--pick-duration) linear 1 both;
+}
+
+.countOld {
+  animation:
+    countOld-translate var(--pick-duration) linear 1 both,
+    countOld-opacity var(--pick-duration) linear 1 both;
+}
+
+.mini {
+  animation:
+    mini-rotate var(--pick-duration) linear 1 both,
+    mini-scale var(--pick-duration) linear 1 both,
+    mini-opacity var(--pick-duration) linear 1 both;
+}
+
+.spark0 {
+  animation:
+    spark0-translate var(--pick-duration) linear 1 both,
+    spark0-opacity var(--pick-duration) linear 1 both;
+}
+
+.spark1 {
+  animation:
+    spark1-translate var(--pick-duration) linear 1 both,
+    spark1-opacity var(--pick-duration) linear 1 both;
+}
+
+.spark2 {
+  animation:
+    spark2-translate var(--pick-duration) linear 1 both,
+    spark2-opacity var(--pick-duration) linear 1 both;
+}
+
+.spark3 {
+  animation:
+    spark3-translate var(--pick-duration) linear 1 both,
+    spark3-opacity var(--pick-duration) linear 1 both;
+}
+
+.spark4 {
+  animation:
+    spark4-translate var(--pick-duration) linear 1 both,
+    spark4-opacity var(--pick-duration) linear 1 both;
+}
+
+.spark5 {
+  animation:
+    spark5-translate var(--pick-duration) linear 1 both,
+    spark5-opacity var(--pick-duration) linear 1 both;
+}
+
+.spark6 {
+  animation:
+    spark6-translate var(--pick-duration) linear 1 both,
+    spark6-opacity var(--pick-duration) linear 1 both;
+}
+
+.spark7 {
+  animation:
+    spark7-translate var(--pick-duration) linear 1 both,
+    spark7-opacity var(--pick-duration) linear 1 both;
+}
+
+/* 정적 모양(Figma FX 프레임) */
+.dim {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: var(--color-overlay-dim-subtle);
+  pointer-events: none;
+}
+
+.glint {
+  position: absolute;
+  top: 163px;
+  left: 112.5px;
+  width: 70px;
+  height: 70px;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 7px rgb(13 15 51 / 28%));
+}
+
+.glintModule {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--primitive-gray-scale-gray-000);
+}
+
+.spark {
+  position: absolute;
+  top: 195.5px;
+  left: 145px;
+  width: 5px;
+  height: 5px;
+  background: var(--primitive-gray-scale-gray-000);
+  pointer-events: none;
+}
+
+.mini {
+  position: absolute;
+  top: -8px;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.miniModule {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--primitive-bunch-500);
+}
+
+.countOld {
+  position: absolute;
+  inset: 0 auto auto 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* 동작 줄이기: 화면이 이 모션을 그리지 않지만 혹시 그려져도 움직이지 않게 */
+@media (prefers-reduced-motion: reduce) {
+  .fx,
+  .fx * {
+    animation: none !important;
+  }
+}

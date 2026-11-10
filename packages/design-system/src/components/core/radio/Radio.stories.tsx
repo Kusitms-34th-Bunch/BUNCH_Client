@@ -32,7 +32,7 @@ export const States: Story = {
 export const Group: Story = {
   render: () => (
     <fieldset className="gap-s4 flex flex-col">
-      <legend className="typography-body-3-semi-bold pb-s4">공개 범위</legend>
+      <legend className="typography-body-3-semibold pb-s4">공개 범위</legend>
       {[
         ['private', '비공개'],
         ['public', '전체 공개'],

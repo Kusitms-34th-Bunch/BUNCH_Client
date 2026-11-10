@@ -17,7 +17,7 @@
 ### 범위 외
 
 - 번치 생성 API, 소개 문구의 서버 검증.
-- 단계 사이 제목·본문 애니메이션. 화면설계서 `791:8480`의 「진행바만 인터랙션 O」에 따라 진행 표시줄 색상만 CSS ease-out·300ms로 전환한다. 공통 `CreateBunchFrame`이 진행바를 유지한다.
+- 단계 사이 본문 애니메이션. 진행 표시줄 채움과 제목 등장은 Header Animation(Figma `1998:35008`, 600ms Slow)을 따른다(`docs/architecture/motion.md`). 공통 `CreateBunchFrame`이 진행바를 유지한다.
 
 ## Route와 접근
 
@@ -48,7 +48,7 @@
 | Figma          | 값                                                                         | 사용한 토큰·utility                           |
 | -------------- | -------------------------------------------------------------------------- | --------------------------------------------- |
 | 소개 입력 영역 | 위 36, 좌우 16                                                             | `pt-s15 px-padding-p8`                        |
-| TIP 영역       | 위 36, 배지와 제목 간격 6, 박스까지 8                                      | `pt-s15 px-padding-p8 gap-s4`, `gap-s3`       |
+| TIP 영역       | 위 36, 배지와 제목 간격 6, 박스까지 6                                      | `pt-s15 px-padding-p8 gap-s3`, `gap-s3`       |
 | TIP 배지       | 7×3 패딩, 12/16 Medium, `chip-blue`                                        | `Badge size="sm"`                             |
 | 예시 박스      | 패딩 16, radius 8, `surface-secondary`, 13/18 `text-tertiary`, 목록 간격 4 | `p-s8 rounded-r4 bg-surface-secondary gap-s2` |
 | 목록 들여쓰기  | 19.5                                                                       | `ms-[19.5px]`(토큰 없음)                      |

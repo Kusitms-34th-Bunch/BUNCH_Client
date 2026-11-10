@@ -1,9 +1,10 @@
 import { ActionDialog, toast } from '@app/design-system';
 import { CameraButton, ProfileImage } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { isNativeShell } from '../../bridge/client';
 import { usePhotoPicker } from '../../hooks/usePhotoPicker';
-import { DEFAULT_BUNCH_IMAGE } from '../../lib/bunchProfile';
+import { DEFAULT_PROFILE_IMAGE } from '../../lib/bunchProfile';
 import { PROFILE_IMAGE_RULES } from '../../lib/imageFile';
 import { closeKeyboard } from '../../lib/keyboard';
 import { PhotoCropScreen } from './PhotoCropScreen';
@@ -25,7 +26,7 @@ type ProfilePhotoFieldProps = {
  * 카메라 버튼 → 「프로필 사진 설정」 선택지 → 앨범 선택 → 원형 조정 → 미리보기. 앱도 시스템 편집 없이 이 조정 화면 사용
  */
 export function ProfilePhotoField({ value, onChange }: ProfilePhotoFieldProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
   const [cropSrc, setCropSrc] = useState<string>();
   const [showLoading, setShowLoading] = useState(false);
   const photoRef = useRef<HTMLDivElement>(null);
@@ -71,41 +72,48 @@ export function ProfilePhotoField({ value, onChange }: ProfilePhotoFieldProps) {
     wasCropOpen.current = cropOpen;
   }, [cropOpen]);
 
-  const actions = [
-    {
-      label: '앨범에서 사진 선택하기',
-      onClick: () => {
-        setDialogOpen(false);
-        // 앞선 읽기가 남아 있으면 새 선택이 시작되지 않으므로 취소 표시도 유지
-        if (!isPending) cancelledWhilePending.current = false;
-        // 웹 파일 선택 창은 사용자 클릭 안에서 열어야 해서 바로 호출
-        handleCameraClick();
-      },
-    },
-    // 이미 기본 이미지면 기본 이미지로 바꾸는 선택지는 없음(화면 설계서 2-1번)
-    ...(value
-      ? [
+  const openDialog = () =>
+    openOverlay((rootProps, close) => (
+      <ActionDialog
+        {...rootProps}
+        title="프로필 사진 설정"
+        actions={[
           {
-            label: '기본 이미지 적용하기',
+            label: '앨범에서 사진 선택하기',
             onClick: () => {
-              setDialogOpen(false);
-              onChange(undefined);
+              close();
+              // 앞선 읽기가 남아 있으면 새 선택이 시작되지 않으므로 취소 표시도 유지
+              if (!isPending) cancelledWhilePending.current = false;
+              // 웹 파일 선택 창은 사용자 클릭 안에서 열어야 해서 바로 호출
+              handleCameraClick();
             },
           },
-        ]
-      : []),
-  ];
+          // 이미 기본 이미지면 기본 이미지로 바꾸는 선택지는 없음(화면 설계서 2-1번)
+          ...(value
+            ? [
+                {
+                  label: '기본 이미지 적용하기',
+                  onClick: () => {
+                    close();
+                    onChange(undefined);
+                  },
+                },
+              ]
+            : []),
+        ]}
+      />
+    ));
 
   return (
     <>
       <div ref={photoRef} className="relative h-22.5 w-23.75">
-        <ProfileImage src={value ?? DEFAULT_BUNCH_IMAGE} className="absolute top-0 left-0.75" />
+        <ProfileImage src={value ?? DEFAULT_PROFILE_IMAGE} className="absolute top-0 left-0.75" />
         <CameraButton
           aria-label="프로필 사진 변경"
           className="absolute top-15.5 left-16.75"
           onClick={() => {
             closeKeyboard();
-            setDialogOpen(true);
+            openDialog();
           }}
         />
       </div>
@@ -115,12 +123,6 @@ export function ProfilePhotoField({ value, onChange }: ProfilePhotoFieldProps) {
         accept={PROFILE_IMAGE_RULES.types.join(',')}
         className="hidden"
         onChange={handleFileChange}
-      />
-      <ActionDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        title="프로필 사진 설정"
-        actions={actions}
       />
       {cropOpen ? (
         <PhotoCropScreen

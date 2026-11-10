@@ -56,7 +56,7 @@ beforeEach(() => {
 describe('번들 사진 20장 한도', () => {
   it('21번째 사진은 선택되지 않고 안내 토스트가 뜬다', async () => {
     render(
-      <BundleSelectProvider>
+      <BundleSelectProvider initialMemberIds={['b']}>
         <BundleSelect currentYear={2026} />
       </BundleSelectProvider>,
     );
@@ -67,7 +67,7 @@ describe('번들 사진 20장 한도', () => {
     for (const cell of cells) await userEvent.click(cell);
 
     expect(toast).toHaveBeenCalledTimes(1);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.maxPhotos, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.maxPhotos);
     expect(screen.getByRole('status')).toHaveTextContent('20장 선택됨');
   });
 });

@@ -1,6 +1,7 @@
 # 008: Toast는 sonner에 알림 동작을 맡기고 모양은 디자인 시스템이 입힌다
 
 - 상태: accepted
+- 기록일: 2026-10-17
 - 구현 상태(2026-10-17 확인): 구현됨(`@app/design-system`의 `Toast`·`Toaster`·`toast`). iOS WebView 실기기 확인 전.
 
 ## 배경

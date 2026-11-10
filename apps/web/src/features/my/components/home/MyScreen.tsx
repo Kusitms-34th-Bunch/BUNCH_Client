@@ -3,13 +3,16 @@
 import { ConfirmDialog, Header, LineChevronRightLargeIcon } from '@app/design-system';
 import { MenuLabel, ProfileImage } from '@app/design-system/web';
 import Link from 'next/link';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 import { openExternal } from '../../lib/navigation';
 import { useLogoutMutation } from '../../queries/session';
+import { PendingConfirmDialog } from '../PendingConfirmDialog';
 
 type ConfirmKind = 'contact' | 'logout';
 type MenuItem = { label: string; href?: string; dialog?: ConfirmKind };
@@ -48,7 +51,32 @@ type MyScreenProps = {
  * 프로필은 호출하는 쪽이 전달(내 정보 API 연결 전에는 fixture)
  */
 export function MyScreen({ profile, contactUrl }: MyScreenProps) {
-  const [confirm, setConfirm] = useState<ConfirmKind | null>(null);
+  const openOverlay = useScreenOverlay();
+  const openConfirm = (kind: ConfirmKind) =>
+    kind === 'contact'
+      ? openOverlay((rootProps, close) => (
+          <ConfirmDialog
+            {...rootProps}
+            title={MY_MESSAGES.contact.title}
+            description={MY_MESSAGES.contact.description}
+            cancelLabel={MY_MESSAGES.cancel}
+            confirmLabel={MY_MESSAGES.contact.confirm}
+            confirmDisabled={!contactUrl}
+            onConfirm={() => {
+              close();
+              if (contactUrl) openExternal(contactUrl);
+            }}
+          />
+        ))
+      : openOverlay((rootProps) => (
+          <PendingConfirmDialog
+            {...rootProps}
+            title={MY_MESSAGES.logout.title}
+            cancelLabel={MY_MESSAGES.cancel}
+            confirmLabel={MY_MESSAGES.logout.confirm}
+            run={(onError) => logout.mutate(undefined, { onError })}
+          />
+        ));
   const logout = useLogoutMutation();
 
   return (
@@ -59,7 +87,11 @@ export function MyScreen({ profile, contactUrl }: MyScreenProps) {
           href={MY_PATHS.profile}
           className="px-padding-p8 py-padding-p5 gap-s5 before:bg-overlay-hover focus-visible:outline-border-brand relative isolate flex touch-manipulation items-center before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 active:before:opacity-100 motion-reduce:before:transition-none"
         >
-          <ProfileImage src={profile.imageSrc} size="M" className="border-border-tertiary border" />
+          <ProfileImage
+            src={profile.imageSrc ?? DEFAULT_PROFILE_IMAGE}
+            size="M"
+            className="border-border-tertiary border"
+          />
           <span className="typography-body-1-semi-bold text-text-primary min-w-0 flex-1 truncate">
             {profile.nickname}
             <span className="sr-only"> {MY_MESSAGES.profileEdit}</span>
@@ -82,7 +114,7 @@ export function MyScreen({ profile, contactUrl }: MyScreenProps) {
                       {label}
                     </MenuLabel>
                   ) : (
-                    <MenuLabel onClick={() => setConfirm(dialog ?? null)}>{label}</MenuLabel>
+                    <MenuLabel onClick={() => dialog && openConfirm(dialog)}>{label}</MenuLabel>
                   )}
                 </li>
               ))}
@@ -90,35 +122,6 @@ export function MyScreen({ profile, contactUrl }: MyScreenProps) {
           ))}
         </div>
       </div>
-      <ConfirmDialog
-        open={confirm === 'contact'}
-        onOpenChange={(open) => setConfirm(open ? 'contact' : null)}
-        title={MY_MESSAGES.contact.title}
-        description={MY_MESSAGES.contact.description}
-        cancelLabel={MY_MESSAGES.cancel}
-        confirmLabel={MY_MESSAGES.contact.confirm}
-        confirmDisabled={!contactUrl}
-        onConfirm={() => {
-          setConfirm(null);
-          if (contactUrl) openExternal(contactUrl);
-        }}
-      />
-      <ConfirmDialog
-        open={confirm === 'logout'}
-        // 요청 중에는 취소·ESC로 닫지 않음(닫힌 뒤 로그아웃이 끝나 화면이 바뀌는 혼란 방지)
-        onOpenChange={(open) => {
-          if (!logout.isPending) setConfirm(open ? 'logout' : null);
-        }}
-        title={MY_MESSAGES.logout.title}
-        cancelLabel={MY_MESSAGES.cancel}
-        confirmLabel={MY_MESSAGES.logout.confirm}
-        // 요청 중과 성공 뒤 문서를 다시 여는 동안 다시 누르지 못하게 막음
-        confirmDisabled={logout.isPending || logout.isSuccess}
-        onConfirm={() =>
-          // 성공 뒤 이동은 useLogoutMutation이 처리, 실패하면 창만 닫음
-          logout.mutate(undefined, { onError: () => setConfirm(null) })
-        }
-      />
     </PageShell>
   );
 }
@@ -128,7 +131,7 @@ function MenuSection({ title, children }: { title: string; children: ReactNode }
   return (
     // 이름 붙은 region으로 두면 토스트 영역(「알림」)과 같은 이름의 랜드마크가 생겨 h2 제목만 둔 묶음으로
     <section className="gap-s2 flex flex-col">
-      <h2 className="typography-body-4-semi-bold text-text-quaternary px-padding-p8 py-padding-p3">
+      <h2 className="typography-body-4-semi-bold text-text-tertiary px-padding-p8 py-padding-p3">
         {title}
       </h2>
       <ul className="px-padding-p6 flex flex-col">{children}</ul>

@@ -1,0 +1,28 @@
+/* Figma 좋아요 모션(4118:103009): 0.4s 동안 1 → 0.74 → 1.22 → 1, 구간마다 ease-in-out(0.5,0,0.5,1) */
+.bounce {
+  animation: like-bounce 400ms both;
+}
+
+@keyframes like-bounce {
+  0% {
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
+  }
+  16.5% {
+    transform: scale(0.74);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
+  }
+  70.8% {
+    transform: scale(1.22);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bounce {
+    animation: none;
+  }
+}

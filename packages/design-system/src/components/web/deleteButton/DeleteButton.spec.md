@@ -12,7 +12,7 @@
 ### 제공하는 동작
 
 - 작은 원 안에 X가 있는 삭제 버튼. 사진·카드 모서리에 얹어 쓴다.
-- 크기 M(16px 원, X 6px)과 L(24px 원, X 8px), 모양 default(`icon-tertiary` 배경 `#535a61`)와 overlay(`overlay-scrim` 검정 60% + 배경 블러 15px, 사진 위용). X는 흰색(`icon-inversed`)이고 선 굵기는 크기와 상관없이 1px이다.
+- 크기 M(16px 원, 아이콘 박스 8px·X 4px)과 L(24px 원, 아이콘 박스 12px·X 6px), 모양 default(`icon-tertiary` 배경 `#535a61`)와 overlay(`overlay-scrim` 검정 60% + 배경 블러 15px, 사진 위용). X는 흰색(`icon-inversed`)이고 선 굵기는 크기와 상관없이 1px이다.
 
 ### 제공하지 않는 동작
 
@@ -29,7 +29,7 @@
 ## 상태와 동작
 
 - 누르면 `onClick`을 호출한다. 시각 상태 변화는 포커스 링뿐이다.
-- X 아이콘은 기존 `LineCloseSmallIcon`을 M에서 12px, L에서 16px로 쓴다(Small 아이콘의 X가 그 크기에서 6px·8px). `vector-effect: non-scaling-stroke`로 선 굵기를 1px에 고정한다(Figma 값. 이전 구현은 크기에 따라 0.9px·1.2px).
+- X 아이콘은 기존 `LineCloseSmallIcon`을 M에서 8px, L에서 12px 박스로 쓴다(Figma `Line/Icon-S/Close` 인스턴스 크기 `1240:9318`·`1741:14501`·`1741:14736`·`1741:14739`. Small 아이콘의 X가 그 박스에서 4px·6px). 이전에는 12px·16px 박스(X 6px·8px)로 써서 시안보다 컸다(2026-11-09 사용자 확인). `vector-effect: non-scaling-stroke`로 선 굵기를 1px에 고정한다(Figma 값. 이전 구현은 크기에 따라 0.9px·1.2px).
 
 ## 접근성
 

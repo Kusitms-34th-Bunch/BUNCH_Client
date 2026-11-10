@@ -21,7 +21,9 @@ export const Gallery: Story = {
   render: () => (
     <div className="gap-s12 bg-surface-primary text-text-primary flex flex-col">
       <table className="typography-label-s w-full border-collapse">
-        <caption className="pb-s8 typography-title-1-semi-bold text-left">Line 28 · Fill 8</caption>
+        <caption className="pb-s8 typography-title-1-semi-bold text-left">
+          Line 33 · Fill 11
+        </caption>
         <thead>
           <tr>
             <th scope="col" className="p-s4 text-left">

@@ -13,7 +13,7 @@ describe('BundleTitle', () => {
     renderTitle();
     const title = screen.getByText('사진');
 
-    expect(title.classList.contains('typography-body-3-semi-bold')).toBe(true);
+    expect(title.classList.contains('typography-body-3-semibold')).toBe(true);
     expect(title.classList.contains('text-text-secondary')).toBe(true);
   });
 
@@ -22,7 +22,7 @@ describe('BundleTitle', () => {
     const title = screen.getByText('사진');
 
     expect(title.classList.contains('typography-body-3-regular')).toBe(true);
-    expect(title.classList.contains('typography-body-3-semi-bold')).toBe(false);
+    expect(title.classList.contains('typography-body-3-semibold')).toBe(false);
     expect(title.classList.contains('text-text-secondary')).toBe(true);
   });
 
@@ -139,5 +139,12 @@ describe('BundleTitle', () => {
 
     expect((container.firstElementChild as HTMLElement).className).toContain('mt-2');
     expect(screen.getByTestId('row')).toBeTruthy();
+  });
+
+  it('아이콘과 제목 사이는 6px(gap-s3)이다', () => {
+    const { container } = render(<BundleTitle title="사진" />);
+    const group = container.querySelector('.text-icon-primary') as HTMLElement;
+
+    expect(group.classList.contains('gap-s3')).toBe(true);
   });
 });

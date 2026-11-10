@@ -31,7 +31,7 @@
 ## Styling과 의존성
 
 - `BottomSheet`, `UploadOptionCard`(`icon="camera"`).
-- Figma 01 간격: 손잡이 아래 14(`pt-padding-p7`, Content `gap-0`), 제목 18/27(`typography-heading-2-semibold`), 제목·카드 10(`mt-s5`), 카드 사이 6(`gap-s3`), 카드 아래 20(`pb-s10`).
+- Figma 01 간격: 손잡이 아래 14(`pt-padding-p7`, Content `gap-0`), 제목 18/27(`typography-heading-2-semibold`), 제목·카드 12(`mt-s6`, 2026-11-08 Figma 수정), 카드 사이 6(`gap-s3`), 카드 아래 20(`pb-s10`).
 
 ## 확인할 항목
 
@@ -42,4 +42,4 @@
 
 - [x] test 3개: 시트 이름·두 카드, 콜백·자동으로 닫지 않음, 숨긴 닫기 버튼
 - [x] Story: Default, LongTitle
-- [x] Storybook: 제목·카드 10px, 카드 사이 6px, 카드 82px, 숨긴 닫기 버튼 초점 시 40×40
+- [x] Storybook: 제목·카드 12px, 카드 사이 6px, 카드 82px, 숨긴 닫기 버튼 초점 시 40×40

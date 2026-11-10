@@ -17,7 +17,7 @@ import {
   fitScale,
 } from '../../lib/photoCrop';
 import { HeaderIconButton } from '../layout/HeaderIconButton';
-import { LoadingDots } from '../loading/LoadingDots';
+import { LoadingRipple } from '../loading/LoadingRipple';
 
 const KEY_STEP = 10;
 
@@ -171,7 +171,7 @@ export function PhotoCropScreen({ src, onCancel, onComplete, onFail }: PhotoCrop
       <Header
         className="bg-transparent"
         leading={
-          <HeaderIconButton label="뒤로 가기" tone="tertiary" onClick={onCancel}>
+          <HeaderIconButton label="뒤로 가기" tone="inversed" onClick={onCancel}>
             <LineChevronLeftLargeIcon />
           </HeaderIconButton>
         }
@@ -247,7 +247,7 @@ export function PhotoCropScreen({ src, onCancel, onComplete, onFail }: PhotoCrop
             role="status"
             className="gap-s4 typography-body-3-regular text-text-quinary flex h-full flex-col items-center justify-center"
           >
-            <LoadingDots />
+            <LoadingRipple />
             사진을 불러오는 중
           </div>
         )}

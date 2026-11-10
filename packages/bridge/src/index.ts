@@ -6,6 +6,8 @@ import type {
   PickGalleryImageOptions,
   SetNativeTabBarParams,
   ShareParams,
+  SocialLoginResult,
+  SocialProvider,
 } from './schema';
 
 export {
@@ -17,6 +19,8 @@ export {
   pickGalleryImageOptionsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
+  socialLoginResultSchema,
+  socialProviderSchema,
 } from './schema';
 export type {
   AppPostMessageSchema,
@@ -27,6 +31,8 @@ export type {
   PickGalleryImageOptions,
   SetNativeTabBarParams,
   ShareParams,
+  SocialLoginResult,
+  SocialProvider,
 } from './schema';
 
 /** 네이티브 구현과 웹 호출부가 공유하는 bridge 메서드 계약 */
@@ -35,6 +41,8 @@ export type AppBridgeMethods = {
   pickGalleryImage: (_options?: PickGalleryImageOptions) => Promise<GalleryImage | null>;
   /** 시스템 권한 팝업 요청. 이미 정해진 권한은 팝업 없이 현재 상태 반환 */
   requestPermission: (_kind: PermissionKind) => Promise<PermissionStatus>;
+  /** 네이티브 SDK 소셜 로그인. 성공하면 서버 로그인에 쓸 ID 토큰(·nonce)을 돌려주고, 창을 닫으면 `cancelled`, SDK 오류는 reject. 미지원 환경(브라우저)에서는 reject */
+  socialLogin: (_provider: SocialProvider) => Promise<SocialLoginResult>;
   /** 네이티브 공유 시트 호출, 일반 브라우저에서는 Web Share API로 대체 */
   share: (_params: ShareParams) => Promise<void>;
   /** iOS 쉘의 시스템 탭 화면 시작·종료. 미지원 환경(브라우저·안드로이드)에서는 false 반환 */
@@ -43,6 +51,8 @@ export type AppBridgeMethods = {
   setNativeTabBarVisible: (_visible: boolean) => Promise<boolean>;
   /** 웹 탭 막대를 누를 때의 선택 햅틱(안드로이드 쉘). iOS 시스템 탭 바는 쉘이 직접 처리 */
   tabSelectionHaptic: () => Promise<void>;
+  /** 웹이 로그인 상태를 확인해 도착 화면(또는 오류 안내)을 그림. 쉘은 이때 스플래시를 닫음. 여러 번 불러도 한 번만 처리, 브라우저에서는 아무것도 하지 않음 */
+  appReady: () => Promise<void>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */

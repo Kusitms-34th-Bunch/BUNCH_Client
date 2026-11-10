@@ -1,14 +1,14 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
+import { CHARACTER_TYPES, defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { bffApi, requestData } from './bffApi';
 import { toDomainId } from './ids';
 
 const defaultBunchSchema = z.object({
   id: z.number().int().positive(),
   name: z.string(),
-  characterType: z.enum(['TYPE_1', 'TYPE_2', 'TYPE_3', 'TYPE_4']),
+  characterType: z.enum(CHARACTER_TYPES),
   imageUrl: z.string().nullish(),
 }) satisfies z.ZodType<ApiContract<components['schemas']['BunchResponse']>>;
 
@@ -27,7 +27,7 @@ const myProfileSchema = z.object({
   }
 >;
 
-/** 내 프로필과 기본 번치(대표 이미지가 없으면 기본 번치 이미지). 기본 번치가 없으면 bunch는 null */
+/** 내 프로필과 기본 번치(대표 이미지가 없으면 성격별 기본 이미지). 기본 번치가 없으면 bunch는 null */
 export const getMyProfile = async (signal?: AbortSignal) => {
   const profile = await requestData(
     bffApi.get('members/me', { signal: signal ?? null }),
@@ -36,11 +36,15 @@ export const getMyProfile = async (signal?: AbortSignal) => {
   );
   return {
     memberId: toDomainId(profile.memberId),
+    nickname: profile.nickname ?? null,
+    imageSrc: profile.imageUrl ?? null,
     bunch: profile.defaultBunch
       ? {
           id: toDomainId(profile.defaultBunch.id),
           name: profile.defaultBunch.name,
-          imageSrc: profile.defaultBunch.imageUrl || DEFAULT_BUNCH_IMAGE,
+          characterType: profile.defaultBunch.characterType,
+          imageSrc:
+            profile.defaultBunch.imageUrl || defaultBunchImage(profile.defaultBunch.characterType),
         }
       : null,
   };

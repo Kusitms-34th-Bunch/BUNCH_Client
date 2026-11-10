@@ -7,7 +7,7 @@ import { NotificationSettingsScreen } from './NotificationSettingsScreen';
 const backOr = vi.fn();
 vi.mock('@/shared/hooks/useBackOr', () => ({ useBackOr: () => backOr }));
 
-const TYPE_TITLES = ['번들 소식', '뭉치 성장', '멤버 및 권한 소식', '팔로우', '좋아요 및 댓글'];
+const TYPE_TITLES = ['번들 소식', '멤버 및 권한 소식', '팔로우', '좋아요 및 댓글'];
 
 const toggle = (name: string) => screen.getByRole<HTMLInputElement>('switch', { name });
 const typeToggles = () =>
@@ -27,16 +27,16 @@ const renderScreen = (props: Partial<Parameters<typeof NotificationSettingsScree
 beforeEach(() => vi.clearAllMocks());
 
 describe('NotificationSettingsScreen', () => {
-  it('앱 푸시 전체와 받을 알림 다섯 종류를 지금 값으로 보여 준다', () => {
+  it('앱 푸시 전체와 받을 알림 네 종류를 지금 값으로 보여 준다', () => {
     renderScreen({
       settings: {
         push: true,
-        types: { bundle: true, growth: false, member: true, follow: false, reaction: true },
+        types: { bundle: true, member: false, follow: true, reaction: false },
       },
     });
 
     expect(toggle('앱 푸시 알림').checked).toBe(true);
-    expect(typeToggles().map((input) => input.checked)).toEqual([true, false, true, false, true]);
+    expect(typeToggles().map((input) => input.checked)).toEqual([true, false, true, false]);
     for (const title of TYPE_TITLES) expect(toggle(title)).toBeTruthy();
   });
 
@@ -46,21 +46,39 @@ describe('NotificationSettingsScreen', () => {
     await userEvent.click(toggle('팔로우'));
 
     expect(toggle('팔로우').checked).toBe(false);
-    expect(typeToggles().filter((input) => input.checked)).toHaveLength(4);
+    expect(typeToggles().filter((input) => input.checked)).toHaveLength(3);
     expect(toggle('앱 푸시 알림').checked).toBe(true);
+  });
+
+  it('받을 알림을 모두 끄면 앱 푸시 알림도 꺼진다', async () => {
+    renderScreen();
+
+    for (const title of TYPE_TITLES.slice(0, -1)) await userEvent.click(toggle(title));
+    expect(toggle('앱 푸시 알림').checked).toBe(true);
+
+    await userEvent.click(toggle(TYPE_TITLES.at(-1) ?? ''));
+    expect(toggle('앱 푸시 알림').checked).toBe(false);
+    expect(toggle('앱 푸시 알림')).toHaveFocus();
+    expect(screen.getByRole('status')).toHaveTextContent('앱 푸시 알림도 꺼졌어요');
+    expect(typeToggles().every((input) => !input.checked)).toBe(true);
+
+    // 앱 푸시를 다시 켜도 종류는 모두 꺼진 채
+    await userEvent.click(toggle('앱 푸시 알림'));
+    expect(toggle('앱 푸시 알림').checked).toBe(true);
+    expect(typeToggles().every((input) => !input.checked && !input.disabled)).toBe(true);
   });
 
   it('전체를 끄면 종류별 값은 유지한 채 막고, 다시 켜면 그 값으로 돌아온다', async () => {
     renderScreen();
-    await userEvent.click(toggle('뭉치 성장'));
+    await userEvent.click(toggle('멤버 및 권한 소식'));
 
     await userEvent.click(toggle('앱 푸시 알림'));
     expect(typeToggles().every((input) => input.disabled)).toBe(true);
-    expect(typeToggles().map((input) => input.checked)).toEqual([true, false, true, true, true]);
+    expect(typeToggles().map((input) => input.checked)).toEqual([true, false, true, true]);
 
     await userEvent.click(toggle('앱 푸시 알림'));
     expect(typeToggles().every((input) => !input.disabled)).toBe(true);
-    expect(typeToggles().map((input) => input.checked)).toEqual([true, false, true, true, true]);
+    expect(typeToggles().map((input) => input.checked)).toEqual([true, false, true, true]);
   });
 
   it('기기 알림 권한이 꺼져 있으면 배너를 띄우고 모든 토글을 값 그대로 막는다', () => {

@@ -19,8 +19,8 @@ export const MY_MESSAGES = {
   logout: {
     title: '로그아웃할까요?',
     confirm: '로그아웃',
-    // 화면 설계서에 없는 실패 문구(다른 실패 토스트와 같은 형태)
-    failed: '로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.',
+    // 기능명세서 7.5.2 예외 처리
+    failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   },
   cancel: '취소',
   // 회원 탈퇴(화면 설계서 MY(5))
@@ -54,8 +54,8 @@ export const MY_MESSAGES = {
     ownerTitle: '관리자로 있는 번치가 있어요',
     ownerDescription: '번치의 관리자 권한을 다른 멤버에게 넘긴 뒤 탈퇴할 수 있어요.',
     ownerTransfer: '권한 넘기러 가기',
-    // 화면 설계서에 없는 실패 문구(다른 실패 토스트와 같은 형태)
-    failed: '탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.',
+    // 기능명세서 7.6.4 예외 처리
+    failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   },
   // 관리자 권한 이전(화면 설계서 MY(5) 4~5번). 화면 제목은 Figma에 없어 낭독용
   transfer: {
@@ -75,17 +75,24 @@ export const MY_MESSAGES = {
   profileEditTitle: '개인 프로필 수정',
   profileEditSubmit: '프로필 수정하기',
   profileEdited: '프로필을 수정했어요.',
+  // 바꾼 내용이 있는데 뒤로 가기(기능명세서 7.2.1 상세 7)
+  profileLeave: {
+    title: '저장하지 않고 나갈까요?',
+    description: '변경한 내용이 반영되지 않아요.',
+    confirm: '나가기',
+  },
   // 알림 설정(화면 설계서 MY(3))
   notifications: {
     title: '알림 설정',
     push: { title: '앱 푸시 알림', description: '푸시를 꺼도 앱 알림 목록에는 그대로 쌓여요.' },
     typesLabel: '받을 알림',
+    // 받을 알림을 모두 꺼 앱 푸시가 꺼졌을 때 낭독(Figma에 보이는 문구 없음)
+    pushAutoOff: '받을 알림을 모두 꺼서 앱 푸시 알림도 꺼졌어요.',
     types: {
       bundle: {
         title: '번들 소식',
         description: '번들 추천부터 제작, 업로드까지의 소식을 알려줘요.',
       },
-      growth: { title: '뭉치 성장', description: '뭉치가 새로운 모습으로 변하면 알려줘요.' },
       member: {
         title: '멤버 및 권한 소식',
         description: '번치의 멤버 구성과 역할이 바뀌면 알려줘요.',

@@ -79,7 +79,30 @@ describe('BunchHome', () => {
     expect(screen.getByRole('heading', { level: 1, name: '퇴근런클럽' })).toBeTruthy();
     expect(screen.getByText('비공개 번치')).toBeTruthy();
     expect(screen.getByRole('button', { name: '첫 번들 만들기' })).toBeTruthy();
-    expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.', expect.anything());
+    expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.');
+  });
+
+  it('번치 성격에 따라 헤더·캐릭터 영역·위쪽 Safe Area 배경이 바뀐다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<BunchHome source="sample" />, { wrapper });
+    const background = () => ({
+      app: container.querySelector('[data-app-background]')?.getAttribute('data-app-background'),
+      header: container.querySelector('header')?.className,
+    });
+
+    // 여행가조 TYPE_3 분홍
+    expect(background().app).toBe('pink-50');
+    expect(background().header).toContain('bg-primitive-pink-50');
+
+    await user.click(within(await openSwitcher(user)).getByRole('button', { name: /퇴근런클럽/ }));
+    expect(background().app).toBe('orange-50');
+    expect(background().header).toContain('bg-primitive-orange-50');
+
+    await user.click(screen.getByRole('button', { name: /퇴근런클럽/ }));
+    const sheet = await screen.findByRole('dialog', { name: '번치 전환하기' });
+    await user.click(within(sheet).getByRole('button', { name: /큐시즘 기프/ }));
+    expect(background().app).toBe('green-50');
+    expect(background().header).toContain('bg-primitive-green-50');
   });
 
   it('「새로운 번치 추가하기」는 시트를 닫은 뒤 번치 시작 선택으로 이동한다', async () => {
@@ -136,7 +159,16 @@ describe('BunchHome', () => {
     await userEvent.click(screen.getByRole('button', { name: '번들 만들기' }));
 
     expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.createBundle);
-    expect(BUNCH_HOME_PATHS.createBundle).toBe('/bunch/bundles/new');
+    expect(BUNCH_HOME_PATHS.createBundle).toBe('/bunch/bundles/new/members');
+  });
+
+  it('「콕한 장소」는 콕한 장소 화면으로 이동한다', async () => {
+    render(<BunchHome source="sample" />, { wrapper });
+
+    await userEvent.click(screen.getByRole('button', { name: '콕한 장소' }));
+
+    expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.places);
+    expect(BUNCH_HOME_PATHS.places).toBe('/bunch/places');
   });
 
   it('헤더 더보기는 더보기 메뉴로 가는 링크다(새 탭 열기 지원)', () => {

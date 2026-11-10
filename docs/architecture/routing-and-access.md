@@ -26,6 +26,14 @@ route는 raw API 요청, domain mutation, 복잡한 form state, 재사용 UI 구
 - client-only storage 값만으로 server 접근 제어가 완료됐다고 간주하지 않는다.
 - 역할·권한 체계가 아직 확정되지 않았으면 임의의 enum, middleware, route group을 만들지 않고 확인할 항목으로 남긴다.
 
+## 로그인·가입 상태 가드 (web)
+
+- `(app)` layout의 `AuthGate`(`features/auth`)가 서버가 알려 준 가입 상태(`GET /members/me/onboarding`)로 화면 접근을 판단하고 `router.replace`로 보낸다. 판단 규칙은 `lib/accessPolicy.ts`의 순수 함수이며, 근거와 한계는 `docs/decisions/records/019-client-auth-gate.md`를 따른다.
+- 새 route는 기본으로 「가입을 마친 사용자만」이다. 가입 전 화면(`/intro`, `/login`, `/signup/*`)의 예외는 `accessPolicy.ts`에서만 정한다.
+- 비로그인 사용자의 첫 화면은 앱 첫 실행 인트로(`/intro`)다. 본 기록(`features/auth/lib/introSeen.ts`)은 WebView 저장소에 두어 앱을 다시 설치하면 다시 보인다. 이 기록은 인트로와 로그인 중 어느 화면을 보일지만 정하고 접근 범위를 넓히지 않는다. 로그인한 사용자는 본 것으로 기록한다.
+- 로그인·가입 상태가 바뀌는 동작은 `sharedKeys.session()`을 무효화하고 기다린 뒤 이동한다. 로그인은 가드가 로딩으로 바뀌지 않도록 가입 상태를 직접 읽어 같은 key에 `setQueryData`로 채운다.
+- 가드는 화면 이동을 맞추는 장치이고 데이터 접근 제어는 백엔드 API가 한다.
+
 ## URL과 data
 
 - path와 search parameter는 외부 입력이다. type assertion이 아니라 route 경계 validation과 fallback을 둔다.

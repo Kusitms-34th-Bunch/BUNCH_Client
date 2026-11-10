@@ -51,7 +51,7 @@
 | 헤더              | 높이 48, 좌우 16                             | `Header`                                                             |
 | 제목·설명         | Title-1 22/28, 설명 14/21, 위 12 좌우 16     | `PageHeader`                                                         |
 | 링크 영역         | 제목 아래 44, 좌우 16, 항목 간격 6           | `pt-s17 px-padding-p8 gap-s3`                                        |
-| 라벨              | Body-2-SemiBold 14/21                        | `typography-body-3-semi-bold text-text-primary`                      |
+| 라벨              | Body-2-Semibold 14/21                        | `typography-body-3-semibold text-text-primary`                       |
 | 안내 박스         | `surface-secondary`, radius 6, 16·10, 간격 6 | `bg-surface-secondary rounded-r3 px-padding-p8 py-padding-p5 gap-s3` |
 | 「나중에 할게요」 | Body-3 13/18 밑줄, `text-tertiary`           | `typography-body-4-regular text-text-tertiary underline`             |
 
@@ -63,7 +63,7 @@
 
 ## 확인할 항목
 
-- 토스트 위치 (확정): Figma는 토스트가 아래에서 82px(홈 인디케이터 34px 제외하면 48px)에 폭을 넓게 펴고 「나중에 할게요」(34px) 위 14px에 놓인다. `toast()`의 `bottomOffset: 32`(기본 Safe Area + 16px에 더함)와 `fullWidth`로 맞췄다(`Toast.spec.md`). 「나중에 할게요」 영역은 Figma처럼 버튼 높이 34px만 둔다. Figma 토스트의 좌우 여백은 왼쪽 19·오른쪽 12로 비대칭이라 목록 폭(좌우 16px)을 썼다.
+- 토스트 위치 (확정): Figma는 토스트가 아래에서 82px(홈 인디케이터 34px 제외하면 48px)에 폭을 넓게 펴고 「나중에 할게요」(34px) 위 14px에 놓인다. 2026-11-10부터는 `toast()`의 `wrapper` 앵커가 하단 영역 위 4px에 목록 폭으로 놓는다(`Toast.spec.md`, 이전 `bottomOffset: 32`는 제거). 「나중에 할게요」 영역은 Figma처럼 버튼 높이 34px만 둔다. Figma 토스트의 좌우 여백은 왼쪽 19·오른쪽 12로 비대칭이라 목록 폭(좌우 16px)을 썼다.
 - 토스트 노출 시간 (확정, 2026-10-19): 설계서의 Toast Interaction대로 3초다(`Toast.spec.md`). 등장 Fade In·Ease Out 200ms, 퇴장 Fade Out·Ease In 200ms는 sonner 기본 전환이라 맞추지 않았다.
 - 안내 문구 마침표 (확정 필요): 기본 상태 「…함께할 수 있어요.」, 복사됨 상태 「…초대할 수 있어요」로 다르다. 같은 화면이라면 어느 쪽인지 디자이너 확인. 지금은 기본 상태 문구를 쓴다.
 - 링크 값 (미정): 설계서의 기본 상태 입력창은 자리 표시 문구(`reqsaieiei///…`)다. 링크 발급 전 상태를 어떻게 보일지 정해야 한다.

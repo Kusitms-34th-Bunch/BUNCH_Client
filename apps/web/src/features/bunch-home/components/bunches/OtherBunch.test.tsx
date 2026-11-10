@@ -59,6 +59,13 @@ describe('OtherBunch 공개 번치', () => {
     );
   });
 
+  it('헤더에 알림은 없고 더보기만 있다', () => {
+    render(<OtherBunch bunchId="bunch-camping" />);
+
+    expect(screen.queryByRole('link', { name: '알림' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /더보기/ })).toBeInTheDocument();
+  });
+
   it('팔로워·팔로잉·멤버 수는 그 번치의 각 목록으로 가는 링크다', () => {
     render(<OtherBunch bunchId="bunch-camping" />);
 

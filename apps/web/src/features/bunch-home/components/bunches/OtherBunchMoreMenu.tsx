@@ -1,17 +1,16 @@
 'use client';
 
 import { LineDotsLargeIcon, toast } from '@app/design-system';
-import { ConfirmSheet, MoreMenuSheet, ProfileImage, ReportSheet } from '@app/design-system/web';
-import { useRef, useState } from 'react';
+import { ConfirmSheet, MoreMenuSheet, ReportSheet } from '@app/design-system/web';
+import Image, { type StaticImageData } from 'next/image';
+import blockedBunch from '@/shared/assets/images/empty/blocked-bunch.svg';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
-import { BUNCH_REPORT_OTHER, BUNCH_REPORT_REASONS } from '../../constants/report';
 import { headerIconLinkClass } from '../BunchHomeHeader';
-
-type Sheet = 'menu' | 'block' | 'report';
 
 type OtherBunchMoreMenuProps = {
   bunchName: string;
-  bunchImageSrc?: string | undefined;
   /** 신고하는 쪽(지금 내 번치) 이름. 아직 모르면 빈 글자 */
   reporterName: string;
   onBlock: () => void;
@@ -24,79 +23,98 @@ type OtherBunchMoreMenuProps = {
  */
 export function OtherBunchMoreMenu({
   bunchName,
-  bunchImageSrc,
   reporterName,
   onBlock,
   onReport,
 }: OtherBunchMoreMenuProps) {
-  const [open, setOpen] = useState<Sheet | null>(null);
-  // 메뉴에서 고른 다음 시트(메뉴가 닫힌 뒤 연다)
-  const next = useRef<Sheet | null>(null);
-  const reported = useRef(false);
-  const openAfterMenu = (sheet: Sheet) => {
-    next.current = sheet;
-    setOpen(null);
-  };
-  const sheetProps = (sheet: Sheet) => ({
-    open: open === sheet,
-    onOpenChange: (nextOpen: boolean) => setOpen(nextOpen ? sheet : null),
-  });
+  const openOverlay = useScreenOverlay();
 
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="더보기"
-        aria-haspopup="dialog"
-        className={headerIconLinkClass}
-        onClick={() => setOpen('menu')}
-      >
-        <LineDotsLargeIcon />
-      </button>
-      <MoreMenuSheet
-        {...sheetProps('menu')}
-        onOpenChangeComplete={(isOpen) => {
-          if (isOpen || !next.current) return;
-          setOpen(next.current);
-          next.current = null;
-        }}
-        items={[
-          // 기능명세 5.10.4: 차단은 멤버 누구나(해제는 메인·공동 관리자)
-          { id: 'block', label: '차단하기', onSelect: () => openAfterMenu('block') },
-          { id: 'report', label: '신고하기', onSelect: () => openAfterMenu('report') },
-        ]}
-      />
+  const openBlock = () =>
+    openOverlay((rootProps, close) => (
       <ConfirmSheet
-        {...sheetProps('block')}
+        {...rootProps}
         title={BUNCH_HOME_MESSAGES.blockQuestion(bunchName)}
         notice={BUNCH_HOME_MESSAGES.blockNotice}
-        illustration={<ProfileImage src={bunchImageSrc} className="size-23" />}
+        // Figma 5402:122972: 92px 자리 가운데에 일러스트 72×72
+        illustration={
+          <div className="flex size-full items-center justify-center">
+            <Image src={blockedBunch as StaticImageData} alt="" width={72} height={72} />
+          </div>
+        }
         confirmLabel="차단하기"
         onConfirm={() => {
-          setOpen(null);
+          close();
           // 차단하면 화면이 접근 제한으로 바뀌어 이 메뉴가 사라지므로 닫힘을 기다리지 않음
           onBlock();
-          toast(BUNCH_HOME_MESSAGES.blockedDone(bunchName), { fullWidth: true });
+          toast(BUNCH_HOME_MESSAGES.blockedDone(bunchName));
         }}
       />
-      <ReportSheet
-        {...sheetProps('report')}
-        title={BUNCH_HOME_MESSAGES.reportTitle(bunchName)}
-        description={BUNCH_HOME_MESSAGES.reportDescription(reporterName)}
-        reasons={BUNCH_REPORT_REASONS}
-        detailReasonValue={BUNCH_REPORT_OTHER}
-        onSubmit={(value) => {
-          setOpen(null);
-          onReport(value);
-          reported.current = true;
-        }}
-        // 접수 안내는 시트가 다 닫힌 뒤(열린 시트 뒤에서 낭독이 묻히지 않게, ADR 014)
-        onOpenChangeComplete={(isOpen) => {
-          if (isOpen || !reported.current) return;
-          reported.current = false;
-          toast(BUNCH_HOME_MESSAGES.reportedDone, { fullWidth: true });
-        }}
-      />
-    </>
+    ));
+
+  const openReport = () => {
+    let reported = false;
+    openOverlay(
+      (rootProps, close) => (
+        <ReportSheet
+          {...rootProps}
+          title={BUNCH_HOME_MESSAGES.reportTitle(bunchName)}
+          description={BUNCH_HOME_MESSAGES.reportDescription(reporterName)}
+          reasons={REPORT_REASONS}
+          detailReasonValue={REPORT_OTHER}
+          onSubmit={(value) => {
+            close();
+            onReport(value);
+            reported = true;
+          }}
+        />
+      ),
+      // 접수 안내는 시트가 다 닫힌 뒤(열린 시트 뒤에서 낭독이 묻히지 않게, ADR 014)
+      () => {
+        if (reported) toast(BUNCH_HOME_MESSAGES.reportedDone);
+      },
+    );
+  };
+
+  const openMenu = () => {
+    let next: (() => void) | undefined;
+    openOverlay(
+      (rootProps, close) => (
+        <MoreMenuSheet
+          {...rootProps}
+          items={[
+            // 기능명세 5.10.4: 차단은 멤버 누구나(해제는 메인·공동 관리자)
+            {
+              id: 'block',
+              label: '차단하기',
+              onSelect: () => {
+                next = openBlock;
+                close();
+              },
+            },
+            {
+              id: 'report',
+              label: '신고하기',
+              onSelect: () => {
+                next = openReport;
+                close();
+              },
+            },
+          ]}
+        />
+      ),
+      () => next?.(),
+    );
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label="더보기"
+      aria-haspopup="dialog"
+      className={headerIconLinkClass}
+      onClick={openMenu}
+    >
+      <LineDotsLargeIcon />
+    </button>
   );
 }

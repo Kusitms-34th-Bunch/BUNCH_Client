@@ -154,24 +154,24 @@ describe('toast()', () => {
     expect(screen.queryByText('액션 후 닫힘')).toBeNull();
   });
 
-  it('lifts the toast by bottomOffset and stretches it with fullWidth', async () => {
+  it('stretches the toast to the list width by default', async () => {
     render(<Toaster />);
-    await show('위치 확인', { bottomOffset: 32, fullWidth: true });
+    await show('위치 확인');
 
     const message = within(screen.getByLabelText('알림')).getByText('위치 확인');
     const toast = message.closest('div[class*="rounded-r6"]') as HTMLElement;
     expect(toast.className).toContain('w-full');
-    expect((toast.parentElement as HTMLElement).style.paddingBottom).toBe('32px');
+    expect(toast.className.split(' ')).not.toContain('mx-auto');
   });
 
-  it('lets only the visible toast take touches, not the list or bottomOffset gap', async () => {
+  it('lets only the visible toast take touches, not the list', async () => {
     render(<Toaster />);
-    await show('터치 확인', { bottomOffset: 32, fullWidth: true });
+    await show('터치 확인');
 
     const message = within(screen.getByLabelText('알림')).getByText('터치 확인');
     const toast = message.closest('div[class*="rounded-r6"]') as HTMLElement;
     expect(toast.className).toContain('pointer-events-auto');
-    // 목록 항목(bottomOffset 여백 포함)은 터치를 통과시킴
+    // 목록 항목의 빈 자리는 터치를 통과시킴
     expect(toast.closest('li')?.className).toContain('pointer-events-none');
   });
 
@@ -183,14 +183,115 @@ describe('toast()', () => {
     expect(list?.getAttribute('data-y-position')).toBe('top');
   });
 
-  it('keeps the toast centered at its content width and un-lifted by default', async () => {
+  it('keeps the toast centered at its content width with fullWidth false', async () => {
     render(<Toaster />);
-    await show('기본 위치');
+    await show('내용 폭', { fullWidth: false });
 
-    const message = within(screen.getByLabelText('알림')).getByText('기본 위치');
+    const message = within(screen.getByLabelText('알림')).getByText('내용 폭');
     const toast = message.closest('div[class*="rounded-r6"]') as HTMLElement;
     expect(toast.className).toContain('mx-auto');
-    expect((toast.parentElement as HTMLElement).style.paddingBottom).toBe('');
+    expect(toast.className.split(' ')).not.toContain('w-full');
+  });
+
+  describe('anchors', () => {
+    const insetOf = () => document.documentElement.style.getPropertyValue('--toast-anchor-inset');
+
+    // jsdom은 레이아웃이 없어 위 끝(top)과 크기를 직접 정함
+    const addAnchor = (
+      kind: string,
+      top: number,
+      { height = 60, inert = false }: { height?: number; inert?: boolean } = {},
+    ) => {
+      const element = document.createElement('div');
+      element.dataset.toastAnchor = kind;
+      element.inert = inert;
+      element.getBoundingClientRect = () =>
+        ({ top, width: 375, height, bottom: top + height }) as DOMRect;
+      document.body.append(element);
+      return element;
+    };
+
+    beforeEach(() => {
+      vi.stubGlobal('innerHeight', 800);
+    });
+
+    afterEach(() => {
+      for (const anchor of document.querySelectorAll('[data-toast-anchor]')) anchor.remove();
+      document.documentElement.style.removeProperty('--toast-anchor-inset');
+      vi.unstubAllGlobals();
+    });
+
+    it('puts the toast 4px above a bottom wrapper', async () => {
+      addAnchor('wrapper', 720);
+      render(<Toaster />);
+
+      await show('wrapper 위');
+
+      expect(insetOf()).toBe('84px');
+    });
+
+    it('puts the toast 16px above a bottom tab bar', async () => {
+      addAnchor('tab-bar', 700);
+      render(<Toaster />);
+
+      await show('탭 막대 위');
+
+      expect(insetOf()).toBe('116px');
+    });
+
+    it('follows the highest anchor when several are visible', async () => {
+      addAnchor('wrapper', 720);
+      addAnchor('tab-bar', 650);
+      render(<Toaster />);
+
+      await show('가장 높은 앵커');
+
+      expect(insetOf()).toBe('166px');
+    });
+
+    it('ignores hidden anchors and screens leaving during a transition', async () => {
+      addAnchor('wrapper', 720, { height: 0 });
+      addAnchor('wrapper', 600, { inert: true });
+      render(<Toaster />);
+
+      await show('앵커 없음');
+
+      expect(insetOf()).toBe('');
+    });
+
+    it('ignores anchors with an unknown kind', async () => {
+      addAnchor('sidebar', 600);
+      render(<Toaster />);
+
+      await show('알 수 없는 앵커');
+
+      expect(insetOf()).toBe('');
+    });
+
+    it('measures again on the next frame for screen changes made in the same action', async () => {
+      render(<Toaster />);
+
+      await show('프레임 뒤 앵커');
+      expect(insetOf()).toBe('');
+
+      // 같은 동작에서 탭 막대가 다시 나타남
+      addAnchor('tab-bar', 700);
+      await advance(20);
+
+      expect(insetOf()).toBe('116px');
+    });
+
+    it('clears the previous inset when the next toast has no anchor', async () => {
+      const anchor = addAnchor('wrapper', 720);
+      render(<Toaster />);
+      await show('앵커 있음');
+      expect(insetOf()).toBe('84px');
+
+      anchor.remove();
+      await show('앵커 없음');
+
+      expect(insetOf()).toBe('');
+    });
   });
 
   it('replaces the previous toast with the new one', async () => {

@@ -1,4 +1,4 @@
-import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
+import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
 import type { OwnedBunch } from '../lib/types';
 
 /**
@@ -9,7 +9,7 @@ export const ownedBunchesFixture: readonly OwnedBunch[] = [
   {
     id: 'owned-1',
     name: '퇴근런클럽',
-    imageSrc: DEFAULT_BUNCH_IMAGE,
+    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_1,
     candidates: [
       { id: 'm-1', name: '지예', role: 'coOwner' },
       { id: 'm-2', name: '서현', role: 'member' },
@@ -20,7 +20,7 @@ export const ownedBunchesFixture: readonly OwnedBunch[] = [
   {
     id: 'owned-2',
     name: '야르렁모임',
-    imageSrc: DEFAULT_BUNCH_IMAGE,
+    imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_1,
     candidates: [
       { id: 'm-5', name: '경진', role: 'coOwner' },
       { id: 'm-6', name: '경준', role: 'member' },

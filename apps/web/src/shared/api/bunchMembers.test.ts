@@ -33,9 +33,25 @@ describe('getBunchMembers', () => {
 
     await expect(getBunchMembers('1')).resolves.toEqual([
       { id: '7', name: '지예', avatarSrc: 'https://cdn.example/7.jpg', role: 'OWNER' },
-      { id: '8', name: '경진', avatarSrc: '/images/default-bunch.png', role: 'MEMBER' },
-      { id: '9', name: '수인', avatarSrc: '/images/default-bunch.png', role: 'CO_OWNER' },
-      { id: '10', name: '하율', avatarSrc: '/images/default-bunch.png', role: 'MEMBER' },
+      { id: '8', name: '경진', avatarSrc: '/images/default-profile.svg', role: 'MEMBER' },
+      { id: '9', name: '수인', avatarSrc: '/images/default-profile.svg', role: 'CO_OWNER' },
+      { id: '10', name: '하율', avatarSrc: '/images/default-profile.svg', role: 'MEMBER' },
+    ]);
+  });
+
+  it('사진이 없는 멤버는 번치 타입과 관계없이 같은 기본 프로필 이미지로 채운다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/members', () =>
+        ok([
+          { memberId: 7, nickname: '지예', imageUrl: 'https://cdn.example/7.jpg', role: 'OWNER' },
+          { memberId: 8, nickname: '경진', imageUrl: null, role: 'MEMBER' },
+        ]),
+      ),
+    );
+
+    await expect(getBunchMembers('1')).resolves.toEqual([
+      { id: '7', name: '지예', avatarSrc: 'https://cdn.example/7.jpg', role: 'OWNER' },
+      { id: '8', name: '경진', avatarSrc: '/images/default-profile.svg', role: 'MEMBER' },
     ]);
   });
 

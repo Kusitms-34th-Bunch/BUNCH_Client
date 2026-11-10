@@ -12,7 +12,7 @@
 - 제목과 설명이 있는 선택 카드(예: 공개 범위 「공개 / 누구나 우리 번치와 번들을 볼 수 있어요.」). 라디오는 왼쪽이다.
 - 기존 컴포넌트와 대조한 결과 따로 만들었다.
   - `RadioCard`(Figma `Radio Card` `1379:22093`): 글자 한 줄, 높이 54, radius 8, 비활성 없음.
-  - `VisibilityOption`(`633:2410`): 아이콘 원이 있고 라디오가 보이지 않는다.
+  - 아이콘 원이 있고 라디오가 보이지 않는 카드(Figma `633:2410`, 구현은 #290에서 삭제).
 - 그룹(`fieldset`·`legend`)과 선택 값은 호출자가 맡는다.
 
 ## Public API
@@ -32,26 +32,26 @@
 
 ## 접근성
 
-- 라디오 이름은 제목(`aria-labelledby`), 설명은 `aria-describedby`로 따로 읽힌다(`VisibilityOption`과 같은 방식).
+- 라디오 이름은 제목(`aria-labelledby`), 설명은 `aria-describedby`로 따로 읽힌다(제목·설명 id를 `aria-labelledby`·`aria-describedby`로 잇는 방식).
 - 카드 전체가 `<label>`이라 어디를 눌러도 선택된다. 키보드는 네이티브 라디오와 같다.
 
 ## Styling과 의존성
 
-| Figma                                                   | 구현                                              |
-| ------------------------------------------------------- | ------------------------------------------------- |
-| 패딩 12, radius `r5`, 바탕 `surface-secondary`, 높이 63 | `p-padding-p6 rounded-r5 bg-surface-secondary`    |
-| 라디오·글자 간격 10                                     | `gap-s5`                                          |
-| 제목·설명 간격 2                                        | `gap-s1`                                          |
-| 제목 Body-3-Semibold, `text-primary`                    | `typography-body-3-semi-bold text-text-primary`   |
-| 설명 Caption-1-Regular, `text-tertiary`                 | `typography-caption-1-regular text-text-tertiary` |
-| Control Radio 20                                        | `Radio`(`core/radio`)                             |
-| 선택·눌림·흐림                                          | `ProfileRadioCard`와 같음                         |
+| Figma                                                                  | 구현                                                  |
+| ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| 좌우 패딩 16·위아래 18, radius `r4`, 바탕 `surface-secondary`, 높이 78 | `px-padding-p8 py-s9 rounded-r4 bg-surface-secondary` |
+| 라디오·글자 간격 14                                                    | `gap-s7`                                              |
+| 제목·설명 간격 4                                                       | `gap-s2`                                              |
+| 제목 Body-2-Medium(15/22), `text-tertiary`                             | `typography-body-2-medium text-text-tertiary`         |
+| 설명 Caption-1-Regular, `text-tertiary`                                | `typography-caption-1-regular text-text-tertiary`     |
+| Control Radio 20                                                       | `Radio`(`core/radio`)                                 |
+| 선택·눌림·흐림                                                         | `ProfileRadioCard`와 같음                             |
 
 ## 확인할 항목
 
 - 선택 테두리 (제안): `ProfileRadioCard`와 같은 이유로 안쪽 `ring`을 썼다.
 - 이름 (제안): Figma `Radio Card - Description`을 기존 `RadioCard`와 구분해 `DescriptionRadioCard`로 지었다.
-- 초점 표시 (확인): 키보드 초점 테두리는 20px 라디오 원에만 그려진다(`core/radio`). `VisibilityOption`처럼 카드 전체에 그릴지는 Figma 초점 표현을 확인한 뒤 정한다.
+- 초점 표시 (확인): 키보드 초점 테두리는 20px 라디오 원에만 그려진다(`core/radio`). 카드 전체에 그릴지는 Figma 초점 표현을 확인한 뒤 정한다.
 
 ## 검증
 

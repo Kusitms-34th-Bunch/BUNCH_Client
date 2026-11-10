@@ -24,6 +24,11 @@ export const WithLeftIcon: Story = {
   args: { children: '번치 삭제', leftIcon: <LineTrashcanIcon /> },
 };
 
+/** 되돌릴 수 없는 동작(번들 댓글 더보기 「삭제」): 글자·아이콘 `system-fail-text` */
+export const Danger: Story = {
+  args: { children: '삭제', tone: 'danger', showChevron: false, leftIcon: <LineTrashcanIcon /> },
+};
+
 /** 화살표 없음(Figma `Show Right Icon` 끔) */
 export const WithoutChevron: Story = {
   args: { showChevron: false },

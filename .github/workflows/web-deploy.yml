@@ -1,0 +1,198 @@
+name: Web Deploy
+
+# 운영 웹 배포(docs/workflows/web-deployment.md). 토큰이 있는 job은 저장소 코드를 실행하지 않고, 빌드 job에는 토큰을 주지 않는다.
+# 블루그린: 새 버전을 운영 주소 없이 올려 확인한 뒤에만 운영 주소를 전환한다(실패하면 사용자는 이전 버전을 계속 봄).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.yarnrc.yml'
+      - '.github/actions/setup/**'
+      - '.github/workflows/web-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 배포할 커밋·태그·브랜치(main에 있던 커밋만)
+        required: true
+        default: main
+        type: string
+
+concurrency:
+  group: web-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  settings:
+    name: 프로젝트 확인
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEB_PROJECT_ID }}
+    steps:
+      - name: secret 확인
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          test -n "$VERCEL_ORG_ID" || { echo "VERCEL_ORG_ID secret이 없습니다."; exit 1; }
+          test -n "$VERCEL_PROJECT_ID" || { echo "VERCEL_WEB_PROJECT_ID secret이 없습니다."; exit 1; }
+          test -n "$VERCEL_TOKEN" || { echo "VERCEL_TOKEN secret이 없습니다."; exit 1; }
+
+      # 다른 프로젝트 ID가 들어가도 그 프로젝트에 올라가지 않게 이름으로 확인
+      - name: 운영 프로젝트 확인
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          EXPECTED_PROJECT_NAME: bunch-web
+        run: |
+          node -e '
+            const { VERCEL_TOKEN, VERCEL_PROJECT_ID, VERCEL_ORG_ID, EXPECTED_PROJECT_NAME } = process.env;
+            fetch("https://api.vercel.com/v9/projects/" + VERCEL_PROJECT_ID + "?teamId=" + VERCEL_ORG_ID, {
+              headers: { Authorization: "Bearer " + VERCEL_TOKEN },
+            })
+              .then(async (res) => {
+                if (!res.ok) throw new Error("프로젝트 조회 실패(HTTP " + res.status + ")");
+                const { name } = await res.json();
+                if (name !== EXPECTED_PROJECT_NAME) throw new Error("운영 프로젝트가 아닙니다: " + name);
+              })
+              .catch((error) => { console.error(error.message); process.exit(1); });
+          '
+
+      # 저장소가 없는 폴더라 npm exec로 고정 버전 CLI만 실행. 환경 변수 파일은 넘기지 않음
+      - name: 프로젝트 설정 받기
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          npm exec --yes -- vercel@65.1.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+          find .vercel -type f ! -name project.json -delete
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vercel-project
+          path: .vercel/project.json
+          include-hidden-files: true
+          retention-days: 1
+
+  build:
+    name: 빌드
+    needs: settings
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      # Vercel의 Next.js 빌더가 node_modules/next를 찾으므로 이 job만 node_modules로 설치(NEXT_NO_VERSION 방지)
+      YARN_NODE_LINKER: node-modules
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # 저장소 코드를 실행하기 전에 리뷰를 거쳐 main에 들어온 커밋인지 확인
+      - name: main 커밋 확인
+        run: |
+          git merge-base --is-ancestor HEAD origin/main || { echo "main에 없는 커밋입니다."; exit 1; }
+
+      - name: 변조 가드
+        run: node turbo/workflows/check-suspicious.mjs
+
+      - name: 의존성 설치
+        uses: ./.github/actions/setup
+
+      # Next.js 빌드 캐시. 의존성이 같으면 이전 빌드 캐시를 이어 씀
+      - uses: actions/cache@v4
+        with:
+          path: apps/web/.next/cache
+          key: web-deploy-next-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**', 'packages/*/src/**') }}
+          restore-keys: web-deploy-next-${{ hashFiles('yarn.lock') }}-
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: vercel-project
+          path: .vercel
+
+      # 서버 전용 값(API_BASE_URL)은 Vercel 프로젝트 환경 변수로 실행할 때 들어감
+      - name: 빌드
+        env:
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: production
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+          NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: yarn dlx vercel@65.1.0 build --prod
+
+      # 어떤 경로로든 가짜 서버(MSW)가 켜진 빌드는 올리지 않음
+      - name: 가짜 서버 꺼짐 확인
+        run: |
+          test -d .vercel/output/static/_next || { echo "빌드 결과물이 없습니다."; exit 1; }
+          if grep -rlq mockServiceWorker .vercel/output/static/_next; then
+            echo "빌드 결과물에 가짜 서버(MSW) 코드가 있습니다."; exit 1;
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vercel-output
+          path: .vercel/output
+          include-hidden-files: true
+          retention-days: 1
+
+  deploy:
+    name: 배포
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEB_PROJECT_ID }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vercel-project
+          path: .vercel
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: vercel-output
+          path: .vercel/output
+
+      # 그린: 운영 환경 변수로 올리되 운영 주소는 아직 연결하지 않음
+      - name: 새 버전 올리기
+        id: upload
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          out=$(npm exec --yes -- vercel@65.1.0 deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")
+          url=$(printf '%s\n' "$out" | tail -n 1)
+          [[ "$url" =~ ^https://[a-z0-9.-]+\.vercel\.app$ ]] || { echo "배포 URL 형식이 아닙니다: $url"; exit 1; }
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # 새 버전 주소에서 화면·매니페스트가 열리는지 확인(실패하면 전환하지 않음)
+      - name: 새 버전 확인
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          URL: ${{ steps.upload.outputs.url }}
+        run: |
+          for path in /login /manifest.webmanifest; do
+            npm exec --yes -- vercel@65.1.0 curl "$path" --deployment "$URL" --token="$VERCEL_TOKEN" \
+              -- --fail --silent --show-error --output /dev/null --retry 3 --retry-all-errors
+            echo "통과: $path"
+          done
+
+      - name: 운영 주소 전환
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          URL: ${{ steps.upload.outputs.url }}
+          REF: ${{ inputs.ref || github.ref_name }}
+        run: |
+          npm exec --yes -- vercel@65.1.0 promote "$URL" --yes --token="$VERCEL_TOKEN"
+          echo "운영 배포: $URL (ref: $REF)" >> "$GITHUB_STEP_SUMMARY"

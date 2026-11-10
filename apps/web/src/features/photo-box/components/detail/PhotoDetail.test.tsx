@@ -13,6 +13,9 @@ import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PHOTO_BOX_PATHS } from '../../constants/paths';
 import { PhotoDetail } from './PhotoDetail';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 const replace = vi.fn();
 const back = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, back, push: vi.fn() }) }));
@@ -93,14 +96,14 @@ describe('PhotoDetail', () => {
     await act(() => client.invalidateQueries({ queryKey: ['photo-box', 'photos'] }));
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list));
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto);
   });
 
   it('없는 사진이면 「삭제된 사진이에요」 토스트 뒤 사진함으로 이동한다', async () => {
     render(<PhotoDetail photoId="9999" />);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list));
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto);
     expect(screenProps).toBeUndefined();
   });
 
@@ -114,7 +117,7 @@ describe('PhotoDetail', () => {
     render(<PhotoDetail photoId={firstId} />);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list));
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto);
   });
 
   it('번치를 불러오지 못하면 로딩에 머물지 않고 사진함으로 이동한다', async () => {
@@ -129,7 +132,7 @@ describe('PhotoDetail', () => {
     render(<PhotoDetail photoId={undefined} />);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(PHOTO_BOX_PATHS.list));
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto);
   });
 
   it('사진이 사라지게 삭제하면 사진함으로 이동한다', async () => {

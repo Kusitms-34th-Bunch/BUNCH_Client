@@ -13,7 +13,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./web": "./src/components/web/index.ts",
-    "./tokens.css": "./tokens/tokens.css"
+    "./tokens.css": "./tokens/tokens.css",
+    "./utilities.css": "./src/styles/utilities.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

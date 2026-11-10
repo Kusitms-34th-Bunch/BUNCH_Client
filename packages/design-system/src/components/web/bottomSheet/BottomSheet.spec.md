@@ -33,7 +33,7 @@
 ## 상태와 동작
 
 - 열기·닫기: Figma 공통 모션. `cubic-bezier(0,0,0.35,1)`, 열기 340ms·닫기 240ms(2026-11-06 Figma 「바텀시트 모션」에서 160ms → 240ms로 바뀜), 아래에서 위로 이동하며 투명도 40%→100%. 동작 줄이기에서는 이동 없이 투명도만 바뀌도록 의도했다(브라우저 에뮬레이션 미확인).
-- 끌어내리기: 손잡이뿐 아니라 시트 어디서든 아래로 끌면 따라 내려오고, 놓으면 속도·거리에 따라 닫힌다(Base UI 기본). 배경 딤은 끄는 만큼 옅어진다. 위로 끌면 움직이지 않는다(Figma에 위로 늘어나는 동작이 없음).
+- 끌어내리기: 손잡이뿐 아니라 시트 어디서든 아래로 끌면 따라 내려오고, 놓으면 속도·거리에 따라 닫힌다(Base UI 기본). 배경 딤은 끄는 만큼 옅어진다. 위로 끌면 움직이지 않는다(Figma에 위로 늘어나는 동작이 없음). 끄는 동안 Base UI가 넣는 `transform`을 끄고 아래 방향만 허용한 `translate`로만 움직인다.
 - 바깥 터치: 기본은 닫는다. 입력 중인 시트는 `disablePointerDismissal`로 막는다.
 - 높이: 내용 높이만큼, 최대는 화면 위 safe area + 24px까지. 넘치면 `Body`만 스크롤하고 제목·하단 버튼은 고정된다.
 - 폭: 앱 프레임과 같은 `--app-max-width`(430px). 변수가 없으면 화면 폭.
@@ -51,24 +51,24 @@
 
 - `@base-ui/react` 1.9.0 Drawer(이미 설치, Dialog와 같은 패키지), `LineCloseIcon`, `cn`.
 
-| Figma                                   | 구현                                               |
-| --------------------------------------- | -------------------------------------------------- |
-| 배경 `surface/surface-primary`          | `bg-surface-primary`                               |
-| 위 모서리 `radius-r10`(24)              | `rounded-t-r10`                                    |
-| 손잡이 영역 padding 10, 막대 52×7       | `p-padding-p5`, `h-1.75 w-13 rounded-full`         |
-| 손잡이 색 `#d9d9d9`(토큰 없음)          | `bg-border-secondary`(#e1e2e5, 가장 가까운 토큰)   |
-| 섹션 간격 `spacing-s8`(16)              | `gap-s8`                                           |
-| 좌우 여백 `padding-p8`(16)              | `px-padding-p8`                                    |
-| 제목 Heading-1-Semibold, `text-primary` | `typography-heading-1-semibold text-text-primary`  |
-| 부제 Body-3-Semibold, `text-quaternary` | `typography-body-3-semi-bold text-text-quaternary` |
-| 제목·부제 간격 `spacing-s2`(4)          | `mt-s2`                                            |
-| 닫기 `Line/Icon-M/Close` 20             | `LineCloseIcon size="md"`, `text-icon-primary`     |
-| 하단 위 여백 `padding-p7`(14), 간격 8   | `pt-padding-p7 gap-s4`                             |
-| 하단 버튼 SolidButton 48                | 기존 `Button`(secondary·tertiary·primary)          |
-| 배경 딤(Figma에 없음)                   | `bg-overlay-dim-subtle`(Dialog와 같음)             |
+| Figma                                   | 구현                                              |
+| --------------------------------------- | ------------------------------------------------- |
+| 배경 `surface/surface-primary`          | `bg-surface-primary`                              |
+| 위 모서리 `radius-r10`(24)              | `rounded-t-r10`                                   |
+| 손잡이 영역 padding 10, 막대 52×7       | `p-padding-p5`, `h-1.75 w-13 rounded-full`        |
+| 손잡이 색 `#d9d9d9`(토큰 없음)          | `bg-border-secondary`(#e1e2e5, 가장 가까운 토큰)  |
+| 섹션 간격 `spacing-s8`(16)              | `gap-s8`                                          |
+| 좌우 여백 `padding-p8`(16)              | `px-padding-p8`                                   |
+| 제목 Heading-1-Semibold, `text-primary` | `typography-heading-1-semibold text-text-primary` |
+| 부제 Body-3-Semibold, `text-quaternary` | `typography-body-3-semibold text-text-quaternary` |
+| 제목·부제 간격 `spacing-s2`(4)          | `mt-s2`                                           |
+| 닫기 `Line/Icon-M/Close` 20             | `LineCloseIcon size="md"`, `text-icon-primary`    |
+| 하단 위 여백 `padding-p7`(14), 간격 8   | `pt-padding-p7 gap-s4`                            |
+| 하단 버튼 SolidButton 48                | 기존 `Button`(secondary·tertiary·primary)         |
+| 배경 딤(Figma에 없음)                   | `bg-overlay-dim-subtle`(Dialog와 같음)            |
 
 - Story: Default, HiddenClose, PointerDismissalDisabled, LongBody(틀 동작). Figma 변형별 모습은 각 시트 렌더러 story에서 확인한다.
-- 부제 글자 토큰 (확정): Figma `Body-3-Semibold`(14/600/21/-0.5)와 값이 같은 `typography-body-3-semi-bold`를 쓴다. 이름도 같다.
+- 부제 글자 토큰 (확정): Figma `Body-3-Semibold`(14/600/21/-0.5)와 값이 같은 `typography-body-3-semibold`를 쓴다. 이름도 같다.
 
 ## 확인할 항목
 
@@ -87,16 +87,19 @@
 
 - Figma에 그려진 시트(Bottom Sheet 01~09)는 이 폴더의 `renderers/`에 시트 렌더러로 둔다. 새 렌더러는 기존 렌더러 파일 4개(`.tsx`·`.test.tsx`·`.stories.tsx`·`.spec.md`)를 복사해서 시작한다. 렌더러는 이 부품을 조합하고 문구·목록·콜백만 props로 받는다. API 호출·저장 상태는 넣지 않는다.
 
-  | Figma | 렌더러                               |
-  | ----- | ------------------------------------ |
-  | 01    | `PhotoUploadSheet`                   |
-  | 02    | `DateChangeSheet`                    |
-  | 03    | `BundleRecommendSheet`               |
-  | 04    | `BunchSwitchSheet`                   |
-  | 05    | `ConfirmSheet`, `AdminTransferSheet` |
-  | 06    | `MoreMenuSheet`                      |
-  | 07·08 | `ReportSheet`                        |
-  | 09    | `PinnedPlaceSheet`                   |
+  | Figma                  | 렌더러                                 |
+  | ---------------------- | -------------------------------------- |
+  | 01                     | `PhotoUploadSheet`                     |
+  | 02                     | `DateChangeSheet`                      |
+  | `5664:100243`(03 대체) | `BundleRecommendSheet`                 |
+  | 04                     | `BunchSwitchSheet`                     |
+  | 05                     | `ConfirmSheet`, `AdminTransferSheet`   |
+  | 06                     | `MoreMenuSheet`                        |
+  | 07·08                  | `ReportSheet`                          |
+  | 09                     | `PinnedPlaceSheet`                     |
+  | `5367:112296`          | `PlacePickSheet`                       |
+  | `5367:112757`          | `BundleMembersSheet`                   |
+  | Figma 시트 없음        | `PlaceSearchSheet`, `PhotoImportSheet` |
 
 - 렌더러를 디자인 시스템에 두는 이유: `apps/web`에는 Storybook이 없어 Figma 대조를 디자인 시스템 story에서 한다. 더보기·신고·번치 전환은 여러 기능이 쓴다.
 - 화면에 닫기 버튼이 없는 시트(Figma 01 등)도 숨긴 닫기 버튼을 둔다. 끌기·바깥 터치는 스크린 리더로 닿기 어렵기 때문이다. 「취소하기」 같은 하단 닫기 버튼이 있으면 생략한다.
@@ -104,7 +107,8 @@
   - `not-sr-only`가 padding·margin을 지우므로 누르는 영역(40px)을 `focus-visible`에서 다시 준다.
 - 선택처럼 열 때마다 초기화할 state는 `BottomSheet.Content` 안쪽 컴포넌트에 둔다. 닫히면 내용이 내려가 함께 사라진다. `Root`의 직접 자식에 두면 닫혀도 남는다.
 - 앱 `features`는 렌더러를 여는 hook만 만든다. 데이터 연결과 동작(저장, 이동, 토스트)은 hook이 맡는다.
-  - hook은 `overlay-kit`의 `overlay.open(({ isOpen, close, unmount }) => …)`로 연다. 예: `features/onboarding/hooks/useExitFlowDialog.tsx`.
+  - hook은 `apps/web`의 `useScreenOverlay`로 연다. 예: `features/feed/hooks/useBundleSheets.tsx`.
+  - 열 때의 값으로 그려져 부모가 다시 그려져도 바뀌지 않는다. 열린 동안 바뀌는 값은 안쪽 컴포넌트의 state로 둔다(예: 콕 표시, 저장 중).
   - 연결: `open={isOpen}`, `onOpenChange={(open) => !open && close()}`, `onOpenChangeComplete={(open) => !open && unmount()}`. `unmount`는 닫힘 모션이 끝난 뒤 실행된다.
 - 시트 안 버튼이 다른 화면(앨범·카메라 등)을 열면 먼저 `open`을 `false`로 바꾼다. 열어 둔 채 띄우면 초점 가두기·스크롤 잠금과 겹친다.
 

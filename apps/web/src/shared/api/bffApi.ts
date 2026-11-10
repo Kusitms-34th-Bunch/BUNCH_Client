@@ -5,7 +5,7 @@ import { createBrowserApi } from './browserClient';
 
 /**
  * 브라우저 → BFF 요청 클라이언트. feature `api/` 함수에서만 사용
- * 재발급까지 실패한 401은 ApiError(auth)로만 전달, 로그인 이동(`onUnauthorized`)은 로그인 API 연동 때 연결
+ * 재발급까지 실패한 401은 ApiError(auth)로만 전달, 로그인 이동은 `AuthGate`가 가입 상태를 다시 읽을 때 맡고 `onUnauthorized`는 연결하지 않음
  */
 export const bffApi = createBrowserApi();
 

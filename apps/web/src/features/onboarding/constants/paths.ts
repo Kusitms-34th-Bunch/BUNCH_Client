@@ -9,7 +9,6 @@ export const ONBOARDING_PATHS = {
   createBunchComplete: '/onboarding/create/complete',
   createBunchInvite: '/onboarding/create/invite',
   joinBunch: '/onboarding/join',
-  joinBunchMotion: '/onboarding/join/motion',
   joinBunchInvitation: '/onboarding/join/invitation',
   joinBunchComplete: '/onboarding/join/complete',
   // 피드 화면 연결 전 임시 홈 경로

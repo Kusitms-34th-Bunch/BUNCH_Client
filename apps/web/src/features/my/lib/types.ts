@@ -10,7 +10,7 @@ export type MyProfile = {
 };
 
 /** 알림 종류(화면 설계서 MY(3) 3번 「받을 알림」 순서) */
-export const NOTIFICATION_TYPES = ['bundle', 'growth', 'member', 'follow', 'reaction'] as const;
+export const NOTIFICATION_TYPES = ['bundle', 'member', 'follow', 'reaction'] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export type NotificationSettings = {

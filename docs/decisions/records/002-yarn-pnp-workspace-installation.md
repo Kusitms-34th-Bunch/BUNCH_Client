@@ -1,6 +1,7 @@
 # 002: Yarn PnP workspace 설치 방식 유지
 
 - 상태: accepted
+- 기록일: 2026-10-14
 
 ## 배경
 

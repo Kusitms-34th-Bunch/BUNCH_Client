@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '../db/seed';
+import { mockDb } from '../db';
+import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '../db/seed';
 
 const base = `/api/bunches/${MOCK_BUNCH_ID}/bundles`;
 const { S1, S4, S5, P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
@@ -181,13 +182,27 @@ describe('가짜 서버 번들 사진 순서 이동', () => {
   });
 });
 
-describe('UT 상태 B의 편집 중인 사진', () => {
-  it('다른 멤버가 편집 중인 2번 사진은 빼거나 옮길 수 없고, 나머지는 바꿀 수 있다', async () => {
+describe('다른 멤버가 편집 중인 사진', () => {
+  it('편집 중인 사진은 빼거나 옮길 수 없고, 나머지는 바꿀 수 있다', async () => {
     const draft = await create([P1, P2, P3, P4]);
     const second = draft.photos.find((photo) => photo.photoId === P2)!;
     const first = draft.photos.find((photo) => photo.photoId === P1)!;
     const third = draft.photos.find((photo) => photo.photoId === P3)!;
     const fourth = draft.photos.find((photo) => photo.photoId === P4)!;
+    mockDb.update((state) => ({
+      ...state,
+      bundleLeases: [
+        ...state.bundleLeases,
+        {
+          bundleId: draft.id,
+          target: `PHOTO:${second.id}`,
+          memberId: MOCK_MEMBER_IDS.memberA,
+          token: '00000000-0000-4000-8000-00000000000a',
+          leaseVersion: 1,
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        },
+      ],
+    }));
 
     const removed = await change(draft.id, { removeBundlePhotoIds: [second.id] });
     expect(removed.status).toBe(409);

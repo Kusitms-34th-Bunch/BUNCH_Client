@@ -9,7 +9,16 @@ type PageShellProps = {
   /** 바깥 틀에 더하는 class. 배경색이 흰색이 아닌 화면은 여기서 `bg-*`로 변경 */
   className?: string;
   /** Safe Area까지 이어질 배경 표식(AppFrame에서 처리) */
-  'data-app-background'?: 'brand-subtle-1' | 'secondary' | undefined;
+  'data-app-background'?:
+    | 'brand-subtle-1'
+    // 앱 첫 실행 인트로의 브랜드 장면
+    | 'brand'
+    | 'secondary'
+    // 번치 성격별 홈 배경(TYPE_2~4, TYPE_1은 brand-subtle-1)
+    | 'orange-50'
+    | 'pink-50'
+    | 'green-50'
+    | undefined;
   /** 아래 Safe Area만 다른 색일 때(위는 data-app-background, 아래 내용은 흰색인 화면) */
   'data-app-background-bottom'?: 'primary' | undefined;
   children: ReactNode;
@@ -42,7 +51,12 @@ export function PageShell({
       <main className="min-h-32 flex-1 scroll-pb-(--main-tab-bar-height,0px) scrollbar-none overflow-y-auto overscroll-y-contain pb-(--main-tab-bar-scroll-inset,0px)">
         {children}
       </main>
-      {bottom ? <div className="shrink-0">{bottom}</div> : null}
+      {/* data-toast-anchor: toast()가 이 영역 위 4px에 토스트를 놓음(디자인 시스템 Toast spec) */}
+      {bottom ? (
+        <div data-toast-anchor="wrapper" className="shrink-0">
+          {bottom}
+        </div>
+      ) : null}
     </div>
   );
 }

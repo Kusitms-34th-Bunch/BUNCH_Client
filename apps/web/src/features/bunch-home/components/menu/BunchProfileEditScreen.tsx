@@ -15,7 +15,8 @@ import {
   BUNCH_DESCRIPTION_MAX_LENGTH,
   BUNCH_NAME_INVALID_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
-  DEFAULT_BUNCH_IMAGE,
+  type CharacterType,
+  defaultBunchImage,
   hasInvalidBunchNameChars,
 } from '@/shared/lib/bunchProfile';
 import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
@@ -32,13 +33,20 @@ type BunchProfileEditScreenProps = {
   onBack: () => void;
   /** 저장한 값으로 호출. 반영·이동·저장 토스트는 호출자 담당 */
   onSaved: (_profile: BunchProfile) => void;
+  /** 번치 타입(대표 사진이 없을 때 보일 기본 이미지를 정함, 모르면 타입 1) */
+  characterType?: CharacterType | undefined;
 };
 
 /**
  * 번치 프로필 편집(기능명세 5.5): 대표 사진·이름·한 줄 소개·공개 범위를 「저장하기」로 한 번에 저장
  * 저장 값은 API 연결 전 임시 메모리 저장소로 번치 홈에 반영(호출자 담당)
  */
-export function BunchProfileEditScreen({ initial, onBack, onSaved }: BunchProfileEditScreenProps) {
+export function BunchProfileEditScreen({
+  initial,
+  onBack,
+  onSaved,
+  characterType,
+}: BunchProfileEditScreenProps) {
   const header = (
     <Header
       leading={
@@ -49,7 +57,14 @@ export function BunchProfileEditScreen({ initial, onBack, onSaved }: BunchProfil
     />
   );
   if (!initial) return <EditFrame header={header} />;
-  return <ProfileForm initial={initial} header={header} onSaved={onSaved} />;
+  return (
+    <ProfileForm
+      initial={initial}
+      header={header}
+      onSaved={onSaved}
+      characterType={characterType}
+    />
+  );
 }
 
 function EditFrame({
@@ -76,10 +91,12 @@ function ProfileForm({
   initial,
   header,
   onSaved,
+  characterType,
 }: {
   initial: BunchProfile;
   header: ReactNode;
   onSaved: (_profile: BunchProfile) => void;
+  characterType: CharacterType | undefined;
 }) {
   const formId = useId();
   const [name, setName] = useState(initial.name);
@@ -135,7 +152,7 @@ function ProfileForm({
         <div className="pt-s14 px-padding-p8 gap-s14 pb-s8 flex flex-col items-center">
           <div className="relative h-22.5 w-23.75 shrink-0">
             <ProfileImage
-              src={imageSrc ?? DEFAULT_BUNCH_IMAGE}
+              src={imageSrc ?? defaultBunchImage(characterType)}
               className="absolute top-0 left-0.75"
             />
             <CameraButton
@@ -176,7 +193,7 @@ function ProfileForm({
               onChange={(event) => setDescription(event.target.value)}
             />
             <fieldset className="min-w-0">
-              <legend className="typography-body-3-semi-bold text-text-secondary pb-s6">
+              <legend className="typography-body-3-semibold text-text-secondary pb-s6">
                 공개 범위
               </legend>
               <div className="gap-s5 flex flex-col">

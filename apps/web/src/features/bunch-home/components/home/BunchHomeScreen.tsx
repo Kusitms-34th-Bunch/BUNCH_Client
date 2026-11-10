@@ -8,14 +8,22 @@ import {
   LinePhotoMediumIcon,
   toast,
 } from '@app/design-system';
-import { BunchSwitchSheet, FloatingButton, MenuTabs } from '@app/design-system/web';
+import {
+  BunchSwitchSheet,
+  FloatingButton,
+  MenuTabs,
+  type BunchSwitchItem,
+} from '@app/design-system/web';
 import { useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import type { BunchHomeActions, BunchHomeData, BunchSummary, DraftBundle } from '../../lib/types';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
-import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
 import { switchStatus } from '../../lib/bunchSwitch';
+import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
+import { BunchCharacter } from '../BunchCharacter';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
@@ -36,6 +44,8 @@ type BunchHomeScreenProps = {
   onOpenDraft?: ((_bundleId: string) => void) | undefined;
   /** 전환 시트의 「새로운 번치 추가하기」 */
   onAddBunch?: (() => void) | undefined;
+  /** 프로필의 「콕한 장소」 버튼 */
+  onOpenPlaces?: (() => void) | undefined;
 };
 
 /** 번치 탭 홈: 번치 프로필, 완성된·작성 중인 번들 탭, 번치 전환 시트, 접근 불가 번치 안내 */
@@ -45,59 +55,130 @@ export function BunchHomeScreen({
   onCreateBundle,
   onOpenDraft,
   onAddBunch,
+  onOpenPlaces,
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
+  const background = BUNCH_BACKGROUNDS[current.characterType];
   const [tab, setTab] = useState<BundleTab>('completed');
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
   // 탭을 한 번이라도 바꿨는지(첫 진입·되돌아올 때는 탭 디졸브를 재생하지 않음)
   const [tabChanged, setTabChanged] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<DraftBundle | null>(null);
-  // 접근 불가 번치 안내(기능명세 5.2.3). 닫히는 모션이 끝난 뒤 대상을 비워 문구 유지
-  const [unavailable, setUnavailable] = useState<BunchSummary | null>(null);
-  const [unavailableOpen, setUnavailableOpen] = useState(false);
+  // 헤더의 번치 전환 버튼에 시트가 열렸는지 알림
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
 
   const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
-  // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움
+  // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움(닫힘 모션 동안 문구는 열 때 값으로 유지)
   const openUnavailable = (id: string) => {
     const bunch = findBunch(id);
     if (!bunch) return;
-    setUnavailable(bunch);
-    setUnavailableOpen(true);
+    let removed = false;
+    // Esc는 안내만 닫고 목록에 남김, 「번치 목록에서 삭제」만 목록에서 지움
+    openOverlay(
+      (rootProps, close) => (
+        <ConfirmDialog
+          {...rootProps}
+          title={BUNCH_HOME_MESSAGES.unavailableTitle(bunch)}
+          description={BUNCH_HOME_MESSAGES.unavailableDescription(bunch)}
+          appearance="text"
+          confirmLabel="번치 목록에서 삭제"
+          onConfirm={() => {
+            actions.removeBunch(bunch.id);
+            removed = true;
+            close();
+          }}
+        />
+      ),
+      () => {
+        // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
+        if (removed)
+          document
+            .querySelector<HTMLElement>('[data-bottom-sheet]:not([data-ending-style])')
+            ?.focus();
+      },
+    );
   };
+  // 창이 열린 사이 앞선 삭제가 끝날 수 있어 확정할 때의 최신 동작을 부름
+  const deleteDraft = usePreservedCallback((id: string) => actions.deleteDraftBundle(id));
+  const openDeleteDraft = (target: DraftBundle) =>
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={BUNCH_HOME_MESSAGES.deleteDraftTitle}
+        description={BUNCH_HOME_MESSAGES.deleteDraftDescription}
+        cancelLabel="취소"
+        confirmLabel="삭제하기"
+        onConfirm={() => {
+          deleteDraft(target.id);
+          close();
+        }}
+      />
+    ));
   const selectBunch = (id: string) => {
     const bunch = findBunch(id);
     if (!bunch) return;
-    setSheetOpen(false);
     setTab('completed');
     setSwitched(true);
     actions.switchBunch(bunch.id);
-    toast(BUNCH_HOME_MESSAGES.switched(bunch.name), {
-      fullWidth: true,
-      bottomOffset: BUNCH_HOME_TOAST_OFFSET,
-    });
+    toast(BUNCH_HOME_MESSAGES.switched(bunch.name));
   };
-  // 「새로운 번치 추가하기」: 시트가 다 내려간 뒤 이동(화면설계서 7-1)
-  const [addAfterClose, setAddAfterClose] = useState(false);
-  const addBunch = () => {
-    setAddAfterClose(true);
-    setSheetOpen(false);
+  // 시트가 열린 사이 목록·알림 수가 바뀌어도 최신 값으로 그림
+  const switchItems = usePreservedCallback((): BunchSwitchItem[] =>
+    bunches.map((bunch) => ({
+      id: bunch.id,
+      name: bunch.name,
+      imageSrc: bunch.imageSrc,
+      notificationCount: bunch.alertCount,
+      status: switchStatus(bunch, current.id),
+    })),
+  );
+  const openSwitcher = () => {
+    // 「새로운 번치 추가하기」: 시트가 다 내려간 뒤 이동(화면설계서 7-1)
+    let addAfterClose = false;
+    setSwitcherOpen(true);
+    openOverlay(
+      (rootProps, close) => (
+        <BunchSwitchSheet
+          {...rootProps}
+          onOpenChange={(open) => {
+            if (!open) setSwitcherOpen(false);
+            rootProps.onOpenChange(open);
+          }}
+          bunches={switchItems()}
+          onSelect={(id) => {
+            setSwitcherOpen(false);
+            close();
+            selectBunch(id);
+          }}
+          onUnavailableSelect={openUnavailable}
+          onAdd={() => {
+            addAfterClose = true;
+            setSwitcherOpen(false);
+            close();
+          }}
+        />
+      ),
+      () => {
+        if (addAfterClose) onAddBunch?.();
+      },
+      { live: true },
+    );
   };
 
   return (
-    // 브랜드 배경은 헤더·캐릭터 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
-    // 틀 배경은 위 절반 연보라·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 연보라, 아래는 흰색이 드러남
+    // 성격별 배경은 헤더·캐릭터 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
+    // 틀 배경은 위 절반 성격 색·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 성격 색, 아래는 흰색이 드러남
     <PageShell
-      data-app-background="brand-subtle-1"
+      data-app-background={background.app}
       data-app-background-bottom="primary"
-      className="from-surface-brand-subtle-1 to-surface-primary bg-linear-to-b from-50% to-50%"
+      className={cn('to-surface-primary bg-linear-to-b from-50% to-50%', background.frame)}
       header={
         <BunchHomeHeader
           bunchName={current.name}
-          bunchImageSrc={current.imageSrc}
-          onBunchClick={() => setSheetOpen(true)}
-          switcherOpen={sheetOpen}
+          onBunchClick={openSwitcher}
+          switcherOpen={switcherOpen}
+          className={background.top}
         />
       }
       // 「+」는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
@@ -120,18 +201,14 @@ export function BunchHomeScreen({
           switched && 'animate-[page-content-in_150ms_ease-out] motion-reduce:animate-none',
         )}
       >
-        {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터 에셋은 아직 없어 회색 자리표시이고 흰 시트에 32px 걸침 */}
-        <div className="bg-surface-brand-subtle-1 relative h-34.5 shrink-0">
-          <div
-            aria-hidden="true"
-            // UT 진행자 장치가 연속 터치를 읽는 표식, 이 화면의 동작과는 무관(UT가 끝나면 지움)
-            data-facilitator-trigger="bunch-character"
-            className="right-s8 bg-surface-tertiary absolute top-7.5 z-10 size-30"
-          />
+        {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터는 120px 상자(Character Wrapper) 안 가로 중앙·아래 12px 위에 놓이고 상자는 흰 시트에 32px 걸침 */}
+        <div className={cn('relative h-34.5 shrink-0', background.top)}>
+          <BunchCharacter characterType={current.characterType} stage={current.stage} />
         </div>
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">
           <BunchProfile
             bunch={current}
+            onPlacesClick={onOpenPlaces}
             countHrefs={{
               followerCount: BUNCH_HOME_PATHS.follows,
               followingCount: followingTab(BUNCH_HOME_PATHS.follows),
@@ -188,7 +265,7 @@ export function BunchHomeScreen({
                 <DraftBundleList
                   bundles={current.draftBundles}
                   onOpen={onOpenDraft}
-                  onDelete={setDeleteTarget}
+                  onDelete={openDeleteDraft}
                 />
               ) : (
                 <div className="pt-s24">
@@ -199,56 +276,6 @@ export function BunchHomeScreen({
           </MenuTabs.Root>
         </div>
       </div>
-
-      <BunchSwitchSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        onOpenChangeComplete={(open) => {
-          if (open || !addAfterClose) return;
-          setAddAfterClose(false);
-          onAddBunch?.();
-        }}
-        bunches={bunches.map((bunch) => ({
-          id: bunch.id,
-          name: bunch.name,
-          imageSrc: bunch.imageSrc,
-          notificationCount: bunch.alertCount,
-          status: switchStatus(bunch, current.id),
-        }))}
-        onSelect={selectBunch}
-        onUnavailableSelect={openUnavailable}
-        onAdd={addBunch}
-      />
-      <ConfirmDialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        title={BUNCH_HOME_MESSAGES.deleteDraftTitle}
-        description={BUNCH_HOME_MESSAGES.deleteDraftDescription}
-        cancelLabel="취소"
-        confirmLabel="삭제하기"
-        onConfirm={() => {
-          if (deleteTarget) actions.deleteDraftBundle(deleteTarget.id);
-          setDeleteTarget(null);
-        }}
-      />
-      {/* Esc는 안내만 닫고 목록에 남김, 「번치 목록에서 삭제」만 목록에서 지움 */}
-      <ConfirmDialog
-        open={unavailableOpen}
-        onOpenChange={setUnavailableOpen}
-        onOpenChangeComplete={(open) => {
-          if (!open) setUnavailable(null);
-        }}
-        title={unavailable ? BUNCH_HOME_MESSAGES.unavailableTitle(unavailable) : ''}
-        description={unavailable ? BUNCH_HOME_MESSAGES.unavailableDescription(unavailable) : ''}
-        appearance="text"
-        confirmLabel="번치 목록에서 삭제"
-        onConfirm={() => {
-          if (unavailable) actions.removeBunch(unavailable.id);
-          setUnavailableOpen(false);
-        }}
-      />
     </PageShell>
   );
 }

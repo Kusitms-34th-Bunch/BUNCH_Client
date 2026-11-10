@@ -31,7 +31,13 @@
           "fonts": ["./assets/fonts/Pretendard-Regular.otf"]
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#454EDF"
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,
@@ -39,7 +45,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#454EDF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

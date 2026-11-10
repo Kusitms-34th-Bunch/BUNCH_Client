@@ -47,12 +47,17 @@ export const Stepper = ({
         <span
           key={index}
           aria-hidden="true"
-          className={cn(
-            // Figma 진행바 전용 300ms: Tailwind 기본 곡선 대신 CSS ease-out 명시
-            'h-s2 min-w-px flex-1 rounded-full transition-colors duration-300 ease-[ease-out] motion-reduce:transition-none',
-            index === step - 1 ? 'bg-surface-brand-subtle-2' : 'bg-surface-disabled',
-          )}
-        />
+          data-filled={index === step - 1}
+          className="h-s2 bg-surface-disabled min-w-px flex-1 overflow-hidden rounded-full"
+        >
+          {/* Figma Fill Right: 왼쪽에서 오른쪽으로 600ms·Slow(스프링을 길이에 맞춘 근사 곡선, motion.md). 첫 표시도 starting-style로 채움 */}
+          <span
+            className={cn(
+              'bg-surface-brand block size-full origin-left transition-transform duration-600 ease-[cubic-bezier(0.24,0.3,0.14,1)] motion-reduce:transition-none',
+              index === step - 1 ? 'scale-x-100 starting:scale-x-0' : 'scale-x-0',
+            )}
+          />
+        </span>
       ))}
     </div>
   );

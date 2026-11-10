@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft } from '../lib/types';
 import { BUNDLE_MESSAGES } from '../constants/messages';
@@ -28,24 +29,14 @@ export function useLeaveDraft(draftId: string | undefined) {
         await mutateAsync(draftId);
       } catch {
         leaving.current = false;
-        toast(BUNDLE_MESSAGES.leaveFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.leaveFailed);
         return;
       }
-      if (creator) toast(BUNDLE_MESSAGES.draftDeleted, { fullWidth: true });
+      if (creator) toastAfterNavigation(BUNDLE_MESSAGES.draftDeleted);
       router.replace(BUNDLE_PATHS.bunchHome);
     },
     [draftId, mutateAsync, router],
   );
-}
-
-/** 없는 초안(삭제됨·발행됨·잘못된 id)은 「삭제된 번들이에요」 토스트 뒤 번치 홈으로 이동 */
-export function useRedirectMissingDraft(missing: boolean) {
-  const router = useRouter();
-  useEffect(() => {
-    if (!missing) return;
-    toast(BUNDLE_MESSAGES.deletedDraft, { fullWidth: true });
-    router.replace(BUNDLE_PATHS.bunchHome);
-  }, [missing, router]);
 }
 
 /**
@@ -62,7 +53,7 @@ export function useRedirectMissingPhoto(draft: Draft | undefined, photoId: strin
   const draftId = draft?.id;
   useEffect(() => {
     if (present !== false || draftId === undefined) return;
-    toast(BUNDLE_MESSAGES.photoDeleted, { fullWidth: true });
+    toastAfterNavigation(BUNDLE_MESSAGES.photoDeleted);
     router.replace(BUNDLE_PATHS.draft(draftId));
   }, [present, draftId, router]);
   return present === true;

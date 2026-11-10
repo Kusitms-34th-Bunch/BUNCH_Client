@@ -3,6 +3,7 @@
 import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
 import { IconButton } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '@/features/photo-box/lib/types';
 import {
   PhotoDetailMenu,
@@ -19,16 +20,15 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
+import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
 import { getDraftAccess } from '../../lib/permissions';
-import { getPhotoEditors, getRemovePhotoKind } from '../../lib/photos';
-import { RemovePhotoDialogs } from './RemovePhotoDialogs';
+import { getPhotoEditors, getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
+import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 
-// 확인 창 닫힘 전환이 끝난 뒤에 포커스를 옮기려는 지연
-const CLOSE_TRANSITION_MS = 150;
 // 앨범 저장 API 연결 전의 목 저장 시간: 저장 중에는 화면 전체에 딤과 로딩 점을 보임(화면설계서 5번 「저장 진행 중 로딩 애니메이션」)
 const MOCK_SAVE_MS = 900;
 
-const notify = (message: string) => toast(message, { fullWidth: true });
+const notify = (message: string) => toast(message);
 
 // 크게 보기 슬라이드가 쓰는 사진함 사진 모양으로 바꿈(번들 사진은 항상 보이는 상태)
 // 배지와 헤더 날짜는 사진함 원본의 올린 멤버·촬영 날짜를 씀(번들 사진의 `uploaderId`는 번들에 담은 사람이라 사진 소유자가 아님)
@@ -88,6 +88,7 @@ export function DraftPhotoViewer({
 }: DraftPhotoViewerProps) {
   const access = getDraftAccess(draft, viewer);
   const photos = draft.photos;
+  const isPicked = useIsPhotoPicked(draft);
   // 사진함 데이터를 받는 동안과 받은 뒤 원본이 없는 사진은 배지·날짜를 비움(번들에 담은 사람을 소유자로 잘못 보이지 않게)
   // 사진함 데이터를 받지 못한 경우(`sources` 없음)만 번들에 담은 사람·번들의 날짜로 보임
   const viewerPhotos = photos.map((photo) => {
@@ -108,27 +109,18 @@ export function DraftPhotoViewer({
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
-  // 확인 창을 연 시점의 사진 id를 고정해 그 사이 넘겨져도 다른 사진을 빼지 않음
-  const [removeDialog, setRemoveDialog] = useState<
-    { kind: 'last' | 'captioned'; photoId: string } | undefined
-  >(undefined);
+  const openRemove = useRemovePhotoDialog();
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
-  const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(
-    () => () => {
-      clearTimeout(focusTimer.current);
-      clearTimeout(saveTimer.current);
-    },
-    [],
-  );
+  useEffect(() => () => clearTimeout(saveTimer.current), []);
 
   const photoViewer = usePhotoViewer({
     photos,
     initialPhotoId,
     onPhotoChange,
-    keyboardBlocked: menuOpen || removeDialog !== undefined || saving,
+    keyboardBlocked: menuOpen || removeDialogOpen || saving,
   });
   const { activeId, activeIndex, chromeHidden, showPhoto } = photoViewer;
   const activePhoto = photos[activeIndex];
@@ -144,9 +136,40 @@ export function DraftPhotoViewer({
     const neighbor = photos[index + 1] ?? photos[index - 1];
     actions.removePhoto(photoId);
     if (neighbor && photoId === activeId) showPhoto(neighbor.id);
-    // 빼면 메뉴를 연 ⋯ 근처에서 계속 쓰도록 포커스를 ⋯로 돌림(확인 창은 닫힌 뒤)
-    clearTimeout(focusTimer.current);
-    focusTimer.current = setTimeout(() => menuTriggerRef.current?.focus(), CLOSE_TRANSITION_MS);
+  };
+
+  // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 최신 값으로 다시 확인
+  // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
+  const confirmRemove = usePreservedCallback((photoId: string) => {
+    if (!photos.some((photo) => photo.id === photoId)) return false;
+    if (getPhotoEditors(draft, viewer, photoId).length > 0) {
+      notify(BUNDLE_MESSAGES.editingBlocked);
+      return false;
+    }
+    if (getRemovePhotoKind(photos) === 'last') return true;
+    removeAndContinue(photoId);
+    return false;
+  });
+  const isPickedNow = usePreservedCallback(isPicked);
+
+  // 연 시점의 사진 id를 고정해 그 사이 넘겨져도 다른 사진을 빼지 않음
+  const showRemoveDialog = (kind: RemovePhotoKind, photoId: string) => {
+    let showLast = false;
+    setRemoveDialogOpen(true);
+    openRemove({
+      kind,
+      isPicked: () => isPickedNow(photoId),
+      onConfirm: () => {
+        showLast = confirmRemove(photoId);
+      },
+      // 앞 창이 다 닫힌 뒤 열어 초점이 두 창 사이에서 엉키지 않게 함
+      onClosed: (confirmed) => {
+        if (showLast) return showRemoveDialog('last', photoId);
+        setRemoveDialogOpen(false);
+        // 빼면 메뉴를 연 ⋯ 근처에서 계속 쓰도록 포커스를 ⋯로 돌림
+        if (confirmed) menuTriggerRef.current?.focus();
+      },
+    });
   };
 
   const requestRemove = () => {
@@ -155,9 +178,7 @@ export function DraftPhotoViewer({
     if (getPhotoEditors(draft, viewer, activePhoto.id).length > 0) {
       return notify(BUNDLE_MESSAGES.editingBlocked);
     }
-    const kind = getRemovePhotoKind(photos, activePhoto);
-    if (kind === 'direct') removeAndContinue(activePhoto.id);
-    else setRemoveDialog({ kind, photoId: activePhoto.id });
+    showRemoveDialog(getRemovePhotoKind(photos), activePhoto.id);
   };
 
   // 저장 중에는 딤과 로딩 점을 보이고 끝나면 완료 토스트(앨범 저장 API 연결 전에는 목 지연)
@@ -235,21 +256,6 @@ export function DraftPhotoViewer({
         inert={saving}
       />
       {saving ? <PageLoading /> : null}
-      <RemovePhotoDialogs
-        kind={removeDialog?.kind}
-        onClose={() => setRemoveDialog(undefined)}
-        onConfirm={() => {
-          // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 다시 확인
-          if (removeDialog && photos.some((photo) => photo.id === removeDialog.photoId)) {
-            if (getPhotoEditors(draft, viewer, removeDialog.photoId).length > 0) {
-              notify(BUNDLE_MESSAGES.editingBlocked);
-            } else {
-              removeAndContinue(removeDialog.photoId);
-            }
-          }
-          setRemoveDialog(undefined);
-        }}
-      />
     </PageShell>
   );
 }

@@ -8,6 +8,9 @@ import { DraftProvider } from '../../contexts/DraftProvider';
 import { BundleDraftPhotoCaption } from './BundleDraftPhotoCaption';
 import { BundleDraftPhotoViewer } from './BundleDraftPhotoViewer';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 vi.mock('swiper/react', () => ({
   Swiper: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   SwiperSlide: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -69,22 +72,15 @@ describe('BundleDraftPhotoCaption', () => {
   it('없는 사진이면 「사진함에서 삭제된 사진이에요.」 뒤 작성 화면으로 이동(replace)한다', () => {
     renderCaption('no-such-photo');
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted);
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 
   it('형식이 틀려 undefined로 넘어온 사진 id도 같은 안내로 처리한다', () => {
     renderCaption(undefined);
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted);
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
-  });
-
-  it('없는 초안은 「삭제된 번들이에요」를 안내하고 번치 홈으로 이동한다', () => {
-    renderCaption('draft-photo-1', 'deleted-draft');
-
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, { fullWidth: true });
-    expect(replace).toHaveBeenCalledWith('/bunch');
   });
 
   it('사진을 누르면 그 사진의 크게 보기 주소로 이동(push)한다', async () => {
@@ -108,6 +104,7 @@ describe('BundleDraftPhotoCaption', () => {
     renderCaption('draft-photo-2');
 
     await userEvent.click(screen.getByRole('button', { name: '2번째 사진 빼기' }));
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));
 
     expect(screen.getAllByRole('img', { name: /한강에서 달리는 사람들/ })).toHaveLength(2);
     expect(toast).not.toHaveBeenCalled();
@@ -134,17 +131,17 @@ describe('BundleDraftPhotoViewer', () => {
   it('없는 사진이면 안내 뒤 작성 화면으로 이동(replace)한다', () => {
     renderViewer('no-such-photo');
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted);
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 
-  it('돌아갈 기록이 없으면 뒤로 가기는 그 사진의 캡션 화면으로 이동(replace)한다', async () => {
+  it('돌아갈 기록이 없으면 뒤로 가기는 작성 화면으로 이동(replace)한다', async () => {
     vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
     renderViewer('draft-photo-2');
 
     await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
-    expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1/photos/draft-photo-2');
+    expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 });
 

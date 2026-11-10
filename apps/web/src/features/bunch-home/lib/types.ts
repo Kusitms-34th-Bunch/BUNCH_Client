@@ -1,4 +1,5 @@
 import type { BundleCardMember } from '@app/design-system/web';
+import type { CharacterType } from '@/shared/lib/bunchProfile';
 
 /** 지금 번치에서 내 역할(기능명세 5장 권한 표). 메뉴 항목과 할 수 있는 일이 달라짐 */
 export type BunchRole = 'owner' | 'coOwner' | 'member';
@@ -41,6 +42,8 @@ export type CompletedBundle = {
   id: string;
   title: string;
   coverSrc: string;
+  /** 멤버 공개 번들이면 사진 오른쪽 위에 표시(Figma `Image` `Show Icon`) */
+  memberOnly?: boolean | undefined;
 };
 
 /** 작성 중인 번들(목록 한 줄) */
@@ -57,6 +60,10 @@ export type BunchHomeDetail = {
   name: string;
   /** 헤더 번치 이미지 주소 */
   imageSrc?: string | undefined;
+  /** 번치 성격(서버 characterType). 홈 위쪽 배경색을 정함 */
+  characterType: CharacterType;
+  /** 번치 성장 단계(서버 stage, 1~4). 홈 캐릭터 크기·모양을 정함 */
+  stage: number;
   description: string;
   /** 비공개 번치면 이름 옆 자물쇠 */
   isPrivate: boolean;
@@ -105,6 +112,8 @@ export type OtherBunch = Pick<
   | 'id'
   | 'name'
   | 'imageSrc'
+  | 'characterType'
+  | 'stage'
   | 'description'
   | 'isPrivate'
   | 'followerCount'

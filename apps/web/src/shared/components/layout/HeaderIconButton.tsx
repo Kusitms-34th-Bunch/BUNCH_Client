@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-// 아이콘 색(currentColor), subtle은 Figma 가입 단계 헤더의 연한 회색, tertiary는 어두운 배경 화면(사진 조정)
+// 아이콘 색(currentColor), subtle은 Figma 가입 단계 헤더의 연한 회색, inversed는 어두운 배경 화면(사진 조정)
 const TONES = {
   primary: 'text-icon-primary',
   subtle: 'text-icon-quaternary',
-  tertiary: 'text-icon-tertiary',
+  inversed: 'text-icon-inversed',
 } as const;
 
 type HeaderIconButtonProps = {
@@ -18,7 +18,10 @@ type HeaderIconButtonProps = {
   tone?: keyof typeof TONES;
 };
 
-/** 40px 터치 영역을 유지하면서 아이콘을 왼쪽 16px에 정렬 */
+/**
+ * 40px 터치 영역을 유지하면서 아이콘을 왼쪽 16px에 정렬
+ * 터치 영역(양옆 8px)은 레이아웃 폭에 넣지 않아 24px 아이콘 바로 옆 8px에서 제목이 시작함(Figma 헤더)
+ */
 export function HeaderIconButton({
   label,
   children,
@@ -30,7 +33,7 @@ export function HeaderIconButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`${TONES[tone]} focus-visible:outline-border-brand -ml-s4 size-s16 flex cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2`}
+      className={`${TONES[tone]} focus-visible:outline-border-brand -mx-s4 size-s16 flex cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2`}
     >
       {children}
     </button>

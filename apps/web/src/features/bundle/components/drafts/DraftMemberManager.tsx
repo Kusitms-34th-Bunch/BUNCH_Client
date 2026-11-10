@@ -5,13 +5,19 @@ import { ChipButton, ProfileListItem } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftMember, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { useMoveAnimation } from '../../hooks/useMoveAnimation';
-import { canRemoveMember, getDraftAccess, getMemberBadge } from '../../lib/permissions';
+import {
+  canRemoveMember,
+  getDraftAccess,
+  getMemberBadge,
+  isDraftCreator,
+} from '../../lib/permissions';
 import { LeaveDraftDialog } from './LeaveDraftDialog';
-import { RemoveMemberDialog } from './RemoveMemberDialog';
+import { useRemoveMemberDialog } from './RemoveMemberDialog';
 
 type DraftMemberManagerProps = {
   draft: Draft;
@@ -39,9 +45,8 @@ export function DraftMemberManager({
 }: DraftMemberManagerProps) {
   const access = getDraftAccess(draft, viewer);
   const { register, capture } = useMoveAnimation();
-  const [removeTarget, setRemoveTarget] = useState<DraftMember | undefined>(undefined);
-  const [removeOpen, setRemoveOpen] = useState(false);
-  const [leaveOpen, setLeaveOpen] = useState(false);
+  const openOverlay = useScreenOverlay();
+  const openRemove = useRemoveMemberDialog();
   // 카드가 다른 목록으로 옮겨가면 눌렀던 요소가 사라져 포커스를 잃으므로, 옮겨간 카드의 버튼으로 포커스를 옮김
   const [focusId, setFocusId] = useState<string | undefined>(undefined);
   const root = useRef<HTMLDivElement>(null);
@@ -67,7 +72,7 @@ export function DraftMemberManager({
     capture();
     actions.addMember(member.id);
     setFocusId(member.id);
-    toast(BUNDLE_MESSAGES.memberAdded(member.name), { fullWidth: true });
+    toast(BUNDLE_MESSAGES.memberAdded(member.name));
   };
 
   return (
@@ -147,10 +152,26 @@ export function DraftMemberManager({
                           }
                           onClick={() => {
                             if (isMe) {
-                              setLeaveOpen(true);
+                              openOverlay((rootProps, close) => (
+                                <LeaveDraftDialog
+                                  {...rootProps}
+                                  onConfirm={() => {
+                                    close();
+                                    onLeave();
+                                  }}
+                                  creator={isDraftCreator(draft, viewer)}
+                                />
+                              ));
                             } else {
-                              setRemoveTarget(member);
-                              setRemoveOpen(true);
+                              openRemove(
+                                member,
+                                ({ id }) => {
+                                  capture();
+                                  actions.removeMember(id);
+                                },
+                                // 창이 닫힌 뒤에 옮겨야 닫히는 모달에 포커스를 빼앗기지 않음
+                                ({ id }) => setFocusId(id),
+                              );
                             }
                           }}
                           // 아이콘 20px·누르는 영역 40px(ProfileListItem의 더보기 버튼과 같은 배치)
@@ -167,18 +188,6 @@ export function DraftMemberManager({
           </ul>
         </section>
       </div>
-      <RemoveMemberDialog
-        open={removeOpen}
-        onOpenChange={setRemoveOpen}
-        target={removeTarget}
-        onConfirm={(member) => {
-          capture();
-          actions.removeMember(member.id);
-        }}
-        // 창이 닫힌 뒤에 옮겨야 닫히는 모달에 포커스를 빼앗기지 않음
-        onClosed={(member) => setFocusId(member.id)}
-      />
-      <LeaveDraftDialog open={leaveOpen} onOpenChange={setLeaveOpen} onConfirm={onLeave} />
     </PageShell>
   );
 }

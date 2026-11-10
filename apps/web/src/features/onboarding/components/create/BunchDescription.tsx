@@ -39,7 +39,10 @@ export function BunchDescription() {
         </div>
       }
     >
-      <PageHeader title="번치를 소개해주세요" className="pt-s13" />
+      <PageHeader
+        title="번치를 소개해주세요"
+        className="pt-s13 animate-step-title-in motion-reduce:animate-none"
+      />
       <div className="pt-s15 px-padding-p8">
         <LabeledTextArea
           label="한 줄 소개"
@@ -55,10 +58,10 @@ export function BunchDescription() {
           }}
         />
       </div>
-      <section className="pt-s15 px-padding-p8 gap-s4 flex flex-col">
+      <section className="pt-s15 px-padding-p8 gap-s3 flex flex-col">
         <div className="gap-s3 flex items-center">
           <Badge size="sm">TIP</Badge>
-          <h2 className="typography-body-3-semi-bold text-text-primary">이런 소개는 어때요?</h2>
+          <h2 className="typography-body-3-semibold text-text-primary">이런 소개는 어때요?</h2>
         </div>
         {/* 토큰이 없는 목록 들여쓰기에 Figma 값 19.5px 적용 */}
         {/* Safari에서 list-style none인 ul의 목록 인식 누락 방지 */}

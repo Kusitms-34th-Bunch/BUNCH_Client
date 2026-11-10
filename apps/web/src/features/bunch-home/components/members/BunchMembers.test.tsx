@@ -112,7 +112,6 @@ describe('BunchMembersScreen', () => {
     await waitFor(() => expect(toast).toHaveBeenCalled());
     expect(toast).toHaveBeenCalledWith('지예님이 공동 관리자가 되었어요.', {
       icon: 'success',
-      fullWidth: true,
     });
   });
 

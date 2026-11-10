@@ -87,11 +87,7 @@ describe('useCreateBundle', () => {
 
     act(() => result.current.create(photoIds));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.membersRequired, {
-        fullWidth: true,
-      }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.membersRequired));
     expect(router.push).not.toHaveBeenCalled();
     expect(result.current.creating).toBe(false);
   });
@@ -103,9 +99,7 @@ describe('useCreateBundle', () => {
 
     act(() => result.current.create(photoIds));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.draftLimit, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.draftLimit));
   });
 
   it('그 밖의 실패는 일반 안내를 띄우고 다시 시도할 수 있다', async () => {
@@ -115,9 +109,7 @@ describe('useCreateBundle', () => {
 
     act(() => result.current.create(photoIds));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.createFailed, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.createFailed));
     expect(result.current.creating).toBe(false);
   });
 

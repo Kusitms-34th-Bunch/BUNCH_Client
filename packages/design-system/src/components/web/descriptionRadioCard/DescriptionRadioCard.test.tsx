@@ -45,4 +45,24 @@ describe('DescriptionRadioCard', () => {
       false,
     );
   });
+
+  it('카드는 반경 r4, 좌우 16·위아래 18 여백, 라디오와 글자 사이 14px이다', () => {
+    const { container } = render(
+      <DescriptionRadioCard name="g" value="a" title="비공개" description="설명" />,
+    );
+    const card = container.firstElementChild as HTMLElement;
+
+    expect(card.classList.contains('rounded-r4')).toBe(true);
+    expect(card.classList.contains('px-padding-p8')).toBe(true);
+    expect(card.classList.contains('py-s9')).toBe(true);
+    expect(card.classList.contains('gap-s7')).toBe(true);
+  });
+
+  it('제목은 Body-2-Medium text-tertiary, 설명은 Caption-1-Regular이다', () => {
+    render(<DescriptionRadioCard name="g" value="a" title="비공개" description="설명" />);
+
+    expect(screen.getByText('비공개').classList.contains('typography-body-2-medium')).toBe(true);
+    expect(screen.getByText('비공개').classList.contains('text-text-tertiary')).toBe(true);
+    expect(screen.getByText('설명').classList.contains('typography-caption-1-regular')).toBe(true);
+  });
 });

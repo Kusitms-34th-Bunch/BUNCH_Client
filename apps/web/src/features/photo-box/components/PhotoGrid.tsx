@@ -3,8 +3,10 @@
 import { cn } from '@app/design-system';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { memo } from 'react';
 import type { PhotoBoxPhoto } from '../lib/types';
 import { usePhotoDrag } from '../contexts/PhotoDragContext';
+import { PHOTO_DRAGGABLE_ATTRIBUTE } from '../lib/dragSelect';
 import { PhotoCell } from './PhotoCell';
 
 type PhotoGridProps = {
@@ -16,7 +18,13 @@ type PhotoGridProps = {
 };
 
 /** 길게 눌러 끌 수 있는 사진 한 칸. 끄는 동안 원래 자리는 흐리게 남고 복사본이 손가락을 따라감 */
-function SortablePhotoItem({ photo, draggable }: { photo: PhotoBoxPhoto; draggable: boolean }) {
+const SortablePhotoItem = memo(function SortablePhotoItem({
+  photo,
+  draggable,
+}: {
+  photo: PhotoBoxPhoto;
+  draggable: boolean;
+}) {
   const { setNodeRef, transform, transition, isDragging, listeners } = useSortable({
     id: photo.id,
     disabled: !draggable,
@@ -27,6 +35,7 @@ function SortablePhotoItem({ photo, draggable }: { photo: PhotoBoxPhoto; draggab
       ref={setNodeRef}
       // 속성(role·tabIndex)은 붙이지 않음: 목록 항목 의미와 사진 칸 버튼의 포커스를 그대로 둠
       {...listeners}
+      {...(draggable ? { [PHOTO_DRAGGABLE_ATTRIBUTE]: '' } : undefined)}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn(
         // 길게 누르기 전에는 스크롤이 먼저이고, iOS 길게 누름 메뉴·글자 선택은 끔
@@ -37,10 +46,10 @@ function SortablePhotoItem({ photo, draggable }: { photo: PhotoBoxPhoto; draggab
       <PhotoCell photo={photo} />
     </li>
   );
-}
+});
 
 /** 한 줄 3장 정사각형 사진 목록(사이 간격 1px) */
-export function PhotoGrid({ photos, label, sectionKey }: PhotoGridProps) {
+export const PhotoGrid = memo(function PhotoGrid({ photos, label, sectionKey }: PhotoGridProps) {
   const { enabled, draggableIds } = usePhotoDrag();
 
   // 날짜 섹션은 끌기가 꺼져 있어도 같은 트리를 써서 선택 모드 진입·종료와 저장·삭제 중에 사진 칸이 다시 마운트되지 않게 함
@@ -73,4 +82,4 @@ export function PhotoGrid({ photos, label, sectionKey }: PhotoGridProps) {
       </ul>
     </SortableContext>
   );
-}
+});

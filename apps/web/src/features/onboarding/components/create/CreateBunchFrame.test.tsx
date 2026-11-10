@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { OverlayProvider } from 'overlay-kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
@@ -19,7 +18,7 @@ vi.mock('next/navigation', () => ({
 
 const Providers = ({ children }: { children: ReactNode }) => (
   <CreateBunchDraftProvider>
-    <OverlayProvider>{children}</OverlayProvider>
+    <>{children}</>
   </CreateBunchDraftProvider>
 );
 const renderFrame = () =>
@@ -119,7 +118,7 @@ describe('CreateBunchFrame', () => {
           <button
             onClick={() => {
               setName('퇴근런클럽');
-              setMood('mood-4');
+              setMood('TYPE_4');
             }}
           >
             채우기

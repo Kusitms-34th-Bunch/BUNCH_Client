@@ -5,22 +5,26 @@ import {
   Button,
   Checkbox,
   cn,
-  ConfirmDialog,
   Header,
   LineChevronLeftLargeIcon,
 } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
-import { markTransferFromGuide, useOwnedBunches } from '../../hooks/useOwnedBunches';
+import {
+  clearKeepAgreed,
+  markTransferFromGuide,
+  peekKeepAgreed,
+  useOwnedBunches,
+} from '../../hooks/useOwnedBunches';
 import { useWithdrawMutation } from '../../queries/session';
-
-type DialogKind = 'confirm' | 'owner';
+import { PendingConfirmDialog } from '../PendingConfirmDialog';
 
 const text = MY_MESSAGES.withdrawal;
 
@@ -33,12 +37,44 @@ export function WithdrawalScreen() {
   const backOr = useBackOr();
   const agreeId = useId();
   const agreeTextId = useId();
-  const [agreed, setAgreed] = useState(false);
-  const [dialog, setDialog] = useState<DialogKind | null>(null);
+  // 마이페이지에서 들어오면 해제, 권한을 넘기고 돌아오면 체크 유지(기능명세서 7.6.1 로직 1)
+  const [agreed, setAgreed] = useState(peekKeepAgreed);
+  useEffect(clearKeepAgreed, []);
+  const openOverlay = useScreenOverlay();
   const withdraw = useWithdrawMutation();
   // 권한을 넘기고 돌아오면 줄어든 목록으로 다시 판단(화면 설계서 5-3)
   const hasOwnedBunch = useOwnedBunches().length > 0;
-  const pending = withdraw.isPending || withdraw.isSuccess;
+  const openConfirm = () =>
+    openOverlay((rootProps) => (
+      <PendingConfirmDialog
+        {...rootProps}
+        title={text.confirmTitle}
+        description={text.confirmDescription}
+        cancelLabel={MY_MESSAGES.cancel}
+        confirmLabel={text.confirm}
+        run={(onError) => withdraw.mutate(undefined, { onError })}
+      />
+    ));
+  const openOwner = () =>
+    openOverlay((rootProps, close) => (
+      <ActionDialog
+        {...rootProps}
+        title={text.ownerTitle}
+        description={text.ownerDescription}
+        actions={[
+          {
+            label: text.ownerTransfer,
+            onClick: () => {
+              close();
+              markTransferFromGuide();
+              router.push(MY_PATHS.withdrawalTransfer);
+            },
+          },
+        ]}
+        cancelLabel={MY_MESSAGES.cancel}
+        cancelAppearance="solid"
+      />
+    ));
 
   return (
     <PageShell
@@ -73,7 +109,7 @@ export function WithdrawalScreen() {
             disabled={!agreed}
             // 막힌 이유(확인 체크)를 보조기기에 함께 전달
             aria-describedby={agreeTextId}
-            onClick={() => setDialog(hasOwnedBunch ? 'owner' : 'confirm')}
+            onClick={hasOwnedBunch ? openOwner : openConfirm}
           >
             {text.next}
           </Button>
@@ -97,38 +133,6 @@ export function WithdrawalScreen() {
           />
         </div>
       </div>
-      <ConfirmDialog
-        open={dialog === 'confirm'}
-        // 요청 중에는 취소·ESC로 닫지 않음(닫힌 뒤 탈퇴가 끝나 화면이 바뀌는 혼란 방지)
-        onOpenChange={(open) => {
-          if (!pending) setDialog(open ? 'confirm' : null);
-        }}
-        title={text.confirmTitle}
-        description={text.confirmDescription}
-        cancelLabel={MY_MESSAGES.cancel}
-        confirmLabel={text.confirm}
-        confirmDisabled={pending}
-        // 성공 뒤 이동은 useWithdrawMutation이 처리, 실패하면 창만 닫음
-        onConfirm={() => withdraw.mutate(undefined, { onError: () => setDialog(null) })}
-      />
-      <ActionDialog
-        open={dialog === 'owner'}
-        onOpenChange={(open) => setDialog(open ? 'owner' : null)}
-        title={text.ownerTitle}
-        description={text.ownerDescription}
-        actions={[
-          {
-            label: text.ownerTransfer,
-            onClick: () => {
-              setDialog(null);
-              markTransferFromGuide();
-              router.push(MY_PATHS.withdrawalTransfer);
-            },
-          },
-        ]}
-        cancelLabel={MY_MESSAGES.cancel}
-        cancelAppearance="solid"
-      />
     </PageShell>
   );
 }

@@ -38,13 +38,13 @@ const SCREENS: {
   {
     name: '마이페이지',
     path: '/my',
-    knownLowContrast: ['알림', '약관 및 정책', '고객지원'],
+    knownLowContrast: [],
     ready: (page) => page.getByRole('link', { name: '알림 설정' }),
   },
   {
     name: '개인 프로필 수정',
     path: '/my/profile',
-    knownLowContrast: ['출생연도와 성별은 다른 사용자에게 공개되지 않아요.'],
+    knownLowContrast: [],
     ready: (page) => page.getByRole('button', { name: '프로필 사진 변경' }),
   },
   {

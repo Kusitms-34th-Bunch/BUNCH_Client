@@ -18,10 +18,16 @@ import {
   WebAnimation,
 } from '@ssgoi/react/view-transitions';
 import { type ReactNode, useMemo } from 'react';
-import { LOGIN_PATH, SIGNUP_PATHS, SIGNUP_TRANSITION_IDS } from '@/features/auth/constants/paths';
+import {
+  INTRO_PATH,
+  LOGIN_PATH,
+  SIGNUP_PATHS,
+  SIGNUP_TRANSITION_IDS,
+} from '@/features/auth/constants/paths';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { BUNDLE_PATHS } from '@/features/bundle/constants/paths';
 import { BUNDLE_SELECT_PATHS } from '@/features/bundle/constants/selectPaths';
+import { FEED_PATHS } from '@/features/feed/constants/paths';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 import { MY_PATHS } from '@/features/my/constants/paths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
@@ -213,12 +219,19 @@ const tabRules: SsgoiTransitionRule[] = tabPaths.flatMap((from) =>
 const rules: SsgoiTransitionRule[] = [
   ...tabRules,
   { from: BUNCH_HOME_PATHS.home, to: ONBOARDING_PATHS.start, transition: bunchAddDissolve },
-  // 번치 홈 플로팅 버튼 → 번들 만들기는 모달처럼 아래에서 올라오고 닫으면 내려가는 sheet 프리셋(SSGOI 데모의 Home → Create)
+  // 번치 홈 플로팅 버튼 → 번들 만들기(멤버 선택)는 모달처럼 아래에서 올라오고 닫으면 내려가는 sheet 프리셋(SSGOI 데모의 Home → Create)
   {
     from: BUNCH_HOME_PATHS.home,
-    to: BUNDLE_SELECT_PATHS.select,
+    to: BUNDLE_SELECT_PATHS.members,
     bidirectional: true,
     transition: bunchSheet,
+  },
+  // 멤버 선택 → 사진 선택은 옆으로 넘어가는 슬라이드
+  {
+    from: BUNDLE_SELECT_PATHS.members,
+    to: BUNDLE_SELECT_PATHS.select,
+    bidirectional: true,
+    transition: bundleSlide,
   },
   {
     from: BUNCH_HOME_PATHS.home,
@@ -233,15 +246,67 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
-  // 다른 번치 프로필(지금 입구는 피드 임시 링크)과 그 멤버 목록도 한 단계 들어가는 drill
+  // 다른 번치 프로필(피드 카드의 번치에서 들어감)과 그 멤버 목록도 한 단계 들어가는 drill
   {
     from: MAIN_TAB_PATHS.feed,
     to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 피드 카드 → 번들 상세, 상세의 번치 → 번치 탭·다른 번치 프로필도 한 단계씩 들어가는 drill
   {
-    from: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    from: MAIN_TAB_PATHS.feed,
+    to: FEED_PATHS.transitionIds.bundle,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.bundle,
+    to: BUNCH_HOME_PATHS.home,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.bundle,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 참여 멤버 시트 → 멤버 프로필 → 번치 프로필도 한 단계씩 들어가는 drill
+  {
+    from: MAIN_TAB_PATHS.feed,
+    to: FEED_PATHS.transitionIds.member,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.bundle,
+    to: FEED_PATHS.transitionIds.member,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 번들 상세 → 공개 범위 설정도 한 단계 들어가는 drill
+  {
+    from: FEED_PATHS.transitionIds.bundle,
+    to: FEED_PATHS.transitionIds.bundleVisibility,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.member,
+    to: BUNCH_HOME_PATHS.home,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.member,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 피드 헤더 알림도 번치 홈 알림과 같은 drill
+  {
+    from: MAIN_TAB_PATHS.feed,
     to: BUNCH_HOME_PATHS.notifications,
     bidirectional: true,
     transition: bunchDrill,
@@ -262,6 +327,13 @@ const rules: SsgoiTransitionRule[] = [
   {
     from: BUNCH_HOME_PATHS.home,
     to: BUNCH_HOME_PATHS.follows,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 콕한 장소도 번치 홈에서 한 단계 들어가는 drill
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.places,
     bidirectional: true,
     transition: bunchDrill,
   },
@@ -390,6 +462,27 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition,
   },
+  // 작성 화면 → 대표 사진 투표(「픽하기 >」)도 참여 멤버 관리와 같은 슬라이드
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.pick,
+    bidirectional: true,
+    transition,
+  },
+  // 작성 화면 → 공개 범위(업로드 직전)도 같은 슬라이드
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.visibility,
+    bidirectional: true,
+    transition,
+  },
+  // 작성 화면 → 사진 상세(크게 보기)도 같은 슬라이드
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.viewer,
+    bidirectional: true,
+    transition,
+  },
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.photo,
@@ -402,6 +495,14 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bundleSlide,
   },
+  {
+    from: BUNDLE_PATHS.transitionIds.draft,
+    to: BUNDLE_PATHS.transitionIds.photoAdd,
+    bidirectional: true,
+    transition: bundleSlide,
+  },
+  // 인트로 → 로그인: 화면설계서에 없어 가입 화면과 같은 디졸브. 앞으로만 넘어가 한 방향
+  { from: INTRO_PATH, to: LOGIN_PATH, transition: dissolve },
   { from: SIGNUP_PATHS.terms, to: LOGIN_PATH, transition: dissolve },
   {
     from: SIGNUP_PATHS.profile,

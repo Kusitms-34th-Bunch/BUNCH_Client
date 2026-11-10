@@ -11,7 +11,7 @@
 
 ### 제공하는 동작
 
-- 프로필 사진(없으면 BUNCH 기본 이미지)과 카메라 버튼. 누르면 「프로필 사진 설정」 선택지(`ActionDialog`): 앨범에서 사진 선택하기 / 기본 이미지 적용하기 / 취소. 이미 기본 이미지면 두 번째 선택지는 없다(2-1번).
+- 프로필 사진(없으면 기본 프로필 이미지, 번치 타입과 무관)과 카메라 버튼. 누르면 「프로필 사진 설정」 선택지(`ActionDialog`): 앨범에서 사진 선택하기 / 기본 이미지 적용하기 / 취소. 이미 기본 이미지면 두 번째 선택지는 없다(2-1번).
 - 앨범에서 고른 사진은 조정 화면으로 연다. 사진을 끌거나 방향키로 옮겨 지름 252px 원에 맞추고 「완료」로 512px JPEG를 만든다(투명 영역은 흰 바탕). 사진을 디코딩하지 못하거나 자르기용 canvas를 만들지 못하면 조정 화면을 닫고 기획 문구 「이 사진은 사용할 수 없어요.」 토스트를 띄운다. 원이 사진 밖으로 나가지 않게 이동을 막는다.
 - 웹 파일 읽기가 300ms를 넘으면 「사진을 불러오는 중」 화면(6번), 작은 사진은 바로 조정 화면.
 - 형식·크기: JPEG·PNG·HEIC·WebP, 10MB 이하(`PROFILE_IMAGE_RULES`). 바이트가 작아도 5천만 픽셀을 넘으면 거절한다(디코딩·자르기 메모리 보호). 어긋나거나 브라우저가 읽지 못하면 「JPEG・PNG・HEIC・WebP, 10MB 이하만 가능해요.」 토스트.
@@ -39,20 +39,20 @@
 
 ## Styling
 
-| Figma            | 값                                | 사용한 토큰·utility                                       |
-| ---------------- | --------------------------------- | --------------------------------------------------------- |
-| 조정 화면 배경   | `surface-inversed-strong` #121212 | `bg-primitive-gray-900`(같은 값, semantic 토큰 없음)      |
-| 원 밖 어둡게     | 사진 위 `overlay-scrim` 60%       | `bg-overlay-scrim` + 원 자리 `mask-image` radial-gradient |
-| 원·정사각 안내선 | 252px, 흰색 60% 1px               | `border-surface-primary/60`                               |
-| 모서리 꺾쇠      | 20px, 흰색, 안내선 3px 밖         | `size-5 border-2 border-surface-primary`, `-0.75` 위치    |
-| 뒤로 가기 아이콘 | `icon-tertiary`                   | `HeaderIconButton tone="tertiary"`(이번에 추가)           |
-| 완료             | Label-S `text-inversed`           | `TextButton size="sm"` + `text-text-inversed`             |
-| 안내 문구        | Body-3-Regular `text-quinary`     | `typography-body-3-regular text-text-quinary`             |
+| Figma            | 값                                                 | 사용한 토큰·utility                                       |
+| ---------------- | -------------------------------------------------- | --------------------------------------------------------- |
+| 조정 화면 배경   | `surface-inversed-strong` #121212                  | `bg-primitive-gray-900`(같은 값, semantic 토큰 없음)      |
+| 원 밖 어둡게     | 사진 위 `overlay-scrim` 60%                        | `bg-overlay-scrim` + 원 자리 `mask-image` radial-gradient |
+| 원·정사각 안내선 | 252px, 흰색 60% 1px                                | `border-surface-primary/60`                               |
+| 모서리 꺾쇠      | 20px, 흰색, 안내선 3px 밖                          | `size-5 border-2 border-surface-primary`, `-0.75` 위치    |
+| 뒤로 가기 아이콘 | `icon-inversed`(디자인 변경, 이전 `icon-tertiary`) | `HeaderIconButton tone="inversed"`                        |
+| 완료             | Label-S `text-inversed`                            | `TextButton size="sm"` + `text-text-inversed`             |
+| 안내 문구        | Body-3-Regular `text-quinary`                      | `typography-body-3-regular text-text-quinary`             |
 
 ## 확인할 항목
 
 - 조정 화면 배경 토큰: Figma `Surface/surface-inversed-strong`이 내보낸 토큰에 없어 primitive를 썼다. 토큰 export에 추가되면 바꾼다.
-- 뒤로 가기 아이콘 대비: Figma `icon-tertiary`(#535A61)는 #121212 배경에서 약 2.6:1로 비텍스트 기준 3:1에 못 미친다. 디자이너 확인 뒤 정한다.
+- 뒤로 가기 아이콘 대비 (해결): 디자이너가 `icon-tertiary`(약 2.6:1)를 `icon-inversed`(흰색)로 바꿨다.
 - 스크린 리더: 열린 동안 뒤 화면이 inert라 그 사이의 토스트가 읽히는지, 방향키 이동에 위치 안내가 없는 점, 데스크톱에서 클릭 뒤 Esc가 동작하는지 VoiceOver·브라우저로 확인한다.
 - 앱 쉘 원본 디코딩 메모리: `expo-image-manipulator`는 줄이기 전에 원본 전체를 디코딩한다. 48MP급 사진을 메모리가 적은 기기에서 고를 때 실패하는지 실기기에서 확인하고, 문제가 되면 디코딩 단계에서 줄이는 방법을 찾는다.
 - 앱 쉘 전송 크기: 2048px JPEG(0.8)가 4MiB 전송 상한을 넘거나 원본 크기를 모르면 실패 토스트만 보인다. 실기기에서 확인한다.

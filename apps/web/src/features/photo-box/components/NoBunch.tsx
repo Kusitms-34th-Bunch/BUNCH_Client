@@ -1,7 +1,9 @@
 'use client';
 
 import { Button } from '@app/design-system';
+import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
+import bunchEmpty from '@/shared/assets/images/empty/bunch-empty.svg';
 import { PHOTO_BOX_PATHS } from '../constants/paths';
 
 /** 소속 번치가 없을 때의 안내와 번치 만들기·초대 링크 참여 버튼(헤더·필터·올리기 버튼 없음) */
@@ -10,12 +12,13 @@ export function NoBunch() {
 
   return (
     <div className="gap-s17 px-s8 flex min-h-full flex-col items-center justify-center">
-      <div className="gap-s9 flex flex-col items-center">
-        {/* 번치 일러스트는 Figma가 추후 공유한다고 해서 회색 자리표시 사용 */}
-        <div aria-hidden="true" className="bg-surface-tertiary h-36 w-43" />
-        <div className="gap-s3 flex flex-col items-center text-center">
-          <p className="typography-body-1-semi-bold text-text-secondary">참여 중인 번치가 없어요</p>
-          <p className="typography-caption-1-regular text-text-tertiary">
+      {/* Figma 5991:162053: 일러스트 72×72, 일러스트와 문구 16, 제목·설명 4 */}
+      <div className="gap-s8 flex flex-col items-center">
+        {/* SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김 */}
+        <Image src={bunchEmpty as StaticImageData} alt="" width={72} height={72} />
+        <div className="gap-s2 flex flex-col items-center text-center">
+          <p className="typography-body-1-medium text-text-tertiary">참여 중인 번치가 없어요</p>
+          <p className="typography-body-4-regular text-text-quaternary">
             새 번치를 만들거나 초대받은 번치에 참여해보세요.
           </p>
         </div>

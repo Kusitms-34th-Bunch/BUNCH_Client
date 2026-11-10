@@ -1,12 +1,19 @@
 /** 번들 만들기 사진 선택·추천 번들 화면의 사용자 안내 문구(기획 문서 docs/specs/bundle-create.md 4.1~4.2, Figma 설계서 `1998:28015`) */
 export const BUNDLE_SELECT_MESSAGES = {
   title: '번들 만들기',
-  create: '번들 만들기',
-  recommend: '추천 번들',
-  apply: '적용하기',
+  next: '다음',
+  previous: '이전',
+  // Figma 사진 선택 헤더 오른쪽 텍스트 버튼
+  viewRecommend: '추천 번들 보기',
+  // Figma 멤버 선택 화면(`5664:99697`·`99724`)
+  membersTitle: '누구와 함께 만들까요?',
+  memberAdd: '추가하기',
+  memberAdded: '추가됨',
+  // 음성 제어가 보이는 글자(추가하기·추가됨)로 부를 수 있게 이름이 보이는 글자로 시작
+  memberAddLabel: (name: string, added: boolean) => `${added ? '추가됨' : '추가하기'}, ${name}`,
+  memberRoleLabel: { owner: '번치장', coOwner: '공동 관리자' },
+  membersStatus: (count: number) => (count === 0 ? '추가한 멤버가 없어요.' : `${count}명 추가됨`),
   back: '뒤로 가기',
-  // Figma: 두 줄로 나뉘는 시트 제목(「추천 사진으로」 뒤에서 줄바꿈)
-  sheetTitle: '추천 사진으로\n빠르게 번들을 만들어보세요!',
   sheetLabel: '추천 번들',
   emptyTitle: '아직 추천할 번들이 없어요',
   emptyDescription: '함께한 순간이 쌓이면 번들을 추천해 드릴게요.',

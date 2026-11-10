@@ -6,10 +6,14 @@
   "main": "index.ts",
   "dependencies": {
     "@app/bridge": "file:../../packages/bridge",
+    "@react-native-google-signin/google-signin": "17.0.0",
+    "@react-native-kakao/core": "3.2.0",
+    "@react-native-kakao/user": "3.2.0",
     "@sentry/react-native": "~8.28.0",
     "@webview-bridge/react-native": "^1.8.0",
     "expo": "~58.0.23",
     "expo-constants": "~58.0.15",
+    "expo-crypto": "~58.0.7",
     "expo-dev-client": "~58.0.18",
     "expo-font": "~58.0.11",
     "expo-haptics": "~58.0.7",
@@ -18,6 +22,7 @@
     "expo-linking": "~58.0.16",
     "expo-notifications": "~58.1.8",
     "expo-router": "~58.0.30",
+    "expo-splash-screen": "~58.0.13",
     "expo-status-bar": "~58.0.4",
     "react": "19.3.0",
     "react-native": "0.88.1",
@@ -31,10 +36,11 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/web-url.test.mjs src/gallery-resize.test.mjs src/tabs/*.test.mjs",
+    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/web-url.test.mjs src/gallery-resize.test.mjs src/social-login-core.test.mjs src/tabs/*.test.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:sync": "DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer} expo prebuild --platform ios",
     "open:ios": "open ios/*.xcworkspace",
     "web": "expo start --web",
     "lint": "expo lint"

@@ -1,12 +1,12 @@
 'use client';
 
-import { Button, GraphicPeopleIcon } from '@app/design-system';
-import { BunchAvatar } from '@app/design-system/web';
+import { Button } from '@app/design-system';
+import { BunchAvatar, InviteMemberCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
-import { DEFAULT_BUNCH_IMAGE } from '@/shared/lib/bunchProfile';
+import { defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
@@ -22,11 +22,14 @@ export function BunchCreated() {
   const { finish } = draft;
   // 초대 화면에서 돌아올 때 완료 기록의 이름 사용
   const [createdName] = useState(draft.createdName ?? draft.name);
+  // 초대 화면에서 돌아올 때 완료 기록의 성격 사용(입력값은 완료 때 비워짐)
+  const [createdMood] = useState(draft.createdMood ?? draft.mood);
+  const defaultImage = defaultBunchImage(createdMood);
 
   // 완료 기록을 남기고 입력값을 초기화해 뒤로 가기 시 중복 생성 방지
   useEffect(() => {
-    if (ready && draft.createdName === null) finish(createdName);
-  }, [ready, draft.createdName, finish, createdName]);
+    if (ready && draft.createdName === null) finish(createdName, createdMood);
+  }, [ready, draft.createdName, finish, createdName, createdMood]);
 
   if (!ready) return null;
 
@@ -34,22 +37,11 @@ export function BunchCreated() {
     <PageShell
       bottom={
         <div className="px-padding-p8">
-          {/* Figma의 링크 형태 카드에 맞춘 초대 화면 이동 */}
-          <button
-            type="button"
+          <InviteMemberCard
+            title="멤버 초대하기"
+            description="친구를 초대해 함께 시작해 보세요"
             onClick={() => router.push(ONBOARDING_PATHS.createBunchInvite)}
-            className="bg-surface-secondary gap-s8 p-s10 rounded-r7 focus-visible:outline-border-brand flex w-full cursor-pointer items-center text-left focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <span aria-hidden="true" className="flex shrink-0">
-              <GraphicPeopleIcon />
-            </span>
-            <span className="gap-s2 flex min-w-0 flex-1 flex-col">
-              <span className="typography-body-1-medium text-text-primary">멤버 초대하기</span>
-              <span className="typography-body-4-regular text-text-tertiary">
-                친구를 초대해 함께 시작해 보세요
-              </span>
-            </span>
-          </button>
+          />
           <div className="pt-s5">
             <Button className="w-full" onClick={() => router.replace(ONBOARDING_PATHS.feed)}>
               내 번치로 이동하기
@@ -62,7 +54,7 @@ export function BunchCreated() {
         <div className="gap-s12 flex flex-1 flex-col items-center justify-center">
           <div aria-busy={isPending} className="gap-s4 flex flex-col items-center">
             <BunchAvatar
-              src={photoUrl ?? DEFAULT_BUNCH_IMAGE}
+              src={photoUrl ?? defaultImage}
               alt={photoUrl ? '선택한 번치 대표 사진' : ''}
               onCameraClick={handleCameraClick}
               cameraLabel={isPending ? '사진 선택 중' : '사진 변경'}

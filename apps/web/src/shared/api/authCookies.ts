@@ -2,7 +2,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 
 export const ACCESS_TOKEN_COOKIE = 'accessToken';
 export const REFRESH_TOKEN_COOKIE = 'refreshToken';
-// refresh 쿠키는 재발급·로그아웃 Route Handler에만 전송
+// refresh 쿠키는 `/api/auth` 아래 요청에만 전송(재발급·로그아웃과 프록시를 거치는 약관 API 포함, 프록시는 브라우저 쿠키를 백엔드로 넘기지 않음)
 export const REFRESH_TOKEN_PATH = '/api/auth';
 
 export interface TokenPair {
@@ -53,5 +53,15 @@ export const setAuthCookies = (response: NextResponse, request: NextRequest, tok
 
 export const clearAuthCookies = (response: NextResponse, request: NextRequest) => {
   response.cookies.set(ACCESS_TOKEN_COOKIE, '', cookieOptions(request, '/'));
+  response.cookies.set(REFRESH_TOKEN_COOKIE, '', cookieOptions(request, REFRESH_TOKEN_PATH));
+};
+
+/** access 토큰만 발급(개발 전용 토큰 로그인용). 이전 계정의 refresh 쿠키가 남아 재발급 때 계정이 섞이지 않게 함께 비우고, refresh 토큰이 없어 만료되면 다시 발급받아야 함 */
+export const setAccessTokenCookie = (
+  response: NextResponse,
+  request: NextRequest,
+  accessToken: string,
+) => {
+  response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, cookieOptions(request, '/', accessToken));
   response.cookies.set(REFRESH_TOKEN_COOKIE, '', cookieOptions(request, REFRESH_TOKEN_PATH));
 };

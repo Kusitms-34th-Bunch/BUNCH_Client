@@ -105,13 +105,9 @@ export const BunchAccordion = ({
               <span className="sr-only">{`, ${selectedLabel}`}</span>
             ) : null}
           </span>
-          {/* 선택 쉐브론 #777FF2에 맞는 semantic 아이콘 토큰이 없어 primitive 색(icon-brand는 #454EDF) */}
           <Chevron
             aria-hidden="true"
-            className={cn(
-              'shrink-0',
-              showSelected ? 'text-primitive-bunch-400' : 'text-icon-quaternary',
-            )}
+            className={cn('shrink-0', showSelected ? 'text-chip-blue-fg' : 'text-icon-quaternary')}
           />
         </button>
       </Heading>

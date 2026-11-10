@@ -64,7 +64,7 @@ export function AdminTransferScreen() {
             aria-describedby={bunches.length > 0 ? progressId : undefined}
             onClick={() => {
               setDone(true);
-              transferOwnership(selections);
+              transferOwnership(selections, { fromGuide });
               if (fromGuide) router.back();
               else router.replace(MY_PATHS.withdrawal);
             }}

@@ -67,7 +67,7 @@ export const LabeledTextField = ({
         <label
           htmlFor={inputId}
           className={cn(
-            'typography-body-3-semi-bold gap-s2 text-text-secondary flex items-center',
+            'typography-body-3-semibold gap-s2 text-text-secondary flex items-center',
             disabled && DISABLED_OPACITY,
           )}
         >

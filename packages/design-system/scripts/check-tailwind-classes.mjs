@@ -18,7 +18,7 @@ const CANONICALIZE_OPTIONS = { rem: 16 };
 export const loadTailwindDesignSystem = async () => {
   const require = createRequire(join(PACKAGE_DIR, 'package.json'));
   const tailwindDir = dirname(require.resolve('tailwindcss/package.json'));
-  const css = `@import 'tailwindcss';\n${readFileSync(join(PACKAGE_DIR, 'tokens/tokens.css'), 'utf8')}`;
+  const css = `@import 'tailwindcss';\n${readFileSync(join(PACKAGE_DIR, 'tokens/tokens.css'), 'utf8')}\n${readFileSync(join(PACKAGE_DIR, 'src/styles/utilities.css'), 'utf8')}`;
   return __unstable__loadDesignSystem(css, {
     base: PACKAGE_DIR,
     loadStylesheet: async (id, base) => {

@@ -12,9 +12,10 @@ import {
 } from '@app/design-system';
 import { ProfileImage, ProfileListItem } from '@app/design-system/web';
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { BunchMemberActions } from '../../hooks/useBunchMembers';
 import type { BunchMember, BunchRole } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -54,20 +55,13 @@ export function BunchMembersScreen({
   onBack,
   onInvite,
 }: BunchMembersScreenProps) {
-  const [target, setTarget] = useState<BunchMember | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  // 고른 동작. 관리 메뉴가 다 닫힌 뒤 확인 창을 열고, 확인 창이 다 닫힐 때까지 문구 유지
-  const [confirm, setConfirm] = useState<ConfirmKind | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  // 처리한 뒤 확인 창이 다 닫히면 띄울 토스트(열린 창 뒤에서 낭독이 묻히지 않게)
-  const doneMessage = useRef<string | null>(null);
+  const openOverlay = useScreenOverlay();
   const summaryRef = useRef<HTMLParagraphElement>(null);
 
-  const choose = (kind: ConfirmKind) => {
-    setConfirm(kind);
-    setMenuOpen(false);
-  };
-  const menuActions = (member: BunchMember): ActionDialogAction[] => {
+  const menuActions = (
+    member: BunchMember,
+    choose: (_kind: ConfirmKind) => void,
+  ): ActionDialogAction[] => {
     if (myRole !== 'owner')
       return [{ label: '번치에서 내보내기', onClick: () => choose('remove') }];
     return [
@@ -116,11 +110,65 @@ export function BunchMembersScreen({
         };
     }
   };
-  const content = target && confirm ? confirmContent(target, confirm) : null;
   // Figma Dialog Profile: 56px 프로필 이미지(장식)
-  const dialogImage = target ? (
-    <ProfileImage src={target.imageSrc} size="M" className="size-14" />
-  ) : undefined;
+  const dialogImage = (member: BunchMember) => (
+    <ProfileImage src={member.imageSrc} size="M" className="size-14" />
+  );
+
+  const openConfirm = (member: BunchMember, kind: ConfirmKind) => {
+    const content = confirmContent(member, kind);
+    let done = false;
+    openOverlay(
+      (rootProps, close) => (
+        <ActionDialog
+          {...rootProps}
+          image={dialogImage(member)}
+          title={content.title}
+          description={content.description}
+          actions={[
+            {
+              label: content.label,
+              onClick: () => {
+                content.run();
+                done = true;
+                close();
+              },
+            },
+          ]}
+        />
+      ),
+      () => {
+        // 내보내기·넘기기로 돌아갈 「⋯」가 없어졌으면 요약 줄로(문서 처음으로 가지 않게)
+        if (!document.activeElement || document.activeElement === document.body) {
+          summaryRef.current?.focus();
+        }
+        // 토스트는 창이 다 닫힌 뒤(열린 창 뒤에서 낭독이 묻히지 않게)
+        if (done) toast(content.done, { icon: 'success' });
+      },
+    );
+  };
+
+  // 관리 메뉴가 다 닫힌 뒤 확인 창을 엶
+  const openManage = (member: BunchMember) => {
+    let chosen: ConfirmKind | undefined;
+    openOverlay(
+      (rootProps, close) => (
+        <ActionDialog
+          {...rootProps}
+          image={dialogImage(member)}
+          title={member.name}
+          description={ROLE_LABELS[member.role]}
+          actions={menuActions(member, (kind) => {
+            chosen = kind;
+            close();
+          })}
+        />
+      ),
+      () => {
+        if (chosen) openConfirm(member, chosen);
+      },
+    );
+  };
 
   return (
     <PageShell
@@ -148,7 +196,7 @@ export function BunchMembersScreen({
       {/* 헤더 아래 16, 요약 줄과 목록 사이 12, 행 사이 8(Figma 2500:65206) */}
       {members ? (
         <div className="pt-padding-p8 px-padding-p8 pb-s8 gap-s6 flex flex-col">
-          <div className="typography-body-3-semi-bold flex items-center justify-between">
+          <div className="typography-body-3-semibold flex items-center justify-between">
             {/* 처리한 행이나 「⋯」가 사라지면 초점을 받는 자리 */}
             <p
               ref={summaryRef}
@@ -181,74 +229,13 @@ export function BunchMembersScreen({
                   memberRole={member.role === 'member' ? undefined : member.role}
                   roleLabel={member.role === 'member' ? undefined : ROLE_LABELS[member.role]}
                   moreLabel={`${member.name} 관리`}
-                  onMore={
-                    canManage(myRole, member)
-                      ? () => {
-                          setTarget(member);
-                          setConfirm(null);
-                          setMenuOpen(true);
-                        }
-                      : undefined
-                  }
+                  onMore={canManage(myRole, member) ? () => openManage(member) : undefined}
                 />
               </li>
             ))}
           </ul>
         </div>
       ) : null}
-
-      <ActionDialog
-        open={menuOpen}
-        onOpenChange={(open) => {
-          if (!open) setMenuOpen(false);
-        }}
-        onOpenChangeComplete={(open) => {
-          if (!open && confirm) setConfirmOpen(true);
-        }}
-        image={dialogImage}
-        title={target?.name ?? ''}
-        description={target ? ROLE_LABELS[target.role] : ''}
-        actions={target ? menuActions(target) : []}
-      />
-      <ActionDialog
-        open={confirmOpen}
-        onOpenChange={(open) => {
-          if (!open) setConfirmOpen(false);
-        }}
-        onOpenChangeComplete={(open) => {
-          if (open) return;
-          // 닫히는 도중 다른 「⋯」로 관리 메뉴를 다시 열었으면 새 대상을 지우지 않음
-          if (!menuOpen) {
-            setConfirm(null);
-            setTarget(null);
-          }
-          // 내보내기·넘기기로 돌아갈 「⋯」가 없어졌으면 요약 줄로(문서 처음으로 가지 않게)
-          if (!document.activeElement || document.activeElement === document.body) {
-            summaryRef.current?.focus();
-          }
-          if (doneMessage.current) {
-            toast(doneMessage.current, { icon: 'success', fullWidth: true });
-            doneMessage.current = null;
-          }
-        }}
-        image={dialogImage}
-        title={content?.title ?? ''}
-        description={content?.description ?? ''}
-        actions={
-          content
-            ? [
-                {
-                  label: content.label,
-                  onClick: () => {
-                    content.run();
-                    doneMessage.current = content.done;
-                    setConfirmOpen(false);
-                  },
-                },
-              ]
-            : []
-        }
-      />
     </PageShell>
   );
 }

@@ -1,11 +1,13 @@
 'use client';
 
 import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
-import { DateChangeSheet, IconButton } from '@app/design-system/web';
-import { useRef, useState } from 'react';
+import { IconButton } from '@app/design-system/web';
+import { useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type {
   PhotoBoxActions,
   PhotoBoxMember,
@@ -20,6 +22,7 @@ import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from '../PhotoDetailMenu';
 import { DeleteConfirmDialog } from '../PhotoSelectionDialogs';
 import { PhotoViewerSwiper } from '../PhotoViewerSwiper';
+import { SavingDateSheet } from '../SavingDateSheet';
 
 type PhotoDetailScreenProps = {
   /** 사진함 순서(`getDetailOrder`)로 정렬된 사진 */
@@ -39,7 +42,7 @@ type PhotoDetailScreenProps = {
 };
 
 // 사진함 토스트는 목록 폭(343px)으로 펼침(Figma 사진함_18)
-const notify = (message: string) => toast(message, { fullWidth: true });
+const notify = (message: string) => toast(message);
 
 /**
  * 사진 상세 화면: 헤더(뒤로·촬영 날짜·더보기), 좌우로 넘기는 큰 사진과 올린 멤버 배지, 더보기 메뉴(저장·날짜 바꾸기·삭제)
@@ -59,10 +62,9 @@ export function PhotoDetailScreen({
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
-  // 확인 창을 연 시점의 사진 id를 고정해 두고 확정 때 그 사진을 지움(그 사이 넘겨져도 다른 사진을 지우지 않음)
-  const [deleteTargetId, setDeleteTargetId] = useState<string | undefined>(undefined);
-  // 날짜 변경 시트를 연 시점의 사진 id를 고정(시트가 열린 사이 사진이 넘어가도 처음 사진의 날짜를 바꿈)
-  const [dateTargetId, setDateTargetId] = useState<string | undefined>(undefined);
+  const openOverlay = useScreenOverlay();
+  // 시트·확인 창이 떠 있는 동안 방향키로 넘기지 않음
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
@@ -71,11 +73,7 @@ export function PhotoDetailScreen({
     photos,
     initialPhotoId,
     onPhotoChange,
-    keyboardBlocked:
-      menuOpen ||
-      deleteTargetId !== undefined ||
-      dateTargetId !== undefined ||
-      pending !== undefined,
+    keyboardBlocked: menuOpen || overlayOpen || pending !== undefined,
   });
   const { activeIndex, chromeHidden } = photoViewer;
   const activePhoto = photos[activeIndex];
@@ -101,32 +99,28 @@ export function PhotoDetailScreen({
   };
 
   // 시트의 「저장」: 성공하면 시트를 닫고 토스트를 띄우며, 실패하면 시트를 그대로 둠(기능 spec 3.4.1)
-  const changeDate = async (date: Date) => {
-    const targetId = dateTargetId;
-    if (!targetId || pending) return;
+  const changeDate = async (targetId: string, date: Date) => {
     setPending('date');
     try {
       await actions.changePhotoDates([targetId], date);
       setPending(undefined);
-      setDateTargetId(undefined);
       notify(PHOTO_BOX_MESSAGES.dateChanged);
+      return true;
     } catch {
       setPending(undefined);
       notify(PHOTO_BOX_MESSAGES.dateChangeFailed);
+      return false;
     }
   };
 
-  const confirmDelete = async () => {
-    const targetId = deleteTargetId;
-    setDeleteTargetId(undefined);
-    if (!targetId) return;
+  const confirmDelete = async (targetId: string) => {
     setPending('delete');
     try {
       const { removedCount } = await actions.deletePhotos([targetId]);
       setPending(undefined);
       if (removedCount > 0) {
         // 사진이 사라지면 사진함으로 돌아가 삭제 토스트, 내 배지만 빠지면 상세에 머묾
-        notify(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
+        toastAfterNavigation(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
         onLeave();
       }
     } catch {
@@ -138,10 +132,49 @@ export function PhotoDetailScreen({
   const handleMenuSelect = (action: PhotoDetailMenuAction) => {
     if (pending || !activePhoto) return;
     if (action === 'save') void save();
-    else if (action === 'date') setDateTargetId(activePhoto.id);
-    else if (canManage) setDeleteTargetId(activePhoto.id);
-    else notify(PHOTO_BOX_MESSAGES.deleteForbidden);
+    else if (action === 'date') {
+      // 연 시점의 사진 id를 고정해 시트가 열린 사이 사진이 넘어가도 처음 사진의 날짜를 바꿈
+      const { id, takenAt } = activePhoto;
+      setOverlayOpen(true);
+      openOverlay(
+        (rootProps, close) => (
+          <SavingDateSheet
+            {...rootProps}
+            close={close}
+            defaultDate={getTakenDate(takenAt)}
+            save={(date) => changeDate(id, date)}
+          />
+        ),
+        () => setOverlayOpen(false),
+      );
+    } else if (canManage) {
+      // 연 시점의 사진 id를 고정해 그 사이 넘겨져도 다른 사진을 지우지 않음
+      const { id } = activePhoto;
+      const description = PHOTO_BOX_MESSAGES.deleteConfirmDescription(
+        getDeleteKind([activePhoto], viewer),
+      );
+      setOverlayOpen(true);
+      openOverlay(
+        (rootProps, close) => (
+          <DeleteConfirmDialog
+            {...rootProps}
+            description={description}
+            onConfirm={() => {
+              close();
+              void confirmDelete(id);
+            }}
+          />
+        ),
+        () => setOverlayOpen(false),
+      );
+    } else notify(PHOTO_BOX_MESSAGES.deleteForbidden);
   };
+
+  const noPhoto = !activePhoto;
+  // 화면 상태가 바뀌어(보던 사진이 사라짐) 창이 의미를 잃으면 모두 닫음
+  useEffect(() => {
+    if (noPhoto) openOverlay.closeAll();
+  }, [noPhoto, openOverlay]);
 
   if (!activePhoto) return null;
 
@@ -198,28 +231,6 @@ export function PhotoDetailScreen({
         inert={pending !== undefined}
       />
       {pending === 'save' ? <PageLoading /> : null}
-      <DateChangeSheet
-        open={dateTargetId !== undefined}
-        onOpenChange={(open) => {
-          if (!open && pending !== 'date') setDateTargetId(undefined);
-        }}
-        defaultDate={getTakenDate(
-          (photos.find((photo) => photo.id === dateTargetId) ?? activePhoto).takenAt,
-        )}
-        saving={pending === 'date'}
-        onSave={(date) => void changeDate(date)}
-      />
-      <DeleteConfirmDialog
-        open={deleteTargetId !== undefined}
-        description={PHOTO_BOX_MESSAGES.deleteConfirmDescription(
-          getDeleteKind(
-            [photos.find((photo) => photo.id === deleteTargetId) ?? activePhoto],
-            viewer,
-          ),
-        )}
-        onClose={() => setDeleteTargetId(undefined)}
-        onConfirm={() => void confirmDelete()}
-      />
     </PageShell>
   );
 }

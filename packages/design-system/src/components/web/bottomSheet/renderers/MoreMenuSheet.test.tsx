@@ -34,4 +34,25 @@ describe('MoreMenuSheet', () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
   });
+
+  it('아이콘 항목과 취소 글자를 바꿀 수 있다', async () => {
+    render(
+      <MoreMenuSheet
+        open
+        onOpenChange={() => {}}
+        cancelLabel="취소"
+        items={[
+          {
+            id: 'a',
+            label: '주소 복사하기',
+            leftIcon: <i data-testid="icon" />,
+            onSelect: () => {},
+          },
+        ]}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: '취소' })).toBeTruthy();
+    expect(screen.getByTestId('icon')).toBeTruthy();
+  });
 });

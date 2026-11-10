@@ -23,6 +23,7 @@ import { leaseTransport, type LeaseTarget } from '../api/leases';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
 import { placeFixture } from '../fixtures/draft.fixture';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
+import { moveLocation } from '../lib/locations';
 import {
   movePhoto,
   type PhotoMovePlan,
@@ -73,7 +74,8 @@ const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
 };
 
 export type DraftState =
-  | { kind: 'missing' }
+  /** 삭제됐거나 없는 초안(deleted), 다른 멤버가 업로드한 초안(published) */
+  | { kind: 'missing'; reason: 'deleted' | 'published' }
   | { kind: 'loading' }
   /** 오류 화면의 「다시 시도」: 실패한 요청만 다시 보냄 */
   | { kind: 'error'; retry: () => void }
@@ -95,6 +97,8 @@ export type DraftActions = {
   setVisibility: (_visibility: DraftVisibility) => void;
   addLocation: (_place: PlaceResult) => void;
   removeLocation: (_locationId: string) => void;
+  /** 위치를 다른 자리로 옮김(햄버거를 잡고 끌어 순서 바꾸기, 자리는 0부터) */
+  moveLocation: (_locationId: string, _toIndex: number) => void;
   setDate: (_date: string | null) => void;
   /** 번치 멤버를 참여 멤버 맨 아래에 더함(이미 참여 중이거나 번치 멤버가 아니면 무시) */
   addMember: (_memberId: string) => void;
@@ -183,6 +187,8 @@ export function useDraft(draftId: string | undefined): {
   const [photoBusy, setPhotoBusy] = useState(false);
   // 내가 발행해 서버가 발행본으로 바꾼 뒤에는 「없는 초안」 안내 없이 이동을 기다림
   const [publishedByMe, setPublishedByMe] = useState(false);
+  // 발행 요청을 보내는 동안: 응답 전에 캐시가 먼저 PUBLISHED로 바뀌어도 내가 올리는 중이라 「업로드됐어요」 창을 띄우지 않음
+  const [publishing, setPublishing] = useState(false);
   // 저장을 포기한 상태(권한·상태 오류 또는 재시도 소진): 헤더가 「저장 실패」를 보이고 입력하면 다시 시도
   const [stalled, setStalled] = useState(false);
   // 입력란에 방금 친 원문: 서버가 앞뒤 공백을 지워 돌려줘도 입력 중 띄어쓰기가 사라지지 않게 보여 줌
@@ -284,7 +290,7 @@ export function useDraft(draftId: string | undefined): {
       if (alive.current) setStalled(true);
       if (!notified.current) {
         notified.current = true;
-        toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.saveFailed);
       }
     };
     try {
@@ -302,7 +308,7 @@ export function useDraft(draftId: string | undefined): {
               retryAfter = RETRY_DELAY_MS;
               if (!notified.current) {
                 notified.current = true;
-                toast(BUNDLE_MESSAGES.fieldLocked, { fullWidth: true });
+                toast(BUNDLE_MESSAGES.fieldLocked);
               }
               return;
             }
@@ -583,7 +589,6 @@ export function useDraft(draftId: string | undefined): {
           errorCode(error) === 'BUNDLE_004'
             ? BUNDLE_MESSAGES.editingBlocked
             : BUNDLE_MESSAGES.photosChangeFailed,
-          { fullWidth: true },
         );
       })
       .finally(() => {
@@ -624,6 +629,10 @@ export function useDraft(draftId: string | undefined): {
           (location) => location.id !== locationId,
         ),
       ),
+    moveLocation: (locationId, toIndex) =>
+      setEditedLocations((current) =>
+        moveLocation(current ?? detailRef.current?.locations ?? NO_LOCATIONS, locationId, toIndex),
+      ),
     setDate: (date) => {
       change((current) => ({ ...current, date }));
       schedule(0);
@@ -632,12 +641,12 @@ export function useDraft(draftId: string | undefined): {
       if (!draft || draft.members.some((joined) => joined.id === memberId)) return;
       if (!bunchMembers?.some((member) => member.id === memberId)) return;
       addParticipant.mutate(memberId, {
-        onError: () => toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true }),
+        onError: () => toast(BUNDLE_MESSAGES.saveFailed),
       });
     },
     removeMember: (memberId) =>
       removeParticipant.mutate(memberId, {
-        onError: () => toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true }),
+        onError: () => toast(BUNDLE_MESSAGES.saveFailed),
       }),
     setPhotoCaption: (photoId, caption) => {
       change((current) => ({ ...current, captions: { ...current.captions, [photoId]: caption } }));
@@ -710,7 +719,7 @@ export function useDraft(draftId: string | undefined): {
       const failuresBefore = photoFailures.current;
       await photoQueue.current;
       if (photoFailures.current !== failuresBefore) {
-        toast(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.photosChangeFailed);
         return 'blocked';
       }
       clearTimeout(timer.current);
@@ -719,18 +728,20 @@ export function useDraft(draftId: string | undefined): {
       let saved = await flush();
       if (!saved) saved = await flush();
       if (!saved) {
-        toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.saveFailed);
         return 'failed';
       }
       const latest = detailRef.current;
       if (!latest) return 'failed';
+      setPublishing(true);
       try {
         await publishMutation.mutateAsync(latest.revision);
         setPublishedByMe(true);
         return 'published';
       } catch (error) {
+        setPublishing(false);
         if (readPublishBlockers(error) !== undefined) {
-          toast(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+          toast(BUNDLE_MESSAGES.uploadIncomplete);
           return 'blocked';
         }
         toast(
@@ -740,7 +751,6 @@ export function useDraft(draftId: string | undefined): {
             errorCode(error) === 'BUNDLE_002'
             ? BUNDLE_MESSAGES.publishConflict
             : BUNDLE_MESSAGES.publishFailed,
-          { fullWidth: true },
         );
         return 'failed';
       }
@@ -755,7 +765,7 @@ export function useDraft(draftId: string | undefined): {
     bundleId === undefined ||
     noAccess ||
     (detailIsError && ['RESOURCE_001', 'AUTH_002'].includes(errorCode(detailError) ?? '')) ||
-    (detail?.status === 'PUBLISHED' && !publishedByMe);
+    (detail?.status === 'PUBLISHED' && !publishedByMe && !publishing);
   const failed =
     profileError || membersError || (detailIsError && !missing && detail === undefined);
   const retry = () => {
@@ -765,8 +775,13 @@ export function useDraft(draftId: string | undefined): {
   };
 
   let state: DraftState = { kind: 'loading' };
-  if (missing) state = { kind: 'missing' };
-  else if (failed) state = { kind: 'error', retry };
+  if (missing) {
+    state = {
+      kind: 'missing',
+      reason:
+        detail?.status === 'PUBLISHED' && !publishedByMe && !publishing ? 'published' : 'deleted',
+    };
+  } else if (failed) state = { kind: 'error', retry };
   else if (draft && viewer && !publishedByMe) {
     state = {
       kind: 'ready',

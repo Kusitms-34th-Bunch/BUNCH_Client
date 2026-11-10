@@ -1,18 +1,16 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import type { DraftPhoto } from '../lib/types';
 import type { PhotoListScroll } from './usePhotoListScroll';
+import { useRemovePhotoDialog } from '../components/drafts/RemovePhotoDialogs';
 import { BUNDLE_MESSAGES } from '../constants/messages';
-import { getRemovePhotoKind } from '../lib/photos';
+import { getRemovePhotoKind, type RemovePhotoKind } from '../lib/photos';
 import { SLOW_MOVE, useMoveAnimation } from './useMoveAnimation';
 
-// 확인 창 닫힘 전환이 끝난 뒤에 포커스를 옮기려는 지연
-const CLOSE_TRANSITION_MS = 150;
 // 이동이 끝난 뒤 스크롤 스냅을 되돌리기 전에 두는 여유
 const SNAP_RESTORE_GAP_MS = 50;
-
-type RemoveDialog = { kind: 'last' | 'captioned'; photoId: string };
 
 type UsePhotoRemovalOptions = {
   photos: readonly DraftPhoto[];
@@ -24,6 +22,8 @@ type UsePhotoRemovalOptions = {
   >;
   canEdit: boolean;
   isLocked: (_photoId: string) => boolean;
+  /** 멤버가 픽한 사진인지(확인 창 문구) */
+  isPicked: (_photoId: string) => boolean;
   /** 참여 멤버가 아니라 못 뺄 때 */
   onDenied: () => void;
   /** 다른 멤버가 편집 중이라 못 뺄 때 */
@@ -33,7 +33,7 @@ type UsePhotoRemovalOptions = {
 };
 
 /**
- * 캡션 화면의 사진 빼기 흐름(기능 spec 4.3.5): 캡션이 없으면 바로, 있으면 확인 창, 마지막 1장이면 안내 창
+ * 캡션 화면의 사진 빼기 흐름(기능 spec 4.3.5): 마지막 1장이면 안내 창, 아니면 캡션 유무와 상관없이 항상 확인 창
  * 빼고 나면 남은 사진이 빈자리를 메우는 이동(Smart Animate·Slow·350ms), 같은 자리에 온 사진으로 스크롤·포커스를 옮김
  * `useMoveAnimation`보다 스크롤 보정이 먼저 실행돼야 이동이 새 스크롤 위치를 기준으로 계산되므로 이 hook 안에서 순서를 지킴
  */
@@ -43,11 +43,12 @@ export function usePhotoRemoval({
   list,
   canEdit,
   isLocked,
+  isPicked,
   onDenied,
   onBlocked,
   announce,
 }: UsePhotoRemovalOptions) {
-  const [removeDialog, setRemoveDialog] = useState<RemoveDialog | undefined>(undefined);
+  const openRemove = useRemovePhotoDialog();
 
   // 사진을 뺀 결과를 그릴 때 새로 보일 사진 자리로 스크롤을 먼저 맞춘 뒤(아래 움직임보다 먼저 실행), 남은 사진이 그 자리로 이동
   const pendingScroll = useRef<number | undefined>(undefined);
@@ -57,9 +58,12 @@ export function usePhotoRemoval({
     if (index !== undefined) list.scrollToIndex(index);
   });
   const { register, capture } = useMoveAnimation(SLOW_MOVE);
+  // 뺀 뒤 확인 창이 다 닫히면 초점을 옮길 사진 번호(닫히는 창에 초점을 빼앗기지 않게)
+  const focusAfterClose = useRef<number | undefined>(undefined);
+  const isPickedNow = usePreservedCallback(isPicked);
 
-  // 빼면 눌렀던 X가 사라지므로 같은 자리에 온 사진의 「크게 보기」 버튼으로 포커스를 옮기고 남은 장수를 알림(확인 창은 닫힌 뒤)
-  const removeAndFocus = (photoId: string, delay: number) => {
+  // 빼면 눌렀던 X가 사라지므로 같은 자리에 온 사진의 「크게 보기」 버튼으로 포커스를 옮기고(확인 창이 닫힌 뒤) 남은 장수를 알림
+  const removeAndFocus = (photoId: string) => {
     const remaining = photos.filter((item) => item.id !== photoId);
     const nextIndex = Math.min(list.current, remaining.length - 1);
     // 남은 사진이 빈자리를 메우는 움직임을 위해 빼기 전 위치를 기억
@@ -72,32 +76,51 @@ export function usePhotoRemoval({
     if (remaining[nextIndex]) {
       announce({ text: BUNDLE_MESSAGES.photoRemoved(remaining.length), index: nextIndex });
     }
-    list.focusPhotoView(nextIndex, delay);
+    focusAfterClose.current = nextIndex;
+  };
+
+  // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 최신 값으로 다시 확인
+  // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
+  const confirmRemove = usePreservedCallback((photoId: string) => {
+    if (!photos.some((photo) => photo.id === photoId)) return false;
+    if (isLocked(photoId)) {
+      onBlocked();
+      return false;
+    }
+    if (getRemovePhotoKind(photos) === 'last') return true;
+    removeAndFocus(photoId);
+    return false;
+  });
+
+  // 연 시점의 사진 id를 고정해 그 사이 목록이 바뀌어도 다른 사진을 빼지 않음
+  const showDialog = (kind: RemovePhotoKind, photoId: string) => {
+    let showLast = false;
+    openRemove({
+      kind,
+      isPicked: () => isPickedNow(photoId),
+      onConfirm: () => {
+        showLast = confirmRemove(photoId);
+      },
+      // 앞 창이 다 닫힌 뒤 열어 초점이 두 창 사이에서 엉키지 않게 함
+      onClosed: () => {
+        if (showLast) return showDialog('last', photoId);
+        const index = focusAfterClose.current;
+        focusAfterClose.current = undefined;
+        if (index !== undefined) list.focusPhotoView(index, 0);
+      },
+    });
   };
 
   const requestRemove = (photo: DraftPhoto) => {
     if (!canEdit) return onDenied();
     if (isLocked(photo.id)) return onBlocked();
-    const kind = getRemovePhotoKind(photos, photo);
-    if (kind === 'direct') removeAndFocus(photo.id, 0);
-    else setRemoveDialog({ kind, photoId: photo.id });
-  };
-
-  const confirmRemove = () => {
-    // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 다시 확인
-    if (removeDialog && photos.some((photo) => photo.id === removeDialog.photoId)) {
-      if (isLocked(removeDialog.photoId)) onBlocked();
-      else removeAndFocus(removeDialog.photoId, CLOSE_TRANSITION_MS);
-    }
-    setRemoveDialog(undefined);
+    // 사진 한 장을 빼려면 항상 확인을 거침(1장이면 안내만)
+    showDialog(getRemovePhotoKind(photos), photo.id);
   };
 
   return {
     /** 사진 항목을 움직임에 등록하는 ref 만들기(`register(photo.id)`) */
     register,
-    removeDialog,
     requestRemove,
-    confirmRemove,
-    closeDialog: () => setRemoveDialog(undefined),
   };
 }

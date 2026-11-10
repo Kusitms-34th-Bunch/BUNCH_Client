@@ -57,7 +57,7 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 
 ## Styling과 의존성
 
-- Token: `gap-s3`·`gap-s2`, `typography-body-3-semi-bold`(제목 14/21 SemiBold, 접미사 철자는 저장소 토큰 이름 그대로), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-4-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 선택 표시는 `Option`, 필수 별표는 `typography-body-1-semi-bold text-icon-brand`(Figma `Wanted Sans` 16/22는 저장소에 없어 Pretendard, `BundleTitle`과 같음)를 쓴다. 필수 표시는 2026-11-04 Figma에서 「필수」 글자가 별표로 바뀌었다.
+- Token: `gap-s3`·`gap-s2`, `typography-body-3-semibold`(제목 14/21 SemiBold), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-4-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 선택 표시는 `Option`, 필수 별표는 `typography-body-1-semi-bold text-icon-brand`(Figma `Wanted Sans` 16/22는 저장소에 없어 Pretendard, `BundleTitle`과 같음)를 쓴다. 필수 표시는 2026-11-04 Figma에서 「필수」 글자가 별표로 바뀌었다.
 - dependency 추가 없음.
 - Storybook state matrix: `Default`, `Focused`, `Filled`, `Editing`, `ErrorState`, `Disabled`, `DisabledWithError`, `LimitWithoutCounter`, `OptionalWithoutCounter`.
 

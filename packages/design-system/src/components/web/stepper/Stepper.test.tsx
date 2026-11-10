@@ -21,10 +21,27 @@ describe('Stepper', () => {
 
     const items = Array.from(screen.getByRole('progressbar').children);
     expect(items).toHaveLength(3);
-    expect(items.map((item) => item.className.includes('bg-surface-brand-subtle-2'))).toEqual([
+    expect(items.map((item) => item.getAttribute('data-filled'))).toEqual([
+      'false',
+      'true',
+      'false',
+    ]);
+    // 보이는 채움(안쪽 span)도 같은 기준
+    expect(items.map((item) => item.firstElementChild?.className.includes('scale-x-100'))).toEqual([
       false,
       true,
       false,
+    ]);
+  });
+
+  it('마지막 단계에서도 앞 막대는 채우지 않는다', () => {
+    render(<Stepper total={3} current={3} />);
+
+    const items = Array.from(screen.getByRole('progressbar').children);
+    expect(items.map((item) => item.getAttribute('data-filled'))).toEqual([
+      'false',
+      'false',
+      'true',
     ]);
   });
 

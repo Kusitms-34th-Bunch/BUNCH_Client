@@ -1,10 +1,10 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
@@ -23,7 +23,9 @@ type RecommendDetailProps = {
 export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
   const router = useRouter();
   const backOr = useBackOr();
-  const { photoState, recommendations, openSheet } = useBundleSelect();
+  const { photoState, recommendations, openSheet, memberIds } = useBundleSelect();
+  // 새로고침·직접 주소로 들어와 멤버를 고르지 않았으면 사진 선택을 거치지 않고 첫 단계로 보냄
+  const noMembers = memberIds.length === 0;
   const photos = photoState.kind === 'ready' ? photoState.data.photos : undefined;
   const recommendation = recommendations.find((item) => item.id === recommendationId);
   const missing = photos !== undefined && recommendation === undefined;
@@ -31,15 +33,17 @@ export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
   const unavailable = photoState.kind === 'error' || photoState.kind === 'no-bunch';
 
   useEffect(() => {
-    if (unavailable) router.replace(BUNDLE_SELECT_PATHS.select);
-  }, [unavailable, router]);
+    if (noMembers) router.replace(BUNDLE_SELECT_PATHS.members);
+    else if (unavailable) router.replace(BUNDLE_SELECT_PATHS.select);
+  }, [noMembers, unavailable, router]);
 
   useEffect(() => {
-    if (!missing) return;
-    toast(BUNDLE_SELECT_MESSAGES.deletedRecommendation, { fullWidth: true });
+    // 멤버가 없으면 위 effect가 첫 단계로 보내므로 삭제 안내·시트 열기는 하지 않음
+    if (!missing || noMembers) return;
+    toastAfterNavigation(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
     openSheet();
     router.replace(BUNDLE_SELECT_PATHS.select);
-  }, [missing, openSheet, router]);
+  }, [missing, noMembers, openSheet, router]);
 
   if (!photos || !recommendation) return <PageLoading />;
 

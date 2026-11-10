@@ -72,24 +72,6 @@ describe('useDraft 상태', () => {
     expect(saveStatus).toBe('saved');
   });
 
-  it('UT 상태 B 초안은 저장된 위치와 다른 멤버의 편집 중 표시를 함께 보인다', async () => {
-    const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
-    const created = await createBundle(
-      bunchId,
-      [P1, P2, P3, P4].map(String),
-      createIdempotencyKey(),
-    );
-    const { result } = renderDraft(created.id);
-    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
-    const { draft } = ready(result.current.state);
-
-    expect(draft.locations.map((location) => location.name)).toEqual(['속초해수욕장']);
-    expect(draft.editing.location).toBe(String(memberB));
-    expect(draft.date).toBe('2026-10-17');
-    const second = draft.photos.find((photo) => photo.sourcePhotoId === String(P2))!;
-    expect(draft.editing.photoEditors?.[second.id]).toEqual([String(memberA)]);
-  });
-
   it('화면에서 위치를 바꾸면 그 뒤로는 화면 값이다', async () => {
     const { result } = await renderReady();
     act(() => {
@@ -258,10 +240,7 @@ describe('useDraft 저장', () => {
 
     act(() => result.current.actions.setTitle('이어서 쓰는 제목'));
 
-    await waitFor(
-      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.fieldLocked, { fullWidth: true }),
-      SAVE_WAIT,
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.fieldLocked), SAVE_WAIT);
     // 거부되는 동안에도 입력은 화면에서 사라지지 않음
     expect(ready(result.current.state).draft.title).toBe('이어서 쓰는 제목');
     await waitFor(() => expect(serverBundle(id)?.title).toBe('이어서 쓰는 제목'), {
@@ -284,10 +263,7 @@ describe('useDraft 저장', () => {
 
     act(() => result.current.actions.setVisibility('public'));
 
-    await waitFor(
-      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, { fullWidth: true }),
-      SAVE_WAIT,
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed), SAVE_WAIT);
     // 재시도 간격(3초)보다 오래 기다려도 요청은 한 번뿐
     await act(() => new Promise((resolve) => setTimeout(resolve, 3500)));
     expect(calls).toBe(1);
@@ -366,7 +342,7 @@ describe('useDraft 저장', () => {
     });
 
     expect(outcome).toBe('failed');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict);
   });
 
   it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {
@@ -387,7 +363,7 @@ describe('useDraft 저장', () => {
 
     // 저장은 성공했고 발행 조건(제목·코멘트 등)만 모자라 blocked
     expect(outcome).toBe('blocked');
-    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, expect.anything());
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
   });
 
   it('입력 직후 화면을 떠나도 남은 입력을 한 번 저장한다', async () => {
@@ -519,6 +495,21 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       [P1, P2, P3, P4].map(String),
       createIdempotencyKey(),
     );
+    // 다른 멤버(A)가 2번 사진 캡션을 편집 중인 상태
+    mockDb.update((current) => ({
+      ...current,
+      bundleLeases: [
+        ...current.bundleLeases,
+        {
+          bundleId: Number(created.id),
+          target: `PHOTO:${serverBundle(created.id)!.photos.find((photo) => photo.photoId === P2)!.id}`,
+          memberId: memberA,
+          token: '00000000-0000-4000-8000-00000000000a',
+          leaseVersion: 1,
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        },
+      ],
+    }));
     const view = renderDraft(created.id);
     await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
     const locked = ready(view.result.current.state).draft.photos.find(
@@ -528,7 +519,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     act(() => view.result.current.actions.removePhoto(locked.id));
 
     await waitFor(
-      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true }),
+      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked),
       SAVE_WAIT,
     );
     await waitFor(
@@ -586,7 +577,7 @@ describe('useDraft 발행', () => {
     });
 
     expect(outcome).toBe('blocked');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
     expect(serverBundle(id)?.status).toBe('DRAFT');
     // 화면도 서버 구성으로 돌아와 있음
     expect(ready(result.current.state).draft.photos).toHaveLength(2);
@@ -617,7 +608,7 @@ describe('useDraft 발행', () => {
     });
 
     expect(outcome).toBe('blocked');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
   });
 
   it('저장하지 못한 입력까지 저장한 뒤 발행하고 발행되면 서버 상태가 발행본이 된다', async () => {
@@ -635,7 +626,6 @@ describe('useDraft 발행', () => {
     expect(serverBundle(id)).toMatchObject({ status: 'PUBLISHED', title: '설악산 단풍 여행' });
     // 발행한 뒤에는 「삭제된 번들」 안내 없이 화면 이동을 기다림
     expect(result.current.state.kind).toBe('loading');
-    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.deletedDraft, expect.anything());
   });
 });
 
@@ -654,7 +644,7 @@ describe('useDraft 편집권 통로가 없는 환경', () => {
     act(() => result.current.actions.setTitle('제목'));
 
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('failed'), SAVE_WAIT);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
     expect(serverBundle(id)?.title).toBe('');
     // 입력은 그대로 남음
     expect(ready(result.current.state).draft.title).toBe('제목');

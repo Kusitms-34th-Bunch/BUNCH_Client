@@ -1,11 +1,9 @@
 'use client';
 
-import { Button } from '@app/design-system';
-import { BottomSheet, ProfileImage } from '@app/design-system/web';
+import { ConfirmSheet, ProfileImage } from '@app/design-system/web';
+import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
 
-type FollowCancelSheetProps = {
-  open: boolean;
-  onOpenChange: (_open: boolean) => void;
+type FollowCancelSheetProps = ScreenOverlayProps & {
   bunchName: string;
   bunchImageSrc?: string | undefined;
   /** 이름 아래 상태 문구(예: 「비공개 번치」, 「요청 대기 중인 비공개 번치」) */
@@ -23,40 +21,28 @@ type FollowCancelSheetProps = {
  * 상대 번치 이미지·이름·상태 문구, 「취소」/확인 버튼
  */
 export function FollowCancelSheet({
-  open,
-  onOpenChange,
   bunchName,
   bunchImageSrc,
   status,
   question,
   confirmLabel,
   onConfirm,
+  ...rootProps
 }: FollowCancelSheetProps) {
   return (
-    <BottomSheet.Root open={open} onOpenChange={onOpenChange}>
-      <BottomSheet.Content>
-        {/* 손잡이 아래 40px(기본 16px + 24px), 이미지 92px과 이름 사이 20px(Figma 3213:76794) */}
-        <BottomSheet.Body className="gap-s10 mt-s12 flex flex-col items-center text-center">
-          <ProfileImage src={bunchImageSrc} className="size-23" />
-          <div className="gap-s1 flex flex-col items-center">
-            <BottomSheet.Title className="typography-heading-2-medium">
-              {bunchName}
-              <span className="sr-only"> {question}</span>
-            </BottomSheet.Title>
-            <BottomSheet.Description className="typography-caption-1-regular text-text-tertiary mt-0">
-              {status}
-            </BottomSheet.Description>
-          </div>
-        </BottomSheet.Body>
-        <BottomSheet.Footer className="flex-row">
-          <Button variant="tertiary" className="min-w-0 flex-1" onClick={() => onOpenChange(false)}>
-            취소
-          </Button>
-          <Button variant="primary" className="min-w-0 flex-1" onClick={onConfirm}>
-            {confirmLabel}
-          </Button>
-        </BottomSheet.Footer>
-      </BottomSheet.Content>
-    </BottomSheet.Root>
+    <ConfirmSheet
+      {...rootProps}
+      title={
+        <>
+          {bunchName}
+          <span className="sr-only"> {question}</span>
+        </>
+      }
+      description={status}
+      // Figma 3213:76794: 92px 자리에 상대 번치 이미지
+      illustration={<ProfileImage src={bunchImageSrc} className="size-full" />}
+      confirmLabel={confirmLabel}
+      onConfirm={onConfirm}
+    />
   );
 }

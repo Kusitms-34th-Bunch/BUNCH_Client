@@ -1,6 +1,7 @@
 # 004: apps/admin은 scaffold로 유지하고 기능 개발은 보류한다
 
 - 상태: accepted
+- 기록일: 2026-10-14
 
 ## 배경
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { createContext, useContext, type Dispatch, type SetStateAction } from 'react';
+import type { CharacterType } from '@/shared/lib/bunchProfile';
 
 export type Visibility = 'private' | 'public';
-/** 분위기 선택지 id. 이름·그래픽이 확정되기 전까지 임시 id */
-export type Mood = 'mood-1' | 'mood-2' | 'mood-3' | 'mood-4';
+/** 번치 성격 선택지. 서버 캐릭터 타입과 같은 값 */
+export type Mood = CharacterType;
 
 export type CreateBunchDraft = {
   name: string;
@@ -17,10 +18,12 @@ export type CreateBunchDraft = {
   setMood: Dispatch<SetStateAction<Mood | null>>;
   /** 입력값 초기화 후 완료 화면 재진입을 위한 이름. 미완료 시 null */
   createdName: string | null;
+  /** 완료 화면 기본 대표 이미지를 정하는 성격 기록. 미완료 시 null */
+  createdMood: Mood | null;
   /** 입력값과 완료 기록 초기화 */
   reset: () => void;
-  /** 완료 기록 저장 후 입력값 초기화 */
-  finish: (_createdName: string) => void;
+  /** 완료 기록(이름·성격) 저장 후 입력값 초기화 */
+  finish: (_createdName: string, _createdMood: Mood | null) => void;
 };
 
 export const CreateBunchDraftContext = createContext<CreateBunchDraft | null>(null);

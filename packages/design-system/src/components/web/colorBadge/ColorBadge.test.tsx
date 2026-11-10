@@ -53,6 +53,16 @@ describe('ColorBadge', () => {
     expect(badge.className).toContain('typography-caption-1-regular');
   });
 
+  it('sm은 md와 같은 글자에 여백만 좌우 6·위아래 2로 작다', () => {
+    render(<ColorBadge size="sm">뱃지</ColorBadge>);
+    const badge = screen.getByText('뱃지');
+
+    expect(badge.className).toContain('px-padding-p3');
+    expect(badge.className).toContain('py-padding-p1');
+    expect(badge.className).toContain('rounded-r3');
+    expect(badge.className).toContain('typography-caption-1-regular');
+  });
+
   it('color는 DOM 속성으로 넘어가지 않고 className과 span 속성은 합쳐진다', () => {
     render(
       <ColorBadge color="pink" className="mt-2" data-testid="b">

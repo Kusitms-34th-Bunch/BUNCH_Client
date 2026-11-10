@@ -3,13 +3,14 @@ import type { VariantProps } from 'tailwind-variants';
 import { tv } from '../../../utils';
 
 const colorBadge = tv({
-  base: 'px-padding-p4 py-padding-p2 inline-flex max-w-full shrink-0 items-center justify-center overflow-clip whitespace-nowrap',
+  base: 'inline-flex max-w-full shrink-0 items-center justify-center overflow-clip whitespace-nowrap',
   variants: {
     variant: { weak: '', fill: '' },
     color: { brand: '', gray: '', pink: '', green: '', orange: '' },
     size: {
-      lg: 'rounded-r4 typography-body-3-regular',
-      md: 'rounded-r3 typography-caption-1-regular',
+      lg: 'px-padding-p4 py-padding-p2 rounded-r4 typography-body-3-regular',
+      md: 'px-padding-p4 py-padding-p2 rounded-r3 typography-caption-1-regular',
+      sm: 'px-padding-p3 py-padding-p1 rounded-r3 typography-caption-1-regular',
     },
   },
   compoundVariants: [

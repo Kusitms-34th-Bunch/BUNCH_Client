@@ -10,7 +10,7 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: vi.fn(),
 }));
-vi.mock('../loading/LoadingDots', () => ({ LoadingDots: () => null }));
+vi.mock('../loading/LoadingRipple', () => ({ LoadingRipple: () => null }));
 
 type PickerOptions = {
   onError?: (_error: Error) => void;
@@ -209,9 +209,9 @@ describe('ProfilePhotoField', () => {
     expect(toast).toHaveBeenCalledWith('JPEG・PNG・HEIC・WebP, 10MB 이하만 가능해요.');
   });
 
-  it('지금 사진이 없으면 BUNCH 기본 이미지를 보여 준다', () => {
+  it('지금 사진이 없으면 기본 프로필 이미지를 보여 준다', () => {
     render(<ProfilePhotoField value={undefined} onChange={vi.fn()} />);
 
-    expect(document.querySelector('img[src="/images/default-bunch.png"]')).toBeTruthy();
+    expect(document.querySelector('img[src="/images/default-profile.svg"]')).toBeTruthy();
   });
 });

@@ -1,7 +1,8 @@
 # 009: 확인 Dialog의 모달 동작은 Base UI에 맡긴다
 
 - 상태: accepted
-- 구현 상태: 로컬 구현·검증. iOS WebView·VoiceOver 실기기 미검증.
+- 기록일: 2026-10-17
+- 구현 상태(2026-10-17 확인): 로컬 구현·검증. iOS WebView·VoiceOver 실기기 미검증.
 
 ## 배경과 결정
 

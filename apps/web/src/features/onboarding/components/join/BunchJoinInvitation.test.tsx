@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { OverlayProvider } from 'overlay-kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { joinInvitationFixture } from '../../fixtures/join.fixture';
@@ -10,9 +9,7 @@ import { BunchJoinInvitation } from './BunchJoinInvitation';
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 
-const Providers = ({ children }: { children: ReactNode }) => (
-  <OverlayProvider>{children}</OverlayProvider>
-);
+const Providers = ({ children }: { children: ReactNode }) => <>{children}</>;
 const renderInvitation = () =>
   render(<BunchJoinInvitation {...joinInvitationFixture} />, { wrapper: Providers });
 

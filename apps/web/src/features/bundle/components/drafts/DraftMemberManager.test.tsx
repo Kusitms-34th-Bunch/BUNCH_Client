@@ -89,9 +89,7 @@ describe('멤버 추가', () => {
     const rows = within(joined()).getAllByRole('listitem');
     expect(rows).toHaveLength(5);
     expect(within(rows[4]!).getByText('효찬')).toBeInTheDocument();
-    expect(toast).toHaveBeenCalledWith('효찬님이 번들 참여 멤버에 추가되었어요.', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenCalledWith('효찬님이 번들 참여 멤버에 추가되었어요.');
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
@@ -179,9 +177,7 @@ describe('내보내기', () => {
     expect(within(addable()).getByText('은우')).toBeInTheDocument();
     // 확인 창이 닫힌 뒤에 알림
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('은우님이 번들 참여 멤버에서 제외되었어요.', {
-        fullWidth: true,
-      }),
+      expect(toast).toHaveBeenCalledWith('은우님이 번들 참여 멤버에서 제외되었어요.'),
     );
     // 포커스는 「멤버 추가하기」로 옮겨간 카드의 「추가하기」로 이동
     await waitFor(() =>
@@ -236,13 +232,13 @@ describe('스스로 나가기', () => {
     );
   });
 
-  it('초안 생성자도 같은 문구의 모달을 본다', async () => {
+  it('초안 생성자는 번들이 삭제된다는 문구의 모달을 본다', async () => {
     render(<Harness viewer={owner} />);
 
     await userEvent.click(screen.getByRole('button', { name: '번들에서 나가기' }));
     const dialog = await screen.findByRole('alertdialog');
 
-    expect(within(dialog).getByText(BUNDLE_MESSAGES.leaveConfirmTitle)).toBeInTheDocument();
+    expect(within(dialog).getByText(BUNDLE_MESSAGES.leaveCreatorTitle)).toBeInTheDocument();
   });
 
   it('「취소」를 누르면 나가지 않고 화면에 남는다', async () => {

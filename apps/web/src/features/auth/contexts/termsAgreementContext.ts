@@ -5,10 +5,12 @@ import type { TermsId } from '../constants/terms';
 
 export type TermsAgreementValue = {
   agreed: Record<TermsId, boolean>;
-  /** 모든 필수 약관 동의 여부(시작하기 활성 조건) */
+  /** 필수·선택 약관을 모두 동의했는지(전체 동의 체크 상태) */
   allAgreed: boolean;
+  /** 필수 약관을 모두 동의했는지(시작하기 활성 조건) */
+  requiredAgreed: boolean;
   setAgreed: (_id: TermsId, _value: boolean) => void;
-  /** 전체 동의·해제 */
+  /** 전체 동의·해제(선택 약관 포함) */
   setAllAgreed: (_value: boolean) => void;
 };
 

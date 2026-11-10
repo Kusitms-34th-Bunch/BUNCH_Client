@@ -49,7 +49,7 @@ describe('cn', () => {
 });
 
 describe('토큰 이름 목록이 tokens.css와 같다', () => {
-  it.each(namesOf(/^ {2}--spacing-([a-z0-9-]+):/gm, 43))('spacing %s', (name) => {
+  it.each(namesOf(/^ {2}--spacing-([a-z0-9-]+):/gm, 46))('spacing %s', (name) => {
     expect(cn(`h-${name}`, 'h-10')).toBe('h-10');
   });
 
