@@ -9,4 +9,6 @@ description = "문서의 Tailwind 디자인 토큰 클래스"
 targetRules = ["generic-api-key"]
 condition = "AND"
 paths = ['''\.md$''']
-regexes = ['''^(?:bg|text|border|ring|outline|fill|stroke|placeholder|from|via|to)-(?:surface|text|border|icon|overlay|system|chip|primitive)(?:-[a-z0-9]+)+$''']
+regexes = [
+  '''^(?:bg|text|border|ring|outline|fill|stroke|placeholder|from|via|to)-(?:surface|text|border|icon|overlay|system|chip|primitive)(?:-[a-z0-9]+)+$''',
+]

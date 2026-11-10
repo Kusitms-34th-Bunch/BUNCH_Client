@@ -4,7 +4,7 @@
 
 - Route: `/signup/terms`(`apps/web/src/app/(app)/signup/terms/page.tsx`)
 - Status: UI와 약관 동의 저장 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 필수 3개와 선택 1개(추가 개인정보)를 받고, 시작하기는 동의를 서버에 저장한 뒤 시스템 권한(사진 → 카메라 → 알림)을 요청하고 프로필로 이동한다. 뒤로 가기는 로그아웃 뒤 로그인 화면이다. 접근 제어는 `(app)` layout의 `AuthGate`가 한다(결정 기록 019).
-- 디자인 출처: Figma `이용약관`(node `796:4654`). 화면설계서(node `796:5872`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.3 약관 동의).
+- 디자인 출처: Figma `이용약관`(node `796:4654`). 화면설계서(node `796:5872`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.3 약관 동의, 기능명세서 1110판 2026-11-10 기준).
 
 ## 목적과 범위
 
@@ -36,7 +36,7 @@
 - Loading·Empty: 시작하기를 누른 동안 버튼이 `aria-busy`이고 다시 누를 수 없으며, 동의를 저장하는 동안에는 `PageLoading`이 화면 전체를 덮는다. Empty는 해당 없음.
 - Error·retry: 저장에 실패하면 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」(공통 처리)를 보이고 체크 상태를 유지한 채 이동·권한 요청 없이 머문다. 다시 눌러 재시도한다. 로그아웃(뒤로 가기)이 실패해도 같은 토스트와 함께 머문다.
 - Disabled·invalid: 필수 약관 하나라도 체크하지 않으면 시작하기 버튼이 비활성(`disabled`)이다. 선택 약관만 체크해도 비활성이다. 안내 문구는 없다.
-- Success·완료 후 이동: 시작하기를 누르면 ① `GET /auth/terms`로 현재 버전을 읽고 ② `POST /auth/terms/agreements`로 필수 3종(`SERVICE`·`PRIVACY`·`AGE_OVER_14`)과 동의한 선택 약관(`DEMOGRAPHICS`)을 한 번에 저장하고 ③ 가입 상태(`sharedKeys.session()`)를 다시 읽어 기다린 뒤 ④ `usePermissionRequests`가 사진 → 카메라 → 알림 순서로 bridge `requestPermission`을 한 권한씩 호출하고(허용·거부·실패 모두 다음으로 진행) ⑤ 프로필(`SIGNUP_PATHS.profile`)로 `push`한다. 선택 약관은 동의했을 때만 보낸다(동의 안 함을 따로 받는지 명세에 없다, 백엔드 확인). 권한 요청 중 화면을 벗어나면 이동을 생략한다. 뒤로 가기는 `POST /api/auth/logout`으로 로그인 상태를 풀고 로그인 화면을 새로 연다(기획 1.3.5, 가입 중 계정과 진행 상태는 서버에 남는다).
+- Success·완료 후 이동: 시작하기를 누르면 ① `GET /auth/terms`로 현재 버전을 읽고 ② `POST /auth/terms/agreements`로 필수 3종(`SERVICE`·`PRIVACY`·`AGE_OVER_14`)과 동의한 선택 약관(`DEMOGRAPHICS`)을 한 번에 저장하고 ③ 가입 상태(`sharedKeys.session()`)를 다시 읽어 기다린 뒤 ④ `usePermissionRequests`가 사진 → 카메라 → 알림 순서로 bridge `requestPermission`을 한 권한씩 호출하고(허용·거부·실패 모두 다음으로 진행) ⑤ 프로필(`SIGNUP_PATHS.profile`)로 `push`한다. 선택 약관은 동의했을 때만 보낸다. 1110판 1.3.4는 [선택] 동의 여부를 저장한다고 하고, 백엔드는 미동의를 항목 생략으로 받는다(아래 API 계약 확인 항목). 권한 요청 중 화면을 벗어나면 이동을 생략한다. 뒤로 가기는 `POST /api/auth/logout`으로 로그인 상태를 풀고 로그인 화면을 새로 연다(기획 1.3.5, 가입 중 계정과 진행 상태는 서버에 남는다).
 
 ## 데이터 의존성
 
@@ -47,7 +47,7 @@
 ## UI와 접근성
 
 - Component mapping: `web`의 `PageHeader`, `Label`, `TermsLabel`, `core`의 `Button`(primary·lg), `Header`(`SignupFrame`). 권한 안내는 이 화면 전용(`PermissionGuide`)이다. 뒤로 가기 버튼은 온보딩과 같은 `HeaderIconButton`(`tone`으로 색만 다르다)이며 두 feature가 쓰도록 `shared/components/layout`으로 옮겼다.
-- Keyboard·focus·accessible name: 체크박스는 native `input`이라 Tab·Space로 바뀐다. 「필수 항목 모두 체크하기」와 약관 행(이름 「[필수] 서비스 이용 약관」 등)은 각각 checkbox이고, 원문 보기 버튼 이름은 「서비스 이용 약관 내용 보기」처럼 약관 이름을 포함한다. `PageHeader`의 제목이 `h1`, 권한 안내 제목이 `h2`이며 권한 3개는 목록(`ul`)이다. 권한 안내는 누를 수 있는 요소가 없다. `main`은 `PageShell`이 하나만 만든다.
+- Keyboard·focus·accessible name: 체크박스는 native `input`이라 Tab·Space로 바뀐다. 「전체 동의하기」와 약관 행(이름 「[필수] 서비스 이용 약관」, 「[선택] 추가 개인정보 수집 및 이용 동의」 등)은 각각 checkbox이고, 원문 보기 버튼 이름은 「서비스 이용 약관 내용 보기」처럼 약관 이름을 포함한다. `PageHeader`의 제목이 `h1`, 권한 안내 제목이 `h2`이며 권한 3개는 목록(`ul`)이다. 권한 안내는 누를 수 있는 요소가 없다. `main`은 `PageShell`이 하나만 만든다.
 - Responsive·긴 텍스트·overflow: 좌우 16px이고 375px에서 가로 넘침이 없다. 약관 이름이 길어지면 `TermsLabel` 안에서 줄바꿈된다. 본문은 `main`에서 스크롤되고 시작하기 버튼은 아래에 고정된다. 본문 아래에는 스크롤 끝에서 버튼에 붙지 않도록 16px 여백을 두었다(Figma에 없는 값).
 
 | Figma            | 값                                           | 사용한 토큰·utility                                                          |
@@ -81,4 +81,5 @@
 - 제목·권한 안내 제목 색 (제안): Figma는 `black`(변수 없음)이고 구현은 `text-primary`(#121212)다.
 - 접근 조건 (미정): 가입 중인 사용자만 진입하는지, 이미 동의한 사용자는 건너뛰는지는 인증 BFF가 정해진 뒤 연결한다.
 - 체크 상태 보관 (결정): 새로고침하면 체크가 사라진다. 서버·저장소에 두지 않는다.
-- 약관 이름 표기 (제안): 「필수 항목 모두 체크하기」는 기획의 「전체 동의」에 해당하는 Figma 문구이고, 「[필수]」는 약관 3개가 모두 필수라서 붙였다.
+- 약관 이름 표기 (확정, 1110판 1.3.1): 전체 동의 버튼은 「전체 동의하기」이고, 행마다 「[필수]」 또는 「[선택]」을 붙인다. 이전 판의 「필수 항목 모두 체크하기」는 쓰지 않는다.
+- 선택 동의서 원문 (1110판, 구현은 아직 이전 기준): 1.3.2는 [선택] 원문에 보관 기간과 마이페이지 「문의하기」로 철회할 수 있다는 안내(7.5.1)를 넣으라고 한다. 지금 임시 문구에는 둘 다 없다(`TermsDocument.spec.md`).

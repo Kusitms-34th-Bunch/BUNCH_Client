@@ -1,7 +1,14 @@
 import type { Draft, DraftEditing, SaveStatus } from './types';
 
 export type PublishBlocker =
-  'title' | 'photos' | 'visibility' | 'members' | 'comments' | 'saving' | 'unsaved' | 'offline';
+  | 'title'
+  | 'photos'
+  | 'visibility'
+  | 'members'
+  | 'comments'
+  | 'saving'
+  | 'unsaved'
+  | 'offline';
 
 type PublishContext = {
   saveStatus: SaveStatus;

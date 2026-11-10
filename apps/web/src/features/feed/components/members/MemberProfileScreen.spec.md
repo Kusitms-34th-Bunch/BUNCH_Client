@@ -6,7 +6,7 @@
 - 접근: 로그인 필요(authenticated, `(app)` 그룹). 페이지 guard는 없어 실제 차단은 API 응답에 달려 있다
 - 소유: `features/feed`. 번치 쪽 주소는 route-local `MemberProfileRoute`가 `BUNCH_HOME_PATHS`로 조합해 넘긴다
 - Status: UI 구현됨(fixture). API·실기기 전
-- 기능명세: 피드 6.3.3(`docs/specs/feed.md` 구현 단위 8)
+- 기능명세: 피드 6.3.3(`docs/specs/feed.md` 구현 단위 8). 기능명세서 1110판(2026-11-10) 대조, 바뀐 동작 없음(오류 토스트 끝 마침표만 뺌)
 - 디자인 출처: Figma `번들_참여 멤버 상세` `5367:110380`(섹션 「피드」 `4940:100716`). 전환은 화면설계서 `5367:114452`
 
 ## 목적과 범위

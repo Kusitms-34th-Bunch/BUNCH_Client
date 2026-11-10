@@ -1,10 +1,11 @@
+import { focusManager } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { createQueryWrapper } from '@/shared/query/testing';
+import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { usePostLoginPath } from '../queries/session';
 import { AuthGate } from './AuthGate';
 
@@ -35,6 +36,9 @@ const protectedScreen = () => screen.queryByText('보호된 화면');
 const loadingOverlay = () => document.querySelector('.bg-overlay-dim-subtle');
 
 describe('AuthGate', () => {
+  // 포커스 테스트가 중간에 실패해도 다음 테스트에 포커스 상태가 남지 않게 되돌림
+  afterEach(() => focusManager.setFocused(undefined));
+
   beforeEach(() => {
     replace.mockClear();
     navigation.pathname = '/bunch';
@@ -120,6 +124,65 @@ describe('AuthGate', () => {
 
     expect(await screen.findByText('보호된 화면')).toBeTruthy();
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('비로그인 상태를 다시 읽는 동안(탭 복귀 등)에도 로딩으로 바뀌지 않고 지금 화면을 유지한다', async () => {
+    navigation.pathname = '/login';
+    // 401은 재발급 뒤 한 번 더 요청되므로 횟수 대신 첫 화면 뒤부터만 붙잡음
+    let holding = false;
+    let release: (() => void) | undefined;
+    server.use(
+      http.get('/api/members/me/onboarding', async () => {
+        if (holding) {
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+        }
+        return fail(401, 'AUTH_001');
+      }),
+    );
+    const client = createTestQueryClient();
+    render(
+      <AuthGate destinations={DESTINATIONS}>
+        <p>보호된 화면</p>
+      </AuthGate>,
+      { wrapper: createQueryWrapper(client) },
+    );
+    expect(await screen.findByText('보호된 화면')).toBeInTheDocument();
+
+    // 탭을 떠났다 돌아옴(비로그인은 바로 낡은 값이라 포커스 때 다시 읽음)
+    holding = true;
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+    await waitFor(() => expect(release).toBeTypeOf('function'));
+    // 다시 읽는 중에도 화면이 그대로(이전에는 데이터 없는 query가 로딩으로 돌아가 화면이 처음부터 다시 그려짐)
+    expect(protectedScreen()).not.toBeNull();
+    expect(loadingOverlay()).toBeNull();
+
+    holding = false;
+    release?.();
+    await waitFor(() => expect(client.isFetching()).toBe(0));
+    expect(protectedScreen()).not.toBeNull();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('회원으로 보던 중 다시 읽은 결과가 401이면(세션 만료) 로그인으로 보낸다', async () => {
+    respondWith({ signupStatus: 'COMPLETED', termsAccepted: true, defaultBunchId: 7 });
+    const client = createTestQueryClient();
+    render(
+      <AuthGate destinations={DESTINATIONS}>
+        <p>보호된 화면</p>
+      </AuthGate>,
+      { wrapper: createQueryWrapper(client) },
+    );
+    expect(await screen.findByText('보호된 화면')).toBeTruthy();
+
+    server.use(http.get('/api/members/me/onboarding', () => fail(401, 'AUTH_001')));
+    await client.refetchQueries();
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/login'));
+    expect(protectedScreen()).toBeNull();
+    expect(loadingOverlay()).not.toBeNull();
   });
 
   it('약관에 동의하지 않은 가입 중 사용자가 다른 화면에 들어오면 약관으로 보낸다', async () => {

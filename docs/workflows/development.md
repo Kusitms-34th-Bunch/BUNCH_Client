@@ -98,7 +98,7 @@ yarn agent:session --agent claude '<worktree 절대 경로>' '<인계문 절대 
 
 앱에서 새 채팅을 여는 도구가 있으면 Codex는 `codex://new`에 `URLSearchParams`로 인코딩한 `path`(worktree 절대 경로)·`prompt`(짧은 인계문)를 넣을 수도 있다. 이 링크는 입력창만 채우며 자동 전송하지 않는다. 기존 세션 링크와 새 채팅 링크를 구분하고, 자동 작업 시작에는 위 CLI 경로를 사용한다. Claude Code는 공식으로 확인된 딥링크가 없어 CLI 재개 명령만 쓴다. [Codex 딥링크 문서](https://developers.openai.com/codex/app/commands), [Codex 비대화형 실행 문서](https://developers.openai.com/codex/noninteractive)를 참고한다.
 
-실행 스크립트 변경은 `node --test .agents/scripts/start-work-session.test.mjs`와 대상 ESLint·Prettier, `yarn check:agent-docs`로 검증한다. 이 테스트는 실제 AI 세션을 실행하지 않고 두 CLI의 출력에서 판정에 쓰는 필드만 남긴 이벤트로 성공·실패 판정을 확인한다. 실제 CLI 동작은 임시 저장소의 worktree에서 파일 변경 없는 짧은 세션으로 따로 확인한다.
+실행 스크립트 변경은 `node --test .agents/scripts/start-work-session.test.mjs`와 대상 ESLint·oxfmt, `yarn check:agent-docs`로 검증한다. 이 테스트는 실제 AI 세션을 실행하지 않고 두 CLI의 출력에서 판정에 쓰는 필드만 남긴 이벤트로 성공·실패 판정을 확인한다. 실제 CLI 동작은 임시 저장소의 worktree에서 파일 변경 없는 짧은 세션으로 따로 확인한다.
 
 ## Figma·스크린샷 구현
 

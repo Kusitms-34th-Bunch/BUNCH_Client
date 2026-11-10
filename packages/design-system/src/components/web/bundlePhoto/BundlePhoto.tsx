@@ -25,7 +25,8 @@ export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
     | undefined;
   /** thumbnail 첫 사진 위쪽의 번치(이미지·이름·경과 시간). 누르면 번치 프로필 */
   author?:
-    { name: string; imageSrc?: string | undefined; time: string; onClick: () => void } | undefined;
+    | { name: string; imageSrc?: string | undefined; time: string; onClick: () => void }
+    | undefined;
   /** 사진을 눌렀을 때(피드 카드 → 번들 상세). 넘긴 사진 순번(0부터)을 받음 */
   onPhotoClick?: ((_index: number) => void) | undefined;
   /** 사진 버튼의 접근성 이름. 기본값 「번들 사진 N/전체 열기」 */
