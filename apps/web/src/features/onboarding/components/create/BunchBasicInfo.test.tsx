@@ -177,6 +177,32 @@ describe('BunchBasicInfo 번치 이름 중복 확인', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('확인하는 동안 입력란 아래에 확인 중 안내를 보이고, 문제가 없으면 안내가 사라진다', async () => {
+    renderChecked(vi.fn().mockResolvedValue(true));
+    const CHECKING = '사용 가능한 이름인지 확인 중이에요.';
+
+    await userEvent.type(nameInput(), '퇴근런클럽');
+
+    expect(screen.getByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    await waitFor(() => expect(screen.queryByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeNull(), {
+      timeout: 2000,
+    });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('이미 사용 중이면 확인 중 안내가 사라지고 오류 문구가 보인다', async () => {
+    renderChecked(vi.fn().mockResolvedValue(false));
+
+    await userEvent.type(nameInput(), '퇴근런클럽');
+
+    await waitFor(
+      () => expect(screen.getByRole('alert').textContent).toBe('이미 사용 중인 번치 이름이에요'),
+      { timeout: 2000 },
+    );
+    expect(screen.queryByText('사용 가능한 이름인지 확인 중이에요.', { selector: 'p[aria-hidden="true"]' })).toBeNull();
+  });
+
   it('이미 사용 중인 이름이면 입력란 아래에 안내하고 다음은 비활성이다', async () => {
     renderChecked(vi.fn().mockResolvedValue(false));
 
