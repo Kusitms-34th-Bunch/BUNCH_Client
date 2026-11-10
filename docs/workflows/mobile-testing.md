@@ -64,7 +64,15 @@ pnpm ios
 `pnpm android`(`expo run:android`)도 같은 방식이지만 아직 검증하지 않았다.
 `ios/`, `android/`는 생성물이므로 직접 수정하거나 커밋하지 않는다.
 
-Xcode에서 서명이나 빌드 로그를 직접 봐야 하면 수동으로 연다. 앱 폴더에서 `ios/`를 맞춘 뒤 Xcode로 열고 **Run**을 누른다. `pnpm ios:sync`는 `expo prebuild --platform ios`이며 Capacitor의 `cap sync`에 해당한다. `app.json`, 아이콘·스플래시 이미지, 네이티브 패키지를 바꿨을 때 다시 실행한다. Xcode가 열린 채로 실행하면 프로젝트를 다시 불러오지 못할 수 있어 Xcode를 닫고 실행한다. `--clean`은 빌드 캐시를 버리므로 `ios/`가 꼬였을 때만 쓴다.
+Xcode에서 서명이나 빌드 로그를 직접 봐야 하면 수동으로 연다. 앱 폴더에서 `ios/`를 맞춘 뒤 Xcode로 열고 **Run**을 누른다. `pnpm ios:sync`는 `expo prebuild --platform ios --no-clean`이며 Capacitor의 `cap sync`에 해당한다. `app.json`, 아이콘·스플래시 이미지, 네이티브 패키지를 바꿨을 때 다시 실행한다. Xcode가 열린 채로 실행하면 프로젝트를 다시 불러오지 못할 수 있어 Xcode를 닫고 실행한다.
+
+Expo 58의 prebuild는 옵션이 없으면 `ios/`를 지우고 새로 만든다. 그러면 Pods까지 처음부터 다시 컴파일한다. 그래서 `ios:sync`는 기존 폴더에 바뀐 것만 반영한다(`--no-clean`).
+플러그인·네이티브 패키지를 제거했거나 `ios/`가 꼬였을 때만 `pnpm ios:sync:clean`으로 새로 만든다. 이때 `ios/.xcode.env.local` 같은 로컬 설정도 지워진다.
+
+| 측정(2026-11-10, Apple M5, Xcode 26.6, 시뮬레이터 Debug) | sync    | 다음 빌드 |
+| -------------------------------------------------------- | ------- | --------- |
+| `ios:sync:clean`(새로 만들기)                            | 34~40초 | 314~321초 |
+| `ios:sync`(`--no-clean`)                                 | 1초     | 18~22초   |
 
 ```bash
 pnpm ios:sync
