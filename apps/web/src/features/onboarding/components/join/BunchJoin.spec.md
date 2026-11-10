@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/onboarding/join`(`apps/web/src/app/(app)/onboarding/join/page.tsx`)
-- Status: UI와 입력·붙여넣기·형식 검사·오류 토스트·중단 모달 구현됨(headless Chromium 375×812 렌더를 Figma 값과 대조함). 링크가 확인되면 로딩(초대장 로티) 화면으로 이동한다. 실기기 검증 전
+- Status: UI와 입력·붙여넣기·형식 검사·오류 토스트·중단 모달 구현됨(headless Chromium 375×812 렌더를 Figma 값과 대조함). 링크가 확인되면 초대 확인 화면(초대장 열람 모션)으로 이동한다. 실기기 검증 전
 - 디자인 출처: Figma `Bunch/Join/Empty`(node `791:2916`), 초점·키보드(`1229:11098`), 유효하지 않은 링크 토스트(`791:2935`), 인원 초과 토스트(`791:2955`), 입력됨(`791:2975`), 중단 모달(`791:13773`). 화면설계서를 함께 참고했다.
 
 ## 목적과 범위
@@ -33,7 +33,7 @@
 - 입력: 공백만 아닌 값이 있으면 「완료」가 활성화된다(Figma의 비활성 `surface-disabled` → 활성 `surface-inversed`).
 - 초점: 입력창 테두리가 진한 색으로 바뀌고 안내 문구가 사라진다(`TextField`의 Figma Focused).
 - 「붙여넣기」: `navigator.clipboard.readText()`로 읽어 앞뒤 공백을 지우고 채운 뒤 입력창에 초점을 줘서 스크린 리더가 채운 값을 읽게 한다. 읽기가 막히면(권한 거부·비보안 환경) 값은 그대로 두고 입력창에 초점만 줘서 직접 붙여넣게 한다.
-- 「완료」: 형식(`https://<호스트>/invite/<코드>`)이 틀리면 `invalid` 토스트. 형식이 맞으면 `onSubmit(링크)`을 호출하고, 실패 이유(`full`)를 돌려주면 그 토스트를 띄운다. 성공이거나 `onSubmit`이 없으면(지금) 로딩 화면(`BunchJoinMotion.spec.md`)으로 `router.push`한다. 요청 중에는 「완료」를 비활성으로 둔다.
+- 「완료」: 형식(`https://<호스트>/invite/<코드>`)이 틀리면 `invalid` 토스트. 형식이 맞으면 `onSubmit(링크)`을 호출하고, 실패 이유(`full`)를 돌려주면 그 토스트를 띄운다. 성공이거나 `onSubmit`이 없으면(지금) 초대 확인 화면(`BunchJoinInvitation.spec.md`)으로 `router.push`한다. 요청 중에는 「완료」를 비활성으로 둔다.
 - 토스트: `toast()`가 3초간 띄운다(`Toast.spec.md`). Figma처럼 「완료」 버튼 위 10px(`bottomOffset: 42`)에 폭을 편다(`fullWidth`).
 - Loading·Empty·Error·retry: 요청이 없어 해당 없음. 참여 요청의 로딩·재시도는 API 연결 때 정한다.
 

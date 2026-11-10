@@ -3,15 +3,15 @@
 ## 메타데이터
 
 - Route: `/onboarding/create/complete`(`apps/web/src/app/(app)/onboarding/create/complete/page.tsx`)
-- Status: UI와 폭죽 애니메이션 구현됨(`next build` 렌더와 375×812 Chromium에서 재생·위치를 확인함). 3단계 「번치 만들기」가 이 화면으로 이동만 하고(생성 요청 없음), 초대 화면 이동과 갤러리 선택·임시 미리보기는 연결됨. 이미지 서버 저장은 미연결. 실기기 검증 전
-- 디자인 출처: Figma `Bunch/Create/Success-Celebration`(node `791:3260`, 폭죽이 나오는 시작 상태), `Bunch/Create/Success`(node `791:3345`, 폭죽이 끝난 최종 상태). 화면설계서와 모션 데이터는 받은 JSON(5개 조각의 위치·회전·불투명도 키프레임).
+- Status: UI와 폭죽(컨페티) 애니메이션 구현됨(컨페티는 2026-11 Figma 변경분, 이슈 #292)(`next build` 렌더와 이전 연출은 375×812 Chromium에서 재생·위치를 확인함, 새 연출은 키프레임 재생만 확인함). 3단계 「번치 만들기」가 이 화면으로 이동만 하고(생성 요청 없음), 초대 화면 이동과 갤러리 선택·임시 미리보기는 연결됨. 이미지 서버 저장은 미연결. 실기기 검증 전
+- 디자인 출처: Figma `Bunch/Create/Success-Celebration`(node `791:3260`, 폭죽이 나오는 시작 상태), `Bunch/Create/Success`(node `791:3345`, 폭죽이 끝난 최종 상태). 컨페티 모션은 Figma `Bunch/Join/Success · Square Confetti`(node `6163:189892`, 16개 조각의 위치·회전·뒤집힘·불투명도 키프레임)로 교체했다. 이전 연출의 `791:3260` 5조각 값은 더 쓰지 않는다.
 
 ## 목적과 범위
 
 ### 포함
 
 - 번치가 만들어졌음을 알리는 화면: 기본 대표 이미지(`BunchAvatar`, 고른 성격의 기본 이미지)+카메라 버튼, 제목 「{번치 이름} 번치가 만들어졌어요!」, 하단 「멤버 초대하기」 카드와 「내 번치로 이동하기」 버튼.
-- 진입하면 폭죽 5조각이 1.5초 동안 한 번 재생되고 끝나면 사라진다(최종 상태가 `791:3345`).
+- 진입하면 폭죽(컨페티) 16개가 4.2초 동안 한 번 재생되고 끝나면 사라진다(번치 합류 완료 화면과 같은 연출).
 
 ### 범위 외
 
@@ -26,7 +26,7 @@
 
 ## 상태와 흐름
 
-- 진입: 폭죽 조각이 나타나 날아가다 사라진다. 끝나면 조각은 DOM에서 치운다. 화면이 먼저 사라지면 재생을 취소한다.
+- 진입: 폭죽 조각이 솟아올랐다가 팔랑이며 떨어지고 사라진다. 끝나면 조각은 DOM에서 치운다. 화면이 먼저 사라지면 재생을 취소한다.
 - 움직임 줄이기(`prefers-reduced-motion: reduce`): 폭죽을 그리지 않는다. 문구·버튼은 그대로다.
 - `Element.animate`를 지원하지 않는 환경: 폭죽을 그리지 않는다.
 - 「멤버 초대하기」: `/onboarding/create/invite`로 `router.push`한다(`features/bunch-invite/components/BunchInvite.spec.md`). 「내 번치로 이동하기」: 피드(임시 `/`)로 `router.replace`한다. 카메라: 네이티브 갤러리를 바로 열고 선택 후 현재 화면의 대표 사진을 교체한다. 일반 브라우저에서는 개발용 파일 선택창을 연다.
@@ -40,31 +40,31 @@
 
 - Component mapping: `BunchAvatar`(카메라 버튼 포함), `Button`(내 번치로 이동하기), `GraphicPeopleIcon`, 폭죽 `BunchConfetti`(이 feature 안).
 - 멤버 초대 카드: Figma는 링크처럼 그린 카드인데 디자인 시스템의 `InviteMemberCard`는 라디오 선택 카드라 의미가 달라 쓰지 않고 같은 모양으로 이 화면에 `button`으로 만들었다(아래 확인할 항목).
-- 폭죽: 장식이라 `aria-hidden`이고 포인터 이벤트를 받지 않는다. 위치(`translate`)·회전(`rotate`)·불투명도를 `Element.animate`로 따로 재생해 transform·opacity만 쓴다(`docs/architecture/motion.md`).
+- 폭죽: 장식이라 `aria-hidden`이고 포인터 이벤트를 받지 않는다. 가로 이동·세로 이동·회전·가로 뒤집힘(`scale`)·불투명도를 `Element.animate`로 따로 재생해 transform·opacity만 쓴다(조각마다 요소 세 겹, 값은 `constants/confetti.ts`의 조각별 파라미터와 `lib/confettiKeyframes.ts`)(`docs/architecture/motion.md`).
 - 제목은 `h1`이고 이름과 문구가 줄을 나눠 보인다. 카메라 버튼의 이름은 「사진 변경」이다.
 
-| Figma          | 값                                                           | 사용한 토큰·utility                                               |
-| -------------- | ------------------------------------------------------------ | ----------------------------------------------------------------- |
-| 본문 정렬      | 세로 가운데, 이미지와 제목 간격 24                           | `flex-1 justify-center gap-s12`                                   |
-| 제목           | Title-1 SemiBold 22/28 가운데                                | `typography-title-1-semi-bold text-center`                        |
-| 멤버 초대 카드 | 패딩 20, radius 14, 아이콘과 글 간격 16, `surface-secondary` | `p-s10 rounded-r7 gap-s8 bg-surface-secondary`                    |
-| 카드 글        | 제목 Body-1 Medium, 설명 Body-3 Regular `text-tertiary`      | `typography-body-1-medium` / `body-4-regular`                     |
-| 카드와 버튼    | 카드 좌우 16, 버튼 위 10                                     | `px-padding-p8`, `pt-s5`                                          |
-| 폭죽 조각      | 23×15, 색 `#26e26a` `#ff86d7` `#fbab22` `#777ff2` `#ff86d7`  | 토큰 없는 장식 색을 인라인 값으로(데이터 `constants/confetti.ts`) |
+| Figma          | 값                                                                         | 사용한 토큰·utility                                               |
+| -------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 본문 정렬      | 세로 가운데, 이미지와 제목 간격 24                                         | `flex-1 justify-center gap-s12`                                   |
+| 제목           | Title-1 SemiBold 22/28 가운데                                              | `typography-title-1-semi-bold text-center`                        |
+| 멤버 초대 카드 | 패딩 20, radius 14, 아이콘과 글 간격 16, `surface-secondary`               | `p-s10 rounded-r7 gap-s8 bg-surface-secondary`                    |
+| 카드 글        | 제목 Body-1 Medium, 설명 Body-3 Regular `text-tertiary`                    | `typography-body-1-medium` / `body-4-regular`                     |
+| 카드와 버튼    | 카드 좌우 16, 버튼 위 10                                                   | `px-padding-p8`, `pt-s5`                                          |
+| 폭죽 조각      | 10×10 또는 12×12 정사각형 16개, 색 `#454edf` `#ffa100` `#ff6ccd` `#26e26a` | 토큰 없는 장식 색을 인라인 값으로(데이터 `constants/confetti.ts`) |
 
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 정적 페이지로 생성되고 `next start`에서 직접 URL 렌더·재생·종료 후 조각 제거를 확인함. 새로고침·뒤로 가기는 미검증
 - [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증)
-- [x] 관련 test: `BunchCreated.test.tsx`(제목, 이름 없음, 버튼), `BunchConfetti.test.tsx`(조각당 3개 재생과 길이, 종료 후 제거, 취소, 움직임 줄이기)
+- [x] 관련 test: `BunchCreated.test.tsx`(제목, 이름 없음, 버튼), `BunchConfetti.test.tsx`·`confettiKeyframes.test.ts`(조각당 5개 재생과 4.2초 길이, 종료 후 제거, 취소, 움직임 줄이기)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`(103개)·lint·typecheck·build 통과
-- [x] 헤드리스 Chromium(375×812): 아바타 154×158, 구름 이미지 로드, 카드와 버튼 위치, 250ms 시점 폭죽 위치, 종료 후 조각 0개, 가로 넘침 없음. Figma 정지 화면과 픽셀 비교, 실기기 프레임은 하지 못함
+- [x] (이전 연출 기준, 새 연출은 앱 화면 재검증 필요) 헤드리스 Chromium(375×812): 아바타 154×158, 구름 이미지 로드, 카드와 버튼 위치, 250ms 시점 폭죽 위치, 종료 후 조각 0개, 가로 넘침 없음. Figma 정지 화면과 픽셀 비교, 실기기 프레임은 하지 못함
 
 ## 확인할 항목
 
-- 폭죽 좌표 (확정): 모션 데이터가 Figma 375×591 틀 기준 절대 좌표라 그 틀의 가운데를 본문(아바타·제목) 가운데에 맞췄다. 아바타와 제목이 고정 크기라 폭을 키우지 않았고, 320·375·430px에서 아바타 중심 기준 조각 위치가 같음을 확인했다(재생 시점 오차 몇 px 안). 폭이 320px보다 좁으면 틀이 잘릴 수 있다. 값은 `useEffect` 안에서 재생하므로 첫 프레임에 조각이 잠깐 보이지 않는다(불투명도 0에서 시작).
+- 폭죽 좌표 (확정): 모션 데이터가 Figma 375×624 틀 기준 절대 좌표라 그 틀의 가운데를 본문(아바타·제목) 가운데에 맞췄다. 아바타와 제목이 고정 크기라 폭을 키우지 않았고, (이전 5조각 연출에서 320·375·430px의 아바타 중심 기준 위치가 같음을 확인했다. 16조각 새 연출은 앱 화면에서 재확인 필요.) 폭이 320px보다 좁으면 틀이 잘릴 수 있다. 값은 `useEffect` 안에서 재생하므로 첫 프레임에 조각이 잠깐 보이지 않는다(불투명도 0에서 시작).
 - 폭죽 색 (제안): Figma의 장식 색을 토큰 없이 그대로 썼다. 토큰이 생기면 교체한다.
-- 모션 값 (확정): 조각 5개의 위치·회전·불투명도를 받은 키프레임 그대로 옮겼다(위치는 100ms 간격 샘플 사이를 직선 보간, 회전과 불투명도 전환은 `cubic-bezier(0.5, 0, 0.5, 1)`). 설계서의 느낌과 비교한 검수는 디자이너 확인.
+- 모션 값 (확정): 조각 16개를 Figma `6163:189892` 키프레임으로 옮겼다. 조각마다 시작·팔랑임·끝 시각, 위치, 팔랑임 횟수가 달라 조각별 파라미터(`constants/confetti.ts`)로 두고, 가로 이동·세로 이동·회전·가로 뒤집힘·불투명도의 시각과 곡선은 `lib/confettiKeyframes.ts`가 Figma 표대로 만든다(곡선은 `cubic-bezier`로 변환). 설계서의 느낌과 비교한 검수는 디자이너 확인.
 - 이 화면 진입 연결 (부분 연결): 설계서는 「번치 만들기」 성공 시 이 화면으로 이동이다. 생성 API가 없어 3단계에서 요청 없이 `ONBOARDING_PATHS.createBunchComplete`로 이동만 한다. 요청을 붙일 때 성공 뒤에 이동하도록 바꾸고 요청 중 중복 탭을 막는다.
 - 직접 진입 (확정): 입력 단계를 마치지 않고 열면 첫 미완료 단계로 `router.replace`한다. 생성이 없었는데 「번치가 만들어졌어요!」가 보이는 거짓 성공 화면은 이 가드로 막는다. 이 화면으로 가는 경로는 3단계의 「번치 만들기」뿐이다.
 - 성공 뒤 입력값 비우기 (확정): 이름을 화면 state로 보관한 뒤 `finish(이름, 성격)`으로 입력값을 비우고 마쳤다는 기록(`createdName`, 기본 이미지를 정하는 성격 `createdMood`)만 남긴다. 3단계는 `router.replace`로 이동해 기록에 남지 않고, 뒤로 가기로 2단계 이전에 돌아가면 가드가 1단계로 보낸다. 초대 화면에서 뒤로 가면 `createdName`이 있어 입력값이 비어 있어도 같은 완료 화면(같은 이름)으로 돌아온다. 중단 모달의 「나가기」(`reset`)와 뒤로 가서 새로 입력을 시작하는 것(입력 setter)도 이 기록을 지워 옛 이름이 새 완료 화면에 나오지 않는다. 완료 화면이 다시 mount되면(초대 화면에서 뒤로 가기) 폭죽이 다시 재생된다(허용, 제안). 생성 API를 연결할 때 이름은 생성 응답 값으로 바꾼다.

@@ -64,7 +64,7 @@ Figma `공통 모션`(node `1962:18333`)이 정한 값이다. 디자이너가 �
 
 ## Lottie
 
-디자이너가 Lottie 애니메이션을 전달할 예정이다(2026-10-14). 온보딩에 쓸 예정이고, 로그인 화면에 쓸지는 미정이다. 재생 라이브러리는 `lottie-react`(3.1.2, 2026-10-19 사용자 확인 후 `apps/web`에 추가)다. 아래는 도입 기준과 첫 도입(초대 링크 확인 화면 `BunchJoinMotion`)의 결과다.
+디자이너가 Lottie 애니메이션을 전달할 예정이다(2026-10-14). 온보딩에 쓸 예정이고, 로그인 화면에 쓸지는 미정이다. 재생 라이브러리는 `lottie-react`(3.1.2, 2026-10-19 사용자 확인 후 `apps/web`에 추가)다. 아래는 도입 기준과 첫 도입(초대 링크 확인 화면의 초대장 로티)의 결과다. 초대장 연출은 2026-11 Figma 변경(`Seal & Flip`)으로 코드 모션으로 바뀌었고(아래 「온보딩 초대장·컨페티」), 로티는 로딩·편집 중·피드 끝 표시에 쓴다.
 
 - 온보딩은 로그인 뒤에 나오므로, 첫 화면 로딩을 늦추지 않고 동적 import로 자산을 받을 수 있다. 온보딩 한 단계가 보이는 동안 다음 단계의 자산을 미리 받아 두면 전환할 때 끊기지 않는다(FE 판단). 로그인 화면에 쓰기로 정해지면 그 화면은 첫 렌더가 늦어질 수 있으니 다시 판단한다.
 - 자산 형식(`.json` 또는 압축된 `.lottie`)과 재생 라이브러리는 디자이너의 자산을 받은 뒤 정한다. 다른 프로젝트에서는 `lottie-react`를 썼다. production dependency 추가는 사용자 확인을 받는다.
@@ -77,12 +77,12 @@ Figma `공통 모션`(node `1962:18333`)이 정한 값이다. 디자이너가 �
 - 위 "애니메이션을 넣을지 판단" 표를 따른다. 자주 보는 요소에는 쓰지 않고 온보딩, 축하, 로딩 같은 드문 장면에 쓴다. "UI 애니메이션은 300ms를 넘지 않는다"는 전환에 대한 규칙이라 Lottie 연출 길이에는 적용하지 않지만, 재생 중에도 사용자의 interaction을 막지 않는다.
 - 복잡한 애니메이션은 WebView에서 프레임이 떨어질 수 있다. 렌더러 선택과 프레임은 실기기에서 확인한다(FE 판단, 미검증).
 - 테스트에서는 재생 라이브러리를 mock한다. 애니메이션의 모양은 테스트하지 않는다.
-- 도입 결과 (2026-10-19): `lottie-react` 3.x는 엔진 세 빌드(full·svg·light)를 함께 내보내서 모듈 전체를 동적 `import()`하면 셋이 모두 내려받아진다(합계 약 180KB gzip). 표현식이 없는 로티는 light 빌드만 쓰도록 `export { LottieLight } from 'lottie-react'` 래퍼(`lib/lottieLight.ts`)를 동적 import해서 엔진 하나(약 164KB)와 래퍼(약 47KB)만 내려받는다. 새 로티를 넣을 때 표현식이 있으면 `LottieSvg`로 바꾼다.
-- 자산 위치 (확정): 초대장 로티는 `apps/web/src/shared/assets/lotties/inviteAnimation.json`에 둔다. 재생 컴포넌트에서 JSON을 동적 import한다.
+- 도입 결과 (2026-10-19): `lottie-react` 3.x는 엔진 세 빌드(full·svg·light)를 함께 내보내서 모듈 전체를 동적 `import()`하면 셋이 모두 내려받아진다(합계 약 180KB gzip). 표현식이 없는 로티는 light 빌드만 쓰도록 `export { LottieLight } from 'lottie-react'` 래퍼(`shared/lib/lottieLight.ts`)를 동적 import해서 엔진 하나(약 164KB)와 래퍼(약 47KB)만 내려받는다. 새 로티를 넣을 때 표현식이 있으면 `LottieSvg`로 바꾼다.
+- 자산 위치 (확정): 로티 JSON은 `apps/web/src/shared/assets/lotties/`에 두고 재생 컴포넌트에서 동적 import한다. 초대장 로티(`inviteAnimation.json`)는 코드 모션으로 대체해 삭제했다(#292).
 - 로딩 상태 (2026-11-09, 앞으로의 기준): 「편집 중」(Editing)이 아닌 로딩 표시는 모두 디자이너가 전달한 `loading.json`(90×90, 물결처럼 번지는 점 패턴, 표현식 없음)으로 처리한다. 사진별·요소별이 아니라 페이지 전체에 하며, 화면 전체를 `overlay-dim-subtle`로 덮고 가운데에 재생한다. 같은 이름의 이전 로티(점 3개, 2026-10-31)를 2026-11-09에 물결 점 패턴으로 교체했다. 자산은 `apps/web/src/shared/assets/lotties/loading.json`, 공통 컴포넌트는 `shared/components/loading/PageLoading.tsx`(dim + 로티)와 `LoadingRipple.tsx`다. 재생은 `shared/components/loading/LazyLottie.tsx`, 엔진(`shared/lib/lottieLight.ts`)과 JSON의 동적 import·캐시는 `shared/lib/lottieLoader.ts`가 맡고 `EditingLottie`도 같이 쓴다. 엔진·JSON은 모듈에서 한 번만 받아 공유하고, 동작 줄이기에서는 첫 프레임에 정지하며, 받지 못하면 빈 자리만 남긴다. 상태 안내는 사용하는 화면이 live region으로 맡고, 로딩은 항상 `PageLoading`으로 쓴다.
 - 편집 중 표시 (Editing, 2026-11-01, 디자이너 확정): 입력창·코멘트 카드·캡션 줄의 「다른 멤버가 편집 중」 표시는 모두 디자이너가 전달한 `editing.json`(30×25)으로 처리하고 DS의 점 애니메이션 컴포넌트는 두지 않는다. 자산은 `apps/web/src/shared/assets/lotties/editing.json`, 공통 컴포넌트는 `shared/components/loading/EditingLottie.tsx`다. DS `TextField`·`BundleCommentCard`는 `editing`과 `editingContent`(앱이 넘기는 애니메이션 자리)만 받아 로티 의존을 갖지 않는다. 엔진·JSON 공유, 동작 줄이기(첫 프레임 정지), 받지 못했을 때 빈 자리는 `LoadingRipple`과 같다.
-- 재생 실패 (확정): 로티가 화면 전환을 이끄는 경우(로딩 화면) 라이브러리·자산을 못 받거나 재생 오류가 나면 멈추지 않고 다음 화면으로 넘긴다.
-- 동작 줄이기 (확정): 정지 프레임이 의미가 없는 장면은 로티를 불러오지 않고 짧게 안내만 둔 뒤 넘어간다(`BunchJoinMotion`).
+- 재생 실패 (확정): 로티가 화면 전환을 이끄는 경우(로딩 화면) 라이브러리·자산을 못 받거나 재생 오류가 나면 멈추지 않고 다음 화면으로 넘긴다. 지금 이런 화면은 없다(이전 초대장 로딩 화면은 코드 모션으로 대체되어 삭제).
+- 동작 줄이기 (확정): 정지 프레임이 의미가 없는 장면은 로티를 불러오지 않고 짧게 안내만 둔 뒤 넘어간다. 로티를 쓰는 화면이 새로 생길 때의 기준이다.
 
 ## 페이지 전환
 
@@ -99,7 +99,7 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 - 효과: 온보딩 시작 → 만들기·참여, 만들기 완료 → 초대는 `slide`를 사용한다. 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. 반대 이동은 방향을 뒤집는다. 페이드는 섞지 않고 경계 밖을 잘라낸다. 참여 화면의 시각 전환은 미검증이다.
 - 시간·곡선: Slide In / Left / 이동 시간 300ms를 적용한다. 곡선은 사용자 합의에 따라 설계서의 Ease In 대신 Ease Out으로 조정한다. SSGOI의 `override`에 `easeOutIntegrator`를 넣어 CSS `cubic-bezier(0, 0, .58, 1)`의 진행도를 계산한다. 라이브러리의 `easeOut({ duration })`은 관성 기반 곡선이므로 CSS 곡선과 동일하다고 취급하지 않는다. 이동 시간과 라이브러리의 종료 판정 시간은 구분한다. 이전 200ms 설정에서 SSGOI 7.4.1의 WAAPI timeline 약 233ms를 확인했으며, 현재 300ms 설정의 실제 종료 시간은 브라우저 재검증 전이다.
 - 상태 유지: 상위 layout은 provider만 유지한다. 실제 route의 DOM에 `data-ssgoi-transition`을 지정하고, 만들기 layout 내부에서 단계 묶음·완료·초대를 구분한다. URL을 먼저 감지하는 상위 경계에서 빈 화면이 전환되는 문제를 피하려고 콘텐츠와 경계를 함께 마운트한다. 1~3단계의 헤더·Stepper와 draft provider는 유지한다. 단계 사이의 본문 전환은 현재 등록하지 않았다.
-- 하단 탭 전환 (2026-11-01, 결정 기록 017): 웹 탭 막대의 네 탭 사이 이동은 80ms 등속 크로스페이드다. 들어오는 탭은 아래에 불투명하게 두고 위로 올린 나가는 탭만 페이드해 같은 헤더가 흐려지지 않는다. 탭 page는 `MainTabPage`로 감싼다. 나가는 탭은 다른 페이지 전환처럼 `inert`로 둔다. 상태 바 영역을 칠하는 `AppFrame` 배경도 나가는 화면(`data-page-leaving`, 모든 등록 전환이 붙임)의 표식을 무시하고 화면과 함께 바뀐다. 기본 150ms ease-out, 웹 탭 막대가 있으면 80ms 등속이다. Next가 새 화면을 그리는 순간 이전 화면이 잠깐 빠져 배경이 먼저 바뀌므로 transition은 전환 전부터 `AppFrame`에 걸어 둔다. 앞 화면 장식이 Safe Area를 덮고 넘어오는 화면(초대 확인)은 `data-app-background-instant`로 즉시 바꾼다. 전환 규칙이 없는 이동도 상태 바 영역은 150ms 페이드라, 번치 홈처럼 배경색이 다른 화면에서 규칙 없는 이동을 추가하면 함께 본다. SSGOI 7.4.1의 `LinearIntegrator`는 지수 감속이라 등속 integrator를 직접 둔다. iOS 앱은 시스템 탭 바라 쉘의 로컬 모듈(`apps/mobile-shell/modules/tab-crossfade`)이 같은 방식으로 전환한다.
+- 하단 탭 전환 (2026-11-01, 결정 기록 017): 웹 탭 막대의 네 탭 사이 이동은 80ms 등속 크로스페이드다. 들어오는 탭은 아래에 불투명하게 두고 위로 올린 나가는 탭만 페이드해 같은 헤더가 흐려지지 않는다. 탭 page는 `MainTabPage`로 감싼다. 나가는 탭은 다른 페이지 전환처럼 `inert`로 둔다. 상태 바 영역을 칠하는 `AppFrame` 배경도 나가는 화면(`data-page-leaving`, 모든 등록 전환이 붙임)의 표식을 무시하고 화면과 함께 바뀐다. 기본 150ms ease-out, 웹 탭 막대가 있으면 80ms 등속이다. Next가 새 화면을 그리는 순간 이전 화면이 잠깐 빠져 배경이 먼저 바뀌므로 transition은 전환 전부터 `AppFrame`에 걸어 둔다. 전환 규칙이 없는 이동도 상태 바 영역은 150ms 페이드라, 번치 홈처럼 배경색이 다른 화면에서 규칙 없는 이동을 추가하면 함께 본다. SSGOI 7.4.1의 `LinearIntegrator`는 지수 감속이라 등속 integrator를 직접 둔다. iOS 앱은 시스템 탭 바라 쉘의 로컬 모듈(`apps/mobile-shell/modules/tab-crossfade`)이 같은 방식으로 전환한다.
 - 번치 추가 (2026-11-01): 화면설계서(`1892:37781` 7·8번)대로 번치 홈 전환 시트의 「새로운 번치 추가하기」는 시트가 다 내려간 뒤(`onOpenChangeComplete`) 번치 시작 선택(`/onboarding`)으로 이동하고, `/bunch` → `/onboarding`에 Dissolve / Ease out / 150ms(`fade`, 단계마다 75ms, `BUNCH_ADD_DISSOLVE_DURATION_MS`)를 등록했다. 하단 탭 막대는 `(main)` layout에 있어 전환 대상 밖이라 이동과 함께 바로 사라진다. Chromium에서 시트 닫힘 → 번치 홈 페이드 아웃 → 시작 선택 페이드 인 순서를 확인했다.
 - 번치 더보기 메뉴 (2026-11-01 #169, 2026-11-02 #186에서 변경): 번치 홈 「더보기」 → 메뉴와 뒤로 가기는 SSGOI `drill`(기본 `parallax`) 프리셋에 Ease out / 250ms만 `override`로 적용한다(`BUNCH_DRILL_DURATION_MS`). 화면설계서(`1892:37780`)는 150ms지만 빨라 보여 사용자 결정으로 200ms로 했고, 2026-11-06에 다시 250ms로 늘렸다. 들어오는 화면은 오른쪽에서, 뒤 화면은 왼쪽으로 20% 함께 밀린다. 처음에는 150ms의 덮는 Move in(아래 화면 제자리)을 직접 만들었지만, 위 「프리셋 우선」 기준에 따라 같은 계열인 `drill`로 바꿨다. 그래서 뒤 화면도 움직이는 것이 화면설계서와 다르고, 이 차이는 디자이너에게 공유한다. 양방향 규칙 하나(`bidirectional`)다. 200ms 설정일 때 Chromium(앱 폭 430px)에서 열기·닫기 이동이 프레임 단위로 약 200ms에 끝나고(250ms는 프레임 측정 안 함) 프레임마다 이동 거리가 54→5px로 줄어(ease-out), 열자마자 뒤로 가도(0.08~0.3초) 두 화면에 남는 스타일이 없는 것을 확인했다. 실기기와 동작 줄이기는 확인하지 않았다.
 - 번치 더보기 메뉴의 하위 화면 (2026-11-01, 이슈 #172): 메뉴 → 프로필 편집은 화면설계서에 정의가 없어, 한 단계 들어가는 이동으로 보고 미는 `slide`·300ms ease-out(`BUNCH_MENU_SUB_SLIDE_DURATION_MS`)으로 정했다(디자이너 요청). 번치 홈 → 메뉴의 `drill`과 구분된다. 다른 하위 화면도 같은 규칙에 경로를 더한다. 멤버 관리(메뉴 ↔ 멤버 관리, 멤버 관리 ↔ 역할별 권한, 메뉴·멤버 관리 ↔ 멤버 초대)도 같은 slide다(#175). 메뉴 ↔ 차단 목록(#178), 메뉴 ↔ 새 관리자 지정(#180)도 같다. 새 관리자를 지정하고 나가면 지정 화면에서 번치 탭으로 두 칸 되돌아가므로, 이 이동에도 메뉴와 같은 `drill`(되돌아가기)을 둔다. 번치 삭제도 메뉴 ↔ 안내 ↔ 확인 문구 입력이 같은 slide이고, 삭제하면 확인 화면에서 번치 탭으로 세 칸 되돌아가 같은 `drill`을 둔다(#184).
@@ -125,3 +125,10 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 
 - Header Animation(Figma `1998:35008`, Smart animation·Slow·600ms): 진행바는 현재 단계까지 누적해 채우고 새 막대가 왼쪽에서 오른쪽으로 늘어난다(Fill Right). 제목은 5px 아래에서 올라오며 나타난다(Slide Up). 곡선은 둘 다 Slow 근사 `cubic-bezier(0.24, 0.3, 0.14, 1)`이다. Figma가 지정한 곡선이라 공통 규칙의 「진행바는 `linear`」의 예외다. 이전 기준(화면설계서 `791:8480` 「진행바만 인터랙션 O」, 색만 300ms)을 대체한다.
 - `CreateBunchFrame`이 같은 `Stepper` 요소를 유지하고 `current`만 바꾼다. 첫 표시는 `@starting-style`로 채운다. 제목은 단계 화면마다 새로 마운트되므로 `PageHeader`에 `animate-step-title-in`(`globals.css`의 keyframe·`@utility`)을 건다. `@starting-style`을 지원하지 않는 브라우저(Safari 17.5·Chrome 117 미만)에서는 첫 표시 채움 없이 채운 상태로 바로 보인다. 모션 감소 설정에서는 둘 다 끈다. 전체 페이지의 300ms 슬라이드와 별도이다.
+
+### 온보딩 초대장·컨페티
+
+- 초대장 열람(Figma `6174:15909` Seal & Flip, 2026-11, 이슈 #292): 초대 확인 화면에 들어오면 봉투 뒷면이 아래에서 올라오고, 인장이 살짝 커졌다 사라지며 가운데 조각 13개가 사방으로 흩어지고, 봉투가 가로로 접히며(`scaleX`) 카드가 펼쳐진 뒤 제목이 10px 아래에서 올라온다. Figma 타임라인 4.2초를 그대로 쓰되 2.5초에 끝나고 이후는 정지다. `InviteReveal`이 Web Animations API로 재생하고 값은 `constants/inviteReveal.ts`·`lib/inviteRevealKeyframes.ts`에 있다. 새 의존성은 없다. 이전의 로티 로딩 화면(`/onboarding/join/motion`)은 이 연출로 흡수해 삭제했다.
+- 번치 타입별 색: Figma에는 TYPE_1(파랑)만 있어 나머지 3종은 컨페티와 같은 계열 색(`#ffa100`·`#ff6ccd`·`#26e26a`)으로 정했다(디자이너 확인 필요). 인장 가운데 조각 모양은 4종 공통으로 두었다.
+- 컨페티(Figma `6163:189892`, 번치 생성·합류 완료 공통): 16개 조각이 4.2초 동안 한 번 솟았다가 떨어지며 가로로 뒤집히듯 팔랑이고 사라진다. 조각마다 시각·위치·팔랑임 횟수가 달라 값을 조각별 파라미터로 두고 키프레임은 `confettiKeyframes`가 만든다. 가로·세로 이동은 시각과 곡선이 달라 요소를 나눠 재생한다.
+- 동작 줄이기·미지원: 두 연출 모두 모션 없이 최종 화면을 바로 보여 준다(컨페티는 그리지 않음). 재생 중 카드는 펼쳐지기 전까지 `inert`로 누를 수 없다.

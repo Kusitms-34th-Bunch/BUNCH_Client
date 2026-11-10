@@ -4,20 +4,25 @@ import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { InviteCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
+import type { CharacterType } from '@/shared/lib/bunchProfile';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
+import { InviteReveal } from './InviteReveal';
 
 type BunchJoinInvitationProps = {
+  /** 초대받은 번치의 타입. 열람 모션의 봉투·인장 색을 정함 */
+  characterType: CharacterType;
   bunchName: string;
   description: string;
   senderName: string;
   imageSrc: string;
 };
 
-/** 참여 API 미연결로 완료 화면 이동만 처리; 뒤로 가기 재참여 방지를 위해 replace 적용 */
+/** 입장 시 봉투가 열리며 카드가 펼쳐짐; 참여 API 미연결로 완료 화면 이동만 처리, 뒤로 가기 재참여 방지를 위해 replace 적용 */
 export function BunchJoinInvitation({
+  characterType,
   bunchName,
   description,
   senderName,
@@ -42,8 +47,7 @@ export function BunchJoinInvitation({
 
   return (
     <PageShell
-      // 로티의 마지막 원 색(#f1f2ff)과 배경 연결
-      className="bg-surface-brand-subtle-1"
+      className="bg-surface-secondary"
       header={
         <Header
           className="bg-transparent"
@@ -55,18 +59,23 @@ export function BunchJoinInvitation({
         />
       }
     >
-      {/* 로티 배경을 유지하며 내용에만 등장 애니메이션 적용 */}
-      <div className="gap-s10 px-padding-p18 pb-padding-p18 flex min-h-full animate-[page-content-in_300ms_ease-out_both] flex-col items-center justify-center motion-reduce:animate-none">
-        <h1 className="typography-title-1-bold text-text-primary text-center break-keep">
-          초대받은 번치에 참여할까요?
-        </h1>
-        <InviteCard
-          bunchName={bunchName}
-          description={description}
-          senderName={senderName}
-          imageSrc={imageSrc}
-          onJoin={join}
-        />
+      <div className="gap-s10 px-padding-p18 pb-padding-p18 flex min-h-full flex-col items-center justify-center">
+        <InviteReveal
+          characterType={characterType}
+          title={
+            <h1 className="typography-title-1-bold text-text-primary text-center break-keep">
+              초대받은 번치에 참여할까요?
+            </h1>
+          }
+        >
+          <InviteCard
+            bunchName={bunchName}
+            description={description}
+            senderName={senderName}
+            imageSrc={imageSrc}
+            onJoin={join}
+          />
+        </InviteReveal>
       </div>
     </PageShell>
   );
