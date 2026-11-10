@@ -216,4 +216,16 @@ describe('PostHog 제품 분석', () => {
       $elements_chain: 'a:href="/invite/:token"nth-child="1"',
     });
   });
+
+  it('경로 앞이 아닌 곳의 invite 조각은 감추지 않는다', async () => {
+    const { sanitizeAnalyticsEvent } = await load();
+
+    const event = sanitizeAnalyticsEvent({
+      uuid: '1',
+      event: '$pageview',
+      properties: { $pathname: '/onboarding/invite/share' },
+    });
+
+    expect(event?.properties).toEqual({ $pathname: '/onboarding/invite/share' });
+  });
 });

@@ -7,8 +7,10 @@ export const PENDING_INVITATION_TTL_MS = 24 * 60 * 60 * 1000;
 
 type Stored = { invitation: string; savedAt: number };
 
-// 저장소를 쓸 수 없어도(비공개 모드·용량 초과) 이번 실행 안에서는 흐름이 이어지게 메모리에도 둠
+// 저장소를 쓸 수 없어도(비공개 모드·용량 초과) 이번 실행 안에서는 흐름이 이어지게 메모리에 둠
+// 메모리는 저장소에 쓰지 못했을 때만 기준이고, 저장소가 정상이면 저장소 값만 믿음(다른 탭의 삭제로 지워진 초대가 되살아나지 않게)
 let memory: Stored | null = null;
+let memoryOnly = false;
 
 const parse = (raw: string | null): Stored | null => {
   if (!raw) return null;
@@ -31,8 +33,9 @@ const parse = (raw: string | null): Stored | null => {
 };
 
 const load = (): Stored | null => {
+  if (memoryOnly) return memory;
   try {
-    return parse(window.localStorage.getItem(KEY)) ?? memory;
+    return parse(window.localStorage.getItem(KEY));
   } catch {
     return memory;
   }
@@ -45,10 +48,12 @@ const load = (): Stored | null => {
 export function savePendingInvitation(invitation: string, now = Date.now()) {
   const stored: Stored = { invitation, savedAt: now };
   memory = stored;
+  memoryOnly = false;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(stored));
   } catch {
     // 저장하지 못해도 이번 실행에서는 메모리 값으로 이어짐
+    memoryOnly = true;
   }
 }
 
@@ -66,6 +71,7 @@ export function readPendingInvitation(now = Date.now()): string | null {
 /** 보관한 초대 정보를 지움. 참여를 마쳤거나 그만두었을 때, 로그아웃할 때(기능명세 1.5.1) */
 export function clearPendingInvitation() {
   memory = null;
+  memoryOnly = false;
   try {
     window.localStorage.removeItem(KEY);
   } catch {

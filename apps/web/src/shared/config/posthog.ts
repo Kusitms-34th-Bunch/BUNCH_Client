@@ -6,7 +6,8 @@ const cleanPath = (value: string) =>
   value
     .replace(/[?#].*$/, '')
     .replace(/\/\d+(?=\/|$)/g, '/:id')
-    .replace(/\/invite\/[^/]+/g, '/invite/:token');
+    // 경로 맨 앞(전체 주소는 origin 바로 뒤)의 `/invite/`만 감춤. 다른 경로의 `invite` 조각은 건드리지 않음
+    .replace(/^((?:https?:\/\/[^/]+)?)\/invite\/[^/]+/, '$1/invite/:token');
 
 const cleanValue = (key: string, value: unknown): unknown => {
   if (typeof value !== 'string') return value;

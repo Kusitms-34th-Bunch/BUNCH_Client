@@ -64,4 +64,23 @@ describe('pendingInvitation', () => {
 
     expect(readPendingInvitation(NOW + 1)).toBe('TOKEN-1');
   });
+
+  it('저장소에 쓰지 못한 뒤에는 메모리 값이 기준이다(이전에 저장된 옛 값을 읽지 않음)', () => {
+    savePendingInvitation('OLD', NOW);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
+
+    savePendingInvitation('NEW', NOW + 10);
+
+    expect(readPendingInvitation(NOW + 20)).toBe('NEW');
+  });
+
+  it('저장소가 정상이면 다른 곳에서 지워진 초대가 메모리로 되살아나지 않는다', () => {
+    savePendingInvitation('TOKEN-1', NOW);
+
+    window.localStorage.removeItem('bunch:pending-invitation');
+
+    expect(readPendingInvitation(NOW + 1)).toBeNull();
+  });
 });
