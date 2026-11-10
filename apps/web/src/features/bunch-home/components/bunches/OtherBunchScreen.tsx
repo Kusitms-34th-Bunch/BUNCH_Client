@@ -6,12 +6,13 @@ import { type ReactNode, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { defaultBunchImage } from '@/shared/lib/bunchProfile';
 import type { FollowStatus, OtherBunch } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
-import { BunchCharacter } from '../BunchCharacter';
 import { BunchProfile } from '../BunchProfile';
+import { BunchProfileImage } from '../BunchProfileImage';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
 import { PrivateBunchNotice } from '../PrivateBunchNotice';
 import { FollowCancelSheet } from './FollowCancelSheet';
@@ -64,6 +65,7 @@ export function OtherBunchScreen({
       <FollowCancelSheet
         {...rootProps}
         bunchName={bunch.name}
+        bunchImageSrc={bunch.imageSrc ?? defaultBunchImage(bunch.characterType)}
         status={
           sheetFor === 'requested'
             ? BUNCH_HOME_MESSAGES.requestPending
@@ -107,9 +109,9 @@ export function OtherBunchScreen({
       }
     >
       <div className="flex min-h-full flex-col">
-        {/* 번치 홈과 같은 성격별 배경·캐릭터 영역과 흰 시트(Figma 3086:70741) */}
-        <div className={cn('relative h-34.5 shrink-0', background.top)}>
-          <BunchCharacter characterType={bunch.characterType} stage={bunch.stage} />
+        {/* 번치 홈과 같은 성격별 배경·프로필 이미지 영역과 흰 시트(Figma 3086:70741) */}
+        <div className={cn('relative h-25.5 shrink-0', background.top)}>
+          <BunchProfileImage imageSrc={bunch.imageSrc} characterType={bunch.characterType} />
         </div>
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 pb-s8 relative -mt-5 flex flex-1 flex-col">
           {/* 프로필 아래 팔로우 버튼 16, 버튼 아래 번들·안내 16(Figma 3086:68423) */}
