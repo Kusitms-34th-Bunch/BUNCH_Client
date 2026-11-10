@@ -16,11 +16,8 @@ const graphicIcons = Object.fromEntries(
   Object.entries(icons).filter(([name]) => name.startsWith('Graphic')),
 );
 const GRAPHIC_SIZES: Record<string, number> = {
-  GraphicGlobeIcon: 34,
-  GraphicLockIcon: 34,
-  GraphicChatIcon: 40,
-  GraphicEditIcon: 40,
-  GraphicPeopleIcon: 40,
+  GraphicEntryCreateIcon: 48,
+  GraphicEntryJoinIcon: 48,
   GraphicRoleOwnerSmallIcon: 16,
   GraphicRoleCoOwnerSmallIcon: 16,
   GraphicRoleDraftAuthorSmallIcon: 16,
@@ -62,7 +59,7 @@ describe('Icons', () => {
   });
 
   it('fixed exports preserve the exact geometry and accessibility of every size', () => {
-    expect(Object.keys(icons)).toHaveLength(203);
+    expect(Object.keys(icons)).toHaveLength(200);
     for (const [name, Icon] of Object.entries(dynamicIcons)) {
       for (const [size, label] of [
         ['sm', 'Small'],
@@ -81,7 +78,7 @@ describe('Icons', () => {
     }
   });
 
-  it('그래픽 아이콘 15종이 Figma 크기(16·20·30·34·40·216px)와 원본 색, 장식 기본값을 갖는다', () => {
+  it('그래픽 아이콘 12종이 Figma 크기(16·20·30·48·216px)와 원본 색, 장식 기본값을 갖는다', () => {
     expect(Object.keys(graphicIcons).sort()).toEqual(Object.keys(GRAPHIC_SIZES).sort());
     for (const [name, Icon] of Object.entries(graphicIcons)) {
       const pixels = GRAPHIC_SIZES[name];
@@ -99,8 +96,8 @@ describe('Icons', () => {
   });
 
   it('그래픽 아이콘에 이름을 주면 img로 노출한다', () => {
-    render(<icons.GraphicLockIcon aria-label="비공개" />);
-    expect(screen.getByRole('img', { name: '비공개' })).toBeTruthy();
+    render(<icons.GraphicEntryCreateIcon aria-label="번치 만들기" />);
+    expect(screen.getByRole('img', { name: '번치 만들기' })).toBeTruthy();
   });
 
   it('size를 주지 않으면 md(20px)다', () => {

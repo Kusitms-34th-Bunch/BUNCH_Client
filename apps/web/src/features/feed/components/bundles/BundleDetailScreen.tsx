@@ -31,10 +31,10 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
-import { FEED_TOAST_OFFSET } from '../../constants/toast';
 import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
 import { useBundleEdits } from '../../hooks/useBundleEdits';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
@@ -66,25 +66,9 @@ type BundleDetailScreenProps = {
 };
 
 const COMMENT_MAX_LENGTH = 200;
-// Figma `6079:178315`: 토스트는 입력란 바로 위 12px, 좌우 16씩 띄운 폭
-const TOAST_GAP = 12;
-// Toaster의 기본 아래 여백(Safe Area + 16)
-const TOAST_BASE_OFFSET = 16;
-
 // 버튼 이름에 붙일 댓글 앞부분: 줄바꿈을 공백으로, 이모지가 반으로 잘리지 않게 글자 단위로 20자
 const previewOf = (content = '') =>
   Array.from(content.replace(/\s+/g, ' ').trim()).slice(0, 20).join('');
-
-// Toaster가 쓰는 하단 Safe Area(px). 키보드가 열리면 입력란은 Safe Area 없이 내려가지만 토스트 여백에는 남음
-const safeAreaBottom = () => {
-  const probe = document.createElement('div');
-  probe.style.cssText =
-    'position:fixed;visibility:hidden;height:var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))';
-  document.body.append(probe);
-  const height = probe.offsetHeight;
-  probe.remove();
-  return height;
-};
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
@@ -95,16 +79,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const backOr = useBackOr();
   const now = useClientNow();
   const composerRef = useRef<HTMLDivElement>(null);
-  // 입력란 위치(답글 상태·줄 수·키보드)가 바뀌므로 토스트를 띄우는 순간 화면 아래에서의 거리로 잼
-  const toastOptions = () => {
-    const top = composerRef.current?.getBoundingClientRect().top;
-    const fromBottom = top === undefined ? 0 : window.innerHeight - top;
-    return {
-      fullWidth: true,
-      bottomOffset: Math.max(0, fromBottom + TOAST_GAP - TOAST_BASE_OFFSET - safeAreaBottom()),
-    };
-  };
-  const { viewer, asBunch } = useFeedViewer(toastOptions);
+  const { viewer, asBunch } = useFeedViewer();
   const likes = useLikeToggle(viewer);
   const keyboardOpen = useKeyboardOpen();
   const commentsRef = useRef<HTMLElement>(null);
@@ -161,7 +136,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     const message = pendingToast.current;
     if (!message) return;
     pendingToast.current = null;
-    toast(message, toastOptions());
+    toast(message);
   }, [comments]);
 
   useEffect(() => {
@@ -332,7 +307,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const reportBundle = () =>
     openReport(text.reportBundleTitle, () => {
       backOr(FEED_PATHS.home);
-      toast(text.reported, { bottomOffset: FEED_TOAST_OFFSET });
+      toastAfterNavigation(text.reported);
     });
 
   // 번들 삭제(Figma `5367:122187`): 창이 다 닫힌 뒤 지우고 이전 화면으로 가서 알림(이 화면은 떠나므로 피드 위치)
@@ -356,7 +331,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
         if (!confirmed) return;
         bundleEdits.remove(bundle.id);
         backOr(FEED_PATHS.home);
-        toast(text.bundleDeleted, { fullWidth: true, bottomOffset: FEED_TOAST_OFFSET });
+        toastAfterNavigation(text.bundleDeleted);
       },
     );
   };

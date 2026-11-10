@@ -20,7 +20,7 @@ describe('usePhotoGalleryImport', () => {
 
     result.current(10);
 
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.photoBoxFull, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.photoBoxFull);
   });
 
   it('가득 차지 않았으면 안내를 띄우지 않는다', () => {

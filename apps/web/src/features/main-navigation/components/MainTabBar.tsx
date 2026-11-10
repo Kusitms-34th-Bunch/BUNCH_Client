@@ -60,6 +60,8 @@ export function MainTabBar() {
   return (
     <div
       data-main-tab-bar
+      // toast()가 이 영역 위 16px에 토스트를 놓음. 막대를 숨기면(display: none) 크기가 0이라 기본 위치를 씀
+      data-toast-anchor="tab-bar"
       // 높이 5rem(막대 64px + 아래 여백 16px) + 아래 Safe Area: 본문을 화면 끝까지 펼치고 막대가 Safe Area를 직접 비켜 섬((main)/layout.tsx의 --main-tab-bar-height와 같은 값)
       // 뒤 그라데이션(Figma 사진함_02): 막대 위 11px부터 화면 끝까지, 투명 → 검정 4%(64px) → 검정 10%
       className="px-padding-p8 pointer-events-none relative z-10 -mt-[calc(5rem+var(--safe-area-bottom))] h-[calc(5rem+var(--safe-area-bottom))] shrink-0 pb-[calc(var(--spacing-s4)+var(--safe-area-bottom))] group-has-data-hide-main-tab-bar/main:hidden before:absolute before:inset-x-0 before:-top-2.75 before:bottom-0 before:-z-10 before:bg-[linear-gradient(to_bottom,rgb(255_255_255/0),rgb(0_0_0/0.04)_64px,rgb(0_0_0/0.1))]"

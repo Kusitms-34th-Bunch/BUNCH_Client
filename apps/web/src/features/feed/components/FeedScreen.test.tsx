@@ -288,10 +288,7 @@ describe('FeedScreen', () => {
     const failedLike = within(cards()[1]!).getByRole('button', { name: /좋아요/ });
     await userEvent.click(failedLike);
     expect(failedLike).toHaveAttribute('aria-pressed', 'false');
-    expect(toast).toHaveBeenCalledWith(
-      '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-      expect.anything(),
-    );
+    expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
   });
 
   it('소속 번치가 없어지면 화면에서 바꾼 좋아요를 보이지 않는다', async () => {
@@ -327,7 +324,7 @@ describe('FeedScreen', () => {
 
     const like = within(cards()[0]!).getByRole('button', { name: /좋아요/ });
     await user.click(like);
-    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', expect.anything());
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
     expect(like).toHaveAttribute('aria-pressed', 'false');
   });
 

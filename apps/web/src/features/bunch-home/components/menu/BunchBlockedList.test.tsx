@@ -74,7 +74,6 @@ describe('BunchBlockedListScreen', () => {
     await waitFor(() =>
       expect(toast).toHaveBeenCalledWith('주말산책 번치를 차단 해제했어요.', {
         icon: 'success',
-        fullWidth: true,
       }),
     );
   });

@@ -28,7 +28,7 @@ import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 // 앨범 저장 API 연결 전의 목 저장 시간: 저장 중에는 화면 전체에 딤과 로딩 점을 보임(화면설계서 5번 「저장 진행 중 로딩 애니메이션」)
 const MOCK_SAVE_MS = 900;
 
-const notify = (message: string) => toast(message, { fullWidth: true });
+const notify = (message: string) => toast(message);
 
 // 크게 보기 슬라이드가 쓰는 사진함 사진 모양으로 바꿈(번들 사진은 항상 보이는 상태)
 // 배지와 헤더 날짜는 사진함 원본의 올린 멤버·촬영 날짜를 씀(번들 사진의 `uploaderId`는 번들에 담은 사람이라 사진 소유자가 아님)

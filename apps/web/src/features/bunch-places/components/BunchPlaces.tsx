@@ -10,9 +10,6 @@ import { useBunchPlaces } from '../hooks/useBunchPlaces';
 import { copyTextOf } from '../lib/places';
 import { BunchPlacesScreen } from './BunchPlacesScreen';
 
-// 하단 내비게이션이 없는 화면의 토스트 위치(Figma 4096:76391·4164:96560: 화면 아래에서 32px)
-const TOAST_BOTTOM_OFFSET = 32;
-
 type BunchPlacesProps = {
   /** 뒤로 가기 기본 이동(들어온 기록이 없을 때): 번치 메인 */
   backHref: string;
@@ -44,11 +41,9 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
     if (copied) {
       toast(PLACES_MESSAGES.addressCopied, {
         icon: 'success',
-        fullWidth: true,
-        bottomOffset: TOAST_BOTTOM_OFFSET,
       });
     } else {
-      toast(PLACES_MESSAGES.error, { fullWidth: true, bottomOffset: TOAST_BOTTOM_OFFSET });
+      toast(PLACES_MESSAGES.error);
     }
   };
 
@@ -56,8 +51,6 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
     remove(place.id);
     toast(PLACES_MESSAGES.removed, {
       icon: 'success',
-      fullWidth: true,
-      bottomOffset: TOAST_BOTTOM_OFFSET,
       action: { label: PLACES_MESSAGES.undo, onClick: () => restore(place.id) },
     });
   };

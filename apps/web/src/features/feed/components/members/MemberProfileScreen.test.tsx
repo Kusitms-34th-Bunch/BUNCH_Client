@@ -78,12 +78,10 @@ describe('MemberProfileScreen', () => {
     renderProfile();
 
     await user.click(screen.getByRole('button', { name: '캠핑러버 팔로우' }));
-    expect(toast).toHaveBeenLastCalledWith('캠핑러버 번치를 팔로우했어요.', { fullWidth: true });
+    expect(toast).toHaveBeenLastCalledWith('캠핑러버 번치를 팔로우했어요.');
 
     await user.click(screen.getByRole('button', { name: '캠핑러버 팔로잉, 누르면 팔로우 취소' }));
-    expect(toast).toHaveBeenLastCalledWith('캠핑러버 번치 팔로우를 취소했어요.', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenLastCalledWith('캠핑러버 번치 팔로우를 취소했어요.');
     expect(screen.getByRole('button', { name: '캠핑러버 팔로우' })).toBeTruthy();
   });
 
@@ -92,14 +90,10 @@ describe('MemberProfileScreen', () => {
     renderProfile();
 
     await user.click(screen.getByRole('button', { name: '책방산책 팔로우' }));
-    expect(toast).toHaveBeenLastCalledWith('책방산책 번치에 팔로우를 요청했어요.', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenLastCalledWith('책방산책 번치에 팔로우를 요청했어요.');
 
     await user.click(screen.getByRole('button', { name: '책방산책 요청됨, 누르면 요청 취소' }));
-    expect(toast).toHaveBeenLastCalledWith('책방산책 번치 팔로우 요청을 취소했어요.', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenLastCalledWith('책방산책 번치 팔로우 요청을 취소했어요.');
     expect(screen.getByRole('button', { name: '책방산책 팔로우' })).toBeTruthy();
   });
 
@@ -110,7 +104,7 @@ describe('MemberProfileScreen', () => {
     await user.click(screen.getByRole('button', { name: '캠핑러버 팔로우' }));
 
     expect(screen.getByRole('button', { name: '캠핑러버 팔로우' })).toBeTruthy();
-    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
   });
 
   it('지금 번치를 받는 중에는 번치 줄을 누를 수 없고 팔로우 버튼도 없다', () => {
@@ -134,9 +128,7 @@ describe('MemberProfileScreen', () => {
     expect(profileButton(/^캠핑러버$/)).toBeTruthy();
     await user.click(follow);
 
-    expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
     expect(screen.getByRole('button', { name: '캠핑러버 팔로우' })).toBeTruthy();
   });
 

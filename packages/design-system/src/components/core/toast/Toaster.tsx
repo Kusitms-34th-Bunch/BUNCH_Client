@@ -3,9 +3,10 @@
 import { Toaster as SonnerToaster } from 'sonner';
 import { cn } from '../../../utils';
 
-// 아래 여백: Safe Area + 16px. --safe-area-bottom은 앱이 정의하고, 없으면 env() 사용(docs/architecture/mobile-shell.md)
+// 아래 여백: 기본 Safe Area + 16px. --safe-area-bottom은 앱이 정의하고, 없으면 env() 사용(docs/architecture/mobile-shell.md)
+// 화면 하단 고정 영역·탭 막대 위에 놓아야 하면 toast()가 --toast-anchor-inset(화면 아래에서의 거리)을 채우고, 더 높은 쪽을 씀
 const BOTTOM_OFFSET =
-  'calc(var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)) + var(--spacing-s8))';
+  'max(calc(var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)) + var(--spacing-s8)), var(--toast-anchor-inset, 0px))';
 
 // 위 여백(`position: 'top'`): Safe Area + 헤더 48px + 1px. Figma 사진 캡션 화면의 토스트가 헤더 바로 아래(y 93, 헤더 끝 92)에 놓임
 const TOP_OFFSET = 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 49px)';
@@ -34,7 +35,7 @@ export const Toaster = () => (
     offset={{ bottom: BOTTOM_OFFSET, top: TOP_OFFSET }}
     mobileOffset={{ bottom: BOTTOM_OFFSET, top: TOP_OFFSET }}
     // 항목(li)을 목록 폭으로 펴서 안의 Toast를 내용 폭으로 가운데 정렬
-    // 목록·항목의 빈 자리(목록 폭, bottomOffset 여백)는 터치를 통과시켜 아래 탭 막대·버튼을 막지 않음. 보이는 Toast만 받음
+    // 목록·항목의 빈 자리(목록 폭)는 터치를 통과시켜 아래 탭 막대·버튼을 막지 않음. 보이는 Toast만 받음
     className="pointer-events-none"
     toastOptions={{ unstyled: true, className: cn('pointer-events-none w-full', TOAST_MOTION) }}
     customAriaLabel="알림"

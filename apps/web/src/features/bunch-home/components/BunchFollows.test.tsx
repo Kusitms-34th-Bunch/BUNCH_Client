@@ -54,15 +54,11 @@ describe('다른 번치 팔로워·팔로잉', () => {
     expect(
       screen.getByRole('button', { name: '책방산책 요청됨, 누르면 요청 취소' }),
     ).toBeInTheDocument();
-    expect(toast).toHaveBeenLastCalledWith('책방산책 번치에 팔로우를 요청했어요.', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenLastCalledWith('책방산책 번치에 팔로우를 요청했어요.');
 
     await user.click(screen.getByRole('button', { name: '주말등산 팔로잉, 누르면 팔로우 취소' }));
     expect(screen.getByRole('button', { name: '주말등산 팔로우' })).toBeInTheDocument();
-    expect(toast).toHaveBeenLastCalledWith('주말등산 번치 팔로우를 취소했어요.', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenLastCalledWith('주말등산 번치 팔로우를 취소했어요.');
   });
 
   it('목록에서 바꾼 팔로우 상태는 그 번치 프로필과 같다', async () => {
@@ -126,16 +122,12 @@ describe('내 번치 팔로워·팔로잉과 팔로우 요청', () => {
 
     expect(screen.getByText('대기 중인 요청 3개')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '맛집탐방대 팔로우 요청 승인' }));
-    expect(toast).toHaveBeenLastCalledWith('맛집탐방대 번치의 팔로우 요청을 승인했어요.', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenLastCalledWith('맛집탐방대 번치의 팔로우 요청을 승인했어요.');
     // 누른 버튼이 사라져 초점은 개수 줄로
     expect(screen.getByText('대기 중인 요청 2개')).toHaveFocus();
 
     await user.click(screen.getByRole('button', { name: '서핑크루 팔로우 요청 거절' }));
-    expect(toast).toHaveBeenLastCalledWith('서핑크루 번치의 팔로우를 거절했어요.', {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenLastCalledWith('서핑크루 번치의 팔로우를 거절했어요.');
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
 
     unmount();

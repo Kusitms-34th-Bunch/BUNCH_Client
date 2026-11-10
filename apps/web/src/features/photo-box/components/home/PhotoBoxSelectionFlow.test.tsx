@@ -9,7 +9,6 @@ import type {
   PhotoBoxState,
   SaveResult,
 } from '../../lib/types';
-import { TOAST_ABOVE_TAB_BAR_OFFSET } from '../../constants/layout';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { photoBoxFixture } from '../../fixtures/photoBox.fixture';
 import { MAX_BUNDLE_PHOTOS } from '../../lib/photoActions';
@@ -99,12 +98,7 @@ describe('저장', () => {
 
     expect(savePhotos).toHaveBeenCalledTimes(1);
     expect(savePhotos.mock.calls[0]?.[0]).toEqual(['bulk-0', 'bulk-1', 'bulk-2']);
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveDone, {
-        fullWidth: true,
-        bottomOffset: TOAST_ABOVE_TAB_BAR_OFFSET,
-      }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveDone));
     expect(screen.getByRole('button', { name: '선택' })).toBeTruthy();
   });
 
@@ -144,9 +138,7 @@ describe('저장', () => {
 
     await runMenu(user, '저장');
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedSome(2), { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedSome(2)));
     expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
     expect(photoButtons()[0]!.getAttribute('aria-pressed')).toBe('false');
     expect(photoButtons()[1]!.textContent).toContain('1번째 선택');
@@ -161,9 +153,7 @@ describe('저장', () => {
 
     await runMenu(user, '저장');
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll));
     expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
   });
 
@@ -175,9 +165,7 @@ describe('저장', () => {
 
     await runMenu(user, '저장');
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll));
     expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
   });
 });
@@ -222,7 +210,7 @@ describe('번들 만들기', () => {
 
     await runMenu(user, '번들 만들기');
 
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.bundleTooMany, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.bundleTooMany);
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(screen.getByRole('radio', { name: `전체 (${MAX_BUNDLE_PHOTOS + 1})` })).toBeTruthy();
   });
@@ -261,12 +249,7 @@ describe('삭제', () => {
     );
 
     expect(deletePhotos).toHaveBeenCalledWith(['bulk-0', 'bulk-1']);
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteDone(2), {
-        fullWidth: true,
-        bottomOffset: TOAST_ABOVE_TAB_BAR_OFFSET,
-      }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteDone(2)));
     expect(screen.getByRole('button', { name: '선택' })).toBeTruthy();
     // 눌렀던 메뉴·선택 칸이 사라지므로 초점은 body가 아니라 화면 제목으로 감
     await waitFor(() =>
@@ -301,7 +284,7 @@ describe('삭제', () => {
 
     await runMenu(user, '삭제');
 
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteForbidden, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteForbidden);
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(deletePhotos).not.toHaveBeenCalled();
   });
@@ -335,7 +318,7 @@ describe('선택 중 사진이 사라진 경우', () => {
     await runMenu(user, '저장');
 
     expect(savePhotos).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1), { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1));
     expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
     expect(photoButtons()[0]!.textContent).toContain('1번째 선택');
@@ -375,9 +358,7 @@ describe('저장·삭제 중 안전장치', () => {
       within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
     );
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed));
     expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
     expect(
@@ -422,7 +403,7 @@ describe('관리자 삭제와 확인 창 시점의 사라진 사진', () => {
     );
 
     expect(deletePhotos).toHaveBeenCalledWith(['bulk-0', 'bulk-1']);
-    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteForbidden, expect.anything());
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteForbidden);
   });
 
   it('확인 창을 연 뒤 고른 사진이 사라졌으면 「삭제하기」를 눌러도 지우지 않고 안내한다', async () => {
@@ -443,7 +424,7 @@ describe('관리자 삭제와 확인 창 시점의 사라진 사진', () => {
     );
 
     expect(deletePhotos).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1), { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1));
     expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
   });
 });

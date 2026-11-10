@@ -166,7 +166,7 @@ describe('역할별 권한', () => {
     renderScreen({ viewer: outsider });
 
     await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
 
     expect(actions.setTitle).not.toHaveBeenCalled();
   });
@@ -175,7 +175,7 @@ describe('역할별 권한', () => {
     renderScreen({ viewer: outsider });
 
     await userEvent.click(screen.getByRole('textbox', { name: '경진 코멘트' }));
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
     expect(actions.setComment).not.toHaveBeenCalled();
   });
 
@@ -246,10 +246,7 @@ describe('업로드 버튼', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: '계속하기' }));
 
     expect(onUpload).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
-      fullWidth: true,
-      bottomOffset: 65,
-    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
   });
 
   it('권한이 없는 참여 멤버는 흐리게 보이고 누르면 이유를 안내한다', async () => {
@@ -257,10 +254,7 @@ describe('업로드 버튼', () => {
 
     expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(uploadButton());
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadForbidden, {
-      fullWidth: true,
-      bottomOffset: 65,
-    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadForbidden);
     expect(onUpload).not.toHaveBeenCalled();
   });
 
@@ -268,10 +262,7 @@ describe('업로드 버튼', () => {
     renderScreen({ viewer: outsider });
 
     await userEvent.click(uploadButton());
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, {
-      fullWidth: true,
-      bottomOffset: 65,
-    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
     expect(onUpload).not.toHaveBeenCalled();
   });
 
@@ -280,10 +271,7 @@ describe('업로드 버튼', () => {
 
     expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(uploadButton());
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
-      fullWidth: true,
-      bottomOffset: 65,
-    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
     expect(onUpload).not.toHaveBeenCalled();
   });
 
@@ -440,11 +428,11 @@ describe('위치와 날짜', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '속초해수욕장 지우기' }));
     expect(actions.removeLocation).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
 
     toast.mockClear();
     await userEvent.click(screen.getByRole('button', { name: /^추가.*경진님이 편집 중/ }));
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
   });
 
   describe('위치 순서 바꾸기', () => {
@@ -494,7 +482,7 @@ describe('위치와 날짜', () => {
 
       await userEvent.click(screen.getByRole('button', { name: '장소 A 순서 바꾸기' }));
 
-      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
       expect(actions.moveLocation).not.toHaveBeenCalled();
     });
 
@@ -503,7 +491,7 @@ describe('위치와 날짜', () => {
 
       await userEvent.click(screen.getByRole('button', { name: '장소 A 순서 바꾸기' }));
 
-      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
+      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
     });
   });
 
@@ -575,7 +563,7 @@ describe('다른 멤버가 편집 중인 영역', () => {
     renderScreen({ draft: { ...draftFixture, editing: { title: 'gyeongjin' } } });
 
     await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
     expect(actions.setTitle).not.toHaveBeenCalled();
   });
 
@@ -592,7 +580,7 @@ describe('다른 멤버가 편집 중인 영역', () => {
     await userEvent.click(screen.getByRole('button', { name: /편집 중 날짜/ }));
 
     expect(toast).toHaveBeenCalledTimes(2);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -687,7 +675,7 @@ describe('다른 멤버가 편집 중인 영역', () => {
       screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
     );
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
@@ -698,7 +686,7 @@ describe('다른 멤버가 편집 중인 영역', () => {
       screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
     );
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
     expect(actions.removePhoto).not.toHaveBeenCalled();
   });
 

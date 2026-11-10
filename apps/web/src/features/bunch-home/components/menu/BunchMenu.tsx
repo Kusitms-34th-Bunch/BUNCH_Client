@@ -1,11 +1,10 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
 import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { leaveBunch } from '../../hooks/useLeftBunches';
 import { BunchMenuScreen } from './BunchMenuScreen';
@@ -35,10 +34,7 @@ export function BunchMenu() {
         if (next) setCurrentId(next);
         // 들어온 길(번치 탭 → 메뉴)을 되돌아가 나간 번치 메뉴를 뒤로 가기 대상에서 뺌(앞으로 가기에는 남음). 직접 진입이면 replace
         backOr(BUNCH_HOME_PATHS.home);
-        toast(BUNCH_HOME_MESSAGES.left(bunch.name), {
-          fullWidth: true,
-          bottomOffset: BUNCH_HOME_TOAST_OFFSET,
-        });
+        toastAfterNavigation(BUNCH_HOME_MESSAGES.left(bunch.name));
       }}
       onOwnerLeave={() => router.push(BUNCH_HOME_PATHS.leave)}
       onDeleteBunch={() => router.push(BUNCH_HOME_PATHS.delete)}

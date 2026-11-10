@@ -194,13 +194,9 @@ describe('DraftPhotoViewer ⋯ 메뉴', () => {
 
     expect(screen.getByText(PHOTO_BOX_MESSAGES.saving)).toBeInTheDocument();
     expect(toast).not.toHaveBeenCalled();
-    await waitFor(
-      () =>
-        expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveDone, {
-          fullWidth: true,
-        }),
-      { timeout: 3000 },
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveDone), {
+      timeout: 3000,
+    });
     expect(screen.queryByText(PHOTO_BOX_MESSAGES.saving)).not.toBeInTheDocument();
   });
 });
@@ -258,7 +254,7 @@ describe('DraftPhotoViewer 삭제', () => {
 
     await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
     expect(actions.removePhoto).not.toHaveBeenCalled();
   });
 });

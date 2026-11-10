@@ -18,9 +18,6 @@ const FAILURE_MESSAGES: Record<JoinFailure, string> = {
   full: '최대 인원을 초과한 번치입니다.',
 };
 
-// Figma의 「완료」 버튼 위 10px 배치를 위한 기본 토스트 위치 보정
-const TOAST_BOTTOM_OFFSET = 42;
-
 type BunchJoinProps = {
   /** 서버 검증 실패 사유 또는 성공(null) 반환; API 미연결 시 생략 */
   onSubmit?: ((_inviteLink: string) => Promise<JoinFailure | null>) | undefined;
@@ -55,11 +52,11 @@ export function BunchJoin({ onSubmit }: BunchJoinProps) {
     try {
       const failure = isInviteLink(value) ? ((await onSubmit?.(value)) ?? null) : 'invalid';
       if (failure) {
-        toast(FAILURE_MESSAGES[failure], { bottomOffset: TOAST_BOTTOM_OFFSET, fullWidth: true });
+        toast(FAILURE_MESSAGES[failure]);
         return;
       }
       // 뒤로 가기로 링크를 수정할 수 있도록 push 적용
-      router.push(ONBOARDING_PATHS.joinBunchMotion);
+      router.push(ONBOARDING_PATHS.joinBunchInvitation);
     } finally {
       setSubmitting(false);
     }

@@ -1,6 +1,5 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
@@ -8,6 +7,7 @@ import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
@@ -33,7 +33,7 @@ export function BundleDraftPhotoAdd() {
 
   useEffect(() => {
     if (draftId === undefined || canEdit) return;
-    toast(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true });
+    toastAfterNavigation(BUNDLE_MESSAGES.editOnlyParticipants);
     router.replace(BUNDLE_PATHS.draft(draftId));
   }, [draftId, canEdit, router]);
 

@@ -8,6 +8,9 @@ import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { BundleSelectProvider } from '../../contexts/BundleSelectProvider';
 import { RecommendViewer } from './RecommendViewer';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 // 재생·제스처 라이브러리는 모양과 제스처를 검증하지 않으므로 mock
 vi.mock('swiper/react', () => ({
   Swiper: ({ children }: { children: ReactNode }) => <div data-testid="swiper">{children}</div>,
@@ -88,9 +91,7 @@ describe('RecommendViewer', () => {
   it('추천에 없는 사진이면 안내 토스트 뒤 사진 선택 화면으로 돌아간다', () => {
     renderViewer('rec-1', 'photo-999');
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation, {
-      fullWidth: true,
-    });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
   });
 

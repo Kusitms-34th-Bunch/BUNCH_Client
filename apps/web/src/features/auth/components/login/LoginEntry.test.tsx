@@ -159,7 +159,7 @@ describe('LoginEntry', () => {
     await userEvent.click(kakao());
     await settle(new Error('인증 실패'));
 
-    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
+    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE);
     expect(kakao().hasAttribute('aria-busy')).toBe(false);
     expect(google().hasAttribute('disabled')).toBe(false);
     expect(apple().hasAttribute('disabled')).toBe(false);
@@ -189,7 +189,7 @@ describe('LoginEntry', () => {
     await settle('cancelled');
 
     expect(push).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
+    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE);
     expect(google().hasAttribute('aria-busy')).toBe(false);
     expect(kakao().hasAttribute('disabled')).toBe(false);
   });
@@ -262,10 +262,8 @@ describe('LoginEntry', () => {
 
     await userEvent.click(kakao());
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(STATUS_CHECK_FAILURE_MESSAGE, expect.anything()),
-    );
-    expect(toast).not.toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(STATUS_CHECK_FAILURE_MESSAGE));
+    expect(toast).not.toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE);
     expect(push).not.toHaveBeenCalled();
     expect(kakao().hasAttribute('aria-busy')).toBe(false);
     expect(google().hasAttribute('disabled')).toBe(false);
@@ -276,7 +274,7 @@ describe('LoginEntry', () => {
 
     await userEvent.click(kakao());
 
-    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE, expect.anything());
+    expect(toast).toHaveBeenCalledWith(LOGIN_FAILURE_MESSAGE);
     expect(push).not.toHaveBeenCalled();
     expect(kakao().hasAttribute('aria-busy')).toBe(false);
     expect(google().hasAttribute('disabled')).toBe(false);
@@ -295,18 +293,6 @@ describe('LoginEntry', () => {
 
     await settle('cancelled');
     expect(screen.getByRole('status').textContent).toBe('');
-  });
-
-  it('실패 토스트는 하단 버튼 영역 위로 올려 띄운다', async () => {
-    const { signIn, settle } = deferredSignIn();
-    render(
-      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
-    );
-
-    await userEvent.click(kakao());
-    await settle(new Error('인증 실패'));
-
-    expect(toast.mock.calls[0]![1]!.bottomOffset).toBeGreaterThan(0);
   });
 
   it('앱 아이콘은 장식이라 이름이 없고 로고만 이미지 이름을 가진다', () => {

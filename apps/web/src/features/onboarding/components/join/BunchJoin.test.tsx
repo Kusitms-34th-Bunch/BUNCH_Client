@@ -92,21 +92,18 @@ describe('BunchJoin', () => {
 
     await userEvent.click(done());
 
-    expect(toast).toHaveBeenCalledWith('유효하지 않은 링크입니다.', {
-      bottomOffset: 42,
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenCalledWith('유효하지 않은 링크입니다.');
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('형식이 맞는 링크는 onSubmit에 넘기고 성공하면 로딩(초대장 로티) 화면으로 이동한다', async () => {
+  it('형식이 맞는 링크는 onSubmit에 넘기고 성공하면 초대 확인 화면으로 이동한다', async () => {
     const onSubmit = vi.fn().mockResolvedValue(null);
     renderJoin({ onSubmit });
     await userEvent.type(input(), LINK);
 
     await userEvent.click(done());
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchMotion));
+    await waitFor(() => expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation));
     expect(onSubmit).toHaveBeenCalledWith(LINK);
     expect(toast).not.toHaveBeenCalled();
   });
@@ -118,12 +115,7 @@ describe('BunchJoin', () => {
 
     await userEvent.click(done());
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('최대 인원을 초과한 번치입니다.', {
-        bottomOffset: 42,
-        fullWidth: true,
-      }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('최대 인원을 초과한 번치입니다.'));
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -133,7 +125,7 @@ describe('BunchJoin', () => {
 
     await userEvent.click(done());
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchMotion));
+    await waitFor(() => expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation));
     expect(toast).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
   });

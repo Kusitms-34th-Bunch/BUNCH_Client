@@ -1,12 +1,11 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
 import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { leaveBunch } from '../../hooks/useLeftBunches';
 import { BunchLeaveScreen } from './BunchLeaveScreen';
@@ -44,10 +43,7 @@ export function BunchLeave() {
         // 들어온 길(번치 탭 → 메뉴 → 지정 화면)을 두 칸 되돌아가 뒤로 가기 대상에서 뺌(앞으로 가기에는 남음). 기록이 모자라면 replace
         if (window.history.length > 2) window.history.go(-2);
         else router.replace(BUNCH_HOME_PATHS.home);
-        toast(BUNCH_HOME_MESSAGES.transferredAndLeft(member.name), {
-          fullWidth: true,
-          bottomOffset: BUNCH_HOME_TOAST_OFFSET,
-        });
+        toastAfterNavigation(BUNCH_HOME_MESSAGES.transferredAndLeft(member.name));
       }}
     />
   );

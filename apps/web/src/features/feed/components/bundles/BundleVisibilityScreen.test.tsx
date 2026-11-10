@@ -6,6 +6,9 @@ import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testin
 import { bundleEdits } from '../../lib/bundleEdits';
 import { BundleVisibilityScreen } from './BundleVisibilityScreen';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 const back = vi.fn();
 const replace = vi.fn();
 const toast = vi.fn();
@@ -54,7 +57,7 @@ describe('BundleVisibilityScreen', () => {
 
     expect(bundleEdits.read().memberOnly.get('bundle-1')).toBe(false);
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
-    expect(toast).toHaveBeenCalledWith('번들을 수정했어요', expect.anything());
+    expect(toastAfterNavigation).toHaveBeenCalledWith('번들을 수정했어요');
   });
 
   it('비공개 번치면 「전체 공개」 대신 「일부 공개」다', () => {
