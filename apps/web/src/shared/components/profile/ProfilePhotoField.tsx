@@ -1,6 +1,6 @@
 import { ActionDialog, toast } from '@app/design-system';
 import { CameraButton, ProfileImage } from '@app/design-system/web';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { isNativeShell } from '../../bridge/client';
 import { usePhotoPicker } from '../../hooks/usePhotoPicker';
@@ -19,13 +19,15 @@ type ProfilePhotoFieldProps = {
   value: string | undefined;
   /** 조정을 마친 사진(512px JPEG data URL), 기본 이미지로 바꾸면 undefined. 저장은 호출하는 쪽 */
   onChange: (_value: string | undefined) => void;
+  /** 사진 영역을 다른 모양(번치 대표 사진 등)으로 그릴 때. 카메라 버튼이 누르면 사진 변경 흐름을 여는 `onCameraClick`을 받음 */
+  renderPhoto?: ((_props: { onCameraClick: () => void }) => ReactNode) | undefined;
 };
 
 /**
  * 프로필 사진과 사진 변경 흐름(가입 프로필·MY 프로필 수정 공통, 화면 설계서 MY(2))
  * 카메라 버튼 → 「프로필 사진 설정」 선택지 → 앨범 선택 → 원형 조정 → 미리보기. 앱도 시스템 편집 없이 이 조정 화면 사용
  */
-export function ProfilePhotoField({ value, onChange }: ProfilePhotoFieldProps) {
+export function ProfilePhotoField({ value, onChange, renderPhoto }: ProfilePhotoFieldProps) {
   const openOverlay = useScreenOverlay();
   const [cropSrc, setCropSrc] = useState<string>();
   const [showLoading, setShowLoading] = useState(false);
@@ -104,19 +106,25 @@ export function ProfilePhotoField({ value, onChange }: ProfilePhotoFieldProps) {
       />
     ));
 
+  const openChange = () => {
+    closeKeyboard();
+    openDialog();
+  };
+
   return (
     <>
-      <div ref={photoRef} className="relative h-22.5 w-23.75">
-        <ProfileImage src={value ?? DEFAULT_PROFILE_IMAGE} className="absolute top-0 left-0.75" />
-        <CameraButton
-          aria-label="프로필 사진 변경"
-          className="absolute top-15.5 left-16.75"
-          onClick={() => {
-            closeKeyboard();
-            openDialog();
-          }}
-        />
-      </div>
+      {renderPhoto ? (
+        <div ref={photoRef}>{renderPhoto({ onCameraClick: openChange })}</div>
+      ) : (
+        <div ref={photoRef} className="relative h-22.5 w-23.75">
+          <ProfileImage src={value ?? DEFAULT_PROFILE_IMAGE} className="absolute top-0 left-0.75" />
+          <CameraButton
+            aria-label="프로필 사진 변경"
+            className="absolute top-15.5 left-16.75"
+            onClick={openChange}
+          />
+        </div>
+      )}
       <input
         ref={inputRef}
         type="file"

@@ -6,20 +6,53 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import {
+  useNicknameAvailability,
+  type CheckNickname,
+} from '@/shared/hooks/useNicknameAvailability';
+import {
   BUNCH_NAME_INVALID_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
   hasInvalidBunchNameChars,
 } from '@/shared/lib/bunchProfile';
+import { checkBunchNameAvailability } from '../../api/bunches';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 
-export function BunchBasicInfo() {
+/** 번치 이름 중복 안내(기획 2.2.3) */
+const BUNCH_NAME_TAKEN_MESSAGE = '이미 사용 중인 번치 이름이에요';
+
+type BunchBasicInfoProps = {
+  /** 번치 이름 중복 확인 호출. 기본은 서버 확인, 테스트에서 대체하고 null이면 확인하지 않음 */
+  checkName?: CheckNickname | null | undefined;
+};
+
+/**
+ * 번치 만들기 1단계: 이름(1~12자, 입력을 멈추고 0.5초 뒤 중복 확인)과 공개 범위
+ * 확인 요청이 실패해도 결과 문구 없이 「다음」을 열고 생성 때 서버가 최종 판단(기획 2.2.3)
+ */
+export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: BunchBasicInfoProps) {
   const router = useRouter();
-  const { name, setName, visibility, setVisibility } = useCreateBunchDraft();
+  const { name, setName, visibility, setVisibility, takenName } = useCreateBunchDraft();
   const [composing, setComposing] = useState(false);
 
   const invalid = hasInvalidBunchNameChars(name, composing);
-  const canGoNext = name.length > 0 && !invalid && visibility !== null;
+  const normalized = name.normalize('NFC').trim();
+  // 규칙에 맞지 않는 이름은 서버에 묻지 않음
+  const availability = useNicknameAvailability(
+    invalid || composing ? '' : normalized,
+    checkName ?? undefined,
+    { notifyFailure: false },
+  );
+  // 서버가 생성 때 이미 쓰는 이름이라고 거절한 이름은 사용 중으로 보되, 그 뒤 확인에서 사용 가능으로 돌아오면(이름이 풀림) 따르지 않음
+  const taken =
+    availability === 'taken' ||
+    (availability !== 'available' && takenName !== null && takenName === normalized);
+  const canGoNext =
+    normalized.length > 0 &&
+    !invalid &&
+    visibility !== null &&
+    !taken &&
+    availability !== 'checking';
 
   return (
     <PageShell
@@ -45,7 +78,9 @@ export function BunchBasicInfo() {
           placeholder="번치 이름을 입력해주세요"
           value={name}
           maxLength={BUNCH_NAME_MAX_LENGTH}
-          errorMessage={invalid ? BUNCH_NAME_INVALID_MESSAGE : undefined}
+          errorMessage={
+            invalid ? BUNCH_NAME_INVALID_MESSAGE : taken ? BUNCH_NAME_TAKEN_MESSAGE : undefined
+          }
           onChange={(event) => setName(event.target.value)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}

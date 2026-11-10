@@ -16,17 +16,22 @@ type Result = { nickname: string; status: 'available' | 'taken' | 'failed' };
  * 입력을 멈추고 0.5초 뒤 중복을 확인하는 상태
  * `check`나 닉네임이 없으면 확인하지 않음(`idle`), 입력이 바뀐 직후부터 결과 도착까지는 `checking`
  * `check`는 최신 함수를 ref로 읽어, 렌더마다 새로 만든 함수여도 재호출하지 않음
+ * 확인에 실패하면 `failed`와 함께 실패 토스트를 띄움(`notifyFailure: false`면 토스트 없이 `failed`만)
+ * 닉네임 말고 이름 중복 확인에도 같은 규칙으로 씀(번치 이름)
  */
 export function useNicknameAvailability(
   nickname: string,
   check?: CheckNickname,
+  { notifyFailure = true }: { notifyFailure?: boolean } = {},
 ): NicknameAvailability {
   const [result, setResult] = useState<Result | null>(null);
   const checkRef = useRef(check);
+  const notifyRef = useRef(notifyFailure);
   const enabled = check !== undefined;
 
   useEffect(() => {
     checkRef.current = check;
+    notifyRef.current = notifyFailure;
   });
 
   useEffect(() => {
@@ -40,7 +45,7 @@ export function useNicknameAvailability(
         () => {
           if (cancelled) return;
           setResult({ nickname, status: 'failed' });
-          toast(CHECK_FAILURE_MESSAGE);
+          if (notifyRef.current) toast(CHECK_FAILURE_MESSAGE);
         },
       );
     }, DEBOUNCE_MS);

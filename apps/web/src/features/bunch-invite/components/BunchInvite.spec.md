@@ -4,7 +4,7 @@
 
 - Route: `/onboarding/create/invite`(`apps/web/src/app/(app)/onboarding/create/invite/page.tsx`), `/bunch/members/invite`(`.../bunch/members/invite/page.tsx`, #175)
 - 소유: `features/bunch-invite`. 번치 만들기 완료와 번치 관리(멤버 관리 헤더 「+ 멤버 초대」, 더보기 메뉴 「멤버 초대」) 두 곳에서 같은 화면을 쓴다. 진입 맥락(닫을 때 갈 곳·전환)은 route가 정한다.
-- Status: UI와 복사·공유 동작 구현됨(브라우저 렌더 대조 결과는 검증 항목). 초대 링크는 API가 없어 임시 값이다. 실기기 검증 전
+- Status: UI와 복사·공유 동작 구현됨(브라우저 렌더 대조 결과는 검증 항목). 번치 만들기 직후 route(`/onboarding/create/invite`)는 `POST /bunches/{id}/invitations`로 링크를 받아 보이고, 멤버 관리 route(`/bunch/members/invite`)는 아직 임시 값이다(이슈 #306). 실기기 검증 전
 - 디자인 출처: Figma `Bunch/Invite/Default`(node `791:3364`), `Bunch/Invite/LinkCopied`(node `791:3390`). 화면설계서(node `791:8962`, 진입점 `791:8727`)를 함께 참고했다.
 
 ## 목적과 범위
@@ -17,20 +17,20 @@
 
 ### 범위 외
 
-- 초대 링크를 만드는 API. 지금은 Figma 예시 값(`fixtures/invite.fixture.ts`의 `inviteLinkFixture`)이고 두 route가 같은 값을 넘긴다. API를 붙일 때 두 route를 함께 바꾼다.
+- 멤버 관리 route의 초대 링크 발급 연결. 지금은 Figma 예시 값(`fixtures/invite.fixture.ts`의 `inviteLinkFixture`)이다. 번치 만들기 직후 route는 `useCreatedBunchInvitation`(`features/onboarding`)이 받은 링크를 `inviteLink`로 넘긴다.
 - 화면 전환: 완료 → 초대는 SSGOI `slide`(Ease Out·이동 시간 300ms)를 적용하고 뒤로 가기는 반대 방향으로 이동한다. 피드로 나가는 이동에는 전환을 등록하지 않았다. 설정과 검증 범위는 `docs/architecture/motion.md`를 따른다.
 - iPhone 상태 바·홈 인디케이터(기기 요소. Safe Area는 `AppFrame`이 처리한다).
 
 ## Route와 접근
 
 - Path·params·search: `/onboarding/create/invite`(번치 만들기), `/bunch/members/invite`(번치 관리). params와 search는 없다. 아래 draft provider·완료 화면 설명은 온보딩 route에만 해당하고, `/bunch/members/invite`는 draft provider 밖이다.
-- 접근 권한·guard: 로그인 접근 조건은 아직 없다. draft를 읽지 않아 입력 순서 가드는 두지 않았다. URL로 바로 열려도 임시 링크가 보인다(링크 API를 붙일 때 번치 식별과 접근 조건을 정한다).
-- Layout·redirect·navigation: `create/layout.tsx`의 draft provider 안이고 `(steps)`의 헤더·진행 표시줄 틀 밖이다. `PageShell`을 한 번 쓴다. 완료 화면에서 `router.push`로 들어오며 뒤로 가기는 완료 화면으로 돌아간다(`createdName` 기록, `BunchCreated.spec.md`). 닫기(X)와 「나중에 할게요」는 `leaveHref`로 정한다. 번치 만들기에서는 `router.replace`로 피드(임시 `/`)로 이동해 뒤로 가기로 돌아오지 않는다. `/bunch/members/invite`는 `backOnLeave`라 이전 화면(멤버 관리·더보기 메뉴)으로 돌아가고, 기록이 없으면 멤버 관리로 `replace`한다. 메뉴·멤버 관리 ↔ 초대는 메뉴 하위 화면과 같은 미는 slide 300ms다.
+- 접근 권한·guard: 번치 만들기 직후 route는 만든 번치(draft의 `createdBunch`)가 없으면(직접 진입·새로고침) 그릴 때 `useCreateBunchGuard`가 번치 만들기 첫 단계로 보낸다. 멤버 관리 route는 아직 접근 조건이 없다.
+- Layout·redirect·navigation: `create/layout.tsx`의 draft provider 안이고 `(steps)`의 헤더·진행 표시줄 틀 밖이다. `PageShell`을 한 번 쓴다. 완료 화면에서 `router.push`로 들어오며 뒤로 가기는 완료 화면으로 돌아간다(`createdBunch` 기록, `BunchCreated.spec.md`). 닫기(X)와 「나중에 할게요」는 `leaveHref`로 정한다. 번치 만들기에서는 `router.replace`로 피드(임시 `/`)로 이동해 뒤로 가기로 돌아오지 않는다. `/bunch/members/invite`는 `backOnLeave`라 이전 화면(멤버 관리·더보기 메뉴)으로 돌아가고, 기록이 없으면 멤버 관리로 `replace`한다. 메뉴·멤버 관리 ↔ 초대는 메뉴 하위 화면과 같은 미는 slide 300ms다.
 
 ## 상태와 흐름
 
 - 초기 진입: 정적 화면이다. 링크는 props로 받는다.
-- Loading·Empty·Error: 링크 요청이 없어 해당 없음. 링크 없음·로딩·오류 상태는 링크 API가 생길 때 정한다.
+- Loading·Empty·Error: 상태 변화는 항상 마운트된 `role="status"` 영역(화면에는 숨김)의 문구(「초대 링크를 불러오는 중이에요」, 「초대 링크를 불러오지 못했어요. 다시 불러오기를 눌러 주세요」)로 알린다. `loading`이면 페이지 전체 로딩(`PageLoading`: 화면 dim + 물결 점 패턴)을 덮고 복사 아이콘을 잠근다. 링크는 비어 있는 입력란 뒤에서 채워지며 로딩이 풀린다. 링크가 없고 `onRetry`가 있으면 「초대 링크를 불러오지 못했어요.」와 「다시 불러오기」를 보이며, 다시 불러오는 동안에도 버튼을 그대로 둔다(로딩 덮개가 누름을 막고 끝나면 초점을 되돌림)(링크를 받으면 입력란과 복사 아이콘이 열린다). 두 경우에도 「나중에 할게요」·닫기는 계속 쓸 수 있다(기획 2.4.1). 링크 없음 상태에서 복사·공유는 동작하지 않는다.
 - Success: 복사 성공 시 토스트 「초대 링크가 복사되었어요.」+「공유」. 토스트는 `toast()`가 띄우며 새 토스트가 이전 것을 대체한다.
 - 복사 실패: 클립보드 권한·비보안 컨텍스트로 실패하면 「초대 링크를 복사하지 못했어요.」 토스트를 띄운다(설계서에 없는 문구, 제안).
 - 공유: 지원 환경에서만 토스트에 「공유」를 제공하고 `navigator.share({ url })`를 호출한다. 사용자의 취소(`AbortError`)는 안내 없이 종료한다. 그 외 실패는 오류를 수집하고 「공유하지 못했어요. 복사한 링크를 직접 보내주세요.」 토스트를 띄운다. 공유 미지원 환경에서는 복사 성공 안내만 제공한다.
@@ -38,7 +38,7 @@
 ## 데이터 의존성
 
 - Query와 enabled 조건: 없음. Mutation·cache 영향: 없음.
-- API 계약 확인 항목: 번치별 초대 링크 발급·조회, 링크 만료·재발급 정책.
+- API 계약: `POST /bunches/{id}/invitations`는 번치당 유효한 링크 1개를 돌려준다(없거나 만료·폐기됐으면 새로 발급, 7일 유효). 같은 링크를 돌려주므로 다시 불러오기로 같은 요청을 반복해도 안전하다. 응답 `url`·`code`·`expiresAt` 중 화면은 `url`만 쓴다.
 
 ## UI와 접근성
 
