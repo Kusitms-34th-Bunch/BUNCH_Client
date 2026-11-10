@@ -11,7 +11,8 @@ type ContrastData = { fgColor?: string; bgColor?: string };
 const KNOWN_LOW_CONTRAST_COLORS = new Set(['#969aa0', '#bcbec2']);
 const isKnownLowContrast = (node: { any: { id: string; data: unknown }[] }) => {
   const data = node.any.find((check) => check.id === 'color-contrast')?.data as
-    ContrastData | undefined;
+    | ContrastData
+    | undefined;
   return KNOWN_LOW_CONTRAST_COLORS.has(data?.fgColor ?? '') && data?.bgColor === '#ffffff';
 };
 

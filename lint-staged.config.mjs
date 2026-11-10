@@ -4,7 +4,7 @@ export default {
   '*.{ts,tsx}': [
     'eslint --fix',
     'yarn workspace @app/design-system check:tailwind --fix',
-    'prettier --write',
+    'oxfmt --no-error-on-unmatched-pattern',
   ],
-  '!(*.ts|*.tsx)': 'prettier --write --ignore-unknown',
+  '!(*.ts|*.tsx)': 'oxfmt --no-error-on-unmatched-pattern',
 };

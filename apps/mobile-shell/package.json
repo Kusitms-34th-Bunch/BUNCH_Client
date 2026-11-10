@@ -40,7 +40,8 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "ios:sync": "DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer} expo prebuild --platform ios",
+    "ios:sync": "node scripts/ios-sync.mjs",
+    "ios:sync:clean": "node scripts/ios-sync.mjs --clean",
     "open:ios": "open ios/*.xcworkspace",
     "web": "expo start --web",
     "lint": "expo lint"

@@ -1,6 +1,5 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { Button } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
@@ -34,20 +33,21 @@ type AuthGateProps = {
 /**
  * 서버가 알려 준 로그인·가입 상태(`GET /members/me/onboarding`)로 화면 접근을 제어
  * 상태를 확인하는 동안과 다른 화면으로 보내는 동안은 화면 대신 `PageLoading`만 보임(보호된 화면이 잠깐 비치지 않게)
- * 401은 비로그인, 그 밖의 실패는 안내와 다시 시도(어디로 보낼지 모르므로 화면을 열지 않음)
+ * 비로그인(401)은 `sessionQueryOptions`가 `null`로 주고, 그 밖의 실패는 안내와 다시 시도(어디로 보낼지 모르므로 화면을 열지 않음)
  * 상태가 바뀌는 동작(로그인·약관 저장·가입 완료)은 `sharedKeys.session()`을 무효화해야 이 판단이 갱신됨
  */
 export function AuthGate({ destinations, children }: AuthGateProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data, error, isFetching, isPending, refetch } = useQuery(sessionQueryOptions());
+  const { data, isFetching, isPending, refetch } = useQuery(sessionQueryOptions());
 
-  const unauthenticated = isApiError(error) && error.status === 401;
-  const session: SessionState | undefined = data
-    ? { kind: 'member', onboarding: data }
-    : unauthenticated
-      ? { kind: 'anonymous' }
-      : undefined;
+  // 비로그인은 query 데이터 `null`(다시 읽는 동안에도 유지)
+  const session: SessionState | undefined =
+    data === undefined
+      ? undefined
+      : data === null
+        ? { kind: 'anonymous' }
+        : { kind: 'member', onboarding: data };
   // 서버·hydration 중에는 알 수 없어(null) 로딩으로 둠. 변경 알림 없이 렌더(이동)마다 다시 읽음
   // 인트로는 기록한 뒤 바로 이동하므로 그 렌더에서 새 값을 읽음
   const introSeen = useSyncExternalStore(subscribeNothing, readIntroSeen, unknownOnServer);

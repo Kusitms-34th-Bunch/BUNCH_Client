@@ -44,7 +44,7 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 Figma
 ## Tokens Studio 변환
 
 - 원본은 `packages/design-system/tokens/tokens.json`이며 Tokens Studio의 `design-token` 브랜치 Push 경로다. 원본의 Figma metadata와 Primitive·Semantic 세트를 유지한다.
-- `yarn tokens:build`로 같은 폴더의 `tokens.css`를 생성하고, `yarn tokens:check`로 원본과 생성물의 동기화를 검증한다. CSS를 직접 수정하지 않는다. 원본과 생성물은 Prettier 대상에서 제외한다.
+- `yarn tokens:build`로 같은 폴더의 `tokens.css`를 생성하고, `yarn tokens:check`로 원본과 생성물의 동기화를 검증한다. CSS를 직접 수정하지 않는다. 원본과 생성물은 포맷(oxfmt) 대상에서 제외한다.
 - 기존 `yarn check:generated`가 `tokens:check`도 실행하므로 local verify와 CI에서 오래된 생성 CSS를 발견한다.
 - 내부 CSS 변수는 `--primitive-<경로>`, `--semantic-<경로>`로 구분하며 그룹과 토큰 이름에 반복된 접두어를 제거한다. 예: `Border.border-brand` → `--semantic-border-brand`, `Bunch.color-primitive-bunch-500` → `--primitive-bunch-500`. Semantic alias는 Primitive 변수에 대한 `var(...)` 참조로 남긴다. Composite typography는 `typography-title-1-bold` 같은 `@utility`로 생성한다.
 - Tailwind v4의 `@theme inline`에 색상·간격·radius·shadow·gradient를 연결한다. 예: `text-text-primary`, `bg-surface-primary`, `rounded-r1`, `gap-s1`. 실제 이름은 생성 CSS를 기준으로 확인한다.

@@ -4,7 +4,7 @@
 
 - Route: `/onboarding/create/complete`(`apps/web/src/app/(app)/onboarding/create/complete/page.tsx`)
 - Status: UI와 폭죽(컨페티) 애니메이션 구현됨(컨페티는 2026-11 Figma 변경분, 이슈 #292). 3단계 「번치 만들기」가 서버에 만든 번치(`createdBunch`)를 읽어 이름·기본 이미지를 보이고, 카메라 버튼의 사진 변경·기본 이미지 적용이 `PUT·DELETE /bunches/{id}/profile-image`로 저장된다(이슈 #306). 폭죽은 `next build` 렌더와 이전 연출을 375×812 Chromium에서 확인했다. 실서버·실기기 검증 전
-- 디자인 출처: Figma `Bunch/Create/Success-Celebration`(node `791:3260`, 폭죽이 나오는 시작 상태), `Bunch/Create/Success`(node `791:3345`, 폭죽이 끝난 최종 상태). 컨페티 모션은 Figma `Bunch/Join/Success · Square Confetti`(node `6163:189892`, 16개 조각의 위치·회전·뒤집힘·불투명도 키프레임)로 교체했다. 이전 연출의 `791:3260` 5조각 값은 더 쓰지 않는다.
+- 디자인 출처: Figma `Bunch/Create/Success-Celebration`(node `791:3260`, 폭죽이 나오는 시작 상태), `Bunch/Create/Success`(node `791:3345`, 폭죽이 끝난 최종 상태). 컨페티 모션은 Figma `Bunch/Join/Success · Square Confetti`(node `6163:189892`, 16개 조각의 위치·회전·뒤집힘·불투명도 키프레임)로 교체했다. 이전 연출의 `791:3260` 5조각 값은 더 쓰지 않는다. 기능명세서는 1110판(2026-11-10) 2.3 기준이다.
 
 ## 목적과 범위
 
@@ -71,6 +71,8 @@
 - 「멤버 초대하기」 카드 (미정): Figma 코드는 링크(`a`)로 그렸다. `InviteMemberCard`는 버튼이고 `onClick`에서 `router.push`로 초대 화면으로 이동한다. 링크 의미가 필요하면 렌더 방식을 props로 받게 바꾼다.
 - 「내 번치로 이동하기」 (미정): 도착 화면(내 번치)이 없어 동작이 없다.
 - 사진 선택 (확정): 카메라 버튼은 `ProfilePhotoField`의 사진 변경 흐름(「프로필 사진 설정」 선택지 → 앨범 → 원형 조정 → 저장)을 연다(`renderPhoto`로 `BunchAvatar`를 그림). 현재 사진이 있을 때만 「기본 이미지 적용하기」가 보인다. 서버 imageUrl은 `isSafeImageUrl`을 통과한 https 주소만 쓴다.
+- 사진 변경 실패·권한 문구 (1110판): 2.3.2의 업로드 실패 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」는 구현됐다(#306). 명세의 권한 거부 모달(「사진 접근 권한이 필요해요」 / 「앨범에서 사진을 고르려면 설정에서 사진 접근을 허용해 주세요.」, 「취소」/「설정으로 이동」, 7.2.3과 같음)은 아직 없다. 지금은 `ProfilePhotoField`가 오류 문구를 토스트로만 보인다(확인 필요).
+- 프로필 이미지 용도 (1110판): 2.3.2는 여기서 정한 이미지가 번치 메인의 프로필 이미지(5.1.3)로 보인다고 정했다. 기본 이미지는 고른 분위기(성격)의 기본 이미지이고, 이전 판의 뭉치 캐릭터 구분은 없어졌다.
 - 기본 이미지 (제안): `BunchAvatar`가 `<img>`를 쓰고 `src`를 문자열로 받아 `next/image` 최적화를 쓰지 않는다(`docs/workflows/performance.md`). 크기를 줄여 두었으나 필요하면 `next/image` 연동을 검토한다.
 - 제목 색 (확정): Figma의 첫 줄(번치 이름)은 `#121212`(`text-primary`), 둘째 줄 「번치가 만들어졌어요!」는 `#111318`이다. `#111318`은 토큰에 없어(가장 가까운 `gray-900`은 `#121212`) 둘째 줄에 `text-[#111318]`로 그대로 썼다. 육안으로는 구분되지 않는 차이라 디자이너가 의도한 값인지 확인하고 토큰이 생기면 교체한다.
 - 포커스 윤곽선 (확정, 예외): 「멤버 초대하기」 카드에 `focus-visible` 윤곽선(2px `border-brand`)이 있다(`InviteMemberCard`). Figma에는 없지만 저장소 공통 방식이고 `BunchAvatar` 카메라 버튼과 같다.
