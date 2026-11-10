@@ -62,7 +62,7 @@ export type BunchHomeDetail = {
   imageSrc?: string | undefined;
   /** 번치 성격(서버 characterType). 홈 위쪽 배경색을 정함 */
   characterType: CharacterType;
-  /** 번치 성장 단계(서버 stage, 1~4). 홈 캐릭터 크기·모양을 정함 */
+  /** 번치 성장 단계(서버 stage, 1~4). 화면은 쓰지 않음 */
   stage: number;
   description: string;
   /** 비공개 번치면 이름 옆 자물쇠 */

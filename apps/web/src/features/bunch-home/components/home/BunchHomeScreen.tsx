@@ -3,6 +3,7 @@
 import {
   ConfirmDialog,
   cn,
+  FillPencilMediumIcon,
   FillPhotoMediumIcon,
   LinePencilMediumIcon,
   LinePhotoMediumIcon,
@@ -23,9 +24,9 @@ import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { switchStatus } from '../../lib/bunchSwitch';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
-import { BunchCharacter } from '../BunchCharacter';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
+import { BunchProfileImage } from '../BunchProfileImage';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
 import { BundleEmpty } from './BundleEmpty';
 import { DraftBundleList } from './DraftBundleList';
@@ -167,7 +168,7 @@ export function BunchHomeScreen({
   };
 
   return (
-    // 성격별 배경은 헤더·캐릭터 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
+    // 성격별 배경은 헤더·프로필 이미지 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
     // 틀 배경은 위 절반 성격 색·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 성격 색, 아래는 흰색이 드러남
     <PageShell
       data-app-background={background.app}
@@ -201,9 +202,9 @@ export function BunchHomeScreen({
           switched && 'animate-[page-content-in_150ms_ease-out] motion-reduce:animate-none',
         )}
       >
-        {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터는 120px 상자(Character Wrapper) 안 가로 중앙·아래 12px 위에 놓이고 상자는 흰 시트에 32px 걸침 */}
-        <div className={cn('relative h-34.5 shrink-0', background.top)}>
-          <BunchCharacter characterType={current.characterType} stage={current.stage} />
+        {/* 프로필 이미지 영역(Figma 헤더 아래 82px + 시트 둥근 모서리 뒤 20px). 90px 프로필 이미지는 영역 위에서 24px 아래에 놓여 흰 시트에 32px 걸침 */}
+        <div className={cn('relative h-25.5 shrink-0', background.top)}>
+          <BunchProfileImage imageSrc={current.imageSrc} characterType={current.characterType} />
         </div>
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">
           <BunchProfile
@@ -230,13 +231,12 @@ export function BunchHomeScreen({
                 icon={<LinePhotoMediumIcon />}
                 selectedIcon={<FillPhotoMediumIcon />}
               />
-              {/* 채운 연필 아이콘이 디자인 시스템에 없어 선택 여부는 색과 밑줄로만 구분 */}
               <MenuTabs.IconTab
                 value="draft"
                 label="작성 중인 번들"
                 className="flex-1"
                 icon={<LinePencilMediumIcon />}
-                selectedIcon={<LinePencilMediumIcon />}
+                selectedIcon={<FillPencilMediumIcon />}
               />
             </MenuTabs.List>
             {/* 탭 전환 시 내용도 Dissolve / Ease out / 75ms(화면설계서 3번) */}
@@ -259,7 +259,7 @@ export function BunchHomeScreen({
             </MenuTabs.Panel>
             <MenuTabs.Panel
               value="draft"
-              className={cn('pt-s8', tabChanged && tab === 'draft' && panelFade)}
+              className={cn(tabChanged && tab === 'draft' && panelFade)}
             >
               {current.draftBundles.length > 0 ? (
                 <DraftBundleList
@@ -268,7 +268,7 @@ export function BunchHomeScreen({
                   onDelete={openDeleteDraft}
                 />
               ) : (
-                <div className="pt-s24">
+                <div className="pt-s25">
                   <BundleEmpty title={BUNCH_HOME_MESSAGES.draftEmptyTitle} />
                 </div>
               )}

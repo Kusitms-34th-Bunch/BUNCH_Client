@@ -8,7 +8,7 @@ type BunchHomeHeaderProps = {
   onBunchClick: () => void;
   /** 전환 시트가 열려 있는지(트리거의 aria-expanded) */
   switcherOpen: boolean;
-  /** 배경 class(캐릭터 영역과 같은 번치 성격 색) */
+  /** 배경 class(프로필 이미지 영역과 같은 번치 성격 색) */
   className: string;
 };
 
@@ -16,7 +16,7 @@ type BunchHomeHeaderProps = {
 export const headerIconLinkClass =
   'text-icon-primary focus-visible:outline-border-brand relative flex size-6 cursor-pointer touch-manipulation items-center justify-center rounded-full before:absolute before:-inset-2 focus-visible:outline-2 focus-visible:outline-offset-2';
 
-/** 번치 홈 상단 헤더: 번치 전환(이름·화살표), 알림, 더보기. 배경은 캐릭터 영역과 같은 성격 색 */
+/** 번치 홈 상단 헤더: 번치 전환(이름·화살표), 알림, 더보기. 배경은 프로필 이미지 영역과 같은 성격 색 */
 export function BunchHomeHeader({
   bunchName,
   onBunchClick,
