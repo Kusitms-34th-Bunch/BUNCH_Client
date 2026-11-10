@@ -57,7 +57,7 @@
     "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
     "happy-dom": "catalog:",
-    "prettier": "^3.9.5",
+    "oxfmt": "0.74.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "storybook": "catalog:",

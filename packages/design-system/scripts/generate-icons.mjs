@@ -4,9 +4,20 @@ import svgoPlugin from '@svgr/plugin-svgo';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { format, resolveConfig } from 'prettier';
+import { format } from 'oxfmt';
 
 const GENERATED_TAG = '// @generated — run `yarn icons:build` to update';
+// 저장소 포맷 설정(oxfmt Node API는 설정 파일을 찾지 않아 직접 읽어 넘김, ignorePatterns는 파일 목록용이라 제외)
+const { ignorePatterns: _ignored, ...FORMAT_OPTIONS } = JSON.parse(
+  await readFile(resolve(import.meta.dirname, '../../../.oxfmtrc.json'), 'utf8'),
+);
+
+const formatTsx = async (fileName, code) => {
+  const { code: formatted, errors } = await format(fileName, code, FORMAT_OPTIONS);
+  if (errors.length > 0) throw new Error(`${fileName} 포맷 실패: ${errors[0].message}`);
+  return formatted;
+};
+
 const ICON_ROOT = resolve(import.meta.dirname, '../src/icons');
 const ICON_SIZES = { small: 16, medium: 20, large: 24 };
 const SIZED_FILE_PATTERN = /^(.+)-(small|medium|large)\.svg$/i;
@@ -270,7 +281,7 @@ const renderSize = async (source, icon, sizeName) => {
 };
 
 // 접근성 속성은 바깥 래퍼가 한 번만 부착.
-const fixedComponentCode = async ({ innerName, name, outputDir, shapeCode }) => {
+const fixedComponentCode = async ({ innerName, name, shapeCode }) => {
   const code = `${GENERATED_TAG}
 import type { ComponentProps } from 'react';
 import type { IconProps } from '../types';
@@ -296,22 +307,20 @@ const ${name} = ({
 };
 export default ${name};
 `;
-  const prettierConfig = (await resolveConfig(join(outputDir, `${name}.tsx`))) ?? {};
-  return format(code, { ...prettierConfig, parser: 'typescript' });
+  return formatTsx(`${name}.tsx`, code);
 };
 
-const renderFixedComponent = async (icon, outputDir, sizeName) => {
+const renderFixedComponent = async (icon, sizeName) => {
   const innerName = sizeName[0].toUpperCase() + sizeName.slice(1);
   return fixedComponentCode({
     innerName,
     name: sizedName(icon.componentName, innerName),
-    outputDir,
     shapeCode: await renderSize(icon.files[sizeName], icon, sizeName),
   });
 };
 
 // 원본 색을 유지하고 크기가 하나뿐인 컬러 그래픽 아이콘
-const renderGraphicComponent = async (source, outputDir) => {
+const renderGraphicComponent = async (source) => {
   const rawSvg = await readFile(source.filePath, 'utf8');
   assertSafeSvg(rawSvg, source.fileName);
   assertGraphicDimensions(rawSvg, source.fileName);
@@ -319,12 +328,11 @@ const renderGraphicComponent = async (source, outputDir) => {
   return fixedComponentCode({
     innerName: 'Shape',
     name: source.componentName,
-    outputDir,
     shapeCode: await transformSvg(normalizePreservedSvg(rawSvg), source.componentName, 'Shape'),
   });
 };
 
-const renderComponent = async (icon, outputDir) => {
+const renderComponent = async (icon) => {
   const code = `${GENERATED_TAG}
 import type { IconProps } from '../types';
 import Large from './${sizedName(icon.componentName, 'Large')}';
@@ -338,8 +346,7 @@ const ${icon.componentName} = ({ size = 'md', ...props }: IconProps) => {
 };
 export default ${icon.componentName};
 `;
-  const prettierConfig = (await resolveConfig(join(outputDir, `${icon.componentName}.tsx`))) ?? {};
-  return format(code, { ...prettierConfig, parser: 'typescript' });
+  return formatTsx(`${icon.componentName}.tsx`, code);
 };
 
 const readGeneratedFiles = async (outputDir) => {
@@ -393,19 +400,16 @@ export const generateIcons = async ({
       const label = sizeName[0].toUpperCase() + sizeName.slice(1);
       expectedFiles.set(
         join(outputDir, `${sizedName(icon.componentName, label)}.tsx`),
-        await renderFixedComponent(icon, outputDir, sizeName),
+        await renderFixedComponent(icon, sizeName),
       );
     }
-    expectedFiles.set(
-      join(outputDir, `${icon.componentName}.tsx`),
-      await renderComponent(icon, outputDir),
-    );
+    expectedFiles.set(join(outputDir, `${icon.componentName}.tsx`), await renderComponent(icon));
   }
 
   for (const source of graphicSources) {
     expectedFiles.set(
       join(outputDir, `${source.componentName}.tsx`),
-      await renderGraphicComponent(source, outputDir),
+      await renderGraphicComponent(source),
     );
   }
 

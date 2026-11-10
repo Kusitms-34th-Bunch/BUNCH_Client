@@ -54,7 +54,7 @@ jobs:
       - name: 의존성 설치
         uses: ./.github/actions/setup
 
-      # 스크립트는 env를 .env 파일보다 먼저 읽으므로 .env 파일 불필요. 생성 뒤 Prettier까지 적용해 커밋본과 같은 포맷
+      # 스크립트는 env를 .env 파일보다 먼저 읽으므로 .env 파일 불필요. 생성 뒤 oxfmt까지 적용해 커밋본과 같은 포맷
       - name: 타입 생성
         env:
           OPENAPI_SCHEMA_URL: ${{ secrets.OPENAPI_SCHEMA_URL }}

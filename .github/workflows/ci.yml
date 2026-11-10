@@ -93,7 +93,7 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
         run: yarn check:boundaries
 
-      - name: Prettier
+      - name: 포맷(oxfmt)
         id: prettier
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
         run: yarn format:check
@@ -228,7 +228,7 @@ jobs:
               ['lint', 'catalog', 'catalog'],
               ['lint', 'agent-docs', 'agent 문서'],
               ['lint', 'boundaries', '경계(boundaries)'],
-              ['lint', 'prettier', 'Prettier'],
+              ['lint', 'prettier', '포맷(oxfmt)'],
               ['lint', 'lint', 'ESLint·Tailwind'],
               ['build', 'typecheck', 'TypeScript'],
               ['test', 'test', 'Test'],
