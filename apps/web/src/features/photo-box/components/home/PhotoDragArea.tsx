@@ -16,17 +16,20 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { PhotoSection } from '../../lib/photoDate';
 import type { PhotoBoxActions, PhotoBoxViewer } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoDragProvider } from '../../contexts/PhotoDragContext';
+import { usePhotoSelectionActions } from '../../contexts/PhotoSelectionContext';
+import { LONG_PRESS_MS } from '../../lib/dragSelect';
 import {
   type SectionItems,
   canDragPhoto,
   dateFromKey,
   findSectionKey,
+  isTapLikeDrag,
   moveItem,
   needsDragConfirm,
   toSectionItems,
@@ -34,8 +37,7 @@ import {
 import { DateChangeConfirmDialog } from '../PhotoSelectionDialogs';
 import { PhotoDateSection } from './PhotoDateSection';
 
-// 길게 누르기: 이만큼 누르고 있어야 끌기가 시작되고, 그 전에 움직이면 스크롤로 넘김(짧게 누르면 선택·해제)
-const LONG_PRESS_MS = 300;
+// 길게 누르기 시간은 쓸어서 고르기와 나누어 쓰도록 공유(짧게 누르면 선택·해제)
 const LONG_PRESS_TOLERANCE_PX = 8;
 
 // 섹션 한가운데뿐 아니라 제목·빈 칸 위에서도 그 섹션으로 보도록 포인터가 들어 있는 영역을 먼저 보고, 없으면 가장 가까운 곳
@@ -63,7 +65,7 @@ type PhotoDragAreaProps = {
  * 이미 있는 섹션으로만 옮길 수 있고(원래 섹션·섹션 밖은 변경 없음), 실패하면 원래 자리로 돌려 오류 토스트를 띄움
  * 키보드·스크린 리더용 대체 경로는 선택 모드의 날짜 바꾸기 시트이고, 키보드 센서는 두지 않음
  */
-export function PhotoDragArea({
+export const PhotoDragArea = memo(function PhotoDragArea({
   sections,
   viewer,
   actions,
@@ -84,6 +86,7 @@ export function PhotoDragArea({
   // 관리자가 다른 멤버 사진을 놓았을 때 확인을 기다리는 이동(확인 창이 열려 있는 동안만 값이 있음)
   const [moveToConfirm, setMoveToConfirm] = useState(false);
   const openOverlay = useScreenOverlay();
+  const { onToggle } = usePhotoSelectionActions();
   // 날짜 변경 요청이 도는 동안은 새로 끌지 못하게 막음(미리보기와 요청 결과가 엉키지 않도록)
   const [moving, setMoving] = useState(false);
 
@@ -173,8 +176,14 @@ export function PhotoDragArea({
     });
   };
 
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+  const handleDragEnd = ({ active, over, delta }: DragEndEvent) => {
     const photoId = String(active.id);
+    // 조금 길게 누르고 떼기만 했으면 끌기 라이브러리가 클릭을 막았으므로 여기서 선택·해제로 이어 줌
+    if (isTapLikeDrag(delta)) {
+      reset();
+      onToggle(photoId);
+      return;
+    }
     const fromKey = findSectionKey(toSectionItems(sections), photoId);
     const toKey = preview ? findSectionKey(preview, photoId) : undefined;
     setActiveId(undefined);
@@ -246,4 +255,4 @@ export function PhotoDragArea({
       </DragOverlay>
     </DndContext>
   );
-}
+});

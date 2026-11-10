@@ -10,6 +10,7 @@ import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
 import { usePhotoSelectionFlow } from '../../hooks/usePhotoSelectionFlow';
+import { LONG_PRESS_MS } from '../../lib/dragSelect';
 import { MAX_PHOTOS_IN_BOX } from '../../lib/photoActions';
 import { filterByMember, splitPhotos } from '../../lib/photoDate';
 import { countSelectedByMember, type PhotoSelection } from '../../lib/selection';
@@ -18,6 +19,7 @@ import { MemberFilter } from '../MemberFilter';
 import { NoBunch } from '../NoBunch';
 import { PhotoBoxEmpty } from '../PhotoBoxEmpty';
 import { PhotoBoxError } from '../PhotoBoxError';
+import { PhotoDragSelect } from '../PhotoDragSelect';
 import { UndatedPhotos } from '../UndatedPhotos';
 import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
@@ -212,7 +214,11 @@ export function PhotoBoxScreen({
       {flow.saving ? <PageLoading /> : null}
       <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
         {/* 저장·삭제 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(헤더 「취소」만 열어 둠) */}
-        <div className="flex min-h-full flex-col" inert={busy}>
+        <PhotoDragSelect
+          className="flex min-h-full flex-col"
+          inert={busy}
+          yieldToLongPressMs={LONG_PRESS_MS}
+        >
           <MemberFilter
             members={members}
             selectedId={memberId}
@@ -230,7 +236,7 @@ export function PhotoBoxScreen({
           {isEmpty ? (
             <PhotoBoxEmpty reason={memberId === ALL_MEMBERS ? 'bunch' : 'member'} />
           ) : null}
-        </div>
+        </PhotoDragSelect>
       </PhotoSelectionProvider>
     </PageShell>
   );

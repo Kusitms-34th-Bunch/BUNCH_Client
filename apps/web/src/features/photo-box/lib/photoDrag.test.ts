@@ -5,6 +5,7 @@ import {
   canDragPhoto,
   dateFromKey,
   findSectionKey,
+  isTapLikeDrag,
   moveItem,
   needsDragConfirm,
   toSectionItems,
@@ -105,5 +106,17 @@ describe('dateFromKey', () => {
     expect([date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()]).toEqual([
       2026, 8, 27, 0,
     ]);
+  });
+});
+
+describe('isTapLikeDrag', () => {
+  it('거의 움직이지 않고 놓은 끌기는 탭으로 본다', () => {
+    expect(isTapLikeDrag({ x: 0, y: 0 })).toBe(true);
+    expect(isTapLikeDrag({ x: -7, y: 7 })).toBe(true);
+  });
+
+  it('어느 방향으로든 8px 이상 움직였으면 탭이 아니다', () => {
+    expect(isTapLikeDrag({ x: 8, y: 0 })).toBe(false);
+    expect(isTapLikeDrag({ x: 0, y: -12 })).toBe(false);
   });
 });
