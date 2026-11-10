@@ -18,6 +18,7 @@
 | 번치 홈 프로필·권한·개수             | `GET /bunches/{id}/home`                                                                                                      | 서버 PR #62 미병합 계약(Notion 명세 기준)                                                                                                                              |
 | 번치 홈 완성된 번들                  | `GET /bunches/{id}/published-bundles`                                                                                         | 서버 PR #62 미병합 계약, 발행 최신순 첫 쪽 50개                                                                                                                        |
 | 온보딩 번치 만들기                   | `GET /bunches/name-availability`, `POST /bunches`, `PUT·DELETE /bunches/{id}/profile-image`, `POST /bunches/{id}/invitations` | 생성은 `Idempotency-Key` 필수(BFF가 헤더를 전달함), 사진은 시연용 이미지로 바뀌고 초대 링크는 번치마다 고정 주소                                                       |
+| 온보딩 초대 참여                     | `POST /invitations/verify`, `POST /invitations/join`                                                                          | 참여는 `Idempotency-Key` 필수. 시연용 초대 코드 `MOCKJOIN`(여행가조, 참여하면 번치가 생김), 초대 발급이 준 `MOCK####`(그 번치), 그 밖은 `INVITE_001`                   |
 
 ### 샘플로 남긴 부분
 

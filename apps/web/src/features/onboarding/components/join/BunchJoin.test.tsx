@@ -2,8 +2,14 @@ import type * as DesignSystem from '@app/design-system';
 import type { ReactNode } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fail, ok } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
+import { createQueryWrapper } from '@/shared/query/testing';
 import { ONBOARDING_PATHS } from '../../constants/paths';
+import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
+import { JoinInvitationProvider } from '../../contexts/JoinInvitationProvider';
 import { BunchJoin } from './BunchJoin';
 
 const replace = vi.fn();
@@ -17,9 +23,21 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
-const Providers = ({ children }: { children: ReactNode }) => <>{children}</>;
-const renderJoin = (props: Parameters<typeof BunchJoin>[0] = {}) =>
-  render(<BunchJoin {...props} />, { wrapper: Providers });
+const Query = createQueryWrapper();
+const Providers = ({ children }: { children: ReactNode }) => (
+  <Query>
+    <JoinInvitationProvider>{children}</JoinInvitationProvider>
+  </Query>
+);
+const renderJoin = () => render(<BunchJoin />, { wrapper: Providers });
+const CARD = { name: '여행가조', introduction: '소개', inviterNickname: '민지', code: 'ABCD2345' };
+const verifyWith = (eligibility: string, capture?: (_body: unknown) => void) =>
+  server.use(
+    http.post('/api/invitations/verify', async ({ request }) => {
+      capture?.(await request.json());
+      return ok({ card: { ...CARD, imageUrl: null }, eligibility });
+    }),
+  );
 
 const LINK = 'https://bunch.app/invite/7xK9mP2q';
 const input = () => screen.getByRole('textbox', { name: '초대 링크' });
@@ -96,38 +114,92 @@ describe('BunchJoin', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('형식이 맞는 링크는 onSubmit에 넘기고 성공하면 초대 확인 화면으로 이동한다', async () => {
-    const onSubmit = vi.fn().mockResolvedValue(null);
-    renderJoin({ onSubmit });
-    await userEvent.type(input(), LINK);
+  it('형식이 맞는 링크는 서버에 확인하고, 참여할 수 있으면 확인한 카드를 남기고 초대 확인 화면으로 이동한다', async () => {
+    let sent: unknown;
+    verifyWith('AVAILABLE', (body) => (sent = body));
+    const Probe = () => (
+      <output aria-label="확인한 초대">
+        {useJoinInvitationFlow().verified?.card.name ?? '없음'}
+      </output>
+    );
+    render(
+      <>
+        <BunchJoin />
+        <Probe />
+      </>,
+      { wrapper: Providers },
+    );
+    await userEvent.type(input(), `  ${LINK}`);
 
     await userEvent.click(done());
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation));
-    expect(onSubmit).toHaveBeenCalledWith(LINK);
+    expect(sent).toEqual({ invitation: LINK });
+    expect(screen.getByLabelText('확인한 초대').textContent).toBe('여행가조');
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('서버가 인원 초과를 알리면 그 토스트를 띄운다', async () => {
-    const onSubmit = vi.fn().mockResolvedValue('full');
-    renderJoin({ onSubmit });
-    await userEvent.type(input(), LINK);
+  it('보조 코드도 서버에 확인한다', async () => {
+    let sent: unknown;
+    verifyWith('AVAILABLE', (body) => (sent = body));
+    renderJoin();
+    await userEvent.type(input(), 'abcd2345');
 
     await userEvent.click(done());
 
-    await waitFor(() => expect(toast).toHaveBeenCalledWith('최대 인원을 초과한 번치입니다.'));
-    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    expect(sent).toEqual({ invitation: 'abcd2345' });
   });
 
-  it('onSubmit이 없으면(링크 확인 API 연결 전) 형식이 맞는 링크로 완료하면 바로 로딩 화면으로 이동한다', async () => {
+  it.each([
+    ['FULL', '최대 인원을 초과한 번치입니다.'],
+    ['LIMIT_EXCEEDED', '참여할 수 있는 번치는 최대 10개예요.'],
+  ])('서버가 %s로 알리면 토스트를 띄우고 입력값을 그대로 둔다', async (eligibility, message) => {
+    verifyWith(eligibility);
     renderJoin();
     await userEvent.type(input(), LINK);
 
     await userEvent.click(done());
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation));
-    expect(toast).not.toHaveBeenCalled();
-    expect(replace).not.toHaveBeenCalled();
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(message));
+    expect(push).not.toHaveBeenCalled();
+    expect(input()).toHaveProperty('value', LINK);
+  });
+
+  it('이미 참여 중인 번치면 오류로 막지 않고 알린 뒤 번치로 이동한다', async () => {
+    verifyWith('ALREADY_MEMBER');
+    renderJoin();
+    await userEvent.type(input(), LINK);
+
+    await userEvent.click(done());
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed));
+    expect(toast).toHaveBeenCalledWith('이미 참여 중인 번치예요.');
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('없거나 만료된 초대(INVITE_001)는 유효하지 않은 링크 토스트를 띄운다', async () => {
+    server.use(http.post('/api/invitations/verify', () => fail(404, 'INVITE_001')));
+    renderJoin();
+    await userEvent.type(input(), LINK);
+
+    await userEvent.click(done());
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('유효하지 않은 링크입니다.'));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('그 밖의 오류는 일시적 오류 토스트를 띄우고 다시 시도할 수 있다', async () => {
+    server.use(http.post('/api/invitations/verify', () => fail(429, 'REQUEST_002')));
+    renderJoin();
+    await userEvent.type(input(), LINK);
+
+    await userEvent.click(done());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect((done() as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('뒤로 가기는 중단 확인 모달을 열고 계속 참여하기는 모달만 닫는다', async () => {

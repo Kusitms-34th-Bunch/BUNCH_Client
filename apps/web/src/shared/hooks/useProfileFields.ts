@@ -69,6 +69,8 @@ export function useProfileFields(initial: ProfileValues, checkNickname?: CheckNi
     values: { nickname, birthYear, gender },
     isValid: nicknameConfirmed && isValidBirthYear(birthYear, currentYear),
     nicknameError,
+    /** 닉네임 중복 확인이 진행 중인지(입력이 바뀐 직후부터 응답까지). 안내 문구를 보일 때 사용 */
+    nicknameChecking: availability === 'checking',
     birthYearError,
     setNickname,
     setComposing,
