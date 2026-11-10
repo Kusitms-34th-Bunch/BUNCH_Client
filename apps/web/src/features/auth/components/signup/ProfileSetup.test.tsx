@@ -246,10 +246,18 @@ describe('ProfileSetup', () => {
 
       await type();
 
-      expect(screen.getByText('사용 가능한 닉네임인지 확인 중이에요.', { selector: 'p[aria-hidden="true"]' })).toBeTruthy();
+      expect(
+        screen.getByText('사용 가능한 닉네임인지 확인 중이에요.', {
+          selector: 'p[aria-hidden="true"]',
+        }),
+      ).toBeTruthy();
       expect(screen.queryByRole('alert')).toBeNull();
       await settle();
-      expect(screen.queryByText('사용 가능한 닉네임인지 확인 중이에요.', { selector: 'p[aria-hidden="true"]' })).toBeNull();
+      expect(
+        screen.queryByText('사용 가능한 닉네임인지 확인 중이에요.', {
+          selector: 'p[aria-hidden="true"]',
+        }),
+      ).toBeNull();
       expect(screen.queryByRole('alert')).toBeNull();
     });
 
@@ -260,7 +268,11 @@ describe('ProfileSetup', () => {
       await type();
       await settle();
 
-      expect(screen.queryByText('사용 가능한 닉네임인지 확인 중이에요.', { selector: 'p[aria-hidden="true"]' })).toBeNull();
+      expect(
+        screen.queryByText('사용 가능한 닉네임인지 확인 중이에요.', {
+          selector: 'p[aria-hidden="true"]',
+        }),
+      ).toBeNull();
       expect(screen.getByRole('alert').textContent).toBe(NICKNAME_TAKEN_MESSAGE);
     });
 

@@ -185,9 +185,12 @@ describe('BunchBasicInfo 번치 이름 중복 확인', () => {
 
     expect(screen.getByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
-    await waitFor(() => expect(screen.queryByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeNull(), {
-      timeout: 2000,
-    });
+    await waitFor(
+      () => expect(screen.queryByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeNull(),
+      {
+        timeout: 2000,
+      },
+    );
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -200,7 +203,11 @@ describe('BunchBasicInfo 번치 이름 중복 확인', () => {
       () => expect(screen.getByRole('alert').textContent).toBe('이미 사용 중인 번치 이름이에요'),
       { timeout: 2000 },
     );
-    expect(screen.queryByText('사용 가능한 이름인지 확인 중이에요.', { selector: 'p[aria-hidden="true"]' })).toBeNull();
+    expect(
+      screen.queryByText('사용 가능한 이름인지 확인 중이에요.', {
+        selector: 'p[aria-hidden="true"]',
+      }),
+    ).toBeNull();
   });
 
   it('이미 사용 중인 이름이면 입력란 아래에 안내하고 다음은 비활성이다', async () => {
