@@ -13,11 +13,11 @@
 - **빌드 캐시**: Next.js 빌드 캐시(`apps/web/.next/cache`)를 `yarn.lock`·소스 해시를 키로 이어 쓴다. 로컬 기준 캐시 없이 43초, 있을 때 21~23초였다(2026-11-10, CI 효과는 첫 배포 뒤 측정). 캐시는 main과 기본 브랜치(develop)에서 실행된 workflow만 쓸 수 있다. 공급망 사고(의존성·저장소 코드 오염)가 의심되면 Actions → Caches에서 `web-deploy-next-` 캐시를 지운 뒤 다시 배포한다(오염된 컴파일 결과가 캐시에 남을 수 있음).
 - 트래픽 일부만 새 버전으로 보내는 점진 배포(카나리)는 Vercel Rolling Releases가 필요하고 현재 요금제(Hobby)에서 쓸 수 있는지 확인하지 않았다.
 
-| job        | Vercel 토큰 | 저장소 코드 | 하는 일                                                                                                    |
-| ---------- | ----------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
-| `settings` | 있음        | 없음        | secret 확인 → 프로젝트 이름(`bunch-web`) 확인 → `.vercel/project.json`만 다음 job에 넘김                   |
-| `build`    | 없음        | 실행        | main 커밋 확인 → 변조 가드 → 설치 → 빌드 캐시 복원 → `vercel build --prod` → 결과물에 MSW 코드 없는지 확인 |
-| `deploy`   | 있음        | 없음        | 새 버전 올리기(`--skip-domain`) → 확인 → 운영 주소 전환(`promote`)                                         |
+| job        | Vercel 토큰 | 저장소 코드 | 하는 일                                                                                                                                                                                |
+| ---------- | ----------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `settings` | 있음        | 없음        | secret 확인 → 프로젝트 이름(`bunch-web`) 확인 → `.vercel/project.json`만 다음 job에 넘김                                                                                               |
+| `build`    | 없음        | 실행        | main 커밋 확인 → 변조 가드 → 설치 → 빌드 캐시 복원 → `vercel build --prod` → 결과물에 MSW 코드 없는지 확인                                                                             |
+| `deploy`   | 있음        | 없음        | 빈 `apps/web` 폴더 만들기(CLI가 프로젝트 Root Directory의 존재만 확인하고, 결과물은 루트 `.vercel/output`을 올림) → 새 버전 올리기(`--skip-domain`) → 확인 → 운영 주소 전환(`promote`) |
 
 - job을 나누는 이유: 같은 job 안에서는 앞 단계(의존성 설치·빌드가 실행하는 코드)가 `$GITHUB_ENV`·`$GITHUB_PATH`로 뒤 단계의 토큰을 가로챌 수 있다. 토큰이 있는 job은 checkout하지 않으므로 Yarn 대신 `npm exec`로 고정 버전 `vercel` CLI(65.1.0)만 실행한다. 버전을 올릴 때는 workflow의 모든 `vercel@`을 함께 바꾼다.
 - 저장소는 Yarn PnP라 Vercel의 Next.js 빌더가 `NEXT_NO_VERSION`으로 실패하므로 `build` job에서만 `YARN_NODE_LINKER=node-modules`로 설치한다(`.yarnrc.yml`은 그대로).
@@ -69,7 +69,7 @@
 
 ## 운영 주소 연결
 
-기본 주소는 `bunch-web-ten.vercel.app`이다(2026-11-10 생성).
+기본 주소는 `bunch-client.vercel.app`이다(2026-11-10, 프로젝트 이름은 `bunch-web`).
 
 - 앱 쉘 Release 빌드의 `EXPO_PUBLIC_WEB_URL`에 이 주소를 넣는다(EAS production 환경, `apps/mobile-shell/.env.production.example`).
 - 카카오·구글 콘솔에는 웹 도메인을 등록하지 않는다. 소셜 로그인은 앱 쉘의 네이티브 SDK(번들 ID 기준)로만 하고, 웹은 받은 토큰을 같은 도메인의 BFF(`/api/auth/login`)로 넘긴다. 브라우저에서는 소셜 로그인을 할 수 없다.
