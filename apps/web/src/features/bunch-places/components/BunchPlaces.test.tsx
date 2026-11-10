@@ -51,10 +51,7 @@ describe('BunchPlaces', () => {
     await openMenu(user, '봄날카페', '주소 복사하기');
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(
-        '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-        expect.anything(),
-      ),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
   });
 

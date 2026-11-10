@@ -143,7 +143,7 @@ export function BunchMembersScreen({
           summaryRef.current?.focus();
         }
         // 토스트는 창이 다 닫힌 뒤(열린 창 뒤에서 낭독이 묻히지 않게)
-        if (done) toast(content.done, { icon: 'success', fullWidth: true });
+        if (done) toast(content.done, { icon: 'success' });
       },
     );
   };

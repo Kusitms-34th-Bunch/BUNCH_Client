@@ -8,6 +8,9 @@ import { DraftProvider } from '../../contexts/DraftProvider';
 import { BundleDraftPhotoCaption } from './BundleDraftPhotoCaption';
 import { BundleDraftPhotoViewer } from './BundleDraftPhotoViewer';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 vi.mock('swiper/react', () => ({
   Swiper: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   SwiperSlide: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -69,14 +72,14 @@ describe('BundleDraftPhotoCaption', () => {
   it('없는 사진이면 「사진함에서 삭제된 사진이에요.」 뒤 작성 화면으로 이동(replace)한다', () => {
     renderCaption('no-such-photo');
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted);
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 
   it('형식이 틀려 undefined로 넘어온 사진 id도 같은 안내로 처리한다', () => {
     renderCaption(undefined);
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted);
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 
@@ -128,7 +131,7 @@ describe('BundleDraftPhotoViewer', () => {
   it('없는 사진이면 안내 뒤 작성 화면으로 이동(replace)한다', () => {
     renderViewer('no-such-photo');
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoDeleted);
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
 

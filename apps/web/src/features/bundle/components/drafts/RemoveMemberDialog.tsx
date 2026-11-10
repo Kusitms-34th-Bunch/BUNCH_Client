@@ -43,7 +43,7 @@ export function useRemoveMemberDialog() {
       // 모달이 열려 있는 동안은 바깥 live region 낭독과 포커스 이동이 막힐 수 있어 닫힌 뒤에 처리
       () => {
         if (!confirmed) return;
-        toast(BUNDLE_MESSAGES.memberRemoved(target.name), { fullWidth: true });
+        toast(BUNDLE_MESSAGES.memberRemoved(target.name));
         onClosed?.(target);
       },
     );

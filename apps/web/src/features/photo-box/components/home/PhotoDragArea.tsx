@@ -156,21 +156,20 @@ export const PhotoDragArea = memo(function PhotoDragArea({
       setMoving(false);
       onMovingChange?.(false);
       reset();
-      toast(PHOTO_BOX_MESSAGES.dateChangeFailed, { fullWidth: true });
+      toast(PHOTO_BOX_MESSAGES.dateChangeFailed);
       return;
     }
     setMoving(false);
     onMovingChange?.(false);
     reset();
     toast(PHOTO_BOX_MESSAGES.dateChanged, {
-      fullWidth: true,
       action: {
         label: PHOTO_BOX_MESSAGES.undo,
         onClick: () => {
           // 원래 날짜로 한 번 더 바꿔 되돌림(시각은 그대로라 같은 섹션의 원래 순서로 돌아옴)
           void actions
             .changePhotoDates([photoId], dateFromKey(fromKey))
-            .catch(() => toast(PHOTO_BOX_MESSAGES.dateChangeFailed, { fullWidth: true }));
+            .catch(() => toast(PHOTO_BOX_MESSAGES.dateChangeFailed));
         },
       },
     });

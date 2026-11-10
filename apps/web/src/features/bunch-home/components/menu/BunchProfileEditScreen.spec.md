@@ -39,7 +39,7 @@
 | 저장하기 활성 | 저장된 값과 하나라도 다르고, 이름이 1자 이상·규칙에 맞고, 소개가 비어 있지 않고, 한글 조합 중이 아닐 때                         |
 
 - 이름 규칙과 글자 수는 번치 만들기와 같아 `shared/lib/bunchProfile.ts`에 둔다.
-- 저장 토스트는 성공 체크 아이콘과 함께 메인탭의 「+」 옆 높이에 뜬다(`icon: 'success'`, `fullWidth`, 번치 전환 토스트와 같은 `BUNCH_HOME_TOAST_OFFSET`).
+- 저장 토스트는 성공 체크 아이콘과 함께 번치 탭에서 뜬다(`icon: 'success'`). 저장하면 번치 탭으로 이동하므로 `toastAfterNavigation()`으로 예약해 도착 화면의 전환·로딩이 끝난 뒤 탭 막대 위 16px에 띄운다(`Toast.spec.md`).
 
 ## UI와 접근성
 

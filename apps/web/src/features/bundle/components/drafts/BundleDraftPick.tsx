@@ -31,7 +31,7 @@ export function BundleDraftPick() {
       picks={picks}
       editable={getDraftAccess(draft, viewer).canEdit}
       onToggle={toggle}
-      onDenied={() => toast(BUNDLE_MESSAGES.editOnlyParticipants, { fullWidth: true })}
+      onDenied={() => toast(BUNDLE_MESSAGES.editOnlyParticipants)}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
       onBack={() => backOr(BUNDLE_PATHS.draft(draft.id))}
     />

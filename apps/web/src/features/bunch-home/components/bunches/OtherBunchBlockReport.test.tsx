@@ -62,7 +62,7 @@ describe('다른 번치 차단', () => {
     expect(confirm).toHaveTextContent('차단하면 번치의 모든 멤버가');
     await user.click(within(confirm).getByRole('button', { name: '차단하기' }));
 
-    expect(toast).toHaveBeenCalledWith('캠핑러버 번치를 차단했어요.', { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith('캠핑러버 번치를 차단했어요.');
     const title = await screen.findByRole('heading', { level: 1, name: '볼 수 없는 번치예요' });
     await waitFor(() => expect(title).toHaveFocus());
     expect(screen.queryByRole('button', { name: /팔로우|팔로잉/ })).toBeNull();
@@ -226,8 +226,6 @@ describe('다른 번치 신고', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: '캠핑러버 번치를 신고할까요?' })).toBeNull(),
     );
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.', { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.'));
   });
 });

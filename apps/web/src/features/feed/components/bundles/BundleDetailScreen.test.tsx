@@ -8,6 +8,9 @@ import { bundleEdits } from '../../lib/bundleEdits';
 import { likeStore } from '../../lib/likeStore';
 import { BundleDetailScreen } from './BundleDetailScreen';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 const push = vi.fn();
 const back = vi.fn();
 const replace = vi.fn();
@@ -154,11 +157,7 @@ describe('BundleDetailScreen', () => {
     const like = screen.getByRole('button', { name: /좋아요/ });
     await user.click(like);
     expect(like).toHaveAttribute('aria-pressed', 'false');
-    // 입력란 바로 위, 좌우 16씩 띄운 폭(Figma 6079:178315)
-    expect(toast).toHaveBeenCalledWith(
-      '번치에 참여하면 할 수 있어요.',
-      expect.objectContaining({ fullWidth: true }),
-    );
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
   });
 
   it('말풍선을 누르면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
@@ -281,12 +280,7 @@ describe('BundleDetailScreen', () => {
     expect(within(dialog).getByText('데이터가 삭제되며 복구 불가능해요.')).toBeTruthy();
     await user.click(within(dialog).getByRole('button', { name: '삭제' }));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(
-        '댓글을 삭제했어요',
-        expect.objectContaining({ fullWidth: true }),
-      ),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('댓글을 삭제했어요'));
     expect(screen.queryByRole('button', { name: '내 댓글 더보기' })).toBeNull();
     expect(screen.getAllByText('삭제된 댓글입니다')).toHaveLength(3);
   });
@@ -306,10 +300,7 @@ describe('BundleDetailScreen', () => {
 
     await waitFor(() => expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull());
     expect(screen.getByRole('listitem', { name: '삭제된 댓글' })).toHaveFocus();
-    expect(toast).toHaveBeenCalledWith(
-      '댓글을 삭제했어요',
-      expect.objectContaining({ fullWidth: true }),
-    );
+    expect(toast).toHaveBeenCalledWith('댓글을 삭제했어요');
   });
 
   it('삭제 확인 창의 「취소」는 댓글을 그대로 둔다', async () => {
@@ -343,10 +334,7 @@ describe('BundleDetailScreen', () => {
     await user.type(screen.getByRole('textbox', { name: '댓글 달기' }), '안녕');
     await user.click(screen.getByRole('button', { name: '보내기' }));
 
-    expect(toast).toHaveBeenCalledWith(
-      '번치에 참여하면 할 수 있어요.',
-      expect.objectContaining({ fullWidth: true }),
-    );
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
     expect(screen.getByText('아직 작성된 댓글이 없어요')).toBeTruthy();
   });
 
@@ -363,12 +351,7 @@ describe('BundleDetailScreen', () => {
     await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
     await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(
-        '신고가 접수됐어요.',
-        expect.objectContaining({ fullWidth: true }),
-      ),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.'));
     // 원댓글(c-1)과 그 답글(c-2)이 함께 빠짐
     expect(within(region).getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByRole('button', { name: /댓글 2/ })).toBeTruthy();
@@ -384,9 +367,7 @@ describe('BundleDetailScreen', () => {
     await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
     await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.', expect.anything()),
-    );
+    await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalledWith('신고가 접수됐어요.'));
     // 직접 들어온 경우(기록 없음)는 피드로 바꿔 들어감
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
   });
@@ -398,9 +379,7 @@ describe('BundleDetailScreen', () => {
     await user.click(screen.getByRole('button', { name: '번들 더보기' }));
     await user.click(await screen.findByRole('button', { name: '신고' }));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', expect.anything()),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.'));
     expect(screen.queryByRole('dialog', { name: '이 게시글을 신고할까요?' })).toBeNull();
   });
 
@@ -427,7 +406,7 @@ describe('BundleDetailScreen', () => {
     expect(within(dialog).getByText('데이터가 삭제되며 복구 불가능해요.')).toBeTruthy();
     await user.click(within(dialog).getByRole('button', { name: '삭제' }));
 
-    await waitFor(() => expect(toast).toHaveBeenCalledWith('번들을 삭제했어요', expect.anything()));
+    await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalledWith('번들을 삭제했어요'));
     expect(bundleEdits.read().deleted.has('bundle-1')).toBe(true);
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
   });

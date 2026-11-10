@@ -56,7 +56,7 @@ export function BunchBlockedListScreen({
         if (!done) return;
         // 해제하면 돌아갈 「차단해제」 버튼이 사라지므로 개수 줄(목록이 비면 빈 상태 제목)로
         focusRef.current?.focus();
-        toast(BUNCH_HOME_MESSAGES.unblocked(target.name), { icon: 'success', fullWidth: true });
+        toast(BUNCH_HOME_MESSAGES.unblocked(target.name), { icon: 'success' });
       },
     );
   };

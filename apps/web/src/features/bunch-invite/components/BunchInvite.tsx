@@ -17,9 +17,6 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 
 // 보이는 라벨과 입력창의 접근성 이름 일치
 const LINK_LABEL = '초대 링크';
-// Figma 기준 홈 인디케이터 포함 하단 82px 위치를 위해 기본 위치에서 32px 상향
-const TOAST_BOTTOM_OFFSET = 32;
-
 type BunchInviteProps = {
   /** 멤버에게 보낼 초대 링크 */
   inviteLink: string;
@@ -39,9 +36,7 @@ export function BunchInvite({ inviteLink, leaveHref, backOnLeave }: BunchInviteP
 
   const share = async () => {
     if (!navigator.share) {
-      toast('공유를 지원하지 않는 환경이에요. 복사한 링크를 직접 보내주세요.', {
-        bottomOffset: TOAST_BOTTOM_OFFSET,
-      });
+      toast('공유를 지원하지 않는 환경이에요. 복사한 링크를 직접 보내주세요.');
       return;
     }
     try {
@@ -49,9 +44,7 @@ export function BunchInvite({ inviteLink, leaveHref, backOnLeave }: BunchInviteP
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       captureException(error);
-      toast('공유하지 못했어요. 복사한 링크를 직접 보내주세요.', {
-        bottomOffset: TOAST_BOTTOM_OFFSET,
-      });
+      toast('공유하지 못했어요. 복사한 링크를 직접 보내주세요.');
     }
   };
 
@@ -63,12 +56,10 @@ export function BunchInvite({ inviteLink, leaveHref, backOnLeave }: BunchInviteP
           typeof navigator.share === 'function'
             ? { label: '공유', onClick: () => void share() }
             : undefined,
-        bottomOffset: TOAST_BOTTOM_OFFSET,
-        fullWidth: true,
       });
     } catch {
       // 권한 거부·비보안 컨텍스트의 복사 실패 안내
-      toast('초대 링크를 복사하지 못했어요.', { bottomOffset: TOAST_BOTTOM_OFFSET });
+      toast('초대 링크를 복사하지 못했어요.');
     }
   };
 

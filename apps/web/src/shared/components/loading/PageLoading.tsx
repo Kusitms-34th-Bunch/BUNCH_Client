@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { markPageLoading } from '@/shared/lib/pageLoadingState';
 import { LoadingRipple } from './LoadingRipple';
 
 /**
@@ -10,6 +11,9 @@ import { LoadingRipple } from './LoadingRipple';
  */
 export function PageLoading() {
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  // 화면 전환 뒤 띄울 토스트가 로딩이 끝나길 기다리도록 로딩 중임을 알림
+  useEffect(() => markPageLoading(), []);
 
   useEffect(() => {
     const overlay = overlayRef.current;

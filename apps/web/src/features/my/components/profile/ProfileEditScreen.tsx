@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -12,6 +12,7 @@ import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import { normalizeNickname } from '@/shared/lib/nickname';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
@@ -67,7 +68,7 @@ export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
     closeKeyboard();
     // MY에서 들어왔으면 그 기록으로 돌아감(replace하면 MY 기록이 두 번 쌓여 뒤로 가기가 한 번 헛돎)
     backOr(MY_PATHS.home);
-    toast(MY_MESSAGES.profileEdited);
+    toastAfterNavigation(MY_MESSAGES.profileEdited);
   };
 
   return (

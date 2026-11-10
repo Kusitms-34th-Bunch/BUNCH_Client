@@ -21,7 +21,6 @@ import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
-import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
 import { switchStatus } from '../../lib/bunchSwitch';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchCharacter } from '../BunchCharacter';
@@ -122,10 +121,7 @@ export function BunchHomeScreen({
     setTab('completed');
     setSwitched(true);
     actions.switchBunch(bunch.id);
-    toast(BUNCH_HOME_MESSAGES.switched(bunch.name), {
-      fullWidth: true,
-      bottomOffset: BUNCH_HOME_TOAST_OFFSET,
-    });
+    toast(BUNCH_HOME_MESSAGES.switched(bunch.name));
   };
   // 시트가 열린 사이 목록·알림 수가 바뀌어도 최신 값으로 그림
   const switchItems = usePreservedCallback((): BunchSwitchItem[] =>

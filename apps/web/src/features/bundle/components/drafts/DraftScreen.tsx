@@ -8,7 +8,6 @@ import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer, SaveStatus } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
-import { UPLOAD_TOAST_OFFSET } from '../../constants/toast';
 import { getDraftAccess, isDraftCreator } from '../../lib/permissions';
 import { getPublishBlockers, hasOtherEditors } from '../../lib/publish';
 import { DraftComments } from './DraftComments';
@@ -46,10 +45,9 @@ type DraftScreenProps = {
   onImportFromGallery: (_maxCount: number) => void;
 };
 
-const notify = (message: string) => toast(message, { fullWidth: true });
+const notify = (message: string) => toast(message);
 // 하단 「업로드」 버튼을 눌러 나는 안내는 버튼을 가리지 않게 그 위로 띄움
-const notifyUpload = (message: string) =>
-  toast(message, { fullWidth: true, bottomOffset: UPLOAD_TOAST_OFFSET });
+const notifyUpload = (message: string) => toast(message);
 
 /**
  * 번들 작성(공동 편집) 화면: 고정 헤더와 연결 끊김 배너 아래로 참여 멤버, 제목, 사진, 코멘트, 위치·날짜(Figma `5664:100786`)
