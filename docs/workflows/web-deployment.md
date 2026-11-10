@@ -13,16 +13,20 @@
 - **빌드 캐시**: Next.js 빌드 캐시(`apps/web/.next/cache`)를 `yarn.lock`·소스 해시를 키로 이어 쓴다. 로컬 기준 캐시 없이 43초, 있을 때 21~23초였다(2026-11-10, CI 효과는 첫 배포 뒤 측정). 캐시는 main과 기본 브랜치(develop)에서 실행된 workflow만 쓸 수 있다. 공급망 사고(의존성·저장소 코드 오염)가 의심되면 Actions → Caches에서 `web-deploy-next-` 캐시를 지운 뒤 다시 배포한다(오염된 컴파일 결과가 캐시에 남을 수 있음).
 - 트래픽 일부만 새 버전으로 보내는 점진 배포(카나리)는 Vercel Rolling Releases가 필요하고 현재 요금제(Hobby)에서 쓸 수 있는지 확인하지 않았다.
 
-| job        | Vercel 토큰 | 저장소 코드 | 하는 일                                                                                                    |
-| ---------- | ----------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
-| `settings` | 있음        | 없음        | secret 확인 → 프로젝트 이름(`bunch-web`) 확인 → `.vercel/project.json`만 다음 job에 넘김                   |
-| `build`    | 없음        | 실행        | main 커밋 확인 → 변조 가드 → 설치 → 빌드 캐시 복원 → `vercel build --prod` → 결과물에 MSW 코드 없는지 확인 |
-| `deploy`   | 있음        | 없음        | 새 버전 올리기(`--skip-domain`) → 확인 → 운영 주소 전환(`promote`)                                         |
+| job        | Vercel 토큰 | 저장소 코드 | 하는 일                                                                                                                                       |
+| ---------- | ----------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `settings` | 있음        | 없음        | secret 확인 → 프로젝트 이름(`bunch-web`) 확인 → `.vercel/project.json`만 다음 job에 넘김                                                      |
+| `build`    | 없음        | 실행        | main 커밋 확인 → 변조 가드 → 설치 → 빌드 캐시 복원 → `vercel build --prod --standalone` → 결과물에 MSW 코드 없는지 확인 → 결과물을 tar로 묶음 |
+| `deploy`   | 있음        | 없음        | 묶음을 검사해 풂 → 빈 `apps/web` 폴더 만들기 → 새 버전 올리기(`--skip-domain`) → 확인 → 운영 주소 전환(`promote`)                             |
 
 - job을 나누는 이유: 같은 job 안에서는 앞 단계(의존성 설치·빌드가 실행하는 코드)가 `$GITHUB_ENV`·`$GITHUB_PATH`로 뒤 단계의 토큰을 가로챌 수 있다. 토큰이 있는 job은 checkout하지 않으므로 Yarn 대신 `npm exec`로 고정 버전 `vercel` CLI(65.1.0)만 실행한다. 버전을 올릴 때는 workflow의 모든 `vercel@`을 함께 바꾼다.
 - 저장소는 Yarn PnP라 Vercel의 Next.js 빌더가 `NEXT_NO_VERSION`으로 실패하므로 `build` job에서만 `YARN_NODE_LINKER=node-modules`로 설치한다(`.yarnrc.yml`은 그대로).
 - 가짜 서버 확인은 빌드 결과물을 본다(`_next` chunk에 `mockServiceWorker`가 있으면 멈춤). 꺼진 빌드는 0개, 켠 빌드는 1개 chunk인 것을 로컬 빌드로 확인했다(2026-11-10).
 - 롤백으로 수동 실행하면 그 커밋의 변조 가드·설치 단계가 실행되므로, 가드가 들어오기 전 커밋으로는 다시 빌드하지 않는다(Instant Rollback을 쓴다).
+- `--standalone`: 기본 빌드 결과물은 함수가 쓰는 파일(`node_modules` 등)을 복사하지 않고 저장소 경로로 가리켜(`filePathMap`), 저장소가 없는 배포 job에서 "File does not exist"로 실패한다. standalone은 그 파일을 함수 폴더 안에 담는다(2026-11-10 로컬 빌드로 함수 5개 모두 경로 참조 0개 확인, 결과물 86MB).
+- 결과물 묶음: 페이지 함수끼리 심볼릭 링크(약 280개)로 공유하는데 `upload-artifact`는 링크를 따라가 복사하므로 tar로 묶어 넘긴다(26MB). 빌드 job은 저장소 코드를 실행하므로 토큰이 있는 배포 job은 묶음을 믿지 않는다. 풀기 전에 모든 경로가 `output/` 아래이고 `..`·절대 경로·하드 링크·특수 파일이 없으며, 심볼릭 링크가 `output/` 안만 가리키고 다른 링크를 거치는 경로가 없는지 직접 검사한다(Python `tarfile` 필터의 알려진 우회 대비). 그다음 `data` 필터로 풀고, 링크가 실제로 가리키는 위치(`realpath`)가 결과물 안인지 다시 확인하고(링크를 거쳐 이어지는 대상, 러너 Python 패치 수준과 무관), 함수 설정(`.vc-config.json`)에 결과물 밖 파일을 가리키는 `filePathMap`이 있으면 멈춘다(CLI가 그 파일을 읽어 올리므로). 실제 결과물은 통과하고 악성 묶음 7가지는 막히는 것을 로컬에서 확인했다(2026-11-10).
+- 토큰은 명령 인자(`--token`)로 넘기지 않고 CLI가 읽는 `VERCEL_TOKEN` 환경 변수로만 준다(프로세스 목록에 드러나지 않게).
+- 빈 `apps/web` 폴더: CLI가 프로젝트 Root Directory의 존재만 확인하고, 올리는 결과물은 루트 `.vercel/output`이다(Vercel CLI 65.1.0 소스 확인).
 - artifact(프로젝트 설정·빌드 결과물)는 저장소를 읽을 수 있는 사람이 받을 수 있어 하루만 보관하고, 프로젝트 환경 변수 파일은 넘기지 않는다.
 
 ## Vercel 운영 프로젝트(계정에서 직접, 한 번만)
@@ -69,7 +73,7 @@
 
 ## 운영 주소 연결
 
-기본 주소는 `bunch-web-ten.vercel.app`이다(2026-11-10 생성).
+기본 주소는 `bunch-client.vercel.app`이다(2026-11-10, 프로젝트 이름은 `bunch-web`).
 
 - 앱 쉘 Release 빌드의 `EXPO_PUBLIC_WEB_URL`에 이 주소를 넣는다(EAS production 환경, `apps/mobile-shell/.env.production.example`).
 - 카카오·구글 콘솔에는 웹 도메인을 등록하지 않는다. 소셜 로그인은 앱 쉘의 네이티브 SDK(번들 ID 기준)로만 하고, 웹은 받은 토큰을 같은 도메인의 BFF(`/api/auth/login`)로 넘긴다. 브라우저에서는 소셜 로그인을 할 수 없다.

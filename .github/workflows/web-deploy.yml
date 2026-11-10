@@ -70,7 +70,7 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          npm exec --yes -- vercel@65.1.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npm exec --yes -- vercel@65.1.0 pull --yes --environment=production
           find .vercel -type f ! -name project.json -delete
 
       - uses: actions/upload-artifact@v4
@@ -120,6 +120,7 @@ jobs:
           path: .vercel
 
       # 서버 전용 값(API_BASE_URL)은 Vercel 프로젝트 환경 변수로 실행할 때 들어감
+      # --standalone: 배포 job에는 저장소가 없으므로 함수가 쓰는 파일을 결과물 안에 복사(기본은 저장소 경로만 가리킴)
       - name: 빌드
         env:
           NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
@@ -127,7 +128,7 @@ jobs:
           NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: yarn dlx vercel@65.1.0 build --prod
+        run: yarn dlx vercel@65.1.0 build --prod --standalone
 
       # 어떤 경로로든 가짜 서버(MSW)가 켜진 빌드는 올리지 않음
       - name: 가짜 서버 꺼짐 확인
@@ -137,11 +138,14 @@ jobs:
             echo "빌드 결과물에 가짜 서버(MSW) 코드가 있습니다."; exit 1;
           fi
 
+      # 페이지 함수끼리 심볼릭 링크로 공유하므로 링크를 보존하게 묶어서 넘김(artifact는 링크를 따라가 복사함)
+      - name: 결과물 묶기
+        run: tar -czf vercel-output.tgz -C .vercel output
+
       - uses: actions/upload-artifact@v4
         with:
           name: vercel-output
-          path: .vercel/output
-          include-hidden-files: true
+          path: vercel-output.tgz
           retention-days: 1
 
   deploy:
@@ -162,7 +166,42 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: vercel-output
-          path: .vercel/output
+
+      # 빌드 job은 저장소 코드를 실행하므로 묶음을 믿지 않는다. 풀기 전에 경로·링크를 직접 검사하고(tarfile 필터 우회 대비),
+      # 푼 뒤 함수 설정이 결과물 밖 파일을 가리키지 않는지(filePathMap, standalone이면 없음) 확인한다
+      - name: 결과물 검사 후 풀기
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, posixpath, tarfile
+          with tarfile.open('vercel-output.tgz') as tar:
+              members = tar.getmembers()
+              links = {m.name for m in members if m.issym()}
+              for m in members:
+                  parts = m.name.split('/')
+                  if m.name.startswith('/') or '..' in parts or parts[0] != 'output':
+                      raise SystemExit(f'예상 밖 경로: {m.name}')
+                  if not (m.isfile() or m.isdir() or m.issym()):
+                      raise SystemExit(f'허용하지 않는 종류: {m.name}')
+                  if any(m.name.startswith(link + '/') for link in links):
+                      raise SystemExit(f'링크를 거치는 경로: {m.name}')
+                  if m.issym():
+                      target = posixpath.normpath(posixpath.join(posixpath.dirname(m.name), m.linkname))
+                      if m.linkname.startswith('/') or not target.startswith('output/'):
+                          raise SystemExit(f'결과물 밖을 가리키는 링크: {m.name} -> {m.linkname}')
+              tar.extractall('.vercel', members=members, filter='data')
+          # 링크를 거쳐 이어지는 대상은 글자 검사로 알 수 없으므로 실제로 가리키는 위치로 한 번 더 확인
+          root = os.path.realpath('.vercel/output')
+          for path in pathlib.Path('.vercel/output').rglob('*'):
+              if path.is_symlink() and not os.path.realpath(path).startswith(root + os.sep):
+                  raise SystemExit(f'결과물 밖을 가리키는 링크: {path}')
+          for config in pathlib.Path('.vercel/output/functions').rglob('.vc-config.json'):
+              if 'filePathMap' in json.loads(config.read_text()):
+                  raise SystemExit(f'결과물 밖 파일을 가리키는 함수 설정: {config}')
+          PY
+
+      # 프로젝트 Root Directory(apps/web)가 있는지 CLI가 확인하므로 빈 폴더만 만듦(저장소는 받지 않음)
+      - name: Root Directory 자리 만들기
+        run: mkdir -p apps/web
 
       # 그린: 운영 환경 변수로 올리되 운영 주소는 아직 연결하지 않음
       - name: 새 버전 올리기
@@ -171,7 +210,7 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          out=$(npm exec --yes -- vercel@65.1.0 deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")
+          out=$(npm exec --yes -- vercel@65.1.0 deploy --prebuilt --prod --skip-domain)
           url=$(printf '%s\n' "$out" | tail -n 1)
           [[ "$url" =~ ^https://[a-z0-9.-]+\.vercel\.app$ ]] || { echo "배포 URL 형식이 아닙니다: $url"; exit 1; }
           echo "url=$url" >> "$GITHUB_OUTPUT"
@@ -183,7 +222,7 @@ jobs:
           URL: ${{ steps.upload.outputs.url }}
         run: |
           for path in /login /manifest.webmanifest; do
-            npm exec --yes -- vercel@65.1.0 curl "$path" --deployment "$URL" --token="$VERCEL_TOKEN" \
+            npm exec --yes -- vercel@65.1.0 curl "$path" --deployment "$URL" \
               -- --fail --silent --show-error --output /dev/null --retry 3 --retry-all-errors
             echo "통과: $path"
           done
@@ -194,5 +233,5 @@ jobs:
           URL: ${{ steps.upload.outputs.url }}
           REF: ${{ inputs.ref || github.ref_name }}
         run: |
-          npm exec --yes -- vercel@65.1.0 promote "$URL" --yes --token="$VERCEL_TOKEN"
+          npm exec --yes -- vercel@65.1.0 promote "$URL" --yes
           echo "운영 배포: $URL (ref: $REF)" >> "$GITHUB_STEP_SUMMARY"
