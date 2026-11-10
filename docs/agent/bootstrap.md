@@ -48,8 +48,9 @@
 | Tailwind·token·스타일 책임                  | `docs/architecture/styling-and-tokens.md`                                                                     |
 | 성능·번들·리렌더 이슈                       | `docs/workflows/performance.md`                                                                               |
 | web 공개 페이지 metadata·색인               | `docs/workflows/seo.md`                                                                                       |
+| 가짜 서버 연동 현황·서버 명세 차이          | `docs/workflows/mock-server-status.md`                                                                        |
 | 로컬 실행·런타임·환경 변수                  | `docs/workflows/local-development.md`                                                                         |
-| 사용성 테스트(UT) 세팅·배포                 | `docs/workflows/usability-test.md`, `docs/workflows/ut-deployment.md`                                         |
+| 웹 배포·홈 화면 앱(PWA)                     | `docs/workflows/web-deployment.md`                                                                            |
 | 페이지·API·디자인 시스템 작업 순서          | `.agents/guides/`의 해당 guide                                                                                |
 | 구현 전·후 흐름                             | `.agents/flows/`의 해당 flow                                                                                  |
 | 장기적으로 방향을 제한하는 결정             | `docs/decisions/README.md`                                                                                    |
