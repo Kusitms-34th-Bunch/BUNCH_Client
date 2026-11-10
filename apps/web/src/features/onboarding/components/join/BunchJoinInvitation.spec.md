@@ -28,7 +28,7 @@
 ## 상태와 흐름
 
 - 초기 진입: 초대장 열람 모션이 재생된다(`InviteReveal`, Web Animations API). 봉투 뒷면이 올라오고 인장이 커졌다 사라지며 가운데 조각이 흩어진 뒤 봉투가 가로로 접히며 카드가 펼쳐지고 제목이 올라온다. Figma 타임라인 4.2초 중 2.5초에 끝난다. 카드는 펼쳐지는 시각(약 2초)까지 `inert`라 누르거나 읽을 수 없다. 봉투·인장 색은 번치 타입(`characterType`)으로 정하며 Figma에는 TYPE_1(파랑)만 있다(나머지 3종은 같은 계열 색으로 정한 값, 확인 필요). 동작 줄이기이거나 재생을 지원하지 않으면 봉투 없이 최종 화면을 바로 보여 준다. 이전 로티 로딩 화면(`/onboarding/join/motion`)은 이 연출로 흡수해 삭제했다.
-- 「참여하기」: 서버에 참여를 요청한다(`useJoinInvitationMutation`, `Idempotency-Key` 필수). 요청 중에는 `PageLoading`을 덮고 같은 틱의 중복 탭은 ref로 막는다. `JOINED`면 결과를 흐름 상태에 남기고 완료 화면으로 `router.replace`, `ALREADY_MEMBER`는 토스트 「이미 참여 중인 번치예요.」 뒤 번치(임시 피드)로 `replace`한다. 실패 코드별 처리: 404 `INVITE_001`·409 `BUNCH_002`(정원)·`BUNCH_003`(소속 한도)는 토스트 뒤 「참여하기」를 잠그고(다시 해도 안 됨), 그 밖은 일시적 오류 토스트 뒤 다시 누를 수 있다. 같은 초대의 재시도는 같은 멱등 키를 쓰고 4xx(408·429 제외)에는 키를 버린다. 카드의 소개·초대한 사람이 없으면 해당 줄을 숨긴다(`InviteCard`).
+- 「참여하기」: 서버에 참여를 요청한다(`useJoinInvitationMutation`, `Idempotency-Key` 필수). 요청 중에는 `PageLoading`을 덮고 같은 틱의 중복 탭은 ref로 막는다. `JOINED`면 결과를 흐름 상태에 남기고 완료 화면으로 `router.replace`, `ALREADY_MEMBER`는 번치(임시 피드)로 `replace`하며 토스트 「이미 참여 중인 번치예요.」는 `toastAfterNavigation()`으로 예약해 도착 화면에서 띄운다. 실패 코드별 처리: 404 `INVITE_001`·409 `BUNCH_002`(정원)·`BUNCH_003`(소속 한도)는 토스트 뒤 「참여하기」를 잠그고(다시 해도 안 됨), 그 밖은 일시적 오류 토스트 뒤 다시 누를 수 있다. 같은 초대의 재시도는 같은 멱등 키를 쓰고 4xx(408·429 제외)에는 키를 버린다. 카드의 소개·초대한 사람이 없으면 해당 줄을 숨긴다(`InviteCard`).
 - 소개가 길면 2줄에서 말줄임(`InviteCard`의 `line-clamp-2`, Figma `875:5962`).
 
 ## UI와 접근성

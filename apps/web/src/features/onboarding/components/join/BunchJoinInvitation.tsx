@@ -10,6 +10,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import {
   BUNCH_ERROR_CODES,
   INVITATION_ERROR_CODES,
@@ -73,7 +74,7 @@ export function BunchJoinInvitation() {
         onSuccess: ({ outcome, bunch }) => {
           if (outcome === 'ALREADY_MEMBER') {
             // 확인한 뒤 다른 곳에서 이미 참여한 경우: 오류로 막지 않고 알린 뒤 번치로 이동
-            toast(ONBOARDING_MESSAGES.alreadyMember);
+            toastAfterNavigation(ONBOARDING_MESSAGES.alreadyMember);
             clearPendingInvitation();
             flow.discardIdempotencyKey();
             router.replace(ONBOARDING_PATHS.feed);

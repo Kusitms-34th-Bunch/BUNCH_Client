@@ -1,6 +1,6 @@
 import type * as DesignSystem from '@app/design-system';
 import type { ReactNode } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -122,6 +122,32 @@ describe('InviteEntry', () => {
       expect(readPendingInvitation()).toBeNull();
     },
   );
+
+  it('이동한 뒤 뒤로 가기로 화면이 그대로 복원되면(bfcache) 로딩을 풀고 다시 누를 수 있다', async () => {
+    server.use(
+      http.get('/api/invitations/:token', () =>
+        ok({ name: '여행가조', introduction: '소개', code: 'ABCD2345' }),
+      ),
+    );
+    renderEntry();
+    await userEvent.click(checkButton());
+    await waitFor(() => expect(push).toHaveBeenCalledWith(CONTINUE));
+
+    // 복원이 아닌 일반 표시에서는 상태를 건드리지 않아 다시 눌러도 요청하지 않음
+    push.mockClear();
+    act(() => {
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: false }));
+    });
+    await userEvent.click(checkButton());
+    expect(push).not.toHaveBeenCalled();
+
+    // bfcache 복원이면 처음 상태로 돌아가 다시 확인할 수 있음
+    act(() => {
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    });
+    await userEvent.click(checkButton());
+    await waitFor(() => expect(push).toHaveBeenCalledWith(CONTINUE));
+  });
 
   it('두 번 눌러도 확인 요청은 한 번만 보낸다', async () => {
     let calls = 0;

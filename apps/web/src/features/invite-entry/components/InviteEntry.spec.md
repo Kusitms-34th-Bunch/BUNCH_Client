@@ -29,7 +29,7 @@
 
 - 진입: 장식(로고 묶음, 픽셀 3개)이 아래에서 올라오며 나타난다(2.4초, 한 번). **CSS 키프레임만으로**(`globals.css`의 `invite-rise-*`, `animation-fill-mode: both`) 첫 페인트부터 재생해서 JS·hydration과 무관하고, 완성된 모양이 먼저 보였다가 다시 시작하는 깜빡임이 없다.
 - 「초대장 확인하기」: `GET /invitations/{토큰}`(공개). 같은 틱의 중복 탭은 ref로 막고 요청 중에는 버튼을 잠그고 `PageLoading`을 덮는다.
-  - 성공: `savePendingInvitation(토큰)` 뒤 `router.push(continueHref)`. 뒤로 가기로 이 페이지에 돌아올 수 있다.
+  - 성공: `savePendingInvitation(토큰)` 뒤 `router.push(continueHref)`. 뒤로 가기로 이 페이지에 돌아올 수 있고, 브라우저가 화면을 그대로 복원하면(bfcache, `pageshow`의 `persisted`) 로딩과 중복 탭 잠금을 풀어 다시 확인할 수 있다.
   - 404 `INVITE_001`(없음·만료·폐기, 구분하지 않음): 토스트 「유효하지 않은 링크입니다.」, 이동하지 않고 보관하지 않는다.
   - 그 밖(네트워크·서버): 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」, 다시 누를 수 있다.
 - 「앱 설치하기」: Figma대로 활성 모양(회색 `secondary`)이다. `onInstallApp`이 없으면 누를 때 토스트 「앱스토어 이동은 곧 지원돼요.」(기획 원문 없는 임시 문구)만 보인다. 유니버셜 링크를 붙일 때 호출부(`page.tsx`)가 핸들러를 넘긴다.

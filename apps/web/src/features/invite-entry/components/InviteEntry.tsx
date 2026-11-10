@@ -4,7 +4,7 @@ import { isApiError } from '@app/api-core';
 import { Button, toast } from '@app/design-system';
 import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { savePendingInvitation } from '@/shared/lib/pendingInvitation';
@@ -51,6 +51,18 @@ export function InviteEntry({ token, continueHref, onInstallApp }: InviteEntryPr
   const lookup = useLookupInvitationMutation();
   // 같은 틱에 연달아 눌러도 한 번만 보내도록 ref로 막음(state 갱신 전에는 isPending이 아직 false)
   const submitted = useRef(false);
+  const { reset } = lookup;
+
+  // 이동한 뒤 뒤로 가기로 이 화면이 그대로 복원되면(bfcache) 성공 상태의 로딩이 남아 버튼이 다시 동작하지 않으므로 처음 상태로 되돌림
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      submitted.current = false;
+      reset();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, [reset]);
 
   const check = () => {
     if (submitted.current) return;

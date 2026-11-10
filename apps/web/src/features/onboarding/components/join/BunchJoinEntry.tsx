@@ -1,12 +1,12 @@
 'use client';
 
 import { isApiError } from '@app/api-core';
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { INVITATION_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
@@ -38,7 +38,8 @@ export function BunchJoinEntry() {
 
     const leave = (message: string, { clear }: { clear: boolean }) => {
       if (clear) clearPendingInvitation();
-      toast(message);
+      // 이동하는 동작의 결과라 도착 화면의 전환·로딩이 끝난 뒤 띄움(`PendingToast`)
+      toastAfterNavigation(message);
       router.replace(ONBOARDING_PATHS.start);
     };
 
@@ -51,7 +52,7 @@ export function BunchJoinEntry() {
         } else if (eligibility === 'ALREADY_MEMBER') {
           // 오류로 막지 않고 알린 뒤 번치로 이동
           clearPendingInvitation();
-          toast(ONBOARDING_MESSAGES.alreadyMember);
+          toastAfterNavigation(ONBOARDING_MESSAGES.alreadyMember);
           router.replace(ONBOARDING_PATHS.feed);
         } else {
           leave(ONBOARDING_MESSAGES.fullBunch, { clear: true });

@@ -21,6 +21,10 @@ const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
+const toastAfterNavigation = vi.fn<(_message: string) => void>();
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({
+  toastAfterNavigation: (message: string) => toastAfterNavigation(message),
+}));
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: (...args: ToastArgs) => toast(...args),
@@ -61,6 +65,7 @@ describe('BunchJoinInvitation', () => {
     clearPendingInvitation();
     replace.mockClear();
     toast.mockClear();
+    toastAfterNavigation.mockClear();
   });
 
   it('제목과 본문(main), 서버가 확인한 초대 카드(번치 이름·소개·초대한 사람)를 보여 준다', () => {
@@ -138,7 +143,8 @@ describe('BunchJoinInvitation', () => {
     await userEvent.click(joinButton());
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed));
-    expect(toast).toHaveBeenCalledWith('이미 참여 중인 번치예요.');
+    expect(toastAfterNavigation).toHaveBeenCalledWith('이미 참여 중인 번치예요.');
+    expect(toast).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchComplete);
   });
 

@@ -1,4 +1,3 @@
-import type * as DesignSystem from '@app/design-system';
 import type { ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { http } from 'msw';
@@ -18,11 +17,10 @@ import { BunchJoinEntry } from './BunchJoinEntry';
 
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
-type ToastArgs = Parameters<typeof DesignSystem.toast>;
-const toast = vi.fn<(..._args: ToastArgs) => void>();
-vi.mock('@app/design-system', async (importOriginal) => ({
-  ...(await importOriginal<typeof DesignSystem>()),
-  toast: (...args: ToastArgs) => toast(...args),
+// 이동하는 동작의 토스트는 도착 화면에서 띄우도록 예약함(`toastAfterNavigation`)
+const toast = vi.fn<(_message: string) => void>();
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({
+  toastAfterNavigation: (message: string) => toast(message),
 }));
 
 const Query = createQueryWrapper();
