@@ -16,7 +16,7 @@ import { useCreateBundle } from '../hooks/useCreateBundle';
 import { applyRecommendation, getApplyDateKey, type Recommendation } from '../lib/recommendation';
 import { BundleSelectContext, type BundleSelectValue } from './bundleSelectContext';
 
-const notify = (message: string) => toast(message, { fullWidth: true });
+const notify = (message: string) => toast(message);
 
 type BundleSelectProviderProps = {
   children: ReactNode;

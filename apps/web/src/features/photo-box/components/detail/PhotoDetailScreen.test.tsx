@@ -13,6 +13,9 @@ import type {
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoDetailScreen } from './PhotoDetailScreen';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 // 재생·제스처 라이브러리는 모양과 제스처를 검증하지 않으므로 mock하고 이벤트는 붙잡아 직접 호출
 type SwiperLike = {
   activeIndex: number;
@@ -421,7 +424,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
     expect(ids).toEqual(['d1']);
     expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 8, 12]);
     await waitFor(() => expect(screen.queryByRole('dialog', { name: '날짜 바꾸기' })).toBeNull());
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChanged, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChanged);
   });
 
   it('저장하지 못하면 오류 토스트를 띄우고 시트를 그대로 둔다', async () => {
@@ -432,9 +435,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
     await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed));
     expect(screen.getByRole('dialog', { name: '날짜 바꾸기' })).toBeTruthy();
   });
 
@@ -463,9 +464,7 @@ describe('PhotoDetailScreen 저장', () => {
     );
 
     finish({ savedIds: ['p1'], failedIds: [] });
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveDone, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveDone));
     expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
   });
 
@@ -491,9 +490,7 @@ describe('PhotoDetailScreen 저장', () => {
     await user.click(screen.getByRole('button', { name: '더보기' }));
     await user.click(screen.getByRole('menuitem', { name: '저장' }));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll));
   });
 });
 
@@ -535,7 +532,7 @@ describe('PhotoDetailScreen 삭제', () => {
 
     expect(deletePhotos).toHaveBeenCalledWith(['p1']);
     await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteDone(1), { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteDone(1));
   });
 
   it('내 이름만 빠지고 사진이 남으면 토스트 없이 상세에 머문다', async () => {
@@ -559,9 +556,7 @@ describe('PhotoDetailScreen 삭제', () => {
 
     await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed));
     expect(onLeave).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PhotoBoxActions, PhotoBoxData, PhotoBoxPhoto, PhotoBoxViewer } from '../../lib/types';
-import { TOAST_ABOVE_TAB_BAR_OFFSET } from '../../constants/layout';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { photoBoxFixture } from '../../fixtures/photoBox.fixture';
 import { MAX_PHOTOS_IN_BOX } from '../../lib/photoActions';
@@ -110,10 +109,7 @@ describe('선택 모드 날짜 바꾸기', () => {
     expect(ids).toEqual(['a', 'b']);
     expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 9, 5]);
     await waitFor(() => expect(screen.queryByRole('dialog', { name: '날짜 바꾸기' })).toBeNull());
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChanged, {
-      fullWidth: true,
-      bottomOffset: TOAST_ABOVE_TAB_BAR_OFFSET,
-    });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChanged);
     expect(screen.getByRole('button', { name: '선택' })).toBeTruthy();
   });
 
@@ -125,9 +121,7 @@ describe('선택 모드 날짜 바꾸기', () => {
     await openDateSheet(user);
     await pickAndSave(user);
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed));
     expect(screen.getByRole('dialog', { name: '날짜 바꾸기' })).toBeTruthy();
     // 선택 모드가 이어지고 있음(시트가 뒤를 가려 접근성 트리에서는 숨겨짐)
     expect(screen.queryByRole('button', { name: '선택', hidden: true })).toBeNull();
@@ -139,7 +133,7 @@ describe('선택 모드 날짜 바꾸기', () => {
     await startSelecting(user, 2);
     await openDateSheet(user);
 
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateForbidden, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateForbidden);
     expect(screen.queryByRole('dialog', { name: '날짜 바꾸기' })).toBeNull();
     expect(changePhotoDates).not.toHaveBeenCalled();
   });
@@ -218,7 +212,7 @@ describe('사진 올리기 시트', () => {
 
     await user.click(screen.getByRole('button', { name: '사진 올리기' }));
 
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.photoBoxFull, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.photoBoxFull);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

@@ -116,7 +116,7 @@ export function PhotoBoxScreen({
   // 사진함이 가득 차면 시트를 열지 않고 토스트로만 알림(명세 3.2.1)
   const openUpload = () => {
     if ((photos?.length ?? 0) >= MAX_PHOTOS_IN_BOX) {
-      toast(PHOTO_BOX_MESSAGES.photoBoxFull, { fullWidth: true });
+      toast(PHOTO_BOX_MESSAGES.photoBoxFull);
       return;
     }
     openOverlay((rootProps, close) => {

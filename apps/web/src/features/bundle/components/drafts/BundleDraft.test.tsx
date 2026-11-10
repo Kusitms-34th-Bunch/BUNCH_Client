@@ -7,6 +7,9 @@ import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { DraftProvider } from '../../contexts/DraftProvider';
 import { BundleDraft } from './BundleDraft';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 vi.mock('@app/design-system', async (importOriginal) => ({
@@ -57,7 +60,7 @@ describe('BundleDraft', () => {
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
     expect(leaveBundle).toHaveBeenCalledWith('draft-1');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.draftDeleted, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.draftDeleted);
   });
 
   it('나가기를 연달아 눌러도 서버에는 한 번만 보내고, 끝나면 한 번만 이동한다', async () => {
@@ -80,7 +83,7 @@ describe('BundleDraft', () => {
 
     finish();
     await waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
-    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).toHaveBeenCalledTimes(1);
   });
 
   it('나가기를 서버에 보내지 못하면 이동하지 않고 안내한다', async () => {
@@ -92,9 +95,7 @@ describe('BundleDraft', () => {
     const dialog = await screen.findByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.leaveFailed, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.leaveFailed));
     expect(replace).not.toHaveBeenCalled();
   });
 

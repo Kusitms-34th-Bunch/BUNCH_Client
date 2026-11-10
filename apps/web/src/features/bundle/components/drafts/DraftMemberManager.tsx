@@ -72,7 +72,7 @@ export function DraftMemberManager({
     capture();
     actions.addMember(member.id);
     setFocusId(member.id);
-    toast(BUNDLE_MESSAGES.memberAdded(member.name), { fullWidth: true });
+    toast(BUNDLE_MESSAGES.memberAdded(member.name));
   };
 
   return (

@@ -20,8 +20,6 @@ type MemberProfileScreenProps = {
   links: { bunchHome: string; otherBunch: (_bunchId: string) => string };
 };
 
-const TOAST_OPTIONS = { fullWidth: true };
-
 const followToast = (bunch: FeedMemberBunch, status: FeedFollowStatus) => {
   if (status === 'following') return text.unfollowed(bunch.name);
   if (status === 'requested') return text.requestCanceled(bunch.name);
@@ -35,7 +33,7 @@ const followToast = (bunch: FeedMemberBunch, status: FeedFollowStatus) => {
 export function MemberProfileScreen({ memberId, links }: MemberProfileScreenProps) {
   const router = useRouter();
   const backOr = useBackOr();
-  const { viewer, viewerPending, asBunch } = useFeedViewer(TOAST_OPTIONS);
+  const { viewer, viewerPending, asBunch } = useFeedViewer();
   const [followed, setFollowed] = useState<Record<string, FeedFollowStatus>>({});
   const member = getMemberProfileFixture(memberId);
 
@@ -69,7 +67,7 @@ export function MemberProfileScreen({ memberId, links }: MemberProfileScreenProp
       const status = statusOf(bunch);
       const next = status !== 'none' ? 'none' : bunch.isPrivate ? 'requested' : 'following';
       setFollowed((current) => ({ ...current, [bunch.id]: next }));
-      toast(followToast(bunch, status), TOAST_OPTIONS);
+      toast(followToast(bunch, status));
     });
 
   return (

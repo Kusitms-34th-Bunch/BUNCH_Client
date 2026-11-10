@@ -1,15 +1,15 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { DescriptionRadioCard } from '@app/design-system/web';
 import { useId, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
-import { FEED_TOAST_OFFSET } from '../../constants/toast';
 import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
 import { useBundleEdits } from '../../hooks/useBundleEdits';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
@@ -86,7 +86,7 @@ export function BundleVisibilityScreen({ bundleId, bunchPrivate }: BundleVisibil
             onClick={() => {
               bundleEdits.setMemberOnly(bundleId, memberOnly);
               back();
-              toast(text.bundleEdited, { fullWidth: true, bottomOffset: FEED_TOAST_OFFSET });
+              toastAfterNavigation(text.bundleEdited);
             }}
           >
             {text.edit}

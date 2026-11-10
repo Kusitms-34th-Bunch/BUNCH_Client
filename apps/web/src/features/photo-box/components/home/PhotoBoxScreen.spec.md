@@ -59,7 +59,7 @@
 
 - 선택 모드는 화면 안 상태다(`hooks/usePhotoSelectionFlow.ts`). 서버·기기 동작은 `PhotoBoxActions`(`savePhotos`·`deletePhotos`)로 받고, `usePhotoBox`가 준다. 삭제는 mutation 뒤 사진 목록을 다시 불러와 반영하고, 저장은 목 동작(0.8초 뒤 모두 성공)이며, 날짜 변경은 서버 반영 전이라 이 세션의 목록에만 덮어 보인다(새로고침하면 원래 날짜).
 - 선택 모드 동안 `HideMainTabBar`를 렌더해 `(main)` layout이 탭 막대를 숨기고 `--main-tab-bar-*` 변수를 0으로 되돌린다. 「⋯」는 막대가 있을 때와 같은 10px 간격(`float-gap`)으로 화면 끝 위에 놓인다(Figma 사진함_07은 간격 0이지만 막대와 같은 간격으로 맞추기로 했다). iOS 쉘에서는 시스템 탭 바를 숨기는 경로가 없어 선택 모드에도 탭 바가 남는다(`docs/specs/photo-box.md` 확인 항목).
-- 선택 모드를 끝낸 직후의 완료 토스트는 막대가 다시 보이므로 막대 위 10px에 둔다(`TOAST_ABOVE_TAB_BAR_OFFSET`). 사진함 토스트는 모두 목록 폭(343px)으로 펼친다.
+- 사진함 토스트는 모두 목록 폭(343px)이고 탭 막대가 보이면 막대 위 16px에 뜬다(`toast()`의 `tab-bar` 앵커, `Toast.spec.md`). 선택 모드를 끝낸 직후의 완료 토스트는 막대가 다시 나타난 뒤 다음 프레임에 위치를 다시 재서 막대 위에 놓인다. 선택 모드 중에는 막대가 숨겨져 기본 위치다.
 
 ## 데이터 의존성
 
