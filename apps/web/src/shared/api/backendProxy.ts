@@ -7,7 +7,8 @@ import { apiBaseUrl } from './serverClient';
 
 const BACKEND_PREFIX = 'api/v1/';
 const TIMEOUT_MS = 10_000;
-const FORWARDED_REQUEST_HEADERS = ['accept', 'content-type'];
+// 멱등 키는 번치 생성·초대 참여·번들 발행처럼 재전송이 한 번만 처리돼야 하는 요청에 필수라 그대로 전달
+const FORWARDED_REQUEST_HEADERS = ['accept', 'content-type', 'idempotency-key'];
 // Set-Cookie 등은 버리고 본문 해석에 필요한 헤더만 전달
 const FORWARDED_RESPONSE_HEADERS = ['cache-control', 'content-disposition', 'content-type'];
 

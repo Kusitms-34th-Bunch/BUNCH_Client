@@ -97,3 +97,62 @@ describe('테스트에서 handler 바꾸기', () => {
     expect(await response.json()).toMatchObject({ error: { code: 'AUTH_001' } });
   });
 });
+
+describe('가짜 서버 번치 만들기', () => {
+  const create = (key: string | null, body: Record<string, unknown>) =>
+    api().post('bunches', {
+      json: body,
+      throwHttpErrors: false,
+      ...(key ? { headers: { 'Idempotency-Key': key } } : {}),
+    });
+  const input = {
+    name: '새번치',
+    introduction: '소개',
+    visibility: 'PUBLIC',
+    characterType: 'TYPE_2',
+  };
+
+  it('번치를 만들고 만든 회원을 OWNER로 등록하며 같은 멱등 키는 같은 번치를 돌려준다', async () => {
+    const first = unwrapEnvelope<{ id: number }>(await (await create('k-1', input)).json());
+    const again = unwrapEnvelope<{ id: number }>(await (await create('k-1', input)).json());
+
+    expect(again.id).toBe(first.id);
+    const { memberships, bunches } = mockDb.get();
+    expect(bunches.filter((bunch) => bunch.name === '새번치')).toHaveLength(1);
+    expect(memberships).toContainEqual({
+      bunchId: first.id,
+      memberId: MOCK_MY_MEMBER_ID,
+      role: 'OWNER',
+    });
+  });
+
+  it('멱등 키가 없으면 400, 같은 키에 다른 입력은 409 REQUEST_001이다', async () => {
+    expect((await create(null, input)).status).toBe(400);
+    await create('k-2', input);
+    const conflict = await create('k-2', { ...input, name: '다른번치' });
+    expect(conflict.status).toBe(409);
+  });
+
+  it('이미 있는 이름은 BUNCH_001이고 이름 확인에도 사용 중으로 나온다', async () => {
+    const taken = mockDb.get().bunches[0]!.name;
+    const response = await create('k-3', { ...input, name: taken });
+    expect(response.status).toBe(409);
+    const body: { error: { code: string } } = await response.json();
+    expect(body.error.code).toBe('BUNCH_001');
+
+    const availability = unwrapEnvelope<{ available: boolean }>(
+      await api()
+        .get('bunches/name-availability', { searchParams: { name: taken } })
+        .json(),
+    );
+    expect(availability.available).toBe(false);
+  });
+
+  it('없는 번치의 대표 사진은 바꿀 수 없다', async () => {
+    const response = await api().put('bunches/999/profile-image', {
+      body: new FormData(),
+      throwHttpErrors: false,
+    });
+    expect(response.status).toBe(404);
+  });
+});

@@ -1,4 +1,5 @@
 import { bunchHomeHandlers } from './bunchHome';
+import { bunchOnboardingHandlers } from './bunchOnboarding';
 import { bundleExitHandlers } from './bundleExit';
 import { bundleLeaseHandlers } from './bundleLeases';
 import { bundlePhotoHandlers } from './bundlePhotos';
@@ -13,6 +14,7 @@ export const handlers = [
   ...memberHandlers,
   ...termHandlers,
   ...photoHandlers,
+  ...bunchOnboardingHandlers,
   // 번들 목록·현황은 `/bundles/:id`보다 먼저 맞아야 해서(먼저 맞는 handler 사용) 번들 handler 앞에 둠
   ...bunchHomeHandlers,
   ...bundleHandlers,
