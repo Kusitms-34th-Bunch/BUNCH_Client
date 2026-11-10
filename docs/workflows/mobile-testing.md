@@ -64,10 +64,11 @@ pnpm ios
 `pnpm android`(`expo run:android`)도 같은 방식이지만 아직 검증하지 않았다.
 `ios/`, `android/`는 생성물이므로 직접 수정하거나 커밋하지 않는다.
 
-Xcode에서 서명이나 빌드 로그를 직접 봐야 하면 수동으로 연다. 앱 폴더에서 `ios/`를 맞춘 뒤 Xcode로 열고 **Run**을 누른다. `pnpm ios:sync`는 `expo prebuild --platform ios --no-clean`이며 Capacitor의 `cap sync`에 해당한다. `app.json`, 아이콘·스플래시 이미지, 네이티브 패키지를 바꿨을 때 다시 실행한다. Xcode가 열린 채로 실행하면 프로젝트를 다시 불러오지 못할 수 있어 Xcode를 닫고 실행한다.
+Xcode에서 서명이나 빌드 로그를 직접 봐야 하면 수동으로 연다. 앱 폴더에서 `ios/`를 맞춘 뒤 Xcode로 열고 **Run**을 누른다. `pnpm ios:sync`(`scripts/ios-sync.mjs`)는 `expo prebuild --platform ios --no-clean`이며 Capacitor의 `cap sync`에 해당한다. `app.json`, 아이콘·스플래시 이미지, 네이티브 패키지를 바꿨을 때 다시 실행한다. Xcode가 열린 채로 실행하면 프로젝트를 다시 불러오지 못할 수 있어 Xcode를 닫고 실행한다.
 
 Expo 58의 prebuild는 옵션이 없으면 `ios/`를 지우고 새로 만든다. 그러면 Pods까지 처음부터 다시 컴파일한다. 그래서 `ios:sync`는 기존 폴더에 바뀐 것만 반영한다(`--no-clean`).
-플러그인·네이티브 패키지를 제거했거나 `ios/`가 꼬였을 때만 `pnpm ios:sync:clean`으로 새로 만든다. 이때 `ios/.xcode.env.local` 같은 로컬 설정도 지워진다.
+`--no-clean`의 prebuild는 직접 추가한 네이티브 패키지를 감지하지 못해 `pod install`을 건너뛴다. 그래서 스크립트가 `pnpm-lock.yaml`·`ios/Podfile`·`ios/Podfile.properties.json`이 지난 sync 때와 다르면 `pod install`을 실행한다(기록은 `ios/.pods-lock-hash`). pod install이 끝나지 않으면 기록을 지우고 실패로 끝나 다음 sync에서 다시 시도한다. JS 패키지만 바뀌어도 실행되며, 이때 다음 빌드는 약 200초 걸린다.
+플러그인·네이티브 패키지를 제거했거나, Expo SDK를 올렸거나(새 네이티브 템플릿은 `ios/`가 있으면 복사되지 않음), `ios/`가 꼬였을 때만 `pnpm ios:sync:clean`으로 새로 만든다. 이때 `ios/.xcode.env.local` 같은 로컬 설정도 지워진다.
 
 | 측정(2026-11-10, Apple M5, Xcode 26.6, 시뮬레이터 Debug) | sync    | 다음 빌드 |
 | -------------------------------------------------------- | ------- | --------- |
