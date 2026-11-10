@@ -21,16 +21,18 @@ describe('BunchConfetti', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('조각마다 위치·회전·불투명도 세 가지를 1.5초 동안 재생한다', () => {
+  it('조각마다 가로·세로 이동, 회전, 뒤집힘, 불투명도를 4.2초 동안 재생한다', () => {
     const { container } = render(<BunchConfetti />);
 
-    expect(container.querySelectorAll('span')).toHaveLength(CONFETTI_PIECES.length);
-    expect(animate).toHaveBeenCalledTimes(CONFETTI_PIECES.length * 3);
+    // 조각마다 가로 이동·세로 이동·본체 세 겹
+    expect(container.querySelectorAll('span')).toHaveLength(CONFETTI_PIECES.length * 3);
+    expect(animate).toHaveBeenCalledTimes(CONFETTI_PIECES.length * 5);
     for (const [, options] of animate.mock.calls as unknown as [
       unknown,
       KeyframeAnimationOptions,
     ][]) {
       expect(options.duration).toBe(CONFETTI_DURATION_MS);
+      expect(options.duration).toBe(4200);
     }
   });
 
@@ -51,7 +53,7 @@ describe('BunchConfetti', () => {
 
     unmount();
 
-    expect(cancel).toHaveBeenCalledTimes(CONFETTI_PIECES.length * 3);
+    expect(cancel).toHaveBeenCalledTimes(CONFETTI_PIECES.length * 5);
   });
 
   it('움직임 줄이기 설정이면 그리지도 재생하지도 않는다', async () => {

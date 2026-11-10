@@ -1,28 +1,32 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import {
-  CONFETTI_DURATION_MS,
-  CONFETTI_FRAME,
-  CONFETTI_OPACITY_EASING,
-  CONFETTI_OPACITY_TIMES_MS,
-  CONFETTI_PIECES,
-  CONFETTI_PIECE_SIZE,
-  CONFETTI_ROTATION_END_MS,
-} from '../constants/confetti';
+import { CONFETTI_DURATION_MS, CONFETTI_FRAME, CONFETTI_PIECES } from '../constants/confetti';
+import { confettiKeyframes } from '../lib/confettiKeyframes';
 
-const BEZIER = 'cubic-bezier(0.5, 0, 0.5, 1)';
-const at = (timeMs: number) => timeMs / CONFETTI_DURATION_MS;
+type PieceRefs = {
+  x: HTMLSpanElement | null;
+  y: HTMLSpanElement | null;
+  body: HTMLSpanElement | null;
+};
+
+const OPTIONS = { duration: CONFETTI_DURATION_MS, fill: 'both' } as const;
 
 // 부모의 relative 좌표계를 사용하며 동작 줄이기 설정 시 렌더링 생략
 export function BunchConfetti() {
-  const pieceRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const pieceRefs = useRef<PieceRefs[]>(
+    CONFETTI_PIECES.map(() => ({ x: null, y: null, body: null })),
+  );
   const [finished, setFinished] = useState(false);
+  const attach = (index: number, key: keyof PieceRefs) => (element: HTMLSpanElement | null) => {
+    const refs = pieceRefs.current[index];
+    if (refs) refs[key] = element;
+  };
 
   useEffect(() => {
-    const elements = pieceRefs.current;
+    const pieces = pieceRefs.current;
     if (
-      typeof elements[0]?.animate !== 'function' ||
+      typeof pieces[0]?.body?.animate !== 'function' ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     ) {
       setFinished(true);
@@ -30,42 +34,17 @@ export function BunchConfetti() {
     }
 
     const animations = CONFETTI_PIECES.flatMap((piece, index) => {
-      const element = elements[index];
-      if (!element) return [];
-      const [from, to] = piece.rotation;
-      const opacityTimes = piece.opacityTimesMs ?? CONFETTI_OPACITY_TIMES_MS;
-      const last = piece.path.at(-1);
-      const options = { duration: CONFETTI_DURATION_MS, fill: 'both' } as const;
+      const refs = pieces[index];
+      if (!refs?.x || !refs.y || !refs.body) return [];
+      const keyframes = confettiKeyframes(piece);
 
       return [
-        element.animate(
-          [
-            ...piece.path.map(([time, x, y]) => ({
-              offset: at(time),
-              translate: `${x}px ${y}px`,
-            })),
-            { offset: 1, translate: `${last?.[1] ?? 0}px ${last?.[2] ?? 0}px` },
-          ],
-          options,
-        ),
-        element.animate(
-          [
-            { offset: 0, rotate: `${from}rad`, easing: BEZIER },
-            { offset: at(CONFETTI_ROTATION_END_MS), rotate: `${to}rad` },
-            { offset: 1, rotate: `${to}rad` },
-          ],
-          options,
-        ),
-        element.animate(
-          [
-            { offset: 0, opacity: 0, easing: CONFETTI_OPACITY_EASING },
-            { offset: at(opacityTimes[1]), opacity: 1 },
-            { offset: at(opacityTimes[2]), opacity: 1, easing: CONFETTI_OPACITY_EASING },
-            { offset: at(opacityTimes[3]), opacity: 0 },
-            { offset: 1, opacity: 0 },
-          ],
-          options,
-        ),
+        // 가로·세로 이동은 시각과 곡선이 달라 요소를 나눠 각각 재생
+        refs.x.animate(keyframes.translateX, OPTIONS),
+        refs.y.animate(keyframes.translateY, OPTIONS),
+        refs.body.animate(keyframes.rotate, OPTIONS),
+        refs.body.animate(keyframes.scale, OPTIONS),
+        refs.body.animate(keyframes.opacity, OPTIONS),
       ];
     });
 
@@ -81,7 +60,7 @@ export function BunchConfetti() {
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* 고정 크기 아바타·제목에 맞춰 Figma 틀(375×591)의 가운데 정렬 */}
+      {/* 고정 크기 아바타·제목에 맞춰 Figma 틀(375×624)의 가운데 정렬 */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{ width: CONFETTI_FRAME.width, height: CONFETTI_FRAME.height }}
@@ -89,16 +68,18 @@ export function BunchConfetti() {
         {CONFETTI_PIECES.map((piece, index) => (
           <span
             key={piece.id}
-            ref={(element) => {
-              pieceRefs.current[index] = element;
-            }}
-            className="absolute top-0 left-0 origin-top-left opacity-0"
-            style={{
-              width: CONFETTI_PIECE_SIZE.width,
-              height: CONFETTI_PIECE_SIZE.height,
-              backgroundColor: piece.color,
-            }}
-          />
+            ref={attach(index, 'x')}
+            className="absolute"
+            style={{ left: piece.left, top: piece.top, width: piece.size, height: piece.size }}
+          >
+            <span ref={attach(index, 'y')} className="block size-full">
+              <span
+                ref={attach(index, 'body')}
+                className="block size-full opacity-0"
+                style={{ backgroundColor: piece.color }}
+              />
+            </span>
+          </span>
         ))}
       </div>
     </div>

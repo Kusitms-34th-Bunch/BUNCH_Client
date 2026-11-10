@@ -56,7 +56,7 @@ export function BunchJoin({ onSubmit }: BunchJoinProps) {
         return;
       }
       // 뒤로 가기로 링크를 수정할 수 있도록 push 적용
-      router.push(ONBOARDING_PATHS.joinBunchMotion);
+      router.push(ONBOARDING_PATHS.joinBunchInvitation);
     } finally {
       setSubmitting(false);
     }
