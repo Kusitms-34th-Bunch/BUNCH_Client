@@ -22,7 +22,7 @@ export const Gallery: Story = {
     <div className="gap-s12 bg-surface-primary text-text-primary flex flex-col">
       <table className="typography-label-s w-full border-collapse">
         <caption className="pb-s8 typography-title-1-semi-bold text-left">
-          Line 33 · Fill 11
+          Line 36 · Fill 12
         </caption>
         <thead>
           <tr>
