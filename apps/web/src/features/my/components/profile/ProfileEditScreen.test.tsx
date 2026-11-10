@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { ProfileEditScreen } from './ProfileEditScreen';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 const replace = vi.fn();
@@ -69,7 +72,7 @@ describe('ProfileEditScreen', () => {
     await user.click(submitButton());
 
     expect(replace).toHaveBeenCalledWith('/my');
-    expect(toast).toHaveBeenCalledWith('프로필을 수정했어요.');
+    expect(toastAfterNavigation).toHaveBeenCalledWith('프로필을 수정했어요.');
     expect(submitButton().disabled).toBe(true);
   });
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { Button, GraphicGlobeIcon, GraphicLockIcon } from '@app/design-system';
-import { LabeledTextField, PageHeader, VisibilityOption } from '@app/design-system/web';
+import { Button } from '@app/design-system';
+import { DescriptionRadioCard, LabeledTextField, PageHeader } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -56,25 +56,23 @@ export function BunchBasicInfo() {
       {/* fieldset 위쪽 패딩은 legend 아래에 적용되므로 바깥 래퍼로 간격 조정 */}
       <div className="pt-s15 px-padding-p8">
         <fieldset className="min-w-0">
-          <legend className="typography-body-3-semibold text-text-primary pb-s6">공개 범위</legend>
-          <div className="gap-s4 flex flex-col">
-            <VisibilityOption
-              name="visibility"
-              value="private"
-              title="비공개 번치"
-              description="승인된 팔로워만 번치의 기록을 볼 수 있어요."
-              icon={<GraphicLockIcon />}
-              checked={visibility === 'private'}
-              onChange={() => setVisibility('private')}
-            />
-            <VisibilityOption
+          <legend className="typography-body-3-semibold text-text-primary pb-s2">공개 범위</legend>
+          <div className="gap-s3 flex flex-col">
+            <DescriptionRadioCard
               name="visibility"
               value="public"
               title="공개 번치"
               description="누구나 번치의 기록을 볼 수 있어요."
-              icon={<GraphicGlobeIcon />}
               checked={visibility === 'public'}
               onChange={() => setVisibility('public')}
+            />
+            <DescriptionRadioCard
+              name="visibility"
+              value="private"
+              title="비공개 번치"
+              description="승인된 팔로워만 번치의 기록을 볼 수 있어요."
+              checked={visibility === 'private'}
+              onChange={() => setVisibility('private')}
             />
           </div>
         </fieldset>

@@ -42,7 +42,6 @@ export function FollowRequestsScreen({
       approve
         ? BUNCH_HOME_MESSAGES.requestApproved(request.name)
         : BUNCH_HOME_MESSAGES.requestRejected(request.name),
-      { fullWidth: true },
     );
   };
 

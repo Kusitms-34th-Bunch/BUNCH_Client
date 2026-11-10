@@ -142,7 +142,7 @@ describe('PhotoBoxScreen 선택 모드', () => {
 
     await user.click(buttons[MAX_SELECTION]!);
 
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.maxSelection, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.maxSelection);
     expect(buttons[MAX_SELECTION]!.getAttribute('aria-pressed')).toBe('false');
     expect(screen.getByRole('radio', { name: `전체 (${MAX_SELECTION})` })).toBeTruthy();
   });

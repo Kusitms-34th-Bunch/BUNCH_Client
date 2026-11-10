@@ -157,6 +157,6 @@ describe('FeedAdCard', () => {
     await user.click(screen.getByRole('button', { name: '콕하기' }));
 
     expect(screen.getByRole('button', { name: '콕하기' })).toBeTruthy();
-    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', expect.anything());
+    expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
   });
 });

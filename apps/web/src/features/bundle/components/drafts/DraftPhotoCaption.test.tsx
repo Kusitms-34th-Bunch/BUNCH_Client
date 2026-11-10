@@ -199,7 +199,6 @@ describe('DraftPhotoCaption 캡션', () => {
 
     expect(actions.setPhotoCaption).toHaveBeenCalledWith('draft-photo-2', '가'.repeat(200));
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.captionTooLong, {
-      fullWidth: true,
       position: 'top',
     });
   });
@@ -220,7 +219,6 @@ describe('DraftPhotoCaption 캡션', () => {
 
     expect(field).toHaveAttribute('readonly');
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants, {
-      fullWidth: true,
       position: 'top',
     });
     expect(actions.setPhotoCaption).not.toHaveBeenCalled();
@@ -237,7 +235,6 @@ describe('DraftPhotoCaption 캡션', () => {
     await userEvent.click(screen.getByRole('button', { name: '경진님이 편집 중' }));
 
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, {
-      fullWidth: true,
       position: 'top',
     });
   });
@@ -306,7 +303,6 @@ describe('DraftPhotoCaption 사진 빼기', () => {
     await userEvent.click(screen.getByRole('button', { name: '2번째 사진 빼기' }));
 
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, {
-      fullWidth: true,
       position: 'top',
     });
     expect(actions.removePhoto).not.toHaveBeenCalled();

@@ -8,7 +8,6 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { DraftVisibility } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
-import { UPLOAD_TOAST_OFFSET } from '../../constants/toast';
 
 type DraftVisibilityScreenProps = {
   /** 고른 공개 범위. 아직 고르지 않았으면 null */
@@ -77,11 +76,7 @@ export function DraftVisibilityScreen({
             aria-disabled={blocked ? true : undefined}
             onClick={() => {
               if (uploading) return;
-              if (value === null)
-                toast(BUNDLE_MESSAGES.visibilityRequired, {
-                  fullWidth: true,
-                  bottomOffset: UPLOAD_TOAST_OFFSET,
-                });
+              if (value === null) toast(BUNDLE_MESSAGES.visibilityRequired);
               else onUpload();
             }}
           >

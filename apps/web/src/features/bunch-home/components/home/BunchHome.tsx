@@ -42,7 +42,7 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
           deleteDraftBundle: (bundleId: string) => {
             if (deleteBundle.isPending) return;
             deleteBundle.mutate(bundleId, {
-              onError: () => toast(BUNCH_HOME_MESSAGES.deleteDraftFailed, { fullWidth: true }),
+              onError: () => toast(BUNCH_HOME_MESSAGES.deleteDraftFailed),
             });
           },
         }

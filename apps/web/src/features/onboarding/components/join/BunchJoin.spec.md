@@ -34,7 +34,7 @@
 - 초점: 입력창 테두리가 진한 색으로 바뀌고 안내 문구가 사라진다(`TextField`의 Figma Focused).
 - 「붙여넣기」: `navigator.clipboard.readText()`로 읽어 앞뒤 공백을 지우고 채운 뒤 입력창에 초점을 줘서 스크린 리더가 채운 값을 읽게 한다. 읽기가 막히면(권한 거부·비보안 환경) 값은 그대로 두고 입력창에 초점만 줘서 직접 붙여넣게 한다.
 - 「완료」: 형식(`https://<호스트>/invite/<코드>`)이 틀리면 `invalid` 토스트. 형식이 맞으면 `onSubmit(링크)`을 호출하고, 실패 이유(`full`)를 돌려주면 그 토스트를 띄운다. 성공이거나 `onSubmit`이 없으면(지금) 초대 확인 화면(`BunchJoinInvitation.spec.md`)으로 `router.push`한다. 요청 중에는 「완료」를 비활성으로 둔다.
-- 토스트: `toast()`가 3초간 띄운다(`Toast.spec.md`). Figma처럼 「완료」 버튼 위 10px(`bottomOffset: 42`)에 폭을 편다(`fullWidth`).
+- 토스트: `toast()`가 3초간 띄운다(`Toast.spec.md`). 하단 「완료」 버튼 영역(`PageShell`의 bottom 슬롯) 바로 위 4px에 목록 폭으로 뜬다(`wrapper` 앵커, Figma `6079:176183`). 이전의 버튼 위 10px(`bottomOffset: 42`)은 2026-11-10에 이 규칙으로 바꿨다.
 - Loading·Empty·Error·retry: 요청이 없어 해당 없음. 참여 요청의 로딩·재시도는 API 연결 때 정한다.
 
 ## 데이터 의존성
@@ -55,7 +55,7 @@
 | 입력창       | 343×46, radius 10, 테두리 `border-secondary`, 제목 아래 12                           | `TextField`, `pt-s6 px-padding-p8`           |
 | 「붙여넣기」 | 32 높이, 12 좌우, radius 8, 13/600, 배경 `surface-brand-subtle-1`, 글자 `text-brand` | `Button variant="brandSubtle" size="sm"`     |
 | 「완료」     | 343×48, 17/600, 위 10 좌우 16, 비활성 `surface-disabled`                             | `Button`(기본) `pt-padding-p5 px-padding-p8` |
-| 토스트       | 343×46, 「완료」 위 10                                                               | `toast()` `bottomOffset: 42`, `fullWidth`    |
+| 토스트       | 343×46, 「완료」 영역 위 4                                                           | `toast()` (`wrapper` 앵커)                   |
 | 중단 모달    | 311 폭, 제목·설명·버튼 2개                                                           | `Dialog` 부품(`ExitFlowDialog`)              |
 
 ## 검증

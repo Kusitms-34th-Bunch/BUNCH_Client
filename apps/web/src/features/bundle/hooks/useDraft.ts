@@ -21,7 +21,6 @@ import type { BundleDetail } from '../model/bundle';
 import { readPublishBlockers, readVersionConflict } from '../api/bundles';
 import { leaseTransport, type LeaseTarget } from '../api/leases';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
-import { UPLOAD_TOAST_OFFSET } from '../constants/toast';
 import { placeFixture } from '../fixtures/draft.fixture';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
 import { moveLocation } from '../lib/locations';
@@ -88,9 +87,6 @@ export type DraftState =
       bunchMembers: readonly DraftMember[];
       saveStatus: SaveStatus;
     };
-
-// 발행 요청 중 나는 안내는 하단 「업로드」 버튼 위로 띄움
-const UPLOAD_TOAST = { fullWidth: true, bottomOffset: UPLOAD_TOAST_OFFSET } as const;
 
 /** 발행 시도 결과(화면은 성공일 때만 이동하고 나머지는 안내가 이미 나감) */
 export type PublishOutcome = 'published' | 'blocked' | 'failed';
@@ -294,7 +290,7 @@ export function useDraft(draftId: string | undefined): {
       if (alive.current) setStalled(true);
       if (!notified.current) {
         notified.current = true;
-        toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+        toast(BUNDLE_MESSAGES.saveFailed);
       }
     };
     try {
@@ -312,7 +308,7 @@ export function useDraft(draftId: string | undefined): {
               retryAfter = RETRY_DELAY_MS;
               if (!notified.current) {
                 notified.current = true;
-                toast(BUNDLE_MESSAGES.fieldLocked, { fullWidth: true });
+                toast(BUNDLE_MESSAGES.fieldLocked);
               }
               return;
             }
@@ -593,7 +589,6 @@ export function useDraft(draftId: string | undefined): {
           errorCode(error) === 'BUNDLE_004'
             ? BUNDLE_MESSAGES.editingBlocked
             : BUNDLE_MESSAGES.photosChangeFailed,
-          { fullWidth: true },
         );
       })
       .finally(() => {
@@ -646,12 +641,12 @@ export function useDraft(draftId: string | undefined): {
       if (!draft || draft.members.some((joined) => joined.id === memberId)) return;
       if (!bunchMembers?.some((member) => member.id === memberId)) return;
       addParticipant.mutate(memberId, {
-        onError: () => toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true }),
+        onError: () => toast(BUNDLE_MESSAGES.saveFailed),
       });
     },
     removeMember: (memberId) =>
       removeParticipant.mutate(memberId, {
-        onError: () => toast(BUNDLE_MESSAGES.saveFailed, { fullWidth: true }),
+        onError: () => toast(BUNDLE_MESSAGES.saveFailed),
       }),
     setPhotoCaption: (photoId, caption) => {
       change((current) => ({ ...current, captions: { ...current.captions, [photoId]: caption } }));
@@ -724,7 +719,7 @@ export function useDraft(draftId: string | undefined): {
       const failuresBefore = photoFailures.current;
       await photoQueue.current;
       if (photoFailures.current !== failuresBefore) {
-        toast(BUNDLE_MESSAGES.photosChangeFailed, UPLOAD_TOAST);
+        toast(BUNDLE_MESSAGES.photosChangeFailed);
         return 'blocked';
       }
       clearTimeout(timer.current);
@@ -733,7 +728,7 @@ export function useDraft(draftId: string | undefined): {
       let saved = await flush();
       if (!saved) saved = await flush();
       if (!saved) {
-        toast(BUNDLE_MESSAGES.saveFailed, UPLOAD_TOAST);
+        toast(BUNDLE_MESSAGES.saveFailed);
         return 'failed';
       }
       const latest = detailRef.current;
@@ -746,7 +741,7 @@ export function useDraft(draftId: string | undefined): {
       } catch (error) {
         setPublishing(false);
         if (readPublishBlockers(error) !== undefined) {
-          toast(BUNDLE_MESSAGES.uploadIncomplete, UPLOAD_TOAST);
+          toast(BUNDLE_MESSAGES.uploadIncomplete);
           return 'blocked';
         }
         toast(
@@ -756,7 +751,6 @@ export function useDraft(draftId: string | undefined): {
             errorCode(error) === 'BUNDLE_002'
             ? BUNDLE_MESSAGES.publishConflict
             : BUNDLE_MESSAGES.publishFailed,
-          UPLOAD_TOAST,
         );
         return 'failed';
       }

@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
 import { PageLoading } from './PageLoading';
 
 // 로티 재생 라이브러리는 모양을 검증하지 않으므로 mock
@@ -17,6 +18,15 @@ describe('PageLoading', () => {
     expect(overlay.className).toContain('items-center');
     expect(overlay.className).toContain('justify-center');
     expect(await findAllByTestId('lottie')).toHaveLength(1);
+  });
+
+  it('보이는 동안만 전체 로딩 중임을 알린다', () => {
+    const before = getPageLoadingCount();
+    const { rerender } = render(<PageLoading />);
+    expect(getPageLoadingCount()).toBe(before + 1);
+
+    rerender(<></>);
+    expect(getPageLoadingCount()).toBe(before);
   });
 
   it('장식이라 접근성 트리에서는 숨기고 상태 안내는 호출하는 쪽에 맡긴다', () => {

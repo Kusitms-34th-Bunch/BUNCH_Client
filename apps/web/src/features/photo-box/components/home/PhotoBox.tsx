@@ -24,7 +24,7 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
   const { create: createBundle, creating } = useCreateBundle();
   // 목록을 다시 받지 못하면(삭제한 사진이 남아 보일 수 있음) 한 번 알리고, 다시 받은 뒤의 다음 실패 때 또 알림
   useEffect(() => {
-    if (stale) toast(PHOTO_BOX_MESSAGES.listStale, { fullWidth: true });
+    if (stale) toast(PHOTO_BOX_MESSAGES.listStale);
   }, [stale]);
 
   return (

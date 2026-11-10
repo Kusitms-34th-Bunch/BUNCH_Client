@@ -7,6 +7,9 @@ import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { DraftProvider } from '../../contexts/DraftProvider';
 import { BundleDraftVisibility } from './BundleDraftVisibility';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 vi.mock('@app/design-system', async (importOriginal) => ({
@@ -55,7 +58,7 @@ describe('BundleDraftVisibility', () => {
     await userEvent.click(screen.getByRole('button', { name: '업로드' }));
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.published, { fullWidth: true });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.published);
   });
 
   it('돌아갈 기록이 없으면 뒤로 가기가 작성 화면으로 이동한다', async () => {

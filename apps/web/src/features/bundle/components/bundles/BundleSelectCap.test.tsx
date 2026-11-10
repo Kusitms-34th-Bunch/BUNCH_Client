@@ -67,7 +67,7 @@ describe('번들 사진 20장 한도', () => {
     for (const cell of cells) await userEvent.click(cell);
 
     expect(toast).toHaveBeenCalledTimes(1);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.maxPhotos, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.maxPhotos);
     expect(screen.getByRole('status')).toHaveTextContent('20장 선택됨');
   });
 });

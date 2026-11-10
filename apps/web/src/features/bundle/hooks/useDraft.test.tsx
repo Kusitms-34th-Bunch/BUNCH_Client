@@ -258,10 +258,7 @@ describe('useDraft 저장', () => {
 
     act(() => result.current.actions.setTitle('이어서 쓰는 제목'));
 
-    await waitFor(
-      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.fieldLocked, { fullWidth: true }),
-      SAVE_WAIT,
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.fieldLocked), SAVE_WAIT);
     // 거부되는 동안에도 입력은 화면에서 사라지지 않음
     expect(ready(result.current.state).draft.title).toBe('이어서 쓰는 제목');
     await waitFor(() => expect(serverBundle(id)?.title).toBe('이어서 쓰는 제목'), {
@@ -284,10 +281,7 @@ describe('useDraft 저장', () => {
 
     act(() => result.current.actions.setVisibility('public'));
 
-    await waitFor(
-      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, { fullWidth: true }),
-      SAVE_WAIT,
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed), SAVE_WAIT);
     // 재시도 간격(3초)보다 오래 기다려도 요청은 한 번뿐
     await act(() => new Promise((resolve) => setTimeout(resolve, 3500)));
     expect(calls).toBe(1);
@@ -366,10 +360,7 @@ describe('useDraft 저장', () => {
     });
 
     expect(outcome).toBe('failed');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict, {
-      fullWidth: true,
-      bottomOffset: 65,
-    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict);
   });
 
   it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {
@@ -390,7 +381,7 @@ describe('useDraft 저장', () => {
 
     // 저장은 성공했고 발행 조건(제목·코멘트 등)만 모자라 blocked
     expect(outcome).toBe('blocked');
-    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, expect.anything());
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
   });
 
   it('입력 직후 화면을 떠나도 남은 입력을 한 번 저장한다', async () => {
@@ -531,7 +522,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     act(() => view.result.current.actions.removePhoto(locked.id));
 
     await waitFor(
-      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked, { fullWidth: true }),
+      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked),
       SAVE_WAIT,
     );
     await waitFor(
@@ -589,10 +580,7 @@ describe('useDraft 발행', () => {
     });
 
     expect(outcome).toBe('blocked');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed, {
-      fullWidth: true,
-      bottomOffset: 65,
-    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
     expect(serverBundle(id)?.status).toBe('DRAFT');
     // 화면도 서버 구성으로 돌아와 있음
     expect(ready(result.current.state).draft.photos).toHaveLength(2);
@@ -623,10 +611,7 @@ describe('useDraft 발행', () => {
     });
 
     expect(outcome).toBe('blocked');
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete, {
-      fullWidth: true,
-      bottomOffset: 65,
-    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
   });
 
   it('저장하지 못한 입력까지 저장한 뒤 발행하고 발행되면 서버 상태가 발행본이 된다', async () => {
@@ -662,7 +647,7 @@ describe('useDraft 편집권 통로가 없는 환경', () => {
     act(() => result.current.actions.setTitle('제목'));
 
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('failed'), SAVE_WAIT);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed, { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
     expect(serverBundle(id)?.title).toBe('');
     // 입력은 그대로 남음
     expect(ready(result.current.state).draft.title).toBe('제목');

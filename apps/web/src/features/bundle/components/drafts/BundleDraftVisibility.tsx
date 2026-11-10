@@ -1,11 +1,11 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { DraftVisibility } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
@@ -63,7 +63,7 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
     setUploading(true);
     void actions.publish().then((outcome) => {
       if (outcome === 'published') {
-        toast(BUNDLE_MESSAGES.published, { fullWidth: true });
+        toastAfterNavigation(BUNDLE_MESSAGES.published);
         router.replace(BUNDLE_PATHS.bunchHome);
         return;
       }

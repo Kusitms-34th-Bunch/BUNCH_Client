@@ -5,26 +5,19 @@ import type { IconProps } from '../types';
 const Shape = (props: ComponentProps<'svg'>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width={34}
-    height={34}
+    width={48}
+    height={48}
     fill="none"
-    viewBox="0 0 34 34"
+    viewBox="0 0 48 48"
     {...props}
   >
-    <path
-      fill="#A7ADFF"
-      fillRule="evenodd"
-      d="M27.778 11.677a2.346 2.346 0 0 1 2.344 2.346V30.15a2.345 2.345 0 0 1-2.344 2.346H6.343a2.346 2.346 0 0 1-2.346-2.346V14.023a2.346 2.346 0 0 1 2.346-2.346zM17.1 18.635c-.971 0-1.758.787-1.758 1.758v3.837a1.758 1.758 0 0 0 3.517 0v-3.837c0-.97-.788-1.758-1.76-1.758"
-      clipRule="evenodd"
-    />
-    <path
-      fill="#454EDF"
-      d="M17.113 2.003a7.315 7.315 0 0 1 7.314 7.315v1.002H19.55V9.317a2.439 2.439 0 0 0-4.876 0v1.003H9.797V9.318a7.315 7.315 0 0 1 7.316-7.315"
-    />
+    <g fill="#fff">
+      <path d="M8.11 23.67h8.11v8.11H8.11zM0 31.78h8.11v8.11H0zM16.22 31.78h8.11v8.11h-8.11zM8.11 39.89h8.11V48H8.11zM31.77.69h8.11V8.8h-8.11zM23.66 8.8h8.11v8.11h-8.11zM39.88 8.8h8.11v8.11h-8.11zM31.77 16.91h8.11v8.11h-8.11z" />
+    </g>
   </svg>
 );
 
-const GraphicLockIcon = ({
+const GraphicEntryJoinIcon = ({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
   ...props
@@ -41,4 +34,4 @@ const GraphicLockIcon = ({
     />
   );
 };
-export default GraphicLockIcon;
+export default GraphicEntryJoinIcon;

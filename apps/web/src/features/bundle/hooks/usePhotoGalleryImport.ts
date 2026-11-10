@@ -14,7 +14,7 @@ export function usePhotoGalleryImport(boxPhotoCount: number) {
   return useCallback(
     (_maxCount: number) => {
       if (boxPhotoCount >= MAX_PHOTOS_IN_BOX) {
-        toast(PHOTO_BOX_MESSAGES.photoBoxFull, { fullWidth: true });
+        toast(PHOTO_BOX_MESSAGES.photoBoxFull);
       }
     },
     [boxPhotoCount],

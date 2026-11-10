@@ -1,11 +1,11 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { replaceUrl } from '@/shared/lib/replaceUrl';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
@@ -44,7 +44,7 @@ export function RecommendViewer({ recommendationId, photoId }: RecommendViewerPr
   useEffect(() => {
     // 멤버가 없으면 위 effect가 첫 단계로 보내므로 삭제 안내·시트 열기는 하지 않음
     if (!missing || noMembers) return;
-    toast(BUNDLE_SELECT_MESSAGES.deletedRecommendation, { fullWidth: true });
+    toastAfterNavigation(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
     openSheet();
     router.replace(BUNDLE_SELECT_PATHS.select);
   }, [missing, noMembers, openSheet, router]);

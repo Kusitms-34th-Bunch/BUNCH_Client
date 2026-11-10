@@ -13,7 +13,7 @@ import { useCreateBundleMutation } from '../queries/bundles';
 
 const MIN_MEMBERS = 2;
 
-const notify = (message: string) => toast(message, { fullWidth: true });
+const notify = (message: string) => toast(message);
 
 /**
  * 고른 사진으로 번들 초안을 만들고 작성 화면으로 이동(사진함 「번들 만들기」와 번들 만들기 화면이 함께 씀)
