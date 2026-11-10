@@ -39,6 +39,30 @@ describe('InviteCard', () => {
     expect(onJoin).toHaveBeenCalledTimes(1);
   });
 
+  it('소개가 없거나 비어 있으면 소개 줄을 그리지 않는다', () => {
+    const { container, rerender } = render(<InviteCard {...props} description={undefined} />);
+    expect(container.querySelector('p.line-clamp-2')).toBeNull();
+
+    rerender(<InviteCard {...props} description="" />);
+    expect(container.querySelector('p.line-clamp-2')).toBeNull();
+  });
+
+  it('보낸 사람이 없으면 From 줄을 그리지 않는다', () => {
+    render(<InviteCard {...props} senderName={undefined} />);
+
+    expect(screen.queryByText('From.')).toBeNull();
+  });
+
+  it('joinDisabled면 참여하기가 비활성이라 onJoin을 호출하지 않는다', async () => {
+    const onJoin = vi.fn();
+    render(<InviteCard {...props} onJoin={onJoin} joinDisabled />);
+
+    const join = screen.getByRole('button', { name: '참여하기' });
+    expect(join).toHaveProperty('disabled', true);
+    await userEvent.click(join);
+    expect(onJoin).not.toHaveBeenCalled();
+  });
+
   it('imageSrc가 있으면 이미지를 그리고 alt를 비우면 장식으로 숨긴다', () => {
     const { container, rerender } = render(<InviteCard {...props} imageSrc="/bunch.png" />);
 
