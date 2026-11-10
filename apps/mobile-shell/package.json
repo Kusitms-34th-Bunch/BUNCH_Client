@@ -39,6 +39,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:sync": "DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer} expo prebuild --platform ios",
     "open:ios": "open ios/*.xcworkspace",
     "web": "expo start --web",
     "lint": "expo lint"

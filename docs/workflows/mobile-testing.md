@@ -45,7 +45,7 @@ yarn dev
 실제 iPhone은 PC와 같은 Wi-Fi에 연결하고 QR을 연다. Mac의 시뮬레이터는 터미널에서 `i`를 누른다.
 Expo Go에서는 앱 고유 설정·네이티브 모듈을 모두 검증할 수 없다.
 앱스토어의 Expo Go는 최신 SDK만 지원하므로 쉘의 SDK가 최신보다 낮으면 열리지 않는다(쉘은 SDK 58). UT에서 Expo Go로 시연하는 절차는 [UT 배포와 홈 화면 앱](./ut-deployment.md)을 따른다.
-iOS 시스템 탭 바(expo-router 네이티브 탭)와 탭 라벨 글꼴(`app.json`의 `expo-font` plugin)은 번치 개발 앱 기준이다. 이 의존성이나 `app.json`을 바꾸면 `pnpm exec expo prebuild -p ios`와 `pod install` 뒤 개발 앱을 다시 빌드해야 반영된다.
+iOS 시스템 탭 바(expo-router 네이티브 탭)와 탭 라벨 글꼴(`app.json`의 `expo-font` plugin)은 번치 개발 앱 기준이다. 이 의존성이나 `app.json`을 바꾸면 `pnpm ios:sync`(prebuild, `pod install` 포함) 뒤 개발 앱을 다시 빌드해야 반영된다.
 
 ## iOS 개발 앱 실행 (macOS)
 
@@ -64,11 +64,10 @@ pnpm ios
 `pnpm android`(`expo run:android`)도 같은 방식이지만 아직 검증하지 않았다.
 `ios/`, `android/`는 생성물이므로 직접 수정하거나 커밋하지 않는다.
 
-Xcode에서 서명이나 빌드 로그를 직접 봐야 하면 수동으로 연다. 앱 폴더에서 한 번 생성한 뒤 Xcode로 열고 **Run**을 누른다.
+Xcode에서 서명이나 빌드 로그를 직접 봐야 하면 수동으로 연다. 앱 폴더에서 `ios/`를 맞춘 뒤 Xcode로 열고 **Run**을 누른다. `pnpm ios:sync`는 `expo prebuild --platform ios`이며 Capacitor의 `cap sync`에 해당한다. `app.json`, 아이콘·스플래시 이미지, 네이티브 패키지를 바꿨을 때 다시 실행한다. Xcode가 열린 채로 실행하면 프로젝트를 다시 불러오지 못할 수 있어 Xcode를 닫고 실행한다. `--clean`은 빌드 캐시를 버리므로 `ios/`가 꼬였을 때만 쓴다.
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-pnpm exec expo prebuild --platform ios
+pnpm ios:sync
 pnpm open:ios
 ```
 
@@ -144,14 +143,14 @@ pnpm test
 기기에서는 Safe Area·키보드·입력 시 확대·단계 이동·입력 유지·웹 로딩 실패·VoiceOver를 확인한다.
 결과에 기기·OS·실행 방식·확인 동작을 남기고, 로그·화면의 개인정보와 토큰은 제거한다.
 
-| 증상                           | 확인                                                              |
-| ------------------------------ | ----------------------------------------------------------------- |
-| 환경변수 누락                  | 앱의 `.env.local` 확인 후 Metro를 `--clear`로 재시작              |
-| 8081 포트 충돌                 | 기존 Metro 터미널에서 종료한 뒤 하나만 실행                       |
-| 서버 연결 실패                 | 웹·Metro 실행, PC LAN IP, Wi-Fi, 방화벽·로컬 네트워크 권한 확인   |
-| `main has not been registered` | 먼저 출력된 오류와 Metro 실행 폴더 확인                           |
-| Xcode·CocoaPods 오류           | 설치 상태와 `DEVELOPER_DIR` 확인                                  |
-| Hermes `BINARY`/`UTF-8` 오류   | 프로젝트 경로에 한글이 있으면 영문 경로로 옮긴 뒤 prebuild 재시도 |
+| 증상                           | 확인                                                                                                                                                     |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 환경변수 누락                  | 앱의 `.env.local` 확인 후 Metro를 `--clear`로 재시작                                                                                                     |
+| 8081 포트 충돌                 | 기존 Metro 터미널에서 종료한 뒤 하나만 실행                                                                                                              |
+| 서버 연결 실패                 | 웹·Metro 실행, PC LAN IP, Wi-Fi, 방화벽·로컬 네트워크 권한 확인                                                                                          |
+| `main has not been registered` | 먼저 출력된 오류와 Metro 실행 폴더 확인                                                                                                                  |
+| Xcode·CocoaPods 오류           | 설치 상태와 `DEVELOPER_DIR` 확인. `pnpm ios:sync`는 기본값 `/Applications/Xcode.app`을 쓰므로 다른 경로의 Xcode(베타 등)는 `DEVELOPER_DIR`를 지정해 실행 |
+| Hermes `BINARY`/`UTF-8` 오류   | 프로젝트 경로에 한글이 있으면 영문 경로로 옮긴 뒤 prebuild 재시도                                                                                        |
 
 현재 ESLint 의존성이 없어 `expo lint`는 실행되지 않는다.
 2026-10-18 확인 범위는 타입 검사·단위 테스트·iOS JS 번들·CocoaPods 설치다.
