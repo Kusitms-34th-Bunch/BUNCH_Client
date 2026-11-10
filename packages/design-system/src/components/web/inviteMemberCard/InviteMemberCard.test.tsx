@@ -3,55 +3,57 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { InviteMemberCard } from './InviteMemberCard';
 
-const icon = <svg data-testid="icon" />;
-
 describe('InviteMemberCard', () => {
-  it('제목을 이름으로, 설명을 부가 설명으로 가진 라디오다', () => {
+  it('제목과 설명이 버튼의 이름이 된다', () => {
     render(
-      <InviteMemberCard
-        name="start"
-        title="멤버 초대하기"
-        description="친구에게 초대 링크를 보내 바로 함께 시작해요."
-        icon={icon}
-      />,
+      <InviteMemberCard title="멤버 초대하기" description="친구를 초대해 함께 시작해 보세요" />,
     );
 
-    const radio = screen.getByRole('radio', { name: '멤버 초대하기' });
-    expect(document.getElementById(radio.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
-      '친구에게 초대 링크를 보내 바로 함께 시작해요.',
-    );
+    expect(
+      screen.getByRole('button', { name: '멤버 초대하기 친구를 초대해 함께 시작해 보세요' }),
+    ).toBeTruthy();
   });
 
-  it('카드 어디를 눌러도 선택되고 onChange가 호출된다', async () => {
-    const onChange = vi.fn();
-    render(
-      <InviteMemberCard
-        name="start"
-        title="멤버 초대하기"
-        description="친구에게 초대 링크를 보내 바로 함께 시작해요."
-        icon={icon}
-        onChange={onChange}
-      />,
-    );
+  it('누르면 onClick을 호출한다', async () => {
+    const onClick = vi.fn();
+    render(<InviteMemberCard title="멤버 초대하기" description="설명" onClick={onClick} />);
 
-    await userEvent.click(screen.getByText('친구에게 초대 링크를 보내 바로 함께 시작해요.'));
+    await userEvent.click(screen.getByRole('button'));
 
-    expect(screen.getByRole('radio')).toHaveProperty('checked', true);
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('아이콘은 접근성에서 숨기고 className은 카드에 전달한다', () => {
-    const { container } = render(
-      <InviteMemberCard
-        name="start"
-        title="멤버 초대하기"
-        description="설명"
-        icon={icon}
-        className="custom"
-      />,
+  it('Enter와 Space로도 누를 수 있다', async () => {
+    const onClick = vi.fn();
+    render(<InviteMemberCard title="멤버 초대하기" description="설명" onClick={onClick} />);
+    screen.getByRole('button').focus();
+
+    await userEvent.keyboard('{Enter}');
+    await userEvent.keyboard(' ');
+
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('form 안에서 눌러도 제출하지 않는다', async () => {
+    const onSubmit = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <InviteMemberCard title="제목" description="설명" />
+      </form>,
     );
 
-    expect(screen.getByTestId('icon').closest('[aria-hidden="true"]')).toBeTruthy();
-    expect(container.querySelector('label')?.className).toContain('custom');
+    await userEvent.click(screen.getByRole('button'));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('화살표 아이콘은 이름에 포함되지 않고 className·ref는 버튼에 전달한다', () => {
+    const ref = { current: null as HTMLButtonElement | null };
+    render(<InviteMemberCard title="제목" description="설명" className="custom" ref={ref} />);
+
+    const button = screen.getByRole('button', { name: '제목 설명' });
+    expect(button.classList.contains('custom')).toBe(true);
+    expect(ref.current).toBe(button);
+    expect(button.querySelector('svg')?.getAttribute('role')).toBeNull();
   });
 });

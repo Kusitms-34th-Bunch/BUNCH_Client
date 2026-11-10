@@ -1,7 +1,7 @@
 'use client';
 
-import { Button, GraphicPeopleIcon } from '@app/design-system';
-import { BunchAvatar } from '@app/design-system/web';
+import { Button } from '@app/design-system';
+import { BunchAvatar, InviteMemberCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -37,22 +37,11 @@ export function BunchCreated() {
     <PageShell
       bottom={
         <div className="px-padding-p8">
-          {/* Figma의 링크 형태 카드에 맞춘 초대 화면 이동 */}
-          <button
-            type="button"
+          <InviteMemberCard
+            title="멤버 초대하기"
+            description="친구를 초대해 함께 시작해 보세요"
             onClick={() => router.push(ONBOARDING_PATHS.createBunchInvite)}
-            className="bg-surface-secondary gap-s8 p-s10 rounded-r7 focus-visible:outline-border-brand flex w-full cursor-pointer items-center text-left focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <span aria-hidden="true" className="flex shrink-0">
-              <GraphicPeopleIcon />
-            </span>
-            <span className="gap-s2 flex min-w-0 flex-1 flex-col">
-              <span className="typography-body-1-medium text-text-primary">멤버 초대하기</span>
-              <span className="typography-body-4-regular text-text-tertiary">
-                친구를 초대해 함께 시작해 보세요
-              </span>
-            </span>
-          </button>
+          />
           <div className="pt-s5">
             <Button className="w-full" onClick={() => router.replace(ONBOARDING_PATHS.feed)}>
               내 번치로 이동하기

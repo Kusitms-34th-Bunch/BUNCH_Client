@@ -7,7 +7,7 @@ export type StepperProps = Omit<
 > & {
   /** 전체 단계 수(1 이상) */
   total: number;
-  /** 현재 진행 중인 단계(1부터). 이 단계까지의 막대를 채움 */
+  /** 현재 진행 중인 단계(1부터). 이 단계의 막대만 채움 */
   current: number;
 };
 
@@ -47,14 +47,14 @@ export const Stepper = ({
         <span
           key={index}
           aria-hidden="true"
-          data-filled={index < step}
+          data-filled={index === step - 1}
           className="h-s2 bg-surface-disabled min-w-px flex-1 overflow-hidden rounded-full"
         >
           {/* Figma Fill Right: 왼쪽에서 오른쪽으로 600ms·Slow(스프링을 길이에 맞춘 근사 곡선, motion.md). 첫 표시도 starting-style로 채움 */}
           <span
             className={cn(
-              'bg-surface-brand-subtle-2 block size-full origin-left transition-transform duration-600 ease-[cubic-bezier(0.24,0.3,0.14,1)] motion-reduce:transition-none',
-              index < step ? 'scale-x-100 starting:scale-x-0' : 'scale-x-0',
+              'bg-surface-brand block size-full origin-left transition-transform duration-600 ease-[cubic-bezier(0.24,0.3,0.14,1)] motion-reduce:transition-none',
+              index === step - 1 ? 'scale-x-100 starting:scale-x-0' : 'scale-x-0',
             )}
           />
         </span>

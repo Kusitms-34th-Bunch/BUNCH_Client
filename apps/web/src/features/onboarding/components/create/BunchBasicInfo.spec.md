@@ -11,7 +11,7 @@
 ### 포함
 
 - 번치를 새로 만들 때 번치 이름과 공개 범위(비공개/공개)를 정하는 첫 단계의 UI와 입력 규칙.
-- 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 1단계), 제목 「어떤 번치를 만들까요?」, 번치 이름 입력(`LabeledTextField`), 공개 범위(`VisibilityOption` 2개), 하단 「다음」 버튼. 입력값은 `useCreateBunchDraft`로 읽고 쓴다.
+- 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 1단계), 제목 「어떤 번치를 만들까요?」, 번치 이름 입력(`LabeledTextField`), 공개 범위(`DescriptionRadioCard` 2개, 공개 → 비공개 순), 하단 「다음」 버튼. 입력값은 `useCreateBunchDraft`로 읽고 쓴다.
 - 번치 이름은 영문·한글·숫자만 쓸 수 있고 최대 12자다. 이름과 공개 범위를 모두 정하면 「다음」이 활성화된다.
 
 ### 범위 외
@@ -44,16 +44,16 @@
 
 ## UI와 접근성
 
-- Component mapping: `CreateBunchFrame`(`(steps)/layout.tsx`가 1~3단계에 한 번 씌우는 틀: `Header`의 뒤로 가기가 `ExitFlowDialog`를 열고 `Stepper`가 단계 사이에 남는다), `PageHeader`(제목만), `LabeledTextField`(번치 이름), `fieldset`·`legend`+`VisibilityOption`(공개 범위), `Button`(다음).
+- Component mapping: `CreateBunchFrame`(`(steps)/layout.tsx`가 1~3단계에 한 번 씌우는 틀: `Header`의 뒤로 가기가 `ExitFlowDialog`를 열고 `Stepper`가 단계 사이에 남는다), `PageHeader`(제목만), `LabeledTextField`(번치 이름), `fieldset`·`legend`+`DescriptionRadioCard`(공개 범위, Figma 주석「기존 Radio Card 사용」), `Button`(다음).
 - Keyboard·focus·accessible name: 번치 이름 입력은 보이는 라벨로 이름을 얻고 오류는 `aria-invalid`와 안내 문구로 읽힌다. 공개 범위는 「공개 범위」 `legend`의 라디오 그룹이라 방향키로 선택을 옮긴다. 「다음」은 비활성일 때 native `disabled`다.
 - Responsive·긴 텍스트·overflow: 입력창과 카드는 `w-full`이고 좌우 16px다. 375px에서 가로 넘침이 없고 본문이 길어지면 스크롤한다.
 
-| Figma          | 값                                      | 사용한 토큰·utility                              |
-| -------------- | --------------------------------------- | ------------------------------------------------ |
-| 진행 표시·제목 | `PageHeader`(Stepper 4px, 제목 22/28)   | `PageHeader`                                     |
-| 이름 입력 영역 | 위 36, 좌우 16                          | `pt-s15 px-padding-p8`                           |
-| 공개 범위 영역 | 위 36, 제목과 카드 간격 12, 카드 간격 8 | `pt-s15 px-padding-p8`, `legend pb-s6`, `gap-s4` |
-| 하단 버튼      | 위 10, 좌우 16, 높이 48                 | `pt-s5 px-padding-p8`, `Button`                  |
+| Figma          | 값                                     | 사용한 토큰·utility                              |
+| -------------- | -------------------------------------- | ------------------------------------------------ |
+| 진행 표시·제목 | `PageHeader`(Stepper 4px, 제목 22/28)  | `PageHeader`                                     |
+| 이름 입력 영역 | 위 36, 좌우 16                         | `pt-s15 px-padding-p8`                           |
+| 공개 범위 영역 | 위 36, 제목과 카드 간격 4, 카드 간격 6 | `pt-s15 px-padding-p8`, `legend pb-s2`, `gap-s3` |
+| 하단 버튼      | 위 10, 좌우 16, 높이 48                | `pt-s5 px-padding-p8`, `Button`                  |
 
 ## 검증
 
