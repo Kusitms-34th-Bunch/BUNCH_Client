@@ -21,7 +21,7 @@
   "eslint.workingDirectories": [{ "mode": "auto" }],
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
   "npm.packageManager": "yarn",
-  "oxc.path.oxfmt": "${workspaceFolder}/.vscode/oxfmt.sh",
+  "oxc.path.oxfmt": ".vscode/oxfmt.sh",
   "js/ts.tsdk.path": ".yarn/sdks/typescript/lib",
   "js/ts.tsdk.promptToUseWorkspaceVersion": true
 }
