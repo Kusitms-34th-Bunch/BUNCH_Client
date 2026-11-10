@@ -154,7 +154,9 @@ describe('BunchInvite', () => {
   });
 
   it('다시 불러오는 동안에도 버튼을 그대로 둔다(로딩 덮개가 누름을 막음)', () => {
-    render(<BunchInvite inviteLink={undefined} loading onRetry={() => undefined} leaveHref={LEAVE} />);
+    render(
+      <BunchInvite inviteLink={undefined} loading onRetry={() => undefined} leaveHref={LEAVE} />,
+    );
 
     expect(screen.getByRole('button', { name: '다시 불러오기' })).toBeTruthy();
     expect(screen.getByRole('status').textContent).toBe('초대 링크를 불러오는 중이에요');
