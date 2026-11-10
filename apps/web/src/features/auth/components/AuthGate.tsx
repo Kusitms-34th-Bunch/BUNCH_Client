@@ -8,6 +8,7 @@ import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
+import { readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import type { PostLoginDestinations } from '../lib/postLoginPath';
 import { STATUS_CHECK_FAILURE_MESSAGE } from '../hooks/useSocialLogin';
 import { type SessionState, resolveAccess } from '../lib/accessPolicy';
@@ -16,6 +17,8 @@ import { sessionQueryOptions } from '../queries/session';
 
 const subscribeNothing = () => () => {};
 const unknownOnServer = () => null;
+/** 로그인·가입을 마친 뒤 이어 갈 초대가 보관돼 있는지(초대 링크로 들어온 사용자) */
+const readHasPendingInvitation = () => readPendingInvitation() !== null;
 
 let appReadySent = false;
 /** 앱 쉘에 첫 화면 준비를 한 번만 알림(이전 버전 앱이라 메서드가 없어도 무시) */
@@ -51,9 +54,14 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
   // 서버·hydration 중에는 알 수 없어(null) 로딩으로 둠. 변경 알림 없이 렌더(이동)마다 다시 읽음
   // 인트로는 기록한 뒤 바로 이동하므로 그 렌더에서 새 값을 읽음
   const introSeen = useSyncExternalStore(subscribeNothing, readIntroSeen, unknownOnServer);
+  const hasPendingInvitation = useSyncExternalStore(
+    subscribeNothing,
+    readHasPendingInvitation,
+    unknownOnServer,
+  );
   const redirectTo =
-    session && introSeen !== null
-      ? resolveAccess(pathname, session, destinations, introSeen)
+    session && introSeen !== null && hasPendingInvitation !== null
+      ? resolveAccess(pathname, session, destinations, introSeen, hasPendingInvitation)
       : null;
 
   useEffect(() => {
@@ -79,7 +87,9 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
   }, [analyticsMember]);
 
   // 도착 화면이나 오류 안내를 그리게 되면 앱 쉘에 알려 스플래시를 닫음(명세 1.1: 도착지가 정해질 때까지 스플래시 유지)
-  const settled = (!session && !isPending) || Boolean(session && introSeen !== null && !redirectTo);
+  const settled =
+    (!session && !isPending) ||
+    Boolean(session && introSeen !== null && hasPendingInvitation !== null && !redirectTo);
   useEffect(() => {
     if (settled) notifyAppReady();
   }, [settled]);
@@ -107,7 +117,7 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
       </PageShell>
     );
   }
-  if (!session || introSeen === null || redirectTo) {
+  if (!session || introSeen === null || hasPendingInvitation === null || redirectTo) {
     return (
       <>
         <p role="status" className="sr-only">

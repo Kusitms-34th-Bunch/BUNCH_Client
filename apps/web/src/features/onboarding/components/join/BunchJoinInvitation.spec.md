@@ -22,7 +22,7 @@
 ## Route와 접근
 
 - Path·params·search: `/onboarding/join/invitation`. params·search는 없다.
-- 접근 권한·guard: 링크 입력에서 확인한 초대(join layout의 `JoinInvitationProvider`)가 없으면(직접 진입·새로고침) 화면을 그리지 않고 링크 입력(`/onboarding/join`)으로 `router.replace`한다.
+- 접근 권한·guard: 링크 입력 또는 초대 진입(`BunchJoinEntry.spec.md`)에서 확인한 초대(join layout의 `JoinInvitationProvider`)가 없으면(직접 진입·새로고침) 화면을 그리지 않고 `router.replace`한다. 보관된 초대(초대 링크로 들어온 사용자)가 있으면 초대 진입으로 돌려 다시 확인하고, 없으면 링크 입력(`/onboarding/join`)으로 보낸다. 참여 성공·나가기·다시 해도 안 되는 실패(무효·정원·소속 한도) 때 보관한 초대를 지운다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 배경은 연회색(`bg-surface-secondary`, `PageShell`의 `className`). route의 `data-app-background="secondary"`를 `AppFrame`이 감지해 상태 바·홈 인디케이터 영역도 같은 색으로 바꾼다(기본 150ms 페이드). 입력 화면에서 `router.push`로 들어오며 로딩 화면은 거치지 않는다. 「참여하기」와 「나가기」는 `router.replace`로 이동해 뒤로 가기로 돌아오지 않는다.
 
 ## 상태와 흐름

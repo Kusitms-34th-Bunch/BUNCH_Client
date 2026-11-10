@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { resolvePostLoginPath } from './postLoginPath';
 
-const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
+const DESTINATIONS = {
+  bunchHome: '/bunch',
+  bunchStart: '/onboarding',
+  inviteEntry: '/onboarding/join/enter',
+};
 
 describe('resolvePostLoginPath', () => {
   it.each([
@@ -25,5 +29,27 @@ describe('resolvePostLoginPath', () => {
         DESTINATIONS,
       ),
     ).toBe('/signup/terms');
+  });
+
+  it('가입을 마친 사용자는 보관된 초대가 있으면 번치 홈이나 번치 시작보다 초대 진입이 먼저다', () => {
+    for (const hasDefaultBunch of [true, false]) {
+      expect(
+        resolvePostLoginPath(
+          { memberId: 1, signupStatus: 'COMPLETED', termsAccepted: true, hasDefaultBunch },
+          DESTINATIONS,
+          true,
+        ),
+      ).toBe('/onboarding/join/enter');
+    }
+  });
+
+  it('가입 중에는 보관된 초대가 있어도 가입 단계를 먼저 마치게 한다', () => {
+    expect(
+      resolvePostLoginPath(
+        { memberId: 1, signupStatus: 'IN_PROGRESS', termsAccepted: true, hasDefaultBunch: false },
+        DESTINATIONS,
+        true,
+      ),
+    ).toBe('/signup/profile');
   });
 });
