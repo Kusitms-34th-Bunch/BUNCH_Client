@@ -35,6 +35,11 @@ describe('OtherBunch 공개 번치', () => {
     await user.click(screen.getByRole('button', { name: '팔로잉' }));
     const sheet = await screen.findByRole('dialog', { name: '캠핑러버 팔로우를 취소할까요?' });
     expect(within(sheet).getByText('공개 번치')).toBeInTheDocument();
+    // 시트의 번치 이미지는 번치 기본 이미지로 채워짐(빈 원이 아님)
+    expect(sheet.querySelector('img')).toHaveAttribute(
+      'src',
+      expect.stringMatching(/^\/images\/default-bunch\/type-\d\.svg$/),
+    );
     await user.click(within(sheet).getByRole('button', { name: '팔로우 취소' }));
 
     expect(screen.getByRole('button', { name: '팔로우' })).toBeInTheDocument();
@@ -104,6 +109,10 @@ describe('OtherBunch 비공개 번치', () => {
     await user.click(screen.getByRole('button', { name: '팔로우 요청됨' }));
     const sheet = await screen.findByRole('dialog', { name: '책방산책 팔로우 요청을 취소할까요?' });
     expect(within(sheet).getByText('요청 대기 중인 비공개 번치')).toBeInTheDocument();
+    expect(sheet.querySelector('img')).toHaveAttribute(
+      'src',
+      expect.stringMatching(/^\/images\/default-bunch\/type-\d\.svg$/),
+    );
     await user.click(within(sheet).getByRole('button', { name: '팔로우 요청 취소' }));
 
     expect(screen.getByRole('button', { name: '팔로우' })).toBeInTheDocument();

@@ -9,10 +9,10 @@ type DraftBundleListProps = {
   onDelete: (_bundle: DraftBundle) => void;
 };
 
-/** 작성 중인 번들 카드 목록(사이 10px, 좌우 16px) */
+/** 작성 중인 번들 카드 목록(탭 아래 12px, 사이 10px, 좌우 16px) */
 export function DraftBundleList({ bundles, onOpen, onDelete }: DraftBundleListProps) {
   return (
-    <ul className="gap-s5 px-s8 flex flex-col">
+    <ul className="gap-s5 px-s8 pt-s6 flex flex-col">
       {bundles.map((bundle) => (
         <li key={bundle.id}>
           <BundleCard
