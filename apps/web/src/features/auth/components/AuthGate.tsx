@@ -5,6 +5,7 @@ import { Button } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useSyncExternalStore } from 'react';
+import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { PostLoginDestinations } from '../lib/postLoginPath';
@@ -16,6 +17,13 @@ import { sessionQueryOptions } from '../queries/session';
 const subscribeNothing = () => () => {};
 const unknownOnServer = () => null;
 
+let appReadySent = false;
+/** 앱 쉘에 첫 화면 준비를 한 번만 알림(이전 버전 앱이라 메서드가 없어도 무시) */
+const notifyAppReady = () => {
+  if (appReadySent || !isNativeShell()) return;
+  appReadySent = true;
+  void appBridge.appReady().catch(() => {});
+};
 type AuthGateProps = {
   /** 가입을 마친 사용자의 도착 화면 경로(다른 feature 소유라 route가 전달) */
   destinations: PostLoginDestinations;
@@ -58,6 +66,12 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
   }, [isMember]);
 
   if (!session && !isPending) {
+    // 도착 화면이나 오류 안내를 그리게 되면 앱 쉘에 알려 스플래시를 닫음(명세 1.1: 도착지가 정해질 때까지 스플래시 유지)
+    const settled = (!session && !isPending) || (session && introSeen !== null && !redirectTo);
+    useEffect(() => {
+      if (settled) notifyAppReady();
+    }, [settled]);
+
     // Figma에 없는 상태. 번치 홈 오류 화면(`BunchHomeError`)과 같은 모양. 다시 시도 중에는 중복 요청만 막고 버튼은 그대로 둠(포커스 유지)
     return (
       <PageShell>

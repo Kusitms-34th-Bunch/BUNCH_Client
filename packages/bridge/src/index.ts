@@ -51,6 +51,8 @@ export type AppBridgeMethods = {
   setNativeTabBarVisible: (_visible: boolean) => Promise<boolean>;
   /** 웹 탭 막대를 누를 때의 선택 햅틱(안드로이드 쉘). iOS 시스템 탭 바는 쉘이 직접 처리 */
   tabSelectionHaptic: () => Promise<void>;
+  /** 웹이 로그인 상태를 확인해 도착 화면(또는 오류 안내)을 그림. 쉘은 이때 스플래시를 닫음. 여러 번 불러도 한 번만 처리, 브라우저에서는 아무것도 하지 않음 */
+  appReady: () => Promise<void>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */
