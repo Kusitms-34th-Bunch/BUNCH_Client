@@ -72,24 +72,6 @@ describe('useDraft 상태', () => {
     expect(saveStatus).toBe('saved');
   });
 
-  it('UT 상태 B 초안은 저장된 위치와 다른 멤버의 편집 중 표시를 함께 보인다', async () => {
-    const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
-    const created = await createBundle(
-      bunchId,
-      [P1, P2, P3, P4].map(String),
-      createIdempotencyKey(),
-    );
-    const { result } = renderDraft(created.id);
-    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
-    const { draft } = ready(result.current.state);
-
-    expect(draft.locations.map((location) => location.name)).toEqual(['속초해수욕장']);
-    expect(draft.editing.location).toBe(String(memberB));
-    expect(draft.date).toBe('2026-10-17');
-    const second = draft.photos.find((photo) => photo.sourcePhotoId === String(P2))!;
-    expect(draft.editing.photoEditors?.[second.id]).toEqual([String(memberA)]);
-  });
-
   it('화면에서 위치를 바꾸면 그 뒤로는 화면 값이다', async () => {
     const { result } = await renderReady();
     act(() => {
@@ -513,6 +495,21 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       [P1, P2, P3, P4].map(String),
       createIdempotencyKey(),
     );
+    // 다른 멤버(A)가 2번 사진 캡션을 편집 중인 상태
+    mockDb.update((current) => ({
+      ...current,
+      bundleLeases: [
+        ...current.bundleLeases,
+        {
+          bundleId: Number(created.id),
+          target: `PHOTO:${serverBundle(created.id)!.photos.find((photo) => photo.photoId === P2)!.id}`,
+          memberId: memberA,
+          token: '00000000-0000-4000-8000-00000000000a',
+          leaseVersion: 1,
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        },
+      ],
+    }));
     const view = renderDraft(created.id);
     await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
     const locked = ready(view.result.current.state).draft.photos.find(

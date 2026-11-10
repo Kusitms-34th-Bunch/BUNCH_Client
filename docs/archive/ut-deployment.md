@@ -1,4 +1,6 @@
-# UT 배포(Vercel)와 홈 화면 앱(PWA)
+# UT 배포(Vercel)와 홈 화면 앱(PWA) (보관)
+
+> 2026-11 UT가 끝나 보관한 기록이다(#295). UT 배포 workflow는 지웠다. 현재 운영 배포와 홈 화면 앱 설정은 [웹 배포](../workflows/web-deployment.md)를 본다.
 
 UT 시나리오와 가짜 서버 세팅은 [usability-test.md](./usability-test.md)를 본다.
 

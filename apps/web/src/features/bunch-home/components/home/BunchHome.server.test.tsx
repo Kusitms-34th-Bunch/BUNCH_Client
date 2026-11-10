@@ -141,8 +141,7 @@ describe('BunchHome 서버 데이터', () => {
 
     await screen.findByAltText(/강릉 커피 투어/);
     await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
-    // 상태 B 초안의 제목으로 카드가 보임
-    await userEvent.click(await findDraftCard('속초 첫째 날'));
+    await userEvent.click(await findDraftCard('제목 없는 번들'));
 
     expect(push).toHaveBeenCalledWith(`/bunch/drafts/${created.id}`);
   });

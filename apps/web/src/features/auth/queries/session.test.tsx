@@ -42,6 +42,7 @@ describe('usePostLoginPath', () => {
     await resolve();
 
     expect(client.getQueryData(sharedKeys.session())).toEqual({
+      memberId: 1,
       signupStatus: 'IN_PROGRESS',
       termsAccepted: true,
       hasDefaultBunch: false,

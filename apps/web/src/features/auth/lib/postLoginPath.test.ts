@@ -11,14 +11,17 @@ describe('resolvePostLoginPath', () => {
     ['가입을 마쳤지만 번치가 없으면 번치 시작 선택', 'COMPLETED', true, false, '/onboarding'],
   ] as const)('%s', (_name, signupStatus, termsAccepted, hasDefaultBunch, expected) => {
     expect(
-      resolvePostLoginPath({ signupStatus, termsAccepted, hasDefaultBunch }, DESTINATIONS),
+      resolvePostLoginPath(
+        { memberId: 1, signupStatus, termsAccepted, hasDefaultBunch },
+        DESTINATIONS,
+      ),
     ).toBe(expected);
   });
 
   it('가입 중에는 번치가 있어도 가입 단계를 먼저 마치게 한다', () => {
     expect(
       resolvePostLoginPath(
-        { signupStatus: 'IN_PROGRESS', termsAccepted: false, hasDefaultBunch: true },
+        { memberId: 1, signupStatus: 'IN_PROGRESS', termsAccepted: false, hasDefaultBunch: true },
         DESTINATIONS,
       ),
     ).toBe('/signup/terms');

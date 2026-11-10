@@ -203,11 +203,7 @@ export function BunchHomeScreen({
       >
         {/* 캐릭터 영역(Figma 헤더 아래 118px + 시트 둥근 모서리 뒤 20px). 캐릭터는 120px 상자(Character Wrapper) 안 가로 중앙·아래 12px 위에 놓이고 상자는 흰 시트에 32px 걸침 */}
         <div className={cn('relative h-34.5 shrink-0', background.top)}>
-          <BunchCharacter
-            characterType={current.characterType}
-            stage={current.stage}
-            facilitatorTrigger
-          />
+          <BunchCharacter characterType={current.characterType} stage={current.stage} />
         </div>
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">
           <BunchProfile
