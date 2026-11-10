@@ -41,6 +41,15 @@ apps/mobile-shell/
 - iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 웹 history에 먼저 연결한다. 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
 - 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면과 iOS 시스템 탭 바다.
 
+### 스플래시
+
+- 앱을 켤 때 웹이 뜨기 전 화면이라 웹이 아니라 쉘이 맡는다. 디자인은 Figma `5931:170225`와 디자이너 Lottie(`Splash`)다. 흰 모듈 48개가 날아와 `bunch` 워드마크가 되는 4초(240f) 연출이다.
+- OS가 띄우는 네이티브 스플래시는 정지 이미지만 되므로 두 겹으로 나눈다. 네이티브는 `expo-splash-screen` config plugin(`app.json`)으로 브랜드 배경(`bunch-500`, #454EDF)만 둔다. Lottie 첫 프레임도 배경뿐이라, 워드마크를 넣으면 애니메이션이 시작될 때 사라졌다 다시 모이는 것처럼 보인다. 네이티브 설정이라 새로 빌드해야 반영된다.
+- 앱 JS가 뜨면 `src/splash/SplashOverlay.tsx`가 같은 색 화면을 덮고 네이티브 스플래시를 닫는다. 모듈의 시작·도착 위치와 시각은 Lottie 키프레임을 `src/splash/modules.ts`로 옮겼다. 곡선은 이동 `cubic-bezier(0.33, 0, 0.15, 1)`, 나타남 `cubic-bezier(0.35, 0, 0.35, 1)`이다. 새 의존성 없이 React Native `Animated`(네이티브 드라이버)로 그리며, 네이티브 드라이버가 선형 보간만 하므로 곡선을 13개 점으로 나눠 넘긴다.
+- 웹이 도착 화면을 정할 때까지 연출을 반복한다(명세 1.1). 웹의 `AuthGate`가 로그인 상태를 확인해 도착 화면이나 오류 안내를 처음 그릴 때 bridge `appReady`를 한 번 보낸다(브라우저에서는 보내지 않음). 쉘은 이 신호, WebView 로드 실패(`onError`·`onHttpError`, 오류 화면이 보이게), 5초 대기 중 먼저 오는 마무리 신호를 받으면, 그 회차의 조립(131.7f)이 끝날 때까지 기다린 뒤 300ms 페이드로 사라진다. 동작 줄이기에서는 완성된 워드마크만 보인다. 장식 화면이라 보조 기술에서 숨긴다.
+- 앱 아이콘은 디자이너의 `App Icon`(1080, 모서리 투명)에서 만든다. iOS 아이콘(`assets/icon.png`, 1024)은 투명 없는 정사각형이어야 하고 모서리는 iOS가 깎으므로, 모서리를 같은 세로 그라데이션(#454EDF→#343DCE)으로 채웠다. Android 적응형 아이콘은 글리프(`android-icon-foreground.png`·`monochrome`)와 그라데이션 배경(`android-icon-background.png`)으로 나눈다. Android는 지름이 캔버스의 61%인 원 밖을 자를 수 있어 `b` 글리프를 80%로 줄였다. 웹 설정용 `favicon.png`(48)는 둥근 원본 아이콘을 줄인 것이다. `splash-icon.png`는 스플래시 Lottie 마지막 프레임의 흰 워드마크(투명 배경, 1024)로, 네이티브 스플래시가 배경만 쓰기로 해 지금은 연결하지 않았다.
+- Expo Go와 개발 빌드는 실제 스플래시를 그대로 보여주지 않는다(공식 문서). 모양과 닫히는 시점은 release 빌드에서 확인한다.
+
 iOS 입력 포커스 확대는 디자인 시스템의 `TextField`·`LabeledTextArea`에서 대응한다. 실제 글꼴을 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 입력 폭·행 높이·padding과 textarea 자동 높이도 같은 비율로 보정한다. `@supports (-webkit-touch-callout: none)`으로 iOS WebKit에 적용하며 모바일 Safari도 포함한다. 쉘에서 viewport 확대 제한을 주입하지 않는다. 실제 터치·키보드·커서·텍스트 선택·줄바꿈은 시뮬레이터와 실기기 검증이 필요하다.
 
 ## Safe Area
