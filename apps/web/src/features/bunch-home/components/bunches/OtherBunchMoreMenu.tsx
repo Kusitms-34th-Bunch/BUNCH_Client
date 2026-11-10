@@ -46,7 +46,7 @@ export function OtherBunchMoreMenu({
           close();
           // 차단하면 화면이 접근 제한으로 바뀌어 이 메뉴가 사라지므로 닫힘을 기다리지 않음
           onBlock();
-          toast(BUNCH_HOME_MESSAGES.blockedDone(bunchName), { fullWidth: true });
+          toast(BUNCH_HOME_MESSAGES.blockedDone(bunchName));
         }}
       />
     ));
@@ -70,7 +70,7 @@ export function OtherBunchMoreMenu({
       ),
       // 접수 안내는 시트가 다 닫힌 뒤(열린 시트 뒤에서 낭독이 묻히지 않게, ADR 014)
       () => {
-        if (reported) toast(BUNCH_HOME_MESSAGES.reportedDone, { fullWidth: true });
+        if (reported) toast(BUNCH_HOME_MESSAGES.reportedDone);
       },
     );
   };

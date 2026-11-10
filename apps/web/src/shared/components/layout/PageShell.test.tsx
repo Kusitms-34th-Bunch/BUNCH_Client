@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { AppFrame } from './AppFrame';
 import { PageShell } from './PageShell';
 
+const main = () => screen.getByRole('main');
+
 describe('PageShell', () => {
   it('헤더, 본문, 하단 영역을 이 순서로 그린다', () => {
     render(
@@ -50,6 +52,25 @@ describe('PageShell', () => {
     expect(main).toContainElement(screen.getByText('본문'));
     expect(main).not.toContainElement(screen.getByText('헤더'));
     expect(main).not.toContainElement(screen.getByText('하단'));
+  });
+
+  it('하단 영역을 토스트 앵커(wrapper)로 표시하고 하단이 없으면 앵커도 없다', () => {
+    const { container, rerender } = render(
+      <PageShell bottom={<p>하단</p>}>
+        <p>본문</p>
+      </PageShell>,
+    );
+
+    const anchor = screen.getByText('하단').parentElement;
+    expect(anchor).toHaveAttribute('data-toast-anchor', 'wrapper');
+    expect(main()).not.toHaveAttribute('data-toast-anchor');
+
+    rerender(
+      <PageShell>
+        <p>본문</p>
+      </PageShell>,
+    );
+    expect(container.querySelector('[data-toast-anchor]')).toBeNull();
   });
 
   it('header와 bottom을 생략하면 본문만 그린다', () => {

@@ -79,7 +79,7 @@ describe('BunchHome', () => {
     expect(screen.getByRole('heading', { level: 1, name: '퇴근런클럽' })).toBeTruthy();
     expect(screen.getByText('비공개 번치')).toBeTruthy();
     expect(screen.getByRole('button', { name: '첫 번들 만들기' })).toBeTruthy();
-    expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.', expect.anything());
+    expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.');
   });
 
   it('번치 성격에 따라 헤더·캐릭터 영역·위쪽 Safe Area 배경이 바뀐다', async () => {

@@ -7,6 +7,9 @@ import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { BundleSelectProvider } from '../../contexts/BundleSelectProvider';
 import { RecommendDetail } from './RecommendDetail';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
@@ -75,9 +78,7 @@ describe('RecommendDetail', () => {
   it('없는 추천이면 안내 토스트 뒤 사진 선택 화면으로 돌아간다', () => {
     renderDetail('nope');
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation, {
-      fullWidth: true,
-    });
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
   });
 
@@ -86,13 +87,13 @@ describe('RecommendDetail', () => {
 
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.members);
     expect(router.replace).not.toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
-    expect(toast).not.toHaveBeenCalled();
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
   });
 
   it('형식이 틀린 id(undefined)도 같은 안내로 처리한다', () => {
     renderDetail(undefined);
 
-    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).toHaveBeenCalledTimes(1);
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
   });
 });

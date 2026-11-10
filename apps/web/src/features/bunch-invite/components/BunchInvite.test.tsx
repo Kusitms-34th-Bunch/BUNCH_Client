@@ -70,8 +70,6 @@ describe('BunchInvite', () => {
     const [message, options] = toast.mock.calls[0]!;
     expect(message).toBe('초대 링크가 복사되었어요.');
     expect(options?.action?.label).toBe('공유');
-    // 「나중에 할게요」를 가리지 않는 Figma 토스트 위치·너비 확인
-    expect(options).toMatchObject({ bottomOffset: 32, fullWidth: true });
   });
 
   it('토스트의 공유를 누르면 링크를 공유한다', async () => {
@@ -115,9 +113,7 @@ describe('BunchInvite', () => {
     await flush();
 
     expect(captureException).toHaveBeenCalledWith(error);
-    expect(toast).toHaveBeenLastCalledWith('공유하지 못했어요. 복사한 링크를 직접 보내주세요.', {
-      bottomOffset: 32,
-    });
+    expect(toast).toHaveBeenLastCalledWith('공유하지 못했어요. 복사한 링크를 직접 보내주세요.');
   });
 
   it('복사에 실패하면 실패 토스트를 띄운다', async () => {
@@ -126,7 +122,7 @@ describe('BunchInvite', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '초대 링크 복사' }));
 
-    expect(toast).toHaveBeenCalledWith('초대 링크를 복사하지 못했어요.', { bottomOffset: 32 });
+    expect(toast).toHaveBeenCalledWith('초대 링크를 복사하지 못했어요.');
   });
 
   it('닫기와 나중에 할게요는 leaveHref로 replace한다', async () => {

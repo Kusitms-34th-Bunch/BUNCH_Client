@@ -75,7 +75,6 @@ export function BunchFollowsScreen({
         bunch.isPrivate
           ? BUNCH_HOME_MESSAGES.followRequested(bunch.name)
           : BUNCH_HOME_MESSAGES.followed(bunch.name),
-        { fullWidth: true },
       );
       return;
     }
@@ -84,7 +83,6 @@ export function BunchFollowsScreen({
       bunch.followStatus === 'requested'
         ? BUNCH_HOME_MESSAGES.requestCanceled(bunch.name)
         : BUNCH_HOME_MESSAGES.unfollowed(bunch.name),
-      { fullWidth: true },
     );
   };
 

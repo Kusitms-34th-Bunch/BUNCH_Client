@@ -37,7 +37,7 @@ export function LocationSearchSheet({
       },
       // 검색 실패는 오류 토스트만 띄우고 검색어와 이전 결과는 유지
       () => {
-        if (!cancelled) toast(BUNDLE_MESSAGES.searchFailed, { fullWidth: true });
+        if (!cancelled) toast(BUNDLE_MESSAGES.searchFailed);
       },
     );
     return () => {

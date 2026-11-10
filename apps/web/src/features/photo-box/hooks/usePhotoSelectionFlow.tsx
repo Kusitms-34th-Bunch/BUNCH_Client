@@ -9,7 +9,6 @@ import {
   DeleteConfirmDialog,
 } from '../components/PhotoSelectionDialogs';
 import { SavingDateSheet } from '../components/SavingDateSheet';
-import { TOAST_ABOVE_TAB_BAR_OFFSET } from '../constants/layout';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import {
   MAX_BUNDLE_PHOTOS,
@@ -22,12 +21,8 @@ import { pruneSelection, toggleSelection, type PhotoSelection } from '../lib/sel
 
 export type PhotoMenuAction = 'save' | 'bundle' | 'date' | 'delete';
 
-// 사진함 토스트는 목록 폭(343px)으로 펼침(Figma 사진함_09·11·12). 선택 모드를 끝낸 직후에는 탭 막대가 다시 보이므로 막대 위로 올림
-const notify = (message: string, { aboveTabBar = false } = {}) =>
-  toast(message, {
-    fullWidth: true,
-    ...(aboveTabBar ? { bottomOffset: TOAST_ABOVE_TAB_BAR_OFFSET } : {}),
-  });
+// 선택 모드를 끝낸 직후에는 탭 막대가 다시 보이는데, toast()가 다음 프레임에 위치를 다시 재므로 막대 위에 놓임
+const notify = (message: string) => toast(message);
 
 type UsePhotoSelectionFlowOptions = {
   /** 목록 데이터(준비되기 전에는 undefined) */
@@ -113,7 +108,7 @@ export function usePhotoSelectionFlow({
     if (session !== sessionRef.current) return;
 
     if (failedIds.length === 0) {
-      notify(PHOTO_BOX_MESSAGES.saveDone, { aboveTabBar: true });
+      notify(PHOTO_BOX_MESSAGES.saveDone);
       stop();
     } else if (failedIds.length === ids.length) {
       notify(PHOTO_BOX_MESSAGES.saveFailedAll);
@@ -178,7 +173,7 @@ export function usePhotoSelectionFlow({
       setPending(undefined);
       if (session !== sessionRef.current) return;
       if (removedCount > 0) {
-        notify(PHOTO_BOX_MESSAGES.deleteDone(removedCount), { aboveTabBar: true });
+        notify(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
       }
       stop();
       // 0장이어도 선택 모드는 끝나 눌렀던 선택 칸이 사라지므로 초점을 옮김
@@ -203,7 +198,7 @@ export function usePhotoSelectionFlow({
     }
     setPending(undefined);
     if (session !== sessionRef.current) return true;
-    notify(PHOTO_BOX_MESSAGES.dateChanged, { aboveTabBar: true });
+    notify(PHOTO_BOX_MESSAGES.dateChanged);
     stop();
     return true;
   };

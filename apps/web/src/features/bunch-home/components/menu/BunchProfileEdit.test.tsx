@@ -6,6 +6,9 @@ import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BunchProfileEdit } from './BunchProfileEdit';
 import { BunchProfileEditScreen } from './BunchProfileEditScreen';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 const replace = vi.fn();
 const back = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, back }) }));
@@ -148,7 +151,7 @@ describe('BunchProfileEdit', () => {
     await user.click(saveButton());
 
     expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.home);
-    expect(toast).toHaveBeenCalledWith(
+    expect(toastAfterNavigation).toHaveBeenCalledWith(
       '번치 프로필을 수정했어요.',
       expect.objectContaining({ icon: 'success' }),
     );

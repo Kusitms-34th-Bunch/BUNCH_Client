@@ -49,7 +49,12 @@ export function PageShell({
       <main className="min-h-32 flex-1 scroll-pb-(--main-tab-bar-height,0px) scrollbar-none overflow-y-auto overscroll-y-contain pb-(--main-tab-bar-scroll-inset,0px)">
         {children}
       </main>
-      {bottom ? <div className="shrink-0">{bottom}</div> : null}
+      {/* data-toast-anchor: toast()가 이 영역 위 4px에 토스트를 놓음(디자인 시스템 Toast spec) */}
+      {bottom ? (
+        <div data-toast-anchor="wrapper" className="shrink-0">
+          {bottom}
+        </div>
+      ) : null}
     </div>
   );
 }

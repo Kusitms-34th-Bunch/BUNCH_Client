@@ -1,12 +1,11 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
 import { useBunchProfileEdits } from '../../hooks/useBunchProfileEdits';
 import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { BunchProfileEditScreen } from './BunchProfileEditScreen';
@@ -40,10 +39,8 @@ export function BunchProfileEdit() {
         saveEdit(bunch.id, profile);
         router.replace(BUNCH_HOME_PATHS.home);
         // 메인탭의 「+」 옆 높이(번치 전환 토스트와 같은 자리)
-        toast(BUNCH_HOME_MESSAGES.profileSaved, {
+        toastAfterNavigation(BUNCH_HOME_MESSAGES.profileSaved, {
           icon: 'success',
-          fullWidth: true,
-          bottomOffset: BUNCH_HOME_TOAST_OFFSET,
         });
       }}
     />

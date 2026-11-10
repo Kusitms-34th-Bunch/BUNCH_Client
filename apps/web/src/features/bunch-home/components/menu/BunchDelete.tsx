@@ -1,12 +1,11 @@
 'use client';
 
-import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { BUNCH_HOME_TOAST_OFFSET } from '../../constants/toast';
 import { useCurrentBunch } from '../../hooks/useCurrentBunch';
 import { leaveBunch } from '../../hooks/useLeftBunches';
 import { BunchDeleteScreen } from './BunchDeleteScreen';
@@ -54,10 +53,7 @@ export function BunchDelete({ step }: { step: 'info' | 'confirm' }) {
         // 들어온 길(번치 탭 → 메뉴 → 안내 → 확인)을 세 칸 되돌아가 삭제한 번치 화면을 뒤로 가기 대상에서 뺌. 기록이 모자라면 replace
         if (window.history.length > 3) window.history.go(-3);
         else router.replace(BUNCH_HOME_PATHS.home);
-        toast(BUNCH_HOME_MESSAGES.deleted(bunch.name), {
-          fullWidth: true,
-          bottomOffset: BUNCH_HOME_TOAST_OFFSET,
-        });
+        toastAfterNavigation(BUNCH_HOME_MESSAGES.deleted(bunch.name));
       }}
     />
   );

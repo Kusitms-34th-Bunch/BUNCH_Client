@@ -13,9 +13,6 @@ export const LOGIN_FAILURE_MESSAGE = '로그인에 실패했어요. 다시 시�
 /** 로그인은 됐지만 가입 상태를 읽지 못해 어디로 보낼지 모를 때(기획 1.1.1의 세션 확인 실패 문구) */
 export const STATUS_CHECK_FAILURE_MESSAGE = '일시적인 오류가 발생했어요. 다시 시도해 주세요';
 
-// 기획 명세: 오류 토스트는 하단 버튼 바로 위. 버튼 영역(버튼 3개 160px + 아래 여백 14px)에서 12px 위로 배치(기본 위치는 Safe Area + 16px)
-const FAILURE_TOAST_BOTTOM_OFFSET = 170;
-
 export const LOGIN_PENDING_MESSAGE = '로그인하는 중이에요';
 
 /**
@@ -44,13 +41,13 @@ export function useSocialLogin(
       const result = await signIn(provider);
       if (result === 'cancelled') {
         // 기획 1.2.6: 로그인 창을 닫아도 실패와 같은 안내 토스트
-        toast(LOGIN_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });
+        toast(LOGIN_FAILURE_MESSAGE);
       } else {
         let next: string | { path: string; replace: boolean };
         try {
           next = await resolveNextPath();
         } catch {
-          toast(STATUS_CHECK_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });
+          toast(STATUS_CHECK_FAILURE_MESSAGE);
           return;
         }
         keepLocked = true;
@@ -59,7 +56,7 @@ export function useSocialLogin(
         else router.push(path);
       }
     } catch {
-      toast(LOGIN_FAILURE_MESSAGE, { bottomOffset: FAILURE_TOAST_BOTTOM_OFFSET });
+      toast(LOGIN_FAILURE_MESSAGE);
     } finally {
       if (!keepLocked) {
         inFlight.current = false;

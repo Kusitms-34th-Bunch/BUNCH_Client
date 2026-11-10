@@ -24,7 +24,7 @@ import { PhotoCaptionField } from './PhotoCaptionField';
 import { PhotoMoveButtons } from './PhotoMoveButtons';
 
 // 캡션 화면의 토스트는 헤더 바로 아래에 뜸(Figma `1782:32928`·`1782:32995`, 입력 중 키보드에 가려지지 않게)
-const notify = (message: string) => toast(message, { fullWidth: true, position: 'top' });
+const notify = (message: string) => toast(message, { position: 'top' });
 
 type DraftPhotoCaptionProps = {
   draft: Draft;

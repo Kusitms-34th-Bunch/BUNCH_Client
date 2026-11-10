@@ -181,7 +181,7 @@ describe('추천 번들 시트', () => {
     await userEvent.click(recommendButton());
     await userEvent.click((await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!);
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(6), { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(6));
     expect(screen.getByRole('status')).toHaveTextContent('6장 선택됨');
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     // 키보드·스크린 리더 사용자가 적용된 날짜에서 이어 탐색하도록 그 날짜 제목에 포커스
@@ -220,7 +220,7 @@ describe('추천 번들 시트', () => {
     const dialog = await screen.findByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: '변경하기' }));
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(6), { fullWidth: true });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(6));
     expect(screen.getByRole('status')).toHaveTextContent('6장 선택됨');
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
   });
@@ -253,9 +253,7 @@ describe('추천 번들 시트', () => {
     await userEvent.click(recommendButton());
     await userEvent.click(await screen.findByRole('button', { name: '사라진 번들' }));
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation, {
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('1장 선택됨');
   });

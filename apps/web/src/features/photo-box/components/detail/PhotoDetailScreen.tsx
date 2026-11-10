@@ -7,6 +7,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type {
   PhotoBoxActions,
   PhotoBoxMember,
@@ -41,7 +42,7 @@ type PhotoDetailScreenProps = {
 };
 
 // 사진함 토스트는 목록 폭(343px)으로 펼침(Figma 사진함_18)
-const notify = (message: string) => toast(message, { fullWidth: true });
+const notify = (message: string) => toast(message);
 
 /**
  * 사진 상세 화면: 헤더(뒤로·촬영 날짜·더보기), 좌우로 넘기는 큰 사진과 올린 멤버 배지, 더보기 메뉴(저장·날짜 바꾸기·삭제)
@@ -119,7 +120,7 @@ export function PhotoDetailScreen({
       setPending(undefined);
       if (removedCount > 0) {
         // 사진이 사라지면 사진함으로 돌아가 삭제 토스트, 내 배지만 빠지면 상세에 머묾
-        notify(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
+        toastAfterNavigation(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
         onLeave();
       }
     } catch {

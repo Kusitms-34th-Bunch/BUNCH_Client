@@ -8,6 +8,7 @@ import { ALL_MEMBERS, type PhotoBoxData } from '@/features/photo-box/lib/types';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -23,7 +24,7 @@ import {
 } from '../../lib/photoAdd';
 import { SelectPhotoList } from '../SelectPhotoList';
 
-const notify = (message: string) => toast(message, { fullWidth: true });
+const notify = (message: string) => toast(message);
 
 type DraftPhotoAddProps = {
   draft: Draft;
@@ -90,7 +91,7 @@ export function DraftPhotoAdd({
       return;
     }
     actions.replacePhotos(applySelection(draft.photos, selection, data.photos));
-    notify(BUNDLE_MESSAGES.photoAddApplied);
+    toastAfterNavigation(BUNDLE_MESSAGES.photoAddApplied);
     onApplied();
   });
   const apply = () => {

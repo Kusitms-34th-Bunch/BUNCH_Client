@@ -92,10 +92,7 @@ describe('BunchJoin', () => {
 
     await userEvent.click(done());
 
-    expect(toast).toHaveBeenCalledWith('유효하지 않은 링크입니다.', {
-      bottomOffset: 42,
-      fullWidth: true,
-    });
+    expect(toast).toHaveBeenCalledWith('유효하지 않은 링크입니다.');
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -118,12 +115,7 @@ describe('BunchJoin', () => {
 
     await userEvent.click(done());
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('최대 인원을 초과한 번치입니다.', {
-        bottomOffset: 42,
-        fullWidth: true,
-      }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('최대 인원을 초과한 번치입니다.'));
     expect(push).not.toHaveBeenCalled();
   });
 

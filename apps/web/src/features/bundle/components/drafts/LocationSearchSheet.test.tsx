@@ -44,9 +44,7 @@ describe('LocationSearchSheet', () => {
 
     const input = await screen.findByRole('searchbox', { name: '장소나 주소 검색' });
     await userEvent.type(input, '여의도{Enter}');
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.searchFailed, { fullWidth: true }),
-    );
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.searchFailed));
 
     // 입력창 값을 바꾸지 않고 한 번 더 검색
     await userEvent.type(input, '{Enter}');
