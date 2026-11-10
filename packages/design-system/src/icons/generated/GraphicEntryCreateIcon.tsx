@@ -5,24 +5,20 @@ import type { IconProps } from '../types';
 const Shape = (props: ComponentProps<'svg'>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width={40}
-    height={40}
+    width={48}
+    height={48}
     fill="none"
-    viewBox="0 0 40 40"
+    viewBox="0 0 48 48"
     {...props}
   >
-    <g fill="#A7ADFF">
-      <path d="M30.39 8.322a2.1 2.1 0 0 1 2.099 2.1v15.954H11.956a3.15 3.15 0 0 1-3.148-3.149V8.322z" />
-      <path d="M35.91 1.004a3.15 3.15 0 0 1 3.149 3.148v19.075a3.15 3.15 0 0 1-3.149 3.149h-1.306V10.422a4.214 4.214 0 0 0-3.997-4.208l-.217-.006H8.808V4.152a3.15 3.15 0 0 1 3.148-3.148z" />
+    <g fill="#fff">
+      <path d="M27 28h7v7h-7zM0 28h7v7H0zM13 28h7v7h-7zM7 35h7v7H7zM0 41h7v7H0z" />
+      <path d="M13 41h7v7h-7zM14 15h7v7h-7z" />
     </g>
-    <path
-      fill="#454EDF"
-      d="M32.489 31.148a2.1 2.1 0 0 1-2.1 2.1H15.087l-4.196 4.241c-1.319 1.333-3.591.4-3.591-1.476v-2.765H3.1a2.1 2.1 0 0 1-2.099-2.1V10.421c0-1.159.94-2.099 2.1-2.099H30.39c1.16 0 2.099.94 2.099 2.1z"
-    />
   </svg>
 );
 
-const GraphicChatIcon = ({
+const GraphicEntryCreateIcon = ({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
   ...props
@@ -39,4 +35,4 @@ const GraphicChatIcon = ({
     />
   );
 };
-export default GraphicChatIcon;
+export default GraphicEntryCreateIcon;

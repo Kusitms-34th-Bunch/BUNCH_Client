@@ -17,7 +17,7 @@
 ### 제공하지 않는 동작
 
 - 그룹 묶음. 같은 `name`을 주고 호출하는 쪽이 `<fieldset>`·`<legend>`로 묶는다.
-- 아이콘이 있는 큰 카드. 그것은 `VisibilityOption`이다.
+- 아이콘이 있는 큰 카드는 만들지 않았다(공개 범위 카드 `VisibilityOption`은 #290에서 삭제).
 - 선택 값 관리와 문구(i18n).
 
 ## Public API

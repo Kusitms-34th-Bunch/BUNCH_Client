@@ -99,7 +99,7 @@ export function BunchInvite({ inviteLink, leaveHref, backOnLeave }: BunchInviteP
             type="button"
             aria-label="초대 링크 복사"
             onClick={() => void copy()}
-            className="text-icon-primary focus-visible:outline-border-brand -my-s4 -mr-s4 size-s16 flex cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="text-icon-quaternary focus-visible:outline-border-brand -my-s4 -mr-s4 size-s16 flex cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <LineCopyLargeIcon />
           </button>
