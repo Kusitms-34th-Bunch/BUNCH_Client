@@ -65,13 +65,13 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
     if (isMember) markIntroSeen();
   }, [isMember]);
 
-  if (!session && !isPending) {
-    // 도착 화면이나 오류 안내를 그리게 되면 앱 쉘에 알려 스플래시를 닫음(명세 1.1: 도착지가 정해질 때까지 스플래시 유지)
-    const settled = (!session && !isPending) || (session && introSeen !== null && !redirectTo);
-    useEffect(() => {
-      if (settled) notifyAppReady();
-    }, [settled]);
+  // 도착 화면이나 오류 안내를 그리게 되면 앱 쉘에 알려 스플래시를 닫음(명세 1.1: 도착지가 정해질 때까지 스플래시 유지)
+  const settled = (!session && !isPending) || Boolean(session && introSeen !== null && !redirectTo);
+  useEffect(() => {
+    if (settled) notifyAppReady();
+  }, [settled]);
 
+  if (!session && !isPending) {
     // Figma에 없는 상태. 번치 홈 오류 화면(`BunchHomeError`)과 같은 모양. 다시 시도 중에는 중복 요청만 막고 버튼은 그대로 둠(포커스 유지)
     return (
       <PageShell>
