@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { IntroPreview } from './IntroPreview';
 
 export default function HomePage() {
   return (
@@ -22,6 +23,8 @@ export default function HomePage() {
         >
           탭 화면 (임시)
         </Link>
+        {/* 앱 첫 실행 인트로 확인용 임시 진입점 */}
+        <IntroPreview />
       </div>
     </PageShell>
   );
