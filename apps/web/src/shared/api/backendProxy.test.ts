@@ -31,6 +31,7 @@ const request = (
     cookie?: string;
     body?: string;
     contentType?: string;
+    idempotencyKey?: string;
   } = {},
 ) =>
   new NextRequest(`https://app.example.com/api/${path}`, {
@@ -38,6 +39,7 @@ const request = (
     headers: {
       ...(init.cookie ? { cookie: init.cookie } : {}),
       ...(init.contentType ? { 'content-type': init.contentType } : {}),
+      ...(init.idempotencyKey ? { 'idempotency-key': init.idempotencyKey } : {}),
       accept: 'application/json',
     },
     ...(init.body === undefined ? {} : { body: init.body }),
@@ -140,6 +142,23 @@ describe('proxyToBackend', () => {
     expect(response.status).toBe(204);
     expect(captured[0]).toMatchObject({ method: 'PUT', body });
     expect(captured[0]?.headers.get('content-type')).toBe(contentType);
+  });
+
+  it('멱등 키(Idempotency-Key)를 백엔드로 전달한다', async () => {
+    stubBackend(new Response(null, { status: 200 }));
+
+    await proxyToBackend(
+      request('bunches', {
+        method: 'POST',
+        body: '{}',
+        contentType: 'application/json',
+        idempotencyKey: 'key-1',
+        cookie: 'accessToken=a-1',
+      }),
+      ['bunches'],
+    );
+
+    expect(captured[0]?.headers.get('idempotency-key')).toBe('key-1');
   });
 
   it('백엔드 상태·본문은 그대로, Set-Cookie 같은 헤더는 버린다', async () => {

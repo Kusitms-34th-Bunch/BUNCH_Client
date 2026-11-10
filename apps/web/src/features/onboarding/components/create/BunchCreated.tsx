@@ -1,37 +1,37 @@
 'use client';
 
-import { Button } from '@app/design-system';
+import { Button, toast } from '@app/design-system';
 import { BunchAvatar, InviteMemberCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { usePhotoPicker } from '@/shared/hooks/usePhotoPicker';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
-import { WEB_IMAGE_ACCEPT } from '@/shared/lib/imageFile';
+import { ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
+import { useChangeBunchPhotoMutation } from '../../queries/bunches';
 import { BunchConfetti } from '../BunchConfetti';
 
+/** 번치 생성 완료: 만든 번치의 대표 사진 변경과 멤버 초대·번치 이동 */
 export function BunchCreated() {
   const router = useRouter();
-  const { inputRef, photoUrl, isPending, message, handleCameraClick, handleFileChange } =
-    usePhotoPicker();
   const ready = useCreateBunchGuard(3);
-  const draft = useCreateBunchDraft();
-  const { finish } = draft;
-  // 초대 화면에서 돌아올 때 완료 기록의 이름 사용
-  const [createdName] = useState(draft.createdName ?? draft.name);
-  // 초대 화면에서 돌아올 때 완료 기록의 성격 사용(입력값은 완료 때 비워짐)
-  const [createdMood] = useState(draft.createdMood ?? draft.mood);
-  const defaultImage = defaultBunchImage(createdMood);
+  const { createdBunch, updateCreatedBunch } = useCreateBunchDraft();
+  const changePhoto = useChangeBunchPhotoMutation(createdBunch?.id);
+  if (!ready || !createdBunch) return null;
 
-  // 완료 기록을 남기고 입력값을 초기화해 뒤로 가기 시 중복 생성 방지
-  useEffect(() => {
-    if (ready && draft.createdName === null) finish(createdName, createdMood);
-  }, [ready, draft.createdName, finish, createdName, createdMood]);
+  const defaultImage = defaultBunchImage(createdBunch.characterType);
 
-  if (!ready) return null;
+  // 조정을 마친 사진은 올리고, 기본 이미지 적용(undefined)은 되돌림. 실패하면 기존 이미지 유지
+  const changeImage = (photo: string | undefined) => {
+    if (changePhoto.isPending) return;
+    changePhoto.mutate(photo, {
+      onSuccess: updateCreatedBunch,
+      onError: () => toast(ONBOARDING_MESSAGES.temporaryFailure),
+    });
+  };
 
   return (
     <PageShell
@@ -51,45 +51,27 @@ export function BunchCreated() {
       }
     >
       <div className="relative flex min-h-full flex-col">
+        <p role="status" className="sr-only">
+          {changePhoto.isPending ? '번치 사진을 저장하는 중이에요' : ''}
+        </p>
+        {changePhoto.isPending ? <PageLoading /> : null}
         <div className="gap-s12 flex flex-1 flex-col items-center justify-center">
-          <div aria-busy={isPending} className="gap-s4 flex flex-col items-center">
-            <BunchAvatar
-              src={photoUrl ?? defaultImage}
-              alt={photoUrl ? '선택한 번치 대표 사진' : ''}
-              onCameraClick={handleCameraClick}
-              cameraLabel={isPending ? '사진 선택 중' : '사진 변경'}
+          <div aria-busy={changePhoto.isPending} className="flex flex-col items-center">
+            <ProfilePhotoField
+              value={createdBunch.imageUrl}
+              onChange={changeImage}
+              renderPhoto={({ onCameraClick }) => (
+                <BunchAvatar
+                  src={createdBunch.imageUrl ?? defaultImage}
+                  alt={createdBunch.imageUrl ? '번치 대표 사진' : ''}
+                  onCameraClick={onCameraClick}
+                  cameraLabel="사진 변경"
+                />
+              )}
             />
-            <input
-              ref={inputRef}
-              type="file"
-              accept={WEB_IMAGE_ACCEPT}
-              aria-label="번치 대표 사진 파일 선택"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <p
-              role="status"
-              className={
-                photoUrl ? 'typography-body-4-regular text-text-tertiary text-center' : 'sr-only'
-              }
-            >
-              {photoUrl ? '현재 화면에서만 미리 볼 수 있어요.' : ''}
-            </p>
-            <p
-              role="status"
-              className={
-                message ? 'typography-body-4-regular text-text-tertiary text-center' : 'sr-only'
-              }
-            >
-              {message}
-            </p>
           </div>
           <h1 className="typography-title-1-semi-bold text-text-primary text-center">
-            {createdName ? (
-              <>
-                <span className="block">{createdName}</span>{' '}
-              </>
-            ) : null}
+            <span className="block">{createdBunch.name}</span>{' '}
             {/* 토큰이 없는 Figma 둘째 줄 색상 #111318 적용 */}
             <span className="block text-[#111318]">번치가 만들어졌어요!</span>
           </h1>

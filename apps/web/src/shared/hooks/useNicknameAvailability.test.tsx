@@ -148,4 +148,15 @@ describe('useNicknameAvailability', () => {
     expect(result.current).toBe('failed');
     expect(toast).toHaveBeenCalledWith(CHECK_FAILURE_MESSAGE);
   });
+
+  it('notifyFailure가 false면 실패해도 토스트 없이 failed만 알린다', async () => {
+    const check = vi.fn(() => Promise.reject(new Error('network')));
+    const { result } = renderHook(() =>
+      useNicknameAvailability('지원', check, { notifyFailure: false }),
+    );
+    await settle();
+
+    expect(result.current).toBe('failed');
+    expect(toast).not.toHaveBeenCalled();
+  });
 });
