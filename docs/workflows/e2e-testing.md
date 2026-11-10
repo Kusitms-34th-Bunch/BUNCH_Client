@@ -4,10 +4,10 @@ Playwright는 재사용 package가 아니라 repository test harness로 `e2e/`�
 
 ## Current coverage
 
-| Surface | Project          | Spec location         | Current scope                |
-| ------- | ---------------- | --------------------- | ---------------------------- |
-| admin   | `admin-chromium` | `e2e/admin/*.spec.ts` | root route smoke             |
-| web     | —                | `e2e/web/`            | product route가 생긴 뒤 추가 |
+| Surface | Project          | Spec location         | Current scope                                                                                                       |
+| ------- | ---------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| admin   | `admin-chromium` | `e2e/admin/*.spec.ts` | root route smoke                                                                                                    |
+| web     | `web-chromium`   | `e2e/web/*.spec.ts`   | 하단 탭 이동·프로필 수정 진입(`main-flow`), 번치 홈·사진함·마이페이지·프로필 수정·알림 설정의 axe 자동 검사(`a11y`) |
 
 ## Commands
 
@@ -22,6 +22,8 @@ yarn e2e:report
 GitHub Actions에서도 browser 설치 전에 `yarn e2e:typecheck`를 실행한 뒤 Playwright를 실행한다.
 
 `playwright.config.ts`가 admin dev server를 `127.0.0.1:5173`에서 시작하거나 재사용한다. `--strictPort`로 포트 fallback을 막아, 다른 프로세스가 이미 그 포트를 쓰고 있으면 조용히 다른 포트로 옮겨가 엉뚱한 인스턴스를 테스트하는 대신 즉시 실패하게 한다.
+
+web은 `127.0.0.1:3200`에서 `NEXT_PUBLIC_API_MOCKING=enabled`로 dev server를 띄워, 실제 백엔드 없이 MSW 가짜 서버로 화면 흐름만 확인한다(`Pixel 7` 기기 설정). 이미 떠 있는 서버는 MSW가 켜졌는지 알 수 없어 재사용하지 않으므로, 그 포트를 다른 프로세스가 쓰고 있으면 실패한다.
 
 ## Writing tests
 

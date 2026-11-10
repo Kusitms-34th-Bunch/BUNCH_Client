@@ -1,6 +1,7 @@
 # 011: 하단 내비게이션의 글라스 효과는 플랫폼별로 나눠 구현한다
 
 - 상태: superseded(iOS 부분) — iOS 쉘 막대는 [012](./012-ios-system-tab-bar.md)로 대체. 웹·안드로이드의 CSS `glass` 막대 결정은 유지한다.
+- 기록일: 2026-10-18
 - 구현 상태(2026-10-22 확인): 웹·안드로이드용 CSS `glass` 옵션은 구현됨(`BottomNavigation`). iOS 쉘의 `GlassView` 막대(`apps/mobile-shell/src/native-tab-bar/`)와 `nativeTabPress` 이벤트는 012에 따라 삭제했다.
 
 ## 배경

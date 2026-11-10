@@ -3,6 +3,7 @@
 
 export { AuthGate } from './AuthGate';
 export { DevTokenLogin } from './dev/DevTokenLogin';
+export { IntroScreen } from './intro/IntroScreen';
 export { LoginEntry } from './login/LoginEntry';
 export { ProfileSetup } from './signup/ProfileSetup';
 export { TermsAgreement } from './signup/TermsAgreement';

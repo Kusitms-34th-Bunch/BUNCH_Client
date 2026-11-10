@@ -1,6 +1,7 @@
 # 010: UI 컴포넌트는 디자인 시스템(core·web 구역)에, 조합은 features에 둔다
 
 - 상태: accepted
+- 기록일: 2026-10-18
 - 구현 상태(2026-10-18 확인): 구현됨. 기존 컴포넌트를 `src/components/core/`로 옮기고 `@app/design-system/web` 공개 주소, 생성기 구역 선택, 구조 검사, import 경계 규칙을 추가했다. `src/components/web/`은 첫 전용 컴포넌트(`BottomNavigation`, 2026-10-18)가 들어오면서 채워졌다.
 
 ## 배경

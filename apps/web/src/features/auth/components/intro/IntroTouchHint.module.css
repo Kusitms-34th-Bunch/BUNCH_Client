@@ -1,0 +1,86 @@
+/* 디자이너 Lottie `Next · Touch Area`(84f = 1.4초 주기)를 옮김. Lottie는 장면마다 멈춰 반복할 수 없어 직접 그림 */
+.hint {
+  position: absolute;
+  left: calc(268 * var(--u));
+  top: calc(688 * var(--u));
+  width: calc(80 * var(--u));
+  height: calc(80 * var(--u));
+  opacity: 0;
+  /* 사라짐 540~558f */
+  transition: opacity 300ms cubic-bezier(0.42, 0, 0.58, 1);
+}
+
+/* 나타남 18~48f */
+.shown {
+  opacity: 1;
+  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1) 300ms;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--primitive-gray-scale-gray-100);
+}
+
+.core {
+  position: absolute;
+  inset: calc(10 * var(--u));
+  border-radius: 9999px;
+  background: var(--primitive-gray-scale-gray-200);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ripple {
+    animation: ripple 1400ms 400ms infinite;
+  }
+
+  .halo {
+    animation: halo 1400ms 400ms infinite ease-in-out;
+  }
+
+  .core {
+    animation: core 1400ms 400ms infinite ease-in-out;
+  }
+}
+
+/* 동작 줄이기에서는 번지는 물결 없이 원 두 개만 */
+.ripple {
+  opacity: 0;
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0, 0, 0.58, 1);
+  }
+  78.6%,
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+
+@keyframes halo {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  51.2% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes core {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  23.8% {
+    transform: scale(0.9);
+  }
+  53.6% {
+    transform: scale(1.04);
+  }
+}

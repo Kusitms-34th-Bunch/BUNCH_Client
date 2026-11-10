@@ -23,6 +23,7 @@ import { pickGalleryImage } from '../gallery-image';
 import { requestPermission } from '../permissions';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { socialLogin } from '../social-login';
+import { markWebReady } from '../splash/state';
 import { canShowTabs } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { isAppWebUrl, resolveWebUrl } from '../web-url';
@@ -78,6 +79,8 @@ const appBridge = bridge({
     return Promise.resolve(true);
   },
   // 안드로이드 시스템 햅틱(기기 햅틱 설정을 따름). iOS는 시스템 탭 바가 아니면 쓰이지 않아 선택 햅틱으로 대체
+  // 웹이 도착 화면을 그리면 스플래시 마무리(여러 WebView가 보내도 한 번만)
+  appReady: async () => markWebReady(),
   tabSelectionHaptic: () =>
     Platform.OS === 'android'
       ? Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Segment_Tick)
@@ -126,6 +129,9 @@ export function AppWebView({ uri }: { uri: string }) {
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
       allowsBackForwardNavigationGestures
+      // 스플래시는 웹의 appReady(도착 화면 결정)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
+      onError={markWebReady}
+      onHttpError={markWebReady}
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;
       }}

@@ -11,6 +11,8 @@ type PageShellProps = {
   /** Safe Area까지 이어질 배경 표식(AppFrame에서 처리) */
   'data-app-background'?:
     | 'brand-subtle-1'
+    // 앱 첫 실행 인트로의 브랜드 장면
+    | 'brand'
     | 'secondary'
     // 번치 성격별 홈 배경(TYPE_2~4, TYPE_1은 brand-subtle-1)
     | 'orange-50'

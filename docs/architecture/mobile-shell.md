@@ -41,6 +41,15 @@ apps/mobile-shell/
 - iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 웹 history에 먼저 연결한다. 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
 - 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면과 iOS 시스템 탭 바다.
 
+### 스플래시
+
+- 앱을 켤 때 웹이 뜨기 전 화면이라 웹이 아니라 쉘이 맡는다. 디자인은 Figma `5931:170225`와 디자이너 Lottie(`Splash`)다. 흰 모듈 48개가 날아와 `bunch` 워드마크가 되는 4초(240f) 연출이다.
+- OS가 띄우는 네이티브 스플래시는 정지 이미지만 되므로 두 겹으로 나눈다. 네이티브는 `expo-splash-screen` config plugin(`app.json`)으로 브랜드 배경(`bunch-500`, #454EDF)만 둔다. Lottie 첫 프레임도 배경뿐이라, 워드마크를 넣으면 애니메이션이 시작될 때 사라졌다 다시 모이는 것처럼 보인다. 네이티브 설정이라 새로 빌드해야 반영된다.
+- 앱 JS가 뜨면 `src/splash/SplashOverlay.tsx`가 같은 색 화면을 덮고 네이티브 스플래시를 닫는다. 모듈의 시작·도착 위치와 시각은 Lottie 키프레임을 `src/splash/modules.ts`로 옮겼다. 곡선은 이동 `cubic-bezier(0.33, 0, 0.15, 1)`, 나타남 `cubic-bezier(0.35, 0, 0.35, 1)`이다. 새 의존성 없이 React Native `Animated`(네이티브 드라이버)로 그리며, 네이티브 드라이버가 선형 보간만 하므로 곡선을 13개 점으로 나눠 넘긴다.
+- 웹이 도착 화면을 정할 때까지 연출을 반복한다(명세 1.1). 웹의 `AuthGate`가 로그인 상태를 확인해 도착 화면이나 오류 안내를 처음 그릴 때 bridge `appReady`를 한 번 보낸다(브라우저에서는 보내지 않음). 쉘은 이 신호, WebView 로드 실패(`onError`·`onHttpError`, 오류 화면이 보이게), 5초 대기 중 먼저 오는 마무리 신호를 받으면, 그 회차의 조립(131.7f)이 끝날 때까지 기다린 뒤 300ms 페이드로 사라진다. 동작 줄이기에서는 완성된 워드마크만 보인다. 장식 화면이라 보조 기술에서 숨긴다.
+- 앱 아이콘은 디자이너의 `App Icon`(1080, 모서리 투명)에서 만든다. iOS 아이콘(`assets/icon.png`, 1024)은 투명 없는 정사각형이어야 하고 모서리는 iOS가 깎으므로, 모서리를 같은 세로 그라데이션(#454EDF→#343DCE)으로 채웠다. Android 적응형 아이콘은 글리프(`android-icon-foreground.png`·`monochrome`)와 그라데이션 배경(`android-icon-background.png`)으로 나눈다. Android는 지름이 캔버스의 61%인 원 밖을 자를 수 있어 `b` 글리프를 80%로 줄였다. 웹 설정용 `favicon.png`(48)는 둥근 원본 아이콘을 줄인 것이다. `splash-icon.png`는 스플래시 Lottie 마지막 프레임의 흰 워드마크(투명 배경, 1024)로, 네이티브 스플래시가 배경만 쓰기로 해 지금은 연결하지 않았다.
+- Expo Go와 개발 빌드는 실제 스플래시를 그대로 보여주지 않는다(공식 문서). 모양과 닫히는 시점은 release 빌드에서 확인한다.
+
 iOS 입력 포커스 확대는 디자인 시스템의 `TextField`·`LabeledTextArea`에서 대응한다. 실제 글꼴을 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 입력 폭·행 높이·padding과 textarea 자동 높이도 같은 비율로 보정한다. `@supports (-webkit-touch-callout: none)`으로 iOS WebKit에 적용하며 모바일 Safari도 포함한다. 쉘에서 viewport 확대 제한을 주입하지 않는다. 실제 터치·키보드·커서·텍스트 선택·줄바꿈은 시뮬레이터와 실기기 검증이 필요하다.
 
 ## Safe Area
@@ -54,7 +63,7 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 문서 전체의 튐(`bounces`, Android `overScrollMode`)은 끈다. 스크롤은 웹 화면 안쪽 영역(`PageShell`의 `main`)이 맡으므로, 켜 두면 화면 위쪽에서 아래로 당길 때 헤더까지 함께 내려가며 WebView 바깥의 흰 배경이 드러난다. 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(`allowsLinkPreview`, iOS)도 꺼서 앱처럼 보이게 한다.
 - 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
 - 화면 키보드가 올라오면 하단 Safe Area를 덮는다. 화면이 `data-keyboard-open`을 표시하면 `AppFrame`이 아래 여백을 0으로 둔다. 지금은 번들 상세 댓글 입력란만 쓴다(`useKeyboardOpen`, `visualViewport` 높이 기준). iOS·Android 실기기 확인 전이다. Android가 키보드에 맞춰 WebView를 줄이면 표시가 켜지지 않고 여백이 그대로 남는다.
-- 초대장처럼 Safe Area까지 배경이 이어지는 화면은 route에 `data-app-background`(연보라 `brand-subtle-1`, 회색 `secondary`, 번치 성격별 `orange-50`·`pink-50`·`green-50`)를 지정한다. `AppFrame`이 CSS `:has()`로 같은 배경을 칠하며 여백 크기는 바꾸지 않는다. 로티 화면은 배경 전환이 시작될 때 같은 표식을 `PageShell`에 전달해 본문과 Safe Area를 함께 300ms ease-out으로 전환한다. 동작 줄이기에서는 배경 전환 효과를 끈다. 화면이 제거되면 배경도 해제된다. 아래 Safe Area는 `AppFrame`의 마지막 자식 요소가 차지한다. 쉘에서는 이 높이에 시스템 탭 바가 포함되므로, 위만 색이 있고 아래 내용은 흰색인 화면(번치 홈은 번치 성격 색, 다른 번치는 연보라)은 `data-app-background-bottom="primary"`를 함께 지정해 탭 바 뒤를 흰색으로 둔다.
+- 초대장처럼 Safe Area까지 배경이 이어지는 화면은 route에 `data-app-background`(브랜드 `brand`, 연보라 `brand-subtle-1`, 회색 `secondary`, 번치 성격별 `orange-50`·`pink-50`·`green-50`)를 지정한다. `AppFrame`이 CSS `:has()`로 같은 배경을 칠하며 여백 크기는 바꾸지 않는다. 로티 화면은 배경 전환이 시작될 때 같은 표식을 `PageShell`에 전달해 본문과 Safe Area를 함께 300ms ease-out으로 전환한다. 동작 줄이기에서는 배경 전환 효과를 끈다. 브랜드(`brand`)는 앱 첫 실행 인트로의 브랜드 배경이 차오르는 시점과 맞춰 200ms 뒤 550ms ease-in-out으로 전환하고, 가이드로 넘어갈 때는 화면이 흐려지는 350ms에 맞춰 돌아온다. 인트로는 안쪽 배경을 따로 칠하지 않고 `AppFrame` 배경 하나가 Safe Area까지 칠해 경계가 늦게 따라오지 않는다. 화면이 제거되면 배경도 해제된다. 아래 Safe Area는 `AppFrame`의 마지막 자식 요소가 차지한다. 쉘에서는 이 높이에 시스템 탭 바가 포함되므로, 위만 색이 있고 아래 내용은 흰색인 화면(번치 홈은 번치 성격 색, 다른 번치는 연보라)은 `data-app-background-bottom="primary"`를 함께 지정해 탭 바 뒤를 흰색으로 둔다.
 - 앱은 `app.json`의 `orientation: "portrait"`로 세로에 고정되어 있어, iPhone 기준으로 앱 안에서는 가로 모드가 생기지 않는다(`ios.supportsTablet: true`인 iPad에서도 세로로 고정되는지는 확인하지 못했다). 일반 브라우저의 가로 모드를 위해 좌우 Safe Area를 적용하고, `PageShell`의 본문은 최소 높이(8rem)를 가진다. header·bottom·Safe Area를 뺀 높이가 그보다 작으면 본문 대신 틀 전체가 넘쳐 페이지가 스크롤된다. 이때 하단 영역(CTA)은 문서를 스크롤해야 보이고, main 위에서 스크롤하면 `overscroll-y-contain` 때문에 문서로 이어지지 않아 닿기 어려울 수 있다. 하단을 항상 보이게 하는 sticky 방식과 문서 스크롤 하나로 통일하는 방식은 이득이 불분명하거나 범위가 커서 택하지 않았고, 이 한계는 실기기와 낮은 화면에서 확인한 뒤 다시 정한다.
 - 확인한 것: 브라우저에서 네이티브 값이 한 번만 적용되고 가로 모드·낮은 화면의 최소 높이 정책이 동작하는 것, 네이티브의 TypeScript 검사·iOS JS 번들 생성·값 변환 테스트. 확인하지 못한 것: iOS·Android 실기기와 시뮬레이터에서 실제 값이 들어가는지, 마운트 뒤 값이 바뀐 상태에서 새 문서를 로드할 때 `injectedJavaScriptBeforeContentLoaded`의 새 값이 쓰이는지, Android 시스템 바(edge-to-edge) 처리, 소프트 키보드와 `dvh`. 이 부분은 실기기 확인 전까지 통과로 보지 않는다.
 

@@ -18,7 +18,12 @@ import {
   WebAnimation,
 } from '@ssgoi/react/view-transitions';
 import { type ReactNode, useMemo } from 'react';
-import { LOGIN_PATH, SIGNUP_PATHS, SIGNUP_TRANSITION_IDS } from '@/features/auth/constants/paths';
+import {
+  INTRO_PATH,
+  LOGIN_PATH,
+  SIGNUP_PATHS,
+  SIGNUP_TRANSITION_IDS,
+} from '@/features/auth/constants/paths';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { BUNDLE_PATHS } from '@/features/bundle/constants/paths';
 import { BUNDLE_SELECT_PATHS } from '@/features/bundle/constants/selectPaths';
@@ -496,6 +501,8 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bundleSlide,
   },
+  // 인트로 → 로그인: 화면설계서에 없어 가입 화면과 같은 디졸브. 앞으로만 넘어가 한 방향
+  { from: INTRO_PATH, to: LOGIN_PATH, transition: dissolve },
   { from: SIGNUP_PATHS.terms, to: LOGIN_PATH, transition: dissolve },
   {
     from: SIGNUP_PATHS.profile,

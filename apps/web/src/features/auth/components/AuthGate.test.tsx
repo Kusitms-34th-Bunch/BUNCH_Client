@@ -38,6 +38,9 @@ describe('AuthGate', () => {
   beforeEach(() => {
     replace.mockClear();
     navigation.pathname = '/bunch';
+    // 기본은 인트로를 본 사용자. 회원 테스트가 남긴 기록에 기대지 않게 매번 다시 둠
+    window.localStorage.clear();
+    window.localStorage.setItem('bunch:intro-seen', '1');
   });
 
   it('상태를 확인하는 동안에는 화면 대신 로딩만 보인다', async () => {
@@ -81,6 +84,25 @@ describe('AuthGate', () => {
     expect(protectedScreen()).toBeNull();
     expect(loadingOverlay()).not.toBeNull();
     expect(screen.getByRole('status').textContent).toBe('화면을 이동하는 중이에요');
+  });
+
+  it('인트로를 본 적 없는 비로그인 사용자는 인트로로 보낸다', async () => {
+    window.localStorage.clear();
+    navigation.pathname = '/login';
+    server.use(http.get('/api/members/me/onboarding', () => fail(401, 'AUTH_001')));
+    renderGate();
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/intro'));
+    expect(protectedScreen()).toBeNull();
+  });
+
+  it('인트로를 본 적 없어도 로그인한 사용자는 본 것으로 기록해 로그아웃 뒤 인트로를 보지 않는다', async () => {
+    window.localStorage.clear();
+    respondWith({ signupStatus: 'COMPLETED', termsAccepted: true, defaultBunchId: 7 });
+    renderGate();
+
+    expect(await screen.findByText('보호된 화면')).toBeTruthy();
+    expect(window.localStorage.getItem('bunch:intro-seen')).toBe('1');
   });
 
   it('로그인하지 않은 사용자가 보호된 화면에 들어오면 로그인으로 보낸다', async () => {

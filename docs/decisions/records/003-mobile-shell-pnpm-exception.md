@@ -1,6 +1,7 @@
 # 003: apps/mobile-shell은 Yarn PnP 예외로 pnpm을 쓴다
 
 - 상태: accepted
+- 기록일: 2026-10-14
 
 ## 배경
 
