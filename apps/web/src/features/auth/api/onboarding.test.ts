@@ -12,6 +12,7 @@ describe('getOnboarding', () => {
     respondWith({ memberId: 1, signupStatus: 'COMPLETED', termsAccepted: true, defaultBunchId: 7 });
 
     await expect(getOnboarding()).resolves.toEqual({
+      memberId: 1,
       signupStatus: 'COMPLETED',
       termsAccepted: true,
       hasDefaultBunch: true,

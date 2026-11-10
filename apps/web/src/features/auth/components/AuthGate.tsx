@@ -8,6 +8,7 @@ import { type ReactNode, useEffect, useSyncExternalStore } from 'react';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { setAnalyticsConsent } from '@/shared/config/posthog';
 import type { PostLoginDestinations } from '../lib/postLoginPath';
 import { STATUS_CHECK_FAILURE_MESSAGE } from '../hooks/useSocialLogin';
 import { type SessionState, resolveAccess } from '../lib/accessPolicy';
@@ -64,6 +65,18 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
   useEffect(() => {
     if (isMember) markIntroSeen();
   }, [isMember]);
+
+  // 제품 분석은 약관에 동의한 회원만 수집(ADR 018). 상태를 모르는 동안은 바꾸지 않음
+  // 동의한 회원의 ID, 비로그인·미동의는 null
+  const analyticsMember =
+    session === undefined
+      ? undefined
+      : session.kind === 'member' && session.onboarding.termsAccepted
+        ? String(session.onboarding.memberId)
+        : null;
+  useEffect(() => {
+    if (analyticsMember !== undefined) void setAnalyticsConsent(analyticsMember).catch(() => {});
+  }, [analyticsMember]);
 
   // 도착 화면이나 오류 안내를 그리게 되면 앱 쉘에 알려 스플래시를 닫음(명세 1.1: 도착지가 정해질 때까지 스플래시 유지)
   const settled = (!session && !isPending) || Boolean(session && introSeen !== null && !redirectTo);

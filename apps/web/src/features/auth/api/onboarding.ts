@@ -12,6 +12,8 @@ const onboardingSchema = z.object({
 }) satisfies z.ZodType<ApiContract<components['schemas']['OnboardingResponse']>>;
 
 export type OnboardingState = {
+  /** 같은 기기에서 회원이 바뀌었는지 구분(제품 분석 익명 ID 분리) */
+  memberId: number;
   signupStatus: 'IN_PROGRESS' | 'COMPLETED';
   termsAccepted: boolean;
   /** 서버가 정한 기본(마지막으로 쓴 유효한) 번치가 있는지 */
@@ -26,6 +28,7 @@ export const getOnboarding = async (signal?: AbortSignal): Promise<OnboardingSta
     'onboarding',
   );
   return {
+    memberId: onboarding.memberId,
     signupStatus: onboarding.signupStatus,
     termsAccepted: onboarding.termsAccepted,
     hasDefaultBunch: onboarding.defaultBunchId != null,

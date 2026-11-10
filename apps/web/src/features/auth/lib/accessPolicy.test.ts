@@ -7,17 +7,29 @@ const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
 const member = (onboarding: OnboardingState): SessionState => ({ kind: 'member', onboarding });
 const anonymous: SessionState = { kind: 'anonymous' };
 const noTerms = member({
+  memberId: 1,
   signupStatus: 'IN_PROGRESS',
   termsAccepted: false,
   hasDefaultBunch: false,
 });
 const termsDone = member({
+  memberId: 1,
   signupStatus: 'IN_PROGRESS',
   termsAccepted: true,
   hasDefaultBunch: false,
 });
-const withBunch = member({ signupStatus: 'COMPLETED', termsAccepted: true, hasDefaultBunch: true });
-const noBunch = member({ signupStatus: 'COMPLETED', termsAccepted: true, hasDefaultBunch: false });
+const withBunch = member({
+  memberId: 1,
+  signupStatus: 'COMPLETED',
+  termsAccepted: true,
+  hasDefaultBunch: true,
+});
+const noBunch = member({
+  memberId: 1,
+  signupStatus: 'COMPLETED',
+  termsAccepted: true,
+  hasDefaultBunch: false,
+});
 
 const access = (pathname: string, session: SessionState) =>
   resolveAccess(pathname, session, DESTINATIONS, true);
