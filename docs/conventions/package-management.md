@@ -3,6 +3,7 @@
 - Yarn 4 PnP를 사용한다. 모든 패키지 명령은 `yarn`으로 실행한다.
 - PnP를 선택한 배경, Vite 경고 처리, 재검토 조건은 `docs/decisions/records/002-yarn-pnp-workspace-installation.md`를 따른다.
 - `apps/web`의 `dev`·`build`는 `--webpack`을 유지한다. Next 16의 기본 번들러인 Turbopack은 Yarn PnP를 지원하지 않고 계획도 없다(Next.js 공식 문서의 Turbopack "Unsupported and unplanned features"). 빌드를 빠르게 하려고 `--webpack`을 지우지 않는다. PnP를 벗어나는 결정이 아니면 바꾸지 않는다.
+- Rspack(`next-rspack`)도 시험했지만 쓰지 않는다(2026-11-10, #305). 캐시 없는 빌드는 약 25% 빨랐지만 캐시가 있으면 차이가 없었고, 모든 화면이 처음 받는 공통 JS가 199.5KB에서 643.8KB(gzip)로 약 3배가 됐다. 번들 크기 원인 표(`@next/bundle-analyzer`)도 만들 수 없다. `next-rspack`이 정식이 되거나 chunk 분할이 webpack과 같아지면 다시 잰다.
 - **예외**: `apps/mobile-shell`은 Expo/Metro가 PnP를 지원하지 않아 pnpm을 쓴다. root Yarn workspace에서 제외돼 있고, 설치·의존성 관리는 그 폴더 안에서만 한다. 배경은 `docs/decisions/records/003-mobile-shell-pnpm-exception.md`, 구조는 `docs/architecture/mobile-shell.md`를 확인한다.
 - 의존성 버전은 root `package.json`의 Yarn workspace 설정과 lockfile을 기준으로 관리한다. 같은 library를 임의로 workspace마다 다른 버전으로 추가하지 않는다.
 - `apps/*`는 배포 단위이며 다른 앱을 import하지 않는다.
