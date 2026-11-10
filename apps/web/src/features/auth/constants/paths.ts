@@ -1,6 +1,8 @@
 import type { TermsDocumentId } from './terms';
 
 export const LOGIN_PATH = '/login';
+/** 앱을 처음 실행한 사람에게만 보이는 인트로와 온보딩 가이드 */
+export const INTRO_PATH = '/intro';
 
 export const SIGNUP_PATHS = {
   terms: '/signup/terms',
