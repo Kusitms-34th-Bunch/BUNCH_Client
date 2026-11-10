@@ -1,7 +1,12 @@
 import type { CaptureResult, PostHog, PostHogConfig, Properties } from 'posthog-js';
 
 /** 주소·경로에서 query·hash(초대 코드·토큰)를 지우고 숫자 ID 구간(회원·번치·사진 등)을 `:id`로 바꿈 */
-const cleanPath = (value: string) => value.replace(/[?#].*$/, '').replace(/\/\d+(?=\/|$)/g, '/:id');
+// 숫자 ID와 초대 링크의 토큰(`/invite/{토큰}`)은 경로 조각이라 값을 감춤
+const cleanPath = (value: string) =>
+  value
+    .replace(/[?#].*$/, '')
+    .replace(/\/\d+(?=\/|$)/g, '/:id')
+    .replace(/\/invite\/[^/]+/g, '/invite/:token');
 
 const cleanValue = (key: string, value: unknown): unknown => {
   if (typeof value !== 'string') return value;

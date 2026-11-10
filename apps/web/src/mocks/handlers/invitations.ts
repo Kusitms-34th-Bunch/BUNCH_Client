@@ -138,6 +138,14 @@ const addMembership = (resolved: Exclude<Resolved, { kind: 'invalid' }>): number
 };
 
 export const invitationHandlers = [
+  // GET /api/v1/invitations/{token}: 공개 초대 카드(로그인 불필요). 없거나 만료·폐기된 링크는 404 INVITE_001(구분하지 않음)
+  http.get('/api/invitations/:token', ({ params }) => {
+    const code = toCode(String(params.token));
+    const resolved = resolve(code);
+    if (resolved.kind === 'invalid') return fail(404, 'INVITE_001');
+    return ok(cardOf(resolved, code));
+  }),
+
   // POST /api/v1/invitations/verify: 참여하지 않고 카드와 참여 가능 여부만(소속이 10개여도 카드는 확인 가능)
   http.post('/api/invitations/verify', async ({ request }) => {
     const body = await readJson(request);
