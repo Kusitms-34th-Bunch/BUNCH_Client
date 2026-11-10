@@ -6,7 +6,6 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
-import { onDraftCreated } from '../scenario/draftCreated';
 
 // 백엔드 명세(번들 초안 생성·수정·발행·편집권) 기준, 명세에 없는 부분은 `ponytail:`로 표시
 const MAX_PHOTOS = 20;
@@ -443,13 +442,7 @@ export const bundleHandlers = [
           updatedAt: at,
           publishedAt: null,
         };
-        // 시나리오가 있으면 초안을 덧입힘(없으면 그대로)
-        const scenario = onDraftCreated(bundle);
-        mockDb.update((latest) => ({
-          ...latest,
-          bundles: [...latest.bundles, scenario.bundle],
-          bundleLeases: [...latest.bundleLeases, ...scenario.leases],
-        }));
+        mockDb.update((latest) => ({ ...latest, bundles: [...latest.bundles, bundle] }));
         return { status: 200, body: { id } };
       },
     );
