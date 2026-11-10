@@ -20,20 +20,40 @@ const withBunch = member({ signupStatus: 'COMPLETED', termsAccepted: true, hasDe
 const noBunch = member({ signupStatus: 'COMPLETED', termsAccepted: true, hasDefaultBunch: false });
 
 const access = (pathname: string, session: SessionState) =>
-  resolveAccess(pathname, session, DESTINATIONS);
+  resolveAccess(pathname, session, DESTINATIONS, true);
 
 describe('resolveAccess', () => {
+  it('가입을 마친 사용자가 인트로에 들어오면 도착 화면으로 보낸다', () => {
+    expect(access('/intro', withBunch)).toBe('/bunch');
+  });
+
+  it('가입 중인 사용자가 인트로에 들어오면 남은 가입 단계로 보낸다', () => {
+    expect(access('/intro', noTerms)).toBe('/signup/terms');
+    expect(access('/intro', termsDone)).toBe('/signup/profile');
+  });
+
   describe('로그인하지 않은 사용자', () => {
     it('로그인 화면만 볼 수 있다', () => {
       expect(access('/login', anonymous)).toBeNull();
     });
 
-    it.each(['/', '/bunch', '/feed', '/signup/terms', '/signup/profile', '/onboarding/create'])(
-      '%s에 들어가면 로그인으로 보낸다',
-      (pathname) => {
-        expect(access(pathname, anonymous)).toBe('/login');
-      },
-    );
+    it.each([
+      '/',
+      '/bunch',
+      '/feed',
+      '/signup/terms',
+      '/signup/profile',
+      '/onboarding/create',
+      '/intro',
+    ])('%s에 들어가면 로그인으로 보낸다', (pathname) => {
+      expect(access(pathname, anonymous)).toBe('/login');
+    });
+
+    it('인트로를 본 적 없으면 인트로만 볼 수 있다', () => {
+      expect(resolveAccess('/intro', anonymous, DESTINATIONS, false)).toBeNull();
+      expect(resolveAccess('/login', anonymous, DESTINATIONS, false)).toBe('/intro');
+      expect(resolveAccess('/bunch', anonymous, DESTINATIONS, false)).toBe('/intro');
+    });
   });
 
   describe('가입 중이고 약관에 동의하지 않은 사용자', () => {
