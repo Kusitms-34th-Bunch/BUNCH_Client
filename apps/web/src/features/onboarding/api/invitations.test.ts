@@ -10,6 +10,7 @@ const CARD = {
   imageUrl: 'https://cdn.example.com/b.jpg',
   inviterNickname: '뭉치',
   code: 'ABCD2345',
+  characterType: 'TYPE_3',
 };
 
 describe('verifyInvitation', () => {
@@ -29,6 +30,7 @@ describe('verifyInvitation', () => {
       eligibility: 'AVAILABLE',
       card: {
         name: '퇴근런클럽',
+        characterType: 'TYPE_3',
         introduction: '함께 달리는 우리',
         inviterNickname: '뭉치',
         imageUrl: 'https://cdn.example.com/b.jpg',
@@ -49,7 +51,7 @@ describe('verifyInvitation', () => {
     const { card, eligibility } = await verifyInvitation('ABCD2345');
 
     expect(eligibility).toBe('FULL');
-    expect(card).toEqual({ name: '퇴근런클럽' });
+    expect(card).toEqual({ name: '퇴근런클럽', characterType: 'TYPE_3' });
   });
 
   it('무효 초대는 코드를 가진 ApiError로 던진다', async () => {

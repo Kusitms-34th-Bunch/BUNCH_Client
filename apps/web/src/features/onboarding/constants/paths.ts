@@ -9,6 +9,8 @@ export const ONBOARDING_PATHS = {
   createBunchComplete: '/onboarding/create/complete',
   createBunchInvite: '/onboarding/create/invite',
   joinBunch: '/onboarding/join',
+  /** 보관된 초대를 서버에 확인하고 초대 확인 화면으로 이어 주는 진입(초대 링크로 들어온 사용자) */
+  joinBunchEnter: '/onboarding/join/enter',
   joinBunchInvitation: '/onboarding/join/invitation',
   joinBunchComplete: '/onboarding/join/complete',
   // 피드 화면 연결 전 임시 홈 경로

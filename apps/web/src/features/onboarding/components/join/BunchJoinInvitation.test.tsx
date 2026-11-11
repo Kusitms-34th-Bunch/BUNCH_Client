@@ -6,6 +6,11 @@ import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import {
+  clearPendingInvitation,
+  readPendingInvitation,
+  savePendingInvitation,
+} from '@/shared/lib/pendingInvitation';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
@@ -16,6 +21,10 @@ const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
+const toastAfterNavigation = vi.fn<(_message: string) => void>();
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({
+  toastAfterNavigation: (message: string) => toastAfterNavigation(message),
+}));
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: (...args: ToastArgs) => toast(...args),
@@ -23,12 +32,18 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 
 type Verified = {
   invitation: string;
-  card: { name: string; introduction?: string; inviterNickname?: string };
+  card: {
+    name: string;
+    characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+    introduction?: string;
+    inviterNickname?: string;
+  };
 };
 const VERIFIED: Verified = {
   invitation: 'ABCD2345',
   card: {
     name: '여행가조',
+    characterType: 'TYPE_3',
     introduction: '틈만 나면 떠나는 여행 좋아하는 네 명',
     inviterNickname: '민지',
   },
@@ -53,8 +68,10 @@ const joinButton = () => screen.getByRole('button', { name: '참여하기' });
 
 describe('BunchJoinInvitation', () => {
   beforeEach(() => {
+    clearPendingInvitation();
     replace.mockClear();
     toast.mockClear();
+    toastAfterNavigation.mockClear();
   });
 
   it('제목과 본문(main), 서버가 확인한 초대 카드(번치 이름·소개·초대한 사람)를 보여 준다', () => {
@@ -70,10 +87,23 @@ describe('BunchJoinInvitation', () => {
   });
 
   it('소개와 초대한 사람이 없으면 해당 줄을 숨긴다', () => {
-    renderInvitation({ invitation: 'ABCD2345', card: { name: '여행가조' } });
+    renderInvitation({
+      invitation: 'ABCD2345',
+      card: { name: '여행가조', characterType: 'TYPE_3' },
+    });
 
     const card = screen.getByRole('article', { name: '여행가조' });
     expect(card.textContent).not.toContain('From.');
+  });
+
+  it('사진이 없으면 서버가 준 번치 성격의 기본 이미지를 보여 준다', () => {
+    renderInvitation({
+      invitation: 'ABCD2345',
+      card: { name: '여행가조', characterType: 'TYPE_4' },
+    });
+
+    const image = screen.getByRole('article', { name: '여행가조' }).querySelector('img');
+    expect(image?.getAttribute('src')).toContain('type-4');
   });
 
   it('확인한 초대 없이 직접 들어오면 화면을 그리지 않고 링크 입력으로 되돌린다', () => {
@@ -81,6 +111,13 @@ describe('BunchJoinInvitation', () => {
 
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
     expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunch);
+  });
+
+  it('초대 링크로 들어온 사용자는 새로고침으로 확인한 초대가 사라지면 보관된 초대로 다시 확인한다', () => {
+    savePendingInvitation('ABCD2345');
+    renderInvitation(null);
+
+    expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchEnter);
   });
 
   it('참여하기는 멱등 키와 함께 서버에 참여하고 결과를 남긴 뒤 완료 화면으로 replace한다', async () => {
@@ -112,6 +149,8 @@ describe('BunchJoinInvitation', () => {
     expect(sent?.body).toEqual({ invitation: 'ABCD2345' });
     expect(sent?.key).toMatch(/^[0-9a-f-]{36}$/);
     expect(screen.getByLabelText('참여한 번치').textContent).toBe('여행가조');
+    // 참여를 마쳤으니 보관한 초대를 지움
+    expect(readPendingInvitation()).toBeNull();
   });
 
   it('이미 참여 중이면(ALREADY_MEMBER) 알린 뒤 번치로 이동하고 완료 화면으로 가지 않는다', async () => {
@@ -123,7 +162,8 @@ describe('BunchJoinInvitation', () => {
     await userEvent.click(joinButton());
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed));
-    expect(toast).toHaveBeenCalledWith('이미 참여 중인 번치예요.');
+    expect(toastAfterNavigation).toHaveBeenCalledWith('이미 참여 중인 번치예요.');
+    expect(toast).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchComplete);
   });
 
@@ -188,5 +228,55 @@ describe('BunchJoinInvitation', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed));
+  });
+
+  describe('보관된 초대 정리', () => {
+    beforeEach(() => savePendingInvitation('ABCD2345'));
+
+    it('이미 참여 중이면(ALREADY_MEMBER) 보관한 초대를 지운다', async () => {
+      server.use(
+        http.post('/api/invitations/join', () => ok({ outcome: 'ALREADY_MEMBER', bunch: BUNCH })),
+      );
+      renderInvitation();
+
+      await userEvent.click(joinButton());
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed));
+      expect(readPendingInvitation()).toBeNull();
+    });
+
+    it.each([
+      [404, 'INVITE_001'],
+      [409, 'BUNCH_002'],
+      [409, 'BUNCH_003'],
+    ])('다시 해도 안 되는 실패(%s %s)는 보관한 초대를 지운다', async (status, code) => {
+      server.use(http.post('/api/invitations/join', () => fail(status, code)));
+      renderInvitation();
+
+      await userEvent.click(joinButton());
+
+      await waitFor(() => expect(readPendingInvitation()).toBeNull());
+    });
+
+    it('일시적 오류는 보관한 초대를 유지한다(다시 시도할 수 있음)', async () => {
+      server.use(http.post('/api/invitations/join', () => fail(503, 'AUTH_018')));
+      renderInvitation();
+
+      await userEvent.click(joinButton());
+
+      await waitFor(() => expect(toast).toHaveBeenCalled());
+      expect(readPendingInvitation()).toBe('ABCD2345');
+    });
+
+    it('모달의 나가기는 보관한 초대를 지운다', async () => {
+      renderInvitation();
+      await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
+      const dialog = await screen.findByRole('alertdialog');
+
+      await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed));
+      expect(readPendingInvitation()).toBeNull();
+    });
   });
 });

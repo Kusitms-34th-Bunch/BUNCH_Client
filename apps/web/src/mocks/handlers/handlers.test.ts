@@ -208,4 +208,12 @@ describe('가짜 서버 초대 확인·참여', () => {
     await join('MOCKJOIN', 'k-3');
     expect((await join('MOCK0001', 'k-3')).status).toBe(409);
   });
+
+  it('공개 초대 조회는 로그인 없이 카드를 돌려주고, 없는 초대는 404 INVITE_001이다', async () => {
+    const card = unwrapEnvelope<{ name: string }>(await api().get('invitations/MOCKJOIN').json());
+    expect(card.name).toBe('여행가조');
+
+    const missing = await api().get('invitations/NOPE0000', { throwHttpErrors: false });
+    expect(missing.status).toBe(404);
+  });
 });

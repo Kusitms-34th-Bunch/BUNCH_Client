@@ -9,6 +9,8 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
+import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import {
   BUNCH_ERROR_CODES,
   INVITATION_ERROR_CODES,
@@ -19,9 +21,6 @@ import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
 import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
 import { useJoinInvitationMutation } from '../../queries/invitations';
 import { InviteReveal } from './InviteReveal';
-
-/** 초대 카드 응답에 번치 성격(`characterType`)이 없어 봉투·인장 색과 기본 이미지는 타입 1로 둠(백엔드 확인 항목) */
-const CARD_CHARACTER_TYPE = 'TYPE_1';
 
 /**
  * 링크 입력에서 확인한 초대를 보여 주고 「참여하기」로 서버에 참여(기획 2.6.2·2.6.3)
@@ -43,12 +42,21 @@ export function BunchJoinInvitation() {
     description: '지금 나가면 번치에 참여하지 않고 피드로 이동해요.',
     cancelLabel: '계속 참여하기',
     onExit: () => {
+      // 참여를 그만두면 보관한 초대도 지움(다음 로그인 때 다시 초대로 보내지 않게)
+      clearPendingInvitation();
       router.replace(ONBOARDING_PATHS.feed);
     },
   });
 
   useEffect(() => {
-    if (!verified) router.replace(ONBOARDING_PATHS.joinBunch);
+    // 초대 링크로 들어온 사용자는 새로고침으로 확인한 초대가 사라져도 보관된 초대로 다시 확인하고, 아니면 링크 입력으로
+    if (!verified) {
+      router.replace(
+        readPendingInvitation() !== null
+          ? ONBOARDING_PATHS.joinBunchEnter
+          : ONBOARDING_PATHS.joinBunch,
+      );
+    }
   }, [verified, router]);
 
   if (!verified) return null;
@@ -63,13 +71,16 @@ export function BunchJoinInvitation() {
         onSuccess: ({ outcome, bunch }) => {
           if (outcome === 'ALREADY_MEMBER') {
             // 확인한 뒤 다른 곳에서 이미 참여한 경우: 오류로 막지 않고 알린 뒤 번치로 이동
-            toast(ONBOARDING_MESSAGES.alreadyMember);
+            toastAfterNavigation(ONBOARDING_MESSAGES.alreadyMember);
+            clearPendingInvitation();
             flow.discardIdempotencyKey();
             router.replace(ONBOARDING_PATHS.feed);
             return;
           }
           // 성공한 요청의 키는 더 쓰지 않음(뒤로 가서 같은 링크로 다시 시도하면 새 키로 서버가 판단)
           flow.discardIdempotencyKey();
+          // 참여를 마쳤으니 보관한 초대를 지움(기능명세 1.5.1)
+          clearPendingInvitation();
           flow.setJoinedBunch(bunch);
           // 중복 참여를 막으려고 replace(성공은 이동이 끝날 때까지 joining을 유지)
           router.replace(ONBOARDING_PATHS.joinBunchComplete);
@@ -89,12 +100,15 @@ export function BunchJoinInvitation() {
           }
           if (code === INVITATION_ERROR_CODES.invalid) {
             toast(ONBOARDING_MESSAGES.invalidInvitation);
+            clearPendingInvitation();
             setBlockedReason(ONBOARDING_MESSAGES.invalidInvitation);
           } else if (code === BUNCH_ERROR_CODES.full) {
             toast(ONBOARDING_MESSAGES.fullBunch);
+            clearPendingInvitation();
             setBlockedReason(ONBOARDING_MESSAGES.fullBunch);
           } else if (code === BUNCH_ERROR_CODES.limitExceeded) {
             toast(ONBOARDING_MESSAGES.bunchLimit);
+            clearPendingInvitation();
             setBlockedReason(ONBOARDING_MESSAGES.bunchLimit);
           } else {
             toast(ONBOARDING_MESSAGES.temporaryFailure);
@@ -125,7 +139,7 @@ export function BunchJoinInvitation() {
       {join.isPending || join.isSuccess ? <PageLoading /> : null}
       <div className="gap-s10 px-padding-p18 pb-padding-p18 flex min-h-full flex-col items-center justify-center">
         <InviteReveal
-          characterType={CARD_CHARACTER_TYPE}
+          characterType={card.characterType}
           title={
             <h1 className="typography-title-1-bold text-text-primary text-center break-keep">
               초대받은 번치에 참여할까요?
@@ -137,7 +151,7 @@ export function BunchJoinInvitation() {
             // 소개·초대한 사람이 없으면 해당 줄을 숨김(기획 2.6.2)
             description={card.introduction}
             senderName={card.inviterNickname}
-            imageSrc={card.imageUrl ?? defaultBunchImage(CARD_CHARACTER_TYPE)}
+            imageSrc={card.imageUrl ?? defaultBunchImage(card.characterType)}
             onJoin={submit}
             joinDisabled={blockedReason !== null}
           />

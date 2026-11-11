@@ -22,13 +22,13 @@
 ## Route와 접근
 
 - Path·params·search: `/onboarding/join/invitation`. params·search는 없다.
-- 접근 권한·guard: 링크 입력에서 확인한 초대(join layout의 `JoinInvitationProvider`)가 없으면(직접 진입·새로고침) 화면을 그리지 않고 링크 입력(`/onboarding/join`)으로 `router.replace`한다.
+- 접근 권한·guard: 링크 입력 또는 초대 진입(`BunchJoinEntry.spec.md`)에서 확인한 초대(join layout의 `JoinInvitationProvider`)가 없으면(직접 진입·새로고침) 화면을 그리지 않고 `router.replace`한다. 보관된 초대(초대 링크로 들어온 사용자)가 있으면 초대 진입으로 돌려 다시 확인하고, 없으면 링크 입력(`/onboarding/join`)으로 보낸다. 참여 성공·나가기·다시 해도 안 되는 실패(무효·정원·소속 한도) 때 보관한 초대를 지운다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 배경은 연회색(`bg-surface-secondary`, `PageShell`의 `className`). route의 `data-app-background="secondary"`를 `AppFrame`이 감지해 상태 바·홈 인디케이터 영역도 같은 색으로 바꾼다(기본 150ms 페이드). 입력 화면에서 `router.push`로 들어오며 로딩 화면은 거치지 않는다. 「참여하기」와 「나가기」는 `router.replace`로 이동해 뒤로 가기로 돌아오지 않는다.
 
 ## 상태와 흐름
 
 - 초기 진입: 초대장 열람 모션이 재생된다(`InviteReveal`, Web Animations API). 봉투 뒷면이 올라오고 인장이 커졌다 사라지며 가운데 조각이 흩어진 뒤 봉투가 가로로 접히며 카드가 펼쳐지고 제목이 올라온다. Figma 타임라인 4.2초 중 2.5초에 끝난다. 카드는 펼쳐지는 시각(약 2초)까지 `inert`라 누르거나 읽을 수 없다. 봉투·인장 색은 번치 타입(`characterType`)으로 정하며 Figma에는 TYPE_1(파랑)만 있다(나머지 3종은 같은 계열 색으로 정한 값, 확인 필요). 동작 줄이기이거나 재생을 지원하지 않으면 봉투 없이 최종 화면을 바로 보여 준다. 이전 로티 로딩 화면(`/onboarding/join/motion`)은 이 연출로 흡수해 삭제했다.
-- 「참여하기」: 서버에 참여를 요청한다(`useJoinInvitationMutation`, `Idempotency-Key` 필수). 요청 중에는 `PageLoading`을 덮고 같은 틱의 중복 탭은 ref로 막는다. `JOINED`면 결과를 흐름 상태에 남기고 완료 화면으로 `router.replace`, `ALREADY_MEMBER`는 토스트 「이미 참여 중인 번치예요.」 뒤 번치(임시 피드)로 `replace`한다. 실패 코드별 처리: 404 `INVITE_001`·409 `BUNCH_002`(정원)·`BUNCH_003`(소속 한도)는 토스트 뒤 「참여하기」를 잠그고(다시 해도 안 됨), 그 밖은 일시적 오류 토스트 뒤 다시 누를 수 있다. 같은 초대의 재시도는 같은 멱등 키를 쓰고 4xx(408·429 제외)에는 키를 버린다. 카드의 소개·초대한 사람이 없으면 해당 줄을 숨긴다(`InviteCard`).
+- 「참여하기」: 서버에 참여를 요청한다(`useJoinInvitationMutation`, `Idempotency-Key` 필수). 요청 중에는 `PageLoading`을 덮고 같은 틱의 중복 탭은 ref로 막는다. `JOINED`면 결과를 흐름 상태에 남기고 완료 화면으로 `router.replace`, `ALREADY_MEMBER`는 번치(임시 피드)로 `replace`하며 토스트 「이미 참여 중인 번치예요.」는 `toastAfterNavigation()`으로 예약해 도착 화면에서 띄운다. 실패 코드별 처리: 404 `INVITE_001`·409 `BUNCH_002`(정원)·`BUNCH_003`(소속 한도)는 토스트 뒤 「참여하기」를 잠그고(다시 해도 안 됨), 그 밖은 일시적 오류 토스트 뒤 다시 누를 수 있다. 같은 초대의 재시도는 같은 멱등 키를 쓰고 4xx(408·429 제외)에는 키를 버린다. 카드의 소개·초대한 사람이 없으면 해당 줄을 숨긴다(`InviteCard`).
 - 소개가 길면 2줄에서 말줄임(`InviteCard`의 `line-clamp-2`, Figma `875:5962`).
 
 ## UI와 접근성
@@ -61,6 +61,6 @@
 - 참여 요청 (확정): 「참여하기」는 서버 참여가 성공했을 때만 완료 화면으로 이동한다(이전의 요청 없는 거짓 성공 흐름은 없앴다).
 - 모달 취소 버튼 글자 (확정, 2026-10-19, 사용자 확인): 「계속 참여하기」다(Figma `791:13839`). 설계서 본문의 「계속 만들기」는 만들기 흐름 문구가 남은 것이고 입력 화면(`BunchJoin`)의 모달도 같게 맞췄다.
 - 모달 모션 (확정, 2026-10-19, 사용자 결정): 화면설계서의 Move in ↑·Ease in·300ms를 따르지 않고 지금 구현(중앙 확대+페이드)을 쓴다. 번치 만들기 모달과 같은 구현이다(`ExitFlowDialog`).
-- 대표 이미지·봉투 색 (백엔드 확인): 초대 카드 응답에 번치 성격(`characterType`)이 없어 봉투·인장 색과 사진이 없을 때의 기본 이미지를 타입 1로 둔다. 응답에 성격이 생기면 그 값을 쓴다(참여 완료 화면은 참여 응답의 `bunch.characterType`을 쓴다).
+- 대표 이미지·봉투 색 (반영함): 초대 카드 응답의 번치 성격(`characterType`, 필수)으로 봉투·인장 색과 사진이 없을 때의 기본 이미지를 정한다(참여 완료 화면은 참여 응답의 `bunch.characterType`을 쓴다).
 - 오류 문구 (1110판, 확정): 기능명세서 1110판(2026-11-10) 2.6은 초대 정보 로딩 실패·10초 초과와 참여 요청의 네트워크 오류 모두 「일시적인 오류가 발생했어요. 다시 시도해 주세요」 토스트를 쓴다(이전 판 「잠시 후 다시 시도해 주세요」). 참여 요청의 일시적 오류에 이 문구(`ONBOARDING_MESSAGES.temporaryFailure`)를 쓴다. 참여 뒤 기존 멤버 알림은 5.12.3을 따른다(서버 처리).
 - 보낸 사람 이름 길이 (미정): `InviteCard`가 한 줄 고정이라 긴 이름이 넘칠 수 있다(`InviteCard.spec.md`).

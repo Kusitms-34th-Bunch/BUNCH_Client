@@ -9,7 +9,11 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace }) }));
 const resolvePostLogin = vi.hoisted(() => vi.fn());
 vi.mock('../../queries/session', () => ({ usePostLoginPath: () => resolvePostLogin }));
 
-const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
+const DESTINATIONS = {
+  bunchHome: '/bunch',
+  bunchStart: '/onboarding',
+  inviteEntry: '/onboarding/join/enter',
+};
 const fetchMock = vi.fn();
 
 beforeEach(() => {

@@ -16,7 +16,11 @@ const push = vi.fn();
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace }) }));
 const NEXT_PATH = '/next';
-const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
+const DESTINATIONS = {
+  bunchHome: '/bunch',
+  bunchStart: '/onboarding',
+  inviteEntry: '/onboarding/join/enter',
+};
 
 // 로그인 뒤 도착 화면 조회가 세션 캐시(Query)를 쓰므로 Provider 안에서 그림
 const render = (ui: ReactElement) => renderUi(ui, { wrapper: createQueryWrapper() });

@@ -43,6 +43,163 @@
   }
 }
 
+/* 초대 진입 페이지 장식 모션(Figma 6400:85935): 2.4초 동안 한 번, 아래에서 올라오며 나타남
+ * JS 없이 첫 페인트부터 적용돼(fill both) 완성된 모양이 먼저 보이지 않음. 동작 줄이기에서는 이동 없이 투명도만
+ * 항목별 구간·곡선은 Figma 모션 데이터 그대로(이동 `0.33,0,0.15,1`, 투명도 `0.4,0,0.2,1`) */
+@keyframes invite-move-logo {
+  0%,
+  12.5% {
+    transform: translateY(18px);
+  }
+  12.5% {
+    animation-timing-function: cubic-bezier(0.33, 0, 0.15, 1);
+  }
+  62.5%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes invite-fade-logo {
+  0%,
+  12.5% {
+    opacity: 0;
+  }
+  12.5% {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.invite-rise-logo {
+  animation:
+    invite-move-logo 2.4s linear both,
+    invite-fade-logo 2.4s linear both;
+}
+
+@keyframes invite-move-pattern-left {
+  0%,
+  25.83% {
+    transform: translateY(12px);
+  }
+  25.83% {
+    animation-timing-function: cubic-bezier(0.33, 0, 0.15, 1);
+  }
+  71.67%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes invite-fade-pattern-left {
+  0%,
+  25.83% {
+    opacity: 0;
+  }
+  25.83% {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  60.21%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.invite-rise-pattern-left {
+  animation:
+    invite-move-pattern-left 2.4s linear both,
+    invite-fade-pattern-left 2.4s linear both;
+}
+
+@keyframes invite-move-pattern-right {
+  0%,
+  20.83% {
+    transform: translateY(12px);
+  }
+  20.83% {
+    animation-timing-function: cubic-bezier(0.33, 0, 0.15, 1);
+  }
+  66.67%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes invite-fade-pattern-right {
+  0%,
+  20.83% {
+    opacity: 0;
+  }
+  20.83% {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  55.21%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.invite-rise-pattern-right {
+  animation:
+    invite-move-pattern-right 2.4s linear both,
+    invite-fade-pattern-right 2.4s linear both;
+}
+
+@keyframes invite-move-module {
+  0%,
+  30.83% {
+    transform: translateY(12px);
+  }
+  30.83% {
+    animation-timing-function: cubic-bezier(0.33, 0, 0.15, 1);
+  }
+  76.67%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes invite-fade-module {
+  0%,
+  30.83% {
+    opacity: 0;
+  }
+  30.83% {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  65.21%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.invite-rise-module {
+  animation:
+    invite-move-module 2.4s linear both,
+    invite-fade-module 2.4s linear both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-rise-logo {
+    animation: invite-fade-logo 2.4s linear both;
+  }
+
+  .invite-rise-pattern-left {
+    animation: invite-fade-pattern-left 2.4s linear both;
+  }
+
+  .invite-rise-pattern-right {
+    animation: invite-fade-pattern-right 2.4s linear both;
+  }
+
+  .invite-rise-module {
+    animation: invite-fade-module 2.4s linear both;
+  }
+}
+
 /* 배경이 이미 같은 색인 화면(참여 초대 확인 화면)에서 내용만 페이드 인. 위치 이동은 main(overflow-y-auto)에 스크롤 바가 잠깐 생겨 제외 */
 @keyframes page-content-in {
   from {

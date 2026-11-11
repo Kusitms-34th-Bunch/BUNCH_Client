@@ -1,13 +1,18 @@
 import { renderHook } from '@testing-library/react';
 import { http } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import { clearPendingInvitation, savePendingInvitation } from '@/shared/lib/pendingInvitation';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { usePostLoginPath } from './session';
 
-const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
+const DESTINATIONS = {
+  bunchHome: '/bunch',
+  bunchStart: '/onboarding',
+  inviteEntry: '/onboarding/join/enter',
+};
 
 const respondWith = (data: unknown) =>
   server.use(http.get('/api/members/me/onboarding', () => ok(data as never)));
@@ -21,6 +26,24 @@ const setup = () => {
 };
 
 describe('usePostLoginPath', () => {
+  beforeEach(() => clearPendingInvitation());
+
+  it('보관된 초대가 있으면 가입 완료 사용자의 도착 화면이 번치 홈이 아니라 초대 진입이다', async () => {
+    savePendingInvitation('ABCD2345');
+    respondWith({ memberId: 1, signupStatus: 'COMPLETED', termsAccepted: true, defaultBunchId: 7 });
+
+    await expect(setup().resolve()).resolves.toEqual({
+      path: '/onboarding/join/enter',
+      replace: true,
+    });
+  });
+
+  it('보관된 초대가 있어도 가입 중 사용자는 가입 단계를 먼저 마치게 한다', async () => {
+    savePendingInvitation('ABCD2345');
+    respondWith({ memberId: 1, signupStatus: 'IN_PROGRESS', termsAccepted: true });
+
+    await expect(setup().resolve()).resolves.toEqual({ path: '/signup/profile', replace: false });
+  });
   it('가입 완료 사용자는 도착 화면으로 replace(로그인 화면을 기록에 남기지 않음)', async () => {
     respondWith({ memberId: 1, signupStatus: 'COMPLETED', termsAccepted: true, defaultBunchId: 7 });
 
