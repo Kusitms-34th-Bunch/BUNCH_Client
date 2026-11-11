@@ -8,8 +8,10 @@ import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { usePhotoBox } from './usePhotoBox';
 
-const renderPhotoBox = () =>
-  renderHook(() => usePhotoBox(), { wrapper: createQueryWrapper(createTestQueryClient()) });
+const renderPhotoBox = (options?: Parameters<typeof usePhotoBox>[1]) =>
+  renderHook(() => usePhotoBox(undefined, options), {
+    wrapper: createQueryWrapper(createTestQueryClient()),
+  });
 
 const readyData = (state: ReturnType<typeof usePhotoBox>['state']) => {
   if (state.kind !== 'ready') throw new Error(`state is ${state.kind}`);
@@ -212,5 +214,115 @@ describe('usePhotoBox', () => {
     expect(result.current.state.kind).toBe('ready');
     // 최신 목록을 받지 못했다는 사실은 화면이 안내하도록 알림
     await waitFor(() => expect(result.current.stale).toBe(true));
+  });
+});
+
+describe('usePhotoBox 이어서 불러오기', () => {
+  const photo = (photoId: number) => ({
+    photoId,
+    thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
+    capturedDate: '2026-10-18',
+    uploaderIds: [1],
+  });
+  // 둘째 쪽 응답을 테스트가 풀어 줄 때까지 붙잡아 첫 쪽만 온 상태를 관찰함
+  const holdSecondPage = (secondPage: () => Response | Promise<Response>) => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', async ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor');
+        if (cursor === null) return ok({ totalCount: 2, photos: [photo(1)], nextCursor: 'p2' });
+        await gate;
+        return secondPage();
+      }),
+    );
+    return release;
+  };
+
+  it('이어서 받는 화면은 첫 쪽이 오면 먼저 보여 주고, 나머지를 다 받으면 more가 없어진다', async () => {
+    const release = holdSecondPage(() => ok({ totalCount: 2, photos: [photo(2)] }));
+    const { result } = renderPhotoBox({ progressive: true });
+
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    expect(readyData(result.current.state).photos.map((p) => p.id)).toEqual(['1']);
+    expect(readyData(result.current.state).more).toBe('loading');
+
+    release();
+    await waitFor(() => expect(readyData(result.current.state).photos).toHaveLength(2));
+    expect(readyData(result.current.state).more).toBeUndefined();
+  });
+
+  it('이어서 받는 화면은 나중 쪽이 실패해도 받은 사진을 유지하고, 다시 시도하면 이어 받는다', async () => {
+    let failing = true;
+    const release = holdSecondPage(() =>
+      failing ? fail(500, 'COMMON_500') : ok({ totalCount: 2, photos: [photo(2)] }),
+    );
+    const { result } = renderPhotoBox({ progressive: true });
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+
+    release();
+    await waitFor(() => expect(readyData(result.current.state).more).toBe('error'));
+    expect(readyData(result.current.state).photos).toHaveLength(1);
+    // 이어 받다 실패한 것은 목록 재조회 실패 안내가 아니라 화면 아래 표시로 알림
+    expect(result.current.stale).toBe(false);
+
+    failing = false;
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(readyData(result.current.state).photos).toHaveLength(2));
+    expect(readyData(result.current.state).more).toBeUndefined();
+  });
+
+  it('재시도하는 동안은 more가 loading이고, 받는 중에 또 눌러도 요청은 한 번이며, 다시 실패하면 error로 돌아온다', async () => {
+    // 둘째 쪽 요청마다 테스트가 풀어 줄 때까지 붙잡고 계속 실패시킴
+    const pending: (() => void)[] = [];
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', async ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor');
+        if (cursor === null) return ok({ totalCount: 2, photos: [photo(1)], nextCursor: 'p2' });
+        await new Promise<void>((resolve) => pending.push(resolve));
+        return fail(500, 'COMMON_500');
+      }),
+    );
+    const { result } = renderPhotoBox({ progressive: true });
+    await waitFor(() => expect(pending).toHaveLength(1));
+
+    pending[0]?.();
+    await waitFor(() => expect(readyData(result.current.state).more).toBe('error'));
+
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(pending).toHaveLength(2));
+    // 재시도 중에는 실패 표시가 아니라 로딩
+    expect(readyData(result.current.state).more).toBe('loading');
+    act(() => result.current.loadMore());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(pending).toHaveLength(2);
+
+    pending[1]?.();
+    await waitFor(() => expect(readyData(result.current.state).more).toBe('error'));
+    expect(pending).toHaveLength(2);
+  });
+
+  it('이어서 받지 않는 화면(번들)은 마지막 쪽까지 받기 전에는 준비 상태가 되지 않는다', async () => {
+    const release = holdSecondPage(() => ok({ totalCount: 2, photos: [photo(2)] }));
+    const { result } = renderPhotoBox();
+
+    // 첫 쪽이 도착할 시간을 주어도 둘째 쪽이 올 때까지 로딩
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(result.current.state.kind).toBe('loading');
+
+    release();
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    expect(readyData(result.current.state).photos).toHaveLength(2);
+    expect(readyData(result.current.state).more).toBeUndefined();
+  });
+
+  it('이어서 받지 않는 화면은 나중 쪽이 실패하면 오류 상태가 된다', async () => {
+    const release = holdSecondPage(() => fail(500, 'COMMON_500'));
+    const { result } = renderPhotoBox();
+
+    release();
+    await waitFor(() => expect(result.current.state.kind).toBe('error'));
   });
 });

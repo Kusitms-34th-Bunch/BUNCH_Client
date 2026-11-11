@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useInfiniteQuery, useQuery, type UseInfiniteQueryResult } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { PhotoBoxPreview } from '../lib/preview';
@@ -18,18 +18,67 @@ type UsePhotoBoxResult = {
   actions: PhotoBoxActions;
   /** 오류 화면의 「다시 시도」 */
   retry: () => void;
+  /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 그 쪽부터 다시 받음 */
+  loadMore: () => void;
   /** 이미 받은 목록은 있는데 최신 목록을 다시 받지 못한 상태(삭제 뒤 재조회 실패 등), 화면이 안내함 */
   stale: boolean;
 };
 
 type DateChange = { ids: ReadonlySet<string>; date: Date };
 
+type UsePhotoBoxOptions = {
+  /**
+   * true면 첫 쪽(100장)이 오는 대로 보여 주고 나머지는 이어서 받음(`data.more`로 상태를 알림). 사진함 화면용
+   * 기본(false)은 마지막 쪽까지 받은 뒤에만 준비 상태가 됨. 번들 화면은 사진 id로 전체 목록에서 찾으므로 이 값을 씀
+   */
+  progressive?: boolean;
+};
+
+type PhotoPagesQuery = Pick<
+  UseInfiniteQueryResult<unknown>,
+  | 'hasNextPage'
+  | 'isFetching'
+  | 'isFetchNextPageError'
+  | 'isError'
+  | 'dataUpdatedAt'
+  | 'fetchNextPage'
+  | 'refetch'
+>;
+
+// 남은 쪽을 한 쪽씩 이어서 받음. 이어 받다 실패하면 멈추고(무한 재시도 방지) 사용자가 다시 시도할 때 이어 감
+function useLoadRemainingPages({
+  hasNextPage,
+  isFetching,
+  isFetchNextPageError,
+  dataUpdatedAt,
+  fetchNextPage,
+}: PhotoPagesQuery) {
+  // dataUpdatedAt: 쪽이 하나 도착해도 나머지 값은 그대로(받는 동안 렌더가 묶임)일 수 있어, 도착할 때마다 다음 쪽을 이어 받게 함
+  useEffect(() => {
+    // cancelRefetch: false — 같은 목록을 쓰는 hook이 동시에 마운트돼도 받는 중인 요청을 취소하고 다시 보내지 않음
+    if (hasNextPage && !isFetching && !isFetchNextPageError) {
+      void fetchNextPage({ cancelRefetch: false });
+    }
+  }, [hasNextPage, isFetching, isFetchNextPageError, dataUpdatedAt, fetchNextPage]);
+}
+
+// 이어 받다 실패했으면 그 쪽부터, 첫 쪽이 실패했으면 처음부터 다시 받음(실패하지 않았으면 아무것도 안 함)
+const retryPhotos = (query: PhotoPagesQuery) => {
+  // 이미 받는 중이면 건드리지 않음(다시 부르면 받는 중인 요청을 취소하고 처음부터 보냄)
+  if (query.isFetching) return;
+  if (query.isFetchNextPageError) void query.fetchNextPage();
+  else if (query.isError) void query.refetch();
+};
+
 /**
  * 사진함 화면 상태와 동작의 호출 지점: 내 프로필(기본 번치)·멤버·사진 목록 query를 화면 상태로 합치고 삭제는 mutation으로 보냄
  * 앨범 저장은 기기 동작이라 목, 날짜 변경은 서버 반영 전이라 이 hook 인스턴스(화면) 안에서만 목록에 덮어 보임(새로고침하거나 사진함·상세 사이를 이동하면 원래 날짜)
  * `preview`는 상태 미리보기용으로 API 연결이 끝나면 함께 없앰
  */
-export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
+export function usePhotoBox(
+  preview?: PhotoBoxPreview,
+  { progressive = false }: UsePhotoBoxOptions = {},
+): UsePhotoBoxResult {
   const {
     data: profile,
     isError: profileError,
@@ -43,18 +92,18 @@ export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
     isRefetchError: membersRefetchError,
     refetch: refetchMembers,
   } = useQuery(bunchMembersQueryOptions(bunchId));
-  const {
-    data: dated,
-    isError: datedError,
-    isRefetchError: datedRefetchError,
-    refetch: refetchDated,
-  } = useQuery(datedPhotosQueryOptions(bunchId));
-  const {
-    data: undated,
-    isError: undatedError,
-    isRefetchError: undatedRefetchError,
-    refetch: refetchUndated,
-  } = useQuery(undatedPhotosQueryOptions(bunchId));
+  const datedQuery = useInfiniteQuery(datedPhotosQueryOptions(bunchId));
+  const undatedQuery = useInfiniteQuery(undatedPhotosQueryOptions(bunchId));
+  const { data: dated, isError: datedError } = datedQuery;
+  const { data: undated, isError: undatedError } = undatedQuery;
+  useLoadRemainingPages(datedQuery);
+  useLoadRemainingPages(undatedQuery);
+  const hasMore = datedQuery.hasNextPage || undatedQuery.hasNextPage;
+  // 첫 쪽 뒤의 쪽을 받다 실패한 상태(이미 받은 사진은 있음). 첫 쪽·재조회 실패와 구분
+  // (재시도 중에는 TanStack이 오류 상태를 성공할 때까지 유지하므로 받는 중이면 실패로 보지 않고 다시 loading으로 봄)
+  const moreFailed =
+    (datedQuery.isFetchNextPageError && !datedQuery.isFetchingNextPage) ||
+    (undatedQuery.isFetchNextPageError && !undatedQuery.isFetchingNextPage);
   const [dateChanges, setDateChanges] = useState<readonly DateChange[]>([]);
 
   const removeMutation = useDeletePhotosMutation(bunchId);
@@ -62,34 +111,50 @@ export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
   const data = useMemo<PhotoBoxData | null>(() => {
     const bunch = profile?.bunch;
     if (!profile || !bunch || !members || !dated || !undated) return null;
+    // 이어서 받는 화면이 아니면 마지막 쪽까지 받은 뒤에만 보여 줌(번들 화면은 사진 id로 전체 목록을 찾음)
+    if (!progressive && hasMore) return null;
     const me = members.find((member) => member.id === profile.memberId);
     const photos = dateChanges.reduce<readonly PhotoBoxPhoto[]>(
       (current, change) => applyTakenDate(current, change.ids, change.date),
       // 두 요청 사이에 촬영 날짜가 바뀌면 같은 사진이 양쪽에 있을 수 있어 id로 한 번만 남김(날짜 있는 쪽 우선)
       [...new Map([...undated, ...dated].map((photo) => [photo.id, photo])).values()],
     );
+    let more: PhotoBoxData['more'];
+    if (moreFailed) more = 'error';
+    else if (hasMore) more = 'loading';
     return {
       bunch,
       viewer: { memberId: profile.memberId, isAdmin: me !== undefined && me.role !== 'MEMBER' },
       members,
       photos,
+      ...(more ? { more } : {}),
     };
-  }, [profile, members, dated, undated, dateChanges]);
+  }, [profile, members, dated, undated, dateChanges, progressive, hasMore, moreFailed]);
 
   // 이미 받은 목록이 있으면 재조회가 실패해도 화면을 유지(삭제 뒤 재조회 실패로 정상 화면이 오류로 덮이지 않게)
+  // 이어서 받는 화면이 아니면 중간 쪽 실패도 오류(전체 목록이 있어야 하므로)
   const failed =
     (profileError && !profile) ||
     (membersError && !members) ||
     (datedError && !dated) ||
-    (undatedError && !undated);
-  // 다시 시도: 실패한 요청만 다시 보냄
+    (undatedError && !undated) ||
+    (!progressive && moreFailed);
+  // 이어 받다 실패한 것은 화면 아래에서 알리므로 목록 재조회 실패 안내(stale)에서 뺌
   const stale =
-    profileRefetchError || membersRefetchError || datedRefetchError || undatedRefetchError;
+    profileRefetchError ||
+    membersRefetchError ||
+    (datedQuery.isRefetchError && !datedQuery.isFetchNextPageError) ||
+    (undatedQuery.isRefetchError && !undatedQuery.isFetchNextPageError);
+  // 다시 시도: 실패한 요청만 다시 보냄(이어 받다 실패했으면 그 쪽부터)
   const retry = () => {
     if (profileError) void refetchProfile();
     if (membersError) void refetchMembers();
-    if (datedError) void refetchDated();
-    if (undatedError) void refetchUndated();
+    retryPhotos(datedQuery);
+    retryPhotos(undatedQuery);
+  };
+  const loadMore = () => {
+    retryPhotos(datedQuery);
+    retryPhotos(undatedQuery);
   };
   const state = useMemo<PhotoBoxState>(() => {
     if (preview === 'loading') return { kind: 'loading' };
@@ -115,5 +180,5 @@ export function usePhotoBox(preview?: PhotoBoxPreview): UsePhotoBoxResult {
     },
   };
 
-  return { state, actions, retry, stale };
+  return { state, actions, retry, loadMore, stale };
 }
