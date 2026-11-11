@@ -80,10 +80,10 @@ const readPhoto = async (photo: PickedPhoto): Promise<UploadItem | null> => {
 /**
  * 사진 올리기(기능명세서 3.2.2·3.2.3): 시트에서 고른 방식으로 쉘의 선택·촬영을 열고, 고른 사진을 한 장씩 가공해 받아 올림
  * - 대상 번치는 올리기를 시작한 시점의 번치로 고정(올리는 중에 번치를 바꿔도 원래 번치에 저장)
- * - 올리는 중에는 진행 표시와 중간 토스트 없이, 끝나면 결과 토스트 하나만 띄움. 네트워크 실패·일시 장애가 있으면 「다시 시도」를 붙임
- *   화면에는 표시하지 않지만 스크린 리더가 상태를 잃지 않도록 `uploading`을 돌려줘 화면 밖 안내(live region)에 쓰게 함
+ * - 올리는 중에는 중간 토스트 없이, 끝나면 결과 토스트 하나만 띄움. 네트워크 실패·일시 장애가 있으면 「다시 시도」를 붙임
+ *   `uploading`을 돌려줘 화면이 전체 로딩과 화면 밖 안내(live region)를 보이게 함
  * - 쉘이 없는 브라우저와 새 bridge 메서드가 없는 이전 쉘에서는 안내만 하고 올리지 않음
- * - 올리는 중에 다시 올리면 묶음이 겹쳐 동시 요청이 `UPLOAD_CONCURRENCY`를 넘을 수 있음(막지 않음, 명세에 정해진 바가 없어 기획 확인 항목)
+ * - 올리는 중에는 화면이 inert라 다시 올릴 수 없지만, 훅 자체는 겹쳐 불려도 묶음별로 동작함(동시 요청이 `UPLOAD_CONCURRENCY`를 넘을 수 있음)
  */
 export function usePhotoUpload(bunchId: string | undefined) {
   const invalidatePhotosOf = useInvalidatePhotosOf();

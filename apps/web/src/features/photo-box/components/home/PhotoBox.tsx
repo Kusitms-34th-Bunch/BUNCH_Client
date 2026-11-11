@@ -43,7 +43,7 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
   return (
     <>
       {/* 만드는 동안은 아래 화면을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(레이아웃은 그대로 두려고 contents) */}
-      <div className="contents" inert={creating}>
+      <div className="contents" inert={creating || uploading}>
         {/* 번치가 바뀌면 화면을 새로 시작해 멤버 필터는 「전체」로, 선택 모드는 해제(명세 3.1.1, 3.3.1). 로딩에서 준비로 갈 때도 키가 undefined에서 번치 id로 바뀌어 한 번 새로 시작하지만 로딩 화면에는 상태가 없어 무해 */}
         <PhotoBoxScreen
           key={state.kind === 'ready' ? state.data.bunch.id : undefined}
@@ -59,11 +59,11 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
       <p role="status" className="sr-only">
         {creating ? PHOTO_BOX_MESSAGES.bundleCreating : ''}
       </p>
-      {/* 올리는 동안 화면에는 표시를 두지 않으므로(명세 3.2.2) 스크린 리더에게만 알림. live region은 항상 마운트하고 문구만 바꿈 */}
+      {/* 올리는 동안은 만들 때와 같이 화면 전체를 dim으로 덮고 가운데에 로딩(사진을 가공하고 올리는 데 시간이 걸려 멈춘 것처럼 보이지 않게, 겹쳐 올리는 것도 막음). 스크린 리더에게는 문구로 알림 */}
       <p role="status" className="sr-only">
         {uploading ? PHOTO_BOX_MESSAGES.uploading : ''}
       </p>
-      {creating ? <PageLoading /> : null}
+      {creating || uploading ? <PageLoading /> : null}
     </>
   );
 }

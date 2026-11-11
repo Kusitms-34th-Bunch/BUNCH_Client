@@ -42,7 +42,7 @@ export const PHOTO_BOX_MESSAGES = {
   uploadNeedsUpdate: '앱을 최신 버전으로 업데이트해 주세요.',
   uploadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   uploadRetry: '다시 시도',
-  // 올리는 동안 화면에는 진행 표시를 두지 않으므로(명세 3.2.2) 스크린 리더에게만 알리는 문구
+  // 올리는 동안 스크린 리더에게 알리는 문구(화면에는 전체 로딩이 보임)
   uploading: '사진을 올리는 중이에요.',
   cameraPermissionTitle: '권한 설정이 필요해요',
   cameraPermissionDescription:
