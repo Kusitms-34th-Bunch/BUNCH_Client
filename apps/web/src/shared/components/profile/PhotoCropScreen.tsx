@@ -324,8 +324,10 @@ export function PhotoCropScreen({ src, onCancel, onComplete, onFail }: PhotoCrop
 
   const complete = () => {
     const image = imageRef.current;
-    if (!image || !current) return;
-    const rect = circleSquare(current);
+    // 다른 손가락으로 끄는 중에 누르면 화면에 보이는(제한한) 칸으로 자름
+    const shown = drag.current ? (latest.current ?? current) : current;
+    if (!image || !shown) return;
+    const rect = circleSquare(shown);
     const canvas = document.createElement('canvas');
     canvas.width = CROP_OUTPUT_SIZE;
     canvas.height = CROP_OUTPUT_SIZE;

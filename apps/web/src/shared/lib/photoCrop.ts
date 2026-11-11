@@ -49,10 +49,21 @@ export const clampCrop = (crop: Crop, image: Size, scale: number): Crop => {
 export const moveCrop = (crop: Crop, delta: Point, image: Size, scale: number) =>
   clampCrop({ ...crop, x: crop.x + delta.x, y: crop.y + delta.y }, image, scale);
 
-/** 가운데와 비율을 그대로 두고 크기만 바꿈(키보드 +·-). `factor`는 배율 */
+/**
+ * 비율을 그대로 두고 크기만 바꿈(키보드 +·-). `factor`는 배율
+ * 두 변에 같은 배율을 쓰고, 먼저 닿는 사진 끝·최소 크기에서 멈춤. 가운데는 유지하되 사진 끝에 닿으면 안쪽으로 밀림
+ */
 export const resizeCropBy = (crop: Crop, factor: number, image: Size, scale: number) => {
-  const width = clampValue(crop.width * factor, minSide(image.width, scale), image.width);
-  const height = clampValue(crop.height * factor, minSide(image.height, scale), image.height);
+  const max = Math.min(image.width / crop.width, image.height / crop.height);
+  const min = Math.max(
+    minSide(image.width, scale) / crop.width,
+    minSide(image.height, scale) / crop.height,
+  );
+  // 키운다고 했는데 줄거나 그 반대가 되지 않게 1을 넘지 않음
+  const applied =
+    factor >= 1 ? Math.max(1, Math.min(factor, max)) : Math.min(1, Math.max(factor, min));
+  const width = crop.width * applied;
+  const height = crop.height * applied;
   const center = { x: crop.x + crop.width / 2, y: crop.y + crop.height / 2 };
   return clampCrop(
     { x: center.x - width / 2, y: center.y - height / 2, width, height },

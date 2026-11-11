@@ -95,6 +95,22 @@ describe('photoCrop', () => {
     });
   });
 
+  it('키보드로 키울 때 한 변이 사진 끝에 닿으면 멈추고 비율을 지킨다', () => {
+    // 높이가 이미 사진 높이(504)라 더 키우지 않음(폭만 늘지 않음)
+    const tall = { x: 0, y: 0, width: 500, height: 504 };
+    expect(resizeCropBy(tall, 1.1, LANDSCAPE, 0.5)).toEqual(tall);
+    // 왼쪽 끝에 붙은 칸은 비율을 지킨 채 커지고 안쪽으로 밀림
+    expect(resizeCropBy({ x: 0, y: 100, width: 400, height: 200 }, 1.25, LANDSCAPE, 0.5)).toEqual({
+      x: 0,
+      y: 75,
+      width: 500,
+      height: 250,
+    });
+    // 최소 크기(원본 160px)에서는 더 줄지 않음
+    const small = { x: 0, y: 0, width: 200, height: 160 };
+    expect(resizeCropBy(small, 1 / 1.1, LANDSCAPE, 0.5)).toEqual(small);
+  });
+
   it('끝을 넘어 끌면 넘친 거리의 25%만 따라간다(고무줄)', () => {
     const crop = { x: 550, y: 0, width: 200, height: 200 };
     const raw = moveCropRaw(crop, { x: 100, y: 0 });
