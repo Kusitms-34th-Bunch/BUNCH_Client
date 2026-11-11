@@ -1,8 +1,8 @@
 import type * as DesignSystem from '@app/design-system';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { onlineManager, useInfiniteQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
@@ -153,5 +153,35 @@ describe('useChangePhotoDatesMutation', () => {
     await waitFor(() => expect(second.result.current.isError).toBe(true));
     expect(other.isInvalidated(other.keys.photos)).toBe(false);
     expect(toast).not.toHaveBeenCalled();
+  });
+});
+
+describe('연결이 끊긴 상태의 삭제·날짜 바꾸기', () => {
+  beforeEach(() => onlineManager.setOnline(false));
+  afterEach(() => onlineManager.setOnline(true));
+
+  // 보류되면 응답이 없어 화면 전체 로딩이 계속 떠 있으므로, 끊겨 있어도 바로 보내 실패로 끝나야 함
+  it('삭제 요청은 보류되지 않고 바로 실패한다', async () => {
+    server.use(http.post('/api/bunches/:bunchId/photos/delete', () => fail(500, 'COMMON_500')));
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+
+    act(() => result.current.mutate(['1']));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.isPaused).toBe(false);
+  });
+
+  it('날짜 변경 요청은 보류되지 않고 바로 실패한다', async () => {
+    server.use(http.post('/api/bunches/:bunchId/photos/date', () => fail(500, 'COMMON_500')));
+    const { result } = renderHook(() => useChangePhotoDatesMutation(bunchId), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+
+    act(() => result.current.mutate({ photoIds: ['1'], date: new Date(2026, 9, 5) }));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.isPaused).toBe(false);
   });
 });

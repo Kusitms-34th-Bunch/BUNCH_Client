@@ -24,6 +24,8 @@ const invalidateIfMissing = (
 export const useDeletePhotosMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
   return useMutation({
+    // 연결이 끊겨 있어도 요청을 보류하지 않고 바로 보내 실패로 끝냄(보류되면 응답이 없어 화면 전체 로딩이 계속 떠 있음)
+    networkMode: 'always',
     mutationFn: (photoIds: readonly string[]) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
       return removePhotos(bunchId, photoIds);
@@ -41,6 +43,8 @@ export const useDeletePhotosMutation = (bunchId: string | undefined) => {
 export const useChangePhotoDatesMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
   return useMutation({
+    // 삭제와 같은 이유로 연결이 끊겨 있어도 보류하지 않고 바로 보내 실패로 끝냄
+    networkMode: 'always',
     mutationFn: ({ photoIds, date }: { photoIds: readonly string[]; date: Date }) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
       return changePhotoDates(bunchId, photoIds, date);
