@@ -237,12 +237,7 @@ describe('usePhotoUpload 다시 시도', () => {
     server.use(
       http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
         const form = await request.clone().formData();
-        const json = form.get('request');
-        const batch = (
-          JSON.parse(typeof json === 'string' ? json : await (json as Blob).text()) as {
-            uploadBatchId: string;
-          }
-        ).uploadBatchId;
+        const batch = form.get('uploadBatchId') as string;
         const file = form.get('photo') as Blob;
         requests.push({ batch, photo: await file.text() });
         // 둘째 사진만 한 번 일시 장애를 겪게 함

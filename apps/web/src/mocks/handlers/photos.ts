@@ -111,20 +111,12 @@ type UploadRequest = {
   capturedTime: string | null;
 };
 
-// request 파트(JSON)를 검사함. 올바르지 않으면 undefined(서버는 COMMON_001): 묶음 ID는 UUID, 시각은 날짜 없이 보낼 수 없음
-const parseUploadRequest = async (part: FormDataEntryValue | null | undefined) => {
-  if (part === null || part === undefined) return undefined;
-  // 서버(Spring @RequestPart)는 이 파트가 application/json이어야 읽으므로 문자열이나 다른 type은 거절
-  if (typeof part === 'string' || part.type !== 'application/json') return undefined;
-  const text = await part.text();
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-  if (typeof value !== 'object' || value === null) return undefined;
-  const { uploadBatchId, capturedDate, capturedTime } = value as Record<string, unknown>;
+// 업로드 요청의 별도 필드(uploadBatchId·capturedDate·capturedTime)를 검사함. 올바르지 않으면 undefined(서버는 COMMON_001): 묶음 ID는 UUID, 시각은 날짜 없이 보낼 수 없음
+const parseUploadRequest = (form: FormData | null) => {
+  if (!form) return undefined;
+  const uploadBatchId = form.get('uploadBatchId');
+  const capturedDate = form.get('capturedDate') ?? undefined;
+  const capturedTime = form.get('capturedTime') ?? undefined;
   if (typeof uploadBatchId !== 'string' || !UUID.test(uploadBatchId)) return undefined;
   if (
     capturedDate !== undefined &&
@@ -186,7 +178,7 @@ export const photoHandlers = [
   }),
 
   // POST /api/v1/bunches/{bunchId}/photos
-  // 사진 1장 업로드(multipart: photo 파일 + request JSON 파트). 같은 번치에 같은 파일(바이트의 SHA-256)이 있으면 합침:
+  // 사진 1장 업로드(multipart: photo 파일 + uploadBatchId·capturedDate·capturedTime 별도 필드). 같은 번치에 같은 파일(바이트의 SHA-256)이 있으면 합침:
   // 내가 이미 올렸으면 ALREADY_UPLOADED, 다른 멤버가 올렸으면 MERGED(올린 사람에 내가 추가), 없으면 STORED
   // 한도(가짜 서버의 가정이며 서버 확인 전): 사진함 1,000장은 새 사진만(합치기는 허용), 같은 묶음 50장. 하루 100장(PHOTO_002)은 가짜 서버에서 흉내 내지 않음
   http.post('/api/bunches/:bunchId/photos', async ({ params, request }) => {
@@ -205,7 +197,7 @@ export const photoHandlers = [
 
     const form = await request.formData().catch(() => null);
     const file = form?.get('photo');
-    const upload = await parseUploadRequest(form?.get('request'));
+    const upload = parseUploadRequest(form ?? null);
     // 서버는 JPEG만 받음
     if (!(file instanceof Blob) || file.size === 0 || file.type !== 'image/jpeg' || !upload) {
       return fail(400, 'COMMON_001');

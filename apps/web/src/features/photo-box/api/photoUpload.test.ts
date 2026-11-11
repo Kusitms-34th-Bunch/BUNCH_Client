@@ -76,10 +76,9 @@ describe('uploadPhoto', () => {
     expect(findPhoto(result.photoId)).toMatchObject({ capturedDate: null, capturedTime: null });
   });
 
-  it('요청은 photo 파일 파트와 request JSON 파트로 보낸다', async () => {
-    const parts: { request: unknown; requestType: string; fileName: string; fileType: string } = {
-      request: undefined,
-      requestType: '',
+  it('요청은 photo 파일 파트와 uploadBatchId·capturedDate·capturedTime 별도 필드로 보낸다', async () => {
+    const parts: { fields: Record<string, unknown>; fileName: string; fileType: string } = {
+      fields: {},
       fileName: '',
       fileType: '',
     };
@@ -89,9 +88,7 @@ describe('uploadPhoto', () => {
         // 본문을 복제해서 읽어야 이어서 응답하는 기본 가짜 서버 handler가 다시 읽을 수 있음
         const form = await request.clone().formData();
         const file = form.get('photo');
-        const json = form.get('request');
-        parts.requestType = json instanceof Blob ? json.type : 'string';
-        parts.request = JSON.parse(typeof json === 'string' ? json : await (json as Blob).text());
+        parts.fields = Object.fromEntries([...form.entries()].filter(([key]) => key !== 'photo'));
         parts.fileName = file instanceof File ? file.name : '';
         parts.fileType = file instanceof Blob ? file.type : '';
         // 이어서 기본 가짜 서버 handler가 응답
@@ -107,13 +104,12 @@ describe('uploadPhoto', () => {
       capturedTime: '19:30:05',
     });
 
-    expect(parts.request).toEqual({
+    // 서버는 `request` JSON 파트가 아니라 필드를 따로 받음(실서버 확인)
+    expect(parts.fields).toEqual({
       uploadBatchId: id,
       capturedDate: '2026-10-19',
       capturedTime: '19:30:05',
     });
-    // Spring @RequestPart는 request 파트가 application/json이어야 읽으므로 type이 빠지면 안 됨
-    expect(parts.requestType).toBe('application/json');
     expect(parts.fileName).toBe('photo.jpg');
     expect(parts.fileType).toBe('image/jpeg');
   });

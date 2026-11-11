@@ -19,8 +19,8 @@ export type UploadPhotoInput = {
 };
 
 /**
- * 사진 업로드: 사진 1장당 요청 1건, multipart로 `photo`(JPEG 파일)와 `request`(JSON 파트)를 보냄(가입 프로필과 같은 방식)
- * 요청 모양(JSON 파트 여부, `capturedTime` 형식)은 백엔드 확정 전이라 Swagger 기준이고, 바뀌면 이 함수 한 곳만 고침
+ * 사진 업로드: 사진 1장당 요청 1건, multipart로 `photo`(JPEG 파일)와 `uploadBatchId`·`capturedDate`·`capturedTime`을 각각 별도 필드로 보냄
+ * 서버는 Swagger와 달리 `request` JSON 파트가 아니라 필드를 따로 받고 `capturedTime`은 `HH:mm:ss` 문자열이며, 실서버 개발 환경에서 확인함
  * 재시도는 처음 만든 파일을 그대로 다시 보내야 함(다시 압축하면 서버가 다른 사진으로 판별)
  * 실패는 `ApiError`로 던짐: 형식·용량 `COMMON_001`, 번치 소속 아님 `AUTH_002`, 한도 `PHOTO_001`(1,000장)·`PHOTO_002`(오늘 100장)·`PHOTO_003`(한 번에 50장), 일시 장애 `PHOTO_007`
  */
@@ -33,16 +33,13 @@ export const uploadPhoto = async ({
   signal,
 }: UploadPhotoInput) => {
   try {
-    const request = {
-      uploadBatchId,
-      ...(capturedDate ? { capturedDate } : {}),
-      // 날짜 없이 시각만 보내면 서버가 거절하므로 날짜가 있을 때만 보냄
-      ...(capturedDate && capturedTime ? { capturedTime } : {}),
-    };
     const body = new FormData();
-    body.append('request', new Blob([JSON.stringify(request)], { type: 'application/json' }));
     // 파일 이름이 있는 File로 보냄(서버가 업로드 파일로 인식)
     body.append('photo', new File([image], 'photo.jpg', { type: 'image/jpeg' }));
+    body.append('uploadBatchId', uploadBatchId);
+    if (capturedDate) body.append('capturedDate', capturedDate);
+    // 날짜 없이 시각만 보내면 서버가 거절하므로 날짜가 있을 때만 보냄
+    if (capturedDate && capturedTime) body.append('capturedTime', capturedTime);
     return await requestData(
       bffApi.post(`bunches/${encodeURIComponent(bunchId)}/photos`, {
         body,
