@@ -35,7 +35,11 @@ const nextConfig = {
       .flatMap((net) => (net && net.family === 'IPv4' && !net.internal ? [net.address] : [])),
   ],
   // 미설정이어도 빈 값으로 빌드 시점에 확정해 꺼진 빌드의 MSW 코드 제외(상수 조건 제거)
-  env: { NEXT_PUBLIC_API_MOCKING: process.env.NEXT_PUBLIC_API_MOCKING ?? '' },
+  env: {
+    NEXT_PUBLIC_API_MOCKING: process.env.NEXT_PUBLIC_API_MOCKING ?? '',
+    // 쿼리 캐시 저장본의 버전(배포마다 달라 이전 배포의 저장본을 버림). Vercel은 커밋, 그 밖은 서버를 켠 시각
+    NEXT_PUBLIC_APP_BUILD: process.env.VERCEL_GIT_COMMIT_SHA ?? String(Date.now()),
+  },
   webpack: (config, { isServer, dev }) => {
     // msw/browser는 node 조건에서 export가 막혀 서버 번들은 빈 모듈로 대체(브라우저에서만 실행)
     if (isServer) config.resolve.alias = { ...config.resolve.alias, 'msw/browser': false };

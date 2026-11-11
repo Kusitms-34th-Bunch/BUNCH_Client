@@ -8,6 +8,7 @@ import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
+import { useClearPersistedQueriesWhen, usePersistedOwnerReady } from '@/shared/query/persistence';
 import type { PostLoginDestinations } from '../lib/postLoginPath';
 import { STATUS_CHECK_FAILURE_MESSAGE } from '../hooks/useSocialLogin';
 import { type SessionState, resolveAccess } from '../lib/accessPolicy';
@@ -60,6 +61,13 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
     if (redirectTo) router.replace(redirectTo);
   }, [redirectTo, router]);
 
+  // 비로그인이 확인되면 이전 사용자의 저장된 캐시를 지움(로그아웃은 화면을 새로 열어 여기서 확인됨)
+  useClearPersistedQueriesWhen(session?.kind === 'anonymous');
+  // 회원이면 저장본 주인을 확인한 뒤에 화면을 그림(다른 회원의 저장 데이터가 한 프레임도 보이지 않게)
+  const ownerReady = usePersistedOwnerReady(
+    session?.kind === 'member' ? String(session.onboarding.memberId) : undefined,
+  );
+
   // 이미 로그인한 사용자(인트로가 들어간 버전으로 업데이트)는 인트로를 보지 않고, 로그아웃해도 로그인 화면으로
   const isMember = session?.kind === 'member';
   useEffect(() => {
@@ -107,7 +115,7 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
       </PageShell>
     );
   }
-  if (!session || introSeen === null || redirectTo) {
+  if (!session || introSeen === null || redirectTo || (session.kind === 'member' && !ownerReady)) {
     return (
       <>
         <p role="status" className="sr-only">
