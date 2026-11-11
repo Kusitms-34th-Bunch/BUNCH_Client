@@ -288,6 +288,28 @@ describe('usePhotoUpload 다시 시도', () => {
     expect(second).toBe('사진을 올리지 못했어요.');
     expect(secondOptions?.action?.label).toBe(PHOTO_BOX_MESSAGES.uploadRetry);
   });
+
+  it('응답이 끊겼지만 서버에는 저장된 사진을 다시 시도해 이미 있다고 나오면 추가한 것으로 알린다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    let calls = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', () => {
+        calls += 1;
+        // 첫 요청은 응답이 끊기고(서버에는 저장됨), 다시 시도하면 이미 있다고 응답
+        return calls === 1
+          ? fail(503, 'PHOTO_007')
+          : ok({ photoId: 7_300, result: 'ALREADY_UPLOADED' });
+      }),
+    );
+    const { result } = render();
+
+    await act(() => result.current.start('album'));
+    const [, options] = lastToast() ?? [];
+    act(() => options?.action?.onClick());
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledTimes(2));
+
+    expect(lastToast()).toEqual(['1장의 사진을 사진함에 추가했어요.', undefined]);
+  });
 });
 
 describe('usePhotoUpload 대상 번치', () => {

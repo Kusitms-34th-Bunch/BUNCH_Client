@@ -136,7 +136,16 @@ export function usePhotoUpload(bunchId: string | undefined) {
                     if (result.limited) limitReached = true;
                     return result;
                   }),
-                ).then((retried) => finish(targetBunchId, uploadBatchId, retried));
+                ).then((retried) =>
+                  // 다시 시도 대상은 응답이 끊겨 서버 저장 여부를 몰랐던 사진이라, 이번에 이미 있다고 나오면 방금 올라간 것으로 셈
+                  finish(
+                    targetBunchId,
+                    uploadBatchId,
+                    retried.map((result) =>
+                      result.outcome === 'skipped' ? { ...result, outcome: 'added' } : result,
+                    ),
+                  ),
+                );
               },
             },
           }
