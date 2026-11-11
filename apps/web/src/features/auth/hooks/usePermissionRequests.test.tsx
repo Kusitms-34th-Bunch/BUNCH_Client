@@ -35,6 +35,18 @@ describe('usePermissionRequests', () => {
     ]);
   });
 
+  it('브리지가 준비되기 전에 생략했으면 다음 호출에서 다시 확인해 요청한다', async () => {
+    bridge.available = false;
+    const { result } = renderHook(() => usePermissionRequests());
+
+    await act(() => result.current.requestAll());
+    expect(bridge.requestPermission).not.toHaveBeenCalled();
+
+    bridge.available = true;
+    await act(() => result.current.requestAll());
+    expect(bridge.requestPermission).toHaveBeenCalledTimes(3);
+  });
+
   it('앞의 권한에 응답하기 전에는 다음 권한을 요청하지 않는다', async () => {
     let answer!: (_status: string) => void;
     bridge.requestPermission.mockImplementationOnce(

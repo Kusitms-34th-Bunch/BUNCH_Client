@@ -32,8 +32,9 @@ export function usePermissionRequests() {
   // 같은 틱의 연타도 같은 요청을 받도록 ref에 둠(state는 다음 렌더에야 반영)
   const request = useRef<Promise<void> | null>(null);
 
+  const canRequest = () =>
+    isNativeShell() && permissionBridge.isNativeMethodAvailable('requestPermission');
   const run = async () => {
-    if (!isNativeShell() || !permissionBridge.isNativeMethodAvailable('requestPermission')) return;
     setIsRequesting(true);
     try {
       for (const kind of PERMISSION_ORDER) {
@@ -46,6 +47,8 @@ export function usePermissionRequests() {
   };
 
   const requestAll = () => {
+    // 브리지 메서드 목록이 아직 오지 않아 생략한 경우는 기억하지 않음(시작하기에서 다시 확인)
+    if (!request.current && !canRequest()) return Promise.resolve();
     request.current ??= run();
     return request.current;
   };
