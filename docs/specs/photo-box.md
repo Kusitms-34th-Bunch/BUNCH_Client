@@ -197,18 +197,24 @@
 - 실패 시 오류 코드와 정확한 문구: 서버 코드를 확인한 뒤 채운다. 화면 문구는 위 요구사항의 문구를 쓴다.
 - Query key 후보(`docs/architecture/data-layer.md` 규칙): `photoKeys.list(bunchId, memberFilter)`(infinite), `photoKeys.undated(bunchId, memberFilter)`, `photoKeys.detail(photoId)`, `photoBoxKeys.members(bunchId)`(다른 feature가 쓰게 되면 `shared/query`로 승격). 업로드·삭제·날짜 변경 뒤에는 `photoKeys.all`을 invalidate한다.
 
-## Bridge 계약(제안)
+## Bridge 계약
 
-현재 bridge의 `pickGalleryImage`는 1장만 고르고 촬영을 제공하지 않는다. 아래가 필요하며 시그니처와 zod schema는 구현 단위에서 확정한다.
+`pickGalleryImage`(프로필용, 1장·미리보기)와 별개로 사진함 업로드용 메서드를 추가했다(#317). 쉘이 사진 데이터를 한꺼번에 넘기지 않도록, 고르면 사진 정보(id·촬영 날짜·시각)만 돌려주고 사진은 웹이 `readPickedPhoto`로 하나씩 가공해 읽어 간다.
 
-| 메서드(제안)        | 입력          | 출력                                                             | 쓰는 곳      |
-| ------------------- | ------------- | ---------------------------------------------------------------- | ------------ |
-| `pickGalleryImages` | 최대 장수(50) | 사진들(위치 제거된 이미지, 촬영 날짜·시간), 취소, 권한 거부 구분 | 3.2.2        |
-| `capturePhoto`      | -             | 사진 1장(위치 제거, 촬영 시각), 취소, 권한 거부 구분             | 3.2.3        |
-| `saveImagesToAlbum` | 이미지 URL들  | 사진별 성공·실패, 권한 거부                                      | 3.3.3, 3.5.2 |
-| `openAppSettings`   | -             | -                                                                | 권한 모달    |
+| 메서드                | 입력                 | 출력                                                                          | 쓰는 곳      | 상태    |
+| --------------------- | -------------------- | ----------------------------------------------------------------------------- | ------------ | ------- |
+| `pickGalleryImages`   | `{ limit?: 1~50 }`   | `picked`(사진 정보 1~50개)·`canceled`                                         | 3.2.2        | 쉘 구현 |
+| `capturePhoto`        | -                    | `picked`(1장)·`canceled`·`denied`(카메라 권한 거부)                           | 3.2.3        | 쉘 구현 |
+| `readPickedPhoto`     | 사진 id              | 업로드용 JPEG data URL(긴 변 2560px 이하, 위치를 포함한 모든 메타데이터 제거) | 3.2.2, 3.2.3 | 쉘 구현 |
+| `releasePickedPhotos` | 사진 id들(생략=모두) | -                                                                             | 3.2.2, 3.2.3 | 쉘 구현 |
+| `openAppSettings`     | -                    | -                                                                             | 권한 모달    | 쉘 구현 |
+| `saveImagesToAlbum`   | 이미지 URL들         | 사진별 성공·실패, 권한 거부                                                   | 3.3.3, 3.5.2 | 미구현  |
 
-- 위치 제거와 촬영 날짜 추출은 쉘이 서버 전송 전에 한다. 웹이 받은 이미지에 위치가 남아 있으면 안 된다.
+- 사진 정보의 촬영 날짜·시각은 쉘이 EXIF의 `DateTimeOriginal`(없으면 `DateTimeDigitized`)에서 꺼낸 현지 값이다. 수정 시각(`DateTime`)은 쓰지 않는다. 올바르지 않은 날짜(`0000:00:00` 등)는 버리고, 시각은 날짜가 있을 때만 담는다(서버 규칙). 카메라로 찍었는데 비어 있으면 지금 시각을 쓴다.
+- 위치는 정보에도 가공한 이미지에도 담지 않는다. 사진 정보 schema는 `strict`라 다른 필드가 섞일 수 없고, 이미지는 쉘이 다시 JPEG로 저장하면서 메타데이터가 빠진다. **실기기에서 올린 사진에 위치가 없는지 확인해야 한다**(완료 기준).
+- 갤러리 선택은 사진 전용 시스템 선택기라 앨범 권한을 요청하지 않아 `denied`가 없다. 카메라는 권한이 거부되어 있으면 `denied`를 돌려주고, 웹이 「권한 설정이 필요해요」 모달에서 `openAppSettings`로 보낸다.
+- 업로드 묶음 ID(`uploadBatchId`)는 선택창을 한 번 연 단위로 웹이 만든다(쉘은 모른다).
+- 같은 사진 판별용 `originalFileHash`(가공 전 원본 SHA-256)는 서버 계약이 확정되기 전이라 계산·전송하지 않는다.
 - 앨범 저장에는 iOS '사진 추가' 권한 문구(`app.json`)가 필요하다.
 
 ## 구현 단위와 이슈
