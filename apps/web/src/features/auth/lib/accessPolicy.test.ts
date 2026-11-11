@@ -139,8 +139,8 @@ describe('resolveAccess', () => {
       },
     } as const;
 
-    it('가입을 마친 사용자가 로그인·가입 화면에 있으면 초대 진입으로 보낸다', () => {
-      for (const pathname of ['/login', '/intro', '/signup/profile']) {
+    it('가입을 마친 사용자가 첫 화면(/)·로그인·가입 화면에 있으면 초대 진입으로 보낸다', () => {
+      for (const pathname of ['/', '/login', '/intro', '/signup/profile']) {
         expect(resolveAccess(pathname, member, DESTINATIONS, true, true)).toBe(
           '/onboarding/join/enter',
         );
