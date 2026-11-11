@@ -43,6 +43,8 @@
     "ios": "expo run:ios",
     "ios:sync": "node scripts/ios-sync.mjs",
     "ios:sync:clean": "node scripts/ios-sync.mjs --clean",
+    "android:sync": "expo prebuild --platform android --no-clean",
+    "android:sync:clean": "expo prebuild --platform android",
     "open:ios": "open ios/*.xcworkspace",
     "web": "expo start --web",
     "lint": "expo lint"
