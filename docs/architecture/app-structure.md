@@ -10,7 +10,7 @@
 - `shared`는 역할별 폴더만 둔다. 도메인 폴더(예: `shared/lib/invitation/`)는 만들지 않는다. `features`의 도메인 경계를 `shared` 안에 다시 만들면 둘 곳을 정하는 기준이 둘로 갈라진다.
   - 역할 폴더가 커지면 같은 역할 안에서 주제별 하위 폴더로 묶는다(예: `lib/image/`, `lib/navigation/`, `lib/lottie/`, `lib/profile/`).
   - 기준은 한 주제의 구현 파일이 5~6개를 넘거나 찾기 불편해질 때다. 그 전에는 평평하게 둔다.
-  - 아직 묶지 않았다(2026-11-11, `shared/lib` 구현 파일 16개). 묶을 때 후보는 이미지(`photoCrop`·`imageFile`·`dataUrl`·`safeImageUrl`), 이동(`replaceUrl`·`toastAfterNavigation`·`pageLoadingState`), 로티(`lottieLight`·`lottieLoader`), 프로필 입력(`nickname`·`birthYear`·`bunchProfile`)이다.
+  - 아직 묶지 않았다(2026-11-11, `shared/lib` 구현 파일 15개). 묶을 때 후보는 이미지(`photoCrop`·`imageFile`·`dataUrl`·`safeImageUrl`), 이동(`replaceUrl`·`toastAfterNavigation`·`pageLoadingState`), 로티(`lottieLight`·`lottieLoader`), 프로필 입력(`nickname`·`birthYear`·`bunchProfile`)이다.
 - feature 폴더는 역할별로 나눈다(예: `components` UI, `constants` 상수, `hooks` 일반 hook, `contexts` context·provider, `lib`·`utils` 순수 함수, `fixtures` API 연결 전 샘플 데이터·테스트 공용 값). 필요한 폴더만 만들고(빈 폴더는 `.gitkeep`), 정해진 목록은 없다. `features/auth`가 역할 폴더 스캐폴딩의 예이고, API 연동 파일(`api/`, `queries/`, 필요할 때 `model/`)은 `docs/architecture/data-layer.md`의 "파일 배치 (web)"를 따른다.
 - 폴더 이름은 같은 종류를 여러 개 모으면 복수(`components/`, `hooks/`, `providers/`, feature의 `queries/`), 영역·인프라를 부르면 단수(`api/`, `query/`, `config/`, `lib/`)로 짓는다.
 - `components/`에는 UI 컴포넌트와 해당 컴포넌트의 테스트·spec·스타일만 둔다. 공개 컴포넌트 export용 `index.ts`는 예외다. 화면 전용이어도 별도 파일로 분리한 hook은 `hooks/`, 순수 함수는 `lib/`·`utils/`, 라이브러리 연결 래퍼는 `lib/`에 둔다. 상수·타입도 별도 파일이면 각 역할 폴더로 분리한다. 컴포넌트 파일 안의 작은 handler·상수까지 억지로 추출하지 않는다.
