@@ -20,7 +20,7 @@ type PhotoBoxProps = {
  * 고른 사진으로 초안 생성 API를 불러 만든 초안으로 이동하고, 만드는 동안 중복 요청을 막음
  */
 export function PhotoBox({ preview }: PhotoBoxProps) {
-  const { state, actions, retry, stale } = usePhotoBox(preview);
+  const { state, actions, retry, loadMore, stale } = usePhotoBox(preview, { progressive: true });
   const { create: createBundle, creating } = useCreateBundle();
   // 목록을 다시 받지 못하면(삭제한 사진이 남아 보일 수 있음) 한 번 알리고, 다시 받은 뒤의 다음 실패 때 또 알림
   useEffect(() => {
@@ -31,11 +31,14 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
     <>
       {/* 만드는 동안은 아래 화면을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(레이아웃은 그대로 두려고 contents) */}
       <div className="contents" inert={creating}>
+        {/* 번치가 바뀌면 화면을 새로 시작해 멤버 필터는 「전체」로, 선택 모드는 해제(명세 3.1.1, 3.3.1). 로딩에서 준비로 갈 때도 키가 undefined에서 번치 id로 바뀌어 한 번 새로 시작하지만 로딩 화면에는 상태가 없어 무해 */}
         <PhotoBoxScreen
+          key={state.kind === 'ready' ? state.data.bunch.id : undefined}
           state={state}
           actions={actions}
           onCreateBundle={createBundle}
           onRetry={retry}
+          onLoadMore={loadMore}
         />
       </div>
       {/* 안내 live region은 항상 마운트하고 문구만 바꿈. 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
