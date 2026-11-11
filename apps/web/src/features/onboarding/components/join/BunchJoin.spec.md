@@ -25,7 +25,7 @@
 
 - Path·params·search: `/onboarding/join`. params와 search는 없다. 초대 링크를 URL로 받아 입력창을 미리 채우는 진입은 정해지지 않았다(확인할 항목).
 - 접근 권한·guard: 아직 없다(로그인 미구현). draft를 읽지 않아 입력 순서 가드도 두지 않았다.
-- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. `create/layout.tsx`의 draft provider 밖이다. 「나가기」는 `router.replace('/')`(피드, 임시)로 이동해 뒤로 가기로 돌아오지 않는다.
+- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. `create/layout.tsx`의 draft provider 밖이다. 「나가기」는 `router.replace('/feed')`(피드 탭)로 이동해 뒤로 가기로 돌아오지 않는다.
 
 ## 상태와 흐름
 

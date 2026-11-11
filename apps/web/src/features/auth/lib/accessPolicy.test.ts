@@ -98,7 +98,7 @@ describe('resolveAccess', () => {
   });
 
   describe('가입을 마친 사용자', () => {
-    it.each(['/', '/bunch', '/feed', '/onboarding', '/my/profile', '/bunch/bundles/new'])(
+    it.each(['/bunch', '/feed', '/onboarding', '/my/profile', '/bunch/bundles/new'])(
       '%s는 볼 수 있다',
       (pathname) => {
         expect(access(pathname, withBunch)).toBeNull();
@@ -106,7 +106,7 @@ describe('resolveAccess', () => {
       },
     );
 
-    it.each(['/login', '/signup/terms', '/signup/terms/service', '/signup/profile'])(
+    it.each(['/', '/login', '/signup/terms', '/signup/terms/service', '/signup/profile'])(
       '%s에 들어가면 도착 화면으로 보낸다(기본 번치가 있으면 번치 홈)',
       (pathname) => {
         expect(access(pathname, withBunch)).toBe('/bunch');
@@ -114,6 +114,7 @@ describe('resolveAccess', () => {
     );
 
     it('기본 번치가 없으면 번치 시작 선택으로 보낸다', () => {
+      expect(access('/', noBunch)).toBe('/onboarding');
       expect(access('/login', noBunch)).toBe('/onboarding');
       expect(access('/signup/profile', noBunch)).toBe('/onboarding');
     });
