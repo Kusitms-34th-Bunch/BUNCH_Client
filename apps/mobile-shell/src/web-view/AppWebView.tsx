@@ -20,7 +20,13 @@ import {
   type AppBridgeMethods,
 } from '@app/bridge';
 import { pickGalleryImage } from '../gallery-image';
-import { requestPermission } from '../permissions';
+import {
+  capturePhoto,
+  pickGalleryImages,
+  readPickedPhoto,
+  releasePickedPhotos,
+} from '../gallery-upload';
+import { openAppSettings, requestPermission } from '../permissions';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { socialLogin } from '../social-login';
 import { markWebReady } from '../splash/state';
@@ -39,6 +45,11 @@ export const WEB_URL = resolveWebUrl(
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({
   pickGalleryImage,
+  pickGalleryImages,
+  capturePhoto,
+  readPickedPhoto,
+  releasePickedPhotos,
+  openAppSettings,
   requestPermission,
   socialLogin,
   share: async (params) => {

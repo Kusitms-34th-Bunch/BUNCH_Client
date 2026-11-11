@@ -15,6 +15,7 @@
     "expo-constants": "~58.0.15",
     "expo-crypto": "~58.0.7",
     "expo-dev-client": "~58.0.18",
+    "expo-file-system": "~58.0.13",
     "expo-font": "~58.0.11",
     "expo-haptics": "~58.0.7",
     "expo-image-manipulator": "~58.0.16",
@@ -36,7 +37,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/web-url.test.mjs src/gallery-resize.test.mjs src/social-login-core.test.mjs src/tabs/*.test.mjs",
+    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/web-url.test.mjs src/gallery-resize.test.mjs src/photo-exif.test.mjs src/picked-photos.test.mjs src/cache-path.test.mjs src/social-login-core.test.mjs src/tabs/*.test.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
