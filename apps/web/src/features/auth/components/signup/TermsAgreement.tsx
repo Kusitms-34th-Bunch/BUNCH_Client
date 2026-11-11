@@ -15,7 +15,8 @@ import { SignupFrame } from './SignupFrame';
 
 /**
  * 약관 동의 화면(필수 3개와 선택 1개, 전체·개별 체크 동기화, 필수를 모두 동의해야 시작하기 활성화)
- * 시작하기는 동의를 서버에 저장하고(실패하면 이동하지 않음) 시스템 권한(사진 → 카메라 → 알림)을 차례로 요청한 뒤 프로필 화면으로 이동
+ * 전체 동의하기를 체크하면 시스템 권한(사진 → 카메라 → 알림)을 차례로 요청. 시작하기는 동의를 서버에 저장하고(실패하면 이동하지 않음)
+ * 권한 요청이 끝나기를 기다린 뒤(전체 동의를 거치지 않았으면 여기서 요청) 프로필 화면으로 이동
  * 뒤로 가기는 로그아웃하고 로그인 화면으로(기획 1.3.5)
  */
 export function TermsAgreement() {
@@ -67,9 +68,13 @@ export function TermsAgreement() {
         </div>
       }
     >
-      {/* 저장 중 상태를 스크린 리더에 알림(화면에는 숨김) */}
+      {/* 저장·권한 요청 중 상태를 스크린 리더에 알림(화면에는 숨김). 전체 동의 체크로 권한 팝업이 뜰 때 이유를 들려줌 */}
       <p role="status" className="sr-only">
-        {agreeToTerms.isPending ? '약관 동의를 저장하는 중이에요' : ''}
+        {agreeToTerms.isPending
+          ? '약관 동의를 저장하는 중이에요'
+          : isRequesting
+            ? '앱 접근 권한을 요청하는 중이에요'
+            : ''}
       </p>
       {busy ? <PageLoading /> : null}
       <PageHeader
@@ -78,10 +83,17 @@ export function TermsAgreement() {
       />
       <div className="pt-s20 pb-padding-p8 gap-s16 flex flex-col">
         <div className="px-padding-p8 gap-s6 flex flex-col">
-          <Label checked={allAgreed} onChange={(event) => setAllAgreed(event.target.checked)}>
+          <Label
+            checked={allAgreed}
+            onChange={(event) => {
+              setAllAgreed(event.target.checked);
+              // 체크할 때만, 한 번만(해제하거나 다시 체크해도 다시 묻지 않음)
+              if (event.target.checked) void requestAll();
+            }}
+          >
             전체 동의하기
           </Label>
-          <div role="group" aria-label="약관 동의 항목" className="gap-s4 flex flex-col">
+          <div role="group" aria-label="약관 동의 항목" className="gap-s4 px-s4 flex flex-col">
             {TERMS_ITEMS.map(({ id, label, required, documentId }) => (
               <TermsLabel
                 key={id}
