@@ -29,7 +29,13 @@ const Providers = ({ children }: { children: ReactNode }) => (
     <JoinInvitationProvider>{children}</JoinInvitationProvider>
   </Query>
 );
-const CARD = { name: '여행가조', introduction: '소개', inviterNickname: '민지', code: 'ABCD2345' };
+const CARD = {
+  name: '여행가조',
+  introduction: '소개',
+  inviterNickname: '민지',
+  code: 'ABCD2345',
+  characterType: 'TYPE_1',
+};
 const verifyWith = (eligibility: string, capture?: (_body: unknown) => void) =>
   server.use(
     http.post('/api/invitations/verify', async ({ request }) => {

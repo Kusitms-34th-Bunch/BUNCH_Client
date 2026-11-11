@@ -9,6 +9,7 @@ const publicInvitationSchema = z.object({
   // OpenAPI는 non-null, Notion 명세는 null 가능(초대한 사람이 비활성이면 null)이라 둘 다 받음
   imageUrl: z.string().nullish(),
   inviterNickname: z.string().nullish(),
+  characterType: z.enum(['TYPE_1', 'TYPE_2', 'TYPE_3', 'TYPE_4']).nullish(),
 });
 
 /**

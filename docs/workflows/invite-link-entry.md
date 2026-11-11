@@ -1,6 +1,6 @@
 # 초대 링크 진입
 
-초대 링크(`/invite/{토큰}`)로 들어온 사람이 번치에 참여하기까지의 흐름과, 아직 연결하지 않은 것(유니버셜 링크, 초대 카드 번치 타입)을 모은다. 화면별 상세는 각 컴포넌트의 spec을 본다.
+초대 링크(`/invite/{토큰}`)로 들어온 사람이 번치에 참여하기까지의 흐름과, 아직 연결하지 않은 것(유니버셜 링크, 링크 미리보기)을 모은다. 화면별 상세는 각 컴포넌트의 spec을 본다.
 
 - 진입 페이지: `apps/web/src/features/invite-entry/components/InviteEntry.spec.md`
 - 초대 진입 확인: `apps/web/src/features/onboarding/components/join/BunchJoinEntry.spec.md`
@@ -44,13 +44,13 @@
 
 앱 밖(브라우저)에서는 소셜 로그인을 할 수 없다(`socialSignIn.ts`: 네이티브 SDK 필요). 그래서 앱 없는 사용자가 「초대장 확인하기」를 누르면 로그인 화면까지 가도 거기서 막힌다. **Universal Link가 연결되면 앱이 설치된 사용자는 이 구간을 겪지 않는다.** 앱이 없는 사용자의 흐름(앱 설치 안내)은 유니버셜 링크와 함께 정한다.
 
-### 초대 카드의 번치 타입(`characterType`)
+### 초대 카드의 번치 타입(`characterType`) — 반영함
 
-초대 확인 응답의 카드(`InvitationCard`)에 번치 타입(`TYPE_1`~`TYPE_4`)이 없다.
+백엔드가 초대 카드(`InvitationCard`)에 번치 타입(`TYPE_1`~`TYPE_4`, 필수)을 추가했다. `POST /invitations/verify`의 `card`와 같은 모양의 `GET /invitations/{token}` 응답에 모두 있다.
 
-- 영향: 초대 확인 화면의 봉투·인장 색과, 번치 사진이 없을 때의 기본 이미지를 **타입 1로 고정**해 두었다(`BunchJoinInvitation.tsx`의 `CARD_CHARACTER_TYPE`). 참여 완료 화면은 참여 응답의 `bunch.characterType`을 써서, 사진이 없는 번치는 두 화면의 기본 이미지가 다를 수 있다.
-- 요청(백엔드): `POST /invitations/verify`의 `card`(와 같은 모양의 `GET /invitations/{token}`)에 `characterType`을 추가. 값이 오면 고정값을 걷어 내고 그 값을 쓴다.
-- 상태: 디스코드 스레드로 요청 예정. 이 문서와 이슈 #308에 TODO로 남겼다.
+- 반영: 초대 확인 화면(`BunchJoinInvitation`)의 봉투·인장 색과, 번치 사진이 없을 때의 기본 이미지가 카드의 `characterType`을 따른다. 이전에 타입 1로 고정했던 값은 없앴다.
+- 생성 타입: `packages/api-core/src/generated/openapi.ts`의 `InvitationCard`에만 `characterType`을 더했다. 전체를 다시 생성하면 이번 변경과 무관한 엔드포인트·스키마 차이가 크게 따라와서(최신 명세 기준) 별도 작업으로 남긴다.
+- 진입 페이지(`InviteEntry`)는 링크가 유효한지만 알면 돼 이 값을 쓰지 않는다. 링크 미리보기(OG)를 붙일 때 카드 정보와 함께 쓸 수 있다.
 
 ## 알려진 한계
 

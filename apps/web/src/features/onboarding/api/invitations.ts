@@ -1,6 +1,7 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
+import type { CharacterType } from '@/shared/lib/bunchProfile';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
@@ -15,6 +16,7 @@ const cardSchema = z.object({
   imageUrl: z.string().nullish(),
   inviterNickname: z.string().nullish(),
   code: z.string(),
+  characterType: z.enum(['TYPE_1', 'TYPE_2', 'TYPE_3', 'TYPE_4']),
 }) satisfies z.ZodType<ApiContract<Schemas['InvitationCard']>>;
 
 const verifySchema = z.object({
@@ -27,6 +29,8 @@ export type InvitationEligibility = z.infer<typeof verifySchema>['eligibility'];
 /** 화면용 초대 카드. 비어 있는 소개·초대한 사람·안전하지 않은 사진 주소는 없는 값으로 둠(소개·From 줄을 숨기고 기본 이미지를 보여 줌) */
 export type InvitationCard = {
   name: string;
+  /** 번치 성격. 초대장 봉투·인장 색과 사진이 없을 때의 기본 이미지를 정함 */
+  characterType: CharacterType;
   introduction?: string;
   inviterNickname?: string;
   imageUrl?: string;
@@ -51,6 +55,7 @@ export const verifyInvitation = async (invitation: string): Promise<VerifiedInvi
     eligibility,
     card: {
       name: card.name,
+      characterType: card.characterType,
       ...(card.introduction.trim() ? { introduction: card.introduction } : {}),
       ...(card.inviterNickname?.trim() ? { inviterNickname: card.inviterNickname } : {}),
       ...(card.imageUrl && isSafeImageUrl(card.imageUrl) ? { imageUrl: card.imageUrl } : {}),

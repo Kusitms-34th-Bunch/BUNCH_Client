@@ -32,12 +32,18 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 
 type Verified = {
   invitation: string;
-  card: { name: string; introduction?: string; inviterNickname?: string };
+  card: {
+    name: string;
+    characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+    introduction?: string;
+    inviterNickname?: string;
+  };
 };
 const VERIFIED: Verified = {
   invitation: 'ABCD2345',
   card: {
     name: '여행가조',
+    characterType: 'TYPE_3',
     introduction: '틈만 나면 떠나는 여행 좋아하는 네 명',
     inviterNickname: '민지',
   },
@@ -81,10 +87,23 @@ describe('BunchJoinInvitation', () => {
   });
 
   it('소개와 초대한 사람이 없으면 해당 줄을 숨긴다', () => {
-    renderInvitation({ invitation: 'ABCD2345', card: { name: '여행가조' } });
+    renderInvitation({
+      invitation: 'ABCD2345',
+      card: { name: '여행가조', characterType: 'TYPE_3' },
+    });
 
     const card = screen.getByRole('article', { name: '여행가조' });
     expect(card.textContent).not.toContain('From.');
+  });
+
+  it('사진이 없으면 서버가 준 번치 성격의 기본 이미지를 보여 준다', () => {
+    renderInvitation({
+      invitation: 'ABCD2345',
+      card: { name: '여행가조', characterType: 'TYPE_4' },
+    });
+
+    const image = screen.getByRole('article', { name: '여행가조' }).querySelector('img');
+    expect(image?.getAttribute('src')).toContain('type-4');
   });
 
   it('확인한 초대 없이 직접 들어오면 화면을 그리지 않고 링크 입력으로 되돌린다', () => {

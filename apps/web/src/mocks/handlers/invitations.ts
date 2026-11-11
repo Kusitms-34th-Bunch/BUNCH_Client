@@ -71,6 +71,7 @@ const cardOf = (resolved: Exclude<Resolved, { kind: 'invalid' }>, code: string) 
         imageUrl: resolved.bunch.imageUrl,
         inviterNickname: inviterOf(resolved.bunch.id),
         code,
+        characterType: resolved.bunch.characterType,
       }
     : {
         name: resolved.demo.name,
@@ -78,6 +79,7 @@ const cardOf = (resolved: Exclude<Resolved, { kind: 'invalid' }>, code: string) 
         imageUrl: null,
         inviterNickname: resolved.demo.inviter,
         code,
+        characterType: resolved.demo.characterType,
       };
 
 const eligibilityOf = (resolved: Exclude<Resolved, { kind: 'invalid' }>) => {

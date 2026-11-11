@@ -22,9 +22,6 @@ import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
 import { useJoinInvitationMutation } from '../../queries/invitations';
 import { InviteReveal } from './InviteReveal';
 
-/** 초대 카드 응답에 번치 성격(`characterType`)이 없어 봉투·인장 색과 기본 이미지는 타입 1로 둠(백엔드 확인 항목) */
-const CARD_CHARACTER_TYPE = 'TYPE_1';
-
 /**
  * 링크 입력에서 확인한 초대를 보여 주고 「참여하기」로 서버에 참여(기획 2.6.2·2.6.3)
  * 입장 시 봉투가 열리며 카드가 펼쳐짐. 확인한 초대가 없으면(직접 진입·새로고침) 링크 입력으로 되돌림
@@ -142,7 +139,7 @@ export function BunchJoinInvitation() {
       {join.isPending || join.isSuccess ? <PageLoading /> : null}
       <div className="gap-s10 px-padding-p18 pb-padding-p18 flex min-h-full flex-col items-center justify-center">
         <InviteReveal
-          characterType={CARD_CHARACTER_TYPE}
+          characterType={card.characterType}
           title={
             <h1 className="typography-title-1-bold text-text-primary text-center break-keep">
               초대받은 번치에 참여할까요?
@@ -154,7 +151,7 @@ export function BunchJoinInvitation() {
             // 소개·초대한 사람이 없으면 해당 줄을 숨김(기획 2.6.2)
             description={card.introduction}
             senderName={card.inviterNickname}
-            imageSrc={card.imageUrl ?? defaultBunchImage(CARD_CHARACTER_TYPE)}
+            imageSrc={card.imageUrl ?? defaultBunchImage(card.characterType)}
             onJoin={submit}
             joinDisabled={blockedReason !== null}
           />
