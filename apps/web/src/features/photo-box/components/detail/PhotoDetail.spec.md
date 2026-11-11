@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/photos/[photoId]`(`apps/web/src/app/(app)/photos/[photoId]/page.tsx`). 하단 탭이 없는 화면이라 `(main)` 밖에 둔다.
-- Status: 헤더·큰 사진·올린 멤버 배지·좌우 스와이프·확대·더보기 메뉴(저장·날짜 바꾸기·삭제)·없는 사진 처리 구현됨(fixture와 목 동작, headless Chrome 375×812 실측. 실기기 전). 날짜 바꾸기 시트 연결됨(목 동작).
+- Status: 헤더·큰 사진·올린 멤버 배지·좌우 스와이프·확대·더보기 메뉴(저장·날짜 바꾸기·삭제)·없는 사진 처리 구현됨(fixture와 목 동작, headless Chrome 375×812 실측. 실기기 전). 날짜 바꾸기 시트는 서버 API(`POST …/photos/date`)에 연결했고(#316), 보던 사진이 그사이 지워져 거절되면(`PHOTO_004`) 「삭제된 사진이에요」 토스트와 함께 사진함으로 돌아간다. 삭제도 같고, 삭제하는 동안에는 저장과 같은 화면 전체 로딩을 보인다.
 - 디자인 출처: Figma `사진함_16·17·18·21·22`와 화면 설계서 상세 보드(`1861:36350`, 날짜 변경 시트는 `1861:36652`). 이슈 #128.
 - 기능 spec: `docs/specs/photo-box.md`의 3.5 사진 상세. 라이브러리 결정: `docs/decisions/records/015-photo-detail-swiper.md`.
 
