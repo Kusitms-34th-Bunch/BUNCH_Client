@@ -16,6 +16,89 @@ export const pickGalleryImageOptionsSchema = z
   .optional();
 export type PickGalleryImageOptions = z.infer<typeof pickGalleryImageOptionsSchema>;
 
+/** 사진함에 한 번에 올릴 수 있는 사진 수(기능명세서 3.2.2) */
+export const MAX_PICKED_PHOTOS = 50;
+
+// 업로드용 사진 전송 상한: base64 약 14MiB(JPEG 약 10MiB). 긴 변 2560px JPEG는 보통 수 MB이고 쉘이 목표 크기(약 5.5MiB) 아래로 맞추므로 이 값은 출력 검증용 최대치
+export const MAX_UPLOAD_IMAGE_DATA_URL = 14 * 1024 * 1024;
+
+// 2026-02-31 같은 존재하지 않는 날짜는 정규식만으로 거를 수 없음
+const isRealDate = (value: string) => {
+  const [year, month, day] = value.split('-').map(Number);
+  if (year === undefined || month === undefined || day === undefined) return false;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  );
+};
+
+/**
+ * 갤러리·카메라에서 고른 사진 한 장의 정보. 사진 데이터는 담지 않고, `readPickedPhoto`로 하나씩 읽어 감
+ * 촬영 날짜·시각은 사진 파일의 촬영 정보(EXIF)에서 쉘이 꺼낸 현지 값이고, 위치 정보는 어디에도 담지 않음
+ * 시각은 날짜 없이 보낼 수 없음(서버 규칙)
+ */
+export const pickedPhotoSchema = z
+  .object({
+    id: z.string().min(1),
+    /** 촬영 현지 날짜(yyyy-MM-dd). 알 수 없으면 없음 */
+    capturedDate: z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/)
+      .optional(),
+    /** 촬영 현지 시각(HH:mm:ss). 알 수 없으면 없음 */
+    capturedTime: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/)
+      .optional(),
+  })
+  .strict()
+  .refine((photo) => photo.capturedTime === undefined || photo.capturedDate !== undefined, {
+    message: 'capturedTime은 capturedDate 없이 보낼 수 없어요.',
+  })
+  .refine((photo) => photo.capturedDate === undefined || isRealDate(photo.capturedDate), {
+    message: 'capturedDate가 실제 날짜가 아니에요.',
+  });
+export type PickedPhoto = z.infer<typeof pickedPhotoSchema>;
+
+/** `readPickedPhoto`에 넘기는 사진 id */
+export const pickedPhotoIdSchema = z.string().min(1).max(64);
+
+/** `releasePickedPhotos`에 넘기는 사진 id 목록(여러 선택을 한꺼번에 놓아 줄 수 있어 50장보다 넉넉히) */
+export const pickedPhotoIdsSchema = z.array(pickedPhotoIdSchema).max(500);
+
+/**
+ * 사진 선택·촬영 결과. `canceled`는 사용자가 창을 닫은 것, `denied`는 카메라 권한이 거부된 것
+ * (사진 전용 시스템 선택기는 앨범 권한을 요청하지 않아 갤러리 선택에서는 `denied`가 없음)
+ */
+export const pickPhotosResultSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('picked'),
+    photos: z.array(pickedPhotoSchema).min(1).max(MAX_PICKED_PHOTOS),
+  }),
+  z.object({ status: z.literal('canceled') }),
+  z.object({ status: z.literal('denied') }),
+]);
+export type PickPhotosResult = z.infer<typeof pickPhotosResultSchema>;
+
+/** 갤러리 여러 장 선택 옵션. `limit`은 1~50장(기본 50장) */
+export const pickGalleryImagesOptionsSchema = z
+  .object({ limit: z.number().int().min(1).max(MAX_PICKED_PHOTOS).optional() })
+  .strict()
+  .optional();
+export type PickGalleryImagesOptions = z.infer<typeof pickGalleryImagesOptionsSchema>;
+
+/**
+ * 업로드용으로 가공한 사진 한 장: 긴 변 2560px 이하 JPEG, 위치를 포함한 모든 메타데이터를 지운 이미지
+ * 서버는 JPEG만 받음(기능명세서 3.2.2, 업로드 API 명세)
+ */
+export const uploadImageSchema = z.object({
+  dataUrl: z
+    .string()
+    .max(MAX_UPLOAD_IMAGE_DATA_URL)
+    .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/),
+});
+export type UploadImage = z.infer<typeof uploadImageSchema>;
+
 /** 가입할 때 요청하는 시스템 권한 */
 export const permissionKindSchema = z.enum(['photo', 'camera', 'notification']);
 export type PermissionKind = z.infer<typeof permissionKindSchema>;
