@@ -33,6 +33,13 @@
       ],
       "expo-status-bar",
       [
+        "expo-build-properties",
+        {
+          "ios": { "networkInspector": false },
+          "android": { "networkInspector": false }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#454EDF"
