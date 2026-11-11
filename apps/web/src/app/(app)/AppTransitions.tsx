@@ -39,6 +39,8 @@ export const SIGNUP_DISSOLVE_DURATION_MS = 300;
 // 기획: 추천 번들 상세 진입은 Slide In(왼쪽 방향)·나갈 때 Slide Out(오른쪽 방향), Ease In, 200ms
 export const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
 export const BUNCH_ADD_DISSOLVE_DURATION_MS = 150;
+// 인트로 → 로그인 디졸브 전체 시간(디자이너 요청, 화면설계서 값 없음). 흰 가이드에서 어두운 영상 화면으로 바뀌어 가입 화면(300ms)보다 천천히
+export const INTRO_LOGIN_DISSOLVE_DURATION_MS = 500;
 // 더보기 메뉴 → 하위 화면은 한 단계 들어가는 이동이라 미는 slide 300ms(화면설계서에 정의 없음, 2026-11-01 디자이너 요청)
 export const BUNCH_MENU_SUB_SLIDE_DURATION_MS = 300;
 // 더보기 메뉴·알림 목록 진입 drill 시간. 화면설계서 Move in / ← / Ease out / 150ms가 빨라 보여 200ms(2026-11-02), 다시 250ms(2026-11-06 사용자 결정)
@@ -85,6 +87,11 @@ const transition = slide({}, { override: { forward: tuneSlide, backward: tuneSli
 // 단계마다 절반씩 써서 전체 300ms 유지. 규칙은 두 방향에 모두 적용
 const tuneDissolve = tuneTransition(SIGNUP_DISSOLVE_DURATION_MS / 2);
 const dissolve = fade({}, { override: { forward: tuneDissolve, backward: tuneDissolve } });
+const tuneIntroDissolve = tuneTransition(INTRO_LOGIN_DISSOLVE_DURATION_MS / 2);
+const introDissolve = fade(
+  {},
+  { override: { forward: tuneIntroDissolve, backward: tuneIntroDissolve } },
+);
 const tuneBundleSlide = tuneTransition(BUNDLE_DETAIL_SLIDE_DURATION_MS);
 const tuneMenuSubSlide = tuneTransition(BUNCH_MENU_SUB_SLIDE_DURATION_MS);
 const menuSubSlide = slide(
@@ -501,14 +508,11 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bundleSlide,
   },
-  // 인트로 → 로그인: 화면설계서에 없어 가입 화면과 같은 디졸브. 앞으로만 넘어가 한 방향
-  { from: INTRO_PATH, to: LOGIN_PATH, transition: dissolve },
+  // 인트로 → 로그인: 화면설계서에 없어 디졸브. 흰 화면에서 어두운 영상 화면으로 바뀌어 가입 화면보다 천천히. 앞으로만 넘어가 한 방향
+  { from: INTRO_PATH, to: LOGIN_PATH, transition: introDissolve },
   { from: SIGNUP_PATHS.terms, to: LOGIN_PATH, transition: dissolve },
-  {
-    from: SIGNUP_PATHS.profile,
-    to: SIGNUP_PATHS.terms,
-    transition: dissolve,
-  },
+  // 약관 ↔ 프로필: 가입 단계라 온보딩과 같은 슬라이드, 뒤로 가기는 반대 방향(화면설계서의 디졸브 대신, 2026-11-11 결정)
+  { from: SIGNUP_PATHS.terms, to: SIGNUP_PATHS.profile, transition },
   {
     from: SIGNUP_TRANSITION_IDS.termsDocument,
     to: SIGNUP_PATHS.terms,
@@ -531,7 +535,8 @@ export function AppTransitions({ children }: { children: ReactNode }) {
   );
   return (
     <Ssgoi config={config}>
-      <div className="bg-surface-primary relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* 전환 중 화면 뒤를 흰색으로 받침. 인트로 브랜드 장면은 바깥 AppFrame이 Safe Area까지 한 번에 칠하므로 보이는 동안·사라지는 동안 비움 */}
+      <div className="bg-surface-primary relative isolate flex min-h-0 flex-1 flex-col overflow-hidden has-[[data-app-background=brand],[data-brand-leaving]]:bg-transparent">
         {children}
       </div>
     </Ssgoi>
