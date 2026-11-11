@@ -52,13 +52,16 @@ export const myBunchesQueryOptions = () =>
  * 사진함·번들 만들기 등 앱 전체가 기본 번치를 보므로 모두 새 번치 기준이 됨(5.2.2 로직 2)
  * 새 번치 홈을 먼저 받아 두어 기본 번치가 바뀔 때 로딩 화면 없이 새 번치가 바로 그려짐
  * 기본 번치가 요청한 번치로 바뀌지 않았으면 실패로 던짐(성공 토스트만 뜨고 화면이 그대로인 것을 막음)
+ * 미리 받기가 실패해도 기본 번치는 확인함: 저장이 됐으면 전환 성공이고 새 번치 홈은 화면이 다시 받음
  */
 export const useSwitchBunchMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (bunchId: string) => {
       await updateLastUsedBunch(bunchId);
-      await Promise.all([
+      // 저장 전에 시작한 members/me 응답(이전 번치)을 다시 쓰지 않게 멈춤
+      await queryClient.cancelQueries({ queryKey: sharedKeys.me() });
+      await Promise.allSettled([
         // 저장해 둔 값이 5분 안이어도 전환한 번치는 서버 값으로 보임
         queryClient.fetchQuery({ ...bunchHomeQueryOptions(bunchId), staleTime: 0 }),
         queryClient.fetchQuery({ ...publishedBundlesQueryOptions(bunchId), staleTime: 0 }),
@@ -67,6 +70,8 @@ export const useSwitchBunchMutation = () => {
       const me = await queryClient.fetchQuery({ ...myProfileQueryOptions(), staleTime: 0 });
       if (me.bunch?.id !== bunchId) throw new Error('default bunch did not change');
     },
+    // 실패해도 서버에 저장됐을 수 있어 기본 번치를 서버 기준으로 다시 맞춤
+    onError: () => queryClient.invalidateQueries({ queryKey: sharedKeys.me() }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
   });
 };

@@ -11,6 +11,7 @@ import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import { getMyBunches } from '../../api/bunchHome';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BunchHome } from './BunchHome';
 
@@ -263,13 +264,25 @@ describe('BunchHome 서버 번치 전환', () => {
     // 새 번치 홈을 미리 받아 두어 로딩 화면을 거치지 않고 바뀜
     expect(await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ })).toBeTruthy();
     expect(screen.queryByText('번치를 불러오는 중이에요')).toBeNull();
-    expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.');
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
     // 서버의 기본 번치가 바뀌어 다른 화면(사진함·번들 만들기)도 새 번치를 봄
-    const latest = mockDb
-      .get()
-      .memberships.filter((membership) => membership.memberId === 5)
-      .sort((a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt))[0];
-    expect(latest?.bunchId).toBe(MOCK_SECOND_BUNCH_ID);
+    expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
+  });
+
+  it('저장은 됐는데 새 번치 홈 미리 받기만 실패하면 전환 성공으로 알리고 새 번치로 바뀐다', async () => {
+    // 새 번치 홈 요청만 실패(저장·기본 번치 변경은 성공)
+    server.use(
+      http.get(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/home`, () => fail(500, 'COMMON_500')),
+    );
+    const user = userEvent.setup();
+    renderHome();
+
+    const sheet = await openSwitcher(user);
+    await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
+    expect(toast).not.toHaveBeenCalledWith('번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
   });
 
   it('전환을 저장하지 못하면 지금 번치에 머물고 실패를 알린다', async () => {
@@ -313,7 +326,10 @@ describe('BunchHome 서버 번치 전환', () => {
     await user.click(within(dialog).getByRole('button', { name: '번치 목록에서 삭제' }));
 
     await waitFor(() => expect(within(sheet).queryByRole('button', { name: /홍대역/ })).toBeNull());
-    expect(mockDb.get().bunchAccessNotices.map((notice) => notice.name)).toEqual(['큐시즘 맛집']);
+    // 서버에서도 지워져 다시 받아도 보이지 않음
+    expect((await getMyBunches()).unavailableBunches.map((notice) => notice.name)).toEqual([
+      '큐시즘 맛집',
+    ]);
   });
 
   it('소속 번치가 최대 개수면 「새로운 번치 추가하기」는 이동하지 않고 한도를 알린다', async () => {
