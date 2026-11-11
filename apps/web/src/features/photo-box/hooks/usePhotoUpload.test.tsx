@@ -579,7 +579,7 @@ describe('usePhotoUpload 내가 이미 올린 사진', () => {
     expect(lastToast()).toEqual(['2장의 사진을 사진함에 추가했어요.', undefined]);
   });
 
-  it('모두 내가 이미 올린 사진이면 알릴 것이 없어 토스트를 띄우지 않는다', async () => {
+  it('모두 내가 이미 올린 사진이면 추가한 장수 없이 이미 있다는 안내 토스트를 띄운다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2'));
     server.use(
       http.post('/api/bunches/:bunchId/photos', () =>
@@ -590,7 +590,7 @@ describe('usePhotoUpload 내가 이미 올린 사진', () => {
 
     await act(() => result.current.start('album'));
 
-    expect(toastSpy).not.toHaveBeenCalled();
+    expect(lastToast()).toEqual(['이미 사진함에 있는 사진이에요.', undefined]);
   });
 
   it('올리지 못한 사진이 함께 있으면 제외된 사진은 빼고 알린다', async () => {

@@ -117,7 +117,7 @@ export function usePhotoUpload(bunchId: string | undefined) {
     }
     const retryItems = results.flatMap((result) => (result.retryItem ? [result.retryItem] : []));
     const message = uploadResultMessage(summary);
-    // 알릴 것이 없으면(모두 이미 올린 사진이라 제외됨) 토스트를 띄우지 않음
+    // 올린 사진이 없으면 알릴 것이 없음
     if (message === null) return;
     toast(
       message,

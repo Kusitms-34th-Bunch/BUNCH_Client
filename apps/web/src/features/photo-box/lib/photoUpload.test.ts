@@ -70,8 +70,8 @@ describe('summarizeUpload', () => {
   it('들어간 사진과 올리지 못한 사진, 그중 다시 시도 대상을 센다', () => {
     expect(
       summarizeUpload(['added', 'failed', 'failed-retryable', 'added', 'failed-retryable']),
-    ).toEqual({ added: 2, failed: 3, retryable: 2 });
-    expect(summarizeUpload([])).toEqual({ added: 0, failed: 0, retryable: 0 });
+    ).toEqual({ added: 2, failed: 3, retryable: 2, skipped: 0 });
+    expect(summarizeUpload([])).toEqual({ added: 0, failed: 0, retryable: 0, skipped: 0 });
   });
 
   it('내가 이미 올려 제외된 사진(skipped)은 추가한 사진에도 올리지 못한 사진에도 세지 않는다', () => {
@@ -79,30 +79,40 @@ describe('summarizeUpload', () => {
       added: 1,
       failed: 1,
       retryable: 0,
+      skipped: 2,
     });
-    expect(summarizeUpload(['skipped', 'skipped'])).toEqual({ added: 0, failed: 0, retryable: 0 });
+    expect(summarizeUpload(['skipped', 'skipped'])).toEqual({
+      added: 0,
+      failed: 0,
+      retryable: 0,
+      skipped: 2,
+    });
   });
 });
 
 describe('uploadResultMessage', () => {
   it('추가한 사진도 올리지 못한 사진도 없으면(모두 제외됨) 알릴 것이 없다', () => {
-    expect(uploadResultMessage({ added: 0, failed: 0, retryable: 0 })).toBeNull();
+    expect(uploadResultMessage({ added: 0, failed: 0, retryable: 0, skipped: 0 })).toBeNull();
+    // 모두 내가 이미 올린 사진이라 제외됐으면 그 사실을 알림
+    expect(uploadResultMessage({ added: 0, failed: 0, retryable: 0, skipped: 3 })).toBe(
+      '이미 사진함에 있는 사진이에요.',
+    );
   });
 
   it('전부 올라가면 추가한 장수를 알린다', () => {
-    expect(uploadResultMessage({ added: 7, failed: 0, retryable: 0 })).toBe(
+    expect(uploadResultMessage({ added: 7, failed: 0, retryable: 0, skipped: 0 })).toBe(
       '7장의 사진을 사진함에 추가했어요.',
     );
   });
 
   it('일부만 올라가면 추가한 장수와 올리지 못한 장수를 함께 알린다', () => {
-    expect(uploadResultMessage({ added: 7, failed: 3, retryable: 1 })).toBe(
+    expect(uploadResultMessage({ added: 7, failed: 3, retryable: 1, skipped: 0 })).toBe(
       '7장을 추가했어요. 3장은 올리지 못했어요.',
     );
   });
 
   it('하나도 못 올렸으면 장수 없이 알린다', () => {
-    expect(uploadResultMessage({ added: 0, failed: 5, retryable: 5 })).toBe(
+    expect(uploadResultMessage({ added: 0, failed: 5, retryable: 5, skipped: 0 })).toBe(
       '사진을 올리지 못했어요.',
     );
   });

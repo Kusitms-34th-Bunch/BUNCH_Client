@@ -1,5 +1,8 @@
 import { ApiError } from '@app/api-core';
 
+/** 올린 사진이 모두 이미 사진함에 있는 사진이었을 때의 안내(기획 원문이 없어 임시 문구) */
+const ALREADY_UPLOADED_MESSAGE = '이미 사진함에 있는 사진이에요.';
+
 /** 한 번에 올리는 사진 수. 서버는 5개 이하를 권장하고, 쉘이 사진을 가공하는 동안의 메모리도 함께 고려 */
 export const UPLOAD_CONCURRENCY = 3;
 
@@ -33,7 +36,7 @@ const LIMIT_UPLOAD_CODES = new Set(['PHOTO_002', 'PHOTO_003']);
 /**
  * 사진 한 장의 업로드 결과
  * - `added`: 사진함에 들어감(새로 저장되었거나 다른 멤버가 올린 같은 사진에 올린 사람으로 합쳐짐)
- * - `skipped`: 내가 이미 올린 같은 사진(`ALREADY_UPLOADED`)이라 서버가 변경 없이 제외함. 추가한 사진에도 올리지 못한 사진에도 세지 않음
+ * - `skipped`: 내가 이미 올린 같은 사진(`ALREADY_UPLOADED`)이라 서버가 변경 없이 제외함. 추가한 사진에도 올리지 못한 사진에도 세지 않고, 올린 사진이 모두 이 경우일 때만 안내함
  * - `failed-retryable`: 네트워크 실패·일시 장애라 「다시 시도」 대상
  * - `failed`: 다시 보내도 같은 결과라 「올리지 못한 사진」으로만 셈(형식·용량·한도·권한 오류, 사진을 읽지 못함)
  */
@@ -57,23 +60,26 @@ export type UploadSummary = {
   failed: number;
   /** 그중 「다시 시도」 대상 수 */
   retryable: number;
+  /** 내가 이미 올려 제외된 사진 수 */
+  skipped: number;
 };
 
-/** 제외된 사진(`skipped`)은 추가한 사진에도 올리지 못한 사진에도 세지 않음 */
+/** 제외된 사진(`skipped`)은 추가한 사진에도 올리지 못한 사진에도 세지 않고 따로 셈 */
 export const summarizeUpload = (outcomes: readonly UploadOutcome[]): UploadSummary => {
   const added = outcomes.filter((outcome) => outcome === 'added').length;
   const retryable = outcomes.filter((outcome) => outcome === 'failed-retryable').length;
   const failed = retryable + outcomes.filter((outcome) => outcome === 'failed').length;
-  return { added, failed, retryable };
+  const skipped = outcomes.filter((outcome) => outcome === 'skipped').length;
+  return { added, failed, retryable, skipped };
 };
 
 /**
  * 업로드가 끝난 뒤 하나만 띄우는 결과 토스트 문구(기능명세서 3.2.2)
  * 못 올린 이유는 나누지 않고 모두 「N장」에 함께 셈
- * 추가한 사진도 올리지 못한 사진도 없으면(모두 내가 이미 올린 사진이라 제외됨) 알릴 것이 없어 null
+ * 추가한 사진도 올리지 못한 사진도 없고 모두 내가 이미 올린 사진이라 제외됐으면 그 사실을 알리고, 올린 사진이 없으면 알릴 것이 없어 null
  */
-export const uploadResultMessage = ({ added, failed }: UploadSummary): string | null => {
-  if (added === 0 && failed === 0) return null;
+export const uploadResultMessage = ({ added, failed, skipped }: UploadSummary): string | null => {
+  if (added === 0 && failed === 0) return skipped > 0 ? ALREADY_UPLOADED_MESSAGE : null;
   if (failed === 0) return `${added}장의 사진을 사진함에 추가했어요.`;
   if (added === 0) return '사진을 올리지 못했어요.';
   return `${added}장을 추가했어요. ${failed}장은 올리지 못했어요.`;
