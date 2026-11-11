@@ -48,7 +48,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kyeongjooni.mobile-shell"
+      "bundleIdentifier": "com.kyeongjooni.mobile-shell",
+      "infoPlist": {
+        "CFBundleDisplayName": "BUNCH"
+      }
     },
     "android": {
       "adaptiveIcon": {

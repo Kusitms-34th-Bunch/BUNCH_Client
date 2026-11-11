@@ -67,7 +67,7 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 앱은 `app.json`의 `orientation: "portrait"`로 세로에 고정되어 있어, iPhone 기준으로 앱 안에서는 가로 모드가 생기지 않는다(`ios.supportsTablet: true`인 iPad에서도 세로로 고정되는지는 확인하지 못했다). 일반 브라우저의 가로 모드를 위해 좌우 Safe Area를 적용하고, `PageShell`의 본문은 최소 높이(8rem)를 가진다. header·bottom·Safe Area를 뺀 높이가 그보다 작으면 본문 대신 틀 전체가 넘쳐 페이지가 스크롤된다. 이때 하단 영역(CTA)은 문서를 스크롤해야 보이고, main 위에서 스크롤하면 `overscroll-y-contain` 때문에 문서로 이어지지 않아 닿기 어려울 수 있다. 하단을 항상 보이게 하는 sticky 방식과 문서 스크롤 하나로 통일하는 방식은 이득이 불분명하거나 범위가 커서 택하지 않았고, 이 한계는 실기기와 낮은 화면에서 확인한 뒤 다시 정한다.
 - 확인한 것: 브라우저에서 네이티브 값이 한 번만 적용되고 가로 모드·낮은 화면의 최소 높이 정책이 동작하는 것, 네이티브의 TypeScript 검사·iOS JS 번들 생성·값 변환 테스트. 확인하지 못한 것: iOS·Android 실기기와 시뮬레이터에서 실제 값이 들어가는지, 마운트 뒤 값이 바뀐 상태에서 새 문서를 로드할 때 `injectedJavaScriptBeforeContentLoaded`의 새 값이 쓰이는지, Android 시스템 바(edge-to-edge) 처리, 소프트 키보드와 `dvh`. 이 부분은 실기기 확인 전까지 통과로 보지 않는다.
 
-현재 iOS `bundleIdentifier`는 `com.kyeongjooni.mobile-shell`이고 Android `package`는 아직 없다. 출시용 식별자는 스토어 등록 전에 확정한다.
+iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …」)은 `app.json`의 `ios.infoPlist.CFBundleDisplayName`(`BUNCH`)이다. `name`(`Bunch`)을 바꾸면 prebuild가 Xcode 프로젝트 이름까지 바꿀 수 있어 표시 이름만 덮어쓴다. Android 이름은 아직 `name`을 따른다. 현재 iOS `bundleIdentifier`는 `com.kyeongjooni.mobile-shell`이고 Android `package`는 아직 없다. 출시용 식별자는 스토어 등록 전에 확정한다.
 
 ## 실행과 테스트
 
