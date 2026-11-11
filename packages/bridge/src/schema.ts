@@ -99,6 +99,56 @@ export const uploadImageSchema = z.object({
 });
 export type UploadImage = z.infer<typeof uploadImageSchema>;
 
+/** 앨범에 한 번에 저장할 수 있는 사진 수(선택 모드 최대 선택 수와 같음, 기능명세서 3.3.3) */
+export const MAX_SAVE_IMAGES = MAX_PICKED_PHOTOS;
+
+// IPv4 주소 표기(점 숫자 4개)나 IPv6 주소([…])는 사설망·loopback·link-local 주소일 수 있어 호스트 이름이 아닌 값은 거절
+const isIpLiteral = (hostname: string) =>
+  hostname.startsWith('[') || /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
+
+const isPublicHostname = (hostname: string) =>
+  hostname.includes('.') &&
+  !isIpLiteral(hostname) &&
+  hostname !== 'localhost' &&
+  !/\.(local|localhost|internal|lan|home)$/.test(hostname);
+
+/**
+ * 앨범 저장 주소가 쉘이 내려받아도 되는 모양인지: https, 계정 정보(`user:pass@`) 없음, 공개 도메인 이름 호스트
+ * 쉘은 웹이 준 주소를 그대로 내려받으므로, 웹 쪽 코드가 오염돼도 사설망·기기 안의 주소를 요청하지 못하게 막음
+ * 허용 호스트 목록은 운영 이미지 호스트가 정해진 뒤에 쉘 설정으로 좁힐 수 있음
+ */
+export const isSavableImageUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === 'https:' &&
+      url.username === '' &&
+      url.password === '' &&
+      isPublicHostname(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+};
+
+/** 앨범에 저장할 이미지 주소. 쉘이 내려받으므로 공개 https 주소만 허용 */
+export const saveImageUrlSchema = z
+  .string()
+  .max(2048)
+  .refine(isSavableImageUrl, { message: '공개 https 주소만 저장할 수 있어요.' });
+
+export const saveImageUrlsSchema = z.array(saveImageUrlSchema).min(1).max(MAX_SAVE_IMAGES);
+
+/**
+ * 앨범 저장 결과. `denied`는 사진 저장 권한이 거부된 것(설정에서 허용해야 함)이고, `saved`는 요청한 주소 순서대로 사진별 성공 여부
+ * 일부만 저장될 수 있으며, 사진 데이터는 웹으로 넘기지 않음
+ */
+export const saveImagesToAlbumResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('saved'), results: z.array(z.boolean()) }),
+  z.object({ status: z.literal('denied') }),
+]);
+export type SaveImagesToAlbumResult = z.infer<typeof saveImagesToAlbumResultSchema>;
+
 /** 가입할 때 요청하는 시스템 권한 */
 export const permissionKindSchema = z.enum(['photo', 'camera', 'notification']);
 export type PermissionKind = z.infer<typeof permissionKindSchema>;

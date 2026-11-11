@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   galleryImageSchema,
+  isSavableImageUrl,
   MAX_PICKED_PHOTOS,
   MAX_UPLOAD_IMAGE_DATA_URL,
   pickedPhotoIdSchema,
@@ -10,6 +11,8 @@ import {
   pickGalleryImageOptionsSchema,
   pickGalleryImagesOptionsSchema,
   pickPhotosResultSchema,
+  saveImagesToAlbumResultSchema,
+  saveImageUrlsSchema,
   setNativeTabBarParamsSchema,
   socialLoginResultSchema,
   socialProviderSchema,
@@ -186,4 +189,39 @@ void test('놓아 줄 사진 id 목록은 문자열 배열만 받고 500개까�
   assert.equal(pickedPhotoIdsSchema.safeParse(['a', '']).success, false);
   assert.equal(pickedPhotoIdsSchema.safeParse('a').success, false);
   assert.equal(pickedPhotoIdsSchema.safeParse(Array(501).fill('a')).success, false);
+});
+
+void test('앨범에 저장할 주소는 https 주소 1~50개만 받는다', () => {
+  assert.equal(saveImageUrlsSchema.safeParse(['https://cdn.example.com/a.jpg']).success, true);
+  assert.equal(saveImageUrlsSchema.safeParse([]).success, false);
+  assert.equal(saveImageUrlsSchema.safeParse(['http://cdn.example.com/a.jpg']).success, false);
+  assert.equal(saveImageUrlsSchema.safeParse(['file:///private/a.jpg']).success, false);
+  assert.equal(saveImageUrlsSchema.safeParse(['/relative/a.jpg']).success, false);
+  assert.equal(saveImageUrlsSchema.safeParse(Array(50).fill('https://a.test/a.jpg')).success, true);
+  assert.equal(
+    saveImageUrlsSchema.safeParse(Array(51).fill('https://a.test/a.jpg')).success,
+    false,
+  );
+});
+
+void test('앨범 저장 결과는 saved(사진별 성공 여부)와 denied만 받는다', () => {
+  assert.equal(
+    saveImagesToAlbumResultSchema.safeParse({ status: 'saved', results: [true, false] }).success,
+    true,
+  );
+  assert.equal(saveImagesToAlbumResultSchema.safeParse({ status: 'denied' }).success, true);
+  assert.equal(saveImagesToAlbumResultSchema.safeParse({ status: 'saved' }).success, false);
+  assert.equal(saveImagesToAlbumResultSchema.safeParse({ status: 'other' }).success, false);
+});
+
+void test('앨범에 저장할 주소는 IP 주소·계정 정보·내부 호스트를 거절한다', () => {
+  assert.equal(isSavableImageUrl('https://cdn.example.com/a.jpg?sig=1'), true);
+  assert.equal(isSavableImageUrl('https://192.168.0.1/a.jpg'), false);
+  assert.equal(isSavableImageUrl('https://169.254.169.254/latest'), false);
+  assert.equal(isSavableImageUrl('https://[::1]/a.jpg'), false);
+  assert.equal(isSavableImageUrl('https://localhost/a.jpg'), false);
+  assert.equal(isSavableImageUrl('https://intranet/a.jpg'), false);
+  assert.equal(isSavableImageUrl('https://printer.local/a.jpg'), false);
+  assert.equal(isSavableImageUrl('https://user:pass@cdn.example.com/a.jpg'), false);
+  assert.equal(isSavableImageUrl('http://cdn.example.com/a.jpg'), false);
 });

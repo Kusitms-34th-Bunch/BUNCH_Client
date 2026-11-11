@@ -6,6 +6,7 @@ import type {
   PickGalleryImageOptions,
   PickGalleryImagesOptions,
   PickPhotosResult,
+  SaveImagesToAlbumResult,
   SetNativeTabBarParams,
   ShareParams,
   SocialLoginResult,
@@ -16,7 +17,9 @@ import type {
 export {
   appPostMessageSchema,
   galleryImageSchema,
+  isSavableImageUrl,
   MAX_PICKED_PHOTOS,
+  MAX_SAVE_IMAGES,
   MAX_UPLOAD_IMAGE_DATA_URL,
   nativeTabBarItemSchema,
   permissionKindSchema,
@@ -27,6 +30,9 @@ export {
   pickGalleryImageOptionsSchema,
   pickGalleryImagesOptionsSchema,
   pickPhotosResultSchema,
+  saveImagesToAlbumResultSchema,
+  saveImageUrlSchema,
+  saveImageUrlsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
   socialLoginResultSchema,
@@ -43,6 +49,7 @@ export type {
   PickGalleryImageOptions,
   PickGalleryImagesOptions,
   PickPhotosResult,
+  SaveImagesToAlbumResult,
   SetNativeTabBarParams,
   ShareParams,
   SocialLoginResult,
@@ -62,6 +69,8 @@ export type AppBridgeMethods = {
   readPickedPhoto: (_id: string) => Promise<UploadImage>;
   /** 업로드가 끝난 사진 정보를 쉘이 놓아 줌(ids를 생략하면 모두). 모르는 id는 무시 */
   releasePickedPhotos: (_ids?: string[]) => Promise<void>;
+  /** 이미지 주소들(https, 최대 50개)을 쉘이 내려받아 휴대폰 앨범에 저장. 사진별 성공 여부를 주소 순서대로 돌려주고, 저장 권한이 거부되어 있으면 `denied`. 사진 데이터는 웹으로 넘기지 않음 */
+  saveImagesToAlbum: (_urls: string[]) => Promise<SaveImagesToAlbumResult>;
   /** 앱의 시스템 설정 화면 열기(사진·카메라 권한 거부 안내의 「설정으로 이동」) */
   openAppSettings: () => Promise<void>;
   /** 시스템 권한 팝업 요청. 이미 정해진 권한은 팝업 없이 현재 상태 반환 */

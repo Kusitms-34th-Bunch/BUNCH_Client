@@ -19,6 +19,7 @@ import {
   shareParamsSchema,
   type AppBridgeMethods,
 } from '@app/bridge';
+import { saveImagesToAlbum } from '../album-save';
 import { pickGalleryImage } from '../gallery-image';
 import {
   capturePhoto,
@@ -49,6 +50,7 @@ const appBridge = bridge({
   capturePhoto,
   readPickedPhoto,
   releasePickedPhotos,
+  saveImagesToAlbum,
   openAppSettings,
   requestPermission,
   socialLogin,
