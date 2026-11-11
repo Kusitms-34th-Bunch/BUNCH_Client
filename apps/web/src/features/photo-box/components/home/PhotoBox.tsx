@@ -27,6 +27,12 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
     if (stale) toast(PHOTO_BOX_MESSAGES.listStale);
   }, [stale]);
 
+  // 이어 받다 실패하면(재시도 뒤 다시 실패해도) 토스트로 알림: 필터로 목록이 짧아지면 스크롤 재시도가 안 되고 빈 상태 문구도 숨겨 화면에 단서가 없음
+  const moreFailed = state.kind === 'ready' && state.data.more === 'error';
+  useEffect(() => {
+    if (moreFailed) toast(PHOTO_BOX_MESSAGES.listMoreFailed);
+  }, [moreFailed]);
+
   return (
     <>
       {/* 만드는 동안은 아래 화면을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(레이아웃은 그대로 두려고 contents) */}
