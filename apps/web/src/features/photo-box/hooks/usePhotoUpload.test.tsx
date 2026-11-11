@@ -487,6 +487,18 @@ describe('usePhotoUpload 사진 목록 갱신', () => {
     expect(invalidatedKeys(spy)).toEqual([photoBoxKeys.photos(bunchId)]);
   });
 
+  it('코드 없는 500처럼 서버 저장 여부를 알 수 없는 실패만 있어도 목록을 다시 받는다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    server.use(http.post('/api/bunches/:bunchId/photos', () => fail(500, 'COMMON_500')));
+    const client = createTestQueryClient();
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    const { result } = render({ id: bunchId }, client);
+
+    await act(() => result.current.start('album'));
+
+    expect(invalidatedKeys(spy)).toEqual([photoBoxKeys.photos(bunchId)]);
+  });
+
   it('한도·형식 오류로 하나도 못 올렸으면 목록을 다시 받지 않는다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
     server.use(http.post('/api/bunches/:bunchId/photos', () => fail(409, 'PHOTO_001')));

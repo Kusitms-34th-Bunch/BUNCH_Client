@@ -49,6 +49,14 @@ export const isRetryableUploadError = (error: unknown): boolean =>
     (error.code !== undefined && RETRYABLE_UPLOAD_CODES.has(error.code)) ||
     (error.status !== undefined && RETRYABLE_GATEWAY_STATUSES.has(error.status)));
 
+/**
+ * 서버에 저장됐는지 알 수 없는 실패인지: 서버가 4xx로 분명히 거절한 것이 아니라 5xx(코드 없는 500 등)이거나 성공 응답을 읽지 못한 경우
+ * 재시도 대상이 아니어도 서버에는 저장됐을 수 있어, 이런 실패가 있으면 사진 목록을 다시 받음
+ */
+export const isUploadOutcomeUnknown = (error: unknown): boolean =>
+  error instanceof ApiError &&
+  (error.code === 'INVALID_RESPONSE' || (error.status !== undefined && error.status >= 500));
+
 /** 사진함 한도 오류인지(하루 100장·한 번에 50장). 이 오류를 받으면 같은 묶음의 남은 사진은 보내지 않음 */
 export const isUploadLimitError = (error: unknown): boolean =>
   error instanceof ApiError && error.code !== undefined && LIMIT_UPLOAD_CODES.has(error.code);

@@ -19,7 +19,7 @@ export type PickGalleryImageOptions = z.infer<typeof pickGalleryImageOptionsSche
 /** 사진함에 한 번에 올릴 수 있는 사진 수(기능명세서 3.2.2) */
 export const MAX_PICKED_PHOTOS = 50;
 
-// 업로드용 사진 전송 상한: base64 약 14MiB(JPEG 약 10MiB). 긴 변 2560px JPEG는 보통 수 MB이고 쉘이 목표 크기(약 5.5MiB) 아래로 맞추므로 이 값은 출력 검증용 최대치
+// 업로드용 사진 전송 상한: base64 약 14MiB(JPEG 약 10MiB). 긴 변 2560px JPEG는 보통 수 MB이고 쉘이 목표 크기(4MiB) 아래로 맞추고 웹이 4.4MB 이하를 한 번 더 확인하므로 이 값은 출력 검증용 최대치
 export const MAX_UPLOAD_IMAGE_DATA_URL = 14 * 1024 * 1024;
 
 // 2026-02-31 같은 존재하지 않는 날짜는 정규식만으로 거를 수 없음

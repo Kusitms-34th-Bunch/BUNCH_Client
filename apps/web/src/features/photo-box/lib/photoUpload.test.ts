@@ -5,6 +5,7 @@ import {
   isRetryableUploadError,
   isUploadableJpeg,
   isUploadLimitError,
+  isUploadOutcomeUnknown,
   MAX_UPLOAD_BYTES,
   runPool,
   summarizeUpload,
@@ -63,6 +64,35 @@ describe('isRetryableUploadError', () => {
   it('ApiError가 아닌 오류는 대상이 아니다', () => {
     expect(isRetryableUploadError(new Error('boom'))).toBe(false);
     expect(isRetryableUploadError(undefined)).toBe(false);
+  });
+});
+
+describe('isUploadOutcomeUnknown', () => {
+  it('코드 없는 5xx와 성공 응답을 읽지 못한 실패는 서버 저장 여부를 알 수 없다', () => {
+    expect(
+      isUploadOutcomeUnknown(new ApiError({ message: 'x', category: 'server', status: 500 })),
+    ).toBe(true);
+    expect(
+      isUploadOutcomeUnknown(
+        new ApiError({
+          message: 'x',
+          category: 'validation',
+          status: 200,
+          code: 'INVALID_RESPONSE',
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('서버가 4xx로 분명히 거절한 실패와 ApiError가 아닌 오류는 해당하지 않는다', () => {
+    for (const options of [
+      { category: 'validation', status: 400, code: 'COMMON_001' },
+      { category: 'validation', status: 409, code: 'PHOTO_001' },
+      { category: 'auth', status: 403, code: 'AUTH_002' },
+    ] as const) {
+      expect(isUploadOutcomeUnknown(new ApiError({ message: 'x', ...options }))).toBe(false);
+    }
+    expect(isUploadOutcomeUnknown(new Error('boom'))).toBe(false);
   });
 });
 

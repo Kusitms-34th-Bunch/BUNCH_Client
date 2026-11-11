@@ -14,6 +14,7 @@ import {
   isRetryableUploadError,
   isUploadableJpeg,
   isUploadLimitError,
+  isUploadOutcomeUnknown,
   runPool,
   summarizeUpload,
   UPLOAD_CONCURRENCY,
@@ -36,6 +37,8 @@ type UploadResult = {
   retryItem?: UploadItem;
   /** 사진함 한도 오류(하루·한 번에 올릴 수 있는 수)라 같은 묶음의 남은 사진도 거절됨 */
   limited?: boolean;
+  /** 서버에 저장됐는지 알 수 없는 실패(코드 없는 5xx, 성공 응답을 읽지 못함)라 목록을 다시 받아야 함 */
+  unknown?: boolean;
 };
 
 const attempt = async (
@@ -50,7 +53,11 @@ const attempt = async (
   } catch (error) {
     return isRetryableUploadError(error)
       ? { outcome: 'failed-retryable', retryItem: item }
-      : { outcome: 'failed', limited: isUploadLimitError(error) };
+      : {
+          outcome: 'failed',
+          limited: isUploadLimitError(error),
+          unknown: isUploadOutcomeUnknown(error),
+        };
   }
 };
 
@@ -111,8 +118,8 @@ export function usePhotoUpload(bunchId: string | undefined) {
   // 한 묶음의 결과를 집계해 토스트를 띄우고, 새로 들어간 사진이 있으면 그 번치의 사진 목록을 다시 받음
   const finish = (targetBunchId: string, uploadBatchId: string, results: UploadResult[]) => {
     const summary = summarizeUpload(results.map((result) => result.outcome));
-    // 응답을 받기 전에 끊긴 사진(다시 시도 대상)도 서버에는 저장됐을 수 있어 목록을 다시 받음
-    if (summary.added > 0 || summary.retryable > 0) {
+    // 응답을 받기 전에 끊긴 사진(다시 시도 대상)과 결과를 알 수 없는 실패(코드 없는 5xx 등)도 서버에는 저장됐을 수 있어 목록을 다시 받음
+    if (summary.added > 0 || summary.retryable > 0 || results.some((result) => result.unknown)) {
       void invalidatePhotosOf(targetBunchId);
     }
     const retryItems = results.flatMap((result) => (result.retryItem ? [result.retryItem] : []));
