@@ -5,7 +5,11 @@ import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { isDevTokenLoginEnabled } from '@/shared/api/devTokenFlag';
 
 // 가입을 마친 사용자의 도착 화면은 다른 feature 소유라 route에서 조합해 넘김
-const DESTINATIONS = { bunchHome: BUNCH_HOME_PATHS.home, bunchStart: ONBOARDING_PATHS.start };
+const DESTINATIONS = {
+  bunchHome: BUNCH_HOME_PATHS.home,
+  bunchStart: ONBOARDING_PATHS.start,
+  inviteEntry: ONBOARDING_PATHS.joinBunchEnter,
+};
 
 export default function LoginPage() {
   return (

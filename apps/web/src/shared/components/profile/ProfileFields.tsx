@@ -4,7 +4,7 @@ import { LabeledTextField } from '@app/design-system/web';
 import { useId } from 'react';
 import type { ProfileFieldsState } from '../../hooks/useProfileFields';
 import { closeKeyboard } from '../../lib/keyboard';
-import { NICKNAME_MAX_LENGTH } from '../../lib/nickname';
+import { NICKNAME_CHECKING_MESSAGE, NICKNAME_MAX_LENGTH } from '../../lib/nickname';
 import { GenderField } from './GenderField';
 
 type ProfileFieldsProps = {
@@ -39,6 +39,7 @@ export function ProfileFields({
         maxLength={NICKNAME_MAX_LENGTH}
         autoComplete="off"
         errorMessage={fields.nicknameError}
+        helperMessage={fields.nicknameChecking ? NICKNAME_CHECKING_MESSAGE : undefined}
         onChange={(event) => fields.setNickname(event.target.value)}
         onCompositionStart={() => fields.setComposing(true)}
         onCompositionEnd={() => fields.setComposing(false)}

@@ -888,6 +888,8 @@ export interface components {
       imageUrl?: string;
       inviterNickname?: string;
       code: string;
+      /** @enum {string} */
+      characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
     };
     InvitationVerification: {
       card: components['schemas']['InvitationCard'];

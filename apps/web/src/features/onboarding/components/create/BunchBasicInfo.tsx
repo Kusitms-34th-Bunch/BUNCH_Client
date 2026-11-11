@@ -10,6 +10,7 @@ import {
   type CheckNickname,
 } from '@/shared/hooks/useNicknameAvailability';
 import {
+  BUNCH_NAME_CHECKING_MESSAGE,
   BUNCH_NAME_INVALID_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
   hasInvalidBunchNameChars,
@@ -81,6 +82,8 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
           errorMessage={
             invalid ? BUNCH_NAME_INVALID_MESSAGE : taken ? BUNCH_NAME_TAKEN_MESSAGE : undefined
           }
+          // 중복 확인이 도는 동안만 보이고, 문제가 없으면 사라지며 중복이면 오류 문구가 대신 보임(오류가 있으면 보이지 않음)
+          helperMessage={availability === 'checking' ? BUNCH_NAME_CHECKING_MESSAGE : undefined}
           onChange={(event) => setName(event.target.value)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}

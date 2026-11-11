@@ -19,6 +19,7 @@
 | 번치 홈 완성된 번들                  | `GET /bunches/{id}/published-bundles`                                                                                         | 서버 PR #62 미병합 계약, 발행 최신순 첫 쪽 50개                                                                                                                        |
 | 번치 전환 목록·접근 불가 안내        | `GET /members/me/bunches`, `PUT /bunches/{id}/last-used`, `DELETE /members/me/bunch-access-notices/{noticeId}`                | 전환하면 기본 번치(`members/me`)가 그 번치로 바뀜(실서버 동작 확인 필요). 가짜 서버는 두 번째 번치 「퇴근런클럽」과 접근 불가 안내 2건을 둠                            |
 | 온보딩 번치 만들기                   | `GET /bunches/name-availability`, `POST /bunches`, `PUT·DELETE /bunches/{id}/profile-image`, `POST /bunches/{id}/invitations` | 생성은 `Idempotency-Key` 필수(BFF가 헤더를 전달함), 사진은 시연용 이미지로 바뀌고 초대 링크는 번치마다 고정 주소                                                       |
+| 온보딩 초대 참여                     | `GET /invitations/{token}`(공개 조회, 초대 링크 진입 페이지), `POST /invitations/verify`, `POST /invitations/join`            | 참여는 `Idempotency-Key` 필수. 시연용 초대 코드 `MOCKJOIN`(여행가조, 참여하면 번치가 생김), 초대 발급이 준 `MOCK####`(그 번치), 그 밖은 `INVITE_001`                   |
 
 ### 샘플로 남긴 부분
 

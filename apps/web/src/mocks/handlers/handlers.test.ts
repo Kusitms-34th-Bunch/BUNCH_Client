@@ -154,3 +154,66 @@ describe('가짜 서버 번치 만들기', () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe('가짜 서버 초대 확인·참여', () => {
+  const verify = (invitation: string) =>
+    api().post('invitations/verify', { json: { invitation }, throwHttpErrors: false });
+  const join = (invitation: string, key: string | null) =>
+    api().post('invitations/join', {
+      json: { invitation },
+      throwHttpErrors: false,
+      ...(key ? { headers: { 'Idempotency-Key': key } } : {}),
+    });
+
+  it('시연용 초대는 링크 URL이든 코드든 카드와 AVAILABLE을 돌려준다', async () => {
+    for (const invitation of ['mockjoin', 'https://bunch.app/invite/MOCKJOIN']) {
+      const response = await verify(invitation);
+      const body = unwrapEnvelope<{ card: { name: string }; eligibility: string }>(
+        await response.json(),
+      );
+      expect(body.card.name).toBe('여행가조');
+      expect(body.eligibility).toBe('AVAILABLE');
+    }
+  });
+
+  it('없는 초대는 404 INVITE_001이고 이미 속한 번치의 초대는 ALREADY_MEMBER다', async () => {
+    expect((await verify('NOPE0000')).status).toBe(404);
+    const body = unwrapEnvelope<{ eligibility: string }>(await (await verify('MOCK0001')).json());
+    expect(body.eligibility).toBe('ALREADY_MEMBER');
+  });
+
+  it('참여하면 MEMBER로 등록되고 같은 멱등 키는 같은 번치를 돌려주며 다시 참여하면 ALREADY_MEMBER다', async () => {
+    const first = unwrapEnvelope<{ outcome: string; bunch: { id: number } }>(
+      await (await join('MOCKJOIN', 'k-1')).json(),
+    );
+    const replay = unwrapEnvelope<{ outcome: string; bunch: { id: number } }>(
+      await (await join('MOCKJOIN', 'k-1')).json(),
+    );
+    const again = unwrapEnvelope<{ outcome: string }>(await (await join('MOCKJOIN', 'k-2')).json());
+
+    expect(first.outcome).toBe('JOINED');
+    expect(replay.bunch.id).toBe(first.bunch.id);
+    expect(again.outcome).toBe('ALREADY_MEMBER');
+    expect(mockDb.get().memberships).toContainEqual(
+      expect.objectContaining({
+        bunchId: first.bunch.id,
+        memberId: MOCK_MY_MEMBER_ID,
+        role: 'MEMBER',
+      }),
+    );
+  });
+
+  it('멱등 키가 없으면 400, 같은 키에 다른 초대는 409다', async () => {
+    expect((await join('MOCKJOIN', null)).status).toBe(400);
+    await join('MOCKJOIN', 'k-3');
+    expect((await join('MOCK0001', 'k-3')).status).toBe(409);
+  });
+
+  it('공개 초대 조회는 로그인 없이 카드를 돌려주고, 없는 초대는 404 INVITE_001이다', async () => {
+    const card = unwrapEnvelope<{ name: string }>(await api().get('invitations/MOCKJOIN').json());
+    expect(card.name).toBe('여행가조');
+
+    const missing = await api().get('invitations/NOPE0000', { throwHttpErrors: false });
+    expect(missing.status).toBe(404);
+  });
+});

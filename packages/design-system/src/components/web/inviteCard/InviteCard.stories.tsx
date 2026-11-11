@@ -30,6 +30,15 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+/** 서버 카드의 소개가 비었을 때: 소개 줄을 그리지 않음 */
+export const NoDescription: Story = { args: { description: undefined } };
+
+/** 초대한 사람이 없을 때(나갔거나 탈퇴): From 줄을 그리지 않음 */
+export const NoSender: Story = { args: { senderName: undefined } };
+
+/** 다시 해도 안 되는 참여 실패 뒤: 「참여하기」 비활성 */
+export const JoinDisabled: Story = { args: { joinDisabled: true } };
+
 /** imageSrc가 없을 때: 이미지 없는 빈 원 */
 export const NoImage: Story = { args: { imageSrc: undefined } };
 
