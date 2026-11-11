@@ -5,13 +5,14 @@ export const MAX_GALLERY_EDGE = 2048;
 export const MAX_UPLOAD_EDGE = 2560;
 
 /**
- * 업로드용 JPEG의 목표 크기. 서버 상한이 문서마다 달라(보안 문서는 파일 6MB·요청 7MB, 업로드 API 명세는 30MiB)
- * 더 작은 쪽인 6MB보다 여유 있게 잡음. 백엔드가 확정하면 이 값을 맞춤
+ * 업로드용 JPEG의 목표 크기. 웹은 Vercel의 BFF(함수)를 거쳐 올리는데 함수 요청 본문은 약 4.5MB를 넘으면 거절되므로
+ * 여러 파트(JSON·파일)의 부가 크기까지 여유를 두고 4MiB로 잡음. 백엔드 상한도 문서마다 달라(파일 6MB·요청 7MB, 업로드 API 명세 30MiB)
+ * 더 작은 쪽인 이 값이 우선이고, 배포처 제한이 바뀌면 이 값을 맞춤
  */
-export const UPLOAD_TARGET_BYTES = 5.5 * 1024 * 1024;
+export const UPLOAD_TARGET_BYTES = 4 * 1024 * 1024;
 
 /** 압축 품질 후보. 먼저 0.8로 저장하고 목표 크기를 넘으면 더 높은 압축으로 다시 저장 */
-export const UPLOAD_QUALITIES = [0.8, 0.6, 0.45] as const;
+export const UPLOAD_QUALITIES = [0.8, 0.6, 0.45, 0.3] as const;
 
 /** base64 문자열이 나타내는 바이트 수(패딩 반영) */
 export function base64ByteLength(base64: string): number {

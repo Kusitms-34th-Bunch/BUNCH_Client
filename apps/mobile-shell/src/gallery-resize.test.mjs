@@ -33,11 +33,11 @@ test('base64 문자열의 바이트 수를 패딩까지 반영해 계산한다',
   assert.equal(base64ByteLength('QUJD'), 3);
 });
 
-test('압축 품질 후보는 점점 높은 압축으로 내려가고 목표 크기는 서버 상한(6MB)보다 작다', () => {
+test('압축 품질 후보는 점점 높은 압축으로 내려가고 목표 크기는 배포처 본문 제한(4.5MB)보다 작다', () => {
   assert.deepEqual(
     [...UPLOAD_QUALITIES],
     [...UPLOAD_QUALITIES].sort((a, b) => b - a),
   );
   assert.ok(UPLOAD_QUALITIES.every((quality) => quality > 0 && quality <= 1));
-  assert.ok(UPLOAD_TARGET_BYTES < 6 * 1024 * 1024);
+  assert.ok(UPLOAD_TARGET_BYTES < 4.5 * 1000 * 1000);
 });
