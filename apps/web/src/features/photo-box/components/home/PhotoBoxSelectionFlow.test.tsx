@@ -217,6 +217,84 @@ describe('저장', () => {
   });
 });
 
+describe('삭제 확인 창 문구(기능명세서 3.3.5)', () => {
+  const admin = { memberId: 'eunwoo', isAdmin: true };
+  const member = { memberId: 'eunwoo', isAdmin: false };
+  // id가 겹치지 않게 접두사를 바꿔 사진 묶음을 만듦
+  const group = (prefix: string, count: number, uploaderIds: string[]) =>
+    bulk(count, uploaderIds).map((photo, index) => ({
+      ...photo,
+      id: `${prefix}-${index}`,
+      uploadedAt: `2026-10-01T00:00:0${index}`,
+    }));
+
+  const IRREVERSIBLE = '삭제 이후에는 복구할 수 없어요.';
+  const cases: {
+    name: string;
+    viewer: typeof admin;
+    photos: PhotoBoxPhoto[];
+    title: string;
+    lines: string[];
+  }[] = [
+    {
+      name: '내가 올린 사진 한 장',
+      viewer: member,
+      photos: group('own', 1, ['eunwoo']),
+      title: '이 사진을 삭제할까요?',
+      lines: [IRREVERSIBLE],
+    },
+    {
+      name: '내가 올린 사진 여러 장',
+      viewer: member,
+      photos: group('own', 3, ['eunwoo']),
+      title: '선택한 사진 3장을 삭제할까요?',
+      lines: [IRREVERSIBLE],
+    },
+    {
+      name: '관리자가 다른 멤버가 올린 사진만',
+      viewer: admin,
+      photos: group('other', 2, ['gyeongjin']),
+      title: '다른 멤버가 업로드한 사진이에요.',
+      lines: [IRREVERSIBLE],
+    },
+    {
+      name: '관리자가 내 사진과 다른 멤버 사진을 함께',
+      viewer: admin,
+      photos: [...group('own', 1, ['eunwoo']), ...group('other', 1, ['gyeongjin'])],
+      title: '다른 멤버가 업로드한 사진이 포함되어 있어요.',
+      lines: [IRREVERSIBLE],
+    },
+    {
+      name: '함께 올린 사진만',
+      viewer: member,
+      photos: group('co', 2, ['eunwoo', 'gyeongjin']),
+      title: '내가 올린 사진을 삭제할까요?',
+      lines: ['사진은 그대로 유지되고, 업로더 목록에서 내 이름만 사라져요.'],
+    },
+    {
+      name: '혼자 올린 사진과 함께 올린 사진이 섞임',
+      viewer: member,
+      photos: [...group('own', 3, ['eunwoo']), ...group('co', 2, ['eunwoo', 'gyeongjin'])],
+      title: '선택한 사진 5장을 삭제할까요?',
+      lines: [IRREVERSIBLE, '다른 멤버도 올린 사진 2장은 사진함에 남아요.'],
+    },
+  ];
+
+  it.each(cases)('$name', async ({ viewer, photos, title, lines }) => {
+    const user = userEvent.setup();
+    renderScreen(ready(dataWith(photos, viewer)));
+    await startSelecting(user, photos.length);
+
+    await runMenu(user, '삭제');
+
+    const dialog = screen.getByRole('alertdialog');
+    expect(within(dialog).getByText(title)).toBeTruthy();
+    for (const line of lines) expect(within(dialog).getByText(line)).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: '삭제하기' })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: '취소' })).toBeTruthy();
+  });
+});
+
 describe('삭제 중 사진이 사라진 경우', () => {
   it('서버가 아무것도 지우지 않고 사라진 사진을 알리면 그 사진만 선택에서 빼고 선택 모드를 유지한다', async () => {
     const user = userEvent.setup();
@@ -309,7 +387,7 @@ describe('삭제', () => {
 
     await runMenu(user, '삭제');
     const dialog = screen.getByRole('alertdialog');
-    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.deleteConfirmTitle)).toBeTruthy();
+    expect(within(dialog).getByText('선택한 사진 2장을 삭제할까요?')).toBeTruthy();
     expect(within(dialog).getByText('삭제 이후에는 복구할 수 없어요.')).toBeTruthy();
     // 되돌릴 수 없는 동작이라 처음 포커스는 「취소」(overlay가 다음 렌더에 열어 초점이 늦게 옮겨짐)
     await waitFor(() =>

@@ -25,6 +25,7 @@ import { PhotoDragProvider } from '../../contexts/PhotoDragContext';
 import { usePhotoSelectionActions } from '../../contexts/PhotoSelectionContext';
 import { LONG_PRESS_MS } from '../../lib/dragSelect';
 import { MissingPhotosError } from '../../lib/missingPhotos';
+import { getDateConfirmKind } from '../../lib/photoActions';
 import {
   type SectionItems,
   canDragPhoto,
@@ -32,7 +33,6 @@ import {
   findSectionKey,
   isTapLikeDrag,
   moveItem,
-  needsDragConfirm,
   toSectionItems,
 } from '../../lib/photoDrag';
 import { DateChangeConfirmDialog } from '../PhotoSelectionDialogs';
@@ -206,12 +206,14 @@ export const PhotoDragArea = memo(function PhotoDragArea({
     }
     // 확인이 필요하면 놓은 자리에 둔 채 확인 창을 띄움
     const photo = photoById.get(photoId);
-    if (photo && needsDragConfirm(photo, viewer)) {
+    const confirmKind = photo ? getDateConfirmKind([photo], viewer) : undefined;
+    if (photo && confirmKind) {
       setMoveToConfirm(true);
       // 「취소」와 Esc만 onOpenChange로 오고(확인 버튼은 닫기 동작이 없음), 취소하면 놓은 자리를 걷고 원래 자리로 돌림
       openOverlay((rootProps, close) => (
         <DateChangeConfirmDialog
           {...rootProps}
+          kind={confirmKind}
           onOpenChange={(open) => {
             if (!open) reset();
             rootProps.onOpenChange(open);

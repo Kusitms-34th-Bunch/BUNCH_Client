@@ -2,6 +2,7 @@
 
 import { ConfirmDialog, Dialog } from '@app/design-system';
 import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { DateConfirmKind } from '../lib/photoActions';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 
 type BundleConfirmDialogProps = ScreenOverlayProps & {
@@ -22,8 +23,9 @@ export function BundleConfirmDialog(props: BundleConfirmDialogProps) {
 }
 
 type DeleteConfirmDialogProps = ScreenOverlayProps & {
-  /** 고른 사진 종류에 맞는 안내 문구 */
-  description: string;
+  /** 고른 사진 종류에 맞는 제목과 내용(내용은 한 줄씩 나눠 보여 줌) */
+  title: string;
+  lines: readonly string[];
   onConfirm: () => void;
 };
 
@@ -32,15 +34,22 @@ type DeleteConfirmDialogProps = ScreenOverlayProps & {
  * 되돌릴 수 없는 동작이라 최초 포커스는 「취소」(Dialog 기본)에 두고, 바깥 누름은 무시
  */
 export function DeleteConfirmDialog({
-  description,
+  title,
+  lines,
   onConfirm,
   ...rootProps
 }: DeleteConfirmDialogProps) {
   return (
     <Dialog.Root {...rootProps}>
       <Dialog.Content>
-        <Dialog.Title>{PHOTO_BOX_MESSAGES.deleteConfirmTitle}</Dialog.Title>
-        <Dialog.Description>{description}</Dialog.Description>
+        <Dialog.Title>{title}</Dialog.Title>
+        <Dialog.Description>
+          {lines.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
+        </Dialog.Description>
         <Dialog.Footer>
           <Dialog.Confirm variant="secondary" onClick={onConfirm}>
             삭제하기
@@ -53,22 +62,29 @@ export function DeleteConfirmDialog({
 }
 
 type DateChangeConfirmDialogProps = ScreenOverlayProps & {
+  /** 고른 사진 종류(다른 멤버 사진만 / 함께 올린 사진이나 내 사진이 섞임) */
+  kind: DateConfirmKind;
   onConfirm: () => void;
 };
 
 /**
- * 관리자가 다른 멤버 사진이나 함께 올린 사진의 날짜를 바꿀 때 거치는 확인 창(날짜 바꾸기 저장·끌어 놓기 공통)
- * 문구와 시안은 기획 확정 전이라 임시이고, 삭제 확인 창과 같은 구조(「취소」 최초 포커스)를 따름
+ * 관리자가 다른 멤버 사진이나 함께 올린 사진의 날짜를 바꿀 때 거치는 확인 창(날짜 바꾸기 저장·끌어 놓기 공통, 기능명세서 3.4.1)
+ * 「변경하기」/「취소」. 삭제 확인 창과 같은 구조(「취소」 최초 포커스)를 따름
  */
-export function DateChangeConfirmDialog({ onConfirm, ...rootProps }: DateChangeConfirmDialogProps) {
+export function DateChangeConfirmDialog({
+  kind,
+  onConfirm,
+  ...rootProps
+}: DateChangeConfirmDialogProps) {
+  const { title, description } = PHOTO_BOX_MESSAGES.dateConfirm(kind);
   return (
     <Dialog.Root {...rootProps}>
       <Dialog.Content>
-        <Dialog.Title>{PHOTO_BOX_MESSAGES.dateConfirmTitle}</Dialog.Title>
-        <Dialog.Description>{PHOTO_BOX_MESSAGES.dateConfirmDescription}</Dialog.Description>
+        <Dialog.Title>{title}</Dialog.Title>
+        <Dialog.Description>{description}</Dialog.Description>
         <Dialog.Footer>
           <Dialog.Confirm variant="secondary" onClick={onConfirm}>
-            바꾸기
+            변경하기
           </Dialog.Confirm>
           <Dialog.Cancel variant="primary">취소</Dialog.Cancel>
         </Dialog.Footer>

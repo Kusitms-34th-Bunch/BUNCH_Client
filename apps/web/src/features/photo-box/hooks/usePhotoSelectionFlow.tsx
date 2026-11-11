@@ -14,8 +14,10 @@ import { MissingPhotosError } from '../lib/missingPhotos';
 import {
   MAX_BUNDLE_PHOTOS,
   canDeletePhotos,
+  countCoUploaded,
+  getDateConfirmKind,
   getDeleteKind,
-  needsDateChangeConfirm,
+  type DateConfirmKind,
   type DeleteKind,
 } from '../lib/photoActions';
 import { pruneSelection, toggleSelection, type PhotoSelection } from '../lib/selection';
@@ -154,11 +156,16 @@ export function usePhotoSelectionFlow({
         ));
       } else notify(PHOTO_BOX_MESSAGES.dateForbidden);
     } else if (canDeletePhotos(selectedPhotos, data.viewer)) {
-      const description = PHOTO_BOX_MESSAGES.deleteConfirmDescription(deleteKind ?? 'own');
+      const { title, lines } = PHOTO_BOX_MESSAGES.deleteConfirm(
+        deleteKind ?? 'own',
+        selectedPhotos.length,
+        countCoUploaded(selectedPhotos),
+      );
       openOverlay((rootProps, close) => (
         <DeleteConfirmDialog
           {...rootProps}
-          description={description}
+          title={title}
+          lines={lines}
           onConfirm={() => {
             close();
             void confirmDelete();
@@ -246,12 +253,13 @@ export function usePhotoSelectionFlow({
   };
 
   // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸)
-  const askDateConfirm = () =>
+  const askDateConfirm = (kind: DateConfirmKind) =>
     new Promise<boolean>((resolve) => {
       openOverlay(
         (rootProps, close) => (
           <DateChangeConfirmDialog
             {...rootProps}
+            kind={kind}
             onConfirm={() => {
               resolve(true);
               close();
@@ -264,7 +272,8 @@ export function usePhotoSelectionFlow({
 
   const checkDate = usePreservedCallback(async () => {
     if (pending || !data || !isSelectionCurrent()) return false;
-    return !needsDateChangeConfirm(selectedPhotos, data.viewer) || (await askDateConfirm());
+    const kind = getDateConfirmKind(selectedPhotos, data.viewer);
+    return kind === undefined || (await askDateConfirm(kind));
   });
 
   // 확인 창을 거치는 사이 목록이 바뀔 수 있어 저장할 때의 최신 값으로 다시 확인

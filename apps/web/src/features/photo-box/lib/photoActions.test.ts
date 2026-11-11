@@ -4,6 +4,8 @@ import {
   applyDelete,
   applyTakenDate,
   canDeletePhotos,
+  countCoUploaded,
+  getDateConfirmKind,
   getDeleteKind,
   needsDateChangeConfirm,
 } from './photoActions';
@@ -45,9 +47,44 @@ describe('getDeleteKind', () => {
     expect(getDeleteKind([photo('1', ['me']), photo('2', ['me', 'you'])], member)).toBe('mixed');
   });
 
-  it('내가 올리지 않은 사진이 하나라도 있으면 others', () => {
-    expect(getDeleteKind([photo('1', ['you'])], admin)).toBe('others');
-    expect(getDeleteKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('others');
+  it('관리자가 다른 멤버가 올린 사진만 고르면 others', () => {
+    expect(getDeleteKind([photo('1', ['you']), photo('2', ['you'])], admin)).toBe('others');
+    // 다른 멤버끼리 함께 올린 사진이어도 내가 올리지 않았으면 others
+    expect(getDeleteKind([photo('1', ['you', 'they'])], admin)).toBe('others');
+  });
+
+  it('관리자가 내 사진과 다른 멤버 사진을 함께 고르면 includes-others', () => {
+    expect(getDeleteKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('includes-others');
+  });
+});
+
+describe('countCoUploaded', () => {
+  it('함께 올린 사진 수를 센다', () => {
+    expect(
+      countCoUploaded([photo('1', ['me']), photo('2', ['me', 'you']), photo('3', ['you', 'they'])]),
+    ).toBe(2);
+  });
+});
+
+describe('getDateConfirmKind', () => {
+  const admin: PhotoBoxViewer = { memberId: 'me', isAdmin: true };
+  const member: PhotoBoxViewer = { memberId: 'me', isAdmin: false };
+
+  it('관리자가 다른 멤버가 올린 사진만 고르면 others', () => {
+    expect(getDateConfirmKind([photo('1', ['you']), photo('2', ['they'])], admin)).toBe('others');
+  });
+
+  it('관리자가 내 사진과 다른 멤버 사진을 섞거나 함께 올린 사진이 있으면 includes-others', () => {
+    expect(getDateConfirmKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe(
+      'includes-others',
+    );
+    expect(getDateConfirmKind([photo('1', ['me', 'you'])], admin)).toBe('includes-others');
+    expect(getDateConfirmKind([photo('1', ['you', 'they'])], admin)).toBe('includes-others');
+  });
+
+  it('나 혼자 올린 사진만이거나 일반 멤버면 확인 창이 없다', () => {
+    expect(getDateConfirmKind([photo('1', ['me']), photo('2', ['me'])], admin)).toBeUndefined();
+    expect(getDateConfirmKind([photo('1', ['me', 'you'])], member)).toBeUndefined();
   });
 });
 
