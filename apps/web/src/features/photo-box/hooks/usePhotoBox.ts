@@ -20,6 +20,11 @@ type UsePhotoBoxResult = {
   retry: () => void;
   /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 그 쪽부터 다시 받음 */
   loadMore: () => void;
+  /**
+   * 이어 받기가 실패한 시각(없으면 0). 실패할 때마다 값이 바뀌어, 재시도가 빨라 렌더가 묶여도 실패를 한 번씩 알아챌 수 있음
+   * (`more`만 보면 error→loading→error가 한 렌더로 묶여 재실패가 보이지 않을 수 있음)
+   */
+  moreErrorAt: number;
   /** 이미 받은 목록은 있는데 최신 목록을 다시 받지 못한 상태(삭제 뒤 재조회 실패 등), 화면이 안내함 */
   stale: boolean;
 };
@@ -152,6 +157,9 @@ export function usePhotoBox(
     retryPhotos(datedQuery);
     retryPhotos(undatedQuery);
   };
+  const moreErrorAt = moreFailed
+    ? Math.max(datedQuery.errorUpdatedAt, undatedQuery.errorUpdatedAt)
+    : 0;
   const loadMore = () => {
     retryPhotos(datedQuery);
     retryPhotos(undatedQuery);
@@ -180,5 +188,5 @@ export function usePhotoBox(
     },
   };
 
-  return { state, actions, retry, loadMore, stale };
+  return { state, actions, retry, loadMore, moreErrorAt, stale };
 }

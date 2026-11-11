@@ -20,7 +20,9 @@ type PhotoBoxProps = {
  * 고른 사진으로 초안 생성 API를 불러 만든 초안으로 이동하고, 만드는 동안 중복 요청을 막음
  */
 export function PhotoBox({ preview }: PhotoBoxProps) {
-  const { state, actions, retry, loadMore, stale } = usePhotoBox(preview, { progressive: true });
+  const { state, actions, retry, loadMore, moreErrorAt, stale } = usePhotoBox(preview, {
+    progressive: true,
+  });
   const { create: createBundle, creating } = useCreateBundle();
   // 목록을 다시 받지 못하면(삭제한 사진이 남아 보일 수 있음) 한 번 알리고, 다시 받은 뒤의 다음 실패 때 또 알림
   useEffect(() => {
@@ -28,10 +30,10 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
   }, [stale]);
 
   // 이어 받다 실패하면(재시도 뒤 다시 실패해도) 토스트로 알림: 필터로 목록이 짧아지면 스크롤 재시도가 안 되고 빈 상태 문구도 숨겨 화면에 단서가 없음
-  const moreFailed = state.kind === 'ready' && state.data.more === 'error';
+  // 실패 시각을 기준으로 삼아 재시도가 빨라도 실패마다 한 번씩 알림
   useEffect(() => {
-    if (moreFailed) toast(PHOTO_BOX_MESSAGES.listMoreFailed);
-  }, [moreFailed]);
+    if (moreErrorAt) toast(PHOTO_BOX_MESSAGES.listMoreFailed);
+  }, [moreErrorAt]);
 
   return (
     <>

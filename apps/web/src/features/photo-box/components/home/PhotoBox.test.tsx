@@ -31,7 +31,6 @@ vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testi
 
 beforeEach(() => {
   vi.clearAllMocks();
-  toastSpy.mockClear();
 });
 
 describe('PhotoBox 번들 만들기 연결', () => {
@@ -105,9 +104,28 @@ describe('PhotoBox 이어 받기 실패 알림', () => {
 
     // 첫 쪽은 보이고
     expect(await screen.findByRole('button', { name: '선택' })).toBeInTheDocument();
-    // 다음 쪽 실패는 토스트로 알림(화면은 오류 화면으로 바뀌지 않음)
+    // 다음 쪽 실패는 토스트로 한 번 알림(화면은 오류 화면으로 바뀌지 않고, 목록 재조회 실패 안내와는 겹치지 않음)
     await waitFor(() => expect(toastSpy).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.listMoreFailed));
+    expect(toastSpy).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByRole('button', { name: '선택' })).toBeInTheDocument();
+  });
+
+  it('다시 시도해도 또 실패하면 토스트를 다시 띄운다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor');
+        if (cursor === null) return ok({ totalCount: 2, photos: [photo(1)], nextCursor: 'p2' });
+        return fail(500, 'COMMON_500');
+      }),
+    );
+    const user = userEvent.setup();
+    render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledTimes(1));
+
+    // 키보드·스크린 리더용 재시도 버튼(재시도 중에는 로딩이 되었다가 다시 실패하면 실패 표시로 돌아옴)
+    await user.click(await screen.findByRole('button', { name: '사진 더 불러오기' }));
+
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledTimes(2));
   });
 });
