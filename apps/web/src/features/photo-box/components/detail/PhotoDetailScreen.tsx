@@ -18,6 +18,7 @@ import type {
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoViewer } from '../../hooks/usePhotoViewer';
 import { useSaveBlockedNotice } from '../../hooks/useSaveBlockedNotice';
+import { MissingPhotosError } from '../../lib/missingPhotos';
 import { canDeletePhotos, getDeleteKind } from '../../lib/photoActions';
 import { formatDetailDate, getTakenDate } from '../../lib/photoDetail';
 import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
@@ -119,8 +120,14 @@ export function PhotoDetailScreen({
       setPending(undefined);
       notify(PHOTO_BOX_MESSAGES.dateChanged);
       return true;
-    } catch {
+    } catch (error) {
       setPending(undefined);
+      // 보던 사진이 그사이 지워졌으면 사진함으로 돌아가 안내(시트도 함께 닫힘)
+      if (error instanceof MissingPhotosError) {
+        toastAfterNavigation(PHOTO_BOX_MESSAGES.deletedPhoto);
+        onLeave();
+        return true;
+      }
       notify(PHOTO_BOX_MESSAGES.dateChangeFailed);
       return false;
     }
@@ -136,8 +143,14 @@ export function PhotoDetailScreen({
         toastAfterNavigation(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
         onLeave();
       }
-    } catch {
+    } catch (error) {
       setPending(undefined);
+      // 보던 사진이 그사이 지워졌으면 사진함으로 돌아가 안내
+      if (error instanceof MissingPhotosError) {
+        toastAfterNavigation(PHOTO_BOX_MESSAGES.deletedPhoto);
+        onLeave();
+        return;
+      }
       notify(PHOTO_BOX_MESSAGES.deleteFailed);
     }
   };
@@ -232,8 +245,10 @@ export function PhotoDetailScreen({
     >
       <h1 className="sr-only">사진 상세</h1>
       <p role="status" className="sr-only">
-        {pending === 'save'
-          ? PHOTO_BOX_MESSAGES.saving
+        {pending === 'save' ? PHOTO_BOX_MESSAGES.saving : null}
+        {pending === 'delete' ? PHOTO_BOX_MESSAGES.deleting : null}
+        {pending === 'save' || pending === 'delete'
+          ? null
           : PHOTO_BOX_MESSAGES.detailPosition(activeIndex + 1, photos.length)}
       </p>
       {/* 저장·삭제 중에는 사진 영역을 inert로 막음(더보기가 포커스를 잃지 않도록 헤더는 열어 둠) */}
@@ -243,7 +258,7 @@ export function PhotoDetailScreen({
         members={members}
         inert={pending !== undefined}
       />
-      {pending === 'save' ? <PageLoading /> : null}
+      {pending === 'save' || pending === 'delete' ? <PageLoading /> : null}
     </PageShell>
   );
 }

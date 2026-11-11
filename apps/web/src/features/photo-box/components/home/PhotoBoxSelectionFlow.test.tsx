@@ -11,6 +11,7 @@ import type {
 } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { photoBoxFixture } from '../../fixtures/photoBox.fixture';
+import { MissingPhotosError } from '../../lib/missingPhotos';
 import { MAX_BUNDLE_PHOTOS } from '../../lib/photoActions';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
 
@@ -216,6 +217,44 @@ describe('저장', () => {
   });
 });
 
+describe('삭제 중 사진이 사라진 경우', () => {
+  it('서버가 아무것도 지우지 않고 사라진 사진을 알리면 그 사진만 선택에서 빼고 선택 모드를 유지한다', async () => {
+    const user = userEvent.setup();
+    deletePhotos.mockRejectedValue(new MissingPhotosError(['bulk-1']));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 3);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1)));
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed);
+    // 3장 중 사라진 1장을 뺀 2장이 선택으로 남음
+    expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
+    expect(photoButtons()[0]!.textContent).toContain('1번째 선택');
+    expect(photoButtons()[1]!.getAttribute('aria-pressed')).toBe('false');
+    expect(photoButtons()[2]!.textContent).toContain('2번째 선택');
+  });
+
+  it('서버가 사라진 사진을 알려 주지 않으면 일반 삭제 실패로 다루고 선택을 그대로 둔다', async () => {
+    const user = userEvent.setup();
+    deletePhotos.mockRejectedValue(new MissingPhotosError([]));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed));
+    expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
+  });
+});
+
 describe('번들 만들기', () => {
   it('1~20장이면 확인 창을 띄우고 「예」를 누르면 고른 순서를 넘긴다', async () => {
     const user = userEvent.setup();
@@ -391,6 +430,25 @@ describe('저장·삭제 중 안전장치', () => {
     expect(screen.getByRole('radio', { name: '전체' })).toBeTruthy();
     await user.click(photoButtons()[0]!);
     expect(photoButtons()[0]!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('삭제하는 동안 화면 전체 로딩과 안내를 보이고 끝나면 걷는다', async () => {
+    const user = userEvent.setup();
+    let finish!: (_result: { removedCount: number }) => void;
+    deletePhotos.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    expect(screen.getByTestId('lottie')).toBeTruthy();
+    expect(pageStatus().textContent).toBe(PHOTO_BOX_MESSAGES.deleting);
+
+    finish({ removedCount: 2 });
+    await waitFor(() => expect(screen.queryByTestId('lottie')).toBeNull());
   });
 
   it('삭제 요청이 실패하면 오류 토스트를 띄우고 선택을 그대로 둔다', async () => {

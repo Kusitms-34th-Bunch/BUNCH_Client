@@ -5,7 +5,8 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { removePhotos } from './photos';
+import { MissingPhotosError } from '../lib/missingPhotos';
+import { changePhotoDates, removePhotos } from './photos';
 
 const bunchId = String(MOCK_BUNCH_ID);
 const photoIdsInDb = () => mockDb.get().photos.map((photo) => photo.photoId);
@@ -85,14 +86,13 @@ describe('removePhotos', () => {
     expect(photoIdsInDb()).not.toContain(MOCK_PHOTO_IDS.S2);
   });
 
-  // 오류 코드와 전부 거부 여부는 서버 확인 전이라 가짜 서버 기준
-  it('이미 사라진 사진이 섞이면 RESOURCE_001이고 아무것도 지우지 않는다', async () => {
+  it('이미 사라진 사진이 섞이면 409 PHOTO_004로 거절하고 사라진 사진 id를 알리며 아무것도 지우지 않는다', async () => {
     const before = photoIdsInDb();
 
-    await expect(removePhotos(bunchId, [myPhoto, '999'])).rejects.toMatchObject({
-      status: 404,
-      code: 'RESOURCE_001',
-    });
+    const error = await removePhotos(bunchId, [myPhoto, '999', '998']).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(MissingPhotosError);
+    expect((error as MissingPhotosError).missingIds).toEqual(['999', '998']);
     expect(photoIdsInDb()).toEqual(before);
   });
 
@@ -114,6 +114,70 @@ describe('removePhotos', () => {
 
     await expect(removePhotos(bunchId, ['1'])).rejects.toMatchObject({
       code: INVALID_RESPONSE_CODE,
+    });
+  });
+});
+
+describe('changePhotoDates', () => {
+  const findPhoto = (id: number) => mockDb.get().photos.find((photo) => photo.photoId === id);
+
+  it('고른 사진의 촬영 날짜만 바꾸고 시각은 그대로 둔다', async () => {
+    const before = findPhoto(MOCK_PHOTO_IDS.S4);
+
+    await expect(changePhotoDates(bunchId, [myPhoto], new Date(2026, 9, 5))).resolves.toEqual({
+      updatedCount: 1,
+    });
+
+    expect(findPhoto(MOCK_PHOTO_IDS.S4)).toMatchObject({
+      capturedDate: '2026-10-05',
+      capturedTime: before?.capturedTime,
+    });
+  });
+
+  it('기기 시간대의 그날을 yyyy-MM-dd로 만들어 photoIds와 capturedDate만 본문에 담는다', async () => {
+    let body: unknown;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos/date', async ({ request }) => {
+        body = await request.clone().json();
+        return undefined;
+      }),
+    );
+
+    await changePhotoDates(bunchId, [myPhoto], new Date(2026, 0, 5));
+
+    expect(body).toEqual({ photoIds: [MOCK_PHOTO_IDS.S4], capturedDate: '2026-01-05' });
+  });
+
+  it('고른 사진이 그사이 지워졌으면 409 PHOTO_004로 거절하고 아무것도 바꾸지 않는다', async () => {
+    const before = findPhoto(MOCK_PHOTO_IDS.S4);
+
+    const error = await changePhotoDates(bunchId, [myPhoto, '999'], new Date(2026, 9, 5)).catch(
+      (e: unknown) => e,
+    );
+
+    expect(error).toBeInstanceOf(MissingPhotosError);
+    expect((error as MissingPhotosError).missingIds).toEqual(['999']);
+    expect(findPhoto(MOCK_PHOTO_IDS.S4)).toEqual(before);
+  });
+
+  it('일반 멤버가 다른 멤버만 올린 사진을 섞으면 403 AUTH_002로 거절하고 아무것도 바꾸지 않는다', async () => {
+    const before = findPhoto(MOCK_PHOTO_IDS.S4);
+
+    await expect(
+      changePhotoDates(bunchId, [myPhoto, otherPhoto], new Date(2026, 9, 5)),
+    ).rejects.toMatchObject({ status: 403, code: 'AUTH_002' });
+    expect(findPhoto(MOCK_PHOTO_IDS.S4)).toEqual(before);
+  });
+
+  it('오늘(Asia/Seoul) 이후 날짜는 400 COMMON_001이다', async () => {
+    await expect(
+      changePhotoDates(bunchId, [myPhoto], new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)),
+    ).rejects.toMatchObject({ status: 400, code: 'COMMON_001' });
+  });
+
+  it('화면 id가 서버 숫자로 바뀌지 않으면 요청 없이 거절한다', async () => {
+    await expect(changePhotoDates(bunchId, ['abc'], new Date(2026, 9, 5))).rejects.toMatchObject({
+      category: 'validation',
     });
   });
 });
