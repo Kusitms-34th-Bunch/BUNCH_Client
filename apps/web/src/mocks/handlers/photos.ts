@@ -96,6 +96,61 @@ const isPhotoIdList = (value: unknown): value is number[] =>
   value.length > 0 &&
   value.every((id) => typeof id === 'number' && Number.isSafeInteger(id) && id > 0);
 
+const MAX_PHOTOS_IN_BOX = 1000;
+const MAX_PHOTOS_PER_BATCH = 50;
+// 같은 uploadBatchId로 받은 요청 수(서버는 한 번에 50장까지만 받음)
+const batchCounts = new Map<string, number>();
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME = /^\d{2}:\d{2}:\d{2}$/;
+
+type UploadRequest = {
+  uploadBatchId: string;
+  capturedDate: string | null;
+  capturedTime: string | null;
+};
+
+// request 파트(JSON)를 검사함. 올바르지 않으면 undefined(서버는 COMMON_001): 묶음 ID는 UUID, 시각은 날짜 없이 보낼 수 없음
+const parseUploadRequest = async (part: FormDataEntryValue | null | undefined) => {
+  if (part === null || part === undefined) return undefined;
+  // 서버(Spring @RequestPart)는 이 파트가 application/json이어야 읽으므로 문자열이나 다른 type은 거절
+  if (typeof part === 'string' || part.type !== 'application/json') return undefined;
+  const text = await part.text();
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (typeof value !== 'object' || value === null) return undefined;
+  const { uploadBatchId, capturedDate, capturedTime } = value as Record<string, unknown>;
+  if (typeof uploadBatchId !== 'string' || !UUID.test(uploadBatchId)) return undefined;
+  if (
+    capturedDate !== undefined &&
+    (typeof capturedDate !== 'string' || !DATE.test(capturedDate))
+  ) {
+    return undefined;
+  }
+  if (
+    capturedTime !== undefined &&
+    (typeof capturedTime !== 'string' || !TIME.test(capturedTime))
+  ) {
+    return undefined;
+  }
+  if (capturedTime !== undefined && capturedDate === undefined) return undefined;
+  return {
+    uploadBatchId,
+    capturedDate: capturedDate ?? null,
+    capturedTime: capturedTime ?? null,
+  } satisfies UploadRequest;
+};
+
+const sha256Hex = async (file: Blob) => {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+};
+
 export const photoHandlers = [
   // GET /api/v1/bunches/{bunchId}/photos
   // 날짜를 아는 사진을 최신순으로(memberId로 올린 사람 필터, cursor 페이지)
@@ -128,6 +183,78 @@ export const photoHandlers = [
       })),
       nextCursor: result.nextCursor,
     });
+  }),
+
+  // POST /api/v1/bunches/{bunchId}/photos
+  // 사진 1장 업로드(multipart: photo 파일 + request JSON 파트). 같은 번치에 같은 파일(바이트의 SHA-256)이 있으면 합침:
+  // 내가 이미 올렸으면 ALREADY_UPLOADED, 다른 멤버가 올렸으면 MERGED(올린 사람에 내가 추가), 없으면 STORED
+  // 한도(가짜 서버의 가정이며 서버 확인 전): 사진함 1,000장은 새 사진만(합치기는 허용), 같은 묶음 50장. 하루 100장(PHOTO_002)은 가짜 서버에서 흉내 내지 않음
+  http.post('/api/bunches/:bunchId/photos', async ({ params, request }) => {
+    const bunchId = toWireId(params.bunchId);
+    if (bunchId === undefined) return fail(400, 'COMMON_001');
+
+    const { bunches, memberships, photos } = mockDb.get();
+    if (!bunches.some((bunch) => bunch.id === bunchId)) return fail(404, 'RESOURCE_001');
+    if (
+      !memberships.some(
+        (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
+      )
+    ) {
+      return fail(403, 'AUTH_002');
+    }
+
+    const form = await request.formData().catch(() => null);
+    const file = form?.get('photo');
+    const upload = await parseUploadRequest(form?.get('request'));
+    // 서버는 JPEG만 받음
+    if (!(file instanceof Blob) || file.size === 0 || file.type !== 'image/jpeg' || !upload) {
+      return fail(400, 'COMMON_001');
+    }
+
+    const batchCount = batchCounts.get(upload.uploadBatchId) ?? 0;
+    if (batchCount >= MAX_PHOTOS_PER_BATCH) return fail(409, 'PHOTO_003');
+
+    const contentHash = await sha256Hex(file);
+    const bunchPhotos = photos.filter((photo) => photo.bunchId === bunchId);
+    const same = bunchPhotos.find((photo) => photo.contentHash === contentHash);
+    if (!same && bunchPhotos.length >= MAX_PHOTOS_IN_BOX) return fail(409, 'PHOTO_001');
+    batchCounts.set(upload.uploadBatchId, batchCount + 1);
+
+    if (same) {
+      if (same.uploaderIds.includes(MOCK_MY_MEMBER_ID)) {
+        return ok({ photoId: same.photoId, result: 'ALREADY_UPLOADED' });
+      }
+      mockDb.update((current) => ({
+        ...current,
+        photos: current.photos.map((photo) =>
+          photo.photoId === same.photoId
+            ? { ...photo, uploaderIds: [...photo.uploaderIds, MOCK_MY_MEMBER_ID] }
+            : photo,
+        ),
+      }));
+      return ok({ photoId: same.photoId, result: 'MERGED' });
+    }
+
+    // 올린 파일은 보관하지 않고 시작 데이터의 사진 이미지로 대신 보임
+    const sample = bunchPhotos[0] ?? photos[0];
+    const photoId = Math.max(0, ...photos.map((photo) => photo.photoId)) + 1;
+    mockDb.update((current) => ({
+      ...current,
+      photos: [
+        ...current.photos,
+        {
+          photoId,
+          bunchId,
+          uploaderIds: [MOCK_MY_MEMBER_ID],
+          capturedDate: upload.capturedDate,
+          capturedTime: upload.capturedTime,
+          thumbnailUrl: sample?.thumbnailUrl ?? '',
+          imageUrl: sample?.imageUrl ?? '',
+          contentHash,
+        },
+      ],
+    }));
+    return ok({ photoId, result: 'STORED' });
   }),
 
   // POST /api/v1/bunches/{bunchId}/photos/delete

@@ -16,6 +16,15 @@ export const photoDeleteResponseSchema = z.object({
 
 export type PhotoDeleteResult = z.infer<typeof photoDeleteResponseSchema>;
 
+/**
+ * `POST /api/v1/bunches/{bunchId}/photos` 응답. `STORED`는 새로 저장, `MERGED`는 다른 멤버가 올린 같은 사진에 올린 사람으로 추가,
+ * `ALREADY_UPLOADED`는 내가 이미 올린 같은 사진(변경 없음). 세 경우 모두 사진 id를 돌려줌
+ */
+export const photoUploadResponseSchema = z.object({
+  photoId: z.number().int().positive(),
+  result: z.enum(['STORED', 'MERGED', 'ALREADY_UPLOADED']),
+}) satisfies z.ZodType<ApiContract<components['schemas']['PhotoUploadResponse']>>;
+
 // 서버 확인 전: Swagger는 시각을 객체(LocalTime), 명세 문서는 'HH:mm:ss' 문자열로 적어 둘 다 받음
 const capturedTimeSchema = z.union([
   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?$/),
