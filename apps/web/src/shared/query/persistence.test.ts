@@ -1,7 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearPersistedQueryStorage,
   queryPersister,
   shouldPersistQuery,
   useClearPersistedQueriesWhen,
@@ -117,5 +118,40 @@ describe('저장본 주인 확인', () => {
     rerender({ id: 'B' });
     expect(result.current).toBe(true);
     expect(client.getQueryData(['persisted'])).toBeUndefined();
+  });
+
+  it('같은 회원으로 확인된 뒤 다른 회원의 저장본을 다시 복원하면 지운다', async () => {
+    save('A');
+    await queryPersister.restoreClient();
+    renderOwner(new QueryClient(), 'A');
+
+    // 다른 탭이 B의 저장본을 쓰고 이 화면이 QueryProvider를 다시 붙여 복원함
+    save('B');
+    await queryPersister.restoreClient();
+    const client = new QueryClient();
+    seed(client);
+    renderOwner(client, 'A');
+
+    expect(client.getQueryData(['persisted'])).toBeUndefined();
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('저장본을 지운 뒤에는 늦게 오는 이전 회원의 쓰기가 다시 만들지 않는다', async () => {
+    vi.useFakeTimers();
+    try {
+      renderOwner(new QueryClient(), 'A');
+      const pending = queryPersister.persistClient({
+        timestamp: Date.now(),
+        buster: '',
+        clientState: { queries: [], mutations: [] },
+      });
+      // 로그아웃: 쓰기가 throttle로 미뤄진 사이에 지움
+      clearPersistedQueryStorage();
+      await vi.advanceTimersByTimeAsync(2000);
+      await pending;
+      expect(localStorage.getItem(KEY)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

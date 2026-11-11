@@ -23,7 +23,11 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         persister: queryPersister,
         maxAge: PERSIST_MAX_AGE,
         buster: PERSIST_BUSTER,
-        dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+        // 일시 중지된 mutation(오프라인 중 댓글 등 입력값)은 저장하지 않음
+        dehydrateOptions: {
+          shouldDehydrateQuery: shouldPersistQuery,
+          shouldDehydrateMutation: () => false,
+        },
       }}
     >
       {children}

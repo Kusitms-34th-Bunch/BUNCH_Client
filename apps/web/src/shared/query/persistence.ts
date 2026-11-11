@@ -40,8 +40,19 @@ const readStorage = () => {
 const entryKey = () =>
   `${STORAGE_PREFIX}${typeof window === 'undefined' ? '' : (window.location.pathname.split('/')[1] ?? '')}`;
 
+// 저장본을 지운 뒤에는 회원이 다시 확인될 때까지 쓰지 않음(throttle로 늦게 오는 이전 회원의 쓰기 포함)
+let writesBlocked = false;
+const baseStorage = readStorage();
+const guardedStorage = baseStorage && {
+  getItem: (key: string) => baseStorage.getItem(key),
+  setItem: (key: string, value: string) => {
+    if (!writesBlocked) baseStorage.setItem(key, value);
+  },
+  removeItem: (key: string) => baseStorage.removeItem(key),
+};
+
 const storagePersister = createAsyncStoragePersister({
-  storage: readStorage(),
+  storage: guardedStorage,
   key: entryKey(),
   throttleTime: 1000,
 });
@@ -87,6 +98,7 @@ export const shouldPersistQuery = (query: Query) =>
 
 /** 모든 화면의 저장본을 지움(로그아웃·탈퇴 직후, 비로그인 확인) */
 export const clearPersistedQueryStorage = () => {
+  writesBlocked = true;
   const storage = readStorage();
   if (!storage) return;
   for (const key of Object.keys(storage)) {
@@ -121,11 +133,13 @@ export function usePersistedOwnerReady(memberId: string | undefined) {
   const queryClient = useQueryClient();
   const owner = useSyncExternalStore(subscribeOwner, getContextOwner, () => null);
   useLayoutEffect(() => {
-    if (memberId === undefined || contextOwner === memberId) return;
+    // 같은 회원이어도 그 뒤 다시 복원한 저장본(QueryProvider를 다시 붙임)은 주인을 다시 확인
+    if (memberId === undefined || (contextOwner === memberId && restoredOwner === memberId)) return;
     const otherRestored = restoredOwner !== undefined && restoredOwner !== memberId;
-    const switched = contextOwner !== null;
+    const switched = contextOwner !== null && contextOwner !== memberId;
     if (otherRestored || switched) clearPersisted(queryClient);
     restoredOwner = memberId;
+    writesBlocked = false;
     setContextOwner(memberId);
   }, [memberId, queryClient]);
   return memberId !== undefined && owner === memberId;
