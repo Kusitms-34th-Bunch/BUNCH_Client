@@ -13,9 +13,11 @@ import type {
   PhotoBoxMember,
   PhotoBoxPhoto,
   PhotoBoxViewer,
+  SaveResult,
 } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoViewer } from '../../hooks/usePhotoViewer';
+import { useSaveBlockedNotice } from '../../hooks/useSaveBlockedNotice';
 import { canDeletePhotos, getDeleteKind } from '../../lib/photoActions';
 import { formatDetailDate, getTakenDate } from '../../lib/photoDetail';
 import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
@@ -63,6 +65,7 @@ export function PhotoDetailScreen({
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
   const openOverlay = useScreenOverlay();
+  const notifySaveBlocked = useSaveBlockedNotice();
   // 시트·확인 창이 떠 있는 동안 방향키로 넘기지 않음
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
@@ -88,13 +91,23 @@ export function PhotoDetailScreen({
     if (!activePhoto) return;
     setPending('save');
     let failed = false;
+    let blocked: SaveResult['blocked'];
     try {
       const result = await actions.savePhotos([activePhoto.id]);
       failed = result.failedIds.length > 0;
+      blocked = result.blocked;
     } catch {
       failed = true;
     }
     setPending(undefined);
+    // 저장을 시도하지 못했으면(권한 거부 등) 실패 토스트 대신 이유를 안내
+    if (blocked) {
+      notifySaveBlocked(blocked, {
+        onOpened: () => setOverlayOpen(true),
+        onClosed: () => setOverlayOpen(false),
+      });
+      return;
+    }
     notify(failed ? PHOTO_BOX_MESSAGES.saveFailedAll : PHOTO_BOX_MESSAGES.saveDone);
   };
 

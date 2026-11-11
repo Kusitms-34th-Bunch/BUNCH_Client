@@ -4,12 +4,11 @@ import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { PhotoBoxPreview } from '../lib/preview';
 import type { PhotoBoxActions, PhotoBoxData, PhotoBoxPhoto, PhotoBoxState } from '../lib/types';
+import { saveToAlbum } from '../api/albumSave';
 import { applyTakenDate } from '../lib/photoActions';
 import { datedPhotosQueryOptions, undatedPhotosQueryOptions } from '../queries/photoLists';
 import { useDeletePhotosMutation } from '../queries/photos';
 
-// 목 저장이 끝나기까지의 시간(화면 전체 로딩이 보이도록)
-const MOCK_SAVE_DELAY_MS = 800;
 // 목 날짜 변경이 끝나기까지의 시간(시트의 「저장 중」 상태가 보이도록)
 const MOCK_CHANGE_DATE_DELAY_MS = 500;
 
@@ -77,7 +76,7 @@ const retryPhotos = (query: PhotoPagesQuery) => {
 
 /**
  * 사진함 화면 상태와 동작의 호출 지점: 내 프로필(기본 번치)·멤버·사진 목록 query를 화면 상태로 합치고 삭제는 mutation으로 보냄
- * 앨범 저장은 기기 동작이라 목, 날짜 변경은 서버 반영 전이라 이 hook 인스턴스(화면) 안에서만 목록에 덮어 보임(새로고침하거나 사진함·상세 사이를 이동하면 원래 날짜)
+ * 앨범 저장은 상세 API로 받은 원본 주소를 쉘에 넘겨 기기에 저장하고, 날짜 변경은 서버 반영 전이라 이 hook 인스턴스(화면) 안에서만 목록에 덮어 보임(새로고침하거나 사진함·상세 사이를 이동하면 원래 날짜)
  * `preview`는 상태 미리보기용으로 API 연결이 끝나면 함께 없앰
  */
 export function usePhotoBox(
@@ -174,10 +173,9 @@ export function usePhotoBox(
   }, [preview, failed, profile, data]);
 
   const actions: PhotoBoxActions = {
-    savePhotos: async (ids) => {
-      await new Promise((resolve) => setTimeout(resolve, MOCK_SAVE_DELAY_MS));
-      return { savedIds: ids, failedIds: [] };
-    },
+    // 번치를 모르면(화면이 준비되기 전) 저장할 사진 주소도 받을 수 없어 전부 실패로 돌려줌
+    savePhotos: (ids) =>
+      bunchId ? saveToAlbum(bunchId, ids) : Promise.resolve({ savedIds: [], failedIds: ids }),
     changePhotoDates: async (ids, date) => {
       await new Promise((resolve) => setTimeout(resolve, MOCK_CHANGE_DATE_DELAY_MS));
       setDateChanges((current) => [...current, { ids: new Set(ids), date }]);

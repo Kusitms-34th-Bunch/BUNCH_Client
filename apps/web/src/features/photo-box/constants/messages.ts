@@ -48,6 +48,11 @@ export const PHOTO_BOX_MESSAGES = {
   cameraPermissionDescription:
     '카메라 접근 권한이 거부되어 있어요. 설정에서 직접 허용할 수 있어요.',
   openSettings: '설정 열기',
+  // 앨범 저장 권한 안내 문구는 기획 문서의 제안 문구(확정 전)
+  albumPermissionTitle: '사진 접근 권한이 필요해요',
+  albumPermissionDescription: '사진을 저장하려면 설정에서 사진 접근을 허용해 주세요.',
+  moveToSettings: '설정으로 이동',
+  saveUnavailable: '사진 저장은 앱에서 할 수 있어요.',
   detailPosition: (index: number, total: number) => `${total}장 중 ${index}번째 사진`,
   previousPhoto: '이전 사진',
   zoomIn: '사진 확대',

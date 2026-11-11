@@ -2,7 +2,7 @@ import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import type { PhotoBoxActions, PhotoBoxData } from '../lib/types';
+import type { PhotoBoxActions, PhotoBoxData, SaveResult } from '../lib/types';
 import {
   BundleConfirmDialog,
   DateChangeConfirmDialog,
@@ -18,6 +18,7 @@ import {
   type DeleteKind,
 } from '../lib/photoActions';
 import { pruneSelection, toggleSelection, type PhotoSelection } from '../lib/selection';
+import { useSaveBlockedNotice } from './useSaveBlockedNotice';
 
 export type PhotoMenuAction = 'save' | 'bundle' | 'date' | 'delete';
 
@@ -50,6 +51,7 @@ export function usePhotoSelectionFlow({
   const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
   const noData = !data;
   const openOverlay = useScreenOverlay();
+  const notifySaveBlocked = useSaveBlockedNotice();
   // 화면 상태가 바뀌어(목록을 못 받음) 창이 의미를 잃으면 모두 닫음
   useEffect(() => {
     if (noData) openOverlay.closeAll();
@@ -97,15 +99,23 @@ export function usePhotoSelectionFlow({
     const ids = selection;
     setPending('save');
     let failedIds: readonly string[];
+    let blocked: SaveResult['blocked'];
     try {
       const result = await actions.savePhotos(ids);
       // 응답에 선택에 없는 id나 중복이 섞여도 고른 사진 기준으로만 집계
       failedIds = ids.filter((id) => result.failedIds.includes(id));
+      blocked = result.blocked;
     } catch {
       failedIds = ids;
     }
     setPending(undefined);
     if (session !== sessionRef.current) return;
+
+    // 저장을 시도하지 못했으면(권한 거부 등) 실패 토스트 대신 이유를 안내하고 선택은 유지
+    if (blocked) {
+      notifySaveBlocked(blocked);
+      return;
+    }
 
     if (failedIds.length === 0) {
       notify(PHOTO_BOX_MESSAGES.saveDone);
