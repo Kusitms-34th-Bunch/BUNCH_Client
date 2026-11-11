@@ -119,11 +119,9 @@ describe('가짜 서버 번치 만들기', () => {
     expect(again.id).toBe(first.id);
     const { memberships, bunches } = mockDb.get();
     expect(bunches.filter((bunch) => bunch.name === '새번치')).toHaveLength(1);
-    expect(memberships).toContainEqual({
-      bunchId: first.id,
-      memberId: MOCK_MY_MEMBER_ID,
-      role: 'OWNER',
-    });
+    expect(memberships).toContainEqual(
+      expect.objectContaining({ bunchId: first.id, memberId: MOCK_MY_MEMBER_ID, role: 'OWNER' }),
+    );
   });
 
   it('멱등 키가 없으면 400, 같은 키에 다른 입력은 409 REQUEST_001이다', async () => {

@@ -110,7 +110,13 @@ export const bunchOnboardingHandlers = [
           ],
           memberships: [
             ...state.memberships,
-            { bunchId: id, memberId: MOCK_MY_MEMBER_ID, role: 'OWNER' },
+            // 만든 번치가 가장 최근 번치라 기본 번치가 됨
+            {
+              bunchId: id,
+              memberId: MOCK_MY_MEMBER_ID,
+              role: 'OWNER',
+              lastUsedAt: new Date().toISOString(),
+            },
           ],
         }));
         return { status: 200, body: { id } };

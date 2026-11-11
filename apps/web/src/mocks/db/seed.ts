@@ -18,11 +18,16 @@ const member = (memberId: number, nickname: string): MockMember => ({
   gender: null,
 });
 
-const membership = (memberId: number, role: MockMembership['role']): MockMembership => ({
-  bunchId: MOCK_BUNCH_ID,
-  memberId,
-  role,
-});
+// 시연 번치(여행쥬아)가 가장 최근에 쓴 번치라 기본 번치가 됨
+const membership = (
+  memberId: number,
+  role: MockMembership['role'],
+  bunchId = MOCK_BUNCH_ID,
+  lastUsedAt = '2026-10-18T09:00:00.000Z',
+): MockMembership => ({ bunchId, memberId, role, lastUsedAt });
+
+/** 번치 전환 시연용 두 번째 번치(Figma 5402:105276 「퇴근런클럽」) */
+export const MOCK_SECOND_BUNCH_ID = 2;
 
 // 날짜 그룹: S는 10월 18일, P는 10월 17일(지정 날짜 4장), O는 10월 3일
 const PHOTO_SEEDS = [
@@ -151,6 +156,16 @@ export const createSeed = (): MockDbState => ({
       followerCount: 3,
       followingCount: 2,
     },
+    {
+      id: MOCK_SECOND_BUNCH_ID,
+      name: '퇴근런클럽',
+      characterType: 'TYPE_2',
+      imageUrl: null,
+      introduction: '퇴근하고 한강 달리는 모임',
+      isPrivate: false,
+      followerCount: 0,
+      followingCount: 0,
+    },
   ],
   memberships: [
     membership(admin, 'OWNER'),
@@ -158,9 +173,30 @@ export const createSeed = (): MockDbState => ({
     membership(memberB, 'MEMBER'),
     membership(memberC, 'MEMBER'),
     membership(me, 'MEMBER'),
+    membership(admin, 'OWNER', MOCK_SECOND_BUNCH_ID, '2026-10-01T09:00:00.000Z'),
+    membership(me, 'MEMBER', MOCK_SECOND_BUNCH_ID, '2026-10-01T09:00:00.000Z'),
   ],
   photos: photos(),
   // UT 시작 데이터(상태 A): 초안은 없고 번치 홈에는 기존 발행 번들 2개가 있음
   bundles: publishedBundles(),
   bundleLeases: [],
+  // 번치 전환 목록의 접근 불가 줄(Figma 5402:105276 안내 창의 번치들)
+  bunchAccessNotices: [
+    {
+      id: 1,
+      bunchId: 90,
+      name: '홍대역',
+      characterType: 'TYPE_3',
+      reason: 'DELETED',
+      occurredAt: '2026-10-15T09:00:00.000Z',
+    },
+    {
+      id: 2,
+      bunchId: 91,
+      name: '큐시즘 맛집',
+      characterType: 'TYPE_4',
+      reason: 'REMOVED',
+      occurredAt: '2026-10-16T09:00:00.000Z',
+    },
+  ],
 });
