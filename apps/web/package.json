@@ -54,6 +54,7 @@
     "eslint": "catalog:",
     "happy-dom": "catalog:",
     "msw": "^3.0.3",
+    "react-devtools-cdt-mcp": "0.1.0",
     "tailwindcss": "^4.3.3",
     "typescript": "catalog:",
     "vite": "catalog:",

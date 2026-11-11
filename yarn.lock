@@ -194,6 +194,7 @@ __metadata:
     overlay-kit: "npm:^1.9.0"
     posthog-js: "npm:^1.446.3"
     react: "catalog:"
+    react-devtools-cdt-mcp: "npm:0.1.0"
     react-dom: "catalog:"
     react-simplikit: "catalog:"
     server-only: "npm:^0.0.1"
@@ -9116,6 +9117,13 @@ __metadata:
   version: 1.2.3
   resolution: "queue-microtask@npm:1.2.3"
   checksum: 10c0/900a93d3cdae3acd7d16f642c29a642aea32c2026446151f0778c62ac089d4b8e6c986811076e1ae180a694cedf077d453a11b58ff0a865629a4f82ab558e102
+  languageName: node
+  linkType: hard
+
+"react-devtools-cdt-mcp@npm:0.1.0":
+  version: 0.1.0
+  resolution: "react-devtools-cdt-mcp@npm:0.1.0"
+  checksum: 10c0/f6a9cc838bbc0ce0e21a51d1bfc46cd79f0d172db720eb4ddb062f7e798c299df7c0b853802993e06908f6f4e4ce02d0302e5941c142f2fa8234339281099146
   languageName: node
   linkType: hard
 
