@@ -1,6 +1,9 @@
 export const MY_MESSAGES = {
   title: 'MY',
   profileEdit: '프로필 수정',
+  // 닉네임을 아직 받지 못했을 때 프로필 행 링크의 낭독 이름
+  profileEditOwn: '내 프로필 수정',
+  profileLoading: '프로필을 불러오는 중이에요',
   sections: { notifications: '알림', terms: '약관 및 정책', support: '고객지원' },
   menu: {
     notifications: '알림 설정',
@@ -15,6 +18,8 @@ export const MY_MESSAGES = {
     title: "'카카오톡'에서 열기",
     description: '오픈채팅 상담 채널로 이동해요.',
     confirm: '열기',
+    // 기능명세서 7.5.1 예외 처리
+    failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   },
   logout: {
     title: '로그아웃할까요?',
@@ -73,6 +78,8 @@ export const MY_MESSAGES = {
   },
   // 개인 프로필 수정(화면 설계서 MY(1) 7·8번)
   profileEditTitle: '개인 프로필 수정',
+  // 기능명세서 7.1.1·7.2.1 예외 처리(프로필 불러오기 실패)
+  profileLoadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   profileEditSubmit: '프로필 수정하기',
   profileEdited: '프로필을 수정했어요.',
   // 바꾼 내용이 있는데 뒤로 가기(기능명세서 7.2.1 상세 7)

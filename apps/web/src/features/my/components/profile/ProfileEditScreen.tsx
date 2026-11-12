@@ -2,6 +2,8 @@
 
 import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { useState } from 'react';
+import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
+import { checkNicknameAvailability } from '@/shared/api/nickname';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
@@ -31,11 +33,19 @@ const isSameValues = (a: ProfileValues, b: ProfileValues) =>
  * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임과 프로필 사진(출생연도·성별은 없음, Figma 개인 프로필 편집)
  * 바뀐 값이 있고 모두 유효할 때만 수정하기 활성, 누르면 MY로 돌아가 토스트(저장 API 연결 전이라 이동만)
  */
-export function ProfileEditScreen({ profile }: { profile: MyProfile }) {
+export function ProfileEditScreen({
+  profile,
+  checkNickname = checkNicknameAvailability,
+}: {
+  profile: MyProfile;
+  /** 닉네임 중복 확인 호출(테스트에서 바꿔 끼움) */
+  checkNickname?: CheckNickname | undefined;
+}) {
   const backOr = useBackOr();
   useScrollFocusedIntoView();
   const initial = toProfileValues(profile);
-  const fields = useProfileFields(initial);
+  // 지금 내 닉네임과 같으면 중복 확인을 건너뜀(기능명세서 7.2.5 로직 1)
+  const fields = useProfileFields(initial, checkNickname, { currentNickname: profile.nickname });
   // 바꾼 사진은 미리보기만(서버 반영은 프로필 수정 API 연결 시)
   const [photo, setPhoto] = useState(profile.imageSrc);
   // 저장 중 중복 탭 방지(화면 설계서 7번)
