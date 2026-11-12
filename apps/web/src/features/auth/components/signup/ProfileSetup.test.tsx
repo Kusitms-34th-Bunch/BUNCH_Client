@@ -32,10 +32,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: vi.fn(),
 }));
 
-// 가입 저장·중복 확인 API는 호출 인자만 확인
+// 가입 저장 API는 호출 인자만 확인
 const registration = vi.hoisted(() => ({
   registerMember: vi.fn<(_input: unknown) => Promise<unknown>>(),
-  checkNicknameAvailability: vi.fn<(_nickname: string) => Promise<boolean>>(),
 }));
 vi.mock('../../api/registration', () => registration);
 

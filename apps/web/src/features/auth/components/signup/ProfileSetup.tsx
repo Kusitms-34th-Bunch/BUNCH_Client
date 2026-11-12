@@ -5,6 +5,7 @@ import { Button, toast } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
 import { useRef, useState } from 'react';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
+import { checkNicknameAvailability } from '@/shared/api/nickname';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
@@ -12,7 +13,6 @@ import { EMPTY_PROFILE_VALUES, useProfileFields } from '@/shared/hooks/useProfil
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import { normalizeNickname } from '@/shared/lib/nickname';
-import { checkNicknameAvailability } from '../../api/registration';
 import { useTermsAgreement } from '../../contexts/termsAgreementContext';
 import { useRegisterMutation } from '../../queries/signup';
 import { SignupFrame } from './SignupFrame';
