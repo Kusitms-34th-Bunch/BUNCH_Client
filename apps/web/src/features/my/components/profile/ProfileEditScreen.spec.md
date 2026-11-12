@@ -14,7 +14,7 @@
 - 지금 값을 채운 닉네임(필수) 입력과 프로필 사진. 출생연도·성별은 편집 화면에 없다(Figma 개인 프로필 편집 5878:89724·5878:89746·5878:89917, 2026-11-10). 닉네임 입력 칸과 검증 규칙은 가입 프로필과 같은 `src/shared/components/profile/ProfileFields`(`showDemographics={false}`)·`useProfileFields`를 쓴다.
 - 프로필 사진: 가입과 같은 `ProfilePhotoField`(선택지 → 원형 조정 → 미리보기, `shared/components/profile/ProfilePhotoField.spec.md`). 사진이 지금 값과 달라지면(기본 이미지로 되돌리기 포함) 변경으로 본다.
 - 바뀐 값이 있는데 뒤로 가면 「저장하지 않고 나갈까요?」 / 「변경한 내용이 반영되지 않아요.」 / 나가기·취소 확인 창(기능명세서 7.2.1 상세 7). 「취소」는 창만 닫고 입력을 둔다. 바뀐 값이 없으면 바로 나간다.
-- 내 정보(`GET /members/me`)는 `ProfileEditRoute`가 `useMyProfile`로 받아 지금 값으로 채운다. 받을 때까지 `PageLoading`을 보이고, 받지 못하면 오류 토스트 뒤 MY로 돌아간다(기능명세서 7.2.1 예외). 들어올 때마다 다시 불러온다.
+- 내 정보(`GET /members/me`)는 `ProfileEditRoute`가 `useMyProfile`로 받아 지금 값으로 채운다. 받을 때까지 `PageLoading`을 보이고, 받지 못하면 MY로 돌아가고, 오류 토스트는 이동을 기다렸다가 도착한 MY에서 보인다(`toastAfterNavigation`, 기능명세서 7.2.1 예외). 들어올 때마다 다시 불러온다.
 - 닉네임 중복 확인(`GET /members/nickname-availability`, `shared/api/nickname.ts`): 입력을 멈추고 0.5초 뒤 확인하고, 지금 내 닉네임과 같은 값(앞뒤 공백 제외)은 확인하지 않는다(7.2.5 로직 1). 이미 쓰는 닉네임이면 오류 문구와 수정하기 비활성, 확인 실패면 오류 토스트와 비활성이다.
 - 「프로필 수정하기」: 바뀐 값이 있고 모두 유효할 때만 활성. 누르면 MY로 돌아가고 토스트 「프로필을 수정했어요.」를 띄운다. 누른 뒤에는 다시 누를 수 없다.
 

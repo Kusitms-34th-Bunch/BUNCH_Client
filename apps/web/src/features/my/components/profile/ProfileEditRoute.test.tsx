@@ -9,6 +9,9 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { ProfileEditRoute } from './ProfileEditRoute';
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 const replace = vi.fn();
 const back = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, back }) }));
@@ -60,13 +63,17 @@ describe('ProfileEditRoute', () => {
     ).toBe(true);
   });
 
-  it('프로필을 불러오지 못하면 오류 토스트를 띄우고 마이페이지로 돌아간다', async () => {
+  it('프로필을 불러오지 못하면 마이페이지로 돌아가고, 오류 토스트는 이동 뒤에 보이게 예약한다', async () => {
     server.use(http.get('/api/members/me', () => fail(500, 'COMMON_500')));
 
     render(<ProfileEditRoute />, { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
-    expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
+    expect(toastAfterNavigation).toHaveBeenCalledWith(
+      '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    );
+    // 이동 중에 바로 뜨는 토스트는 없음
+    expect(toast).not.toHaveBeenCalled();
     expect(screen.queryByRole('textbox', { name: /닉네임/ })).toBeNull();
   });
 });
