@@ -93,8 +93,13 @@ export const MY_MESSAGES = {
     title: '알림 설정',
     push: { title: '앱 푸시 알림', description: '푸시를 꺼도 앱 알림 목록에는 그대로 쌓여요.' },
     typesLabel: '받을 알림',
-    // 받을 알림을 모두 꺼 앱 푸시가 꺼졌을 때 낭독(Figma에 보이는 문구 없음)
-    pushAutoOff: '받을 알림을 모두 꺼서 앱 푸시 알림도 꺼졌어요.',
+    // 기능명세서 7.3.1·7.3.2 예외 처리(설정값 불러오기·저장 실패)
+    loadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    saveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    // 스크린 리더 안내(Figma에 보이는 문구 없음): 설정값을 받는 동안, 기기 알림 권한이 바뀌었을 때
+    loading: '알림 설정을 불러오는 중이에요',
+    deviceOffAnnounce: '기기 알림이 꺼져 있어 알림 설정을 바꿀 수 없어요',
+    deviceOnAnnounce: '기기 알림이 켜져서 알림 설정을 바꿀 수 있어요',
     types: {
       bundle: {
         title: '번들 소식',

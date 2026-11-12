@@ -3,6 +3,6 @@
 
 export { AdminTransferScreen } from './withdrawal/AdminTransferScreen';
 export { MyRoute } from './home/MyRoute';
-export { NotificationSettingsScreen } from './notifications/NotificationSettingsScreen';
+export { NotificationSettingsRoute } from './notifications/NotificationSettingsRoute';
 export { ProfileEditRoute } from './profile/ProfileEditRoute';
 export { WithdrawalScreen } from './withdrawal/WithdrawalScreen';

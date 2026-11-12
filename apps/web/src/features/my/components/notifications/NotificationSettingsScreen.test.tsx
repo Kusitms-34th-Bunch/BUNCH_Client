@@ -1,13 +1,17 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { notificationSettingsFixture } from '../../fixtures/notificationSettings.fixture';
+import type { NotificationSettings } from '../../lib/types';
 import { NotificationSettingsScreen } from './NotificationSettingsScreen';
 
 const backOr = vi.fn();
 vi.mock('@/shared/hooks/useBackOr', () => ({ useBackOr: () => backOr }));
 
 const TYPE_TITLES = ['번들 소식', '멤버 및 권한 소식', '팔로우', '좋아요 및 댓글'];
+const ALL_ON: NotificationSettings = {
+  push: true,
+  types: { bundle: true, member: true, follow: true, reaction: true },
+};
 
 const toggle = (name: string) => screen.getByRole<HTMLInputElement>('switch', { name });
 const typeToggles = () =>
@@ -15,19 +19,23 @@ const typeToggles = () =>
     'switch',
   );
 
-const renderScreen = (props: Partial<Parameters<typeof NotificationSettingsScreen>[0]> = {}) =>
-  render(
-    <NotificationSettingsScreen
-      settings={notificationSettingsFixture}
-      devicePermission="granted"
-      {...props}
-    />,
-  );
+const onChangePush = vi.fn();
+const onChangeType = vi.fn();
+
+const props = (overrides: Partial<Parameters<typeof NotificationSettingsScreen>[0]> = {}) => ({
+  settings: ALL_ON,
+  devicePermission: 'granted' as const,
+  onChangePush,
+  onChangeType,
+  ...overrides,
+});
+const renderScreen = (overrides: Partial<Parameters<typeof NotificationSettingsScreen>[0]> = {}) =>
+  render(<NotificationSettingsScreen {...props(overrides)} />);
 
 beforeEach(() => vi.clearAllMocks());
 
 describe('NotificationSettingsScreen', () => {
-  it('앱 푸시 전체와 받을 알림 네 종류를 지금 값으로 보여 준다', () => {
+  it('앱 푸시 전체와 받을 알림 네 종류를 받은 값으로 보여 준다', () => {
     renderScreen({
       settings: {
         push: true,
@@ -40,44 +48,49 @@ describe('NotificationSettingsScreen', () => {
     for (const title of TYPE_TITLES) expect(toggle(title)).toBeTruthy();
   });
 
-  it('종류별 토글은 그 종류만 바꾸고 다른 종류와 전체 토글은 그대로 둔다', async () => {
+  it('종류별 토글을 누르면 그 종류와 바꿀 값만 알린다', async () => {
     renderScreen();
 
     await userEvent.click(toggle('팔로우'));
 
-    expect(toggle('팔로우').checked).toBe(false);
-    expect(typeToggles().filter((input) => input.checked)).toHaveLength(3);
-    expect(toggle('앱 푸시 알림').checked).toBe(true);
+    expect(onChangeType).toHaveBeenCalledWith('follow', false);
+    expect(onChangeType).toHaveBeenCalledTimes(1);
+    expect(onChangePush).not.toHaveBeenCalled();
   });
 
-  it('받을 알림을 모두 끄면 앱 푸시 알림도 꺼진다', async () => {
+  it('앱 푸시 전체 토글을 누르면 바꿀 값을 알린다', async () => {
     renderScreen();
 
-    for (const title of TYPE_TITLES.slice(0, -1)) await userEvent.click(toggle(title));
-    expect(toggle('앱 푸시 알림').checked).toBe(true);
-
-    await userEvent.click(toggle(TYPE_TITLES.at(-1) ?? ''));
-    expect(toggle('앱 푸시 알림').checked).toBe(false);
-    expect(toggle('앱 푸시 알림')).toHaveFocus();
-    expect(screen.getByRole('status')).toHaveTextContent('앱 푸시 알림도 꺼졌어요');
-    expect(typeToggles().every((input) => !input.checked)).toBe(true);
-
-    // 앱 푸시를 다시 켜도 종류는 모두 꺼진 채
     await userEvent.click(toggle('앱 푸시 알림'));
+
+    expect(onChangePush).toHaveBeenCalledWith(false);
+    expect(onChangeType).not.toHaveBeenCalled();
+  });
+
+  it('받을 알림이 모두 꺼져 있어도 앱 푸시 알림은 켜진 채로 두고 종류 토글도 누를 수 있다', () => {
+    renderScreen({
+      settings: {
+        push: true,
+        types: { bundle: false, member: false, follow: false, reaction: false },
+      },
+    });
+
     expect(toggle('앱 푸시 알림').checked).toBe(true);
     expect(typeToggles().every((input) => !input.checked && !input.disabled)).toBe(true);
+    // 자동으로 꺼졌다는 안내 낭독도 없음
+    expect(screen.queryByRole('status')).toBeNull();
   });
 
-  it('전체를 끄면 종류별 값은 유지한 채 막고, 다시 켜면 그 값으로 돌아온다', async () => {
-    renderScreen();
-    await userEvent.click(toggle('멤버 및 권한 소식'));
+  it('전체가 꺼져 있으면 종류별 값은 그대로 보이고 누를 수 없다', () => {
+    renderScreen({
+      settings: {
+        push: false,
+        types: { bundle: true, member: false, follow: true, reaction: true },
+      },
+    });
 
-    await userEvent.click(toggle('앱 푸시 알림'));
+    expect(toggle('앱 푸시 알림').checked).toBe(false);
     expect(typeToggles().every((input) => input.disabled)).toBe(true);
-    expect(typeToggles().map((input) => input.checked)).toEqual([true, false, true, true]);
-
-    await userEvent.click(toggle('앱 푸시 알림'));
-    expect(typeToggles().every((input) => !input.disabled)).toBe(true);
     expect(typeToggles().map((input) => input.checked)).toEqual([true, false, true, true]);
   });
 
@@ -102,9 +115,7 @@ describe('NotificationSettingsScreen', () => {
 
     rerender(
       <NotificationSettingsScreen
-        settings={notificationSettingsFixture}
-        devicePermission="denied"
-        onOpenDeviceSettings={onOpenDeviceSettings}
+        {...props({ devicePermission: 'denied', onOpenDeviceSettings })}
       />,
     );
     await userEvent.click(screen.getByRole('button', { name: '설정으로 이동' }));
@@ -112,26 +123,19 @@ describe('NotificationSettingsScreen', () => {
     expect(onOpenDeviceSettings).toHaveBeenCalledTimes(1);
   });
 
-  it('기기 권한이 꺼졌다 다시 켜지면 배너만 사라지고 바꾼 값은 그대로다', async () => {
-    const { rerender } = renderScreen();
-    await userEvent.click(toggle('팔로우'));
+  it('기기 권한이 꺼졌다 다시 켜지면 배너만 사라지고 받은 값은 그대로다', () => {
+    const settings: NotificationSettings = {
+      push: true,
+      types: { bundle: true, member: true, follow: false, reaction: true },
+    };
+    const { rerender } = renderScreen({ settings });
     const values = typeToggles().map((input) => input.checked);
 
-    rerender(
-      <NotificationSettingsScreen
-        settings={notificationSettingsFixture}
-        devicePermission="denied"
-      />,
-    );
+    rerender(<NotificationSettingsScreen {...props({ settings, devicePermission: 'denied' })} />);
     expect(typeToggles().every((input) => input.disabled)).toBe(true);
     expect(typeToggles().map((input) => input.checked)).toEqual(values);
 
-    rerender(
-      <NotificationSettingsScreen
-        settings={notificationSettingsFixture}
-        devicePermission="granted"
-      />,
-    );
+    rerender(<NotificationSettingsScreen {...props({ settings, devicePermission: 'granted' })} />);
     expect(screen.queryByText('알림 설정이 꺼져 있어요.')).toBeNull();
     expect(typeToggles().every((input) => !input.disabled)).toBe(true);
     expect(typeToggles().map((input) => input.checked)).toEqual(values);
