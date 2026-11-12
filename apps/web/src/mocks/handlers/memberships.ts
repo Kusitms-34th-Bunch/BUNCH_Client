@@ -5,6 +5,7 @@ import type { MemberRole, MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
+import { runIdempotent } from '../lib/idempotency';
 import { readJson } from './bundles';
 
 // 멤버 관리(Swagger 기준). 가짜 서버는 소속 ID를 회원 ID로 대신함(번치 홈의 myMembership과 같음)
@@ -177,30 +178,53 @@ export const membershipHandlers = [
 
   // POST /api/v1/bunches/{bunchId}/owner-transfer: 메인 관리자 넘기기(나는 일반 멤버), 멱등 키 필수
   http.post('/api/bunches/:bunchId/owner-transfer', async ({ params, request }) => {
-    if (!request.headers.get(IDEMPOTENCY_KEY_HEADER)) return fail(400, 'COMMON_001');
+    const key = request.headers.get(IDEMPOTENCY_KEY_HEADER);
+    if (!key) return fail(400, 'COMMON_001');
     const found = context(params.bunchId);
     if ('error' in found) return found.error;
     const body = ((await readJson(request)) ?? {}) as Body;
-    const target = targetOf(found.bunchId, body.targetMembershipId);
-    if (!target) return fail(404, 'RESOURCE_001');
-    const rejected = check(found.bunchId, body);
-    if (rejected) return rejected;
-    if (
-      !actionsOf(found.mine.role, target.role, target.memberId === MOCK_MY_MEMBER_ID)
-        .canTransferOwner
-    ) {
-      return fail(403, 'AUTH_002');
-    }
-    const version = commit(found.bunchId, (state) => ({
-      ...state,
-      memberships: state.memberships.map((item) =>
-        item === target
-          ? { ...item, role: 'OWNER' }
-          : item.bunchId === found.bunchId && item.memberId === MOCK_MY_MEMBER_ID
-            ? { ...item, role: 'MEMBER' }
-            : item,
-      ),
-    }));
-    return ok(mutationResult(found.bunchId, version, [target.memberId, MOCK_MY_MEMBER_ID]));
+    // 같은 키·본문의 재전송(첫 응답 유실)은 버전 검사 전에 처음 응답을 돌려줌
+    const outcome = runIdempotent(
+      `${MOCK_MY_MEMBER_ID}:owner-transfer:${found.bunchId}`,
+      key,
+      JSON.stringify(body),
+      () => {
+        const target = targetOf(found.bunchId, body.targetMembershipId);
+        if (!target) return { status: 404, body: { code: 'RESOURCE_001' } };
+        if (body.actorMembershipId !== MOCK_MY_MEMBER_ID)
+          return { status: 403, body: { code: 'AUTH_002' } };
+        if (body.expectedMembershipVersion !== versionOf(mockDb.get(), found.bunchId)) {
+          return { status: 409, body: { code: 'MOCK_MEMBERSHIP_VERSION' } };
+        }
+        const mine = mockDb
+          .get()
+          .memberships.find((m) => m.bunchId === found.bunchId && m.memberId === MOCK_MY_MEMBER_ID);
+        if (
+          !mine ||
+          !actionsOf(mine.role, target.role, target.memberId === MOCK_MY_MEMBER_ID).canTransferOwner
+        ) {
+          return { status: 403, body: { code: 'AUTH_002' } };
+        }
+        const version = commit(found.bunchId, (state) => ({
+          ...state,
+          memberships: state.memberships.map((item) =>
+            item === target
+              ? { ...item, role: 'OWNER' }
+              : item.bunchId === found.bunchId && item.memberId === MOCK_MY_MEMBER_ID
+                ? { ...item, role: 'MEMBER' }
+                : item,
+          ),
+        }));
+        return {
+          status: 200,
+          body: mutationResult(found.bunchId, version, [target.memberId, MOCK_MY_MEMBER_ID]),
+        };
+      },
+    );
+    if (outcome.kind === 'conflict') return fail(409, 'REQUEST_001');
+    const stored = outcome.response;
+    return stored.status === 200
+      ? ok(stored.body as ReturnType<typeof mutationResult>)
+      : fail(stored.status, (stored.body as { code: string }).code);
   }),
 ];
