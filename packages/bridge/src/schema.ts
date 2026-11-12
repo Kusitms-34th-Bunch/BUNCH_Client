@@ -165,6 +165,33 @@ export type PermissionKind = z.infer<typeof permissionKindSchema>;
 export const permissionStatusSchema = z.enum(['granted', 'denied', 'undetermined']);
 export type PermissionStatus = z.infer<typeof permissionStatusSchema>;
 
+/**
+ * 푸시 기기 등록 정보(서버 `PUT /members/me/push-devices/{installationId}` 계약과 같은 규칙)
+ * 서버 계약이 APNs 기준이라 iOS 쉘만 만듦: 토큰은 16진수 짝수 길이 2~4096자, 환경은 `SANDBOX`·`PRODUCTION`
+ * 토큰은 기기를 가리키는 값이라 웹은 서버로 보내기만 하고 저장·로그·오류 메시지에 넣지 않음
+ */
+export const pushDeviceTokenSchema = z
+  .string()
+  .min(2)
+  .max(4096)
+  .regex(/^(?:[0-9a-fA-F]{2})+$/);
+export const pushEnvironmentSchema = z.enum(['SANDBOX', 'PRODUCTION']);
+/** OS 알림 권한 상태(서버 `authorizationStatus`). 거부여도 등록하며 서버가 푸시를 보내지 않음 */
+export const pushAuthorizationStatusSchema = z.enum([
+  'NOT_DETERMINED',
+  'DENIED',
+  'AUTHORIZED',
+  'PROVISIONAL',
+]);
+export const pushDeviceRegistrationSchema = z.object({
+  /** 설치별 UUID. 쉘이 처음 만들어 저장하고 계정이 바뀌어도 같음 */
+  installationId: z.uuid(),
+  deviceToken: pushDeviceTokenSchema,
+  environment: pushEnvironmentSchema,
+  authorizationStatus: pushAuthorizationStatusSchema,
+});
+export type PushDeviceRegistration = z.infer<typeof pushDeviceRegistrationSchema>;
+
 /** 쉘이 네이티브 SDK로 로그인시키는 소셜 서비스 */
 export const socialProviderSchema = z.enum(['kakao', 'google', 'apple']);
 export type SocialProvider = z.infer<typeof socialProviderSchema>;
