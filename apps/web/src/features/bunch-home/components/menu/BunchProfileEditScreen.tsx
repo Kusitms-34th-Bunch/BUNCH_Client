@@ -139,6 +139,8 @@ function ProfileForm({
   // 보이는 대표 사진: 처음 값, 조정한 새 사진(data URL), 기본 이미지면 undefined
   const [imageSrc, setImageSrc] = useState(initial.imageSrc);
   const [composing, setComposing] = useState(false);
+  // 고른 사진을 읽거나 조정하는 중이면 저장하지 않음(이전 사진으로 저장되지 않게)
+  const [photoPending, setPhotoPending] = useState(false);
 
   const nameInvalid = hasInvalidBunchNameChars(name, composing);
   const normalized = name.normalize('NFC').trim();
@@ -159,6 +161,7 @@ function ProfileForm({
   const canSave =
     changed &&
     !saving &&
+    !photoPending &&
     !composing &&
     normalized.length > 0 &&
     !nameInvalid &&
@@ -210,6 +213,7 @@ function ProfileForm({
           <ProfilePhotoField
             value={imageSrc}
             onChange={setImageSrc}
+            onPendingChange={setPhotoPending}
             renderPhoto={({ onCameraClick }) => (
               <div className="relative h-22.5 w-23.75 shrink-0">
                 <ProfileImage

@@ -216,6 +216,16 @@ describe('BunchProfileEdit', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
+  it('서버가 프로필 버전을 주지 않으면 저장할 수 없어 폼 대신 다시 시도를 보인다', async () => {
+    makeMeOwner();
+    const real = await getBunchHome(String(MOCK_BUNCH_ID));
+    server.use(http.get('/api/bunches/:bunchId/home', () => ok({ ...real, profileVersion: null })));
+    renderEdit();
+
+    expect(await screen.findByRole('button', { name: '다시 시도' })).toBeTruthy();
+    expect(screen.queryByRole('textbox')).toBeNull();
+  });
+
   it('메인 관리자는 서버의 번치 프로필로 채운다', async () => {
     makeMeOwner();
     renderEdit();

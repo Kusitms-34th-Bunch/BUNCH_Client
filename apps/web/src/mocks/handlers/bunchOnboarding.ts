@@ -179,7 +179,9 @@ export const bunchOnboardingHandlers = [
     if (!profile || !isValidName(name) || introduction.length === 0 || introduction.length > 50) {
       return fail(400, 'COMMON_001');
     }
-    const version = owned.bunch.profileVersion ?? 1;
+    // 본문을 기다리는 사이 다른 저장이 끝났을 수 있어 지금 DB 값으로 비교(비교와 갱신 사이에는 await 없음)
+    const current = mockDb.get().bunches.find((bunch) => bunch.id === owned.bunch.id);
+    const version = current?.profileVersion ?? 1;
     if (profile.expectedProfileVersion !== version) return fail(409, 'MOCK_PROFILE_VERSION');
     if (isNameTaken(name, owned.bunch.id)) return fail(409, 'BUNCH_001');
     if (profile.imageAction === 'REPLACE' && !(form.get('photo') instanceof Blob)) {

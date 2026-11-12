@@ -70,6 +70,10 @@ export function BunchProfileEdit() {
       </>
     );
   }
+  // 버전이 없으면 저장할 수 없으므로 폼을 열지 않고 다시 받기를 권함(서버가 주지 않는 경우 대비)
+  if (profile.profileVersion === undefined) {
+    return <BunchHomeError onRetry={() => void home.refetch()} />;
+  }
 
   const save = ({
     name,
@@ -78,10 +82,7 @@ export function BunchProfileEdit() {
     image,
     expectedProfileVersion,
   }: BunchProfileDraft) => {
-    if (expectedProfileVersion === undefined || update.isPending) {
-      if (expectedProfileVersion === undefined) toast(BUNCH_HOME_MESSAGES.profileSaveFailed);
-      return;
-    }
+    if (expectedProfileVersion === undefined || update.isPending) return;
     update.mutate(
       { name, introduction: description, isPrivate, image, expectedProfileVersion },
       {
