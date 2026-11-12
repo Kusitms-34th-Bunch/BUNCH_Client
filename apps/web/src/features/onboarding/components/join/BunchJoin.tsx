@@ -47,7 +47,8 @@ export function BunchJoin() {
       setPasted(true);
       return;
     }
-    // 읽지 못하면(권한 거부·비어 있음) 입력창에서 직접 붙여넣을 수 있게 포커스를 줌
+    // 읽지 못하면(권한 거부·비어 있음) 이전 붙여넣기 알림을 지우고 입력창에서 직접 붙여넣을 수 있게 포커스를 줌
+    setPasted(false);
     document.getElementById(inputId)?.focus();
   };
 
@@ -60,6 +61,8 @@ export function BunchJoin() {
       return;
     }
     submitted.current = true;
+    // 확인이 실패해도 이전 붙여넣기 알림이 다시 나오지 않게 지움
+    setPasted(false);
     verify.mutate(value, {
       onSuccess: ({ card, eligibility }) => {
         submitted.current = false;

@@ -188,6 +188,33 @@ describe('BunchJoin', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it('붙여넣은 링크의 확인이 실패해도 붙여넣기 알림이 다시 나오지 않는다', async () => {
+    server.use(http.post('/api/invitations/verify', () => fail(404, 'INVITE_001')));
+    renderJoin();
+    await userEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('초대 링크를 붙여넣었어요'),
+    );
+
+    await userEvent.click(done());
+
+    await waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(screen.getByRole('status').textContent).toBe('');
+  });
+
+  it('다시 붙여넣으려다 읽기에 실패하면 이전 붙여넣기 알림을 지운다', async () => {
+    renderJoin();
+    await userEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('초대 링크를 붙여넣었어요'),
+    );
+
+    readText.mockRejectedValue(new Error('denied'));
+    await userEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe(''));
+  });
+
   it('없거나 만료된 초대(INVITE_001)는 유효하지 않은 링크 토스트를 띄운다', async () => {
     server.use(http.post('/api/invitations/verify', () => fail(404, 'INVITE_001')));
     renderJoin();
