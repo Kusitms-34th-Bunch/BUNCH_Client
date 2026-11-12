@@ -37,14 +37,16 @@
 
 ### 임의로 정한 값
 
-| 값                                | 정한 값                                                                      | 위치                                 |
-| --------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------ |
-| 번치 팔로워·팔로잉 수             | 3명·2명                                                                      | `src/mocks/db/seed.ts`               |
-| 번치 홈 Stage 규칙                | 명세(PR #62) 기준(발행본 0~~1=1, 2~~5=2, 6~9=3, 10개 이상=4)                 | `src/mocks/handlers/bunchHome.ts`    |
-| 소속 ID·참여 시각                 | 회원 ID와 고정 시각                                                          | `src/mocks/handlers/bunchHome.ts`    |
-| 기존 발행 번들의 코멘트·공개 범위 | 「함께해서 즐거웠어요!」, 멤버 공개                                          | `src/mocks/db/seed.ts`               |
-| 사진 업로드 시각                  | 사진 ID로 만든 값(서버가 주지 않음)                                          | `features/photo-box/model/photos.ts` |
-| 안내 문구(기획 원문 없음)         | 최신 사진 목록 재조회 실패, 사진 구성 변경 중 업로드 막기, 저장 실패 안내 등 | 각 feature `constants/messages.ts`   |
+| 값                                | 정한 값                                                                           | 위치                                 |
+| --------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------ |
+| 번치 팔로워·팔로잉 수             | 3명·2명                                                                           | `src/mocks/db/seed.ts`               |
+| 번치 홈 Stage 규칙                | 명세(PR #62) 기준(발행본 0~~1=1, 2~~5=2, 6~9=3, 10개 이상=4)                      | `src/mocks/handlers/bunchHome.ts`    |
+| 소속 ID·참여 시각                 | 회원 ID와 고정 시각                                                               | `src/mocks/handlers/bunchHome.ts`    |
+| 기존 발행 번들의 코멘트·공개 범위 | 「함께해서 즐거웠어요!」, 멤버 공개                                               | `src/mocks/db/seed.ts`               |
+| 사진 업로드 시각                  | 사진 ID로 만든 값(서버가 주지 않음)                                               | `features/photo-box/model/photos.ts` |
+| 번들 응답의 위치·댓글 ID          | 배열 순서로 만든 번호(항목을 지우거나 옮기면 바뀜)                                | `src/mocks/handlers/bundles.ts`      |
+| 번들 좋아요·댓글 수와 권한        | 소셜 값은 0·false 고정(가짜 서버에 소셜 API 없음), 권한은 명세 기준 발행본만 허용 | `src/mocks/handlers/bundles.ts`      |
+| 안내 문구(기획 원문 없음)         | 최신 사진 목록 재조회 실패, 사진 구성 변경 중 업로드 막기, 저장 실패 안내 등      | 각 feature `constants/messages.ts`   |
 
 ## 가짜 서버와 서버 명세의 차이, 백엔드 확인 항목
 
@@ -81,7 +83,7 @@
 
 ### 실서버를 연결할 때 정리할 것
 
-- 가짜 서버만 있는 확장은 실서버 연결 때 걷어 낸다: 편집권 대상 `LOCATION`(`mocks/handlers/bundleLeases.ts`)과 응답의 `locations`·`locationsVersion`, 화면의 `LOCATION` 편집권 매핑(`lib/draftMapping.ts`). 위치 저장 계약은 장소 검색 이슈에서 정한다.
+- 가짜 서버만 있는 확장은 실서버 연결 때 걷어 낸다: 편집권 대상 `LOCATION`(`mocks/handlers/bundleLeases.ts`)과 화면의 `LOCATION` 편집권 매핑(`lib/draftMapping.ts`). 번들 응답의 `locations`·`locationVersion`은 2026-11 타입 재생성으로 서버 계약(BundleSnapshot)에 들어와 확장이 아니다. 가짜 서버는 저장된 위치를 계약 모양(`id`·`position` 포함)으로 돌려준다. 위치를 저장하는 요청 계약(`BundleLocationInput`)도 생성 타입에 있지만, 화면 연결은 장소 검색 이슈에서 한다.
 - `public/mock/photos`(약 7MB)는 `NEXT_PUBLIC_API_MOCKING`과 무관하게 운영 배포에도 정적 파일로 공개된다. 얼굴이 없는 시연 사진이라 기밀 문제는 아니고 용량 문제다. 운영 배포에서 제외할 방안을 정한다.
 - 사진 목록의 `thumbnailUrl`은 URL 형식을 검증하지 않고(상세 `imageUrl`만 검증), 이미지 호스트 allowlist도 없다. 실서버를 연결할 때 함께 정한다.
 - 사진 목록은 마지막 쪽까지 순차로 받는다. 사진이 많아지면 무한 스크롤 구조로 바꾼다(`PhotoBoxScreen.spec.md`).

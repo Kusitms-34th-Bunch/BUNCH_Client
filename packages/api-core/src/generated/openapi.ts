@@ -4,6 +4,118 @@
  */
 
 export interface paths {
+  '/api/v1/members/me/push-devices/{installationId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['registerDevice'];
+    post?: never;
+    delete: operations['unregisterDevice'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/feed/advertisements/{advertisementId}/pin': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['pin'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/feed/advertisements/{advertisementId}/hide': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['hide'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bundles/{bundleId}/locations/{locationId}/pin': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['pin_1'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bundles/{bundleId}/like': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['summary'];
+    put: operations['like'];
+    post?: never;
+    delete: operations['unlike'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{viewerId}/following/{targetId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['follow'];
+    post?: never;
+    delete: operations['cancel'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{viewerId}/blocks/{targetId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['block'];
+    post?: never;
+    delete: operations['unblock'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bunches/{id}/profile-image': {
     parameters: {
       query?: never;
@@ -36,6 +148,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/bunches/{bunchId}/profile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['update'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bunches/{bunchId}/notifications/{notificationId}/read': {
     parameters: {
       query?: never;
@@ -45,6 +173,22 @@ export interface paths {
     };
     get?: never;
     put: operations['read'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/memberships/{membershipId}/role': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['changeRole'];
     post?: never;
     delete?: never;
     options?: never;
@@ -77,6 +221,22 @@ export interface paths {
     };
     get?: never;
     put: operations['title'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/bundles/{id}/published': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['editPublished'];
     post?: never;
     delete?: never;
     options?: never;
@@ -132,6 +292,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/bunches/{bunchId}/bundles/{bundleId}/locations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['getLocations'];
+    put: operations['saveDraftLocations'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/members/me/registration': {
     parameters: {
       query?: never;
@@ -180,6 +356,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/bundles/{bundleId}/reports': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['bundle'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bundles/{bundleId}/comments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['list'];
+    put?: never;
+    post: operations['create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bundles/{bundleId}/comments/{commentId}/reports': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['comment_1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bunches': {
     parameters: {
       query?: never;
@@ -189,7 +413,39 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    post: operations['create'];
+    post: operations['create_1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{viewerId}/reports': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['report'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{viewerId}/follow-requests/{requestId}/decision': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['decide'];
     delete?: never;
     options?: never;
     head?: never;
@@ -219,7 +475,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['list'];
+    get: operations['list_1'];
     put?: never;
     post: operations['upload'];
     delete?: never;
@@ -260,6 +516,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/bunches/{bunchId}/owner-transfer': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['transferOwner'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bunches/{bunchId}/notifications/{notificationId}/open': {
     parameters: {
       query?: never;
@@ -292,6 +564,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/bunches/{bunchId}/memberships/{membershipId}/remove': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['remove'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/leave': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['leave'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/deletion': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['delete_1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bunches/{bunchId}/bundles': {
     parameters: {
       query?: never;
@@ -299,9 +619,9 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['list_1'];
+    get: operations['list_2'];
     put?: never;
-    post: operations['create_1'];
+    post: operations['create_2'];
     delete?: never;
     options?: never;
     head?: never;
@@ -381,7 +701,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    post: operations['leave'];
+    post: operations['leave_1'];
     delete?: never;
     options?: never;
     head?: never;
@@ -468,6 +788,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/auth/dev/token': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['devToken'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/auth/apple/login': {
     parameters: {
       query?: never;
@@ -478,6 +814,38 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['apple'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/members/me/push-preferences': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['getPreferences'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['patchPreferences'];
+    trace?: never;
+  };
+  '/api/v1/members/{memberId}/social-profile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['get'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -523,10 +891,42 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['get'];
+    get: operations['get_1'];
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/members/me/bunches': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['list_3'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/members/me/bunch-access-notices/{noticeId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['get_2'];
+    put?: never;
+    post?: never;
+    delete: operations['delete_2'];
     options?: never;
     head?: never;
     patch?: never;
@@ -548,14 +948,190 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/bunches/{id}/members': {
+  '/api/v1/feed': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    get: operations['members'];
+    get: operations['get_3'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/feed/advertisements/{advertisementId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['read_1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bundles/{bundleId}/pinned-places': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['forBundle'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bundles/{bundleId}/comments/{commentId}/replies': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['replies'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{viewerId}/follow-requests': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['requests'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{viewerId}/blocks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['blocks'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{targetId}/following': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['following'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{targetId}/followers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['followers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/recommended-bundles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['list_4'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/recommended-bundles/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/published-bundles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['bundles'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/published-bundles/{bundleId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['bundle_1'];
     put?: never;
     post?: never;
     delete?: never;
@@ -571,7 +1147,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['detail'];
+    get: operations['detail_1'];
     put?: never;
     post?: never;
     delete?: never;
@@ -603,7 +1179,55 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['list_2'];
+    get: operations['list_5'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/memberships': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['memberships'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/members': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['members'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/home': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['home'];
     put?: never;
     post?: never;
     delete?: never;
@@ -619,10 +1243,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['get_1'];
+    get: operations['get_4'];
     put?: never;
     post?: never;
-    delete: operations['delete_1'];
+    delete: operations['delete_3'];
     options?: never;
     head?: never;
     patch?: never;
@@ -635,7 +1259,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['summary'];
+    get: operations['summary_1'];
     put?: never;
     post?: never;
     delete?: never;
@@ -676,6 +1300,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/pinned-places/{pinId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['unpin'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bundles/{bundleId}/comments/{commentId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['delete_4'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bunches/{bunchId}/bundles/{id}/participants/{memberId}': {
     parameters: {
       query?: never;
@@ -696,10 +1352,88 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    PushDeviceRegistrationRequest: {
+      deviceToken: string;
+      /** @enum {string} */
+      environment: 'SANDBOX' | 'PRODUCTION';
+      /** @enum {string} */
+      authorizationStatus: 'NOT_DETERMINED' | 'DENIED' | 'AUTHORIZED' | 'PROVISIONAL';
+    };
     ApiError: {
       code: string;
       message: string;
       detail?: Record<string, never>;
+    };
+    ApiResponsePushDeviceResponse: {
+      success: boolean;
+      data?: components['schemas']['PushDeviceResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    PushDeviceResponse: {
+      /** Format: uuid */
+      installationId: string;
+      /** @enum {string} */
+      environment: 'SANDBOX' | 'PRODUCTION';
+      /** @enum {string} */
+      authorizationStatus: 'NOT_DETERMINED' | 'DENIED' | 'AUTHORIZED' | 'PROVISIONAL';
+      /** Format: date-time */
+      registeredAt: string;
+    };
+    ApiResponsePinnedPlaceResponse: {
+      success: boolean;
+      data?: components['schemas']['PinnedPlaceResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    PinnedPlaceResponse: {
+      /** Format: int64 */
+      id: number;
+      /** Format: int64 */
+      bunchId: number;
+      provider: string;
+      externalId: string;
+      name: string;
+      address: string;
+      /** @enum {string} */
+      sourceType: 'BUNDLE' | 'ADVERTISEMENT';
+      /** Format: int64 */
+      sourceBundleId?: number;
+      /** Format: int64 */
+      sourceLocationId?: number;
+      /** Format: int64 */
+      sourceAdvertisementId?: number;
+      /** Format: int64 */
+      pinnedByMemberId?: number;
+      /** Format: date-time */
+      pinnedAt: string;
+    };
+    ApiResponseUnit: {
+      success: boolean;
+      error?: components['schemas']['ApiError'];
+    };
+    ApiResponseSocialLikeResponse: {
+      success: boolean;
+      data?: components['schemas']['SocialLikeResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    SocialLikeResponse: {
+      /** Format: int64 */
+      bundleId: number;
+      /** Format: int64 */
+      currentBunchId?: number;
+      likedByCurrentBunch: boolean;
+      /** Format: int64 */
+      likeCount: number;
+    };
+    ApiResponseFollowResult: {
+      success: boolean;
+      data?: components['schemas']['FollowResult'];
+      error?: components['schemas']['ApiError'];
+    };
+    FollowResult: {
+      /** @enum {string} */
+      followState: 'NONE' | 'REQUESTED' | 'FOLLOWING';
+      /** Format: int64 */
+      followId?: number;
     };
     ApiResponseBunchResponse: {
       success: boolean;
@@ -714,9 +1448,26 @@ export interface components {
       characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
       imageUrl?: string;
     };
-    ApiResponseUnit: {
+    BunchProfileRequest: {
+      name: string;
+      introduction: string;
+      /** @enum {string} */
+      visibility: 'PUBLIC' | 'PRIVATE';
+      /** @enum {string} */
+      imageAction: 'KEEP' | 'REPLACE' | 'RESET';
+      /** Format: int64 */
+      expectedProfileVersion: number;
+    };
+    ApiResponseBunchProfileResponse: {
       success: boolean;
+      data?: components['schemas']['BunchProfileResponse'];
       error?: components['schemas']['ApiError'];
+    };
+    BunchProfileResponse: {
+      /** Format: int64 */
+      bunchId: number;
+      /** Format: int64 */
+      profileVersion: number;
     };
     ApiResponseNotificationRead: {
       success: boolean;
@@ -728,6 +1479,28 @@ export interface components {
       id: number;
       /** Format: date-time */
       readAt: string;
+    };
+    ChangeMembershipRoleRequest: {
+      /** Format: int64 */
+      actorMembershipId: number;
+      /** Format: int64 */
+      expectedMembershipVersion: number;
+      /** @enum {string} */
+      role: 'OWNER' | 'CO_OWNER' | 'MEMBER';
+    };
+    ApiResponseMembershipMutationResult: {
+      success: boolean;
+      data?: components['schemas']['MembershipMutationResult'];
+      error?: components['schemas']['ApiError'];
+    };
+    MembershipMutationResult: {
+      /** Format: int64 */
+      bunchId: number;
+      /** Format: int64 */
+      membershipVersion: number;
+      changedMembershipIds: number[];
+      /** Format: int64 */
+      ownerMembershipId: number;
     };
     BundleVisibilityRequest: {
       /** @enum {string} */
@@ -752,12 +1525,30 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
+      nickname?: string;
+      imageUrl?: string;
+      profileAvailable: boolean;
+      /** Format: int64 */
+      id: number;
+    };
+    BundleLocationResponse: {
+      /** Format: int64 */
+      id: number;
+      provider: string;
+      externalId: string;
+      name: string;
+      address: string;
+      /** Format: int32 */
+      position: number;
     };
     BundleParticipantResponse: {
       /** Format: int64 */
       memberId: number;
       /** Format: date-time */
       joinedAt: string;
+      nickname?: string;
+      imageUrl?: string;
+      profileAvailable: boolean;
     };
     BundlePermissions: {
       administrator: boolean;
@@ -766,6 +1557,9 @@ export interface components {
       canEdit: boolean;
       canPublish: boolean;
       canDelete: boolean;
+      canReport: boolean;
+      canLike: boolean;
+      canComment: boolean;
     };
     BundlePhotoResponse: {
       /** Format: int64 */
@@ -824,6 +1618,14 @@ export interface components {
       updatedAt: string;
       /** Format: date-time */
       publishedAt?: string;
+      /** Format: int64 */
+      locationVersion: number;
+      locations: components['schemas']['BundleLocationResponse'][];
+      /** Format: int64 */
+      likeCount: number;
+      likedByCurrentBunch: boolean;
+      /** Format: int64 */
+      commentCount: number;
     };
     LeaseState: {
       target: string;
@@ -843,6 +1645,32 @@ export interface components {
       /** Format: uuid */
       leaseToken?: string;
     };
+    BundleLocationInput: {
+      provider: string;
+      externalId: string;
+      name: string;
+      address: string;
+      /** Format: int32 */
+      position: number;
+    };
+    EditPublishedBundleRequest: {
+      /** Format: int64 */
+      expectedRevision: number;
+      title: string;
+      /** @enum {string} */
+      visibility: 'PUBLIC' | 'PRIVATE';
+      /** Format: date */
+      date?: string;
+      photos: components['schemas']['PublishedBundlePhotoInput'][];
+      locations: components['schemas']['BundleLocationInput'][];
+    };
+    PublishedBundlePhotoInput: {
+      /** Format: int64 */
+      bundlePhotoId?: number;
+      /** Format: int64 */
+      photoId?: number;
+      caption: string;
+    };
     BundleDateRequest: {
       /** Format: date */
       value?: string;
@@ -852,6 +1680,27 @@ export interface components {
       mode: 'DRAFT' | 'PUBLISHED';
       /** Format: uuid */
       leaseToken?: string;
+    };
+    BundleLocationsRequest: {
+      locations: components['schemas']['BundleLocationInput'][];
+      /** Format: int64 */
+      expectedVersion: number;
+      /** Format: uuid */
+      leaseToken?: string;
+    };
+    ApiResponseBundleLocationState: {
+      success: boolean;
+      data?: components['schemas']['BundleLocationState'];
+      error?: components['schemas']['ApiError'];
+    };
+    BundleLocationState: {
+      /** Format: int64 */
+      bundleId: number;
+      /** Format: int64 */
+      revision: number;
+      /** Format: int64 */
+      locationVersion: number;
+      locations: components['schemas']['BundleLocationResponse'][];
     };
     RegistrationRequest: {
       nickname: string;
@@ -906,6 +1755,61 @@ export interface components {
       outcome: 'JOINED' | 'ALREADY_MEMBER';
       bunch: components['schemas']['BunchResponse'];
     };
+    SocialContentReportRequest: {
+      /** @enum {string} */
+      reason: 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'PERSONAL_INFORMATION' | 'OTHER';
+      detail?: string;
+    };
+    ApiResponseSocialContentReportResult: {
+      success: boolean;
+      data?: components['schemas']['SocialContentReportResult'];
+      error?: components['schemas']['ApiError'];
+    };
+    SocialContentReportResult: {
+      /** Format: int64 */
+      reportId: number;
+    };
+    CreateSocialCommentRequest: {
+      content: string;
+      /** Format: int64 */
+      parentId?: number;
+    };
+    ApiResponseSocialCommentItem: {
+      success: boolean;
+      data?: components['schemas']['SocialCommentItem'];
+      error?: components['schemas']['ApiError'];
+    };
+    SocialCommentAuthor: {
+      /** Format: int64 */
+      memberId?: number;
+      nickname: string;
+      imageUrl?: string;
+    };
+    SocialCommentBadge: {
+      /** Format: int64 */
+      bunchId: number;
+      name: string;
+      characterType: string;
+    };
+    SocialCommentItem: {
+      /** Format: int64 */
+      id: number;
+      /** Format: int64 */
+      bundleId: number;
+      /** Format: int64 */
+      parentId?: number;
+      content: string;
+      deleted: boolean;
+      /** Format: date-time */
+      createdAt?: string;
+      author: components['schemas']['SocialCommentAuthor'];
+      badge?: components['schemas']['SocialCommentBadge'];
+      /** Format: int64 */
+      replyCount: number;
+      canDelete: boolean;
+      canReply: boolean;
+      canReport: boolean;
+    };
     CreateBunchRequest: {
       name: string;
       introduction: string;
@@ -913,6 +1817,38 @@ export interface components {
       visibility: 'PUBLIC' | 'PRIVATE';
       /** @enum {string} */
       characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+    };
+    BunchReportRequest: {
+      /** Format: int64 */
+      targetBunchId: number;
+      /** @enum {string} */
+      reason: 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'PERSONAL_INFORMATION' | 'OTHER';
+      detail?: string;
+    };
+    ApiResponseBunchReportResult: {
+      success: boolean;
+      data?: components['schemas']['BunchReportResult'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchReportResult: {
+      /** Format: int64 */
+      reportId: number;
+    };
+    FollowDecisionRequest: {
+      /** @enum {string} */
+      decision: 'APPROVE' | 'REJECT';
+    };
+    ApiResponseFollowDecisionResult: {
+      success: boolean;
+      data?: components['schemas']['FollowDecisionResult'];
+      error?: components['schemas']['ApiError'];
+    };
+    FollowDecisionResult: {
+      /** Format: int64 */
+      requestId: number;
+      applied: boolean;
+      /** @enum {string} */
+      state: 'APPROVED' | 'REJECTED' | 'UNAVAILABLE';
     };
     ApiResponseInvitationResponse: {
       success: boolean;
@@ -982,6 +1918,14 @@ export interface components {
       /** Format: int32 */
       updatedCount: number;
     };
+    OwnerTransferRequest: {
+      /** Format: int64 */
+      actorMembershipId: number;
+      /** Format: int64 */
+      expectedMembershipVersion: number;
+      /** Format: int64 */
+      targetMembershipId: number;
+    };
     ApiResponseNotificationOpen: {
       success: boolean;
       data?: components['schemas']['NotificationOpen'];
@@ -1016,6 +1960,10 @@ export interface components {
       noticeId?: number;
       /** Format: int64 */
       targetBunchId?: number;
+      /** Format: int64 */
+      sourceBunchId?: number;
+      /** Format: int64 */
+      commentId?: number;
     };
     ApiResponseNotificationUnread: {
       success: boolean;
@@ -1026,8 +1974,60 @@ export interface components {
       /** Format: int64 */
       unreadCount: number;
     };
+    BunchRemovalRequest: {
+      /** Format: int64 */
+      actorMembershipId: number;
+      /** Format: int64 */
+      expectedMembershipVersion: number;
+    };
+    ApiResponseBunchRemovalResponse: {
+      success: boolean;
+      data?: components['schemas']['BunchRemovalResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchRemovalResponse: {
+      /** Format: int64 */
+      bunchId: number;
+      /** Format: int64 */
+      removedMembershipId: number;
+      /** Format: int64 */
+      membershipVersion: number;
+      /** Format: int64 */
+      memberCount: number;
+    };
+    BunchMembershipExitRequest: {
+      /** Format: int64 */
+      actorMembershipId: number;
+      /** Format: int64 */
+      expectedMembershipVersion: number;
+      /** Format: int64 */
+      successorMembershipId?: number;
+    };
+    ApiResponseBunchDepartureResponse: {
+      success: boolean;
+      data?: components['schemas']['BunchDepartureResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchDepartureResponse: {
+      /** Format: int64 */
+      bunchId: number;
+      /** Format: int64 */
+      departedMembershipId: number;
+      outcome: string;
+      /** Format: int64 */
+      defaultBunchId?: number;
+    };
+    BunchDeletionRequest: {
+      /** Format: int64 */
+      actorMembershipId: number;
+      /** Format: int64 */
+      expectedMembershipVersion: number;
+      confirmation: string;
+    };
     CreateBundleRequest: {
       photoIds: number[];
+      /** Format: int64 */
+      recommendationId?: number;
     };
     PublishBundleRequest: {
       /** Format: int64 */
@@ -1079,6 +2079,68 @@ export interface components {
     GoogleLoginRequest: {
       idToken: string;
     };
+    DevTokenRequest: {
+      nickname: string;
+    };
+    ApiResponseDevTokenResponse: {
+      success: boolean;
+      data?: components['schemas']['DevTokenResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    DevTokenResponse: {
+      /** Format: int64 */
+      memberId: number;
+      accessToken: string;
+    };
+    PushPreferencePatchRequest: {
+      enabled?: boolean;
+      types?: {
+        [key: string]: boolean;
+      };
+    };
+    ApiResponsePushPreferenceResponse: {
+      success: boolean;
+      data?: components['schemas']['PushPreferenceResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    PushPreferenceResponse: {
+      enabled: boolean;
+      types: {
+        [key: string]: boolean;
+      };
+    };
+    ApiResponseMemberSocialProfileResponse: {
+      success: boolean;
+      data?: components['schemas']['MemberSocialProfileResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchSocialCard: {
+      /** Format: int64 */
+      id: number;
+      name: string;
+      imageUrl?: string;
+      /** @enum {string} */
+      characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+      /** @enum {string} */
+      visibility: 'PUBLIC' | 'PRIVATE';
+    };
+    MemberSocialBunchItem: {
+      bunch: components['schemas']['BunchSocialCard'];
+      /** @enum {string} */
+      followState: 'NONE' | 'REQUESTED' | 'FOLLOWING';
+      /** Format: int64 */
+      followId?: number;
+      showFollowButton: boolean;
+    };
+    MemberSocialProfileResponse: {
+      /** Format: int64 */
+      memberId: number;
+      nickname?: string;
+      imageUrl?: string;
+      /** Format: int64 */
+      currentBunchId?: number;
+      bunches: components['schemas']['MemberSocialBunchItem'][];
+    };
     ApiResponseNameAvailability: {
       success: boolean;
       data?: components['schemas']['NameAvailability'];
@@ -1118,23 +2180,423 @@ export interface components {
       /** Format: int64 */
       defaultBunchId?: number;
     };
+    ApiResponseMyBunchesResponse: {
+      success: boolean;
+      data?: components['schemas']['MyBunchesResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchAccessNoticeResponse: {
+      /** Format: int64 */
+      id: number;
+      /** Format: int64 */
+      bunchId: number;
+      name: string;
+      /** @enum {string} */
+      characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+      /** @enum {string} */
+      reason: 'REMOVED' | 'DELETED';
+      /** Format: date-time */
+      occurredAt: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    BunchCardResponse: {
+      /** Format: int64 */
+      id: number;
+      name: string;
+      imageUrl?: string;
+      /** @enum {string} */
+      characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+      /** @enum {string} */
+      visibility: 'PUBLIC' | 'PRIVATE';
+    };
+    MyBunchItem: {
+      bunch: components['schemas']['BunchCardResponse'];
+      myMembership: components['schemas']['MyMembershipResponse'];
+      /** Format: int64 */
+      unreadCount: number;
+      /** Format: date-time */
+      lastUsedAt: string;
+    };
+    MyBunchesResponse: {
+      /** Format: int64 */
+      activeCount: number;
+      /** Format: int32 */
+      maxActiveCount: number;
+      /** Format: int64 */
+      defaultBunchId?: number;
+      activeBunches: components['schemas']['MyBunchItem'][];
+      unavailableBunches: components['schemas']['BunchAccessNoticeResponse'][];
+    };
+    MyMembershipResponse: {
+      /** Format: int64 */
+      membershipId: number;
+      /** @enum {string} */
+      role: 'OWNER' | 'CO_OWNER' | 'MEMBER';
+      /** Format: date-time */
+      joinedAt: string;
+    };
+    ApiResponseBunchAccessNoticeResponse: {
+      success: boolean;
+      data?: components['schemas']['BunchAccessNoticeResponse'];
+      error?: components['schemas']['ApiError'];
+    };
     ApiResponseInvitationCard: {
       success: boolean;
       data?: components['schemas']['InvitationCard'];
       error?: components['schemas']['ApiError'];
     };
-    ApiResponseListBunchMemberResponse: {
+    AdvertisementResponse: {
+      /** Format: int64 */
+      id: number;
+      name: string;
+      introduction: string;
+      photoUrl: string;
+      tags: string[];
+      externalLink?: string;
+      place: components['schemas']['PlaceDetails'];
+      pinned: boolean;
+      /** Format: int64 */
+      pinId?: number;
+      canPin: boolean;
+    };
+    ApiResponseFeedResponse: {
       success: boolean;
-      data?: components['schemas']['BunchMemberResponse'][];
+      data?: components['schemas']['FeedResponse'];
       error?: components['schemas']['ApiError'];
     };
-    BunchMemberResponse: {
+    FeedAdvertisementItem: WithRequired<components['schemas']['FeedItem'], 'type'> & {
+      advertisement: components['schemas']['AdvertisementResponse'];
+    };
+    FeedBunchInfo: {
+      /** Format: int64 */
+      id: number;
+      name: string;
+      imageUrl?: string;
+      /** @enum {string} */
+      characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+      /** @enum {string} */
+      visibility: 'PUBLIC' | 'PRIVATE';
+    };
+    FeedBundleCard: {
+      /** Format: int64 */
+      id: number;
+      bunch: components['schemas']['FeedBunchInfo'];
+      /** Format: date-time */
+      publishedAt: string;
+      title: string;
+      /** Format: date */
+      date?: string;
+      coverImageUrl?: string;
+      photos: components['schemas']['FeedPhoto'][];
+      locations: components['schemas']['BundleLocationResponse'][];
+      participants: components['schemas']['BundleParticipantResponse'][];
+      /** Format: int64 */
+      likeCount: number;
+      likedByCurrentBunch: boolean;
+      /** Format: int64 */
+      commentCount: number;
+    };
+    FeedBundleItem: WithRequired<components['schemas']['FeedItem'], 'type'> & {
+      /** @enum {string} */
+      segment: 'FOLLOWING' | 'PUBLIC';
+      bundle: components['schemas']['FeedBundleCard'];
+    };
+    FeedFollowingCaughtUpItem: WithRequired<components['schemas']['FeedItem'], 'type'>;
+    FeedItem: {
+      type: string;
+    };
+    FeedPhoto: {
+      /** Format: int64 */
+      id: number;
+      imageUrl: string;
+      /** Format: int32 */
+      position: number;
+      caption: string;
+    };
+    FeedResponse: {
+      /** Format: date-time */
+      anchorTime: string;
+      /** Format: int64 */
+      currentBunchId?: number;
+      canInteract: boolean;
+      /** Format: int32 */
+      size: number;
+      /** Format: int32 */
+      bundleCount: number;
+      items: (
+        | components['schemas']['FeedAdvertisementItem']
+        | components['schemas']['FeedBundleItem']
+        | components['schemas']['FeedFollowingCaughtUpItem']
+      )[];
+      nextCursor?: string;
+      hasNext: boolean;
+      endReached: boolean;
+    };
+    PlaceDetails: {
+      provider: string;
+      externalId: string;
+      name: string;
+      address: string;
+    };
+    ApiResponseAdvertisementResponse: {
+      success: boolean;
+      data?: components['schemas']['AdvertisementResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    ApiResponseBundlePlacePinsResponse: {
+      success: boolean;
+      data?: components['schemas']['BundlePlacePinsResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    BundlePlacePinResponse: {
+      /** Format: int64 */
+      id: number;
+      provider: string;
+      externalId: string;
+      name: string;
+      address: string;
+      /** Format: int32 */
+      position: number;
+      pinned: boolean;
+      /** Format: int64 */
+      pinId?: number;
+    };
+    BundlePlacePinsResponse: {
+      /** Format: int64 */
+      bundleId: number;
+      /** Format: int64 */
+      currentBunchId?: number;
+      canPin: boolean;
+      locations: components['schemas']['BundlePlacePinResponse'][];
+    };
+    ApiResponseSocialCommentPage: {
+      success: boolean;
+      data?: components['schemas']['SocialCommentPage'];
+      error?: components['schemas']['ApiError'];
+    };
+    SocialCommentPage: {
+      items: components['schemas']['SocialCommentItem'][];
+      nextCursor?: string;
+      hasNext: boolean;
+      /** Format: int64 */
+      totalCount: number;
+    };
+    ApiResponseBunchSocialPageBunchFollowRequestItem: {
+      success: boolean;
+      data?: components['schemas']['BunchSocialPageBunchFollowRequestItem'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchFollowRequestItem: {
+      /** Format: int64 */
+      id: number;
+      bunch: components['schemas']['BunchSocialCard'];
+      /** Format: date-time */
+      requestedAt: string;
+    };
+    BunchSocialPageBunchFollowRequestItem: {
+      items: components['schemas']['BunchFollowRequestItem'][];
+      /** Format: int32 */
+      page: number;
+      /** Format: int32 */
+      size: number;
+      /** Format: int64 */
+      totalElements: number;
+      hasNext: boolean;
+    };
+    ApiResponseBunchSocialPageBunchBlockItem: {
+      success: boolean;
+      data?: components['schemas']['BunchSocialPageBunchBlockItem'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchBlockItem: {
+      /** Format: int64 */
+      id: number;
+      bunch: components['schemas']['BunchSocialCard'];
+      /** Format: date-time */
+      blockedAt: string;
+    };
+    BunchSocialPageBunchBlockItem: {
+      items: components['schemas']['BunchBlockItem'][];
+      /** Format: int32 */
+      page: number;
+      /** Format: int32 */
+      size: number;
+      /** Format: int64 */
+      totalElements: number;
+      hasNext: boolean;
+    };
+    ApiResponseBunchSocialPageBunchRelationItem: {
+      success: boolean;
+      data?: components['schemas']['BunchSocialPageBunchRelationItem'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchRelationItem: {
+      bunch: components['schemas']['BunchSocialCard'];
+      /** @enum {string} */
+      followState: 'NONE' | 'REQUESTED' | 'FOLLOWING';
+      /** Format: int64 */
+      followId?: number;
+      /** Format: date-time */
+      followedAt: string;
+    };
+    BunchSocialPageBunchRelationItem: {
+      items: components['schemas']['BunchRelationItem'][];
+      /** Format: int32 */
+      page: number;
+      /** Format: int32 */
+      size: number;
+      /** Format: int64 */
+      totalElements: number;
+      hasNext: boolean;
+    };
+    ApiResponseRecommendedBundleListResponse: {
+      success: boolean;
+      data?: components['schemas']['RecommendedBundleListResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    RecommendedBundleCard: {
+      /** Format: int64 */
+      id: number;
+      title: string;
+      /** Format: date */
+      startDate: string;
+      /** Format: date */
+      endDate?: string;
+      /** Format: int32 */
+      photoCount: number;
+      uploaders: components['schemas']['RecommendedUploader'][];
+      coverImageUrl: string;
+    };
+    RecommendedBundleListResponse: {
+      bundles: components['schemas']['RecommendedBundleCard'][];
+    };
+    RecommendedUploader: {
       /** Format: int64 */
       memberId: number;
       nickname?: string;
       imageUrl?: string;
+    };
+    ApiResponseRecommendedBundleDetailResponse: {
+      success: boolean;
+      data?: components['schemas']['RecommendedBundleDetailResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    RecommendedBundleDetailResponse: {
+      /** Format: int64 */
+      id: number;
+      title: string;
+      photos: components['schemas']['RecommendedBundlePhoto'][];
+    };
+    RecommendedBundlePhoto: {
+      /** Format: int64 */
+      photoId: number;
+      thumbnailUrl: string;
+      imageUrl: string;
+      /** Format: date */
+      capturedDate: string;
+      capturedTime?: components['schemas']['LocalTime'];
+      uploaders: components['schemas']['RecommendedUploader'][];
+    };
+    ApiResponseBunchSocialPageBunchPublicBundleCard: {
+      success: boolean;
+      data?: components['schemas']['BunchSocialPageBunchPublicBundleCard'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchPublicBundleCard: {
+      /** Format: int64 */
+      id: number;
+      /** Format: int64 */
+      bunchId: number;
+      title: string;
+      coverImageUrl?: string;
+      /** Format: date */
+      date?: string;
+      location?: components['schemas']['BunchPublicLocation'];
+      /** Format: date-time */
+      publishedAt?: string;
+      locations: components['schemas']['BundleLocationResponse'][];
+      /** Format: int64 */
+      likeCount: number;
+      likedByCurrentBunch: boolean;
+      /** Format: int64 */
+      commentCount: number;
+    };
+    BunchPublicLocation: {
+      name: string;
+      /** Format: double */
+      latitude: number;
+      /** Format: double */
+      longitude: number;
+    };
+    BunchSocialPageBunchPublicBundleCard: {
+      items: components['schemas']['BunchPublicBundleCard'][];
+      /** Format: int32 */
+      page: number;
+      /** Format: int32 */
+      size: number;
+      /** Format: int64 */
+      totalElements: number;
+      hasNext: boolean;
+    };
+    ApiResponseBunchPublicBundleDetail: {
+      success: boolean;
+      data?: components['schemas']['BunchPublicBundleDetail'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchPublicBundleComment: {
+      /** Format: int64 */
+      id: number;
+      /** Format: int64 */
+      memberId: number;
+      nickname?: string;
+      imageUrl?: string;
+      content?: string;
+      /** Format: date-time */
+      updatedAt: string;
+      profileAvailable: boolean;
+    };
+    BunchPublicBundleContributor: {
+      /** Format: int64 */
+      memberId: number;
+      nickname?: string;
+      imageUrl?: string;
+      profileAvailable: boolean;
+    };
+    BunchPublicBundleDetail: {
+      /** Format: int64 */
+      id: number;
+      /** Format: int64 */
+      bunchId: number;
+      title: string;
+      coverImageUrl?: string;
+      /** Format: date */
+      date?: string;
+      location?: components['schemas']['BunchPublicLocation'];
+      /** Format: date-time */
+      publishedAt?: string;
+      photos: components['schemas']['BunchPublicBundlePhoto'][];
+      contributors: components['schemas']['BunchPublicBundleContributor'][];
+      comments: components['schemas']['BunchPublicBundleComment'][];
+      locations: components['schemas']['BundleLocationResponse'][];
+      /** Format: int64 */
+      revision: number;
       /** @enum {string} */
-      role: 'OWNER' | 'CO_OWNER' | 'MEMBER';
+      visibility?: 'PUBLIC' | 'PRIVATE';
+      permissions: components['schemas']['BundlePermissions'];
+      /** Format: int64 */
+      likeCount: number;
+      likedByCurrentBunch: boolean;
+      /** Format: int64 */
+      commentCount: number;
+    };
+    BunchPublicBundlePhoto: {
+      /** Format: int64 */
+      id: number;
+      imageUrl: string;
+      /** Format: int32 */
+      position: number;
+      caption: string;
     };
     ApiResponsePhotoListResponse: {
       success: boolean;
@@ -1243,6 +2705,112 @@ export interface components {
       /** Format: int64 */
       unreadCount: number;
     };
+    ApiResponseMembershipsResponse: {
+      success: boolean;
+      data?: components['schemas']['MembershipsResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    ManagedMembershipResponse: {
+      /** Format: int64 */
+      membershipId: number;
+      /** Format: int64 */
+      memberId: number;
+      nickname?: string;
+      imageUrl?: string;
+      /** @enum {string} */
+      role: 'OWNER' | 'CO_OWNER' | 'MEMBER';
+      isMe: boolean;
+      /** Format: date-time */
+      joinedAt: string;
+      actions: components['schemas']['MembershipActions'];
+    };
+    MembershipActions: {
+      canGrantCoOwner: boolean;
+      canRevokeCoOwner: boolean;
+      canTransferOwner: boolean;
+      canRemove: boolean;
+    };
+    MembershipsResponse: {
+      /** Format: int64 */
+      bunchId: number;
+      /** Format: int64 */
+      membershipVersion: number;
+      myMembership: components['schemas']['MyMembershipResponse'];
+      members: components['schemas']['ManagedMembershipResponse'][];
+    };
+    ApiResponseListBunchMemberResponse: {
+      success: boolean;
+      data?: components['schemas']['BunchMemberResponse'][];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchMemberResponse: {
+      /** Format: int64 */
+      memberId: number;
+      nickname?: string;
+      imageUrl?: string;
+      /** @enum {string} */
+      role: 'OWNER' | 'CO_OWNER' | 'MEMBER';
+    };
+    ApiResponseBunchHomeResponse: {
+      success: boolean;
+      data?: components['schemas']['BunchHomeResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    BunchHomeProfileResponse: {
+      /** Format: int64 */
+      id: number;
+      name: string;
+      imageUrl?: string;
+      /** @enum {string} */
+      characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+      /** @enum {string} */
+      visibility: 'PUBLIC' | 'PRIVATE';
+      introduction: string;
+    };
+    BunchHomeResponse: {
+      bunch: components['schemas']['BunchHomeProfileResponse'];
+      myMembership?: components['schemas']['MyMembershipResponse'];
+      permissions: components['schemas']['BunchPermissions'];
+      /** Format: int64 */
+      profileVersion?: number;
+      /** Format: int64 */
+      membershipVersion?: number;
+      /** Format: int64 */
+      memberCount: number;
+      /** Format: int64 */
+      followerCount: number;
+      /** Format: int64 */
+      followingCount: number;
+      /** Format: int64 */
+      draftCount?: number;
+      /** Format: int64 */
+      publishedCount?: number;
+      /** Format: int32 */
+      stage: number;
+      /** Format: int64 */
+      unreadCount?: number;
+      /** Format: int64 */
+      currentBunchId?: number;
+      /** @enum {string} */
+      accessScope: 'INTERNAL' | 'EXTERNAL';
+      /** @enum {string} */
+      followState: 'NONE' | 'REQUESTED' | 'FOLLOWING';
+      /** Format: int64 */
+      followId?: number;
+      canViewBundles: boolean;
+      canViewMembers: boolean;
+      canViewRelations: boolean;
+      isCurrentBunch: boolean;
+    };
+    BunchPermissions: {
+      canEditProfile: boolean;
+      canDeleteBunch: boolean;
+      canManageRoles: boolean;
+      canTransferOwner: boolean;
+      canBlock: boolean;
+      canInvite: boolean;
+      canLeave: boolean;
+    };
     ApiResponseBundlePage: {
       success: boolean;
       data?: components['schemas']['BundlePage'];
@@ -1275,6 +2843,19 @@ export interface components {
       data?: Record<string, never>;
       error?: components['schemas']['ApiError'];
     };
+    ApiResponseFollowCancellationResult: {
+      success: boolean;
+      data?: components['schemas']['FollowCancellationResult'];
+      error?: components['schemas']['ApiError'];
+    };
+    FollowCancellationResult: {
+      /** @enum {string} */
+      followState: 'NONE' | 'REQUESTED' | 'FOLLOWING';
+      /** Format: int64 */
+      followId?: number;
+      /** @enum {string} */
+      cancelled: 'NONE' | 'REQUESTED' | 'FOLLOWING';
+    };
   };
   responses: never;
   parameters: never;
@@ -1284,6 +2865,283 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  registerDevice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        installationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PushDeviceRegistrationRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePushDeviceResponse'];
+        };
+      };
+    };
+  };
+  unregisterDevice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        installationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseUnit'];
+        };
+      };
+    };
+  };
+  pin: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        advertisementId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePinnedPlaceResponse'];
+        };
+      };
+    };
+  };
+  hide: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        advertisementId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseUnit'];
+        };
+      };
+    };
+  };
+  pin_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundleId: number;
+        locationId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePinnedPlaceResponse'];
+        };
+      };
+    };
+  };
+  summary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialLikeResponse'];
+        };
+      };
+    };
+  };
+  like: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialLikeResponse'];
+        };
+      };
+    };
+  };
+  unlike: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialLikeResponse'];
+        };
+      };
+    };
+  };
+  follow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        viewerId: number;
+        targetId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseFollowResult'];
+        };
+      };
+    };
+  };
+  cancel: {
+    parameters: {
+      query: {
+        followId: number;
+      };
+      header?: never;
+      path: {
+        viewerId: number;
+        targetId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseFollowCancellationResult'];
+        };
+      };
+    };
+  };
+  block: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        viewerId: number;
+        targetId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseUnit'];
+        };
+      };
+    };
+  };
+  unblock: {
+    parameters: {
+      query: {
+        blockId: number;
+      };
+      header?: never;
+      path: {
+        viewerId: number;
+        targetId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseUnit'];
+        };
+      };
+    };
+  };
   updateImage: {
     parameters: {
       query?: never;
@@ -1357,6 +3215,38 @@ export interface operations {
       };
     };
   };
+  update: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'multipart/form-data': {
+          profile: components['schemas']['BunchProfileRequest'];
+          /** Format: binary */
+          photo?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchProfileResponse'];
+        };
+      };
+    };
+  };
   read: {
     parameters: {
       query?: never;
@@ -1376,6 +3266,33 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseNotificationRead'];
+        };
+      };
+    };
+  };
+  changeRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+        membershipId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChangeMembershipRoleRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseMembershipMutationResult'];
         };
       };
     };
@@ -1424,6 +3341,35 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['BundleTextRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBundleSnapshot'];
+        };
+      };
+    };
+  };
+  editPublished: {
+    parameters: {
+      query?: never;
+      header?: {
+        'X-Request-Id'?: string;
+      };
+      path: {
+        bunchId: number;
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EditPublishedBundleRequest'];
       };
     };
     responses: {
@@ -1526,6 +3472,58 @@ export interface operations {
       };
     };
   };
+  getLocations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBundleLocationState'];
+        };
+      };
+    };
+  };
+  saveDraftLocations: {
+    parameters: {
+      query?: never;
+      header?: {
+        'X-Request-Id'?: string;
+      };
+      path: {
+        bunchId: number;
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BundleLocationsRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBundleLocationState'];
+        };
+      };
+    };
+  };
   complete: {
     parameters: {
       query?: never;
@@ -1604,7 +3602,113 @@ export interface operations {
       };
     };
   };
+  bundle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SocialContentReportRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialContentReportResult'];
+        };
+      };
+    };
+  };
+  list: {
+    parameters: {
+      query?: {
+        size?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path: {
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialCommentPage'];
+        };
+      };
+    };
+  };
   create: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path: {
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSocialCommentRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialCommentItem'];
+        };
+      };
+    };
+  };
+  comment_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundleId: number;
+        commentId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SocialContentReportRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialContentReportResult'];
+        };
+      };
+    };
+  };
+  create_1: {
     parameters: {
       query?: never;
       header: {
@@ -1626,6 +3730,59 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseBunchResponse'];
+        };
+      };
+    };
+  };
+  report: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        viewerId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BunchReportRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchReportResult'];
+        };
+      };
+    };
+  };
+  decide: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        viewerId: number;
+        requestId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['FollowDecisionRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseFollowDecisionResult'];
         };
       };
     };
@@ -1652,7 +3809,7 @@ export interface operations {
       };
     };
   };
-  list: {
+  list_1: {
     parameters: {
       query?: {
         memberId?: number;
@@ -1760,6 +3917,34 @@ export interface operations {
       };
     };
   };
+  transferOwner: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OwnerTransferRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseMembershipMutationResult'];
+        };
+      };
+    };
+  };
   open: {
     parameters: {
       query?: never;
@@ -1805,7 +3990,90 @@ export interface operations {
       };
     };
   };
-  list_1: {
+  remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+        membershipId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BunchRemovalRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchRemovalResponse'];
+        };
+      };
+    };
+  };
+  leave: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BunchMembershipExitRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchDepartureResponse'];
+        };
+      };
+    };
+  };
+  delete_1: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BunchDeletionRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchDepartureResponse'];
+        };
+      };
+    };
+  };
+  list_2: {
     parameters: {
       query: {
         status: 'DRAFT' | 'PUBLISHED';
@@ -1831,7 +4099,7 @@ export interface operations {
       };
     };
   };
-  create_1: {
+  create_2: {
     parameters: {
       query?: never;
       header: {
@@ -1976,7 +4244,7 @@ export interface operations {
       };
     };
   };
-  leave: {
+  leave_1: {
     parameters: {
       query?: never;
       header?: {
@@ -2117,6 +4385,30 @@ export interface operations {
       };
     };
   };
+  devToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DevTokenRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseDevTokenResponse'];
+        };
+      };
+    };
+  };
   apple: {
     parameters: {
       query?: never;
@@ -2137,6 +4429,72 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseTokenResponse'];
+        };
+      };
+    };
+  };
+  getPreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePushPreferenceResponse'];
+        };
+      };
+    };
+  };
+  patchPreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PushPreferencePatchRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePushPreferenceResponse'];
+        };
+      };
+    };
+  };
+  get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        memberId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseMemberSocialProfileResponse'];
         };
       };
     };
@@ -2183,7 +4541,7 @@ export interface operations {
       };
     };
   };
-  get: {
+  get_1: {
     parameters: {
       query?: never;
       header?: never;
@@ -2199,6 +4557,70 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseOnboardingResponse'];
+        };
+      };
+    };
+  };
+  list_3: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseMyBunchesResponse'];
+        };
+      };
+    };
+  };
+  get_2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        noticeId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchAccessNoticeResponse'];
+        };
+      };
+    };
+  };
+  delete_2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        noticeId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseUnit'];
         };
       };
     };
@@ -2225,11 +4647,227 @@ export interface operations {
       };
     };
   };
-  members: {
+  get_3: {
+    parameters: {
+      query?: {
+        size?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseFeedResponse'];
+        };
+      };
+    };
+  };
+  read_1: {
     parameters: {
       query?: never;
       header?: never;
       path: {
+        advertisementId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseAdvertisementResponse'];
+        };
+      };
+    };
+  };
+  forBundle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBundlePlacePinsResponse'];
+        };
+      };
+    };
+  };
+  replies: {
+    parameters: {
+      query?: {
+        size?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path: {
+        bundleId: number;
+        commentId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialCommentPage'];
+        };
+      };
+    };
+  };
+  requests: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        viewerId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchSocialPageBunchFollowRequestItem'];
+        };
+      };
+    };
+  };
+  blocks: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        viewerId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchSocialPageBunchBlockItem'];
+        };
+      };
+    };
+  };
+  following: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        targetId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchSocialPageBunchRelationItem'];
+        };
+      };
+    };
+  };
+  followers: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        targetId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchSocialPageBunchRelationItem'];
+        };
+      };
+    };
+  };
+  list_4: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseRecommendedBundleListResponse'];
+        };
+      };
+    };
+  };
+  detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
         id: number;
       };
       cookie?: never;
@@ -2242,12 +4880,60 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          '*/*': components['schemas']['ApiResponseListBunchMemberResponse'];
+          '*/*': components['schemas']['ApiResponseRecommendedBundleDetailResponse'];
         };
       };
     };
   };
-  detail: {
+  bundles: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchSocialPageBunchPublicBundleCard'];
+        };
+      };
+    };
+  };
+  bundle_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchPublicBundleDetail'];
+        };
+      };
+    };
+  };
+  detail_1: {
     parameters: {
       query?: never;
       header?: never;
@@ -2296,7 +4982,7 @@ export interface operations {
       };
     };
   };
-  list_2: {
+  list_5: {
     parameters: {
       query?: {
         page?: number;
@@ -2321,7 +5007,73 @@ export interface operations {
       };
     };
   };
-  get_1: {
+  memberships: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseMembershipsResponse'];
+        };
+      };
+    };
+  };
+  members: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseListBunchMemberResponse'];
+        };
+      };
+    };
+  };
+  home: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBunchHomeResponse'];
+        };
+      };
+    };
+  };
+  get_4: {
     parameters: {
       query?: never;
       header?: never;
@@ -2344,7 +5096,7 @@ export interface operations {
       };
     };
   };
-  delete_1: {
+  delete_3: {
     parameters: {
       query?: never;
       header?: {
@@ -2369,7 +5121,7 @@ export interface operations {
       };
     };
   };
-  summary: {
+  summary_1: {
     parameters: {
       query?: never;
       header?: never;
@@ -2395,6 +5147,7 @@ export interface operations {
     parameters: {
       query: {
         name: string;
+        excludeBunchId?: number;
       };
       header?: never;
       path?: never;
@@ -2433,6 +5186,51 @@ export interface operations {
       };
     };
   };
+  unpin: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        pinId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseUnit'];
+        };
+      };
+    };
+  };
+  delete_4: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundleId: number;
+        commentId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSocialCommentItem'];
+        };
+      };
+    };
+  };
   removeParticipant: {
     parameters: {
       query?: never;
@@ -2460,3 +5258,6 @@ export interface operations {
     };
   };
 }
+type WithRequired<T, K extends keyof T> = T & {
+  [P in K]-?: T[P];
+};

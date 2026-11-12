@@ -20,25 +20,33 @@ const bundlePhotoSchema = z.object({
   captionUpdatedAt: z.string().nullish(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundlePhotoResponse']>>;
 
-// ponytail: 위치 저장은 명세에 없는 가짜 서버 확장(장소 검색 이슈에서 계약이 정해지면 생성 타입으로 맞춤)이라 선택 필드로 받음
 const bundleLocationSchema = z.object({
+  id: z.number().int().positive(),
   provider: z.string(),
   externalId: z.string(),
   name: z.string(),
-  address: z.string().nullish(),
-});
+  address: z.string(),
+  position: z.number().int().nonnegative(),
+}) satisfies z.ZodType<ApiContract<Schemas['BundleLocationResponse']>>;
 
 const bundleParticipantSchema = z.object({
   memberId: z.number().int().positive(),
   joinedAt: z.string(),
+  nickname: z.string().nullish(),
+  imageUrl: z.string().nullish(),
+  profileAvailable: z.boolean(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundleParticipantResponse']>>;
 
 const bundleCommentSchema = z.object({
+  id: z.number().int().positive(),
   memberId: z.number().int().positive(),
   content: z.string(),
   version: z.number().int().nonnegative(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  nickname: z.string().nullish(),
+  imageUrl: z.string().nullish(),
+  profileAvailable: z.boolean(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundleCommentResponse']>>;
 
 const bundlePermissionsSchema = z.object({
@@ -48,6 +56,9 @@ const bundlePermissionsSchema = z.object({
   canEdit: z.boolean(),
   canPublish: z.boolean(),
   canDelete: z.boolean(),
+  canReport: z.boolean(),
+  canLike: z.boolean(),
+  canComment: z.boolean(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundlePermissions']>>;
 
 const leaseStateSchema = z.object({
@@ -57,7 +68,11 @@ const leaseStateSchema = z.object({
   leaseVersion: z.number().int().nonnegative(),
 }) satisfies z.ZodType<ApiContract<Schemas['LeaseState']>>;
 
-/** BundleSnapshot(초안 생성·상세·저장·발행 응답 공통), 중첩 배열·객체는 계약 검사가 선택 필드를 다루지 못해 위 항목별 스키마에서 따로 결합 */
+/**
+ * BundleSnapshot(초안 생성·상세·저장·발행 응답 공통)
+ * 중첩 배열·객체는 계약 검사가 선택 필드를 다루지 못해 항목별 스키마(위)에서 따로 검사 후 결합
+ * 아래 `satisfies`는 `locations`를 그대로 대조하고 `photos` 등 나머지 중첩 항목은 제외
+ */
 export const bundleSnapshotSchema = z.object({
   id: z.number().int().positive(),
   bunchId: z.number().int().positive(),
@@ -69,8 +84,11 @@ export const bundleSnapshotSchema = z.object({
   visibilityVersion: z.number().int().nonnegative(),
   date: z.string().nullish(),
   dateVersion: z.number().int().nonnegative(),
-  locations: z.array(bundleLocationSchema).optional(),
-  locationsVersion: z.number().int().nonnegative().optional(),
+  locationVersion: z.number().int().nonnegative(),
+  locations: z.array(bundleLocationSchema),
+  likeCount: z.number().int().nonnegative(),
+  likedByCurrentBunch: z.boolean(),
+  commentCount: z.number().int().nonnegative(),
   revision: z.number().int().nonnegative(),
   photos: z.array(bundlePhotoSchema),
   participants: z.array(bundleParticipantSchema),
@@ -153,7 +171,7 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   visibilityVersion: snapshot.visibilityVersion,
   date: snapshot.date ?? null,
   dateVersion: snapshot.dateVersion,
-  locations: (snapshot.locations ?? []).map((location) => ({
+  locations: snapshot.locations.map((location) => ({
     id: `${location.provider}:${location.externalId}`,
     name: location.name,
   })),
