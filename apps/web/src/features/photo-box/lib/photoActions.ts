@@ -11,33 +11,57 @@ export const canDeletePhotos = (photos: readonly PhotoBoxPhoto[], viewer: PhotoB
   viewer.isAdmin || photos.every((photo) => photo.uploaderIds.includes(viewer.memberId));
 
 /**
- * 날짜를 바꾸기 전에 확인 창을 거치는지: 관리자가 다른 멤버 사진이나 함께 올린 사진을 포함할 때(명세 3.4.1)
- * 일반 멤버는 내가 올린 사진만 바꿀 수 있어 확인 없이 진행
+ * 날짜 바꾸기 확인 창 문구를 가르는 종류(명세 3.4.1). 확인 창을 거치지 않으면 undefined
+ * - others: 관리자가 다른 멤버가 올린 사진만 고름(함께 올린 사진이 없음)
+ * - includes-others: 관리자가 내 사진과 다른 멤버 사진을 함께 고르거나, 고른 사진에 함께 올린 사진이 있음
+ * 일반 멤버는 내가 올린 사진만 바꿀 수 있고, 관리자라도 나 혼자 올린 사진만 고르면 확인 없이 진행
  */
-export const needsDateChangeConfirm = (photos: readonly PhotoBoxPhoto[], viewer: PhotoBoxViewer) =>
-  viewer.isAdmin &&
-  photos.some(
+export type DateConfirmKind = 'others' | 'includes-others';
+
+export const getDateConfirmKind = (
+  photos: readonly PhotoBoxPhoto[],
+  viewer: PhotoBoxViewer,
+): DateConfirmKind | undefined => {
+  if (!viewer.isAdmin) return undefined;
+  const needsConfirm = photos.some(
     (photo) => !photo.uploaderIds.includes(viewer.memberId) || photo.uploaderIds.length > 1,
   );
+  if (!needsConfirm) return undefined;
+  const othersOnly = photos.every(
+    (photo) => !photo.uploaderIds.includes(viewer.memberId) && photo.uploaderIds.length === 1,
+  );
+  return othersOnly ? 'others' : 'includes-others';
+};
+
+/** 날짜를 바꾸기 전에 확인 창을 거치는지(명세 3.4.1) */
+export const needsDateChangeConfirm = (photos: readonly PhotoBoxPhoto[], viewer: PhotoBoxViewer) =>
+  getDateConfirmKind(photos, viewer) !== undefined;
 
 /**
  * 삭제 확인 창 문구를 가르는 종류(명세 3.3.5)
  * - own: 내가 혼자 올린 사진만
- * - others: 관리자가 다른 멤버 사진을 고름(내 사진이 섞여도 포함)
+ * - others: 관리자가 다른 멤버가 올린 사진만 고름
+ * - includes-others: 관리자가 내 사진과 다른 멤버 사진을 함께 고름
  * - co-uploaded: 함께 올린 사진만(내 이름만 빠짐)
  * - mixed: 혼자 올린 사진과 함께 올린 사진이 섞임
  */
-export type DeleteKind = 'own' | 'others' | 'co-uploaded' | 'mixed';
+export type DeleteKind = 'own' | 'others' | 'includes-others' | 'co-uploaded' | 'mixed';
 
 export const getDeleteKind = (
   photos: readonly PhotoBoxPhoto[],
   viewer: PhotoBoxViewer,
 ): DeleteKind => {
-  if (photos.some((photo) => !photo.uploaderIds.includes(viewer.memberId))) return 'others';
+  const notMine = photos.filter((photo) => !photo.uploaderIds.includes(viewer.memberId)).length;
+  if (notMine === photos.length) return 'others';
+  if (notMine > 0) return 'includes-others';
   const coUploaded = photos.filter((photo) => photo.uploaderIds.length > 1).length;
   if (coUploaded === 0) return 'own';
   return coUploaded === photos.length ? 'co-uploaded' : 'mixed';
 };
+
+/** 함께 올린 사진 수(삭제해도 사진함에 남는 사진 수, 「다른 멤버도 올린 사진 M장은 사진함에 남아요.」의 M) */
+export const countCoUploaded = (photos: readonly PhotoBoxPhoto[]) =>
+  photos.filter((photo) => photo.uploaderIds.length > 1).length;
 
 export type DeleteResult = {
   photos: readonly PhotoBoxPhoto[];

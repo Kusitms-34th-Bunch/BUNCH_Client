@@ -8,7 +8,7 @@ type SavingDateSheetProps = ScreenOverlayProps & {
   close: () => void;
   defaultDate?: Date | null | undefined;
   /** 저장 전 확인. false면 시트를 그대로 둠 */
-  beforeSave?: (_date: Date) => boolean | Promise<boolean>;
+  beforeSave?: ((_date: Date) => boolean | Promise<boolean>) | undefined;
   /** true면 시트를 닫고, false(실패)면 그대로 둠(기능 spec 3.4.1) */
   save: (_date: Date) => Promise<boolean>;
 };

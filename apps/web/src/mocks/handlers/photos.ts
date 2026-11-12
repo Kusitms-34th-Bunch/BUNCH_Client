@@ -103,6 +103,8 @@ const batchCounts = new Map<string, number>();
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+// 서버는 오늘(Asia/Seoul) 이후 날짜를 거절함('yyyy-MM-dd'라 문자열 비교로 충분)
+const todayInSeoul = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const TIME = /^\d{2}:\d{2}:\d{2}$/;
 
 type UploadRequest = {
@@ -266,7 +268,15 @@ export const photoHandlers = [
     const bunchId = toWireId(params.bunchId);
     const body: unknown = await request.json().catch(() => null);
     const photoIds = (body as { photoIds?: unknown } | null)?.photoIds;
-    if (bunchId === undefined || !isPhotoIdList(photoIds)) return fail(400, 'COMMON_001');
+    // 서버는 빈 목록·50개 초과·중복·1 미만 ID를 400 COMMON_001로 거절함
+    if (
+      bunchId === undefined ||
+      !isPhotoIdList(photoIds) ||
+      photoIds.length > 50 ||
+      new Set(photoIds).size !== photoIds.length
+    ) {
+      return fail(400, 'COMMON_001');
+    }
 
     const { memberships, photos } = mockDb.get();
     const myRole = memberships.find(
@@ -277,8 +287,9 @@ export const photoHandlers = [
     const targets = photos.filter(
       (photo) => photo.bunchId === bunchId && photoIds.includes(photo.photoId),
     );
-    if (targets.length !== new Set(photoIds).size) return fail(404, 'RESOURCE_001');
-    // ponytail: 남의 사진을 지우려는 멤버의 오류 코드는 명세에 없어 AUTH_002로 대신함, 명세 확정 시 교체
+    // 고른 사진 중 일부가 그사이 지워졌으면 아무것도 삭제하지 않고 사라진 사진 ID를 요청한 순서대로 알림
+    const missingPhotoIds = photoIds.filter((id) => !targets.some((photo) => photo.photoId === id));
+    if (missingPhotoIds.length > 0) return fail(409, 'PHOTO_004', { missingPhotoIds });
     const isAdmin = myRole !== 'MEMBER';
     if (!isAdmin && targets.some((photo) => !photo.uploaderIds.includes(MOCK_MY_MEMBER_ID))) {
       return fail(403, 'AUTH_002');
@@ -302,6 +313,59 @@ export const photoHandlers = [
       }),
     }));
     return ok({ deletedCount, uploaderRemovedCount });
+  }),
+
+  // POST /api/v1/bunches/{bunchId}/photos/date
+  // 고른 사진(1~50장, 중복 불가)의 촬영 날짜만 바꿈(시각 유지). 전부 성공 또는 전부 실패
+  // 확인 순서(서버 명세): 입력·날짜 400 → 번치·소속 → 사라진 사진 409 PHOTO_004 → 권한 403 AUTH_002
+  // 날짜 없음으로 되돌리는 clearDate는 날짜 미확인 사진을 끌 수 없어 화면이 부르지 않으므로 가짜 서버도 받지 않음(400)
+  http.post('/api/bunches/:bunchId/photos/date', async ({ params, request }) => {
+    const bunchId = toWireId(params.bunchId);
+    const body = (await request.json().catch(() => null)) as {
+      photoIds?: unknown;
+      capturedDate?: unknown;
+      clearDate?: unknown;
+    } | null;
+    const photoIds = body?.photoIds;
+    const capturedDate = body?.capturedDate;
+    if (
+      bunchId === undefined ||
+      !isPhotoIdList(photoIds) ||
+      photoIds.length > 50 ||
+      new Set(photoIds).size !== photoIds.length ||
+      body?.clearDate === true ||
+      typeof capturedDate !== 'string' ||
+      !DATE.test(capturedDate) ||
+      capturedDate > todayInSeoul()
+    ) {
+      return fail(400, 'COMMON_001');
+    }
+
+    const { bunches, memberships, photos } = mockDb.get();
+    if (!bunches.some((bunch) => bunch.id === bunchId)) return fail(404, 'RESOURCE_001');
+    const myRole = memberships.find(
+      (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
+    )?.role;
+    if (!myRole) return fail(403, 'AUTH_002');
+
+    const targets = photos.filter(
+      (photo) => photo.bunchId === bunchId && photoIds.includes(photo.photoId),
+    );
+    const missingPhotoIds = photoIds.filter((id) => !targets.some((photo) => photo.photoId === id));
+    if (missingPhotoIds.length > 0) return fail(409, 'PHOTO_004', { missingPhotoIds });
+    // 일반 멤버가 다른 멤버만 올린 사진을 하나라도 섞으면 아무것도 바꾸지 않음(함께 올린 사진은 올린 멤버 누구라도 가능)
+    const isAdmin = myRole !== 'MEMBER';
+    if (!isAdmin && targets.some((photo) => !photo.uploaderIds.includes(MOCK_MY_MEMBER_ID))) {
+      return fail(403, 'AUTH_002');
+    }
+
+    mockDb.update((current) => ({
+      ...current,
+      photos: current.photos.map((photo) =>
+        targets.includes(photo) ? { ...photo, capturedDate } : photo,
+      ),
+    }));
+    return ok({ updatedCount: targets.length });
   }),
 
   // GET /api/v1/bunches/{bunchId}/photos/{photoId}

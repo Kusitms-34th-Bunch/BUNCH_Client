@@ -10,11 +10,14 @@ import {
 } from '../components/PhotoSelectionDialogs';
 import { SavingDateSheet } from '../components/SavingDateSheet';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
+import { MissingPhotosError } from '../lib/missingPhotos';
 import {
   MAX_BUNDLE_PHOTOS,
   canDeletePhotos,
+  countCoUploaded,
+  getDateConfirmKind,
   getDeleteKind,
-  needsDateChangeConfirm,
+  type DateConfirmKind,
   type DeleteKind,
 } from '../lib/photoActions';
 import { pruneSelection, toggleSelection, type PhotoSelection } from '../lib/selection';
@@ -153,11 +156,16 @@ export function usePhotoSelectionFlow({
         ));
       } else notify(PHOTO_BOX_MESSAGES.dateForbidden);
     } else if (canDeletePhotos(selectedPhotos, data.viewer)) {
-      const description = PHOTO_BOX_MESSAGES.deleteConfirmDescription(deleteKind ?? 'own');
+      const { title, lines } = PHOTO_BOX_MESSAGES.deleteConfirm(
+        deleteKind ?? 'own',
+        selectedPhotos.length,
+        countCoUploaded(selectedPhotos),
+      );
       openOverlay((rootProps, close) => (
         <DeleteConfirmDialog
           {...rootProps}
-          description={description}
+          title={title}
+          lines={lines}
           onConfirm={() => {
             close();
             void confirmDelete();
@@ -174,12 +182,31 @@ export function usePhotoSelectionFlow({
     if (isSelectionCurrent()) onCreateBundle?.(selection);
   });
 
+  // 서버가 거절하며 알려 준 사라진 사진(`PHOTO_004`)을 선택에서 빼고 안내함. 선택 모드는 유지(전부 사라져 0장이 되어도 토스트만 보이고 선택 모드는 그대로, 명세 3.3.1)
+  // 서버가 사라진 사진을 알려 주지 않았으면(빈 목록) 빼지 못하므로 일반 실패로 다루고 false를 돌려줌
+  const dropMissing = (
+    ids: PhotoSelection,
+    missingIds: readonly string[],
+    failMessage: string,
+  ): boolean => {
+    const missing = new Set(missingIds);
+    const remaining = ids.filter((id) => !missing.has(id));
+    if (remaining.length === ids.length) {
+      notify(failMessage);
+      return false;
+    }
+    setSelection(remaining);
+    notify(PHOTO_BOX_MESSAGES.selectionStale(ids.length - remaining.length));
+    return true;
+  };
+
   const confirmDelete = usePreservedCallback(async () => {
     if (pending || !isSelectionCurrent()) return;
     const session = sessionRef.current;
+    const ids = selection;
     setPending('delete');
     try {
-      const { removedCount } = await actions.deletePhotos(selection);
+      const { removedCount } = await actions.deletePhotos(ids);
       setPending(undefined);
       if (session !== sessionRef.current) return;
       if (removedCount > 0) {
@@ -188,22 +215,34 @@ export function usePhotoSelectionFlow({
       stop();
       // 0장이어도 선택 모드는 끝나 눌렀던 선택 칸이 사라지므로 초점을 옮김
       onDeleted?.();
-    } catch {
+    } catch (error) {
       setPending(undefined);
+      if (session !== sessionRef.current) return;
+      // 고른 사진이 그사이 지워졌으면 아무것도 삭제되지 않음: 사라진 사진만 선택에서 뺌
+      if (error instanceof MissingPhotosError) {
+        dropMissing(ids, error.missingIds, PHOTO_BOX_MESSAGES.deleteFailed);
+        return;
+      }
       // 실패하면 선택을 그대로 두어 바로 다시 시도할 수 있게 함
-      if (session === sessionRef.current) notify(PHOTO_BOX_MESSAGES.deleteFailed);
+      notify(PHOTO_BOX_MESSAGES.deleteFailed);
     }
   });
 
   // 여러 장은 전부 성공 또는 전부 실패: 성공하면 선택 모드를 끝내고 토스트, 실패하면 시트를 그대로 둠
   const changeDate = async (date: Date) => {
     const session = sessionRef.current;
+    const ids = selection;
     setPending('date');
     try {
-      await actions.changePhotoDates(selection, date);
-    } catch {
+      await actions.changePhotoDates(ids, date);
+    } catch (error) {
       setPending(undefined);
-      if (session === sessionRef.current) notify(PHOTO_BOX_MESSAGES.dateChangeFailed);
+      if (session !== sessionRef.current) return false;
+      // 고른 사진이 그사이 지워졌으면 아무것도 바뀌지 않음: 사라진 사진만 선택에서 빼고 시트는 닫음(사라진 사진을 몰라 일반 실패가 되면 시트를 그대로 둠)
+      if (error instanceof MissingPhotosError) {
+        return dropMissing(ids, error.missingIds, PHOTO_BOX_MESSAGES.dateChangeFailed);
+      }
+      notify(PHOTO_BOX_MESSAGES.dateChangeFailed);
       return false;
     }
     setPending(undefined);
@@ -214,12 +253,13 @@ export function usePhotoSelectionFlow({
   };
 
   // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸)
-  const askDateConfirm = () =>
+  const askDateConfirm = (kind: DateConfirmKind) =>
     new Promise<boolean>((resolve) => {
       openOverlay(
         (rootProps, close) => (
           <DateChangeConfirmDialog
             {...rootProps}
+            kind={kind}
             onConfirm={() => {
               resolve(true);
               close();
@@ -232,7 +272,8 @@ export function usePhotoSelectionFlow({
 
   const checkDate = usePreservedCallback(async () => {
     if (pending || !data || !isSelectionCurrent()) return false;
-    return !needsDateChangeConfirm(selectedPhotos, data.viewer) || (await askDateConfirm());
+    const kind = getDateConfirmKind(selectedPhotos, data.viewer);
+    return kind === undefined || (await askDateConfirm(kind));
   });
 
   // 확인 창을 거치는 사이 목록이 바뀔 수 있어 저장할 때의 최신 값으로 다시 확인
@@ -246,6 +287,7 @@ export function usePhotoSelectionFlow({
     /** 저장·삭제·날짜 변경 요청이 도는 중 */
     busy: pending !== undefined,
     saving: pending === 'save',
+    deleting: pending === 'delete',
     start,
     stop,
     toggle,

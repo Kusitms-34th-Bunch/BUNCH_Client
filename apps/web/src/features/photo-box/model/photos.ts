@@ -16,6 +16,11 @@ export const photoDeleteResponseSchema = z.object({
 
 export type PhotoDeleteResult = z.infer<typeof photoDeleteResponseSchema>;
 
+/** `POST /api/v1/bunches/{bunchId}/photos/date` 응답. 날짜를 바꾼 사진 수 */
+export const photoDateChangeResponseSchema = z.object({
+  updatedCount: z.number().int().nonnegative(),
+}) satisfies z.ZodType<ApiContract<components['schemas']['PhotoDateChangeResponse']>>;
+
 /**
  * `POST /api/v1/bunches/{bunchId}/photos` 응답. `STORED`는 새로 저장, `MERGED`는 다른 멤버가 올린 같은 사진에 올린 사람으로 추가,
  * `ALREADY_UPLOADED`는 내가 이미 올린 같은 사진(변경 없음). 세 경우 모두 사진 id를 돌려줌
