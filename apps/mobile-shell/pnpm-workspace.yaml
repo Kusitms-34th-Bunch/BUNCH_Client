@@ -1,2 +1,4 @@
 allowBuilds:
   '@sentry/cli': true
+minimumReleaseAgeExclude:
+  - expo-media-library@58.0.14

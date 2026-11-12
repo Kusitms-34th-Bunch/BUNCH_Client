@@ -7,6 +7,7 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { PhotoBoxPreview } from '../../lib/preview';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoBox } from '../../hooks/usePhotoBox';
+import { usePhotoUpload } from '../../hooks/usePhotoUpload';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
 
 type PhotoBoxProps = {
@@ -15,7 +16,7 @@ type PhotoBoxProps = {
 };
 
 /**
- * `/photos` 사진함 탭 화면: 상태와 동작을 가져와 화면에 연결(번치 전환·날짜 바꾸기·올리기는 아직 동작 없음)
+ * `/photos` 사진함 탭 화면: 상태와 동작을 가져와 화면에 연결(번치 전환·날짜 바꾸기는 아직 동작 없음)
  * 선택 모드의 「번들 만들기」는 번들 만들기 화면을 거치지 않고 화면 전체 로딩 뒤 초안 작성 화면으로 이동(기능 spec 3.3.4)
  * 고른 사진으로 초안 생성 API를 불러 만든 초안으로 이동하고, 만드는 동안 중복 요청을 막음
  */
@@ -24,6 +25,10 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
     progressive: true,
   });
   const { create: createBundle, creating } = useCreateBundle();
+  // 올리기는 올리기를 시작한 시점의 번치에 저장
+  const { start: startUpload, uploading } = usePhotoUpload(
+    state.kind === 'ready' ? state.data.bunch.id : undefined,
+  );
   // 화면을 새로 시작하는 기준: 준비된 번치의 id. 로딩·오류로 잠깐 바뀌어도 마지막 번치 id를 유지해, 같은 번치로 돌아올 때는 선택 모드와 멤버 필터를 지우지 않음
   const readyBunchId = state.kind === 'ready' ? state.data.bunch.id : undefined;
   const [screenKey, setScreenKey] = useState(readyBunchId);
@@ -49,6 +54,7 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
           state={state}
           actions={actions}
           onCreateBundle={createBundle}
+          onUpload={(source) => void startUpload(source)}
           onRetry={retry}
           onLoadMore={loadMore}
         />
@@ -56,6 +62,10 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
       {/* 안내 live region은 항상 마운트하고 문구만 바꿈. 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
       <p role="status" className="sr-only">
         {creating ? PHOTO_BOX_MESSAGES.bundleCreating : ''}
+      </p>
+      {/* 올리는 동안은 화면을 막거나 진행 표시를 두지 않고 다 올라간 사진부터 목록에 들어오게 함(기획 확정). 사진함을 보거나 다른 화면으로 가도 계속 올라가며, 스크린 리더에게만 문구로 알림 */}
+      <p role="status" className="sr-only">
+        {uploading ? PHOTO_BOX_MESSAGES.uploading : ''}
       </p>
       {creating ? <PageLoading /> : null}
     </>

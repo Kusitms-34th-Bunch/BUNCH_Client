@@ -29,7 +29,7 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 | `POST /api/auth/reissue` | refresh 쿠키로 `reissueOnce`, 두 쿠키 교체 후 204. 실패해도 쿠키는 지우지 않는다(다른 탭·인스턴스가 먼저 교체한 새 쿠키를 지우지 않도록). 쿠키 정리는 로그아웃이 맡는다                                                                                |
 | `POST /api/auth/logout`  | 백엔드 로그아웃을 시도하고 결과(만료로 인한 401 포함)와 관계없이 쿠키 삭제, 204. 백엔드 로그아웃은 access 토큰만 받으므로 access 쿠키가 만료돼 없으면 refresh 쿠키로 재발급한 access로 폐기한다(재발급도 실패하면 백엔드 세션은 refresh 만료까지 남음) |
 
-이 구성을 섞지 않는다 — server-only 코드에 `browserClient`를 쓰거나 브라우저 코드에서 쿠키·토큰을 직접 다루지 않는다. multipart 업로드(가입 프로필, 번치 사진)도 BFF를 거치므로 배포처의 요청 본문 크기 제한을 백엔드 제한(파일 6MB·요청 7MB)과 함께 확인한다.
+이 구성을 섞지 않는다 — server-only 코드에 `browserClient`를 쓰거나 브라우저 코드에서 쿠키·토큰을 직접 다루지 않는다. multipart 업로드(가입 프로필, 번치 사진)도 BFF를 거치므로 배포처의 요청 본문 크기 제한을 백엔드 제한(파일 6MB·요청 7MB)과 함께 확인한다. 운영 웹은 Vercel 함수로 BFF를 돌리고 함수 요청 본문은 약 4.5MB를 넘으면 거절되므로, 사진함 업로드는 쉘이 사진을 4MiB 이하로 줄여 주고(`apps/mobile-shell/src/gallery-resize.ts`의 `UPLOAD_TARGET_BYTES`), 웹이 보내기 전에 4.4MB 이하의 JPEG인지 한 번 더 확인한다(`features/photo-box/lib/photoUpload.ts`의 `MAX_UPLOAD_BYTES`). 응답을 기다리는 시간은 BFF가 백엔드에 10초라, 끊기면 `BFF_UPSTREAM_UNAVAILABLE`(502)로 오고 사진함 업로드는 이를 다시 시도 대상으로 본다.
 
 ## BFF 경로
 

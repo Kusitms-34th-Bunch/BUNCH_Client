@@ -152,12 +152,25 @@ packages/bridge/
 ## 갤러리 사진 선택
 
 - `pickGalleryImage(options?: { edit?: boolean }): Promise<GalleryImage | null>`은 `expo-image-picker`로 사진 한 장을 선택한다. 촬영은 제공하지 않는다. 취소는 `null`, 읽기·크기 제한 실패는 reject이며 웹은 기존 사진을 유지한다.
-- SDK 58 호환 버전은 `expo install`로 설치한다. 사진 전용 시스템 선택기는 전체 앨범 권한을 먼저 요청하지 않는다. 앱 권한 설명은 `app.json`에서 관리하며 카메라·마이크 권한은 추가하지 않는다. [Expo ImagePicker](https://docs.expo.dev/versions/v58.0.0/sdk/imagepicker/)를 기준으로 한다.
+- SDK 58 호환 버전은 `expo install`로 설치한다. 사진 전용 시스템 선택기는 전체 앨범 권한을 먼저 요청하지 않는다. 앱 권한 설명은 `app.json`에서 관리한다. 카메라 권한 문구(`cameraPermission`)는 사진함 촬영(`capturePhoto`)이 쓰고, 마이크 권한은 추가하지 않는다. [Expo ImagePicker](https://docs.expo.dev/versions/v58.0.0/sdk/imagepicker/)를 기준으로 한다.
 - `src/gallery-image.ts`는 기본으로 시스템 정사각형 편집 후 JPEG base64를 반환한다. `edit: false`면 시스템 편집 없이 원본을 `expo-image-manipulator`로 긴 변 2048px 이하로 줄여 JPEG(압축 0.8)로 반환하고, 웹이 직접 자른다(프로필 사진의 원형 조정 화면). 옵션을 모르는 이전 앱은 옵션을 무시하고 정사각형 편집 결과를 돌려주며, 웹 조정 화면이 그 결과를 그대로 다시 자른다. 네이티브 `file://` 경로는 웹에서 직접 읽지 않는다. 브리지 응답은 `galleryImageSchema`로 data URL 형식과 약 4MiB 전송 상한을 검증한다.
 - 현재 사용처는 번치 생성 완료 화면, 번치 프로필 편집, 가입·MY 프로필 사진이며 모두 미리보기까지다. 이미지 API 확정 후 업로드 결과 ID/URL로 저장 계약을 연결한다. `exif: false`만으로 파일 메타데이터 제거를 보장하지 않으며 업로드 단계에서 별도 확정한다.
 - 웹 fallback은 파일 input으로 선택하고 브라우저 디코딩 성공 후 표시한다. 기본 규칙은 JPEG·PNG·WebP 최대 3MiB, 프로필 사진은 JPEG·PNG·HEIC·WebP 최대 10MiB(`PROFILE_IMAGE_RULES`, 브라우저가 HEIC를 읽지 못하면 같은 안내로 거절). 네이티브 편집 UI·HEIC 지원을 대체하지 않는다. 사진을 영구 저장하거나 localStorage에 남기지 않는다.
 - WebView 내부 이동은 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)만 허용하고 외부 주소는 OS로 전달한다. 외부 페이지가 갤러리 등 네이티브 브리지에 접근하지 못하도록 하는 경계다. 인증 redirect는 별도 계약 확정 후 연결한다.
 - 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다(`expo-image-picker`, `expo-image-manipulator`). 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`은 initialBridge 메서드도 포함). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
+
+### 사진함 업로드용 선택·촬영 (`src/gallery-upload.ts`)
+
+- `pickGalleryImages({ limit? })`는 시스템 선택기로 최대 50장을 고르고, `capturePhoto()`는 카메라로 한 장 찍는다. 둘 다 사진 데이터를 넘기지 않고 `{ status: 'picked', photos: [{ id, capturedDate?, capturedTime? }] }`(취소는 `canceled`, 카메라 권한 거부는 `denied`)만 돌려준다. 웹이 `readPickedPhoto(id)`로 한 장씩 읽어 가고, 끝나면 `releasePickedPhotos(ids?)`로 놓아 준다. 한꺼번에 50장을 base64로 넘기면 WebView 메모리가 위험해서 이렇게 나눴다.
+- `readPickedPhoto(id)`는 가공한 JPEG와 함께 **가공 전 원본 파일의 SHA-256**(`originalFileHash`, 소문자 hex 64자)을 돌려준다(`src/gallery-upload.ts`의 `hashOriginal`, `expo-crypto`로 계산하고 읽거나 계산하지 못하면 필드 없이 돌려줌). 가공(리사이즈·재인코딩) 결과는 같은 원본이어도 기기마다 바이트가 달라(실기기 확인: 원본 해시는 같고 가공본 해시는 다름) 서버가 같은 원본 사진을 판별하려면 원본 해시가 필요하다. iOS 선택기가 HEIC를 새 JPEG로 바꾸면 원본 해시가 맞지 않으므로 선택기에 `preferredAssetRepresentationMode: current`로 원본 그대로 받도록 요청한다.
+- `readPickedPhoto`는 `expo-image-manipulator`로 긴 변을 2560px 이하로 줄이고 JPEG(압축 0.8)로 다시 저장한다. 다시 저장하면서 위치를 포함한 원본의 메타데이터가 빠지고 HEIC·PNG·WebP도 JPEG가 된다(서버는 JPEG만 받음). 이 처리는 서버로 보내기 전에 쉘에서 해야 한다.
+- 촬영 날짜·시각은 `src/photo-exif.ts`가 EXIF에서 꺼낸다. 결과에는 날짜·시각만 담기고 위치는 어디에도 넘기지 않는다.
+- `readPickedPhoto`는 결과를 목표 크기(`UPLOAD_TARGET_BYTES`, 4MiB) 이하로 맞춘다. 웹은 Vercel의 BFF(함수)를 거쳐 올리는데 함수 요청 본문은 약 4.5MB를 넘으면 거절되고, 백엔드 상한도 문서마다 달라(파일 6MB·요청 7MB, 업로드 API 명세 30MiB) 가장 작은 쪽에 맞췄다. 넘으면 압축 품질을 0.8 → 0.6 → 0.45 → 0.3으로 낮춰 다시 저장한다. 배포처나 백엔드 제한이 바뀌면 값을 맞춘다. 기기가 알려 준 가로·세로가 회전 전 값이면 줄이는 변이 틀릴 수 있어 결과 크기로 한 번 더 확인한다(서버는 긴 변 4096px 이하).
+- 선택·촬영 창은 한 번에 하나만 열린다(이미 열려 있으면 둘째 요청은 `canceled`). `app.json`의 사진·카메라 권한 문구가 이미 있고 새 네이티브 모듈은 쓰지 않아 개발 앱 재빌드가 필요 없다. Expo Go에서도 선택·촬영·가공을 시험할 수 있다(권한 문구는 Expo Go 자체 문구로 뜸).
+- iOS는 촬영 정보를 `{Exif}` 하위 객체에 묶어 줄 수 있어 최상위와 `{Exif}`·`Exif` 안을 읽는다. 기기별 실제 키 구조는 실기기에서 확인해야 한다.
+- 선택기가 앱 캐시에 만든 원본 복사본(위치를 포함할 수 있음)은 `releasePickedPhotos`가 놓아 줄 때 `expo-file-system`으로 함께 지운다(`src/cache-cleanup.ts`). 가공 결과 파일(`saveAsync`)은 base64를 받은 직후 지운다. **앱 캐시 폴더 안의 파일만 지우고**(`src/cache-path.ts`) 사용자의 앨범 원본은 건드리지 않으며, 지우지 못해도 업로드는 막지 않는다. 웹은 사진을 읽은 뒤 바로 놓아 줘도 되고, 실패한 사진의 재시도는 웹이 들고 있는 가공 결과로 한다. `expo-file-system`을 이 쉘의 직접 의존성으로 추가했으므로 개발 앱·배포 빌드는 다시 빌드해야 한다(Expo Go는 영향 없음). 가공 결과의 위치 제거는 소스 코드 읽기에 근거한 추론이라 실기기에서 올린 사진을 확인해야 한다.
+- `saveImagesToAlbum(urls)`는 공개 https 이미지 주소(최대 50개, IP 주소·`user:pass@`·localhost·내부 호스트 이름은 계약 `isSavableImageUrl`이 거절. 웹이 주소 하나 때문에 묶음이 거절되지 않게 사진별로 먼저 거르고, 쉘도 같은 검사로 다시 막는다)를 쉘이 앱 캐시로 내려받아(`expo-file-system`, 3장씩 동시) `expo-media-library`로 앨범에 저장하고 임시 파일을 바로 지운다(`src/album-save.ts`). 결과는 `saved`(주소 순서대로 사진별 성공 여부)나 `denied`(저장 권한 거부, 팝업은 처음 한 번만)다. 저장 권한만 요청한다(`requestPermissionsAsync(true)`). iOS는 사진 추가 권한이지만 Android는 `expo-media-library` 플러그인이 읽기 권한도 매니페스트에 넣어 쓰기 전용이 아닐 수 있어 실기기에서 어떤 팝업이 뜨는지 확인해야 한다. 사진을 다 받기 전에 사용자가 선택 모드를 취소해도 쉘의 저장은 끝까지 진행된다(취소할 수 없고 결과 안내만 생략). 허용 호스트 목록은 운영 이미지 호스트가 정해지면 쉘 설정으로 좁힌다. 주소 검사는 처음 주소만 하므로, `File.downloadFileAsync`가 리다이렉트를 따라가는지는 expo-file-system 동작이라 확인하지 못했다(미확인). 따라간다면 이미지 호스트가 리다이렉트를 내줄 때 검사하지 않은 주소로 갈 수 있어, 허용 호스트를 좁힐 때 함께 확인한다. 사진 데이터는 웹으로 넘기지 않는다. `expo-media-library`는 네이티브 모듈이라 개발 앱·배포 빌드를 다시 빌드해야 하고(Expo Go는 영향 없음), 설치할 때 `pnpm-workspace.yaml`의 `minimumReleaseAgeExclude`에 버전이 한 줄 추가됐다.
+- `openAppSettings()`는 앱의 시스템 설정 화면을 연다(`src/permissions.ts`).
 
 ## 소셜 로그인 bridge
 

@@ -29,8 +29,55 @@ vi.mock('next/navigation', () => ({ useRouter: () => router }));
 // 로티 재생 라이브러리는 모양을 검증하지 않으므로 mock
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
+// 쉘 bridge: 사진 올리기만 확인하므로 선택·읽기·놓기만 흉내 냄
+const bridge = vi.hoisted(() => ({
+  pickGalleryImages: vi.fn(),
+  readPickedPhoto: vi.fn(),
+  releasePickedPhotos: vi.fn(),
+}));
+vi.mock('@/shared/bridge/client', () => ({
+  isNativeShell: () => true,
+  photoUploadBridge: {
+    isNativeMethodAvailable: () => true,
+    pickGalleryImages: bridge.pickGalleryImages,
+    readPickedPhoto: bridge.readPickedPhoto,
+    releasePickedPhotos: bridge.releasePickedPhotos,
+    openAppSettings: vi.fn(),
+  },
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
+  bridge.pickGalleryImages.mockResolvedValue({ status: 'picked', photos: [{ id: 'p1' }] });
+  // JPEG 시작 바이트(FF D8 FF)로 시작하는 작은 이미지
+  bridge.readPickedPhoto.mockResolvedValue({
+    dataUrl: `data:image/jpeg;base64,${btoa(`${String.fromCharCode(0xff, 0xd8, 0xff, 0xe0)}photo-box-test`)}`,
+  });
+  bridge.releasePickedPhotos.mockResolvedValue(undefined);
+});
+
+describe('PhotoBox 사진 올리기', () => {
+  it('사진을 올리는 동안 화면을 막는 로딩 없이 사진함을 그대로 쓸 수 있다', async () => {
+    // 응답을 잠시 늦춰 올리는 중 화면을 확인(undefined를 돌려주면 기본 가짜 서버 handler가 응답)
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async () => {
+        await delay(300);
+        return undefined;
+      }),
+    );
+    const user = userEvent.setup();
+    render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+
+    await user.click(await screen.findByRole('button', { name: '사진 올리기' }));
+    await user.click(await screen.findByRole('button', { name: '앨범에서 선택' }));
+
+    // 올리는 중임을 스크린 리더에게만 알리고, 화면 전체 로딩이나 잠금은 없음
+    await waitFor(() => expect(screen.getByText(PHOTO_BOX_MESSAGES.uploading)).toBeInTheDocument());
+    expect(screen.queryByTestId('lottie')).toBeNull();
+    expect(screen.getByRole('button', { name: '선택' }).closest('[inert]')).toBeNull();
+
+    await waitFor(() => expect(screen.queryByText(PHOTO_BOX_MESSAGES.uploading)).toBeNull());
+  });
 });
 
 describe('PhotoBox 번들 만들기 연결', () => {

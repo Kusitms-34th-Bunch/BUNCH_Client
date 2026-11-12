@@ -64,6 +64,11 @@ export type SaveResult = {
   savedIds: readonly string[];
   /** 저장하지 못한 사진 id */
   failedIds: readonly string[];
+  /**
+   * 저장을 시도하지 못한 이유(모든 사진이 `failedIds`에 들어감). 화면이 일반 실패 토스트 대신 이유에 맞게 안내함
+   * `denied`는 사진 저장 권한 거부, `unavailable`은 앱이 아닌 브라우저, `outdated`는 저장 기능이 없는 이전 앱
+   */
+  blocked?: 'denied' | 'unavailable' | 'outdated';
 };
 
 export type DeletePhotosResult = {
