@@ -13,10 +13,47 @@ const renderPhotoBox = (options?: Parameters<typeof usePhotoBox>[1]) =>
     wrapper: createQueryWrapper(createTestQueryClient()),
   });
 
+// 같은 QueryClient로 화면을 닫았다 다시 열어 목록 요청이 몇 번 갔는지 셈
+const countPhotoListRequests = async (options?: Parameters<typeof usePhotoBox>[1]) => {
+  let requests = 0;
+  server.use(
+    http.get('/api/bunches/:bunchId/photos', () => {
+      requests += 1;
+      return undefined;
+    }),
+  );
+  const client = createTestQueryClient();
+  const wrapper = createQueryWrapper(client);
+  const first = renderHook(() => usePhotoBox(undefined, options), { wrapper });
+  await waitFor(() => expect(first.result.current.state.kind).toBe('ready'));
+  first.unmount();
+  const afterFirst = requests;
+
+  // 곧바로 다시 엶(30초가 지나지 않음)
+  const second = renderHook(() => usePhotoBox(undefined, options), { wrapper });
+  await waitFor(() => expect(second.result.current.state.kind).toBe('ready'));
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  return { afterFirst, afterSecond: requests };
+};
+
 const readyData = (state: ReturnType<typeof usePhotoBox>['state']) => {
   if (state.kind !== 'ready') throw new Error(`state is ${state.kind}`);
   return state.data;
 };
+
+describe('usePhotoBox 목록 다시 받기', () => {
+  it('사진함 화면은 곧바로 다시 열어도 목록을 다시 받아 다른 멤버의 변경을 반영한다', async () => {
+    const { afterFirst, afterSecond } = await countPhotoListRequests({ progressive: true });
+
+    expect(afterSecond).toBeGreaterThan(afterFirst);
+  });
+
+  it('번들·상세 같은 일반 사용은 30초 안에는 받아 둔 목록을 그대로 쓴다', async () => {
+    const { afterFirst, afterSecond } = await countPhotoListRequests();
+
+    expect(afterSecond).toBe(afterFirst);
+  });
+});
 
 describe('usePhotoBox', () => {
   it('처음에는 로딩이고, 끝나면 번치·멤버·전체 사진을 합쳐 준비 상태가 된다', async () => {
