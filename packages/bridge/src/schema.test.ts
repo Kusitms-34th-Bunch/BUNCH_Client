@@ -12,6 +12,8 @@ import {
   pickGalleryImageOptionsSchema,
   pickGalleryImagesOptionsSchema,
   pickPhotosResultSchema,
+  pushDeviceRegistrationSchema,
+  pushDeviceTokenSchema,
   saveImagesToAlbumResultSchema,
   saveImageUrlsSchema,
   setNativeTabBarParamsSchema,
@@ -246,4 +248,46 @@ void test('업로드용 사진의 원본 해시는 소문자 hex 64자만 허용
   assert.equal(parse('A'.repeat(64)), false);
   assert.equal(parse('a'.repeat(63)), false);
   assert.equal(parse('g'.repeat(64)), false);
+});
+
+const UUID = 'b37d231c-5a60-4cf8-a83c-ae4b704154b7';
+
+void test('푸시 토큰은 16진수 짝수 길이 2~4096자만 허용한다(서버 계약과 같은 규칙)', () => {
+  for (const token of ['aa', 'AABBCCDD', 'a'.repeat(4096)]) {
+    assert.equal(pushDeviceTokenSchema.safeParse(token).success, true, token.slice(0, 8));
+  }
+  for (const token of ['', 'a', 'abc', 'zz', 'aabbccd', 'aa bb', 'a'.repeat(4098), '0xaabb']) {
+    assert.equal(pushDeviceTokenSchema.safeParse(token).success, false, token.slice(0, 8));
+  }
+});
+
+void test('푸시 기기 등록 정보는 설치 UUID·토큰·환경·권한 상태가 모두 맞아야 한다', () => {
+  const valid = {
+    installationId: UUID,
+    deviceToken: 'aabbccdd',
+    environment: 'SANDBOX',
+    authorizationStatus: 'AUTHORIZED',
+  };
+  assert.equal(pushDeviceRegistrationSchema.safeParse(valid).success, true);
+  for (const authorizationStatus of ['NOT_DETERMINED', 'DENIED', 'PROVISIONAL']) {
+    assert.equal(
+      pushDeviceRegistrationSchema.safeParse({ ...valid, authorizationStatus }).success,
+      true,
+      authorizationStatus,
+    );
+  }
+  assert.equal(
+    pushDeviceRegistrationSchema.safeParse({ ...valid, environment: 'PRODUCTION' }).success,
+    true,
+  );
+
+  for (const invalid of [
+    { ...valid, installationId: 'not-a-uuid' },
+    { ...valid, deviceToken: 'xyz' },
+    { ...valid, environment: 'STAGING' },
+    { ...valid, authorizationStatus: 'GRANTED' },
+    { installationId: UUID, deviceToken: 'aabbccdd', environment: 'SANDBOX' },
+  ]) {
+    assert.equal(pushDeviceRegistrationSchema.safeParse(invalid).success, false);
+  }
 });

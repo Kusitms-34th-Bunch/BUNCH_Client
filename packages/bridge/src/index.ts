@@ -6,6 +6,7 @@ import type {
   PickGalleryImageOptions,
   PickGalleryImagesOptions,
   PickPhotosResult,
+  PushDeviceRegistration,
   SaveImagesToAlbumResult,
   SetNativeTabBarParams,
   ShareParams,
@@ -31,6 +32,10 @@ export {
   pickGalleryImageOptionsSchema,
   pickGalleryImagesOptionsSchema,
   pickPhotosResultSchema,
+  pushAuthorizationStatusSchema,
+  pushDeviceRegistrationSchema,
+  pushDeviceTokenSchema,
+  pushEnvironmentSchema,
   saveImagesToAlbumResultSchema,
   saveImageUrlSchema,
   saveImageUrlsSchema,
@@ -50,6 +55,7 @@ export type {
   PickGalleryImageOptions,
   PickGalleryImagesOptions,
   PickPhotosResult,
+  PushDeviceRegistration,
   SaveImagesToAlbumResult,
   SetNativeTabBarParams,
   ShareParams,
@@ -78,6 +84,10 @@ export type AppBridgeMethods = {
   requestPermission: (_kind: PermissionKind) => Promise<PermissionStatus>;
   /** 시스템 권한의 현재 상태만 읽음(팝업을 띄우지 않음). 설정에서 권한을 바꾸고 돌아온 화면이 다시 확인할 때 사용. 미지원 환경(브라우저)에서는 `undetermined` */
   getPermissionStatus: (_kind: PermissionKind) => Promise<PermissionStatus>;
+  /** 이 기기의 푸시 등록 정보(설치 ID·APNs 토큰·환경·알림 권한 상태). 서버 푸시 기기 등록에 씀. iOS 쉘에서만 값이 있고, 그 밖(안드로이드·브라우저·토큰을 받지 못한 기기)은 null. 토큰은 로그·오류에 남기지 않음 */
+  getPushDeviceRegistration: () => Promise<PushDeviceRegistration | null>;
+  /** 이 설치의 푸시 기기 ID만 읽음(토큰을 얻지 않아 빠르고 권한 창도 없음). 로그아웃 때 서버에서 이 기기를 해제하는 데 씀. 아직 등록한 적이 없으면 null */
+  getPushInstallationId: () => Promise<string | null>;
   /** 네이티브 SDK 소셜 로그인. 성공하면 서버 로그인에 쓸 ID 토큰(·nonce)을 돌려주고, 창을 닫으면 `cancelled`, SDK 오류는 reject. 미지원 환경(브라우저)에서는 reject */
   socialLogin: (_provider: SocialProvider) => Promise<SocialLoginResult>;
   /** 텍스트를 시스템 클립보드에 복사. 성공 여부를 돌려주고(검증 실패·오류는 false) 브라우저에서는 `navigator.clipboard`로 대체. WebView의 http 개발 주소는 보안 컨텍스트가 아니라 `navigator.clipboard`가 없어서 필요 */

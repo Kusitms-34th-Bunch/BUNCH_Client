@@ -33,6 +33,9 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     requestPermission: () => Promise.resolve('undetermined'),
     // 브라우저에는 시스템 권한이 없어 읽을 상태도 없음. 호출부에서 먼저 isNativeShell()로 확인 필요
     getPermissionStatus: () => Promise.resolve('undetermined'),
+    // 브라우저에는 푸시 토큰이 없음(서버 푸시 기기 등록은 iOS 쉘만). 호출부에서 먼저 isNativeShell()로 확인 필요
+    getPushDeviceRegistration: () => Promise.resolve(null),
+    getPushInstallationId: () => Promise.resolve(null),
     // 브라우저에는 소셜 로그인 SDK 없음. 쉘에서만 로그인할 수 있어 호출부가 실패로 처리
     socialLogin: () => Promise.reject(new Error('네이티브 쉘에서만 소셜 로그인을 할 수 있어요.')),
     // 브라우저에서는 웹 탭 막대 사용
@@ -78,6 +81,15 @@ export const photoUploadBridge = linkBridge<AppBridge, AppPostMessageSchema>({
 export const permissionBridge = linkBridge<AppBridge, AppPostMessageSchema>({
   timeout: 0,
   throwOnError: ['requestPermission', 'getPermissionStatus'],
+});
+
+/**
+ * 푸시 기기 정보 읽기: 토큰은 APNs 등록을 기다릴 수 있어 기본보다 넉넉한 제한 시간(10초)을 두고, 시간 초과·오류는 reject로 받아 호출부가 건너뜀
+ * 푸시 등록은 앱 사용을 막으면 안 되므로 호출부가 오류를 삼키고 다음 기회에 다시 시도함
+ */
+export const pushDeviceBridge = linkBridge<AppBridge, AppPostMessageSchema>({
+  timeout: 10_000,
+  throwOnError: ['getPushDeviceRegistration', 'getPushInstallationId'],
 });
 
 /** 클립보드 읽기 전용: iOS는 사용자가 붙여넣기를 허용할 때까지 기다리므로 타임아웃 없음(복사는 기본 `appBridge`의 타임아웃을 씀) */
