@@ -25,14 +25,14 @@
 
 - Path·params·search: `/onboarding/join`. params와 search는 없다. 초대 링크를 URL로 받아 입력창을 미리 채우는 진입은 정해지지 않았다(확인할 항목).
 - 접근 권한·guard: 아직 없다(로그인 미구현). draft를 읽지 않아 입력 순서 가드도 두지 않았다.
-- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. `create/layout.tsx`의 draft provider 밖이다. 「나가기」는 `router.replace('/')`(피드, 임시)로 이동해 뒤로 가기로 돌아오지 않는다.
+- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. `create/layout.tsx`의 draft provider 밖이다. 「나가기」는 `router.replace('/feed')`(피드 탭)로 이동해 뒤로 가기로 돌아오지 않는다.
 
 ## 상태와 흐름
 
 - 초기 진입: 입력창이 비어 있고 「완료」는 비활성이다.
 - 입력: 공백만 아닌 값이 있으면 「완료」가 활성화된다(Figma의 비활성 `surface-disabled` → 활성 `surface-inversed`).
 - 초점: 입력창 테두리가 진한 색으로 바뀌고 안내 문구가 사라진다(`TextField`의 Figma Focused).
-- 「붙여넣기」: `navigator.clipboard.readText()`로 읽어 앞뒤 공백을 지우고 채운 뒤 입력창에 초점을 줘서 스크린 리더가 채운 값을 읽게 한다. 읽기가 막히면(권한 거부·비보안 환경) 값은 그대로 두고 입력창에 초점만 줘서 직접 붙여넣게 한다.
+- 「붙여넣기」: `navigator.clipboard.readText()`로 읽어 앞뒤 공백을 지우고 채운다. 입력창에는 초점을 주지 않아 키보드가 올라오지 않고(바로 「완료」를 누를 수 있게), 채운 사실은 항상 마운트된 숨김 상태 알림(「초대 링크를 붙여넣었어요」, 직접 고치면 사라짐)으로 스크린 리더에 전한다. 앱 쉘에서는 네이티브 클립보드 bridge로 읽는다. 읽기가 막히면(권한 거부·비보안 환경) 값은 그대로 두고 입력창에 초점만 줘서 직접 붙여넣게 한다.
 - 「완료」: 형식(링크 URL 또는 토큰·보조 코드)이 틀리면 `invalid` 토스트. 형식이 맞으면 서버에 초대를 확인한다(`POST /invitations/verify`). 요청 중에는 `PageLoading`을 덮고 항상 마운트된 `role="status"`에 「초대를 확인하는 중이에요」를 알리며 「완료」를 잠근다. 결과별 처리는 아래 데이터 의존성을 따른다. 참여할 수 없으면 입력값은 그대로 둔다.
 - 토스트: `toast()`가 3초간 띄운다(`Toast.spec.md`). 하단 「완료」 버튼 영역(`PageShell`의 bottom 슬롯) 바로 위 4px에 목록 폭으로 뜬다(`wrapper` 앵커, Figma `6079:176183`). 이전의 버튼 위 10px(`bottomOffset: 42`)은 2026-11-10에 이 규칙으로 바꿨다.
 - Loading·Empty·Error·retry: 확인 요청 중 `PageLoading`(앱 공통 로딩)과 숨김 안내 문구. 오류는 토스트(3초)로 알리고 입력값을 유지해 바로 고쳐 다시 시도할 수 있다.

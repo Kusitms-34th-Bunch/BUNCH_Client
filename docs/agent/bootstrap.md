@@ -58,6 +58,7 @@
 | 재현 가능한 반복 장애                            | `docs/troubleshooting/README.md`                                                                              |
 | symbol·reference 탐색, Serena MCP 설정           | `docs/agent/serena-mcp.md`                                                                                    |
 | agent가 직접 브라우저로 UI 확인                  | `docs/agent/agent-browser-mcp.md`                                                                             |
+| agent가 React 컴포넌트·렌더 시간 확인            | `docs/agent/react-devtools-mcp.md`                                                                            |
 | Figma 링크·스크린샷으로 UI 구현                  | `docs/workflows/development.md`, `docs/workflows/figma-references.md`, `implement-from-figma`                 |
 
 ## Surface reference

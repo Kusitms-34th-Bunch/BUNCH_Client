@@ -16,6 +16,7 @@
 | 화면 전환                                                                                 | `@ssgoi/react`                                 | web                 | `docs/architecture/motion.md`, ADR 017          |
 | 로티 애니메이션                                                                           | `lottie-react`(light 빌드)                     | web                 | `docs/architecture/motion.md`                   |
 | 서버 상태                                                                                 | `@tanstack/react-query`                        | web                 | `docs/architecture/data-layer.md`               |
+| 앱을 다시 열 때 지난 서버 상태 복원(쿼리 캐시 영속화, async storage persister 함께)       | `@tanstack/react-query-persist-client`         | web                 | `data-layer.md` 「캐시 영속화」                 |
 | HTTP 요청                                                                                 | `ky`                                           | api-core·web        | `docs/architecture/api-boundary.md`             |
 | 런타임 스키마 검증                                                                        | `zod`                                          | api-core·web·bridge | `docs/architecture/data-layer.md`               |
 | 변형 있는 Tailwind class                                                                  | `tailwind-variants`(+`tailwind-merge`, `clsx`) | design-system       | `docs/architecture/design-system-components.md` |

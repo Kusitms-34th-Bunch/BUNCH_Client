@@ -116,13 +116,21 @@ export function BunchHomeScreen({
         }}
       />
     ));
+  // 전환 중에 다른 번치를 또 누르면 무시(앞선 전환이 끝나기 전 순서가 뒤섞이지 않게)
+  const [switching, setSwitching] = useState(false);
   const selectBunch = (id: string) => {
     const bunch = findBunch(id);
-    if (!bunch) return;
-    setTab('completed');
-    setSwitched(true);
-    actions.switchBunch(bunch.id);
-    toast(BUNCH_HOME_MESSAGES.switched(bunch.name));
+    if (!bunch || switching) return;
+    setSwitching(true);
+    // 서버 전환은 저장·다시 읽기가 끝난 뒤 토스트, 실패하면 지금 번치에 머물고 실패 안내
+    Promise.resolve(actions.switchBunch(bunch.id))
+      .then(() => {
+        setTab('completed');
+        setSwitched(true);
+        toast(BUNCH_HOME_MESSAGES.switched(bunch.name));
+      })
+      .catch(() => toast(BUNCH_HOME_MESSAGES.switchFailed))
+      .finally(() => setSwitching(false));
   };
   // 시트가 열린 사이 목록·알림 수가 바뀌어도 최신 값으로 그림
   const switchItems = usePreservedCallback((): BunchSwitchItem[] =>

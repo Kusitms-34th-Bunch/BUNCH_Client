@@ -1,6 +1,7 @@
 import { permissionKindSchema, type PermissionKind, type PermissionStatus } from '@app/bridge';
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
+import { Linking } from 'react-native';
 
 type PermissionResponse = { status: string; granted: boolean; canAskAgain: boolean };
 
@@ -40,4 +41,9 @@ export async function requestPermission(kind: PermissionKind): Promise<Permissio
     console.warn(`[permission] ${parsed} 요청 실패`, error);
     throw error;
   }
+}
+
+/** 앱의 시스템 설정 화면 열기(사진·카메라 권한을 거부한 사용자가 직접 허용하도록 안내하는 「설정으로 이동」) */
+export function openAppSettings(): Promise<void> {
+  return Linking.openSettings();
 }

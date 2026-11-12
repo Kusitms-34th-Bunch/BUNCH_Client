@@ -89,15 +89,19 @@ describe('BunchJoin', () => {
     expect((done() as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('붙여넣기를 누르면 클립보드의 링크를 입력창에 채우고 초점을 준다', async () => {
+  it('붙여넣기에 성공하면 클립보드의 링크를 입력창에 채우고 키보드가 올라오지 않게 초점은 주지 않는다', async () => {
     readText.mockResolvedValue(`  ${LINK}\n`);
     renderJoin();
 
     await userEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
 
     await waitFor(() => expect(input()).toHaveProperty('value', LINK));
-    expect(document.activeElement).toBe(input());
+    expect(document.activeElement).not.toBe(input());
     expect((done() as HTMLButtonElement).disabled).toBe(false);
+    // 초점 대신 상태 알림으로 채워진 것을 전하고, 직접 고치면 사라짐
+    expect(screen.getByRole('status').textContent).toBe('초대 링크를 붙여넣었어요');
+    await userEvent.type(input(), 'x');
+    expect(screen.getByRole('status').textContent).toBe('');
   });
 
   it('클립보드를 읽지 못하면 입력창에 초점을 준다', async () => {
@@ -182,6 +186,33 @@ describe('BunchJoin', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed));
     expect(toast).toHaveBeenCalledWith('이미 참여 중인 번치예요.');
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it('붙여넣은 링크의 확인이 실패해도 붙여넣기 알림이 다시 나오지 않는다', async () => {
+    server.use(http.post('/api/invitations/verify', () => fail(404, 'INVITE_001')));
+    renderJoin();
+    await userEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('초대 링크를 붙여넣었어요'),
+    );
+
+    await userEvent.click(done());
+
+    await waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(screen.getByRole('status').textContent).toBe('');
+  });
+
+  it('다시 붙여넣으려다 읽기에 실패하면 이전 붙여넣기 알림을 지운다', async () => {
+    renderJoin();
+    await userEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('초대 링크를 붙여넣었어요'),
+    );
+
+    readText.mockRejectedValue(new Error('denied'));
+    await userEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe(''));
   });
 
   it('없거나 만료된 초대(INVITE_001)는 유효하지 않은 링크 토스트를 띄운다', async () => {
