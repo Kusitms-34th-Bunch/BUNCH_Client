@@ -190,6 +190,12 @@ export const socialLoginResultSchema = z.discriminatedUnion('status', [
 ]);
 export type SocialLoginResult = z.infer<typeof socialLoginResultSchema>;
 
+/**
+ * 클립보드로 주고받는 텍스트: 초대 링크·주소 수준의 짧은 문자열만 허용(큰 데이터가 브리지로 오가지 않게 상한을 둠)
+ * 복사 입력과 읽기 결과 모두 같은 규칙으로 검증하고, 규칙을 어기면 복사는 실패, 읽기는 비어 있는 것으로 취급
+ */
+export const clipboardTextSchema = z.string().min(1).max(2048);
+
 export const shareParamsSchema = z.object({
   url: z.url(),
   title: z.string().optional(),

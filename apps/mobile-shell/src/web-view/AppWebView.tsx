@@ -20,6 +20,7 @@ import {
   type AppBridgeMethods,
 } from '@app/bridge';
 import { saveImagesToAlbum } from '../album-save';
+import { copyToClipboard, readClipboard } from '../clipboard';
 import { pickGalleryImage } from '../gallery-image';
 import {
   capturePhoto,
@@ -53,6 +54,8 @@ const appBridge = bridge({
   saveImagesToAlbum,
   openAppSettings,
   requestPermission,
+  copyToClipboard,
+  readClipboard,
   socialLogin,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
@@ -143,6 +146,7 @@ export function AppWebView({ uri }: { uri: string }) {
       allowsLinkPreview={false}
       allowsBackForwardNavigationGestures
       // 로그인 배경 영상(muted·playsInline·autoPlay)이 자동으로 화면 안에서 재생되게. 기본값이면 멈춘 첫 프레임과 재생 버튼만 보임
+      // iOS 기본값(false)에서는 <video playsInline>이 무시되고, 두 설정 모두 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 소리 있는 영상을 넣을 때 자동 재생 여부를 함께 고려
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
       // 스플래시는 웹의 appReady(도착 화면 결정)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음

@@ -172,6 +172,19 @@ packages/bridge/
 - `saveImagesToAlbum(urls)`는 공개 https 이미지 주소(최대 50개, IP 주소·`user:pass@`·localhost·내부 호스트 이름은 계약 `isSavableImageUrl`이 거절. 웹이 주소 하나 때문에 묶음이 거절되지 않게 사진별로 먼저 거르고, 쉘도 같은 검사로 다시 막는다)를 쉘이 앱 캐시로 내려받아(`expo-file-system`, 3장씩 동시) `expo-media-library`로 앨범에 저장하고 임시 파일을 바로 지운다(`src/album-save.ts`). 결과는 `saved`(주소 순서대로 사진별 성공 여부)나 `denied`(저장 권한 거부, 팝업은 처음 한 번만)다. 저장 권한만 요청한다(`requestPermissionsAsync(true)`). iOS는 사진 추가 권한이지만 Android는 `expo-media-library` 플러그인이 읽기 권한도 매니페스트에 넣어 쓰기 전용이 아닐 수 있어 실기기에서 어떤 팝업이 뜨는지 확인해야 한다. 사진을 다 받기 전에 사용자가 선택 모드를 취소해도 쉘의 저장은 끝까지 진행된다(취소할 수 없고 결과 안내만 생략). 허용 호스트 목록은 운영 이미지 호스트가 정해지면 쉘 설정으로 좁힌다. 주소 검사는 처음 주소만 하므로, `File.downloadFileAsync`가 리다이렉트를 따라가는지는 expo-file-system 동작이라 확인하지 못했다(미확인). 따라간다면 이미지 호스트가 리다이렉트를 내줄 때 검사하지 않은 주소로 갈 수 있어, 허용 호스트를 좁힐 때 함께 확인한다. 사진 데이터는 웹으로 넘기지 않는다. `expo-media-library`는 네이티브 모듈이라 개발 앱·배포 빌드를 다시 빌드해야 하고(Expo Go는 영향 없음), 설치할 때 `pnpm-workspace.yaml`의 `minimumReleaseAgeExclude`에 버전이 한 줄 추가됐다.
 - `openAppSettings()`는 앱의 시스템 설정 화면을 연다(`src/permissions.ts`).
 
+## 클립보드 bridge
+
+- `copyToClipboard(text): Promise<boolean>`와 `readClipboard(): Promise<string | null>`는 쉘이 `expo-clipboard`로 시스템 클립보드를 복사·읽는 계약이다. WebView의 개발 주소(`http://<LAN IP>`)는 보안 컨텍스트가 아니라 `navigator.clipboard`가 없고, 배포 주소(https)에서도 iOS WebView의 `readText()`는 허용 팝업이 뜨거나 거부될 수 있어서 네이티브로 처리한다.
+- 입력과 읽기 결과는 모두 `clipboardTextSchema`(1~2048자 문자열)로 검증하고, 어긋나면 복사는 `false`, 읽기는 `null`이다. 쉘은 오류를 웹에 던지지 않는다(`src/clipboard-core.ts`, Node 테스트로 확인). 큰 데이터나 텍스트가 아닌 값이 브리지로 오가지 않게 하는 상한이다.
+- 읽기는 사용자가 누른 동작 직후에만 부르는 것이 호출부 규약이다(붙여넣기 버튼 한 곳). 쉘이 사용자 동작을 강제하지는 않아서, 앱 출처 페이지의 스크립트(예: XSS)가 직접 부르면 막지 못한다. iOS는 다른 앱에서 복사한 내용을 읽을 때 OS가 붙여넣기 허용 팝업을 띄우지만 Android는 앱이 포그라운드일 때 조용히 읽힌다. WebView 최상위 이동은 앱 출처만 허용하므로(위 이동 제한) 외부 페이지가 최상위로 올라와 이 메서드를 부르지는 못한다. 앱 출처 페이지 안의 외부 iframe은 iOS에서는 같은 핸들러로 걸러지지만 Android는 이 핸들러로 막지 못할 수 있다(react-native-webview 동작 미확인, 지금은 외부 iframe을 넣는 코드가 없다).
+- 웹은 `shared/lib/clipboard.ts`의 `copyText`·`readClipboardText`만 쓴다. 쉘 안에서 이 메서드가 있으면 브리지를, 없으면(이전 쉘 빌드) `navigator.clipboard`로 대체하고, 브라우저는 `navigator.clipboard`를 쓴다. 읽기는 사용자가 팝업에 응답할 때까지 기다려야 해서 읽기 전용 `clipboardBridge`의 timeout만 껐고, 복사는 기본 `appBridge`의 timeout을 쓴다.
+- 새 네이티브 모듈이라 **개발 앱(dev client)은 다시 빌드**해야 한다. Expo Go는 `expo-clipboard`를 포함한다. 실기기에서 복사·붙여넣기 동작과 iOS 붙여넣기 팝업은 확인하지 못했다.
+
+## WebView 미디어 재생
+
+- `AppWebView`의 `WebView`에 `allowsInlineMediaPlayback`과 `mediaPlaybackRequiresUserAction={false}`를 둔다. react-native-webview의 iOS 기본값(`allowsInlineMediaPlayback=false`)에서는 웹의 `<video playsInline>`이 무시되고 영상이 네이티브 플레이어(재생·10초 이동 버튼)로 열린다. 로그인 화면 배경 영상(`autoPlay muted loop playsInline`)이 인라인으로 자동 재생되려면 이 설정이 필요하며, 출시 빌드도 같다.
+- 실기기에서 인라인 재생을 확인하지 못했다. iOS 저전력 모드에서는 자동 재생이 막힐 수 있다.
+
 ## 소셜 로그인 bridge
 
 - `socialLogin(provider: 'kakao' | 'google' | 'apple'): Promise<SocialLoginResult>`는 쉘의 네이티브 SDK로 로그인시키고 서버 로그인에 쓸 ID 토큰을 웹에 넘기는 계약이다(`packages/bridge`의 `socialLoginResultSchema`). 서버 호출과 인증 쿠키 저장은 웹 BFF(`/api/auth/login`)가 맡고, 쉘은 토큰만 전달한다.
