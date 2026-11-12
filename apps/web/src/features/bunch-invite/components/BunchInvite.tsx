@@ -15,6 +15,7 @@ import { useId } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { copyText } from '@/shared/lib/clipboard';
 
 // 보이는 라벨과 입력창의 접근성 이름 일치
 const LINK_LABEL = '초대 링크';
@@ -62,18 +63,17 @@ export function BunchInvite({
 
   const copy = async () => {
     if (!inviteLink) return;
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      toast('초대 링크가 복사되었어요.', {
-        action:
-          typeof navigator.share === 'function'
-            ? { label: '공유', onClick: () => void share() }
-            : undefined,
-      });
-    } catch {
-      // 권한 거부·비보안 컨텍스트의 복사 실패 안내
+    // 쉘에서는 네이티브 클립보드, 브라우저에서는 navigator.clipboard(권한 거부·비보안 컨텍스트면 실패)
+    if (!(await copyText(inviteLink))) {
       toast('초대 링크를 복사하지 못했어요.');
+      return;
     }
+    toast('초대 링크가 복사되었어요.', {
+      action:
+        typeof navigator.share === 'function'
+          ? { label: '공유', onClick: () => void share() }
+          : undefined,
+    });
   };
 
   return (

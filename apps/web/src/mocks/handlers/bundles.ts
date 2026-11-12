@@ -115,13 +115,26 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     visibilityVersion: bundle.visibilityVersion,
     date: bundle.date,
     dateVersion: bundle.dateVersion,
-    // ponytail: 위치 저장·편집권(LOCATION)은 명세에 없는 가짜 서버 확장, 장소 검색 이슈에서 계약이 정해지면 맞춤
-    locations: bundle.locations,
-    locationsVersion: bundle.locationsVersion,
+    // 위치 저장은 가짜 서버가 단순화한 구현(편집권 LOCATION은 가짜 서버 확장). 응답 모양은 BundleSnapshot 계약을 따름
+    locationVersion: bundle.locationsVersion,
+    locations: bundle.locations.map((location, index) => ({
+      ...location,
+      id: index + 1,
+      position: index,
+    })),
+    likeCount: 0,
+    likedByCurrentBunch: false,
+    commentCount: 0,
     revision: bundle.revision,
     photos: [...bundle.photos].sort((a, b) => a.position - b.position),
-    participants: [...bundle.participants].sort((a, b) => a.joinedAt.localeCompare(b.joinedAt)),
-    comments: bundle.comments,
+    participants: [...bundle.participants]
+      .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
+      .map((participant) => ({ ...participant, profileAvailable: true })),
+    comments: bundle.comments.map((comment, index) => ({
+      ...comment,
+      id: index + 1,
+      profileAvailable: true,
+    })),
     dateChips: dateChips(bundle, state),
     publishBlockers: draft ? publishBlockers(bundle) : [],
     permissions: {
@@ -131,6 +144,10 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
       canEdit: draft ? participant : isCreator || isAdmin,
       canPublish: draft && participant && (isCreator || isAdmin),
       canDelete: draft && (isCreator || isAdmin),
+      // 번들 상세 명세: 신고는 내 번치의 OWNER 관리 대상이 아닐 때, 좋아요·댓글은 번치가 있을 때 허용(초안의 소셜 값은 false로 둠)
+      canReport: !draft && myRole !== 'OWNER',
+      canLike: !draft,
+      canComment: !draft,
     },
     leases: draft
       ? liveLeases(state, bundle.id).map(({ target, memberId, leaseVersion, expiresAt }) => ({
