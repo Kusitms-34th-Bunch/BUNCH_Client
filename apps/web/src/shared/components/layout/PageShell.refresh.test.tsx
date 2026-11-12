@@ -206,6 +206,17 @@ describe('PageShell 당겨서 새로고침', () => {
     expect(container.style.getPropertyValue('--pull-fade')).toBe('0');
   });
 
+  it('onRefresh가 거부되면 실패로 알린다', async () => {
+    render(<PageShell onRefresh={() => Promise.reject(new Error('offline'))}>본문</PageShell>);
+
+    pull(screen.getByRole('main'), 140);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1300);
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent('새로고침하지 못했어요');
+  });
+
   it('터치가 취소되면 기준을 넘게 당겼어도 새로고침하지 않는다', () => {
     const onRefresh = vi.fn();
     render(<PageShell onRefresh={onRefresh}>본문</PageShell>);

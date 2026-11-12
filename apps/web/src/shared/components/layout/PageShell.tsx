@@ -9,6 +9,7 @@ const REFRESH_STATUS_MESSAGES = {
   idle: '',
   refreshing: '새로고침하고 있어요',
   done: '새로고침을 마쳤어요',
+  failed: '새로고침하지 못했어요',
 } as const;
 
 type PageShellProps = {
@@ -20,7 +21,7 @@ type PageShellProps = {
   className?: string;
   /**
    * 있으면 본문을 맨 위에서 아래로 당겨 새로고침(Figma `6673:45282`). 끝날 때까지 기다릴 수 있게 Promise를 돌려줌
-   * 터치로만 동작하며, 화면이 진입·앱 복귀 때도 새로 받는다는 전제의 보조 수단
+   * 터치로만 동작함(키보드·스크린 리더용 수단은 후속 과제). Promise가 거부되면 실패로 알림
    */
   onRefresh?: (() => Promise<unknown> | void) | undefined;
   /** 선택 모드·저장 중처럼 당김이 다른 조작과 겹치는 동안 끔 */

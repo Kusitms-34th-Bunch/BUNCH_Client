@@ -17,14 +17,14 @@ const INDICATOR_SIZE_PX = 36;
 /** 「새로고침을 마쳤어요」 안내를 남겨 두는 시간 */
 const DONE_MESSAGE_MS = 3000;
 
-export type PullStatus = 'idle' | 'refreshing' | 'done';
+export type PullStatus = 'idle' | 'refreshing' | 'done' | 'failed';
 
 type UsePullToRefreshOptions = {
   /** `--pull-y`·`--pull-p`를 받아 내용과 표시기를 움직이는 바깥 요소 */
   containerRef: RefObject<HTMLElement | null>;
   /** 스크롤하는 요소(맨 위에서만 당김이 시작됨) */
   scrollRef: RefObject<HTMLElement | null>;
-  /** 새로고침 동작. 끝날 때까지 표시가 열려 있음. 실패해도 닫으며 오류 안내는 호출하는 화면이 맡음 */
+  /** 새로고침 동작. 끝날 때까지 표시가 열려 있음. 거부(reject)하면 실패로 보고 닫으며 「새로고침하지 못했어요」를 알림 */
   onRefresh: (() => Promise<unknown> | void) | undefined;
   /** 선택 모드·저장 중처럼 당김이 다른 조작과 겹치는 동안 끔 */
   disabled?: boolean | undefined;
@@ -33,7 +33,7 @@ type UsePullToRefreshOptions = {
 /**
  * 맨 위에서 아래로 당겼다 놓으면 새로고침하는 터치 제스처
  * 움직임은 React 상태가 아니라 컨테이너의 CSS 변수로 직접 써서 당기는 동안 다시 그리지 않음
- * 마우스·키보드에는 반응하지 않으며, 화면은 진입·앱 복귀 때도 새로 받으므로 같은 동작을 다른 수단으로 얻을 수 있음
+ * 마우스·키보드에는 반응하지 않음. 키보드·스크린 리더용 새로고침 수단은 아직 없음(진입·앱 복귀 때 다시 받지만 query 신선 시간 5분 안에는 받지 않음)
  */
 export function usePullToRefresh({
   containerRef,
@@ -58,6 +58,7 @@ export function usePullToRefresh({
 
     // 이 effect가 정리된 뒤(꺼짐·화면 이탈) 늦게 끝난 새로고침이 상태를 건드리지 않게 함
     let alive = true;
+    let failed = false;
     let timer = 0;
     let doneTimer = 0;
     let tracking = false;
@@ -107,7 +108,7 @@ export function usePullToRefresh({
       scrollToTop();
       close(() => {
         busyRef.current = false;
-        setStatus('done');
+        setStatus(failed ? 'failed' : 'done');
         // 알림 문구가 영구히 남아 가상 커서가 매번 읽지 않게 잠시 뒤 비움
         doneTimer = window.setTimeout(() => setStatus('idle'), DONE_MESSAGE_MS);
       });
@@ -119,10 +120,11 @@ export function usePullToRefresh({
       container.setAttribute('data-pull-settling', 'open');
       apply(PULL_THRESHOLD_PX);
       const startedAt = Date.now();
+      failed = false;
       try {
         await refreshRef.current?.();
       } catch {
-        // 오류 안내는 화면의 몫. 표시만 닫음
+        failed = true;
       }
       if (!alive) return;
       const rest = Math.max(0, MIN_REFRESH_MS - (Date.now() - startedAt));
@@ -134,7 +136,7 @@ export function usePullToRefresh({
       if (busyRef.current || event.touches.length !== 1 || !touch || scroller.scrollTop > 0) return;
       window.clearTimeout(timer);
       window.clearTimeout(doneTimer);
-      setStatus((current) => (current === 'done' ? 'idle' : current));
+      setStatus((current) => (current === 'done' || current === 'failed' ? 'idle' : current));
       reset();
       tracking = true;
       pulling = false;

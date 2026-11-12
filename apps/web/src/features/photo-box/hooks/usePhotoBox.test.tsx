@@ -93,13 +93,13 @@ describe('usePhotoBox 당겨서 새로고침', () => {
     expect(result.current.state.kind).toBe('ready');
   });
 
-  it('요청이 실패해도 던지지 않고 끝난다', async () => {
+  it('요청이 하나라도 실패하면 모두 끝난 뒤 거부한다', async () => {
     const { result } = renderPhotoBox({ progressive: true });
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
     server.use(http.get('/api/bunches/:bunchId/photos', () => fail(500, 'COMMON_001')));
 
     await act(async () => {
-      await expect(result.current.refresh()).resolves.toBeUndefined();
+      await expect(result.current.refresh()).rejects.toThrow();
     });
   });
 });
