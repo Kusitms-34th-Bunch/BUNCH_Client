@@ -30,7 +30,8 @@ export function BunchLeave() {
     if (managed && !canTransfer) router.replace(BUNCH_HOME_PATHS.menu);
   }, [managed, canTransfer, router]);
 
-  if (failed) return <BunchHomeError onRetry={retry} />;
+  if (failed)
+    return <BunchHomeError onRetry={retry} onBack={() => backOr(BUNCH_HOME_PATHS.menu)} />;
 
   return (
     <BunchLeaveScreen

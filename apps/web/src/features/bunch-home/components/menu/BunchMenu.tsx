@@ -18,7 +18,8 @@ export function BunchMenu() {
   const backOr = useBackOr();
   const { bunchName, managed, failed, retry, depart } = useMyBunchMemberships();
 
-  if (failed) return <BunchHomeError onRetry={retry} />;
+  if (failed)
+    return <BunchHomeError onRetry={retry} onBack={() => backOr(BUNCH_HOME_PATHS.home)} />;
 
   return (
     <BunchMenuScreen

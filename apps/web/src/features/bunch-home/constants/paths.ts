@@ -17,6 +17,9 @@ export const BUNCH_HOME_PATHS = {
   delete: '/bunch/menu/delete',
   /** 번치 삭제 확인 문구 입력(화면설계서 2236:41816 2번) */
   deleteConfirm: '/bunch/menu/delete/confirm',
+  /** 삭제 대상 번치를 고정한 확인 화면 */
+  deleteConfirmOf: (bunchId: string) =>
+    `/bunch/menu/delete/confirm?bunch=${encodeURIComponent(bunchId)}`,
   /** 다른 번치 프로필(기능명세 5.10) */
   otherBunch: (bunchId: string) => `/bunches/${bunchId}`,
   /** 다른 번치 멤버 목록(화면설계서 2500:71333 4번) */

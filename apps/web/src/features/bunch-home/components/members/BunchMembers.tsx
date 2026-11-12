@@ -51,6 +51,7 @@ export function BunchMembers() {
   if ((me.isError && !me.data) || (memberships.isError && !memberships.data) || refreshFailed) {
     return (
       <BunchHomeError
+        onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
         onRetry={() => {
           if (me.isError) void me.refetch();
           if (memberships.isError || refreshFailed) {

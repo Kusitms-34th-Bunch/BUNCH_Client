@@ -36,11 +36,12 @@ export function useMyBunchMemberships() {
   const departing = useRef(false);
   // 같은 요청(번치·본문)을 다시 보내면 같은 키: 처리됐는데 응답만 못 받았으면 서버가 처음 응답을 돌려줌
   const attempt = useRef<{ request: string; key: string } | null>(null);
-  // 떠난 번치의 캐시(저장된 홈·멤버 포함)는 화면이 빠질 때 지움(빠지는 동안에는 그 번치를 그림)
-  const departedId = useRef<string | null>(null);
+  // 떠나는 번치의 캐시(저장된 홈·멤버 포함)는 화면이 빠질 때 지움. 요청 중 빠져도 지우게 보낼 때 기록
+  // 요청 중 빠진 뒤 실패해도 지우지만 다음 진입 때 다시 받을 뿐
+  const departingId = useRef<string | null>(null);
   useEffect(
     () => () => {
-      if (departedId.current !== null) forgetBunchCache(departedId.current);
+      if (departingId.current !== null) forgetBunchCache(departingId.current);
     },
     [forgetBunchCache],
   );
@@ -55,6 +56,7 @@ export function useMyBunchMemberships() {
   const depart = (departure: Departure, onDone: () => void) => {
     if (!managed || bunchId === undefined || departing.current) return;
     departing.current = true;
+    departingId.current = bunchId;
     setPinnedId(bunchId);
     const base = {
       actorMembershipId: managed.myMembershipId,
@@ -67,12 +69,10 @@ export function useMyBunchMemberships() {
     mutation.mutate(
       { departure, base, idempotencyKey: attempt.current.key },
       {
-        onSuccess: () => {
-          departedId.current = bunchId;
-          onDone();
-        },
+        onSuccess: onDone,
         onError: () => {
           departing.current = false;
+          departingId.current = null;
           setPinnedId(null);
           toast(
             departure.kind === 'leave'
@@ -87,6 +87,8 @@ export function useMyBunchMemberships() {
   };
 
   return {
+    /** 지금 번치(처리 중에는 떠나는 번치). 모르면 undefined */
+    bunchId,
     // 홈을 못 받았으면 기본 번치 이름(처리 중에는 기본 번치가 바뀌므로 쓰지 않음)
     bunchName: home.data?.bunch.name ?? (pinnedId === null ? me.data?.bunch?.name : undefined),
     managed,
