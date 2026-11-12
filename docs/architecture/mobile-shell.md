@@ -159,6 +159,19 @@ packages/bridge/
 - WebView 내부 이동은 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)만 허용하고 외부 주소는 OS로 전달한다. 외부 페이지가 갤러리 등 네이티브 브리지에 접근하지 못하도록 하는 경계다. 인증 redirect는 별도 계약 확정 후 연결한다.
 - 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다(`expo-image-picker`, `expo-image-manipulator`). 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`은 initialBridge 메서드도 포함). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
 
+## 클립보드 bridge
+
+- `copyToClipboard(text): Promise<boolean>`와 `readClipboard(): Promise<string | null>`는 쉘이 `expo-clipboard`로 시스템 클립보드를 복사·읽는 계약이다. WebView의 개발 주소(`http://<LAN IP>`)는 보안 컨텍스트가 아니라 `navigator.clipboard`가 없고, 배포 주소(https)에서도 iOS WebView의 `readText()`는 허용 팝업이 뜨거나 거부될 수 있어서 네이티브로 처리한다.
+- 입력과 읽기 결과는 모두 `clipboardTextSchema`(1~2048자 문자열)로 검증하고, 어긋나면 복사는 `false`, 읽기는 `null`이다. 쉘은 오류를 웹에 던지지 않는다(`src/clipboard-core.ts`, Node 테스트로 확인). 큰 데이터나 텍스트가 아닌 값이 브리지로 오가지 않게 하는 상한이다.
+- 읽기는 사용자가 누른 동작 직후에만 부르는 것이 호출부 규약이다(붙여넣기 버튼 한 곳). 쉘이 사용자 동작을 강제하지는 않아서, 앱 출처 페이지의 스크립트(예: XSS)가 직접 부르면 막지 못한다. iOS는 다른 앱에서 복사한 내용을 읽을 때 OS가 붙여넣기 허용 팝업을 띄우지만 Android는 앱이 포그라운드일 때 조용히 읽힌다. WebView 최상위 이동은 앱 출처만 허용하므로(위 이동 제한) 외부 페이지가 최상위로 올라와 이 메서드를 부르지는 못한다. 앱 출처 페이지 안의 외부 iframe은 iOS에서는 같은 핸들러로 걸러지지만 Android는 이 핸들러로 막지 못할 수 있다(react-native-webview 동작 미확인, 지금은 외부 iframe을 넣는 코드가 없다).
+- 웹은 `shared/lib/clipboard.ts`의 `copyText`·`readClipboardText`만 쓴다. 쉘 안에서 이 메서드가 있으면 브리지를, 없으면(이전 쉘 빌드) `navigator.clipboard`로 대체하고, 브라우저는 `navigator.clipboard`를 쓴다. 읽기는 사용자가 팝업에 응답할 때까지 기다려야 해서 읽기 전용 `clipboardBridge`의 timeout만 껐고, 복사는 기본 `appBridge`의 timeout을 쓴다.
+- 새 네이티브 모듈이라 **개발 앱(dev client)은 다시 빌드**해야 한다. Expo Go는 `expo-clipboard`를 포함한다. 실기기에서 복사·붙여넣기 동작과 iOS 붙여넣기 팝업은 확인하지 못했다.
+
+## WebView 미디어 재생
+
+- `AppWebView`의 `WebView`에 `allowsInlineMediaPlayback`과 `mediaPlaybackRequiresUserAction={false}`를 둔다. react-native-webview의 iOS 기본값(`allowsInlineMediaPlayback=false`)에서는 웹의 `<video playsInline>`이 무시되고 영상이 네이티브 플레이어(재생·10초 이동 버튼)로 열린다. 로그인 화면 배경 영상(`autoPlay muted loop playsInline`)이 인라인으로 자동 재생되려면 이 설정이 필요하며, 출시 빌드도 같다.
+- 실기기에서 인라인 재생을 확인하지 못했다. iOS 저전력 모드에서는 자동 재생이 막힐 수 있다.
+
 ## 소셜 로그인 bridge
 
 - `socialLogin(provider: 'kakao' | 'google' | 'apple'): Promise<SocialLoginResult>`는 쉘의 네이티브 SDK로 로그인시키고 서버 로그인에 쓸 ID 토큰을 웹에 넘기는 계약이다(`packages/bridge`의 `socialLoginResultSchema`). 서버 호출과 인증 쿠키 저장은 웹 BFF(`/api/auth/login`)가 맡고, 쉘은 토큰만 전달한다.
