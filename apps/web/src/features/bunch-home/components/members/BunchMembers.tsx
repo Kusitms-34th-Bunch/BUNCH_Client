@@ -1,30 +1,111 @@
 'use client';
 
+import { toast } from '@app/design-system';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
+import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { useBunchProfileEdits } from '../../hooks/useBunchProfileEdits';
-import { useCurrentBunch } from '../../hooks/useCurrentBunch';
+import { type BunchMemberActions, sortMembers } from '../../hooks/useBunchMembers';
+import { toManagedMemberships } from '../../model/memberships';
+import { bunchHomeQueryOptions } from '../../queries/bunchHome';
+import {
+  type MembershipChange,
+  membershipsQueryOptions,
+  useChangeMembershipMutation,
+} from '../../queries/memberships';
+import { BunchHomeError } from '../home/BunchHomeError';
 import { BunchMembersScreen } from './BunchMembersScreen';
 
 /**
- * `/bunch/members` 멤버 관리: 멤버 API 연결 전이라 번치 홈에서 고른 번치의 fixture 멤버와 메모리 저장소 사용
+ * `/bunch/members` 멤버 관리: 내 기본 번치(`members/me`)의 멤버 관리 목록(`GET /bunches/{id}/memberships`)
+ * 관리 메뉴는 서버가 멤버마다 준 동작만 보이고, 처리는 목록을 받을 때의 버전으로 보내 그 사이 바뀌었으면 서버가 거절
  */
 export function BunchMembers() {
   const router = useRouter();
   const backOr = useBackOr();
-  const [edits] = useBunchProfileEdits();
-  // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음(다른 번치 멤버가 잠깐 보이지 않게)
-  const { bunch, members, myRole, actions } = useCurrentBunch();
+  const me = useQuery(myProfileQueryOptions());
+  const bunchId = me.data?.bunch?.id;
+  const home = useQuery(bunchHomeQueryOptions(bunchId));
+  const memberships = useQuery(membershipsQueryOptions(bunchId));
+  const change = useChangeMembershipMutation(bunchId);
+  // 실패 뒤 목록을 다시 받는 동안도 처리 중(오래된 버전으로 다시 보내지 않게)
+  const [recovering, setRecovering] = useState(false);
+  const managed = useMemo(
+    () => (memberships.data ? toManagedMemberships(memberships.data) : undefined),
+    [memberships.data],
+  );
+  const members = useMemo(() => managed && sortMembers(managed.members), [managed]);
+  // 번치가 없으면(모두 나감) 번치 탭으로
+  const hasNoBunch = me.isSuccess && bunchId === undefined;
+  useEffect(() => {
+    if (hasNoBunch) router.replace(BUNCH_HOME_PATHS.home);
+  }, [hasNoBunch, router]);
+
+  // 받은 값이 하나도 없을 때만 오류 화면(다시 받기만 실패하면 목록을 지우지 않음)
+  if ((me.isError && !me.data) || (memberships.isError && !memberships.data)) {
+    return (
+      <BunchHomeError
+        onRetry={() => {
+          if (me.isError) void me.refetch();
+          if (memberships.isError) void memberships.refetch();
+        }}
+      />
+    );
+  }
+  if (!managed) {
+    return (
+      <>
+        <p role="status" className="sr-only">
+          멤버를 불러오는 중이에요
+        </p>
+        <PageLoading />
+      </>
+    );
+  }
+
+  const run = (target: MembershipChange) =>
+    change.mutateAsync(
+      {
+        change: target,
+        base: {
+          actorMembershipId: managed.myMembershipId,
+          expectedMembershipVersion: managed.version,
+        },
+      },
+      {
+        onError: () => {
+          setRecovering(true);
+          // 충돌 코드가 Swagger에 없어, 다시 받은 버전이 요청한 버전과 다르면 그 사이 바뀐 것으로 봄
+          void memberships.refetch().then(({ data }) => {
+            setRecovering(false);
+            toast(
+              data && data.membershipVersion !== managed.version
+                ? BUNCH_HOME_MESSAGES.membersChangedElsewhere
+                : BUNCH_HOME_MESSAGES.memberChangeFailed,
+            );
+          });
+        },
+      },
+    );
+  const actions: BunchMemberActions = {
+    setRole: (membershipId, role) => run({ kind: 'role', membershipId, role }),
+    transferOwner: (membershipId) => run({ kind: 'transfer', membershipId }),
+    remove: (membershipId) => run({ kind: 'remove', membershipId }),
+  };
 
   return (
     <BunchMembersScreen
-      bunchName={bunch && (edits[bunch.id]?.name ?? bunch.name)}
+      bunchName={home.data?.bunch.name}
       members={members}
-      myRole={myRole}
+      myRole={managed.myRole}
       actions={actions}
       onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
       onInvite={() => router.push(BUNCH_HOME_PATHS.invite)}
+      busy={change.isPending || recovering}
     />
   );
 }
