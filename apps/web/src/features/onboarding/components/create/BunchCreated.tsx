@@ -60,6 +60,8 @@ export function BunchCreated() {
             <ProfilePhotoField
               value={createdBunch.imageUrl}
               onChange={changeImage}
+              // 고르자마자 저장하고 저장 중·실패를 따로 알림
+              announceChange={false}
               renderPhoto={({ onCameraClick }) => (
                 <BunchAvatar
                   src={createdBunch.imageUrl ?? defaultImage}

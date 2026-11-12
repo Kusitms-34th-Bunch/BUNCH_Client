@@ -23,6 +23,8 @@ export type MockBunch = {
   /** 번치 홈의 팔로워·팔로잉 수(관계 API가 없어 시작 데이터 값) */
   followerCount: number;
   followingCount: number;
+  /** 프로필 버전(저장할 때마다 1 올라감, 번치 홈 응답의 profileVersion). 없으면 1 */
+  profileVersion?: number;
 };
 
 export type MockMembership = {

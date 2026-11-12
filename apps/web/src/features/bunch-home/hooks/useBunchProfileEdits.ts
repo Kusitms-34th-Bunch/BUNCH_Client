@@ -8,8 +8,8 @@ export type BunchProfileEdit = Pick<
 >;
 type Edits = Readonly<Record<string, BunchProfileEdit>>;
 
-// 번치 API 연결 전 프로필 편집 결과를 번치 홈에 반영하는 임시 저장소(메모리, 새로고침하면 사라짐)
-// 사진은 data URL이라 크기 때문에 sessionStorage에 두지 않음. 연결하면 저장 mutation과 번치 query 갱신으로 대체
+// 샘플(fixture) 화면의 프로필 편집 결과 저장소(메모리, 새로고침하면 사라짐). 서버 편집은 `PUT /bunches/{id}/profile`(#327)
+// 사진은 data URL이라 크기 때문에 sessionStorage에 두지 않음
 const EMPTY: Edits = {};
 let edits: Edits = EMPTY;
 const listeners = new Set<() => void>();

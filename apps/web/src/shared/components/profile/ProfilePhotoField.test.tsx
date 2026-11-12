@@ -86,6 +86,8 @@ describe('ProfilePhotoField', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: '기본 이미지 적용하기' }));
 
     expect(onChange).toHaveBeenCalledWith(undefined);
+    // 미리보기만 바뀌어 결과를 읽어 줌
+    expect(screen.getByText('기본 이미지로 바꿨어요')).toBeTruthy();
   });
 
   it('「앨범에서 사진 선택하기」는 사진 선택을 시작하고, 고른 사진은 조정 화면으로 연다', async () => {
@@ -131,8 +133,60 @@ describe('ProfilePhotoField', () => {
     await userEvent.click(screen.getByRole('button', { name: '완료' }));
 
     expect(onChange).toHaveBeenCalledWith('data:image/jpeg;base64,CROP');
+    expect(screen.getByText('사진을 바꿨어요')).toBeTruthy();
     expect(screen.queryByRole('dialog', { name: '프로필 사진 조정' })).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole('button', { name: '프로필 사진 변경' }));
+  });
+
+  it('사진을 연달아 바꿔도 바꿀 때마다 결과를 다시 읽어 준다', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(
+      'data:image/jpeg;base64,CROP',
+    );
+    render(<ProfilePhotoField value={undefined} onChange={vi.fn()} />);
+    const crop = async () => {
+      act(() => picker.options.onSelect?.(PHOTO));
+      const image = document.querySelector('img[src="' + PHOTO + '"]');
+      if (!image) throw new Error('조정 사진 없음');
+      Object.defineProperty(image, 'naturalWidth', { value: 504 });
+      Object.defineProperty(image, 'naturalHeight', { value: 504 });
+      fireEvent.load(image);
+      await userEvent.click(screen.getByRole('button', { name: '완료' }));
+    };
+
+    await crop();
+    expect(screen.getByText('사진을 바꿨어요')).toBeTruthy();
+    // 다시 바꾸기 시작하면 비워 같은 문구가 새로 들어가 읽힘
+    await openDialog();
+    expect(screen.queryByText('사진을 바꿨어요')).toBeNull();
+    await userEvent.keyboard('{Escape}');
+    await crop();
+    expect(screen.getByText('사진을 바꿨어요')).toBeTruthy();
+  });
+
+  it('고른 사진을 읽거나 조정하는 동안을 알리고, 끝나면 다시 알린다', () => {
+    const onPendingChange = vi.fn();
+    const { rerender } = render(
+      <ProfilePhotoField value={undefined} onChange={vi.fn()} onPendingChange={onPendingChange} />,
+    );
+    expect(onPendingChange).toHaveBeenLastCalledWith(false);
+
+    picker.isPending = true;
+    rerender(
+      <ProfilePhotoField value={undefined} onChange={vi.fn()} onPendingChange={onPendingChange} />,
+    );
+    expect(onPendingChange).toHaveBeenLastCalledWith(true);
+
+    // 읽기가 끝나 조정 화면이 열려 있는 동안도 진행 중
+    picker.isPending = false;
+    act(() => picker.options.onSelect?.(PHOTO));
+    expect(onPendingChange).toHaveBeenLastCalledWith(true);
+
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    expect(onPendingChange).toHaveBeenLastCalledWith(false);
   });
 
   it('불러오는 중에 취소하면 읽기가 끝나도 조정 화면을 열지 않는다', () => {
@@ -142,7 +196,7 @@ describe('ProfilePhotoField', () => {
     act(() => {
       vi.advanceTimersByTime(300);
     });
-    expect(screen.getByRole('status').textContent).toContain('사진을 불러오는 중');
+    expect(screen.getByText('사진을 불러오는 중')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
     picker.isPending = false;

@@ -1,5 +1,6 @@
 import { isApiError } from '@app/api-core';
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -11,6 +12,8 @@ import {
   getDraftBundles,
   getMyBunches,
   getPublishedBundles,
+  updateBunchProfile,
+  type UpdateBunchProfileInput,
   updateLastUsedBunch,
 } from '../api/bunchHome';
 
@@ -102,5 +105,26 @@ export const useDeleteBunchNoticeMutation = () => {
     },
     // 이미 지워진 안내(404) 등으로 실패하면 서버 기준으로 다시 맞춤
     onError: () => queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
+  });
+};
+
+/**
+ * 번치 프로필 저장. 성공하면 번치 홈을 다시 받아(프로필·버전) 끝낸 뒤 완료로 봄: 이동한 번치 홈에 새 값이 바로 보임
+ * 이름·사진은 내 프로필(`members/me`의 기본 번치)과 전환 목록에도 보여 함께 무효화
+ * 실패하면 화면이 번치 홈을 다시 받아 버전 충돌·권한 상실을 판단함
+ */
+export const useUpdateBunchProfileMutation = (bunchId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateBunchProfileInput) => {
+      if (bunchId === undefined) throw new Error('편집할 번치를 아직 모릅니다.');
+      return updateBunchProfile(bunchId, input, createIdempotencyKey());
+    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHomeScope(bunchId) }),
+        queryClient.invalidateQueries({ queryKey: sharedKeys.me() }),
+        queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
+      ]),
   });
 };
