@@ -162,6 +162,7 @@ packages/bridge/
 ### 사진함 업로드용 선택·촬영 (`src/gallery-upload.ts`)
 
 - `pickGalleryImages({ limit? })`는 시스템 선택기로 최대 50장을 고르고, `capturePhoto()`는 카메라로 한 장 찍는다. 둘 다 사진 데이터를 넘기지 않고 `{ status: 'picked', photos: [{ id, capturedDate?, capturedTime? }] }`(취소는 `canceled`, 카메라 권한 거부는 `denied`)만 돌려준다. 웹이 `readPickedPhoto(id)`로 한 장씩 읽어 가고, 끝나면 `releasePickedPhotos(ids?)`로 놓아 준다. 한꺼번에 50장을 base64로 넘기면 WebView 메모리가 위험해서 이렇게 나눴다.
+- `readPickedPhoto(id)`는 가공한 JPEG와 함께 **가공 전 원본 파일의 SHA-256**(`originalFileHash`, 소문자 hex 64자)을 돌려준다(`src/gallery-upload.ts`의 `hashOriginal`, `expo-crypto`로 계산하고 읽거나 계산하지 못하면 필드 없이 돌려줌). 가공(리사이즈·재인코딩) 결과는 같은 원본이어도 기기마다 바이트가 달라(실기기 확인: 원본 해시는 같고 가공본 해시는 다름) 서버가 같은 원본 사진을 판별하려면 원본 해시가 필요하다. iOS 선택기가 HEIC를 새 JPEG로 바꾸면 원본 해시가 맞지 않으므로 선택기에 `preferredAssetRepresentationMode: current`로 원본 그대로 받도록 요청한다.
 - `readPickedPhoto`는 `expo-image-manipulator`로 긴 변을 2560px 이하로 줄이고 JPEG(압축 0.8)로 다시 저장한다. 다시 저장하면서 위치를 포함한 원본의 메타데이터가 빠지고 HEIC·PNG·WebP도 JPEG가 된다(서버는 JPEG만 받음). 이 처리는 서버로 보내기 전에 쉘에서 해야 한다.
 - 촬영 날짜·시각은 `src/photo-exif.ts`가 EXIF에서 꺼낸다. 결과에는 날짜·시각만 담기고 위치는 어디에도 넘기지 않는다.
 - `readPickedPhoto`는 결과를 목표 크기(`UPLOAD_TARGET_BYTES`, 4MiB) 이하로 맞춘다. 웹은 Vercel의 BFF(함수)를 거쳐 올리는데 함수 요청 본문은 약 4.5MB를 넘으면 거절되고, 백엔드 상한도 문서마다 달라(파일 6MB·요청 7MB, 업로드 API 명세 30MiB) 가장 작은 쪽에 맞췄다. 넘으면 압축 품질을 0.8 → 0.6 → 0.45 → 0.3으로 낮춰 다시 저장한다. 배포처나 백엔드 제한이 바뀌면 값을 맞춘다. 기기가 알려 준 가로·세로가 회전 전 값이면 줄이는 변이 틀릴 수 있어 결과 크기로 한 번 더 확인한다(서버는 긴 변 4096px 이하).
