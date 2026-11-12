@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
+import '../server';
 import { mockDb } from '../db';
 import { mockDrafts } from '../db/drafts';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID, MOCK_PHOTO_IDS } from '../db/seed';

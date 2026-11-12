@@ -22,7 +22,7 @@ const permissions = vi.hoisted(() => ({
 }));
 vi.mock('../../hooks/usePermissionRequests', () => ({ usePermissionRequests: () => permissions }));
 const logout = vi.hoisted(() => vi.fn<() => Promise<void>>());
-vi.mock('../../api/logout', () => ({ logout }));
+vi.mock('@/shared/api/logout', () => ({ logout }));
 const reloadTo = vi.hoisted(() => vi.fn<(_path: string) => void>());
 vi.mock('../../lib/reloadTo', () => ({ reloadTo }));
 

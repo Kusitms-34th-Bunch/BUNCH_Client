@@ -8,6 +8,7 @@ import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
+import { usePushDeviceSync } from '@/shared/hooks/usePushDeviceSync';
 import { readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import { useClearPersistedQueriesWhen, usePersistedOwnerReady } from '@/shared/query/persistence';
 import type { PostLoginDestinations } from '../lib/postLoginPath';
@@ -93,6 +94,13 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
   useEffect(() => {
     if (analyticsMember !== undefined) void setAnalyticsConsent(analyticsMember).catch(() => {});
   }, [analyticsMember]);
+
+  // 가입을 마친 회원의 쉘이면 이 기기의 푸시 토큰을 서버에 등록(서버가 가입 완료 계정만 받음, 기능명세서 7.5.2). 값이 같으면 보내지 않음
+  usePushDeviceSync(
+    session?.kind === 'member' && session.onboarding.signupStatus === 'COMPLETED'
+      ? String(session.onboarding.memberId)
+      : null,
+  );
 
   // 도착 화면이나 오류 안내를 그리게 되면 앱 쉘에 알려 스플래시를 닫음(명세 1.1: 도착지가 정해질 때까지 스플래시 유지)
   const settled =

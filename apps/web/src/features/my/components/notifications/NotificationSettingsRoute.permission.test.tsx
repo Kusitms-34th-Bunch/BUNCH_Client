@@ -1,5 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
+import '@/mocks/server';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { NotificationSettingsRoute } from './NotificationSettingsRoute';
 
