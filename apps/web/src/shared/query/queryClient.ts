@@ -6,6 +6,10 @@ declare module '@tanstack/react-query' {
   // 모듈 보강이라 사용처가 없음(TanStack Query가 meta 타입으로 읽음)
   // eslint-disable-next-line unused-imports/no-unused-vars
   interface Register {
+    queryMeta: {
+      /** true면 앱을 다시 열 때 복원하도록 저장(`shared/query/persistence.ts`, 로그인 상태·민감한 화면에는 쓰지 않음) */
+      persist?: boolean;
+    };
     mutationMeta: {
       /** 실패하면 띄울 토스트 문구. 없으면 공통 알림 없이 화면이 직접 처리 */
       errorMessage?: string;

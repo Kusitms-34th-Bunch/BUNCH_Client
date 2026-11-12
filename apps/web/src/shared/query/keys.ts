@@ -1,6 +1,8 @@
 // 여러 feature가 함께 쓰는 query key(응답을 바꾸는 입력은 모두 key에 포함, docs/architecture/data-layer.md)
 export const sharedKeys = {
   me: () => ['me'] as const,
+  // 내 소속 번치 목록(번치 전환 시트). 전환·접근 불가 안내 삭제·번치 만들기 뒤 무효화(참여·나가기·삭제 연결 때 추가)
+  myBunches: () => ['my-bunches'] as const,
   // 로그인·가입 상태(가입 단계 이동·접근 제어의 기준). 로그인·약관 저장·가입 완료로 상태가 바뀌면 무효화
   session: () => ['session'] as const,
   // 번치를 아직 모르면 undefined(요청하지 않는 skipToken 상태의 key)

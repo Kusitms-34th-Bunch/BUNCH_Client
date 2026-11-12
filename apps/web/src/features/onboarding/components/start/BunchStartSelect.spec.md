@@ -17,7 +17,7 @@
 ### 범위 외
 
 - 이동 대상 화면(번치 만들기 첫 단계, 초대 링크 입력)과 API 연결.
-- 피드 화면 자체(「나가기」가 이동하는 `ONBOARDING_PATHS.feed`는 현재 `/`).
+- 피드 화면 자체(「나가기」가 이동하는 `ONBOARDING_PATHS.feed`는 피드 탭 `/feed`).
 - 로그인 도착지 판단(`docs/specs/login-signup.md` 1.2.8)과 이 화면으로의 진입 연결.
 - 화면 전환 애니메이션 중 「새 번치 만들기」 → 번치 만들기 1단계와 「초대받은 번치 참여하기」 → 참여 화면(`BunchJoin.spec.md`)의 Slide In(왼쪽 방향)은 구현했다(아래 확인할 항목).
 - iPhone 상태 바·홈 인디케이터. 기기 요소라 웹이 그리지 않는다(Safe Area는 `AppFrame`이 처리한다).

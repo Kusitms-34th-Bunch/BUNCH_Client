@@ -33,6 +33,13 @@
       ],
       "expo-status-bar",
       [
+        "expo-build-properties",
+        {
+          "ios": { "networkInspector": false },
+          "android": { "networkInspector": false }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#454EDF"
@@ -41,7 +48,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kyeongjooni.mobile-shell"
+      "bundleIdentifier": "com.kyeongjooni.mobile-shell",
+      "infoPlist": {
+        "CFBundleDisplayName": "BUNCH"
+      }
     },
     "android": {
       "adaptiveIcon": {

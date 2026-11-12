@@ -129,6 +129,9 @@ export function AppWebView({ uri }: { uri: string }) {
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
       allowsBackForwardNavigationGestures
+      // 로그인 배경 영상(muted·playsInline·autoPlay)이 자동으로 화면 안에서 재생되게. 기본값이면 멈춘 첫 프레임과 재생 버튼만 보임
+      allowsInlineMediaPlayback
+      mediaPlaybackRequiresUserAction={false}
       // 스플래시는 웹의 appReady(도착 화면 결정)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
       onError={markWebReady}
       onHttpError={markWebReady}

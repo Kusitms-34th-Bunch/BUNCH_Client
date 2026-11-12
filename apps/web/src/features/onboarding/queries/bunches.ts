@@ -20,6 +20,8 @@ export const useCreateBunchMutation = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: sharedKeys.session() });
       void queryClient.invalidateQueries({ queryKey: sharedKeys.me() });
+      // 번치 전환 목록과 소속 개수 한도에 새 번치를 반영
+      void queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() });
     },
   });
 };
