@@ -1,5 +1,6 @@
 import { isApiError } from '@app/api-core';
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toDomainId } from '@/shared/api/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import type { Home } from '../model/bunchHome';
 import { getBunchHome, getPublishedBundles } from '../api/bunchHome';
@@ -28,7 +29,7 @@ export const otherBunchPublishedQueryOptions = (
         : ({ signal }) => getPublishedBundles(targetId, signal),
   });
 
-/** 취소의 `followId`는 홈 응답의 관계 ID. 팔로우 중인데 없으면 처리하지 못한 것으로 안내 */
+/** 취소의 `followId`는 홈 응답의 관계 ID. 없으면 팔로우 요청(같은 관계를 돌려줌)으로 먼저 얻음 */
 export type FollowChange = { kind: 'follow' } | { kind: 'unfollow'; followId: string | undefined };
 
 /**
@@ -41,18 +42,31 @@ export const useFollowBunchMutation = (targetId: string, viewerId: string | null
     meta: { errorMessage: BUNCH_HOME_MESSAGES.followFailed },
     mutationFn: async (change: FollowChange) => {
       if (!viewerId) throw new Error('팔로우할 내 번치가 없습니다.');
-      if (change.kind === 'unfollow' && !change.followId) throw new Error('팔로우 ID가 없습니다.');
+      const unfollow = async (followId: string | undefined) => {
+        // 팔로우 중일 때만 부르므로, 관계 ID가 없는 응답이면 PUT(이미 있으면 같은 관계)으로 ID를 얻음
+        const id =
+          followId ??
+          (await followBunch(viewerId, targetId).then((found) =>
+            found.followId ? toDomainId(found.followId) : undefined,
+          ));
+        if (!id) throw new Error('팔로우 ID가 없습니다.');
+        try {
+          return await unfollowBunch(viewerId, targetId, id);
+        } catch (error) {
+          if (!isApiError(error) || error.status !== 404) throw error;
+          // 404는 이미 해제됐거나 오래된 ID라 다시 받아 관계가 없을 때만 성공으로 봄
+          const home = await queryClient.fetchQuery({
+            ...otherBunchHomeQueryOptions(targetId, viewerId),
+            staleTime: 0,
+          });
+          if (home.followState && home.followState !== 'NONE') throw error;
+          return { followState: 'NONE' as const };
+        }
+      };
       const result =
         change.kind === 'follow'
           ? await followBunch(viewerId, targetId)
-          : // 이미 해제된 관계(404)는 해제하려던 상태라 성공으로 봄
-            await unfollowBunch(viewerId, targetId, change.followId ?? '').catch(
-              (error: unknown) => {
-                if (isApiError(error) && error.status === 404)
-                  return { followState: 'NONE' as const };
-                throw error;
-              },
-            );
+          : await unfollow(change.followId);
       const followId = 'followId' in result && result.followId ? result.followId : null;
       queryClient.setQueryData<Home>(bunchHomeKeys.otherBunchHome(targetId, viewerId), (home) =>
         home ? { ...home, followState: result.followState, followId } : home,
