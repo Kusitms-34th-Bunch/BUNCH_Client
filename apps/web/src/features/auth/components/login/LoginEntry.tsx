@@ -21,6 +21,15 @@ const WORDMARK = wordmarkSvg as StaticImageData;
 const BACKGROUND_VIDEO = '/videos/login.mp4';
 const BACKGROUND_POSTER = '/videos/login-poster.jpg';
 
+// 첫 진입 모션(디자이너 요청, Figma 값 없음): 워드마크 다음 버튼이 차례로 5px 아래에서 올라오며 나타남
+// 번치 만들기 단계 제목과 같은 600ms Slow 곡선, 동작 줄이기에서는 이동 없이 투명도만
+const ENTER_MOTION =
+  'animate-step-title-in motion-reduce:animate-[page-content-in_600ms_ease-out_both]';
+// 인트로에서 넘어오면 페이지가 디졸브로 나타나는 동안(약 250ms) 모션이 지나가 버려서, 워드마크도 조금 늦게 시작
+const WORDMARK_DELAY_MS = 200;
+const BUTTONS_DELAY_MS = 350;
+const BUTTON_STAGGER_MS = 60;
+
 // 순서가 곧 노출 순서(카카오 → Google → Apple)
 const PROVIDERS: { provider: SocialProvider; label: string }[] = [
   { provider: 'kakao', label: '카카오 로그인' },
@@ -78,19 +87,25 @@ export function LoginEntry({
         className="relative bg-transparent"
         bottom={
           <div className="px-padding-p8 pb-padding-p7 gap-s4 flex flex-col">
-            {PROVIDERS.map(({ provider, label }) => {
+            {PROVIDERS.map(({ provider, label }, index) => {
               const isPending = pendingProvider === provider;
               return (
-                <LoginButton
+                // 모션은 감싼 요소에: 버튼에 걸면 끝난 뒤 남는 opacity가 비활성(40%) 표시를 덮음
+                <div
                   key={provider}
-                  brand={provider}
-                  // 어느 로그인이 진행 중인지 보이도록 진행 중인 버튼은 두고 나머지만 비활성화
-                  disabled={pendingProvider !== null && !isPending}
-                  aria-busy={isPending || undefined}
-                  onClick={() => void login(provider)}
+                  className={ENTER_MOTION}
+                  style={{ animationDelay: `${BUTTONS_DELAY_MS + index * BUTTON_STAGGER_MS}ms` }}
                 >
-                  {label}
-                </LoginButton>
+                  <LoginButton
+                    brand={provider}
+                    // 어느 로그인이 진행 중인지 보이도록 진행 중인 버튼은 두고 나머지만 비활성화
+                    disabled={pendingProvider !== null && !isPending}
+                    aria-busy={isPending || undefined}
+                    onClick={() => void login(provider)}
+                  >
+                    {label}
+                  </LoginButton>
+                </div>
               );
             })}
             {/* 진행 중인 버튼은 aria-busy만으로는 읽히지 않는 경우가 많아 상태를 음성으로 안내(화면에는 숨김) */}
@@ -106,7 +121,7 @@ export function LoginEntry({
           data-dev-login-trigger
           className="px-padding-p8 pb-padding-p18 flex min-h-full flex-col items-center justify-end"
         >
-          <h1>
+          <h1 className={ENTER_MOTION} style={{ animationDelay: `${WORDMARK_DELAY_MS}ms` }}>
             <Image src={WORDMARK} alt="Bunch" width={171} height={43} priority />
           </h1>
         </div>

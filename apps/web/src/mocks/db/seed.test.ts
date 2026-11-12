@@ -13,8 +13,8 @@ const { admin, memberA, memberB, memberC, me } = MOCK_MEMBER_IDS;
 
 // 기대값은 UT 시나리오 문서의 사전 세팅(3-1, 3-2, 3-6)에서 가져옴
 describe('UT 시나리오 시드', () => {
-  it('번치는 비공개 「여행쥬아」이고 소개가 있다', () => {
-    expect(createSeed().bunches).toEqual([
+  it('시연 번치는 비공개 「여행쥬아」이고 소개가 있다', () => {
+    expect(createSeed().bunches.filter((bunch) => bunch.id === MOCK_BUNCH_ID)).toEqual([
       expect.objectContaining({
         id: MOCK_BUNCH_ID,
         name: '여행쥬아',
@@ -33,12 +33,15 @@ describe('UT 시나리오 시드', () => {
       '수인',
       '큐시즘',
     ]);
+    const bunchMemberships = memberships.filter(
+      (membership) => membership.bunchId === MOCK_BUNCH_ID,
+    );
     const roleOf = (memberId: number) =>
-      memberships.find((membership) => membership.memberId === memberId)?.role;
+      bunchMemberships.find((membership) => membership.memberId === memberId)?.role;
     expect(MOCK_MY_MEMBER_ID).toBe(me);
     expect(roleOf(me)).toBe('MEMBER');
     expect(roleOf(admin)).toBe('OWNER');
-    expect(memberships.filter((membership) => membership.role !== 'MEMBER')).toHaveLength(1);
+    expect(bunchMemberships.filter((membership) => membership.role !== 'MEMBER')).toHaveLength(1);
   });
 
   it('사진은 13장이고 날짜 그룹은 10월 18일 6장, 17일 4장, 3일 3장이다', () => {

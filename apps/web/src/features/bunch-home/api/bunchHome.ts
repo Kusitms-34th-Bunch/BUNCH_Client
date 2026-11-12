@@ -1,9 +1,14 @@
+import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import {
   bunchHomeResponseSchema,
   draftBundlesPageSchema,
+  myBunchesResponseSchema,
   publishedBundlesPageSchema,
 } from '../model/bunchHome';
+
+// 데이터 없는 성공 응답(Swagger `ApiResponseUnit`)은 data가 빠지거나 null
+const unitSchema = z.null().optional();
 
 // 번치 홈 「완성된 번들」·「작성 중인 번들」은 한 번에 받을 수 있는 최대 쪽 크기만 불러옴(더 불러오기는 UT 이후)
 const PUBLISHED_PAGE_SIZE = 50;
@@ -39,3 +44,25 @@ export const getDraftBundles = (bunchId: string, signal?: AbortSignal) =>
     draftBundlesPageSchema,
     'draft bundles',
   );
+
+/** 내 소속 번치(번치 전환 목록)와 접근 불가 번치 안내 */
+export const getMyBunches = (signal?: AbortSignal) =>
+  requestData(
+    bffApi.get('members/me/bunches', { signal: signal ?? null }),
+    myBunchesResponseSchema,
+    'my bunches',
+  );
+
+/** 번치 전환: 마지막 사용 번치로 저장(기본 번치가 이 번치로 바뀜). 내 번치가 아니면 AUTH_002 */
+export const updateLastUsedBunch = async (bunchId: string) => {
+  await requestData(bffApi.put(`${bunchPath(bunchId)}/last-used`), unitSchema, 'last used bunch');
+};
+
+/** 접근 불가 번치 안내 지우기(전환 목록의 「번치 목록에서 삭제」) */
+export const deleteBunchAccessNotice = async (noticeId: string) => {
+  await requestData(
+    bffApi.delete(`members/me/bunch-access-notices/${encodeURIComponent(noticeId)}`),
+    unitSchema,
+    'delete bunch access notice',
+  );
+};

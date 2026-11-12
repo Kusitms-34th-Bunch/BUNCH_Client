@@ -17,7 +17,7 @@
 ### 범위 외
 
 - 번치 생성 요청과 3단계 화면(`BunchMood.spec.md`). 입력값은 create layout의 임시 상태에 보관했다가 3단계에서 한 번에 보낸다.
-- 홈(피드) 화면. 「나가기」가 이동하는 `ONBOARDING_PATHS.feed`는 현재 `/`다(아래 확인할 항목).
+- 홈(피드) 화면. 「나가기」가 이동하는 `ONBOARDING_PATHS.feed`는 피드 탭 `/feed`다.
 - 화면 전환 애니메이션(`BunchStartSelect.spec.md`의 확인할 항목). 진행 표시줄 전환은 구현했다(진행 표시줄이 단계 공통 틀에 남아 있다). 이름 중복 확인은 구현했다(아래 데이터 의존성).
 
 ## Route와 접근

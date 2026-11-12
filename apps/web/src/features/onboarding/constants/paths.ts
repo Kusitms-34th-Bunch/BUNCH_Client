@@ -13,6 +13,6 @@ export const ONBOARDING_PATHS = {
   joinBunchEnter: '/onboarding/join/enter',
   joinBunchInvitation: '/onboarding/join/invitation',
   joinBunchComplete: '/onboarding/join/complete',
-  // 피드 화면 연결 전 임시 홈 경로
-  feed: '/',
+  // 온보딩 「나가기」·참여 완료 뒤 이동하는 피드 탭
+  feed: '/feed',
 } as const;
