@@ -50,6 +50,9 @@ beforeEach(() => {
   vi.restoreAllMocks();
   vi.clearAllMocks();
   picker.isPending = false;
+  // jsdom은 레이아웃이 없어 사진 조정 영역 크기를 지정(크기를 모르면 조정 화면이 완료를 막음)
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(375);
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
 });
 
 describe('ProfilePhotoField', () => {

@@ -73,9 +73,9 @@
 
 ## 운영 주소 연결
 
-기본 주소는 `bunch-client.vercel.app`이다(2026-11-10, 프로젝트 이름은 `bunch-web`).
+운영 주소는 `app.bunch.kr`이다(2026-11-11, Vercel 프로젝트 `bunch-web`에 연결한 도메인). Vercel 기본 주소는 `bunch-client.vercel.app`이다.
 
-- 앱 쉘 Release 빌드의 `EXPO_PUBLIC_WEB_URL`에 이 주소를 넣는다(EAS production 환경, `apps/mobile-shell/.env.production.example`).
+- 앱 쉘 Release 빌드의 `EXPO_PUBLIC_WEB_URL`에 운영 주소(`https://app.bunch.kr`)를 넣는다(EAS production 환경, `apps/mobile-shell/.env.production.example`).
 - 카카오·구글 콘솔에는 웹 도메인을 등록하지 않는다. 소셜 로그인은 앱 쉘의 네이티브 SDK(번들 ID 기준)로만 하고, 웹은 받은 토큰을 같은 도메인의 BFF(`/api/auth/login`)로 넘긴다. 브라우저에서는 소셜 로그인을 할 수 없다.
 - 백엔드는 BFF가 서버에서 부르므로 브라우저 CORS 허용 출처 등록이 필요 없다.
 

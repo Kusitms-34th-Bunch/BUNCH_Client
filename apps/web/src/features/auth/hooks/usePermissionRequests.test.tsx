@@ -35,6 +35,18 @@ describe('usePermissionRequests', () => {
     ]);
   });
 
+  it('브리지가 준비되기 전에 생략했으면 다음 호출에서 다시 확인해 요청한다', async () => {
+    bridge.available = false;
+    const { result } = renderHook(() => usePermissionRequests());
+
+    await act(() => result.current.requestAll());
+    expect(bridge.requestPermission).not.toHaveBeenCalled();
+
+    bridge.available = true;
+    await act(() => result.current.requestAll());
+    expect(bridge.requestPermission).toHaveBeenCalledTimes(3);
+  });
+
   it('앞의 권한에 응답하기 전에는 다음 권한을 요청하지 않는다', async () => {
     let answer!: (_status: string) => void;
     bridge.requestPermission.mockImplementationOnce(
@@ -68,7 +80,7 @@ describe('usePermissionRequests', () => {
     expect(result.current.isRequesting).toBe(false);
   });
 
-  it('요청이 진행 중일 때 다시 호출해도 중복 요청하지 않는다', async () => {
+  it('진행 중이거나 끝난 뒤 다시 호출하면 같은 요청을 돌려주고 다시 요청하지 않는다', async () => {
     let answer!: (_status: string) => void;
     bridge.requestPermission.mockImplementationOnce(
       () => new Promise((resolve) => (answer = resolve)),
@@ -76,16 +88,20 @@ describe('usePermissionRequests', () => {
     const { result } = renderHook(() => usePermissionRequests());
 
     let first!: Promise<void>;
+    let second!: Promise<void>;
     act(() => {
       first = result.current.requestAll();
+      second = result.current.requestAll();
     });
-    await act(() => result.current.requestAll());
+    expect(second).toBe(first);
     expect(bridge.requestPermission).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       answer('granted');
       await first;
     });
+    await act(() => result.current.requestAll());
+    expect(bridge.requestPermission).toHaveBeenCalledTimes(3);
   });
 
   it('응답이 오지 않아도 상한이 지나면 다음 권한으로 넘어가 끝난다', async () => {

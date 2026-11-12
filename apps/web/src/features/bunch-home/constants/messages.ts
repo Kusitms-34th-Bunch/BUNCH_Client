@@ -10,6 +10,11 @@ const objectParticle = (word: string) => {
 export const BUNCH_HOME_MESSAGES = {
   bundleMemberOnly: '멤버 공개',
   switched: (bunchName: string) => `${bunchName} 번치로 전환했어요.`,
+  // 기획 원문 없는 임시 안내: 전환(마지막 사용 번치 저장)·접근 불가 안내 삭제를 서버에 보내지 못했을 때
+  switchFailed: '번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  removeBunchFailed: '목록에서 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  // 소속 번치가 최대 개수일 때 「새로운 번치 추가하기」(5.2.4, 번치 만들기의 한도 안내와 같은 문구)
+  bunchLimit: '참여할 수 있는 번치는 최대 10개예요.',
   completedEmptyTitle: '추억은 많은데, 번들은 아직!',
   draftEmptyTitle: '아직 작성 중인 번들이 없어요',
   emptyDescription: '함께한 순간을 하나의 기록으로 남겨보세요.',

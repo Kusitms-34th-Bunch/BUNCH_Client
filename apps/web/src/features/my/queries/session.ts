@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { clearPersistedQueryStorage } from '@/shared/query/persistence';
 import { logout } from '../api/session';
 import { MY_MESSAGES } from '../constants/messages';
 import { MY_PATHS } from '../constants/paths';
@@ -12,7 +13,11 @@ export const useLogoutMutation = () =>
   useMutation({
     mutationFn: logout,
     meta: { errorMessage: MY_MESSAGES.logout.failed },
-    onSuccess: () => reloadTo(MY_PATHS.login),
+    // 이 기기에 남은 사용자 데이터 저장본을 지우고 로그인 화면을 새로 엶
+    onSuccess: () => {
+      clearPersistedQueryStorage();
+      reloadTo(MY_PATHS.login);
+    },
   });
 
 /**
@@ -23,5 +28,9 @@ export const useWithdrawMutation = () =>
   useMutation({
     mutationFn: logout,
     meta: { errorMessage: MY_MESSAGES.withdrawal.failed },
-    onSuccess: () => reloadTo(MY_PATHS.login),
+    // 이 기기에 남은 사용자 데이터 저장본을 지우고 로그인 화면을 새로 엶
+    onSuccess: () => {
+      clearPersistedQueryStorage();
+      reloadTo(MY_PATHS.login);
+    },
   });
