@@ -21,16 +21,25 @@ type ProfilePhotoFieldProps = {
   onChange: (_value: string | undefined) => void;
   /** 사진 영역을 다른 모양(번치 대표 사진 등)으로 그릴 때. 카메라 버튼이 누르면 사진 변경 흐름을 여는 `onCameraClick`을 받음 */
   renderPhoto?: ((_props: { onCameraClick: () => void }) => ReactNode) | undefined;
+  /** 바꾼 결과를 화면 읽기에 알림(기본). 고르자마자 서버에 저장해 결과를 따로 알리는 화면은 false */
+  announceChange?: boolean | undefined;
 };
 
 /**
  * 프로필 사진과 사진 변경 흐름(가입 프로필·MY 프로필 수정 공통, 화면 설계서 MY(2))
  * 카메라 버튼 → 「프로필 사진 설정」 선택지 → 앨범 선택 → 원형 조정 → 미리보기. 앱도 시스템 편집 없이 이 조정 화면 사용
  */
-export function ProfilePhotoField({ value, onChange, renderPhoto }: ProfilePhotoFieldProps) {
+export function ProfilePhotoField({
+  value,
+  onChange,
+  renderPhoto,
+  announceChange = true,
+}: ProfilePhotoFieldProps) {
   const openOverlay = useScreenOverlay();
   const [cropSrc, setCropSrc] = useState<string>();
   const [showLoading, setShowLoading] = useState(false);
+  // 미리보기만 바뀌어 화면 읽기 사용자에게 결과를 알림(항상 그려 둔 status에 문구만 바꿈)
+  const [announcement, setAnnouncement] = useState('');
   const photoRef = useRef<HTMLDivElement>(null);
   // 불러오는 중에 취소한 선택은 읽기가 끝나도 조정 화면·오류 토스트를 띄우지 않음
   const cancelledWhilePending = useRef(false);
@@ -98,6 +107,7 @@ export function ProfilePhotoField({ value, onChange, renderPhoto }: ProfilePhoto
                   onClick: () => {
                     close();
                     onChange(undefined);
+                    if (announceChange) setAnnouncement('기본 이미지로 바꿨어요');
                   },
                 },
               ]
@@ -125,6 +135,9 @@ export function ProfilePhotoField({ value, onChange, renderPhoto }: ProfilePhoto
           />
         </div>
       )}
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
       <input
         ref={inputRef}
         type="file"
@@ -143,6 +156,7 @@ export function ProfilePhotoField({ value, onChange, renderPhoto }: ProfilePhoto
           onComplete={(dataUrl) => {
             closeCrop();
             onChange(dataUrl);
+            if (announceChange) setAnnouncement('사진을 바꿨어요');
           }}
           onFail={() => {
             closeCrop();

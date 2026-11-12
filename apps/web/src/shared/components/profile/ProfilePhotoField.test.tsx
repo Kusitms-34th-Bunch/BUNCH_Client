@@ -86,6 +86,8 @@ describe('ProfilePhotoField', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: '기본 이미지 적용하기' }));
 
     expect(onChange).toHaveBeenCalledWith(undefined);
+    // 미리보기만 바뀌어 결과를 읽어 줌
+    expect(screen.getByText('기본 이미지로 바꿨어요')).toBeTruthy();
   });
 
   it('「앨범에서 사진 선택하기」는 사진 선택을 시작하고, 고른 사진은 조정 화면으로 연다', async () => {
@@ -131,6 +133,7 @@ describe('ProfilePhotoField', () => {
     await userEvent.click(screen.getByRole('button', { name: '완료' }));
 
     expect(onChange).toHaveBeenCalledWith('data:image/jpeg;base64,CROP');
+    expect(screen.getByText('사진을 바꿨어요')).toBeTruthy();
     expect(screen.queryByRole('dialog', { name: '프로필 사진 조정' })).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole('button', { name: '프로필 사진 변경' }));
   });
@@ -142,7 +145,7 @@ describe('ProfilePhotoField', () => {
     act(() => {
       vi.advanceTimersByTime(300);
     });
-    expect(screen.getByRole('status').textContent).toContain('사진을 불러오는 중');
+    expect(screen.getByText('사진을 불러오는 중')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
     picker.isPending = false;
