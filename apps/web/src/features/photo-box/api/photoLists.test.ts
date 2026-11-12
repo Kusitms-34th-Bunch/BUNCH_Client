@@ -57,6 +57,38 @@ describe('getDatedPhotosPage', () => {
     expect(next.nextCursor).toBeNull();
   });
 
+  it('한 번에 서버가 허용하는 최대 100장씩 요청한다(1,000장 상한을 10번에 받음)', async () => {
+    const sizes: (string | null)[] = [];
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', ({ request }) => {
+        sizes.push(new URL(request.url).searchParams.get('size'));
+        // 기본 가짜 서버 handler가 이어서 응답
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/photos/undated', ({ request }) => {
+        sizes.push(new URL(request.url).searchParams.get('size'));
+        return undefined;
+      }),
+    );
+
+    await getDatedPhotosPage({ bunchId });
+    await getUndatedPhotosPage({ bunchId });
+
+    expect(sizes).toEqual(['100', '100']);
+  });
+
+  it('nextCursor가 빈 문자열이면 마지막 쪽으로 본다(보내지 않으면 첫 쪽을 다시 받게 됨)', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({ totalCount: 0, photos: [], nextCursor: '' }),
+      ),
+    );
+
+    const page = await getDatedPhotosPage({ bunchId });
+
+    expect(page.nextCursor).toBeNull();
+  });
+
   it('시각이 객체(LocalTime)로 와도 같은 시각으로 바꾼다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/photos', () =>

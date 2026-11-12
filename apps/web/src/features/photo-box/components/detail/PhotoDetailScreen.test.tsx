@@ -492,6 +492,40 @@ describe('PhotoDetailScreen 저장', () => {
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll));
   });
+
+  it('사진 저장 권한이 거부되어 있으면 오류 토스트 대신 안내 창을 띄우고, 떠 있는 동안 방향키로 넘기지 않는다', async () => {
+    const user = userEvent.setup();
+    savePhotos.mockResolvedValue({ savedIds: [], failedIds: ['p1'], blocked: 'denied' });
+    renderScreen();
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+    await user.click(screen.getByRole('menuitem', { name: '저장' }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.albumPermissionTitle)).toBeTruthy();
+    expect(toast).not.toHaveBeenCalled();
+    expect(swiper.keyboard.disable).toHaveBeenCalled();
+
+    vi.mocked(swiper.keyboard.enable).mockClear();
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    await waitFor(() => expect(swiper.keyboard.enable).toHaveBeenCalled());
+  });
+
+  it('앱이 아니면 저장할 수 없다는 토스트를, 저장 기능이 없는 이전 앱이면 업데이트 안내 토스트를 띄운다', async () => {
+    const user = userEvent.setup();
+    savePhotos.mockResolvedValue({ savedIds: [], failedIds: ['p1'], blocked: 'unavailable' });
+    const { unmount } = renderScreen();
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+    await user.click(screen.getByRole('menuitem', { name: '저장' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveUnavailable));
+    unmount();
+
+    toast.mockClear();
+    savePhotos.mockResolvedValue({ savedIds: [], failedIds: ['p1'], blocked: 'outdated' });
+    renderScreen();
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+    await user.click(screen.getByRole('menuitem', { name: '저장' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.uploadNeedsUpdate));
+  });
 });
 
 describe('PhotoDetailScreen 삭제', () => {

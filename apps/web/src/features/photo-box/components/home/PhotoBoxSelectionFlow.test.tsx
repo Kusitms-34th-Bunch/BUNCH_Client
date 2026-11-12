@@ -32,6 +32,13 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
+// 사진 저장 권한 안내의 「설정으로 이동」이 쉘의 설정 열기를 부르는지만 확인
+const openAppSettings = vi.hoisted(() => vi.fn<() => Promise<void>>());
+vi.mock('@/shared/bridge/client', () => ({
+  isNativeShell: () => false,
+  photoUploadBridge: { openAppSettings },
+}));
+
 const savePhotos = vi.fn<PhotoBoxActions['savePhotos']>();
 const deletePhotos = vi.fn<PhotoBoxActions['deletePhotos']>();
 const actions: PhotoBoxActions = {
@@ -78,6 +85,7 @@ const runMenu = async (user: ReturnType<typeof userEvent.setup>, name: string) =
 
 beforeEach(() => {
   toast.mockClear();
+  openAppSettings.mockReset().mockResolvedValue(undefined);
   savePhotos.mockReset();
   deletePhotos.mockReset();
   savePhotos.mockImplementation((ids) => Promise.resolve({ savedIds: ids, failedIds: [] }));
@@ -167,6 +175,44 @@ describe('저장', () => {
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll));
     expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
+  });
+
+  it('사진 저장 권한이 거부되어 있으면 실패 토스트 대신 설정 이동 창을 띄우고 선택을 유지한다', async () => {
+    const user = userEvent.setup();
+    savePhotos.mockResolvedValue({
+      savedIds: [],
+      failedIds: ['bulk-0', 'bulk-1'],
+      blocked: 'denied',
+    });
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+
+    await runMenu(user, '저장');
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.albumPermissionTitle)).toBeTruthy();
+    expect(toast).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: '설정으로 이동' }));
+    expect(openAppSettings).toHaveBeenCalledTimes(1);
+    // 창이 닫히면 선택 모드와 고른 사진이 그대로 남아 있음
+    await waitFor(() => expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy());
+  });
+
+  it('앱이 아닌 브라우저에서는 저장할 수 없다는 토스트만 띄운다', async () => {
+    const user = userEvent.setup();
+    savePhotos.mockResolvedValue({
+      savedIds: [],
+      failedIds: ['bulk-0'],
+      blocked: 'unavailable',
+    });
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 1);
+
+    await runMenu(user, '저장');
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveUnavailable));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 });
 

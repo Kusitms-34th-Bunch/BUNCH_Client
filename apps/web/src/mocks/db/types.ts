@@ -56,6 +56,8 @@ export type MockPhoto = {
   capturedTime: string | null;
   thumbnailUrl: string;
   imageUrl: string;
+  /** 업로드로 만든 사진의 파일 SHA-256(같은 번치에서 같은 파일을 합치는 판별용). 시작 데이터의 사진에는 없음 */
+  contentHash?: string;
 };
 
 export type BundleVisibility = 'PUBLIC' | 'PRIVATE';

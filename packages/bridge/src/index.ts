@@ -4,23 +4,40 @@ import type {
   PermissionKind,
   PermissionStatus,
   PickGalleryImageOptions,
+  PickGalleryImagesOptions,
+  PickPhotosResult,
+  SaveImagesToAlbumResult,
   SetNativeTabBarParams,
   ShareParams,
   SocialLoginResult,
   SocialProvider,
+  UploadImage,
 } from './schema';
 
 export {
   appPostMessageSchema,
   galleryImageSchema,
+  isSavableImageUrl,
+  MAX_PICKED_PHOTOS,
+  MAX_SAVE_IMAGES,
+  MAX_UPLOAD_IMAGE_DATA_URL,
   nativeTabBarItemSchema,
   permissionKindSchema,
   permissionStatusSchema,
+  pickedPhotoIdSchema,
+  pickedPhotoIdsSchema,
+  pickedPhotoSchema,
   pickGalleryImageOptionsSchema,
+  pickGalleryImagesOptionsSchema,
+  pickPhotosResultSchema,
+  saveImagesToAlbumResultSchema,
+  saveImageUrlSchema,
+  saveImageUrlsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
   socialLoginResultSchema,
   socialProviderSchema,
+  uploadImageSchema,
 } from './schema';
 export type {
   AppPostMessageSchema,
@@ -28,17 +45,34 @@ export type {
   NativeTabBarItem,
   PermissionKind,
   PermissionStatus,
+  PickedPhoto,
   PickGalleryImageOptions,
+  PickGalleryImagesOptions,
+  PickPhotosResult,
+  SaveImagesToAlbumResult,
   SetNativeTabBarParams,
   ShareParams,
   SocialLoginResult,
   SocialProvider,
+  UploadImage,
 } from './schema';
 
 /** 네이티브 구현과 웹 호출부가 공유하는 bridge 메서드 계약 */
 export type AppBridgeMethods = {
   /** 갤러리 사진의 임시 미리보기. 취소 시 null. 옵션을 모르는 이전 앱은 무시하고 정사각형 편집 결과를 돌려줌 */
   pickGalleryImage: (_options?: PickGalleryImageOptions) => Promise<GalleryImage | null>;
+  /** 갤러리에서 여러 장 선택(최대 50장). 사진 데이터는 담지 않고 `readPickedPhoto`로 하나씩 읽음. 취소는 `canceled` */
+  pickGalleryImages: (_options?: PickGalleryImagesOptions) => Promise<PickPhotosResult>;
+  /** 카메라로 한 장 촬영. 카메라 권한이 거부되어 있으면 `denied`, 닫으면 `canceled` */
+  capturePhoto: () => Promise<PickPhotosResult>;
+  /** 고른 사진 한 장을 업로드용으로 가공해 돌려줌(긴 변 2560px 이하 JPEG, 위치를 포함한 모든 메타데이터 제거). 모르는 id는 reject */
+  readPickedPhoto: (_id: string) => Promise<UploadImage>;
+  /** 업로드가 끝난 사진 정보를 쉘이 놓아 줌(ids를 생략하면 모두). 모르는 id는 무시 */
+  releasePickedPhotos: (_ids?: string[]) => Promise<void>;
+  /** 이미지 주소들(https, 최대 50개)을 쉘이 내려받아 휴대폰 앨범에 저장. 사진별 성공 여부를 주소 순서대로 돌려주고, 저장 권한이 거부되어 있으면 `denied`. 사진 데이터는 웹으로 넘기지 않음 */
+  saveImagesToAlbum: (_urls: string[]) => Promise<SaveImagesToAlbumResult>;
+  /** 앱의 시스템 설정 화면 열기(사진·카메라 권한 거부 안내의 「설정으로 이동」) */
+  openAppSettings: () => Promise<void>;
   /** 시스템 권한 팝업 요청. 이미 정해진 권한은 팝업 없이 현재 상태 반환 */
   requestPermission: (_kind: PermissionKind) => Promise<PermissionStatus>;
   /** 네이티브 SDK 소셜 로그인. 성공하면 서버 로그인에 쓸 ID 토큰(·nonce)을 돌려주고, 창을 닫으면 `cancelled`, SDK 오류는 reject. 미지원 환경(브라우저)에서는 reject */
