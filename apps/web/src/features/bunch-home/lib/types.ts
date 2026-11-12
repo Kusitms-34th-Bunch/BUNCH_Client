@@ -13,6 +13,15 @@ export type BunchMember = {
   role: BunchRole;
   /** 나 자신이면 이름 뒤 「(나)」, 관리 대상에서 제외 */
   isMe?: boolean | undefined;
+  /** 내가 이 멤버에게 할 수 있는 관리 동작(서버가 정함). 없으면 화면이 역할로 판단(샘플 데이터) */
+  actions?: BunchMemberManageActions | undefined;
+};
+
+export type BunchMemberManageActions = {
+  canGrantCoOwner: boolean;
+  canRevokeCoOwner: boolean;
+  canTransferOwner: boolean;
+  canRemove: boolean;
 };
 
 /** 내 번치가 차단한 다른 번치(차단 목록 한 줄) */
