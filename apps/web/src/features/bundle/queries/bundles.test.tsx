@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
+import '@/mocks/server';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { sharedKeys } from '@/shared/query/keys';
