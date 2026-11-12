@@ -28,7 +28,7 @@ import {
   readPickedPhoto,
   releasePickedPhotos,
 } from '../gallery-upload';
-import { openAppSettings, requestPermission } from '../permissions';
+import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { socialLogin } from '../social-login';
 import { markWebReady } from '../splash/state';
@@ -54,6 +54,7 @@ const appBridge = bridge({
   saveImagesToAlbum,
   openAppSettings,
   requestPermission,
+  getPermissionStatus,
   copyToClipboard,
   readClipboard,
   socialLogin,
