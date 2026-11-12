@@ -35,6 +35,38 @@ describe('NotificationSettingsRoute(실제 기기 권한 훅)', () => {
     expect(screen.queryByText(DEVICE_ON_NOTICE)).toBeNull();
   });
 
+  it('첫 상태를 받기 전에는 토글을 잠가 두고, 켜짐이면 풀며 거부면 계속 잠근다', async () => {
+    let resolveStatus: (_status: Status) => void = () => {};
+    bridge.getPermissionStatus.mockImplementationOnce(
+      () =>
+        new Promise<Status>((resolve) => {
+          resolveStatus = resolve;
+        }),
+    );
+    render(<NotificationSettingsRoute />, { wrapper: createQueryWrapper() });
+    const push = await screen.findByRole<HTMLInputElement>('switch', { name: '앱 푸시 알림' });
+
+    // 권한이 꺼져 있는지 모르는 동안은 배너 없이 잠김
+    expect(push.disabled).toBe(true);
+    expect(screen.queryByText('알림 설정이 꺼져 있어요.')).toBeNull();
+
+    await act(async () => {
+      resolveStatus('denied');
+      await Promise.resolve();
+    });
+    expect(await screen.findByText('알림 설정이 꺼져 있어요.')).toBeTruthy();
+    expect(push.disabled).toBe(true);
+  });
+
+  it('첫 확인 결과가 켜짐이면 토글이 풀린다', async () => {
+    bridge.getPermissionStatus.mockResolvedValue('granted');
+
+    render(<NotificationSettingsRoute />, { wrapper: createQueryWrapper() });
+    const push = await screen.findByRole<HTMLInputElement>('switch', { name: '앱 푸시 알림' });
+
+    await waitFor(() => expect(push.disabled).toBe(false));
+  });
+
   it('첫 확인 뒤 설정에서 권한을 켜고 돌아오면 그때부터 변화를 낭독한다', async () => {
     bridge.getPermissionStatus.mockResolvedValueOnce('denied').mockResolvedValue('granted');
     render(<NotificationSettingsRoute />, { wrapper: createQueryWrapper() });

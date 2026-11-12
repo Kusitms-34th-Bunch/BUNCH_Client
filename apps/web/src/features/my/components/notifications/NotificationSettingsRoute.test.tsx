@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PUSH_NOTIFICATION_TYPES } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { createQueryWrapper } from '@/shared/query/testing';
+import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { NotificationSettingsRoute } from './NotificationSettingsRoute';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
@@ -22,11 +22,15 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: vi.fn(),
 }));
 
-const device = vi.hoisted((): { permission: 'granted' | 'denied' } => ({ permission: 'granted' }));
+const device = vi.hoisted((): { permission: 'granted' | 'denied'; checking: boolean } => ({
+  permission: 'granted',
+  checking: false,
+}));
 vi.mock('../../hooks/useDeviceNotificationPermission', () => ({
   useDeviceNotificationPermission: () => ({
     permission: device.permission,
     ready: true,
+    checking: device.checking,
     openSettings: undefined,
   }),
 }));
@@ -84,12 +88,14 @@ const useServer = (
 };
 
 const toggle = (name: string) => screen.getByRole<HTMLInputElement>('switch', { name });
-const renderRoute = () => render(<NotificationSettingsRoute />, { wrapper: createQueryWrapper() });
+const renderRoute = (client = createTestQueryClient()) =>
+  render(<NotificationSettingsRoute />, { wrapper: createQueryWrapper(client) });
 const ready = () => screen.findByRole('switch', { name: '앱 푸시 알림' });
 
 beforeEach(() => {
   vi.clearAllMocks();
   device.permission = 'granted';
+  device.checking = false;
 });
 
 describe('NotificationSettingsRoute', () => {
@@ -223,6 +229,25 @@ describe('NotificationSettingsRoute', () => {
     await waitFor(() => expect(toggle('팔로우').checked).toBe(false));
   });
 
+  it('기기 알림 권한을 확인하는 동안에는 배너 없이 토글만 잠그고, 확인이 끝나면 풀어 저장한다', async () => {
+    device.checking = true;
+    useServer();
+    const { rerender } = renderRoute();
+    await ready();
+
+    expect(toggle('앱 푸시 알림').disabled).toBe(true);
+    expect(toggle('팔로우').disabled).toBe(true);
+    expect(screen.queryByText('알림 설정이 꺼져 있어요.')).toBeNull();
+    await userEvent.click(toggle('팔로우'));
+    expect(server_.patches).toHaveLength(0);
+
+    device.checking = false;
+    rerender(<NotificationSettingsRoute />);
+    expect(toggle('팔로우').disabled).toBe(false);
+    await userEvent.click(toggle('팔로우'));
+    await waitFor(() => expect(server_.patches).toHaveLength(1));
+  });
+
   it('기기 알림 권한이 꺼져 있으면 배너를 띄우고 토글을 막는다', async () => {
     device.permission = 'denied';
     useServer();
@@ -237,7 +262,8 @@ describe('NotificationSettingsRoute', () => {
   it('연타 중 앞선 저장이 실패해도 뒤에 누른 값이 남고 서버 값을 따로 다시 받지 않는다', async () => {
     const gate = deferred();
     useServer({}, { failFirst: 1, gate: gate.promise });
-    renderRoute();
+    const client = createTestQueryClient();
+    renderRoute(client);
     await ready();
     const getsAfterLoad = server_.gets;
 
@@ -254,8 +280,12 @@ describe('NotificationSettingsRoute', () => {
     // 두 번째 저장(켜기)이 서버에 반영돼 화면도 켜짐으로 남음
     await waitFor(() => expect(toggle('팔로우').checked).toBe(true));
     expect(server_.prefs.types.BUNCH_FOLLOWED).toBe(true);
-    // 첫 저장 실패 때문에 서버 값을 따로 다시 받지 않음(뒤 저장과 겹쳐 낡은 값이 덮는 것을 막음). 늦게 오는 요청도 잡도록 한 번 비운 뒤 확인
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // 저장 후처리와 재조회까지 모두 끝난 것을 query client로 확인한 뒤(고정 대기 없이), 첫 저장 실패 때문에 서버 값을 따로 다시 받지 않았는지 확인
+    // 뒤 저장과 겹쳐 낡은 값이 덮는 것을 막기 위한 동작
+    await waitFor(() => {
+      expect(client.isMutating()).toBe(0);
+      expect(client.isFetching()).toBe(0);
+    });
     expect(server_.gets).toBe(getsAfterLoad);
   });
 

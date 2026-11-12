@@ -33,7 +33,7 @@
 - 전체 OFF: 종류별 토글 비활성, 값 유지.
 - 기기 권한 OFF: 배너, 모든 토글 비활성, 값 유지.
 - 화면은 `settings`를 prop으로만 그리고 저장은 `onChangePush`·`onChangeType`으로 알린다(상태를 들고 있지 않음). 권한이 다시 켜지면(prop이 바뀌면) 배너가 사라지고 받은 값 그대로 돌아온다.
-- 기기 알림 권한은 `useDeviceNotificationPermission`이 쉘 bridge `getPermissionStatus('notification')`로 상태만 읽는다(OS 권한 창을 띄우지 않음). 화면에 들어올 때와 앱으로 돌아올 때(탭이 다시 보이거나 창이 포커스를 받을 때) 다시 읽는다. `denied`만 꺼짐으로 보고, 브라우저·오래된 쉘·읽기 실패·`undetermined`는 켜짐으로 둔다. 「설정으로 이동」은 쉘에서만 `openAppSettings`로 연다(7.3.4).
+- 기기 알림 권한은 `useDeviceNotificationPermission`이 쉘 bridge `getPermissionStatus('notification')`로 상태만 읽는다(OS 권한 창을 띄우지 않음). 화면에 들어올 때와 앱으로 돌아올 때(탭이 다시 보이거나 창이 포커스를 받을 때) 다시 읽는다. `denied`만 꺼짐으로 보고, 브라우저·오래된 쉘·읽기 실패·`undetermined`는 켜짐으로 둔다. 「설정으로 이동」은 쉘에서만 `openAppSettings`로 연다(7.3.4). 쉘에서 첫 상태를 받기 전(최대 1초, `CHECK_CAP_MS`)에는 꺼져 있는지 아직 모르므로 배너 없이 토글만 잠가 거부된 기기에서 설정이 바뀌지 않게 한다(`devicePermissionChecking`). 상한이 지나거나 읽지 못하면(읽기를 지원하지 않는 오래된 쉘 등) 켜짐으로 풀리고, 상한 뒤에 꺼짐으로 확인되면 그때 배너와 비활성으로 바뀐다. 오래된 쉘은 들어올 때마다 최대 1초 잠긴다.
 
 ## 데이터 의존성
 

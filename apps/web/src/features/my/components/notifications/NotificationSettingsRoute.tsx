@@ -24,7 +24,7 @@ export function NotificationSettingsRoute() {
   const backOr = useBackOr();
   const query = useQuery(notificationSettingsQueryOptions());
   const update = useUpdateNotificationSettingsMutation();
-  const { permission, ready, openSettings } = useDeviceNotificationPermission();
+  const { permission, ready, checking, openSettings } = useDeviceNotificationPermission();
   const failed = query.isError && !query.data && query.fetchStatus === 'idle';
   const text = MY_MESSAGES.notifications;
   // 영역이 먼저 마운트된 뒤에 문구를 채워야 스크린 리더가 변화로 읽음(영역과 문구가 함께 생기면 읽히지 않을 수 있음)
@@ -72,6 +72,7 @@ export function NotificationSettingsRoute() {
         <NotificationSettingsScreen
           settings={toNotificationSettings(query.data)}
           devicePermission={permission}
+          devicePermissionChecking={checking}
           onChangePush={(checked) => update.mutate(pushPatch(checked))}
           onChangeType={(type, checked) => update.mutate(typePatch(type, checked))}
           onOpenDeviceSettings={openSettings}

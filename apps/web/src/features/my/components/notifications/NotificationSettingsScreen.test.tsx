@@ -141,6 +141,15 @@ describe('NotificationSettingsScreen', () => {
     expect(typeToggles().map((input) => input.checked)).toEqual(values);
   });
 
+  it('기기 알림 권한을 확인하는 동안에는 배너 없이 모든 토글을 값 그대로 막는다', () => {
+    renderScreen({ devicePermissionChecking: true });
+
+    expect(screen.queryByText('알림 설정이 꺼져 있어요.')).toBeNull();
+    expect(toggle('앱 푸시 알림').disabled).toBe(true);
+    expect(toggle('앱 푸시 알림').checked).toBe(true);
+    expect(typeToggles().every((input) => input.disabled && input.checked)).toBe(true);
+  });
+
   it('기기 알림 권한이 켜져 있으면 배너가 없다', () => {
     renderScreen();
 

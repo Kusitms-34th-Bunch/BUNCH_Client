@@ -21,6 +21,8 @@ type NotificationSettingsScreenProps = {
   settings: NotificationSettings;
   /** 기기 알림 권한. 꺼져 있으면 배너를 띄우고 토글을 모두 막음 */
   devicePermission: DeviceNotificationPermission;
+  /** 기기 알림 권한을 아직 확인하는 중(쉘 첫 응답 전). 꺼져 있는지 모르므로 배너 없이 토글만 잠금 */
+  devicePermissionChecking?: boolean | undefined;
   /** 앱 푸시 전체 토글을 누를 때 */
   onChangePush: (_checked: boolean) => void;
   /** 알림 종류 토글을 누를 때 */
@@ -37,6 +39,7 @@ type NotificationSettingsScreenProps = {
 export function NotificationSettingsScreen({
   settings,
   devicePermission,
+  devicePermissionChecking = false,
   onChangePush,
   onChangeType,
   onOpenDeviceSettings,
@@ -47,7 +50,9 @@ export function NotificationSettingsScreen({
   const pushId = useId();
 
   const deviceOff = devicePermission === 'denied';
-  const typesDisabled = deviceOff || !settings.push;
+  // 권한을 확인하는 동안(꺼져 있는지 아직 모름)에도 잠가, 거부된 기기에서 설정이 바뀌지 않게 함(기능명세서 7.3.4)
+  const locked = deviceOff || devicePermissionChecking;
+  const typesDisabled = locked || !settings.push;
   // 기기 권한 때문에 막힌 토글은 배너 문구를 이유로 함께 읽음
   const disabledReason = deviceOff ? deviceOffMessageId : undefined;
   const text = MY_MESSAGES.notifications;
@@ -79,7 +84,7 @@ export function NotificationSettingsScreen({
           title={text.push.title}
           description={text.push.description}
           checked={settings.push}
-          disabled={deviceOff}
+          disabled={locked}
           aria-describedby={disabledReason}
           onChange={(event) => onChangePush(event.currentTarget.checked)}
         />

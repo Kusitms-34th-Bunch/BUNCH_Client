@@ -39,6 +39,55 @@ describe('useDeviceNotificationPermission', () => {
     expect(bridge.getPermissionStatus).not.toHaveBeenCalled();
   });
 
+  it('쉘에서는 첫 상태를 받기 전까지 확인 중이고, 받으면 끝난다', async () => {
+    bridge.getPermissionStatus.mockResolvedValue('denied');
+
+    const { result } = renderHook(() => useDeviceNotificationPermission());
+    expect(result.current.checking).toBe(true);
+
+    await waitFor(() => expect(result.current.checking).toBe(false));
+    expect(result.current.permission).toBe('denied');
+  });
+
+  it('브라우저에서는 확인할 것이 없어 확인 중이 아니다', () => {
+    bridge.isNativeShell.mockReturnValue(false);
+
+    const { result } = renderHook(() => useDeviceNotificationPermission());
+
+    expect(result.current.checking).toBe(false);
+  });
+
+  it('상태를 읽지 못해도 확인 중으로 계속 막지 않는다', async () => {
+    bridge.getPermissionStatus.mockRejectedValue(new Error('bridge down'));
+
+    const { result } = renderHook(() => useDeviceNotificationPermission());
+
+    await waitFor(() => expect(result.current.checking).toBe(false));
+    expect(result.current.permission).toBe('granted');
+  });
+
+  it('쉘이 읽기를 지원하지 않아 응답이 없으면 상한(1초)이 지나 확인 중을 푼다', () => {
+    vi.useFakeTimers();
+    try {
+      bridge.isNativeMethodAvailable.mockReturnValue(false);
+
+      const { result } = renderHook(() => useDeviceNotificationPermission());
+      expect(result.current.checking).toBe(true);
+
+      act(() => {
+        vi.advanceTimersByTime(999);
+      });
+      expect(result.current.checking).toBe(true);
+
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(result.current.checking).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('쉘에서는 첫 상태를 받기 전까지 준비되지 않은 것으로 알린다', async () => {
     bridge.getPermissionStatus.mockResolvedValue('denied');
 
