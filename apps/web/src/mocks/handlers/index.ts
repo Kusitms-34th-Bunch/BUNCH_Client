@@ -7,12 +7,14 @@ import { bundleHandlers } from './bundles';
 import { invitationHandlers } from './invitations';
 import { memberHandlers } from './members';
 import { photoHandlers } from './photos';
+import { pushPreferenceHandlers } from './pushPreferences';
 import { sessionHandlers } from './session';
 import { termHandlers } from './terms';
 
 export const handlers = [
   ...sessionHandlers,
   ...memberHandlers,
+  ...pushPreferenceHandlers,
   ...termHandlers,
   ...photoHandlers,
   ...bunchOnboardingHandlers,
