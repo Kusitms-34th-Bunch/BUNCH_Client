@@ -3,6 +3,9 @@ import { act, render, renderHook, screen, waitFor, within } from '@testing-libra
 import userEvent from '@testing-library/user-event';
 import { renderToString } from 'react-dom/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+// 다른 번치 프로필은 가짜 서버 응답에 기댐(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
+import '@/mocks/server';
+import { mockDb } from '@/mocks/db';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -35,8 +38,18 @@ beforeEach(() => {
   sessionStorage.clear();
 });
 
+// 프로필은 가짜 서버 데이터라 QueryClient와 함께 그림. resetModules 뒤라 같은 TanStack Query 모듈을 쓰게 함께 불러옴
+const queryWrapper = async () => {
+  const { createQueryWrapper, createTestQueryClient } = await import('@/shared/query/testing');
+  return createQueryWrapper(createTestQueryClient());
+};
+const renderOther = async (bunchId: string) => {
+  const { OtherBunch } = await import('./OtherBunch');
+  return render(<OtherBunch bunchId={bunchId} />, { wrapper: await queryWrapper() });
+};
+
 const openMore = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(screen.getByRole('button', { name: '더보기' }));
+  await user.click(await screen.findByRole('button', { name: '더보기' }));
   return screen.findByRole('dialog', { name: '더보기' });
 };
 
@@ -45,14 +58,12 @@ describe('다른 번치 차단', () => {
     // 퇴근런클럽: 메인 관리자
     useBunch('bunch-run');
     const user = userEvent.setup();
-    const { OtherBunch } = await import('./OtherBunch');
     const { useBlockedBunches } = await import('../../hooks/useBlockedBunches');
-    const { useBunchFollow } = await import('../../hooks/useBunchFollow');
-    const { otherBunchesFixture } = await import('../../fixtures/otherBunches.fixture');
-    render(<OtherBunch bunchId="bunch-camping" />);
+    await renderOther('3');
 
     // 팔로우 중이던 번치를 차단하면 팔로우도 해제
-    await user.click(screen.getByRole('button', { name: '팔로우' }));
+    await user.click(await screen.findByRole('button', { name: '팔로우' }));
+    await screen.findByRole('button', { name: '팔로잉' });
     await user.click(within(await openMore(user)).getByRole('button', { name: '차단하기' }));
     const confirm = await screen.findByRole(
       'dialog',
@@ -68,18 +79,14 @@ describe('다른 번치 차단', () => {
     expect(screen.queryByRole('button', { name: /팔로우|팔로잉/ })).toBeNull();
 
     const { result: blocked } = renderHook(() => useBlockedBunches('bunch-run'));
-    expect(blocked.current.blocked?.[0]).toMatchObject({ id: 'bunch-camping', name: '캠핑러버' });
-    const { result: follow } = renderHook(() =>
-      useBunchFollow(otherBunchesFixture['bunch-camping']),
-    );
-    expect(follow.current.status).toBe('none');
+    expect(blocked.current.blocked?.[0]).toMatchObject({ id: '3', name: '캠핑러버' });
+    await waitFor(() => expect(mockDb.get().follows).toEqual([]));
   });
 
   it('확인 시트의 「취소」는 차단하지 않는다', async () => {
     useBunch('bunch-run');
     const user = userEvent.setup();
-    const { OtherBunch } = await import('./OtherBunch');
-    render(<OtherBunch bunchId="bunch-camping" />);
+    await renderOther('3');
 
     await user.click(within(await openMore(user)).getByRole('button', { name: '차단하기' }));
     const confirm = await screen.findByRole(
@@ -100,8 +107,7 @@ describe('다른 번치 차단', () => {
     // 큐시즘 기프: 일반 멤버(기능명세 5.10.4, 차단은 멤버 누구나)
     useBunch('bunch-gift');
     const user = userEvent.setup();
-    const { OtherBunch } = await import('./OtherBunch');
-    render(<OtherBunch bunchId="bunch-camping" />);
+    await renderOther('3');
 
     const menu = await openMore(user);
     expect(within(menu).getByRole('button', { name: '차단하기' })).toBeInTheDocument();
@@ -111,14 +117,11 @@ describe('다른 번치 차단', () => {
   it('팔로우 요청 중인 비공개 번치를 차단하면 요청도 취소된다', async () => {
     useBunch('bunch-run');
     const user = userEvent.setup();
-    const { OtherBunch } = await import('./OtherBunch');
-    const { useBunchFollow } = await import('../../hooks/useBunchFollow');
-    const { otherBunchesFixture } = await import('../../fixtures/otherBunches.fixture');
-    render(<OtherBunch bunchId="bunch-book" />);
+    await renderOther('4');
 
-    await user.click(screen.getByRole('button', { name: '팔로우' }));
-    const { result: before } = renderHook(() => useBunchFollow(otherBunchesFixture['bunch-book']));
-    expect(before.current.status).toBe('requested');
+    await user.click(await screen.findByRole('button', { name: '팔로우' }));
+    await screen.findByRole('button', { name: '팔로우 요청됨' });
+    expect(mockDb.get().follows[0]?.status).toBe('REQUESTED');
 
     await user.click(within(await openMore(user)).getByRole('button', { name: '차단하기' }));
     const confirm = await screen.findByRole(
@@ -128,8 +131,7 @@ describe('다른 번치 차단', () => {
     );
     await user.click(within(confirm).getByRole('button', { name: '차단하기' }));
 
-    const { result: after } = renderHook(() => useBunchFollow(otherBunchesFixture['bunch-book']));
-    expect(after.current.status).toBe('none');
+    await waitFor(() => expect(mockDb.get().follows).toEqual([]));
   });
 
   it('차단을 해제하면 프로필이 다시 보인다', async () => {
@@ -137,20 +139,25 @@ describe('다른 번치 차단', () => {
     const { OtherBunch } = await import('./OtherBunch');
     const { useBlockedBunches } = await import('../../hooks/useBlockedBunches');
     const { result } = renderHook(() => useBlockedBunches('bunch-run'));
-    act(() => result.current.block({ id: 'bunch-camping', name: '캠핑러버' }));
-    render(<OtherBunch bunchId="bunch-camping" />);
+    act(() => result.current.block({ id: '3', name: '캠핑러버' }));
+    render(<OtherBunch bunchId="3" />, { wrapper: await queryWrapper() });
     expect(
       await screen.findByRole('heading', { level: 1, name: '볼 수 없는 번치예요' }),
     ).toBeInTheDocument();
 
-    act(() => result.current.unblock('bunch-camping'));
+    act(() => result.current.unblock('3'));
     expect(await screen.findByRole('heading', { level: 1, name: '캠핑러버' })).toBeInTheDocument();
   });
 
   it('서버 렌더는 차단 여부를 몰라 프로필 내용 없이 헤더만 그린다', async () => {
     useBunch('bunch-run');
     const { OtherBunch } = await import('./OtherBunch');
-    const html = renderToString(<OtherBunch bunchId="bunch-camping" />);
+    const Wrapper = await queryWrapper();
+    const html = renderToString(
+      <Wrapper>
+        <OtherBunch bunchId="3" />
+      </Wrapper>,
+    );
 
     expect(html).toContain('뒤로 가기');
     expect(html).not.toContain('캠핑러버');
@@ -164,8 +171,8 @@ describe('다른 번치 차단', () => {
     const { OtherBunchMembers } = await import('./OtherBunchMembers');
 
     for (const html of [
-      renderToString(<OtherBunchFollows bunchId="bunch-camping" initialTab="followers" />),
-      renderToString(<OtherBunchMembers bunchId="bunch-camping" />),
+      renderToString(<OtherBunchFollows bunchId="3" initialTab="followers" />),
+      renderToString(<OtherBunchMembers bunchId="3" />),
     ]) {
       expect(html).toContain('뒤로 가기');
       expect(html).not.toContain('<li');
@@ -179,18 +186,16 @@ describe('다른 번치 차단', () => {
     const { OtherBunchFollows } = await import('./OtherBunchFollows');
     const { OtherBunchMembers } = await import('./OtherBunchMembers');
     const { result } = renderHook(() => useBlockedBunches('bunch-run'));
-    result.current.block({ id: 'bunch-camping', name: '캠핑러버' });
+    result.current.block({ id: '3', name: '캠핑러버' });
 
-    const { unmount } = render(
-      <OtherBunchFollows bunchId="bunch-camping" initialTab="followers" />,
-    );
+    const { unmount } = render(<OtherBunchFollows bunchId="3" initialTab="followers" />);
     expect(
       screen.getByRole('heading', { level: 1, name: '볼 수 없는 번치예요' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('tab')).toBeNull();
     unmount();
 
-    render(<OtherBunchMembers bunchId="bunch-camping" />);
+    render(<OtherBunchMembers bunchId="3" />);
     expect(
       screen.getByRole('heading', { level: 1, name: '볼 수 없는 번치예요' }),
     ).toBeInTheDocument();
@@ -202,8 +207,7 @@ describe('다른 번치 신고', () => {
   it('사유를 골라야 신고할 수 있고, 기타는 상세 사유가 필요하며, 신고하면 접수 안내를 띄운다', async () => {
     useBunch('bunch-gift');
     const user = userEvent.setup();
-    const { OtherBunch } = await import('./OtherBunch');
-    render(<OtherBunch bunchId="bunch-camping" />);
+    await renderOther('3');
 
     await user.click(within(await openMore(user)).getByRole('button', { name: '신고하기' }));
     const sheet = await screen.findByRole(

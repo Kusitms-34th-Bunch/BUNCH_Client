@@ -1,36 +1,66 @@
-import { render, screen, within } from '@testing-library/react';
+import type * as DesignSystem from '@app/design-system';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { http } from 'msw';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockDb } from '@/mocks/db';
+import { MOCK_BUNCH_ID, MOCK_SECOND_BUNCH_ID } from '@/mocks/db/seed';
+import { fail } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
+import { getMyProfile } from '@/shared/api/myProfile';
+import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
+import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { OtherBunch } from './OtherBunch';
 import { OtherBunchMembers } from './OtherBunchMembers';
 
 const back = vi.fn();
 const replace = vi.fn();
-const notFound = vi.hoisted(() =>
-  vi.fn(() => {
-    throw new Error('NEXT_NOT_FOUND');
-  }),
-);
+const notFound = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({ useRouter: () => ({ back, replace }), notFound }));
+
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
+type ToastArgs = Parameters<typeof DesignSystem.toast>;
+const toast = vi.fn<(..._args: ToastArgs) => void>();
+vi.mock('@app/design-system', async (importOriginal) => ({
+  ...(await importOriginal<typeof DesignSystem>()),
+  toast: (...args: ToastArgs) => toast(...args),
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
+// 단언이 실패해도 요청 기록 listener가 다음 테스트로 넘어가지 않게
+afterEach(() => {
+  server.events.removeAllListeners();
+});
 
-// 팔로우 결과는 모듈 저장소에 남으므로 각 테스트가 마지막에 처음 상태(팔로우 안 함)로 되돌림
-describe('OtherBunch 공개 번치', () => {
-  it('팔로우하면 「팔로잉」이 되고 팔로워가 한 명 늘며, 시트에서 팔로우를 취소한다', async () => {
+const renderOther = (bunchId: string) =>
+  render(<OtherBunch bunchId={bunchId} />, {
+    wrapper: createQueryWrapper(createTestQueryClient()),
+  });
+const followerText = () => screen.getByText('팔로워').parentElement;
+
+describe('OtherBunch 공개 번치(가짜 서버)', () => {
+  it('팔로우하면 서버에 반영돼 「팔로잉」·팔로워 +1이 되고, 시트에서 팔로우를 취소한다', async () => {
     const user = userEvent.setup();
-    render(<OtherBunch bunchId="bunch-camping" />);
+    renderOther('3');
 
-    expect(screen.getByRole('heading', { level: 1, name: '캠핑러버' })).toBeInTheDocument();
-    expect(screen.getByText('팔로워').parentElement).toHaveTextContent('23팔로워');
-    // 공개 번치는 팔로우 전에도 번들이 보임
-    expect(screen.getByRole('region', { name: '번들' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: '캠핑러버' })).toBeInTheDocument();
+    expect(followerText()).toHaveTextContent('23팔로워');
+    // 공개 번치는 팔로우 전에도 서버의 공개 번들이 보임
+    const bundles = screen.getByRole('region', { name: '번들' });
+    expect(
+      await within(bundles).findByRole('img', { name: '가평 첫 캠핑 🏕️' }),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '팔로우' }));
-    expect(screen.getByText('팔로워').parentElement).toHaveTextContent('24팔로워');
+    expect(await screen.findByRole('button', { name: '팔로잉' })).toBeInTheDocument();
+    await waitFor(() => expect(followerText()).toHaveTextContent('24팔로워'));
     expect(screen.getByRole('status')).toHaveTextContent('캠핑러버 번치를 팔로우했어요.');
+    expect(mockDb.get().follows).toMatchObject([{ targetBunchId: 3, status: 'FOLLOWING' }]);
 
     await user.click(screen.getByRole('button', { name: '팔로잉' }));
     const sheet = await screen.findByRole('dialog', { name: '캠핑러버 팔로우를 취소할까요?' });
@@ -42,66 +72,72 @@ describe('OtherBunch 공개 번치', () => {
     );
     await user.click(within(sheet).getByRole('button', { name: '팔로우 취소' }));
 
-    expect(screen.getByRole('button', { name: '팔로우' })).toBeInTheDocument();
-    expect(screen.getByText('팔로워').parentElement).toHaveTextContent('23팔로워');
+    expect(await screen.findByRole('button', { name: '팔로우' })).toBeInTheDocument();
+    await waitFor(() => expect(followerText()).toHaveTextContent('23팔로워'));
     expect(screen.getByRole('status')).toHaveTextContent('캠핑러버 번치 팔로우를 취소했어요.');
+    expect(mockDb.get().follows).toEqual([]);
   });
 
   it('시트의 「취소」는 팔로우 상태를 그대로 둔다', async () => {
     const user = userEvent.setup();
-    render(<OtherBunch bunchId="bunch-camping" />);
+    renderOther('3');
 
-    await user.click(screen.getByRole('button', { name: '팔로우' }));
-    await user.click(screen.getByRole('button', { name: '팔로잉' }));
+    await user.click(await screen.findByRole('button', { name: '팔로우' }));
+    await user.click(await screen.findByRole('button', { name: '팔로잉' }));
     const sheet = await screen.findByRole('dialog');
     await user.click(within(sheet).getByRole('button', { name: '취소' }));
 
     expect(screen.getByRole('button', { name: '팔로잉' })).toBeInTheDocument();
-    // 다음 테스트를 위해 처음 상태로
-    await user.click(screen.getByRole('button', { name: '팔로잉' }));
-    await user.click(
-      within(await screen.findByRole('dialog')).getByRole('button', { name: '팔로우 취소' }),
-    );
+    expect(mockDb.get().follows).toHaveLength(1);
   });
 
-  it('헤더에 알림은 없고 더보기만 있다', () => {
-    render(<OtherBunch bunchId="bunch-camping" />);
+  it('팔로우하지 못하면 안내하고 상태를 바꾸지 않는다', async () => {
+    server.use(
+      http.put('/api/bunches/:viewerId/following/:targetId', () => fail(500, 'COMMON_500')),
+    );
+    const user = userEvent.setup();
+    renderOther('3');
 
+    await user.click(await screen.findByRole('button', { name: '팔로우' }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.followFailed));
+    expect(screen.getByRole('button', { name: '팔로우' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('');
+  });
+
+  it('헤더에 알림은 없고 더보기만 있다', async () => {
+    renderOther('3');
+
+    expect(await screen.findByRole('button', { name: /더보기/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: '알림' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /더보기/ })).toBeInTheDocument();
   });
 
-  it('팔로워·팔로잉·멤버 수는 그 번치의 각 목록으로 가는 링크다', () => {
-    render(<OtherBunch bunchId="bunch-camping" />);
+  it('팔로워·팔로잉·멤버 수는 목록 서버 연결 전이라 글자만 보인다', async () => {
+    renderOther('3');
 
-    expect(screen.getByRole('link', { name: '23 팔로워' })).toHaveAttribute(
-      'href',
-      '/bunches/bunch-camping/follows',
-    );
-    expect(screen.getByRole('link', { name: '8 팔로잉' })).toHaveAttribute(
-      'href',
-      '/bunches/bunch-camping/follows?tab=following',
-    );
-    expect(screen.getByRole('link', { name: '4 멤버' })).toHaveAttribute(
-      'href',
-      '/bunches/bunch-camping/members',
-    );
+    await screen.findByRole('heading', { level: 1, name: '캠핑러버' });
+    expect(screen.queryByRole('link', { name: /팔로워|팔로잉|멤버/ })).toBeNull();
+    expect(screen.getByText('멤버').parentElement).toHaveTextContent('4멤버');
   });
 });
 
-describe('OtherBunch 비공개 번치', () => {
+describe('OtherBunch 비공개 번치(가짜 서버)', () => {
   it('팔로우 전에는 번들 대신 안내를 보이고, 팔로우하면 요청 상태로 바뀌며 요청을 취소할 수 있다', async () => {
+    const requests: string[] = [];
+    server.events.on('request:start', ({ request }) => {
+      requests.push(new URL(request.url).pathname);
+    });
     const user = userEvent.setup();
-    render(<OtherBunch bunchId="bunch-book" />);
+    renderOther('4');
 
-    // 승인 전에는 수치만 보이고 팔로워·팔로잉·멤버 목록 링크는 없음
-    expect(screen.getByText('팔로워').parentElement).toHaveTextContent('32팔로워');
-    expect(screen.queryByRole('link', { name: /팔로워|팔로잉|멤버/ })).toBeNull();
-
-    expect(screen.getByRole('region', { name: '비공개 번치예요' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: '비공개 번치예요' })).toBeInTheDocument();
+    expect(followerText()).toHaveTextContent('32팔로워');
     expect(screen.queryByRole('region', { name: '번들' })).toBeNull();
+    // 볼 수 없는 번들은 요청하지 않음
+    expect(requests).not.toContain('/api/bunches/4/published-bundles');
 
     await user.click(screen.getByRole('button', { name: '팔로우' }));
+    expect(await screen.findByRole('button', { name: '팔로우 요청됨' })).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('책방산책 번치에 팔로우를 요청했어요.');
     // 요청만 보낸 상태라 여전히 가림
     expect(screen.getByRole('heading', { name: '비공개 번치예요' })).toBeInTheDocument();
@@ -109,26 +145,56 @@ describe('OtherBunch 비공개 번치', () => {
     await user.click(screen.getByRole('button', { name: '팔로우 요청됨' }));
     const sheet = await screen.findByRole('dialog', { name: '책방산책 팔로우 요청을 취소할까요?' });
     expect(within(sheet).getByText('요청 대기 중인 비공개 번치')).toBeInTheDocument();
-    expect(sheet.querySelector('img')).toHaveAttribute(
-      'src',
-      expect.stringMatching(/^\/images\/default-bunch\/type-\d\.svg$/),
-    );
     await user.click(within(sheet).getByRole('button', { name: '팔로우 요청 취소' }));
 
-    expect(screen.getByRole('button', { name: '팔로우' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '팔로우' })).toBeInTheDocument();
+    expect(mockDb.get().follows).toEqual([]);
   });
 
-  it('없는 번치와 상속 속성 이름은 404로 보낸다', () => {
-    expect(() => render(<OtherBunch bunchId="unknown" />)).toThrow('NEXT_NOT_FOUND');
-    expect(() => render(<OtherBunch bunchId="__proto__" />)).toThrow('NEXT_NOT_FOUND');
-    expect(() => render(<OtherBunchMembers bunchId="constructor" />)).toThrow('NEXT_NOT_FOUND');
-    expect(notFound).toHaveBeenCalled();
+  it('팔로우가 승인된 비공개 번치는 번들을 보인다', async () => {
+    mockDb.update((state) => ({
+      ...state,
+      follows: [{ id: 1, followerBunchId: MOCK_BUNCH_ID, targetBunchId: 4, status: 'FOLLOWING' }],
+    }));
+    renderOther('4');
+
+    const bundles = await screen.findByRole('region', { name: '번들' });
+    expect(
+      await within(bundles).findByRole('img', { name: '노을 지는 동네 책방 투어' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '팔로잉' })).toBeInTheDocument();
+  });
+});
+
+describe('OtherBunch 주소 처리', () => {
+  it('없는 번치와 잘못된 주소는 404로 보낸다', async () => {
+    renderOther('999');
+    await waitFor(() => expect(notFound).toHaveBeenCalled());
+
+    notFound.mockClear();
+    renderOther('__proto__');
+    await waitFor(() => expect(notFound).toHaveBeenCalled());
+  });
+
+  it('지금 번치의 주소면 번치 탭으로 보낸다', async () => {
+    renderOther(String(MOCK_BUNCH_ID));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.home));
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+  });
+
+  it('내가 속한 다른 번치면 그 번치로 전환한 뒤 번치 탭으로 보낸다', async () => {
+    renderOther(String(MOCK_SECOND_BUNCH_ID));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.home));
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.switched('퇴근런클럽'));
+    expect((await getMyProfile()).bunch?.id).toBe(String(MOCK_SECOND_BUNCH_ID));
   });
 });
 
 describe('OtherBunchMembers', () => {
   it('그 번치의 멤버를 관리 동작 없이 보여 준다', () => {
-    render(<OtherBunchMembers bunchId="bunch-camping" />);
+    render(<OtherBunchMembers bunchId="3" />);
 
     expect(screen.getByRole('heading', { level: 1, name: '캠핑러버 멤버' })).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
@@ -136,11 +202,19 @@ describe('OtherBunchMembers', () => {
   });
 
   it('팔로우 승인 전의 비공개 번치는 멤버 명단 대신 안내를 보인다', () => {
-    render(<OtherBunchMembers bunchId="bunch-book" />);
+    render(<OtherBunchMembers bunchId="4" />);
 
     expect(screen.getByRole('region', { name: '비공개 번치예요' })).toHaveTextContent(
       '목록을 보려면 이 번치를 팔로우하세요.',
     );
     expect(screen.queryByRole('listitem')).toBeNull();
+  });
+
+  it('없는 번치와 상속 속성 이름은 404로 보낸다', () => {
+    notFound.mockImplementation(() => {
+      throw new Error('NEXT_NOT_FOUND');
+    });
+    expect(() => render(<OtherBunchMembers bunchId="constructor" />)).toThrow('NEXT_NOT_FOUND');
+    notFound.mockReset();
   });
 });

@@ -228,7 +228,7 @@ describe('FeedScreen', () => {
     await user.click(within(own!).getByRole('button', { name: '댓글 4' }));
     expect(push.mock.calls.map(([path]: unknown[]) => path as string)).toEqual([
       '/bunch',
-      '/bunches/bunch-book',
+      '/bunches/4',
       '/bundles/bundle-1',
       '/bundles/bundle-1?focus=comments',
     ]);
