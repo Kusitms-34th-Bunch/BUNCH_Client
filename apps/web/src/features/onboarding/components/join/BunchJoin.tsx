@@ -8,6 +8,7 @@ import { useId, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { readClipboardText } from '@/shared/lib/clipboard';
 import { INVITATION_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
@@ -37,11 +38,9 @@ export function BunchJoin() {
   });
 
   const paste = async () => {
-    try {
-      setLink((await navigator.clipboard.readText()).trim());
-    } catch {
-      // 권한 거부·비보안 환경에서는 입력창에서 직접 붙여넣기 허용
-    }
+    // 읽지 못하면(권한 거부·비어 있음) 입력창에서 직접 붙여넣을 수 있게 포커스만 줌
+    const text = await readClipboardText();
+    if (text) setLink(text);
     document.getElementById(inputId)?.focus();
   };
 

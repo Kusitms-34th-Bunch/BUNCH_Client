@@ -12,6 +12,7 @@ import type {
 
 export {
   appPostMessageSchema,
+  clipboardTextSchema,
   galleryImageSchema,
   nativeTabBarItemSchema,
   permissionKindSchema,
@@ -43,6 +44,10 @@ export type AppBridgeMethods = {
   requestPermission: (_kind: PermissionKind) => Promise<PermissionStatus>;
   /** 네이티브 SDK 소셜 로그인. 성공하면 서버 로그인에 쓸 ID 토큰(·nonce)을 돌려주고, 창을 닫으면 `cancelled`, SDK 오류는 reject. 미지원 환경(브라우저)에서는 reject */
   socialLogin: (_provider: SocialProvider) => Promise<SocialLoginResult>;
+  /** 텍스트를 시스템 클립보드에 복사. 성공 여부를 돌려주고(검증 실패·오류는 false) 브라우저에서는 `navigator.clipboard`로 대체. WebView의 http 개발 주소는 보안 컨텍스트가 아니라 `navigator.clipboard`가 없어서 필요 */
+  copyToClipboard: (_text: string) => Promise<boolean>;
+  /** 시스템 클립보드의 텍스트를 읽음. 비어 있거나 텍스트가 아니거나 상한을 넘으면 null. 사용자가 누른 동작 직후에만 호출(iOS는 붙여넣기 허용 팝업이 뜰 수 있음) */
+  readClipboard: () => Promise<string | null>;
   /** 네이티브 공유 시트 호출, 일반 브라우저에서는 Web Share API로 대체 */
   share: (_params: ShareParams) => Promise<void>;
   /** iOS 쉘의 시스템 탭 화면 시작·종료. 미지원 환경(브라우저·안드로이드)에서는 false 반환 */

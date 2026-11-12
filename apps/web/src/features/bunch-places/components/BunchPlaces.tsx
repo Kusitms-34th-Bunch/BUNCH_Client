@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { copyText } from '@/shared/lib/clipboard';
 import type { KokPlace } from '../lib/types';
 import { PLACES_MESSAGES } from '../constants/messages';
 import { useBunchPlaces } from '../hooks/useBunchPlaces';
@@ -27,15 +28,7 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
   const { members, places, remove, restore } = useBunchPlaces();
 
   // 클립보드 쓰기는 누른 순간에 하고(사용자 제스처), 결과 토스트는 시트가 닫힌 뒤 화면이 부름
-  const copyAddress = async (place: KokPlace) => {
-    try {
-      await navigator.clipboard.writeText(copyTextOf(place));
-      return true;
-    } catch {
-      // 권한 거부·비보안 컨텍스트의 복사 실패
-      return false;
-    }
-  };
+  const copyAddress = (place: KokPlace) => copyText(copyTextOf(place));
 
   const copyDone = (copied: boolean) => {
     if (copied) {

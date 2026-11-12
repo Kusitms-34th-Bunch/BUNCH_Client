@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  clipboardTextSchema,
   galleryImageSchema,
   pickGalleryImageOptionsSchema,
   setNativeTabBarParamsSchema,
@@ -91,4 +92,14 @@ void test('갤러리 선택 옵션은 edit 불리언만 허용하고 생략할 �
   assert.equal(pickGalleryImageOptionsSchema.safeParse({ edit: false }).success, true);
   assert.equal(pickGalleryImageOptionsSchema.safeParse({ edit: 'no' }).success, false);
   assert.equal(pickGalleryImageOptionsSchema.safeParse({ edit: false, extra: 1 }).success, false);
+});
+
+void test('클립보드 텍스트는 1~2048자 문자열만 허용한다', () => {
+  const parse = (value: unknown) => clipboardTextSchema.safeParse(value).success;
+  assert.equal(parse('https://app.bunch.kr/invite/abc'), true);
+  assert.equal(parse('a'.repeat(2048)), true);
+  assert.equal(parse(''), false);
+  assert.equal(parse('a'.repeat(2049)), false);
+  assert.equal(parse(123), false);
+  assert.equal(parse(null), false);
 });

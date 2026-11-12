@@ -19,6 +19,7 @@ import {
   shareParamsSchema,
   type AppBridgeMethods,
 } from '@app/bridge';
+import { copyToClipboard, readClipboard } from '../clipboard';
 import { pickGalleryImage } from '../gallery-image';
 import { requestPermission } from '../permissions';
 import { buildSafeAreaScript } from '../safe-area-script';
@@ -40,6 +41,8 @@ export const WEB_URL = resolveWebUrl(
 const appBridge = bridge({
   pickGalleryImage,
   requestPermission,
+  copyToClipboard,
+  readClipboard,
   socialLogin,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
@@ -128,6 +131,9 @@ export function AppWebView({ uri }: { uri: string }) {
       overScrollMode="never"
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
+      // iOS 기본값(false)에서는 <video playsInline>이 무시돼 네이티브 플레이어가 뜸. 로그인 화면 배경 영상이 인라인으로 자동 재생되도록 허용
+      allowsInlineMediaPlayback
+      mediaPlaybackRequiresUserAction={false}
       allowsBackForwardNavigationGestures
       // 스플래시는 웹의 appReady(도착 화면 결정)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
       onError={markWebReady}
