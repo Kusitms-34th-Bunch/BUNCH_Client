@@ -75,6 +75,19 @@ jobs:
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
           restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
 
+      # ESLint는 파일 내용 기준 캐시로 바뀐 파일만 다시 검사. PR만 develop·main이 저장한 결과를 이어 받음
+      # 다른 파일의 타입이 바뀌어도 캐시된 타입 기반 규칙 결과는 갱신되지 않으므로 push는 캐시 없이 전체 검사 후 저장
+      - name: Restore ESLint cache
+        if: matrix.id == 'lint' && github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .eslintcache
+            apps/*/.eslintcache
+            packages/*/.eslintcache
+          key: eslint-${{ runner.os }}-${{ hashFiles('yarn.lock', 'packages/lint-config/**', '**/eslint.config.*') }}-${{ github.sha }}
+          restore-keys: eslint-${{ runner.os }}-${{ hashFiles('yarn.lock', 'packages/lint-config/**', '**/eslint.config.*') }}-
+
       # 검사마다 단계를 나눠 Actions·PR 댓글에 검사별 결과 표시. 앞 단계가 실패해도 다음 단계는 실행
       - name: 생성물 동기화
         id: generated
@@ -155,6 +168,17 @@ jobs:
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ matrix.id }}-${{ github.sha }}
+
+      # develop·main push의 전체 검사 결과만 저장(PR 결과로 기준 캐시가 바뀌지 않게)
+      - name: Save ESLint cache
+        if: ${{ !cancelled() && matrix.id == 'lint' && github.event_name == 'push' && steps.lint.outcome == 'success' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .eslintcache
+            apps/*/.eslintcache
+            packages/*/.eslintcache
+          key: eslint-${{ runner.os }}-${{ hashFiles('yarn.lock', 'packages/lint-config/**', '**/eslint.config.*') }}-${{ github.sha }}
 
       - name: Save Next.js build cache
         if: ${{ !cancelled() && matrix.id == 'build' && steps.build.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
