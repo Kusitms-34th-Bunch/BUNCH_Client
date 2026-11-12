@@ -132,6 +132,7 @@ export function AppWebView({ uri }: { uri: string }) {
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
       // iOS 기본값(false)에서는 <video playsInline>이 무시돼 네이티브 플레이어가 뜸. 로그인 화면 배경 영상이 인라인으로 자동 재생되도록 허용
+      // 두 설정 모두 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 소리 있는 영상을 넣을 때 자동 재생 여부를 함께 고려
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
       allowsBackForwardNavigationGestures
