@@ -89,15 +89,19 @@ describe('BunchJoin', () => {
     expect((done() as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('붙여넣기를 누르면 클립보드의 링크를 입력창에 채우고 초점을 준다', async () => {
+  it('붙여넣기에 성공하면 클립보드의 링크를 입력창에 채우고 키보드가 올라오지 않게 초점은 주지 않는다', async () => {
     readText.mockResolvedValue(`  ${LINK}\n`);
     renderJoin();
 
     await userEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
 
     await waitFor(() => expect(input()).toHaveProperty('value', LINK));
-    expect(document.activeElement).toBe(input());
+    expect(document.activeElement).not.toBe(input());
     expect((done() as HTMLButtonElement).disabled).toBe(false);
+    // 초점 대신 상태 알림으로 채워진 것을 전하고, 직접 고치면 사라짐
+    expect(screen.getByRole('status').textContent).toBe('초대 링크를 붙여넣었어요');
+    await userEvent.type(input(), 'x');
+    expect(screen.getByRole('status').textContent).toBe('');
   });
 
   it('클립보드를 읽지 못하면 입력창에 초점을 준다', async () => {

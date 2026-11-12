@@ -25,6 +25,8 @@ export function BunchJoin() {
   const router = useRouter();
   const inputId = useId();
   const [link, setLink] = useState('');
+  // 붙여넣기로 채운 직후에만 스크린 리더에 알림(직접 고치면 사라짐)
+  const [pasted, setPasted] = useState(false);
   const flow = useJoinInvitationFlow();
   const verify = useVerifyInvitationMutation();
   // 같은 틱에 연달아 눌러도 한 번만 보내도록 ref로 막음(state 갱신 전에는 isPending이 아직 false)
@@ -38,9 +40,14 @@ export function BunchJoin() {
   });
 
   const paste = async () => {
-    // 읽지 못하면(권한 거부·비어 있음) 입력창에서 직접 붙여넣을 수 있게 포커스만 줌
     const text = await readClipboardText();
-    if (text) setLink(text);
+    if (text) {
+      // 붙여넣기에 성공하면 입력창에 초점을 주지 않아 키보드가 올라오지 않음(바로 완료할 수 있음). 채워진 것은 상태 알림으로 전함
+      setLink(text);
+      setPasted(true);
+      return;
+    }
+    // 읽지 못하면(권한 거부·비어 있음) 입력창에서 직접 붙여넣을 수 있게 포커스를 줌
     document.getElementById(inputId)?.focus();
   };
 
@@ -105,9 +112,9 @@ export function BunchJoin() {
         </div>
       }
     >
-      {/* 확인 중 상태를 스크린 리더에 알림(화면에는 숨김) */}
+      {/* 확인 중·붙여넣기 완료를 스크린 리더에 알림(화면에는 숨김) */}
       <p role="status" className="sr-only">
-        {verify.isPending ? '초대를 확인하는 중이에요' : ''}
+        {verify.isPending ? '초대를 확인하는 중이에요' : pasted ? '초대 링크를 붙여넣었어요' : ''}
       </p>
       {verify.isPending ? <PageLoading /> : null}
       <PageHeader title="초대받은 번치에 참여해볼까요?" />
@@ -117,7 +124,10 @@ export function BunchJoin() {
           label="초대 링크"
           placeholder="초대 링크를 붙여넣어 주세요"
           value={link}
-          onChange={(event) => setLink(event.target.value)}
+          onChange={(event) => {
+            setLink(event.target.value);
+            setPasted(false);
+          }}
           inputMode="url"
           autoComplete="off"
           autoCapitalize="none"
