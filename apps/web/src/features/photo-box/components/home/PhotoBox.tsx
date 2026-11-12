@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCreateBundle } from '@/features/bundle/hooks/useCreateBundle';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { PhotoBoxPreview } from '../../lib/preview';
@@ -24,6 +24,10 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
     progressive: true,
   });
   const { create: createBundle, creating } = useCreateBundle();
+  // 화면을 새로 시작하는 기준: 준비된 번치의 id. 로딩·오류로 잠깐 바뀌어도 마지막 번치 id를 유지해, 같은 번치로 돌아올 때는 선택 모드와 멤버 필터를 지우지 않음
+  const readyBunchId = state.kind === 'ready' ? state.data.bunch.id : undefined;
+  const [screenKey, setScreenKey] = useState(readyBunchId);
+  if (readyBunchId !== undefined && readyBunchId !== screenKey) setScreenKey(readyBunchId);
   // 목록을 다시 받지 못하면(삭제한 사진이 남아 보일 수 있음) 한 번 알리고, 다시 받은 뒤의 다음 실패 때 또 알림
   useEffect(() => {
     if (stale) toast(PHOTO_BOX_MESSAGES.listStale);
@@ -39,9 +43,9 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
     <>
       {/* 만드는 동안은 아래 화면을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(레이아웃은 그대로 두려고 contents) */}
       <div className="contents" inert={creating}>
-        {/* 번치가 바뀌면 화면을 새로 시작해 멤버 필터는 「전체」로, 선택 모드는 해제(명세 3.1.1, 3.3.1). 로딩에서 준비로 갈 때도 키가 undefined에서 번치 id로 바뀌어 한 번 새로 시작하지만 로딩 화면에는 상태가 없어 무해 */}
+        {/* 번치가 바뀌면 화면을 새로 시작해 멤버 필터는 「전체」로, 선택 모드는 해제(명세 3.1.1, 3.3.1). 처음 로딩에서 준비로 갈 때는 키가 undefined에서 번치 id로 한 번 바뀌어 새로 시작하지만 로딩 화면에는 상태가 없어 무해 */}
         <PhotoBoxScreen
-          key={state.kind === 'ready' ? state.data.bunch.id : undefined}
+          key={screenKey}
           state={state}
           actions={actions}
           onCreateBundle={createBundle}
