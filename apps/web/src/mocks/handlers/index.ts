@@ -8,6 +8,7 @@ import { invitationHandlers } from './invitations';
 import { memberHandlers } from './members';
 import { membershipHandlers } from './memberships';
 import { photoHandlers } from './photos';
+import { pushDeviceHandlers } from './pushDevices';
 import { pushPreferenceHandlers } from './pushPreferences';
 import { sessionHandlers } from './session';
 import { termHandlers } from './terms';
@@ -16,6 +17,7 @@ export const handlers = [
   ...sessionHandlers,
   ...memberHandlers,
   ...pushPreferenceHandlers,
+  ...pushDeviceHandlers,
   ...termHandlers,
   ...photoHandlers,
   ...bunchOnboardingHandlers,

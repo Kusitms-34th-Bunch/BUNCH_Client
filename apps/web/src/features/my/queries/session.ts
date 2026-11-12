@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
+import { logout } from '@/shared/api/logout';
 import { clearPersistedQueryStorage } from '@/shared/query/persistence';
-import { logout } from '../api/session';
 import { MY_MESSAGES } from '../constants/messages';
 import { MY_PATHS } from '../constants/paths';
 import { reloadTo } from '../lib/navigation';

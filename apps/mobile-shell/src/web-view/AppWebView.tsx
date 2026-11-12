@@ -29,6 +29,7 @@ import {
   releasePickedPhotos,
 } from '../gallery-upload';
 import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
+import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { socialLogin } from '../social-login';
 import { markWebReady } from '../splash/state';
@@ -55,6 +56,8 @@ const appBridge = bridge({
   openAppSettings,
   requestPermission,
   getPermissionStatus,
+  getPushDeviceRegistration,
+  getPushInstallationId,
   copyToClipboard,
   readClipboard,
   socialLogin,

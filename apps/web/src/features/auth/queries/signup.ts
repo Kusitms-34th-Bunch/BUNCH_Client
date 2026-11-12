@@ -1,8 +1,8 @@
 import { isApiError } from '@app/api-core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { logout } from '@/shared/api/logout';
 import { sharedKeys } from '@/shared/query/keys';
 import { clearPersistedQueryStorage } from '@/shared/query/persistence';
-import { logout } from '../api/logout';
 import { registerMember } from '../api/registration';
 import { saveTermsAgreements } from '../api/terms';
 import { LOGIN_PATH } from '../constants/paths';
