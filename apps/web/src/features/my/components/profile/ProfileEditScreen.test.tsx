@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryWrapper } from '@/shared/query/testing';
@@ -21,12 +21,20 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
-const renderScreen = () =>
-  render(<ProfileEditScreen profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }} />, {
-    wrapper: createQueryWrapper(),
-  });
+// 닉네임 중복 확인은 기본으로 사용 가능(true)이라 응답 뒤 수정하기가 켜짐
+const renderScreen = (checkNickname = vi.fn((_nickname: string) => Promise.resolve(true))) => {
+  render(
+    <ProfileEditScreen
+      profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }}
+      checkNickname={checkNickname}
+    />,
+    { wrapper: createQueryWrapper() },
+  );
+  return checkNickname;
+};
 const submitButton = () =>
   screen.getByRole<HTMLButtonElement>('button', { name: '프로필 수정하기' });
+const waitForEnabled = () => waitFor(() => expect(submitButton().disabled).toBe(false));
 const nicknameInput = () => screen.getByRole<HTMLInputElement>('textbox', { name: /닉네임/ });
 
 describe('ProfileEditScreen', () => {
@@ -45,7 +53,7 @@ describe('ProfileEditScreen', () => {
     renderScreen();
 
     await user.type(nicknameInput(), '누');
-    expect(submitButton().disabled).toBe(false);
+    await waitForEnabled();
 
     await user.clear(nicknameInput());
     await user.type(nicknameInput(), '으누 ');
@@ -69,6 +77,7 @@ describe('ProfileEditScreen', () => {
     renderScreen();
 
     await user.type(nicknameInput(), '누');
+    await waitForEnabled();
     await user.click(submitButton());
 
     expect(replace).toHaveBeenCalledWith('/my');
@@ -82,6 +91,7 @@ describe('ProfileEditScreen', () => {
     renderScreen();
 
     await user.type(nicknameInput(), '누');
+    await waitForEnabled();
     await user.click(submitButton());
 
     expect(back).toHaveBeenCalledTimes(1);
@@ -137,11 +147,57 @@ describe('ProfileEditScreen', () => {
     const user = userEvent.setup();
     renderScreen();
     await user.type(nicknameInput(), '짱');
+    await waitForEnabled();
     await user.click(submitButton());
 
     await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('닉네임을 바꾸고 0.5초 뒤 중복을 확인한다', async () => {
+    const user = userEvent.setup();
+    const check = renderScreen();
+
+    await user.type(nicknameInput(), '짱');
+    expect(check).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(check).toHaveBeenCalledWith('으누짱'));
+    expect(check).toHaveBeenCalledTimes(1);
+  });
+
+  it('이미 사용 중인 닉네임이면 오류를 보이고 수정하기를 막는다', async () => {
+    const user = userEvent.setup();
+    renderScreen(vi.fn((_nickname: string) => Promise.resolve(false)));
+
+    await user.type(nicknameInput(), '짱');
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      '이미 사용 중인 닉네임이에요.',
+    );
+    expect(submitButton().disabled).toBe(true);
+  });
+
+  it('지금 내 닉네임과 같은 값은 중복 확인을 하지 않는다', async () => {
+    const user = userEvent.setup();
+    const check = renderScreen();
+
+    await user.type(nicknameInput(), ' ');
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    expect(check).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('허용하지 않는 문자가 섞인 글을 붙여넣으면 그 문자만 빼고 넣는다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.click(nicknameInput());
+    await user.paste('a!b@\n😀c');
+
+    expect(nicknameInput().value).toBe('으누abc');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('제목과 사진 변경 버튼의 이름을 가진다', () => {

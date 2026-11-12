@@ -31,7 +31,11 @@ export const EMPTY_PROFILE_VALUES: ProfileValues = { nickname: '', birthYear: ''
  * 프로필 입력(닉네임·출생연도·성별)의 값·오류·유효 여부. 가입 프로필 작성과 MY 프로필 수정이 같은 규칙 사용
  * 닉네임은 조합 중 자모를 허용해 오류를 띄우지 않고, 유효 여부·중복 확인은 조합이 끝난 완성 값만 인정
  */
-export function useProfileFields(initial: ProfileValues, checkNickname?: CheckNickname) {
+export function useProfileFields(
+  initial: ProfileValues,
+  checkNickname?: CheckNickname,
+  { currentNickname }: { currentNickname?: string | undefined } = {},
+) {
   const [nickname, setNickname] = useState(initial.nickname);
   const [composing, setComposing] = useState(false);
   const [birthYear, setBirthYear] = useState(initial.birthYear);
@@ -44,7 +48,13 @@ export function useProfileFields(initial: ProfileValues, checkNickname?: CheckNi
   const nicknameValid = isValidNickname(nickname);
   const normalizedNickname = nicknameValid ? normalizeNickname(nickname) : '';
   const takenAtSave = takenNicknames.includes(normalizedNickname);
-  const availability = useNicknameAvailability(normalizedNickname, checkNickname);
+  // 지금 내 닉네임과 같으면 중복 확인을 하지 않고 결과 문구도 보이지 않음(기능명세서 7.2.5 로직 1)
+  const isCurrentNickname =
+    currentNickname !== undefined && normalizedNickname === normalizeNickname(currentNickname);
+  const availability = useNicknameAvailability(
+    normalizedNickname,
+    isCurrentNickname ? undefined : checkNickname,
+  );
   const nicknameError = nicknameInvalid
     ? NICKNAME_INVALID_MESSAGE
     : availability === 'taken' || takenAtSave

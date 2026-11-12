@@ -7,7 +7,7 @@ describe('openExternal', () => {
   it('브라우저에서는 https 주소를 새 탭으로 연다', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
 
-    openExternal('https://open.kakao.example/o/channel');
+    expect(openExternal('https://open.kakao.example/o/channel')).toBe(true);
 
     expect(open).toHaveBeenCalledWith(
       'https://open.kakao.example/o/channel',
@@ -21,7 +21,7 @@ describe('openExternal', () => {
     (url) => {
       const open = vi.spyOn(window, 'open').mockReturnValue(null);
 
-      openExternal(url);
+      expect(openExternal(url)).toBe(false);
 
       expect(open).not.toHaveBeenCalled();
     },

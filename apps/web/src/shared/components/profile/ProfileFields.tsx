@@ -4,7 +4,12 @@ import { LabeledTextField } from '@app/design-system/web';
 import { useId } from 'react';
 import type { ProfileFieldsState } from '../../hooks/useProfileFields';
 import { closeKeyboard } from '../../lib/keyboard';
-import { NICKNAME_CHECKING_MESSAGE, NICKNAME_MAX_LENGTH } from '../../lib/nickname';
+import {
+  hasInvalidNicknameChars,
+  NICKNAME_CHECKING_MESSAGE,
+  NICKNAME_MAX_LENGTH,
+  pasteIntoNickname,
+} from '../../lib/nickname';
 import { GenderField } from './GenderField';
 
 type ProfileFieldsProps = {
@@ -41,6 +46,21 @@ export function ProfileFields({
         errorMessage={fields.nicknameError}
         helperMessage={fields.nicknameChecking ? NICKNAME_CHECKING_MESSAGE : undefined}
         onChange={(event) => fields.setNickname(event.target.value)}
+        onPaste={(event) => {
+          // 허용하지 않는 문자가 섞였으면 그 문자만 빼고 넣음(허용 문자만이면 브라우저 기본 동작)
+          const pasted = event.clipboardData.getData('text');
+          if (!hasInvalidNicknameChars(pasted, false)) return;
+          event.preventDefault();
+          const input = event.currentTarget;
+          const result = pasteIntoNickname(
+            values.nickname,
+            { start: input.selectionStart ?? 0, end: input.selectionEnd ?? 0 },
+            pasted,
+          );
+          if (!result) return;
+          fields.setNickname(result.value);
+          requestAnimationFrame(() => input.setSelectionRange(result.caret, result.caret));
+        }}
         onCompositionStart={() => fields.setComposing(true)}
         onCompositionEnd={() => fields.setComposing(false)}
         // 일부 모바일 키보드의 조합 종료 없는 포커스 이탈 처리
