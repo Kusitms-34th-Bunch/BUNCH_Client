@@ -29,6 +29,18 @@ export type MockMembership = {
   bunchId: number;
   memberId: number;
   role: MemberRole;
+  /** 이 번치를 마지막으로 쓴 시각(ISO). 가장 최근 번치가 기본 번치(`members/me`) */
+  lastUsedAt: string;
+};
+
+/** 삭제됐거나 내보내진 번치의 안내(번치 전환 목록의 접근 불가 줄) */
+export type MockBunchAccessNotice = {
+  id: number;
+  bunchId: number;
+  name: string;
+  characterType: CharacterType;
+  reason: 'REMOVED' | 'DELETED';
+  occurredAt: string;
 };
 
 /** 같은 사진을 여러 멤버가 올리면 하나로 합쳐 올린 사람을 모두 기록 */
@@ -42,6 +54,8 @@ export type MockPhoto = {
   capturedTime: string | null;
   thumbnailUrl: string;
   imageUrl: string;
+  /** 업로드로 만든 사진의 파일 SHA-256(같은 번치에서 같은 파일을 합치는 판별용). 시작 데이터의 사진에는 없음 */
+  contentHash?: string;
 };
 
 export type BundleVisibility = 'PUBLIC' | 'PRIVATE';
@@ -117,4 +131,5 @@ export type MockDbState = {
   photos: MockPhoto[];
   bundles: MockBundle[];
   bundleLeases: MockLease[];
+  bunchAccessNotices: MockBunchAccessNotice[];
 };

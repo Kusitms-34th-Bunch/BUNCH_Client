@@ -42,6 +42,11 @@ export type PhotoBoxData = {
   viewer: PhotoBoxViewer;
   members: readonly PhotoBoxMember[];
   photos: readonly PhotoBoxPhoto[];
+  /**
+   * 첫 쪽만 받고 나머지를 이어 받는 중이면 'loading', 이어 받다 실패했으면 'error', 다 받았으면 없음
+   * 이어 받는 동안 `photos`는 일부이므로 빈 상태나 개수는 확정이 아님
+   */
+  more?: 'loading' | 'error';
 };
 
 /** 사진함 화면 상태. API 연결 후에는 query 상태에서 변환 */
@@ -59,6 +64,11 @@ export type SaveResult = {
   savedIds: readonly string[];
   /** 저장하지 못한 사진 id */
   failedIds: readonly string[];
+  /**
+   * 저장을 시도하지 못한 이유(모든 사진이 `failedIds`에 들어감). 화면이 일반 실패 토스트 대신 이유에 맞게 안내함
+   * `denied`는 사진 저장 권한 거부, `unavailable`은 앱이 아닌 브라우저, `outdated`는 저장 기능이 없는 이전 앱
+   */
+  blocked?: 'denied' | 'unavailable' | 'outdated';
 };
 
 export type DeletePhotosResult = {

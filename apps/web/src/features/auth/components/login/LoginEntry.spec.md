@@ -51,6 +51,7 @@
 ## UI와 접근성
 
 - Component mapping: `web`의 `LoginButton`(브랜드별 색·로고, 눌림 75ms Ease Out은 컴포넌트가 처리). 브랜딩 영역은 이 화면 전용이다. 워드마크는 `src/shared/assets/images/login/wordmark.svg`(흰 픽셀 SVG)를 import해 `next/image`로 표시한다(Figma `5931:161462`, 로그인 `5878:77389`). 브랜딩 변경으로 별 심볼은 뺐다. 배경은 화면 전체(Safe Area 포함)를 덮는 영상(`public/videos/login.mp4`, `muted`·`loop`·`playsInline`·자동 재생)과 첫 프레임 포스터(`login-poster.jpg`)이고, 위에 검정 겹침(위 절반 40%, 61%부터 60%)을 깐다. 동작 줄이기 설정이면 영상 요소를 그리지 않아(`useReducedMotion`) 영상을 받지도 재생하지도 않고 포스터만 보인다.
+- 첫 진입 모션(디자이너 요청, Figma·화면설계서 값 없음): 워드마크와 버튼 3개가 5px 아래에서 올라오며 나타난다. 곡선과 길이는 번치 만들기 단계 제목과 같은 `animate-step-title-in`(600ms)이다. 워드마크가 200ms 뒤 먼저 시작하고, 버튼은 350ms 뒤부터 카카오 → Google → Apple 순으로 60ms 간격이라 약 1.07초에 모두 끝난다. 인트로에서 넘어오면 페이지가 디졸브(나가기 250ms → 들어오기 250ms, `INTRO_LOGIN_DISSOLVE_DURATION_MS`)로 나타나는 동안 모션이 지나가 버리지 않게 늦게 시작한다. 크기 변화·튕김은 없다. 동작 줄이기 설정이면 이동 없이 투명도만 바뀐다. 버튼은 감싼 요소에 모션을 건다. 버튼 자체에 걸면 끝난 뒤 남는 투명도 값이 비활성(40%) 표시를 덮기 때문이다. 모션 중에도 버튼을 누를 수 있다.
 - Keyboard·focus·accessible name: 워드마크 이미지가 화면 제목(`h1`, 이름 「Bunch」)이고, 배경 영상·겹침은 `aria-hidden`이다. 버튼 이름은 「카카오 로그인」「Google로 계속하기」「Apple로 계속하기」(Figma 문구)이고 Tab 순서는 화면 순서와 같다. 비활성 버튼은 native `disabled`라 포커스가 가지 않는다. 로그인 실패 토스트는 DS `Toaster`가 알린다. `main`은 `PageShell`이 하나만 만든다.
 - Responsive·긴 텍스트·overflow: 버튼 폭은 `w-full`(화면 좌우 16px), 버튼 글자는 길면 잘린다(`LoginButton`). 375×812와 390×844에서 가로 넘침이 없다. 브랜딩 영역은 본문 영역 아래쪽(버튼 위)에 붙고, 화면이 낮아지면 본문이 스크롤된다.
 

@@ -19,8 +19,16 @@ import {
   shareParamsSchema,
   type AppBridgeMethods,
 } from '@app/bridge';
+import { saveImagesToAlbum } from '../album-save';
+import { copyToClipboard, readClipboard } from '../clipboard';
 import { pickGalleryImage } from '../gallery-image';
-import { requestPermission } from '../permissions';
+import {
+  capturePhoto,
+  pickGalleryImages,
+  readPickedPhoto,
+  releasePickedPhotos,
+} from '../gallery-upload';
+import { openAppSettings, requestPermission } from '../permissions';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { socialLogin } from '../social-login';
 import { markWebReady } from '../splash/state';
@@ -39,7 +47,15 @@ export const WEB_URL = resolveWebUrl(
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({
   pickGalleryImage,
+  pickGalleryImages,
+  capturePhoto,
+  readPickedPhoto,
+  releasePickedPhotos,
+  saveImagesToAlbum,
+  openAppSettings,
   requestPermission,
+  copyToClipboard,
+  readClipboard,
   socialLogin,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
@@ -129,6 +145,10 @@ export function AppWebView({ uri }: { uri: string }) {
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
       allowsBackForwardNavigationGestures
+      // 로그인 배경 영상(muted·playsInline·autoPlay)이 자동으로 화면 안에서 재생되게. 기본값이면 멈춘 첫 프레임과 재생 버튼만 보임
+      // iOS 기본값(false)에서는 <video playsInline>이 무시되고, 두 설정 모두 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 소리 있는 영상을 넣을 때 자동 재생 여부를 함께 고려
+      allowsInlineMediaPlayback
+      mediaPlaybackRequiresUserAction={false}
       // 스플래시는 웹의 appReady(도착 화면 결정)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
       onError={markWebReady}
       onHttpError={markWebReady}

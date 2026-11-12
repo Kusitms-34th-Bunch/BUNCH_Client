@@ -126,6 +126,23 @@ describe('TermsAgreement', () => {
     expect(start().hasAttribute('disabled')).toBe(false);
   });
 
+  it('권한을 요청하는 동안 스크린 리더에 이유를 알린다', () => {
+    permissions.isRequesting = true;
+    renderPage();
+
+    expect(screen.getByRole('status').textContent).toBe('앱 접근 권한을 요청하는 중이에요');
+  });
+
+  it('전체 동의하기를 체크하면 권한을 요청하고, 해제할 때는 요청하지 않는다', async () => {
+    renderPage();
+
+    await userEvent.click(all());
+    expect(permissions.requestAll).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(all());
+    expect(permissions.requestAll).toHaveBeenCalledTimes(1);
+  });
+
   it('모두 체크된 상태에서 전체 동의하기를 누르면 모두 해제된다', async () => {
     renderPage({ ...REQUIRED, demographics: true });
 

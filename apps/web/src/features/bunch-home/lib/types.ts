@@ -35,6 +35,8 @@ export type BunchSummary = {
   /** 읽지 않은 알림 수(0이면 칩 숨김) */
   alertCount: number;
   access: BunchAccess;
+  /** 접근 불가 줄의 서버 안내 ID(「번치 목록에서 삭제」로 지울 대상). 소속 번치는 없음 */
+  noticeId?: string | undefined;
 };
 
 /** 완성된 번들(그리드 한 칸) */
@@ -86,7 +88,8 @@ export type BunchHomeData = {
  * 번치 홈이 부르는 동작. API 연결 전에는 목 동작을 돌려주고, 연결하면 hook 구현만 바꿈
  */
 export type BunchHomeActions = {
-  switchBunch: (_bunchId: string) => void;
+  /** 전환. 서버에 저장하면 끝날 때까지 기다릴 수 있게 Promise를 돌려줌(실패하면 reject) */
+  switchBunch: (_bunchId: string) => void | Promise<void>;
   deleteDraftBundle: (_bundleId: string) => void;
   /** 접근 불가 번치를 전환 목록에서 지움(「번치 목록에서 삭제」) */
   removeBunch: (_bunchId: string) => void;
