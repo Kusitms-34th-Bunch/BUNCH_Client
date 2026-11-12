@@ -210,6 +210,91 @@
   }
 }
 
+/*
+ * 당겨서 새로고침(Figma `6673:45282` 피드·Refresh Motion, 표시기 `6672:47286`)
+ * `--pull-y`(내려온 거리)·`--pull-p`(0~1 진행)는 usePullToRefresh가 컨테이너에 쓰고, 등록해 두어야 transition으로 보간됨
+ * 열릴 때 80px 내려오는 곡선 (0.33, 0, 0.15, 1), 닫힐 때 (0.45, 0, 0.2, 1)로 각 0.6초(타임라인 17.1%·91.4% 구간)
+ * 내용을 움직이는 translate는 당기는 동안(`data-pull`)에만 걸어, 평소에는 fixed 자손의 기준 상자가 바뀌지 않게 함
+ */
+@property --pull-y {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+@property --pull-p {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.pull-refresh[data-pull-settling='open'] {
+  transition:
+    --pull-y 600ms cubic-bezier(0.33, 0, 0.15, 1),
+    --pull-p 600ms cubic-bezier(0.33, 0, 0.15, 1);
+}
+
+.pull-refresh[data-pull-settling='close'] {
+  transition:
+    --pull-y 600ms cubic-bezier(0.45, 0, 0.2, 1),
+    --pull-p 600ms cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.pull-refresh[data-pull] > main > * {
+  translate: 0 var(--pull-y);
+}
+
+/* 내용이 내려온 자리(머리 아래 80px)에서 위쪽 30px에 가운데 정렬(Figma 표시기 top 140 − 내용 시작 110). 표시기는 위에서 20px 내려오며 나타남 */
+.pull-refresh-indicator {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  opacity: var(--pull-p);
+  translate: 0 calc((1 - var(--pull-p)) * -20px);
+}
+
+/* 동작 줄이기: 손가락을 따라가는 이동은 사용자가 직접 하는 조작이라 두고(빼면 표시기가 내용과 겹침), 열리고 닫히는 전환과 표시기의 이동은 뺌 */
+@media (prefers-reduced-motion: reduce) {
+  .pull-refresh[data-pull-settling] {
+    transition: none;
+  }
+
+  .pull-refresh-indicator {
+    translate: none;
+  }
+}
+
+/* 표시기 Spark 회전: 2초 주기, 90°씩 세 번 끊어 돌고(모양이 90° 회전 대칭이라 네 번째 멈춤에서 처음으로 돌아가도 이음매 없음), 곡선 (0.45, 0, 0.2, 1) */
+@keyframes refresh-spark-spin {
+  0%,
+  5% {
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  30%,
+  40% {
+    rotate: 90deg;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  62.5%,
+  70% {
+    rotate: 180deg;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  92.5%,
+  100% {
+    rotate: 270deg;
+  }
+}
+
+@utility animate-refresh-spark-spin {
+  animation: refresh-spark-spin 2s linear infinite;
+}
+
 /* 번치 만들기 단계 제목: 5px 아래에서 올라오며 나타남(Figma 1998:35008, 600ms Slow 근사 곡선) */
 @keyframes step-title-in {
   from {

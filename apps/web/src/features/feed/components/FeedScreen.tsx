@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries';
 import type { FeedBundle } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { FEED_PATHS } from '../constants/paths';
@@ -37,6 +38,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
   const router = useRouter();
   const { viewer, viewerPending, asBunch } = useFeedViewer();
   const reducedMotion = useReducedMotion();
+  const refresh = useRefreshActiveQueries();
   const topRef = useRef<HTMLDivElement>(null);
   // 경과 시간은 브라우저에서만 계산(서버 렌더와 시계·시간대가 달라 글자가 어긋나지 않게)
   const now = useClientNow();
@@ -95,6 +97,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
 
   return (
     <PageShell
+      onRefresh={refresh}
       header={
         <FeedHeader
           viewer={viewer}
