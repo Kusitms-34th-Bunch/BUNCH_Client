@@ -56,8 +56,8 @@ beforeEach(() => {
   bridge.releasePickedPhotos.mockResolvedValue(undefined);
 });
 
-describe('PhotoBox 사진 올리기 로딩', () => {
-  it('사진을 올리는 동안 화면 전체 로딩을 보이고 화면을 막았다가 끝나면 걷는다', async () => {
+describe('PhotoBox 사진 올리기', () => {
+  it('사진을 올리는 동안 화면을 막는 로딩 없이 사진함을 그대로 쓸 수 있다', async () => {
     // 응답을 잠시 늦춰 올리는 중 화면을 확인(undefined를 돌려주면 기본 가짜 서버 handler가 응답)
     server.use(
       http.post('/api/bunches/:bunchId/photos', async () => {
@@ -71,12 +71,12 @@ describe('PhotoBox 사진 올리기 로딩', () => {
     await user.click(await screen.findByRole('button', { name: '사진 올리기' }));
     await user.click(await screen.findByRole('button', { name: '앨범에서 선택' }));
 
-    await waitFor(() => expect(screen.getByTestId('lottie')).toBeInTheDocument());
-    expect(screen.getByText(PHOTO_BOX_MESSAGES.uploading)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '선택' }).closest('[inert]')).not.toBeNull();
-
-    await waitFor(() => expect(screen.queryByTestId('lottie')).toBeNull());
+    // 올리는 중임을 스크린 리더에게만 알리고, 화면 전체 로딩이나 잠금은 없음
+    await waitFor(() => expect(screen.getByText(PHOTO_BOX_MESSAGES.uploading)).toBeInTheDocument());
+    expect(screen.queryByTestId('lottie')).toBeNull();
     expect(screen.getByRole('button', { name: '선택' }).closest('[inert]')).toBeNull();
+
+    await waitFor(() => expect(screen.queryByText(PHOTO_BOX_MESSAGES.uploading)).toBeNull());
   });
 });
 

@@ -10,6 +10,8 @@ import {
   type PickPhotosResult,
   type UploadImage,
 } from '@app/bridge';
+import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
+import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat, type ImageRef } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { deleteCacheFiles } from './cache-cleanup';
@@ -80,6 +82,9 @@ export async function pickGalleryImages(
       // 촬영 날짜·시각을 읽으려고 요청. 선택기가 압축하지 않도록 품질은 최대로
       exif: true,
       quality: 1,
+      // iOS가 HEIC를 JPEG로 바꿔 주면(기본 automatic) 선택기가 새로 만든 파일이라 원본과 바이트가 달라져 원본 해시가 맞지 않으므로 원본 그대로 받음(HEIC도 이후 가공에서 JPEG가 됨)
+      preferredAssetRepresentationMode:
+        ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
     });
     if (result.canceled) return { status: 'canceled' };
     const assets = result.assets.slice(0, limit);
@@ -155,6 +160,19 @@ const encodeWithinTarget = async (image: ImageRef): Promise<string> => {
   return base64;
 };
 
+const toHex = (buffer: ArrayBuffer) =>
+  Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, '0')).join('');
+
+// 선택기가 준 원본 파일의 SHA-256(소문자 hex 64자). 가공 결과는 같은 원본이어도 기기마다 바이트가 달라질 수 있어(실기기 확인) 가공 전 파일로 계산함
+// 읽거나 계산하지 못하면 없음으로 두고 업로드는 계속함(서버가 업로드된 파일로 판별)
+const hashOriginal = async (uri: string): Promise<string | undefined> => {
+  try {
+    return toHex(await digest(CryptoDigestAlgorithm.SHA256, await new File(uri).arrayBuffer()));
+  } catch {
+    return undefined;
+  }
+};
+
 /**
  * 고른 사진 한 장을 업로드용으로 가공: 긴 변 2560px 이하로 줄여 JPEG로 다시 저장(큰 사진은 목표 크기 이하로 압축)
  * 다시 저장하면서 위치를 포함한 원본의 메타데이터가 빠지도록 한 것이고, HEIC·PNG·WebP도 JPEG가 됨
@@ -163,10 +181,14 @@ const encodeWithinTarget = async (image: ImageRef): Promise<string> => {
  */
 export async function readPickedPhoto(id: string): Promise<UploadImage> {
   const { uri, width, height } = getPickedPhoto(pickedPhotoIdSchema.parse(id));
+  const originalFileHash = await hashOriginal(uri);
   const image = await renderFitted(uri, width, height);
   try {
     const base64 = await encodeWithinTarget(image);
-    return uploadImageSchema.parse({ dataUrl: `data:image/jpeg;base64,${base64}` });
+    return uploadImageSchema.parse({
+      dataUrl: `data:image/jpeg;base64,${base64}`,
+      ...(originalFileHash ? { originalFileHash } : {}),
+    });
   } finally {
     image.release();
   }

@@ -121,11 +121,31 @@ describe('summarizeUpload', () => {
 });
 
 describe('uploadResultMessage', () => {
-  it('추가한 사진도 올리지 못한 사진도 없으면(모두 제외됨) 알릴 것이 없다', () => {
+  it('올린 사진이 하나도 없으면 알릴 것이 없다', () => {
     expect(uploadResultMessage({ added: 0, failed: 0, retryable: 0, skipped: 0 })).toBeNull();
-    // 모두 내가 이미 올린 사진이라 제외됐으면 그 사실을 알림
+  });
+
+  it('실패가 없고 모두 중복이면 이미 업로드된 사진이라고 알린다', () => {
     expect(uploadResultMessage({ added: 0, failed: 0, retryable: 0, skipped: 3 })).toBe(
-      '이미 사진함에 있는 사진이에요.',
+      '이미 사진함에 업로드된 사진이에요.',
+    );
+  });
+
+  it('실패가 없고 일부가 중복이면 중복 장수를 빼고 추가한 장수를 알린다', () => {
+    expect(uploadResultMessage({ added: 4, failed: 0, retryable: 0, skipped: 2 })).toBe(
+      '중복된 2장을 제외하고, 사진 4장을 추가했어요.',
+    );
+  });
+
+  it('실패가 있으면 중복도 올리지 못한 장수에 함께 센다(5장 중 2장 추가, 2장 중복, 1장 실패)', () => {
+    expect(uploadResultMessage({ added: 2, failed: 1, retryable: 0, skipped: 2 })).toBe(
+      '2장을 추가했어요. 3장은 올리지 못했어요.',
+    );
+  });
+
+  it('실패가 있고 추가한 사진이 없으면 중복이 있어도 장수 없이 알린다', () => {
+    expect(uploadResultMessage({ added: 0, failed: 1, retryable: 0, skipped: 2 })).toBe(
+      '사진을 올리지 못했어요.',
     );
   });
 

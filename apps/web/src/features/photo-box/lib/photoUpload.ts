@@ -1,10 +1,13 @@
 import { ApiError } from '@app/api-core';
 
-/** 올린 사진이 모두 이미 사진함에 있는 사진이었을 때의 안내(기획 원문이 없어 임시 문구) */
-const ALREADY_UPLOADED_MESSAGE = '이미 사진함에 있는 사진이에요.';
-
 /** 한 번에 올리는 사진 수. 서버는 5개 이하를 권장하고, 쉘이 사진을 가공하는 동안의 메모리도 함께 고려 */
 export const UPLOAD_CONCURRENCY = 3;
+
+/**
+ * 올리는 도중 새로 올라간 사진을 목록에 보여 주려고 목록을 다시 받는 간격(밀리초)
+ * 사진 한 장마다 받으면 목록 전체(최대 1,000장)를 자주 다시 받으므로, 이 간격 안에 올라간 사진은 한 번에 반영함
+ */
+export const UPLOAD_LIST_REFRESH_MS = 3000;
 
 /**
  * 웹이 보내기 전에 한 번 더 확인하는 업로드 파일 크기 상한
@@ -36,7 +39,7 @@ const LIMIT_UPLOAD_CODES = new Set(['PHOTO_002', 'PHOTO_003']);
 /**
  * 사진 한 장의 업로드 결과
  * - `added`: 사진함에 들어감(새로 저장되었거나 다른 멤버가 올린 같은 사진에 올린 사람으로 합쳐짐)
- * - `skipped`: 내가 이미 올린 같은 사진(`ALREADY_UPLOADED`)이라 서버가 변경 없이 제외함. 추가한 사진에도 올리지 못한 사진에도 세지 않고, 올린 사진이 모두 이 경우일 때만 안내함
+ * - `skipped`: 내가 이미 올린 같은 사진(`ALREADY_UPLOADED`)이라 서버가 변경 없이 제외함(중복). 실패가 없으면 중복 장수로 따로 알리고, 실패가 있으면 「올리지 못한 M장」에 함께 셈
  * - `failed-retryable`: 네트워크 실패·일시 장애라 「다시 시도」 대상
  * - `failed`: 다시 보내도 같은 결과라 「올리지 못한 사진」으로만 셈(형식·용량·한도·권한 오류, 사진을 읽지 못함)
  */
@@ -72,7 +75,7 @@ export type UploadSummary = {
   skipped: number;
 };
 
-/** 제외된 사진(`skipped`)은 추가한 사진에도 올리지 못한 사진에도 세지 않고 따로 셈 */
+/** 중복으로 제외된 사진(`skipped`)은 추가한 사진에도 실패한 사진에도 세지 않고 따로 셈(결과 문구가 실패 여부에 따라 합쳐서 셈) */
 export const summarizeUpload = (outcomes: readonly UploadOutcome[]): UploadSummary => {
   const added = outcomes.filter((outcome) => outcome === 'added').length;
   const retryable = outcomes.filter((outcome) => outcome === 'failed-retryable').length;
@@ -82,15 +85,24 @@ export const summarizeUpload = (outcomes: readonly UploadOutcome[]): UploadSumma
 };
 
 /**
- * 업로드가 끝난 뒤 하나만 띄우는 결과 토스트 문구(기능명세서 3.2.2)
- * 못 올린 이유는 나누지 않고 모두 「N장」에 함께 셈
- * 추가한 사진도 올리지 못한 사진도 없고 모두 내가 이미 올린 사진이라 제외됐으면 그 사실을 알리고, 올린 사진이 없으면 알릴 것이 없어 null
+ * 업로드가 끝난 뒤 하나만 띄우는 결과 토스트 문구(기능명세서 3.2.2 상세 동작 4, 기획 확정)
+ * N = 새로 추가된 장수(다른 멤버가 올린 같은 사진에 내 배지가 붙은 것도 추가), M = 중복 장수 또는 실패에 중복을 더한 장수
+ * 실패가 없으면: 전부 추가 「N장의 사진을 사진함에 추가했어요.」, 일부 중복 「중복된 M장을 제외하고, 사진 N장을 추가했어요.」, 전부 중복 「이미 사진함에 업로드된 사진이에요.」
+ * 실패가 있으면(중복도 「올리지 못한 M장」에 함께 셈): 추가한 사진이 있으면 「N장을 추가했어요. M장은 올리지 못했어요.」, 없으면 「사진을 올리지 못했어요.」
+ * 못 올린 이유는 나누지 않고 모두 M장에 함께 셈. 올린 사진이 하나도 없으면(빈 선택) 알릴 것이 없어 null
  */
 export const uploadResultMessage = ({ added, failed, skipped }: UploadSummary): string | null => {
-  if (added === 0 && failed === 0) return skipped > 0 ? ALREADY_UPLOADED_MESSAGE : null;
-  if (failed === 0) return `${added}장의 사진을 사진함에 추가했어요.`;
-  if (added === 0) return '사진을 올리지 못했어요.';
-  return `${added}장을 추가했어요. ${failed}장은 올리지 못했어요.`;
+  if (failed > 0) {
+    return added > 0
+      ? `${added}장을 추가했어요. ${failed + skipped}장은 올리지 못했어요.`
+      : '사진을 올리지 못했어요.';
+  }
+  if (added > 0) {
+    return skipped > 0
+      ? `중복된 ${skipped}장을 제외하고, 사진 ${added}장을 추가했어요.`
+      : `${added}장의 사진을 사진함에 추가했어요.`;
+  }
+  return skipped > 0 ? '이미 사진함에 업로드된 사진이에요.' : null;
 };
 
 /**
