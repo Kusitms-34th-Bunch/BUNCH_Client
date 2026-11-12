@@ -102,7 +102,7 @@ const bunchBody = (bunch: MockBunch) => ({
   imageUrl: bunch.imageUrl,
 });
 
-/** 참여: 시연용 초대면 번치를 DB에 만들고 본인을 MEMBER로 등록 */
+/** 참여: 시연용 초대면 번치를 초대한 사람(OWNER)과 함께 DB에 만들고 본인을 MEMBER로 등록 */
 const addMembership = (resolved: Exclude<Resolved, { kind: 'invalid' }>): number => {
   if (resolved.kind === 'bunch') {
     mockDb.update((state) => ({
@@ -122,8 +122,21 @@ const addMembership = (resolved: Exclude<Resolved, { kind: 'invalid' }>): number
   }
   const { demo } = resolved;
   const id = Math.max(0, ...mockDb.get().bunches.map((bunch) => bunch.id)) + 1;
+  // 초대한 사람이 없으면 번치 멤버가 본인 하나라 번들을 만들 수 없고, 다시 확인할 때 초대 카드의 초대자도 비어 있음
+  const inviterId = Math.max(0, ...mockDb.get().members.map((item) => item.memberId)) + 1;
+  const now = new Date().toISOString();
   mockDb.update((state) => ({
     ...state,
+    members: [
+      ...state.members,
+      {
+        memberId: inviterId,
+        nickname: demo.inviter,
+        imageUrl: null,
+        birthYear: null,
+        gender: null,
+      },
+    ],
     bunches: [
       ...state.bunches,
       {
@@ -139,12 +152,8 @@ const addMembership = (resolved: Exclude<Resolved, { kind: 'invalid' }>): number
     ],
     memberships: [
       ...state.memberships,
-      {
-        bunchId: id,
-        memberId: MOCK_MY_MEMBER_ID,
-        role: 'MEMBER',
-        lastUsedAt: new Date().toISOString(),
-      },
+      { bunchId: id, memberId: inviterId, role: 'OWNER', lastUsedAt: now },
+      { bunchId: id, memberId: MOCK_MY_MEMBER_ID, role: 'MEMBER', lastUsedAt: now },
     ],
   }));
   return id;

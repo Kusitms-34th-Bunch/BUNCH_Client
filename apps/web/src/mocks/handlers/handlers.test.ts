@@ -209,6 +209,22 @@ describe('가짜 서버 초대 확인·참여', () => {
     expect((await join('MOCK0001', 'k-3')).status).toBe(409);
   });
 
+  it('시연 초대로 참여하면 초대한 사람이 OWNER로 함께 등록되고 다시 확인해도 초대자가 보인다', async () => {
+    const joined = unwrapEnvelope<{ bunch: { id: number } }>(
+      await (await join('MOCKJOIN', 'k-owner')).json(),
+    );
+    const roles = mockDb
+      .get()
+      .memberships.filter((item) => item.bunchId === joined.bunch.id)
+      .map((item) => item.role);
+    expect(roles.sort()).toEqual(['MEMBER', 'OWNER']);
+
+    const card = unwrapEnvelope<{ inviterNickname: string | null }>(
+      await api().get('invitations/MOCKJOIN').json(),
+    );
+    expect(card.inviterNickname).toBe('민지');
+  });
+
   it('공개 초대 조회는 로그인 없이 카드를 돌려주고, 없는 초대는 404 INVITE_001이다', async () => {
     const card = unwrapEnvelope<{ name: string }>(await api().get('invitations/MOCKJOIN').json());
     expect(card.name).toBe('여행가조');
