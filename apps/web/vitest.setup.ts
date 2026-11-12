@@ -1,11 +1,14 @@
 import '@testing-library/jest-dom/vitest';
-import { render } from '@testing-library/react';
+import { configure, render } from '@testing-library/react';
 import { OverlayProvider } from 'overlay-kit';
 import { createElement } from 'react';
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 import { mockDb } from './src/mocks/db';
 import { resetIdempotency } from './src/mocks/lib/idempotency';
 import { server } from './src/mocks/server';
+
+// findBy·waitFor 기본 대기 1초는 동시 실행 부하에서 넘칠 수 있어 3초(통과하는 테스트는 그대로 빨리 끝남)
+configure({ asyncUtilTimeout: 3000 });
 
 // 테스트는 가짜 서버(MSW) 위에서 도는 환경이라 가짜 서버 전용 구현(편집권 통로 등)을 켬
 process.env.NEXT_PUBLIC_API_MOCKING = 'enabled';
