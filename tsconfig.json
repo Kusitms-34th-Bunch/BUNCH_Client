@@ -1,7 +1,9 @@
 {
   "extends": "@app/ts-config/base.json",
   "compilerOptions": {
-    "allowJs": true
+    "allowJs": true,
+    // TypeScript 6부터 types 기본값이 []라 Node 타입(process 등)을 직접 지정
+    "types": ["node"]
   },
   "include": ["*.mjs", "*.cjs", "playwright.config.ts"]
 }

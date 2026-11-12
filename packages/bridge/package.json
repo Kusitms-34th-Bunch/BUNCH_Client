@@ -13,7 +13,7 @@
   "scripts": {
     "test": "node --test src/schema.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint . --cache --cache-strategy content"
   },
   "dependencies": {
     "@webview-bridge/types": "^1.8.0",

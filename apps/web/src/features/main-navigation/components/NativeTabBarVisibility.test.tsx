@@ -1,4 +1,4 @@
-import { act, render, waitFor } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NativeTabBarVisibility } from './NativeTabBarVisibility';
 
@@ -34,21 +34,23 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     render(<NativeTabBarVisibility />);
     expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
 
+    // DOM 변화 감지(MutationObserver)는 비동기라, act 안에서 감지 콜백과 React 갱신을 끝낸 뒤 확인
+    // (waitFor의 1초 대기는 전체 테스트를 동시에 돌리는 부하에서 넘칠 수 있음)
+    const mutate = (change: () => void) =>
+      act(async () => {
+        change();
+        await Promise.resolve();
+      });
     const sheet = document.createElement('div');
     sheet.setAttribute('role', 'dialog');
-    act(() => {
-      document.body.append(sheet);
-    });
-    await waitFor(() => expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(false));
+    await mutate(() => document.body.append(sheet));
+    expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(false);
 
     // 닫힘 애니메이션이 시작되면 요소가 사라지기 전이라도 바로 다시 표시
-    act(() => {
-      sheet.setAttribute('data-ending-style', '');
-    });
-    await waitFor(() => expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true));
-    act(() => {
-      sheet.remove();
-    });
+    await mutate(() => sheet.setAttribute('data-ending-style', ''));
+    expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
+    // 지운 뒤의 감지 콜백도 테스트 안에서 끝냄(다음 테스트로 새지 않게)
+    await mutate(() => sheet.remove());
   });
 
   it('화면에 보이지 않는 탭 WebView는 보내지 않고, 다시 보이면 현재 상태를 보낸다', () => {

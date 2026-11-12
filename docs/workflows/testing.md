@@ -59,6 +59,10 @@
 
 - mock은 네트워크·시간·브라우저 경계에 한정하고, 내부 구현을 과도하게 mock하지 않는다.
 - 비동기 UI는 임의의 대기 시간 대신 `findBy*`, `waitFor`처럼 관찰 가능한 완료 조건을 기다린다.
+- 직접 바꾼 DOM에 반응하는 코드(`MutationObserver` 등)는 `waitFor`로 기다리지 않는다. `await act(async () => { 변경; await Promise.resolve(); })`로 감지 콜백과 React 갱신을 끝낸 뒤 확인한다.
+  - `waitFor`는 전체 테스트를 동시에 돌리는 부하에서 대기 시간을 넘겨 가끔 실패한다.
+  - `Promise.resolve()` 한 번으로 충분한 것은 happy-dom이 감지 콜백을 변경 즉시 microtask로 예약하기 때문이다. 테스트 환경을 바꾸면 이 전제를 다시 확인한다.
+- web은 동시 실행 부하(pre-push·`yarn verify`)를 고려해 테스트 제한 시간을 15초, `findBy*`·`waitFor` 기본 대기를 3초로 둔다(`apps/web/vitest.config.ts`·`vitest.setup.ts`). 통과하는 테스트는 그대로 빨리 끝난다. 이 값을 늘려 불안정한 테스트를 숨기지 않고, 혼자 돌려도 실패하면 원인을 고친다.
 - timer, storage, navigation 같은 경계는 필요한 부분만 mock하고, fake timer 사용 뒤에는 원래 timer로 복원한다.
 - 테스트는 로컬 `.env` 값에 의존하지 않는다. 화면·컴포넌트 test는 endpoint 모듈을 mock하고, endpoint 래퍼 test는 transport 함수만 mock한다. 실제 API origin을 test에 적지 않는다(URL 조립 자체를 검증할 때만 예외). env 필수값 검사가 test의 import 경로에서 실행되면 로컬에서는 통과하고 CI에서만 깨진다. 아래 "MSW 가짜 서버"를 쓰는 test는 transport mock 대신 상대 BFF 경로(`/api/…`)를 호출하고 응답은 handler가 정하며, 한 test에서 둘을 섞지 않는다.
 - 실패한 테스트를 `skip` 또는 `only`로 숨기지 않는다.

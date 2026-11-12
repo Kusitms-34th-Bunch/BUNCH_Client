@@ -1,7 +1,9 @@
 {
   "extends": "../ts-config/base.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    // TypeScript 6부터 types 기본값이 []라 node:test·URL 등 Node 타입을 직접 지정
+    "types": ["node"]
   },
   "include": ["src"]
 }
