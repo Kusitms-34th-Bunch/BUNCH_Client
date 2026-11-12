@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   # 무거운 lint·test는 각자 러너, 정적 검사는 lint 러너에·typecheck는 build 러너에 묶어 job 수와 코어 경합을 함께 줄임
-  # test는 CI 전체 시간을 정하는 가장 긴 job이라 vitest shard로 3개 러너에 나눔
+  # test는 CI 전체 시간을 정하는 가장 긴 job이라 vitest shard로 4개 러너에 나눔
   checks:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -26,15 +26,18 @@ jobs:
         include:
           - name: Lint
             id: lint
-          - name: Test 1/3
+          - name: Test 1/4
             id: test-1
             shard: 1
-          - name: Test 2/3
+          - name: Test 2/4
             id: test-2
             shard: 2
-          - name: Test 3/3
+          - name: Test 3/4
             id: test-3
             shard: 3
+          - name: Test 4/4
+            id: test-4
+            shard: 4
           - name: Typecheck & Build
             id: build
 
@@ -107,7 +110,7 @@ jobs:
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
         run: yarn lint $AFFECTED
 
-      # 패키지마다 테스트 파일을 3등분해 이 러너 몫만 실행. 파일이 적은 패키지는 몫이 비어도 통과
+      # 패키지마다 테스트 파일을 4등분해 이 러너 몫만 실행. 파일이 적은 패키지는 몫이 비어도 통과
       # PR은 base 대비 바뀐 파일과 import로 이어진 테스트만(vitest --changed). setup·가짜 서버·설정이 바뀌면 전체(forceRerunTriggers)
       - name: Test
         id: test
@@ -116,7 +119,7 @@ jobs:
           TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           CHANGED: ${{ github.event_name == 'pull_request' && format('--changed=origin/{0}', github.base_ref) || '' }}
-        run: yarn test $AFFECTED -- --shard=${{ matrix.shard }}/3 --passWithNoTests $CHANGED
+        run: yarn test $AFFECTED -- --shard=${{ matrix.shard }}/4 --passWithNoTests $CHANGED
 
       # typecheck와 build는 Next 생성 파일을 공유하므로 같은 러너에서 순서대로 실행
       - name: TypeScript
@@ -222,7 +225,7 @@ jobs:
             const { owner, repo } = context.repo;
             const marker = '<!-- frontend-ci-result -->';
             const fs = require('fs');
-            // [결과 파일(matrix.id) 또는 묶음(all: 모든 job, test: shard 3개 합산), 단계 id, 표 이름] — ci.yml의 단계 id와 같아야 함
+            // [결과 파일(matrix.id) 또는 묶음(all: 모든 job, test: shard 4개 합산), 단계 id, 표 이름] — ci.yml의 단계 id와 같아야 함
             const rows = [
               ['all', 'guard', '변조 가드'],
               ['all', 'setup', '의존성 설치'],
@@ -238,7 +241,7 @@ jobs:
             ];
             const status = { success: '통과', failure: '**실패**', skipped: '생략', cancelled: '취소' };
 
-            const groups = { test: ['test-1', 'test-2', 'test-3'] };
+            const groups = { test: ['test-1', 'test-2', 'test-3', 'test-4'] };
             const files = ['lint', ...groups.test, 'build'];
             groups.all = files;
             const results = {};
