@@ -8,9 +8,16 @@ import { MOCK_BUNCH_ID } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import type * as PhotoUploadLib from '../lib/photoUpload';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { photoBoxKeys } from '../queries/keys';
 import { usePhotoUpload } from './usePhotoUpload';
+
+// 올리는 도중 목록 갱신 간격을 짧게 해서 테스트가 오래 걸리지 않게 함
+vi.mock('../lib/photoUpload', async (importOriginal) => ({
+  ...(await importOriginal<typeof PhotoUploadLib>()),
+  UPLOAD_LIST_REFRESH_MS: 30,
+}));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toastSpy = vi.fn<(..._args: ToastArgs) => void>();
@@ -226,6 +233,55 @@ describe('usePhotoUpload 업로드 결과', () => {
     await act(() => result.current.start('album'));
 
     expect(lastToast()).toEqual(['사진을 올리지 못했어요.', undefined]);
+  });
+});
+
+describe('usePhotoUpload 원본 해시', () => {
+  it('쉘이 준 원본 해시를 업로드 요청에 담고, 「다시 시도」도 같은 값을 보낸다', async () => {
+    const HASH = 'd'.repeat(64);
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    bridge.readPickedPhoto.mockImplementation((id: string) =>
+      Promise.resolve({ ...imageOf(id), originalFileHash: HASH }),
+    );
+    const sent: (string | null)[] = [];
+    let failNext = true;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
+        const form = await request.clone().formData();
+        sent.push(form.get('originalFileHash') as string | null);
+        if (failNext) {
+          failNext = false;
+          return fail(503, 'PHOTO_007');
+        }
+        return undefined;
+      }),
+    );
+    const { result } = render();
+
+    await act(() => result.current.start('album'));
+    const [, options] = lastToast() ?? [];
+    act(() => options?.action?.onClick());
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledTimes(2));
+
+    expect(sent).toEqual([HASH, HASH]);
+    // 다시 시도 때는 쉘에서 사진을 다시 읽지 않으므로 해시도 다시 계산하지 않음
+    expect(bridge.readPickedPhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it('원본 해시를 받지 못한 사진은 필드 없이 올린다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    let sentField: unknown = 'sent';
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
+        sentField = (await request.clone().formData()).get('originalFileHash');
+        return undefined;
+      }),
+    );
+    const { result } = render();
+
+    await act(() => result.current.start('album'));
+
+    expect(sentField).toBeNull();
   });
 });
 
@@ -499,6 +555,39 @@ describe('usePhotoUpload 사진 목록 갱신', () => {
     expect(invalidatedKeys(spy)).toEqual([photoBoxKeys.photos(bunchId)]);
   });
 
+  it('올리는 도중에도 새로 올라간 사진이 있으면 끝나기 전에 목록을 다시 받는다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2'));
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let calls = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async () => {
+        calls += 1;
+        // 둘째 사진은 응답을 붙잡아 두어 아직 올리는 중인 상태를 만듦
+        if (calls === 2) await gate;
+        return undefined;
+      }),
+    );
+    const client = createTestQueryClient();
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    const { result } = render({ id: bunchId }, client);
+
+    let upload!: Promise<void>;
+    act(() => {
+      upload = result.current.start('album');
+    });
+
+    try {
+      // 첫 사진이 올라가고 둘째가 아직 올라가는 중인데도 목록을 다시 받음
+      await waitFor(() => expect(invalidatedKeys(spy)).toEqual([photoBoxKeys.photos(bunchId)]));
+    } finally {
+      release();
+    }
+    await act(() => upload);
+    // 끝나면 한 번 더 받음(예약해 둔 갱신은 걷어서 겹치지 않음)
+    expect(invalidatedKeys(spy)).toHaveLength(2);
+  });
+
   it('한도·형식 오류로 하나도 못 올렸으면 목록을 다시 받지 않는다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
     server.use(http.post('/api/bunches/:bunchId/photos', () => fail(409, 'PHOTO_001')));
@@ -594,7 +683,7 @@ describe('usePhotoUpload 한도 오류별 동작', () => {
 });
 
 describe('usePhotoUpload 내가 이미 올린 사진', () => {
-  it('내가 이미 올린 같은 사진(ALREADY_UPLOADED)은 추가한 사진으로 세지 않는다', async () => {
+  it('내가 이미 올린 같은 사진(ALREADY_UPLOADED)은 중복으로 빼고 추가한 장수를 알린다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2', 'p3'));
     let calls = 0;
     server.use(
@@ -610,10 +699,10 @@ describe('usePhotoUpload 내가 이미 올린 사진', () => {
 
     await act(() => result.current.start('album'));
 
-    expect(lastToast()).toEqual(['2장의 사진을 사진함에 추가했어요.', undefined]);
+    expect(lastToast()).toEqual(['중복된 1장을 제외하고, 사진 2장을 추가했어요.', undefined]);
   });
 
-  it('모두 내가 이미 올린 사진이면 추가한 장수 없이 이미 있다는 안내 토스트를 띄운다', async () => {
+  it('모두 내가 이미 올린 사진이면 이미 업로드된 사진이라는 토스트를 띄운다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2'));
     server.use(
       http.post('/api/bunches/:bunchId/photos', () =>
@@ -624,10 +713,29 @@ describe('usePhotoUpload 내가 이미 올린 사진', () => {
 
     await act(() => result.current.start('album'));
 
-    expect(lastToast()).toEqual(['이미 사진함에 있는 사진이에요.', undefined]);
+    expect(lastToast()).toEqual(['이미 사진함에 업로드된 사진이에요.', undefined]);
   });
 
-  it('올리지 못한 사진이 함께 있으면 제외된 사진은 빼고 알린다', async () => {
+  it('실패가 있으면 중복도 올리지 못한 장수에 함께 센다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2', 'p3'));
+    let calls = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', () => {
+        calls += 1;
+        // 1장 추가, 1장 중복, 1장 실패
+        if (calls === 1) return ok({ photoId: 7_300, result: 'STORED' });
+        if (calls === 2) return ok({ photoId: 7_301, result: 'ALREADY_UPLOADED' });
+        return fail(409, 'PHOTO_001');
+      }),
+    );
+    const { result } = render();
+
+    await act(() => result.current.start('album'));
+
+    expect(lastToast()).toEqual(['1장을 추가했어요. 2장은 올리지 못했어요.', undefined]);
+  });
+
+  it('실패가 있고 추가한 사진이 없으면 중복이 있어도 실패 문구를 띄운다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2'));
     let calls = 0;
     server.use(

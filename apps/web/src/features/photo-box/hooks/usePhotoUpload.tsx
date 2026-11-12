@@ -18,6 +18,7 @@ import {
   runPool,
   summarizeUpload,
   UPLOAD_CONCURRENCY,
+  UPLOAD_LIST_REFRESH_MS,
   uploadResultMessage,
   type UploadOutcome,
 } from '../lib/photoUpload';
@@ -30,6 +31,8 @@ type UploadItem = {
   image: Blob;
   capturedDate?: string | undefined;
   capturedTime?: string | undefined;
+  /** 쉘이 가공 전 원본 파일로 계산한 SHA-256. 「다시 시도」도 같은 값을 보냄 */
+  originalFileHash?: string | undefined;
 };
 
 type UploadResult = {
@@ -69,13 +72,14 @@ const skipPhoto = (photo: PickedPhoto) =>
 // 쉘이 준 이미지도 보내기 전에 한 번 더 확인함(비어 있거나 JPEG가 아니거나 배포처 본문 제한을 넘으면 보내지 않고 「올리지 못한 사진」으로 셈)
 const readPhoto = async (photo: PickedPhoto): Promise<UploadItem | null> => {
   try {
-    const { dataUrl } = await photoUploadBridge.readPickedPhoto(photo.id);
+    const { dataUrl, originalFileHash } = await photoUploadBridge.readPickedPhoto(photo.id);
     const image = dataUrlToBlob(dataUrl);
     if (!(await isUploadableJpeg(image))) return null;
     return {
       image,
       ...(photo.capturedDate ? { capturedDate: photo.capturedDate } : {}),
       ...(photo.capturedTime ? { capturedTime: photo.capturedTime } : {}),
+      ...(originalFileHash ? { originalFileHash } : {}),
     };
   } catch {
     return null;
@@ -87,10 +91,11 @@ const readPhoto = async (photo: PickedPhoto): Promise<UploadItem | null> => {
 /**
  * 사진 올리기(기능명세서 3.2.2·3.2.3): 시트에서 고른 방식으로 쉘의 선택·촬영을 열고, 고른 사진을 한 장씩 가공해 받아 올림
  * - 대상 번치는 올리기를 시작한 시점의 번치로 고정(올리는 중에 번치를 바꿔도 원래 번치에 저장)
+ * - 올리는 도중에도 새로 올라간 사진은 `UPLOAD_LIST_REFRESH_MS` 간격으로 목록에 반영함(기능명세서 3.2.2 「다 올라간 사진부터 목록에 들어온다」)
  * - 올리는 중에는 중간 토스트 없이, 끝나면 결과 토스트 하나만 띄움. 네트워크 실패·일시 장애가 있으면 「다시 시도」를 붙임
- *   `uploading`을 돌려줘 화면이 전체 로딩과 화면 밖 안내(live region)를 보이게 함
+ *   화면을 막는 로딩은 없고(기획 확정), `uploading`을 돌려줘 화면 밖 안내(live region)에만 씀. 올리는 중에도 사진함을 보거나 다른 화면으로 갈 수 있음
  * - 쉘이 없는 브라우저와 새 bridge 메서드가 없는 이전 쉘에서는 안내만 하고 올리지 않음
- * - 올리는 중에는 화면이 inert라 다시 올릴 수 없지만, 훅 자체는 겹쳐 불려도 묶음별로 동작함(동시 요청이 `UPLOAD_CONCURRENCY`를 넘을 수 있음)
+ * - 올리는 중에도 다시 올릴 수 있어 묶음이 겹치면 동시 요청이 `UPLOAD_CONCURRENCY`를 넘을 수 있음(묶음별로 결과 토스트를 하나씩 띄움)
  */
 export function usePhotoUpload(bunchId: string | undefined) {
   const invalidatePhotosOf = useInvalidatePhotosOf();
@@ -98,12 +103,30 @@ export function usePhotoUpload(bunchId: string | undefined) {
   const [uploadingCount, setUploadingCount] = useState(0);
   // 선택·촬영 창을 기다리는 사이 화면이 떠났으면 권한 안내 창을 열지 않음(떠난 화면의 창이 남지 않게)
   const mounted = useRef(true);
+  // 번치마다 한 번만 걸어 두는 목록 갱신 예약(올리는 도중 새로 올라간 사진을 반영함)
+  const refreshTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => {
     mounted.current = true;
+    const timers = refreshTimers.current;
     return () => {
       mounted.current = false;
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
     };
   }, []);
+
+  // 새로 올라간 사진이 있으면 그 번치의 목록 갱신을 예약함. 이미 예약돼 있으면 그 갱신에 함께 반영됨
+  const scheduleListRefresh = (targetBunchId: string) => {
+    const timers = refreshTimers.current;
+    if (timers.has(targetBunchId)) return;
+    timers.set(
+      targetBunchId,
+      setTimeout(() => {
+        timers.delete(targetBunchId);
+        void invalidatePhotosOf(targetBunchId);
+      }, UPLOAD_LIST_REFRESH_MS),
+    );
+  };
 
   // 올리는 중인 묶음 수를 셈(여러 번 올리기가 겹칠 수 있음)
   const track = async <Result,>(work: () => Promise<Result>): Promise<Result> => {
@@ -118,6 +141,9 @@ export function usePhotoUpload(bunchId: string | undefined) {
   // 한 묶음의 결과를 집계해 토스트를 띄우고, 새로 들어간 사진이 있으면 그 번치의 사진 목록을 다시 받음
   const finish = (targetBunchId: string, uploadBatchId: string, results: UploadResult[]) => {
     const summary = summarizeUpload(results.map((result) => result.outcome));
+    // 끝나면 아래에서 한 번 더 받으므로 예약해 둔 갱신은 걷음
+    clearTimeout(refreshTimers.current.get(targetBunchId));
+    refreshTimers.current.delete(targetBunchId);
     // 응답을 받기 전에 끊긴 사진(다시 시도 대상)과 결과를 알 수 없는 실패(코드 없는 5xx 등)도 서버에는 저장됐을 수 있어 목록을 다시 받음
     if (summary.added > 0 || summary.retryable > 0 || results.some((result) => result.unknown)) {
       void invalidatePhotosOf(targetBunchId);
@@ -141,6 +167,7 @@ export function usePhotoUpload(bunchId: string | undefined) {
                     if (limitReached) return { outcome: 'failed' };
                     const result = await attempt(targetBunchId, uploadBatchId, item);
                     if (result.limited) limitReached = true;
+                    if (result.outcome === 'added') scheduleListRefresh(targetBunchId);
                     return result;
                   }),
                 ).then((retried) =>
@@ -220,6 +247,7 @@ export function usePhotoUpload(bunchId: string | undefined) {
         if (!item) return { outcome: 'failed' };
         const result = await attempt(targetBunchId, uploadBatchId, item);
         if (result.limited) limitReached = true;
+        if (result.outcome === 'added') scheduleListRefresh(targetBunchId);
         return result;
       }),
     );
