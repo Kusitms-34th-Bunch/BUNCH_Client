@@ -3,6 +3,7 @@ import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
 import type { BunchRole } from '../lib/types';
 import {
+  departureResultSchema,
   membershipChangeResultSchema,
   membershipsResponseSchema,
   SERVER_ROLE,
@@ -74,4 +75,41 @@ export const transferOwner = (
     }),
     membershipChangeResultSchema,
     'transfer owner',
+  );
+
+/** 번치 나가기. 메인 관리자는 새 관리자(`successorMembershipId`)를 함께 보내 넘기기와 나가기를 한 번에 함 */
+export const leaveBunch = (
+  bunchId: string,
+  base: MembershipChangeBase,
+  successorMembershipId: string | undefined,
+  idempotencyKey: string,
+) =>
+  requestData(
+    bffApi.post(`bunches/${encodeURIComponent(bunchId)}/leave`, {
+      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      json: {
+        ...baseBody(base),
+        ...(successorMembershipId === undefined
+          ? {}
+          : { successorMembershipId: wire(successorMembershipId) }),
+      },
+    }),
+    departureResultSchema,
+    'leave bunch',
+  );
+
+/** 번치 삭제(메인 관리자). `confirmation`은 화면이 입력과 맞는지 확인한 확인 문구 */
+export const deleteBunch = (
+  bunchId: string,
+  base: MembershipChangeBase,
+  confirmation: string,
+  idempotencyKey: string,
+) =>
+  requestData(
+    bffApi.post(`bunches/${encodeURIComponent(bunchId)}/deletion`, {
+      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      json: { ...baseBody(base), confirmation },
+    }),
+    departureResultSchema,
+    'delete bunch',
   );
