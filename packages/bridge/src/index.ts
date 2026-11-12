@@ -76,6 +76,8 @@ export type AppBridgeMethods = {
   openAppSettings: () => Promise<void>;
   /** 시스템 권한 팝업 요청. 이미 정해진 권한은 팝업 없이 현재 상태 반환 */
   requestPermission: (_kind: PermissionKind) => Promise<PermissionStatus>;
+  /** 시스템 권한의 현재 상태만 읽음(팝업을 띄우지 않음). 설정에서 권한을 바꾸고 돌아온 화면이 다시 확인할 때 사용. 미지원 환경(브라우저)에서는 `undetermined` */
+  getPermissionStatus: (_kind: PermissionKind) => Promise<PermissionStatus>;
   /** 네이티브 SDK 소셜 로그인. 성공하면 서버 로그인에 쓸 ID 토큰(·nonce)을 돌려주고, 창을 닫으면 `cancelled`, SDK 오류는 reject. 미지원 환경(브라우저)에서는 reject */
   socialLogin: (_provider: SocialProvider) => Promise<SocialLoginResult>;
   /** 텍스트를 시스템 클립보드에 복사. 성공 여부를 돌려주고(검증 실패·오류는 false) 브라우저에서는 `navigator.clipboard`로 대체. WebView의 http 개발 주소는 보안 컨텍스트가 아니라 `navigator.clipboard`가 없어서 필요 */
