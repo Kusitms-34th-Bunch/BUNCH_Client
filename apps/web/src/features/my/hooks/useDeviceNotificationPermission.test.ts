@@ -159,6 +159,45 @@ describe('useDeviceNotificationPermission', () => {
     }
   });
 
+  it('앞선 읽기가 실패해도 최신 읽기가 끝나기 전에는 확인 중을 풀지 않는다', async () => {
+    let rejectFirst: (_error: Error) => void = () => {};
+    let resolveSecond: (_status: Status) => void = () => {};
+    bridge.getPermissionStatus
+      .mockImplementationOnce(
+        () =>
+          new Promise<Status>((_resolve, reject) => {
+            rejectFirst = reject;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Status>((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    const { result } = renderHook(() => useDeviceNotificationPermission());
+    await waitFor(() => expect(bridge.getPermissionStatus).toHaveBeenCalledTimes(1));
+    // 앱으로 돌아와 두 번째(최신) 읽기를 시작
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await waitFor(() => expect(bridge.getPermissionStatus).toHaveBeenCalledTimes(2));
+
+    await act(async () => {
+      rejectFirst(new Error('bridge down'));
+      await Promise.resolve();
+    });
+    // 최신 읽기가 아직 진행 중이라 잠금을 유지
+    expect(result.current.checking).toBe(true);
+
+    await act(async () => {
+      resolveSecond('denied');
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(result.current.checking).toBe(false));
+    expect(result.current.permission).toBe('denied');
+  });
+
   it('겹쳐 읽은 응답은 마지막 요청의 값만 반영한다(앞선 요청의 낡은 값이 나중에 와도 덮지 않음)', async () => {
     let resolveFirst: (_status: Status) => void = () => {};
     bridge.getPermissionStatus

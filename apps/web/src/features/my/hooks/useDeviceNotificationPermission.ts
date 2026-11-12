@@ -51,8 +51,11 @@ export function useDeviceNotificationPermission() {
           setReady(true);
           setChecking(false);
         },
-        // 읽지 못해도 계속 막지 않음(켜짐으로 둠)
-        () => setChecking(false),
+        // 읽지 못해도 계속 막지 않음(켜짐으로 둠). 앞선 요청의 실패는 무시해 최신 요청이 끝나기 전에 잠금을 풀지 않음
+        () => {
+          if (cancelled || request !== latest) return;
+          setChecking(false);
+        },
       );
     };
     const onVisible = () => {
