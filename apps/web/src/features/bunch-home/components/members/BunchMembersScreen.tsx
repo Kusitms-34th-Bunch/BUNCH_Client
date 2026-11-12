@@ -12,7 +12,7 @@ import {
 } from '@app/design-system';
 import { ProfileImage, ProfileListItem } from '@app/design-system/web';
 import Link from 'next/link';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
@@ -37,11 +37,18 @@ type BunchMembersScreenProps = {
   onBack: () => void;
   /** 헤더 「+ 멤버 초대」 */
   onInvite: () => void;
+  /** 관리 처리를 서버에 보내는 중(그동안 「⋯」를 숨겨 같은 요청이 두 번 가지 않게 함) */
+  busy?: boolean | undefined;
 };
 
-/** 내가 이 멤버를 관리할 수 있는지(Figma 권한 표 2500:54066: 공동 관리자는 메인 관리자 외 내보내기만) */
-const canManage = (myRole: BunchRole | undefined, member: BunchMember) =>
-  !member.isMe && (myRole === 'owner' || (myRole === 'coOwner' && member.role !== 'owner'));
+/**
+ * 내가 이 멤버를 관리할 수 있는지. 서버가 준 동작이 있으면 그대로 따름
+ * 샘플 데이터는 Figma 권한 표 2500:54066(공동 관리자는 메인 관리자 외 내보내기만)
+ */
+const canManage = (myRole: BunchRole | undefined, member: BunchMember) => {
+  if (member.actions) return Object.values(member.actions).some(Boolean);
+  return !member.isMe && (myRole === 'owner' || (myRole === 'coOwner' && member.role !== 'owner'));
+};
 
 /**
  * 번치 멤버 관리(기능명세 5.6, 화면설계서 2198:42965): 역할순 목록, 관리 메뉴 → 확인 창 → 토스트
@@ -54,6 +61,7 @@ export function BunchMembersScreen({
   actions,
   onBack,
   onInvite,
+  busy = false,
 }: BunchMembersScreenProps) {
   const openOverlay = useScreenOverlay();
   const summaryRef = useRef<HTMLParagraphElement>(null);
@@ -62,6 +70,23 @@ export function BunchMembersScreen({
     member: BunchMember,
     choose: (_kind: ConfirmKind) => void,
   ): ActionDialogAction[] => {
+    const allowed = member.actions;
+    if (allowed) {
+      return [
+        ...(allowed.canGrantCoOwner
+          ? [{ label: '공동 관리자로 지정하기', onClick: () => choose('appoint') }]
+          : []),
+        ...(allowed.canRevokeCoOwner
+          ? [{ label: '공동 관리자 해제하기', onClick: () => choose('revoke') }]
+          : []),
+        ...(allowed.canTransferOwner
+          ? [{ label: '관리자 권한 넘기기', onClick: () => choose('transfer') }]
+          : []),
+        ...(allowed.canRemove
+          ? [{ label: '번치에서 내보내기', onClick: () => choose('remove') }]
+          : []),
+      ];
+    }
     if (myRole !== 'owner')
       return [{ label: '번치에서 내보내기', onClick: () => choose('remove') }];
     return [
@@ -102,7 +127,8 @@ export function BunchMembersScreen({
         };
       case 'remove':
         return {
-          title: BUNCH_HOME_MESSAGES.removeTitle(name, bunchName ?? ''),
+          // 번치 이름을 받지 못했으면 「번치」로(제목이 깨지지 않게)
+          title: BUNCH_HOME_MESSAGES.removeTitle(name, bunchName ?? '번치'),
           description: BUNCH_HOME_MESSAGES.removeDescription(name),
           label: '내보내기',
           run: () => actions.remove(member.id),
@@ -115,9 +141,24 @@ export function BunchMembersScreen({
     <ProfileImage src={member.imageSrc} size="M" className="size-14" />
   );
 
+  // 처리한 행이나 「⋯」가 사라져 초점을 잃었으면 요약 줄로(문서 처음으로 가지 않게)
+  const keepFocus = () => {
+    if (!document.activeElement || document.activeElement === document.body) {
+      summaryRef.current?.focus();
+    }
+  };
+  // 초점 복구는 창이 닫힐 때(onClosed)가 주로 맡고, 이 effect는 창이 닫힌 뒤 응답이 와 행이 사라지는 경우의 보조
+  // 관리 처리를 한 뒤에만 동작(들어올 때·다시 받을 때 초점을 빼앗지 않음)
+  const focusAfterChange = useRef(false);
+  useEffect(() => {
+    if (!focusAfterChange.current) return;
+    keepFocus();
+    if (!busy) focusAfterChange.current = false;
+  }, [members, busy]);
+
   const openConfirm = (member: BunchMember, kind: ConfirmKind) => {
     const content = confirmContent(member, kind);
-    let done = false;
+    let result: Promise<unknown> | undefined;
     openOverlay(
       (rootProps, close) => (
         <ActionDialog
@@ -129,8 +170,10 @@ export function BunchMembersScreen({
             {
               label: content.label,
               onClick: () => {
-                content.run();
-                done = true;
+                focusAfterChange.current = true;
+                result = Promise.resolve(content.run());
+                // 응답 전에 화면을 떠나 onClosed가 불리지 않아도 실패가 처리되지 않은 채 남지 않게
+                result.catch(() => {});
                 close();
               },
             },
@@ -138,12 +181,12 @@ export function BunchMembersScreen({
         />
       ),
       () => {
-        // 내보내기·넘기기로 돌아갈 「⋯」가 없어졌으면 요약 줄로(문서 처음으로 가지 않게)
-        if (!document.activeElement || document.activeElement === document.body) {
-          summaryRef.current?.focus();
-        }
-        // 토스트는 창이 다 닫힌 뒤(열린 창 뒤에서 낭독이 묻히지 않게)
-        if (done) toast(content.done, { icon: 'success' });
+        keepFocus();
+        // 토스트는 창이 다 닫히고 처리가 끝난 뒤(열린 창 뒤에서 낭독이 묻히지 않게). 실패 안내는 동작 쪽 담당
+        void result?.then(
+          () => toast(content.done, { icon: 'success' }),
+          () => {},
+        );
       },
     );
   };
@@ -193,6 +236,9 @@ export function BunchMembersScreen({
       }
     >
       <h1 className="sr-only">{bunchName ? `${bunchName} 멤버 관리` : '멤버 관리'}</h1>
+      <p role="status" className="sr-only">
+        {busy ? '처리하는 중이에요' : ''}
+      </p>
       {/* 헤더 아래 16, 요약 줄과 목록 사이 12, 행 사이 8(Figma 2500:65206) */}
       {members ? (
         <div className="pt-padding-p8 px-padding-p8 pb-s8 gap-s6 flex flex-col">
@@ -229,7 +275,7 @@ export function BunchMembersScreen({
                   memberRole={member.role === 'member' ? undefined : member.role}
                   roleLabel={member.role === 'member' ? undefined : ROLE_LABELS[member.role]}
                   moreLabel={`${member.name} 관리`}
-                  onMore={canManage(myRole, member) ? () => openManage(member) : undefined}
+                  onMore={!busy && canManage(myRole, member) ? () => openManage(member) : undefined}
                 />
               </li>
             ))}
