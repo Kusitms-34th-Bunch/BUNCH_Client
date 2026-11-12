@@ -55,9 +55,12 @@ const MOCK_UPLOADED_BUNCH_IMAGE = '/mock/photos/C1.jpg';
 export const bunchOnboardingHandlers = [
   // GET /api/v1/bunches/name-availability
   http.get('/api/bunches/name-availability', ({ request }) => {
-    const name = normalizeName(new URL(request.url).searchParams.get('name') ?? '');
+    const url = new URL(request.url);
+    const name = normalizeName(url.searchParams.get('name') ?? '');
     if (!isValidName(name)) return fail(400, 'COMMON_001');
-    return ok({ normalizedValue: name, available: !isNameTaken(name) });
+    // 프로필 편집은 자기 번치의 지금 이름을 사용 중으로 보지 않음
+    const exclude = toWireId(url.searchParams.get('excludeBunchId') ?? undefined);
+    return ok({ normalizedValue: name, available: !isNameTaken(name, exclude) });
   }),
 
   // POST /api/v1/bunches: 가입 완료 회원, 소속 10개 미만. 같은 멱등 키·입력은 처음 만든 번치를 돌려줌
@@ -147,6 +150,55 @@ export const bunchOnboardingHandlers = [
     changeBunch(owned.bunch.id, (bunch) => ({ ...bunch, imageUrl: null }));
     const changed = mockDb.get().bunches.find((bunch) => bunch.id === owned.bunch.id);
     return changed ? ok(bunchBody(changed)) : fail(404, 'RESOURCE_001');
+  }),
+
+  // PUT /api/v1/bunches/{bunchId}/profile: OWNER만, multipart `profile`(JSON)·`photo`(선택)
+  // 가짜 서버는 사진 내용을 읽지 않고 시연용 이미지로 바꿈. 버전 충돌 코드는 Swagger에 없어 가짜 코드로 둠
+  http.put('/api/bunches/:bunchId/profile', async ({ params, request }) => {
+    if (!request.headers.get(IDEMPOTENCY_KEY_HEADER)) return fail(400, 'COMMON_001');
+    const owned = findOwnedBunch(params.bunchId);
+    if ('error' in owned) return owned.error;
+    const form = await request.formData();
+    const part = form.get('profile');
+    const parse = async () => {
+      try {
+        return part instanceof Blob ? (JSON.parse(await part.text()) as unknown) : null;
+      } catch {
+        return null;
+      }
+    };
+    const profile = (await parse()) as {
+      name?: string;
+      introduction?: string;
+      visibility?: string;
+      imageAction?: string;
+      expectedProfileVersion?: number;
+    } | null;
+    const name = normalizeName(profile?.name ?? '');
+    const introduction = (profile?.introduction ?? '').trim();
+    if (!profile || !isValidName(name) || introduction.length === 0 || introduction.length > 50) {
+      return fail(400, 'COMMON_001');
+    }
+    const version = owned.bunch.profileVersion ?? 1;
+    if (profile.expectedProfileVersion !== version) return fail(409, 'MOCK_PROFILE_VERSION');
+    if (isNameTaken(name, owned.bunch.id)) return fail(409, 'BUNCH_001');
+    if (profile.imageAction === 'REPLACE' && !(form.get('photo') instanceof Blob)) {
+      return fail(400, 'COMMON_001');
+    }
+    changeBunch(owned.bunch.id, (bunch) => ({
+      ...bunch,
+      name,
+      introduction,
+      isPrivate: profile.visibility === 'PRIVATE',
+      imageUrl:
+        profile.imageAction === 'REPLACE'
+          ? MOCK_UPLOADED_BUNCH_IMAGE
+          : profile.imageAction === 'RESET'
+            ? null
+            : bunch.imageUrl,
+      profileVersion: version + 1,
+    }));
+    return ok({ bunchId: owned.bunch.id, profileVersion: version + 1 });
   }),
 
   // POST /api/v1/bunches/{id}/invitations: 번치당 유효한 링크 1개(같은 번치는 같은 링크를 돌려줌)

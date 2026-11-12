@@ -79,7 +79,7 @@ export const bunchHomeHandlers = [
         canInvite: isAdmin,
         canLeave: memberCount > 1,
       },
-      profileVersion: 1,
+      profileVersion: bunch.profileVersion ?? 1,
       membershipVersion: 1,
       memberCount,
       followerCount: bunch.followerCount,

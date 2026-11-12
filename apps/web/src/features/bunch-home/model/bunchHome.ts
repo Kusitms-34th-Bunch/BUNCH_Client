@@ -217,3 +217,36 @@ export const toBunchSummaries = (data: MyBunches, currentId: string): BunchSumma
     ...unavailable,
   ];
 };
+
+/** `PUT /bunches/{bunchId}/profile` 응답. 값은 쓰지 않아 정수·범위 제약 없이 숫자만 확인 */
+export const bunchProfileResponseSchema = z.object({
+  bunchId: z.number(),
+  profileVersion: z.number(),
+});
+
+/** 프로필 편집 화면이 쓰는 번치 프로필. 대표 사진이 없거나 안전하지 않은 주소면 `imageSrc`는 없음(기본 이미지) */
+export type EditableBunchProfile = {
+  name: string;
+  description: string;
+  isPrivate: boolean;
+  imageSrc: string | undefined;
+  characterType: Home['bunch']['characterType'];
+  /** 저장 요청의 `expectedProfileVersion`. 서버가 주지 않으면 undefined(저장하지 않음) */
+  profileVersion: number | undefined;
+  /** 프로필을 바꿀 수 있는지(서버 권한, 지금은 메인 관리자) */
+  canEdit: boolean;
+};
+
+export const toEditableBunchProfile = (home: Home): EditableBunchProfile => ({
+  name: home.bunch.name,
+  description: home.bunch.introduction ?? '',
+  isPrivate: home.bunch.visibility === 'PRIVATE',
+  imageSrc:
+    home.bunch.imageUrl && isSafeImageUrl(home.bunch.imageUrl) ? home.bunch.imageUrl : undefined,
+  characterType: home.bunch.characterType,
+  profileVersion: home.profileVersion ?? undefined,
+  canEdit:
+    home.myMembership !== null &&
+    home.myMembership !== undefined &&
+    home.permissions.canEditProfile,
+});

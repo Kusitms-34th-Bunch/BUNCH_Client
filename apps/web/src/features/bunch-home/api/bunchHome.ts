@@ -1,7 +1,11 @@
+import { normalizeError } from '@app/api-core';
 import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
+import { dataUrlToBlob } from '@/shared/lib/dataUrl';
 import {
   bunchHomeResponseSchema,
+  bunchProfileResponseSchema,
   draftBundlesPageSchema,
   myBunchesResponseSchema,
   publishedBundlesPageSchema,
@@ -65,4 +69,64 @@ export const deleteBunchAccessNotice = async (noticeId: string) => {
     unitSchema,
     'delete bunch access notice',
   );
+};
+
+/** 대표 사진을 어떻게 할지: 그대로 · 새 사진(조정 화면의 정사각 JPEG data URL) · 기본 이미지 */
+export type BunchProfileImageChange =
+  | { action: 'KEEP' }
+  | { action: 'REPLACE'; photo: string }
+  | { action: 'RESET' };
+
+export type UpdateBunchProfileInput = {
+  name: string;
+  introduction: string;
+  isPrivate: boolean;
+  image: BunchProfileImageChange;
+  /** 편집을 시작할 때 받은 프로필 버전. 그 사이 다른 곳에서 바뀌었으면 서버가 거절함 */
+  expectedProfileVersion: number;
+};
+
+/**
+ * 번치 프로필 저장(메인 관리자): 이름·소개·공개 범위·대표 사진을 한 번에 저장(multipart `profile` JSON + 선택 `photo`)
+ * 이름 중복은 409 `BUNCH_001`. 버전 충돌·권한 오류의 코드는 Swagger에 없어 화면은 그 밖의 실패를 하나로 다룸
+ */
+export const updateBunchProfile = async (
+  bunchId: string,
+  { name, introduction, isPrivate, image, expectedProfileVersion }: UpdateBunchProfileInput,
+  idempotencyKey: string,
+) => {
+  try {
+    const body = new FormData();
+    // 서버는 profile 파트를 JSON으로 읽으므로 파트의 Content-Type을 application/json으로 보냄
+    body.append(
+      'profile',
+      new Blob(
+        [
+          JSON.stringify({
+            name: name.normalize('NFC').trim(),
+            introduction: introduction.trim(),
+            visibility: isPrivate ? 'PRIVATE' : 'PUBLIC',
+            imageAction: image.action,
+            expectedProfileVersion,
+          }),
+        ],
+        { type: 'application/json' },
+      ),
+    );
+    if (image.action === 'REPLACE') {
+      const jpeg = dataUrlToBlob(image.photo);
+      if (jpeg.type !== 'image/jpeg') throw new Error('JPEG 사진만 올릴 수 있습니다.');
+      body.append('photo', new File([jpeg], 'bunch.jpg', { type: jpeg.type }));
+    }
+    return await requestData(
+      bffApi.put(`${bunchPath(bunchId)}/profile`, {
+        body,
+        headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      }),
+      bunchProfileResponseSchema,
+      'update bunch profile',
+    );
+  } catch (error) {
+    throw normalizeError(error);
+  }
 };
