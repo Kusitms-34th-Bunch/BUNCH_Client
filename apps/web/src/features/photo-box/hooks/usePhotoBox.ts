@@ -6,7 +6,11 @@ import type { PhotoBoxPreview } from '../lib/preview';
 import type { PhotoBoxActions, PhotoBoxData, PhotoBoxPhoto, PhotoBoxState } from '../lib/types';
 import { saveToAlbum } from '../api/albumSave';
 import { applyTakenDate } from '../lib/photoActions';
-import { datedPhotosQueryOptions, undatedPhotosQueryOptions } from '../queries/photoLists';
+import {
+  datedPhotosQueryOptions,
+  PHOTO_BOX_STALE_TIME,
+  undatedPhotosQueryOptions,
+} from '../queries/photoLists';
 import { useDeletePhotosMutation } from '../queries/photos';
 
 // 목 날짜 변경이 끝나기까지의 시간(시트의 「저장 중」 상태가 보이도록)
@@ -96,8 +100,10 @@ export function usePhotoBox(
     isRefetchError: membersRefetchError,
     refetch: refetchMembers,
   } = useQuery(bunchMembersQueryOptions(bunchId));
-  const datedQuery = useInfiniteQuery(datedPhotosQueryOptions(bunchId));
-  const undatedQuery = useInfiniteQuery(undatedPhotosQueryOptions(bunchId));
+  // 사진함 화면(progressive)은 들어올 때마다 목록을 다시 받고, 번들·상세 화면은 30초 안에는 받아 둔 목록을 그대로 씀
+  const listOptions = progressive ? { staleTime: PHOTO_BOX_STALE_TIME } : undefined;
+  const datedQuery = useInfiniteQuery(datedPhotosQueryOptions(bunchId, listOptions));
+  const undatedQuery = useInfiniteQuery(undatedPhotosQueryOptions(bunchId, listOptions));
   const { data: dated, isError: datedError } = datedQuery;
   const { data: undated, isError: undatedError } = undatedQuery;
   useLoadRemainingPages(datedQuery);

@@ -3,10 +3,21 @@ import { getDatedPhotosPage, getUndatedPhotosPage } from '../api/photos';
 import { photoBoxKeys } from './keys';
 
 /**
- * 사진 목록이 신선하다고 보는 시간(30초). 기본 5분이면 사진함에 들어오거나 앱에 돌아와도 다른 멤버가 올리거나 지운 사진이
- * 한참 안 보이므로(명세 3.1.1: 진입·앱 복귀 때 반영) 줄이되, 사진함·상세·번들 화면을 오가며 전체 쪽을 매번 다시 받지는 않게 함
+ * 사진 목록이 신선하다고 보는 시간(30초). 기본 5분이면 다른 멤버가 올리거나 지운 사진이 한참 안 보이므로 줄이되,
+ * 사진 상세·번들 화면이 전체 쪽을 마운트할 때마다 다시 받지는 않게 함
  */
 export const PHOTO_LIST_STALE_TIME = 30_000;
+
+/**
+ * 사진함 화면이 쓰는 신선 시간(0): 사진함에 들어오거나 앱에 돌아올 때마다 목록을 다시 받아 다른 멤버가 올리거나 지운 사진을 반영함(명세 3.1.1)
+ * 받아 둔 목록이 있으면 그것을 먼저 보여 주고 뒤에서 새로 받아 바뀐 것만 반영하므로 이미 있던 사진은 기다리지 않고 보이고, 새로 올라온 사진만 조금 늦게 뜰 수 있음
+ */
+export const PHOTO_BOX_STALE_TIME = 0;
+
+type PhotoListOptions = {
+  /** 목록을 신선하다고 보는 시간. 기본은 `PHOTO_LIST_STALE_TIME` */
+  staleTime?: number;
+};
 
 type PhotosPage = Awaited<ReturnType<typeof getDatedPhotosPage>>;
 
@@ -28,10 +39,13 @@ const flattenPages = (data: { pages: PhotosPage[] }) => data.pages.flatMap((page
  * 날짜를 아는 사진(최신순)을 쪽 단위로 받음. 번치를 아직 모르면 요청하지 않음
  * 화면이 한 목록으로 계산하므로 `usePhotoBox`가 남은 쪽을 이어서 받음(첫 쪽만 오면 먼저 보여 줄 수 있음)
  */
-export const datedPhotosQueryOptions = (bunchId: string | undefined) =>
+export const datedPhotosQueryOptions = (
+  bunchId: string | undefined,
+  { staleTime = PHOTO_LIST_STALE_TIME }: PhotoListOptions = {},
+) =>
   infiniteQueryOptions({
     queryKey: photoBoxKeys.datedPhotos(bunchId),
-    staleTime: PHOTO_LIST_STALE_TIME,
+    staleTime,
     initialPageParam: undefined as string | undefined,
     queryFn: bunchId
       ? ({ pageParam, signal }) => getDatedPhotosPage({ bunchId, cursor: pageParam, signal })
@@ -41,10 +55,13 @@ export const datedPhotosQueryOptions = (bunchId: string | undefined) =>
   });
 
 /** 날짜를 모르는 사진을 쪽 단위로 받음 */
-export const undatedPhotosQueryOptions = (bunchId: string | undefined) =>
+export const undatedPhotosQueryOptions = (
+  bunchId: string | undefined,
+  { staleTime = PHOTO_LIST_STALE_TIME }: PhotoListOptions = {},
+) =>
   infiniteQueryOptions({
     queryKey: photoBoxKeys.undatedPhotos(bunchId),
-    staleTime: PHOTO_LIST_STALE_TIME,
+    staleTime,
     initialPageParam: undefined as string | undefined,
     queryFn: bunchId
       ? ({ pageParam, signal }) => getUndatedPhotosPage({ bunchId, cursor: pageParam, signal })
