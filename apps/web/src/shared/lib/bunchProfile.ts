@@ -19,6 +19,8 @@ export const defaultBunchImage = (type?: CharacterType | null) =>
 export const DEFAULT_PROFILE_IMAGE = '/images/default-profile.svg';
 
 export const BUNCH_NAME_INVALID_MESSAGE = '특수문자를 제외한 영문, 한글만 사용할 수 있어요.';
+/** 다른 번치가 쓰는 이름(번치 만들기·프로필 편집) */
+export const BUNCH_NAME_TAKEN_MESSAGE = '이미 사용 중인 번치 이름이에요';
 /** 이름 중복 확인이 진행되는 동안 입력란 아래에 보이는 안내(Figma, 확인이 끝나 문제가 없으면 사라짐) */
 export const BUNCH_NAME_CHECKING_MESSAGE = '사용 가능한 이름인지 확인 중이에요.';
 

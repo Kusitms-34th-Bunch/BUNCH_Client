@@ -3,6 +3,7 @@ import { type ApiContract, normalizeError } from '@app/api-core';
 import { z } from 'zod';
 import type { CharacterType } from '@/shared/lib/bunchProfile';
 import { bffApi, requestData } from '@/shared/api/bffApi';
+import { checkBunchNameAvailability as checkSharedBunchName } from '@/shared/api/bunchNameAvailability';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
 import { dataUrlToBlob } from '@/shared/lib/dataUrl';
@@ -11,18 +12,8 @@ import type { Visibility } from '../contexts/createBunchDraftContext';
 
 type Schemas = components['schemas'];
 
-/** 번치 이름 중복 확인 응답(`GET /bunches/name-availability`) */
-const availabilitySchema = z.object({ normalizedValue: z.string(), available: z.boolean() });
-
 /** 번치 이름을 지금 쓸 수 있는지. 이름을 예약하지 않으므로 생성 때 서버가 다시 확인함(`BUNCH_001`) */
-export const checkBunchNameAvailability = async (name: string, signal?: AbortSignal) => {
-  const { available } = await requestData(
-    bffApi.get('bunches/name-availability', { searchParams: { name }, signal: signal ?? null }),
-    availabilitySchema,
-    'bunch name availability',
-  );
-  return available;
-};
+export const checkBunchNameAvailability = (name: string) => checkSharedBunchName(name);
 
 /** `POST /bunches`·`PUT·DELETE /bunches/{id}/profile-image` 응답 */
 export const bunchSchema = z.object({

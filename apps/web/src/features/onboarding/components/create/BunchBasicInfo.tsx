@@ -12,15 +12,13 @@ import {
 import {
   BUNCH_NAME_CHECKING_MESSAGE,
   BUNCH_NAME_INVALID_MESSAGE,
+  BUNCH_NAME_TAKEN_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
   hasInvalidBunchNameChars,
 } from '@/shared/lib/bunchProfile';
 import { checkBunchNameAvailability } from '../../api/bunches';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
-
-/** 번치 이름 중복 안내(기획 2.2.3) */
-const BUNCH_NAME_TAKEN_MESSAGE = '이미 사용 중인 번치 이름이에요';
 
 type BunchBasicInfoProps = {
   /** 번치 이름 중복 확인 호출. 기본은 서버 확인, 테스트에서 대체하고 null이면 확인하지 않음 */
