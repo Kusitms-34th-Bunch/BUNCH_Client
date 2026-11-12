@@ -9,7 +9,7 @@ import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID } from '@/mocks/db/se
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
-import { getMemberships } from '../../api/memberships';
+import { getMemberships, transferOwner } from '../../api/memberships';
 import { BunchMembers } from './BunchMembers';
 
 const replace = vi.fn();
@@ -93,6 +93,42 @@ describe('BunchMembers 서버 멤버 관리', () => {
     );
     expect((await serverRoles())['경진']).toBe('MEMBER');
     expect(await screen.findByRole('button', { name: '경진 관리' })).toBeTruthy();
+  });
+
+  it('실패 뒤 목록 다시 받기도 실패하면 관리하지 않고 다시 시도를 보이며, 받으면 목록으로 돌아온다', async () => {
+    setMyRole('OWNER');
+    let listFails = false;
+    server.use(
+      http.put('/api/bunches/:bunchId/memberships/:membershipId/role', () =>
+        fail(500, 'COMMON_500'),
+      ),
+      http.get('/api/bunches/:bunchId/memberships', () =>
+        listFails ? fail(500, 'COMMON_500') : undefined,
+      ),
+    );
+    const user = userEvent.setup();
+    renderMembers();
+    await screen.findByText('5/8명');
+    listFails = true;
+
+    await confirmIn('공동 관리자로 지정하기', '완료', '경진');
+
+    const retry = await screen.findByRole('button', { name: '다시 시도' });
+    listFails = false;
+    await user.click(retry);
+    expect(await screen.findByRole('button', { name: '경진 관리' })).toBeTruthy();
+  });
+
+  it('같은 멱등 키로 다시 보낸 넘기기는 처음 성공 응답을 돌려준다(첫 응답 유실 재시도)', async () => {
+    setMyRole('OWNER');
+    const base = { actorMembershipId: String(MOCK_MY_MEMBER_ID), expectedMembershipVersion: 1 };
+    const target = String(MOCK_MEMBER_IDS.memberB);
+
+    const first = await transferOwner(String(MOCK_BUNCH_ID), target, base, 'k-transfer');
+    const replay = await transferOwner(String(MOCK_BUNCH_ID), target, base, 'k-transfer');
+
+    expect(replay.membershipVersion).toBe(first.membershipVersion);
+    expect((await serverRoles())['은우']).toBe('OWNER');
   });
 
   it('메인 관리자가 공동 관리자로 지정하면 서버에 반영하고 토스트를 띄운다', async () => {

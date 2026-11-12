@@ -247,7 +247,8 @@ export function BunchMembersScreen({
             <p
               ref={summaryRef}
               tabIndex={-1}
-              className="text-text-secondary gap-s3 flex focus:outline-none"
+              // 처리 뒤 초점이 옮겨 오면 키보드 사용자에게 보이게(마우스 조작 뒤에는 표시 없음)
+              className="text-text-secondary gap-s3 rounded-r2 focus-visible:outline-border-brand flex focus:outline-none focus-visible:outline-2"
             >
               <span>멤버</span>
               {/* 간격은 gap이라 낭독용 띄어쓰기만 따로 둠 */}

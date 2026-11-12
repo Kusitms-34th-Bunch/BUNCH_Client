@@ -34,6 +34,8 @@ export function BunchMembers() {
   const change = useChangeMembershipMutation(bunchId);
   // 실패 뒤 목록을 다시 받는 동안도 처리 중(오래된 버전으로 다시 보내지 않게)
   const [recovering, setRecovering] = useState(false);
+  // 실패 뒤 다시 받기도 실패하면 목록·버전이 오래돼 관리하지 않고 다시 받기를 권함
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const managed = useMemo(
     () => (memberships.data ? toManagedMemberships(memberships.data) : undefined),
     [memberships.data],
@@ -46,12 +48,18 @@ export function BunchMembers() {
   }, [hasNoBunch, router]);
 
   // 받은 값이 하나도 없을 때만 오류 화면(다시 받기만 실패하면 목록을 지우지 않음)
-  if ((me.isError && !me.data) || (memberships.isError && !memberships.data)) {
+  if ((me.isError && !me.data) || (memberships.isError && !memberships.data) || refreshFailed) {
     return (
       <BunchHomeError
         onRetry={() => {
           if (me.isError) void me.refetch();
-          if (memberships.isError) void memberships.refetch();
+          if (memberships.isError || refreshFailed) {
+            void memberships.refetch().then(({ isError }) => {
+              if (isError) return;
+              setRefreshFailed(false);
+              setRecovering(false);
+            });
+          }
         }}
       />
     );
@@ -80,7 +88,12 @@ export function BunchMembers() {
         onError: () => {
           setRecovering(true);
           // 충돌 코드가 Swagger에 없어, 다시 받은 버전이 요청한 버전과 다르면 그 사이 바뀐 것으로 봄
-          void memberships.refetch().then(({ data }) => {
+          void memberships.refetch().then(({ data, isError }) => {
+            // refetch는 실패해도 reject하지 않고 이전 값을 돌려주므로 오류 여부를 따로 봄
+            if (isError) {
+              setRefreshFailed(true);
+              return;
+            }
             setRecovering(false);
             toast(
               data && data.membershipVersion !== managed.version
