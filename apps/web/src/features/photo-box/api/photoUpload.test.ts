@@ -155,6 +155,106 @@ describe('uploadPhoto', () => {
     ]);
   });
 
+  const ORIGINAL_HASH = 'a'.repeat(64);
+
+  it('원본 해시를 평면 폼 필드로 보낸다', async () => {
+    let field: unknown;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
+        field = (await request.clone().formData()).get('originalFileHash');
+        return undefined;
+      }),
+    );
+
+    await uploadPhoto({
+      bunchId,
+      image: jpeg('hash-field'),
+      uploadBatchId: batchId(),
+      originalFileHash: ORIGINAL_HASH,
+    });
+
+    expect(field).toBe(ORIGINAL_HASH);
+  });
+
+  it('원본 해시가 없으면 필드를 보내지 않는다', async () => {
+    let field: unknown = 'sent';
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
+        field = (await request.clone().formData()).get('originalFileHash');
+        return undefined;
+      }),
+    );
+
+    await uploadPhoto({ bunchId, image: jpeg('no-hash'), uploadBatchId: batchId() });
+
+    expect(field).toBeNull();
+  });
+
+  // 가공 결과(업로드 파일)가 기기마다 달라도 원본 해시가 같으면 같은 사진으로 판별
+  it('업로드 파일의 바이트가 달라도 원본 해시가 같으면 내가 이미 올린 사진은 ALREADY_UPLOADED다', async () => {
+    const first = await uploadPhoto({
+      bunchId,
+      image: jpeg('original-A-processed-1'),
+      uploadBatchId: batchId(),
+      originalFileHash: 'b'.repeat(64),
+    });
+    const before = photoCount();
+
+    const second = await uploadPhoto({
+      bunchId,
+      image: jpeg('original-A-processed-2'),
+      uploadBatchId: batchId(),
+      originalFileHash: 'b'.repeat(64),
+    });
+
+    expect(second).toEqual({ photoId: first.photoId, result: 'ALREADY_UPLOADED' });
+    expect(photoCount()).toBe(before);
+  });
+
+  it('업로드 파일의 바이트가 달라도 원본 해시가 같으면 다른 멤버가 올린 사진은 MERGED다', async () => {
+    const sample = mockDb.get().photos[0]!;
+    const otherPhotoId = 9_100;
+    mockDb.update((current) => ({
+      ...current,
+      photos: [
+        ...current.photos,
+        {
+          ...sample,
+          photoId: otherPhotoId,
+          bunchId: MOCK_BUNCH_ID,
+          uploaderIds: [MOCK_MEMBER_IDS.memberB],
+          contentHash: 'c'.repeat(64),
+        },
+      ],
+    }));
+
+    const result = await uploadPhoto({
+      bunchId,
+      image: jpeg('processed-on-my-device'),
+      uploadBatchId: batchId(),
+      originalFileHash: 'c'.repeat(64),
+    });
+
+    expect(result).toEqual({ photoId: otherPhotoId, result: 'MERGED' });
+    expect(findPhoto(otherPhotoId)?.uploaderIds).toEqual([
+      MOCK_MEMBER_IDS.memberB,
+      MOCK_MEMBER_IDS.me,
+    ]);
+  });
+
+  it('형식이 맞지 않는 원본 해시는 400 COMMON_001이다', async () => {
+    const error = await uploadError(
+      uploadPhoto({
+        bunchId,
+        image: jpeg('bad-hash'),
+        uploadBatchId: batchId(),
+        originalFileHash: 'NOT-A-HASH',
+      }),
+    );
+
+    expect(error).toMatchObject({ status: 400, code: 'COMMON_001' });
+  });
+
   it('사진함이 1,000장이면 새 사진은 PHOTO_001로 거절되지만 같은 사진 합치기는 허용된다', async () => {
     const sample = mockDb.get().photos[0]!;
     const merged = jpeg('full-merge');

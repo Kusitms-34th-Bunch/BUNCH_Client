@@ -225,3 +225,14 @@ void test('앨범에 저장할 주소는 IP 주소·계정 정보·내부 호스
   assert.equal(isSavableImageUrl('https://user:pass@cdn.example.com/a.jpg'), false);
   assert.equal(isSavableImageUrl('http://cdn.example.com/a.jpg'), false);
 });
+
+void test('업로드용 사진의 원본 해시는 소문자 hex 64자만 허용하고 없어도 된다', () => {
+  const dataUrl = 'data:image/jpeg;base64,AAAA';
+  const parse = (originalFileHash?: unknown) =>
+    uploadImageSchema.safeParse({ dataUrl, originalFileHash }).success;
+  assert.equal(parse(undefined), true);
+  assert.equal(parse('a'.repeat(64)), true);
+  assert.equal(parse('A'.repeat(64)), false);
+  assert.equal(parse('a'.repeat(63)), false);
+  assert.equal(parse('g'.repeat(64)), false);
+});

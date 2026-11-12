@@ -96,6 +96,14 @@ export const uploadImageSchema = z.object({
     .string()
     .max(MAX_UPLOAD_IMAGE_DATA_URL)
     .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/),
+  /**
+   * 가공 전 원본 파일의 SHA-256(소문자 hex 64자). 서버가 같은 원본 사진을 판별하는 데 씀
+   * 가공(리사이즈·재인코딩) 결과는 같은 원본이어도 기기마다 바이트가 달라 가공본 해시로는 합쳐지지 않으므로 가공 전 파일로 계산함. 계산하지 못하면 없음
+   */
+  originalFileHash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
 });
 export type UploadImage = z.infer<typeof uploadImageSchema>;
 

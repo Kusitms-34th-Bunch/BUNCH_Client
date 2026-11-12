@@ -109,6 +109,8 @@ type UploadRequest = {
   uploadBatchId: string;
   capturedDate: string | null;
   capturedTime: string | null;
+  /** 가공 전 원본 파일의 SHA-256(소문자 hex 64자). 있으면 같은 사진 판별에 업로드 파일 해시 대신 씀 */
+  originalFileHash: string | null;
 };
 
 // 업로드 요청의 별도 필드(uploadBatchId·capturedDate·capturedTime)를 검사함. 올바르지 않으면 undefined(서버는 COMMON_001): 묶음 ID는 UUID, 시각은 날짜 없이 보낼 수 없음
@@ -117,6 +119,7 @@ const parseUploadRequest = (form: FormData | null) => {
   const uploadBatchId = form.get('uploadBatchId');
   const capturedDate = form.get('capturedDate') ?? undefined;
   const capturedTime = form.get('capturedTime') ?? undefined;
+  const originalFileHash = form.get('originalFileHash') ?? undefined;
   if (typeof uploadBatchId !== 'string' || !UUID.test(uploadBatchId)) return undefined;
   if (
     capturedDate !== undefined &&
@@ -131,10 +134,17 @@ const parseUploadRequest = (form: FormData | null) => {
     return undefined;
   }
   if (capturedTime !== undefined && capturedDate === undefined) return undefined;
+  if (
+    originalFileHash !== undefined &&
+    (typeof originalFileHash !== 'string' || !/^[0-9a-f]{64}$/.test(originalFileHash))
+  ) {
+    return undefined;
+  }
   return {
     uploadBatchId,
     capturedDate: capturedDate ?? null,
     capturedTime: capturedTime ?? null,
+    originalFileHash: originalFileHash ?? null,
   } satisfies UploadRequest;
 };
 
@@ -206,7 +216,8 @@ export const photoHandlers = [
     const batchCount = batchCounts.get(upload.uploadBatchId) ?? 0;
     if (batchCount >= MAX_PHOTOS_PER_BATCH) return fail(409, 'PHOTO_003');
 
-    const contentHash = await sha256Hex(file);
+    // 원본 해시가 있으면 그 값으로, 없으면 업로드된 파일의 SHA-256으로 같은 사진을 판별함
+    const contentHash = upload.originalFileHash ?? (await sha256Hex(file));
     const bunchPhotos = photos.filter((photo) => photo.bunchId === bunchId);
     const same = bunchPhotos.find((photo) => photo.contentHash === contentHash);
     if (!same && bunchPhotos.length >= MAX_PHOTOS_IN_BOX) return fail(409, 'PHOTO_001');
