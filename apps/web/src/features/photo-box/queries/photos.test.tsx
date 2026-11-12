@@ -1,4 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +10,7 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { photoBoxKeys } from './keys';
+import { datedPhotosQueryOptions } from './photoLists';
 import { useDeletePhotosMutation } from './photos';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -50,6 +52,30 @@ describe('useDeletePhotosMutation', () => {
     expect(isInvalidated(keys.otherBunchPhotos)).toBe(false);
     expect(isInvalidated(keys.members)).toBe(false);
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('쪽 단위로 받은 목록도 삭제 뒤 받았던 쪽을 처음부터 다시 받는다', async () => {
+    const client = createTestQueryClient();
+    const wrapper = createQueryWrapper(client);
+    const list = renderHook(
+      () => {
+        const query = useInfiniteQuery(datedPhotosQueryOptions(bunchId));
+        // 둘째 쪽 이후는 이 테스트의 관심 밖이라 첫 쪽만 받고 멈춤
+        return query;
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(list.result.current.data).toBeDefined());
+    const before = list.result.current.dataUpdatedAt;
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), { wrapper });
+
+    await act(() => result.current.mutateAsync([String(MOCK_PHOTO_IDS.S4)]));
+
+    // 활성 목록이 다시 받아져 삭제한 사진이 빠진 새 데이터가 됨
+    await waitFor(() => expect(list.result.current.dataUpdatedAt).toBeGreaterThan(before));
+    expect(list.result.current.data?.map((photo) => photo.id)).not.toContain(
+      String(MOCK_PHOTO_IDS.S4),
+    );
   });
 
   it('실패하면 공통 처리가 삭제 실패 토스트를 띄우고 캐시는 그대로 둔다', async () => {

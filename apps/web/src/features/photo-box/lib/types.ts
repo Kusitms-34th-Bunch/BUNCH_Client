@@ -42,6 +42,11 @@ export type PhotoBoxData = {
   viewer: PhotoBoxViewer;
   members: readonly PhotoBoxMember[];
   photos: readonly PhotoBoxPhoto[];
+  /**
+   * 첫 쪽만 받고 나머지를 이어 받는 중이면 'loading', 이어 받다 실패했으면 'error', 다 받았으면 없음
+   * 이어 받는 동안 `photos`는 일부이므로 빈 상태나 개수는 확정이 아님
+   */
+  more?: 'loading' | 'error';
 };
 
 /** 사진함 화면 상태. API 연결 후에는 query 상태에서 변환 */
