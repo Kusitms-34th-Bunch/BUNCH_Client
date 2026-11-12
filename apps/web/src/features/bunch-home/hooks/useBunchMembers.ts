@@ -4,8 +4,8 @@ import { bunchMembersFixture } from '../fixtures/bunchMembers.fixture';
 
 type Members = Readonly<Record<string, readonly BunchMember[]>>;
 
-// 멤버 API 연결 전 역할 변경·내보내기 결과를 담는 임시 저장소(메모리, 새로고침하면 fixture로 돌아감)
-// 연결하면 역할 변경·내보내기 mutation과 멤버 query 갱신으로 대체
+// 샘플(fixture) 화면의 역할 변경·내보내기 결과 저장소(메모리, 새로고침하면 fixture로 돌아감)
+// 멤버 관리 화면은 서버(`queries/memberships.ts`, #330). 더보기·나가기 화면 연결 때 정리
 const EMPTY: Members = {};
 let changed: Members = EMPTY;
 const listeners = new Set<() => void>();
@@ -31,11 +31,12 @@ export const sortMembers = (members: readonly BunchMember[]) =>
     (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.name.localeCompare(b.name, 'ko'),
   );
 
+/** 관리 동작. 서버에 보내면 끝날 때까지 기다릴 수 있게 Promise(실패하면 reject, 실패 안내는 동작 쪽 담당) */
 export type BunchMemberActions = {
-  setRole: (_memberId: string, _role: 'coOwner' | 'member') => void;
+  setRole: (_memberId: string, _role: 'coOwner' | 'member') => void | Promise<unknown>;
   /** 메인 관리자를 넘기고 나는 일반 멤버가 됨(화면설계서 4번) */
-  transferOwner: (_memberId: string) => void;
-  remove: (_memberId: string) => void;
+  transferOwner: (_memberId: string) => void | Promise<unknown>;
+  remove: (_memberId: string) => void | Promise<unknown>;
 };
 
 /**

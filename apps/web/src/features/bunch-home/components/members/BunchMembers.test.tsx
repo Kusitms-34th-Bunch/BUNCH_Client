@@ -191,7 +191,9 @@ describe('useBunchMembers', () => {
     const { result } = renderHook(() => useBunchMembers('bunch-run'));
     expect(result.current.myRole).toBe('owner');
 
-    act(() => result.current.actions.setRole('member-suin', 'coOwner'));
+    act(() => {
+      void result.current.actions.setRole('member-suin', 'coOwner');
+    });
     expect(result.current.members?.map((member) => member.name)).toEqual([
       '은우링링링',
       '경진',
@@ -200,10 +202,14 @@ describe('useBunchMembers', () => {
       '지예',
     ]);
 
-    act(() => result.current.actions.remove('member-kyungjun'));
+    act(() => {
+      void result.current.actions.remove('member-kyungjun');
+    });
     expect(result.current.members).toHaveLength(4);
 
-    act(() => result.current.actions.transferOwner('member-jiye'));
+    act(() => {
+      void result.current.actions.transferOwner('member-jiye');
+    });
     expect(result.current.myRole).toBe('member');
     expect(result.current.members?.[0]?.name).toBe('지예');
   });

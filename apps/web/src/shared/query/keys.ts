@@ -15,4 +15,7 @@ export const sharedKeys = {
     [...sharedKeys.bunchHomeScope(bunchId), 'published'] as const,
   draftBundles: (bunchId: string | undefined) =>
     [...sharedKeys.bunchHomeScope(bunchId), 'drafts'] as const,
+  // 멤버 관리 목록(역할·관리 동작). 번치 홈 key 아래라 번치 홈 무효화에 함께 갱신됨
+  bunchMemberships: (bunchId: string | undefined) =>
+    [...sharedKeys.bunchHomeScope(bunchId), 'memberships'] as const,
 };
