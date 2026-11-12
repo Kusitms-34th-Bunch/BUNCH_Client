@@ -5,7 +5,7 @@ import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_SECOND_BUNCH_ID } from '@/mocks/db/seed';
-import { fail } from '@/mocks/lib/envelope';
+import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { getMyProfile } from '@/shared/api/myProfile';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -163,6 +163,48 @@ describe('OtherBunch 비공개 번치(가짜 서버)', () => {
       await within(bundles).findByRole('img', { name: '노을 지는 동네 책방 투어' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '팔로잉' })).toBeInTheDocument();
+  });
+});
+
+describe('OtherBunch 명의 확인', () => {
+  it('서버가 본 명의가 다시 받은 기본 번치와 계속 다르면 팔로우를 막아 두지 않고 다시 시도 화면을 보인다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/home', () =>
+        ok({
+          bunch: {
+            id: 3,
+            name: '캠핑러버',
+            imageUrl: null,
+            characterType: 'TYPE_2',
+            visibility: 'PUBLIC',
+            introduction: '',
+          },
+          myMembership: null,
+          permissions: {
+            canEditProfile: false,
+            canDeleteBunch: false,
+            canManageRoles: false,
+            canTransferOwner: false,
+            canBlock: true,
+            canInvite: false,
+            canLeave: false,
+          },
+          memberCount: 4,
+          followerCount: 23,
+          followingCount: 8,
+          stage: 1,
+          accessScope: 'EXTERNAL',
+          followState: 'NONE',
+          followId: null,
+          canViewBundles: true,
+          currentBunchId: MOCK_SECOND_BUNCH_ID,
+          isCurrentBunch: false,
+        }),
+      ),
+    );
+    renderOther('3');
+
+    expect(await screen.findByRole('button', { name: '다시 시도' })).toBeInTheDocument();
   });
 });
 

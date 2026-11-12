@@ -71,8 +71,13 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   useEffect(() => {
     if (viewerStale) void refetchMe();
   }, [viewerStale, refetchMe]);
-  // 처리 중 다시 눌러도 한 번만(isPending은 다음 렌더부터 반영)
-  const pending = useRef(false);
+  // 다시 받았는데도 명의가 어긋나면(또는 다시 받기 실패) 팔로우를 막은 채 두지 않고 다시 시도 화면
+  const viewerMismatch =
+    viewerStale &&
+    !me.isFetching &&
+    Math.max(me.dataUpdatedAt, me.errorUpdatedAt) > home.dataUpdatedAt;
+  // 처리 중 다시 눌러도 한 번만(isPending은 다음 렌더부터 반영), 차단이 끝날 때를 기다릴 수 있게 진행 중인 요청을 둠
+  const inflight = useRef<Promise<unknown> | null>(null);
 
   // 없는 번치·잘못된 주소는 404
   const errorStatus = isApiError(home.error) ? home.error.status : undefined;
@@ -85,12 +90,13 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   if (
     (me.isError && !me.data) ||
     (home.isError && !home.data) ||
-    (home.data && !home.data.accessScope)
+    (home.data && !home.data.accessScope) ||
+    viewerMismatch
   ) {
     return (
       <BunchHomeError
         onRetry={() => {
-          if (me.isError) void me.refetch();
+          if (me.isError || viewerMismatch) void me.refetch();
           void home.refetch();
         }}
         onBack={back}
@@ -105,15 +111,24 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   const status = FOLLOW_STATUS[data.followState ?? 'NONE'];
   // 실패 안내·다시 받기는 mutation이 맡음(meta·onError)
   const run = async (change: FollowChange) => {
-    if (pending.current) throw new Error('already pending');
-    pending.current = true;
+    if (inflight.current) throw new Error('already pending');
+    const request = follow.mutateAsync(change);
+    inflight.current = request;
     try {
-      return await follow.mutateAsync(change);
+      return await request;
     } finally {
-      pending.current = false;
+      inflight.current = null;
     }
   };
   const unfollow = () => run({ kind: 'unfollow', followId: followIdOf(data) });
+  // 차단: 진행 중인 팔로우가 끝나기를 기다린 뒤 최신 상태로 해제(요청 중에 차단해도 관계가 남지 않게)
+  const unfollowForBlock = async () => {
+    await inflight.current?.catch(() => {});
+    const { data: latest } = await home.refetch();
+    if (latest?.followState && latest.followState !== 'NONE') {
+      await run({ kind: 'unfollow', followId: followIdOf(latest) });
+    }
+  };
   const bunch = toOtherBunchProfile(data, published.data);
 
   return (
@@ -135,8 +150,8 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
             onBlock={() => {
               // 차단하면 팔로우 관계도 해제(화면설계서 2500:67470 2번). 차단은 아직 샘플
               block({ id: bunch.id, name: bunch.name, imageSrc: bunch.imageSrc });
-              // 해제 실패는 run이 안내함(차단은 아직 샘플이라 서버 차단과 함께 처리하는 것은 차단 API 연결 때)
-              if (status !== 'none') void unfollow().catch(() => {});
+              // 해제 실패는 mutation이 안내함(차단은 아직 샘플이라 서버 차단과 함께 처리하는 것은 차단 API 연결 때)
+              void unfollowForBlock().catch(() => {});
               setJustBlocked(true);
             }}
             // 신고 API 연결 전이라 접수 안내만(시트가 토스트를 띄움)

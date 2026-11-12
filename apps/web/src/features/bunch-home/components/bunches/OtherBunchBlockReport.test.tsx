@@ -1,11 +1,12 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http } from 'msw';
 import { renderToString } from 'react-dom/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 // 다른 번치 프로필은 가짜 서버 응답에 기댐(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
-import '@/mocks/server';
 import { mockDb } from '@/mocks/db';
+import { server } from '@/mocks/server';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -81,6 +82,40 @@ describe('다른 번치 차단', () => {
     const { result: blocked } = renderHook(() => useBlockedBunches('bunch-run'));
     expect(blocked.current.blocked?.[0]).toMatchObject({ id: '3', name: '캠핑러버' });
     await waitFor(() => expect(mockDb.get().follows).toEqual([]));
+  });
+
+  it('팔로우를 보내는 중에 차단해도 끝난 뒤 팔로우를 해제한다', async () => {
+    useBunch('bunch-run');
+    // 차단을 누른 뒤에야 팔로우 응답이 가게 막아 둠(아무것도 돌려주지 않으면 원래 handler가 처리)
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.put('/api/bunches/:viewerId/following/:targetId', async () => {
+        await gate;
+      }),
+    );
+    const deletes: string[] = [];
+    server.events.on('request:start', ({ request }) => {
+      if (request.method === 'DELETE') deletes.push(new URL(request.url).pathname);
+    });
+    const user = userEvent.setup();
+    await renderOther('3');
+
+    await user.click(await screen.findByRole('button', { name: '팔로우' }));
+    await user.click(within(await openMore(user)).getByRole('button', { name: '차단하기' }));
+    const confirm = await screen.findByRole(
+      'dialog',
+      { name: '캠핑러버 번치를 차단할까요?' },
+      SHEET_WAIT,
+    );
+    await user.click(within(confirm).getByRole('button', { name: '차단하기' }));
+    release();
+
+    await waitFor(() => expect(deletes).toHaveLength(1), SHEET_WAIT);
+    await waitFor(() => expect(mockDb.get().follows).toEqual([]), SHEET_WAIT);
+    server.events.removeAllListeners();
   });
 
   it('확인 시트의 「취소」는 차단하지 않는다', async () => {
