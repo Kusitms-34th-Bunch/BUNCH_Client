@@ -1,7 +1,7 @@
-/// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { createLogger, defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
 
 export default defineConfig({
   plugins: [
@@ -30,5 +30,14 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
+    // PR CI는 바뀐 파일과 관련된 테스트만 돌림(--changed). 테스트가 import하지 않는 것(setup·가짜 서버·의존성·tsconfig)이 바뀌면 전체
+    forceRerunTriggers: [
+      ...configDefaults.forceRerunTriggers,
+      '**/vitest.setup.*',
+      '**/src/mocks/**',
+      '**/tsconfig*.json',
+      '**/yarn.lock',
+      '**/.yarnrc.yml',
+    ],
   },
 });

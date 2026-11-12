@@ -108,13 +108,15 @@ jobs:
         run: yarn lint $AFFECTED
 
       # 패키지마다 테스트 파일을 3등분해 이 러너 몫만 실행. 파일이 적은 패키지는 몫이 비어도 통과
+      # PR은 base 대비 바뀐 파일과 import로 이어진 테스트만(vitest --changed). setup·가짜 서버·설정이 바뀌면 전체(forceRerunTriggers)
       - name: Test
         id: test
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.shard }}
         env:
           TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
-        run: yarn test $AFFECTED -- --shard=${{ matrix.shard }}/3 --passWithNoTests
+          CHANGED: ${{ github.event_name == 'pull_request' && format('--changed=origin/{0}', github.base_ref) || '' }}
+        run: yarn test $AFFECTED -- --shard=${{ matrix.shard }}/3 --passWithNoTests $CHANGED
 
       # typecheck와 build는 Next 생성 파일을 공유하므로 같은 러너에서 순서대로 실행
       - name: TypeScript
