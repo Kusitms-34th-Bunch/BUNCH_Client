@@ -61,7 +61,7 @@ hook을 새로 추가하는 기준(보편적 정책 + 안전 문제 + 반복된 
 
 ## MCP 도구: 개인 선택
 
-Serena(semantic code navigation)와 agent-browser(라이브 브라우저 조작)는 repo에 아무것도 커밋하지 않는 개인 로컬 도구다. 설치·등록 방법은 각각 `docs/agent/serena-mcp.md`, `docs/agent/agent-browser-mcp.md`를 확인한다. 쓰고 싶은 사람만 설치하면 되고, 안 써도 동작에 지장이 없다.
+Serena(semantic code navigation)와 agent-browser(라이브 브라우저 조작)는 repo에 아무것도 커밋하지 않는 개인 로컬 도구다. 설치·등록 방법은 각각 `docs/agent/serena-mcp.md`, `docs/agent/agent-browser-mcp.md`를 확인한다. React DevTools MCP는 페이지 쪽 라이브러리만 repo(apps/web 개발 서버)에 있고, MCP 서버 등록은 `docs/agent/react-devtools-mcp.md`를 따라 각자 한다. 쓰고 싶은 사람만 설치하면 되고, 안 써도 동작에 지장이 없다.
 
 ## future-skills: 아직 안 쓰는 참고 자료
 

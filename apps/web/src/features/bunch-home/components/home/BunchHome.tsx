@@ -12,6 +12,7 @@ import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useBunchHome } from '../../hooks/useBunchHome';
 import { useServerBunchHome } from '../../hooks/useServerBunchHome';
+import { useDeleteBunchNoticeMutation, useSwitchBunchMutation } from '../../queries/bunchHome';
 import { BunchHomeError } from './BunchHomeError';
 import { BunchHomeScreen } from './BunchHomeScreen';
 import { NoBunchScreen } from './NoBunchScreen';
@@ -33,11 +34,23 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
   const server = useServerBunchHome({ enabled: source === 'server' });
   const { data: profile } = useQuery({ ...myProfileQueryOptions(), enabled: source === 'server' });
   const deleteBundle = useDeleteBundleMutation(profile?.bunch?.id);
-  // 서버 모드는 작성 중인 번들 삭제를 서버에 보냄(나머지 동작은 아직 샘플)
+  const switchBunch = useSwitchBunchMutation();
+  const deleteNotice = useDeleteBunchNoticeMutation();
+  const serverBunches = server.kind === 'ready' ? server.bunches : [];
+  // 서버 모드는 번치 전환·접근 불가 안내 삭제·작성 중인 번들 삭제를 서버에 보냄
   const actions =
     source === 'server'
       ? {
           ...sample.actions,
+          // 새 번치 홈과 기본 번치를 받을 때까지 기다려 전환 토스트가 새 번치 화면과 함께 뜸
+          switchBunch: (bunchId: string) => switchBunch.mutateAsync(bunchId),
+          removeBunch: (bunchId: string) => {
+            const noticeId = serverBunches.find((bunch) => bunch.id === bunchId)?.noticeId;
+            if (!noticeId || deleteNotice.isPending) return;
+            deleteNotice.mutate(noticeId, {
+              onError: () => toast(BUNCH_HOME_MESSAGES.removeBunchFailed),
+            });
+          },
           // 삭제 요청 중에는 다시 보내지 않음(같은 카드를 연달아 누르면 두 번째가 404로 실패해 성공한 삭제가 실패로 보임)
           deleteDraftBundle: (bundleId: string) => {
             if (deleteBundle.isPending) return;
@@ -67,13 +80,13 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
     }
     if (server.kind === 'error') return <BunchHomeError onRetry={server.retry} />;
   }
-  // 서버 모드는 내 기본 번치 하나로 보임(번치 전환·팔로우·알림·멤버 관리는 샘플이라 전환 목록은 이 번치뿐)
   const data =
     source === 'server'
       ? server.kind === 'ready'
-        ? { current: server.current, bunches: [server.summary] }
+        ? { current: server.current, bunches: server.bunches }
         : null
       : sample.data;
+  const atBunchLimit = source === 'server' && server.kind === 'ready' && server.atBunchLimit;
 
   if (!data) {
     return (
@@ -88,7 +101,11 @@ export function BunchHome({ source = 'server' }: BunchHomeProps) {
       <BunchHomeScreen
         data={data}
         actions={actions}
-        onAddBunch={() => router.push(BUNCH_HOME_PATHS.startBunch)}
+        onAddBunch={() =>
+          atBunchLimit
+            ? toast(BUNCH_HOME_MESSAGES.bunchLimit)
+            : router.push(BUNCH_HOME_PATHS.startBunch)
+        }
         onOpenPlaces={() => router.push(BUNCH_HOME_PATHS.places)}
         // 멤버가 2명 미만이면 번들 만들기로 들어가지 않고 초대 안내(번들은 멤버가 2명 이상일 때 만들 수 있음)
         onCreateBundle={() =>

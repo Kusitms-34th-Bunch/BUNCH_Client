@@ -30,6 +30,9 @@ export const removePhotos = async (bunchId: string, photoIds: readonly string[])
   );
 };
 
+/** 한 번에 받을 사진 수. 서버 허용 범위(1~100)의 최댓값이라 사진함 상한(1,000장)을 10번에 받음 */
+export const PHOTO_PAGE_SIZE = 100;
+
 type PhotoPageParams = {
   bunchId: string;
   /** 올린 사람 필터(없으면 전체) */
@@ -39,7 +42,7 @@ type PhotoPageParams = {
 };
 
 const toSearchParams = ({ memberId, cursor }: PhotoPageParams) => {
-  const searchParams: Record<string, string> = {};
+  const searchParams: Record<string, string> = { size: String(PHOTO_PAGE_SIZE) };
   if (memberId) searchParams.memberId = memberId;
   if (cursor) searchParams.cursor = cursor;
   return searchParams;
@@ -58,7 +61,8 @@ export const getDatedPhotosPage = async (params: PhotoPageParams) => {
   return {
     totalCount: page.totalCount,
     photos: page.photos.map(toDatedPhotoBoxPhoto),
-    nextCursor: page.nextCursor ?? null,
+    // 빈 문자열도 마지막 쪽(끝)으로 봄: cursor를 보내지 않으면 첫 쪽을 다시 받게 되므로
+    nextCursor: page.nextCursor || null,
   };
 };
 
@@ -75,7 +79,8 @@ export const getUndatedPhotosPage = async (params: PhotoPageParams) => {
   return {
     totalCount: page.totalCount,
     photos: page.photos.map(toUndatedPhotoBoxPhoto),
-    nextCursor: page.nextCursor ?? null,
+    // 빈 문자열도 마지막 쪽(끝)으로 봄: cursor를 보내지 않으면 첫 쪽을 다시 받게 되므로
+    nextCursor: page.nextCursor || null,
   };
 };
 

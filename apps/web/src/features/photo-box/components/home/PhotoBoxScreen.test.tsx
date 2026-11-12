@@ -243,6 +243,71 @@ describe('PhotoBoxScreen 멤버 필터', () => {
   });
 });
 
+describe('PhotoBoxScreen 이어서 불러오는 중', () => {
+  it('남은 사진을 받는 중이면 빈 상태 문구 대신 불러오는 중 표시를 보인다', async () => {
+    const user = userEvent.setup();
+    renderScreen(ready({ ...emptyData, more: 'loading' }));
+
+    await user.click(screen.getByRole('radio', { name: '지예' }));
+
+    // 선택한 멤버의 사진이 아직 받지 않은 쪽에 있을 수 있어 없다고 말하지 않음
+    expect(screen.queryByText('첫 사진을 기다리고 있어요!')).toBeNull();
+    expect(screen.queryByText('첫 번째 사진을 공유해 보세요')).toBeNull();
+    expect(screen.getByText('사진을 더 불러오는 중이에요')).toBeTruthy();
+  });
+
+  it('이어 받다 실패하면 받은 사진은 그대로 두고 키보드용 「사진 더 불러오기」로 다시 시도한다', async () => {
+    const user = userEvent.setup();
+    const onLoadMore = vi.fn();
+    renderScreen(ready({ ...photoBoxFixture, more: 'error' }), { onLoadMore });
+
+    expect(screen.queryByText('사진을 더 불러오는 중이에요')).toBeNull();
+    expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: '사진 더 불러오기' }));
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('이어 받다 실패했을 때도 빈 상태 문구로 없다고 단정하지 않고 실패를 안내한다', async () => {
+    const user = userEvent.setup();
+    renderScreen(ready({ ...emptyData, more: 'error' }));
+
+    await user.click(screen.getByRole('radio', { name: '지예' }));
+
+    expect(screen.queryByText('첫 사진을 기다리고 있어요!')).toBeNull();
+    expect(screen.getByText('사진을 더 불러오지 못했어요')).toBeTruthy();
+  });
+
+  it('다시 시도 버튼이 로딩 표시로 바뀌어 사라져도 포커스가 문서 처음으로 돌아가지 않는다', async () => {
+    const user = userEvent.setup();
+    const onLoadMore = vi.fn();
+    const failed = ready({ ...photoBoxFixture, more: 'error' });
+    const view = renderScreen(failed, { onLoadMore });
+
+    await user.click(screen.getByRole('button', { name: '사진 더 불러오기' }));
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+    // 재시도가 시작되면 실패 표시(버튼)가 사라지고 로딩 표시로 바뀜
+    view.rerender(
+      <PhotoBoxScreen
+        state={ready({ ...photoBoxFixture, more: 'loading' })}
+        currentYear={2026}
+        onLoadMore={onLoadMore}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: '사진 더 불러오기' })).toBeNull();
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement?.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('다 받았으면 불러오는 중 표시도 다시 시도 버튼도 없다', () => {
+    renderScreen();
+
+    expect(screen.queryByText('사진을 더 불러오는 중이에요')).toBeNull();
+    expect(screen.queryByRole('button', { name: '사진 더 불러오기' })).toBeNull();
+  });
+});
+
 describe('PhotoBoxScreen 빈 상태', () => {
   it('번치에 사진이 없으면 「첫 번째 사진을 공유해 보세요」를 보이고 칩과 「+」는 그대로다', () => {
     renderScreen(ready(emptyData));

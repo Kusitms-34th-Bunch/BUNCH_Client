@@ -59,6 +59,19 @@ export const loginBridge = linkBridge<AppBridge, AppPostMessageSchema>({
   throwOnError: ['socialLogin'],
 });
 
+/** 사진함 업로드용 선택·촬영·읽기, 앨범 저장, 설정 열기. 사용자 선택과 쉘의 사진 가공·내려받기를 기다려야 하므로 타임아웃 없음, 오류는 reject */
+export const photoUploadBridge = linkBridge<AppBridge, AppPostMessageSchema>({
+  timeout: 0,
+  throwOnError: [
+    'pickGalleryImages',
+    'capturePhoto',
+    'readPickedPhoto',
+    'releasePickedPhotos',
+    'saveImagesToAlbum',
+    'openAppSettings',
+  ],
+});
+
 /** 시스템 권한 팝업은 사용자가 응답할 때까지 기다려야 하므로 타임아웃 없음 */
 export const permissionBridge = linkBridge<AppBridge, AppPostMessageSchema>({
   timeout: 0,

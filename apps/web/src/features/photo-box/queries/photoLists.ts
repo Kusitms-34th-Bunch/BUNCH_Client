@@ -1,42 +1,71 @@
-import { queryOptions, skipToken } from '@tanstack/react-query';
+import { infiniteQueryOptions, skipToken } from '@tanstack/react-query';
 import { getDatedPhotosPage, getUndatedPhotosPage } from '../api/photos';
 import { photoBoxKeys } from './keys';
 
-type PhotosPage = Awaited<ReturnType<typeof getDatedPhotosPage>>;
-type PageRequest = (_cursor: string | undefined) => Promise<PhotosPage>;
+/**
+ * 사진 목록이 신선하다고 보는 시간(30초). 기본 5분이면 다른 멤버가 올리거나 지운 사진이 한참 안 보이므로 줄이되,
+ * 사진 상세·번들 화면이 전체 쪽을 마운트할 때마다 다시 받지는 않게 함
+ */
+export const PHOTO_LIST_STALE_TIME = 30_000;
 
-// 사진함은 멤버 필터·날짜 묶기를 화면에서 하므로 마지막 쪽까지 이어서 불러와 한 목록으로 합침
-// 번치 사진 상한(1000장)이 있어 요청 수가 제한됨
-const fetchAllPages = async (request: PageRequest) => {
-  const photos: PhotosPage['photos'] = [];
-  let cursor: string | undefined;
-  // 이미 받은 cursor가 다시 오면(같은 cursor 반복·A→B→A 순환) 무한 반복하지 않고 중단
-  const seen = new Set<string>();
-  do {
-    const page = await request(cursor);
-    // 그 쪽에서 받은 사진은 남기고, 이미 본 cursor가 다시 오면 거기서 끝냄
-    photos.push(...page.photos);
-    if (page.nextCursor !== null && seen.has(page.nextCursor)) break;
-    if (page.nextCursor !== null) seen.add(page.nextCursor);
-    cursor = page.nextCursor ?? undefined;
-  } while (cursor);
-  return photos;
+/**
+ * 사진함 화면이 쓰는 신선 시간(0): 사진함에 들어오거나 앱에 돌아올 때마다 목록을 다시 받아 다른 멤버가 올리거나 지운 사진을 반영함(명세 3.1.1)
+ * 받아 둔 목록이 있으면 그것을 먼저 보여 주고 뒤에서 새로 받아 바뀐 것만 반영하므로 이미 있던 사진은 기다리지 않고 보이고, 새로 올라온 사진만 조금 늦게 뜰 수 있음
+ */
+export const PHOTO_BOX_STALE_TIME = 0;
+
+type PhotoListOptions = {
+  /** 목록을 신선하다고 보는 시간. 기본은 `PHOTO_LIST_STALE_TIME` */
+  staleTime?: number;
 };
 
-/** 날짜를 아는 사진 전체(최신순). 번치를 아직 모르면 요청하지 않음 */
-export const datedPhotosQueryOptions = (bunchId: string | undefined) =>
-  queryOptions({
+type PhotosPage = Awaited<ReturnType<typeof getDatedPhotosPage>>;
+
+// 같은 cursor가 다시 오면(서버 오류로 같은 쪽 반복·A→B→A 순환) 무한 반복하지 않고 거기서 끝냄
+const getNextPageParam = (
+  lastPage: PhotosPage,
+  _pages: PhotosPage[],
+  _lastParam: string | undefined,
+  allParams: (string | undefined)[],
+) =>
+  lastPage.nextCursor !== null && !allParams.includes(lastPage.nextCursor)
+    ? lastPage.nextCursor
+    : undefined;
+
+// 받은 쪽을 한 목록으로 합침(멤버 필터·날짜 묶기는 화면이 이 목록으로 함)
+const flattenPages = (data: { pages: PhotosPage[] }) => data.pages.flatMap((page) => page.photos);
+
+/**
+ * 날짜를 아는 사진(최신순)을 쪽 단위로 받음. 번치를 아직 모르면 요청하지 않음
+ * 화면이 한 목록으로 계산하므로 `usePhotoBox`가 남은 쪽을 이어서 받음(첫 쪽만 오면 먼저 보여 줄 수 있음)
+ */
+export const datedPhotosQueryOptions = (
+  bunchId: string | undefined,
+  { staleTime = PHOTO_LIST_STALE_TIME }: PhotoListOptions = {},
+) =>
+  infiniteQueryOptions({
     queryKey: photoBoxKeys.datedPhotos(bunchId),
+    staleTime,
+    initialPageParam: undefined as string | undefined,
     queryFn: bunchId
-      ? ({ signal }) => fetchAllPages((cursor) => getDatedPhotosPage({ bunchId, cursor, signal }))
+      ? ({ pageParam, signal }) => getDatedPhotosPage({ bunchId, cursor: pageParam, signal })
       : skipToken,
+    getNextPageParam,
+    select: flattenPages,
   });
 
-/** 날짜를 모르는 사진 전체 */
-export const undatedPhotosQueryOptions = (bunchId: string | undefined) =>
-  queryOptions({
+/** 날짜를 모르는 사진을 쪽 단위로 받음 */
+export const undatedPhotosQueryOptions = (
+  bunchId: string | undefined,
+  { staleTime = PHOTO_LIST_STALE_TIME }: PhotoListOptions = {},
+) =>
+  infiniteQueryOptions({
     queryKey: photoBoxKeys.undatedPhotos(bunchId),
+    staleTime,
+    initialPageParam: undefined as string | undefined,
     queryFn: bunchId
-      ? ({ signal }) => fetchAllPages((cursor) => getUndatedPhotosPage({ bunchId, cursor, signal }))
+      ? ({ pageParam, signal }) => getUndatedPhotosPage({ bunchId, cursor: pageParam, signal })
       : skipToken,
+    getNextPageParam,
+    select: flattenPages,
   });

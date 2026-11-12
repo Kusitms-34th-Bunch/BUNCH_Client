@@ -6,7 +6,7 @@ import {
   defaultBunchImage,
 } from '@/shared/lib/bunchProfile';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
-import type { BunchHomeDetail, BunchRole } from '../lib/types';
+import type { BunchHomeDetail, BunchRole, BunchSummary } from '../lib/types';
 
 // 번치 홈 조회(`/home`)와 번치 발행 번들 목록(`/published-bundles`)은 서버 PR #62 미병합 계약이라
 // Swagger 생성 타입이 없어 Notion 명세 기준으로 직접 정의함, 서버가 병합되면 생성 타입으로 묶음
@@ -152,4 +152,68 @@ export const toBunchHomeDetail = (
       };
     }),
   };
+};
+
+/**
+ * `GET /api/v1/members/me/bunches` 응답(Swagger `MyBunchesResponse`)
+ * 생성 타입을 다시 만들면 번들 스키마 계약 차이가 함께 드러나 그 정리 전까지 직접 정의하고 쓰는 필드만 검사
+ */
+export const myBunchesResponseSchema = z.object({
+  activeCount: z.number().int().nonnegative(),
+  maxActiveCount: z.number().int().positive(),
+  defaultBunchId: z.number().int().positive().nullish(),
+  activeBunches: z.array(
+    z.object({
+      bunch: z.object({
+        id: z.number().int().positive(),
+        name: z.string(),
+        imageUrl: z.string().nullish(),
+        characterType: z.enum(CHARACTER_TYPES),
+      }),
+      unreadCount: z.number().int().nonnegative(),
+      lastUsedAt: z.string(),
+    }),
+  ),
+  unavailableBunches: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      bunchId: z.number().int().positive(),
+      name: z.string(),
+      characterType: z.enum(CHARACTER_TYPES),
+      reason: z.enum(['REMOVED', 'DELETED']),
+    }),
+  ),
+});
+
+export type MyBunches = z.infer<typeof myBunchesResponseSchema>;
+
+const lastUsedTime = (value: string) => Date.parse(value) || 0;
+
+/**
+ * 번치 전환 목록: 지금 번치를 맨 위, 나머지 소속 번치는 최근 사용순, 접근 불가 번치는 맨 아래(5.2.1)
+ * 접근 불가 줄은 같은 번치의 안내가 여러 건일 수 있어 안내 ID로 구분
+ */
+export const toBunchSummaries = (data: MyBunches, currentId: string): BunchSummary[] => {
+  const active = [...data.activeBunches]
+    .sort((a, b) => lastUsedTime(b.lastUsedAt) - lastUsedTime(a.lastUsedAt))
+    .map(({ bunch, unreadCount }): BunchSummary => ({
+      id: toDomainId(bunch.id),
+      name: bunch.name,
+      imageSrc: safeImage(bunch.imageUrl, defaultBunchImage(bunch.characterType)),
+      alertCount: unreadCount,
+      access: 'active',
+    }));
+  const unavailable = data.unavailableBunches.map((notice): BunchSummary => ({
+    id: `notice-${toDomainId(notice.id)}`,
+    name: notice.name,
+    imageSrc: defaultBunchImage(notice.characterType),
+    alertCount: 0,
+    access: notice.reason === 'DELETED' ? 'deleted' : 'removed',
+    noticeId: toDomainId(notice.id),
+  }));
+  return [
+    ...active.filter((bunch) => bunch.id === currentId),
+    ...active.filter((bunch) => bunch.id !== currentId),
+    ...unavailable,
+  ];
 };

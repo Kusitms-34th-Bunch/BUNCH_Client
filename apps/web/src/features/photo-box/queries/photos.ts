@@ -31,3 +31,15 @@ export const useInvalidatePhotos = (bunchId: string | undefined) => {
     [queryClient, bunchId],
   );
 };
+
+/**
+ * 번치를 호출할 때 정해 그 번치의 사진 목록·상세 캐시를 무효화하는 함수(업로드가 끝났을 때)
+ * 올리는 중에 사진함의 번치가 바뀌어도 처음 정한 번치의 목록을 새로 받도록 번치를 인자로 받음
+ */
+export const useInvalidatePhotosOf = () => {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (bunchId: string) => queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) }),
+    [queryClient],
+  );
+};

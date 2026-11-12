@@ -1,31 +1,7 @@
-import Link from 'next/link';
-import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
-import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
-import { PageShell } from '@/shared/components/layout/PageShell';
-import { IntroPreview } from './IntroPreview';
-
-export default function HomePage() {
-  return (
-    <PageShell>
-      <div className="gap-s8 flex h-full flex-col items-center justify-center">
-        <h1 className="text-2xl font-semibold">web</h1>
-        {/* 온보딩 개발 확인용 임시 진입점 */}
-        <Link
-          href={ONBOARDING_PATHS.start}
-          className="bg-surface-brand text-text-inversed rounded-r4 px-s8 h-s18 typography-label-l focus-visible:outline-border-brand inline-flex items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          온보딩 시작 (임시)
-        </Link>
-        {/* 탭 화면 개발 확인용 임시 진입점 */}
-        <Link
-          href={MAIN_TAB_PATHS.feed}
-          className="typography-label-l text-text-brand focus-visible:outline-border-brand underline focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          탭 화면 (임시)
-        </Link>
-        {/* 앱 첫 실행 인트로 확인용 임시 진입점 */}
-        <IntroPreview />
-      </div>
-    </PageShell>
-  );
+/**
+ * 앱 진입 주소(앱 쉘이 처음 여는 `/`). 보여 줄 화면이 없고 `AuthGate`가 지금 상태의 진입 화면으로 보냄
+ * 비로그인은 인트로·로그인, 가입 중은 남은 가입 단계, 가입 완료는 번치 홈 또는 번치 시작 선택(기획 1.2.8)
+ */
+export default function RootPage() {
+  return null;
 }

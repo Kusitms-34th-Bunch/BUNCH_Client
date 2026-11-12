@@ -19,6 +19,7 @@ import { MemberFilter } from '../MemberFilter';
 import { NoBunch } from '../NoBunch';
 import { PhotoBoxEmpty } from '../PhotoBoxEmpty';
 import { PhotoBoxError } from '../PhotoBoxError';
+import { PhotoBoxMore } from '../PhotoBoxMore';
 import { PhotoDragSelect } from '../PhotoDragSelect';
 import { UndatedPhotos } from '../UndatedPhotos';
 import { PhotoBoxHeader } from './PhotoBoxHeader';
@@ -33,6 +34,8 @@ const noopActions: PhotoBoxActions = {
   changePhotoDates: () => Promise.resolve(),
 };
 
+const noop = () => {};
+
 // 확인 창 닫힘 전환(100ms)이 끝난 뒤에 초점을 옮기려는 지연
 const DIALOG_CLOSE_MS = 150;
 
@@ -43,6 +46,8 @@ type PhotoBoxScreenProps = {
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
   currentYear?: number | undefined;
   onRetry?: (() => void) | undefined;
+  /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 아래로 다시 스크롤하면 부름 */
+  onLoadMore?: (() => void) | undefined;
   /** 번치 이름을 눌렀을 때(전환 목록은 추후 작업) */
   onBunchClick?: (() => void) | undefined;
   /** 올리기 시트에서 방식을 골랐을 때(앨범·카메라 연동은 사진 올리기 이슈, 시트는 닫고 호출) */
@@ -57,6 +62,7 @@ export function PhotoBoxScreen({
   actions = noopActions,
   currentYear = new Date().getFullYear(),
   onRetry,
+  onLoadMore,
   onBunchClick,
   onUpload,
   onCreateBundle,
@@ -151,7 +157,8 @@ export function PhotoBoxScreen({
   }
 
   const { bunch, members } = state.data;
-  const isEmpty = sections.length === 0 && undated.length === 0;
+  // 남은 사진을 받는 중이거나 받다 실패했으면 아직 없다고 말할 수 없음(선택한 멤버의 사진이 받지 못한 쪽에 있을 수 있음)
+  const isEmpty = sections.length === 0 && undated.length === 0 && state.data.more === undefined;
 
   let statusMessage = '';
   if (flow.saving) statusMessage = PHOTO_BOX_MESSAGES.saving;
@@ -236,6 +243,7 @@ export function PhotoBoxScreen({
           {isEmpty ? (
             <PhotoBoxEmpty reason={memberId === ALL_MEMBERS ? 'bunch' : 'member'} />
           ) : null}
+          <PhotoBoxMore state={state.data.more} onRetry={onLoadMore ?? noop} />
         </PhotoDragSelect>
       </PhotoSelectionProvider>
     </PageShell>

@@ -24,6 +24,15 @@
           "microphonePermission": false
         }
       ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "사진함・게시물에 올리거나 프로필로 쓸 사진을 불러올 때 사용해요.",
+          "savePhotosPermission": "사진함의 사진을 휴대폰 앨범에 저장할 때 사용해요.",
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": ["photo"]
+        }
+      ],
       "expo-router",
       [
         "expo-font",
@@ -33,6 +42,13 @@
       ],
       "expo-status-bar",
       [
+        "expo-build-properties",
+        {
+          "ios": { "networkInspector": false },
+          "android": { "networkInspector": false }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#454EDF"
@@ -41,7 +57,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kyeongjooni.mobile-shell"
+      "bundleIdentifier": "com.kyeongjooni.mobile-shell",
+      "infoPlist": {
+        "CFBundleDisplayName": "BUNCH"
+      }
     },
     "android": {
       "adaptiveIcon": {
