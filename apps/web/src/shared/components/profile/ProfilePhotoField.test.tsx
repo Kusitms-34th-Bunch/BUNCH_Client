@@ -138,6 +138,57 @@ describe('ProfilePhotoField', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: '프로필 사진 변경' }));
   });
 
+  it('사진을 연달아 바꿔도 바꿀 때마다 결과를 다시 읽어 준다', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(
+      'data:image/jpeg;base64,CROP',
+    );
+    render(<ProfilePhotoField value={undefined} onChange={vi.fn()} />);
+    const crop = async () => {
+      act(() => picker.options.onSelect?.(PHOTO));
+      const image = document.querySelector('img[src="' + PHOTO + '"]');
+      if (!image) throw new Error('조정 사진 없음');
+      Object.defineProperty(image, 'naturalWidth', { value: 504 });
+      Object.defineProperty(image, 'naturalHeight', { value: 504 });
+      fireEvent.load(image);
+      await userEvent.click(screen.getByRole('button', { name: '완료' }));
+    };
+
+    await crop();
+    expect(screen.getByText('사진을 바꿨어요')).toBeTruthy();
+    // 다시 바꾸기 시작하면 비워 같은 문구가 새로 들어가 읽힘
+    await openDialog();
+    expect(screen.queryByText('사진을 바꿨어요')).toBeNull();
+    await userEvent.keyboard('{Escape}');
+    await crop();
+    expect(screen.getByText('사진을 바꿨어요')).toBeTruthy();
+  });
+
+  it('고른 사진을 읽거나 조정하는 동안을 알리고, 끝나면 다시 알린다', () => {
+    const onPendingChange = vi.fn();
+    const { rerender } = render(
+      <ProfilePhotoField value={undefined} onChange={vi.fn()} onPendingChange={onPendingChange} />,
+    );
+    expect(onPendingChange).toHaveBeenLastCalledWith(false);
+
+    picker.isPending = true;
+    rerender(
+      <ProfilePhotoField value={undefined} onChange={vi.fn()} onPendingChange={onPendingChange} />,
+    );
+    expect(onPendingChange).toHaveBeenLastCalledWith(true);
+
+    // 읽기가 끝나 조정 화면이 열려 있는 동안도 진행 중
+    picker.isPending = false;
+    act(() => picker.options.onSelect?.(PHOTO));
+    expect(onPendingChange).toHaveBeenLastCalledWith(true);
+
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    expect(onPendingChange).toHaveBeenLastCalledWith(false);
+  });
+
   it('불러오는 중에 취소하면 읽기가 끝나도 조정 화면을 열지 않는다', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     picker.isPending = true;

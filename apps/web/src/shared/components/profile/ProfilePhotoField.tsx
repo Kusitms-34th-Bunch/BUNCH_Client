@@ -23,6 +23,8 @@ type ProfilePhotoFieldProps = {
   renderPhoto?: ((_props: { onCameraClick: () => void }) => ReactNode) | undefined;
   /** 바꾼 결과를 화면 읽기에 알림(기본). 고르자마자 서버에 저장해 결과를 따로 알리는 화면은 false */
   announceChange?: boolean | undefined;
+  /** 고른 사진을 읽거나 조정하는 중인지(끝나야 `onChange`가 불림). 따로 저장하는 화면이 그동안 저장을 막을 때 */
+  onPendingChange?: ((_pending: boolean) => void) | undefined;
 };
 
 /**
@@ -34,6 +36,7 @@ export function ProfilePhotoField({
   onChange,
   renderPhoto,
   announceChange = true,
+  onPendingChange,
 }: ProfilePhotoFieldProps) {
   const openOverlay = useScreenOverlay();
   const [cropSrc, setCropSrc] = useState<string>();
@@ -74,6 +77,16 @@ export function ProfilePhotoField({
       setShowLoading(false);
     };
   }, [loadingPossible]);
+
+  // 읽기(네이티브는 로딩 화면 없음)·조정이 끝나기 전에는 부모의 사진 값이 이전 값이라 알림
+  const photoPending = isPending || Boolean(cropSrc);
+  const pendingRef = useRef(onPendingChange);
+  useEffect(() => {
+    pendingRef.current = onPendingChange;
+  });
+  useEffect(() => {
+    pendingRef.current?.(photoPending);
+  }, [photoPending]);
 
   // 조정 화면이 닫혀 뒤 화면 inert가 풀린 뒤 초점을 카메라 버튼으로 되돌림
   const cropOpen = Boolean(cropSrc) || showLoading;
@@ -118,6 +131,8 @@ export function ProfilePhotoField({
 
   const openChange = () => {
     closeKeyboard();
+    // 같은 문구가 다시 들어가도 읽히도록 새 변경을 시작할 때 비움
+    setAnnouncement('');
     openDialog();
   };
 
