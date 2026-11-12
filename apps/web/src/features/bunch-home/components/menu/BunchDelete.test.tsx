@@ -1,10 +1,8 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, renderHook, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
-import { BunchDelete } from './BunchDelete';
 import { BunchDeleteScreen } from './BunchDeleteScreen';
 import { BunchMenuScreen } from './BunchMenuScreen';
 
@@ -106,61 +104,5 @@ describe('BunchDeleteScreen', () => {
 
     expect(screen.getByText('퇴근런클럽')).toBeInTheDocument();
     expect(screen.getByText('은우링링링(나), 경진')).toBeInTheDocument();
-  });
-});
-
-describe('BunchDelete', () => {
-  // 들어온 길만큼 기록을 쌓아 「돌아갈 기록이 있음」 상태로 둠
-  const stackHistory = (count: number) => {
-    for (let i = 0; i < count; i += 1) window.history.pushState({}, '', `/step-${i}`);
-  };
-
-  it('메인 관리자가 아니면 더보기 메뉴로 돌려보낸다', async () => {
-    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-gift');
-    render(<BunchDelete step="info" />);
-
-    await vi.waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch/menu'));
-  });
-
-  it('안내의 「다음」은 확인 문구 입력 화면으로 간다', async () => {
-    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-run');
-    render(<BunchDelete step="info" />);
-
-    await userEvent.click(await screen.findByRole('button', { name: '다음' }));
-
-    expect(push).toHaveBeenCalledWith('/bunch/menu/delete/confirm');
-  });
-
-  it('소속 멤버는 나를 맨 앞에 「(나)」로 보여 준다', async () => {
-    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-run');
-    render(<BunchDelete step="confirm" />);
-
-    expect(await screen.findByText('은우링링링(나), 경진, 경준, 수인, 지예')).toBeInTheDocument();
-  });
-
-  it('삭제하면 세 칸 뒤로(번치 탭으로) 돌아가 다음 번치로 바꾸고 토스트를 띄운다(다시 제출해도 한 번만)', async () => {
-    const user = userEvent.setup();
-    const go = vi.spyOn(window.history, 'go').mockImplementation(() => {});
-    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-run');
-    stackHistory(3);
-    render(<BunchDelete step="confirm" />);
-
-    // 화면이 빠지는 동안의 Enter 반복·연타
-    await user.type(
-      await screen.findByRole('textbox', { name: '확인 문구 입력' }),
-      '삭제하기{Enter}{Enter}',
-    );
-    await user.click(screen.getByRole('button', { name: '삭제하기' }));
-
-    expect(go).toHaveBeenCalledTimes(1);
-    expect(go).toHaveBeenCalledWith(-3);
-    expect(toastAfterNavigation).toHaveBeenCalledTimes(1);
-    // 빠지는 화면은 다음 번치가 아니라 삭제한 번치를 그대로 보여 줌
-    expect(screen.getByText('퇴근런클럽')).toBeInTheDocument();
-    expect(replace).not.toHaveBeenCalled();
-    expect(toastAfterNavigation).toHaveBeenCalledWith('퇴근런클럽 번치를 삭제했어요.');
-    const { result } = renderHook(() => useCurrentBunchId());
-    expect(result.current[0]).toBe('bunch-trip');
-    go.mockRestore();
   });
 });

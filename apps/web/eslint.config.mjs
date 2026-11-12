@@ -1,4 +1,4 @@
-import { next } from '@app/lint-config';
+import { disableTypeChecked, next } from '@app/lint-config';
 import { readdirSync } from 'node:fs';
 
 // feature끼리 내부 파일 직접 import 금지(docs/architecture/domain-ownership.md). 공통 부분은 shared로 올림
@@ -55,6 +55,8 @@ export default [
   ...next,
   // mockServiceWorker.js는 msw init 생성 파일
   { ignores: ['.next/**', 'public/mockServiceWorker.js'] },
+  // node로 바로 실행하는 검사 스크립트(tsconfig 밖)
+  { files: ['scripts/*.mjs'], ...disableTypeChecked },
   ...featureBoundaries,
   {
     // 화면은 options를 받아 읽기만 하고, 정의·캐시 조작은 queries/에서만

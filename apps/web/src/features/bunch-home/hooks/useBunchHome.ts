@@ -12,7 +12,6 @@ import { useUnreadNotificationCounts } from './useBunchNotifications';
 import { useBunchProfileEdits } from './useBunchProfileEdits';
 import { useCurrentBunchId } from './useCurrentBunchId';
 import { useFollowRequests } from './useFollowRequests';
-import { firstRemainingBunchId, useLeftBunches } from './useLeftBunches';
 
 type UseBunchHomeResult = {
   /** 참여 중인 번치가 하나도 없으면 null(번치 없음, 기능명세 5.1.7) */
@@ -27,36 +26,30 @@ type UseBunchHomeResult = {
 export function useBunchHome(): UseBunchHomeResult {
   const [storedId, setCurrentId] = useCurrentBunchId();
   // 첫 hydration은 기본 번치(번치 홈은 역할별 항목이 없어 그대로 그림)
-  const requestedId = storedId ?? initialBunchDetailFixture.id;
-  // 저장소의 null은 hydration 대기·번치 없음 둘 다라, hydration 기본값도 나간 번치 기준으로 다시 거름(남은 번치가 없으면 null)
-  const left = useLeftBunches();
-  const currentId = left.has(requestedId) ? firstRemainingBunchId(left) : requestedId;
+  const currentId = storedId ?? initialBunchDetailFixture.id;
   const [bunches, setBunches] = useState(bunchSummariesFixture);
   const [deletedDraftIds, setDeletedDraftIds] = useState<ReadonlySet<string>>(new Set());
   // 프로필 편집에서 저장한 값을 fixture 위에 덮어씀(이름·대표 사진은 전환 목록에도)
   const [profileEdits] = useBunchProfileEdits();
   // 멤버 관리에서 내보낸 결과를 멤버 수에 반영
-  const { members } = useBunchMembers(currentId ?? undefined);
+  const { members } = useBunchMembers(currentId);
   // 알림 목록에서 읽으면 전환 목록의 「알림 N개」도 줄어듦
   const unreadCounts = useUnreadNotificationCounts();
   // 팔로워·팔로잉 목록에서 팔로우하거나 요청을 승인한 결과를 수에 반영(화면설계서 2500:71333 3-1번)
   const followStatuses = useFollowStatuses();
-  const { approvedIds } = useFollowRequests(currentId ?? undefined);
+  const { approvedIds } = useFollowRequests(currentId);
   const followingAdded = followingDelta(followStatuses, followBunchesFixture);
 
   const data = useMemo<BunchHomeData | null>(() => {
-    if (currentId === null) return null;
     const detail = bunchDetailsFixture[currentId] ?? initialBunchDetailFixture;
     // 지금 번치를 맨 위에 두고 나머지는 받은 순서(서버가 최근 사용순으로 줄 예정, 기능명세 5.2.1)
-    const edited = bunches
-      .filter((bunch) => !left.has(bunch.id))
-      .map((bunch) => {
-        const edit = profileEdits[bunch.id];
-        const alertCount = unreadCounts[bunch.id] ?? bunch.alertCount;
-        return edit
-          ? { ...bunch, name: edit.name, imageSrc: edit.imageSrc, alertCount }
-          : { ...bunch, alertCount };
-      });
+    const edited = bunches.map((bunch) => {
+      const edit = profileEdits[bunch.id];
+      const alertCount = unreadCounts[bunch.id] ?? bunch.alertCount;
+      return edit
+        ? { ...bunch, name: edit.name, imageSrc: edit.imageSrc, alertCount }
+        : { ...bunch, alertCount };
+    });
     const current = edited.filter((bunch) => bunch.id === currentId);
     const others = edited.filter((bunch) => bunch.id !== currentId);
     return {
@@ -73,7 +66,6 @@ export function useBunchHome(): UseBunchHomeResult {
   }, [
     currentId,
     bunches,
-    left,
     deletedDraftIds,
     profileEdits,
     members,

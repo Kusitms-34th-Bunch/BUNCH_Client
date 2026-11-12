@@ -25,7 +25,7 @@
 
 ## MSW 가짜 서버
 
-- API 요청 코드(endpoint 함수, query)는 MSW 가짜 서버(`src/mocks/`)로 요청 입력과 응답 매핑을 함께 확인한다. 가짜 서버는 BFF 경로(`/api/…`, 백엔드 경로에서 `/api/v1`을 뺀 경로)를 가로챈다. 화면 test는 기존처럼 endpoint 모듈을 mock해도 된다.
+- API 요청 코드(endpoint 함수, query)는 MSW 가짜 서버(`src/mocks/`)로 요청 입력과 응답 매핑을 함께 확인한다. 가짜 서버는 BFF 경로(`/api/…`, 백엔드 경로에서 `/api/v1`을 뺀 경로)를 가로챈다. 화면 test는 기존처럼 endpoint 모듈을 mock해도 된다. 가짜 서버 응답에 기대는 test는 `server.use`를 쓰지 않아도 `@/mocks/server`를 import한다. setup이 켜 둔 서버만 쓰거나 가짜 DB(`@/mocks/db`)만 import하면 PR CI의 `--changed`가 handler 변경 때 그 test를 고르지 못한다([ci.md](./ci.md)). 가짜 DB를 import하면서 서버를 import하지 않는 test는 `yarn lint`의 `check:mock-imports`(`apps/web/scripts/check-mock-server-imports.mjs`)가 막는다. lint 단계라 PR에서도 늘 돈다.
 - Vitest: `vitest.setup.ts`가 `server.listen({ onUnhandledFrame: 'error' })`로 켜고, handler가 없는 요청은 test를 실패시킨다. test마다 handler 덮어쓰기(`server.resetHandlers`)·가짜 DB(`mockDb.reset`)·멱등 키가 초기화된다. 한 test에서만 다른 응답이 필요하면 `server.use(http.get(…))`를 쓰고, 오류 응답은 `fail(status, code)`로 만든다.
 - 기준 예시는 `features/photo-box/api/bunchMembers.test.ts`(요청 함수)와 `queries/bunchMembers.test.tsx`(query)다.
   - 요청 함수: 가짜 서버 응답의 화면 모양 변환, 오류 code, 한 test만의 응답(`server.use`), 계약 위반(`INVALID_RESPONSE`)을 확인한다. 요청 입력은 handler 안에서 `params`·`request`를 받아 확인한다.
