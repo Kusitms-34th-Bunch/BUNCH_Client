@@ -67,3 +67,11 @@ export const toManagedMemberships = (data: MembershipsResponse): ManagedMembersh
   myMembershipId: toDomainId(data.myMembership.membershipId),
   version: data.membershipVersion,
 });
+
+/** 나가기·삭제 응답. 다음 기본 번치는 `members/me`를 다시 받아 확인해 값은 검증만 함 */
+export const departureResultSchema = z.object({
+  bunchId: z.number(),
+  departedMembershipId: z.number(),
+  outcome: z.string(),
+  defaultBunchId: z.number().nullish(),
+});

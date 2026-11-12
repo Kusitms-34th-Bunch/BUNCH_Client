@@ -15,7 +15,62 @@ type Body = {
   expectedMembershipVersion?: number;
   role?: MemberRole;
   targetMembershipId?: number;
+  successorMembershipId?: number;
+  confirmation?: string;
 };
+
+// 화면의 확인 문구와 같은 값(실서버가 받는 값은 Swagger에 없어 화면 문구로 둠)
+const DELETE_CONFIRMATION = '삭제하기';
+
+/** 나가거나 삭제한 뒤의 내 기본 번치(남은 소속 중 마지막 사용), 없으면 null */
+const nextDefaultBunchId = () =>
+  mockDb
+    .get()
+    .memberships.filter((m) => m.memberId === MOCK_MY_MEMBER_ID)
+    .sort((a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt))[0]?.bunchId ?? null;
+
+type Stored = { status: number; body: unknown };
+
+/** 멱등 키 검사 뒤 처리. 같은 키·본문의 재전송은 처음 응답을 돌려줌 */
+const idempotent = async (
+  request: Request,
+  rawBunchId: unknown,
+  action: string,
+  run: (_bunchId: number, _body: Body) => Stored,
+) => {
+  const key = request.headers.get(IDEMPOTENCY_KEY_HEADER);
+  if (!key) return fail(400, 'COMMON_001');
+  const found = context(rawBunchId);
+  if ('error' in found) return found.error;
+  const body = ((await readJson(request)) ?? {}) as Body;
+  const outcome = runIdempotent(
+    `${MOCK_MY_MEMBER_ID}:${action}:${found.bunchId}`,
+    key,
+    JSON.stringify(body),
+    () => run(found.bunchId, body),
+  );
+  if (outcome.kind === 'conflict') return fail(409, 'REQUEST_001');
+  const stored = outcome.response;
+  return stored.status === 200
+    ? ok(stored.body as Record<string, unknown>)
+    : fail(stored.status, (stored.body as { code: string }).code);
+};
+
+const rejectedOf = (bunchId: number, body: Body): Stored | null => {
+  if (body.actorMembershipId !== MOCK_MY_MEMBER_ID)
+    return { status: 403, body: { code: 'AUTH_002' } };
+  if (body.expectedMembershipVersion !== versionOf(mockDb.get(), bunchId)) {
+    return { status: 409, body: { code: 'MOCK_MEMBERSHIP_VERSION' } };
+  }
+  return null;
+};
+
+const departure = (bunchId: number, outcome: string) => ({
+  bunchId,
+  departedMembershipId: MOCK_MY_MEMBER_ID,
+  outcome,
+  defaultBunchId: nextDefaultBunchId(),
+});
 
 const versionOf = (state: MockDbState, bunchId: number) =>
   state.bunches.find((bunch) => bunch.id === bunchId)?.membershipVersion ?? 1;
@@ -227,4 +282,53 @@ export const membershipHandlers = [
       ? ok(stored.body as ReturnType<typeof mutationResult>)
       : fail(stored.status, (stored.body as { code: string }).code);
   }),
+
+  // POST /api/v1/bunches/{bunchId}/leave: 나가기, 메인 관리자는 새 관리자(successorMembershipId)를 함께 보냄. 멱등 키 필수
+  // 오류 코드는 Swagger에 없어 가짜 코드(후임 없음·나만 남음 MOCK_OWNER_SUCCESSOR)
+  http.post('/api/bunches/:bunchId/leave', ({ params, request }) =>
+    idempotent(request, params.bunchId, 'leave', (bunchId, body) => {
+      const rejected = rejectedOf(bunchId, body);
+      if (rejected) return rejected;
+      const state = mockDb.get();
+      const mine = state.memberships.find(
+        (m) => m.bunchId === bunchId && m.memberId === MOCK_MY_MEMBER_ID,
+      );
+      if (!mine) return { status: 403, body: { code: 'AUTH_002' } };
+      const successor =
+        mine.role === 'OWNER' ? targetOf(bunchId, body.successorMembershipId) : undefined;
+      if (mine.role === 'OWNER' && (!successor || successor === mine)) {
+        return { status: 409, body: { code: 'MOCK_OWNER_SUCCESSOR' } };
+      }
+      commit(bunchId, (current) => ({
+        ...current,
+        memberships: current.memberships
+          .filter((item) => item !== mine)
+          .map((item) => (item === successor ? { ...item, role: 'OWNER' } : item)),
+      }));
+      return { status: 200, body: departure(bunchId, 'LEFT') };
+    }),
+  ),
+
+  // POST /api/v1/bunches/{bunchId}/deletion: 번치 삭제(메인 관리자), 확인 문구·멱등 키 필수
+  http.post('/api/bunches/:bunchId/deletion', ({ params, request }) =>
+    idempotent(request, params.bunchId, 'deletion', (bunchId, body) => {
+      const rejected = rejectedOf(bunchId, body);
+      if (rejected) return rejected;
+      const state = mockDb.get();
+      const mine = state.memberships.find(
+        (m) => m.bunchId === bunchId && m.memberId === MOCK_MY_MEMBER_ID,
+      );
+      if (mine?.role !== 'OWNER') return { status: 403, body: { code: 'AUTH_002' } };
+      if (body.confirmation !== DELETE_CONFIRMATION) {
+        return { status: 400, body: { code: 'COMMON_001' } };
+      }
+      // ponytail: 번치와 소속만 지움, 번들·사진은 남지만 소속이 없어 보이지 않음
+      mockDb.update((current) => ({
+        ...current,
+        bunches: current.bunches.filter((bunch) => bunch.id !== bunchId),
+        memberships: current.memberships.filter((item) => item.bunchId !== bunchId),
+      }));
+      return { status: 200, body: departure(bunchId, 'DELETED') };
+    }),
+  ),
 ];
