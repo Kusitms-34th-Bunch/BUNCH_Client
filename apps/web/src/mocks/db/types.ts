@@ -25,6 +25,8 @@ export type MockBunch = {
   followingCount: number;
   /** 프로필 버전(저장할 때마다 1 올라감, 번치 홈 응답의 profileVersion). 없으면 1 */
   profileVersion?: number;
+  /** 멤버 구성 버전(역할 변경·내보내기·넘기기마다 1 올라감). 없으면 1 */
+  membershipVersion?: number;
 };
 
 export type MockMembership = {

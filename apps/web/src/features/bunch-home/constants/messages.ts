@@ -14,6 +14,8 @@ export const BUNCH_HOME_MESSAGES = {
   switchFailed: '번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.',
   profileSaveFailed: '번치 프로필을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
   profileChangedElsewhere: '다른 곳에서 프로필이 바뀌어 최신 내용으로 다시 불러왔어요.',
+  memberChangeFailed: '처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  membersChangedElsewhere: '멤버 정보가 바뀌어 최신 목록으로 다시 불러왔어요.',
   removeBunchFailed: '목록에서 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
   // 소속 번치가 최대 개수일 때 「새로운 번치 추가하기」(5.2.4, 번치 만들기의 한도 안내와 같은 문구)
   bunchLimit: '참여할 수 있는 번치는 최대 10개예요.',
