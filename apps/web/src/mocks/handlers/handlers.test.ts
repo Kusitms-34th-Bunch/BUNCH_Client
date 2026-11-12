@@ -119,11 +119,9 @@ describe('가짜 서버 번치 만들기', () => {
     expect(again.id).toBe(first.id);
     const { memberships, bunches } = mockDb.get();
     expect(bunches.filter((bunch) => bunch.name === '새번치')).toHaveLength(1);
-    expect(memberships).toContainEqual({
-      bunchId: first.id,
-      memberId: MOCK_MY_MEMBER_ID,
-      role: 'OWNER',
-    });
+    expect(memberships).toContainEqual(
+      expect.objectContaining({ bunchId: first.id, memberId: MOCK_MY_MEMBER_ID, role: 'OWNER' }),
+    );
   });
 
   it('멱등 키가 없으면 400, 같은 키에 다른 입력은 409 REQUEST_001이다', async () => {
@@ -196,17 +194,35 @@ describe('가짜 서버 초대 확인·참여', () => {
     expect(first.outcome).toBe('JOINED');
     expect(replay.bunch.id).toBe(first.bunch.id);
     expect(again.outcome).toBe('ALREADY_MEMBER');
-    expect(mockDb.get().memberships).toContainEqual({
-      bunchId: first.bunch.id,
-      memberId: MOCK_MY_MEMBER_ID,
-      role: 'MEMBER',
-    });
+    expect(mockDb.get().memberships).toContainEqual(
+      expect.objectContaining({
+        bunchId: first.bunch.id,
+        memberId: MOCK_MY_MEMBER_ID,
+        role: 'MEMBER',
+      }),
+    );
   });
 
   it('멱등 키가 없으면 400, 같은 키에 다른 초대는 409다', async () => {
     expect((await join('MOCKJOIN', null)).status).toBe(400);
     await join('MOCKJOIN', 'k-3');
     expect((await join('MOCK0001', 'k-3')).status).toBe(409);
+  });
+
+  it('시연 초대로 참여하면 초대한 사람이 OWNER로 함께 등록되고 다시 확인해도 초대자가 보인다', async () => {
+    const joined = unwrapEnvelope<{ bunch: { id: number } }>(
+      await (await join('MOCKJOIN', 'k-owner')).json(),
+    );
+    const roles = mockDb
+      .get()
+      .memberships.filter((item) => item.bunchId === joined.bunch.id)
+      .map((item) => item.role);
+    expect(roles.sort()).toEqual(['MEMBER', 'OWNER']);
+
+    const card = unwrapEnvelope<{ inviterNickname: string | null }>(
+      await api().get('invitations/MOCKJOIN').json(),
+    );
+    expect(card.inviterNickname).toBe('민지');
   });
 
   it('공개 초대 조회는 로그인 없이 카드를 돌려주고, 없는 초대는 404 INVITE_001이다', async () => {

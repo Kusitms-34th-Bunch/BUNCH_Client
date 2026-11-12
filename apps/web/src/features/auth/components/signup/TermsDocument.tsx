@@ -6,13 +6,21 @@ type TermsDocumentProps = {
   documentId: TermsDocumentId;
   /** 헤더에 약관 이름을 보이지 않음(MY 약관 화면 Figma는 뒤로 가기만, 이름은 화면 밖 h1로 유지) */
   hideTitle?: boolean;
+  /** 원문 제목 대신 쓸 이름(MY 메뉴 이름이 가입 약관 원문 제목과 다름) */
+  title?: string | undefined;
   /** 직접 진입이라 돌아갈 기록이 없을 때 뒤로 가기로 갈 경로 */
   backFallback?: string | undefined;
 };
 
 /** 약관 원문 화면(임시 문구, 약관 이름은 h1: 헤더에 보이거나 화면 밖) */
-export function TermsDocument({ documentId, hideTitle = false, backFallback }: TermsDocumentProps) {
-  const { title, effectiveDate, version, articles } = TERMS_DOCUMENTS[documentId];
+export function TermsDocument({
+  documentId,
+  hideTitle = false,
+  title: titleOverride,
+  backFallback,
+}: TermsDocumentProps) {
+  const { title: documentTitle, effectiveDate, version, articles } = TERMS_DOCUMENTS[documentId];
+  const title = titleOverride ?? documentTitle;
 
   return (
     <SignupFrame

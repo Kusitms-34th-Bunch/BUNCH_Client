@@ -6,8 +6,8 @@ const BACKGROUND_COLOR = '#ffffff';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'bunch',
-    short_name: 'bunch',
+    name: 'BUNCH',
+    short_name: 'BUNCH',
     description: '함께한 순간을 하나의 기록으로',
     lang: 'ko',
     // 설치한 앱은 번치 탭에서 시작(UT 시작 화면이 번치 홈)
