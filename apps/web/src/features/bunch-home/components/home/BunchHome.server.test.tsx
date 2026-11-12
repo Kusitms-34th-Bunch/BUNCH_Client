@@ -269,10 +269,13 @@ describe('BunchHome 서버 번치 전환', () => {
     expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
   });
 
-  it('저장은 됐는데 새 번치 홈 미리 받기만 실패하면 전환 성공으로 알리고 새 번치로 바뀐다', async () => {
+  it('저장은 됐는데 새 번치 홈 미리 받기만 실패하면 전환 성공으로 알리고 새 번치 오류 화면에서 다시 받는다', async () => {
     // 새 번치 홈 요청만 실패(저장·기본 번치 변경은 성공)
+    let failing = true;
     server.use(
-      http.get(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/home`, () => fail(500, 'COMMON_500')),
+      http.get(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/home`, () =>
+        failing ? fail(500, 'COMMON_500') : undefined,
+      ),
     );
     const user = userEvent.setup();
     renderHome();
@@ -283,6 +286,14 @@ describe('BunchHome 서버 번치 전환', () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
     expect(toast).not.toHaveBeenCalledWith('번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.');
     expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
+
+    // 기본 번치는 새 번치라 이전 번치에 머물지 않고 새 번치의 오류 화면이 보임
+    const retry = await screen.findByRole('button', { name: '다시 시도' });
+    expect(screen.queryByRole('heading', { level: 1, name: /여행쥬아/ })).toBeNull();
+    failing = false;
+    await user.click(retry);
+
+    expect(await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ })).toBeTruthy();
   });
 
   it('전환을 저장하지 못하면 지금 번치에 머물고 실패를 알린다', async () => {
