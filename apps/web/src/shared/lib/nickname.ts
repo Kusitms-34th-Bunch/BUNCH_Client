@@ -10,6 +10,25 @@ const ALLOWED = /^[A-Za-z0-9가-힣 ]*$/;
 // 한글 IME 조합 중 자모 허용으로 오류 깜빡임 방지
 const COMPOSING_ALLOWED = /^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ ]*$/;
 
+/**
+ * 붙여넣은 글을 입력 칸에 넣은 결과(선택 영역을 대체)
+ * 허용하지 않는 문자(특수문자·이모지·줄바꿈)는 빼고 넣으며 최대 길이를 넘는 뒤쪽은 자름
+ * 넣을 글자가 하나도 남지 않으면 null(입력을 바꾸지 않음), `caret`은 넣은 뒤 커서 위치
+ */
+export const pasteIntoNickname = (
+  current: string,
+  selection: { start: number; end: number },
+  pasted: string,
+): { value: string; caret: number } | null => {
+  const clean = pasted.normalize('NFC').replace(/[^A-Za-z0-9가-힣 ]/g, '');
+  if (clean === '') return null;
+  const value = (current.slice(0, selection.start) + clean + current.slice(selection.end)).slice(
+    0,
+    NICKNAME_MAX_LENGTH,
+  );
+  return { value, caret: Math.min(selection.start + clean.length, NICKNAME_MAX_LENGTH) };
+};
+
 /** 저장·중복 확인에 쓰는 값: NFC 정규화 후 앞뒤 공백 제거 */
 export const normalizeNickname = (value: string) => value.normalize('NFC').trim();
 
