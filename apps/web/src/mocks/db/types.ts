@@ -128,6 +128,9 @@ export type MockLease = {
   expiresAt: string;
 };
 
+/** 내 푸시 수신 설정: 계정 전체 수신과 알림 종류별 수신(서버 `NotificationType` 키 전체 맵) */
+export type MockPushPreferences = { enabled: boolean; types: Record<string, boolean> };
+
 export type MockDbState = {
   members: MockMember[];
   bunches: MockBunch[];
@@ -136,4 +139,5 @@ export type MockDbState = {
   bundles: MockBundle[];
   bundleLeases: MockLease[];
   bunchAccessNotices: MockBunchAccessNotice[];
+  pushPreferences: MockPushPreferences;
 };

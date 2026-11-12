@@ -43,6 +43,26 @@ export async function requestPermission(kind: PermissionKind): Promise<Permissio
   }
 }
 
+const read = (kind: PermissionKind): Promise<PermissionResponse> => {
+  switch (kind) {
+    case 'photo':
+      return ImagePicker.getMediaLibraryPermissionsAsync();
+    case 'camera':
+      return ImagePicker.getCameraPermissionsAsync();
+    case 'notification':
+      return Notifications.getPermissionsAsync();
+  }
+};
+
+/**
+ * 시스템 권한의 현재 상태만 읽음. `requestPermission`과 달리 팝업을 띄우지 않아
+ * 설정 화면에서 권한을 바꾸고 돌아온 화면이 상태를 다시 확인하는 데 씀
+ */
+export async function getPermissionStatus(kind: PermissionKind): Promise<PermissionStatus> {
+  const parsed = permissionKindSchema.parse(kind);
+  return toStatus(await read(parsed));
+}
+
 /** 앱의 시스템 설정 화면 열기(사진·카메라 권한을 거부한 사용자가 직접 허용하도록 안내하는 「설정으로 이동」) */
 export function openAppSettings(): Promise<void> {
   return Linking.openSettings();

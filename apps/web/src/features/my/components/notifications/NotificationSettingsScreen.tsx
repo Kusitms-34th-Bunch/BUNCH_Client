@@ -2,7 +2,7 @@
 
 import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { ToggleListItem } from '@app/design-system/web';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -12,38 +12,47 @@ import {
   NOTIFICATION_TYPES,
   type DeviceNotificationPermission,
   type NotificationSettings,
+  type NotificationType,
 } from '../../lib/types';
 import { DeviceNotificationOffBanner } from './DeviceNotificationOffBanner';
 
 type NotificationSettingsScreenProps = {
-  /** 지금 저장된 설정(알림 설정 API 연결 전에는 fixture) */
+  /** 지금 저장된 설정(저장 중인 변경은 이미 반영된 값) */
   settings: NotificationSettings;
   /** 기기 알림 권한. 꺼져 있으면 배너를 띄우고 토글을 모두 막음 */
   devicePermission: DeviceNotificationPermission;
-  /** 기기 알림 설정 열기(앱 연동 전에는 없음) */
+  /** 기기 알림 권한을 아직 확인하는 중(쉘 첫 응답 전). 꺼져 있는지 모르므로 배너 없이 토글만 잠금 */
+  devicePermissionChecking?: boolean | undefined;
+  /** 앱 푸시 전체 토글을 누를 때 */
+  onChangePush: (_checked: boolean) => void;
+  /** 알림 종류 토글을 누를 때 */
+  onChangeType: (_type: NotificationType, _checked: boolean) => void;
+  /** 기기 알림 설정 열기(앱이 아니면 없음) */
   onOpenDeviceSettings?: (() => void) | undefined;
 };
 
 /**
- * 알림 설정(화면 설계서 MY(3)): 앱 푸시 전체 토글과 알림 종류별 토글, 바꾸면 바로 반영(저장 API 연결 전이라 화면 상태만)
+ * 알림 설정(화면 설계서 MY(3)): 앱 푸시 전체 토글과 알림 종류별 토글. 누르면 바로 반영하고 저장은 호출하는 쪽이 맡음
  * 전체를 끄거나 기기 권한이 꺼지면 종류별 값은 그대로 보여 주며 막고, 다시 켜면 그 값으로 돌아옴
+ * 받을 알림 4개를 모두 꺼도 앱 푸시 알림은 켜진 채로 둠(기능명세서 1110판 7.3.3 상세 3)
  */
 export function NotificationSettingsScreen({
   settings,
   devicePermission,
+  devicePermissionChecking = false,
+  onChangePush,
+  onChangeType,
   onOpenDeviceSettings,
 }: NotificationSettingsScreenProps) {
   const backOr = useBackOr();
   const typesLabelId = useId();
   const deviceOffMessageId = useId();
   const pushId = useId();
-  // 받을 알림을 모두 꺼서 앱 푸시가 자동으로 꺼졌는지(낭독 안내용)
-  const [autoOff, setAutoOff] = useState(false);
-  const [push, setPush] = useState(settings.push);
-  const [types, setTypes] = useState(settings.types);
 
   const deviceOff = devicePermission === 'denied';
-  const typesDisabled = deviceOff || !push;
+  // 권한을 확인하는 동안(꺼져 있는지 아직 모름)에도 잠가, 거부된 기기에서 설정이 바뀌지 않게 함(기능명세서 7.3.4)
+  const locked = deviceOff || devicePermissionChecking;
+  const typesDisabled = locked || !settings.push;
   // 기기 권한 때문에 막힌 토글은 배너 문구를 이유로 함께 읽음
   const disabledReason = deviceOff ? deviceOffMessageId : undefined;
   const text = MY_MESSAGES.notifications;
@@ -74,13 +83,10 @@ export function NotificationSettingsScreen({
           id={pushId}
           title={text.push.title}
           description={text.push.description}
-          checked={push}
-          disabled={deviceOff}
+          checked={settings.push}
+          disabled={locked}
           aria-describedby={disabledReason}
-          onChange={(event) => {
-            setPush(event.currentTarget.checked);
-            setAutoOff(false);
-          }}
+          onChange={(event) => onChangePush(event.currentTarget.checked)}
         />
         <section aria-labelledby={typesLabelId} className="gap-s3 flex flex-col">
           <h2
@@ -95,29 +101,15 @@ export function NotificationSettingsScreen({
                 key={type}
                 title={text.types[type].title}
                 description={text.types[type].description}
-                checked={types[type]}
+                checked={settings.types[type]}
                 disabled={typesDisabled}
                 aria-describedby={disabledReason}
-                onChange={(event) => {
-                  const { checked } = event.currentTarget;
-                  const next = { ...types, [type]: checked };
-                  setTypes(next);
-                  // 받을 알림이 모두 꺼지면 앱 푸시도 끔(기능명세서 7.3.3 상세 3)
-                  if (!Object.values(next).some(Boolean)) {
-                    setPush(false);
-                    setAutoOff(true);
-                    // 방금 누른 토글이 비활성이 돼 초점이 사라지지 않게 앱 푸시 토글로 옮김
-                    document.getElementById(pushId)?.focus();
-                  }
-                }}
+                onChange={(event) => onChangeType(type, event.currentTarget.checked)}
               />
             ))}
           </div>
         </section>
       </div>
-      <p role="status" className="sr-only">
-        {autoOff ? text.pushAutoOff : ''}
-      </p>
     </PageShell>
   );
 }

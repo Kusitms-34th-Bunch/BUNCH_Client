@@ -1,5 +1,30 @@
 import type { MockBundle, MockDbState, MockMember, MockMembership, MockPhoto } from './types';
 
+/** 서버 `NotificationType` 21개 키(Notion 푸시 수신 설정 조회 응답 순서). 푸시 수신 설정 `types`의 키 전체 */
+export const PUSH_NOTIFICATION_TYPES = [
+  'DRAFT_PARTICIPANT_ADDED',
+  'DRAFT_ACTIVITY',
+  'COMMENT_REMINDER',
+  'DRAFT_PARTICIPANT_REMOVED',
+  'DRAFT_READY_TO_PUBLISH',
+  'DRAFT_PARTICIPANTS_INSUFFICIENT',
+  'BUNDLE_PUBLISHED',
+  'CANDIDATE_CREATED',
+  'CHARACTER_GROWN',
+  'MEMBER_JOINED',
+  'CO_OWNER_GRANTED',
+  'CO_OWNER_REVOKED',
+  'OWNER_TRANSFERRED',
+  'MEMBER_REMOVED',
+  'BUNCH_DELETED',
+  'BUNCH_VISIBILITY_CHANGED',
+  'BUNCH_FOLLOWED',
+  'FOLLOW_REQUESTED',
+  'FOLLOW_REQUEST_APPROVED',
+  'SOCIAL_COMMENT_CREATED',
+  'BUNDLE_LIKED',
+] as const;
+
 export const MOCK_BUNCH_ID = 1;
 
 /** UT 시나리오의 등장 인물: 관리자, 멤버 A·B·C, 시연하는 사람(일반 멤버, 번들 초안 생성자) */
@@ -199,4 +224,9 @@ export const createSeed = (): MockDbState => ({
       occurredAt: '2026-10-16T09:00:00.000Z',
     },
   ],
+  // 저장값이 없으면 전체와 모든 알림 종류가 켜짐(Notion 푸시 수신 설정 조회)
+  pushPreferences: {
+    enabled: true,
+    types: Object.fromEntries(PUSH_NOTIFICATION_TYPES.map((type) => [type, true])),
+  },
 });
