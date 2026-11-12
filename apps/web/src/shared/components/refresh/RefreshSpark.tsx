@@ -18,8 +18,6 @@ const MODULES: ReadonlyArray<readonly [number, number]> = [
 ];
 
 type RefreshSparkProps = {
-  /** 새로고침 중이면 90°씩 끊어 돈다(Figma `6672:47287`, 2초 주기). 동작 줄이기에서는 멈춤 */
-  spinning?: boolean;
   className?: string;
 };
 
@@ -28,14 +26,15 @@ type RefreshSparkProps = {
  * 모양이 90° 회전 대칭이라 한 바퀴를 네 번 끊어 도는 것과 같고, 마지막 멈춤에서 처음으로 돌아가도 이음매가 보이지 않음
  * 장식이라 스크린 리더에는 숨기고 상태는 PageShell의 live region이 알림
  */
-export function RefreshSpark({ spinning = false, className }: RefreshSparkProps) {
+export function RefreshSpark({ className }: RefreshSparkProps) {
   return (
     <svg
       aria-hidden
       viewBox="0 0 36 36"
       className={cn(
         'fill-primitive-gray-300 size-9 shrink-0 origin-center',
-        spinning && 'animate-refresh-spark-spin motion-reduce:animate-none',
+        // 당기기 시작하면(`.pull-refresh`의 data-pull) 바로 90°씩 끊어 돈다(Figma `6672:47287`, 2초 주기). 동작 줄이기에서는 멈춤
+        'group-data-pull/pull:animate-refresh-spark-spin motion-reduce:animate-none',
         className,
       )}
       shapeRendering="crispEdges"

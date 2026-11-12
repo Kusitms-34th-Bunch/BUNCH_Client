@@ -111,6 +111,101 @@ describe('PageShell 당겨서 새로고침', () => {
     expect(onRefresh).not.toHaveBeenCalled();
   });
 
+  it('당긴 채로 시작 자리보다 위로 올리면 내용이 그만큼 스크롤되고, 기준에 닿은 적이 있으면 놓을 때 새로고침한다', () => {
+    const onRefresh = vi.fn();
+    render(<PageShell onRefresh={onRefresh}>본문</PageShell>);
+    const main = screen.getByRole('main');
+    const container = main.parentElement as HTMLElement;
+    const scrollTo = vi.fn();
+    main.scrollTo = scrollTo;
+
+    touch(main, 'touchstart', { x: 0, y: 100 });
+    touch(main, 'touchmove', { x: 0, y: 110 });
+    touch(main, 'touchmove', { x: 0, y: 250 });
+    expect(container.style.getPropertyValue('--pull-y')).toBe('72px');
+
+    // 기본 스크롤은 막혀 있어 hook이 직접 스크롤: 시작 자리(110)보다 40px 위
+    const up = touch(main, 'touchmove', { x: 0, y: 70 });
+    expect(up.defaultPrevented).toBe(true);
+    expect(main.scrollTop).toBe(40);
+    expect(container.style.getPropertyValue('--pull-y')).toBe('0px');
+
+    // 기준 거리까지 한 번 당겼으므로 헤더 밑으로 올렸다 놓아도 새로고침함
+    touch(main, 'touchend');
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+  });
+
+  it('기준에 닿지 못한 채 위로 올렸다 놓으면 새로고침하지 않고 최상단으로 돌아온다', () => {
+    const onRefresh = vi.fn();
+    render(<PageShell onRefresh={onRefresh}>본문</PageShell>);
+    const main = screen.getByRole('main');
+    const scrollTo = vi.fn();
+    main.scrollTo = scrollTo;
+
+    touch(main, 'touchstart', { x: 0, y: 100 });
+    touch(main, 'touchmove', { x: 0, y: 110 });
+    touch(main, 'touchmove', { x: 0, y: 160 });
+    touch(main, 'touchmove', { x: 0, y: 70 });
+    touch(main, 'touchend');
+
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+  });
+
+  it('새로고침 중에는 스크롤할 수 있고, 끝나면 스크롤 위치와 무관하게 맨 위로 올린다', async () => {
+    let finish: () => void = () => {};
+    render(
+      <PageShell onRefresh={() => new Promise<void>((resolve) => (finish = resolve))}>
+        본문
+      </PageShell>,
+    );
+    const main = screen.getByRole('main');
+    const scrollTo = vi.fn();
+    main.scrollTo = scrollTo;
+    pull(main, 140);
+
+    // 새로고침 중의 스크롤은 막지 않음
+    const move = touch(main, 'touchmove', { x: 0, y: 10 });
+    expect(move.defaultPrevented).toBe(false);
+    main.scrollTop = 100;
+    expect(scrollTo).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finish();
+      await vi.advanceTimersByTimeAsync(1300);
+    });
+
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+    expect(screen.getByRole('status')).toHaveTextContent('새로고침을 마쳤어요');
+  });
+
+  it('새로고침 중에 스크롤해 내용이 표시기 자리를 덮는 만큼 표시기를 흐리게 한다', () => {
+    render(<PageShell onRefresh={() => new Promise<void>(() => {})}>본문</PageShell>);
+    const main = screen.getByRole('main');
+    const container = main.parentElement as HTMLElement;
+    pull(main, 140);
+
+    main.scrollTop = 0;
+    act(() => {
+      main.dispatchEvent(new Event('scroll'));
+    });
+    expect(container.style.getPropertyValue('--pull-fade')).toBe('1');
+
+    // 간격 64px − 스크롤 30px − 표시기 위쪽 20px = 14px가 남아 36px 중 일부만 보임
+    main.scrollTop = 30;
+    act(() => {
+      main.dispatchEvent(new Event('scroll'));
+    });
+    expect(Number(container.style.getPropertyValue('--pull-fade'))).toBeCloseTo(14 / 36);
+
+    main.scrollTop = 60;
+    act(() => {
+      main.dispatchEvent(new Event('scroll'));
+    });
+    expect(container.style.getPropertyValue('--pull-fade')).toBe('0');
+  });
+
   it('터치가 취소되면 기준을 넘게 당겼어도 새로고침하지 않는다', () => {
     const onRefresh = vi.fn();
     render(<PageShell onRefresh={onRefresh}>본문</PageShell>);

@@ -55,6 +55,55 @@ describe('usePhotoBox 목록 다시 받기', () => {
   });
 });
 
+describe('usePhotoBox 당겨서 새로고침', () => {
+  it('프로필·멤버·날짜 있는/없는 사진 목록을 모두 다시 받고, 끝나면 풀린다', async () => {
+    const counts = { profile: 0, members: 0, dated: 0, undated: 0 };
+    server.use(
+      http.get('/api/members/me', () => {
+        counts.profile += 1;
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/members', () => {
+        counts.members += 1;
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/photos', () => {
+        counts.dated += 1;
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/photos/undated', () => {
+        counts.undated += 1;
+        return undefined;
+      }),
+    );
+    const { result } = renderPhotoBox({ progressive: true });
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    await waitFor(() => expect(readyData(result.current.state).more).toBeUndefined());
+    const before = { ...counts };
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(counts.profile).toBeGreaterThan(before.profile);
+    expect(counts.members).toBeGreaterThan(before.members);
+    // 날짜 있는 목록과 없는 목록
+    expect(counts.dated).toBeGreaterThan(before.dated);
+    expect(counts.undated).toBeGreaterThan(before.undated);
+    expect(result.current.state.kind).toBe('ready');
+  });
+
+  it('요청이 실패해도 던지지 않고 끝난다', async () => {
+    const { result } = renderPhotoBox({ progressive: true });
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    server.use(http.get('/api/bunches/:bunchId/photos', () => fail(500, 'COMMON_001')));
+
+    await act(async () => {
+      await expect(result.current.refresh()).resolves.toBeUndefined();
+    });
+  });
+});
+
 describe('usePhotoBox', () => {
   it('처음에는 로딩이고, 끝나면 번치·멤버·전체 사진을 합쳐 준비 상태가 된다', async () => {
     const { result } = renderPhotoBox();

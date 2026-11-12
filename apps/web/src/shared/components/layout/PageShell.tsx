@@ -89,10 +89,10 @@ export function PageShell({
         // 내용(`main`의 직계 자식)과 표시기가 `--pull-y`·`--pull-p`를 받아 움직임(globals.css `.pull-refresh`)
         <div
           ref={refreshContainerRef}
-          className="pull-refresh relative flex min-h-32 flex-1 flex-col"
+          className="pull-refresh group/pull relative isolate flex min-h-32 flex-1 flex-col"
         >
           <div aria-hidden className="pull-refresh-indicator">
-            <RefreshSpark spinning={status === 'refreshing'} />
+            <RefreshSpark />
           </div>
           {/* 새로고침 중·끝남을 스크린 리더에 알림(항상 마운트해 문구만 바꿈) */}
           <p role="status" className="sr-only">
