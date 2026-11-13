@@ -1,34 +1,48 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { followBunchesFixture } from '../../fixtures/bunchFollows.fixture';
-import { useBunchHome } from '../../hooks/useBunchHome';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
-import { useFollowRequests } from '../../hooks/useFollowRequests';
+import { toFollowRequestRows } from '../../model/follows';
+import { followRequestsQueryOptions, useDecideFollowRequestMutation } from '../../queries/follows';
+import { BunchHomeError } from '../home/BunchHomeError';
 import { FollowRequestsScreen } from './FollowRequestsScreen';
 
-/** `/bunch/follows/requests` 내 번치의 대기 중인 팔로우 요청. 팔로우 API 연결 전이라 fixture와 메모리 저장소 사용 */
+/** `/bunch/follows/requests` 내 번치(기본 번치)에 온 대기 중인 팔로우 요청과 승인·거절 */
 export function FollowRequests() {
+  const router = useRouter();
   const backOr = useBackOr();
-  const [storedId] = useCurrentBunchId();
-  const { data } = useBunchHome();
-  const bunchId = storedId === null ? undefined : data?.current.id;
-  const { pending, approve, reject } = useFollowRequests(bunchId);
+  const me = useQuery(myProfileQueryOptions());
+  const bunchId = me.data?.bunch?.id;
+  const requests = useQuery(followRequestsQueryOptions(bunchId));
+  const decide = useDecideFollowRequestMutation(bunchId);
+  // 번치가 없는 회원은 목록이 없어 번치 탭(번치 없음 안내)으로
+  const noBunch = me.data !== undefined && !me.data.bunch;
+  useEffect(() => {
+    if (noBunch) router.replace(BUNCH_HOME_PATHS.home);
+  }, [noBunch, router]);
+  const back = () => backOr(BUNCH_HOME_PATHS.follows);
+
+  if ((me.isError && !me.data) || (requests.isError && !requests.data)) {
+    return (
+      <BunchHomeError
+        onRetry={() => {
+          if (me.isError) void me.refetch();
+          if (requests.isError) void requests.refetch();
+        }}
+        onBack={back}
+      />
+    );
+  }
 
   return (
     <FollowRequestsScreen
-      requests={
-        bunchId === undefined
-          ? undefined
-          : pending.flatMap(({ bunchId: requesterId, daysAgo }) => {
-              const bunch = followBunchesFixture[requesterId];
-              return bunch ? [{ ...bunch, daysAgo }] : [];
-            })
-      }
-      onBack={() => backOr(BUNCH_HOME_PATHS.follows)}
-      onApprove={approve}
-      onReject={reject}
+      requests={requests.data ? toFollowRequestRows(requests.data) : undefined}
+      onBack={back}
+      onDecide={(requestId, decision) => decide.mutateAsync({ requestId, decision })}
     />
   );
 }

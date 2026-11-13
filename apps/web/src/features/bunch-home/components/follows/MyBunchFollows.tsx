@@ -1,39 +1,65 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { useBunchHome } from '../../hooks/useBunchHome';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
 import { useFollowList } from '../../hooks/useFollowList';
-import { useFollowRequests } from '../../hooks/useFollowRequests';
+import { useViewerStale } from '../../hooks/useViewerStale';
+import { bunchHomeQueryOptions } from '../../queries/bunchHome';
+import { followRequestsQueryOptions } from '../../queries/follows';
 import { BunchFollowsScreen, type FollowsTab } from '../BunchFollowsScreen';
+import { BunchHomeError } from '../home/BunchHomeError';
 
 /**
- * `/bunch/follows` 내 번치(지금 번치)의 팔로워·팔로잉. 승인한 요청은 팔로워 맨 위에 더하고, 대기 요청이 있으면 「팔로우 요청 N」 줄
- * 팔로우 API 연결 전이라 fixture와 메모리 저장소 사용
+ * `/bunch/follows` 내 번치(기본 번치, `members/me`)의 팔로워·팔로잉. 대기 요청이 있으면 「팔로우 요청 N」 줄
+ * 이름·수는 번치 홈 응답, 목록과 행의 팔로우 상태는 서버(명의도 같은 번치)
  */
 export function MyBunchFollows({ initialTab }: { initialTab: FollowsTab }) {
   const router = useRouter();
   const backOr = useBackOr();
-  // 첫 hydration은 저장된 번치를 몰라 목록을 그리지 않음(다른 번치 목록이 잠깐 보이지 않게)
-  const [storedId] = useCurrentBunchId();
-  const { data } = useBunchHome();
-  const bunch = storedId === null ? undefined : data?.current;
-  const { pending, approvedIds } = useFollowRequests(bunch?.id);
-  const { followers, following, follow, unfollow } = useFollowList(bunch?.id, approvedIds);
+  const me = useQuery(myProfileQueryOptions());
+  const bunchId = me.data?.bunch?.id;
+  const home = useQuery(bunchHomeQueryOptions(bunchId));
+  const requests = useQuery(followRequestsQueryOptions(bunchId));
+  const { followers, following, follow, unfollow } = useFollowList(bunchId ?? '', bunchId, true);
+  // 번치가 없는 회원은 목록이 없어 번치 탭(번치 없음 안내)으로
+  const noBunch = me.data !== undefined && !me.data.bunch;
+  useEffect(() => {
+    if (noBunch) router.replace(BUNCH_HOME_PATHS.home);
+  }, [noBunch, router]);
+  const viewerStale = useViewerStale(bunchId, home.data?.currentBunchId, me.refetch);
+  const back = () => backOr(BUNCH_HOME_PATHS.home);
+
+  if ((me.isError && !me.data) || (home.isError && !home.data)) {
+    return (
+      <BunchHomeError
+        onRetry={() => {
+          if (me.isError) void me.refetch();
+          if (home.isError) void home.refetch();
+        }}
+        onBack={back}
+      />
+    );
+  }
 
   return (
     <BunchFollowsScreen
-      bunchName={bunch?.name}
-      followerCount={bunch?.followerCount ?? 0}
-      followingCount={bunch?.followingCount ?? 0}
+      bunchName={home.data?.bunch.name}
+      followerCount={home.data?.followerCount ?? 0}
+      followingCount={home.data?.followingCount ?? 0}
       followers={followers}
       following={following}
+      // ponytail: 다시 받아도 명의가 어긋나면 버튼이 계속 막힘(프로필처럼 다시 시도 화면은 실서버 동작 확인 뒤)
+      busy={viewerStale}
+      viewerId={bunchId}
       initialTab={initialTab}
-      pendingRequestCount={pending.length}
+      // 요청 목록을 못 받으면 줄을 숨김(요청 목록 화면에서 다시 시도)
+      pendingRequestCount={requests.data?.totalElements ?? 0}
       onOpenRequests={() => router.push(BUNCH_HOME_PATHS.followRequests)}
-      onBack={() => backOr(BUNCH_HOME_PATHS.home)}
+      onBack={back}
       onFollow={follow}
       onUnfollow={unfollow}
     />

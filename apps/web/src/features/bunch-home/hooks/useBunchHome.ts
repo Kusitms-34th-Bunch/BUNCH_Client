@@ -1,17 +1,14 @@
 import { useMemo, useState } from 'react';
 import type { BunchHomeActions, BunchHomeData } from '../lib/types';
-import { followBunchesFixture } from '../fixtures/bunchFollows.fixture';
 import {
   bunchDetailsFixture,
   bunchSummariesFixture,
   initialBunchDetailFixture,
 } from '../fixtures/bunchHome.fixture';
-import { followingDelta, useFollowStatuses } from './useBunchFollow';
 import { useBunchMembers } from './useBunchMembers';
 import { useUnreadNotificationCounts } from './useBunchNotifications';
 import { useBunchProfileEdits } from './useBunchProfileEdits';
 import { useCurrentBunchId } from './useCurrentBunchId';
-import { useFollowRequests } from './useFollowRequests';
 
 type UseBunchHomeResult = {
   /** 참여 중인 번치가 하나도 없으면 null(번치 없음, 기능명세 5.1.7) */
@@ -35,10 +32,6 @@ export function useBunchHome(): UseBunchHomeResult {
   const { members } = useBunchMembers(currentId);
   // 알림 목록에서 읽으면 전환 목록의 「알림 N개」도 줄어듦
   const unreadCounts = useUnreadNotificationCounts();
-  // 팔로워·팔로잉 목록에서 팔로우하거나 요청을 승인한 결과를 수에 반영(화면설계서 2500:71333 3-1번)
-  const followStatuses = useFollowStatuses();
-  const { approvedIds } = useFollowRequests(currentId);
-  const followingAdded = followingDelta(followStatuses, followBunchesFixture);
 
   const data = useMemo<BunchHomeData | null>(() => {
     const detail = bunchDetailsFixture[currentId] ?? initialBunchDetailFixture;
@@ -57,22 +50,11 @@ export function useBunchHome(): UseBunchHomeResult {
         ...detail,
         ...profileEdits[currentId],
         memberCount: members?.length ?? detail.memberCount,
-        followerCount: detail.followerCount + approvedIds.length,
-        followingCount: detail.followingCount + followingAdded,
         draftBundles: detail.draftBundles.filter((bundle) => !deletedDraftIds.has(bundle.id)),
       },
       bunches: [...current, ...others],
     };
-  }, [
-    currentId,
-    bunches,
-    deletedDraftIds,
-    profileEdits,
-    members,
-    unreadCounts,
-    approvedIds.length,
-    followingAdded,
-  ]);
+  }, [currentId, bunches, deletedDraftIds, profileEdits, members, unreadCounts]);
 
   const actions: BunchHomeActions = {
     switchBunch: setCurrentId,
