@@ -15,6 +15,7 @@ type PhotosRouteProps = {
  * 사진함이 번치 홈 내부 파일을 직접 import하지 않도록 route에서 조합하고, 지금 번치는 기본 번치(`members/me`)를 봄
  */
 export function PhotosRoute({ preview }: PhotosRouteProps) {
+  // `PhotoBox` 안의 `usePhotoBox`도 같은 key(`members/me`)를 구독해 요청은 하나로 합쳐짐: route는 전환 시트에 지금 번치만 알려 줌
   const { data: profile } = useQuery(myProfileQueryOptions());
   const switcher = useBunchSwitcher(profile?.bunch ?? undefined);
   return <PhotoBox preview={preview} bunchSwitcher={switcher} />;
