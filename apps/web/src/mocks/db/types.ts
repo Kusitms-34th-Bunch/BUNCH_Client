@@ -149,6 +149,18 @@ export type MockBlock = {
   createdAt: string;
 };
 
+/** 번치 알림(내 회원 기준, 번치마다 쌓임). target은 Swagger `NotificationTarget` 모양 */
+export type MockNotification = {
+  id: number;
+  bunchId: number;
+  type: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+  target: { kind: string; bunchId: number; bundleId?: number; targetBunchId?: number };
+};
+
 /** 번치 신고(접수만, 처리 결과는 화면에 없음) */
 export type MockReport = {
   id: number;
@@ -170,4 +182,5 @@ export type MockDbState = {
   follows: MockFollow[];
   blocks: MockBlock[];
   reports: MockReport[];
+  notifications: MockNotification[];
 };
