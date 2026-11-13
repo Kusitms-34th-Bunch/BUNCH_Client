@@ -26,7 +26,7 @@ export const FOLLOW_STATUS: Readonly<Record<z.infer<typeof followStateSchema>, F
 };
 
 /** 다른 번치 프로필 화면이 쓰는 모양(멤버 명단·처음 팔로우 상태는 따로) */
-export type OtherBunchProfile = Omit<OtherBunch, 'members' | 'followStatus'>;
+export type OtherBunchProfile = Omit<OtherBunch, 'followStatus'>;
 
 /** 홈 응답의 팔로우 관계 ID(화면 모양) */
 export const followIdOf = (home: Home | undefined) =>

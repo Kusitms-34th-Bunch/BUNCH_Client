@@ -255,6 +255,11 @@ export const createSeed = (): MockDbState => ({
     member(memberB, '은우'),
     member(memberC, '수인'),
     member(me, '큐시즘'),
+    // 다른 번치 멤버(명단 화면용, 내 번치와 겹치지 않는 회원)
+    ...(['솔', '하람', '도윤', '서아'] as const).map((name, index) => member(101 + index, name)),
+    ...(['지안', '루아', '하윤', '서진', '다온', '이든'] as const).map((name, index) =>
+      member(201 + index, name),
+    ),
   ],
   bunches: [
     {
@@ -320,7 +325,7 @@ export const createSeed = (): MockDbState => ({
     membership(me, 'MEMBER'),
     membership(admin, 'OWNER', MOCK_SECOND_BUNCH_ID, '2026-10-01T09:00:00.000Z'),
     membership(me, 'MEMBER', MOCK_SECOND_BUNCH_ID, '2026-10-01T09:00:00.000Z'),
-    // 다른 번치의 멤버 수 계산용(가짜 DB에 회원이 없는 ID, 내 소속은 없음)
+    // 다른 번치의 멤버(내 소속은 없음)
     ...[101, 102, 103, 104].map((id, index) =>
       membership(id, index === 0 ? 'OWNER' : 'MEMBER', MOCK_EXTERNAL_BUNCH_IDS.public),
     ),
