@@ -1,11 +1,13 @@
 import { isApiError } from '@app/api-core';
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getBunchMembers } from '@/shared/api/bunchMembers';
 import { toDomainId } from '@/shared/api/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import type { Home } from '../model/bunchHome';
 import { getBunchHome, getPublishedBundles } from '../api/bunchHome';
 import { followBunch, unfollowBunch } from '../api/follows';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { toBunchMembers } from '../model/memberships';
 import { bunchHomeKeys } from './keys';
 
 /** 다른 번치 홈. 명의(내 기본 번치)를 알기 전에는 요청하지 않음(`undefined`), 번치가 없으면 `null` */
@@ -27,6 +29,21 @@ export const otherBunchPublishedQueryOptions = (
       viewerId === undefined || !canView
         ? skipToken
         : ({ signal }) => getPublishedBundles(targetId, signal),
+  });
+
+/** 다른 번치의 멤버 명단. 볼 수 있을 때만(비공개는 팔로우 승인 뒤) */
+export const otherBunchMembersQueryOptions = (
+  targetId: string,
+  viewerId: string | null | undefined,
+  canView: boolean,
+) =>
+  queryOptions({
+    queryKey: bunchHomeKeys.otherBunchMembers(targetId, viewerId ?? null),
+    queryFn:
+      viewerId === undefined || !canView
+        ? skipToken
+        : ({ signal }) => getBunchMembers(targetId, signal),
+    select: toBunchMembers,
   });
 
 /** 취소의 `followId`는 홈 응답의 관계 ID. 없으면 팔로우 요청(같은 관계를 돌려줌)으로 먼저 얻음 */

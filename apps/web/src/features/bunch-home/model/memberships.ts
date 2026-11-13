@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { BunchMember as SharedBunchMember } from '@/shared/api/bunchMembers';
 import { toDomainId } from '@/shared/api/ids';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
@@ -67,6 +68,15 @@ export const toManagedMemberships = (data: MembershipsResponse): ManagedMembersh
   myMembershipId: toDomainId(data.myMembership.membershipId),
   version: data.membershipVersion,
 });
+
+/** 공용 멤버 목록(`GET /bunches/{bunchId}/members`) → 확인용 멤버 목록(관리 동작 없음). id는 회원 ID */
+export const toBunchMembers = (members: readonly SharedBunchMember[]): BunchMember[] =>
+  members.map((member) => ({
+    id: member.id,
+    name: member.name,
+    imageSrc: isSafeImageUrl(member.avatarSrc) ? member.avatarSrc : DEFAULT_PROFILE_IMAGE,
+    role: ROLE[member.role],
+  }));
 
 /** 나가기·삭제 응답. 다음 기본 번치는 `members/me`를 다시 받아 확인해 값은 검증만 함 */
 export const departureResultSchema = z.object({
