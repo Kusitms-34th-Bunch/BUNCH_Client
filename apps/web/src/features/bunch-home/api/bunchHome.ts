@@ -19,7 +19,7 @@ const PUBLISHED_PAGE_SIZE = 50;
 
 const bunchPath = (bunchId: string) => `bunches/${encodeURIComponent(bunchId)}`;
 
-/** 번치 홈 프로필·권한·개수(내가 속하지 않은 번치는 AUTH_002, 없는 번치는 RESOURCE_001) */
+/** 번치 홈 프로필·권한·개수. 내가 속하지 않은 번치는 `accessScope: EXTERNAL`(소속·개수 일부 null), 없는 번치는 404 */
 export const getBunchHome = (bunchId: string, signal?: AbortSignal) =>
   requestData(
     bffApi.get(`${bunchPath(bunchId)}/home`, { signal: signal ?? null }),

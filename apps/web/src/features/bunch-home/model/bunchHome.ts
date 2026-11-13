@@ -49,6 +49,16 @@ export const bunchHomeResponseSchema = z.object({
   publishedCount: z.number().int().nonnegative().nullish(),
   stage: z.number().int().nonnegative(),
   unreadCount: z.number().int().nonnegative().nullish(),
+  // 내 번치(INTERNAL)·다른 번치(EXTERNAL) 구분과 지금 번치 명의의 팔로우·열람 범위(Swagger 필수, 이전 응답과 호환되게 선택으로 받음)
+  accessScope: z.enum(['INTERNAL', 'EXTERNAL']).optional(),
+  followState: z.enum(['NONE', 'REQUESTED', 'FOLLOWING']).optional(),
+  followId: z.number().int().positive().nullish(),
+  canViewBundles: z.boolean().optional(),
+  canViewMembers: z.boolean().optional(),
+  canViewRelations: z.boolean().optional(),
+  isCurrentBunch: z.boolean().optional(),
+  // 서버가 이 응답의 명의로 본 번치(지금 번치)
+  currentBunchId: z.number().int().positive().nullish(),
 });
 
 /** `GET /api/v1/bunches/{bunchId}/published-bundles` 응답(발행 최신순) */

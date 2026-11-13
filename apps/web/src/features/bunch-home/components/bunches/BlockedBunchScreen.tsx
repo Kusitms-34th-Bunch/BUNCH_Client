@@ -40,7 +40,12 @@ export function BlockedBunchScreen({
         />
       }
     >
-      {checking ? null : (
+      {checking ? (
+        // 불러오는 동안 제목·내용 없이(차단한 번치 내용이 잠깐 보이지 않게) 상태만 알림
+        <p role="status" className="sr-only">
+          {BUNCH_HOME_MESSAGES.otherBunchLoading}
+        </p>
+      ) : (
         /* Figma 5991:164581: 이미지 72×72와 글자 사이 18, 제목·설명 사이 6
           화면 전체의 세로 가운데라 본문 기준 약 38 위(차단 목록 빈 상태와 같이 아래 여백 72) */
         <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">

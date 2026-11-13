@@ -38,7 +38,7 @@ export const feedFixture: FeedData = {
     bundle({
       id: 'bundle-2',
       // 팔로우한 비공개 번치의 번들도 이 구간에 나옴
-      bunch: { id: 'bunch-book', name: '책방산책', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_1 },
+      bunch: { id: '4', name: '책방산책', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_1 },
       publishedAt: hoursAgo(5),
       title: '노을 지는 동네 책방 투어',
       location: '망원동',
@@ -53,7 +53,7 @@ export const feedFixture: FeedData = {
   public: [
     bundle({
       id: 'bundle-3',
-      bunch: { id: 'bunch-camping', name: '캠핑러버', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2 },
+      bunch: { id: '3', name: '캠핑러버', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2 },
       publishedAt: hoursAgo(24 * 10),
       title: '여름밤 바닷가 캠핑',
       location: undefined,
