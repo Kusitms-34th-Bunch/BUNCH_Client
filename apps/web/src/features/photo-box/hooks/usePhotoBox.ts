@@ -7,6 +7,7 @@ import type { PhotoBoxActions, PhotoBoxData, PhotoBoxState } from '../lib/types'
 import { saveToAlbum } from '../api/albumSave';
 import {
   datedPhotosQueryOptions,
+  PHOTO_BOX_POLL_MS,
   PHOTO_BOX_STALE_TIME,
   undatedPhotosQueryOptions,
 } from '../queries/photoLists';
@@ -95,7 +96,10 @@ export function usePhotoBox(
     refetch: refetchMembers,
   } = useQuery(bunchMembersQueryOptions(bunchId));
   // 사진함 화면(progressive)은 들어올 때마다 목록을 다시 받고, 번들·상세 화면은 30초 안에는 받아 둔 목록을 그대로 씀
-  const listOptions = progressive ? { staleTime: PHOTO_BOX_STALE_TIME } : undefined;
+  // 머무는 동안에는 20초마다 다시 받아 다른 멤버가 지운 사진이 오래 남지 않게 함(번들·상세 화면은 마운트할 때만)
+  const listOptions = progressive
+    ? { staleTime: PHOTO_BOX_STALE_TIME, refetchInterval: PHOTO_BOX_POLL_MS }
+    : undefined;
   const datedQuery = useInfiniteQuery(datedPhotosQueryOptions(bunchId, listOptions));
   const undatedQuery = useInfiniteQuery(undatedPhotosQueryOptions(bunchId, listOptions));
   const { data: dated, isError: datedError } = datedQuery;
