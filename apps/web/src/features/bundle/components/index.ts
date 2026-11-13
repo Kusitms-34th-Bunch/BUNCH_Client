@@ -4,7 +4,6 @@
 export { BundleDraft } from './drafts/BundleDraft';
 export { BundleDraftMembers } from './drafts/BundleDraftMembers';
 export { BundleDraftPhotoAdd } from './drafts/BundleDraftPhotoAdd';
-export { BundleDraftPhotoCaption } from './drafts/BundleDraftPhotoCaption';
 export { BundleDraftPhotoViewer } from './drafts/BundleDraftPhotoViewer';
 export { BundleDraftPick } from './drafts/BundleDraftPick';
 export { BundleDraftVisibility } from './drafts/BundleDraftVisibility';

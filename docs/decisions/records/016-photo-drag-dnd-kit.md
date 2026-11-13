@@ -2,7 +2,7 @@
 
 - 상태: accepted
 - 기록일: 2026-10-31
-- 구현 상태(2026-10-31 확인): 구현됨(`features/photo-box/components/home/PhotoDragArea.tsx`). 번들 사진 순서 바꾸기(`features/bundle/components/drafts/DraftPhotoCard.tsx`의 `useSortable`, `hooks/usePhotoReorder.ts`의 센서, 화면은 `DraftPhotoCaption.tsx`)도 `@dnd-kit/sortable`로 가로 목록을 정렬한다(길게 누르기 500ms, 키보드 대체는 「앞으로·뒤로 옮기기」 버튼). headless Chrome에서 마우스 길게 누르기 → 끌기 → 놓기 → 되돌리기를 확인했고 터치·iOS·안드로이드 쉘 실기기는 미확인.
+- 구현 상태(2026-10-31 확인): 구현됨(`features/photo-box/components/home/PhotoDragArea.tsx`). 번들 사진 순서 바꾸기(`hooks/usePhotoReorder.ts`의 센서)는 사진 캡션 화면과 함께 쓰이다가 그 화면이 제거돼(#354) 지금은 쓰는 곳이 없고, 작성 화면 썸네일 순서 바꾸기에서 이어 씀. 이전 구현도 `@dnd-kit/sortable`로 가로 목록을 정렬한다(길게 누르기 500ms, 키보드 대체는 「앞으로·뒤로 옮기기」 버튼). headless Chrome에서 마우스 길게 누르기 → 끌기 → 놓기 → 되돌리기를 확인했고 터치·iOS·안드로이드 쉘 실기기는 미확인.
 
 ## 배경
 

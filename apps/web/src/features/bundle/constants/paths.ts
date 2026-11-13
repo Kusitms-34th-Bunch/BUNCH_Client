@@ -9,8 +9,6 @@ export const BUNDLE_PATHS = {
   visibility: (draftId: string) => `/bunch/drafts/${draftId}/visibility`,
   /** 참여 멤버 관리 화면 */
   members: (draftId: string) => `/bunch/drafts/${draftId}/members`,
-  /** 사진 상세 캡션 화면(보고 있는 사진을 주소가 가리킴) */
-  photo: (draftId: string, photoId: string) => `/bunch/drafts/${draftId}/photos/${photoId}`,
   /** 사진 추가(사진함에서 고르기) 화면 */
   photoAdd: (draftId: string) => `/bunch/drafts/${draftId}/photos/add`,
   /** 사진 크게 보기 */
@@ -23,7 +21,6 @@ export const BUNDLE_PATHS = {
     visibility: '/bunch/drafts/visibility',
     pick: '/bunch/drafts/pick',
     viewer: '/bunch/drafts/viewer',
-    photo: '/bunch/drafts/photo',
     photoAdd: '/bunch/drafts/photo-add',
   },
 } as const;

@@ -21,22 +21,18 @@ type Snapshot = {
   photos: {
     id: number;
     photoId: number;
-    caption: string;
-    captionVersion: number;
-    captionUpdatedBy: number | null;
   }[];
   participants: { memberId: number }[];
   comments: { memberId: number; content: string; version: number }[];
   dateChips: string[];
   publishBlockers: string[];
   permissions: Record<string, boolean>;
-  leases: { target: string; memberId: number }[];
   publishedAt: string | null;
 };
 
 type Envelope = {
   success: boolean;
-  data: Snapshot & { token: string; leaseVersion: number };
+  data: Snapshot;
   error: { code: string; detail: unknown } | null;
 };
 
@@ -62,11 +58,6 @@ const createDraft = async () => {
   const { json } = await create([MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5]);
   return json.data as { id: number; revision: number; photos: { id: number }[] };
 };
-
-const acquire = async (bundleId: number, target: string) =>
-  (await call('POST', `${base}/${bundleId}/leases/acquire`, { target })).json.data as {
-    token: string;
-  };
 
 describe('가짜 서버 번들 초안 생성', () => {
   it('고른 순서대로 사진을 담고 생성자와 사진 올린 멤버가 참여자가 된다', async () => {
@@ -192,103 +183,32 @@ describe('가짜 서버 번들 상세 조회', () => {
   });
 });
 
-describe('가짜 서버 번들 제목·공개 범위·코멘트·캡션 저장', () => {
-  it('편집권 token으로 제목을 저장하면 제목 버전과 revision이 오른다', async () => {
+describe('가짜 서버 번들 제목·공개 범위·코멘트 저장', () => {
+  it('제목을 저장하면 제목 버전과 revision이 오른다', async () => {
     const draft = await createDraft();
-    const { token } = await acquire(draft.id, 'TITLE');
 
     const { status, json } = await call('PUT', `${base}/${draft.id}/title`, {
       value: '  설악산 단풍  ',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
 
     expect(status).toBe(200);
     expect(json.data).toMatchObject({ title: '설악산 단풍', titleVersion: 1, revision: 2 });
   });
 
-  it('편집권이 없거나 token이 다르면 BUNDLE_004이다', async () => {
-    const draft = await createDraft();
-    const body = { value: '제목', expectedVersion: 0, mode: 'DRAFT' };
-
-    const none = await call('PUT', `${base}/${draft.id}/title`, body);
-    expect(none.json.error?.code).toBe('BUNDLE_004');
-
-    await acquire(draft.id, 'TITLE');
-    const wrong = await call('PUT', `${base}/${draft.id}/title`, {
-      ...body,
-      leaseToken: createIdempotencyKey(),
-    });
-    expect(wrong.json.error?.code).toBe('BUNDLE_004');
-  });
-
-  it('다른 멤버가 편집권을 쥔 대상은 얻을 수 없다', async () => {
-    const draft = await createDraft();
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        {
-          bundleId: draft.id,
-          target: 'TITLE',
-          memberId: memberA,
-          token: createIdempotencyKey(),
-          leaseVersion: 1,
-          expiresAt: new Date(Date.now() + 10_000).toISOString(),
-        },
-      ],
-    }));
-
-    const result = await call('POST', `${base}/${draft.id}/leases/acquire`, { target: 'TITLE' });
-    expect(result.status).toBe(409);
-    expect(result.json.error?.code).toBe('BUNDLE_004');
-    // 상세 응답에는 편집권 상태가 token 없이 공개됨
-    const detail = await call('GET', `${base}/${draft.id}`);
-    expect(Object.keys(detail.json.data.leases[0] ?? {}).sort()).toEqual([
-      'expiresAt',
-      'leaseVersion',
-      'memberId',
-      'target',
-    ]);
-    expect(detail.json.data.leases[0]).toMatchObject({ target: 'TITLE', memberId: memberA });
-  });
-
-  it('만료된 편집권은 다른 멤버가 다시 얻을 수 있다', async () => {
-    const draft = await createDraft();
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        {
-          bundleId: draft.id,
-          target: 'TITLE',
-          memberId: memberA,
-          token: createIdempotencyKey(),
-          leaseVersion: 1,
-          expiresAt: new Date(Date.now() - 1000).toISOString(),
-        },
-      ],
-    }));
-
-    const result = await call('POST', `${base}/${draft.id}/leases/acquire`, { target: 'TITLE' });
-    expect(result.status).toBe(200);
-    expect(result.json.data.leaseVersion).toBe(2);
-  });
-
   it('버전이 다르면 BUNDLE_003과 현재 값·버전을 돌려준다', async () => {
     const draft = await createDraft();
-    const { token } = await acquire(draft.id, 'TITLE');
     await call('PUT', `${base}/${draft.id}/title`, {
       value: '첫 제목',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
 
     const result = await call('PUT', `${base}/${draft.id}/title`, {
       value: '다른 제목',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
     expect(result.status).toBe(409);
     expect(result.json.error).toMatchObject({
@@ -331,12 +251,10 @@ describe('가짜 서버 번들 제목·공개 범위·코멘트·캡션 저장',
     });
     expect(badValue.json.error?.code).toBe('COMMON_001');
 
-    const { token } = await acquire(draft.id, 'TITLE');
     const newline = await call('PUT', `${base}/${draft.id}/title`, {
       value: '두 줄\n제목',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
     expect(newline.json.error?.code).toBe('COMMON_001');
   });
@@ -380,34 +298,6 @@ describe('가짜 서버 번들 제목·공개 범위·코멘트·캡션 저장',
       mode: 'DRAFT',
     });
     expect(stale.json.error?.code).toBe('BUNDLE_003');
-  });
-
-  it('사진 캡션은 그 사진의 편집권으로 저장하고 사진마다 버전이 따로다', async () => {
-    const draft = await createDraft();
-    const [first, second] = draft.photos;
-    const { token } = await acquire(draft.id, `PHOTO:${first?.id}`);
-
-    const saved = await call('PUT', `${base}/${draft.id}/photos/${first?.id}/caption`, {
-      value: '오래 기억할 순간',
-      expectedVersion: 0,
-      mode: 'DRAFT',
-      leaseToken: token,
-    });
-    expect(saved.json.data.photos[0]).toMatchObject({
-      caption: '오래 기억할 순간',
-      captionVersion: 1,
-      captionUpdatedBy: MOCK_MY_MEMBER_ID,
-    });
-    expect(saved.json.data.photos[1]).toMatchObject({ id: second?.id, captionVersion: 0 });
-
-    // 다른 사진의 편집권 token으로는 저장할 수 없음
-    const other = await call('PUT', `${base}/${draft.id}/photos/${second?.id}/caption`, {
-      value: '다른 사진',
-      expectedVersion: 0,
-      mode: 'DRAFT',
-      leaseToken: token,
-    });
-    expect(other.json.error?.code).toBe('BUNDLE_004');
   });
 });
 
@@ -470,12 +360,10 @@ describe('가짜 서버 번들 발행', () => {
   // 발행 조건을 모두 채운 초안(제목·공개 범위·참여자 전원 코멘트)
   const fillDraft = async () => {
     const draft = await createDraft();
-    const { token } = await acquire(draft.id, 'TITLE');
     await call('PUT', `${base}/${draft.id}/title`, {
       value: '설악산',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
     await call('PUT', `${base}/${draft.id}/visibility`, {
       value: 'PRIVATE',
@@ -525,7 +413,7 @@ describe('가짜 서버 번들 발행', () => {
     });
   });
 
-  it('조건을 채우면 발행되고 편집권이 풀리며 이후 초안 저장은 BUNDLE_002이다', async () => {
+  it('조건을 채우면 발행되고 이후 초안 저장은 BUNDLE_002이다', async () => {
     const id = await fillDraft();
     const result = await publish(id, await revisionOf(id));
 
@@ -533,11 +421,9 @@ describe('가짜 서버 번들 발행', () => {
     expect(result.json.data).toMatchObject({
       status: 'PUBLISHED',
       publishBlockers: [],
-      leases: [],
       permissions: { canPublish: false },
     });
     expect(result.json.data.publishedAt).not.toBeNull();
-    expect(mockDb.get().bundleLeases).toEqual([]);
 
     const late = await call('PUT', `${base}/${id}/visibility`, {
       value: 'PUBLIC',

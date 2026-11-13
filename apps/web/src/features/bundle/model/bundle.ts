@@ -14,11 +14,6 @@ const bundlePhotoSchema = z.object({
   position: z.number().int().nonnegative(),
   addedBy: z.number().int().positive(),
   addedAt: z.string(),
-  // 서버가 캡션을 없애서 응답에 없으면 빈 값으로 둠, 캡션 UI 정리는 후속 작업
-  caption: z.string().default(''),
-  captionVersion: z.number().int().nonnegative().default(0),
-  captionUpdatedBy: z.number().int().positive().nullish(),
-  captionUpdatedAt: z.string().nullish(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundlePhotoResponse']>>;
 
 const bundleLocationSchema = z.object({
@@ -64,14 +59,6 @@ const bundlePermissionsSchema = z.object({
   canComment: z.boolean(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundlePermissions']>>;
 
-// 서버 스키마에서 사라진 legacy lease, 가짜 서버 확장으로만 남아 있고 실제 응답에는 없음
-const leaseStateSchema = z.object({
-  target: z.string(),
-  memberId: z.number().int().positive(),
-  expiresAt: z.string(),
-  leaseVersion: z.number().int().nonnegative(),
-});
-
 /**
  * BundleSnapshot(초안 생성·상세·저장·발행 응답 공통)
  * 중첩 배열·객체는 계약 검사가 선택 필드를 다루지 못해 항목별 스키마(위)에서 따로 검사 후 결합
@@ -100,7 +87,6 @@ export const bundleSnapshotSchema = z.object({
   dateChips: z.array(z.string()),
   publishBlockers: z.array(z.string()),
   permissions: bundlePermissionsSchema,
-  leases: z.array(leaseStateSchema).default([]),
   titleTooLong: z.boolean(),
   titleCrdtState: z.string().nullish(),
   createdAt: z.string(),
@@ -109,13 +95,12 @@ export const bundleSnapshotSchema = z.object({
 }) satisfies z.ZodType<
   Omit<
     ApiContract<Schemas['BundleSnapshot']>,
-    'photos' | 'participants' | 'comments' | 'permissions' | 'leases'
+    'photos' | 'participants' | 'comments' | 'permissions'
   > & {
     photos: unknown;
     participants: unknown;
     comments: unknown;
     permissions: unknown;
-    leases: unknown;
   }
 >;
 
@@ -151,8 +136,6 @@ export type BundleDetail = {
     src: string;
     position: number;
     addedBy: string;
-    caption: string;
-    captionVersion: number;
   }[];
   /** 참여 멤버 id(참여 시각 순) */
   participantIds: readonly string[];
@@ -161,8 +144,6 @@ export type BundleDetail = {
   dateChips: readonly string[];
   publishBlockers: readonly string[];
   permissions: z.infer<typeof bundlePermissionsSchema>;
-  /** 누가 어느 대상을 편집 중인지(token은 서버가 공개하지 않음) */
-  leases: readonly { target: string; memberId: string; leaseVersion: number; expiresAt: string }[];
 };
 
 /** 서버 응답을 화면 계층이 쓰는 모양으로 변환(문자열 id, 사진 순서 정렬) */
@@ -190,8 +171,6 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
       src: photo.imageUrl,
       position: photo.position,
       addedBy: toDomainId(photo.addedBy),
-      caption: photo.caption,
-      captionVersion: photo.captionVersion,
     })),
   participantIds: [...snapshot.participants]
     .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
@@ -204,20 +183,4 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   dateChips: snapshot.dateChips,
   publishBlockers: snapshot.publishBlockers,
   permissions: snapshot.permissions,
-  leases: snapshot.leases.map((lease) => ({
-    target: lease.target,
-    memberId: toDomainId(lease.memberId),
-    leaseVersion: lease.leaseVersion,
-    expiresAt: lease.expiresAt,
-  })),
 });
-
-/** 편집권 획득·갱신 응답(LEASE_GRANTED·LEASE_HEARTBEAT의 data) */
-export const leaseGrantSchema = z.object({
-  target: z.string(),
-  token: z.uuid(),
-  leaseVersion: z.number().int().nonnegative(),
-  expiresAt: z.string(),
-});
-
-export type LeaseGrant = z.infer<typeof leaseGrantSchema>;

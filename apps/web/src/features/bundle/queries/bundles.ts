@@ -13,7 +13,6 @@ import {
   publishBundle,
   readVersionConflict,
   removeBundleParticipant,
-  saveBundleCaption,
   saveBundleComment,
   saveBundleDate,
   saveBundleTitle,
@@ -140,7 +139,7 @@ const requireIds = (bunchId: string | undefined, bundleId: string | undefined) =
 
 export const useSaveTitleMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
   useMutation({
-    mutationFn: (input: FieldInput<string> & { leaseToken?: string }) =>
+    mutationFn: (input: FieldInput<string>) =>
       saveBundleTitle({ ...requireIds(bunchId, bundleId), ...input }),
     ...useBundleCacheSync(bunchId, bundleId),
   });
@@ -157,15 +156,8 @@ export const useSaveVisibilityMutation = (
 
 export const useSaveDateMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
   useMutation({
-    mutationFn: (input: FieldInput<string | null> & { leaseToken?: string }) =>
+    mutationFn: (input: FieldInput<string | null>) =>
       saveBundleDate({ ...requireIds(bunchId, bundleId), ...input }),
-    ...useBundleCacheSync(bunchId, bundleId),
-  });
-
-export const useSaveCaptionMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
-  useMutation({
-    mutationFn: (input: FieldInput<string> & { bundlePhotoId: string; leaseToken?: string }) =>
-      saveBundleCaption({ ...requireIds(bunchId, bundleId), ...input }),
     ...useBundleCacheSync(bunchId, bundleId),
   });
 

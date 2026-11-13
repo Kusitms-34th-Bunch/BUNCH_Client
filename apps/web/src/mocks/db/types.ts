@@ -81,10 +81,6 @@ export type MockBundlePhoto = {
   position: number;
   addedBy: number;
   addedAt: string;
-  caption: string;
-  captionVersion: number;
-  captionUpdatedBy: number | null;
-  captionUpdatedAt: string | null;
 };
 
 export type MockBundleComment = {
@@ -116,16 +112,6 @@ export type MockBundle = {
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;
-};
-
-/** 편집권(STOMP 대신 가짜 서버가 관리). target은 TITLE·DATE·LOCATION·PHOTO:{번들 사진 ID} */
-export type MockLease = {
-  bundleId: number;
-  target: string;
-  memberId: number;
-  token: string;
-  leaseVersion: number;
-  expiresAt: string;
 };
 
 /** 내 푸시 수신 설정: 계정 전체 수신과 알림 종류별 수신(서버 `NotificationType` 키 전체 맵) */
@@ -164,7 +150,6 @@ export type MockDbState = {
   memberships: MockMembership[];
   photos: MockPhoto[];
   bundles: MockBundle[];
-  bundleLeases: MockLease[];
   bunchAccessNotices: MockBunchAccessNotice[];
   pushPreferences: MockPushPreferences;
   follows: MockFollow[];

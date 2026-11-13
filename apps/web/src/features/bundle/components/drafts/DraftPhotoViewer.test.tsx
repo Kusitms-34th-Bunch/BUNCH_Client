@@ -57,11 +57,10 @@ const renderViewer = ({
     />,
   );
 
-const photo = (id: string, caption = ''): DraftPhoto => ({
+const photo = (id: string): DraftPhoto => ({
   id,
   src: `/${id}.jpg`,
   alt: `사진 ${id}`,
-  caption,
   takenAt: '2026-06-20T19:00',
   uploaderId: 'jiye',
 });

@@ -9,7 +9,7 @@ import {
   placeFixture,
 } from '../fixtures/draft.fixture';
 import { moveLocation } from '../lib/locations';
-import { movePhoto, removePhoto, setPhotoCaption } from '../lib/photos';
+import { movePhoto, removePhoto } from '../lib/photos';
 
 // 입력이 멈추고 이만큼 지나면 저장 완료로 봄(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」)
 const SAVE_DELAY_MS = 1000;
@@ -88,11 +88,6 @@ export function useDraftFixture(draftId: string | undefined): {
         ...current,
         members: current.members.filter((member) => member.id !== memberId),
         comments: current.comments.filter((comment) => comment.memberId !== memberId),
-      })),
-    setPhotoCaption: (photoId, caption) =>
-      update((current) => ({
-        ...current,
-        photos: setPhotoCaption(current.photos, photoId, caption),
       })),
     removePhoto: (photoId) =>
       update((current) => ({ ...current, photos: removePhoto(current.photos, photoId) })),

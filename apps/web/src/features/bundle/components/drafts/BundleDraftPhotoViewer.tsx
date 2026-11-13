@@ -16,7 +16,7 @@ type BundleDraftPhotoViewerProps = {
 };
 
 /**
- * `/bunch/drafts/[draftId]/photos/[photoId]/viewer` 사진 크게 보기: 캡션 화면과 같은 초안 상태를 봄
+ * `/bunch/drafts/[draftId]/photos/[photoId]/viewer` 사진 크게 보기: 작성 화면과 같은 초안 상태를 봄
  * 주소의 사진이 초안에 없으면 안내 토스트 뒤 작성 화면으로 돌아가고, 사진을 넘기면 주소가 따라 바뀜
  */
 export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps) {
@@ -61,7 +61,6 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
       sources={sources}
       sourcesPending={sourcesPending}
       bunchMembers={photoBoxData?.members}
-      // 직접 주소로 들어와 돌아갈 기록이 없으면 그 사진의 캡션 화면으로 이동
       // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동(작성 화면에서 사진을 눌러 들어오는 화면)
       onBack={() => backOr(BUNDLE_PATHS.draft(draft.id))}
       onPhotoChange={sync}

@@ -2,7 +2,6 @@ import { blockHandlers } from './blocks';
 import { bunchHomeHandlers } from './bunchHome';
 import { bunchOnboardingHandlers } from './bunchOnboarding';
 import { bundleExitHandlers } from './bundleExit';
-import { bundleLeaseHandlers } from './bundleLeases';
 import { bundlePhotoHandlers } from './bundlePhotos';
 import { bundleHandlers } from './bundles';
 import { followHandlers } from './follows';
@@ -30,7 +29,6 @@ export const handlers = [
   ...followHandlers,
   ...blockHandlers,
   ...bundleHandlers,
-  ...bundleLeaseHandlers,
   ...bundleExitHandlers,
   ...bundlePhotoHandlers,
 ];

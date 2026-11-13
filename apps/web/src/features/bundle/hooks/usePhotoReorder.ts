@@ -12,7 +12,7 @@ type UsePhotoReorderOptions = {
 };
 
 /**
- * 캡션 화면의 길게 눌러 끌어 순서 바꾸기(기능 spec 4.3.5, 결정 기록 016): 500ms 길게 누르면 떠오르고 놓을 때 한 번만 옮김
+ * 길게 눌러 끌어 순서 바꾸기(기능 spec 4.3.5, 결정 기록 016). 사진 목록 화면이 없어져 지금 쓰는 곳은 없고, 작성 화면 썸네일의 순서 바꾸기 이슈에서 이어 씀: 500ms 길게 누르면 떠오르고 놓을 때 한 번만 옮김
  * 끄는 동안 상태(스크롤 스냅 끄기용), 앱이 백그라운드로 가면 끌던 사진을 놓은 것으로 보고 끌기 영역을 새로 만드는 epoch를 맡음
  */
 export function usePhotoReorder({ photoIds, onMove }: UsePhotoReorderOptions) {

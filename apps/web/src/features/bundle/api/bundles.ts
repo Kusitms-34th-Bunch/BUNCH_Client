@@ -57,48 +57,25 @@ type SaveBase = {
 
 const saveText = (
   path: string,
-  {
-    value,
-    expectedVersion,
-    mode,
-    leaseToken,
-  }: Omit<SaveBase, 'bunchId' | 'bundleId'> & {
-    value: string;
-    leaseToken?: string | undefined;
-  },
+  { value, expectedVersion, mode }: Omit<SaveBase, 'bunchId' | 'bundleId'> & { value: string },
   context: string,
 ) =>
   requestBundle(
     bffApi.put(path, {
-      json: {
-        value,
-        expectedVersion,
-        mode,
-        ...(leaseToken === undefined ? {} : { leaseToken }),
-      } satisfies Schemas['BundleTextRequest'],
+      json: { value, expectedVersion, mode } satisfies Schemas['BundleTextRequest'],
     }),
     context,
   );
 
-/** 제목 저장(초안은 편집권 token 필요) */
-export const saveBundleTitle = (input: SaveBase & { value: string; leaseToken?: string }) =>
+/** 제목 저장(전체 문자열 호환 경로, 제목 CRDT 저장은 후속 작업) */
+export const saveBundleTitle = (input: SaveBase & { value: string }) =>
   saveText(`${bundlePath(input.bunchId, input.bundleId)}/title`, input, 'save title');
 
-/** 사진 캡션 저장(초안은 그 사진의 편집권 token 필요) */
-export const saveBundleCaption = (
-  input: SaveBase & { bundlePhotoId: string; value: string; leaseToken?: string },
-) =>
-  saveText(
-    `${bundlePath(input.bunchId, input.bundleId)}/photos/${encodeURIComponent(input.bundlePhotoId)}/caption`,
-    input,
-    'save caption',
-  );
-
-/** 내 코멘트 저장(편집권 없음, 본인 코멘트만) */
+/** 내 코멘트 저장(본인 코멘트만) */
 export const saveBundleComment = (input: SaveBase & { value: string }) =>
   saveText(`${bundlePath(input.bunchId, input.bundleId)}/comments/me`, input, 'save comment');
 
-/** 공개 범위 저장(편집권 없음) */
+/** 공개 범위 저장 */
 export const saveBundleVisibility = ({
   bunchId,
   bundleId,
@@ -113,22 +90,20 @@ export const saveBundleVisibility = ({
     'save visibility',
   );
 
-/** 날짜 저장(null이면 해제, 초안은 편집권 token 필요) */
+/** 날짜 저장(null이면 해제) */
 export const saveBundleDate = ({
   bunchId,
   bundleId,
   value,
   expectedVersion,
   mode,
-  leaseToken,
-}: SaveBase & { value: string | null; leaseToken?: string }) =>
+}: SaveBase & { value: string | null }) =>
   requestBundle(
     bffApi.put(`${bundlePath(bunchId, bundleId)}/date`, {
       json: {
         ...(value === null ? {} : { value }),
         expectedVersion,
         mode,
-        ...(leaseToken === undefined ? {} : { leaseToken }),
       } satisfies Schemas['BundleDateRequest'],
     }),
     'save date',
@@ -158,7 +133,7 @@ export const removeBundleParticipant = async (
 
 /**
  * 사진 구성 변경: 추가할 사진함 원본 ID와 제거할 번들 사진 ID를 한 번에 병합, 최종 1~20장
- * 같은 멱등 키·같은 본문은 처음 결과를 돌려주고, 다른 멤버가 편집 중인 사진을 빼면 BUNDLE_004
+ * 같은 멱등 키·같은 본문은 처음 결과를 돌려줌
  */
 export const changeBundlePhotos = ({
   bunchId,
@@ -192,7 +167,7 @@ export const changeBundlePhotos = ({
 
 /**
  * 사진 순서 이동: 이동 대상을 뺀 목록에서 서로 인접한 앞뒤 사진 사이로 옮김(맨 앞이면 previous, 맨 뒤면 next가 null)
- * 앞뒤가 최신 목록과 맞지 않으면 BUNDLE_006, 다른 멤버가 편집 중이면 BUNDLE_004
+ * 앞뒤가 최신 목록과 맞지 않으면 BUNDLE_006
  */
 export const moveBundlePhoto = ({
   bunchId,

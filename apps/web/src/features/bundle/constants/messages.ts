@@ -27,7 +27,6 @@ export const BUNDLE_MESSAGES = {
   pickDeletedDescription: '삭제된 사진은 픽할 수 없어요.',
   photoCount: (count: number) => `사진 ${count}장`,
   photosTitle: '사진',
-  captionPlaceholder: '캡션 추가...',
   locationAdd: '위치 추가',
   locationField: '위치',
   dateAdd: '날짜 추가',
@@ -50,7 +49,6 @@ export const BUNDLE_MESSAGES = {
   publishedDraftDescription: '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
   missingDraftConfirm: '확인',
   // 서버 저장·발행 실패 안내(서버 연동 때 추가한 문구)
-  fieldLocked: '다른 멤버가 편집 중이라 저장하지 못했어요.',
   saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
   publishFailed: '번들을 업로드하지 못했어요. 잠시 후 다시 시도해 주세요.',
   publishConflict: '다른 멤버가 내용을 바꿨어요. 확인한 뒤 다시 업로드해 주세요.',
@@ -136,12 +134,9 @@ export const BUNDLE_MESSAGES = {
   locationNoResult: '검색 결과가 없어요',
   locationResultCount: (count: number) => `검색 결과 ${count}건`,
   searchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  // 사진 상세(캡션 화면·크게 보기, 기능 spec 4.3.4~4.3.6, Figma `1782:32837`·`2082:49108`·`2091:61896`)
-  captionLabel: '사진 캡션',
-  captionTooLong: '캡션은 200자까지 쓸 수 있어요',
+  // 사진 상세(크게 보기, 기능 spec 4.3.4~4.3.6, Figma `2082:49108`·`2091:61896`)
   photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
   photoOpenLabel: (current: number) => `${current}번째 사진 상세 보기`,
-  photoCaptionTitle: '번들 사진',
   photoViewerTitle: '사진 크게 보기',
   photoViewLabel: (current: number) => `${current}번째 사진 크게 보기`,
   removePhotoLabel: (current: number) => `${current}번째 사진 빼기`,
@@ -176,6 +171,5 @@ export const BUNDLE_MESSAGES = {
 export const MAX_LOCATIONS = 3;
 export const TITLE_MAX_LENGTH = 40;
 export const COMMENT_MAX_LENGTH = 400;
-/** 캡션 최대 글자 수와 번들 한 개에 담을 수 있는 사진 수(기능 spec 4.3.4·4.3.7) */
-export const CAPTION_MAX_LENGTH = 200;
+/** 번들 한 개에 담을 수 있는 사진 수(기능 spec 4.3.4·4.3.7) */
 export const MAX_PHOTOS = 20;

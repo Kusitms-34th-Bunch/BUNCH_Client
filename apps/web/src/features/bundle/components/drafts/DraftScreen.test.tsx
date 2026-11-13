@@ -32,7 +32,6 @@ const actions = {
   setDate: vi.fn(),
   addMember: vi.fn(),
   removeMember: vi.fn(),
-  setPhotoCaption: vi.fn(),
   removePhoto: vi.fn(),
   movePhoto: vi.fn(),
   replacePhotos: vi.fn(),
@@ -101,9 +100,7 @@ describe('DraftScreen 구성', () => {
     expect(screen.getByText('참여 멤버')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue(draftFixture.title);
     expect(screen.getAllByRole('img', { name: /한강에서 달리는 사람들/ })).toHaveLength(3);
-    // 사진별 캡션은 이 화면에서 보이지 않고, 제목 옆에는 「픽하기 >」, 맨 끝에는 「사진 추가」 타일이 있음
-    expect(screen.queryByText(draftFixture.photos[0]!.caption)).not.toBeInTheDocument();
-    expect(screen.queryByText(BUNDLE_MESSAGES.captionPlaceholder)).not.toBeInTheDocument();
+    // 제목 옆에는 「픽하기 >」, 맨 끝에는 「사진 추가」 타일이 있음
     expect(screen.getByRole('button', { name: '픽하기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '사진 추가' })).toBeInTheDocument();
     expect(screen.getByText('서울특별시 여의도동')).toBeInTheDocument();
