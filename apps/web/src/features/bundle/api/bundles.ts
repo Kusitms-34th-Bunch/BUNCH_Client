@@ -202,7 +202,7 @@ export const moveBundlePhoto = ({
     'move bundle photo',
   );
 
-/** 번들 삭제: 생성자나 번치 관리자만, 번들·참여자·코멘트·편집권이 사라지고 사진함 원본은 그대로(응답 data는 null) */
+/** 번들 삭제: 생성자나 번치 관리자만, 번들·참여자·코멘트가 사라지고 사진함 원본은 그대로(응답 data는 null) */
 export const deleteBundle = async (bunchId: string, bundleId: string) => {
   await requestData(bffApi.delete(bundlePath(bunchId, bundleId)), z.null(), 'delete bundle');
 };

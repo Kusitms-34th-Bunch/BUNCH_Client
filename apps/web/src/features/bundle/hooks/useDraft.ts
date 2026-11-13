@@ -42,7 +42,7 @@ import {
 const NO_LOCATIONS: readonly DraftLocation[] = [];
 
 const SAVE_DELAY_MS = 1000;
-// 편집권 거부·일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
+// 일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
 const RETRY_DELAY_MS = 3000;
 const MAX_RETRIES = 5;
 // 버전 충돌은 최신 상세를 받은 직후 바로 이어서 저장
