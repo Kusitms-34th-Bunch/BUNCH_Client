@@ -56,7 +56,7 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 - Turbo 캐시가 hit한 작업은 다시 실행하지 않고 이전 로그만 재생한다. 입력(소스, 의존성, `turbo.json`)이 같을 때만 hit하므로 검증을 건너뛰는 것은 아니다. 의심스러우면 Actions의 Caches에서 해당 캐시를 지우고 다시 실행한다.
 - Turbo 캐시 키에 커밋 SHA를 쓰므로 push마다 항목이 새로 저장된다. PR이 만든 캐시(Next 빌드 캐시 등)는 PR이 닫히면 `cache-cleanup.yml`이 지워서 쌓이지 않게 한다. `develop`·`main`에 push되며 저장된 캐시는 정리하지 않고 아래 한도에 의한 삭제에 맡긴다. 저장소 캐시 한도(10GB)를 넘으면 오래된 항목부터 지워진다.
 - Next 캐시는 빌드가 성공한 실행에서만 저장한다. 중간에 실패한 빌드의 부분 캐시가 그 키에 고정되지 않게 하려는 것이다.
-- Build 단계는 `NEXT_SKIP_TYPECHECK=true`로 `next build` 안의 타입 검사를 건너뛴다(`next.config.mjs`의 `typescript.ignoreBuildErrors`). 같은 job의 앞 TypeScript 단계(`yarn typecheck`)가 같은 검사를 하고, 그 단계가 실패해도 Build는 실행돼 결과가 따로 보인다. 배포 빌드(Vercel·`web-deploy.yml`)에는 이 값이 없어 그대로 검사한다.
+- Build 단계는 `NEXT_SKIP_TYPECHECK=true`로 `next build` 안의 타입 검사를 건너뛴다(`next.config.mjs`의 `typescript.ignoreBuildErrors`). `Lint & Typecheck` job의 TypeScript 단계(`yarn typecheck`)가 같은 검사를 따로 하고, 두 job은 서로 기다리지 않아 각 결과가 따로 보인다. 배포 빌드(Vercel·`web-deploy.yml`)에는 이 값이 없어 그대로 검사한다.
 - 웹 번들 크기 기준선도 Actions 캐시다(`bundle-size-<OS>-<브랜치>-<SHA>`, `docs/workflows/performance.md`). `develop`·`main` push 빌드만 저장한다.
 - Turbo 설정(`turbo.json`)의 `outputs`·`inputs`·`env`를 바꾸면 캐시가 틀린 결과를 재사용하지 않는지 확인한다.
 
