@@ -1,7 +1,8 @@
 'use client';
 
 import { overlay } from 'overlay-kit';
-import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { LiveOverlay } from '@/shared/components/overlay/LiveOverlay';
 
 /** 시트·대화상자 렌더러에 그대로 펼쳐 넘기는 값 */
 export type ScreenOverlayProps = {
@@ -13,7 +14,7 @@ export type ScreenOverlayProps = {
 type RenderOverlay = (_props: ScreenOverlayProps, _close: () => void) => ReactNode;
 
 // 화면이 다시 그려진 횟수를 열린 창에 알리는 저장소
-const createStore = () => {
+const createOverlayStore = () => {
   let version = 0;
   const listeners = new Set<() => void>();
   return {
@@ -30,24 +31,6 @@ const createStore = () => {
     },
   };
 };
-type Store = ReturnType<typeof createStore>;
-
-const ignore = () => () => {};
-const fixedVersion = () => 0;
-
-/** `live`면 화면이 다시 그려질 때마다 열린 창도 다시 그림 */
-function LiveOverlay({
-  store,
-  live,
-  render,
-}: {
-  store: Store;
-  live: boolean;
-  render: () => ReactNode;
-}) {
-  useSyncExternalStore(live ? store.subscribe : ignore, live ? store.getVersion : fixedVersion);
-  return render();
-}
 
 /**
  * 시트·대화상자를 `overlay.open`으로 여는 함수를 돌려줌. 다 닫히면 언마운트하고 `onClosed`를 부름
@@ -59,7 +42,7 @@ function LiveOverlay({
 export function useScreenOverlay() {
   // 렌더와 무관한 값이라 한 번만 만들고 바꾸지 않음
   const [opened] = useState(() => new Set<string>());
-  const [store] = useState(createStore);
+  const [store] = useState(createOverlayStore);
 
   // 의존성 없이 매 렌더 뒤에 알림
   useEffect(() => store.bump());
