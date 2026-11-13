@@ -10,6 +10,7 @@ import { defaultBunchImage } from '@/shared/lib/bunchProfile';
 import type { FollowStatus } from '../../lib/types';
 import type { OtherBunchProfile } from '../../model/otherBunch';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
+import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchProfile } from '../BunchProfile';
 import { BunchProfileImage } from '../BunchProfileImage';
@@ -34,6 +35,8 @@ type OtherBunchScreenProps = {
   busy?: boolean;
   /** 팔로우할 수 있는지(내 번치가 없으면 버튼 없음) */
   canFollow?: boolean;
+  /** 팔로워·팔로잉 목록을 볼 수 있는지(서버 판단). 볼 수 있으면 수를 링크로 */
+  canViewRelations?: boolean;
 };
 
 /**
@@ -51,6 +54,7 @@ export function OtherBunchScreen({
   onUnfollow,
   busy = false,
   canFollow = true,
+  canViewRelations = false,
 }: OtherBunchScreenProps) {
   const openOverlay = useScreenOverlay();
   const background = BUNCH_BACKGROUNDS[bunch.characterType];
@@ -131,8 +135,19 @@ export function OtherBunchScreen({
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 pb-s8 relative -mt-5 flex flex-1 flex-col">
           {/* 프로필 아래 팔로우 버튼 16, 버튼 아래 번들·안내 16(Figma 3086:68423) */}
           <div className="gap-s8 flex flex-col">
-            {/* 수는 글자만(멤버·팔로워·팔로잉 목록의 서버 연결 때 링크로) */}
-            <BunchProfile bunch={bunch} showPlaces={false} />
+            {/* 팔로워·팔로잉 수는 볼 수 있을 때만 링크. 멤버 수는 다른 번치 멤버 API가 없어 글자만 */}
+            <BunchProfile
+              bunch={bunch}
+              showPlaces={false}
+              countHrefs={
+                canViewRelations
+                  ? {
+                      followerCount: BUNCH_HOME_PATHS.otherBunchFollows(bunch.id),
+                      followingCount: followingTab(BUNCH_HOME_PATHS.otherBunchFollows(bunch.id)),
+                    }
+                  : undefined
+              }
+            />
             {canFollow && (
               <div className="px-padding-p8">
                 <FollowButton

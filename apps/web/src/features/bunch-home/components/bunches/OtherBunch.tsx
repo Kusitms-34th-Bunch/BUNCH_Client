@@ -33,11 +33,11 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   const backOr = useBackOr();
   const me = useQuery(myProfileQueryOptions());
   // 번치가 없는 회원은 명의 없이 보기만(null), 아직 모르면 요청하지 않음(undefined)
-  const viewerId = me.isSuccess ? (me.data.bunch?.id ?? null) : undefined;
+  const viewerId = me.data ? (me.data.bunch?.id ?? null) : undefined;
   const home = useQuery(otherBunchHomeQueryOptions(bunchId, viewerId));
   const canViewBundles = home.data?.canViewBundles ?? false;
   const published = useQuery(otherBunchPublishedQueryOptions(bunchId, viewerId, canViewBundles));
-  const follow = useFollowBunchMutation(bunchId, viewerId);
+  const follow = useFollowBunchMutation(viewerId);
   const switchBunch = useSwitchBunchMutation();
   const { me: reporter, access, block } = useBlockRelation(bunchId);
   // 이 화면에서 차단해 접근 제한 화면으로 바뀌면 제목으로 초점
@@ -112,7 +112,7 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   // 실패 안내·다시 받기는 mutation이 맡음(meta·onError)
   const run = async (change: FollowChange) => {
     if (inflight.current) throw new Error('already pending');
-    const request = follow.mutateAsync(change);
+    const request = follow.mutateAsync({ targetId: bunchId, change });
     inflight.current = request;
     try {
       return await request;
@@ -140,6 +140,7 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
       busy={follow.isPending || viewerStale}
       // 번치가 없는 회원은 팔로우할 명의가 없어 버튼을 숨김
       canFollow={viewerId !== null}
+      canViewRelations={data.canViewRelations ?? false}
       onBack={back}
       // 내 번치(신고 명의)를 알기 전에는 더보기를 숨김
       more={
