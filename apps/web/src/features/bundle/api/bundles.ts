@@ -21,17 +21,22 @@ const wireIdOrThrow = (id: string) => {
 const requestBundle = async (request: ReturnType<typeof bffApi.get>, context: string) =>
   toBundleDetail(await requestData(request, bundleSnapshotSchema, context));
 
-/** 초안 생성: 같은 번치의 사진 1~20장(고른 순서), 같은 멱등 키로 다시 보내면 같은 초안 */
+/**
+ * 초안 생성: 같은 번치의 사진 1~20장(고른 순서), 같은 멱등 키로 다시 보내면 같은 초안
+ * 서버는 생성자를 뺀 참여자 1명 이상을 요구함(화면이 참여자를 넘기도록 잇는 일은 실서버 연동 이슈에서)
+ */
 export const createBundle = async (
   bunchId: string,
   photoIds: readonly string[],
   idempotencyKey: string,
+  participantMemberIds: readonly string[] = [],
 ) =>
   requestBundle(
     bffApi.post(`bunches/${encodeURIComponent(bunchId)}/bundles`, {
       headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
       json: {
         photoIds: photoIds.map(wireIdOrThrow),
+        participantMemberIds: participantMemberIds.map(wireIdOrThrow),
       } satisfies Schemas['CreateBundleRequest'],
     }),
     'create bundle',
@@ -177,6 +182,9 @@ export const changeBundlePhotos = ({
         addPhotoIds: addPhotoIds.map(wireIdOrThrow),
         removeBundlePhotoIds: removeBundlePhotoIds.map(wireIdOrThrow),
         mode,
+        // 20장을 넘길 때의 처리 방식, 지금은 전부 적용하거나 전부 거절(ATOMIC_APPLY)로 고정
+        capacityMode: 'ATOMIC_APPLY',
+        reselectedPhotoIds: [],
       } satisfies Schemas['BundlePhotoChangesRequest'],
     }),
     'change bundle photos',

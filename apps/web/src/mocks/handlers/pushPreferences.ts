@@ -18,11 +18,11 @@ export const pushPreferenceHandlers = [
   http.patch('/api/members/me/push-preferences', async ({ request }) => {
     const body: unknown = await request.json().catch(() => null);
     if (!isRecord(body)) return fail(400, 'COMMON_002');
-    const { enabled, types } = body;
+    const { enabled, categories } = body;
     if (enabled !== undefined && typeof enabled !== 'boolean') return fail(400, 'COMMON_002');
-    if (types !== undefined && !isRecord(types)) return fail(400, 'COMMON_002');
+    if (categories !== undefined && !isRecord(categories)) return fail(400, 'COMMON_002');
 
-    const changes = types ?? {};
+    const changes = categories ?? {};
     if (Object.keys(changes).some((type) => !KNOWN_TYPES.has(type))) return fail(400, 'COMMON_001');
     if (Object.values(changes).some((value) => typeof value !== 'boolean')) {
       return fail(400, 'COMMON_002');
@@ -31,7 +31,7 @@ export const pushPreferenceHandlers = [
     const current = mockDb.get().pushPreferences;
     const next = {
       enabled: enabled ?? current.enabled,
-      types: { ...current.types, ...(changes as Record<string, boolean>) },
+      categories: { ...current.categories, ...(changes as Record<string, boolean>) },
     };
     mockDb.update((state) => ({ ...state, pushPreferences: next }));
     return ok(next);

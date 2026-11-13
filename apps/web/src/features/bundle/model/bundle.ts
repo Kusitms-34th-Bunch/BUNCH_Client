@@ -14,8 +14,9 @@ const bundlePhotoSchema = z.object({
   position: z.number().int().nonnegative(),
   addedBy: z.number().int().positive(),
   addedAt: z.string(),
-  caption: z.string(),
-  captionVersion: z.number().int().nonnegative(),
+  // 서버가 캡션을 없애서 응답에 없으면 빈 값으로 둠, 캡션 UI 정리는 후속 작업
+  caption: z.string().default(''),
+  captionVersion: z.number().int().nonnegative().default(0),
   captionUpdatedBy: z.number().int().positive().nullish(),
   captionUpdatedAt: z.string().nullish(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundlePhotoResponse']>>;
@@ -35,6 +36,8 @@ const bundleParticipantSchema = z.object({
   nickname: z.string().nullish(),
   imageUrl: z.string().nullish(),
   profileAvailable: z.boolean(),
+  role: z.enum(['OWNER', 'CO_OWNER', 'MEMBER']).nullish(),
+  creator: z.boolean(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundleParticipantResponse']>>;
 
 const bundleCommentSchema = z.object({
@@ -61,12 +64,13 @@ const bundlePermissionsSchema = z.object({
   canComment: z.boolean(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundlePermissions']>>;
 
+// 서버 스키마에서 사라진 legacy lease, 가짜 서버 확장으로만 남아 있고 실제 응답에는 없음
 const leaseStateSchema = z.object({
   target: z.string(),
   memberId: z.number().int().positive(),
   expiresAt: z.string(),
   leaseVersion: z.number().int().nonnegative(),
-}) satisfies z.ZodType<ApiContract<Schemas['LeaseState']>>;
+});
 
 /**
  * BundleSnapshot(초안 생성·상세·저장·발행 응답 공통)
@@ -96,7 +100,9 @@ export const bundleSnapshotSchema = z.object({
   dateChips: z.array(z.string()),
   publishBlockers: z.array(z.string()),
   permissions: bundlePermissionsSchema,
-  leases: z.array(leaseStateSchema),
+  leases: z.array(leaseStateSchema).default([]),
+  titleTooLong: z.boolean(),
+  titleCrdtState: z.string().nullish(),
   createdAt: z.string(),
   updatedAt: z.string(),
   publishedAt: z.string().nullish(),

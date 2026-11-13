@@ -38,7 +38,7 @@
 ## 데이터 의존성
 
 - Query: `notificationSettingsQueryOptions`(key `myKeys.notificationSettings()`, `GET /members/me/push-preferences`). Mutation: `useUpdateNotificationSettingsMutation`(`PATCH`, `scope`로 직렬화, optimistic 후 실패 되돌림, 다른 요청이 남아 있으면 응답으로 덮어쓰지 않음).
-- 서버 `types` 21개 키와 화면 토글 4개의 대응은 `lib/notificationPreferences.ts`(`NOTIFICATION_TYPE_KEYS`)가 맡는다. 묶인 알림이 모두 켜져 있을 때만 그 토글을 켜짐으로 보이고, 토글을 누르면 묶인 키를 모두 같은 값으로 보낸다. 뭉치 성장(9)·내보내짐(14)·번치 삭제(15)·공개 범위 바뀜(16)은 어느 토글에도 묶지 않아 보내지 않는다.
+- 서버 `categories` 21개 키(화면 계층에서는 `types`로 변환)와 화면 토글 4개의 대응은 `lib/notificationPreferences.ts`(`NOTIFICATION_TYPE_KEYS`)가 맡는다. 묶인 알림이 모두 켜져 있을 때만 그 토글을 켜짐으로 보이고, 토글을 누르면 묶인 키를 모두 같은 값으로 보낸다. 뭉치 성장(9)·내보내짐(14)·번치 삭제(15)·공개 범위 바뀜(16)은 어느 토글에도 묶지 않아 보내지 않는다.
 - 화면(`NotificationSettingsScreen`)은 `settings`, `devicePermission`, `onChangePush`, `onChangeType`, `onOpenDeviceSettings?`를 prop으로 받는다.
 
 ## UI와 접근성

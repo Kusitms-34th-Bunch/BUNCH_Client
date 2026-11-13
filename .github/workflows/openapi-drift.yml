@@ -1,6 +1,7 @@
 name: OpenAPI Drift
 
-# 커밋된 생성 타입(packages/api-core/src/generated/openapi.ts)이 실제 스펙과 어긋났는지 매일 확인. PR 차단 검사 아님
+# 커밋된 생성 타입(packages/api-core/src/generated/openapi.ts)이 실제 스펙과 어긋났는지 매일 확인하고,
+# 어긋나면 develop으로 갱신 PR(브랜치 openapi-sync)을 열거나 갱신. PR 차단 검사 아님
 on:
   schedule:
     # 매일 09:00 KST
@@ -8,9 +9,10 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: openapi-drift-${{ github.ref }}
-  cancel-in-progress: true
+  group: openapi-drift
+  cancel-in-progress: false
 
+# 푸시·PR은 PAT(OPENAPI_SYNC_PR_TOKEN)로 함(기본 토큰으로 만든 PR은 CI가 돌지 않음)
 permissions:
   contents: read
 
@@ -21,9 +23,14 @@ jobs:
     timeout-minutes: 10
     env:
       GENERATED_PATH: packages/api-core/src/generated/openapi.ts
+      SYNC_BRANCH: openapi-sync
+      BASE_BRANCH: develop
+      HAS_PR_TOKEN: ${{ secrets.OPENAPI_SYNC_PR_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.BASE_BRANCH }}
+          # 설치·생성 단계(서드파티 스크립트 실행)에 쓰기 자격 증명을 남기지 않음. PAT는 마지막 PR 단계에서만 씀
           persist-credentials: false
 
       # 스펙 주소가 없으면 설치 전에 중단
@@ -80,26 +87,35 @@ jobs:
             exit 0
           fi
           echo "drift=true" >> "$GITHUB_OUTPUT"
-          git diff -- "$GENERATED_PATH" > openapi-drift.diff
+          git diff -- "$GENERATED_PATH" > "$RUNNER_TEMP/openapi-drift.diff"
           read -r added removed _ < <(git diff --numstat -- "$GENERATED_PATH")
+          # 경로·operation 변경 요약(Summary와 PR 본문에 같이 씀)
           {
-            echo "## OpenAPI Drift"
-            echo ""
-            echo "**결과: 실패** — 커밋된 생성 타입이 스펙과 다릅니다 (추가 ${added}줄, 삭제 ${removed}줄)"
-            echo ""
-            echo "로컬에서 \`yarn gen:api-types\`를 실행해 갱신한 뒤 커밋하세요(포맷까지 적용됨). 전체 diff는 artifact \`openapi-drift-diff\`에 있습니다."
-            echo ""
             echo "### 경로 변경"
             echo ""
             echo '```diff'
-            grep -E "^[+-]  '/" openapi-drift.diff || echo "(없음)"
+            grep -E "^[+-]  '/" "$RUNNER_TEMP/openapi-drift.diff" || echo "(없음)"
             echo '```'
             echo ""
             echo "### operation 변경"
             echo ""
             echo '```diff'
-            { grep -E "^[+-]  [A-Za-z0-9_]+: \{" openapi-drift.diff || echo "(없음)"; } | head -100
+            { grep -E "^[+-]  [A-Za-z0-9_]+: \{" "$RUNNER_TEMP/openapi-drift.diff" || echo "(없음)"; } | head -100
             echo '```'
+          } > "$RUNNER_TEMP/openapi-drift-summary.md"
+          echo "lines=추가 ${added}줄, 삭제 ${removed}줄" >> "$GITHUB_OUTPUT"
+          {
+            echo "## OpenAPI Drift"
+            echo ""
+            echo "**결과: 변경 있음** — 커밋된 생성 타입이 스펙과 다릅니다 (추가 ${added}줄, 삭제 ${removed}줄)"
+            echo ""
+            if [ "$HAS_PR_TOKEN" = "true" ]; then
+              echo "갱신 PR(브랜치 \`${SYNC_BRANCH}\`)을 열거나 갱신합니다. 타입이 깨지는 곳은 그 PR의 CI에서 확인하세요."
+            else
+              echo "로컬에서 \`yarn gen:api-types\`를 실행해 갱신한 뒤 커밋하세요(포맷까지 적용됨). 자동 PR은 repo secret \`OPENAPI_SYNC_PR_TOKEN\`을 설정하면 켜집니다."
+            fi
+            echo ""
+            cat "$RUNNER_TEMP/openapi-drift-summary.md"
             echo ""
             echo "$footer"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -109,11 +125,123 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: openapi-drift-diff
-          path: openapi-drift.diff
+          path: ${{ runner.temp }}/openapi-drift.diff
           retention-days: 3
 
+      # 열린 갱신 PR이 있으면 그 브랜치 위에 새 생성물만 커밋(사람이 올린 수정 커밋을 지우지 않음)
+      # 열린 PR이 없으면 develop에서 브랜치를 새로 만듦(이전 브랜치는 머지됐거나 버려진 것)
+      - name: 갱신 PR 열기·갱신
+        if: steps.diff.outputs.drift == 'true' && env.HAS_PR_TOKEN == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.OPENAPI_SYNC_PR_TOKEN }}
+          DIFF_LINES: ${{ steps.diff.outputs.lines }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          cp "$GENERATED_PATH" "$RUNNER_TEMP/openapi.ts"
+          git checkout -- "$GENERATED_PATH"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 이 단계의 fetch·push에만 PAT 자격 증명을 씀
+          gh auth setup-git
+
+          # 같은 저장소 브랜치의 PR만(포크의 같은 이름 브랜치 PR은 제외)
+          open_pr=$(gh pr list --base "$BASE_BRANCH" --head "$SYNC_BRANCH" --state open \
+            --json number,isCrossRepository \
+            --jq '[.[] | select(.isCrossRepository | not)][0].number // empty')
+          if [ -n "$open_pr" ]; then
+            git fetch --depth=1 origin "$SYNC_BRANCH"
+            git switch -c "$SYNC_BRANCH" FETCH_HEAD
+          else
+            git switch -c "$SYNC_BRANCH"
+          fi
+
+          cp "$RUNNER_TEMP/openapi.ts" "$GENERATED_PATH"
+          git add -- "$GENERATED_PATH"
+          if git diff --cached --quiet; then
+            echo "열린 PR #${open_pr}의 생성 타입이 이미 최신입니다."
+            exit 0
+          fi
+          # 저장소 hook(pre-push의 typecheck·test 등)은 러너에서 돌리지 않음
+          git -c core.hooksPath=/dev/null commit -m "chore(api-core): OpenAPI 생성 타입 자동 갱신"
+          if [ -n "$open_pr" ]; then
+            git -c core.hooksPath=/dev/null push origin "HEAD:$SYNC_BRANCH"
+          else
+            # 열린 PR이 없는 이전 브랜치만 덮어씀. 복구할 수 있게 덮기 전 커밋을 남김
+            previous=$(git ls-remote --heads origin "$SYNC_BRANCH" | cut -f1)
+            [ -n "$previous" ] && echo "::notice::이전 ${SYNC_BRANCH} 커밋 ${previous}를 덮어씁니다."
+            git -c core.hooksPath=/dev/null push --force origin "HEAD:$SYNC_BRANCH"
+          fi
+
+          # 본문은 PR 템플릿과 같은 순서. 변경 요약은 develop 대비 마지막 생성 결과 기준
+          {
+            echo "## ✨ 주요 변경사항"
+            echo ""
+            echo "- 운영 OpenAPI 스펙이 바뀌어 생성 타입(\`${GENERATED_PATH}\`)을 다시 만들었습니다 (${DIFF_LINES})."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 📝 작업 상세 내용"
+            echo ""
+            echo "- \`OpenAPI Drift\` workflow가 매일 09:00(KST)에 \`yarn gen:api-types\`로 만든 결과입니다. 생성 파일만 바꿨습니다."
+            echo "- 바뀐 계약 때문에 깨지는 코드는 이 브랜치에 직접 커밋해 고칩니다. 다음 실행은 그 커밋을 지우지 않고 새 생성 결과만 덧붙입니다."
+            echo ""
+            cat "$RUNNER_TEMP/openapi-drift-summary.md"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 🧪 검증"
+            echo ""
+            echo "- 이 PR의 Frontend CI(typecheck·test) 결과로 확인합니다. [생성 실행 로그](${RUN_URL})"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 👀 리뷰 포인트"
+            echo ""
+            echo "- 사라지거나 이름이 바뀐 경로·필드를 쓰는 코드가 있는지(typecheck 실패 위치)"
+            echo "- zod 스키마(\`satisfies\`)와 가짜 서버(MSW) 응답이 새 계약과 맞는지"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## ✅ 체크리스트"
+            echo ""
+            echo "- [ ] 관련 이슈 \`Close #번호\` 작성"
+            echo "- [ ] 불필요한 주석 및 디버깅 코드 제거"
+            echo "- [ ] 기능 정상 동작 확인"
+            echo "- [ ] 커밋 및 코드 컨벤션 준수"
+            echo "- [ ] 코드 리뷰 지적에 모두 응답 (고침 / 안 고치는 이유 / 이슈 번호)"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 📸 스크린샷 (선택)"
+            echo ""
+            echo "UI 변경 없음"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## ⚠️ 리스크 / 후속 작업"
+            echo ""
+            echo "- 새 경로·필드를 화면에 연결하는 작업은 기능 이슈에서 합니다."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 🔗 관련 이슈"
+            echo ""
+            echo "연결할 이슈가 있으면 리뷰 시 추가합니다."
+          } > "$RUNNER_TEMP/openapi-sync-pr.md"
+
+          if [ -n "$open_pr" ]; then
+            gh pr edit "$open_pr" --body-file "$RUNNER_TEMP/openapi-sync-pr.md"
+            echo "갱신 PR #${open_pr}을 갱신했습니다."
+          else
+            gh pr create --base "$BASE_BRANCH" --head "$SYNC_BRANCH" \
+              --title "[Chore] OpenAPI 생성 타입 갱신" \
+              --body-file "$RUNNER_TEMP/openapi-sync-pr.md"
+          fi
+
+      # PR을 열 수 없으면(토큰 없음) 지금처럼 실패로 알림
       - name: 드리프트 시 실패
-        if: steps.diff.outputs.drift == 'true'
+        if: steps.diff.outputs.drift == 'true' && env.HAS_PR_TOKEN != 'true'
         run: |
           echo "::error file=${GENERATED_PATH}::커밋된 생성 타입이 스펙과 다릅니다. Summary와 artifact를 확인하세요."
           exit 1
