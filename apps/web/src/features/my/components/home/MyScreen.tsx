@@ -3,7 +3,6 @@
 import { ConfirmDialog, Header, LineChevronRightLargeIcon, toast } from '@app/design-system';
 import { MenuLabel, ProfileImage } from '@app/design-system/web';
 import Link from 'next/link';
-import { type ReactNode } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
@@ -12,6 +11,7 @@ import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 import { openExternal } from '../../lib/navigation';
 import { useLogoutMutation } from '../../queries/session';
+import { MenuSection } from '../MenuSection';
 import { PendingConfirmDialog } from '../PendingConfirmDialog';
 
 type ConfirmKind = 'contact' | 'logout';
@@ -25,10 +25,7 @@ const MENU_SECTIONS: { title: string; items: MenuItem[] }[] = [
   },
   {
     title: MY_MESSAGES.sections.terms,
-    items: [
-      { label: MY_MESSAGES.menu.termsOfService, href: MY_PATHS.termsOfService },
-      { label: MY_MESSAGES.menu.privacyPolicy, href: MY_PATHS.privacyPolicy },
-    ],
+    items: [{ label: MY_MESSAGES.menu.termsAndPrivacy, href: MY_PATHS.termsAndPrivacy }],
   },
   {
     title: MY_MESSAGES.sections.support,
@@ -126,18 +123,5 @@ export function MyScreen({ profile, contactUrl }: MyScreenProps) {
         </div>
       </div>
     </PageShell>
-  );
-}
-
-/** 묶음 제목과 메뉴 목록. 제목 아래 4, 목록 좌우 12(메뉴 안쪽 4와 더해 16) */
-function MenuSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    // 이름 붙은 region으로 두면 토스트 영역(「알림」)과 같은 이름의 랜드마크가 생겨 h2 제목만 둔 묶음으로
-    <section className="gap-s2 flex flex-col">
-      <h2 className="typography-body-4-semi-bold text-text-tertiary px-padding-p8 py-padding-p3">
-        {title}
-      </h2>
-      <ul className="px-padding-p6 flex flex-col">{children}</ul>
-    </section>
   );
 }

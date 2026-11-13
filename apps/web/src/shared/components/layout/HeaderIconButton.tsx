@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 
-// 아이콘 색(currentColor), subtle은 Figma 가입 단계 헤더의 연한 회색, inversed는 어두운 배경 화면(사진 조정)
+// 아이콘 색(currentColor), subtle은 Figma 가입 단계 헤더의 연한 회색, tertiary는 Figma 약관 및 개인정보 헤더(#535A61), inversed는 어두운 배경 화면(사진 조정)
 const TONES = {
   primary: 'text-icon-primary',
   subtle: 'text-icon-quaternary',
+  tertiary: 'text-icon-tertiary',
   inversed: 'text-icon-inversed',
 } as const;
 

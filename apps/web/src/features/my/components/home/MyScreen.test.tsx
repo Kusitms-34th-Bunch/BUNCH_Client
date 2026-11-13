@@ -62,13 +62,12 @@ describe('MyScreen', () => {
         .getAllByRole('listitem')
         .map((item) => item.textContent);
     expect(items('알림')).toEqual(['알림 설정']);
-    expect(items('약관 및 정책')).toEqual(['서비스 이용약관', '개인정보 처리방침']);
+    expect(items('서비스 정보')).toEqual(['약관 및 개인정보']);
     expect(items('고객지원')).toEqual(['문의하기', '로그아웃', '탈퇴하기']);
 
     const href = (name: string) => screen.getByRole('link', { name }).getAttribute('href');
     expect(href('알림 설정')).toBe('/my/notifications');
-    expect(href('서비스 이용약관')).toBe('/my/terms/service');
-    expect(href('개인정보 처리방침')).toBe('/my/terms/privacy');
+    expect(href('약관 및 개인정보')).toBe('/my/terms');
     expect(href('탈퇴하기')).toBe('/my/withdrawal');
   });
 
