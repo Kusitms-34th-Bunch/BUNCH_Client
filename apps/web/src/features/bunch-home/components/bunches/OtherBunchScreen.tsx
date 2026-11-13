@@ -33,6 +33,8 @@ type OtherBunchScreenProps = {
   onUnfollow: () => Promise<unknown>;
   /** 처리 중(버튼을 다시 눌러도 보내지 않음) */
   busy?: boolean;
+  /** 화면 단위 처리 안내(예: 차단 중). 있으면 상태 영역에 팔로우 결과 대신 이 글자 */
+  notice?: string | undefined;
   /** 팔로우할 수 있는지(내 번치가 없으면 버튼 없음) */
   canFollow?: boolean;
   /** 팔로워·팔로잉 목록을 볼 수 있는지(서버 판단). 볼 수 있으면 수를 링크로 */
@@ -53,6 +55,7 @@ export function OtherBunchScreen({
   onFollow,
   onUnfollow,
   busy = false,
+  notice,
   canFollow = true,
   canViewRelations = false,
 }: OtherBunchScreenProps) {
@@ -179,7 +182,7 @@ export function OtherBunchScreen({
       </div>
 
       <p role="status" className="sr-only">
-        {announcement}
+        {notice ?? announcement}
       </p>
     </PageShell>
   );

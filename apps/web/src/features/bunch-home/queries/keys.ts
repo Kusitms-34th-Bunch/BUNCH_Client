@@ -14,4 +14,6 @@ export const bunchHomeKeys = {
     [...bunchHomeKeys.follows(), bunchId, viewerId, kind] as const,
   followRequests: (viewerId: string | undefined) =>
     [...bunchHomeKeys.follows(), 'requests', viewerId] as const,
+  // 내 번치(명의)가 차단한 번치 목록. 차단·해제 뒤 무효화
+  blocks: (viewerId: string | undefined) => [...bunchHomeKeys.all, 'blocks', viewerId] as const,
 };

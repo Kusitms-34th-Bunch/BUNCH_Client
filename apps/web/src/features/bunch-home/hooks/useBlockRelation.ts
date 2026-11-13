@@ -1,36 +1,36 @@
-import { useSyncExternalStore } from 'react';
-import { useBlockedBunches } from './useBlockedBunches';
-import { useBunchHome } from './useBunchHome';
-import { useCurrentBunchId } from './useCurrentBunchId';
-
-const subscribeNothing = () => () => {};
+import { useQuery } from '@tanstack/react-query';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
+import { blockedBunchesQueryOptions } from '../queries/blocks';
 
 type BlockAccess = 'checking' | 'blocked' | 'visible';
 
 /**
- * 지금 내 번치와 다른 번치의 차단 관계. 서버 렌더·첫 hydration은 저장된 내 번치를 몰라 checking(내용을 그리지 않음)
- * 차단 API 연결 전이라 내가 차단한 경우만 알 수 있음(상대가 나를 차단한 경우와 서버 쪽 차단은 API 연결 때)
+ * 지금 내 번치(`members/me` 기본 번치)가 이 번치를 차단했는지(서버 차단 목록 첫 쪽 기준)
+ * 상대가 나를 차단한 경우는 그 번치 응답(403)으로 화면이 따로 판단. 명의·목록을 모르는 동안은 checking(내용을 그리지 않음)
  */
 export function useBlockRelation(bunchId: string) {
-  const [storedId] = useCurrentBunchId();
-  const { data } = useBunchHome();
-  const me = storedId === null ? undefined : data?.current;
-  const { blocked, block } = useBlockedBunches(me?.id);
-  // 서버·첫 hydration은 false, 이후 true(참여 번치가 없으면 차단 관계도 없으니 그대로 그림)
-  const hydrated = useSyncExternalStore(
-    subscribeNothing,
-    () => true,
-    () => false,
-  );
-  const isBlocked = blocked?.some((bunch) => bunch.id === bunchId) ?? false;
-  let access: BlockAccess = 'visible';
-  if (!hydrated) access = 'checking';
-  else if (isBlocked) access = 'blocked';
+  const me = useQuery(myProfileQueryOptions());
+  const viewerId = me.data ? (me.data.bunch?.id ?? null) : undefined;
+  const blocks = useQuery(blockedBunchesQueryOptions(viewerId));
+  let access: BlockAccess = 'checking';
+  // 내 정보·목록을 못 받으면 차단 여부를 몰라도 화면은 보임(오류 안내는 화면 쪽, 서버가 다시 막음)
+  if (
+    viewerId === null ||
+    viewerId === '' ||
+    (viewerId === undefined && me.isError) ||
+    blocks.isError
+  ) {
+    access = 'visible';
+  }
+  if (blocks.data) {
+    // ponytail: 첫 쪽(50개)만 확인, 더 차단했으면 그 번치는 서버 응답(403)으로만 막힘
+    const blocked = blocks.data.items.some((item) => String(item.bunch.id) === bunchId);
+    access = blocked ? 'blocked' : 'visible';
+  }
   return {
-    /** checking: 차단 여부를 아직 모름(서버 렌더·첫 hydration), blocked: 내가 차단함, visible: 볼 수 있음 */
+    /** checking: 차단 여부를 아직 모름, blocked: 내가 차단함, visible: 볼 수 있음 */
     access,
-    /** 지금 내 번치(이름·역할). 모르면 undefined */
-    me,
-    block,
+    /** 지금 내 번치(신고 명의). 모르거나 없으면 undefined */
+    me: me.data?.bunch ?? undefined,
   };
 }

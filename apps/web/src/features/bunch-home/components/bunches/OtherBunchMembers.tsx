@@ -1,16 +1,21 @@
 'use client';
 
+import { isApiError } from '@app/api-core';
 import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { ProfileListItem } from '@app/design-system/web';
+import { useQuery } from '@tanstack/react-query';
 import { notFound } from 'next/navigation';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { ROLE_LABELS } from '../../constants/roles';
 import { findOtherBunch } from '../../fixtures/otherBunches.fixture';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
+import { otherBunchHomeQueryOptions } from '../../queries/otherBunch';
+import { BunchHomeError } from '../home/BunchHomeError';
 import { PrivateBunchNotice } from '../PrivateBunchNotice';
 import { BlockedBunchScreen } from './BlockedBunchScreen';
 
@@ -20,16 +25,44 @@ import { BlockedBunchScreen } from './BlockedBunchScreen';
  */
 export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
   const backOr = useBackOr();
+  // ponytail: 다른 번치 멤버 API가 없어 명단은 샘플, 접근(404·차단 403)과 잠금은 그 번치 홈(서버, 프로필과 같은 캐시) 기준
   const bunch = findOtherBunch(bunchId);
+  const me = useQuery(myProfileQueryOptions());
+  const viewerId = me.data ? (me.data.bunch?.id ?? null) : undefined;
+  const home = useQuery(otherBunchHomeQueryOptions(bunchId, viewerId));
   const { access } = useBlockRelation(bunchId);
-  if (!bunch) notFound();
+  const errorStatus = isApiError(home.error) ? home.error.status : undefined;
+  const blocked = access === 'blocked' || errorStatus === 403;
   // 기록이 없으면 프로필로, 차단한 번치면 프로필도 접근 제한이라 피드로
-  const back = () =>
-    backOr(access === 'blocked' ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
-  if (access !== 'visible')
-    return <BlockedBunchScreen onBack={back} checking={access === 'checking'} />;
-  // 비공개 번치는 팔로우 승인 전에 멤버 명단을 볼 수 없음(기능명세 5.10). ponytail: 다른 번치 멤버 API가 없어 샘플의 처음 상태로 판단
-  const locked = bunch.isPrivate && bunch.followStatus !== 'following';
+  const back = () => backOr(blocked ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
+  // 내가 차단한 번치는 서버 응답(404 등)보다 먼저 접근 제한
+  if (access === 'blocked') return <BlockedBunchScreen onBack={back} />;
+  if (!bunch || errorStatus === 400 || errorStatus === 404) notFound();
+  if (errorStatus === 403) {
+    return (
+      <BlockedBunchScreen
+        onBack={back}
+        onRetry={() => {
+          void me.refetch();
+          void home.refetch();
+        }}
+      />
+    );
+  }
+  if ((me.isError && !me.data) || (home.isError && !home.data)) {
+    return (
+      <BunchHomeError
+        onRetry={() => {
+          void me.refetch();
+          if (viewerId !== undefined) void home.refetch();
+        }}
+        onBack={back}
+      />
+    );
+  }
+  if (access === 'checking' || !home.data) return <BlockedBunchScreen onBack={back} checking />;
+  // 비공개 번치는 팔로우 승인 전에 멤버 명단을 볼 수 없음(기능명세 5.10, 서버 canViewMembers)
+  const locked = !(home.data.canViewMembers ?? false);
 
   return (
     <PageShell

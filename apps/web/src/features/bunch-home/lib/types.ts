@@ -27,6 +27,8 @@ export type BunchMemberManageActions = {
 /** 내 번치가 차단한 다른 번치(차단 목록 한 줄) */
 export type BlockedBunch = {
   id: string;
+  /** 차단 관계 ID(해제 요청에 씀) */
+  blockId: string;
   name: string;
   /** 번치 대표 이미지 주소(없으면 배경색 원) */
   imageSrc?: string | undefined;

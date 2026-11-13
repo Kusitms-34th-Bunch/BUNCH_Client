@@ -21,6 +21,9 @@ export const BUNCH_HOME_MESSAGES = {
   deleteFailed: '번치를 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
   otherBunchLoading: '번치를 불러오는 중이에요',
   followFailed: '팔로우를 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  blockFailed: '번치를 차단하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  unblockFailed: '차단을 해제하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  reportFailed: '신고를 접수하지 못했어요. 잠시 후 다시 시도해 주세요.',
   requestDecisionFailed: '팔로우 요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
   requestAlreadyHandled: '이미 처리된 팔로우 요청이에요.',
   followListLoading: '목록을 불러오는 중이에요',
@@ -119,6 +122,7 @@ export const BUNCH_HOME_MESSAGES = {
   blockQuestion: (bunchName: string) => `${bunchName} 번치를 차단할까요?`,
   blockNotice: '차단하면 번치의 모든 멤버가\n서로의 활동을 볼 수 없어요.',
   blockedDone: (bunchName: string) => `${bunchName} 번치를 차단했어요.`,
+  blocking: '번치를 차단하는 중이에요',
   blockedBunchTitle: '볼 수 없는 번치예요',
   blockedBunchDescription: '해당 번치의 프로필 정보를 불러올 수 없어요.',
   reportTitle: (bunchName: string) => `${bunchName} 번치를 신고할까요?`,
@@ -130,6 +134,9 @@ export const BUNCH_HOME_MESSAGES = {
   unblockTitle: (bunchName: string) => `${bunchName} 차단을 해제할까요?`,
   unblockDescription: '서로의 번들과 프로필을 볼 수 있어요. 팔로우는 자동으로 돌아오지 않아요.',
   unblocked: (bunchName: string) => `${bunchName} 번치를 차단 해제했어요.`,
+  blockedListLoading: '차단 목록을 불러오는 중이에요',
+  // 첫 쪽만 보일 때(더 불러오기 전)
+  blockedListMore: (shown: number) => `최근 차단한 ${shown}개만 보여요.`,
   blockedEmptyTitle: '아직 차단한 번치가 없어요',
   blockedEmptyDescription:
     '차단은 번치 멤버 모두에게 적용되며,\n서로의 번들・프로필・댓글은 보이지 않아요.',
