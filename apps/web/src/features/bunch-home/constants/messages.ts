@@ -80,6 +80,13 @@ export const BUNCH_HOME_MESSAGES = {
   notificationSettingsNudge: '알림 받기를 설정하고 유용한 알림을 받아보세요.',
   readAllDone: '모든 알림을 읽음으로 바꿨어요.',
   nothingToRead: '읽지 않은 알림이 없어요.',
+  notificationsLoading: '알림을 불러오는 중이에요',
+  // 빈 목록 디자인이 없어 낭독만(제안)
+  noNotifications: '아직 알림이 없어요.',
+  openingNotification: '알림을 여는 중이에요',
+  // 명세에 문구가 없어 제안(갈 화면이 사라진 알림, 삭제된 번들 등)
+  notificationUnavailable: '더 이상 볼 수 없는 알림이에요.',
+  readFailed: '알림을 읽음으로 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.',
   // 번치 삭제(화면설계서 2236:41816)
   deleteTitle: (bunchName: string) => `${bunchName}${objectParticle(bunchName)} 삭제할까요?`,
   deletedItems: ['사진함 속 사진', '작성 중이거나 발행된 번들', '팔로우・좋아요・댓글'],
