@@ -19,31 +19,37 @@ import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 
-// 출생연도·성별은 편집 화면에서 다루지 않음(Figma 개인 프로필 편집)
-const toProfileValues = (profile: MyProfile): ProfileValues => ({
+// 출생연도·성별은 추가 개인정보에 동의한 사람만 값을 갖고 고칠 수 있음(기능명세서 7.2.6). 동의하지 않았으면 비워 둔 비활성 칸
+const toProfileValues = (profile: MyProfile, consented: boolean): ProfileValues => ({
   nickname: profile.nickname,
-  birthYear: '',
-  gender: null,
+  birthYear: consented && profile.birthYear !== undefined ? String(profile.birthYear) : '',
+  gender: consented ? (profile.gender ?? null) : null,
 });
 
 const isSameValues = (a: ProfileValues, b: ProfileValues) =>
-  normalizeNickname(a.nickname) === normalizeNickname(b.nickname);
+  normalizeNickname(a.nickname) === normalizeNickname(b.nickname) &&
+  a.birthYear === b.birthYear &&
+  a.gender === b.gender;
 
 /**
- * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임과 프로필 사진(출생연도·성별은 없음, Figma 개인 프로필 편집)
+ * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임·프로필 사진·출생연도·성별
+ * 추가 개인정보에 동의하지 않았으면 출생연도·성별 칸과 안내 문구를 보이지 않음(사용자 요청, Figma는 비활성 표시)
  * 바뀐 값이 있고 모두 유효할 때만 수정하기 활성, 누르면 MY로 돌아가 토스트(저장 API 연결 전이라 이동만)
  */
 export function ProfileEditScreen({
   profile,
+  demographicsConsent,
   checkNickname = checkNicknameAvailability,
 }: {
   profile: MyProfile;
+  /** 추가 개인정보(출생연도·성별) 수집·이용 동의 여부. 동의해야 출생연도·성별 칸이 보이고 고칠 수 있음 */
+  demographicsConsent: boolean;
   /** 닉네임 중복 확인 호출(테스트에서 바꿔 끼움) */
   checkNickname?: CheckNickname | undefined;
 }) {
   const backOr = useBackOr();
   useScrollFocusedIntoView();
-  const initial = toProfileValues(profile);
+  const initial = toProfileValues(profile, demographicsConsent);
   // 지금 내 닉네임과 같으면 중복 확인을 건너뜀(기능명세서 7.2.5 로직 1)
   const fields = useProfileFields(initial, checkNickname, { currentNickname: profile.nickname });
   // 바꾼 사진은 미리보기만(서버 반영은 프로필 수정 API 연결 시)
@@ -108,7 +114,7 @@ export function ProfileEditScreen({
           <ProfilePhotoField value={photo} onChange={setPhoto} />
         </div>
         <div className="pt-s14 px-padding-p8">
-          <ProfileFields fields={fields} showDemographics={false} />
+          <ProfileFields fields={fields} showDemographics={demographicsConsent} />
         </div>
       </PageShell>
     </div>
