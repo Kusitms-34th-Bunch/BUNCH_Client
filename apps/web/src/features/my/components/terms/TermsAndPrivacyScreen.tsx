@@ -7,7 +7,7 @@ import {
   Toggle,
   type ConfirmDialogProps,
 } from '@app/design-system';
-import { MenuLabel } from '@app/design-system/web';
+import { MenuLabel, TextButtonUnderline } from '@app/design-system/web';
 import Link from 'next/link';
 import { useId, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
@@ -92,13 +92,16 @@ export function TermsAndPrivacyScreen({ consent, onChangeConsent }: TermsAndPriv
               >
                 {demographics.title}
               </span>
-              <Link
-                href={MY_PATHS.demographicsTerms}
-                className="typography-caption-1-regular text-text-tertiary focus-visible:outline-border-brand cursor-pointer touch-manipulation underline decoration-from-font [text-underline-position:from-font] focus-visible:outline-2 focus-visible:outline-offset-2"
+              <TextButtonUnderline
+                renderLink={({ className, children }) => (
+                  <Link href={MY_PATHS.demographicsTerms} className={className}>
+                    {children}
+                  </Link>
+                )}
               >
                 {demographics.viewFull}
                 <span className="sr-only"> {demographics.title}</span>
-              </Link>
+              </TextButtonUnderline>
             </span>
             {/* 누른 값으로 바로 바뀌지 않게 상태는 서버 값만 따르고, 누르면 확인 창을 엶 */}
             <Toggle
