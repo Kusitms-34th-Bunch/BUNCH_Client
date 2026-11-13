@@ -129,7 +129,7 @@ export type MockLease = {
 };
 
 /** 내 푸시 수신 설정: 계정 전체 수신과 알림 종류별 수신(서버 `NotificationType` 키 전체 맵) */
-export type MockPushPreferences = { enabled: boolean; types: Record<string, boolean> };
+export type MockPushPreferences = { enabled: boolean; categories: Record<string, boolean> };
 
 /** 번치 사이 팔로우(follower가 target을 팔로우). 비공개 target은 승인 전까지 REQUESTED */
 export type MockFollow = {

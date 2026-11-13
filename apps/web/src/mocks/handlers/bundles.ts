@@ -111,6 +111,8 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     status: bundle.status,
     title: bundle.title,
     titleVersion: bundle.titleVersion,
+    // 제목 CRDT는 아직 가짜 서버에 없음(제목 길이 초과 병합 상태는 만들지 않음)
+    titleTooLong: false,
     visibility: bundle.visibility,
     visibilityVersion: bundle.visibilityVersion,
     date: bundle.date,
@@ -129,7 +131,11 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     photos: [...bundle.photos].sort((a, b) => a.position - b.position),
     participants: [...bundle.participants]
       .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
-      .map((participant) => ({ ...participant, profileAvailable: true })),
+      .map((participant) => ({
+        ...participant,
+        profileAvailable: true,
+        creator: participant.memberId === bundle.createdBy,
+      })),
     comments: bundle.comments.map((comment, index) => ({
       ...comment,
       id: index + 1,

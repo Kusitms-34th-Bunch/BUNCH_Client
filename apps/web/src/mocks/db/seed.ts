@@ -392,6 +392,6 @@ export const createSeed = (): MockDbState => ({
   // 저장값이 없으면 전체와 모든 알림 종류가 켜짐(Notion 푸시 수신 설정 조회)
   pushPreferences: {
     enabled: true,
-    types: Object.fromEntries(PUSH_NOTIFICATION_TYPES.map((type) => [type, true])),
+    categories: Object.fromEntries(PUSH_NOTIFICATION_TYPES.map((type) => [type, true])),
   },
 });

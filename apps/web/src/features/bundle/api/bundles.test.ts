@@ -54,7 +54,7 @@ describe('번들 API', () => {
     expect(draft.photos[0]?.src).toBe('/mock/photos/S4.jpg');
   });
 
-  it('고른 사진 id를 서버 숫자로 바꿔 순서대로 보내고 멱등 키를 헤더에 싣는다', async () => {
+  it('고른 사진·참여자 id를 서버 숫자로 바꿔 순서대로 보내고 멱등 키를 헤더에 싣는다', async () => {
     let body: unknown;
     let key: string | null = null;
     server.use(
@@ -66,9 +66,9 @@ describe('번들 API', () => {
     );
     const idempotencyKey = createIdempotencyKey();
 
-    await catchError(createBundle(bunchId, ['5', '4'], idempotencyKey));
+    await catchError(createBundle(bunchId, ['5', '4'], idempotencyKey, ['2', '3']));
 
-    expect(body).toEqual({ photoIds: [5, 4] });
+    expect(body).toEqual({ photoIds: [5, 4], participantMemberIds: [2, 3] });
     expect(key).toBe(idempotencyKey);
   });
 

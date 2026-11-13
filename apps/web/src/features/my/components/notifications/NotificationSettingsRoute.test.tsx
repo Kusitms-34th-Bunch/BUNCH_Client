@@ -46,7 +46,7 @@ const deferred = () => {
   return { promise, release };
 };
 
-type Prefs = { enabled: boolean; types: Record<string, boolean> };
+type Prefs = { enabled: boolean; categories: Record<string, boolean> };
 const server_ = { prefs: null as unknown as Prefs, patches: [] as unknown[], gets: 0 };
 
 /** 서버처럼 부분 수정을 병합해 돌려주는 handler. `failPatch`면 저장을 실패시킴 */
@@ -60,7 +60,10 @@ const useServer = (
 ) => {
   server_.prefs = {
     enabled: initial.enabled ?? true,
-    types: { ...Object.fromEntries(ALL_KEYS.map((key) => [key, true])), ...initial.types },
+    categories: {
+      ...Object.fromEntries(ALL_KEYS.map((key) => [key, true])),
+      ...initial.categories,
+    },
   };
   server_.patches = [];
   server_.gets = 0;
@@ -80,7 +83,7 @@ const useServer = (
       if (failPatch) return fail(500, 'COMMON_500');
       server_.prefs = {
         enabled: body.enabled ?? server_.prefs.enabled,
-        types: { ...server_.prefs.types, ...body.types },
+        categories: { ...server_.prefs.categories, ...body.categories },
       };
       return ok(server_.prefs);
     }),
@@ -100,7 +103,7 @@ beforeEach(() => {
 
 describe('NotificationSettingsRoute', () => {
   it('서버 설정을 받아 토글 4개로 보여 준다(묶인 알림이 하나라도 꺼져 있으면 꺼짐)', async () => {
-    useServer({ enabled: true, types: { BUNDLE_LIKED: false, DRAFT_ACTIVITY: false } });
+    useServer({ enabled: true, categories: { BUNDLE_LIKED: false, DRAFT_ACTIVITY: false } });
 
     renderRoute();
     await ready();
@@ -142,7 +145,11 @@ describe('NotificationSettingsRoute', () => {
     await waitFor(() => expect(toggle('팔로우').checked).toBe(false));
     await waitFor(() => expect(server_.patches).toHaveLength(1));
     expect(server_.patches[0]).toEqual({
-      types: { BUNCH_FOLLOWED: false, FOLLOW_REQUESTED: false, FOLLOW_REQUEST_APPROVED: false },
+      categories: {
+        BUNCH_FOLLOWED: false,
+        FOLLOW_REQUESTED: false,
+        FOLLOW_REQUEST_APPROVED: false,
+      },
     });
     // 다른 종류와 전체는 그대로
     expect(toggle('번들 소식').checked).toBe(true);
@@ -187,7 +194,7 @@ describe('NotificationSettingsRoute', () => {
     await waitFor(() => expect(server_.patches).toHaveLength(4));
 
     const sent = server_.patches.flatMap((patch) =>
-      Object.keys((patch as Partial<Prefs>).types ?? {}),
+      Object.keys((patch as Partial<Prefs>).categories ?? {}),
     );
     for (const key of [
       'CHARACTER_GROWN',
@@ -223,9 +230,9 @@ describe('NotificationSettingsRoute', () => {
     await userEvent.click(follow);
 
     await waitFor(() => expect(server_.patches).toHaveLength(3));
-    const values = server_.patches.map((patch) => (patch as Prefs).types.BUNCH_FOLLOWED);
+    const values = server_.patches.map((patch) => (patch as Prefs).categories.BUNCH_FOLLOWED);
     expect(values).toEqual([false, true, false]);
-    expect(server_.prefs.types.BUNCH_FOLLOWED).toBe(false);
+    expect(server_.prefs.categories.BUNCH_FOLLOWED).toBe(false);
     await waitFor(() => expect(toggle('팔로우').checked).toBe(false));
   });
 
@@ -279,7 +286,7 @@ describe('NotificationSettingsRoute', () => {
     );
     // 두 번째 저장(켜기)이 서버에 반영돼 화면도 켜짐으로 남음
     await waitFor(() => expect(toggle('팔로우').checked).toBe(true));
-    expect(server_.prefs.types.BUNCH_FOLLOWED).toBe(true);
+    expect(server_.prefs.categories.BUNCH_FOLLOWED).toBe(true);
     // 저장 후처리와 재조회까지 모두 끝난 것을 query client로 확인한 뒤(고정 대기 없이), 첫 저장 실패 때문에 서버 값을 따로 다시 받지 않았는지 확인
     // 뒤 저장과 겹쳐 낡은 값이 덮는 것을 막기 위한 동작
     await waitFor(() => {
