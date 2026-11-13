@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import type { FollowBunch, FollowStatus, OtherBunch } from '../lib/types';
 
-// 팔로우 API 연결 전 팔로우 처리 결과를 담는 임시 저장소(메모리, 새로고침하면 fixture로 돌아감)
-// 연결하면 팔로우·요청·취소 mutation과 프로필 query 갱신으로 대체
+// 팔로워·팔로잉 목록·멤버 목록(샘플)의 팔로우 처리 결과를 담는 임시 저장소(메모리, 새로고침하면 fixture로)
+// 다른 번치 프로필은 서버(#341), 목록을 서버에 연결하면 이 저장소를 지움
 const EMPTY: Readonly<Record<string, FollowStatus>> = {};
 let changed = EMPTY;
 const listeners = new Set<() => void>();
@@ -47,7 +47,7 @@ export const followingDelta = (
   );
 
 /**
- * 다른 번치의 지금 팔로우 상태와 바꾸는 동작. 팔로워 수는 처음 상태와 비교해 내 번치 한 명만큼 더하거나 뺌
+ * 목록 화면(샘플)이 보는 다른 번치의 팔로우 상태. 팔로워 수는 처음 상태와 비교해 내 번치 한 명만큼 더하거나 뺌
  */
 export function useBunchFollow(bunch: OtherBunch | undefined) {
   const all = useFollowStatuses();
@@ -55,14 +55,5 @@ export function useBunchFollow(bunch: OtherBunch | undefined) {
   const followerCount = bunch
     ? bunch.followerCount + following(status) - following(bunch.followStatus)
     : 0;
-  return {
-    status,
-    followerCount,
-    follow: () => {
-      if (bunch) followBunch(bunch);
-    },
-    unfollow: () => {
-      if (bunch) unfollowBunch(bunch.id);
-    },
-  };
+  return { status, followerCount };
 }

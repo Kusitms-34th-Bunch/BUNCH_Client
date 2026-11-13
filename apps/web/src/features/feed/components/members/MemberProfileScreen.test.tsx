@@ -67,7 +67,7 @@ describe('MemberProfileScreen', () => {
     renderProfile();
 
     await user.click(profileButton(/^캠핑러버$/));
-    expect(push).toHaveBeenLastCalledWith('/bunches/bunch-camping');
+    expect(push).toHaveBeenLastCalledWith('/bunches/3');
 
     await user.click(profileButton(/^여행쥬아.*비공개 번치$/));
     expect(push).toHaveBeenLastCalledWith('/bunch');

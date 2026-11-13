@@ -6,7 +6,7 @@ import { feedFixture } from './feed.fixture';
 // 순서는 화면에서 정렬하므로 섞어 둠
 const bunches: FeedMemberBunch[] = [
   {
-    id: 'bunch-camping',
+    id: '3',
     name: '캠핑러버',
     imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2,
     isPrivate: false,
@@ -20,7 +20,7 @@ const bunches: FeedMemberBunch[] = [
     followStatus: 'none',
   },
   {
-    id: 'bunch-book',
+    id: '4',
     name: '책방산책',
     imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_4,
     isPrivate: true,

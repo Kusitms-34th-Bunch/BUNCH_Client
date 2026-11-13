@@ -20,7 +20,7 @@ export function OtherBunchFollows({
 }) {
   const backOr = useBackOr();
   const bunch = findOtherBunch(bunchId);
-  // 내가 이 번치를 팔로우하면 팔로워 수도 프로필처럼 한 명 늘어남
+  // 내가 이 번치를 팔로우하면(목록 샘플 저장소) 팔로워 수가 한 명 늘어남, 프로필(서버)과는 목록 서버 연결 때 맞춤
   const { status, followerCount } = useBunchFollow(bunch);
   const { followers, following, follow, unfollow } = useFollowList(bunch?.id);
   const { access } = useBlockRelation(bunchId);

@@ -121,7 +121,7 @@ describe('BundleDetailScreen', () => {
     const user = userEvent.setup();
     renderDetail('bundle-2');
     await user.click(screen.getByRole('button', { name: /책방산책/ }));
-    expect(push).toHaveBeenLastCalledWith('/bunches/bunch-book');
+    expect(push).toHaveBeenLastCalledWith('/bunches/4');
   });
 
   it('답글을 누르면 답글 작성 상태가 되고 닫기로 돌아온다', async () => {

@@ -46,7 +46,7 @@ const EMPTY: BunchFollows = { followers: [], following: [], requests: [] };
 // 수는 번치 fixture 값, 목록은 그중 일부(목록 페이지 나누기는 API 연결 때). 비공개인 퇴근런클럽에만 대기 중인 요청(화면설계서 2500:72664)
 const bunchFollowsFixture: Readonly<Record<string, BunchFollows>> = {
   'bunch-run': {
-    followers: ['bunch-walk', 'bunch-camping', 'bunch-running', 'bunch-night', 'bunch-reading'],
+    followers: ['bunch-walk', '3', 'bunch-running', 'bunch-night', 'bunch-reading'],
     following: ['bunch-walk', 'bunch-hiking'],
     requests: [
       { bunchId: 'bunch-surf', daysAgo: 1 },
@@ -55,18 +55,18 @@ const bunchFollowsFixture: Readonly<Record<string, BunchFollows>> = {
     ],
   },
   'bunch-trip': {
-    followers: ['bunch-walk', 'bunch-camping', 'bunch-running', 'bunch-reading'],
+    followers: ['bunch-walk', '3', 'bunch-running', 'bunch-reading'],
     following: ['bunch-walk', 'bunch-hiking'],
     requests: [],
   },
-  'bunch-camping': {
-    followers: ['bunch-walk', 'bunch-book', 'bunch-hiking'],
-    following: ['bunch-walk', 'bunch-book', 'bunch-hiking', 'bunch-reading'],
+  '3': {
+    followers: ['bunch-walk', '4', 'bunch-hiking'],
+    following: ['bunch-walk', '4', 'bunch-hiking', 'bunch-reading'],
     requests: [],
   },
-  'bunch-book': {
-    followers: ['bunch-walk', 'bunch-camping', 'bunch-reading'],
-    following: ['bunch-camping'],
+  '4': {
+    followers: ['bunch-walk', '3', 'bunch-reading'],
+    following: ['3'],
     requests: [],
   },
 };
