@@ -189,7 +189,12 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
               bunchName={bunch.name}
               reporterName={reporter.name}
               onBlock={() => void block()}
-              onReport={(value) => reportBunch.mutateAsync({ targetId: bunchId, ...value })}
+              // 차단 중(덮개는 가상 커서를 막지 못함)에는 신고를 받지 않음
+              onReport={(value) =>
+                blockingRef.current
+                  ? Promise.reject(new Error('blocking'))
+                  : reportBunch.mutateAsync({ targetId: bunchId, ...value })
+              }
             />
           )
         }

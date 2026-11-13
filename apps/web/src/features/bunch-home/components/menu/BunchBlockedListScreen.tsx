@@ -39,15 +39,16 @@ export function BunchBlockedListScreen({
   const countRef = useRef<HTMLParagraphElement>(null);
   const emptyRef = useRef<HTMLHeadingElement>(null);
   // 진행 중인 해제(해제마다 새 객체). 행이 빠져 개수가 바뀐 렌더 뒤 초점을 옮기고 토스트(초점 → 토스트 순서)
-  const pending = useRef<{ name: string } | null>(null);
+  const pending = useRef<{ id: string; name: string } | null>(null);
   const count = blocked?.length;
   useEffect(() => {
     const done = pending.current;
-    if (!done) return;
+    // 그 행이 실제로 빠졌을 때만(다른 해제·다시 받기로 개수가 바뀐 경우는 기다림)
+    if (!done || blocked?.some((bunch) => bunch.id === done.id)) return;
     pending.current = null;
     (countRef.current ?? emptyRef.current)?.focus();
     toast(BUNCH_HOME_MESSAGES.unblocked(done.name), { icon: 'success' });
-  }, [count]);
+  }, [count, blocked]);
   // Figma 2141:37877: 이미지 + 「해제하기」·「취소」 세로 배치(설계의 「번치에서 내보내기」는 번치 단위 차단과 맞지 않아 뺌)
   const openUnblock = (target: BlockedBunch) => {
     let confirmed = false;
@@ -73,7 +74,7 @@ export function BunchBlockedListScreen({
       // 사라진 「차단해제」 대신 개수 줄(목록이 비면 빈 상태 제목)로 초점을 옮기고 토스트, 실패 안내는 부르는 쪽
       () => {
         if (!confirmed) return;
-        const request = { name: target.name };
+        const request = { id: target.id, name: target.name };
         pending.current = request;
         void onUnblock(target).then(
           // 이미 빠진 행이라 개수가 그대로면 잠시 뒤 토스트만(이 해제가 아직 남아 있을 때만, 다른 해제는 건드리지 않음)
