@@ -3,11 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { PhotoBoxActions, PhotoBoxData, SaveResult } from '../lib/types';
-import {
-  BundleConfirmDialog,
-  DateChangeConfirmDialog,
-  DeleteConfirmDialog,
-} from '../components/PhotoSelectionDialogs';
+import { DateChangeConfirmDialog, DeleteConfirmDialog } from '../components/PhotoSelectionDialogs';
 import { SavingDateSheet } from '../components/SavingDateSheet';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import {
@@ -18,6 +14,7 @@ import {
   type DeleteKind,
 } from '../lib/photoActions';
 import { pruneSelection, toggleSelection, type PhotoSelection } from '../lib/selection';
+import { clearPhotoBoxSelection, readPhotoBoxSelection } from '../lib/selectionResume';
 import { useSaveBlockedNotice } from './useSaveBlockedNotice';
 
 export type PhotoMenuAction = 'save' | 'bundle' | 'date' | 'delete';
@@ -46,10 +43,17 @@ export function usePhotoSelectionFlow({
   onCreateBundle,
   onDeleted,
 }: UsePhotoSelectionFlowOptions) {
-  const [selecting, setSelecting] = useState(false);
-  const [selection, setSelection] = useState<PhotoSelection>([]);
+  // 참여 멤버 고르기에서 뒤로 왔으면 그때 고른 사진과 번호로 선택 모드를 이어 감(기능 spec 3.3.4)
+  const [resumed] = useState(readPhotoBoxSelection);
+  const [selecting, setSelecting] = useState(resumed !== undefined);
+  const [selection, setSelection] = useState<PhotoSelection>(() => [...(resumed ?? [])]);
+
   const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
   const noData = !data;
+  // 목록이 준비되면(화면이 이때 다시 마운트되기도 함) 이어 간 선택을 비워, 다음에 사진함을 열 때 선택 모드가 남지 않게 함
+  useEffect(() => {
+    if (!noData) clearPhotoBoxSelection();
+  }, [noData]);
   const openOverlay = useScreenOverlay();
   const notifySaveBlocked = useSaveBlockedNotice();
   // 화면 상태가 바뀌어(목록을 못 받음) 창이 의미를 잃으면 모두 닫음
@@ -134,17 +138,9 @@ export function usePhotoSelectionFlow({
     if (action === 'save') {
       void save();
     } else if (action === 'bundle') {
+      // 1~20장이면 확인 창 없이 참여 멤버 고르기로 넘어감(기능 spec 3.3.4)
       if (selection.length > MAX_BUNDLE_PHOTOS) notify(PHOTO_BOX_MESSAGES.bundleTooMany);
-      else
-        openOverlay((rootProps, close) => (
-          <BundleConfirmDialog
-            {...rootProps}
-            onConfirm={() => {
-              close();
-              confirmBundle();
-            }}
-          />
-        ));
+      else confirmBundle();
     } else if (action === 'date') {
       // 날짜는 항상 오늘 달을 선택 없이 열고(명세 3.4.1) 저장하면 고른 사진 전부의 날짜를 바꿈
       if (canDeletePhotos(selectedPhotos, data.viewer)) {

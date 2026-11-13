@@ -36,7 +36,7 @@ import {
   useSaveTitleMutation,
 } from '../queries/bundles';
 
-// 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 공개 범위·날짜는 고르는 즉시 저장
+// 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 날짜는 고르는 즉시 저장하고 공개 범위는 발행 요청으로만 보냄
 // 위치가 없을 때 쓰는 고정된 빈 목록(렌더마다 새 배열이 되어 draft를 다시 만들지 않게 함)
 const NO_LOCATIONS: readonly DraftLocation[] = [];
 
@@ -124,7 +124,7 @@ const errorCode = (error: unknown) => (error as { code?: string } | null)?.code;
 /**
  * 초안 상태와 동작: 내 프로필·번치 멤버·번들 상세 query를 화면의 `Draft`로 합치고, 입력은 바로 화면에 반영한 뒤
  * 멈추면 서버에 저장(필드별 버전 사용, 충돌이면 최신 상세를 받아 이어서 저장)
- * 위치는 서버에 필드가 없어 이 화면에서만 들고 있고, 사진 구성·순서 변경은 서버 연동 전이라 이 화면에서만 바뀜
+ * 위치는 서버에 필드가 없어 이 화면에서만 들고 있고, 사진 구성·순서 변경은 요청을 순서대로 하나씩 보낸 뒤 서버 값으로 맞춤
  */
 export function useDraft(draftId: string | undefined): {
   state: DraftState;

@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { delay, http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,7 @@ import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
+import { clearPhotoBoxSelection, readPhotoBoxSelection } from '../../lib/selectionResume';
 import { PhotoBox } from './PhotoBox';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -49,6 +50,7 @@ vi.mock('@/shared/bridge/client', () => ({
 
 beforeEach(() => {
   clearPhotoBoxEntry();
+  clearPhotoBoxSelection();
   vi.clearAllMocks();
   bridge.pickGalleryImages.mockResolvedValue({ status: 'picked', photos: [{ id: 'p1' }] });
   // JPEG 시작 바이트(FF D8 FF)로 시작하는 작은 이미지
@@ -83,7 +85,7 @@ describe('PhotoBox 사진 올리기', () => {
 });
 
 describe('PhotoBox 번들 만들기 연결', () => {
-  it('사진을 골라 「번들 만들기」를 확인하면 고른 사진을 넘기고 참여 멤버 고르기로 이동한다', async () => {
+  it('사진을 골라 「번들 만들기」를 누르면 확인 창 없이 고른 사진을 넘기고 참여 멤버 고르기로 이동한다', async () => {
     const user = userEvent.setup();
     render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
 
@@ -95,12 +97,35 @@ describe('PhotoBox 번들 만들기 연결', () => {
     fireEvent.click(photo);
     await user.click(screen.getByRole('button', { name: '메뉴 열기' }));
     await user.click(screen.getByRole('menuitem', { name: '번들 만들기' }));
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: '예' }));
 
     // 초안은 참여 멤버를 고른 뒤 그 화면에서 만듦(기능 spec 3.3.4)
     expect(router.push).toHaveBeenCalledWith('/bunch/bundles/new/members');
     expect(readPhotoBoxEntry()).toHaveLength(1);
+    // 멤버 고르기에서 뒤로 오면 이 선택으로 선택 모드를 이어 가도록 기억함
+    expect(readPhotoBoxSelection()).toEqual(readPhotoBoxEntry());
     expect(mockDrafts()).toHaveLength(0);
+  });
+});
+
+describe('PhotoBox 선택 모드 이어 가기', () => {
+  it('참여 멤버 고르기에서 뒤로 오면 고른 사진과 번호로 선택 모드가 이어진다', async () => {
+    const user = userEvent.setup();
+    const first = render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+    await user.click(await screen.findByRole('button', { name: '선택' }));
+    const photo = screen
+      .queryAllByRole('button')
+      .find((button) => button.hasAttribute('aria-pressed'))!;
+    fireEvent.click(photo);
+    await user.click(screen.getByRole('button', { name: '메뉴 열기' }));
+    await user.click(screen.getByRole('menuitem', { name: '번들 만들기' }));
+    first.unmount();
+
+    // 멤버 고르기에서 뒤로 와 사진함이 다시 열린 상황
+    render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+
+    expect(await screen.findByRole('radio', { name: '전체 (1)' })).toBeTruthy();
+    // 한 번 이어 간 뒤에는 비워 다음에 사진함을 열 때 선택 모드가 남지 않음
+    expect(readPhotoBoxSelection()).toBeUndefined();
   });
 });
 

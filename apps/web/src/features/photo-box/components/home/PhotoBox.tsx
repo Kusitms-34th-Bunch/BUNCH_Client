@@ -9,6 +9,7 @@ import type { PhotoBoxPreview } from '../../lib/preview';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoBox } from '../../hooks/usePhotoBox';
 import { usePhotoUpload } from '../../hooks/usePhotoUpload';
+import { rememberPhotoBoxSelection } from '../../lib/selectionResume';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
 
 type PhotoBoxProps = {
@@ -28,6 +29,8 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
   const router = useRouter();
   const createBundle = (selection: readonly string[]) => {
     startFromPhotoBox(selection);
+    // 멤버 고르기에서 뒤로 오면 이 선택으로 선택 모드를 이어 감
+    rememberPhotoBoxSelection(selection);
     router.push(BUNDLE_SELECT_PATHS.members);
   };
   // 올리기는 올리기를 시작한 시점의 번치에 저장

@@ -469,6 +469,46 @@ describe('useDraft 발행', () => {
     }));
   };
 
+  it('고른 공개 범위를 발행 요청 본문에 싣고, 하나도 고르지 않았으면 요청 없이 막는다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const bodies: unknown[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', async ({ request }) => {
+        bodies.push(await request.clone().json());
+        return undefined;
+      }),
+    );
+
+    await act(async () => {
+      expect(await result.current.actions.publish()).toBe('published');
+    });
+
+    // fill()이 고른 「멤버 공개」가 서버 초안에는 저장되지 않고 발행 요청에만 실림
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toMatchObject({ visibility: 'PRIVATE' });
+  });
+
+  it('공개 범위를 고르지 않으면 발행 요청을 보내지 않고 막는다', async () => {
+    const { result } = await renderReady();
+    let requests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        requests += 1;
+        return undefined;
+      }),
+    );
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('blocked');
+    expect(requests).toBe(0);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
+  });
+
   it('사진 변경이 실패하면 화면과 다른 서버 구성을 발행하지 않고 안내한다', async () => {
     const { id, result } = await renderReady();
     await fill(result, id);

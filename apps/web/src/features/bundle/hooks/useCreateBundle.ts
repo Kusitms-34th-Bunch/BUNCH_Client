@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
+import { clearPhotoBoxSelection } from '@/features/photo-box/lib/selectionResume';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -64,6 +65,8 @@ export function useCreateBundle() {
         onSuccess: (bundle) => {
           // 같은 사진으로 다시 만들면 새 초안이 되도록 키를 비움(이동이 끝날 때까지는 submitted가 중복을 막음)
           attempt.current = undefined;
+          // 초안을 만들었으면 사진함 선택 모드는 끝남(작성 화면에서 뒤로 와도 선택이 남지 않게 함)
+          clearPhotoBoxSelection();
           const path = BUNDLE_SELECT_PATHS.draft(bundle.id);
           if (replace) router.replace(path);
           else router.push(path);
