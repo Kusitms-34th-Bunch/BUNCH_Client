@@ -15,6 +15,8 @@ next-env.d.ts
 .vercel
 .tanstack/
 coverage/
+# 번들 크기 기준선(CI는 develop·main push 빌드 결과를 캐시로 받음, 로컬 --update 결과는 커밋하지 않음)
+apps/web/bundle-size-baseline.json
 # ESLint 캐시(파일 내용 기준, CI는 PR에서만 develop 결과를 이어 받음)
 .eslintcache
 playwright-report/

@@ -51,10 +51,13 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 
 - 캐시가 없거나 맞지 않으면(첫 실행, 소스·`yarn.lock` 변경으로 Next 캐시 키가 달라진 경우, 7일 이상 미사용으로 만료) 해당 부분을 다시 실행하므로 느려질 뿐 결과는 같다. 캐시 서비스 오류는 경고로만 처리되어 CI를 실패시키지 않는다.
 - Turbo 캐시는 검사 job마다 키를 나눈다(`turbo-<OS>-<lint|test-1|test-2|test-3|test-4|build>-<SHA>`). 여러 job이 같은 키를 동시에 저장하면 하나만 저장되기 때문이다.
-- 저장은 `actions/cache/save`로 각 job 끝에 따로 둔다. 기본 자동 저장은 job이 성공해야 실행되는데, 검사가 실패한 job은 고친 뒤 다시 push할 때마다 캐시 없이 시작하게 된다. 그래서 검사 결과와 상관없이 저장한다(Turbo는 성공한 작업의 결과만 캐시한다). 변조 가드나 설치가 실패하면 그 job은 저장 전에 멈춘다.
+- Turbo 캐시는 `develop`·`main` push에서만 저장하고, PR은 base 브랜치 캐시를 받기만 한다. PR마다 저장에 20초 넘게 걸려 가장 늦게 끝나는 Typecheck & Build job을 늘렸기 때문이다(2026-11-13 PR #348: 24초). 그래서 같은 PR에 다시 push하면 이전 push에서만 바뀐 패키지(예: design-system을 고친 뒤 web만 다시 고친 경우)는 다시 실행된다. 결과는 같다.
+- 저장은 `actions/cache/save`로 각 job 끝에 따로 둔다. 기본 자동 저장은 job이 성공해야 실행되므로 검사 결과와 상관없이 저장한다(Turbo는 성공한 작업의 결과만 캐시한다). 변조 가드나 설치가 실패하면 그 job은 저장 전에 멈춘다.
 - Turbo 캐시가 hit한 작업은 다시 실행하지 않고 이전 로그만 재생한다. 입력(소스, 의존성, `turbo.json`)이 같을 때만 hit하므로 검증을 건너뛰는 것은 아니다. 의심스러우면 Actions의 Caches에서 해당 캐시를 지우고 다시 실행한다.
-- Turbo 캐시 키에 커밋 SHA를 쓰므로 실행마다 항목이 새로 저장된다. PR이 닫히면 `cache-cleanup.yml`이 그 PR의 캐시를 지워서 쌓이지 않게 한다. `develop`·`main`에 push되며 저장된 캐시는 정리하지 않고 아래 한도에 의한 삭제에 맡긴다. 저장소 캐시 한도(10GB)를 넘으면 오래된 항목부터 지워진다.
+- Turbo 캐시 키에 커밋 SHA를 쓰므로 push마다 항목이 새로 저장된다. PR이 만든 캐시(Next 빌드 캐시 등)는 PR이 닫히면 `cache-cleanup.yml`이 지워서 쌓이지 않게 한다. `develop`·`main`에 push되며 저장된 캐시는 정리하지 않고 아래 한도에 의한 삭제에 맡긴다. 저장소 캐시 한도(10GB)를 넘으면 오래된 항목부터 지워진다.
 - Next 캐시는 빌드가 성공한 실행에서만 저장한다. 중간에 실패한 빌드의 부분 캐시가 그 키에 고정되지 않게 하려는 것이다.
+- Build 단계는 `NEXT_SKIP_TYPECHECK=true`로 `next build` 안의 타입 검사를 건너뛴다(`next.config.mjs`의 `typescript.ignoreBuildErrors`). 같은 job의 앞 TypeScript 단계(`yarn typecheck`)가 같은 검사를 하고, 그 단계가 실패해도 Build는 실행돼 결과가 따로 보인다. 배포 빌드(Vercel·`web-deploy.yml`)에는 이 값이 없어 그대로 검사한다.
+- 웹 번들 크기 기준선도 Actions 캐시다(`bundle-size-<OS>-<브랜치>-<SHA>`, `docs/workflows/performance.md`). `develop`·`main` push 빌드만 저장한다.
 - Turbo 설정(`turbo.json`)의 `outputs`·`inputs`·`env`를 바꾸면 캐시가 틀린 결과를 재사용하지 않는지 확인한다.
 
 ## 로컬 재현
