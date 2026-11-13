@@ -180,11 +180,11 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
         canFollow={viewerId !== null}
         canViewRelations={data.canViewRelations ?? false}
         onBack={back}
-        // 내 번치(차단·신고 명의)를 모르거나 명의를 다시 확인하는 동안·차단 중에는 더보기를 숨김
+        // 내 번치(차단·신고 명의)를 모르거나 명의를 다시 확인하는 동안에는 더보기를 숨김
+        // 차단 중에는 덮개가 막고, 실패하면 덮개가 초점을 더보기로 돌려주도록 그대로 둠
         more={
           reporter &&
-          !viewerStale &&
-          !blocking && (
+          !viewerStale && (
             <OtherBunchMoreMenu
               bunchName={bunch.name}
               reporterName={reporter.name}

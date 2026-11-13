@@ -63,6 +63,12 @@ export function OtherBunchScreen({
   const background = BUNCH_BACKGROUNDS[bunch.characterType];
   // 버튼 이름만 바뀌면 스크린 리더가 결과를 놓칠 수 있어 상태 영역으로도 알림(서버 반영 뒤)
   const [announcement, setAnnouncement] = useState('');
+  // 화면 단위 안내가 시작되면 이전 결과 문구를 비움(안내가 끝난 뒤 옛 문구가 다시 낭독되지 않게, 렌더 중 상태 맞추기)
+  const [lastNotice, setLastNotice] = useState(notice);
+  if (notice !== lastNotice) {
+    setLastNotice(notice);
+    if (notice) setAnnouncement('');
+  }
   // 같은 문구가 이어져도 다시 낭독되게 시작할 때 비움
   const follow = () => {
     setAnnouncement('');

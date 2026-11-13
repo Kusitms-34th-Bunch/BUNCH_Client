@@ -38,13 +38,15 @@ export function BunchBlockedListScreen({
   // 해제한 행이 사라지면 초점을 받는 자리(목록이 비면 빈 상태 제목). 개수 줄과 빈 상태는 동시에 그려지지 않음
   const countRef = useRef<HTMLParagraphElement>(null);
   const emptyRef = useRef<HTMLHeadingElement>(null);
-  // 해제가 진행 중일 때만 켬. 행이 빠져 개수가 바뀐 렌더 뒤 한 번 초점을 옮기고 끔(실패하면 바로, 개수가 그대로면 잠시 뒤 끔)
-  const pendingFocus = useRef(false);
+  // 진행 중인 해제(해제마다 새 객체). 행이 빠져 개수가 바뀐 렌더 뒤 초점을 옮기고 토스트(초점 → 토스트 순서)
+  const pending = useRef<{ name: string } | null>(null);
   const count = blocked?.length;
   useEffect(() => {
-    if (!pendingFocus.current) return;
-    pendingFocus.current = false;
+    const done = pending.current;
+    if (!done) return;
+    pending.current = null;
     (countRef.current ?? emptyRef.current)?.focus();
+    toast(BUNCH_HOME_MESSAGES.unblocked(done.name), { icon: 'success' });
   }, [count]);
   // Figma 2141:37877: 이미지 + 「해제하기」·「취소」 세로 배치(설계의 「번치에서 내보내기」는 번치 단위 차단과 맞지 않아 뺌)
   const openUnblock = (target: BlockedBunch) => {
@@ -71,17 +73,18 @@ export function BunchBlockedListScreen({
       // 사라진 「차단해제」 대신 개수 줄(목록이 비면 빈 상태 제목)로 초점을 옮기고 토스트, 실패 안내는 부르는 쪽
       () => {
         if (!confirmed) return;
-        pendingFocus.current = true;
+        const request = { name: target.name };
+        pending.current = request;
         void onUnblock(target).then(
-          () => {
-            toast(BUNCH_HOME_MESSAGES.unblocked(target.name), { icon: 'success' });
-            // 이미 빠진 행이라 개수가 그대로면 초점은 그대로 두고 표시만 끔(나중 개수 변화에 초점이 튀지 않게)
+          // 이미 빠진 행이라 개수가 그대로면 잠시 뒤 토스트만(이 해제가 아직 남아 있을 때만, 다른 해제는 건드리지 않음)
+          () =>
             setTimeout(() => {
-              pendingFocus.current = false;
-            }, 1000);
-          },
+              if (pending.current !== request) return;
+              pending.current = null;
+              toast(BUNCH_HOME_MESSAGES.unblocked(request.name), { icon: 'success' });
+            }, 1000),
           () => {
-            pendingFocus.current = false;
+            if (pending.current === request) pending.current = null;
           },
         );
       },
