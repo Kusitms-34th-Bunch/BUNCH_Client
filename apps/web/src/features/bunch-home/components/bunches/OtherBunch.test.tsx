@@ -269,30 +269,93 @@ describe('OtherBunchMembers', () => {
       wrapper: createQueryWrapper(createTestQueryClient()),
     });
 
-  it('그 번치의 멤버를 관리 동작 없이 보여 준다', async () => {
+  it('그 번치의 멤버를 서버 순서(관리자 먼저)로 관리 동작 없이 보여 준다', async () => {
     renderMembers('3');
 
     expect(
       await screen.findByRole('heading', { level: 1, name: '캠핑러버 멤버' }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(4);
+    const items = await screen.findAllByRole('listitem');
+    expect(items.map((item) => item.textContent)).toEqual([
+      expect.stringContaining('솔'),
+      expect.stringContaining('도윤'),
+      expect.stringContaining('서아'),
+      expect.stringContaining('하람'),
+    ]);
     expect(screen.queryByRole('button', { name: /관리|더보기/ })).toBeNull();
   });
 
-  it('팔로우 승인 전의 비공개 번치는 멤버 명단 대신 안내를 보인다', async () => {
+  it('팔로우 승인 전의 비공개 번치는 명단을 요청하지 않고 안내를 보인다', async () => {
+    const requests: string[] = [];
+    const record = ({ request }: { request: Request }) => {
+      requests.push(new URL(request.url).pathname);
+    };
+    server.events.on('request:start', record);
     renderMembers('4');
 
     expect(await screen.findByRole('region', { name: '비공개 번치예요' })).toHaveTextContent(
       '목록을 보려면 이 번치를 팔로우하세요.',
     );
+    server.events.removeListener('request:start', record);
+    expect(screen.queryByRole('listitem')).toBeNull();
+    expect(requests).not.toContain('/api/bunches/4/members');
+  });
+
+  it('팔로우가 승인된 비공개 번치는 명단을 보인다', async () => {
+    mockDb.update((state) => ({
+      ...state,
+      follows: [
+        ...state.follows,
+        {
+          id: 999,
+          followerBunchId: MOCK_BUNCH_ID,
+          targetBunchId: 4,
+          status: 'FOLLOWING',
+          createdAt: '2026-10-20T09:00:00.000Z',
+        },
+      ],
+    }));
+    renderMembers('4');
+
+    expect(await screen.findAllByRole('listitem')).toHaveLength(6);
+  });
+
+  it('명단 조회가 403이면(그사이 비공개로 바뀜) 잠금 안내를 보인다', async () => {
+    server.use(http.get('/api/bunches/:bunchId/members', () => fail(403, 'AUTH_002')));
+    renderMembers('3');
+
+    expect(await screen.findByRole('region', { name: '비공개 번치예요' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['명단이 404(그사이 차단·삭제)', '/api/bunches/:bunchId/members', 404, 'BUNCH_009'],
+    ['명단이 409(접근 불가 안내)', '/api/bunches/:bunchId/members', 409, 'BUNCH_008'],
+    ['번치 홈이 409(접근 불가 안내)', '/api/bunches/:bunchId/home', 409, 'BUNCH_008'],
+  ])('%s면 다시 시도 없이 접근 제한 화면을 보인다', async (_name, path, status, code) => {
+    server.use(http.get(path, () => fail(status, code)));
+    renderMembers('3');
+
+    expect(await screen.findByRole('heading', { name: '볼 수 없는 번치예요' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '다시 시도' })).toBeNull();
     expect(screen.queryByRole('listitem')).toBeNull();
   });
 
-  it('없는 번치와 상속 속성 이름은 404로 보낸다', () => {
-    notFound.mockImplementation(() => {
-      throw new Error('NEXT_NOT_FOUND');
-    });
-    expect(() => renderMembers('constructor')).toThrow('NEXT_NOT_FOUND');
-    notFound.mockReset();
+  it('명단 조회가 실패하면 다시 시도로 다시 받는다', async () => {
+    const user = userEvent.setup();
+    server.use(http.get('/api/bunches/:bunchId/members', () => fail(500, 'X'), { once: true }));
+    renderMembers('3');
+
+    await user.click(await screen.findByRole('button', { name: '다시 시도' }));
+
+    expect(await screen.findAllByRole('listitem')).toHaveLength(4);
+  });
+
+  it('없는 번치와 상속 속성 이름은 404로 보낸다', async () => {
+    renderMembers('constructor');
+    await waitFor(() => expect(notFound).toHaveBeenCalled());
+    notFound.mockClear();
+
+    renderMembers('9999');
+    await waitFor(() => expect(notFound).toHaveBeenCalled());
   });
 });
