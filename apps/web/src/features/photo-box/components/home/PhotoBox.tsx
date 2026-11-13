@@ -21,7 +21,7 @@ type PhotoBoxProps = {
  * 고른 사진으로 초안 생성 API를 불러 만든 초안으로 이동하고, 만드는 동안 중복 요청을 막음
  */
 export function PhotoBox({ preview }: PhotoBoxProps) {
-  const { state, actions, retry, loadMore, moreErrorAt, stale } = usePhotoBox(preview, {
+  const { state, actions, retry, loadMore, refresh, moreErrorAt, stale } = usePhotoBox(preview, {
     progressive: true,
   });
   const { create: createBundle, creating } = useCreateBundle();
@@ -57,6 +57,7 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
           onUpload={(source) => void startUpload(source)}
           onRetry={retry}
           onLoadMore={loadMore}
+          onRefresh={refresh}
         />
       </div>
       {/* 안내 live region은 항상 마운트하고 문구만 바꿈. 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}

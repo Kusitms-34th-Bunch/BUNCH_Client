@@ -23,6 +23,8 @@ type UsePhotoBoxResult = {
   retry: () => void;
   /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 그 쪽부터 다시 받음 */
   loadMore: () => void;
+  /** 당겨서 새로고침: 프로필·멤버·사진 목록을 모두 다시 받고, 하나라도 실패하면 거부함 */
+  refresh: () => Promise<void>;
   /**
    * 이어 받기가 실패한 시각(없으면 0). 실패할 때마다 값이 바뀌어, 재시도가 빨라 렌더가 묶여도 실패를 한 번씩 알아챌 수 있음
    * (`more`만 보면 error→loading→error가 한 렌더로 묶여 재실패가 보이지 않을 수 있음)
@@ -169,6 +171,23 @@ export function usePhotoBox(
     retryPhotos(datedQuery);
     retryPhotos(undatedQuery);
   };
+  const refresh = async () => {
+    // 번치를 모르면(프로필 전·번치 없음) 목록 요청을 보낼 수 없어 프로필부터 다시 받음
+    const throwOnError = { throwOnError: true };
+    const results = await Promise.allSettled([
+      refetchProfile(throwOnError),
+      ...(bunchId
+        ? [
+            refetchMembers(throwOnError),
+            datedQuery.refetch(throwOnError),
+            undatedQuery.refetch(throwOnError),
+          ]
+        : []),
+    ]);
+    // 모두 끝난 뒤(일부만 끝났을 때 풀리지 않게) 하나라도 실패했으면 거부해 새로고침 실패로 알림
+    if (results.some((result) => result.status === 'rejected'))
+      throw new Error('photo box refresh failed');
+  };
   const state = useMemo<PhotoBoxState>(() => {
     if (preview === 'loading') return { kind: 'loading' };
     if (preview === 'error' || failed) return { kind: 'error' };
@@ -192,5 +211,5 @@ export function usePhotoBox(
     },
   };
 
-  return { state, actions, retry, loadMore, moreErrorAt, stale };
+  return { state, actions, retry, loadMore, refresh, moreErrorAt, stale };
 }
