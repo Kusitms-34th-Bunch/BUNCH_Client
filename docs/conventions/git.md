@@ -73,6 +73,13 @@ checkout에는 `contents: read`, 라벨·assignee·본문 수정에는 `issues: 
 - PAT로 commit push와 PR 생성 요청을 인증해 후속 CI를 실행한다. [GitHub 공식 문서](https://docs.github.com/en/actions/concepts/security/github_token#when-github_token-triggers-workflow-runs)에 따르면 `GITHUB_TOKEN`으로 생성·갱신한 PR의 workflow는 승인 대기가 필요할 수 있다.
 - 최초 적용 시 workflow·변환 스크립트와 최신 `develop` 변경을 `design-token`에도 반영해야 한다. 이후 PR을 merge할 때 지속 사용하는 `design-token` 브랜치는 삭제하지 않고, 다음 디자인 변경 전 `develop`을 반영한다. 자동 merge·강제 push는 하지 않는다.
 
+## OpenAPI 타입 자동 PR
+
+- `.github/workflows/openapi-drift.yml`은 매일 09:00(KST)과 수동 실행 때 `develop`에서 생성 타입을 다시 만들고, 커밋본과 다르면 `openapi-sync` → `develop` PR(`[Chore] OpenAPI 생성 타입 갱신`)을 연다. 생성 파일만 바꾸고, 깨지는 코드는 그 PR의 CI(typecheck·test)로 드러난다.
+- 바뀐 계약 때문에 깨지는 코드는 `openapi-sync`에 직접 커밋해 고친다. `develop`이 여전히 스펙과 다르면 다음 실행은 열린 PR의 브랜치 위에 새 생성 결과만 커밋하고 사람이 올린 커밋을 지우지 않는다. 기능 작업에서 직접 생성한 결과가 먼저 머지돼 `develop`이 최신이 되면 열린 PR은 그대로 남으므로(머지하면 충돌) 닫는다. 열린 PR이 없을 때만 `develop`에서 브랜치를 새로 만들어 강제 push하고, 덮어쓴 이전 커밋은 실행 로그에 남긴다. 포크에서 같은 이름 브랜치로 연 PR은 무시한다. PAT는 PR 단계에서만 쓰고 설치·생성 단계에는 남기지 않는다.
+- repository Actions secret `OPENAPI_SYNC_PR_TOKEN`에 이 저장소만 선택한 fine-grained PAT(`Contents`·`Pull requests` Read and write)를 등록한다. 디자인 토큰 PAT와 따로 둔다. 없으면 PR 없이 드리프트를 실패로만 알린다.
+- PR을 merge할 때 `openapi-sync` 브랜치는 지워도 된다. 다음 드리프트 때 다시 만든다.
+
 ## Git hook (husky)
 
 사람과 agent 모두 걸린다. `yarn install`의 `prepare`가 hook을 건다.
