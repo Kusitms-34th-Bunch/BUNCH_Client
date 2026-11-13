@@ -144,7 +144,7 @@ export function OtherBunchScreen({
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 pb-s8 relative -mt-5 flex flex-1 flex-col">
           {/* 프로필 아래 팔로우 버튼 16, 버튼 아래 번들·안내 16(Figma 3086:68423) */}
           <div className="gap-s8 flex flex-col">
-            {/* 팔로워·팔로잉 수는 볼 수 있을 때만 링크. 멤버 수는 다른 번치 멤버 API가 없어 글자만 */}
+            {/* 팔로워·팔로잉 수는 볼 수 있을 때만 링크. 멤버 수는 내 번치 홈과 같이 글자만 */}
             <BunchProfile
               bunch={bunch}
               showPlaces={false}
