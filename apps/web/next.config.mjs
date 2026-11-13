@@ -23,6 +23,8 @@ const withBundleAnalyzer = bundleAnalyzer({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactCompiler: true,
+  // CI는 앞 단계(tsc)에서 같은 타입 검사를 하므로 빌드 안의 검사를 건너뜀. 배포 빌드는 이 값이 없어 그대로 검사
+  typescript: { ignoreBuildErrors: process.env.NEXT_SKIP_TYPECHECK === 'true' },
   // next dev가 AGENTS.md에 넣는 안내 블록 끄기(Yarn PnP라 블록이 가리키는 node_modules/next/dist/docs 경로가 없음)
   agentRules: false,
   // 폰에서 dev 서버를 열 때 /_next 개발 리소스 차단 방지: VS Code 포트 포워딩(dev tunnels), 개발 PC의 실제 LAN IPv4(앱 쉘·Expo Go)
