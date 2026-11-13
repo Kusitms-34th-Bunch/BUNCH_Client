@@ -151,6 +151,25 @@ describe('BunchNotifications(가짜 서버)', () => {
     );
   });
 
+  it('모두 읽음 뒤 다시 받기가 실패해도 받은 목록을 읽음으로 바꾸고 결과를 알린다', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await cards();
+    server.use(http.get('/api/bunches/:bunchId/notifications', () => fail(500, 'X')));
+
+    await user.click(screen.getByRole('button', { name: '모두 읽음' }));
+
+    expect(await screen.findByText(BUNCH_HOME_MESSAGES.readAllDone)).toHaveAttribute(
+      'role',
+      'status',
+    );
+    const after = await cards();
+    after.forEach((card) =>
+      expect(card).not.toHaveAccessibleName(expect.stringContaining('읽지 않음')),
+    );
+    expect(toast).not.toHaveBeenCalled();
+  });
+
   it('읽을 알림이 없으면 요청하지 않고 없다고 알린다', async () => {
     mockDb.update((state) => ({
       ...state,

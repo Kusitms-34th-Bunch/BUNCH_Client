@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { sharedKeys } from '@/shared/query/keys';
+import type { NotificationPage } from '../model/notifications';
 import {
   getBunchNotifications,
   openBunchNotification,
@@ -52,9 +53,19 @@ export const useReadAllNotificationsMutation = (bunchId: string | undefined) => 
     meta: { errorMessage: BUNCH_HOME_MESSAGES.readFailed },
     mutationFn: async () => {
       if (!bunchId) throw new Error('알림을 읽을 번치가 없습니다.');
-      await readAllBunchNotifications(bunchId);
-      // 결과 낭독 전에 목록을 바꿔 둠(읽지 않음 이름이 낭독 뒤 남지 않게)
-      await refreshUnread(queryClient, bunchId);
+      const { unreadCount } = await readAllBunchNotifications(bunchId);
+      // 서버 처리가 끝났으면 결과 낭독 전에 받은 목록을 읽음으로 바꿔 둠(다시 받기가 실패해도 화면·낭독이 어긋나지 않게)
+      const readAt = new Date().toISOString();
+      queryClient.setQueryData<NotificationPage>(
+        bunchHomeKeys.notifications(bunchId),
+        (page) =>
+          page && {
+            ...page,
+            unreadCount,
+            items: page.items.map((item) => (item.readAt ? item : { ...item, readAt })),
+          },
+      );
+      void refreshUnread(queryClient, bunchId);
     },
   });
 };
