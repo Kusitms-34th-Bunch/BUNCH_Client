@@ -6,6 +6,7 @@ import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { toSnapshot } from './bundles';
 import { followCounts, followOf, isBlockedBetween, viewerBunchId } from './follows';
+import { unreadCountOf } from './notifications';
 
 // 번치 홈 조회(`/home`, 서버 PR #62 미병합 계약), 번들 목록·현황(Swagger) 기준, 명세에 없는 값은 `ponytail:`로 표시
 const DEFAULT_PAGE_SIZE = 20;
@@ -137,7 +138,7 @@ export const bunchHomeHandlers = [
       memberCount,
       ...followCounts(state, bunchId),
       ...counts(state, bunchId),
-      unreadCount: 0,
+      unreadCount: unreadCountOf(state, bunchId),
       currentBunchId: viewerBunchId(state) ?? null,
       accessScope: 'INTERNAL',
       followState: 'NONE',

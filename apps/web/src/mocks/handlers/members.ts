@@ -4,6 +4,7 @@ import type { MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
+import { unreadCountOf } from './notifications';
 
 // 소속 번치 최대 개수(기능명세 5.2.4, 번치 만들기의 BUNCH_003과 같은 값)
 const MAX_ACTIVE_BUNCHES = 10;
@@ -66,7 +67,7 @@ export const memberHandlers = [
               role: membership.role,
               joinedAt: '2026-09-01T00:00:00.000Z',
             },
-            unreadCount: 0,
+            unreadCount: unreadCountOf(state, bunch.id),
             lastUsedAt: membership.lastUsedAt,
           },
         ];
