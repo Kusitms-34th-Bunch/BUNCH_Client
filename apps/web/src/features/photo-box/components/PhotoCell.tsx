@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { memo, useState } from 'react';
 import type { PhotoBoxPhoto } from '../lib/types';
 import { PHOTO_BOX_PATHS } from '../constants/paths';
-import { usePhotoOrder, usePhotoSelectionActions } from '../contexts/PhotoSelectionContext';
+import { usePhotoOrder, usePhotoSelectionActions } from '../contexts/photoSelection';
 import { PHOTO_ID_ATTRIBUTE } from '../lib/dragSelect';
 
 type PhotoCellProps = {
