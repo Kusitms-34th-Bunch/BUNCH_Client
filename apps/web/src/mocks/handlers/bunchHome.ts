@@ -5,7 +5,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { toSnapshot } from './bundles';
-import { followCounts, followOf, viewerBunchId } from './follows';
+import { followCounts, followOf, isBlockedBetween, viewerBunchId } from './follows';
 
 // 번치 홈 조회(`/home`, 서버 PR #62 미병합 계약), 번들 목록·현황(Swagger) 기준, 명세에 없는 값은 `ponytail:`로 표시
 const DEFAULT_PAGE_SIZE = 20;
@@ -77,6 +77,8 @@ export const bunchHomeHandlers = [
     const memberTotal = state.memberships.filter((m) => m.bunchId === bunchId).length;
     if (!mine) {
       const { viewer, follow, canView } = externalAccess(state, bunchId, bunch.isPrivate);
+      // ponytail: 차단 관계의 응답은 명세에 없어 403으로 둠(화면은 접근 제한), 실서버 확인 필요
+      if (isBlockedBetween(state, viewer, bunchId)) return fail(403, 'AUTH_002');
       // ponytail: 비소속 번치의 버전·개수·권한은 명세에 값이 없어 null·false(차단만 가능)
       return ok({
         bunch: profile,
@@ -191,7 +193,11 @@ export const bunchHomeHandlers = [
     if ('error' in found) return found.error;
     const { bunchId, state, mine, bunch } = found;
     // 다른 번치는 볼 수 있을 때만(비공개는 팔로우 승인 뒤), 공개 번들만
-    if (!mine && !externalAccess(state, bunchId, bunch.isPrivate).canView) {
+    if (
+      !mine &&
+      (!externalAccess(state, bunchId, bunch.isPrivate).canView ||
+        isBlockedBetween(state, viewerBunchId(state), bunchId))
+    ) {
       return fail(403, 'AUTH_002');
     }
     const url = new URL(request.url);

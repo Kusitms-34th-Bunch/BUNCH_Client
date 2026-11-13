@@ -33,8 +33,13 @@ export function OtherBunchFollows({
   const viewerId = me.data ? (me.data.bunch?.id ?? null) : undefined;
   const home = useQuery(otherBunchHomeQueryOptions(bunchId, viewerId));
   const canView = home.data?.canViewRelations ?? false;
-  const { followers, following, follow, unfollow } = useFollowList(bunchId, viewerId, canView);
   const { access } = useBlockRelation(bunchId);
+  // 차단 여부를 확인하기 전·차단한 번치는 목록을 요청하지 않음
+  const { followers, following, follow, unfollow } = useFollowList(
+    bunchId,
+    viewerId,
+    canView && access === 'visible',
+  );
   const viewer = useViewerStale(viewerId, home, me);
 
   // 내 번치: 지금 번치면 내 번치 목록으로, 다른 소속 번치면 프로필(전환 뒤 번치 탭)로
@@ -49,13 +54,25 @@ export function OtherBunchFollows({
   }, [internal, initialTab, bunchId, router]);
 
   const errorStatus = isApiError(home.error) ? home.error.status : undefined;
-  if (errorStatus === 400 || errorStatus === 404) notFound();
-
+  // 내가 차단했거나, 상대가 나를 차단해 서버가 403을 준 번치(프로필과 같은 판단)
+  const blocked = access === 'blocked' || errorStatus === 403;
   // 기록이 없으면 프로필로, 차단한 번치면 프로필도 접근 제한이라 피드로
-  const back = () =>
-    backOr(access === 'blocked' ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
-  if (access !== 'visible')
-    return <BlockedBunchScreen onBack={back} checking={access === 'checking'} />;
+  const back = () => backOr(blocked ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
+  // 내가 차단한 번치는 서버 응답(404 등)보다 먼저 접근 제한
+  if (access === 'blocked') return <BlockedBunchScreen onBack={back} />;
+  if (errorStatus === 400 || errorStatus === 404) notFound();
+  if (errorStatus === 403) {
+    return (
+      <BlockedBunchScreen
+        onBack={back}
+        onRetry={() => {
+          void me.refetch();
+          void home.refetch();
+        }}
+      />
+    );
+  }
+  if (access === 'checking') return <BlockedBunchScreen onBack={back} checking />;
   // 다시 받아도 명의가 어긋나거나 다시 받기가 실패하면 버튼을 막아 두지 않고 다시 시도 화면
   if ((me.isError && !me.data) || (home.isError && !home.data) || viewer.mismatch) {
     return (

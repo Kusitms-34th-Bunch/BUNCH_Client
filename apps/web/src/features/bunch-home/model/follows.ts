@@ -10,7 +10,7 @@ import { FOLLOW_STATUS } from './otherBunch';
 type Schemas = components['schemas'];
 
 /** 목록 행의 번치(Swagger `BunchSocialCard`) */
-const bunchCardSchema = z.object({
+export const bunchCardSchema = z.object({
   id: z.number().int().positive(),
   name: z.string(),
   imageUrl: z.string().nullish(),
@@ -18,7 +18,7 @@ const bunchCardSchema = z.object({
   visibility: z.enum(['PUBLIC', 'PRIVATE']),
 }) satisfies z.ZodType<ApiContract<Schemas['BunchSocialCard']>>;
 
-const pageOf = <T extends z.ZodType>(item: T) =>
+export const pageOf = <T extends z.ZodType>(item: T) =>
   z.object({
     items: z.array(item),
     page: z.number().int().nonnegative(),
@@ -72,7 +72,7 @@ export type FollowRequestRow = Pick<FollowBunch, 'id' | 'name' | 'imageSrc' | 'i
   daysAgo: number;
 };
 
-const card = (bunch: z.infer<typeof bunchCardSchema>) => ({
+export const card = (bunch: z.infer<typeof bunchCardSchema>) => ({
   id: toDomainId(bunch.id),
   name: bunch.name,
   imageSrc:

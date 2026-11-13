@@ -263,18 +263,26 @@ describe('OtherBunch 주소 처리', () => {
 });
 
 describe('OtherBunchMembers', () => {
-  it('그 번치의 멤버를 관리 동작 없이 보여 준다', () => {
-    render(<OtherBunchMembers bunchId="3" />);
+  // 차단 여부를 서버 차단 목록으로 확인하므로 QueryClient와 함께 그리고 확인이 끝나기를 기다림
+  const renderMembers = (bunchId: string) =>
+    render(<OtherBunchMembers bunchId={bunchId} />, {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
 
-    expect(screen.getByRole('heading', { level: 1, name: '캠핑러버 멤버' })).toBeInTheDocument();
+  it('그 번치의 멤버를 관리 동작 없이 보여 준다', async () => {
+    renderMembers('3');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '캠핑러버 멤버' }),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
     expect(screen.queryByRole('button', { name: /관리|더보기/ })).toBeNull();
   });
 
-  it('팔로우 승인 전의 비공개 번치는 멤버 명단 대신 안내를 보인다', () => {
-    render(<OtherBunchMembers bunchId="4" />);
+  it('팔로우 승인 전의 비공개 번치는 멤버 명단 대신 안내를 보인다', async () => {
+    renderMembers('4');
 
-    expect(screen.getByRole('region', { name: '비공개 번치예요' })).toHaveTextContent(
+    expect(await screen.findByRole('region', { name: '비공개 번치예요' })).toHaveTextContent(
       '목록을 보려면 이 번치를 팔로우하세요.',
     );
     expect(screen.queryByRole('listitem')).toBeNull();
@@ -284,7 +292,7 @@ describe('OtherBunchMembers', () => {
     notFound.mockImplementation(() => {
       throw new Error('NEXT_NOT_FOUND');
     });
-    expect(() => render(<OtherBunchMembers bunchId="constructor" />)).toThrow('NEXT_NOT_FOUND');
+    expect(() => renderMembers('constructor')).toThrow('NEXT_NOT_FOUND');
     notFound.mockReset();
   });
 });
