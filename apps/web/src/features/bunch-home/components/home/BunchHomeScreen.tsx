@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries';
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
@@ -68,6 +69,7 @@ export function BunchHomeScreen({
   // 헤더의 번치 전환 버튼에 시트가 열렸는지 알림
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const openOverlay = useScreenOverlay();
+  const refresh = useRefreshActiveQueries();
 
   const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
   // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움(닫힘 모션 동안 문구는 열 때 값으로 유지)
@@ -179,6 +181,8 @@ export function BunchHomeScreen({
     // 성격별 배경은 헤더·프로필 이미지 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
     // 틀 배경은 위 절반 성격 색·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 성격 색, 아래는 흰색이 드러남
     <PageShell
+      onRefresh={refresh}
+      refreshDisabled={switcherOpen}
       data-app-background={background.app}
       data-app-background-bottom="primary"
       className={cn('to-surface-primary bg-linear-to-b from-50% to-50%', background.frame)}

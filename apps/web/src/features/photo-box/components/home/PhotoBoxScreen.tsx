@@ -48,6 +48,8 @@ type PhotoBoxScreenProps = {
   onRetry?: (() => void) | undefined;
   /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 아래로 다시 스크롤하면 부름 */
   onLoadMore?: (() => void) | undefined;
+  /** 맨 위에서 당겨서 새로고침(기능 spec 3.1.1). 선택 모드·저장·삭제 중에는 당김을 끔 */
+  onRefresh?: (() => Promise<void>) | undefined;
   /** 번치 이름을 눌렀을 때(전환 목록은 추후 작업) */
   onBunchClick?: (() => void) | undefined;
   /** 올리기 시트에서 방식을 골랐을 때(앨범·카메라 연동은 사진 올리기 이슈, 시트는 닫고 호출) */
@@ -63,6 +65,7 @@ export function PhotoBoxScreen({
   currentYear = new Date().getFullYear(),
   onRetry,
   onLoadMore,
+  onRefresh,
   onBunchClick,
   onUpload,
   onCreateBundle,
@@ -169,6 +172,8 @@ export function PhotoBoxScreen({
 
   return (
     <PageShell
+      onRefresh={onRefresh}
+      refreshDisabled={selecting || busy}
       header={
         <PhotoBoxHeader
           bunch={bunch}
