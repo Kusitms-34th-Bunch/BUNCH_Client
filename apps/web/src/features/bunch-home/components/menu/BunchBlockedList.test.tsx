@@ -95,6 +95,23 @@ describe('BunchBlockedListScreen', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
+  it('해제가 끝나기 전에는 다른 해제를 받지 않는다', async () => {
+    onUnblock.mockReturnValueOnce(new Promise(() => {}));
+    const user = userEvent.setup();
+    renderScreen(BLOCKED);
+
+    await user.click(screen.getByRole('button', { name: '주말산책 차단해제' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '해제하기' }),
+    );
+    await waitFor(() => expect(onUnblock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    await user.click(screen.getByRole('button', { name: '주말산책 차단해제' }));
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(onUnblock).toHaveBeenCalledTimes(1);
+  });
+
   it('확인 창에서 취소하면 해제하지 않는다', async () => {
     const user = userEvent.setup();
     renderScreen(BLOCKED);

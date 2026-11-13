@@ -51,6 +51,8 @@ export function BunchBlockedListScreen({
   }, [count, blocked]);
   // Figma 2141:37877: 이미지 + 「해제하기」·「취소」 세로 배치(설계의 「번치에서 내보내기」는 번치 단위 차단과 맞지 않아 뺌)
   const openUnblock = (target: BlockedBunch) => {
+    // 해제가 끝나기 전에는 다시 받지 않음(같은 DELETE가 두 번 가면 뒤 요청이 404로 실패 안내를 띄움)
+    if (pending.current) return;
     let confirmed = false;
     openOverlay(
       (rootProps, close) => (
@@ -73,7 +75,7 @@ export function BunchBlockedListScreen({
       // 확인 창이 다 닫힌 뒤 해제(실패 안내가 닫히는 창 뒤에 묻히지 않게). 끝나면 행이 빠진 화면이 그려진 다음
       // 사라진 「차단해제」 대신 개수 줄(목록이 비면 빈 상태 제목)로 초점을 옮기고 토스트, 실패 안내는 부르는 쪽
       () => {
-        if (!confirmed) return;
+        if (!confirmed || pending.current) return;
         const request = { id: target.id, name: target.name };
         pending.current = request;
         void onUnblock(target).then(

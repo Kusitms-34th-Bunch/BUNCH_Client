@@ -46,11 +46,15 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   const { me: reporter, access } = useBlockRelation(bunchId);
   const blockBunch = useBlockBunchMutation(viewerId);
   const reportBunch = useReportBunchMutation(viewerId);
-  // 이 화면에서 차단한 번치 이름(접근 제한으로 바꾸고 제목 초점 뒤 완료 토스트)
-  const [justBlocked, setJustBlocked] = useState<string | null>(null);
+  // 이 화면에서 차단한 명의·번치 이름(접근 제한으로 바꾸고 제목 초점 뒤 완료 토스트). 명의가 바뀌면 적용하지 않음
+  const [blockedBy, setBlockedBy] = useState<{ viewerId: string; name: string } | null>(null);
+  // 렌더 중 상태 맞추기: 명의가 바뀌면 버림(토스트가 뜨기 전에, 명의가 돌아와도 다시 적용하지 않게)
+  if (blockedBy && blockedBy.viewerId !== viewerId) setBlockedBy(null);
   useEffect(() => {
-    if (justBlocked) toast(BUNCH_HOME_MESSAGES.blockedDone(justBlocked));
-  }, [justBlocked]);
+    if (blockedBy) toast(BUNCH_HOME_MESSAGES.blockedDone(blockedBy.name));
+  }, [blockedBy]);
+  // 위에서 명의가 다른 값은 버리므로 남아 있으면 지금 명의의 차단
+  const justBlocked = blockedBy !== null;
   // 차단 처리 중(로딩 덮개, 다시 눌러도 한 번만: isPending은 다음 렌더부터 반영)
   const [blocking, setBlocking] = useState(false);
   const blockingRef = useRef(false);
@@ -81,7 +85,7 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   const back = () => backOr(BUNCH_HOME_PATHS.feed);
   // 내가 차단한 번치는 서버 응답(404 등)보다 먼저 접근 제한
   if (access === 'blocked' || justBlocked) {
-    return <BlockedBunchScreen onBack={back} focusTitle={justBlocked !== null} />;
+    return <BlockedBunchScreen onBack={back} focusTitle={justBlocked} />;
   }
   // 없는 번치·잘못된 주소는 404
   const errorStatus = isApiError(home.error) ? home.error.status : undefined;
@@ -134,6 +138,15 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   };
   const unfollow = () => run({ kind: 'unfollow', followId: followIdOf(data) });
   const bunch = toOtherBunchProfile(data, published.data);
+  // 차단·신고 직전 서버 명의 확인: 다시 받지 못했거나 명의가 바뀌었으면(다른 기기에서 전환) 보내지 않음
+  const confirmViewer = async () => {
+    const latest = await home.refetch();
+    const serverViewer = latest.data?.currentBunchId;
+    if (latest.isError || !latest.data) return undefined;
+    // 어긋나면 내 정보 다시 받기는 useViewerStale이 맡음
+    if (serverViewer && toDomainId(serverViewer) !== viewerId) return undefined;
+    return latest.data;
+  };
   /**
    * 차단(화면설계서 2500:67470 2번): 진행 중인 팔로우가 끝나기를 기다려 최신 관계를 받은 뒤 차단하고, 성공하면 남은 팔로우를 해제
    * 그 사이 서버 명의가 바뀌었으면(다른 기기에서 전환) 이전 명의로 차단하지 않음. 실패 안내는 mutation
@@ -144,19 +157,17 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
     setBlocking(true);
     try {
       await inflight.current?.catch(() => {});
-      const { data: latest } = await home.refetch();
-      const serverViewer = latest?.currentBunchId;
-      if (serverViewer && toDomainId(serverViewer) !== viewerId) {
-        void me.refetch();
+      const latest = await confirmViewer();
+      if (!latest || !viewerId) {
         toast(BUNCH_HOME_MESSAGES.blockFailed);
         return;
       }
-      const following = latest?.followState && latest.followState !== 'NONE';
+      const following = latest.followState && latest.followState !== 'NONE';
       await blockBunch.mutateAsync({
         targetId: bunchId,
         followId: following ? followIdOf(latest) : undefined,
       });
-      setJustBlocked(bunch.name);
+      setBlockedBy({ viewerId, name: bunch.name });
     } catch {
       // 실패 안내는 mutation 공통 토스트(meta)
     } finally {
@@ -189,12 +200,14 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
               bunchName={bunch.name}
               reporterName={reporter.name}
               onBlock={() => void block()}
-              // 차단 중(덮개는 가상 커서를 막지 못함)에는 신고를 받지 않음
-              onReport={(value) =>
-                blockingRef.current
-                  ? Promise.reject(new Error('blocking'))
-                  : reportBunch.mutateAsync({ targetId: bunchId, ...value })
-              }
+              // 차단 중(덮개는 가상 커서를 막지 못함)이거나 명의를 확인하지 못하면 신고를 받지 않음
+              onReport={async (value) => {
+                if (blockingRef.current) throw new Error('blocking');
+                if (!(await confirmViewer())) throw new Error('viewer changed');
+                // 확인을 기다리는 사이 차단을 시작했을 수 있음
+                if (blockingRef.current) throw new Error('blocking');
+                return reportBunch.mutateAsync({ targetId: bunchId, ...value });
+              }}
             />
           )
         }

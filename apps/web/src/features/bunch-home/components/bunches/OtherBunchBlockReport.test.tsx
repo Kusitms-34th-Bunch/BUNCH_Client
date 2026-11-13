@@ -177,6 +177,17 @@ describe('다른 번치 차단(가짜 서버)', () => {
     expect(mockDb.get().blocks.some((block) => block.targetBunchId === 3)).toBe(false);
   });
 
+  it('차단 직전 명의를 다시 받지 못하면 차단하지 않는다', async () => {
+    const user = userEvent.setup();
+    renderOther('3');
+    await screen.findByRole('heading', { level: 1, name: '캠핑러버' });
+    server.use(http.get('/api/bunches/:bunchId/home', () => fail(500, 'X')));
+
+    await confirmBlock(user, '캠핑러버');
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.blockFailed));
+    expect(mockDb.get().blocks.some((block) => block.targetBunchId === 3)).toBe(false);
+  });
+
   it('확인 시트의 「취소」는 차단하지 않는다', async () => {
     const user = userEvent.setup();
     renderOther('3');
@@ -339,5 +350,31 @@ describe('다른 번치 신고(가짜 서버)', () => {
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.reportFailed));
     expect(toast).not.toHaveBeenCalledWith('신고가 접수됐어요.');
+  });
+
+  it('신고하려는 사이 다른 기기에서 번치를 바꿨으면 이전 명의로 신고하지 않는다', async () => {
+    const user = userEvent.setup();
+    renderOther('3');
+
+    await user.click(within(await openMore(user)).getByRole('button', { name: '신고하기' }));
+    const sheet = await screen.findByRole(
+      'dialog',
+      { name: '캠핑러버 번치를 신고할까요?' },
+      SHEET_WAIT,
+    );
+    // 서버의 지금 번치를 퇴근런클럽(2)으로 바꿈
+    mockDb.update((state) => ({
+      ...state,
+      memberships: state.memberships.map((item) =>
+        item.memberId === MOCK_MY_MEMBER_ID && item.bunchId === 2
+          ? { ...item, lastUsedAt: '2026-11-01T09:00:00.000Z' }
+          : item,
+      ),
+    }));
+    await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
+    await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.reportFailed));
+    expect(mockDb.get().reports).toEqual([]);
   });
 });

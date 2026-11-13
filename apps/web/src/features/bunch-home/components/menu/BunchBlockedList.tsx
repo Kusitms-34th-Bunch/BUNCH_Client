@@ -1,10 +1,12 @@
 'use client';
 
+import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
+import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useViewerStale } from '../../hooks/useViewerStale';
 import { toBlockedBunches } from '../../model/blocks';
@@ -32,6 +34,11 @@ export function BunchBlockedList() {
     if (noBunch) router.replace(BUNCH_HOME_PATHS.home);
   }, [noBunch, router]);
   const back = () => backOr(BUNCH_HOME_PATHS.menu);
+  // 확인 창이 열린 뒤 명의가 바뀌었거나 다시 확인 중이면 이전 명의의 행으로 해제하지 않게, 실행 때의 명의를 둠
+  const current = useRef({ bunchId, stale: viewer.stale });
+  useEffect(() => {
+    current.current = { bunchId, stale: viewer.stale };
+  }, [bunchId, viewer.stale]);
 
   if (
     (me.isError && !me.data) ||
@@ -61,7 +68,14 @@ export function BunchBlockedList() {
       total={blocks.data?.totalElements}
       // 명의를 다시 확인하는 동안에는 해제 버튼을 숨김
       canUnblock={(role === 'OWNER' || role === 'CO_OWNER') && !viewer.stale}
-      onUnblock={(target) => unblock.mutateAsync({ targetId: target.id, blockId: target.blockId })}
+      // 이 렌더(확인 창을 연 때)의 명의와 실행 때 명의가 다르면 보내지 않고 실패 안내
+      onUnblock={(target) => {
+        if (current.current.bunchId !== bunchId || current.current.stale) {
+          toast(BUNCH_HOME_MESSAGES.unblockFailed);
+          return Promise.reject(new Error('viewer changed'));
+        }
+        return unblock.mutateAsync({ targetId: target.id, blockId: target.blockId });
+      }}
       onBack={back}
     />
   );
