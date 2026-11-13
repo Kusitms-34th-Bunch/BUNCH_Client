@@ -15,10 +15,12 @@ type GenderFieldProps = {
   onChange: (_value: Gender | null) => void;
   /** 그룹에 연결할 설명 요소 id(예: 공개 여부 안내) */
   describedBy?: string;
+  /** 선택할 수 없음(추가 개인정보에 동의하지 않은 MY 프로필 수정). 제목과 칩이 함께 흐려짐 */
+  disabled?: boolean | undefined;
 };
 
 // 여성·남성 중 하나 선택, 다시 누르면 해제(선택은 Figma 눌림 모양 유지)
-export function GenderField({ value, onChange, describedBy }: GenderFieldProps) {
+export function GenderField({ value, onChange, describedBy, disabled = false }: GenderFieldProps) {
   const titleId = useId();
 
   return (
@@ -28,7 +30,10 @@ export function GenderField({ value, onChange, describedBy }: GenderFieldProps) 
       aria-describedby={describedBy}
       className="gap-s3 flex w-full flex-col"
     >
-      <span id={titleId} className="typography-body-3-semibold text-text-secondary">
+      <span
+        id={titleId}
+        className={`typography-body-3-semibold text-text-secondary ${disabled ? 'opacity-(--semantic-opacity-disabled)' : ''}`}
+      >
         성별
       </span>
       <div className="gap-s4 flex">
@@ -40,6 +45,7 @@ export function GenderField({ value, onChange, describedBy }: GenderFieldProps) 
               variant="tertiary"
               size="md"
               aria-pressed={selected}
+              disabled={disabled}
               className={selected ? 'flex-1 before:opacity-100' : 'text-text-tertiary flex-1'}
               onClick={() => onChange(selected ? null : gender.value)}
             >

@@ -22,10 +22,14 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
 // 닉네임 중복 확인은 기본으로 사용 가능(true)이라 응답 뒤 수정하기가 켜짐
-const renderScreen = (checkNickname = vi.fn((_nickname: string) => Promise.resolve(true))) => {
+const renderScreen = (
+  checkNickname = vi.fn((_nickname: string) => Promise.resolve(true)),
+  demographicsConsent = false,
+) => {
   render(
     <ProfileEditScreen
       profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }}
+      demographicsConsent={demographicsConsent}
       checkNickname={checkNickname}
     />,
     { wrapper: createQueryWrapper() },
@@ -42,9 +46,50 @@ describe('ProfileEditScreen', () => {
     renderScreen();
 
     expect(nicknameInput().value).toBe('으누');
-    // 출생연도·성별은 편집 화면에 없음(Figma 개인 프로필 편집)
-    expect(screen.queryByRole('textbox', { name: /출생연도/ })).toBeNull();
-    expect(screen.queryByRole('group', { name: '성별' })).toBeNull();
+    expect(submitButton().disabled).toBe(true);
+  });
+
+  it('추가 개인정보에 동의하지 않았으면 출생연도·성별이 비활성이고 값이 비어 있다(Figma 6745:46068)', () => {
+    renderScreen();
+
+    const birthYear = screen.getByRole<HTMLInputElement>('textbox', { name: /출생연도/ });
+    expect(birthYear.disabled).toBe(true);
+    expect(birthYear.value).toBe('');
+    expect(birthYear.placeholder).toBe('약관 동의 후 입력할 수 있어요.');
+    // 비활성 사유를 보조기술에도 입력란 설명으로 전달
+    const describedBy = (birthYear.getAttribute('aria-describedby') ?? '').split(' ');
+    expect(describedBy.map((id) => document.getElementById(id)?.textContent)).toContain(
+      '약관 동의 후 입력할 수 있어요.',
+    );
+    const gender = screen.getByRole('group', { name: '성별' });
+    expect(
+      within(gender)
+        .getAllByRole<HTMLButtonElement>('button')
+        .map((button) => button.disabled),
+    ).toEqual([true, true]);
+    expect(screen.getByText('출생연도와 성별은 다른 사용자에게 공개되지 않아요.')).toBeTruthy();
+    expect(submitButton().disabled).toBe(true);
+  });
+
+  it('동의했으면 저장된 출생연도·성별이 채워지고 고칠 수 있다(기능명세서 7.2.6)', async () => {
+    const user = userEvent.setup();
+    renderScreen(undefined, true);
+
+    const birthYear = screen.getByRole<HTMLInputElement>('textbox', { name: /출생연도/ });
+    expect(birthYear.disabled).toBe(false);
+    expect(birthYear.value).toBe('2003');
+    const gender = screen.getByRole('group', { name: '성별' });
+    expect(within(gender).getByRole('button', { name: '남성' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(submitButton().disabled).toBe(true);
+
+    // 바꾸면 변경 사항이 생겨 활성, 원래 값으로 되돌리면 다시 비활성
+    await user.clear(birthYear);
+    await user.type(birthYear, '1999');
+    await waitForEnabled();
+    await user.clear(birthYear);
+    await user.type(birthYear, '2003');
     expect(submitButton().disabled).toBe(true);
   });
 
