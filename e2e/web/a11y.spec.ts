@@ -45,7 +45,8 @@ const SCREENS: {
   {
     name: '개인 프로필 수정',
     path: '/my/profile',
-    knownLowContrast: [],
+    // 출생연도·성별 비공개 안내는 가입 프로필과 같은 Figma text-quaternary(#969AA0)
+    knownLowContrast: ['출생연도와 성별은 다른 사용자에게 공개되지 않아요.'],
     ready: (page) => page.getByRole('button', { name: '프로필 사진 변경' }),
   },
   {

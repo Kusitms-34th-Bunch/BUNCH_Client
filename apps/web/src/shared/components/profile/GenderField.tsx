@@ -28,6 +28,8 @@ export function GenderField({ value, onChange, describedBy, disabled = false }: 
       role="group"
       aria-labelledby={titleId}
       aria-describedby={describedBy}
+      // 비활성이면 그룹 전체를 비활성으로 알려, 흐린 제목이 대비 검사·보조기술에서 비활성 요소로 취급되게 함
+      aria-disabled={disabled || undefined}
       className="gap-s3 flex w-full flex-col"
     >
       <span
