@@ -11,6 +11,7 @@ import type {
 } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { photoBoxFixture } from '../../fixtures/photoBox.fixture';
+import { MissingPhotosError } from '../../lib/missingPhotos';
 import { MAX_BUNDLE_PHOTOS } from '../../lib/photoActions';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
 
@@ -216,6 +217,122 @@ describe('저장', () => {
   });
 });
 
+describe('삭제 확인 창 문구(기능명세서 3.3.5)', () => {
+  const admin = { memberId: 'eunwoo', isAdmin: true };
+  const member = { memberId: 'eunwoo', isAdmin: false };
+  // id가 겹치지 않게 접두사를 바꿔 사진 묶음을 만듦
+  const group = (prefix: string, count: number, uploaderIds: string[]) =>
+    bulk(count, uploaderIds).map((photo, index) => ({
+      ...photo,
+      id: `${prefix}-${index}`,
+      uploadedAt: `2026-10-01T00:00:0${index}`,
+    }));
+
+  const IRREVERSIBLE = '삭제 이후에는 복구할 수 없어요.';
+  const cases: {
+    name: string;
+    viewer: typeof admin;
+    photos: PhotoBoxPhoto[];
+    title: string;
+    lines: string[];
+  }[] = [
+    {
+      name: '내가 올린 사진 한 장',
+      viewer: member,
+      photos: group('own', 1, ['eunwoo']),
+      title: '이 사진을 삭제할까요?',
+      lines: [IRREVERSIBLE],
+    },
+    {
+      name: '내가 올린 사진 여러 장',
+      viewer: member,
+      photos: group('own', 3, ['eunwoo']),
+      title: '선택한 사진 3장을 삭제할까요?',
+      lines: [IRREVERSIBLE],
+    },
+    {
+      name: '관리자가 다른 멤버가 올린 사진만',
+      viewer: admin,
+      photos: group('other', 2, ['gyeongjin']),
+      title: '다른 멤버가 업로드한 사진이에요.',
+      lines: [IRREVERSIBLE],
+    },
+    {
+      name: '관리자가 내 사진과 다른 멤버 사진을 함께',
+      viewer: admin,
+      photos: [...group('own', 1, ['eunwoo']), ...group('other', 1, ['gyeongjin'])],
+      title: '다른 멤버가 업로드한 사진이 포함되어 있어요.',
+      lines: [IRREVERSIBLE],
+    },
+    {
+      name: '함께 올린 사진만',
+      viewer: member,
+      photos: group('co', 2, ['eunwoo', 'gyeongjin']),
+      title: '내가 올린 사진을 삭제할까요?',
+      lines: ['사진은 그대로 유지되고, 업로더 목록에서 내 이름만 사라져요.'],
+    },
+    {
+      name: '혼자 올린 사진과 함께 올린 사진이 섞임',
+      viewer: member,
+      photos: [...group('own', 3, ['eunwoo']), ...group('co', 2, ['eunwoo', 'gyeongjin'])],
+      title: '선택한 사진 5장을 삭제할까요?',
+      lines: [IRREVERSIBLE, '다른 멤버도 올린 사진 2장은 사진함에 남아요.'],
+    },
+  ];
+
+  it.each(cases)('$name', async ({ viewer, photos, title, lines }) => {
+    const user = userEvent.setup();
+    renderScreen(ready(dataWith(photos, viewer)));
+    await startSelecting(user, photos.length);
+
+    await runMenu(user, '삭제');
+
+    const dialog = screen.getByRole('alertdialog');
+    expect(within(dialog).getByText(title)).toBeTruthy();
+    for (const line of lines) expect(within(dialog).getByText(line)).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: '삭제하기' })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: '취소' })).toBeTruthy();
+  });
+});
+
+describe('삭제 중 사진이 사라진 경우', () => {
+  it('서버가 아무것도 지우지 않고 사라진 사진을 알리면 그 사진만 선택에서 빼고 선택 모드를 유지한다', async () => {
+    const user = userEvent.setup();
+    deletePhotos.mockRejectedValue(new MissingPhotosError(['bulk-1']));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 3);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1)));
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed);
+    // 3장 중 사라진 1장을 뺀 2장이 선택으로 남음
+    expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
+    expect(photoButtons()[0]!.textContent).toContain('1번째 선택');
+    expect(photoButtons()[1]!.getAttribute('aria-pressed')).toBe('false');
+    expect(photoButtons()[2]!.textContent).toContain('2번째 선택');
+  });
+
+  it('서버가 사라진 사진을 알려 주지 않으면 일반 삭제 실패로 다루고 선택을 그대로 둔다', async () => {
+    const user = userEvent.setup();
+    deletePhotos.mockRejectedValue(new MissingPhotosError([]));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed));
+    expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
+  });
+});
+
 describe('번들 만들기', () => {
   it('1~20장이면 확인 창을 띄우고 「예」를 누르면 고른 순서를 넘긴다', async () => {
     const user = userEvent.setup();
@@ -270,7 +387,7 @@ describe('삭제', () => {
 
     await runMenu(user, '삭제');
     const dialog = screen.getByRole('alertdialog');
-    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.deleteConfirmTitle)).toBeTruthy();
+    expect(within(dialog).getByText('선택한 사진 2장을 삭제할까요?')).toBeTruthy();
     expect(within(dialog).getByText('삭제 이후에는 복구할 수 없어요.')).toBeTruthy();
     // 되돌릴 수 없는 동작이라 처음 포커스는 「취소」(overlay가 다음 렌더에 열어 초점이 늦게 옮겨짐)
     await waitFor(() =>
@@ -391,6 +508,25 @@ describe('저장·삭제 중 안전장치', () => {
     expect(screen.getByRole('radio', { name: '전체' })).toBeTruthy();
     await user.click(photoButtons()[0]!);
     expect(photoButtons()[0]!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('삭제하는 동안 화면 전체 로딩과 안내를 보이고 끝나면 걷는다', async () => {
+    const user = userEvent.setup();
+    let finish!: (_result: { removedCount: number }) => void;
+    deletePhotos.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    expect(screen.getByTestId('lottie')).toBeTruthy();
+    expect(pageStatus().textContent).toBe(PHOTO_BOX_MESSAGES.deleting);
+
+    finish({ removedCount: 2 });
+    await waitFor(() => expect(screen.queryByTestId('lottie')).toBeNull());
   });
 
   it('삭제 요청이 실패하면 오류 토스트를 띄우고 선택을 그대로 둔다', async () => {

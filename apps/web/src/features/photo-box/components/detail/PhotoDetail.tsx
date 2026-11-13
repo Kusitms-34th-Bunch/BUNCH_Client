@@ -101,13 +101,22 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   const [lastPhotos, setLastPhotos] = useState(photosWithOriginal);
   if (present && lastPhotos !== photosWithOriginal) setLastPhotos(photosWithOriginal);
 
-  // 내가 사진을 지우는 동안에는 목록에서 사라져도 별도 안내 없이 화면의 이탈 흐름(토스트·이동)에 맡김
+  // 내가 사진을 지우거나 날짜를 바꾸는 동안에는 목록에서 사라져도 별도 안내 없이 화면의 이탈 흐름(토스트·이동)에 맡김
+  // (날짜 바꾸기가 사라진 사진으로 거절되면 목록을 다시 받아 사진이 빠진 뒤에 화면이 같은 안내로 이동하므로 안내가 두 번 실행되지 않게 함)
   const guardedActions = {
     ...actions,
     deletePhotos: async (ids: readonly string[]) => {
       deleting.current = true;
       try {
         return await actions.deletePhotos(ids);
+      } finally {
+        deleting.current = false;
+      }
+    },
+    changePhotoDates: async (ids: readonly string[], date: Date) => {
+      deleting.current = true;
+      try {
+        await actions.changePhotoDates(ids, date);
       } finally {
         deleting.current = false;
       }

@@ -130,18 +130,17 @@ describe('usePhotoBox', () => {
     await waitFor(() => expect(readyData(result.current.state).photos).toHaveLength(12));
   });
 
-  it('날짜를 바꾸면 이 세션 목록에서 그 날짜로 옮겨 보인다(서버 반영 전)', async () => {
+  it('날짜를 바꾸면 서버에 반영하고 목록을 다시 받아 그 날짜로 옮겨 보인다', async () => {
     const { result } = renderPhotoBox();
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    const mine = String(MOCK_PHOTO_IDS.S4);
 
-    await act(() =>
-      result.current.actions.changePhotoDates([String(MOCK_PHOTO_IDS.O1)], new Date(2026, 9, 20)),
-    );
+    await act(() => result.current.actions.changePhotoDates([mine], new Date(2026, 9, 20)));
 
-    const moved = readyData(result.current.state).photos.find(
-      (photo) => photo.id === String(MOCK_PHOTO_IDS.O1),
-    );
-    expect(moved?.takenAt).toBe('2026-10-20T10:00');
+    await waitFor(() => {
+      const moved = readyData(result.current.state).photos.find((photo) => photo.id === mine);
+      expect(moved?.takenAt?.startsWith('2026-10-20')).toBe(true);
+    });
   });
 
   it('멤버 목록 응답이 비어도 준비 상태로 넘어간다', async () => {

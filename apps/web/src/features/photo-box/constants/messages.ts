@@ -1,9 +1,11 @@
-import type { DeleteKind } from '../lib/photoActions';
+import type { DateConfirmKind, DeleteKind } from '../lib/photoActions';
 
 /** 사진함 선택·메뉴 흐름의 사용자 안내 문구(기획 문서 docs/specs/photo-box.md 3.3) */
 export const PHOTO_BOX_MESSAGES = {
   maxSelection: '사진은 한 번에 50장까지 고를 수 있어요.',
   saving: '사진을 앨범에 저장하는 중이에요',
+  // 삭제 요청이 도는 동안 스크린 리더에게 알리는 문구(화면에는 전체 로딩이 보임, 기획 원문이 없어 임시)
+  deleting: '사진을 삭제하는 중이에요',
   dragStart: '사진을 끌고 있어요.',
   dragCancel: '끌기를 취소했어요.',
   selectionStatus: (count: number) => (count === 0 ? '선택 모드' : `${count}장 선택됨`),
@@ -19,16 +21,48 @@ export const PHOTO_BOX_MESSAGES = {
   // 기획에 원문이 없는 임시 문구: 삭제 뒤 목록을 다시 받지 못해 지운 사진이 남아 보일 수 있을 때
   listStale: '최신 사진 목록을 불러오지 못했어요. 사진함을 다시 열어 확인해 주세요.',
   deleteForbidden: '내가 올린 사진만 삭제할 수 있어요.',
-  deleteConfirmTitle: '선택한 사진을 삭제할까요?',
-  // 사진 종류별 원문은 기획 문서에 없어 모든 종류가 같은 기본 문구를 씀(분기 구조는 getDeleteKind가 이미 제공)
-  deleteConfirmDescription: (_kind: DeleteKind) => '삭제 이후에는 복구할 수 없어요.',
+  // 삭제 확인 창 문구(기능명세서 3.3.5): 사진 종류별 제목과 내용. 「작성 중인 번들에 쓰인 사진」 문구는 그 정보가 API에 없어 아직 구분하지 않음
+  // count: 고른 사진 수, sharedCount: 그중 함께 올린 사진 수(`mixed`의 「다른 멤버도 올린 사진 M장」)
+  deleteConfirm: (
+    kind: DeleteKind,
+    count: number,
+    sharedCount: number,
+  ): { title: string; lines: readonly string[] } => {
+    const irreversible = '삭제 이후에는 복구할 수 없어요.';
+    switch (kind) {
+      case 'own':
+        return {
+          title: count > 1 ? `선택한 사진 ${count}장을 삭제할까요?` : '이 사진을 삭제할까요?',
+          lines: [irreversible],
+        };
+      case 'others':
+        return { title: '다른 멤버가 업로드한 사진이에요.', lines: [irreversible] };
+      case 'includes-others':
+        return { title: '다른 멤버가 업로드한 사진이 포함되어 있어요.', lines: [irreversible] };
+      case 'co-uploaded':
+        return {
+          title: '내가 올린 사진을 삭제할까요?',
+          lines: ['사진은 그대로 유지되고, 업로더 목록에서 내 이름만 사라져요.'],
+        };
+      case 'mixed':
+        return {
+          title: `선택한 사진 ${count}장을 삭제할까요?`,
+          lines: [irreversible, `다른 멤버도 올린 사진 ${sharedCount}장은 사진함에 남아요.`],
+        };
+    }
+  },
   deleteDone: (count: number) => `사진함에서 사진 ${count}장이 삭제되었어요.`,
   dateChanged: '사진 날짜가 변경되었어요.',
   undo: '되돌리기',
   dateForbidden: '내가 올린 사진만 날짜를 바꿀 수 있어요.',
-  // 날짜 바꾸기·끌기 확인 창 문구는 기획 문서에 원문이 없어 임시 문구(기획 확정 후 교체)
-  dateConfirmTitle: '선택한 사진의 날짜를 바꿀까요?',
-  dateConfirmDescription: '다른 멤버가 올린 사진이 포함되어 있어요.',
+  // 날짜 바꾸기·끌기 확인 창 문구(기능명세서 3.4.1): 관리자가 다른 멤버가 올린 사진의 날짜를 바꿀 때
+  dateConfirm: (kind: DateConfirmKind): { title: string; description: string } => ({
+    title:
+      kind === 'others'
+        ? '다른 멤버가 올린 사진이에요.'
+        : '다른 멤버가 업로드한 사진이 포함되어 있어요.',
+    description: '날짜를 변경하면 사진함에서 변경된 날짜로 보여요.',
+  }),
   bundleCreating: '번들을 만들고 있어요.',
   photoBoxFull: '사진함이 가득 찼어요.',
   uploadSheetTitle: (bunchName: string) => `${bunchName}에 사진 올리기`,

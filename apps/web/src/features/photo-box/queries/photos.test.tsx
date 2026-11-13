@@ -1,17 +1,17 @@
 import type * as DesignSystem from '@app/design-system';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { onlineManager, useInfiniteQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
-import { PHOTO_BOX_MESSAGES } from '../constants/messages';
+import { MissingPhotosError } from '../lib/missingPhotos';
 import { photoBoxKeys } from './keys';
 import { datedPhotosQueryOptions } from './photoLists';
-import { useDeletePhotosMutation } from './photos';
+import { useChangePhotoDatesMutation, useDeletePhotosMutation } from './photos';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -78,7 +78,7 @@ describe('useDeletePhotosMutation', () => {
     );
   });
 
-  it('실패하면 공통 처리가 삭제 실패 토스트를 띄우고 캐시는 그대로 둔다', async () => {
+  it('실패하면 캐시는 그대로 두고 토스트는 띄우지 않는다(화면이 결과에 따라 직접 안내)', async () => {
     server.use(http.post('/api/bunches/:bunchId/photos/delete', () => fail(500, 'COMMON_500')));
     const { client, keys, isInvalidated } = createSeededClient();
     const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
@@ -89,7 +89,99 @@ describe('useDeletePhotosMutation', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toMatchObject({ code: 'COMMON_500' });
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed);
+    expect(toast).not.toHaveBeenCalled();
     expect(isInvalidated(keys.photos)).toBe(false);
+  });
+
+  it('고른 사진이 그사이 지워져 거절되면 사라진 사진이 빠지도록 목록을 다시 받는다', async () => {
+    const { client, keys, isInvalidated } = createSeededClient();
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    act(() => result.current.mutate(['999']));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(MissingPhotosError);
+    expect(isInvalidated(keys.photos)).toBe(true);
+    expect(isInvalidated(keys.otherBunchPhotos)).toBe(false);
+  });
+});
+
+describe('useChangePhotoDatesMutation', () => {
+  beforeEach(() => toast.mockClear());
+
+  it('성공하면 이 번치의 사진 목록만 무효화한다', async () => {
+    const { client, keys, isInvalidated } = createSeededClient();
+    const { result } = renderHook(() => useChangePhotoDatesMutation(bunchId), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    await act(() =>
+      result.current.mutateAsync({
+        photoIds: [String(MOCK_PHOTO_IDS.S4)],
+        date: new Date(2026, 9, 5),
+      }),
+    );
+
+    expect(isInvalidated(keys.photos)).toBe(true);
+    expect(isInvalidated(keys.otherBunchPhotos)).toBe(false);
+    expect(isInvalidated(keys.members)).toBe(false);
+  });
+
+  it('고른 사진이 그사이 지워져 거절되면 목록을 다시 받고, 그 밖의 실패는 캐시를 그대로 둔다', async () => {
+    const missing = createSeededClient();
+    const first = renderHook(() => useChangePhotoDatesMutation(bunchId), {
+      wrapper: createQueryWrapper(missing.client),
+    });
+    act(() => first.result.current.mutate({ photoIds: ['999'], date: new Date(2026, 9, 5) }));
+    await waitFor(() => expect(first.result.current.isError).toBe(true));
+    expect(first.result.current.error).toBeInstanceOf(MissingPhotosError);
+    expect(missing.isInvalidated(missing.keys.photos)).toBe(true);
+
+    server.use(http.post('/api/bunches/:bunchId/photos/date', () => fail(500, 'COMMON_500')));
+    const other = createSeededClient();
+    const second = renderHook(() => useChangePhotoDatesMutation(bunchId), {
+      wrapper: createQueryWrapper(other.client),
+    });
+    act(() =>
+      second.result.current.mutate({
+        photoIds: [String(MOCK_PHOTO_IDS.S4)],
+        date: new Date(2026, 9, 5),
+      }),
+    );
+    await waitFor(() => expect(second.result.current.isError).toBe(true));
+    expect(other.isInvalidated(other.keys.photos)).toBe(false);
+    expect(toast).not.toHaveBeenCalled();
+  });
+});
+
+describe('연결이 끊긴 상태의 삭제·날짜 바꾸기', () => {
+  beforeEach(() => onlineManager.setOnline(false));
+  afterEach(() => onlineManager.setOnline(true));
+
+  // 보류되면 응답이 없어 화면 전체 로딩이 계속 떠 있으므로, 끊겨 있어도 바로 보내 실패로 끝나야 함
+  it('삭제 요청은 보류되지 않고 바로 실패한다', async () => {
+    server.use(http.post('/api/bunches/:bunchId/photos/delete', () => fail(500, 'COMMON_500')));
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+
+    act(() => result.current.mutate(['1']));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.isPaused).toBe(false);
+  });
+
+  it('날짜 변경 요청은 보류되지 않고 바로 실패한다', async () => {
+    server.use(http.post('/api/bunches/:bunchId/photos/date', () => fail(500, 'COMMON_500')));
+    const { result } = renderHook(() => useChangePhotoDatesMutation(bunchId), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+
+    act(() => result.current.mutate({ photoIds: ['1'], date: new Date(2026, 9, 5) }));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.isPaused).toBe(false);
   });
 });
