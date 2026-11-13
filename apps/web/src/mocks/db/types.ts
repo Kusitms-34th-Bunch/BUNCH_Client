@@ -141,6 +141,23 @@ export type MockFollow = {
   createdAt: string;
 };
 
+/** 번치 사이 차단(blocker가 target을 차단) */
+export type MockBlock = {
+  id: number;
+  blockerBunchId: number;
+  targetBunchId: number;
+  createdAt: string;
+};
+
+/** 번치 신고(접수만, 처리 결과는 화면에 없음) */
+export type MockReport = {
+  id: number;
+  reporterBunchId: number;
+  targetBunchId: number;
+  reason: 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'PERSONAL_INFORMATION' | 'OTHER';
+  detail: string | null;
+};
+
 export type MockDbState = {
   members: MockMember[];
   bunches: MockBunch[];
@@ -151,4 +168,6 @@ export type MockDbState = {
   bunchAccessNotices: MockBunchAccessNotice[];
   pushPreferences: MockPushPreferences;
   follows: MockFollow[];
+  blocks: MockBlock[];
+  reports: MockReport[];
 };

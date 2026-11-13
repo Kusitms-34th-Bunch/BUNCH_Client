@@ -76,6 +76,9 @@ const SOCIAL_BUNCHES: readonly [
   [7, '서핑크루', 'TYPE_2', true],
   [8, '맛집탐방대', 'TYPE_4', false],
   [9, '침대조아', 'TYPE_1', true],
+  // 여행쥬아가 차단한 번치(Figma 1873:33766 차단 목록 예시 이름)
+  [10, '야간러너스', 'TYPE_2', false],
+  [11, '주말산책', 'TYPE_4', true],
 ];
 
 // [팔로우하는 번치, 대상 번치, 상태, 시각]. 여행쥬아(1)는 팔로워 3·팔로잉 2·대기 요청 3
@@ -344,6 +347,21 @@ export const createSeed = (): MockDbState => ({
       'PUBLIC',
     ),
   ],
+  blocks: [
+    {
+      id: 1,
+      blockerBunchId: MOCK_BUNCH_ID,
+      targetBunchId: 11,
+      createdAt: '2026-10-05T09:00:00.000Z',
+    },
+    {
+      id: 2,
+      blockerBunchId: MOCK_BUNCH_ID,
+      targetBunchId: 10,
+      createdAt: '2026-10-08T09:00:00.000Z',
+    },
+  ],
+  reports: [],
   follows: FOLLOW_SEEDS.map(([followerBunchId, targetBunchId, status, createdAt], index) => ({
     id: index + 1,
     followerBunchId,

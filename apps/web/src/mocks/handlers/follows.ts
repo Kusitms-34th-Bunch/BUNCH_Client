@@ -32,7 +32,16 @@ export const followCounts = (state: MockDbState, bunchId: number) => {
   };
 };
 
-const isMine = (state: MockDbState, bunchId: number) =>
+/** 두 번치 사이에 어느 쪽이든 차단이 있는지(차단하면 서로의 프로필·관계 목록을 볼 수 없음) */
+export const isBlockedBetween = (state: MockDbState, a: number | undefined, b: number) =>
+  a !== undefined &&
+  state.blocks.some(
+    (block) =>
+      (block.blockerBunchId === a && block.targetBunchId === b) ||
+      (block.blockerBunchId === b && block.targetBunchId === a),
+  );
+
+export const isMine = (state: MockDbState, bunchId: number) =>
   state.memberships.some((item) => item.bunchId === bunchId && item.memberId === MOCK_MY_MEMBER_ID);
 
 /** 경로의 내 번치(팔로우 명의)와 상대 번치. 내가 속한 번치가 아니면 403 */
@@ -49,7 +58,7 @@ const pair = (params: Record<string, string | readonly string[] | undefined>) =>
 };
 
 /** `?page=&size=`. 잘못된 값이면 undefined(400) */
-const pageOf = (request: Request) => {
+export const pageOf = (request: Request) => {
   const url = new URL(request.url);
   const parse = (value: string | null, fallback: number) =>
     value === null ? fallback : /^\d+$/.test(value) ? Number(value) : NaN;
@@ -59,7 +68,7 @@ const pageOf = (request: Request) => {
   return { page, size: Math.min(size, MAX_PAGE_SIZE) };
 };
 
-const paged = <T>(items: readonly T[], { page, size }: { page: number; size: number }) => ({
+export const paged = <T>(items: readonly T[], { page, size }: { page: number; size: number }) => ({
   items: items.slice(page * size, (page + 1) * size),
   page,
   size,
@@ -67,7 +76,7 @@ const paged = <T>(items: readonly T[], { page, size }: { page: number; size: num
   hasNext: (page + 1) * size < items.length,
 });
 
-const cardOf = (state: MockDbState, bunchId: number) => {
+export const cardOf = (state: MockDbState, bunchId: number) => {
   const bunch = state.bunches.find((item) => item.id === bunchId);
   return bunch
     ? {
@@ -97,7 +106,7 @@ const relationList = (kind: 'followers' | 'following') =>
       isMine(state, targetId) ||
       !target.isPrivate ||
       followOf(state, viewer, targetId)?.status === 'FOLLOWING';
-    if (!canView) return fail(403, 'AUTH_002');
+    if (!canView || isBlockedBetween(state, viewer, targetId)) return fail(403, 'AUTH_002');
     const relations = state.follows
       .filter(
         (follow) =>
