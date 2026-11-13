@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '@/mocks/server';
 import { mockDb } from '@/mocks/db';
-import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS, MOCK_MEMBER_IDS } from '@/mocks/db/seed';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { createBundle } from '../api/bundles';
@@ -18,7 +18,11 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 
 const bunchId = String(MOCK_BUNCH_ID);
 const newDraft = async () =>
-  (await createBundle(bunchId, [String(MOCK_PHOTO_IDS.S4)], createIdempotencyKey())).id;
+  (
+    await createBundle(bunchId, [String(MOCK_PHOTO_IDS.S4)], createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ])
+  ).id;
 
 // 보이는 제목과 제목 입력 동작을 노출하는 소비자
 function Consumer() {

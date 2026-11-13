@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { delay, http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearPhotoBoxEntry, readPhotoBoxEntry } from '@/features/bundle/lib/photoBoxEntry';
 import { mockDrafts } from '@/mocks/db/drafts';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
@@ -47,6 +48,7 @@ vi.mock('@/shared/bridge/client', () => ({
 }));
 
 beforeEach(() => {
+  clearPhotoBoxEntry();
   vi.clearAllMocks();
   bridge.pickGalleryImages.mockResolvedValue({ status: 'picked', photos: [{ id: 'p1' }] });
   // JPEG 시작 바이트(FF D8 FF)로 시작하는 작은 이미지
@@ -81,14 +83,7 @@ describe('PhotoBox 사진 올리기', () => {
 });
 
 describe('PhotoBox 번들 만들기 연결', () => {
-  it('사진을 골라 「번들 만들기」를 확인하면 로딩을 보이고 초안을 만든 뒤 작성 화면으로 이동한다', async () => {
-    // 응답을 잠시 늦춰 생성 중 화면을 확인(undefined를 돌려주면 기본 가짜 서버 handler가 응답)
-    server.use(
-      http.post('/api/bunches/:bunchId/bundles', async () => {
-        await delay(300);
-        return undefined;
-      }),
-    );
+  it('사진을 골라 「번들 만들기」를 확인하면 고른 사진을 넘기고 참여 멤버 고르기로 이동한다', async () => {
     const user = userEvent.setup();
     render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
 
@@ -102,13 +97,10 @@ describe('PhotoBox 번들 만들기 연결', () => {
     await user.click(screen.getByRole('menuitem', { name: '번들 만들기' }));
     await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: '예' }));
 
-    expect(router.push).not.toHaveBeenCalled();
-    expect(screen.getByText(PHOTO_BOX_MESSAGES.bundleCreating)).toBeInTheDocument();
-    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
-    const [bundle] = mockDrafts();
-    expect(router.push).toHaveBeenCalledWith(`/bunch/drafts/${bundle?.id}`);
-    // 고른 사진 한 장으로 초안이 만들어짐(어느 사진인지는 사진함 정렬 순서에 따름)
-    expect(bundle?.photos).toHaveLength(1);
+    // 초안은 참여 멤버를 고른 뒤 그 화면에서 만듦(기능 spec 3.3.4)
+    expect(router.push).toHaveBeenCalledWith('/bunch/bundles/new/members');
+    expect(readPhotoBoxEntry()).toHaveLength(1);
+    expect(mockDrafts()).toHaveLength(0);
   });
 });
 

@@ -46,13 +46,21 @@ export const bundlePhotoHandlers = [
     const add = idList(body?.addPhotoIds);
     const remove = idList(body?.removeBundlePhotoIds);
     const mode = body?.mode;
+    // 정원을 넘길 때: 기본은 전부 거절(ATOMIC_APPLY), PARTIAL_ADD는 남은 자리까지만 담음
+    const capacityMode = body?.capacityMode ?? 'ATOMIC_APPLY';
+    // 재선택 사진: 추가 목록에 든 기존 원본(ID·픽을 지키고 뒤로 옮김), ATOMIC_APPLY에서만 허용
+    const reselected = idList(body?.reselectedPhotoIds);
     if (
       !body ||
       !key ||
       !UUID.test(key) ||
       !add ||
       !remove ||
-      (mode !== 'DRAFT' && mode !== 'PUBLISHED')
+      !reselected ||
+      (mode !== 'DRAFT' && mode !== 'PUBLISHED') ||
+      (capacityMode !== 'ATOMIC_APPLY' && capacityMode !== 'PARTIAL_ADD') ||
+      (reselected.length > 0 && capacityMode !== 'ATOMIC_APPLY') ||
+      !reselected.every((id) => add.includes(id))
     ) {
       return fail(400, 'COMMON_001');
     }
@@ -62,7 +70,7 @@ export const bundlePhotoHandlers = [
     const outcome = runIdempotent(
       `${MOCK_MY_MEMBER_ID}:${bunchId}:photos:${bundle.id}`,
       key,
-      JSON.stringify({ add, remove, mode }),
+      JSON.stringify({ add, remove, mode, capacityMode, reselected }),
       () => {
         const state = mockDb.get();
         const current = state.bundles.find((item) => item.id === bundle.id);
@@ -81,51 +89,85 @@ export const bundlePhotoHandlers = [
         if (removing.some((photo) => photo.photoId !== null && add.includes(photo.photoId))) {
           return { status: 400, body: { code: 'COMMON_001' } };
         }
-        // 추가 사진은 같은 번치의 원본이어야 하고 이미 번들에 있는 원본은 다시 추가할 수 없음
+        // 추가 사진은 같은 번치의 원본이어야 함(없는 원본은 COMMON_001)
         const sources = add.map((id) =>
           state.photos.find((photo) => photo.photoId === id && photo.bunchId === bunchId),
         );
         if (sources.some((photo) => photo === undefined)) {
-          return { status: 404, body: { code: 'RESOURCE_001' } };
+          return { status: 400, body: { code: 'COMMON_001' } };
         }
         const staying = current.photos.filter((photo) => !remove.includes(photo.id));
-        if (add.some((id) => staying.some((photo) => photo.photoId === id))) {
+        const existingOf = (id: number) => staying.find((photo) => photo.photoId === id);
+        // 이미 번들에 있는 원본은 재선택일 때만 다시 담을 수 있음
+        if (add.some((id) => existingOf(id) && !reselected.includes(id))) {
           return { status: 409, body: { code: 'BUNDLE_006' } };
         }
-        const total = staying.length + add.length;
-        if (total < 1 || total > MAX_PHOTOS) return { status: 409, body: { code: 'BUNDLE_006' } };
+        // 이미 삭제된 재선택 사진은 되살리지 않음(새로 담지도 않음)
+        const fresh = add.filter((id) => !existingOf(id) && !reselected.includes(id));
+        const room = MAX_PHOTOS - staying.length;
+        if (capacityMode === 'ATOMIC_APPLY' && fresh.length > room) {
+          return { status: 409, body: { code: 'BUNDLE_006' } };
+        }
+        const accepted = capacityMode === 'PARTIAL_ADD' ? fresh.slice(0, Math.max(0, room)) : fresh;
+        const rejected = fresh.filter((id) => !accepted.includes(id));
+        const total = staying.length + accepted.length;
+        if (total < 1) return { status: 409, body: { code: 'BUNDLE_006' } };
+        const result = { addedPhotoIds: accepted, rejectedPhotoIds: rejected };
+        const reselectedPhotos = add.flatMap((id) =>
+          reselected.includes(id) ? (existingOf(id) ?? []) : [],
+        );
         // 실제 구성 변화가 없으면 revision을 올리지 않음
-        if (removing.length === 0 && add.length === 0)
-          return { status: 200, body: { id: bundle.id } };
+        if (removing.length === 0 && accepted.length === 0 && reselectedPhotos.length === 0) {
+          return { status: 200, body: { id: bundle.id, result } };
+        }
 
         const at = nowIso();
         let nextId = Math.max(0, ...state.bundles.flatMap((item) => item.photos.map((p) => p.id)));
-        const added: MockBundlePhoto[] = sources.flatMap((source) =>
-          source
-            ? [
-                {
-                  id: (nextId += 1),
-                  photoId: source.photoId,
-                  imageAssetId: source.photoId + 7000,
-                  imageUrl: source.imageUrl,
-                  position: 0,
-                  addedBy: MOCK_MY_MEMBER_ID,
-                  addedAt: at,
-                },
-              ]
-            : [],
+        const addedPhotos = new Map<number, MockBundlePhoto>(
+          accepted.flatMap((id) => {
+            const source = sources[add.indexOf(id)];
+            return source
+              ? [
+                  [
+                    id,
+                    {
+                      id: (nextId += 1),
+                      photoId: source.photoId,
+                      imageAssetId: source.photoId + 7000,
+                      imageUrl: source.imageUrl,
+                      position: 0,
+                      addedBy: MOCK_MY_MEMBER_ID,
+                      addedAt: at,
+                    },
+                  ] as const,
+                ]
+              : [];
+          }),
         );
-        changeBundle(bundle.id, (latest) => ({
-          ...latest,
-          photos: renumber([...byPosition(staying), ...added]),
-        }));
-        return { status: 200, body: { id: bundle.id } };
+        // 재선택하지 않은 사진은 상대 순서를 지키고, 새로 담은 사진·재선택 사진은 선택 순서대로 뒤에 붙음
+        const kept = byPosition(staying).filter((photo) => !reselectedPhotos.includes(photo));
+        const tail = add.flatMap((id) => {
+          const fresh = addedPhotos.get(id);
+          if (fresh) return [fresh];
+          return reselected.includes(id) ? (existingOf(id) ?? []) : [];
+        });
+        changeBundle(bundle.id, (latest) => ({ ...latest, photos: renumber([...kept, ...tail]) }));
+        return { status: 200, body: { id: bundle.id, result } };
       },
     );
     if (outcome.kind === 'conflict') return fail(409, 'REQUEST_001');
     const stored = outcome.response;
     if (stored.status !== 200) return fail(stored.status, (stored.body as { code: string }).code);
-    return snapshotOf(bundle.id);
+    const { result } = stored.body as {
+      result: { addedPhotoIds: number[]; rejectedPhotoIds: number[] };
+    };
+    // 같은 키 재시도는 최신 snapshot과 빈 결과(replayed)만 돌려줌
+    return snapshotOf(bundle.id, {
+      photoChangeResult:
+        outcome.kind === 'replayed'
+          ? { addedPhotoIds: [], rejectedPhotoIds: [], replayed: true }
+          : { ...result, replayed: false },
+    });
   }),
 
   // POST /api/v1/bunches/{bunchId}/bundles/{bundleId}/photos/{bundlePhotoId}/move
@@ -157,22 +199,50 @@ export const bundlePhotoHandlers = [
       const moving = bundle.photos.find((photo) => photo.id === bundlePhotoId);
       if (!moving) return fail(404, 'RESOURCE_001');
 
-      // 이동 대상을 뺀 순서에서 앞뒤 anchor가 존재하고 서로 인접해야 함(양쪽 null은 사진이 하나일 때만)
-      const rest = byPosition(bundle.photos).filter((photo) => photo.id !== moving.id);
-      const previousIndex =
-        previous === null ? -1 : rest.findIndex((photo) => photo.id === previous);
-      const nextIndex = next === null ? rest.length : rest.findIndex((photo) => photo.id === next);
-      const anchorsExist =
-        (previous === null || previousIndex >= 0) && (next === null || nextIndex >= 0);
-      if (!anchorsExist || nextIndex !== previousIndex + 1) return fail(409, 'BUNDLE_006');
+      const perform = (): { status: number; body: unknown } => {
+        // 자기 자신이나 같은 사진을 앞뒤 anchor로 쓰거나, 번들에 없는 anchor이거나, 양쪽 null인데 다른 사진이 있으면 BUNDLE_006
+        // 앞뒤 anchor가 서로 인접하지 않아도 받아들이고, 뒤 anchor 직전을 우선하며 뒤 anchor가 없으면 앞 anchor 직후에 둠(v5 명세)
+        const rest = byPosition(bundle.photos).filter((photo) => photo.id !== moving.id);
+        const previousIndex =
+          previous === null ? -1 : rest.findIndex((photo) => photo.id === previous);
+        const nextIndex = next === null ? -1 : rest.findIndex((photo) => photo.id === next);
+        const invalid =
+          previous === moving.id ||
+          next === moving.id ||
+          (previous !== null && previous === next) ||
+          (previous !== null && previousIndex < 0) ||
+          (next !== null && nextIndex < 0) ||
+          (previous === null && next === null && rest.length > 0);
+        if (invalid) return { status: 409, body: { code: 'BUNDLE_006' } };
+        const insertAt = next !== null ? nextIndex : previousIndex + 1;
 
-      const moved = [...rest.slice(0, previousIndex + 1), moving, ...rest.slice(previousIndex + 1)];
-      const unchanged = moved.every(
-        (photo, index) => photo.id === byPosition(bundle.photos)[index]?.id,
+        const moved = [...rest.slice(0, insertAt), moving, ...rest.slice(insertAt)];
+        const unchanged = moved.every(
+          (photo, index) => photo.id === byPosition(bundle.photos)[index]?.id,
+        );
+        // 자리가 같으면 revision을 올리지 않음
+        if (!unchanged) {
+          changeBundle(bundle.id, (latest) => ({ ...latest, photos: renumber(moved) }));
+        }
+        return { status: 200, body: null };
+      };
+
+      // 같은 X-Request-Id의 재시도는 옛 이동을 다시 적용하지 않고 최신 상태만 돌려줌(같은 ID에 다른 내용은 REQUEST_001)
+      if (requestId === null) {
+        const result = perform();
+        if (result.status !== 200)
+          return fail(result.status, (result.body as { code: string }).code);
+        return snapshotOf(bundle.id);
+      }
+      const outcome = runIdempotent(
+        `${MOCK_MY_MEMBER_ID}:${bundle.bunchId}:move:${bundle.id}`,
+        requestId,
+        JSON.stringify({ bundlePhotoId, previous, next, mode }),
+        perform,
       );
-      // 자리가 같으면 revision을 올리지 않음
-      if (!unchanged) {
-        changeBundle(bundle.id, (latest) => ({ ...latest, photos: renumber(moved) }));
+      if (outcome.kind === 'conflict') return fail(409, 'REQUEST_001');
+      if (outcome.response.status !== 200) {
+        return fail(outcome.response.status, (outcome.response.body as { code: string }).code);
       }
       return snapshotOf(bundle.id);
     },

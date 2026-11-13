@@ -29,6 +29,7 @@ const newDraft = async () =>
       bunchId,
       [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5)],
       createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
     )
   ).id;
 
@@ -134,7 +135,7 @@ describe('useDraft 저장', () => {
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
   });
 
-  it('공개 범위는 고르는 즉시 저장하고 내 코멘트도 저장한다', async () => {
+  it('공개 범위는 서버에 저장하지 않고 화면에만 두며 내 코멘트는 저장한다', async () => {
     const { id, result } = await renderReady();
 
     act(() => {
@@ -142,11 +143,13 @@ describe('useDraft 저장', () => {
       result.current.actions.setComment(String(me), '함께한 하루');
     });
 
-    await waitFor(() => expect(serverBundle(id)?.visibility).toBe('PUBLIC'), SAVE_WAIT);
     await waitFor(
       () => expect(serverBundle(id)?.comments[0]).toMatchObject({ content: '함께한 하루' }),
       SAVE_WAIT,
     );
+    // 최종 선택은 업로드(발행) 요청으로만 보냄(v5 명세)
+    expect(ready(result.current.state).draft.visibility).toBe('public');
+    expect(serverBundle(id)?.visibility).toBeNull();
   });
 
   it('남의 코멘트는 저장하지 않는다', async () => {
@@ -195,19 +198,19 @@ describe('useDraft 저장', () => {
     const { result } = await renderReady();
     let calls = 0;
     server.use(
-      http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => {
+      http.put('/api/bunches/:bunchId/bundles/:id/date', () => {
         calls += 1;
         return fail(403, 'AUTH_002');
       }),
     );
 
-    act(() => result.current.actions.setVisibility('public'));
+    act(() => result.current.actions.setDate('2026-10-18'));
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed), SAVE_WAIT);
     // 재시도 간격(3초)보다 오래 기다려도 요청은 한 번뿐
     await act(() => new Promise((resolve) => setTimeout(resolve, 3500)));
     expect(calls).toBe(1);
-    expect(ready(result.current.state).draft.visibility).toBe('public');
+    expect(ready(result.current.state).draft.date).toBe('2026-10-18');
     // 저장을 포기한 상태는 「저장 중」에 고정되지 않고 「저장 실패」로 보임
     expect(ready(result.current.state).saveStatus).toBe('failed');
     expect(
@@ -245,6 +248,8 @@ describe('useDraft 저장', () => {
         revision: bundle.revision + 1,
       })),
     }));
+    // 공개 범위를 골라야 발행 요청이 나가고, 요청이 거절되면 상세를 다시 받아 서버 값이 보임
+    act(() => result.current.actions.setVisibility('members'));
     await act(async () => {
       await result.current.actions.publish();
     });
@@ -256,15 +261,15 @@ describe('useDraft 저장', () => {
     const { id, result } = await renderReady();
     let calls = 0;
     server.use(
-      http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => {
+      http.put('/api/bunches/:bunchId/bundles/:id/date', () => {
         calls += 1;
         return calls === 1 ? fail(500, 'COMMON_500') : undefined;
       }),
     );
 
-    act(() => result.current.actions.setVisibility('members'));
+    act(() => result.current.actions.setDate('2026-10-18'));
 
-    await waitFor(() => expect(serverBundle(id)?.visibility).toBe('PRIVATE'), {
+    await waitFor(() => expect(serverBundle(id)?.date).toBe('2026-10-18'), {
       timeout: 9000,
     });
     expect(calls).toBeGreaterThanOrEqual(2);
@@ -276,6 +281,7 @@ describe('useDraft 저장', () => {
       http.post('/api/bunches/:bunchId/bundles/:id/publish', () => fail(409, 'BUNDLE_002')),
     );
 
+    act(() => result.current.actions.setVisibility('members'));
     let outcome: string | undefined;
     await act(async () => {
       outcome = await result.current.actions.publish();
@@ -288,13 +294,16 @@ describe('useDraft 저장', () => {
   it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {
     const { result } = await renderReady();
     server.use(
-      http.put('/api/bunches/:bunchId/bundles/:id/visibility', async () => {
+      http.put('/api/bunches/:bunchId/bundles/:id/date', async () => {
         await delay(300);
         return undefined;
       }),
     );
 
-    act(() => result.current.actions.setVisibility('members'));
+    act(() => {
+      result.current.actions.setVisibility('members');
+      result.current.actions.setDate('2026-10-18');
+    });
     await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
     let outcome: string | undefined;
     await act(async () => {

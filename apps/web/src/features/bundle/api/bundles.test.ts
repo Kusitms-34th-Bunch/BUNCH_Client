@@ -9,8 +9,10 @@ import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import {
   addBundleParticipant,
+  changeBundlePhotos,
   createBundle,
   getBundle,
+  moveBundlePhoto,
   publishBundle,
   readPublishBlockers,
   readVersionConflict,
@@ -35,9 +37,17 @@ const catchError = async (promise: Promise<unknown>) => {
 };
 
 // 계약 모양 응답을 화면 모양으로 바꾸는지와 요청 본문·헤더를 가짜 서버로 함께 확인
+const requestHeaders = () => {
+  const seen: Headers[] = [];
+  const bodies: unknown[] = [];
+  return { seen, bodies };
+};
+
 describe('번들 API', () => {
   it('초안을 만들면 화면 모양(문자열 id, 참여자 순서, 권한)으로 돌려준다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
 
     expect(draft).toMatchObject({
       status: 'DRAFT',
@@ -71,14 +81,18 @@ describe('번들 API', () => {
   });
 
   it('서버 숫자로 바꿀 수 없는 사진 id는 요청하지 않고 오류다', async () => {
-    const error = await catchError(createBundle(bunchId, ['temp-1'], createIdempotencyKey()));
+    const error = await catchError(
+      createBundle(bunchId, ['temp-1'], createIdempotencyKey(), [String(MOCK_MEMBER_IDS.memberA)]),
+    );
 
     expect(error).toMatchObject({ name: 'ApiError', category: 'validation' });
     expect(mockDrafts()).toHaveLength(0);
   });
 
   it('상세 조회는 같은 번들을 돌려주고 없는 번들은 RESOURCE_001이다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
 
     await expect(getBundle(bunchId, draft.id)).resolves.toEqual(draft);
     await expect(getBundle(bunchId, '999')).rejects.toMatchObject({
@@ -88,7 +102,9 @@ describe('번들 API', () => {
   });
 
   it('제목·공개 범위·날짜·코멘트 저장이 각 필드 버전과 함께 반영된다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
     const base = { bunchId, bundleId: draft.id, mode: 'DRAFT' } as const;
 
     await saveBundleTitle({ ...base, value: '설악산', expectedVersion: 0 });
@@ -112,7 +128,9 @@ describe('번들 API', () => {
   });
 
   it('버전이 어긋나면 BUNDLE_003이고 현재 값과 버전을 읽을 수 있다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
     const base = { bunchId, bundleId: draft.id, mode: 'DRAFT' } as const;
     await saveBundleVisibility({ ...base, value: 'PUBLIC', expectedVersion: 0 });
 
@@ -126,7 +144,9 @@ describe('번들 API', () => {
   });
 
   it('참여자를 더하고 제외하면 참여 목록이 바뀐다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
 
     const added = await addBundleParticipant(bunchId, draft.id, String(memberB));
     expect(added.participantIds).toEqual([String(me), String(memberA), String(memberB)]);
@@ -140,18 +160,21 @@ describe('번들 API', () => {
   });
 
   it('발행 조건이 모자라면 BUNDLE_005 사유를 읽을 수 있다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
 
     const error = await catchError(
-      publishBundle(bunchId, draft.id, draft.revision, createIdempotencyKey()),
+      publishBundle(
+        bunchId,
+        draft.id,
+        { visibility: 'PUBLIC', expectedRevision: draft.revision },
+        createIdempotencyKey(),
+      ),
     );
 
     expect(error).toMatchObject({ status: 409, code: 'BUNDLE_005' });
-    expect(readPublishBlockers(error)).toEqual([
-      'TITLE_REQUIRED',
-      'VISIBILITY_REQUIRED',
-      'COMMENTS_REQUIRED',
-    ]);
+    expect(readPublishBlockers(error)).toEqual(['TITLE_REQUIRED', 'COMMENTS_REQUIRED']);
     expect(readPublishBlockers(new Error('x'))).toBeUndefined();
   });
 
@@ -162,7 +185,9 @@ describe('번들 API', () => {
   });
 
   it('안전하지 않은 사진 이미지 주소가 오면 성공으로 넘기지 않는다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
     mockDb.update((current) => ({
       ...current,
       bundles: current.bundles.map((bundle) => ({
@@ -174,5 +199,101 @@ describe('번들 API', () => {
     await expect(getBundle(bunchId, draft.id)).rejects.toMatchObject({
       code: INVALID_RESPONSE_CODE,
     });
+  });
+});
+
+describe('번들 API v5 요청', () => {
+  it('사진 구성 변경은 정원 처리 방식과 재선택 사진을 보내고 결과를 화면 id로 돌려준다', async () => {
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [String(memberA)]);
+    const { bodies } = requestHeaders();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async ({ request }) => {
+        bodies.push(await request.clone().json());
+        return undefined;
+      }),
+    );
+
+    const changed = await changeBundlePhotos({
+      bunchId,
+      bundleId: draft.id,
+      addPhotoIds: [String(MOCK_PHOTO_IDS.S1), String(MOCK_PHOTO_IDS.S4)],
+      removeBundlePhotoIds: [],
+      mode: 'DRAFT',
+      idempotencyKey: createIdempotencyKey(),
+      reselectedPhotoIds: [String(MOCK_PHOTO_IDS.S4)],
+    });
+
+    expect(bodies[0]).toEqual({
+      addPhotoIds: [MOCK_PHOTO_IDS.S1, MOCK_PHOTO_IDS.S4],
+      removeBundlePhotoIds: [],
+      mode: 'DRAFT',
+      capacityMode: 'ATOMIC_APPLY',
+      reselectedPhotoIds: [MOCK_PHOTO_IDS.S4],
+    });
+    expect(changed.photoChangeResult).toEqual({
+      addedPhotoIds: [String(MOCK_PHOTO_IDS.S1)],
+      rejectedPhotoIds: [],
+      replayed: false,
+    });
+  });
+
+  it('사진 이동은 요청 ID를 X-Request-Id로 보내고 재시도에 같은 값을 쓰면 옛 이동을 되풀이하지 않는다', async () => {
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [String(memberA)]);
+    const [first, second] = draft.photos;
+    const requestId = createIdempotencyKey();
+    const seen: (string | null)[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/:photoId/move', ({ request }) => {
+        seen.push(request.headers.get('X-Request-Id'));
+        return undefined;
+      }),
+    );
+    const input = {
+      bunchId,
+      bundleId: draft.id,
+      bundlePhotoId: first!.id,
+      previousBundlePhotoId: second!.id,
+      nextBundlePhotoId: null,
+      mode: 'DRAFT' as const,
+      requestId,
+    };
+
+    const moved = await moveBundlePhoto(input);
+    await moveBundlePhoto({
+      ...input,
+      bundlePhotoId: second!.id,
+      previousBundlePhotoId: null,
+      nextBundlePhotoId: first!.id,
+      requestId: createIdempotencyKey(),
+    });
+    const replay = await moveBundlePhoto(input);
+
+    expect(seen[0]).toBe(requestId);
+    expect(seen[2]).toBe(requestId);
+    expect(moved.photos.map((photo) => photo.id)).toEqual([second!.id, first!.id]);
+    // 그 사이 다시 옮긴 순서를 옛 이동이 덮지 않음
+    expect(replay.photos.map((photo) => photo.id)).toEqual([second!.id, first!.id]);
+  });
+
+  it('발행은 최종 공개 범위와 expectedRevision을 함께 보낸다', async () => {
+    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [String(memberA)]);
+    const { bodies } = requestHeaders();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', async ({ request }) => {
+        bodies.push(await request.json());
+        return fail(409, 'BUNDLE_005');
+      }),
+    );
+
+    await catchError(
+      publishBundle(
+        bunchId,
+        draft.id,
+        { visibility: 'PRIVATE', expectedRevision: draft.revision },
+        createIdempotencyKey(),
+      ),
+    );
+
+    expect(bodies[0]).toEqual({ visibility: 'PRIVATE', expectedRevision: draft.revision });
   });
 });

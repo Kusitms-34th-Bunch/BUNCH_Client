@@ -29,7 +29,6 @@ export const PHOTO_BOX_MESSAGES = {
   // 날짜 바꾸기·끌기 확인 창 문구는 기획 문서에 원문이 없어 임시 문구(기획 확정 후 교체)
   dateConfirmTitle: '선택한 사진의 날짜를 바꿀까요?',
   dateConfirmDescription: '다른 멤버가 올린 사진이 포함되어 있어요.',
-  bundleCreating: '번들을 만들고 있어요.',
   photoBoxFull: '사진함이 가득 찼어요.',
   uploadSheetTitle: (bunchName: string) => `${bunchName}에 사진 올리기`,
   dateChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',

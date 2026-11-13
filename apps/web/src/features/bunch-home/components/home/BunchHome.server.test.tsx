@@ -5,7 +5,7 @@ import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBundle } from '@/features/bundle/api/bundles';
 import { mockDb } from '@/mocks/db';
-import { MOCK_PHOTO_IDS, MOCK_SECOND_BUNCH_ID } from '@/mocks/db/seed';
+import { MOCK_PHOTO_IDS, MOCK_SECOND_BUNCH_ID, MOCK_MEMBER_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
@@ -148,7 +148,9 @@ describe('BunchHome 서버 데이터', () => {
 
   it('작성 중인 번들 탭에 서버의 초안이 카드로 보이고 누르면 작성 화면으로 이동한다', async () => {
     const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
-    const created = await createBundle('1', [P1, P2, P3, P4].map(String), createIdempotencyKey());
+    const created = await createBundle('1', [P1, P2, P3, P4].map(String), createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
     renderHome();
 
     await screen.findByAltText(/강릉 커피 투어/);
@@ -163,6 +165,7 @@ describe('BunchHome 서버 데이터', () => {
       '1',
       [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
       createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
     );
     renderHome();
 
@@ -177,6 +180,7 @@ describe('BunchHome 서버 데이터', () => {
       '1',
       [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
       createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
     );
     renderHome();
 

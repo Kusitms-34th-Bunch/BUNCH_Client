@@ -31,6 +31,8 @@ export const BUNDLE_SELECT_MESSAGES = {
   // 초안 생성 실패 안내(기획 4.1.3), 번치 인원 부족·초안 한도는 같은 오류 코드라 번치 멤버 수로 구분
   membersRequired: '번들은 멤버가 2명 이상일 때 만들 수 있어요. 멤버를 초대해 주세요.',
   draftLimit: '번들 초안은 최대 10개까지 만들 수 있어요. 기존 초안을 발행하거나 삭제해 주세요.',
+  // 사진함에서 넘어온 흐름에서 고른 사진이 모두 사라졌을 때(기능 spec 3.3.4)
+  allSelectionGone: '선택한 사진이 모두 사진함에서 사라졌어요.',
   selectionStale: (count: number) =>
     `선택한 사진 중 ${count}장이 사진함에서 삭제되어 선택이 해제됐어요.`,
   createFailed: '번들을 만들지 못했어요. 잠시 후 다시 시도해 주세요.',
