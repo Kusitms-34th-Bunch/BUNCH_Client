@@ -2,17 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '../server';
-import { mockDb } from '../db';
-import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '../db/seed';
+import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '../db/seed';
 
 const base = `/api/bunches/${MOCK_BUNCH_ID}/bundles`;
-const { S1, S4, S5, P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
+const { S1, S4, S5, P1, P3 } = MOCK_PHOTO_IDS;
 
 type Snapshot = {
   id: number;
   status: string;
   revision: number;
-  photos: { id: number; photoId: number; position: number; caption: string }[];
+  photos: { id: number; photoId: number; position: number }[];
 };
 type Envelope = { success: boolean; data: Snapshot; error: { code: string } | null };
 
@@ -181,39 +180,5 @@ describe('가짜 서버 번들 사진 순서 이동', () => {
     const same = await move(draft.id, c!.id, b!.id, null);
     expect(same.json.data.revision).toBe(draft.revision);
     expect((await move(draft.id, 999999, null, null)).status).toBe(404);
-  });
-});
-
-describe('다른 멤버가 편집 중인 사진', () => {
-  it('편집 중인 사진은 빼거나 옮길 수 없고, 나머지는 바꿀 수 있다', async () => {
-    const draft = await create([P1, P2, P3, P4]);
-    const second = draft.photos.find((photo) => photo.photoId === P2)!;
-    const first = draft.photos.find((photo) => photo.photoId === P1)!;
-    const third = draft.photos.find((photo) => photo.photoId === P3)!;
-    const fourth = draft.photos.find((photo) => photo.photoId === P4)!;
-    mockDb.update((state) => ({
-      ...state,
-      bundleLeases: [
-        ...state.bundleLeases,
-        {
-          bundleId: draft.id,
-          target: `PHOTO:${second.id}`,
-          memberId: MOCK_MEMBER_IDS.memberA,
-          token: '00000000-0000-4000-8000-00000000000a',
-          leaseVersion: 1,
-          expiresAt: '2999-01-01T00:00:00.000Z',
-        },
-      ],
-    }));
-
-    const removed = await change(draft.id, { removeBundlePhotoIds: [second.id] });
-    expect(removed.status).toBe(409);
-    expect(removed.json.error?.code).toBe('BUNDLE_004');
-    const moved = await move(draft.id, second.id, third.id, null);
-    expect(moved.status).toBe(409);
-    expect(moved.json.error?.code).toBe('BUNDLE_004');
-
-    const ok = await move(draft.id, first.id, third.id, fourth.id);
-    expect(ok.status).toBe(200);
   });
 });

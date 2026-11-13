@@ -6,7 +6,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
-import { changeBundle, findScope, liveLeases, nowIso, readJson, snapshotOf, UUID } from './bundles';
+import { changeBundle, findScope, nowIso, readJson, snapshotOf, UUID } from './bundles';
 
 // 번들 사진 구성 변경(`photos/changes`)·순서 이동(`photos/{bundlePhotoId}/move`) 명세(PR #32) 기준
 const MAX_PHOTOS = 20;
@@ -27,12 +27,6 @@ const byPosition = (photos: readonly MockBundlePhoto[]) =>
 
 const renumber = (photos: readonly MockBundlePhoto[]): MockBundlePhoto[] =>
   photos.map((photo, position) => ({ ...photo, position }));
-
-// 다른 회원이 쥔 유효 편집권이 있는 사진은 구성 변경·이동을 거부함(내가 쥔 것은 괜찮음)
-const heldByOther = (bundle: MockBundle, bundlePhotoId: number) =>
-  liveLeases(mockDb.get(), bundle.id).some(
-    (lease) => lease.target === `PHOTO:${bundlePhotoId}` && lease.memberId !== MOCK_MY_MEMBER_ID,
-  );
 
 // 초안은 참여자만, 발행본의 사진은 생성자·번치 관리자만
 const canEditPhotos = (
@@ -98,9 +92,6 @@ export const bundlePhotoHandlers = [
         if (add.some((id) => staying.some((photo) => photo.photoId === id))) {
           return { status: 409, body: { code: 'BUNDLE_006' } };
         }
-        if (removing.some((photo) => heldByOther(current, photo.id))) {
-          return { status: 409, body: { code: 'BUNDLE_004' } };
-        }
         const total = staying.length + add.length;
         if (total < 1 || total > MAX_PHOTOS) return { status: 409, body: { code: 'BUNDLE_006' } };
         // 실제 구성 변화가 없으면 revision을 올리지 않음
@@ -120,10 +111,6 @@ export const bundlePhotoHandlers = [
                   position: 0,
                   addedBy: MOCK_MY_MEMBER_ID,
                   addedAt: at,
-                  caption: '',
-                  captionVersion: 0,
-                  captionUpdatedBy: null,
-                  captionUpdatedAt: null,
                 },
               ]
             : [],
@@ -131,17 +118,6 @@ export const bundlePhotoHandlers = [
         changeBundle(bundle.id, (latest) => ({
           ...latest,
           photos: renumber([...byPosition(staying), ...added]),
-        }));
-        // 제거한 사진의 편집권도 함께 사라짐
-        mockDb.update((latest) => ({
-          ...latest,
-          bundleLeases: latest.bundleLeases.filter(
-            (lease) =>
-              !(
-                lease.bundleId === bundle.id &&
-                removing.some((photo) => lease.target === `PHOTO:${photo.id}`)
-              ),
-          ),
         }));
         return { status: 200, body: { id: bundle.id } };
       },
@@ -180,7 +156,6 @@ export const bundlePhotoHandlers = [
       if (!canEditPhotos(bundle, scope)) return fail(403, 'AUTH_002');
       const moving = bundle.photos.find((photo) => photo.id === bundlePhotoId);
       if (!moving) return fail(404, 'RESOURCE_001');
-      if (heldByOther(bundle, moving.id)) return fail(409, 'BUNDLE_004');
 
       // 이동 대상을 뺀 순서에서 앞뒤 anchor가 존재하고 서로 인접해야 함(양쪽 null은 사진이 하나일 때만)
       const rest = byPosition(bundle.photos).filter((photo) => photo.id !== moving.id);

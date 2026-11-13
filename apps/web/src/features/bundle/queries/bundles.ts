@@ -13,7 +13,6 @@ import {
   publishBundle,
   readVersionConflict,
   removeBundleParticipant,
-  saveBundleCaption,
   saveBundleComment,
   saveBundleDate,
   saveBundleTitle,
@@ -140,7 +139,7 @@ const requireIds = (bunchId: string | undefined, bundleId: string | undefined) =
 
 export const useSaveTitleMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
   useMutation({
-    mutationFn: (input: FieldInput<string> & { leaseToken?: string }) =>
+    mutationFn: (input: FieldInput<string>) =>
       saveBundleTitle({ ...requireIds(bunchId, bundleId), ...input }),
     ...useBundleCacheSync(bunchId, bundleId),
   });
@@ -157,15 +156,8 @@ export const useSaveVisibilityMutation = (
 
 export const useSaveDateMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
   useMutation({
-    mutationFn: (input: FieldInput<string | null> & { leaseToken?: string }) =>
+    mutationFn: (input: FieldInput<string | null>) =>
       saveBundleDate({ ...requireIds(bunchId, bundleId), ...input }),
-    ...useBundleCacheSync(bunchId, bundleId),
-  });
-
-export const useSaveCaptionMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
-  useMutation({
-    mutationFn: (input: FieldInput<string> & { bundlePhotoId: string; leaseToken?: string }) =>
-      saveBundleCaption({ ...requireIds(bunchId, bundleId), ...input }),
     ...useBundleCacheSync(bunchId, bundleId),
   });
 
@@ -203,7 +195,7 @@ export const useRemoveParticipantMutation = (
 type PhotoChangeInput = Omit<Parameters<typeof changeBundlePhotos>[0], 'bunchId' | 'bundleId'>;
 type PhotoMoveInput = Omit<Parameters<typeof moveBundlePhoto>[0], 'bunchId' | 'bundleId'>;
 
-// 사진 구성은 실패한 이유와 상관없이(편집권·anchor 충돌 등) 최신 상세를 다시 받아 화면을 서버에 맞춤
+// 사진 구성은 실패한 이유와 상관없이(anchor 충돌 등) 최신 상세를 다시 받아 화면을 서버에 맞춤
 const usePhotoCacheSync = (bunchId: string | undefined, bundleId: string | undefined) => {
   const queryClient = useQueryClient();
   const sync = useBundleCacheSync(bunchId, bundleId);

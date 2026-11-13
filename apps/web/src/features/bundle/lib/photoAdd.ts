@@ -6,12 +6,11 @@ import { getPhotoEditors } from './photos';
 /** 사진함 사진으로 번들 사진을 만들 때의 id: 사진함 사진 id에 `draft-`를 붙임(같은 사진을 다시 더해도 같은 id) */
 export const toDraftPhotoId = (sourcePhotoId: string) => `draft-${sourcePhotoId}`;
 
-/** 사진함 사진 하나를 번들 사진으로 바꿈. 캡션은 비어 있고 올린 멤버는 첫 번째 */
+/** 사진함 사진 하나를 번들 사진으로 바꿈. 올린 멤버는 첫 번째 */
 export const toDraftPhoto = (source: PhotoBoxPhoto): DraftPhoto => ({
   id: toDraftPhotoId(source.id),
   src: source.src,
   alt: source.alt,
-  caption: '',
   takenAt: source.takenAt,
   uploaderId: source.uploaderIds[0] ?? '',
   sourcePhotoId: source.id,
@@ -36,7 +35,7 @@ export const isSameSelection = (
 ): boolean =>
   initial.length === selection.length && initial.every((id, index) => id === selection[index]);
 
-/** 선택에서 풀려 번들에서 빠질 사진(캡션도 함께 사라짐) */
+/** 선택에서 풀려 번들에서 빠질 사진 */
 export const getRemovedPhotos = (
   photos: readonly DraftPhoto[],
   selection: readonly string[],
@@ -44,7 +43,7 @@ export const getRemovedPhotos = (
   photos.filter((photo) => photo.sourcePhotoId && !selection.includes(photo.sourcePhotoId));
 
 /**
- * 적용한 결과 번들 사진: 선택 순서대로 이어 가고(이미 있던 사진은 캡션을 지킴) 새로 고른 사진은 캡션 없이 뒤에 붙음
+ * 적용한 결과 번들 사진: 선택 순서대로 이어 가고(이미 있던 사진은 그대로 둠) 새로 고른 사진은 뒤에 붙음
  * 사진함에 대응이 없는 사진은 선택에 나타나지 않으므로 뺄 수 없어 맨 뒤에 그대로 둠
  */
 export const applySelection = (

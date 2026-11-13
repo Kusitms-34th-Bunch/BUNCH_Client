@@ -220,10 +220,6 @@ const publishedBundles = (
           position: 0,
           addedBy: seed.createdBy,
           addedAt: at,
-          caption: '',
-          captionVersion: 0,
-          captionUpdatedBy: null,
-          captionUpdatedAt: null,
         },
       ],
       participants: seed.participants.map((memberId) => ({ memberId, joinedAt: at })),
@@ -426,7 +422,6 @@ export const createSeed = (): MockDbState => ({
     status,
     createdAt,
   })),
-  bundleLeases: [],
   // 번치 전환 목록의 접근 불가 줄(Figma 5402:105276 안내 창의 번치들)
   bunchAccessNotices: [
     {

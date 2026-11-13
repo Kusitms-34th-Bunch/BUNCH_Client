@@ -57,11 +57,10 @@ const renderViewer = ({
     />,
   );
 
-const photo = (id: string, caption = ''): DraftPhoto => ({
+const photo = (id: string): DraftPhoto => ({
   id,
   src: `/${id}.jpg`,
   alt: `사진 ${id}`,
-  caption,
   takenAt: '2026-06-20T19:00',
   uploaderId: 'jiye',
 });
@@ -224,7 +223,7 @@ describe('DraftPhotoViewer 삭제', () => {
     expect(onPhotoChange).toHaveBeenCalledWith('draft-photo-2');
   });
 
-  it('캡션이 있는 사진도 같은 확인 창에서 「삭제하기」를 눌러야 뺀다', async () => {
+  it('첫 번째 사진도 같은 확인 창에서 「삭제하기」를 눌러야 뺀다', async () => {
     renderViewer({ initialPhotoId: 'draft-photo-1' });
 
     await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));

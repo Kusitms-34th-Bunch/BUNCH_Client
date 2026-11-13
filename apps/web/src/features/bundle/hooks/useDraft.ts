@@ -19,18 +19,11 @@ import type {
 } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
 import { readPublishBlockers, readVersionConflict } from '../api/bundles';
-import { leaseTransport, type LeaseTarget } from '../api/leases';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
 import { placeFixture } from '../fixtures/draft.fixture';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
 import { moveLocation } from '../lib/locations';
-import {
-  movePhoto,
-  type PhotoMovePlan,
-  planPhotoMoves,
-  removePhoto,
-  setPhotoCaption,
-} from '../lib/photos';
+import { movePhoto, type PhotoMovePlan, planPhotoMoves, removePhoto } from '../lib/photos';
 import {
   bundleQueryOptions,
   useAddParticipantMutation,
@@ -38,7 +31,6 @@ import {
   useMovePhotoMutation,
   usePublishBundleMutation,
   useRemoveParticipantMutation,
-  useSaveCaptionMutation,
   useSaveCommentMutation,
   useSaveDateMutation,
   useSaveTitleMutation,
@@ -50,16 +42,15 @@ import {
 const NO_LOCATIONS: readonly DraftLocation[] = [];
 
 const SAVE_DELAY_MS = 1000;
-// 편집권 거부·일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
+// 일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
 const RETRY_DELAY_MS = 3000;
 const MAX_RETRIES = 5;
 // 버전 충돌은 최신 상세를 받은 직후 바로 이어서 저장
 const CONFLICT_RETRY_DELAY_MS = 200;
-// 다시 시도하면 될 수 있는 오류: 편집권 거부(BUNDLE_004), 응답이 없는 네트워크 오류, 서버 오류(5xx)
+// 다시 시도하면 될 수 있는 오류: 응답이 없는 네트워크 오류, 서버 오류(5xx)
 // 그 밖의 거절(다른 사람이 발행·삭제, 인증·권한, 잘못된 입력 등 4xx)은 같은 요청을 다시 보내도 같은 결과
 const isRetryable = (error: unknown) => {
-  const { code, status } = (error as { code?: string; status?: number } | null) ?? {};
-  if (code === 'BUNDLE_004') return true;
+  const { status } = (error as { status?: number } | null) ?? {};
   return status === undefined || status >= 500;
 };
 
@@ -104,11 +95,9 @@ export type DraftActions = {
   addMember: (_memberId: string) => void;
   /** 참여 멤버를 내보냄(그 멤버의 코멘트도 함께 삭제) */
   removeMember: (_memberId: string) => void;
-  /** 사진 캡션을 바꿈(최대 글자 수 보정은 호출하는 쪽이 함) */
-  setPhotoCaption: (_photoId: string, _caption: string) => void;
-  /** 사진을 번들에서 뺌(1장이면 무시, 캡션도 함께 사라짐). 서버 반영은 후속이라 이 화면에서만 바뀜 */
+  /** 사진을 번들에서 뺌(1장이면 무시). 서버 반영은 후속이라 이 화면에서만 바뀜 */
   removePhoto: (_photoId: string) => void;
-  /** 사진을 다른 자리(0부터)로 옮김(캡션은 사진을 따라감). 서버 반영은 후속이라 이 화면에서만 바뀜 */
+  /** 사진을 다른 자리(0부터)로 옮김. 서버 반영은 후속이라 이 화면에서만 바뀜 */
   movePhoto: (_photoId: string, _toIndex: number) => void;
   /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜 */
   replacePhotos: (_photos: readonly DraftPhoto[]) => void;
@@ -124,21 +113,19 @@ type Pending = {
   /** null은 날짜를 지우는 값 */
   date?: string | null;
   comment?: string;
-  captions?: Readonly<Record<string, string>>;
 };
 
 const isEmpty = (pending: Pending) =>
   pending.title === undefined &&
   pending.visibility === undefined &&
   pending.date === undefined &&
-  pending.comment === undefined &&
-  Object.keys(pending.captions ?? {}).length === 0;
+  pending.comment === undefined;
 
 const errorCode = (error: unknown) => (error as { code?: string } | null)?.code;
 
 /**
  * 초안 상태와 동작: 내 프로필·번치 멤버·번들 상세 query를 화면의 `Draft`로 합치고, 입력은 바로 화면에 반영한 뒤
- * 멈추면 서버에 저장(필드별 버전·편집권 token 사용, 충돌이면 최신 상세를 받아 이어서 저장)
+ * 멈추면 서버에 저장(필드별 버전 사용, 충돌이면 최신 상세를 받아 이어서 저장)
  * 위치는 서버에 필드가 없어 이 화면에서만 들고 있고, 사진 구성·순서 변경은 서버 연동 전이라 이 화면에서만 바뀜
  */
 export function useDraft(draftId: string | undefined): {
@@ -168,7 +155,6 @@ export function useDraft(draftId: string | undefined): {
   const saveTitle = useSaveTitleMutation(bunchId, bundleId);
   const saveVisibility = useSaveVisibilityMutation(bunchId, bundleId);
   const saveDate = useSaveDateMutation(bunchId, bundleId);
-  const saveCaption = useSaveCaptionMutation(bunchId, bundleId);
   const saveComment = useSaveCommentMutation(bunchId, bundleId);
   const changePhotos = useChangePhotosMutation(bunchId, bundleId);
   const movePhotoMutation = useMovePhotoMutation(bunchId, bundleId);
@@ -192,10 +178,7 @@ export function useDraft(draftId: string | undefined): {
   // 저장을 포기한 상태(권한·상태 오류 또는 재시도 소진): 헤더가 「저장 실패」를 보이고 입력하면 다시 시도
   const [stalled, setStalled] = useState(false);
   // 입력란에 방금 친 원문: 서버가 앞뒤 공백을 지워 돌려줘도 입력 중 띄어쓰기가 사라지지 않게 보여 줌
-  const [typed, setTyped] = useState<{
-    title?: string;
-    captions?: Readonly<Record<string, string>>;
-  }>({});
+  const [typed, setTyped] = useState<{ title?: string }>({});
 
   // 비동기 저장 루프가 항상 최신 값을 읽도록 ref에 둠(렌더 밖 이벤트·타이머에서만 읽고 씀)
   const pendingRef = useRef<Pending>({});
@@ -238,7 +221,7 @@ export function useDraft(draftId: string | undefined): {
 
   // 저장에 성공한 값이 그 사이 더 바뀌지 않았을 때만 입력 보관을 비움
   const clearField = useCallback(
-    (key: Exclude<keyof Pending, 'captions'>, value: unknown) => {
+    (key: keyof Pending, value: unknown) => {
       change((current) => {
         if (current[key] !== value) return current;
         const { [key]: _saved, ...rest } = current;
@@ -247,39 +230,9 @@ export function useDraft(draftId: string | undefined): {
     },
     [change],
   );
-  const clearCaption = useCallback(
-    (photoId: string, value: string) => {
-      change((current) => {
-        if (current.captions?.[photoId] !== value) return current;
-        const { [photoId]: _saved, ...rest } = current.captions;
-        return { ...current, captions: rest };
-      });
-    },
-    [change],
-  );
-
-  // 편집권을 얻어 저장하고 바로 풂. 다른 멤버가 쥐고 있으면 'locked'
-  const withLease = useCallback(
-    async (target: LeaseTarget, save: (_token: string) => Promise<BundleDetail>) => {
-      if (!bunchId || !bundleId) throw new Error('bundle is not loaded');
-      let token: string;
-      try {
-        token = (await leaseTransport.acquire(bunchId, bundleId, target)).token;
-      } catch (error) {
-        if (errorCode(error) === 'BUNDLE_004') return 'locked' as const;
-        throw error;
-      }
-      try {
-        return await save(token);
-      } finally {
-        await leaseTransport.release(bunchId, bundleId, target, token).catch(() => undefined);
-      }
-    },
-    [bunchId, bundleId],
-  );
 
   // 보관 중인 입력을 필드별로 저장하고 끝난 뒤 입력이 모두 비었는지 돌려줌
-  // 충돌은 최신 상세를 받아 같은 입력으로 다시, 편집권 거부·일시 오류는 정해진 횟수까지 다시 시도하고,
+  // 충돌은 최신 상세를 받아 같은 입력으로 다시, 일시 오류는 정해진 횟수까지 다시 시도하고,
   // 권한·상태 오류는 재시도하지 않음(어느 경우도 입력은 지우지 않고 한 번만 안내)
   const runFlush = useCallback(async (): Promise<boolean> => {
     setFlushing(true);
@@ -301,17 +254,9 @@ export function useDraft(draftId: string | undefined): {
         if (!base || isEmpty(snapshot)) break;
         const common = { mode: 'DRAFT' as const };
         // 필드 하나 저장: 성공하면 입력을 비우고 최신 응답을 기준으로 삼음
-        const run = async (save: () => Promise<BundleDetail | 'locked'>, onSaved: () => void) => {
+        const run = async (save: () => Promise<BundleDetail>, onSaved: () => void) => {
           try {
             const result = await save();
-            if (result === 'locked') {
-              retryAfter = RETRY_DELAY_MS;
-              if (!notified.current) {
-                notified.current = true;
-                toast(BUNDLE_MESSAGES.fieldLocked);
-              }
-              return;
-            }
             // 늦게 도착한 낡은 응답이 최신 revision 기준을 덮지 않게 함
             if (!detailRef.current || result.revision >= detailRef.current.revision) {
               detailRef.current = result;
@@ -337,14 +282,11 @@ export function useDraft(draftId: string | undefined): {
           const value = snapshot.title;
           await run(
             () =>
-              withLease('TITLE', (leaseToken) =>
-                saveTitle.mutateAsync({
-                  ...common,
-                  value,
-                  expectedVersion: (detailRef.current ?? base).titleVersion,
-                  leaseToken,
-                }),
-              ),
+              saveTitle.mutateAsync({
+                ...common,
+                value,
+                expectedVersion: (detailRef.current ?? base).titleVersion,
+              }),
             () => clearField('title', value),
           );
         }
@@ -364,14 +306,11 @@ export function useDraft(draftId: string | undefined): {
           const value = snapshot.date;
           await run(
             () =>
-              withLease('DATE', (leaseToken) =>
-                saveDate.mutateAsync({
-                  ...common,
-                  value,
-                  expectedVersion: (detailRef.current ?? base).dateVersion,
-                  leaseToken,
-                }),
-              ),
+              saveDate.mutateAsync({
+                ...common,
+                value,
+                expectedVersion: (detailRef.current ?? base).dateVersion,
+              }),
             () => clearField('date', value),
           );
         }
@@ -388,26 +327,6 @@ export function useDraft(draftId: string | undefined): {
               });
             },
             () => clearField('comment', value),
-          );
-        }
-        for (const [photoId, value] of Object.entries(snapshot.captions ?? {})) {
-          if (stop) break;
-          await run(
-            () => {
-              const photo = (detailRef.current ?? base).photos.find((p) => p.id === photoId);
-              // 서버에 없는 사진(화면에서만 바뀐 사진)의 캡션은 서버로 보낼 수 없어 저장하지 않음(사진 구성 서버 연동은 후속)
-              if (!photo) return Promise.resolve(detailRef.current ?? base);
-              return withLease(`PHOTO:${photoId}`, (leaseToken) =>
-                saveCaption.mutateAsync({
-                  ...common,
-                  bundlePhotoId: photoId,
-                  value,
-                  expectedVersion: photo.captionVersion,
-                  leaseToken,
-                }),
-              );
-            },
-            () => clearCaption(photoId, value),
           );
         }
       } while (again.current && retryAfter === undefined && !stop);
@@ -435,17 +354,7 @@ export function useDraft(draftId: string | undefined): {
       timer.current = setTimeout(() => void flushRef.current(), 0);
     }
     return settled;
-  }, [
-    clearCaption,
-    clearField,
-    refetchDetail,
-    saveCaption,
-    saveComment,
-    saveDate,
-    saveTitle,
-    saveVisibility,
-    withLease,
-  ]);
+  }, [clearField, refetchDetail, saveComment, saveDate, saveTitle, saveVisibility]);
 
   // 저장은 한 번에 하나만: 진행 중이면 그 결과를 함께 기다리고 끝난 뒤 한 번 더 확인하도록 표시
   const flush = useCallback((): Promise<boolean> => {
@@ -487,19 +396,9 @@ export function useDraft(draftId: string | undefined): {
 
   const draft = useMemo<Draft | undefined>(() => {
     if (!detail || !bunchMembers || !myId) return undefined;
-    const base = toDraft({ detail, bunchMembers, locations, myMemberId: myId });
+    const base = toDraft({ detail, bunchMembers, locations });
     // 저장이 끝난 입력은 서버가 정리한 값(앞뒤 공백 제거)과 같을 때만 친 원문을 계속 보여 줌(다른 곳에서 바뀌면 서버 값)
-    const shownCaption = (photo: DraftPhoto) => {
-      const typedValue = typed.captions?.[photo.id];
-      return typedValue !== undefined && typedValue.trim() === photo.caption
-        ? typedValue
-        : photo.caption;
-    };
-    const captionOf = (photo: DraftPhoto) => pending.captions?.[photo.id] ?? shownCaption(photo);
-    const photos = (localPhotos ?? base.photos).map((photo) => ({
-      ...photo,
-      caption: captionOf(photo),
-    }));
+    const photos = localPhotos ?? base.photos;
     const hasMyComment = base.comments.some((comment) => comment.memberId === myId);
     return {
       ...base,
@@ -548,7 +447,7 @@ export function useDraft(draftId: string | undefined): {
         (photo.sourcePhotoId !== undefined && candidate.sourcePhotoId === photo.sourcePhotoId),
     )?.id;
 
-  // 사진 변경 응답으로 최신 상세를 갱신, 이미 더 최신 revision이면 유지(캡션·제목 저장과 동시에 돌 수 있음)
+  // 사진 변경 응답으로 최신 상세를 갱신, 이미 더 최신 revision이면 유지(제목·날짜 저장과 동시에 돌 수 있음)
   const adoptDetail = (next: BundleDetail) => {
     const current = detailRef.current;
     if (!current || next.revision >= current.revision) detailRef.current = next;
@@ -582,14 +481,10 @@ export function useDraft(draftId: string | undefined): {
     setPhotoBusy(true);
     photoQueue.current = photoQueue.current
       .then(() => (photoFailed.current ? undefined : run()))
-      .catch((error: unknown) => {
+      .catch(() => {
         photoFailed.current = true;
         photoFailures.current += 1;
-        toast(
-          errorCode(error) === 'BUNDLE_004'
-            ? BUNDLE_MESSAGES.editingBlocked
-            : BUNDLE_MESSAGES.photosChangeFailed,
-        );
+        toast(BUNDLE_MESSAGES.photosChangeFailed);
       })
       .finally(() => {
         photoOps.current -= 1;
@@ -648,15 +543,6 @@ export function useDraft(draftId: string | undefined): {
       removeParticipant.mutate(memberId, {
         onError: () => toast(BUNDLE_MESSAGES.saveFailed),
       }),
-    setPhotoCaption: (photoId, caption) => {
-      change((current) => ({ ...current, captions: { ...current.captions, [photoId]: caption } }));
-      setTyped((current) => ({
-        ...current,
-        captions: { ...current.captions, [photoId]: caption },
-      }));
-      schedule(SAVE_DELAY_MS);
-      setLocalPhotos((current) => current && setPhotoCaption(current, photoId, caption));
-    },
     removePhoto: (photoId) => {
       const current = shownPhotosRef.current;
       const target = current.find((photo) => photo.id === photoId);

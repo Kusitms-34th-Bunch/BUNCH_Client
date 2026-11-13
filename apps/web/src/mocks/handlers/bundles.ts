@@ -1,21 +1,18 @@
 import { http } from 'msw';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
-import type { MockBundle, MockBundlePhoto, MockDbState, MockLease } from '../db/types';
+import type { MockBundle, MockBundlePhoto, MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
 
-// 백엔드 명세(번들 초안 생성·수정·발행·편집권) 기준, 명세에 없는 부분은 `ponytail:`로 표시
+// 백엔드 명세(번들 초안 생성·수정·발행) 기준, 명세에 없는 부분은 `ponytail:`로 표시
 const MAX_PHOTOS = 20;
 const MAX_DRAFTS = 10;
 const MIN_BUNCH_MEMBERS = 2;
 const TITLE_MAX = 40;
-const CAPTION_MAX = 200;
 const COMMENT_MAX = 400;
-// 편집권 유효 시간(마지막 갱신 후 15초, heartbeat는 5초 간격)
-export const LEASE_TTL_MS = 15_000;
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const length = (value: string) => [...value].length;
@@ -78,11 +75,6 @@ const publishBlockers = (bundle: MockBundle) => {
     reasons.push('PHOTOS_REQUIRED');
   return reasons;
 };
-
-export const liveLeases = (state: MockDbState, bundleId: number): MockLease[] =>
-  state.bundleLeases.filter(
-    (lease) => lease.bundleId === bundleId && new Date(lease.expiresAt).getTime() > Date.now(),
-  );
 
 // 날짜를 아직 고르지 않았을 때 보여 주는 추천 촬영일(사진함 원본의 촬영일, 많은 순 최대 3개)
 const dateChips = (bundle: MockBundle, state: MockDbState): string[] => {
@@ -155,14 +147,6 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
       canLike: !draft,
       canComment: !draft,
     },
-    leases: draft
-      ? liveLeases(state, bundle.id).map(({ target, memberId, leaseVersion, expiresAt }) => ({
-          target,
-          memberId,
-          leaseVersion,
-          expiresAt,
-        }))
-      : [],
     createdAt: bundle.createdAt,
     updatedAt: bundle.updatedAt,
     publishedAt: bundle.publishedAt,
@@ -192,19 +176,10 @@ export const changeBundle = (bundleId: number, change: (_bundle: MockBundle) => 
     ),
   }));
 
-type SaveKind = 'title' | 'visibility' | 'comment' | 'caption' | 'date';
+type SaveKind = 'title' | 'visibility' | 'comment' | 'date';
 
 const textOk = (value: unknown, max: number): value is string =>
   typeof value === 'string' && length(value) <= max;
-
-const setPhoto = (
-  bundle: MockBundle,
-  bundlePhotoId: number,
-  change: (_photo: MockBundlePhoto) => MockBundlePhoto,
-): MockBundle => ({
-  ...bundle,
-  photos: bundle.photos.map((photo) => (photo.id === bundlePhotoId ? change(photo) : photo)),
-});
 
 type SaveRequest = {
   kind: SaveKind;
@@ -212,23 +187,17 @@ type SaveRequest = {
   request: Request;
 };
 
-// 필드 저장 공통 규칙: 모드·권한·편집권·길이·버전을 확인하고 같은 값이면 아무것도 바꾸지 않음
+// 필드 저장 공통 규칙: 모드·권한·길이·버전을 확인하고 같은 값이면 아무것도 바꾸지 않음
 const saveField = async ({ kind, params, request }: SaveRequest) => {
   const scope = findScope(params.bunchId, params.id);
   if ('error' in scope) return scope.error;
   const { bundle, isCreator, isAdmin, isParticipant } = scope;
   const body = await readJson(request);
   if (!body) return fail(400, 'COMMON_001');
-  const { expectedVersion, mode, leaseToken } = body;
+  const { expectedVersion, mode } = body;
   // 날짜는 value를 생략하면 해제(null)
   const value = kind === 'date' && body.value === undefined ? null : body.value;
-  const bundlePhotoId = kind === 'caption' ? toWireId(params.photoId) : undefined;
-  if (
-    !isVersion(expectedVersion) ||
-    (mode !== 'DRAFT' && mode !== 'PUBLISHED') ||
-    (kind === 'caption' && bundlePhotoId === undefined) ||
-    (leaseToken != null && (typeof leaseToken !== 'string' || !UUID.test(leaseToken)))
-  ) {
+  if (!isVersion(expectedVersion) || (mode !== 'DRAFT' && mode !== 'PUBLISHED')) {
     return fail(400, 'COMMON_001');
   }
   // 서버 상태와 다른 모드(발행 뒤 늦게 도착한 초안 저장 등)
@@ -239,30 +208,8 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
     kind === 'comment' || bundle.status === 'DRAFT' ? isParticipant : isCreator || isAdmin;
   if (!allowed) return fail(403, 'AUTH_002');
 
-  const state = mockDb.get();
-  // 제목·날짜·사진 캡션의 초안 저장은 편집권 token이 현재 내 것이어야 함
-  const leaseTarget =
-    kind === 'title'
-      ? 'TITLE'
-      : kind === 'date'
-        ? 'DATE'
-        : kind === 'caption'
-          ? `PHOTO:${bundlePhotoId}`
-          : null;
-  if (bundle.status === 'DRAFT' && leaseTarget !== null) {
-    const held = liveLeases(state, bundle.id).find((lease) => lease.target === leaseTarget);
-    if (!held || held.memberId !== MOCK_MY_MEMBER_ID || held.token !== leaseToken) {
-      return fail(409, 'BUNDLE_004');
-    }
-  }
-
-  if (kind === 'caption' && !bundle.photos.some((photo) => photo.id === bundlePhotoId)) {
-    return fail(404, 'RESOURCE_001');
-  }
-
   const published = bundle.status === 'PUBLISHED';
   const myComment = bundle.comments.find((comment) => comment.memberId === MOCK_MY_MEMBER_ID);
-  const photo = bundle.photos.find((item) => item.id === bundlePhotoId);
 
   let currentValue: unknown;
   let currentVersion: number;
@@ -285,11 +232,6 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
       currentVersion = bundle.dateVersion;
       valid = value === null || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value));
       break;
-    case 'caption':
-      currentValue = photo?.caption ?? '';
-      currentVersion = photo?.captionVersion ?? 0;
-      valid = textOk(value, CAPTION_MAX);
-      break;
     default:
       currentValue = myComment?.content ?? '';
       currentVersion = myComment?.version ?? 0;
@@ -301,7 +243,6 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
     return fail(409, 'BUNDLE_003', {
       value: currentValue as string | null,
       version: currentVersion,
-      ...(bundlePhotoId === undefined ? {} : { bundlePhotoId }),
     });
   }
   const normalized = typeof value === 'string' && kind !== 'comment' ? value.trim() : value;
@@ -324,14 +265,6 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
           date: normalized as string | null,
           dateVersion: current.dateVersion + 1,
         };
-      case 'caption':
-        return setPhoto(current, bundlePhotoId as number, (item) => ({
-          ...item,
-          caption: normalized as string,
-          captionVersion: item.captionVersion + 1,
-          captionUpdatedBy: MOCK_MY_MEMBER_ID,
-          captionUpdatedAt: at,
-        }));
       default: {
         const row = current.comments.find((comment) => comment.memberId === MOCK_MY_MEMBER_ID);
         return {
@@ -429,10 +362,6 @@ export const bundleHandlers = [
                   position,
                   addedBy: MOCK_MY_MEMBER_ID,
                   addedAt: at,
-                  caption: '',
-                  captionVersion: 0,
-                  captionUpdatedBy: null,
-                  captionUpdatedAt: null,
                 },
               ]
             : [],
@@ -485,7 +414,7 @@ export const bundleHandlers = [
     return snapshotOf(scope.bundle.id);
   }),
 
-  // PUT …/title · visibility · date · comments/me · photos/{photoId}/caption
+  // PUT …/title · visibility · date · comments/me
   http.put('/api/bunches/:bunchId/bundles/:id/title', ({ params, request }) =>
     saveField({ kind: 'title', params, request }),
   ),
@@ -497,9 +426,6 @@ export const bundleHandlers = [
   ),
   http.put('/api/bunches/:bunchId/bundles/:id/comments/me', ({ params, request }) =>
     saveField({ kind: 'comment', params, request }),
-  ),
-  http.put('/api/bunches/:bunchId/bundles/:id/photos/:photoId/caption', ({ params, request }) =>
-    saveField({ kind: 'caption', params, request }),
   ),
 
   // POST /api/v1/bunches/{bunchId}/bundles/{id}/participants
@@ -560,12 +486,6 @@ export const bundleHandlers = [
       // 제외되는 멤버의 코멘트를 함께 지움
       comments: current.comments.filter((comment) => comment.memberId !== memberId),
     }));
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: current.bundleLeases.filter(
-        (lease) => !(lease.bundleId === bundle.id && lease.memberId === memberId),
-      ),
-    }));
     return snapshotOf(bundle.id);
   }),
 
@@ -604,11 +524,6 @@ export const bundleHandlers = [
           ...latest,
           status: 'PUBLISHED',
           publishedAt: nowIso(),
-        }));
-        // 발행하면 활성 편집권을 모두 풂
-        mockDb.update((latest) => ({
-          ...latest,
-          bundleLeases: latest.bundleLeases.filter((lease) => lease.bundleId !== bundle.id),
         }));
         return { status: 200, body: { id: bundle.id } };
       },

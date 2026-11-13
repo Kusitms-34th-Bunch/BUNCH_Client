@@ -15,8 +15,6 @@ export type DraftPhoto = {
   id: string;
   src: string;
   alt: string;
-  /** 사진 캡션(없으면 빈 문자열) */
-  caption: string;
   /** 촬영 날짜·시각('YYYY-MM-DDTHH:mm'). 확인하지 못했으면 null */
   takenAt: string | null;
   /** 올린 멤버 id */
@@ -37,7 +35,7 @@ export type DraftComment = {
 
 export type DraftVisibility = 'members' | 'public';
 
-/** 다른 멤버가 편집 중인 영역(멤버 id). 서버 연결 전에는 fixture 값 */
+/** 다른 멤버가 편집 중인 영역(멤버 id). 실시간 presence 연결 전에는 fixture 값이고 서버 응답에서는 비어 있음 */
 export type DraftEditing = {
   title?: string | undefined;
   /** 사진을 편집 중인 멤버 모두 */
