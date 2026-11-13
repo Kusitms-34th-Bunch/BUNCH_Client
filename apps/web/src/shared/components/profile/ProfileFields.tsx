@@ -15,12 +15,8 @@ import { GenderField } from './GenderField';
 type ProfileFieldsProps = {
   /** `useProfileFields`가 돌려준 값·오류·변경 함수 */
   fields: ProfileFieldsState;
-  /** 출생연도·성별과 비공개 안내를 보임. 가입은 선택 약관에 동의했을 때만 보임(MY 수정은 동의하지 않아도 보이되 `demographicsDisabled`로 막음, 기본은 보임) */
+  /** 출생연도·성별과 비공개 안내를 보임. 선택 약관(추가 개인정보)에 동의했을 때만 보임(가입·MY 수정 공통, 기본은 보임) */
   showDemographics?: boolean | undefined;
-  /** 출생연도·성별을 보이되 입력할 수 없게 함(추가 개인정보에 동의하지 않은 MY 수정). 값은 비워 두고 입력란 안내는 `demographicsDisabledPlaceholder` */
-  demographicsDisabled?: boolean | undefined;
-  /** 비활성 출생연도 입력란에 보일 안내 문구 */
-  demographicsDisabledPlaceholder?: string | undefined;
   /** 출생연도·성별 아래 안내 문구. 기본은 비공개 안내이고 가입은 통계 분석 용도를 함께 안내(Figma). 줄바꿈 문자(`\n`)는 그대로 줄이 바뀜 */
   note?: string | undefined;
 };
@@ -32,15 +28,10 @@ type ProfileFieldsProps = {
 export function ProfileFields({
   fields,
   showDemographics = true,
-  demographicsDisabled = false,
-  demographicsDisabledPlaceholder,
   note = '출생연도와 성별은 다른 사용자에게 공개되지 않아요.',
 }: ProfileFieldsProps) {
   const noteId = useId();
   const birthYearHintId = useId();
-  const lockedReasonId = useId();
-  // 비활성이면 사유를, 아니면 입력 힌트를 출생연도 입력란의 설명으로 연결(칩 그룹은 사유만)
-  const lockedNote = demographicsDisabled ? lockedReasonId : undefined;
   const { values } = fields;
 
   return (
@@ -77,16 +68,15 @@ export function ProfileFields({
       />
       {showDemographics ? (
         <>
-          <span id={demographicsDisabled ? lockedReasonId : birthYearHintId} className="sr-only">
-            {demographicsDisabled ? demographicsDisabledPlaceholder : '숫자 4자리로 입력해 주세요.'}
+          <span id={birthYearHintId} className="sr-only">
+            숫자 4자리로 입력해 주세요.
           </span>
           <LabeledTextField
             title="출생연도"
-            placeholder={demographicsDisabled ? demographicsDisabledPlaceholder : 'EX)1998'}
-            disabled={demographicsDisabled}
+            placeholder="EX)1998"
             inputMode="numeric"
             autoComplete="off"
-            aria-describedby={`${demographicsDisabled ? lockedReasonId : birthYearHintId} ${noteId}`}
+            aria-describedby={`${birthYearHintId} ${noteId}`}
             value={values.birthYear}
             errorMessage={fields.birthYearError}
             onChange={(event) => fields.setBirthYear(event.target.value)}
@@ -96,8 +86,7 @@ export function ProfileFields({
           <div className="gap-s4 flex flex-col">
             <GenderField
               value={values.gender}
-              describedBy={[lockedNote, noteId].filter(Boolean).join(' ')}
-              disabled={demographicsDisabled}
+              describedBy={noteId}
               onChange={(next) => {
                 fields.setGender(next);
                 closeKeyboard();

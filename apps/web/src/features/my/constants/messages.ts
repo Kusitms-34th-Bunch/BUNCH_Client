@@ -49,8 +49,6 @@ export const MY_MESSAGES = {
       },
     },
   },
-  // 프로필 편집의 출생연도 입력란 안내(추가 개인정보에 동의하지 않아 비활성일 때, Figma 6745:46068)
-  demographicsLockedPlaceholder: '약관 동의 후 입력할 수 있어요.',
   // 회원 탈퇴(화면 설계서 MY(5))
   withdrawal: {
     title: '탈퇴하기 전에 확인해 주세요',

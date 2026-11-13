@@ -11,7 +11,7 @@
 
 ### 포함
 
-- 지금 값을 채운 닉네임(필수)·프로필 사진·출생연도·성별(Figma 개인 프로필 편집 `6745:46068`, #345). 추가 개인정보 수집·이용에 동의하지 않았으면 출생연도·성별은 비활성이고 값이 비어 있으며 입력란 안내는 「약관 동의 후 입력할 수 있어요.」다. 동의했으면 저장된 값을 채워 고칠 수 있다(기능명세서 7.2.6). 입력 칸과 검증 규칙은 가입 프로필과 같은 `src/shared/components/profile/ProfileFields`(`demographicsDisabled`)·`useProfileFields`를 쓴다. 동의 상태는 서버 API가 없어 이 기기에만 저장하는 임시 값(`useDemographicsConsent`)이고 `ProfileEditRoute`가 `demographicsConsent`로 넘긴다.
+- 지금 값을 채운 닉네임(필수)·프로필 사진·출생연도·성별(Figma 개인 프로필 편집 `6745:46068`, #345). 추가 개인정보 수집·이용에 동의하지 않았으면 출생연도·성별 칸과 비공개 안내를 보이지 않는다(Figma는 비활성 표시지만 사용자 요청으로 숨김). 동의했으면 저장된 값을 채워 고칠 수 있다(기능명세서 7.2.6). 입력 칸과 검증 규칙은 가입 프로필과 같은 `src/shared/components/profile/ProfileFields`(`showDemographics`)·`useProfileFields`를 쓴다. 동의 상태는 서버 API가 없어 이 기기에만 저장하는 임시 값(`useDemographicsConsent`)이고 `ProfileEditRoute`가 `demographicsConsent`로 넘긴다.
 - 프로필 사진: 가입과 같은 `ProfilePhotoField`(선택지 → 원형 조정 → 미리보기, `shared/components/profile/ProfilePhotoField.spec.md`). 사진이 지금 값과 달라지면(기본 이미지로 되돌리기 포함) 변경으로 본다.
 - 바뀐 값이 있는데 뒤로 가면 「저장하지 않고 나갈까요?」 / 「변경한 내용이 반영되지 않아요.」 / 나가기·취소 확인 창(기능명세서 7.2.1 상세 7). 「취소」는 창만 닫고 입력을 둔다. 바뀐 값이 없으면 바로 나간다.
 - 내 정보(`GET /members/me`)는 `ProfileEditRoute`가 `useMyProfile`로 받아 지금 값으로 채운다. 받을 때까지 `PageLoading`을 보이고, 받지 못하면 MY로 돌아가고, 오류 토스트는 이동을 기다렸다가 도착한 MY에서 보인다(`toastAfterNavigation`, 기능명세서 7.2.1 예외). 들어올 때마다 다시 불러온다.

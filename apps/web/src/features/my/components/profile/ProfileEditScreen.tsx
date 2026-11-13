@@ -33,7 +33,7 @@ const isSameValues = (a: ProfileValues, b: ProfileValues) =>
 
 /**
  * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임·프로필 사진·출생연도·성별
- * 추가 개인정보에 동의하지 않았으면 출생연도·성별은 비활성으로 보임(Figma 6745:46068)
+ * 추가 개인정보에 동의하지 않았으면 출생연도·성별 칸과 안내 문구를 보이지 않음(사용자 요청, Figma는 비활성 표시)
  * 바뀐 값이 있고 모두 유효할 때만 수정하기 활성, 누르면 MY로 돌아가 토스트(저장 API 연결 전이라 이동만)
  */
 export function ProfileEditScreen({
@@ -42,7 +42,7 @@ export function ProfileEditScreen({
   checkNickname = checkNicknameAvailability,
 }: {
   profile: MyProfile;
-  /** 추가 개인정보(출생연도·성별) 수집·이용 동의 여부. 동의해야 출생연도·성별을 고칠 수 있음 */
+  /** 추가 개인정보(출생연도·성별) 수집·이용 동의 여부. 동의해야 출생연도·성별 칸이 보이고 고칠 수 있음 */
   demographicsConsent: boolean;
   /** 닉네임 중복 확인 호출(테스트에서 바꿔 끼움) */
   checkNickname?: CheckNickname | undefined;
@@ -114,11 +114,7 @@ export function ProfileEditScreen({
           <ProfilePhotoField value={photo} onChange={setPhoto} />
         </div>
         <div className="pt-s14 px-padding-p8">
-          <ProfileFields
-            fields={fields}
-            demographicsDisabled={!demographicsConsent}
-            demographicsDisabledPlaceholder={MY_MESSAGES.demographicsLockedPlaceholder}
-          />
+          <ProfileFields fields={fields} showDemographics={demographicsConsent} />
         </div>
       </PageShell>
     </div>

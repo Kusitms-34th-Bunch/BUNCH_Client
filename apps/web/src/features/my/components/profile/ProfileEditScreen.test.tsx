@@ -49,25 +49,12 @@ describe('ProfileEditScreen', () => {
     expect(submitButton().disabled).toBe(true);
   });
 
-  it('추가 개인정보에 동의하지 않았으면 출생연도·성별이 비활성이고 값이 비어 있다(Figma 6745:46068)', () => {
+  it('추가 개인정보에 동의하지 않았으면 출생연도·성별 칸과 비공개 안내가 보이지 않는다', () => {
     renderScreen();
 
-    const birthYear = screen.getByRole<HTMLInputElement>('textbox', { name: /출생연도/ });
-    expect(birthYear.disabled).toBe(true);
-    expect(birthYear.value).toBe('');
-    expect(birthYear.placeholder).toBe('약관 동의 후 입력할 수 있어요.');
-    // 비활성 사유를 보조기술에도 입력란 설명으로 전달
-    const describedBy = (birthYear.getAttribute('aria-describedby') ?? '').split(' ');
-    expect(describedBy.map((id) => document.getElementById(id)?.textContent)).toContain(
-      '약관 동의 후 입력할 수 있어요.',
-    );
-    const gender = screen.getByRole('group', { name: '성별' });
-    expect(
-      within(gender)
-        .getAllByRole<HTMLButtonElement>('button')
-        .map((button) => button.disabled),
-    ).toEqual([true, true]);
-    expect(screen.getByText('출생연도와 성별은 다른 사용자에게 공개되지 않아요.')).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: /출생연도/ })).toBeNull();
+    expect(screen.queryByRole('group', { name: '성별' })).toBeNull();
+    expect(screen.queryByText('출생연도와 성별은 다른 사용자에게 공개되지 않아요.')).toBeNull();
     expect(submitButton().disabled).toBe(true);
   });
 
