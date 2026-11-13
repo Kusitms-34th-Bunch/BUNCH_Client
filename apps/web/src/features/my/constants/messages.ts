@@ -4,9 +4,10 @@ export const MY_MESSAGES = {
   // 닉네임을 아직 받지 못했을 때 프로필 행 링크의 낭독 이름
   profileEditOwn: '내 프로필 수정',
   profileLoading: '프로필을 불러오는 중이에요',
-  sections: { notifications: '알림', terms: '약관 및 정책', support: '고객지원' },
+  sections: { notifications: '알림', terms: '서비스 정보', support: '고객지원' },
   menu: {
     notifications: '알림 설정',
+    termsAndPrivacy: '약관 및 개인정보',
     termsOfService: '서비스 이용약관',
     privacyPolicy: '개인정보 처리방침',
     contact: '문의하기',
@@ -28,6 +29,26 @@ export const MY_MESSAGES = {
     failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   },
   cancel: '취소',
+  // 약관 및 개인정보(화면 설계서 MY(4), 기능명세서 7.4.4·7.4.5)
+  termsSettings: {
+    title: '약관 및 개인정보',
+    termsSection: '이용약관',
+    privacySection: '개인정보 처리 및 동의',
+    demographics: {
+      title: '추가 개인정보 수집 및 동의',
+      viewFull: '전문보기',
+      agree: {
+        title: '추가 개인정보 수집에 동의할까요?',
+        description: '동의 후 프로필 편집에서 출생연도와 성별을 설정할 수 있어요.',
+        confirm: '동의하기',
+      },
+      withdraw: {
+        title: '추가 개인정보 수집 동의를 철회할까요?',
+        description: '철회 시 출생연도와 성별 정보가 삭제돼요.',
+        confirm: '동의 철회',
+      },
+    },
+  },
   // 회원 탈퇴(화면 설계서 MY(5))
   withdrawal: {
     title: '탈퇴하기 전에 확인해 주세요',

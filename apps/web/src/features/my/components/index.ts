@@ -5,4 +5,5 @@ export { AdminTransferScreen } from './withdrawal/AdminTransferScreen';
 export { MyRoute } from './home/MyRoute';
 export { NotificationSettingsRoute } from './notifications/NotificationSettingsRoute';
 export { ProfileEditRoute } from './profile/ProfileEditRoute';
+export { TermsAndPrivacyRoute } from './terms/TermsAndPrivacyRoute';
 export { WithdrawalScreen } from './withdrawal/WithdrawalScreen';
