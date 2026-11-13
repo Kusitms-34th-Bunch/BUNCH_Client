@@ -6,8 +6,9 @@ import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { myMembershipsByRecent } from './members';
 
-// 번치 팔로우(Swagger). 명세에 오류 코드가 없어 권한은 AUTH_002, 자기 번치 팔로우는 COMMON_001로 둠
-// ponytail: 비공개 번치 요청 승인은 상대 번치 몫이라 이 가짜 서버에서는 승인되지 않음(팔로우 요청 목록 연결 때)
+// 번치 팔로우·관계 목록·요청 결정(Swagger). 명세에 오류 코드가 없어 권한은 AUTH_002, 자기 번치 팔로우는 COMMON_001로 둠
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 50;
 
 /** 지금 내 번치(마지막 사용 번치, `members/me`의 기본 번치). 번치 홈 응답의 팔로우 명의 */
 export const viewerBunchId = (state: MockDbState) => myMembershipsByRecent(state)[0]?.bunchId;
@@ -31,6 +32,9 @@ export const followCounts = (state: MockDbState, bunchId: number) => {
   };
 };
 
+const isMine = (state: MockDbState, bunchId: number) =>
+  state.memberships.some((item) => item.bunchId === bunchId && item.memberId === MOCK_MY_MEMBER_ID);
+
 /** 경로의 내 번치(팔로우 명의)와 상대 번치. 내가 속한 번치가 아니면 403 */
 const pair = (params: Record<string, string | readonly string[] | undefined>) => {
   const viewerId = toWireId(params.viewerId);
@@ -39,15 +43,149 @@ const pair = (params: Record<string, string | readonly string[] | undefined>) =>
   const state = mockDb.get();
   const target = state.bunches.find((bunch) => bunch.id === targetId);
   if (!target) return { error: fail(404, 'RESOURCE_001') };
-  const mine = state.memberships.some(
-    (item) => item.bunchId === viewerId && item.memberId === MOCK_MY_MEMBER_ID,
-  );
-  if (!mine) return { error: fail(403, 'AUTH_002') };
+  if (!isMine(state, viewerId)) return { error: fail(403, 'AUTH_002') };
   if (viewerId === targetId) return { error: fail(400, 'COMMON_001') };
   return { viewerId, targetId, target, state };
 };
 
+/** `?page=&size=`. 잘못된 값이면 undefined(400) */
+const pageOf = (request: Request) => {
+  const url = new URL(request.url);
+  const parse = (value: string | null, fallback: number) =>
+    value === null ? fallback : /^\d+$/.test(value) ? Number(value) : NaN;
+  const page = parse(url.searchParams.get('page'), 0);
+  const size = parse(url.searchParams.get('size'), DEFAULT_PAGE_SIZE);
+  if (!Number.isSafeInteger(page) || !Number.isSafeInteger(size) || size < 1) return undefined;
+  return { page, size: Math.min(size, MAX_PAGE_SIZE) };
+};
+
+const paged = <T>(items: readonly T[], { page, size }: { page: number; size: number }) => ({
+  items: items.slice(page * size, (page + 1) * size),
+  page,
+  size,
+  totalElements: items.length,
+  hasNext: (page + 1) * size < items.length,
+});
+
+const cardOf = (state: MockDbState, bunchId: number) => {
+  const bunch = state.bunches.find((item) => item.id === bunchId);
+  return bunch
+    ? {
+        id: bunch.id,
+        name: bunch.name,
+        imageUrl: bunch.imageUrl ?? undefined,
+        characterType: bunch.characterType,
+        visibility: bunch.isPrivate ? 'PRIVATE' : 'PUBLIC',
+      }
+    : undefined;
+};
+
+/**
+ * 팔로워·팔로잉 목록(승인된 관계, 최근순). 행의 followState는 지금 내 번치(명의)가 그 번치를 팔로우하는 상태
+ * 다른 번치는 공개이거나 내 번치가 팔로우 승인됐을 때만 봄(번치 홈의 canViewRelations와 같음)
+ */
+const relationList = (kind: 'followers' | 'following') =>
+  http.get(`/api/bunches/:targetId/${kind}`, ({ params, request }) => {
+    const targetId = toWireId(params.targetId);
+    const page = pageOf(request);
+    if (targetId === undefined || !page) return fail(400, 'COMMON_001');
+    const state = mockDb.get();
+    const target = state.bunches.find((bunch) => bunch.id === targetId);
+    if (!target) return fail(404, 'BUNCH_009');
+    const viewer = viewerBunchId(state);
+    const canView =
+      isMine(state, targetId) ||
+      !target.isPrivate ||
+      followOf(state, viewer, targetId)?.status === 'FOLLOWING';
+    if (!canView) return fail(403, 'AUTH_002');
+    const relations = state.follows
+      .filter(
+        (follow) =>
+          follow.status === 'FOLLOWING' &&
+          (kind === 'followers' ? follow.targetBunchId : follow.followerBunchId) === targetId,
+      )
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id);
+    const items = relations.flatMap((follow) => {
+      const bunchId = kind === 'followers' ? follow.followerBunchId : follow.targetBunchId;
+      const bunch = cardOf(state, bunchId);
+      const mine = bunchId === viewer ? undefined : followOf(state, viewer, bunchId);
+      return bunch
+        ? [
+            {
+              bunch,
+              followState: mine?.status ?? 'NONE',
+              followId: mine?.id,
+              followedAt: follow.createdAt,
+            },
+          ]
+        : [];
+    });
+    return ok(paged(items, page));
+  });
+
 export const followHandlers = [
+  // GET /api/v1/bunches/{targetId}/followers·following?page=&size=
+  relationList('followers'),
+  relationList('following'),
+
+  // GET /api/v1/bunches/{viewerId}/follow-requests?page=&size=: 내 번치에 온 대기 중인 요청(최근순)
+  http.get('/api/bunches/:viewerId/follow-requests', ({ params, request }) => {
+    const viewerId = toWireId(params.viewerId);
+    const page = pageOf(request);
+    if (viewerId === undefined || !page) return fail(400, 'COMMON_001');
+    const state = mockDb.get();
+    if (!isMine(state, viewerId)) return fail(403, 'AUTH_002');
+    const items = state.follows
+      .filter((follow) => follow.targetBunchId === viewerId && follow.status === 'REQUESTED')
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
+      .flatMap((follow) => {
+        const bunch = cardOf(state, follow.followerBunchId);
+        return bunch ? [{ id: follow.id, bunch, requestedAt: follow.createdAt }] : [];
+      });
+    return ok(paged(items, page));
+  }),
+
+  // POST /api/v1/bunches/{viewerId}/follow-requests/{requestId}/decision { decision: APPROVE | REJECT }
+  // 이미 승인된 요청은 applied: false·APPROVED, 취소·거절돼 없어진 요청은 applied: false·UNAVAILABLE
+  http.post(
+    '/api/bunches/:viewerId/follow-requests/:requestId/decision',
+    async ({ params, request }) => {
+      const viewerId = toWireId(params.viewerId);
+      const requestId = toWireId(params.requestId);
+      const body = (await request.json().catch(() => null)) as { decision?: unknown } | null;
+      const decision = body?.decision;
+      if (
+        viewerId === undefined ||
+        requestId === undefined ||
+        (decision !== 'APPROVE' && decision !== 'REJECT')
+      ) {
+        return fail(400, 'COMMON_001');
+      }
+      const state = mockDb.get();
+      if (!isMine(state, viewerId)) return fail(403, 'AUTH_002');
+      const follow = state.follows.find(
+        (item) => item.id === requestId && item.targetBunchId === viewerId,
+      );
+      if (!follow) return ok({ requestId, applied: false, state: 'UNAVAILABLE' });
+      if (follow.status === 'FOLLOWING')
+        return ok({ requestId, applied: false, state: 'APPROVED' });
+      mockDb.update((current) => ({
+        ...current,
+        follows:
+          decision === 'APPROVE'
+            ? current.follows.map((item) =>
+                item.id === requestId ? { ...item, status: 'FOLLOWING' as const } : item,
+              )
+            : current.follows.filter((item) => item.id !== requestId),
+      }));
+      return ok({
+        requestId,
+        applied: true,
+        state: decision === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+      });
+    },
+  ),
+
   // PUT /api/v1/bunches/{viewerId}/following/{targetId}: 공개 번치는 바로 팔로우, 비공개는 요청. 이미 있으면 그 관계 그대로
   http.put('/api/bunches/:viewerId/following/:targetId', ({ params }) => {
     const found = pair(params);
@@ -60,6 +198,7 @@ export const followHandlers = [
       followerBunchId: viewerId,
       targetBunchId: targetId,
       status: target.isPrivate ? 'REQUESTED' : 'FOLLOWING',
+      createdAt: new Date().toISOString(),
     };
     mockDb.update((current) => ({ ...current, follows: [...current.follows, follow] }));
     return ok({ followState: follow.status, followId: follow.id });

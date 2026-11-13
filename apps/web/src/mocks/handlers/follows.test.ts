@@ -4,6 +4,16 @@ import '../server';
 import { mockDb } from '../db';
 import { MOCK_BUNCH_ID, MOCK_EXTERNAL_BUNCH_IDS, MOCK_SECOND_BUNCH_ID } from '../db/seed';
 
+// 내 번치(여행쥬아)가 다른 번치 3·4를 팔로우한 관계(시작 데이터의 목록용 관계는 제외)
+const myExternalFollows = () =>
+  mockDb
+    .get()
+    .follows.filter(
+      (follow) =>
+        follow.followerBunchId === MOCK_BUNCH_ID &&
+        (follow.targetBunchId === 3 || follow.targetBunchId === 4),
+    );
+
 type Envelope<T> = { success: boolean; data: T; error: { code: string } | null };
 const call = async <T>(method: string, path: string) => {
   const response = await fetch(path, { method });
@@ -81,6 +91,6 @@ describe('팔로우 PUT·DELETE', () => {
     expect((await call('DELETE', path)).status).toBe(400);
     const cancelled = await call<{ cancelled: string }>('DELETE', `${path}?followId=${followId}`);
     expect(cancelled.json.data.cancelled).toBe('FOLLOWING');
-    expect(mockDb.get().follows).toEqual([]);
+    expect(myExternalFollows()).toEqual([]);
   });
 });

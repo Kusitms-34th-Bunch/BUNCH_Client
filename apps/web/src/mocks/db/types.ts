@@ -20,7 +20,7 @@ export type MockBunch = {
   introduction: string;
   /** 가짜 DB 내부 표현, 번치 홈 응답에서 visibility(PUBLIC·PRIVATE)로 바뀜 */
   isPrivate: boolean;
-  /** 번치 홈의 팔로워·팔로잉 수(관계 API가 없어 시작 데이터 값) */
+  /** 가짜 DB의 팔로우 관계 밖 팔로워·팔로잉 수(번치 홈의 수는 이 값에 승인된 관계를 더함) */
   followerCount: number;
   followingCount: number;
   /** 프로필 버전(저장할 때마다 1 올라감, 번치 홈 응답의 profileVersion). 없으면 1 */
@@ -137,6 +137,8 @@ export type MockFollow = {
   followerBunchId: number;
   targetBunchId: number;
   status: 'REQUESTED' | 'FOLLOWING';
+  /** 요청·팔로우 시각(ISO). 목록의 requestedAt·followedAt */
+  createdAt: string;
 };
 
 export type MockDbState = {

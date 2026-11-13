@@ -151,7 +151,21 @@ jobs:
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           # web 빌드에 모듈별 크기(.next/analyze/client.json)를 함께 기록해 번들 크기 보고가 커진 원인을 표로 남김
           ANALYZE: 'true'
+          # 바로 앞 TypeScript 단계가 같은 타입 검사를 하므로 next build 안의 검사는 건너뜀(배포 빌드는 그대로 검사)
+          NEXT_SKIP_TYPECHECK: 'true'
         run: yarn build $AFFECTED
+
+      # 번들 크기 기준선은 base 브랜치(develop·main) push 빌드가 잰 결과. PR은 base 커밋의 결과, 없으면 그 브랜치의 가장 최근 결과와 비교
+      - name: Restore bundle size baseline
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && hashFiles('apps/web/.next/build-manifest.json') != '' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: apps/web/bundle-size-baseline.json
+          key: bundle-size-${{ runner.os }}-${{ github.base_ref || github.ref_name }}-${{ github.event.pull_request.base.sha || github.sha }}
+          # base 브랜치의 결과가 없으면(다른 작업 브랜치 위 PR, 캐시 만료) develop의 가장 최근 결과로 비교
+          restore-keys: |
+            bundle-size-${{ runner.os }}-${{ github.base_ref || github.ref_name }}-
+            bundle-size-${{ runner.os }}-develop-
 
       # web 클라이언트 JS 크기(gzip)를 Summary와 PR 결과 댓글(bundle-size.md)에 기록, 기준선보다 10% 넘게 커지면 경고만(실패 아님). web을 빌드하지 않은 PR이면 건너뜀
       - name: 웹 번들 크기
@@ -161,9 +175,24 @@ jobs:
           BUNDLE_SIZE_REPORT: bundle-size.md
         run: node scripts/report-web-bundle-size.mjs
 
+      # develop·main push는 이번 빌드 결과를 다음 PR의 기준선으로 저장(머지될 때마다 자동 갱신)
+      - name: Update bundle size baseline
+        id: bundle-baseline
+        if: ${{ !cancelled() && github.event_name == 'push' && steps.build.outcome == 'success' && hashFiles('apps/web/.next/build-manifest.json') != '' }}
+        continue-on-error: true
+        run: node scripts/report-web-bundle-size.mjs --update
+
+      - name: Save bundle size baseline
+        if: ${{ !cancelled() && steps.bundle-baseline.outcome == 'success' }}
+        uses: actions/cache/save@v4
+        with:
+          path: apps/web/bundle-size-baseline.json
+          key: bundle-size-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+
+      # develop·main push만 저장하고 PR은 그 캐시를 이어 받기만 함(PR마다 저장에 20초 넘게 걸려 빌드 job이 가장 늦게 끝남)
       # actions/cache의 자동 저장은 job 성공 시에만 실행되므로 검사 결과와 상관없이 직접 저장. Turbo는 성공한 작업만 캐시
       - name: Save Turbo cache
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && github.event_name == 'push' && steps.setup.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: .turbo/cache

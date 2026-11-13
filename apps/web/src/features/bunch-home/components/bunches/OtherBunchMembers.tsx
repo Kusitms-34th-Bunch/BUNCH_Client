@@ -11,7 +11,6 @@ import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { ROLE_LABELS } from '../../constants/roles';
 import { findOtherBunch } from '../../fixtures/otherBunches.fixture';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
-import { useBunchFollow } from '../../hooks/useBunchFollow';
 import { PrivateBunchNotice } from '../PrivateBunchNotice';
 import { BlockedBunchScreen } from './BlockedBunchScreen';
 
@@ -22,7 +21,6 @@ import { BlockedBunchScreen } from './BlockedBunchScreen';
 export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
   const backOr = useBackOr();
   const bunch = findOtherBunch(bunchId);
-  const { status } = useBunchFollow(bunch);
   const { access } = useBlockRelation(bunchId);
   if (!bunch) notFound();
   // 기록이 없으면 프로필로, 차단한 번치면 프로필도 접근 제한이라 피드로
@@ -30,8 +28,8 @@ export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
     backOr(access === 'blocked' ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
   if (access !== 'visible')
     return <BlockedBunchScreen onBack={back} checking={access === 'checking'} />;
-  // 비공개 번치는 팔로우 승인 전에 멤버 명단을 볼 수 없음(기능명세 5.10)
-  const locked = bunch.isPrivate && status !== 'following';
+  // 비공개 번치는 팔로우 승인 전에 멤버 명단을 볼 수 없음(기능명세 5.10). ponytail: 다른 번치 멤버 API가 없어 샘플의 처음 상태로 판단
+  const locked = bunch.isPrivate && bunch.followStatus !== 'following';
 
   return (
     <PageShell

@@ -11,7 +11,8 @@ import { gzipSync } from 'node:zlib';
 
 // web 빌드 산출물의 클라이언트 JS 크기(gzip)를 기록하고 기준선보다 10% 넘게 커지면 경고(실패시키지 않음)
 // ANALYZE=true 빌드면 패키지·소스 폴더별 크기로 무엇이 커졌는지도 표로 남김
-// 기준선 갱신: 의도한 증가면 `ANALYZE=true yarn workspace @app/web build` 뒤 `--update`로 갱신해 커밋
+// 기준선: CI는 develop·main push 빌드가 `--update`로 저장한 결과를 캐시로 받아 비교(머지될 때마다 자동 갱신, 커밋하지 않음)
+// 로컬 비교는 `ANALYZE=true yarn workspace @app/web build` 뒤 `--update`로 내 기준선을 만든 다음 다시 빌드해 실행
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const nextDir = resolve(repositoryRoot, 'apps/web/.next');
 const baselinePath = resolve(repositoryRoot, 'apps/web/bundle-size-baseline.json');
@@ -93,7 +94,17 @@ if (process.argv.includes('--update')) {
   process.exit(0);
 }
 
-const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : {};
+const isObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+// 기준선은 캐시에서 받으므로 읽지 못하거나 모양이 다르면 기준선 없음으로 처리(보고는 계속)
+const readBaseline = () => {
+  try {
+    const parsed = JSON.parse(readFileSync(baselinePath, 'utf8'));
+    return isObject(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+const baseline = existsSync(baselinePath) ? readBaseline() : {};
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 const changes = [];
 const rows = [
@@ -122,7 +133,7 @@ const ownerRows = (entries) =>
 const ownerSection = [];
 let grownOwners = [];
 if (Object.keys(ownerSizes).length > 0) {
-  const baseOwners = baseline.owners ?? {};
+  const baseOwners = isObject(baseline.owners) ? baseline.owners : {};
   const grown = Object.entries(ownerSizes)
     .map(([owner, size]) => [owner, size, size - (baseOwners[owner] ?? 0)])
     .filter(([, , delta]) => delta >= 1024)
@@ -165,7 +176,7 @@ const summary = [
   ...ownerSection,
   '패키지·소스 폴더 크기는 모듈마다 따로 잰 gzip이라 합이 전체 크기와 맞지 않습니다. 증가량 비교용입니다.',
   '',
-  `기준선보다 ${TOLERANCE * 100}% 넘게 커지면 경고만 하고 실패시키지 않습니다. 의도한 증가면 \`SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= ANALYZE=true yarn workspace @app/web build\` 뒤 \`node scripts/report-web-bundle-size.mjs --update\`로 기준선을 갱신해 커밋합니다.`,
+  `기준선은 base 브랜치(develop·main)에 머지된 최신 빌드 결과이고, 머지될 때마다 자동으로 갱신됩니다. ${TOLERANCE * 100}% 넘게 커지면 경고만 하고 실패시키지 않습니다.`,
   '',
 ].join('\n');
 

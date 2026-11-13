@@ -6,7 +6,18 @@ import { renderToString } from 'react-dom/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 // 다른 번치 프로필은 가짜 서버 응답에 기댐(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import { mockDb } from '@/mocks/db';
+import { MOCK_BUNCH_ID } from '@/mocks/db/seed';
 import { server } from '@/mocks/server';
+
+// 내 번치(여행쥬아)가 다른 번치 3·4를 팔로우한 관계(시작 데이터의 목록용 관계는 제외)
+const myExternalFollows = () =>
+  mockDb
+    .get()
+    .follows.filter(
+      (follow) =>
+        follow.followerBunchId === MOCK_BUNCH_ID &&
+        (follow.targetBunchId === 3 || follow.targetBunchId === 4),
+    );
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -81,7 +92,7 @@ describe('다른 번치 차단', () => {
 
     const { result: blocked } = renderHook(() => useBlockedBunches('bunch-run'));
     expect(blocked.current.blocked?.[0]).toMatchObject({ id: '3', name: '캠핑러버' });
-    await waitFor(() => expect(mockDb.get().follows).toEqual([]));
+    await waitFor(() => expect(myExternalFollows()).toEqual([]));
   });
 
   it('팔로우를 보내는 중에 차단해도 끝난 뒤 팔로우를 해제한다', async () => {
@@ -114,7 +125,7 @@ describe('다른 번치 차단', () => {
     release();
 
     await waitFor(() => expect(deletes).toHaveLength(1), SHEET_WAIT);
-    await waitFor(() => expect(mockDb.get().follows).toEqual([]), SHEET_WAIT);
+    await waitFor(() => expect(myExternalFollows()).toEqual([]), SHEET_WAIT);
     server.events.removeAllListeners();
   });
 
@@ -156,7 +167,7 @@ describe('다른 번치 차단', () => {
 
     await user.click(await screen.findByRole('button', { name: '팔로우' }));
     await screen.findByRole('button', { name: '팔로우 요청됨' });
-    expect(mockDb.get().follows[0]?.status).toBe('REQUESTED');
+    expect(myExternalFollows()[0]?.status).toBe('REQUESTED');
 
     await user.click(within(await openMore(user)).getByRole('button', { name: '차단하기' }));
     const confirm = await screen.findByRole(
@@ -166,7 +177,7 @@ describe('다른 번치 차단', () => {
     );
     await user.click(within(confirm).getByRole('button', { name: '차단하기' }));
 
-    await waitFor(() => expect(mockDb.get().follows).toEqual([]));
+    await waitFor(() => expect(myExternalFollows()).toEqual([]));
   });
 
   it('차단을 해제하면 프로필이 다시 보인다', async () => {
@@ -204,9 +215,14 @@ describe('다른 번치 차단', () => {
     useBunch('bunch-run');
     const { OtherBunchFollows } = await import('./OtherBunchFollows');
     const { OtherBunchMembers } = await import('./OtherBunchMembers');
+    const Wrapper = await queryWrapper();
 
     for (const html of [
-      renderToString(<OtherBunchFollows bunchId="3" initialTab="followers" />),
+      renderToString(
+        <Wrapper>
+          <OtherBunchFollows bunchId="3" initialTab="followers" />
+        </Wrapper>,
+      ),
       renderToString(<OtherBunchMembers bunchId="3" />),
     ]) {
       expect(html).toContain('뒤로 가기');
@@ -223,7 +239,9 @@ describe('다른 번치 차단', () => {
     const { result } = renderHook(() => useBlockedBunches('bunch-run'));
     result.current.block({ id: '3', name: '캠핑러버' });
 
-    const { unmount } = render(<OtherBunchFollows bunchId="3" initialTab="followers" />);
+    const { unmount } = render(<OtherBunchFollows bunchId="3" initialTab="followers" />, {
+      wrapper: await queryWrapper(),
+    });
     expect(
       screen.getByRole('heading', { level: 1, name: '볼 수 없는 번치예요' }),
     ).toBeInTheDocument();

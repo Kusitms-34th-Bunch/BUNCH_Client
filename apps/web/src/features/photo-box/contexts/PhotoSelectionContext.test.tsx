@@ -2,11 +2,8 @@ import { render } from '@testing-library/react';
 import { memo } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PhotoSelection } from '../lib/selection';
-import {
-  PhotoSelectionProvider,
-  usePhotoOrder,
-  usePhotoSelectionActions,
-} from './PhotoSelectionContext';
+import { usePhotoOrder, usePhotoSelectionActions } from './photoSelection';
+import { PhotoSelectionProvider } from './PhotoSelectionContext';
 
 const onRender = vi.fn<(_id: string) => void>();
 const renderCounts = () => {

@@ -21,6 +21,10 @@ export const BUNCH_HOME_MESSAGES = {
   deleteFailed: '번치를 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
   otherBunchLoading: '번치를 불러오는 중이에요',
   followFailed: '팔로우를 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  requestDecisionFailed: '팔로우 요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  requestAlreadyHandled: '이미 처리된 팔로우 요청이에요.',
+  followListLoading: '목록을 불러오는 중이에요',
+  followListFailed: '목록을 불러오지 못했어요. 다시 시도해 주세요.',
   // 소속 번치가 최대 개수일 때 「새로운 번치 추가하기」(5.2.4, 번치 만들기의 한도 안내와 같은 문구)
   bunchLimit: '참여할 수 있는 번치는 최대 10개예요.',
   completedEmptyTitle: '추억은 많은데, 번들은 아직!',
@@ -101,12 +105,16 @@ export const BUNCH_HOME_MESSAGES = {
   requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
   // 팔로워·팔로잉 목록과 팔로우 요청(화면설계서 2500:71333·2500:72664)
   followRequestsBanner: (count: number) => `팔로우 요청 ${count}`,
+  // 요청 수를 받지 못했을 때(요청 화면에서 다시 시도)
+  followRequestsBannerUnknown: '팔로우 요청 확인하기',
   pendingRequests: (count: number) => `대기 중인 요청 ${count}개`,
   requestApproved: (bunchName: string) => `${bunchName} 번치의 팔로우 요청을 승인했어요.`,
   requestRejected: (bunchName: string) => `${bunchName} 번치의 팔로우를 거절했어요.`,
   followersEmpty: '아직 팔로워가 없어요.',
   followingEmpty: '아직 팔로우하는 번치가 없어요.',
   requestsEmpty: '대기 중인 팔로우 요청이 없어요.',
+  // 첫 쪽만 보일 때(전체 수가 보이는 행보다 많음)
+  requestsMore: '처리하면 다음 요청이 이어서 보여요.',
   // 다른 번치 차단·신고(화면설계서 2500:67470·2500:69551)
   blockQuestion: (bunchName: string) => `${bunchName} 번치를 차단할까요?`,
   blockNotice: '차단하면 번치의 모든 멤버가\n서로의 활동을 볼 수 없어요.',

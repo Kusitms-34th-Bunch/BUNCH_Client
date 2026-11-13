@@ -8,7 +8,7 @@ import {
   useEffect,
   useRef,
 } from 'react';
-import { usePhotoSelection } from '../contexts/PhotoSelectionContext';
+import { usePhotoSelection } from '../contexts/photoSelection';
 import {
   PHOTO_DRAGGABLE_ATTRIBUTE,
   PHOTO_ID_ATTRIBUTE,

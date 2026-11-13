@@ -22,7 +22,7 @@ import type { PhotoSection } from '../../lib/photoDate';
 import type { PhotoBoxActions, PhotoBoxViewer } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoDragProvider } from '../../contexts/PhotoDragContext';
-import { usePhotoSelectionActions } from '../../contexts/PhotoSelectionContext';
+import { usePhotoSelectionActions } from '../../contexts/photoSelection';
 import { LONG_PRESS_MS } from '../../lib/dragSelect';
 import {
   type SectionItems,

@@ -14,6 +14,16 @@ import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { OtherBunch } from './OtherBunch';
 import { OtherBunchMembers } from './OtherBunchMembers';
 
+// 내 번치(여행쥬아)가 다른 번치 3·4를 팔로우한 관계(시작 데이터의 목록용 관계는 제외)
+const myExternalFollows = () =>
+  mockDb
+    .get()
+    .follows.filter(
+      (follow) =>
+        follow.followerBunchId === MOCK_BUNCH_ID &&
+        (follow.targetBunchId === 3 || follow.targetBunchId === 4),
+    );
+
 const back = vi.fn();
 const replace = vi.fn();
 const notFound = vi.hoisted(() => vi.fn());
@@ -60,7 +70,7 @@ describe('OtherBunch 공개 번치(가짜 서버)', () => {
     expect(await screen.findByRole('button', { name: '팔로잉' })).toBeInTheDocument();
     await waitFor(() => expect(followerText()).toHaveTextContent('24팔로워'));
     expect(screen.getByRole('status')).toHaveTextContent('캠핑러버 번치를 팔로우했어요.');
-    expect(mockDb.get().follows).toMatchObject([{ targetBunchId: 3, status: 'FOLLOWING' }]);
+    expect(myExternalFollows()).toMatchObject([{ targetBunchId: 3, status: 'FOLLOWING' }]);
 
     await user.click(screen.getByRole('button', { name: '팔로잉' }));
     const sheet = await screen.findByRole('dialog', { name: '캠핑러버 팔로우를 취소할까요?' });
@@ -75,7 +85,7 @@ describe('OtherBunch 공개 번치(가짜 서버)', () => {
     expect(await screen.findByRole('button', { name: '팔로우' })).toBeInTheDocument();
     await waitFor(() => expect(followerText()).toHaveTextContent('23팔로워'));
     expect(screen.getByRole('status')).toHaveTextContent('캠핑러버 번치 팔로우를 취소했어요.');
-    expect(mockDb.get().follows).toEqual([]);
+    expect(myExternalFollows()).toEqual([]);
   });
 
   it('시트의 「취소」는 팔로우 상태를 그대로 둔다', async () => {
@@ -88,7 +98,7 @@ describe('OtherBunch 공개 번치(가짜 서버)', () => {
     await user.click(within(sheet).getByRole('button', { name: '취소' }));
 
     expect(screen.getByRole('button', { name: '팔로잉' })).toBeInTheDocument();
-    expect(mockDb.get().follows).toHaveLength(1);
+    expect(myExternalFollows()).toHaveLength(1);
   });
 
   it('팔로우하지 못하면 안내하고 상태를 바꾸지 않는다', async () => {
@@ -112,11 +122,19 @@ describe('OtherBunch 공개 번치(가짜 서버)', () => {
     expect(screen.queryByRole('link', { name: '알림' })).not.toBeInTheDocument();
   });
 
-  it('팔로워·팔로잉·멤버 수는 목록 서버 연결 전이라 글자만 보인다', async () => {
+  it('볼 수 있는 번치는 팔로워·팔로잉 수가 목록 링크이고, 멤버 수는 글자만이다', async () => {
     renderOther('3');
 
     await screen.findByRole('heading', { level: 1, name: '캠핑러버' });
-    expect(screen.queryByRole('link', { name: /팔로워|팔로잉|멤버/ })).toBeNull();
+    expect(screen.getByRole('link', { name: /팔로워/ })).toHaveAttribute(
+      'href',
+      BUNCH_HOME_PATHS.otherBunchFollows('3'),
+    );
+    expect(screen.getByRole('link', { name: /팔로잉/ })).toHaveAttribute(
+      'href',
+      `${BUNCH_HOME_PATHS.otherBunchFollows('3')}?tab=following`,
+    );
+    expect(screen.queryByRole('link', { name: /멤버/ })).toBeNull();
     expect(screen.getByText('멤버').parentElement).toHaveTextContent('4멤버');
   });
 });
@@ -132,6 +150,8 @@ describe('OtherBunch 비공개 번치(가짜 서버)', () => {
 
     expect(await screen.findByRole('region', { name: '비공개 번치예요' })).toBeInTheDocument();
     expect(followerText()).toHaveTextContent('32팔로워');
+    // 볼 수 없는 목록은 링크가 아님
+    expect(screen.queryByRole('link', { name: /팔로워|팔로잉/ })).toBeNull();
     expect(screen.queryByRole('region', { name: '번들' })).toBeNull();
     // 볼 수 없는 번들은 요청하지 않음
     expect(requests).not.toContain('/api/bunches/4/published-bundles');
@@ -148,13 +168,21 @@ describe('OtherBunch 비공개 번치(가짜 서버)', () => {
     await user.click(within(sheet).getByRole('button', { name: '팔로우 요청 취소' }));
 
     expect(await screen.findByRole('button', { name: '팔로우' })).toBeInTheDocument();
-    expect(mockDb.get().follows).toEqual([]);
+    expect(myExternalFollows()).toEqual([]);
   });
 
   it('팔로우가 승인된 비공개 번치는 번들을 보인다', async () => {
     mockDb.update((state) => ({
       ...state,
-      follows: [{ id: 1, followerBunchId: MOCK_BUNCH_ID, targetBunchId: 4, status: 'FOLLOWING' }],
+      follows: [
+        {
+          id: 1,
+          followerBunchId: MOCK_BUNCH_ID,
+          targetBunchId: 4,
+          status: 'FOLLOWING',
+          createdAt: '2026-10-01T09:00:00.000Z',
+        },
+      ],
     }));
     renderOther('4');
 

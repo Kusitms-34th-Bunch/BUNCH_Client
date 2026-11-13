@@ -143,11 +143,3 @@ export type FollowBunch = Pick<
   OtherBunch,
   'id' | 'name' | 'imageSrc' | 'isPrivate' | 'followStatus'
 >;
-
-/** 번치 하나의 팔로워·팔로잉 번치 id와 대기 중인 팔로우 요청(비공개 내 번치만) */
-export type BunchFollows = {
-  followers: readonly string[];
-  following: readonly string[];
-  /** 요청 시각 글자는 API 연결 때 정함. 지금은 며칠 전인지만 */
-  requests: readonly { bunchId: string; daysAgo: number }[];
-};
