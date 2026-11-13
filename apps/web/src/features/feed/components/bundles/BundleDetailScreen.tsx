@@ -30,6 +30,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { formatElapsedTime } from '@/shared/lib/elapsedTime';
 import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { FeedComment } from '../../lib/types';
@@ -53,7 +54,6 @@ import {
   markDeleted,
 } from '../../lib/comments';
 import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
-import { formatElapsedTime } from '../../lib/elapsedTime';
 import { withRo } from '../../lib/josa';
 import { MemberComments } from './MemberComments';
 
