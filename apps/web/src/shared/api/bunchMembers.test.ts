@@ -69,10 +69,10 @@ describe('getBunchMembers', () => {
     expect(requestedBunchId).toBe('42');
   });
 
-  it('없는 번치는 RESOURCE_001 오류다', async () => {
+  it('없는 번치는 BUNCH_009 오류다', async () => {
     await expect(getBunchMembers('999')).rejects.toMatchObject({
       status: 404,
-      code: 'RESOURCE_001',
+      code: 'BUNCH_009',
     });
   });
 

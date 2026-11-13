@@ -241,4 +241,39 @@ export const bunchHomeHandlers = [
     if ('error' in found) return found.error;
     return ok(counts(found.state, found.bunchId));
   }),
+
+  // GET /api/v1/bunches/{bunchId}/members: 내부·외부 공통. 다른 번치는 공개거나 팔로우 승인 뒤, 차단이면 BUNCH_009
+  // 정렬은 OWNER → CO_OWNER → MEMBER, 같은 역할은 닉네임 순(ponytail: 서버의 C collation 대신 기본 문자열 비교)
+  http.get('/api/bunches/:bunchId/members', ({ params }) => {
+    const found = findBunch(params.bunchId, 'BUNCH_009', true);
+    if ('error' in found) return found.error;
+    const { bunchId, state, mine, bunch } = found;
+    if (!mine) {
+      const { viewer, canView } = externalAccess(state, bunchId, bunch.isPrivate);
+      if (isBlockedBetween(state, viewer, bunchId)) return fail(404, 'BUNCH_009');
+      if (!canView) return fail(403, 'AUTH_002');
+    }
+    const order = { OWNER: 0, CO_OWNER: 1, MEMBER: 2 } as const;
+    return ok(
+      state.memberships
+        .filter((membership) => membership.bunchId === bunchId)
+        .flatMap((membership) => {
+          const member = state.members.find((item) => item.memberId === membership.memberId);
+          return member
+            ? [
+                {
+                  memberId: member.memberId,
+                  nickname: member.nickname,
+                  imageUrl: member.imageUrl,
+                  role: membership.role,
+                },
+              ]
+            : [];
+        })
+        .sort(
+          (a, b) =>
+            order[a.role] - order[b.role] || (a.nickname ?? '').localeCompare(b.nickname ?? ''),
+        ),
+    );
+  }),
 ];

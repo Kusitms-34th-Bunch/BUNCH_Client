@@ -137,7 +137,6 @@ export type OtherBunch = Pick<
 > & {
   /** 처음 받은 팔로우 상태(팔로우 처리 결과는 저장소가 덮어씀) */
   followStatus: FollowStatus;
-  members: readonly BunchMember[];
 };
 
 /** 팔로워·팔로잉·요청 목록의 한 줄 번치(기능명세 5.11). 버튼은 내 번치의 팔로우 상태 */

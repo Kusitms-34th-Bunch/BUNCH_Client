@@ -140,31 +140,4 @@ export const memberHandlers = [
       ...(membership ? { defaultBunchId: membership.bunchId } : {}),
     });
   }),
-
-  // GET /api/v1/bunches/{bunchId}/members
-  http.get('/api/bunches/:bunchId/members', ({ params }) => {
-    const bunchId = toWireId(params.bunchId);
-    if (bunchId === undefined) return fail(400, 'COMMON_001');
-    const { members, memberships, bunches } = mockDb.get();
-    if (!bunches.some((bunch) => bunch.id === bunchId)) return fail(404, 'RESOURCE_001');
-    const bunchMemberships = memberships.filter((membership) => membership.bunchId === bunchId);
-    if (!bunchMemberships.some((membership) => membership.memberId === MOCK_MY_MEMBER_ID)) {
-      return fail(403, 'AUTH_002');
-    }
-    return ok(
-      bunchMemberships.flatMap((membership) => {
-        const member = members.find((item) => item.memberId === membership.memberId);
-        return member
-          ? [
-              {
-                memberId: member.memberId,
-                nickname: member.nickname,
-                imageUrl: member.imageUrl,
-                role: membership.role,
-              },
-            ]
-          : [];
-      }),
-    );
-  }),
 ];
