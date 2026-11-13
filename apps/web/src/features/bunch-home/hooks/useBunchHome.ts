@@ -6,7 +6,6 @@ import {
   initialBunchDetailFixture,
 } from '../fixtures/bunchHome.fixture';
 import { useBunchMembers } from './useBunchMembers';
-import { useUnreadNotificationCounts } from './useBunchNotifications';
 import { useBunchProfileEdits } from './useBunchProfileEdits';
 import { useCurrentBunchId } from './useCurrentBunchId';
 
@@ -30,18 +29,13 @@ export function useBunchHome(): UseBunchHomeResult {
   const [profileEdits] = useBunchProfileEdits();
   // 멤버 관리에서 내보낸 결과를 멤버 수에 반영
   const { members } = useBunchMembers(currentId);
-  // 알림 목록에서 읽으면 전환 목록의 「알림 N개」도 줄어듦
-  const unreadCounts = useUnreadNotificationCounts();
 
   const data = useMemo<BunchHomeData | null>(() => {
     const detail = bunchDetailsFixture[currentId] ?? initialBunchDetailFixture;
     // 지금 번치를 맨 위에 두고 나머지는 받은 순서(서버가 최근 사용순으로 줄 예정, 기능명세 5.2.1)
     const edited = bunches.map((bunch) => {
       const edit = profileEdits[bunch.id];
-      const alertCount = unreadCounts[bunch.id] ?? bunch.alertCount;
-      return edit
-        ? { ...bunch, name: edit.name, imageSrc: edit.imageSrc, alertCount }
-        : { ...bunch, alertCount };
+      return edit ? { ...bunch, name: edit.name, imageSrc: edit.imageSrc } : bunch;
     });
     const current = edited.filter((bunch) => bunch.id === currentId);
     const others = edited.filter((bunch) => bunch.id !== currentId);
@@ -54,7 +48,7 @@ export function useBunchHome(): UseBunchHomeResult {
       },
       bunches: [...current, ...others],
     };
-  }, [currentId, bunches, deletedDraftIds, profileEdits, members, unreadCounts]);
+  }, [currentId, bunches, deletedDraftIds, profileEdits, members]);
 
   const actions: BunchHomeActions = {
     switchBunch: setCurrentId,
