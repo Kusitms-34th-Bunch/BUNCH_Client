@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Lint
+          - name: Lint & Typecheck
             id: lint
           - name: Test 1/4
             id: test-1
@@ -38,7 +38,7 @@ jobs:
           - name: Test 4/4
             id: test-4
             shard: 4
-          - name: Typecheck & Build
+          - name: Build
             id: build
 
     steps:
@@ -134,10 +134,10 @@ jobs:
           CHANGED: ${{ github.event_name == 'pull_request' && format('--changed=origin/{0}', github.base_ref) || '' }}
         run: yarn test $AFFECTED -- --shard=${{ matrix.shard }}/4 --passWithNoTests $CHANGED
 
-      # typecheck와 build는 Next 생성 파일을 공유하므로 같은 러너에서 순서대로 실행
+      # 타입 검사는 lint job에서 함께(가장 긴 build job에서 빼 CI 전체 시간을 줄임). `yarn typecheck`가 Next 생성 파일(next typegen)을 직접 만듦
       - name: TypeScript
         id: typecheck
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'build' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
         env:
           TURBO_SCM_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
@@ -151,7 +151,7 @@ jobs:
           AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           # web 빌드에 모듈별 크기(.next/analyze/client.json)를 함께 기록해 번들 크기 보고가 커진 원인을 표로 남김
           ANALYZE: 'true'
-          # 바로 앞 TypeScript 단계가 같은 타입 검사를 하므로 next build 안의 검사는 건너뜀(배포 빌드는 그대로 검사)
+          # Lint & Typecheck job의 TypeScript 단계가 같은 타입 검사를 하므로 next build 안의 검사는 건너뜀(배포 빌드는 그대로 검사)
           NEXT_SKIP_TYPECHECK: 'true'
         run: yarn build $AFFECTED
 
@@ -288,7 +288,7 @@ jobs:
               ['lint', 'boundaries', '경계(boundaries)'],
               ['lint', 'prettier', '포맷(oxfmt)'],
               ['lint', 'lint', 'ESLint·Tailwind'],
-              ['build', 'typecheck', 'TypeScript'],
+              ['lint', 'typecheck', 'TypeScript'],
               ['test', 'test', 'Test'],
               ['build', 'build', 'Build'],
             ];
