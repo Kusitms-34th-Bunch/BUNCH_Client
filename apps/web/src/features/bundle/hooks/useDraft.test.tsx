@@ -1,7 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { delay, http } from 'msw';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
@@ -66,7 +66,7 @@ describe('useDraft 상태', () => {
     expect(draft.members.map((member) => member.id)).toEqual([String(me), String(memberA)]);
     expect(draft.members[0]).toMatchObject({ isCreator: true, bunchRole: 'member' });
     expect(draft.photos).toHaveLength(2);
-    expect(draft.photos[0]).toMatchObject({ src: '/mock/photos/S4.jpg', caption: '' });
+    expect(draft.photos[0]).toMatchObject({ src: '/mock/photos/S4.jpg' });
     expect(bunchMembers).toHaveLength(5);
     expect(viewer).toEqual({ memberId: String(me), bunchRole: 'member' });
     expect(saveStatus).toBe('saved');
@@ -113,32 +113,12 @@ describe('useDraft 상태', () => {
     await waitFor(() => expect(result.current.state.kind).toBe('missing'));
   });
 
-  it('다른 멤버의 편집권은 편집 중 표시로 보이고 내 편집권은 보이지 않는다', async () => {
+  it('서버 응답에는 편집 중 표시가 없다(실시간 presence 연결 전)', async () => {
     const id = await newDraft();
-    const first = serverBundle(id)?.photos[0]?.id;
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        ['TITLE', memberA],
-        [`PHOTO:${first}`, memberA],
-        ['DATE', me],
-      ].map(([target, memberId], index) => ({
-        bundleId: Number(id),
-        target: String(target),
-        memberId: Number(memberId),
-        token: `00000000-0000-4000-8000-00000000000${index}`,
-        leaseVersion: 1,
-        expiresAt: new Date(Date.now() + 60_000).toISOString(),
-      })),
-    }));
     const { result } = renderDraft(id);
 
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
-    expect(ready(result.current.state).draft.editing).toEqual({
-      title: String(memberA),
-      photoMemberIds: [String(memberA)],
-      photoEditors: { [String(first)]: [String(memberA)] },
-    });
+    expect(ready(result.current.state).draft.editing).toEqual({});
   });
 });
 
@@ -152,8 +132,6 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).saveStatus).toBe('saving');
     await waitFor(() => expect(serverBundle(id)?.title).toBe('설악산 단풍'), SAVE_WAIT);
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
-    // 저장하면 편집권을 풀어 다른 멤버가 이어서 쓸 수 있음
-    expect(mockDb.get().bundleLeases).toEqual([]);
   });
 
   it('공개 범위는 고르는 즉시 저장하고 내 코멘트도 저장한다', async () => {
@@ -180,19 +158,11 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).draft.comments).toEqual([]);
   });
 
-  it('사진 캡션과 날짜를 저장한다', async () => {
+  it('날짜를 저장한다', async () => {
     const { id, result } = await renderReady();
-    const photoId = ready(result.current.state).draft.photos[0]!.id;
 
-    act(() => {
-      result.current.actions.setPhotoCaption(photoId, '케이블카');
-      result.current.actions.setDate('2026-10-18');
-    });
+    act(() => result.current.actions.setDate('2026-10-18'));
 
-    await waitFor(
-      () => expect(serverBundle(id)?.photos[0]).toMatchObject({ caption: '케이블카' }),
-      SAVE_WAIT,
-    );
     await waitFor(() => expect(serverBundle(id)?.date).toBe('2026-10-18'), SAVE_WAIT);
   });
 
@@ -220,36 +190,6 @@ describe('useDraft 저장', () => {
     // 내 입력은 충돌 중에도 화면에서 사라지지 않음
     expect(ready(result.current.state).draft.title).toBe('내 제목');
   });
-
-  it('다른 멤버가 편집권을 쥔 대상은 한 번만 안내하고 입력을 지키며 풀리면 이어서 저장한다', async () => {
-    const { id, result } = await renderReady();
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        {
-          bundleId: Number(id),
-          target: 'TITLE',
-          memberId: memberA,
-          token: '00000000-0000-4000-8000-000000000001',
-          leaseVersion: 1,
-          // 첫 저장 시도 직후 만료되어 다음 시도에서는 얻을 수 있음
-          expiresAt: new Date(Date.now() + 1500).toISOString(),
-        },
-      ],
-    }));
-
-    act(() => result.current.actions.setTitle('이어서 쓰는 제목'));
-
-    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.fieldLocked), SAVE_WAIT);
-    // 거부되는 동안에도 입력은 화면에서 사라지지 않음
-    expect(ready(result.current.state).draft.title).toBe('이어서 쓰는 제목');
-    await waitFor(() => expect(serverBundle(id)?.title).toBe('이어서 쓰는 제목'), {
-      timeout: 9000,
-    });
-    expect(
-      toast.mock.calls.filter(([message]) => message === BUNDLE_MESSAGES.fieldLocked),
-    ).toHaveLength(1);
-  }, 15_000);
 
   it('권한·상태 오류는 다시 시도하지 않고 한 번만 안내하며 입력은 그대로 둔다', async () => {
     const { result } = await renderReady();
@@ -468,7 +408,6 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       id: 'temp-added',
       src: '/mock/photos/S1.jpg',
       alt: '추가한 사진',
-      caption: '',
       takenAt: null,
       uploaderId: String(me),
       sourcePhotoId: String(MOCK_PHOTO_IDS.S1),
@@ -486,47 +425,6 @@ describe('useDraft 참여 멤버·위치·사진', () => {
         ]),
       SAVE_WAIT,
     );
-  });
-
-  it('다른 멤버가 편집 중인 사진을 빼려 하면 서버가 거절해 안내하고 서버 구성으로 돌아온다', async () => {
-    const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
-    const created = await createBundle(
-      bunchId,
-      [P1, P2, P3, P4].map(String),
-      createIdempotencyKey(),
-    );
-    // 다른 멤버(A)가 2번 사진 캡션을 편집 중인 상태
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        ...current.bundleLeases,
-        {
-          bundleId: Number(created.id),
-          target: `PHOTO:${serverBundle(created.id)!.photos.find((photo) => photo.photoId === P2)!.id}`,
-          memberId: memberA,
-          token: '00000000-0000-4000-8000-00000000000a',
-          leaseVersion: 1,
-          expiresAt: '2999-01-01T00:00:00.000Z',
-        },
-      ],
-    }));
-    const view = renderDraft(created.id);
-    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
-    const locked = ready(view.result.current.state).draft.photos.find(
-      (photo) => photo.sourcePhotoId === String(P2),
-    )!;
-
-    act(() => view.result.current.actions.removePhoto(locked.id));
-
-    await waitFor(
-      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked),
-      SAVE_WAIT,
-    );
-    await waitFor(
-      () => expect(ready(view.result.current.state).draft.photos).toHaveLength(4),
-      SAVE_WAIT,
-    );
-    expect(serverBundle(created.id)?.photos).toHaveLength(4);
   });
 });
 
@@ -626,27 +524,5 @@ describe('useDraft 발행', () => {
     expect(serverBundle(id)).toMatchObject({ status: 'PUBLISHED', title: '설악산 단풍 여행' });
     // 발행한 뒤에는 「삭제된 번들」 안내 없이 화면 이동을 기다림
     expect(result.current.state.kind).toBe('loading');
-  });
-});
-
-describe('useDraft 편집권 통로가 없는 환경', () => {
-  beforeEach(() => {
-    // 가짜 서버 모드가 아닌 빌드: 편집권 요청을 보내지 않고 실패
-    vi.stubEnv('NEXT_PUBLIC_API_MOCKING', '');
-  });
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('제목 저장은 다시 시도하지 않고 「저장 실패」로 알린다', async () => {
-    const { id, result } = await renderReady();
-
-    act(() => result.current.actions.setTitle('제목'));
-
-    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('failed'), SAVE_WAIT);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
-    expect(serverBundle(id)?.title).toBe('');
-    // 입력은 그대로 남음
-    expect(ready(result.current.state).draft.title).toBe('제목');
   });
 });

@@ -7,7 +7,6 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
-import { leaseTransport } from '../api/leases';
 import {
   bundleQueryOptions,
   useCreateBundleMutation,
@@ -61,14 +60,12 @@ describe('번들 query·mutation', () => {
     const { client, wrapper } = setup();
     const id = await createDraft(wrapper);
     const { result } = renderHook(() => useSaveTitleMutation(bunchId, id), { wrapper });
-    const lease = await leaseTransport.acquire(bunchId, id, 'TITLE');
 
     await act(async () => {
       await result.current.mutateAsync({
         value: '설악산',
         expectedVersion: 0,
         mode: 'DRAFT',
-        leaseToken: lease.token,
       });
     });
 

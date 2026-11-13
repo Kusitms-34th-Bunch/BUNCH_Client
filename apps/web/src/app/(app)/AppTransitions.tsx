@@ -476,7 +476,7 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bundleSlide,
   },
-  // 번들 작성 화면 ↔ 참여 멤버 관리·사진 캡션 화면은 온보딩과 같은 슬라이드(300ms). 뒤로 가기는 방향이 반대
+  // 번들 작성 화면 ↔ 참여 멤버 관리·사진 크게 보기는 온보딩과 같은 슬라이드(300ms). 뒤로 가기는 방향이 반대
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.members,
@@ -503,18 +503,6 @@ const rules: SsgoiTransitionRule[] = [
     to: BUNDLE_PATHS.transitionIds.viewer,
     bidirectional: true,
     transition,
-  },
-  {
-    from: BUNDLE_PATHS.transitionIds.draft,
-    to: BUNDLE_PATHS.transitionIds.photo,
-    bidirectional: true,
-    transition,
-  },
-  {
-    from: BUNDLE_PATHS.transitionIds.photo,
-    to: BUNDLE_PATHS.transitionIds.photoAdd,
-    bidirectional: true,
-    transition: bundleSlide,
   },
   {
     from: BUNDLE_PATHS.transitionIds.draft,

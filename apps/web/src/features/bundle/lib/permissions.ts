@@ -3,7 +3,7 @@ import type { BunchRole, Draft, DraftMember, DraftViewer } from './types';
 export type DraftAccess = {
   /** 이 초안의 참여 멤버인지. 아니면 보기 전용 */
   participant: boolean;
-  /** 제목·사진·캡션·위치·날짜·공개 범위를 고칠 수 있는지 */
+  /** 제목·사진·위치·날짜·공개 범위를 고칠 수 있는지 */
   canEdit: boolean;
   /** 참여 멤버에 더할 수 있는지 */
   canAddMember: boolean;

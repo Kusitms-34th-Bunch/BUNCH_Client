@@ -19,7 +19,7 @@ type PublishContext = {
 const MIN_MEMBERS = 2;
 
 /**
- * 발행 조건 중 아직 채우지 못한 것(위치·날짜·캡션은 조건이 아니고 공개 범위는 하나를 골라야 함)
+ * 발행 조건 중 아직 채우지 못한 것(위치·날짜는 조건이 아니고 공개 범위는 하나를 골라야 함)
  * 비어 있으면 필수 항목을 모두 채운 것
  */
 export const getPublishBlockers = (draft: Draft, context: PublishContext): PublishBlocker[] => {

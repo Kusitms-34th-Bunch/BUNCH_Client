@@ -16,7 +16,7 @@ type RemovePhotoDialogOptions = {
 };
 
 /**
- * 사진 빼기 확인 창(캡션 화면 X와 크게 보기 ⋯ 「삭제」가 같이 씀, 기능 spec 4.3.5)
+ * 사진 빼기 확인 창(작성 화면 X와 크게 보기 ⋯ 「삭제」가 같이 씀, 기능 spec 4.3.5)
  * 마지막 한 장이면 「확인」만 있는 안내 창(Figma `2082:49108`), 아니면 항상 삭제 확인 창(Figma `4850:62115`, 캡션 유무와 상관없음)
  */
 export function useRemovePhotoDialog() {

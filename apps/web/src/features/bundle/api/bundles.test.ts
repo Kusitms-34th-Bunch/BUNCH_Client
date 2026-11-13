@@ -15,13 +15,11 @@ import {
   readPublishBlockers,
   readVersionConflict,
   removeBundleParticipant,
-  saveBundleCaption,
   saveBundleComment,
   saveBundleDate,
   saveBundleTitle,
   saveBundleVisibility,
 } from './bundles';
-import { leaseTransport } from './leases';
 
 const bunchId = String(MOCK_BUNCH_ID);
 const { memberA, memberB, me } = MOCK_MEMBER_IDS;
@@ -89,34 +87,13 @@ describe('번들 API', () => {
     });
   });
 
-  it('제목·공개 범위·날짜·캡션·코멘트 저장이 각 필드 버전과 함께 반영된다', async () => {
+  it('제목·공개 범위·날짜·코멘트 저장이 각 필드 버전과 함께 반영된다', async () => {
     const draft = await createBundle(bunchId, photos, createIdempotencyKey());
     const base = { bunchId, bundleId: draft.id, mode: 'DRAFT' } as const;
-    const title = await leaseTransport.acquire(bunchId, draft.id, 'TITLE');
-    const date = await leaseTransport.acquire(bunchId, draft.id, 'DATE');
-    const firstPhoto = draft.photos[0]!;
-    const caption = await leaseTransport.acquire(bunchId, draft.id, `PHOTO:${firstPhoto.id}`);
 
-    await saveBundleTitle({
-      ...base,
-      value: '설악산',
-      expectedVersion: 0,
-      leaseToken: title.token,
-    });
+    await saveBundleTitle({ ...base, value: '설악산', expectedVersion: 0 });
     await saveBundleVisibility({ ...base, value: 'PRIVATE', expectedVersion: 0 });
-    await saveBundleDate({
-      ...base,
-      value: '2026-10-18',
-      expectedVersion: 0,
-      leaseToken: date.token,
-    });
-    await saveBundleCaption({
-      ...base,
-      bundlePhotoId: firstPhoto.id,
-      value: '케이블카',
-      expectedVersion: 0,
-      leaseToken: caption.token,
-    });
+    await saveBundleDate({ ...base, value: '2026-10-18', expectedVersion: 0 });
     const saved = await saveBundleComment({ ...base, value: '내 코멘트', expectedVersion: 0 });
 
     expect(saved).toMatchObject({
@@ -129,14 +106,8 @@ describe('번들 API', () => {
       dateChips: [],
       comments: [{ memberId: String(me), content: '내 코멘트', version: 1 }],
     });
-    expect(saved.photos[0]).toMatchObject({ caption: '케이블카', captionVersion: 1 });
     // 날짜를 null로 저장하면 날짜 필드를 보내지 않아 해제됨
-    const cleared = await saveBundleDate({
-      ...base,
-      value: null,
-      expectedVersion: 1,
-      leaseToken: date.token,
-    });
+    const cleared = await saveBundleDate({ ...base, value: null, expectedVersion: 1 });
     expect(cleared.date).toBeNull();
   });
 
@@ -152,20 +123,6 @@ describe('번들 API', () => {
     expect(error).toMatchObject({ status: 409, code: 'BUNDLE_003' });
     expect(readVersionConflict(error)).toEqual({ value: 'PUBLIC', version: 1 });
     expect(readVersionConflict(new Error('x'))).toBeUndefined();
-  });
-
-  it('편집권 token 없이 제목을 저장하면 BUNDLE_004이다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
-
-    await expect(
-      saveBundleTitle({
-        bunchId,
-        bundleId: draft.id,
-        value: '제목',
-        expectedVersion: 0,
-        mode: 'DRAFT',
-      }),
-    ).rejects.toMatchObject({ status: 409, code: 'BUNDLE_004' });
   });
 
   it('참여자를 더하고 제외하면 참여 목록이 바뀐다', async () => {
@@ -216,50 +173,6 @@ describe('번들 API', () => {
 
     await expect(getBundle(bunchId, draft.id)).rejects.toMatchObject({
       code: INVALID_RESPONSE_CODE,
-    });
-  });
-});
-
-describe('편집권 통로', () => {
-  it('획득·갱신·해제가 가짜 서버 규칙대로 동작한다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
-
-    const granted = await leaseTransport.acquire(bunchId, draft.id, 'TITLE');
-    expect(granted).toMatchObject({ target: 'TITLE', leaseVersion: 1 });
-
-    const renewed = await leaseTransport.heartbeat(bunchId, draft.id, 'TITLE', granted.token);
-    expect(renewed.token).toBe(granted.token);
-
-    await leaseTransport.release(bunchId, draft.id, 'TITLE', granted.token);
-    // 해제한 뒤에는 같은 token으로 갱신할 수 없음
-    await expect(
-      leaseTransport.heartbeat(bunchId, draft.id, 'TITLE', granted.token),
-    ).rejects.toMatchObject({ status: 409, code: 'BUNDLE_004' });
-  });
-
-  it('다른 멤버가 쥔 대상은 얻을 수 없다(BUNDLE_004)', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey());
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        {
-          bundleId: Number(draft.id),
-          target: 'TITLE',
-          memberId: memberA,
-          token: createIdempotencyKey(),
-          leaseVersion: 1,
-          expiresAt: new Date(Date.now() + 10_000).toISOString(),
-        },
-      ],
-    }));
-
-    await expect(leaseTransport.acquire(bunchId, draft.id, 'TITLE')).rejects.toMatchObject({
-      status: 409,
-      code: 'BUNDLE_004',
-    });
-    // 상세 조회에는 누가 쥐고 있는지만 보임
-    await expect(getBundle(bunchId, draft.id)).resolves.toMatchObject({
-      leases: [{ target: 'TITLE', memberId: String(memberA) }],
     });
   });
 });

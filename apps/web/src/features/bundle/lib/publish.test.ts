@@ -13,7 +13,7 @@ const complete: Draft = {
   id: 'd',
   members: [member('a'), member('b')],
   title: '제목',
-  photos: [{ id: 'p1', src: '/p1.jpg', alt: '', caption: '', takenAt: null, uploaderId: 'a' }],
+  photos: [{ id: 'p1', src: '/p1.jpg', alt: '', takenAt: null, uploaderId: 'a' }],
   locations: [],
   date: null,
   suggestedDates: [],
