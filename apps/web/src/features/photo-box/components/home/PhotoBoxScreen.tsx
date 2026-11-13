@@ -48,8 +48,10 @@ type PhotoBoxScreenProps = {
   onRetry?: (() => void) | undefined;
   /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 아래로 다시 스크롤하면 부름 */
   onLoadMore?: (() => void) | undefined;
-  /** 번치 이름을 눌렀을 때(전환 목록은 추후 작업) */
+  /** 번치 이름을 눌렀을 때(번치 전환 시트 열기) */
   onBunchClick?: (() => void) | undefined;
+  /** 번치 전환 시트가 열려 있는지 */
+  switcherOpen?: boolean | undefined;
   /** 올리기 시트에서 방식을 골랐을 때(앨범·카메라 연동은 사진 올리기 이슈, 시트는 닫고 호출) */
   onUpload?: ((_source: 'album' | 'camera') => void) | undefined;
   /** 「번들 만들기」 확인 창에서 「예」를 눌렀을 때(고른 사진 id를 누른 순서대로 전달, 초안 생성·이동은 번들 작성 이슈) */
@@ -64,6 +66,7 @@ export function PhotoBoxScreen({
   onRetry,
   onLoadMore,
   onBunchClick,
+  switcherOpen,
   onUpload,
   onCreateBundle,
 }: PhotoBoxScreenProps) {
@@ -174,6 +177,7 @@ export function PhotoBoxScreen({
         <PhotoBoxHeader
           bunch={bunch}
           onBunchClick={onBunchClick}
+          switcherOpen={switcherOpen}
           selecting={selecting}
           onSelectClick={flow.start}
           onCancelClick={handleCancel}
