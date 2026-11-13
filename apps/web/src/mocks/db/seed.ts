@@ -1,4 +1,12 @@
-import type { MockBundle, MockDbState, MockMember, MockMembership, MockPhoto } from './types';
+import type {
+  CharacterType,
+  MockBundle,
+  MockDbState,
+  MockFollow,
+  MockMember,
+  MockMembership,
+  MockPhoto,
+} from './types';
 
 /** 서버 `NotificationType` 21개 키(Notion 푸시 수신 설정 조회 응답 순서). 푸시 수신 설정 `types`의 키 전체 */
 export const PUSH_NOTIFICATION_TYPES = [
@@ -55,6 +63,35 @@ const membership = (
 export const MOCK_SECOND_BUNCH_ID = 2;
 /** 내가 속하지 않은 번치(다른 번치 프로필·팔로우): 공개 「캠핑러버」, 비공개 「책방산책」 */
 export const MOCK_EXTERNAL_BUNCH_IDS = { public: 3, private: 4 } as const;
+
+// 팔로워·팔로잉·요청 목록용 다른 번치(화면설계서 2500:71333·2500:72664 예시 이름, 소속 없음)
+const SOCIAL_BUNCHES: readonly [
+  id: number,
+  name: string,
+  type: CharacterType,
+  isPrivate: boolean,
+][] = [
+  [5, '산책클럽', 'TYPE_1', true],
+  [6, '주말등산', 'TYPE_3', false],
+  [7, '서핑크루', 'TYPE_2', true],
+  [8, '맛집탐방대', 'TYPE_4', false],
+  [9, '침대조아', 'TYPE_1', true],
+];
+
+// [팔로우하는 번치, 대상 번치, 상태, 시각]. 여행쥬아(1)는 팔로워 3·팔로잉 2·대기 요청 3
+const FOLLOW_SEEDS: readonly [number, number, MockFollow['status'], string][] = [
+  [5, 1, 'FOLLOWING', '2026-10-10T09:00:00.000Z'],
+  [3, 1, 'FOLLOWING', '2026-10-12T09:00:00.000Z'],
+  [6, 1, 'FOLLOWING', '2026-10-14T09:00:00.000Z'],
+  [1, 5, 'FOLLOWING', '2026-10-11T09:00:00.000Z'],
+  [1, 6, 'FOLLOWING', '2026-10-13T09:00:00.000Z'],
+  [7, 1, 'REQUESTED', '2026-10-17T09:00:00.000Z'],
+  [8, 1, 'REQUESTED', '2026-10-17T10:00:00.000Z'],
+  [9, 1, 'REQUESTED', '2026-10-15T09:00:00.000Z'],
+  [5, 3, 'FOLLOWING', '2026-10-09T09:00:00.000Z'],
+  [6, 3, 'FOLLOWING', '2026-10-08T09:00:00.000Z'],
+  [5, 4, 'FOLLOWING', '2026-10-07T09:00:00.000Z'],
+];
 
 // 날짜 그룹: S는 10월 18일, P는 10월 17일(지정 날짜 4장), O는 10월 3일
 const PHOTO_SEEDS = [
@@ -228,9 +265,9 @@ export const createSeed = (): MockDbState => ({
       imageUrl: null,
       introduction: '여행 안 갈 바엔 죽을란다',
       isPrivate: true,
-      // UT 시나리오에 값이 없어 임의로 정한 시작 값
-      followerCount: 3,
-      followingCount: 2,
+      // 수는 모두 가짜 DB의 팔로우 관계(FOLLOW_SEEDS)
+      followerCount: 0,
+      followingCount: 0,
     },
     {
       id: MOCK_SECOND_BUNCH_ID,
@@ -250,8 +287,9 @@ export const createSeed = (): MockDbState => ({
       imageUrl: null,
       introduction: '주말마다 캠핑장을 찾아다니는 넷',
       isPrivate: false,
-      followerCount: 23,
-      followingCount: 8,
+      // 관계 밖 수 + FOLLOW_SEEDS(팔로워 2·팔로잉 1) = 23·8
+      followerCount: 21,
+      followingCount: 7,
     },
     {
       id: MOCK_EXTERNAL_BUNCH_IDS.private,
@@ -260,9 +298,20 @@ export const createSeed = (): MockDbState => ({
       imageUrl: null,
       introduction: '책과 커피를 기록하는 모임',
       isPrivate: true,
-      followerCount: 32,
+      // 관계 밖 수 + FOLLOW_SEEDS(팔로워 1) = 32·12
+      followerCount: 31,
       followingCount: 12,
     },
+    ...SOCIAL_BUNCHES.map(([id, name, characterType, isPrivate]) => ({
+      id,
+      name,
+      characterType,
+      imageUrl: null,
+      introduction: '',
+      isPrivate,
+      followerCount: 0,
+      followingCount: 0,
+    })),
   ],
   memberships: [
     membership(admin, 'OWNER'),
@@ -295,8 +344,13 @@ export const createSeed = (): MockDbState => ({
       'PUBLIC',
     ),
   ],
-  // 내 번치가 다른 번치를 팔로우한 관계(시작은 없음)
-  follows: [],
+  follows: FOLLOW_SEEDS.map(([followerBunchId, targetBunchId, status, createdAt], index) => ({
+    id: index + 1,
+    followerBunchId,
+    targetBunchId,
+    status,
+    createdAt,
+  })),
   bundleLeases: [],
   // 번치 전환 목록의 접근 불가 줄(Figma 5402:105276 안내 창의 번치들)
   bunchAccessNotices: [
