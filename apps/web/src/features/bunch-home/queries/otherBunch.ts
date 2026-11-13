@@ -36,11 +36,11 @@ export type FollowChange = { kind: 'follow' } | { kind: 'unfollow'; followId: st
  * 팔로우·요청·취소. 성공하면 응답의 상태를 바로 반영하고, 개수·열람 범위가 바뀌므로 그 번치와 내 번치 홈을 다시 받은 뒤 끝냄
  * 실패하면 공통 토스트(meta)와 함께 그 번치를 다시 받음(그 사이 상태가 바뀌었을 수 있음)
  */
-export const useFollowBunchMutation = (targetId: string, viewerId: string | null | undefined) => {
+export const useFollowBunchMutation = (viewerId: string | null | undefined) => {
   const queryClient = useQueryClient();
   return useMutation({
     meta: { errorMessage: BUNCH_HOME_MESSAGES.followFailed },
-    mutationFn: async (change: FollowChange) => {
+    mutationFn: async ({ targetId, change }: { targetId: string; change: FollowChange }) => {
       if (!viewerId) throw new Error('팔로우할 내 번치가 없습니다.');
       const unfollow = async (followId: string | undefined) => {
         // 팔로우 중일 때만 부르므로, 관계 ID가 없는 응답이면 PUT(이미 있으면 같은 관계)으로 ID를 얻음
@@ -71,13 +71,18 @@ export const useFollowBunchMutation = (targetId: string, viewerId: string | null
       queryClient.setQueryData<Home>(bunchHomeKeys.otherBunchHome(targetId, viewerId), (home) =>
         home ? { ...home, followState: result.followState, followId } : home,
       );
-      // ponytail: 팔로우 목록·피드는 아직 샘플이라 무효화 대상 아님, 서버 연결 때 여기에 추가
+      // 그 번치가 들어 있는 모든 목록의 버튼·수도 바뀜. ponytail: 피드는 아직 샘플이라 무효화 대상 아님, 서버 연결 때 추가
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) }),
         queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHome(viewerId) }),
+        queryClient.invalidateQueries({ queryKey: bunchHomeKeys.follows() }),
       ]);
       return result.followState;
     },
-    onError: () => queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) }),
+    onError: (_error, { targetId }) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) }),
+        queryClient.invalidateQueries({ queryKey: bunchHomeKeys.follows() }),
+      ]),
   });
 };

@@ -21,6 +21,10 @@ export const BUNCH_HOME_MESSAGES = {
   deleteFailed: '번치를 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
   otherBunchLoading: '번치를 불러오는 중이에요',
   followFailed: '팔로우를 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  requestDecisionFailed: '팔로우 요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  requestAlreadyHandled: '이미 처리된 팔로우 요청이에요.',
+  followListLoading: '목록을 불러오는 중이에요',
+  followListFailed: '목록을 불러오지 못했어요. 다시 시도해 주세요.',
   // 소속 번치가 최대 개수일 때 「새로운 번치 추가하기」(5.2.4, 번치 만들기의 한도 안내와 같은 문구)
   bunchLimit: '참여할 수 있는 번치는 최대 10개예요.',
   completedEmptyTitle: '추억은 많은데, 번들은 아직!',

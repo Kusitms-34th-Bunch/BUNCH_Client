@@ -8,4 +8,10 @@ export const bunchHomeKeys = {
     [...bunchHomeKeys.otherBunch(targetId), viewerId, 'home'] as const,
   otherBunchPublished: (targetId: string, viewerId: string | null) =>
     [...bunchHomeKeys.otherBunch(targetId), viewerId, 'published'] as const,
+  // 팔로워·팔로잉·요청 목록. 행의 팔로우 상태가 명의마다 달라 명의 번치를 key에 둠. 팔로우가 바뀌면 전체 무효화
+  follows: () => [...bunchHomeKeys.all, 'follows'] as const,
+  followList: (bunchId: string, viewerId: string | null, kind: 'followers' | 'following') =>
+    [...bunchHomeKeys.follows(), bunchId, viewerId, kind] as const,
+  followRequests: (viewerId: string | undefined) =>
+    [...bunchHomeKeys.follows(), 'requests', viewerId] as const,
 };

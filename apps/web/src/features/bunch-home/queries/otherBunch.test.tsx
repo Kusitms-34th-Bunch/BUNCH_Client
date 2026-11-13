@@ -13,6 +13,16 @@ import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { bunchHomeKeys } from './keys';
 import { useFollowBunchMutation } from './otherBunch';
 
+// 내 번치(여행쥬아)가 다른 번치 3·4를 팔로우한 관계(시작 데이터의 목록용 관계는 제외)
+const myExternalFollows = () =>
+  mockDb
+    .get()
+    .follows.filter(
+      (follow) =>
+        follow.followerBunchId === MOCK_BUNCH_ID &&
+        (follow.targetBunchId === 3 || follow.targetBunchId === 4),
+    );
+
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 vi.mock('@app/design-system', async (importOriginal) => ({
@@ -35,6 +45,7 @@ const followed = () =>
         followerBunchId: MOCK_BUNCH_ID,
         targetBunchId: MOCK_EXTERNAL_BUNCH_IDS.public,
         status: 'FOLLOWING',
+        createdAt: '2026-10-01T09:00:00.000Z',
       },
     ],
   }));
@@ -44,7 +55,7 @@ const setup = () => {
   // 무효화를 확인할 내 번치 홈·다른 번치 홈(관찰자가 없어 다시 받지 않고 표시만 바뀜)
   client.setQueryData(sharedKeys.bunchHome(viewer), {});
   client.setQueryData(bunchHomeKeys.otherBunchHome(target, viewer), { followState: 'NONE' });
-  const { result } = renderHook(() => useFollowBunchMutation(target, viewer), {
+  const { result } = renderHook(() => useFollowBunchMutation(viewer), {
     wrapper: createQueryWrapper(client),
   });
   return { client, result };
@@ -54,7 +65,7 @@ describe('useFollowBunchMutation', () => {
   it('팔로우하면 상태를 바로 반영하고 그 번치와 내 번치 홈(팔로잉 수)을 무효화한다', async () => {
     const { client, result } = setup();
 
-    await act(() => result.current.mutateAsync({ kind: 'follow' }));
+    await act(() => result.current.mutateAsync({ targetId: target, change: { kind: 'follow' } }));
 
     expect(client.getQueryData(bunchHomeKeys.otherBunchHome(target, viewer))).toMatchObject({
       followState: 'FOLLOWING',
@@ -72,7 +83,12 @@ describe('useFollowBunchMutation', () => {
     const { result } = setup();
 
     await expect(
-      act(() => result.current.mutateAsync({ kind: 'unfollow', followId: '1' })),
+      act(() =>
+        result.current.mutateAsync({
+          targetId: target,
+          change: { kind: 'unfollow', followId: '1' },
+        }),
+      ),
     ).resolves.toBe('NONE');
     expect(toast).not.toHaveBeenCalled();
   });
@@ -85,7 +101,12 @@ describe('useFollowBunchMutation', () => {
     const { result } = setup();
 
     await expect(
-      act(() => result.current.mutateAsync({ kind: 'unfollow', followId: '1' })),
+      act(() =>
+        result.current.mutateAsync({
+          targetId: target,
+          change: { kind: 'unfollow', followId: '1' },
+        }),
+      ),
     ).rejects.toThrow();
     expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.followFailed);
   });
@@ -94,9 +115,14 @@ describe('useFollowBunchMutation', () => {
     followed();
     const { result } = setup();
 
-    await act(() => result.current.mutateAsync({ kind: 'unfollow', followId: undefined }));
+    await act(() =>
+      result.current.mutateAsync({
+        targetId: target,
+        change: { kind: 'unfollow', followId: undefined },
+      }),
+    );
 
-    expect(mockDb.get().follows).toEqual([]);
+    expect(myExternalFollows()).toEqual([]);
     expect(toast).not.toHaveBeenCalled();
   });
 });
