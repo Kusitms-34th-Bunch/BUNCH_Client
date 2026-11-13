@@ -70,13 +70,35 @@ describe('가짜 서버 번치 멤버 목록', () => {
     expect(await response.json()).toMatchObject({ success: false, error: { code: 'COMMON_001' } });
   });
 
-  it('없는 번치는 RESOURCE_001(404)이다', async () => {
+  it('없는 번치는 BUNCH_009(404)이다', async () => {
     const response = await fetch('/api/bunches/999/members');
     expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ error: { code: 'RESOURCE_001' } });
+    expect(await response.json()).toMatchObject({ error: { code: 'BUNCH_009' } });
   });
 
-  it('내가 소속이 아니면 AUTH_002(403)이다', async () => {
+  it('소속이 아니어도 공개 번치는 조회하고, 서로 차단했으면 BUNCH_009(404)이다', async () => {
+    expect(unwrapEnvelope<BunchMember[]>(await api().get('bunches/3/members').json())).toHaveLength(
+      4,
+    );
+
+    mockDb.update((state) => ({
+      ...state,
+      blocks: [
+        ...state.blocks,
+        {
+          id: 99,
+          blockerBunchId: 3,
+          targetBunchId: MOCK_BUNCH_ID,
+          createdAt: '2026-10-20T09:00:00.000Z',
+        },
+      ],
+    }));
+    const response = await fetch('/api/bunches/3/members');
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: { code: 'BUNCH_009' } });
+  });
+
+  it('소속이 아닌 비공개 번치를 팔로우 승인 없이 보면 AUTH_002(403)이다', async () => {
     mockDb.update((state) => ({
       ...state,
       memberships: state.memberships.filter(
