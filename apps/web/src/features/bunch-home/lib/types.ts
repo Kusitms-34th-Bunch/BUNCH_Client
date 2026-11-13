@@ -106,14 +106,14 @@ export type BunchHomeActions = {
   removeBunch: (_bunchId: string) => void;
 };
 
-/** 번치 알림 한 건(기능명세 5.12). 시각 글자 형식은 API 연결 때 정함 */
+/** 번치 알림 한 건(기능명세 5.12). 제목·내용은 서버 값 */
 export type BunchNotification = {
   id: string;
   title: string;
   description: string;
-  /** 시각 글자(예: 「방금 전」) */
+  /** 서버 `createdAt`의 경과 시간 글자(예: 「방금 전」) */
   time: string;
-  /** 처음 받았을 때 읽지 않음이면 true(읽음 처리는 저장소가 덮어씀) */
+  /** 서버 `readAt`이 없으면 true */
   unread: boolean;
 };
 

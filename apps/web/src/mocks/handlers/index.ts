@@ -9,6 +9,7 @@ import { followHandlers } from './follows';
 import { invitationHandlers } from './invitations';
 import { memberHandlers } from './members';
 import { membershipHandlers } from './memberships';
+import { notificationHandlers } from './notifications';
 import { photoHandlers } from './photos';
 import { pushDeviceHandlers } from './pushDevices';
 import { pushPreferenceHandlers } from './pushPreferences';
@@ -29,6 +30,7 @@ export const handlers = [
   ...membershipHandlers,
   ...followHandlers,
   ...blockHandlers,
+  ...notificationHandlers,
   ...bundleHandlers,
   ...bundleLeaseHandlers,
   ...bundleExitHandlers,
