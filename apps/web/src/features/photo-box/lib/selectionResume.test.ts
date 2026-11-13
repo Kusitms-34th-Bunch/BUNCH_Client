@@ -11,24 +11,25 @@ afterEach(() => {
 });
 
 describe('selectionResume', () => {
-  it('기억한 선택을 고른 순서대로 읽고 비우면 없어진다', () => {
+  it('기억한 선택을 번치와 함께 고른 순서대로 읽고, 읽어도 남아 있다가 비우면 없어진다', () => {
     expect(readPhotoBoxSelection()).toBeUndefined();
 
-    rememberPhotoBoxSelection(['3', '1']);
-    expect(readPhotoBoxSelection()).toEqual(['3', '1']);
+    rememberPhotoBoxSelection('7', ['3', '1']);
+    expect(readPhotoBoxSelection()).toEqual({ bunchId: '7', photoIds: ['3', '1'] });
+    expect(readPhotoBoxSelection()).toEqual({ bunchId: '7', photoIds: ['3', '1'] });
 
     clearPhotoBoxSelection();
     expect(readPhotoBoxSelection()).toBeUndefined();
   });
 
-  it('오래 지난 선택은 되살리지 않는다', () => {
+  it('2분이 지난 선택은 되살리지 않는다', () => {
     vi.useFakeTimers();
-    rememberPhotoBoxSelection(['1']);
+    rememberPhotoBoxSelection('7', ['1']);
 
-    vi.advanceTimersByTime(9 * 60_000);
-    expect(readPhotoBoxSelection()).toEqual(['1']);
+    vi.advanceTimersByTime(110_000);
+    expect(readPhotoBoxSelection()?.photoIds).toEqual(['1']);
 
-    vi.advanceTimersByTime(2 * 60_000);
+    vi.advanceTimersByTime(20_000);
     expect(readPhotoBoxSelection()).toBeUndefined();
   });
 });

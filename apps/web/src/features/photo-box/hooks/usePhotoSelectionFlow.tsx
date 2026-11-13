@@ -46,11 +46,28 @@ export function usePhotoSelectionFlow({
   // 참여 멤버 고르기에서 뒤로 왔으면 그때 고른 사진과 번호로 선택 모드를 이어 감(기능 spec 3.3.4)
   const [resumed] = useState(readPhotoBoxSelection);
   const [selecting, setSelecting] = useState(resumed !== undefined);
-  const [selection, setSelection] = useState<PhotoSelection>(() => [...(resumed ?? [])]);
+  const [selection, setSelection] = useState<PhotoSelection>(() => [...(resumed?.photoIds ?? [])]);
 
   const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
   const noData = !data;
-  // 목록이 준비되면(화면이 이때 다시 마운트되기도 함) 이어 간 선택을 비워, 다음에 사진함을 열 때 선택 모드가 남지 않게 함
+  // 목록이 준비되면(화면이 이때 다시 마운트되기도 함) 되살린 선택을 한 번 확인함
+  // 다른 번치의 선택이거나 사진이 하나도 남지 않았으면 선택 모드를 켜지 않고, 일부만 사라졌으면 남은 사진만 이어 감
+  const [resumeChecked, setResumeChecked] = useState(false);
+  if (data && !resumeChecked) {
+    setResumeChecked(true);
+    if (resumed) {
+      const existing = new Set(data.photos.map((photo) => photo.id));
+      const kept =
+        resumed.bunchId === data.bunch.id ? resumed.photoIds.filter((id) => existing.has(id)) : [];
+      if (kept.length === 0) {
+        setSelecting(false);
+        setSelection([]);
+      } else if (kept.length !== resumed.photoIds.length) {
+        setSelection(kept);
+      }
+    }
+  }
+  // 확인이 끝났으면 기억한 값을 비워, 다음에 사진함을 열 때 선택 모드가 남지 않게 함
   useEffect(() => {
     if (!noData) clearPhotoBoxSelection();
   }, [noData]);

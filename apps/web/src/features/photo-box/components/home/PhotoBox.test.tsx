@@ -5,11 +5,16 @@ import { delay, http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearPhotoBoxEntry, readPhotoBoxEntry } from '@/features/bundle/lib/photoBoxEntry';
 import { mockDrafts } from '@/mocks/db/drafts';
+import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
-import { clearPhotoBoxSelection, readPhotoBoxSelection } from '../../lib/selectionResume';
+import {
+  clearPhotoBoxSelection,
+  readPhotoBoxSelection,
+  rememberPhotoBoxSelection,
+} from '../../lib/selectionResume';
 import { PhotoBox } from './PhotoBox';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -102,7 +107,7 @@ describe('PhotoBox 번들 만들기 연결', () => {
     expect(router.push).toHaveBeenCalledWith('/bunch/bundles/new/members');
     expect(readPhotoBoxEntry()).toHaveLength(1);
     // 멤버 고르기에서 뒤로 오면 이 선택으로 선택 모드를 이어 가도록 기억함
-    expect(readPhotoBoxSelection()).toEqual(readPhotoBoxEntry());
+    expect(readPhotoBoxSelection()?.photoIds).toEqual(readPhotoBoxEntry());
     expect(mockDrafts()).toHaveLength(0);
   });
 });
@@ -126,6 +131,27 @@ describe('PhotoBox 선택 모드 이어 가기', () => {
     expect(await screen.findByRole('radio', { name: '전체 (1)' })).toBeTruthy();
     // 한 번 이어 간 뒤에는 비워 다음에 사진함을 열 때 선택 모드가 남지 않음
     expect(readPhotoBoxSelection()).toBeUndefined();
+  });
+
+  it('다른 번치에서 기억한 선택이나 사진이 하나도 남지 않은 선택은 되살리지 않는다', async () => {
+    rememberPhotoBoxSelection('99999', [String(MOCK_PHOTO_IDS.S4)]);
+    const other = render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+    expect(await screen.findByRole('button', { name: '선택' })).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: /^전체 (d+)$/ })).toBeNull();
+    expect(readPhotoBoxSelection()).toBeUndefined();
+    other.unmount();
+
+    rememberPhotoBoxSelection(String(MOCK_BUNCH_ID), ['ghost-photo']);
+    render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+    expect(await screen.findByRole('button', { name: '선택' })).toBeTruthy();
+    expect(readPhotoBoxSelection()).toBeUndefined();
+  });
+
+  it('일부 사진만 사라졌으면 남은 사진으로 선택 모드를 이어 간다', async () => {
+    rememberPhotoBoxSelection(String(MOCK_BUNCH_ID), [String(MOCK_PHOTO_IDS.S4), 'ghost-photo']);
+    render(<PhotoBox />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+
+    expect(await screen.findByRole('radio', { name: '전체 (1)' })).toBeTruthy();
   });
 });
 

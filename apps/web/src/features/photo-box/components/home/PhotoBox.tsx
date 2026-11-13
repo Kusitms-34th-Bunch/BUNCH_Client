@@ -29,8 +29,8 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
   const router = useRouter();
   const createBundle = (selection: readonly string[]) => {
     startFromPhotoBox(selection);
-    // 멤버 고르기에서 뒤로 오면 이 선택으로 선택 모드를 이어 감
-    rememberPhotoBoxSelection(selection);
+    // 멤버 고르기에서 뒤로 오면 이 선택으로 선택 모드를 이어 감(같은 번치일 때만)
+    if (readyBunchId !== undefined) rememberPhotoBoxSelection(readyBunchId, selection);
     router.push(BUNDLE_SELECT_PATHS.members);
   };
   // 올리기는 올리기를 시작한 시점의 번치에 저장
