@@ -53,6 +53,8 @@ const membership = (
 
 /** 번치 전환 시연용 두 번째 번치(Figma 5402:105276 「퇴근런클럽」) */
 export const MOCK_SECOND_BUNCH_ID = 2;
+/** 내가 속하지 않은 번치(다른 번치 프로필·팔로우): 공개 「캠핑러버」, 비공개 「책방산책」 */
+export const MOCK_EXTERNAL_BUNCH_IDS = { public: 3, private: 4 } as const;
 
 // 날짜 그룹: S는 10월 18일, P는 10월 17일(지정 날짜 4장), O는 10월 3일
 const PHOTO_SEEDS = [
@@ -103,17 +105,66 @@ const PUBLISHED_SEEDS = [
   },
 ] as const;
 
-const publishedBundles = (): MockBundle[] =>
-  PUBLISHED_SEEDS.map((seed) => {
+type PublishedSeed = {
+  readonly id: number;
+  readonly title: string;
+  readonly date: string;
+  readonly image: string;
+  readonly createdBy: number;
+  readonly participants: readonly number[];
+  readonly publishedAt: string;
+};
+
+// 다른 번치의 발행 번들(멤버는 가짜 DB에 없어 시연 회원 ID를 빌려 씀, 다른 번치 프로필 그리드용)
+const EXTERNAL_PUBLISHED_SEEDS: Readonly<Record<number, readonly PublishedSeed[]>> = {
+  [MOCK_EXTERNAL_BUNCH_IDS.public]: [
+    {
+      id: 901,
+      title: '가평 첫 캠핑 🏕️',
+      date: '2026-10-11',
+      image: 'C1',
+      createdBy: admin,
+      participants: [admin],
+      publishedAt: '2026-10-12T09:00:00.000Z',
+    },
+    {
+      id: 902,
+      title: '여름밤 바닷가 캠핑',
+      date: '2026-08-15',
+      image: 'C2',
+      createdBy: admin,
+      participants: [admin],
+      publishedAt: '2026-08-16T09:00:00.000Z',
+    },
+  ],
+  [MOCK_EXTERNAL_BUNCH_IDS.private]: [
+    {
+      id: 911,
+      title: '노을 지는 동네 책방 투어',
+      date: '2026-10-05',
+      image: 'C2',
+      createdBy: admin,
+      participants: [admin],
+      publishedAt: '2026-10-06T09:00:00.000Z',
+    },
+  ],
+};
+
+const publishedBundles = (
+  seeds: readonly PublishedSeed[] = PUBLISHED_SEEDS,
+  bunchId: number = MOCK_BUNCH_ID,
+  visibility: MockBundle['visibility'] = 'PRIVATE',
+): MockBundle[] =>
+  seeds.map((seed) => {
     const at = seed.publishedAt;
     return {
       id: seed.id,
-      bunchId: MOCK_BUNCH_ID,
+      bunchId,
       createdBy: seed.createdBy,
       status: 'PUBLISHED',
       title: seed.title,
       titleVersion: 1,
-      visibility: 'PRIVATE',
+      visibility,
       visibilityVersion: 1,
       date: seed.date,
       dateVersion: 1,
@@ -191,6 +242,27 @@ export const createSeed = (): MockDbState => ({
       followerCount: 0,
       followingCount: 0,
     },
+    // 다른 번치(피드 샘플의 캠핑러버·책방산책과 같은 ID)
+    {
+      id: MOCK_EXTERNAL_BUNCH_IDS.public,
+      name: '캠핑러버',
+      characterType: 'TYPE_2',
+      imageUrl: null,
+      introduction: '주말마다 캠핑장을 찾아다니는 넷',
+      isPrivate: false,
+      followerCount: 23,
+      followingCount: 8,
+    },
+    {
+      id: MOCK_EXTERNAL_BUNCH_IDS.private,
+      name: '책방산책',
+      characterType: 'TYPE_4',
+      imageUrl: null,
+      introduction: '책과 커피를 기록하는 모임',
+      isPrivate: true,
+      followerCount: 32,
+      followingCount: 12,
+    },
   ],
   memberships: [
     membership(admin, 'OWNER'),
@@ -200,10 +272,31 @@ export const createSeed = (): MockDbState => ({
     membership(me, 'MEMBER'),
     membership(admin, 'OWNER', MOCK_SECOND_BUNCH_ID, '2026-10-01T09:00:00.000Z'),
     membership(me, 'MEMBER', MOCK_SECOND_BUNCH_ID, '2026-10-01T09:00:00.000Z'),
+    // 다른 번치의 멤버 수 계산용(가짜 DB에 회원이 없는 ID, 내 소속은 없음)
+    ...[101, 102, 103, 104].map((id, index) =>
+      membership(id, index === 0 ? 'OWNER' : 'MEMBER', MOCK_EXTERNAL_BUNCH_IDS.public),
+    ),
+    ...[201, 202, 203, 204, 205, 206].map((id, index) =>
+      membership(id, index === 0 ? 'OWNER' : 'MEMBER', MOCK_EXTERNAL_BUNCH_IDS.private),
+    ),
   ],
   photos: photos(),
   // UT 시작 데이터(상태 A): 초안은 없고 번치 홈에는 기존 발행 번들 2개가 있음
-  bundles: publishedBundles(),
+  bundles: [
+    ...publishedBundles(),
+    ...publishedBundles(
+      EXTERNAL_PUBLISHED_SEEDS[MOCK_EXTERNAL_BUNCH_IDS.public],
+      MOCK_EXTERNAL_BUNCH_IDS.public,
+      'PUBLIC',
+    ),
+    ...publishedBundles(
+      EXTERNAL_PUBLISHED_SEEDS[MOCK_EXTERNAL_BUNCH_IDS.private],
+      MOCK_EXTERNAL_BUNCH_IDS.private,
+      'PUBLIC',
+    ),
+  ],
+  // 내 번치가 다른 번치를 팔로우한 관계(시작은 없음)
+  follows: [],
   bundleLeases: [],
   // 번치 전환 목록의 접근 불가 줄(Figma 5402:105276 안내 창의 번치들)
   bunchAccessNotices: [

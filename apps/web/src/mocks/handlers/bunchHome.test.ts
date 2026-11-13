@@ -202,7 +202,8 @@ describe('가짜 서버 번치 발행 번들 목록', () => {
     },
   );
 
-  it('없는 번치는 BUNCH_009, 소속이 아니면 AUTH_002이다', async () => {
+  // 여행쥬아는 비공개라 소속이 빠지면 팔로우 전의 다른 번치(EXTERNAL)로 보여 번들을 막음
+  it('없는 번치는 BUNCH_009, 소속이 아니고 볼 수 없는 비공개 번치면 AUTH_002이다', async () => {
     expect((await get<PublishedPage>('/api/bunches/999/published-bundles')).json.error?.code).toBe(
       'BUNCH_009',
     );

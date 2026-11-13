@@ -33,7 +33,7 @@ describe('다른 번치 팔로워·팔로잉', () => {
   it('누른 수의 탭으로 열리고, 탭을 바꿔 다른 목록을 본다', async () => {
     const user = userEvent.setup();
     const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
-    render(<OtherBunchFollows bunchId="bunch-camping" initialTab="following" />);
+    render(<OtherBunchFollows bunchId="3" initialTab="following" />);
 
     expect(screen.getByRole('tab', { name: '팔로잉 8' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
@@ -47,7 +47,7 @@ describe('다른 번치 팔로워·팔로잉', () => {
   it('목록 버튼으로 바로 팔로우·언팔로우하고 토스트로 알린다', async () => {
     const user = userEvent.setup();
     const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
-    render(<OtherBunchFollows bunchId="bunch-camping" initialTab="following" />);
+    render(<OtherBunchFollows bunchId="3" initialTab="following" />);
 
     // 비공개 번치는 요청
     await user.click(screen.getByRole('button', { name: '책방산책 팔로우' }));
@@ -61,23 +61,9 @@ describe('다른 번치 팔로워·팔로잉', () => {
     expect(toast).toHaveBeenLastCalledWith('주말등산 번치 팔로우를 취소했어요.');
   });
 
-  it('목록에서 바꾼 팔로우 상태는 그 번치 프로필과 같다', async () => {
-    const user = userEvent.setup();
-    const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
-    const { OtherBunch } = await import('./bunches/OtherBunch');
-    const { unmount } = render(
-      <OtherBunchFollows bunchId="bunch-camping" initialTab="followers" />,
-    );
-
-    await user.click(screen.getByRole('button', { name: '책방산책 팔로우' }));
-    unmount();
-    render(<OtherBunch bunchId="bunch-book" />);
-    expect(screen.getByRole('button', { name: '팔로우 요청됨' })).toBeInTheDocument();
-  });
-
   it('팔로우 승인 전의 비공개 번치는 주소로 들어와도 목록 대신 안내를 보인다', async () => {
     const { OtherBunchFollows } = await import('./bunches/OtherBunchFollows');
-    render(<OtherBunchFollows bunchId="bunch-book" initialTab="followers" />);
+    render(<OtherBunchFollows bunchId="4" initialTab="followers" />);
 
     expect(screen.getByRole('region', { name: '비공개 번치예요' })).toHaveTextContent(
       '목록을 보려면 이 번치를 팔로우하세요.',

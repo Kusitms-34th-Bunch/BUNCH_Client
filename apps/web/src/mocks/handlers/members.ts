@@ -9,7 +9,7 @@ import { fail, ok } from '../lib/envelope';
 const MAX_ACTIVE_BUNCHES = 10;
 
 /** 내 소속을 최근 사용순으로. 첫 번째가 기본 번치(마지막 사용 번치) */
-const myMembershipsByRecent = (state: MockDbState) =>
+export const myMembershipsByRecent = (state: MockDbState) =>
   state.memberships
     .filter((membership) => membership.memberId === MOCK_MY_MEMBER_ID)
     .sort((a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt));

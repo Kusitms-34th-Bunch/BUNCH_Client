@@ -5,6 +5,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { toSnapshot } from './bundles';
+import { followCounts, followOf, viewerBunchId } from './follows';
 
 // 번치 홈 조회(`/home`, 서버 PR #62 미병합 계약), 번들 목록·현황(Swagger) 기준, 명세에 없는 값은 `ponytail:`로 표시
 const DEFAULT_PAGE_SIZE = 20;
@@ -16,6 +17,7 @@ type NotFoundCode = 'BUNCH_009' | 'RESOURCE_001';
 const findBunch = (
   bunchIdParam: string | readonly string[] | undefined,
   notFoundCode: NotFoundCode,
+  external = false,
 ) => {
   const bunchId = toWireId(bunchIdParam);
   if (bunchId === undefined) return { error: fail(400, 'COMMON_001') };
@@ -25,8 +27,19 @@ const findBunch = (
   const mine = state.memberships.find(
     (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
   );
-  if (!mine) return { error: fail(403, 'AUTH_002') };
+  if (!mine) {
+    // 다른 번치(EXTERNAL)는 프로필·공개 번들만 내 번치 명의로 조회
+    if (external) return { bunchId, bunch, mine: undefined, state };
+    return { error: fail(403, 'AUTH_002') };
+  }
   return { bunchId, bunch, mine, state };
+};
+
+/** 다른 번치를 내 번치(지금 번치)가 볼 수 있는지: 공개거나 팔로우가 승인됐으면 번들·목록을 봄 */
+const externalAccess = (state: MockDbState, bunchId: number, isPrivate: boolean) => {
+  const viewer = viewerBunchId(state);
+  const follow = followOf(state, viewer, bunchId);
+  return { viewer, follow, canView: !isPrivate || follow?.status === 'FOLLOWING' };
 };
 
 const counts = (state: MockDbState, bunchId: number) => {
@@ -48,10 +61,48 @@ const parseNonNegativeInt = (value: string | null, fallback: number) => {
 
 export const bunchHomeHandlers = [
   // GET /api/v1/bunches/{bunchId}/home
-  http.get('/api/bunches/:bunchId/home', ({ params }) => {
-    const found = findBunch(params.bunchId, 'BUNCH_009');
+  // 내 번치·다른 번치의 응답 모양이 달라 반환을 Response로 둠
+  http.get('/api/bunches/:bunchId/home', ({ params }): Response => {
+    const found = findBunch(params.bunchId, 'BUNCH_009', true);
     if ('error' in found) return found.error;
     const { bunch, mine, state, bunchId } = found;
+    const profile = {
+      id: bunch.id,
+      name: bunch.name,
+      imageUrl: bunch.imageUrl,
+      characterType: bunch.characterType,
+      visibility: bunch.isPrivate ? 'PRIVATE' : 'PUBLIC',
+      introduction: bunch.introduction,
+    };
+    const memberTotal = state.memberships.filter((m) => m.bunchId === bunchId).length;
+    if (!mine) {
+      const { viewer, follow, canView } = externalAccess(state, bunchId, bunch.isPrivate);
+      // ponytail: 비소속 번치의 버전·개수·권한은 명세에 값이 없어 null·false(차단만 가능)
+      return ok({
+        bunch: profile,
+        myMembership: null,
+        permissions: {
+          canEditProfile: false,
+          canDeleteBunch: false,
+          canManageRoles: false,
+          canTransferOwner: false,
+          canBlock: true,
+          canInvite: false,
+          canLeave: false,
+        },
+        memberCount: memberTotal,
+        ...followCounts(state, bunchId),
+        stage: counts(state, bunchId).stage,
+        currentBunchId: viewer ?? null,
+        accessScope: 'EXTERNAL',
+        followState: follow?.status ?? 'NONE',
+        followId: follow?.id ?? null,
+        canViewBundles: canView,
+        canViewMembers: canView,
+        canViewRelations: canView,
+        isCurrentBunch: false,
+      });
+    }
     const isOwner = mine.role === 'OWNER';
     const isAdmin = mine.role !== 'MEMBER';
     const memberCount = state.memberships.filter((m) => m.bunchId === bunchId).length;
@@ -82,10 +133,17 @@ export const bunchHomeHandlers = [
       profileVersion: bunch.profileVersion ?? 1,
       membershipVersion: bunch.membershipVersion ?? 1,
       memberCount,
-      followerCount: bunch.followerCount,
-      followingCount: bunch.followingCount,
+      ...followCounts(state, bunchId),
       ...counts(state, bunchId),
       unreadCount: 0,
+      currentBunchId: viewerBunchId(state) ?? null,
+      accessScope: 'INTERNAL',
+      followState: 'NONE',
+      followId: null,
+      canViewBundles: true,
+      canViewMembers: true,
+      canViewRelations: true,
+      isCurrentBunch: viewerBunchId(state) === bunchId,
     });
   }),
 
@@ -95,6 +153,7 @@ export const bunchHomeHandlers = [
     const found = findBunch(params.bunchId, 'RESOURCE_001');
     if ('error' in found) return found.error;
     const { bunchId, mine, state } = found;
+    if (!mine) return fail(403, 'AUTH_002');
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
     const page = parseNonNegativeInt(url.searchParams.get('page'), 0);
@@ -128,9 +187,13 @@ export const bunchHomeHandlers = [
   // GET /api/v1/bunches/{bunchId}/published-bundles?page=&size= (서버 PR #62 미병합 계약, 번치 홈 「완성된 번들」용)
   // 내 번치(INTERNAL)는 공개 범위와 상관없이 발행본 전체, 발행 최신순(publishedAt, id 내림차순), 초안은 포함하지 않음
   http.get('/api/bunches/:bunchId/published-bundles', ({ params, request }) => {
-    const found = findBunch(params.bunchId, 'BUNCH_009');
+    const found = findBunch(params.bunchId, 'BUNCH_009', true);
     if ('error' in found) return found.error;
-    const { bunchId, state } = found;
+    const { bunchId, state, mine, bunch } = found;
+    // 다른 번치는 볼 수 있을 때만(비공개는 팔로우 승인 뒤), 공개 번들만
+    if (!mine && !externalAccess(state, bunchId, bunch.isPrivate).canView) {
+      return fail(403, 'AUTH_002');
+    }
     const url = new URL(request.url);
     const page = parseNonNegativeInt(url.searchParams.get('page'), 0);
     const size = parseNonNegativeInt(url.searchParams.get('size'), DEFAULT_PAGE_SIZE);
@@ -138,7 +201,12 @@ export const bunchHomeHandlers = [
       return fail(400, 'COMMON_001');
     }
     const published = state.bundles
-      .filter((bundle) => bundle.bunchId === bunchId && bundle.status === 'PUBLISHED')
+      .filter(
+        (bundle) =>
+          bundle.bunchId === bunchId &&
+          bundle.status === 'PUBLISHED' &&
+          (mine !== undefined || bundle.visibility === 'PUBLIC'),
+      )
       .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? '') || b.id - a.id);
     return ok({
       items: published.slice(page * size, (page + 1) * size).map((bundle) => ({

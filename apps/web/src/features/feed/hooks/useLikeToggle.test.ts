@@ -6,7 +6,7 @@ import { useLikeToggle } from './useLikeToggle';
 
 const bundle = { id: 'bundle-1', liked: false, likeCount: 4 };
 const trip: FeedViewer = { bunchId: 'bunch-trip', name: '여행가조' };
-const book: FeedViewer = { bunchId: 'bunch-book', name: '책방산책' };
+const book: FeedViewer = { bunchId: '4', name: '책방산책' };
 
 beforeEach(() => {
   likeStore.clear();

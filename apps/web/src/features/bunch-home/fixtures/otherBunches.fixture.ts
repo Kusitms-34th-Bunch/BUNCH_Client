@@ -12,8 +12,8 @@ const members = (names: readonly string[], imageSrc: string): BunchMember[] =>
   }));
 
 export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
-  'bunch-camping': {
-    id: 'bunch-camping',
+  '3': {
+    id: '3',
     name: '캠핑러버',
     imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2,
     characterType: 'TYPE_2',
@@ -31,8 +31,8 @@ export const otherBunchesFixture: Readonly<Record<string, OtherBunch>> = {
     followStatus: 'none',
     members: members(['솔', '하람', '도윤', '서아'], DEFAULT_PROFILE_IMAGE),
   },
-  'bunch-book': {
-    id: 'bunch-book',
+  '4': {
+    id: '4',
     name: '책방산책',
     imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_4,
     characterType: 'TYPE_4',
