@@ -4,13 +4,13 @@ import { isApiError } from '@app/api-core';
 import { useQuery } from '@tanstack/react-query';
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { toDomainId } from '@/shared/api/ids';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
+import { useViewerStale } from '../../hooks/useViewerStale';
 import { FOLLOW_STATUS, followIdOf, toOtherBunchProfile } from '../../model/otherBunch';
 import { useSwitchBunchMutation } from '../../queries/bunchHome';
 import {
@@ -60,22 +60,8 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
     });
   }, [internal, bunchId, router, switchBunch]);
 
-  // 서버가 본 명의(지금 번치)가 캐시의 기본 번치와 다르면 기본 번치를 다시 받음(다른 기기에서 전환 등)
-  const serverViewer = home.data?.currentBunchId;
-  const viewerStale =
-    serverViewer !== null &&
-    serverViewer !== undefined &&
-    viewerId !== undefined &&
-    toDomainId(serverViewer) !== viewerId;
-  const refetchMe = me.refetch;
-  useEffect(() => {
-    if (viewerStale) void refetchMe();
-  }, [viewerStale, refetchMe]);
-  // 다시 받았는데도 명의가 어긋나면(또는 다시 받기 실패) 팔로우를 막은 채 두지 않고 다시 시도 화면
-  const viewerMismatch =
-    viewerStale &&
-    !me.isFetching &&
-    Math.max(me.dataUpdatedAt, me.errorUpdatedAt) > home.dataUpdatedAt;
+  // 서버가 본 명의가 캐시의 기본 번치와 다르면 다시 받고, 다시 받아도 어긋나면 다시 시도 화면(다른 기기에서 전환 등)
+  const { stale: viewerStale, mismatch: viewerMismatch } = useViewerStale(viewerId, home, me);
   // 처리 중 다시 눌러도 한 번만(isPending은 다음 렌더부터 반영), 차단이 끝날 때를 기다릴 수 있게 진행 중인 요청을 둠
   const inflight = useRef<Promise<unknown> | null>(null);
 
@@ -96,8 +82,8 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
     return (
       <BunchHomeError
         onRetry={() => {
-          if (me.isError || viewerMismatch) void me.refetch();
-          void home.refetch();
+          void me.refetch();
+          if (viewerId !== undefined) void home.refetch();
         }}
         onBack={back}
       />

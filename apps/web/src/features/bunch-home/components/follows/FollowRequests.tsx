@@ -30,8 +30,8 @@ export function FollowRequests() {
     return (
       <BunchHomeError
         onRetry={() => {
-          if (me.isError) void me.refetch();
-          if (requests.isError) void requests.refetch();
+          void me.refetch();
+          if (bunchId) void requests.refetch();
         }}
         onBack={back}
       />
@@ -41,8 +41,12 @@ export function FollowRequests() {
   return (
     <FollowRequestsScreen
       requests={requests.data ? toFollowRequestRows(requests.data) : undefined}
+      // 첫 쪽만 받으므로 개수는 전체 수
+      total={requests.data?.totalElements}
       onBack={back}
-      onDecide={(requestId, decision) => decide.mutateAsync({ requestId, decision })}
+      onDecide={(request, decision) =>
+        decide.mutateAsync({ requestId: request.requestId, requesterId: request.id, decision })
+      }
     />
   );
 }

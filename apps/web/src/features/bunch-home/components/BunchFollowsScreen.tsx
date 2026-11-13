@@ -29,8 +29,8 @@ type BunchFollowsScreenProps = {
   initialTab: FollowsTab;
   /** 팔로우 승인 전의 비공개 번치: 목록 대신 안내(주소로 직접 들어온 경우) */
   locked?: boolean | undefined;
-  /** 내 번치의 대기 중인 팔로우 요청 수. 0이거나 없으면 「팔로우 요청」 줄을 숨김 */
-  pendingRequestCount?: number | undefined;
+  /** 내 번치의 대기 중인 팔로우 요청 수. 0이거나 없으면 「팔로우 요청」 줄을 숨김, null(수를 못 받음)이면 수 없이 줄만 */
+  pendingRequestCount?: number | null | undefined;
   onOpenRequests?: (() => void) | undefined;
   onBack: () => void;
   /** 팔로우·요청. 끝나면 서버가 정한 상태, 실패하면 reject(안내는 부르는 쪽) */
@@ -219,9 +219,11 @@ export function BunchFollowsScreen({
             value="followers"
             className={`px-padding-p8 gap-s6 flex flex-col ${DISSOLVE}`}
           >
-            {pendingRequestCount > 0 && onOpenRequests ? (
+            {(pendingRequestCount === null || pendingRequestCount > 0) && onOpenRequests ? (
               <NudgeBanner onClick={onOpenRequests}>
-                {BUNCH_HOME_MESSAGES.followRequestsBanner(pendingRequestCount)}
+                {pendingRequestCount === null
+                  ? BUNCH_HOME_MESSAGES.followRequestsBannerUnknown
+                  : BUNCH_HOME_MESSAGES.followRequestsBanner(pendingRequestCount)}
               </NudgeBanner>
             ) : null}
             {list(followers, BUNCH_HOME_MESSAGES.followersEmpty)}

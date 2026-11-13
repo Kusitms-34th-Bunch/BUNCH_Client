@@ -16,14 +16,21 @@ type FollowRequestsScreenProps = {
   requests: readonly FollowRequestRow[] | undefined;
   onBack: () => void;
   /** 승인·거절. 끝나면 그 행이 목록에서 빠짐, 실패하면 reject(안내는 부르는 쪽) */
-  onDecide: (_requestId: string, _decision: FollowDecision) => Promise<DecisionResult>;
+  onDecide: (_request: FollowRequestRow, _decision: FollowDecision) => Promise<DecisionResult>;
+  /** 전체 대기 요청 수(목록은 첫 쪽만이라 행 수와 다를 수 있음). 없으면 행 수 */
+  total?: number | undefined;
 };
 
 /**
  * 대기 중인 팔로우 요청(화면설계서 2500:72664 2~4번, Figma 2500:73508)
  * 승인·거절은 확인 없이 바로 처리하고, 서버 처리가 끝나면 목록에서 빼며 토스트로 알림
  */
-export function FollowRequestsScreen({ requests, onBack, onDecide }: FollowRequestsScreenProps) {
+export function FollowRequestsScreen({
+  requests,
+  onBack,
+  onDecide,
+  total,
+}: FollowRequestsScreenProps) {
   // 처리한 행의 버튼이 사라지므로 초점은 개수 줄로
   const countRef = useRef<HTMLParagraphElement>(null);
 
@@ -32,7 +39,8 @@ export function FollowRequestsScreen({ requests, onBack, onDecide }: FollowReque
 
   // 처리가 끝나 행이 빠지면 줄어든 개수가 그려진 뒤 개수 줄로 초점(다른 곳으로 옮긴 초점은 가져오지 않음)
   const focusCount = useRef(false);
-  const count = requests?.length;
+  // 첫 쪽이 다음 요청으로 다시 채워져 행 수가 그대로여도 전체 수가 바뀌면 확인
+  const count = `${requests?.length}/${total}`;
   useEffect(() => {
     if (!focusCount.current) return;
     focusCount.current = false;
@@ -49,7 +57,7 @@ export function FollowRequestsScreen({ requests, onBack, onDecide }: FollowReque
     const row = event.currentTarget.closest('li');
     setPendingIds((ids) => new Set(ids).add(request.requestId));
     try {
-      const result = await onDecide(request.requestId, decision);
+      const result = await onDecide(request, decision);
       // 처리한 행에 초점이 있었으면(행이 빠지며 초점을 잃음) 개수 줄로
       const active = document.activeElement;
       focusCount.current = !active || active === document.body || !!row?.contains(active);
@@ -101,48 +109,55 @@ export function FollowRequestsScreen({ requests, onBack, onDecide }: FollowReque
             tabIndex={-1}
             className="bg-surface-secondary rounded-r4 px-padding-p8 py-padding-p7 typography-label-s text-text-tertiary focus:outline-none"
           >
-            {BUNCH_HOME_MESSAGES.pendingRequests(requests.length)}
+            {BUNCH_HOME_MESSAGES.pendingRequests(total ?? requests.length)}
           </p>
           {requests.length > 0 ? (
-            <ul className="flex flex-col">
-              {requests.map((request) => {
-                const busy = pendingIds.has(request.requestId);
-                return (
-                  <li key={request.requestId}>
-                    <FollowListItem
-                      name={request.name}
-                      imageSrc={request.imageSrc}
-                      isPrivate={request.isPrivate}
-                      privateLabel="비공개 번치"
-                      meta={`${request.daysAgo}일 전`}
-                      action={
-                        <>
-                          <Button
-                            size="sm"
-                            aria-label={`${request.name} 팔로우 요청 승인`}
-                            aria-disabled={busy || undefined}
-                            className={cn('transition-opacity', busy && 'opacity-60')}
-                            onClick={(event) => void decide(event, request, 'APPROVE')}
-                          >
-                            승인
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondarySubtle"
-                            aria-label={`${request.name} 팔로우 요청 거절`}
-                            aria-disabled={busy || undefined}
-                            className={cn('transition-opacity', busy && 'opacity-60')}
-                            onClick={(event) => void decide(event, request, 'REJECT')}
-                          >
-                            거절
-                          </Button>
-                        </>
-                      }
-                    />
-                  </li>
-                );
-              })}
-            </ul>
+            <>
+              <ul className="flex flex-col">
+                {requests.map((request) => {
+                  const busy = pendingIds.has(request.requestId);
+                  return (
+                    <li key={request.requestId}>
+                      <FollowListItem
+                        name={request.name}
+                        imageSrc={request.imageSrc}
+                        isPrivate={request.isPrivate}
+                        privateLabel="비공개 번치"
+                        meta={`${request.daysAgo}일 전`}
+                        action={
+                          <>
+                            <Button
+                              size="sm"
+                              aria-label={`${request.name} 팔로우 요청 승인`}
+                              aria-disabled={busy || undefined}
+                              className={cn('transition-opacity', busy && 'opacity-60')}
+                              onClick={(event) => void decide(event, request, 'APPROVE')}
+                            >
+                              승인
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondarySubtle"
+                              aria-label={`${request.name} 팔로우 요청 거절`}
+                              aria-disabled={busy || undefined}
+                              className={cn('transition-opacity', busy && 'opacity-60')}
+                              onClick={(event) => void decide(event, request, 'REJECT')}
+                            >
+                              거절
+                            </Button>
+                          </>
+                        }
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+              {total !== undefined && total > requests.length ? (
+                <p className="typography-body-3-regular text-text-tertiary py-s6 text-center">
+                  {BUNCH_HOME_MESSAGES.requestsMore}
+                </p>
+              ) : null}
+            </>
           ) : (
             <p className="typography-body-3-regular text-text-tertiary py-s10 text-center">
               {BUNCH_HOME_MESSAGES.requestsEmpty}

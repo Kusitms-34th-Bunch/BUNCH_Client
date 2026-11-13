@@ -30,15 +30,21 @@ export function MyBunchFollows({ initialTab }: { initialTab: FollowsTab }) {
   useEffect(() => {
     if (noBunch) router.replace(BUNCH_HOME_PATHS.home);
   }, [noBunch, router]);
-  const viewerStale = useViewerStale(bunchId, home.data?.currentBunchId, me.refetch);
+  const viewer = useViewerStale(bunchId, home, me);
   const back = () => backOr(BUNCH_HOME_PATHS.home);
 
-  if ((me.isError && !me.data) || (home.isError && !home.data)) {
+  // 다시 받아도 명의가 어긋나거나 다시 받기가 실패하면 버튼을 막아 두지 않고 다시 시도 화면
+  if ((me.isError && !me.data) || (home.isError && !home.data) || viewer.mismatch) {
     return (
       <BunchHomeError
         onRetry={() => {
-          if (me.isError) void me.refetch();
-          if (home.isError) void home.refetch();
+          // 다른 기기에서 번치를 나간 경우 등 내 정보가 바뀌었을 수 있어 항상 다시 받음
+          void me.refetch();
+          // 번치를 모르면 아직 요청하지 않는 query라 다시 받지 않음(내 정보가 오면 자동으로 받음)
+          if (bunchId) {
+            void home.refetch();
+            if (requests.isError) void requests.refetch();
+          }
         }}
         onBack={back}
       />
@@ -52,12 +58,14 @@ export function MyBunchFollows({ initialTab }: { initialTab: FollowsTab }) {
       followingCount={home.data?.followingCount ?? 0}
       followers={followers}
       following={following}
-      // ponytail: 다시 받아도 명의가 어긋나면 버튼이 계속 막힘(프로필처럼 다시 시도 화면은 실서버 동작 확인 뒤)
-      busy={viewerStale}
+      // 명의를 다시 확인하는 동안은 팔로우를 보내지 않음
+      busy={viewer.stale}
       viewerId={bunchId}
       initialTab={initialTab}
-      // 요청 목록을 못 받으면 줄을 숨김(요청 목록 화면에서 다시 시도)
-      pendingRequestCount={requests.data?.totalElements ?? 0}
+      // 요청 수를 못 받으면 수 없이 줄만 보임(요청 화면에서 다시 시도)
+      pendingRequestCount={
+        requests.isError && !requests.data ? null : (requests.data?.totalElements ?? 0)
+      }
       onOpenRequests={() => router.push(BUNCH_HOME_PATHS.followRequests)}
       onBack={back}
       onFollow={follow}

@@ -35,7 +35,7 @@ export function OtherBunchFollows({
   const canView = home.data?.canViewRelations ?? false;
   const { followers, following, follow, unfollow } = useFollowList(bunchId, viewerId, canView);
   const { access } = useBlockRelation(bunchId);
-  const viewerStale = useViewerStale(viewerId, home.data?.currentBunchId, me.refetch);
+  const viewer = useViewerStale(viewerId, home, me);
 
   // 내 번치: 지금 번치면 내 번치 목록으로, 다른 소속 번치면 프로필(전환 뒤 번치 탭)로
   const internal = home.data?.accessScope === 'INTERNAL' ? home.data : undefined;
@@ -56,12 +56,13 @@ export function OtherBunchFollows({
     backOr(access === 'blocked' ? BUNCH_HOME_PATHS.feed : BUNCH_HOME_PATHS.otherBunch(bunchId));
   if (access !== 'visible')
     return <BlockedBunchScreen onBack={back} checking={access === 'checking'} />;
-  if ((me.isError && !me.data) || (home.isError && !home.data)) {
+  // 다시 받아도 명의가 어긋나거나 다시 받기가 실패하면 버튼을 막아 두지 않고 다시 시도 화면
+  if ((me.isError && !me.data) || (home.isError && !home.data) || viewer.mismatch) {
     return (
       <BunchHomeError
         onRetry={() => {
-          if (me.isError) void me.refetch();
-          void home.refetch();
+          void me.refetch();
+          if (viewerId !== undefined) void home.refetch();
         }}
         onBack={back}
       />
@@ -76,8 +77,8 @@ export function OtherBunchFollows({
       followingCount={home.data?.followingCount ?? 0}
       followers={followers}
       following={following}
-      // ponytail: 다시 받아도 명의가 어긋나면 버튼이 계속 막힘(프로필처럼 다시 시도 화면은 실서버 동작 확인 뒤)
-      busy={viewerStale}
+      // 명의를 다시 확인하는 동안은 팔로우를 보내지 않음
+      busy={viewer.stale}
       viewerId={viewerId}
       initialTab={initialTab}
       locked={home.data !== undefined && !internal && !canView}

@@ -105,12 +105,16 @@ export const BUNCH_HOME_MESSAGES = {
   requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
   // 팔로워·팔로잉 목록과 팔로우 요청(화면설계서 2500:71333·2500:72664)
   followRequestsBanner: (count: number) => `팔로우 요청 ${count}`,
+  // 요청 수를 받지 못했을 때(요청 화면에서 다시 시도)
+  followRequestsBannerUnknown: '팔로우 요청 확인하기',
   pendingRequests: (count: number) => `대기 중인 요청 ${count}개`,
   requestApproved: (bunchName: string) => `${bunchName} 번치의 팔로우 요청을 승인했어요.`,
   requestRejected: (bunchName: string) => `${bunchName} 번치의 팔로우를 거절했어요.`,
   followersEmpty: '아직 팔로워가 없어요.',
   followingEmpty: '아직 팔로우하는 번치가 없어요.',
   requestsEmpty: '대기 중인 팔로우 요청이 없어요.',
+  // 첫 쪽만 보일 때(전체 수가 보이는 행보다 많음)
+  requestsMore: '처리하면 다음 요청이 이어서 보여요.',
   // 다른 번치 차단·신고(화면설계서 2500:67470·2500:69551)
   blockQuestion: (bunchName: string) => `${bunchName} 번치를 차단할까요?`,
   blockNotice: '차단하면 번치의 모든 멤버가\n서로의 활동을 볼 수 없어요.',

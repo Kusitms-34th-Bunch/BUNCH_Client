@@ -2,17 +2,18 @@ import type * as DesignSystem from '@app/design-system';
 import type { ReactElement } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
+import { delay, http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // 목록·요청은 가짜 서버 응답에 기댐(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
-import { fail } from '@/mocks/lib/envelope';
+import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
+import { bunchHomeKeys } from '../queries/keys';
 import { OtherBunchFollows } from './bunches/OtherBunchFollows';
 import { FollowRequests } from './follows/FollowRequests';
 import { MyBunchFollows } from './follows/MyBunchFollows';
@@ -79,7 +80,9 @@ describe('다른 번치 팔로워·팔로잉(가짜 서버)', () => {
       await screen.findByRole('button', { name: '산책클럽 팔로잉, 누르면 팔로우 취소' }),
     );
     expect(await screen.findByRole('button', { name: '산책클럽 팔로우' })).toBeInTheDocument();
-    expect(toast).toHaveBeenLastCalledWith('산책클럽 번치 팔로우를 취소했어요.');
+    await waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith('산책클럽 번치 팔로우를 취소했어요.'),
+    );
     expect(myFollowOf(5)).toBeUndefined();
 
     // 비공개 번치는 서버가 요청으로 처리
@@ -87,7 +90,9 @@ describe('다른 번치 팔로워·팔로잉(가짜 서버)', () => {
     expect(
       await screen.findByRole('button', { name: '산책클럽 요청됨, 누르면 요청 취소' }),
     ).toBeInTheDocument();
-    expect(toast).toHaveBeenLastCalledWith('산책클럽 번치에 팔로우를 요청했어요.');
+    await waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith('산책클럽 번치에 팔로우를 요청했어요.'),
+    );
     expect(myFollowOf(5)?.status).toBe('REQUESTED');
   });
 
@@ -124,7 +129,7 @@ describe('다른 번치 팔로워·팔로잉(가짜 서버)', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.otherBunch('2')));
   });
 
-  it('서버가 본 명의가 캐시와 다르면 다시 확인하는 동안 팔로우를 보내지 않는다', async () => {
+  it('서버가 본 명의와 캐시가 다르고 다시 받기도 실패하면 다시 시도 화면을 보이고, 다시 시도하면 서버 명의로 보인다', async () => {
     // 이 기기는 여행쥬아를 기본 번치로 받아 두었는데, 다른 기기에서 퇴근런클럽(2)으로 전환함(다시 받기는 실패)
     const client = createTestQueryClient();
     await client.fetchQuery(myProfileQueryOptions());
@@ -142,13 +147,26 @@ describe('다른 번치 팔로워·팔로잉(가짜 서버)', () => {
       wrapper: createQueryWrapper(client),
     });
 
-    // 행은 서버 명의(퇴근런클럽) 기준이라 「팔로우」, 누르면 캐시 명의(여행쥬아)로 나갈 수 있어 막음
+    // 캐시 명의(여행쥬아)로 팔로우가 나가지 않게 버튼 대신 다시 시도
+    // 다시 시도에서 home이 내 정보보다 늦게 와도 막힌 목록으로 굳지 않음(회귀)
+    server.use(
+      http.get('/api/bunches/:bunchId/home', async () => {
+        await delay(100);
+      }),
+    );
+    const retry = await screen.findByRole('button', { name: '다시 시도' });
+    await user.click(retry);
+    // 다시 받는 동안(home 지연)에도 같은 다시 시도 화면을 유지해 초점을 잃지 않음
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(retry).toBeInTheDocument();
+    expect(retry).toHaveFocus();
+    expect(screen.queryByRole('button', { name: /산책클럽/ })).toBeNull();
+
+    // 내 정보를 다시 받을 수 있게 되면 서버 명의(퇴근런클럽) 기준 목록과 버튼
+    server.resetHandlers();
+    await user.click(await screen.findByRole('button', { name: '다시 시도' }));
     const button = await screen.findByRole('button', { name: '산책클럽 팔로우' });
-    await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'true'));
-    const before = mockDb.get().follows.length;
-    await user.click(button);
-    expect(mockDb.get().follows).toHaveLength(before);
-    expect(toast).not.toHaveBeenCalled();
+    expect(button).not.toHaveAttribute('aria-disabled');
   });
 
   it('없는 번치는 404로 보낸다', async () => {
@@ -181,7 +199,55 @@ describe('내 번치 팔로워·팔로잉(가짜 서버)', () => {
     expect(await screen.findByRole('tab', { name: '팔로잉 1' })).toBeInTheDocument();
     // 다시 받은 팔로잉 목록에서 빠짐
     await waitFor(() => expect(screen.getAllByRole('listitem')).toHaveLength(1));
-    expect(toast).toHaveBeenLastCalledWith('주말등산 번치 팔로우를 취소했어요.');
+    await waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith('주말등산 번치 팔로우를 취소했어요.'),
+    );
+  });
+});
+
+describe('요청 수와 요청자 프로필', () => {
+  it('요청 수를 받지 못해도 「팔로우 요청」 줄을 남겨 요청 화면에서 다시 시도할 수 있다', async () => {
+    server.use(http.get('/api/bunches/:viewerId/follow-requests', () => fail(500, 'X')));
+    const user = userEvent.setup();
+    renderWithQuery(<MyBunchFollows initialTab="followers" />);
+
+    await user.click(await screen.findByRole('button', { name: '팔로우 요청 확인하기' }));
+    expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.followRequests);
+  });
+
+  it('요청 화면의 개수는 첫 쪽 행 수가 아니라 전체 대기 요청 수다', async () => {
+    const card = { id: 7, name: '서핑크루', characterType: 'TYPE_2', visibility: 'PRIVATE' };
+    server.use(
+      http.get('/api/bunches/:viewerId/follow-requests', () =>
+        ok({
+          items: [{ id: 6, bunch: card, requestedAt: '2026-10-17T09:00:00.000Z' }],
+          page: 0,
+          size: 50,
+          totalElements: 60,
+          hasNext: true,
+        }),
+      ),
+    );
+    renderWithQuery(<FollowRequests />);
+
+    expect(await screen.findByText('대기 중인 요청 60개')).toBeInTheDocument();
+    expect(screen.getByText(BUNCH_HOME_MESSAGES.requestsMore)).toBeInTheDocument();
+  });
+
+  it('승인하면 요청한 번치의 프로필(팔로잉 수)도 다시 받게 한다', async () => {
+    const client = createTestQueryClient();
+    // 요청한 서핑크루(7)의 프로필을 미리 받아 둔 상태
+    client.setQueryData(bunchHomeKeys.otherBunchHome('7', String(MOCK_BUNCH_ID)), {});
+    const user = userEvent.setup();
+    render(<FollowRequests />, { wrapper: createQueryWrapper(client) });
+
+    await user.click(await screen.findByRole('button', { name: '서핑크루 팔로우 요청 승인' }));
+    await waitFor(() =>
+      expect(
+        client.getQueryState(bunchHomeKeys.otherBunchHome('7', String(MOCK_BUNCH_ID)))
+          ?.isInvalidated,
+      ).toBe(true),
+    );
   });
 });
 
@@ -212,12 +278,16 @@ describe('팔로우 요청 승인·거절(가짜 서버)', () => {
     await user.click(screen.getByRole('button', { name: '서핑크루 팔로우 요청 승인' }));
     expect(await screen.findByText('대기 중인 요청 2개')).toBe(count);
     expect(count).toHaveFocus();
-    expect(toast).toHaveBeenLastCalledWith('서핑크루 번치의 팔로우 요청을 승인했어요.');
+    await waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith('서핑크루 번치의 팔로우 요청을 승인했어요.'),
+    );
     expect(mockDb.get().follows.find((f) => f.followerBunchId === 7)?.status).toBe('FOLLOWING');
 
     await user.click(screen.getByRole('button', { name: '맛집탐방대 팔로우 요청 거절' }));
     expect(await screen.findByText('대기 중인 요청 1개')).toBeInTheDocument();
-    expect(toast).toHaveBeenLastCalledWith('맛집탐방대 번치의 팔로우를 거절했어요.');
+    await waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith('맛집탐방대 번치의 팔로우를 거절했어요.'),
+    );
     expect(mockDb.get().follows.find((f) => f.followerBunchId === 8)).toBeUndefined();
   });
 
@@ -233,7 +303,6 @@ describe('팔로우 요청 승인·거절(가짜 서버)', () => {
     }));
     await user.click(screen.getByRole('button', { name: '서핑크루 팔로우 요청 승인' }));
     expect(await screen.findByText('대기 중인 요청 2개')).toBeInTheDocument();
-    expect(toast).not.toHaveBeenCalled();
 
     // 다른 멤버가 침대조아를 먼저 승인함: 거절해도 승인이 유지되고 이미 처리됐다고 알림
     mockDb.update((state) => ({
@@ -244,7 +313,11 @@ describe('팔로우 요청 승인·거절(가짜 서버)', () => {
     }));
     await user.click(screen.getByRole('button', { name: '침대조아 팔로우 요청 거절' }));
     expect(await screen.findByText('대기 중인 요청 1개')).toBeInTheDocument();
-    expect(toast).toHaveBeenLastCalledWith(BUNCH_HOME_MESSAGES.requestAlreadyHandled);
+    await waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith(BUNCH_HOME_MESSAGES.requestAlreadyHandled),
+    );
+    // 취소된 요청(서핑크루)은 알림이 없어 토스트는 이것 하나
+    expect(toast).toHaveBeenCalledTimes(1);
     expect(mockDb.get().follows.find((f) => f.followerBunchId === 9)?.status).toBe('FOLLOWING');
   });
 

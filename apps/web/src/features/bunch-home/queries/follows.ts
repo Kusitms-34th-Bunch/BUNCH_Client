@@ -40,9 +40,12 @@ export const useDecideFollowRequestMutation = (viewerId: string | undefined) => 
     meta: { errorMessage: BUNCH_HOME_MESSAGES.requestDecisionFailed },
     mutationFn: async ({
       requestId,
+      requesterId,
       decision,
     }: {
       requestId: string;
+      /** 요청한 번치(승인되면 그 번치의 팔로잉 수가 바뀜) */
+      requesterId: string;
       decision: FollowDecision;
     }) => {
       if (!viewerId) throw new Error('요청을 처리할 내 번치가 없습니다.');
@@ -59,6 +62,10 @@ export const useDecideFollowRequestMutation = (viewerId: string | undefined) => 
       );
       void queryClient.invalidateQueries({ queryKey: bunchHomeKeys.follows() });
       void queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHome(viewerId) });
+      // 승인되면 요청한 번치의 팔로잉 수가 늘어 그 번치 프로필도 다시 받음
+      if (result.state === 'APPROVED') {
+        void queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(requesterId) });
+      }
       return result;
     },
     // 실패하면 그 사이 다른 멤버가 처리했을 수 있어 요청 목록을 다시 받음
