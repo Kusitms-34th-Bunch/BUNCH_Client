@@ -61,6 +61,7 @@ const bulk = (count: number, uploaderIds: string[] = ['eunwoo']): PhotoBoxPhoto[
     takenAt: '2026-09-27T10:00',
     uploadedAt: '2026-10-01T00:00:00',
     uploaderIds,
+    usedInDraftBundle: false,
     status: 'ready',
   }));
 
@@ -229,6 +230,10 @@ describe('삭제 확인 창 문구(기능명세서 3.3.5)', () => {
     }));
 
   const IRREVERSIBLE = '삭제 이후에는 복구할 수 없어요.';
+  const DRAFT_USED =
+    '작성 중인 번들에 쓰인 사진도 있어요. 삭제하면 번들에서도 빠지고 복구할 수 없어요.';
+  const inDraft = (photos: PhotoBoxPhoto[]) =>
+    photos.map((photo) => ({ ...photo, usedInDraftBundle: true }));
   const cases: {
     name: string;
     viewer: typeof admin;
@@ -277,6 +282,28 @@ describe('삭제 확인 창 문구(기능명세서 3.3.5)', () => {
       photos: [...group('own', 3, ['eunwoo']), ...group('co', 2, ['eunwoo', 'gyeongjin'])],
       title: '선택한 사진 5장을 삭제할까요?',
       lines: [IRREVERSIBLE, '다른 멤버도 올린 사진 2장은 사진함에 남아요.'],
+    },
+    // 작성 중인 번들에 쓰인 사진이 사라지면 「복구할 수 없어요」 줄만 번들 안내로 바뀌고 줄은 덧붙지 않음(명세 3.3.5)
+    {
+      name: '작성 중인 번들에 쓰인 사진이 사라짐',
+      viewer: member,
+      photos: [...inDraft(group('own', 1, ['eunwoo'])), ...group('own2', 1, ['eunwoo'])],
+      title: '선택한 사진 2장을 삭제할까요?',
+      lines: [DRAFT_USED],
+    },
+    {
+      name: '작성 중인 번들에 쓰인 사진과 함께 올린 사진이 섞임',
+      viewer: member,
+      photos: [...inDraft(group('own', 1, ['eunwoo'])), ...group('co', 1, ['eunwoo', 'gyeongjin'])],
+      title: '선택한 사진 2장을 삭제할까요?',
+      lines: [DRAFT_USED, '다른 멤버도 올린 사진 1장은 사진함에 남아요.'],
+    },
+    {
+      name: '함께 올린 사진은 번들에 쓰여도 내 이름만 빠져 문구가 바뀌지 않음',
+      viewer: member,
+      photos: inDraft(group('co', 1, ['eunwoo', 'gyeongjin'])),
+      title: '내가 올린 사진을 삭제할까요?',
+      lines: ['사진은 그대로 유지되고, 업로더 목록에서 내 이름만 사라져요.'],
     },
   ];
 

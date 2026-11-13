@@ -27,6 +27,8 @@ export type PhotoBoxPhoto = {
   uploadedAt: string;
   /** 올린 멤버(함께 올린 사진은 여러 명) */
   uploaderIds: readonly string[];
+  /** 작성 중인 번들에 담긴 사진인지. 지우면 그 번들에서도 빠지므로 삭제 확인 창 문구가 달라짐(명세 3.3.5) */
+  usedInDraftBundle: boolean;
   status: PhotoStatus;
 };
 

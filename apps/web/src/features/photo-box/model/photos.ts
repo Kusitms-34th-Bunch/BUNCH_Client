@@ -43,12 +43,17 @@ const capturedTimeSchema = z.union([
 
 const uploaderIdsSchema = z.array(z.number().int().positive());
 
+// 작성 중인 번들에 담긴 사진 여부(서버 PR #140). 서버가 필수로 내려 주므로 생성 타입을 다시 만든 뒤에는 default를 빼 누락을 파싱 오류로 드러냄
+// 서버 PR이 머지되기 전(필드 없음)에도 동작하도록 그때까지는 쓰이지 않은 것으로 봄(삭제 확인 창이 일반 문구로 보임)
+const usedInDraftBundleSchema = z.boolean().default(false);
+
 const datedPhotoSchema = z.object({
   photoId: z.number().int().positive(),
   thumbnailUrl: z.string(),
   capturedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   capturedTime: capturedTimeSchema.nullish(),
   uploaderIds: uploaderIdsSchema,
+  usedInDraftBundle: usedInDraftBundleSchema,
 }) satisfies z.ZodType<
   Omit<ApiContract<components['schemas']['PhotoListItem']>, 'capturedTime'> & {
     capturedTime?: unknown;
@@ -59,6 +64,7 @@ const undatedPhotoSchema = z.object({
   photoId: z.number().int().positive(),
   thumbnailUrl: z.string(),
   uploaderIds: uploaderIdsSchema,
+  usedInDraftBundle: usedInDraftBundleSchema,
 }) satisfies z.ZodType<ApiContract<components['schemas']['PhotoUndatedItem']>>;
 
 /** `GET /api/v1/bunches/{bunchId}/photos` 응답(날짜를 아는 사진 한 페이지) */
@@ -98,6 +104,7 @@ export const toDatedPhotoBoxPhoto = (photo: z.infer<typeof datedPhotoSchema>): P
   takenAt: `${photo.capturedDate}T${toHourMinute(photo.capturedTime)}`,
   uploadedAt: toUploadedAt(photo.photoId),
   uploaderIds: photo.uploaderIds.map(toDomainId),
+  usedInDraftBundle: photo.usedInDraftBundle,
   status: 'ready',
 });
 
@@ -110,6 +117,7 @@ export const toUndatedPhotoBoxPhoto = (
   takenAt: null,
   uploadedAt: toUploadedAt(photo.photoId),
   uploaderIds: photo.uploaderIds.map(toDomainId),
+  usedInDraftBundle: photo.usedInDraftBundle,
   status: 'ready',
 });
 
@@ -125,6 +133,7 @@ export const photoDetailSchema = z.object({
   imageUrl: z.string().refine(isSafeImageUrl, 'https 주소 또는 같은 출처 경로만 허용'),
   capturedDate: z.string().nullish(),
   uploaders: z.array(photoDetailUploaderSchema),
+  usedInDraftBundle: usedInDraftBundleSchema,
 }) satisfies z.ZodType<
   // 중첩 배열은 계약 검사가 선택 필드를 다루지 못해 uploaders는 위 스키마에서 따로 검사
   Omit<ApiContract<components['schemas']['PhotoDetailResponse']>, 'uploaders'> & {

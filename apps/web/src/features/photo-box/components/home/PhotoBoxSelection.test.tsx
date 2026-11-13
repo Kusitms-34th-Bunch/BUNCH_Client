@@ -41,6 +41,7 @@ const manyPhotos = (count: number): PhotoBoxData => ({
     takenAt: '2026-09-27T10:00',
     uploadedAt: '2026-10-01T00:00:00',
     uploaderIds: ['eunwoo'],
+    usedInDraftBundle: false,
     status: 'ready',
   })),
 });

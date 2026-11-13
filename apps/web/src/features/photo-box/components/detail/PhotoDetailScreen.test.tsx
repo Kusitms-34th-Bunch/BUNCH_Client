@@ -93,6 +93,7 @@ const photo = (
   takenAt,
   uploadedAt: '2026-10-01T00:00:00',
   uploaderIds,
+  usedInDraftBundle: false,
   status,
 });
 

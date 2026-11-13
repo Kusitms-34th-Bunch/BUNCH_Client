@@ -59,6 +59,17 @@ export const getDeleteKind = (
   return coUploaded === photos.length ? 'co-uploaded' : 'mixed';
 };
 
+/**
+ * 삭제하면 작성 중인 번들에서도 빠지는 사진이 있는지(명세 3.3.5 로직 4)
+ * 사진이 실제로 사라질 때만 번들에서 빠진다. 함께 올린 사진에서 내 이름만 빠지는 경우는 번들에 영향이 없음
+ */
+export const removesDraftBundlePhoto = (photos: readonly PhotoBoxPhoto[], viewer: PhotoBoxViewer) =>
+  photos.some((photo) => {
+    if (!photo.usedInDraftBundle) return false;
+    const keepsOthers = photo.uploaderIds.includes(viewer.memberId) && photo.uploaderIds.length > 1;
+    return !keepsOthers;
+  });
+
 /** 함께 올린 사진 수(삭제해도 사진함에 남는 사진 수, 「다른 멤버도 올린 사진 M장은 사진함에 남아요.」의 M) */
 export const countCoUploaded = (photos: readonly PhotoBoxPhoto[]) =>
   photos.filter((photo) => photo.uploaderIds.length > 1).length;

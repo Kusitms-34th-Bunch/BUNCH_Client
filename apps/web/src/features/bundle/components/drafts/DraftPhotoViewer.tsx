@@ -41,6 +41,8 @@ const toViewerPhoto = (photo: DraftPhoto, source: PhotoSource | undefined): Phot
     takenAt,
     uploadedAt: takenAt ?? '',
     uploaderIds: source ? source.uploaderIds : [photo.uploaderId],
+    // 번들 크게 보기에는 삭제가 없어 쓰이지 않는 값
+    usedInDraftBundle: false,
     status: 'ready',
   };
 };

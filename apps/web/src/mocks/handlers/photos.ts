@@ -84,6 +84,7 @@ const listPhotos = (
   const page = matched.slice(start, start + query.size);
   const last = page.at(-1);
   return {
+    bunchId,
     totalCount: matched.length,
     page,
     nextCursor:
@@ -155,12 +156,23 @@ const sha256Hex = async (file: Blob) => {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 };
 
+// 작성 중(DRAFT) 번들에 담긴 사진 ID(서버 PR #140의 usedInDraftBundle). 발행된 번들은 사진을 지워도 남으므로 세지 않음
+const draftBundlePhotoIds = (bunchId: number) =>
+  new Set(
+    mockDb
+      .get()
+      .bundles.filter((bundle) => bundle.bunchId === bunchId && bundle.status === 'DRAFT')
+      .flatMap((bundle) => bundle.photos.map((photo) => photo.photoId))
+      .filter((photoId): photoId is number => photoId !== null),
+  );
+
 export const photoHandlers = [
   // GET /api/v1/bunches/{bunchId}/photos
   // 날짜를 아는 사진을 최신순으로(memberId로 올린 사람 필터, cursor 페이지)
   http.get('/api/bunches/:bunchId/photos', ({ params, request }) => {
     const result = listPhotos(params.bunchId, new URL(request.url), true);
     if (result.error) return result.error;
+    const used = draftBundlePhotoIds(result.bunchId);
     return ok({
       totalCount: result.totalCount,
       photos: result.page.map((photo) => ({
@@ -169,6 +181,7 @@ export const photoHandlers = [
         capturedDate: photo.capturedDate,
         capturedTime: photo.capturedTime,
         uploaderIds: photo.uploaderIds,
+        usedInDraftBundle: used.has(photo.photoId),
       })),
       nextCursor: result.nextCursor,
     });
@@ -178,12 +191,14 @@ export const photoHandlers = [
   http.get('/api/bunches/:bunchId/photos/undated', ({ params, request }) => {
     const result = listPhotos(params.bunchId, new URL(request.url), false);
     if (result.error) return result.error;
+    const used = draftBundlePhotoIds(result.bunchId);
     return ok({
       totalCount: result.totalCount,
       photos: result.page.map((photo) => ({
         photoId: photo.photoId,
         thumbnailUrl: photo.thumbnailUrl,
         uploaderIds: photo.uploaderIds,
+        usedInDraftBundle: used.has(photo.photoId),
       })),
       nextCursor: result.nextCursor,
     });
@@ -302,8 +317,20 @@ export const photoHandlers = [
     const uploaderRemovedCount = targets.filter(keepsOthers).length;
     const deletedCount = targets.length - uploaderRemovedCount;
 
+    // 사진이 사라지면 작성 중인 번들에서도 빠지고(서버 처리, 명세 3.3.5 로직 4), 사진이 0장이 된 초안은 삭제됨
+    const vanishedIds = new Set(
+      targets.filter((photo) => !keepsOthers(photo)).map((photo) => photo.photoId),
+    );
     mockDb.update((current) => ({
       ...current,
+      bundles: current.bundles.flatMap((bundle) => {
+        if (bundle.status !== 'DRAFT') return [bundle];
+        const remaining = bundle.photos.filter(
+          (photo) => photo.photoId === null || !vanishedIds.has(photo.photoId),
+        );
+        if (remaining.length === bundle.photos.length) return [bundle];
+        return remaining.length === 0 ? [] : [{ ...bundle, photos: remaining }];
+      }),
       photos: current.photos.flatMap((photo) => {
         if (!targets.includes(photo)) return [photo];
         if (!keepsOthers(photo)) return [];
@@ -388,6 +415,7 @@ export const photoHandlers = [
     return ok({
       photoId: photo.photoId,
       imageUrl: photo.imageUrl,
+      usedInDraftBundle: draftBundlePhotoIds(bunchId).has(photo.photoId),
       ...(photo.capturedDate ? { capturedDate: photo.capturedDate } : {}),
       uploaders: photo.uploaderIds.flatMap((memberId) => {
         const member = members.find((item) => item.memberId === memberId);

@@ -4,4 +4,6 @@ export const bundleKeys = {
   // 번치를 아직 모르면 undefined(요청하지 않는 skipToken 상태의 key)
   detail: (bunchId: string | undefined, bundleId: string | undefined) =>
     [...bundleKeys.all, 'detail', bunchId, bundleId] as const,
+  // 그 번치의 번들 상세 전체(사진이 지워져 여러 초안이 바뀔 수 있을 때)
+  detailsOf: (bunchId: string | undefined) => [...bundleKeys.all, 'detail', bunchId] as const,
 };

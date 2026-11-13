@@ -24,6 +24,7 @@ import {
   countCoUploaded,
   getDateConfirmKind,
   getDeleteKind,
+  removesDraftBundlePhoto,
   type DateConfirmKind,
 } from '../../lib/photoActions';
 import { formatDetailDate } from '../../lib/photoDetail';
@@ -206,6 +207,7 @@ export function PhotoDetailScreen({
         getDeleteKind([activePhoto], viewer),
         1,
         countCoUploaded([activePhoto]),
+        removesDraftBundlePhoto([activePhoto], viewer),
       );
       setOverlayOpen(true);
       openOverlay(

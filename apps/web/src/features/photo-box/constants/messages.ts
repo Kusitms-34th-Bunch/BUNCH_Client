@@ -21,14 +21,18 @@ export const PHOTO_BOX_MESSAGES = {
   // 기획에 원문이 없는 임시 문구: 삭제 뒤 목록을 다시 받지 못해 지운 사진이 남아 보일 수 있을 때
   listStale: '최신 사진 목록을 불러오지 못했어요. 사진함을 다시 열어 확인해 주세요.',
   deleteForbidden: '내가 올린 사진만 삭제할 수 있어요.',
-  // 삭제 확인 창 문구(기능명세서 3.3.5): 사진 종류별 제목과 내용. 「작성 중인 번들에 쓰인 사진」 문구는 그 정보가 API에 없어 아직 구분하지 않음
+  // 삭제 확인 창 문구(기능명세서 3.3.5): 사진 종류별 제목과 내용. 사라지는 사진 중 작성 중인 번들에 쓰인 사진이 있으면(`usedInDraftBundle`) 「복구할 수 없어요」 줄만 번들 안내로 바뀜(`draftUsed`)
   // count: 고른 사진 수, sharedCount: 그중 함께 올린 사진 수(`mixed`의 「다른 멤버도 올린 사진 M장」)
+  // draftUsed: 사라지는 사진 중 작성 중인 번들에 쓰인 사진이 있으면 「복구할 수 없어요」 줄만 번들 안내 문구로 바꿈(줄을 덧붙이지 않음)
   deleteConfirm: (
     kind: DeleteKind,
     count: number,
     sharedCount: number,
+    draftUsed = false,
   ): { title: string; lines: readonly string[] } => {
-    const irreversible = '삭제 이후에는 복구할 수 없어요.';
+    const irreversible = draftUsed
+      ? '작성 중인 번들에 쓰인 사진도 있어요. 삭제하면 번들에서도 빠지고 복구할 수 없어요.'
+      : '삭제 이후에는 복구할 수 없어요.';
     switch (kind) {
       case 'own':
         return {

@@ -17,6 +17,7 @@ import {
   countCoUploaded,
   getDateConfirmKind,
   getDeleteKind,
+  removesDraftBundlePhoto,
   type DateConfirmKind,
   type DeleteKind,
 } from '../lib/photoActions';
@@ -160,6 +161,7 @@ export function usePhotoSelectionFlow({
         deleteKind ?? 'own',
         selectedPhotos.length,
         countCoUploaded(selectedPhotos),
+        removesDraftBundlePhoto(selectedPhotos, data.viewer),
       );
       openOverlay((rootProps, close) => (
         <DeleteConfirmDialog

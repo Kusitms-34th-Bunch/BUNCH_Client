@@ -31,6 +31,7 @@ const source = (id: string, uploaderIds = ['gyeongjin']): PhotoBoxPhoto => ({
   takenAt: '2026-09-27T14:10',
   uploadedAt: '2026-10-29T09:01:00',
   uploaderIds,
+  usedInDraftBundle: false,
   status: 'ready',
 });
 

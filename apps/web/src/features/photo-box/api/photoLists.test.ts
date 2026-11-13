@@ -89,6 +89,29 @@ describe('getDatedPhotosPage', () => {
     expect(page.nextCursor).toBeNull();
   });
 
+  it('작성 중인 번들 사용 여부(usedInDraftBundle)를 사진에 담고, 값이 없으면 쓰이지 않은 것으로 본다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({
+          totalCount: 2,
+          photos: [
+            {
+              photoId: 7,
+              thumbnailUrl: 'a.jpg',
+              capturedDate: '2026-10-18',
+              uploaderIds: [1],
+              usedInDraftBundle: true,
+            },
+            { photoId: 8, thumbnailUrl: 'b.jpg', capturedDate: '2026-10-18', uploaderIds: [1] },
+          ],
+        }),
+      ),
+    );
+
+    const page = await getDatedPhotosPage({ bunchId });
+    expect(page.photos.map((photo) => photo.usedInDraftBundle)).toEqual([true, false]);
+  });
+
   it('시각이 객체(LocalTime)로 와도 같은 시각으로 바꾼다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/photos', () =>
