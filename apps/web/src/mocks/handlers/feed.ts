@@ -5,6 +5,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { isBlockedBetween, viewerBunchId } from './follows';
+import { likeOf } from './likes';
 import { myMembershipsByRecent } from './members';
 
 // 팔로잉·공개 피드(명세 025). 구간·광고 규칙은 명세, 응답 모양은 Swagger `FeedResponse`
@@ -151,9 +152,8 @@ const cardOf = (state: MockDbState, bundle: MockBundle) => {
         creator: false,
       };
     }),
-    // ponytail: 좋아요·소셜 댓글은 가짜 DB에 없어 0, 좋아요·댓글 연결(API 연동 3·4번) 때 채움
-    likeCount: 0,
-    likedByCurrentBunch: false,
+    ...likeOf(state, viewerBunchId(state), bundle.id),
+    // ponytail: 소셜 댓글은 가짜 DB에 없어 0, 댓글 연결(API 연동 4번) 때 채움
     commentCount: 0,
   };
 };
@@ -248,9 +248,8 @@ const publicDetailOf = (state: MockDbState, bunchId: number, bundleId: number) =
       canLike: viewer !== undefined,
       canComment: viewer !== undefined,
     },
-    // ponytail: 좋아요·소셜 댓글은 가짜 DB에 없어 0, 좋아요·댓글 연결(API 연동 3·4번) 때 채움
-    likeCount: 0,
-    likedByCurrentBunch: false,
+    ...likeOf(state, viewerBunchId(state), bundle.id),
+    // ponytail: 소셜 댓글은 가짜 DB에 없어 0, 댓글 연결(API 연동 4번) 때 채움
     commentCount: 0,
   });
 };

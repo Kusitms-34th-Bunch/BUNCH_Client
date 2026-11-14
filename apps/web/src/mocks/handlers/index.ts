@@ -7,6 +7,7 @@ import { bundleHandlers } from './bundles';
 import { feedHandlers } from './feed';
 import { followHandlers } from './follows';
 import { invitationHandlers } from './invitations';
+import { likeHandlers } from './likes';
 import { memberHandlers } from './members';
 import { membershipHandlers } from './memberships';
 import { notificationHandlers } from './notifications';
@@ -30,6 +31,7 @@ export const handlers = [
   ...membershipHandlers,
   ...followHandlers,
   ...feedHandlers,
+  ...likeHandlers,
   ...blockHandlers,
   ...notificationHandlers,
   ...bundleHandlers,

@@ -156,6 +156,9 @@ export type MockReport = {
   detail: string | null;
 };
 
+/** 번치 공동 좋아요(번치 명의, 같은 번치 멤버가 함께 씀) */
+export type MockLike = { bunchId: number; bundleId: number };
+
 export type MockDbState = {
   members: MockMember[];
   bunches: MockBunch[];
@@ -167,5 +170,6 @@ export type MockDbState = {
   follows: MockFollow[];
   blocks: MockBlock[];
   reports: MockReport[];
+  likes: MockLike[];
   notifications: MockNotification[];
 };
