@@ -6,6 +6,12 @@ export const FEED_MESSAGES = {
   currentBunch: (name: string) => `${name} 번치 홈`,
   followingDone: '팔로우한 번치의 소식을 모두 확인했어요',
   allDone: '모든 피드를 확인했어요',
+  feedLoading: '피드를 불러오는 중이에요',
+  moreLoading: '피드를 더 불러오는 중이에요',
+  moreFailed: '피드를 더 불러오지 못했어요',
+  /** 이어 받기 자리(광고가 사라지고 다음 카드가 없을 때 초점을 받음) */
+  moreArea: '다음 피드',
+  retry: '다시 시도',
   /** 소속 번치가 없을 때 번치 명의 행동(기능명세서 6.1.7) */
   joinRequired: '번치에 참여하면 할 수 있어요.',
   back: '뒤로 가기',
