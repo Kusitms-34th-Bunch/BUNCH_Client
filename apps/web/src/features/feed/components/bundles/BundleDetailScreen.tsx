@@ -680,7 +680,7 @@ export function BundleDetailScreen({
         title={bundle.title}
         titleAs="h1"
         location={bundle.location}
-        onLocationClick={() => openPlaces(bundle.places)}
+        onLocationClick={() => openPlaces(bundle.id, bundle.places)}
         date={bundle.date}
         memberOnly={bundle.memberOnly}
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
