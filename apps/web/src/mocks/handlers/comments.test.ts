@@ -109,6 +109,34 @@ describe('가짜 서버 번들 댓글', () => {
     expect((await post(901, { content: '🙌'.repeat(200) })).status).toBe(200);
   });
 
+  it('같은 키로 다시 보내면 그사이 원댓글이 지워졌어도 처음 등록한 답글을 돌려준다', async () => {
+    const key = crypto.randomUUID();
+    const first = await post(901, { content: '답글', parentId: 5005 }, key);
+    expect(first.status).toBe(200);
+    await call('901/comments/5005', { method: 'DELETE' });
+    expect(await post(901, { content: '답글', parentId: 5005 }, key)).toMatchObject({
+      status: 200,
+      data: { id: first.data.id },
+    });
+  });
+
+  it('탈퇴한 작성자의 댓글은 삭제 자리로 돌려준다', async () => {
+    const author = mockDb.get().socialComments.find((item) => item.id === 5001)!.memberId;
+    mockDb.update((state) => ({
+      ...state,
+      members: state.members.filter((member) => member.memberId !== author),
+    }));
+    const { data } = await call<Page>('901/comments');
+    expect(data.items.find((item) => item.id === 5001)).toMatchObject({
+      deleted: true,
+      content: '삭제된 댓글입니다',
+      author: { nickname: '작성자' },
+      badge: null,
+      canReply: false,
+      canReport: false,
+    });
+  });
+
   it('내 댓글만 지우고 삭제 자리를 돌려주며, 다시 지워도 같다', async () => {
     const removed = await call<Item>('901/comments/5005', { method: 'DELETE' });
     expect(removed.data).toMatchObject({ id: 5005, deleted: true, content: '삭제된 댓글입니다' });

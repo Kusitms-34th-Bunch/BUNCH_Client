@@ -76,32 +76,43 @@ const addCount = (client: QueryClient, target: Target) => {
   );
 };
 
+// 진행 중인 받기를 멈춤. 아직 데이터가 없는 첫 받기는 멈추면 받는 중에 머무르므로 그대로 둠
+const cancelLoaded = (client: QueryClient, keys: readonly (readonly unknown[])[]) =>
+  Promise.all(
+    keys
+      .filter((key) => client.getQueryData(key) !== undefined)
+      .map((key) => client.cancelQueries({ queryKey: key, exact: true })),
+  );
+
 const replaceItem = (items: CommentItemResponse[], saved: CommentItemResponse) =>
   items.map((item) => (item.id === saved.id ? saved : item));
 
-type CreateVariables = { content: string; parentId: number | null; idempotencyKey: string };
+// 대상은 요청할 때 값으로 넘김(진행 중 명의가 바뀌어 다시 렌더돼도 응답을 보낸 명의의 cache에 넣게)
+type CreateVariables = {
+  target: Target;
+  content: string;
+  parentId: number | null;
+  idempotencyKey: string;
+};
 
 /**
  * 지금 번치 명의로 댓글·답글 등록(명세 016). 성공하면 원댓글은 맨 위, 답글은 그 원댓글의 답글 끝에 넣고 수를 올림
  * 서버 응답을 기다린 뒤 넣음(작성자·배지·시각은 서버 값). 실패 안내는 화면이 오류 코드로 나눔
  */
-export const useCreateCommentMutation = (target: Target) => {
+export const useCreateCommentMutation = () => {
   const queryClient = useQueryClient();
-  const listKey = feedKeys.comments(String(target.bundleId), target.viewerId);
   return useMutation({
-    mutationFn: ({ content, parentId, idempotencyKey }: CreateVariables) =>
+    mutationFn: ({ target, content, parentId, idempotencyKey }: CreateVariables) =>
       createComment(target.bundleId, { content, parentId }, idempotencyKey),
-    onSuccess: async (saved) => {
+    onSuccess: async (saved, { target }) => {
+      const listKey = feedKeys.comments(String(target.bundleId), target.viewerId);
       const parentId = saved.parentId;
       const repliesKey =
         parentId == null
           ? undefined
           : feedKeys.replies(String(target.bundleId), target.viewerId, parentId);
-      // 진행 중인 다시 받기가 늦게 끝나 넣은 댓글을 덮지 않게 먼저 멈춤
-      // 아직 데이터가 없는 첫 받기는 멈추면 받는 중에 머무르므로 그대로 둠
-      if (queryClient.getQueryData(repliesKey ?? listKey) !== undefined) {
-        await queryClient.cancelQueries({ queryKey: repliesKey ?? listKey, exact: true });
-      }
+      // 진행 중인 다시 받기가 늦게 끝나 넣은 댓글·답글 수를 덮지 않게 먼저 멈춤(답글이면 원댓글 목록도)
+      await cancelLoaded(queryClient, repliesKey ? [repliesKey, listKey] : [listKey]);
       const roots = queryClient.getQueryData<InfiniteData<CommentPage>>(listKey);
       const replies = repliesKey && queryClient.getQueryData<CommentItemResponse[]>(repliesKey);
       // 같은 키로 다시 보내 처음 결과가 왔는데 이미 목록에 있으면(연타·재시도) 바꾸기만 하고 수는 그대로
@@ -149,13 +160,18 @@ export const useCreateCommentMutation = (target: Target) => {
 };
 
 /** 내 댓글·답글 삭제(명세 017). 성공하면 그 자리를 서버의 삭제 자리로 바꿈(수는 그대로) */
-export const useDeleteCommentMutation = (target: Target) => {
+export const useDeleteCommentMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (comment: { id: number; parentId: number | null }) =>
-      deleteComment(target.bundleId, comment.id),
+    mutationFn: (comment: { target: Target; id: number; parentId: number | null }) =>
+      deleteComment(comment.target.bundleId, comment.id),
     // 자리는 지운 댓글의 원래 위치로 찾음(삭제 자리 응답의 parentId에 기대지 않음)
-    onSuccess: (saved, { parentId }) => {
+    onSuccess: async (saved, { target, parentId }) => {
+      await cancelLoaded(queryClient, [
+        parentId == null
+          ? feedKeys.comments(String(target.bundleId), target.viewerId)
+          : feedKeys.replies(String(target.bundleId), target.viewerId, parentId),
+      ]);
       if (parentId == null) {
         patchRoots(queryClient, target, (page) => ({
           ...page,

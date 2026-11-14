@@ -202,8 +202,8 @@ export function BundleDetailScreen({
     backOr(FEED_PATHS.home);
     toastAfterNavigation(text.bundleGone);
   }, [backOr]);
-  // 답글·삭제 실패 뒤 다시 받은 목록이 번들을 볼 수 없다고 하면 떠남(답글 대상 없음과 번들 없음이 같은 404라서)
-  const listGone = isGone(thread.error) && thread.failed;
+  // 목록(다음 쪽 포함)이 번들을 볼 수 없다고 하면 떠남(답글·삭제 실패 뒤 다시 받은 목록도, 답글 대상 없음과 번들 없음이 같은 404라서)
+  const listGone = isGone(thread.error);
   useEffect(() => {
     if (listGone && contentReady) leaveGone();
   }, [listGone, contentReady, leaveGone]);
@@ -296,9 +296,10 @@ export function BundleDetailScreen({
       if (!viewer || !content) return;
       const parentId = replyTarget?.id ?? null;
       thread.create(content, parentId, {
+        // 기다리는 사이 고친 입력·바꾼 답글 대상은 지우지 않음
         onSuccess: (saved) => {
-          setDraft('');
-          setReplyTarget(null);
+          setDraft((current) => (current.trim() === content ? '' : current));
+          setReplyTarget((current) => ((current?.id ?? null) === parentId ? null : current));
           announce(parentId ? text.replyAdded : text.commentAdded);
           focusCommentId.current = String(saved.id);
         },

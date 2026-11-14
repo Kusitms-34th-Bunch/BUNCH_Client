@@ -31,8 +31,8 @@ const setup = () => {
     pageParams: [undefined],
   });
   const wrapper = createQueryWrapper(client);
-  const create = renderHook(() => useCreateCommentMutation(target), { wrapper }).result;
-  const remove = renderHook(() => useDeleteCommentMutation(target), { wrapper }).result;
+  const create = renderHook(() => useCreateCommentMutation(), { wrapper }).result;
+  const remove = renderHook(() => useDeleteCommentMutation(), { wrapper }).result;
   return { client, create, remove };
 };
 const pageOf = (data: unknown) => (data as { pages: CommentPage[] }).pages[0]!;
@@ -49,6 +49,7 @@ describe('댓글 등록·삭제 캐시', () => {
     const { client, create } = setup();
     act(() =>
       create.current.mutate({
+        target,
         content: '새 댓글',
         parentId: null,
         idempotencyKey: crypto.randomUUID(),
@@ -64,6 +65,7 @@ describe('댓글 등록·삭제 캐시', () => {
     const { client, create } = setup();
     act(() =>
       create.current.mutate({
+        target,
         content: '새 답글',
         parentId: 5001,
         idempotencyKey: crypto.randomUUID(),
@@ -83,11 +85,12 @@ describe('댓글 등록·삭제 캐시', () => {
   it('같은 키로 다시 보내 이미 목록에 있는 댓글이 오면 넣지 않고 수도 그대로 둔다', async () => {
     const { client, create } = setup();
     const idempotencyKey = crypto.randomUUID();
-    act(() => create.current.mutate({ content: '한 번', parentId: null, idempotencyKey }));
-    await waitFor(() => expect(create.current.isSuccess).toBe(true));
-    act(() => create.current.mutate({ content: '한 번', parentId: null, idempotencyKey }));
-    await waitFor(() => expect(create.current.isIdle || create.current.isSuccess).toBe(true));
-    await waitFor(() => expect(client.isMutating()).toBe(0));
+    const send = () =>
+      create.current.mutateAsync({ target, content: '한 번', parentId: null, idempotencyKey });
+    const first = await act(send);
+    // 두 번째도 성공하고 같은 댓글이 돌아옴(실패로 끝난 것과 구분)
+    const second = await act(send);
+    expect(second.id).toBe(first.id);
 
     const items = pageOf(client.getQueryData(listKey)).items;
     expect(items.filter((item) => item.content === '한 번')).toHaveLength(1);
@@ -97,8 +100,11 @@ describe('댓글 등록·삭제 캐시', () => {
   it('기존 답글을 아직 받지 못했으면 새 답글로 덮지 않고 다시 받게 둔다', async () => {
     const { client, create } = setup();
     client.removeQueries({ queryKey: repliesKey, exact: true });
+    // 받기 전인 답글 query(데이터 없음)
+    client.getQueryCache().build(client, { queryKey: repliesKey });
     act(() =>
       create.current.mutate({
+        target,
         content: '새 답글',
         parentId: 5001,
         idempotencyKey: crypto.randomUUID(),
@@ -107,12 +113,14 @@ describe('댓글 등록·삭제 캐시', () => {
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
 
     expect(client.getQueryData(repliesKey)).toBeUndefined();
+    // 덮지 않고 다시 받게 표시(지우면 기존 답글을 다시 받지 못하는 회귀)
+    expect(client.getQueryState(repliesKey)?.isInvalidated).toBe(true);
     expect(pageOf(client.getQueryData(listKey)).items[1]).toMatchObject({ replyCount: 2 });
   });
 
   it('지우면 그 자리를 서버의 삭제 자리로 바꾸고 수는 그대로 둔다', async () => {
     const { client, remove } = setup();
-    act(() => remove.current.mutate({ id: 5002, parentId: 5001 }));
+    act(() => remove.current.mutate({ target, id: 5002, parentId: 5001 }));
     await waitFor(() => expect(remove.current.isSuccess).toBe(true));
 
     expect(client.getQueryData<CommentItemResponse[]>(repliesKey)![0]).toMatchObject({
