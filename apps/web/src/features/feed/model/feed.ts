@@ -4,7 +4,7 @@ import { defaultBunchImage, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProf
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import type { FeedAd, FeedBundle } from '../lib/types';
 
-const imageOrUndefined = (url: string | null | undefined) =>
+export const imageOrUndefined = (url: string | null | undefined) =>
   url && isSafeImageUrl(url) ? url : undefined;
 
 // 응답 모양은 Swagger 생성 타입 FeedResponse·AdvertisementResponse(중첩 선택 필드가 있어 ApiContract로 묶지 않음)
@@ -101,13 +101,13 @@ export type FeedEntry =
   | { kind: 'followingDone' };
 
 /** 「2026년 7월 9일」(번들 날짜는 올해도 연도를 붙임, 기능명세서 6.2.3) */
-const toDateLabel = (date: string) => {
+export const toDateLabel = (date: string) => {
   const [year, month, day] = date.split('-').map(Number);
   return `${year}년 ${month}월 ${day}일`;
 };
 
 /** 「{첫 장소} 외 N곳」 */
-const toLocationLabel = (names: readonly string[]) =>
+export const toLocationLabel = (names: readonly string[]) =>
   names.length === 0
     ? undefined
     : names.length === 1

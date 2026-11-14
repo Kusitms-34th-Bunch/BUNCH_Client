@@ -199,12 +199,12 @@ export function FeedScreen({ links }: FeedScreenProps) {
           location={bundle.location}
           onLocationClick={() => openPlaces(bundle.places)}
           date={bundle.date}
-          onPhotoClick={() => router.push(FEED_PATHS.bundle(bundle.id))}
+          onPhotoClick={() => router.push(FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
           liked={likes.isLiked(bundle)}
           likeCount={likes.likeCount(bundle)}
           onLike={() => asBunch(() => likes.toggle(bundle))}
           commentCount={bundle.commentCount}
-          onComment={() => router.push(FEED_PATHS.bundleComments(bundle.id))}
+          onComment={() => router.push(FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id))}
         />
       </li>
     );
