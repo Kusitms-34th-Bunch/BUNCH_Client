@@ -1,7 +1,8 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { PHOTO_BOX_PATHS } from '@/features/photo-box/constants/paths';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import {
   countSelectedByMember,
@@ -10,9 +11,11 @@ import {
   type PhotoSelection,
 } from '@/features/photo-box/lib/selection';
 import { ALL_MEMBERS } from '@/features/photo-box/lib/types';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_SELECT_MESSAGES, MAX_SELECT_PHOTOS } from '../constants/selectMessages';
 import { recommendationFixture } from '../fixtures/recommendation.fixture';
 import { useCreateBundle } from '../hooks/useCreateBundle';
+import { clearPhotoBoxEntry, readPhotoBoxEntry } from '../lib/photoBoxEntry';
 import { applyRecommendation, getApplyDateKey, type Recommendation } from '../lib/recommendation';
 import { BundleSelectContext, type BundleSelectValue } from './bundleSelectContext';
 
@@ -38,9 +41,16 @@ export function BundleSelectProvider({
 }: BundleSelectProviderProps) {
   const { state: photoState, retry } = usePhotoBox();
   const { create: createBundle, creating } = useCreateBundle();
+  const backOr = useBackOr();
   const photos = photoState.kind === 'ready' ? photoState.data.photos : undefined;
 
-  const [selection, setSelection] = useState<PhotoSelection>([]);
+  // 사진함 선택 모드에서 넘어왔으면 그 사진이 처음부터 선택돼 있고, 멤버만 고르면 바로 초안을 만듦(기능 spec 3.3.4)
+  const [fromPhotoBox] = useState(() => readPhotoBoxEntry() !== undefined);
+  const [selection, setSelection] = useState<PhotoSelection>(() => [
+    ...(readPhotoBoxEntry() ?? []),
+  ]);
+  // 이 흐름을 벗어나면 넘겨받은 사진을 비워 다음 진입에 남지 않게 함
+  useEffect(() => clearPhotoBoxEntry, []);
   const [memberIds, setMemberIds] = useState<readonly string[]>(initialMemberIds);
   const [memberId, setMemberId] = useState<string>(ALL_MEMBERS);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -104,7 +114,14 @@ export function BundleSelectProvider({
     return 'applied';
   };
 
+  // 사진함에서 넘어온 흐름은 사진을 다시 고를 화면이 없어, 모두 사라졌으면 사진함으로 돌려보냄(기능 spec 3.3.4)
+  const backToPhotoBox = () => {
+    notify(BUNDLE_SELECT_MESSAGES.allSelectionGone);
+    backOr(PHOTO_BOX_PATHS.list);
+  };
+
   // 실행 직전 고른 사진이 사진함에서 사라졌는지 확인하고, 사라졌으면 선택에서 빼고 중단(기획 4.1.3)
+  // 사진함에서 넘어온 흐름은 안내 없이 남은 사진으로 바로 만들고, 하나도 안 남았으면 사진함으로 돌아감
   const create = () => {
     if (creating || selection.length === 0 || !photos) return;
     const { selection: kept, removedCount } = pruneSelection(
@@ -113,10 +130,31 @@ export function BundleSelectProvider({
     );
     if (removedCount > 0) {
       setSelection(kept);
-      notify(BUNDLE_SELECT_MESSAGES.selectionStale(removedCount));
-      return;
+      if (!fromPhotoBox) {
+        notify(BUNDLE_SELECT_MESSAGES.selectionStale(removedCount));
+        return;
+      }
+      if (kept.length === 0) return backToPhotoBox();
     }
-    createBundle(selection);
+    const photoIds = removedCount > 0 ? kept : selection;
+    // 번치에서 나간 멤버는 참여자로 보내지 않음(서버가 유효하지 않은 멤버가 하나라도 있으면 전부 거절함)
+    const currentMemberIds =
+      photoState.kind === 'ready'
+        ? photoState.data.members
+            .filter((member) => member.id !== photoState.data.viewer.memberId)
+            .map((member) => member.id)
+        : [];
+    const participantIds = memberIds.filter((id) => currentMemberIds.includes(id));
+    if (participantIds.length === 0) return;
+    createBundle(photoIds, participantIds, {
+      // 서버에 없다고 돌려준 사진은 선택에서 빼고 다시 고르게 함(사진함에서 넘어온 흐름은 하나도 안 남으면 사진함으로)
+      onMissingPhotos: (missing) => {
+        const left = photoIds.filter((id) => !missing.includes(id));
+        setSelection(left);
+        if (fromPhotoBox && left.length === 0) backToPhotoBox();
+      },
+      replace: fromPhotoBox,
+    });
   };
 
   const value: BundleSelectValue = {
@@ -131,6 +169,7 @@ export function BundleSelectProvider({
     pickedId,
     scrollTarget,
     creating,
+    fromPhotoBox,
     clearScrollTarget,
     setMemberId,
     toggleMember,

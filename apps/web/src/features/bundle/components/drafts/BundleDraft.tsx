@@ -51,8 +51,13 @@ export function BundleDraft() {
           saveStatus={state.saveStatus}
           offline={!online}
           actions={actions}
-          // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)
-          onBack={() => backOr(BUNDLE_PATHS.bunchHome)}
+          // 번치 홈에서 만든 초안이면(`from=home`) 거쳐 온 멤버·사진 선택이 아니라 번치 홈으로 이동
+          // 그 밖에는 들어온 곳으로 가고, 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)
+          onBack={() =>
+            new URLSearchParams(window.location.search).get('from') === 'home'
+              ? router.replace(BUNDLE_PATHS.bunchHome)
+              : backOr(BUNDLE_PATHS.bunchHome)
+          }
           onLeave={() => void leaveDraft(isDraftCreator(state.draft, state.viewer))}
           onRetry={recheck}
           // 조건을 채우면 공개 범위 화면으로 가서 거기서 업로드(기능 spec 4.3.12)

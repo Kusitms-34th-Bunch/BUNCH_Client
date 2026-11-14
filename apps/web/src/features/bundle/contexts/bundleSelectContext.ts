@@ -24,6 +24,8 @@ export type BundleSelectValue = {
   /** 적용 뒤 스크롤할 날짜 섹션(요청마다 nonce가 바뀜) */
   scrollTarget: { dateKey: string; nonce: number } | undefined;
   creating: boolean;
+  /** 사진함 선택 모드에서 넘어온 흐름(사진은 이미 골랐고 멤버만 고르면 바로 초안을 만듦) */
+  fromPhotoBox: boolean;
   /** 스크롤을 마친 뒤 대상을 비움(상세·뷰어를 다녀와 다시 마운트돼도 되풀이하지 않음) */
   clearScrollTarget: () => void;
   setMemberId: (_memberId: string) => void;

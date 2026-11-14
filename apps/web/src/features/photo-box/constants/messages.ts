@@ -11,8 +11,6 @@ export const PHOTO_BOX_MESSAGES = {
   saveFailedAll: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   saveFailedSome: (count: number) => `${count}장은 저장하지 못했어요. 다시 시도해 주세요.`,
   bundleTooMany: '번들에는 사진을 20장까지 담을 수 있어요.',
-  bundleConfirmTitle: '이 사진들로 번들을 만들까요?',
-  bundleConfirmDescription: '작성 중인 번들에 담기고, 멤버들과 함께 완성할 수 있어요.',
   deleteFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   // 이어 받다 실패했을 때(명세 3.1.1의 목록 로딩 실패 토스트와 같은 문구). 보이는 재시도 수단이 없는 짧은 목록에서도 알아챌 수 있게 함
   listMoreFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
@@ -29,7 +27,6 @@ export const PHOTO_BOX_MESSAGES = {
   // 날짜 바꾸기·끌기 확인 창 문구는 기획 문서에 원문이 없어 임시 문구(기획 확정 후 교체)
   dateConfirmTitle: '선택한 사진의 날짜를 바꿀까요?',
   dateConfirmDescription: '다른 멤버가 올린 사진이 포함되어 있어요.',
-  bundleCreating: '번들을 만들고 있어요.',
   photoBoxFull: '사진함이 가득 찼어요.',
   uploadSheetTitle: (bunchName: string) => `${bunchName}에 사진 올리기`,
   dateChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',

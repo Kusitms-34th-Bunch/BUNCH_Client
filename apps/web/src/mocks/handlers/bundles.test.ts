@@ -50,8 +50,11 @@ const call = async (
   return { status: response.status, json: (await response.json()) as Envelope };
 };
 
-const create = (photoIds: number[], key = createIdempotencyKey()) =>
-  call('POST', base, { photoIds }, { 'Idempotency-Key': key });
+const create = (
+  photoIds: number[],
+  key = createIdempotencyKey(),
+  participantMemberIds: number[] = [memberA],
+) => call('POST', base, { photoIds, participantMemberIds }, { 'Idempotency-Key': key });
 
 // 내 사진(S4)과 멤버 A의 사진(S5)으로 만든 초안
 const createDraft = async () => {
@@ -60,12 +63,12 @@ const createDraft = async () => {
 };
 
 describe('가짜 서버 번들 초안 생성', () => {
-  it('고른 순서대로 사진을 담고 생성자와 사진 올린 멤버가 참여자가 된다', async () => {
-    const { status, json } = await create([
-      MOCK_PHOTO_IDS.S5,
-      MOCK_PHOTO_IDS.S4,
-      MOCK_PHOTO_IDS.S1,
-    ]);
+  it('고른 순서대로 사진을 담고 생성자와 고른 멤버가 참여자가 된다', async () => {
+    const { status, json } = await create(
+      [MOCK_PHOTO_IDS.S5, MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S1],
+      createIdempotencyKey(),
+      [admin, memberA],
+    );
 
     expect(status).toBe(200);
     const draft = json.data;
@@ -81,18 +84,15 @@ describe('가짜 서버 번들 초안 생성', () => {
       MOCK_PHOTO_IDS.S4,
       MOCK_PHOTO_IDS.S1,
     ]);
-    // 생성자 먼저, 이어서 사진을 올린 멤버(중복 없이)
+    // 생성자 먼저, 이어서 고른 순서대로(사진을 올렸다는 이유로 자동 참여하지 않음)
     expect(draft.participants.map((p: { memberId: number }) => p.memberId)).toEqual([
       MOCK_MY_MEMBER_ID,
-      memberA,
       admin,
+      memberA,
     ]);
     expect(draft.permissions).toMatchObject({ creator: true, participant: true, canPublish: true });
-    expect(draft.publishBlockers).toEqual([
-      'TITLE_REQUIRED',
-      'VISIBILITY_REQUIRED',
-      'COMMENTS_REQUIRED',
-    ]);
+    // 공개 범위는 최종 발행 요청에서만 확인해 준비 상태에는 넣지 않음
+    expect(draft.publishBlockers).toEqual(['TITLE_REQUIRED', 'COMMENTS_REQUIRED']);
     // 날짜를 고르기 전에는 추천 촬영일을 돌려줌
     expect(draft.dateChips).toEqual(['2026-10-18']);
   });
@@ -110,7 +110,10 @@ describe('가짜 서버 번들 초안 생성', () => {
   });
 
   it('Idempotency-Key가 없거나 사진이 0장·21장·중복이면 COMMON_001이다', async () => {
-    const noKey = await call('POST', base, { photoIds: [MOCK_PHOTO_IDS.S4] });
+    const noKey = await call('POST', base, {
+      photoIds: [MOCK_PHOTO_IDS.S4],
+      participantMemberIds: [memberA],
+    });
     const none = await create([]);
     const dup = await create([MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S4]);
     const over = await create(Array.from({ length: 21 }, (_, i) => i + 1));
@@ -121,10 +124,34 @@ describe('가짜 서버 번들 초안 생성', () => {
     }
   });
 
-  it('없는 사진이 섞이면 전체를 거부하고 초안을 만들지 않는다', async () => {
+  it('참여 멤버가 없거나 나를 넣었거나 중복이거나 번치 멤버가 아니면 COMMON_001이고 초안을 만들지 않는다', async () => {
+    const photos = [MOCK_PHOTO_IDS.S4];
+    const none = await create(photos, createIdempotencyKey(), []);
+    const self = await create(photos, createIdempotencyKey(), [MOCK_MY_MEMBER_ID]);
+    const dup = await create(photos, createIdempotencyKey(), [memberA, memberA]);
+    const stranger = await create(photos, createIdempotencyKey(), [memberA, 999]);
+    const omitted = await call(
+      'POST',
+      base,
+      { photoIds: photos },
+      { 'Idempotency-Key': createIdempotencyKey() },
+    );
+
+    for (const result of [none, self, dup, stranger, omitted]) {
+      expect(result.status).toBe(400);
+      expect(result.json.error?.code).toBe('COMMON_001');
+    }
+    expect(mockDrafts()).toHaveLength(0);
+  });
+
+  it('없는 사진이 섞이면 PHOTO_004로 전체를 거부하고 없는 사진 ID를 알려 준다', async () => {
     const result = await create([MOCK_PHOTO_IDS.S4, 999]);
 
-    expect(result.status).toBe(404);
+    expect(result.status).toBe(409);
+    expect(result.json.error).toMatchObject({
+      code: 'PHOTO_004',
+      detail: { missingPhotoIds: [999] },
+    });
     expect(mockDrafts()).toHaveLength(0);
   });
 
@@ -149,7 +176,7 @@ describe('가짜 서버 번들 초안 생성', () => {
     const missing = await call(
       'POST',
       '/api/bunches/999/bundles',
-      { photoIds: [1] },
+      { photoIds: [1], participantMemberIds: [memberA] },
       {
         'Idempotency-Key': createIdempotencyKey(),
       },
@@ -358,18 +385,20 @@ describe('가짜 서버 번들 참여자', () => {
 
 describe('가짜 서버 번들 발행', () => {
   // 발행 조건을 모두 채운 초안(제목·공개 범위·참여자 전원 코멘트)
-  const fillDraft = async () => {
+  const fillDraft = async ({ withVisibility = true } = {}) => {
     const draft = await createDraft();
     await call('PUT', `${base}/${draft.id}/title`, {
       value: '설악산',
       expectedVersion: 0,
       mode: 'DRAFT',
     });
-    await call('PUT', `${base}/${draft.id}/visibility`, {
-      value: 'PRIVATE',
-      expectedVersion: 0,
-      mode: 'DRAFT',
-    });
+    if (withVisibility) {
+      await call('PUT', `${base}/${draft.id}/visibility`, {
+        value: 'PRIVATE',
+        expectedVersion: 0,
+        mode: 'DRAFT',
+      });
+    }
     await call('PUT', `${base}/${draft.id}/comments/me`, {
       value: '내 코멘트',
       expectedVersion: 0,
@@ -433,12 +462,36 @@ describe('가짜 서버 번들 발행', () => {
     expect(late.json.error?.code).toBe('BUNDLE_002');
   });
 
-  it('revision이 다르면 BUNDLE_003이다', async () => {
+  it('낡은 expectedRevision도 최초 발행을 거절하지 않는다(호환 필드)', async () => {
     const id = await fillDraft();
     const result = await publish(id, 1);
 
-    expect(result.status).toBe(409);
-    expect(result.json.error?.code).toBe('BUNDLE_003');
+    expect(result.status).toBe(200);
+    expect(result.json.data.status).toBe('PUBLISHED');
+  });
+
+  it('최종 공개 범위를 함께 보내면 그 범위로 발행되고, 초안 범위도 없으면 VISIBILITY_REQUIRED다', async () => {
+    const id = await fillDraft({ withVisibility: false });
+    const missing = await call(
+      'POST',
+      `${base}/${id}/publish`,
+      {},
+      { 'Idempotency-Key': createIdempotencyKey() },
+    );
+    expect(missing.status).toBe(409);
+    expect(missing.json.error).toMatchObject({
+      code: 'BUNDLE_005',
+      detail: { reasons: ['VISIBILITY_REQUIRED'] },
+    });
+
+    const result = await call(
+      'POST',
+      `${base}/${id}/publish`,
+      { visibility: 'PUBLIC' },
+      { 'Idempotency-Key': createIdempotencyKey() },
+    );
+    expect(result.status).toBe(200);
+    expect(result.json.data).toMatchObject({ status: 'PUBLISHED', visibility: 'PUBLIC' });
   });
 
   it('같은 키로 다시 발행하면 같은 결과를 돌려주고 다른 키는 BUNDLE_002이다', async () => {

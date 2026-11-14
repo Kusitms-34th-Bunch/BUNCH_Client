@@ -1,25 +1,8 @@
 'use client';
 
-import { ConfirmDialog, Dialog } from '@app/design-system';
+import { Dialog } from '@app/design-system';
 import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
-
-type BundleConfirmDialogProps = ScreenOverlayProps & {
-  onConfirm: () => void;
-};
-
-/** 「번들 만들기」 확인 창: 「아니요」/「예」(1~20장일 때만 열림) */
-export function BundleConfirmDialog(props: BundleConfirmDialogProps) {
-  return (
-    <ConfirmDialog
-      {...props}
-      title={PHOTO_BOX_MESSAGES.bundleConfirmTitle}
-      description={PHOTO_BOX_MESSAGES.bundleConfirmDescription}
-      cancelLabel="아니요"
-      confirmLabel="예"
-    />
-  );
-}
 
 type DeleteConfirmDialogProps = ScreenOverlayProps & {
   /** 고른 사진 종류에 맞는 안내 문구 */

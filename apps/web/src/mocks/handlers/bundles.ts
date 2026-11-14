@@ -63,10 +63,11 @@ export const findScope = (
   };
 };
 
-const publishBlockers = (bundle: MockBundle) => {
+// 발행 준비 snapshot의 publishBlockers에는 공개 범위를 넣지 않고(finalVisibility 생략), 최종 발행 요청에서만 범위를 확인함
+const publishBlockers = (bundle: MockBundle, finalVisibility?: 'PUBLIC' | 'PRIVATE' | null) => {
   const reasons: string[] = [];
   if (bundle.title.trim() === '') reasons.push('TITLE_REQUIRED');
-  if (bundle.visibility === null) reasons.push('VISIBILITY_REQUIRED');
+  if (finalVisibility === null) reasons.push('VISIBILITY_REQUIRED');
   if (bundle.participants.length < MIN_BUNCH_MEMBERS) reasons.push('PARTICIPANTS_REQUIRED');
   const commented = (memberId: number) =>
     bundle.comments.some((comment) => comment.memberId === memberId && comment.content.trim());
@@ -158,11 +159,12 @@ export const myRoleIn = (state: MockDbState, bunchId: number) =>
     (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
   )?.role ?? 'MEMBER';
 
-export const snapshotOf = (bundleId: number) => {
+/** 번들 응답(BundleSnapshot). extra는 요청자에게만 가는 필드(사진 구성 변경의 photoChangeResult) */
+export const snapshotOf = (bundleId: number, extra: Record<string, unknown> = {}) => {
   const state = mockDb.get();
   const bundle = state.bundles.find((item) => item.id === bundleId);
   if (!bundle) return fail(404, 'RESOURCE_001');
-  return ok(toSnapshot(bundle, state, myRoleIn(state, bundle.bunchId)));
+  return ok({ ...toSnapshot(bundle, state, myRoleIn(state, bundle.bunchId)), ...extra });
 };
 
 // 번들 한 건을 고치고 내용이 바뀌었으니 revision·updatedAt을 올림(편집 변경은 모두 이 함수로 반영)
@@ -239,7 +241,8 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
   }
   if (!valid) return fail(400, 'COMMON_001');
 
-  if (expectedVersion !== currentVersion) {
+  // 날짜는 v5 명세가 낡은 버전도 거절하지 않고 마지막 저장을 적용함(expectedVersion은 호환 필드)
+  if (kind !== 'date' && expectedVersion !== currentVersion) {
     return fail(409, 'BUNDLE_003', {
       value: currentValue as string | null,
       version: currentVersion,
@@ -303,12 +306,14 @@ const isPhotoIdList = (value: unknown): value is number[] =>
 
 export const bundleHandlers = [
   // POST /api/v1/bunches/{bunchId}/bundles
-  // 같은 번치 사진 1~20장으로 초안 생성. 생성자와 고른 사진을 올린 현재 멤버가 초기 참여자(생성자 먼저)
+  // 같은 번치 사진 1~20장으로 초안 생성. 생성자와 고른 참여 멤버(participantMemberIds, 1명 이상, 나 제외)가 초기 참여자(생성자 먼저)
+  // 사진을 올렸다는 이유로 자동 참여하지 않음. 사진이 사라졌으면 PHOTO_004(detail.missingPhotoIds), 유효하지 않은 멤버가 하나라도 있으면 전체 거부
   http.post('/api/bunches/:bunchId/bundles', async ({ params, request }) => {
     const bunchId = toWireId(params.bunchId);
     const key = request.headers.get(IDEMPOTENCY_KEY_HEADER);
     const body = await readJson(request);
     const photoIds = body?.photoIds;
+    const participantIds = body?.participantMemberIds;
     if (
       bunchId === undefined ||
       !key ||
@@ -316,7 +321,11 @@ export const bundleHandlers = [
       !isPhotoIdList(photoIds) ||
       photoIds.length < 1 ||
       photoIds.length > MAX_PHOTOS ||
-      new Set(photoIds).size !== photoIds.length
+      new Set(photoIds).size !== photoIds.length ||
+      !isPhotoIdList(participantIds) ||
+      participantIds.length < 1 ||
+      new Set(participantIds).size !== participantIds.length ||
+      participantIds.includes(MOCK_MY_MEMBER_ID)
     ) {
       return fail(400, 'COMMON_001');
     }
@@ -330,7 +339,7 @@ export const bundleHandlers = [
     const outcome = runIdempotent(
       `${MOCK_MY_MEMBER_ID}:${bunchId}:create`,
       key,
-      JSON.stringify(photoIds),
+      JSON.stringify({ photoIds, participantMemberIds: participantIds }),
       () => {
         const current = mockDb.get();
         if (
@@ -341,12 +350,23 @@ export const bundleHandlers = [
         ) {
           return { status: 409, body: { code: 'BUNDLE_001' } };
         }
-        // 사진 누락·다른 번치 사진이 하나라도 있으면 전체 거부
+        // 선택한 멤버가 현재 번치 멤버가 아니면 자동으로 빼지 않고 전체 거부
+        if (participantIds.some((memberId) => !bunchMemberIds.includes(memberId))) {
+          return { status: 400, body: { code: 'COMMON_001' } };
+        }
+        // 사진 누락이 하나라도 있으면 전체 거부하고 없는 사진을 알려 줌
         const picked = photoIds.map((id) =>
           current.photos.find((photo) => photo.bunchId === bunchId && photo.photoId === id),
         );
+        // 어느 번치에도 없는 사진만 PHOTO_004, 있지만 다른 번치 사진이면 COMMON_001(v5 명세)
+        const missingPhotoIds = photoIds.filter(
+          (id) => !current.photos.some((photo) => photo.photoId === id),
+        );
+        if (missingPhotoIds.length > 0) {
+          return { status: 409, body: { code: 'PHOTO_004', detail: { missingPhotoIds } } };
+        }
         if (picked.some((photo) => photo === undefined)) {
-          return { status: 404, body: { code: 'RESOURCE_001' } };
+          return { status: 400, body: { code: 'COMMON_001' } };
         }
         const at = nowIso();
         const id = Math.max(0, ...current.bundles.map((bundle) => bundle.id)) + 1;
@@ -366,13 +386,7 @@ export const bundleHandlers = [
               ]
             : [],
         );
-        const uploaderIds = picked.flatMap((photo) => photo?.uploaderIds ?? []);
-        const participantIds = [
-          MOCK_MY_MEMBER_ID,
-          ...[...new Set(uploaderIds)].filter(
-            (memberId) => memberId !== MOCK_MY_MEMBER_ID && bunchMemberIds.includes(memberId),
-          ),
-        ];
+        const initialParticipantIds = [MOCK_MY_MEMBER_ID, ...participantIds];
         const bundle: MockBundle = {
           id,
           bunchId,
@@ -388,7 +402,7 @@ export const bundleHandlers = [
           locationsVersion: 0,
           revision: 1,
           photos,
-          participants: participantIds.map((memberId) => ({ memberId, joinedAt: at })),
+          participants: initialParticipantIds.map((memberId) => ({ memberId, joinedAt: at })),
           comments: [],
           createdAt: at,
           updatedAt: at,
@@ -401,7 +415,8 @@ export const bundleHandlers = [
     if (outcome.kind === 'conflict') return fail(409, 'REQUEST_001');
     const stored = outcome.response;
     if (stored.status !== 200) {
-      return fail(stored.status, (stored.body as { code: string }).code);
+      const { code, detail } = stored.body as { code: string; detail?: Record<string, unknown> };
+      return detail === undefined ? fail(stored.status, code) : fail(stored.status, code, detail);
     }
     return snapshotOf((stored.body as { id: number }).id);
   }),
@@ -495,13 +510,25 @@ export const bundleHandlers = [
     if ('error' in scope) return scope.error;
     const { bundle, bunchId, isCreator, isAdmin, isParticipant } = scope;
     const key = request.headers.get(IDEMPOTENCY_KEY_HEADER);
-    const expectedRevision = (await readJson(request))?.expectedRevision;
-    if (!key || !UUID.test(key) || !isVersion(expectedRevision)) return fail(400, 'COMMON_001');
+    const body = await readJson(request);
+    // expectedRevision은 호환 필드(생략·낡은 값이어도 최초 발행을 거절하지 않음), visibility는 최종 선택 범위(생략하면 초안 범위)
+    const expectedRevision = body?.expectedRevision ?? null;
+    const requestedVisibility = body?.visibility ?? null;
+    if (
+      !key ||
+      !UUID.test(key) ||
+      (expectedRevision !== null && !isVersion(expectedRevision)) ||
+      (requestedVisibility !== null &&
+        requestedVisibility !== 'PUBLIC' &&
+        requestedVisibility !== 'PRIVATE')
+    ) {
+      return fail(400, 'COMMON_001');
+    }
 
     const outcome = runIdempotent(
       `${MOCK_MY_MEMBER_ID}:${bunchId}:publish:${bundle.id}`,
       key,
-      String(expectedRevision),
+      JSON.stringify({ visibility: requestedVisibility, expectedRevision }),
       () => {
         const current = mockDb.get().bundles.find((item) => item.id === bundle.id);
         if (!current) return { status: 404, body: { code: 'RESOURCE_001' } };
@@ -510,19 +537,19 @@ export const bundleHandlers = [
           return { status: 403, body: { code: 'AUTH_002' } };
         }
         if (current.status === 'PUBLISHED') return { status: 409, body: { code: 'BUNDLE_002' } };
-        if (current.revision !== expectedRevision) {
-          return {
-            status: 409,
-            body: { code: 'BUNDLE_003', detail: { revision: current.revision } },
-          };
-        }
-        const reasons = publishBlockers(current);
+        const finalVisibility = requestedVisibility ?? current.visibility;
+        const reasons = publishBlockers(current, finalVisibility);
         if (reasons.length > 0) {
           return { status: 409, body: { code: 'BUNDLE_005', detail: { reasons } } };
         }
         changeBundle(bundle.id, (latest) => ({
           ...latest,
           status: 'PUBLISHED',
+          visibility: finalVisibility,
+          visibilityVersion:
+            finalVisibility === latest.visibility
+              ? latest.visibilityVersion
+              : latest.visibilityVersion + 1,
           publishedAt: nowIso(),
         }));
         return { status: 200, body: { id: bundle.id } };

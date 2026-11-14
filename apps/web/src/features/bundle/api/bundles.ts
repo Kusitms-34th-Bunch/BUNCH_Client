@@ -2,11 +2,13 @@ import type { components } from '@app/api-core/generated';
 import { ApiError } from '@app/api-core';
 import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey, IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
 import { type BundleDetail, bundleSnapshotSchema, toBundleDetail } from '../model/bundle';
 
 type Schemas = components['schemas'];
+
+const REQUEST_ID_HEADER = 'X-Request-Id';
 
 const bundlePath = (bunchId: string, bundleId: string) =>
   `bunches/${encodeURIComponent(bunchId)}/bundles/${encodeURIComponent(bundleId)}`;
@@ -22,14 +24,14 @@ const requestBundle = async (request: ReturnType<typeof bffApi.get>, context: st
   toBundleDetail(await requestData(request, bundleSnapshotSchema, context));
 
 /**
- * 초안 생성: 같은 번치의 사진 1~20장(고른 순서), 같은 멱등 키로 다시 보내면 같은 초안
- * 서버는 생성자를 뺀 참여자 1명 이상을 요구함(화면이 참여자를 넘기도록 잇는 일은 실서버 연동 이슈에서)
+ * 초안 생성: 같은 번치의 사진 1~20장(고른 순서)과 나를 뺀 참여 멤버 1명 이상, 같은 멱등 키로 다시 보내면 같은 초안
+ * 참여자는 생성자와 고른 멤버뿐이고 사진을 올렸다는 이유로 자동 참여하지 않음(비면 서버가 COMMON_001)
  */
 export const createBundle = async (
   bunchId: string,
   photoIds: readonly string[],
   idempotencyKey: string,
-  participantMemberIds: readonly string[] = [],
+  participantMemberIds: readonly string[],
 ) =>
   requestBundle(
     bffApi.post(`bunches/${encodeURIComponent(bunchId)}/bundles`, {
@@ -131,9 +133,13 @@ export const removeBundleParticipant = async (
     'remove participant',
   );
 
+/** 정원(20장)을 넘길 때 처리: 전부 거절(ATOMIC_APPLY) 또는 남은 자리까지만 추가(PARTIAL_ADD) */
+export type PhotoCapacityMode = 'ATOMIC_APPLY' | 'PARTIAL_ADD';
+
 /**
  * 사진 구성 변경: 추가할 사진함 원본 ID와 제거할 번들 사진 ID를 한 번에 병합, 최종 1~20장
- * 같은 멱등 키·같은 본문은 처음 결과를 돌려줌
+ * 같은 멱등 키·같은 본문은 처음 결과를 돌려줌(photoChangeResult.replayed)
+ * 재선택 사진(reselectedPhotoIds)은 추가 목록에 든 기존 원본이고 ATOMIC_APPLY에서만 쓸 수 있음
  */
 export const changeBundlePhotos = ({
   bunchId,
@@ -142,6 +148,8 @@ export const changeBundlePhotos = ({
   removeBundlePhotoIds,
   mode,
   idempotencyKey,
+  capacityMode = 'ATOMIC_APPLY',
+  reselectedPhotoIds = [],
 }: {
   bunchId: string;
   bundleId: string;
@@ -149,6 +157,8 @@ export const changeBundlePhotos = ({
   removeBundlePhotoIds: readonly string[];
   mode: 'DRAFT' | 'PUBLISHED';
   idempotencyKey: string;
+  capacityMode?: PhotoCapacityMode;
+  reselectedPhotoIds?: readonly string[];
 }): Promise<BundleDetail> =>
   requestBundle(
     bffApi.post(`${bundlePath(bunchId, bundleId)}/photos/changes`, {
@@ -157,9 +167,8 @@ export const changeBundlePhotos = ({
         addPhotoIds: addPhotoIds.map(wireIdOrThrow),
         removeBundlePhotoIds: removeBundlePhotoIds.map(wireIdOrThrow),
         mode,
-        // 20장을 넘길 때의 처리 방식, 지금은 전부 적용하거나 전부 거절(ATOMIC_APPLY)로 고정
-        capacityMode: 'ATOMIC_APPLY',
-        reselectedPhotoIds: [],
+        capacityMode,
+        reselectedPhotoIds: reselectedPhotoIds.map(wireIdOrThrow),
       } satisfies Schemas['BundlePhotoChangesRequest'],
     }),
     'change bundle photos',
@@ -167,7 +176,8 @@ export const changeBundlePhotos = ({
 
 /**
  * 사진 순서 이동: 이동 대상을 뺀 목록에서 서로 인접한 앞뒤 사진 사이로 옮김(맨 앞이면 previous, 맨 뒤면 next가 null)
- * 앞뒤가 최신 목록과 맞지 않으면 BUNDLE_006
+ * 서로 인접하지 않은 앞뒤도 서버가 받아들여 뒤 사진 직전에 두고(뒤가 없으면 앞 사진 직후), 자기 자신·같은 사진을 앞뒤로 쓰거나 번들에 없는 사진이면 BUNDLE_006
+ * 재시도할 때는 호출하는 쪽이 같은 requestId를 다시 넘겨야 서버가 옛 이동을 다시 적용하지 않음(같은 id에 다른 내용은 REQUEST_001). 지금 호출부는 재시도하지 않아 호출마다 새 ID를 씀
  */
 export const moveBundlePhoto = ({
   bunchId,
@@ -176,6 +186,7 @@ export const moveBundlePhoto = ({
   previousBundlePhotoId,
   nextBundlePhotoId,
   mode,
+  requestId = createIdempotencyKey(),
 }: {
   bunchId: string;
   bundleId: string;
@@ -183,11 +194,13 @@ export const moveBundlePhoto = ({
   previousBundlePhotoId: string | null;
   nextBundlePhotoId: string | null;
   mode: 'DRAFT' | 'PUBLISHED';
+  requestId?: string;
 }): Promise<BundleDetail> =>
   requestBundle(
     bffApi.post(
       `${bundlePath(bunchId, bundleId)}/photos/${encodeURIComponent(String(wireIdOrThrow(bundlePhotoId)))}/move`,
       {
+        headers: { [REQUEST_ID_HEADER]: requestId },
         json: {
           ...(previousBundlePhotoId !== null && {
             previousBundlePhotoId: wireIdOrThrow(previousBundlePhotoId),
@@ -223,17 +236,20 @@ export const leaveBundle = async (
   return data === null ? null : toBundleDetail(data);
 };
 
-/** 발행: 최신 revision을 보내고 같은 멱등 키로 다시 보내면 같은 결과 */
+/**
+ * 발행: 최종 공개 범위를 함께 보내고(공개 범위 화면에서 뒤로 가도 저장하지 않음), 같은 멱등 키로 다시 보내면 같은 결과
+ * expectedRevision은 호환 필드라 낡아도 최초 발행을 거절하지 않지만 같은 키 재시도 비교에는 쓰임
+ */
 export const publishBundle = (
   bunchId: string,
   bundleId: string,
-  expectedRevision: number,
+  { visibility, expectedRevision }: { visibility: 'PUBLIC' | 'PRIVATE'; expectedRevision: number },
   idempotencyKey: string,
 ): Promise<BundleDetail> =>
   requestBundle(
     bffApi.post(`${bundlePath(bunchId, bundleId)}/publish`, {
       headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
-      json: { expectedRevision } satisfies Schemas['PublishBundleRequest'],
+      json: { visibility, expectedRevision } satisfies Schemas['PublishBundleRequest'],
     }),
     'publish bundle',
   );

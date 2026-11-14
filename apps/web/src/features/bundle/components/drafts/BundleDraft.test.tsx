@@ -109,4 +109,28 @@ describe('BundleDraft', () => {
 
     expect(push).toHaveBeenCalledWith('/bunch/drafts/draft-1/members');
   });
+
+  it('번치 홈에서 만든 초안(from=home)의 뒤로가기는 사진 선택이 아니라 번치 홈으로 이동(replace)한다', async () => {
+    window.history.replaceState(null, '', '/bunch/drafts/draft-1?from=home');
+    try {
+      renderDraft('draft-1');
+
+      await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
+
+      expect(replace).toHaveBeenCalledWith('/bunch');
+      expect(back).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
+  it('그 밖의 진입(작성 중인 번들 탭·알림)의 뒤로가기는 들어온 곳으로 돌아간다(back)', async () => {
+    vi.spyOn(window.history, 'length', 'get').mockReturnValue(3);
+    renderDraft('draft-1');
+
+    await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
+
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
