@@ -4,6 +4,7 @@ import type { MockBundle, MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
+import { commentCountOf } from './comments';
 import { isBlockedBetween, viewerBunchId } from './follows';
 import { likeOf } from './likes';
 import { myMembershipsByRecent } from './members';
@@ -153,8 +154,7 @@ const cardOf = (state: MockDbState, bundle: MockBundle) => {
       };
     }),
     ...likeOf(state, viewerBunchId(state), bundle.id),
-    // ponytail: 소셜 댓글은 가짜 DB에 없어 0, 댓글 연결(API 연동 4번) 때 채움
-    commentCount: 0,
+    commentCount: commentCountOf(state, viewerBunchId(state), bundle.id),
   };
 };
 
@@ -249,8 +249,7 @@ const publicDetailOf = (state: MockDbState, bunchId: number, bundleId: number) =
       canComment: viewer !== undefined,
     },
     ...likeOf(state, viewerBunchId(state), bundle.id),
-    // ponytail: 소셜 댓글은 가짜 DB에 없어 0, 댓글 연결(API 연동 4번) 때 채움
-    commentCount: 0,
+    commentCount: commentCountOf(state, viewerBunchId(state), bundle.id),
   });
 };
 
