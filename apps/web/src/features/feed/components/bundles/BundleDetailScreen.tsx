@@ -43,18 +43,17 @@ import type { FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
 import { useBundleComments } from '../../hooks/useBundleComments';
-import { useBundleEdits } from '../../hooks/useBundleEdits';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useHoldScrollOnLeave } from '../../hooks/useHoldScrollOnLeave';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
-import { bundleEdits } from '../../lib/bundleEdits';
 import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { withRo } from '../../lib/josa';
 import { type BundleBunchSource, toFeedBundleDetail, toFeedBunch } from '../../model/bundleDetail';
 import { bundleDetailQueryOptions } from '../../queries/bundleDetail';
+import { useDeletePublishedBundleMutation, useForgetBundle } from '../../queries/manageBundle';
 import { useReportMutation } from '../../queries/report';
 import { MemberComments } from './MemberComments';
 
@@ -81,7 +80,7 @@ const previewOf = (content = '') =>
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * 내용은 발행 번들 상세(명세 084), 댓글은 명세 014~017, 신고는 018·019. 번들 삭제·공개 범위는 아직 화면에서만 바뀜(API 연동 6~7번). 「수정하기」는 메뉴만 있음
+ * 내용은 발행 번들 상세(명세 084), 댓글은 명세 014~017, 신고는 018·019, 삭제는 048(공개 범위는 `BundleVisibilityScreen`). 「수정하기」는 메뉴만 있음
  */
 export function BundleDetailScreen({
   bunchId,
@@ -109,11 +108,18 @@ export function BundleDetailScreen({
   const [replyTarget, setReplyTarget] = useState<{ id: string; author: string } | null>(null);
   const { openPlaces, openMembers } = useBundleSheets();
   const openOverlay = useScreenOverlay();
-  const { isDeleted, memberOnlyOf } = useBundleEdits();
-  // 화면에서 지운 번들은 없는 번들과 같은 안내. 들어올 때 기준이라 여기서 지운 뒤 떠나는 동안 안내로 바뀌지 않음
-  const [deletedOnEnter] = useState(() => isDeleted(bundleId));
+  const removeBundle = useDeletePublishedBundleMutation();
+  // 지운 번들의 캐시는 이 화면이 떠날 때 비움(떠 있는 동안 비우면 빈 상세를 다시 받아 안내가 깜빡임)
+  const forgetBundle = useForgetBundle(bundleId);
+  const deleted = useRef(false);
+  useEffect(
+    () => () => {
+      if (deleted.current) forgetBundle();
+    },
+    [forgetBundle],
+  );
   const bundle =
-    deletedOnEnter || !detail.data || bunch === undefined
+    !detail.data || bunch === undefined
       ? undefined
       : toFeedBundleDetail(
           detail.data,
@@ -240,12 +246,11 @@ export function BundleDetailScreen({
 
   // 지웠거나 없음·볼 수 없음(404·403)과 잘못된 주소(400)는 같은 안내, 그 밖의 실패는 다시 시도
   const unavailable =
-    deletedOnEnter ||
-    (isApiError(detail.error) && [400, 403, 404].includes(detail.error.status ?? 0));
+    isApiError(detail.error) && [400, 403, 404].includes(detail.error.status ?? 0);
   // 이미 받은 상세가 있으면 다시 받기가 실패해도 보던 내용을 그대로 둠
   const failed =
     !unavailable && (detail.isError || (viewer === undefined && viewerFailed)) && !detail.data;
-  if ((unavailable && !detail.data) || deletedOnEnter || failed) {
+  if ((unavailable && !detail.data) || failed) {
     return (
       <PageShell header={header()}>
         <div className="gap-s8 flex h-full flex-col items-center justify-center">
@@ -481,8 +486,10 @@ export function BundleDetailScreen({
       },
     );
 
-  // 번들 삭제(Figma `5367:122187`): 창이 다 닫힌 뒤 지우고 이전 화면으로 가서 알림(이 화면은 떠나므로 피드 위치)
+  // 번들 삭제(Figma `5367:122187`, 명세 048): 창이 다 닫힌 뒤 서버에서 지우고 이전 화면으로 가서 알림(이 화면은 떠나므로 피드 위치)
+  // 권한을 잃었으면 알리고 상세를 다시 받아 메뉴를 맞춤, 그사이 지워졌거나 볼 수 없게 됐으면 떠남
   const openDeleteBundle = () => {
+    if (removeBundle.isPending) return;
     let confirmed = false;
     openOverlay(
       (rootProps, close) => (
@@ -500,9 +507,24 @@ export function BundleDetailScreen({
       ),
       () => {
         if (!confirmed) return;
-        bundleEdits.remove(bundle.id);
-        backOr(FEED_PATHS.home);
-        toastAfterNavigation(text.bundleDeleted);
+        removeBundle.mutate(
+          { bunchId, bundleId, viewerId: viewerId ?? null },
+          {
+            onSuccess: () => {
+              deleted.current = true;
+              backOr(FEED_PATHS.home);
+              toastAfterNavigation(text.bundleDeleted);
+            },
+            onError: (error) => {
+              if (codeOf(error) === 'AUTH_002') {
+                toast(text.permissionChanged);
+                void detail.refetch();
+                return;
+              }
+              failAction(error);
+            },
+          },
+        );
       },
     );
   };
@@ -630,6 +652,15 @@ export function BundleDetailScreen({
         </div>
       }
     >
+      {/* 지우는 동안과 지운 뒤 떠날 때까지 덮개(받는 중과 같은 모양)와 안내. 실패하면 걷히고 보던 화면 그대로 */}
+      {removeBundle.isPending || removeBundle.isSuccess ? (
+        <>
+          <p role="status" className="sr-only">
+            {text.bundleDeleting}
+          </p>
+          <PageLoading />
+        </>
+      ) : null}
       <BundleAuthorInfo
         bunchName={bundle.bunch.name}
         imageSrc={bundle.bunch.imageSrc}
@@ -651,7 +682,7 @@ export function BundleDetailScreen({
         location={bundle.location}
         onLocationClick={() => openPlaces(bundle.places)}
         date={bundle.date}
-        memberOnly={memberOnlyOf(bundle.id, bundle.memberOnly)}
+        memberOnly={bundle.memberOnly}
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
       />
       <BundlePhoto variant="detail" photos={bundle.photos} />

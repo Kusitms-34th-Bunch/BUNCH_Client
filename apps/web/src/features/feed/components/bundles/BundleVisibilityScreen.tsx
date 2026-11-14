@@ -1,7 +1,7 @@
 'use client';
 
 import { isApiError } from '@app/api-core';
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { DescriptionRadioCard } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -12,10 +12,11 @@ import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
-import { useBundleEdits } from '../../hooks/useBundleEdits';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
-import { bundleEdits } from '../../lib/bundleEdits';
-import { bundleDetailQueryOptions } from '../../queries/bundleDetail';
+import {
+  managedBundleQueryOptions,
+  useSavePublishedVisibilityMutation,
+} from '../../queries/manageBundle';
 
 type BundleVisibilityScreenProps = {
   bunchId: string;
@@ -26,7 +27,7 @@ type BundleVisibilityScreenProps = {
 
 /**
  * 번들 공개 범위 설정(Figma `5367:151676`·`5367:151697`): 전체(비공개 번치는 일부)·멤버 공개 중 하나를 골라 「수정하기」
- * 현재 값과 권한은 발행 번들 상세(명세 084), 저장은 화면에서만(API 연동 6번). 바뀐 값이 없으면 버튼이 꺼져 있고, 저장하면 상세로 돌아감
+ * 현재 값·버전·권한은 우리 번치 번들 조회(멤버 공개도 옴), 저장은 명세 057. 바뀐 값이 없으면 버튼이 꺼져 있고, 저장하면 상세로 돌아감
  */
 export function BundleVisibilityScreen({
   bunchId,
@@ -37,13 +38,13 @@ export function BundleVisibilityScreen({
   const titleId = useId();
   const { viewer, viewerFailed, viewerFetching, retryViewer } = useFeedViewer();
   const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
-  const detail = useQuery(bundleDetailQueryOptions(bunchId, bundleId, viewerId));
-  const { isDeleted, memberOnlyOf } = useBundleEdits();
-  // 메뉴를 숨기는 것만으로는 막히지 않아 직접 들어와도 서버가 수정 권한을 준 사람만 바꿈
-  const canEdit = !isDeleted(bundleId) && detail.data?.permissions.canEdit === true;
-  const saved = memberOnlyOf(bundleId, detail.data?.visibility === 'PRIVATE');
-  // ponytail: 저장은 화면에서만, 공개 범위 API 연결(API 연동 6번) 때 서버로 보냄
-  // 외부 상세(084)는 멤버 공개 번들을 404로 빼므로 서버에 멤버 공개로 저장되면 이 화면에 다시 못 들어옴. 6번에서 관리용 조회로
+  const detail = useQuery(managedBundleQueryOptions(bunchId, bundleId, viewerId));
+  const save = useSavePublishedVisibilityMutation();
+  // 메뉴를 숨기는 것만으로는 막히지 않아 직접 들어와도 서버가 수정 권한을 준 사람만, 발행본만 바꿈
+  // 권한을 잃은 뒤 다시 받기가 403·404면 받아 둔 값이 있어도 볼 수 없다는 안내로
+  const lost = isApiError(detail.error) && [403, 404].includes(detail.error.status ?? 0);
+  const canEdit = !lost && detail.data?.status === 'PUBLISHED' && detail.data.permissions.canEdit;
+  const saved = detail.data?.visibility === 'PRIVATE';
   const [picked, setPicked] = useState<boolean | null>(null);
   const memberOnly = picked ?? saved;
   const changed = memberOnly !== saved;
@@ -59,6 +60,26 @@ export function BundleVisibilityScreen({
     if (focused && focused !== document.body && focused.isConnected) return;
     titleRef.current?.focus({ preventScroll: true });
   });
+
+  // 저장 실패(6.2.15 로직): 권한을 잃었으면 알리고 다시 받아 볼 수 없다는 안내로, 그사이 지워졌으면 피드로
+  // 다른 곳에서 먼저 바꿔 버전이 어긋나면(BUNDLE_003) 최신 값을 다시 받고 고른 값은 둠
+  const failSave = (error: unknown) => {
+    const code = isApiError(error) ? error.code : undefined;
+    if (code === 'RESOURCE_001') {
+      backOr(FEED_PATHS.home);
+      toastAfterNavigation(text.bundleGone);
+      return;
+    }
+    if (code === 'AUTH_002') {
+      toast(text.permissionChanged);
+      // 다시 받아 안내로 바뀌면 사라진 「수정하기」 대신 안내 제목으로 초점
+      focusTitleAfterRetry.current = true;
+      void detail.refetch();
+      return;
+    }
+    if (code === 'BUNDLE_003') void detail.refetch();
+    toast(text.actionFailed);
+  };
 
   const options = [
     {
@@ -150,11 +171,25 @@ export function BundleVisibilityScreen({
         <div className="bg-surface-primary pt-padding-p7 px-padding-p8 pb-s4">
           <Button
             className="w-full"
-            disabled={!changed}
+            disabled={!changed || save.isPending}
             onClick={() => {
-              bundleEdits.setMemberOnly(bundleId, memberOnly);
-              back();
-              toastAfterNavigation(text.bundleEdited);
+              if (!detail.data || viewerId === undefined) return;
+              save.mutate(
+                {
+                  bunchId,
+                  bundleId,
+                  viewerId,
+                  value: memberOnly ? 'PRIVATE' : 'PUBLIC',
+                  expectedVersion: detail.data.visibilityVersion,
+                },
+                {
+                  onSuccess: () => {
+                    back();
+                    toastAfterNavigation(text.bundleEdited);
+                  },
+                  onError: failSave,
+                },
+              );
             }}
           >
             {text.edit}

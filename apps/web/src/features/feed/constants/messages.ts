@@ -62,6 +62,7 @@ export const FEED_MESSAGES = {
   deleteBundleDescription: '데이터가 삭제되며 복구 불가능해요.',
   deleteBundleConfirm: '삭제',
   bundleDeleted: '번들을 삭제했어요',
+  bundleDeleting: '번들을 삭제하는 중이에요',
   bundleEdited: '번들을 수정했어요',
   visibilityTitle: '번들의 공개 범위를 설정해 주세요',
   visibilityAll: '전체 공개',
@@ -96,4 +97,6 @@ export const FEED_MESSAGES = {
   requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
   /** 내 정보를 받지 못해 번치 명의 행동을 할 수 없을 때 */
   actionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  // 기능명세서 6.2.11: 화면을 연 뒤 역할이 바뀌어 수정·삭제를 할 수 없게 됨
+  permissionChanged: '권한이 변경되어 해당 기능을 이용할 수 없어요.',
 } as const;

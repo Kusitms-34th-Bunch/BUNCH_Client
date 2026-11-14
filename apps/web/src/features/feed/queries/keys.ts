@@ -12,6 +12,9 @@ export const feedKeys = {
     [...feedKeys.bundle(bundleId), 'detail', viewerId] as const,
   detail: (bunchId: string, bundleId: string, viewerId: string | null) =>
     [...feedKeys.details(bundleId, viewerId), bunchId] as const,
+  // 우리 번치 번들 조회(공개 범위 화면, 멤버 공개도 옴)
+  managed: (bunchId: string, bundleId: string, viewerId: string | null) =>
+    [...feedKeys.bundle(bundleId), 'managed', viewerId, bunchId] as const,
   // 원댓글(쪽 단위)과 그 아래 답글. 쪽 데이터와 답글 배열이 같은 앞부분에 섞이므로 캐시를 고칠 때는 exact
   comments: (bundleId: string, viewerId: string | null) =>
     [...feedKeys.bundle(bundleId), 'comments', viewerId] as const,
