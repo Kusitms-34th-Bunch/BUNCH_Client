@@ -8,7 +8,7 @@ import {
   type StompConnection,
 } from '@/shared/realtime/stompConnection';
 import { fetchWsToken } from '@/shared/realtime/wsToken';
-import { useRefetchBundleDetail } from '../queries/bundles';
+import { useApplyBundleEvent, useRefetchBundleDetail } from '../queries/bundles';
 
 /** 번들 초안의 STOMP destination(v5 실시간 명세) */
 export const bundleDestinations = (bunchId: string, bundleId: string) => ({
@@ -55,6 +55,11 @@ export function useBundleRealtime(
   useEffect(() => {
     refetchRef.current = refetchDetail;
   });
+  const applyEvent = useApplyBundleEvent(bunchId, bundleId);
+  const applyEventRef = useRef(applyEvent);
+  useEffect(() => {
+    applyEventRef.current = applyEvent;
+  });
   const [status, setStatus] = useState<RealtimeStatus>('idle');
   // 재연결 뒤 최신 상세를 받는 중이거나 받지 못했을 때: 화면이 낡았을 수 있어 끊김과 같이 다룸
   const [sync, setSync] = useState<'idle' | 'syncing' | 'failed'>('idle');
@@ -94,11 +99,13 @@ export function useBundleRealtime(
       },
     });
     connectionRef.current = connection;
-    // 이후 이슈가 destination별 처리를 붙이므로 지금은 연결·구독 상태만 만듦(받은 내용은 구독자가 있을 때 전달)
+    // 번들 topic은 저장 이벤트를 상세에 반영함(지금은 제목 TITLE만, 나머지 type은 이후 이슈). activity·leases는 이후 이슈가 처리
     const { topic, activity, leases } = bundleDestinations(bunchId, bundleId);
-    const unsubscribers = [topic, activity, leases].map((destination) =>
-      connection.subscribe(destination, () => undefined),
-    );
+    const unsubscribers = [
+      connection.subscribe(topic, (body) => applyEventRef.current(body)),
+      connection.subscribe(activity, () => undefined),
+      connection.subscribe(leases, () => undefined),
+    ];
     connection.start();
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());

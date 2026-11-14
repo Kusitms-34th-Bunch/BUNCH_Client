@@ -167,6 +167,7 @@ __metadata:
     "@app/design-system": "workspace:*"
     "@app/lint-config": "workspace:*"
     "@app/ts-config": "workspace:*"
+    "@automerge/automerge": "npm:3.2.1"
     "@dnd-kit/core": "npm:6.3.1"
     "@dnd-kit/sortable": "npm:10.0.0"
     "@dnd-kit/utilities": "npm:3.2.2"
@@ -210,6 +211,13 @@ __metadata:
     zod: "catalog:"
   languageName: unknown
   linkType: soft
+
+"@automerge/automerge@npm:3.2.1":
+  version: 3.2.1
+  resolution: "@automerge/automerge@npm:3.2.1"
+  checksum: 10c0/ea8804e0eec547652a4ce01465a12b8d38d21abd01fc463ba2ee8d6f7a88b81f06f2fd9da8a2851578a773fcca3f2f3a32ea22566ad09aec85e967f8f7dbd50f
+  languageName: node
+  linkType: hard
 
 "@axe-core/playwright@npm:^4.14.0":
   version: 4.14.0

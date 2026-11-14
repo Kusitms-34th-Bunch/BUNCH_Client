@@ -49,6 +49,7 @@ export function useDraftFixture(draftId: string | undefined): {
 
   const actions: DraftActions = {
     setTitle: (title) => update((current) => ({ ...current, title })),
+    setTitleComposing: () => undefined,
     setComment: (memberId, text) =>
       update((current) => ({
         ...current,

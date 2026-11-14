@@ -1,7 +1,9 @@
 import type { Draft, DraftEditing, SaveStatus } from './types';
+import { countTitleGraphemes } from './title';
 
 export type PublishBlocker =
   | 'title'
+  | 'titleTooLong'
   | 'photos'
   | 'visibility'
   | 'members'
@@ -17,6 +19,7 @@ type PublishContext = {
 };
 
 const MIN_MEMBERS = 2;
+const TITLE_MAX = 40;
 
 /**
  * 발행 조건 중 아직 채우지 못한 것(위치·날짜는 조건이 아니고 공개 범위는 하나를 골라야 함)
@@ -25,6 +28,8 @@ const MIN_MEMBERS = 2;
 export const getPublishBlockers = (draft: Draft, context: PublishContext): PublishBlocker[] => {
   const blockers: PublishBlocker[] = [];
   if (draft.title.trim() === '') blockers.push('title');
+  // 동시 편집이 합쳐져 40자를 넘을 수 있음(자르지 않고 그대로 두며 줄일 때까지 발행을 막음)
+  else if (countTitleGraphemes(draft.title) > TITLE_MAX) blockers.push('titleTooLong');
   if (draft.photos.length < 1) blockers.push('photos');
   if (draft.visibility === null) blockers.push('visibility');
   if (draft.members.length < MIN_MEMBERS) blockers.push('members');

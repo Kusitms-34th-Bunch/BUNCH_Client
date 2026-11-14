@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
@@ -24,6 +24,7 @@ const outsider: DraftViewer = { memberId: 'outsider', bunchRole: 'owner' };
 
 const actions = {
   setTitle: vi.fn(),
+  setTitleComposing: vi.fn(),
   setComment: vi.fn(),
   setVisibility: vi.fn(),
   addLocation: vi.fn(),
@@ -300,6 +301,27 @@ describe('입력', () => {
     await userEvent.type(screen.getByRole('textbox', { name: /제목/ }), 'x');
     // 40자가 가득 차 있어 추가 입력 차단
     expect(actions.setTitle).not.toHaveBeenCalled();
+  });
+
+  it('동시 편집이 합쳐져 40자를 넘으면 자르지 않고 안내하며 업로드를 막는다', async () => {
+    renderScreen({ viewer: creator, draft: { ...publishable, title: '가'.repeat(41) } });
+
+    expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue('가'.repeat(41));
+    expect(screen.getByRole('alert')).toHaveTextContent(BUNDLE_MESSAGES.titleTooLong);
+    expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(uploadButton());
+    expect(onUpload).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.titleTooLong);
+  });
+
+  it('한글 조합이 시작되고 끝나는 것을 알린다', () => {
+    renderScreen({ viewer: creator });
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    fireEvent.compositionStart(title);
+    fireEvent.compositionEnd(title);
+
+    expect(actions.setTitleComposing.mock.calls).toEqual([[true], [false]]);
   });
 
   it('내 코멘트만 고칠 수 있고 다른 멤버 코멘트는 읽기 전용이다', async () => {

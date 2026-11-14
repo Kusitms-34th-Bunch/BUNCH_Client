@@ -10,6 +10,7 @@ import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
+import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import { type DraftState, useDraft } from './useDraft';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -232,29 +233,59 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).draft.title).toBe('여름 바다');
   });
 
-  it('다른 곳에서 제목이 바뀌면 입력 원문 대신 서버 값을 보인다', async () => {
+  it('다른 멤버가 제목을 고치면 상세를 다시 받을 때 내 문서에 병합해 보인다', async () => {
     const { id, result } = await renderReady();
     act(() => result.current.actions.setTitle('여름 '));
     await waitFor(() => expect(serverBundle(id)?.title).toBe('여름'), SAVE_WAIT);
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
 
-    // 다른 멤버가 제목을 바꾼 상황: 상세를 다시 받으면 서버 값이 보임
+    // 다른 멤버가 같은 문서에서 제목 뒤에 글자를 더한 상황(서버 문서가 바뀜): 상세를 다시 받으면 병합돼 보임
+    const state = serverBundle(id)?.titleCrdtState ?? '';
+    await ensureTitleCrdt();
+    const theirs = saveTitleDoc(editTitle(loadTitleDoc(state), '여름 바다'));
     mockDb.update((current) => ({
       ...current,
       bundles: current.bundles.map((bundle) => ({
         ...bundle,
-        title: '다른 멤버의 제목',
+        title: '여름 바다',
         titleVersion: bundle.titleVersion + 1,
+        titleCrdtState: theirs,
         revision: bundle.revision + 1,
       })),
     }));
-    // 공개 범위를 골라야 발행 요청이 나가고, 요청이 거절되면 상세를 다시 받아 서버 값이 보임
+    // 공개 범위를 골라야 발행 요청이 나가고, 요청이 거절되면 상세를 다시 받음
     act(() => result.current.actions.setVisibility('members'));
     await act(async () => {
       await result.current.actions.publish();
     });
 
-    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('다른 멤버의 제목'));
+    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('여름 바다'));
+  });
+
+  it('내가 입력한 제목과 다른 멤버의 변경이 저장되기 전에 겹쳐도 둘 다 남는다', async () => {
+    const { id, result } = await renderReady();
+    act(() => result.current.actions.setTitle('부산'));
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('부산'), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+
+    // 다른 멤버가 앞에 글자를 더해 서버에 저장하고, 나는 그 사실을 모른 채 뒤에 글자를 입력
+    await ensureTitleCrdt();
+    const base = serverBundle(id)?.titleCrdtState ?? '';
+    const theirs = saveTitleDoc(editTitle(loadTitleDoc(base), '가을 부산'));
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({
+        ...bundle,
+        title: '가을 부산',
+        titleVersion: bundle.titleVersion + 1,
+        titleCrdtState: theirs,
+        revision: bundle.revision + 1,
+      })),
+    }));
+    act(() => result.current.actions.setTitle('부산 여행'));
+
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('가을 부산 여행'), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('가을 부산 여행'));
   });
 
   it('서버 오류(5xx)는 일시 오류로 보고 다시 시도해 저장한다', async () => {

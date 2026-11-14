@@ -25,6 +25,7 @@ import { placeFixture } from '../fixtures/draft.fixture';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
 import { moveLocation } from '../lib/locations';
 import { movePhoto, type PhotoMovePlan, planPhotoMoves, removePhoto } from '../lib/photos';
+import { ensureTitleCrdt } from '../lib/titleCrdt';
 import {
   bundleQueryOptions,
   useAddParticipantMutation,
@@ -34,9 +35,10 @@ import {
   useRemoveParticipantMutation,
   useSaveCommentMutation,
   useSaveDateMutation,
-  useSaveTitleMutation,
+  useMergeTitleMutation,
 } from '../queries/bundles';
 import { useBundleRealtime } from './useBundleRealtime';
+import { useTitleCrdt } from './useTitleCrdt';
 
 // 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 날짜는 고르는 즉시 저장하고 공개 범위는 발행 요청으로만 보냄
 // 위치가 없을 때 쓰는 고정된 빈 목록(렌더마다 새 배열이 되어 draft를 다시 만들지 않게 함)
@@ -87,6 +89,8 @@ export type PublishOutcome = 'published' | 'blocked' | 'failed';
 
 export type DraftActions = {
   setTitle: (_title: string) => void;
+  /** 한글 조합 같은 입력 중에는 원격 제목 변경을 입력이 끝난 뒤 반영하도록 알림 */
+  setTitleComposing: (_composing: boolean) => void;
   setComment: (_memberId: string, _text: string) => void;
   /** 공개 범위를 고름(서버에는 업로드 요청으로만 보냄). null은 고른 값을 버림(공개 범위 화면에서 뒤로 갈 때, 기능 spec 4.3.9) */
   setVisibility: (_visibility: DraftVisibility | null) => void;
@@ -155,7 +159,13 @@ export function useDraft(draftId: string | undefined): {
     refetch: refetchDetail,
   } = useQuery(bundleQueryOptions(bunchId, bundleId));
 
-  const saveTitle = useSaveTitleMutation(bunchId, bundleId);
+  const saveTitle = useMergeTitleMutation(bunchId, bundleId);
+  const titleCrdt = useTitleCrdt(detail);
+  // 저장 루프가 최신 문서를 읽도록 ref에 둠(렌더 밖에서만 읽음)
+  const titleCrdtRef = useRef(titleCrdt);
+  useEffect(() => {
+    titleCrdtRef.current = titleCrdt;
+  });
   const saveDate = useSaveDateMutation(bunchId, bundleId);
   const saveComment = useSaveCommentMutation(bunchId, bundleId);
   const changePhotos = useChangePhotosMutation(bunchId, bundleId);
@@ -185,8 +195,6 @@ export function useDraft(draftId: string | undefined): {
   const [visibilityChoice, setVisibilityChoice] = useState<DraftVisibility | undefined>(undefined);
   // 네트워크 오류 뒤 같은 내용으로 다시 업로드할 때 같은 요청 키를 써서 한 번만 발행되게 함(기능 spec 4.3.9·4.3.12)
   const publishAttempt = useRef<{ signature: string; key: string } | undefined>(undefined);
-  // 입력란에 방금 친 원문: 서버가 앞뒤 공백을 지워 돌려줘도 입력 중 띄어쓰기가 사라지지 않게 보여 줌
-  const [typed, setTyped] = useState<{ title?: string }>({});
 
   // 비동기 저장 루프가 항상 최신 값을 읽도록 ref에 둠(렌더 밖 이벤트·타이머에서만 읽고 씀)
   const pendingRef = useRef<Pending>({});
@@ -289,12 +297,13 @@ export function useDraft(draftId: string | undefined): {
         if (snapshot.title !== undefined) {
           const value = snapshot.title;
           await run(
-            () =>
-              saveTitle.mutateAsync({
-                ...common,
-                value,
-                expectedVersion: (detailRef.current ?? base).titleVersion,
-              }),
+            async () => {
+              // 서버 문서에서 파생한 로컬 문서(저장 전 입력과 병합된 원격 변경 포함)를 통째로 보내면 서버가 병합함
+              await ensureTitleCrdt();
+              const state = titleCrdtRef.current.serialize();
+              if (state === undefined) throw new Error('title crdt is not ready');
+              return saveTitle.mutateAsync(state);
+            },
             () => clearField('title', value),
           );
         }
@@ -393,14 +402,12 @@ export function useDraft(draftId: string | undefined): {
   const draft = useMemo<Draft | undefined>(() => {
     if (!detail || !bunchMembers || !myId) return undefined;
     const base = toDraft({ detail, bunchMembers, locations });
-    // 저장이 끝난 입력은 서버가 정리한 값(앞뒤 공백 제거)과 같을 때만 친 원문을 계속 보여 줌(다른 곳에서 바뀌면 서버 값)
     const photos = localPhotos ?? base.photos;
     const hasMyComment = base.comments.some((comment) => comment.memberId === myId);
     return {
       ...base,
-      title:
-        pending.title ??
-        (typed.title !== undefined && typed.title.trim() === base.title ? typed.title : base.title),
+      // 제목은 로컬 CRDT 문서의 원문(입력 중 띄어쓰기·커서 위치 유지, 원격 변경 병합). 문서를 불러오기 전에는 서버 제목
+      title: titleCrdt.text ?? base.title,
       date: pending.date === undefined ? base.date : pending.date,
       visibility: visibilityChoice ?? base.visibility,
       photos,
@@ -415,7 +422,16 @@ export function useDraft(draftId: string | undefined): {
               )
             : [...base.comments, { memberId: myId, text: pending.comment }],
     };
-  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed, visibilityChoice]);
+  }, [
+    detail,
+    bunchMembers,
+    locations,
+    myId,
+    pending,
+    localPhotos,
+    titleCrdt.text,
+    visibilityChoice,
+  ]);
 
   const busy =
     flushing ||
@@ -495,10 +511,12 @@ export function useDraft(draftId: string | undefined): {
 
   const actions: DraftActions = {
     setTitle: (title) => {
+      // 문서를 아직 불러오지 못했으면 입력을 받지 않음(서버 제목이 그대로 보임)
+      if (!titleCrdt.edit(title)) return;
       change((current) => ({ ...current, title }));
-      setTyped((current) => ({ ...current, title }));
       schedule(SAVE_DELAY_MS);
     },
+    setTitleComposing: titleCrdt.setComposing,
     setComment: (memberId, text) => {
       // 서버는 본인 코멘트만 저장할 수 있음
       if (memberId !== myIdRef.current) return;

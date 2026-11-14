@@ -98,6 +98,7 @@ export function DraftScreen({
     if (!access.participant) notifyUpload(BUNDLE_MESSAGES.editOnlyParticipants);
     else if (!access.canPublish) notifyUpload(BUNDLE_MESSAGES.uploadForbidden);
     // 저장이 끝나지 않아 막힌 경우는 입력 부족과 다른 안내
+    else if (blockers.includes('titleTooLong')) notifyUpload(BUNDLE_MESSAGES.titleTooLong);
     else if (blockers.includes('unsaved')) notifyUpload(BUNDLE_MESSAGES.uploadUnsaved);
     else if (blockers.length === 1 && blockers[0] === 'saving')
       notifyUpload(BUNDLE_MESSAGES.uploadSaving);
@@ -183,6 +184,7 @@ export function DraftScreen({
         onEditEnd={() => endSelfEditing('title')}
         editable={access.canEdit}
         onChange={actions.setTitle}
+        onComposing={actions.setTitleComposing}
         onDenied={denyEdit}
         onEditingBlocked={blockEditing}
       />

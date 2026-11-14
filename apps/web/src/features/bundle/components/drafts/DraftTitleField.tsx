@@ -1,7 +1,10 @@
 import { BundleTextInput } from '@app/design-system/web';
+import { useLayoutEffect, useRef } from 'react';
 import { EditingLottie } from '@/shared/components/loading/EditingLottie';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES, TITLE_MAX_LENGTH } from '../../constants/messages';
+import { countTitleGraphemes } from '../../lib/title';
+import { diffText } from '../../lib/titleCrdt';
 
 type DraftTitleFieldProps = {
   draft: Draft;
@@ -15,6 +18,8 @@ type DraftTitleFieldProps = {
   /** 제목을 고칠 수 있는지(참여 멤버만) */
   editable: boolean;
   onChange: (_title: string) => void;
+  /** 한글 조합 같은 입력이 진행 중인지(진행 중에는 원격 변경을 화면에 반영하지 않음) */
+  onComposing?: ((_composing: boolean) => void) | undefined;
   /** 고칠 수 없는 사람이 입력란에 닿았을 때 */
   onDenied: () => void;
   /** 다른 멤버가 편집 중인 입력란에 닿았을 때 */
@@ -30,6 +35,7 @@ export function DraftTitleField({
   onEditEnd,
   editable,
   onChange,
+  onComposing,
   onDenied,
   onEditingBlocked,
 }: DraftTitleFieldProps) {
@@ -37,9 +43,37 @@ export function DraftTitleField({
   // 내가 입력 중이면 내 프로필(잠그지는 않음). 다른 멤버가 편집 중이면 그 멤버가 우선
   const me = draft.members.find((member) => member.id === viewer.memberId);
   const shown = editor ?? (selfEditing ? me : undefined);
+  const tooLong = countTitleGraphemes(draft.title) > TITLE_MAX_LENGTH;
+
+  // 다른 멤버의 변경이 합쳐져 값이 바뀌어도 내 커서·선택 영역이 글자를 따라가게 함(내가 친 변경은 브라우저가 맞춤)
+  const sectionRef = useRef<HTMLElement>(null);
+  const selection = useRef<{ start: number; end: number } | undefined>(undefined);
+  const previous = useRef(draft.title);
+  const typedByMe = useRef(false);
+  useLayoutEffect(() => {
+    const before = previous.current;
+    previous.current = draft.title;
+    if (typedByMe.current) {
+      typedByMe.current = false;
+      return;
+    }
+    const input = sectionRef.current?.querySelector('input');
+    const range = selection.current;
+    if (!input || !range || before === draft.title || document.activeElement !== input) return;
+    const { index, remove, insert } = diffText(before, draft.title);
+    const move = (position: number) =>
+      position <= index
+        ? position
+        : position >= index + remove
+          ? position - remove + insert.length
+          : index + insert.length;
+    const next = { start: move(range.start), end: move(range.end) };
+    selection.current = next;
+    input.setSelectionRange(next.start, next.end);
+  }, [draft.title]);
 
   return (
-    <section className="pt-s15 px-padding-p8">
+    <section ref={sectionRef} className="pt-s15 px-padding-p8">
       <BundleTextInput
         title={BUNDLE_MESSAGES.titleLabel}
         icon={false}
@@ -54,10 +88,31 @@ export function DraftTitleField({
         editingContent={<EditingLottie />}
         // 낭독 영역은 항상 마운트해 두고 문구만 바꿔야 편집 시작이 상태 변화로 읽힘
         editingLabel={editor ? BUNDLE_MESSAGES.editingLabel(editor.name) : ''}
-        errorMessage={draft.title.length >= TITLE_MAX_LENGTH ? BUNDLE_MESSAGES.titleMax : undefined}
+        errorMessage={
+          tooLong
+            ? BUNDLE_MESSAGES.titleTooLong
+            : draft.title.length >= TITLE_MAX_LENGTH
+              ? BUNDLE_MESSAGES.titleMax
+              : undefined
+        }
         onFocus={!editable ? onDenied : editor ? onEditingBlocked : onEditStart}
         onBlur={onEditEnd}
-        onChange={(event) => onChange(event.target.value)}
+        onSelect={(event) => {
+          selection.current = {
+            start: event.currentTarget.selectionStart ?? 0,
+            end: event.currentTarget.selectionEnd ?? 0,
+          };
+        }}
+        onCompositionStart={() => onComposing?.(true)}
+        onCompositionEnd={() => onComposing?.(false)}
+        onChange={(event) => {
+          typedByMe.current = true;
+          selection.current = {
+            start: event.target.selectionStart ?? 0,
+            end: event.target.selectionEnd ?? 0,
+          };
+          onChange(event.target.value);
+        }}
       />
     </section>
   );

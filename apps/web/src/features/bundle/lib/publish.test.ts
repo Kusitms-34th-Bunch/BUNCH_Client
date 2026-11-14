@@ -36,6 +36,13 @@ describe('getPublishBlockers', () => {
     expect(getPublishBlockers({ ...complete, title: '   ' }, ready)).toEqual(['title']);
   });
 
+  it('동시 편집이 합쳐져 제목이 40자를 넘으면 줄일 때까지 막는다', () => {
+    expect(getPublishBlockers({ ...complete, title: '가'.repeat(41) }, ready)).toEqual([
+      'titleTooLong',
+    ]);
+    expect(getPublishBlockers({ ...complete, title: '가'.repeat(40) }, ready)).toEqual([]);
+  });
+
   it('공개 범위를 골라야 한다', () => {
     expect(getPublishBlockers({ ...complete, visibility: null }, ready)).toEqual(['visibility']);
   });

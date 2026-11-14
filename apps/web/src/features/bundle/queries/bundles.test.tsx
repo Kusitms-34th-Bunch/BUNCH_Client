@@ -7,13 +7,16 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import type { BundleDetail } from '../model/bundle';
+import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import {
   bundleQueryOptions,
   useCreateBundleMutation,
   useDeleteBundleMutation,
   useLeaveBundleMutation,
   usePublishBundleMutation,
-  useSaveTitleMutation,
+  useApplyBundleEvent,
+  useMergeTitleMutation,
   useSaveVisibilityMutation,
 } from './bundles';
 import { bundleKeys } from './keys';
@@ -61,23 +64,24 @@ describe('번들 query·mutation', () => {
     expect(result.current.fetchStatus).toBe('idle');
   });
 
-  it('제목을 저장하면 응답으로 상세 캐시가 바로 최신이 된다', async () => {
+  it('제목 CRDT를 저장하면 병합 응답으로 상세 캐시의 제목 상태가 바로 최신이 된다', async () => {
     const { client, wrapper } = setup();
     const id = await createDraft(wrapper);
-    const { result } = renderHook(() => useSaveTitleMutation(bunchId, id), { wrapper });
+    const before = client.getQueryData<BundleDetail>(bundleKeys.detail(bunchId, id));
+    await ensureTitleCrdt();
+    const edited = editTitle(loadTitleDoc(before?.titleCrdtState ?? ''), '설악산');
+    const { result } = renderHook(() => useMergeTitleMutation(bunchId, id), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync({
-        value: '설악산',
-        expectedVersion: 0,
-        mode: 'DRAFT',
-      });
+      await result.current.mutateAsync(saveTitleDoc(edited));
     });
 
     expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toMatchObject({
       title: '설악산',
       titleVersion: 1,
-      revision: 2,
+      titleTooLong: false,
+      // 병합 응답에는 번들 revision이 없어 그대로 둠
+      revision: before?.revision,
     });
   });
 
@@ -209,5 +213,88 @@ describe('번들 query·mutation', () => {
 
     await waitFor(() => expect(result.current.error).toMatchObject({ code: 'BUNDLE_005' }));
     expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toMatchObject({ status: 'DRAFT' });
+  });
+
+  describe('번들 topic 이벤트(TITLE)', () => {
+    const titleEvent = (revision: number, title: string, titleVersion: number) => ({
+      type: 'TITLE',
+      revision,
+      data: { title, titleVersion, titleCrdtState: 'state', titleTooLong: false },
+    });
+    const apply = async () => {
+      const { client, wrapper } = setup();
+      const id = await createDraft(wrapper);
+      const { result } = renderHook(() => useApplyBundleEvent(bunchId, id), { wrapper });
+      const detail = () => client.getQueryData<BundleDetail>(bundleKeys.detail(bunchId, id));
+      return { client, id, detail, apply: result.current };
+    };
+
+    it('바로 다음 revision이면 제목 상태와 revision을 반영하고 같은 이벤트가 다시 와도 결과가 같다', async () => {
+      const { detail, apply: applyEvent } = await apply();
+      const base = detail()?.revision ?? 0;
+
+      applyEvent(titleEvent(base + 1, '새 제목', 5));
+      applyEvent(titleEvent(base + 1, '새 제목', 5));
+
+      expect(detail()).toMatchObject({
+        title: '새 제목',
+        titleVersion: 5,
+        titleCrdtState: 'state',
+        revision: base + 1,
+      });
+    });
+
+    it('이미 반영된 revision이나 낡은 제목 버전은 무시한다', async () => {
+      const { detail, apply: applyEvent } = await apply();
+      const base = detail()?.revision ?? 0;
+
+      applyEvent(titleEvent(base, '무시', 9));
+
+      expect(detail()?.title).not.toBe('무시');
+    });
+
+    it('revision이 건너뛰면 이벤트를 쓰지 않고 상세를 다시 받는다', async () => {
+      const { client, id, detail, apply: applyEvent } = await apply();
+      renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), {
+        wrapper: createQueryWrapper(client),
+      });
+      const base = detail()?.revision ?? 0;
+
+      applyEvent(titleEvent(base + 3, '건너뜀', 9));
+
+      expect(detail()?.title).not.toBe('건너뜀');
+      await waitFor(() =>
+        expect(client.getQueryState(bundleKeys.detail(bunchId, id))?.isInvalidated).toBe(true),
+      );
+    });
+
+    it('길이 초과 제목은 발행 사유에 TITLE_TOO_LONG을 넣고 줄어들면 뺀다', async () => {
+      const { detail, apply: applyEvent } = await apply();
+      const base = detail()?.revision ?? 0;
+
+      applyEvent({
+        ...titleEvent(base + 1, '가'.repeat(41), 6),
+        data: {
+          ...titleEvent(0, '', 0).data,
+          title: '가'.repeat(41),
+          titleVersion: 6,
+          titleTooLong: true,
+        },
+      });
+      expect(detail()?.publishBlockers).toContain('TITLE_TOO_LONG');
+
+      applyEvent(titleEvent(base + 2, '짧게', 7));
+      expect(detail()?.publishBlockers).not.toContain('TITLE_TOO_LONG');
+    });
+
+    it('TITLE이 아닌 이벤트와 모양이 다른 내용은 건드리지 않는다', async () => {
+      const { detail, apply: applyEvent } = await apply();
+      const before = detail();
+
+      applyEvent({ type: 'DATE', revision: 99, data: {} });
+      applyEvent('garbage');
+
+      expect(detail()).toBe(before);
+    });
   });
 });
