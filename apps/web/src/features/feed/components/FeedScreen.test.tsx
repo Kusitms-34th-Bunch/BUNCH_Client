@@ -559,8 +559,8 @@ describe('FeedScreen', () => {
     expect(push.mock.calls.map(([path]: unknown[]) => path as string)).toEqual([
       '/bunch',
       '/bunches/4',
-      '/bundles/1',
-      '/bundles/1?focus=comments',
+      '/bunches/1/bundles/1',
+      '/bunches/1/bundles/1?focus=comments',
     ]);
   });
 

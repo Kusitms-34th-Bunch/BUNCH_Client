@@ -68,7 +68,8 @@ export const toBunchNotifications = (
   }));
 
 // 번들 상세는 feed feature 화면이라 URL 계약만 둠(feature import 없음)
-const bundlePath = (bundleId: number) => `/bundles/${toDomainId(bundleId)}`;
+const bundlePath = (bunchId: number, bundleId: number) =>
+  `/bunches/${toDomainId(bunchId)}/bundles/${toDomainId(bundleId)}`;
 
 /**
  * 알림 이동 화면(기능명세 5.12.3 표의 이동 화면). 화면이 아직 없거나 필요한 ID가 없으면 번치 홈
@@ -85,10 +86,10 @@ export const notificationPath = (target: NotificationTarget): string => {
         ? BUNCH_HOME_PATHS.draft(toDomainId(target.bundleId))
         : BUNCH_HOME_PATHS.home;
     case 'BUNDLE':
-      return target.bundleId ? bundlePath(target.bundleId) : BUNCH_HOME_PATHS.home;
+      return target.bundleId ? bundlePath(target.bunchId, target.bundleId) : BUNCH_HOME_PATHS.home;
     case 'BUNDLE_COMMENTS':
       return target.bundleId
-        ? `${bundlePath(target.bundleId)}?focus=comments`
+        ? `${bundlePath(target.bunchId, target.bundleId)}?focus=comments`
         : BUNCH_HOME_PATHS.home;
     case 'CANDIDATES':
       return BUNCH_HOME_PATHS.createBundle;

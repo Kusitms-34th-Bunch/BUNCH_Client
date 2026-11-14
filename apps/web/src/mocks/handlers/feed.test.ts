@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MockBundle } from '../db/types';
 import { mockDb } from '../db';
-import { MOCK_BUNCH_ID } from '../db/seed';
+import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID } from '../db/seed';
 // handler 변경 때 PR CI(`--changed`)가 이 테스트를 고르게 서버를 import
 import '@/mocks/server';
 
@@ -117,5 +117,93 @@ describe('가짜 서버 피드', () => {
     expect(stale).toMatchObject({ status: 409, code: 'FEED_001' });
     expect(await getFeed('?cursor=broken')).toMatchObject({ status: 400, code: 'COMMON_001' });
     expect(await getFeed('?size=51')).toMatchObject({ status: 400, code: 'COMMON_001' });
+  });
+});
+
+describe('가짜 서버 발행 번들 상세', () => {
+  const getDetail = async (bunchId: number | string, bundleId: number | string) => {
+    const response = await fetch(`/api/bunches/${bunchId}/published-bundles/${bundleId}`);
+    const body = (await response.json()) as {
+      data: {
+        id: number;
+        bunchId: number;
+        contributors: { profileAvailable: boolean }[];
+        permissions: { canEdit: boolean; canReport: boolean };
+      } | null;
+      error: { code: string } | null;
+    };
+    return { status: response.status, data: body.data, code: body.error?.code };
+  };
+
+  it('공개 번치의 공개 번들은 지금 번치 명의의 권한과 함께 준다', async () => {
+    const { status, data } = await getDetail(3, 901);
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ id: 901, bunchId: 3 });
+    expect(data?.permissions).toMatchObject({ canEdit: false, canReport: true });
+  });
+
+  it('비공개 번치의 번들은 팔로우가 승인된 뒤에만 보인다', async () => {
+    expect(await getDetail(4, 911)).toMatchObject({ status: 403, code: 'AUTH_002' });
+
+    mockDb.update((state) => ({
+      ...state,
+      follows: [
+        ...state.follows,
+        {
+          id: 997,
+          followerBunchId: MOCK_BUNCH_ID,
+          targetBunchId: 4,
+          status: 'FOLLOWING',
+          createdAt: '2026-11-01T09:00:00.000Z',
+        },
+      ],
+    }));
+    expect((await getDetail(4, 911)).status).toBe(200);
+  });
+
+  it('멤버 공개 번들, 경로가 다른 번들, 없는 번치, 잘못된 ID는 오류다', async () => {
+    const own = mockDb
+      .get()
+      .bundles.find((bundle) => bundle.bunchId === MOCK_BUNCH_ID && bundle.status === 'PUBLISHED')!;
+    expect(await getDetail(MOCK_BUNCH_ID, own.id)).toMatchObject({
+      status: 404,
+      code: 'RESOURCE_001',
+    });
+    expect(await getDetail(4, 901)).toMatchObject({ status: 404, code: 'RESOURCE_001' });
+    expect(await getDetail(999, 901)).toMatchObject({ status: 404, code: 'BUNCH_009' });
+    expect(await getDetail('x', 901)).toMatchObject({ status: 400, code: 'COMMON_001' });
+  });
+
+  it('지금 번치의 일반 멤버는 신고, 메인 관리자는 수정·삭제 권한이고, 소속 번치가 없어도 공개 번들은 읽는다', async () => {
+    const own = mockDb
+      .get()
+      .bundles.find((bundle) => bundle.bunchId === MOCK_BUNCH_ID && bundle.status === 'PUBLISHED')!;
+    mockDb.update((state) => ({
+      ...state,
+      bundles: state.bundles.map((bundle) =>
+        bundle.id === own.id ? { ...bundle, visibility: 'PUBLIC' as const } : bundle,
+      ),
+    }));
+    // 일반 멤버는 신고만(기능명세서 6.2.11), 메인 관리자는 수정·삭제
+    expect((await getDetail(MOCK_BUNCH_ID, own.id)).data?.permissions).toMatchObject({
+      canEdit: false,
+      canReport: true,
+    });
+    mockDb.update((state) => ({
+      ...state,
+      memberships: state.memberships.map((item) =>
+        item.bunchId === MOCK_BUNCH_ID && item.memberId === MOCK_MY_MEMBER_ID
+          ? { ...item, role: 'OWNER' as const }
+          : item,
+      ),
+    }));
+    expect((await getDetail(MOCK_BUNCH_ID, own.id)).data?.permissions).toMatchObject({
+      canEdit: true,
+      canReport: false,
+    });
+
+    mockDb.update((state) => ({ ...state, memberships: [] }));
+    expect(await getDetail(3, 901)).toMatchObject({ status: 200 });
   });
 });

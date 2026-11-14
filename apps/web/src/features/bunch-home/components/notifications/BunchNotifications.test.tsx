@@ -96,7 +96,7 @@ describe('BunchNotifications(가짜 서버)', () => {
     const [, bundle] = await cards();
     await user.click(bundle!);
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/bundles/1'));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1'));
     expect(unreadOf(MOCK_BUNCH_ID)).toBe(2);
     await waitFor(async () =>
       expect((await cards())[1]).not.toHaveAccessibleName(expect.stringContaining('읽지 않음')),

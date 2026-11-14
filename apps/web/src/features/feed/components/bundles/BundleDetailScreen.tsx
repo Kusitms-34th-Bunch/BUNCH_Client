@@ -1,6 +1,8 @@
 'use client';
 
+import { isApiError } from '@app/api-core';
 import {
+  Button,
   ConfirmDialog,
   Header,
   LineAlertMediumIcon,
@@ -21,6 +23,7 @@ import {
   MoreMenuSheet,
   ReportSheet,
 } from '@app/design-system/web';
+import { useQuery } from '@tanstack/react-query';
 import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -28,6 +31,7 @@ import { usePreservedCallback } from 'react-simplikit';
 import commentEmpty from '@/shared/assets/images/empty/comment-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
@@ -36,7 +40,6 @@ import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
-import { getBundleDetailFixture } from '../../fixtures/bundleDetail.fixture';
 import { useBundleEdits } from '../../hooks/useBundleEdits';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
@@ -55,10 +58,15 @@ import {
 } from '../../lib/comments';
 import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { withRo } from '../../lib/josa';
+import { type BundleBunchSource, toFeedBundleDetail, toFeedBunch } from '../../model/bundleDetail';
+import { bundleDetailQueryOptions } from '../../queries/bundleDetail';
 import { MemberComments } from './MemberComments';
 
 type BundleDetailScreenProps = {
+  bunchId: string;
   bundleId: string;
+  /** 번치 이름·이미지(route가 번치 홈 응답에서 넘김). 받는 중 undefined, 받지 못하면 null */
+  bunch: BundleBunchSource | null | undefined;
   /** 말풍선에서 들어옴(?focus=comments): 댓글 영역으로 스크롤하고 입력란 활성화 */
   focusComments: boolean;
   /** 다른 기능의 화면 주소(route가 조합) */
@@ -72,14 +80,22 @@ const previewOf = (content = '') =>
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * API 연결 전 fixture라 댓글·신고·번들 삭제·공개 범위는 화면에서만 바뀜(구현 단위 10). 「수정하기」는 메뉴만 있고 수정 화면이 생기면 이동을 붙임
+ * 내용은 발행 번들 상세(명세 084). 댓글·신고·번들 삭제·공개 범위는 아직 화면에서만 바뀜(API 연동 3~7번). 「수정하기」는 메뉴만 있음
  */
-export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDetailScreenProps) {
+export function BundleDetailScreen({
+  bunchId,
+  bundleId,
+  bunch,
+  focusComments,
+  links,
+}: BundleDetailScreenProps) {
   const router = useRouter();
   const backOr = useBackOr();
   const now = useClientNow();
   const composerRef = useRef<HTMLDivElement>(null);
-  const { viewer, asBunch } = useFeedViewer();
+  const { viewer, viewerFailed, viewerFetching, retryViewer, asBunch } = useFeedViewer();
+  const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
+  const detail = useQuery(bundleDetailQueryOptions(bunchId, bundleId, viewerId));
   const likes = useLikeToggle(viewer);
   const keyboardOpen = useKeyboardOpen();
   const commentsRef = useRef<HTMLElement>(null);
@@ -90,9 +106,18 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const { isDeleted, memberOnlyOf } = useBundleEdits();
   // 화면에서 지운 번들은 없는 번들과 같은 안내. 들어올 때 기준이라 여기서 지운 뒤 떠나는 동안 안내로 바뀌지 않음
   const [deletedOnEnter] = useState(() => isDeleted(bundleId));
-  const bundle = deletedOnEnter ? undefined : getBundleDetailFixture(bundleId);
-  // ponytail: 화면 안에서만 바뀜. 댓글 API(구현 단위 10)를 연결하면 상세 query 캐시로 대체
-  const [comments, setComments] = useState<readonly FeedComment[]>(bundle?.comments ?? []);
+  const bundle =
+    deletedOnEnter || !detail.data || bunch === undefined
+      ? undefined
+      : toFeedBundleDetail(
+          detail.data,
+          // 번치 정보를 받지 못해도 내용은 보임(기본 이미지와 「번치」, 버튼 이름이 비지 않게)
+          bunch ? toFeedBunch(bunch) : { id: bunchId, name: text.unknownBunch },
+        );
+  // 「다시 시도」가 성공해 버튼이 사라지면 번들 제목으로 초점
+  const focusTitleAfterRetry = useRef(false);
+  // ponytail: 화면 안에서만 바뀜. 댓글 API(API 연동 4번)를 연결하면 댓글 query 캐시로 대체
+  const [comments, setComments] = useState<readonly FeedComment[]>([]);
   const [addedCount, setAddedCount] = useState(0);
   const [hiddenCount, setHiddenCount] = useState(0);
   const [announcement, setAnnouncement] = useState('');
@@ -107,6 +132,24 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   const localId = useRef(0);
 
   useHoldScrollOnLeave(commentsRef);
+
+  // 다시 시도(상세나 내 정보)를 받는 중
+  const retrying = detail.isFetching || viewerFetching;
+  // 볼 수 없음·실패 안내의 제목(다시 시도 결과가 「볼 수 없음」이면 초점을 받는 곳)
+  const stateTitleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    // 본문이나 안내 제목이 그려질 때까지 기다림(상세가 먼저 와도 번치 정보를 받는 동안은 덮개)
+    if (!focusTitleAfterRetry.current || retrying || (!bundle && !stateTitleRef.current)) return;
+    focusTitleAfterRetry.current = false;
+    // 다시 실패해 버튼이 남았으면 초점도 그대로
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && focused.isConnected) return;
+    const title =
+      stateTitleRef.current ?? commentsRef.current?.closest('main')?.querySelector('h1');
+    if (!title) return;
+    title.tabIndex = -1;
+    title.focus({ preventScroll: true });
+  });
 
   // 입력란은 CommentComposer 안쪽이라 감싼 요소에서 찾음
   const focusInput = useCallback(
@@ -139,12 +182,14 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     toast(message);
   }, [comments]);
 
+  // 댓글 영역은 본문이 그려진 뒤에 생김(번치 정보·상세를 받는 중에는 없음)
+  const contentReady = bundle !== undefined;
   useEffect(() => {
-    if (!focusComments) return;
+    if (!focusComments || !contentReady) return;
     // effect에서 바로 주면 RouteFocus가 이동 전에 남은 초점으로 보고 제목으로 옮기므로 다음 프레임에
     const frame = requestAnimationFrame(goToComments);
     return () => cancelAnimationFrame(frame);
-  }, [focusComments, goToComments]);
+  }, [focusComments, contentReady, goToComments]);
 
   // 남의 댓글 신고: 접수되면 그 댓글(원댓글이면 답글까지)을 바로 숨기고 그 자리 다음 댓글로 초점
   // 시트가 닫힌 시점의 최신 목록으로 계산
@@ -171,13 +216,51 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
     />
   );
 
-  // API 연결 전 임시 안내. 연결하면 없는 ID는 route에서 notFound()(routing-and-access.md), 볼 수 없는 번들만 이 안내
+  // 지웠거나 없음·볼 수 없음(404·403)과 잘못된 주소(400)는 같은 안내, 그 밖의 실패는 다시 시도
+  const unavailable =
+    deletedOnEnter ||
+    (isApiError(detail.error) && [400, 403, 404].includes(detail.error.status ?? 0));
+  // 이미 받은 상세가 있으면 다시 받기가 실패해도 보던 내용을 그대로 둠
+  const failed =
+    !unavailable && (detail.isError || (viewer === undefined && viewerFailed)) && !detail.data;
+  if ((unavailable && !detail.data) || deletedOnEnter || failed) {
+    return (
+      <PageShell header={header()}>
+        <div className="gap-s8 flex h-full flex-col items-center justify-center">
+          {/* 알림은 감싼 요소에 두어 h1의 제목 의미를 지킴 */}
+          <div role={failed ? 'alert' : undefined}>
+            <h1
+              ref={stateTitleRef}
+              className="typography-body-2-regular text-text-quinary text-center"
+            >
+              {failed ? text.actionFailed : text.bundleUnavailable}
+            </h1>
+          </div>
+          {failed ? (
+            <Button
+              variant="tertiary"
+              size="md"
+              // 누르면 받는 중 화면(덮개)으로 바뀜. 데이터 없이 실패한 query는 다시 받으면 pending
+              onClick={() => {
+                focusTitleAfterRetry.current = true;
+                void (detail.isError ? detail.refetch() : retryViewer());
+              }}
+            >
+              {text.retry}
+            </Button>
+          ) : null}
+        </div>
+      </PageShell>
+    );
+  }
+  // 덮개(`PageLoading`)가 헤더까지 덮고 초점을 가져감(앱 공통). 상태 문구는 덮개와 함께 붙음
   if (!bundle) {
     return (
       <PageShell header={header()}>
-        <h1 className="typography-body-2-regular text-text-quinary flex h-full items-center justify-center">
-          {text.bundleUnavailable}
-        </h1>
+        <p role="status" className="sr-only">
+          {text.bundleLoading}
+        </p>
+        <PageLoading />
       </PageShell>
     );
   }
@@ -345,33 +428,42 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
           {...rootProps}
           title={text.bundleMore}
           cancelLabel={text.cancel}
+          // 항목마다 그 권한이 있을 때만(수정·공개 범위는 수정 권한, 삭제는 삭제 권한)
           items={[
-            {
-              id: 'edit',
-              label: text.edit,
-              leftIcon: <LinePencilMediumIcon aria-hidden />,
-              // ponytail: 번들 수정 화면(기능명세서 6.2.12)이 없어 시트만 닫음. 다음 이슈에서 이동 연결
-              onSelect: close,
-            },
-            {
-              id: 'visibility',
-              label: text.visibilitySetting,
-              leftIcon: <LineLockMediumIcon aria-hidden />,
-              onSelect: () => {
-                next = () => router.push(FEED_PATHS.bundleVisibility(bundle.id));
-                close();
-              },
-            },
-            {
-              id: 'delete',
-              label: text.deleteBundle,
-              tone: 'danger',
-              leftIcon: <LineTrashcanMediumIcon aria-hidden />,
-              onSelect: () => {
-                next = openDeleteBundle;
-                close();
-              },
-            },
+            ...(bundle.canEdit
+              ? [
+                  {
+                    id: 'edit',
+                    label: text.edit,
+                    leftIcon: <LinePencilMediumIcon aria-hidden />,
+                    // ponytail: 번들 수정 화면(기능명세서 6.2.12)이 없어 시트만 닫음. API 연동 7번에서 이동 연결
+                    onSelect: close,
+                  },
+                  {
+                    id: 'visibility',
+                    label: text.visibilitySetting,
+                    leftIcon: <LineLockMediumIcon aria-hidden />,
+                    onSelect: () => {
+                      next = () => router.push(FEED_PATHS.bundleVisibility(bunchId, bundle.id));
+                      close();
+                    },
+                  },
+                ]
+              : []),
+            ...(bundle.canDelete
+              ? [
+                  {
+                    id: 'delete',
+                    label: text.deleteBundle,
+                    tone: 'danger' as const,
+                    leftIcon: <LineTrashcanMediumIcon aria-hidden />,
+                    onSelect: () => {
+                      next = openDeleteBundle;
+                      close();
+                    },
+                  },
+                ]
+              : []),
           ]}
         />
       ),
@@ -380,10 +472,8 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   };
 
   // 헤더 더보기(기능명세서 6.2.11): 다른 번치 번들, 우리 번치 번들의 메인 관리자가 아닌 역할은 「신고」, 메인 관리자는 관리 메뉴
-  // 내 정보를 받기 전에는 갈래를 알 수 없어 버튼을 그리지 않음(메인 관리자에게 보였다 사라지지 않게)
-  const ownBundle = viewer?.bunchId === bundle.bunch.id;
-  // ponytail: 메뉴 노출과 삭제·공개 범위 변경을 화면 판단에만 기댐. API 연결 때 서버의 메인 관리자 확인으로 옮기고 실패하면 안내
-  const isOwner = ownBundle && bundle.myRole === 'owner';
+  // 메뉴 갈래는 서버 권한(수정·삭제 권한이면 관리 메뉴, 신고 권한이면 신고). 모두 없으면 버튼 없음
+  const isOwner = bundle.canEdit || bundle.canDelete;
 
   // 내 댓글 더보기(Figma `5367:121393`): 「삭제」/「취소」. 시트가 다 닫힌 뒤 확인 창(`5367:121647`)
   const openCommentMenu = (comment: FeedComment) => {
@@ -425,7 +515,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
   return (
     <PageShell
       header={header(
-        viewer !== undefined ? (
+        isOwner || bundle.canReport ? (
           <HeaderIconButton
             label={text.bundleMore}
             onClick={isOwner ? openOwnerMenu : () => openReportMenu(text.bundleMore, reportBundle)}
@@ -455,7 +545,7 @@ export function BundleDetailScreen({ bundleId, focusComments, links }: BundleDet
       <BundleAuthorInfo
         bunchName={bundle.bunch.name}
         imageSrc={bundle.bunch.imageSrc}
-        time={now === null ? '' : formatElapsedTime(bundle.publishedAt, now)}
+        time={now === null || !bundle.publishedAt ? '' : formatElapsedTime(bundle.publishedAt, now)}
         onBunchClick={() =>
           router.push(
             viewer?.bunchId === bundle.bunch.id
