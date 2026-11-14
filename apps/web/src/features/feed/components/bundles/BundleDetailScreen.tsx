@@ -211,6 +211,9 @@ export function BundleDetailScreen({
     if (listGone && contentReady) leaveGone();
   }, [listGone, contentReady, leaveGone]);
 
+  // 응답을 기다리는 사이 명의(지금 번치)가 바뀌었는지(늦게 온 결과를 새 명의의 목록에 적용하지 않게)
+  const isViewer = usePreservedCallback((id: string | null | undefined) => id === viewerId);
+
   // 남의 댓글 신고: 접수되면 그 댓글(원댓글이면 답글까지)을 바로 숨기고 그 자리 다음 댓글로 초점
   // 시트가 닫힌 시점의 최신 목록으로 계산
   const hideReported = usePreservedCallback((comment: FeedComment) => {
@@ -417,11 +420,13 @@ export function BundleDetailScreen({
   const reportComment = (comment: FeedComment) => {
     const commentId = toWireId(comment.id);
     if (commentId === undefined) return;
+    const reportedAs = viewerId;
     openReport(
       text.reportCommentTitle,
       { commentId },
       {
-        onSuccess: () => hideReported(comment),
+        // 그사이 명의가 바뀌었으면 새 명의의 목록은 그대로 두고 접수만 알림
+        onSuccess: () => (isViewer(reportedAs) ? hideReported(comment) : toast(text.reported)),
         onError: (error) => {
           // 그사이 지워진 댓글이면 목록을 맞춤(번들이 사라졌으면 다시 받은 목록이 알려 떠남)
           if (codeOf(error) === 'RESOURCE_001') {
