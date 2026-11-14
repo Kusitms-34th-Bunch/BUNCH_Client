@@ -102,8 +102,8 @@ export function useBundleComments(
     void loadMore();
   }, {});
 
-  const createMutation = useCreateCommentMutation(target);
-  const deleteMutation = useDeleteCommentMutation(target);
+  const createMutation = useCreateCommentMutation();
+  const deleteMutation = useDeleteCommentMutation();
   // 같은 명의·내용·대상으로 다시 보내면 같은 키(응답이 오지 않은 요청이 두 번 등록되지 않게)
   const attempt = useRef<{ request: string; key: string } | null>(null);
   // 보내는 중 다시 누르기는 ref로 막음(isPending은 다음 렌더부터라 같은 순간의 두 번째 탭이 지나감)
@@ -117,7 +117,7 @@ export function useBundleComments(
       attempt.current = { request, key: createIdempotencyKey() };
     }
     createMutation.mutate(
-      { content, parentId: parent, idempotencyKey: attempt.current.key },
+      { target, content, parentId: parent, idempotencyKey: attempt.current.key },
       {
         onSettled: () => {
           sending.current = false;
@@ -141,7 +141,7 @@ export function useBundleComments(
     if (id === undefined || removing.current) return;
     removing.current = true;
     deleteMutation.mutate(
-      { id, parentId: comment.parentId ? (toWireId(comment.parentId) ?? null) : null },
+      { target, id, parentId: comment.parentId ? (toWireId(comment.parentId) ?? null) : null },
       {
         ...callbacks,
         onSettled: () => {

@@ -32,7 +32,9 @@ const itemOf = (state: MockDbState, viewer: number | undefined, comment: MockSoc
     ? 0
     : visibleOf(state, viewer, comment.bundleId).filter((c) => c.parentId === comment.id).length;
   const base = { id: comment.id, bundleId: comment.bundleId, parentId: comment.parentId };
-  if (comment.deleted) {
+  const member = state.members.find((item) => item.memberId === comment.memberId);
+  // 탈퇴한 작성자의 댓글도 삭제 자리로(6.2.7 로직 5)
+  if (comment.deleted || !member) {
     return {
       ...base,
       content: '삭제된 댓글입니다',
@@ -46,7 +48,6 @@ const itemOf = (state: MockDbState, viewer: number | undefined, comment: MockSoc
       canReport: false,
     };
   }
-  const member = state.members.find((item) => item.memberId === comment.memberId);
   const bunch = state.bunches.find((item) => item.id === comment.bunchId);
   const mine = comment.memberId === MOCK_MY_MEMBER_ID;
   const hasBunch = viewer !== undefined;
@@ -55,9 +56,7 @@ const itemOf = (state: MockDbState, viewer: number | undefined, comment: MockSoc
     content: comment.content,
     deleted: false,
     createdAt: comment.createdAt,
-    author: member
-      ? { memberId: member.memberId, nickname: member.nickname, imageUrl: member.imageUrl }
-      : { memberId: null, nickname: '작성자', imageUrl: null },
+    author: { memberId: member.memberId, nickname: member.nickname, imageUrl: member.imageUrl },
     badge: bunch
       ? { bunchId: bunch.id, name: bunch.name, characterType: bunch.characterType }
       : null,
@@ -178,17 +177,18 @@ export const commentHandlers = [
     const access = bundleAccess(state, bundleId);
     if ('error' in access) return access.error;
     const viewer = access.viewer as number;
-    if (parentId !== null) {
-      const parent = visibleOf(state, viewer, bundleId).find((comment) => comment.id === parentId);
-      if (!parent) return fail(404, 'RESOURCE_001');
-      if (parent.deleted || parent.parentId) return fail(409, 'BUNDLE_002');
-    }
+    // 원댓글 검사는 새로 등록할 때만(같은 키로 다시 보내면 그사이 원댓글이 지워졌어도 처음 결과를 돌려줌)
     const outcome = runIdempotent(
       `comment:${MOCK_MY_MEMBER_ID}:${viewer}:${bundleId}`,
       key,
       JSON.stringify([content, parentId]),
       () => {
         const current = mockDb.get();
+        if (parentId !== null) {
+          const parent = visibleOf(current, viewer, bundleId).find((item) => item.id === parentId);
+          if (!parent) return { status: 404, body: 'RESOURCE_001' };
+          if (parent.deleted || parent.parentId) return { status: 409, body: 'BUNDLE_002' };
+        }
         const comment: MockSocialComment = {
           id: Math.max(5000, ...current.socialComments.map((item) => item.id)) + 1,
           bundleId,
@@ -204,6 +204,9 @@ export const commentHandlers = [
       },
     );
     if (outcome.kind === 'conflict') return fail(409, 'REQUEST_001');
+    if (outcome.response.status !== 200) {
+      return fail(outcome.response.status, outcome.response.body as string);
+    }
     // 다시 보낸 요청은 지금 상태로(그사이 지웠으면 삭제 자리)
     const latest = mockDb.get();
     const saved = latest.socialComments.find((item) => item.id === outcome.response.body);

@@ -32,10 +32,12 @@ export const getAllReplies = async (bundleId: number, commentId: number, signal?
       'comment replies',
     );
     replies.push(...page.items);
-    // 받은 커서가 다시 오면 거기서 끝냄(순환 방지)
-    const next = page.hasNext ? page.nextCursor : undefined;
-    cursor = next && !used.has(next) ? next : undefined;
-    if (cursor) used.add(cursor);
+    if (!page.hasNext) break;
+    // 다음 쪽이 있다는데 커서가 없거나 받은 커서가 다시 오면 실패로(답글이 빠진 채 끝난 것으로 보지 않게)
+    if (!page.nextCursor || used.has(page.nextCursor))
+      throw new Error('comment replies cursor did not advance');
+    cursor = page.nextCursor;
+    used.add(cursor);
   } while (cursor);
   return replies;
 };
