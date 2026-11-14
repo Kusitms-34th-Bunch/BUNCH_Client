@@ -22,7 +22,6 @@ type DraftPlaceDateProps = {
   currentYear: number;
   /** 고칠 수 없는 사람이 눌렀을 때 */
   onDenied: () => void;
-  /** 다른 멤버가 편집 중인 위치·날짜를 눌렀을 때 */
 };
 
 /**
@@ -81,10 +80,11 @@ export function DraftPlaceDate({
       ? list.map((member) => ({ name: member.name, src: member.avatarSrc }))
       : undefined;
   // 프로필은 장식이라 작업 중이라는 사실은 필드 이름으로 읽히게 함("○○님이 편집 중 위치")
+  // 여러 명이면 이름마다 「님이 편집 중」을 붙여 이음(예: 경진님이 편집 중, 은우님이 편집 중 위치)
   const editingName = (list: typeof locationEditors) =>
-    list.map((member) => member.name).join(', ');
+    list.map((member) => BUNDLE_MESSAGES.editingLabel(member.name)).join(', ');
   const fieldNameWith = (field: string, list: typeof locationEditors) =>
-    list.length > 0 ? `${BUNDLE_MESSAGES.editingLabel(editingName(list))} ${field}` : field;
+    list.length > 0 ? `${editingName(list)} ${field}` : field;
 
   const suggestions = draft.suggestedDates.map((value) => ({
     value,
@@ -114,7 +114,7 @@ export function DraftPlaceDate({
           onAdd={draft.locations.length < MAX_LOCATIONS ? openLocation : undefined}
           addMembers={toProfiles(addEditors)}
           {...(addEditors.length > 0 && {
-            addMembersLabel: BUNDLE_MESSAGES.editingLabel(editingName(addEditors)),
+            addMembersLabel: editingName(addEditors),
           })}
         />
       )}

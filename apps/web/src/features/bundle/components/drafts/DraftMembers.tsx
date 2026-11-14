@@ -40,7 +40,7 @@ export function DraftMembers({
       .find(Boolean);
     target?.focus();
   }, [memberIds]);
-  // 지금 이 초안에 들어와 있는 멤버의 초록 점(기능 spec 4.3.6)
+  // 지금 이 초안에 들어와 있는 멤버의 초록 점(기능 spec 4.3.2)
   const viewingIds = new Set(draft.viewingMemberIds);
 
   return (

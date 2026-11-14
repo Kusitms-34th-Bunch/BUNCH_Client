@@ -41,7 +41,6 @@ describe('usePresenceSender', () => {
 
     act(() => result.current.begin('DATE'));
     act(() => result.current.begin('PHOTOS'));
-    act(() => result.current.begin('DATE'));
     expect(bodies()).toEqual([
       { action: 'BEGIN', target: 'DATE' },
       { action: 'BEGIN', target: 'PHOTOS' },
@@ -63,6 +62,38 @@ describe('usePresenceSender', () => {
       { action: 'VIEW' },
       { action: 'BEGIN', target: 'PHOTOS' },
     ]);
+  });
+
+  it('같은 target을 여러 곳이 쓰면 모두 끝났을 때만 END를 보낸다(열린 화면과 진행 작업의 합집합)', () => {
+    const { result } = render();
+    send.mockClear();
+
+    act(() => result.current.begin('PHOTOS'));
+    act(() => result.current.begin('PHOTOS'));
+    act(() => result.current.end('PHOTOS'));
+    expect(bodies()).toEqual([{ action: 'BEGIN', target: 'PHOTOS' }]);
+
+    send.mockClear();
+    act(() => void vi.advanceTimersByTime(5_000));
+    expect(bodies()).toContainEqual({ action: 'BEGIN', target: 'PHOTOS' });
+
+    send.mockClear();
+    act(() => result.current.end('PHOTOS'));
+    act(() => result.current.end('PHOTOS'));
+    expect(bodies()).toEqual([{ action: 'END', target: 'PHOTOS' }]);
+  });
+
+  it('탭이 숨겨진 동안은 5초가 지나도 VIEW·BEGIN으로 입장을 되살리지 않는다', () => {
+    const { result } = render();
+    act(() => result.current.begin('DATE'));
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    act(() => void document.dispatchEvent(new Event('visibilitychange')));
+    send.mockClear();
+
+    act(() => void vi.advanceTimersByTime(15_000));
+
+    expect(send).not.toHaveBeenCalled();
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
   });
 
   it('제목·코멘트는 입력할 때마다 현재 전체 글자를 TYPE으로 보내고 나가면 BLUR를 보낸다', () => {

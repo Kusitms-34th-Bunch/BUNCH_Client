@@ -51,17 +51,25 @@ export function usePresenceSender({
     sendRef.current = send;
     participantRef.current = participant;
   });
-  // 진행 중인 비텍스트 작업 target(끝낼 때까지 입장 신호와 함께 5초마다 다시 보냄)
-  const running = useRef(new Set<string>());
+  // 진행 중인 비텍스트 작업 target과 그 작업을 하는 곳의 수(끝낼 때까지 입장 신호와 함께 5초마다 다시 보냄)
+  // 같은 target(예: 사진)을 여러 곳(시트·화면·확인 창)이 쓰므로 모두 끝났을 때만 END를 보냄(열린 화면과 진행 작업의 합집합)
+  const running = useRef(new Map<string, number>());
 
   const begin = useCallback((target: string) => {
-    if (!participantRef.current || running.current.has(target)) return;
-    running.current.add(target);
-    sendRef.current({ action: 'BEGIN', target });
+    if (!participantRef.current) return;
+    const count = running.current.get(target) ?? 0;
+    running.current.set(target, count + 1);
+    if (count === 0) sendRef.current({ action: 'BEGIN', target });
   }, []);
 
   const end = useCallback((target: string) => {
-    if (!running.current.delete(target)) return;
+    const count = running.current.get(target);
+    if (count === undefined) return;
+    if (count > 1) {
+      running.current.set(target, count - 1);
+      return;
+    }
+    running.current.delete(target);
     sendRef.current({ action: 'END', target });
   }, []);
 
@@ -80,8 +88,12 @@ export function usePresenceSender({
   useEffect(() => {
     if (!connected || !viewing) return;
     const refresh = () => {
+      // 앱 이탈(BACKGROUND)로 지운 입장을 숨겨진 동안 되살리지 않음
+      if (document.visibilityState === 'hidden') return;
       sendRef.current({ action: 'VIEW' });
-      for (const target of running.current) sendRef.current({ action: 'BEGIN', target });
+      for (const target of running.current.keys()) {
+        sendRef.current({ action: 'BEGIN', target });
+      }
     };
     refresh();
     const timer = setInterval(refresh, REFRESH_MS);
@@ -96,7 +108,9 @@ export function usePresenceSender({
         sendRef.current({ action: 'BACKGROUND' });
       } else {
         sendRef.current({ action: 'VIEW' });
-        for (const target of running.current) sendRef.current({ action: 'BEGIN', target });
+        for (const target of running.current.keys()) {
+          sendRef.current({ action: 'BEGIN', target });
+        }
       }
     };
     document.addEventListener('visibilitychange', onVisibility);

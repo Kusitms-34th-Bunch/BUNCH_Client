@@ -396,13 +396,34 @@ describe('입력', () => {
     expect(names[0]).toBe('은우 (나) 코멘트');
   });
 
-  it('다른 멤버가 코멘트를 쓰는 중이면 점 애니메이션만 보이고 잠그지는 않는다', () => {
+  it('다른 멤버가 쓰는 글자는 저장 전이어도 그 카드에 바로 보이고 내 카드는 영향받지 않는다(기능 spec 4.3.8)', () => {
     renderScreen({
       viewer: creator,
-      draft: { ...draftFixture, editing: { commentMemberIds: ['gyeongjin'] } },
+      draft: {
+        ...draftFixture,
+        editing: {
+          commentMemberIds: ['gyeongjin'],
+          commentTexts: { gyeongjin: '지금 치는 중이에요' },
+        },
+      },
     });
 
-    expect(screen.getByRole('img', { name: '경진님이 작성 중' })).toBeInTheDocument();
+    const theirs = screen.getByRole('textbox', { name: '경진 코멘트' });
+    expect(theirs).toHaveValue('지금 치는 중이에요');
+    expect(theirs).toHaveAttribute('readonly');
+    expect(screen.getByRole('textbox', { name: /지예.*코멘트/ })).not.toHaveAttribute('readonly');
+  });
+
+  it('다른 멤버가 코멘트를 모두 지우면 빈 글자가 보인다', () => {
+    renderScreen({
+      viewer: creator,
+      draft: {
+        ...draftFixture,
+        editing: { commentMemberIds: ['gyeongjin'], commentTexts: { gyeongjin: '' } },
+      },
+    });
+
+    expect(screen.getByRole('textbox', { name: '경진 코멘트' })).toHaveValue('');
   });
 });
 
