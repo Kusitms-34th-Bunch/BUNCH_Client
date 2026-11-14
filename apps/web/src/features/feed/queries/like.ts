@@ -1,6 +1,7 @@
 import { isApiError } from '@app/api-core';
 import {
   type InfiniteData,
+  type QueryClient,
   type QueryFilters,
   useMutation,
   useQueryClient,
@@ -15,106 +16,130 @@ import { patchDetailLike, patchFeedLike, toggledLike, type LikeState } from '../
 import { bundleDetailKeys } from './bundleDetail';
 import { feedKeys } from './feed';
 
-type LikeVariables = { bundleId: number; liked: boolean };
+/** viewerId: 누른 시점의 화면 명의(요청 중 명의가 바뀌어도 그 요청의 캐시만 다룸) */
+export type LikeVariables = { bundleId: number; liked: boolean; viewerId: string | null };
+// 캐시마다 되돌릴 값(피드 카드와 상세가 어긋나 있어도 각자 누르기 전 값으로)
+type LikeBase = { feed: LikeState | undefined; detail: LikeState | undefined };
 
 const LIKE_KEY = ['bundle-like'] as const;
 // 같은 scope의 요청은 순서대로 하나씩 보냄(연타해도 서버에 마지막 누른 값이 남음)
 const LIKE_SCOPE = { id: 'bundle-like' };
 // 연달아 누르는 동안 되돌릴 기준(첫 요청 직전 값, 앞선 요청이 성공하면 그 응답)을 명의·번들마다 보관
-const confirmed = new Map<string, LikeState>();
+const confirmed = new Map<string, LikeBase>();
+
+const baseKey = ({ viewerId, bundleId }: LikeVariables) => `${viewerId ?? '-'}:${bundleId}`;
+const feedFilters = ({ viewerId }: LikeVariables): QueryFilters => ({
+  queryKey: feedKeys.list(viewerId),
+  exact: true,
+});
+// 상세 key: [...all, bunchId, bundleId, viewerId]
+const detailFilters = ({ viewerId, bundleId }: LikeVariables): QueryFilters => ({
+  predicate: ({ queryKey }) =>
+    queryKey[0] === bundleDetailKeys.all[0] &&
+    queryKey[2] === String(bundleId) &&
+    queryKey[3] === viewerId,
+});
+
+const applyFeed = (client: QueryClient, vars: LikeVariables, next: (_: LikeState) => LikeState) =>
+  client.setQueriesData<InfiniteData<FeedPage>>(feedFilters(vars), (data) =>
+    patchFeedLike(data, vars.bundleId, next),
+  );
+const applyDetail = (client: QueryClient, vars: LikeVariables, next: (_: LikeState) => LikeState) =>
+  client.setQueriesData<BundleDetailResponse>(detailFilters(vars), (data) =>
+    patchDetailLike(data, vars.bundleId, next),
+  );
+
+const pick = (source: LikeState | undefined): LikeState | undefined =>
+  source && { likedByCurrentBunch: source.likedByCurrentBunch, likeCount: source.likeCount };
+
+/** 캐시마다 그 번들의 지금 좋아요 */
+const read = (client: QueryClient, vars: LikeVariables): LikeBase => ({
+  feed: pick(
+    client
+      .getQueriesData<InfiniteData<FeedPage>>(feedFilters(vars))
+      .flatMap(([, data]) => data?.pages ?? [])
+      .flatMap((page) => page.items)
+      .flatMap((item) =>
+        'bundle' in item && item.bundle.id === vars.bundleId ? [item.bundle] : [],
+      )[0],
+  ),
+  detail: pick(
+    client.getQueriesData<BundleDetailResponse>(detailFilters(vars)).find(([, data]) => data)?.[1],
+  ),
+});
+
+/** 같은 명의·번들로 아직 끝나지 않은 요청 수 */
+const pendingFor = (client: QueryClient, vars: LikeVariables) =>
+  client.isMutating({
+    mutationKey: LIKE_KEY,
+    predicate: (mutation) => {
+      const other = mutation.state.variables as LikeVariables | undefined;
+      return other?.bundleId === vars.bundleId && other.viewerId === vars.viewerId;
+    },
+  });
 
 /**
  * 번들 좋아요(지금 번치 명의, 명세 011·012). 누르면 피드 카드·상세 캐시를 바로 바꾸고 서버에 보냄
- * 마지막 요청이 실패하면 그 번들의 좋아요만 기준값으로 되돌리고 공통 토스트(`meta.errorMessage`), 앞선 결과는 뒤에 누른 값을 덮지 않음
+ * 마지막 요청이 실패하면 그 번들의 좋아요만 캐시마다 기준값으로 되돌리고 공통 토스트(`meta.errorMessage`), 앞선 결과는 뒤에 누른 값을 덮지 않음
  * 피드 목록은 쪽 전부를 다시 받지 않도록 성공 응답 값으로 확정하고, 상세만 다시 받음(docs/architecture/data-layer.md 예외)
  */
-export const useBundleLikeMutation = (viewerId: string | null | undefined) => {
+export const useBundleLikeMutation = () => {
   const queryClient = useQueryClient();
-  const feedFilters: QueryFilters = { queryKey: feedKeys.list(viewerId ?? null), exact: true };
-  // 상세 key: [...all, bunchId, bundleId, viewerId]
-  const detailFilters = (bundleId: number): QueryFilters => ({
-    predicate: ({ queryKey }) =>
-      queryKey[0] === bundleDetailKeys.all[0] &&
-      queryKey[2] === String(bundleId) &&
-      queryKey[3] === (viewerId ?? null),
-  });
-  const baseKey = (bundleId: number) => `${viewerId ?? '-'}:${bundleId}`;
-  const apply = (bundleId: number, next: (_current: LikeState) => LikeState) => {
-    queryClient.setQueriesData<InfiniteData<FeedPage>>(feedFilters, (data) =>
-      patchFeedLike(data, bundleId, next),
-    );
-    queryClient.setQueriesData<BundleDetailResponse>(detailFilters(bundleId), (data) =>
-      patchDetailLike(data, bundleId, next),
-    );
+  const invalidateViewer = () => {
+    void queryClient.invalidateQueries({ queryKey: sharedKeys.me() });
+    void queryClient.invalidateQueries({ queryKey: feedKeys.all });
   };
-  /** 캐시에 있는 그 번들의 지금 좋아요(피드 카드 먼저, 없으면 상세) */
-  const read = (bundleId: number): LikeState | undefined => {
-    const card = queryClient
-      .getQueriesData<InfiniteData<FeedPage>>(feedFilters)
-      .flatMap(([, data]) => data?.pages ?? [])
-      .flatMap((page) => page.items)
-      .flatMap((item) => ('bundle' in item && item.bundle.id === bundleId ? [item.bundle] : []))[0];
-    const detail = queryClient
-      .getQueriesData<BundleDetailResponse>(detailFilters(bundleId))
-      .find(([, data]) => data)?.[1];
-    const source = card ?? detail;
-    return (
-      source && { likedByCurrentBunch: source.likedByCurrentBunch, likeCount: source.likeCount }
-    );
-  };
-  const pendingFor = (bundleId: number) =>
-    queryClient.isMutating({
-      mutationKey: LIKE_KEY,
-      predicate: (mutation) => (mutation.state.variables as LikeVariables)?.bundleId === bundleId,
-    });
 
   return useMutation({
     mutationKey: LIKE_KEY,
     scope: LIKE_SCOPE,
     mutationFn: ({ bundleId, liked }: LikeVariables) => setBundleLike(bundleId, liked),
     meta: { errorMessage: FEED_MESSAGES.likeFailed },
-    onMutate: async ({ bundleId, liked }) => {
+    onMutate: async (vars) => {
       await Promise.all([
-        queryClient.cancelQueries(feedFilters),
-        queryClient.cancelQueries(detailFilters(bundleId)),
+        queryClient.cancelQueries(feedFilters(vars)),
+        queryClient.cancelQueries(detailFilters(vars)),
       ]);
       // 연달아 누른 첫 요청이면 누르기 전 값을 되돌릴 기준으로 남김
-      const current = read(bundleId);
-      if (current && !confirmed.has(baseKey(bundleId))) confirmed.set(baseKey(bundleId), current);
-      apply(bundleId, (like) => toggledLike(like, liked));
+      if (!confirmed.has(baseKey(vars))) confirmed.set(baseKey(vars), read(queryClient, vars));
+      const next = (like: LikeState) => toggledLike(like, vars.liked);
+      applyFeed(queryClient, vars, next);
+      applyDetail(queryClient, vars, next);
     },
-    onError: (error, { bundleId }) => {
-      if (pendingFor(bundleId) > 1) return;
-      const base = confirmed.get(baseKey(bundleId));
-      confirmed.delete(baseKey(bundleId));
-      if (base) apply(bundleId, () => base);
+    onError: (error, vars) => {
+      if (pendingFor(queryClient, vars) > 1) return;
+      const base = confirmed.get(baseKey(vars));
+      confirmed.delete(baseKey(vars));
+      if (base?.feed) applyFeed(queryClient, vars, () => base.feed!);
+      if (base?.detail) applyDetail(queryClient, vars, () => base.detail!);
       // 권한·차단·삭제·번치 상태(403·404·409)는 화면의 전제가 낡은 것이라 명의와 피드를 다시 받음
-      if (isApiError(error) && [403, 404, 409].includes(error.status ?? 0)) {
-        void queryClient.invalidateQueries({ queryKey: sharedKeys.me() });
-        void queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      }
+      if (isApiError(error) && [403, 404, 409].includes(error.status ?? 0)) invalidateViewer();
     },
-    onSuccess: (saved, { bundleId }) => {
+    onSuccess: (saved, vars) => {
+      const pending = pendingFor(queryClient, vars);
       // 서버의 지금 번치가 화면 명의와 다르면(다른 기기에서 전환) 명의와 목록을 다시 받음
-      if ((saved.currentBunchId ?? null) !== (viewerId ? (toWireId(viewerId) ?? null) : null)) {
+      if (
+        (saved.currentBunchId ?? null) !==
+        (vars.viewerId ? (toWireId(vars.viewerId) ?? null) : null)
+      ) {
         // 뒤 요청이 남았으면 그 요청이 실패할 때 쓸 기준값은 남겨 둠
-        if (pendingFor(bundleId) <= 1) confirmed.delete(baseKey(bundleId));
-        void queryClient.invalidateQueries({ queryKey: sharedKeys.me() });
-        void queryClient.invalidateQueries({ queryKey: feedKeys.all });
+        if (pending <= 1) confirmed.delete(baseKey(vars));
+        invalidateViewer();
         return;
       }
       const like = { likedByCurrentBunch: saved.likedByCurrentBunch, likeCount: saved.likeCount };
       // 뒤 요청이 남았으면 화면은 그대로 두고, 그 요청이 실패할 때 되돌릴 기준만 이 응답으로
-      if (pendingFor(bundleId) > 1) {
-        confirmed.set(baseKey(bundleId), like);
+      if (pending > 1) {
+        confirmed.set(baseKey(vars), { feed: like, detail: like });
         return;
       }
-      confirmed.delete(baseKey(bundleId));
-      apply(bundleId, () => like);
+      confirmed.delete(baseKey(vars));
+      applyFeed(queryClient, vars, () => like);
+      applyDetail(queryClient, vars, () => like);
     },
-    onSettled: (_data, _error, { bundleId }) => {
-      if (pendingFor(bundleId) > 1) return;
-      void queryClient.invalidateQueries(detailFilters(bundleId));
+    onSettled: (_data, _error, vars) => {
+      if (pendingFor(queryClient, vars) > 1) return;
+      void queryClient.invalidateQueries(detailFilters(vars));
     },
   });
 };

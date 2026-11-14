@@ -245,13 +245,14 @@ describe('BundleDetailScreen', () => {
 
   it('좋아요는 응답 전에 수와 함께 바뀌고, 실패하면 되돌린다', async () => {
     const user = userEvent.setup();
+    // 응답을 붙잡아 둘 약속을 요청 전에 만들어, 요청이 늦게 들어와도 풀림
     let release = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
     server.use(
-      http.put(
-        '/api/bundles/:bundleId/like',
-        () =>
-          new Promise<Response>((resolve) => (release = () => resolve(fail(500, 'COMMON_999')))),
-      ),
+      http.put('/api/bundles/:bundleId/like', async () => {
+        await held;
+        return fail(500, 'COMMON_999');
+      }),
     );
     renderDetail('2');
     const like = screen.getByRole('button', { name: /좋아요/ });

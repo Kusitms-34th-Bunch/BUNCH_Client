@@ -11,7 +11,7 @@ const LIKE_TAP_GUARD_MS = 400;
  * 소속 번치가 없거나 받기 전이면 무시(안내는 호출하는 쪽의 `asBunch`)
  */
 export function useLikeToggle(viewer: FeedViewer | undefined) {
-  const like = useBundleLikeMutation(viewer === undefined ? undefined : (viewer?.bunchId ?? null));
+  const like = useBundleLikeMutation();
   const lastTap = useRef<Record<string, number>>({});
 
   return {
@@ -21,7 +21,7 @@ export function useLikeToggle(viewer: FeedViewer | undefined) {
       const now = Date.now();
       if (now - (lastTap.current[bundle.id] ?? 0) < LIKE_TAP_GUARD_MS) return;
       lastTap.current[bundle.id] = now;
-      like.mutate({ bundleId, liked: !bundle.liked });
+      like.mutate({ bundleId, liked: !bundle.liked, viewerId: viewer.bunchId });
     },
   };
 }

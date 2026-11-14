@@ -37,7 +37,7 @@ const setup = () => {
     pageParams: [undefined],
   });
   client.setQueryData(detailKey, { id: 7, likedByCurrentBunch: false, likeCount: 2 });
-  const { result } = renderHook(() => useBundleLikeMutation(VIEWER), {
+  const { result } = renderHook(() => useBundleLikeMutation(), {
     wrapper: createQueryWrapper(client),
   });
   return { client, result };
@@ -73,7 +73,7 @@ describe('useBundleLikeMutation', () => {
     const pending = holdLikes();
     const { client, result } = setup();
 
-    act(() => result.current.mutate({ bundleId: 7, liked: true }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
     await waitFor(() =>
       expect(likeOf(client.getQueryData(feedKey))).toMatchObject({
         likedByCurrentBunch: true,
@@ -95,7 +95,7 @@ describe('useBundleLikeMutation', () => {
     server.use(http.put('/api/bundles/:bundleId/like', () => fail(404, 'RESOURCE_001')));
     const { client, result } = setup();
 
-    act(() => result.current.mutate({ bundleId: 7, liked: true }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(likeOf(client.getQueryData(feedKey))).toMatchObject({
@@ -110,8 +110,8 @@ describe('useBundleLikeMutation', () => {
     const pending = holdLikes();
     const { client, result } = setup();
 
-    act(() => result.current.mutate({ bundleId: 7, liked: true }));
-    act(() => result.current.mutate({ bundleId: 7, liked: false }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
+    act(() => result.current.mutate({ bundleId: 7, liked: false, viewerId: VIEWER }));
     await waitFor(() =>
       expect(likeOf(client.getQueryData(feedKey))).toMatchObject({ likedByCurrentBunch: false }),
     );
@@ -142,7 +142,7 @@ describe('useBundleLikeMutation', () => {
       bunch: { id: VIEWER, name: '여행쥬아' },
     });
 
-    act(() => result.current.mutate({ bundleId: 7, liked: true }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(client.getQueryState(sharedKeys.me())?.isInvalidated).toBe(true);
@@ -156,8 +156,8 @@ describe('useBundleLikeMutation', () => {
     );
     const { client, result } = setup();
 
-    act(() => result.current.mutate({ bundleId: 7, liked: true }));
-    act(() => result.current.mutate({ bundleId: 7, liked: false }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
+    act(() => result.current.mutate({ bundleId: 7, liked: false, viewerId: VIEWER }));
     await waitFor(() => expect(client.isMutating()).toBe(0));
 
     expect(likeOf(client.getQueryData(feedKey))).toMatchObject({
@@ -175,8 +175,8 @@ describe('useBundleLikeMutation', () => {
     );
     const { client, result } = setup();
 
-    act(() => result.current.mutate({ bundleId: 7, liked: true }));
-    act(() => result.current.mutate({ bundleId: 7, liked: false }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
+    act(() => result.current.mutate({ bundleId: 7, liked: false, viewerId: VIEWER }));
     await waitFor(() => expect(client.isMutating()).toBe(0));
 
     expect(likeOf(client.getQueryData(feedKey))).toMatchObject({
@@ -185,11 +185,44 @@ describe('useBundleLikeMutation', () => {
     });
   });
 
+  it('피드 카드와 상세 값이 어긋나 있으면 실패할 때 각자 누르기 전 값으로 돌아간다', async () => {
+    server.use(http.delete('/api/bundles/:bundleId/like', () => fail(500, 'COMMON_999')));
+    const { client, result } = setup();
+    // 상세를 나중에 받아 피드 카드보다 새 값
+    client.setQueryData(detailKey, { id: 7, likedByCurrentBunch: true, likeCount: 5 });
+
+    act(() => result.current.mutate({ bundleId: 7, liked: false, viewerId: VIEWER }));
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(likeOf(client.getQueryData(feedKey))).toMatchObject({
+      likedByCurrentBunch: false,
+      likeCount: 2,
+    });
+    expect(client.getQueryData(detailKey)).toMatchObject({
+      likedByCurrentBunch: true,
+      likeCount: 5,
+    });
+  });
+
+  it('다른 명의로 같은 번들 요청이 남아 있어도 실패한 명의의 값은 되돌린다', async () => {
+    server.use(http.put('/api/bundles/:bundleId/like', () => fail(500, 'COMMON_999')));
+    const { client, result } = setup();
+
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: '2' }));
+    await waitFor(() => expect(client.isMutating()).toBe(0));
+
+    expect(likeOf(client.getQueryData(feedKey))).toMatchObject({
+      likedByCurrentBunch: false,
+      likeCount: 2,
+    });
+  });
+
   it('되돌릴 때 다른 번들 카드와 그사이 받은 쪽은 건드리지 않는다', async () => {
     server.use(http.put('/api/bundles/:bundleId/like', () => fail(500, 'COMMON_999')));
     const { client, result } = setup();
 
-    act(() => result.current.mutate({ bundleId: 7, liked: true }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
     // 요청 중에 다음 쪽이 붙음
     client.setQueryData(feedKey, (data: { pages: unknown[]; pageParams: unknown[] }) => ({
       pages: [
@@ -218,7 +251,7 @@ describe('useBundleLikeMutation', () => {
       bunch: { id: VIEWER, name: '여행쥬아' },
     });
 
-    act(() => result.current.mutate({ bundleId: 7, liked: true }));
+    act(() => result.current.mutate({ bundleId: 7, liked: true, viewerId: VIEWER }));
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(client.getQueryState(sharedKeys.me())?.isInvalidated).toBe(true);
