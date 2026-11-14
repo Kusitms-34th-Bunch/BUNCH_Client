@@ -12,7 +12,12 @@ export function useFeedViewer(toastOptions?: ToastOptions) {
   // 옵션이 없으면 toast()에 두 번째 인자를 넘기지 않음
   const notify = (message: string) =>
     toastOptions ? toast(message, toastOptions) : toast(message);
-  const { data: profile, isPending: viewerPending } = useQuery(myProfileQueryOptions());
+  const {
+    data: profile,
+    isPending: viewerPending,
+    isError: viewerFailed,
+    refetch: retryViewer,
+  } = useQuery(myProfileQueryOptions());
   const viewer: FeedViewer | undefined =
     profile === undefined
       ? undefined
@@ -33,5 +38,5 @@ export function useFeedViewer(toastOptions?: ToastOptions) {
     else if (!viewerPending) notify(text.actionFailed);
   };
 
-  return { viewer, viewerPending, asBunch };
+  return { viewer, viewerPending, viewerFailed, retryViewer, asBunch };
 }
