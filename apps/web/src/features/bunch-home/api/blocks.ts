@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { toWireId } from '@/shared/api/ids';
-import { blockPageSchema, bunchReportResultSchema, REPORT_REASON } from '../model/blocks';
+import { toReportRequest } from '@/shared/lib/reportReasons';
+import { blockPageSchema, bunchReportResultSchema } from '../model/blocks';
 
 // 데이터 없는 성공 응답(Swagger `ApiResponseUnit`)은 data가 빠지거나 null
 const unitSchema = z.null().optional();
@@ -44,20 +45,13 @@ export const unblockBunch = async (viewerId: string, targetId: string, blockId: 
 export const reportBunch = (
   viewerId: string,
   targetId: string,
-  { reason, detail }: { reason: string; detail: string },
+  value: { reason: string; detail: string },
 ) => {
   const target = toWireId(targetId);
-  // 화면 값만 받음(`__proto__` 같은 상속 속성 이름은 사유 없음)
-  const serverReason = Object.hasOwn(REPORT_REASON, reason) ? REPORT_REASON[reason] : undefined;
-  if (target === undefined || !serverReason) throw new Error('신고 내용이 올바르지 않습니다.');
+  if (target === undefined) throw new Error('신고 내용이 올바르지 않습니다.');
   return requestData(
     bffApi.post(`${bunchPath(viewerId)}/reports`, {
-      // 상세 사유는 「기타」일 때만(시트도 기타에서만 받음)
-      json: {
-        targetBunchId: target,
-        reason: serverReason,
-        ...(serverReason === 'OTHER' && detail.trim() ? { detail: detail.trim() } : {}),
-      },
+      json: { targetBunchId: target, ...toReportRequest(value) },
     }),
     bunchReportResultSchema,
     'report bunch',
