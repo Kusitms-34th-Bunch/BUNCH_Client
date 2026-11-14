@@ -530,6 +530,48 @@ describe('BundleDetailScreen', () => {
     expect(screen.getByRole('button', { name: /댓글 4/ })).toBeTruthy();
   });
 
+  /** 지예 원댓글 더보기 → 「신고」 → 사유 「스팸」으로 신고하기 */
+  const reportJiye = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(await screen.findByRole('button', { name: /지예 댓글 더보기/ }));
+    await user.click(await screen.findByRole('button', { name: '신고' }));
+    const sheet = await screen.findByRole('dialog', { name: '이 댓글을 신고할까요?' });
+    await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
+    await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
+  };
+
+  it('남의 댓글을 신고하면 서버가 접수한 뒤 그 댓글과 답글을 숨기고 알린다', async () => {
+    const user = userEvent.setup();
+    renderDetail('901');
+    await reportJiye(user);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.'));
+    expect(screen.queryByRole('listitem', { name: '지예님의 댓글' })).toBeNull();
+    expect(screen.queryByRole('listitem', { name: '큐시즘님의 답글' })).toBeNull();
+    // 5001: 지예 원댓글(답글 5002가 달린)
+    expect(mockDb.get().reports.at(-1)).toMatchObject({
+      bundleId: 901,
+      commentId: 5001,
+      reason: 'SPAM',
+    });
+  });
+
+  it('댓글 신고가 실패하면 댓글을 남기고 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post('/api/bundles/:bundleId/comments/:commentId/reports', () =>
+        fail(500, 'COMMON_000'),
+      ),
+    );
+    renderDetail('901');
+    await reportJiye(user);
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(screen.getByRole('listitem', { name: '지예님의 댓글' })).toBeTruthy();
+    expect(toast).not.toHaveBeenCalledWith('신고가 접수됐어요.');
+  });
+
   it('답글 대상이 그사이 지워졌으면 답글 상태를 풀고 쓴 내용은 남긴 채 알린다', async () => {
     const user = userEvent.setup();
     server.use(http.post('/api/bundles/:bundleId/comments', () => fail(409, 'BUNDLE_002')));
@@ -693,6 +735,24 @@ describe('BundleDetailScreen', () => {
     await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalledWith('신고가 접수됐어요.'));
     // 직접 들어온 경우(기록 없음)는 피드로 바꿔 들어감
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+  });
+
+  it('번들 신고가 실패하면 화면에 남아 실패를 알린다', async () => {
+    server.use(http.post('/api/bundles/:bundleId/reports', () => fail(500, 'COMMON_000')));
+    const user = userEvent.setup();
+    renderDetail('2');
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '신고' }));
+    const sheet = await screen.findByRole('dialog', { name: '이 게시글을 신고할까요?' });
+    await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
+    await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+    expect(back.mock.calls.length + replace.mock.calls.length).toBe(0);
   });
 
   it('소속 번치가 없으면 신고 시트를 열지 않고 안내한다', async () => {

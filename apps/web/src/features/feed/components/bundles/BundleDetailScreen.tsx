@@ -28,6 +28,7 @@ import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
+import { toWireId } from '@/shared/api/ids';
 import commentEmpty from '@/shared/assets/images/empty/comment-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -54,6 +55,7 @@ import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserI
 import { withRo } from '../../lib/josa';
 import { type BundleBunchSource, toFeedBundleDetail, toFeedBunch } from '../../model/bundleDetail';
 import { bundleDetailQueryOptions } from '../../queries/bundleDetail';
+import { useReportMutation } from '../../queries/report';
 import { MemberComments } from './MemberComments';
 
 type BundleDetailScreenProps = {
@@ -79,7 +81,7 @@ const previewOf = (content = '') =>
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * 내용은 발행 번들 상세(명세 084), 댓글은 명세 014~017. 신고·번들 삭제·공개 범위는 아직 화면에서만 바뀜(API 연동 5~7번). 「수정하기」는 메뉴만 있음
+ * 내용은 발행 번들 상세(명세 084), 댓글은 명세 014~017, 신고는 018·019. 번들 삭제·공개 범위는 아직 화면에서만 바뀜(API 연동 6~7번). 「수정하기」는 메뉴만 있음
  */
 export function BundleDetailScreen({
   bunchId,
@@ -98,6 +100,7 @@ export function BundleDetailScreen({
   // 댓글 커서를 이어 쓸 수 없으면(다른 기기에서 번치 전환 등) 명의도 다시 받음
   const refreshViewer = usePreservedCallback(() => void retryViewer());
   const thread = useBundleComments(bundleId, viewerId, refreshViewer);
+  const report = useReportMutation();
   const { comments, moreRef } = thread;
   const likes = useLikeToggle(viewer);
   const keyboardOpen = useKeyboardOpen();
@@ -208,6 +211,9 @@ export function BundleDetailScreen({
     if (listGone && contentReady) leaveGone();
   }, [listGone, contentReady, leaveGone]);
 
+  // 응답을 기다리는 사이 명의(지금 번치)가 바뀌었는지(늦게 온 결과를 새 명의의 목록에 적용하지 않게)
+  const isViewer = usePreservedCallback((id: string | null | undefined) => id === viewerId);
+
   // 남의 댓글 신고: 접수되면 그 댓글(원댓글이면 답글까지)을 바로 숨기고 그 자리 다음 댓글로 초점
   // 시트가 닫힌 시점의 최신 목록으로 계산
   const hideReported = usePreservedCallback((comment: FeedComment) => {
@@ -312,13 +318,13 @@ export function BundleDetailScreen({
             toast(text.replyTargetDeleted);
             return;
           }
-          failCommentAction(error);
+          failAction(error);
         },
       });
     });
 
-  // 댓글 등록·삭제의 공통 실패: 번들을 볼 수 없게 됐으면 떠나고, 소속 번치가 사라졌으면 명의를 다시 받음
-  const failCommentAction = (error: unknown) => {
+  // 댓글 등록·삭제·신고의 공통 실패: 번들을 볼 수 없게 됐으면 떠나고, 소속 번치가 사라졌으면 명의를 다시 받음
+  const failAction = (error: unknown) => {
     if (isGone(error)) {
       leaveGone();
       return;
@@ -359,17 +365,25 @@ export function BundleDetailScreen({
               thread.restart();
               return;
             }
-            failCommentAction(error);
+            failAction(error);
           },
         });
       },
     );
   };
 
-  // 신고 사유 시트(Figma `5367:121909`·`5367:122444`, 번치 신고와 같은 구성). 접수되면 닫힌 뒤 onReported
-  const openReport = (title: string, onReported: () => void) =>
+  // 신고 사유 시트(Figma `5367:121909`·`5367:122444`, 번치 신고와 같은 구성). 누르면 닫고 보냄
+  // 결과 처리는 시트가 다 닫히고 접수가 끝난 뒤(열린 시트 뒤에서 낭독이 묻히지 않게, ADR 014)
+  const openReport = (
+    title: string,
+    target: { commentId?: number },
+    callbacks: { onSuccess: () => void; onError: (_error: unknown) => void },
+  ) =>
     asBunch(() => {
-      let reported = false;
+      const bundleWireId = toWireId(bundleId);
+      // 앞 신고를 접수하는 중에는 새로 열지 않음(닫힌 시트 뒤에서 같은 대상을 두 번 보내지 않게)
+      if (bundleWireId === undefined || report.isPending) return;
+      let result: Promise<{ ok: true } | { ok: false; error: unknown }> | undefined;
       openOverlay(
         (rootProps, close) => (
           <ReportSheet
@@ -378,20 +392,52 @@ export function BundleDetailScreen({
             description={text.reportAs(viewer?.name ?? '')}
             reasons={REPORT_REASONS}
             detailReasonValue={REPORT_OTHER}
-            onSubmit={() => {
-              reported = true;
+            onSubmit={(value) => {
+              // 닫히는 동안 다시 눌러도 한 번만
+              if (result) return;
               close();
+              // mutate 단위 콜백이라 응답 전에 화면을 떠나면 불리지 않음(떠난 뒤 한 번 더 이동하지 않게)
+              result = new Promise((resolve) =>
+                report.mutate(
+                  { bundleId: bundleWireId, ...target, ...value },
+                  {
+                    onSuccess: () => resolve({ ok: true }),
+                    onError: (error) => resolve({ ok: false, error }),
+                  },
+                ),
+              );
             }}
           />
         ),
         () => {
-          if (reported) onReported();
+          void result?.then((outcome) =>
+            outcome.ok ? callbacks.onSuccess() : callbacks.onError(outcome.error),
+          );
         },
       );
     });
 
-  const reportComment = (comment: FeedComment) =>
-    openReport(text.reportCommentTitle, () => hideReported(comment));
+  const reportComment = (comment: FeedComment) => {
+    const commentId = toWireId(comment.id);
+    if (commentId === undefined) return;
+    const reportedAs = viewerId;
+    openReport(
+      text.reportCommentTitle,
+      { commentId },
+      {
+        // 그사이 명의가 바뀌었으면 새 명의의 목록은 그대로 두고 접수만 알림
+        onSuccess: () => (isViewer(reportedAs) ? hideReported(comment) : toast(text.reported)),
+        onError: (error) => {
+          // 그사이 지워진 댓글이면 목록을 맞춤(번들이 사라졌으면 다시 받은 목록이 알려 떠남)
+          if (codeOf(error) === 'RESOURCE_001') {
+            thread.restart();
+            return;
+          }
+          failAction(error);
+        },
+      },
+    );
+  };
 
   // 남의 댓글 더보기(Figma `5367:110378`): 「신고」/「취소」. 시트가 다 닫힌 뒤 신고 시트
   const openReportMenu = (title: string, onSelect: () => void) => {
@@ -423,10 +469,17 @@ export function BundleDetailScreen({
 
   // 번들 신고: 접수되면 이전 화면(피드)으로 가서 알림(이 화면은 떠나므로 피드 위치)
   const reportBundle = () =>
-    openReport(text.reportBundleTitle, () => {
-      backOr(FEED_PATHS.home);
-      toastAfterNavigation(text.reported);
-    });
+    openReport(
+      text.reportBundleTitle,
+      {},
+      {
+        onSuccess: () => {
+          backOr(FEED_PATHS.home);
+          toastAfterNavigation(text.reported);
+        },
+        onError: failAction,
+      },
+    );
 
   // 번들 삭제(Figma `5367:122187`): 창이 다 닫힌 뒤 지우고 이전 화면으로 가서 알림(이 화면은 떠나므로 피드 위치)
   const openDeleteBundle = () => {
