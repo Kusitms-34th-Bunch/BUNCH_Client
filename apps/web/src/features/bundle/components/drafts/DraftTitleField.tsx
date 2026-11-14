@@ -22,6 +22,9 @@ type DraftTitleFieldProps = {
   onComposing?: ((_composing: boolean) => void) | undefined;
   /** 제목 문서를 불러오는 중(입력을 받지 못하므로 읽기 전용으로 보임) */
   loading?: boolean | undefined;
+  /** 제목 문서를 불러오지 못함: 안내를 보이고 입력란을 누르면 `onLoadRetry` */
+  loadFailed?: boolean | undefined;
+  onLoadRetry?: (() => void) | undefined;
   /** 고칠 수 없는 사람이 입력란에 닿았을 때 */
   onDenied: () => void;
   /** 다른 멤버가 편집 중인 입력란에 닿았을 때 */
@@ -39,6 +42,8 @@ export function DraftTitleField({
   onChange,
   onComposing,
   loading = false,
+  loadFailed = false,
+  onLoadRetry,
   onDenied,
   onEditingBlocked,
 }: DraftTitleFieldProps) {
@@ -91,14 +96,24 @@ export function DraftTitleField({
         // 낭독 영역은 항상 마운트해 두고 문구만 바꿔야 편집 시작이 상태 변화로 읽힘
         editingLabel={editor ? BUNDLE_MESSAGES.editingLabel(editor.name) : ''}
         errorMessage={
-          tooLong
-            ? BUNDLE_MESSAGES.titleTooLong
-            : countTitleGraphemes(draft.title) >= TITLE_MAX_LENGTH
-              ? BUNDLE_MESSAGES.titleMax
-              : undefined
+          loadFailed
+            ? BUNDLE_MESSAGES.titleLoadFailed
+            : tooLong
+              ? BUNDLE_MESSAGES.titleTooLong
+              : countTitleGraphemes(draft.title) >= TITLE_MAX_LENGTH
+                ? BUNDLE_MESSAGES.titleMax
+                : undefined
         }
         onFocus={
-          !editable ? onDenied : editor ? onEditingBlocked : loading ? undefined : onEditStart
+          !editable
+            ? onDenied
+            : editor
+              ? onEditingBlocked
+              : loadFailed
+                ? onLoadRetry
+                : loading
+                  ? undefined
+                  : onEditStart
         }
         onBlur={() => {
           // 조합이 끝나지 않은 채 포커스를 잃어도 원격 변경이 계속 미뤄지지 않게 함

@@ -84,6 +84,8 @@ export type DraftState =
       realtime: { down: boolean; retry: () => void };
       /** 제목 문서를 불러와 입력할 수 있는지(불러오는 동안 제목 입력란은 읽기 전용) */
       titleReady: boolean;
+      /** 제목 문서를 불러오지 못함(입력란을 누르면 `retryTitleLoad`로 다시 불러옴) */
+      titleFailed: boolean;
     };
 
 /** 발행 시도 결과(화면은 성공일 때만 이동하고 나머지는 안내가 이미 나감) */
@@ -93,6 +95,8 @@ export type DraftActions = {
   setTitle: (_title: string) => void;
   /** 한글 조합 같은 입력 중에는 원격 제목 변경을 입력이 끝난 뒤 반영하도록 알림 */
   setTitleComposing: (_composing: boolean) => void;
+  /** 제목 문서를 다시 불러옴 */
+  retryTitleLoad: () => void;
   setComment: (_memberId: string, _text: string) => void;
   /** 공개 범위를 고름(서버에는 업로드 요청으로만 보냄). null은 고른 값을 버림(공개 범위 화면에서 뒤로 갈 때, 기능 spec 4.3.9) */
   setVisibility: (_visibility: DraftVisibility | null) => void;
@@ -519,6 +523,7 @@ export function useDraft(draftId: string | undefined): {
       schedule(SAVE_DELAY_MS);
     },
     setTitleComposing: titleCrdt.setComposing,
+    retryTitleLoad: titleCrdt.retry,
     setComment: (memberId, text) => {
       // 서버는 본인 코멘트만 저장할 수 있음
       if (memberId !== myIdRef.current) return;
@@ -716,6 +721,7 @@ export function useDraft(draftId: string | undefined): {
       saveStatus: stalled ? 'failed' : busy ? 'saving' : 'saved',
       realtime: { down: realtime.down, retry: realtime.retry },
       titleReady: titleCrdt.ready,
+      titleFailed: titleCrdt.failed,
     };
   }
 

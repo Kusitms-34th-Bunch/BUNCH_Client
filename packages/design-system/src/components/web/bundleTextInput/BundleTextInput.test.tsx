@@ -34,9 +34,9 @@ describe('BundleTextInput', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
-  it('오류 문구가 없으면 alert와 aria-invalid가 없다', () => {
+  it('오류 문구가 없으면 알림 영역은 비어 있고 aria-invalid가 없다', () => {
     render(<BundleTextInput title="사진" />);
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('alert').textContent).toBe('');
     expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBeNull();
   });
 

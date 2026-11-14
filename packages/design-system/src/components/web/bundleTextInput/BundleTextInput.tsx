@@ -65,15 +65,14 @@ export const BundleTextInput = ({
           aria-describedby={describedBy || undefined}
         />
       </div>
-      {errorMessage ? (
-        <p
-          id={errorId}
-          role="alert"
-          className="typography-caption-1-medium text-system-fail-text flex min-h-5.5 w-full items-center"
-        >
-          {errorMessage}
-        </p>
-      ) : null}
+      {/* 알림 영역은 항상 그려 두고 문구만 바꿔야 나중에 생긴 오류(다른 사람의 변경으로 생긴 것 포함)도 스크린 리더가 읽음. 문구가 없으면 숨김 */}
+      <p
+        id={errorId}
+        role="alert"
+        className="typography-caption-1-medium text-system-fail-text flex min-h-5.5 w-full items-center empty:hidden"
+      >
+        {errorMessage}
+      </p>
     </div>
   );
 };

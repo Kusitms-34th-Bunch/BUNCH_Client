@@ -50,6 +50,7 @@ export function useDraftFixture(draftId: string | undefined): {
   const actions: DraftActions = {
     setTitle: (title) => update((current) => ({ ...current, title })),
     setTitleComposing: () => undefined,
+    retryTitleLoad: () => undefined,
     setComment: (memberId, text) =>
       update((current) => ({
         ...current,
@@ -105,6 +106,7 @@ export function useDraftFixture(draftId: string | undefined): {
           kind: 'ready',
           realtime: { down: false, retry: () => undefined },
           titleReady: true,
+          titleFailed: false,
           draft,
           viewer: draftViewerFixture,
           bunchMembers: bunchMembersFixture,

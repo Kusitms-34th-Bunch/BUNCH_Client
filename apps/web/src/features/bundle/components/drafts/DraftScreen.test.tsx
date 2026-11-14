@@ -25,6 +25,7 @@ const outsider: DraftViewer = { memberId: 'outsider', bunchRole: 'owner' };
 const actions = {
   setTitle: vi.fn(),
   setTitleComposing: vi.fn(),
+  retryTitleLoad: vi.fn(),
   setComment: vi.fn(),
   setVisibility: vi.fn(),
   addLocation: vi.fn(),
@@ -55,6 +56,7 @@ type Options = {
   saveStatus?: 'saved' | 'saving';
   offline?: boolean;
   titleReady?: boolean;
+  titleFailed?: boolean;
 };
 
 // 초안은 공개 범위를 고르지 않은 채 시작하므로, 업로드할 수 있는 상태를 기본으로 두려고 공개를 골라 둠
@@ -66,6 +68,7 @@ const screenElement = ({
   saveStatus = 'saved',
   offline = false,
   titleReady = true,
+  titleFailed = false,
 }: Options = {}) => (
   <DraftScreen
     draft={draft}
@@ -73,6 +76,7 @@ const screenElement = ({
     saveStatus={saveStatus}
     offline={offline}
     titleReady={titleReady}
+    titleFailed={titleFailed}
     actions={actions}
     currentYear={2026}
     onBack={onBack}
@@ -127,7 +131,7 @@ describe('DraftScreen 구성', () => {
   it('연결이 끊기면 배너를 보이고 「재시도」가 동작한다', async () => {
     renderScreen({ offline: true });
 
-    expect(screen.getByRole('alert')).toHaveTextContent(BUNDLE_MESSAGES.offlineBanner);
+    expect(screen.getByText(BUNDLE_MESSAGES.offlineBanner)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '재시도' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
@@ -322,6 +326,15 @@ describe('입력', () => {
     const title = screen.getByRole('textbox', { name: /제목/ });
 
     expect(title).toHaveAttribute('readonly');
+  });
+
+  it('제목 문서를 불러오지 못하면 안내하고 입력란을 누르면 다시 불러온다', async () => {
+    renderScreen({ viewer: creator, titleReady: false, titleFailed: true });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(BUNDLE_MESSAGES.titleLoadFailed);
+    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+
+    expect(actions.retryTitleLoad).toHaveBeenCalledTimes(1);
   });
 
   it('보이는 글자 기준 40자를 넘기는 입력은 받지 않는다(이모지는 한 글자)', async () => {

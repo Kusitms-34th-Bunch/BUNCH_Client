@@ -17,6 +17,9 @@ export type TitleCrdt = {
   text: string | undefined;
   /** 문서를 불러와 입력할 수 있는지(문서가 없는 번들은 불러올 것이 없으므로 true) */
   ready: boolean;
+  /** 제목 문서를 불러오지 못했는지(네트워크 등). `retry`로 다시 불러옴 */
+  failed: boolean;
+  retry: () => void;
   /** 입력한 내용을 문서에 반영(바뀐 부분만 splice). 문서를 아직 불러오지 못했으면 false */
   edit: (_next: string) => boolean;
   /** 서버로 보낼 전체 저장 문서(base64). 문서를 아직 불러오지 못했으면 undefined */
@@ -41,6 +44,8 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
   // 조합 중에 원격 변경이 문서에 병합됐지만 화면에는 아직 반영하지 않은 상태
   const heldRef = useRef(false);
   const [text, setText] = useState<string | undefined>(undefined);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (state === undefined || bundleId === undefined) return;
@@ -59,14 +64,23 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
           return;
         }
         viewRef.current = merged;
+        setFailed(false);
         setText(titleText(merged));
       },
-      () => undefined,
+      () => {
+        // 불러오지 못하면 입력은 계속 막히므로 알리고, 다시 시도할 수 있게 함
+        if (!cancelled) setFailed(true);
+      },
     );
     return () => {
       cancelled = true;
     };
-  }, [state, bundleId]);
+  }, [state, bundleId, attempt]);
+
+  const retry = useCallback(() => {
+    setFailed(false);
+    setAttempt((count) => count + 1);
+  }, []);
 
   const edit = useCallback((next: string) => {
     const doc = docRef.current;
@@ -92,5 +106,13 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
     setText(titleText(docRef.current));
   }, []);
 
-  return { text, ready: text !== undefined || state === undefined, edit, serialize, setComposing };
+  return {
+    text,
+    ready: text !== undefined || state === undefined,
+    failed,
+    retry,
+    edit,
+    serialize,
+    setComposing,
+  };
 }

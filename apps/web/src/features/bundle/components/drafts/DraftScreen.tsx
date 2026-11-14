@@ -26,6 +26,8 @@ type DraftScreenProps = {
   offline: boolean;
   /** 제목 문서를 불러오는 동안 false(제목 입력란을 읽기 전용으로 둠) */
   titleReady?: boolean;
+  /** 제목 문서를 불러오지 못함(입력란을 누르면 다시 불러옴) */
+  titleFailed?: boolean;
   actions: DraftActions;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
   currentYear?: number | undefined;
@@ -62,6 +64,7 @@ export function DraftScreen({
   saveStatus,
   offline,
   titleReady = true,
+  titleFailed = false,
   actions,
   currentYear = new Date().getFullYear(),
   onBack,
@@ -189,6 +192,8 @@ export function DraftScreen({
         onChange={actions.setTitle}
         onComposing={actions.setTitleComposing}
         loading={!titleReady}
+        loadFailed={titleFailed}
+        onLoadRetry={actions.retryTitleLoad}
         onDenied={denyEdit}
         onEditingBlocked={blockEditing}
       />
