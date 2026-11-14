@@ -200,8 +200,8 @@ export function FeedScreen({ links }: FeedScreenProps) {
           onLocationClick={() => openPlaces(bundle.places)}
           date={bundle.date}
           onPhotoClick={() => router.push(FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
-          liked={likes.isLiked(bundle)}
-          likeCount={likes.likeCount(bundle)}
+          liked={bundle.liked}
+          likeCount={bundle.likeCount}
           onLike={() => asBunch(() => likes.toggle(bundle))}
           commentCount={bundle.commentCount}
           onComment={() => router.push(FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id))}

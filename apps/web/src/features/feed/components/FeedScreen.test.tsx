@@ -9,7 +9,6 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { bundleEdits } from '../lib/bundleEdits';
 import { clearHiddenAds } from '../lib/hiddenAds';
-import { likeStore } from '../lib/likeStore';
 import { FeedScreen } from './FeedScreen';
 
 const push = vi.fn();
@@ -198,7 +197,6 @@ beforeEach(() => {
   vi.stubGlobal('IntersectionObserver', VisibleObserver);
   serveFeed([...FOLLOWING_ITEMS, ...PUBLIC_ITEMS]);
   clearHiddenAds();
-  likeStore.clear();
   bundleEdits.clear();
   push.mockClear();
   toast.mockClear();
@@ -564,8 +562,10 @@ describe('FeedScreen', () => {
     ]);
   });
 
-  it('좋아요는 서버 값으로 보이고, 누르면 화면에서 바로 바뀌고 수가 함께 바뀐다', async () => {
+  it('좋아요는 서버 값으로 보이고, 누르면 응답 전에 화면에서 바로 바뀌고 수가 함께 바뀐다', async () => {
     const user = userEvent.setup();
+    // 응답을 붙잡아 둬 낙관적 반영만 확인
+    server.use(http.put('/api/bundles/:bundleId/like', () => new Promise<never>(() => {})));
     renderFeed(OWN);
     await cardsLoaded();
     expect(within(cards()[0]!).getByRole('button', { name: '좋아요 4' })).toHaveAttribute(
@@ -577,6 +577,23 @@ describe('FeedScreen', () => {
     await user.click(like);
     expect(like).toHaveAttribute('aria-pressed', 'true');
     expect(like).toHaveAccessibleName('좋아요 5');
+  });
+
+  it('하트를 빠르게 두 번 누르면 첫 탭만 받아 요청도 한 번이다', async () => {
+    const user = userEvent.setup();
+    const requests: string[] = [];
+    const hold = () => new Promise<never>(() => {});
+    server.use(
+      http.put('/api/bundles/:bundleId/like', () => (requests.push('PUT'), hold())),
+      http.delete('/api/bundles/:bundleId/like', () => (requests.push('DELETE'), hold())),
+    );
+    renderFeed(OWN);
+    await cardsLoaded();
+    const like = within(cards()[1]!).getByRole('button', { name: /좋아요/ });
+
+    await user.dblClick(like);
+    expect(like).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(requests).toEqual(['PUT']));
   });
 
   it('번들이 하나도 없으면 끝 안내만 보인다', async () => {
@@ -672,7 +689,8 @@ describe('FeedScreen', () => {
     expect(screen.queryByRole('link', { name: /번치 홈/ })).toBeNull();
   });
 
-  it('소속 번치가 없어지면 화면에서 바꾼 좋아요를 보이지 않는다', async () => {
+  it('소속 번치가 없어지면 그 번치 명의로 누른 좋아요를 보이지 않는다', async () => {
+    server.use(http.put('/api/bundles/:bundleId/like', () => new Promise<never>(() => {})));
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: OWN });
     render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });

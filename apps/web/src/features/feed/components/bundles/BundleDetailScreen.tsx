@@ -569,8 +569,8 @@ export function BundleDetailScreen({
       <BundlePhoto variant="detail" photos={bundle.photos} />
       <MemberComments members={bundle.memberComments} />
       <BundleEngagement
-        liked={likes.isLiked(bundle)}
-        likeCount={likes.likeCount(bundle)}
+        liked={bundle.liked}
+        likeCount={bundle.likeCount}
         onLike={() => asBunch(() => likes.toggle(bundle))}
         commentCount={bundle.commentCount + addedCount - hiddenCount}
         onComment={goToComments}
