@@ -37,6 +37,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   server.events.removeAllListeners();
+  vi.restoreAllMocks();
 });
 
 const renderWithQuery = (ui: ReactElement) =>
@@ -213,6 +214,32 @@ describe('요청 수와 요청자 프로필', () => {
 
     await user.click(await screen.findByRole('button', { name: '팔로우 요청 확인하기' }));
     expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.followRequests);
+  });
+
+  it('요청 목록을 받지 못하면 다시 시도 화면을 보이고, 다시 시도하면 목록을 보인다', async () => {
+    let failing = true;
+    server.use(
+      http.get('/api/bunches/:viewerId/follow-requests', () =>
+        failing ? fail(500, 'COMMON_999') : undefined,
+      ),
+    );
+    // 경계가 잡은 오류를 React가 console.error로 남길 때 happy-dom 요청 객체를 문자열로 바꾸다 실패해 막음
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const user = userEvent.setup();
+    renderWithQuery(<FollowRequests />);
+
+    // 받는 중 안내는 경계의 늘 있는 상태 영역에 들어감
+    expect(await screen.findByText(BUNCH_HOME_MESSAGES.followListLoading)).toHaveAttribute(
+      'role',
+      'status',
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('일시적인 오류가 발생했어요');
+    failing = false;
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    // 버튼이 사라져도 초점은 문서 처음으로 가지 않음
+    expect(document.activeElement).not.toBe(document.body);
+    expect(await screen.findByText(/대기 중인 요청 \d+개/)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('요청 화면의 개수는 첫 쪽 행 수가 아니라 전체 대기 요청 수다', async () => {

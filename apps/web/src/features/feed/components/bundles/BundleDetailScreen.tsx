@@ -624,7 +624,7 @@ export function BundleDetailScreen({
         ref={commentsRef}
         aria-label={text.commentsTitle}
         tabIndex={-1}
-        className="focus:outline-none"
+        className="relative focus:outline-none"
       >
         {comments.length > 0 ? (
           <ul className="px-padding-p8 pt-padding-p8">
@@ -713,8 +713,10 @@ export function BundleDetailScreen({
             <p className="typography-body-4-regular text-text-quinary">{text.noComments}</p>
           </div>
         )}
-        {/* 보이면 다음 쪽(실패하면 다시 내려올 때 다시 시도) */}
-        <div ref={moreRef} aria-hidden="true" className="h-px" />
+        {/* 보이면 다음 쪽(실패하면 다시 내려올 때 다시 시도). 받을 수 있을 때만 그려 새로 붙는 순간 확인 */}
+        {thread.canLoadMore ? (
+          <div ref={moreRef} aria-hidden="true" className="absolute inset-x-0 bottom-0 h-px" />
+        ) : null}
         {thread.fetchingMore && !thread.moreFailed ? (
           <div className="flex justify-center pb-6">
             <LoadingRipple />

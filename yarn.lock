@@ -173,6 +173,7 @@ __metadata:
     "@next/bundle-analyzer": "npm:^16.4.5"
     "@sentry/nextjs": "npm:^11.7.0"
     "@ssgoi/react": "npm:^7.4.1"
+    "@suspensive/react": "catalog:"
     "@tailwindcss/postcss": "npm:^4.3.3"
     "@tanstack/query-async-storage-persister": "npm:5.101.2"
     "@tanstack/react-query": "catalog:"
@@ -3708,6 +3709,15 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/7bc16b8b685acae3dda5586bdd2ffff4a4e9f429ab60da3968b3d09683390d389cc0d853b27c27d44eb7cbd5ac47251914c5f73fa9ed08bb84591e408effe390
+  languageName: node
+  linkType: hard
+
+"@suspensive/react@npm:^3.21.4":
+  version: 3.21.4
+  resolution: "@suspensive/react@npm:3.21.4"
+  peerDependencies:
+    react: ^18 || ^19
+  checksum: 10c0/cbff9e0b471c67a9e7415a9fe23bcd7e039eaea6787f21142766e0a4d8d3f019ebbe2977951a33b2834a823364e2824ea5734bb6222e2a01fee1b0808003c55f
   languageName: node
   linkType: hard
 

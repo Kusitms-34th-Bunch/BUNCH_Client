@@ -165,12 +165,8 @@ export function FollowRequestsScreen({
           )}
         </div>
       ) : (
-        <>
-          <p role="status" className="sr-only">
-            {BUNCH_HOME_MESSAGES.followListLoading}
-          </p>
-          <PageLoading />
-        </>
+        // 받는 중 안내는 감싸는 경계(`QueryBoundary`)의 늘 있는 상태 영역이 읽어 줌
+        <PageLoading />
       )}
     </PageShell>
   );
