@@ -160,7 +160,12 @@ const withTitleState = (
   state: BundleTitleState,
   revision?: number,
 ): BundleDetail => {
-  if (state.titleVersion < detail.titleVersion) return detail;
+  // 더 낡은 제목은 반영하지 않지만, 이벤트로 알게 된 revision은 맞춤(이후 이벤트가 건너뛴 것으로 보이지 않게)
+  if (state.titleVersion < detail.titleVersion) {
+    return revision === undefined
+      ? detail
+      : { ...detail, revision: Math.max(detail.revision, revision) };
+  }
   const blockers = detail.publishBlockers.filter((reason) => reason !== 'TITLE_TOO_LONG');
   return {
     ...detail,

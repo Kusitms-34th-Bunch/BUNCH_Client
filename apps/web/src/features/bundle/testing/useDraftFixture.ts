@@ -104,6 +104,7 @@ export function useDraftFixture(draftId: string | undefined): {
       ? {
           kind: 'ready',
           realtime: { down: false, retry: () => undefined },
+          titleReady: true,
           draft,
           viewer: draftViewerFixture,
           bunchMembers: bunchMembersFixture,

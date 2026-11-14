@@ -54,6 +54,7 @@ type Options = {
   viewer?: DraftViewer;
   saveStatus?: 'saved' | 'saving';
   offline?: boolean;
+  titleReady?: boolean;
 };
 
 // 초안은 공개 범위를 고르지 않은 채 시작하므로, 업로드할 수 있는 상태를 기본으로 두려고 공개를 골라 둠
@@ -64,12 +65,14 @@ const screenElement = ({
   viewer = creator,
   saveStatus = 'saved',
   offline = false,
+  titleReady = true,
 }: Options = {}) => (
   <DraftScreen
     draft={draft}
     viewer={viewer}
     saveStatus={saveStatus}
     offline={offline}
+    titleReady={titleReady}
     actions={actions}
     currentYear={2026}
     onBack={onBack}
@@ -312,6 +315,31 @@ describe('입력', () => {
     await userEvent.click(uploadButton());
     expect(onUpload).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.titleTooLong);
+  });
+
+  it('제목 문서를 불러오는 동안은 읽기 전용이다', () => {
+    renderScreen({ viewer: creator, titleReady: false });
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    expect(title).toHaveAttribute('readonly');
+  });
+
+  it('보이는 글자 기준 40자를 넘기는 입력은 받지 않는다(이모지는 한 글자)', async () => {
+    renderScreen({ viewer: creator, draft: { ...publishable, title: '가'.repeat(39) + '😀' } });
+
+    await userEvent.type(screen.getByRole('textbox', { name: /제목/ }), 'x');
+
+    expect(actions.setTitle).not.toHaveBeenCalled();
+  });
+
+  it('조합이 끝나지 않은 채 포커스를 잃어도 조합 종료를 알린다', async () => {
+    renderScreen({ viewer: creator });
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    await userEvent.click(title);
+    await userEvent.tab();
+
+    expect(actions.setTitleComposing).toHaveBeenCalledWith(false);
   });
 
   it('한글 조합이 시작되고 끝나는 것을 알린다', () => {

@@ -83,6 +83,31 @@ describe('useTitleCrdt', () => {
     expect(result.current.text).toContain('ㄱ');
   });
 
+  it('조합 중 보류한 원격 변경이 있는 채로 입력이 이어져도 원격 변경을 지우지 않는다', async () => {
+    const { result, rerender } = render(detail(serverState));
+    await waitFor(() => expect(result.current.text).toBe('부산 여행'));
+    act(() => {
+      result.current.setComposing(true);
+      result.current.edit('부산 여행ㄱ');
+    });
+    const theirs = saveTitleDoc(editTitle(loadTitleDoc(serverState), '가을 부산 여행'));
+    rerender({ value: detail(theirs) });
+    await act(async () => {
+      await ensureTitleCrdt();
+    });
+
+    // 아직 보이지 않는 원격 변경 위에 다음 글자 입력(화면 문자열 기준)
+    act(() => {
+      result.current.edit('부산 여행가');
+    });
+    expect(result.current.text).toBe('부산 여행가');
+    act(() => result.current.setComposing(false));
+
+    expect(result.current.text).toContain('가을');
+    expect(result.current.text).toContain('가');
+    expect(loadTitleDoc(result.current.serialize() ?? '').title).toBe(result.current.text);
+  });
+
   it('발행본에는 문서가 없어 입력을 받지 않는다', () => {
     const published = { ...detail(serverState), status: 'PUBLISHED' } as BundleDetail;
     const { result } = render(published);

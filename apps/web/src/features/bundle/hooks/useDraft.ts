@@ -82,6 +82,8 @@ export type DraftState =
       saveStatus: SaveStatus;
       /** 실시간 연결: 끊겨 편집을 막아야 하면 down, 「재시도」는 retry */
       realtime: { down: boolean; retry: () => void };
+      /** 제목 문서를 불러와 입력할 수 있는지(불러오는 동안 제목 입력란은 읽기 전용) */
+      titleReady: boolean;
     };
 
 /** 발행 시도 결과(화면은 성공일 때만 이동하고 나머지는 안내가 이미 나감) */
@@ -713,6 +715,7 @@ export function useDraft(draftId: string | undefined): {
       bunchMembers: members,
       saveStatus: stalled ? 'failed' : busy ? 'saving' : 'saved',
       realtime: { down: realtime.down, retry: realtime.retry },
+      titleReady: titleCrdt.ready,
     };
   }
 

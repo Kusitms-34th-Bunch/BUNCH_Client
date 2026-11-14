@@ -50,6 +50,7 @@ export function BundleDraft() {
           viewer={state.viewer}
           saveStatus={state.saveStatus}
           offline={!online || state.realtime.down}
+          titleReady={state.titleReady}
           actions={actions}
           // 번치 홈에서 만든 초안이면(`from=home`) 거쳐 온 멤버·사진 선택이 아니라 번치 홈으로 이동
           // 그 밖에는 들어온 곳으로 가고, 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)

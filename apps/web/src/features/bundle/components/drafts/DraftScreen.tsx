@@ -24,6 +24,8 @@ type DraftScreenProps = {
   saveStatus: SaveStatus;
   /** 연결 끊김 배너를 보일지(보이는 동안 업로드 제한) */
   offline: boolean;
+  /** 제목 문서를 불러오는 동안 false(제목 입력란을 읽기 전용으로 둠) */
+  titleReady?: boolean;
   actions: DraftActions;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
   currentYear?: number | undefined;
@@ -59,6 +61,7 @@ export function DraftScreen({
   viewer,
   saveStatus,
   offline,
+  titleReady = true,
   actions,
   currentYear = new Date().getFullYear(),
   onBack,
@@ -185,6 +188,7 @@ export function DraftScreen({
         editable={access.canEdit}
         onChange={actions.setTitle}
         onComposing={actions.setTitleComposing}
+        loading={!titleReady}
         onDenied={denyEdit}
         onEditingBlocked={blockEditing}
       />

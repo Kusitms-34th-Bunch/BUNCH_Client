@@ -15,6 +15,8 @@ import {
 export type TitleCrdt = {
   /** 입력란에 보일 제목 원문. 문서를 불러오기 전에는 undefined(서버가 준 제목을 보임) */
   text: string | undefined;
+  /** 문서를 불러와 입력할 수 있는지(문서가 없는 번들은 불러올 것이 없으므로 true) */
+  ready: boolean;
   /** 입력한 내용을 문서에 반영(바뀐 부분만 splice). 문서를 아직 불러오지 못했으면 false */
   edit: (_next: string) => boolean;
   /** 서버로 보낼 전체 저장 문서(base64). 문서를 아직 불러오지 못했으면 undefined */
@@ -30,7 +32,10 @@ export type TitleCrdt = {
 export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
   const bundleId = detail?.id;
   const state = detail?.status === 'DRAFT' ? detail.titleCrdtState : undefined;
+  // 서버·원격 변경까지 병합한 문서
   const docRef = useRef<TitleDoc | undefined>(undefined);
+  // 화면에 보이는 문서(조합 중에는 보류한 원격 변경이 빠져 있음). 입력은 이 문서 기준으로 반영해 보류한 변경을 지우지 않음
+  const viewRef = useRef<TitleDoc | undefined>(undefined);
   const bundleRef = useRef<string | undefined>(undefined);
   const composingRef = useRef(false);
   // 조합 중에 원격 변경이 문서에 병합됐지만 화면에는 아직 반영하지 않은 상태
@@ -53,6 +58,7 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
           heldRef.current = true;
           return;
         }
+        viewRef.current = merged;
         setText(titleText(merged));
       },
       () => undefined,
@@ -65,7 +71,10 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
   const edit = useCallback((next: string) => {
     const doc = docRef.current;
     if (!doc) return false;
-    docRef.current = editTitle(doc, next);
+    // 화면에 보이던 문서에 입력을 반영하고 병합 문서에 합침(보류한 원격 변경은 그대로 남음)
+    const view = editTitle(viewRef.current ?? doc, next);
+    viewRef.current = view;
+    docRef.current = heldRef.current ? mergeTitleDocs(doc, view) : view;
     setText(next);
     return true;
   }, []);
@@ -79,8 +88,9 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
     composingRef.current = composing;
     if (composing || !heldRef.current || !docRef.current) return;
     heldRef.current = false;
+    viewRef.current = docRef.current;
     setText(titleText(docRef.current));
   }, []);
 
-  return { text, edit, serialize, setComposing };
+  return { text, ready: text !== undefined || state === undefined, edit, serialize, setComposing };
 }
