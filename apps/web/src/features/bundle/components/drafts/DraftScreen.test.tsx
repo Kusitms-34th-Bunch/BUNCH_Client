@@ -326,6 +326,7 @@ describe('입력', () => {
     const title = screen.getByRole('textbox', { name: /제목/ });
 
     expect(title).toHaveAttribute('readonly');
+    expect(title).toHaveAttribute('aria-busy', 'true');
   });
 
   it('보이는 글자 기준 40자를 넘기는 입력은 받지 않는다(이모지는 한 글자)', async () => {

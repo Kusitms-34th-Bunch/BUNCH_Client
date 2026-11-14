@@ -85,6 +85,7 @@ export function DraftTitleField({
         value={draft.title}
         placeholder={BUNDLE_MESSAGES.titlePlaceholder}
         readOnly={!editable || editor !== undefined || loading}
+        aria-busy={loading || undefined}
         editing={editor !== undefined}
         editingContent={<EditingLottie />}
         // 낭독 영역은 항상 마운트해 두고 문구만 바꿔야 편집 시작이 상태 변화로 읽힘
