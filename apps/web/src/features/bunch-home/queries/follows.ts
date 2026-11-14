@@ -23,11 +23,24 @@ export const followListQueryOptions = (
         : ({ signal }) => getFollowRelations(bunchId, kind, signal),
   });
 
+// 두 정의가 같은 key에 같은 요청을 쓰도록 한곳에 둠
+const requestFollowRequests =
+  (viewerId: string) =>
+  ({ signal }: { signal: AbortSignal }) =>
+    getFollowRequests(viewerId, signal);
+
+/** 내 번치에 온 대기 중인 팔로우 요청(번치를 알 때, `useSuspenseQuery`에도 씀) */
+export const bunchFollowRequestsQueryOptions = (viewerId: string) =>
+  queryOptions({
+    queryKey: bunchHomeKeys.followRequests(viewerId),
+    queryFn: requestFollowRequests(viewerId),
+  });
+
 /** 내 번치에 온 대기 중인 팔로우 요청. 내 번치를 모르면 요청하지 않음 */
 export const followRequestsQueryOptions = (viewerId: string | undefined) =>
   queryOptions({
     queryKey: bunchHomeKeys.followRequests(viewerId),
-    queryFn: viewerId ? ({ signal }) => getFollowRequests(viewerId, signal) : skipToken,
+    queryFn: viewerId ? requestFollowRequests(viewerId) : skipToken,
   });
 
 /**

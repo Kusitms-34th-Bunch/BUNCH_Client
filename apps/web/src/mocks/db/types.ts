@@ -159,6 +159,20 @@ export type MockReport = {
 /** 번치 공동 좋아요(번치 명의, 같은 번치 멤버가 함께 씀) */
 export type MockLike = { bunchId: number; bundleId: number };
 
+/** 발행 번들의 소셜 댓글·답글(참여 멤버 코멘트 `MockBundleComment`와 별개, 명세 014~017) */
+export type MockSocialComment = {
+  id: number;
+  bundleId: number;
+  /** 답글이면 원댓글 ID(한 단계만) */
+  parentId: number | null;
+  memberId: number;
+  /** 작성 당시 번치(배지) */
+  bunchId: number;
+  content: string;
+  createdAt: string;
+  deleted: boolean;
+};
+
 export type MockDbState = {
   members: MockMember[];
   bunches: MockBunch[];
@@ -171,5 +185,6 @@ export type MockDbState = {
   blocks: MockBlock[];
   reports: MockReport[];
   likes: MockLike[];
+  socialComments: MockSocialComment[];
   notifications: MockNotification[];
 };

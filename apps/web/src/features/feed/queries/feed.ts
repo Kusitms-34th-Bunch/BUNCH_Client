@@ -1,12 +1,7 @@
 import { infiniteQueryOptions, skipToken, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { getFeedPage } from '../api/feed';
-
-// 피드 key. 구간·좋아요 상태가 지금 번치(명의)에 따라 달라 명의를 key에 둠, 소속 번치가 없으면 null
-export const feedKeys = {
-  all: ['feed'] as const,
-  list: (viewerId: string | null) => [...feedKeys.all, viewerId] as const,
-};
+import { feedKeys } from './keys';
 
 /**
  * 피드를 쪽 단위로 받음. 명의를 알기 전(undefined)에는 요청하지 않음

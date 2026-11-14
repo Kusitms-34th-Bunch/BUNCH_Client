@@ -7,7 +7,7 @@ import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { bundleEdits } from '../../lib/bundleEdits';
-import { bundleDetailKeys } from '../../queries/bundleDetail';
+import { feedKeys } from '../../queries/keys';
 import { BundleVisibilityScreen } from './BundleVisibilityScreen';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
@@ -44,7 +44,7 @@ const renderScreen = (bundleId = '1', bunchPrivate = false) => {
   const client = createTestQueryClient();
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
   client.setQueryData(
-    bundleDetailKeys.detail('1', bundleId, '1'),
+    feedKeys.detail('1', bundleId, '1'),
     detail(Number(bundleId), bundleId === '1'),
   );
   render(<BundleVisibilityScreen bunchId="1" bundleId={bundleId} bunchPrivate={bunchPrivate} />, {

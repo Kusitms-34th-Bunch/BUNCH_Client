@@ -8,8 +8,7 @@ import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { FEED_MESSAGES } from '../constants/messages';
-import { bundleDetailKeys } from './bundleDetail';
-import { feedKeys } from './feed';
+import { feedKeys } from './keys';
 import { useBundleLikeMutation } from './like';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -22,7 +21,7 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 // 지금 번치 1 명의의 피드 카드(번들 7)와 그 상세
 const VIEWER = '1';
 const feedKey = feedKeys.list(VIEWER);
-const detailKey = bundleDetailKeys.detail('3', '7', VIEWER);
+const detailKey = feedKeys.detail('3', '7', VIEWER);
 const likeOf = (data: unknown) => {
   const card = (data as { pages: { items: { bundle?: object }[] }[] }).pages[0]!.items[0]!.bundle;
   return card;

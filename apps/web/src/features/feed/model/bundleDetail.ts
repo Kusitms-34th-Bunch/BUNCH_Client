@@ -136,7 +136,5 @@ export const toFeedBundleDetail = (
           }
         : { id: toDomainId(comment.id), name: '', comment: '', left: true },
     ),
-    // ponytail: 소셜 댓글 목록은 댓글 API 연결(API 연동 4번) 전이라 비어 있고 화면에서만 더함
-    comments: [],
   };
 };

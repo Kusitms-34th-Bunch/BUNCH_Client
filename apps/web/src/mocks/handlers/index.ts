@@ -4,6 +4,7 @@ import { bunchOnboardingHandlers } from './bunchOnboarding';
 import { bundleExitHandlers } from './bundleExit';
 import { bundlePhotoHandlers } from './bundlePhotos';
 import { bundleHandlers } from './bundles';
+import { commentHandlers } from './comments';
 import { feedHandlers } from './feed';
 import { followHandlers } from './follows';
 import { invitationHandlers } from './invitations';
@@ -32,6 +33,7 @@ export const handlers = [
   ...followHandlers,
   ...feedHandlers,
   ...likeHandlers,
+  ...commentHandlers,
   ...blockHandlers,
   ...notificationHandlers,
   ...bundleHandlers,

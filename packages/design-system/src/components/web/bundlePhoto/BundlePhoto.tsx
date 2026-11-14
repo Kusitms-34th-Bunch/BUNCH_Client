@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { useState, type ComponentProps } from 'react';
+import { useIntersectionObserver } from 'react-simplikit';
 import { cn } from '../../../utils';
 import { BundleInfo, type BundleInfoProps } from '../bundleInfo';
 import { PageCounter } from '../pageCounter';
@@ -56,22 +57,16 @@ const PickAvatars = ({ pickers }: { pickers: NonNullable<BundlePhotoItem['picker
   const [closing, setClosing] = useState(false);
   // 떠다니는 모션은 얼굴이 보일 때 시작(가려진 채 끝나지 않게), 다시 보이면 또 재생
   // 움직이는 얼굴 대신 고정된 칸을 관찰(2px 움직임이 판정을 바꿔 재생이 반복되지 않게)
-  const facesRef = useRef<HTMLSpanElement>(null);
   const [visible, setVisible] = useState(false);
+  // 1명 ↔ 2명이면 칸이 다시 만들어지는데, callback ref라 새 칸을 다시 관찰함
+  const facesRef = useIntersectionObserver<HTMLSpanElement>(
+    (entry) => setVisible(entry.isIntersecting),
+    { threshold: 0.5 },
+  );
   const float = visible ? pickMotion.float : undefined;
   const [first, ...rest] = pickers;
   const pressable = rest.length > 0;
 
-  useEffect(() => {
-    const faces = facesRef.current;
-    if (!faces || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(([entry]) => setVisible(!!entry?.isIntersecting), {
-      threshold: 0.5,
-    });
-    observer.observe(faces);
-    return () => observer.disconnect();
-    // 1명 ↔ 2명이면 칸이 다시 만들어짐
-  }, [pressable]);
   const listed = expanded || closing;
   const stacked = listed ? pickers.slice(0, 1) : pickers.slice(0, PICK_LAYERS.length);
   const label = `pick ${pickers.map((picker) => picker.name).join(', ')}`;

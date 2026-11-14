@@ -104,8 +104,10 @@ export type FeedComment = {
   parentId?: string | undefined;
   deleted?: boolean | undefined;
   replyCount?: number | undefined;
-  /** 내가 쓴 댓글(더보기에서 삭제) */
-  mine?: boolean | undefined;
+  /** 서버 권한: 내 댓글 삭제, 원댓글에 답글, 남의 댓글 신고(명세 014, 소속 번치가 없으면 모두 false) */
+  canDelete: boolean;
+  canReply: boolean;
+  canReport: boolean;
 };
 
 export type FeedBundleDetail = FeedBundle & {
@@ -118,7 +120,6 @@ export type FeedBundleDetail = FeedBundle & {
   /** 신고할 수 있음(서버 `permissions.canReport`) */
   canReport: boolean;
   memberComments: FeedMemberComment[];
-  comments: FeedComment[];
 };
 
 export type FeedFollowStatus = 'none' | 'following' | 'requested';

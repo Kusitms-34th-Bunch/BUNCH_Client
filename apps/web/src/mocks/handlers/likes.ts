@@ -15,10 +15,13 @@ export const likeOf = (state: MockDbState, viewer: number | undefined, bundleId:
   };
 };
 
-/** 지금 번치 명의로 좋아요를 바꿀 수 있는지(명세 011·012). 안 되면 오류 응답 */
-const likeAccess = (state: MockDbState, bundleId: number) => {
+/**
+ * 지금 번치 명의로 그 발행 번들에 반응(좋아요·댓글)할 수 있는지. 안 되면 오류 응답(명세 011~017 공통 순서)
+ * 읽기만 하면(`write` false) 소속 번치가 없어도 외부 규칙으로 판단
+ */
+export const bundleAccess = (state: MockDbState, bundleId: number, write = true) => {
   const viewer = viewerBunchId(state);
-  if (viewer === undefined) return { error: fail(409, 'BUNCH_010') };
+  if (write && viewer === undefined) return { error: fail(409, 'BUNCH_010') };
   const bundle = state.bundles.find((item) => item.id === bundleId);
   if (!bundle || bundle.status !== 'PUBLISHED') return { error: fail(404, 'RESOURCE_001') };
   const bunch = state.bunches.find((item) => item.id === bundle.bunchId);
@@ -40,9 +43,9 @@ const likeAccess = (state: MockDbState, bundleId: number) => {
 const setLike = (bundleIdParam: string | readonly string[] | undefined, liked: boolean) => {
   const bundleId = toWireId(bundleIdParam);
   if (bundleId === undefined) return fail(400, 'COMMON_001');
-  const access = likeAccess(mockDb.get(), bundleId);
+  const access = bundleAccess(mockDb.get(), bundleId);
   if ('error' in access) return access.error;
-  const { viewer } = access;
+  const viewer = access.viewer as number;
   // 같은 요청을 반복해도 한 번만 반영(멱등)
   mockDb.update((current) => ({
     ...current,

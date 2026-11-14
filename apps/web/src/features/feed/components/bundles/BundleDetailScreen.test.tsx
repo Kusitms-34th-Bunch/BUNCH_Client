@@ -1,7 +1,8 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockDb } from '@/mocks/db';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
@@ -9,7 +10,7 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BundleBunchSource, BundleDetailResponse } from '../../model/bundleDetail';
 import { bundleEdits } from '../../lib/bundleEdits';
-import { bundleDetailKeys } from '../../queries/bundleDetail';
+import { feedKeys } from '../../queries/keys';
 import { BundleDetailScreen } from './BundleDetailScreen';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
@@ -105,6 +106,18 @@ const DETAILS: Record<string, BundleDetailResponse> = {
     comments: [],
     permissions: REPORT,
   },
+  // 가짜 서버에 댓글이 있는 「가평 첫 캠핑」(공개 번치 3)
+  '901': {
+    ...base,
+    id: 901,
+    bunchId: 3,
+    title: '가평 첫 캠핑',
+    photos: photos([0]),
+    contributors: [person(1, '멤버 1')],
+    comments: [],
+    permissions: REPORT,
+    commentCount: 4,
+  },
 };
 const BUNCHES: Record<string, BundleBunchSource> = {
   '1': { id: 1, name: '여행가조', characterType: 'TYPE_3' },
@@ -124,7 +137,7 @@ const renderDetail = (
   const detail = DETAILS[bundleId];
   const bunchId = String(detail?.bunchId ?? 1);
   if (detail) {
-    client.setQueryData(bundleDetailKeys.detail(bunchId, bundleId, viewer?.id ?? null), detail);
+    client.setQueryData(feedKeys.detail(bunchId, bundleId, viewer?.id ?? null), detail);
   }
   return render(
     <BundleDetailScreen
@@ -138,13 +151,54 @@ const renderDetail = (
   );
 };
 
-/** 입력란에 댓글을 써서 등록(소셜 댓글 목록은 API 연동 4번 전이라 비어 있음) */
+/** 입력란에 댓글을 써서 등록하고 목록에 붙을 때까지 기다림(가짜 서버, 작성자는 시연 회원 「큐시즘」) */
 const addComment = async (user: ReturnType<typeof userEvent.setup>, content: string) => {
   await user.type(screen.getByRole('textbox', { name: /달기/ }), content);
   await user.click(screen.getByRole('button', { name: '보내기' }));
+  await within(screen.getByRole('region', { name: '댓글' })).findByText(content);
 };
 
+// 목록 끝 감지 요소가 관찰되면 바로 보인 것으로 알림(이어 받기, 피드 테스트와 같은 방식)
+class VisibleObserver {
+  private readonly callback: IntersectionObserverCallback;
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+  }
+  observe() {
+    this.callback(
+      [{ isIntersecting: true } as IntersectionObserverEntry],
+      this as unknown as IntersectionObserver,
+    );
+  }
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+/** 「가평 첫 캠핑」(901)에 원댓글을 더해 두 쪽(20개 넘게)으로 만듦. 가장 오래된 것은 「오래된 댓글 1」 */
+const seedManyComments = (count: number) =>
+  mockDb.update((state) => ({
+    ...state,
+    socialComments: [
+      ...state.socialComments,
+      ...Array.from({ length: count }, (_, index) => ({
+        id: 6000 + index,
+        bundleId: 901,
+        parentId: null,
+        memberId: 1,
+        bunchId: 3,
+        content: `오래된 댓글 ${index + 1}`,
+        createdAt: new Date(Date.UTC(2026, 9, 1, 0, index)).toISOString(),
+        deleted: false,
+      })),
+    ],
+  }));
+
+afterEach(() => vi.unstubAllGlobals());
+
 beforeEach(() => {
+  toastAfterNavigation.mockClear();
   push.mockClear();
   back.mockClear();
   replace.mockClear();
@@ -235,7 +289,7 @@ describe('BundleDetailScreen', () => {
     expect(screen.getByText('님에게 답글 남기는 중')).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByRole('textbox'));
     expect(
-      screen.getByRole('textbox', { name: /나님에게 답글, 여행가조로 답글 달기/ }),
+      screen.getByRole('textbox', { name: /큐시즘님에게 답글, 여행가조로 답글 달기/ }),
     ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '답글 그만 쓰기' }));
@@ -288,9 +342,9 @@ describe('BundleDetailScreen', () => {
     expect(document.activeElement).toBe(screen.getByRole('textbox'));
   });
 
-  it('댓글이 없으면 빈 안내를 보인다', () => {
+  it('댓글이 없으면 빈 안내를 보인다', async () => {
     renderDetail('2');
-    expect(screen.getByText('아직 작성된 댓글이 없어요')).toBeTruthy();
+    expect(await screen.findByText('아직 작성된 댓글이 없어요')).toBeTruthy();
   });
 
   it('?focus=comments로 들어오면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
@@ -368,13 +422,17 @@ describe('BundleDetailScreen', () => {
     expect(send()).toBeDisabled();
     await user.clear(input());
     await user.type(input(), '  첫 댓글  ');
+    // 댓글 수는 서버 값(이 번들은 가짜 서버에 댓글이 없음)
+    await screen.findByText('아직 작성된 댓글이 없어요');
+    expect(screen.getByRole('button', { name: /댓글 0/ })).toBeTruthy();
     await user.click(send());
 
     const items = () =>
       within(screen.getByRole('region', { name: '댓글' })).getAllByRole('listitem');
+    await screen.findByText('첫 댓글');
     expect(within(items()[0]!).getByText('첫 댓글')).toBeTruthy();
     expect(input()).toHaveValue('');
-    expect(screen.getByRole('button', { name: /댓글 5/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /댓글 1/ })).toBeTruthy();
     await waitFor(() => expect(items()[0]).toHaveFocus());
     expect(screen.getByRole('status')).toHaveTextContent('댓글을 등록했어요');
 
@@ -382,8 +440,10 @@ describe('BundleDetailScreen', () => {
     await user.type(input(), '답글이에요');
     await user.click(send());
 
+    await screen.findByText('답글이에요');
     expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull();
-    expect(screen.getByRole('button', { name: '나님 댓글의 답글 1개' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '큐시즘님 댓글의 답글 1개' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /댓글 2/ })).toBeTruthy();
     // 원댓글 아래
     expect(within(items()[1]!).getByText('답글이에요')).toBeTruthy();
   });
@@ -392,25 +452,25 @@ describe('BundleDetailScreen', () => {
     const user = userEvent.setup();
     renderDetail();
     await addComment(user, '지울 댓글');
-    await user.click(screen.getByRole('button', { name: '내 댓글 더보기' }));
+    await user.click(screen.getByRole('button', { name: /^내 댓글 더보기/ }));
     await user.click(await screen.findByRole('button', { name: '삭제' }));
     const dialog = await screen.findByRole('alertdialog', { name: '댓글을 삭제할까요?' });
     expect(within(dialog).getByText('데이터가 삭제되며 복구 불가능해요.')).toBeTruthy();
     await user.click(within(dialog).getByRole('button', { name: '삭제' }));
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith('댓글을 삭제했어요'));
-    expect(screen.queryByRole('button', { name: '내 댓글 더보기' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^내 댓글 더보기/ })).toBeNull();
     expect(screen.getAllByText('삭제된 댓글입니다')).toHaveLength(1);
   });
 
   it('답글을 쓰던 댓글을 지우면 답글 상태가 풀린다', async () => {
     const user = userEvent.setup();
-    renderDetail('3');
+    renderDetail('2');
     await addComment(user, '내 댓글');
 
     await user.click(screen.getByRole('button', { name: /댓글에 답글 달기/ }));
     expect(screen.getByText('님에게 답글 남기는 중')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '내 댓글 더보기' }));
+    await user.click(screen.getByRole('button', { name: /^내 댓글 더보기/ }));
     await user.click(await screen.findByRole('button', { name: '삭제' }));
     const dialog = await screen.findByRole('alertdialog');
     await user.click(within(dialog).getByRole('button', { name: '삭제' }));
@@ -425,35 +485,199 @@ describe('BundleDetailScreen', () => {
     renderDetail();
     await addComment(user, '남길 댓글');
 
-    await user.click(screen.getByRole('button', { name: '내 댓글 더보기' }));
+    await user.click(screen.getByRole('button', { name: /^내 댓글 더보기/ }));
     await user.click(await screen.findByRole('button', { name: '삭제' }));
     const dialog = await screen.findByRole('alertdialog');
     await user.click(within(dialog).getByRole('button', { name: '취소' }));
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    expect(screen.getByRole('button', { name: '내 댓글 더보기' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^내 댓글 더보기/ })).toBeTruthy();
     expect(toast).not.toHaveBeenCalled();
   });
 
   it('보내기를 연타해도 한 번만 등록한다', async () => {
     const user = userEvent.setup();
-    renderDetail('3');
+    renderDetail('2');
 
     await user.type(screen.getByRole('textbox', { name: /달기/ }), '한 번');
     await user.dblClick(screen.getByRole('button', { name: '보내기' }));
 
+    await screen.findByText('한 번');
+    expect(screen.getByRole('button', { name: /댓글 1/ })).toBeTruthy();
     expect(screen.getAllByText('한 번')).toHaveLength(1);
+  });
+
+  it('서버 댓글을 원댓글 최신순, 답글은 그 아래로 보이고 메뉴는 서버 권한을 따른다', async () => {
+    renderDetail('901');
+    const region = screen.getByRole('region', { name: '댓글' });
+    await within(region).findByText('좋아요 🙌');
+
+    const items = within(region).getAllByRole('listitem');
+    expect(items.map((item) => item.getAttribute('aria-label'))).toEqual([
+      '큐시즘님의 댓글',
+      '삭제된 댓글',
+      '지예님의 댓글',
+      '큐시즘님의 답글',
+    ]);
+    expect(within(items[0]!).getByText('사진 너무 예뻐요')).toBeTruthy();
+    // 삭제 자리: 메뉴·답글 버튼 없음
+    expect(within(items[1]!).queryAllByRole('button')).toHaveLength(0);
+    // 남의 원댓글: 신고 메뉴와 「답글 1」, 그 아래 내 답글은 삭제 메뉴
+    expect(within(items[2]!).getByRole('button', { name: /지예 댓글 더보기/ })).toBeTruthy();
+    expect(within(items[2]!).getByRole('button', { name: '지예님 댓글의 답글 1개' })).toBeTruthy();
+    expect(within(items[3]!).getByRole('button', { name: /^내 댓글 더보기/ })).toBeTruthy();
+    expect(within(items[3]!).queryByRole('button', { name: /답글/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /댓글 4/ })).toBeTruthy();
+  });
+
+  it('답글 대상이 그사이 지워졌으면 답글 상태를 풀고 쓴 내용은 남긴 채 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(http.post('/api/bundles/:bundleId/comments', () => fail(409, 'BUNDLE_002')));
+    renderDetail('901');
+    await user.click(await screen.findByRole('button', { name: '지예님 댓글의 답글 1개' }));
+    await user.type(screen.getByRole('textbox'), '늦은 답글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('삭제된 댓글입니다'));
+    expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull();
+    expect(screen.getByRole('textbox')).toHaveValue('늦은 답글');
+  });
+
+  it('쓰는 사이 번들을 볼 수 없게 됐으면 이전 화면으로 가서 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(http.post('/api/bundles/:bundleId/comments', () => fail(404, 'RESOURCE_001')));
+    renderDetail('901');
+    await user.type(screen.getByRole('textbox'), '안녕');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await waitFor(() =>
+      expect(toastAfterNavigation).toHaveBeenCalledWith('더 이상 볼 수 없는 번들이에요.'),
+    );
+    expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+  });
+
+  it('등록이 실패하면 쓴 내용을 남기고 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(http.post('/api/bundles/:bundleId/comments', () => fail(500, 'COMMON_999')));
+    renderDetail('901');
+    await user.type(screen.getByRole('textbox'), '다시 보낼 댓글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(screen.getByRole('textbox')).toHaveValue('다시 보낼 댓글');
+  });
+
+  it('댓글을 받지 못하면 그 자리에 안내와 다시 시도를 두고, 다시 시도하면 목록을 보인다', async () => {
+    const user = userEvent.setup();
+    let failing = true;
+    server.use(
+      http.get('/api/bundles/:bundleId/comments', () =>
+        failing ? fail(500, 'COMMON_999') : undefined,
+      ),
+    );
+    renderDetail('901');
+    expect(await screen.findByRole('alert')).toHaveTextContent('일시적인 오류가 발생했어요');
+
+    failing = false;
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    // 버튼이 사라져도 초점은 댓글 영역에 남음
+    expect(screen.getByRole('region', { name: '댓글' })).toHaveFocus();
+    expect(await screen.findByText('사진 너무 예뻐요')).toBeTruthy();
+  });
+
+  it('이미 지워진 댓글을 지우면 따로 알리지 않고 목록을 맞춘다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.delete('/api/bundles/:bundleId/comments/:commentId', () => fail(404, 'RESOURCE_001')),
+    );
+    renderDetail('901');
+    const [mine] = await screen.findAllByRole('button', { name: /^내 댓글 더보기/ });
+    await user.click(mine!);
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }));
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(await screen.findByText('사진 너무 예뻐요')).toBeTruthy();
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('목록 끝이 보이면 다음 쪽을 받는다', async () => {
+    vi.stubGlobal('IntersectionObserver', VisibleObserver);
+    seedManyComments(20);
+    renderDetail('901');
+    expect(await screen.findByText('오래된 댓글 1')).toBeTruthy();
+  });
+
+  it('다음 쪽을 받지 못하면 보이던 댓글은 두고 안내와 다시 시도를 보인다', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('IntersectionObserver', VisibleObserver);
+    seedManyComments(20);
+    let failing = true;
+    server.use(
+      http.get('/api/bundles/:bundleId/comments', ({ request }) =>
+        failing && new URL(request.url).searchParams.has('cursor')
+          ? fail(500, 'COMMON_999')
+          : undefined,
+      ),
+    );
+    renderDetail('901');
+    expect(await screen.findByRole('alert')).toHaveTextContent('댓글을 더 불러오지 못했어요');
+    expect(screen.getByText('사진 너무 예뻐요')).toBeTruthy();
+
+    failing = false;
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    // 버튼이 사라져도 초점은 댓글 영역에 남음
+    expect(screen.getByRole('region', { name: '댓글' })).toHaveFocus();
+    expect(await screen.findByText('오래된 댓글 1')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('답글을 쓰는 사이 번들이 사라졌으면 다시 받은 목록을 보고 이전 화면으로 간다', async () => {
+    const user = userEvent.setup();
+    let gone = false;
+    server.use(
+      http.post('/api/bundles/:bundleId/comments', () => {
+        gone = true;
+        return fail(404, 'RESOURCE_001');
+      }),
+      http.get('/api/bundles/:bundleId/comments', () =>
+        gone ? fail(404, 'RESOURCE_001') : undefined,
+      ),
+    );
+    renderDetail('901');
+    await user.click(await screen.findByRole('button', { name: '지예님 댓글의 답글 1개' }));
+    await user.type(screen.getByRole('textbox'), '답글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await waitFor(() =>
+      expect(toastAfterNavigation).toHaveBeenCalledWith('더 이상 볼 수 없는 번들이에요.'),
+    );
+    // 다시 받은 목록이 실패해도 한 번만 떠남
+    expect(
+      toastAfterNavigation.mock.calls.filter(
+        ([message]) => message === '더 이상 볼 수 없는 번들이에요.',
+      ),
+    ).toHaveLength(1);
   });
 
   it('소속 번치가 없으면 댓글을 등록하지 않고 안내한다', async () => {
     const user = userEvent.setup();
+    // 가짜 서버의 지금 번치와 달리 소속 번치가 없는 화면이라 목록은 빈 응답으로
+    server.use(
+      http.get('/api/bundles/:bundleId/comments', () =>
+        ok({ items: [], nextCursor: null, hasNext: false, totalCount: 0 }),
+      ),
+    );
     renderDetail('3', { viewer: null });
 
     await user.type(screen.getByRole('textbox', { name: '댓글 달기' }), '안녕');
     await user.click(screen.getByRole('button', { name: '보내기' }));
 
     expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
-    expect(screen.getByText('아직 작성된 댓글이 없어요')).toBeTruthy();
+    expect(await screen.findByText('아직 작성된 댓글이 없어요')).toBeTruthy();
   });
 
   it('다른 번치 번들은 헤더 더보기 → 「신고」 → 신고하면 이전 화면으로 가서 알린다', async () => {
@@ -593,7 +817,7 @@ describe('BundleDetailScreen', () => {
   it('번치 정보를 받지 못해도 내용은 보이고, 번치 버튼 이름은 「번치」다', () => {
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: null });
-    client.setQueryData(bundleDetailKeys.detail('3', '3', null), DETAILS['3']);
+    client.setQueryData(feedKeys.detail('3', '3', null), DETAILS['3']);
     render(
       <BundleDetailScreen
         bunchId="3"
@@ -614,7 +838,7 @@ describe('BundleDetailScreen', () => {
     );
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
-    const key = bundleDetailKeys.detail('3', '3', '1');
+    const key = feedKeys.detail('3', '3', '1');
     client.setQueryData(key, DETAILS['3']);
     render(
       <BundleDetailScreen
@@ -692,7 +916,7 @@ describe('BundleDetailScreen', () => {
   it('번치 정보가 늦게 와도 ?focus=comments면 본문이 그려진 뒤 입력란에 초점을 둔다', async () => {
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
-    client.setQueryData(bundleDetailKeys.detail('3', '3', '1'), DETAILS['3']);
+    client.setQueryData(feedKeys.detail('3', '3', '1'), DETAILS['3']);
     const view = (bunch: BundleBunchSource | undefined) => (
       <BundleDetailScreen bunchId="3" bundleId="3" bunch={bunch} focusComments links={links} />
     );
@@ -728,7 +952,7 @@ describe('BundleDetailScreen', () => {
     failing = false;
     await user.click(screen.getByRole('button', { name: '다시 시도' }));
     await waitFor(() =>
-      expect(client.getQueryState(bundleDetailKeys.detail('3', '3', '1'))?.status).toBe('success'),
+      expect(client.getQueryState(feedKeys.detail('3', '3', '1'))?.status).toBe('success'),
     );
 
     rerender(view(BUNCHES['3']));

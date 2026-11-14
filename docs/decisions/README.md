@@ -33,4 +33,5 @@
 - [019: 화면 접근 제어는 `(app)` layout의 클라이언트 가드가 서버의 가입 상태로 한다](./records/019-client-auth-gate.md)
 - [020: 토스트 위치는 화면 요소의 앵커로 정하고, 화면 이동 뒤 토스트는 도착 화면에서 띄운다](./records/020-toast-anchor-position.md)
 - [021: 포맷터는 Prettier 대신 oxfmt를 쓴다](./records/021-oxfmt-formatter.md)
-- [022: 실시간(STOMP) 인증은 BFF가 발급받은 연결용 토큰을 브라우저에 한 번 전달한다](./records/022-ws-token-bff-realtime-auth.md)
+- [022: 데이터 없이 그릴 수 없는 화면의 받는 중·실패는 Suspensive 경계로 모은다](./records/022-suspensive-query-boundary.md)
+- [023: 실시간(STOMP) 인증은 BFF가 발급받은 연결용 토큰을 브라우저에 한 번 전달한다](./records/023-ws-token-bff-realtime-auth.md)

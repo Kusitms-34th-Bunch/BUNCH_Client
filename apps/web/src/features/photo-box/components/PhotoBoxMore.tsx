@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useIntersectionObserver } from 'react-simplikit';
 import type { PhotoBoxData } from '../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 
@@ -27,26 +28,24 @@ export function PhotoBoxMore({ state, onRetry }: PhotoBoxMoreProps) {
   });
   const failed = state === 'error';
 
+  // 실패한 순간 끝이 이미 보이고 있어도 바로 다시 보내지 않고, 한 번 벗어났다가 다시 보일 때만 시도
+  // 감지 요소는 실패했을 때만 그려, 다시 실패하면 새로 붙어 처음부터 다시 셈
+  const leftView = useRef(false);
+  // 실패에 들어오거나 벗어날 때마다 처음부터 셈(다른 경로로 실패가 풀렸다 다시 실패해도 바로 보내지 않게)
   useEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!failed || !wrapper || typeof IntersectionObserver === 'undefined') return;
-    // 실패한 순간 끝이 이미 보이고 있어도 바로 다시 보내지 않고, 한 번 벗어났다가 다시 보일 때만 시도
-    let leftView = false;
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) leftView = true;
-        else if (leftView) {
-          leftView = false;
-          retryRef.current();
-        }
-      }
-    });
-    observer.observe(wrapper);
-    return () => observer.disconnect();
+    leftView.current = false;
   }, [failed]);
+  const observeRetry = useIntersectionObserver<HTMLSpanElement>((entry) => {
+    if (!entry.isIntersecting) leftView.current = true;
+    else if (leftView.current) {
+      leftView.current = false;
+      retryRef.current();
+    }
+  }, {});
 
   // 버튼이 사라져도(재시도가 시작되면 실패 표시가 로딩으로 바뀜) 포커스가 문서 처음으로 돌아가지 않도록 이 영역으로 옮김
   const handleRetry = () => {
+    leftView.current = false;
     retryRef.current();
     wrapperRef.current?.focus({ preventScroll: true });
   };
@@ -56,7 +55,7 @@ export function PhotoBoxMore({ state, onRetry }: PhotoBoxMoreProps) {
   else if (failed) announcement = PHOTO_BOX_MESSAGES.loadMoreFailed;
 
   return (
-    <div ref={wrapperRef} tabIndex={-1} className="outline-none">
+    <div ref={wrapperRef} tabIndex={-1} className="relative outline-none">
       <p role="status" className="sr-only">
         {announcement}
       </p>
@@ -66,6 +65,9 @@ export function PhotoBoxMore({ state, onRetry }: PhotoBoxMoreProps) {
             <div key={cell} className="bg-surface-tertiary aspect-square" />
           ))}
         </div>
+      ) : null}
+      {failed ? (
+        <span ref={observeRetry} aria-hidden="true" className="absolute top-0 size-px" />
       ) : null}
       {failed ? (
         <button
