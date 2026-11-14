@@ -24,8 +24,14 @@ const call = async (method: string, path: string, body?: unknown, headers = {}) 
 };
 
 const create = async (photoIds: number[]) =>
-  (await call('POST', base, { photoIds }, { 'Idempotency-Key': createIdempotencyKey() })).json
-    .data!;
+  (
+    await call(
+      'POST',
+      base,
+      { photoIds, participantMemberIds: [MOCK_MEMBER_IDS.memberA] },
+      { 'Idempotency-Key': createIdempotencyKey() },
+    )
+  ).json.data!;
 
 const exists = (id: number) => mockDb.get().bundles.some((bundle) => bundle.id === id);
 

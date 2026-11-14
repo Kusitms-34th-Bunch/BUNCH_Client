@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '@/mocks/server';
 import { mockDb } from '@/mocks/db';
-import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import {
@@ -30,7 +30,12 @@ const createDraft = async (wrapper: ReturnType<typeof createQueryWrapper>) => {
   const { result } = renderHook(() => useCreateBundleMutation(bunchId), { wrapper });
   let id = '';
   await act(async () => {
-    id = (await result.current.mutateAsync({ photoIds })).id;
+    id = (
+      await result.current.mutateAsync({
+        photoIds,
+        participantMemberIds: [String(MOCK_MEMBER_IDS.memberA)],
+      })
+    ).id;
   });
   return id;
 };
@@ -138,7 +143,7 @@ describe('번들 query·mutation', () => {
     const { result } = renderHook(() => usePublishBundleMutation(bunchId, id), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync(revision);
+      await result.current.mutateAsync({ visibility: 'PRIVATE', expectedRevision: revision });
     });
 
     expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toMatchObject({
@@ -197,7 +202,9 @@ describe('번들 query·mutation', () => {
     const { result } = renderHook(() => usePublishBundleMutation(bunchId, id), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync(1).catch(() => undefined);
+      await result.current
+        .mutateAsync({ visibility: 'PUBLIC', expectedRevision: 1 })
+        .catch(() => undefined);
     });
 
     await waitFor(() => expect(result.current.error).toMatchObject({ code: 'BUNDLE_005' }));

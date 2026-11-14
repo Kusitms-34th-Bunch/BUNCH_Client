@@ -32,6 +32,7 @@ const request = (
     body?: string;
     contentType?: string;
     idempotencyKey?: string;
+    requestId?: string;
   } = {},
 ) =>
   new NextRequest(`https://app.example.com/api/${path}`, {
@@ -40,6 +41,7 @@ const request = (
       ...(init.cookie ? { cookie: init.cookie } : {}),
       ...(init.contentType ? { 'content-type': init.contentType } : {}),
       ...(init.idempotencyKey ? { 'idempotency-key': init.idempotencyKey } : {}),
+      ...(init.requestId ? { 'x-request-id': init.requestId } : {}),
       accept: 'application/json',
     },
     ...(init.body === undefined ? {} : { body: init.body }),
@@ -159,6 +161,23 @@ describe('proxyToBackend', () => {
     );
 
     expect(captured[0]?.headers.get('idempotency-key')).toBe('key-1');
+  });
+
+  it('UUID 형식의 요청 ID(X-Request-Id)만 백엔드로 전달하고 아니면 버린다', async () => {
+    stubBackend(new Response(null, { status: 200 }));
+    const id = 'b37d231c-5a60-4cf8-a83c-ae4b704154b7';
+
+    await proxyToBackend(request('bunches/1', { requestId: id, cookie: 'accessToken=a-1' }), [
+      'bunches',
+      '1',
+    ]);
+    await proxyToBackend(
+      request('bunches/1', { requestId: 'not-a-uuid', cookie: 'accessToken=a-1' }),
+      ['bunches', '1'],
+    );
+
+    expect(captured[0]?.headers.get('x-request-id')).toBe(id);
+    expect(captured[1]?.headers.has('x-request-id')).toBe(false);
   });
 
   it('백엔드 상태·본문은 그대로, Set-Cookie 같은 헤더는 버린다', async () => {

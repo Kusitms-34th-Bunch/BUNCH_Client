@@ -9,6 +9,9 @@ const BACKEND_PREFIX = 'api/v1/';
 const TIMEOUT_MS = 10_000;
 // 멱등 키는 번치 생성·초대 참여·번들 발행처럼 재전송이 한 번만 처리돼야 하는 요청에 필수라 그대로 전달
 const FORWARDED_REQUEST_HEADERS = ['accept', 'content-type', 'idempotency-key'];
+// 사진 이동·참여자 변경 같은 요청의 상관 ID(재시도에 같은 값을 써야 서버가 중복 적용을 막음). UUID 형식만 전달하고 아니면 버려 서버가 새로 만들게 함
+const REQUEST_ID_HEADER = 'x-request-id';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Set-Cookie 등은 버리고 본문 해석에 필요한 헤더만 전달
 const FORWARDED_RESPONSE_HEADERS = ['cache-control', 'content-disposition', 'content-type'];
 
@@ -56,6 +59,8 @@ export const proxyToBackend = async (request: NextRequest, segments: string[]) =
       const value = request.headers.get(name);
       if (value) headers.set(name, value);
     }
+    const requestId = request.headers.get(REQUEST_ID_HEADER);
+    if (requestId && UUID.test(requestId)) headers.set(REQUEST_ID_HEADER, requestId);
     const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
     if (accessToken) headers.set('authorization', `Bearer ${accessToken}`);
 

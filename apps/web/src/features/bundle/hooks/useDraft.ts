@@ -34,10 +34,9 @@ import {
   useSaveCommentMutation,
   useSaveDateMutation,
   useSaveTitleMutation,
-  useSaveVisibilityMutation,
 } from '../queries/bundles';
 
-// 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 공개 범위·날짜는 고르는 즉시 저장
+// 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 날짜는 고르는 즉시 저장하고 공개 범위는 발행 요청으로만 보냄
 // 위치가 없을 때 쓰는 고정된 빈 목록(렌더마다 새 배열이 되어 draft를 다시 만들지 않게 함)
 const NO_LOCATIONS: readonly DraftLocation[] = [];
 
@@ -109,24 +108,23 @@ export type DraftActions = {
 // 아직 서버에 저장하지 못한 입력(필드마다 마지막 값만 보관)
 type Pending = {
   title?: string;
-  visibility?: DraftVisibility;
   /** null은 날짜를 지우는 값 */
   date?: string | null;
   comment?: string;
 };
 
 const isEmpty = (pending: Pending) =>
-  pending.title === undefined &&
-  pending.visibility === undefined &&
-  pending.date === undefined &&
-  pending.comment === undefined;
+  pending.title === undefined && pending.date === undefined && pending.comment === undefined;
+
+const toDraftVisibility = (value: 'PUBLIC' | 'PRIVATE' | null): DraftVisibility | null =>
+  value === null ? null : value === 'PUBLIC' ? 'public' : 'members';
 
 const errorCode = (error: unknown) => (error as { code?: string } | null)?.code;
 
 /**
  * 초안 상태와 동작: 내 프로필·번치 멤버·번들 상세 query를 화면의 `Draft`로 합치고, 입력은 바로 화면에 반영한 뒤
  * 멈추면 서버에 저장(필드별 버전 사용, 충돌이면 최신 상세를 받아 이어서 저장)
- * 위치는 서버에 필드가 없어 이 화면에서만 들고 있고, 사진 구성·순서 변경은 서버 연동 전이라 이 화면에서만 바뀜
+ * 위치는 서버에 필드가 없어 이 화면에서만 들고 있고, 사진 구성·순서 변경은 요청을 순서대로 하나씩 보낸 뒤 서버 값으로 맞춤
  */
 export function useDraft(draftId: string | undefined): {
   state: DraftState;
@@ -153,7 +151,6 @@ export function useDraft(draftId: string | undefined): {
   } = useQuery(bundleQueryOptions(bunchId, bundleId));
 
   const saveTitle = useSaveTitleMutation(bunchId, bundleId);
-  const saveVisibility = useSaveVisibilityMutation(bunchId, bundleId);
   const saveDate = useSaveDateMutation(bunchId, bundleId);
   const saveComment = useSaveCommentMutation(bunchId, bundleId);
   const changePhotos = useChangePhotosMutation(bunchId, bundleId);
@@ -177,6 +174,8 @@ export function useDraft(draftId: string | undefined): {
   const [publishing, setPublishing] = useState(false);
   // 저장을 포기한 상태(권한·상태 오류 또는 재시도 소진): 헤더가 「저장 실패」를 보이고 입력하면 다시 시도
   const [stalled, setStalled] = useState(false);
+  // 업로드 직전 공개 범위 화면에서 고른 값(서버에는 발행 요청으로만 보냄). 고르기 전에는 서버의 초안 값
+  const [visibilityChoice, setVisibilityChoice] = useState<DraftVisibility | undefined>(undefined);
   // 입력란에 방금 친 원문: 서버가 앞뒤 공백을 지워 돌려줘도 입력 중 띄어쓰기가 사라지지 않게 보여 줌
   const [typed, setTyped] = useState<{ title?: string }>({});
 
@@ -290,18 +289,6 @@ export function useDraft(draftId: string | undefined): {
             () => clearField('title', value),
           );
         }
-        if (snapshot.visibility !== undefined && !stop) {
-          const value = snapshot.visibility;
-          await run(
-            () =>
-              saveVisibility.mutateAsync({
-                ...common,
-                value: value === 'public' ? 'PUBLIC' : 'PRIVATE',
-                expectedVersion: (detailRef.current ?? base).visibilityVersion,
-              }),
-            () => clearField('visibility', value),
-          );
-        }
         if (snapshot.date !== undefined && !stop) {
           const value = snapshot.date;
           await run(
@@ -354,7 +341,7 @@ export function useDraft(draftId: string | undefined): {
       timer.current = setTimeout(() => void flushRef.current(), 0);
     }
     return settled;
-  }, [clearField, refetchDetail, saveComment, saveDate, saveTitle, saveVisibility]);
+  }, [clearField, refetchDetail, saveComment, saveDate, saveTitle]);
 
   // 저장은 한 번에 하나만: 진행 중이면 그 결과를 함께 기다리고 끝난 뒤 한 번 더 확인하도록 표시
   const flush = useCallback((): Promise<boolean> => {
@@ -406,7 +393,7 @@ export function useDraft(draftId: string | undefined): {
         pending.title ??
         (typed.title !== undefined && typed.title.trim() === base.title ? typed.title : base.title),
       date: pending.date === undefined ? base.date : pending.date,
-      visibility: pending.visibility ?? base.visibility,
+      visibility: visibilityChoice ?? base.visibility,
       photos,
       comments:
         pending.comment === undefined
@@ -419,7 +406,7 @@ export function useDraft(draftId: string | undefined): {
               )
             : [...base.comments, { memberId: myId, text: pending.comment }],
     };
-  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed]);
+  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed, visibilityChoice]);
 
   const busy =
     flushing ||
@@ -509,10 +496,8 @@ export function useDraft(draftId: string | undefined): {
       change((current) => ({ ...current, comment: text }));
       schedule(SAVE_DELAY_MS);
     },
-    setVisibility: (visibility) => {
-      change((current) => ({ ...current, visibility }));
-      schedule(0);
-    },
+    // 공개 범위는 고르기만 하고 저장하지 않음: 업로드(발행) 요청에 최종 선택을 함께 보냄(v5 명세)
+    setVisibility: setVisibilityChoice,
     addLocation: (place) =>
       setEditedLocations((current) => {
         const base = current ?? detailRef.current?.locations ?? NO_LOCATIONS;
@@ -619,9 +604,17 @@ export function useDraft(draftId: string | undefined): {
       }
       const latest = detailRef.current;
       if (!latest) return 'failed';
+      const chosen = visibilityChoice ?? toDraftVisibility(latest.visibility);
+      if (chosen === null) {
+        toast(BUNDLE_MESSAGES.uploadIncomplete);
+        return 'blocked';
+      }
       setPublishing(true);
       try {
-        await publishMutation.mutateAsync(latest.revision);
+        await publishMutation.mutateAsync({
+          visibility: chosen === 'public' ? 'PUBLIC' : 'PRIVATE',
+          expectedRevision: latest.revision,
+        });
         setPublishedByMe(true);
         return 'published';
       } catch (error) {

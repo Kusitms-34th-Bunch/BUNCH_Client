@@ -1,8 +1,12 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
+import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { BundleSelectProvider } from '../../contexts/BundleSelectProvider';
+import { clearPhotoBoxEntry, startFromPhotoBox } from '../../lib/photoBoxEntry';
+import { DOUBLE_CREATE_DELAY_MS } from '../../testing/selectScreenDoubles';
 import { BundleMemberSelect } from './BundleMemberSelect';
 
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
@@ -29,6 +33,7 @@ const addButton = (name: string) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  clearPhotoBoxEntry();
 });
 
 describe('멤버 선택', () => {
@@ -82,5 +87,53 @@ describe('멤버 선택', () => {
     await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.bunchHome);
+  });
+
+  it('사진함에서 넘어왔으면 「다음」이 사진 선택 없이 바로 초안을 만들고 기록에 멤버 선택을 남기지 않는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      startFromPhotoBox([photoBoxFixture.photos[0]!.id]);
+      renderMembers();
+
+      await userEvent.click(addButton('경진'));
+      await userEvent.click(nextButton());
+
+      expect(router.push).not.toHaveBeenCalled();
+      expect(screen.getByRole('status')).toHaveTextContent(BUNDLE_SELECT_MESSAGES.creating);
+      await act(() => vi.advanceTimersByTimeAsync(DOUBLE_CREATE_DELAY_MS));
+      expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.draft('draft-1'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('사진함에서 넘어왔고 고른 사진이 모두 사라졌으면 사진함으로 돌아간다', async () => {
+    vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
+    startFromPhotoBox(['ghost-photo']);
+    renderMembers();
+
+    await userEvent.click(addButton('경진'));
+    await userEvent.click(nextButton());
+
+    expect(router.replace).toHaveBeenCalledWith('/photos');
+    expect(router.push).not.toHaveBeenCalled();
+    expect(screen.queryByRole('status')).not.toHaveTextContent(BUNDLE_SELECT_MESSAGES.creating);
+  });
+
+  it('사진함에서 넘어왔고 일부 사진만 사라졌으면 안내 없이 남은 사진으로 바로 만든다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      startFromPhotoBox([photoBoxFixture.photos[0]!.id, 'ghost-photo']);
+      renderMembers();
+
+      await userEvent.click(addButton('경진'));
+      await userEvent.click(nextButton());
+
+      expect(screen.getByRole('status')).toHaveTextContent(BUNDLE_SELECT_MESSAGES.creating);
+      await act(() => vi.advanceTimersByTimeAsync(DOUBLE_CREATE_DELAY_MS));
+      expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.draft('draft-1'));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

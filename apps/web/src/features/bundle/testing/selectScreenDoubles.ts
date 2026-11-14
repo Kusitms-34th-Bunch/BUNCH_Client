@@ -15,13 +15,18 @@ export const useCreateBundleDouble = () => {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const create = (photoIds: readonly string[]) => {
-    if (creating || photoIds.length === 0) return;
+  const create = (
+    photoIds: readonly string[],
+    participantMemberIds: readonly string[] = [],
+    options: { replace?: boolean } = {},
+  ) => {
+    if (creating || photoIds.length === 0 || participantMemberIds.length === 0) return;
     setCreating(true);
-    timer.current = setTimeout(
-      () => router.push(BUNDLE_SELECT_PATHS.draft('draft-1')),
-      DOUBLE_CREATE_DELAY_MS,
-    );
+    timer.current = setTimeout(() => {
+      const path = BUNDLE_SELECT_PATHS.draft('draft-1');
+      if (options.replace) router.replace(path);
+      else router.push(path);
+    }, DOUBLE_CREATE_DELAY_MS);
   };
   return { create, creating };
 };

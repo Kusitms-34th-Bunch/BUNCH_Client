@@ -37,14 +37,17 @@ export const useCreateBundleMutation = (bunchId: string | undefined) => {
   return useMutation({
     mutationFn: ({
       photoIds,
+      participantMemberIds,
       idempotencyKey = createIdempotencyKey(),
     }: {
       photoIds: readonly string[];
+      /** 나를 뺀 참여 멤버(1명 이상), 사진을 올린 멤버라도 고르지 않으면 참여하지 않음 */
+      participantMemberIds: readonly string[];
       /** 응답이 유실된 뒤 다시 보내도 초안이 둘이 되지 않도록 호출하는 쪽이 같은 키를 유지 */
       idempotencyKey?: string;
     }) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
-      return createBundle(bunchId, photoIds, idempotencyKey);
+      return createBundle(bunchId, photoIds, idempotencyKey, participantMemberIds);
     },
     onSuccess: (bundle) => {
       queryClient.setQueryData(bundleKeys.detail(bundle.bunchId, bundle.id), bundle);
@@ -116,12 +119,13 @@ const useBundleCacheSync = (bunchId: string | undefined, bundleId: string | unde
         old && old.revision > bundle.revision ? old : bundle,
       ),
     onError: (error: unknown) => {
-      // 충돌 응답의 detail 모양과 상관없이 버전·상태 불일치(BUNDLE_003·BUNDLE_002)는 최신 상세를 다시 받음
+      // 충돌 응답의 detail 모양과 상관없이 버전·상태 불일치(BUNDLE_003·BUNDLE_002)와 발행 거절(BUNDLE_005, 그 사이 다른 멤버가 바꿨을 수 있음)은 최신 상세를 다시 받음
       const code = (error as { code?: string } | null)?.code;
       if (
         readVersionConflict(error) !== undefined ||
         code === 'BUNDLE_003' ||
-        code === 'BUNDLE_002'
+        code === 'BUNDLE_002' ||
+        code === 'BUNDLE_005'
       ) {
         return queryClient.invalidateQueries({ queryKey: key });
       }
@@ -240,9 +244,9 @@ export const usePublishBundleMutation = (
   const queryClient = useQueryClient();
   const sync = useBundleCacheSync(bunchId, bundleId);
   return useMutation({
-    mutationFn: (expectedRevision: number) => {
+    mutationFn: (input: { visibility: 'PUBLIC' | 'PRIVATE'; expectedRevision: number }) => {
       const ids = requireIds(bunchId, bundleId);
-      return publishBundle(ids.bunchId, ids.bundleId, expectedRevision, createIdempotencyKey());
+      return publishBundle(ids.bunchId, ids.bundleId, input, createIdempotencyKey());
     },
     onError: sync.onError,
     onSuccess: async (bundle: BundleDetail) => {

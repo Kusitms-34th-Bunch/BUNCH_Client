@@ -89,6 +89,13 @@ export const bundleSnapshotSchema = z.object({
   permissions: bundlePermissionsSchema,
   titleTooLong: z.boolean(),
   titleCrdtState: z.string().nullish(),
+  photoChangeResult: z
+    .object({
+      addedPhotoIds: z.array(z.number().int().positive()),
+      rejectedPhotoIds: z.array(z.number().int().positive()),
+      replayed: z.boolean(),
+    })
+    .nullish(),
   createdAt: z.string(),
   updatedAt: z.string(),
   publishedAt: z.string().nullish(),
@@ -107,6 +114,7 @@ export const bundleSnapshotSchema = z.object({
 /** 발행 차단 사유(BUNDLE_005 detail.reasons와 같은 값) */
 export type PublishBlockerReason =
   | 'TITLE_REQUIRED'
+  | 'TITLE_TOO_LONG'
   | 'VISIBILITY_REQUIRED'
   | 'PARTICIPANTS_REQUIRED'
   | 'PARTICIPANT_INACTIVE'
@@ -144,6 +152,19 @@ export type BundleDetail = {
   dateChips: readonly string[];
   publishBlockers: readonly string[];
   permissions: z.infer<typeof bundlePermissionsSchema>;
+  /** 병합된 제목이 40자를 넘음(자르지 않고 보존, 발행 불가 사유) */
+  titleTooLong: boolean;
+  /** 사진 구성 변경 응답에만 있음. 정원 초과로 못 담은 사진과 같은 키 재시도 여부 */
+  photoChangeResult: PhotoChangeResult | undefined;
+};
+
+export type PhotoChangeResult = {
+  /** 담긴 사진함 원본 ID */
+  addedPhotoIds: readonly string[];
+  /** 정원 초과로 담기지 못한 사진함 원본 ID(사진함에는 남음) */
+  rejectedPhotoIds: readonly string[];
+  /** 같은 멱등 키의 재시도라 처음 결과를 다시 돌려줌 */
+  replayed: boolean;
 };
 
 /** 서버 응답을 화면 계층이 쓰는 모양으로 변환(문자열 id, 사진 순서 정렬) */
@@ -183,4 +204,12 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   dateChips: snapshot.dateChips,
   publishBlockers: snapshot.publishBlockers,
   permissions: snapshot.permissions,
+  titleTooLong: snapshot.titleTooLong,
+  photoChangeResult: snapshot.photoChangeResult
+    ? {
+        addedPhotoIds: snapshot.photoChangeResult.addedPhotoIds.map(toDomainId),
+        rejectedPhotoIds: snapshot.photoChangeResult.rejectedPhotoIds.map(toDomainId),
+        replayed: snapshot.photoChangeResult.replayed,
+      }
+    : undefined,
 });
