@@ -8,6 +8,7 @@ import {
   type StompConnection,
 } from '@/shared/realtime/stompConnection';
 import { fetchWsToken } from '@/shared/realtime/wsToken';
+import { type PresenceData, presenceEventSchema } from '../lib/presence';
 import { useApplyBundleEvent, useRefetchBundleDetail } from '../queries/bundles';
 
 /** 번들 초안의 STOMP destination(v5 실시간 명세) */
@@ -30,6 +31,15 @@ export type BundleRealtime = {
   down: boolean;
   /** 기다리지 않고 지금 다시 연결 */
   retry: () => void;
+  /** presence 명령(VIEW·BEGIN·TYPE 등)을 보냄. 연결돼 있지 않으면 보내지 않고 false */
+  sendPresence: (_body: Record<string, unknown>) => boolean;
+};
+
+export type BundleRealtimeHandlers = {
+  /** 전체 PRESENCE를 받았을 때(topic·내 연결의 activity queue 모두). 세 배열을 통째로 교체하면 됨 */
+  onPresence?: (_data: PresenceData) => void;
+  /** 연결(재연결 포함)이 맺어지고 구독을 마친 직후. 놓친 presence를 다시 읽을 때 씀 */
+  onConnected?: () => void;
 };
 
 const DISABLED: BundleRealtime = {
@@ -37,6 +47,7 @@ const DISABLED: BundleRealtime = {
   status: 'idle',
   down: false,
   retry: () => undefined,
+  sendPresence: () => false,
 };
 
 /**
@@ -48,7 +59,13 @@ export function useBundleRealtime(
   bunchId: string | undefined,
   bundleId: string | undefined,
   active: boolean,
+  handlers?: BundleRealtimeHandlers,
 ): BundleRealtime {
+  // 연결 effect가 최신 처리 함수를 부르되 다시 연결하지는 않게 ref에 둠
+  const handlersRef = useRef(handlers);
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
   const refetchDetail = useRefetchBundleDetail(bunchId, bundleId);
   // 연결 effect가 최신 함수를 부르되 다시 연결하지는 않게 ref에 둠
   const refetchRef = useRef(refetchDetail);
@@ -88,6 +105,10 @@ export function useBundleRealtime(
   useEffect(() => {
     const url = realtimeUrl();
     if (!enabled || bunchId === undefined || bundleId === undefined || url === undefined) return;
+    const applyPresence = (body: unknown) => {
+      const parsed = presenceEventSchema.safeParse(body);
+      if (parsed.success) handlersRef.current?.onPresence?.(parsed.data.data);
+    };
     const connection = createStompConnection({
       url,
       getToken: async () => (await fetchWsToken()).token,
@@ -96,18 +117,25 @@ export function useBundleRealtime(
         // 구독을 맺은 직후 최신 상세로 맞춤: 상세를 받은 뒤 구독 전까지, 또는 끊긴 사이의 변경은 이벤트로 오지 않음(삭제·발행·권한 변화도 이 결과로 처리됨)
         // 재연결이면 다 받을 때까지 편집을 막음
         resync(reconnected);
+        handlersRef.current?.onConnected?.();
       },
     });
     connectionRef.current = connection;
     // 번들 topic은 저장 이벤트를 상세에 반영함(지금은 제목 TITLE만, 나머지 type은 이후 이슈). activity·leases는 이후 이슈가 처리
     const { topic, activity, leases } = bundleDestinations(bunchId, bundleId);
     const unsubscribers = [
-      connection.subscribe(topic, (body) => applyEventRef.current(body)),
-      connection.subscribe(activity, () => undefined),
+      connection.subscribe(topic, (body) => {
+        applyEventRef.current(body);
+        applyPresence(body);
+      }),
+      // 내가 보낸 명령에 대한 presence 응답(topic과 같은 내용)
+      connection.subscribe(activity, applyPresence),
       connection.subscribe(leases, () => undefined),
     ];
     connection.start();
     return () => {
+      // 화면을 나가거나 발행·삭제로 닫을 때는 연결을 닫기 전에 입장을 끝냄(서버의 끊김 유예를 기다리지 않음)
+      connection.publish(bundleDestinations(bunchId, bundleId).presence, { action: 'LEAVE' });
       unsubscribers.forEach((unsubscribe) => unsubscribe());
       connection.stop();
       connectionRef.current = undefined;
@@ -123,6 +151,23 @@ export function useBundleRealtime(
     connectionRef.current?.retryNow();
   }, [resync]);
 
+  const sendPresence = useCallback(
+    (body: Record<string, unknown>) => {
+      if (bunchId === undefined || bundleId === undefined) return false;
+      return (
+        connectionRef.current?.publish(bundleDestinations(bunchId, bundleId).presence, body) ??
+        false
+      );
+    },
+    [bunchId, bundleId],
+  );
+
   if (!enabled) return DISABLED;
-  return { enabled, status, down: status === 'reconnecting' || sync !== 'idle', retry };
+  return {
+    enabled,
+    status,
+    down: status === 'reconnecting' || sync !== 'idle',
+    retry,
+    sendPresence,
+  };
 }

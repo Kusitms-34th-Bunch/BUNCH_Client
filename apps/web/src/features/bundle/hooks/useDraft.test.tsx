@@ -115,12 +115,15 @@ describe('useDraft 상태', () => {
     await waitFor(() => expect(result.current.state.kind).toBe('missing'));
   });
 
-  it('서버 응답에는 편집 중 표시가 없다(실시간 presence 연결 전)', async () => {
+  it('실시간 연결 전에는 작업 중·입장 표시가 비어 있다', async () => {
     const id = await newDraft();
     const { result } = renderDraft(id);
 
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
-    expect(ready(result.current.state).draft.editing).toEqual({});
+    const { draft } = ready(result.current.state);
+    expect(draft.viewingMemberIds).toEqual([]);
+    expect(draft.editing.titleMemberIds ?? []).toEqual([]);
+    expect(draft.editing.photoMemberIds ?? []).toEqual([]);
   });
 });
 

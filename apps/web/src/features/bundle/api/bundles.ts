@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { createIdempotencyKey, IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
+import { presenceDataSchema } from '../lib/presence';
 import {
   type BundleDetail,
   bundleSnapshotSchema,
@@ -91,6 +92,14 @@ export const mergeBundleTitle = (input: {
     }),
     bundleTitleStateSchema,
     'merge title',
+  );
+
+/** 현재 presence(members·editing·typing) 복구용 조회. 입장 신호가 아니고 만료를 연장하지 않음 */
+export const getBundlePresence = (bunchId: string, bundleId: string, signal?: AbortSignal) =>
+  requestData(
+    bffApi.get(`${bundlePath(bunchId, bundleId)}/presence`, { signal: signal ?? null }),
+    presenceDataSchema,
+    'bundle presence',
   );
 
 /** 내 코멘트 저장(본인 코멘트만) */

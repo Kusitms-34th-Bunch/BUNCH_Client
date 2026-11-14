@@ -51,6 +51,12 @@ export function useDraftFixture(draftId: string | undefined): {
     setTitle: (title) => update((current) => ({ ...current, title })),
     setTitleComposing: () => undefined,
     saveNow: () => undefined,
+    presence: {
+      type: () => undefined,
+      blur: () => undefined,
+      begin: () => undefined,
+      end: () => undefined,
+    },
     setComment: (memberId, text) =>
       update((current) => ({
         ...current,

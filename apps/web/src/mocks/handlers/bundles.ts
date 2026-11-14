@@ -474,6 +474,13 @@ export const bundleHandlers = [
     return snapshotOf(scope.bundle.id);
   }),
 
+  // GET …/presence: 현재 members·editing·typing 복구용. 가짜 서버에는 실시간 연결이 없어 항상 비어 있음
+  http.get('/api/bunches/:bunchId/bundles/:id/presence', ({ params }) => {
+    const scope = findScope(params.bunchId, params.id);
+    if ('error' in scope) return scope.error;
+    return ok({ members: [], typing: [], editing: [] });
+  }),
+
   // PATCH …/title/crdt: 서버 문서에서 파생한 Automerge 전체 저장 문서를 서버 최신 문서와 병합(응답은 BundleSnapshot이 아니라 제목 상태)
   // 40자를 넘어도 자르지 않고 titleTooLong으로 알림, 같은 문서를 다시 보내면 아무것도 바꾸지 않음
   http.patch('/api/bunches/:bunchId/bundles/:id/title/crdt', async ({ params, request }) => {

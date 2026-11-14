@@ -56,7 +56,8 @@ export const toDraft = ({ detail, bunchMembers, locations }: ToDraftInput): Draf
     })),
     visibility:
       detail.visibility === null ? null : detail.visibility === 'PUBLIC' ? 'public' : 'members',
-    // 누가 어디를 편집 중인지는 실시간 presence로 받을 예정이라 서버 응답에는 없음
+    // 누가 어디를 작업 중인지와 들어와 있는지는 실시간 presence로 받아 화면 상태에서 채움(서버 응답에는 없음)
     editing: {},
+    viewingMemberIds: [],
   };
 };

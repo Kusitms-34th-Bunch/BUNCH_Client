@@ -30,7 +30,10 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 const creator: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
 const outsider: DraftViewer = { memberId: 'outsider', bunchRole: 'member' };
 
-const actions = { removePhoto: vi.fn() };
+const actions = {
+  removePhoto: vi.fn(),
+  presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
+};
 const onBack = vi.fn();
 const onPhotoChange = vi.fn();
 
@@ -244,16 +247,14 @@ describe('DraftPhotoViewer 삭제', () => {
     expect(actions.removePhoto).not.toHaveBeenCalled();
   });
 
-  it('다른 멤버가 편집 중인 사진은 삭제하지 못하고 안내한다', async () => {
-    const draft: Draft = {
-      ...draftFixture,
-      editing: { photoEditors: { 'draft-photo-2': ['gyeongjin'] } },
-    };
+  it('다른 멤버가 사진 작업 중이어도 삭제 확인 창을 열고, 열려 있는 동안 사진 작업을 알린다', async () => {
+    const draft: Draft = { ...draftFixture, editing: { photoMemberIds: ['gyeongjin'] } };
     renderViewer({ draft, initialPhotoId: 'draft-photo-2' });
 
     await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-    expect(actions.removePhoto).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    expect(toast).not.toHaveBeenCalled();
   });
 });

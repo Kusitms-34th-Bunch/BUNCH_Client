@@ -27,6 +27,7 @@ const draft: Draft = {
   comments: [],
   visibility: 'public',
   editing: {},
+  viewingMemberIds: [],
 };
 
 const viewer = (memberId: string, bunchRole: DraftViewer['bunchRole'] = 'member'): DraftViewer => ({

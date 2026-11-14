@@ -524,6 +524,19 @@ describe('가짜 서버 번들 발행', () => {
   });
 });
 
+describe('가짜 서버 번들 presence 조회', () => {
+  it('번치 멤버는 빈 presence를 받고 없는 번들은 RESOURCE_001이다', async () => {
+    const draft = await createDraft();
+
+    const found = await call('GET', `${base}/${draft.id}/presence`);
+    const missing = await call('GET', `${base}/999999/presence`);
+
+    expect(found.status).toBe(200);
+    expect(found.json.data).toEqual({ members: [], typing: [], editing: [] });
+    expect(missing.json.error?.code).toBe('RESOURCE_001');
+  });
+});
+
 describe('가짜 서버 번들 제목 CRDT 병합', () => {
   beforeAll(async () => {
     await ensureTitleCrdt();

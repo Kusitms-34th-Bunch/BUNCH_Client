@@ -48,7 +48,7 @@ export function BundleDraftPhotoAdd() {
     );
   }
 
-  const { draft, viewer } = state;
+  const { draft } = state;
   // 앱 안에서 온 게 아니면 작성 화면으로 이동
   const goBack = () =>
     fromApp && window.history.length > 1
@@ -57,7 +57,6 @@ export function BundleDraftPhotoAdd() {
   return (
     <DraftPhotoAdd
       draft={draft}
-      viewer={viewer}
       data={photoState.data}
       actions={actions}
       onBack={goBack}

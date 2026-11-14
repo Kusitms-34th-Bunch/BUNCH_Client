@@ -38,6 +38,8 @@ import {
   useMergeTitleMutation,
 } from '../queries/bundles';
 import { useBundleRealtime } from './useBundleRealtime';
+import { usePresence } from './usePresence';
+import { type PresenceCommands, usePresenceSender } from './usePresenceSender';
 import { useTitleCrdt } from './useTitleCrdt';
 
 // 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 날짜는 고르는 즉시 저장하고 공개 범위는 발행 요청으로만 보냄
@@ -96,6 +98,8 @@ export type DraftActions = {
   setTitle: (_title: string) => void;
   /** 한글 조합 같은 입력 중에는 원격 제목 변경을 입력이 끝난 뒤 반영하도록 알림 */
   setTitleComposing: (_composing: boolean) => void;
+  /** 입력·작업 중임을 다른 멤버에게 알림(제목·코멘트 입력, 날짜·사진 작업). 잠그지 않는 표시 */
+  presence: PresenceCommands;
   setComment: (_memberId: string, _text: string) => void;
   /** 제목·코멘트 입력란을 벗어날 때: 입력이 1초 멈추기를 기다리지 않고 저장하지 못한 입력을 바로 저장(기능 spec 4.3.14) */
   saveNow: () => void;
@@ -181,7 +185,12 @@ export function useDraft(draftId: string | undefined): {
   const removeParticipant = useRemoveParticipantMutation(bunchId, bundleId);
   const publishMutation = usePublishBundleMutation(bunchId, bundleId);
   // 초안이 열려 있는 동안 실시간으로 연결(발행·삭제되면 끊음). 끊긴 사이의 변경은 다시 연결될 때 최신 상세로 맞춤
-  const realtime = useBundleRealtime(bunchId, bundleId, detail?.status === 'DRAFT');
+  const presenceState = usePresence(bunchId, bundleId);
+  const realtime = useBundleRealtime(bunchId, bundleId, detail?.status === 'DRAFT', {
+    // 전체 PRESENCE로 교체하고, 연결(재연결)되면 놓친 현재 상태를 다시 읽음
+    onPresence: presenceState.apply,
+    onConnected: presenceState.refresh,
+  });
 
   const [pending, setPending] = useState<Pending>({});
   // 화면에서 위치를 바꾸기 전에는 서버에 저장된 위치를 보이고, 바꾼 뒤에는 화면 값(위치 저장은 장소 검색 이슈에서 연결)
@@ -415,6 +424,9 @@ export function useDraft(draftId: string | undefined): {
       ...base,
       // 제목은 로컬 CRDT 문서의 원문(입력 중 띄어쓰기·커서 위치 유지, 원격 변경 병합). 문서를 불러오기 전에는 서버 제목
       title: titleCrdt.text ?? base.title,
+      // 누가 어디를 작업 중인지와 들어와 있는지(실시간 presence, 잠금 없음)
+      editing: presenceState.presence.editing,
+      viewingMemberIds: presenceState.presence.viewingMemberIds,
       date: pending.date === undefined ? base.date : pending.date,
       visibility: visibilityChoice ?? base.visibility,
       photos,
@@ -437,8 +449,17 @@ export function useDraft(draftId: string | undefined): {
     pending,
     localPhotos,
     titleCrdt.text,
+    presenceState.presence,
     visibilityChoice,
   ]);
+
+  // presence 명령은 연결된 동안 이 초안을 보는 중일 때만 보냄(비참여 멤버는 VIEW만)
+  const presenceCommands = usePresenceSender({
+    send: realtime.sendPresence,
+    connected: realtime.status === 'connected',
+    viewing: detail?.status === 'DRAFT',
+    participant: draft?.members.some((member) => member.id === myId) ?? false,
+  });
 
   const busy =
     flushing ||
@@ -521,16 +542,20 @@ export function useDraft(draftId: string | undefined): {
       // 문서를 아직 불러오지 못했으면 입력을 받지 않음(서버 제목이 그대로 보임)
       if (!titleCrdt.edit(title)) return;
       change((current) => ({ ...current, title }));
+      // 실제로 입력한 제목 전체를 다른 멤버에게 보임(저장이 아니라 입력 표시)
+      presenceCommands.type('TITLE', title);
       schedule(SAVE_DELAY_MS);
     },
     setTitleComposing: titleCrdt.setComposing,
     saveNow: () => {
       if (!isEmpty(pendingRef.current)) schedule(0);
     },
+    presence: presenceCommands,
     setComment: (memberId, text) => {
       // 서버는 본인 코멘트만 저장할 수 있음
       if (memberId !== myIdRef.current) return;
       change((current) => ({ ...current, comment: text }));
+      presenceCommands.type('COMMENT', text);
       schedule(SAVE_DELAY_MS);
     },
     // 공개 범위는 고르기만 하고 저장하지 않음: 업로드(발행) 요청에 최종 선택을 함께 보냄(v5 명세)

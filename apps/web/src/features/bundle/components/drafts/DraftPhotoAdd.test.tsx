@@ -1,9 +1,9 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
-import type { Draft, DraftViewer } from '../../lib/types';
+import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { draftFixture } from '../../fixtures/draft.fixture';
@@ -19,8 +19,10 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
-const creator: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
-const actions = { replacePhotos: vi.fn() };
+const actions = {
+  replacePhotos: vi.fn(),
+  presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
+};
 const onBack = vi.fn();
 const onApplied = vi.fn();
 
@@ -28,7 +30,6 @@ const renderAdd = (draft: Draft = draftFixture) =>
   render(
     <DraftPhotoAdd
       draft={draft}
-      viewer={creator}
       data={photoBoxFixture}
       actions={actions}
       currentYear={2026}
@@ -147,12 +148,12 @@ describe('DraftPhotoAdd', () => {
     expect(applyButton()).toBeDisabled();
   });
 
-  it('다른 멤버가 편집 중인 사진은 풀 수 없다', async () => {
-    renderAdd({ ...draftFixture, editing: { photoEditors: { 'draft-photo-1': ['gyeongjin'] } } });
+  it('다른 멤버가 사진 작업 중이어도 사진을 풀 수 있고, 이 화면에 있는 동안 사진 작업을 알린다', async () => {
+    renderAdd({ ...draftFixture, editing: { photoMemberIds: ['gyeongjin'] } });
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
 
     await userEvent.click(sectionPhotos()[0]!);
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-    await waitFor(() => expect(applyButton()).toBeDisabled());
+    expect(toast).not.toHaveBeenCalled();
   });
 });

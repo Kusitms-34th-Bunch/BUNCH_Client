@@ -23,6 +23,7 @@ const complete: Draft = {
   ],
   visibility: 'public',
   editing: {},
+  viewingMemberIds: [],
 };
 
 const ready = { saveStatus: 'saved', offline: false } as const;
@@ -85,15 +86,15 @@ describe('hasOtherEditors', () => {
   });
 
   it('제목·위치·날짜·사진·코멘트 중 하나라도 다른 멤버가 편집 중이면 참이다', () => {
-    expect(hasOtherEditors({ title: 'other' }, 'me')).toBe(true);
-    expect(hasOtherEditors({ location: 'other' }, 'me')).toBe(true);
-    expect(hasOtherEditors({ date: 'other' }, 'me')).toBe(true);
+    expect(hasOtherEditors({ titleMemberIds: ['other'] }, 'me')).toBe(true);
+    expect(hasOtherEditors({ locationAddMemberIds: ['other'] }, 'me')).toBe(true);
+    expect(hasOtherEditors({ locationEditors: { l1: ['other'] } }, 'me')).toBe(true);
+    expect(hasOtherEditors({ dateMemberIds: ['other'] }, 'me')).toBe(true);
     expect(hasOtherEditors({ photoMemberIds: ['other'] }, 'me')).toBe(true);
-    expect(hasOtherEditors({ photoEditors: { p1: ['other'] } }, 'me')).toBe(true);
     expect(hasOtherEditors({ commentMemberIds: ['other'] }, 'me')).toBe(true);
   });
 
   it('나만 편집 중이면 거짓이다', () => {
-    expect(hasOtherEditors({ title: 'me', commentMemberIds: ['me'] }, 'me')).toBe(false);
+    expect(hasOtherEditors({ titleMemberIds: ['me'], commentMemberIds: ['me'] }, 'me')).toBe(false);
   });
 });

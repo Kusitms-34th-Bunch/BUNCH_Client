@@ -50,15 +50,13 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
 export const hasOtherEditors = (editing: DraftEditing, myId: string): boolean =>
   [...getEditingMemberIds(editing)].some((memberId) => memberId !== myId);
 
-/** 지금 무엇이든 편집 중인 멤버 id(제목·사진·위치·날짜·코멘트). 멤버 카드의 초록 점 기준 */
+/** 지금 무엇이든 작업 중인 멤버 id(제목·코멘트 입력, 사진·위치·날짜 작업) */
 export const getEditingMemberIds = (editing: DraftEditing): ReadonlySet<string> =>
-  new Set(
-    [
-      editing.title,
-      editing.location,
-      editing.date,
-      ...(editing.photoMemberIds ?? []),
-      ...Object.values(editing.photoEditors ?? {}).flat(),
-      ...(editing.commentMemberIds ?? []),
-    ].filter((memberId): memberId is string => memberId !== undefined),
-  );
+  new Set([
+    ...(editing.titleMemberIds ?? []),
+    ...(editing.commentMemberIds ?? []),
+    ...(editing.photoMemberIds ?? []),
+    ...(editing.locationAddMemberIds ?? []),
+    ...Object.values(editing.locationEditors ?? {}).flat(),
+    ...(editing.dateMemberIds ?? []),
+  ]);

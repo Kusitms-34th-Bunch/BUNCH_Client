@@ -1,6 +1,5 @@
 import { BundleTextInput } from '@app/design-system/web';
 import { useLayoutEffect, useRef } from 'react';
-import { EditingLottie } from '@/shared/components/loading/EditingLottie';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES, TITLE_MAX_LENGTH } from '../../constants/messages';
 import { countTitleGraphemes } from '../../lib/title';
@@ -12,7 +11,7 @@ type DraftTitleFieldProps = {
   viewer: DraftViewer;
   /** 내가 제목을 입력 중인지 */
   selfEditing?: boolean | undefined;
-  /** 제목 입력을 시작·끝냈을 때(다른 멤버가 편집 중이거나 고칠 수 없으면 호출하지 않음) */
+  /** 제목 입력을 시작·끝냈을 때(고칠 수 없으면 호출하지 않음) */
   onEditStart?: (() => void) | undefined;
   onEditEnd?: (() => void) | undefined;
   /** 제목을 고칠 수 있는지(참여 멤버만) */
@@ -24,11 +23,9 @@ type DraftTitleFieldProps = {
   loading?: boolean | undefined;
   /** 고칠 수 없는 사람이 입력란에 닿았을 때 */
   onDenied: () => void;
-  /** 다른 멤버가 편집 중인 입력란에 닿았을 때 */
-  onEditingBlocked: () => void;
 };
 
-/** 번들 제목 입력: 40자까지, 다른 멤버가 편집 중이면 그 멤버의 프로필과 「···」 표시 */
+/** 번들 제목 입력: 40자까지, 제목을 입력 중인 멤버의 프로필을 「번들 제목」 옆에 모두 보임(잠그지 않음, 기능 spec 4.3.13) */
 export function DraftTitleField({
   draft,
   viewer,
@@ -40,12 +37,13 @@ export function DraftTitleField({
   onComposing,
   loading = false,
   onDenied,
-  onEditingBlocked,
 }: DraftTitleFieldProps) {
-  const editor = draft.members.find((member) => member.id === draft.editing.title);
-  // 내가 입력 중이면 내 프로필(잠그지는 않음). 다른 멤버가 편집 중이면 그 멤버가 우선
-  const me = draft.members.find((member) => member.id === viewer.memberId);
-  const shown = editor ?? (selfEditing ? me : undefined);
+  // 제목을 입력 중인 멤버 모두(내가 입력 중이면 서버 표시가 오기 전에도 내 프로필을 보임)
+  const typingIds = new Set(draft.editing.titleMemberIds ?? []);
+  if (selfEditing) typingIds.add(viewer.memberId);
+  const typists = draft.members
+    .filter((member) => typingIds.has(member.id))
+    .map((member) => ({ name: member.name, src: member.avatarSrc }));
 
   // 다른 멤버의 변경이 합쳐져 값이 바뀌어도 내 커서·선택 영역이 글자를 따라가게 함(내가 친 변경은 브라우저가 맞춤)
   const sectionRef = useRef<HTMLElement>(null);
@@ -80,25 +78,19 @@ export function DraftTitleField({
         title={BUNDLE_MESSAGES.titleLabel}
         icon={false}
         required
-        members={shown ? [{ name: shown.name, src: shown.avatarSrc }] : undefined}
+        members={typists.length > 0 ? typists : undefined}
         membersLabel="편집 중인 멤버"
         value={draft.title}
         placeholder={BUNDLE_MESSAGES.titlePlaceholder}
-        readOnly={!editable || editor !== undefined || loading}
+        readOnly={!editable || loading}
         aria-busy={loading || undefined}
-        editing={editor !== undefined}
-        editingContent={<EditingLottie />}
-        // 낭독 영역은 항상 마운트해 두고 문구만 바꿔야 편집 시작이 상태 변화로 읽힘
-        editingLabel={editor ? BUNDLE_MESSAGES.editingLabel(editor.name) : ''}
         errorMessage={
           // 40자에 닿거나 합쳐진 결과가 넘으면 같은 오류(기능 spec 4.3.7)
           countTitleGraphemes(draft.title) >= TITLE_MAX_LENGTH
             ? BUNDLE_MESSAGES.titleMax
             : undefined
         }
-        onFocus={
-          !editable ? onDenied : editor ? onEditingBlocked : loading ? undefined : onEditStart
-        }
+        onFocus={!editable ? onDenied : loading ? undefined : onEditStart}
         onBlur={() => {
           // 조합이 끝나지 않은 채 포커스를 잃어도 원격 변경이 계속 미뤄지지 않게 함
           onComposing?.(false);

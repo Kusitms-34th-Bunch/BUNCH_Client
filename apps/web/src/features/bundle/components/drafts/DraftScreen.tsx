@@ -93,7 +93,6 @@ export function DraftScreen({
     if (offline && baseAccess.canEdit) return;
     notify(BUNDLE_MESSAGES.editOnlyParticipants);
   };
-  const blockEditing = () => notify(BUNDLE_MESSAGES.editingBlocked);
 
   // 안내 순서: 참여 멤버가 아님 → 권한 없음 → 필수 항목 부족(기능 spec 4.3.12), 막혔으면 안내하고 true
   const blockUpload = () => {
@@ -173,7 +172,6 @@ export function DraftScreen({
         draft={draft}
         viewer={viewer}
         access={access}
-        selfEditing={selfEditing !== undefined}
         onAddMember={onAddMember}
         onRemoveMember={actions.removeMember}
       />
@@ -185,21 +183,20 @@ export function DraftScreen({
         onEditEnd={() => {
           endSelfEditing('title');
           actions.saveNow();
+          actions.presence.blur('TITLE');
         }}
         editable={access.canEdit}
         onChange={actions.setTitle}
         onComposing={actions.setTitleComposing}
         loading={!titleReady}
         onDenied={denyEdit}
-        onEditingBlocked={blockEditing}
       />
       <DraftPhotos
         draft={draft}
-        viewer={viewer}
         access={access}
         onRemovePhoto={actions.removePhoto}
+        presence={actions.presence}
         onDenied={denyEdit}
-        onEditingBlocked={blockEditing}
         onOpenPhoto={onOpenPhoto}
         onOpenPick={onOpenPick}
         onImportFromBunchBox={onImportFromBunchBox}
@@ -213,6 +210,7 @@ export function DraftScreen({
         onWriteEnd={() => {
           endSelfEditing('comment');
           actions.saveNow();
+          actions.presence.blur('COMMENT');
         }}
         editable={access.canEdit}
         onChange={actions.setComment}
@@ -224,7 +222,6 @@ export function DraftScreen({
         editable={access.canEdit}
         currentYear={currentYear}
         onDenied={denyEdit}
-        onEditingBlocked={blockEditing}
       />
     </PageShell>
   );

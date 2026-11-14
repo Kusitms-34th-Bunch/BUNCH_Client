@@ -3,13 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RealtimeStatus, StompConnectionOptions } from '@/shared/realtime/stompConnection';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { bundleKeys } from '../queries/keys';
-import { useBundleRealtime } from './useBundleRealtime';
+import { type BundleRealtimeHandlers, useBundleRealtime } from './useBundleRealtime';
 
 const connections = vi.hoisted(() => [] as FakeConnection[]);
 
 type FakeConnection = {
   options: StompConnectionOptions;
   subscribed: string[];
+  handlers: Map<string, (_body: unknown) => void>;
+  published: { destination: string; body: unknown }[];
   started: boolean;
   stopped: boolean;
   retried: number;
@@ -20,6 +22,8 @@ vi.mock('@/shared/realtime/stompConnection', () => ({
     const fake: FakeConnection = {
       options,
       subscribed: [],
+      handlers: new Map(),
+      published: [],
       started: false,
       stopped: false,
       retried: 0,
@@ -35,11 +39,15 @@ vi.mock('@/shared/realtime/stompConnection', () => ({
       retryNow: () => {
         fake.retried += 1;
       },
-      subscribe: (destination: string) => {
+      subscribe: (destination: string, handler: (_body: unknown) => void) => {
         fake.subscribed.push(destination);
+        fake.handlers.set(destination, handler);
         return () => undefined;
       },
-      publish: () => false,
+      publish: (destination: string, body: unknown) => {
+        fake.published.push({ destination, body });
+        return true;
+      },
       status: () => 'idle',
     };
   },
@@ -48,10 +56,10 @@ vi.mock('@/shared/realtime/stompConnection', () => ({
 const fetchWsToken = vi.hoisted(() => vi.fn());
 vi.mock('@/shared/realtime/wsToken', () => ({ fetchWsToken }));
 
-const render = (active = true) => {
+const render = (active = true, handlers?: BundleRealtimeHandlers) => {
   const client = createTestQueryClient();
   const invalidate = vi.spyOn(client, 'refetchQueries');
-  const hook = renderHook(() => useBundleRealtime('1', '2', active), {
+  const hook = renderHook(() => useBundleRealtime('1', '2', active, handlers), {
     wrapper: createQueryWrapper(client),
   });
   return { ...hook, invalidate };
@@ -192,5 +200,66 @@ describe('useBundleRealtime', () => {
     await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
 
     expect(result.current.down).toBe(false);
+  });
+
+  describe('presence', () => {
+    const presence = {
+      type: 'PRESENCE',
+      revision: null,
+      requestId: null,
+      data: {
+        members: [{ memberId: 12, expiresAt: '2026-11-13T12:00:15Z' }],
+        typing: [],
+        editing: [],
+      },
+    };
+
+    it('topic과 내 연결의 activity queue로 온 PRESENCE를 모두 전달하고 다른 이벤트는 넘기지 않는다', () => {
+      const onPresence = vi.fn();
+      render(true, { onPresence });
+      const [topic, activity] = [
+        connections[0]!.handlers.get('/topic/bunches/1/bundles/2')!,
+        connections[0]!.handlers.get('/user/queue/bundle-activity')!,
+      ];
+
+      topic(presence);
+      activity(presence);
+      topic({ type: 'DATE', revision: 3, data: {} });
+      activity('garbage');
+
+      expect(onPresence).toHaveBeenCalledTimes(2);
+      expect(onPresence).toHaveBeenCalledWith(presence.data);
+    });
+
+    it('연결(재연결)되면 놓친 presence를 읽도록 알린다', () => {
+      const onConnected = vi.fn();
+      render(true, { onConnected });
+
+      act(() => connections[0]?.options.onConnected?.(false));
+      act(() => connections[0]?.options.onConnected?.(true));
+
+      expect(onConnected).toHaveBeenCalledTimes(2);
+    });
+
+    it('presence 명령은 번들의 presence destination으로 보낸다', () => {
+      const { result } = render();
+
+      act(() => void result.current.sendPresence({ action: 'VIEW' }));
+
+      expect(connections[0]?.published).toEqual([
+        { destination: '/app/bunches/1/bundles/2/presence', body: { action: 'VIEW' } },
+      ]);
+    });
+
+    it('화면을 나가면 연결을 닫기 전에 LEAVE를 보낸다', () => {
+      const { unmount } = render();
+
+      unmount();
+
+      expect(connections[0]?.published).toEqual([
+        { destination: '/app/bunches/1/bundles/2/presence', body: { action: 'LEAVE' } },
+      ]);
+      expect(connections[0]?.stopped).toBe(true);
+    });
   });
 });
