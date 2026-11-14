@@ -5,7 +5,7 @@ import { Button } from '@app/design-system';
 import { FeedBundleCard } from '@app/design-system/web';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
@@ -32,6 +32,10 @@ type FeedScreenProps = {
   /** 다른 기능의 화면 주소(route가 조합) */
   links: { notifications: string; bunchHome: string; otherBunch: (_bunchId: string) => string };
 };
+
+/** 커서로 이어 받을 수 없는 실패(문맥이 바뀜 FEED_001, 커서 오류 400). size는 고정이라 400은 커서 쪽 */
+const cannotContinue = (error: unknown) =>
+  isApiError(error) && (error.code === 'FEED_001' || error.status === 400);
 
 /** 목록의 index번째 카드 첫 버튼으로 초점(없으면 이어 받기 자리나 끝 안내) */
 const focusListItem = (
@@ -61,24 +65,23 @@ export function FeedScreen({ links }: FeedScreenProps) {
   const likes = useLikeToggle(viewer);
   const { openPlaces, openMembers } = useBundleSheets();
 
-  useScrollInHistory(topRef);
-  useHoldScrollOnLeave(topRef);
-
   // 구간·좋아요 상태는 지금 번치 명의로 정해짐(소속 번치가 없으면 공개 구간만, 기능명세서 6.1.7)
   const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
   const feed = useInfiniteQuery(feedQueryOptions(viewerId));
+
+  useScrollInHistory(topRef, feed.data !== undefined);
+  useHoldScrollOnLeave(topRef);
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = feed;
-  // 번치·팔로우가 그사이 바뀌면(FEED_001) 커서를 이어 쓸 수 없어 처음부터 다시 받음
+  // 번치·팔로우가 그사이 바뀌었거나(FEED_001) 커서가 맞지 않으면(400) 이어 받을 수 없어 처음부터 다시 받음
   // 저절로는 연달아 한 번만 하고, 또 실패하면 「다시 시도」로 넘김(같은 실패가 반복돼도 멈추게)
-  // 다음 쪽을 받아야 다시 쓸 수 있음. 첫 쪽 성공으로 풀면 재시작 → 첫 쪽 → FEED_001이 되풀이됨
+  // 다음 쪽을 받아야 다시 쓸 수 있음. 첫 쪽 성공으로 풀면 재시작 → 첫 쪽 → 실패가 되풀이됨
   const restart = useRestartFeed(viewerId);
   const [restartUsed, setRestartUsed] = useState(false);
-  const staleCursor =
-    feed.isFetchNextPageError && isApiError(feed.error) && feed.error.code === 'FEED_001';
+  const staleCursor = feed.isFetchNextPageError && cannotContinue(feed.error);
   const restarting = staleCursor && !restartUsed;
   const loadMore = useCallback(async () => {
     const result = await fetchNextPage();
-    const stale = isApiError(result.error) && result.error.code === 'FEED_001';
+    const stale = cannotContinue(result.error);
     if (!result.isFetchNextPageError) setRestartUsed(false);
     else if (stale && !restartUsed) {
       setRestartUsed(true);
@@ -88,20 +91,33 @@ export function FeedScreen({ links }: FeedScreenProps) {
 
   // 다시 시도 중에도 버튼을 남겨 초점을 잃지 않게 함(누르는 동안은 막음)
   const [retrying, setRetrying] = useState(false);
-  const retry = (run: () => Promise<unknown>) => {
+  // 끝난 뒤 초점을 옮길 카드 순번(이어 받기는 누르기 전 카드 수, 처음부터 다시 받기는 0)
+  const focusAfterRetry = useRef<number | null>(null);
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const retry = (run: () => Promise<unknown>, fromStart = false) => {
     if (retrying) return;
-    const before = topRef.current?.querySelectorAll(':scope > ul > li').length ?? 0;
+    focusAfterRetry.current = fromStart
+      ? 0
+      : (topRef.current?.querySelectorAll(':scope > ul > li').length ?? 0);
     setRetrying(true);
-    void run().finally(() => {
-      setRetrying(false);
-      // 성공해 버튼이 사라지면 초점을 새로 받은 첫 카드로
-      requestAnimationFrame(() => {
-        if (document.activeElement === document.body) {
-          focusListItem(topRef.current, before, [moreRef.current, endRef.current]);
-        }
-      });
-    });
+    void run().finally(() => setRetrying(false));
   };
+  // 성공해 버튼이 사라진 렌더 뒤에 초점을 새로 받은 첫 카드로(실패면 버튼에 남아 그대로)
+  // 내 정보 뒤 이어지는 피드 요청은 그 렌더에서 이미 받는 중(isFetching)으로 잡혀 끝날 때까지 기다림
+  useLayoutEffect(() => {
+    const index = focusAfterRetry.current;
+    if (index === null || retrying || feed.isFetching) return;
+    focusAfterRetry.current = null;
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && focused.isConnected) return;
+    // 카드가 없으면 다시 나타난 「다시 시도」, 이어 받기 자리, 끝 안내, 화면 제목 순
+    focusListItem(topRef.current, index, [
+      retryButtonRef.current,
+      moreRef.current,
+      endRef.current,
+      titleRef.current,
+    ]);
+  });
   // 내 정보를 못 받으면 명의를 몰라 피드도 받을 수 없으므로 같은 실패로 보임
   const firstFailed =
     feed.data === undefined && (feed.isError || (viewer === undefined && viewerFailed));
@@ -112,6 +128,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
   const [hiddenAds, setHiddenAds] = useState(readHiddenAds);
   const endRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const shown = (entry: FeedEntry) =>
     entry.kind === 'bundle'
       ? !isDeleted(entry.bundle.id) && !becameMemberOnly(entry.bundle.id, false)
@@ -120,12 +137,15 @@ export function FeedScreen({ links }: FeedScreenProps) {
         : true;
   const entries = feed.data ? toFeedEntries(feed.data.pages).filter(shown) : [];
   // 카드의 구간으로 두 목록을 나눔. 구간 끝 안내가 아직 안 왔어도 팔로우 카드가 다른 목록으로 옮겨 다시 그려지지 않게
+  // 안내 전에는 마지막 팔로우 카드 뒤의 광고도 팔로우 목록에 둠(다음 쪽에 팔로우 카드가 더 오면 부모 목록이 바뀌어 광고 상태가 사라짐)
   const doneAt = entries.findIndex((entry) => entry.kind === 'followingDone');
-  const splitAt =
-    doneAt >= 0
-      ? doneAt
-      : entries.findLastIndex((entry) => entry.kind === 'bundle' && entry.segment === 'FOLLOWING') +
-        1;
+  const lastFollowing = entries.findLastIndex(
+    (entry) => entry.kind === 'bundle' && entry.segment === 'FOLLOWING',
+  );
+  let splitAt = doneAt >= 0 ? doneAt : lastFollowing + 1;
+  if (doneAt < 0 && lastFollowing >= 0) {
+    while (entries[splitAt]?.kind === 'ad') splitAt += 1;
+  }
   const following = entries.slice(0, splitAt);
   const rest = entries.slice(splitAt).filter((entry) => entry.kind !== 'followingDone');
   const handleAdGone = useCallback((adId: string, hadFocus: boolean) => {
@@ -206,7 +226,9 @@ export function FeedScreen({ links }: FeedScreenProps) {
       }
     >
       <div ref={topRef} className="pt-padding-p8">
-        <h1 className="sr-only">{text.title}</h1>
+        <h1 ref={titleRef} tabIndex={-1} className="sr-only">
+          {text.title}
+        </h1>
         {feed.data === undefined && (firstFailed || retrying) ? (
           <div className="gap-s8 px-s8 py-s16 flex flex-col items-center">
             {firstFailed ? (
@@ -218,6 +240,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
               </p>
             ) : null}
             <Button
+              ref={retryButtonRef}
               variant="tertiary"
               size="md"
               aria-disabled={retrying}
@@ -256,10 +279,11 @@ export function FeedScreen({ links }: FeedScreenProps) {
                   </p>
                 ) : null}
                 <Button
+                  ref={retryButtonRef}
                   variant="tertiary"
                   size="md"
                   aria-disabled={retrying}
-                  onClick={() => retry(staleCursor ? restart : loadMore)}
+                  onClick={() => (staleCursor ? retry(restart, true) : retry(loadMore))}
                 >
                   {text.retry}
                 </Button>

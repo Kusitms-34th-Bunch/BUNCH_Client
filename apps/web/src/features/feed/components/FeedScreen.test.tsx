@@ -395,57 +395,48 @@ describe('FeedScreen', () => {
     expect(screen.queryByRole('button', { name: '다시 시도' })).toBeNull();
   });
 
-  it('다시 받은 뒤에도 FEED_001이면 저절로 다시 받지 않고 안내와 다시 시도를 보인다', async () => {
-    const cursors: (string | null)[] = [];
-    server.use(
-      http.get('/api/feed', ({ request }) => {
-        const cursor = new URL(request.url).searchParams.get('cursor');
-        cursors.push(cursor);
-        return cursor === 'stale' ? fail(409, 'FEED_001') : ok(page(FOLLOWING_ITEMS, 'stale'));
-      }),
-    );
-    renderFeed(OWN);
+  it.each([
+    ['FEED_001', 409, 'FEED_001'],
+    ['커서 오류', 400, 'COMMON_001'],
+  ])(
+    '다음 쪽이 %s면 처음부터 한 번 다시 받고, 또 실패하면 안내와 다시 시도를 보인다',
+    async (_label, status, code) => {
+      const user = userEvent.setup();
+      const cursors: (string | null)[] = [];
+      let recovered = false;
+      server.use(
+        http.get('/api/feed', ({ request }) => {
+          const cursor = new URL(request.url).searchParams.get('cursor');
+          cursors.push(cursor);
+          if (recovered) return ok(page(PUBLIC_ITEMS));
+          return cursor === 'stale' ? fail(status, code) : ok(page(FOLLOWING_ITEMS, 'stale'));
+        }),
+      );
+      renderFeed(OWN);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('피드를 더 불러오지 못했어요');
-    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
-    expect(cursors).toEqual([null, 'stale', null, 'stale']);
-  });
+      expect(await screen.findByRole('alert')).toHaveTextContent('피드를 더 불러오지 못했어요');
+      expect(cursors).toEqual([null, 'stale', null, 'stale']);
 
-  it('다음 쪽이 400이면 처음부터 다시 받지 않고, 다시 시도하는 동안 버튼과 초점을 유지한다', async () => {
-    const user = userEvent.setup();
-    const cursors: (string | null)[] = [];
-    let pendingMore = false;
-    server.use(
-      http.get('/api/feed', ({ request }) => {
-        const cursor = new URL(request.url).searchParams.get('cursor');
-        cursors.push(cursor);
-        if (cursor === null) return ok(page(FOLLOWING_ITEMS, 'bad'));
-        return pendingMore ? new Promise<never>(() => {}) : fail(400, 'COMMON_001');
-      }),
-    );
-    renderFeed(OWN);
+      // 다시 시도는 처음부터 받고, 초점은 새 목록의 첫 카드로
+      recovered = true;
+      await user.click(screen.getByRole('button', { name: '다시 시도' }));
+      await waitFor(() => expect(cards()).toHaveLength(1));
+      await waitFor(() => expect(cards()[0]!.contains(document.activeElement)).toBe(true));
+    },
+  );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('피드를 더 불러오지 못했어요');
-    expect(cursors).toEqual([null, 'bad']);
-    expect(cards()).toHaveLength(2);
-
-    pendingMore = true;
-    const retry = screen.getByRole('button', { name: '다시 시도' });
-    await user.click(retry);
-    expect(retry).toBeInTheDocument();
-    expect(retry).toHaveAttribute('aria-disabled', 'true');
-    expect(retry).toHaveFocus();
-    expect(screen.getByText('피드를 더 불러오는 중이에요')).toHaveAttribute('role', 'status');
-  });
-
-  it('다음 쪽이 그 밖의 이유로 실패하면 받은 카드는 두고 다시 시도로 이어 받는다', async () => {
+  it('다음 쪽이 그 밖의 이유로 실패하면 받은 카드는 두고, 다시 시도하는 동안 버튼과 초점을 유지한다', async () => {
     const user = userEvent.setup();
     let failMore = true;
+    let release = () => {};
     server.use(
       http.get('/api/feed', ({ request }) => {
         const cursor = new URL(request.url).searchParams.get('cursor');
         if (cursor === null) return ok(page(FOLLOWING_ITEMS, 'next'));
-        return failMore ? fail(500, 'X') : ok(page(PUBLIC_ITEMS));
+        if (failMore) return fail(500, 'X');
+        return new Promise((resolve) => {
+          release = () => resolve(ok(page(PUBLIC_ITEMS)));
+        });
       }),
     );
     renderFeed(OWN);
@@ -455,6 +446,10 @@ describe('FeedScreen', () => {
     expect(screen.queryByText('모든 피드를 확인했어요')).toBeNull();
     failMore = false;
     await user.click(retry);
+    expect(retry).toHaveAttribute('aria-disabled', 'true');
+    expect(retry).toHaveFocus();
+    expect(screen.getByText('피드를 더 불러오는 중이에요')).toHaveAttribute('role', 'status');
+    release();
 
     await waitFor(() => expect(cards()).toHaveLength(3));
     // 버튼이 사라지면 초점은 새로 받은 첫 카드로
@@ -495,7 +490,10 @@ describe('FeedScreen', () => {
     expect(main.scrollTop).toBe(0);
     expect(content.style.transform).toBe('translateY(-300px)');
 
+    // 캐시 없이 돌아와도 목록이 그려진 뒤 복원
     const back = renderFeed(OWN);
+    expect(back.container.querySelector('main')!.scrollTop).toBe(0);
+    await cardsLoaded();
     expect(back.container.querySelector('main')!.scrollTop).toBe(300);
     back.unmount();
 
@@ -504,15 +502,36 @@ describe('FeedScreen', () => {
     expect(renderFeed(OWN).container.querySelector('main')!.scrollTop).toBe(0);
   });
 
-  it('Strict Mode에서 돌아와도 복원한 스크롤에 붙잡기 값이 겹치지 않는다', () => {
+  it('Strict Mode에서 돌아와도 복원한 스크롤에 붙잡기 값이 겹치지 않는다', async () => {
     configure({ reactStrictMode: true });
     try {
       window.history.replaceState({ feedScroll: 300 }, '');
       const { container } = renderFeed(OWN);
       const main = container.querySelector('main')!;
+      await cardsLoaded();
 
       expect(main.scrollTop).toBe(300);
       expect((main.firstElementChild as HTMLElement).style.transform).toBe('');
+    } finally {
+      configure({ reactStrictMode: false });
+    }
+  });
+
+  it('Strict Mode에서 캐시가 있는 채로 돌아와도 스크롤을 복원한다', () => {
+    configure({ reactStrictMode: true });
+    try {
+      window.history.replaceState({ feedScroll: 300 }, '');
+      const client = createTestQueryClient();
+      client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: OWN });
+      client.setQueryData(['feed', OWN.id], {
+        pages: [page([...FOLLOWING_ITEMS, ...PUBLIC_ITEMS])],
+        pageParams: [undefined],
+      });
+      const { container } = render(<FeedScreen links={links} />, {
+        wrapper: createQueryWrapper(client),
+      });
+
+      expect(container.querySelector('main')!.scrollTop).toBe(300);
     } finally {
       configure({ reactStrictMode: false });
     }
@@ -571,14 +590,64 @@ describe('FeedScreen', () => {
 
   it('내 정보를 받지 못하면 피드 대신 안내와 다시 시도를 보이고, 다시 시도로 피드까지 받는다', async () => {
     const user = userEvent.setup();
-    server.use(http.get('/api/members/me', () => fail(500, 'COMMON_500'), { once: true }));
+    let release: (() => void) | undefined;
+    server.use(
+      http.get('/api/members/me', () => fail(500, 'COMMON_500'), { once: true }),
+      http.get(
+        '/api/feed',
+        () =>
+          new Promise((resolve) => {
+            release = () => resolve(ok(page(PUBLIC_ITEMS)));
+          }),
+      ),
+    );
     render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '일시적인 오류가 발생했어요. 다시 시도해 주세요',
     );
     await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    // 내 정보 뒤 피드가 늦게 와도 카드가 그려진 뒤 첫 카드로 초점
+    await waitFor(() => expect(release).toBeDefined());
+    release!();
     await cardsLoaded();
+    await waitFor(() => expect(cards()[0]!.contains(document.activeElement)).toBe(true));
+  });
+
+  it('내 정보를 다시 받은 뒤 피드가 실패하면 초점은 다시 나타난 다시 시도로 간다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/members/me', () => fail(500, 'COMMON_500'), { once: true }),
+      http.get('/api/feed', () => fail(500, 'X')),
+    );
+    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+
+    await user.click(await screen.findByRole('button', { name: '다시 시도' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: '다시 시도' })).toHaveFocus());
+    expect(screen.getByRole('alert')).toHaveTextContent('일시적인 오류가 발생했어요');
+  });
+
+  it('팔로우 구간이 여러 쪽에 걸쳐도 구간 끝의 광고는 같은 목록에 남는다', async () => {
+    const [firstFollowing, secondFollowing, caughtUp] = FOLLOWING_ITEMS;
+    const [publicBundle] = PUBLIC_ITEMS;
+    let release = () => {};
+    server.use(
+      http.get('/api/feed', ({ request }) =>
+        new URL(request.url).searchParams.get('cursor') === null
+          ? ok(page([firstFollowing, AD], 'more'))
+          : new Promise((resolve) => {
+              release = () => resolve(ok(page([secondFollowing, caughtUp, publicBundle])));
+            }),
+      ),
+    );
+    renderFeed(OWN);
+    const ad = await screen.findByRole('article', { name: '광고 플로디스튜디오' });
+
+    release();
+    await waitFor(() => expect(cards()).toHaveLength(3));
+    // 다시 마운트되지 않고 같은 요소
+    expect(screen.getByRole('article', { name: '광고 플로디스튜디오' })).toBe(ad);
   });
 
   it('내 정보를 받는 중에는 번치 이미지 자리만 보이고 피드는 기다리며, 실패하면 알림만 보인다', async () => {
