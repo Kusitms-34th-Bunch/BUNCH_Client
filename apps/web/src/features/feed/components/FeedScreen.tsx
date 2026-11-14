@@ -5,7 +5,8 @@ import { Button } from '@app/design-system';
 import { FeedBundleCard } from '@app/design-system/web';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useIntersectionObserver } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
@@ -77,17 +78,23 @@ export function FeedScreen({ links }: FeedScreenProps) {
   // 다음 쪽을 받아야 다시 쓸 수 있음. 첫 쪽 성공으로 풀면 재시작 → 첫 쪽 → 실패가 되풀이됨
   const restart = useRestartFeed(viewerId);
   const [restartUsed, setRestartUsed] = useState(false);
+  // loadMore는 감지 요소가 붙는 순간(commit 중) 지난 렌더의 함수로 불릴 수 있어 가드는 ref로 읽음
+  const restartUsedRef = useRef(false);
+  const markRestartUsed = useCallback((used: boolean) => {
+    restartUsedRef.current = used;
+    setRestartUsed(used);
+  }, []);
   const staleCursor = feed.isFetchNextPageError && cannotContinue(feed.error);
   const restarting = staleCursor && !restartUsed;
   const loadMore = useCallback(async () => {
     const result = await fetchNextPage();
     const stale = cannotContinue(result.error);
-    if (!result.isFetchNextPageError) setRestartUsed(false);
-    else if (stale && !restartUsed) {
-      setRestartUsed(true);
+    if (!result.isFetchNextPageError) markRestartUsed(false);
+    else if (stale && !restartUsedRef.current) {
+      markRestartUsed(true);
       await restart();
     }
-  }, [fetchNextPage, restart, restartUsed]);
+  }, [fetchNextPage, restart, markRestartUsed]);
 
   // 다시 시도 중에도 버튼을 남겨 초점을 잃지 않게 함(누르는 동안은 막음)
   const [retrying, setRetrying] = useState(false);
@@ -162,16 +169,11 @@ export function FeedScreen({ links }: FeedScreenProps) {
   }, []);
 
   // 목록 끝이 보이면 다음 쪽(실패해 멈춘 동안은 「다시 시도」로만)
+  // 감지 요소는 받을 수 있을 때만 그려, 새로 붙는 순간 이미 보이면 바로 받음
   const canLoadMore = hasNextPage && !isFetchingNextPage && !feed.isFetchNextPageError;
-  useEffect(() => {
-    const element = moreRef.current;
-    if (!canLoadMore || !element) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting) void loadMore();
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [canLoadMore, loadMore]);
+  const observeMore = useIntersectionObserver<HTMLSpanElement>((entry) => {
+    if (entry.isIntersecting) void loadMore();
+  }, {});
 
   const renderEntry = (entry: FeedEntry) =>
     entry.kind === 'bundle' ? (
@@ -266,8 +268,12 @@ export function FeedScreen({ links }: FeedScreenProps) {
             tabIndex={-1}
             role="group"
             aria-label={text.moreArea}
-            className="gap-s8 py-s8 flex flex-col items-center outline-none"
+            className="gap-s8 py-s8 relative flex flex-col items-center outline-none"
           >
+            {/* absolute라 flex 간격에 끼지 않음 */}
+            {canLoadMore ? (
+              <span ref={observeMore} aria-hidden="true" className="absolute top-0 size-px" />
+            ) : null}
             {(feed.isFetchNextPageError && !restarting) || retrying ? (
               <>
                 {feed.isFetchNextPageError ? (

@@ -12,7 +12,6 @@ afterEach(() => {
 
 describe('BundlePhoto', () => {
   it('pick 얼굴은 보일 때만 떠다니고, 사라지면 관찰을 끝낸다', () => {
-    const disconnect = vi.fn();
     let notify: (_visible: boolean) => void = () => undefined;
     let observed: Element | undefined;
     vi.stubGlobal(
@@ -24,7 +23,12 @@ describe('BundlePhoto', () => {
         observe(element: Element) {
           observed = element;
         }
-        disconnect = disconnect;
+        unobserve(element: Element) {
+          if (observed === element) observed = undefined;
+        }
+        disconnect() {
+          observed = undefined;
+        }
       },
     );
     const { unmount } = render(
@@ -43,7 +47,7 @@ describe('BundlePhoto', () => {
     expect(faces?.classList.contains(float)).toBe(false);
 
     unmount();
-    expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(observed).toBeUndefined();
   });
 
   it('사진마다 여는 버튼이 있고 누른 사진 순번을 알린다', async () => {

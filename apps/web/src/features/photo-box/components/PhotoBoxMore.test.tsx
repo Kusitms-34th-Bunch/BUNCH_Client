@@ -5,20 +5,26 @@ import { PhotoBoxMore } from './PhotoBoxMore';
 type ObserverCallback = (_entries: Pick<IntersectionObserverEntry, 'isIntersecting'>[]) => void;
 
 let callbacks: ObserverCallback[] = [];
-let disconnects = 0;
+// 지금 관찰 중인 요소(react-simplikit은 관찰 객체를 하나 두고 요소를 붙이고 뗌)
+const observed = new Set<Element>();
 
 beforeEach(() => {
   callbacks = [];
-  disconnects = 0;
+  observed.clear();
   vi.stubGlobal(
     'IntersectionObserver',
     class {
       constructor(callback: ObserverCallback) {
         callbacks.push(callback);
       }
-      observe() {}
+      observe(element: Element) {
+        observed.add(element);
+      }
+      unobserve(element: Element) {
+        observed.delete(element);
+      }
       disconnect() {
-        disconnects += 1;
+        observed.clear();
       }
     },
   );
@@ -60,12 +66,13 @@ describe('PhotoBoxMore 스크롤 재시도', () => {
 
   it('실패 상태가 아니면 관찰하지 않는다', () => {
     render(<PhotoBoxMore state="loading" onRetry={vi.fn()} />);
-    expect(callbacks).toHaveLength(0);
+    expect(observed.size).toBe(0);
   });
 
   it('실패에서 벗어나면 관찰을 끝낸다', () => {
     const view = render(<PhotoBoxMore state="error" onRetry={vi.fn()} />);
+    expect(observed.size).toBe(1);
     view.rerender(<PhotoBoxMore state="loading" onRetry={vi.fn()} />);
-    expect(disconnects).toBe(1);
+    expect(observed.size).toBe(0);
   });
 });

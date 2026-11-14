@@ -1,6 +1,7 @@
 import { isApiError } from '@app/api-core';
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useIntersectionObserver } from 'react-simplikit';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
 import type { FeedComment } from '../lib/types';
@@ -68,8 +69,11 @@ export function useBundleComments(
   // 다음 쪽 실패는 다시 받는 동안에도 남겨 「다시 시도」 버튼이 사라지지 않게 함(누른 버튼의 초점 유지)
   // 연달아 실패한 횟수(실패할 때마다 안내를 새로 그려 다시 읽히게, 성공·처음부터 다시 받기면 0)
   const [moreFailures, setMoreFailures] = useState(0);
+  // 목록 끝이 보이면 바로 받아도 되는지. 실패한 뒤에는 목록 끝이 화면 밖으로 나갔다 다시 보일 때만(보이는 채로 되풀이하지 않게)
+  const armed = useRef(true);
   const loadMore = useCallback(async () => {
     const result = await fetchNextPage();
+    armed.current = !result.isFetchNextPageError;
     setMoreFailures((count) => (result.isFetchNextPageError ? count + 1 : 0));
     if (!result.isFetchNextPageError) {
       restarted.current = false;
@@ -77,33 +81,26 @@ export function useBundleComments(
     }
     if (isApiError(result.error) && result.error.status === 400 && !restarted.current) {
       restarted.current = true;
+      armed.current = true;
       setMoreFailures(0);
       void restart();
       onStaleCursor();
     }
   }, [fetchNextPage, restart, onStaleCursor]);
 
-  // 목록 끝 감지 요소는 상세 본문이 그려진 뒤에 생겨 callback ref로 받음(목록이 상세보다 먼저 와도 관찰이 붙게)
-  const [moreElement, moreRef] = useState<HTMLDivElement | null>(null);
+  // 감지 요소는 받을 수 있을 때만 그려(`canLoadMore`), 새로 붙는 순간 이미 보이면 바로 받음
+  // callback ref라 상세 본문이 늦게 그려져도(목록이 먼저 와도) 붙는 순간부터 관찰
   const canLoadMore = list.hasNextPage && !list.isFetchingNextPage;
   const moreFailed = moreFailures > 0;
-  useEffect(() => {
-    const element = moreElement;
-    if (!canLoadMore || !element || typeof IntersectionObserver === 'undefined') return;
-    // 실패한 뒤에는 목록 끝이 화면 밖으로 나갔다 다시 보일 때만 다시 시도(보이는 채로 되풀이하지 않게)
-    let armed = !moreFailed;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting) {
-        armed = true;
-        return;
-      }
-      if (!armed) return;
-      armed = false;
-      void loadMore();
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [moreElement, canLoadMore, moreFailed, loadMore]);
+  const moreRef = useIntersectionObserver<HTMLDivElement>((entry) => {
+    if (!entry.isIntersecting) {
+      armed.current = true;
+      return;
+    }
+    if (!armed.current) return;
+    armed.current = false;
+    void loadMore();
+  }, {});
 
   const createMutation = useCreateCommentMutation(target);
   const deleteMutation = useDeleteCommentMutation(target);
@@ -170,11 +167,14 @@ export function useBundleComments(
     moreFailed,
     moreFailures,
     loadMore: () => void loadMore(),
+    /** 다음 쪽을 받을 수 있음(이때만 `moreRef` 감지 요소를 그림) */
+    canLoadMore,
     moreRef,
     create,
     remove,
     /** 그사이 바뀐 목록을 처음부터 다시 받음(답글 대상이 지워짐, 이미 지운 댓글) */
     restart: () => {
+      armed.current = true;
       setMoreFailures(0);
       void restart();
     },
