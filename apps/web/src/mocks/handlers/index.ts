@@ -15,6 +15,7 @@ import { notificationHandlers } from './notifications';
 import { photoHandlers } from './photos';
 import { pushDeviceHandlers } from './pushDevices';
 import { pushPreferenceHandlers } from './pushPreferences';
+import { reportHandlers } from './reports';
 import { sessionHandlers } from './session';
 import { termHandlers } from './terms';
 
@@ -34,6 +35,7 @@ export const handlers = [
   ...feedHandlers,
   ...likeHandlers,
   ...commentHandlers,
+  ...reportHandlers,
   ...blockHandlers,
   ...notificationHandlers,
   ...bundleHandlers,

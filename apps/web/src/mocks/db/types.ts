@@ -147,11 +147,13 @@ export type MockNotification = {
   target: { kind: string; bunchId: number; bundleId?: number; targetBunchId?: number };
 };
 
-/** 번치 신고(접수만, 처리 결과는 화면에 없음) */
+/** 번치·번들·댓글 신고(접수만, 처리 결과는 화면에 없음). 번들·댓글이면 그 번들의 번치가 대상 번치 */
 export type MockReport = {
   id: number;
   reporterBunchId: number;
   targetBunchId: number;
+  bundleId?: number;
+  commentId?: number;
   reason: 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'PERSONAL_INFORMATION' | 'OTHER';
   detail: string | null;
 };
