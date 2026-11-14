@@ -154,7 +154,8 @@ export const createStompConnection = ({
         // 세션이 끝났으면(401·403) 다시 시도해도 같으므로 멈춤. 「재시도」로는 다시 해 볼 수 있음
         const status = isApiError(error) ? error.status : undefined;
         if (status === 401 || status === 403) {
-          setStatus('closed');
+          // 한 번 연결됐던 세션이면 끊김으로 남겨 편집을 계속 막고, 처음 연결 전이면 닫기만 함
+          setStatus(everConnected ? 'reconnecting' : 'closed');
           return;
         }
         // 네트워크 등 일시 오류: 같은 규칙으로 다시 시도

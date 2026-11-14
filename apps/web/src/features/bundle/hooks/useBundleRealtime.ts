@@ -109,10 +109,11 @@ export function useBundleRealtime(
     };
   }, [enabled, bunchId, bundleId, resync]);
 
-  // 연결은 돼 있는데 최신 상세를 받지 못했으면 상세를 다시 받고, 끊겨 있으면 기다리지 않고 다시 연결
+  // 최신 상세를 받지 못했으면 상세를 다시 받고, 끊겨 있으면 기다리지 않고 다시 연결
   const retry = useCallback(() => {
     if (syncRef.current === 'failed') resync(true);
-    else connectionRef.current?.retryNow();
+    // 이미 연결돼 있으면 아무것도 하지 않음
+    connectionRef.current?.retryNow();
   }, [resync]);
 
   if (!enabled) return DISABLED;

@@ -12,8 +12,16 @@ export const realtimeUrl = (): string | undefined => {
   try {
     const url = new URL(raw);
     if (url.search !== '' || url.hash !== '') return undefined;
+    // 주소에 계정 정보를 넣지 않음
+    if (url.username !== '' || url.password !== '') return undefined;
     if (url.protocol === 'wss:') return raw;
-    if (url.protocol === 'ws:' && LOCAL_HOSTS.has(url.hostname)) return raw;
+    // 운영 빌드에서는 평문 연결을 쓰지 않음
+    if (
+      url.protocol === 'ws:' &&
+      LOCAL_HOSTS.has(url.hostname) &&
+      process.env.NODE_ENV !== 'production'
+    )
+      return raw;
     return undefined;
   } catch {
     return undefined;

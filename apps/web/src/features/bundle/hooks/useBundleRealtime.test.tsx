@@ -179,8 +179,8 @@ describe('useBundleRealtime', () => {
 
     await waitFor(() => expect(result.current.down).toBe(false));
     expect(invalidate).toHaveBeenCalledTimes(2);
-    // 연결은 이미 돼 있으므로 다시 연결하지는 않음
-    expect(connections[0]?.retried).toBe(0);
+    // 연결을 맺는 쪽에는 항상 알리고(이미 연결돼 있으면 연결 쪽이 아무것도 하지 않음) 상세도 다시 받음
+    expect(connections[0]?.retried).toBe(1);
   });
 
   it('처음 연결 뒤 상세를 받지 못해도 끊김으로 보지 않는다', async () => {

@@ -379,4 +379,23 @@ describe('createStompConnection', () => {
 
     expect(received).toEqual([1]);
   });
+
+  it('한 번 연결된 뒤 세션이 끝나 토큰을 못 받으면 멈추되 끊김으로 남긴다', async () => {
+    const getToken = vi
+      .fn()
+      .mockResolvedValueOnce('token-1')
+      .mockRejectedValueOnce(
+        new ApiError({ message: 'unauthorized', category: 'auth', status: 401 }),
+      );
+    const { connection, statuses } = setup(getToken);
+    connection.start();
+    await flush();
+    last().connect();
+    last().drop();
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(statuses.at(-1)).toBe('reconnecting');
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(getToken).toHaveBeenCalledTimes(2);
+  });
 });

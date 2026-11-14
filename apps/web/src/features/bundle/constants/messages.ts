@@ -4,7 +4,7 @@ export const BUNDLE_MESSAGES = {
   headerSaving: '저장 중',
   headerSaveFailed: '저장 실패',
   upload: '업로드',
-  offlineBanner: '인터넷 연결을 확인해 주세요.',
+  offlineBanner: '인터넷 연결을 확인해 주세요. 연결되기 전에는 수정할 수 없어요.',
   offlineRetry: '재시도',
   membersTitle: '참여 멤버',
   titleLabel: '번들 제목',
