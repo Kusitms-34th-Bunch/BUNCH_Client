@@ -128,6 +128,14 @@ describe('DraftScreen 구성', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it('연결이 끊긴 동안은 제목을 고칠 수 없고 이유를 안내한다', async () => {
+    renderScreen({ offline: true });
+
+    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOfflineBlocked);
+  });
+
   it('뒤로가기를 누르면 onBack을 호출한다', async () => {
     renderScreen();
     await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));

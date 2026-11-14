@@ -107,13 +107,17 @@ export const useLeaveBundleMutation = (bunchId: string | undefined) => {
   });
 };
 
-/** 번들 상세를 최신으로 다시 받음(실시간 연결이 끊겼다 돌아왔을 때처럼 놓친 변경을 맞출 때) */
+/** 번들 상세를 최신으로 다시 받음(실시간 연결이 끊겼다 돌아왔을 때처럼 놓친 변경을 맞출 때). 받지 못하면 reject */
 export const useRefetchBundleDetail = (
   bunchId: string | undefined,
   bundleId: string | undefined,
 ) => {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: bundleKeys.detail(bunchId, bundleId) });
+  return () =>
+    queryClient.refetchQueries(
+      { queryKey: bundleKeys.detail(bunchId, bundleId), exact: true },
+      { throwOnError: true },
+    );
 };
 
 // 저장·참여자 변경 성공 응답(전체 BundleSnapshot)으로 상세 캐시를 바로 갱신하고,

@@ -1,4 +1,5 @@
 import type { IFrame } from '@stomp/stompjs';
+import { ApiError } from '@app/api-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createStompConnection, type RealtimeStatus } from './stompConnection';
 
@@ -245,7 +246,9 @@ describe('createStompConnection', () => {
   it('세션이 끝나 토큰을 못 받으면(401) 다시 시도하지 않고 닫되 「재시도」는 할 수 있다', async () => {
     const getToken = vi
       .fn()
-      .mockRejectedValueOnce(Object.assign(new Error('unauthorized'), { status: 401 }))
+      .mockRejectedValueOnce(
+        new ApiError({ message: 'unauthorized', category: 'auth', status: 401 }),
+      )
       .mockResolvedValueOnce('token-2');
     const { connection, statuses } = setup(getToken);
 
@@ -314,5 +317,66 @@ describe('createStompConnection', () => {
     await flush();
 
     expect(getToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('낡은 연결의 늦은 닫힘은 새 연결을 예약하거나 끊김으로 바꾸지 않는다', async () => {
+    const { connection, getToken, statuses } = setup();
+    connection.start();
+    await flush();
+    const first = last();
+    first.drop();
+    connection.retryNow();
+    await flush();
+    const second = last();
+    second.connect();
+
+    // 버려진 첫 연결이 뒤늦게 닫힘을 알림
+    first.drop();
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect(statuses.at(-1)).toBe('connected');
+    expect(getToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('토큰을 기다리는 중에 멈추면 늦게 온 토큰으로 연결하지 않는다', async () => {
+    let resolveToken: (_token: string) => void = () => undefined;
+    const getToken = vi.fn(() => new Promise<string>((resolve) => (resolveToken = resolve)));
+    const { connection } = setup(getToken);
+    connection.start();
+    connection.stop();
+    resolveToken('late');
+    await flush();
+
+    expect(FakeClient.instances).toHaveLength(0);
+  });
+
+  it('토큰을 기다리는 중에 「재시도」하면 낡은 토큰 요청의 결과는 버린다', async () => {
+    const resolvers: ((_token: string) => void)[] = [];
+    const getToken = vi.fn(() => new Promise<string>((resolve) => resolvers.push(resolve)));
+    const { connection } = setup(getToken);
+    connection.start();
+    connection.retryNow();
+    resolvers[0]?.('old');
+    resolvers[1]?.('new');
+    await flush();
+
+    expect(FakeClient.instances).toHaveLength(1);
+    expect(last().config.connectHeaders).toEqual({ Authorization: 'Bearer new' });
+  });
+
+  it('같은 구독 해제 함수를 다시 불러도 나중에 등록한 구독자를 지우지 않는다', async () => {
+    const { connection } = setup();
+    connection.start();
+    await flush();
+    last().connect();
+    const off = connection.subscribe(TOPIC, () => undefined);
+    off();
+    const received: unknown[] = [];
+    connection.subscribe(TOPIC, (body) => received.push(body));
+
+    off();
+    last().receive(TOPIC, '1');
+
+    expect(received).toEqual([1]);
   });
 });

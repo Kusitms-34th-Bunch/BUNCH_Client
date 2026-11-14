@@ -1,5 +1,6 @@
 'use client';
 
+import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -636,8 +637,13 @@ export function useDraft(draftId: string | undefined): {
       } catch (error) {
         setPublishing(false);
         // 서버가 요청 자체를 거절했으면(4xx) 같은 요청이 다시 거절될 수 있어 키를 비우고, 응답이 없거나 5xx면 키를 유지함
-        const status = (error as { status?: number } | null)?.status;
-        if (status !== undefined && status >= 400 && status < 500)
+        // 서버 응답(ApiError)이 아닌 오류는 서버가 받았는지 알 수 없으므로 키를 유지함
+        if (
+          isApiError(error) &&
+          error.status !== undefined &&
+          error.status >= 400 &&
+          error.status < 500
+        )
           publishAttempt.current = undefined;
         if (readPublishBlockers(error) !== undefined) {
           toast(BUNDLE_MESSAGES.uploadIncomplete);

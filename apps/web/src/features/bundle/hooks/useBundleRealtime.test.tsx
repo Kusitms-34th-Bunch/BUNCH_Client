@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RealtimeStatus, StompConnectionOptions } from '@/shared/realtime/stompConnection';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -50,7 +50,7 @@ vi.mock('@/shared/realtime/wsToken', () => ({ fetchWsToken }));
 
 const render = (active = true) => {
   const client = createTestQueryClient();
-  const invalidate = vi.spyOn(client, 'invalidateQueries');
+  const invalidate = vi.spyOn(client, 'refetchQueries');
   const hook = renderHook(() => useBundleRealtime('1', '2', active), {
     wrapper: createQueryWrapper(client),
   });
@@ -114,7 +114,7 @@ describe('useBundleRealtime', () => {
     expect(fetchWsToken).toHaveBeenCalledTimes(1);
   });
 
-  it('다시 연결을 맺는 중에만 끊김으로 보고, 연결될 때마다 최신 상세를 다시 받는다', () => {
+  it('다시 연결을 맺는 중에만 끊김으로 보고, 연결될 때마다 최신 상세를 다시 받는다', async () => {
     const { result, invalidate } = render();
 
     emit('connecting');
@@ -128,9 +128,12 @@ describe('useBundleRealtime', () => {
     act(() => connections[0]?.options.onConnected?.(true));
     emit('connected');
 
-    expect(result.current.down).toBe(false);
+    await waitFor(() => expect(result.current.down).toBe(false));
     expect(invalidate).toHaveBeenCalledTimes(2);
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: bundleKeys.detail('1', '2') });
+    expect(invalidate).toHaveBeenCalledWith(
+      { queryKey: bundleKeys.detail('1', '2'), exact: true },
+      { throwOnError: true },
+    );
   });
 
   it('「재시도」는 기다리지 않고 지금 다시 연결하게 한다', () => {
@@ -139,5 +142,55 @@ describe('useBundleRealtime', () => {
     act(() => result.current.retry());
 
     expect(connections[0]?.retried).toBe(1);
+  });
+
+  it('재연결 뒤에는 최신 상세를 다 받을 때까지 끊김으로 둔다', async () => {
+    let finish: () => void = () => undefined;
+    const { result, invalidate } = render();
+    invalidate.mockImplementation(() => new Promise<void>((resolve) => (finish = resolve)));
+
+    emit('connecting');
+    act(() => connections[0]?.options.onConnected?.(false));
+    emit('connected');
+    expect(result.current.down).toBe(false);
+
+    emit('reconnecting');
+    act(() => connections[0]?.options.onConnected?.(true));
+    emit('connected');
+    expect(result.current.down).toBe(true);
+
+    act(() => finish());
+    await waitFor(() => expect(result.current.down).toBe(false));
+    expect(result.current.down).toBe(false);
+  });
+
+  it('재연결 뒤 최신 상세를 받지 못하면 끊김으로 두고 「재시도」가 상세를 다시 받는다', async () => {
+    const { result, invalidate } = render();
+    invalidate.mockRejectedValueOnce(new Error('network'));
+
+    emit('reconnecting');
+    act(() => connections[0]?.options.onConnected?.(true));
+    emit('connected');
+    await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.down).toBe(true));
+
+    invalidate.mockResolvedValueOnce(undefined);
+    act(() => result.current.retry());
+
+    await waitFor(() => expect(result.current.down).toBe(false));
+    expect(invalidate).toHaveBeenCalledTimes(2);
+    // 연결은 이미 돼 있으므로 다시 연결하지는 않음
+    expect(connections[0]?.retried).toBe(0);
+  });
+
+  it('처음 연결 뒤 상세를 받지 못해도 끊김으로 보지 않는다', async () => {
+    const { result, invalidate } = render();
+    invalidate.mockRejectedValueOnce(new Error('network'));
+
+    act(() => connections[0]?.options.onConnected?.(false));
+    emit('connected');
+    await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
+
+    expect(result.current.down).toBe(false);
   });
 });

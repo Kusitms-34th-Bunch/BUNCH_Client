@@ -26,7 +26,7 @@ export type BundleRealtime = {
   /** 실시간 연결을 쓰는 중인지(가짜 서버 모드·주소 미설정이면 false) */
   enabled: boolean;
   status: RealtimeStatus;
-  /** 연결이 끊겨 편집을 막아야 하는 상태(처음 연결을 맺기 전은 포함하지 않음) */
+  /** 연결이 끊겼거나, 다시 연결된 뒤 최신 상세를 받는 중·받지 못한 상태: 편집을 막아야 함(처음 연결을 맺기 전은 포함하지 않음) */
   down: boolean;
   /** 기다리지 않고 지금 다시 연결 */
   retry: () => void;
@@ -56,8 +56,29 @@ export function useBundleRealtime(
     refetchRef.current = refetchDetail;
   });
   const [status, setStatus] = useState<RealtimeStatus>('idle');
+  // 재연결 뒤 최신 상세를 받는 중이거나 받지 못했을 때: 화면이 낡았을 수 있어 끊김과 같이 다룸
+  const [sync, setSync] = useState<'idle' | 'syncing' | 'failed'>('idle');
+  const syncRun = useRef(0);
+  const syncRef = useRef(sync);
+  useEffect(() => {
+    syncRef.current = sync;
+  });
   const connectionRef = useRef<StompConnection | undefined>(undefined);
   const enabled = active && bunchId !== undefined && bundleId !== undefined && isRealtimeEnabled();
+
+  // 최신 상세를 다시 받음. track이면 끝날 때까지(실패하면 실패로) 끊김으로 둠. 더 새 요청이 있으면 낡은 결과는 무시
+  const resync = useCallback((track: boolean) => {
+    const run = ++syncRun.current;
+    if (track) setSync('syncing');
+    refetchRef.current().then(
+      () => {
+        if (run === syncRun.current) setSync('idle');
+      },
+      () => {
+        if (run === syncRun.current) setSync(track ? 'failed' : 'idle');
+      },
+    );
+  }, []);
 
   useEffect(() => {
     const url = realtimeUrl();
@@ -66,9 +87,10 @@ export function useBundleRealtime(
       url,
       getToken: async () => (await fetchWsToken()).token,
       onStatus: setStatus,
-      onConnected: () => {
+      onConnected: (reconnected) => {
         // 구독을 맺은 직후 최신 상세로 맞춤: 상세를 받은 뒤 구독 전까지, 또는 끊긴 사이의 변경은 이벤트로 오지 않음(삭제·발행·권한 변화도 이 결과로 처리됨)
-        void refetchRef.current();
+        // 재연결이면 다 받을 때까지 편집을 막음
+        resync(reconnected);
       },
     });
     connectionRef.current = connection;
@@ -82,11 +104,17 @@ export function useBundleRealtime(
       unsubscribers.forEach((unsubscribe) => unsubscribe());
       connection.stop();
       connectionRef.current = undefined;
+      syncRun.current += 1;
+      setSync('idle');
     };
-  }, [enabled, bunchId, bundleId]);
+  }, [enabled, bunchId, bundleId, resync]);
 
-  const retry = useCallback(() => connectionRef.current?.retryNow(), []);
+  // 연결은 돼 있는데 최신 상세를 받지 못했으면 상세를 다시 받고, 끊겨 있으면 기다리지 않고 다시 연결
+  const retry = useCallback(() => {
+    if (syncRef.current === 'failed') resync(true);
+    else connectionRef.current?.retryNow();
+  }, [resync]);
 
   if (!enabled) return DISABLED;
-  return { enabled, status, down: status === 'reconnecting', retry };
+  return { enabled, status, down: status === 'reconnecting' || sync !== 'idle', retry };
 }

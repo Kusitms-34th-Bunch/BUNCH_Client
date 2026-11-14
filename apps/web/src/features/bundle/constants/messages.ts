@@ -112,6 +112,7 @@ export const BUNDLE_MESSAGES = {
   // 기획 원문 없는 임시 안내: 나가기를 서버에 보내지 못했을 때
   leaveFailed: '번들에서 나가지 못했어요. 잠시 후 다시 시도해 주세요.',
   // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
+  editOfflineBlocked: '연결이 끊겨 있어 수정할 수 없어요. 다시 연결되면 수정해 주세요.',
   editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
   editingLabel: (name: string) => `${name}님이 편집 중`,
   commentEditingLabel: (name: string) => `${name}님이 작성 중`,

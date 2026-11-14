@@ -76,14 +76,21 @@ export function DraftScreen({
   const [selfEditing, setSelfEditing] = useState<'title' | 'comment' | undefined>(undefined);
   const endSelfEditing = (field: 'title' | 'comment') =>
     setSelfEditing((current) => (current === field ? undefined : current));
-  const access = getDraftAccess(draft, viewer);
+  const baseAccess = getDraftAccess(draft, viewer);
+  // 연결이 끊긴 동안은 수정을 막음(끊긴 사이의 수정은 서버에 닿지 않으므로 받지 않음, 기능 spec 4.3.14)
+  const access = offline ? { ...baseAccess, canEdit: false } : baseAccess;
   // 공개 범위는 업로드를 누른 뒤 다음 화면에서 고르므로 이 화면의 조건에서는 뺌
   const blockers = getPublishBlockers(draft, { saveStatus, offline }).filter(
     (blocker) => blocker !== 'visibility',
   );
   const uploadReady = access.canPublish && blockers.length === 0;
 
-  const denyEdit = () => notify(BUNDLE_MESSAGES.editOnlyParticipants);
+  const denyEdit = () =>
+    notify(
+      offline && baseAccess.canEdit
+        ? BUNDLE_MESSAGES.editOfflineBlocked
+        : BUNDLE_MESSAGES.editOnlyParticipants,
+    );
   const blockEditing = () => notify(BUNDLE_MESSAGES.editingBlocked);
 
   // 안내 순서: 참여 멤버가 아님 → 권한 없음 → 필수 항목 부족(기능 spec 4.3.12), 막혔으면 안내하고 true

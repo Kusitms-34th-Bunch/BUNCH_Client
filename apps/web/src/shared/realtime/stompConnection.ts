@@ -1,3 +1,4 @@
+import { isApiError } from '@app/api-core';
 import { Client, type IFrame, type IMessage } from '@stomp/stompjs';
 
 export type RealtimeStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'closed';
@@ -151,7 +152,7 @@ export const createStompConnection = ({
       (error: unknown) => {
         if (mine !== generation) return;
         // 세션이 끝났으면(401·403) 다시 시도해도 같으므로 멈춤. 「재시도」로는 다시 해 볼 수 있음
-        const status = (error as { status?: number } | null)?.status;
+        const status = isApiError(error) ? error.status : undefined;
         if (status === 401 || status === 403) {
           setStatus('closed');
           return;
@@ -186,7 +187,11 @@ export const createStompConnection = ({
       set.add(handler);
       handlers.set(destination, set);
       if (status === 'connected') attachSubscription(destination);
+      let released = false;
       return () => {
+        // 같은 해제 함수를 다시 불러도 나중에 등록된 구독자를 지우지 않음
+        if (released) return;
+        released = true;
         set.delete(handler);
         if (set.size > 0) return;
         handlers.delete(destination);
