@@ -62,6 +62,20 @@ describe('가짜 서버 번들 장소 콕', () => {
     });
   });
 
+  it('지운 콕의 ID를 새 콕에 다시 주지 않아, 늦게 온 옛 취소가 새 콕을 지우지 않는다', async () => {
+    const location = (await firstLocation()).locations[0]!;
+    const first = await call<{ id: number }>('PUT', `/bundles/901/locations/${location.id}/pin`);
+    await call('DELETE', `/pinned-places/${first.data.id}`);
+    const second = await call<{ id: number }>('PUT', `/bundles/901/locations/${location.id}/pin`);
+
+    expect(second.data.id).not.toBe(first.data.id);
+    expect((await call('DELETE', `/pinned-places/${first.data.id}`)).status).toBe(404);
+    expect((await firstLocation()).locations[0]).toMatchObject({
+      pinned: true,
+      pinId: second.data.id,
+    });
+  });
+
   it('없는 장소는 404, 소속 번치가 없으면 콕할 수 없다', async () => {
     expect(await call('PUT', '/bundles/901/locations/1/pin')).toMatchObject({
       status: 404,

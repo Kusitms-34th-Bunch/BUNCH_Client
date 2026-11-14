@@ -90,8 +90,9 @@ export const useKokMutation = () => {
       const previous = queryClient
         .getQueryData<BundleKoks>(key)
         ?.locations.find((location) => location.id === locationId);
+      // 취소는 콕 ID도 비움(응답 전에 다시 콕해도 옛 ID로 다시 취소하지 못하게, 새 ID는 콕 응답이 채움)
       queryClient.setQueryData<BundleKoks>(key, (data) =>
-        patch(data, locationId, { pinned: vars.pin }),
+        patch(data, locationId, vars.pin ? { pinned: true } : { pinned: false, pinId: null }),
       );
       return { previous, locationId };
     },
@@ -115,7 +116,12 @@ export const useKokMutation = () => {
     },
     // 뒤에 보낼 요청이 남았으면 다시 받은 값이 바로 누른 버튼을 덮지 않게 기다림
     onSettled: (_data, _error, vars) => {
-      if (queryClient.isMutating({ mutationKey: KOK_KEY }) > 1) return;
+      const pendingForViewer = queryClient.isMutating({
+        mutationKey: KOK_KEY,
+        predicate: (mutation) =>
+          (mutation.state.variables as KokVariables | undefined)?.viewerId === vars.viewerId,
+      });
+      if (pendingForViewer > 1) return;
       return queryClient.invalidateQueries({ queryKey: feedKeys.koksOf(vars.viewerId) });
     },
   });

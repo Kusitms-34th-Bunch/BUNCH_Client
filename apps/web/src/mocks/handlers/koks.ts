@@ -92,7 +92,7 @@ export const kokHandlers = [
     const existing = kokOf(state, viewer, location);
     if (existing) return ok(kokResponse(existing));
     const kok: MockKok = {
-      id: state.koks.reduce((max, item) => Math.max(max, item.id), 0) + 1,
+      id: state.lastKokId + 1,
       bunchId: viewer,
       provider: location.provider,
       externalId: location.externalId,
@@ -103,7 +103,7 @@ export const kokHandlers = [
       pinnedByMemberId: MOCK_MY_MEMBER_ID,
       pinnedAt: new Date().toISOString(),
     };
-    mockDb.update((current) => ({ ...current, koks: [...current.koks, kok] }));
+    mockDb.update((current) => ({ ...current, koks: [...current.koks, kok], lastKokId: kok.id }));
     return ok(kokResponse(kok));
   }),
 

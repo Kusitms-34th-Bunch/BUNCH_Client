@@ -282,6 +282,31 @@ describe('useBundleSheets', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
+  it('시트를 연 뒤 명의가 바뀌면 누른 장소를 보내지 않고 시트를 닫는다', async () => {
+    const user = userEvent.setup();
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: 'me',
+      bunch: { id: 'bunch-trip', name: '여행가조' },
+    });
+    render(<Harness />, { wrapper: createQueryWrapper(client) });
+    await user.click(screen.getByRole('button', { name: '위치' }));
+    await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' });
+
+    act(() => {
+      client.setQueryData(sharedKeys.me(), {
+        memberId: 'me',
+        bunch: { id: 'bunch-run', name: '러닝크루' },
+      });
+    });
+    await user.click(pickButton('애월 한담해변'));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
+    );
+    expect(requests).toEqual([]);
+  });
+
   it('참여 멤버를 순서대로 보여 주고 나간 멤버는 「작성자」, 역할은 배지로 읽힌다', async () => {
     await setup('멤버');
 

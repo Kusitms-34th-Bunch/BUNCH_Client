@@ -202,6 +202,8 @@ export type MockDbState = {
   reports: MockReport[];
   likes: MockLike[];
   koks: MockKok[];
+  /** 마지막에 준 콕 ID(지운 콕의 ID를 새 콕에 다시 주지 않게) */
+  lastKokId: number;
   socialComments: MockSocialComment[];
   notifications: MockNotification[];
 };

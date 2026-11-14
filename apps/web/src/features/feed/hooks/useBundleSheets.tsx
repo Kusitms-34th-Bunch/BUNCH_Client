@@ -38,7 +38,14 @@ export function useBundleSheets() {
   const sendKok = (vars: Parameters<typeof kok.mutate>[0]) => kok.mutate(vars);
 
   // 콕 취소 확인 창(화면설계서 피드 2번): 무엇을 고르든 창이 다 닫힌 뒤 콕하기 시트를 다시 올려 이어서 고르게 함
-  const openPickCancel = (bundleId: string, place: FeedPlace, pinId: number, places: FeedPlace[]) =>
+  // 시트를 연 명의(openedAs)로만 보냄. 그사이 명의가 바뀌었으면 보내지 않고, 다시 올리는 시트가 새 명의로 받음
+  const openPickCancel = (
+    bundleId: string,
+    place: FeedPlace,
+    pinId: number,
+    places: FeedPlace[],
+    openedAs: string | null,
+  ) =>
     openOverlay(
       (rootProps, close) => (
         <ConfirmDialog
@@ -48,9 +55,8 @@ export function useBundleSheets() {
           cancelLabel={text.pickCancelNo}
           confirmLabel={text.pickCancelConfirm}
           onConfirm={() => {
-            const id = viewerId();
-            if (id !== undefined) {
-              sendKok({ bundleId, viewerId: id, locationId: place.id, pin: false, pinId });
+            if (viewerId() === openedAs) {
+              sendKok({ bundleId, viewerId: openedAs, locationId: place.id, pin: false, pinId });
             }
             close();
           }}
@@ -72,12 +78,17 @@ export function useBundleSheets() {
     };
   }, []);
   const loadAndShowPlaces = async (bundleId: string, places: FeedPlace[]) => {
-    const id = viewerId();
-    if (opening.current || id === undefined) return;
+    if (opening.current || viewerId() === undefined) return;
     opening.current = true;
     try {
-      await loadKoks(bundleId, id);
-      if (mounted.current) showPlaces(bundleId, places);
+      // 받는 사이 명의가 바뀌었으면 새 명의로 다시 받음(연 시트는 늘 그 명의의 콕 여부)
+      let id = viewerId();
+      while (id !== undefined) {
+        await loadKoks(bundleId, id);
+        if (viewerId() === id) break;
+        id = viewerId();
+      }
+      if (mounted.current && id !== undefined) showPlaces(bundleId, places, id);
     } catch {
       if (mounted.current) toast(text.actionFailed, { position: 'top' });
     } finally {
@@ -87,7 +98,8 @@ export function useBundleSheets() {
   const openPlaces = (bundleId: string, places: FeedPlace[]) =>
     void loadAndShowPlaces(bundleId, places);
 
-  function showPlaces(bundleId: string, places: FeedPlace[]) {
+  // 연 시트는 명의가 바뀌어도 다시 그려지지 않으므로(overlay는 열 때의 값), 바뀐 뒤 누르면 보내지 않고 닫음
+  function showPlaces(bundleId: string, places: FeedPlace[], openedAs: string | null) {
     let cancelTarget: { place: FeedPlace; pinId: number } | undefined;
     openOverlay(
       (rootProps, close) =>
@@ -95,23 +107,24 @@ export function useBundleSheets() {
           <PlacePickOverlay
             {...rootProps}
             bundleId={bundleId}
-            viewerId={viewerId()}
+            viewerId={openedAs}
             places={places}
             asBunch={asLatestBunch}
             onPick={(place) => {
-              const id = viewerId();
-              if (id !== undefined)
-                sendKok({ bundleId, viewerId: id, locationId: place.id, pin: true });
+              if (viewerId() !== openedAs) return close();
+              sendKok({ bundleId, viewerId: openedAs, locationId: place.id, pin: true });
             }}
             onCancelPick={(place, pinId) => {
-              cancelTarget = { place, pinId };
+              if (viewerId() === openedAs) cancelTarget = { place, pinId };
               close();
             }}
           />,
         ),
       // 시트가 다 닫힌 뒤 확인 창을 열어 초점이 위치 버튼으로 돌아가게 함
       () => {
-        if (cancelTarget) openPickCancel(bundleId, cancelTarget.place, cancelTarget.pinId, places);
+        if (cancelTarget) {
+          openPickCancel(bundleId, cancelTarget.place, cancelTarget.pinId, places, openedAs);
+        }
       },
     );
   }
