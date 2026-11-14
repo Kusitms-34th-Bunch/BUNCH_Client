@@ -1,7 +1,7 @@
 import { DEFAULT_BUNCH_IMAGES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { FeedBundle, FeedData } from '../lib/types';
 
-// 피드 API 연결 전 Figma 예시 값(사진은 public/mock/photos)
+// 번들 상세·멤버 프로필 샘플이 쓰는 Figma 예시 값(사진은 public/mock/photos). 피드 목록은 서버(#364), 상세·프로필 연결(API 연동 2·9번) 때 삭제
 const HOUR = 3_600_000;
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * HOUR).toISOString();
 const members = (count: number) =>
