@@ -95,7 +95,11 @@ export function BundleVisibilityScreen({
       <PageShell header={header}>
         <div className="gap-s8 flex h-full flex-col items-center justify-center">
           <div role="alert">
-            <h1 className="typography-body-2-regular text-text-quinary text-center">
+            <h1
+              ref={titleRef}
+              tabIndex={-1}
+              className="typography-body-2-regular text-text-quinary text-center"
+            >
               {text.actionFailed}
             </h1>
           </div>

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -101,7 +101,7 @@ describe('BundleVisibilityScreen', () => {
     expect(screen.queryByRole('radiogroup')).toBeNull();
   });
 
-  it('상세를 받지 못하면(일시 오류) 안내와 다시 시도를 보인다', async () => {
+  it('상세를 받지 못하면(일시 오류) 안내와 다시 시도를 보이고, 다시 실패해도 안내로 초점을 둔다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/published-bundles/:bundleId', () => fail(500, 'COMMON_999')),
     );
@@ -112,6 +112,11 @@ describe('BundleVisibilityScreen', () => {
     });
 
     expect(await screen.findByRole('alert')).toHaveTextContent('일시적인 오류가 발생했어요');
-    expect(screen.getByRole('button', { name: '다시 시도' })).toBeTruthy();
+
+    // 다시 실패해도 초점이 본문으로 빠지지 않고 안내(제목이나 다시 나온 버튼)에 남음
+    await userEvent.setup().click(screen.getByRole('button', { name: '다시 시도' }));
+    await waitFor(() =>
+      expect(screen.getByRole('alert').parentElement?.contains(document.activeElement)).toBe(true),
+    );
   });
 });

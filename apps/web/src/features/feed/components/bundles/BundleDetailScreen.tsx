@@ -138,7 +138,8 @@ export function BundleDetailScreen({
   // 볼 수 없음·실패 안내의 제목(다시 시도 결과가 「볼 수 없음」이면 초점을 받는 곳)
   const stateTitleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    if (!focusTitleAfterRetry.current || retrying) return;
+    // 본문이나 안내 제목이 그려질 때까지 기다림(상세가 먼저 와도 번치 정보를 받는 동안은 덮개)
+    if (!focusTitleAfterRetry.current || retrying || (!bundle && !stateTitleRef.current)) return;
     focusTitleAfterRetry.current = false;
     // 다시 실패해 버튼이 남았으면 초점도 그대로
     const focused = document.activeElement;
@@ -181,12 +182,14 @@ export function BundleDetailScreen({
     toast(message);
   }, [comments]);
 
+  // 댓글 영역은 본문이 그려진 뒤에 생김(번치 정보·상세를 받는 중에는 없음)
+  const contentReady = bundle !== undefined;
   useEffect(() => {
-    if (!focusComments) return;
+    if (!focusComments || !contentReady) return;
     // effect에서 바로 주면 RouteFocus가 이동 전에 남은 초점으로 보고 제목으로 옮기므로 다음 프레임에
     const frame = requestAnimationFrame(goToComments);
     return () => cancelAnimationFrame(frame);
-  }, [focusComments, goToComments]);
+  }, [focusComments, contentReady, goToComments]);
 
   // 남의 댓글 신고: 접수되면 그 댓글(원댓글이면 답글까지)을 바로 숨기고 그 자리 다음 댓글로 초점
   // 시트가 닫힌 시점의 최신 목록으로 계산

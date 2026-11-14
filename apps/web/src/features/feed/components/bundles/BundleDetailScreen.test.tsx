@@ -676,4 +676,51 @@ describe('BundleDetailScreen', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('번들을 불러오는 중이에요');
     expect(screen.queryByRole('alert')).toBeNull();
   });
+
+  it('번치 정보가 늦게 와도 ?focus=comments면 본문이 그려진 뒤 입력란에 초점을 둔다', async () => {
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
+    client.setQueryData(bundleDetailKeys.detail('3', '3', '1'), DETAILS['3']);
+    const view = (bunch: BundleBunchSource | undefined) => (
+      <BundleDetailScreen bunchId="3" bundleId="3" bunch={bunch} focusComments links={links} />
+    );
+    const { rerender } = render(view(undefined), { wrapper: createQueryWrapper(client) });
+    await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+
+    rerender(view(BUNCHES['3']));
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus());
+  });
+
+  it('상세가 먼저 오고 번치 정보가 늦어도 다시 시도 뒤 초점을 번들 제목으로 옮긴다', async () => {
+    const user = userEvent.setup();
+    let failing = true;
+    server.use(
+      http.get('/api/bunches/:bunchId/published-bundles/:bundleId', () =>
+        failing ? fail(500, 'COMMON_999') : ok(DETAILS['3']),
+      ),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
+    const view = (bunch: BundleBunchSource | undefined) => (
+      <BundleDetailScreen
+        bunchId="3"
+        bundleId="3"
+        bunch={bunch}
+        focusComments={false}
+        links={links}
+      />
+    );
+    const { rerender } = render(view(undefined), { wrapper: createQueryWrapper(client) });
+
+    await screen.findByRole('alert');
+    failing = false;
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    await waitFor(() =>
+      expect(client.getQueryState(bundleDetailKeys.detail('3', '3', '1'))?.status).toBe('success'),
+    );
+
+    rerender(view(BUNCHES['3']));
+    const title = await screen.findByRole('heading', { level: 1, name: '여름밤 바닷가 캠핑' });
+    await waitFor(() => expect(title).toHaveFocus());
+  });
 });
