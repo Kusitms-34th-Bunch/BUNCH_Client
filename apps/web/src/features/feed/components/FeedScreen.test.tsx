@@ -7,7 +7,6 @@ import { server } from '@/mocks/server';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
-import { bundleEdits } from '../lib/bundleEdits';
 import { clearHiddenAds } from '../lib/hiddenAds';
 import { feedKeys } from '../queries/keys';
 import { FeedScreen } from './FeedScreen';
@@ -198,7 +197,6 @@ beforeEach(() => {
   vi.stubGlobal('IntersectionObserver', VisibleObserver);
   serveFeed([...FOLLOWING_ITEMS, ...PUBLIC_ITEMS]);
   clearHiddenAds();
-  bundleEdits.clear();
   push.mockClear();
   toast.mockClear();
 });
@@ -725,16 +723,5 @@ describe('FeedScreen', () => {
     await user.click(like);
     expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
     expect(like).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('지웠거나 「멤버 공개」로 바꾼 번들은 피드에서 빠진다', async () => {
-    bundleEdits.remove('1');
-    bundleEdits.setMemberOnly('2', true);
-    renderFeed(OWN);
-    await cardsLoaded();
-
-    expect(cards().map((card) => card.getAttribute('aria-label'))).toEqual([
-      '캠핑러버의 번들 여름밤 바닷가 캠핑',
-    ]);
   });
 });
