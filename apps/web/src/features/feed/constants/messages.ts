@@ -32,17 +32,23 @@ export const FEED_MESSAGES = {
   replyPlaceholder: '답글 달기',
   replyPlaceholderAs: (bunchRo: string) => `${bunchRo} 답글 달기`,
   /** 닉네임을 모를 때 내 댓글 작성자 */
-  me: '나',
   commentAdded: '댓글을 등록했어요',
   commentLabel: (author: string) => `${author}님의 댓글`,
+  replyLabel: (author: string) => `${author}님의 답글`,
   deletedCommentLabel: '삭제된 댓글',
   replyAdded: '답글을 등록했어요',
+  commentsLoading: '댓글을 불러오는 중이에요',
+  moreCommentsLoading: '댓글을 더 불러오는 중이에요',
+  // 기능명세서 6.2.8: 쓰는 사이 번들이 지워졌거나 멤버 공개로 바뀜, 답글 대상이 지워짐
+  bundleGone: '더 이상 볼 수 없는 번들이에요.',
+  replyTargetDeleted: '삭제된 댓글입니다',
+  moreCommentsFailed: '댓글을 더 불러오지 못했어요',
   commentMenuTitle: '댓글 더보기',
   deleteComment: '삭제',
   report: '신고',
   bundleMore: '번들 더보기',
   /** 같은 작성자 이름이 겹쳐도 내 댓글 메뉴를 구분 */
-  myCommentMore: '내 댓글 더보기',
+  myCommentMore: (preview: string) => `내 댓글 더보기: ${preview}`,
   /** 같은 작성자의 댓글이 여럿이어도 구분되게 내용 앞부분을 붙임 */
   commentMore: (author: string, preview: string) => `${author} 댓글 더보기: ${preview}`,
   reportCommentTitle: '이 댓글을 신고할까요?',

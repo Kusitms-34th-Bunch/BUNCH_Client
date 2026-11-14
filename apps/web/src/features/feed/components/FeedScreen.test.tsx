@@ -9,6 +9,7 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { bundleEdits } from '../lib/bundleEdits';
 import { clearHiddenAds } from '../lib/hiddenAds';
+import { feedKeys } from '../queries/keys';
 import { FeedScreen } from './FeedScreen';
 
 const push = vi.fn();
@@ -521,7 +522,7 @@ describe('FeedScreen', () => {
       window.history.replaceState({ feedScroll: 300 }, '');
       const client = createTestQueryClient();
       client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: OWN });
-      client.setQueryData(['feed', OWN.id], {
+      client.setQueryData(feedKeys.list(OWN.id), {
         pages: [page([...FOLLOWING_ITEMS, ...PUBLIC_ITEMS])],
         pageParams: [undefined],
       });

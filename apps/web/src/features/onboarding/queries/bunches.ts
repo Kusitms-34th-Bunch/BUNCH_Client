@@ -7,6 +7,7 @@ import {
   updateBunchProfileImage,
   type CreateBunchInput,
 } from '../api/bunches';
+import { onboardingKeys } from './keys';
 
 /**
  * 번치 생성. 성공하면 가입 상태(`sharedKeys.session()`)를 다시 읽음: 소속 번치가 생겨 기본 번치가 바뀌므로
@@ -41,11 +42,6 @@ export const useChangeBunchPhotoMutation = (bunchId: string | undefined) => {
       void queryClient.invalidateQueries({ queryKey: sharedKeys.me() });
     },
   });
-};
-
-export const onboardingKeys = {
-  // 응답을 바꾸는 입력은 번치 하나뿐
-  invitation: (bunchId: string | undefined) => ['bunch-invitation', bunchId] as const,
 };
 
 /**

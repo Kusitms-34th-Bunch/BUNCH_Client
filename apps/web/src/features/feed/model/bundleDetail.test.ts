@@ -78,7 +78,6 @@ describe('toFeedBundleDetail', () => {
       commentCount: 5,
       memberOnly: false,
       publishedAt: '',
-      comments: [],
     });
     expect(detail.bunch).toMatchObject({ id: '3', name: '캠핑러버' });
   });
