@@ -191,7 +191,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
           photos={bundle.photos}
           title={bundle.title}
           location={bundle.location}
-          onLocationClick={() => openPlaces(bundle.places)}
+          onLocationClick={() => openPlaces(bundle.id, bundle.places)}
           date={bundle.date}
           onPhotoClick={() => router.push(FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
           liked={bundle.liked}

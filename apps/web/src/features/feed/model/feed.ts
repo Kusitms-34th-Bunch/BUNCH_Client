@@ -129,7 +129,7 @@ export const toFeedBundle = (card: BundleCard): FeedBundle => {
     publishedAt: card.publishedAt,
     title: card.title,
     location: toLocationLabel(locations.map((location) => location.name)),
-    // ponytail: 피드 응답에는 콕 여부가 없어 모두 「콕하기」, 장소 콕 API 연결(API 연동 8번) 때 받아 옴
+    // 콕 여부는 응답에 없어 시트를 열 때 따로 받음(명세 021)
     places: locations.map((location) => ({
       id: toDomainId(location.id),
       name: location.name,

@@ -15,6 +15,10 @@ export const feedKeys = {
   // 우리 번치 번들 조회(공개 범위 화면, 멤버 공개도 옴)
   managed: (bunchId: string, bundleId: string, viewerId: string | null) =>
     [...feedKeys.bundle(bundleId), 'managed', viewerId, bunchId] as const,
+  // 번들 장소별 콕 여부. 같은 장소는 다른 번들에서 콕해도 콕한 것이라 명의 앞부분으로 함께 다시 받음
+  koksOf: (viewerId: string | null) => [...feedKeys.all, 'koks', viewerId] as const,
+  koks: (bundleId: string, viewerId: string | null) =>
+    [...feedKeys.koksOf(viewerId), bundleId] as const,
   // 원댓글(쪽 단위)과 그 아래 답글. 쪽 데이터와 답글 배열이 같은 앞부분에 섞이므로 캐시를 고칠 때는 exact
   comments: (bundleId: string, viewerId: string | null) =>
     [...feedKeys.bundle(bundleId), 'comments', viewerId] as const,

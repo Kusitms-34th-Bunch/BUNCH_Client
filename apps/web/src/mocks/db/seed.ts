@@ -368,6 +368,8 @@ export const createSeed = (): MockDbState => ({
     { bunchId: MOCK_EXTERNAL_BUNCH_IDS.private, bundleId: 901 },
     { bunchId: MOCK_SECOND_BUNCH_ID, bundleId: 901 },
   ],
+  koks: [],
+  lastKokId: 0,
   // 「가평 첫 캠핑」 댓글: 캠핑러버 관리자의 원댓글과 내 답글, 삭제된 원댓글, 차단한 번치(야간러너스)의 원댓글(목록·수에서 빠짐), 내 원댓글
   socialComments: [
     {

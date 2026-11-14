@@ -9,6 +9,9 @@ import { isBlockedBetween, viewerBunchId } from './follows';
 import { likeOf } from './likes';
 import { myMembershipsByRecent } from './members';
 
+/** 가짜 DB 장소에는 행 ID가 없어 번들 ID와 순서로 만든 장소 ID(피드·상세·콕 응답이 함께 씀) */
+export const mockLocationId = (bundleId: number, index: number) => bundleId * 10 + index + 1;
+
 // 팔로잉·공개 피드(명세 025). 구간·광고 규칙은 명세, 응답 모양은 Swagger `FeedResponse`
 const DEFAULT_SIZE = 20;
 const MAX_SIZE = 50;
@@ -132,9 +135,8 @@ const cardOf = (state: MockDbState, bundle: MockBundle) => {
     date: bundle.date,
     coverImageUrl: bundle.photos[0]?.imageUrl ?? null,
     photos: bundle.photos.map(({ id, imageUrl, position }) => ({ id, imageUrl, position })),
-    // 가짜 DB 장소에는 행 ID가 없어 번들 ID로 만든 값
     locations: bundle.locations.map((location, index) => ({
-      id: bundle.id * 10 + index + 1,
+      id: mockLocationId(bundle.id, index),
       provider: location.provider,
       externalId: location.externalId,
       name: location.name,
