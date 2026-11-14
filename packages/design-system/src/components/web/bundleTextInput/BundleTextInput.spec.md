@@ -30,7 +30,7 @@
 ## 상태와 동작
 
 - 입력창 상태(기본·포커스·값 있음)는 core `TextField`를 따른다(`TextField.spec.md`).
-- `errorMessage`가 있으면 오류 문구를 보이고, 없으면 오류 영역을 보이지 않는다(Figma `showErrorText`). 알림 영역(`role="alert"`) 자체는 항상 마운트해 두고 비어 있으면 숨겨, 나중에 생긴 오류도 스크린 리더가 읽게 한다.
+- `errorMessage`가 있으면 오류 문구를 보이고, 없으면 오류 영역을 보이지 않는다(Figma `showErrorText`). 알림 영역(`role="alert"`) 자체는 항상 마운트해 두고 비어 있으면 화면에서만 숨겨(`sr-only`), 나중에 생긴 오류도 스크린 리더가 읽게 한다.
 
 ## 접근성
 

@@ -108,6 +108,13 @@ describe('useTitleCrdt', () => {
     expect(loadTitleDoc(result.current.serialize() ?? '').title).toBe(result.current.text);
   });
 
+  it('서버 문서가 손상돼 읽지 못하면 불러오기 실패로 알린다', async () => {
+    const { result } = render(detail('not-base64!!'));
+
+    await waitFor(() => expect(result.current.failed).toBe(true));
+    expect(result.current.ready).toBe(false);
+  });
+
   it('발행본에는 문서가 없어 입력을 받지 않는다', () => {
     const published = { ...detail(serverState), status: 'PUBLISHED' } as BundleDetail;
     const { result } = render(published);

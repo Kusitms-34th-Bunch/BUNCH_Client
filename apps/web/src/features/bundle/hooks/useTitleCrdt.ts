@@ -50,28 +50,28 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
   useEffect(() => {
     if (state === undefined || bundleId === undefined) return;
     let cancelled = false;
-    ensureTitleCrdt().then(
-      () => {
-        if (cancelled) return;
-        const remote = loadTitleDoc(state);
-        const sameBundle = bundleRef.current === bundleId;
-        bundleRef.current = bundleId;
-        const merged =
-          sameBundle && docRef.current ? mergeTitleDocs(docRef.current, remote) : remote;
-        docRef.current = merged;
-        if (composingRef.current) {
-          heldRef.current = true;
-          return;
-        }
-        viewRef.current = merged;
-        setFailed(false);
-        setText(titleText(merged));
-      },
-      () => {
-        // 불러오지 못하면 입력은 계속 막히므로 알리고, 다시 시도할 수 있게 함
+    const apply = () => {
+      const remote = loadTitleDoc(state);
+      const sameBundle = bundleRef.current === bundleId;
+      bundleRef.current = bundleId;
+      const merged = sameBundle && docRef.current ? mergeTitleDocs(docRef.current, remote) : remote;
+      docRef.current = merged;
+      if (composingRef.current) {
+        heldRef.current = true;
+        return;
+      }
+      viewRef.current = merged;
+      setFailed(false);
+      setText(titleText(merged));
+    };
+    ensureTitleCrdt()
+      // 문서를 불러오지 못하거나(청크 로드 실패) 서버 문서가 손상돼 읽지 못하면 입력은 계속 막히므로 알리고, 다시 시도할 수 있게 함
+      .then(() => {
+        if (!cancelled) apply();
+      })
+      .catch(() => {
         if (!cancelled) setFailed(true);
-      },
-    );
+      });
     return () => {
       cancelled = true;
     };
