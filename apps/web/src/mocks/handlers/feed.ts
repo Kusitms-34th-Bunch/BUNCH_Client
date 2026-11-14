@@ -1,6 +1,8 @@
 import { http } from 'msw';
+import { toWireId } from '@/shared/api/ids';
 import type { MockBundle, MockDbState } from '../db/types';
 import { mockDb } from '../db';
+import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { isBlockedBetween, viewerBunchId } from './follows';
 import { myMembershipsByRecent } from './members';
@@ -156,7 +158,112 @@ const cardOf = (state: MockDbState, bundle: MockBundle) => {
   };
 };
 
+/** 지금 회원·소속으로 프로필을 보일 수 있는 멤버(없으면 「작성자」, 명세 084) */
+const profileOf = (state: MockDbState, bunchId: number, memberId: number) => {
+  const member = state.members.find((item) => item.memberId === memberId);
+  const active = state.memberships.some(
+    (item) => item.bunchId === bunchId && item.memberId === memberId,
+  );
+  return member && active
+    ? { nickname: member.nickname, imageUrl: member.imageUrl, profileAvailable: true }
+    : { nickname: '작성자', imageUrl: null, profileAvailable: false };
+};
+
+/** 발행 번들 상세(명세 084, Swagger `BunchPublicBundleDetail`). 볼 수 없으면 오류 응답 */
+const publicDetailOf = (state: MockDbState, bunchId: number, bundleId: number) => {
+  const bunch = state.bunches.find((item) => item.id === bunchId);
+  if (!bunch) return fail(404, 'BUNCH_009');
+  const bundle = state.bundles.find((item) => item.id === bundleId);
+  // 없는·초안·경로가 다른·멤버 공개(PRIVATE) 발행본은 외부 상세에서 없음
+  if (
+    !bundle ||
+    bundle.bunchId !== bunchId ||
+    bundle.status !== 'PUBLISHED' ||
+    bundle.visibility !== 'PUBLIC'
+  ) {
+    return fail(404, 'RESOURCE_001');
+  }
+  const viewer = viewerBunchId(state);
+  // 권한·접근은 지금 번치 명의로 판단(다른 소속 번치의 역할은 보지 않음)
+  const mine =
+    viewer === bunchId
+      ? state.memberships.find(
+          (item) => item.bunchId === bunchId && item.memberId === MOCK_MY_MEMBER_ID,
+        )
+      : undefined;
+  const approved = state.follows.some(
+    (follow) =>
+      follow.followerBunchId === viewer &&
+      follow.targetBunchId === bunchId &&
+      follow.status === 'FOLLOWING',
+  );
+  // 비공개 번치의 공개 번들은 승인된 팔로워 번치만
+  if (isBlockedBetween(state, viewer, bunchId) || (bunch.isPrivate && !mine && !approved)) {
+    return fail(403, 'AUTH_002');
+  }
+  const owner = mine?.role === 'OWNER';
+  const locations = cardOf(state, bundle).locations;
+  return ok({
+    id: bundle.id,
+    bunchId,
+    title: bundle.title,
+    coverImageUrl: bundle.photos[0]?.imageUrl ?? null,
+    date: bundle.date,
+    // 명세: 옛 단일 장소 필드라 null, 장소는 locations
+    location: null,
+    publishedAt: bundle.publishedAt,
+    // ponytail: 가짜 DB에 픽이 없어 모두 0, 사진 픽은 상세 화면에서 읽기만
+    photos: bundle.photos.map(({ id, imageUrl, position }) => ({
+      id,
+      imageUrl,
+      position,
+      picks: { count: 0, pickedByMe: false, version: 0, members: [] },
+    })),
+    contributors: bundle.participants.map(({ memberId }) => ({
+      memberId,
+      ...profileOf(state, bunchId, memberId),
+    })),
+    comments: bundle.comments.map((comment, index) => {
+      const profile = profileOf(state, bunchId, comment.memberId);
+      return {
+        id: bundle.id * 100 + index + 1,
+        memberId: comment.memberId,
+        ...profile,
+        content: profile.profileAvailable ? comment.content : '삭제된 코멘트입니다',
+        updatedAt: comment.updatedAt,
+      };
+    }),
+    locations,
+    revision: bundle.revision,
+    visibility: bundle.visibility,
+    permissions: {
+      administrator: owner,
+      creator: bundle.createdBy === MOCK_MY_MEMBER_ID,
+      participant: bundle.participants.some(({ memberId }) => memberId === MOCK_MY_MEMBER_ID),
+      canEdit: owner,
+      canPublish: false,
+      canDelete: owner,
+      // 기능명세서 6.2.11: 메인 관리자가 아니면 우리 번치 번들도 신고
+      canReport: viewer !== undefined && !owner,
+      canLike: viewer !== undefined,
+      canComment: viewer !== undefined,
+    },
+    // ponytail: 좋아요·소셜 댓글은 가짜 DB에 없어 0, 좋아요·댓글 연결(API 연동 3·4번) 때 채움
+    likeCount: 0,
+    likedByCurrentBunch: false,
+    commentCount: 0,
+  });
+};
+
 export const feedHandlers = [
+  // GET /api/v1/bunches/{bunchId}/published-bundles/{bundleId}
+  http.get('/api/bunches/:bunchId/published-bundles/:bundleId', ({ params }) => {
+    const bunchId = toWireId(params.bunchId);
+    const bundleId = toWireId(params.bundleId);
+    if (bunchId === undefined || bundleId === undefined) return fail(400, 'COMMON_001');
+    return publicDetailOf(mockDb.get(), bunchId, bundleId);
+  }),
+
   // GET /api/v1/feed?size=&cursor=
   http.get('/api/feed', ({ request }) => {
     const url = new URL(request.url);
