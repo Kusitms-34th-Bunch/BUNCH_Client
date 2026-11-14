@@ -22,6 +22,7 @@
   1. 요청 전: 같은 query key로 진행 중인 조회를 취소하고, 현재 캐시 값을 스냅샷으로 남긴 뒤 optimistic 값을 적용한다.
   2. 실패 시: 스냅샷으로 롤백하고 사용자에게 실패를 알린다. 롤백 없이 에러만 삼키는 optimistic update는 리뷰에서 반려한다.
   3. 완료 시(성공·실패 무관): 해당 query key를 invalidate해 서버 응답이 최종적으로 화면을 결정하게 한다.
+     - 예외: mutation 응답이 바꾼 값 전체(예: 좋아요 여부와 수)를 돌려주고 대상이 infinite 목록이면, 성공했을 때에 한해 그 목록은 invalidate 대신 응답 값으로 캐시를 확정한다(받은 쪽 전부를 다시 받지 않게). 같은 데이터의 단건 캐시는 invalidate하고, 실패가 화면의 전제가 낡았다는 뜻(403·404·409)이면 목록도 invalidate한다. 되돌림은 목록 전체 스냅샷이 아니라 그 항목만 기준값으로 한다(`features/feed/queries/like.ts`).
   - 같은 데이터가 일반 목록과 infinite 목록에 함께 캐시돼 있으면 prefix로 `getQueriesData`(스냅샷)·`setQueriesData`(적용)를 하고, 두 캐시 모양(배열과 `pages`)을 모두 처리하는 갱신 함수 하나를 `lib/`에 순수 함수로 둔다.
 
 ## 파일 배치 (web)

@@ -363,6 +363,11 @@ export const createSeed = (): MockDbState => ({
     },
   ],
   reports: [],
+  // 공개 번치(3)의 「가평 첫 캠핑」에 책방산책(4)과 내 두 번째 번치(퇴근런클럽)가 누른 좋아요
+  likes: [
+    { bunchId: MOCK_EXTERNAL_BUNCH_IDS.private, bundleId: 901 },
+    { bunchId: MOCK_SECOND_BUNCH_ID, bundleId: 901 },
+  ],
   // 여행쥬아: 읽지 않은 3개(최신순 앞), 읽은 1개. 마지막 번들(9999)은 지워져 열 수 없는 알림. 퇴근런클럽: 읽지 않은 1개
   notifications: [
     {

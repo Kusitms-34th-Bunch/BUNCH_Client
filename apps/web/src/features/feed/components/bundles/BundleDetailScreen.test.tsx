@@ -9,7 +9,6 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BundleBunchSource, BundleDetailResponse } from '../../model/bundleDetail';
 import { bundleEdits } from '../../lib/bundleEdits';
-import { likeStore } from '../../lib/likeStore';
 import { bundleDetailKeys } from '../../queries/bundleDetail';
 import { BundleDetailScreen } from './BundleDetailScreen';
 
@@ -149,7 +148,6 @@ beforeEach(() => {
   push.mockClear();
   back.mockClear();
   replace.mockClear();
-  likeStore.clear();
   bundleEdits.clear();
   toast.mockClear();
 });
@@ -245,13 +243,27 @@ describe('BundleDetailScreen', () => {
     expect(document.activeElement).toBe(screen.getByRole('textbox'));
   });
 
-  it('좋아요는 수와 함께 바뀐다', async () => {
+  it('좋아요는 응답 전에 수와 함께 바뀌고, 실패하면 되돌린다', async () => {
     const user = userEvent.setup();
+    // 응답을 붙잡아 둘 약속을 요청 전에 만들어, 요청이 늦게 들어와도 풀림
+    let release = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      http.put('/api/bundles/:bundleId/like', async () => {
+        await held;
+        return fail(500, 'COMMON_999');
+      }),
+    );
     renderDetail('2');
     const like = screen.getByRole('button', { name: /좋아요/ });
     await user.click(like);
     expect(like).toHaveAttribute('aria-pressed', 'true');
     expect(like).toHaveAccessibleName('좋아요 5');
+
+    release();
+    await waitFor(() => expect(like).toHaveAccessibleName('좋아요 4'));
+    expect(like).toHaveAttribute('aria-pressed', 'false');
+    expect(toast).toHaveBeenCalledWith('좋아요를 반영하지 못했어요. 다시 시도해 주세요');
   });
 
   it('소속 번치가 없으면 입력 안내에 번치 이름이 없고, 번치 명의 행동은 토스트로 막는다', async () => {
