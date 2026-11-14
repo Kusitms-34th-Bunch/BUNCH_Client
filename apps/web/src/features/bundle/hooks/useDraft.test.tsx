@@ -1,6 +1,6 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { delay, http } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
@@ -487,6 +487,54 @@ describe('useDraft 발행', () => {
     // fill()이 고른 「멤버 공개」가 서버 초안에는 저장되지 않고 발행 요청에만 실림
     expect(bodies).toHaveLength(1);
     expect(bodies[0]).toMatchObject({ visibility: 'PRIVATE' });
+  });
+
+  it('네트워크 오류 뒤 같은 내용으로 다시 업로드하면 같은 요청 키로 보낸다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const keys: (string | null)[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return keys.length === 1 ? HttpResponse.error() : undefined;
+      }),
+    );
+
+    let first: string | undefined;
+    let second: string | undefined;
+    await act(async () => {
+      first = await result.current.actions.publish();
+    });
+    await act(async () => {
+      second = await result.current.actions.publish();
+    });
+
+    expect(first).toBe('failed');
+    expect(second).toBe('published');
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('서버가 요청을 거절한 뒤에는 새 요청 키를 쓴다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const keys: (string | null)[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return keys.length === 1 ? fail(409, 'BUNDLE_002') : undefined;
+      }),
+    );
+
+    await act(async () => {
+      await result.current.actions.publish();
+    });
+    await act(async () => {
+      await result.current.actions.publish();
+    });
+
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).not.toBe(keys[0]);
   });
 
   it('공개 범위를 고르지 않으면 발행 요청을 보내지 않고 막는다', async () => {

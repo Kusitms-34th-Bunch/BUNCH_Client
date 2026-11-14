@@ -68,4 +68,14 @@ describe('BundleDraftVisibility', () => {
 
     expect(replace).toHaveBeenCalledWith('/bunch/drafts/draft-1');
   });
+
+  it('뒤로 가면 고른 공개 범위를 버린다(다시 들어오면 아무것도 고르지 않은 상태)', async () => {
+    renderVisibility();
+
+    await userEvent.click(await screen.findByRole('radio', { name: '멤버 공개' }));
+    expect(screen.getByRole('radio', { name: '멤버 공개' })).toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
+
+    expect(screen.getByRole('radio', { name: '멤버 공개' })).not.toBeChecked();
+  });
 });

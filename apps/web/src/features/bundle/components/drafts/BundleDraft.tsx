@@ -49,7 +49,7 @@ export function BundleDraft() {
           draft={state.draft}
           viewer={state.viewer}
           saveStatus={state.saveStatus}
-          offline={!online}
+          offline={!online || state.realtime.down}
           actions={actions}
           // 번치 홈에서 만든 초안이면(`from=home`) 거쳐 온 멤버·사진 선택이 아니라 번치 홈으로 이동
           // 그 밖에는 들어온 곳으로 가고, 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로가기는 묻지 않음, 기능 spec 4.3.1)
@@ -59,7 +59,11 @@ export function BundleDraft() {
               : backOr(BUNDLE_PATHS.bunchHome)
           }
           onLeave={() => void leaveDraft(isDraftCreator(state.draft, state.viewer))}
-          onRetry={recheck}
+          // 「재시도」는 브라우저 연결 상태를 다시 읽고 끊긴 실시간 연결도 기다리지 않고 다시 맺음
+          onRetry={() => {
+            recheck();
+            state.realtime.retry();
+          }}
           // 조건을 채우면 공개 범위 화면으로 가서 거기서 업로드(기능 spec 4.3.12)
           onUpload={() => startMoving(() => router.push(BUNDLE_PATHS.visibility(draftId)))}
           onAddMember={() => router.push(BUNDLE_PATHS.members(draftId))}

@@ -102,6 +102,7 @@ export function useDraftFixture(draftId: string | undefined): {
     state: exists
       ? {
           kind: 'ready',
+          realtime: { down: false, retry: () => undefined },
           draft,
           viewer: draftViewerFixture,
           bunchMembers: bunchMembersFixture,

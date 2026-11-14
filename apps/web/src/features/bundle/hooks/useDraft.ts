@@ -35,6 +35,7 @@ import {
   useSaveDateMutation,
   useSaveTitleMutation,
 } from '../queries/bundles';
+import { useBundleRealtime } from './useBundleRealtime';
 
 // 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 날짜는 고르는 즉시 저장하고 공개 범위는 발행 요청으로만 보냄
 // 위치가 없을 때 쓰는 고정된 빈 목록(렌더마다 새 배열이 되어 draft를 다시 만들지 않게 함)
@@ -76,6 +77,8 @@ export type DraftState =
       /** 번치 멤버 전체(참여하지 않은 멤버 포함) */
       bunchMembers: readonly DraftMember[];
       saveStatus: SaveStatus;
+      /** 실시간 연결: 끊겨 편집을 막아야 하면 down, 「재시도」는 retry */
+      realtime: { down: boolean; retry: () => void };
     };
 
 /** 발행 시도 결과(화면은 성공일 때만 이동하고 나머지는 안내가 이미 나감) */
@@ -84,7 +87,8 @@ export type PublishOutcome = 'published' | 'blocked' | 'failed';
 export type DraftActions = {
   setTitle: (_title: string) => void;
   setComment: (_memberId: string, _text: string) => void;
-  setVisibility: (_visibility: DraftVisibility) => void;
+  /** 공개 범위를 고름(서버에는 업로드 요청으로만 보냄). null은 고른 값을 버림(공개 범위 화면에서 뒤로 갈 때, 기능 spec 4.3.9) */
+  setVisibility: (_visibility: DraftVisibility | null) => void;
   addLocation: (_place: PlaceResult) => void;
   removeLocation: (_locationId: string) => void;
   /** 위치를 다른 자리로 옮김(햄버거를 잡고 끌어 순서 바꾸기, 자리는 0부터) */
@@ -158,6 +162,8 @@ export function useDraft(draftId: string | undefined): {
   const addParticipant = useAddParticipantMutation(bunchId, bundleId);
   const removeParticipant = useRemoveParticipantMutation(bunchId, bundleId);
   const publishMutation = usePublishBundleMutation(bunchId, bundleId);
+  // 초안이 열려 있는 동안 실시간으로 연결(발행·삭제되면 끊음). 끊긴 사이의 변경은 다시 연결될 때 최신 상세로 맞춤
+  const realtime = useBundleRealtime(bunchId, bundleId, detail?.status === 'DRAFT');
 
   const [pending, setPending] = useState<Pending>({});
   // 화면에서 위치를 바꾸기 전에는 서버에 저장된 위치를 보이고, 바꾼 뒤에는 화면 값(위치 저장은 장소 검색 이슈에서 연결)
@@ -176,6 +182,8 @@ export function useDraft(draftId: string | undefined): {
   const [stalled, setStalled] = useState(false);
   // 업로드 직전 공개 범위 화면에서 고른 값(서버에는 발행 요청으로만 보냄). 고르기 전에는 서버의 초안 값
   const [visibilityChoice, setVisibilityChoice] = useState<DraftVisibility | undefined>(undefined);
+  // 네트워크 오류 뒤 같은 내용으로 다시 업로드할 때 같은 요청 키를 써서 한 번만 발행되게 함(기능 spec 4.3.9·4.3.12)
+  const publishAttempt = useRef<{ signature: string; key: string } | undefined>(undefined);
   // 입력란에 방금 친 원문: 서버가 앞뒤 공백을 지워 돌려줘도 입력 중 띄어쓰기가 사라지지 않게 보여 줌
   const [typed, setTyped] = useState<{ title?: string }>({});
 
@@ -497,7 +505,7 @@ export function useDraft(draftId: string | undefined): {
       schedule(SAVE_DELAY_MS);
     },
     // 공개 범위는 고르기만 하고 저장하지 않음: 업로드(발행) 요청에 최종 선택을 함께 보냄(v5 명세)
-    setVisibility: setVisibilityChoice,
+    setVisibility: (visibility) => setVisibilityChoice(visibility ?? undefined),
     addLocation: (place) =>
       setEditedLocations((current) => {
         const base = current ?? detailRef.current?.locations ?? NO_LOCATIONS;
@@ -609,16 +617,28 @@ export function useDraft(draftId: string | undefined): {
         toast(BUNDLE_MESSAGES.uploadIncomplete);
         return 'blocked';
       }
+      // 같은 키에 다른 내용을 보내면 서버가 거절하므로 범위나 revision이 바뀌면 새 키를 씀
+      const visibility = chosen === 'public' ? 'PUBLIC' : 'PRIVATE';
+      const signature = `${visibility}:${latest.revision}`;
+      if (publishAttempt.current?.signature !== signature) {
+        publishAttempt.current = { signature, key: createIdempotencyKey() };
+      }
       setPublishing(true);
       try {
         await publishMutation.mutateAsync({
-          visibility: chosen === 'public' ? 'PUBLIC' : 'PRIVATE',
+          visibility,
           expectedRevision: latest.revision,
+          idempotencyKey: publishAttempt.current.key,
         });
+        publishAttempt.current = undefined;
         setPublishedByMe(true);
         return 'published';
       } catch (error) {
         setPublishing(false);
+        // 서버가 요청 자체를 거절했으면(4xx) 같은 요청이 다시 거절될 수 있어 키를 비우고, 응답이 없거나 5xx면 키를 유지함
+        const status = (error as { status?: number } | null)?.status;
+        if (status !== undefined && status >= 400 && status < 500)
+          publishAttempt.current = undefined;
         if (readPublishBlockers(error) !== undefined) {
           toast(BUNDLE_MESSAGES.uploadIncomplete);
           return 'blocked';
@@ -668,6 +688,7 @@ export function useDraft(draftId: string | undefined): {
       viewer,
       bunchMembers: members,
       saveStatus: stalled ? 'failed' : busy ? 'saving' : 'saved',
+      realtime: { down: realtime.down, retry: realtime.retry },
     };
   }
 

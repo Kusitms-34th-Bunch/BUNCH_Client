@@ -83,7 +83,10 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
       // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
       onBack={() => {
         // 업로드 중에는 초안이 사라져 돌아갈 곳을 만들 수 없음
-        if (draftId !== undefined && !uploading) backOr(BUNDLE_PATHS.draft(draftId));
+        if (draftId === undefined || uploading) return;
+        // 뒤로 가면 고른 공개 범위를 버림(기능 spec 4.3.9)
+        actions.setVisibility(null);
+        backOr(BUNDLE_PATHS.draft(draftId));
       }}
       onUpload={upload}
     />

@@ -24,6 +24,7 @@
     "@dnd-kit/utilities": "3.2.2",
     "@sentry/nextjs": "^11.7.0",
     "@ssgoi/react": "^7.4.1",
+    "@stomp/stompjs": "catalog:",
     "@tanstack/query-async-storage-persister": "5.101.2",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "5.101.2",

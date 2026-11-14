@@ -107,6 +107,15 @@ export const useLeaveBundleMutation = (bunchId: string | undefined) => {
   });
 };
 
+/** 번들 상세를 최신으로 다시 받음(실시간 연결이 끊겼다 돌아왔을 때처럼 놓친 변경을 맞출 때) */
+export const useRefetchBundleDetail = (
+  bunchId: string | undefined,
+  bundleId: string | undefined,
+) => {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: bundleKeys.detail(bunchId, bundleId) });
+};
+
 // 저장·참여자 변경 성공 응답(전체 BundleSnapshot)으로 상세 캐시를 바로 갱신하고,
 // 버전 충돌이면 서버의 최신 상세를 다시 받아 화면이 최신 버전으로 이어서 저장하게 함
 const useBundleCacheSync = (bunchId: string | undefined, bundleId: string | undefined) => {
@@ -244,9 +253,17 @@ export const usePublishBundleMutation = (
   const queryClient = useQueryClient();
   const sync = useBundleCacheSync(bunchId, bundleId);
   return useMutation({
-    mutationFn: (input: { visibility: 'PUBLIC' | 'PRIVATE'; expectedRevision: number }) => {
+    mutationFn: ({
+      idempotencyKey = createIdempotencyKey(),
+      ...input
+    }: {
+      visibility: 'PUBLIC' | 'PRIVATE';
+      expectedRevision: number;
+      /** 응답이 유실된 뒤 다시 보내도 한 번만 발행되도록 호출하는 쪽이 같은 키를 유지 */
+      idempotencyKey?: string;
+    }) => {
       const ids = requireIds(bunchId, bundleId);
-      return publishBundle(ids.bunchId, ids.bundleId, input, createIdempotencyKey());
+      return publishBundle(ids.bunchId, ids.bundleId, input, idempotencyKey);
     },
     onError: sync.onError,
     onSuccess: async (bundle: BundleDetail) => {
