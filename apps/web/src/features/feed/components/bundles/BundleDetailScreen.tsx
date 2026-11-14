@@ -31,6 +31,7 @@ import { usePreservedCallback } from 'react-simplikit';
 import commentEmpty from '@/shared/assets/images/empty/comment-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { LoadingRipple } from '@/shared/components/loading/LoadingRipple';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
@@ -40,6 +41,7 @@ import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
+import { useBundleComments } from '../../hooks/useBundleComments';
 import { useBundleEdits } from '../../hooks/useBundleEdits';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
@@ -48,14 +50,6 @@ import { useHoldScrollOnLeave } from '../../hooks/useHoldScrollOnLeave';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
 import { bundleEdits } from '../../lib/bundleEdits';
-import {
-  addComment,
-  addReply,
-  badgeColorOf,
-  formatCommentDate,
-  hideComment,
-  markDeleted,
-} from '../../lib/comments';
 import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { withRo } from '../../lib/josa';
 import { type BundleBunchSource, toFeedBundleDetail, toFeedBunch } from '../../model/bundleDetail';
@@ -74,13 +68,18 @@ type BundleDetailScreenProps = {
 };
 
 const COMMENT_MAX_LENGTH = 200;
+const ANNOUNCE_CLEAR_MS = 5000;
+const codeOf = (error: unknown) => (isApiError(error) ? error.code : undefined);
+// 번들을 볼 수 없게 됨(명세 014~017: 비공개 접근 불가·차단·없음·내보내짐). 가입 미완료 등 계정 오류는 빼고 코드로 가림
+const isGone = (error: unknown) =>
+  ['AUTH_002', 'BUNCH_009', 'RESOURCE_001', 'BUNCH_008'].includes(codeOf(error) ?? '');
 // 버튼 이름에 붙일 댓글 앞부분: 줄바꿈을 공백으로, 이모지가 반으로 잘리지 않게 글자 단위로 20자
 const previewOf = (content = '') =>
   Array.from(content.replace(/\s+/g, ' ').trim()).slice(0, 20).join('');
 
 /**
  * 번들 상세(기능명세서 6.2, Figma `5367:103510`·`5367:103541`): 번치 정보 → 제목·위치·날짜 → 사진 → 멤버별 코멘트 → 좋아요·댓글 수 → 댓글 목록, 아래 고정 입력란
- * 내용은 발행 번들 상세(명세 084). 댓글·신고·번들 삭제·공개 범위는 아직 화면에서만 바뀜(API 연동 3~7번). 「수정하기」는 메뉴만 있음
+ * 내용은 발행 번들 상세(명세 084), 댓글은 명세 014~017. 신고·번들 삭제·공개 범위는 아직 화면에서만 바뀜(API 연동 5~7번). 「수정하기」는 메뉴만 있음
  */
 export function BundleDetailScreen({
   bunchId,
@@ -96,6 +95,10 @@ export function BundleDetailScreen({
   const { viewer, viewerFailed, viewerFetching, retryViewer, asBunch } = useFeedViewer();
   const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
   const detail = useQuery(bundleDetailQueryOptions(bunchId, bundleId, viewerId));
+  // 댓글 커서를 이어 쓸 수 없으면(다른 기기에서 번치 전환 등) 명의도 다시 받음
+  const refreshViewer = usePreservedCallback(() => void retryViewer());
+  const thread = useBundleComments(bundleId, viewerId, refreshViewer);
+  const { comments, moreRef } = thread;
   const likes = useLikeToggle(viewer);
   const keyboardOpen = useKeyboardOpen();
   const commentsRef = useRef<HTMLElement>(null);
@@ -116,20 +119,20 @@ export function BundleDetailScreen({
         );
   // 「다시 시도」가 성공해 버튼이 사라지면 번들 제목으로 초점
   const focusTitleAfterRetry = useRef(false);
-  // ponytail: 화면 안에서만 바뀜. 댓글 API(API 연동 4번)를 연결하면 댓글 query 캐시로 대체
-  const [comments, setComments] = useState<readonly FeedComment[]>([]);
-  const [addedCount, setAddedCount] = useState(0);
-  const [hiddenCount, setHiddenCount] = useState(0);
   const [announcement, setAnnouncement] = useState('');
   // 같은 문구를 이어서 알려도 다시 읽히도록 끝에 보이지 않는 공백을 번갈아 붙임
-  const announce = (message: string) =>
+  // 몇 초 뒤 비워, 뒤이은 받는 중 안내가 읽히고 끝난 뒤 지난 안내로 돌아가지 않게 함
+  const announceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(announceTimer.current), []);
+  const announce = (message: string) => {
     setAnnouncement((current) => (current === message ? `${message}\u00a0` : message));
+    clearTimeout(announceTimer.current);
+    announceTimer.current = setTimeout(() => setAnnouncement(''), ANNOUNCE_CLEAR_MS);
+  };
   // 등록·삭제가 반영된 뒤 초점을 옮길 댓글
   const focusCommentId = useRef<string | null>(null);
   // 지운 결과(답글 상태 해제로 입력란 높이도 바뀜)가 그려진 뒤 띄울 토스트
   const pendingToast = useRef<string | null>(null);
-  // 화면에서 등록한 댓글 ID(시각은 같은 밀리초에 겹칠 수 있어 순번을 씀)
-  const localId = useRef(0);
 
   useHoldScrollOnLeave(commentsRef);
 
@@ -191,18 +194,31 @@ export function BundleDetailScreen({
     return () => cancelAnimationFrame(frame);
   }, [focusComments, contentReady, goToComments]);
 
+  // 쓰는 사이 번들을 볼 수 없게 됨(지워짐·멤버 공개·차단·내보내짐): 이전 화면으로 가서 알림
+  const left = useRef(false);
+  const leaveGone = useCallback(() => {
+    if (left.current) return;
+    left.current = true;
+    backOr(FEED_PATHS.home);
+    toastAfterNavigation(text.bundleGone);
+  }, [backOr]);
+  // 답글·삭제 실패 뒤 다시 받은 목록이 번들을 볼 수 없다고 하면 떠남(답글 대상 없음과 번들 없음이 같은 404라서)
+  const listGone = isGone(thread.error) && thread.failed;
+  useEffect(() => {
+    if (listGone && contentReady) leaveGone();
+  }, [listGone, contentReady, leaveGone]);
+
   // 남의 댓글 신고: 접수되면 그 댓글(원댓글이면 답글까지)을 바로 숨기고 그 자리 다음 댓글로 초점
   // 시트가 닫힌 시점의 최신 목록으로 계산
   const hideReported = usePreservedCallback((comment: FeedComment) => {
-    const { comments: next, hiddenCount: count } = hideComment(comments, comment.id);
     const index = comments.findIndex(({ id }) => id === comment.id);
-    focusCommentId.current = next[index]?.id ?? next[index - 1]?.id ?? 'none';
+    // 숨길 범위(원댓글이면 그 답글까지) 다음의 첫 댓글, 없으면 앞 댓글
+    const gone = (item: FeedComment) => item.id === comment.id || item.parentId === comment.id;
+    const nextItem = comments.slice(index).find((item) => !gone(item)) ?? comments[index - 1];
+    focusCommentId.current = nextItem?.id ?? 'none';
     pendingToast.current = text.reported;
-    setComments(next);
-    setHiddenCount((value) => value + count);
-    setReplyTarget((target) =>
-      target && !next.some(({ id }) => id === target.id) ? null : target,
-    );
+    thread.hide(comment.id);
+    setReplyTarget((target) => (target?.id === comment.id ? null : target));
   });
 
   const header = (trailing?: ReactNode) => (
@@ -276,32 +292,39 @@ export function BundleDetailScreen({
   const submit = (value: string) =>
     asBunch(() => {
       const content = value.trim();
-      // 보내면 입력란을 바로 비워 보내기가 꺼지므로 연타해도 한 번만 등록됨
+      // 보내는 동안은 다시 보내지 않음(연타해도 한 번만 등록, hook이 막음)
       if (!viewer || !content) return;
-      const time = Date.now();
-      const comment: FeedComment = {
-        id: `local-${(localId.current += 1)}`,
-        author: viewer.memberName ?? text.me,
-        avatarSrc: viewer.memberImageSrc,
-        bunchName: viewer.name,
-        bunchColor: badgeColorOf(viewer.characterType),
-        date: formatCommentDate(time),
-        content,
-        mine: true,
-        ...(replyTarget && { reply: true, parentId: replyTarget.id }),
-      };
-      const next = replyTarget
-        ? addReply(comments, replyTarget.id, comment)
-        : addComment(comments, comment);
-      // 원댓글을 못 찾으면(이미 사라짐) 등록하지 않음
-      if (next === comments) return;
-      setComments(next);
-      setAddedCount((count) => count + 1);
-      setDraft('');
-      setReplyTarget(null);
-      announce(replyTarget ? text.replyAdded : text.commentAdded);
-      focusCommentId.current = comment.id;
+      const parentId = replyTarget?.id ?? null;
+      thread.create(content, parentId, {
+        onSuccess: (saved) => {
+          setDraft('');
+          setReplyTarget(null);
+          announce(parentId ? text.replyAdded : text.commentAdded);
+          focusCommentId.current = String(saved.id);
+        },
+        // 실패하면 쓴 내용은 그대로 둠
+        onError: (error) => {
+          // 답글 대상이 그사이 지워졌거나 숨겨짐: 답글 상태를 풀고 목록을 맞춤(번들이 사라졌으면 다시 받은 목록이 알려 떠남)
+          if (codeOf(error) === 'BUNDLE_002' || (parentId && codeOf(error) === 'RESOURCE_001')) {
+            setReplyTarget(null);
+            thread.restart();
+            toast(text.replyTargetDeleted);
+            return;
+          }
+          failCommentAction(error);
+        },
+      });
     });
+
+  // 댓글 등록·삭제의 공통 실패: 번들을 볼 수 없게 됐으면 떠나고, 소속 번치가 사라졌으면 명의를 다시 받음
+  const failCommentAction = (error: unknown) => {
+    if (isGone(error)) {
+      leaveGone();
+      return;
+    }
+    if (codeOf(error) === 'BUNCH_010') void retryViewer();
+    toast(text.actionFailed);
+  };
 
   const openDeleteConfirm = (comment: FeedComment) => {
     let confirmed = false;
@@ -322,11 +345,22 @@ export function BundleDetailScreen({
       // 창이 다 닫힌 뒤 지우고 알려 토스트가 창 뒤에 묻히지 않게 함. 더보기가 사라지므로 그 댓글로 초점
       () => {
         if (!confirmed) return;
-        setComments((current) => markDeleted(current, comment.id, text.leftMember));
-        // 삭제된 댓글에는 답글을 달 수 없으므로 그 댓글에 쓰던 답글 상태를 풂
-        setReplyTarget((target) => (target?.id === comment.id ? null : target));
-        focusCommentId.current = comment.id;
-        pendingToast.current = text.commentDeleted;
+        thread.remove(comment, {
+          onSuccess: () => {
+            // 삭제된 댓글에는 답글을 달 수 없으므로 그 댓글에 쓰던 답글 상태를 풂
+            setReplyTarget((target) => (target?.id === comment.id ? null : target));
+            focusCommentId.current = comment.id;
+            pendingToast.current = text.commentDeleted;
+          },
+          onError: (error) => {
+            // 이미 지워졌거나 없는 댓글이면 바뀐 상태로 맞추고 따로 알리지 않음(번들이 사라졌으면 다시 받은 목록이 알려 떠남)
+            if (codeOf(error) === 'RESOURCE_001') {
+              thread.restart();
+              return;
+            }
+            failCommentAction(error);
+          },
+        });
       },
     );
   };
@@ -572,13 +606,18 @@ export function BundleDetailScreen({
         liked={bundle.liked}
         likeCount={bundle.likeCount}
         onLike={() => asBunch(() => likes.toggle(bundle))}
-        commentCount={bundle.commentCount + addedCount - hiddenCount}
+        commentCount={(thread.totalCount ?? bundle.commentCount) - thread.hiddenCount}
         onComment={goToComments}
         className="pb-padding-p8 pt-6"
       />
       <div aria-hidden="true" className="bg-surface-secondary h-2" />
+      {/* 늘 있는 상태 영역에서 글자만 바꿔 읽어 줌(등록 결과, 댓글을 받는 중) */}
       <p role="status" className="sr-only">
-        {announcement}
+        {thread.loading
+          ? text.commentsLoading
+          : thread.fetchingMore
+            ? text.moreCommentsLoading
+            : announcement}
       </p>
       <section
         ref={commentsRef}
@@ -595,7 +634,11 @@ export function BundleDetailScreen({
                 tabIndex={-1}
                 // 등록·삭제 뒤 초점이 오면 어떤 댓글인지 읽히게 이름을 붙임
                 aria-label={
-                  comment.deleted ? text.deletedCommentLabel : text.commentLabel(comment.author)
+                  comment.deleted
+                    ? text.deletedCommentLabel
+                    : comment.reply
+                      ? text.replyLabel(comment.author)
+                      : text.commentLabel(comment.author)
                 }
                 className="focus-visible:outline-border-brand rounded-r4 focus-visible:outline-2"
               >
@@ -609,9 +652,9 @@ export function BundleDetailScreen({
                   reply={comment.reply}
                   deleted={comment.deleted}
                   replyCount={comment.replyCount}
-                  // 삭제된 댓글에는 답글을 달 수 없음
+                  // 답글은 서버 권한(삭제되지 않은 원댓글). 소속 번치가 없으면 눌렀을 때 안내
                   onReply={
-                    comment.deleted
+                    comment.deleted || !(comment.canReply || viewer === null)
                       ? undefined
                       : () =>
                           asBunch(() => {
@@ -620,22 +663,47 @@ export function BundleDetailScreen({
                           })
                   }
                   moreLabel={
-                    comment.mine
-                      ? text.myCommentMore
+                    comment.canDelete
+                      ? text.myCommentMore(previewOf(comment.content))
                       : text.commentMore(comment.author, previewOf(comment.content))
                   }
-                  // 내 댓글은 삭제, 남의 댓글은 신고. 삭제된 댓글은 메뉴 없음
+                  // 서버 권한대로 내 댓글은 삭제, 남의 댓글은 신고. 소속 번치가 없으면 신고를 눌렀을 때 안내
                   onMore={
                     comment.deleted
                       ? undefined
-                      : comment.mine
+                      : comment.canDelete
                         ? () => openCommentMenu(comment)
-                        : () => openReportMenu(text.commentMenuTitle, () => reportComment(comment))
+                        : comment.canReport || viewer === null
+                          ? () =>
+                              openReportMenu(text.commentMenuTitle, () => reportComment(comment))
+                          : undefined
                   }
                 />
               </li>
             ))}
           </ul>
+        ) : thread.loading ? (
+          <div className="flex h-64 items-center justify-center">
+            <LoadingRipple />
+          </div>
+        ) : thread.failed ? (
+          // 기능명세서는 토스트지만 다시 받을 길이 없어 그 자리에 안내와 다시 시도를 둠
+          <div className="gap-s8 flex h-64 flex-col items-center justify-center">
+            <p role="alert" className="typography-body-4-regular text-text-quinary">
+              {text.actionFailed}
+            </p>
+            <Button
+              variant="tertiary"
+              size="md"
+              // 누르면 받는 중으로 바뀌어 버튼이 사라지므로 초점을 댓글 영역에 둠
+              onClick={() => {
+                commentsRef.current?.focus({ preventScroll: true });
+                thread.retry();
+              }}
+            >
+              {text.retry}
+            </Button>
+          </div>
         ) : (
           // Figma 5367:103541: 일러스트 72×72와 문구(13/18) 사이 12, 영역 256 안에서 가운데
           <div className="gap-s6 flex h-64 flex-col items-center justify-center">
@@ -644,6 +712,39 @@ export function BundleDetailScreen({
             <p className="typography-body-4-regular text-text-quinary">{text.noComments}</p>
           </div>
         )}
+        {/* 보이면 다음 쪽(실패하면 다시 내려올 때 다시 시도) */}
+        <div ref={moreRef} aria-hidden="true" className="h-px" />
+        {thread.fetchingMore && !thread.moreFailed ? (
+          <div className="flex justify-center pb-6">
+            <LoadingRipple />
+          </div>
+        ) : null}
+        {thread.moreFailed ? (
+          // 목록 끝이 다시 보일 때도 다시 받지만, 스크롤 없이 다시 받을 수 있게 버튼을 둠
+          <div className="gap-s4 flex flex-col items-center pb-6">
+            <p
+              // 다시 실패하면 새로 그려 같은 안내도 다시 읽힘
+              key={thread.moreFailures}
+              role="alert"
+              className="typography-body-4-regular text-text-quinary"
+            >
+              {text.moreCommentsFailed}
+            </p>
+            {/* 받고 나면 버튼이 사라지므로 누를 때 초점을 댓글 영역에 둠. 받는 동안은 버튼을 남기고 막음 */}
+            <Button
+              variant="tertiary"
+              size="md"
+              aria-disabled={thread.fetchingMore}
+              onClick={() => {
+                if (thread.fetchingMore) return;
+                commentsRef.current?.focus({ preventScroll: true });
+                thread.loadMore();
+              }}
+            >
+              {text.retry}
+            </Button>
+          </div>
+        ) : null}
       </section>
     </PageShell>
   );
