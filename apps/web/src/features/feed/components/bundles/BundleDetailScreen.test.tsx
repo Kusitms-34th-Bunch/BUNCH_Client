@@ -9,7 +9,7 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BundleBunchSource, BundleDetailResponse } from '../../model/bundleDetail';
 import { bundleEdits } from '../../lib/bundleEdits';
-import { bundleDetailKeys } from '../../queries/bundleDetail';
+import { feedKeys } from '../../queries/keys';
 import { BundleDetailScreen } from './BundleDetailScreen';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
@@ -124,7 +124,7 @@ const renderDetail = (
   const detail = DETAILS[bundleId];
   const bunchId = String(detail?.bunchId ?? 1);
   if (detail) {
-    client.setQueryData(bundleDetailKeys.detail(bunchId, bundleId, viewer?.id ?? null), detail);
+    client.setQueryData(feedKeys.detail(bunchId, bundleId, viewer?.id ?? null), detail);
   }
   return render(
     <BundleDetailScreen
@@ -593,7 +593,7 @@ describe('BundleDetailScreen', () => {
   it('번치 정보를 받지 못해도 내용은 보이고, 번치 버튼 이름은 「번치」다', () => {
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: null });
-    client.setQueryData(bundleDetailKeys.detail('3', '3', null), DETAILS['3']);
+    client.setQueryData(feedKeys.detail('3', '3', null), DETAILS['3']);
     render(
       <BundleDetailScreen
         bunchId="3"
@@ -614,7 +614,7 @@ describe('BundleDetailScreen', () => {
     );
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
-    const key = bundleDetailKeys.detail('3', '3', '1');
+    const key = feedKeys.detail('3', '3', '1');
     client.setQueryData(key, DETAILS['3']);
     render(
       <BundleDetailScreen
@@ -692,7 +692,7 @@ describe('BundleDetailScreen', () => {
   it('번치 정보가 늦게 와도 ?focus=comments면 본문이 그려진 뒤 입력란에 초점을 둔다', async () => {
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
-    client.setQueryData(bundleDetailKeys.detail('3', '3', '1'), DETAILS['3']);
+    client.setQueryData(feedKeys.detail('3', '3', '1'), DETAILS['3']);
     const view = (bunch: BundleBunchSource | undefined) => (
       <BundleDetailScreen bunchId="3" bundleId="3" bunch={bunch} focusComments links={links} />
     );
@@ -728,7 +728,7 @@ describe('BundleDetailScreen', () => {
     failing = false;
     await user.click(screen.getByRole('button', { name: '다시 시도' }));
     await waitFor(() =>
-      expect(client.getQueryState(bundleDetailKeys.detail('3', '3', '1'))?.status).toBe('success'),
+      expect(client.getQueryState(feedKeys.detail('3', '3', '1'))?.status).toBe('success'),
     );
 
     rerender(view(BUNCHES['3']));

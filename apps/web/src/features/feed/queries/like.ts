@@ -13,8 +13,7 @@ import type { FeedPage } from '../model/feed';
 import { setBundleLike } from '../api/like';
 import { FEED_MESSAGES } from '../constants/messages';
 import { patchDetailLike, patchFeedLike, toggledLike, type LikeState } from '../lib/likeCache';
-import { bundleDetailKeys } from './bundleDetail';
-import { feedKeys } from './feed';
+import { feedKeys } from './keys';
 
 /** viewerId: 누른 시점의 화면 명의(요청 중 명의가 바뀌어도 그 요청의 캐시만 다룸) */
 export type LikeVariables = { bundleId: number; liked: boolean; viewerId: string | null };
@@ -32,12 +31,9 @@ const feedFilters = ({ viewerId }: LikeVariables): QueryFilters => ({
   queryKey: feedKeys.list(viewerId),
   exact: true,
 });
-// 상세 key: [...all, bunchId, bundleId, viewerId]
+// 어느 번치 주소로 열었든 그 명의의 이 번들 상세
 const detailFilters = ({ viewerId, bundleId }: LikeVariables): QueryFilters => ({
-  predicate: ({ queryKey }) =>
-    queryKey[0] === bundleDetailKeys.all[0] &&
-    queryKey[2] === String(bundleId) &&
-    queryKey[3] === viewerId,
+  queryKey: feedKeys.details(String(bundleId), viewerId),
 });
 
 const applyFeed = (client: QueryClient, vars: LikeVariables, next: (_: LikeState) => LikeState) =>
@@ -87,7 +83,7 @@ export const useBundleLikeMutation = () => {
   const queryClient = useQueryClient();
   const invalidateViewer = () => {
     void queryClient.invalidateQueries({ queryKey: sharedKeys.me() });
-    void queryClient.invalidateQueries({ queryKey: feedKeys.all });
+    void queryClient.invalidateQueries({ queryKey: feedKeys.lists() });
   };
 
   return useMutation({
