@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { MockBundle } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_BUNCH_ID } from '../db/seed';
+// handler 변경 때 PR CI(`--changed`)가 이 테스트를 고르게 서버를 import
+import '@/mocks/server';
 
 type FeedItem = { type: string; segment?: string; bundle?: { id: number; bunch: { id: number } } };
 type FeedPage = {
