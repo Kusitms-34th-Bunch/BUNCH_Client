@@ -16,6 +16,7 @@ export function useFeedViewer(toastOptions?: ToastOptions) {
     data: profile,
     isPending: viewerPending,
     isError: viewerFailed,
+    isFetching: viewerFetching,
     refetch: retryViewer,
   } = useQuery(myProfileQueryOptions());
   const viewer: FeedViewer | undefined =
@@ -38,5 +39,5 @@ export function useFeedViewer(toastOptions?: ToastOptions) {
     else if (!viewerPending) notify(text.actionFailed);
   };
 
-  return { viewer, viewerPending, viewerFailed, retryViewer, asBunch };
+  return { viewer, viewerPending, viewerFailed, viewerFetching, retryViewer, asBunch };
 }

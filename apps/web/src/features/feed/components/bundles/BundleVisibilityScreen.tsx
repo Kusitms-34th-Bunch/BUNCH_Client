@@ -35,7 +35,7 @@ export function BundleVisibilityScreen({
 }: BundleVisibilityScreenProps) {
   const backOr = useBackOr();
   const titleId = useId();
-  const { viewer, viewerFailed, retryViewer } = useFeedViewer();
+  const { viewer, viewerFailed, viewerFetching, retryViewer } = useFeedViewer();
   const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
   const detail = useQuery(bundleDetailQueryOptions(bunchId, bundleId, viewerId));
   const { isDeleted, memberOnlyOf } = useBundleEdits();
@@ -48,13 +48,16 @@ export function BundleVisibilityScreen({
   const memberOnly = picked ?? saved;
   const changed = memberOnly !== saved;
   const back = () => backOr(FEED_PATHS.bundle(bunchId, bundleId));
-  // 「다시 시도」가 성공해 버튼이 사라지면 화면 제목으로 초점
+  // 「다시 시도」가 끝나 버튼이 사라지면 그 화면의 제목(설정 제목이나 볼 수 없음 안내)으로 초점
   const titleRef = useRef<HTMLHeadingElement>(null);
   const focusTitleAfterRetry = useRef(false);
   useEffect(() => {
-    if (!focusTitleAfterRetry.current || !titleRef.current) return;
+    if (!focusTitleAfterRetry.current || detail.isFetching || viewerFetching) return;
     focusTitleAfterRetry.current = false;
-    titleRef.current.focus({ preventScroll: true });
+    // 다시 실패해 버튼이 남았으면 초점도 그대로
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && focused.isConnected) return;
+    titleRef.current?.focus({ preventScroll: true });
   });
 
   const options = [
@@ -81,10 +84,12 @@ export function BundleVisibilityScreen({
   );
 
   // 일시 오류(400·403·404 외)와 내 정보 실패는 다시 시도, 권한이 없거나 없는·지운 번들은 볼 수 없다는 안내
+  // 이미 받은 상세가 있으면 다시 받기가 실패해도 고르던 화면을 그대로 둠
   const failed =
-    (detail.isError &&
+    !detail.data &&
+    ((detail.isError &&
       !(isApiError(detail.error) && [400, 403, 404].includes(detail.error.status ?? 0))) ||
-    (viewer === undefined && viewerFailed);
+      (viewer === undefined && viewerFailed));
   if (failed) {
     return (
       <PageShell header={header}>
@@ -97,9 +102,7 @@ export function BundleVisibilityScreen({
           <Button
             variant="tertiary"
             size="md"
-            aria-disabled={detail.isFetching}
             onClick={() => {
-              if (detail.isFetching) return;
               focusTitleAfterRetry.current = true;
               void (detail.isError ? detail.refetch() : retryViewer());
             }}
@@ -124,7 +127,11 @@ export function BundleVisibilityScreen({
   if (!canEdit) {
     return (
       <PageShell header={header}>
-        <h1 className="typography-body-2-regular text-text-quinary flex h-full items-center justify-center">
+        <h1
+          ref={titleRef}
+          tabIndex={-1}
+          className="typography-body-2-regular text-text-quinary flex h-full items-center justify-center"
+        >
           {text.bundleUnavailable}
         </h1>
       </PageShell>

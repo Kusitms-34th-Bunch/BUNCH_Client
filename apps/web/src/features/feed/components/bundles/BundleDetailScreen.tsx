@@ -93,7 +93,7 @@ export function BundleDetailScreen({
   const backOr = useBackOr();
   const now = useClientNow();
   const composerRef = useRef<HTMLDivElement>(null);
-  const { viewer, viewerFailed, retryViewer, asBunch } = useFeedViewer();
+  const { viewer, viewerFailed, viewerFetching, retryViewer, asBunch } = useFeedViewer();
   const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
   const detail = useQuery(bundleDetailQueryOptions(bunchId, bundleId, viewerId));
   const likes = useLikeToggle(viewer);
@@ -133,10 +133,18 @@ export function BundleDetailScreen({
 
   useHoldScrollOnLeave(commentsRef);
 
+  // 다시 시도(상세나 내 정보)를 받는 중
+  const retrying = detail.isFetching || viewerFetching;
+  // 볼 수 없음·실패 안내의 제목(다시 시도 결과가 「볼 수 없음」이면 초점을 받는 곳)
+  const stateTitleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    if (!focusTitleAfterRetry.current || !bundle) return;
+    if (!focusTitleAfterRetry.current || retrying) return;
     focusTitleAfterRetry.current = false;
-    const title = commentsRef.current?.closest('main')?.querySelector('h1');
+    // 다시 실패해 버튼이 남았으면 초점도 그대로
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && focused.isConnected) return;
+    const title =
+      stateTitleRef.current ?? commentsRef.current?.closest('main')?.querySelector('h1');
     if (!title) return;
     title.tabIndex = -1;
     title.focus({ preventScroll: true });
@@ -209,14 +217,19 @@ export function BundleDetailScreen({
   const unavailable =
     deletedOnEnter ||
     (isApiError(detail.error) && [400, 403, 404].includes(detail.error.status ?? 0));
-  const failed = !unavailable && (detail.isError || (viewer === undefined && viewerFailed));
-  if (unavailable || failed) {
+  // 이미 받은 상세가 있으면 다시 받기가 실패해도 보던 내용을 그대로 둠
+  const failed =
+    !unavailable && (detail.isError || (viewer === undefined && viewerFailed)) && !detail.data;
+  if ((unavailable && !detail.data) || deletedOnEnter || failed) {
     return (
       <PageShell header={header()}>
         <div className="gap-s8 flex h-full flex-col items-center justify-center">
           {/* 알림은 감싼 요소에 두어 h1의 제목 의미를 지킴 */}
           <div role={failed ? 'alert' : undefined}>
-            <h1 className="typography-body-2-regular text-text-quinary text-center">
+            <h1
+              ref={stateTitleRef}
+              className="typography-body-2-regular text-text-quinary text-center"
+            >
               {failed ? text.actionFailed : text.bundleUnavailable}
             </h1>
           </div>
@@ -224,10 +237,8 @@ export function BundleDetailScreen({
             <Button
               variant="tertiary"
               size="md"
-              // 다시 받는 동안 남겨 두고 막음(눌렀는지 알 수 있게)
-              aria-disabled={detail.isFetching}
+              // 누르면 받는 중 화면(덮개)으로 바뀜. 데이터 없이 실패한 query는 다시 받으면 pending
               onClick={() => {
-                if (detail.isFetching) return;
                 focusTitleAfterRetry.current = true;
                 void (detail.isError ? detail.refetch() : retryViewer());
               }}

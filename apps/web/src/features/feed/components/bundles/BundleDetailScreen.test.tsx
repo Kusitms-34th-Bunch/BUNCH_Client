@@ -595,4 +595,85 @@ describe('BundleDetailScreen', () => {
     expect(screen.getByRole('heading', { level: 1, name: '여름밤 바닷가 캠핑' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /^번치/ })).toBeTruthy();
   });
+
+  it('이미 받은 상세가 있으면 다시 받기가 실패해도 보던 내용을 그대로 둔다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/published-bundles/:bundleId', () => fail(500, 'COMMON_999')),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
+    const key = bundleDetailKeys.detail('3', '3', '1');
+    client.setQueryData(key, DETAILS['3']);
+    render(
+      <BundleDetailScreen
+        bunchId="3"
+        bundleId="3"
+        bunch={BUNCHES['3']}
+        focusComments={false}
+        links={links}
+      />,
+      { wrapper: createQueryWrapper(client) },
+    );
+
+    await act(() => client.refetchQueries({ queryKey: key }));
+    expect(client.getQueryState(key)?.status).toBe('error');
+    expect(screen.getByRole('heading', { level: 1, name: '여름밤 바닷가 캠핑' })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('다시 시도 결과가 볼 수 없음이면 초점을 안내 제목으로 옮긴다', async () => {
+    const user = userEvent.setup();
+    let status = 500;
+    server.use(
+      http.get('/api/bunches/:bunchId/published-bundles/:bundleId', () =>
+        fail(status, status === 404 ? 'RESOURCE_001' : 'COMMON_999'),
+      ),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
+    render(
+      <BundleDetailScreen
+        bunchId="3"
+        bundleId="3"
+        bunch={BUNCHES['3']}
+        focusComments={false}
+        links={links}
+      />,
+      { wrapper: createQueryWrapper(client) },
+    );
+
+    await screen.findByRole('alert');
+    status = 404;
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    const notice = await screen.findByRole('heading', {
+      level: 1,
+      name: '삭제되었거나 볼 수 없는 내용이에요',
+    });
+    await waitFor(() => expect(notice).toHaveFocus());
+  });
+
+  it('내 정보를 다시 받는 동안은 받는 중 화면으로 바뀐다', async () => {
+    const user = userEvent.setup();
+    let attempt = 0;
+    server.use(
+      http.get('/api/members/me', () => {
+        attempt += 1;
+        return attempt === 1 ? fail(500, 'COMMON_500') : new Promise<never>(() => {});
+      }),
+    );
+    render(
+      <BundleDetailScreen
+        bunchId="3"
+        bundleId="3"
+        bunch={BUNCHES['3']}
+        focusComments={false}
+        links={links}
+      />,
+      { wrapper: createQueryWrapper(createTestQueryClient()) },
+    );
+
+    await user.click(await screen.findByRole('button', { name: '다시 시도' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('번들을 불러오는 중이에요');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
 });
