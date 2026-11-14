@@ -46,7 +46,8 @@ describe('useCreateBundle', () => {
 
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
     const [bundle] = mockDrafts();
-    expect(router.push).toHaveBeenCalledWith(`/bunch/drafts/${bundle?.id}`);
+    // 번치 홈에서 만든 초안은 뒤로가기가 번치 홈으로 가도록 표시를 붙여 이동
+    expect(router.push).toHaveBeenCalledWith(`/bunch/drafts/${bundle?.id}?from=home`);
     expect(bundle?.photos.map((photo) => photo.photoId)).toEqual([
       MOCK_PHOTO_IDS.S4,
       MOCK_PHOTO_IDS.S5,

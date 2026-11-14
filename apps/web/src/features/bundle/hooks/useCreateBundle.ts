@@ -67,9 +67,9 @@ export function useCreateBundle() {
           attempt.current = undefined;
           // 초안을 만들었으면 사진함 선택 모드는 끝남(작성 화면에서 뒤로 와도 선택이 남지 않게 함)
           clearPhotoBoxSelection();
-          const path = BUNDLE_SELECT_PATHS.draft(bundle.id);
-          if (replace) router.replace(path);
-          else router.push(path);
+          // 사진함에서 넘어온 흐름은 기록에서 멤버 선택을 빼고(뒤로가기가 사진함으로), 번치 홈에서 만든 흐름은 뒤로가기가 번치 홈으로 가게 표시함
+          if (replace) router.replace(BUNDLE_SELECT_PATHS.draft(bundle.id));
+          else router.push(BUNDLE_SELECT_PATHS.draftFromHome(bundle.id));
         },
         onError: (error) => {
           // 실패하면 다시 시도할 수 있게 풂(성공은 이동이 끝날 때까지 유지)
