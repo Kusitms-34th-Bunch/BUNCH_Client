@@ -4,16 +4,14 @@ export const BUNDLE_MESSAGES = {
   headerSaving: '저장 중',
   headerSaveFailed: '저장 실패',
   upload: '업로드',
-  offlineBanner: '인터넷 연결을 확인해 주세요. 연결되기 전에는 수정할 수 없어요.',
+  offlineBanner: '인터넷 연결을 확인해 주세요.',
   offlineRetry: '재시도',
   membersTitle: '참여 멤버',
   titleLabel: '번들 제목',
   titlePlaceholder: '번들 제목을 입력해주세요.',
   titleMax: '제목은 40자까지 쓸 수 있어요.',
-  // 동시 편집이 합쳐져 40자를 넘은 경우(자르지 않고 그대로 둠)
-  // 제목 문서를 불러오지 못한 경우(네트워크 등): 입력란을 누르면 다시 불러옴
+  // 기획 원문 없는 임시 안내: 제목 문서를 불러오지 못한 경우(네트워크 등), 입력란을 누르면 다시 불러옴
   titleLoadFailed: '제목을 불러오지 못했어요. 입력란을 눌러 다시 시도해 주세요.',
-  titleTooLong: '제목이 40자를 넘었어요. 40자 이하로 줄여야 업로드할 수 있어요.',
   // 사진 제목 옆 「픽하기 >」: 대표 사진 투표 화면으로(Figma `5367:146358`)
   // 코멘트 카드 아래 안내 문구(Figma `5730:142491`, 별표 한 칸 뒤 문구)
   commentsNotice: '코멘트와 픽하기는 업로드 이후 수정이 불가해요',
@@ -116,7 +114,6 @@ export const BUNDLE_MESSAGES = {
   // 기획 원문 없는 임시 안내: 나가기를 서버에 보내지 못했을 때
   leaveFailed: '번들에서 나가지 못했어요. 잠시 후 다시 시도해 주세요.',
   // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
-  editOfflineBlocked: '연결이 끊겨 있어 수정할 수 없어요. 다시 연결되면 수정해 주세요.',
   editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
   editingLabel: (name: string) => `${name}님이 편집 중`,
   commentEditingLabel: (name: string) => `${name}님이 작성 중`,

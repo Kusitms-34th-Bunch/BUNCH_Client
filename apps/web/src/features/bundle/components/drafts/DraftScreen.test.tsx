@@ -136,12 +136,15 @@ describe('DraftScreen 구성', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it('연결이 끊긴 동안은 제목을 고칠 수 없고 이유를 안내한다', async () => {
+  it('연결이 끊긴 동안은 제목을 고칠 수 없고 안내 없이 반응만 없앤다', async () => {
     renderScreen({ offline: true });
+    const title = screen.getByRole('textbox', { name: /제목/ });
 
-    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+    await userEvent.type(title, 'x');
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOfflineBlocked);
+    expect(title).toHaveAttribute('readonly');
+    expect(actions.setTitle).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('뒤로가기를 누르면 onBack을 호출한다', async () => {
@@ -314,11 +317,12 @@ describe('입력', () => {
     renderScreen({ viewer: creator, draft: { ...publishable, title: '가'.repeat(41) } });
 
     expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue('가'.repeat(41));
-    expect(screen.getByRole('alert')).toHaveTextContent(BUNDLE_MESSAGES.titleTooLong);
+    // 40자에 닿았을 때와 같은 오류(기능 spec)
+    expect(screen.getByRole('alert')).toHaveTextContent(BUNDLE_MESSAGES.titleMax);
     expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(uploadButton());
     expect(onUpload).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.titleTooLong);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
   });
 
   it('제목 문서를 불러오는 동안은 읽기 전용이다', () => {

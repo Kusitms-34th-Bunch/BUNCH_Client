@@ -51,7 +51,6 @@ export function DraftTitleField({
   // 내가 입력 중이면 내 프로필(잠그지는 않음). 다른 멤버가 편집 중이면 그 멤버가 우선
   const me = draft.members.find((member) => member.id === viewer.memberId);
   const shown = editor ?? (selfEditing ? me : undefined);
-  const tooLong = countTitleGraphemes(draft.title) > TITLE_MAX_LENGTH;
 
   // 다른 멤버의 변경이 합쳐져 값이 바뀌어도 내 커서·선택 영역이 글자를 따라가게 함(내가 친 변경은 브라우저가 맞춤)
   const sectionRef = useRef<HTMLElement>(null);
@@ -98,11 +97,10 @@ export function DraftTitleField({
         errorMessage={
           loadFailed
             ? BUNDLE_MESSAGES.titleLoadFailed
-            : tooLong
-              ? BUNDLE_MESSAGES.titleTooLong
-              : countTitleGraphemes(draft.title) >= TITLE_MAX_LENGTH
-                ? BUNDLE_MESSAGES.titleMax
-                : undefined
+            : // 40자에 닿거나 합쳐진 결과가 넘으면 같은 오류(기능 spec 4.3.7)
+              countTitleGraphemes(draft.title) >= TITLE_MAX_LENGTH
+              ? BUNDLE_MESSAGES.titleMax
+              : undefined
         }
         onFocus={
           !editable

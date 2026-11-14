@@ -91,12 +91,11 @@ export function DraftScreen({
   );
   const uploadReady = access.canPublish && blockers.length === 0;
 
-  const denyEdit = () =>
-    notify(
-      offline && baseAccess.canEdit
-        ? BUNDLE_MESSAGES.editOfflineBlocked
-        : BUNDLE_MESSAGES.editOnlyParticipants,
-    );
+  // 연결이 끊긴 동안의 편집은 흐리게 하지 않고 반응만 없앰(기능 spec 4.3.14), 참여 멤버가 아니면 안내
+  const denyEdit = () => {
+    if (offline && baseAccess.canEdit) return;
+    notify(BUNDLE_MESSAGES.editOnlyParticipants);
+  };
   const blockEditing = () => notify(BUNDLE_MESSAGES.editingBlocked);
 
   // 안내 순서: 참여 멤버가 아님 → 권한 없음 → 필수 항목 부족(기능 spec 4.3.12), 막혔으면 안내하고 true
@@ -104,7 +103,6 @@ export function DraftScreen({
     if (!access.participant) notifyUpload(BUNDLE_MESSAGES.editOnlyParticipants);
     else if (!access.canPublish) notifyUpload(BUNDLE_MESSAGES.uploadForbidden);
     // 저장이 끝나지 않아 막힌 경우는 입력 부족과 다른 안내
-    else if (blockers.includes('titleTooLong')) notifyUpload(BUNDLE_MESSAGES.titleTooLong);
     else if (blockers.includes('unsaved')) notifyUpload(BUNDLE_MESSAGES.uploadUnsaved);
     else if (blockers.length === 1 && blockers[0] === 'saving')
       notifyUpload(BUNDLE_MESSAGES.uploadSaving);
