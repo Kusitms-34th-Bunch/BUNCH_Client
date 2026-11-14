@@ -158,6 +158,20 @@ export type MockReport = {
   detail: string | null;
 };
 
+/** 번치의 콕한 장소(번치 명의, 같은 장소는 출처가 달라도 하나) */
+export type MockKok = {
+  id: number;
+  bunchId: number;
+  provider: string;
+  externalId: string;
+  name: string;
+  address: string;
+  sourceBundleId: number;
+  sourceLocationId: number;
+  pinnedByMemberId: number;
+  pinnedAt: string;
+};
+
 /** 번치 공동 좋아요(번치 명의, 같은 번치 멤버가 함께 씀) */
 export type MockLike = { bunchId: number; bundleId: number };
 
@@ -187,6 +201,7 @@ export type MockDbState = {
   blocks: MockBlock[];
   reports: MockReport[];
   likes: MockLike[];
+  koks: MockKok[];
   socialComments: MockSocialComment[];
   notifications: MockNotification[];
 };

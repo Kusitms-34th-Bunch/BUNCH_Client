@@ -8,6 +8,7 @@ import { commentHandlers } from './comments';
 import { feedHandlers } from './feed';
 import { followHandlers } from './follows';
 import { invitationHandlers } from './invitations';
+import { kokHandlers } from './koks';
 import { likeHandlers } from './likes';
 import { memberHandlers } from './members';
 import { membershipHandlers } from './memberships';
@@ -36,6 +37,7 @@ export const handlers = [
   ...likeHandlers,
   ...commentHandlers,
   ...reportHandlers,
+  ...kokHandlers,
   ...blockHandlers,
   ...notificationHandlers,
   ...bundleHandlers,
