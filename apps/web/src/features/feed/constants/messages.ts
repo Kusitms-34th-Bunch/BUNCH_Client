@@ -16,6 +16,9 @@ export const FEED_MESSAGES = {
   joinRequired: '번치에 참여하면 할 수 있어요.',
   back: '뒤로 가기',
   bundleUnavailable: '삭제되었거나 볼 수 없는 내용이에요',
+  bundleLoading: '번들을 불러오는 중이에요',
+  /** 번치 정보를 받지 못했을 때 번치 버튼 이름 */
+  unknownBunch: '번치',
   commentsTitle: '댓글',
   noComments: '아직 작성된 댓글이 없어요',
   memberCommentsLabel: '멤버별 코멘트',

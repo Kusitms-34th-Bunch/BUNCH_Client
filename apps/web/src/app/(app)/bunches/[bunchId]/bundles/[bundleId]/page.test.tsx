@@ -4,23 +4,25 @@ import BundleDetailPage from './page';
 
 vi.mock('./BundleDetailRoute', () => ({
   BundleDetailRoute: ({
+    bunchId,
     bundleId,
     focusComments,
   }: {
+    bunchId: string;
     bundleId: string;
     focusComments: boolean;
-  }) => <p>{`${bundleId}:${String(focusComments)}`}</p>,
+  }) => <p>{`${bunchId}/${bundleId}:${String(focusComments)}`}</p>,
 }));
 
 const renderPage = async (focus?: string | string[]) =>
   render(
     await BundleDetailPage({
-      params: Promise.resolve({ bundleId: 'b1' }),
+      params: Promise.resolve({ bunchId: '3', bundleId: 'b1' }),
       searchParams: Promise.resolve(focus === undefined ? {} : { focus }),
     }),
   );
 
-describe('/bundles/[bundleId] page', () => {
+describe('/bunches/[bunchId]/bundles/[bundleId] page', () => {
   it.each([
     ['comments', true],
     ['other', false],
@@ -28,6 +30,6 @@ describe('/bundles/[bundleId] page', () => {
     [undefined, false],
   ])('focus=%j이면 댓글 초점 %s', async (focus, expected) => {
     await renderPage(focus);
-    expect(screen.getByText(`b1:${String(expected)}`)).toBeInTheDocument();
+    expect(screen.getByText(`3/b1:${String(expected)}`)).toBeInTheDocument();
   });
 });

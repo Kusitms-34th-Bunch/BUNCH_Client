@@ -111,8 +111,12 @@ export type FeedComment = {
 export type FeedBundleDetail = FeedBundle & {
   /** 멤버 공개 번들(제목 옆 뱃지) */
   memberOnly: boolean;
-  /** 이 번들이 우리 번치 번들일 때 내 역할(메뉴 갈래, 기능명세서 6.2.11) */
-  myRole?: 'owner' | 'coOwner' | 'member' | undefined;
+  /** 수정·공개 범위를 바꿀 수 있음(서버 `permissions.canEdit`, 헤더 관리 메뉴 기능명세서 6.2.11) */
+  canEdit: boolean;
+  /** 삭제할 수 있음(서버 `permissions.canDelete`) */
+  canDelete: boolean;
+  /** 신고할 수 있음(서버 `permissions.canReport`) */
+  canReport: boolean;
   memberComments: FeedMemberComment[];
   comments: FeedComment[];
 };
