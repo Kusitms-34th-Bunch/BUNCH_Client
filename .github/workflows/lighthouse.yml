@@ -34,16 +34,35 @@ permissions:
 
 jobs:
   # 저장소 코드를 실행하는 job에는 쓰기 권한을 주지 않음(댓글은 아래 comment job)
+  # 빌드가 다른 두 묶음을 동시에 측정(E2E와 비슷한 시간에 끝나게)
   measure:
-    name: Lighthouse
+    name: Lighthouse (${{ matrix.title }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 로그인 없이 열리는 페이지(운영 빌드). `/login`은 로그인 전이면 `/intro`로 이동해 뺌
+          # 초대 토큰은 버튼을 눌러야 확인하므로 가짜 토큰으로도 실제 초대 링크의 첫 화면과 같음
+          - id: public
+            title: 공개 페이지
+            mocking: ''
+            note: ''
+            urls: >-
+              http://127.0.0.1:3300/intro
+              http://127.0.0.1:3300/invite/lighthouse-check
+          # 로그인 뒤 화면. 가짜 서버(MSW)가 세션 요청에 시작 데이터의 계정으로 답해 쿠키 없이 로그인 상태
+          - id: signed-in
+            title: 로그인 화면
+            mocking: enabled
+            note: 가짜 서버(MSW)를 켠 빌드라 성능 절대값은 운영과 다릅니다. 기준선 대비 변화로 회귀를 봅니다.
+            urls: >-
+              http://127.0.0.1:3300/feed
+              http://127.0.0.1:3300/bunch
+              http://127.0.0.1:3300/my
     env:
-      # 로그인 없이 열리는 페이지만(`/login`은 로그인 전이면 `/intro`로 이동해 뺌)
-      # 초대 토큰은 버튼을 눌러야 확인하므로 가짜 토큰으로도 실제 초대 링크의 첫 화면과 같음
-      LIGHTHOUSE_URLS: >-
-        http://127.0.0.1:3300/intro
-        http://127.0.0.1:3300/invite/lighthouse-check
+      LIGHTHOUSE_URLS: ${{ matrix.urls }}
 
     steps:
       # git 인증이 필요 없어 토큰을 남기지 않음(아래 `yarn dlx`가 lockfile 밖 의존성을 받아 실행하므로)
@@ -70,6 +89,7 @@ jobs:
       - name: Build web
         env:
           NEXT_SKIP_TYPECHECK: 'true'
+          NEXT_PUBLIC_API_MOCKING: ${{ matrix.mocking }}
         run: yarn workspace @app/web build
 
       # 실제 백엔드 없이 모든 요청에 401(로그인 전)만 주는 API. API_BASE_URL이 없으면 세션 확인이 실패해 오류 화면이 측정됨
@@ -83,8 +103,9 @@ jobs:
           node -e "require('node:http').createServer((req, res) => { res.writeHead(401, { 'content-type': 'application/json' }); res.end(JSON.stringify({ success: false, data: null, error: { code: 'AUTH_001', message: 'unauthorized' } })); }).listen(3399, '127.0.0.1')" &
           yarn workspace @app/web exec next start --hostname 127.0.0.1 --port 3300 > next-start.log 2>&1 &
           # 페이지 HTML은 API를 부르지 않으므로 stub의 401도 함께 확인(stub이 없으면 오류 화면이 정상 점수처럼 저장됨)
+          set -- $LIGHTHOUSE_URLS
           for _ in $(seq 1 60); do
-            if curl --silent --fail --output /dev/null http://127.0.0.1:3300/intro &&
+            if curl --silent --fail --output /dev/null "$1" &&
               [ "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3399/)" = 401 ]; then
               exit 0
             fi
@@ -100,10 +121,12 @@ jobs:
         id: lighthouse
         if: steps.start.outcome == 'success'
         continue-on-error: true
+        # 페이지마다 따로 재서(--additive) 한 페이지가 열리지 않아도 나머지는 측정, 빠진 페이지는 보고에 표시
         run: |
-          args=()
-          for url in $LIGHTHOUSE_URLS; do args+=("--url=$url"); done
-          yarn dlx @lhci/cli@0.15.1 collect "${args[@]}" --numberOfRuns=1 --settings.locale=ko --settings.disableFullPageScreenshot
+          for url in $LIGHTHOUSE_URLS; do
+            yarn dlx @lhci/cli@0.15.1 collect --url="$url" --numberOfRuns=1 --additive \
+              --settings.locale=ko --settings.disableFullPageScreenshot || echo "측정 실패: $url"
+          done
 
       # PR은 base 커밋의 결과, 없으면 develop의 가장 최근 결과와 비교
       - name: Restore Lighthouse baseline
@@ -111,20 +134,24 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: apps/web/lighthouse-baseline.json
-          key: lighthouse-${{ runner.os }}-develop-${{ github.event.pull_request.base.sha }}
-          restore-keys: lighthouse-${{ runner.os }}-develop-
+          key: lighthouse-${{ runner.os }}-${{ matrix.id }}-develop-${{ github.event.pull_request.base.sha }}
+          restore-keys: lighthouse-${{ runner.os }}-${{ matrix.id }}-develop-
 
       - name: Report
         if: steps.lighthouse.outcome == 'success'
         continue-on-error: true
         env:
           LIGHTHOUSE_REPORT: lighthouse.md
+          LIGHTHOUSE_TITLE: ${{ matrix.title }}
+          LIGHTHOUSE_NOTE: ${{ matrix.note }}
         run: node scripts/report-lighthouse.mjs
 
       # develop push는 이번 결과를 다음 PR의 기준선으로 저장(머지될 때마다 갱신)
+      # 측정이 하나라도 빠지면 갱신하지 않고 이전 기준선 유지(체크는 실패시키지 않음)
       - name: Update Lighthouse baseline
         id: baseline
         if: github.event_name == 'push' && steps.lighthouse.outcome == 'success'
+        continue-on-error: true
         run: node scripts/report-lighthouse.mjs --update
 
       - name: Save Lighthouse baseline
@@ -132,13 +159,13 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: apps/web/lighthouse-baseline.json
-          key: lighthouse-${{ runner.os }}-develop-${{ github.sha }}
+          key: lighthouse-${{ runner.os }}-${{ matrix.id }}-develop-${{ github.sha }}
 
       - name: Upload Lighthouse report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: lighthouse-report
+          name: lighthouse-report-${{ matrix.id }}
           path: |
             .lighthouseci
             lighthouse.md
@@ -163,11 +190,12 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Download Lighthouse report
+      # 묶음마다 lighthouse/lighthouse-report-<id>/ 아래로 받음
+      - name: Download Lighthouse reports
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: lighthouse-report
+          pattern: lighthouse-report-*
           path: lighthouse
 
       # 댓글 하나를 찾아 갱신(새 커밋마다 댓글이 쌓이지 않게)
@@ -182,12 +210,20 @@ jobs:
             const { owner, repo } = context.repo;
             const marker = '<!-- lighthouse-result -->';
             const commitUrl = `${context.payload.repository.html_url}/commit/${context.payload.pull_request.head.sha}`;
-            const report = fs.existsSync('lighthouse/lighthouse.md')
-              ? fs.readFileSync('lighthouse/lighthouse.md', 'utf8').trim()
-              : '### Lighthouse\n\n이번 커밋은 측정하지 못했습니다. 실행 로그와 `next-start.log`(artifact)를 확인하세요.';
+            // measure matrix와 같은 순서·이름. 측정하지 못한 묶음은 그 자리에 알림
+            const groups = [
+              ['public', '공개 페이지'],
+              ['signed-in', '로그인 화면'],
+            ];
+            const sections = groups.map(([id, title]) => {
+              const file = `lighthouse/lighthouse-report-${id}/lighthouse.md`;
+              return fs.existsSync(file)
+                ? fs.readFileSync(file, 'utf8').trim()
+                : `### Lighthouse · ${title}\n\n이번 커밋은 측정하지 못했습니다. 실행 로그와 \`next-start.log\`(artifact)를 확인하세요.`;
+            });
             const body = [
               marker,
-              report,
+              sections.join('\n\n'),
               '',
               `[기준 커밋](${commitUrl}) · [실행 로그와 전체 리포트(artifact)](${process.env.RUN_URL})`,
             ].join('\n');
