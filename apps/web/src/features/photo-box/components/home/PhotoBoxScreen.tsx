@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
@@ -148,6 +149,21 @@ export function PhotoBoxScreen({
     setMenuOpen((open) => !open);
   };
 
+  // 선택 모드면 메뉴(저장·삭제 중에는 무시), 아니면 사진 올리기
+  const floatingAction = selecting ? (busy ? undefined : toggleMenu) : openUpload;
+  // iOS 26 이상 쉘은 「+」·「⋯」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음(목록 화면에서만)
+  const showWebFloatingButton = useNativeFloatingButton({
+    tab: 'photos',
+    icon: selecting ? 'more' : 'add',
+    label: selecting ? '메뉴 열기' : '사진 올리기',
+    // 저장·삭제·끌기 이동 중에도 누를 수 없음으로 알림(웹 버튼의 aria-disabled에 해당, VoiceOver 초점은 남음)
+    disabled: selecting && (selection.length === 0 || busy),
+    expanded: selecting ? menuOpen : undefined,
+    // 저장 중 화면 전체 dim(PageLoading) 위로 네이티브 버튼이 뜨지 않게
+    hidden: !ready || flow.saving,
+    onPress: floatingAction,
+  });
+
   if (state.kind === 'loading') return <PhotoBoxSkeleton />;
   if (state.kind === 'error') return <PhotoBoxError onRetry={onRetry} />;
   if (state.kind === 'no-bunch') {
@@ -166,10 +182,6 @@ export function PhotoBoxScreen({
   let statusMessage = '';
   if (flow.saving) statusMessage = PHOTO_BOX_MESSAGES.saving;
   else if (selecting) statusMessage = PHOTO_BOX_MESSAGES.selectionStatus(selection.length);
-  // 선택 모드면 메뉴(저장·삭제 중에는 무시), 아니면 사진 올리기
-  let floatingAction: (() => void) | undefined = openUpload;
-  if (selecting) floatingAction = busy ? undefined : toggleMenu;
-
   return (
     <PageShell
       onRefresh={onRefresh}
@@ -194,23 +206,26 @@ export function PhotoBoxScreen({
                 onClose={() => setMenuOpen(false)}
                 onExited={() => setMenuMounted(false)}
                 onSelect={flow.handleMenuAction}
-                triggerRef={menuTriggerRef}
+                // 네이티브 버튼이면 돌아갈 웹 버튼이 없어 닫을 때 초점을 화면 제목으로
+                triggerRef={showWebFloatingButton ? menuTriggerRef : headingRef}
               />
             </div>
           ) : null}
-          <FloatingButton
-            ref={menuTriggerRef}
-            icon={selecting ? 'more' : 'add'}
-            aria-label={selecting ? '메뉴 열기' : '사진 올리기'}
-            aria-haspopup={selecting ? 'menu' : undefined}
-            aria-expanded={selecting ? menuOpen : undefined}
-            disabled={selecting && selection.length === 0}
-            // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
-            aria-disabled={selecting && busy ? true : undefined}
-            onClick={floatingAction}
-            // 선택 모드에서 탭 바가 숨으면 탭 바 숨김과 비슷하게 200ms ease-out으로 내려감(아이콘은 FloatingButton이 크로스페이드)
-            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10 motion-safe:transition-[bottom] motion-safe:duration-200 motion-safe:ease-out"
-          />
+          {showWebFloatingButton ? (
+            <FloatingButton
+              ref={menuTriggerRef}
+              icon={selecting ? 'more' : 'add'}
+              aria-label={selecting ? '메뉴 열기' : '사진 올리기'}
+              aria-haspopup={selecting ? 'menu' : undefined}
+              aria-expanded={selecting ? menuOpen : undefined}
+              disabled={selecting && selection.length === 0}
+              // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
+              aria-disabled={selecting && busy ? true : undefined}
+              onClick={floatingAction}
+              // 선택 모드에서 탭 바가 숨으면 탭 바 숨김과 비슷하게 200ms ease-out으로 내려감(아이콘은 FloatingButton이 크로스페이드)
+              className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10 motion-safe:transition-[bottom] motion-safe:duration-200 motion-safe:ease-out"
+            />
+          ) : null}
         </div>
       }
     >
