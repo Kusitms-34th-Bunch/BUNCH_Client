@@ -1,7 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
@@ -149,6 +149,58 @@ describe('ProfileEditScreen', () => {
     expect(submitButton().disabled).toBe(true);
     expect(replace).not.toHaveBeenCalled();
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  /** 프로필 저장 응답을 `release`를 부를 때까지 붙잡음 */
+  const holdSave = () => {
+    const held = { release: () => undefined as void, responded: false };
+    server.use(
+      http.put('/api/members/me/profile', async () => {
+        await new Promise<void>((resolve) => {
+          held.release = resolve;
+        });
+        held.responded = true;
+        return HttpResponse.json({
+          success: true,
+          data: { memberId: MOCK_MY_MEMBER_ID, nickname: '으누누', imageUrl: null },
+        });
+      }),
+    );
+    return held;
+  };
+
+  it('저장 중에는 닉네임·사진을 바꿀 수 없다', async () => {
+    holdSave();
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() => expect(nicknameInput()).toBeDisabled());
+    expect(screen.getByRole('button', { name: '프로필 사진 변경' })).toBeDisabled();
+    expect(submitButton()).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('저장 중 뒤로 가면 저장이 끝나도 다시 이동하거나 완료 토스트를 띄우지 않는다', async () => {
+    const held = holdSave();
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+    await waitFor(() => expect(submitButton()).toHaveAttribute('aria-busy', 'true'));
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    expect(replace).toHaveBeenCalledTimes(1);
+
+    held.release();
+    await waitFor(() => expect(held.responded).toBe(true));
+    // 응답 뒤 성공 처리(내 프로필 다시 받기 포함)가 끝날 시간을 둠
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
   });
 
   it('저장이 실패하면 머물러 토스트를 띄우고 다시 누를 수 있다', async () => {

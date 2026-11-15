@@ -212,12 +212,13 @@ describe('AdminTransferScreen', () => {
     expect(peekKeepAgreed()).toBe(true);
   });
 
-  it('보내는 중 다시 눌러도 번치마다 한 번씩만 보낸다', async () => {
+  it('보내는 중에는 다시 눌러도 번치마다 한 번씩만 보내고 새 관리자 선택을 잠근다', async () => {
     let calls = 0;
+    const releases: (() => void)[] = [];
     server.use(
       http.post('/api/bunches/:bunchId/owner-transfer', async () => {
         calls += 1;
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise<void>((resolve) => releases.push(resolve));
         return HttpResponse.json({ success: true, data: { membershipVersion: 2 } });
       }),
     );
@@ -226,8 +227,14 @@ describe('AdminTransferScreen', () => {
     const next = screen.getByRole('button', { name: '다음' });
 
     await userEvent.click(next);
+    await waitFor(() => expect(calls).toBe(2));
+    expect(next).toHaveAttribute('aria-busy', 'true');
     await userEvent.click(next);
+    expect(calls).toBe(2);
+    // 보낸 사람과 화면의 선택이 달라지지 않게 라디오가 잠김
+    expect(screen.getByRole('radio', { name: /^은우/ })).toBeDisabled();
 
+    releases.forEach((release) => release());
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/my/withdrawal'));
     expect(calls).toBe(2);
   });

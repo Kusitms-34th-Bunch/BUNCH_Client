@@ -143,7 +143,8 @@ export function AdminTransferScreen() {
                   selectedLabel={pickedMember ? text.selected(pickedMember.name) : undefined}
                 >
                   {/* Figma 좌우 10, 「멤버」와 목록 사이 8, 멤버 사이 2 */}
-                  <fieldset className="px-padding-p5 min-w-0">
+                  {/* 보내는 동안·넘긴 뒤에는 선택을 잠금(화면의 새 관리자와 실제로 넘긴 사람이 달라지지 않게) */}
+                  <fieldset disabled={transfer.isPending || done} className="px-padding-p5 min-w-0">
                     <legend className="typography-body-4-semi-bold text-text-quaternary px-padding-p5 mb-s4">
                       {/* 여러 번치의 같은 「멤버」 그룹을 구분하도록 번치 이름을 함께 낭독 */}
                       <span className="sr-only">{bunch.name} </span>

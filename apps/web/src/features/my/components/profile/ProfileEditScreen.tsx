@@ -2,7 +2,7 @@
 
 import { isApiError } from '@app/api-core';
 import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
 import { checkNicknameAvailability } from '@/shared/api/nickname';
@@ -69,13 +69,26 @@ export function ProfileEditScreen({
   const [saved, setSaved] = useState(false);
   const openOverlay = useScreenOverlay();
   const containerRef = useRef<HTMLDivElement>(null);
+  // 저장 중 이 화면을 떠났는지(뒤로 가기·언마운트)
+  const left = useRef(false);
+  useEffect(() => {
+    left.current = false;
+    return () => {
+      left.current = true;
+    };
+  }, []);
 
   const changed = photo !== profile.imageSrc || !isSameValues(fields.values, initial);
   const canSubmit = changed && fields.isValid && !photoPending && !saved;
   // 바꾼 내용이 있으면 나가기 전에 확인(기능명세서 7.2.1 상세 7)
   // 저장 뒤 돌아가는 전환 중에는 묻지 않음
   const back = () => {
-    if (!changed || submitting) return backOr(MY_PATHS.home);
+    // 저장 중에 떠나면 저장 뒤 이동·토스트를 하지 않음(캐시 갱신은 mutation이 그대로 함)
+    if (submitting) {
+      left.current = true;
+      return backOr(MY_PATHS.home);
+    }
+    if (!changed) return backOr(MY_PATHS.home);
     openOverlay((rootProps, close) => (
       <ConfirmDialog
         {...rootProps}
@@ -122,6 +135,12 @@ export function ProfileEditScreen({
       }
       return;
     }
+    // 떠난 뒤에도 화면이 남는 경우(이동 실패 등) 잠긴 채 멈추지 않게 풀어 둠
+    if (left.current) {
+      submittingRef.current = false;
+      setSubmitting(false);
+      return;
+    }
     setSaved(true);
     // MY에서 들어왔으면 그 기록으로 돌아감(replace하면 MY 기록이 두 번 쌓여 뒤로 가기가 한 번 헛돎)
     backOr(MY_PATHS.home);
@@ -163,13 +182,20 @@ export function ProfileEditScreen({
         }
       >
         <h1 className="sr-only">{MY_MESSAGES.profileEditTitle}</h1>
-        {/* 헤더 아래 48, 사진과 입력 칸 사이 32(Figma 개인 프로필 편집(1)) */}
-        <div className="pt-s18 flex flex-col items-center">
-          <ProfilePhotoField value={photo} onChange={setPhoto} onPendingChange={setPhotoPending} />
-        </div>
-        <div className="pt-s14 px-padding-p8">
-          <ProfileFields fields={fields} showDemographics={demographicsConsent} />
-        </div>
+        {/* 저장 중에는 입력을 잠금(보낸 값과 화면 값이 달라진 채 완료되지 않게). 배치에는 영향 없음 */}
+        <fieldset disabled={submitting} className="contents">
+          {/* 헤더 아래 48, 사진과 입력 칸 사이 32(Figma 개인 프로필 편집(1)) */}
+          <div className="pt-s18 flex flex-col items-center">
+            <ProfilePhotoField
+              value={photo}
+              onChange={setPhoto}
+              onPendingChange={setPhotoPending}
+            />
+          </div>
+          <div className="pt-s14 px-padding-p8">
+            <ProfileFields fields={fields} showDemographics={demographicsConsent} />
+          </div>
+        </fieldset>
       </PageShell>
     </div>
   );
