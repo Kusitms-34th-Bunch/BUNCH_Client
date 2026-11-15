@@ -85,6 +85,7 @@
 - Sentry에 운영 환경(`production`) 오류가 들어온다.
 - 앱 쉘 Release 빌드가 운영 주소를 연다.
 - `/manifest.webmanifest`가 응답한다.
+- 배포가 성공하면 별도 workflow(`lighthouse-production.yml`)가 운영 주소를 측정해 릴리스 PR에 댓글을 단다(`docs/workflows/ci.md` 「운영 측정」). 배포 실행 안에서 돌지 않아 배포 캐시·artifact와 섞이지 않는다.
 
 ## 홈 화면 추가(PWA)
 
