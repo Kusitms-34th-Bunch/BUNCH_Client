@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
@@ -619,6 +619,20 @@ describe('멤버 내보내기', () => {
 
     await userEvent.click(within(dialog).getByRole('button', { name: '내보내기' }));
     expect(actions.removeMember).toHaveBeenCalledWith('gyeongjin');
+  });
+
+  it('연결이 끊겨 내보내기가 막히면 성공 토스트를 띄우지 않는다', async () => {
+    actions.removeMember.mockReturnValueOnce(false);
+    renderScreen({ viewer: creator });
+
+    await userEvent.click(screen.getByRole('button', { name: '경진 삭제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: '내보내기' }));
+
+    expect(actions.removeMember).toHaveBeenCalledWith('gyeongjin');
+    // 확인 창이 완전히 닫힌 뒤에도 알림이 없음
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.memberRemoved('경진'));
   });
 
   it('「취소」를 누르면 멤버를 내보내지 않는다', async () => {
