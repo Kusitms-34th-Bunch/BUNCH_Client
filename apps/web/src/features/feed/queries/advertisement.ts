@@ -81,8 +81,12 @@ export const useAdKokMutation = () => {
       if (next) write(vars, context.adId, next);
     },
     onSuccess: (pinId, vars, context) => {
-      // 그사이 다시 받은 콕 전 값이 덮었어도 콕한 상태로 확정
-      if (pinId !== null) write(vars, context.adId, { pinned: true, pinId });
+      // 그사이 다시 받은 값이 덮었어도 이 요청의 결과로 확정(취소면 콕 ID도 비움)
+      write(
+        vars,
+        context.adId,
+        pinId === null ? { pinned: false, pinId: null } : { pinned: true, pinId },
+      );
     },
     onSettled: (_data, _error, vars) => refreshKoksWhenIdle(queryClient, vars.viewerId),
   });

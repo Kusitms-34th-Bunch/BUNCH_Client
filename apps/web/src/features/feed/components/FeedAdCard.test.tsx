@@ -10,6 +10,7 @@ import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testin
 import { clearHiddenAds, readHiddenAds } from '../lib/hiddenAds';
 import { toFeedEntries } from '../model/feed';
 import { feedQueryOptions } from '../queries/feed';
+import { feedKeys } from '../queries/keys';
 import { FeedAdCard } from './FeedAdCard';
 
 const toast = vi.fn();
@@ -79,6 +80,7 @@ const render$ = (bunch: { id: string; name: string } | null) => {
   const client = createTestQueryClient();
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch });
   render(<Harness viewerId={bunch?.id ?? null} />, { wrapper: createQueryWrapper(client) });
+  return client;
 };
 
 const setup = async (
@@ -289,6 +291,36 @@ describe('FeedAdCard', () => {
 
     expect(await screen.findByRole('button', { name: '콕하기' })).toBeTruthy();
     await waitFor(() => expect(requests).toEqual(['unpin 42']));
+  });
+
+  it('취소 응답을 기다리는 사이 피드를 다시 받아 옛 값이 덮어도, 취소가 성공하면 「콕하기」로 확정한다', async () => {
+    kok = { pinned: true, pinId: 42 };
+    let finish = () => {};
+    server.use(
+      http.delete(
+        '/api/pinned-places/:pinId',
+        () =>
+          new Promise<Response>((resolve) => {
+            finish = () => {
+              kok = { pinned: false, pinId: null };
+              resolve(ok(null));
+            };
+          }),
+      ),
+    );
+    const client = render$({ id: 'b', name: '여행가조' });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '콕 했어요' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+    expect(await screen.findByRole('button', { name: '콕하기' })).toBeTruthy();
+
+    // 서버는 아직 취소 전이라 다시 받으면 「콕 했어요」
+    await act(() => client.refetchQueries({ queryKey: feedKeys.list('b') }));
+    expect(await screen.findByRole('button', { name: '콕 했어요' })).toBeTruthy();
+
+    finish();
+    expect(await screen.findByRole('button', { name: '콕하기' })).toBeTruthy();
   });
 
   it('다른 멤버가 이미 뺀 콕을 취소하면 알리지 않고 「콕하기」로 둔다', async () => {
