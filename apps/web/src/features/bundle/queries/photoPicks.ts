@@ -19,10 +19,18 @@ export const usePhotoPickCache = (bunchId: string | undefined, bundleId: string 
         queryClient
           .getQueryData<BundleDetail>(queryKey)
           ?.photos.find((photo) => photo.id === photoId),
+      /**
+       * 저장 응답·충돌 detail을 캐시의 사진 픽에 반영. 캐시의 내 픽 버전이 같거나 더 높으면 응답이 늦게 도착한 것이라 반영하지 않음
+       * (그 사이 받은 상세가 다른 멤버의 더 새로운 픽을 담고 있을 수 있음)
+       */
       writePicks: (photoId: string, picks: PhotoPicks) => {
         queryClient.setQueryData<BundleDetail>(queryKey, (old) =>
           old
-            ? {
+            ? old.photos.some(
+                (photo) => photo.id === photoId && (photo.picks?.version ?? 0) >= picks.version,
+              )
+              ? old
+              : {
                 ...old,
                 photos: old.photos.map((photo) =>
                   photo.id === photoId ? { ...photo, picks } : photo,

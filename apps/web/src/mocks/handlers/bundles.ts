@@ -510,11 +510,12 @@ export const bundleHandlers = [
   http.put(
     '/api/bunches/:bunchId/bundles/:id/photos/:photoId/pick',
     async ({ params, request }) => {
+      const bundlePhotoId = toWireId(params.photoId);
+      const body = await readJson(request);
+      // 본문을 기다리는 사이 다른 요청이 번들을 바꿨을 수 있어, 읽은 뒤의 최신 상태로 확인
       const scope = findScope(params.bunchId, params.id);
       if ('error' in scope) return scope.error;
       const { bundle, isParticipant } = scope;
-      const bundlePhotoId = toWireId(params.photoId);
-      const body = await readJson(request);
       if (bundlePhotoId === undefined) return fail(400, 'COMMON_001');
       if (
         typeof body?.picked !== 'boolean' ||

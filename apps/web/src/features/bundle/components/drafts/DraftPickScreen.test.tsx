@@ -11,6 +11,7 @@ const onBack = vi.fn();
 
 type Options = {
   removedIds?: ReadonlySet<string>;
+  deletedNoticeFor?: string;
   picks?: Picks;
   editable?: boolean;
   photos?: typeof draftFixture.photos;
@@ -21,6 +22,7 @@ const onDismissRemoved = vi.fn();
 
 const screenElement = ({
   removedIds,
+  deletedNoticeFor,
   picks = {},
   editable = true,
   photos = draftFixture.photos,
@@ -36,6 +38,7 @@ const screenElement = ({
     onDenied={onDenied}
     onBack={onBack}
     removedIds={removedIds}
+    deletedNoticeFor={deletedNoticeFor}
     onDismissRemoved={onDismissRemoved}
   />
 );
@@ -138,6 +141,17 @@ describe('DraftPickScreen', () => {
     expect(dialog).toHaveAccessibleDescription('삭제된 사진은 픽할 수 없어요.');
     expect(onToggle).not.toHaveBeenCalled();
     expect(onDismissRemoved).not.toHaveBeenCalled();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: '확인' }));
+
+    expect(onDismissRemoved).toHaveBeenCalledWith(draftFixture.photos[0]!.id);
+  });
+
+  it('서버가 사진이 없다고 알려 준 사진은 누르지 않아도 바로 「삭제된 사진이에요」 안내를 띄운다', async () => {
+    renderScreen({ deletedNoticeFor: draftFixture.photos[0]!.id });
+
+    const dialog = await screen.findByRole('alertdialog', { name: '삭제된 사진이에요' });
+    expect(onToggle).not.toHaveBeenCalled();
 
     await userEvent.click(within(dialog).getByRole('button', { name: '확인' }));
 

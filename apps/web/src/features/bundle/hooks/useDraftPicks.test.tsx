@@ -14,6 +14,7 @@ import { createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { draftFixture } from '../fixtures/draft.fixture';
 import { toDraft } from '../lib/draftMapping';
+import { pickIntents } from '../lib/pickIntents';
 import { bundleQueryOptions } from '../queries/bundles';
 import { useDraftPicks } from './useDraftPicks';
 
@@ -27,7 +28,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 const me = String(MOCK_MY_MEMBER_ID);
 
 // 가짜 서버에 초안을 만들고 상세 캐시를 채운 뒤, 픽 화면이 쓰는 Draft(서버 픽 포함)를 만듦
-const setup = async (options: { blocked?: boolean } = {}) => {
+const setup = async (
+  options: { blocked?: boolean; onPhotoGone?: (_photoId: string) => void } = {},
+) => {
   const client = createTestQueryClient();
   const profile = await client.fetchQuery(myProfileQueryOptions());
   const bunchId = profile.bunch!.id;
@@ -43,10 +46,13 @@ const setup = async (options: { blocked?: boolean } = {}) => {
     ...toDraft({ detail: detail(), bunchMembers: [], locations: [] }),
     members: draftFixture.members,
   });
-  const hook = renderHook(({ draft, blocked }) => useDraftPicks(draft, me, blocked), {
-    wrapper: createQueryWrapper(client),
-    initialProps: { draft: draftOf(), blocked: options.blocked ?? false },
-  });
+  const hook = renderHook(
+    ({ draft, blocked }) => useDraftPicks(draft, me, blocked, options.onPhotoGone),
+    {
+      wrapper: createQueryWrapper(client),
+      initialProps: { draft: draftOf(), blocked: options.blocked ?? false },
+    },
+  );
   // 캐시가 바뀌면 화면의 draft도 새로 만들어 넘김(실제로는 useDraft가 같은 일을 함)
   const refresh = () => hook.rerender({ draft: draftOf(), blocked: options.blocked ?? false });
   const photoIds = created.photos.map((photo) => photo.id);
@@ -58,6 +64,7 @@ const setup = async (options: { blocked?: boolean } = {}) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  pickIntents.reset();
 });
 
 describe('useDraftPicks', () => {
@@ -172,8 +179,9 @@ describe('useDraftPicks', () => {
     expect(detail().photos[0]!.picks?.pickedByMe).toBe(false);
   });
 
-  it('사진이 이미 없어졌으면(404) 오류 토스트 없이 되돌린다', async () => {
-    const { hook, photoIds } = await setup();
+  it('사진이 이미 없어졌으면(404) 오류 토스트 없이 되돌리고 삭제 안내를 요청한다', async () => {
+    const onPhotoGone = vi.fn();
+    const { hook, photoIds } = await setup({ onPhotoGone });
     const [first] = photoIds;
     server.use(
       http.put('/api/bunches/:bunchId/bundles/:id/photos/:photoId/pick', () =>
@@ -183,6 +191,7 @@ describe('useDraftPicks', () => {
 
     act(() => hook.result.current.toggle(first!));
 
+    await waitFor(() => expect(onPhotoGone).toHaveBeenCalledWith(first));
     await waitFor(() => expect(hook.result.current.picks[first!] ?? []).toEqual([]));
     expect(toast).not.toHaveBeenCalled();
   });
@@ -291,5 +300,76 @@ describe('useDraftPicks', () => {
     // setup이 상세를 한 번 받고, 화면이 들어올 때 한 번 더 받음
     await waitFor(() => expect(detailReads).toBeGreaterThanOrEqual(2));
     await waitFor(() => expect(hook.result.current.entry?.photos).toHaveLength(2));
+  });
+
+  it('화면을 나갔다 다시 들어와도 같은 사진의 저장 루프는 하나이고 마지막 선택이 남는다', async () => {
+    const { client, hook, detail, draftOf, photoIds } = await setup();
+    const [first] = photoIds;
+    const sent: boolean[] = [];
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/photos/:photoId/pick', async ({ request }) => {
+        sent.push(((await request.clone().json()) as { picked: boolean }).picked);
+        if (sent.length === 1) await gate;
+        return undefined;
+      }),
+    );
+
+    // 옛 화면에서 픽(저장 요청이 응답을 기다리는 중)한 뒤 나감
+    act(() => hook.result.current.toggle(first!));
+    await waitFor(() => expect(sent).toEqual([true]));
+    hook.unmount();
+
+    // 새 화면에 들어와 해제: 옛 루프의 희망 상태를 같이 바꾸고 새 루프는 시작하지 않음
+    const reentered = renderHook(() => useDraftPicks(draftOf(), me, false), {
+      wrapper: createQueryWrapper(client),
+    });
+    expect(reentered.result.current.picks[first!]).toEqual([me]);
+    act(() => reentered.result.current.toggle(first!));
+    expect(reentered.result.current.picks[first!]).toEqual([]);
+    expect(sent).toEqual([true]);
+
+    release();
+
+    await waitFor(() => expect(sent).toEqual([true, false]));
+    await waitFor(() => expect(detail().photos[0]!.picks?.pickedByMe).toBe(false));
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('늦게 도착한 저장 응답이 그사이 받은 더 새로운 상세를 덮지 않는다', async () => {
+    const { client, hook, detail, photoIds, queryKey } = await setup();
+    const [first] = photoIds;
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/photos/:photoId/pick', async () => {
+        await gate;
+        return undefined;
+      }),
+    );
+    // 가짜 서버는 저장한 revision을 내 픽 버전으로 돌려줌
+    const savedVersion = detail().revision + 1;
+
+    act(() => hook.result.current.toggle(first!));
+    // 응답이 늦는 사이 다른 멤버의 픽까지 담은 상세가 같은 내 픽 버전으로 먼저 도착
+    act(() => {
+      client.setQueryData(queryKey, {
+        ...detail(),
+        photos: detail().photos.map((photo, index) =>
+          index === 0
+            ? { ...photo, picks: { version: savedVersion, pickedByMe: true, memberIds: ['99', me] } }
+            : photo,
+        ),
+      });
+    });
+    release();
+
+    await waitFor(() => expect(pickIntents.get(detail().id, first!)).toBeUndefined());
+    expect(detail().photos[0]!.picks?.memberIds).toEqual(['99', me]);
   });
 });

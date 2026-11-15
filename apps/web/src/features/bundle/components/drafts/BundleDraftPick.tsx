@@ -22,10 +22,13 @@ export function BundleDraftPick() {
   const { state } = useDraftContext();
   const draft = state.kind === 'ready' ? state.draft : undefined;
   const viewer = state.kind === 'ready' ? state.viewer : undefined;
+  // 누른 사진이 서버에 없다고 확인된 경우(404): 바로 삭제 안내를 띄움
+  const [goneId, setGoneId] = useState<string | undefined>(undefined);
   const { picks, toggle, entry } = useDraftPicks(
     draft,
     viewer?.memberId,
     state.kind === 'ready' && state.realtime.down,
+    setGoneId,
   );
 
   // 들어올 때 받은 최신 상세(`entry`)가 오면 그 값으로 고정(그 전에는 지금 값을 보임)
@@ -63,7 +66,11 @@ export function BundleDraftPick() {
       onToggle={toggle}
       onDenied={() => toast(BUNDLE_MESSAGES.editOnlyParticipants)}
       removedIds={removedIds}
-      onDismissRemoved={(photoId) => setDismissed((current) => [...current, photoId])}
+      deletedNoticeFor={goneId}
+      onDismissRemoved={(photoId) => {
+        setDismissed((current) => [...current, photoId]);
+        setGoneId(undefined);
+      }}
       // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
       onBack={() => backOr(BUNDLE_PATHS.draft(draft.id))}
     />

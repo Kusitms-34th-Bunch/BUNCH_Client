@@ -90,6 +90,8 @@ type DraftPickScreenProps = {
   onBack: () => void;
   /** 들어온 뒤 번들에서 빠졌지만 아직 보이고 있는 사진(누르면 「삭제된 사진이에요」 안내, 기능 spec 4.3.5 예외) */
   removedIds?: ReadonlySet<string> | undefined;
+  /** 서버가 그 사진이 없다고 알려 준 경우: 누른 직후 바로 「삭제된 사진이에요」 안내를 띄울 사진 */
+  deletedNoticeFor?: string | undefined;
   /** 안내의 「확인」 뒤에 그 사진을 목록에서 없앰 */
   onDismissRemoved?: ((_photoId: string) => void) | undefined;
 };
@@ -110,6 +112,7 @@ export function DraftPickScreen({
   onDenied,
   onBack,
   removedIds,
+  deletedNoticeFor,
   onDismissRemoved,
 }: DraftPickScreenProps) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -165,6 +168,15 @@ export function DraftPickScreen({
       behavior: reduced ? 'auto' : 'smooth',
     });
   };
+  // 서버 응답으로 사진이 없다고 확인되면 곧바로 안내(최신 openDeletedNotice를 ref로 거쳐 `deletedNoticeFor`가 바뀔 때만 실행)
+  const openNoticeRef = useRef(openDeletedNotice);
+  useEffect(() => {
+    openNoticeRef.current = openDeletedNotice;
+  });
+  useEffect(() => {
+    if (deletedNoticeFor !== undefined) openNoticeRef.current(deletedNoticeFor);
+  }, [deletedNoticeFor]);
+
   const handlePick = () => {
     if (!active) return;
     // 번들에서 빠진 사진은 픽하지 않고 안내만
