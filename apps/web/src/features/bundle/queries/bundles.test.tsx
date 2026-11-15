@@ -424,6 +424,36 @@ describe('번들 query·mutation', () => {
         expect(detail()).toMatchObject({ date: '2026-11-12', revision: (base ?? 0) + 2 });
       });
 
+      it('LOCATION은 낡은 버전이면 목록을 바꾸지 않고 revision만 맞춘다', async () => {
+        const { detail, apply: applyEvent } = await apply();
+        const place = (id: number, name: string, position: number) => ({
+          id,
+          provider: 'KAKAO',
+          externalId: `k${id}`,
+          name,
+          address: null,
+          position,
+        });
+        applyEvent(
+          next(detail()?.revision, 'LOCATION', {
+            version: 5,
+            locations: [place(2, '둘째', 1), place(1, '첫째', 0)],
+          }),
+        );
+        // position 순으로 정렬하고 주소 없음은 null
+        expect(detail()?.locations.map((location) => location.name)).toEqual(['첫째', '둘째']);
+        expect(detail()?.locations[0]?.address).toBeNull();
+        const revision = detail()?.revision ?? 0;
+
+        applyEvent(
+          next(revision, 'LOCATION', { version: 4, locations: [place(9, '낡은 목록', 0)] }),
+        );
+
+        expect(detail()?.locations.map((location) => location.name)).toEqual(['첫째', '둘째']);
+        expect(detail()?.locationVersion).toBe(5);
+        expect(detail()?.revision).toBe(revision + 1);
+      });
+
       it('VISIBILITY는 공개 범위와 버전을 반영한다', async () => {
         const { detail, apply: applyEvent } = await apply();
         const version = (detail()?.visibilityVersion ?? 0) + 1;
@@ -452,7 +482,10 @@ describe('번들 query·mutation', () => {
             ],
           }),
         );
-        expect(detail()?.locations).toEqual([{ id: 'KAKAO:k1', name: '해운대' }]);
+        expect(detail()?.locations).toEqual([
+          { id: '3', provider: 'KAKAO', externalId: 'k1', name: '해운대', address: '부산' },
+        ]);
+        expect(detail()?.locationVersion).toBe(1);
 
         const photo = (id: number, position: number) => ({
           id,

@@ -8,6 +8,7 @@ import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import type { PlaceResult } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
 import { createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
@@ -23,6 +24,13 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 }));
 
 const { me, memberA, memberB } = MOCK_MEMBER_IDS;
+const place = (key: string, name: string, address: string): PlaceResult => ({
+  id: `test:${key}`,
+  provider: 'test',
+  externalId: key,
+  name,
+  address,
+});
 const bunchId = String(MOCK_BUNCH_ID);
 const SAVE_WAIT = { timeout: 5000 };
 
@@ -76,13 +84,28 @@ describe('useDraft 상태', () => {
     expect(saveStatus).toBe('saved');
   });
 
-  it('화면에서 위치를 바꾸면 그 뒤로는 화면 값이다', async () => {
-    const { result } = await renderReady();
+  it('위치를 더하면 화면에 먼저 보이고 서버에 저장된 뒤 서버 행 id로 바뀐다', async () => {
+    const { id, result } = await renderReady();
     act(() => {
-      result.current.actions.addLocation({ id: 'x', name: '장소 X', address: '주소 X' });
+      result.current.actions.addLocation(place('x', '장소 X', '주소 X'));
     });
 
+    // 응답 전에도 화면에 보임(아직 서버 id가 없는 줄)
     expect(ready(result.current.state).draft.locations.map((l) => l.name)).toEqual(['장소 X']);
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+    await waitFor(
+      () =>
+        expect(ready(result.current.state).draft.locations).toEqual([
+          {
+            id: expect.stringMatching(/^[0-9]+$/) as string,
+            provider: 'test',
+            externalId: 'x',
+            name: '장소 X',
+            address: '주소 X',
+          },
+        ]),
+      SAVE_WAIT,
+    );
   });
 
   it('없는 번들·숫자가 아닌 id·번치 멤버가 아닌 경우는 없는 초안이다', async () => {
@@ -456,21 +479,94 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     expect(serverBundle(id)?.revision).toBe(before);
   });
 
-  it('위치는 서버로 보내지 않고 화면에서만 더하고 뺀다(최대 개수까지)', async () => {
+  it('위치를 더하고 바꾸고 옮기고 지우면 서버에 순서대로 저장된다', async () => {
     const { id, result } = await renderReady();
-    const before = serverBundle(id)?.revision;
+    const names = () => ready(result.current.state).draft.locations.map((l) => l.name);
+    const saved = () => serverBundle(id)?.locations.map((l) => l.name);
 
     act(() => {
-      result.current.actions.addLocation({ id: 'p1', name: '여의도한강공원', address: '주소' });
+      result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+      result.current.actions.addLocation(place('b', '장소 B', '주소 B'));
     });
-    expect(ready(result.current.state).draft.locations).toEqual([
-      { id: 'p1', name: '여의도한강공원' },
-    ]);
-    act(() => result.current.actions.removeLocation('p1'));
+    await waitFor(() => expect(saved()).toEqual(['장소 A', '장소 B']), SAVE_WAIT);
+    await waitFor(
+      () => expect(ready(result.current.state).draft.locations).toHaveLength(2),
+      SAVE_WAIT,
+    );
 
-    expect(ready(result.current.state).draft.locations).toEqual([]);
-    expect(serverBundle(id)?.revision).toBe(before);
+    const [first, second] = ready(result.current.state).draft.locations;
+    act(() => result.current.actions.moveLocation(second!.id, 0));
+    expect(names()).toEqual(['장소 B', '장소 A']);
+    await waitFor(() => expect(saved()).toEqual(['장소 B', '장소 A']), SAVE_WAIT);
+
+    act(() => result.current.actions.replaceLocation(first!.id, place('c', '장소 C', '주소 C')));
+    expect(names()).toEqual(['장소 B', '장소 C']);
+    await waitFor(() => expect(saved()).toEqual(['장소 B', '장소 C']), SAVE_WAIT);
+
+    act(() => result.current.actions.removeLocation(second!.id));
+    expect(names()).toEqual(['장소 C']);
+    await waitFor(() => expect(saved()).toEqual(['장소 C']), SAVE_WAIT);
     await expect(result.current.actions.searchPlaces('여의도')).resolves.not.toHaveLength(0);
+  });
+
+  it('같은 장소를 다시 더하거나 3개를 넘기면 서버에 보내지 않고 명세 문구로 알린다', async () => {
+    const { id, result } = await renderReady();
+    act(() => {
+      result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+    });
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+
+    act(() => {
+      result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationDuplicate);
+
+    for (const key of ['b', 'c']) {
+      act(() => {
+        result.current.actions.addLocation(place(key, `장소 ${key}`, '주소'));
+      });
+    }
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(3), SAVE_WAIT);
+    act(() => {
+      result.current.actions.addLocation(place('d', '장소 D', '주소 D'));
+    });
+
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationMax);
+    expect(serverBundle(id)?.locations).toHaveLength(3);
+  });
+
+  it('다른 멤버가 먼저 같은 장소를 넣어 서버가 거절하면 내 변경을 걷고 「이미 추가한 위치예요.」를 알린다', async () => {
+    const { id, result } = await renderReady();
+    // 화면은 모르는 사이 서버에 같은 장소가 들어감
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) =>
+        String(bundle.id) === id
+          ? {
+              ...bundle,
+              locations: [
+                { id: 77, provider: 'test', externalId: 'a', name: '장소 A', address: '주소 A' },
+              ],
+              locationsVersion: bundle.locationsVersion + 1,
+            }
+          : bundle,
+      ),
+    }));
+
+    act(() => {
+      result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+    });
+
+    await waitFor(
+      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationDuplicate),
+      SAVE_WAIT,
+    );
+    expect(serverBundle(id)?.locations).toHaveLength(1);
+    // 서버 목록의 줄 하나만 보임(내가 얹은 줄은 걷힘)
+    await waitFor(
+      () => expect(ready(result.current.state).draft.locations.map((l) => l.id)).toEqual(['77']),
+      SAVE_WAIT,
+    );
   });
 
   it('사진을 빼면 서버 구성이 바뀌고 화면도 서버 값을 보인다', async () => {

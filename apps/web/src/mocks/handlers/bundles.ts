@@ -11,7 +11,7 @@ import {
 } from '@/features/bundle/lib/titleCrdt';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
-import type { MockBundle, MockBundlePhoto, MockDbState } from '../db/types';
+import type { MockBundle, MockBundlePhoto, MockDbState, MockLocation } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
@@ -133,6 +133,89 @@ const photoPicks = (bundle: MockBundle, bundlePhotoId: number) => {
   };
 };
 
+const MAX_LOCATIONS = 3;
+
+type IntentPlace = { provider: string; externalId: string; name: string; address: string | null };
+
+const isText = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim() !== '';
+
+const toPlace = (value: unknown): IntentPlace | undefined => {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const place = value as Record<string, unknown>;
+  const address = place.address ?? null;
+  if (!isText(place.provider) || !isText(place.externalId) || !isText(place.name)) return undefined;
+  // 주소 없음은 null만 허용하고 빈 문자열·공백은 거부
+  if (address !== null && !isText(address)) return undefined;
+  return { provider: place.provider, externalId: place.externalId, name: place.name, address };
+};
+
+const isLocationId = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+
+type LocationIntent =
+  | { intent: 'ADD'; locations: IntentPlace[] }
+  | { intent: 'REPLACE'; targetLocationId: number; location: IntentPlace }
+  | { intent: 'REMOVE'; targetLocationId: number }
+  | {
+      intent: 'MOVE';
+      targetLocationId: number;
+      previousLocationId: number | null;
+      nextLocationId: number | null;
+    };
+
+const hasOnly = (body: Record<string, unknown>, allowed: string[]) =>
+  Object.keys(body).every((key) => allowed.includes(key));
+
+const parseLocationIntent = (body: Record<string, unknown> | null): LocationIntent | undefined => {
+  if (!body) return undefined;
+  switch (body.intent) {
+    case 'ADD': {
+      if (!hasOnly(body, ['intent', 'locations']) || !Array.isArray(body.locations))
+        return undefined;
+      const places = body.locations.map(toPlace);
+      return places.length >= 1 && places.length <= MAX_LOCATIONS && places.every(Boolean)
+        ? { intent: 'ADD', locations: places as IntentPlace[] }
+        : undefined;
+    }
+    case 'REPLACE': {
+      if (!hasOnly(body, ['intent', 'location', 'targetLocationId'])) return undefined;
+      const location = toPlace(body.location);
+      return location && isLocationId(body.targetLocationId)
+        ? { intent: 'REPLACE', targetLocationId: body.targetLocationId, location }
+        : undefined;
+    }
+    case 'REMOVE':
+      return hasOnly(body, ['intent', 'targetLocationId']) && isLocationId(body.targetLocationId)
+        ? { intent: 'REMOVE', targetLocationId: body.targetLocationId }
+        : undefined;
+    case 'MOVE': {
+      if (!hasOnly(body, ['intent', 'targetLocationId', 'previousLocationId', 'nextLocationId'])) {
+        return undefined;
+      }
+      const optional = (value: unknown) => (value === undefined || value === null ? null : value);
+      const previous = optional(body.previousLocationId);
+      const next = optional(body.nextLocationId);
+      return isLocationId(body.targetLocationId) &&
+        (previous === null || isLocationId(previous)) &&
+        (next === null || isLocationId(next))
+        ? {
+            intent: 'MOVE',
+            targetLocationId: body.targetLocationId,
+            previousLocationId: previous,
+            nextLocationId: next,
+          }
+        : undefined;
+    }
+    default:
+      return undefined;
+  }
+};
+
+// 장소 행 id를 모두 채운 목록(시드처럼 id가 없는 줄은 순서로 정함)
+const locationsWithIds = (bundle: MockBundle): (MockLocation & { id: number })[] =>
+  bundle.locations.map((location, index) => ({ ...location, id: location.id ?? index + 1 }));
+
 // 번들 한 건의 응답(BundleSnapshot). 편집권 token은 공개하지 않음
 export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: string) => {
   const isCreator = bundle.createdBy === MOCK_MY_MEMBER_ID;
@@ -157,7 +240,7 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     locationVersion: bundle.locationsVersion,
     locations: bundle.locations.map((location, index) => ({
       ...location,
-      id: index + 1,
+      id: location.id ?? index + 1,
       position: index,
     })),
     likeCount: 0,
@@ -503,6 +586,109 @@ export const bundleHandlers = [
     if ('error' in scope) return scope.error;
     await ensureTitleState(scope.bundle.id);
     return snapshotOf(scope.bundle.id);
+  }),
+
+  // POST …/locations/intents: 장소 추가·교체·삭제·이동을 서버 최신 목록에 적용(전체 덮어쓰기·버전 검사 없음)
+  // 거절은 409와 detail.reason(LOCATION_DUPLICATE·LOCATION_CAPACITY_EXCEEDED·LOCATION_REMOVED)
+  // 명세 7절: 409 BUNDLE_002(발행된 번들)이거나 detail.reason으로 구분한 장소 충돌. 화면은 409의 detail.reason만 읽음
+  http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', async ({ params, request }) => {
+    const body = await readJson(request);
+    const scope = findScope(params.bunchId, params.id);
+    if ('error' in scope) return scope.error;
+    const { bundle, isParticipant } = scope;
+    if (!isParticipant) return fail(403, 'AUTH_002');
+    if (bundle.status !== 'DRAFT') return fail(409, 'BUNDLE_002');
+    const reject = (reason: string) => fail(409, 'BUNDLE_002', { reason });
+
+    const parsed = parseLocationIntent(body);
+    if (!parsed) return fail(400, 'COMMON_001');
+
+    const current = locationsWithIds(bundle);
+    let next = current;
+    let acceptedCount = 0;
+    let nextId = Math.max(0, ...current.map((location) => location.id)) + 1;
+    const keyOf = (place: { provider: string; externalId: string }) =>
+      `${place.provider.trim().toLowerCase()}:${place.externalId.trim()}`;
+
+    switch (parsed.intent) {
+      case 'ADD': {
+        const keys = new Set(current.map(keyOf));
+        for (const place of parsed.locations) {
+          if (keys.has(keyOf(place))) return reject('LOCATION_DUPLICATE');
+          keys.add(keyOf(place));
+        }
+        if (current.length + parsed.locations.length > MAX_LOCATIONS) {
+          return reject('LOCATION_CAPACITY_EXCEEDED');
+        }
+        next = [...current, ...parsed.locations.map((place) => ({ ...place, id: nextId++ }))];
+        acceptedCount = parsed.locations.length;
+        break;
+      }
+      case 'REPLACE': {
+        const target = current.find((location) => location.id === parsed.targetLocationId);
+        if (
+          current.some(
+            (location) => location !== target && keyOf(location) === keyOf(parsed.location),
+          )
+        ) {
+          return reject('LOCATION_DUPLICATE');
+        }
+        if (target) {
+          next = current.map((location) =>
+            location === target ? { ...parsed.location, id: target.id } : location,
+          );
+        } else {
+          // 이미 삭제된 줄을 바꾸면 정원이 남을 때 새 줄을 맨 끝에 더함
+          if (current.length >= MAX_LOCATIONS) return reject('LOCATION_CAPACITY_EXCEEDED');
+          next = [...current, { ...parsed.location, id: nextId++ }];
+        }
+        acceptedCount = 1;
+        break;
+      }
+      case 'REMOVE': {
+        // 이미 지워진 줄을 다시 지워도 성공(바뀐 것 없음)
+        next = current.filter((location) => location.id !== parsed.targetLocationId);
+        acceptedCount = next.length === current.length ? 0 : 1;
+        break;
+      }
+      case 'MOVE': {
+        const target = current.find((location) => location.id === parsed.targetLocationId);
+        if (!target) return reject('LOCATION_REMOVED');
+        const rest = current.filter((location) => location !== target);
+        // 뒤 기준점이 있으면 그 앞, 없으면 앞 기준점 뒤, 둘 다 없으면 맨 끝
+        const nextIndex = rest.findIndex((location) => location.id === parsed.nextLocationId);
+        const previousIndex = rest.findIndex(
+          (location) => location.id === parsed.previousLocationId,
+        );
+        const at =
+          nextIndex >= 0 ? nextIndex : previousIndex >= 0 ? previousIndex + 1 : rest.length;
+        next = [...rest.slice(0, at), target, ...rest.slice(at)];
+        acceptedCount = 1;
+        break;
+      }
+    }
+
+    const changed =
+      next.length !== current.length || next.some((location, index) => location !== current[index]);
+    if (changed) {
+      changeBundle(bundle.id, (latest) => ({
+        ...latest,
+        locations: next,
+        locationsVersion: latest.locationsVersion + 1,
+      }));
+    }
+    const updated = mockDb.get().bundles.find((item) => item.id === bundle.id) ?? bundle;
+    return ok({
+      bundleId: updated.id,
+      revision: updated.revision,
+      locationVersion: updated.locationsVersion,
+      changed,
+      acceptedCount: changed ? acceptedCount : 0,
+      locations: locationsWithIds(updated).map((location, index) => ({
+        ...location,
+        position: index,
+      })),
+    });
   }),
 
   // PUT …/photos/{photoId}/pick: 본인 픽의 최종 상태(picked)를 저장하는 멱등 요청, photoId는 번들 사진 ID

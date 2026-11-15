@@ -85,7 +85,7 @@ export const kokHandlers = [
       provider: location.provider,
       externalId: location.externalId,
       name: location.name,
-      address: location.address,
+      address: location.address ?? '',
       sourceBundleId: bundleId,
       sourceLocationId: locationId,
       sourceAdvertisementId: null,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BundleDetail } from '../model/bundle';
-import { applyContentEvent, keepNewerPicks } from './bundleEvents';
+import { applyContentEvent, keepNewerLocations, keepNewerPicks } from './bundleEvents';
 
 const mine = { version: 4, pickedByMe: true, memberIds: ['5'] };
 
@@ -81,5 +81,40 @@ describe('keepNewerPicks', () => {
 
     expect(keepNewerPicks(saved, sameVersion)).toBe(sameVersion);
     expect(keepNewerPicks(saved, newer)).toBe(newer);
+  });
+});
+
+describe('keepNewerLocations', () => {
+  const withLocations = (locationVersion: number, names: string[]) =>
+    ({
+      ...detail,
+      locationVersion,
+      locations: names.map((name, index) => ({
+        id: String(index + 1),
+        provider: 'test',
+        externalId: name,
+        name,
+        address: null,
+      })),
+    }) as unknown as BundleDetail;
+
+  it('장소 버전이 뒤로 가는 상세는 장소 목록을 되돌리지 못하고 나머지는 들어온 값을 쓴다', () => {
+    const saved = withLocations(5, ['새 목록']);
+    const stale = { ...withLocations(4, ['낡은 목록']), title: '새 제목' };
+
+    const merged = keepNewerLocations(saved, stale);
+
+    expect(merged.locations.map((location) => location.name)).toEqual(['새 목록']);
+    expect(merged.locationVersion).toBe(5);
+    expect(merged.title).toBe('새 제목');
+  });
+
+  it('같거나 더 새 버전이면 들어온 목록을 쓴다', () => {
+    const saved = withLocations(5, ['A']);
+    const same = withLocations(5, ['A', 'B']);
+    const newer = withLocations(6, ['C']);
+
+    expect(keepNewerLocations(saved, same)).toBe(same);
+    expect(keepNewerLocations(saved, newer)).toBe(newer);
   });
 });

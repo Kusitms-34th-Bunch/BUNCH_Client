@@ -71,8 +71,35 @@ export function useDraftFixture(draftId: string | undefined): {
       update((current) =>
         current.locations.length >= MAX_LOCATIONS
           ? current
-          : { ...current, locations: [...current.locations, { id: place.id, name: place.name }] },
+          : {
+              ...current,
+              locations: [
+                ...current.locations,
+                {
+                  id: place.id,
+                  provider: place.provider,
+                  externalId: place.externalId,
+                  name: place.name,
+                  address: place.address,
+                },
+              ],
+            },
       ),
+    replaceLocation: (locationId, place) =>
+      update((current) => ({
+        ...current,
+        locations: current.locations.map((location) =>
+          location.id === locationId
+            ? {
+                id: location.id,
+                provider: place.provider,
+                externalId: place.externalId,
+                name: place.name,
+                address: place.address,
+              }
+            : location,
+        ),
+      })),
     removeLocation: (locationId) =>
       update((current) => ({
         ...current,

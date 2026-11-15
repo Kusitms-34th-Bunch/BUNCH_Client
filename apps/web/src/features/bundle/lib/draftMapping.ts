@@ -21,7 +21,7 @@ type ToDraftInput = {
   detail: BundleDetail;
   /** 번치 멤버 전체(이름·역할을 찾는 기준) */
   bunchMembers: readonly BunchMember[];
-  /** 서버에 필드가 없어 화면에서만 들고 있는 위치 */
+  /** 화면에 보일 위치(서버 목록에 아직 응답을 받지 못한 내 변경을 얹은 값) */
   locations: readonly DraftLocation[];
 };
 

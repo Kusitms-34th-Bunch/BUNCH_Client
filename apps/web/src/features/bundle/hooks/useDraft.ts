@@ -20,10 +20,9 @@ import type {
 } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
 import { readPublishBlockers, readVersionConflict } from '../api/bundles';
-import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
-import { placeFixture } from '../fixtures/draft.fixture';
+import { searchPlaces as searchPlacesApi } from '../api/places';
+import { BUNDLE_MESSAGES } from '../constants/messages';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
-import { moveLocation } from '../lib/locations';
 import { movePhoto, type PhotoMovePlan, planPhotoMoves, removePhoto } from '../lib/photos';
 import { ensureTitleCrdt } from '../lib/titleCrdt';
 import {
@@ -38,6 +37,7 @@ import {
   useMergeTitleMutation,
 } from '../queries/bundles';
 import { bundleMutationKeys } from '../queries/keys';
+import { useBundleLocations } from './useBundleLocations';
 import { useBundleRealtime } from './useBundleRealtime';
 import { useOnlineStatus } from './useOnlineStatus';
 import { usePresence } from './usePresence';
@@ -62,16 +62,6 @@ const CONFLICT_RETRY_DELAY_MS = 200;
 const isRetryable = (error: unknown) => {
   const { status } = (error as { status?: number } | null) ?? {};
   return status === undefined || status >= 500;
-};
-
-/** 장소 검색 API 연결 전 목 검색(이름·주소에 키워드가 들어 있으면 결과). 렌더마다 바뀌지 않도록 hook 밖에 둠 */
-const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
-  const query = keyword.trim();
-  return Promise.resolve(
-    query === ''
-      ? []
-      : placeFixture.filter((place) => place.name.includes(query) || place.address.includes(query)),
-  );
 };
 
 export type DraftState =
@@ -111,6 +101,8 @@ export type DraftActions = {
   /** 공개 범위를 고름(서버에는 업로드 요청으로만 보냄). null은 고른 값을 버림(공개 범위 화면에서 뒤로 갈 때, 기능 spec 4.3.9) */
   setVisibility: (_visibility: DraftVisibility | null) => void;
   addLocation: (_place: PlaceResult) => void;
+  /** 위치 줄을 눌러 다른 장소로 바꿈(줄 id와 자리는 그대로) */
+  replaceLocation: (_locationId: string, _place: PlaceResult) => void;
   removeLocation: (_locationId: string) => void;
   /** 위치를 다른 자리로 옮김(햄버거를 잡고 끌어 순서 바꾸기, 자리는 0부터) */
   moveLocation: (_locationId: string, _toIndex: number) => void;
@@ -217,11 +209,14 @@ export function useDraft(draftId: string | undefined): {
   });
 
   const [pending, setPending] = useState<Pending>({});
-  // 화면에서 위치를 바꾸기 전에는 서버에 저장된 위치를 보이고, 바꾼 뒤에는 화면 값(위치 저장은 장소 검색 이슈에서 연결)
-  const [editedLocations, setEditedLocations] = useState<readonly DraftLocation[] | undefined>(
-    undefined,
-  );
-  const locations = editedLocations ?? detail?.locations ?? NO_LOCATIONS;
+  // 위치: 서버 목록 위에 응답을 기다리는 내 변경을 얹어 보임. 연결이 끊겼을 때의 막기는 아래 동작 감싸기가 맡음
+  const placeActions = useBundleLocations({
+    bunchId,
+    bundleId,
+    serverLocations: detail?.locations ?? NO_LOCATIONS,
+    blocked: false,
+  });
+  const locations = placeActions.locations;
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   const [flushing, setFlushing] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -669,21 +664,10 @@ export function useDraft(draftId: string | undefined): {
     },
     // 공개 범위는 고르기만 하고 저장하지 않음: 업로드(발행) 요청에 최종 선택을 함께 보냄(v5 명세)
     setVisibility: (visibility) => setVisibilityChoice(visibility ?? undefined),
-    addLocation: (place) =>
-      setEditedLocations((current) => {
-        const base = current ?? detailRef.current?.locations ?? NO_LOCATIONS;
-        return base.length >= MAX_LOCATIONS ? base : [...base, { id: place.id, name: place.name }];
-      }),
-    removeLocation: (locationId) =>
-      setEditedLocations((current) =>
-        (current ?? detailRef.current?.locations ?? NO_LOCATIONS).filter(
-          (location) => location.id !== locationId,
-        ),
-      ),
-    moveLocation: (locationId, toIndex) =>
-      setEditedLocations((current) =>
-        moveLocation(current ?? detailRef.current?.locations ?? NO_LOCATIONS, locationId, toIndex),
-      ),
+    addLocation: placeActions.add,
+    replaceLocation: placeActions.replace,
+    removeLocation: placeActions.remove,
+    moveLocation: placeActions.move,
     setDate: (date) => {
       change((current) => ({ ...current, date }));
       schedule(0);
@@ -758,7 +742,7 @@ export function useDraft(draftId: string | undefined): {
         }
       });
     },
-    searchPlaces,
+    searchPlaces: searchPlacesApi,
     publish: async () => {
       // 보내는 중인 사진 변경이 끝난 뒤의 서버 구성으로 발행함
       const failuresBefore = photoFailures.current;
@@ -843,6 +827,9 @@ export function useDraft(draftId: string | undefined): {
     },
     addLocation: (...args: Parameters<DraftActions['addLocation']>) => {
       if (!downRef.current) rawActions.addLocation(...args);
+    },
+    replaceLocation: (...args: Parameters<DraftActions['replaceLocation']>) => {
+      if (!downRef.current) rawActions.replaceLocation(...args);
     },
     removeLocation: (...args: Parameters<DraftActions['removeLocation']>) => {
       if (!downRef.current) rawActions.removeLocation(...args);

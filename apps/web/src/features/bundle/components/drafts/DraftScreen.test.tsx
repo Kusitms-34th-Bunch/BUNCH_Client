@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
-import { draftFixture } from '../../fixtures/draft.fixture';
+import { draftFixture, fixtureLocation, fixturePlace } from '../../fixtures/draft.fixture';
 import { DraftScreen } from './DraftScreen';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -37,6 +37,7 @@ const actions = {
   removePhoto: vi.fn(() => true),
   movePhoto: vi.fn(),
   replacePhotos: vi.fn(() => true),
+  replaceLocation: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
   publish: vi.fn(() => Promise.resolve('published' as const)),
 } satisfies DraftActions;
@@ -578,11 +579,69 @@ describe('위치와 날짜', () => {
     expect(actions.removeLocation).toHaveBeenCalledWith('location-1');
   });
 
+  it('새 위치를 찾으려고 시트를 열면 위치를 작업 중으로 알리고 닫으면 끝낸다', async () => {
+    const view = renderScreen({ draft: { ...draftFixture, locations: [] } });
+
+    await userEvent.click(screen.getByRole('button', { name: /위치.*위치 추가/ }));
+
+    expect(await screen.findByRole('dialog', { name: '위치 검색' })).toBeInTheDocument();
+    expect(actions.presence.begin).toHaveBeenCalledWith('LOCATION');
+
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(actions.presence.end).toHaveBeenCalledWith('LOCATION'));
+    view.unmount();
+  });
+
+  it('위치 줄을 누르면 그 줄을 작업 중으로 알리며 검색 시트가 열리고, 결과를 고르면 그 줄을 바꾼다', async () => {
+    const place = fixturePlace('p9', '더현대 서울', '서울 영등포구 여의대로 108');
+    const searchPlaces = vi.fn(() => Promise.resolve([place]));
+    renderScreen({ actions: { ...actions, searchPlaces } });
+
+    await userEvent.click(screen.getByRole('button', { name: /^위치: 서울특별시 여의도동$/ }));
+
+    expect(await screen.findByRole('dialog', { name: '위치 검색' })).toBeInTheDocument();
+    expect(actions.presence.begin).toHaveBeenCalledWith('LOCATION:location-1');
+
+    await userEvent.type(
+      screen.getByRole('searchbox', { name: '장소나 주소 검색' }),
+      '더현대{Enter}',
+    );
+    await userEvent.click(await screen.findByRole('button', { name: /더현대 서울/ }));
+
+    expect(actions.replaceLocation).toHaveBeenCalledWith('location-1', place);
+    expect(actions.addLocation).not.toHaveBeenCalled();
+  });
+
+  it('서버 id를 아직 받지 못한 줄은 눌러도 검색 시트를 열지 않는다', async () => {
+    renderScreen({
+      draft: { ...draftFixture, locations: [fixtureLocation('pending:1', '방금 더한 장소')] },
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: /^위치: 방금 더한 장소$/ }));
+
+    expect(screen.queryByRole('dialog', { name: '위치 검색' })).not.toBeInTheDocument();
+  });
+
+  it('그 줄을 바꾸거나 끄는 멤버의 프로필은 그 줄에만 보인다', () => {
+    renderScreen({
+      draft: {
+        ...draftFixture,
+        locations: [fixtureLocation('a', '장소 A'), fixtureLocation('b', '장소 B')],
+        editing: { locationEditors: { a: ['gyeongjin'] } },
+      },
+    });
+
+    expect(
+      screen.getByRole('button', { name: /경진님이 편집 중 위치.*장소 A/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^위치: 장소 B$/ })).toBeInTheDocument();
+  });
+
   it('다른 멤버가 위치를 고르는 중이어도 지우기·추가를 막지 않고 프로필을 보인다(잠금 없음)', async () => {
     renderScreen({
       draft: {
         ...draftFixture,
-        locations: [{ id: 'sokcho', name: '속초해수욕장' }],
+        locations: [fixtureLocation('sokcho', '속초해수욕장')],
         editing: { locationAddMemberIds: ['gyeongjin'] },
       },
     });
@@ -596,10 +655,7 @@ describe('위치와 날짜', () => {
   describe('위치 순서 바꾸기', () => {
     const twoLocations = {
       ...draftFixture,
-      locations: [
-        { id: 'a', name: '장소 A' },
-        { id: 'b', name: '장소 B' },
-      ],
+      locations: [fixtureLocation('a', '장소 A'), fixtureLocation('b', '장소 B')],
     };
 
     it('위치를 고르면 제목 앞이 햄버거 핸들로 바뀌어 위치마다 「순서 바꾸기」 버튼이 생긴다', () => {
@@ -624,9 +680,26 @@ describe('위치와 날짜', () => {
       }
     });
 
+    it('끌 수 없는 상태의 핸들은 포커스를 유지한 채 aria-disabled로 알린다', () => {
+      const { unmount } = renderScreen({
+        draft: { ...draftFixture, locations: [fixtureLocation('a', '장소 A')] },
+      });
+      expect(screen.getByRole('button', { name: '장소 A 순서 바꾸기' })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+      unmount();
+
+      renderScreen({ draft: twoLocations });
+      expect(screen.getByRole('button', { name: '장소 A 순서 바꾸기' })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      );
+    });
+
     it('위치가 하나뿐이면 끌 수 없고 핸들을 눌러도 아무 안내가 없다', async () => {
       renderScreen({
-        draft: { ...draftFixture, locations: [{ id: 'a', name: '장소 A' }] },
+        draft: { ...draftFixture, locations: [fixtureLocation('a', '장소 A')] },
       });
 
       await userEvent.click(screen.getByRole('button', { name: '장소 A 순서 바꾸기' }));
@@ -659,9 +732,9 @@ describe('위치와 날짜', () => {
       draft: {
         ...draftFixture,
         locations: [
-          { id: 'a', name: '장소 A' },
-          { id: 'b', name: '장소 B' },
-          { id: 'c', name: '장소 C' },
+          fixtureLocation('a', '장소 A'),
+          fixtureLocation('b', '장소 B'),
+          fixtureLocation('c', '장소 C'),
         ],
       },
     });
