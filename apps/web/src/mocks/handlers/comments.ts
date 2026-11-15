@@ -16,7 +16,7 @@ const MAX_LENGTH = 200;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** 지금 번치에 보이는 댓글(차단 관계 번치가 쓴 것과 그 원댓글의 답글은 빠짐, 삭제 자리는 남음) */
-const visibleOf = (state: MockDbState, viewer: number | undefined, bundleId: number) => {
+export const visibleOf = (state: MockDbState, viewer: number | undefined, bundleId: number) => {
   const shown = (comment: MockSocialComment) => !isBlockedBetween(state, viewer, comment.bunchId);
   const all = state.socialComments.filter((comment) => comment.bundleId === bundleId);
   const hiddenRoots = new Set(all.filter((c) => !c.parentId && !shown(c)).map((c) => c.id));

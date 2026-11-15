@@ -49,3 +49,8 @@ storybook-static/
 
 # 기획 쪽 공개 동의를 받으면 이 줄을 지우고 올린다
 docs/specs/bunch-prd.md
+
+# Lighthouse 기준선(CI 캐시)과 로컬 측정 산출물
+apps/web/lighthouse-baseline.json
+.lighthouseci/
+/lighthouse.md

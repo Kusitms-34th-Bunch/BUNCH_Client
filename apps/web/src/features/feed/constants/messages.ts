@@ -18,6 +18,7 @@ export const FEED_MESSAGES = {
   back: '뒤로 가기',
   bundleUnavailable: '삭제되었거나 볼 수 없는 내용이에요',
   bundleLoading: '번들을 불러오는 중이에요',
+  memberLoading: '멤버 프로필을 불러오는 중이에요',
   /** 번치 정보를 받지 못했을 때 번치 버튼 이름 */
   unknownBunch: '번치',
   commentsTitle: '댓글',
@@ -62,6 +63,7 @@ export const FEED_MESSAGES = {
   deleteBundleDescription: '데이터가 삭제되며 복구 불가능해요.',
   deleteBundleConfirm: '삭제',
   bundleDeleted: '번들을 삭제했어요',
+  bundleDeleting: '번들을 삭제하는 중이에요',
   bundleEdited: '번들을 수정했어요',
   visibilityTitle: '번들의 공개 범위를 설정해 주세요',
   visibilityAll: '전체 공개',
@@ -83,6 +85,7 @@ export const FEED_MESSAGES = {
   pickCancelConfirm: '삭제하기',
   adHide: '숨기기',
   adHideTitle: '이 장소를 숨길까요?',
+  adHiding: '장소를 숨기는 중이에요',
   adHiddenCardLabel: (title: string) => `광고 ${title}, 장소를 숨김 처리 했어요`,
   adHideDescription:
     'BUNCH 팀이 번치가 모이기 좋은 곳을 직접 골라 소개해요.\n현재 업체로부터 비용을 받고 있지 않아요.',
@@ -96,4 +99,6 @@ export const FEED_MESSAGES = {
   requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
   /** 내 정보를 받지 못해 번치 명의 행동을 할 수 없을 때 */
   actionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  // 기능명세서 6.2.11: 화면을 연 뒤 역할이 바뀌어 수정·삭제를 할 수 없게 됨
+  permissionChanged: '권한이 변경되어 해당 기능을 이용할 수 없어요.',
 } as const;

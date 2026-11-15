@@ -147,13 +147,31 @@ export type MockNotification = {
   target: { kind: string; bunchId: number; bundleId?: number; targetBunchId?: number };
 };
 
-/** 번치 신고(접수만, 처리 결과는 화면에 없음) */
+/** 번치·번들·댓글 신고(접수만, 처리 결과는 화면에 없음). 번들·댓글이면 그 번들의 번치가 대상 번치 */
 export type MockReport = {
   id: number;
   reporterBunchId: number;
   targetBunchId: number;
+  bundleId?: number;
+  commentId?: number;
   reason: 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'PERSONAL_INFORMATION' | 'OTHER';
   detail: string | null;
+};
+
+/** 번치의 콕한 장소(번치 명의, 같은 장소는 출처가 달라도 하나) */
+export type MockKok = {
+  id: number;
+  bunchId: number;
+  provider: string;
+  externalId: string;
+  name: string;
+  address: string;
+  /** 번들 장소에서 콕했으면 그 번들·위치, 광고에서 콕했으면 그 광고 */
+  sourceBundleId: number | null;
+  sourceLocationId: number | null;
+  sourceAdvertisementId: number | null;
+  pinnedByMemberId: number;
+  pinnedAt: string;
 };
 
 /** 번치 공동 좋아요(번치 명의, 같은 번치 멤버가 함께 씀) */
@@ -185,6 +203,11 @@ export type MockDbState = {
   blocks: MockBlock[];
   reports: MockReport[];
   likes: MockLike[];
+  koks: MockKok[];
+  /** 내가 숨긴 광고(사용자 단위) */
+  hiddenAdIds: number[];
+  /** 마지막에 준 콕 ID(지운 콕의 ID를 새 콕에 다시 주지 않게) */
+  lastKokId: number;
   socialComments: MockSocialComment[];
   notifications: MockNotification[];
 };
