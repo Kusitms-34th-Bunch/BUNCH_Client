@@ -1,4 +1,10 @@
-import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  queryOptions,
+  replaceEqualDeep,
+  skipToken,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { sharedKeys } from '@/shared/query/keys';
 import {
@@ -40,11 +46,15 @@ export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string
   queryOptions({
     queryKey: bundleKeys.detail(bunchId, bundleId),
     queryFn: bunchId && bundleId ? ({ signal }) => getBundle(bunchId, bundleId, signal) : skipToken,
-    // 먼저 보낸 재조회 응답이 그사이 이벤트로 맞춘 더 새 상태를 낡은 revision으로 덮지 않음(같거나 더 새 revision이면 응답을 씀)
+    // 먼저 보낸 재조회 응답이 그사이 이벤트로 맞춘 더 새 상태를 낡은 revision으로 덮지 않음(setQueryData에도 적용됨)
+    // 같거나 더 새 revision이면 응답을 쓰되, 바뀌지 않은 부분은 기본 구조 공유로 참조를 유지해 불필요한 리렌더를 막음
     structuralSharing: (old, next) => {
       const previous = old as BundleDetail | undefined;
       const incoming = next as BundleDetail;
-      return previous && previous.revision > incoming.revision ? previous : incoming;
+      if (!previous) return incoming;
+      return previous.revision > incoming.revision
+        ? previous
+        : replaceEqualDeep(previous, incoming);
     },
   });
 
