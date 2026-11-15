@@ -47,8 +47,8 @@
 
 - Path·params·search: `/photos`. params는 없다. 임시 `preview` search(`loading`·`error`·`no-bunch`·`empty`)로 상태를 눈으로 확인할 수 있고, route 경계(`lib/preview.ts`의 `parsePreview`)에서 허용 값만 통과시킨다. 알 수 없는 값은 무시하고 운영(`NODE_ENV=production`)에서는 아예 열지 않는다. 제거 조건: 번들 화면 테스트의 샘플 사진(`photoBox.fixture`)이 필요 없어지면 `preview.ts`·`fixtures/`·page의 `searchParams` 읽기를 함께 삭제한다. 사진함 화면·사진 크게 보기·번들 만들기 화면은 이미 사진함 API(개발·시연에서는 가짜 서버)를 쓴다.
 - 렌더링: `searchParams`를 읽어 `/photos`가 정적 prerender 대신 요청마다 렌더되는 동적 route다. 정적 정보뿐인 화면이라 비용은 작고, `preview`를 없애면 함께 사라진다.
-- 아직 없는 route: 사진 상세 `/photos/[photoId]`는 #128에서 만든다. 그 전에는 직접 URL로 들어가면 not-found이고, 이 화면에서 사진을 눌러도 이동하지 않는다.
-- 접근 권한·guard: 아직 없다(로그인 미구현). 번치 멤버만 볼 수 있어야 하며 서버가 판단한다(`docs/specs/photo-box.md`).
+- 사진을 누르면 사진 상세 `/photos/[photoId]`로 이동한다(`PhotoCell`, `PHOTO_BOX_PATHS.detail`).
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태로 막는다(`features/auth/lib/accessPolicy.ts`, 결정 기록 019). 가입을 마친 사용자만 들어오고, 비로그인은 로그인(처음이면 인트로)으로, 가입 중이면 약관·프로필로 보낸다. 번치 멤버인지는 서버가 판단한다(`docs/specs/photo-box.md`).
 - Layout·redirect·navigation: `(app)/(main)` group의 하단 탭 layout 안에서 `PageShell`을 한 번 쓴다. `robots: noindex`.
 
 ## 상태와 흐름

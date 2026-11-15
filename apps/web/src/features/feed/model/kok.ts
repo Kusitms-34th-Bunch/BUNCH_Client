@@ -5,6 +5,7 @@ import { z } from 'zod';
 type LocationKok = ApiContract<components['schemas']['BundleLocationKokResponse']>;
 
 /** `GET /bundles/{bundleId}/pinned-places` 응답(명세 021)에서 시트가 쓰는 장소별 값만. 장소 ID는 피드·상세 응답과 같음 */
+// 계약 미연결: 장소별 콕 여부만 받음(bundleId·선택 멤버·개수 생략)
 export const bundleKoksSchema = z.object({
   locations: z.array(
     z.object({

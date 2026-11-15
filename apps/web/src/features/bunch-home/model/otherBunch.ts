@@ -1,3 +1,5 @@
+import type { ApiContract } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
@@ -11,13 +13,13 @@ const followStateSchema = z.enum(['NONE', 'REQUESTED', 'FOLLOWING']);
 export const followResultSchema = z.object({
   followState: followStateSchema,
   followId: z.number().int().positive().nullish(),
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['FollowResult']>>;
 
 /** `DELETE /bunches/{viewerId}/following/{targetId}?followId=` 응답 */
 export const followCancellationSchema = z.object({
   followState: followStateSchema,
   cancelled: followStateSchema,
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['FollowCancellationResult']>>;
 
 export const FOLLOW_STATUS: Readonly<Record<z.infer<typeof followStateSchema>, FollowStatus>> = {
   NONE: 'none',

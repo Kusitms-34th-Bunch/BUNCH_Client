@@ -22,7 +22,7 @@
 
 ## 확인 항목
 
-- **XSS**: 사용자 입력이나 외부 응답을 `dangerouslySetInnerHTML`, 직접 DOM 삽입, 템플릿 문자열로 렌더링하는 경로에 escaping·sanitize가 있는가. Content-Security-Policy는 이 저장소에 아직 없다 — 배포 대상이 정해지고 도입한다면 `script-src`에 `unsafe-inline`·`unsafe-eval` 없이 nonce 기반으로 구성하고, `<meta>` 태그가 아니라 실제 HTTP 응답 헤더로 전달한다(`frame-ancestors` 등 일부 지시문은 `<meta>`에서 무시된다).
+- **XSS**: 사용자 입력이나 외부 응답을 `dangerouslySetInnerHTML`, 직접 DOM 삽입, 템플릿 문자열로 렌더링하는 경로에 escaping·sanitize가 있는가. Content-Security-Policy는 이 저장소에 없다(2026-11-16 확인, `apps/web/next.config.mjs`에 헤더 없음). 도입한다면 `script-src`에 `unsafe-inline`·`unsafe-eval` 없이 nonce 기반으로 구성하고, `<meta>` 태그가 아니라 실제 HTTP 응답 헤더로 전달한다(`frame-ancestors` 등 일부 지시문은 `<meta>`에서 무시된다).
 - **인증·권한 경계**: route guard, server action, API 호출이 로그인 여부뿐 아니라 리소스 소유권·역할까지 검증하는가. 클라이언트 쪽 조건부 렌더링만으로 접근을 막고 있지 않은가. Server Action(`'use server'`)은 middleware나 상위 layout의 접근 제어를 거치지 않고 직접 호출될 수 있는 공개 endpoint다 — action 함수 내부에서 그 자체로 인증·권한을 다시 검증하는가.
 - **secret 노출**: 서버 전용 값(API 키, 내부 URL, 토큰)이 client component, 브라우저 번들, 커밋된 파일로 새지 않는가. `NEXT_PUBLIC_`, `VITE_` 접두사가 실제로 공개해도 되는 값에만 붙는가.
 - **IDOR**: URL·payload의 id 값을 서버가 요청자 소유인지 검증 없이 그대로 조회·수정에 쓰지 않는가.

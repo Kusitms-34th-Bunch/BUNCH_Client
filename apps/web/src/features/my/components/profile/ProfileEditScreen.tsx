@@ -40,7 +40,7 @@ const isSameValues = (a: ProfileValues, b: ProfileValues) =>
 
 /**
  * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 닉네임·프로필 사진·출생연도·성별(동의한 사람만 보임), 저장되면 MY로
- * 출생연도·성별은 프로필 수정 계약에 없어 보내지 않음(닉네임·사진만 저장, 상태별 동작은 spec)
+ * 출생연도·성별은 프로필 수정 계약에 없어 보내지 않음(닉네임·사진만 저장, 상태별 동작은 spec, 2026-11-16 확인)
  */
 export function ProfileEditScreen({
   profile,

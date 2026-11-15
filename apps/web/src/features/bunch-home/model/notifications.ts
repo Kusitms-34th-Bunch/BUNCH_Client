@@ -32,6 +32,7 @@ const notificationItemSchema = z.object({
 });
 
 /** `GET /bunches/{bunchId}/notifications` 응답(최신순 쪽) */
+// 계약 미연결: 모르는 알림 종류가 와도 목록이 깨지지 않게 type을 문자열로 받음
 export const notificationPageSchema = z.object({
   items: z.array(notificationItemSchema),
   page: z.number().int().nonnegative(),
@@ -43,6 +44,7 @@ export const notificationPageSchema = z.object({
 export type NotificationPage = z.infer<typeof notificationPageSchema>;
 
 /** `POST .../{notificationId}/open` 응답. available이 false면 갈 화면이 없어짐(삭제된 번들 등) */
+// 계약 미연결: 모르는 이동 대상이 와도 열기가 깨지지 않게 target.kind를 문자열로 받음
 export const notificationOpenSchema = z.object({
   notificationId: z.number().int().positive(),
   readAt: z.string(),

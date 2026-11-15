@@ -14,7 +14,7 @@ Line 36종·Fill 12종, 아이콘 48종을 크기별 SVG(small·medium·large, �
 - 동적 크기: `LineSearchIcon`, `FillCircleCheckIcon` 등 기존 named export 48개. 고정 크기가 아닌 경우에 사용한다.
 - `size?: 'sm' | 'md' | 'lg'`(기본 `md`). `sm` 16×16, `md` 20×20, `lg` 24×24이고 크기마다 Figma가 그린 도형·viewBox·선 굵기를 쓴다. `size`는 `Button`의 `sm`·`md`·`lg`와 같은 이름이다. 공개 타입 `IconSize`, `IconProps`.
 - React SVG props, `className`, `ref` 전달. 색은 부모의 `color` 상속.
-- 별도 상태·이벤트 API 없음. 클릭·키보드·터치 영역은 호출자의 button/link 책임.
+- 별도 상태·이벤트 prop을 두지 않는다. 클릭·키보드·터치 영역은 호출자의 button/link 책임.
 - 장식은 기본 `aria-hidden="true"`, `focusable="false"`. 의미가 있으면 `aria-label` 또는 `aria-labelledby`를 제공해 `role="img"`로 노출. 이 계약은 `size`와 무관하다. 호출자가 넘긴 `aria-hidden`·`role`·`focusable`은 접근성 속성 뒤에 펼쳐지므로 덮어쓸 수 있고 이를 막지 않는다(호출자 책임). `children`(예: `<title>`)은 받지 않는다.
 - 아이콘 전용 버튼은 버튼에 이름을 제공하고 SVG는 장식으로 사용. Button 슬롯의 숨김 정책 유지.
 

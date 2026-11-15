@@ -25,7 +25,7 @@ const updatedProfileSchema = z.object({
 
 /**
  * 내 프로필 수정. multipart(`profile` JSON의 닉네임·사진 처리 + 새 사진이면 `photo` JPEG)
- * 출생연도·성별은 계약에 없어 보내지 않음(필드가 생기면 여기와 `toMyProfile`을 고침, mock-server-status.md 확인 표)
+ * 출생연도·성별은 계약에 없어 보내지 않음(필드가 생기면 여기와 `toMyProfile`을 고침, mock-server-status.md 확인 표, 2026-11-16 확인)
  * 실패는 `ApiError`로 던짐(닉네임 중복은 가입과 같은 `USER_002`로 봄)
  */
 export const updateMyProfile = async ({ nickname, photo }: ProfileUpdateInput) => {

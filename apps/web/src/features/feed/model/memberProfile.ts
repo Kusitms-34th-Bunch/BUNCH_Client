@@ -1,3 +1,5 @@
+import type { ApiContract } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
 import { defaultBunchImage, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
@@ -25,7 +27,7 @@ export const memberSocialProfileSchema = z.object({
       showFollowButton: z.boolean(),
     }),
   ),
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['MemberSocialProfileResponse']>>;
 export type MemberSocialProfile = z.infer<typeof memberSocialProfileSchema>;
 
 const FOLLOW_STATUS: Record<'NONE' | 'REQUESTED' | 'FOLLOWING', FeedFollowStatus> = {

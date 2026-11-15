@@ -1,3 +1,5 @@
+import type { ApiContract } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { BunchMember as SharedBunchMember } from '@/shared/api/bunchMembers';
 import type { MembershipsResponse, membershipRoleSchema } from '@/shared/api/bunchMemberships';
@@ -60,4 +62,4 @@ export const departureResultSchema = z.object({
   departedMembershipId: z.number(),
   outcome: z.string(),
   defaultBunchId: z.number().nullish(),
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['BunchDepartureResponse']>>;

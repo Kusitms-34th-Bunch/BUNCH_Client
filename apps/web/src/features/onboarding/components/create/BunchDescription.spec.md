@@ -22,7 +22,7 @@
 ## Route와 접근
 
 - Path·params·search: `/onboarding/create/description`. params와 search는 없다.
-- 접근 권한·guard: 로그인 접근 조건은 아직 없다(로그인 미구현, 확인할 항목). 입력 순서 가드는 있다. 입력값은 `create/layout.tsx`의 provider가 보관하므로 새로고침·URL 직접 입력으로 1단계(이름·공개 범위)를 거치지 않고 열면 `useCreateBunchGuard`가 화면을 그리지 않고 `ONBOARDING_PATHS.createBunch`로 `router.replace`한다. 처음 그릴 때만 판정한다.
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태로 막는다(`features/auth/lib/accessPolicy.ts`, 결정 기록 019). 가입을 마친 사용자만 들어오고, 비로그인은 로그인(처음이면 인트로)으로, 가입 중이면 약관·프로필로 보낸다. 입력 순서 가드도 있다. 입력값은 `create/layout.tsx`의 provider가 보관하므로 새로고침·URL 직접 입력으로 1단계(이름·공개 범위)를 거치지 않고 열면 `useCreateBunchGuard`가 화면을 그리지 않고 `ONBOARDING_PATHS.createBunch`로 `router.replace`한다. 처음 그릴 때만 판정한다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 「다음」은 `router.push`, 「이전」은 `router.back()`이고 헤더 뒤로 가기는 중단 확인 모달을 연다.
 
 ## 상태와 흐름

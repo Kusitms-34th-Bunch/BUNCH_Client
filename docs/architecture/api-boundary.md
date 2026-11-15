@@ -14,7 +14,7 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 
 ## 구성 요소(`src/shared/api/`)
 
-서버(Route Handler·RSC·middleware)에서만 쓰는 파일은 `src/shared/api/server/`에 둔다: `authCookies`, `authSession`, `backendProxy`, `createAuthorizedRoute`, `crossSite`, `devToken`, `devTokenFlag`, `requestBody`, `routeError`, `serverClient`. 쿠키·백엔드 주소·토큰을 다루므로 브라우저 코드에서 import하지 않는다. `src/shared/api/` 바로 아래에는 브라우저 요청 기반(`bffApi`, `browserClient`, `idempotencyKey`, `ids`, `errorStatus`)과 여러 feature가 쓰는 요청 함수를 둔다.
+서버(Route Handler·RSC·middleware)에서만 쓰는 파일은 `src/shared/api/server/`에 둔다: `authCookies`, `authSession`, `backendProxy`, `createAuthorizedRoute`, `crossSite`, `devToken`, `devTokenFlag`, `requestBody`, `routeError`, `serverClient`. 쿠키·백엔드 주소·토큰을 다루므로 브라우저 코드에서 import하지 않는다(`apps/web/eslint.config.mjs`가 `src/features`·`src/shared`에서 막음). `src/shared/api/` 바로 아래에는 브라우저 요청 기반(`bffApi`, `browserClient`, `idempotencyKey`, `ids`, `errorStatus`)과 여러 feature가 쓰는 요청 함수를 둔다.
 
 - **`createAuthorizedRoute`**: 인증이 필요한 BFF endpoint의 wrapper다. httpOnly `accessToken` 쿠키가 없으면 401을 반환하고, 있으면 handler에 `accessToken`·검증된 `body`·`params`를 넘긴다. handler 오류는 `toErrorResponse`로 변환해, 백엔드 HTTP 오류는 상태·`code`를 그대로 전달하고(브라우저가 401로 재발급을 판단) 백엔드 연결 실패는 502(`BFF_UPSTREAM_UNAVAILABLE`), 그 외는 내부 메시지 없이 500으로 돌려준다. BFF 오류 응답은 `{ message, code }`이고, BFF가 직접 만드는 오류 코드는 `BFF_` 접두사(`BFF_UNAUTHENTICATED`, `BFF_INVALID_REQUEST`)다. 인증이 필요한 전용 BFF endpoint(아래 "BFF 경로")는 Route Handler를 직접 작성하지 않고 이 wrapper로 만든다(인증 Route Handler 제외). 일반 요청은 범용 프록시가 맡는다.
 - **`serverClient`(`createServerApi`)**: RSC·Route Handler 전용 백엔드 클라이언트다(`server-only`). `accessToken`을 주면 `Authorization: Bearer`로 붙이고, 주지 않으면 공개 API(초대장 조회 등)를 인증 없이 호출한다. 브라우저 쿠키를 백엔드로 넘기지 않는다.

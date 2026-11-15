@@ -39,9 +39,18 @@
         "SENTRY_RELEASE"
       ]
     },
-    "typecheck": {},
-    "lint": {},
-    "test": {},
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "typecheck": {
+      "dependsOn": ["transit"]
+    },
+    "lint": {
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
+    },
     "test:watch": {
       "cache": false,
       "persistent": true

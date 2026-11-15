@@ -15,7 +15,7 @@
 - workspace, script, package 이름, 문서 링크가 현재 구조를 가리키는지 확인한다.
 - app·shared package의 경계가 달라지면 root와 해당 workspace의 `AGENTS.md`, architecture 문서를 함께 갱신할지 판단한다.
 - workspace `AGENTS.md`를 추가하거나 변경하면 같은 위치의 `CLAUDE.md`가 local `AGENTS.md`만 import하는지 확인한다.
-- agent 문서를 바꾼 뒤에는 `yarn check:agent-docs`와 `yarn format:check`를 실행한다.
+- agent 문서를 바꾼 뒤에는 `yarn check:agent-docs`와 `yarn format:check`를 실행한다. `check:agent-docs`는 참조 경로·adapter와 문서가 백틱으로 적은 루트 기준 저장소 경로(`apps/…`, `docs/…` 등, gitignore 대상 제외)의 실재를 검사하고(실패), 확인 근거 없는 시점 의존 서술을 함께 알린다(경고, `.agents/scripts/check-stale-notes.mjs`). 경고가 나온 서술은 지금도 맞는지 코드로 확인해 근거를 붙이거나 고친다.
 
 ## 자동화 승격
 
