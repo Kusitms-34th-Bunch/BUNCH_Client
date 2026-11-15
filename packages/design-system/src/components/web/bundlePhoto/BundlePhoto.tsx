@@ -32,6 +32,11 @@ export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
   onPhotoClick?: ((_index: number) => void) | undefined;
   /** 사진 버튼의 접근성 이름. 기본값 「번들 사진 N/전체 열기」 */
   photoLabel?: ((_index: number, _total: number) => string) | undefined;
+  /**
+   * 화면 전환에서 다른 화면의 같은 키 요소와 이어 그릴 공유 요소 키(앱의 SSGOI hero)
+   * thumbnail은 카드 전체(사진과 위 글자)에 `data-hero-enter-key`, detail은 첫 사진에 `data-hero-exit-key`(두 장을 페이지 위 층에 그려 줄 스크롤에 잘리지 않음)
+   */
+  heroKey?: string | undefined;
 };
 
 // Figma `Bundle Photo Card` 그라데이션(토큰 없음, 디자인 값 유지)
@@ -154,6 +159,7 @@ export const BundlePhoto = ({
   author,
   onPhotoClick,
   photoLabel = (index, total) => `번들 사진 ${index + 1}/${total} 열기`,
+  heroKey,
   className,
   ...props
 }: BundlePhotoProps) => {
@@ -169,7 +175,12 @@ export const BundlePhoto = ({
   };
 
   return (
-    <div className={cn('relative w-full', className)} {...props}>
+    <div
+      // thumbnail 루트도 사진과 같은 둥근 모서리로 잘라 둠: 화면 전환(hero)은 overflow를 자르는 요소의 radius만 읽어 전환 중에도 둥글게
+      className={cn('relative w-full', thumbnail && 'rounded-r10 overflow-hidden', className)}
+      data-hero-enter-key={thumbnail ? heroKey : undefined}
+      {...props}
+    >
       <div
         onScroll={thumbnail ? (event) => handleScroll(event.currentTarget) : undefined}
         // 사진 버튼이 없으면 목록 자체에 초점을 줘 방향키로 넘김
@@ -185,6 +196,7 @@ export const BundlePhoto = ({
         {photos.map((photo, index) => (
           <div
             key={`${photo.src}-${index}`}
+            data-hero-exit-key={!thumbnail && index === 0 ? heroKey : undefined}
             className={cn(
               'relative aspect-4/5 w-full shrink-0 snap-center snap-always overflow-hidden',
               !thumbnail && 'rounded-r10',

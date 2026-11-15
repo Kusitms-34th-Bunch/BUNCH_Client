@@ -8,21 +8,22 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
 import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries';
 import type { FeedBundle } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
-import { FEED_PATHS } from '../constants/paths';
+import { bundleHeroKey, FEED_PATHS } from '../constants/paths';
 import { useBundleSheets } from '../hooks/useBundleSheets';
 import { useClientNow } from '../hooks/useClientNow';
 import { useFeedViewer } from '../hooks/useFeedViewer';
-import { useHoldScrollOnLeave } from '../hooks/useHoldScrollOnLeave';
 import { useLikeToggle } from '../hooks/useLikeToggle';
-import { useScrollInHistory } from '../hooks/useScrollInHistory';
 import { hideLeftMemberImages } from '../lib/deletedUserImage';
 import { readHiddenAds } from '../lib/hiddenAds';
 import { type FeedEntry, toFeedEntries } from '../model/feed';
+import { usePrefetchBundleDetail } from '../queries/bundleDetail';
 import { feedQueryOptions, useRestartFeed } from '../queries/feed';
 import { FeedAdCard } from './FeedAdCard';
 import { FeedCaughtUp } from './FeedCaughtUp';
@@ -31,7 +32,12 @@ import { FeedHeader } from './FeedHeader';
 type FeedScreenProps = {
   /** 다른 기능의 화면 주소(route가 조합) */
   links: { notifications: string; bunchHome: string; otherBunch: (_bunchId: string) => string };
+  /** 번들 상세가 쓰는 번치 정보를 미리 받음(다른 기능의 query라 route가 조합) */
+  prefetchBunch?: ((_bunchId: string, _viewerId: string | null) => Promise<unknown>) | undefined;
 };
+
+// 상세 데이터를 기다리는 최대 시간. 넘으면 그냥 이동(받는 중 화면이라 사진 이어 그리기 없이 바뀜)
+const DETAIL_PREFETCH_WAIT_MS = 400;
 
 /** 커서로 이어 받을 수 없는 실패(문맥이 바뀜 FEED_001, 커서 오류 400). size는 고정이라 400은 커서 쪽 */
 const cannotContinue = (error: unknown) =>
@@ -54,7 +60,7 @@ const focusListItem = (
  * 피드 탭(기능명세서 6.1, Figma `4940:99466`): 팔로우한 번치 구간 → 구간 안내 → 공개 구간 → 끝 안내
  * 서버(`GET /feed`)가 정한 순서대로 그리고, 끝에 닿으면 다음 쪽을 이어서 받음
  */
-export function FeedScreen({ links }: FeedScreenProps) {
+export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
   const router = useRouter();
   const { viewer, viewerPending, viewerFailed, retryViewer, asBunch } = useFeedViewer();
   const reducedMotion = useReducedMotion();
@@ -68,6 +74,44 @@ export function FeedScreen({ links }: FeedScreenProps) {
   // 구간·좋아요 상태는 지금 번치 명의로 정해짐(소속 번치가 없으면 공개 구간만, 기능명세서 6.1.7)
   const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
   const feed = useInfiniteQuery(feedQueryOptions(viewerId));
+  const prefetchBundleDetail = usePrefetchBundleDetail();
+  // 상세가 바로 그려져야 카드 사진이 상세 첫 사진으로 이어짐(AppTransitions hero). 손가락이 닿을 때부터 받아 둠
+  const prefetchDetail = (bundle: FeedBundle) =>
+    viewerId === undefined
+      ? Promise.resolve()
+      : Promise.all([
+          prefetchBundleDetail(bundle.bunch.id, bundle.id, viewerId),
+          prefetchBunch?.(bundle.bunch.id, viewerId),
+          // 실패해도 이동은 막지 않음(상세가 다시 받고 실패 안내)
+        ]).then(
+          () => undefined,
+          () => undefined,
+        );
+  // 사진·말풍선 모두 같은 상세(말풍선은 댓글로 바로)라 미리 받은 뒤 이동
+  // 이동을 기다리는 동안 다시 누르면 무시하고, 그 사이 화면을 떠나면 이동하지 않음. 동작 줄이기면 전환이 없어 기다리지 않음
+  const openingRef = useRef(false);
+  const mountedRef = useRef(true);
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  const openDetail = (bundle: FeedBundle, href: string) => {
+    if (openingRef.current) return;
+    if (reducedMotion) {
+      router.push(href);
+      return;
+    }
+    openingRef.current = true;
+    void Promise.race([
+      prefetchDetail(bundle),
+      new Promise((resolve) => setTimeout(resolve, DETAIL_PREFETCH_WAIT_MS)),
+    ]).finally(() => {
+      openingRef.current = false;
+      if (mountedRef.current) router.push(href);
+    });
+  };
 
   useScrollInHistory(topRef, feed.data !== undefined);
   useHoldScrollOnLeave(topRef);
@@ -177,7 +221,11 @@ export function FeedScreen({ links }: FeedScreenProps) {
   const renderCard = (bundle: FeedBundle) => {
     const ownBunch = viewer?.bunchId === bundle.bunch.id;
     return (
-      <li key={bundle.id}>
+      // 상세에서 돌아오는 hero 사진(SSGOI 복사본)이 아래 카드에 가리지 않게 그동안만 위로 올림
+      <li
+        key={bundle.id}
+        className="has-data-ssgoi-crossfade:relative has-data-ssgoi-crossfade:z-1"
+      >
         <FeedBundleCard
           titleAs="h2"
           bunchName={bundle.bunch.name}
@@ -193,12 +241,21 @@ export function FeedScreen({ links }: FeedScreenProps) {
           location={bundle.location}
           onLocationClick={() => openPlaces(bundle.id, bundle.places)}
           date={bundle.date}
-          onPhotoClick={() => router.push(FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
+          onPhotoClick={() => openDetail(bundle, FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
+          // 사진에 손가락이 닿을 때만 미리 받음(하트·번치·스크롤 시작 터치는 제외)
+          onPointerDown={(event) => {
+            if ((event.target as Element).closest('[data-hero-enter-key]'))
+              void prefetchDetail(bundle);
+          }}
+          // 번들 상세의 첫 사진과 이어 그림(AppTransitions의 피드 → 상세 hero)
+          photoHeroKey={bundleHeroKey(bundle.id)}
           liked={bundle.liked}
           likeCount={bundle.likeCount}
           onLike={() => asBunch(() => likes.toggle(bundle))}
           commentCount={bundle.commentCount}
-          onComment={() => router.push(FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id))}
+          onComment={() =>
+            openDetail(bundle, FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id))
+          }
         />
       </li>
     );
@@ -207,6 +264,8 @@ export function FeedScreen({ links }: FeedScreenProps) {
   return (
     <PageShell
       onRefresh={refresh}
+      // 내리면 헤더를 숨기고 올리면 다시 보임(A안, Facebook 방식)
+      collapsibleHeader
       header={
         <FeedHeader
           viewer={viewer}

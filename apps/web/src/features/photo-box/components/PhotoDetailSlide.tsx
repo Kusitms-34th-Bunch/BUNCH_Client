@@ -4,6 +4,7 @@ import { cn } from '@app/design-system';
 import { UploaderBadge } from '@app/design-system/web';
 import { useState } from 'react';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '../lib/types';
+import { photoHeroKey } from '../constants/paths';
 import { getUploaders } from '../lib/photoDetail';
 
 type PhotoDetailSlideProps = {
@@ -11,6 +12,8 @@ type PhotoDetailSlideProps = {
   members: readonly PhotoBoxMember[];
   /** 헤더와 같이 숨겨지는 올린 멤버 배지의 숨김 여부 */
   chromeHidden: boolean;
+  /** 지금 보는 사진 여부. 이 사진만 사진함 썸네일과 hero로 이어짐(옆 사진까지 이으면 함께 날아감) */
+  current: boolean;
 };
 
 /**
@@ -18,7 +21,7 @@ type PhotoDetailSlideProps = {
  * Swiper Zoom이 `swiper-zoom-target`을 확대하므로 사진과 배지를 한 덩어리로 묶음
  * 처리 중이거나 불러오지 못한 사진은 회색 정사각형 자리표시
  */
-export function PhotoDetailSlide({ photo, members, chromeHidden }: PhotoDetailSlideProps) {
+export function PhotoDetailSlide({ photo, members, chromeHidden, current }: PhotoDetailSlideProps) {
   // 불러오지 못한 주소를 기억해 썸네일에서 원본으로 바뀌면 다시 시도(주소별로 판단)
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const broken = brokenSrc === photo.src;
@@ -40,6 +43,8 @@ export function PhotoDetailSlide({ photo, members, chromeHidden }: PhotoDetailSl
           <img
             src={photo.src}
             alt={photo.alt}
+            // 사진함 썸네일과 이어지는 hero 짝
+            data-hero-exit-key={current ? photoHeroKey(photo.id) : undefined}
             className="block h-auto w-full"
             draggable={false}
             onError={() => setBrokenSrc(photo.src)}

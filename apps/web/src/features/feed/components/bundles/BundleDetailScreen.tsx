@@ -35,18 +35,18 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { LoadingRipple } from '@/shared/components/loading/LoadingRipple';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
 import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
-import { FEED_PATHS } from '../../constants/paths';
+import { bundleHeroKey, FEED_PATHS } from '../../constants/paths';
 import { useBundleComments } from '../../hooks/useBundleComments';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
-import { useHoldScrollOnLeave } from '../../hooks/useHoldScrollOnLeave';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
 import { DELETED_USER_IMAGE, hideLeftMemberImages } from '../../lib/deletedUserImage';
@@ -143,7 +143,8 @@ export function BundleDetailScreen({
   // 지운 결과(답글 상태 해제로 입력란 높이도 바뀜)가 그려진 뒤 띄울 토스트
   const pendingToast = useRef<string | null>(null);
 
-  useHoldScrollOnLeave(commentsRef);
+  // 받는 중 화면에서 시작하면 댓글 영역이 그려진 뒤 붙잡기 등록
+  useHoldScrollOnLeave(commentsRef, bundle !== undefined);
 
   // 다시 시도(상세나 내 정보)를 받는 중
   const retrying = detail.isFetching || viewerFetching;
@@ -685,7 +686,8 @@ export function BundleDetailScreen({
         memberOnly={bundle.memberOnly}
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
       />
-      <BundlePhoto variant="detail" photos={bundle.photos} />
+      {/* 피드 카드 사진이 이 첫 사진 자리로 옮겨 옴(AppTransitions의 피드 → 상세 hero) */}
+      <BundlePhoto variant="detail" photos={bundle.photos} heroKey={bundleHeroKey(bundle.id)} />
       <MemberComments members={bundle.memberComments} />
       <BundleEngagement
         liked={bundle.liked}

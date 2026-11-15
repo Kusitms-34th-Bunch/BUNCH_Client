@@ -62,7 +62,12 @@ export function PhotoViewerSwiper({ viewer, photos, members, inert }: PhotoViewe
             aria-hidden={Math.abs(index - activeIndex) <= RENDER_RANGE ? undefined : true}
           >
             {Math.abs(index - activeIndex) <= RENDER_RANGE ? (
-              <PhotoDetailSlide photo={photo} members={members} chromeHidden={chromeHidden} />
+              <PhotoDetailSlide
+                photo={photo}
+                members={members}
+                chromeHidden={chromeHidden}
+                current={index === activeIndex}
+              />
             ) : null}
           </SwiperSlide>
         ))}
@@ -87,7 +92,11 @@ export function PhotoViewerSwiper({ viewer, photos, members, inert }: PhotoViewe
         type="button"
         aria-pressed={zoomed}
         onClick={viewer.toggleZoom}
-        className={cn(HIDDEN_BUTTON, 'focus-visible:left-s8 focus-visible:bottom-s8')}
+        // 사진 영역이 홈 인디케이터 뒤까지 이어지는 화면(data-bottom-bleed)에서는 아래 Safe Area만큼 더 올림
+        className={cn(
+          HIDDEN_BUTTON,
+          'focus-visible:left-s8 focus-visible:bottom-s8 in-data-bottom-bleed:focus-visible:bottom-[calc(var(--spacing-s8)+var(--safe-area-bottom))]',
+        )}
       >
         {zoomed ? PHOTO_BOX_MESSAGES.zoomOut : PHOTO_BOX_MESSAGES.zoomIn}
       </button>
