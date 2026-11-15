@@ -55,6 +55,30 @@ describe('번들 query·mutation', () => {
     });
   });
 
+  it('먼저 보낸 재조회 응답이 그사이 저장 응답으로 맞춘 더 새 revision의 캐시를 덮지 않는다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const key = bundleKeys.detail(bunchId, id);
+    const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const loaded = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    client.setQueryData(key, {
+      ...loaded,
+      revision: loaded.revision + 5,
+      title: '저장 응답으로 맞춤',
+    });
+
+    // 서버는 낡은 revision을 돌려주지만 캐시의 더 새 상태를 유지함
+    await act(async () => {
+      await client.refetchQueries({ queryKey: key });
+    });
+
+    expect(client.getQueryData<BundleDetail>(key)).toMatchObject({
+      revision: loaded.revision + 5,
+      title: '저장 응답으로 맞춤',
+    });
+  });
+
   it('상세 query는 번들을 아직 모르면 요청하지 않는다', () => {
     const { wrapper } = setup();
     const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, undefined)), {
