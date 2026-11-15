@@ -80,12 +80,18 @@ export const MY_MESSAGES = {
     ownerTitle: '관리자로 있는 번치가 있어요',
     ownerDescription: '번치의 관리자 권한을 다른 멤버에게 넘긴 뒤 탈퇴할 수 있어요.',
     ownerTransfer: '권한 넘기러 가기',
+    // 「다음」 확인 중 낭독용(Figma에 보이는 문구 없음)
+    checking: '넘길 번치를 확인하는 중이에요',
     // 기능명세서 7.6.4 예외 처리
     failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   },
   // 관리자 권한 이전(화면 설계서 MY(5) 4~5번). 화면 제목은 Figma에 없어 낭독용
   transfer: {
     title: '관리자 권한 넘기기',
+    // 낭독용(Figma에 보이는 문구 없음)
+    loading: '관리자를 넘길 번치를 불러오는 중이에요',
+    sending: '관리자 권한을 넘기는 중이에요',
+    unknownMember: '알 수 없는 멤버',
     members: '멤버',
     coOwner: '공동 관리자',
     // 고른 뒤 접힌 번치 카드에 붙여 읽는 문구(색만으로 전하지 않음)
@@ -103,6 +109,9 @@ export const MY_MESSAGES = {
   profileLoadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   profileEditSubmit: '프로필 수정하기',
   profileEdited: '프로필을 수정했어요.',
+  // 기능명세서 7.2.7 예외 처리(저장 실패)
+  profileSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  profileSaving: '프로필을 저장하는 중이에요',
   // 바꾼 내용이 있는데 뒤로 가기(기능명세서 7.2.1 상세 7)
   profileLeave: {
     title: '저장하지 않고 나갈까요?',

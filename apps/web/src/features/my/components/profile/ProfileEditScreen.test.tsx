@@ -1,7 +1,12 @@
 import type * as DesignSystem from '@app/design-system';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockDb } from '@/mocks/db';
+import { MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
+import { fail } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { ProfileEditScreen } from './ProfileEditScreen';
 
@@ -112,9 +117,54 @@ describe('ProfileEditScreen', () => {
     await waitForEnabled();
     await user.click(submitButton());
 
-    expect(replace).toHaveBeenCalledWith('/my');
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
     expect(toastAfterNavigation).toHaveBeenCalledWith('프로필을 수정했어요.');
     expect(submitButton().disabled).toBe(true);
+  });
+
+  it('닉네임과 사진 처리(그대로)를 서버에 저장한다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
+    const me = mockDb.get().members.find((member) => member.memberId === MOCK_MY_MEMBER_ID);
+    expect(me?.nickname).toBe('으누누');
+  });
+
+  it('저장할 때 서버가 닉네임 중복으로 거절하면 오류를 보이고 닉네임 입력으로 초점을 옮긴다', async () => {
+    server.use(http.put('/api/members/me/profile', () => fail(409, 'USER_002')));
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    expect(await screen.findByText('이미 사용 중인 닉네임이에요.')).toBeTruthy();
+    expect(document.activeElement).toBe(nicknameInput());
+    expect(submitButton().disabled).toBe(true);
+    expect(replace).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('저장이 실패하면 머물러 토스트를 띄우고 다시 누를 수 있다', async () => {
+    server.use(http.put('/api/members/me/profile', () => fail(500, 'COMMON_500')));
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    await waitForEnabled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('MY에서 들어왔으면 저장 뒤 그 기록으로 돌아간다(MY 기록을 쌓지 않음)', async () => {
@@ -126,7 +176,7 @@ describe('ProfileEditScreen', () => {
     await waitForEnabled();
     await user.click(submitButton());
 
-    expect(back).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(back).toHaveBeenCalledTimes(1));
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -181,6 +231,7 @@ describe('ProfileEditScreen', () => {
     await user.type(nicknameInput(), '짱');
     await waitForEnabled();
     await user.click(submitButton());
+    await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalled());
 
     await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
