@@ -70,7 +70,7 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 - `lighthouse-production.yml`은 `Web Deploy` 실행이 성공으로 끝난 뒤(`workflow_run`) 운영 주소(`https://app.bunch.kr`)를 잰다. 대상은 `/intro`, `/invite/<토큰>`이고 페이지당 3번 잰 뒤 성능 중앙값 실행 하나로 보고한다. 실제 CDN·이미지 최적화·캐시 헤더·백엔드 응답이 들어간 점수다.
 - 배포 workflow와 실행을 나눴다. lockfile 밖 도구(`yarn dlx`로 받는 Lighthouse)가 배포 실행의 `main` 범위 캐시나 배포 묶음 artifact에 닿지 않게 하려는 것이다. 측정이 배포 동시 실행 그룹(`web-deploy`)을 점유해 다음 배포를 기다리게 하지도 않는다. `workflow_run`은 기본 브랜치(develop)의 workflow 파일로, develop 범위에서 실행된다.
 - Vercel 토큰과 environment가 없고, 저장소는 `package.json`·`.yarnrc.yml`·보고 스크립트만 받아 설치·빌드하지 않는다. 측정·보고 실패는 배포 결과에 영향이 없고, 배포가 실패한 실행은 재지 않는다.
-- 2026-11-15 기준 `/invite`는 아직 `main`에 없어 404다. 다음 릴리스 전까지 「측정하지 못한 페이지」로 나온다. 운영 기준선은 측정된 페이지로 갱신한다.
+- 2026-11-15 기준 `/invite`는 아직 `main`에 없어 404다. 다음 릴리스 전까지 「측정하지 못한 페이지」로 나온다. 운영 기준선은 3번 다 잰 페이지만 갱신하고, 열리지 않거나 일부만 잰 페이지는 이전 값을 유지한다(보고에 「일부만 측정한 페이지」로 표시).
 - 배포가 연달아 일어나면 앞 배포의 측정·댓글은 취소되고 마지막 배포만 잰다(`cancel-in-progress`).
 - 기준선은 직전 운영 측정이다(캐시 `lighthouse-<OS>-production-<run id>-<시도>`, 배포마다 갱신). 같은 배포를 다시 실행하면 그 배포의 앞선 측정과 비교된다.
 - 결과는 실행 요약과 develop → main 릴리스 PR의 댓글 하나로 남긴다. 릴리스 PR은 배포한 커밋(`workflow_run.head_sha`)을 머지 커밋으로 가진 `main` 대상 PR로 찾는다. 머지 커밋은 develop에 없어서 커밋으로 PR을 찾는 API는 머지된 PR을 돌려주지 않는다. 댓글은 checkout하지 않는 `comment` job(`pull-requests: write`)이 쓰고, 수동 배포(`workflow_dispatch`)는 실행 요약만 남긴다.
