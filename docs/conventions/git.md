@@ -34,7 +34,8 @@ PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이�
 
 - 구현 시작 시 `docs/workflows/development.md`의 "worktree를 만드는 기준"으로 작업 위치를 선택한다. 단일 작업은 feature 브랜치·현재 세션이 기본이다. 브랜치를 옮기기 전에 `git status --short`로 변경의 소유 작업을 확인한다. 다른 작업의 변경이나 실행 중 세션이 있으면 그대로 보존하고 새 작업만 worktree로 격리한다. 같은 작업의 변경은 충돌 없이 따라가는 경우에만 브랜치를 이동하며, 자동 stash·commit·reset으로 이동을 강제하지 않는다.
 - 자동 생성된 브랜치로는 `git fetch origin && git switch <브랜치>`로 옮긴다. 직접 만들 때는 로컬 기준 브랜치를 거치지 않고 `git switch -c <이름> origin/<기준 브랜치>`로 만든다. 다른 사람이 머지하면 `origin/*`만 움직이고 로컬 브랜치는 멈춰 있어서, 로컬에서 파면 뒤처진 자리에서 시작한다.
-- `git fetch origin` 후 대상 작업 폴더에서 `git rev-list --count HEAD..origin/develop`으로 뒤처짐을 확인한다. 이슈 자동화는 기준 브랜치를 받은 시점의 커밋에서 브랜치를 만들며, 생성 후 들어온 변경은 자동 반영하지 않는다. 스택 브랜치는 `origin/develop` 대신 기준 브랜치(`origin/<기준 브랜치>`) 대비 뒤처짐을 본다. 미커밋 변경이 없고 작업 커밋도 없는 신규 브랜치는 `git merge --ff-only origin/develop`으로 최신화한다. 진행 중인 브랜치는 미커밋 변경을 보존하고 `develop` 반영 범위·충돌을 먼저 확인하며, 통합 커밋은 기존 커밋 승인 기준을 따른다. push된 브랜치를 자동 rebase·강제 push하지 않는다.
+- 아래에서 `<기준>`은 `origin/develop`이고, 스택 브랜치면 `origin/<기준 브랜치>`다.
+- `git fetch origin` 후 대상 작업 폴더에서 `git rev-list --count HEAD..<기준>`으로 뒤처짐을 확인한다. 이슈 자동화는 기준 브랜치를 받은 시점의 커밋에서 브랜치를 만들며, 생성 후 들어온 변경은 자동 반영하지 않는다. 미커밋 변경이 없고 작업 커밋도 없는 신규 브랜치는 `git merge --ff-only <기준>`으로 최신화한다. 진행 중인 브랜치는 미커밋 변경을 보존하고 `develop` 반영 범위·충돌을 먼저 확인하며, 통합 커밋은 기존 커밋 승인 기준을 따른다. push된 브랜치를 자동 rebase·강제 push하지 않는다.
 - 기존 PR 브랜치에 커밋을 더 올리기 전에 `gh pr view <번호> --json state`가 `MERGED`가 아닌지 확인한다. 머지된 뒤에 올린 커밋은 어디에도 반영되지 않으므로 새 이슈·브랜치·PR로 옮긴다.
 
 ### 격리·동시 구현용 worktree
