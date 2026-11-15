@@ -69,7 +69,9 @@ describe('BundleVisibilityScreen', () => {
     await user.click(screen.getByRole('radio', { name: /전체 공개/ }));
     await user.click(screen.getByRole('button', { name: '수정하기' }));
 
-    await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalledWith('번들을 수정했어요'));
+    await waitFor(() =>
+      expect(toastAfterNavigation).toHaveBeenCalledWith('공개 범위를 수정했어요.'),
+    );
     expect(body).toEqual({ value: 'PUBLIC', expectedVersion: 3, mode: 'PUBLISHED' });
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
   });
