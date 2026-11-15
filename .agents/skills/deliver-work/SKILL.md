@@ -11,7 +11,7 @@ description: 현재 상태(브랜치, 커밋 안 된 변경, push·PR 여부, gh
 
 ## 현재 상태 점검
 
-원격 ref를 갱신하는 `git fetch` 외에는 읽기만 하는 명령으로 확인한다. 인증을 대신 시도하지 않는다. 작업 브랜치의 기준은 `develop`이다(`main`은 릴리스 PR로만 바뀐다. `docs/conventions/git.md`).
+원격 ref를 갱신하는 `git fetch` 외에는 읽기만 하는 명령으로 확인한다. 인증을 대신 시도하지 않는다. 작업 브랜치의 기준은 `develop`이고, 스택 PR이면 앞 작업 브랜치다(`main`은 릴리스 PR로만 바뀐다. `docs/conventions/git.md`).
 
 1. `git worktree list`로 이번 작업의 폴더를 확인하고 그 폴더에서 아래 점검을 진행한다. 다른 작업의 worktree를 대신 전달하지 않는다. `git fetch origin`으로 원격 정보를 갱신한다. 하지 않으면 아래 비교가 오래된 정보를 쓴다.
 2. `git branch --show-current`, `git status --short --branch`, `git log origin/develop..HEAD --oneline`, `gh auth status`를 본다.
