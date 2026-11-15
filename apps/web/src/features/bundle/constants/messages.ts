@@ -45,8 +45,11 @@ export const BUNDLE_MESSAGES = {
   deletedDraftTitle: '번들이 삭제됐어요',
   deletedDraftDescription: '작성 중이던 번들이 삭제되어 더 이상 편집할 수 없어요.',
   publishedDraftTitle: '번들이 업로드됐어요',
-  // 시안은 「○○님이」로 업로드한 멤버 이름을 보이지만 초안 응답에 그 정보가 없어 이름 없이 안내
-  publishedDraftDescription: '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
+  // 기능 spec 4.3.1: 「{닉네임}님이 번들을 업로드해…」. 발행자 닉네임을 받지 못했을 때만 이름 없이 안내
+  publishedDraftDescription: (nickname: string | undefined) =>
+    nickname
+      ? `${nickname}님이 번들을 업로드해 더 이상 편집할 수 없어요.`
+      : '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
   missingDraftConfirm: '확인',
   // 서버 저장·발행 실패 안내(서버 연동 때 추가한 문구)
   saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',

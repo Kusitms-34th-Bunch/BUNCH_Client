@@ -72,7 +72,7 @@ const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
 
 export type DraftState =
   /** 삭제됐거나 없는 초안(deleted), 다른 멤버가 업로드한 초안(published) */
-  | { kind: 'missing'; reason: 'deleted' | 'published' }
+  | { kind: 'missing'; reason: 'deleted' | 'published'; publisherNickname?: string | undefined }
   | { kind: 'loading' }
   /** 오류 화면의 「다시 시도」: 실패한 요청만 다시 보냄 */
   | { kind: 'error'; retry: () => void }
@@ -751,6 +751,7 @@ export function useDraft(draftId: string | undefined): {
       kind: 'missing',
       reason:
         detail?.status === 'PUBLISHED' && !publishedByMe && !publishing ? 'published' : 'deleted',
+      publisherNickname: detail?.publisherNickname,
     };
   } else if (failed) state = { kind: 'error', retry };
   else if (draft && viewer && !publishedByMe) {

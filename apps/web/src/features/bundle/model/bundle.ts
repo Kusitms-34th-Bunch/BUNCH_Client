@@ -99,6 +99,8 @@ export const bundleSnapshotSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   publishedAt: z.string().nullish(),
+  publishedBy: z.number().int().positive().nullish(),
+  publisherNickname: z.string().nullish(),
 }) satisfies z.ZodType<
   Omit<
     ApiContract<Schemas['BundleSnapshot']>,
@@ -166,6 +168,8 @@ export type BundleDetail = {
   titleTooLong: boolean;
   /** 제목 CRDT 문서(Automerge 전체 저장 문서의 base64). 발행본에는 없음 */
   titleCrdtState: string | undefined;
+  /** 발행본의 발행자 닉네임(초안에는 없음) */
+  publisherNickname: string | undefined;
   /** 사진 구성 변경 응답에만 있음. 정원 초과로 못 담은 사진과 같은 키 재시도 여부 */
   photoChangeResult: PhotoChangeResult | undefined;
 };
@@ -238,6 +242,7 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   permissions: snapshot.permissions,
   titleTooLong: snapshot.titleTooLong,
   titleCrdtState: snapshot.titleCrdtState ?? undefined,
+  publisherNickname: snapshot.publisherNickname ?? undefined,
   photoChangeResult: snapshot.photoChangeResult
     ? {
         addedPhotoIds: snapshot.photoChangeResult.addedPhotoIds.map(toDomainId),

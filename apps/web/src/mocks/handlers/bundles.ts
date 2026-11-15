@@ -169,6 +169,14 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     createdAt: bundle.createdAt,
     updatedAt: bundle.updatedAt,
     publishedAt: bundle.publishedAt,
+    // 발행본이면 발행자(가짜 서버는 생성자로 둠)
+    ...(draft
+      ? {}
+      : {
+          publishedBy: bundle.createdBy,
+          publisherNickname: state.members.find((member) => member.memberId === bundle.createdBy)
+            ?.nickname,
+        }),
   };
 };
 
