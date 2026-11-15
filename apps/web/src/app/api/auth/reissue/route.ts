@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { REFRESH_TOKEN_COOKIE, setAuthCookies } from '@/shared/api/authCookies';
-import { reissueOnce } from '@/shared/api/authSession';
-import { toErrorResponse } from '@/shared/api/routeError';
+import { REFRESH_TOKEN_COOKIE, setAuthCookies } from '@/shared/api/server/authCookies';
+import { reissueOnce } from '@/shared/api/server/authSession';
+import { toErrorResponse } from '@/shared/api/server/routeError';
 
 /**
  * refresh 쿠키로 토큰 재발급

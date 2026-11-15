@@ -6,6 +6,7 @@ import { PageHeader } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
+import { isDefiniteRejection } from '@/shared/api/errorStatus';
 import mood1 from '@/shared/assets/images/bunch-mood/type-1.svg';
 import mood2 from '@/shared/assets/images/bunch-mood/type-2.svg';
 import mood3 from '@/shared/assets/images/bunch-mood/type-3.svg';
@@ -67,15 +68,7 @@ export function BunchMood() {
           const code = isApiError(error) ? error.code : undefined;
           // 서버가 요청을 거절한 경우(4xx)는 같은 키로 다시 보내면 거절이 재생될 수 있어 키를 버림
           // 408·429는 서버가 이미 처리했을 수 있어 같은 키로 다시 보내 중복 생성을 막음
-          if (
-            isApiError(error) &&
-            error.status !== undefined &&
-            error.status < 500 &&
-            error.status !== 408 &&
-            error.status !== 429
-          ) {
-            draft.discardIdempotencyKey();
-          }
+          if (isDefiniteRejection(error)) draft.discardIdempotencyKey();
           if (code === BUNCH_ERROR_CODES.nameTaken) {
             // 중복 확인 뒤 그 사이 다른 번치가 같은 이름을 씀: 1단계에서 다시 이름을 고르게 함
             draft.markNameTaken(name.normalize('NFC').trim());

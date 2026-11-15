@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { setAccessTokenCookie } from '@/shared/api/authCookies';
-import { requestDevToken } from '@/shared/api/devToken';
-import { isDevTokenLoginEnabled } from '@/shared/api/devTokenFlag';
-import { parseRequestBody } from '@/shared/api/requestBody';
-import { toErrorResponse } from '@/shared/api/routeError';
+import { setAccessTokenCookie } from '@/shared/api/server/authCookies';
+import { requestDevToken } from '@/shared/api/server/devToken';
+import { isDevTokenLoginEnabled } from '@/shared/api/server/devTokenFlag';
+import { parseRequestBody } from '@/shared/api/server/requestBody';
+import { toErrorResponse } from '@/shared/api/server/routeError';
 
 const bodySchema = z.object({ nickname: z.string().trim().min(1).max(30) });
 

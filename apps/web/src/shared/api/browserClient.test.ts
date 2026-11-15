@@ -1,3 +1,4 @@
+import { normalizeError } from '@app/api-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createBrowserApi } from './browserClient';
 
@@ -162,4 +163,100 @@ describe('createBrowserApi', () => {
     await expect(api.get('users')).rejects.toMatchObject({ response: { status: 401 } });
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
+});
+
+/** 원래 요청은 첫 번째에 401, 재발급(`/api/auth/reissue`)·세션 확인(`/api/session`)은 주어진 대로 응답 */
+const stubReissue = (
+  reissue: () => Promise<Response>,
+  session = () => Promise.resolve(json({}, 401)),
+) => {
+  const paths: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: Request | string) => {
+      const path = new URL(typeof input === 'string' ? input : input.url, 'https://app.example.com')
+        .pathname;
+      paths.push(path);
+      if (path === '/api/auth/reissue') return reissue();
+      if (path === '/api/session') return session();
+      return Promise.resolve(json({ code: 'AUTH_001' }, 401));
+    }),
+  );
+  return paths;
+};
+
+/** 실패한 요청의 오류를 화면이 받는 모양(`ApiError`)으로 */
+const failureOf = async (request: Promise<unknown>) => {
+  try {
+    await request;
+  } catch (error) {
+    return normalizeError(error);
+  }
+  throw new Error('요청이 성공했습니다.');
+};
+
+describe('createBrowserApi 재발급 실패 구분', () => {
+  it('재발급이 일시 장애(502)면 인증 만료가 아니라 서버 오류로 전달하고 다시 보내지 않는다', async () => {
+    const paths = stubReissue(() =>
+      Promise.resolve(json({ message: 'upstream', code: 'BFF_UPSTREAM_UNAVAILABLE' }, 502)),
+    );
+    const onUnauthorized = vi.fn();
+    const api = createBrowserApi({ baseUrl: 'https://app.example.com/api/', onUnauthorized });
+
+    const error = await failureOf(api.post('bunches'));
+
+    expect(error).toMatchObject({
+      category: 'server',
+      status: 502,
+      code: 'BFF_UPSTREAM_UNAVAILABLE',
+    });
+    expect(onUnauthorized).not.toHaveBeenCalled();
+    // 다른 탭 갱신 확인은 인증 실패일 때만, 원래 POST는 한 번만
+    expect(paths).toEqual(['/api/bunches', '/api/auth/reissue']);
+  });
+
+  it('재발급이 네트워크 오류면 네트워크 오류로 전달한다', async () => {
+    const paths = stubReissue(() => Promise.reject(new TypeError('Failed to fetch')));
+    const onUnauthorized = vi.fn();
+    const api = createBrowserApi({ baseUrl: 'https://app.example.com/api/', onUnauthorized });
+
+    const error = await failureOf(api.get('users'));
+
+    expect(error).toMatchObject({ category: 'network' });
+    expect(onUnauthorized).not.toHaveBeenCalled();
+    expect(paths).toEqual(['/api/users', '/api/auth/reissue']);
+  });
+
+  it('재발급 응답이 시간 안에 오지 않으면 네트워크 오류로 전달한다', async () => {
+    stubReissue(() => Promise.reject(new DOMException('signal timed out', 'TimeoutError')));
+    const onUnauthorized = vi.fn();
+    const api = createBrowserApi({ baseUrl: 'https://app.example.com/api/', onUnauthorized });
+
+    const error = await failureOf(api.get('users'));
+
+    expect(error).toMatchObject({ category: 'network' });
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [401, { code: 'AUTH_001' }],
+    [403, { code: 'AUTH_002' }],
+    // 백엔드가 무효 토큰을 401이 아닌 4xx로 거절하는 경우(Swagger에 재발급 오류 정의 없음)
+    [400, { code: 'COMMON_001' }],
+    // BFF가 응답 형식 오류를 바꾼 500(무효 토큰일 수 있음)
+    [500, { message: 'Internal Server Error' }],
+  ])(
+    '재발급이 %i이고 다른 탭도 갱신하지 않았으면 지금처럼 인증 만료로 끝난다',
+    async (status, body) => {
+      const paths = stubReissue(() => Promise.resolve(json(body, status)));
+      const onUnauthorized = vi.fn();
+      const api = createBrowserApi({ baseUrl: 'https://app.example.com/api/', onUnauthorized });
+
+      const error = await failureOf(api.get('users'));
+
+      expect(error).toMatchObject({ category: 'auth', status: 401 });
+      expect(onUnauthorized).toHaveBeenCalledTimes(1);
+      expect(paths).toEqual(['/api/users', '/api/auth/reissue', '/api/session']);
+    },
+  );
 });

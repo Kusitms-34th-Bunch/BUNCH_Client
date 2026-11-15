@@ -5,6 +5,7 @@ import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-sys
 import { DescriptionRadioCard } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
+import { isUnavailableTarget } from '@/shared/api/errorStatus';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -108,8 +109,7 @@ export function BundleVisibilityScreen({
   // 이미 받은 상세가 있으면 다시 받기가 실패해도 고르던 화면을 그대로 둠
   const failed =
     !detail.data &&
-    ((detail.isError &&
-      !(isApiError(detail.error) && [400, 403, 404].includes(detail.error.status ?? 0))) ||
+    ((detail.isError && !isUnavailableTarget(detail.error)) ||
       (viewer === undefined && viewerFailed));
   if (failed) {
     return (

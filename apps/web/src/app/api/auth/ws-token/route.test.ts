@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from './route';
 
 const session = vi.hoisted(() => ({ requestWsToken: vi.fn() }));
-vi.mock('@/shared/api/authSession', () => session);
+vi.mock('@/shared/api/server/authSession', () => session);
 
 const post = (cookie?: string) =>
   new NextRequest('https://app.example.com/api/auth/ws-token', {

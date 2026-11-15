@@ -174,7 +174,7 @@
 | 사진 목록             | `GET /bunches/{bunchId}/photos`                 | 연결됨(#315, 한 번에 100장) |
 | 날짜 미확인 사진 목록 | `GET /bunches/{bunchId}/photos/undated`         | 연결됨(#315)                |
 | 사진 상세             | `GET /bunches/{bunchId}/photos/{photoId}`       | 연결됨(#315)                |
-| 멤버 목록             | `GET /bunches/{bunchId}/members`                | 연결됨(PR #62 미병합 기준)  |
+| 멤버 목록             | `GET /bunches/{bunchId}/members`                | 연결됨                      |
 | 삭제                  | `POST /bunches/{bunchId}/photos/delete`         | 연결됨, 사라진 사진은 #316  |
 | 날짜 바꾸기           | `POST /bunches/{bunchId}/photos/date`           | 목 동작, #316               |
 | 업로드                | `POST /bunches/{bunchId}/photos`(사진 1장/요청) | 연결됨(#317, 별도 폼 필드)  |

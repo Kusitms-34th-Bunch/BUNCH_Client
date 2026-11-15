@@ -1,3 +1,5 @@
+import type { ApiContract } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
 import { defaultBunchImage, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
@@ -91,7 +93,7 @@ export const feedPageSchema = z.object({
   nextCursor: z.string().nullish(),
   hasNext: z.boolean(),
   endReached: z.boolean(),
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['FeedResponse']>>;
 export type FeedPage = z.infer<typeof feedPageSchema>;
 
 /** 화면이 그리는 피드 한 줄: 번들 카드, 광고 카드, 팔로우 구간 끝 안내 */
