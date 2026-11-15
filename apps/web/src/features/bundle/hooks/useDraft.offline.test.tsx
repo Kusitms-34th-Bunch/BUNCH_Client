@@ -1,8 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { delay, http, HttpResponse } from 'msw';
+import { delay, http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { fail } from '@/mocks/lib/envelope';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
@@ -249,7 +250,7 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
       http.get('/api/bunches/:bunchId/bundles/:id', () => {
         detailRequests += 1;
         // 처음 한 번만 실패
-        return detailRequests === 1 ? new HttpResponse(null, { status: 500 }) : undefined;
+        return detailRequests === 1 ? fail(500, 'SERVER_ERROR') : undefined;
       }),
     );
 
@@ -262,9 +263,10 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     expect(detailRequests).toBe(2);
   });
 
-  it('재조회가 계속 실패하면 정해진 횟수(처음 포함 3번)만 다시 받아 보고 멈춘다', async () => {
-    const { view, first, remoteRemovesThird } = await startHeldRequest();
+  it('재조회가 계속 실패하면 정해진 횟수(처음 포함 3번)만 다시 받아 보고 멈추며 배너로 알리고, 「재시도」로 다시 받아 맞춘다', async () => {
+    const { view, first, second, shownIds, remoteRemovesThird } = await startHeldRequest();
     let detailRequests = 0;
+    let failing = true;
     server.use(
       http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
         await delay(200);
@@ -272,18 +274,27 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
       }),
       http.get('/api/bunches/:bunchId/bundles/:id', () => {
         detailRequests += 1;
-        return new HttpResponse(null, { status: 500 });
+        return failing ? fail(500, 'SERVER_ERROR') : undefined;
       }),
     );
+    const banner = () => ready(view.result.current.state).realtime.down;
+    expect(banner()).toBe(false);
 
     act(() => void view.result.current.actions.removePhoto(first.id));
     expect(connection.holdEvent?.('PHOTOS')).toBe(true);
     await remoteRemovesThird();
 
+    // 모두 실패하면 연결 끊김과 같은 배너로 알리고 더 이상 자동으로 다시 받지 않음
     await waitFor(() => expect(detailRequests).toBe(3), { timeout: 6000 });
-    // 더 이상 자동으로 다시 받지 않음
+    await waitFor(() => expect(banner()).toBe(true));
     await act(() => wait(2500));
     expect(detailRequests).toBe(3);
+
+    // 「재시도」를 누르면 처음부터 다시 받아 화면이 맞춰지고 배너가 사라짐
+    failing = false;
+    act(() => ready(view.result.current.state).realtime.retry());
+    await waitFor(() => expect(shownIds()).toEqual([second.id]), { timeout: 5000 });
+    await waitFor(() => expect(banner()).toBe(false));
   });
 });
 
