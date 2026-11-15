@@ -1,4 +1,14 @@
 import { http } from 'msw';
+import { countTitleGraphemes, displayTitle } from '@/features/bundle/lib/title';
+import {
+  createTitleDoc,
+  editTitle,
+  ensureTitleCrdt,
+  loadTitleDoc,
+  mergeTitleDocs,
+  saveTitleDoc,
+  titleText,
+} from '@/features/bundle/lib/titleCrdt';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
 import type { MockBundle, MockBundlePhoto, MockDbState } from '../db/types';
@@ -13,6 +23,12 @@ const MAX_DRAFTS = 10;
 const MIN_BUNCH_MEMBERS = 2;
 const TITLE_MAX = 40;
 const COMMENT_MAX = 400;
+// 제목에는 줄바꿈과 NUL을 넣을 수 없음(CR, LF, U+0085, U+2028, U+2029, NUL)
+const INVALID_TITLE_CODES = [0x0d, 0x0a, 0x85, 0x2028, 0x2029, 0x00];
+const hasInvalidTitleChar = (text: string) =>
+  INVALID_TITLE_CODES.some((code) => text.includes(String.fromCharCode(code)));
+// 디코딩 후 256KiB를 base64 길이로 환산한 상한
+const CRDT_MAX_BASE64 = Math.ceil((256 * 1024 * 4) / 3) + 4;
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const length = (value: string) => [...value].length;
@@ -67,6 +83,7 @@ export const findScope = (
 const publishBlockers = (bundle: MockBundle, finalVisibility?: 'PUBLIC' | 'PRIVATE' | null) => {
   const reasons: string[] = [];
   if (bundle.title.trim() === '') reasons.push('TITLE_REQUIRED');
+  if (countTitleGraphemes(bundle.title) > TITLE_MAX) reasons.push('TITLE_TOO_LONG');
   if (finalVisibility === null) reasons.push('VISIBILITY_REQUIRED');
   if (bundle.participants.length < MIN_BUNCH_MEMBERS) reasons.push('PARTICIPANTS_REQUIRED');
   const commented = (memberId: number) =>
@@ -104,8 +121,9 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     status: bundle.status,
     title: bundle.title,
     titleVersion: bundle.titleVersion,
-    // 제목 CRDT는 아직 가짜 서버에 없음(제목 길이 초과 병합 상태는 만들지 않음)
-    titleTooLong: false,
+    titleTooLong: countTitleGraphemes(bundle.title) > TITLE_MAX,
+    // 발행본에는 CRDT 문서가 없음
+    titleCrdtState: draft ? bundle.titleCrdtState : undefined,
     visibility: bundle.visibility,
     visibilityVersion: bundle.visibilityVersion,
     date: bundle.date,
@@ -177,6 +195,20 @@ export const changeBundle = (bundleId: number, change: (_bundle: MockBundle) => 
         : bundle,
     ),
   }));
+
+/** 번들에 제목 CRDT 문서가 없으면 제목으로 만들어 둠(snapshot이 문서를 싣도록 snapshot 전에 부름) */
+const ensureTitleState = async (bundleId: number) => {
+  await ensureTitleCrdt();
+  const found = mockDb.get().bundles.find((item) => item.id === bundleId);
+  if (!found || found.titleCrdtState !== undefined) return;
+  const state = saveTitleDoc(createTitleDoc(found.title));
+  mockDb.update((current) => ({
+    ...current,
+    bundles: current.bundles.map((item) =>
+      item.id === bundleId ? { ...item, titleCrdtState: state } : item,
+    ),
+  }));
+};
 
 type SaveKind = 'title' | 'visibility' | 'comment' | 'date';
 
@@ -250,12 +282,24 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
   }
   const normalized = typeof value === 'string' && kind !== 'comment' ? value.trim() : value;
   if (normalized === currentValue) return snapshotOf(bundle.id);
+  // 문서가 없는 기존 번들의 제목을 바꿀 때 WASM 로드와 문서 생성을 기다림
+  if (kind === 'title') await ensureTitleState(bundle.id);
 
   const at = nowIso();
   changeBundle(bundle.id, (current) => {
     switch (kind) {
-      case 'title':
-        return { ...current, title: normalized as string, titleVersion: current.titleVersion + 1 };
+      case 'title': {
+        // 이전 전체 문자열 경로도 CRDT 문서를 이어서 고쳐 문서와 제목이 어긋나지 않게 함
+        const doc = current.titleCrdtState
+          ? editTitle(loadTitleDoc(current.titleCrdtState), normalized as string)
+          : createTitleDoc(normalized as string);
+        return {
+          ...current,
+          title: normalized as string,
+          titleVersion: current.titleVersion + 1,
+          titleCrdtState: saveTitleDoc(doc),
+        };
+      }
       case 'visibility':
         return {
           ...current,
@@ -418,15 +462,70 @@ export const bundleHandlers = [
       const { code, detail } = stored.body as { code: string; detail?: Record<string, unknown> };
       return detail === undefined ? fail(stored.status, code) : fail(stored.status, code, detail);
     }
-    return snapshotOf((stored.body as { id: number }).id);
+    const createdId = (stored.body as { id: number }).id;
+    await ensureTitleState(createdId);
+    return snapshotOf(createdId);
   }),
 
   // GET /api/v1/bunches/{bunchId}/bundles/{id}
   // 번치 멤버라면 참여자가 아니어도 볼 수 있음(보기 전용, 권한 값으로 구분)
-  http.get('/api/bunches/:bunchId/bundles/:id', ({ params }) => {
+  http.get('/api/bunches/:bunchId/bundles/:id', async ({ params }) => {
     const scope = findScope(params.bunchId, params.id);
     if ('error' in scope) return scope.error;
+    await ensureTitleState(scope.bundle.id);
     return snapshotOf(scope.bundle.id);
+  }),
+
+  // GET …/presence: 현재 members·editing·typing 복구용. 가짜 서버에는 실시간 연결이 없어 항상 비어 있음
+  http.get('/api/bunches/:bunchId/bundles/:id/presence', ({ params }) => {
+    const scope = findScope(params.bunchId, params.id);
+    if ('error' in scope) return scope.error;
+    return ok({ members: [], typing: [], editing: [] });
+  }),
+
+  // PATCH …/title/crdt: 서버 문서에서 파생한 Automerge 전체 저장 문서를 서버 최신 문서와 병합(응답은 BundleSnapshot이 아니라 제목 상태)
+  // 40자를 넘어도 자르지 않고 titleTooLong으로 알림, 같은 문서를 다시 보내면 아무것도 바꾸지 않음
+  http.patch('/api/bunches/:bunchId/bundles/:id/title/crdt', async ({ params, request }) => {
+    const scope = findScope(params.bunchId, params.id);
+    if ('error' in scope) return scope.error;
+    if (!scope.isParticipant) return fail(403, 'AUTH_002');
+    if (scope.bundle.status !== 'DRAFT') return fail(409, 'BUNDLE_002');
+    const body = await readJson(request);
+    const state = body?.state;
+    if (typeof state !== 'string' || state === '' || state.length > CRDT_MAX_BASE64) {
+      return fail(400, 'COMMON_001');
+    }
+    await ensureTitleState(scope.bundle.id);
+    const current = mockDb.get().bundles.find((item) => item.id === scope.bundle.id);
+    if (!current?.titleCrdtState) return fail(404, 'RESOURCE_001');
+    // 요청 본문을 읽고 문서를 준비하는 동안 다른 요청이 발행했을 수 있어 최신 상태를 다시 확인
+    if (current.status !== 'DRAFT') return fail(409, 'BUNDLE_002');
+    let merged;
+    try {
+      merged = mergeTitleDocs(loadTitleDoc(current.titleCrdtState), loadTitleDoc(state));
+    } catch {
+      return fail(400, 'COMMON_001');
+    }
+    // 서버 문서의 title은 런타임 타입이 보장되지 않으므로 문자열인지 먼저 확인
+    const raw: unknown = titleText(merged);
+    if (typeof raw !== 'string' || hasInvalidTitleChar(raw)) return fail(400, 'COMMON_001');
+    const next = saveTitleDoc(merged);
+    if (next !== current.titleCrdtState) {
+      changeBundle(current.id, (bundle) => ({
+        ...bundle,
+        title: displayTitle(raw),
+        titleVersion: bundle.titleVersion + 1,
+        titleCrdtState: next,
+      }));
+    }
+    const saved = mockDb.get().bundles.find((item) => item.id === current.id);
+    if (!saved) return fail(404, 'RESOURCE_001');
+    return ok({
+      title: saved.title,
+      titleCrdtState: saved.titleCrdtState ?? next,
+      titleVersion: saved.titleVersion,
+      titleTooLong: countTitleGraphemes(saved.title) > TITLE_MAX,
+    });
   }),
 
   // PUT …/title · visibility · date · comments/me

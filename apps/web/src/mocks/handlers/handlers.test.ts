@@ -18,6 +18,15 @@ describe('가짜 서버 세션', () => {
     expect(await api().get('session').json()).toEqual({ authenticated: true });
   });
 
+  it('실시간 연결용 토큰은 token과 앞으로의 만료 시각을 돌려준다', async () => {
+    const { token, expiresAt } = await api()
+      .post('auth/ws-token')
+      .json<{ token: string; expiresAt: string }>();
+
+    expect(token).not.toBe('');
+    expect(new Date(expiresAt).getTime()).toBeGreaterThan(Date.now());
+  });
+
   it('재발급과 로그아웃은 본문 없이 성공한다', async () => {
     // ky afterResponse hook이 본문 없는 204 응답을 복제하면 happy-dom 스트림 오류 발생(실제 브라우저는 무관), fetch로 확인
     for (const path of ['/api/auth/reissue', '/api/auth/logout']) {

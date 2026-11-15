@@ -48,6 +48,13 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
   const notReady = state.kind === 'ready' && !contentReady && !uploading;
   const draftId = draft?.id;
 
+  // 브라우저·OS 뒤로 가기처럼 화면 안의 뒤로 가기 버튼을 거치지 않고 떠나도 고른 공개 범위를 버림(기능 spec 4.3.9)
+  const setVisibilityRef = useRef(actions.setVisibility);
+  useEffect(() => {
+    setVisibilityRef.current = actions.setVisibility;
+  });
+  useEffect(() => () => setVisibilityRef.current(null), []);
+
   useEffect(() => {
     if (notReady && draftId !== undefined) router.replace(BUNDLE_PATHS.draft(draftId));
   }, [notReady, draftId, router]);
@@ -83,7 +90,10 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
       // 직접 주소로 들어와 돌아갈 기록이 없으면 작성 화면으로 이동
       onBack={() => {
         // 업로드 중에는 초안이 사라져 돌아갈 곳을 만들 수 없음
-        if (draftId !== undefined && !uploading) backOr(BUNDLE_PATHS.draft(draftId));
+        if (draftId === undefined || uploading) return;
+        // 뒤로 가면 고른 공개 범위를 버림(기능 spec 4.3.9)
+        actions.setVisibility(null);
+        backOr(BUNDLE_PATHS.draft(draftId));
       }}
       onUpload={upload}
     />

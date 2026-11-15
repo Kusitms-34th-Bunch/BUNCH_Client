@@ -1,6 +1,6 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { delay, http } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
@@ -10,6 +10,7 @@ import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
+import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import { type DraftState, useDraft } from './useDraft';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -114,12 +115,15 @@ describe('useDraft 상태', () => {
     await waitFor(() => expect(result.current.state.kind).toBe('missing'));
   });
 
-  it('서버 응답에는 편집 중 표시가 없다(실시간 presence 연결 전)', async () => {
+  it('실시간 연결 전에는 작업 중·입장 표시가 비어 있다', async () => {
     const id = await newDraft();
     const { result } = renderDraft(id);
 
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
-    expect(ready(result.current.state).draft.editing).toEqual({});
+    const { draft } = ready(result.current.state);
+    expect(draft.viewingMemberIds).toEqual([]);
+    expect(draft.editing.titleMemberIds ?? []).toEqual([]);
+    expect(draft.editing.photoMemberIds ?? []).toEqual([]);
   });
 });
 
@@ -133,6 +137,33 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).saveStatus).toBe('saving');
     await waitFor(() => expect(serverBundle(id)?.title).toBe('설악산 단풍'), SAVE_WAIT);
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+  });
+
+  it('입력란을 벗어나면 1초를 기다리지 않고 바로 저장한다', async () => {
+    const { id, result } = await renderReady();
+
+    act(() => {
+      result.current.actions.setTitle('벗어나며 저장');
+      result.current.actions.setComment(String(me), '코멘트도 함께');
+    });
+    expect(serverBundle(id)?.title).toBe('');
+    act(() => result.current.actions.saveNow());
+
+    // 입력이 멈춘 뒤 저장 대기(1초)보다 훨씬 짧게 서버에 반영됨
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('벗어나며 저장'), { timeout: 700 });
+    await waitFor(() => expect(serverBundle(id)?.comments[0]?.content).toBe('코멘트도 함께'), {
+      timeout: 700,
+    });
+  });
+
+  it('저장할 입력이 없으면 입력란을 벗어나도 요청을 보내지 않는다', async () => {
+    const { id, result } = await renderReady();
+    const before = serverBundle(id)?.revision;
+
+    act(() => result.current.actions.saveNow());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 200)));
+
+    expect(serverBundle(id)?.revision).toBe(before);
   });
 
   it('공개 범위는 서버에 저장하지 않고 화면에만 두며 내 코멘트는 저장한다', async () => {
@@ -232,29 +263,59 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).draft.title).toBe('여름 바다');
   });
 
-  it('다른 곳에서 제목이 바뀌면 입력 원문 대신 서버 값을 보인다', async () => {
+  it('다른 멤버가 제목을 고치면 상세를 다시 받을 때 내 문서에 병합해 보인다', async () => {
     const { id, result } = await renderReady();
     act(() => result.current.actions.setTitle('여름 '));
     await waitFor(() => expect(serverBundle(id)?.title).toBe('여름'), SAVE_WAIT);
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
 
-    // 다른 멤버가 제목을 바꾼 상황: 상세를 다시 받으면 서버 값이 보임
+    // 다른 멤버가 같은 문서에서 제목 뒤에 글자를 더한 상황(서버 문서가 바뀜): 상세를 다시 받으면 병합돼 보임
+    const state = serverBundle(id)?.titleCrdtState ?? '';
+    await ensureTitleCrdt();
+    const theirs = saveTitleDoc(editTitle(loadTitleDoc(state), '여름 바다'));
     mockDb.update((current) => ({
       ...current,
       bundles: current.bundles.map((bundle) => ({
         ...bundle,
-        title: '다른 멤버의 제목',
+        title: '여름 바다',
         titleVersion: bundle.titleVersion + 1,
+        titleCrdtState: theirs,
         revision: bundle.revision + 1,
       })),
     }));
-    // 공개 범위를 골라야 발행 요청이 나가고, 요청이 거절되면 상세를 다시 받아 서버 값이 보임
+    // 공개 범위를 골라야 발행 요청이 나가고, 요청이 거절되면 상세를 다시 받음
     act(() => result.current.actions.setVisibility('members'));
     await act(async () => {
       await result.current.actions.publish();
     });
 
-    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('다른 멤버의 제목'));
+    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('여름 바다'));
+  });
+
+  it('내가 입력한 제목과 다른 멤버의 변경이 저장되기 전에 겹쳐도 둘 다 남는다', async () => {
+    const { id, result } = await renderReady();
+    act(() => result.current.actions.setTitle('부산'));
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('부산'), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+
+    // 다른 멤버가 앞에 글자를 더해 서버에 저장하고, 나는 그 사실을 모른 채 뒤에 글자를 입력
+    await ensureTitleCrdt();
+    const base = serverBundle(id)?.titleCrdtState ?? '';
+    const theirs = saveTitleDoc(editTitle(loadTitleDoc(base), '가을 부산'));
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({
+        ...bundle,
+        title: '가을 부산',
+        titleVersion: bundle.titleVersion + 1,
+        titleCrdtState: theirs,
+        revision: bundle.revision + 1,
+      })),
+    }));
+    act(() => result.current.actions.setTitle('부산 여행'));
+
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('가을 부산 여행'), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('가을 부산 여행'));
   });
 
   it('서버 오류(5xx)는 일시 오류로 보고 다시 시도해 저장한다', async () => {
@@ -329,12 +390,12 @@ describe('useDraft 참여 멤버·위치·사진', () => {
   it('참여 멤버를 더하고 내보내면 서버 참여자와 코멘트가 바뀐다', async () => {
     const { id, result } = await renderReady();
 
-    act(() => result.current.actions.addMember(String(memberB)));
+    act(() => void result.current.actions.addMember(String(memberB)));
     await waitFor(() =>
       expect(ready(result.current.state).draft.members.map((m) => m.id)).toContain(String(memberB)),
     );
 
-    act(() => result.current.actions.removeMember(String(memberB)));
+    act(() => void result.current.actions.removeMember(String(memberB)));
     await waitFor(() =>
       expect(ready(result.current.state).draft.members.map((m) => m.id)).not.toContain(
         String(memberB),
@@ -376,7 +437,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     const { id, result } = await renderReady();
     const photoId = ready(result.current.state).draft.photos[0]!.id;
 
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
     // 보내는 동안에도 화면은 바로 줄어 있음
     expect(ready(result.current.state).draft.photos).toHaveLength(1);
 
@@ -423,7 +484,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     };
 
     // 새 사진을 맨 앞에 둔 선택 결과
-    act(() => result.current.actions.replacePhotos([added, ...current]));
+    act(() => void result.current.actions.replacePhotos([added, ...current]));
 
     await waitFor(
       () =>
@@ -489,6 +550,54 @@ describe('useDraft 발행', () => {
     expect(bodies[0]).toMatchObject({ visibility: 'PRIVATE' });
   });
 
+  it('네트워크 오류 뒤 같은 내용으로 다시 업로드하면 같은 요청 키로 보낸다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const keys: (string | null)[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return keys.length === 1 ? HttpResponse.error() : undefined;
+      }),
+    );
+
+    let first: string | undefined;
+    let second: string | undefined;
+    await act(async () => {
+      first = await result.current.actions.publish();
+    });
+    await act(async () => {
+      second = await result.current.actions.publish();
+    });
+
+    expect(first).toBe('failed');
+    expect(second).toBe('published');
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('서버가 요청을 거절한 뒤에는 새 요청 키를 쓴다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const keys: (string | null)[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return keys.length === 1 ? fail(409, 'BUNDLE_002') : undefined;
+      }),
+    );
+
+    await act(async () => {
+      await result.current.actions.publish();
+    });
+    await act(async () => {
+      await result.current.actions.publish();
+    });
+
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
   it('공개 범위를 고르지 않으면 발행 요청을 보내지 않고 막는다', async () => {
     const { result } = await renderReady();
     let requests = 0;
@@ -516,7 +625,7 @@ describe('useDraft 발행', () => {
       http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', () => fail(500, 'COMMON_500')),
     );
     const photoId = ready(result.current.state).draft.photos[0]!.id;
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
 
     let outcome: string | undefined;
     await act(async () => {
@@ -534,7 +643,7 @@ describe('useDraft 발행', () => {
     const { id, result } = await renderReady();
     await fill(result, id);
     const photoId = ready(result.current.state).draft.photos[0]!.id;
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
 
     let outcome: string | undefined;
     await act(async () => {

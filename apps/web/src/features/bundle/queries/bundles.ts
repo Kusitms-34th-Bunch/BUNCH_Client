@@ -1,7 +1,12 @@
-import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  queryOptions,
+  replaceEqualDeep,
+  skipToken,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { sharedKeys } from '@/shared/query/keys';
-import type { BundleDetail } from '../model/bundle';
 import {
   addBundleParticipant,
   changeBundlePhotos,
@@ -14,10 +19,11 @@ import {
   readVersionConflict,
   removeBundleParticipant,
   saveBundleComment,
+  mergeBundleTitle,
   saveBundleDate,
-  saveBundleTitle,
   saveBundleVisibility,
 } from '../api/bundles';
+import { type BundleDetail, type BundleTitleState, titleEventSchema } from '../model/bundle';
 import { bundleKeys } from './keys';
 
 /** 번들(초안·발행본) 상세. 번치나 번들을 아직 모르면 요청하지 않음(skipToken) */
@@ -25,6 +31,25 @@ export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string
   queryOptions({
     queryKey: bundleKeys.detail(bunchId, bundleId),
     queryFn: bunchId && bundleId ? ({ signal }) => getBundle(bunchId, bundleId, signal) : skipToken,
+    // 먼저 보낸 재조회 응답이 그사이 저장 응답으로 맞춘 더 새 상태를 낡은 revision으로 덮지 않음(setQueryData에도 적용됨)
+    // 같거나 더 새 revision이면 응답을 쓰되, 바뀌지 않은 부분은 기본 구조 공유로 참조를 유지해 불필요한 리렌더를 막음
+    structuralSharing: (old, next) => {
+      const previous = old as BundleDetail | undefined;
+      const incoming = next as BundleDetail;
+      if (!previous) return incoming;
+      if (previous.revision > incoming.revision) return previous;
+      // 제목 병합 응답은 revision을 바꾸지 않아, 같은 revision의 낡은 상세가 더 높은 제목 버전을 되돌리지 않게 함
+      if (previous.titleCrdtState !== undefined && previous.titleVersion > incoming.titleVersion) {
+        const kept = withTitleState(incoming, {
+          title: previous.title,
+          titleCrdtState: previous.titleCrdtState,
+          titleVersion: previous.titleVersion,
+          titleTooLong: previous.titleTooLong,
+        });
+        return replaceEqualDeep(previous, kept);
+      }
+      return replaceEqualDeep(previous, incoming);
+    },
   });
 
 /**
@@ -107,6 +132,19 @@ export const useLeaveBundleMutation = (bunchId: string | undefined) => {
   });
 };
 
+/** 번들 상세를 최신으로 다시 받음(실시간 연결이 끊겼다 돌아왔을 때처럼 놓친 변경을 맞출 때). 받지 못하면 reject */
+export const useRefetchBundleDetail = (
+  bunchId: string | undefined,
+  bundleId: string | undefined,
+) => {
+  const queryClient = useQueryClient();
+  return () =>
+    queryClient.refetchQueries(
+      { queryKey: bundleKeys.detail(bunchId, bundleId), exact: true },
+      { throwOnError: true },
+    );
+};
+
 // 저장·참여자 변경 성공 응답(전체 BundleSnapshot)으로 상세 캐시를 바로 갱신하고,
 // 버전 충돌이면 서버의 최신 상세를 다시 받아 화면이 최신 버전으로 이어서 저장하게 함
 const useBundleCacheSync = (bunchId: string | undefined, bundleId: string | undefined) => {
@@ -141,12 +179,79 @@ const requireIds = (bunchId: string | undefined, bundleId: string | undefined) =
   return { bunchId, bundleId };
 };
 
-export const useSaveTitleMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
-  useMutation({
-    mutationFn: (input: FieldInput<string>) =>
-      saveBundleTitle({ ...requireIds(bunchId, bundleId), ...input }),
-    ...useBundleCacheSync(bunchId, bundleId),
+/** 병합된 제목 상태(응답·이벤트)를 상세에 반영: 더 낡은 제목 버전으로 덮지 않고, 길이 초과 발행 사유도 맞춤 */
+const withTitleState = (
+  detail: BundleDetail,
+  state: BundleTitleState,
+  revision?: number,
+): BundleDetail => {
+  // 더 낡은 제목은 반영하지 않지만, 이벤트로 알게 된 revision은 맞춤(이후 이벤트가 건너뛴 것으로 보이지 않게)
+  if (state.titleVersion < detail.titleVersion) {
+    return revision === undefined
+      ? detail
+      : { ...detail, revision: Math.max(detail.revision, revision) };
+  }
+  const blockers = detail.publishBlockers.filter((reason) => reason !== 'TITLE_TOO_LONG');
+  return {
+    ...detail,
+    title: state.title,
+    titleVersion: state.titleVersion,
+    titleCrdtState: state.titleCrdtState,
+    titleTooLong: state.titleTooLong,
+    publishBlockers: state.titleTooLong ? [...blockers, 'TITLE_TOO_LONG'] : blockers,
+    revision: revision === undefined ? detail.revision : Math.max(detail.revision, revision),
+  };
+};
+
+/**
+ * 제목 CRDT 저장: 서버가 병합한 제목 상태로 상세 캐시를 갱신하고 갱신된 상세를 돌려줌
+ * 응답에는 번들 revision이 없어 revision은 이후 TITLE 이벤트나 다음 상세 조회로 맞춰짐
+ */
+export const useMergeTitleMutation = (
+  bunchId: string | undefined,
+  bundleId: string | undefined,
+) => {
+  const queryClient = useQueryClient();
+  const key = bundleKeys.detail(bunchId, bundleId);
+  return useMutation({
+    mutationFn: async (state: string): Promise<BundleDetail> => {
+      const saved = await mergeBundleTitle({
+        ...requireIds(bunchId, bundleId),
+        state,
+        requestId: createIdempotencyKey(),
+      });
+      const next = queryClient.setQueryData<BundleDetail>(key, (old) =>
+        old ? withTitleState(old, saved) : old,
+      );
+      if (!next) throw new Error('bundle detail is not loaded');
+      return next;
+    },
   });
+};
+
+/**
+ * 번들 topic으로 온 이벤트를 상세 캐시에 반영(지금은 TITLE만): revision이 이미 반영됐으면 무시, 바로 다음이면 적용,
+ * 건너뛰었으면 놓친 이벤트가 있다는 뜻이라 최신 상세를 다시 받음(이벤트는 재생되지 않음). 같은 이벤트가 다시 와도 결과가 같음
+ */
+export const useApplyBundleEvent = (bunchId: string | undefined, bundleId: string | undefined) => {
+  const queryClient = useQueryClient();
+  const key = bundleKeys.detail(bunchId, bundleId);
+  return (body: unknown) => {
+    const parsed = titleEventSchema.safeParse(body);
+    if (!parsed.success) return;
+    const event = parsed.data;
+    const current = queryClient.getQueryData<BundleDetail>(key);
+    if (!current || current.status !== 'DRAFT' || event.revision <= current.revision) return;
+    if (event.revision === current.revision + 1) {
+      queryClient.setQueryData<BundleDetail>(
+        key,
+        withTitleState(current, event.data, event.revision),
+      );
+    } else {
+      void queryClient.invalidateQueries({ queryKey: key });
+    }
+  };
+};
 
 export const useSaveVisibilityMutation = (
   bunchId: string | undefined,
@@ -244,9 +349,17 @@ export const usePublishBundleMutation = (
   const queryClient = useQueryClient();
   const sync = useBundleCacheSync(bunchId, bundleId);
   return useMutation({
-    mutationFn: (input: { visibility: 'PUBLIC' | 'PRIVATE'; expectedRevision: number }) => {
+    mutationFn: ({
+      idempotencyKey = createIdempotencyKey(),
+      ...input
+    }: {
+      visibility: 'PUBLIC' | 'PRIVATE';
+      expectedRevision: number;
+      /** 응답이 유실된 뒤 다시 보내도 한 번만 발행되도록 호출하는 쪽이 같은 키를 유지 */
+      idempotencyKey?: string;
+    }) => {
       const ids = requireIds(bunchId, bundleId);
-      return publishBundle(ids.bunchId, ids.bundleId, input, createIdempotencyKey());
+      return publishBundle(ids.bunchId, ids.bundleId, input, idempotencyKey);
     },
     onError: sync.onError,
     onSuccess: async (bundle: BundleDetail) => {

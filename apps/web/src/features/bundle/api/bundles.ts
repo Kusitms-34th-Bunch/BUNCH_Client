@@ -4,7 +4,13 @@ import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { createIdempotencyKey, IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
-import { type BundleDetail, bundleSnapshotSchema, toBundleDetail } from '../model/bundle';
+import { presenceDataSchema } from '../lib/presence';
+import {
+  type BundleDetail,
+  bundleSnapshotSchema,
+  bundleTitleStateSchema,
+  toBundleDetail,
+} from '../model/bundle';
 
 type Schemas = components['schemas'];
 
@@ -69,9 +75,32 @@ const saveText = (
     context,
   );
 
-/** 제목 저장(전체 문자열 호환 경로, 제목 CRDT 저장은 후속 작업) */
-export const saveBundleTitle = (input: SaveBase & { value: string }) =>
-  saveText(`${bundlePath(input.bunchId, input.bundleId)}/title`, input, 'save title');
+/**
+ * 제목 CRDT 병합: 서버 문서에서 파생한 Automerge 전체 저장 문서(base64)를 보내고 서버가 병합한 제목 상태를 받음
+ * 버전·모드를 보내지 않고, 40자를 넘어도 자르지 않고 저장함(`titleTooLong`). 요청 id는 변경 이벤트의 requestId가 됨
+ */
+export const mergeBundleTitle = (input: {
+  bunchId: string;
+  bundleId: string;
+  state: string;
+  requestId: string;
+}) =>
+  requestData(
+    bffApi.patch(`${bundlePath(input.bunchId, input.bundleId)}/title/crdt`, {
+      headers: { [REQUEST_ID_HEADER]: input.requestId },
+      json: { state: input.state } satisfies Schemas['BundleTitleCrdtRequest'],
+    }),
+    bundleTitleStateSchema,
+    'merge title',
+  );
+
+/** 현재 presence(members·editing·typing) 복구용 조회. 입장 신호가 아니고 만료를 연장하지 않음 */
+export const getBundlePresence = (bunchId: string, bundleId: string, signal?: AbortSignal) =>
+  requestData(
+    bffApi.get(`${bundlePath(bunchId, bundleId)}/presence`, { signal: signal ?? null }),
+    presenceDataSchema,
+    'bundle presence',
+  );
 
 /** 내 코멘트 저장(본인 코멘트만) */
 export const saveBundleComment = (input: SaveBase & { value: string }) =>

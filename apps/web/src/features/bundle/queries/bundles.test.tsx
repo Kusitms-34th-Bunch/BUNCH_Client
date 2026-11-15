@@ -1,19 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
-// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
-import '@/mocks/server';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
+import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import type { BundleDetail } from '../model/bundle';
+import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import {
   bundleQueryOptions,
   useCreateBundleMutation,
   useDeleteBundleMutation,
   useLeaveBundleMutation,
   usePublishBundleMutation,
-  useSaveTitleMutation,
+  useApplyBundleEvent,
+  useMergeTitleMutation,
   useSaveVisibilityMutation,
 } from './bundles';
 import { bundleKeys } from './keys';
@@ -52,6 +56,96 @@ describe('번들 query·mutation', () => {
     });
   });
 
+  it('먼저 보낸 재조회 응답이 그사이 저장 응답으로 맞춘 더 새 revision의 캐시를 덮지 않는다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const key = bundleKeys.detail(bunchId, id);
+    const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const loaded = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    // GET 핸들러가 요청을 받은 것과 응답을 내보내는 시점을 테스트가 직접 정함(시간 대기에 기대지 않음)
+    let reachedServer: () => void = () => undefined;
+    const requestReachedServer = new Promise<void>((resolve) => (reachedServer = resolve));
+    let sendResponse: () => void = () => undefined;
+    const responseReleased = new Promise<void>((resolve) => (sendResponse = resolve));
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        reachedServer();
+        await responseReleased;
+        return undefined;
+      }),
+    );
+
+    // 재조회 요청이 서버에 도달해 응답을 기다리는 동안(조회 실패는 숨기지 않고 테스트를 실패시킴)
+    let inflight: Promise<unknown> = Promise.resolve();
+    act(() => {
+      inflight = client.refetchQueries({ queryKey: key }, { throwOnError: true });
+    });
+    await requestReachedServer;
+    // 저장 응답이 먼저 도착해 캐시를 더 새 revision으로 맞춤
+    client.setQueryData(key, {
+      ...loaded,
+      revision: loaded.revision + 5,
+      title: '저장 응답으로 맞춤',
+    });
+    // 그 뒤에 낡은 revision의 재조회 응답이 도착해도 캐시의 더 새 상태를 유지함
+    sendResponse();
+    await act(async () => {
+      await inflight;
+    });
+
+    expect(client.getQueryState(key)).toMatchObject({ status: 'success', fetchStatus: 'idle' });
+    expect(client.getQueryData<BundleDetail>(key)).toMatchObject({
+      revision: loaded.revision + 5,
+      title: '저장 응답으로 맞춤',
+    });
+  });
+
+  it('제목 병합 응답은 revision을 바꾸지 않으므로 같은 revision의 낡은 상세가 더 높은 제목 버전을 되돌리지 않는다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const key = bundleKeys.detail(bunchId, id);
+    const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const loaded = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    let reachedServer: () => void = () => undefined;
+    const requestReachedServer = new Promise<void>((resolve) => (reachedServer = resolve));
+    let sendResponse: () => void = () => undefined;
+    const responseReleased = new Promise<void>((resolve) => (sendResponse = resolve));
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        reachedServer();
+        await responseReleased;
+        return undefined;
+      }),
+    );
+
+    // 병합 전에 시작한 상세 조회가 서버에서 처리되는 동안
+    let inflight: Promise<unknown> = Promise.resolve();
+    act(() => {
+      inflight = client.refetchQueries({ queryKey: key }, { throwOnError: true });
+    });
+    await requestReachedServer;
+    // 제목 병합 응답이 먼저 도착해 같은 revision에서 제목 버전만 올림
+    client.setQueryData(key, {
+      ...loaded,
+      title: '병합 응답으로 맞춘 제목',
+      titleVersion: loaded.titleVersion + 3,
+      titleCrdtState: 'merged-state',
+    });
+    sendResponse();
+    await act(async () => {
+      await inflight;
+    });
+
+    expect(client.getQueryData<BundleDetail>(key)).toMatchObject({
+      revision: loaded.revision,
+      title: '병합 응답으로 맞춘 제목',
+      titleVersion: loaded.titleVersion + 3,
+      titleCrdtState: 'merged-state',
+    });
+  });
+
   it('상세 query는 번들을 아직 모르면 요청하지 않는다', () => {
     const { wrapper } = setup();
     const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, undefined)), {
@@ -61,23 +155,24 @@ describe('번들 query·mutation', () => {
     expect(result.current.fetchStatus).toBe('idle');
   });
 
-  it('제목을 저장하면 응답으로 상세 캐시가 바로 최신이 된다', async () => {
+  it('제목 CRDT를 저장하면 병합 응답으로 상세 캐시의 제목 상태가 바로 최신이 된다', async () => {
     const { client, wrapper } = setup();
     const id = await createDraft(wrapper);
-    const { result } = renderHook(() => useSaveTitleMutation(bunchId, id), { wrapper });
+    const before = client.getQueryData<BundleDetail>(bundleKeys.detail(bunchId, id));
+    await ensureTitleCrdt();
+    const edited = editTitle(loadTitleDoc(before?.titleCrdtState ?? ''), '설악산');
+    const { result } = renderHook(() => useMergeTitleMutation(bunchId, id), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync({
-        value: '설악산',
-        expectedVersion: 0,
-        mode: 'DRAFT',
-      });
+      await result.current.mutateAsync(saveTitleDoc(edited));
     });
 
     expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toMatchObject({
       title: '설악산',
       titleVersion: 1,
-      revision: 2,
+      titleTooLong: false,
+      // 병합 응답에는 번들 revision이 없어 그대로 둠
+      revision: before?.revision,
     });
   });
 
@@ -209,5 +304,88 @@ describe('번들 query·mutation', () => {
 
     await waitFor(() => expect(result.current.error).toMatchObject({ code: 'BUNDLE_005' }));
     expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toMatchObject({ status: 'DRAFT' });
+  });
+
+  describe('번들 topic 이벤트(TITLE)', () => {
+    const titleEvent = (revision: number, title: string, titleVersion: number) => ({
+      type: 'TITLE',
+      revision,
+      data: { title, titleVersion, titleCrdtState: 'state', titleTooLong: false },
+    });
+    const apply = async () => {
+      const { client, wrapper } = setup();
+      const id = await createDraft(wrapper);
+      const { result } = renderHook(() => useApplyBundleEvent(bunchId, id), { wrapper });
+      const detail = () => client.getQueryData<BundleDetail>(bundleKeys.detail(bunchId, id));
+      return { client, id, detail, apply: result.current };
+    };
+
+    it('바로 다음 revision이면 제목 상태와 revision을 반영하고 같은 이벤트가 다시 와도 결과가 같다', async () => {
+      const { detail, apply: applyEvent } = await apply();
+      const base = detail()?.revision ?? 0;
+
+      applyEvent(titleEvent(base + 1, '새 제목', 5));
+      applyEvent(titleEvent(base + 1, '새 제목', 5));
+
+      expect(detail()).toMatchObject({
+        title: '새 제목',
+        titleVersion: 5,
+        titleCrdtState: 'state',
+        revision: base + 1,
+      });
+    });
+
+    it('이미 반영된 revision이나 낡은 제목 버전은 무시한다', async () => {
+      const { detail, apply: applyEvent } = await apply();
+      const base = detail()?.revision ?? 0;
+
+      applyEvent(titleEvent(base, '무시', 9));
+
+      expect(detail()?.title).not.toBe('무시');
+    });
+
+    it('revision이 건너뛰면 이벤트를 쓰지 않고 상세를 다시 받는다', async () => {
+      const { client, id, detail, apply: applyEvent } = await apply();
+      renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), {
+        wrapper: createQueryWrapper(client),
+      });
+      const base = detail()?.revision ?? 0;
+
+      applyEvent(titleEvent(base + 3, '건너뜀', 9));
+
+      expect(detail()?.title).not.toBe('건너뜀');
+      await waitFor(() =>
+        expect(client.getQueryState(bundleKeys.detail(bunchId, id))?.isInvalidated).toBe(true),
+      );
+    });
+
+    it('길이 초과 제목은 발행 사유에 TITLE_TOO_LONG을 넣고 줄어들면 뺀다', async () => {
+      const { detail, apply: applyEvent } = await apply();
+      const base = detail()?.revision ?? 0;
+
+      applyEvent({
+        ...titleEvent(base + 1, '가'.repeat(41), 6),
+        data: {
+          ...titleEvent(0, '', 0).data,
+          title: '가'.repeat(41),
+          titleVersion: 6,
+          titleTooLong: true,
+        },
+      });
+      expect(detail()?.publishBlockers).toContain('TITLE_TOO_LONG');
+
+      applyEvent(titleEvent(base + 2, '짧게', 7));
+      expect(detail()?.publishBlockers).not.toContain('TITLE_TOO_LONG');
+    });
+
+    it('TITLE이 아닌 이벤트와 모양이 다른 내용은 건드리지 않는다', async () => {
+      const { detail, apply: applyEvent } = await apply();
+      const before = detail();
+
+      applyEvent({ type: 'DATE', revision: 99, data: {} });
+      applyEvent('garbage');
+
+      expect(detail()).toBe(before);
+    });
   });
 });

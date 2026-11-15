@@ -1,5 +1,4 @@
 import { BundleCommentCard, BundleTitle } from '@app/design-system/web';
-import { EditingLottie } from '@/shared/components/loading/EditingLottie';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES, COMMENT_MAX_LENGTH } from '../../constants/messages';
 
@@ -20,7 +19,7 @@ type DraftCommentsProps = {
 
 /**
  * 참여 멤버별 코멘트 카드: 내 카드가 맨 위이고 내 카드만 입력할 수 있음(관리자도 남의 코멘트는 못 고침)
- * 다른 멤버가 쓰는 중이면 점 애니메이션만 보이고 잠그지는 않음
+ * 다른 멤버가 쓰는 글자는 저장 전이어도 그 카드에 바로 보이고(기능 spec 4.3.8) 잠그지는 않음
  */
 export function DraftComments({
   draft,
@@ -62,8 +61,10 @@ export function DraftComments({
       <ul className="gap-s3 flex flex-col">
         {members.map((member) => {
           const mine = member.id === viewer.memberId;
-          const text = draft.comments.find((comment) => comment.memberId === member.id)?.text ?? '';
-          const writing = !mine && (draft.editing.commentMemberIds ?? []).includes(member.id);
+          const saved =
+            draft.comments.find((comment) => comment.memberId === member.id)?.text ?? '';
+          // 다른 멤버가 쓰는 글자는 저장 전이어도 그 카드에 바로 보임(기능 spec 4.3.8, 입력 미리보기). 내 카드는 내가 친 값 그대로
+          const text = (!mine ? draft.editing.commentTexts?.[member.id] : undefined) ?? saved;
           return (
             <li key={member.id}>
               <BundleCommentCard
@@ -73,11 +74,6 @@ export function DraftComments({
                 value={text}
                 maxLength={COMMENT_MAX_LENGTH}
                 readOnly={!(mine && editable)}
-                editing={writing}
-                editingContent={<EditingLottie />}
-                editingLabel={
-                  writing ? BUNDLE_MESSAGES.commentEditingLabel(member.name) : undefined
-                }
                 error={text.length >= COMMENT_MAX_LENGTH ? BUNDLE_MESSAGES.commentMax : undefined}
                 // 남의 카드는 터치·클릭해도 포커스(테두리 강조)가 생기지 않고 Tab 순서에서도 제외
                 tabIndex={mine ? undefined : -1}

@@ -99,6 +99,8 @@ export type MockBundle = {
   status: 'DRAFT' | 'PUBLISHED';
   title: string;
   titleVersion: number;
+  /** 제목 CRDT 문서(Automerge 전체 저장 문서 base64). 처음 쓸 때 제목으로 만듦 */
+  titleCrdtState?: string;
   visibility: BundleVisibility | null;
   visibilityVersion: number;
   date: string | null;

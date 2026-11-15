@@ -127,6 +127,7 @@ export const draftFixture: Draft = {
   ],
   visibility: null,
   editing: {},
+  viewingMemberIds: [],
 };
 
 /** 장소 검색 API 연결 전 목 결과(키워드가 이름·주소에 들어 있으면 보임) */

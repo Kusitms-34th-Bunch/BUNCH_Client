@@ -1,9 +1,9 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
-import type { Draft, DraftViewer } from '../../lib/types';
+import type { Draft, DraftPhoto } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { draftFixture } from '../../fixtures/draft.fixture';
@@ -19,8 +19,10 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
-const creator: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
-const actions = { replacePhotos: vi.fn() };
+const actions = {
+  replacePhotos: vi.fn<(_photos: readonly DraftPhoto[]) => boolean>(() => true),
+  presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
+};
 const onBack = vi.fn();
 const onApplied = vi.fn();
 
@@ -28,7 +30,6 @@ const renderAdd = (draft: Draft = draftFixture) =>
   render(
     <DraftPhotoAdd
       draft={draft}
-      viewer={creator}
       data={photoBoxFixture}
       actions={actions}
       currentYear={2026}
@@ -62,7 +63,7 @@ describe('DraftPhotoAdd', () => {
     expect(applyButton()).toBeEnabled();
     await userEvent.click(applyButton());
 
-    const next = actions.replacePhotos.mock.calls[0]![0] as Draft['photos'];
+    const next = actions.replacePhotos.mock.calls[0]![0];
     expect(next.map((photo) => photo.id)).toEqual([
       'draft-photo-1',
       'draft-photo-2',
@@ -71,6 +72,18 @@ describe('DraftPhotoAdd', () => {
     ]);
     expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoAddApplied);
     expect(onApplied).toHaveBeenCalledTimes(1);
+  });
+
+  it('연결이 끊겨 적용이 막히면 성공 안내와 화면 이동을 하지 않는다', async () => {
+    actions.replacePhotos.mockReturnValueOnce(false);
+    renderAdd();
+
+    await userEvent.click(sectionPhotos()[3]!);
+    await userEvent.click(applyButton());
+
+    expect(actions.replacePhotos).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+    expect(onApplied).not.toHaveBeenCalled();
   });
 
   it('고른 사진을 풀면 빠지는 장수를 확인하고, 「취소」면 적용하지 않는다', async () => {
@@ -94,7 +107,7 @@ describe('DraftPhotoAdd', () => {
     const dialog = await screen.findByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: '적용하기' }));
 
-    const next = actions.replacePhotos.mock.calls[0]![0] as Draft['photos'];
+    const next = actions.replacePhotos.mock.calls[0]![0];
     expect(next.map((photo) => photo.id)).toEqual(['draft-photo-2', 'draft-photo-3']);
     expect(onApplied).toHaveBeenCalledTimes(1);
   });
@@ -147,12 +160,15 @@ describe('DraftPhotoAdd', () => {
     expect(applyButton()).toBeDisabled();
   });
 
-  it('다른 멤버가 편집 중인 사진은 풀 수 없다', async () => {
-    renderAdd({ ...draftFixture, editing: { photoEditors: { 'draft-photo-1': ['gyeongjin'] } } });
+  it('다른 멤버가 사진 작업 중이어도 사진을 풀 수 있고, 이 화면에 있는 동안 사진 작업을 알린다', async () => {
+    renderAdd({ ...draftFixture, editing: { photoMemberIds: ['gyeongjin'] } });
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    const selectedBefore = screen.getByRole('status').textContent;
 
     await userEvent.click(sectionPhotos()[0]!);
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-    await waitFor(() => expect(applyButton()).toBeDisabled());
+    expect(toast).not.toHaveBeenCalled();
+    // 클릭이 무시되지 않고 선택이 실제로 풀려 선택 개수 표시가 바뀜
+    expect(screen.getByRole('status').textContent).not.toBe(selectedBefore);
   });
 });

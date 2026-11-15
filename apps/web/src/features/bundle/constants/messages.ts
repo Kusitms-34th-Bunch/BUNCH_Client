@@ -111,10 +111,10 @@ export const BUNDLE_MESSAGES = {
   draftDeleted: '작성 중인 번들을 삭제했어요.',
   // 기획 원문 없는 임시 안내: 나가기를 서버에 보내지 못했을 때
   leaveFailed: '번들에서 나가지 못했어요. 잠시 후 다시 시도해 주세요.',
-  // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
-  editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
+  // 기획 원문 없는 접근성 이름(화면에는 안 보임): 위치·날짜 줄 이름에 붙임
   editingLabel: (name: string) => `${name}님이 편집 중`,
-  commentEditingLabel: (name: string) => `${name}님이 작성 중`,
+  // 기획 원문 없는 접근성 이름(화면에는 안 보임): 멤버 카드의 초록 점(지금 이 초안에 들어와 있는 멤버)
+  viewingLabel: (name: string) => `${name}님이 보는 중`,
   roleLabel: { owner: '번치장', coOwner: '공동 번치장', draftAuthor: '초안 작성자' },
   // 위치 순서 바꾸기(햄버거 핸들을 잡고 끌기, Figma `5367:146358`)
   locationReorderLabel: (name: string) => `${name} 순서 바꾸기`,

@@ -121,6 +121,31 @@ export type PublishBlockerReason =
   | 'COMMENTS_REQUIRED'
   | 'PHOTOS_REQUIRED';
 
+/** 제목 CRDT 병합 응답(BundleSnapshot이 아니라 제목 상태만, 번들 revision은 없음) */
+export const bundleTitleStateSchema = z.object({
+  title: z.string(),
+  titleCrdtState: z.string(),
+  titleVersion: z.number().int().nonnegative(),
+  titleTooLong: z.boolean(),
+}) satisfies z.ZodType<ApiContract<Schemas['BundleTitleState']>>;
+
+export type BundleTitleState = z.infer<typeof bundleTitleStateSchema>;
+
+/**
+ * 번들 topic의 제목 저장 이벤트(TITLE): 커밋 뒤 전달되며 data에 제목 값·버전·CRDT 문서·길이 초과 여부가 모두 있음
+ * revision은 번들 내용 revision(중복·유실 판단에 씀). 다른 type은 이후 작업에서 처리
+ */
+export const titleEventSchema = z.object({
+  type: z.literal('TITLE'),
+  revision: z.number().int().nonnegative(),
+  data: z.object({
+    title: z.string(),
+    titleVersion: z.number().int().nonnegative(),
+    titleCrdtState: z.string(),
+    titleTooLong: z.boolean(),
+  }),
+});
+
 export type BundleDetail = {
   id: string;
   bunchId: string;
@@ -154,6 +179,8 @@ export type BundleDetail = {
   permissions: z.infer<typeof bundlePermissionsSchema>;
   /** 병합된 제목이 40자를 넘음(자르지 않고 보존, 발행 불가 사유) */
   titleTooLong: boolean;
+  /** 제목 CRDT 문서(Automerge 전체 저장 문서의 base64). 발행본에는 없음 */
+  titleCrdtState: string | undefined;
   /** 사진 구성 변경 응답에만 있음. 정원 초과로 못 담은 사진과 같은 키 재시도 여부 */
   photoChangeResult: PhotoChangeResult | undefined;
 };
@@ -205,6 +232,7 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   publishBlockers: snapshot.publishBlockers,
   permissions: snapshot.permissions,
   titleTooLong: snapshot.titleTooLong,
+  titleCrdtState: snapshot.titleCrdtState ?? undefined,
   photoChangeResult: snapshot.photoChangeResult
     ? {
         addedPhotoIds: snapshot.photoChangeResult.addedPhotoIds.map(toDomainId),

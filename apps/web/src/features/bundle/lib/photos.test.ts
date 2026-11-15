@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Draft, DraftPhoto, DraftViewer } from './types';
-import { draftFixture } from '../fixtures/draft.fixture';
-import {
-  getPhotoEditors,
-  getRemovePhotoKind,
-  movePhoto,
-  planPhotoMoves,
-  removePhoto,
-} from './photos';
+import type { DraftPhoto } from './types';
+import { getRemovePhotoKind, movePhoto, planPhotoMoves, removePhoto } from './photos';
 
 const photo = (id: string): DraftPhoto => ({
   id,
@@ -59,22 +52,6 @@ describe('movePhoto', () => {
   it('같은 자리이거나 없는 사진이면 그대로 둔다', () => {
     expect(movePhoto(photos, 'b', 1)).toBe(photos);
     expect(movePhoto(photos, 'x', 0)).toBe(photos);
-  });
-});
-
-describe('getPhotoEditors', () => {
-  const viewer: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
-  const draft: Draft = {
-    ...draftFixture,
-    editing: { photoEditors: { a: ['gyeongjin', 'jiye'] } },
-  };
-
-  it('내가 아닌 편집 중인 멤버만 돌려준다', () => {
-    expect(getPhotoEditors(draft, viewer, 'a')).toEqual(['gyeongjin']);
-  });
-
-  it('편집 중인 멤버가 없으면 빈 목록이다', () => {
-    expect(getPhotoEditors(draft, viewer, 'b')).toEqual([]);
   });
 });
 

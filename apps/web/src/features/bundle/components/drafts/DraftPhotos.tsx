@@ -7,26 +7,27 @@ import {
   BundleTitle,
   PhotoImportSheet,
 } from '@app/design-system/web';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import type { PresenceCommands } from '../../hooks/usePresenceSender';
 import type { DraftAccess } from '../../lib/permissions';
-import type { Draft, DraftViewer } from '../../lib/types';
+import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../../constants/messages';
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
-import { getRemovePhotoKind, getPhotoEditors } from '../../lib/photos';
+import { getRemovePhotoKind } from '../../lib/photos';
+import { PresenceScope } from './PresenceScope';
 import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 
 type DraftPhotosProps = {
   draft: Draft;
-  viewer: DraftViewer;
   access: DraftAccess;
   /** 사진 삭제 확정 */
   onRemovePhoto: (_photoId: string) => void;
   /** 참여 멤버가 아니라 고칠 수 없을 때 */
   onDenied: () => void;
-  /** 다른 멤버가 그 사진을 편집 중일 때 */
-  onEditingBlocked: () => void;
+  /** 사진 작업(추가 시트·삭제 확인)을 하는 동안 다른 멤버에게 알림 */
+  presence: PresenceCommands;
   /** 사진을 눌렀을 때(사진 상세로 이동) */
   onOpenPhoto?: ((_photoId: string) => void) | undefined;
   /** 「픽하기 >」를 눌렀을 때(대표 사진 투표 화면으로 이동) */
@@ -44,11 +45,10 @@ type DraftPhotosProps = {
  */
 export function DraftPhotos({
   draft,
-  viewer,
   access,
   onRemovePhoto,
   onDenied,
-  onEditingBlocked,
+  presence,
   onOpenPhoto,
   onOpenPick,
   onImportFromBunchBox,
@@ -60,6 +60,8 @@ export function DraftPhotos({
   // 시트가 열린 사이 장수가 바뀌어도 고른 순간의 남은 장수로 가져옴
   const importFromGallery = usePreservedCallback(() => onImportFromGallery(MAX_PHOTOS - total));
   const isPickedNow = usePreservedCallback(isPicked);
+  // 시트가 열려 있는 동안 사진을 작업 중으로 알림: 열 때의 presence(연결 전에는 아무것도 보내지 않음)가 굳지 않도록 열림 상태만 두고 현재 presence로 알림
+  const [importOpen, setImportOpen] = useState(false);
   const openImport = () => {
     // 시트 카드를 연타해도 고른 출처를 한 번만 처리
     let chosen = false;
@@ -69,18 +71,24 @@ export function DraftPhotos({
       close();
       action();
     };
-    openOverlay((rootProps, close) => (
-      <PhotoImportSheet
-        {...rootProps}
-        onSelectBunchBox={() => choose(close, onImportFromBunchBox)}
-        onSelectGallery={() => choose(close, importFromGallery)}
-      />
-    ));
+    setImportOpen(true);
+    openOverlay(
+      (rootProps, close) => (
+        <PhotoImportSheet
+          {...rootProps}
+          onSelectBunchBox={() => choose(close, onImportFromBunchBox)}
+          onSelectGallery={() => choose(close, importFromGallery)}
+        />
+      ),
+      () => setImportOpen(false),
+    );
   };
   const listRef = useRef<HTMLUListElement>(null);
   const openRemove = useRemovePhotoDialog();
+  // 삭제 확인 창이 열려 있는 동안(연결이 끊겼다 이어져도 다시 알리도록 열림 상태로 둠)
+  const [removeOpen, setRemoveOpen] = useState(false);
 
-  // 라벨 옆: 사진을 편집 중인 멤버 전체(어느 사진인지는 알려 주지 않음)
+  // 라벨 옆: 사진 작업(추가·삭제·끄는 중)을 하는 멤버 전체(어느 사진인지는 알려 주지 않음)
   const editors = (draft.editing.photoMemberIds ?? []).flatMap((id) => {
     const member = draft.members.find((candidate) => candidate.id === id);
     return member ? [{ name: member.name, src: member.avatarSrc }] : [];
@@ -88,7 +96,7 @@ export function DraftPhotos({
 
   const requestRemove = (photoId: string) => {
     if (!access.canEdit) return onDenied();
-    if (getPhotoEditors(draft, viewer, photoId).length > 0) return onEditingBlocked();
+    setRemoveOpen(true);
     // 연 시점의 사진 id를 고정해 그 사이 목록이 바뀌어도 다른 사진을 지우지 않음
     openRemove({
       kind: getRemovePhotoKind(draft.photos),
@@ -96,6 +104,7 @@ export function DraftPhotos({
       onConfirm: () => onRemovePhoto(photoId),
       // 지운 사진의 X에 있던 포커스가 사라지므로 창이 다 닫힌 뒤 목록의 첫 버튼으로 옮김
       onClosed: (confirmed) => {
+        setRemoveOpen(false);
         if (confirmed) listRef.current?.querySelector<HTMLElement>('button')?.focus();
       },
     });
@@ -157,6 +166,7 @@ export function DraftPhotos({
       <p role="status" className="sr-only">
         {BUNDLE_MESSAGES.photoCount(total)}
       </p>
+      {removeOpen || importOpen ? <PresenceScope presence={presence} target="PHOTOS" /> : null}
     </section>
   );
 }

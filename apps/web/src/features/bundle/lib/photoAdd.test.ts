@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
-import type { Draft, DraftPhoto } from './types';
+import type { DraftPhoto } from './types';
 import { draftFixture } from '../fixtures/draft.fixture';
 import {
   applySelection,
@@ -9,7 +9,6 @@ import {
   getMaxSelectable,
   getRemovedPhotos,
   isSameSelection,
-  isSourceLocked,
   toDraftPhoto,
   toDraftPhotoId,
 } from './photoAdd';
@@ -115,23 +114,5 @@ describe('applySelection', () => {
     const next = applySelection(photos, ['a', 'gone'], sources);
 
     expect(next.map((photo) => photo.id)).toEqual(['draft-a', 'gallery-1']);
-  });
-});
-
-describe('isSourceLocked', () => {
-  const draft: Draft = {
-    ...draftFixture,
-    photos: [draftPhoto('draft-a', 'a'), draftPhoto('draft-b', 'b')],
-    editing: { photoEditors: { 'draft-a': ['gyeongjin'], 'draft-b': ['jiye'] } },
-  };
-  const viewer = { memberId: 'jiye', bunchRole: 'owner' as const };
-
-  it('다른 멤버가 편집 중인 사진만 잠겨 있다(내가 편집 중인 것은 제외)', () => {
-    expect(isSourceLocked(draft, viewer, 'a')).toBe(true);
-    expect(isSourceLocked(draft, viewer, 'b')).toBe(false);
-  });
-
-  it('번들에 없는 사진은 잠겨 있지 않다', () => {
-    expect(isSourceLocked(draft, viewer, 'zzz')).toBe(false);
   });
 });

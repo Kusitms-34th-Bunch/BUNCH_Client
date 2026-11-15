@@ -1,5 +1,6 @@
 'use client';
 
+import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import { placeFixture } from '../fixtures/draft.fixture';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
 import { moveLocation } from '../lib/locations';
 import { movePhoto, type PhotoMovePlan, planPhotoMoves, removePhoto } from '../lib/photos';
+import { ensureTitleCrdt } from '../lib/titleCrdt';
 import {
   bundleQueryOptions,
   useAddParticipantMutation,
@@ -33,8 +35,13 @@ import {
   useRemoveParticipantMutation,
   useSaveCommentMutation,
   useSaveDateMutation,
-  useSaveTitleMutation,
+  useMergeTitleMutation,
 } from '../queries/bundles';
+import { useBundleRealtime } from './useBundleRealtime';
+import { useOnlineStatus } from './useOnlineStatus';
+import { usePresence } from './usePresence';
+import { type PresenceCommands, usePresenceSender } from './usePresenceSender';
+import { useTitleCrdt } from './useTitleCrdt';
 
 // 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 날짜는 고르는 즉시 저장하고 공개 범위는 발행 요청으로만 보냄
 // 위치가 없을 때 쓰는 고정된 빈 목록(렌더마다 새 배열이 되어 draft를 다시 만들지 않게 함)
@@ -76,6 +83,13 @@ export type DraftState =
       /** 번치 멤버 전체(참여하지 않은 멤버 포함) */
       bunchMembers: readonly DraftMember[];
       saveStatus: SaveStatus;
+      /** 실시간 연결: 끊겨 편집을 막아야 하면 down, 「재시도」는 retry */
+      realtime: { down: boolean; retry: () => void };
+      /** 제목 문서를 불러와 입력할 수 있는지(불러오는 동안 제목 입력란은 읽기 전용) */
+      titleReady: boolean;
+      /** 제목 문서를 불러오지 못함: 연결 끊김과 같이 다뤄 배너를 보이고, 「재시도」(`retryTitle`)로 다시 불러옴 */
+      titleFailed: boolean;
+      retryTitle: () => void;
     };
 
 /** 발행 시도 결과(화면은 성공일 때만 이동하고 나머지는 안내가 이미 나감) */
@@ -83,23 +97,30 @@ export type PublishOutcome = 'published' | 'blocked' | 'failed';
 
 export type DraftActions = {
   setTitle: (_title: string) => void;
+  /** 한글 조합 같은 입력 중에는 원격 제목 변경을 입력이 끝난 뒤 반영하도록 알림 */
+  setTitleComposing: (_composing: boolean) => void;
+  /** 입력·작업 중임을 다른 멤버에게 알림(제목·코멘트 입력, 날짜·사진 작업). 잠그지 않는 표시 */
+  presence: PresenceCommands;
   setComment: (_memberId: string, _text: string) => void;
-  setVisibility: (_visibility: DraftVisibility) => void;
+  /** 제목·코멘트 입력란을 벗어날 때: 입력이 1초 멈추기를 기다리지 않고 저장하지 못한 입력을 바로 저장(기능 spec 4.3.14) */
+  saveNow: () => void;
+  /** 공개 범위를 고름(서버에는 업로드 요청으로만 보냄). null은 고른 값을 버림(공개 범위 화면에서 뒤로 갈 때, 기능 spec 4.3.9) */
+  setVisibility: (_visibility: DraftVisibility | null) => void;
   addLocation: (_place: PlaceResult) => void;
   removeLocation: (_locationId: string) => void;
   /** 위치를 다른 자리로 옮김(햄버거를 잡고 끌어 순서 바꾸기, 자리는 0부터) */
   moveLocation: (_locationId: string, _toIndex: number) => void;
   setDate: (_date: string | null) => void;
-  /** 번치 멤버를 참여 멤버 맨 아래에 더함(이미 참여 중이거나 번치 멤버가 아니면 무시) */
-  addMember: (_memberId: string) => void;
-  /** 참여 멤버를 내보냄(그 멤버의 코멘트도 함께 삭제) */
-  removeMember: (_memberId: string) => void;
-  /** 사진을 번들에서 뺌(1장이면 무시). 서버 반영은 후속이라 이 화면에서만 바뀜 */
-  removePhoto: (_photoId: string) => void;
+  /** 번치 멤버를 참여 멤버 맨 아래에 더함(이미 참여 중이거나 번치 멤버가 아니면 무시). 연결이 끊겨 막히면 false(성공 안내를 띄우지 않음) */
+  addMember: (_memberId: string) => boolean;
+  /** 참여 멤버를 내보냄(그 멤버의 코멘트도 함께 삭제). 연결이 끊겨 막히면 false */
+  removeMember: (_memberId: string) => boolean;
+  /** 사진을 번들에서 뺌(1장이면 무시). 서버 반영은 후속이라 이 화면에서만 바뀜. 연결이 끊겨 막히면 false */
+  removePhoto: (_photoId: string) => boolean;
   /** 사진을 다른 자리(0부터)로 옮김. 서버 반영은 후속이라 이 화면에서만 바뀜 */
   movePhoto: (_photoId: string, _toIndex: number) => void;
-  /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜 */
-  replacePhotos: (_photos: readonly DraftPhoto[]) => void;
+  /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜. 연결이 끊겨 막히면 false */
+  replacePhotos: (_photos: readonly DraftPhoto[]) => boolean;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
   /** 저장하지 못한 입력을 먼저 저장한 뒤 발행 */
   publish: () => Promise<PublishOutcome>;
@@ -111,6 +132,17 @@ type Pending = {
   /** null은 날짜를 지우는 값 */
   date?: string | null;
   comment?: string;
+};
+
+// 연결 가드를 입히기 전의 동작: 결과를 알려 주는 동작도 여기서는 반환값이 없음
+type RawActions = Omit<
+  DraftActions,
+  'addMember' | 'removeMember' | 'removePhoto' | 'replacePhotos'
+> & {
+  addMember: (_memberId: string) => void;
+  removeMember: (_memberId: string) => void;
+  removePhoto: (_photoId: string) => void;
+  replacePhotos: (_photos: readonly DraftPhoto[]) => void;
 };
 
 const isEmpty = (pending: Pending) =>
@@ -150,7 +182,13 @@ export function useDraft(draftId: string | undefined): {
     refetch: refetchDetail,
   } = useQuery(bundleQueryOptions(bunchId, bundleId));
 
-  const saveTitle = useSaveTitleMutation(bunchId, bundleId);
+  const saveTitle = useMergeTitleMutation(bunchId, bundleId);
+  const titleCrdt = useTitleCrdt(detail);
+  // 저장 루프가 최신 문서를 읽도록 ref에 둠(렌더 밖에서만 읽음)
+  const titleCrdtRef = useRef(titleCrdt);
+  useEffect(() => {
+    titleCrdtRef.current = titleCrdt;
+  });
   const saveDate = useSaveDateMutation(bunchId, bundleId);
   const saveComment = useSaveCommentMutation(bunchId, bundleId);
   const changePhotos = useChangePhotosMutation(bunchId, bundleId);
@@ -158,6 +196,13 @@ export function useDraft(draftId: string | undefined): {
   const addParticipant = useAddParticipantMutation(bunchId, bundleId);
   const removeParticipant = useRemoveParticipantMutation(bunchId, bundleId);
   const publishMutation = usePublishBundleMutation(bunchId, bundleId);
+  // 초안이 열려 있는 동안 실시간으로 연결(발행·삭제되면 끊음). 끊긴 사이의 변경은 다시 연결될 때 최신 상세로 맞춤
+  const presenceState = usePresence(bunchId, bundleId);
+  const realtime = useBundleRealtime(bunchId, bundleId, detail?.status === 'DRAFT', {
+    // 전체 PRESENCE로 교체하고, 연결(재연결)되면 놓친 현재 상태를 다시 읽음
+    onPresence: presenceState.apply,
+    onConnected: presenceState.refresh,
+  });
 
   const [pending, setPending] = useState<Pending>({});
   // 화면에서 위치를 바꾸기 전에는 서버에 저장된 위치를 보이고, 바꾼 뒤에는 화면 값(위치 저장은 장소 검색 이슈에서 연결)
@@ -176,14 +221,16 @@ export function useDraft(draftId: string | undefined): {
   const [stalled, setStalled] = useState(false);
   // 업로드 직전 공개 범위 화면에서 고른 값(서버에는 발행 요청으로만 보냄). 고르기 전에는 서버의 초안 값
   const [visibilityChoice, setVisibilityChoice] = useState<DraftVisibility | undefined>(undefined);
-  // 입력란에 방금 친 원문: 서버가 앞뒤 공백을 지워 돌려줘도 입력 중 띄어쓰기가 사라지지 않게 보여 줌
-  const [typed, setTyped] = useState<{ title?: string }>({});
+  // 네트워크 오류 뒤 같은 내용으로 다시 업로드할 때 같은 요청 키를 써서 한 번만 발행되게 함(기능 spec 4.3.9·4.3.12)
+  const publishAttempt = useRef<{ signature: string; key: string } | undefined>(undefined);
 
   // 비동기 저장 루프가 항상 최신 값을 읽도록 ref에 둠(렌더 밖 이벤트·타이머에서만 읽고 씀)
   const pendingRef = useRef<Pending>({});
   const detailRef = useRef<BundleDetail | undefined>(undefined);
   // 사진 빼기·이동·추가는 순서대로 하나씩 서버에 보내고, 모두 끝나면 화면 값(localPhotos)을 버리고 서버 값을 보임
   const photoQueue = useRef<Promise<void>>(Promise.resolve());
+  // 연결이 끊길 때마다 올림: 그 전에 대기열에 넣었지만 아직 보내지 않은 사진 변경은 버림
+  const discardGeneration = useRef(0);
   const photoOps = useRef(0);
   const photoFailed = useRef(false);
   const photoFailures = useRef(0);
@@ -251,6 +298,9 @@ export function useDraft(draftId: string | undefined): {
         const base = detailRef.current;
         const snapshot = pendingRef.current;
         if (!base || isEmpty(snapshot)) break;
+        // 이 저장을 시작한 뒤 연결이 끊겨 입력이 폐기됐으면 보관해 둔 값은 더 보내지 않음
+        const generation = discardGeneration.current;
+        const discarded = () => generation !== discardGeneration.current;
         const common = { mode: 'DRAFT' as const };
         // 필드 하나 저장: 성공하면 입력을 비우고 최신 응답을 기준으로 삼음
         const run = async (save: () => Promise<BundleDetail>, onSaved: () => void) => {
@@ -280,16 +330,17 @@ export function useDraft(draftId: string | undefined): {
         if (snapshot.title !== undefined) {
           const value = snapshot.title;
           await run(
-            () =>
-              saveTitle.mutateAsync({
-                ...common,
-                value,
-                expectedVersion: (detailRef.current ?? base).titleVersion,
-              }),
+            async () => {
+              // 서버 문서에서 파생한 로컬 문서(저장 전 입력과 병합된 원격 변경 포함)를 통째로 보내면 서버가 병합함
+              await ensureTitleCrdt();
+              const state = titleCrdtRef.current.serialize();
+              if (state === undefined) throw new Error('title crdt is not ready');
+              return saveTitle.mutateAsync(state);
+            },
             () => clearField('title', value),
           );
         }
-        if (snapshot.date !== undefined && !stop) {
+        if (snapshot.date !== undefined && !stop && !discarded()) {
           const value = snapshot.date;
           await run(
             () =>
@@ -301,7 +352,7 @@ export function useDraft(draftId: string | undefined): {
             () => clearField('date', value),
           );
         }
-        if (snapshot.comment !== undefined && !stop) {
+        if (snapshot.comment !== undefined && !stop && !discarded()) {
           const value = snapshot.comment;
           await run(
             () => {
@@ -384,14 +435,15 @@ export function useDraft(draftId: string | undefined): {
   const draft = useMemo<Draft | undefined>(() => {
     if (!detail || !bunchMembers || !myId) return undefined;
     const base = toDraft({ detail, bunchMembers, locations });
-    // 저장이 끝난 입력은 서버가 정리한 값(앞뒤 공백 제거)과 같을 때만 친 원문을 계속 보여 줌(다른 곳에서 바뀌면 서버 값)
     const photos = localPhotos ?? base.photos;
     const hasMyComment = base.comments.some((comment) => comment.memberId === myId);
     return {
       ...base,
-      title:
-        pending.title ??
-        (typed.title !== undefined && typed.title.trim() === base.title ? typed.title : base.title),
+      // 제목은 로컬 CRDT 문서의 원문(입력 중 띄어쓰기·커서 위치 유지, 원격 변경 병합). 문서를 불러오기 전에는 서버 제목
+      title: titleCrdt.text ?? base.title,
+      // 누가 어디를 작업 중인지와 들어와 있는지(실시간 presence, 잠금 없음)
+      editing: presenceState.presence.editing,
+      viewingMemberIds: presenceState.presence.viewingMemberIds,
       date: pending.date === undefined ? base.date : pending.date,
       visibility: visibilityChoice ?? base.visibility,
       photos,
@@ -406,7 +458,25 @@ export function useDraft(draftId: string | undefined): {
               )
             : [...base.comments, { memberId: myId, text: pending.comment }],
     };
-  }, [detail, bunchMembers, locations, myId, pending, localPhotos, typed, visibilityChoice]);
+  }, [
+    detail,
+    bunchMembers,
+    locations,
+    myId,
+    pending,
+    localPhotos,
+    titleCrdt.text,
+    presenceState.presence,
+    visibilityChoice,
+  ]);
+
+  // presence 명령은 연결된 동안 이 초안을 보는 중일 때만 보냄(비참여 멤버는 VIEW만)
+  const presenceCommands = usePresenceSender({
+    send: realtime.sendPresence,
+    connected: realtime.status === 'connected',
+    viewing: detail?.status === 'DRAFT',
+    participant: draft?.members.some((member) => member.id === myId) ?? false,
+  });
 
   const busy =
     flushing ||
@@ -463,11 +533,16 @@ export function useDraft(draftId: string | undefined): {
   };
 
   // 한 번에 하나씩 보냄, 한 번 실패하면 남은 변경은 건너뛰고(서버와 어긋난 상태) 한 번만 안내하며 서버 값으로 되돌림
-  const enqueuePhotoOp = (run: () => Promise<void>) => {
+  const enqueuePhotoOp = (run: (_discarded: () => boolean) => Promise<void>) => {
     photoOps.current += 1;
     setPhotoBusy(true);
+    const generation = discardGeneration.current;
     photoQueue.current = photoQueue.current
-      .then(() => (photoFailed.current ? undefined : run()))
+      .then(() =>
+        photoFailed.current || generation !== discardGeneration.current
+          ? undefined
+          : run(() => generation !== discardGeneration.current),
+      )
       .catch(() => {
         photoFailed.current = true;
         photoFailures.current += 1;
@@ -484,20 +559,54 @@ export function useDraft(draftId: string | undefined): {
       });
   };
 
-  const actions: DraftActions = {
+  // 화면의 오프라인 배너와 같은 조건: 브라우저가 오프라인이거나 실시간 연결이 끊김
+  const { online } = useOnlineStatus();
+  const offline = !online || realtime.down;
+  // 연결이 끊기면 서버에 보내지 못한 수정은 버림(기능 spec 4.3.14). 다시 연결되면 최신 상세로 맞춤
+  // 이미 보낸 요청의 결과는 서버 기준이라 재연결 뒤 상세로 복구되고, 오프라인 큐로 다시 보내지 않음
+  const discardUnsent = () => {
+    clearTimeout(timer.current);
+    failures.current = 0;
+    notified.current = false;
+    again.current = false;
+    discardGeneration.current += 1;
+    pendingRef.current = {};
+    setPending({});
+    setLocalPhotos(undefined);
+    setStalled(false);
+    titleCrdtRef.current.reset();
+  };
+  const discardUnsentRef = useRef(discardUnsent);
+  useEffect(() => {
+    discardUnsentRef.current = discardUnsent;
+  });
+  useEffect(() => {
+    if (offline) discardUnsentRef.current();
+  }, [offline]);
+
+  const rawActions: RawActions = {
     setTitle: (title) => {
+      // 문서를 아직 불러오지 못했으면 입력을 받지 않음(서버 제목이 그대로 보임)
+      if (!titleCrdt.edit(title)) return;
       change((current) => ({ ...current, title }));
-      setTyped((current) => ({ ...current, title }));
+      // 실제로 입력한 제목 전체를 다른 멤버에게 보임(저장이 아니라 입력 표시)
+      presenceCommands.type('TITLE', title);
       schedule(SAVE_DELAY_MS);
     },
+    setTitleComposing: titleCrdt.setComposing,
+    saveNow: () => {
+      if (!isEmpty(pendingRef.current)) schedule(0);
+    },
+    presence: presenceCommands,
     setComment: (memberId, text) => {
       // 서버는 본인 코멘트만 저장할 수 있음
       if (memberId !== myIdRef.current) return;
       change((current) => ({ ...current, comment: text }));
+      presenceCommands.type('COMMENT', text);
       schedule(SAVE_DELAY_MS);
     },
     // 공개 범위는 고르기만 하고 저장하지 않음: 업로드(발행) 요청에 최종 선택을 함께 보냄(v5 명세)
-    setVisibility: setVisibilityChoice,
+    setVisibility: (visibility) => setVisibilityChoice(visibility ?? undefined),
     addLocation: (place) =>
       setEditedLocations((current) => {
         const base = current ?? detailRef.current?.locations ?? NO_LOCATIONS;
@@ -568,10 +677,12 @@ export function useDraft(draftId: string | undefined): {
       const added = photos.filter((photo) => !currentIds.has(photo.id));
       const removed = current.filter((photo) => !keptIds.has(photo.id));
       showPhotos(photos);
-      enqueuePhotoOp(async () => {
+      enqueuePhotoOp(async (discarded) => {
         const add = added.flatMap((photo) => (photo.sourcePhotoId ? [photo.sourcePhotoId] : []));
         const remove = removed.flatMap((photo) => serverPhotoId(photo) ?? []);
         if (add.length > 0 || remove.length > 0) await applyPhotoChanges({ add, remove });
+        // 요청을 기다리는 사이 연결이 끊겨 폐기됐으면 이어지는 이동 요청은 보내지 않음
+        if (discarded()) return;
         // 새 사진은 서버가 맨 뒤에 붙이므로, 고른 순서와 다르면 이동으로 맞춤
         const latest = detailRef.current;
         if (!latest) return;
@@ -580,6 +691,7 @@ export function useDraft(draftId: string | undefined): {
           latest.photos.map((photo) => photo.id),
           desired,
         )) {
+          if (discarded()) return;
           await applyPhotoMove(plan);
         }
       });
@@ -609,16 +721,33 @@ export function useDraft(draftId: string | undefined): {
         toast(BUNDLE_MESSAGES.uploadIncomplete);
         return 'blocked';
       }
+      // 같은 키에 다른 내용을 보내면 서버가 거절하므로 범위나 revision이 바뀌면 새 키를 씀
+      const visibility = chosen === 'public' ? 'PUBLIC' : 'PRIVATE';
+      const signature = `${visibility}:${latest.revision}`;
+      if (publishAttempt.current?.signature !== signature) {
+        publishAttempt.current = { signature, key: createIdempotencyKey() };
+      }
       setPublishing(true);
       try {
         await publishMutation.mutateAsync({
-          visibility: chosen === 'public' ? 'PUBLIC' : 'PRIVATE',
+          visibility,
           expectedRevision: latest.revision,
+          idempotencyKey: publishAttempt.current.key,
         });
+        publishAttempt.current = undefined;
         setPublishedByMe(true);
         return 'published';
       } catch (error) {
         setPublishing(false);
+        // 서버가 요청 자체를 거절했으면(4xx) 같은 요청이 다시 거절될 수 있어 키를 비우고, 응답이 없거나 5xx면 키를 유지함
+        // 서버 응답(ApiError)이 아닌 오류는 서버가 받았는지 알 수 없으므로 키를 유지함
+        if (
+          isApiError(error) &&
+          error.status !== undefined &&
+          error.status >= 400 &&
+          error.status < 500
+        )
+          publishAttempt.current = undefined;
         if (readPublishBlockers(error) !== undefined) {
           toast(BUNDLE_MESSAGES.uploadIncomplete);
           return 'blocked';
@@ -633,6 +762,57 @@ export function useDraft(draftId: string | undefined): {
         );
         return 'failed';
       }
+    },
+  };
+
+  // 연결이 끊긴 동안은 편집 동작이 반응하지 않음(기능 spec 4.3.14). 이미 열린 시트·확인 창에서 늦게 눌러도 서버로 보내지 않음
+  const downRef = useRef(offline);
+  useEffect(() => {
+    downRef.current = offline;
+  });
+  // ref는 동작이 불릴 때만 읽음(렌더 중에는 읽지 않음)
+  const actions: DraftActions = {
+    ...rawActions,
+    setTitle: (...args: Parameters<DraftActions['setTitle']>) => {
+      if (!downRef.current) rawActions.setTitle(...args);
+    },
+    setComment: (...args: Parameters<DraftActions['setComment']>) => {
+      if (!downRef.current) rawActions.setComment(...args);
+    },
+    addLocation: (...args: Parameters<DraftActions['addLocation']>) => {
+      if (!downRef.current) rawActions.addLocation(...args);
+    },
+    removeLocation: (...args: Parameters<DraftActions['removeLocation']>) => {
+      if (!downRef.current) rawActions.removeLocation(...args);
+    },
+    moveLocation: (...args: Parameters<DraftActions['moveLocation']>) => {
+      if (!downRef.current) rawActions.moveLocation(...args);
+    },
+    setDate: (...args: Parameters<DraftActions['setDate']>) => {
+      if (!downRef.current) rawActions.setDate(...args);
+    },
+    addMember: (...args: Parameters<DraftActions['addMember']>) => {
+      if (downRef.current) return false;
+      rawActions.addMember(...args);
+      return true;
+    },
+    removeMember: (...args: Parameters<DraftActions['removeMember']>) => {
+      if (downRef.current) return false;
+      rawActions.removeMember(...args);
+      return true;
+    },
+    removePhoto: (...args: Parameters<DraftActions['removePhoto']>) => {
+      if (downRef.current) return false;
+      rawActions.removePhoto(...args);
+      return true;
+    },
+    movePhoto: (...args: Parameters<DraftActions['movePhoto']>) => {
+      if (!downRef.current) rawActions.movePhoto(...args);
+    },
+    replacePhotos: (...args: Parameters<DraftActions['replacePhotos']>) => {
+      if (downRef.current) return false;
+      rawActions.replacePhotos(...args);
+      return true;
     },
   };
 
@@ -668,6 +848,10 @@ export function useDraft(draftId: string | undefined): {
       viewer,
       bunchMembers: members,
       saveStatus: stalled ? 'failed' : busy ? 'saving' : 'saved',
+      realtime: { down: realtime.down, retry: realtime.retry },
+      titleReady: titleCrdt.ready,
+      titleFailed: titleCrdt.failed,
+      retryTitle: titleCrdt.retry,
     };
   }
 
