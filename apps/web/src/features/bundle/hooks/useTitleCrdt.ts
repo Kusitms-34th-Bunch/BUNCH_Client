@@ -24,6 +24,8 @@ export type TitleCrdt = {
   edit: (_next: string) => boolean;
   /** 서버로 보낼 전체 저장 문서(base64). 문서를 아직 불러오지 못했으면 undefined */
   serialize: () => string | undefined;
+  /** 서버에 보내지 못한 입력을 버리고 마지막으로 받은 서버 문서로 되돌림(연결이 끊겼을 때) */
+  reset: () => void;
   /** 한글 조합처럼 입력이 끝나지 않은 동안은 원격 변경을 화면에 반영하지 않고 끝난 뒤 반영 */
   setComposing: (_composing: boolean) => void;
 };
@@ -41,6 +43,8 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
   const viewRef = useRef<TitleDoc | undefined>(undefined);
   const bundleRef = useRef<string | undefined>(undefined);
   const composingRef = useRef(false);
+  // reset 직후 다음 반영은 조합 중이어도 보류하지 않고 서버 문서로 화면을 되돌림(폐기한 입력이 다시 섞이지 않게)
+  const forceRef = useRef(false);
   // 조합 중에 원격 변경이 문서에 병합됐지만 화면에는 아직 반영하지 않은 상태
   const heldRef = useRef(false);
   const [text, setText] = useState<string | undefined>(undefined);
@@ -56,7 +60,9 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
       bundleRef.current = bundleId;
       const merged = sameBundle && docRef.current ? mergeTitleDocs(docRef.current, remote) : remote;
       docRef.current = merged;
-      if (composingRef.current) {
+      const force = forceRef.current;
+      forceRef.current = false;
+      if (composingRef.current && !force) {
         heldRef.current = true;
         return;
       }
@@ -79,6 +85,14 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
 
   const retry = useCallback(() => {
     setFailed(false);
+    setAttempt((count) => count + 1);
+  }, []);
+
+  const reset = useCallback(() => {
+    // 병합하지 않고 서버 문서로만 다시 불러오게 함(저장하지 못한 로컬 입력과 보류한 변경을 모두 버림)
+    bundleRef.current = undefined;
+    heldRef.current = false;
+    forceRef.current = true;
     setAttempt((count) => count + 1);
   }, []);
 
@@ -113,6 +127,7 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
     retry,
     edit,
     serialize,
+    reset,
     setComposing,
   };
 }

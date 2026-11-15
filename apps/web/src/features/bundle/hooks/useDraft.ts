@@ -229,6 +229,8 @@ export function useDraft(draftId: string | undefined): {
   const detailRef = useRef<BundleDetail | undefined>(undefined);
   // 사진 빼기·이동·추가는 순서대로 하나씩 서버에 보내고, 모두 끝나면 화면 값(localPhotos)을 버리고 서버 값을 보임
   const photoQueue = useRef<Promise<void>>(Promise.resolve());
+  // 연결이 끊길 때마다 올림: 그 전에 대기열에 넣었지만 아직 보내지 않은 사진 변경은 버림
+  const discardGeneration = useRef(0);
   const photoOps = useRef(0);
   const photoFailed = useRef(false);
   const photoFailures = useRef(0);
@@ -296,6 +298,9 @@ export function useDraft(draftId: string | undefined): {
         const base = detailRef.current;
         const snapshot = pendingRef.current;
         if (!base || isEmpty(snapshot)) break;
+        // 이 저장을 시작한 뒤 연결이 끊겨 입력이 폐기됐으면 보관해 둔 값은 더 보내지 않음
+        const generation = discardGeneration.current;
+        const discarded = () => generation !== discardGeneration.current;
         const common = { mode: 'DRAFT' as const };
         // 필드 하나 저장: 성공하면 입력을 비우고 최신 응답을 기준으로 삼음
         const run = async (save: () => Promise<BundleDetail>, onSaved: () => void) => {
@@ -335,7 +340,7 @@ export function useDraft(draftId: string | undefined): {
             () => clearField('title', value),
           );
         }
-        if (snapshot.date !== undefined && !stop) {
+        if (snapshot.date !== undefined && !stop && !discarded()) {
           const value = snapshot.date;
           await run(
             () =>
@@ -347,7 +352,7 @@ export function useDraft(draftId: string | undefined): {
             () => clearField('date', value),
           );
         }
-        if (snapshot.comment !== undefined && !stop) {
+        if (snapshot.comment !== undefined && !stop && !discarded()) {
           const value = snapshot.comment;
           await run(
             () => {
@@ -528,11 +533,16 @@ export function useDraft(draftId: string | undefined): {
   };
 
   // 한 번에 하나씩 보냄, 한 번 실패하면 남은 변경은 건너뛰고(서버와 어긋난 상태) 한 번만 안내하며 서버 값으로 되돌림
-  const enqueuePhotoOp = (run: () => Promise<void>) => {
+  const enqueuePhotoOp = (run: (_discarded: () => boolean) => Promise<void>) => {
     photoOps.current += 1;
     setPhotoBusy(true);
+    const generation = discardGeneration.current;
     photoQueue.current = photoQueue.current
-      .then(() => (photoFailed.current ? undefined : run()))
+      .then(() =>
+        photoFailed.current || generation !== discardGeneration.current
+          ? undefined
+          : run(() => generation !== discardGeneration.current),
+      )
       .catch(() => {
         photoFailed.current = true;
         photoFailures.current += 1;
@@ -548,6 +558,31 @@ export function useDraft(draftId: string | undefined): {
         }
       });
   };
+
+  // 화면의 오프라인 배너와 같은 조건: 브라우저가 오프라인이거나 실시간 연결이 끊김
+  const { online } = useOnlineStatus();
+  const offline = !online || realtime.down;
+  // 연결이 끊기면 서버에 보내지 못한 수정은 버림(기능 spec 4.3.14). 다시 연결되면 최신 상세로 맞춤
+  // 이미 보낸 요청의 결과는 서버 기준이라 재연결 뒤 상세로 복구되고, 오프라인 큐로 다시 보내지 않음
+  const discardUnsent = () => {
+    clearTimeout(timer.current);
+    failures.current = 0;
+    notified.current = false;
+    again.current = false;
+    discardGeneration.current += 1;
+    pendingRef.current = {};
+    setPending({});
+    setLocalPhotos(undefined);
+    setStalled(false);
+    titleCrdtRef.current.reset();
+  };
+  const discardUnsentRef = useRef(discardUnsent);
+  useEffect(() => {
+    discardUnsentRef.current = discardUnsent;
+  });
+  useEffect(() => {
+    if (offline) discardUnsentRef.current();
+  }, [offline]);
 
   const rawActions: RawActions = {
     setTitle: (title) => {
@@ -642,10 +677,12 @@ export function useDraft(draftId: string | undefined): {
       const added = photos.filter((photo) => !currentIds.has(photo.id));
       const removed = current.filter((photo) => !keptIds.has(photo.id));
       showPhotos(photos);
-      enqueuePhotoOp(async () => {
+      enqueuePhotoOp(async (discarded) => {
         const add = added.flatMap((photo) => (photo.sourcePhotoId ? [photo.sourcePhotoId] : []));
         const remove = removed.flatMap((photo) => serverPhotoId(photo) ?? []);
         if (add.length > 0 || remove.length > 0) await applyPhotoChanges({ add, remove });
+        // 요청을 기다리는 사이 연결이 끊겨 폐기됐으면 이어지는 이동 요청은 보내지 않음
+        if (discarded()) return;
         // 새 사진은 서버가 맨 뒤에 붙이므로, 고른 순서와 다르면 이동으로 맞춤
         const latest = detailRef.current;
         if (!latest) return;
@@ -654,6 +691,7 @@ export function useDraft(draftId: string | undefined): {
           latest.photos.map((photo) => photo.id),
           desired,
         )) {
+          if (discarded()) return;
           await applyPhotoMove(plan);
         }
       });
@@ -728,9 +766,6 @@ export function useDraft(draftId: string | undefined): {
   };
 
   // 연결이 끊긴 동안은 편집 동작이 반응하지 않음(기능 spec 4.3.14). 이미 열린 시트·확인 창에서 늦게 눌러도 서버로 보내지 않음
-  // 화면의 오프라인 배너와 같은 조건: 브라우저가 오프라인이거나 실시간 연결이 끊김
-  const { online } = useOnlineStatus();
-  const offline = !online || realtime.down;
   const downRef = useRef(offline);
   useEffect(() => {
     downRef.current = offline;

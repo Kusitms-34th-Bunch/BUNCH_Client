@@ -101,6 +101,51 @@ describe('번들 query·mutation', () => {
     });
   });
 
+  it('제목 병합 응답은 revision을 바꾸지 않으므로 같은 revision의 낡은 상세가 더 높은 제목 버전을 되돌리지 않는다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const key = bundleKeys.detail(bunchId, id);
+    const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const loaded = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    let reachedServer: () => void = () => undefined;
+    const requestReachedServer = new Promise<void>((resolve) => (reachedServer = resolve));
+    let sendResponse: () => void = () => undefined;
+    const responseReleased = new Promise<void>((resolve) => (sendResponse = resolve));
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        reachedServer();
+        await responseReleased;
+        return undefined;
+      }),
+    );
+
+    // 병합 전에 시작한 상세 조회가 서버에서 처리되는 동안
+    let inflight: Promise<unknown> = Promise.resolve();
+    act(() => {
+      inflight = client.refetchQueries({ queryKey: key }, { throwOnError: true });
+    });
+    await requestReachedServer;
+    // 제목 병합 응답이 먼저 도착해 같은 revision에서 제목 버전만 올림
+    client.setQueryData(key, {
+      ...loaded,
+      title: '병합 응답으로 맞춘 제목',
+      titleVersion: loaded.titleVersion + 3,
+      titleCrdtState: 'merged-state',
+    });
+    sendResponse();
+    await act(async () => {
+      await inflight;
+    });
+
+    expect(client.getQueryData<BundleDetail>(key)).toMatchObject({
+      revision: loaded.revision,
+      title: '병합 응답으로 맞춘 제목',
+      titleVersion: loaded.titleVersion + 3,
+      titleCrdtState: 'merged-state',
+    });
+  });
+
   it('상세 query는 번들을 아직 모르면 요청하지 않는다', () => {
     const { wrapper } = setup();
     const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, undefined)), {
