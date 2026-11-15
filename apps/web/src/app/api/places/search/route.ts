@@ -29,7 +29,8 @@ export const GET = createAuthorizedRoute(async ({ request }) => {
   }
 
   try {
-    const places = await searchKakaoPlaces(query, apiKey);
+    // 브라우저가 요청을 취소하면(다음 글자 입력·시트 닫기) 카카오 호출도 함께 끊음
+    const places = await searchKakaoPlaces(query, apiKey, request.signal);
     return NextResponse.json({ places }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     if (error instanceof PlaceSearchUnavailableError) {

@@ -10,7 +10,7 @@ import { BUNDLE_MESSAGES } from '../../constants/messages';
 // 이 글자 수 미만이면 검색하지 않고 처음 안내를 보임(두 글자부터 자동 검색, 기획 원문에 없어 합의로 정한 값)
 export const MIN_SEARCH_LENGTH = 2;
 // 글자를 칠 때마다 요청하지 않도록 입력이 멈추고 이만큼 지나면 검색(기획 원문에 없는 구현 기본값)
-export const SEARCH_DEBOUNCE_MS = 300;
+export const SEARCH_DEBOUNCE_MS = 400;
 
 type LocationSearchSheetProps = ScreenOverlayProps & {
   searchPlaces: (_keyword: string, _signal?: AbortSignal) => Promise<readonly PlaceResult[]>;
