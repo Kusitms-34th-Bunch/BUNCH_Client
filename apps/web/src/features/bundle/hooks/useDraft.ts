@@ -218,6 +218,8 @@ export function useDraft(draftId: string | undefined): {
   const detailRef = useRef<BundleDetail | undefined>(undefined);
   // 사진 빼기·이동·추가는 순서대로 하나씩 서버에 보내고, 모두 끝나면 화면 값(localPhotos)을 버리고 서버 값을 보임
   const photoQueue = useRef<Promise<void>>(Promise.resolve());
+  // 연결이 끊길 때마다 올림: 그 전에 대기열에 넣었지만 아직 보내지 않은 사진 변경은 버림
+  const discardGeneration = useRef(0);
   const photoOps = useRef(0);
   const photoFailed = useRef(false);
   const photoFailures = useRef(0);
@@ -532,8 +534,11 @@ export function useDraft(draftId: string | undefined): {
   const enqueuePhotoOp = (run: () => Promise<void>) => {
     photoOps.current += 1;
     setPhotoBusy(true);
+    const generation = discardGeneration.current;
     photoQueue.current = photoQueue.current
-      .then(() => (photoFailed.current ? undefined : run()))
+      .then(() =>
+        photoFailed.current || generation !== discardGeneration.current ? undefined : run(),
+      )
       .catch(() => {
         photoFailed.current = true;
         photoFailures.current += 1;
@@ -549,6 +554,29 @@ export function useDraft(draftId: string | undefined): {
         }
       });
   };
+
+  // 연결이 끊기면 서버에 보내지 못한 수정은 버림(기능 spec 4.3.14). 다시 연결되면 최신 상세로 맞춤
+  // 이미 보낸 요청의 결과는 서버 기준이라 재연결 뒤 상세로 복구되고, 오프라인 큐로 다시 보내지 않음
+  const discardUnsent = () => {
+    clearTimeout(timer.current);
+    failures.current = 0;
+    notified.current = false;
+    again.current = false;
+    discardGeneration.current += 1;
+    pendingRef.current = {};
+    setPending({});
+    setLocalPhotos(undefined);
+    setStalled(false);
+    titleCrdtRef.current.reset();
+  };
+  const discardUnsentRef = useRef(discardUnsent);
+  useEffect(() => {
+    discardUnsentRef.current = discardUnsent;
+  });
+  const connectionDown = realtime.down;
+  useEffect(() => {
+    if (connectionDown) discardUnsentRef.current();
+  }, [connectionDown]);
 
   const actions: DraftActions = {
     setTitle: (title) => {
