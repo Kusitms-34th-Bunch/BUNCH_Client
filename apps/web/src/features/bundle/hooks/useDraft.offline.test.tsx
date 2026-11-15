@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { delay, http } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
@@ -205,6 +205,85 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
 
     // 보류했던 이벤트 대신 다시 받은 상세가 반영되어 두 변경이 모두 보임
     await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
+  });
+
+  // 보류한 이벤트를 대신하는 재조회가 실패하는 경우: 사진 3장 번들에서 내가 첫 사진을 빼는 동안 이벤트를 보류시킴
+  const startHeldRequest = async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [first, second, third] = ready(view.result.current.state).draft.photos;
+    const shownIds = () => ready(view.result.current.state).draft.photos.map((photo) => photo.id);
+    // 내 사진 빼기가 서버에 반영된 뒤 다른 멤버가 세 번째 사진을 뺀 것으로 만듦(그 응답에는 없는 원격 변경)
+    const remoteRemovesThird = async () => {
+      await waitFor(() => expect(serverBundle(created.id)?.photos).toHaveLength(2), {
+        timeout: 5000,
+      });
+      mockDb.update((current) => ({
+        ...current,
+        bundles: current.bundles.map((bundle) =>
+          String(bundle.id) === created.id
+            ? { ...bundle, photos: bundle.photos.filter((photo) => photo.id !== Number(third!.id)) }
+            : bundle,
+        ),
+      }));
+    };
+    return { view, first: first!, second: second!, shownIds, remoteRemovesThird };
+  };
+
+  it('보류한 이벤트를 대신하는 재조회가 실패해도 표시를 남겨 두었다가 다시 받아 화면을 맞춘다', async () => {
+    const { view, first, second, shownIds, remoteRemovesThird } = await startHeldRequest();
+    let detailRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        // 처음 한 번만 실패
+        return detailRequests === 1 ? new HttpResponse(null, { status: 500 }) : undefined;
+      }),
+    );
+
+    act(() => void view.result.current.actions.removePhoto(first.id));
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    await remoteRemovesThird();
+
+    // 첫 재조회가 실패해도 잊지 않고 다시 받아 원격 변경까지 반영됨
+    await waitFor(() => expect(shownIds()).toEqual([second.id]), { timeout: 5000 });
+    expect(detailRequests).toBe(2);
+  });
+
+  it('재조회가 계속 실패하면 정해진 횟수(처음 포함 3번)만 다시 받아 보고 멈춘다', async () => {
+    const { view, first, remoteRemovesThird } = await startHeldRequest();
+    let detailRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+
+    act(() => void view.result.current.actions.removePhoto(first.id));
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    await remoteRemovesThird();
+
+    await waitFor(() => expect(detailRequests).toBe(3), { timeout: 6000 });
+    // 더 이상 자동으로 다시 받지 않음
+    await act(() => wait(2500));
+    expect(detailRequests).toBe(3);
   });
 });
 

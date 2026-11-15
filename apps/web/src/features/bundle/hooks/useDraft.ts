@@ -52,6 +52,9 @@ const SAVE_DELAY_MS = 1000;
 // 일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
 const RETRY_DELAY_MS = 3000;
 const MAX_RETRIES = 5;
+// 보류한 이벤트 대신 최신 상세를 받는 재조회가 실패했을 때 다시 받아 보는 간격과 총 시도 횟수(처음 시도 포함)
+const HELD_RESYNC_RETRY_MS = 1000;
+const HELD_RESYNC_MAX_ATTEMPTS = 3;
 // 버전 충돌은 최신 상세를 받은 직후 바로 이어서 저장
 const CONFLICT_RETRY_DELAY_MS = 200;
 // 다시 시도하면 될 수 있는 오류: 응답이 없는 네트워크 오류, 서버 오류(5xx)
@@ -607,10 +610,29 @@ export function useDraft(draftId: string | undefined): {
     };
   });
   const requestsBusy = photoBusy || participantBusy;
+  // 요청이 끝나면 보류했던 이벤트를 대신해 최신 상세를 받음. 받는 데 성공한 뒤에만 「놓친 변경이 있음」 표시를 지우고,
+  // 실패하면 표시를 남긴 채 몇 번 다시 받아 봄(그 사이 새 요청이 시작되면 멈췄다가 다시 한가해질 때 이어서 받음)
   useEffect(() => {
     if (requestsBusy || !heldEventRef.current) return;
-    heldEventRef.current = false;
-    void refetchDetail();
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const resync = (attempt: number) => {
+      void refetchDetail().then((result) => {
+        if (cancelled) return;
+        if (!result.isError) {
+          heldEventRef.current = false;
+          return;
+        }
+        if (attempt < HELD_RESYNC_MAX_ATTEMPTS) {
+          retryTimer = setTimeout(() => resync(attempt + 1), HELD_RESYNC_RETRY_MS);
+        }
+      });
+    };
+    resync(1);
+    return () => {
+      cancelled = true;
+      clearTimeout(retryTimer);
+    };
   }, [requestsBusy, refetchDetail]);
   useEffect(() => {
     if (offline) discardUnsentRef.current();
