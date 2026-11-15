@@ -80,6 +80,8 @@ describe('BunchMemberInvite', () => {
       'aria-busy',
       'true',
     );
+    // 핸들러가 두 번째 요청에 들어와 release를 잡은 뒤 풀어 줌(같은 틱에 할당)
+    await waitFor(() => expect(attempts).toBe(2));
     release();
     await waitFor(() => expect(linkField().value).toMatch(/^https:\/\/bunch\.app\/invite\/MOCK/));
   });

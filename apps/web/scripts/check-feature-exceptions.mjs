@@ -36,7 +36,11 @@ for (const pair of limited.filter((item) => !configured.includes(item))) {
   );
 }
 for (const [from, to, limit] of LIMITS) {
-  const pattern = new RegExp(`from '@/features/${to}(?:/[^']*)?'`, 'g');
+  // 줄 첫머리의 정적 import·export 선언만 셈(부수 효과 import 포함, 주석·동적 import()·문자열 제외)
+  const pattern = new RegExp(
+    `^\\s*(?:import|export)\\b(?:[^;'"]*?\\bfrom)?\\s*['"]@/features/${to}(?:/[^'"]*)?['"]`,
+    'gm',
+  );
   const count = sourceFiles(join(FEATURES, from)).reduce(
     (sum, file) => sum + (readFileSync(file, 'utf8').match(pattern)?.length ?? 0),
     0,

@@ -41,6 +41,11 @@ const featureBoundaries = FEATURES.map((feature) => {
   };
 });
 
+const SHARED_NO_FEATURE = {
+  group: ['@/features/*', '@/app/*'],
+  message: 'shared는 feature·route를 import하지 않습니다. 필요한 값은 인자로 받습니다.',
+};
+
 // API 연동 파일 경계(docs/architecture/data-layer.md "파일 배치 (web)")
 const QUERY_DEFINITION_FILES = [
   'src/features/**/queries/**',
@@ -83,25 +88,19 @@ export default [
       ],
     },
   },
-  {
-    // shared는 feature·route를 모름(docs/architecture/app-structure.md), 서버 전용 폴더만 서버 전용 파일끼리 import
-    files: ['src/shared/**/*.{ts,tsx}'],
-    ignores: ['src/shared/api/server/**'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['@/features/*', '@/app/*'],
-              message: 'shared는 feature·route를 import하지 않습니다. 필요한 값은 인자로 받습니다.',
-            },
-            SERVER_ONLY_API,
-          ],
-        },
-      ],
+  // shared는 feature·route를 모름(docs/architecture/app-structure.md). 서버 전용 폴더는 서버 전용 파일끼리만 import
+  // 같은 규칙은 뒤 블록이 덮어쓰므로, 서버 폴더 밖 블록은 두 제한을 함께 가짐
+  ...[
+    { files: ['src/shared/**/*.{ts,tsx}'], patterns: [SHARED_NO_FEATURE] },
+    {
+      files: ['src/shared/**/*.{ts,tsx}'],
+      ignores: ['src/shared/api/server/**'],
+      patterns: [SHARED_NO_FEATURE, SERVER_ONLY_API],
     },
-  },
+  ].map(({ patterns, ...target }) => ({
+    ...target,
+    rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns }] },
+  })),
   {
     // 화면은 options를 받아 읽기만 하고, 정의·캐시 조작은 queries/에서만
     files: ['src/**/*.{ts,tsx}'],

@@ -16,10 +16,28 @@ const sourceFiles = (dir) =>
     return /\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name) ? [path] : [];
   });
 
+/** `index`가 문자열·주석의 시작이면 그 끝 다음 위치, 아니면 그대로(괄호 셈에서 제외하려고) */
+const skipLiteral = (text, index) => {
+  const char = text[index];
+  if (char === '/' && text[index + 1] === '/') return text.indexOf('\n', index) + 1 || text.length;
+  if (char === '/' && text[index + 1] === '*')
+    return text.indexOf('*/', index + 2) + 2 || text.length;
+  if (char !== "'" && char !== '"' && char !== '`') return index;
+  // ponytail: 템플릿 안의 ${…} 중첩·정규식 리터럴은 따로 해석하지 않음
+  let cursor = index + 1;
+  while (cursor < text.length && text[cursor] !== char) cursor += text[cursor] === '\\' ? 2 : 1;
+  return cursor + 1;
+};
+
 /** `start`(여는 괄호 다음)부터 짝이 맞는 닫는 괄호까지의 위치 */
 const closingIndex = (text, start) => {
   let depth = 1;
   for (let index = start; index < text.length; index += 1) {
+    const skipped = skipLiteral(text, index);
+    if (skipped !== index) {
+      index = skipped - 1;
+      continue;
+    }
     const char = text[index];
     if (char === '(' || char === '[' || char === '{') depth += 1;
     else if (char === ')' || char === ']' || char === '}') {
@@ -30,12 +48,19 @@ const closingIndex = (text, start) => {
   return text.length;
 };
 
-/** 최상위 쉼표로 나눈 인자 목록(문자열·템플릿 안의 쉼표는 괄호 깊이로만 거름) */
+/** 최상위 쉼표로 나눈 인자 목록(문자열·주석 안의 괄호·쉼표는 무시) */
 const splitArgs = (text) => {
   const args = [];
   let depth = 0;
   let current = '';
-  for (const char of text) {
+  for (let index = 0; index < text.length; index += 1) {
+    const skipped = skipLiteral(text, index);
+    if (skipped !== index) {
+      current += text.slice(index, skipped);
+      index = skipped - 1;
+      continue;
+    }
+    const char = text[index];
     if ('([{'.includes(char)) depth += 1;
     if (')]}'.includes(char)) depth -= 1;
     if (char === ',' && depth === 0) {
@@ -82,7 +107,8 @@ const isAccounted = (declaration, seen = new Set()) => {
   if (/^z\s*\.\s*(null|unknown|void|undefined)\s*\(/.test(value)) return true;
   // 표시는 선언 바로 윗줄만 인정(이웃 선언의 표시를 빌려 통과하지 않게)
   const above = text.slice(0, index).trimEnd().split('\n').at(-1) ?? '';
-  if (above.includes(MARKER)) return true;
+  // 표시 뒤에 이유가 있어야 인정
+  if (above.split(MARKER)[1]?.trim()) return true;
   // z.object(…)뿐 아니라 스키마를 만드는 함수 호출(pageOf(…))도 끝난 자리에서 satisfies를 봄
   const call = /^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*\(/.exec(value);
   if (!call) return false;
