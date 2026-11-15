@@ -1,6 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -77,5 +78,33 @@ describe('BundleDraftVisibility', () => {
     await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(screen.getByRole('radio', { name: '멤버 공개' })).not.toBeChecked();
+  });
+
+  it('화면 안의 뒤로 가기 버튼 없이 떠나도(브라우저 뒤로 가기) 고른 공개 범위를 버린다', async () => {
+    // 같은 초안 provider 아래에서 공개 범위 화면만 닫았다 다시 여는 상황(layout이 유지되는 route 이동)
+    function Harness() {
+      const [shown, setShown] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setShown((current) => !current)}>
+            화면 전환
+          </button>
+          {shown ? <BundleDraftVisibility /> : null}
+        </>
+      );
+    }
+    render(
+      <DraftProvider draftId="draft-1">
+        <Harness />
+      </DraftProvider>,
+      { wrapper: createQueryWrapper(createTestQueryClient()) },
+    );
+
+    await userEvent.click(await screen.findByRole('radio', { name: '멤버 공개' }));
+    expect(screen.getByRole('radio', { name: '멤버 공개' })).toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: '화면 전환' }));
+    await userEvent.click(screen.getByRole('button', { name: '화면 전환' }));
+
+    expect(await screen.findByRole('radio', { name: '멤버 공개' })).not.toBeChecked();
   });
 });
