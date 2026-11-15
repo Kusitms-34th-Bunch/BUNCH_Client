@@ -10,6 +10,7 @@ import { followHandlers } from './follows';
 import { invitationHandlers } from './invitations';
 import { kokHandlers } from './koks';
 import { likeHandlers } from './likes';
+import { memberProfileHandlers } from './memberProfiles';
 import { memberHandlers } from './members';
 import { membershipHandlers } from './memberships';
 import { notificationHandlers } from './notifications';
@@ -23,6 +24,7 @@ import { termHandlers } from './terms';
 export const handlers = [
   ...sessionHandlers,
   ...memberHandlers,
+  ...memberProfileHandlers,
   ...pushPreferenceHandlers,
   ...pushDeviceHandlers,
   ...termHandlers,
