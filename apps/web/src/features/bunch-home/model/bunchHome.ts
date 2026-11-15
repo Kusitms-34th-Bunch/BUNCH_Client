@@ -1,3 +1,5 @@
+import type { ApiContract } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
 import {
@@ -8,8 +10,7 @@ import {
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import type { BunchHomeDetail, BunchRole, BunchSummary } from '../lib/types';
 
-// 번치 홈 조회(`/home`)와 번치 발행 번들 목록(`/published-bundles`)은 서버 PR #62 미병합 계약이라
-// Swagger 생성 타입이 없어 Notion 명세 기준으로 직접 정의함, 서버가 병합되면 생성 타입으로 묶음
+type Schemas = components['schemas'];
 
 const roleSchema = z.enum(['OWNER', 'CO_OWNER', 'MEMBER']);
 
@@ -21,8 +22,13 @@ export const bunchHomeResponseSchema = z.object({
     imageUrl: z.string().nullish(),
     characterType: z.enum(CHARACTER_TYPES),
     visibility: z.enum(['PUBLIC', 'PRIVATE']),
+    // 소개는 계약상 필수지만 비어 올 수 있어 null도 받음(값 타입만 계약으로 검사)
     introduction: z.string().nullish(),
-  }),
+  }) satisfies z.ZodType<
+    Omit<ApiContract<Schemas['BunchHomeProfileResponse']>, 'introduction'> & {
+      introduction?: string | null | undefined;
+    }
+  >,
   // 내 번치가 아닌 번치(EXTERNAL)를 조회하면 소속·개수는 null이라 nullable로 받고, 변환에서 걸러냄
   myMembership: z
     .object({
@@ -30,7 +36,7 @@ export const bunchHomeResponseSchema = z.object({
       role: roleSchema,
       joinedAt: z.string(),
     })
-    .nullish(),
+    .nullish() satisfies z.ZodType<Schemas['MyMembershipResponse'] | null | undefined>,
   permissions: z.object({
     canEditProfile: z.boolean(),
     canDeleteBunch: z.boolean(),
@@ -59,7 +65,33 @@ export const bunchHomeResponseSchema = z.object({
   isCurrentBunch: z.boolean().optional(),
   // 서버가 이 응답의 명의로 본 번치(지금 번치)
   currentBunchId: z.number().int().positive().nullish(),
-});
+}) satisfies z.ZodType<
+  // 중첩 객체는 위에서 따로 묶고, 계약상 필수지만 선택으로 받는 접근 범위 필드는 값 타입만 맞춤
+  Omit<
+    ApiContract<Schemas['BunchHomeResponse']>,
+    | 'bunch'
+    | 'myMembership'
+    | 'accessScope'
+    | 'followState'
+    | 'canViewBundles'
+    | 'canViewMembers'
+    | 'canViewRelations'
+    | 'isCurrentBunch'
+  > &
+    ApiContract<
+      Partial<
+        Pick<
+          Schemas['BunchHomeResponse'],
+          | 'accessScope'
+          | 'followState'
+          | 'canViewBundles'
+          | 'canViewMembers'
+          | 'canViewRelations'
+          | 'isCurrentBunch'
+        >
+      >
+    > & { bunch: unknown; myMembership?: unknown }
+>;
 
 /** `GET /api/v1/bunches/{bunchId}/published-bundles` 응답(발행 최신순) */
 export const publishedBundlesPageSchema = z.object({
@@ -232,7 +264,7 @@ export const toBunchSummaries = (data: MyBunches, currentId: string): BunchSumma
 export const bunchProfileResponseSchema = z.object({
   bunchId: z.number(),
   profileVersion: z.number(),
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['BunchProfileResponse']>>;
 
 /** 프로필 편집 화면이 쓰는 번치 프로필. 대표 사진이 없거나 안전하지 않은 주소면 `imageSrc`는 없음(기본 이미지) */
 export type EditableBunchProfile = {

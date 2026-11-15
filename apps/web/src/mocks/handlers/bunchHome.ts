@@ -8,7 +8,7 @@ import { toSnapshot } from './bundles';
 import { followCounts, followOf, isBlockedBetween, viewerBunchId } from './follows';
 import { unreadCountOf } from './notifications';
 
-// 번치 홈 조회(`/home`, 서버 PR #62 미병합 계약), 번들 목록·현황(Swagger) 기준, 명세에 없는 값은 `ponytail:`로 표시
+// 번치 홈 조회(`/home`)·번들 목록·현황은 Swagger 기준, 명세에 없는 값은 `ponytail:`로 표시
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
 
@@ -47,7 +47,7 @@ const counts = (state: MockDbState, bunchId: number) => {
   const bundles = state.bundles.filter((bundle) => bundle.bunchId === bunchId);
   const draftCount = bundles.filter((bundle) => bundle.status === 'DRAFT').length;
   const publishedCount = bundles.length - draftCount;
-  // 명세(PR #62) Stage: 발행본 0~1개=1, 2~5개=2, 6~9개=3, 10개 이상=4
+  // 명세 Stage: 발행본 0~1개=1, 2~5개=2, 6~9개=3, 10개 이상=4
   const stage = publishedCount >= 10 ? 4 : publishedCount >= 6 ? 3 : publishedCount >= 2 ? 2 : 1;
   return { draftCount, publishedCount, stage };
 };
@@ -187,7 +187,7 @@ export const bunchHomeHandlers = [
     });
   }),
 
-  // GET /api/v1/bunches/{bunchId}/published-bundles?page=&size= (서버 PR #62 미병합 계약, 번치 홈 「완성된 번들」용)
+  // GET /api/v1/bunches/{bunchId}/published-bundles?page=&size= (번치 홈 「완성된 번들」용)
   // 내 번치(INTERNAL)는 공개 범위와 상관없이 발행본 전체, 발행 최신순(publishedAt, id 내림차순), 초안은 포함하지 않음
   http.get('/api/bunches/:bunchId/published-bundles', ({ params, request }) => {
     const found = findBunch(params.bunchId, 'BUNCH_009', true);
