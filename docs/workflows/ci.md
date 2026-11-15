@@ -50,7 +50,7 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 
 `lighthouse.yml`은 PR의 web을 배포하지 않고 runner 안에서 측정한다. 운영 배포는 `main` push 때만 되어 PR의 변경이 배포 주소에 없고, PR 미리보기 배포는 Vercel 토큰과 접속 보호 우회가 필요하기 때문이다.
 
-- 순서: 변조 가드 → 설치 → CI build job이 저장한 Next 빌드 캐시 복원(저장하지 않음) → `yarn workspace @app/web build`(`NEXT_SKIP_TYPECHECK`) → 모든 요청에 401만 주는 API stub(127.0.0.1:3399)과 `next start`(127.0.0.1:3300, `API_BASE_URL`은 stub) → `@lhci/cli collect`(runner의 Chrome, 페이지당 1번, `--settings.locale=ko`) → `scripts/report-lighthouse.mjs`.
+- 순서: 변조 가드 → 설치 → CI build job이 저장한 Next 빌드 캐시 복원(저장하지 않음) → `yarn workspace @app/web build`(`NEXT_SKIP_TYPECHECK`) → 모든 요청에 401만 주는 API stub(127.0.0.1:3399)과 `next start`(127.0.0.1:3300, `API_BASE_URL`은 stub) → `@lhci/cli collect`(runner의 Chrome, 페이지당 1번, `--settings.locale=ko`, HTML 리포트용 전체 페이지 스크린샷은 끔) → `scripts/report-lighthouse.mjs`.
 - stub이 없으면 `API_BASE_URL`이 비어 세션 확인이 실패하고, `/intro` 대신 「일시적인 오류」 화면이 측정된다. stub은 로그인 전 상태만 흉내 내므로 실제 백엔드 응답 시간은 점수에 들어가지 않는다.
 - 측정 페이지는 로그인 없이 열리는 `/intro`와 `/invite/<토큰>`이다. `/login`은 로그인 전이면 `/intro`로 이동해서 뺐다. 로그인 뒤 화면은 측정용 로그인 방식이 정해지면 추가한다. 페이지는 workflow의 `LIGHTHOUSE_URLS`에서 바꾼다.
 - 댓글은 페이지별 점수(성능·접근성·권장사항·SEO), develop 기준선과의 차이, 점수에 반영되는 항목 중 통과하지 못한 것(감점이 큰 순 5개)이다. 측정하지 못한 항목(예: `NO_LCP`)은 이유를 한 줄로 적는다. 전체 리포트는 artifact `lighthouse-report`(7일)에 있다.

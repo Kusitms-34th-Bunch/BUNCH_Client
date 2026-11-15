@@ -33,6 +33,8 @@ const pages = files
   .map((name) => JSON.parse(readFileSync(join(resultsDir, name), 'utf8')))
   .map((report) => ({
     path: pathOf(report.requestedUrl),
+    // Lighthouse가 페이지 하나를 측정하는 데 쓴 시간(Chrome·프로세스 시작 제외)
+    seconds: (report.timing?.total ?? 0) / 1000,
     finalPath: pathOf(report.finalDisplayedUrl ?? report.finalUrl ?? report.requestedUrl),
     scores: Object.fromEntries(
       CATEGORIES.map(([id]) => {
@@ -127,6 +129,10 @@ for (const page of pages) {
 
 const markdown = lines.join('\n');
 console.log(markdown);
+// 실행 시간 조정용(댓글에는 넣지 않음)
+console.log(
+  `\n측정 시간: ${pages.map((page) => `${page.path} ${page.seconds.toFixed(1)}초`).join(', ')}`,
+);
 if (process.env.GITHUB_STEP_SUMMARY)
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`);
 if (process.env.LIGHTHOUSE_REPORT) writeFileSync(process.env.LIGHTHOUSE_REPORT, `${markdown}\n`);
