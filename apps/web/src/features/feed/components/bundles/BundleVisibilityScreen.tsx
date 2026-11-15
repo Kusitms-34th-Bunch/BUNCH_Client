@@ -185,7 +185,7 @@ export function BundleVisibilityScreen({
                 {
                   onSuccess: () => {
                     back();
-                    toastAfterNavigation(text.bundleEdited);
+                    toastAfterNavigation(text.visibilitySaved);
                   },
                   onError: failSave,
                 },
