@@ -146,7 +146,10 @@ export const bundleLocationIntentResultSchema = z.object({
   changed: z.boolean(),
   acceptedCount: z.number().int().nonnegative(),
   locations: z.array(bundleLocationSchema),
-});
+  // 장소 항목은 항목별 스키마가 검사하므로 계약 대조에서 제외(아래 BundleSnapshot과 같은 이유)
+}) satisfies z.ZodType<
+  Omit<ApiContract<Schemas['BundleLocationIntentResponse']>, 'locations'> & { locations: unknown }
+>;
 
 /** 제목 CRDT 병합 응답(BundleSnapshot이 아니라 제목 상태만, 번들 revision은 없음) */
 export const bundleTitleStateSchema = z.object({
