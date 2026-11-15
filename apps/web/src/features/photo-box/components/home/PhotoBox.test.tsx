@@ -44,6 +44,8 @@ const bridge = vi.hoisted(() => ({
 }));
 vi.mock('@/shared/bridge/client', () => ({
   isNativeShell: () => true,
+  // 탭 WebView가 아님(쉘이 탭 ID를 주지 않아 웹 플로팅 버튼을 그림)
+  nativeShellTab: () => null,
   photoUploadBridge: {
     isNativeMethodAvailable: () => true,
     pickGalleryImages: bridge.pickGalleryImages,

@@ -20,7 +20,7 @@ type PhotoSelectionMenuProps = {
   /** 항목을 골랐을 때(메뉴는 닫기를 요청한 뒤 호출) */
   onSelect: (_action: PhotoMenuAction) => void;
   /** 메뉴를 여는 「⋯」 버튼. 바깥 누름 판정과 닫을 때 포커스 복귀에 사용 */
-  triggerRef: RefObject<HTMLButtonElement | null>;
+  triggerRef: RefObject<HTMLElement | null>;
 };
 
 const ITEMS: readonly PhotoActionMenuItem<PhotoMenuAction>[] = [

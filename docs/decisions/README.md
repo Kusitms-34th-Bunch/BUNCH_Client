@@ -37,3 +37,4 @@
 - [023: 운영 서버의 로그인 뒤 화면 Lighthouse 측정 방식](./records/023-production-signed-in-lighthouse.md) (proposed)
 - [024: 실시간(STOMP) 인증은 BFF가 발급받은 연결용 토큰을 브라우저에 한 번 전달한다](./records/024-ws-token-bff-realtime-auth.md)
 - [025: 번들 제목은 Automerge 문서로 병합하고 WASM은 초안 화면에서만 불러온다](./records/025-title-crdt-automerge.md)
+- [026: iOS 26 쉘의 플로팅 버튼은 네이티브 Liquid Glass로 그린다](./records/026-native-glass-floating-button.md) (proposed)

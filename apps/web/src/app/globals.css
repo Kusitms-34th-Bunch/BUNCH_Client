@@ -249,7 +249,8 @@
 .pull-refresh-indicator {
   position: absolute;
   z-index: -1;
-  top: 20px;
+  /* 접는 헤더(PageShell collapsibleHeader)는 상태 표시줄·헤더가 본문 위에 겹치므로 그만큼 내림 */
+  top: calc(20px + var(--page-top-inset, 0px));
   left: 0;
   right: 0;
   display: flex;

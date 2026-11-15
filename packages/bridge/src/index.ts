@@ -8,6 +8,7 @@ import type {
   PickPhotosResult,
   PushDeviceRegistration,
   SaveImagesToAlbumResult,
+  SetNativeFloatingButtonParams,
   SetNativeTabBarParams,
   ShareParams,
   SocialLoginResult,
@@ -23,6 +24,7 @@ export {
   MAX_PICKED_PHOTOS,
   MAX_SAVE_IMAGES,
   MAX_UPLOAD_IMAGE_DATA_URL,
+  nativeFloatingButtonPressSchema,
   nativeTabBarItemSchema,
   permissionKindSchema,
   permissionStatusSchema,
@@ -39,6 +41,7 @@ export {
   saveImagesToAlbumResultSchema,
   saveImageUrlSchema,
   saveImageUrlsSchema,
+  setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
   socialLoginResultSchema,
@@ -48,6 +51,7 @@ export {
 export type {
   AppPostMessageSchema,
   GalleryImage,
+  NativeFloatingButtonPress,
   NativeTabBarItem,
   PermissionKind,
   PermissionStatus,
@@ -57,6 +61,7 @@ export type {
   PickPhotosResult,
   PushDeviceRegistration,
   SaveImagesToAlbumResult,
+  SetNativeFloatingButtonParams,
   SetNativeTabBarParams,
   ShareParams,
   SocialLoginResult,
@@ -100,6 +105,8 @@ export type AppBridgeMethods = {
   setNativeTabBar: (_params: SetNativeTabBarParams) => Promise<boolean>;
   /** iOS 탭 화면의 시스템 탭 바 표시 여부(탭 밖 화면을 여는 동안 숨김). 화면에 보이는 WebView만 호출, 탭 화면이 아니거나 미지원 환경이면 false */
   setNativeTabBarVisible: (_visible: boolean) => Promise<boolean>;
+  /** 탭 화면의 플로팅 버튼을 네이티브 Liquid Glass로 표시·제거. 그렸으면 true(웹 버튼을 숨김), iOS 26 미만·탭 화면 밖·미지원 환경이면 false. 눌림은 `nativeFloatingButtonPress` */
+  setNativeFloatingButton: (_params: SetNativeFloatingButtonParams) => Promise<boolean>;
   /** 웹 탭 막대를 누를 때의 선택 햅틱(안드로이드 쉘). iOS 시스템 탭 바는 쉘이 직접 처리 */
   tabSelectionHaptic: () => Promise<void>;
   /** 웹이 로그인 상태를 확인해 도착 화면(또는 오류 안내)을 그림. 쉘은 이때 스플래시를 닫음. 여러 번 불러도 한 번만 처리, 브라우저에서는 아무것도 하지 않음 */
