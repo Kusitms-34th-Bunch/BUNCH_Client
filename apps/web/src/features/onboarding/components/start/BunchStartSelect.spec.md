@@ -60,7 +60,7 @@
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: 이전에 `next build`에서 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 지금은 `from` 쿼리를 읽어 요청마다 렌더되는 동적 route다. 새로고침·뒤로 가기는 확인하지 못함(미검증)
-- [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
+- [ ] 권한·redirect: `(app)` layout의 `AuthGate`가 맡는다(#259). 규칙은 `accessPolicy.test.ts`·`AuthGate.test.tsx`가 확인하고, 이 화면에서 직접 확인하지는 않음(미검증)
 - [x] 상태별 UI: 정적 화면이라 상태가 없다
 - [x] 관련 test: `BunchStartSelect.test.tsx`(제목·main, 첫 진입 닫기의 중단 확인 모달(열기·계속 만들기·ESC·나가기)·번치 홈 진입 닫기 뒤로 가기·기록 없을 때 대체 이동, 카드 이름, 두 카드의 이동 경로)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
