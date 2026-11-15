@@ -362,7 +362,10 @@ describe('useDraftPicks', () => {
         ...detail(),
         photos: detail().photos.map((photo, index) =>
           index === 0
-            ? { ...photo, picks: { version: savedVersion, pickedByMe: true, memberIds: ['99', me] } }
+            ? {
+                ...photo,
+                picks: { version: savedVersion, pickedByMe: true, memberIds: ['99', me] },
+              }
             : photo,
         ),
       });

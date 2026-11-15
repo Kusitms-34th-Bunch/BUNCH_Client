@@ -31,11 +31,11 @@ export const usePhotoPickCache = (bunchId: string | undefined, bundleId: string 
               )
               ? old
               : {
-                ...old,
-                photos: old.photos.map((photo) =>
-                  photo.id === photoId ? { ...photo, picks } : photo,
-                ),
-              }
+                  ...old,
+                  photos: old.photos.map((photo) =>
+                    photo.id === photoId ? { ...photo, picks } : photo,
+                  ),
+                }
             : old,
         );
       },
