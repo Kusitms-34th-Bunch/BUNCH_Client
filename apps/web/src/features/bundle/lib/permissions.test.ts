@@ -24,6 +24,7 @@ const draft: Draft = {
   locations: [],
   date: null,
   suggestedDates: [],
+  picks: {},
   comments: [],
   visibility: 'public',
   editing: {},

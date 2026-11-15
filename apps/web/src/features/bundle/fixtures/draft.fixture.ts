@@ -107,6 +107,7 @@ export const draftFixture: Draft = {
   ],
   date: null,
   suggestedDates: ['2026-06-20'],
+  picks: {},
   comments: [
     {
       memberId: 'jiye',

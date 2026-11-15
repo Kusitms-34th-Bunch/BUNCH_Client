@@ -4,6 +4,8 @@ import {
   applyDelete,
   applyTakenDate,
   canDeletePhotos,
+  countCoUploaded,
+  getDateConfirmKind,
   getDeleteKind,
   needsDateChangeConfirm,
 } from './photoActions';
@@ -45,9 +47,13 @@ describe('getDeleteKind', () => {
     expect(getDeleteKind([photo('1', ['me']), photo('2', ['me', 'you'])], member)).toBe('mixed');
   });
 
-  it('내가 올리지 않은 사진이 하나라도 있으면 others', () => {
+  it('다른 멤버가 올린 사진만 고르면 others', () => {
     expect(getDeleteKind([photo('1', ['you'])], admin)).toBe('others');
-    expect(getDeleteKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('others');
+    expect(getDeleteKind([photo('1', ['you']), photo('2', ['you', 'they'])], admin)).toBe('others');
+  });
+
+  it('내 사진과 다른 멤버 사진을 함께 고르면 others-included', () => {
+    expect(getDeleteKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('others-included');
   });
 });
 
@@ -129,5 +135,26 @@ describe('needsDateChangeConfirm', () => {
 
   it('일반 멤버는 확인을 거치지 않는다', () => {
     expect(needsDateChangeConfirm([photo('1', ['me', 'you'])], member)).toBe(false);
+  });
+});
+
+describe('getDateConfirmKind', () => {
+  it('다른 멤버가 올린 사진만 고르면 others', () => {
+    expect(getDateConfirmKind([photo('1', ['you']), photo('2', ['you', 'they'])], admin)).toBe(
+      'others',
+    );
+  });
+
+  it('내 사진이 섞였거나 내가 함께 올린 사진이 있으면 included', () => {
+    expect(getDateConfirmKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('included');
+    expect(getDateConfirmKind([photo('1', ['me', 'you'])], admin)).toBe('included');
+  });
+});
+
+describe('countCoUploaded', () => {
+  it('올린 멤버가 둘 이상인 사진만 센다', () => {
+    expect(
+      countCoUploaded([photo('1', ['me']), photo('2', ['me', 'you']), photo('3', ['you', 'they'])]),
+    ).toBe(2);
   });
 });

@@ -24,6 +24,7 @@ import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoDragProvider } from '../../contexts/PhotoDragContext';
 import { usePhotoSelectionActions } from '../../contexts/photoSelection';
 import { LONG_PRESS_MS } from '../../lib/dragSelect';
+import { getDateConfirmKind } from '../../lib/photoActions';
 import {
   type SectionItems,
   canDragPhoto,
@@ -199,6 +200,7 @@ export const PhotoDragArea = memo(function PhotoDragArea({
       openOverlay((rootProps, close) => (
         <DateChangeConfirmDialog
           {...rootProps}
+          kind={getDateConfirmKind([photo], viewer)}
           onOpenChange={(open) => {
             if (!open) reset();
             rootProps.onOpenChange(open);

@@ -108,6 +108,31 @@ const dateChips = (bundle: MockBundle, state: MockDbState): string[] => {
     .map(([date]) => date);
 };
 
+const participantsOf = (bundle: MockBundle) =>
+  [...bundle.participants]
+    .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
+    .map((participant) => ({
+      ...participant,
+      profileAvailable: true,
+      creator: participant.memberId === bundle.createdBy,
+    }));
+
+// 사진 하나의 픽 요약(내 기준): 내 본인 행 버전(행이 없으면 초기 버전 0), 픽한 참여자는 참여 순서
+// ponytail: 참여자 추가 시 pickInitialVersion(추가 시점 revision)은 가짜 서버가 단순화해 항상 0
+const photoPicks = (bundle: MockBundle, bundlePhotoId: number) => {
+  const rows = bundle.photos.find((photo) => photo.id === bundlePhotoId)?.picks ?? [];
+  const members = participantsOf(bundle).filter((participant) =>
+    rows.some((row) => row.memberId === participant.memberId && row.picked),
+  );
+  const mine = rows.find((row) => row.memberId === MOCK_MY_MEMBER_ID);
+  return {
+    count: members.length,
+    pickedByMe: mine?.picked ?? false,
+    version: mine?.version ?? 0,
+    members,
+  };
+};
+
 // 번들 한 건의 응답(BundleSnapshot). 편집권 token은 공개하지 않음
 export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: string) => {
   const isCreator = bundle.createdBy === MOCK_MY_MEMBER_ID;
@@ -139,14 +164,10 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     likedByCurrentBunch: false,
     commentCount: 0,
     revision: bundle.revision,
-    photos: [...bundle.photos].sort((a, b) => a.position - b.position),
-    participants: [...bundle.participants]
-      .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
-      .map((participant) => ({
-        ...participant,
-        profileAvailable: true,
-        creator: participant.memberId === bundle.createdBy,
-      })),
+    photos: [...bundle.photos]
+      .sort((a, b) => a.position - b.position)
+      .map(({ picks: _rows, ...photo }) => ({ ...photo, picks: photoPicks(bundle, photo.id) })),
+    participants: participantsOf(bundle),
     comments: bundle.comments.map((comment, index) => ({
       ...comment,
       id: index + 1,
@@ -484,6 +505,57 @@ export const bundleHandlers = [
     return snapshotOf(scope.bundle.id);
   }),
 
+  // PUT …/photos/{photoId}/pick: 본인 픽의 최종 상태(picked)를 저장하는 멱등 요청, photoId는 번들 사진 ID
+  // 상태가 같으면 expectedVersion이 낡아도 성공하고 아무것도 바꾸지 않으며, 다르면 본인 행 버전과 비교해 어긋나면 BUNDLE_003(detail은 현재 픽)
+  http.put(
+    '/api/bunches/:bunchId/bundles/:id/photos/:photoId/pick',
+    async ({ params, request }) => {
+      const bundlePhotoId = toWireId(params.photoId);
+      const body = await readJson(request);
+      // 본문을 기다리는 사이 다른 요청이 번들을 바꿨을 수 있어, 읽은 뒤의 최신 상태로 확인
+      const scope = findScope(params.bunchId, params.id);
+      if ('error' in scope) return scope.error;
+      const { bundle, isParticipant } = scope;
+      if (bundlePhotoId === undefined) return fail(400, 'COMMON_001');
+      if (
+        typeof body?.picked !== 'boolean' ||
+        typeof body.expectedVersion !== 'number' ||
+        !Number.isSafeInteger(body.expectedVersion)
+      ) {
+        return fail(400, 'COMMON_002');
+      }
+      const { picked, expectedVersion } = body;
+      if (expectedVersion < 0) return fail(400, 'COMMON_001');
+      if (!isParticipant) return fail(403, 'AUTH_002');
+      if (bundle.status !== 'DRAFT') return fail(409, 'BUNDLE_002');
+      const photo = bundle.photos.find((item) => item.id === bundlePhotoId);
+      if (!photo) return fail(404, 'RESOURCE_001');
+
+      const mine = photo.picks?.find((row) => row.memberId === MOCK_MY_MEMBER_ID);
+      if ((mine?.picked ?? false) === picked) return ok(photoPicks(bundle, bundlePhotoId));
+      if (expectedVersion !== (mine?.version ?? 0)) {
+        return fail(409, 'BUNDLE_003', photoPicks(bundle, bundlePhotoId));
+      }
+      changeBundle(bundle.id, (current) => ({
+        ...current,
+        photos: current.photos.map((item) =>
+          item.id === bundlePhotoId
+            ? {
+                ...item,
+                // 실변경은 번들 revision을 한 번 올리고 본인 행 버전을 그 revision으로 저장(picked=false 행도 남김)
+                picks: [
+                  ...(item.picks ?? []).filter((row) => row.memberId !== MOCK_MY_MEMBER_ID),
+                  { memberId: MOCK_MY_MEMBER_ID, picked, version: current.revision + 1 },
+                ],
+              }
+            : item,
+        ),
+      }));
+      const updated = mockDb.get().bundles.find((item) => item.id === bundle.id);
+      return ok(photoPicks(updated ?? bundle, bundlePhotoId));
+    },
+  ),
+
   // GET …/presence: 현재 members·editing·typing 복구용. 가짜 서버에는 실시간 연결이 없어 항상 비어 있음
   http.get('/api/bunches/:bunchId/bundles/:id/presence', ({ params }) => {
     const scope = findScope(params.bunchId, params.id);
@@ -605,8 +677,13 @@ export const bundleHandlers = [
     changeBundle(bundle.id, (current) => ({
       ...current,
       participants: current.participants.filter((p) => p.memberId !== memberId),
-      // 제외되는 멤버의 코멘트를 함께 지움
+      // 제외되는 멤버의 코멘트와 픽을 함께 지움
       comments: current.comments.filter((comment) => comment.memberId !== memberId),
+      photos: current.photos.map((photo) =>
+        photo.picks
+          ? { ...photo, picks: photo.picks.filter((row) => row.memberId !== memberId) }
+          : photo,
+      ),
     }));
     return snapshotOf(bundle.id);
   }),

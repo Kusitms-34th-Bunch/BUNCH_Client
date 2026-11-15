@@ -6,25 +6,6 @@ import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 
 type Schemas = components['schemas'];
 
-const bundlePhotoSchema = z.object({
-  id: z.number().int().positive(),
-  photoId: z.number().int().positive().nullish(),
-  imageAssetId: z.number().int().positive(),
-  imageUrl: z.string().refine(isSafeImageUrl, 'https 주소 또는 같은 출처 경로만 허용'),
-  position: z.number().int().nonnegative(),
-  addedBy: z.number().int().positive(),
-  addedAt: z.string(),
-}) satisfies z.ZodType<ApiContract<Schemas['BundlePhotoResponse']>>;
-
-const bundleLocationSchema = z.object({
-  id: z.number().int().positive(),
-  provider: z.string(),
-  externalId: z.string(),
-  name: z.string(),
-  address: z.string(),
-  position: z.number().int().nonnegative(),
-}) satisfies z.ZodType<ApiContract<Schemas['BundleLocationResponse']>>;
-
 const bundleParticipantSchema = z.object({
   memberId: z.number().int().positive(),
   joinedAt: z.string(),
@@ -34,6 +15,39 @@ const bundleParticipantSchema = z.object({
   role: z.enum(['OWNER', 'CO_OWNER', 'MEMBER']).nullish(),
   creator: z.boolean(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundleParticipantResponse']>>;
+
+/** 사진 하나의 픽 요약(내 기준). version은 내 본인 픽의 버전이고 PUT 픽 저장의 expectedVersion */
+export const bundlePhotoPicksSchema = z.object({
+  count: z.number().int().nonnegative(),
+  pickedByMe: z.boolean(),
+  version: z.number().int().nonnegative(),
+  members: z.array(bundleParticipantSchema),
+  // members는 항목별 스키마(참여자)에서 검사하므로 계약 대조에서 제외(아래 BundleSnapshot과 같은 이유)
+}) satisfies z.ZodType<
+  Omit<ApiContract<Schemas['BundlePhotoPicks']>, 'members'> & { members: unknown }
+>;
+
+const bundlePhotoSchema = z.object({
+  id: z.number().int().positive(),
+  photoId: z.number().int().positive().nullish(),
+  imageAssetId: z.number().int().positive(),
+  imageUrl: z.string().refine(isSafeImageUrl, 'https 주소 또는 같은 출처 경로만 허용'),
+  position: z.number().int().nonnegative(),
+  addedBy: z.number().int().positive(),
+  addedAt: z.string(),
+  picks: bundlePhotoPicksSchema.nullish(),
+}) satisfies z.ZodType<
+  Omit<ApiContract<Schemas['BundlePhotoResponse']>, 'picks'> & { picks?: unknown }
+>;
+
+const bundleLocationSchema = z.object({
+  id: z.number().int().positive(),
+  provider: z.string(),
+  externalId: z.string(),
+  name: z.string(),
+  address: z.string(),
+  position: z.number().int().nonnegative(),
+}) satisfies z.ZodType<ApiContract<Schemas['BundleLocationResponse']>>;
 
 const bundleCommentSchema = z.object({
   id: z.number().int().positive(),
@@ -156,6 +170,8 @@ export type BundleDetail = {
     src: string;
     position: number;
     addedBy: string;
+    /** 픽 요약. 응답에 없으면 undefined(픽 없음으로 다룸) */
+    picks: PhotoPicks | undefined;
   }[];
   /** 참여 멤버 id(참여 시각 순) */
   participantIds: readonly string[];
@@ -174,6 +190,13 @@ export type BundleDetail = {
   photoChangeResult: PhotoChangeResult | undefined;
 };
 
+/** 사진 하나의 픽: 내 본인 픽 버전(PUT의 expectedVersion), 내가 픽했는지, 픽한 참여 멤버 id(참여 시각 순) */
+export type PhotoPicks = {
+  version: number;
+  pickedByMe: boolean;
+  memberIds: readonly string[];
+};
+
 export type PhotoChangeResult = {
   /** 담긴 사진함 원본 ID */
   addedPhotoIds: readonly string[];
@@ -184,9 +207,17 @@ export type PhotoChangeResult = {
 };
 
 type SnapshotPhoto = z.infer<typeof bundlePhotoSchema>;
+type SnapshotPicks = z.infer<typeof bundlePhotoPicksSchema>;
 type SnapshotLocation = z.infer<typeof bundleLocationSchema>;
 type SnapshotParticipant = z.infer<typeof bundleParticipantSchema>;
 type SnapshotComment = z.infer<typeof bundleCommentSchema>;
+
+/** 서버 픽 요약을 화면 모양으로 변환 */
+export const toPhotoPicks = (picks: SnapshotPicks): PhotoPicks => ({
+  version: picks.version,
+  pickedByMe: picks.pickedByMe,
+  memberIds: toParticipantIds(picks.members),
+});
 
 /** 번들 사진을 화면 모양으로 변환(position 순서) */
 export const toDetailPhotos = (photos: readonly SnapshotPhoto[]): BundleDetail['photos'] =>
@@ -198,6 +229,7 @@ export const toDetailPhotos = (photos: readonly SnapshotPhoto[]): BundleDetail['
       src: photo.imageUrl,
       position: photo.position,
       addedBy: toDomainId(photo.addedBy),
+      picks: photo.picks == null ? undefined : toPhotoPicks(photo.picks),
     }));
 
 export const toDetailLocations = (

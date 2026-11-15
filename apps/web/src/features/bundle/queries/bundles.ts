@@ -27,6 +27,7 @@ import {
   applyContentEvent,
   applyDateChips,
   type BundleEventOutcome,
+  keepNewerPicks,
   withTitleState,
 } from '../lib/bundleEvents';
 import { type BundleDetail, bundleEventEnvelopeSchema, CONTENT_EVENT_TYPES } from '../model/bundle';
@@ -53,9 +54,11 @@ export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string
       const incoming = next as BundleDetail;
       if (!previous) return incoming;
       if (previous.revision > incoming.revision) return previous;
+      // 픽 저장 응답도 revision을 바꾸지 않아, 같은 revision의 낡은 상세가 방금 저장한 픽을 되돌리지 않게 함
+      const current = keepNewerPicks(previous, incoming);
       // 제목 병합 응답은 revision을 바꾸지 않아, 같은 revision의 낡은 상세가 더 높은 제목 버전을 되돌리지 않게 함
-      if (previous.titleCrdtState !== undefined && previous.titleVersion > incoming.titleVersion) {
-        const kept = withTitleState(incoming, {
+      if (previous.titleCrdtState !== undefined && previous.titleVersion > current.titleVersion) {
+        const kept = withTitleState(current, {
           title: previous.title,
           titleCrdtState: previous.titleCrdtState,
           titleVersion: previous.titleVersion,
@@ -63,7 +66,7 @@ export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string
         });
         return replaceEqualDeep(previous, kept);
       }
-      return replaceEqualDeep(previous, incoming);
+      return replaceEqualDeep(previous, current);
     },
   });
 

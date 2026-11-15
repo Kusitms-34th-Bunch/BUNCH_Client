@@ -50,6 +50,9 @@ export const toDraft = ({ detail, bunchMembers, locations }: ToDraftInput): Draf
     locations,
     date: detail.date,
     suggestedDates: detail.dateChips,
+    picks: Object.fromEntries(
+      detail.photos.map((photo) => [photo.id, photo.picks?.memberIds ?? []]),
+    ),
     comments: detail.comments.map((comment) => ({
       memberId: comment.memberId,
       text: comment.content,

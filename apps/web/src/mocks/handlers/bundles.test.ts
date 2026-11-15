@@ -669,3 +669,139 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     expect((await merge(999999, state)).json.error?.code).toBe('RESOURCE_001');
   });
 });
+
+describe('가짜 서버 사진 픽 저장', () => {
+  type Picks = {
+    count: number;
+    pickedByMe: boolean;
+    version: number;
+    members: { memberId: number }[];
+  };
+  type PickEnvelope = { data: Picks; error: { code: string; detail: Picks } | null };
+
+  const pick = async (draftId: number, photoId: number, body: unknown) => {
+    const response = await fetch(`${base}/${draftId}/photos/${photoId}/pick`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return { status: response.status, json: (await response.json()) as PickEnvelope };
+  };
+  const snapshotPicks = async (draftId: number) =>
+    (
+      (await (await fetch(`${base}/${draftId}`)).json()) as {
+        data: { revision: number; photos: { id: number; picks: Picks }[] };
+      }
+    ).data;
+
+  it('상세 응답의 사진마다 픽 요약이 있고 처음에는 비어 있다', async () => {
+    const draft = await createDraft();
+    const { photos } = await snapshotPicks(draft.id);
+
+    expect(photos.map((photo) => photo.picks)).toEqual([
+      { count: 0, pickedByMe: false, version: 0, members: [] },
+      { count: 0, pickedByMe: false, version: 0, members: [] },
+    ]);
+  });
+
+  it('픽하면 내 픽이 더해지고 revision이 한 번 오르며 내 픽 버전이 그 revision이 된다', async () => {
+    const draft = await createDraft();
+    const photoId = draft.photos[0]!.id;
+
+    const saved = await pick(draft.id, photoId, { picked: true, expectedVersion: 0 });
+
+    expect(saved.status).toBe(200);
+    expect(saved.json.data).toMatchObject({
+      count: 1,
+      pickedByMe: true,
+      version: draft.revision + 1,
+      members: [expect.objectContaining({ memberId: MOCK_MY_MEMBER_ID })],
+    });
+    const after = await snapshotPicks(draft.id);
+    expect(after.revision).toBe(draft.revision + 1);
+    expect(after.photos[0]!.picks.pickedByMe).toBe(true);
+    expect(after.photos[1]!.picks.count).toBe(0);
+  });
+
+  it('이미 원하는 상태면 버전이 낡아도 성공하고 아무것도 바꾸지 않는다', async () => {
+    const draft = await createDraft();
+    const photoId = draft.photos[0]!.id;
+    const first = await pick(draft.id, photoId, { picked: true, expectedVersion: 0 });
+
+    const again = await pick(draft.id, photoId, { picked: true, expectedVersion: 0 });
+
+    expect(again.status).toBe(200);
+    expect(again.json.data).toEqual(first.json.data);
+    expect((await snapshotPicks(draft.id)).revision).toBe(draft.revision + 1);
+  });
+
+  it('상태를 바꾸려는데 버전이 다르면 BUNDLE_003과 현재 픽을 돌려준다', async () => {
+    const draft = await createDraft();
+    const photoId = draft.photos[0]!.id;
+    const first = await pick(draft.id, photoId, { picked: true, expectedVersion: 0 });
+
+    const conflict = await pick(draft.id, photoId, { picked: false, expectedVersion: 0 });
+
+    expect(conflict.status).toBe(409);
+    expect(conflict.json.error?.code).toBe('BUNDLE_003');
+    expect(conflict.json.error?.detail).toEqual(first.json.data);
+
+    const undone = await pick(draft.id, photoId, {
+      picked: false,
+      expectedVersion: first.json.data.version,
+    });
+    // 해제한 행도 남아 버전이 그 revision으로 오름
+    expect(undone.json.data).toMatchObject({ count: 0, pickedByMe: false });
+    expect(undone.json.data.version).toBe(draft.revision + 2);
+  });
+
+  it('잘못된 요청과 없는 사진·발행본·참여자가 아닌 사람을 거절한다', async () => {
+    const draft = await createDraft();
+    const photoId = draft.photos[0]!.id;
+    const body = { picked: true, expectedVersion: 0 };
+
+    expect((await pick(draft.id, photoId, { picked: true })).json.error?.code).toBe('COMMON_002');
+    expect(
+      (await pick(draft.id, photoId, { picked: 'yes', expectedVersion: 0 })).json.error?.code,
+    ).toBe('COMMON_002');
+    expect(
+      (await pick(draft.id, photoId, { picked: true, expectedVersion: -1 })).json.error?.code,
+    ).toBe('COMMON_001');
+    expect((await pick(draft.id, 999999, body)).status).toBe(404);
+
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({ ...bundle, status: 'PUBLISHED' as const })),
+    }));
+    expect((await pick(draft.id, photoId, body)).json.error?.code).toBe('BUNDLE_002');
+
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({
+        ...bundle,
+        status: 'DRAFT' as const,
+        participants: bundle.participants.filter((p) => p.memberId !== MOCK_MY_MEMBER_ID),
+      })),
+    }));
+    expect((await pick(draft.id, photoId, body)).json.error?.code).toBe('AUTH_002');
+  });
+
+  it('참여자를 제외하면 그 멤버의 픽도 함께 지워진다', async () => {
+    const draft = await createDraft();
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({
+        ...bundle,
+        photos: bundle.photos.map((photo) => ({
+          ...photo,
+          picks: [{ memberId: memberA, picked: true, version: 3 }],
+        })),
+      })),
+    }));
+    expect((await snapshotPicks(draft.id)).photos[0]!.picks.count).toBe(1);
+
+    await call('DELETE', `${base}/${draft.id}/participants/${memberA}`);
+
+    expect((await snapshotPicks(draft.id)).photos[0]!.picks.count).toBe(0);
+  });
+});

@@ -33,6 +33,25 @@ export const withTitleState = (
   };
 };
 
+/**
+ * 내 픽 버전이 뒤로 가는 상세로는 그 사진의 픽을 되돌리지 않음
+ * 픽 저장 응답은 번들 revision을 알려 주지 않아 캐시 revision이 그대로라, 저장보다 먼저 시작한 재조회가 나중에 도착하면
+ * 같은 revision으로 보여 방금 저장한 픽을 덮을 수 있음. 내 픽 버전(`picks.version`)은 사진마다 오르기만 하므로 그 값으로 낡은 응답을 거름
+ * 같은 버전이면 다른 멤버의 픽이 더 새로울 수 있어 들어온 값을 씀
+ */
+export const keepNewerPicks = (previous: BundleDetail, incoming: BundleDetail): BundleDetail => {
+  let changed = false;
+  const photos = incoming.photos.map((photo) => {
+    const before = previous.photos.find((old) => old.id === photo.id)?.picks;
+    if (before && before.version > (photo.picks?.version ?? 0)) {
+      changed = true;
+      return { ...photo, picks: before };
+    }
+    return photo;
+  });
+  return changed ? { ...incoming, photos } : incoming;
+};
+
 /** 이벤트 처리 결과: 상세에 반영한 값, 서버 최신 상세로 맞춤, 아무것도 하지 않음 */
 export type BundleEventOutcome =
   | { kind: 'apply'; detail: BundleDetail }
@@ -86,8 +105,15 @@ export const applyContentEvent = (
     }
     case 'PHOTOS': {
       const parsed = schemas.PHOTOS.safeParse(data);
+      // 픽은 전용 이벤트가 없고, 방송 이벤트의 픽은 요청자 기준 값(pickedByMe·version)이 아니라 쓰지 않고 기존 픽을 이어 붙임
       return parsed.success
-        ? next({ photos: toDetailPhotos(parsed.data.photos), dateChips: parsed.data.dateChips })
+        ? next({
+            photos: toDetailPhotos(parsed.data.photos).map((photo) => ({
+              ...photo,
+              picks: detail.photos.find((old) => old.id === photo.id)?.picks,
+            })),
+            dateChips: parsed.data.dateChips,
+          })
         : REFETCH;
     }
     case 'COMMENT': {
