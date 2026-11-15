@@ -22,7 +22,8 @@ import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
 import { getDraftAccess } from '../../lib/permissions';
-import { getPhotoEditors, getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
+import { getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
+import { PresenceScope } from './PresenceScope';
 import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 
 // 앨범 저장 API 연결 전의 목 저장 시간: 저장 중에는 화면 전체에 딤과 로딩 점을 보임(화면설계서 5번 「저장 진행 중 로딩 애니메이션」)
@@ -53,7 +54,7 @@ const UNKNOWN_SOURCE: PhotoSource = { takenAt: null, uploaderIds: [] };
 type DraftPhotoViewerProps = {
   draft: Draft;
   viewer: DraftViewer;
-  actions: Pick<DraftActions, 'removePhoto'>;
+  actions: Pick<DraftActions, 'removePhoto' | 'presence'>;
   /** 처음 보여 줄 사진 id */
   initialPhotoId: string;
   /** 사진함 원본 사진 id별 촬영 날짜·올린 멤버. 없으면 번들에 담은 사람과 날짜 없음으로 보임 */
@@ -134,18 +135,15 @@ export function DraftPhotoViewer({
   const removeAndContinue = (photoId: string) => {
     const index = photos.findIndex((photo) => photo.id === photoId);
     const neighbor = photos[index + 1] ?? photos[index - 1];
-    actions.removePhoto(photoId);
+    // 연결이 끊겨 막히면 다른 사진으로 넘어가지 않음
+    if (!actions.removePhoto(photoId)) return;
     if (neighbor && photoId === activeId) showPhoto(neighbor.id);
   };
 
-  // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 최신 값으로 다시 확인
+  // 확인 창이 떠 있는 사이 사진이 이미 빠졌을 수 있어 최신 값으로 다시 확인
   // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
   const confirmRemove = usePreservedCallback((photoId: string) => {
     if (!photos.some((photo) => photo.id === photoId)) return false;
-    if (getPhotoEditors(draft, viewer, photoId).length > 0) {
-      notify(BUNDLE_MESSAGES.editingBlocked);
-      return false;
-    }
     if (getRemovePhotoKind(photos) === 'last') return true;
     removeAndContinue(photoId);
     return false;
@@ -175,9 +173,6 @@ export function DraftPhotoViewer({
   const requestRemove = () => {
     if (!activePhoto) return;
     if (!access.canEdit) return notify(BUNDLE_MESSAGES.editOnlyParticipants);
-    if (getPhotoEditors(draft, viewer, activePhoto.id).length > 0) {
-      return notify(BUNDLE_MESSAGES.editingBlocked);
-    }
     showRemoveDialog(getRemovePhotoKind(photos), activePhoto.id);
   };
 
@@ -256,6 +251,8 @@ export function DraftPhotoViewer({
         inert={saving}
       />
       {saving ? <PageLoading /> : null}
+      {/* 삭제 확인 창이 열려 있는 동안 사진을 작업 중으로 알림 */}
+      {removeDialogOpen ? <PresenceScope presence={actions.presence} target="PHOTOS" /> : null}
     </PageShell>
   );
 }

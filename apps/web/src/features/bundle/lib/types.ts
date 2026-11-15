@@ -35,17 +35,21 @@ export type DraftComment = {
 
 export type DraftVisibility = 'members' | 'public';
 
-/** 다른 멤버가 편집 중인 영역(멤버 id). 실시간 presence 연결 전에는 fixture 값이고 서버 응답에서는 비어 있음 */
+/**
+ * 누가 어느 영역을 작업 중인지(멤버 id, 실시간 presence). 잠그지 않고 표시만 하며 여러 멤버가 같은 영역에 있을 수 있음(기능 spec 4.3.13)
+ * 제목·코멘트는 실제로 입력 중인 멤버, 사진은 열린 화면과 진행 작업을 한곳에 모은 멤버
+ */
 export type DraftEditing = {
-  title?: string | undefined;
-  /** 사진을 편집 중인 멤버 모두 */
-  photoMemberIds?: readonly string[] | undefined;
-  /** 사진 한 장 단위의 잠금: 사진 id → 그 사진을 편집 중인 멤버 */
-  photoEditors?: Readonly<Record<string, readonly string[]>> | undefined;
-  location?: string | undefined;
-  date?: string | undefined;
-  /** 코멘트를 쓰는 중인 멤버(잠그지 않고 표시만) */
+  titleMemberIds?: readonly string[] | undefined;
   commentMemberIds?: readonly string[] | undefined;
+  /** 코멘트를 입력 중인 멤버가 지금 친 글자(입력 미리보기). 멤버 id → 현재 전체 입력 */
+  commentTexts?: Readonly<Record<string, string>> | undefined;
+  photoMemberIds?: readonly string[] | undefined;
+  /** 새 위치를 추가하려는 멤버 */
+  locationAddMemberIds?: readonly string[] | undefined;
+  /** 위치 줄을 바꾸려는 멤버: 위치 id → 멤버 */
+  locationEditors?: Readonly<Record<string, readonly string[]>> | undefined;
+  dateMemberIds?: readonly string[] | undefined;
 };
 
 export type Draft = {
@@ -63,6 +67,8 @@ export type Draft = {
   /** 공개 범위. 초안을 만들면 고르지 않은 상태(null)로 시작하고, 발행하려면 하나를 골라야 함(기능 spec 4.3.9) */
   visibility: DraftVisibility | null;
   editing: DraftEditing;
+  /** 지금 이 초안에 들어와 있는 멤버(멤버 카드의 초록 점, 기능 spec 4.3.2) */
+  viewingMemberIds: readonly string[];
 };
 
 /** 지금 초안을 보는 사람. 참여 멤버가 아닌 번치 멤버도 포함 */

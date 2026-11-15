@@ -45,8 +45,11 @@ export const BUNDLE_MESSAGES = {
   deletedDraftTitle: '번들이 삭제됐어요',
   deletedDraftDescription: '작성 중이던 번들이 삭제되어 더 이상 편집할 수 없어요.',
   publishedDraftTitle: '번들이 업로드됐어요',
-  // 시안은 「○○님이」로 업로드한 멤버 이름을 보이지만 초안 응답에 그 정보가 없어 이름 없이 안내
-  publishedDraftDescription: '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
+  // 기능 spec 4.3.1: 「{닉네임}님이 번들을 업로드해…」. 발행자 닉네임을 받지 못했을 때만 이름 없이 안내
+  publishedDraftDescription: (nickname: string | undefined) =>
+    nickname
+      ? `${nickname}님이 번들을 업로드해 더 이상 편집할 수 없어요.`
+      : '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
   missingDraftConfirm: '확인',
   // 서버 저장·발행 실패 안내(서버 연동 때 추가한 문구)
   saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
@@ -55,6 +58,8 @@ export const BUNDLE_MESSAGES = {
   // 업로드 완료 토스트(번치 홈으로 이동하며 띄움)
   published: '업로드가 완료되었어요',
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
+  // 편집 중 참여 멤버에서 빠졌을 때(기능 spec 4.3.2)
+  removedFromDraft: '번들 참여 멤버에서 제외되어 보기만 할 수 있어요.',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
   // 사진 빼기·이동·추가를 서버에 보내지 못했을 때의 임시 안내(기획 원문 없음)
   photosChangeFailed: '사진 구성을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.',
@@ -111,10 +116,10 @@ export const BUNDLE_MESSAGES = {
   draftDeleted: '작성 중인 번들을 삭제했어요.',
   // 기획 원문 없는 임시 안내: 나가기를 서버에 보내지 못했을 때
   leaveFailed: '번들에서 나가지 못했어요. 잠시 후 다시 시도해 주세요.',
-  // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
-  editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
+  // 기획 원문 없는 접근성 이름(화면에는 안 보임): 위치·날짜 줄 이름에 붙임
   editingLabel: (name: string) => `${name}님이 편집 중`,
-  commentEditingLabel: (name: string) => `${name}님이 작성 중`,
+  // 기획 원문 없는 접근성 이름(화면에는 안 보임): 멤버 카드의 초록 점(지금 이 초안에 들어와 있는 멤버)
+  viewingLabel: (name: string) => `${name}님이 보는 중`,
   roleLabel: { owner: '번치장', coOwner: '공동 번치장', draftAuthor: '초안 작성자' },
   // 위치 순서 바꾸기(햄버거 핸들을 잡고 끌기, Figma `5367:146358`)
   locationReorderLabel: (name: string) => `${name} 순서 바꾸기`,

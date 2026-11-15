@@ -5,3 +5,9 @@ export const bundleKeys = {
   detail: (bunchId: string | undefined, bundleId: string | undefined) =>
     [...bundleKeys.all, 'detail', bunchId, bundleId] as const,
 };
+
+// 진행 중인 변경을 화면 밖에서 구분할 때 쓰는 mutation key
+export const bundleMutationKeys = {
+  /** 초안 나가기(본인이 나가는 동안 참여 제외 안내를 띄우지 않기 위함) */
+  leave: [...bundleKeys.all, 'leave'] as const,
+};

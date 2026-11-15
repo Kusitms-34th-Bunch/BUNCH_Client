@@ -99,6 +99,8 @@ export const bundleSnapshotSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   publishedAt: z.string().nullish(),
+  publishedBy: z.number().int().positive().nullish(),
+  publisherNickname: z.string().nullish(),
 }) satisfies z.ZodType<
   Omit<
     ApiContract<Schemas['BundleSnapshot']>,
@@ -120,6 +122,16 @@ export type PublishBlockerReason =
   | 'PARTICIPANT_INACTIVE'
   | 'COMMENTS_REQUIRED'
   | 'PHOTOS_REQUIRED';
+
+/** 제목 CRDT 병합 응답(BundleSnapshot이 아니라 제목 상태만, 번들 revision은 없음) */
+export const bundleTitleStateSchema = z.object({
+  title: z.string(),
+  titleCrdtState: z.string(),
+  titleVersion: z.number().int().nonnegative(),
+  titleTooLong: z.boolean(),
+}) satisfies z.ZodType<ApiContract<Schemas['BundleTitleState']>>;
+
+export type BundleTitleState = z.infer<typeof bundleTitleStateSchema>;
 
 export type BundleDetail = {
   id: string;
@@ -154,6 +166,10 @@ export type BundleDetail = {
   permissions: z.infer<typeof bundlePermissionsSchema>;
   /** 병합된 제목이 40자를 넘음(자르지 않고 보존, 발행 불가 사유) */
   titleTooLong: boolean;
+  /** 제목 CRDT 문서(Automerge 전체 저장 문서의 base64). 발행본에는 없음 */
+  titleCrdtState: string | undefined;
+  /** 발행본의 발행자 닉네임(초안에는 없음) */
+  publisherNickname: string | undefined;
   /** 사진 구성 변경 응답에만 있음. 정원 초과로 못 담은 사진과 같은 키 재시도 여부 */
   photoChangeResult: PhotoChangeResult | undefined;
 };
@@ -167,6 +183,43 @@ export type PhotoChangeResult = {
   replayed: boolean;
 };
 
+type SnapshotPhoto = z.infer<typeof bundlePhotoSchema>;
+type SnapshotLocation = z.infer<typeof bundleLocationSchema>;
+type SnapshotParticipant = z.infer<typeof bundleParticipantSchema>;
+type SnapshotComment = z.infer<typeof bundleCommentSchema>;
+
+/** 번들 사진을 화면 모양으로 변환(position 순서) */
+export const toDetailPhotos = (photos: readonly SnapshotPhoto[]): BundleDetail['photos'] =>
+  [...photos]
+    .sort((a, b) => a.position - b.position)
+    .map((photo) => ({
+      id: toDomainId(photo.id),
+      sourcePhotoId: photo.photoId == null ? undefined : toDomainId(photo.photoId),
+      src: photo.imageUrl,
+      position: photo.position,
+      addedBy: toDomainId(photo.addedBy),
+    }));
+
+export const toDetailLocations = (
+  locations: readonly SnapshotLocation[],
+): BundleDetail['locations'] =>
+  locations.map((location) => ({
+    id: `${location.provider}:${location.externalId}`,
+    name: location.name,
+  }));
+
+/** 참여 멤버 id(참여 시각 순) */
+export const toParticipantIds = (participants: readonly SnapshotParticipant[]): string[] =>
+  [...participants]
+    .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
+    .map((participant) => toDomainId(participant.memberId));
+
+export const toDetailComment = (comment: SnapshotComment): BundleDetail['comments'][number] => ({
+  memberId: toDomainId(comment.memberId),
+  content: comment.content,
+  version: comment.version,
+});
+
 /** 서버 응답을 화면 계층이 쓰는 모양으로 변환(문자열 id, 사진 순서 정렬) */
 export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): BundleDetail => ({
   id: toDomainId(snapshot.id),
@@ -179,32 +232,17 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   visibilityVersion: snapshot.visibilityVersion,
   date: snapshot.date ?? null,
   dateVersion: snapshot.dateVersion,
-  locations: snapshot.locations.map((location) => ({
-    id: `${location.provider}:${location.externalId}`,
-    name: location.name,
-  })),
+  locations: toDetailLocations(snapshot.locations),
   revision: snapshot.revision,
-  photos: [...snapshot.photos]
-    .sort((a, b) => a.position - b.position)
-    .map((photo) => ({
-      id: toDomainId(photo.id),
-      sourcePhotoId: photo.photoId == null ? undefined : toDomainId(photo.photoId),
-      src: photo.imageUrl,
-      position: photo.position,
-      addedBy: toDomainId(photo.addedBy),
-    })),
-  participantIds: [...snapshot.participants]
-    .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
-    .map((participant) => toDomainId(participant.memberId)),
-  comments: snapshot.comments.map((comment) => ({
-    memberId: toDomainId(comment.memberId),
-    content: comment.content,
-    version: comment.version,
-  })),
+  photos: toDetailPhotos(snapshot.photos),
+  participantIds: toParticipantIds(snapshot.participants),
+  comments: snapshot.comments.map(toDetailComment),
   dateChips: snapshot.dateChips,
   publishBlockers: snapshot.publishBlockers,
   permissions: snapshot.permissions,
   titleTooLong: snapshot.titleTooLong,
+  titleCrdtState: snapshot.titleCrdtState ?? undefined,
+  publisherNickname: snapshot.publisherNickname ?? undefined,
   photoChangeResult: snapshot.photoChangeResult
     ? {
         addedPhotoIds: snapshot.photoChangeResult.addedPhotoIds.map(toDomainId),
@@ -213,3 +251,58 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
       }
     : undefined,
 });
+
+/**
+ * 번들 topic 이벤트의 공통 봉투(v5): type으로 분기하고, revision은 내용 이벤트에만 있음
+ * data는 type별 스키마(아래)로 다시 검사
+ */
+export const bundleEventEnvelopeSchema = z.object({
+  type: z.string(),
+  revision: z.number().int().nonnegative().nullish(),
+  data: z.unknown(),
+});
+
+const versionSchema = z.number().int().nonnegative();
+
+/** 내용 이벤트 type별 data. 모양이 다르면 이벤트로 적용하지 않고 최신 상세를 다시 받음 */
+export const bundleEventDataSchemas = {
+  DATE: z.object({
+    value: z.string().nullable(),
+    version: versionSchema,
+    dateChips: z.array(z.string()),
+  }),
+  VISIBILITY: z.object({
+    value: z.enum(['PUBLIC', 'PRIVATE']).nullable(),
+    version: versionSchema,
+  }),
+  LOCATION: z.object({ locations: z.array(bundleLocationSchema), version: versionSchema }),
+  PHOTOS: z.object({ photos: z.array(bundlePhotoSchema), dateChips: z.array(z.string()) }),
+  COMMENT: bundleCommentSchema,
+  PARTICIPANTS: z.object({
+    participants: z.array(bundleParticipantSchema),
+    comments: z.array(bundleCommentSchema),
+    removedCommentMemberIds: z.array(z.number().int().positive()).nullish(),
+  }),
+  TITLE: z.object({
+    title: z.string(),
+    titleVersion: versionSchema,
+    titleCrdtState: z.string(),
+    titleTooLong: z.boolean(),
+  }),
+  /** 별도 갱신(내용 revision을 올리지 않음): 배열 그대로이거나 `{ dateChips }` */
+  DATE_CHIPS: z.union([
+    z.array(z.string()),
+    z.object({ dateChips: z.array(z.string()) }).transform((data) => data.dateChips),
+  ]),
+} as const;
+
+/** revision 규칙으로 적용하는 내용 이벤트 type(DATE_CHIPS와 CREATED·PUBLISHED·EDITED는 따로 처리) */
+export const CONTENT_EVENT_TYPES = [
+  'DATE',
+  'VISIBILITY',
+  'LOCATION',
+  'PHOTOS',
+  'COMMENT',
+  'PARTICIPANTS',
+  'TITLE',
+] as const;

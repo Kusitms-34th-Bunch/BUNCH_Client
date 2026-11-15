@@ -5,7 +5,7 @@ Root `AGENTS.md`와 `docs/architecture/mobile-shell.md`를 먼저 따른다. 이
 ## 이 워크스페이스의 성격
 
 - 이 앱은 화면을 직접 그리지 않는다. `react-native-webview`로 `apps/web`(Next.js)을 그대로 열고, 카메라·푸시·공유 같은 네이티브 기능만 `packages/bridge`를 통해 제공한다.
-- 화면을 RN으로 다시 만드는 "진짜 네이티브 앱" 패턴은 지금 범위가 아니다. 예외는 iOS 시스템 탭 바와 iOS 26 플로팅 버튼(결정 기록 `docs/decisions/records/024-native-glass-floating-button.md`) 둘이다. 이를 위해 expo-router(`app/`)로 첫 화면(WebView 하나)과 탭 화면(탭마다 WebView)을 나눈다(결정 기록 `docs/decisions/records/012-ios-system-tab-bar.md`). 그 밖의 WebView 밖 네이티브 UI는 실제로 필요해지기 전까지 추가하지 않는다.
+- 화면을 RN으로 다시 만드는 "진짜 네이티브 앱" 패턴은 지금 범위가 아니다. 예외는 iOS 시스템 탭 바와 iOS 26 플로팅 버튼(결정 기록 `docs/decisions/records/026-native-glass-floating-button.md`) 둘이다. 이를 위해 expo-router(`app/`)로 첫 화면(WebView 하나)과 탭 화면(탭마다 WebView)을 나눈다(결정 기록 `docs/decisions/records/012-ios-system-tab-bar.md`). 그 밖의 WebView 밖 네이티브 UI는 실제로 필요해지기 전까지 추가하지 않는다.
 
 ## 폴더 구조
 

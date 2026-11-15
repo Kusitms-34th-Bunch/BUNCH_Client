@@ -1,7 +1,10 @@
 import type { Draft, DraftEditing, SaveStatus } from './types';
+import { TITLE_MAX_LENGTH } from '../constants/messages';
+import { countTitleGraphemes } from './title';
 
 export type PublishBlocker =
   | 'title'
+  | 'titleTooLong'
   | 'photos'
   | 'visibility'
   | 'members'
@@ -25,6 +28,8 @@ const MIN_MEMBERS = 2;
 export const getPublishBlockers = (draft: Draft, context: PublishContext): PublishBlocker[] => {
   const blockers: PublishBlocker[] = [];
   if (draft.title.trim() === '') blockers.push('title');
+  // 동시 편집이 합쳐져 40자를 넘을 수 있음(자르지 않고 그대로 두며 줄일 때까지 발행을 막음)
+  else if (countTitleGraphemes(draft.title) > TITLE_MAX_LENGTH) blockers.push('titleTooLong');
   if (draft.photos.length < 1) blockers.push('photos');
   if (draft.visibility === null) blockers.push('visibility');
   if (draft.members.length < MIN_MEMBERS) blockers.push('members');
@@ -45,15 +50,13 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
 export const hasOtherEditors = (editing: DraftEditing, myId: string): boolean =>
   [...getEditingMemberIds(editing)].some((memberId) => memberId !== myId);
 
-/** 지금 무엇이든 편집 중인 멤버 id(제목·사진·위치·날짜·코멘트). 멤버 카드의 초록 점 기준 */
+/** 지금 무엇이든 작업 중인 멤버 id(제목·코멘트 입력, 사진·위치·날짜 작업) */
 export const getEditingMemberIds = (editing: DraftEditing): ReadonlySet<string> =>
-  new Set(
-    [
-      editing.title,
-      editing.location,
-      editing.date,
-      ...(editing.photoMemberIds ?? []),
-      ...Object.values(editing.photoEditors ?? {}).flat(),
-      ...(editing.commentMemberIds ?? []),
-    ].filter((memberId): memberId is string => memberId !== undefined),
-  );
+  new Set([
+    ...(editing.titleMemberIds ?? []),
+    ...(editing.commentMemberIds ?? []),
+    ...(editing.photoMemberIds ?? []),
+    ...(editing.locationAddMemberIds ?? []),
+    ...Object.values(editing.locationEditors ?? {}).flat(),
+    ...(editing.dateMemberIds ?? []),
+  ]);

@@ -1,4 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import * as Automerge from '@automerge/automerge/slim';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  editTitle,
+  ensureTitleCrdt,
+  loadTitleDoc,
+  saveTitleDoc,
+} from '@/features/bundle/lib/titleCrdt';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '../server';
@@ -515,5 +522,150 @@ describe('가짜 서버 번들 발행', () => {
 
     const result = await publish(id, await revisionOf(id));
     expect(result.status).toBe(403);
+  });
+});
+
+describe('가짜 서버 번들 presence 조회', () => {
+  it('번치 멤버는 빈 presence를 받고 없는 번들은 RESOURCE_001이다', async () => {
+    const draft = await createDraft();
+
+    const found = await call('GET', `${base}/${draft.id}/presence`);
+    const missing = await call('GET', `${base}/999999/presence`);
+
+    expect(found.status).toBe(200);
+    expect(found.json.data).toEqual({ members: [], typing: [], editing: [] });
+    expect(missing.json.error?.code).toBe('RESOURCE_001');
+  });
+});
+
+describe('가짜 서버 번들 제목 CRDT 병합', () => {
+  beforeAll(async () => {
+    await ensureTitleCrdt();
+  });
+
+  type TitleState = {
+    title: string;
+    titleCrdtState: string;
+    titleVersion: number;
+    titleTooLong: boolean;
+  };
+  const merge = (id: number, state: unknown) =>
+    call('PATCH', `${base}/${id}/title/crdt`, { state }) as unknown as Promise<{
+      status: number;
+      json: { data: TitleState; error: { code: string } | null };
+    }>;
+
+  // 서버가 snapshot으로 준 문서에서 제목을 고친 전체 저장 문서
+  const edit = async (id: number, text: string) => {
+    const { json } = await call('GET', `${base}/${id}`);
+    const state = (json.data as unknown as { titleCrdtState: string }).titleCrdtState;
+    return saveTitleDoc(editTitle(loadTitleDoc(state), text));
+  };
+
+  it('snapshot에 CRDT 문서가 있고 병합하면 제목과 버전이 오르며 revision 없는 제목 상태를 돌려준다', async () => {
+    const draft = await createDraft();
+
+    const { status, json } = await merge(draft.id, await edit(draft.id, '  설악산 단풍  '));
+
+    expect(status).toBe(200);
+    // 표시 제목만 NFC·trim하고 정확히 네 필드만 돌려줌
+    expect(Object.keys(json.data).sort()).toEqual(
+      ['title', 'titleCrdtState', 'titleTooLong', 'titleVersion'].sort(),
+    );
+    expect(json.data).toMatchObject({ title: '설악산 단풍', titleVersion: 1, titleTooLong: false });
+  });
+
+  it('완전히 같은 문서를 다시 보내면 아무것도 바뀌지 않는다', async () => {
+    const draft = await createDraft();
+    const state = await edit(draft.id, '설악산');
+    await merge(draft.id, state);
+
+    const again = await merge(draft.id, state);
+
+    expect(again.json.data.titleVersion).toBe(1);
+  });
+
+  it('40자를 넘어도 자르지 않고 titleTooLong으로 알리며 발행 사유에 넣는다', async () => {
+    const draft = await createDraft();
+
+    const { json } = await merge(draft.id, await edit(draft.id, '가'.repeat(41)));
+    const detail = await call('GET', `${base}/${draft.id}`);
+
+    expect(json.data).toMatchObject({ title: '가'.repeat(41), titleTooLong: true });
+    expect(detail.json.data.publishBlockers).toContain('TITLE_TOO_LONG');
+  });
+
+  it('깨진 문서·줄바꿈이 든 제목·빈 상태는 COMMON_001이다', async () => {
+    const draft = await createDraft();
+
+    expect((await merge(draft.id, 'not-base64!!')).json.error?.code).toBe('COMMON_001');
+    expect((await merge(draft.id, '')).json.error?.code).toBe('COMMON_001');
+    expect((await merge(draft.id, await edit(draft.id, '한 줄\n두 줄'))).json.error?.code).toBe(
+      'COMMON_001',
+    );
+  });
+
+  it('title이 문자열이 아닌 문서는 오류로 거절한다(서버가 죽지 않고 COMMON_001)', async () => {
+    const draft = await createDraft();
+    const { json } = await call('GET', `${base}/${draft.id}`);
+    const state = (json.data as unknown as { titleCrdtState: string }).titleCrdtState;
+    // 서버 문서 위에 title을 숫자로 바꾼 변경을 얹은 문서(병합하면 이 값이 이김)
+    const broken = Automerge.change(loadTitleDoc(state), (doc) => {
+      (doc as unknown as { title: unknown }).title = 123;
+    });
+    const bytes = Automerge.save(broken);
+
+    const result = await merge(draft.id, Buffer.from(bytes).toString('base64'));
+
+    expect(result.status).toBe(400);
+    expect(result.json.error?.code).toBe('COMMON_001');
+  });
+
+  it('처음 상태 검사 뒤 문서를 준비하는 사이 번들이 발행되면 제목을 바꾸지 않고 BUNDLE_002를 돌려준다', async () => {
+    const draft = await createDraft();
+    const state = await edit(draft.id, '발행 뒤 도착한 제목');
+    const readTitle = () => mockDb.get().bundles.find((bundle) => bundle.id === draft.id)?.title;
+    const titleBefore = readTitle();
+
+    // 핸들러의 번들 조회 순서: 1) 범위 확인(초안 확인) 2) 문서 준비 3) 최신 번들 다시 읽기
+    // 2번째 조회 시점에 다른 요청이 발행한 것처럼 상태를 바꿔, 처음 검사와 최신 읽기 사이의 경합을 고정함
+    const original = mockDb.get.bind(mockDb);
+    let reads = 0;
+    const spy = vi.spyOn(mockDb, 'get').mockImplementation(() => {
+      reads += 1;
+      if (reads === 2) {
+        mockDb.update((current) => ({
+          ...current,
+          bundles: current.bundles.map((bundle) =>
+            bundle.id === draft.id ? { ...bundle, status: 'PUBLISHED' as const } : bundle,
+          ),
+        }));
+      }
+      return original();
+    });
+
+    let result;
+    try {
+      result = await merge(draft.id, state);
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(reads).toBeGreaterThanOrEqual(3);
+    expect(result.status).toBe(409);
+    expect(result.json.error?.code).toBe('BUNDLE_002');
+    expect(readTitle()).toBe(titleBefore);
+  });
+
+  it('참여하지 않은 사람은 AUTH_002, 없는 번들은 RESOURCE_001이다', async () => {
+    const draft = await createDraft();
+    const state = await edit(draft.id, '제목');
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({ ...bundle, participants: [] })),
+    }));
+
+    expect((await merge(draft.id, state)).json.error?.code).toBe('AUTH_002');
+    expect((await merge(999999, state)).json.error?.code).toBe('RESOURCE_001');
   });
 });

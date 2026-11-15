@@ -1,4 +1,4 @@
-# 024: iOS 26 쉘의 플로팅 버튼은 네이티브 Liquid Glass로 그린다
+# 026: iOS 26 쉘의 플로팅 버튼은 네이티브 Liquid Glass로 그린다
 
 - 상태: proposed
 - 기록일: 2026-11-15

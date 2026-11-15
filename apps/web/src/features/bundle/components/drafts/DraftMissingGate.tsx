@@ -23,7 +23,9 @@ export function DraftMissingGate() {
       title={published ? BUNDLE_MESSAGES.publishedDraftTitle : BUNDLE_MESSAGES.deletedDraftTitle}
       description={
         published
-          ? BUNDLE_MESSAGES.publishedDraftDescription
+          ? BUNDLE_MESSAGES.publishedDraftDescription(
+              state.kind === 'missing' ? state.publisherNickname : undefined,
+            )
           : BUNDLE_MESSAGES.deletedDraftDescription
       }
       confirmLabel={BUNDLE_MESSAGES.missingDraftConfirm}

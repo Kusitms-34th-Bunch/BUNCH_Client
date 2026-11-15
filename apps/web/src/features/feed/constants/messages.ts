@@ -64,11 +64,12 @@ export const FEED_MESSAGES = {
   deleteBundleConfirm: '삭제',
   bundleDeleted: '번들을 삭제했어요',
   bundleDeleting: '번들을 삭제하는 중이에요',
-  bundleEdited: '번들을 수정했어요',
+  visibilitySaved: '공개 범위를 수정했어요.',
   visibilityTitle: '번들의 공개 범위를 설정해 주세요',
   visibilityAll: '전체 공개',
   visibilityAllDescription: '번치의 모든 사용자가 볼 수 있어요',
   visibilityPartial: '일부 공개',
+  // Figma `5367:151697` 기준(1110판 명세는 「우리 번치의 팔로워도 볼 수 있어요」)
   visibilityPartialDescription: '우리 번치를 팔로우한 번치도 볼 수 있어요',
   visibilityMembers: '멤버 공개',
   visibilityMembersDescription: '우리 번치 멤버만 볼 수 있어요',

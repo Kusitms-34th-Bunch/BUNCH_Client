@@ -118,7 +118,7 @@ iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …�
 
 ## iOS 26 플로팅 버튼
 
-iOS 26 이상 탭 화면에서는 플로팅 버튼(번치 홈 「번들 만들기」, 사진함 「사진 올리기」·「메뉴 열기」)도 쉘이 `expo-glass-effect`의 `GlassView`로 그린다. 근거와 대안은 `docs/decisions/records/024-native-glass-floating-button.md`다.
+iOS 26 이상 탭 화면에서는 플로팅 버튼(번치 홈 「번들 만들기」, 사진함 「사진 올리기」·「메뉴 열기」)도 쉘이 `expo-glass-effect`의 `GlassView`로 그린다. 근거와 대안은 `docs/decisions/records/026-native-glass-floating-button.md`다.
 
 - 웹 hook `useNativeFloatingButton`(`apps/web/src/shared/hooks/`)이 `setNativeFloatingButton({ tab, button })`으로 아이콘(`add`·`more`)·접근성 이름·`disabled`·`expanded`를 보낸다. `button: null`이면 그 탭의 버튼을 지운다. 쉘이 true를 돌려주면 웹 버튼을 그리지 않는다.
 - 쉘은 iOS이고 `isLiquidGlassAvailable()`이 true이고 탭 화면일 때만 그린다. 탭 ID는 `TAB_IDS`만 받는다. 지우기 요청은 언제나 받는다.

@@ -7,6 +7,7 @@ import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed'
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import {
   addBundleParticipant,
   changeBundlePhotos,
@@ -19,7 +20,7 @@ import {
   removeBundleParticipant,
   saveBundleComment,
   saveBundleDate,
-  saveBundleTitle,
+  mergeBundleTitle,
   saveBundleVisibility,
 } from './bundles';
 
@@ -107,7 +108,15 @@ describe('번들 API', () => {
     ]);
     const base = { bunchId, bundleId: draft.id, mode: 'DRAFT' } as const;
 
-    await saveBundleTitle({ ...base, value: '설악산', expectedVersion: 0 });
+    await ensureTitleCrdt();
+    const edited = editTitle(loadTitleDoc(draft.titleCrdtState ?? ''), '설악산');
+    const merged = await mergeBundleTitle({
+      bunchId,
+      bundleId: draft.id,
+      state: saveTitleDoc(edited),
+      requestId: createIdempotencyKey(),
+    });
+    expect(merged).toMatchObject({ title: '설악산', titleVersion: 1, titleTooLong: false });
     await saveBundleVisibility({ ...base, value: 'PRIVATE', expectedVersion: 0 });
     await saveBundleDate({ ...base, value: '2026-10-18', expectedVersion: 0 });
     const saved = await saveBundleComment({ ...base, value: '내 코멘트', expectedVersion: 0 });

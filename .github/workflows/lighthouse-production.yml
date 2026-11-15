@@ -1,0 +1,170 @@
+name: Lighthouse Production
+
+# 운영 배포(Web Deploy)가 끝난 뒤 운영 주소를 측정하고 릴리스 PR에 남김(docs/workflows/ci.md 「운영 측정」)
+# 배포 workflow와 실행을 나눔: lockfile 밖 도구(`yarn dlx`)가 배포 실행의 캐시(main 범위)·artifact에 닿지 않게 하고,
+# 배포 동시 실행 그룹을 측정이 점유하지 않게 함. workflow_run은 기본 브랜치(develop)의 이 파일로 develop 범위에서 실행
+on:
+  workflow_run:
+    workflows: [Web Deploy]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: lighthouse-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: 운영 Lighthouse
+    # 배포가 성공해 운영 주소가 바뀐 경우만. workflow 이름만 같은 다른 파일·포크 실행은 제외
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.path == '.github/workflows/web-deploy.yml' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # 로그인 없이 열리는 페이지만(운영 로그인 화면은 docs/decisions/records/023 참고)
+      # 페이지당 측정 횟수(보고 스크립트가 일부만 잰 페이지를 가려냄)
+      LIGHTHOUSE_RUNS: 3
+      LIGHTHOUSE_URLS: >-
+        https://app.bunch.kr/intro
+        https://app.bunch.kr/invite/lighthouse-check
+    steps:
+      # 보고 스크립트와 Yarn 버전 파일만 받음(저장소 코드를 설치·실행하지 않음)
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            package.json
+            .yarnrc.yml
+            scripts/report-lighthouse.mjs
+          sparse-checkout-cone-mode: false
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # 배포는 PR을 기다리게 하지 않으므로 페이지당 3번(보고는 성능 중앙값). 한 페이지가 열리지 않아도(예: 아직 배포 안 된 화면) 나머지는 측정
+      - name: Run Lighthouse
+        id: lighthouse
+        continue-on-error: true
+        run: |
+          for url in $LIGHTHOUSE_URLS; do
+            yarn dlx @lhci/cli@0.15.1 collect --url="$url" --numberOfRuns="$LIGHTHOUSE_RUNS" --additive \
+              --settings.locale=ko --settings.disableFullPageScreenshot || echo "측정 실패: $url"
+          done
+
+      # 직전 운영 측정과 비교(main 배포마다 갱신)
+      - name: Restore Lighthouse baseline
+        uses: actions/cache/restore@v4
+        with:
+          path: apps/web/lighthouse-baseline.json
+          key: lighthouse-${{ runner.os }}-production-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: lighthouse-${{ runner.os }}-production-
+
+      - name: Report
+        continue-on-error: true
+        env:
+          LIGHTHOUSE_REPORT: lighthouse.md
+          LIGHTHOUSE_TITLE: 운영
+          LIGHTHOUSE_BASELINE_LABEL: 직전 운영
+        run: node scripts/report-lighthouse.mjs
+
+      # /invite처럼 아직 배포되지 않은 페이지가 늘 빠질 수 있어 측정된 페이지로 갱신
+      - name: Update Lighthouse baseline
+        id: baseline
+        continue-on-error: true
+        env:
+          LIGHTHOUSE_UPDATE_PARTIAL: allow
+        run: node scripts/report-lighthouse.mjs --update
+
+      - name: Save Lighthouse baseline
+        if: steps.baseline.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: apps/web/lighthouse-baseline.json
+          key: lighthouse-${{ runner.os }}-production-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-production
+          path: |
+            .lighthouseci
+            lighthouse.md
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 30
+
+  # 이 배포를 만든 develop → main 릴리스 PR에 운영 측정 결과를 남김. 저장소 코드를 받지 않음
+  comment:
+    name: 운영 Lighthouse 댓글
+    needs: measure
+    # main push 배포만(수동 배포는 실행 요약만). 측정을 건너뛴 실행(배포 실패)은 댓글 없음
+    if: >-
+      !cancelled() && github.event.workflow_run.event == 'push' &&
+      needs.measure.result != 'cancelled' && needs.measure.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download Lighthouse report
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: lighthouse-production
+          path: lighthouse
+
+      - name: Comment on the release pull request
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            // 배포한 커밋(Web Deploy 실행의 head)을 머지 커밋으로 만든 main 대상 PR(develop → main)
+            // 머지 커밋은 기본 브랜치(develop)에 없어 커밋→PR 조회 API로는 머지된 PR이 나오지 않음
+            const deployed = context.payload.workflow_run.head_sha;
+            const { data: pulls } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'closed',
+              base: 'main',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 30,
+            });
+            const release = pulls.find((pull) => pull.merge_commit_sha === deployed);
+            if (!release) {
+              core.info('이 배포 커밋에 연결된 릴리스 PR이 없어 댓글을 남기지 않습니다.');
+              return;
+            }
+            const report = fs.existsSync('lighthouse/lighthouse.md')
+              ? fs.readFileSync('lighthouse/lighthouse.md', 'utf8').trim()
+              : '### Lighthouse · 운영\n\n이번 배포는 측정하지 못했습니다. 실행 로그를 확인하세요.';
+            const marker = '<!-- lighthouse-production -->';
+            const body = [marker, report, '', `[실행 로그와 전체 리포트(artifact)](${process.env.RUN_URL})`].join('\n');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: release.number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (comment) => comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: release.number, body });
+            }

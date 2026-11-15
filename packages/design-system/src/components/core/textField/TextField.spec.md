@@ -53,7 +53,7 @@
 
 - 입력창은 native `input`이고 `aria-label`로 `label`을 이름으로 갖는다.
 - 지우기 버튼은 `aria-label`(`clearLabel`)이 이름이고 아이콘은 장식이다. 터치 영역 40px. 마우스를 누르는 동안 입력창 포커스가 빠지지 않게 `mousedown`을 막는다(Safari·터치).
-- `editing` 동안 입력창에 `aria-busy`를 걸고 애니메이션 자리는 `aria-hidden`이다. 진행을 말로 알리지는 않는다.
+- `editing` 동안 입력창에 `aria-busy`를 걸고(`editing`이 아닐 때는 호출하는 쪽이 준 `aria-busy`를 그대로 전달하고), 애니메이션 자리는 `aria-hidden`이다. 진행을 말로 알리지는 않는다.
 - 강제 색상 모드에서는 테두리 색 변화가 사라질 수 있어 2px 시스템 색 윤곽선을 추가한다.
 
 ## Styling과 의존성

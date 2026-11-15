@@ -40,6 +40,20 @@ export const requestLogout = async (accessToken: string) => {
   await createServerApi({ accessToken }).post('api/v1/auth/logout');
 };
 
+const wsTokenSchema = z.object({
+  token: z.string().min(1),
+  expiresAt: z.string().min(1),
+});
+
+/**
+ * 실시간 연결용 토큰 발급(백엔드 `POST /auth/ws-token`)
+ * 일회용이 아니라 만료 시각(`expiresAt`) 안에 연결하면 세션이 유지되므로, 연결(재연결)할 때마다 직전에 받아 씀
+ */
+export const requestWsToken = async (accessToken: string) =>
+  wsTokenSchema.parse(
+    unwrapEnvelope(await createServerApi({ accessToken }).post('api/v1/auth/ws-token').json()),
+  );
+
 const RECENT_REISSUE_MS = 10_000;
 // ponytail: 프로세스 메모리 기준이라 웹 서버 인스턴스가 여러 개면 인스턴스 사이에는 공유 안 됨(그때 Redis 등 공용 저장소로 이동)
 const reissues = new Map<string, Promise<TokenPair>>();

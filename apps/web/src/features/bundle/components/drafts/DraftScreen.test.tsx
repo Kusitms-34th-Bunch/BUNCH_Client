@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
@@ -24,17 +24,20 @@ const outsider: DraftViewer = { memberId: 'outsider', bunchRole: 'owner' };
 
 const actions = {
   setTitle: vi.fn(),
+  setTitleComposing: vi.fn(),
+  saveNow: vi.fn(),
+  presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
   setComment: vi.fn(),
   setVisibility: vi.fn(),
   addLocation: vi.fn(),
   removeLocation: vi.fn(),
   moveLocation: vi.fn(),
   setDate: vi.fn(),
-  addMember: vi.fn(),
-  removeMember: vi.fn(),
-  removePhoto: vi.fn(),
+  addMember: vi.fn(() => true),
+  removeMember: vi.fn(() => true),
+  removePhoto: vi.fn(() => true),
   movePhoto: vi.fn(),
-  replacePhotos: vi.fn(),
+  replacePhotos: vi.fn(() => true),
   searchPlaces: vi.fn(() => Promise.resolve([])),
   publish: vi.fn(() => Promise.resolve('published' as const)),
 } satisfies DraftActions;
@@ -49,27 +52,32 @@ const onImportFromBunchBox = vi.fn();
 const onImportFromGallery = vi.fn();
 
 type Options = {
+  actions?: DraftActions;
   draft?: Draft;
   viewer?: DraftViewer;
   saveStatus?: 'saved' | 'saving';
   offline?: boolean;
+  titleReady?: boolean;
 };
 
 // 초안은 공개 범위를 고르지 않은 채 시작하므로, 업로드할 수 있는 상태를 기본으로 두려고 공개를 골라 둠
 const publishable: Draft = { ...draftFixture, visibility: 'public' };
 
 const screenElement = ({
+  actions: screenActions = actions,
   draft = publishable,
   viewer = creator,
   saveStatus = 'saved',
   offline = false,
+  titleReady = true,
 }: Options = {}) => (
   <DraftScreen
     draft={draft}
     viewer={viewer}
     saveStatus={saveStatus}
     offline={offline}
-    actions={actions}
+    titleReady={titleReady}
+    actions={screenActions}
     currentYear={2026}
     onBack={onBack}
     onLeave={onLeave}
@@ -123,9 +131,20 @@ describe('DraftScreen 구성', () => {
   it('연결이 끊기면 배너를 보이고 「재시도」가 동작한다', async () => {
     renderScreen({ offline: true });
 
-    expect(screen.getByRole('alert')).toHaveTextContent(BUNDLE_MESSAGES.offlineBanner);
+    expect(screen.getByText(BUNDLE_MESSAGES.offlineBanner)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '재시도' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('연결이 끊긴 동안은 제목을 고칠 수 없고 안내 없이 반응만 없앤다', async () => {
+    renderScreen({ offline: true });
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    await userEvent.type(title, 'x');
+
+    expect(title).toHaveAttribute('readonly');
+    expect(actions.setTitle).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('뒤로가기를 누르면 onBack을 호출한다', async () => {
@@ -157,6 +176,19 @@ describe('역할별 권한', () => {
 
     expect(membersSection().queryByRole('button', { name: '추가' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '더보기' })).not.toBeInTheDocument();
+  });
+
+  it('제목·내 코멘트 입력란을 벗어나면 저장하지 못한 입력을 바로 저장하게 한다', async () => {
+    renderScreen({ viewer: creator });
+
+    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+    expect(actions.saveNow).not.toHaveBeenCalled();
+    await userEvent.tab();
+    expect(actions.saveNow).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByRole('textbox', { name: '지예 (나) 코멘트' }));
+    await userEvent.tab();
+    expect(actions.saveNow).toHaveBeenCalledTimes(2);
   });
 
   it('참여 멤버가 아닌 사람이 편집하려 하면 안내하고 값은 바뀌지 않는다', async () => {
@@ -223,7 +255,10 @@ describe('업로드 버튼', () => {
   });
 
   it('편집 중 확인 창에서 「취소」를 누르면 넘어가지 않는다', async () => {
-    renderScreen({ viewer: creator, draft: { ...publishable, editing: { title: 'gyeongjin' } } });
+    renderScreen({
+      viewer: creator,
+      draft: { ...publishable, editing: { titleMemberIds: ['gyeongjin'] } },
+    });
 
     await userEvent.click(uploadButton());
     const dialog = await screen.findByRole('alertdialog');
@@ -233,7 +268,7 @@ describe('업로드 버튼', () => {
   });
 
   it('확인 창이 열려 있는 사이 조건이 깨지면 계속해도 넘어가지 않고 안내한다', async () => {
-    const editingDraft: Draft = { ...publishable, editing: { title: 'gyeongjin' } };
+    const editingDraft: Draft = { ...publishable, editing: { titleMemberIds: ['gyeongjin'] } };
     const { rerender } = renderScreen({ viewer: creator, draft: editingDraft });
 
     await userEvent.click(uploadButton());
@@ -294,6 +329,111 @@ describe('입력', () => {
     expect(actions.setTitle).not.toHaveBeenCalled();
   });
 
+  it('동시 편집이 합쳐져 40자를 넘으면 자르지 않고 안내하며 업로드를 막는다', async () => {
+    renderScreen({ viewer: creator, draft: { ...publishable, title: '가'.repeat(41) } });
+
+    expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue('가'.repeat(41));
+    // 40자에 닿았을 때와 같은 오류(기능 spec)
+    expect(screen.getByRole('alert')).toHaveTextContent(BUNDLE_MESSAGES.titleMax);
+    expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(uploadButton());
+    expect(onUpload).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
+  });
+
+  it('제목 문서를 불러오는 동안은 읽기 전용이다', () => {
+    renderScreen({ viewer: creator, titleReady: false });
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    expect(title).toHaveAttribute('readonly');
+    expect(title).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('보이는 글자 기준 40자를 넘기는 입력은 받지 않는다(이모지는 한 글자)', async () => {
+    renderScreen({ viewer: creator, draft: { ...publishable, title: '가'.repeat(39) + '😀' } });
+
+    await userEvent.type(screen.getByRole('textbox', { name: /제목/ }), 'x');
+
+    expect(actions.setTitle).not.toHaveBeenCalled();
+  });
+
+  it('이모지를 일반 글자로 바꿔 보이는 글자가 늘어나 40자를 넘기면 받지 않는다(UTF-16 길이는 줄어도)', () => {
+    // 이모지 20개와 한글 20개는 40글자지만 UTF-16 길이는 60
+    renderScreen({
+      viewer: creator,
+      draft: { ...publishable, title: '😀'.repeat(20) + '가'.repeat(20) },
+    });
+
+    fireEvent.change(screen.getByRole('textbox', { name: /제목/ }), {
+      target: { value: 'a'.repeat(41) },
+    });
+
+    expect(actions.setTitle).not.toHaveBeenCalled();
+  });
+
+  it('합쳐져서 이미 40자를 넘은 제목은 줄이는 입력을 받는다', () => {
+    renderScreen({ viewer: creator, draft: { ...publishable, title: '가'.repeat(41) } });
+
+    fireEvent.change(screen.getByRole('textbox', { name: /제목/ }), {
+      target: { value: '가'.repeat(40) },
+    });
+
+    expect(actions.setTitle).toHaveBeenCalledWith('가'.repeat(40));
+  });
+
+  describe('다른 멤버의 변경이 합쳐질 때 커서와 선택 영역', () => {
+    // 입력란에 포커스가 있고 커서(또는 선택)가 있는 상태에서 제목이 원격 변경으로 바뀜
+    const mergeRemote = (before: string, after: string, select: [number, number]) => {
+      const view = renderScreen({ viewer: creator, draft: { ...publishable, title: before } });
+      const input = screen.getByRole<HTMLInputElement>('textbox', { name: /제목/ });
+      input.focus();
+      input.setSelectionRange(select[0], select[1]);
+      fireEvent.select(input);
+
+      view.rerender(screenElement({ viewer: creator, draft: { ...publishable, title: after } }));
+      return input;
+    };
+
+    it('앞뒤에 동시에 글자가 끼어들어도 커서는 같은 글자 뒤에 남는다', () => {
+      const input = mergeRemote('abcd', 'XabcdY', [2, 2]);
+
+      // b 뒤: X 한 글자만큼만 밀림(문자열 끝이 아님)
+      expect([input.selectionStart, input.selectionEnd]).toEqual([3, 3]);
+    });
+
+    it('선택 영역의 시작과 끝을 각각 보정해 같은 글자를 계속 선택한다', () => {
+      const input = mergeRemote('abcd', 'XabcdY', [1, 3]);
+
+      expect([input.selectionStart, input.selectionEnd]).toEqual([2, 4]);
+    });
+
+    it('한 곳만 바뀐 경우는 이전과 같이 보정한다', () => {
+      const input = mergeRemote('부산 여행', '가을 부산 여행', [5, 5]);
+
+      expect([input.selectionStart, input.selectionEnd]).toEqual([8, 8]);
+    });
+  });
+
+  it('조합이 끝나지 않은 채 포커스를 잃어도 조합 종료를 알린다', async () => {
+    renderScreen({ viewer: creator });
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    await userEvent.click(title);
+    await userEvent.tab();
+
+    expect(actions.setTitleComposing).toHaveBeenCalledWith(false);
+  });
+
+  it('한글 조합이 시작되고 끝나는 것을 알린다', () => {
+    renderScreen({ viewer: creator });
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    fireEvent.compositionStart(title);
+    fireEvent.compositionEnd(title);
+
+    expect(actions.setTitleComposing.mock.calls).toEqual([[true], [false]]);
+  });
+
   it('내 코멘트만 고칠 수 있고 다른 멤버 코멘트는 읽기 전용이다', async () => {
     renderScreen({ viewer: creator });
 
@@ -315,13 +455,34 @@ describe('입력', () => {
     expect(names[0]).toBe('은우 (나) 코멘트');
   });
 
-  it('다른 멤버가 코멘트를 쓰는 중이면 점 애니메이션만 보이고 잠그지는 않는다', () => {
+  it('다른 멤버가 쓰는 글자는 저장 전이어도 그 카드에 바로 보이고 내 카드는 영향받지 않는다(기능 spec 4.3.8)', () => {
     renderScreen({
       viewer: creator,
-      draft: { ...draftFixture, editing: { commentMemberIds: ['gyeongjin'] } },
+      draft: {
+        ...draftFixture,
+        editing: {
+          commentMemberIds: ['gyeongjin'],
+          commentTexts: { gyeongjin: '지금 치는 중이에요' },
+        },
+      },
     });
 
-    expect(screen.getByRole('img', { name: '경진님이 작성 중' })).toBeInTheDocument();
+    const theirs = screen.getByRole('textbox', { name: '경진 코멘트' });
+    expect(theirs).toHaveValue('지금 치는 중이에요');
+    expect(theirs).toHaveAttribute('readonly');
+    expect(screen.getByRole('textbox', { name: /지예.*코멘트/ })).not.toHaveAttribute('readonly');
+  });
+
+  it('다른 멤버가 코멘트를 모두 지우면 빈 글자가 보인다', () => {
+    renderScreen({
+      viewer: creator,
+      draft: {
+        ...draftFixture,
+        editing: { commentMemberIds: ['gyeongjin'], commentTexts: { gyeongjin: '' } },
+      },
+    });
+
+    expect(screen.getByRole('textbox', { name: '경진 코멘트' })).toHaveValue('');
   });
 });
 
@@ -336,43 +497,37 @@ describe('편집 중 표시', () => {
     expect(within(writers).getAllByRole('img')).toHaveLength(1);
   });
 
-  it('무언가 편집 중인 멤버의 카드에만 초록 점(편집 중 표시)이 붙는다', () => {
-    renderScreen({ draft: { ...publishable, editing: { title: 'gyeongjin' } } });
+  it('지금 이 초안에 들어와 있는 멤버의 카드에만 초록 점이 붙는다', () => {
+    renderScreen({ draft: { ...publishable, viewingMemberIds: ['gyeongjin'] } });
 
-    expect(membersSection().getAllByRole('img', { name: /님이 편집 중$/ })).toHaveLength(1);
-    expect(membersSection().getByRole('img', { name: '경진님이 편집 중' })).toBeInTheDocument();
+    expect(membersSection().getAllByRole('img', { name: /님이 보는 중$/ })).toHaveLength(1);
+    expect(membersSection().getByRole('img', { name: '경진님이 보는 중' })).toBeInTheDocument();
   });
 
-  it('아무도 편집하지 않으면 멤버 카드에 점이 없다', () => {
+  it('아무도 들어와 있지 않으면 멤버 카드에 점이 없다', () => {
     renderScreen();
 
-    expect(membersSection().queryByRole('img', { name: /님이 편집 중$/ })).not.toBeInTheDocument();
+    expect(membersSection().queryByRole('img', { name: /님이 보는 중$/ })).not.toBeInTheDocument();
   });
 });
 
 describe('내가 입력 중일 때 표시', () => {
-  it('제목에 포커스가 있는 동안 내 카드에 초록 점이 붙고 제목 옆에 내 프로필이 보이며, 벗어나면 사라진다', async () => {
+  it('제목에 포커스가 있는 동안 제목 옆에 내 프로필이 보이고, 벗어나면 사라진다', async () => {
     renderScreen({ viewer: creator });
-    expect(
-      membersSection().queryByRole('img', { name: '지예님이 편집 중' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('편집 중인 멤버')).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
-    expect(membersSection().getByRole('img', { name: '지예님이 편집 중' })).toBeInTheDocument();
     expect(screen.getByLabelText('편집 중인 멤버')).toBeInTheDocument();
 
     await userEvent.tab();
-    expect(
-      membersSection().queryByRole('img', { name: '지예님이 편집 중' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('편집 중인 멤버')).not.toBeInTheDocument();
   });
 
-  it('내 코멘트에 포커스가 있는 동안 내 카드에 초록 점이 붙고 코멘트 제목 옆에 내 프로필이 보인다', async () => {
+  it('내 코멘트에 포커스가 있는 동안 코멘트 제목 옆에 내 프로필이 보인다', async () => {
     renderScreen({ viewer: creator });
     expect(screen.queryByLabelText('코멘트를 쓰는 멤버')).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('textbox', { name: /지예.*코멘트/ }));
-    expect(membersSection().getByRole('img', { name: '지예님이 편집 중' })).toBeInTheDocument();
     expect(screen.getByLabelText('코멘트를 쓰는 멤버')).toBeInTheDocument();
 
     await userEvent.tab();
@@ -387,7 +542,18 @@ describe('내가 입력 중일 때 표시', () => {
 
     expect(screen.queryByLabelText('편집 중인 멤버')).not.toBeInTheDocument();
     expect(screen.getByLabelText('코멘트를 쓰는 멤버')).toBeInTheDocument();
-    expect(membersSection().getAllByRole('img', { name: '지예님이 편집 중' })).toHaveLength(1);
+  });
+
+  it('제목·코멘트에서 나가면 입력 표시를 끈다(BLUR)', async () => {
+    renderScreen({ viewer: creator });
+
+    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+    await userEvent.tab();
+    await userEvent.click(screen.getByRole('textbox', { name: /지예.*코멘트/ }));
+    await userEvent.tab();
+
+    expect(actions.presence.blur).toHaveBeenCalledWith('TITLE');
+    expect(actions.presence.blur).toHaveBeenCalledWith('COMMENT');
   });
 });
 
@@ -414,22 +580,19 @@ describe('위치와 날짜', () => {
     expect(actions.removeLocation).toHaveBeenCalledWith('location-1');
   });
 
-  it('다른 멤버가 위치를 편집 중이면 지우기·추가가 모두 막히고 안내한다', async () => {
+  it('다른 멤버가 위치를 고르는 중이어도 지우기·추가를 막지 않고 프로필을 보인다(잠금 없음)', async () => {
     renderScreen({
       draft: {
         ...draftFixture,
         locations: [{ id: 'sokcho', name: '속초해수욕장' }],
-        editing: { location: 'gyeongjin' },
+        editing: { locationAddMemberIds: ['gyeongjin'] },
       },
     });
 
     await userEvent.click(screen.getByRole('button', { name: '속초해수욕장 지우기' }));
-    expect(actions.removeLocation).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-
-    toast.mockClear();
-    await userEvent.click(screen.getByRole('button', { name: /^추가.*경진님이 편집 중/ }));
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
+    expect(actions.removeLocation).toHaveBeenCalledWith('sokcho');
+    expect(toast).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /^추가.*경진님이 편집 중/ })).toBeInTheDocument();
   });
 
   describe('위치 순서 바꾸기', () => {
@@ -474,13 +637,14 @@ describe('위치와 날짜', () => {
       expect(actions.moveLocation).not.toHaveBeenCalled();
     });
 
-    it('다른 멤버가 위치를 편집 중이면 핸들을 눌렀을 때 안내한다', async () => {
-      renderScreen({ draft: { ...twoLocations, editing: { location: 'gyeongjin' } } });
+    it('다른 멤버가 위치를 고르는 중이어도 핸들을 잠그지 않는다', async () => {
+      renderScreen({
+        draft: { ...twoLocations, editing: { locationAddMemberIds: ['gyeongjin'] } },
+      });
 
       await userEvent.click(screen.getByRole('button', { name: '장소 A 순서 바꾸기' }));
 
-      expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-      expect(actions.moveLocation).not.toHaveBeenCalled();
+      expect(toast).not.toHaveBeenCalled();
     });
 
     it('참여 멤버가 아니면 핸들을 눌렀을 때 안내한다', async () => {
@@ -544,6 +708,20 @@ describe('멤버 내보내기', () => {
     expect(actions.removeMember).toHaveBeenCalledWith('gyeongjin');
   });
 
+  it('연결이 끊겨 내보내기가 막히면 성공 토스트를 띄우지 않는다', async () => {
+    actions.removeMember.mockReturnValueOnce(false);
+    renderScreen({ viewer: creator });
+
+    await userEvent.click(screen.getByRole('button', { name: '경진 삭제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: '내보내기' }));
+
+    expect(actions.removeMember).toHaveBeenCalledWith('gyeongjin');
+    // 확인 창이 완전히 닫힌 뒤에도 알림이 없음
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.memberRemoved('경진'));
+  });
+
   it('「취소」를 누르면 멤버를 내보내지 않는다', async () => {
     renderScreen({ viewer: creator });
 
@@ -555,30 +733,50 @@ describe('멤버 내보내기', () => {
   });
 });
 
-describe('다른 멤버가 편집 중인 영역', () => {
-  it('제목 입력란에 닿으면 안내하고 값은 바뀌지 않는다', async () => {
-    renderScreen({ draft: { ...draftFixture, editing: { title: 'gyeongjin' } } });
+describe('다른 멤버가 작업 중인 영역(잠그지 않음)', () => {
+  it('다른 멤버가 제목을 입력 중이어도 입력란을 잠그지 않고 프로필만 보인다', async () => {
+    renderScreen({ draft: { ...draftFixture, editing: { titleMemberIds: ['gyeongjin'] } } });
+    const title = screen.getByRole('textbox', { name: /제목/ });
 
-    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-    expect(actions.setTitle).not.toHaveBeenCalled();
+    expect(title).not.toHaveAttribute('readonly');
+    expect(screen.getByLabelText('편집 중인 멤버')).toBeInTheDocument();
+    await userEvent.type(title, 'x');
+
+    expect(toast).not.toHaveBeenCalled();
+    expect(actions.setTitle).toHaveBeenCalled();
   });
 
-  it('편집 중인 위치·날짜를 누르면 시트를 열지 않고 안내한다', async () => {
+  it('여러 멤버가 같은 제목을 입력 중이면 프로필을 모두 보인다', () => {
+    renderScreen({
+      draft: { ...draftFixture, editing: { titleMemberIds: ['gyeongjin', 'eunwoo'] } },
+    });
+
+    expect(within(screen.getByLabelText('편집 중인 멤버')).getAllByRole('img')).toHaveLength(2);
+  });
+
+  it('위치·날짜를 고르는 멤버가 있어도 시트를 연다', async () => {
     renderScreen({
       draft: {
         ...draftFixture,
         locations: [],
-        editing: { location: 'gyeongjin', date: 'eunwoo' },
+        editing: { locationAddMemberIds: ['gyeongjin'], dateMemberIds: ['eunwoo'] },
       },
     });
 
-    await userEvent.click(screen.getByRole('button', { name: /편집 중 위치/ }));
     await userEvent.click(screen.getByRole('button', { name: /편집 중 날짜/ }));
 
-    expect(toast).toHaveBeenCalledTimes(2);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(toast).not.toHaveBeenCalled();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('날짜 선택 화면이 열려 있는 동안 날짜 작업을 알리고 닫으면 끝낸다', async () => {
+    renderScreen();
+
+    await userEvent.click(screen.getByRole('button', { name: /날짜/ }));
+    expect(actions.presence.begin).toHaveBeenCalledWith('DATE');
+    await userEvent.keyboard('{Escape}');
+
+    await waitFor(() => expect(actions.presence.end).toHaveBeenCalledWith('DATE'));
   });
 
   it('사진을 누르면 사진 상세로, 「픽하기」를 누르면 대표 사진 투표로 이동한다', async () => {
@@ -657,23 +855,34 @@ describe('다른 멤버가 편집 중인 영역', () => {
     expect(actions.removePhoto).not.toHaveBeenCalled();
   });
 
-  it('다른 멤버가 편집 중인 사진은 지울 수 없고 안내한다', async () => {
-    renderScreen({
-      draft: {
-        ...draftFixture,
-        editing: {
-          photoMemberIds: ['gyeongjin'],
-          photoEditors: { [draftFixture.photos[0]!.id]: ['gyeongjin'] },
-        },
-      },
-    });
+  it('다른 멤버가 사진 작업 중이어도 지울 수 있고, 삭제 확인 창이 열려 있는 동안 사진 작업을 알린다', async () => {
+    renderScreen({ draft: { ...draftFixture, editing: { photoMemberIds: ['gyeongjin'] } } });
 
     await userEvent.click(
       screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
     );
+    const dialog = await screen.findByRole('alertdialog');
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    await userEvent.click(within(dialog).getByRole('button', { name: '취소' }));
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS'));
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('사진 추가 시트가 열려 있는 동안 연결 상태가 바뀌어 presence가 바뀌어도 새 presence로 작업을 알린다', async () => {
+    const view = renderScreen();
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+
+    // 재연결로 presence 객체가 바뀐 상황(시트는 계속 열려 있음)
+    const reconnected = {
+      ...actions,
+      presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
+    };
+    view.rerender(screenElement({ actions: reconnected }));
+
+    expect(reconnected.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
   });
 
   it('참여 멤버가 아니면 사진을 지우려 할 때 안내한다', async () => {
@@ -709,7 +918,10 @@ describe('다른 멤버가 편집 중인 영역', () => {
 
   it('다른 멤버가 위치·날짜를 편집 중이면 그 멤버의 프로필만 보인다', () => {
     renderScreen({
-      draft: { ...draftFixture, editing: { location: 'gyeongjin', date: 'eunwoo' } },
+      draft: {
+        ...draftFixture,
+        editing: { locationAddMemberIds: ['gyeongjin'], dateMemberIds: ['eunwoo'] },
+      },
     });
 
     // 위치 「추가」 행에 프로필 이미지가 붙고, 위치·날짜 줄 모두 점 애니메이션은 없음

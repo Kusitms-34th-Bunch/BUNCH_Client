@@ -1,8 +1,4 @@
-import type { Draft, DraftPhoto, DraftViewer } from './types';
-
-/** 다른 멤버가 그 사진을 편집 중인지(내가 편집 중인 것은 제외) */
-export const getPhotoEditors = (draft: Draft, viewer: DraftViewer, photoId: string) =>
-  (draft.editing.photoEditors?.[photoId] ?? []).filter((memberId) => memberId !== viewer.memberId);
+import type { DraftPhoto } from './types';
 
 /** 사진 빼기가 어떻게 진행되는지: 1장이면 막고, 아니면 항상 확인을 거침(Figma 4850:62115) */
 export type RemovePhotoKind = 'last' | 'confirm';
