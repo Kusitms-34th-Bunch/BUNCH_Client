@@ -277,7 +277,7 @@ describe('useDraftPicks', () => {
     await waitFor(() => expect(hook.result.current.picks[first!] ?? []).toEqual([]));
   });
 
-  it('픽 화면에 들어올 때 상세를 다시 받고 받고 나면 synced가 된다', async () => {
+  it('픽 화면에 들어올 때 상세를 다시 받고 받고 나면 그 상세의 사진과 픽이 entry가 된다', async () => {
     let detailReads = 0;
     server.use(
       http.get('/api/bunches/:bunchId/bundles/:id', () => {
@@ -290,6 +290,6 @@ describe('useDraftPicks', () => {
 
     // setup이 상세를 한 번 받고, 화면이 들어올 때 한 번 더 받음
     await waitFor(() => expect(detailReads).toBeGreaterThanOrEqual(2));
-    await waitFor(() => expect(hook.result.current.synced).toBe(true));
+    await waitFor(() => expect(hook.result.current.entry?.photos).toHaveLength(2));
   });
 });

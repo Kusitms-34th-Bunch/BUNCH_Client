@@ -4,16 +4,13 @@ import { toast } from '@app/design-system';
 import { useMemo, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import type { DraftPhoto } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useDraftPicks } from '../../hooks/useDraftPicks';
 import { getDraftAccess } from '../../lib/permissions';
-import { withOwnPicks, type Picks } from '../../lib/picks';
+import { withOwnPicks } from '../../lib/picks';
 import { DraftPickScreen } from './DraftPickScreen';
-
-type Snapshot = { photos: readonly DraftPhoto[]; picks: Picks };
 
 /**
  * `/bunch/drafts/[draftId]/pick` 대표 사진 투표 화면: layout의 초안 상태를 작성 화면과 함께 봄
@@ -25,15 +22,14 @@ export function BundleDraftPick() {
   const { state } = useDraftContext();
   const draft = state.kind === 'ready' ? state.draft : undefined;
   const viewer = state.kind === 'ready' ? state.viewer : undefined;
-  const { picks, toggle, synced } = useDraftPicks(
+  const { picks, toggle, entry } = useDraftPicks(
     draft,
     viewer?.memberId,
     state.kind === 'ready' && state.realtime.down,
   );
 
-  // 들어올 때 받은 최신 상세가 오면 그 값으로 고정(그 전에는 지금 값을 보임)
-  const [frozen, setFrozen] = useState<Snapshot | undefined>(undefined);
-  if (synced && !frozen && draft) setFrozen({ photos: draft.photos, picks: draft.picks });
+  // 들어올 때 받은 최신 상세(`entry`)가 오면 그 값으로 고정(그 전에는 지금 값을 보임)
+  const frozen = entry;
   // 안내의 「확인」을 눌러 목록에서 없앤 사진
   const [dismissed, setDismissed] = useState<readonly string[]>([]);
 

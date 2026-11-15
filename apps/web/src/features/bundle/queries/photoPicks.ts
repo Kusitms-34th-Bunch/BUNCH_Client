@@ -12,6 +12,8 @@ export const usePhotoPickCache = (bunchId: string | undefined, bundleId: string 
   return useMemo(() => {
     const queryKey = bundleKeys.detail(bunchId, bundleId);
     return {
+      /** 지금 캐시의 번들 상세(재조회가 끝난 직후 최신 값을 읽을 때 씀) */
+      readDetail: () => queryClient.getQueryData<BundleDetail>(queryKey),
       /** 지금 캐시의 번들 사진(없으면 번들에서 빠진 사진) */
       readPhoto: (photoId: string) =>
         queryClient

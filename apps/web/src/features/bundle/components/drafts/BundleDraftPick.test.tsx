@@ -3,15 +3,19 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Picks } from '../../lib/picks';
-import type { Draft } from '../../lib/types';
+import type { Draft, DraftPhoto } from '../../lib/types';
 import { DraftContext, type DraftContextValue } from '../../contexts/draftContext';
 import { draftFixture } from '../../fixtures/draft.fixture';
 import { BundleDraftPick } from './BundleDraftPick';
 
 vi.mock('@/shared/hooks/useBackOr', () => ({ useBackOr: () => vi.fn() }));
 
-// 서버 저장은 useDraftPicks 테스트에서 확인하므로 여기서는 들어올 때 재조회 완료(synced)와 내 픽만 조절
-const draftPicks = { picks: {} as Picks, toggle: vi.fn(), synced: false };
+// 서버 저장은 useDraftPicks 테스트에서 확인하므로 여기서는 들어올 때 받아 둔 상세(entry)와 내 픽만 조절
+const draftPicks = {
+  picks: {} as Picks,
+  toggle: vi.fn(),
+  entry: undefined as { photos: readonly DraftPhoto[]; picks: Picks } | undefined,
+};
 vi.mock('../../hooks/useDraftPicks', () => ({ useDraftPicks: () => draftPicks }));
 
 const viewer = { memberId: 'jiye', bunchRole: 'owner' as const };
@@ -44,12 +48,12 @@ const draftWith = (overrides: Partial<Draft>): Draft => ({ ...draftFixture, ...o
 beforeEach(() => {
   vi.clearAllMocks();
   draftPicks.picks = {};
-  draftPicks.synced = false;
+  draftPicks.entry = undefined;
 });
 
 describe('BundleDraftPick 들어온 뒤 고정', () => {
   it('들어올 때 받은 뒤에는 다른 멤버가 지운 사진도 그대로 보이고, 누르면 안내 뒤에 없앤다', async () => {
-    draftPicks.synced = true;
+    draftPicks.entry = { photos: draftFixture.photos, picks: {} };
     const { rerender } = render(withDraft(draftFixture));
     expect(screen.getAllByRole('img')).toHaveLength(draftFixture.photos.length);
 
@@ -67,7 +71,7 @@ describe('BundleDraftPick 들어온 뒤 고정', () => {
   });
 
   it('다른 멤버가 새로 픽해도 고정한 값을 보이고, 내 픽은 바로 바뀐다', () => {
-    draftPicks.synced = true;
+    draftPicks.entry = { photos: draftFixture.photos, picks: { [first!.id]: ['suin'] } };
     const { rerender } = render(withDraft(draftWith({ picks: { [first!.id]: ['suin'] } })));
     expect(screen.getByText('1명이 픽했어요')).toBeInTheDocument();
 
@@ -83,7 +87,7 @@ describe('BundleDraftPick 들어온 뒤 고정', () => {
   });
 
   it('들어올 때 받기 전에는 지금 값을 그대로 보인다', () => {
-    draftPicks.synced = false;
+    draftPicks.entry = undefined;
     const { rerender } = render(withDraft(draftFixture));
 
     rerender(withDraft(draftWith({ photos: draftFixture.photos.slice(1) })));
