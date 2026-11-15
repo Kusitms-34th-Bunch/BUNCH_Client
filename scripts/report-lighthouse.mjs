@@ -30,7 +30,7 @@ if (files.length === 0) {
 }
 
 const pathOf = (url) => new URL(url).pathname;
-const pages = files
+const runs = files
   .map((name) => JSON.parse(readFileSync(join(resultsDir, name), 'utf8')))
   .map((report) => ({
     path: pathOf(report.requestedUrl),
@@ -65,10 +65,35 @@ const pages = files
         }, new Map())
         .values(),
     ],
-  }))
+  }));
+// 같은 페이지를 여러 번 쟀으면(운영) 성능 점수가 중앙값인 실행 하나로(점수와 항목이 같은 실행에서 나오게)
+const byPath = Map.groupBy(runs, (run) => run.path);
+const runsPerPage = Math.max(...[...byPath.values()].map((list) => list.length));
+const pages = [...byPath.values()]
+  .map(
+    (list) =>
+      list.toSorted((a, b) => (a.scores.performance ?? -1) - (b.scores.performance ?? -1))[
+        Math.floor((list.length - 1) / 2)
+      ],
+  )
   .sort((a, b) => a.path.localeCompare(b.path));
+// 결과 묶음 이름(PR 공개 페이지·로그인 화면·운영), 덧붙일 안내, 기준선 이름
+const title = process.env.LIGHTHOUSE_TITLE;
+// 측정을 요청한 주소 중 결과가 없는 페이지(예: 운영에 아직 배포되지 않아 404)
+const missing = (process.env.LIGHTHOUSE_URLS ?? '')
+  .split(/\s+/)
+  .filter(Boolean)
+  .map(pathOf)
+  .filter((path) => !byPath.has(path));
+const note = process.env.LIGHTHOUSE_NOTE;
+const baselineLabel = process.env.LIGHTHOUSE_BASELINE_LABEL ?? 'develop';
 
 if (update) {
+  // 일부 페이지가 빠진 측정으로 기준선을 덮지 않음(빠진 페이지가 다음 비교에서 사라지지 않게). 운영처럼 일부가 늘 빠질 수 있으면 허용
+  if (missing.length > 0 && process.env.LIGHTHOUSE_UPDATE_PARTIAL !== 'allow') {
+    console.log(`측정하지 못한 페이지가 있어 기준선을 갱신하지 않습니다: ${missing.join(', ')}`);
+    process.exit(1);
+  }
   const baseline = Object.fromEntries(pages.map((page) => [page.path, page.scores]));
   writeFileSync(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`);
   console.log(`Lighthouse 기준선을 갱신했습니다: ${baselinePath}`);
@@ -97,12 +122,15 @@ const plain = (text, max = 200) =>
     .replaceAll('|', '\\|')
     .replaceAll('\n', ' ');
 
+const measured =
+  runsPerPage > 1 ? `페이지당 ${runsPerPage}번 측정한 중앙값이지만` : '페이지당 1번 측정이라';
 const lines = [
-  '### Lighthouse',
+  title ? `### Lighthouse · ${title}` : '### Lighthouse',
   '',
+  ...(note ? [note, ''] : []),
   baseline
-    ? `페이지당 1번 측정이라 성능은 ${NOISE}점 미만의 차이를 표시하지 않습니다. 괄호는 develop 기준선과의 차이입니다.`
-    : '비교할 develop 기준선이 없어 이번 점수만 표시합니다.',
+    ? `${measured} 성능은 ${NOISE}점 미만의 차이를 표시하지 않습니다. 괄호는 ${baselineLabel} 기준선과의 차이입니다.`
+    : `비교할 ${baselineLabel} 기준선이 없어 이번 점수만 표시합니다.`,
   '',
   `| 페이지 | ${CATEGORIES.map(([, label]) => label).join(' | ')} |`,
   `| --- | ${CATEGORIES.map(() => '---:').join(' | ')} |`,
@@ -111,6 +139,13 @@ const lines = [
       `| \`${page.path}\`${page.finalPath === page.path ? '' : ` → \`${page.finalPath}\``} | ${CATEGORIES.map(([id]) => cell(page, id)).join(' | ')} |`,
   ),
 ];
+
+if (missing.length > 0) {
+  lines.push(
+    '',
+    `⚠️ 측정하지 못한 페이지: ${missing.map((path) => `\`${plain(path)}\``).join(', ')}(페이지가 열리지 않음, 실행 로그 참고)`,
+  );
+}
 
 for (const page of pages) {
   if (page.audits.length === 0 && page.errors.length === 0) continue;
