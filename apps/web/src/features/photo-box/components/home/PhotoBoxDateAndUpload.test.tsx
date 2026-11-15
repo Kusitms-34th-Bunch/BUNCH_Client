@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PhotoBoxActions, PhotoBoxData, PhotoBoxPhoto, PhotoBoxViewer } from '../../lib/types';
-import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
+import { dateConfirmCopy, PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { photoBoxFixture } from '../../fixtures/photoBox.fixture';
 import { MAX_PHOTOS_IN_BOX } from '../../lib/photoActions';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
@@ -146,13 +146,27 @@ describe('선택 모드 날짜 바꾸기', () => {
     await pickAndSave(user);
 
     expect(
-      await screen.findByRole('alertdialog', { name: PHOTO_BOX_MESSAGES.dateConfirmTitle }),
+      await screen.findByRole('alertdialog', { name: dateConfirmCopy('included').title }),
     ).toBeTruthy();
     expect(changePhotoDates).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '바꾸기' }));
+    await user.click(screen.getByRole('button', { name: '변경하기' }));
 
     await waitFor(() => expect(changePhotoDates).toHaveBeenCalledTimes(1));
+  });
+
+  it('관리자가 다른 멤버가 올린 사진만 고르면 「다른 멤버가 올린 사진이에요.」 확인 창을 본다', async () => {
+    const user = userEvent.setup();
+    renderScreen(dataWith([photo('a', ['gyeongjin']), photo('b', ['gyeongjin'])]));
+    await startSelecting(user, 2);
+    await openDateSheet(user);
+    await pickAndSave(user);
+
+    const dialog = await screen.findByRole('alertdialog', {
+      name: dateConfirmCopy('others').title,
+    });
+
+    expect(dialog).toHaveAccessibleDescription('날짜를 변경하면 사진함에서 변경된 날짜로 보여요.');
   });
 
   it('확인 창에서 취소하면 바꾸지 않고 시트를 유지한다', async () => {
@@ -161,14 +175,14 @@ describe('선택 모드 날짜 바꾸기', () => {
     await startSelecting(user, 2);
     await openDateSheet(user);
     await pickAndSave(user);
-    await screen.findByRole('alertdialog', { name: PHOTO_BOX_MESSAGES.dateConfirmTitle });
+    await screen.findByRole('alertdialog', { name: dateConfirmCopy('included').title });
 
     await user.click(screen.getByRole('button', { name: '취소' }));
 
     expect(changePhotoDates).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(
-        screen.queryByRole('alertdialog', { name: PHOTO_BOX_MESSAGES.dateConfirmTitle }),
+        screen.queryByRole('alertdialog', { name: dateConfirmCopy('included').title }),
       ).toBeNull(),
     );
     expect(screen.getByRole('dialog', { name: '날짜 바꾸기' })).toBeTruthy();

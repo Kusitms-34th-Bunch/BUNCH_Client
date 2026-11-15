@@ -81,6 +81,8 @@ export type MockBundlePhoto = {
   position: number;
   addedBy: number;
   addedAt: string;
+  /** 참여자별 본인 픽 행(없으면 아직 한 번도 픽하지 않음). picked=false 행도 버전 비교를 위해 남김 */
+  picks?: { memberId: number; picked: boolean; version: number }[];
 };
 
 export type MockBundleComment = {

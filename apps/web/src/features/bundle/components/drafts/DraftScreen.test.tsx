@@ -6,7 +6,6 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { draftFixture } from '../../fixtures/draft.fixture';
-import { resetDraftPicks, seedDraftPicks } from '../../hooks/useDraftPicks';
 import { DraftScreen } from './DraftScreen';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -97,7 +96,6 @@ const membersSection = () => within(screen.getByRole('region', { name: '참여 �
 
 beforeEach(() => {
   vi.clearAllMocks();
-  resetDraftPicks();
 });
 
 describe('DraftScreen 구성', () => {
@@ -815,8 +813,9 @@ describe('다른 멤버가 작업 중인 영역(잠그지 않음)', () => {
   });
 
   it('멤버가 픽한 사진을 지우려 하면 「멤버들이 픽한 사진이에요」 확인 창이 뜨고 삭제하기로 지운다', async () => {
-    seedDraftPicks(draftFixture.id, { [draftFixture.photos[0]!.id]: ['gyeongjin'] });
-    renderScreen();
+    renderScreen({
+      draft: { ...draftFixture, picks: { [draftFixture.photos[0]!.id]: ['gyeongjin'] } },
+    });
 
     await userEvent.click(
       screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
@@ -831,8 +830,9 @@ describe('다른 멤버가 작업 중인 영역(잠그지 않음)', () => {
   });
 
   it('픽이 없는 다른 사진은 기본 삭제 확인 창을 본다', async () => {
-    seedDraftPicks(draftFixture.id, { [draftFixture.photos[0]!.id]: ['gyeongjin'] });
-    renderScreen();
+    renderScreen({
+      draft: { ...draftFixture, picks: { [draftFixture.photos[0]!.id]: ['gyeongjin'] } },
+    });
 
     await userEvent.click(
       screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(2) }),

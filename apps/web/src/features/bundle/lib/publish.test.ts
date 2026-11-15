@@ -17,6 +17,7 @@ const complete: Draft = {
   locations: [],
   date: null,
   suggestedDates: [],
+  picks: {},
   comments: [
     { memberId: 'a', text: '하나' },
     { memberId: 'b', text: '둘' },
@@ -62,6 +63,7 @@ describe('getPublishBlockers', () => {
     expect(getPublishBlockers(missing, ready)).toEqual(['comments']);
     const blank = {
       ...complete,
+      picks: {},
       comments: [
         { memberId: 'a', text: '하나' },
         { memberId: 'b', text: ' \n ' },

@@ -15,10 +15,10 @@ import type {
   PhotoBoxViewer,
   SaveResult,
 } from '../../lib/types';
-import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
+import { deleteConfirmCopy, PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoViewer } from '../../hooks/usePhotoViewer';
 import { useSaveBlockedNotice } from '../../hooks/useSaveBlockedNotice';
-import { canDeletePhotos, getDeleteKind } from '../../lib/photoActions';
+import { canDeletePhotos, countCoUploaded, getDeleteKind } from '../../lib/photoActions';
 import { formatDetailDate, getTakenDate } from '../../lib/photoDetail';
 import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from '../PhotoDetailMenu';
@@ -163,15 +163,18 @@ export function PhotoDetailScreen({
     } else if (canManage) {
       // 연 시점의 사진 id를 고정해 그 사이 넘겨져도 다른 사진을 지우지 않음
       const { id } = activePhoto;
-      const description = PHOTO_BOX_MESSAGES.deleteConfirmDescription(
+      const copy = deleteConfirmCopy(
         getDeleteKind([activePhoto], viewer),
+        1,
+        countCoUploaded([activePhoto]),
       );
       setOverlayOpen(true);
       openOverlay(
         (rootProps, close) => (
           <DeleteConfirmDialog
             {...rootProps}
-            description={description}
+            title={copy.title}
+            lines={copy.lines}
             onConfirm={() => {
               close();
               void confirmDelete(id);

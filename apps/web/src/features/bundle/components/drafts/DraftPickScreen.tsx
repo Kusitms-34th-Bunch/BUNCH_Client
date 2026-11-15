@@ -88,12 +88,19 @@ type DraftPickScreenProps = {
   /** 참여 멤버가 아니라 픽할 수 없을 때 */
   onDenied: () => void;
   onBack: () => void;
+  /** 들어온 뒤 번들에서 빠졌지만 아직 보이고 있는 사진(누르면 「삭제된 사진이에요」 안내, 기능 spec 4.3.5 예외) */
+  removedIds?: ReadonlySet<string> | undefined;
+  /** 서버가 그 사진이 없다고 알려 준 경우: 누른 직후 바로 「삭제된 사진이에요」 안내를 띄울 사진 */
+  deletedNoticeFor?: string | undefined;
+  /** 안내의 「확인」 뒤에 그 사진을 목록에서 없앰 */
+  onDismissRemoved?: ((_photoId: string) => void) | undefined;
 };
 
 /**
  * 대표 사진 투표 화면(Figma `5699:103571`~`103708`): 「마음에 드는 사진을 픽해보세요」 아래 가로로 넘기는 사진 한 장씩, 「이 사진 픽하기」, 픽한 멤버 칩
  * 가운데 사진만 또렷하고 옆 사진은 흐리며, 픽하면 버튼이 「사진을 픽했어요」로 바뀌고 다시 누르면 해제
- * 보고 있던 사진이 지워지면 「삭제된 사진이에요」 안내 창
+ * 보고 있던 사진이 지워져도 바로 없애지 않고 그대로 보이다가, 「이 사진 픽하기」를 누르면 픽하지 않고 「삭제된 사진이에요」 안내 창,
+ * 「확인」 뒤에 그 사진을 없애고 다음 사진(마지막이었으면 이전 사진)을 보임
  */
 export function DraftPickScreen({
   photos,
@@ -104,6 +111,9 @@ export function DraftPickScreen({
   onToggle,
   onDenied,
   onBack,
+  removedIds,
+  deletedNoticeFor,
+  onDismissRemoved,
 }: DraftPickScreenProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const openOverlay = useScreenOverlay();
@@ -116,33 +126,30 @@ export function DraftPickScreen({
   const current = Math.min(activeIndex, Math.max(0, total - 1));
   const active = photos[current];
 
-  // 보던 사진이 목록에서 사라지면 안내(처음 그릴 때는 비교할 이전 사진이 없음)
-  const shownId = useRef<string | undefined>(undefined);
-  // 창이 떠 있는 사이 또 지워져도 안내 창을 겹치지 않음
+  // 창이 떠 있는 사이 또 눌러도 안내 창을 겹치지 않음
   const deletedNoticeOpen = useRef(false);
-  useEffect(() => {
-    if (shownId.current !== undefined && !photos.some((photo) => photo.id === shownId.current)) {
-      if (!deletedNoticeOpen.current) {
-        deletedNoticeOpen.current = true;
-        openOverlay(
-          (rootProps, close) => (
-            <ConfirmDialog
-              {...rootProps}
-              appearance="text"
-              title={BUNDLE_MESSAGES.pickDeletedTitle}
-              description={BUNDLE_MESSAGES.pickDeletedDescription}
-              confirmLabel={BUNDLE_MESSAGES.missingDraftConfirm}
-              onConfirm={close}
-            />
-          ),
-          () => {
-            deletedNoticeOpen.current = false;
-          },
-        );
-      }
-    }
-    shownId.current = active?.id;
-  }, [photos, active?.id, openOverlay]);
+  const openDeletedNotice = (photoId: string) => {
+    if (deletedNoticeOpen.current) return;
+    deletedNoticeOpen.current = true;
+    openOverlay(
+      (rootProps, close) => (
+        <ConfirmDialog
+          {...rootProps}
+          appearance="text"
+          title={BUNDLE_MESSAGES.pickDeletedTitle}
+          description={BUNDLE_MESSAGES.pickDeletedDescription}
+          confirmLabel={BUNDLE_MESSAGES.missingDraftConfirm}
+          onConfirm={() => {
+            close();
+            onDismissRemoved?.(photoId);
+          }}
+        />
+      ),
+      () => {
+        deletedNoticeOpen.current = false;
+      },
+    );
+  };
 
   const pickers = (active ? pickersOf(picks, active.id) : []).filter((id) =>
     members.some((member) => member.id === id),
@@ -161,8 +168,22 @@ export function DraftPickScreen({
       behavior: reduced ? 'auto' : 'smooth',
     });
   };
+  // 서버 응답으로 사진이 없다고 확인되면 곧바로 안내(최신 openDeletedNotice를 ref로 거쳐 `deletedNoticeFor`가 바뀔 때만 실행)
+  const openNoticeRef = useRef(openDeletedNotice);
+  useEffect(() => {
+    openNoticeRef.current = openDeletedNotice;
+  });
+  useEffect(() => {
+    if (deletedNoticeFor !== undefined) openNoticeRef.current(deletedNoticeFor);
+  }, [deletedNoticeFor]);
+
   const handlePick = () => {
     if (!active) return;
+    // 번들에서 빠진 사진은 픽하지 않고 안내만
+    if (removedIds?.has(active.id)) {
+      openDeletedNotice(active.id);
+      return;
+    }
     if (!editable) {
       onDenied();
       return;
