@@ -2,7 +2,7 @@ import { Button } from '@app/design-system';
 import { PageShell } from '@/shared/components/layout/PageShell';
 
 type PhotoBoxErrorProps = {
-  /** 「다시 시도」를 눌렀을 때(목록 API 연결 전에는 호출 지점만) */
+  /** 「다시 시도」를 눌렀을 때(첫 목록 다시 받기) */
   onRetry?: (() => void) | undefined;
 };
 

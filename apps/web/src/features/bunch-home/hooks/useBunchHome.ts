@@ -16,8 +16,8 @@ type UseBunchHomeResult = {
 };
 
 /**
- * 번치 홈 상태와 동작의 호출 지점. 번치·번들 API 연결 전에는 fixture와 목 동작을 돌려줌
- * 연결하면 이 hook만 TanStack Query 상태(로딩·오류 포함)와 mutation으로 바꿈
+ * 번치 홈 샘플 모드(`source="sample"`, 테스트용)의 fixture와 목 동작
+ * 서버 모드는 `useServerBunchHome` 데이터를 쓰고 이 hook의 동작을 서버 mutation으로 덮어씀(`BunchHome`)
  */
 export function useBunchHome(): UseBunchHomeResult {
   const [storedId, setCurrentId] = useCurrentBunchId();

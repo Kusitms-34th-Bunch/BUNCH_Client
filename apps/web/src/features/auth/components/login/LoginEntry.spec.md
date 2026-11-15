@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/login`(`apps/web/src/app/(app)/login/page.tsx`)
-- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 아직 없어 앱에서도 실패 토스트가 나옴. 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어와 앱 실행 시 세션 확인은 `(app)` layout의 `AuthGate`가 맡음(결정 기록 019)
+- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 카카오·Google을 연결했고, Apple은 SDK 연동 전이라 앱에서 Apple을 누르면 실패 토스트가 나옴(`apps/mobile-shell/src/social-login.ts`, 2026-11-16 확인). 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어와 앱 실행 시 세션 확인은 `(app)` layout의 `AuthGate`가 맡음(결정 기록 019)
 - 디자인 출처: Figma `로그인`(node `4744:90759`, 배경 영상 디자인. 이전 `796:4634`). 화면설계서(node `796:5339`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.2 Entry).
 
 ## 목적과 범위
@@ -17,7 +17,7 @@
 
 ### 범위 외
 
-- 쉘의 네이티브 소셜 SDK(카카오·Google·Apple). 쉘의 `socialLogin`은 지금 항상 실패하는 자리라, 앱에서도 버튼을 누르면 실패 토스트가 나온다. 웹의 호출과 BFF 로그인은 연결돼 있다.
+- 쉘의 Apple 로그인 SDK. 카카오·Google은 쉘(`apps/mobile-shell/src/social-login.ts`)이 연결했고 Apple만 실패를 돌려줘, 앱에서 Apple 버튼을 누르면 실패 토스트가 나온다(2026-11-16 확인). 웹의 호출과 BFF 로그인은 연결돼 있다.
 - 앱 실행 시 세션 확인·스플래시와 단계별 접근 제어(로그인 뒤 분기 자체는 포함, 아래 Success 참고).
 - 초대 정보 보관·전달.
 - iPhone 상태 바·홈 인디케이터. 기기 요소라 웹이 그리지 않는다(Safe Area는 `AppFrame`이 처리한다).
@@ -25,7 +25,7 @@
 ## Route와 접근
 
 - Path·params·search: `/login`. params와 search는 없다.
-- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태(`GET /members/me/onboarding`)로 판단한다(`lib/accessPolicy.ts`). 비로그인은 `/login`만 볼 수 있고, 가입 완료 사용자가 `/login`·`/signup/*`에 들어오면 번치 홈이나 번치 시작 선택으로 보낸다. 가입 중 사용자의 `/login`은 막지 않는다(약관의 뒤로가기가 로그인으로 돌아오는 것이 기획 1.3.5이고 로그아웃이 아직 연결되지 않았다). 상태를 확인하는 동안에는 `PageLoading`만 보이고, 실패하면 안내와 다시 시도가 나온다.
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태(`GET /members/me/onboarding`)로 판단한다(`lib/accessPolicy.ts`). 비로그인은 `/login`만 볼 수 있고, 가입 완료 사용자가 `/login`·`/signup/*`에 들어오면 번치 홈이나 번치 시작 선택으로 보낸다. 가입 중 사용자의 `/login`은 막지 않는다(기획 1.3.5). 약관의 뒤로가기는 로그아웃한 뒤 로그인 화면을 새로 연다(`useLeaveSignupMutation`, 2026-11-16 확인). 상태를 확인하는 동안에는 `PageLoading`만 보이고, 실패하면 안내와 다시 시도가 나온다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 이동과 redirect는 없다. 화면 전환 규칙(`AppTransitions`)에도 등록하지 않아 page 래퍼에 `data-ssgoi-transition`을 붙이지 않았다(`/signup/terms` 등으로 가는 전환 규칙을 넣을 때 함께 붙인다). 인증 전 화면이 `(app)`의 `OverlayProvider`·`Toaster`를 공유하는 것은 실패 토스트에 필요해서이고, 인증 전용 group 분리는 접근 제어를 만들 때 함께 판단한다.
 
 ## 상태와 흐름
@@ -35,7 +35,7 @@
 - Empty: 해당 없음.
 - Error·retry: 실패 시 토스트와 버튼 복귀. 토스트는 기획 명세대로 하단 버튼 영역 바로 위에 놓는다(`PageShell`의 bottom 슬롯 `wrapper` 앵커로 영역 위 4px, `Toast.spec.md`). 다시 눌러 재시도할 수 있다. 오류 원인은 따로 기록하지 않는다(Sentry 전송 없음).
 - Disabled·invalid: 다른 소셜 로그인이 진행 중인 버튼.
-- Success·완료 후 이동: 로그인에 성공하면 `GET /members/me/onboarding`으로 가입 상태를 읽어 도착 화면을 정하고(`lib/postLoginPath.ts`), 정해질 때까지 버튼을 잠근 채 둔 뒤 이동한다. 가입 완료 사용자는 로그인 화면이 기록에 남지 않게 `router.replace`, 가입 중 사용자는 약관의 뒤로가기가 로그인으로 돌아오도록 `router.push`한다(기획의 「로그인 해제」는 아직 없다). 읽은 가입 상태는 `setQueryData`로 세션 캐시에 채워 도착 화면의 `AuthGate`가 같은 상태로 판단하게 한다(같은 key를 `fetchQuery`로 다시 읽으면 가드가 로딩으로 바뀌어 로그인 화면이 사라지므로 쓰지 않는다). 규칙(기획 1.2.7·1.2.8): 가입 중이고 약관 미동의 → 약관 `/signup/terms`, 가입 중이고 동의 → 프로필 `/signup/profile`, 가입 완료이고 기본 번치(`defaultBunchId`) 있음 → 번치 홈 `/bunch`, 가입 완료이고 번치 없음 → 번치 시작 선택 `/onboarding`. 가입 완료 사용자의 두 경로는 다른 feature 소유라 `login/page.tsx`가 `destinations` prop으로 넘긴다. 마지막으로 쓴 번치가 유효한지의 판단(없으면 가장 최근 번치)은 서버가 `defaultBunchId`에 반영한다고 가정한다(확인할 항목).
+- Success·완료 후 이동: 로그인에 성공하면 `GET /members/me/onboarding`으로 가입 상태를 읽어 도착 화면을 정하고(`lib/postLoginPath.ts`), 정해질 때까지 버튼을 잠근 채 둔 뒤 이동한다. 가입 완료 사용자는 로그인 화면이 기록에 남지 않게 `router.replace`, 가입 중 사용자는 약관의 뒤로가기가 로그인으로 돌아오도록 `router.push`한다. 약관의 뒤로가기는 로그아웃한 뒤 로그인 화면을 새로 연다(기획 1.3.5, `useLeaveSignupMutation`). 읽은 가입 상태는 `setQueryData`로 세션 캐시에 채워 도착 화면의 `AuthGate`가 같은 상태로 판단하게 한다(같은 key를 `fetchQuery`로 다시 읽으면 가드가 로딩으로 바뀌어 로그인 화면이 사라지므로 쓰지 않는다). 규칙(기획 1.2.7·1.2.8): 가입 중이고 약관 미동의 → 약관 `/signup/terms`, 가입 중이고 동의 → 프로필 `/signup/profile`, 가입 완료이고 기본 번치(`defaultBunchId`) 있음 → 번치 홈 `/bunch`, 가입 완료이고 번치 없음 → 번치 시작 선택 `/onboarding`. 가입 완료 사용자의 두 경로는 다른 feature 소유라 `login/page.tsx`가 `destinations` prop으로 넘긴다. 마지막으로 쓴 번치가 유효한지의 판단(없으면 가장 최근 번치)은 서버가 `defaultBunchId`에 반영한다고 가정한다(확인할 항목).
 - 가입 상태 조회 실패: 로그인은 됐지만 어디로 보낼지 모르므로 이동하지 않고 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」(기획 1.1.1 세션 확인 실패 문구)를 보이고 버튼이 처음 상태로 돌아온다. 쿠키는 이미 저장돼 있어 다시 누르면 이어진다. 로그인 실패 문구와는 다르다.
 - 초대 정보가 있으면 가장 먼저 초대 참여로 가야 하나(기획 1.2.8) 초대 정보 보관을 만들 때 붙인다. 쉘 SDK가 없어 실제로는 로그인이 항상 실패해 이 이동은 일어나지 않는다.
 

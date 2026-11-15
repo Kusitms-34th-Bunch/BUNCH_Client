@@ -25,7 +25,7 @@
 ## Route와 접근
 
 - Path·params·search: `/onboarding`. params와 search는 없다.
-- 접근 권한·guard: 아직 없다. 로그인·가입 완료 여부를 막는 guard가 구현되지 않았다(`features/auth`는 빈 폴더). 가입을 마친 사용자만 오는 화면이라는 규칙은 확인할 항목이다.
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태로 막는다(`features/auth/lib/accessPolicy.ts`, 결정 기록 019). 가입을 마친 사용자만 들어오고, 비로그인은 로그인(처음이면 인트로)으로, 가입 중이면 약관·프로필로 보낸다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 카드는 `router.push`로 이동하고 redirect는 없다.
 
 ## 상태와 흐름

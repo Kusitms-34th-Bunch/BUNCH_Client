@@ -113,7 +113,7 @@
 문의하기·로그아웃 (7.5, USER-08·USER-06)
 
 - [x] 문의하기 확인 창 「'카카오톡'에서 열기」 / 「오픈채팅 상담 채널로 이동해요.」 / 취소·열기(7.5.1).
-- [ ] 오픈채팅 링크를 서버 설정값으로 받는다(7.5.1 로직 1). 서버에 해당 API가 없어 `MY_CONTACT_URL` 상수를 쓴다.
+- [ ] 오픈채팅 링크를 서버 설정값으로 받는다(7.5.1 로직 1). 서버에 해당 API가 없어 `MY_CONTACT_URL` 상수를 쓴다(2026-11-16 확인).
 - [x] 링크를 열지 못하면 오류 토스트(7.5.1 예외, #324). 브라우저 팝업 차단은 구분하지 못한다.
 - [x] 로그아웃 확인 창 「로그아웃할까요?」 / 취소·로그아웃, 성공하면 뒤로 돌아올 수 없게 이동(7.5.2 상세).
 - [ ] 다시 로그인하면 마지막으로 보던 번치로 들어간다(7.5.2 로직 4, 1.2.8). 번치 API 연결 뒤 한다.
@@ -157,7 +157,7 @@
 | 닉네임 중복 확인    | 닉네임. 대소문자·공백을 구분해 비교(1.4.4)                                            | 7.2.5        | 있음, 연동됨: `GET /members/nickname-availability`                                                                                                                                                                                                                    | A    |
 | 프로필 저장         | 바뀐 값(이미지 업로드 포함), 요청 키. 서버가 닉네임 재확인                            | 7.2.7        | 있음, 연동됨(#404): `PUT /members/me/profile`(multipart `profile`의 닉네임·`imageAction` + `photo`). 출생연도·성별 필드는 없다                                                                                                                                        | C    |
 | 알림 설정 조회·저장 | 앱 푸시 전체, 종류 4개. 가입 때 기기 권한으로 초기값을 정함(허용 ON, 거부 OFF)        | 7.3.1~7.3.3  | 있음: `GET·PATCH /members/me/push-preferences`(`enabled`, `categories` 21개 키 맵(2026-11 Swagger에서 `types`가 바뀜, 화면 계층은 `types`로 변환), Notion은 서버 PR #65 미병합 표기이나 운영 Swagger에 있음). 연동됨, 토글 4개와 키의 대응은 `NOTIFICATION_TYPE_KEYS` | B1   |
-| 푸시 기기 등록·해제 | 설치 ID, 푸시 토큰, 환경                                                              | 7.5.2 로직 1 | 있음, 연동됨(iOS만): `PUT·DELETE /members/me/push-devices/{installationId}`. 계약이 APNs 기준(16진수 토큰, `SANDBOX`·`PRODUCTION`)이라 Android는 계약이 없다                                                                                                          | B2   |
+| 푸시 기기 등록·해제 | 설치 ID, 푸시 토큰, 환경                                                              | 7.5.2 로직 1 | 있음, 연동됨(iOS만): `PUT·DELETE /members/me/push-devices/{installationId}`. 계약이 APNs 기준(16진수 토큰, `SANDBOX`·`PRODUCTION`)이라 Android는 계약이 없다(2026-11-16 확인)                                                                                         | B2   |
 | 추가 개인정보 동의  | 동의 상태 조회, 동의·철회(철회하면 출생연도·성별 즉시 삭제, 같은 요청은 한 번만 처리) | 7.4.4·7.4.5  | 없음. 화면은 이 기기에만 저장하는 임시 값을 쓴다. 동의 상태를 어디서 받는지, 가입 뒤 동의·철회 API가 있는지 백엔드 확인 필요                                                                                                                                          | #345 |
 | 약관 원문           | 종류, 시행일자, 버전, 조항                                                            | 7.4          | 일부: `GET /auth/terms`가 종류·버전·필수 여부만 준다. 원문·시행일자는 앱이 가진다                                                                                                                                                                                     | -    |
 | 문의 링크           | 오픈채팅 주소(서버 설정값)                                                            | 7.5.1        | 없음                                                                                                                                                                                                                                                                  | -    |
@@ -171,12 +171,12 @@
 
 ## 영향받는 컴포넌트
 
-| 컴포넌트                                 | 변경 사항                                                                 |
-| ---------------------------------------- | ------------------------------------------------------------------------- |
-| `ProfileEditScreen`                      | 중복 확인 연결, 저장 mutation과 실패 처리                                 |
-| `NotificationSettingsScreen`             | 저장 mutation과 되돌림, 자동 OFF 제거(1110판)                             |
-| `WithdrawalScreen`·`AdminTransferScreen` | 넘길 번치 query(`ownedBunchesQueryOptions`)·권한 이전·탈퇴 mutation(#404) |
-| `features/auth` `TermsDocument`          | (보류) 서버 원문·불러오기 실패 상태는 원문 API가 없어 하지 않음           |
+| 컴포넌트                                 | 변경 사항                                                                        |
+| ---------------------------------------- | -------------------------------------------------------------------------------- |
+| `ProfileEditScreen`                      | 중복 확인 연결, 저장 mutation과 실패 처리                                        |
+| `NotificationSettingsScreen`             | 저장 mutation과 되돌림, 자동 OFF 제거(1110판)                                    |
+| `WithdrawalScreen`·`AdminTransferScreen` | 넘길 번치 query(`ownedBunchesQueryOptions`)·권한 이전·탈퇴 mutation(#404)        |
+| `features/auth` `TermsDocument`          | (보류) 서버 원문·불러오기 실패 상태는 원문 API가 없어 하지 않음(2026-11-16 확인) |
 
 ## 구현 단위와 이슈
 

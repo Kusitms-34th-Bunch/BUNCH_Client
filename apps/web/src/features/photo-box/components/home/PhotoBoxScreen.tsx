@@ -181,7 +181,7 @@ export function PhotoBoxScreen({
   }
 
   const { bunch, members } = state.data;
-  // 남은 사진을 받는 중이거나 받다 실패했으면 아직 없다고 말할 수 없음(선택한 멤버의 사진이 받지 못한 쪽에 있을 수 있음)
+  // 남은 사진을 받는 중이거나 받다 실패했으면 비었다고 단정할 수 없음(선택한 멤버의 사진이 받지 못한 쪽에 있을 수 있음)
   const isEmpty = sections.length === 0 && undated.length === 0 && state.data.more === undefined;
 
   let statusMessage = '';

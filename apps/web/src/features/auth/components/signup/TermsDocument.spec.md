@@ -25,7 +25,7 @@
 ## Route와 접근
 
 - Path·params·search: `/signup/terms/service`, `/signup/terms/privacy`, `/signup/terms/demographics`. `generateStaticParams`로 이 셋만 정적으로 만들고(`dynamicParams = false`) 그 밖의 값은 404다.
-- 접근 권한·guard: 아직 없다(약관 동의 화면과 같다).
+- 접근 권한·guard: 약관 동의 화면과 같다. `(app)` layout의 `AuthGate`가 가입 상태로 막아 가입 중인 사용자만 들어온다(`features/auth/lib/accessPolicy.ts`).
 - Layout·redirect·navigation: `(app)/signup/layout.tsx`(체크 상태 provider) 안에서 `SignupFrame`을 쓴다. 뒤로 가기는 `router.back()`이다.
 
 ## 상태와 흐름

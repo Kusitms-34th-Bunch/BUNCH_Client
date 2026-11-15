@@ -16,7 +16,7 @@ export function useMyBunchInvitation() {
   // 번치가 없으면 링크를 요청하지 않아(skipToken) 받는 중으로 남지 않게 따로 판단
   const noBunch = me.isSuccess && bunchId === undefined;
 
-  // 링크가 아직 없고 요청 중이거나 오프라인이라 대기 중(실패 뒤 다시 받는 중 포함)
+  // 링크를 받기 전이고 요청 중이거나 오프라인이라 대기 중(실패 뒤 다시 받는 중 포함)
   const waiting = (query: { isFetching: boolean; isPending: boolean; fetchStatus: string }) =>
     query.isFetching || (query.isPending && query.fetchStatus === 'paused');
   const loading = invitation.data === undefined && (waiting(me) || waiting(invitation));

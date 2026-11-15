@@ -96,7 +96,7 @@ export type BunchHomeData = {
 };
 
 /**
- * 번치 홈이 부르는 동작. API 연결 전에는 목 동작을 돌려주고, 연결하면 hook 구현만 바꿈
+ * 번치 홈이 부르는 동작. 서버 모드는 mutation, 샘플 모드는 목 동작(`BunchHome`에서 선택)
  */
 export type BunchHomeActions = {
   /** 전환. 서버에 저장하면 끝날 때까지 기다릴 수 있게 Promise를 돌려줌(실패하면 reject) */
