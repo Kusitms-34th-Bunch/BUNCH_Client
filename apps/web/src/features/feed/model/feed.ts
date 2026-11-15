@@ -165,6 +165,7 @@ export const toFeedAd = (ad: z.infer<typeof advertisementSchema>): FeedAd => ({
   location: ad.place.address ?? ad.place.name,
   tags: ad.tags,
   picked: ad.pinned,
+  pinId: ad.pinId ?? undefined,
 });
 
 /**

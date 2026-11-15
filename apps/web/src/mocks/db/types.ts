@@ -166,8 +166,10 @@ export type MockKok = {
   externalId: string;
   name: string;
   address: string;
-  sourceBundleId: number;
-  sourceLocationId: number;
+  /** 번들 장소에서 콕했으면 그 번들·위치, 광고에서 콕했으면 그 광고 */
+  sourceBundleId: number | null;
+  sourceLocationId: number | null;
+  sourceAdvertisementId: number | null;
   pinnedByMemberId: number;
   pinnedAt: string;
 };
@@ -202,6 +204,8 @@ export type MockDbState = {
   reports: MockReport[];
   likes: MockLike[];
   koks: MockKok[];
+  /** 내가 숨긴 광고(사용자 단위) */
+  hiddenAdIds: number[];
   /** 마지막에 준 콕 ID(지운 콕의 ID를 새 콕에 다시 주지 않게) */
   lastKokId: number;
   socialComments: MockSocialComment[];

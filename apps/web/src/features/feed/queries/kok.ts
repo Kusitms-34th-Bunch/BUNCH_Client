@@ -1,6 +1,12 @@
 import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
-import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  type QueryClient,
+  queryOptions,
+  skipToken,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toWireId } from '@/shared/api/ids';
 import type { BundleKoks } from '../model/kok';
@@ -44,7 +50,20 @@ export type KokVariables = {
   locationId: string;
 } & ({ pin: true } | { pin: false; pinId: number });
 
-const KOK_KEY = ['bundle-kok'] as const;
+// 번들·광고 장소 콕이 함께 씀(같은 장소를 양쪽에서 누를 수 있어 하나씩 차례로 보내고 대기 수도 함께 셈)
+export const KOK_KEY = ['bundle-kok'] as const;
+export const KOK_SCOPE = { id: 'bundle-kok' };
+
+/** 같은 명의의 마지막 콕 요청이 끝났을 때만 그 명의의 콕 여부를 다시 받음(뒤 요청이 남았으면 방금 누른 버튼을 덮지 않게) */
+export const refreshKoksWhenIdle = (queryClient: QueryClient, viewerId: string | null) => {
+  const pendingForViewer = queryClient.isMutating({
+    mutationKey: KOK_KEY,
+    predicate: (mutation) =>
+      (mutation.state.variables as { viewerId?: string | null } | undefined)?.viewerId === viewerId,
+  });
+  if (pendingForViewer > 1) return;
+  return queryClient.invalidateQueries({ queryKey: feedKeys.koksOf(viewerId) });
+};
 
 const patch = (
   data: BundleKoks | undefined,
@@ -59,7 +78,7 @@ const patch = (
   };
 
 /** 다른 멤버가 그사이 뺀 콕을 취소함(그 상태로 맞추고 알리지 않음, 기능명세서 6.3.1) */
-export const isAlreadyUnpinned = (error: unknown, vars: KokVariables) =>
+export const isAlreadyUnpinned = (error: unknown, vars: { pin: boolean }) =>
   !vars.pin && isApiError(error) && error.code === 'RESOURCE_001';
 
 /**
@@ -73,7 +92,7 @@ export const useKokMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: KOK_KEY,
-    scope: { id: 'bundle-kok' },
+    scope: KOK_SCOPE,
     // 성공하면 그 장소의 콕 ID(취소면 null)
     mutationFn: async (vars: KokVariables): Promise<number | null> => {
       const bundleId = toWireId(vars.bundleId);
@@ -114,15 +133,6 @@ export const useKokMutation = () => {
         patch(data, context.locationId, { pinId }),
       );
     },
-    // 뒤에 보낼 요청이 남았으면 다시 받은 값이 바로 누른 버튼을 덮지 않게 기다림
-    onSettled: (_data, _error, vars) => {
-      const pendingForViewer = queryClient.isMutating({
-        mutationKey: KOK_KEY,
-        predicate: (mutation) =>
-          (mutation.state.variables as KokVariables | undefined)?.viewerId === vars.viewerId,
-      });
-      if (pendingForViewer > 1) return;
-      return queryClient.invalidateQueries({ queryKey: feedKeys.koksOf(vars.viewerId) });
-    },
+    onSettled: (_data, _error, vars) => refreshKoksWhenIdle(queryClient, vars.viewerId),
   });
 };

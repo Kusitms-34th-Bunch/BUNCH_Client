@@ -63,6 +63,8 @@ export type FeedAd = {
   tags?: readonly string[] | undefined;
   /** 현재 번치의 콕한 장소에 담겨 있음 */
   picked: boolean;
+  /** 콕 취소에 쓰는 콕 ID(콕하지 않았거나 응답 전이면 없음) */
+  pinId?: number | undefined;
 };
 
 /** 팔로우한 번치 구간과 공개 구간(앞 구간에 나온 번들은 서버가 뺌), 공개 구간 끝의 광고 */
