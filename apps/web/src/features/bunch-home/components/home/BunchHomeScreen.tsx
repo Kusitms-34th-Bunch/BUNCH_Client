@@ -18,6 +18,7 @@ import {
 import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries';
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
@@ -33,6 +34,8 @@ import { BundleEmpty } from './BundleEmpty';
 import { DraftBundleList } from './DraftBundleList';
 
 type BundleTab = 'completed' | 'draft';
+
+const CREATE_BUNDLE_LABEL = '번들 만들기';
 
 // 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
 const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
@@ -70,6 +73,13 @@ export function BunchHomeScreen({
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const openOverlay = useScreenOverlay();
   const refresh = useRefreshActiveQueries();
+  // iOS 26 이상 쉘은 「+」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음
+  const showWebCreateButton = useNativeFloatingButton({
+    tab: 'bunch',
+    icon: 'add',
+    label: CREATE_BUNDLE_LABEL,
+    onPress: onCreateBundle,
+  });
 
   const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
   // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움(닫힘 모션 동안 문구는 열 때 값으로 유지)
@@ -195,14 +205,17 @@ export function BunchHomeScreen({
         />
       }
       // 「+」는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
+      // 네이티브 버튼일 때도 높이 0 영역은 남김(PageShell이 이 영역을 토스트 기준으로 씀)
       bottom={
         <div className="relative h-0">
-          <FloatingButton
-            icon="add"
-            aria-label="번들 만들기"
-            onClick={onCreateBundle}
-            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
-          />
+          {showWebCreateButton ? (
+            <FloatingButton
+              icon="add"
+              aria-label={CREATE_BUNDLE_LABEL}
+              onClick={onCreateBundle}
+              className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
+            />
+          ) : null}
         </div>
       }
     >

@@ -260,7 +260,42 @@ export const setNativeTabBarParamsSchema = z.object({
 export type NativeTabBarItem = z.infer<typeof nativeTabBarItemSchema>;
 export type SetNativeTabBarParams = z.infer<typeof setNativeTabBarParamsSchema>;
 
-/** `createWebView({ postMessageSchema })`와 `linkBridge`가 같이 쓰는 네이티브 → 웹 이벤트 목록. 탭 선택은 시스템 탭 바가 처리해 현재 없음 */
-export const appPostMessageSchema = {};
+/**
+ * iOS 26 이상 쉘이 탭 화면 위에 네이티브 Liquid Glass로 그리는 플로팅 버튼. `button`이 null이면 그 탭의 버튼을 지움
+ * 탭마다 하나만 두고, 쉘은 웹이 알려 준 탭 화면에만 그림(다른 탭 WebView의 요청이 서로 덮어쓰지 않게)
+ */
+export const setNativeFloatingButtonParamsSchema = z
+  .object({
+    tab: z.string().min(1),
+    button: z
+      .object({
+        /** 웹 `FloatingButton`의 아이콘과 같은 이름 */
+        icon: z.enum(['add', 'more']),
+        /** 아이콘만 있는 버튼의 접근성 이름 */
+        label: z.string().min(1).max(40),
+        /** 누를 수 없음(예: 고른 사진이 없을 때의 「⋯」). 흐리게 그리고 눌림을 보내지 않음 */
+        disabled: z.boolean().optional(),
+        /** 버튼이 연 메뉴가 열려 있는지(VoiceOver가 읽음). 메뉴를 열지 않는 버튼은 없음 */
+        expanded: z.boolean().optional(),
+      })
+      .strict()
+      .nullable(),
+  })
+  .strict();
+export type SetNativeFloatingButtonParams = z.infer<typeof setNativeFloatingButtonParamsSchema>;
+
+/** 네이티브 플로팅 버튼 눌림. 모든 탭 WebView에 보내므로 웹이 `tab`으로 자기 버튼인지 가림 */
+export const nativeFloatingButtonPressSchema = z.object({ tab: z.string().min(1) }).strict();
+export type NativeFloatingButtonPress = z.infer<typeof nativeFloatingButtonPressSchema>;
+
+// @webview-bridge의 이벤트 schema에 필요한 validate 인터페이스 적용
+const validator = <T extends z.ZodType>(schema: T) => ({
+  validate: (data: unknown): z.infer<T> => schema.parse(data),
+});
+
+/** `createWebView({ postMessageSchema })`와 `linkBridge`가 같이 쓰는 네이티브 → 웹 이벤트 목록 */
+export const appPostMessageSchema = {
+  nativeFloatingButtonPress: validator(nativeFloatingButtonPressSchema),
+};
 
 export type AppPostMessageSchema = typeof appPostMessageSchema;

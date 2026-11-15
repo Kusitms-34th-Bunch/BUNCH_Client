@@ -18,7 +18,7 @@
 
 ## Public API
 
-- Props: `photos`(`{ src, alt?, pickers? }[]`, 필수), `variant`, `info`(제목·위치·날짜), `author`(`name`·`imageSrc`·`time`·`onClick`), `onPhotoClick(index)`, `photoLabel(index, total)`, native `<div>` 속성.
+- Props: `photos`(`{ src, alt?, pickers? }[]`, 필수), `variant`, `info`(제목·위치·날짜), `author`(`name`·`imageSrc`·`time`·`onClick`), `onPhotoClick(index)`, `photoLabel(index, total)`, `heroKey`(화면 전환 공유 요소 키. thumbnail은 카드 전체에 `data-hero-enter-key`, detail은 첫 사진에 `data-hero-exit-key`), native `<div>` 속성.
 
 ## 접근성
 

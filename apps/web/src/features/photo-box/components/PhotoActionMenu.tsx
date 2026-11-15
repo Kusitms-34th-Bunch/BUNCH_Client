@@ -36,7 +36,7 @@ type PhotoActionMenuProps<Id extends string> = {
   /** 항목을 골랐을 때(메뉴는 닫기를 요청한 뒤 호출) */
   onSelect: (_id: Id) => void;
   /** 메뉴를 여는 버튼. 바깥 누름 판정과 닫을 때 포커스 복귀에 사용 */
-  triggerRef: RefObject<HTMLButtonElement | null>;
+  triggerRef: RefObject<HTMLElement | null>;
   /** 모션 방향 등 위치에 따른 CSS 변수(예: `--menu-motion-offset`) */
   style?: CSSProperties | undefined;
 };

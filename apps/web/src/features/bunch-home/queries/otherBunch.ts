@@ -17,6 +17,13 @@ export const otherBunchHomeQueryOptions = (targetId: string, viewerId: string | 
     queryFn: viewerId === undefined ? skipToken : ({ signal }) => getBunchHome(targetId, signal),
   });
 
+/** 다른 번치 홈(번치 이름·이미지)을 미리 받음. 피드 → 번들 상세처럼 상세가 바로 그려져야 할 때. 캐시가 있으면 바로 끝남, 실패는 reject */
+export function usePrefetchOtherBunchHome() {
+  const queryClient = useQueryClient();
+  return (targetId: string, viewerId: string | null) =>
+    queryClient.ensureQueryData(otherBunchHomeQueryOptions(targetId, viewerId));
+}
+
 /** 다른 번치의 공개 번들. 볼 수 있을 때만(비공개는 팔로우 승인 뒤) */
 export const otherBunchPublishedQueryOptions = (
   targetId: string,
