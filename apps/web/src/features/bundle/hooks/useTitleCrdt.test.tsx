@@ -103,8 +103,8 @@ describe('useTitleCrdt', () => {
     expect(result.current.text).toBe('부산 여행가');
     act(() => result.current.setComposing(false));
 
-    expect(result.current.text).toContain('가을');
-    expect(result.current.text).toContain('가');
+    // 원격 변경(가을)과 로컬 마지막 글자(가)가 둘 다 남은 최종 결과(접두사 일치만으로는 통과하지 않음)
+    expect(result.current.text).toBe('가을 부산 여행가');
     expect(loadTitleDoc(result.current.serialize() ?? '').title).toBe(result.current.text);
   });
 

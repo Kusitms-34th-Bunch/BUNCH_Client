@@ -114,9 +114,11 @@ export function DraftTitleField({
         onCompositionEnd={() => onComposing?.(false)}
         onChange={(event) => {
           // 40자(보이는 글자 기준)를 넘기는 입력은 받지 않음(원격 병합으로 넘은 값은 줄이는 방향만 허용)
+          // 늘어났는지도 UTF-16 길이가 아니라 보이는 글자(grapheme) 수로 비교(이모지를 일반 글자로 바꿔도 늘어난 것으로 봄)
+          const nextGraphemes = countTitleGraphemes(event.target.value);
           if (
-            event.target.value.length > draft.title.length &&
-            countTitleGraphemes(event.target.value) > TITLE_MAX_LENGTH
+            nextGraphemes > TITLE_MAX_LENGTH &&
+            nextGraphemes > countTitleGraphemes(draft.title)
           ) {
             return;
           }

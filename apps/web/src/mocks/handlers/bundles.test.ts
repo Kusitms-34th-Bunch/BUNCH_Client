@@ -1,3 +1,4 @@
+import * as Automerge from '@automerge/automerge/slim';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   editTitle,
@@ -589,6 +590,22 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     expect((await merge(draft.id, await edit(draft.id, '한 줄\n두 줄'))).json.error?.code).toBe(
       'COMMON_001',
     );
+  });
+
+  it('title이 문자열이 아닌 문서는 오류로 거절한다(서버가 죽지 않고 COMMON_001)', async () => {
+    const draft = await createDraft();
+    const { json } = await call('GET', `${base}/${draft.id}`);
+    const state = (json.data as unknown as { titleCrdtState: string }).titleCrdtState;
+    // 서버 문서 위에 title을 숫자로 바꾼 변경을 얹은 문서(병합하면 이 값이 이김)
+    const broken = Automerge.change(loadTitleDoc(state), (doc) => {
+      (doc as unknown as { title: unknown }).title = 123;
+    });
+    const bytes = Automerge.save(broken);
+
+    const result = await merge(draft.id, Buffer.from(bytes).toString('base64'));
+
+    expect(result.status).toBe(400);
+    expect(result.json.error?.code).toBe('COMMON_001');
   });
 
   it('참여하지 않은 사람은 AUTH_002, 없는 번들은 RESOURCE_001이다', async () => {

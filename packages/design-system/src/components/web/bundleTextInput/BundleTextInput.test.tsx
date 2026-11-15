@@ -40,6 +40,22 @@ describe('BundleTextInput', () => {
     expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBeNull();
   });
 
+  it('오류가 생겼다 사라져도 같은 알림 영역이 유지되며 내용만 바뀐다(스크린 리더가 변화를 읽도록)', () => {
+    const { rerender } = render(<BundleTextInput title="사진" />);
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toBe('');
+
+    rerender(<BundleTextInput title="사진" errorMessage="입력 가능한 글자수를 초과했어요" />);
+    expect(screen.getByRole('alert')).toBe(alert);
+    expect(alert.textContent).toBe('입력 가능한 글자수를 초과했어요');
+    expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBe('true');
+
+    rerender(<BundleTextInput title="사진" />);
+    expect(screen.getByRole('alert')).toBe(alert);
+    expect(alert.textContent).toBe('');
+    expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBeNull();
+  });
+
   it('오류 문구가 있으면 alert로 보이고 입력창이 aria-invalid·describedby로 연결된다', () => {
     render(<BundleTextInput title="사진" errorMessage="입력 가능한 글자수를 초과했어요" />);
     const alert = screen.getByRole('alert');

@@ -37,9 +37,18 @@ export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string
       const previous = old as BundleDetail | undefined;
       const incoming = next as BundleDetail;
       if (!previous) return incoming;
-      return previous.revision > incoming.revision
-        ? previous
-        : replaceEqualDeep(previous, incoming);
+      if (previous.revision > incoming.revision) return previous;
+      // 제목 병합 응답은 revision을 바꾸지 않아, 같은 revision의 낡은 상세가 더 높은 제목 버전을 되돌리지 않게 함
+      if (previous.titleCrdtState !== undefined && previous.titleVersion > incoming.titleVersion) {
+        const kept = withTitleState(incoming, {
+          title: previous.title,
+          titleCrdtState: previous.titleCrdtState,
+          titleVersion: previous.titleVersion,
+          titleTooLong: previous.titleTooLong,
+        });
+        return replaceEqualDeep(previous, kept);
+      }
+      return replaceEqualDeep(previous, incoming);
     },
   });
 

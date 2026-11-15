@@ -351,6 +351,30 @@ describe('입력', () => {
     expect(actions.setTitle).not.toHaveBeenCalled();
   });
 
+  it('이모지를 일반 글자로 바꿔 보이는 글자가 늘어나 40자를 넘기면 받지 않는다(UTF-16 길이는 줄어도)', () => {
+    // 이모지 20개와 한글 20개는 40글자지만 UTF-16 길이는 60
+    renderScreen({
+      viewer: creator,
+      draft: { ...publishable, title: '😀'.repeat(20) + '가'.repeat(20) },
+    });
+
+    fireEvent.change(screen.getByRole('textbox', { name: /제목/ }), {
+      target: { value: 'a'.repeat(41) },
+    });
+
+    expect(actions.setTitle).not.toHaveBeenCalled();
+  });
+
+  it('합쳐져서 이미 40자를 넘은 제목은 줄이는 입력을 받는다', () => {
+    renderScreen({ viewer: creator, draft: { ...publishable, title: '가'.repeat(41) } });
+
+    fireEvent.change(screen.getByRole('textbox', { name: /제목/ }), {
+      target: { value: '가'.repeat(40) },
+    });
+
+    expect(actions.setTitle).toHaveBeenCalledWith('가'.repeat(40));
+  });
+
   it('조합이 끝나지 않은 채 포커스를 잃어도 조합 종료를 알린다', async () => {
     renderScreen({ viewer: creator });
     const title = screen.getByRole('textbox', { name: /제목/ });
