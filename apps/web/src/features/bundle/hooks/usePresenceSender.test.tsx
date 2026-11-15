@@ -1,6 +1,7 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, render as renderTree, renderHook } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { usePresenceSender } from './usePresenceSender';
+import { type PresenceCommands, usePresenceSender } from './usePresenceSender';
 
 const send = vi.fn((_body: Record<string, unknown>) => true);
 const bodies = () => send.mock.calls.map(([body]) => body);
@@ -123,6 +124,27 @@ describe('usePresenceSender', () => {
       { action: 'TYPE', target: 'COMMENT', text: '' },
       { action: 'BLUR', target: 'TITLE' },
     ]);
+  });
+
+  it('참여 멤버가 되는 바로 그 커밋에 마운트된 자식의 BEGIN도 보낸다(자식 effect가 먼저 돌아도)', () => {
+    // 초안이 준비되면서 participant가 true가 되고 PresenceScope 같은 자식이 같은 커밋에 마운트되는 상황
+    function Child({ presence }: { presence: PresenceCommands }) {
+      useEffect(() => {
+        presence.begin('PHOTOS');
+        return () => presence.end('PHOTOS');
+      }, [presence]);
+      return null;
+    }
+    function Parent({ participant }: { participant: boolean }) {
+      const presence = usePresenceSender({ send, connected: true, viewing: true, participant });
+      return participant ? <Child presence={presence} /> : null;
+    }
+    const view = renderTree(<Parent participant={false} />);
+    send.mockClear();
+
+    view.rerender(<Parent participant />);
+
+    expect(bodies()).toContainEqual({ action: 'BEGIN', target: 'PHOTOS' });
   });
 
   it('참여 멤버가 아니면 VIEW만 보내고 BEGIN·TYPE는 보내지 않는다', () => {

@@ -52,6 +52,7 @@ const onImportFromBunchBox = vi.fn();
 const onImportFromGallery = vi.fn();
 
 type Options = {
+  actions?: DraftActions;
   draft?: Draft;
   viewer?: DraftViewer;
   saveStatus?: 'saved' | 'saving';
@@ -63,6 +64,7 @@ type Options = {
 const publishable: Draft = { ...draftFixture, visibility: 'public' };
 
 const screenElement = ({
+  actions: screenActions = actions,
   draft = publishable,
   viewer = creator,
   saveStatus = 'saved',
@@ -75,7 +77,7 @@ const screenElement = ({
     saveStatus={saveStatus}
     offline={offline}
     titleReady={titleReady}
-    actions={actions}
+    actions={screenActions}
     currentYear={2026}
     onBack={onBack}
     onLeave={onLeave}
@@ -865,6 +867,22 @@ describe('다른 멤버가 작업 중인 영역(잠그지 않음)', () => {
 
     await waitFor(() => expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS'));
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('사진 추가 시트가 열려 있는 동안 연결 상태가 바뀌어 presence가 바뀌어도 새 presence로 작업을 알린다', async () => {
+    const view = renderScreen();
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+
+    // 재연결로 presence 객체가 바뀐 상황(시트는 계속 열려 있음)
+    const reconnected = {
+      ...actions,
+      presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
+    };
+    view.rerender(screenElement({ actions: reconnected }));
+
+    expect(reconnected.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
   });
 
   it('참여 멤버가 아니면 사진을 지우려 할 때 안내한다', async () => {
