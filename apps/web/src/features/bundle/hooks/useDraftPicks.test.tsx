@@ -29,7 +29,12 @@ const me = String(MOCK_MY_MEMBER_ID);
 
 // 가짜 서버에 초안을 만들고 상세 캐시를 채운 뒤, 픽 화면이 쓰는 Draft(서버 픽 포함)를 만듦
 const setup = async (
-  options: { blocked?: boolean; onPhotoGone?: (_photoId: string) => void } = {},
+  options: {
+    blocked?: boolean;
+    onPhotoGone?: (_photoId: string) => void;
+    /** 상세를 한 번 받아 캐시에 둔 뒤, 화면이 들어오며 다시 받기 전에 서버 상태를 바꿈 */
+    beforeMount?: () => void;
+  } = {},
 ) => {
   const client = createTestQueryClient();
   const profile = await client.fetchQuery(myProfileQueryOptions());
@@ -41,6 +46,7 @@ const setup = async (
     [String(MOCK_MEMBER_IDS.memberA)],
   );
   await client.fetchQuery(bundleQueryOptions(bunchId, created.id));
+  options.beforeMount?.();
   const detail = () => client.getQueryData(bundleQueryOptions(bunchId, created.id).queryKey)!;
   const draftOf = (): Draft => ({
     ...toDraft({ detail: detail(), bunchMembers: [], locations: [] }),
@@ -300,6 +306,31 @@ describe('useDraftPicks', () => {
     // setup이 상세를 한 번 받고, 화면이 들어올 때 한 번 더 받음
     await waitFor(() => expect(detailReads).toBeGreaterThanOrEqual(2));
     await waitFor(() => expect(hook.result.current.entry?.photos).toHaveLength(2));
+  });
+
+  it('들어올 때 받은 상세가 캐시와 다르면 entry는 새로 받은 사진 목록과 다른 멤버의 픽이다', async () => {
+    // 캐시(사진 2장, 픽 없음)와 달리 서버에서는 그사이 첫 사진을 다른 멤버가 픽하고 둘째 사진이 빠짐
+    const { hook, photoIds } = await setup({
+      beforeMount: () =>
+        mockDb.update((current) => ({
+          ...current,
+          bundles: current.bundles.map((bundle) => ({
+            ...bundle,
+            photos: bundle.photos.slice(0, 1).map((photo) => ({
+              ...photo,
+              picks: [{ memberId: MOCK_MEMBER_IDS.memberA, picked: true, version: 1 }],
+            })),
+          })),
+        })),
+    });
+    const [first, second] = photoIds;
+
+    await waitFor(() => expect(hook.result.current.entry).toBeDefined());
+
+    const { entry } = hook.result.current;
+    expect(entry?.photos.map((photo) => photo.id)).toEqual([first]);
+    expect(entry?.picks[first!]).toEqual([String(MOCK_MEMBER_IDS.memberA)]);
+    expect(entry?.picks[second!]).toBeUndefined();
   });
 
   it('화면을 나갔다 다시 들어와도 같은 사진의 저장 루프는 하나이고 마지막 선택이 남는다', async () => {
