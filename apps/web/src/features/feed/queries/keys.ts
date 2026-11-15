@@ -19,6 +19,10 @@ export const feedKeys = {
   koksOf: (viewerId: string | null) => [...feedKeys.all, 'koks', viewerId] as const,
   koks: (bundleId: string, viewerId: string | null) =>
     [...feedKeys.koksOf(viewerId), bundleId] as const,
+  // 멤버 프로필(참여 번치의 팔로우 상태가 명의에 따라 달라 명의를 둠)
+  memberAll: (memberId: string) => [...feedKeys.all, 'member', memberId] as const,
+  member: (memberId: string, viewerId: string | null) =>
+    [...feedKeys.memberAll(memberId), viewerId] as const,
   // 원댓글(쪽 단위)과 그 아래 답글. 쪽 데이터와 답글 배열이 같은 앞부분에 섞이므로 캐시를 고칠 때는 exact
   comments: (bundleId: string, viewerId: string | null) =>
     [...feedKeys.bundle(bundleId), 'comments', viewerId] as const,
