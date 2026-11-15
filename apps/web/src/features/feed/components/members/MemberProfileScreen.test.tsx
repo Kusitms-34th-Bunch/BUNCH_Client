@@ -196,6 +196,40 @@ describe('MemberProfileScreen', () => {
     expect(screen.getByRole('button', { name: '캠핑러버 팔로우' })).toBeTruthy();
   });
 
+  it('팔로우 뒤 다시 받기가 실패하면 옛 버튼 대신 안내와 다시 시도를 보인다', async () => {
+    const user = userEvent.setup();
+    renderProfile();
+    await loaded();
+    server.use(
+      http.get('/api/members/:memberId/social-profile', () => fail(500, 'COMMON_999'), {
+        once: true,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: '캠핑러버 팔로우' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('일시적인 오류가 발생했어요');
+    expect(screen.queryByRole('button', { name: '캠핑러버 팔로우' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    expect(
+      await screen.findByRole('button', { name: '캠핑러버 팔로잉, 누르면 팔로우 취소' }),
+    ).toBeTruthy();
+  });
+
+  it('받아 둔 프로필이 있어도 다시 받을 때 볼 수 없게 되면 안내만 보인다', async () => {
+    const user = userEvent.setup();
+    renderProfile();
+    await loaded();
+    server.use(http.get('/api/members/:memberId/social-profile', () => fail(404, 'RESOURCE_001')));
+
+    await user.click(screen.getByRole('button', { name: '캠핑러버 팔로우' }));
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '삭제되었거나 볼 수 없는 내용이에요' }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('list')).toBeNull();
+  });
+
   it('소속 번치가 없으면 모두 「팔로우」이고 눌러도 보내지 않으며 안내한다', async () => {
     const user = userEvent.setup();
     renderProfile(null);
