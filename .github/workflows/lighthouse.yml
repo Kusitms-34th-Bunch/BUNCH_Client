@@ -1,0 +1,209 @@
+name: Lighthouse
+
+# web이 바뀐 PR을 CI 안에서 빌드해 Lighthouse로 측정하고 결과를 PR 댓글 하나로 알림(실패시키지 않음, docs/workflows/ci.md)
+# develop push는 같은 측정을 다음 PR의 기준선으로 저장. 배포 주소가 아니라 runner 안의 next start를 측정
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.yarnrc.yml'
+      - '.github/actions/setup/**'
+      - '.github/workflows/lighthouse.yml'
+      - 'scripts/report-lighthouse.mjs'
+  push:
+    branches: [develop]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.yarnrc.yml'
+      - '.github/actions/setup/**'
+      - '.github/workflows/lighthouse.yml'
+      - 'scripts/report-lighthouse.mjs'
+
+concurrency:
+  group: lighthouse-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # 저장소 코드를 실행하는 job에는 쓰기 권한을 주지 않음(댓글은 아래 comment job)
+  measure:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # 로그인 없이 열리는 페이지만(`/login`은 로그인 전이면 `/intro`로 이동해 뺌)
+      # 초대 토큰은 버튼을 눌러야 확인하므로 가짜 토큰으로도 실제 초대 링크의 첫 화면과 같음
+      LIGHTHOUSE_URLS: >-
+        http://127.0.0.1:3300/intro
+        http://127.0.0.1:3300/invite/lighthouse-check
+
+    steps:
+      # git 인증이 필요 없어 토큰을 남기지 않음(아래 `yarn dlx`가 lockfile 밖 의존성을 받아 실행하므로)
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # 의존성 설치(코드가 실행될 수 있는 단계) 전 변조 징후 선검사
+      - name: 변조 가드
+        run: node turbo/workflows/check-suspicious.mjs
+
+      - name: 의존성 설치
+        uses: ./.github/actions/setup
+
+      # CI build job이 저장한 Next 빌드 캐시를 이어 받기만 함(저장은 CI가 담당)
+      - name: Restore Next.js build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: apps/web/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
+          restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
+
+      # 타입 검사는 CI의 Lint & Typecheck job이 함
+      - name: Build web
+        env:
+          NEXT_SKIP_TYPECHECK: 'true'
+        run: yarn workspace @app/web build
+
+      # 실제 백엔드 없이 모든 요청에 401(로그인 전)만 주는 API. API_BASE_URL이 없으면 세션 확인이 실패해 오류 화면이 측정됨
+      # 측정 인프라 실패는 체크를 실패시키지 않고 댓글로 알림
+      - name: Start web
+        id: start
+        continue-on-error: true
+        env:
+          API_BASE_URL: http://127.0.0.1:3399
+        run: |
+          node -e "require('node:http').createServer((req, res) => { res.writeHead(401, { 'content-type': 'application/json' }); res.end(JSON.stringify({ success: false, data: null, error: { code: 'AUTH_001', message: 'unauthorized' } })); }).listen(3399, '127.0.0.1')" &
+          yarn workspace @app/web exec next start --hostname 127.0.0.1 --port 3300 > next-start.log 2>&1 &
+          # 페이지 HTML은 API를 부르지 않으므로 stub의 401도 함께 확인(stub이 없으면 오류 화면이 정상 점수처럼 저장됨)
+          for _ in $(seq 1 60); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:3300/intro &&
+              [ "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3399/)" = 401 ]; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat next-start.log
+          exit 1
+
+      # runner에 있는 Chrome 사용. 페이지당 1번, 항목 제목은 한국어
+      # 전체 페이지 스크린샷은 HTML 리포트용이라 끔(페이지당 약 1초, 점수·최종 화면에는 영향 없음)
+      # 최상위 버전만 고정, 전이 의존성은 실행 때 resolve(devDependency면 모든 CI 설치가 무거워짐)
+      - name: Run Lighthouse
+        id: lighthouse
+        if: steps.start.outcome == 'success'
+        continue-on-error: true
+        run: |
+          args=()
+          for url in $LIGHTHOUSE_URLS; do args+=("--url=$url"); done
+          yarn dlx @lhci/cli@0.15.1 collect "${args[@]}" --numberOfRuns=1 --settings.locale=ko --settings.disableFullPageScreenshot
+
+      # PR은 base 커밋의 결과, 없으면 develop의 가장 최근 결과와 비교
+      - name: Restore Lighthouse baseline
+        if: github.event_name == 'pull_request' && steps.lighthouse.outcome == 'success'
+        uses: actions/cache/restore@v4
+        with:
+          path: apps/web/lighthouse-baseline.json
+          key: lighthouse-${{ runner.os }}-develop-${{ github.event.pull_request.base.sha }}
+          restore-keys: lighthouse-${{ runner.os }}-develop-
+
+      - name: Report
+        if: steps.lighthouse.outcome == 'success'
+        continue-on-error: true
+        env:
+          LIGHTHOUSE_REPORT: lighthouse.md
+        run: node scripts/report-lighthouse.mjs
+
+      # develop push는 이번 결과를 다음 PR의 기준선으로 저장(머지될 때마다 갱신)
+      - name: Update Lighthouse baseline
+        id: baseline
+        if: github.event_name == 'push' && steps.lighthouse.outcome == 'success'
+        run: node scripts/report-lighthouse.mjs --update
+
+      - name: Save Lighthouse baseline
+        if: steps.baseline.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: apps/web/lighthouse-baseline.json
+          key: lighthouse-${{ runner.os }}-develop-${{ github.sha }}
+
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: |
+            .lighthouseci
+            lighthouse.md
+            next-start.log
+          if-no-files-found: ignore
+          # .lighthouseci는 점으로 시작하는 폴더라 기본값이면 빠짐
+          include-hidden-files: true
+          retention-days: 7
+
+  comment:
+    name: Lighthouse comment
+    needs: measure
+    # 포크·Dependabot PR은 토큰이 읽기 전용이라 건너뜀
+    # 측정하지 못한 커밋도 이전 결과가 남아 보이지 않게 댓글을 덮어씀
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' && needs.measure.result != 'cancelled' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Download Lighthouse report
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: lighthouse-report
+          path: lighthouse
+
+      # 댓글 하나를 찾아 갱신(새 커밋마다 댓글이 쌓이지 않게)
+      - name: Comment Lighthouse result on the pull request
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const marker = '<!-- lighthouse-result -->';
+            const commitUrl = `${context.payload.repository.html_url}/commit/${context.payload.pull_request.head.sha}`;
+            const report = fs.existsSync('lighthouse/lighthouse.md')
+              ? fs.readFileSync('lighthouse/lighthouse.md', 'utf8').trim()
+              : '### Lighthouse\n\n이번 커밋은 측정하지 못했습니다. 실행 로그와 `next-start.log`(artifact)를 확인하세요.';
+            const body = [
+              marker,
+              report,
+              '',
+              `[기준 커밋](${commitUrl}) · [실행 로그와 전체 리포트(artifact)](${process.env.RUN_URL})`,
+            ].join('\n');
+
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (comment) => comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
