@@ -31,6 +31,15 @@ describe('normalizeError', () => {
     expect(result.message).toBe('인증이 필요합니다');
   });
 
+  it('maps a 403 HTTPError to the forbidden category, not auth', () => {
+    const result = normalizeError(
+      fakeHttpError(403, { message: '권한이 없습니다', code: 'AUTH_002' }),
+    );
+    expect(result.category).toBe('forbidden');
+    expect(result.status).toBe(403);
+    expect(result.code).toBe('AUTH_002');
+  });
+
   it('maps a 401 HTTPError to the auth category', () => {
     const result = normalizeError(
       fakeHttpError(401, { message: '인증이 필요합니다', code: 'AUTH-001' }),

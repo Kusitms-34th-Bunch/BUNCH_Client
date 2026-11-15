@@ -1,11 +1,11 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { FollowListItem, ProfileImage } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { isUnavailableTarget } from '@/shared/api/errorStatus';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -82,8 +82,7 @@ export function MemberProfileScreen({ memberId, links, follow }: MemberProfileSc
 
   // 없음·탈퇴·볼 수 없음(404·403)과 잘못된 주소(400)는 같은 안내, 그 밖의 실패는 다시 시도
   // 받아 둔 프로필이 있어도 다시 받기가 실패하면 안내(옛 관계 상태로 다시 보내지 않게)
-  const unavailable =
-    isApiError(profile.error) && [400, 403, 404].includes(profile.error.status ?? 0);
+  const unavailable = isUnavailableTarget(profile.error);
   const failed =
     !unavailable && (profile.isError || (!member && viewer === undefined && viewerFailed));
   if (unavailable || failed) {

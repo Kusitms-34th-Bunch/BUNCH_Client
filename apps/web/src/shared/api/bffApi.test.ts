@@ -20,7 +20,7 @@ describe('requestData', () => {
     serve(() => fail(403, 'AUTH_002'));
     await expect(request()).rejects.toMatchObject({
       name: 'ApiError',
-      category: 'auth',
+      category: 'forbidden',
       status: 403,
       code: 'AUTH_002',
     });

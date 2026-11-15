@@ -28,6 +28,7 @@ import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
+import { isUnavailableTarget } from '@/shared/api/errorStatus';
 import { toWireId } from '@/shared/api/ids';
 import commentEmpty from '@/shared/assets/images/empty/comment-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
@@ -246,8 +247,7 @@ export function BundleDetailScreen({
   );
 
   // 지웠거나 없음·볼 수 없음(404·403)과 잘못된 주소(400)는 같은 안내, 그 밖의 실패는 다시 시도
-  const unavailable =
-    isApiError(detail.error) && [400, 403, 404].includes(detail.error.status ?? 0);
+  const unavailable = isUnavailableTarget(detail.error);
   // 이미 받은 상세가 있으면 다시 받기가 실패해도 보던 내용을 그대로 둠
   const failed =
     !unavailable && (detail.isError || (viewer === undefined && viewerFailed)) && !detail.data;

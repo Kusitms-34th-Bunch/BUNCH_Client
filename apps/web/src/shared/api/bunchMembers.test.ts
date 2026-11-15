@@ -80,7 +80,7 @@ describe('getBunchMembers', () => {
     server.use(http.get('/api/bunches/:bunchId/members', () => fail(403, 'AUTH_002')));
 
     await expect(getBunchMembers('1')).rejects.toMatchObject({
-      category: 'auth',
+      category: 'forbidden',
       code: 'AUTH_002',
     });
   });

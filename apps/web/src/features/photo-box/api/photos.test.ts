@@ -97,7 +97,7 @@ describe('removePhotos', () => {
   });
 
   it.each([
-    [403, 'AUTH_002', 'auth'],
+    [403, 'AUTH_002', 'forbidden'],
     [500, 'COMMON_500', 'server'],
   ] as const)('%i 응답은 %s 코드의 %s ApiError다', async (status, code, category) => {
     server.use(http.post('/api/bunches/:bunchId/photos/delete', () => fail(status, code)));
