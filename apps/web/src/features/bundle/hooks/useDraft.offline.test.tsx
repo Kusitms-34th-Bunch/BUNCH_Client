@@ -236,7 +236,7 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
         ),
       }));
     };
-    return { view, first: first!, second: second!, shownIds, remoteRemovesThird };
+    return { id: created.id, view, first: first!, second: second!, shownIds, remoteRemovesThird };
   };
 
   it('보류한 이벤트를 대신하는 재조회가 실패해도 표시를 남겨 두었다가 다시 받아 화면을 맞춘다', async () => {
@@ -263,18 +263,23 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     expect(detailRequests).toBe(2);
   });
 
-  it('재조회가 계속 실패하면 정해진 횟수(처음 포함 3번)만 다시 받아 보고 멈추며 배너로 알리고, 「재시도」로 다시 받아 맞춘다', async () => {
-    const { view, first, second, shownIds, remoteRemovesThird } = await startHeldRequest();
+  it('재조회가 계속 실패하면 정해진 횟수(처음 포함 3번)만 다시 받아 보고 멈추며 배너로 알리고, 「재시도」로 다시 받는 동안에도 배너와 편집 제한을 유지하다가 성공하면 푼다', async () => {
+    const { id, view, first, second, shownIds, remoteRemovesThird } = await startHeldRequest();
     let detailRequests = 0;
     let failing = true;
+    let releaseRetry: () => void = () => undefined;
+    const retryGate = new Promise<void>((resolve) => (releaseRetry = resolve));
     server.use(
       http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
         await delay(200);
         return undefined;
       }),
-      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
         detailRequests += 1;
-        return failing ? fail(500, 'SERVER_ERROR') : undefined;
+        if (failing) return fail(500, 'SERVER_ERROR');
+        // 「재시도」로 다시 받는 요청은 테스트가 풀어 줄 때까지 서버에서 붙잡아 둠
+        await retryGate;
+        return undefined;
       }),
     );
     const banner = () => ready(view.result.current.state).realtime.down;
@@ -290,9 +295,17 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     await act(() => wait(2500));
     expect(detailRequests).toBe(3);
 
-    // 「재시도」를 누르면 처음부터 다시 받아 화면이 맞춰지고 배너가 사라짐
+    // 「재시도」로 다시 받는 요청이 진행 중인 동안에는 배너와 편집 제한이 그대로
     failing = false;
     act(() => ready(view.result.current.state).realtime.retry());
+    await waitFor(() => expect(detailRequests).toBe(4), { timeout: 3000 });
+    expect(banner()).toBe(true);
+    act(() => void view.result.current.actions.setDate('2026-10-18'));
+    await act(() => wait(300));
+    expect(serverBundle(id)?.date).toBeNull();
+
+    // 성공해야 화면이 맞춰지고 배너가 사라짐
+    releaseRetry();
     await waitFor(() => expect(shownIds()).toEqual([second.id]), { timeout: 5000 });
     await waitFor(() => expect(banner()).toBe(false));
   });

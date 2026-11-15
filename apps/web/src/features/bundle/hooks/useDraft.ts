@@ -206,6 +206,8 @@ export function useDraft(draftId: string | undefined): {
   const holdEventRef = useRef<(_type: string) => boolean>(() => false);
   // 위 재조회가 정해진 횟수를 다 실패해 화면이 낡았을 수 있는 상태: 연결 끊김과 같은 배너(「재시도」)로 알리고 편집을 막음
   const [heldSyncFailed, setHeldSyncFailed] = useState(false);
+  // 배너의 「재시도」를 누를 때마다 올려 재조회를 처음부터 다시 시작(배너는 성공할 때까지 유지)
+  const [heldRetry, setHeldRetry] = useState(0);
   const heldEventRef = useRef(false);
   const realtime = useBundleRealtime(bunchId, bundleId, detail?.status === 'DRAFT', {
     holdEvent: (type) => holdEventRef.current(type),
@@ -614,9 +616,9 @@ export function useDraft(draftId: string | undefined): {
   const requestsBusy = photoBusy || participantBusy;
   // 요청이 끝나면 보류했던 이벤트를 대신해 최신 상세를 받음. 받는 데 성공한 뒤에만 「놓친 변경이 있음」 표시를 지우고,
   // 실패하면 표시를 남긴 채 몇 번 다시 받아 봄(그 사이 새 요청이 시작되면 멈췄다가 다시 한가해질 때 이어서 받음)
-  // 모두 실패하면 배너로 알리고 멈추며, 사용자가 「재시도」를 누르면 처음부터 다시 받음
+  // 모두 실패하면 배너로 알리고 멈추며, 사용자가 「재시도」를 누르면 처음부터 다시 받음(그동안 배너와 편집 제한은 유지하고 성공해야 풂)
   useEffect(() => {
-    if (requestsBusy || heldSyncFailed || !heldEventRef.current) return;
+    if (requestsBusy || !heldEventRef.current) return;
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     const resync = (attempt: number) => {
@@ -624,6 +626,7 @@ export function useDraft(draftId: string | undefined): {
         if (cancelled) return;
         if (!result.isError) {
           heldEventRef.current = false;
+          setHeldSyncFailed(false);
           return;
         }
         if (attempt < HELD_RESYNC_MAX_ATTEMPTS) {
@@ -638,7 +641,7 @@ export function useDraft(draftId: string | undefined): {
       cancelled = true;
       clearTimeout(retryTimer);
     };
-  }, [requestsBusy, heldSyncFailed, refetchDetail]);
+  }, [requestsBusy, heldRetry, refetchDetail]);
   useEffect(() => {
     if (offline) discardUnsentRef.current();
   }, [offline]);
@@ -912,7 +915,7 @@ export function useDraft(draftId: string | undefined): {
         down: realtime.down || heldSyncFailed,
         retry: () => {
           realtime.retry();
-          setHeldSyncFailed(false);
+          if (heldSyncFailed) setHeldRetry((count) => count + 1);
         },
       },
       titleReady: titleCrdt.ready,
