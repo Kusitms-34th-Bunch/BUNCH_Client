@@ -157,6 +157,55 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     // 적용하지 못한 이벤트가 있었으므로 요청이 끝나면 상세를 다시 받음
     await waitFor(() => expect(detailRequests).toBeGreaterThan(0), { timeout: 5000 });
   });
+
+  it('요청이 끝난 뒤 다시 받은 상세로 보류했던 원격 사진 변경이 화면에 반영된다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [first, second, third] = ready(view.result.current.state).draft.photos;
+    const shownIds = () => ready(view.result.current.state).draft.photos.map((photo) => photo.id);
+
+    // 상세 재조회는 테스트가 풀어 줄 때까지 서버에서 붙잡아 둠(그 사이 원격 변경을 만듦)
+    let releaseDetail: () => void = () => undefined;
+    const detailGate = new Promise<void>((resolve) => (releaseDetail = resolve));
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        await detailGate;
+        return undefined;
+      }),
+    );
+
+    act(() => void view.result.current.actions.removePhoto(first!.id));
+    // 요청이 진행 중일 때 온 PHOTOS 이벤트는 보류됨
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    // 내 사진 빼기가 서버에 반영된 뒤, 그 응답에는 없는 원격 변경(다른 멤버가 세 번째 사진을 뺌)을 만듦
+    await waitFor(() => expect(serverBundle(created.id)?.photos).toHaveLength(2), {
+      timeout: 5000,
+    });
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) =>
+        String(bundle.id) === created.id
+          ? { ...bundle, photos: bundle.photos.filter((photo) => photo.id !== Number(third!.id)) }
+          : bundle,
+      ),
+    }));
+    releaseDetail();
+
+    // 보류했던 이벤트 대신 다시 받은 상세가 반영되어 두 변경이 모두 보임
+    await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
+  });
 });
 
 describe('useDraft 요청을 보내는 중에 연결이 끊겼을 때(기능 spec 4.3.14)', () => {
