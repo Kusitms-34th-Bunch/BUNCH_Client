@@ -7,6 +7,7 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import type { BundleDetail } from '../model/bundle';
 import {
   bundleQueryOptions,
   useCreateBundleMutation,
@@ -49,6 +50,30 @@ describe('번들 query·mutation', () => {
       id,
       status: 'DRAFT',
       revision: 1,
+    });
+  });
+
+  it('먼저 보낸 재조회 응답이 그사이 저장 응답으로 맞춘 더 새 revision의 캐시를 덮지 않는다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const key = bundleKeys.detail(bunchId, id);
+    const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const loaded = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    client.setQueryData(key, {
+      ...loaded,
+      revision: loaded.revision + 5,
+      title: '저장 응답으로 맞춤',
+    });
+
+    // 서버는 낡은 revision을 돌려주지만 캐시의 더 새 상태를 유지함
+    await act(async () => {
+      await client.refetchQueries({ queryKey: key });
+    });
+
+    expect(client.getQueryData<BundleDetail>(key)).toMatchObject({
+      revision: loaded.revision + 5,
+      title: '저장 응답으로 맞춤',
     });
   });
 

@@ -11,6 +11,8 @@ export const realtimeUrl = (): string | undefined => {
   if (!raw) return undefined;
   try {
     const url = new URL(raw);
+    // 빈 query(?)·fragment(#)도 WebSocket 생성자가 거부하므로 원문에 구분자가 있으면 받지 않음
+    if (raw.includes('?') || raw.includes('#')) return undefined;
     if (url.search !== '' || url.hash !== '') return undefined;
     // 주소에 계정 정보를 넣지 않음
     if (url.username !== '' || url.password !== '') return undefined;

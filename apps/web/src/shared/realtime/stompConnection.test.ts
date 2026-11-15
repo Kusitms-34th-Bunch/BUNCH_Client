@@ -214,6 +214,34 @@ describe('createStompConnection', () => {
     expect(getToken).toHaveBeenCalledTimes(3);
   });
 
+  it('연결이 10초를 채우기 전에 끊기면 다음 토큰 요청이 늦어져도 이전 안정화 타이머가 대기를 처음으로 되돌리지 않는다', async () => {
+    let rejectSecond: (_reason: Error) => void = () => undefined;
+    const getToken = vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValueOnce('token-1')
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => (rejectSecond = reject)))
+      .mockResolvedValue('token-3');
+    const { connection } = setup(getToken);
+    connection.start();
+    await flush();
+    last().connect();
+    // 연결된 지 1초 만에 끊김: 다음 연결은 1초 뒤, 그 토큰 요청이 오래 걸림
+    await vi.advanceTimersByTimeAsync(1_000);
+    last().drop();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(getToken).toHaveBeenCalledTimes(2);
+    // 처음 연결에서 10초가 지나는 시점(이전 안정화 타이머가 있었다면 여기서 대기를 처음으로 되돌림)을 넘김
+    await vi.advanceTimersByTimeAsync(10_000);
+    rejectSecond(new Error('network'));
+    await flush();
+
+    // 대기는 처음(1초)이 아니라 누적된 두 번째(2초)여야 함
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(getToken).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(getToken).toHaveBeenCalledTimes(3);
+  });
+
   it('오류와 닫힘이 연달아 와도 다음 연결은 한 번만 예약한다', async () => {
     const { connection, getToken } = setup();
     connection.start();

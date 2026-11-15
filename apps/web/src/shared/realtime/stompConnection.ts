@@ -89,6 +89,9 @@ export const createStompConnection = ({
   };
 
   const scheduleReconnect = () => {
+    // 연결이 10초 넘게 이어지지 못했으면 재연결 대기를 되돌리지 않음(다음 토큰 요청이 늦어져도 이전 타이머가 attempt를 비우지 않게)
+    clearTimeout(stableTimer);
+    stableTimer = undefined;
     // 오류와 닫힘이 연달아 와도 다음 연결은 한 번만 예약함
     if (stopped || reconnectTimer !== undefined) return;
     // 처음 연결을 맺기 전의 실패는 「끊김」이 아니라 계속 「연결 중」으로 둠(실시간 서버 문제가 저장·업로드를 막지 않게 함)
