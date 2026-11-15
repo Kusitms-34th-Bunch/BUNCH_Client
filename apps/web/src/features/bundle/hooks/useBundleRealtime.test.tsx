@@ -62,7 +62,7 @@ const render = (active = true, handlers?: BundleRealtimeHandlers) => {
   const hook = renderHook(() => useBundleRealtime('1', '2', active, handlers), {
     wrapper: createQueryWrapper(client),
   });
-  return { ...hook, invalidate };
+  return { ...hook, invalidate, client };
 };
 
 const emit = (status: RealtimeStatus) => {
@@ -200,6 +200,47 @@ describe('useBundleRealtime', () => {
     await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
 
     expect(result.current.down).toBe(false);
+  });
+
+  describe('저장 이벤트', () => {
+    const detail = { status: 'DRAFT', revision: 5, date: null, dateVersion: 0, dateChips: [] };
+    const setup = (holdEvent: (_type: string) => boolean) => {
+      const { client } = render(true, { holdEvent });
+      client.setQueryData(bundleKeys.detail('1', '2'), detail);
+      return {
+        client,
+        topic: connections[0]!.handlers.get('/topic/bunches/1/bundles/2')!,
+        current: () => client.getQueryData<typeof detail>(bundleKeys.detail('1', '2')),
+      };
+    };
+
+    it('저장 이벤트는 상세 캐시에 반영한다', () => {
+      const { topic, current } = setup(() => false);
+
+      act(() =>
+        topic({
+          type: 'DATE',
+          revision: 6,
+          data: { value: '2026-11-12', version: 1, dateChips: [] },
+        }),
+      );
+
+      expect(current()).toMatchObject({ date: '2026-11-12', revision: 6 });
+    });
+
+    it('적용을 미루겠다고 한 type의 이벤트는 건너뛰고 다른 type은 그대로 적용한다', () => {
+      const { topic, current } = setup((type) => type === 'DATE');
+
+      act(() =>
+        topic({
+          type: 'DATE',
+          revision: 6,
+          data: { value: '2026-11-12', version: 1, dateChips: [] },
+        }),
+      );
+
+      expect(current()).toMatchObject({ date: null, revision: 5 });
+    });
   });
 
   describe('presence', () => {

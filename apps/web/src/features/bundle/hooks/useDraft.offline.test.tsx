@@ -1,22 +1,35 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { delay, http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { createBundle } from '../api/bundles';
 import { type DraftState, useDraft } from './useDraft';
 
 // 실시간 연결 상태만 바꿔 가며 끊김 처리를 확인(연결 자체는 useBundleRealtime 테스트가 다룸)
-const connection = vi.hoisted(() => ({ down: false }));
+const connection = vi.hoisted(() => ({
+  down: false,
+  holdEvent: undefined as ((_type: string) => boolean) | undefined,
+}));
 vi.mock('./useBundleRealtime', () => ({
-  useBundleRealtime: () => ({
-    enabled: true,
-    status: connection.down ? 'reconnecting' : 'connected',
-    down: connection.down,
-    retry: () => undefined,
-    sendPresence: () => false,
-  }),
+  useBundleRealtime: (
+    _bunchId: unknown,
+    _bundleId: unknown,
+    _active: unknown,
+    handlers?: { holdEvent?: (_type: string) => boolean },
+  ) => {
+    connection.holdEvent = handlers?.holdEvent;
+    return {
+      enabled: true,
+      status: connection.down ? 'reconnecting' : 'connected',
+      down: connection.down,
+      retry: () => undefined,
+      sendPresence: () => false,
+    };
+  },
 }));
 
 const { me } = MOCK_MEMBER_IDS;
@@ -97,5 +110,34 @@ describe('useDraft 연결이 끊겼을 때(기능 spec 4.3.14)', () => {
     act(goDown);
 
     expect(ready(result.current.state).draft.title).toBe('저장된 제목');
+  });
+});
+
+describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
+  it('내 사진 변경 요청이 진행 중이면 PHOTOS 이벤트는 적용하지 않고 끝나면 최신 상세로 맞춘다', async () => {
+    const { id, result } = await renderReady();
+    let detailRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        return undefined;
+      }),
+    );
+    expect(connection.holdEvent?.('PHOTOS')).toBe(false);
+
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    act(() => result.current.actions.removePhoto(photoId));
+
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    // 다른 type은 그대로 적용
+    expect(connection.holdEvent?.('DATE')).toBe(false);
+    await waitFor(() => expect(serverBundle(id)?.photos).toHaveLength(1), { timeout: 5000 });
+    await waitFor(() => expect(connection.holdEvent?.('PHOTOS')).toBe(false), { timeout: 5000 });
+    // 적용하지 못한 이벤트가 있었으므로 요청이 끝나면 상세를 다시 받음
+    await waitFor(() => expect(detailRequests).toBeGreaterThan(0), { timeout: 5000 });
   });
 });

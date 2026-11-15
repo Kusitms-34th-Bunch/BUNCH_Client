@@ -187,7 +187,11 @@ export function useDraft(draftId: string | undefined): {
   const publishMutation = usePublishBundleMutation(bunchId, bundleId);
   // 초안이 열려 있는 동안 실시간으로 연결(발행·삭제되면 끊음). 끊긴 사이의 변경은 다시 연결될 때 최신 상세로 맞춤
   const presenceState = usePresence(bunchId, bundleId);
+  // 내 사진·참여자 변경 요청이 진행 중일 때 받은 그 type의 이벤트(전체 목록)를 적용하지 않고, 요청이 끝나면 최신 상세로 맞춤
+  const holdEventRef = useRef<(_type: string) => boolean>(() => false);
+  const heldEventRef = useRef(false);
   const realtime = useBundleRealtime(bunchId, bundleId, detail?.status === 'DRAFT', {
+    holdEvent: (type) => holdEventRef.current(type),
     // 전체 PRESENCE로 교체하고, 연결(재연결)되면 놓친 현재 상태를 다시 읽음
     onPresence: presenceState.apply,
     onConnected: presenceState.refresh,
@@ -573,6 +577,21 @@ export function useDraft(draftId: string | undefined): {
   useEffect(() => {
     discardUnsentRef.current = discardUnsent;
   });
+  const participantBusy = addParticipant.isPending || removeParticipant.isPending;
+  useEffect(() => {
+    holdEventRef.current = (type) => {
+      const hold =
+        (type === 'PHOTOS' && photoOps.current > 0) || (type === 'PARTICIPANTS' && participantBusy);
+      if (hold) heldEventRef.current = true;
+      return hold;
+    };
+  });
+  const requestsBusy = photoBusy || participantBusy;
+  useEffect(() => {
+    if (requestsBusy || !heldEventRef.current) return;
+    heldEventRef.current = false;
+    void refetchDetail();
+  }, [requestsBusy, refetchDetail]);
   const connectionDown = realtime.down;
   useEffect(() => {
     if (connectionDown) discardUnsentRef.current();
