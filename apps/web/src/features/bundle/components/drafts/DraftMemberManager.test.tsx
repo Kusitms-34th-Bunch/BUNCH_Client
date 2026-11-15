@@ -20,14 +20,21 @@ const onBack = vi.fn();
 const onLeave = vi.fn();
 
 // 상태를 직접 들고 있어 추가·내보내기로 카드가 목록 사이를 옮겨가는 것까지 확인
-function Harness({ viewer }: { viewer: DraftViewer }) {
+function Harness({ viewer, blocked = false }: { viewer: DraftViewer; blocked?: boolean }) {
   const [members, setMembers] = useState(draftFixture.members);
   const actions: Pick<DraftActions, 'addMember' | 'removeMember'> = {
     addMember: (id) => {
+      // 연결이 끊겨 막힌 상태: 아무것도 바꾸지 않고 false
+      if (blocked) return false;
       const member = bunchMembersFixture.find((candidate) => candidate.id === id);
       if (member) setMembers((current) => [...current, member]);
+      return true;
     },
-    removeMember: (id) => setMembers((current) => current.filter((member) => member.id !== id)),
+    removeMember: (id) => {
+      if (blocked) return false;
+      setMembers((current) => current.filter((member) => member.id !== id));
+      return true;
+    },
   };
   return (
     <DraftMemberManager
@@ -91,6 +98,16 @@ describe('멤버 추가', () => {
     expect(within(rows[4]!).getByText('효찬')).toBeInTheDocument();
     expect(toast).toHaveBeenCalledWith('효찬님이 번들 참여 멤버에 추가되었어요.');
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('연결이 끊겨 추가가 막히면 성공 토스트를 띄우지 않고 카드도 옮기지 않는다', async () => {
+    render(<Harness viewer={owner} blocked />);
+
+    await userEvent.click(screen.getByRole('button', { name: '효찬 추가하기' }));
+
+    expect(toast).not.toHaveBeenCalled();
+    expect(within(joined()).getAllByRole('listitem')).toHaveLength(4);
+    expect(within(addable()).getByText('효찬')).toBeInTheDocument();
   });
 
   it('삭제 버튼이 없는 카드로 옮겨가면 카드 자체로 포커스가 이동한다', async () => {

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { delay, http } from 'msw';
 import { describe, expect, it } from 'vitest';
-// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
-import '@/mocks/server';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
+import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BundleDetail } from '../model/bundle';
@@ -62,15 +63,27 @@ describe('번들 query·mutation', () => {
     const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     const loaded = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        await delay(150);
+        return undefined;
+      }),
+    );
+
+    // 재조회 요청이 서버에서 처리되는 동안(응답이 아직 오지 않음)
+    let inflight: Promise<unknown> = Promise.resolve();
+    act(() => {
+      inflight = client.refetchQueries({ queryKey: key });
+    });
+    // 저장 응답이 먼저 도착해 캐시를 더 새 revision으로 맞춤
     client.setQueryData(key, {
       ...loaded,
       revision: loaded.revision + 5,
       title: '저장 응답으로 맞춤',
     });
-
-    // 서버는 낡은 revision을 돌려주지만 캐시의 더 새 상태를 유지함
+    // 그 뒤에 낡은 revision의 재조회 응답이 도착해도 캐시의 더 새 상태를 유지함
     await act(async () => {
-      await client.refetchQueries({ queryKey: key });
+      await inflight;
     });
 
     expect(client.getQueryData<BundleDetail>(key)).toMatchObject({

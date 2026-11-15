@@ -390,12 +390,12 @@ describe('useDraft 참여 멤버·위치·사진', () => {
   it('참여 멤버를 더하고 내보내면 서버 참여자와 코멘트가 바뀐다', async () => {
     const { id, result } = await renderReady();
 
-    act(() => result.current.actions.addMember(String(memberB)));
+    act(() => void result.current.actions.addMember(String(memberB)));
     await waitFor(() =>
       expect(ready(result.current.state).draft.members.map((m) => m.id)).toContain(String(memberB)),
     );
 
-    act(() => result.current.actions.removeMember(String(memberB)));
+    act(() => void result.current.actions.removeMember(String(memberB)));
     await waitFor(() =>
       expect(ready(result.current.state).draft.members.map((m) => m.id)).not.toContain(
         String(memberB),
@@ -437,7 +437,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     const { id, result } = await renderReady();
     const photoId = ready(result.current.state).draft.photos[0]!.id;
 
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
     // 보내는 동안에도 화면은 바로 줄어 있음
     expect(ready(result.current.state).draft.photos).toHaveLength(1);
 
@@ -484,7 +484,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     };
 
     // 새 사진을 맨 앞에 둔 선택 결과
-    act(() => result.current.actions.replacePhotos([added, ...current]));
+    act(() => void result.current.actions.replacePhotos([added, ...current]));
 
     await waitFor(
       () =>
@@ -625,7 +625,7 @@ describe('useDraft 발행', () => {
       http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', () => fail(500, 'COMMON_500')),
     );
     const photoId = ready(result.current.state).draft.photos[0]!.id;
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
 
     let outcome: string | undefined;
     await act(async () => {
@@ -643,7 +643,7 @@ describe('useDraft 발행', () => {
     const { id, result } = await renderReady();
     await fill(result, id);
     const photoId = ready(result.current.state).draft.photos[0]!.id;
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
 
     let outcome: string | undefined;
     await act(async () => {
