@@ -477,7 +477,7 @@ describe('FeedScreen', () => {
     main.scrollTop = 300;
     fireEvent.scroll(main);
     await waitFor(() =>
-      expect((window.history.state as { feedScroll?: number }).feedScroll).toBe(300),
+      expect((window.history.state as { pageScroll?: number }).pageScroll).toBe(300),
     );
     // 이동이 취소되어도 피드가 밀린 채 남지 않게, 누르기만 해서는 그대로
     await user.click(within(cards()[0]!).getByRole('button', { name: /사진 열기/ }));
@@ -503,7 +503,7 @@ describe('FeedScreen', () => {
   it('Strict Mode에서 돌아와도 복원한 스크롤에 붙잡기 값이 겹치지 않는다', async () => {
     configure({ reactStrictMode: true });
     try {
-      window.history.replaceState({ feedScroll: 300 }, '');
+      window.history.replaceState({ pageScroll: 300 }, '');
       const { container } = renderFeed(OWN);
       const main = container.querySelector('main')!;
       await cardsLoaded();
@@ -518,7 +518,7 @@ describe('FeedScreen', () => {
   it('Strict Mode에서 캐시가 있는 채로 돌아와도 스크롤을 복원한다', () => {
     configure({ reactStrictMode: true });
     try {
-      window.history.replaceState({ feedScroll: 300 }, '');
+      window.history.replaceState({ pageScroll: 300 }, '');
       const client = createTestQueryClient();
       client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: OWN });
       client.setQueryData(feedKeys.list(OWN.id), {

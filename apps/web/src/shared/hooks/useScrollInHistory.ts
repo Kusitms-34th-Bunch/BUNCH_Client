@@ -19,8 +19,8 @@ export function useScrollInHistory(anchorRef: RefObject<HTMLElement | null>, rea
     if (!ready || restored.current) return;
     restored.current = true;
     const main = anchorRef.current?.closest('main');
-    const state = window.history.state as { feedScroll?: number } | null;
-    if (main && state?.feedScroll) main.scrollTop = state.feedScroll;
+    const state = window.history.state as { pageScroll?: number } | null;
+    if (main && state?.pageScroll) main.scrollTop = state.pageScroll;
   }, [anchorRef, ready]);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function useScrollInHistory(anchorRef: RefObject<HTMLElement | null>, rea
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         const state = window.history.state as object | null;
-        window.history.replaceState({ ...state, feedScroll: main.scrollTop }, '');
+        window.history.replaceState({ ...state, pageScroll: main.scrollTop }, '');
       }, SAVE_DELAY_MS);
     };
     main.addEventListener('scroll', save, { passive: true });
