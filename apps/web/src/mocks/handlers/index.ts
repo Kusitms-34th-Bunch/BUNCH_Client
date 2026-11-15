@@ -1,3 +1,4 @@
+import { advertisementHandlers } from './advertisements';
 import { blockHandlers } from './blocks';
 import { bunchHomeHandlers } from './bunchHome';
 import { bunchOnboardingHandlers } from './bunchOnboarding';
@@ -36,6 +37,7 @@ export const handlers = [
   ...membershipHandlers,
   ...followHandlers,
   ...feedHandlers,
+  ...advertisementHandlers,
   ...likeHandlers,
   ...commentHandlers,
   ...reportHandlers,
