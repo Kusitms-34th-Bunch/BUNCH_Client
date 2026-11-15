@@ -39,5 +39,6 @@ export function useScrollInHistory(anchorRef: RefObject<HTMLElement | null>, rea
       window.clearTimeout(timer);
       main.removeEventListener('scroll', save);
     };
-  }, [anchorRef]);
+    // 받는 중 화면처럼 기준 요소가 없다가 생기면 그때 등록
+  }, [anchorRef, ready]);
 }

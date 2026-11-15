@@ -143,7 +143,8 @@ export function BundleDetailScreen({
   // 지운 결과(답글 상태 해제로 입력란 높이도 바뀜)가 그려진 뒤 띄울 토스트
   const pendingToast = useRef<string | null>(null);
 
-  useHoldScrollOnLeave(commentsRef);
+  // 받는 중 화면에서 시작하면 댓글 영역이 그려진 뒤 붙잡기 등록
+  useHoldScrollOnLeave(commentsRef, bundle !== undefined);
 
   // 다시 시도(상세나 내 정보)를 받는 중
   const retrying = detail.isFetching || viewerFetching;
