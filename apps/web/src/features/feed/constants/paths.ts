@@ -18,3 +18,6 @@ export const FEED_PATHS = {
     member: '/members/profile',
   },
 } as const;
+
+/** 피드 카드 사진과 번들 상세 첫 사진을 잇는 화면 전환 공유 요소 키(SSGOI hero, BundlePhoto `heroKey`) */
+export const bundleHeroKey = (bundleId: string) => `bundle-photo-${bundleId}`;

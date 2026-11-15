@@ -41,7 +41,7 @@ import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
-import { FEED_PATHS } from '../../constants/paths';
+import { bundleHeroKey, FEED_PATHS } from '../../constants/paths';
 import { useBundleComments } from '../../hooks/useBundleComments';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
@@ -685,7 +685,8 @@ export function BundleDetailScreen({
         memberOnly={bundle.memberOnly}
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
       />
-      <BundlePhoto variant="detail" photos={bundle.photos} />
+      {/* 피드 카드 사진이 이 첫 사진 자리로 옮겨 옴(AppTransitions의 피드 → 상세 hero) */}
+      <BundlePhoto variant="detail" photos={bundle.photos} heroKey={bundleHeroKey(bundle.id)} />
       <MemberComments members={bundle.memberComments} />
       <BundleEngagement
         liked={bundle.liked}

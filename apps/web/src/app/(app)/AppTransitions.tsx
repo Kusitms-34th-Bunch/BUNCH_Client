@@ -11,6 +11,7 @@ import {
   defineTransition,
   drill,
   fade,
+  hero,
   MultiAnimation as CompositeAnimation,
   sheet,
   slide,
@@ -31,7 +32,10 @@ import { FEED_PATHS } from '@/features/feed/constants/paths';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 import { MY_PATHS } from '@/features/my/constants/paths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
-import { easeOutIntegrator } from '@/shared/components/layout/easeOutIntegrator.internal';
+import {
+  cubicBezierIntegrator,
+  easeOutIntegrator,
+} from '@/shared/components/layout/easeOutIntegrator.internal';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 export const ONBOARDING_TRANSITION_DURATION_MS = 300;
@@ -123,6 +127,26 @@ const bunchDrill = drill(
   {
     override: { forward: tuneBunchDrill, backward: tuneBunchDrill },
   },
+);
+// 피드 카드 → 번들 상세(Figma `6892:46500` 「게시글 확대 모션」): 카드(사진과 딤·글자)가 상세의 첫 사진 자리로 옮겨 가며 상세 화면이 겹쳐 나타남
+// 카드 `data-hero-enter-key`·상세 첫 사진 `data-hero-exit-key`(BundlePhoto `heroKey`) 조합의 이유와 시간·곡선은 docs/architecture/motion.md
+const FEED_BUNDLE_HERO_MS = 550;
+// 다른 전환과 같이 나가는 화면은 전환 동안 inert·나가는 화면 표식(초점·상태 바 배경)
+const guardHero = ({ animation }: { animation: MultiAnimation<'shared' | 'out' | 'in'> }) => {
+  const outgoing = animation.select('out').getMotionTracks()[0];
+  guardPair(animation.select('in').getMotionTracks()[0]?.element, outgoing?.element, outgoing);
+};
+const tuneFeedBundleHero = ({
+  animation,
+}: {
+  animation: MultiAnimation<'shared' | 'out' | 'in'>;
+}) => {
+  animation.set({ integrator: cubicBezierIntegrator(FEED_BUNDLE_HERO_MS, [0.3, 0, 0.15, 1]) });
+  guardHero({ animation });
+};
+const feedBundleHero = hero(
+  { type: 'fade' },
+  { override: { forward: tuneFeedBundleHero, backward: tuneFeedBundleHero } },
 );
 // sheet 프리셋은 움직이는 화면(sheet)만 track이라 뒤 화면은 경계 id로 찾아 나가는 화면 표식(상태 바 색 즉시 전환)
 // 중단된 이전 전환의 노드가 남아 있을 수 있어 같은 id 중 가장 나중에 붙은 노드 사용
@@ -267,13 +291,14 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
-  // 피드 카드 → 번들 상세, 상세의 번치 → 번치 탭·다른 번치 프로필도 한 단계씩 들어가는 drill
+  // 피드 카드 → 번들 상세는 카드 사진을 상세 첫 사진으로 잇는 hero(Figma는 들어갈 때만 정의, 돌아올 때도 같은 곡선으로 되돌림)
   {
     from: MAIN_TAB_PATHS.feed,
     to: FEED_PATHS.transitionIds.bundle,
     bidirectional: true,
-    transition: bunchDrill,
+    transition: feedBundleHero,
   },
+  // 상세의 번치 → 번치 탭·다른 번치 프로필은 한 단계씩 들어가는 drill
   {
     from: FEED_PATHS.transitionIds.bundle,
     to: BUNCH_HOME_PATHS.home,

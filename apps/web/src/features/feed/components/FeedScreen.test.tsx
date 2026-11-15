@@ -552,8 +552,13 @@ describe('FeedScreen', () => {
     const [own, other] = cards();
     await user.click(within(own!).getByRole('button', { name: '여행가조 2일 전' }));
     await user.click(within(other!).getByRole('button', { name: '책방산책 5시간 전' }));
+    // 사진·말풍선은 상세를 미리 받은 뒤 이동하므로 이동이 끝나기를 기다린 뒤 다음을 누름
     await user.click(within(own!).getByRole('button', { name: /사진 열기/ }));
+    await waitFor(() => expect(push).toHaveBeenLastCalledWith('/bunches/1/bundles/1'));
     await user.click(within(own!).getByRole('button', { name: '댓글 4' }));
+    await waitFor(() =>
+      expect(push).toHaveBeenLastCalledWith('/bunches/1/bundles/1?focus=comments'),
+    );
     expect(push.mock.calls.map(([path]: unknown[]) => path as string)).toEqual([
       '/bunch',
       '/bunches/4',
