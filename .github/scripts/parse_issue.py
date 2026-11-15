@@ -62,9 +62,12 @@ FORBIDDEN_BASES = {'main'}
 def parse_base_branch(raw: str) -> Optional[str]:
     """기준 브랜치 값을 검증한다. 비면 '', 쓸 수 없는 값이면 None."""
     name = raw.strip().strip('`')
-    name = re.sub(r'^(?:refs/heads/|origin/)', '', name)
     if not name:
         return ''
+    # 접두어만 있으면(`origin/`) 비운 것이 아니라 잘못 쓴 값
+    name = re.sub(r'^(?:refs/heads/|origin/)', '', name)
+    if not name:
+        return None
     if (
         not BASE_BRANCH_PATTERN.match(name)
         or '..' in name

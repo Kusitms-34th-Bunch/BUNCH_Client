@@ -79,7 +79,7 @@ class IssueMetadataTests(unittest.TestCase):
                 self.assertEqual(result['matched'], 'true')
                 self.assertEqual(result['base_branch'], expected)
 
-        for value in ('main', 'origin/main', 'a b', 'feat/../x', 'feat/', '-x', 'a;rm -rf', 'x.lock', '$(id)'):
+        for value in ('origin/', 'refs/heads/', 'main', 'origin/main', 'a b', 'feat/../x', 'feat/', '-x', 'a;rm -rf', 'x.lock', '$(id)'):
             with self.subTest(value=value):
                 self.assertEqual(with_base(value)['matched'], 'false')
 
