@@ -14,7 +14,9 @@ const ownerBunchSchema = z.object({
   membershipVersion: z.number().int().nonnegative(),
 }) satisfies z.ZodType<ApiContract<components['schemas']['WithdrawalOwnerBunch']>>;
 
-const withdrawalCheckSchema = z.object({ ownerBunches: z.array(ownerBunchSchema) });
+const withdrawalCheckSchema = z.object({
+  ownerBunches: z.array(ownerBunchSchema),
+}) satisfies z.ZodType<ApiContract<components['schemas']['WithdrawalCheckResponse']>>;
 
 // 되돌릴 수 없는 요청이라 본문 모양이 달라도 성공 응답이면 탈퇴된 것으로 봄
 const withdrawalResultSchema = z.unknown();

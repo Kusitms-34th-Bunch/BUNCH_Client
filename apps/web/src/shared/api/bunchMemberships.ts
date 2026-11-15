@@ -8,6 +8,7 @@ import { toWireId } from './ids';
 export const membershipRoleSchema = z.enum(['OWNER', 'CO_OWNER', 'MEMBER']);
 
 /** `GET /bunches/{bunchId}/memberships` 응답 */
+// 계약 미연결: 멤버 관리에 필요한 필드만 받음(bunchId·joinedAt 등 생략)
 export const membershipsResponseSchema = z.object({
   membershipVersion: z.number().int().nonnegative(),
   myMembership: z.object({ membershipId: z.number().int().positive(), role: membershipRoleSchema }),
@@ -30,6 +31,7 @@ export const membershipsResponseSchema = z.object({
 export type MembershipsResponse = z.infer<typeof membershipsResponseSchema>;
 
 /** 역할 변경·넘기기·내보내기 응답(값은 쓰지 않아 새 버전 숫자만 확인) */
+// 계약 미연결: 다음 요청에 쓰는 새 버전만 받음(바뀐 소속 목록 등 생략)
 export const membershipChangeResultSchema = z.object({ membershipVersion: z.number() });
 
 /** 바꾸는 요청 공통: 요청한 사람의 소속 ID와 목록을 받을 때의 버전(그 사이 바뀌었으면 서버가 거절) */

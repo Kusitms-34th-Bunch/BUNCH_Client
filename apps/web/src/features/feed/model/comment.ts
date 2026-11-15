@@ -4,7 +4,8 @@ import type { FeedComment } from '../lib/types';
 import { badgeColorOf, formatCommentDate } from '../lib/comments';
 import { imageOrUndefined } from './feed';
 
-// 응답 모양은 Swagger 생성 타입 SocialCommentItem·SocialCommentPage(중첩 선택 필드가 있어 ApiContract로 묶지 않음), 표시 규칙은 명세 014~017
+// 응답 모양은 Swagger 생성 타입 SocialCommentItem·SocialCommentPage, 표시 규칙은 명세 014~017
+// 계약 미연결: 작성자 배지의 번치 ID(bunchId)는 쓰지 않아 받지 않음
 export const commentItemSchema = z.object({
   id: z.number().int().positive(),
   bundleId: z.number().int().positive(),
@@ -26,6 +27,7 @@ export const commentItemSchema = z.object({
 });
 export type CommentItemResponse = z.infer<typeof commentItemSchema>;
 
+// 계약 미연결: 항목(commentItemSchema)과 같은 이유로 작성자 배지의 번치 ID를 받지 않음
 export const commentPageSchema = z.object({
   items: z.array(commentItemSchema),
   nextCursor: z.string().nullish(),

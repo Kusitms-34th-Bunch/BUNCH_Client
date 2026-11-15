@@ -12,7 +12,7 @@ export const blockPageSchema = pageOf(
     bunch: bunchCardSchema,
     blockedAt: z.string(),
   }),
-);
+) satisfies z.ZodType<ApiContract<components['schemas']['BunchSocialPageBunchBlockItem']>>;
 
 /** `POST /bunches/{viewerId}/reports` 응답 */
 export const bunchReportResultSchema = z.object({

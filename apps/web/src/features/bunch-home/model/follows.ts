@@ -36,7 +36,7 @@ export const relationPageSchema = pageOf(
     followId: z.number().int().positive().nullish(),
     followedAt: z.string(),
   }),
-);
+) satisfies z.ZodType<ApiContract<components['schemas']['BunchSocialPageBunchRelationItem']>>;
 
 /** `GET /bunches/{viewerId}/follow-requests` 응답 */
 export const followRequestPageSchema = pageOf(
@@ -45,7 +45,7 @@ export const followRequestPageSchema = pageOf(
     bunch: bunchCardSchema,
     requestedAt: z.string(),
   }),
-);
+) satisfies z.ZodType<ApiContract<components['schemas']['BunchSocialPageBunchFollowRequestItem']>>;
 
 /** `POST /bunches/{viewerId}/follow-requests/{requestId}/decision` 응답. applied가 false면 이미 처리됐거나(APPROVED·REJECTED) 없어진 요청(UNAVAILABLE) */
 export const followDecisionResultSchema = z.object({
