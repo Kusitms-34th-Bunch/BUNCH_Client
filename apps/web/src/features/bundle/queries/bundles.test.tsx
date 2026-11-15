@@ -459,6 +459,31 @@ describe('번들 query·mutation', () => {
         },
       );
 
+      it('PUBLISHED·EDITED는 revision이 이미 반영된 값이어도 상세를 다시 받는다', async () => {
+        const { client, id, detail, apply: applyEvent } = await apply();
+        const before = detail();
+
+        applyEvent(next(before?.revision, 'PUBLISHED', null, 0));
+
+        expect(invalidated(client, id)).toBe(true);
+      });
+
+      it('먼저 보낸 재조회 응답이 더 새 revision으로 맞춘 캐시를 낡은 값으로 덮지 않는다', async () => {
+        const { client, id, detail } = await apply();
+        const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), {
+          wrapper: createQueryWrapper(client),
+        });
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        const newer = { ...(detail() as BundleDetail), revision: (detail()?.revision ?? 0) + 5, title: '이벤트로 맞춤' };
+        client.setQueryData(bundleKeys.detail(bunchId, id), newer);
+
+        await act(async () => {
+          await client.refetchQueries({ queryKey: bundleKeys.detail(bunchId, id) });
+        });
+
+        expect(detail()?.title).toBe('이벤트로 맞춤');
+      });
+
       it('모양이 다른 data는 추측해 쓰지 않고 상세를 다시 받는다', async () => {
         const { client, id, detail, apply: applyEvent } = await apply();
         const before = detail();

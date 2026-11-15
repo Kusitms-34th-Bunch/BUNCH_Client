@@ -26,11 +26,26 @@ import {
 import { type BundleDetail, bundleEventEnvelopeSchema, CONTENT_EVENT_TYPES } from '../model/bundle';
 import { bundleKeys, bundleMutationKeys } from './keys';
 
+/** revision 검사 없이 항상 최신 상세로 확인하는 상태 전환 이벤트 */
+const STATE_CHANGE_EVENT_TYPES: readonly string[] = [
+  'PERMISSIONS',
+  'DELETED',
+  'CREATED',
+  'PUBLISHED',
+  'EDITED',
+];
+
 /** 번들(초안·발행본) 상세. 번치나 번들을 아직 모르면 요청하지 않음(skipToken) */
 export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string | undefined) =>
   queryOptions({
     queryKey: bundleKeys.detail(bunchId, bundleId),
     queryFn: bunchId && bundleId ? ({ signal }) => getBundle(bunchId, bundleId, signal) : skipToken,
+    // 먼저 보낸 재조회 응답이 그사이 이벤트로 맞춘 더 새 상태를 낡은 revision으로 덮지 않음(같거나 더 새 revision이면 응답을 씀)
+    structuralSharing: (old, next) => {
+      const previous = old as BundleDetail | undefined;
+      const incoming = next as BundleDetail;
+      return previous && previous.revision > incoming.revision ? previous : incoming;
+    },
   });
 
 /**
@@ -190,7 +205,7 @@ export const useMergeTitleMutation = (
 /**
  * 번들 topic으로 온 이벤트를 상세 캐시에 반영(v5 실시간 명세 6절)
  * - 내용 이벤트(revision 있음): 이미 반영된 revision은 무시, 바로 다음이면 type별 data를 적용, 건너뛰었으면 놓친 이벤트가 있다는 뜻이라 최신 상세를 다시 받음(이벤트는 재생되지 않음)
- * - PERMISSIONS·DELETED: 권한·삭제는 상세를 다시 받아 확인(발행·삭제·참여 제외 화면은 그 결과로 정해짐)
+ * - PERMISSIONS·DELETED·CREATED·PUBLISHED·EDITED: revision 검사 없이 항상 상세를 다시 받아 확인(발행·삭제·참여 제외 화면은 그 결과로 정해짐)
  * - DATE_CHIPS: 내용 revision을 올리지 않는 별도 갱신이라 revision 검사를 하지 않음. PRESENCE 등 그 밖의 type은 건드리지 않음
  * 같은 이벤트가 다시 와도 결과가 같음
  */
@@ -208,7 +223,9 @@ export const useApplyBundleEvent = (bunchId: string | undefined, bundleId: strin
     const { type, revision, data } = envelope.data;
     const current = queryClient.getQueryData<BundleDetail>(key);
 
-    if (type === 'PERMISSIONS' || type === 'DELETED') {
+    // 권한·삭제·발행 같은 상태 전환은 revision과 상관없이 확인해야 하므로 중복 제거 없이 항상 다시 받음
+    // 방송 data의 권한은 요청한 사람마다 달라 쓰지 않음
+    if (STATE_CHANGE_EVENT_TYPES.includes(type)) {
       if (current) refetch();
       return;
     }

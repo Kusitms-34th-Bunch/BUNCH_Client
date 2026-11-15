@@ -291,10 +291,7 @@ export const bundleEventDataSchemas = {
   ]),
 } as const;
 
-/** CREATED·PUBLISHED·EDITED는 전체 내용(상세 응답과 같은 모양) */
-export const FULL_CONTENT_EVENT_TYPES = ['CREATED', 'PUBLISHED', 'EDITED'] as const;
-
-/** revision이 붙는 내용 이벤트 type(DATE_CHIPS 제외) */
+/** revision 규칙으로 적용하는 내용 이벤트 type(DATE_CHIPS와 CREATED·PUBLISHED·EDITED는 따로 처리) */
 export const CONTENT_EVENT_TYPES = [
   'DATE',
   'VISIBILITY',
@@ -303,5 +300,4 @@ export const CONTENT_EVENT_TYPES = [
   'COMMENT',
   'PARTICIPANTS',
   'TITLE',
-  ...FULL_CONTENT_EVENT_TYPES,
 ] as const;
