@@ -375,6 +375,39 @@ describe('입력', () => {
     expect(actions.setTitle).toHaveBeenCalledWith('가'.repeat(40));
   });
 
+  describe('다른 멤버의 변경이 합쳐질 때 커서와 선택 영역', () => {
+    // 입력란에 포커스가 있고 커서(또는 선택)가 있는 상태에서 제목이 원격 변경으로 바뀜
+    const mergeRemote = (before: string, after: string, select: [number, number]) => {
+      const view = renderScreen({ viewer: creator, draft: { ...publishable, title: before } });
+      const input = screen.getByRole<HTMLInputElement>('textbox', { name: /제목/ });
+      input.focus();
+      input.setSelectionRange(select[0], select[1]);
+      fireEvent.select(input);
+
+      view.rerender(screenElement({ viewer: creator, draft: { ...publishable, title: after } }));
+      return input;
+    };
+
+    it('앞뒤에 동시에 글자가 끼어들어도 커서는 같은 글자 뒤에 남는다', () => {
+      const input = mergeRemote('abcd', 'XabcdY', [2, 2]);
+
+      // b 뒤: X 한 글자만큼만 밀림(문자열 끝이 아님)
+      expect([input.selectionStart, input.selectionEnd]).toEqual([3, 3]);
+    });
+
+    it('선택 영역의 시작과 끝을 각각 보정해 같은 글자를 계속 선택한다', () => {
+      const input = mergeRemote('abcd', 'XabcdY', [1, 3]);
+
+      expect([input.selectionStart, input.selectionEnd]).toEqual([2, 4]);
+    });
+
+    it('한 곳만 바뀐 경우는 이전과 같이 보정한다', () => {
+      const input = mergeRemote('부산 여행', '가을 부산 여행', [5, 5]);
+
+      expect([input.selectionStart, input.selectionEnd]).toEqual([8, 8]);
+    });
+  });
+
   it('조합이 끝나지 않은 채 포커스를 잃어도 조합 종료를 알린다', async () => {
     renderScreen({ viewer: creator });
     const title = screen.getByRole('textbox', { name: /제목/ });

@@ -3,8 +3,8 @@ import { useLayoutEffect, useRef } from 'react';
 import { EditingLottie } from '@/shared/components/loading/EditingLottie';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES, TITLE_MAX_LENGTH } from '../../constants/messages';
+import { diffHunks, mapPosition } from '../../lib/textDiff';
 import { countTitleGraphemes } from '../../lib/title';
-import { diffText } from '../../lib/titleCrdt';
 
 type DraftTitleFieldProps = {
   draft: Draft;
@@ -62,14 +62,9 @@ export function DraftTitleField({
     const input = sectionRef.current?.querySelector('input');
     const range = selection.current;
     if (!input || !range || before === draft.title || document.activeElement !== input) return;
-    const { index, remove, insert } = diffText(before, draft.title);
-    const move = (position: number) =>
-      position <= index
-        ? position
-        : position >= index + remove
-          ? position - remove + insert.length
-          : index + insert.length;
-    const next = { start: move(range.start), end: move(range.end) };
+    // 앞뒤에 동시에 끼어든 변경처럼 바뀐 구간이 여럿이어도 커서·선택 영역의 끝을 각각 같은 글자에 둠
+    const hunks = diffHunks(before, draft.title);
+    const next = { start: mapPosition(range.start, hunks), end: mapPosition(range.end, hunks) };
     selection.current = next;
     input.setSelectionRange(next.start, next.end);
   }, [draft.title]);
