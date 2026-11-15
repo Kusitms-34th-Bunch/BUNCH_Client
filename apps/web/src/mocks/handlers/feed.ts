@@ -9,6 +9,9 @@ import { isBlockedBetween, viewerBunchId } from './follows';
 import { likeOf } from './likes';
 import { myMembershipsByRecent } from './members';
 
+/** 가짜 DB 장소에는 행 ID가 없어 번들 ID와 순서로 만든 장소 ID(피드·상세·콕 응답이 함께 씀) */
+export const mockLocationId = (bundleId: number, index: number) => bundleId * 10 + index + 1;
+
 // 팔로잉·공개 피드(명세 025). 구간·광고 규칙은 명세, 응답 모양은 Swagger `FeedResponse`
 const DEFAULT_SIZE = 20;
 const MAX_SIZE = 50;
@@ -16,8 +19,8 @@ const FOLLOWING_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 // 누적 번들 6개마다 광고
 const AD_EVERY = 6;
 
-// ponytail: 광고는 가짜 DB에 넣지 않고 고정 목록, 광고 숨김·콕 연결(API 연동 10번) 때 DB로 옮김
-const MOCK_ADS = [
+// ponytail: 광고 내용은 고정 목록(서버 관리라 바꾸는 화면 없음), 콕·숨김만 가짜 DB에 둠
+export const MOCK_ADS = [
   {
     id: 71,
     name: '플로디스튜디오',
@@ -31,10 +34,28 @@ const MOCK_ADS = [
       name: '플로디스튜디오',
       address: '서울숲역 도보 7분',
     },
-    pinned: false,
-    pinId: null,
   },
 ];
+
+/** 같은 장소(제공자·외부 ID)를 지금 번치가 콕했는지(다른 번들·광고에서 콕한 것도 같은 장소) */
+export const kokOf = (
+  state: MockDbState,
+  bunchId: number,
+  place: { provider: string; externalId: string },
+) =>
+  state.koks.find(
+    (kok) =>
+      kok.bunchId === bunchId &&
+      kok.provider === place.provider &&
+      kok.externalId === place.externalId,
+  );
+
+/** 광고 응답(콕 여부는 지금 번치가 같은 장소를 콕했는지, 번들에서 콕한 것도) */
+export const adResponse = (state: MockDbState, ad: (typeof MOCK_ADS)[number]) => {
+  const viewer = viewerBunchId(state);
+  const kok = viewer === undefined ? undefined : kokOf(state, viewer, ad.place);
+  return { ...ad, pinned: kok !== undefined, pinId: kok?.id ?? null, canPin: viewer !== undefined };
+};
 
 type Cursor = { anchor: string; offset: number; context: string };
 
@@ -132,9 +153,8 @@ const cardOf = (state: MockDbState, bundle: MockBundle) => {
     date: bundle.date,
     coverImageUrl: bundle.photos[0]?.imageUrl ?? null,
     photos: bundle.photos.map(({ id, imageUrl, position }) => ({ id, imageUrl, position })),
-    // 가짜 DB 장소에는 행 ID가 없어 번들 ID로 만든 값
     locations: bundle.locations.map((location, index) => ({
-      id: bundle.id * 10 + index + 1,
+      id: mockLocationId(bundle.id, index),
       provider: location.provider,
       externalId: location.externalId,
       name: location.name,
@@ -286,16 +306,14 @@ export const feedHandlers = [
     const lastFollowing = all.findLastIndex((entry) => entry.segment === 'FOLLOWING');
     const page = all.slice(offset, offset + size);
     const items: unknown[] = [];
+    // 내가 숨긴 광고는 뺌
+    const ads = MOCK_ADS.filter((ad) => !state.hiddenAdIds.includes(ad.id));
     page.forEach((entry, index) => {
       const position = offset + index;
       items.push({ type: 'BUNDLE', segment: entry.segment, bundle: cardOf(state, entry.bundle) });
       if ((position + 1) % AD_EVERY === 0) {
-        const ad = MOCK_ADS[((position + 1) / AD_EVERY - 1) % MOCK_ADS.length];
-        if (ad)
-          items.push({
-            type: 'ADVERTISEMENT',
-            advertisement: { ...ad, canPin: viewer !== undefined },
-          });
+        const ad = ads[((position + 1) / AD_EVERY - 1) % ads.length];
+        if (ad) items.push({ type: 'ADVERTISEMENT', advertisement: adResponse(state, ad) });
       }
       if (position === lastFollowing) items.push({ type: 'FOLLOWING_CAUGHT_UP' });
     });

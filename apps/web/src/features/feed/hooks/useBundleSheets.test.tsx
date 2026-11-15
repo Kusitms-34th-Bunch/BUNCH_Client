@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http } from 'msw';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
+import { fail, ok } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -17,10 +20,44 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   },
 }));
 
+// 번들 7의 장소 71·72. 콕 여부는 서버(명세 021)에서 받고, 처음엔 72만 콕한 상태(콕 ID 5)
 const places: FeedPlace[] = [
-  { id: 'a', name: '애월 한담해변', address: '제주 제주시 애월읍', picked: false },
-  { id: 'b', name: '제주 바다', address: '제주 서귀포시', picked: true },
+  { id: '71', name: '애월 한담해변', address: '제주 제주시 애월읍', picked: false },
+  { id: '72', name: '제주 바다', address: '제주 서귀포시', picked: false },
 ];
+let pinned: Record<number, number | null>;
+const requests: string[] = [];
+const serveKoks = () =>
+  server.use(
+    http.get('/api/bundles/:bundleId/pinned-places', () =>
+      ok({
+        bundleId: 7,
+        canPin: true,
+        locations: [71, 72].map((id, position) => ({
+          id,
+          provider: 'KAKAO',
+          externalId: String(id),
+          name: String(id),
+          position,
+          pinned: pinned[id] != null,
+          pinId: pinned[id] ?? null,
+        })),
+      }),
+    ),
+    http.put('/api/bundles/:bundleId/locations/:locationId/pin', ({ params }) => {
+      const id = Number(params.locationId);
+      requests.push(`PUT ${id}`);
+      pinned[id] = 100 + id;
+      return ok({ id: 100 + id });
+    }),
+    http.delete('/api/pinned-places/:pinId', ({ params }) => {
+      requests.push(`DELETE ${String(params.pinId)}`);
+      for (const key of Object.keys(pinned)) {
+        if (pinned[Number(key)] === Number(params.pinId)) pinned[Number(key)] = null;
+      }
+      return ok(null);
+    }),
+  );
 const members: FeedBundleMember[] = [
   { id: 'm-1', name: '은우', role: 'owner' },
   { id: 'm-2', name: '경진' },
@@ -30,10 +67,10 @@ function Harness() {
   const { openPlaces, openMembers } = useBundleSheets();
   return (
     <>
-      <button type="button" onClick={() => openPlaces(places)}>
+      <button type="button" onClick={() => openPlaces('7', places)}>
         위치
       </button>
-      <button type="button" onClick={() => openPlaces(places.slice(0, 1))}>
+      <button type="button" onClick={() => openPlaces('7', places.slice(0, 1))}>
         장소 하나
       </button>
       <button type="button" onClick={() => openMembers(members)}>
@@ -52,6 +89,8 @@ const setup = async (
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch });
   render(<Harness />, { wrapper: createQueryWrapper(client) });
   await user.click(screen.getByRole('button', { name: open }));
+  // 장소 시트는 콕 여부를 받은 뒤에 열림
+  if (open !== '멤버') await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' });
   return user;
 };
 
@@ -61,29 +100,35 @@ const pickButton = (place: string) =>
 beforeEach(() => {
   push.mockClear();
   toast.mockClear();
+  pinned = { 71: null, 72: 5 };
+  requests.length = 0;
+  serveKoks();
 });
 
 describe('useBundleSheets', () => {
-  it('장소마다 이름·주소와 담긴 상태를 보여 준다', async () => {
+  it('장소마다 이름·주소와 서버의 콕 상태를 보여 준다', async () => {
     await setup('위치');
 
     expect(screen.getByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
     expect(screen.getByText('제주 제주시 애월읍')).toBeTruthy();
+    await waitFor(() => expect(pickButton('제주 바다').textContent).toBe('콕 했어요'));
     expect(pickButton('애월 한담해변').textContent).toBe('콕하기');
-    expect(pickButton('제주 바다').textContent).toBe('콕 했어요');
   });
 
-  it('「콕하기」는 시트를 닫지 않고 「콕 했어요」로 바꾼다', async () => {
+  it('「콕하기」는 시트를 닫지 않고 「콕 했어요」로 바꾸며 서버에 콕한다', async () => {
     const user = await setup('위치');
+    await waitFor(() => expect(pickButton('제주 바다').textContent).toBe('콕 했어요'));
 
     await user.click(pickButton('애월 한담해변'));
+    await waitFor(() => expect(requests).toEqual(['PUT 71']));
 
     expect(pickButton('애월 한담해변').textContent).toBe('콕 했어요');
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('「콕 했어요」는 시트를 닫고 확인 창을 열며, 「삭제하기」면 콕을 뺀다', async () => {
+  it('「콕 했어요」는 시트를 닫고 확인 창을 열며, 「삭제하기」면 서버에서 콕을 뺀다', async () => {
     const user = await setup('위치');
+    await waitFor(() => expect(pickButton('제주 바다').textContent).toBe('콕 했어요'));
 
     await user.click(pickButton('제주 바다'));
 
@@ -98,6 +143,7 @@ describe('useBundleSheets', () => {
     // 창이 닫히면 시트가 다시 올라오고(화면설계서) 뺀 장소는 「콕하기」
     expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
     expect(pickButton('제주 바다').textContent).toBe('콕하기');
+    expect(requests).toEqual(['DELETE 5']);
 
     // 취소한 장소는 다시 콕할 수 있음
     await user.click(pickButton('제주 바다'));
@@ -113,6 +159,7 @@ describe('useBundleSheets', () => {
 
   it('확인 창의 「아니요」는 창을 닫고 시트를 다시 올리며 콕을 유지한다', async () => {
     const user = await setup('위치');
+    await waitFor(() => expect(pickButton('제주 바다').textContent).toBe('콕 했어요'));
 
     await user.click(pickButton('제주 바다'));
     const dialog = await screen.findByRole('alertdialog', { name: '이 장소의 콕을 삭제할까요?' });
@@ -132,6 +179,7 @@ describe('useBundleSheets', () => {
     });
     render(<Harness />, { wrapper: createQueryWrapper(client) });
     await user.click(screen.getByRole('button', { name: '위치' }));
+    await waitFor(() => expect(pickButton('제주 바다').textContent).toBe('콕 했어요'));
 
     await user.click(pickButton('제주 바다'));
     const dialog = await screen.findByRole('alertdialog', { name: '이 장소의 콕을 삭제할까요?' });
@@ -155,6 +203,108 @@ describe('useBundleSheets', () => {
 
     expect(pickButton('애월 한담해변').textContent).toBe('콕하기');
     expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.', { position: 'top' });
+  });
+
+  it('콕하기가 실패하면 「콕하기」로 되돌리고 알린다', async () => {
+    server.use(
+      http.put('/api/bundles/:bundleId/locations/:locationId/pin', () => fail(500, 'COMMON_999')),
+    );
+    const user = await setup('위치');
+    await waitFor(() => expect(pickButton('제주 바다').textContent).toBe('콕 했어요'));
+
+    await user.click(pickButton('애월 한담해변'));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요', {
+        position: 'top',
+      }),
+    );
+    expect(pickButton('애월 한담해변').textContent).toBe('콕하기');
+  });
+
+  it('콕 여부를 받지 못하면 시트를 열지 않고 알리며, 다시 누르면 다시 받는다', async () => {
+    server.use(
+      http.get('/api/bundles/:bundleId/pinned-places', () => fail(500, 'COMMON_999'), {
+        once: true,
+      }),
+    );
+    const user = userEvent.setup();
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: 'me',
+      bunch: { id: 'bunch-trip', name: '여행가조' },
+    });
+    render(<Harness />, { wrapper: createQueryWrapper(client) });
+
+    await user.click(screen.getByRole('button', { name: '위치' }));
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요', {
+        position: 'top',
+      }),
+    );
+    expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '위치' }));
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    expect(pickButton('제주 바다').textContent).toBe('콕 했어요');
+  });
+
+  it('다른 멤버가 이미 뺀 콕을 취소하면 알리지 않고 뺀 상태로 맞춘다', async () => {
+    // 다른 멤버가 먼저 뺌(서버에는 이미 없음)
+    server.use(
+      http.delete('/api/pinned-places/:pinId', () => {
+        pinned[72] = null;
+        return fail(404, 'RESOURCE_001');
+      }),
+    );
+    const user = await setup('위치');
+
+    await user.click(pickButton('제주 바다'));
+    const dialog = await screen.findByRole('alertdialog', { name: '이 장소의 콕을 삭제할까요?' });
+    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    await waitFor(() => expect(pickButton('제주 바다').textContent).toBe('콕하기'));
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('콕을 취소하고 바로 다시 콕하면 차례로 보내 「콕 했어요」로 남는다', async () => {
+    const user = await setup('위치');
+
+    await user.click(pickButton('제주 바다'));
+    const dialog = await screen.findByRole('alertdialog', { name: '이 장소의 콕을 삭제할까요?' });
+    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+    expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
+    await user.click(pickButton('제주 바다'));
+
+    await waitFor(() => expect(requests).toEqual(['DELETE 5', 'PUT 72']));
+    await waitFor(() => expect(pickButton('제주 바다').textContent).toBe('콕 했어요'));
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('시트를 연 뒤 명의가 바뀌면 누른 장소를 보내지 않고 시트를 닫는다', async () => {
+    const user = userEvent.setup();
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: 'me',
+      bunch: { id: 'bunch-trip', name: '여행가조' },
+    });
+    render(<Harness />, { wrapper: createQueryWrapper(client) });
+    await user.click(screen.getByRole('button', { name: '위치' }));
+    await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' });
+
+    act(() => {
+      client.setQueryData(sharedKeys.me(), {
+        memberId: 'me',
+        bunch: { id: 'bunch-run', name: '러닝크루' },
+      });
+    });
+    await user.click(pickButton('애월 한담해변'));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
+    );
+    expect(requests).toEqual([]);
   });
 
   it('참여 멤버를 순서대로 보여 주고 나간 멤버는 「작성자」, 역할은 배지로 읽힌다', async () => {

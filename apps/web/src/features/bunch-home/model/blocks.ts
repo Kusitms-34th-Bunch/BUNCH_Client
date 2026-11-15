@@ -21,17 +21,6 @@ export const bunchReportResultSchema = z.object({
 
 export type BlockPage = z.infer<typeof blockPageSchema>;
 
-type ReportReason = components['schemas']['BunchReportRequest']['reason'];
-
-/** 화면 신고 사유(`shared/lib/reportReasons`)를 서버 값으로. 모르는 값은 undefined */
-export const REPORT_REASON: Readonly<Record<string, ReportReason>> = {
-  spam: 'SPAM',
-  inappropriate: 'INAPPROPRIATE',
-  harassment: 'HARASSMENT',
-  privacy: 'PERSONAL_INFORMATION',
-  other: 'OTHER',
-};
-
 export const toBlockedBunches = (page: BlockPage): BlockedBunch[] =>
   page.items.map((item) => {
     const { id, name, imageSrc } = card(item.bunch);
