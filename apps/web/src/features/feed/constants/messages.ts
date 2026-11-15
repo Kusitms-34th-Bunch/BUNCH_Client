@@ -85,6 +85,7 @@ export const FEED_MESSAGES = {
   pickCancelConfirm: '삭제하기',
   adHide: '숨기기',
   adHideTitle: '이 장소를 숨길까요?',
+  adHiding: '장소를 숨기는 중이에요',
   adHiddenCardLabel: (title: string) => `광고 ${title}, 장소를 숨김 처리 했어요`,
   adHideDescription:
     'BUNCH 팀이 번치가 모이기 좋은 곳을 직접 골라 소개해요.\n현재 업체로부터 비용을 받고 있지 않아요.',

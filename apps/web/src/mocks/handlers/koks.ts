@@ -1,10 +1,10 @@
 import { http } from 'msw';
 import { toWireId } from '@/shared/api/ids';
-import type { MockBundle, MockDbState, MockKok } from '../db/types';
+import type { MockBundle, MockKok } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
-import { mockLocationId } from './feed';
+import { kokOf, mockLocationId } from './feed';
 import { viewerBunchId } from './follows';
 import { bundleAccess } from './likes';
 
@@ -17,27 +17,15 @@ const locationsOf = (bundle: MockBundle) =>
     index,
   }));
 
-/** 같은 장소(제공자·외부 ID)를 지금 번치가 콕했는지(다른 번들·광고에서 콕한 것도 같은 장소) */
-const kokOf = (
-  state: MockDbState,
-  bunchId: number,
-  place: { provider: string; externalId: string },
-) =>
-  state.koks.find(
-    (kok) =>
-      kok.bunchId === bunchId &&
-      kok.provider === place.provider &&
-      kok.externalId === place.externalId,
-  );
-
-const kokResponse = (kok: MockKok) => ({
+export const kokResponse = (kok: MockKok) => ({
   id: kok.id,
   bunchId: kok.bunchId,
   provider: kok.provider,
   externalId: kok.externalId,
   name: kok.name,
   address: kok.address || null,
-  sourceType: 'BUNDLE',
+  sourceType: kok.sourceAdvertisementId === null ? 'BUNDLE' : 'ADVERTISEMENT',
+  sourceAdvertisementId: kok.sourceAdvertisementId,
   sourceBundleId: kok.sourceBundleId,
   sourceLocationId: kok.sourceLocationId,
   pinnedByMemberId: kok.pinnedByMemberId,
@@ -100,6 +88,7 @@ export const kokHandlers = [
       address: location.address,
       sourceBundleId: bundleId,
       sourceLocationId: locationId,
+      sourceAdvertisementId: null,
       pinnedByMemberId: MOCK_MY_MEMBER_ID,
       pinnedAt: new Date().toISOString(),
     };

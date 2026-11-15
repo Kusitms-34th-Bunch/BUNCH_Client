@@ -1,4 +1,4 @@
-// ponytail: 메모리 보관이라 새로고침하면 다시 보임. 숨김 API(구현 단위 10)를 연결하면 서버가 뺀 목록으로 대체
+// 숨기기가 성공한 광고(앱이 켜져 있는 동안). 서버가 피드에서 빼지만, 다시 들어올 때 받아 둔 목록을 먼저 그리거나 다시 받기가 실패해도 보이지 않게
 const hiddenAds = new Set<string>();
 
 export const markAdHidden = (adId: string) => void hiddenAds.add(adId);
