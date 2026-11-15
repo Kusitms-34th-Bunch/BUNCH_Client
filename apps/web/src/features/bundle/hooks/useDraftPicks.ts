@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft } from '../lib/types';
+import type { PhotoPicks } from '../model/bundle';
 import { readPickConflict, saveBundlePhotoPick } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { pickersOf, withPick } from '../lib/picks';
@@ -79,6 +80,8 @@ export function useDraftPicks(
       if (!bunchId || !bundleId || inflight.current.has(photoId)) return;
       inflight.current.add(photoId);
       let conflicts = 0;
+      // 이 루프가 마지막으로 받은 서버 픽(저장 응답·충돌 detail). 캐시가 낡은 값으로 보이더라도 이 값 기준으로 끝낼 수 있음
+      let latest: PhotoPicks | undefined;
       try {
         for (;;) {
           const want = wantedRef.current.get(photoId);
@@ -86,7 +89,7 @@ export function useDraftPicks(
           const photo = cache.readPhoto(photoId);
           // 그사이 사진이 번들에서 빠짐: 보던 사진 안내는 목록이 바뀔 때 화면이 띄움
           if (!photo) return settle(photoId);
-          const known = photo.picks ?? { version: 0, pickedByMe: false, memberIds: [] };
+          const known = latest ?? photo.picks ?? { version: 0, pickedByMe: false, memberIds: [] };
           if (known.pickedByMe === want) return settle(photoId);
           try {
             const saved = await saveBundlePhotoPick({
@@ -96,6 +99,7 @@ export function useDraftPicks(
               picked: want,
               expectedVersion: known.version,
             });
+            latest = saved;
             cache.writePicks(photoId, saved);
             // 서버가 원하는 상태와 다른 값을 성공으로 돌려주면 같은 요청을 반복하지 않고 실패로 봄
             if (saved.pickedByMe !== want && wantedRef.current.get(photoId) === want) {
@@ -107,6 +111,7 @@ export function useDraftPicks(
             const current = readPickConflict(error);
             if (current && conflicts < MAX_CONFLICT_RETRIES) {
               conflicts += 1;
+              latest = current;
               cache.writePicks(photoId, current);
               continue;
             }

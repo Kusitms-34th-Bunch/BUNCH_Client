@@ -52,7 +52,8 @@ const setup = async (options: { blocked?: boolean } = {}) => {
   const photoIds = created.photos.map((photo) => photo.id);
   const serverRow = (photoId: string) =>
     mockDrafts()[0]!.photos.find((photo) => String(photo.id) === photoId)?.picks;
-  return { client, hook, detail, refresh, photoIds, serverRow, draftOf };
+  const queryKey = bundleQueryOptions(bunchId, created.id).queryKey;
+  return { client, hook, detail, refresh, photoIds, serverRow, draftOf, queryKey };
 };
 
 beforeEach(() => {
@@ -73,6 +74,26 @@ describe('useDraftPicks', () => {
     ]);
     refresh();
     await waitFor(() => expect(hook.result.current.picks[first!]).toEqual([me]));
+  });
+
+  it('저장보다 먼저 시작한 재조회가 나중에 도착해도 방금 저장한 픽이 되돌아가지 않는다', async () => {
+    const { client, hook, detail, refresh, photoIds, queryKey } = await setup();
+    const [first] = photoIds;
+    // 저장 전에 시작한 재조회가 받아 온 옛 상세(내 픽 없음, 같은 revision)
+    const stale = structuredClone(detail());
+    act(() => hook.result.current.toggle(first!));
+    await waitFor(() => expect(detail().photos[0]!.picks?.pickedByMe).toBe(true));
+
+    act(() => {
+      client.setQueryData(queryKey, stale);
+    });
+
+    expect(detail().photos[0]!.picks?.pickedByMe).toBe(true);
+    // 다음 누름도 저장된 버전을 기준으로 보내 충돌 없이 해제됨
+    refresh();
+    act(() => hook.result.current.toggle(first!));
+    await waitFor(() => expect(detail().photos[0]!.picks?.pickedByMe).toBe(false));
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('다시 누르면 픽을 해제한다', async () => {
@@ -115,14 +136,14 @@ describe('useDraftPicks', () => {
   it('서버가 버전 충돌로 현재 픽을 돌려주면 그 버전으로 같은 상태를 다시 보낸다', async () => {
     const { hook, detail, photoIds } = await setup();
     const [first] = photoIds;
-    // 화면이 아는 버전(0)과 달리 서버에는 이미 내 해제 행(버전 7)이 있음
+    // 화면이 아는 버전(0)과 달리 서버에는 이미 내 해제 행(버전 1)이 있음
     mockDb.update((current) => ({
       ...current,
       bundles: current.bundles.map((bundle) => ({
         ...bundle,
         photos: bundle.photos.map((photo, index) =>
           index === 0
-            ? { ...photo, picks: [{ memberId: MOCK_MY_MEMBER_ID, picked: false, version: 7 }] }
+            ? { ...photo, picks: [{ memberId: MOCK_MY_MEMBER_ID, picked: false, version: 1 }] }
             : photo,
         ),
       })),
