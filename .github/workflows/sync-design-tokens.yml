@@ -29,11 +29,12 @@ jobs:
           fi
 
       # PAT-authenticated pushes and PRs allow their CI workflows to run without bot approval.
+      # 토큰을 .git에 남기지 않음(설치·변환 단계의 코드가 읽지 못하게). push할 때만 그 단계에서 넘김
       - uses: actions/checkout@v4
         with:
           ref: design-token
           fetch-depth: 0
-          token: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
+          persist-credentials: false
 
       - name: Suspicious file guard
         run: node turbo/workflows/check-suspicious.mjs
@@ -54,20 +55,23 @@ jobs:
           yarn workspace @app/design-system test scripts/tokens.test.ts
 
       - name: Commit generated CSS
+        env:
+          PR_TOKEN: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add packages/design-system/tokens/tokens.css
           if ! git diff --cached --quiet; then
             git commit -m "chore: 디자인 토큰 자동 변환"
-            git push origin HEAD:design-token
+            # 앞 단계(설치·변환)가 심었을 수 있는 git hook·credential helper가 토큰을 보지 못하게 끄고 push
+            git -c core.hooksPath=/dev/null -c credential.helper= push "https://x-access-token:${PR_TOKEN}@github.com/${{ github.repository }}.git" HEAD:design-token
           fi
 
       - name: Open a PR to develop when needed
         env:
           GH_TOKEN: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
         run: |
-          git fetch origin develop
+          # checkout(fetch-depth: 0)이 모든 브랜치를 받아 두어 origin/develop이 있음(인증 없는 fetch 불필요)
           if git diff --quiet origin/develop HEAD -- packages/design-system/tokens/tokens.json packages/design-system/tokens/tokens.css; then
             echo "No design token changes compared with develop."
             exit 0
