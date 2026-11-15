@@ -16,7 +16,8 @@ const CATEGORIES = [
 // 페이지당 보여 줄 통과하지 못한 항목 수
 const MAX_AUDITS = 5;
 // 페이지당 1번 측정이라 성능 점수는 이만큼은 흔들릴 수 있음(이 안의 차이는 변화 없음으로 봄)
-const NOISE = 5;
+// 2026-11-15 같은 코드 두 실행에서 /invite 성능이 75→69로 6점 차이
+const NOISE = 10;
 
 const update = process.argv.includes('--update');
 const files = existsSync(resultsDir)
