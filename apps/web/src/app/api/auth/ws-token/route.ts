@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requestWsToken } from '@/shared/api/authSession';
-import { createAuthorizedRoute } from '@/shared/api/createAuthorizedRoute';
+import { requestWsToken } from '@/shared/api/server/authSession';
+import { createAuthorizedRoute } from '@/shared/api/server/createAuthorizedRoute';
 
 /**
  * 실시간(STOMP) 연결용 토큰 발급: 브라우저는 httpOnly 쿠키의 access 토큰을 읽을 수 없어,
