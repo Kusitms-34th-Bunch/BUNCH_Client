@@ -132,10 +132,6 @@ CI의 E2E job은 Playwright 공식 이미지(`mcr.microsoft.com/playwright:v<버
 
 이슈 생성 시 브랜치 자동 생성, PR의 라벨·assignee 자동화, 브랜치 네이밍 규칙은 `docs/conventions/git.md`를 확인한다.
 
-## 아직 활성화되지 않은 템플릿
-
-`.github/workflow-templates/`에는 배포 주소 Lighthouse 성능 감사와 Vercel 배포 workflow 초안이 있다. PR의 Lighthouse 측정은 배포 주소 없이 `lighthouse.yml`이 한다(위 「Lighthouse 결과 댓글」). `.github/workflows/`가 아닌 곳에 있어 실행되지 않으며, 각 파일이 요구하는 전제(secret 설정, 저장소 공개 전환 등)가 갖춰지기 전까지는 도입하지 않는다. 조건이 갖춰지면 해당 템플릿을 `.github/workflows/`로 옮기고 이 문서에 실제 trigger·역할을 추가한다. 자세한 활성화 조건은 `.github/workflow-templates/README.md`를 확인한다.
-
 ## 공개 저장소 전제
 
 `codeql.yml`과 `storybook-deploy.yml`은 저장소가 공개일 때만 동작한다.
