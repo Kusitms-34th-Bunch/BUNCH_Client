@@ -103,9 +103,47 @@ describe('useTitleCrdt', () => {
     expect(result.current.text).toBe('부산 여행가');
     act(() => result.current.setComposing(false));
 
-    expect(result.current.text).toContain('가을');
-    expect(result.current.text).toContain('가');
+    // 원격 변경(가을)과 로컬 마지막 글자(가)가 둘 다 남은 최종 결과(접두사 일치만으로는 통과하지 않음)
+    expect(result.current.text).toBe('가을 부산 여행가');
     expect(loadTitleDoc(result.current.serialize() ?? '').title).toBe(result.current.text);
+  });
+
+  it('reset하면 저장하지 못한 입력을 버리고 서버 문서로 돌아가며, 이어서 입력해도 버린 글자가 되살아나지 않는다', async () => {
+    const { result } = render(detail(serverState));
+    await waitFor(() => expect(result.current.text).toBe('부산 여행'));
+    act(() => {
+      result.current.edit('부산 여행 보내지 못한 글자');
+    });
+
+    act(() => result.current.reset());
+    await waitFor(() => expect(result.current.text).toBe('부산 여행'));
+    act(() => {
+      result.current.edit('부산 여행 새 글자');
+    });
+
+    expect(loadTitleDoc(result.current.serialize() ?? '').title).toBe('부산 여행 새 글자');
+  });
+
+  it('한글 조합 중에 reset해도 화면과 입력 기준이 서버 문서로 돌아가 버린 입력이 다시 섞이지 않는다', async () => {
+    const { result } = render(detail(serverState));
+    await waitFor(() => expect(result.current.text).toBe('부산 여행'));
+    act(() => result.current.setComposing(true));
+    act(() => {
+      result.current.edit('부산 여행 조합중');
+    });
+    expect(result.current.text).toBe('부산 여행 조합중');
+
+    act(() => result.current.reset());
+    // 조합이 끝나지 않았어도 서버 문서로 되돌림
+    await waitFor(() => expect(result.current.text).toBe('부산 여행'));
+    // 조합이 이어져 다음 글자가 들어와도 버린 글자 없이 서버 문서 기준으로만 반영됨
+    act(() => {
+      result.current.edit('부산 여행가');
+    });
+    act(() => result.current.setComposing(false));
+
+    expect(result.current.text).toBe('부산 여행가');
+    expect(loadTitleDoc(result.current.serialize() ?? '').title).toBe('부산 여행가');
   });
 
   it('서버 문서가 손상돼 읽지 못하면 불러오기 실패로 알린다', async () => {

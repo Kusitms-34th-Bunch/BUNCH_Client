@@ -290,6 +290,8 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
   }
   const normalized = typeof value === 'string' && kind !== 'comment' ? value.trim() : value;
   if (normalized === currentValue) return snapshotOf(bundle.id);
+  // 문서가 없는 기존 번들의 제목을 바꿀 때 WASM 로드와 문서 생성을 기다림
+  if (kind === 'title') await ensureTitleState(bundle.id);
 
   const at = nowIso();
   changeBundle(bundle.id, (current) => {
@@ -504,14 +506,17 @@ export const bundleHandlers = [
     await ensureTitleState(scope.bundle.id);
     const current = mockDb.get().bundles.find((item) => item.id === scope.bundle.id);
     if (!current?.titleCrdtState) return fail(404, 'RESOURCE_001');
+    // 요청 본문을 읽고 문서를 준비하는 동안 다른 요청이 발행했을 수 있어 최신 상태를 다시 확인
+    if (current.status !== 'DRAFT') return fail(409, 'BUNDLE_002');
     let merged;
     try {
       merged = mergeTitleDocs(loadTitleDoc(current.titleCrdtState), loadTitleDoc(state));
     } catch {
       return fail(400, 'COMMON_001');
     }
-    const raw = titleText(merged);
-    if (hasInvalidTitleChar(raw)) return fail(400, 'COMMON_001');
+    // 서버 문서의 title은 런타임 타입이 보장되지 않으므로 문자열인지 먼저 확인
+    const raw: unknown = titleText(merged);
+    if (typeof raw !== 'string' || hasInvalidTitleChar(raw)) return fail(400, 'COMMON_001');
     const next = saveTitleDoc(merged);
     if (next !== current.titleCrdtState) {
       changeBundle(current.id, (bundle) => ({

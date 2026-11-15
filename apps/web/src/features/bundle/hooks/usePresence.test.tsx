@@ -81,6 +81,28 @@ describe('usePresence', () => {
     expect(result.current.presence.viewingMemberIds).toEqual(['13']);
   });
 
+  it('복구 조회가 겹치면 먼저 보낸 조회가 나중에 끝나도 더 늦게 보낸 조회 결과를 덮지 않는다', async () => {
+    const resolvers: ((_data: PresenceData) => void)[] = [];
+    getBundlePresence.mockImplementation(
+      () => new Promise<PresenceData>((done) => resolvers.push(done)),
+    );
+    const { result } = renderHook(() => usePresence('1', '2'));
+
+    // 첫 연결의 조회 A가 끝나기 전에 재연결 조회 B가 시작됨(그동안 PRESENCE는 없음)
+    act(() => result.current.refresh());
+    act(() => result.current.refresh());
+    await act(async () => {
+      resolvers[1]?.(viewers(13));
+      await Promise.resolve();
+    });
+    await act(async () => {
+      resolvers[0]?.(viewers(7));
+      await Promise.resolve();
+    });
+
+    expect(result.current.presence.viewingMemberIds).toEqual(['13']);
+  });
+
   it('복구 조회에 실패해도 현재 상태를 그대로 둔다', async () => {
     getBundlePresence.mockRejectedValue(new Error('network'));
     const { result } = renderHook(() => usePresence('1', '2'));

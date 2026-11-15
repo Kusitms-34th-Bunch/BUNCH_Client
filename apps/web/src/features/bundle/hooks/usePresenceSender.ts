@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 const REFRESH_MS = 5_000;
 
@@ -47,7 +47,8 @@ export function usePresenceSender({
 }: Options): PresenceCommands {
   const sendRef = useRef(send);
   const participantRef = useRef(participant);
-  useEffect(() => {
+  // layout effect는 같은 커밋의 자식 passive effect(PresenceScope의 begin)보다 먼저 돌아 최신 참여 여부를 읽게 함
+  useLayoutEffect(() => {
     sendRef.current = send;
     participantRef.current = participant;
   });

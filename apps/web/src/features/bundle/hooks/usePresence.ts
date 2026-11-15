@@ -46,12 +46,15 @@ export function usePresence(
     [replace],
   );
 
+  // 조회마다 순번을 올려, 먼저 보낸 조회가 나중에 끝나도 더 늦게 보낸 조회 결과를 덮지 않게 함
+  const latestRequest = useRef(0);
   const refresh = useCallback(() => {
     if (bunchId === undefined || bundleId === undefined) return;
+    const request = ++latestRequest.current;
     const seen = received.current;
     getBundlePresence(bunchId, bundleId).then(
       (next) => {
-        if (received.current === seen) replace(next);
+        if (request === latestRequest.current && received.current === seen) replace(next);
       },
       // 복구 조회에 실패해도 이후 PRESENCE와 만료로 맞춰짐
       () => undefined,

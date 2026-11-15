@@ -163,9 +163,12 @@ describe('DraftPhotoAdd', () => {
   it('다른 멤버가 사진 작업 중이어도 사진을 풀 수 있고, 이 화면에 있는 동안 사진 작업을 알린다', async () => {
     renderAdd({ ...draftFixture, editing: { photoMemberIds: ['gyeongjin'] } });
     expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    const selectedBefore = screen.getByRole('status').textContent;
 
     await userEvent.click(sectionPhotos()[0]!);
 
     expect(toast).not.toHaveBeenCalled();
+    // 클릭이 무시되지 않고 선택이 실제로 풀려 선택 개수 표시가 바뀜
+    expect(screen.getByRole('status').textContent).not.toBe(selectedBefore);
   });
 });

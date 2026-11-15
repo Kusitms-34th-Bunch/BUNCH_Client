@@ -14,7 +14,8 @@ type DraftMembersProps = {
   /** 「추가」 카드를 눌렀을 때(참여 멤버 관리 화면 연결 전에는 생략) */
   onAddMember?: (() => void) | undefined;
   /** 내보내기 확인 창에서 「내보내기」를 눌렀을 때 */
-  onRemoveMember: (_memberId: string) => void;
+  /** 연결이 끊겨 막히면 false */
+  onRemoveMember: (_memberId: string) => boolean;
 };
 
 /** 참여 멤버 가로 목록: 역할 배지, 편집 중인 멤버의 초록 점, 권한이 있을 때만 삭제 버튼(누르면 내보내기 확인 창), 맨 끝 「추가」 카드 */

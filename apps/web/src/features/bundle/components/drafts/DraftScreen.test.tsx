@@ -52,6 +52,7 @@ const onImportFromBunchBox = vi.fn();
 const onImportFromGallery = vi.fn();
 
 type Options = {
+  actions?: DraftActions;
   draft?: Draft;
   viewer?: DraftViewer;
   saveStatus?: 'saved' | 'saving';
@@ -63,6 +64,7 @@ type Options = {
 const publishable: Draft = { ...draftFixture, visibility: 'public' };
 
 const screenElement = ({
+  actions: screenActions = actions,
   draft = publishable,
   viewer = creator,
   saveStatus = 'saved',
@@ -75,7 +77,7 @@ const screenElement = ({
     saveStatus={saveStatus}
     offline={offline}
     titleReady={titleReady}
-    actions={actions}
+    actions={screenActions}
     currentYear={2026}
     onBack={onBack}
     onLeave={onLeave}
@@ -353,6 +355,63 @@ describe('입력', () => {
     await userEvent.type(screen.getByRole('textbox', { name: /제목/ }), 'x');
 
     expect(actions.setTitle).not.toHaveBeenCalled();
+  });
+
+  it('이모지를 일반 글자로 바꿔 보이는 글자가 늘어나 40자를 넘기면 받지 않는다(UTF-16 길이는 줄어도)', () => {
+    // 이모지 20개와 한글 20개는 40글자지만 UTF-16 길이는 60
+    renderScreen({
+      viewer: creator,
+      draft: { ...publishable, title: '😀'.repeat(20) + '가'.repeat(20) },
+    });
+
+    fireEvent.change(screen.getByRole('textbox', { name: /제목/ }), {
+      target: { value: 'a'.repeat(41) },
+    });
+
+    expect(actions.setTitle).not.toHaveBeenCalled();
+  });
+
+  it('합쳐져서 이미 40자를 넘은 제목은 줄이는 입력을 받는다', () => {
+    renderScreen({ viewer: creator, draft: { ...publishable, title: '가'.repeat(41) } });
+
+    fireEvent.change(screen.getByRole('textbox', { name: /제목/ }), {
+      target: { value: '가'.repeat(40) },
+    });
+
+    expect(actions.setTitle).toHaveBeenCalledWith('가'.repeat(40));
+  });
+
+  describe('다른 멤버의 변경이 합쳐질 때 커서와 선택 영역', () => {
+    // 입력란에 포커스가 있고 커서(또는 선택)가 있는 상태에서 제목이 원격 변경으로 바뀜
+    const mergeRemote = (before: string, after: string, select: [number, number]) => {
+      const view = renderScreen({ viewer: creator, draft: { ...publishable, title: before } });
+      const input = screen.getByRole<HTMLInputElement>('textbox', { name: /제목/ });
+      input.focus();
+      input.setSelectionRange(select[0], select[1]);
+      fireEvent.select(input);
+
+      view.rerender(screenElement({ viewer: creator, draft: { ...publishable, title: after } }));
+      return input;
+    };
+
+    it('앞뒤에 동시에 글자가 끼어들어도 커서는 같은 글자 뒤에 남는다', () => {
+      const input = mergeRemote('abcd', 'XabcdY', [2, 2]);
+
+      // b 뒤: X 한 글자만큼만 밀림(문자열 끝이 아님)
+      expect([input.selectionStart, input.selectionEnd]).toEqual([3, 3]);
+    });
+
+    it('선택 영역의 시작과 끝을 각각 보정해 같은 글자를 계속 선택한다', () => {
+      const input = mergeRemote('abcd', 'XabcdY', [1, 3]);
+
+      expect([input.selectionStart, input.selectionEnd]).toEqual([2, 4]);
+    });
+
+    it('한 곳만 바뀐 경우는 이전과 같이 보정한다', () => {
+      const input = mergeRemote('부산 여행', '가을 부산 여행', [5, 5]);
+
+      expect([input.selectionStart, input.selectionEnd]).toEqual([8, 8]);
+    });
   });
 
   it('조합이 끝나지 않은 채 포커스를 잃어도 조합 종료를 알린다', async () => {
@@ -649,6 +708,20 @@ describe('멤버 내보내기', () => {
     expect(actions.removeMember).toHaveBeenCalledWith('gyeongjin');
   });
 
+  it('연결이 끊겨 내보내기가 막히면 성공 토스트를 띄우지 않는다', async () => {
+    actions.removeMember.mockReturnValueOnce(false);
+    renderScreen({ viewer: creator });
+
+    await userEvent.click(screen.getByRole('button', { name: '경진 삭제' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: '내보내기' }));
+
+    expect(actions.removeMember).toHaveBeenCalledWith('gyeongjin');
+    // 확인 창이 완전히 닫힌 뒤에도 알림이 없음
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.memberRemoved('경진'));
+  });
+
   it('「취소」를 누르면 멤버를 내보내지 않는다', async () => {
     renderScreen({ viewer: creator });
 
@@ -794,6 +867,22 @@ describe('다른 멤버가 작업 중인 영역(잠그지 않음)', () => {
 
     await waitFor(() => expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS'));
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('사진 추가 시트가 열려 있는 동안 연결 상태가 바뀌어 presence가 바뀌어도 새 presence로 작업을 알린다', async () => {
+    const view = renderScreen();
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+
+    // 재연결로 presence 객체가 바뀐 상황(시트는 계속 열려 있음)
+    const reconnected = {
+      ...actions,
+      presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
+    };
+    view.rerender(screenElement({ actions: reconnected }));
+
+    expect(reconnected.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
   });
 
   it('참여 멤버가 아니면 사진을 지우려 할 때 안내한다', async () => {

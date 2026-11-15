@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { delay, http } from 'msw';
+import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
@@ -63,18 +63,25 @@ describe('번들 query·mutation', () => {
     const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     const loaded = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    // GET 핸들러가 요청을 받은 것과 응답을 내보내는 시점을 테스트가 직접 정함(시간 대기에 기대지 않음)
+    let reachedServer: () => void = () => undefined;
+    const requestReachedServer = new Promise<void>((resolve) => (reachedServer = resolve));
+    let sendResponse: () => void = () => undefined;
+    const responseReleased = new Promise<void>((resolve) => (sendResponse = resolve));
     server.use(
       http.get('/api/bunches/:bunchId/bundles/:id', async () => {
-        await delay(150);
+        reachedServer();
+        await responseReleased;
         return undefined;
       }),
     );
 
-    // 재조회 요청이 서버에서 처리되는 동안(응답이 아직 오지 않음)
+    // 재조회 요청이 서버에 도달해 응답을 기다리는 동안(조회 실패는 숨기지 않고 테스트를 실패시킴)
     let inflight: Promise<unknown> = Promise.resolve();
     act(() => {
-      inflight = client.refetchQueries({ queryKey: key });
+      inflight = client.refetchQueries({ queryKey: key }, { throwOnError: true });
     });
+    await requestReachedServer;
     // 저장 응답이 먼저 도착해 캐시를 더 새 revision으로 맞춤
     client.setQueryData(key, {
       ...loaded,
@@ -82,13 +89,60 @@ describe('번들 query·mutation', () => {
       title: '저장 응답으로 맞춤',
     });
     // 그 뒤에 낡은 revision의 재조회 응답이 도착해도 캐시의 더 새 상태를 유지함
+    sendResponse();
+    await act(async () => {
+      await inflight;
+    });
+
+    expect(client.getQueryState(key)).toMatchObject({ status: 'success', fetchStatus: 'idle' });
+    expect(client.getQueryData<BundleDetail>(key)).toMatchObject({
+      revision: loaded.revision + 5,
+      title: '저장 응답으로 맞춤',
+    });
+  });
+
+  it('제목 병합 응답은 revision을 바꾸지 않으므로 같은 revision의 낡은 상세가 더 높은 제목 버전을 되돌리지 않는다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const key = bundleKeys.detail(bunchId, id);
+    const { result } = renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const loaded = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    let reachedServer: () => void = () => undefined;
+    const requestReachedServer = new Promise<void>((resolve) => (reachedServer = resolve));
+    let sendResponse: () => void = () => undefined;
+    const responseReleased = new Promise<void>((resolve) => (sendResponse = resolve));
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        reachedServer();
+        await responseReleased;
+        return undefined;
+      }),
+    );
+
+    // 병합 전에 시작한 상세 조회가 서버에서 처리되는 동안
+    let inflight: Promise<unknown> = Promise.resolve();
+    act(() => {
+      inflight = client.refetchQueries({ queryKey: key }, { throwOnError: true });
+    });
+    await requestReachedServer;
+    // 제목 병합 응답이 먼저 도착해 같은 revision에서 제목 버전만 올림
+    client.setQueryData(key, {
+      ...loaded,
+      title: '병합 응답으로 맞춘 제목',
+      titleVersion: loaded.titleVersion + 3,
+      titleCrdtState: 'merged-state',
+    });
+    sendResponse();
     await act(async () => {
       await inflight;
     });
 
     expect(client.getQueryData<BundleDetail>(key)).toMatchObject({
-      revision: loaded.revision + 5,
-      title: '저장 응답으로 맞춤',
+      revision: loaded.revision,
+      title: '병합 응답으로 맞춘 제목',
+      titleVersion: loaded.titleVersion + 3,
+      titleCrdtState: 'merged-state',
     });
   });
 

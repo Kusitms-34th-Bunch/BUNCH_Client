@@ -1,4 +1,5 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import * as Automerge from '@automerge/automerge/slim';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   editTitle,
   ensureTitleCrdt,
@@ -602,6 +603,58 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     expect((await merge(draft.id, await edit(draft.id, '한 줄\n두 줄'))).json.error?.code).toBe(
       'COMMON_001',
     );
+  });
+
+  it('title이 문자열이 아닌 문서는 오류로 거절한다(서버가 죽지 않고 COMMON_001)', async () => {
+    const draft = await createDraft();
+    const { json } = await call('GET', `${base}/${draft.id}`);
+    const state = (json.data as unknown as { titleCrdtState: string }).titleCrdtState;
+    // 서버 문서 위에 title을 숫자로 바꾼 변경을 얹은 문서(병합하면 이 값이 이김)
+    const broken = Automerge.change(loadTitleDoc(state), (doc) => {
+      (doc as unknown as { title: unknown }).title = 123;
+    });
+    const bytes = Automerge.save(broken);
+
+    const result = await merge(draft.id, Buffer.from(bytes).toString('base64'));
+
+    expect(result.status).toBe(400);
+    expect(result.json.error?.code).toBe('COMMON_001');
+  });
+
+  it('처음 상태 검사 뒤 문서를 준비하는 사이 번들이 발행되면 제목을 바꾸지 않고 BUNDLE_002를 돌려준다', async () => {
+    const draft = await createDraft();
+    const state = await edit(draft.id, '발행 뒤 도착한 제목');
+    const readTitle = () => mockDb.get().bundles.find((bundle) => bundle.id === draft.id)?.title;
+    const titleBefore = readTitle();
+
+    // 핸들러의 번들 조회 순서: 1) 범위 확인(초안 확인) 2) 문서 준비 3) 최신 번들 다시 읽기
+    // 2번째 조회 시점에 다른 요청이 발행한 것처럼 상태를 바꿔, 처음 검사와 최신 읽기 사이의 경합을 고정함
+    const original = mockDb.get.bind(mockDb);
+    let reads = 0;
+    const spy = vi.spyOn(mockDb, 'get').mockImplementation(() => {
+      reads += 1;
+      if (reads === 2) {
+        mockDb.update((current) => ({
+          ...current,
+          bundles: current.bundles.map((bundle) =>
+            bundle.id === draft.id ? { ...bundle, status: 'PUBLISHED' as const } : bundle,
+          ),
+        }));
+      }
+      return original();
+    });
+
+    let result;
+    try {
+      result = await merge(draft.id, state);
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(reads).toBeGreaterThanOrEqual(3);
+    expect(result.status).toBe(409);
+    expect(result.json.error?.code).toBe('BUNDLE_002');
+    expect(readTitle()).toBe(titleBefore);
   });
 
   it('참여하지 않은 사람은 AUTH_002, 없는 번들은 RESOURCE_001이다', async () => {

@@ -202,6 +202,19 @@ describe('내보내기', () => {
     );
   });
 
+  it('연결이 끊겨 내보내기가 막히면 성공 토스트와 포커스 이동을 하지 않고 멤버도 그대로다', async () => {
+    render(<Harness viewer={owner} blocked />);
+
+    await userEvent.click(screen.getByRole('button', { name: '은우 내보내기' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: '내보내기' }));
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(toast).not.toHaveBeenCalled();
+    expect(within(joined()).getByText('은우')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '은우 추가하기' })).not.toBeInTheDocument();
+  });
+
   it('내용은 「삭제되며,」 뒤에서 줄이 바뀐다', async () => {
     render(<Harness viewer={owner} />);
 

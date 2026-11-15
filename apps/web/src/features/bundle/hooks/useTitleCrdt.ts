@@ -43,6 +43,8 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
   const viewRef = useRef<TitleDoc | undefined>(undefined);
   const bundleRef = useRef<string | undefined>(undefined);
   const composingRef = useRef(false);
+  // reset 직후 다음 반영은 조합 중이어도 보류하지 않고 서버 문서로 화면을 되돌림(폐기한 입력이 다시 섞이지 않게)
+  const forceRef = useRef(false);
   // 조합 중에 원격 변경이 문서에 병합됐지만 화면에는 아직 반영하지 않은 상태
   const heldRef = useRef(false);
   const [text, setText] = useState<string | undefined>(undefined);
@@ -58,7 +60,9 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
       bundleRef.current = bundleId;
       const merged = sameBundle && docRef.current ? mergeTitleDocs(docRef.current, remote) : remote;
       docRef.current = merged;
-      if (composingRef.current) {
+      const force = forceRef.current;
+      forceRef.current = false;
+      if (composingRef.current && !force) {
         heldRef.current = true;
         return;
       }
@@ -88,6 +92,7 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
     // 병합하지 않고 서버 문서로만 다시 불러오게 함(저장하지 못한 로컬 입력과 보류한 변경을 모두 버림)
     bundleRef.current = undefined;
     heldRef.current = false;
+    forceRef.current = true;
     setAttempt((count) => count + 1);
   }, []);
 

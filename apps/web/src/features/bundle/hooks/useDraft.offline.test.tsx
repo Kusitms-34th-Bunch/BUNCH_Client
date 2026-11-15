@@ -3,6 +3,7 @@ import { delay, http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -155,5 +156,68 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     await waitFor(() => expect(connection.holdEvent?.('PHOTOS')).toBe(false), { timeout: 5000 });
     // 적용하지 못한 이벤트가 있었으므로 요청이 끝나면 상세를 다시 받음
     await waitFor(() => expect(detailRequests).toBeGreaterThan(0), { timeout: 5000 });
+  });
+});
+
+describe('useDraft 요청을 보내는 중에 연결이 끊겼을 때(기능 spec 4.3.14)', () => {
+  it('제목 요청을 기다리는 사이 끊기면 이어서 보낼 날짜·코멘트는 보내지 않는다', async () => {
+    const { id, result, goDown } = await renderReady();
+    // 제목 요청이 서버에서 처리되는 동안 연결이 끊기도록 늦춤
+    server.use(
+      http.patch('/api/bunches/:bunchId/bundles/:id/title/crdt', async () => {
+        await delay(400);
+        return undefined;
+      }),
+    );
+    act(() => {
+      result.current.actions.setTitle('끊기기 전에 보낸 제목');
+      result.current.actions.setComment(String(me), '끊긴 뒤에는 보내지 않을 코멘트');
+      // 날짜는 고르는 즉시 저장이 시작되어 제목 요청이 먼저 나감
+      result.current.actions.setDate('2026-10-18');
+    });
+    await act(() => wait(100));
+
+    act(goDown);
+    await act(() => wait(1500));
+
+    const bundle = serverBundle(id);
+    expect(bundle?.date).toBeNull();
+    expect(bundle?.comments).toEqual([]);
+  });
+
+  it('사진 구성 요청을 기다리는 사이 끊기면 이어서 보낼 순서 이동은 보내지 않는다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const photos = ready(view.result.current.state).draft.photos;
+    const [first, second, third] = photos;
+    const orderOf = () => serverBundle(created.id)?.photos.map((photo) => photo.id);
+    const before = orderOf();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(400);
+        return undefined;
+      }),
+    );
+
+    // 첫 사진을 빼고 나머지 순서를 바꿈: 구성 변경 요청 뒤에 순서 이동 요청이 이어짐
+    act(() => {
+      view.result.current.actions.replacePhotos([third!, second!]);
+    });
+    await act(() => wait(100));
+    connection.down = true;
+    act(() => view.rerender());
+    await act(() => wait(1500));
+
+    // 이미 보낸 구성 변경(첫 사진 빼기)만 반영되고, 뒤이은 이동은 보내지 않아 남은 둘의 순서는 그대로
+    const after = orderOf();
+    expect(after).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
   });
 });
