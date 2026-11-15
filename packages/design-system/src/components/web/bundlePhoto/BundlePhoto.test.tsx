@@ -11,6 +11,20 @@ afterEach(() => {
 });
 
 describe('BundlePhoto', () => {
+  it('공유 요소 키는 thumbnail이면 카드 전체, detail이면 첫 사진에만 붙는다', () => {
+    const { container, rerender } = render(
+      <BundlePhoto photos={photos} heroKey="bundle-photo-1" />,
+    );
+    const keyed = (side: 'enter' | 'exit') =>
+      container.querySelectorAll(`[data-hero-${side}-key="bundle-photo-1"]`);
+    expect(keyed('enter')).toHaveLength(1);
+    expect(keyed('enter')[0]).toBe(container.firstElementChild);
+
+    rerender(<BundlePhoto variant="detail" photos={photos} heroKey="bundle-photo-1" />);
+    expect(keyed('exit')).toHaveLength(1);
+    expect(keyed('exit')[0]?.querySelector('img')?.getAttribute('src')).toBe('a.jpg');
+  });
+
   it('pick 얼굴은 보일 때만 떠다니고, 사라지면 관찰을 끝낸다', () => {
     let notify: (_visible: boolean) => void = () => undefined;
     let observed: Element | undefined;
