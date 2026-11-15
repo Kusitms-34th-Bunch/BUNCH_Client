@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { delay, http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { server } from '@/mocks/server';
@@ -70,6 +70,10 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 beforeEach(() => {
   connection.down = false;
 });
+afterEach(() => {
+  Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+  act(() => void window.dispatchEvent(new Event('online')));
+});
 
 describe('useDraft 연결이 끊겼을 때(기능 spec 4.3.14)', () => {
   it('저장 대기 중이던 제목·코멘트·날짜는 서버로 보내지 않고 화면에서도 되돌린다', async () => {
@@ -88,6 +92,18 @@ describe('useDraft 연결이 끊겼을 때(기능 spec 4.3.14)', () => {
     expect(bundle?.comments).toEqual([]);
     expect(ready(result.current.state).draft.title).toBe('');
     expect(ready(result.current.state).saveStatus).toBe('saved');
+  });
+
+  it('브라우저가 오프라인이 되어도(실시간 연결은 그대로) 저장 대기 중이던 입력을 보내지 않는다', async () => {
+    const { id, result } = await renderReady();
+    act(() => result.current.actions.setTitle('오프라인 직전 제목'));
+
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+    act(() => void window.dispatchEvent(new Event('offline')));
+    await act(() => wait(PAST_SAVE_DELAY));
+
+    expect(serverBundle(id)?.title).toBe('');
+    expect(ready(result.current.state).draft.title).toBe('');
   });
 
   it('날짜도 보내지 않는다', async () => {

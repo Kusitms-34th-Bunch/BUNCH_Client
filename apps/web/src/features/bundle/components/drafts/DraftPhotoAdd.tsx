@@ -75,7 +75,8 @@ export function DraftPhotoAdd({
   };
 
   const commit = usePreservedCallback(() => {
-    actions.replacePhotos(applySelection(draft.photos, selection, data.photos));
+    // 연결이 끊겨 막히면 성공 안내와 화면 이동도 하지 않음(반응만 없앰, 기능 spec 4.3.14)
+    if (!actions.replacePhotos(applySelection(draft.photos, selection, data.photos))) return;
     toastAfterNavigation(BUNDLE_MESSAGES.photoAddApplied);
     onApplied();
   });

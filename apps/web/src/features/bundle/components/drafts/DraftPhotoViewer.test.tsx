@@ -31,7 +31,7 @@ const creator: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
 const outsider: DraftViewer = { memberId: 'outsider', bunchRole: 'member' };
 
 const actions = {
-  removePhoto: vi.fn(),
+  removePhoto: vi.fn(() => true),
   presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
 };
 const onBack = vi.fn();
@@ -214,6 +214,17 @@ describe('DraftPhotoViewer 삭제', () => {
 
     expect(actions.removePhoto).toHaveBeenCalledWith('draft-photo-2');
     expect(onPhotoChange).toHaveBeenCalledWith('draft-photo-3');
+  });
+
+  it('연결이 끊겨 삭제가 막히면 이웃 사진으로 넘어가지 않는다', async () => {
+    actions.removePhoto.mockReturnValueOnce(false);
+    renderViewer({ initialPhotoId: 'draft-photo-2' });
+
+    await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));
+
+    expect(actions.removePhoto).toHaveBeenCalledWith('draft-photo-2');
+    expect(onPhotoChange).not.toHaveBeenCalled();
   });
 
   it('마지막 사진을 빼면 앞 사진으로 이어서 본다', async () => {

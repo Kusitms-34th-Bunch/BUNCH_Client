@@ -84,24 +84,33 @@ export function useDraftFixture(draftId: string | undefined): {
         locations: [...moveLocation(current.locations, locationId, toIndex)],
       })),
     setDate: (date) => update((current) => ({ ...current, date })),
-    addMember: (memberId) =>
+    addMember: (memberId) => {
       update((current) => {
         const member = bunchMembersFixture.find((candidate) => candidate.id === memberId);
         return !member || current.members.some((joined) => joined.id === memberId)
           ? current
           : { ...current, members: [...current.members, member] };
-      }),
-    removeMember: (memberId) =>
+      });
+      return true;
+    },
+    removeMember: (memberId) => {
       update((current) => ({
         ...current,
         members: current.members.filter((member) => member.id !== memberId),
         comments: current.comments.filter((comment) => comment.memberId !== memberId),
-      })),
-    removePhoto: (photoId) =>
-      update((current) => ({ ...current, photos: removePhoto(current.photos, photoId) })),
+      }));
+      return true;
+    },
+    removePhoto: (photoId) => {
+      update((current) => ({ ...current, photos: removePhoto(current.photos, photoId) }));
+      return true;
+    },
     movePhoto: (photoId, toIndex) =>
       update((current) => ({ ...current, photos: movePhoto(current.photos, photoId, toIndex) })),
-    replacePhotos: (photos) => update((current) => ({ ...current, photos })),
+    replacePhotos: (photos) => {
+      update((current) => ({ ...current, photos }));
+      return true;
+    },
     searchPlaces,
     publish: () => Promise.resolve('published' as const),
   };

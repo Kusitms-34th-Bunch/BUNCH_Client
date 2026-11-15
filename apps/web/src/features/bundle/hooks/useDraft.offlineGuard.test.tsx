@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '@/mocks/server';
 import { mockDb } from '@/mocks/db';
@@ -81,11 +81,17 @@ describe('useDraft 연결이 끊긴 동안의 편집(기능 spec 4.3.14)', () =>
     const before = serverBundle(id)?.participants.map((participant) => participant.memberId);
     setDown(true);
 
+    let added: boolean | undefined;
+    let removed: boolean | undefined;
     act(() => {
-      result.current.actions.addMember(String(memberB));
-      result.current.actions.removeMember(String(memberA));
+      added = result.current.actions.addMember(String(memberB));
+      removed = result.current.actions.removeMember(String(memberA));
     });
     await act(() => wait(300));
+
+    // 막힌 동작은 false를 돌려줘 호출하는 쪽이 성공 안내를 띄우지 않음
+    expect(added).toBe(false);
+    expect(removed).toBe(false);
 
     expect(serverBundle(id)?.participants.map((participant) => participant.memberId)).toEqual(
       before,
@@ -97,11 +103,76 @@ describe('useDraft 연결이 끊긴 동안의 편집(기능 spec 4.3.14)', () =>
     const photoId = ready(result.current.state).draft.photos[0]!.id;
     setDown(true);
 
-    act(() => result.current.actions.removePhoto(photoId));
+    let removed: boolean | undefined;
+    act(() => {
+      removed = result.current.actions.removePhoto(photoId);
+    });
     await act(() => wait(300));
 
+    expect(removed).toBe(false);
     expect(serverBundle(id)?.photos).toHaveLength(2);
     expect(ready(result.current.state).draft.photos).toHaveLength(2);
+  });
+
+  it('사진 목록을 통째로 바꾸는 적용도 막고 false를 돌려준다', async () => {
+    const { id, result, setDown } = await renderReady();
+    const photos = ready(result.current.state).draft.photos.slice(0, 1);
+    setDown(true);
+
+    let applied: boolean | undefined;
+    act(() => {
+      applied = result.current.actions.replacePhotos(photos);
+    });
+    await act(() => wait(300));
+
+    expect(applied).toBe(false);
+    expect(serverBundle(id)?.photos).toHaveLength(2);
+    expect(ready(result.current.state).draft.photos).toHaveLength(2);
+  });
+
+  it('연결되어 있으면 동작을 적용하고 true를 돌려준다', async () => {
+    const { result } = await renderReady();
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+
+    let removed: boolean | undefined;
+    act(() => {
+      removed = result.current.actions.removePhoto(photoId);
+    });
+
+    expect(removed).toBe(true);
+  });
+
+  describe('브라우저가 오프라인일 때(실시간 연결과 별개)', () => {
+    const setBrowserOnline = (online: boolean) => {
+      Object.defineProperty(navigator, 'onLine', { configurable: true, value: online });
+      act(() => void window.dispatchEvent(new Event(online ? 'online' : 'offline')));
+    };
+    afterEach(() => setBrowserOnline(true));
+
+    it('실시간 연결은 살아 있어도 브라우저가 오프라인이면 편집을 막는다', async () => {
+      const { id, result } = await renderReady();
+      setBrowserOnline(false);
+
+      let removed: boolean | undefined;
+      act(() => {
+        result.current.actions.setDate('2026-10-18');
+        removed = result.current.actions.removeMember(String(memberA));
+      });
+      await act(() => wait(PAST_SAVE_DELAY));
+
+      expect(removed).toBe(false);
+      expect(serverBundle(id)?.date).toBeNull();
+    });
+
+    it('다시 온라인이 되면 편집이 다시 저장된다', async () => {
+      const { id, result } = await renderReady();
+      setBrowserOnline(false);
+      setBrowserOnline(true);
+
+      act(() => result.current.actions.setDate('2026-10-18'));
+
+      await waitFor(() => expect(serverBundle(id)?.date).toBe('2026-10-18'), { timeout: 5000 });
+    });
   });
 
   it('다시 연결되면 편집이 다시 저장된다', async () => {
