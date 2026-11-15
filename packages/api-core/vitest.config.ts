@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { createLogger, defineConfig } from 'vite';
 
 export default defineConfig({
