@@ -10,8 +10,8 @@ export function useRemoveMemberDialog() {
   const openOverlay = useScreenOverlay();
   return (
     target: DraftMember,
-    /** 「내보내기」를 눌렀을 때 */
-    onConfirm: (_member: DraftMember) => void,
+    /** 「내보내기」를 눌렀을 때. 연결이 끊겨 막혀 내보내지 못하면 false(성공 토스트와 성공 뒤 포커스 이동을 하지 않음) */
+    onConfirm: (_member: DraftMember) => boolean,
     /** 「내보내기」 뒤 창이 완전히 닫힌 다음(토스트와 같은 시점). 포커스를 옮길 때 씀 */
     onClosed?: (_member: DraftMember) => void,
   ) => {
@@ -28,8 +28,7 @@ export function useRemoveMemberDialog() {
               <Dialog.Confirm
                 variant="warning"
                 onClick={() => {
-                  onConfirm(target);
-                  confirmed = true;
+                  confirmed = onConfirm(target);
                   close();
                 }}
               >
