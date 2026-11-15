@@ -168,8 +168,8 @@ export function DraftMemberManager({
                                 member,
                                 ({ id }) => {
                                   capture();
-                                  // 연결이 끊겨 막히면 내보내지 않음
-                                  actions.removeMember(id);
+                                  // 연결이 끊겨 막히면 false: 성공 토스트와 포커스 이동을 하지 않음
+                                  return actions.removeMember(id);
                                 },
                                 // 창이 닫힌 뒤에 옮겨야 닫히는 모달에 포커스를 빼앗기지 않음
                                 ({ id }) => setFocusId(id),
