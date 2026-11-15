@@ -7,7 +7,7 @@ import { fail, ok } from '../lib/envelope';
 import { cardOf, isMine, paged, pageOf } from './follows';
 
 // 번치 차단·신고(Swagger). 명세에 오류 코드가 없어 권한은 AUTH_002, 잘못된 입력은 COMMON_001로 둠
-const REPORT_REASONS: readonly MockReport['reason'][] = [
+export const REPORT_REASONS: readonly MockReport['reason'][] = [
   'SPAM',
   'INAPPROPRIATE',
   'HARASSMENT',
@@ -30,7 +30,7 @@ const pairOf = (params: Record<string, string | readonly string[] | undefined>) 
   return { viewerId, targetId, state };
 };
 
-const nextId = (items: readonly { id: number }[]) =>
+export const nextId = (items: readonly { id: number }[]) =>
   Math.max(0, ...items.map((item) => item.id)) + 1;
 
 export const blockHandlers = [

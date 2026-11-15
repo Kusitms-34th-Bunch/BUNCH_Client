@@ -14,7 +14,6 @@ import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries'
 import type { FeedBundle } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { FEED_PATHS } from '../constants/paths';
-import { useBundleEdits } from '../hooks/useBundleEdits';
 import { useBundleSheets } from '../hooks/useBundleSheets';
 import { useClientNow } from '../hooks/useClientNow';
 import { useFeedViewer } from '../hooks/useFeedViewer';
@@ -129,19 +128,12 @@ export function FeedScreen({ links }: FeedScreenProps) {
   const firstFailed =
     feed.data === undefined && (feed.isError || (viewer === undefined && viewerFailed));
 
-  // 화면에서 지웠거나 「멤버 공개」로 바꾼 번들은 피드에서 뺌(기능명세서 6.2.12 로직 5·6.2.13). 피드에는 공개 번들만 옴
-  const { isDeleted, becameMemberOnly } = useBundleEdits();
   // 숨긴 광고는 안내를 잠깐 보인 뒤 접혀 사라지고, 피드에 다시 들어와도 없음
   const [hiddenAds, setHiddenAds] = useState(readHiddenAds);
   const endRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const shown = (entry: FeedEntry) =>
-    entry.kind === 'bundle'
-      ? !isDeleted(entry.bundle.id) && !becameMemberOnly(entry.bundle.id, false)
-      : entry.kind === 'ad'
-        ? !hiddenAds.has(entry.ad.id)
-        : true;
+  const shown = (entry: FeedEntry) => (entry.kind === 'ad' ? !hiddenAds.has(entry.ad.id) : true);
   const entries = feed.data ? toFeedEntries(feed.data.pages).filter(shown) : [];
   // 카드의 구간으로 두 목록을 나눔. 구간 끝 안내가 아직 안 왔어도 팔로우 카드가 다른 목록으로 옮겨 다시 그려지지 않게
   // 안내 전에는 마지막 팔로우 카드 뒤의 광고도 팔로우 목록에 둠(다음 쪽에 팔로우 카드가 더 오면 부모 목록이 바뀌어 광고 상태가 사라짐)
@@ -199,7 +191,7 @@ export function FeedScreen({ links }: FeedScreenProps) {
           photos={bundle.photos}
           title={bundle.title}
           location={bundle.location}
-          onLocationClick={() => openPlaces(bundle.places)}
+          onLocationClick={() => openPlaces(bundle.id, bundle.places)}
           date={bundle.date}
           onPhotoClick={() => router.push(FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
           liked={bundle.liked}

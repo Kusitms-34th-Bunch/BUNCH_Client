@@ -1,3 +1,4 @@
+import { advertisementHandlers } from './advertisements';
 import { blockHandlers } from './blocks';
 import { bunchHomeHandlers } from './bunchHome';
 import { bunchOnboardingHandlers } from './bunchOnboarding';
@@ -8,19 +9,23 @@ import { commentHandlers } from './comments';
 import { feedHandlers } from './feed';
 import { followHandlers } from './follows';
 import { invitationHandlers } from './invitations';
+import { kokHandlers } from './koks';
 import { likeHandlers } from './likes';
+import { memberProfileHandlers } from './memberProfiles';
 import { memberHandlers } from './members';
 import { membershipHandlers } from './memberships';
 import { notificationHandlers } from './notifications';
 import { photoHandlers } from './photos';
 import { pushDeviceHandlers } from './pushDevices';
 import { pushPreferenceHandlers } from './pushPreferences';
+import { reportHandlers } from './reports';
 import { sessionHandlers } from './session';
 import { termHandlers } from './terms';
 
 export const handlers = [
   ...sessionHandlers,
   ...memberHandlers,
+  ...memberProfileHandlers,
   ...pushPreferenceHandlers,
   ...pushDeviceHandlers,
   ...termHandlers,
@@ -32,8 +37,11 @@ export const handlers = [
   ...membershipHandlers,
   ...followHandlers,
   ...feedHandlers,
+  ...advertisementHandlers,
   ...likeHandlers,
   ...commentHandlers,
+  ...reportHandlers,
+  ...kokHandlers,
   ...blockHandlers,
   ...notificationHandlers,
   ...bundleHandlers,
