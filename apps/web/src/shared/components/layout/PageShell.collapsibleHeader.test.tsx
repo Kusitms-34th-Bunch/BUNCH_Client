@@ -95,6 +95,47 @@ describe('PageShell 접는 헤더', () => {
     expect(shift()).toBe('translateY(calc(-100% - 2px))');
   });
 
+  it('멈춰서 끝까지 숨긴 뒤에는 위로 올린 거리를 처음부터 센다', () => {
+    const { main, scrollTo, stop, shift } = setup();
+    fireEvent.touchStart(main);
+    scrollTo(300);
+    // 90 올림(70 숨음) → 놓고 멈추면 끝까지 넣음
+    scrollTo(210);
+    fireEvent.touchEnd(main);
+    stop();
+    expect(shift()).toBe('translateY(calc(-100% - 2px))');
+    // 다시 10만 올려도 60을 넘지 않아 그대로 숨어 있음
+    fireEvent.touchStart(main);
+    scrollTo(200);
+    expect(shift()).toBe('translateY(calc(-100% - 2px))');
+  });
+
+  it('반쯤 숨은 헤더에 초점이 들어오면 바로 꺼내고 멈춰도 숨기지 않는다', () => {
+    const { main, scrollTo, stop, shift } = setup();
+    fireEvent.touchStart(main);
+    scrollTo(300);
+    scrollTo(210);
+    fireEvent.touchEnd(main);
+    act(() => screen.getByRole('link', { name: '알림' }).focus());
+    expect(shift()).toBe('');
+    stop();
+    expect(shift()).toBe('');
+  });
+
+  it('화면에 있는 동안 켠 동작 줄이기도 정리 이동에 반영한다', () => {
+    const query = { matches: false };
+    const spy = vi.spyOn(window, 'matchMedia').mockReturnValue(query as unknown as MediaQueryList);
+    const { main, header, scrollTo, stop } = setup();
+    fireEvent.touchStart(main);
+    scrollTo(300);
+    scrollTo(210);
+    fireEvent.touchEnd(main);
+    query.matches = true;
+    stop();
+    expect(header.style.transition).toBe('none');
+    spy.mockRestore();
+  });
+
   it('맨 위에서는 스크롤한 거리보다 더 숨지 않고, 멈추면 다 보인다', () => {
     const { main, scrollTo, stop, shift } = setup();
     fireEvent.touchStart(main);

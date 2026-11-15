@@ -47,7 +47,8 @@ export function useHideOnScroll({ scrollRef, headerRef, containerRef, enabled }:
     const scroller = scrollRef.current;
     const header = headerRef.current;
     if (!enabled || !scroller || !header) return;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // 화면에 있는 동안 설정을 바꿔도 따르도록 움직일 때마다 읽음
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let userScrolled = false;
     let last = scroller.scrollTop;
     // 헤더가 위로 밀려 올라간 거리(0이면 다 보임, 높이면 다 숨음)
@@ -60,7 +61,7 @@ export function useHideOnScroll({ scrollRef, headerRef, containerRef, enabled }:
       const height = header.offsetHeight;
       // 스크롤 값이 소수(iOS 0.33px 단위)라 거의 다 숨은 상태는 다 숨은 것으로 봄(아래 끝이 1px 미만으로 남지 않게)
       offset = next >= height - 1 ? height : next;
-      header.style.transition = animate && !reduceMotion ? SETTLE_TRANSITION : 'none';
+      header.style.transition = animate && !motionQuery.matches ? SETTLE_TRANSITION : 'none';
       // 다 숨으면 잰 높이 대신 자기 높이 + 2px만큼 올려 반올림한 높이로 생기는 틈도 없앰
       if (offset === 0) header.style.transform = '';
       else if (offset === height) header.style.transform = `translateY(${HIDDEN_TRANSFORM})`;
@@ -70,9 +71,19 @@ export function useHideOnScroll({ scrollRef, headerRef, containerRef, enabled }:
     const settle = () => {
       const height = header.offsetHeight;
       if (offset === 0 || offset === height) return;
-      // 맨 위 근처는 끝까지 숨길 수 없으므로 꺼냄
-      const hide = offset > height / 2 && scroller.scrollTop >= height;
+      // 맨 위 근처는 끝까지 숨길 수 없으므로 꺼내고, 헤더 안에 초점이 있으면 숨기지 않음
+      const hide =
+        offset > height / 2 &&
+        scroller.scrollTop >= height &&
+        !header.contains(document.activeElement);
+      // 다시 다 숨으면 위로 올린 거리도 처음부터 셈(REVEAL_DISTANCE 기준 유지)
+      if (hide) upward = 0;
       apply(hide ? height : 0, true);
+    };
+    // 헤더 안으로 초점이 들어오면 바로 꺼냄(예약된 정리로 숨어 inert가 되지 않게)
+    const onFocusIn = () => {
+      clearTimeout(settleTimer);
+      if (offset !== 0) apply(0, true);
     };
     // 손가락이 화면에 닿아 있는 동안은 멈춰 있어도 정리하지 않음(놓은 뒤 관성까지 끝나면 정리)
     let touching = false;
@@ -121,6 +132,7 @@ export function useHideOnScroll({ scrollRef, headerRef, containerRef, enabled }:
     scroller.addEventListener('pointerdown', markUser, { passive: true });
     document.addEventListener('keydown', markUser);
     scroller.addEventListener('scroll', onScroll, { passive: true });
+    header.addEventListener('focusin', onFocusIn);
     return () => {
       clearTimeout(settleTimer);
       scroller.removeEventListener('touchstart', onTouchStart);
@@ -130,6 +142,7 @@ export function useHideOnScroll({ scrollRef, headerRef, containerRef, enabled }:
       scroller.removeEventListener('pointerdown', markUser);
       document.removeEventListener('keydown', markUser);
       scroller.removeEventListener('scroll', onScroll);
+      header.removeEventListener('focusin', onFocusIn);
       header.style.transform = '';
       header.style.transition = '';
     };
