@@ -72,7 +72,7 @@ const departure = (bunchId: number, outcome: string) => ({
   defaultBunchId: nextDefaultBunchId(),
 });
 
-const versionOf = (state: MockDbState, bunchId: number) =>
+export const versionOf = (state: MockDbState, bunchId: number) =>
   state.bunches.find((bunch) => bunch.id === bunchId)?.membershipVersion ?? 1;
 
 /** 내가 상대에게 할 수 있는 관리 동작(Figma 권한 표: 공동 관리자는 메인 관리자 외 내보내기만) */
