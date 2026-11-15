@@ -121,7 +121,7 @@ export function useBundleRealtime(
       },
     });
     connectionRef.current = connection;
-    // 번들 topic은 저장 이벤트를 상세에 반영함(지금은 제목 TITLE만, 나머지 type은 이후 이슈). activity·leases는 이후 이슈가 처리
+    // 번들 topic의 저장 이벤트는 type별로 상세에 반영하거나 최신 상세를 다시 받음(useApplyBundleEvent). leases는 처리하지 않음
     const { topic, activity, leases } = bundleDestinations(bunchId, bundleId);
     const unsubscribers = [
       connection.subscribe(topic, (body) => {

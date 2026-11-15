@@ -55,6 +55,8 @@ export const BUNDLE_MESSAGES = {
   // 업로드 완료 토스트(번치 홈으로 이동하며 띄움)
   published: '업로드가 완료되었어요',
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
+  // 편집 중 참여 멤버에서 빠졌을 때(기능 spec 4.3.2)
+  removedFromDraft: '번들 참여 멤버에서 제외되어 보기만 할 수 있어요.',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
   // 사진 빼기·이동·추가를 서버에 보내지 못했을 때의 임시 안내(기획 원문 없음)
   photosChangeFailed: '사진 구성을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.',

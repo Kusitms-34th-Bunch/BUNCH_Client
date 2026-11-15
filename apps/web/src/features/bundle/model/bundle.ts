@@ -131,21 +131,6 @@ export const bundleTitleStateSchema = z.object({
 
 export type BundleTitleState = z.infer<typeof bundleTitleStateSchema>;
 
-/**
- * 번들 topic의 제목 저장 이벤트(TITLE): 커밋 뒤 전달되며 data에 제목 값·버전·CRDT 문서·길이 초과 여부가 모두 있음
- * revision은 번들 내용 revision(중복·유실 판단에 씀). 다른 type은 이후 작업에서 처리
- */
-export const titleEventSchema = z.object({
-  type: z.literal('TITLE'),
-  revision: z.number().int().nonnegative(),
-  data: z.object({
-    title: z.string(),
-    titleVersion: z.number().int().nonnegative(),
-    titleCrdtState: z.string(),
-    titleTooLong: z.boolean(),
-  }),
-});
-
 export type BundleDetail = {
   id: string;
   bunchId: string;
@@ -194,6 +179,43 @@ export type PhotoChangeResult = {
   replayed: boolean;
 };
 
+type SnapshotPhoto = z.infer<typeof bundlePhotoSchema>;
+type SnapshotLocation = z.infer<typeof bundleLocationSchema>;
+type SnapshotParticipant = z.infer<typeof bundleParticipantSchema>;
+type SnapshotComment = z.infer<typeof bundleCommentSchema>;
+
+/** 번들 사진을 화면 모양으로 변환(position 순서) */
+export const toDetailPhotos = (photos: readonly SnapshotPhoto[]): BundleDetail['photos'] =>
+  [...photos]
+    .sort((a, b) => a.position - b.position)
+    .map((photo) => ({
+      id: toDomainId(photo.id),
+      sourcePhotoId: photo.photoId == null ? undefined : toDomainId(photo.photoId),
+      src: photo.imageUrl,
+      position: photo.position,
+      addedBy: toDomainId(photo.addedBy),
+    }));
+
+export const toDetailLocations = (
+  locations: readonly SnapshotLocation[],
+): BundleDetail['locations'] =>
+  locations.map((location) => ({
+    id: `${location.provider}:${location.externalId}`,
+    name: location.name,
+  }));
+
+/** 참여 멤버 id(참여 시각 순) */
+export const toParticipantIds = (participants: readonly SnapshotParticipant[]): string[] =>
+  [...participants]
+    .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
+    .map((participant) => toDomainId(participant.memberId));
+
+export const toDetailComment = (comment: SnapshotComment): BundleDetail['comments'][number] => ({
+  memberId: toDomainId(comment.memberId),
+  content: comment.content,
+  version: comment.version,
+});
+
 /** 서버 응답을 화면 계층이 쓰는 모양으로 변환(문자열 id, 사진 순서 정렬) */
 export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): BundleDetail => ({
   id: toDomainId(snapshot.id),
@@ -206,28 +228,11 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   visibilityVersion: snapshot.visibilityVersion,
   date: snapshot.date ?? null,
   dateVersion: snapshot.dateVersion,
-  locations: snapshot.locations.map((location) => ({
-    id: `${location.provider}:${location.externalId}`,
-    name: location.name,
-  })),
+  locations: toDetailLocations(snapshot.locations),
   revision: snapshot.revision,
-  photos: [...snapshot.photos]
-    .sort((a, b) => a.position - b.position)
-    .map((photo) => ({
-      id: toDomainId(photo.id),
-      sourcePhotoId: photo.photoId == null ? undefined : toDomainId(photo.photoId),
-      src: photo.imageUrl,
-      position: photo.position,
-      addedBy: toDomainId(photo.addedBy),
-    })),
-  participantIds: [...snapshot.participants]
-    .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
-    .map((participant) => toDomainId(participant.memberId)),
-  comments: snapshot.comments.map((comment) => ({
-    memberId: toDomainId(comment.memberId),
-    content: comment.content,
-    version: comment.version,
-  })),
+  photos: toDetailPhotos(snapshot.photos),
+  participantIds: toParticipantIds(snapshot.participants),
+  comments: snapshot.comments.map(toDetailComment),
   dateChips: snapshot.dateChips,
   publishBlockers: snapshot.publishBlockers,
   permissions: snapshot.permissions,
@@ -241,3 +246,62 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
       }
     : undefined,
 });
+
+/**
+ * 번들 topic 이벤트의 공통 봉투(v5): type으로 분기하고, revision은 내용 이벤트에만 있음
+ * data는 type별 스키마(아래)로 다시 검사
+ */
+export const bundleEventEnvelopeSchema = z.object({
+  type: z.string(),
+  revision: z.number().int().nonnegative().nullish(),
+  data: z.unknown(),
+});
+
+const versionSchema = z.number().int().nonnegative();
+
+/** 내용 이벤트 type별 data. 모양이 다르면 이벤트로 적용하지 않고 최신 상세를 다시 받음 */
+export const bundleEventDataSchemas = {
+  DATE: z.object({
+    value: z.string().nullable(),
+    version: versionSchema,
+    dateChips: z.array(z.string()),
+  }),
+  VISIBILITY: z.object({
+    value: z.enum(['PUBLIC', 'PRIVATE']).nullable(),
+    version: versionSchema,
+  }),
+  LOCATION: z.object({ locations: z.array(bundleLocationSchema), version: versionSchema }),
+  PHOTOS: z.object({ photos: z.array(bundlePhotoSchema), dateChips: z.array(z.string()) }),
+  COMMENT: bundleCommentSchema,
+  PARTICIPANTS: z.object({
+    participants: z.array(bundleParticipantSchema),
+    comments: z.array(bundleCommentSchema),
+    removedCommentMemberIds: z.array(z.number().int().positive()).nullish(),
+  }),
+  TITLE: z.object({
+    title: z.string(),
+    titleVersion: versionSchema,
+    titleCrdtState: z.string(),
+    titleTooLong: z.boolean(),
+  }),
+  /** 별도 갱신(내용 revision을 올리지 않음): 배열 그대로이거나 `{ dateChips }` */
+  DATE_CHIPS: z.union([
+    z.array(z.string()),
+    z.object({ dateChips: z.array(z.string()) }).transform((data) => data.dateChips),
+  ]),
+} as const;
+
+/** CREATED·PUBLISHED·EDITED는 전체 내용(상세 응답과 같은 모양) */
+export const FULL_CONTENT_EVENT_TYPES = ['CREATED', 'PUBLISHED', 'EDITED'] as const;
+
+/** revision이 붙는 내용 이벤트 type(DATE_CHIPS 제외) */
+export const CONTENT_EVENT_TYPES = [
+  'DATE',
+  'VISIBILITY',
+  'LOCATION',
+  'PHOTOS',
+  'COMMENT',
+  'PARTICIPANTS',
+  'TITLE',
+  ...FULL_CONTENT_EVENT_TYPES,
+] as const;

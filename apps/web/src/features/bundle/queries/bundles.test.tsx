@@ -287,14 +287,187 @@ describe('번들 query·mutation', () => {
       expect(detail()?.publishBlockers).not.toContain('TITLE_TOO_LONG');
     });
 
-    it('TITLE이 아닌 이벤트와 모양이 다른 내용은 건드리지 않는다', async () => {
+    it('알 수 없는 type과 봉투가 아닌 값은 건드리지 않는다', async () => {
       const { detail, apply: applyEvent } = await apply();
       const before = detail();
 
-      applyEvent({ type: 'DATE', revision: 99, data: {} });
+      applyEvent({ type: 'ACTIVITY', revision: 99, data: {} });
+      applyEvent({ type: 'PRESENCE', revision: null, data: {} });
       applyEvent('garbage');
 
       expect(detail()).toBe(before);
+    });
+
+    describe('그 밖의 내용 이벤트', () => {
+      const next = (base: number | undefined, type: string, data: unknown, offset = 1) => ({
+        type,
+        revision: (base ?? 0) + offset,
+        data,
+      });
+      const comment = (memberId: number, content: string, version: number) => ({
+        id: memberId,
+        memberId,
+        content,
+        version,
+        createdAt: '2026-11-13T12:00:00Z',
+        updatedAt: '2026-11-13T12:00:00Z',
+        profileAvailable: true,
+      });
+      const invalidated = (client: ReturnType<typeof setup>['client'], id: string) =>
+        client.getQueryState(bundleKeys.detail(bunchId, id))?.isInvalidated;
+
+      it('DATE는 날짜·버전·추천 날짜를 반영하고 낡은 버전은 revision만 맞춘다', async () => {
+        const { detail, apply: applyEvent } = await apply();
+        const base = detail()?.revision;
+        const version = (detail()?.dateVersion ?? 0) + 2;
+
+        applyEvent(next(base, 'DATE', { value: '2026-11-12', version, dateChips: ['2026-11-11'] }));
+        expect(detail()).toMatchObject({
+          date: '2026-11-12',
+          dateVersion: version,
+          dateChips: ['2026-11-11'],
+          revision: (base ?? 0) + 1,
+        });
+
+        applyEvent(next(base, 'DATE', { value: null, version: version - 1, dateChips: [] }, 2));
+        expect(detail()).toMatchObject({ date: '2026-11-12', revision: (base ?? 0) + 2 });
+      });
+
+      it('VISIBILITY는 공개 범위와 버전을 반영한다', async () => {
+        const { detail, apply: applyEvent } = await apply();
+        const version = (detail()?.visibilityVersion ?? 0) + 1;
+
+        applyEvent(next(detail()?.revision, 'VISIBILITY', { value: 'PRIVATE', version }));
+
+        expect(detail()).toMatchObject({ visibility: 'PRIVATE', visibilityVersion: version });
+      });
+
+      it('LOCATION은 장소 목록을, PHOTOS는 사진 목록(position 순)과 추천 날짜를 통째로 바꾼다', async () => {
+        const { detail, apply: applyEvent } = await apply();
+        const base = detail()?.revision;
+
+        applyEvent(
+          next(base, 'LOCATION', {
+            version: 1,
+            locations: [
+              {
+                id: 3,
+                provider: 'KAKAO',
+                externalId: 'k1',
+                name: '해운대',
+                address: '부산',
+                position: 0,
+              },
+            ],
+          }),
+        );
+        expect(detail()?.locations).toEqual([{ id: 'KAKAO:k1', name: '해운대' }]);
+
+        const photo = (id: number, position: number) => ({
+          id,
+          photoId: id + 100,
+          imageAssetId: id,
+          imageUrl: '/mock/photo.png',
+          position,
+          addedBy: 1,
+          addedAt: '2026-11-13T12:00:00Z',
+        });
+        applyEvent(
+          next(
+            base,
+            'PHOTOS',
+            { photos: [photo(2, 1), photo(1, 0)], dateChips: ['2026-11-10'] },
+            2,
+          ),
+        );
+        expect(detail()?.photos.map((item) => item.id)).toEqual(['1', '2']);
+        expect(detail()?.dateChips).toEqual(['2026-11-10']);
+      });
+
+      it('COMMENT는 그 멤버의 코멘트만 바꾸고 더 높은 버전은 낡은 이벤트로 덮지 않는다', async () => {
+        const { detail, apply: applyEvent } = await apply();
+        const base = detail()?.revision;
+
+        applyEvent(next(base, 'COMMENT', comment(7, '처음', 1)));
+        applyEvent(next(base, 'COMMENT', comment(7, '수정', 2), 2));
+        applyEvent(next(base, 'COMMENT', comment(7, '낡음', 1), 3));
+
+        expect(detail()?.comments.filter((item) => item.memberId === '7')).toEqual([
+          { memberId: '7', content: '수정', version: 2 },
+        ]);
+        expect(detail()?.revision).toBe((base ?? 0) + 3);
+      });
+
+      it('PARTICIPANTS는 참여 멤버와 코멘트를 바꾸고 제외된 멤버의 코멘트를 지운다', async () => {
+        const { detail, apply: applyEvent } = await apply();
+        const participant = (memberId: number, joinedAt: string) => ({
+          memberId,
+          joinedAt,
+          profileAvailable: true,
+          creator: false,
+        });
+
+        applyEvent(
+          next(detail()?.revision, 'PARTICIPANTS', {
+            participants: [
+              participant(9, '2026-11-13T12:00:02Z'),
+              participant(8, '2026-11-13T12:00:01Z'),
+            ],
+            comments: [comment(8, '남음', 1), comment(9, '지워질 코멘트', 1)],
+            removedCommentMemberIds: [9],
+          }),
+        );
+
+        expect(detail()?.participantIds).toEqual(['8', '9']);
+        expect(detail()?.comments).toEqual([{ memberId: '8', content: '남음', version: 1 }]);
+      });
+
+      it('DATE_CHIPS는 revision과 상관없이 추천 날짜만 바꾼다', async () => {
+        const { detail, apply: applyEvent } = await apply();
+        const before = detail()?.revision;
+
+        applyEvent({ type: 'DATE_CHIPS', revision: null, data: { dateChips: ['2026-11-09'] } });
+        applyEvent({ type: 'DATE_CHIPS', revision: before, data: ['2026-11-08'] });
+
+        expect(detail()?.dateChips).toEqual(['2026-11-08']);
+        expect(detail()?.revision).toBe(before);
+      });
+
+      it.each(['PERMISSIONS', 'DELETED'])(
+        '%s는 최신 상세를 다시 받는다(revision이 없어도)',
+        async (type) => {
+          const { client, id, detail, apply: applyEvent } = await apply();
+          const before = detail();
+
+          applyEvent({ type, revision: null, data: null });
+
+          expect(invalidated(client, id)).toBe(true);
+          expect(detail()).toBe(before);
+        },
+      );
+
+      it.each(['PUBLISHED', 'EDITED', 'CREATED'])(
+        '%s는 요청한 사람마다 다른 권한이 있어 data를 쓰지 않고 상세를 다시 받는다',
+        async (type) => {
+          const { client, id, detail, apply: applyEvent } = await apply();
+          const before = detail();
+
+          applyEvent(next(before?.revision, type, { status: 'PUBLISHED' }));
+
+          expect(invalidated(client, id)).toBe(true);
+          expect(detail()).toBe(before);
+        },
+      );
+
+      it('모양이 다른 data는 추측해 쓰지 않고 상세를 다시 받는다', async () => {
+        const { client, id, detail, apply: applyEvent } = await apply();
+        const before = detail();
+
+        applyEvent(next(before?.revision, 'DATE', { value: 3 }));
+
+        expect(invalidated(client, id)).toBe(true);
+        expect(detail()).toBe(before);
+      });
     });
   });
 });

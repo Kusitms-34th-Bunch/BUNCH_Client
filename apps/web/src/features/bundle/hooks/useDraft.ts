@@ -2,7 +2,7 @@
 
 import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
-import { useQuery } from '@tanstack/react-query';
+import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
@@ -37,6 +37,7 @@ import {
   useSaveDateMutation,
   useMergeTitleMutation,
 } from '../queries/bundles';
+import { bundleMutationKeys } from '../queries/keys';
 import { useBundleRealtime } from './useBundleRealtime';
 import { usePresence } from './usePresence';
 import { type PresenceCommands, usePresenceSender } from './usePresenceSender';
@@ -453,13 +454,25 @@ export function useDraft(draftId: string | undefined): {
     visibilityChoice,
   ]);
 
+  const isParticipant = draft?.members.some((member) => member.id === myId) ?? false;
   // presence 명령은 연결된 동안 이 초안을 보는 중일 때만 보냄(비참여 멤버는 VIEW만)
   const presenceCommands = usePresenceSender({
     send: realtime.sendPresence,
     connected: realtime.status === 'connected',
     viewing: detail?.status === 'DRAFT',
-    participant: draft?.members.some((member) => member.id === myId) ?? false,
+    participant: isParticipant,
   });
+
+  // 편집 중 참여 멤버에서 빠지면 바로 보기 전용이 되고 안내(기능 spec 4.3.2). 내가 직접 나가는 중에는 이동하므로 안내하지 않음
+  const leaving = useIsMutating({ mutationKey: bundleMutationKeys.leave }) > 0;
+  const wasParticipant = useRef(false);
+  useEffect(() => {
+    if (draft === undefined || detail?.status !== 'DRAFT') return;
+    if (wasParticipant.current && !isParticipant && !leaving) {
+      toast(BUNDLE_MESSAGES.removedFromDraft);
+    }
+    wasParticipant.current = isParticipant;
+  }, [draft, detail?.status, isParticipant, leaving]);
 
   const busy =
     flushing ||
