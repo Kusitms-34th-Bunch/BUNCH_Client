@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
-import type { Draft, DraftViewer } from '../../lib/types';
+import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { draftFixture } from '../../fixtures/draft.fixture';
@@ -20,7 +20,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 }));
 
 const creator: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
-const actions = { replacePhotos: vi.fn() };
+const actions = {
+  replacePhotos: vi.fn<(_photos: readonly DraftPhoto[]) => boolean>(() => true),
+};
 const onBack = vi.fn();
 const onApplied = vi.fn();
 
@@ -62,7 +64,7 @@ describe('DraftPhotoAdd', () => {
     expect(applyButton()).toBeEnabled();
     await userEvent.click(applyButton());
 
-    const next = actions.replacePhotos.mock.calls[0]![0] as Draft['photos'];
+    const next = actions.replacePhotos.mock.calls[0]![0];
     expect(next.map((photo) => photo.id)).toEqual([
       'draft-photo-1',
       'draft-photo-2',
@@ -71,6 +73,18 @@ describe('DraftPhotoAdd', () => {
     ]);
     expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoAddApplied);
     expect(onApplied).toHaveBeenCalledTimes(1);
+  });
+
+  it('연결이 끊겨 적용이 막히면 성공 안내와 화면 이동을 하지 않는다', async () => {
+    actions.replacePhotos.mockReturnValueOnce(false);
+    renderAdd();
+
+    await userEvent.click(sectionPhotos()[3]!);
+    await userEvent.click(applyButton());
+
+    expect(actions.replacePhotos).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+    expect(onApplied).not.toHaveBeenCalled();
   });
 
   it('고른 사진을 풀면 빠지는 장수를 확인하고, 「취소」면 적용하지 않는다', async () => {
@@ -94,7 +108,7 @@ describe('DraftPhotoAdd', () => {
     const dialog = await screen.findByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: '적용하기' }));
 
-    const next = actions.replacePhotos.mock.calls[0]![0] as Draft['photos'];
+    const next = actions.replacePhotos.mock.calls[0]![0];
     expect(next.map((photo) => photo.id)).toEqual(['draft-photo-2', 'draft-photo-3']);
     expect(onApplied).toHaveBeenCalledTimes(1);
   });

@@ -134,7 +134,8 @@ export function DraftPhotoViewer({
   const removeAndContinue = (photoId: string) => {
     const index = photos.findIndex((photo) => photo.id === photoId);
     const neighbor = photos[index + 1] ?? photos[index - 1];
-    actions.removePhoto(photoId);
+    // 연결이 끊겨 막히면 다른 사진으로 넘어가지 않음
+    if (!actions.removePhoto(photoId)) return;
     if (neighbor && photoId === activeId) showPhoto(neighbor.id);
   };
 
