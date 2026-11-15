@@ -15,6 +15,7 @@ vi.mock('./useBundleRealtime', () => ({
     status: connection.down ? 'reconnecting' : 'connected',
     down: connection.down,
     retry: () => undefined,
+    sendPresence: () => false,
   }),
 }));
 
