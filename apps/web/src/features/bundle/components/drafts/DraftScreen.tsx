@@ -182,7 +182,10 @@ export function DraftScreen({
         viewer={viewer}
         selfEditing={selfEditing === 'title'}
         onEditStart={() => setSelfEditing('title')}
-        onEditEnd={() => endSelfEditing('title')}
+        onEditEnd={() => {
+          endSelfEditing('title');
+          actions.saveNow();
+        }}
         editable={access.canEdit}
         onChange={actions.setTitle}
         onComposing={actions.setTitleComposing}
@@ -207,7 +210,10 @@ export function DraftScreen({
         viewer={viewer}
         selfWriting={selfEditing === 'comment'}
         onWriteStart={() => setSelfEditing('comment')}
-        onWriteEnd={() => endSelfEditing('comment')}
+        onWriteEnd={() => {
+          endSelfEditing('comment');
+          actions.saveNow();
+        }}
         editable={access.canEdit}
         onChange={actions.setComment}
         onDenied={denyEdit}

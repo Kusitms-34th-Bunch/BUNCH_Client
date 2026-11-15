@@ -97,6 +97,8 @@ export type DraftActions = {
   /** 한글 조합 같은 입력 중에는 원격 제목 변경을 입력이 끝난 뒤 반영하도록 알림 */
   setTitleComposing: (_composing: boolean) => void;
   setComment: (_memberId: string, _text: string) => void;
+  /** 제목·코멘트 입력란을 벗어날 때: 입력이 1초 멈추기를 기다리지 않고 저장하지 못한 입력을 바로 저장(기능 spec 4.3.14) */
+  saveNow: () => void;
   /** 공개 범위를 고름(서버에는 업로드 요청으로만 보냄). null은 고른 값을 버림(공개 범위 화면에서 뒤로 갈 때, 기능 spec 4.3.9) */
   setVisibility: (_visibility: DraftVisibility | null) => void;
   addLocation: (_place: PlaceResult) => void;
@@ -522,6 +524,9 @@ export function useDraft(draftId: string | undefined): {
       schedule(SAVE_DELAY_MS);
     },
     setTitleComposing: titleCrdt.setComposing,
+    saveNow: () => {
+      if (!isEmpty(pendingRef.current)) schedule(0);
+    },
     setComment: (memberId, text) => {
       // 서버는 본인 코멘트만 저장할 수 있음
       if (memberId !== myIdRef.current) return;

@@ -136,6 +136,33 @@ describe('useDraft 저장', () => {
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
   });
 
+  it('입력란을 벗어나면 1초를 기다리지 않고 바로 저장한다', async () => {
+    const { id, result } = await renderReady();
+
+    act(() => {
+      result.current.actions.setTitle('벗어나며 저장');
+      result.current.actions.setComment(String(me), '코멘트도 함께');
+    });
+    expect(serverBundle(id)?.title).toBe('');
+    act(() => result.current.actions.saveNow());
+
+    // 입력이 멈춘 뒤 저장 대기(1초)보다 훨씬 짧게 서버에 반영됨
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('벗어나며 저장'), { timeout: 700 });
+    await waitFor(() => expect(serverBundle(id)?.comments[0]?.content).toBe('코멘트도 함께'), {
+      timeout: 700,
+    });
+  });
+
+  it('저장할 입력이 없으면 입력란을 벗어나도 요청을 보내지 않는다', async () => {
+    const { id, result } = await renderReady();
+    const before = serverBundle(id)?.revision;
+
+    act(() => result.current.actions.saveNow());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 200)));
+
+    expect(serverBundle(id)?.revision).toBe(before);
+  });
+
   it('공개 범위는 서버에 저장하지 않고 화면에만 두며 내 코멘트는 저장한다', async () => {
     const { id, result } = await renderReady();
 

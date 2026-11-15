@@ -25,6 +25,7 @@ const outsider: DraftViewer = { memberId: 'outsider', bunchRole: 'owner' };
 const actions = {
   setTitle: vi.fn(),
   setTitleComposing: vi.fn(),
+  saveNow: vi.fn(),
   setComment: vi.fn(),
   setVisibility: vi.fn(),
   addLocation: vi.fn(),
@@ -172,6 +173,19 @@ describe('역할별 권한', () => {
 
     expect(membersSection().queryByRole('button', { name: '추가' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '더보기' })).not.toBeInTheDocument();
+  });
+
+  it('제목·내 코멘트 입력란을 벗어나면 저장하지 못한 입력을 바로 저장하게 한다', async () => {
+    renderScreen({ viewer: creator });
+
+    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+    expect(actions.saveNow).not.toHaveBeenCalled();
+    await userEvent.tab();
+    expect(actions.saveNow).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByRole('textbox', { name: '지예 (나) 코멘트' }));
+    await userEvent.tab();
+    expect(actions.saveNow).toHaveBeenCalledTimes(2);
   });
 
   it('참여 멤버가 아닌 사람이 편집하려 하면 안내하고 값은 바뀌지 않는다', async () => {
