@@ -24,6 +24,7 @@ apps/mobile-shell/
     tab-crossfade/      탭 전환 80ms 크로스페이드·선택 햅틱(로컬 Expo 모듈, iOS ObjC)
   assets/
     tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
+    floating-icons/     플로팅 버튼 아이콘(같은 방식, 더하기·더보기)
     fonts/              Pretendard Regular(탭 라벨), 라이선스
   src/
     web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기·오류 화면)

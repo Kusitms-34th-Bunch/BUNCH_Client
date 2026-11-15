@@ -1,6 +1,6 @@
 import type { SetNativeFloatingButtonParams } from '@app/bridge';
 import { GlassView } from 'expo-glass-effect';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Button = NonNullable<SetNativeFloatingButtonParams['button']>;
@@ -14,29 +14,11 @@ const ICON_COLOR = '#121212';
 const ICON_DISABLED_COLOR = '#bcbec2';
 const DISABLED_OPACITY = 0.4;
 
-/** 디자인 시스템 아이콘(Large 24px, 선 1.5px)을 View로 그린 것: 더하기는 가로·세로 선, 더보기는 점 세 개 */
-function Icon({ name, color }: { name: Button['icon']; color: string }) {
-  if (name === 'add')
-    return (
-      <View style={styles.icon}>
-        <View style={[styles.line, { width: 15.5, height: 1.5, backgroundColor: color }]} />
-        <View
-          style={[
-            styles.line,
-            styles.absolute,
-            { width: 1.5, height: 15.5, backgroundColor: color },
-          ]}
-        />
-      </View>
-    );
-  return (
-    <View style={[styles.icon, styles.dots]}>
-      {[0, 1, 2].map((dot) => (
-        <View key={dot} style={[styles.dot, { backgroundColor: color }]} />
-      ))}
-    </View>
-  );
-}
+// 디자인 시스템 Line 아이콘(Large 24px)을 탭 아이콘처럼 1x·2x·3x PNG로 옮긴 것. 색은 tintColor로 칠함
+const ICONS: Record<Button['icon'], number> = {
+  add: require('../../assets/floating-icons/line-add.png'),
+  more: require('../../assets/floating-icons/line-dots.png'),
+};
 
 /** iOS 26 Liquid Glass 플로팅 버튼(누르면 시스템 반응). 위치는 탭 바 위, 탭 WebView 위에 겹침 */
 export function NativeFloatingButton({ button, onPress }: { button: Button; onPress: () => void }) {
@@ -55,7 +37,10 @@ export function NativeFloatingButton({ button, onPress }: { button: Button; onPr
       ]}
     >
       <GlassView isInteractive={!button.disabled} glassEffectStyle="regular" style={styles.glass}>
-        <Icon name={button.icon} color={button.disabled ? ICON_DISABLED_COLOR : ICON_COLOR} />
+        <Image
+          source={ICONS[button.icon]}
+          style={[styles.icon, { tintColor: button.disabled ? ICON_DISABLED_COLOR : ICON_COLOR }]}
+        />
       </GlassView>
     </Pressable>
   );
@@ -64,9 +49,5 @@ export function NativeFloatingButton({ button, onPress }: { button: Button; onPr
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', right: RIGHT, width: SIZE, height: SIZE },
   glass: { flex: 1, borderRadius: SIZE / 2, alignItems: 'center', justifyContent: 'center' },
-  icon: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  absolute: { position: 'absolute' },
-  line: { borderRadius: 1 },
-  dots: { flexDirection: 'row', gap: 3.5 },
-  dot: { width: 3.5, height: 3.5, borderRadius: 1.75 },
+  icon: { width: 24, height: 24 },
 });
