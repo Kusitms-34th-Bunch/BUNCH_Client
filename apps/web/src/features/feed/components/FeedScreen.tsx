@@ -207,6 +207,8 @@ export function FeedScreen({ links }: FeedScreenProps) {
   return (
     <PageShell
       onRefresh={refresh}
+      // 내리면 헤더를 숨기고 올리면 다시 보임(A안, Facebook 방식)
+      collapsibleHeader
       header={
         <FeedHeader
           viewer={viewer}
