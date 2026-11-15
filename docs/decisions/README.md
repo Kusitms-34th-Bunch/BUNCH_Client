@@ -34,3 +34,4 @@
 - [020: 토스트 위치는 화면 요소의 앵커로 정하고, 화면 이동 뒤 토스트는 도착 화면에서 띄운다](./records/020-toast-anchor-position.md)
 - [021: 포맷터는 Prettier 대신 oxfmt를 쓴다](./records/021-oxfmt-formatter.md)
 - [022: 데이터 없이 그릴 수 없는 화면의 받는 중·실패는 Suspensive 경계로 모은다](./records/022-suspensive-query-boundary.md)
+- [024: iOS 26 쉘의 플로팅 버튼은 네이티브 Liquid Glass로 그린다](./records/024-native-glass-floating-button.md) (proposed)

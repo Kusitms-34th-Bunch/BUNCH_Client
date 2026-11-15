@@ -27,7 +27,7 @@ apps/mobile-shell/
     fonts/              Pretendard Regular(탭 라벨), 라이선스
   src/
     web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기·오류 화면)
-    tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx)
+    tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx)
     safe-area-script.ts, sentry.ts, sanitize-sentry-event.ts, web-url.ts, gallery-image.ts, permissions.ts (+ *.test.mjs)
 ```
 
@@ -115,6 +115,20 @@ iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …�
 - 탭 WebView 4개는 처음에 함께 만들어진다(expo-router 네이티브 탭은 모든 탭을 미리 그림). 탭마다 웹 상태가 따로라 번치 전환·로그아웃처럼 다른 탭에도 알려야 하는 변화는 아직 연결하지 않았다.
 - 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 첫 화면 → 탭 화면 전환, 탭 이동, 아이콘·선택 색·라벨 크기. 확인하지 못한 것: 실기기, 끌어서 이동·렌즈 효과의 실제 터치, VoiceOver, 탭 사이 로그인 쿠키 공유, 메모리, `hidden: true`로 돌아가기, 안드로이드에서 탭 WebView 여러 개의 뒤로가기 처리.
 
+## iOS 26 플로팅 버튼
+
+iOS 26 이상 탭 화면에서는 플로팅 버튼(번치 홈 「번들 만들기」, 사진함 「사진 올리기」·「메뉴 열기」)도 쉘이 `expo-glass-effect`의 `GlassView`로 그린다. 근거와 대안은 `docs/decisions/records/024-native-glass-floating-button.md`다.
+
+- 웹 hook `useNativeFloatingButton`(`apps/web/src/shared/hooks/`)이 `setNativeFloatingButton({ tab, button })`으로 아이콘(`add`·`more`)·접근성 이름·`disabled`·`expanded`를 보낸다. `button: null`이면 그 탭의 버튼을 지운다. 쉘이 true를 돌려주면 웹 버튼을 그리지 않는다.
+- 쉘은 iOS이고 `isLiquidGlassAvailable()`이 true이고 탭 화면일 때만 그린다. 탭 ID는 `TAB_IDS`만 받는다. 지우기 요청은 언제나 받는다.
+- 버튼은 탭별로 저장하고(`src/tabs/floating-button-store.ts`) 그 탭의 `TabScreen` 위에만 그린다. 위치는 웹과 같은 오른쪽 16px, 아래 Safe Area(탭 바 포함) 위 10px다.
+- 탭 WebView는 문서를 열기 전에 자기 탭 ID를 sessionStorage `bunch-shell-tab`에 받는다. 웹은 페이지의 탭과 이 값이 같을 때만 네이티브 버튼을 요청한다. 다른 탭 WebView가 같은 경로를 열면 웹 버튼을 그린다.
+- 눌림은 `nativeFloatingButtonPress({ tab })`로 모든 WebView에 보내고(broadcast), 웹이 탭 ID와 `document.visibilityState`로 자기 것만 처리한다.
+- 웹은 시트·대화상자가 열린 동안(`useModalOpen`), 화면에 버튼이 없을 때(`hidden`, 로딩·저장 중), 화면을 떠날 때 버튼을 지운다. 새 문서를 열 때(`onLoadStart`)와 로그아웃(`setNativeTabBar` `hidden: true`) 때는 쉘이 지운다.
+- 쉘 응답 전에는 웹 버튼을 그리지 않는다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행되고, 제한 시간을 넘긴 응답도 웹 버튼으로 처리한다.
+- 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 두 탭의 버튼 표시, 누름, 사진함 선택 모드, 시트 동안 숨김. 확인하지 못한 것: 실기기, VoiceOver로 네이티브 「⋯」에서 웹 메뉴로 들어가는 초점, 시트가 닫힌 뒤 초점 복귀, 선택 모드 전환 중 버튼 위치의 타이밍.
+- 개발 중 쉘 코드를 바꿨으면 Metro가 파일을 감시하는지 확인한다. `CI=1`로 띄운 Metro는 변경을 반영하지 않아 앱이 이전 쉘 코드를 계속 실행했다.
+
 ## Bridge 계약 (`packages/bridge`)
 
 `packages/bridge`는 web↔native 호출의 타입 계약만 담는다. 런타임 구현은 두지 않는다.
@@ -131,7 +145,7 @@ packages/bridge/
 
 ### 네이티브 쪽 구현 (`apps/mobile-shell/src/web-view/AppWebView.tsx`)
 
-실제 구현은 [AppWebView.tsx](../../apps/mobile-shell/src/web-view/AppWebView.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 지금 없다(탭 선택은 시스템 탭 바가 처리해 `nativeTabPress`를 지웠다). 여러 WebView가 같은 bridge를 쓴다.
+실제 구현은 [AppWebView.tsx](../../apps/mobile-shell/src/web-view/AppWebView.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 플로팅 버튼 눌림(`nativeFloatingButtonPress`) 하나다. 탭 WebView가 여럿이라 `postMessage`의 기본값(마지막에 만든 WebView에만 보냄) 대신 `broadcast: true`로 보낸다. 여러 WebView가 같은 bridge를 쓴다.
 
 `bridge()`에는 **인라인 객체 리터럴**을 넘긴다. 미리 `AppBridgeMethods` 타입을 선언한 변수를 넘기면 TypeScript가 index signature 불일치로 거부한다(이름 있는 타입은 fresh literal 취급을 받지 못한다).
 
