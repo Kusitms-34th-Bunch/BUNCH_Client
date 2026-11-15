@@ -261,7 +261,7 @@ describe('FeedScreen', () => {
     expect(next.contains(document.activeElement)).toBe(true);
   });
 
-  it('공개 구간 끝에 광고 카드가 보이고, 숨긴 뒤 다시 들어오면 없다', async () => {
+  it('공개 구간 끝에 광고 카드가 보이고, 숨기면 서버에 보내고 다시 들어와도 없다', async () => {
     const user = userEvent.setup();
     const first = renderFeed(OWN);
     const ad = await screen.findByRole('article', { name: '광고 플로디스튜디오' });
@@ -275,6 +275,7 @@ describe('FeedScreen', () => {
     await user.click(within(sheet).getByRole('button', { name: '숨기기' }));
     expect(await screen.findByText('장소를 숨김 처리 했어요')).toBeTruthy();
 
+    // 서버가 아직 광고를 주더라도(받아 둔 목록·다시 받기 실패) 숨기기가 성공한 광고는 다시 보이지 않음
     first.unmount();
     renderFeed(OWN);
     await cardsLoaded();
