@@ -19,18 +19,3 @@ export const useLogoutMutation = () =>
       reloadTo(MY_PATHS.login);
     },
   });
-
-/**
- * 회원 탈퇴. 탈퇴 API가 계약에 없어 지금은 세션만 끝냄(BFF 로그아웃), 연결할 때 요청 함수만 바꿈
- * 성공하면 로그인 화면을 새로 엶. 요청 중 화면이 사라져도 실행되도록 mutate가 아닌 여기서 처리
- */
-export const useWithdrawMutation = () =>
-  useMutation({
-    mutationFn: logout,
-    meta: { errorMessage: MY_MESSAGES.withdrawal.failed },
-    // 이 기기에 남은 사용자 데이터 저장본을 지우고 로그인 화면을 새로 엶
-    onSuccess: () => {
-      clearPersistedQueryStorage();
-      reloadTo(MY_PATHS.login);
-    },
-  });
