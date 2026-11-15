@@ -2,7 +2,7 @@
 
 import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
-import { useQuery } from '@tanstack/react-query';
+import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
@@ -37,6 +37,7 @@ import {
   useSaveDateMutation,
   useMergeTitleMutation,
 } from '../queries/bundles';
+import { bundleMutationKeys } from '../queries/keys';
 import { useBundleRealtime } from './useBundleRealtime';
 import { useOnlineStatus } from './useOnlineStatus';
 import { usePresence } from './usePresence';
@@ -51,6 +52,9 @@ const SAVE_DELAY_MS = 1000;
 // 일시 오류 뒤 같은 입력으로 다시 시도하기까지의 시간(연속 실패 횟수만큼 길어짐)과 포기하기까지의 횟수
 const RETRY_DELAY_MS = 3000;
 const MAX_RETRIES = 5;
+// 보류한 이벤트 대신 최신 상세를 받는 재조회가 실패했을 때 다시 받아 보는 간격과 총 시도 횟수(처음 시도 포함)
+const HELD_RESYNC_RETRY_MS = 1000;
+const HELD_RESYNC_MAX_ATTEMPTS = 3;
 // 버전 충돌은 최신 상세를 받은 직후 바로 이어서 저장
 const CONFLICT_RETRY_DELAY_MS = 200;
 // 다시 시도하면 될 수 있는 오류: 응답이 없는 네트워크 오류, 서버 오류(5xx)
@@ -72,7 +76,7 @@ const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
 
 export type DraftState =
   /** 삭제됐거나 없는 초안(deleted), 다른 멤버가 업로드한 초안(published) */
-  | { kind: 'missing'; reason: 'deleted' | 'published' }
+  | { kind: 'missing'; reason: 'deleted' | 'published'; publisherNickname?: string | undefined }
   | { kind: 'loading' }
   /** 오류 화면의 「다시 시도」: 실패한 요청만 다시 보냄 */
   | { kind: 'error'; retry: () => void }
@@ -198,7 +202,15 @@ export function useDraft(draftId: string | undefined): {
   const publishMutation = usePublishBundleMutation(bunchId, bundleId);
   // 초안이 열려 있는 동안 실시간으로 연결(발행·삭제되면 끊음). 끊긴 사이의 변경은 다시 연결될 때 최신 상세로 맞춤
   const presenceState = usePresence(bunchId, bundleId);
+  // 내 사진·참여자 변경 요청이 진행 중일 때 받은 그 type의 이벤트(전체 목록)를 적용하지 않고, 요청이 끝나면 최신 상세로 맞춤
+  const holdEventRef = useRef<(_type: string) => boolean>(() => false);
+  // 위 재조회가 정해진 횟수를 다 실패해 화면이 낡았을 수 있는 상태: 연결 끊김과 같은 배너(「재시도」)로 알리고 편집을 막음
+  const [heldSyncFailed, setHeldSyncFailed] = useState(false);
+  // 배너의 「재시도」를 누를 때마다 올려 재조회를 처음부터 다시 시작(배너는 성공할 때까지 유지)
+  const [heldRetry, setHeldRetry] = useState(0);
+  const heldEventRef = useRef(false);
   const realtime = useBundleRealtime(bunchId, bundleId, detail?.status === 'DRAFT', {
+    holdEvent: (type) => holdEventRef.current(type),
     // 전체 PRESENCE로 교체하고, 연결(재연결)되면 놓친 현재 상태를 다시 읽음
     onPresence: presenceState.apply,
     onConnected: presenceState.refresh,
@@ -470,13 +482,25 @@ export function useDraft(draftId: string | undefined): {
     visibilityChoice,
   ]);
 
+  const isParticipant = draft?.members.some((member) => member.id === myId) ?? false;
   // presence 명령은 연결된 동안 이 초안을 보는 중일 때만 보냄(비참여 멤버는 VIEW만)
   const presenceCommands = usePresenceSender({
     send: realtime.sendPresence,
     connected: realtime.status === 'connected',
     viewing: detail?.status === 'DRAFT',
-    participant: draft?.members.some((member) => member.id === myId) ?? false,
+    participant: isParticipant,
   });
+
+  // 편집 중 참여 멤버에서 빠지면 바로 보기 전용이 되고 안내(기능 spec 4.3.2). 내가 직접 나가는 중에는 이동하므로 안내하지 않음
+  const leaving = useIsMutating({ mutationKey: bundleMutationKeys.leave }) > 0;
+  const wasParticipant = useRef(false);
+  useEffect(() => {
+    if (draft === undefined || detail?.status !== 'DRAFT') return;
+    if (wasParticipant.current && !isParticipant && !leaving) {
+      toast(BUNDLE_MESSAGES.removedFromDraft);
+    }
+    wasParticipant.current = isParticipant;
+  }, [draft, detail?.status, isParticipant, leaving]);
 
   const busy =
     flushing ||
@@ -561,7 +585,7 @@ export function useDraft(draftId: string | undefined): {
 
   // 화면의 오프라인 배너와 같은 조건: 브라우저가 오프라인이거나 실시간 연결이 끊김
   const { online } = useOnlineStatus();
-  const offline = !online || realtime.down;
+  const offline = !online || realtime.down || heldSyncFailed;
   // 연결이 끊기면 서버에 보내지 못한 수정은 버림(기능 spec 4.3.14). 다시 연결되면 최신 상세로 맞춤
   // 이미 보낸 요청의 결과는 서버 기준이라 재연결 뒤 상세로 복구되고, 오프라인 큐로 다시 보내지 않음
   const discardUnsent = () => {
@@ -580,6 +604,44 @@ export function useDraft(draftId: string | undefined): {
   useEffect(() => {
     discardUnsentRef.current = discardUnsent;
   });
+  const participantBusy = addParticipant.isPending || removeParticipant.isPending;
+  useEffect(() => {
+    holdEventRef.current = (type) => {
+      const hold =
+        (type === 'PHOTOS' && photoOps.current > 0) || (type === 'PARTICIPANTS' && participantBusy);
+      if (hold) heldEventRef.current = true;
+      return hold;
+    };
+  });
+  const requestsBusy = photoBusy || participantBusy;
+  // 요청이 끝나면 보류했던 이벤트를 대신해 최신 상세를 받음. 받는 데 성공한 뒤에만 「놓친 변경이 있음」 표시를 지우고,
+  // 실패하면 표시를 남긴 채 몇 번 다시 받아 봄(그 사이 새 요청이 시작되면 멈췄다가 다시 한가해질 때 이어서 받음)
+  // 모두 실패하면 배너로 알리고 멈추며, 사용자가 「재시도」를 누르면 처음부터 다시 받음(그동안 배너와 편집 제한은 유지하고 성공해야 풂)
+  useEffect(() => {
+    if (requestsBusy || !heldEventRef.current) return;
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const resync = (attempt: number) => {
+      void refetchDetail().then((result) => {
+        if (cancelled) return;
+        if (!result.isError) {
+          heldEventRef.current = false;
+          setHeldSyncFailed(false);
+          return;
+        }
+        if (attempt < HELD_RESYNC_MAX_ATTEMPTS) {
+          retryTimer = setTimeout(() => resync(attempt + 1), HELD_RESYNC_RETRY_MS);
+        } else {
+          setHeldSyncFailed(true);
+        }
+      });
+    };
+    resync(1);
+    return () => {
+      cancelled = true;
+      clearTimeout(retryTimer);
+    };
+  }, [requestsBusy, heldRetry, refetchDetail]);
   useEffect(() => {
     if (offline) discardUnsentRef.current();
   }, [offline]);
@@ -839,6 +901,7 @@ export function useDraft(draftId: string | undefined): {
       kind: 'missing',
       reason:
         detail?.status === 'PUBLISHED' && !publishedByMe && !publishing ? 'published' : 'deleted',
+      publisherNickname: detail?.publisherNickname,
     };
   } else if (failed) state = { kind: 'error', retry };
   else if (draft && viewer && !publishedByMe) {
@@ -848,7 +911,13 @@ export function useDraft(draftId: string | undefined): {
       viewer,
       bunchMembers: members,
       saveStatus: stalled ? 'failed' : busy ? 'saving' : 'saved',
-      realtime: { down: realtime.down, retry: realtime.retry },
+      realtime: {
+        down: realtime.down || heldSyncFailed,
+        retry: () => {
+          realtime.retry();
+          if (heldSyncFailed) setHeldRetry((count) => count + 1);
+        },
+      },
       titleReady: titleCrdt.ready,
       titleFailed: titleCrdt.failed,
       retryTitle: titleCrdt.retry,

@@ -23,15 +23,30 @@ import {
   saveBundleDate,
   saveBundleVisibility,
 } from '../api/bundles';
-import { type BundleDetail, type BundleTitleState, titleEventSchema } from '../model/bundle';
-import { bundleKeys } from './keys';
+import {
+  applyContentEvent,
+  applyDateChips,
+  type BundleEventOutcome,
+  withTitleState,
+} from '../lib/bundleEvents';
+import { type BundleDetail, bundleEventEnvelopeSchema, CONTENT_EVENT_TYPES } from '../model/bundle';
+import { bundleKeys, bundleMutationKeys } from './keys';
+
+/** revision 검사 없이 항상 최신 상세로 확인하는 상태 전환 이벤트 */
+const STATE_CHANGE_EVENT_TYPES: readonly string[] = [
+  'PERMISSIONS',
+  'DELETED',
+  'CREATED',
+  'PUBLISHED',
+  'EDITED',
+];
 
 /** 번들(초안·발행본) 상세. 번치나 번들을 아직 모르면 요청하지 않음(skipToken) */
 export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string | undefined) =>
   queryOptions({
     queryKey: bundleKeys.detail(bunchId, bundleId),
     queryFn: bunchId && bundleId ? ({ signal }) => getBundle(bunchId, bundleId, signal) : skipToken,
-    // 먼저 보낸 재조회 응답이 그사이 저장 응답으로 맞춘 더 새 상태를 낡은 revision으로 덮지 않음(setQueryData에도 적용됨)
+    // 먼저 보낸 재조회 응답이 그사이 이벤트로 맞춘 더 새 상태를 낡은 revision으로 덮지 않음(setQueryData에도 적용됨)
     // 같거나 더 새 revision이면 응답을 쓰되, 바뀌지 않은 부분은 기본 구조 공유로 참조를 유지해 불필요한 리렌더를 막음
     structuralSharing: (old, next) => {
       const previous = old as BundleDetail | undefined;
@@ -124,6 +139,7 @@ export const useDeleteBundleMutation = (bunchId: string | undefined) => {
 export const useLeaveBundleMutation = (bunchId: string | undefined) => {
   const gone = useBundleGone(bunchId, { removeDetail: false });
   return useMutation({
+    mutationKey: bundleMutationKeys.leave,
     mutationFn: (bundleId: string) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
       return leaveBundle(bunchId, bundleId);
@@ -179,30 +195,6 @@ const requireIds = (bunchId: string | undefined, bundleId: string | undefined) =
   return { bunchId, bundleId };
 };
 
-/** 병합된 제목 상태(응답·이벤트)를 상세에 반영: 더 낡은 제목 버전으로 덮지 않고, 길이 초과 발행 사유도 맞춤 */
-const withTitleState = (
-  detail: BundleDetail,
-  state: BundleTitleState,
-  revision?: number,
-): BundleDetail => {
-  // 더 낡은 제목은 반영하지 않지만, 이벤트로 알게 된 revision은 맞춤(이후 이벤트가 건너뛴 것으로 보이지 않게)
-  if (state.titleVersion < detail.titleVersion) {
-    return revision === undefined
-      ? detail
-      : { ...detail, revision: Math.max(detail.revision, revision) };
-  }
-  const blockers = detail.publishBlockers.filter((reason) => reason !== 'TITLE_TOO_LONG');
-  return {
-    ...detail,
-    title: state.title,
-    titleVersion: state.titleVersion,
-    titleCrdtState: state.titleCrdtState,
-    titleTooLong: state.titleTooLong,
-    publishBlockers: state.titleTooLong ? [...blockers, 'TITLE_TOO_LONG'] : blockers,
-    revision: revision === undefined ? detail.revision : Math.max(detail.revision, revision),
-  };
-};
-
 /**
  * 제목 CRDT 저장: 서버가 병합한 제목 상태로 상세 캐시를 갱신하고 갱신된 상세를 돌려줌
  * 응답에는 번들 revision이 없어 revision은 이후 TITLE 이벤트나 다음 상세 조회로 맞춰짐
@@ -230,26 +222,43 @@ export const useMergeTitleMutation = (
 };
 
 /**
- * 번들 topic으로 온 이벤트를 상세 캐시에 반영(지금은 TITLE만): revision이 이미 반영됐으면 무시, 바로 다음이면 적용,
- * 건너뛰었으면 놓친 이벤트가 있다는 뜻이라 최신 상세를 다시 받음(이벤트는 재생되지 않음). 같은 이벤트가 다시 와도 결과가 같음
+ * 번들 topic으로 온 이벤트를 상세 캐시에 반영(v5 실시간 명세 6절)
+ * - 내용 이벤트(revision 있음): 이미 반영된 revision은 무시, 바로 다음이면 type별 data를 적용, 건너뛰었으면 놓친 이벤트가 있다는 뜻이라 최신 상세를 다시 받음(이벤트는 재생되지 않음)
+ * - PERMISSIONS·DELETED·CREATED·PUBLISHED·EDITED: revision 검사 없이 항상 상세를 다시 받아 확인(발행·삭제·참여 제외 화면은 그 결과로 정해짐)
+ * - DATE_CHIPS: 내용 revision을 올리지 않는 별도 갱신이라 revision 검사를 하지 않음. PRESENCE 등 그 밖의 type은 건드리지 않음
+ * 같은 이벤트가 다시 와도 결과가 같음
  */
 export const useApplyBundleEvent = (bunchId: string | undefined, bundleId: string | undefined) => {
   const queryClient = useQueryClient();
   const key = bundleKeys.detail(bunchId, bundleId);
+  const refetch = () => void queryClient.invalidateQueries({ queryKey: key });
+  const settle = (outcome: BundleEventOutcome) => {
+    if (outcome.kind === 'apply') queryClient.setQueryData<BundleDetail>(key, outcome.detail);
+    else if (outcome.kind === 'refetch') refetch();
+  };
   return (body: unknown) => {
-    const parsed = titleEventSchema.safeParse(body);
-    if (!parsed.success) return;
-    const event = parsed.data;
+    const envelope = bundleEventEnvelopeSchema.safeParse(body);
+    if (!envelope.success) return;
+    const { type, revision, data } = envelope.data;
     const current = queryClient.getQueryData<BundleDetail>(key);
-    if (!current || current.status !== 'DRAFT' || event.revision <= current.revision) return;
-    if (event.revision === current.revision + 1) {
-      queryClient.setQueryData<BundleDetail>(
-        key,
-        withTitleState(current, event.data, event.revision),
-      );
-    } else {
-      void queryClient.invalidateQueries({ queryKey: key });
+
+    // 권한·삭제·발행 같은 상태 전환은 revision과 상관없이 확인해야 하므로 중복 제거 없이 항상 다시 받음
+    // 방송 data의 권한은 요청한 사람마다 달라 쓰지 않음
+    if (STATE_CHANGE_EVENT_TYPES.includes(type)) {
+      if (current) refetch();
+      return;
     }
+    if (type === 'DATE_CHIPS') {
+      if (current && current.status === 'DRAFT') settle(applyDateChips(current, data));
+      return;
+    }
+    if (!(CONTENT_EVENT_TYPES as readonly string[]).includes(type) || revision == null) return;
+    if (!current || current.status !== 'DRAFT' || revision <= current.revision) return;
+    if (revision > current.revision + 1) {
+      refetch();
+      return;
+    }
+    settle(applyContentEvent(current, type, data, revision));
   };
 };
 

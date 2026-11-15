@@ -3,6 +3,7 @@ import { delay, http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { fail } from '@/mocks/lib/envelope';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
@@ -11,15 +12,26 @@ import { createBundle } from '../api/bundles';
 import { type DraftState, useDraft } from './useDraft';
 
 // 실시간 연결 상태만 바꿔 가며 끊김 처리를 확인(연결 자체는 useBundleRealtime 테스트가 다룸)
-const connection = vi.hoisted(() => ({ down: false }));
+const connection = vi.hoisted(() => ({
+  down: false,
+  holdEvent: undefined as ((_type: string) => boolean) | undefined,
+}));
 vi.mock('./useBundleRealtime', () => ({
-  useBundleRealtime: () => ({
-    enabled: true,
-    status: connection.down ? 'reconnecting' : 'connected',
-    down: connection.down,
-    retry: () => undefined,
-    sendPresence: () => false,
-  }),
+  useBundleRealtime: (
+    _bunchId: unknown,
+    _bundleId: unknown,
+    _active: unknown,
+    handlers?: { holdEvent?: (_type: string) => boolean },
+  ) => {
+    connection.holdEvent = handlers?.holdEvent;
+    return {
+      enabled: true,
+      status: connection.down ? 'reconnecting' : 'connected',
+      down: connection.down,
+      retry: () => undefined,
+      sendPresence: () => false,
+    };
+  },
 }));
 
 const { me } = MOCK_MEMBER_IDS;
@@ -116,6 +128,186 @@ describe('useDraft 연결이 끊겼을 때(기능 spec 4.3.14)', () => {
     act(goDown);
 
     expect(ready(result.current.state).draft.title).toBe('저장된 제목');
+  });
+});
+
+describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
+  it('내 사진 변경 요청이 진행 중이면 PHOTOS 이벤트는 적용하지 않고 끝나면 최신 상세로 맞춘다', async () => {
+    const { id, result } = await renderReady();
+    let detailRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        return undefined;
+      }),
+    );
+    expect(connection.holdEvent?.('PHOTOS')).toBe(false);
+
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    act(() => void result.current.actions.removePhoto(photoId));
+
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    // 다른 type은 그대로 적용
+    expect(connection.holdEvent?.('DATE')).toBe(false);
+    await waitFor(() => expect(serverBundle(id)?.photos).toHaveLength(1), { timeout: 5000 });
+    await waitFor(() => expect(connection.holdEvent?.('PHOTOS')).toBe(false), { timeout: 5000 });
+    // 적용하지 못한 이벤트가 있었으므로 요청이 끝나면 상세를 다시 받음
+    await waitFor(() => expect(detailRequests).toBeGreaterThan(0), { timeout: 5000 });
+  });
+
+  it('요청이 끝난 뒤 다시 받은 상세로 보류했던 원격 사진 변경이 화면에 반영된다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [first, second, third] = ready(view.result.current.state).draft.photos;
+    const shownIds = () => ready(view.result.current.state).draft.photos.map((photo) => photo.id);
+
+    // 상세 재조회는 테스트가 풀어 줄 때까지 서버에서 붙잡아 둠(그 사이 원격 변경을 만듦)
+    let releaseDetail: () => void = () => undefined;
+    const detailGate = new Promise<void>((resolve) => (releaseDetail = resolve));
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        await detailGate;
+        return undefined;
+      }),
+    );
+
+    act(() => void view.result.current.actions.removePhoto(first!.id));
+    // 요청이 진행 중일 때 온 PHOTOS 이벤트는 보류됨
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    // 내 사진 빼기가 서버에 반영된 뒤, 그 응답에는 없는 원격 변경(다른 멤버가 세 번째 사진을 뺌)을 만듦
+    await waitFor(() => expect(serverBundle(created.id)?.photos).toHaveLength(2), {
+      timeout: 5000,
+    });
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) =>
+        String(bundle.id) === created.id
+          ? { ...bundle, photos: bundle.photos.filter((photo) => photo.id !== Number(third!.id)) }
+          : bundle,
+      ),
+    }));
+    releaseDetail();
+
+    // 보류했던 이벤트 대신 다시 받은 상세가 반영되어 두 변경이 모두 보임
+    await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
+  });
+
+  // 보류한 이벤트를 대신하는 재조회가 실패하는 경우: 사진 3장 번들에서 내가 첫 사진을 빼는 동안 이벤트를 보류시킴
+  const startHeldRequest = async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [first, second, third] = ready(view.result.current.state).draft.photos;
+    const shownIds = () => ready(view.result.current.state).draft.photos.map((photo) => photo.id);
+    // 내 사진 빼기가 서버에 반영된 뒤 다른 멤버가 세 번째 사진을 뺀 것으로 만듦(그 응답에는 없는 원격 변경)
+    const remoteRemovesThird = async () => {
+      await waitFor(() => expect(serverBundle(created.id)?.photos).toHaveLength(2), {
+        timeout: 5000,
+      });
+      mockDb.update((current) => ({
+        ...current,
+        bundles: current.bundles.map((bundle) =>
+          String(bundle.id) === created.id
+            ? { ...bundle, photos: bundle.photos.filter((photo) => photo.id !== Number(third!.id)) }
+            : bundle,
+        ),
+      }));
+    };
+    return { id: created.id, view, first: first!, second: second!, shownIds, remoteRemovesThird };
+  };
+
+  it('보류한 이벤트를 대신하는 재조회가 실패해도 표시를 남겨 두었다가 다시 받아 화면을 맞춘다', async () => {
+    const { view, first, second, shownIds, remoteRemovesThird } = await startHeldRequest();
+    let detailRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        // 처음 한 번만 실패
+        return detailRequests === 1 ? fail(500, 'SERVER_ERROR') : undefined;
+      }),
+    );
+
+    act(() => void view.result.current.actions.removePhoto(first.id));
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    await remoteRemovesThird();
+
+    // 첫 재조회가 실패해도 잊지 않고 다시 받아 원격 변경까지 반영됨
+    await waitFor(() => expect(shownIds()).toEqual([second.id]), { timeout: 5000 });
+    expect(detailRequests).toBe(2);
+  });
+
+  it('재조회가 계속 실패하면 정해진 횟수(처음 포함 3번)만 다시 받아 보고 멈추며 배너로 알리고, 「재시도」로 다시 받는 동안에도 배너와 편집 제한을 유지하다가 성공하면 푼다', async () => {
+    const { id, view, first, second, shownIds, remoteRemovesThird } = await startHeldRequest();
+    let detailRequests = 0;
+    let failing = true;
+    let releaseRetry: () => void = () => undefined;
+    const retryGate = new Promise<void>((resolve) => (releaseRetry = resolve));
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        detailRequests += 1;
+        if (failing) return fail(500, 'SERVER_ERROR');
+        // 「재시도」로 다시 받는 요청은 테스트가 풀어 줄 때까지 서버에서 붙잡아 둠
+        await retryGate;
+        return undefined;
+      }),
+    );
+    const banner = () => ready(view.result.current.state).realtime.down;
+    expect(banner()).toBe(false);
+
+    act(() => void view.result.current.actions.removePhoto(first.id));
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    await remoteRemovesThird();
+
+    // 모두 실패하면 연결 끊김과 같은 배너로 알리고 더 이상 자동으로 다시 받지 않음
+    await waitFor(() => expect(detailRequests).toBe(3), { timeout: 6000 });
+    await waitFor(() => expect(banner()).toBe(true));
+    await act(() => wait(2500));
+    expect(detailRequests).toBe(3);
+
+    // 「재시도」로 다시 받는 요청이 진행 중인 동안에는 배너와 편집 제한이 그대로
+    failing = false;
+    act(() => ready(view.result.current.state).realtime.retry());
+    await waitFor(() => expect(detailRequests).toBe(4), { timeout: 3000 });
+    expect(banner()).toBe(true);
+    act(() => void view.result.current.actions.setDate('2026-10-18'));
+    await act(() => wait(300));
+    expect(serverBundle(id)?.date).toBeNull();
+
+    // 성공해야 화면이 맞춰지고 배너가 사라짐
+    releaseRetry();
+    await waitFor(() => expect(shownIds()).toEqual([second.id]), { timeout: 5000 });
+    await waitFor(() => expect(banner()).toBe(false));
   });
 });
 

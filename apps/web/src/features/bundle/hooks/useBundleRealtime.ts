@@ -9,6 +9,7 @@ import {
 } from '@/shared/realtime/stompConnection';
 import { fetchWsToken } from '@/shared/realtime/wsToken';
 import { type PresenceData, presenceEventSchema } from '../lib/presence';
+import { bundleEventEnvelopeSchema } from '../model/bundle';
 import { useApplyBundleEvent, useRefetchBundleDetail } from '../queries/bundles';
 
 /** 번들 초안의 STOMP destination(v5 실시간 명세) */
@@ -38,6 +39,8 @@ export type BundleRealtime = {
 export type BundleRealtimeHandlers = {
   /** 전체 PRESENCE를 받았을 때(topic·내 연결의 activity queue 모두). 세 배열을 통째로 교체하면 됨 */
   onPresence?: (_data: PresenceData) => void;
+  /** 내 변경 요청이 진행 중이라 그 type의 저장 이벤트를 지금 적용하지 않으려 할 때 true(요청 응답이 그 시점의 최신 목록이라 이벤트로 덮지 않음) */
+  holdEvent?: (_type: string) => boolean;
   /** 연결(재연결 포함)이 맺어지고 구독을 마친 직후. 놓친 presence를 다시 읽을 때 씀 */
   onConnected?: () => void;
 };
@@ -121,11 +124,14 @@ export function useBundleRealtime(
       },
     });
     connectionRef.current = connection;
-    // 번들 topic은 저장 이벤트를 상세에 반영함(지금은 제목 TITLE만, 나머지 type은 이후 이슈). activity·leases는 이후 이슈가 처리
+    // 번들 topic의 저장 이벤트는 type별로 상세에 반영하거나 최신 상세를 다시 받음(useApplyBundleEvent). leases는 처리하지 않음
     const { topic, activity, leases } = bundleDestinations(bunchId, bundleId);
     const unsubscribers = [
       connection.subscribe(topic, (body) => {
-        applyEventRef.current(body);
+        const envelope = bundleEventEnvelopeSchema.safeParse(body);
+        const held =
+          envelope.success && handlersRef.current?.holdEvent?.(envelope.data.type) === true;
+        if (!held) applyEventRef.current(body);
         applyPresence(body);
       }),
       // 내가 보낸 명령에 대한 presence 응답(topic과 같은 내용)

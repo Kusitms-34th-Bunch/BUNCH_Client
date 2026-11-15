@@ -8,9 +8,11 @@ import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import type { BundleDetail } from '../model/bundle';
 import { createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
+import { bundleKeys } from '../queries/keys';
 import { type DraftState, useDraft } from './useDraft';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -124,6 +126,44 @@ describe('useDraft 상태', () => {
     expect(draft.viewingMemberIds).toEqual([]);
     expect(draft.editing.titleMemberIds ?? []).toEqual([]);
     expect(draft.editing.photoMemberIds ?? []).toEqual([]);
+  });
+});
+
+describe('useDraft 참여 제외 안내', () => {
+  const renderWithClient = async () => {
+    const id = await newDraft();
+    const client = createTestQueryClient();
+    const view = renderHook(() => useDraft(id), { wrapper: createQueryWrapper(client) });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const removeMe = () =>
+      act(() => {
+        client.setQueryData<BundleDetail>(bundleKeys.detail(bunchId, id), (old) =>
+          old
+            ? {
+                ...old,
+                participantIds: old.participantIds.filter((memberId) => memberId !== String(me)),
+              }
+            : old,
+        );
+      });
+    return { ...view, removeMe };
+  };
+
+  it('편집 중 참여 멤버에서 빠지면 보기 전용 안내를 한 번 띄운다', async () => {
+    const { removeMe } = await renderWithClient();
+
+    removeMe();
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.removedFromDraft));
+    expect(
+      toast.mock.calls.filter(([message]) => message === BUNDLE_MESSAGES.removedFromDraft),
+    ).toHaveLength(1);
+  });
+
+  it('처음 불러온 뒤 참여 멤버가 그대로이면 띄우지 않는다', async () => {
+    await renderWithClient();
+
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.removedFromDraft);
   });
 });
 
