@@ -4,7 +4,10 @@ import { PlaceSearchSheet, type PlaceSearchResult } from './PlaceSearchSheet';
 
 afterEach(cleanup);
 
-const setup = (results: readonly PlaceSearchResult[] | undefined) => {
+const setup = (
+  results: readonly PlaceSearchResult[] | undefined,
+  onQueryChange?: (_query: string) => void,
+) => {
   const onSelect = vi.fn();
   render(
     <PlaceSearchSheet
@@ -19,6 +22,7 @@ const setup = (results: readonly PlaceSearchResult[] | undefined) => {
       resultCountLabel={(count) => `검색 결과 ${count}개`}
       results={results}
       onSearch={() => {}}
+      onQueryChange={onQueryChange}
       onSelect={onSelect}
     />,
   );
@@ -39,6 +43,18 @@ describe('PlaceSearchSheet', () => {
 
     expect((await screen.findByRole('status')).textContent).toBe('검색 결과가 없어요');
     expect(screen.queryByText('태그한 위치는 함께 보여요')).toBeNull();
+  });
+
+  it('입력값이 바뀔 때마다 onQueryChange로 현재 입력값을 알린다', async () => {
+    const onQueryChange = vi.fn();
+    setup(undefined, onQueryChange);
+
+    const input = await screen.findByRole('searchbox', { name: '장소 검색' });
+    fireEvent.change(input, { target: { value: '여의' } });
+    fireEvent.change(input, { target: { value: '여의도' } });
+
+    expect(onQueryChange).toHaveBeenNthCalledWith(1, '여의');
+    expect(onQueryChange).toHaveBeenNthCalledWith(2, '여의도');
   });
 
   it('결과를 누르면 그 장소를 알린다', async () => {

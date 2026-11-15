@@ -15,7 +15,7 @@
 
 - `open`, `onOpenChange`, `onOpenChangeComplete`: `BottomSheet.Root`와 같음.
 - 문구: `title`(보이지 않음), `inputLabel`, `placeholder`, `guideTitle`, `guideDescription`, `noResultLabel`, `resultCountLabel(count)`.
-- `results`: 검색 전 `undefined`, 검색 뒤 결과(`id`, `name`, `address`). `onSearch(keyword)`, `onSelect(place)`.
+- `results`: 검색 전 `undefined`, 검색 뒤 결과(`id`, `name`, `address`). `onSearch(keyword)`(Enter), `onQueryChange(query)`(입력값이 바뀔 때마다, 선택), `onSelect(place)`.
 
 ## 접근성
 

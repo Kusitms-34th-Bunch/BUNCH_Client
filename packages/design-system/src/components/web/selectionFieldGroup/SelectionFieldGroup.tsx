@@ -11,6 +11,10 @@ export type SelectionFieldGroupItem = {
   id: string;
   /** 고른 값(예: "서울특별시 여의도동"): 값과 지우기 버튼이 보임 */
   value: string;
+  /** 이 행을 고르거나 옮기는 중인 멤버 프로필(값 바로 오른쪽에 겹쳐 보임, 앞에서부터 최대 8명). 장식이라 읽어 줄 문구는 `fieldLabel`에 반영 */
+  members?: readonly BundleTitleMember[] | undefined;
+  /** 이 행의 접근성 이름 앞에 붙는 필드 이름. 주면 그룹의 `fieldLabel` 대신 씀(예: "경진님이 편집 중 위치") */
+  fieldLabel?: string | undefined;
 };
 
 export type SelectionFieldGroupProps = Omit<ComponentProps<'div'>, 'children'> & {
@@ -92,7 +96,8 @@ export const SelectionFieldGroup = ({
             key={item.id}
             label={item.value}
             selected
-            fieldLabel={fieldLabel}
+            fieldLabel={item.fieldLabel ?? fieldLabel}
+            members={item.members}
             clearLabel={clearLabel?.(item.value, index)}
             handle={itemHandle?.(item, index)}
             onFieldClick={() => onItemClick?.(item.id)}

@@ -23,7 +23,10 @@ export type PlaceSearchSheetProps = Omit<
   resultCountLabel: (_count: number) => string;
   /** 검색 전에는 undefined, 검색한 뒤에는 결과(빈 목록이면 결과 없음) */
   results: readonly PlaceSearchResult[] | undefined;
+  /** Enter(검색 키)를 눌렀을 때 현재 입력값과 함께 호출 */
   onSearch: (_keyword: string) => void;
+  /** 입력값이 바뀔 때마다 현재 입력값과 함께 호출(입력하는 대로 검색하는 호출자가 씀, 없으면 Enter 검색만) */
+  onQueryChange?: ((_query: string) => void) | undefined;
   /** 결과를 눌렀을 때(닫기는 호출자 담당) */
   onSelect: (_place: PlaceSearchResult) => void;
 };
@@ -42,6 +45,7 @@ export const PlaceSearchSheet = ({
   resultCountLabel,
   results,
   onSearch,
+  onQueryChange,
   onSelect,
   ...rootProps
 }: PlaceSearchSheetProps) => (
@@ -52,7 +56,12 @@ export const PlaceSearchSheet = ({
       </BottomSheet.Header>
       <div className="px-padding-p8 flex items-center">
         <div className="min-w-0 flex-1">
-          <SearchField inputLabel={inputLabel} placeholder={placeholder} onSearch={onSearch} />
+          <SearchField
+            inputLabel={inputLabel}
+            placeholder={placeholder}
+            onSearch={onSearch}
+            {...(onQueryChange && { onChange: (event) => onQueryChange(event.target.value) })}
+          />
         </div>
         {/* 화면에 닫기 버튼이 없어 숨겨 둠. 입력란에 먼저 초점이 가도록 입력란 뒤에 둠 */}
         <BottomSheet.Close className="focus-visible:-m-s5 focus-visible:p-s5 sr-only focus-visible:not-sr-only" />
