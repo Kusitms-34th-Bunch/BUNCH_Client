@@ -24,6 +24,7 @@ export type DeviceNotificationPermission = 'granted' | 'denied';
 
 /** 권한을 넘겨받을 수 있는 멤버(나 제외) */
 export type TransferCandidate = {
+  /** 소속 ID(권한 이전 요청의 `targetMembershipId`) */
   id: string;
   name: string;
   /** 프로필 이미지 주소(없으면 배경색 원) */
@@ -38,4 +39,7 @@ export type OwnedBunch = {
   name: string;
   imageSrc?: string | undefined;
   candidates: readonly TransferCandidate[];
+  /** 이 번치에서 내 소속 ID와 멤버 목록을 받을 때의 버전(권한 이전 요청에 그대로 보냄) */
+  myMembershipId: string;
+  membershipVersion: number;
 };

@@ -3,4 +3,6 @@ export const myKeys = {
   all: ['my'] as const,
   /** 푸시 수신 설정(앱 푸시 전체와 알림 종류별 수신) */
   notificationSettings: () => [...myKeys.all, 'notification-settings'] as const,
+  /** 탈퇴 전 넘겨야 할 번치(내가 메인 관리자이고 다른 멤버가 있는 번치와 넘길 수 있는 멤버) */
+  ownedBunches: () => [...myKeys.all, 'owned-bunches'] as const,
 };

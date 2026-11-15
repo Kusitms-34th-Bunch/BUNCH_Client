@@ -1,9 +1,11 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { sharedKeys } from '@/shared/query/keys';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
+import { updateMyProfile } from '../api/profile';
 import { MY_MESSAGES } from '../constants/messages';
 import { toMyProfile } from '../lib/profile';
 
@@ -29,3 +31,15 @@ export function useMyProfile({ notifyFailure = true }: { notifyFailure?: boolean
     isError: failed,
   };
 }
+
+/**
+ * 내 프로필 저장. 실패 안내는 화면이 맡음(닉네임 중복은 입력란 오류, 그 밖은 토스트)
+ * 성공하면 내 프로필을 다시 받은 뒤 끝냄(돌아간 마이페이지가 새 값을 바로 그림, 기능명세서 7.2.7 로직 3)
+ */
+export const useUpdateProfileMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateMyProfile,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sharedKeys.me() }),
+  });
+};

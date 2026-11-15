@@ -4,7 +4,19 @@ import type { MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
+import { versionOf } from './memberships';
 import { unreadCountOf } from './notifications';
+
+// 가짜 서버가 새 프로필 사진으로 쓰는 시연 이미지(올린 사진 내용은 읽지 않음)
+const MOCK_UPLOADED_PROFILE_IMAGE = '/mock/photos/C2.jpg';
+
+/** 내가 메인 관리자인 번치 */
+const myOwnedBunches = (state: MockDbState) =>
+  state.memberships.flatMap((membership) => {
+    if (membership.memberId !== MOCK_MY_MEMBER_ID || membership.role !== 'OWNER') return [];
+    const bunch = state.bunches.find((item) => item.id === membership.bunchId);
+    return bunch ? [bunch] : [];
+  });
 
 // 소속 번치 최대 개수(기능명세 5.2.4, 번치 만들기의 BUNCH_003과 같은 값)
 const MAX_ACTIVE_BUNCHES = 10;
@@ -129,6 +141,80 @@ export const memberHandlers = [
       imageUrl: null,
     }),
   ),
+
+  // PUT /api/v1/members/me/profile: multipart `profile`(닉네임·imageAction)·`photo`(REPLACE일 때)
+  // 닉네임 중복은 중복 확인과 같이 「중복」이 들어간 닉네임만, 코드는 가입과 같은 USER_002로 둠(Swagger에 오류 코드 없음)
+  http.put('/api/members/me/profile', async ({ request }) => {
+    const form = await request.formData().catch(() => null);
+    const part = form?.get('profile');
+    const profile = await (async () => {
+      try {
+        return part instanceof Blob
+          ? (JSON.parse(await part.text()) as { nickname?: string; imageAction?: string })
+          : null;
+      } catch {
+        return null;
+      }
+    })();
+    const nickname = profile?.nickname?.trim() ?? '';
+    const action = profile?.imageAction;
+    if (!profile || nickname.length < 1 || nickname.length > 12) return fail(400, 'COMMON_001');
+    if (action !== 'KEEP' && action !== 'REPLACE' && action !== 'RESET') {
+      return fail(400, 'COMMON_001');
+    }
+    if (action === 'REPLACE' && !(form?.get('photo') instanceof Blob))
+      return fail(400, 'COMMON_001');
+    if (nickname.includes('중복')) return fail(409, 'USER_002');
+    mockDb.update((state) => ({
+      ...state,
+      members: state.members.map((member) =>
+        member.memberId === MOCK_MY_MEMBER_ID
+          ? {
+              ...member,
+              nickname,
+              imageUrl:
+                action === 'REPLACE'
+                  ? MOCK_UPLOADED_PROFILE_IMAGE
+                  : action === 'RESET'
+                    ? null
+                    : member.imageUrl,
+            }
+          : member,
+      ),
+    }));
+    const me = mockDb.get().members.find((member) => member.memberId === MOCK_MY_MEMBER_ID);
+    return me
+      ? ok({ memberId: me.memberId, nickname: me.nickname, imageUrl: me.imageUrl })
+      : fail(401, 'AUTH_001');
+  }),
+
+  // GET /api/v1/members/me/withdrawal/check: 내가 메인 관리자인 번치(혼자 있는 번치 포함, 넘길 멤버는 화면이 멤버 목록으로 확인)
+  http.get('/api/members/me/withdrawal/check', () => {
+    const state = mockDb.get();
+    return ok({
+      ownerBunches: myOwnedBunches(state).map((bunch) => ({
+        bunchId: bunch.id,
+        name: bunch.name,
+        imageUrl: bunch.imageUrl,
+        // 가짜 서버는 소속 ID를 회원 ID로 대신함(멤버 관리 handler와 같음)
+        myMembershipId: MOCK_MY_MEMBER_ID,
+        membershipVersion: versionOf(state, bunch.id),
+      })),
+    });
+  }),
+
+  // POST /api/v1/members/me/withdrawal: 다른 멤버가 있는 번치의 메인 관리자면 거절(코드는 Swagger에 없어 가짜 코드)
+  // ponytail: 시연 데이터를 지우지 않고 성공만 돌려줌(가짜 서버는 로그아웃 상태도 두지 않음)
+  http.post('/api/members/me/withdrawal', () => {
+    const state = mockDb.get();
+    const blocked = myOwnedBunches(state).some((bunch) =>
+      state.memberships.some(
+        (membership) =>
+          membership.bunchId === bunch.id && membership.memberId !== MOCK_MY_MEMBER_ID,
+      ),
+    );
+    return blocked ? fail(409, 'MOCK_WITHDRAWAL_OWNER') : ok(null);
+  }),
 
   // GET /api/v1/members/me/onboarding: 가짜 서버는 가입을 마친 시연 사용자를 가정(가입 중 시나리오는 server.use로 덮어씀)
   http.get('/api/members/me/onboarding', () => {
