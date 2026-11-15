@@ -516,7 +516,7 @@ export function useDraft(draftId: string | undefined): {
       });
   };
 
-  const actions: DraftActions = {
+  const rawActions: DraftActions = {
     setTitle: (title) => {
       // 문서를 아직 불러오지 못했으면 입력을 받지 않음(서버 제목이 그대로 보임)
       if (!titleCrdt.edit(title)) return;
@@ -687,6 +687,49 @@ export function useDraft(draftId: string | undefined): {
         );
         return 'failed';
       }
+    },
+  };
+
+  // 연결이 끊긴 동안은 편집 동작이 반응하지 않음(기능 spec 4.3.14). 이미 열린 시트·확인 창에서 늦게 눌러도 서버로 보내지 않음
+  const downRef = useRef(realtime.down);
+  useEffect(() => {
+    downRef.current = realtime.down;
+  });
+  // ref는 동작이 불릴 때만 읽음(렌더 중에는 읽지 않음)
+  const actions: DraftActions = {
+    ...rawActions,
+    setTitle: (...args: Parameters<DraftActions['setTitle']>) => {
+      if (!downRef.current) rawActions.setTitle(...args);
+    },
+    setComment: (...args: Parameters<DraftActions['setComment']>) => {
+      if (!downRef.current) rawActions.setComment(...args);
+    },
+    addLocation: (...args: Parameters<DraftActions['addLocation']>) => {
+      if (!downRef.current) rawActions.addLocation(...args);
+    },
+    removeLocation: (...args: Parameters<DraftActions['removeLocation']>) => {
+      if (!downRef.current) rawActions.removeLocation(...args);
+    },
+    moveLocation: (...args: Parameters<DraftActions['moveLocation']>) => {
+      if (!downRef.current) rawActions.moveLocation(...args);
+    },
+    setDate: (...args: Parameters<DraftActions['setDate']>) => {
+      if (!downRef.current) rawActions.setDate(...args);
+    },
+    addMember: (...args: Parameters<DraftActions['addMember']>) => {
+      if (!downRef.current) rawActions.addMember(...args);
+    },
+    removeMember: (...args: Parameters<DraftActions['removeMember']>) => {
+      if (!downRef.current) rawActions.removeMember(...args);
+    },
+    removePhoto: (...args: Parameters<DraftActions['removePhoto']>) => {
+      if (!downRef.current) rawActions.removePhoto(...args);
+    },
+    movePhoto: (...args: Parameters<DraftActions['movePhoto']>) => {
+      if (!downRef.current) rawActions.movePhoto(...args);
+    },
+    replacePhotos: (...args: Parameters<DraftActions['replacePhotos']>) => {
+      if (!downRef.current) rawActions.replacePhotos(...args);
     },
   };
 

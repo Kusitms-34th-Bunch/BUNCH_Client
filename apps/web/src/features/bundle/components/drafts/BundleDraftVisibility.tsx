@@ -48,6 +48,13 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
   const notReady = state.kind === 'ready' && !contentReady && !uploading;
   const draftId = draft?.id;
 
+  // 브라우저·OS 뒤로 가기처럼 화면 안의 뒤로 가기 버튼을 거치지 않고 떠나도 고른 공개 범위를 버림(기능 spec 4.3.9)
+  const setVisibilityRef = useRef(actions.setVisibility);
+  useEffect(() => {
+    setVisibilityRef.current = actions.setVisibility;
+  });
+  useEffect(() => () => setVisibilityRef.current(null), []);
+
   useEffect(() => {
     if (notReady && draftId !== undefined) router.replace(BUNDLE_PATHS.draft(draftId));
   }, [notReady, draftId, router]);
