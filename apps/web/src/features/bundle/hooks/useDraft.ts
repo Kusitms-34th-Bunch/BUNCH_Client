@@ -289,6 +289,9 @@ export function useDraft(draftId: string | undefined): {
         const base = detailRef.current;
         const snapshot = pendingRef.current;
         if (!base || isEmpty(snapshot)) break;
+        // 이 저장을 시작한 뒤 연결이 끊겨 입력이 폐기됐으면 보관해 둔 값은 더 보내지 않음
+        const generation = discardGeneration.current;
+        const discarded = () => generation !== discardGeneration.current;
         const common = { mode: 'DRAFT' as const };
         // 필드 하나 저장: 성공하면 입력을 비우고 최신 응답을 기준으로 삼음
         const run = async (save: () => Promise<BundleDetail>, onSaved: () => void) => {
@@ -328,7 +331,7 @@ export function useDraft(draftId: string | undefined): {
             () => clearField('title', value),
           );
         }
-        if (snapshot.date !== undefined && !stop) {
+        if (snapshot.date !== undefined && !stop && !discarded()) {
           const value = snapshot.date;
           await run(
             () =>
@@ -340,7 +343,7 @@ export function useDraft(draftId: string | undefined): {
             () => clearField('date', value),
           );
         }
-        if (snapshot.comment !== undefined && !stop) {
+        if (snapshot.comment !== undefined && !stop && !discarded()) {
           const value = snapshot.comment;
           await run(
             () => {
@@ -509,13 +512,15 @@ export function useDraft(draftId: string | undefined): {
   };
 
   // 한 번에 하나씩 보냄, 한 번 실패하면 남은 변경은 건너뛰고(서버와 어긋난 상태) 한 번만 안내하며 서버 값으로 되돌림
-  const enqueuePhotoOp = (run: () => Promise<void>) => {
+  const enqueuePhotoOp = (run: (_discarded: () => boolean) => Promise<void>) => {
     photoOps.current += 1;
     setPhotoBusy(true);
     const generation = discardGeneration.current;
     photoQueue.current = photoQueue.current
       .then(() =>
-        photoFailed.current || generation !== discardGeneration.current ? undefined : run(),
+        photoFailed.current || generation !== discardGeneration.current
+          ? undefined
+          : run(() => generation !== discardGeneration.current),
       )
       .catch(() => {
         photoFailed.current = true;
@@ -647,10 +652,12 @@ export function useDraft(draftId: string | undefined): {
       const added = photos.filter((photo) => !currentIds.has(photo.id));
       const removed = current.filter((photo) => !keptIds.has(photo.id));
       showPhotos(photos);
-      enqueuePhotoOp(async () => {
+      enqueuePhotoOp(async (discarded) => {
         const add = added.flatMap((photo) => (photo.sourcePhotoId ? [photo.sourcePhotoId] : []));
         const remove = removed.flatMap((photo) => serverPhotoId(photo) ?? []);
         if (add.length > 0 || remove.length > 0) await applyPhotoChanges({ add, remove });
+        // 요청을 기다리는 사이 연결이 끊겨 폐기됐으면 이어지는 이동 요청은 보내지 않음
+        if (discarded()) return;
         // 새 사진은 서버가 맨 뒤에 붙이므로, 고른 순서와 다르면 이동으로 맞춤
         const latest = detailRef.current;
         if (!latest) return;
@@ -659,6 +666,7 @@ export function useDraft(draftId: string | undefined): {
           latest.photos.map((photo) => photo.id),
           desired,
         )) {
+          if (discarded()) return;
           await applyPhotoMove(plan);
         }
       });
