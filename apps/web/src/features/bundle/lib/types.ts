@@ -1,3 +1,5 @@
+import type { Picks } from './picks';
+
 /** 번치에서의 역할. 번들 화면의 권한과 역할 배지를 정하는 기준 */
 export type BunchRole = 'owner' | 'coOwner' | 'member';
 
@@ -64,6 +66,8 @@ export type Draft = {
   /** 추천 날짜('YYYY-MM-DD', 최대 3개) */
   suggestedDates: readonly string[];
   comments: readonly DraftComment[];
+  /** 사진별로 그 사진을 픽한 멤버(서버 값, 참여 시각 순). 기능 spec 4.3.5 */
+  picks: Picks;
   /** 공개 범위. 초안을 만들면 고르지 않은 상태(null)로 시작하고, 발행하려면 하나를 골라야 함(기능 spec 4.3.9) */
   visibility: DraftVisibility | null;
   editing: DraftEditing;

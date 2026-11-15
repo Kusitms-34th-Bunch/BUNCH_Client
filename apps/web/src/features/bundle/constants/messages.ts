@@ -23,6 +23,7 @@ export const BUNDLE_MESSAGES = {
   pickButton: '이 사진 픽하기',
   pickedButton: '사진을 픽했어요',
   pickedCount: (count: number) => `${count}명이 픽했어요`,
+  pickFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   pickDeletedTitle: '삭제된 사진이에요',
   pickDeletedDescription: '삭제된 사진은 픽할 수 없어요.',
   photoCount: (count: number) => `사진 ${count}장`,

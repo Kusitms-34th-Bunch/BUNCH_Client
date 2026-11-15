@@ -10,13 +10,17 @@ const onDenied = vi.fn();
 const onBack = vi.fn();
 
 type Options = {
+  removedIds?: ReadonlySet<string>;
   picks?: Picks;
   editable?: boolean;
   photos?: typeof draftFixture.photos;
   viewerId?: string;
 };
 
+const onDismissRemoved = vi.fn();
+
 const screenElement = ({
+  removedIds,
   picks = {},
   editable = true,
   photos = draftFixture.photos,
@@ -31,6 +35,8 @@ const screenElement = ({
     onToggle={onToggle}
     onDenied={onDenied}
     onBack={onBack}
+    removedIds={removedIds}
+    onDismissRemoved={onDismissRemoved}
   />
 );
 
@@ -116,15 +122,26 @@ describe('DraftPickScreen', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it('보던 사진이 지워지면 「삭제된 사진이에요」 안내 창이 뜬다', async () => {
-    const { rerender } = renderScreen();
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  it('번들에서 빠진 사진도 바로 없애거나 안내하지 않고 그대로 보인다', () => {
+    renderScreen({ removedIds: new Set([draftFixture.photos[0]!.id]) });
 
-    rerender(screenElement({ photos: draftFixture.photos.slice(1) }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('img')).toHaveLength(draftFixture.photos.length);
+  });
+
+  it('빠진 사진에서 「이 사진 픽하기」를 누르면 픽하지 않고 「삭제된 사진이에요」 안내 뒤 「확인」으로 없앤다', async () => {
+    renderScreen({ removedIds: new Set([draftFixture.photos[0]!.id]) });
+
+    await userEvent.click(screen.getByRole('button', { name: '이 사진 픽하기' }));
 
     const dialog = await screen.findByRole('alertdialog', { name: '삭제된 사진이에요' });
     expect(dialog).toHaveAccessibleDescription('삭제된 사진은 픽할 수 없어요.');
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(onDismissRemoved).not.toHaveBeenCalled();
+
     await userEvent.click(within(dialog).getByRole('button', { name: '확인' }));
+
+    expect(onDismissRemoved).toHaveBeenCalledWith(draftFixture.photos[0]!.id);
   });
 
   describe('픽하기 모션', () => {

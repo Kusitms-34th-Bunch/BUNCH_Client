@@ -86,8 +86,15 @@ export const applyContentEvent = (
     }
     case 'PHOTOS': {
       const parsed = schemas.PHOTOS.safeParse(data);
+      // 픽은 전용 이벤트가 없고, 방송 이벤트의 픽은 요청자 기준 값(pickedByMe·version)이 아니라 쓰지 않고 기존 픽을 이어 붙임
       return parsed.success
-        ? next({ photos: toDetailPhotos(parsed.data.photos), dateChips: parsed.data.dateChips })
+        ? next({
+            photos: toDetailPhotos(parsed.data.photos).map((photo) => ({
+              ...photo,
+              picks: detail.photos.find((old) => old.id === photo.id)?.picks,
+            })),
+            dateChips: parsed.data.dateChips,
+          })
         : REFETCH;
     }
     case 'COMMENT': {
