@@ -10,6 +10,7 @@
   issue_title  — 업데이트할 이슈 제목 (예: [Feat] #1 - 로그인 페이지)
   branch_type  — 브랜치 타입 (예: feat)
   label        — GitHub 라벨 (예: ✨ Feature)
+  base_branch  — 작업 브랜치를 만들 기준 브랜치. 비면 default branch (예: 381-feat/bundle-place-pin-api)
 """
 
 import os
@@ -46,9 +47,33 @@ def clean_branch_name(raw: str) -> str:
     """브랜치명을 Git 규칙에 맞게 정제한다."""
     name = raw.strip().lower()
     name = re.sub(r'\s+', '-', name)
-    name = re.sub(r'[/:^~?*\[\]\\@{}.]+', '', name)
+    # 영문 소문자·숫자·하이픈만(이름이 댓글의 복사용 shell 명령에 들어감)
+    name = re.sub(r'[^a-z0-9-]+', '', name)
     name = re.sub(r'-{2,}', '-', name)
     return name.strip('-.') or 'issue'
+
+
+# Git 브랜치 이름으로 쓸 수 있는 글자만(출력 파일·shell로 넘어가므로 공백·줄바꿈·따옴표 없음)
+BASE_BRANCH_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._/-]*$')
+# 작업 브랜치의 기준이 될 수 없는 브랜치(프로덕션)
+FORBIDDEN_BASES = {'main'}
+
+
+def parse_base_branch(raw: str) -> Optional[str]:
+    """기준 브랜치 값을 검증한다. 비면 '', 쓸 수 없는 값이면 None."""
+    name = raw.strip().strip('`')
+    name = re.sub(r'^(?:refs/heads/|origin/)', '', name)
+    if not name:
+        return ''
+    if (
+        not BASE_BRANCH_PATTERN.match(name)
+        or '..' in name
+        or '//' in name
+        or name.endswith(('/', '.', '.lock'))
+        or name in FORBIDDEN_BASES
+    ):
+        return None
+    return name
 
 
 def build_issue_title(branch_type: str, issue_number: str, original_title: str) -> str:
@@ -92,8 +117,14 @@ def issue_output() -> Dict[str, str]:
     raw_type = parse_form_field(body, '작업 타입') or parse_form_field(body, '📂 브랜치 타입')
     type_option = re.search(r'\(([a-z]+)\)\s*-', raw_type)
     branch_type = find_type(type_option.group(1) if type_option else raw_type)
+    base_branch = parse_base_branch(parse_form_field(body, '기준 브랜치 (선택)'))
 
-    if not raw_branch or not branch_type or not re.sub(r'^\[작업\]\s*', '', title).strip():
+    if (
+        not raw_branch
+        or not branch_type
+        or base_branch is None
+        or not re.sub(r'^\[작업\]\s*', '', title).strip()
+    ):
         return {
             'matched': 'false',
             'label_names': '|'.join(details['name'] for details in LABEL_MAP.values()),
@@ -106,6 +137,7 @@ def issue_output() -> Dict[str, str]:
         'branch_name': branch_name,
         'issue_title': build_issue_title(branch_type, number, title),
         'branch_type': branch_type,
+        'base_branch': base_branch,
         'label': LABEL_MAP[branch_type]['name'],
         'label_color': LABEL_MAP[branch_type]['color'],
         'label_description': LABEL_MAP[branch_type]['description'],
