@@ -38,6 +38,7 @@ import {
   useMergeTitleMutation,
 } from '../queries/bundles';
 import { useBundleRealtime } from './useBundleRealtime';
+import { useOnlineStatus } from './useOnlineStatus';
 import { useTitleCrdt } from './useTitleCrdt';
 
 // 입력이 멈추고 이만큼 지나면 저장(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」), 날짜는 고르는 즉시 저장하고 공개 범위는 발행 요청으로만 보냄
@@ -106,16 +107,16 @@ export type DraftActions = {
   /** 위치를 다른 자리로 옮김(햄버거를 잡고 끌어 순서 바꾸기, 자리는 0부터) */
   moveLocation: (_locationId: string, _toIndex: number) => void;
   setDate: (_date: string | null) => void;
-  /** 번치 멤버를 참여 멤버 맨 아래에 더함(이미 참여 중이거나 번치 멤버가 아니면 무시) */
-  addMember: (_memberId: string) => void;
-  /** 참여 멤버를 내보냄(그 멤버의 코멘트도 함께 삭제) */
-  removeMember: (_memberId: string) => void;
-  /** 사진을 번들에서 뺌(1장이면 무시). 서버 반영은 후속이라 이 화면에서만 바뀜 */
-  removePhoto: (_photoId: string) => void;
+  /** 번치 멤버를 참여 멤버 맨 아래에 더함(이미 참여 중이거나 번치 멤버가 아니면 무시). 연결이 끊겨 막히면 false(성공 안내를 띄우지 않음) */
+  addMember: (_memberId: string) => boolean;
+  /** 참여 멤버를 내보냄(그 멤버의 코멘트도 함께 삭제). 연결이 끊겨 막히면 false */
+  removeMember: (_memberId: string) => boolean;
+  /** 사진을 번들에서 뺌(1장이면 무시). 서버 반영은 후속이라 이 화면에서만 바뀜. 연결이 끊겨 막히면 false */
+  removePhoto: (_photoId: string) => boolean;
   /** 사진을 다른 자리(0부터)로 옮김. 서버 반영은 후속이라 이 화면에서만 바뀜 */
   movePhoto: (_photoId: string, _toIndex: number) => void;
-  /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜 */
-  replacePhotos: (_photos: readonly DraftPhoto[]) => void;
+  /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜. 연결이 끊겨 막히면 false */
+  replacePhotos: (_photos: readonly DraftPhoto[]) => boolean;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
   /** 저장하지 못한 입력을 먼저 저장한 뒤 발행 */
   publish: () => Promise<PublishOutcome>;
@@ -127,6 +128,17 @@ type Pending = {
   /** null은 날짜를 지우는 값 */
   date?: string | null;
   comment?: string;
+};
+
+// 연결 가드를 입히기 전의 동작: 결과를 알려 주는 동작도 여기서는 반환값이 없음
+type RawActions = Omit<
+  DraftActions,
+  'addMember' | 'removeMember' | 'removePhoto' | 'replacePhotos'
+> & {
+  addMember: (_memberId: string) => void;
+  removeMember: (_memberId: string) => void;
+  removePhoto: (_photoId: string) => void;
+  replacePhotos: (_photos: readonly DraftPhoto[]) => void;
 };
 
 const isEmpty = (pending: Pending) =>
@@ -516,7 +528,7 @@ export function useDraft(draftId: string | undefined): {
       });
   };
 
-  const rawActions: DraftActions = {
+  const rawActions: RawActions = {
     setTitle: (title) => {
       // 문서를 아직 불러오지 못했으면 입력을 받지 않음(서버 제목이 그대로 보임)
       if (!titleCrdt.edit(title)) return;
@@ -691,9 +703,12 @@ export function useDraft(draftId: string | undefined): {
   };
 
   // 연결이 끊긴 동안은 편집 동작이 반응하지 않음(기능 spec 4.3.14). 이미 열린 시트·확인 창에서 늦게 눌러도 서버로 보내지 않음
-  const downRef = useRef(realtime.down);
+  // 화면의 오프라인 배너와 같은 조건: 브라우저가 오프라인이거나 실시간 연결이 끊김
+  const { online } = useOnlineStatus();
+  const offline = !online || realtime.down;
+  const downRef = useRef(offline);
   useEffect(() => {
-    downRef.current = realtime.down;
+    downRef.current = offline;
   });
   // ref는 동작이 불릴 때만 읽음(렌더 중에는 읽지 않음)
   const actions: DraftActions = {
@@ -717,19 +732,27 @@ export function useDraft(draftId: string | undefined): {
       if (!downRef.current) rawActions.setDate(...args);
     },
     addMember: (...args: Parameters<DraftActions['addMember']>) => {
-      if (!downRef.current) rawActions.addMember(...args);
+      if (downRef.current) return false;
+      rawActions.addMember(...args);
+      return true;
     },
     removeMember: (...args: Parameters<DraftActions['removeMember']>) => {
-      if (!downRef.current) rawActions.removeMember(...args);
+      if (downRef.current) return false;
+      rawActions.removeMember(...args);
+      return true;
     },
     removePhoto: (...args: Parameters<DraftActions['removePhoto']>) => {
-      if (!downRef.current) rawActions.removePhoto(...args);
+      if (downRef.current) return false;
+      rawActions.removePhoto(...args);
+      return true;
     },
     movePhoto: (...args: Parameters<DraftActions['movePhoto']>) => {
       if (!downRef.current) rawActions.movePhoto(...args);
     },
     replacePhotos: (...args: Parameters<DraftActions['replacePhotos']>) => {
-      if (!downRef.current) rawActions.replacePhotos(...args);
+      if (downRef.current) return false;
+      rawActions.replacePhotos(...args);
+      return true;
     },
   };
 
