@@ -63,6 +63,8 @@ export type FeedAd = {
   tags?: readonly string[] | undefined;
   /** 현재 번치의 콕한 장소에 담겨 있음 */
   picked: boolean;
+  /** 콕 취소에 쓰는 콕 ID(콕하지 않았거나 응답 전이면 없음) */
+  pinId?: number | undefined;
 };
 
 /** 팔로우한 번치 구간과 공개 구간(앞 구간에 나온 번들은 서버가 뺌), 공개 구간 끝의 광고 */
@@ -131,6 +133,10 @@ export type FeedMemberBunch = {
   imageSrc?: string | undefined;
   isPrivate: boolean;
   followStatus: FeedFollowStatus;
+  /** 언팔로우·요청 취소에 쓰는 관계 ID(팔로우하지 않았으면 없음) */
+  followId?: string | undefined;
+  /** 서버가 팔로우 버튼을 보이라고 함(지금 번치 자신의 줄·소속 번치 없음이면 false) */
+  showFollowButton?: boolean | undefined;
 };
 
 export type FeedMemberProfile = {

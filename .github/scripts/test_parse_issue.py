@@ -61,6 +61,38 @@ class IssueMetadataTests(unittest.TestCase):
                 self.assertEqual(parse_issue(body)['matched'], 'false')
         self.assertEqual(parse_issue('### 📌 작업 설명\n\n내용')['matched'], 'false')
 
+    def test_base_branch_is_optional_and_validated(self):
+        def with_base(value):
+            return parse_issue(
+                '### 작업 타입\n\nfeat\n\n### 브랜치 이름\n\npage-shell\n\n'
+                f'### 기준 브랜치 (선택)\n\n{value}\n\n### 📌 작업 설명\n\n본문'
+            )
+
+        for value, expected in [
+            ('_No response_', ''),
+            ('381-feat/bundle-place-pin-api', '381-feat/bundle-place-pin-api'),
+            ('origin/381-feat/bundle-place-pin-api', '381-feat/bundle-place-pin-api'),
+            ('`develop`', 'develop'),
+        ]:
+            with self.subTest(value=value):
+                result = with_base(value)
+                self.assertEqual(result['matched'], 'true')
+                self.assertEqual(result['base_branch'], expected)
+
+        for value in ('origin/', 'refs/heads/', 'main', 'origin/main', 'a b', 'feat/../x', 'feat/', '-x', 'a;rm -rf', 'x.lock', '$(id)'):
+            with self.subTest(value=value):
+                self.assertEqual(with_base(value)['matched'], 'false')
+
+    def test_branch_name_keeps_only_safe_characters(self):
+        for raw, expected in [('x$(id)', 'xid'), ('a;curl${IFS}e|sh', 'acurlifsesh'), ('a`b', 'ab'), ('Page Shell', 'page-shell')]:
+            with self.subTest(raw=raw):
+                body = f'### 작업 타입\n\nfeat\n\n### 브랜치 이름\n\n{raw}'
+                self.assertEqual(parse_issue(body)['branch_name'], f'42-feat/{expected}')
+
+    def test_form_without_base_field_keeps_default(self):
+        body = '### 작업 타입\n\nfeat\n\n### 브랜치 이름\n\npage-shell'
+        self.assertEqual(parse_issue(body)['base_branch'], '')
+
     def test_pr_type_rules_are_unchanged(self):
         for value in ('[Feat] 페이지 틀', 'feat(web): 페이지 틀', '42-feat/page-shell', 'feature'):
             with self.subTest(value=value):

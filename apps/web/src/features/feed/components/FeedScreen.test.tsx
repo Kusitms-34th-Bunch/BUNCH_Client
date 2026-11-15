@@ -7,7 +7,6 @@ import { server } from '@/mocks/server';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
-import { bundleEdits } from '../lib/bundleEdits';
 import { clearHiddenAds } from '../lib/hiddenAds';
 import { feedKeys } from '../queries/keys';
 import { FeedScreen } from './FeedScreen';
@@ -198,7 +197,6 @@ beforeEach(() => {
   vi.stubGlobal('IntersectionObserver', VisibleObserver);
   serveFeed([...FOLLOWING_ITEMS, ...PUBLIC_ITEMS]);
   clearHiddenAds();
-  bundleEdits.clear();
   push.mockClear();
   toast.mockClear();
 });
@@ -263,7 +261,7 @@ describe('FeedScreen', () => {
     expect(next.contains(document.activeElement)).toBe(true);
   });
 
-  it('공개 구간 끝에 광고 카드가 보이고, 숨긴 뒤 다시 들어오면 없다', async () => {
+  it('공개 구간 끝에 광고 카드가 보이고, 숨기면 서버에 보내고 다시 들어와도 없다', async () => {
     const user = userEvent.setup();
     const first = renderFeed(OWN);
     const ad = await screen.findByRole('article', { name: '광고 플로디스튜디오' });
@@ -277,6 +275,7 @@ describe('FeedScreen', () => {
     await user.click(within(sheet).getByRole('button', { name: '숨기기' }));
     expect(await screen.findByText('장소를 숨김 처리 했어요')).toBeTruthy();
 
+    // 서버가 아직 광고를 주더라도(받아 둔 목록·다시 받기 실패) 숨기기가 성공한 광고는 다시 보이지 않음
     first.unmount();
     renderFeed(OWN);
     await cardsLoaded();
@@ -725,16 +724,5 @@ describe('FeedScreen', () => {
     await user.click(like);
     expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
     expect(like).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('지웠거나 「멤버 공개」로 바꾼 번들은 피드에서 빠진다', async () => {
-    bundleEdits.remove('1');
-    bundleEdits.setMemberOnly('2', true);
-    renderFeed(OWN);
-    await cardsLoaded();
-
-    expect(cards().map((card) => card.getAttribute('aria-label'))).toEqual([
-      '캠핑러버의 번들 여름밤 바닷가 캠핑',
-    ]);
   });
 });

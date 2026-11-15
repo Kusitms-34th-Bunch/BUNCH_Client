@@ -36,6 +36,15 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: base-branch
+    attributes:
+      label: 기준 브랜치 (선택)
+      description: 스택 PR처럼 다른 작업 브랜치 위에서 시작하려면 그 브랜치 이름을 입력해주세요. 비우면 develop에서 만듭니다. main은 쓸 수 없습니다.
+      placeholder: 381-feat/bundle-place-pin-api
+    validations:
+      required: false
+
   - type: textarea
     id: description
     attributes:

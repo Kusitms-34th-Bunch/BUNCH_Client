@@ -9,7 +9,6 @@ import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BundleBunchSource, BundleDetailResponse } from '../../model/bundleDetail';
-import { bundleEdits } from '../../lib/bundleEdits';
 import { feedKeys } from '../../queries/keys';
 import { BundleDetailScreen } from './BundleDetailScreen';
 
@@ -202,7 +201,6 @@ beforeEach(() => {
   push.mockClear();
   back.mockClear();
   replace.mockClear();
-  bundleEdits.clear();
   toast.mockClear();
 });
 
@@ -530,6 +528,48 @@ describe('BundleDetailScreen', () => {
     expect(screen.getByRole('button', { name: /댓글 4/ })).toBeTruthy();
   });
 
+  /** 지예 원댓글 더보기 → 「신고」 → 사유 「스팸」으로 신고하기 */
+  const reportJiye = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(await screen.findByRole('button', { name: /지예 댓글 더보기/ }));
+    await user.click(await screen.findByRole('button', { name: '신고' }));
+    const sheet = await screen.findByRole('dialog', { name: '이 댓글을 신고할까요?' });
+    await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
+    await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
+  };
+
+  it('남의 댓글을 신고하면 서버가 접수한 뒤 그 댓글과 답글을 숨기고 알린다', async () => {
+    const user = userEvent.setup();
+    renderDetail('901');
+    await reportJiye(user);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.'));
+    expect(screen.queryByRole('listitem', { name: '지예님의 댓글' })).toBeNull();
+    expect(screen.queryByRole('listitem', { name: '큐시즘님의 답글' })).toBeNull();
+    // 5001: 지예 원댓글(답글 5002가 달린)
+    expect(mockDb.get().reports.at(-1)).toMatchObject({
+      bundleId: 901,
+      commentId: 5001,
+      reason: 'SPAM',
+    });
+  });
+
+  it('댓글 신고가 실패하면 댓글을 남기고 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post('/api/bundles/:bundleId/comments/:commentId/reports', () =>
+        fail(500, 'COMMON_000'),
+      ),
+    );
+    renderDetail('901');
+    await reportJiye(user);
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(screen.getByRole('listitem', { name: '지예님의 댓글' })).toBeTruthy();
+    expect(toast).not.toHaveBeenCalledWith('신고가 접수됐어요.');
+  });
+
   it('답글 대상이 그사이 지워졌으면 답글 상태를 풀고 쓴 내용은 남긴 채 알린다', async () => {
     const user = userEvent.setup();
     server.use(http.post('/api/bundles/:bundleId/comments', () => fail(409, 'BUNDLE_002')));
@@ -695,6 +735,24 @@ describe('BundleDetailScreen', () => {
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
   });
 
+  it('번들 신고가 실패하면 화면에 남아 실패를 알린다', async () => {
+    server.use(http.post('/api/bundles/:bundleId/reports', () => fail(500, 'COMMON_000')));
+    const user = userEvent.setup();
+    renderDetail('2');
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '신고' }));
+    const sheet = await screen.findByRole('dialog', { name: '이 게시글을 신고할까요?' });
+    await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
+    await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+    expect(back.mock.calls.length + replace.mock.calls.length).toBe(0);
+  });
+
   it('소속 번치가 없으면 신고 시트를 열지 않고 안내한다', async () => {
     const user = userEvent.setup();
     renderDetail('2', { viewer: null });
@@ -719,7 +777,19 @@ describe('BundleDetailScreen', () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1/visibility'));
   });
 
-  it('메인 관리자가 번들을 삭제하면 이전 화면으로 가서 알린다', async () => {
+  it('메인 관리자가 번들을 삭제하면 서버에서 지우고 이전 화면으로 가서 알린다', async () => {
+    const removed: string[] = [];
+    const detailGets = vi.fn();
+    server.use(
+      http.delete('/api/bunches/:bunchId/bundles/:id', ({ params }) => {
+        removed.push(`${String(params.bunchId)}/${String(params.id)}`);
+        return ok(null);
+      }),
+      http.get('/api/bunches/:bunchId/published-bundles/:bundleId', () => {
+        detailGets();
+        return fail(404, 'RESOURCE_001');
+      }),
+    );
     const user = userEvent.setup();
     renderDetail('1');
 
@@ -730,11 +800,23 @@ describe('BundleDetailScreen', () => {
     await user.click(within(dialog).getByRole('button', { name: '삭제' }));
 
     await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalledWith('번들을 삭제했어요'));
-    expect(bundleEdits.read().deleted.has('1')).toBe(true);
+    expect(removed).toEqual(['1/1']);
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+    // 떠나는 동안 지운 상세를 다시 받거나 안내로 바뀌지 않음
+    expect(detailGets).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole('heading', { name: '삭제되었거나 볼 수 없는 내용이에요' }),
+    ).toBeNull();
   });
 
   it('삭제 확인 창의 「취소」는 번들을 그대로 둔다', async () => {
+    const removed = vi.fn();
+    server.use(
+      http.delete('/api/bunches/:bunchId/bundles/:id', () => {
+        removed();
+        return ok(null);
+      }),
+    );
     const user = userEvent.setup();
     renderDetail('1');
 
@@ -745,22 +827,25 @@ describe('BundleDetailScreen', () => {
     );
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    expect(bundleEdits.read().deleted.size).toBe(0);
+    expect(removed).not.toHaveBeenCalled();
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('지운 번들에 다시 들어오면 볼 수 없다는 안내를 보인다', () => {
-    bundleEdits.remove('2');
-    renderDetail('2');
-    expect(
-      screen.getByRole('heading', { name: '삭제되었거나 볼 수 없는 내용이에요' }),
-    ).toBeTruthy();
-  });
-
-  it('공개 범위를 바꾸면 상세 뱃지에 반영된다', () => {
-    bundleEdits.setMemberOnly('1', false);
+  it('삭제하는 사이 권한을 잃었으면 알리고 화면에 남는다', async () => {
+    server.use(http.delete('/api/bunches/:bunchId/bundles/:id', () => fail(403, 'AUTH_002')));
+    const user = userEvent.setup();
     renderDetail('1');
-    expect(screen.queryByRole('img', { name: '멤버 공개' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '삭제하기' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '삭제' }),
+    );
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('권한이 변경되어 해당 기능을 이용할 수 없어요.'),
+    );
+    expect(back.mock.calls.length + replace.mock.calls.length).toBe(0);
   });
 
   it('받는 동안은 불러오는 중을 알리고, 실패하면 다시 시도로 받는다', async () => {

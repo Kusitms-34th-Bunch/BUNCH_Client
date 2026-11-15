@@ -4,4 +4,5 @@
 export { BundleDetailScreen } from './bundles/BundleDetailScreen';
 export { BundleVisibilityScreen } from './bundles/BundleVisibilityScreen';
 export { FeedScreen } from './FeedScreen';
+export type { MemberFollowChange } from './members/MemberProfileScreen';
 export { MemberProfileScreen } from './members/MemberProfileScreen';
