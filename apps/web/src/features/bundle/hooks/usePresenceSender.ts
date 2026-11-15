@@ -59,7 +59,10 @@ export function usePresenceSender({
     if (!participantRef.current) return;
     const count = running.current.get(target) ?? 0;
     running.current.set(target, count + 1);
-    if (count === 0) sendRef.current({ action: 'BEGIN', target });
+    // 탭이 숨겨진 동안은 보내지 않음(BACKGROUND로 지운 표시를 되살리지 않고, 다시 보일 때 진행 작업을 함께 알림)
+    if (count === 0 && document.visibilityState !== 'hidden') {
+      sendRef.current({ action: 'BEGIN', target });
+    }
   }, []);
 
   const end = useCallback((target: string) => {

@@ -7,7 +7,7 @@ import {
   BundleTitle,
   PhotoImportSheet,
 } from '@app/design-system/web';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { PresenceCommands } from '../../hooks/usePresenceSender';
@@ -82,6 +82,8 @@ export function DraftPhotos({
   };
   const listRef = useRef<HTMLUListElement>(null);
   const openRemove = useRemovePhotoDialog();
+  // 삭제 확인 창이 열려 있는 동안(연결이 끊겼다 이어져도 다시 알리도록 열림 상태로 둠)
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   // 라벨 옆: 사진 작업(추가·삭제·끄는 중)을 하는 멤버 전체(어느 사진인지는 알려 주지 않음)
   const editors = (draft.editing.photoMemberIds ?? []).flatMap((id) => {
@@ -91,8 +93,7 @@ export function DraftPhotos({
 
   const requestRemove = (photoId: string) => {
     if (!access.canEdit) return onDenied();
-    // 삭제 확인 창이 열려 있는 동안 사진을 작업 중으로 알림
-    presence.begin('PHOTOS');
+    setRemoveOpen(true);
     // 연 시점의 사진 id를 고정해 그 사이 목록이 바뀌어도 다른 사진을 지우지 않음
     openRemove({
       kind: getRemovePhotoKind(draft.photos),
@@ -100,7 +101,7 @@ export function DraftPhotos({
       onConfirm: () => onRemovePhoto(photoId),
       // 지운 사진의 X에 있던 포커스가 사라지므로 창이 다 닫힌 뒤 목록의 첫 버튼으로 옮김
       onClosed: (confirmed) => {
-        presence.end('PHOTOS');
+        setRemoveOpen(false);
         if (confirmed) listRef.current?.querySelector<HTMLElement>('button')?.focus();
       },
     });
@@ -162,6 +163,7 @@ export function DraftPhotos({
       <p role="status" className="sr-only">
         {BUNDLE_MESSAGES.photoCount(total)}
       </p>
+      {removeOpen ? <PresenceScope presence={presence} target="PHOTOS" /> : null}
     </section>
   );
 }

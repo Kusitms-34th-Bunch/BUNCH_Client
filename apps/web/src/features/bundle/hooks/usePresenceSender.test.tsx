@@ -96,6 +96,20 @@ describe('usePresenceSender', () => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
   });
 
+  it('탭이 숨겨진 동안 시작한 작업은 바로 보내지 않고 다시 보일 때 알린다', () => {
+    const { result } = render();
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    act(() => void document.dispatchEvent(new Event('visibilitychange')));
+    send.mockClear();
+
+    act(() => result.current.begin('DATE'));
+    expect(send).not.toHaveBeenCalled();
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    act(() => void document.dispatchEvent(new Event('visibilitychange')));
+    expect(bodies()).toEqual([{ action: 'VIEW' }, { action: 'BEGIN', target: 'DATE' }]);
+  });
+
   it('제목·코멘트는 입력할 때마다 현재 전체 글자를 TYPE으로 보내고 나가면 BLUR를 보낸다', () => {
     const { result } = render();
     send.mockClear();
