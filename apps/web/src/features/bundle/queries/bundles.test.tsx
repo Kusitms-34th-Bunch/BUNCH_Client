@@ -474,7 +474,11 @@ describe('번들 query·mutation', () => {
           wrapper: createQueryWrapper(client),
         });
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        const newer = { ...(detail() as BundleDetail), revision: (detail()?.revision ?? 0) + 5, title: '이벤트로 맞춤' };
+        const newer = {
+          ...(detail() as BundleDetail),
+          revision: (detail()?.revision ?? 0) + 5,
+          title: '이벤트로 맞춤',
+        };
         client.setQueryData(bundleKeys.detail(bunchId, id), newer);
 
         await act(async () => {

@@ -43,7 +43,9 @@ describe('DraftMissingGate', () => {
     render(<DraftMissingGate />);
 
     const dialog = await screen.findByRole('alertdialog', { name: '번들이 업로드됐어요' });
-    expect(dialog).toHaveAccessibleDescription('경진님이 번들을 업로드해 더 이상 편집할 수 없어요.');
+    expect(dialog).toHaveAccessibleDescription(
+      '경진님이 번들을 업로드해 더 이상 편집할 수 없어요.',
+    );
   });
 
   it('다른 멤버가 업로드한 번들이면 「번들이 업로드됐어요」를 안내한다', async () => {
