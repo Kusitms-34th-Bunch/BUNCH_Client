@@ -195,6 +195,13 @@ describe('PhotoDetailScreen 헤더와 사진', () => {
     ]);
   });
 
+  it('지금 보는 사진만 사진함 썸네일과 이어지는 hero 키를 갖는다', () => {
+    const { container } = renderScreen({}, 'p3');
+
+    const keys = [...container.querySelectorAll('[data-hero-exit-key]')];
+    expect(keys.map((element) => element.getAttribute('data-hero-exit-key'))).toEqual(['photo-p3']);
+  });
+
   it('처리 중이거나 불러오지 못한 사진은 회색 자리표시로 보인다', () => {
     renderScreen({ photos: [photo('x', null, ['a'], 'processing')] }, 'x');
 

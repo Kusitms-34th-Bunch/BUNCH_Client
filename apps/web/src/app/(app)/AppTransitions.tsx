@@ -32,6 +32,7 @@ import { FEED_PATHS } from '@/features/feed/constants/paths';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
 import { MY_PATHS } from '@/features/my/constants/paths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
+import { PHOTO_BOX_PATHS } from '@/features/photo-box/constants/paths';
 import {
   cubicBezierIntegrator,
   easeOutIntegrator,
@@ -147,6 +148,12 @@ const tuneFeedBundleHero = ({
 const feedBundleHero = hero(
   { type: 'fade' },
   { override: { forward: tuneFeedBundleHero, backward: tuneFeedBundleHero } },
+);
+// 사진함 썸네일 → 사진 상세 hero(Figma에 정의 없음). 들어갈 때는 spring이 처음에 급해 확대보다 바뀌는 느낌이라 피드와 같은 곡선
+// 돌아갈 때는 부드러운 spring(smooth) 그대로(사용자 확인)
+const photoHero = hero(
+  { type: 'fade', variant: 'smooth' },
+  { override: { forward: tuneFeedBundleHero, backward: guardHero } },
 );
 // sheet 프리셋은 움직이는 화면(sheet)만 track이라 뒤 화면은 경계 id로 찾아 나가는 화면 표식(상태 바 색 즉시 전환)
 // 중단된 이전 전환의 노드가 남아 있을 수 있어 같은 id 중 가장 나중에 붙은 노드 사용
@@ -297,6 +304,13 @@ const rules: SsgoiTransitionRule[] = [
     to: FEED_PATHS.transitionIds.bundle,
     bidirectional: true,
     transition: feedBundleHero,
+  },
+  // 사진함 썸네일 → 사진 상세도 같은 사진을 잇는 hero
+  {
+    from: MAIN_TAB_PATHS.photos,
+    to: PHOTO_BOX_PATHS.transitionIds.detail,
+    bidirectional: true,
+    transition: photoHero,
   },
   // 상세의 번치 → 번치 탭·다른 번치 프로필은 한 단계씩 들어가는 drill
   {

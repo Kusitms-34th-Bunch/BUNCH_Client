@@ -6,8 +6,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
 import { usePhotoSelectionFlow } from '../../hooks/usePhotoSelectionFlow';
@@ -89,6 +91,9 @@ export function PhotoBoxScreen({
 
   // 사진을 지우면 눌렀던 메뉴·선택 칸이 사라지므로 화면 제목으로 초점을 옮김(web-interface-guidelines 「같은 화면에서 항목이 사라지면」, 확인 창이 닫힌 뒤)
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // 사진 상세에서 돌아오면 보던 위치로 복원(맨 위로 튀면 돌아오는 hero 사진이 화면 밖 칸으로 날아감)
+  useScrollInHistory(headingRef, ready);
+  useHoldScrollOnLeave(headingRef, ready);
   const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(focusTimer.current), []);
   const focusHeading = () => {
