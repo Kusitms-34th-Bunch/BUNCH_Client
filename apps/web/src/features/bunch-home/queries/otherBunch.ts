@@ -88,7 +88,7 @@ export const useFollowBunchMutation = (viewerId: string | null | undefined) => {
       queryClient.setQueryData<Home>(bunchHomeKeys.otherBunchHome(targetId, viewerId), (home) =>
         home ? { ...home, followState: result.followState, followId } : home,
       );
-      // 그 번치가 들어 있는 모든 목록의 버튼·수도 바뀜. ponytail: 피드는 아직 샘플이라 무효화 대상 아님, 서버 연결 때 추가
+      // 그 번치가 들어 있는 모든 목록의 버튼·수도 바뀜(피드 멤버 프로필은 들어올 때마다 다시 받음)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) }),
         queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHome(viewerId) }),

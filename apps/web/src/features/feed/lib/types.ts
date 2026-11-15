@@ -131,6 +131,10 @@ export type FeedMemberBunch = {
   imageSrc?: string | undefined;
   isPrivate: boolean;
   followStatus: FeedFollowStatus;
+  /** 언팔로우·요청 취소에 쓰는 관계 ID(팔로우하지 않았으면 없음) */
+  followId?: string | undefined;
+  /** 서버가 팔로우 버튼을 보이라고 함(지금 번치 자신의 줄·소속 번치 없음이면 false) */
+  showFollowButton?: boolean | undefined;
 };
 
 export type FeedMemberProfile = {
