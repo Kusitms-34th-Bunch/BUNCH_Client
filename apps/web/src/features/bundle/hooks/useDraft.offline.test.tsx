@@ -146,7 +146,7 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     expect(connection.holdEvent?.('PHOTOS')).toBe(false);
 
     const photoId = ready(result.current.state).draft.photos[0]!.id;
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
 
     expect(connection.holdEvent?.('PHOTOS')).toBe(true);
     // 다른 type은 그대로 적용
