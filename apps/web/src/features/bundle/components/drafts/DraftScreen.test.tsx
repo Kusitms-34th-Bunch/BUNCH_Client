@@ -1132,8 +1132,14 @@ describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
     expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
     expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
     expect(actions.presence.end).not.toHaveBeenCalledWith('PHOTOS');
+    // 떠오른 사진은 95%로 줄이고 70% 불투명도로 보임(이전 캡션 화면 끌기와 같은 값)
+    const lifted = screen
+      .getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(1) })
+      .closest('li');
+    expect(lifted).toHaveClass('scale-95', 'opacity-70');
 
     release();
+    expect(lifted).not.toHaveClass('opacity-70');
 
     expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
     expect(actions.setPhotoDragging).toHaveBeenLastCalledWith(false);

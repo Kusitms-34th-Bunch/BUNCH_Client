@@ -43,11 +43,17 @@ function SortablePhotoItem({ id, disabled, children }: SortablePhotoItemProps) {
       : undefined,
     transition,
     // 끄는 사진은 이웃 사진 위로 올라옴
-    zIndex: isDragging ? 20 : undefined,
+    zIndex: isDragging ? 10 : undefined,
   };
 
   return (
-    <li ref={setNodeRef} style={style} {...listeners} className="relative shrink-0">
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      // 떠오른 사진: 95%로 줄이고 사진함 끌기(`PhotoDragArea`)와 같은 70% 불투명도(이전 캡션 화면 끌기와 같은 값)
+      className={isDragging ? 'relative shrink-0 scale-95 opacity-70' : 'relative shrink-0'}
+    >
       {children}
     </li>
   );
@@ -190,14 +196,14 @@ export function DraftPhotos({
         onDragStart={reorder.onDragStart}
         onDragEnd={reorder.onDragEnd}
         onDragCancel={reorder.onDragCancel}
-        // 키보드 끌기는 쓰지 않아 안내·낭독 문구를 비움(키보드·스크린 리더용 대체 수단은 따로 정함)
+        // 키보드 끌기는 쓰지 않아 사용 안내는 비우고, 끌기 시작·취소만 기존 문구로 낭독(키보드·스크린 리더용 대체 수단은 따로 정함)
         accessibility={{
           screenReaderInstructions: { draggable: '' },
           announcements: {
-            onDragStart: () => undefined,
+            onDragStart: () => BUNDLE_MESSAGES.photoDragStart,
             onDragOver: () => undefined,
             onDragEnd: () => undefined,
-            onDragCancel: () => undefined,
+            onDragCancel: () => BUNDLE_MESSAGES.photoDragCancel,
           },
         }}
       >
