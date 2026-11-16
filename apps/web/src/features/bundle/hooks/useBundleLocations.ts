@@ -36,11 +36,15 @@ const REJECTION_MESSAGE = {
  * - 보이는 목록 = 서버 목록 + 아직 끝나지 않은 내 변경(서버 목록이 이벤트로 바뀌어도 그 위에 다시 얹음)
  * - 서버가 거절하면(중복·3개 초과·삭제된 줄) 그 변경만 걷고 명세 문구로 알림, 그 밖의 오류는 걷고 최신 상세로 맞춤
  * - 이동은 이동한 뒤의 앞뒤 장소를 서버 목록에서 찾아 보내 앞선 변경으로 줄 id가 새로 생겨도 맞음
+ * - 보내는 중·기다리는 변경이 있으면 `pending`(저장 중 표시), `settled()`로 모두 끝나길 기다림(발행 전)
+ * - `discard()`: 연결이 끊기면 아직 보내지 않은 변경을 버림(기능 spec 4.3.14). 이미 보낸 요청의 결과는 서버 기준이라 그대로 반영됨
  */
 export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked }: Options) {
   const cache = useLocationCache(bunchId, bundleId);
   const [ops, setOps] = useState<readonly LocationOp[]>([]);
   const nextNo = useRef(1);
+  // 이 번호가 바뀌면 그 전에 대기열에 들어간 변경은 보내지 않음(버린 변경)
+  const generation = useRef(0);
   // 내 변경 요청을 하나씩 순서대로 보내는 대기열
   const queue = useRef<Promise<void>>(Promise.resolve());
   const alive = useRef(true);
@@ -63,8 +67,11 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
     (op: LocationOp) => {
       if (!bunchId || !bundleId) return;
       setOps((current) => [...current, op]);
+      const enqueuedAt = generation.current;
 
       queue.current = queue.current.then(async () => {
+        // 연결이 끊겨 버린 변경은 보내지 않음(화면의 낙관적 표시는 discard가 이미 걷음)
+        if (enqueuedAt !== generation.current) return;
         try {
           // 앞선 변경이 끝난 서버 목록으로 보낼 줄 id를 정함(내가 막 추가한 줄도 이때는 서버 id가 있음)
           const serverList = cache.readDetail()?.locations ?? [];
@@ -113,6 +120,20 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
   );
 
   const newNo = () => nextNo.current++;
+
+  const discard = useCallback(() => {
+    generation.current += 1;
+    setOps([]);
+  }, []);
+
+  // 지금까지 들어온 변경이 모두 끝나길 기다림(기다리는 사이 새로 들어온 변경까지)
+  const settled = useCallback(async () => {
+    let waited: Promise<void>;
+    do {
+      waited = queue.current;
+      await waited;
+    } while (waited !== queue.current);
+  }, []);
 
   const add = useCallback(
     (place: LocationInput) => {
@@ -182,5 +203,5 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
     [enqueue],
   );
 
-  return { locations, add, replace, remove, move };
+  return { locations, add, replace, remove, move, pending: ops.length > 0, settled, discard };
 }

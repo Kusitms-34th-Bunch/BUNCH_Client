@@ -490,10 +490,12 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       result.current.actions.addLocation(place('b', '장소 B', '주소 B'));
     });
     await waitFor(() => expect(saved()).toEqual(['장소 A', '장소 B']), SAVE_WAIT);
-    await waitFor(
-      () => expect(ready(result.current.state).draft.locations).toHaveLength(2),
-      SAVE_WAIT,
-    );
+    // 행 수가 아니라 두 줄 모두 서버 id를 받았는지로 기다림(낙관적으로 얹은 줄은 임시 id)
+    await waitFor(() => {
+      const rows = ready(result.current.state).draft.locations;
+      expect(rows).toHaveLength(2);
+      expect(rows.every((row) => !row.id.startsWith('pending:'))).toBe(true);
+    }, SAVE_WAIT);
 
     const [first, second] = ready(result.current.state).draft.locations;
     act(() => result.current.actions.moveLocation(second!.id, 0));
@@ -562,6 +564,80 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     act(() => result.current.actions.moveLocation('pending:9', 0));
 
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  describe('위치 요청의 저장 상태·발행·연결 끊김', () => {
+    // 첫 위치 요청의 응답을 늦춰 요청이 오가는 동안을 만듦
+    const slowFirstIntent = (ms: number) => {
+      let first = true;
+      server.use(
+        http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', async () => {
+          if (first) {
+            first = false;
+            await delay(ms);
+          }
+          return undefined;
+        }),
+      );
+    };
+
+    it('위치 요청이 끝나기 전에는 「저장 중」으로 보이고 끝나면 「저장 완료」가 된다', async () => {
+      const { id, result } = await renderReady();
+      slowFirstIntent(150);
+
+      act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+
+      expect(ready(result.current.state).saveStatus).toBe('saving');
+      await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+      await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+    });
+
+    it('연결이 끊기면 아직 보내지 않은 위치 변경은 버리고 이미 보낸 것만 서버에 남는다', async () => {
+      const { id, result } = await renderReady();
+      slowFirstIntent(200);
+
+      act(() => {
+        result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+        result.current.actions.addLocation(place('b', '장소 B', '주소 B'));
+      });
+      // 첫 요청이 서버로 나간 뒤(응답은 아직 오지 않음)에 연결이 끊김
+      await act(async () => {
+        await delay(50);
+      });
+      const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      try {
+        act(() => {
+          window.dispatchEvent(new Event('offline'));
+        });
+        // 첫 요청이 끝난 뒤에도 대기 중이던 둘째 변경은 보내지 않음
+        await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+        await delay(300);
+        expect(serverBundle(id)?.locations.map((location) => location.name)).toEqual(['장소 A']);
+      } finally {
+        onLine.mockRestore();
+        act(() => {
+          window.dispatchEvent(new Event('online'));
+        });
+      }
+    });
+
+    it('지운 줄의 행 id를 새 줄이 이어받지 않는다(늦은 옛 요청이 새 줄을 건드리지 않도록)', async () => {
+      const { id, result } = await renderReady();
+
+      act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+      await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+      const firstId = serverBundle(id)?.locations[0]?.id;
+      await waitFor(
+        () => expect(ready(result.current.state).draft.locations[0]?.id).toBe(String(firstId)),
+        SAVE_WAIT,
+      );
+      act(() => result.current.actions.removeLocation(String(firstId)));
+      await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(0), SAVE_WAIT);
+      act(() => result.current.actions.addLocation(place('b', '장소 B', '주소 B')));
+      await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+
+      expect(serverBundle(id)?.locations[0]?.id).not.toBe(firstId);
+    });
   });
 
   it('다른 멤버가 먼저 같은 장소를 넣어 서버가 거절하면 내 변경을 걷고 「이미 추가한 위치예요.」를 알린다', async () => {
@@ -694,6 +770,35 @@ describe('useDraft 발행', () => {
       })),
     }));
   };
+
+  it('발행은 보내는 중인 위치 요청이 끝난 뒤의 서버 구성으로 한다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    let firstIntent = true;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', async () => {
+        if (firstIntent) {
+          firstIntent = false;
+          await delay(200);
+        }
+        return undefined;
+      }),
+    );
+    const locationsAtPublish: number[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        locationsAtPublish.push(serverBundle(id)?.locations.length ?? -1);
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+    await act(async () => {
+      expect(await result.current.actions.publish()).toBe('published');
+    });
+
+    expect(locationsAtPublish).toEqual([1]);
+  });
 
   it('고른 공개 범위를 발행 요청 본문에 싣고, 하나도 고르지 않았으면 요청 없이 막는다', async () => {
     const { id, result } = await renderReady();

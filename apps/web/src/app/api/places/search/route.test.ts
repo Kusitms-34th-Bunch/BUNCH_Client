@@ -75,6 +75,7 @@ describe('GET /api/places/search', () => {
           address: '서울 영등포구 여의도동',
         },
       ],
+      degraded: false,
     });
     // 키는 카카오 요청 헤더로만 가고 좌표 필드는 응답에 없음
     const [firstUrl, firstInit] = fetchMock.mock.calls[0] as unknown as [URL, RequestInit];
@@ -240,6 +241,23 @@ describe('GET /api/places/search', () => {
       await GET(get('?q=%20cafe%20'), context);
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('한쪽이 실패한 결과는 degraded로 알린다', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((input: URL) =>
+          Promise.resolve(
+            input.pathname.endsWith('/keyword.json')
+              ? Response.json({ documents: keywordDocs(1) })
+              : new Response('error', { status: 500 }),
+          ),
+        ),
+      );
+
+      const body = (await (await GET(get('?q=여의도'), context)).json()) as { degraded: boolean };
+
+      expect(body.degraded).toBe(true);
     });
 
     it('한쪽이 실패한 결과는 캐시하지 않아 다음 검색에서 다시 부른다', async () => {

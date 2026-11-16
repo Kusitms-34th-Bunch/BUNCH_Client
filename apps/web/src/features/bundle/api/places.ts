@@ -12,6 +12,8 @@ const placeSearchSchema = z.object({
       address: z.string(),
     }),
   ),
+  // 키워드·주소 검색 중 한쪽이 실패해 결과가 일부일 때 true(이 결과는 다시 묻도록 캐시하지 않음)
+  degraded: z.boolean().optional(),
 });
 
 // 같은 검색어를 이 시간 동안은 BFF에 다시 묻지 않음(글자를 지웠다 다시 쓰는 흔한 경우의 호출을 줄임)
@@ -51,7 +53,7 @@ export const searchPlaces = async (
       const oldest = cache.keys().next().value;
       if (oldest !== undefined) cache.delete(oldest);
     }
-    cache.set(key, { at: Date.now(), places });
+    if (!body.degraded) cache.set(key, { at: Date.now(), places });
     return places;
   } catch (error) {
     throw normalizeError(error);

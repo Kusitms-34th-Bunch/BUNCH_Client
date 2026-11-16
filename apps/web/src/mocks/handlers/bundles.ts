@@ -606,7 +606,9 @@ export const bundleHandlers = [
     const current = locationsWithIds(bundle);
     let next = current;
     let acceptedCount = 0;
-    let nextId = Math.max(0, ...current.map((location) => location.id)) + 1;
+    // 지운 줄의 id를 새 줄이 이어받으면 늦게 도착한 옛 요청이 새 줄을 지우거나 바꾸므로, 발급한 id는 되풀이하지 않음
+    let nextId =
+      Math.max(bundle.lastLocationId ?? 0, ...current.map((location) => location.id)) + 1;
     const keyOf = (place: { provider: string; externalId: string }) =>
       `${place.provider.trim().toLowerCase()}:${place.externalId.trim()}`;
 
@@ -675,6 +677,7 @@ export const bundleHandlers = [
         ...latest,
         locations: next,
         locationsVersion: latest.locationsVersion + 1,
+        lastLocationId: Math.max(latest.lastLocationId ?? 0, nextId - 1),
       }));
     }
     const updated = mockDb.get().bundles.find((item) => item.id === bundle.id) ?? bundle;

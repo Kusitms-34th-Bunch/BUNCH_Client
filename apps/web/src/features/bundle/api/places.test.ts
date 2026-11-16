@@ -56,6 +56,20 @@ describe('searchPlaces', () => {
     expect(requests).toEqual(['여의도', '여의도']);
   });
 
+  it('일부 검색이 실패한 결과(degraded)는 캐시하지 않아 다음에 다시 묻는다', async () => {
+    server.use(
+      http.get('/api/places/search', ({ request }) => {
+        requests.push(new URL(request.url).searchParams.get('q') ?? '');
+        return HttpResponse.json({ places: [], degraded: true });
+      }),
+    );
+
+    await searchPlaces('여의도');
+    await searchPlaces('여의도');
+
+    expect(requests).toEqual(['여의도', '여의도']);
+  });
+
   it('실패한 응답은 캐시하지 않는다', async () => {
     server.use(http.get('/api/places/search', () => HttpResponse.json({}, { status: 502 })));
     await expect(searchPlaces('여의도')).rejects.toBeTruthy();

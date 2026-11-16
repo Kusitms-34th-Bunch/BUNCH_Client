@@ -112,6 +112,8 @@ export type MockBundle = {
   dateVersion: number;
   locations: MockLocation[];
   locationsVersion: number;
+  /** 지금까지 발급한 장소 행 id의 최댓값(줄을 지워도 같은 id를 다시 주지 않으려고 따로 둠, 없으면 현재 목록에서 정함) */
+  lastLocationId?: number;
   revision: number;
   photos: MockBundlePhoto[];
   participants: { memberId: number; joinedAt: string }[];

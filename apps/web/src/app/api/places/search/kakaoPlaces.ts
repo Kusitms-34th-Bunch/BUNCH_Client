@@ -123,14 +123,15 @@ const fromAddress = (documents: z.infer<typeof addressSchema>['documents']): Kak
  * - 키워드 결과가 ADDRESS_SEARCH_BELOW건 이상이면 주소 검색은 부르지 않아 대부분의 장소 이름 검색은 호출 1건
  * - 한쪽만 실패하면 다른 쪽 결과를 쓰고, 둘 다 실패하면 오류. 취소된 요청은 오류로 끝남
  * - 같은 검색어는 CACHE_TTL_MS 동안 캐시한 결과를 돌려줌
+ * - 한쪽이 실패해 일부만 담긴 결과는 `degraded: true`로 알려 브라우저도 캐시하지 않게 함
  */
 export const searchKakaoPlaces = async (
   query: string,
   apiKey: string,
   signal?: AbortSignal,
-): Promise<KakaoPlace[]> => {
+): Promise<{ places: KakaoPlace[]; degraded: boolean }> => {
   const cached = readCache(query);
-  if (cached) return cached;
+  if (cached) return { places: cached, degraded: false };
 
   // 한쪽이라도 실패한 결과는 캐시하지 않음(일시 오류가 몇 분 동안 굳지 않게)
   let degraded = false;
@@ -179,5 +180,5 @@ export const searchKakaoPlaces = async (
     })
     .slice(0, MAX_RESULTS);
   if (!degraded) writeCache(query, places);
-  return places;
+  return { places, degraded };
 };

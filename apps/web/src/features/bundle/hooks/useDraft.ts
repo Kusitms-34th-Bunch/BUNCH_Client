@@ -499,6 +499,7 @@ export function useDraft(draftId: string | undefined): {
 
   const busy =
     flushing ||
+    placeActions.pending ||
     !isEmpty(pending) ||
     photoBusy ||
     addParticipant.isPending ||
@@ -589,6 +590,7 @@ export function useDraft(draftId: string | undefined): {
     notified.current = false;
     again.current = false;
     discardGeneration.current += 1;
+    placeActions.discard();
     pendingRef.current = {};
     setPending({});
     setLocalPhotos(undefined);
@@ -744,6 +746,8 @@ export function useDraft(draftId: string | undefined): {
     },
     searchPlaces: searchPlacesApi,
     publish: async () => {
+      // 보내는 중인 위치 변경이 끝난 뒤의 서버 구성으로 발행함(위치 변경이 발행보다 늦게 도착하지 않도록)
+      await placeActions.settled();
       // 보내는 중인 사진 변경이 끝난 뒤의 서버 구성으로 발행함
       const failuresBefore = photoFailures.current;
       await photoQueue.current;
