@@ -751,7 +751,18 @@ export function useDraft(draftId: string | undefined): {
       // 위치 변경이 거절·실패했으면(알림은 그때 이미 띄움) 서버에 반영되지 않은 구성으로 발행하지 않음
       if (placeResult.failed) return 'blocked';
       // 위치 응답은 상세 revision을 올리지 않으므로 보낸 요청이 있었으면 최신 상세로 맞춘 뒤 발행함
-      if (placeResult.sent) await refetchDetail();
+      if (placeResult.sent) {
+        const refreshed = await refetchDetail();
+        // 최신 상세를 받지 못하면 낡은 revision으로 발행을 시도하지 않음
+        if (refreshed.isError || !refreshed.data) {
+          toast(BUNDLE_MESSAGES.saveFailed);
+          return 'failed';
+        }
+        // effect가 ref를 갱신하기를 기다리지 않고 받은 상세를 바로 기준으로 삼음
+        if (!detailRef.current || refreshed.data.revision >= detailRef.current.revision) {
+          detailRef.current = refreshed.data;
+        }
+      }
       // 보내는 중인 사진 변경이 끝난 뒤의 서버 구성으로 발행함
       const failuresBefore = photoFailures.current;
       await photoQueue.current;

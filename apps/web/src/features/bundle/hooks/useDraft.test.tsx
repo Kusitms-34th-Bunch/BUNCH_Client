@@ -10,7 +10,7 @@ import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { PlaceResult } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
-import { createBundle } from '../api/bundles';
+import { applyBundleLocationIntent, createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import { bundleKeys } from '../queries/keys';
@@ -609,6 +609,8 @@ describe('useDraft 참여 멤버·위치·사진', () => {
         act(() => {
           window.dispatchEvent(new Event('offline'));
         });
+        // 이미 나간 첫 요청의 응답이 오기 전에는 낙관적 변경을 걷어도 「저장 중」으로 보임
+        expect(ready(result.current.state).saveStatus).toBe('saving');
         // 첫 요청이 끝난 뒤에도 대기 중이던 둘째 변경은 보내지 않음
         await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
         await delay(300);
@@ -637,6 +639,23 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
 
       expect(serverBundle(id)?.locations[0]?.id).not.toBe(firstId);
+
+    // 지운 줄을 향해 늦게 도착한 옛 REMOVE·REPLACE는 새 줄을 건드리지 않음
+    const newId = serverBundle(id)?.locations[0]?.id;
+    await applyBundleLocationIntent(bunchId, id, {
+      intent: 'REMOVE',
+      targetLocationId: String(firstId),
+    });
+    await applyBundleLocationIntent(bunchId, id, {
+      intent: 'REPLACE',
+      targetLocationId: String(firstId),
+      place: place('c', '장소 C', '주소 C'),
+    });
+    const ids = serverBundle(id)?.locations.map((location) => location.id);
+    expect(ids).toContain(newId);
+    expect(serverBundle(id)?.locations.find((location) => location.id === newId)?.name).toBe(
+      '장소 B',
+    );
     });
   });
 
@@ -823,6 +842,31 @@ describe('useDraft 발행', () => {
     expect(outcome).toBe('blocked');
     expect(published).toEqual([]);
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationSaveFailed);
+  });
+
+  it('위치 변경 뒤 최신 상세를 받지 못하면 낡은 revision으로 발행하지 않는다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const published: number[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        published.push(1);
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+    // 위치 요청이 끝난 뒤 발행 직전의 상세 재조회가 실패
+    server.use(http.get('/api/bunches/:bunchId/bundles/:id', () => fail(500, 'COMMON_500')));
+    act(() => result.current.actions.addLocation(place('b', '장소 B', '주소 B')));
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('failed');
+    expect(published).toEqual([]);
   });
 
   it('고른 공개 범위를 발행 요청 본문에 싣고, 하나도 고르지 않았으면 요청 없이 막는다', async () => {

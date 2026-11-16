@@ -42,6 +42,8 @@ const REJECTION_MESSAGE = {
 export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked }: Options) {
   const cache = useLocationCache(bunchId, bundleId);
   const [ops, setOps] = useState<readonly LocationOp[]>([]);
+  // 서버로 보낸 뒤 응답을 기다리는 요청 수(연결이 끊겨 낙관적 변경을 걷어도 응답이 올 때까지는 저장 중으로 보임)
+  const [sending, setSending] = useState(0);
   const nextNo = useRef(1);
   // 이 번호가 바뀌면 그 전에 대기열에 들어간 변경은 보내지 않음(버린 변경)
   const generation = useRef(0);
@@ -75,6 +77,7 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
       queue.current = queue.current.then(async () => {
         // 연결이 끊겨 버린 변경은 보내지 않음(화면의 낙관적 표시는 discard가 이미 걷음)
         if (enqueuedAt !== generation.current) return;
+        setSending((count) => count + 1);
         try {
           // 앞선 변경이 끝난 서버 목록으로 보낼 줄 id를 정함(내가 막 추가한 줄도 이때는 서버 id가 있음)
           const serverList = cache.readDetail()?.locations ?? [];
@@ -114,6 +117,7 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
           // 거절·실패한 변경은 걷고 서버의 최신 목록으로 맞춤
           void cache.refetch();
         } finally {
+          setSending((count) => count - 1);
           // 응답이 캐시에 반영돼 화면에 그려진 뒤에 내 변경을 걷어 줄이 한 프레임 사라지지 않게 함
           setTimeout(() => {
             if (alive.current) setOps((current) => current.filter((item) => item.no !== op.no));
@@ -215,5 +219,5 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
     [enqueue],
   );
 
-  return { locations, add, replace, remove, move, pending: ops.length > 0, settled, discard };
+  return { locations, add, replace, remove, move, pending: ops.length > 0 || sending > 0, settled, discard };
 }
