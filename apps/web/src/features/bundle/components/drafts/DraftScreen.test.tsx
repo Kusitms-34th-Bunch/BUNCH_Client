@@ -1363,3 +1363,67 @@ describe('고칠 수 없는 사람의 사진 길게 누르기와 추천 날짜 �
     expect(actions.setDate).toHaveBeenCalledWith('2026-06-20');
   });
 });
+
+describe('사진 앞·뒤로 옮기기 버튼(키보드·스크린 리더용 대체 수단)', () => {
+  const before = (position: number) => BUNDLE_MESSAGES.movePhotoBeforeLabel(position);
+  const after = (position: number) => BUNDLE_MESSAGES.movePhotoAfterLabel(position);
+
+  it('참여 멤버에게는 사진마다 몇 번째 사진인지 담은 이름의 앞·뒤로 옮기기 버튼이 있다', () => {
+    renderScreen();
+
+    for (const position of [1, 2, 3]) {
+      expect(screen.getByRole('button', { name: before(position) })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: after(position) })).toBeInTheDocument();
+    }
+  });
+
+  it('맨 앞 사진의 「앞으로」와 맨 뒤 사진의 「뒤로」는 aria-disabled이고 눌러도 옮기지 않는다', () => {
+    renderScreen();
+
+    const first = screen.getByRole('button', { name: before(1) });
+    const last = screen.getByRole('button', { name: after(3) });
+    expect(first).toHaveAttribute('aria-disabled', 'true');
+    expect(last).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: after(1) })).not.toHaveAttribute('aria-disabled');
+
+    fireEvent.click(first);
+    fireEvent.click(last);
+
+    expect(actions.movePhoto).not.toHaveBeenCalled();
+  });
+
+  it('「뒤로」를 누르면 그 사진을 한 칸 뒤 자리로 옮기고 결과를 낭독한다', () => {
+    renderScreen();
+    const firstPhotoId = publishable.photos[0]!.id;
+
+    fireEvent.click(screen.getByRole('button', { name: after(1) }));
+
+    expect(actions.movePhoto).toHaveBeenCalledWith(firstPhotoId, 1);
+    expect(screen.getByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
+  });
+
+  it('「앞으로」를 누르면 그 사진을 한 칸 앞 자리로 옮긴다', () => {
+    renderScreen();
+    const thirdPhotoId = publishable.photos[2]!.id;
+
+    fireEvent.click(screen.getByRole('button', { name: before(3) }));
+
+    expect(actions.movePhoto).toHaveBeenCalledWith(thirdPhotoId, 1);
+    expect(screen.getByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
+  });
+
+  it('참여 멤버가 아니거나 사진이 1장이거나 연결이 끊겨 있으면 버튼이 없다', () => {
+    const { unmount } = renderScreen({ viewer: outsider });
+    expect(screen.queryByRole('button', { name: after(1) })).toBeNull();
+    unmount();
+
+    const single = renderScreen({
+      draft: { ...publishable, photos: publishable.photos.slice(0, 1) },
+    });
+    expect(screen.queryByRole('button', { name: after(1) })).toBeNull();
+    single.unmount();
+
+    renderScreen({ offline: true });
+    expect(screen.queryByRole('button', { name: after(1) })).toBeNull();
+  });
+});

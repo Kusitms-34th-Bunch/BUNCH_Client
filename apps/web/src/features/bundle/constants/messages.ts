@@ -154,6 +154,9 @@ export const BUNDLE_MESSAGES = {
   photoRemovedByOther: '다른 멤버가 삭제한 사진이에요.',
   movePhotoBefore: '사진을 앞으로 옮기기',
   movePhotoAfter: '사진을 뒤로 옮기기',
+  // 목록에서 어느 사진인지 알도록 접근성 이름에 몇 번째인지 붙임(`removePhotoLabel`과 같은 방식)
+  movePhotoBeforeLabel: (current: number) => `${current}번째 사진을 앞으로 옮기기`,
+  movePhotoAfterLabel: (current: number) => `${current}번째 사진을 뒤로 옮기기`,
   photoMoved: (position: number, total: number) => `${total}장 중 ${position}번째로 옮겼어요.`,
   photoDragStart: '사진을 끌고 있어요.',
   photoDragCancel: '끌기를 취소했어요.',

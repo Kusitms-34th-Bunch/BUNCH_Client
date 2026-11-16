@@ -29,6 +29,7 @@ import { ADD_CARD_ID, AUTO_SCROLL, LONG_PRESS_MS } from '../../constants/photoLi
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
 import { usePhotoReorder } from '../../hooks/usePhotoReorder';
 import { getRemovePhotoKind } from '../../lib/photos';
+import { PhotoMoveButtons } from './PhotoMoveButtons';
 import { PresenceScope } from './PresenceScope';
 import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 
@@ -64,6 +65,7 @@ function SortablePhotoItem({ id, disabled, onLockedPress, children }: SortablePh
   return (
     <li
       ref={setNodeRef}
+      data-photo-id={id}
       style={style}
       {...listeners}
       {...(onLockedPress && {
@@ -178,6 +180,29 @@ export function DraftPhotos({
   });
   // 고칠 수 있는 참여 멤버만, 사진이 2장 이상일 때만 끌 수 있음
   const reorderable = access.canEdit && total > 1;
+  // 키보드·스크린 리더용 앞·뒤로 옮기기: 옮긴 뒤 같은 사진의 같은 버튼으로 포커스를 돌려주고(자리가 바뀌면 브라우저가 포커스를 잃을 수 있음) 결과를 낭독
+  const pendingFocus = useRef<{ photoId: string; move: 'before' | 'after'; order: string } | null>(
+    null,
+  );
+  const [moveAnnouncement, setMoveAnnouncement] = useState('');
+  const order = photoIds.join('|');
+  useEffect(() => {
+    const target = pendingFocus.current;
+    pendingFocus.current = null;
+    // 자리가 바뀌지 않았으면(옮기지 못함) 포커스를 건드리지 않음
+    if (!target || target.order === order) return;
+    const item = [
+      ...(listRef.current?.querySelectorAll<HTMLElement>('[data-photo-id]') ?? []),
+    ].find((element) => element.dataset.photoId === target.photoId);
+    item?.querySelector<HTMLElement>(`[data-move="${target.move}"]`)?.focus();
+  });
+  const movePhotoBy = (photoId: string, index: number, step: -1 | 1) => {
+    const to = index + step;
+    if (to < 0 || to >= total) return;
+    pendingFocus.current = { photoId, move: step < 0 ? 'before' : 'after', order };
+    onMovePhoto(photoId, to);
+    setMoveAnnouncement(BUNDLE_MESSAGES.photoMoved(to + 1, total));
+  };
   const openRemove = useRemovePhotoDialog();
   // 삭제 확인 창이 열려 있는 동안(연결이 끊겼다 이어져도 다시 알리도록 열림 상태로 둠)
   const [removeOpen, setRemoveOpen] = useState(false);
@@ -235,7 +260,7 @@ export function DraftPhotos({
         onDragStart={reorder.onDragStart}
         onDragEnd={reorder.onDragEnd}
         onDragCancel={reorder.onDragCancel}
-        // 키보드 끌기는 쓰지 않아 사용 안내는 비우고, 끌기 시작·취소만 기존 문구로 낭독(키보드·스크린 리더용 대체 수단은 따로 정함)
+        // 키보드 끌기는 쓰지 않아 사용 안내는 비우고, 끌기 시작·취소만 기존 문구로 낭독(키보드·스크린 리더는 썸네일의 앞·뒤로 옮기기 버튼을 씀)
         accessibility={{
           screenReaderInstructions: { draggable: '' },
           announcements: {
@@ -278,6 +303,15 @@ export function DraftPhotos({
                   deleteLabel={BUNDLE_MESSAGES.removePhotoLabel(index + 1)}
                   onDelete={() => requestRemove(photo.id)}
                 />
+                {reorderable ? (
+                  <PhotoMoveButtons
+                    index={index}
+                    total={total}
+                    onMoveBefore={() => movePhotoBy(photo.id, index, -1)}
+                    onMoveAfter={() => movePhotoBy(photo.id, index, 1)}
+                    className="inset-x-s3 bottom-s3 gap-s2 absolute z-10 flex flex-col"
+                  />
+                ) : null}
               </SortablePhotoItem>
             ))}
             {access.canAddPhoto && total < MAX_PHOTOS ? (
@@ -294,6 +328,10 @@ export function DraftPhotos({
       </DndContext>
       <p role="status" className="sr-only">
         {BUNDLE_MESSAGES.photoCount(total)}
+      </p>
+      {/* 앞·뒤로 옮긴 결과(「N장 중 M번째로 옮겼어요.」)를 상태 변화로 읽음 */}
+      <p role="status" className="sr-only">
+        {moveAnnouncement}
       </p>
       {removeOpen || importOpen || reorder.dragging ? (
         <PresenceScope presence={presence} target="PHOTOS" />
