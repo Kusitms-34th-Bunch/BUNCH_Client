@@ -3,9 +3,10 @@
 import { DateChangeSheet, SelectionField } from '@app/design-system/web';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
-import type { Draft } from '../../lib/types';
+import type { Draft, PlaceResult } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../../constants/messages';
 import { formatDraftDate, parseDraftDate, toDraftDateString } from '../../lib/draftDate';
+import { isPendingLocation, toLiveIndex } from '../../lib/locationOps';
 import { LocationSearchSheet } from './LocationSearchSheet';
 import { PresenceScope } from './PresenceScope';
 import { SortableLocationGroup } from './SortableLocationGroup';
@@ -14,10 +15,18 @@ type DraftPlaceDateProps = {
   draft: Draft;
   actions: Pick<
     DraftActions,
-    'addLocation' | 'removeLocation' | 'moveLocation' | 'setDate' | 'searchPlaces' | 'presence'
+    | 'addLocation'
+    | 'replaceLocation'
+    | 'removeLocation'
+    | 'moveLocation'
+    | 'setDate'
+    | 'searchPlaces'
+    | 'presence'
   >;
   /** 위치·날짜를 고칠 수 있는지(참여 멤버만) */
   editable: boolean;
+  /** 참여 멤버인지: 아니면 위치는 장소만 보이고 X와 「+ 위치 추가」는 보이지 않음(연결이 끊겨 editable만 false인 때는 그대로 보임, 기능 spec 4.3.10) */
+  participant: boolean;
   /** 날짜 형식(올해 여부)의 기준 연도 */
   currentYear: number;
   /** 고칠 수 없는 사람이 눌렀을 때 */
@@ -32,24 +41,37 @@ export function DraftPlaceDate({
   draft,
   actions,
   editable,
+  participant,
   currentYear,
   onDenied,
 }: DraftPlaceDateProps) {
   const openOverlay = useScreenOverlay();
 
   const guard = (action: () => void) => () => (editable ? action() : onDenied());
-  const openLocation = guard(() => {
+  // 검색 시트가 열려 있는 동안 그 영역을 작업 중으로 알림: 새 위치는 `LOCATION`, 기존 줄을 바꾸는 중이면 그 줄(`LOCATION:{서버 행 id}`)
+  const openLocationSheet = (target: string, onSelect: (_place: PlaceResult) => void) => {
     openOverlay((rootProps, close) => (
-      <LocationSearchSheet
-        {...rootProps}
-        searchPlaces={actions.searchPlaces}
-        onSelect={(place) => {
-          actions.addLocation(place);
-          close();
-        }}
-      />
+      <PresenceScope presence={actions.presence} target={target}>
+        <LocationSearchSheet
+          {...rootProps}
+          searchPlaces={actions.searchPlaces}
+          onSelect={(place) => {
+            onSelect(place);
+            close();
+          }}
+        />
+      </PresenceScope>
     ));
-  });
+  };
+  const openLocation = guard(() => openLocationSheet('LOCATION', actions.addLocation));
+  // 서버 id를 아직 받지 못한 줄(내가 막 추가한 줄)은 바꾸지 않음
+  const openReplace = (locationId: string) =>
+    guard(() => {
+      if (isPendingLocation({ id: locationId })) return;
+      openLocationSheet(`LOCATION:${locationId}`, (place) =>
+        actions.replaceLocation(locationId, place),
+      );
+    })();
   const openDate = guard(() => {
     openOverlay((rootProps, close) => (
       // 날짜 선택 화면이 열려 있는 동안 날짜를 작업 중으로 알림
@@ -70,10 +92,8 @@ export function DraftPlaceDate({
   const membersOf = (ids: readonly string[]) =>
     draft.members.filter((candidate) => ids.includes(candidate.id));
   const addEditors = membersOf(draft.editing.locationAddMemberIds ?? []);
-  const locationEditors = membersOf([
-    ...(draft.editing.locationAddMemberIds ?? []),
-    ...Object.values(draft.editing.locationEditors ?? {}).flat(),
-  ]);
+  // 위치가 없을 때는 새 위치를 더하려는 멤버만 「위치 추가」 줄에 보임
+  const locationEditors = membersOf(draft.editing.locationAddMemberIds ?? []);
   const dateEditors = membersOf(draft.editing.dateMemberIds ?? []);
   const toProfiles = (list: typeof locationEditors) =>
     list.length > 0
@@ -102,16 +122,33 @@ export function DraftPlaceDate({
         />
       ) : (
         <SortableLocationGroup
-          items={draft.locations.map((location) => ({ id: location.id, value: location.name }))}
+          // 줄마다 그 줄을 바꾸거나 끄는 멤버의 프로필을 이름 오른쪽에 보임(기능 spec 4.3.13)
+          items={draft.locations.map((location) => {
+            const rowEditors = membersOf(draft.editing.locationEditors?.[location.id] ?? []);
+            return {
+              id: location.id,
+              value: location.name,
+              members: toProfiles(rowEditors),
+              fieldLabel: fieldNameWith(BUNDLE_MESSAGES.locationField, rowEditors),
+            };
+          })}
           // 하나뿐이거나 권한이 없으면 끌 수 없음(눌렀을 때 이유를 안내)
           disabled={!editable || draft.locations.length < 2}
           onBlockedPress={!editable ? onDenied : undefined}
-          onMove={actions.moveLocation}
-          // 작업 중인 멤버가 있으면 이름을 필드·그룹 이름에 넣어 칩에서도 읽히게 함
-          fieldLabel={fieldNameWith(BUNDLE_MESSAGES.locationField, locationEditors)}
-          groupLabel={fieldNameWith(BUNDLE_MESSAGES.locationField, locationEditors)}
+          onMove={(id, shownIndex, overId) =>
+            actions.moveLocation(id, toLiveIndex(draft.locations, overId, shownIndex))
+          }
+          onItemClick={openReplace}
+          onDragStateChange={(id, dragging) =>
+            dragging
+              ? actions.presence.begin(`LOCATION:${id}`)
+              : actions.presence.end(`LOCATION:${id}`)
+          }
+          fieldLabel={BUNDLE_MESSAGES.locationField}
+          groupLabel={BUNDLE_MESSAGES.locationField}
           onItemClear={(id) => guard(() => actions.removeLocation(id))()}
-          onAdd={draft.locations.length < MAX_LOCATIONS ? openLocation : undefined}
+          hideItemClear={!participant}
+          onAdd={participant && draft.locations.length < MAX_LOCATIONS ? openLocation : undefined}
           addMembers={toProfiles(addEditors)}
           {...(addEditors.length > 0 && {
             addMembersLabel: editingName(addEditors),

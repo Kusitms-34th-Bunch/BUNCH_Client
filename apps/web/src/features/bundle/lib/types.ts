@@ -25,9 +25,14 @@ export type DraftPhoto = {
   sourcePhotoId?: string | undefined;
 };
 
+/** 번들의 위치 한 줄. id는 서버가 준 장소 행 id(presence·이동·교체의 기준)이고 provider·externalId는 같은 장소인지 가르는 값 */
 export type DraftLocation = {
   id: string;
+  provider: string;
+  externalId: string;
   name: string;
+  /** 주소 없음은 null */
+  address: string | null;
 };
 
 export type DraftComment = {
@@ -84,8 +89,11 @@ export type DraftViewer = {
 /** 저장 실패는 서버가 거절하거나 재시도를 모두 썼을 때(입력은 지우지 않고 다음 입력에서 다시 시도) */
 export type SaveStatus = 'saved' | 'saving' | 'failed';
 
+/** 위치 검색 결과(`id`는 목록에서 구분하는 값, 저장에는 provider·externalId를 씀) */
 export type PlaceResult = {
   id: string;
+  provider: string;
+  externalId: string;
   name: string;
   address: string;
 };

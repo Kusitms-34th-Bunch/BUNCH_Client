@@ -220,6 +220,7 @@ export function DraftScreen({
         draft={draft}
         actions={actions}
         editable={access.canEdit}
+        participant={access.participant}
         currentYear={currentYear}
         onDenied={denyEdit}
       />

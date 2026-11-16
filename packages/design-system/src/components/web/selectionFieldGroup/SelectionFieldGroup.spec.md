@@ -23,7 +23,7 @@
 
 ## Public API
 
-- Props: `items`(`{ id, value }` 배열, 필수, `value`는 고른 값), `fieldLabel`(각 행 버튼 이름 앞에 붙는 보이지 않는 이름), `groupLabel`(주면 `role="group"`의 이름), `onItemClick(id)`, `onItemClear(id)`, `clearLabel(값, 행 순서)`(기본 "{값} 지우기"), `onAdd`(주면 추가 행), `addLabel`(기본 "추가"), 그리고 native `<div>`의 속성(`className`은 카드에 적용, `children`은 받지 않는다).
+- Props: `items`(`{ id, value, members?, fieldLabel? }` 배열, 필수, `value`는 고른 값, `members`는 그 행을 고르거나 옮기는 중인 멤버 프로필, `fieldLabel`은 그 행 버튼 이름 앞에 붙는 이름으로 주면 그룹의 `fieldLabel` 대신 씀), `fieldLabel`(각 행 버튼 이름 앞에 붙는 보이지 않는 이름), `groupLabel`(주면 `role="group"`의 이름), `onItemClick(id)`, `onItemClear(id)`, `clearLabel(값, 행 순서)`(기본 "{값} 지우기"), `onAdd`(주면 추가 행), `addLabel`(기본 "추가"), 그리고 native `<div>`의 속성(`className`은 카드에 적용, `children`은 받지 않는다).
 - 행이 하나도 없으면(`items`가 비고 `onAdd`도 없음) 아무것도 그리지 않는다.
 - 호출자 소유 책임: 값 보관, 최대 개수, 값 선택 동작, 문구의 i18n. 지우기·추가로 행이 사라지거나 늘면 포커스가 `body`로 떨어지므로 호출하는 쪽이 포커스를 옮겨 준다(`SelectionField`와 같음).
 

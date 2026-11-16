@@ -66,10 +66,13 @@ export type BundleVisibility = 'PUBLIC' | 'PRIVATE';
 
 /** 번들에 저장된 장소(검색은 BFF가 하고 서버는 저장만 하는 방향의 모양: provider, externalId, name, address) */
 export type MockLocation = {
+  /** 서버가 발급한 장소 행 id. 없으면(시드·옛 데이터) 목록 순서로 정함 */
+  id?: number;
   provider: string;
   externalId: string;
   name: string;
-  address: string;
+  /** 주소 없음은 null */
+  address: string | null;
 };
 
 /** 번들에 담긴 사진 한 장(번들 사진 ID와 사진함 원본 ID는 다름) */
@@ -109,6 +112,8 @@ export type MockBundle = {
   dateVersion: number;
   locations: MockLocation[];
   locationsVersion: number;
+  /** 지금까지 발급한 장소 행 id의 최댓값(줄을 지워도 같은 id를 다시 주지 않으려고 따로 둠, 없으면 현재 목록에서 정함) */
+  lastLocationId?: number;
   revision: number;
   photos: MockBundlePhoto[];
   participants: { memberId: number; joinedAt: string }[];

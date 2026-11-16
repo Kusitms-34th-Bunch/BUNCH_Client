@@ -52,6 +52,20 @@ export const keepNewerPicks = (previous: BundleDetail, incoming: BundleDetail): 
   return changed ? { ...incoming, photos } : incoming;
 };
 
+/**
+ * 장소 목록 버전이 뒤로 가는 상세로는 장소 목록을 되돌리지 않음
+ * 장소 작업 응답도 번들 revision을 캐시에 올리지 않아, 응답을 쓴 뒤에 먼저 시작한 재조회가 같은 revision으로 도착하면
+ * 낡은 목록이 방금 쓴 목록을 덮을 수 있음. `locationVersion`은 저장마다 오르므로 그 값으로 낡은 응답을 거름
+ */
+export const keepNewerLocations = (previous: BundleDetail, incoming: BundleDetail): BundleDetail =>
+  previous.locationVersion > incoming.locationVersion
+    ? {
+        ...incoming,
+        locations: previous.locations,
+        locationVersion: previous.locationVersion,
+      }
+    : incoming;
+
 /** 이벤트 처리 결과: 상세에 반영한 값, 서버 최신 상세로 맞춤, 아무것도 하지 않음 */
 export type BundleEventOutcome =
   | { kind: 'apply'; detail: BundleDetail }
@@ -99,9 +113,13 @@ export const applyContentEvent = (
     }
     case 'LOCATION': {
       const parsed = schemas.LOCATION.safeParse(data);
-      return parsed.success
-        ? next({ locations: toDetailLocations(parsed.data.locations) })
-        : REFETCH;
+      if (!parsed.success) return REFETCH;
+      // 낡은 목록으로 더 새로운 장소 목록을 덮지 않고 revision만 맞춤
+      if (parsed.data.version < detail.locationVersion) return next({});
+      return next({
+        locations: toDetailLocations(parsed.data.locations),
+        locationVersion: parsed.data.version,
+      });
     }
     case 'PHOTOS': {
       const parsed = schemas.PHOTOS.safeParse(data);

@@ -20,10 +20,9 @@ import type {
 } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
 import { readPublishBlockers, readVersionConflict } from '../api/bundles';
-import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
-import { placeFixture } from '../fixtures/draft.fixture';
+import { searchPlaces as searchPlacesApi } from '../api/places';
+import { BUNDLE_MESSAGES } from '../constants/messages';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
-import { moveLocation } from '../lib/locations';
 import { movePhoto, type PhotoMovePlan, planPhotoMoves, removePhoto } from '../lib/photos';
 import { ensureTitleCrdt } from '../lib/titleCrdt';
 import {
@@ -38,6 +37,7 @@ import {
   useMergeTitleMutation,
 } from '../queries/bundles';
 import { bundleMutationKeys } from '../queries/keys';
+import { useBundleLocations } from './useBundleLocations';
 import { useBundleRealtime } from './useBundleRealtime';
 import { useOnlineStatus } from './useOnlineStatus';
 import { usePresence } from './usePresence';
@@ -62,16 +62,6 @@ const CONFLICT_RETRY_DELAY_MS = 200;
 const isRetryable = (error: unknown) => {
   const { status } = (error as { status?: number } | null) ?? {};
   return status === undefined || status >= 500;
-};
-
-/** 장소 검색 API 연결 전 목 검색(이름·주소에 키워드가 들어 있으면 결과). 렌더마다 바뀌지 않도록 hook 밖에 둠 */
-const searchPlaces = (keyword: string): Promise<readonly PlaceResult[]> => {
-  const query = keyword.trim();
-  return Promise.resolve(
-    query === ''
-      ? []
-      : placeFixture.filter((place) => place.name.includes(query) || place.address.includes(query)),
-  );
 };
 
 export type DraftState =
@@ -111,6 +101,8 @@ export type DraftActions = {
   /** 공개 범위를 고름(서버에는 업로드 요청으로만 보냄). null은 고른 값을 버림(공개 범위 화면에서 뒤로 갈 때, 기능 spec 4.3.9) */
   setVisibility: (_visibility: DraftVisibility | null) => void;
   addLocation: (_place: PlaceResult) => void;
+  /** 위치 줄을 눌러 다른 장소로 바꿈(줄 id와 자리는 그대로) */
+  replaceLocation: (_locationId: string, _place: PlaceResult) => void;
   removeLocation: (_locationId: string) => void;
   /** 위치를 다른 자리로 옮김(햄버거를 잡고 끌어 순서 바꾸기, 자리는 0부터) */
   moveLocation: (_locationId: string, _toIndex: number) => void;
@@ -217,11 +209,16 @@ export function useDraft(draftId: string | undefined): {
   });
 
   const [pending, setPending] = useState<Pending>({});
-  // 화면에서 위치를 바꾸기 전에는 서버에 저장된 위치를 보이고, 바꾼 뒤에는 화면 값(위치 저장은 장소 검색 이슈에서 연결)
-  const [editedLocations, setEditedLocations] = useState<readonly DraftLocation[] | undefined>(
-    undefined,
-  );
-  const locations = editedLocations ?? detail?.locations ?? NO_LOCATIONS;
+  // 위치: 서버 목록 위에 응답을 기다리는 내 변경을 얹어 보임. 연결이 끊겼을 때의 막기는 아래 동작 감싸기가 맡음
+  const placeActions = useBundleLocations({
+    bunchId,
+    bundleId,
+    serverLocations: detail?.locations ?? NO_LOCATIONS,
+    blocked: false,
+    // 실시간 연결이 끊긴 순간 바로(렌더 전에) 대기 중인 변경을 막음
+    isOffline: realtime.isDown,
+  });
+  const locations = placeActions.locations;
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   const [flushing, setFlushing] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -504,6 +501,7 @@ export function useDraft(draftId: string | undefined): {
 
   const busy =
     flushing ||
+    placeActions.pending ||
     !isEmpty(pending) ||
     photoBusy ||
     addParticipant.isPending ||
@@ -594,6 +592,7 @@ export function useDraft(draftId: string | undefined): {
     notified.current = false;
     again.current = false;
     discardGeneration.current += 1;
+    placeActions.discard();
     pendingRef.current = {};
     setPending({});
     setLocalPhotos(undefined);
@@ -669,21 +668,10 @@ export function useDraft(draftId: string | undefined): {
     },
     // 공개 범위는 고르기만 하고 저장하지 않음: 업로드(발행) 요청에 최종 선택을 함께 보냄(v5 명세)
     setVisibility: (visibility) => setVisibilityChoice(visibility ?? undefined),
-    addLocation: (place) =>
-      setEditedLocations((current) => {
-        const base = current ?? detailRef.current?.locations ?? NO_LOCATIONS;
-        return base.length >= MAX_LOCATIONS ? base : [...base, { id: place.id, name: place.name }];
-      }),
-    removeLocation: (locationId) =>
-      setEditedLocations((current) =>
-        (current ?? detailRef.current?.locations ?? NO_LOCATIONS).filter(
-          (location) => location.id !== locationId,
-        ),
-      ),
-    moveLocation: (locationId, toIndex) =>
-      setEditedLocations((current) =>
-        moveLocation(current ?? detailRef.current?.locations ?? NO_LOCATIONS, locationId, toIndex),
-      ),
+    addLocation: placeActions.add,
+    replaceLocation: placeActions.replace,
+    removeLocation: placeActions.remove,
+    moveLocation: placeActions.move,
     setDate: (date) => {
       change((current) => ({ ...current, date }));
       schedule(0);
@@ -758,8 +746,25 @@ export function useDraft(draftId: string | undefined): {
         }
       });
     },
-    searchPlaces,
+    searchPlaces: searchPlacesApi,
     publish: async () => {
+      // 보내는 중인 위치 변경이 끝난 뒤의 서버 구성으로 발행함(위치 변경이 발행보다 늦게 도착하지 않도록)
+      const placeResult = await placeActions.settled();
+      // 위치 변경이 거절·실패했으면(알림은 그때 이미 띄움) 서버에 반영되지 않은 구성으로 발행하지 않음
+      if (placeResult.failed) return 'blocked';
+      // 위치 응답은 상세 revision을 올리지 않으므로 보낸 요청이 있었으면 최신 상세로 맞춘 뒤 발행함
+      if (placeResult.sent) {
+        const refreshed = await refetchDetail();
+        // 최신 상세를 받지 못하면 낡은 revision으로 발행을 시도하지 않음
+        if (refreshed.isError || !refreshed.data) {
+          toast(BUNDLE_MESSAGES.saveFailed);
+          return 'failed';
+        }
+        // effect가 ref를 갱신하기를 기다리지 않고 받은 상세를 바로 기준으로 삼음
+        if (!detailRef.current || refreshed.data.revision >= detailRef.current.revision) {
+          detailRef.current = refreshed.data;
+        }
+      }
       // 보내는 중인 사진 변경이 끝난 뒤의 서버 구성으로 발행함
       const failuresBefore = photoFailures.current;
       await photoQueue.current;
@@ -843,6 +848,9 @@ export function useDraft(draftId: string | undefined): {
     },
     addLocation: (...args: Parameters<DraftActions['addLocation']>) => {
       if (!downRef.current) rawActions.addLocation(...args);
+    },
+    replaceLocation: (...args: Parameters<DraftActions['replaceLocation']>) => {
+      if (!downRef.current) rawActions.replaceLocation(...args);
     },
     removeLocation: (...args: Parameters<DraftActions['removeLocation']>) => {
       if (!downRef.current) rawActions.removeLocation(...args);

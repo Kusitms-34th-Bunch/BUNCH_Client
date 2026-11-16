@@ -144,6 +144,22 @@ describe('useBundleRealtime', () => {
     );
   });
 
+  it('isDown()은 렌더를 기다리지 않고 연결이 끊긴 그 순간부터 true다', () => {
+    const { result } = render();
+    emit('connecting');
+    emit('connected');
+    expect(result.current.isDown()).toBe(false);
+
+    act(() => {
+      connections.at(-1)?.options.onStatus?.('reconnecting');
+      // 같은 act 안(아직 다시 그려지기 전)에서도 바로 읽힘, down 값은 다시 그려져야 바뀜
+      expect(result.current.isDown()).toBe(true);
+      expect(result.current.down).toBe(false);
+    });
+
+    expect(result.current.down).toBe(true);
+  });
+
   it('「재시도」는 기다리지 않고 지금 다시 연결하게 한다', () => {
     const { result } = render();
 

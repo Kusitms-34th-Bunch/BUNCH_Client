@@ -45,7 +45,7 @@ const bundleLocationSchema = z.object({
   provider: z.string(),
   externalId: z.string(),
   name: z.string(),
-  address: z.string(),
+  address: z.string().nullish(),
   position: z.number().int().nonnegative(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundleLocationResponse']>>;
 
@@ -76,7 +76,7 @@ const bundlePermissionsSchema = z.object({
 /**
  * BundleSnapshot(초안 생성·상세·저장·발행 응답 공통)
  * 중첩 배열·객체는 계약 검사가 선택 필드를 다루지 못해 항목별 스키마(위)에서 따로 검사 후 결합
- * 아래 `satisfies`는 `locations`를 그대로 대조하고 `photos` 등 나머지 중첩 항목은 제외
+ * 아래 `satisfies`는 `photos`·`locations` 등 중첩 항목은 제외(항목별 스키마가 검사, 주소는 서버가 null을 줄 수 있음)
  */
 export const bundleSnapshotSchema = z.object({
   id: z.number().int().positive(),
@@ -118,8 +118,9 @@ export const bundleSnapshotSchema = z.object({
 }) satisfies z.ZodType<
   Omit<
     ApiContract<Schemas['BundleSnapshot']>,
-    'photos' | 'participants' | 'comments' | 'permissions'
+    'photos' | 'participants' | 'comments' | 'permissions' | 'locations'
   > & {
+    locations: unknown;
     photos: unknown;
     participants: unknown;
     comments: unknown;
@@ -136,6 +137,19 @@ export type PublishBlockerReason =
   | 'PARTICIPANT_INACTIVE'
   | 'COMMENTS_REQUIRED'
   | 'PHOTOS_REQUIRED';
+
+/** 번들 장소 작업 적용(`locations/intents`) 응답: 최신 장소 목록과 버전 */
+export const bundleLocationIntentResultSchema = z.object({
+  bundleId: z.number().int().positive(),
+  revision: z.number().int().nonnegative(),
+  locationVersion: z.number().int().nonnegative(),
+  changed: z.boolean(),
+  acceptedCount: z.number().int().nonnegative(),
+  locations: z.array(bundleLocationSchema),
+  // 장소 항목은 항목별 스키마가 검사하므로 계약 대조에서 제외(아래 BundleSnapshot과 같은 이유)
+}) satisfies z.ZodType<
+  Omit<ApiContract<Schemas['BundleLocationIntentResponse']>, 'locations'> & { locations: unknown }
+>;
 
 /** 제목 CRDT 병합 응답(BundleSnapshot이 아니라 제목 상태만, 번들 revision은 없음) */
 export const bundleTitleStateSchema = z.object({
@@ -159,8 +173,10 @@ export type BundleDetail = {
   /** 'YYYY-MM-DD', 고르지 않았으면 null */
   date: string | null;
   dateVersion: number;
-  /** 서버에 저장된 장소(가짜 서버 확장, 없으면 빈 목록) */
-  locations: readonly { id: string; name: string }[];
+  /** 서버에 저장된 장소(position 순서) */
+  locations: readonly DetailLocation[];
+  /** 장소 목록의 서버 버전(낡은 `LOCATION` 이벤트·저장 응답을 가르는 기준) */
+  locationVersion: number;
   /** 내용이 바뀔 때마다 오르는 버전, 발행 요청의 expectedRevision */
   revision: number;
   /** 번들 사진(순서대로), id는 번들 사진 ID이고 sourcePhotoId가 사진함 원본 */
@@ -195,6 +211,15 @@ export type PhotoPicks = {
   version: number;
   pickedByMe: boolean;
   memberIds: readonly string[];
+};
+
+/** 번들 장소 한 줄: id는 서버 장소 행 id */
+export type DetailLocation = {
+  id: string;
+  provider: string;
+  externalId: string;
+  name: string;
+  address: string | null;
 };
 
 export type PhotoChangeResult = {
@@ -235,10 +260,15 @@ export const toDetailPhotos = (photos: readonly SnapshotPhoto[]): BundleDetail['
 export const toDetailLocations = (
   locations: readonly SnapshotLocation[],
 ): BundleDetail['locations'] =>
-  locations.map((location) => ({
-    id: `${location.provider}:${location.externalId}`,
-    name: location.name,
-  }));
+  [...locations]
+    .sort((a, b) => a.position - b.position)
+    .map((location) => ({
+      id: toDomainId(location.id),
+      provider: location.provider,
+      externalId: location.externalId,
+      name: location.name,
+      address: location.address ?? null,
+    }));
 
 /** 참여 멤버 id(참여 시각 순) */
 export const toParticipantIds = (participants: readonly SnapshotParticipant[]): string[] =>
@@ -250,6 +280,15 @@ export const toDetailComment = (comment: SnapshotComment): BundleDetail['comment
   memberId: toDomainId(comment.memberId),
   content: comment.content,
   version: comment.version,
+});
+
+/** 장소 작업 응답을 화면 계층이 쓰는 모양으로 변환 */
+export const toLocationIntentResult = (
+  result: z.infer<typeof bundleLocationIntentResultSchema>,
+): { locations: BundleDetail['locations']; locationVersion: number; changed: boolean } => ({
+  locations: toDetailLocations(result.locations),
+  locationVersion: result.locationVersion,
+  changed: result.changed,
 });
 
 /** 서버 응답을 화면 계층이 쓰는 모양으로 변환(문자열 id, 사진 순서 정렬) */
@@ -265,6 +304,7 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   date: snapshot.date ?? null,
   dateVersion: snapshot.dateVersion,
   locations: toDetailLocations(snapshot.locations),
+  locationVersion: snapshot.locationVersion,
   revision: snapshot.revision,
   photos: toDetailPhotos(snapshot.photos),
   participantIds: toParticipantIds(snapshot.participants),
