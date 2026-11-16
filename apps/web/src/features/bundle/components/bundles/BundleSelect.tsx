@@ -54,7 +54,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   const openOverlay = useScreenOverlay();
   // 추천 상세로 가면 돌아왔을 때 시트를 다시 올림
   const reopenOnReturn = useRef(false);
-  const { openSheet, closeSheet, sheetOpen, loadRecommendations } = select;
+  const { openSheet, closeSheet, sheetOpen, loadRecommendations, isRecommendationBusy } = select;
   // 목록을 받는 사이 화면을 떠났으면 시트를 올리지 않음
   const mounted = useRef(true);
   useEffect(() => {
@@ -105,6 +105,8 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
     // 시트가 다 닫힌 뒤 확인 창을 열어 초점이 두 창 사이에서 엉키지 않게 함
     let confirmId: string | undefined;
     let reload = false;
+    // 사진을 받는 사이 시트가 먼저 내려갔는지(내려간 뒤에는 닫힘 콜백이 이미 지나가 결과를 직접 이어서 처리)
+    let sheetClosed = false;
     openOverlay(
       (rootProps, close) => (
         <RecommendOverlay
@@ -124,10 +126,17 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
               // 삭제됐으면 시트를 내렸다가 최신 목록으로 다시 올림
               if (result === 'deleted') reload = true;
               if (result === 'confirm') confirmId = id;
+              if (sheetClosed) {
+                if (confirmId) openChangeConfirm(confirmId);
+                else if (reload) openSheet();
+                return;
+              }
               close();
             });
           }}
           onOpenDetail={(id) => {
+            // 사진을 받는 동안 상세로 가면 상세 화면에서 선택이 적용되므로 받기가 끝난 뒤에 이동
+            if (isRecommendationBusy()) return;
             reopenOnReturn.current = true;
             router.push(BUNDLE_SELECT_PATHS.recommendation(id));
           }}
@@ -138,6 +147,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
         />
       ),
       () => {
+        sheetClosed = true;
         if (confirmId) openChangeConfirm(confirmId);
         else if (reload) openSheet();
       },

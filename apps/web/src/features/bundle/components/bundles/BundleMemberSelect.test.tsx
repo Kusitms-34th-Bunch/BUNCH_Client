@@ -21,10 +21,6 @@ vi.mock(
   '../../hooks/useRecommendations',
   async () => (await import('../../testing/recommendationDoubles')).recommendationHooksDouble,
 );
-vi.mock(
-  '../../hooks/useRecommendations',
-  async () => (await import('../../testing/recommendationDoubles')).recommendationHooksDouble,
-);
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 const renderMembers = () =>

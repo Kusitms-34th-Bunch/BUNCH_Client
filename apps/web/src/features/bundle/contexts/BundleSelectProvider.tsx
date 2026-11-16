@@ -231,6 +231,7 @@ export function BundleSelectProvider({
     scrollTarget,
     creating,
     recommendationBusy,
+    isRecommendationBusy: () => applying.current,
     fromPhotoBox,
     clearScrollTarget,
     setMemberId,

@@ -344,6 +344,46 @@ describe('추천 번들 시트', () => {
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
   });
 
+  it('사진을 받는 동안에는 「>」로 상세에 들어가지 않는다', async () => {
+    let release: () => void = () => {};
+    recommendationDouble.detailGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    const card = (await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!;
+    await userEvent.click(card);
+    await userEvent.click(
+      screen.getAllByRole('button', { name: '성수동 러닝 모임 상세 보기' })[0]!,
+    );
+    expect(router.push).not.toHaveBeenCalled();
+    release();
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(6)));
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('사진을 받는 사이 시트를 내려도 변경 확인 창은 그대로 뜬다', async () => {
+    let release: () => void = () => {};
+    recommendationDouble.detailGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    renderSelect();
+
+    await userEvent.click(sectionPhotos()[0]!);
+    await userEvent.click(recommendButton());
+    const card = (await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!;
+    await userEvent.click(card);
+    // 받는 사이 시트를 Esc로 내림
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    release();
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText('추천 번들 사진으로 변경할까요?')).toBeInTheDocument();
+  });
+
   it('추천 번들 목록을 받지 못하면 시트를 올리지 않고 안내한다', async () => {
     recommendationDouble.failing = true;
     renderSelect();

@@ -62,13 +62,15 @@ export type RecommendationDetailState =
 
 /** 추천 번들 상세(진입할 때마다 최신 사진을 다시 받음). id가 잘못된 형식이면 요청하지 않고 삭제된 것으로 봄 */
 export function useRecommendationDetail(id: string | undefined): RecommendationDetailState {
-  const { data: profile } = useQuery(myProfileQueryOptions());
-  const bunchId = profile?.bunch?.id;
+  const profile = useQuery(myProfileQueryOptions());
+  const bunchId = profile.data?.bunch?.id;
   const query = useQuery(recommendationQueryOptions(bunchId, id));
   if (id === undefined) return { kind: 'deleted' };
   // 이전에 받은 값이 남아 있어도 다시 받다가 삭제됐다고 하면 삭제로 봄
   if (query.isError && isDeleted(query.error)) return { kind: 'deleted' };
   if (query.data) return { kind: 'ready', detail: query.data };
   if (query.isError) return { kind: 'error' };
+  // 프로필을 받지 못했거나 번치가 없으면 요청이 나가지 않아 로딩에 갇히므로 오류로 알림
+  if (profile.isError || (profile.isSuccess && bunchId === undefined)) return { kind: 'error' };
   return { kind: 'loading' };
 }

@@ -25,6 +25,8 @@ export type BundleSelectValue = {
   creating: boolean;
   /** 추천 번들 목록·사진을 서버에서 받는 중(시트가 올라오기 전, 카드를 눌러 적용하기 전). 화면을 막고 로딩을 보임 */
   recommendationBusy: boolean;
+  /** 지금 추천 번들을 받는 중인지(시트가 열려 있는 동안의 콜백이 낡은 값을 보지 않게 ref를 읽음) */
+  isRecommendationBusy: () => boolean;
   /** 사진함 선택 모드에서 넘어온 흐름(사진은 이미 골랐고 멤버만 고르면 바로 초안을 만듦) */
   fromPhotoBox: boolean;
   /** 스크롤을 마친 뒤 대상을 비움(상세·뷰어를 다녀와 다시 마운트돼도 되풀이하지 않음) */

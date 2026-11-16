@@ -51,6 +51,8 @@ type Control = {
   listRequests: number;
   /** 있으면 목록 응답이 이 약속이 풀릴 때까지 늦어짐(받는 동안의 화면 확인용) */
   listGate: Promise<void> | undefined;
+  /** 있으면 상세 응답이 이 약속이 풀릴 때까지 늦어짐(사진을 받는 동안의 시트 조작 확인용) */
+  detailGate: Promise<void> | undefined;
 };
 
 const initial = (): Control => ({
@@ -61,6 +63,7 @@ const initial = (): Control => ({
   detailRequests: [],
   listRequests: 0,
   listGate: undefined,
+  detailGate: undefined,
 });
 
 /** 테스트가 시나리오를 바꾸는 손잡이. `resetRecommendationDouble`로 처음 상태로 돌림 */
@@ -76,14 +79,13 @@ const loadList = async (): Promise<RecommendationLoad<readonly Recommendation[]>
     : { kind: 'ready', data: recommendationDouble.cards };
 };
 
-const loadDetail = (id: string): Promise<RecommendationLoad<RecommendationDetail>> => {
+const loadDetail = async (id: string): Promise<RecommendationLoad<RecommendationDetail>> => {
   recommendationDouble.detailRequests.push(id);
-  if (recommendationDouble.failing) return Promise.resolve({ kind: 'failed' });
+  await recommendationDouble.detailGate;
+  if (recommendationDouble.failing) return { kind: 'failed' };
   const detail = recommendationDouble.details[id];
-  if (!detail || recommendationDouble.deletedIds.includes(id)) {
-    return Promise.resolve({ kind: 'deleted' });
-  }
-  return Promise.resolve({ kind: 'ready', data: detail });
+  if (!detail || recommendationDouble.deletedIds.includes(id)) return { kind: 'deleted' };
+  return { kind: 'ready', data: detail };
 };
 
 /** `hooks/useRecommendations`를 대신하는 모듈(vi.mock 용) */

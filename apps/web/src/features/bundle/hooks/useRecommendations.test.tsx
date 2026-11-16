@@ -1,5 +1,8 @@
 import { renderHook, waitFor } from '@testing-library/react';
+import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { ok } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { useRecommendationDetail, useRecommendationLoader } from './useRecommendations';
 
@@ -38,6 +41,18 @@ describe('useRecommendationDetail', () => {
 
     const gone = renderHook(() => useRecommendationDetail('77'), { wrapper: wrapper() });
     await waitFor(() => expect(gone.result.current.kind).toBe('deleted'));
+  });
+
+  it('프로필에 번치가 없으면 로딩에 머물지 않고 error이다', async () => {
+    server.use(
+      http.get('/api/members/me', () =>
+        ok({ memberId: 1, nickname: '효찬', imageUrl: null, defaultBunch: null }),
+      ),
+    );
+    const { result } = renderHook(() => useRecommendationDetail('1'), { wrapper: wrapper() });
+
+    expect(result.current.kind).toBe('loading');
+    await waitFor(() => expect(result.current.kind).toBe('error'));
   });
 
   it('id가 없으면(형식이 틀림) 요청 없이 deleted이다', () => {
