@@ -181,16 +181,31 @@ export function DraftPhotos({
   // 고칠 수 있는 참여 멤버만, 사진이 2장 이상일 때만 끌 수 있음
   const reorderable = access.canEdit && total > 1;
   // 키보드·스크린 리더용 앞·뒤로 옮기기: 옮긴 뒤 같은 사진의 같은 버튼으로 포커스를 돌려주고(자리가 바뀌면 브라우저가 포커스를 잃을 수 있음) 결과를 낭독
-  const pendingFocus = useRef<{ photoId: string; move: 'before' | 'after'; order: string } | null>(
-    null,
-  );
+  const pendingFocus = useRef<{
+    photoId: string;
+    move: 'before' | 'after';
+    order: string;
+  } | null>(null);
+  // 1초가 지나도록 자리가 바뀌지 않으면(옮기지 못함) 기다리던 포커스 복원을 버려, 나중의 다른 변경에서 포커스를 가져가지 않게 함
+  const pendingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(pendingTimer.current), []);
   const [moveAnnouncement, setMoveAnnouncement] = useState('');
+  const announceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(announceTimer.current), []);
+  // 같은 문구도 다시 읽히도록 영역을 한 번 비웠다가 채움(같은 값이면 보조 기기가 읽지 않음)
+  const announceMove = (message: string) => {
+    clearTimeout(announceTimer.current);
+    setMoveAnnouncement('');
+    announceTimer.current = setTimeout(() => setMoveAnnouncement(message), 100);
+  };
   const order = photoIds.join('|');
   useEffect(() => {
     const target = pendingFocus.current;
+    if (!target) return;
+    // 화면의 자리가 바뀔 때까지 기다림(바뀌는 렌더에서 포커스를 돌려줌)
+    if (target.order === order) return;
     pendingFocus.current = null;
-    // 자리가 바뀌지 않았으면(옮기지 못함) 포커스를 건드리지 않음
-    if (!target || target.order === order) return;
+    clearTimeout(pendingTimer.current);
     const item = [
       ...(listRef.current?.querySelectorAll<HTMLElement>('[data-photo-id]') ?? []),
     ].find((element) => element.dataset.photoId === target.photoId);
@@ -199,9 +214,17 @@ export function DraftPhotos({
   const movePhotoBy = (photoId: string, index: number, step: -1 | 1) => {
     const to = index + step;
     if (to < 0 || to >= total) return;
-    pendingFocus.current = { photoId, move: step < 0 ? 'before' : 'after', order };
+    pendingFocus.current = {
+      photoId,
+      move: step < 0 ? 'before' : 'after',
+      order,
+    };
+    clearTimeout(pendingTimer.current);
+    pendingTimer.current = setTimeout(() => {
+      pendingFocus.current = null;
+    }, 1000);
     onMovePhoto(photoId, to);
-    setMoveAnnouncement(BUNDLE_MESSAGES.photoMoved(to + 1, total));
+    announceMove(BUNDLE_MESSAGES.photoMoved(to + 1, total));
   };
   const openRemove = useRemovePhotoDialog();
   // 삭제 확인 창이 열려 있는 동안(연결이 끊겼다 이어져도 다시 알리도록 열림 상태로 둠)
@@ -284,7 +307,7 @@ export function DraftPhotos({
                 key={photo.id}
                 id={photo.id}
                 disabled={!reorderable}
-                onLockedPress={!access.canEdit ? onDenied : undefined}
+                onLockedPress={!access.participant ? onDenied : undefined}
               >
                 {/* 사진 전체를 누르는 버튼은 아래에 두고, 사진 틀은 X만 눌리게 해서 X와 사진 누르기가 겹치지 않음 */}
                 {onOpenPhoto ? (

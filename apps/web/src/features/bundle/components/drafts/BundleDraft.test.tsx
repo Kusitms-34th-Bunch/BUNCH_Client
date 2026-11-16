@@ -117,14 +117,14 @@ describe('BundleDraft', () => {
     expect(active).toHaveAttribute('data-move', 'after');
     expect(active).toHaveAccessibleName(BUNDLE_MESSAGES.movePhotoAfterLabel(2));
     expect(active.closest('li')?.querySelector('img')?.getAttribute('alt')).toBe(firstPhotoAlt);
-    expect(screen.getByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
+    expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
 
     // 이어서 한 번 더 누르면 같은 사진이 세 번째로 가고, 맨 뒤라 「뒤로」는 aria-disabled지만 포커스는 그대로
     await userEvent.keyboard('{Enter}');
     const last = document.activeElement as HTMLElement;
     expect(last).toHaveAccessibleName(BUNDLE_MESSAGES.movePhotoAfterLabel(3));
     expect(last).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByText(BUNDLE_MESSAGES.photoMoved(3, 3))).toBeInTheDocument();
+    expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(3, 3))).toBeInTheDocument();
   });
 
   it('「추가」 카드는 참여 멤버 관리 화면으로 이동(push)한다', async () => {

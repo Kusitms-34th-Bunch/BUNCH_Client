@@ -1351,6 +1351,8 @@ describe('고칠 수 없는 사람의 사진 길게 누르기와 추천 날짜 �
     }
 
     expect(actions.setDate).not.toHaveBeenCalled();
+    // 보조 기기로 눌러도 필드를 누른 것과 같게 안내가 나감
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
   });
 
   it('참여 멤버는 추천 날짜 칩을 눌러 날짜를 정한다', async () => {
@@ -1392,24 +1394,24 @@ describe('사진 앞·뒤로 옮기기 버튼(키보드·스크린 리더용 대
     expect(actions.movePhoto).not.toHaveBeenCalled();
   });
 
-  it('「뒤로」를 누르면 그 사진을 한 칸 뒤 자리로 옮기고 결과를 낭독한다', () => {
+  it('「뒤로」를 누르면 그 사진을 한 칸 뒤 자리로 옮기고 결과를 낭독한다', async () => {
     renderScreen();
     const firstPhotoId = publishable.photos[0]!.id;
 
     fireEvent.click(screen.getByRole('button', { name: after(1) }));
 
     expect(actions.movePhoto).toHaveBeenCalledWith(firstPhotoId, 1);
-    expect(screen.getByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
+    expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
   });
 
-  it('「앞으로」를 누르면 그 사진을 한 칸 앞 자리로 옮긴다', () => {
+  it('「앞으로」를 누르면 그 사진을 한 칸 앞 자리로 옮긴다', async () => {
     renderScreen();
     const thirdPhotoId = publishable.photos[2]!.id;
 
     fireEvent.click(screen.getByRole('button', { name: before(3) }));
 
     expect(actions.movePhoto).toHaveBeenCalledWith(thirdPhotoId, 1);
-    expect(screen.getByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
+    expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
   });
 
   it('참여 멤버가 아니거나 사진이 1장이거나 연결이 끊겨 있으면 버튼이 없다', () => {
