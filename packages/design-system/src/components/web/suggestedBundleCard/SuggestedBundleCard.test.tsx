@@ -134,6 +134,17 @@ describe('SuggestedBundleCard', () => {
     }
   });
 
+  it('연도와 끝 날짜가 있으면 날짜에 붙고, 월이 같으면 끝 날짜의 월은 생략한다', () => {
+    const { rerender } = renderCard({ year: 2025, month: 10, day: 19, endMonth: 10, endDay: 20 });
+    expect(screen.getByText('2025년 10월 19일~20일')).toBeTruthy();
+
+    rerender(<SuggestedBundleCard {...BASE} month={10} day={31} endMonth={11} endDay={1} />);
+    expect(screen.getByText('10월 31일~11월 1일')).toBeTruthy();
+
+    rerender(<SuggestedBundleCard {...BASE} month={10} day={19} endDay={20} />);
+    expect(screen.getByText('10월 19일~20일')).toBeTruthy();
+  });
+
   it('className과 div 속성이 카드에 합쳐진다', () => {
     renderCard({ className: 'mt-2', 'data-testid': 'card' } as Partial<SuggestedBundleCardProps>);
 

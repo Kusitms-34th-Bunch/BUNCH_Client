@@ -23,9 +23,9 @@
 
 ## Public API
 
-- Props: `imageSrc`, `title`, `members`(이름 배열), `photoCount`, `month`, `day`, `selected`(기본 `false`), `maxVisibleMembers`(기본 6), `imageAlt`(기본 빈 문자열), `onCardClick`, `onDetailClick`, 그리고 native `<div>`의 속성(`className`은 카드에 적용).
+- Props: `imageSrc`, `title`, `members`(이름 배열), `photoCount`, `month`, `day`, `year`(선택), `endMonth`·`endDay`(선택), `selected`(기본 `false`), `maxVisibleMembers`(기본 6), `imageAlt`(기본 빈 문자열), `onCardClick`, `onDetailClick`, 그리고 native `<div>`의 속성(`className`은 카드에 적용).
 - Controlled: `selected`는 호출하는 쪽이 보관하고 `onCardClick`에서 바꾼다. 내부 state는 없다.
-- 글자: 사진 수는 `{photoCount}장`, 날짜는 `{month}월 {day}일`로 컴포넌트가 만든다. 번들 이름·멤버 이름은 호출하는 쪽이 i18n한다.
+- 글자: 사진 수는 `{photoCount}장`, 날짜는 `{month}월 {day}일`로 컴포넌트가 만들고, `year`가 있으면 앞에 `{year}년 `을, `endDay`가 있으면 뒤에 `~{endDay}일`(월이 다르면 `~{endMonth}월 {endDay}일`)을 붙인다. 올해 여부는 호출하는 쪽이 판단해 `year`를 넘긴다(기능 명세 4.2.2). 번들 이름·멤버 이름은 호출하는 쪽이 i18n한다.
 - 호출자 소유 책임: 카드 폭(기본 `w-full`, Figma는 348px), 선택 그룹 규칙, 상세 이동.
 
 ## 상태와 동작

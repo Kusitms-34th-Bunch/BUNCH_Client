@@ -20,6 +20,11 @@ export type SuggestedBundleCardProps = Omit<ComponentProps<'div'>, 'children' | 
   month: number;
   /** 촬영 날짜의 일 */
   day: number;
+  /** 연도. 올해가 아닌 번들만 넘기면 날짜 앞에 `2025년`처럼 붙음 */
+  year?: number | undefined;
+  /** 자정을 넘겨 이은 번들의 끝 날짜(일이 있어야 `~20일`처럼 붙음). 월이 같거나 없으면 월은 생략 */
+  endMonth?: number | undefined;
+  endDay?: number | undefined;
   /** 선택된 카드(Figma `Selected`) */
   selected?: boolean | undefined;
   /** 마지막 요약 칩을 포함해 보여 줄 칩 수(기본 6개) */
@@ -30,6 +35,15 @@ export type SuggestedBundleCardProps = Omit<ComponentProps<'div'>, 'children' | 
   onCardClick?: (() => void) | undefined;
   /** 오른쪽 화살표를 눌러 추천 번들 상세로 이동할 때 */
   onDetailClick?: (() => void) | undefined;
+};
+
+type DateParts = Pick<SuggestedBundleCardProps, 'year' | 'month' | 'day' | 'endMonth' | 'endDay'>;
+
+// 연도(올해가 아닐 때)와 끝 날짜(이틀에 걸친 번들)를 붙인 날짜 글자. 예: `2025년 10월 19일~20일`
+const formatDate = ({ year, month, day, endMonth, endDay }: DateParts) => {
+  const start = `${year === undefined ? '' : `${year}년 `}${month}월 ${day}일`;
+  if (endDay === undefined) return start;
+  return `${start}~${endMonth === undefined || endMonth === month ? '' : `${endMonth}월 `}${endDay}일`;
 };
 
 /**
@@ -43,6 +57,9 @@ export const SuggestedBundleCard = ({
   photoCount,
   month,
   day,
+  year,
+  endMonth,
+  endDay,
   selected = false,
   maxVisibleMembers = 6,
   imageAlt = '',
@@ -131,7 +148,7 @@ export const SuggestedBundleCard = ({
           </span>
           <span className="flex items-center gap-0.5">
             <LineCalendarSmallIcon aria-hidden="true" />
-            {month}월 {day}일
+            {formatDate({ year, month, day, endMonth, endDay })}
           </span>
         </div>
       </div>
