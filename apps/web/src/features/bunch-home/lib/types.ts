@@ -50,6 +50,12 @@ export type BunchSummary = {
   noticeId?: string | undefined;
 };
 
+/** 삭제·내보내진 번치 안내(접근 불가 안내 창에 쓰는 값) */
+export type BunchAccessNotice = Pick<BunchSummary, 'name'> & {
+  noticeId: string;
+  access: Exclude<BunchAccess, 'active'>;
+};
+
 /** 완성된 번들(그리드 한 칸) */
 export type CompletedBundle = {
   id: string;

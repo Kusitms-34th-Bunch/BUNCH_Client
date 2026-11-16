@@ -1,5 +1,11 @@
+import { ApiError } from '@app/api-core';
 import { describe, expect, it } from 'vitest';
-import { publishedBundlesPageSchema, toBunchHomeDetail, type Home } from './bunchHome';
+import {
+  accessNoticeIdOf,
+  publishedBundlesPageSchema,
+  toBunchHomeDetail,
+  type Home,
+} from './bunchHome';
 
 const home = (bunch: Partial<Home['bunch']> = {}): Home => ({
   bunch: { id: 1, name: '퇴근런클럽', characterType: 'TYPE_2', visibility: 'PUBLIC', ...bunch },
@@ -61,5 +67,27 @@ describe('toBunchHomeDetail', () => {
     expect(detail({ imageUrl: 'https://cdn.example.com/bunch.png' })?.imageSrc).toBe(
       'https://cdn.example.com/bunch.png',
     );
+  });
+});
+
+describe('accessNoticeIdOf', () => {
+  const apiError = (code: string, detail: unknown) =>
+    new ApiError({
+      message: code,
+      category: 'validation',
+      status: 409,
+      code,
+      data: { success: false, data: null, error: { code, message: 'x', detail } },
+    });
+
+  it('409 BUNCH_008이면 서버 안내 ID를 화면 id로 준다', () => {
+    expect(accessNoticeIdOf(apiError('BUNCH_008', { noticeId: 7, reason: 'REMOVED' }))).toBe('7');
+  });
+
+  it('다른 오류이거나 안내 ID가 없으면 undefined', () => {
+    expect(accessNoticeIdOf(apiError('BUNCH_009', null))).toBeUndefined();
+    expect(accessNoticeIdOf(apiError('BUNCH_008', null))).toBeUndefined();
+    expect(accessNoticeIdOf(new Error('x'))).toBeUndefined();
+    expect(accessNoticeIdOf(null)).toBeUndefined();
   });
 });
