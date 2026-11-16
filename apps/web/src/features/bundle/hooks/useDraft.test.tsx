@@ -884,6 +884,36 @@ describe('useDraft 발행', () => {
     expect(seen[0]?.expected).toBe(seen[0]?.server);
   });
 
+  it('끌던 사진을 다른 멤버가 지웠으면 손을 뗄 때 알리고 그 사진을 없앤다(기능 spec 4.3.6)', async () => {
+    const { id, result } = await renderReady();
+    const [first, second] = ready(result.current.state).draft.photos;
+    // 끄는 동안 다른 멤버가 첫 사진을 지움(화면은 이벤트를 미뤄 아직 모름)
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) =>
+        String(bundle.id) === id
+          ? { ...bundle, photos: bundle.photos.filter((photo) => photo.id !== Number(first!.id)) }
+          : bundle,
+      ),
+    }));
+
+    act(() => result.current.actions.movePhoto(first!.id, 1));
+
+    await waitFor(
+      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoRemovedByOther),
+      SAVE_WAIT,
+    );
+    // 일반 사진 변경 실패 안내는 띄우지 않고 최신 상세로 그 사진이 사라지는 흐름
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
+    await waitFor(
+      () =>
+        expect(ready(result.current.state).draft.photos.map((photo) => photo.id)).toEqual([
+          second!.id,
+        ]),
+      SAVE_WAIT,
+    );
+  });
+
   it('위치 변경이 실패하면 서버에 반영되지 않은 구성으로 발행하지 않는다', async () => {
     const { id, result } = await renderReady();
     await fill(result, id);

@@ -151,6 +151,7 @@ export const BUNDLE_MESSAGES = {
   photoViewLabel: (current: number) => `${current}번째 사진 크게 보기`,
   removePhotoLabel: (current: number) => `${current}번째 사진 빼기`,
   photoRemoved: (left: number) => `사진을 뺐어요. ${left}장이 남았어요.`,
+  photoRemovedByOther: '다른 멤버가 삭제한 사진이에요.',
   movePhotoBefore: '사진을 앞으로 옮기기',
   movePhotoAfter: '사진을 뒤로 옮기기',
   photoMoved: (position: number, total: number) => `${total}장 중 ${position}번째로 옮겼어요.`,

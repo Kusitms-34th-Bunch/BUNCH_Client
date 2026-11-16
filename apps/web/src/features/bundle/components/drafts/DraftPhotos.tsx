@@ -7,17 +7,51 @@ import {
   BundleTitle,
   PhotoImportSheet,
 } from '@app/design-system/web';
-import { useRef, useState } from 'react';
+import { closestCenter, DndContext } from '@dnd-kit/core';
+import { horizontalListSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { type CSSProperties, type ReactNode, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { PresenceCommands } from '../../hooks/usePresenceSender';
 import type { DraftAccess } from '../../lib/permissions';
 import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../../constants/messages';
+import { ADD_CARD_ID, AUTO_SCROLL } from '../../constants/photoList';
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
+import { usePhotoReorder } from '../../hooks/usePhotoReorder';
 import { getRemovePhotoKind } from '../../lib/photos';
 import { PresenceScope } from './PresenceScope';
 import { useRemovePhotoDialog } from './RemovePhotoDialogs';
+
+type SortablePhotoItemProps = {
+  id: string;
+  disabled: boolean | { draggable?: boolean; droppable?: boolean };
+  children: ReactNode;
+};
+
+/** 사진 한 칸: 길게 눌러 끄는 정렬 항목(키보드 끌기는 쓰지 않아 `attributes`는 붙이지 않음) */
+function SortablePhotoItem({ id, disabled, children }: SortablePhotoItemProps) {
+  const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled,
+  });
+  const style: CSSProperties = {
+    // 좌우로만 움직이고 크기는 바꾸지 않음
+    transform: transform
+      ? CSS.Translate.toString({ x: transform.x, y: 0, scaleX: 1, scaleY: 1 })
+      : undefined,
+    transition,
+    // 끄는 사진은 이웃 사진 위로 올라옴
+    zIndex: isDragging ? 20 : undefined,
+  };
+
+  return (
+    <li ref={setNodeRef} style={style} {...listeners} className="relative shrink-0">
+      {children}
+    </li>
+  );
+}
 
 type DraftPhotosProps = {
   draft: Draft;
@@ -26,8 +60,12 @@ type DraftPhotosProps = {
   onRemovePhoto: (_photoId: string) => void;
   /** 참여 멤버가 아니라 고칠 수 없을 때 */
   onDenied: () => void;
-  /** 사진 작업(추가 시트·삭제 확인)을 하는 동안 다른 멤버에게 알림 */
+  /** 사진 작업(추가 시트·삭제 확인·끌기)을 하는 동안 다른 멤버에게 알림 */
   presence: PresenceCommands;
+  /** 끌어서 놓은 사진을 그 자리로 옮김(`toIndex`는 놓은 자리) */
+  onMovePhoto: (_photoId: string, _toIndex: number) => void;
+  /** 끌기를 시작하거나 끝냈을 때(끄는 동안 다른 멤버의 사진 변경을 미루는 데 씀) */
+  onDragChange?: ((_dragging: boolean) => void) | undefined;
   /** 사진을 눌렀을 때(사진 상세로 이동) */
   onOpenPhoto?: ((_photoId: string) => void) | undefined;
   /** 「픽하기 >」를 눌렀을 때(대표 사진 투표 화면으로 이동) */
@@ -42,6 +80,7 @@ type DraftPhotosProps = {
  * 사진 가로 목록(Figma `5367:146358`): 130px 정사각 사진이 가로로 이어지고, 사진마다 오른쪽 위 X(삭제), 맨 끝에 「사진 추가」 타일
  * 제목 줄 오른쪽 「픽하기 >」는 대표 사진 투표 화면으로 가고, 사진을 누르면 사진 상세(크게 보기)로 감
  * 「사진 추가」는 초안 생성자·관리자·공동 관리자에게만 보이고(20장이면 숨김), 삭제는 참여 멤버가 할 수 있으며 마지막 한 장은 지울 수 없음
+ * 참여 멤버는 사진을 길게 눌러 좌우로 끌어 순서를 바꿈(기능 spec 4.3.6): 사진이 1장이면 끌 수 없고 「사진 추가」 칸 뒤로는 못 옮김
  */
 export function DraftPhotos({
   draft,
@@ -49,6 +88,8 @@ export function DraftPhotos({
   onRemovePhoto,
   onDenied,
   presence,
+  onMovePhoto,
+  onDragChange,
   onOpenPhoto,
   onOpenPick,
   onImportFromBunchBox,
@@ -84,6 +125,14 @@ export function DraftPhotos({
     );
   };
   const listRef = useRef<HTMLUListElement>(null);
+  const photoIds = draft.photos.map((photo) => photo.id);
+  const reorder = usePhotoReorder({
+    photoIds,
+    onMove: onMovePhoto,
+    onDragStateChange: onDragChange,
+  });
+  // 고칠 수 있는 참여 멤버만, 사진이 2장 이상일 때만 끌 수 있음
+  const reorderable = access.canEdit && total > 1;
   const openRemove = useRemovePhotoDialog();
   // 삭제 확인 창이 열려 있는 동안(연결이 끊겼다 이어져도 다시 알리도록 열림 상태로 둠)
   const [removeOpen, setRemoveOpen] = useState(false);
@@ -132,41 +181,73 @@ export function DraftPhotos({
           </button>
         ) : null}
       </div>
-      <ul
-        ref={listRef}
-        className="gap-s5 px-padding-p8 flex scrollbar-none overflow-x-auto pt-1 [&::-webkit-scrollbar]:hidden"
+      <DndContext
+        // 앱이 백그라운드로 가면 끌던 사진을 놓은 것으로 보고 끌기 영역을 새로 만듦
+        key={reorder.dragEpoch}
+        sensors={reorder.sensors}
+        collisionDetection={closestCenter}
+        autoScroll={AUTO_SCROLL}
+        onDragStart={reorder.onDragStart}
+        onDragEnd={reorder.onDragEnd}
+        onDragCancel={reorder.onDragCancel}
+        // 키보드 끌기는 쓰지 않아 안내·낭독 문구를 비움(키보드·스크린 리더용 대체 수단은 따로 정함)
+        accessibility={{
+          screenReaderInstructions: { draggable: '' },
+          announcements: {
+            onDragStart: () => undefined,
+            onDragOver: () => undefined,
+            onDragEnd: () => undefined,
+            onDragCancel: () => undefined,
+          },
+        }}
       >
-        {draft.photos.map((photo, index) => (
-          <li key={photo.id} className="relative shrink-0">
-            {/* 사진 전체를 누르는 버튼은 아래에 두고, 사진 틀은 X만 눌리게 해서 X와 사진 누르기가 겹치지 않음 */}
-            {onOpenPhoto ? (
-              <button
-                type="button"
-                aria-label={BUNDLE_MESSAGES.photoOpenLabel(index + 1)}
-                onClick={() => onOpenPhoto(photo.id)}
-                className="rounded-r4 focus-visible:outline-border-brand absolute inset-0 cursor-pointer touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2"
-              />
+        <SortableContext
+          items={access.canAddPhoto && total < MAX_PHOTOS ? [...photoIds, ADD_CARD_ID] : photoIds}
+          strategy={horizontalListSortingStrategy}
+        >
+          <ul
+            ref={listRef}
+            className="gap-s5 px-padding-p8 flex scrollbar-none overflow-x-auto pt-1 select-none [-webkit-touch-callout:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {draft.photos.map((photo, index) => (
+              <SortablePhotoItem key={photo.id} id={photo.id} disabled={!reorderable}>
+                {/* 사진 전체를 누르는 버튼은 아래에 두고, 사진 틀은 X만 눌리게 해서 X와 사진 누르기가 겹치지 않음 */}
+                {onOpenPhoto ? (
+                  <button
+                    type="button"
+                    aria-label={BUNDLE_MESSAGES.photoOpenLabel(index + 1)}
+                    onClick={() => onOpenPhoto(photo.id)}
+                    className="rounded-r4 focus-visible:outline-border-brand absolute inset-0 cursor-pointer touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2"
+                  />
+                ) : null}
+                <BundlePhotoEditor
+                  src={photo.src}
+                  alt={photo.alt}
+                  size="xs"
+                  className="pointer-events-none [&_button]:pointer-events-auto"
+                  deleteLabel={BUNDLE_MESSAGES.removePhotoLabel(index + 1)}
+                  onDelete={() => requestRemove(photo.id)}
+                />
+              </SortablePhotoItem>
+            ))}
+            {access.canAddPhoto && total < MAX_PHOTOS ? (
+              // 끌 수는 없지만 사진이 옮겨 갈 때 함께 움직이고, 이 칸에 놓으면 맨 뒤 사진 자리로 감
+              <SortablePhotoItem
+                id={ADD_CARD_ID}
+                disabled={{ draggable: true, droppable: !reorderable }}
+              >
+                <AddBundlePhotoEditor size="xs" onClick={openImport} />
+              </SortablePhotoItem>
             ) : null}
-            <BundlePhotoEditor
-              src={photo.src}
-              alt={photo.alt}
-              size="xs"
-              className="pointer-events-none [&_button]:pointer-events-auto"
-              deleteLabel={BUNDLE_MESSAGES.removePhotoLabel(index + 1)}
-              onDelete={() => requestRemove(photo.id)}
-            />
-          </li>
-        ))}
-        {access.canAddPhoto && total < MAX_PHOTOS ? (
-          <li className="shrink-0">
-            <AddBundlePhotoEditor size="xs" onClick={openImport} />
-          </li>
-        ) : null}
-      </ul>
+          </ul>
+        </SortableContext>
+      </DndContext>
       <p role="status" className="sr-only">
         {BUNDLE_MESSAGES.photoCount(total)}
       </p>
-      {removeOpen || importOpen ? <PresenceScope presence={presence} target="PHOTOS" /> : null}
+      {removeOpen || importOpen || reorder.dragging ? (
+        <PresenceScope presence={presence} target="PHOTOS" />
+      ) : null}
     </section>
   );
 }

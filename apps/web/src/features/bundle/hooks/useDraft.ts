@@ -115,6 +115,8 @@ export type DraftActions = {
   removePhoto: (_photoId: string) => boolean;
   /** 사진을 다른 자리(0부터)로 옮김. 서버 반영은 후속이라 이 화면에서만 바뀜 */
   movePhoto: (_photoId: string, _toIndex: number) => void;
+  /** 사진을 끌기 시작하거나 놓았을 때: 끄는 동안 다른 멤버의 사진 변경 이벤트는 미뤘다가 놓은 뒤 반영(기능 spec 4.3.6) */
+  setPhotoDragging: (_dragging: boolean) => void;
   /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜. 연결이 끊겨 막히면 false */
   replacePhotos: (_photos: readonly DraftPhoto[]) => boolean;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
@@ -222,6 +224,9 @@ export function useDraft(draftId: string | undefined): {
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   const [flushing, setFlushing] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  // 사진을 끄는 중: 이벤트 보류 판단은 ref(이벤트가 올 때 읽음), 놓은 뒤 재조회는 state(effect)로 이어 감
+  const photoDragRef = useRef(false);
+  const [photoDragging, setPhotoDraggingState] = useState(false);
   // 내가 발행해 서버가 발행본으로 바꾼 뒤에는 「없는 초안」 안내 없이 이동을 기다림
   const [publishedByMe, setPublishedByMe] = useState(false);
   // 발행 요청을 보내는 동안: 응답 전에 캐시가 먼저 PUBLISHED로 바뀌어도 내가 올리는 중이라 「업로드됐어요」 창을 띄우지 않음
@@ -544,14 +549,14 @@ export function useDraft(draftId: string | undefined): {
   };
 
   const applyPhotoMove = async ({ photoId, previous, next }: PhotoMovePlan) => {
-    adoptDetail(
-      await movePhotoMutation.mutateAsync({
-        bundlePhotoId: photoId,
-        previousBundlePhotoId: previous,
-        nextBundlePhotoId: next,
-        mode: detailRef.current?.status ?? 'DRAFT',
-      }),
-    );
+    const moved = await movePhotoMutation.mutateAsync({
+      bundlePhotoId: photoId,
+      previousBundlePhotoId: previous,
+      nextBundlePhotoId: next,
+      mode: detailRef.current?.status ?? 'DRAFT',
+    });
+    adoptDetail(moved);
+    return moved;
   };
 
   // 한 번에 하나씩 보냄, 한 번 실패하면 남은 변경은 건너뛰고(서버와 어긋난 상태) 한 번만 안내하며 서버 값으로 되돌림
@@ -607,12 +612,13 @@ export function useDraft(draftId: string | undefined): {
   useEffect(() => {
     holdEventRef.current = (type) => {
       const hold =
-        (type === 'PHOTOS' && photoOps.current > 0) || (type === 'PARTICIPANTS' && participantBusy);
+        (type === 'PHOTOS' && (photoOps.current > 0 || photoDragRef.current)) ||
+        (type === 'PARTICIPANTS' && participantBusy);
       if (hold) heldEventRef.current = true;
       return hold;
     };
   });
-  const requestsBusy = photoBusy || participantBusy;
+  const requestsBusy = photoBusy || participantBusy || photoDragging;
   // 요청이 끝나면 보류했던 이벤트를 대신해 최신 상세를 받음. 받는 데 성공한 뒤에만 「놓친 변경이 있음」 표시를 지우고,
   // 실패하면 표시를 남긴 채 몇 번 다시 받아 봄(그 사이 새 요청이 시작되면 멈췄다가 다시 한가해질 때 이어서 받음)
   // 모두 실패하면 배너로 알리고 멈추며, 사용자가 「재시도」를 누르면 처음부터 다시 받음(그동안 배너와 편집 제한은 유지하고 성공해야 풂)
@@ -713,12 +719,28 @@ export function useDraft(draftId: string | undefined): {
         if (movingId === undefined || (previous && !previousId) || (following && !nextId)) {
           throw new Error('photo is not on the server');
         }
-        await applyPhotoMove({
-          photoId: movingId,
-          previous: previousId ?? null,
-          next: nextId ?? null,
-        });
+        // 끄는 사이 다른 멤버가 지운 사진이면 서버는 변경 없이 응답하거나(삭제 확인) 알 수 없는 대상(404)으로 답함
+        // 어느 쪽이든 그 사진은 사라진 것이라 손을 뗄 때 알리고, 보류했던 변경은 놓은 뒤 재조회로 맞춤
+        const removedByOther = () => {
+          toast(BUNDLE_MESSAGES.photoRemovedByOther);
+          void refetchDetail();
+        };
+        try {
+          const moved = await applyPhotoMove({
+            photoId: movingId,
+            previous: previousId ?? null,
+            next: nextId ?? null,
+          });
+          if (!moved.photos.some((photo) => photo.id === movingId)) removedByOther();
+        } catch (error) {
+          if (isApiError(error) && error.status === 404) return removedByOther();
+          throw error;
+        }
       });
+    },
+    setPhotoDragging: (dragging) => {
+      photoDragRef.current = dragging;
+      setPhotoDraggingState(dragging);
     },
     replacePhotos: (photos) => {
       const current = shownPhotosRef.current;

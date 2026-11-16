@@ -195,6 +195,8 @@ export function DraftScreen({
         draft={draft}
         access={access}
         onRemovePhoto={actions.removePhoto}
+        onMovePhoto={actions.movePhoto}
+        onDragChange={actions.setPhotoDragging}
         presence={actions.presence}
         onDenied={denyEdit}
         onOpenPhoto={onOpenPhoto}

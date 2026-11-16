@@ -134,6 +134,7 @@ export function useDraftFixture(draftId: string | undefined): {
     },
     movePhoto: (photoId, toIndex) =>
       update((current) => ({ ...current, photos: movePhoto(current.photos, photoId, toIndex) })),
+    setPhotoDragging: () => undefined,
     replacePhotos: (photos) => {
       update((current) => ({ ...current, photos }));
       return true;

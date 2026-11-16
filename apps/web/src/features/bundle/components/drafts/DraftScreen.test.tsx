@@ -1,10 +1,11 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
+import { LONG_PRESS_MS } from '../../constants/photoList';
 import { draftFixture, fixtureLocation, fixturePlace } from '../../fixtures/draft.fixture';
 import { DraftScreen } from './DraftScreen';
 
@@ -36,6 +37,7 @@ const actions = {
   removeMember: vi.fn(() => true),
   removePhoto: vi.fn(() => true),
   movePhoto: vi.fn(),
+  setPhotoDragging: vi.fn(),
   replacePhotos: vi.fn(() => true),
   replaceLocation: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
@@ -1099,5 +1101,87 @@ describe('나가기', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: '취소' }));
 
     expect(onLeave).not.toHaveBeenCalled();
+  });
+});
+
+describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // 사진의 「열기」 버튼을 마우스로 길게 누른 상태를 만듦(끌기는 사진 칸이 받음)
+  const pressPhoto = async (position: number) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const target = screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(position) });
+    fireEvent.mouseDown(target, { button: 0, clientX: 10, clientY: 10 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS);
+    });
+  };
+  const release = () => {
+    act(() => {
+      fireEvent.mouseUp(document);
+    });
+  };
+
+  it('길게 누르면 「사진」 작업 중으로 알리고 다른 멤버 변경을 미루게 하며, 놓으면 둘 다 푼다', async () => {
+    renderScreen();
+
+    await pressPhoto(1);
+
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
+    expect(actions.presence.end).not.toHaveBeenCalledWith('PHOTOS');
+
+    release();
+
+    expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
+    expect(actions.setPhotoDragging).toHaveBeenLastCalledWith(false);
+  });
+
+  it('길게 누르기 시간이 되기 전에 놓으면 끌기가 시작되지 않는다', async () => {
+    renderScreen();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const target = screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(1) });
+
+    fireEvent.mouseDown(target, { button: 0, clientX: 10, clientY: 10 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS - 100);
+    });
+    release();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS);
+    });
+
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+    expect(actions.presence.begin).not.toHaveBeenCalledWith('PHOTOS');
+  });
+
+  it('사진이 1장이면 떠오르지 않는다', async () => {
+    renderScreen({ draft: { ...publishable, photos: publishable.photos.slice(0, 1) } });
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+    expect(actions.presence.begin).not.toHaveBeenCalledWith('PHOTOS');
+  });
+
+  it('참여 멤버가 아니면 끌 수 없다', async () => {
+    renderScreen({ viewer: outsider });
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+  });
+
+  it('끄는 중 화면이 사라져도 작업 중 표시와 변경 미루기를 푼다', async () => {
+    const view = renderScreen();
+    await pressPhoto(1);
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
+
+    view.unmount();
+
+    expect(actions.setPhotoDragging).toHaveBeenLastCalledWith(false);
+    expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
   });
 });

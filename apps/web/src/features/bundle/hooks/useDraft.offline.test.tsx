@@ -161,6 +161,48 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     await waitFor(() => expect(detailRequests).toBeGreaterThan(0), { timeout: 5000 });
   });
 
+  it('사진을 끄는 동안은 PHOTOS 이벤트를 적용하지 않고, 놓은 뒤 최신 상세로 맞춘다(기능 spec 4.3.6)', async () => {
+    const { result } = await renderReady();
+    let detailRequests = 0;
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        return undefined;
+      }),
+    );
+    expect(connection.holdEvent?.('PHOTOS')).toBe(false);
+
+    act(() => result.current.actions.setPhotoDragging(true));
+
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    // 다른 type은 그대로 적용
+    expect(connection.holdEvent?.('DATE')).toBe(false);
+    const before = detailRequests;
+
+    act(() => result.current.actions.setPhotoDragging(false));
+
+    expect(connection.holdEvent?.('PHOTOS')).toBe(false);
+    // 미뤄 둔 이벤트가 있었으므로 놓은 뒤 상세를 다시 받음
+    await waitFor(() => expect(detailRequests).toBeGreaterThan(before), { timeout: 5000 });
+  });
+
+  it('끄는 동안 이벤트가 오지 않았다면 놓은 뒤 상세를 다시 받지 않는다', async () => {
+    const { result } = await renderReady();
+    let detailRequests = 0;
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.setPhotoDragging(true));
+    act(() => result.current.actions.setPhotoDragging(false));
+    await act(() => wait(300));
+
+    expect(detailRequests).toBe(0);
+  });
+
   it('요청이 끝난 뒤 다시 받은 상세로 보류했던 원격 사진 변경이 화면에 반영된다', async () => {
     const created = await createBundle(
       bunchId,
