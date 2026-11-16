@@ -189,3 +189,23 @@ export const toFeedEntries = (pages: readonly FeedPage[]): FeedEntry[] =>
       return item.type === 'FOLLOWING_CAUGHT_UP' ? [{ kind: 'followingDone' }] : [];
     }),
   );
+
+/**
+ * 카드의 구간으로 두 목록을 나눔. 구간 끝 안내가 아직 안 왔어도 팔로우 카드가 다른 목록으로 옮겨 다시 그려지지 않게
+ * 안내 전에는 마지막 팔로우 카드 뒤의 광고도 팔로우 목록에 둠(다음 쪽에 팔로우 카드가 더 오면 부모 목록이 바뀌어 광고 상태가 사라짐)
+ */
+export const splitFeedSections = (entries: readonly FeedEntry[]) => {
+  const doneAt = entries.findIndex((entry) => entry.kind === 'followingDone');
+  const lastFollowing = entries.findLastIndex(
+    (entry) => entry.kind === 'bundle' && entry.segment === 'FOLLOWING',
+  );
+  let splitAt = doneAt >= 0 ? doneAt : lastFollowing + 1;
+  if (doneAt < 0 && lastFollowing >= 0) {
+    while (entries[splitAt]?.kind === 'ad') splitAt += 1;
+  }
+  return {
+    following: entries.slice(0, splitAt),
+    followingDone: doneAt >= 0,
+    rest: entries.slice(splitAt).filter((entry) => entry.kind !== 'followingDone'),
+  };
+};

@@ -1,20 +1,9 @@
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useRef } from 'react';
+import { CENTER, COPIES, TILE_PITCH } from '@/features/auth/constants/introRows';
+import { useIntroRowsMotion } from '@/features/auth/hooks/intro/useIntroRowsMotion';
 
-// 좌표·시각은 디자이너 Lottie(인트로_01~04, 375×812·60fps) 기준. 1 디자인 px = --u
-const FPS = 60;
-const CENTER = 187.5;
-// 줄은 210f부터 48f 동안 15.6px 가속한 뒤 초당 약 40px로 흐름. Lottie는 624f에서 멈추지만 화면은 누를 때까지 계속 흐름
-const DRIFT_FROM = 210;
-const EASE_FRAMES = 48;
-const EASE_PX = 15.6;
-const SPEED = (244.4 / 366) * FPS;
-// 360f(장면 2→3을 누른 시각)까지 흐른 거리. 사라짐·나타남 순서의 기준점이 이만큼 옮겨 감
-const DRIFT_AT_TAP = 83.7;
-// 한 주기를 3벌 이어 붙여 한 주기만큼 옮기면 처음과 같은 화면(이음매 없이 반복)
-const COPIES = 3;
-
+// 좌표는 디자이너 Lottie(인트로_01~04, 375×812) 기준. 1 디자인 px = --u
 const TILE = 95;
-const TILE_PITCH = 101.5;
 const CARD = { width: 168, height: 216, pitch: 178 };
 
 // Figma `Asset / *`(9×9 격자, 가운데 5×5만 사용)
@@ -68,7 +57,6 @@ type Row<Item> = {
 };
 
 const u = (px: number) => `calc(${px} * var(--u))`;
-const ms = (frames: number) => (frames / FPS) * 1000;
 
 type TrackProps<Item> = {
   row: Row<Item>;
@@ -160,140 +148,11 @@ type IntroRowsProps = {
 
 /**
  * 인트로 장면 2·3의 흐르는 타일·사진 줄. 누를 때까지 머무는 동안에도 끊기지 않고 흐르도록 Lottie에서 빼 직접 그림
- * 나타남·사라짐은 Lottie 키프레임을 옮긴 것. 중앙(장면 3은 흐른 만큼 옮긴 기준점)에서 먼 칸일수록 늦음
+ * 흐름·나타남·사라짐 재생은 useIntroRowsMotion
  */
 export function IntroRows({ scene, still }: IntroRowsProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root || typeof root.animate !== 'function') return;
-    // 인트로 도중 동작 줄이기를 켜면 이미 흐르던 줄도 멈춤
-    if (still) {
-      root.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
-      return;
-    }
-    const all = (selector: string) => Array.from(root.querySelectorAll<HTMLElement>(selector));
-    // 화면 폭이 375가 아니어도 디자인 좌표로 거리를 잼
-    const rootBox = root.getBoundingClientRect();
-    const scale = rootBox.width / 375 || 1;
-    const liveX = (element: HTMLElement) => {
-      const box = element.getBoundingClientRect();
-      return (box.left + box.width / 2 - rootBox.left) / scale;
-    };
-
-    if (scene === 1) {
-      // 누른 시각(141f)부터 210f에 흐르기 시작
-      const start = ms(DRIFT_FROM - 141);
-      for (const ease of all('[data-ease]')) {
-        const dir = Number(ease.dataset.dir);
-        const period = Number(ease.dataset.period);
-        ease.animate(
-          [
-            { transform: 'none' },
-            { transform: `translateX(${(dir * EASE_PX * 100) / (period * COPIES)}%)` },
-          ],
-          {
-            duration: ms(EASE_FRAMES),
-            delay: start,
-            easing: 'cubic-bezier(0.42, 0, 1, 1)',
-            fill: 'forwards',
-          },
-        );
-        ease
-          .querySelector<HTMLElement>('[data-track]')
-          ?.animate(
-            [{ transform: 'none' }, { transform: `translateX(${(dir * 100) / COPIES}%)` }],
-            {
-              duration: (period / SPEED) * 1000,
-              delay: start + ms(EASE_FRAMES),
-              iterations: Infinity,
-            },
-          );
-      }
-      for (const tile of all('[data-item=tile]')) {
-        const steps = Math.abs(Number(tile.dataset.x) - CENTER) / TILE_PITCH;
-        // 가운데 다이아몬드는 Lottie의 큰 다이아몬드가 줄어들어 놓이는 자리라 204f에 바로 보임
-        if (steps < 0.01) {
-          tile.animate([{ opacity: 1 }, { opacity: 1 }], {
-            duration: 1,
-            delay: ms(204 - 141),
-            fill: 'forwards',
-          });
-          continue;
-        }
-        const delay = ms(Number(tile.dataset.enter) + 8.7 * steps - 141);
-        tile.animate([{ opacity: 0 }, { opacity: 1 }], {
-          duration: ms(7.2),
-          delay,
-          easing: 'cubic-bezier(0, 0, 0.58, 1)',
-          fill: 'both',
-        });
-        tile.animate(
-          [
-            { transform: 'scale(0.4)' },
-            { transform: 'scale(1.012)', offset: 0.55 },
-            { transform: 'none' },
-          ],
-          { duration: ms(19), delay, easing: 'ease-out', fill: 'both' },
-        );
-      }
-    }
-
-    if (scene === 2) {
-      for (const tile of all('[data-item=tile]')) {
-        const origin = CENTER + Number(tile.dataset.dir) * DRIFT_AT_TAP;
-        const delay = ms((6.78 * Math.abs(liveX(tile) - origin)) / TILE_PITCH);
-        const timing = {
-          duration: ms(18),
-          delay,
-          easing: 'cubic-bezier(0.42, 0, 0.58, 1)',
-          fill: 'both',
-        } as const;
-        tile.getAnimations().forEach((animation) => animation.cancel());
-        tile.animate([{ opacity: 1 }, { opacity: 0 }], timing);
-        tile.animate([{ transform: 'none' }, { transform: 'scale(0.6)' }], timing);
-      }
-      for (const card of all('[data-item=photo]')) {
-        const origin = CENTER + Number(card.dataset.dir) * DRIFT_AT_TAP;
-        const delay = ms(Number(card.dataset.enter) + 0.0683 * Math.abs(liveX(card) - origin));
-        const easing = 'cubic-bezier(0, 0, 0.58, 1)';
-        card.animate([{ opacity: 0 }, { opacity: 1 }], {
-          duration: ms(21),
-          delay,
-          easing,
-          fill: 'both',
-        });
-        card.animate([{ transform: 'scale(0.879)' }, { transform: 'none' }], {
-          duration: ms(18),
-          delay,
-          easing,
-          fill: 'both',
-        });
-      }
-    }
-
-    if (scene === 3) {
-      const fades = all('[data-photo-row]').map(
-        (row) =>
-          row.animate(
-            [
-              { opacity: 1, transform: 'none' },
-              { opacity: 0, transform: 'scale(0.96)' },
-            ],
-            { duration: ms(24), easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' },
-          ).finished,
-      );
-      // 다 사라진 뒤에는 보이지 않는 줄을 계속 돌리지 않음
-      Promise.all(fades)
-        .then(() =>
-          all('[data-ease], [data-track]').forEach((element) =>
-            element.getAnimations().forEach((animation) => animation.cancel()),
-          ),
-        )
-        .catch(() => {});
-    }
-  }, [scene, still]);
+  useIntroRowsMotion(rootRef, scene, still);
 
   return (
     <div ref={rootRef} aria-hidden="true" className="pointer-events-none absolute inset-0">

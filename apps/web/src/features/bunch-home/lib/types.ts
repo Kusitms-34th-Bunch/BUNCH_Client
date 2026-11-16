@@ -95,15 +95,19 @@ export type BunchHomeDetail = {
   draftBundles: readonly DraftBundle[];
 };
 
+/** 프로필 편집으로 바꾸는 값 */
+export type BunchProfileEdit = Pick<
+  BunchHomeDetail,
+  'name' | 'description' | 'isPrivate' | 'imageSrc'
+>;
+
 export type BunchHomeData = {
   current: BunchHomeDetail;
   /** 전환 목록. 지금 번치가 맨 위 */
   bunches: readonly BunchSummary[];
 };
 
-/**
- * 번치 홈이 부르는 동작. 서버 모드는 mutation, 샘플 모드는 목 동작(`BunchHome`에서 선택)
- */
+/** 번치 홈이 부르는 동작(`BunchHome`이 서버 mutation으로 연결) */
 export type BunchHomeActions = {
   /** 전환. 서버에 저장하면 끝날 때까지 기다릴 수 있게 Promise를 돌려줌(실패하면 reject) */
   switchBunch: (_bunchId: string) => void | Promise<void>;

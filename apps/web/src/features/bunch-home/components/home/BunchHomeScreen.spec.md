@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/bunch`(`apps/web/src/app/(app)/(main)/bunch/page.tsx`)
-- Status: 프로필·번들 두 탭·빈 상태·작성 중인 번들 삭제·번치 전환 시트·접근 불가 번치 안내 UI 구현됨. 화면은 서버 데이터(`useServerBunchHome`, 기본 `source="server"`)로 그리고, fixture와 목 동작(`useBunchHome`)은 샘플 모드(`source="sample"`, 테스트용)에만 쓴다. 개발 서버 Chrome(앱 폭 430px)에서 Figma와 위치를 대조했고 실기기는 확인하지 않았다.
+- Status: 프로필·번들 두 탭·빈 상태·작성 중인 번들 삭제·번치 전환 시트·접근 불가 번치 안내 UI 구현됨. 화면은 서버 데이터(`useServerBunchHome`)로만 그린다. API 연결 전에는 fixture(가짜 번치·멤버 데이터, `fixtures/bunchHome.fixture.ts`·`bunchMembers.fixture.ts`)와 메모리 저장소로 화면과 전환·삭제 동작을 먼저 만들었고, 서버 연결 뒤 테스트용 샘플 모드로만 남아 있던 것을 #413에서 지웠다. fixture 파일은 기록용으로 남겨 두었고 쓰는 곳은 없다. 개발 서버 Chrome(앱 폭 430px)에서 Figma와 위치를 대조했고 실기기는 확인하지 않았다.
 - 화면설계서: Figma `1892:37781`(번치 메인 탭 > 계정 전환 / 번치 만들기).
 - 디자인 출처: Figma `번치 - 메인`(`5402:112707`)·계정 전환 모달(`5402:112815`), `번치 - 계정 전환(1)·(2)`(`5402:113083`·`5402:113196`), `번치 - 작성 중인 번들(1)·(2)`(`5402:113555`·`5402:113781`)과 빈 상태(`5402:114263`), 안내 Dialog(`5402:105298`·`5402:105299`). 이슈 #162(최초 구현), #300(2026-11 디자인 개편 반영, 이전 노드 `3086:66283`·`3086:67437`·`3086:67555`·`3213:75914`·`3213:77085`·`3213:76983`·`1873:30725`).
 - 기능 spec: 기능명세서 5장 번치(메인/상세) 5.1~5.3, 1110판(2026-11-10) 기준. 번들 영역은 이전 판(「우리의 번들」)과 달라 Figma(아이콘 탭)를 따랐고(사용자 결정), 1110판이 같은 구조로 바뀌었다.
@@ -27,7 +27,7 @@
 
 ### 범위 외(추후 작업 예정)
 
-- 서버 연동: 번치 프로필·권한·개수(`GET /bunches/{id}/home`)와 완성된 번들(`GET /bunches/{id}/published-bundles`)은 `useServerBunchHome`이 내 기본 번치 기준으로 받는다(`/home` 응답은 Swagger 생성 타입과 묶음, #408). 로딩은 `PageLoading`, 오류는 「다시 시도」가 있는 `BunchHomeError`, 소속 번치가 없으면 번치 없음 화면이다. 번들 발행 뒤에는 번치 홈 key 전체(`sharedKeys.bunchHomeScope`)를 무효화해 새 번들이 맨 앞에 쌓인다. 팔로우·알림·멤버 관리는 샘플이며 `docs/workflows/mock-server-status.md`에 모아 두었다.
+- 서버 연동: 번치 프로필·권한·개수(`GET /bunches/{id}/home`)와 완성된 번들(`GET /bunches/{id}/published-bundles`)은 `useServerBunchHome`이 내 기본 번치 기준으로 받는다(`/home` 응답은 Swagger 생성 타입과 묶음, #408). 로딩은 `PageLoading`, 오류는 「다시 시도」가 있는 `BunchHomeError`, 소속 번치가 없으면 번치 없음 화면이다. 번들 발행 뒤에는 번치 홈 key 전체(`sharedKeys.bunchHomeScope`)를 무효화해 새 번들이 맨 앞에 쌓인다. 팔로우·알림·멤버 관리는 각 화면이 서버에서 받고, 연동 현황은 `docs/workflows/mock-server-status.md`에 모아 두었다.
 - 작성 중인 번들: 서버 모드에서는 초안 목록(`GET /bunches/{id}/bundles?status=DRAFT`, 최근 수정순 첫 쪽 50개)으로 카드를 만들고(대표 사진은 첫 사진, 참여 멤버는 번치 멤버 정보로 채움, 제목이 비면 임시 이름 「제목 없는 번들」), 카드를 누르면 `/bunch/drafts/{id}`로 이동한다. 삭제는 `DELETE`로 서버에 보내고 실패하면 토스트로 알린다. 초안을 만들거나 나가거나 삭제하거나 발행하면 번치 홈 key 전체가 무효화되어 목록이 갱신된다. 「첫 번들 만들기」·「+」는 `/bunch/bundles/new/members`(번들 만들기 멤버 선택)로 이동한다. 번치 멤버가 2명 미만이면 이동하지 않고 「함께할 멤버가 없어요」 창(「취소」·「초대하기」, Figma `5618:81971`)을 띄우며 「초대하기」는 멤버 초대 화면(`/bunch/members/invite`)으로 간다.
 - 「콕한 장소」: 누르면 `/bunch/places`(`bunch-places` feature, `BunchPlaces.spec.md`)로 이동한다(#257). 알림은 화면이 없어 버튼만 있다. 더보기는 `/bunch/menu`로 가는 링크다(#169, `BunchMenuScreen.spec.md`).
 - 완성된 번들 그리드 칸: 번들 상세가 없어 누를 수 없는 사진이다.
@@ -37,13 +37,14 @@
 
 ## Route와 접근
 
-- Path: `/bunch`. params·search는 없다. 화면은 서버 데이터(`useServerBunchHome`, `BunchHome`의 기본 `source="server"`)로 그린다. `fixtures/`와 `useBunchHome`은 샘플 모드(`source="sample"`, 테스트용)에만 쓰고, 샘플 모드를 없앨 때 함께 지운다.
+- Path: `/bunch`. params·search는 없다. 화면은 서버 데이터(`useServerBunchHome`)로 그린다.
 - 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태로 막는다(`features/auth/lib/accessPolicy.ts`, 결정 기록 019). 가입을 마친 사용자만 들어오고, 비로그인은 로그인(처음이면 인트로)으로, 가입 중이면 약관·프로필로 보낸다. 번치 멤버인지는 서버가 판단한다.
 - Layout: `(app)/(main)` 하단 탭 layout 안에서 `PageShell`을 한 번 쓴다. `robots: noindex`.
 
 ## 상태와 흐름
 
-- 화면 데이터는 `BunchHome`의 서버 모드(기본, `useServerBunchHome`)가 받는다. `useBunchHome`은 샘플 모드(`source="sample"`, 테스트용)의 fixture와 목 동작(`switchBunch`·`deleteDraftBundle`·`removeBunch`)이고, 서버 모드는 이 동작을 서버 mutation으로 덮어쓴다(2026-11-16 확인). fixture 번치마다 내 역할이 달라(퇴근런클럽 메인 관리자, 여행가조 공동 관리자, 큐시즘 기프 일반 멤버) 번치를 전환하면 더보기 메뉴가 역할에 맞게 바뀐다.
+- 화면 데이터는 `BunchHome`이 `useServerBunchHome`으로 받는다. 동작(`switchBunch`·`deleteDraftBundle`·`removeBunch`)은 서버 mutation(`useSwitchBunchMutation`·`useDeleteBundleMutation`·`useDeleteBunchNoticeMutation`)이다. 더보기 메뉴의 역할은 서버 멤버 목록(`useMyBunchMemberships`)으로 정한다.
+- 테스트는 가짜 서버(MSW)의 시작 데이터(기본 번치 여행쥬아)로 그린다(`BunchHome.test.tsx`·`BunchHome.server.test.tsx`·`BunchHome.needMembers.test.tsx`).
 - 탭·전환 시트·삭제 대상·접근 불가 안내 대상은 화면 안 상태다.
 
 ## 접근성
@@ -62,14 +63,13 @@
 - 쪽 크기: 발행 번들은 첫 쪽 50개만 받는다(`hasNext`를 읽지 않아 50개를 넘으면 잘린다). 더 보기를 붙일 때 `useInfiniteQuery`로 바꾸고 query key에 `page`·`size`를 넣는다.
 - 표지 주소: 안전하지 않은 이미지 주소는 해당 항목만 기본 이미지로 대체한다(파싱 실패로 홈 전체를 막지 않음). 서버가 어떤 주소를 내려주는지 정해지면 기준을 다시 본다.
 - Stage: 가짜 서버는 명세 값(발행본 0~~1=1, 2~~5=2, 6~9=3, 10개 이상=4)으로 내려준다. 기능명세 1110판(5.1.3)은 단계를 없앴으므로 서버 응답에서 빠지는지 확인한다.
-- 샘플 모드: `BunchHome`의 `source="sample"`과 `useBunchHome`은 번치 전환·팔로우 등이 서버에 연결될 때까지 남아 있어 서버 모드에서도 훅이 함께 호출된다. 샘플 모드를 없앨 때 같이 정리한다.
 
 ## 확인할 항목
 
 - 「+」의 동작(번들 만들기로 해석), 알림·그리드 칸을 눌렀을 때의 이동.
 - Figma 안내 제목의 「홍대먹짱」과 목록의 「홍대 먹짱」 띄어쓰기 차이.
 - 전환 토스트는 Figma대로 「+」와 같은 높이라 떠 있는 3초 동안 「+」를 덮는다(의도). 덮인 동안 「+」를 누를 수 있는지는 확인하지 않았다.
-- 서버 모드의 지금 번치는 `members/me`의 기본 번치다. `PUT /bunches/{id}/last-used` 뒤 기본 번치가 그 번치로 바뀐다고 보고 연결했다(가짜 서버도 그렇게 동작). 실서버가 같은지 확인한다. 샘플 모드의 지금 번치는 `useCurrentBunchId`가 sessionStorage에 둔다.
+- 지금 번치는 `members/me`의 기본 번치다. `PUT /bunches/{id}/last-used` 뒤 기본 번치가 그 번치로 바뀐다고 보고 연결했다(가짜 서버도 그렇게 동작). 실서버가 같은지 확인한다.
 - 홈 말고 다른 화면(콕한 장소·피드 상세 등)이 `BUNCH_008`을 받는 경우는 이 안내로 연결하지 않았다. 콕한 장소는 서버가 지금 번치를 고르는 API라 해당하지 않는다.
 - 기능명세서(5.1.5·5.3)와 Figma 차이: 1110판이 아이콘 탭·3열 그리드·탭 안 작성 중 목록·삭제 확인 모달로 바뀌어 구조는 같아졌다. 삭제 확인 문구도 구현과 같다. 남은 차이는 작성 중 카드 모양이다. 1110판은 왼쪽 사진, 오른쪽 제목, 참여 멤버 프로필 최대 3개 + 「외 N명」(6.1.3과 같은 방식)이다. 구현 `BundleCard`가 Figma와 같은지 확인한다(명세와 다름, 확인 필요).
 - 탭 이름: 1110판은 「번들」·「작성 중인 번들」 탭이다. 구현의 접근성 이름은 「완성된 번들」·「작성 중인 번들」이라 맞출지 확인한다.

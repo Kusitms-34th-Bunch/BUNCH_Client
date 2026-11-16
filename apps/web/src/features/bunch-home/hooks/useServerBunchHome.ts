@@ -29,24 +29,19 @@ export type ServerBunchHome =
       atBunchLimit: boolean;
     };
 
-type Options = {
-  /** false면 요청하지 않음(샘플 데이터로 보는 테스트·미리보기) */
-  enabled?: boolean;
-};
-
 /**
  * 번치 홈의 프로필·개수와 완성된 번들·작성 중인 번들을 서버(가짜 서버 포함)에서 받아 화면 모양으로 돌려줌
  * 내 기본 번치(`members/me`, 마지막 사용 번치)를 지금 번치로 보고, 전환 목록은 `members/me/bunches`
- * 팔로우·알림·멤버 관리는 아직 샘플이라 이 hook 밖에 있음
+ * 팔로우·알림·멤버 관리는 각 화면의 query가 따로 받음
  */
-export function useServerBunchHome({ enabled = true }: Options = {}): ServerBunchHome {
-  const profile = useQuery({ ...myProfileQueryOptions(), enabled });
-  const bunchId = enabled ? profile.data?.bunch?.id : undefined;
+export function useServerBunchHome(): ServerBunchHome {
+  const profile = useQuery(myProfileQueryOptions());
+  const bunchId = profile.data?.bunch?.id;
   const home = useQuery(bunchHomeQueryOptions(bunchId));
   const published = useQuery(publishedBundlesQueryOptions(bunchId));
   const drafts = useQuery(draftBundlesQueryOptions(bunchId));
   const members = useQuery(bunchMembersQueryOptions(bunchId));
-  const myBunches = useQuery({ ...myBunchesQueryOptions(), enabled });
+  const myBunches = useQuery(myBunchesQueryOptions());
 
   const ready = useMemo(() => {
     if (!home.data || !published.data || !drafts.data) return undefined;

@@ -26,7 +26,7 @@ describe('patchFeedLike·patchDetailLike', () => {
   const off = () => ({ likedByCurrentBunch: false, likeCount: 0 });
 
   it('피드는 여러 쪽에서 그 번들 카드만 바꾼다', () => {
-    const next = patchFeedLike(feed, 2, off)!;
+    const next = patchFeedLike(feed, '2', off)!;
     const bundles = next.pages.flatMap((page: FeedPage) =>
       page.items.flatMap((item) => ('bundle' in item ? [item.bundle] : [])),
     );
@@ -36,9 +36,9 @@ describe('patchFeedLike·patchDetailLike', () => {
 
   it('상세는 같은 번들일 때만 바꾸고, 캐시가 없으면 그대로 없다', () => {
     const detail = { id: 5, ...like } as BundleDetailResponse;
-    expect(patchDetailLike(detail, 5, off)).toMatchObject({ likedByCurrentBunch: false });
-    expect(patchDetailLike(detail, 6, off)).toBe(detail);
-    expect(patchDetailLike(undefined, 5, off)).toBeUndefined();
-    expect(patchFeedLike(undefined, 5, off)).toBeUndefined();
+    expect(patchDetailLike(detail, '5', off)).toMatchObject({ likedByCurrentBunch: false });
+    expect(patchDetailLike(detail, '6', off)).toBe(detail);
+    expect(patchDetailLike(undefined, '5', off)).toBeUndefined();
+    expect(patchFeedLike(undefined, '5', off)).toBeUndefined();
   });
 });

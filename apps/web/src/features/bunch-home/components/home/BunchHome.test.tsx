@@ -2,12 +2,10 @@ import type * as DesignSystem from '@app/design-system';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BunchHome } from './BunchHome';
-
-// 샘플 모드도 서버 hook을 호출하므로 QueryClient가 필요함
-const wrapper = createQueryWrapper(createTestQueryClient());
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
@@ -19,95 +17,72 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: (...args: ToastArgs) => toast(...args),
 }));
+vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 beforeEach(() => {
-  // 지금 번치는 sessionStorage에 유지되므로 테스트마다 기본 번치로
-  sessionStorage.clear();
   push.mockClear();
   toast.mockClear();
 });
 
-const openSwitcher = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(screen.getByRole('button', { name: /여행가조/ }));
+// 가짜 서버의 기본 번치는 여행쥬아(비공개, TYPE_1, 멤버 5명)
+const renderHome = async () => {
+  const result = render(<BunchHome />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+  await screen.findByRole('heading', { level: 1, name: /여행쥬아/ });
+  return result;
+};
+
+const openSwitcher = async (user: ReturnType<typeof userEvent.setup>, name = /여행쥬아/) => {
+  await user.click(screen.getByRole('button', { name }));
   return screen.findByRole('dialog', { name: '번치 전환하기' });
 };
 
 describe('BunchHome', () => {
-  it('번치 이름이 페이지 제목이고 팔로워·팔로잉·멤버 수와 완성된 번들 그리드를 보여 준다', () => {
-    render(<BunchHome source="sample" />, { wrapper });
+  it('번치 이름이 페이지 제목이고 팔로워·팔로잉 수는 내 번치의 목록 링크, 첫 탭은 완성된 번들이다', async () => {
+    await renderHome();
 
-    expect(screen.getByRole('heading', { level: 1, name: '여행가조' })).toBeTruthy();
-    expect(screen.getByText('팔로워').previousSibling?.textContent).toBe('23');
-    // 팔로워·팔로잉 수는 내 번치의 목록으로(누른 쪽 탭)
-    expect(screen.getByRole('link', { name: '23 팔로워' }).getAttribute('href')).toBe(
+    expect(screen.getByText('비공개 번치')).toBeTruthy();
+    // 팔로워·팔로잉 수는 가짜 DB의 팔로우 관계(팔로워 3·팔로잉 2)
+    expect(screen.getByText('팔로워').previousSibling?.textContent).toBe('3');
+    expect(screen.getByRole('link', { name: '3 팔로워' }).getAttribute('href')).toBe(
       '/bunch/follows',
     );
-    expect(screen.getByRole('link', { name: '8 팔로잉' }).getAttribute('href')).toBe(
+    expect(screen.getByRole('link', { name: '2 팔로잉' }).getAttribute('href')).toBe(
       '/bunch/follows?tab=following',
     );
     expect(screen.getByRole('tab', { name: '완성된 번들' }).getAttribute('aria-selected')).toBe(
       'true',
     );
-    expect(screen.getAllByRole('img', { name: /완성된 번들 \d/ })).toHaveLength(7);
   });
 
-  it('작성 중인 번들 탭에서 삭제를 확인하면 카드가 사라진다', async () => {
+  it('번치 성격에 따라 헤더·위쪽 Safe Area 배경이 바뀌고, 전환 목록은 지금 번치를 표시한다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome source="sample" />, { wrapper });
-
-    await user.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
-    await user.click(screen.getByRole('button', { name: '머그샷 삭제' }));
-    const dialog = await screen.findByRole('alertdialog', { name: '작성 중인 번들을 삭제할까요?' });
-    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
-
-    await waitFor(() => expect(screen.queryByRole('button', { name: '머그샷 삭제' })).toBeNull());
-    expect(screen.getByRole('button', { name: '부자가되고싶어요 삭제' })).toBeTruthy();
-  });
-
-  it('전환 시트에서 다른 번치를 고르면 화면이 바뀌고 토스트로 알린다', async () => {
-    const user = userEvent.setup();
-    render(<BunchHome source="sample" />, { wrapper });
-
-    const sheet = await openSwitcher(user);
-    expect(
-      within(sheet)
-        .getByRole('button', { name: /여행가조/ })
-        .getAttribute('aria-current'),
-    ).toBe('true');
-    await user.click(within(sheet).getByRole('button', { name: /퇴근런클럽/ }));
-
-    expect(screen.getByRole('heading', { level: 1, name: '퇴근런클럽' })).toBeTruthy();
-    expect(screen.getByText('비공개 번치')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '첫 번들 만들기' })).toBeTruthy();
-    expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.');
-  });
-
-  it('번치 성격에 따라 헤더·프로필 이미지 영역·위쪽 Safe Area 배경이 바뀐다', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<BunchHome source="sample" />, { wrapper });
+    const { container } = await renderHome();
     const background = () => ({
       app: container.querySelector('[data-app-background]')?.getAttribute('data-app-background'),
       header: container.querySelector('header')?.className,
     });
 
-    // 여행가조 TYPE_3 분홍
-    expect(background().app).toBe('pink-50');
-    expect(background().header).toContain('bg-primitive-pink-50');
+    // 여행쥬아 TYPE_1 연보라
+    expect(background().app).toBe('brand-subtle-1');
+    expect(background().header).toContain('bg-surface-brand-subtle-1');
 
-    await user.click(within(await openSwitcher(user)).getByRole('button', { name: /퇴근런클럽/ }));
+    const sheet = await openSwitcher(user);
+    expect(
+      within(sheet)
+        .getByRole('button', { name: /여행쥬아/ })
+        .getAttribute('aria-current'),
+    ).toBe('true');
+    await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
+
+    // 퇴근런클럽 TYPE_2 주황
+    await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ });
     expect(background().app).toBe('orange-50');
     expect(background().header).toContain('bg-primitive-orange-50');
-
-    await user.click(screen.getByRole('button', { name: /퇴근런클럽/ }));
-    const sheet = await screen.findByRole('dialog', { name: '번치 전환하기' });
-    await user.click(within(sheet).getByRole('button', { name: /큐시즘 기프/ }));
-    expect(background().app).toBe('green-50');
-    expect(background().header).toContain('bg-primitive-green-50');
   });
 
   it('「새로운 번치 추가하기」는 시트를 닫은 뒤 번치 시작 선택으로 이동한다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome source="sample" />, { wrapper });
+    await renderHome();
 
     const sheet = await openSwitcher(user);
     await user.click(within(sheet).getByRole('button', { name: '새로운 번치 추가하기' }));
@@ -117,44 +92,21 @@ describe('BunchHome', () => {
     expect(screen.queryByRole('dialog', { name: '번치 전환하기' })).toBeNull();
   });
 
-  it('전환 목록에서 지금 번치가 맨 위에 있다', async () => {
+  it('접근 불가 안내를 Esc로 닫으면 목록에 남긴다', async () => {
     const user = userEvent.setup();
-    render(<BunchHome source="sample" />, { wrapper });
+    await renderHome();
 
     const sheet = await openSwitcher(user);
-    const rows = within(sheet).getAllByRole('button', { name: /,|여행가조|퇴근런클럽/ });
-    expect(rows[0]?.getAttribute('aria-current')).toBe('true');
-  });
-
-  it('접근 불가 번치를 누르면 전환하지 않고 안내를 띄우며, 「번치 목록에서 삭제」로 목록에서 지운다', async () => {
-    const user = userEvent.setup();
-    render(<BunchHome source="sample" />, { wrapper });
-
-    const sheet = await openSwitcher(user);
-    await user.click(within(sheet).getByRole('button', { name: /홍대 먹짱/ }));
-    const dialog = await screen.findByRole('alertdialog', { name: '홍대 먹짱 번치가 삭제됐어요' });
-    await user.click(within(dialog).getByRole('button', { name: '번치 목록에서 삭제' }));
-
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    // 시트가 열려 있어 뒤 화면은 접근성 트리에서 숨김 상태
-    expect(screen.getByRole('heading', { level: 1, name: '여행가조', hidden: true })).toBeTruthy();
-    expect(within(sheet).queryByRole('button', { name: /홍대 먹짱/ })).toBeNull();
-  });
-
-  it('안내를 Esc로 닫으면 목록에 남긴다', async () => {
-    const user = userEvent.setup();
-    render(<BunchHome source="sample" />, { wrapper });
-
-    const sheet = await openSwitcher(user);
-    await user.click(within(sheet).getByRole('button', { name: /큐시즘 밋업/ }));
-    await screen.findByRole('alertdialog', { name: '큐시즘 밋업 번치에서 내보내졌어요' });
+    await user.click(await within(sheet).findByRole('button', { name: /큐시즘 맛집/ }));
+    await screen.findByRole('alertdialog', { name: '큐시즘 맛집 번치에서 내보내졌어요' });
     await user.keyboard('{Escape}');
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    expect(within(sheet).getByRole('button', { name: /큐시즘 밋업/ })).toBeTruthy();
+    expect(within(sheet).getByRole('button', { name: /큐시즘 맛집/ })).toBeTruthy();
   });
+
   it('「+」는 번들 만들기 화면으로 이동한다', async () => {
-    render(<BunchHome source="sample" />, { wrapper });
+    await renderHome();
 
     await userEvent.click(screen.getByRole('button', { name: '번들 만들기' }));
 
@@ -163,7 +115,7 @@ describe('BunchHome', () => {
   });
 
   it('「콕한 장소」는 콕한 장소 화면으로 이동한다', async () => {
-    render(<BunchHome source="sample" />, { wrapper });
+    await renderHome();
 
     await userEvent.click(screen.getByRole('button', { name: '콕한 장소' }));
 
@@ -171,8 +123,8 @@ describe('BunchHome', () => {
     expect(BUNCH_HOME_PATHS.places).toBe('/bunch/places');
   });
 
-  it('헤더 더보기는 더보기 메뉴로 가는 링크다(새 탭 열기 지원)', () => {
-    render(<BunchHome source="sample" />, { wrapper });
+  it('헤더 더보기는 더보기 메뉴로 가는 링크다(새 탭 열기 지원)', async () => {
+    await renderHome();
 
     expect(screen.getByRole('link', { name: '더보기' }).getAttribute('href')).toBe(
       BUNCH_HOME_PATHS.menu,

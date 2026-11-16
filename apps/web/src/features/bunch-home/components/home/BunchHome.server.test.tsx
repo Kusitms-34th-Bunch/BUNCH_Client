@@ -203,6 +203,17 @@ describe('BunchHome 서버 데이터', () => {
     );
   });
 
+  it('완성된 번들이 없으면 빈 상태와 「첫 번들 만들기」를 보인다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/published-bundles', () =>
+        ok({ items: [], page: 0, size: 50, totalElements: 0, hasNext: false }),
+      ),
+    );
+    renderHome();
+
+    expect(await screen.findByRole('button', { name: '첫 번들 만들기' })).toBeInTheDocument();
+  });
+
   it('안전하지 않은 표지 주소의 번들은 기본 이미지로 보이고 홈은 그대로 나온다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/published-bundles', () =>

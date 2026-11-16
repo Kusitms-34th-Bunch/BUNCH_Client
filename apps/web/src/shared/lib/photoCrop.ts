@@ -148,3 +148,65 @@ export const rubberBand = (raw: Crop, clamped: Crop, factor = RUBBER_BAND): Crop
   width: clamped.width + (raw.width - clamped.width) * factor,
   height: clamped.height + (raw.height - clamped.height) * factor,
 });
+
+/** 화면 위 상자(px) */
+export type Box = { width: number; height: number; left: number; top: number };
+
+/**
+ * 칸·원 위치(화면 px). 칸은 조정 영역 기준, 원은 사진 상자 기준(그림자를 사진 상자로 자르므로), 원 테두리는 칸 기준
+ * `imageOffset`은 조정 영역 안 사진 상자의 왼쪽 위
+ */
+export const cropLayout = (
+  crop: Crop,
+  scale: number,
+  imageOffset: { left: number; top: number },
+) => {
+  const square = circleSquare(crop);
+  const frame: Box = {
+    width: crop.width * scale,
+    height: crop.height * scale,
+    left: imageOffset.left + crop.x * scale,
+    top: imageOffset.top + crop.y * scale,
+  };
+  const circle: Box = {
+    width: square.size * scale,
+    height: square.size * scale,
+    left: square.x * scale,
+    top: square.y * scale,
+  };
+  const ring: Box = {
+    ...circle,
+    left: (square.x - crop.x) * scale,
+    top: (square.y - crop.y) * scale,
+  };
+  return { frame, circle, ring };
+};
+
+/** 화면 낭독기로 읽어 줄 칸 크기와 가운데 위치(사진 대비 %) */
+export const cropAnnouncement = (crop: Crop, image: Size) =>
+  `칸 가로 ${Math.round((crop.width / image.width) * 100)}%, 세로 ${Math.round((crop.height / image.height) * 100)}%, 원 가운데 가로 ${Math.round(((crop.x + crop.width / 2) / image.width) * 100)}%·세로 ${Math.round(((crop.y + crop.height / 2) / image.height) * 100)}% 위치`;
+
+/** 원이 덮는 정사각 영역을 512px JPEG data URL로 자름. canvas를 만들지 못하면(메모리 부족 등) null */
+export const encodeCircleCrop = (image: CanvasImageSource, crop: Crop) => {
+  const rect = circleSquare(crop);
+  const canvas = document.createElement('canvas');
+  canvas.width = CROP_OUTPUT_SIZE;
+  canvas.height = CROP_OUTPUT_SIZE;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  // JPEG는 투명을 검정으로 합성하므로 투명 PNG·WebP를 위해 흰 바탕을 먼저 칠함
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, CROP_OUTPUT_SIZE, CROP_OUTPUT_SIZE);
+  context.drawImage(
+    image,
+    rect.x,
+    rect.y,
+    rect.size,
+    rect.size,
+    0,
+    0,
+    CROP_OUTPUT_SIZE,
+    CROP_OUTPUT_SIZE,
+  );
+  return canvas.toDataURL('image/jpeg', 0.9);
+};

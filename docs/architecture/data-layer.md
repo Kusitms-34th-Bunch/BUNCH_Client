@@ -11,7 +11,7 @@
   - `ApiContract`는 생성 타입의 선택 필드를 생략과 null 모두 허용하도록 넓힌다. 중첩 객체와 배열 항목에도 같은 규칙을 적용한다. 서버가 둘 중 어느 쪽으로 보낼지 생성 타입만으로는 알 수 없어서다. 선택 필드는 스키마에서 `.nullish()`로 받는다.
   - 이 검사는 스키마 결과가 계약에 들어맞는지만 보는 단방향 검사다. 필수 필드 누락, 값 타입 오류, 계약에 없는 enum 값은 컴파일에서 잡는다. 계약에 없는 필드 추가, 계약보다 좁은 enum, 빠뜨린 선택 필드는 잡지 못하므로 스키마를 쓸 때 생성 타입과 직접 대조한다. 계약상 선택인 필드를 화면 때문에 필수로 받으면 그 이유를 스키마 주석에 남긴다.
   - Swagger에 아직 없는 응답만 노션 명세로 스키마를 쓰고, 올라오면 같은 방식으로 묶는다.
-  - web은 `src/shared/api/bffApi.ts`의 `requestData(request, schema, context)`로 요청한다. 넘기는 응답 스키마는 Swagger 생성 타입과 `satisfies z.ZodType<ApiContract<…>>`로 묶는다. 화면에 필요한 필드만 받거나 계약보다 느슨하게 받아 묶지 못하면 선언 바로 위에 `// 계약 미연결: <이유>`를 적는다. `yarn lint`의 `check:contracts`(`apps/web/scripts/check-response-contracts.mjs`)가 둘 다 없는 스키마를 막는다. 문서·주석의 「아직 생성 타입이 없다」 같은 설명은 낡기 쉬워서 이유를 검사로 드러낸다. envelope 해제, 스키마 검사, 오류 변환을 한곳에서 한다. HTTP 오류·실패 envelope·네트워크 오류·계약 위반은 모두 `ApiError`로 던지고, 계약 위반은 code `INVALID_RESPONSE`(category `validation`, 재시도 없음)다. category `validation`은 4xx 요청 오류에도 쓰이므로 계약 위반은 code로 구분한다. 어느 응답인지와 어긋난 위치는 화면 문구가 아니라 `data`(`context`, `issues`)에 담긴다. 계약 위반을 오류 수집(Sentry)으로 보내는 것은 아직 하지 않았고 후속 과제다.
+  - web은 `src/shared/api/bffApi.ts`의 `requestData(request, schema, context)`로 요청한다. 넘기는 응답 스키마는 Swagger 생성 타입과 `satisfies z.ZodType<ApiContract<…>>`로 묶는다. 화면에 필요한 필드만 받거나 계약보다 느슨하게 받아 묶지 못하면 선언 바로 위에 `// 계약 미연결: <이유>`를 적는다. `yarn lint`의 `check:contracts`(`apps/web/scripts/check-response-contracts.mjs`)가 둘 다 없는 스키마를 막는다. 문서·주석의 「아직 생성 타입이 없다」 같은 설명은 낡기 쉬워서 이유를 검사로 드러낸다. envelope 해제, 스키마 검사, 오류 변환을 한곳에서 한다. HTTP 오류·실패 envelope·네트워크 오류·계약 위반은 모두 `ApiError`로 던지고, 계약 위반은 code `INVALID_RESPONSE`(category `validation`, 재시도 없음)다. category `validation`은 4xx 요청 오류에도 쓰이므로 계약 위반은 code로 구분한다. 어느 응답인지와 어긋난 위치는 화면 문구가 아니라 `data`(`context`, `issues`)에 담긴다. 계약 위반은 아래 「오류 보고 (web)」 기준으로 Sentry에 보낸다.
   - enum은 명세 값만 받는 닫힌 목록으로 둔다. 서버가 새 값을 보내면 화면이 추측하지 않고 계약 위반으로 드러난다.
   - `requestData`는 `data`가 있는 응답 전용이다. 본문 없는 204 응답은 본문을 읽지 않는다. 요청 함수에서 `bffApi.*`를 await하고 오류를 `normalizeError`로 감싼다(로그아웃 `shared/api/logout.ts` 기준). 같은 형태가 반복되면 `shared/api`의 공용 함수로 올린다.
   - 재발급까지 실패한 401은 `ApiError`(category `auth`)로만 전달된다. 403은 category `forbidden`이다. 재발급이 일시 장애(502·503·504·네트워크)로 실패하면 401로 바꾸지 않고 `server`·`network`로 전달한다(`api-boundary.md`). 화면이 같은 기준으로 쓰는 status 판정(볼 수 없음 400·403·404, 확정 거절 4xx)은 `src/shared/api/errorStatus.ts`를 쓴다. 로그인 화면으로 보내는 처리는 `AuthGate`가 가입 상태를 다시 읽을 때 맡고, `createBrowserApi`의 `onUnauthorized`는 연결하지 않는다(`shared/api/bffApi.ts`).
@@ -48,7 +48,7 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 - **mutation 실패 알림은 공통 처리로 선언한다.** mutation에 `meta: { errorMessage }`(사용자 문구)를 주면 QueryClient의 `MutationCache.onError`가 그 문구를 toast로 띄운다. meta 타입은 TanStack Query `Register`로 고정한다. 서버 `error.message`는 문구 키라 그대로 보여 주지 않는다. code마다 다른 문구가 필요하거나 입력 칸 아래에 오류를 보여 주는 화면은 meta 없이 `mutate(…, { onError })`로 직접 처리한다. 성공 toast와 화면 이동은 계속 화면이 맡는다. 구현은 `src/shared/query/queryClient.ts`의 `MutationCache`와 `Register.mutationMeta`다.
 - **`hooks/`**: 화면·흐름 hook을 둔다. `queries/`의 options를 `useQuery`로 읽거나 mutation hook을 불러 조합할 수 있다. query 정의(`queryOptions`)·mutation 정의·캐시 조작(`useQueryClient`)은 `queries/`에만 둔다(ESLint 강제).
 - 여러 feature가 같은 요청·query를 실제로 함께 쓰고 계약이 안정되면 `src/shared`(`shared/query/`)로 옮긴다. 인증 세션(로그인·재발급·로그아웃)은 모든 BFF가 쓰는 공용 인프라라 처음부터 `src/shared/api/`에 둔다.
-- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/ids.ts`로 화면 문자열 id로 바꾼다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
+- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/ids.ts`로 화면 문자열 id로 바꾼다. 화면·hook·query는 문자열 id만 넘기고, 서버 숫자로 바꾸는 `toWireId`·`requireWireId`는 `api/`에서만 쓴다(ESLint 강제). 잘못된 id로 요청을 건너뛸지는 `isWireId`로 판단한다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
 
 ### 예시
 
@@ -199,3 +199,13 @@ remove.mutate(selectedIds, {
 - web에서는 server-only 경계와 browser client를 분리한다. cookie·secret을 client bundle로 보내지 않는다.
 - admin에서는 route loader와 component query의 책임을 섞지 않고, 필요한 경우 route 수준에서 prefetch한다.
 - 여러 app에서 같은 transport·생성 타입을 써도 endpoint와 query hook은 제품 의미가 같고 안정된 API일 때만 shared package로 승격한다. 공통화 전에는 각 app·feature 가까이에 둔다.
+
+## 오류 보고 (web)
+
+조회·mutation이 최종 실패하면 `createQueryClient`의 `QueryCache`·`MutationCache` `onError`가 `shared/lib/reportApiError.ts`를 거쳐 개발팀이 알아야 하는 오류만 Sentry로 보낸다(결정 기록 006의 수집 정책을 따름).
+
+- 보고: 5xx(재시도 뒤), 분류하지 못한 오류(category `unknown`), 응답 계약 위반(code `INVALID_RESPONSE`), `ApiError`가 아닌 코드 결함.
+- 제외: 401·403(세션·권한 흐름이 처리), 네트워크 오류(사용자 환경), 업무 4xx(화면이 안내). 취소된 조회는 TanStack Query가 `onError`를 부르지 않는다.
+- `ApiError`는 응답 원문이 들어 있을 수 있는 message 대신 `API <category> <status> <code>` 고정 문구로 보내고, 같은 값으로 fingerprint를 붙여 묶는다. code는 오류 코드 형식(`/^[A-Z][A-Z0-9_]{0,40}$/`)일 때만 쓴다.
+- 화면에서 직접 잡는 실패(공유 실패 등)는 그 화면이 `captureException`을 부른다.
+- mutation 안에서 `fetchQuery`로 받은 조회가 실패하면 QueryCache와 MutationCache가 한 번씩 보고한다. 같은 fingerprint로 묶이므로 이슈는 하나지만 발생 수는 두 배로 보인다.

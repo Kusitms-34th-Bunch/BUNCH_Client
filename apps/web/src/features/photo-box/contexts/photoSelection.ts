@@ -1,4 +1,5 @@
 import { createContext, useContext, useSyncExternalStore } from 'react';
+import { createListeners } from '@/shared/lib/listeners';
 import { type PhotoSelection, getSelectionOrder } from '../lib/selection';
 
 // 선택 상태의 context·저장소와 읽는 hook(provider는 PhotoSelectionContext.tsx, 컴포넌트 파일과 나눠 Fast Refresh 유지)
@@ -22,17 +23,14 @@ export type SelectionStore = {
 
 export const createStore = (initial: PhotoSelection): SelectionStore => {
   let selection = initial;
-  const listeners = new Set<() => void>();
+  const { subscribe, emit } = createListeners();
   return {
     getSnapshot: () => selection,
     set: (next) => {
       selection = next;
-      for (const listener of listeners) listener();
+      emit();
     },
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
+    subscribe,
   };
 };
 
