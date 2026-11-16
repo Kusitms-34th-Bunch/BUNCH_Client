@@ -219,5 +219,14 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
     [enqueue],
   );
 
-  return { locations, add, replace, remove, move, pending: ops.length > 0 || sending > 0, settled, discard };
+  return {
+    locations,
+    add,
+    replace,
+    remove,
+    move,
+    pending: ops.length > 0 || sending > 0,
+    settled,
+    discard,
+  };
 }

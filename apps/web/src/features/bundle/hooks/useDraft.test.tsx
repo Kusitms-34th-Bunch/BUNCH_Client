@@ -640,22 +640,22 @@ describe('useDraft 참여 멤버·위치·사진', () => {
 
       expect(serverBundle(id)?.locations[0]?.id).not.toBe(firstId);
 
-    // 지운 줄을 향해 늦게 도착한 옛 REMOVE·REPLACE는 새 줄을 건드리지 않음
-    const newId = serverBundle(id)?.locations[0]?.id;
-    await applyBundleLocationIntent(bunchId, id, {
-      intent: 'REMOVE',
-      targetLocationId: String(firstId),
-    });
-    await applyBundleLocationIntent(bunchId, id, {
-      intent: 'REPLACE',
-      targetLocationId: String(firstId),
-      place: place('c', '장소 C', '주소 C'),
-    });
-    const ids = serverBundle(id)?.locations.map((location) => location.id);
-    expect(ids).toContain(newId);
-    expect(serverBundle(id)?.locations.find((location) => location.id === newId)?.name).toBe(
-      '장소 B',
-    );
+      // 지운 줄을 향해 늦게 도착한 옛 REMOVE·REPLACE는 새 줄을 건드리지 않음
+      const newId = serverBundle(id)?.locations[0]?.id;
+      await applyBundleLocationIntent(bunchId, id, {
+        intent: 'REMOVE',
+        targetLocationId: String(firstId),
+      });
+      await applyBundleLocationIntent(bunchId, id, {
+        intent: 'REPLACE',
+        targetLocationId: String(firstId),
+        place: place('c', '장소 C', '주소 C'),
+      });
+      const ids = serverBundle(id)?.locations.map((location) => location.id);
+      expect(ids).toContain(newId);
+      expect(serverBundle(id)?.locations.find((location) => location.id === newId)?.name).toBe(
+        '장소 B',
+      );
     });
   });
 
