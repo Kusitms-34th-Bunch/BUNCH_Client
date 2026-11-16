@@ -249,6 +249,7 @@ const photos = (): MockPhoto[] =>
 
 // UT 시나리오 시작 데이터(상태 A): 비공개 번치 「여행쥬아」와 멤버 5명, 사진 13장
 export const createSeed = (): MockDbState => ({
+  session: { loggedIn: true, signupStatus: 'COMPLETED', termsAccepted: true },
   members: [
     member(admin, '지예'),
     member(memberA, '경진'),
@@ -513,3 +514,20 @@ export const createSeed = (): MockDbState => ({
     categories: Object.fromEntries(PUSH_NOTIFICATION_TYPES.map((type) => [type, true])),
   },
 });
+
+/**
+ * 시작 세션 종류(`anonymous` 비로그인, `signup-terms` 약관 전 가입 중, 그 밖은 가입 완료)에 맞춘 시작 데이터
+ * 가입 중은 소속 번치가 없어 가입을 마치면 번치 시작으로 감
+ */
+export const createSeedFor = (kind: string | null): MockDbState => {
+  const seed = createSeed();
+  if (kind === 'anonymous') return { ...seed, session: { ...seed.session, loggedIn: false } };
+  if (kind === 'signup-terms') {
+    return {
+      ...seed,
+      session: { loggedIn: true, signupStatus: 'IN_PROGRESS', termsAccepted: false },
+      memberships: seed.memberships.filter(({ memberId }) => memberId !== MOCK_MY_MEMBER_ID),
+    };
+  }
+  return seed;
+};
