@@ -1,7 +1,9 @@
-import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
 import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
 import type { RecommendationDetailState, RecommendationLoad } from '../hooks/useRecommendations';
 import type { Recommendation, RecommendationDetail } from '../model/recommendation';
+
+// feature 예외 import 개수를 늘리지 않으려고 사진함 타입은 샘플에서 추론함
+type PhotoBoxPhoto = (typeof photoBoxFixture.photos)[number];
 
 // 번들 만들기 화면 테스트의 추천 번들 대역: 사진함 샘플 사진을 추천 순서대로 나눠 담음(실제 추천 API는 api·mock 테스트가 확인)
 const ready: readonly PhotoBoxPhoto[] = photoBoxFixture.photos.filter(
