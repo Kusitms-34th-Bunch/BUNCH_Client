@@ -48,7 +48,10 @@ type CacheEntry = { at: number; places: KakaoPlace[] };
 const cache = new Map<string, CacheEntry>();
 
 /** 테스트에서 검색어 사이에 결과가 새지 않도록 캐시를 비움 */
-export const clearPlaceSearchCache = () => cache.clear();
+export const clearPlaceSearchCache = () => {
+  cache.clear();
+  flights.clear();
+};
 
 // 대소문자·앞뒤 공백 차이로 같은 검색어를 다시 묻지 않도록 키를 맞춤
 const cacheKey = (query: string) => query.trim().toLowerCase();
@@ -117,22 +120,12 @@ const fromAddress = (documents: z.infer<typeof addressSchema>['documents']): Kak
     };
   });
 
-/**
- * 카카오 로컬 키워드 검색을 먼저 부르고, 결과가 적을 때(주소·지역 검색일 가능성)만 주소 검색을 더해 합친 위치 목록
- * 장소나 지역을 가르거나 막지 않고 검색 결과를 그대로 돌려줌. 좌표는 쓰지 않음(기능 spec 4.3.10)
- * - 키워드 결과가 ADDRESS_SEARCH_BELOW건 이상이면 주소 검색은 부르지 않아 대부분의 장소 이름 검색은 호출 1건
- * - 한쪽만 실패하면 다른 쪽 결과를 쓰고, 둘 다 실패하면 오류. 취소된 요청은 오류로 끝남
- * - 같은 검색어는 CACHE_TTL_MS 동안 캐시한 결과를 돌려줌
- * - 한쪽이 실패해 일부만 담긴 결과는 `degraded: true`로 알려 브라우저도 캐시하지 않게 함
- */
-export const searchKakaoPlaces = async (
+/** 카카오 호출 본체(키워드 검색, 결과가 적으면 주소 검색을 더함). 캐시·합류·취소 정책은 `searchKakaoPlaces`가 맡음 */
+const runSearch = async (
   query: string,
   apiKey: string,
   signal?: AbortSignal,
 ): Promise<{ places: KakaoPlace[]; degraded: boolean }> => {
-  const cached = readCache(query);
-  if (cached) return { places: cached, degraded: false };
-
   // 한쪽이라도 실패한 결과는 캐시하지 않음(일시 오류가 몇 분 동안 굳지 않게)
   let degraded = false;
 
@@ -181,4 +174,58 @@ export const searchKakaoPlaces = async (
     .slice(0, MAX_RESULTS);
   if (!degraded) writeCache(query, places);
   return { places, degraded };
+};
+
+type SearchResult = { places: KakaoPlace[]; degraded: boolean };
+type Flight = { promise: Promise<SearchResult>; waiters: number; controller: AbortController };
+
+// 같은 검색어를 동시에 묻는 요청은 카카오 호출 하나를 함께 기다림(캐시가 채워지기 전의 중복 호출을 막음)
+const flights = new Map<string, Flight>();
+
+/**
+ * 카카오 로컬 키워드 검색을 먼저 부르고, 결과가 적을 때(주소·지역 검색일 가능성)만 주소 검색을 더해 합친 위치 목록
+ * 장소나 지역을 가르거나 막지 않고 검색 결과를 그대로 돌려줌. 좌표는 쓰지 않음(기능 spec 4.3.10)
+ * - 키워드 결과가 ADDRESS_SEARCH_BELOW건 이상이면 주소 검색은 부르지 않아 대부분의 장소 이름 검색은 호출 1건
+ * - 한쪽만 실패하면 다른 쪽 결과를 쓰고, 둘 다 실패하면 오류
+ * - 같은 검색어는 CACHE_TTL_MS 동안 캐시한 결과를 돌려주고, 캐시가 채워지기 전에 동시에 온 같은 검색어는 호출 하나를 함께 기다림
+ * - 취소: 합류한 요청이 취소돼도 함께 기다리는 다른 요청은 결과를 받고, 기다리는 요청이 모두 취소됐을 때만 카카오 호출을 끊어 오류로 끝냄
+ * - 한쪽이 실패해 일부만 담긴 결과는 `degraded: true`로 알려 브라우저도 캐시하지 않게 함
+ */
+export const searchKakaoPlaces = (
+  query: string,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<SearchResult> => {
+  const cached = readCache(query);
+  if (cached) return Promise.resolve({ places: cached, degraded: false });
+
+  const key = cacheKey(query);
+  let flight = flights.get(key);
+  // 기다리던 요청이 모두 취소돼 이미 끊긴 호출에는 합류하지 않고 새로 시작함(끊긴 호출은 곧 실패로 끝나 합류한 요청까지 실패시킴)
+  if (flight?.controller.signal.aborted) flight = undefined;
+  if (!flight) {
+    const controller = new AbortController();
+    const started: Flight = {
+      controller,
+      waiters: 0,
+      promise: runSearch(query, apiKey, controller.signal).finally(() => {
+        // 새로 시작한 호출일 때만 비움(끝난 뒤 같은 검색어로 새로 시작한 호출을 지우지 않게)
+        if (flights.get(key) === started) flights.delete(key);
+      }),
+    };
+    flights.set(key, started);
+    flight = started;
+  }
+
+  const joined = flight;
+  joined.waiters += 1;
+  if (signal) {
+    const leave = () => {
+      joined.waiters -= 1;
+      if (joined.waiters <= 0) joined.controller.abort();
+    };
+    if (signal.aborted) leave();
+    else signal.addEventListener('abort', leave, { once: true });
+  }
+  return joined.promise;
 };
