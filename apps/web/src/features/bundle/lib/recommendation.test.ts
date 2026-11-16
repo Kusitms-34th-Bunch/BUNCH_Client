@@ -3,10 +3,11 @@ import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
 import {
   applyRecommendation,
   getApplyDateKey,
-  getRecommendationPhotos,
+  getCardDate,
   groupByDate,
   parseRecommendationId,
   type Recommendation,
+  type RecommendationDetail,
 } from './recommendation';
 
 const photo = (
@@ -31,58 +32,78 @@ const photos = [
   photo('p5', '2026-09-26T08:00', 'processing'),
 ];
 
-const recommendation = (photoIds: readonly string[]): Recommendation => ({
-  id: 'rec',
+const detail = (ids: readonly string[]): RecommendationDetail => ({
+  id: '1',
+  title: '성수동 러닝 모임',
+  photos: ids.flatMap((id) => photos.filter((item) => item.id === id)),
+  originalSrcById: {},
+  members: [],
+});
+
+const card = (startDate: string, endDate: string | null): Recommendation => ({
+  id: '1',
   title: '성수동 러닝 모임',
   imageSrc: '/p1.jpg',
   memberNames: ['지예'],
-  photoIds,
-  month: 9,
-  day: 27,
+  photoCount: 6,
+  startDate,
+  endDate,
 });
 
 describe('parseRecommendationId', () => {
-  it('허용 문자와 길이를 지킨 id만 통과한다', () => {
-    expect(parseRecommendationId('rec-1_A')).toBe('rec-1_A');
+  it('서버 숫자 id로 바꿀 수 있는 id만 통과한다', () => {
+    expect(parseRecommendationId('31')).toBe('31');
+    expect(parseRecommendationId('rec-1')).toBeUndefined();
     expect(parseRecommendationId('../secret')).toBeUndefined();
+    expect(parseRecommendationId('0')).toBeUndefined();
     expect(parseRecommendationId('')).toBeUndefined();
-    expect(parseRecommendationId('x'.repeat(65))).toBeUndefined();
-  });
-});
-
-describe('getRecommendationPhotos', () => {
-  it('추천 순서를 지키고 사라졌거나 처리 중인 사진은 뺀다', () => {
-    const result = getRecommendationPhotos(recommendation(['p3', 'gone', 'p1', 'p5']), photos);
-
-    expect(result.map((item) => item.id)).toEqual(['p3', 'p1']);
   });
 });
 
 describe('applyRecommendation', () => {
   it('추천 순서대로 사진 id를 돌려준다', () => {
-    expect(applyRecommendation(recommendation(['p2', 'p1']), photos)).toEqual(['p2', 'p1']);
-  });
-
-  it('사라진 사진은 빼서 남은 장수만큼만 선택한다', () => {
-    expect(applyRecommendation(recommendation(['p1', 'gone', 'p3']), photos)).toEqual(['p1', 'p3']);
+    expect(applyRecommendation(detail(['p2', 'p1']))).toEqual(['p2', 'p1']);
   });
 
   it('최대 장수를 넘으면 앞에서부터 자른다', () => {
-    expect(applyRecommendation(recommendation(['p1', 'p2', 'p3']), photos, 2)).toEqual([
-      'p1',
-      'p2',
-    ]);
+    expect(applyRecommendation(detail(['p1', 'p2', 'p3']), 2)).toEqual(['p1', 'p2']);
   });
 });
 
 describe('getApplyDateKey', () => {
   it('첫 사진의 촬영일을 돌려준다', () => {
-    expect(getApplyDateKey(recommendation(['p3', 'p1']), photos)).toBe('2026-09-26');
+    expect(getApplyDateKey(detail(['p3', 'p1']))).toBe('2026-09-26');
   });
 
   it('첫 사진의 날짜를 모르거나 사진이 없으면 null이다', () => {
-    expect(getApplyDateKey(recommendation(['p4', 'p1']), photos)).toBeNull();
-    expect(getApplyDateKey(recommendation(['gone']), photos)).toBeNull();
+    expect(getApplyDateKey(detail(['p4', 'p1']))).toBeNull();
+    expect(getApplyDateKey(detail([]))).toBeNull();
+  });
+});
+
+describe('getCardDate', () => {
+  it('올해 하루짜리는 월·일만 돌려준다', () => {
+    expect(getCardDate(card('2026-10-17', null), 2026)).toEqual({ month: 10, day: 17 });
+    expect(getCardDate(card('2026-10-17', '2026-10-17'), 2026)).toEqual({ month: 10, day: 17 });
+  });
+
+  it('자정을 넘긴 묶음은 끝 날짜를 함께 돌려준다', () => {
+    expect(getCardDate(card('2026-10-19', '2026-10-20'), 2026)).toEqual({
+      month: 10,
+      day: 19,
+      endMonth: 10,
+      endDay: 20,
+    });
+  });
+
+  it('올해가 아니면 연도를 함께 돌려준다', () => {
+    expect(getCardDate(card('2025-12-31', '2026-01-01'), 2026)).toEqual({
+      year: 2025,
+      month: 12,
+      day: 31,
+      endMonth: 1,
+      endDay: 1,
+    });
   });
 });
 

@@ -44,6 +44,8 @@ export const createBundle = async (
   photoIds: readonly string[],
   idempotencyKey: string,
   participantMemberIds: readonly string[],
+  /** 마지막으로 적용한 추천 번들 id. 있으면 서버가 기본 제목을 추천 제목으로 하고 추천으로 만든 번들로 기록 */
+  recommendationId?: string,
 ) =>
   requestBundle(
     bffApi.post(`bunches/${encodeURIComponent(bunchId)}/bundles`, {
@@ -51,6 +53,9 @@ export const createBundle = async (
       json: {
         photoIds: photoIds.map(wireIdOrThrow),
         participantMemberIds: participantMemberIds.map(wireIdOrThrow),
+        ...(recommendationId === undefined
+          ? {}
+          : { recommendationId: wireIdOrThrow(recommendationId) }),
       } satisfies Schemas['CreateBundleRequest'],
     }),
     'create bundle',

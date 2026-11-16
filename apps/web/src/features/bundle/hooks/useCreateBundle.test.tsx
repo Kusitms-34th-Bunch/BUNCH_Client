@@ -174,6 +174,34 @@ describe('useCreateBundle', () => {
     expect(result.current.creating).toBe(false);
   });
 
+  it('추천 번들 id를 서버에 보내 기본 제목을 추천 제목으로 만든다', async () => {
+    const { result } = renderCreate();
+    await loaded(result);
+
+    act(() => result.current.create(photoIds, participants, { recommendationId: '1' }));
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+    expect(mockDrafts()[0]?.title).toBe('설악산 단풍 여행');
+  });
+
+  it('연결한 추천 번들이 없어졌으면(RESOURCE_001) 추천 연결을 풀게 하고 안내한다', async () => {
+    const { result } = renderCreate();
+    await loaded(result);
+    const onRecommendationGone = vi.fn();
+
+    act(() =>
+      result.current.create(photoIds, participants, {
+        recommendationId: '77',
+        onRecommendationGone,
+      }),
+    );
+
+    await waitFor(() => expect(onRecommendationGone).toHaveBeenCalledTimes(1));
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
+    expect(router.push).not.toHaveBeenCalled();
+    expect(result.current.creating).toBe(false);
+  });
+
   it('사진함에서 넘어온 흐름은 멤버 선택을 기록에 남기지 않고 replace로 이동한다', async () => {
     const { result } = renderCreate();
     await loaded(result);

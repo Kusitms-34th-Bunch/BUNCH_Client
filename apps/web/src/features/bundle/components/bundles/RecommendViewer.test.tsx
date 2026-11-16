@@ -6,6 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { BundleSelectProvider } from '../../contexts/BundleSelectProvider';
+import {
+  recommendationDouble,
+  resetRecommendationDouble,
+} from '../../testing/recommendationDoubles';
 import { RecommendViewer } from './RecommendViewer';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
@@ -29,10 +33,10 @@ vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
 vi.mock('../../hooks/useCreateBundle', async () => ({
   useCreateBundle: (await import('../../testing/selectScreenDoubles')).useCreateBundleDouble,
 }));
-vi.mock('../../fixtures/recommendation.fixture', async () => ({
-  recommendationFixture: (await import('../../testing/selectScreenDoubles'))
-    .legacyRecommendationFixture,
-}));
+vi.mock(
+  '../../hooks/useRecommendations',
+  async () => (await import('../../testing/recommendationDoubles')).recommendationHooksDouble,
+);
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -55,6 +59,7 @@ const renderViewer = (
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRecommendationDouble();
 });
 
 describe('RecommendViewer', () => {
@@ -64,6 +69,29 @@ describe('RecommendViewer', () => {
     expect(screen.getByRole('banner')).toHaveTextContent(/월 .+일/);
     expect(screen.getByRole('status')).toHaveTextContent('6장 중 1번째 사진');
     expect(screen.getAllByTestId('slide')).toHaveLength(6);
+  });
+
+  it('뷰어에는 정사각 썸네일이 아니라 원본 비율 사진을 보여 준다', () => {
+    const detail = recommendationDouble.details['rec-1']!;
+    const first = detail.photos[0]!;
+    recommendationDouble.details = {
+      ...recommendationDouble.details,
+      'rec-1': { ...detail, originalSrcById: { [first.id]: '/original-1.jpg' } },
+    };
+    renderViewer('rec-1', first.id);
+
+    const sources = screen.getAllByRole('img').map((image) => image.getAttribute('src'));
+    expect(sources[0]).toBe('/original-1.jpg');
+    // 원본 주소를 모르는 사진은 목록 사진 주소를 그대로 씀
+    expect(sources[1]).toBe(detail.photos[1]?.src);
+  });
+
+  it('추천 사진을 불러오지 못하면 안내 토스트 뒤 사진 선택 화면으로 돌아간다', () => {
+    recommendationDouble.failing = true;
+    renderViewer('rec-1', 'photo-1');
+
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.recommendationsFailed);
+    expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
   });
 
   it('저장·날짜 변경·삭제 메뉴(더보기)가 없다', () => {
