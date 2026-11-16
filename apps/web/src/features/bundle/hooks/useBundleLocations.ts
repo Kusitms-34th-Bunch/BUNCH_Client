@@ -45,6 +45,9 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
   const nextNo = useRef(1);
   // 이 번호가 바뀌면 그 전에 대기열에 들어간 변경은 보내지 않음(버린 변경)
   const generation = useRef(0);
+  // 보낸 요청과 실패한 요청의 누적 횟수(발행 전에 기다리는 동안 늘었는지로 판단)
+  const sentCount = useRef(0);
+  const failedCount = useRef(0);
   // 내 변경 요청을 하나씩 순서대로 보내는 대기열
   const queue = useRef<Promise<void>>(Promise.resolve());
   const alive = useRef(true);
@@ -99,7 +102,9 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
                     },
           );
           cache.writeLocations(result.locations, result.locationVersion);
+          sentCount.current += 1;
         } catch (error) {
+          failedCount.current += 1;
           const rejection = readLocationRejection(error);
           if (rejection) {
             toast(REJECTION_MESSAGE[rejection]);
@@ -127,12 +132,19 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
   }, []);
 
   // 지금까지 들어온 변경이 모두 끝나길 기다림(기다리는 사이 새로 들어온 변경까지)
+  // 기다리는 동안 서버에 반영된 요청이 있었는지(`sent`)와 실패한 요청이 있었는지(`failed`)를 돌려줌
   const settled = useCallback(async () => {
+    const sentBefore = sentCount.current;
+    const failedBefore = failedCount.current;
     let waited: Promise<void>;
     do {
       waited = queue.current;
       await waited;
     } while (waited !== queue.current);
+    return {
+      sent: sentCount.current !== sentBefore,
+      failed: failedCount.current !== failedBefore,
+    };
   }, []);
 
   const add = useCallback(

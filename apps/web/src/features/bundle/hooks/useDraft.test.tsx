@@ -800,6 +800,31 @@ describe('useDraft 발행', () => {
     expect(locationsAtPublish).toEqual([1]);
   });
 
+  it('위치 변경이 실패하면 서버에 반영되지 않은 구성으로 발행하지 않는다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const published: number[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', () =>
+        fail(500, 'COMMON_500'),
+      ),
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        published.push(1);
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('blocked');
+    expect(published).toEqual([]);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationSaveFailed);
+  });
+
   it('고른 공개 범위를 발행 요청 본문에 싣고, 하나도 고르지 않았으면 요청 없이 막는다', async () => {
     const { id, result } = await renderReady();
     await fill(result, id);

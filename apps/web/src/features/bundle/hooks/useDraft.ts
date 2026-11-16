@@ -747,7 +747,11 @@ export function useDraft(draftId: string | undefined): {
     searchPlaces: searchPlacesApi,
     publish: async () => {
       // 보내는 중인 위치 변경이 끝난 뒤의 서버 구성으로 발행함(위치 변경이 발행보다 늦게 도착하지 않도록)
-      await placeActions.settled();
+      const placeResult = await placeActions.settled();
+      // 위치 변경이 거절·실패했으면(알림은 그때 이미 띄움) 서버에 반영되지 않은 구성으로 발행하지 않음
+      if (placeResult.failed) return 'blocked';
+      // 위치 응답은 상세 revision을 올리지 않으므로 보낸 요청이 있었으면 최신 상세로 맞춘 뒤 발행함
+      if (placeResult.sent) await refetchDetail();
       // 보내는 중인 사진 변경이 끝난 뒤의 서버 구성으로 발행함
       const failuresBefore = photoFailures.current;
       await photoQueue.current;
