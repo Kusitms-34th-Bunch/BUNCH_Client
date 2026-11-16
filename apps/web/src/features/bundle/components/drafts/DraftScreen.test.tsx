@@ -1035,15 +1035,34 @@ describe('다른 멤버가 작업 중인 영역(잠그지 않음)', () => {
     expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
   });
 
-  it('참여 멤버가 아니면 사진을 지우려 할 때 안내한다', async () => {
-    renderScreen({ viewer: outsider });
+  it('사진 삭제 X는 참여 멤버에게만 보인다(기능 spec 4.3.4)', () => {
+    const { unmount } = renderScreen({ viewer: outsider });
+
+    // 참여 멤버가 아니면 사진만 보이고 삭제 X가 없음(열기 버튼은 그대로)
+    expect(
+      screen.queryByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(1) }),
+    ).toBeInTheDocument();
+    unmount();
+
+    renderScreen();
+    expect(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    ).toBeInTheDocument();
+  });
+
+  it('연결이 끊긴 참여 멤버에게는 삭제 X가 그대로 보이고 눌러도 반응이 없다', async () => {
+    renderScreen({ offline: true });
 
     await userEvent.click(
       screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
     );
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
+    expect(toast).not.toHaveBeenCalled();
     expect(actions.removePhoto).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('「사진 추가」는 초안 생성자·관리자·공동 관리자에게만 보이고 누르면 가져오기 시트가 열린다', async () => {

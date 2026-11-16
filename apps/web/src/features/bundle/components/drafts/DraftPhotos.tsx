@@ -122,7 +122,7 @@ type DraftPhotosProps = {
 /**
  * 사진 가로 목록(Figma `5367:146358`): 130px 정사각 사진이 가로로 이어지고, 사진마다 오른쪽 위 X(삭제), 맨 끝에 「사진 추가」 타일
  * 제목 줄 오른쪽 「픽하기 >」는 대표 사진 투표 화면으로 가고, 사진을 누르면 사진 상세(크게 보기)로 감
- * 「사진 추가」는 초안 생성자·관리자·공동 관리자에게만 보이고(20장이면 숨김), 삭제는 참여 멤버가 할 수 있으며 마지막 한 장은 지울 수 없음
+ * 「사진 추가」는 초안 생성자·관리자·공동 관리자에게만 보이고(20장이면 숨김), 삭제 X는 참여 멤버에게만 보이며 마지막 한 장은 지울 수 없음
  * 참여 멤버는 사진을 길게 눌러 좌우로 끌어 순서를 바꿈(기능 spec 4.3.6): 사진이 1장이면 끌 수 없고 「사진 추가」 칸 뒤로는 못 옮김
  */
 export function DraftPhotos({
@@ -326,7 +326,8 @@ export function DraftPhotos({
                   size="xs"
                   className="pointer-events-none [&_button]:pointer-events-auto"
                   deleteLabel={BUNDLE_MESSAGES.removePhotoLabel(index + 1)}
-                  onDelete={() => requestRemove(photo.id)}
+                  // 삭제 X는 참여 멤버에게만 보임(기능 spec 4.3.4, 연결이 끊긴 참여 멤버는 그대로 보이고 눌러도 반응 없음)
+                  onDelete={access.participant ? () => requestRemove(photo.id) : undefined}
                 />
                 {reorderable ? (
                   <PhotoMoveButtons
