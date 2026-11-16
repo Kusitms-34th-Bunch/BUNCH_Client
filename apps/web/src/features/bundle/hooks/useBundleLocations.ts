@@ -23,6 +23,11 @@ type Options = {
   serverLocations: readonly DraftLocation[];
   /** 연결이 끊겨 편집을 막는 동안: 눌러도 반응하지 않음(기능 spec 4.3.14) */
   blocked: boolean;
+  /**
+   * 지금 이 순간 실시간 연결이 끊겼는지(렌더를 기다리지 않고 바로 읽는 함수)
+   * 끊김을 화면이 알아채 `discard`가 실행되기 전에 대기열 차례가 오는 경우를 막으려고 보내기 직전에 확인함
+   */
+  isOffline?: (() => boolean) | undefined;
 };
 
 const REJECTION_MESSAGE = {
@@ -39,7 +44,13 @@ const REJECTION_MESSAGE = {
  * - 보내는 중·기다리는 변경이 있으면 `pending`(저장 중 표시), `settled()`로 모두 끝나길 기다림(발행 전)
  * - `discard()`: 연결이 끊기면 아직 보내지 않은 변경을 버림(기능 spec 4.3.14). 이미 보낸 요청의 결과는 서버 기준이라 그대로 반영됨
  */
-export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked }: Options) {
+export function useBundleLocations({
+  bunchId,
+  bundleId,
+  serverLocations,
+  blocked,
+  isOffline,
+}: Options) {
   const cache = useLocationCache(bunchId, bundleId);
   const [ops, setOps] = useState<readonly LocationOp[]>([]);
   // 서버로 보낸 뒤 응답을 기다리는 요청 수(연결이 끊겨 낙관적 변경을 걷어도 응답이 올 때까지는 저장 중으로 보임)
@@ -54,11 +65,13 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
   const queue = useRef<Promise<void>>(Promise.resolve());
   const alive = useRef(true);
   const blockedRef = useRef(blocked);
+  const isOfflineRef = useRef(isOffline);
 
   const locations = useMemo(() => applyLocationOps(serverLocations, ops), [serverLocations, ops]);
   const locationsRef = useRef(locations);
   useEffect(() => {
     blockedRef.current = blocked;
+    isOfflineRef.current = isOffline;
     locationsRef.current = locations;
   });
   useEffect(() => {
@@ -79,7 +92,11 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
         if (enqueuedAt !== generation.current) return;
         // 끊김을 화면이 알아채 discard가 실행되기 전에 이 차례가 온 경우를 막으려고 보내기 직전에 브라우저 연결 상태를 직접 확인함
         // 끊겨 있으면 이 변경과 뒤에 대기 중인 변경을 모두 버림(재연결 때 최신 상세로 맞춰짐)
-        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        // 브라우저 연결이 끊겼거나(navigator) 실시간 연결이 끊겼으면(isOffline) 보내지 않음
+        if (
+          (typeof navigator !== 'undefined' && !navigator.onLine) ||
+          isOfflineRef.current?.() === true
+        ) {
           generation.current += 1;
           setOps([]);
           return;

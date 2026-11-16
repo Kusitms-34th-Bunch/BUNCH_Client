@@ -30,6 +30,11 @@ export type BundleRealtime = {
   status: RealtimeStatus;
   /** 연결이 끊겼거나, 다시 연결된 뒤 최신 상세를 받는 중·받지 못한 상태: 편집을 막아야 함(처음 연결을 맺기 전은 포함하지 않음) */
   down: boolean;
+  /**
+   * 지금 이 순간 `down`인지(렌더를 기다리지 않고 바로 읽음)
+   * `down`은 상태가 바뀐 렌더 뒤에야 반영돼, 그 사이에 보내는 요청(대기열)은 이 함수로 확인함
+   */
+  isDown: () => boolean;
   /** 기다리지 않고 지금 다시 연결 */
   retry: () => void;
   /** presence 명령(VIEW·BEGIN·TYPE 등)을 보냄. 연결돼 있지 않으면 보내지 않고 false */
@@ -49,6 +54,7 @@ const DISABLED: BundleRealtime = {
   enabled: false,
   status: 'idle',
   down: false,
+  isDown: () => false,
   retry: () => undefined,
   sendPresence: () => false,
 };
@@ -80,30 +86,40 @@ export function useBundleRealtime(
   useEffect(() => {
     applyEventRef.current = applyEvent;
   });
-  const [status, setStatus] = useState<RealtimeStatus>('idle');
+  const [status, setStatusState] = useState<RealtimeStatus>('idle');
+  // 연결 상태가 바뀌는 즉시 읽을 수 있게 상태와 함께 ref에도 바로 씀(렌더·effect를 기다리지 않음)
+  const statusRef = useRef<RealtimeStatus>('idle');
+  const setStatus = useCallback((next: RealtimeStatus) => {
+    statusRef.current = next;
+    setStatusState(next);
+  }, []);
   // 재연결 뒤 최신 상세를 받는 중이거나 받지 못했을 때: 화면이 낡았을 수 있어 끊김과 같이 다룸
-  const [sync, setSync] = useState<'idle' | 'syncing' | 'failed'>('idle');
+  const [sync, setSyncState] = useState<'idle' | 'syncing' | 'failed'>('idle');
   const syncRun = useRef(0);
   const syncRef = useRef(sync);
-  useEffect(() => {
-    syncRef.current = sync;
-  });
+  const setSync = useCallback((next: 'idle' | 'syncing' | 'failed') => {
+    syncRef.current = next;
+    setSyncState(next);
+  }, []);
   const connectionRef = useRef<StompConnection | undefined>(undefined);
   const enabled = active && bunchId !== undefined && bundleId !== undefined && isRealtimeEnabled();
 
   // 최신 상세를 다시 받음. track이면 끝날 때까지(실패하면 실패로) 끊김으로 둠. 더 새 요청이 있으면 낡은 결과는 무시
-  const resync = useCallback((track: boolean) => {
-    const run = ++syncRun.current;
-    if (track) setSync('syncing');
-    refetchRef.current().then(
-      () => {
-        if (run === syncRun.current) setSync('idle');
-      },
-      () => {
-        if (run === syncRun.current) setSync(track ? 'failed' : 'idle');
-      },
-    );
-  }, []);
+  const resync = useCallback(
+    (track: boolean) => {
+      const run = ++syncRun.current;
+      if (track) setSync('syncing');
+      refetchRef.current().then(
+        () => {
+          if (run === syncRun.current) setSync('idle');
+        },
+        () => {
+          if (run === syncRun.current) setSync(track ? 'failed' : 'idle');
+        },
+      );
+    },
+    [setSync],
+  );
 
   useEffect(() => {
     const url = realtimeUrl();
@@ -148,7 +164,12 @@ export function useBundleRealtime(
       syncRun.current += 1;
       setSync('idle');
     };
-  }, [enabled, bunchId, bundleId, resync]);
+  }, [enabled, bunchId, bundleId, resync, setStatus, setSync]);
+
+  const isDown = useCallback(
+    () => statusRef.current === 'reconnecting' || syncRef.current !== 'idle',
+    [],
+  );
 
   // 최신 상세를 받지 못했으면 상세를 다시 받고, 끊겨 있으면 기다리지 않고 다시 연결
   const retry = useCallback(() => {
@@ -173,6 +194,7 @@ export function useBundleRealtime(
     enabled,
     status,
     down: status === 'reconnecting' || sync !== 'idle',
+    isDown,
     retry,
     sendPresence,
   };

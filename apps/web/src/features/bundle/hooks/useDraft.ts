@@ -215,6 +215,8 @@ export function useDraft(draftId: string | undefined): {
     bundleId,
     serverLocations: detail?.locations ?? NO_LOCATIONS,
     blocked: false,
+    // 실시간 연결이 끊긴 순간 바로(렌더 전에) 대기 중인 변경을 막음
+    isOffline: realtime.isDown,
   });
   const locations = placeActions.locations;
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);

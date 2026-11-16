@@ -28,6 +28,8 @@ vi.mock('./useBundleRealtime', () => ({
       enabled: true,
       status: connection.down ? 'reconnecting' : 'connected',
       down: connection.down,
+      // 렌더를 기다리지 않고 지금 상태를 바로 읽음(실제 훅의 isDown과 같은 계약)
+      isDown: () => connection.down,
       retry: () => undefined,
       sendPresence: () => false,
     };
@@ -371,5 +373,39 @@ describe('useDraft 요청을 보내는 중에 연결이 끊겼을 때(기능 spe
     // 이미 보낸 구성 변경(첫 사진 빼기)만 반영되고, 뒤이은 이동은 보내지 않아 남은 둘의 순서는 그대로
     const after = orderOf();
     expect(after).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
+  });
+
+  it('실시간 연결만 끊기고(브라우저는 온라인) 화면이 아직 모르는 사이 첫 응답이 끝나도 대기 중이던 위치 변경은 보내지 않는다', async () => {
+    const { id, result } = await renderReady();
+    let first = true;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', async () => {
+        if (first) {
+          first = false;
+          await delay(250);
+        }
+        return undefined;
+      }),
+    );
+    const place = (key: string) => ({
+      id: `test:${key}`,
+      provider: 'test',
+      externalId: key,
+      name: `장소 ${key}`,
+      address: '주소',
+    });
+
+    act(() => {
+      result.current.actions.addLocation(place('a'));
+      result.current.actions.addLocation(place('b'));
+    });
+    await act(() => wait(50));
+    // 렌더(rerender) 없이 연결 상태만 바뀜: 훅의 effect가 끊김을 알아채기 전과 같은 상황
+    connection.down = true;
+    await act(() => wait(600));
+
+    expect(serverBundle(id)?.locations.map((location) => location.name)).toEqual(['장소 a']);
+    // 보내지 못한 둘째 변경의 낙관적 표시도 걷힘
+    expect(ready(result.current.state).draft.locations.map((row) => row.name)).toEqual(['장소 a']);
   });
 });
