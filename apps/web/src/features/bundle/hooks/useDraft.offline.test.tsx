@@ -500,6 +500,91 @@ describe('useDraft 요청을 보내는 중에 연결이 끊겼을 때(기능 spe
     expect(after).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
   });
 
+  it('실시간 연결만 끊기고 화면이 아직 모르는 사이 날짜 저장이 끝나도 대기 중이던 코멘트는 보내지 않는다', async () => {
+    const { id, result } = await renderReady();
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/date', async () => {
+        await delay(250);
+        return undefined;
+      }),
+    );
+
+    act(() => {
+      result.current.actions.setDate('2026-10-18');
+      result.current.actions.setComment(String(me), '끊기기 전 코멘트');
+    });
+    // 날짜 저장이 시작된 뒤(응답 전, 저장 지연 1초 직후) 렌더 없이 연결 상태만 바뀜
+    await act(() => wait(1100));
+    connection.down = true;
+    await act(() => wait(800));
+
+    expect(serverBundle(id)?.date).toBe('2026-10-18');
+    expect(serverBundle(id)?.comments).toEqual([]);
+  });
+
+  it('실시간 연결만 끊기고 화면이 아직 모르는 사이 사진 구성 요청이 끝나도 이어서 보낼 순서 이동은 보내지 않는다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [first, second, third] = ready(view.result.current.state).draft.photos;
+    const orderOf = () => serverBundle(created.id)?.photos.map((photo) => photo.id);
+    const before = orderOf();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(400);
+        return undefined;
+      }),
+    );
+
+    act(() => view.result.current.actions.replacePhotos([third!, second!]));
+    await act(() => wait(100));
+    // 렌더(rerender) 없이 연결 상태만 바뀜: 훅의 effect가 끊김을 알아채기 전과 같은 상황
+    connection.down = true;
+    await act(() => wait(1500));
+
+    // 이미 보낸 구성 변경(첫 사진 빼기)만 반영되고, 뒤이은 이동은 보내지 않아 남은 둘의 순서는 그대로
+    expect(orderOf()).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
+  });
+
+  it('실시간 연결만 끊기고 화면이 아직 모르는 사이 앞선 사진 변경이 끝나도 대기열에서 시작하지 않은 다음 변경은 보내지 않는다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [first, second, third] = ready(view.result.current.state).draft.photos;
+    const orderOf = () => serverBundle(created.id)?.photos.map((photo) => photo.id);
+    const before = orderOf();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(400);
+        return undefined;
+      }),
+    );
+
+    // 첫 사진을 빼는 변경이 서버로 나가 있는 동안 두 번째 사진을 빼는 변경이 대기열에 쌓임
+    act(() => view.result.current.actions.replacePhotos([second!, third!]));
+    act(() => view.result.current.actions.replacePhotos([third!]));
+    await act(() => wait(100));
+    connection.down = true;
+    await act(() => wait(1500));
+
+    // 이미 보낸 첫 변경만 반영되고, 아직 시작하지 않은 두 번째는 보내지 않음
+    expect(orderOf()).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
+  });
+
   it('실시간 연결만 끊기고(브라우저는 온라인) 화면이 아직 모르는 사이 첫 응답이 끝나도 대기 중이던 위치 변경은 보내지 않는다', async () => {
     const { id, result } = await renderReady();
     let first = true;

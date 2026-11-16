@@ -251,6 +251,19 @@ export function useDraft(draftId: string | undefined): {
   const photoQueue = useRef<Promise<void>>(Promise.resolve());
   // 연결이 끊길 때마다 올림: 그 전에 대기열에 넣었지만 아직 보내지 않은 사진 변경은 버림
   const discardGeneration = useRef(0);
+  // 보내기 직전에 지금 연결이 끊겼는지 바로 확인(실시간 연결·브라우저 오프라인·보류 이벤트 재조회 실패)
+  // 끊김을 아는 상태는 렌더 뒤 effect에서 반영돼, 그 사이에 대기열의 다음 요청이 나가지 않게 함
+  const heldSyncFailedRef = useRef(false);
+  useEffect(() => {
+    heldSyncFailedRef.current = heldSyncFailed;
+  });
+  const offlineNowRef = useRef<() => boolean>(() => false);
+  useEffect(() => {
+    offlineNowRef.current = () =>
+      realtime.isDown() ||
+      (typeof navigator !== 'undefined' && !navigator.onLine) ||
+      heldSyncFailedRef.current;
+  });
   const photoOps = useRef(0);
   const photoFailed = useRef(false);
   const photoFailures = useRef(0);
@@ -318,9 +331,11 @@ export function useDraft(draftId: string | undefined): {
         const base = detailRef.current;
         const snapshot = pendingRef.current;
         if (!base || isEmpty(snapshot)) break;
+        // 이미 끊겼으면(아직 화면이 끊김을 모르는 사이도 포함) 보내지 않음. 보관한 입력은 끊김을 알아챈 뒤 폐기됨
+        if (offlineNowRef.current()) break;
         // 이 저장을 시작한 뒤 연결이 끊겨 입력이 폐기됐으면 보관해 둔 값은 더 보내지 않음
         const generation = discardGeneration.current;
-        const discarded = () => generation !== discardGeneration.current;
+        const discarded = () => generation !== discardGeneration.current || offlineNowRef.current();
         const common = { mode: 'DRAFT' as const };
         // 필드 하나 저장: 성공하면 입력을 비우고 최신 응답을 기준으로 삼음
         const run = async (save: () => Promise<BundleDetail>, onSaved: () => void) => {
@@ -572,9 +587,9 @@ export function useDraft(draftId: string | undefined): {
     const generation = discardGeneration.current;
     photoQueue.current = photoQueue.current
       .then(() =>
-        photoFailed.current || generation !== discardGeneration.current
+        photoFailed.current || generation !== discardGeneration.current || offlineNowRef.current()
           ? undefined
-          : run(() => generation !== discardGeneration.current),
+          : run(() => generation !== discardGeneration.current || offlineNowRef.current()),
       )
       .catch(() => {
         photoFailed.current = true;
@@ -637,6 +652,8 @@ export function useDraft(draftId: string | undefined): {
         if (cancelled) return;
         if (!result.isError) {
           heldEventRef.current = false;
+          // 렌더 전에도 보내기 직전 확인이 바로 알도록 ref도 함께 바꿈
+          heldSyncFailedRef.current = false;
           setHeldSyncFailed(false);
           // 끌던 사진을 다른 멤버가 지웠는데 자리를 바꾸지 않고 놓은 경우에도 놓은 뒤 안내(이동 요청을 보냈다면 그 응답 경로가 안내함)
           const dropped = draggedPhotoId.current;
@@ -654,6 +671,7 @@ export function useDraft(draftId: string | undefined): {
         if (attempt < HELD_RESYNC_MAX_ATTEMPTS) {
           retryTimer = setTimeout(() => resync(attempt + 1), HELD_RESYNC_RETRY_MS);
         } else {
+          heldSyncFailedRef.current = true;
           setHeldSyncFailed(true);
         }
       });
