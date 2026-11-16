@@ -77,6 +77,13 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
       queue.current = queue.current.then(async () => {
         // 연결이 끊겨 버린 변경은 보내지 않음(화면의 낙관적 표시는 discard가 이미 걷음)
         if (enqueuedAt !== generation.current) return;
+        // 끊김을 화면이 알아채 discard가 실행되기 전에 이 차례가 온 경우를 막으려고 보내기 직전에 브라우저 연결 상태를 직접 확인함
+        // 끊겨 있으면 이 변경과 뒤에 대기 중인 변경을 모두 버림(재연결 때 최신 상세로 맞춰짐)
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          generation.current += 1;
+          setOps([]);
+          return;
+        }
         setSending((count) => count + 1);
         try {
           // 앞선 변경이 끝난 서버 목록으로 보낼 줄 id를 정함(내가 막 추가한 줄도 이때는 서버 id가 있음)

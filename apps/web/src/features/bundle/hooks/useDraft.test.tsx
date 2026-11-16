@@ -623,6 +623,37 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       }
     });
 
+    it('끊김을 화면이 알아채기 전에 첫 응답이 끝나도 대기 중이던 둘째 변경은 보내기 직전에 막는다', async () => {
+      const { id, result } = await renderReady();
+      slowFirstIntent(200);
+
+      act(() => {
+        result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+        result.current.actions.addLocation(place('b', '장소 B', '주소 B'));
+      });
+      await act(async () => {
+        await delay(50);
+      });
+      // 'offline' 이벤트는 보내지 않아 화면(discard)은 아직 끊김을 모르는 상태에서 브라우저 연결만 끊김
+      const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      try {
+        await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+        await delay(300);
+
+        expect(serverBundle(id)?.locations.map((location) => location.name)).toEqual(['장소 A']);
+        // 보내지 못한 둘째 변경의 낙관적 표시도 걷힘
+        await waitFor(
+          () =>
+            expect(ready(result.current.state).draft.locations.map((row) => row.name)).toEqual([
+              '장소 A',
+            ]),
+          SAVE_WAIT,
+        );
+      } finally {
+        onLine.mockRestore();
+      }
+    });
+
     it('지운 줄의 행 id를 새 줄이 이어받지 않는다(늦은 옛 요청이 새 줄을 건드리지 않도록)', async () => {
       const { id, result } = await renderReady();
 
