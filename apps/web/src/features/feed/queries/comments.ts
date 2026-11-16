@@ -8,19 +8,20 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { isWireId, toDomainId } from '@/shared/api/ids';
 import type { BundleDetailResponse } from '../model/bundleDetail';
 import type { CommentItemResponse, CommentPage } from '../model/comment';
 import type { FeedPage } from '../model/feed';
 import { createComment, deleteComment, getAllReplies, getComments } from '../api/comments';
 import { feedKeys } from './keys';
 
-/** 원댓글을 쪽 단위로(최신순). 명의를 알기 전(undefined)에는 요청하지 않고, 들어올 때마다 최신으로(6.2.1 로직 3) */
-export const commentsQueryOptions = (bundleId: number, viewerId: string | null | undefined) =>
+/** 원댓글을 쪽 단위로(최신순). 명의를 알기 전(undefined)이나 잘못된 번들 ID면 요청하지 않고, 들어올 때마다 최신으로(6.2.1 로직 3) */
+export const commentsQueryOptions = (bundleId: string, viewerId: string | null | undefined) =>
   infiniteQueryOptions({
-    queryKey: feedKeys.comments(String(bundleId), viewerId ?? null),
+    queryKey: feedKeys.comments(bundleId, viewerId ?? null),
     initialPageParam: undefined as string | undefined,
     queryFn:
-      viewerId === undefined
+      viewerId === undefined || !isWireId(bundleId)
         ? skipToken
         : ({ pageParam, signal }) => getComments(bundleId, pageParam, signal),
     refetchOnMount: 'always',
@@ -32,23 +33,22 @@ export const commentsQueryOptions = (bundleId: number, viewerId: string | null |
   });
 
 /** 원댓글 하나의 답글 전부(오래된 순) */
-export const repliesQueryOptions = (bundleId: number, viewerId: string | null, parentId: number) =>
+export const repliesQueryOptions = (bundleId: string, viewerId: string | null, parentId: number) =>
   queryOptions({
-    queryKey: feedKeys.replies(String(bundleId), viewerId, parentId),
+    queryKey: feedKeys.replies(bundleId, viewerId, toDomainId(parentId)),
     queryFn: ({ signal }) => getAllReplies(bundleId, parentId, signal),
     refetchOnMount: 'always',
   });
 
-type Target = { bundleId: number; viewerId: string | null };
+type Target = { bundleId: string; viewerId: string | null };
 
 const patchRoots = (
   client: QueryClient,
   { bundleId, viewerId }: Target,
   next: (_page: CommentPage, _index: number) => CommentPage,
 ) =>
-  client.setQueryData<InfiniteData<CommentPage>>(
-    feedKeys.comments(String(bundleId), viewerId),
-    (data) => (data ? { ...data, pages: data.pages.map(next) } : data),
+  client.setQueryData<InfiniteData<CommentPage>>(feedKeys.comments(bundleId, viewerId), (data) =>
+    data ? { ...data, pages: data.pages.map(next) } : data,
   );
 
 /** 피드 카드·상세·목록의 댓글 수를 하나 올림(다시 받지 않고, 피드는 쪽 전부를 다시 받지 않게) */
@@ -63,7 +63,7 @@ const addCount = (client: QueryClient, target: Target) => {
         pages: data.pages.map((page) => ({
           ...page,
           items: page.items.map((item) =>
-            'bundle' in item && item.bundle.id === bundleId
+            'bundle' in item && toDomainId(item.bundle.id) === bundleId
               ? { ...item, bundle: { ...item.bundle, commentCount: item.bundle.commentCount + 1 } }
               : item,
           ),
@@ -71,7 +71,7 @@ const addCount = (client: QueryClient, target: Target) => {
       },
   );
   client.setQueriesData<BundleDetailResponse>(
-    { queryKey: feedKeys.details(String(bundleId), viewerId) },
+    { queryKey: feedKeys.details(bundleId, viewerId) },
     (data) => data && { ...data, commentCount: data.commentCount + 1 },
   );
 };
@@ -91,7 +91,7 @@ const replaceItem = (items: CommentItemResponse[], saved: CommentItemResponse) =
 type CreateVariables = {
   target: Target;
   content: string;
-  parentId: number | null;
+  parentId: string | null;
   idempotencyKey: string;
 };
 
@@ -105,12 +105,12 @@ export const useCreateCommentMutation = () => {
     mutationFn: ({ target, content, parentId, idempotencyKey }: CreateVariables) =>
       createComment(target.bundleId, { content, parentId }, idempotencyKey),
     onSuccess: async (saved, { target }) => {
-      const listKey = feedKeys.comments(String(target.bundleId), target.viewerId);
+      const listKey = feedKeys.comments(target.bundleId, target.viewerId);
       const parentId = saved.parentId;
       const repliesKey =
         parentId == null
           ? undefined
-          : feedKeys.replies(String(target.bundleId), target.viewerId, parentId);
+          : feedKeys.replies(target.bundleId, target.viewerId, toDomainId(parentId));
       // 진행 중인 다시 받기가 늦게 끝나 넣은 댓글·답글 수를 덮지 않게 먼저 멈춤(답글이면 원댓글 목록도)
       await cancelLoaded(queryClient, repliesKey ? [repliesKey, listKey] : [listKey]);
       const roots = queryClient.getQueryData<InfiniteData<CommentPage>>(listKey);
@@ -163,14 +163,14 @@ export const useCreateCommentMutation = () => {
 export const useDeleteCommentMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (comment: { target: Target; id: number; parentId: number | null }) =>
+    mutationFn: (comment: { target: Target; id: string; parentId: string | null }) =>
       deleteComment(comment.target.bundleId, comment.id),
     // 자리는 지운 댓글의 원래 위치로 찾음(삭제 자리 응답의 parentId에 기대지 않음)
     onSuccess: async (saved, { target, parentId }) => {
       await cancelLoaded(queryClient, [
         parentId == null
-          ? feedKeys.comments(String(target.bundleId), target.viewerId)
-          : feedKeys.replies(String(target.bundleId), target.viewerId, parentId),
+          ? feedKeys.comments(target.bundleId, target.viewerId)
+          : feedKeys.replies(target.bundleId, target.viewerId, parentId),
       ]);
       if (parentId == null) {
         patchRoots(queryClient, target, (page) => ({
@@ -180,7 +180,7 @@ export const useDeleteCommentMutation = () => {
         return;
       }
       queryClient.setQueryData<CommentItemResponse[]>(
-        feedKeys.replies(String(target.bundleId), target.viewerId, parentId),
+        feedKeys.replies(target.bundleId, target.viewerId, parentId),
         (replies) => replies && replaceItem(replies, saved),
       );
     },
@@ -191,7 +191,7 @@ export const useDeleteCommentMutation = () => {
 export const useRestartComments = ({ bundleId, viewerId }: Target) => {
   const queryClient = useQueryClient();
   return useCallback(
-    () => queryClient.resetQueries({ queryKey: feedKeys.comments(String(bundleId), viewerId) }),
+    () => queryClient.resetQueries({ queryKey: feedKeys.comments(bundleId, viewerId) }),
     [queryClient, bundleId, viewerId],
   );
 };

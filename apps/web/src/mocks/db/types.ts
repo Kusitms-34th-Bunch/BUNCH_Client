@@ -195,7 +195,15 @@ export type MockSocialComment = {
   deleted: boolean;
 };
 
+/** 이 브라우저의 로그인·가입 상태(`GET /members/me/onboarding`의 근거) */
+export type MockSession = {
+  loggedIn: boolean;
+  signupStatus: 'IN_PROGRESS' | 'COMPLETED';
+  termsAccepted: boolean;
+};
+
 export type MockDbState = {
+  session: MockSession;
   members: MockMember[];
   bunches: MockBunch[];
   memberships: MockMembership[];

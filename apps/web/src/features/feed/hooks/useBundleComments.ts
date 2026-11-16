@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { toWireId } from '@/shared/api/ids';
+import { isWireId } from '@/shared/api/ids';
 import type { FeedComment } from '../lib/types';
 import { hideComment } from '../lib/comments';
 import { type CommentItemResponse, toFeedComment } from '../model/comment';
@@ -30,11 +30,8 @@ export function useBundleComments(
   /** 커서를 이어 쓸 수 없을 때(400, 다른 기기에서 번치 전환 등) 명의도 다시 받게 화면이 넘김 */
   onStaleCursor: () => void,
 ) {
-  const wireId = toWireId(bundleId);
-  const target = { bundleId: wireId ?? 0, viewerId: viewerId ?? null };
-  const list = useInfiniteQuery(
-    commentsQueryOptions(target.bundleId, wireId === undefined ? undefined : viewerId),
-  );
+  const target = { bundleId, viewerId: viewerId ?? null };
+  const list = useInfiniteQuery(commentsQueryOptions(bundleId, viewerId));
 
   // 이어 받는 사이 새 댓글이 앞에 붙으면 쪽 경계가 밀려 같은 댓글이 다시 올 수 있어 한 번만
   const seen = new Set<number>();
@@ -111,7 +108,8 @@ export function useBundleComments(
   const create = (content: string, parentId: string | null, callbacks: CreateCallbacks) => {
     if (sending.current) return;
     sending.current = true;
-    const parent = parentId === null ? null : (toWireId(parentId) ?? null);
+    // 바꿀 수 없는 id는 원댓글로(요청 키도 같게)
+    const parent = parentId !== null && isWireId(parentId) ? parentId : null;
     const request = JSON.stringify([target.bundleId, target.viewerId, content, parent]);
     if (attempt.current?.request !== request) {
       attempt.current = { request, key: createIdempotencyKey() };
@@ -137,11 +135,14 @@ export function useBundleComments(
 
   const removing = useRef(false);
   const remove = (comment: FeedComment, callbacks: CreateCallbacks) => {
-    const id = toWireId(comment.id);
-    if (id === undefined || removing.current) return;
+    if (!isWireId(comment.id) || removing.current) return;
     removing.current = true;
     deleteMutation.mutate(
-      { target, id, parentId: comment.parentId ? (toWireId(comment.parentId) ?? null) : null },
+      {
+        target,
+        id: comment.id,
+        parentId: comment.parentId && isWireId(comment.parentId) ? comment.parentId : null,
+      },
       {
         ...callbacks,
         onSettled: () => {

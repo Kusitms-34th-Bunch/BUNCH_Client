@@ -1,6 +1,5 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { Button } from '@app/design-system';
 import { FeedBundleCard } from '@app/design-system/web';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -18,13 +17,14 @@ import { FEED_MESSAGES as text } from '../constants/messages';
 import { bundleHeroKey, FEED_PATHS } from '../constants/paths';
 import { useBundleSheets } from '../hooks/useBundleSheets';
 import { useClientNow } from '../hooks/useClientNow';
+import { useFeedLoadMore } from '../hooks/useFeedLoadMore';
 import { useFeedViewer } from '../hooks/useFeedViewer';
 import { useLikeToggle } from '../hooks/useLikeToggle';
+import { useOpenBundleDetail } from '../hooks/useOpenBundleDetail';
 import { hideLeftMemberImages } from '../lib/deletedUserImage';
 import { readHiddenAds } from '../lib/hiddenAds';
-import { type FeedEntry, toFeedEntries } from '../model/feed';
-import { usePrefetchBundleDetail } from '../queries/bundleDetail';
-import { feedQueryOptions, useRestartFeed } from '../queries/feed';
+import { type FeedEntry, splitFeedSections, toFeedEntries } from '../model/feed';
+import { feedQueryOptions } from '../queries/feed';
 import { FeedAdCard } from './FeedAdCard';
 import { FeedCaughtUp } from './FeedCaughtUp';
 import { FeedHeader } from './FeedHeader';
@@ -35,13 +35,6 @@ type FeedScreenProps = {
   /** 번들 상세가 쓰는 번치 정보를 미리 받음(다른 기능의 query라 route가 조합) */
   prefetchBunch?: ((_bunchId: string, _viewerId: string | null) => Promise<unknown>) | undefined;
 };
-
-// 상세 데이터를 기다리는 최대 시간. 넘으면 그냥 이동(받는 중 화면이라 사진 이어 그리기 없이 바뀜)
-const DETAIL_PREFETCH_WAIT_MS = 400;
-
-/** 커서로 이어 받을 수 없는 실패(문맥이 바뀜 FEED_001, 커서 오류 400). size는 고정이라 400은 커서 쪽 */
-const cannotContinue = (error: unknown) =>
-  isApiError(error) && (error.code === 'FEED_001' || error.status === 400);
 
 /** 목록의 index번째 카드 첫 버튼으로 초점(없으면 이어 받기 자리나 끝 안내) */
 const focusListItem = (
@@ -74,70 +67,15 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
   // 구간·좋아요 상태는 지금 번치 명의로 정해짐(소속 번치가 없으면 공개 구간만, 기능명세서 6.1.7)
   const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
   const feed = useInfiniteQuery(feedQueryOptions(viewerId));
-  const prefetchBundleDetail = usePrefetchBundleDetail();
-  // 상세가 바로 그려져야 카드 사진이 상세 첫 사진으로 이어짐(AppTransitions hero). 손가락이 닿을 때부터 받아 둠
-  const prefetchDetail = (bundle: FeedBundle) =>
-    viewerId === undefined
-      ? Promise.resolve()
-      : Promise.all([
-          prefetchBundleDetail(bundle.bunch.id, bundle.id, viewerId),
-          prefetchBunch?.(bundle.bunch.id, viewerId),
-          // 실패해도 이동은 막지 않음(상세가 다시 받고 실패 안내)
-        ]).then(
-          () => undefined,
-          () => undefined,
-        );
-  // 사진·말풍선 모두 같은 상세(말풍선은 댓글로 바로)라 미리 받은 뒤 이동
-  // 이동을 기다리는 동안 다시 누르면 무시하고, 그 사이 화면을 떠나면 이동하지 않음. 동작 줄이기면 전환이 없어 기다리지 않음
-  const openingRef = useRef(false);
-  const mountedRef = useRef(true);
-  useLayoutEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-  const openDetail = (bundle: FeedBundle, href: string) => {
-    if (openingRef.current) return;
-    if (reducedMotion) {
-      router.push(href);
-      return;
-    }
-    openingRef.current = true;
-    void Promise.race([
-      prefetchDetail(bundle),
-      new Promise((resolve) => setTimeout(resolve, DETAIL_PREFETCH_WAIT_MS)),
-    ]).finally(() => {
-      openingRef.current = false;
-      if (mountedRef.current) router.push(href);
-    });
-  };
+  const { prefetch: prefetchDetail, open: openDetail } = useOpenBundleDetail({
+    viewerId,
+    prefetchBunch,
+  });
 
   useScrollInHistory(topRef, feed.data !== undefined);
   useHoldScrollOnLeave(topRef);
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = feed;
-  // 번치·팔로우가 그사이 바뀌었거나(FEED_001) 커서가 맞지 않으면(400) 이어 받을 수 없어 처음부터 다시 받음
-  // 저절로는 연달아 한 번만 하고, 또 실패하면 「다시 시도」로 넘김(같은 실패가 반복돼도 멈추게)
-  // 다음 쪽을 받아야 다시 쓸 수 있음. 첫 쪽 성공으로 풀면 재시작 → 첫 쪽 → 실패가 되풀이됨
-  const restart = useRestartFeed(viewerId);
-  const [restartUsed, setRestartUsed] = useState(false);
-  // loadMore는 감지 요소가 붙는 순간(commit 중) 지난 렌더의 함수로 불릴 수 있어 가드는 ref로 읽음
-  const restartUsedRef = useRef(false);
-  const markRestartUsed = useCallback((used: boolean) => {
-    restartUsedRef.current = used;
-    setRestartUsed(used);
-  }, []);
-  const staleCursor = feed.isFetchNextPageError && cannotContinue(feed.error);
-  const restarting = staleCursor && !restartUsed;
-  const loadMore = useCallback(async () => {
-    const result = await fetchNextPage();
-    const stale = cannotContinue(result.error);
-    if (!result.isFetchNextPageError) markRestartUsed(false);
-    else if (stale && !restartUsedRef.current) {
-      markRestartUsed(true);
-      await restart();
-    }
-  }, [fetchNextPage, restart, markRestartUsed]);
+  const { hasNextPage, isFetchingNextPage } = feed;
+  const { loadMore, restart, staleCursor, restarting } = useFeedLoadMore(feed, viewerId);
 
   // 다시 시도 중에도 버튼을 남겨 초점을 잃지 않게 함(누르는 동안은 막음)
   const [retrying, setRetrying] = useState(false);
@@ -179,18 +117,7 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const shown = (entry: FeedEntry) => (entry.kind === 'ad' ? !hiddenAds.has(entry.ad.id) : true);
   const entries = feed.data ? toFeedEntries(feed.data.pages).filter(shown) : [];
-  // 카드의 구간으로 두 목록을 나눔. 구간 끝 안내가 아직 안 왔어도 팔로우 카드가 다른 목록으로 옮겨 다시 그려지지 않게
-  // 안내 전에는 마지막 팔로우 카드 뒤의 광고도 팔로우 목록에 둠(다음 쪽에 팔로우 카드가 더 오면 부모 목록이 바뀌어 광고 상태가 사라짐)
-  const doneAt = entries.findIndex((entry) => entry.kind === 'followingDone');
-  const lastFollowing = entries.findLastIndex(
-    (entry) => entry.kind === 'bundle' && entry.segment === 'FOLLOWING',
-  );
-  let splitAt = doneAt >= 0 ? doneAt : lastFollowing + 1;
-  if (doneAt < 0 && lastFollowing >= 0) {
-    while (entries[splitAt]?.kind === 'ad') splitAt += 1;
-  }
-  const following = entries.slice(0, splitAt);
-  const rest = entries.slice(splitAt).filter((entry) => entry.kind !== 'followingDone');
+  const { following, followingDone, rest } = splitFeedSections(entries);
   const handleAdGone = useCallback((adId: string, hadFocus: boolean) => {
     // 초점이 있던 카드가 없어지므로 다음 카드로 옮김(없으면 이어 받기 자리나 끝 안내)
     if (hadFocus) {
@@ -306,7 +233,7 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
         {following.length > 0 ? (
           <>
             <ul className="px-padding-p8 gap-s14 flex flex-col">{following.map(renderEntry)}</ul>
-            {doneAt >= 0 ? <FeedCaughtUp kind="following" /> : null}
+            {followingDone ? <FeedCaughtUp kind="following" /> : null}
           </>
         ) : null}
         {rest.length > 0 ? (

@@ -26,6 +26,6 @@ export const feedKeys = {
   // 원댓글(쪽 단위)과 그 아래 답글. 쪽 데이터와 답글 배열이 같은 앞부분에 섞이므로 캐시를 고칠 때는 exact
   comments: (bundleId: string, viewerId: string | null) =>
     [...feedKeys.bundle(bundleId), 'comments', viewerId] as const,
-  replies: (bundleId: string, viewerId: string | null, parentId: number) =>
+  replies: (bundleId: string, viewerId: string | null, parentId: string) =>
     [...feedKeys.comments(bundleId, viewerId), 'replies', parentId] as const,
 };

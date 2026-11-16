@@ -132,15 +132,19 @@ export const memberHandlers = [
     return ok({ normalizedValue: nickname, available: !nickname.includes('중복') });
   }),
 
-  // POST /api/v1/members/me/registration: multipart 본문은 읽지 않고 가입 완료만 돌려줌(가짜 서버는 이미 가입을 마친 상태)
-  http.post('/api/members/me/registration', () =>
-    ok({
+  // POST /api/v1/members/me/registration: multipart 본문은 읽지 않고 가입 완료만 기록(닉네임은 시작 데이터 그대로)
+  http.post('/api/members/me/registration', () => {
+    mockDb.update((state) => ({
+      ...state,
+      session: { ...state.session, signupStatus: 'COMPLETED' },
+    }));
+    return ok({
       memberId: MOCK_MY_MEMBER_ID,
       signupStatus: 'COMPLETED',
       nickname: '큐시즘',
       imageUrl: null,
-    }),
-  ),
+    });
+  }),
 
   // PUT /api/v1/members/me/profile: multipart `profile`(닉네임·imageAction)·`photo`(REPLACE일 때)
   // 닉네임 중복은 중복 확인과 같이 「중복」이 들어간 닉네임만, 코드는 가입과 같은 USER_002로 둠(Swagger에 오류 코드 없음)
@@ -204,7 +208,7 @@ export const memberHandlers = [
   }),
 
   // POST /api/v1/members/me/withdrawal: 다른 멤버가 있는 번치의 메인 관리자면 거절(코드는 Swagger에 없어 가짜 코드)
-  // ponytail: 시연 데이터를 지우지 않고 성공만 돌려줌(가짜 서버는 로그아웃 상태도 두지 않음)
+  // ponytail: 시연 데이터를 지우지 않고 성공만 돌려줌(이어서 화면이 부르는 로그아웃이 세션을 끝냄)
   http.post('/api/members/me/withdrawal', () => {
     const state = mockDb.get();
     const blocked = myOwnedBunches(state).some((bunch) =>
@@ -216,13 +220,16 @@ export const memberHandlers = [
     return blocked ? fail(409, 'MOCK_WITHDRAWAL_OWNER') : ok(null);
   }),
 
-  // GET /api/v1/members/me/onboarding: 가짜 서버는 가입을 마친 시연 사용자를 가정(가입 중 시나리오는 server.use로 덮어씀)
+  // GET /api/v1/members/me/onboarding: 가짜 DB의 세션(시작값은 `createSeedFor`). 로그아웃했으면 401
   http.get('/api/members/me/onboarding', () => {
-    const membership = myMembershipsByRecent(mockDb.get())[0];
+    const state = mockDb.get();
+    const { loggedIn, signupStatus, termsAccepted } = state.session;
+    if (!loggedIn) return fail(401, 'AUTH_001');
+    const membership = myMembershipsByRecent(state)[0];
     return ok({
       memberId: MOCK_MY_MEMBER_ID,
-      signupStatus: 'COMPLETED',
-      termsAccepted: true,
+      signupStatus,
+      termsAccepted,
       ...(membership ? { defaultBunchId: membership.bunchId } : {}),
     });
   }),

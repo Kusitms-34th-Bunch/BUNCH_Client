@@ -8,7 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { toWireId } from '@/shared/api/ids';
+import { isWireId, toDomainId } from '@/shared/api/ids';
 import type { BundleKoks } from '../model/kok';
 import { getBundleKoks, pinPlace, unpinPlace } from '../api/kok';
 import { FEED_MESSAGES } from '../constants/messages';
@@ -19,9 +19,9 @@ export const bundleKoksQueryOptions = (bundleId: string, viewerId: string | null
   queryOptions({
     queryKey: feedKeys.koks(bundleId, viewerId ?? null),
     queryFn:
-      viewerId === undefined || toWireId(bundleId) === undefined
+      viewerId === undefined || !isWireId(bundleId)
         ? skipToken
-        : ({ signal }) => getBundleKoks(toWireId(bundleId) ?? 0, signal),
+        : ({ signal }) => getBundleKoks(bundleId, signal),
   });
 
 /**
@@ -65,15 +65,19 @@ export const refreshKoksWhenIdle = (queryClient: QueryClient, viewerId: string |
   return queryClient.invalidateQueries({ queryKey: feedKeys.koksOf(viewerId) });
 };
 
+/** 받아 둔 콕 여부에서 그 장소(화면 id) */
+export const findKok = (data: BundleKoks | undefined, locationId: string) =>
+  data?.locations.find((location) => toDomainId(location.id) === locationId);
+
 const patch = (
   data: BundleKoks | undefined,
-  locationId: number,
+  locationId: string,
   next: Partial<BundleKoks['locations'][number]>,
 ) =>
   data && {
     ...data,
     locations: data.locations.map((location) =>
-      location.id === locationId ? { ...location, ...next } : location,
+      toDomainId(location.id) === locationId ? { ...location, ...next } : location,
     ),
   };
 
@@ -95,20 +99,16 @@ export const useKokMutation = () => {
     scope: KOK_SCOPE,
     // 성공하면 그 장소의 콕 ID(취소면 null)
     mutationFn: async (vars: KokVariables): Promise<number | null> => {
-      const bundleId = toWireId(vars.bundleId);
-      const locationId = toWireId(vars.locationId);
-      if (bundleId === undefined || locationId === undefined) throw new Error('invalid place');
-      if (vars.pin) return (await pinPlace(bundleId, locationId)).id;
+      if (!isWireId(vars.bundleId) || !isWireId(vars.locationId)) throw new Error('invalid place');
+      if (vars.pin) return (await pinPlace(vars.bundleId, vars.locationId)).id;
       await unpinPlace(vars.pinId);
       return null;
     },
     onMutate: async (vars) => {
       const key = feedKeys.koks(vars.bundleId, vars.viewerId);
-      const locationId = toWireId(vars.locationId) ?? 0;
+      const { locationId } = vars;
       await queryClient.cancelQueries({ queryKey: key, exact: true });
-      const previous = queryClient
-        .getQueryData<BundleKoks>(key)
-        ?.locations.find((location) => location.id === locationId);
+      const previous = findKok(queryClient.getQueryData<BundleKoks>(key), locationId);
       // 취소는 콕 ID도 비움(응답 전에 다시 콕해도 옛 ID로 다시 취소하지 못하게, 새 ID는 콕 응답이 채움)
       queryClient.setQueryData<BundleKoks>(key, (data) =>
         patch(data, locationId, vars.pin ? { pinned: true } : { pinned: false, pinId: null }),

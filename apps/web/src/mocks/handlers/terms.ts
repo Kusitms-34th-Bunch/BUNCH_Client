@@ -1,4 +1,5 @@
 import { http } from 'msw';
+import { mockDb } from '../db';
 import { ok } from '../lib/envelope';
 
 // BFF 경로는 백엔드 경로에서 `/api/v1`을 뺀 경로(docs/architecture/api-boundary.md)
@@ -16,6 +17,9 @@ export const termHandlers = [
     }),
   ),
 
-  // POST /api/v1/auth/terms/agreements: 가짜 서버는 가입을 마친 상태라 상태를 바꾸지 않고 성공만 돌려줌
-  http.post('/api/auth/terms/agreements', () => ok(null)),
+  // POST /api/v1/auth/terms/agreements: 본문은 읽지 않고 약관 동의만 기록
+  http.post('/api/auth/terms/agreements', () => {
+    mockDb.update((state) => ({ ...state, session: { ...state.session, termsAccepted: true } }));
+    return ok(null);
+  }),
 ];

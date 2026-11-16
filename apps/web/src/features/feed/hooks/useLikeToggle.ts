@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { toWireId } from '@/shared/api/ids';
+import { isWireId } from '@/shared/api/ids';
 import type { FeedBundle, FeedViewer } from '../lib/types';
 import { useBundleLikeMutation } from '../queries/like';
 
@@ -16,12 +16,11 @@ export function useLikeToggle(viewer: FeedViewer | undefined) {
 
   return {
     toggle: (bundle: Pick<FeedBundle, 'id' | 'liked'>) => {
-      const bundleId = toWireId(bundle.id);
-      if (!viewer || bundleId === undefined) return;
+      if (!viewer || !isWireId(bundle.id)) return;
       const now = Date.now();
       if (now - (lastTap.current[bundle.id] ?? 0) < LIKE_TAP_GUARD_MS) return;
       lastTap.current[bundle.id] = now;
-      like.mutate({ bundleId, liked: !bundle.liked, viewerId: viewer.bunchId });
+      like.mutate({ bundleId: bundle.id, liked: !bundle.liked, viewerId: viewer.bunchId });
     },
   };
 }

@@ -1,13 +1,13 @@
 import type { LottieHandle } from 'lottie-react';
 import { cn } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
+import { useTileStackIdle } from '@/features/auth/hooks/intro/useTileStackIdle';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { createLottieLoader, type LoadedLottie } from '@/shared/lib/lottieLoader';
 import { GUIDE_IMAGES } from './guideImages';
 import { IntroRows } from './IntroRows';
 import { IntroTouchHint } from './IntroTouchHint';
-import { useTileStackIdle } from './useTileStackIdle';
 
 // 디자이너 Lottie(인트로_01~04)에서 흐르는 줄·가짜 상태 바·흰 배경을 뺀 것. 흐르는 줄은 IntroRows가 그림
 const loadIntro = createLottieLoader(() => import('@/shared/assets/lotties/intro.json'));

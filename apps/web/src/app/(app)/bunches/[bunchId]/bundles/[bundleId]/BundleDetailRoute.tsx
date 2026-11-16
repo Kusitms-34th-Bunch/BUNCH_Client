@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { otherBunchHomeQueryOptions } from '@/features/bunch-home/queries/otherBunch';
-import { BundleDetailScreen } from '@/features/feed/components';
+import { BundleDetail } from '@/features/feed/components';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 
 // 상세에서 번치 쪽 화면으로 가는 주소(기능끼리 직접 import하지 않고 route에서 조합)
@@ -27,7 +27,7 @@ export function BundleDetailRoute({
   const home = useQuery(otherBunchHomeQueryOptions(bunchId, viewerId));
 
   return (
-    <BundleDetailScreen
+    <BundleDetail
       bunchId={bunchId}
       bundleId={bundleId}
       // 받지 못하면 null(상세는 번치 이름 없이 보임)

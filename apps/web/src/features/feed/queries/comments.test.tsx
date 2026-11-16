@@ -9,9 +9,9 @@ import { feedKeys } from './keys';
 
 // 지금 번치 1 명의로 보는 「가평 첫 캠핑」(가짜 서버 번들 901)
 const VIEWER = '1';
-const target = { bundleId: 901, viewerId: VIEWER };
+const target = { bundleId: '901', viewerId: VIEWER };
 const listKey = feedKeys.comments('901', VIEWER);
-const repliesKey = feedKeys.replies('901', VIEWER, 5001);
+const repliesKey = feedKeys.replies('901', VIEWER, '5001');
 const detailKey = feedKeys.detail('3', '901', VIEWER);
 const feedKey = feedKeys.list(VIEWER);
 
@@ -67,7 +67,7 @@ describe('댓글 등록·삭제 캐시', () => {
       create.current.mutate({
         target,
         content: '새 답글',
-        parentId: 5001,
+        parentId: '5001',
         idempotencyKey: crypto.randomUUID(),
       }),
     );
@@ -106,7 +106,7 @@ describe('댓글 등록·삭제 캐시', () => {
       create.current.mutate({
         target,
         content: '새 답글',
-        parentId: 5001,
+        parentId: '5001',
         idempotencyKey: crypto.randomUUID(),
       }),
     );
@@ -120,7 +120,7 @@ describe('댓글 등록·삭제 캐시', () => {
 
   it('지우면 그 자리를 서버의 삭제 자리로 바꾸고 수는 그대로 둔다', async () => {
     const { client, remove } = setup();
-    act(() => remove.current.mutate({ target, id: 5002, parentId: 5001 }));
+    act(() => remove.current.mutate({ target, id: '5002', parentId: '5001' }));
     await waitFor(() => expect(remove.current.isSuccess).toBe(true));
 
     expect(client.getQueryData<CommentItemResponse[]>(repliesKey)![0]).toMatchObject({

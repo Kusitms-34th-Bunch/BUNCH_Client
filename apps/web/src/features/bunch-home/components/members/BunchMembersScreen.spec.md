@@ -18,7 +18,7 @@
 
 ### 범위 외(후속)
 
-- 더보기 메뉴·나가기 화면 등 다른 화면은 아직 fixture 멤버(`useBunchMembers`)를 쓴다. 나가기·삭제 연결(#330 뒤 4번 이슈) 때 바꾼다.
+- 더보기 메뉴·나가기 화면도 서버 멤버 목록(`useMyBunchMemberships`)을 쓴다. 정렬(`sortMembers`)과 관리 동작 타입(`BunchMemberActions`)은 `lib/members.ts`에 있다.
 
 ### 서버 연결(#330)
 

@@ -3,6 +3,7 @@
 import { overlay } from 'overlay-kit';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LiveOverlay } from '@/shared/components/overlay/LiveOverlay';
+import { createListeners } from '@/shared/lib/listeners';
 
 /** 시트·대화상자 렌더러에 그대로 펼쳐 넘기는 값 */
 export type ScreenOverlayProps = {
@@ -16,18 +17,13 @@ type RenderOverlay = (_props: ScreenOverlayProps, _close: () => void) => ReactNo
 // 화면이 다시 그려진 횟수를 열린 창에 알리는 저장소
 const createOverlayStore = () => {
   let version = 0;
-  const listeners = new Set<() => void>();
+  const { subscribe, emit } = createListeners();
   return {
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe,
     getVersion: () => version,
     bump: () => {
       version += 1;
-      listeners.forEach((listener) => listener());
+      emit();
     },
   };
 };
