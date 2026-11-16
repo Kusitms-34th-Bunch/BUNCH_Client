@@ -218,7 +218,7 @@ export function DraftPhotos({
         >
           <ul
             ref={listRef}
-            className="gap-s5 px-padding-p8 flex scrollbar-none overflow-x-auto pt-1 select-none [-webkit-touch-callout:none] [&::-webkit-scrollbar]:hidden"
+            className="gap-s5 px-padding-p8 -mb-1 flex scrollbar-none overflow-x-auto pt-1 pb-1 select-none [-webkit-touch-callout:none] [&::-webkit-scrollbar]:hidden"
           >
             {draft.photos.map((photo, index) => (
               <SortablePhotoItem key={photo.id} id={photo.id} disabled={!reorderable}>

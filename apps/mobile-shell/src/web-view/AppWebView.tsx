@@ -125,9 +125,10 @@ const appBridge = bridge({
   // 사진을 길게 눌러 집어 올린 순간(끌기 시작): 안드로이드는 시스템 끌기 시작 햅틱(지원하지 않는 기기는 길게 누르기 햅틱), iOS는 중간 세기 충격
   dragStartHaptic: async () => {
     if (Platform.OS !== 'android') return Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Drag_Start).catch(() =>
-      Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press),
-    );
+    await Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Drag_Start)
+      .catch(() => Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press))
+      // 햅틱은 보조 효과라 두 방법이 모두 실패해도 웹에 오류를 올리지 않음
+      .catch(() => undefined);
   },
 } satisfies AppBridgeMethods);
 
