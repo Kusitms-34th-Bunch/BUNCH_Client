@@ -87,6 +87,15 @@ describe('RecommendDetail', () => {
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
   });
 
+  it('받는 동안에는 로딩을 보이고 다른 화면으로 보내지 않는다', async () => {
+    recommendationDouble.detailLoading = true;
+    renderDetail('rec-1');
+
+    expect(await screen.findByTestId('lottie')).toBeInTheDocument();
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+  });
+
   it('추천 사진을 불러오지 못하면 안내 토스트 뒤 사진 선택 화면으로 돌아간다', () => {
     recommendationDouble.failing = true;
     renderDetail('rec-1');

@@ -10,7 +10,7 @@ import {
   recommendationDouble,
   resetRecommendationDouble,
 } from '../../testing/recommendationDoubles';
-import { createCalls } from '../../testing/selectScreenDoubles';
+import { createCalls, photoBoxRefresh } from '../../testing/selectScreenDoubles';
 import { BundleSelect } from './BundleSelect';
 
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
@@ -52,6 +52,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   resetRecommendationDouble();
   createCalls.length = 0;
+  photoBoxRefresh.calls = 0;
+  photoBoxRefresh.fail = false;
 });
 
 afterEach(() => {
@@ -323,6 +325,7 @@ describe('추천 번들 시트', () => {
     await user.click(sectionPhotos()[0]!);
     await user.click(createButton());
 
+    expect(createCalls).toHaveLength(1);
     expect(createCalls[0]?.recommendationId).toBeUndefined();
   });
 
@@ -382,6 +385,54 @@ describe('추천 번들 시트', () => {
 
     const dialog = await screen.findByRole('alertdialog');
     expect(within(dialog).getByText('추천 번들 사진으로 변경할까요?')).toBeInTheDocument();
+  });
+
+  it('사진함 목록에 없는 최신 사진이 추천에 있으면 목록을 먼저 새로 받은 뒤 적용한다', async () => {
+    const detail = recommendationDouble.details['rec-1']!;
+    recommendationDouble.details = {
+      ...recommendationDouble.details,
+      'rec-1': {
+        ...detail,
+        photos: [...detail.photos, { ...detail.photos[0]!, id: 'just-uploaded' }],
+      },
+    };
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    await userEvent.click((await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(7)));
+    expect(photoBoxRefresh.calls).toBe(1);
+  });
+
+  it('사진함 목록을 새로 받지 못하면 적용하지 않고 안내한다', async () => {
+    const detail = recommendationDouble.details['rec-1']!;
+    recommendationDouble.details = {
+      ...recommendationDouble.details,
+      'rec-1': {
+        ...detail,
+        photos: [...detail.photos, { ...detail.photos[0]!, id: 'just-uploaded' }],
+      },
+    };
+    photoBoxRefresh.fail = true;
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    await userEvent.click((await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applyFailed));
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(7));
+    expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('선택한 사진이 없어요.');
+  });
+
+  it('사진함 목록에 이미 있는 사진만 적용할 때는 목록을 다시 받지 않는다', async () => {
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    await userEvent.click((await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(6)));
+    expect(photoBoxRefresh.calls).toBe(0);
   });
 
   it('추천 번들 목록을 받지 못하면 시트를 올리지 않고 안내한다', async () => {

@@ -55,6 +55,8 @@ type Control = {
   listGate: Promise<void> | undefined;
   /** 있으면 상세 응답이 이 약속이 풀릴 때까지 늦어짐(사진을 받는 동안의 시트 조작 확인용) */
   detailGate: Promise<void> | undefined;
+  /** 상세·뷰어 화면이 받는 중 상태(loading)인 상황 */
+  detailLoading: boolean;
 };
 
 const initial = (): Control => ({
@@ -66,6 +68,7 @@ const initial = (): Control => ({
   listRequests: 0,
   listGate: undefined,
   detailGate: undefined,
+  detailLoading: false,
 });
 
 /** 테스트가 시나리오를 바꾸는 손잡이. `resetRecommendationDouble`로 처음 상태로 돌림 */
@@ -95,6 +98,7 @@ export const recommendationHooksDouble = {
   useRecommendationLoader: () => ({ loadList, loadDetail }),
   useRecommendationDetail: (id: string | undefined): RecommendationDetailState => {
     if (id === undefined) return { kind: 'deleted' };
+    if (recommendationDouble.detailLoading) return { kind: 'loading' };
     if (recommendationDouble.failing) return { kind: 'error' };
     const detail = recommendationDouble.details[id];
     if (!detail || recommendationDouble.deletedIds.includes(id)) return { kind: 'deleted' };

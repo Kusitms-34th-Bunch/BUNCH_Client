@@ -37,7 +37,7 @@ export function BundleSelectProvider({
   children,
   initialMemberIds = [],
 }: BundleSelectProviderProps) {
-  const { state: photoState, retry } = usePhotoBox();
+  const { state: photoState, retry, refresh } = usePhotoBox();
   const { create: createBundle, creating } = useCreateBundle();
   const { loadList, loadDetail } = useRecommendationLoader();
   const backOr = useBackOr();
@@ -118,6 +118,17 @@ export function BundleSelectProvider({
     if (result.kind === 'deleted' || result.data.photos.length === 0) {
       notify(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
       return { kind: 'deleted' } as const;
+    }
+    // 다른 멤버가 방금 올린 사진이 최신 추천에는 있고 내 사진함 목록에는 아직 없을 수 있음
+    // 그대로 선택하면 초안을 만들 때 삭제된 사진으로 보고 선택에서 빠지므로, 목록을 먼저 새로 받고 받지 못하면 적용하지 않음
+    const known = new Set(photos?.map((photo) => photo.id));
+    if (result.data.photos.some((photo) => !known.has(photo.id))) {
+      try {
+        await refresh();
+      } catch {
+        notify(BUNDLE_SELECT_MESSAGES.applyFailed);
+        return { kind: 'failed' } as const;
+      }
     }
     return result;
   };
