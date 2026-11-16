@@ -16,7 +16,7 @@ import { useEffect, useRef } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import type { BunchMemberActions } from '../../hooks/useBunchMembers';
+import type { BunchMemberActions } from '../../lib/members';
 import type { BunchMember, BunchRole } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
