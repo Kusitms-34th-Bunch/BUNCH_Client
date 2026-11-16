@@ -33,7 +33,7 @@ import {
 import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
 import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
 import { buildSafeAreaScript } from '../safe-area-script';
-// import { socialLogin } from '../social-login';
+import { socialLogin } from '../social-login';
 import { markWebReady } from '../splash/state';
 import { floatingButtonStore } from '../tabs/floating-button-store';
 import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
@@ -63,7 +63,7 @@ const appBridge = bridge({
   getPushInstallationId,
   copyToClipboard,
   readClipboard,
-  // socialLogin,
+  socialLogin,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
     await Share.share({ message: title ? `${title}\n${url}` : url, url });
