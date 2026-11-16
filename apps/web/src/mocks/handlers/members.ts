@@ -1,6 +1,6 @@
 import { http } from 'msw';
 import { toWireId } from '@/shared/api/ids';
-import type { MockDbState } from '../db/types';
+import type { MockBunchAccessNotice, MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
@@ -9,6 +9,21 @@ import { unreadCountOf } from './notifications';
 
 // 가짜 서버가 새 프로필 사진으로 쓰는 시연 이미지(올린 사진 내용은 읽지 않음)
 const MOCK_UPLOADED_PROFILE_IMAGE = '/mock/photos/C2.jpg';
+
+// ponytail: 30일 뒤 만료(expiresAt)는 시각만 내려주고 목록·조회에서 자동으로 빼지 않음
+const noticeResponse = (notice: MockBunchAccessNotice) => ({
+  ...notice,
+  expiresAt: new Date(Date.parse(notice.occurredAt) + 30 * 86_400_000).toISOString(),
+});
+
+/** 내가 소속되지 않은 번치의 안내(보던 번치가 삭제·내보내짐). 다시 들어간 번치면 안내를 무시(명세 068·074) */
+export const accessNoticeFor = (state: MockDbState, bunchId: number | undefined) =>
+  bunchId === undefined ||
+  state.memberships.some(
+    (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
+  )
+    ? undefined
+    : state.bunchAccessNotices.find((notice) => notice.bunchId === bunchId);
 
 /** 내가 메인 관리자인 번치 */
 const myOwnedBunches = (state: MockDbState) =>
@@ -84,12 +99,16 @@ export const memberHandlers = [
           },
         ];
       }),
-      // ponytail: 30일 뒤 만료(expiresAt)는 시각만 내려주고 목록에서 자동으로 빼지 않음
-      unavailableBunches: state.bunchAccessNotices.map((notice) => ({
-        ...notice,
-        expiresAt: new Date(Date.parse(notice.occurredAt) + 30 * 86_400_000).toISOString(),
-      })),
+      unavailableBunches: state.bunchAccessNotices.map(noticeResponse),
     });
+  }),
+
+  // GET /api/v1/members/me/bunch-access-notices/{noticeId}: 안내 한 건(명세 078). 확인한(지운) 안내는 RESOURCE_001
+  http.get('/api/members/me/bunch-access-notices/:noticeId', ({ params }) => {
+    const noticeId = toWireId(params.noticeId);
+    if (noticeId === undefined) return fail(400, 'COMMON_001');
+    const notice = mockDb.get().bunchAccessNotices.find((item) => item.id === noticeId);
+    return notice ? ok(noticeResponse(notice)) : fail(404, 'RESOURCE_001');
   }),
 
   // DELETE /api/v1/members/me/bunch-access-notices/{noticeId}: 전환 목록의 「번치 목록에서 삭제」

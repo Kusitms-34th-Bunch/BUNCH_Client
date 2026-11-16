@@ -44,11 +44,12 @@ describe('가짜 서버 번들 장소 콕', () => {
     const location = before.locations[0]!;
     expect(location.pinned).toBe(false);
 
+    const kokCount = mockDb.get().koks.length;
     const pinned = await call<{ id: number }>('PUT', `/bundles/901/locations/${location.id}/pin`);
     expect(pinned.status).toBe(200);
     const again = await call<{ id: number }>('PUT', `/bundles/901/locations/${location.id}/pin`);
     expect(again.data.id).toBe(pinned.data.id);
-    expect(mockDb.get().koks).toHaveLength(1);
+    expect(mockDb.get().koks).toHaveLength(kokCount + 1);
     expect((await firstLocation()).locations[0]).toMatchObject({
       pinned: true,
       pinId: pinned.data.id,
@@ -93,5 +94,89 @@ describe('가짜 서버 번들 장소 콕', () => {
       status: 409,
       code: 'BUNCH_010',
     });
+  });
+});
+
+type PinnedPlaces = {
+  bunchId: number;
+  selectedMemberId: number | null;
+  totalCount: number;
+  members: { memberId: number; nickname: string; count: number }[];
+  items: {
+    name: string;
+    sourceType: string;
+    sourceAccessible: boolean;
+    sourceBunchName: string | null;
+  }[];
+  nextCursor: string | null;
+};
+
+describe('가짜 서버 콕한 장소 목록', () => {
+  it('지금 번치의 콕을 최근 콕한 순으로, 멤버 칩은 지금 멤버 전원과 처음 콕한 수로 준다', async () => {
+    const { status, data } = await call<PinnedPlaces>('GET', '/pinned-places?size=50');
+
+    expect(status).toBe(200);
+    expect(data.bunchId).toBe(MOCK_BUNCH_ID);
+    // 나간 회원(101)의 콕도 전체 수에는 들어감
+    expect(data.totalCount).toBe(7);
+    expect(data.items.map((item) => item.name)).toEqual([
+      '봄날카페',
+      '계동 골목 식당',
+      '안목해변 커피거리',
+      '광안리 해변',
+      '연남동 책방',
+      '협재해변',
+      '해리단길',
+    ]);
+    expect(data.members.map(({ nickname, count }) => [nickname, count])).toEqual([
+      ['지예', 1],
+      ['경진', 2],
+      ['은우', 3],
+      ['수인', 0],
+      ['큐시즘', 0],
+    ]);
+  });
+
+  it('출처: 볼 수 있는 번들은 번치 이름, 지워진 번들은 볼 수 없음, 광고는 ADVERTISEMENT', async () => {
+    const { data } = await call<PinnedPlaces>('GET', '/pinned-places');
+    const byName = (name: string) => data.items.find((item) => item.name === name);
+
+    expect(byName('봄날카페')).toMatchObject({
+      sourceAccessible: true,
+      sourceBunchName: '캠핑러버',
+    });
+    expect(byName('안목해변 커피거리')).toMatchObject({
+      sourceAccessible: false,
+      sourceBunchName: null,
+    });
+    expect(byName('광안리 해변')).toMatchObject({ sourceType: 'ADVERTISEMENT' });
+  });
+
+  it('멤버로 거르고, 지금 멤버가 아니면 전체로 돌아가며, 쪽이 남으면 다음 커서를 준다', async () => {
+    const filtered = (await call<PinnedPlaces>('GET', '/pinned-places?memberId=2')).data;
+    expect(filtered.selectedMemberId).toBe(2);
+    expect(filtered.items.map((item) => item.name)).toEqual(['광안리 해변', '연남동 책방']);
+    expect(filtered.totalCount).toBe(7);
+
+    const outsider = (await call<PinnedPlaces>('GET', '/pinned-places?memberId=101')).data;
+    expect(outsider.selectedMemberId).toBeNull();
+    expect(outsider.items).toHaveLength(7);
+
+    const first = (await call<PinnedPlaces>('GET', '/pinned-places?size=5')).data;
+    expect(first.items).toHaveLength(5);
+    const next = (
+      await call<PinnedPlaces>('GET', `/pinned-places?size=5&cursor=${first.nextCursor}`)
+    ).data;
+    expect(next.items.map((item) => item.name)).toEqual(['협재해변', '해리단길']);
+    expect(next.nextCursor).toBeNull();
+  });
+
+  it('잘못된 쪽 크기는 COMMON_001, 소속 번치가 없으면 BUNCH_010', async () => {
+    expect(await call('GET', '/pinned-places?size=51')).toMatchObject({
+      status: 400,
+      code: 'COMMON_001',
+    });
+    mockDb.update((state) => ({ ...state, memberships: [] }));
+    expect(await call('GET', '/pinned-places')).toMatchObject({ status: 409, code: 'BUNCH_010' });
   });
 });

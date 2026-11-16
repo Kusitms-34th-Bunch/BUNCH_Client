@@ -36,12 +36,13 @@ beforeEach(() => {
 
 describe('가짜 서버 피드 광고', () => {
   it('콕하면 광고와 피드가 콕한 상태가 되고, 다시 콕해도 하나이며, 콕 취소로 빠진다', async () => {
+    const kokCount = mockDb.get().koks.length;
     const pinned = await call<{ id: number }>('PUT', '/feed/advertisements/71/pin');
     expect(pinned.status).toBe(200);
     expect((await call<{ id: number }>('PUT', '/feed/advertisements/71/pin')).data.id).toBe(
       pinned.data.id,
     );
-    expect(mockDb.get().koks).toHaveLength(1);
+    expect(mockDb.get().koks).toHaveLength(kokCount + 1);
     expect((await call<Ad>('GET', '/feed/advertisements/71')).data).toMatchObject({
       pinned: true,
       pinId: pinned.data.id,

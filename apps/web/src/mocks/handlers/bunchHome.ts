@@ -6,6 +6,7 @@ import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { toSnapshot } from './bundles';
 import { followCounts, followOf, isBlockedBetween, viewerBunchId } from './follows';
+import { accessNoticeFor } from './members';
 import { unreadCountOf } from './notifications';
 
 // 번치 홈 조회(`/home`)·번들 목록·현황은 Swagger 기준, 명세에 없는 값은 `ponytail:`로 표시
@@ -64,6 +65,11 @@ export const bunchHomeHandlers = [
   // GET /api/v1/bunches/{bunchId}/home
   // 내 번치·다른 번치의 응답 모양이 달라 반환을 Response로 둠
   http.get('/api/bunches/:bunchId/home', ({ params }): Response => {
+    // 삭제·내보내진 번치의 안내가 남아 있으면 다른 오류보다 먼저(명세 074)
+    const notice = accessNoticeFor(mockDb.get(), toWireId(params.bunchId));
+    if (notice) {
+      return fail(409, 'BUNCH_008', { noticeId: notice.id, reason: notice.reason });
+    }
     const found = findBunch(params.bunchId, 'BUNCH_009', true);
     if ('error' in found) return found.error;
     const { bunch, mine, state, bunchId } = found;
