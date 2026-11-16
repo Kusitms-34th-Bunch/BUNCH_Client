@@ -122,6 +122,13 @@ const appBridge = bridge({
     Platform.OS === 'android'
       ? Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Segment_Tick)
       : Haptics.selectionAsync(),
+  // 사진을 길게 눌러 집어 올린 순간(끌기 시작): 안드로이드는 시스템 끌기 시작 햅틱(지원하지 않는 기기는 길게 누르기 햅틱), iOS는 중간 세기 충격
+  dragStartHaptic: async () => {
+    if (Platform.OS !== 'android') return Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Drag_Start).catch(() =>
+      Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press),
+    );
+  },
 } satisfies AppBridgeMethods);
 
 // postMessage: 네이티브 → 웹 이벤트(탭 WebView 여러 개라 broadcast로 보내고 웹이 대상 확인)

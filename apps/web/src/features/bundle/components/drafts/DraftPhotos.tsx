@@ -12,6 +12,7 @@ import { horizontalListSortingStrategy, SortableContext, useSortable } from '@dn
 import { CSS } from '@dnd-kit/utilities';
 import { type CSSProperties, type ReactNode, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
+import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { PresenceCommands } from '../../hooks/usePresenceSender';
 import type { DraftAccess } from '../../lib/permissions';
@@ -51,8 +52,8 @@ function SortablePhotoItem({ id, disabled, children }: SortablePhotoItemProps) {
       ref={setNodeRef}
       style={style}
       {...listeners}
-      // 떠오른 사진: 95%로 줄이고 사진함 끌기(`PhotoDragArea`)와 같은 70% 불투명도(이전 캡션 화면 끌기와 같은 값)
-      className={isDragging ? 'relative shrink-0 scale-95 opacity-70' : 'relative shrink-0'}
+      // 떠오른 사진은 살짝 커짐(기능 spec 4.3.6 「살짝 커지며」, 105%)
+      className={isDragging ? 'relative shrink-0 scale-105' : 'relative shrink-0'}
     >
       {children}
     </li>
@@ -135,7 +136,11 @@ export function DraftPhotos({
   const reorder = usePhotoReorder({
     photoIds,
     onMove: onMovePhoto,
-    onDragStateChange: onDragChange,
+    onDragStateChange: (dragging) => {
+      // 집어 올린 순간 한 번 진동(기능 spec 4.3.6). 쉘이 아니거나 이 메서드가 없는 이전 쉘이면 동작 없음
+      if (dragging && isNativeShell()) void appBridge.dragStartHaptic().catch(() => {});
+      onDragChange?.(dragging);
+    },
   });
   // 고칠 수 있는 참여 멤버만, 사진이 2장 이상일 때만 끌 수 있음
   const reorderable = access.canEdit && total > 1;

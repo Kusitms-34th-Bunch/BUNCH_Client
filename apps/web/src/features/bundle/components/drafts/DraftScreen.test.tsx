@@ -44,6 +44,16 @@ const actions = {
   publish: vi.fn(() => Promise.resolve('published' as const)),
 } satisfies DraftActions;
 
+// 쉘 여부와 끌기 햅틱 호출만 바꿔 가며 확인(나머지 bridge는 이 화면에서 쓰지 않음)
+const bridge = vi.hoisted(() => ({
+  inShell: false,
+  dragStartHaptic: vi.fn<() => Promise<void>>(),
+}));
+vi.mock('@/shared/bridge/client', () => ({
+  appBridge: { dragStartHaptic: () => bridge.dragStartHaptic() },
+  isNativeShell: () => bridge.inShell,
+}));
+
 const onBack = vi.fn();
 const onLeave = vi.fn();
 const onRetry = vi.fn();
@@ -99,6 +109,8 @@ const membersSection = () => within(screen.getByRole('region', { name: '참여 �
 
 beforeEach(() => {
   vi.clearAllMocks();
+  bridge.inShell = false;
+  bridge.dragStartHaptic.mockImplementation(() => Promise.resolve());
 });
 
 describe('DraftScreen 구성', () => {
@@ -1132,17 +1144,48 @@ describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
     expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
     expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
     expect(actions.presence.end).not.toHaveBeenCalledWith('PHOTOS');
-    // 떠오른 사진은 95%로 줄이고 70% 불투명도로 보임(이전 캡션 화면 끌기와 같은 값)
+    // 떠오른 사진은 살짝 커짐(spec 「살짝 커지며」, 105%)
     const lifted = screen
       .getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(1) })
       .closest('li');
-    expect(lifted).toHaveClass('scale-95', 'opacity-70');
+    expect(lifted).toHaveClass('scale-105');
 
     release();
-    expect(lifted).not.toHaveClass('opacity-70');
+    expect(lifted).not.toHaveClass('scale-105');
 
     expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
     expect(actions.setPhotoDragging).toHaveBeenLastCalledWith(false);
+  });
+
+  it('쉘에서는 집어 올린 순간 한 번 진동하고, 놓을 때는 진동하지 않는다', async () => {
+    bridge.inShell = true;
+    renderScreen();
+
+    await pressPhoto(1);
+    expect(bridge.dragStartHaptic).toHaveBeenCalledTimes(1);
+
+    release();
+    expect(bridge.dragStartHaptic).toHaveBeenCalledTimes(1);
+  });
+
+  it('브라우저에서는 진동을 요청하지 않는다', async () => {
+    renderScreen();
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
+    expect(bridge.dragStartHaptic).not.toHaveBeenCalled();
+  });
+
+  it('진동 요청이 실패해도 끌기는 그대로 진행한다', async () => {
+    bridge.inShell = true;
+    bridge.dragStartHaptic.mockImplementation(() => Promise.reject(new Error('no haptic')));
+    renderScreen();
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
   });
 
   it('길게 누르기 시간이 되기 전에 놓으면 끌기가 시작되지 않는다', async () => {
