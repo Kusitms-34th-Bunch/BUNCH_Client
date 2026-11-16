@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { desiredStates, nextToggle } from './dragSelect';
+import { autoScrollStep, desiredStates, nextToggle } from './dragSelect';
 
 const ids = ['a', 'b', 'c', 'd', 'e'];
 const indexById = new Map(ids.map((id, index) => [id, index]));
@@ -57,5 +57,19 @@ describe('nextToggle', () => {
       ['d', false],
     ]);
     expect(nextToggle(desired, ['c', 'd'], indexById, 1)).toBe('d');
+  });
+});
+
+describe('autoScrollStep', () => {
+  it('가장자리 구역 밖에서는 움직이지 않는다', () => {
+    expect(autoScrollStep(300, 0, 600)).toBe(0);
+  });
+
+  it('구역에 막 들어오면 최소 1px, 가장 끝에서는 최대 속도로 움직인다', () => {
+    expect(autoScrollStep(79.9, 0, 600)).toBe(-1);
+    expect(autoScrollStep(0, 0, 600)).toBe(-12);
+    expect(autoScrollStep(-50, 0, 600)).toBe(-12);
+    expect(autoScrollStep(560, 0, 600)).toBe(6);
+    expect(autoScrollStep(700, 0, 600)).toBe(12);
   });
 });
