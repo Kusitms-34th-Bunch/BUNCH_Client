@@ -1,10 +1,12 @@
-import type { DragEndEvent } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ADD_CARD_ID } from '../constants/photoList';
 import { usePhotoReorder } from './usePhotoReorder';
 
 const photoIds = ['a', 'b', 'c'];
+// 끌기 시작 이벤트(끌기 시작한 사진의 id가 알림에 실림)
+const dragStart = (active: string) => ({ active: { id: active } }) as DragStartEvent;
 const dragEnd = (active: string, over: string | null) =>
   ({ active: { id: active }, over: over === null ? null : { id: over } }) as DragEndEvent;
 
@@ -36,19 +38,19 @@ describe('usePhotoReorder', () => {
   it('끄는 동안만 dragging이고 놓거나 취소하면 풀린다', () => {
     const { result } = renderHook(() => usePhotoReorder({ photoIds, onMove: vi.fn() }));
 
-    act(() => result.current.onDragStart());
+    act(() => result.current.onDragStart(dragStart('a')));
     expect(result.current.dragging).toBe(true);
     act(() => result.current.onDragEnd(dragEnd('a', null)));
     expect(result.current.dragging).toBe(false);
 
-    act(() => result.current.onDragStart());
+    act(() => result.current.onDragStart(dragStart('a')));
     act(() => result.current.onDragCancel());
     expect(result.current.dragging).toBe(false);
   });
 
   it('앱이 백그라운드로 가면 끌던 상태를 풀고 끌기 영역을 새로 만든다(epoch 증가)', () => {
     const { result } = renderHook(() => usePhotoReorder({ photoIds, onMove: vi.fn() }));
-    act(() => result.current.onDragStart());
+    act(() => result.current.onDragStart(dragStart('a')));
     const before = result.current.dragEpoch;
 
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
@@ -91,11 +93,11 @@ describe('usePhotoReorder', () => {
         usePhotoReorder({ photoIds, onMove: vi.fn(), onDragStateChange }),
       );
 
-      act(() => result.current.onDragStart());
+      act(() => result.current.onDragStart(dragStart('a')));
       act(() => result.current.onDragEnd(dragEnd('a', 'c')));
       act(() => result.current.onDragCancel());
 
-      expect(onDragStateChange.mock.calls).toEqual([[true], [false]]);
+      expect(onDragStateChange.mock.calls).toEqual([[true, 'a'], [false]]);
     });
 
     it('끄는 중 앱이 백그라운드로 가면 놓은 것으로 알린다', () => {
@@ -103,14 +105,14 @@ describe('usePhotoReorder', () => {
       const { result } = renderHook(() =>
         usePhotoReorder({ photoIds, onMove: vi.fn(), onDragStateChange }),
       );
-      act(() => result.current.onDragStart());
+      act(() => result.current.onDragStart(dragStart('a')));
 
       vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
       act(() => {
         document.dispatchEvent(new Event('visibilitychange'));
       });
 
-      expect(onDragStateChange.mock.calls).toEqual([[true], [false]]);
+      expect(onDragStateChange.mock.calls).toEqual([[true, 'a'], [false]]);
     });
 
     it('끄는 중 화면이 사라져도 놓은 것으로 알려 작업 중 표시가 남지 않게 한다', () => {
@@ -118,11 +120,11 @@ describe('usePhotoReorder', () => {
       const { result, unmount } = renderHook(() =>
         usePhotoReorder({ photoIds, onMove: vi.fn(), onDragStateChange }),
       );
-      act(() => result.current.onDragStart());
+      act(() => result.current.onDragStart(dragStart('a')));
 
       unmount();
 
-      expect(onDragStateChange.mock.calls).toEqual([[true], [false]]);
+      expect(onDragStateChange.mock.calls).toEqual([[true, 'a'], [false]]);
     });
 
     it('끌지 않았으면 화면이 사라져도 알리지 않는다', () => {

@@ -115,8 +115,11 @@ export type DraftActions = {
   removePhoto: (_photoId: string) => boolean;
   /** 사진을 다른 자리(0부터)로 옮김. 서버 반영은 후속이라 이 화면에서만 바뀜 */
   movePhoto: (_photoId: string, _toIndex: number) => void;
-  /** 사진을 끌기 시작하거나 놓았을 때: 끄는 동안 다른 멤버의 사진 변경 이벤트는 미뤘다가 놓은 뒤 반영(기능 spec 4.3.6) */
-  setPhotoDragging: (_dragging: boolean) => void;
+  /**
+   * 사진을 끌기 시작하거나 놓았을 때: 끄는 동안 다른 멤버의 사진 변경 이벤트는 미뤘다가 놓은 뒤 반영(기능 spec 4.3.6)
+   * 시작할 때 끌기 시작한 사진의 id를 주면, 놓은 뒤 그 사진이 다른 멤버에게 지워졌을 때(자리를 바꾸지 않고 놓은 경우 포함) 안내함
+   */
+  setPhotoDragging: (_dragging: boolean, _photoId?: string) => void;
   /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜. 연결이 끊겨 막히면 false */
   replacePhotos: (_photos: readonly DraftPhoto[]) => boolean;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
@@ -226,6 +229,9 @@ export function useDraft(draftId: string | undefined): {
   const [photoBusy, setPhotoBusy] = useState(false);
   // 사진을 끄는 중: 이벤트 보류 판단은 ref(이벤트가 올 때 읽음), 놓은 뒤 재조회는 state(effect)로 이어 감
   const photoDragRef = useRef(false);
+  // 끌던 사진의 서버 id와, 그 끌기에서 이동 요청을 보냈는지(보냈다면 이동 응답 경로가 삭제 안내를 맡음)
+  const draggedPhotoId = useRef<string | undefined>(undefined);
+  const dragMoved = useRef(false);
   const [photoDragging, setPhotoDraggingState] = useState(false);
   // 내가 발행해 서버가 발행본으로 바꾼 뒤에는 「없는 초안」 안내 없이 이동을 기다림
   const [publishedByMe, setPublishedByMe] = useState(false);
@@ -632,6 +638,17 @@ export function useDraft(draftId: string | undefined): {
         if (!result.isError) {
           heldEventRef.current = false;
           setHeldSyncFailed(false);
+          // 끌던 사진을 다른 멤버가 지웠는데 자리를 바꾸지 않고 놓은 경우에도 놓은 뒤 안내(이동 요청을 보냈다면 그 응답 경로가 안내함)
+          const dropped = draggedPhotoId.current;
+          draggedPhotoId.current = undefined;
+          if (
+            dropped !== undefined &&
+            !dragMoved.current &&
+            result.data &&
+            !result.data.photos.some((photo) => photo.id === dropped)
+          ) {
+            toast(BUNDLE_MESSAGES.photoRemovedByOther);
+          }
           return;
         }
         if (attempt < HELD_RESYNC_MAX_ATTEMPTS) {
@@ -706,6 +723,7 @@ export function useDraft(draftId: string | undefined): {
       });
     },
     movePhoto: (photoId, toIndex) => {
+      dragMoved.current = true;
       const current = shownPhotosRef.current;
       const next = movePhoto(current, photoId, toIndex);
       if (next.every((photo, index) => photo.id === current[index]?.id)) return;
@@ -739,9 +757,20 @@ export function useDraft(draftId: string | undefined): {
         }
       });
     },
-    setPhotoDragging: (dragging) => {
+    setPhotoDragging: (dragging, photoId) => {
       photoDragRef.current = dragging;
       setPhotoDraggingState(dragging);
+      if (dragging) {
+        dragMoved.current = false;
+        const photo =
+          photoId === undefined
+            ? undefined
+            : shownPhotosRef.current.find((candidate) => candidate.id === photoId);
+        draggedPhotoId.current = photo && serverPhotoId(photo);
+      } else if (!heldEventRef.current) {
+        // 끄는 동안 사진 변경 이벤트가 없었으면 놓은 뒤 확인할 것이 없음(낡은 id가 나중의 재조회에서 안내를 만들지 않게 비움)
+        draggedPhotoId.current = undefined;
+      }
     },
     replacePhotos: (photos) => {
       const current = shownPhotosRef.current;

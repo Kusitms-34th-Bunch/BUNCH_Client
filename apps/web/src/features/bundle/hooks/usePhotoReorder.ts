@@ -1,6 +1,13 @@
 'use client';
 
-import { type DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import {
+  type DragEndEvent,
+  type DragStartEvent,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { useEffect, useRef, useState } from 'react';
 import { ADD_CARD_ID, LONG_PRESS_MS, LONG_PRESS_TOLERANCE_PX } from '../constants/photoList';
 
@@ -11,9 +18,9 @@ type UsePhotoReorderOptions = {
   onMove: (_photoId: string, _toIndex: number) => void;
   /**
    * 끌기가 시작되거나 끝났을 때(놓기·취소·앱 백그라운드·화면 이탈 포함, 상태가 바뀔 때만 한 번씩)
-   * 끄는 동안의 작업 중 표시와 다른 멤버 변경 미루기에 씀
+   * 끄는 동안의 작업 중 표시와 다른 멤버 변경 미루기에 씀. 시작할 때는 끌기 시작한 사진의 id도 함께 줌
    */
-  onDragStateChange?: ((_dragging: boolean) => void) | undefined;
+  onDragStateChange?: ((_dragging: boolean, _photoId?: string) => void) | undefined;
 };
 
 /**
@@ -41,11 +48,13 @@ export function usePhotoReorder({ photoIds, onMove, onDragStateChange }: UsePhot
   });
 
   // 끌기 상태를 바꾸고 실제로 바뀐 때만 알림(놓기와 취소가 겹쳐 들어와도 한 번만)
-  const setDragging = (next: boolean) => {
+  const setDragging = (next: boolean, photoId?: string) => {
     setDraggingState(next);
     if (draggingRef.current === next) return;
     draggingRef.current = next;
-    stateChange.current?.(next);
+    // 사진 id는 끌기 시작 때만 있음(끝날 때는 두 번째 인자를 넘기지 않음)
+    if (photoId === undefined) stateChange.current?.(next);
+    else stateChange.current?.(next, photoId);
   };
   const setDraggingRef = useRef(setDragging);
   useEffect(() => {
@@ -86,7 +95,8 @@ export function usePhotoReorder({ photoIds, onMove, onDragStateChange }: UsePhot
     sensors,
     dragEpoch,
     dragging,
-    onDragStart: () => setDragging(true),
+    onDragStart: (event?: DragStartEvent) =>
+      setDragging(true, event === undefined ? undefined : String(event.active.id)),
     onDragEnd,
     onDragCancel: () => setDragging(false),
   };

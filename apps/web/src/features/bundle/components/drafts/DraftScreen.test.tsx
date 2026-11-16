@@ -1168,7 +1168,7 @@ describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
     await pressPhoto(1);
 
     expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
-    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true, publishable.photos[0]!.id);
     expect(actions.presence.end).not.toHaveBeenCalledWith('PHOTOS');
     // 떠오른 사진은 살짝 커짐(spec 「살짝 커지며」, 105%)
     const lifted = screen
@@ -1199,7 +1199,7 @@ describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
 
     await pressPhoto(1);
 
-    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true, publishable.photos[0]!.id);
     expect(bridge.dragStartHaptic).not.toHaveBeenCalled();
   });
 
@@ -1210,7 +1210,7 @@ describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
 
     await pressPhoto(1);
 
-    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true, publishable.photos[0]!.id);
     expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
   });
 
@@ -1261,7 +1261,7 @@ describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
   it('끄는 중 화면이 사라져도 작업 중 표시와 변경 미루기를 푼다', async () => {
     const view = renderScreen();
     await pressPhoto(1);
-    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true);
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true, publishable.photos[0]!.id);
 
     view.unmount();
 

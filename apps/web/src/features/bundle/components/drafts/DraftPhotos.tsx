@@ -108,7 +108,7 @@ type DraftPhotosProps = {
   /** 끌어서 놓은 사진을 그 자리로 옮김(`toIndex`는 놓은 자리) */
   onMovePhoto: (_photoId: string, _toIndex: number) => void;
   /** 끌기를 시작하거나 끝냈을 때(끄는 동안 다른 멤버의 사진 변경을 미루는 데 씀) */
-  onDragChange?: ((_dragging: boolean) => void) | undefined;
+  onDragChange?: ((_dragging: boolean, _photoId?: string) => void) | undefined;
   /** 사진을 눌렀을 때(사진 상세로 이동) */
   onOpenPhoto?: ((_photoId: string) => void) | undefined;
   /** 「픽하기 >」를 눌렀을 때(대표 사진 투표 화면으로 이동) */
@@ -172,10 +172,12 @@ export function DraftPhotos({
   const reorder = usePhotoReorder({
     photoIds,
     onMove: onMovePhoto,
-    onDragStateChange: (dragging) => {
+    onDragStateChange: (dragging, photoId) => {
       // 집어 올린 순간 한 번 진동(기능 spec 4.3.6). 쉘이 아니거나 이 메서드가 없는 이전 쉘이면 동작 없음
       if (dragging && isNativeShell()) void appBridge.dragStartHaptic().catch(() => {});
-      onDragChange?.(dragging);
+      // 사진 id는 끌기 시작 때만 있음(끝날 때는 두 번째 인자를 넘기지 않음)
+      if (photoId === undefined) onDragChange?.(dragging);
+      else onDragChange?.(dragging, photoId);
     },
   });
   // 고칠 수 있는 참여 멤버만, 사진이 2장 이상일 때만 끌 수 있음
