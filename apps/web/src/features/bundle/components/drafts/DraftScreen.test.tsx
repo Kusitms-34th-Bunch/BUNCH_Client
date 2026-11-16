@@ -1166,6 +1166,15 @@ describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
     expect(actions.presence.begin).not.toHaveBeenCalledWith('PHOTOS');
   });
 
+  it('연결이 끊겨 있으면 끌 수 없다', async () => {
+    renderScreen({ offline: true });
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+    expect(actions.presence.begin).not.toHaveBeenCalledWith('PHOTOS');
+  });
+
   it('참여 멤버가 아니면 끌 수 없다', async () => {
     renderScreen({ viewer: outsider });
 

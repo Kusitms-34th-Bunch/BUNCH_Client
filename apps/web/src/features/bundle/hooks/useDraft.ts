@@ -733,6 +733,7 @@ export function useDraft(draftId: string | undefined): {
           });
           if (!moved.photos.some((photo) => photo.id === movingId)) removedByOther();
         } catch (error) {
+          // 404는 API 명세상 없는·삭제된 번들이나 사진이라 지운 사진으로 봄(삭제된 이웃 기준 사진은 서버가 위치를 보정해 404가 아님)
           if (isApiError(error) && error.status === 404) return removedByOther();
           throw error;
         }
