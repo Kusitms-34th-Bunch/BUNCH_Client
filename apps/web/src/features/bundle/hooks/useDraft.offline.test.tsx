@@ -589,6 +589,49 @@ describe('useDraft 요청을 보내는 중에 연결이 끊겼을 때(기능 spe
     expect(orderOf()).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
   });
 
+  it('사진 변경을 기다리는 사이 연결이 끊겨 대기열이 변경을 건너뛰면 사진 변경이 빠진 구성으로 발행하지 않는다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [, second, third] = ready(view.result.current.state).draft.photos;
+    let publishRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(400);
+        return undefined;
+      }),
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        publishRequests += 1;
+        return undefined;
+      }),
+    );
+
+    // 첫 사진을 빼는 변경이 서버로 나가 있고, 두 번째 사진을 빼는 변경이 대기열에서 기다림
+    act(() => {
+      view.result.current.actions.replacePhotos([second!, third!]);
+      view.result.current.actions.replacePhotos([third!]);
+    });
+    await act(() => wait(100));
+    // 발행을 누르면 사진 변경이 끝나기를 기다림. 그 사이 렌더 없이 연결만 끊김
+    let outcome: string | undefined;
+    const publishing = view.result.current.actions.publish().then((value) => {
+      outcome = value;
+    });
+    connection.down = true;
+    await act(() => publishing);
+
+    expect(outcome).toBe('blocked');
+    expect(publishRequests).toBe(0);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
+  });
+
   it('실시간 연결만 끊기고(브라우저는 온라인) 화면이 아직 모르는 사이 첫 응답이 끝나도 대기 중이던 위치 변경은 보내지 않는다', async () => {
     const { id, result } = await renderReady();
     let first = true;

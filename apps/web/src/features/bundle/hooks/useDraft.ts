@@ -586,11 +586,18 @@ export function useDraft(draftId: string | undefined): {
     setPhotoBusy(true);
     const generation = discardGeneration.current;
     photoQueue.current = photoQueue.current
-      .then(() =>
-        photoFailed.current || generation !== discardGeneration.current || offlineNowRef.current()
-          ? undefined
-          : run(() => generation !== discardGeneration.current || offlineNowRef.current()),
-      )
+      .then(async () => {
+        if (photoFailed.current) return;
+        // 연결이 끊겨(아직 화면이 몰라도) 보내지 않고 건너뛴 변경인지: 한 번 건너뛰면 이어지는 단계도 건너뜀
+        let dropped = false;
+        const isDropped = () => {
+          if (generation !== discardGeneration.current || offlineNowRef.current()) dropped = true;
+          return dropped;
+        };
+        if (!isDropped()) await run(isDropped);
+        // 건너뛴 변경도 발행 전 확인이 알아챌 수 있게 실패 횟수에 셈(발행하면 사진 변경이 빠진 구성이 올라가므로, 안내는 발행 때 함)
+        if (dropped) photoFailures.current += 1;
+      })
       .catch(() => {
         photoFailed.current = true;
         photoFailures.current += 1;
