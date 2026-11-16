@@ -83,12 +83,16 @@ export function usePhotoReorder({ photoIds, onMove, onDragStateChange }: UsePhot
   );
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    setDragging(false);
-    if (!over || active.id === over.id) return;
     const from = photoIds.indexOf(String(active.id));
-    const to = over.id === ADD_CARD_ID ? photoIds.length - 1 : photoIds.indexOf(String(over.id));
-    if (from < 0 || to < 0 || from === to) return;
-    onMove(String(active.id), to);
+    const to =
+      !over || active.id === over.id
+        ? -1
+        : over.id === ADD_CARD_ID
+          ? photoIds.length - 1
+          : photoIds.indexOf(String(over.id));
+    // 이동 요청은 끌기를 끝내기 전에 보냄(그 요청을 이 끌기의 이동으로 기록하려고, 끝난 뒤의 다른 이동과 구분)
+    if (from >= 0 && to >= 0 && from !== to) onMove(String(active.id), to);
+    setDragging(false);
   };
 
   return {

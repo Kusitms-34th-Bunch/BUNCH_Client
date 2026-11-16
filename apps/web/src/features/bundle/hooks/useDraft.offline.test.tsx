@@ -247,6 +247,24 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.photoRemovedByOther);
   });
 
+  it('끌기를 마친 직후 앞·뒤로 옮기기 버튼으로 다른 사진을 옮겨도 끌던 사진의 삭제 안내는 띄운다', async () => {
+    const { id, result } = await renderReady();
+    const [first, second] = ready(result.current.state).draft.photos;
+
+    act(() => result.current.actions.setPhotoDragging(true, first!.id));
+    removeServerPhoto(id, first!.id);
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    act(() => {
+      // 끌기는 자리를 바꾸지 않고 끝났고, 곧바로 버튼으로 다른 사진을 옮김
+      result.current.actions.setPhotoDragging(false);
+      result.current.actions.movePhoto(second!.id, 0);
+    });
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoRemovedByOther), {
+      timeout: 5000,
+    });
+  });
+
   it('끌던 사진이 지워졌고 자리도 바꿔 이동 요청을 보냈다면 안내는 한 번만 띄운다', async () => {
     const { id, client, result } = await renderReady();
     const shownIds = () => ready(result.current.state).draft.photos.map((photo) => photo.id);

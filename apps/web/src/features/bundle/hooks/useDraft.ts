@@ -723,10 +723,11 @@ export function useDraft(draftId: string | undefined): {
       });
     },
     movePhoto: (photoId, toIndex) => {
-      dragMoved.current = true;
       const current = shownPhotosRef.current;
       const next = movePhoto(current, photoId, toIndex);
       if (next.every((photo, index) => photo.id === current[index]?.id)) return;
+      // 끌기 중에 보낸 이동만 이 끌기의 이동으로 기록(끌기를 끝낸 뒤 앞·뒤로 버튼으로 옮긴 다른 이동은 아님)
+      if (photoDragRef.current) dragMoved.current = true;
       showPhotos(next);
       const index = next.findIndex((photo) => photo.id === photoId);
       const [moving, previous, following] = [next[index], next[index - 1], next[index + 1]];
