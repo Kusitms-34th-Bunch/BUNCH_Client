@@ -19,7 +19,7 @@
 
 ### 범위 외
 
-- 문의 채널 주소의 서버 설정값 연동. 서버에 해당 API가 없어 `MY_CONTACT_URL` 상수를 쓴다(기능명세서 7.5.1 로직 1).
+- 문의 채널 주소의 서버 설정값 연동. 서버에 해당 API가 없어 `MY_CONTACT_URL` 상수를 쓴다(기능명세서 7.5.1 로직 1, 2026-11-16 확인).
 - 다른 탭 WebView에 로그아웃 알리기(iOS 쉘). 로그아웃한 탭 WebView만 문서를 새로 불러온다. 나머지 탭 WebView는 이전 사용자의 화면·캐시를 가진 채 남고, 다시 로그인하면 다시 받기 전까지 그 데이터가 보일 수 있다(`docs/architecture/mobile-shell.md`의 탭 WebView 상태 공유 항목). 쉘이 탭 WebView를 모두 다시 불러오는 방식은 후속으로 다룬다.
 - 로그아웃 뒤 기록 정리. `location.replace`는 현재 기록 항목만 바꿔 그 앞의 화면으로 뒤로 갈 수 있다. 접근 guard와 401 시 로그인 이동(`onUnauthorized`)을 연결할 때 함께 다룬다. 같은 탭의 `sessionStorage`(지금 번치 id)도 그때 정리한다.
 

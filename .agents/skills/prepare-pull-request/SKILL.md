@@ -72,7 +72,7 @@ PR 초안을 쓰기 **전에** 브랜치(`<base>...HEAD`)의 리뷰 상태를 �
 1. 기본 결과인 초안과 명령을 준비한 뒤 `gh auth status`를 확인한다. 인증을 대신 시도하지 않는다. 실패하면 실행 여부를 묻지 않고 초안과 명령만 남기며, 웹에서 PR을 만드는 방법도 안내한다.
 2. 올리기 전에 `gh pr view <브랜치> --json state`로 이미 열렸거나 머지된 PR이 아닌지, 미커밋 변경이 없는지, base 브랜치가 맞는지 확인한다. 작업 브랜치의 base는 `develop`이고, `main`을 base로 하는 PR은 `develop`에서 올리는 릴리스 PR뿐이다. 하나라도 걸리면 올리지 않고 알린다.
 3. 인증이 성공하고 입력 점검을 통과하면 제목·본문·명령을 보여 준 뒤 "push하고 PR을 올릴까요?"를 사용자에게 묻는다. 사용자가 "명령만"·"초안만"을 요청하면 묻지 않는다. 실행 질문에 긍정한 경우에만 제시한 범위를 실행한다. 이미 같은 범위를 승인했다면 다시 묻지 않고, 범위가 바뀌면 새로 승인받는다. 규칙이나 설명에 대한 동의와 커밋 승인은 push·PR 승인을 대신하지 않는다.
-4. 승인되면 `git push -u origin <브랜치>`를 실행한다. `pre-push` hook(typecheck·test)이 실패하면 PR을 만들지 않고 원인을 보고하며, `--no-verify`로 우회하지 않는다. 강제 푸시가 필요하면 `--force-with-lease`를 쓰되 따로 확인받는다.
+4. 승인되면 `git push -u origin <브랜치>`를 실행한다. `pre-push` hook(typecheck)이 실패하면 PR을 만들지 않고 원인을 보고하며, `--no-verify`로 우회하지 않는다. 강제 푸시가 필요하면 `--force-with-lease`를 쓰되 따로 확인받는다.
 5. 본문을 임시 파일에 쓰고 `gh pr create --base <base> --title "<제목>" --body-file <파일>`로 만든다. 라벨과 assignee는 `pr-metadata` workflow가 채우므로 주지 않는다.
 6. PR URL을 알려 준다. UI 변경 스크린샷은 사람이 붙인다. 만들지 않았다면 만들지 않았다고 쓴다.
 7. `deliver-work` 없이 직접 호출됐고 PR이 올라갔다면 `review-pr`로 inline 리뷰 코멘트를 달 수 있다고 안내한다. `deliver-work`가 호출했다면 안내하지 않는다.

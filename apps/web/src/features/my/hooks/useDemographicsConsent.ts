@@ -2,7 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 
-// 서버에 추가 개인정보(출생연도·성별) 동의 상태 조회·동의·철회 API가 아직 없어(기능명세서 7.4.4·7.4.5, 백엔드 확인 대기)
+// 서버에 추가 개인정보(출생연도·성별) 동의 상태 조회·동의·철회 API가 아직 없어(기능명세서 7.4.4·7.4.5, 백엔드 확인 대기, 2026-11-16 확인)
 // UI 확인용으로 이 기기(브라우저)에만 저장하는 임시 값. API가 정해지면 이 hook을 query·mutation으로 바꾸고 이 파일은 지움
 const STORAGE_KEY = 'bunch:demographics-consent';
 const listeners = new Set<() => void>();

@@ -260,7 +260,7 @@ Swagger에는 아직 피드·번들 상세·댓글·좋아요·콕·광고 API�
 디자인
 
 - Figma 노드: 피드 탭, 번들 카드, 광고 카드, 번들 상세, 댓글, 시트 3종, 멤버 프로필, 수정 화면.
-- 애니메이션 자산 `FeedCaughtUp_Confetti`·`FeedCaughtUp_Check`: 로티 파일은 받아 `apps/web/src/shared/assets/lotties/feedCaughtUp*.json`에 두었다(표현식 없음). 재생 화면은 아직 없다.
+- 애니메이션 자산 `FeedCaughtUp_Confetti`·`FeedCaughtUp_Check`: 로티 파일은 받아 `apps/web/src/shared/assets/lotties/feedCaughtUp*.json`에 두었다(표현식 없음). 피드 끝 안내 `FeedCaughtUp`(`apps/web/src/features/feed/components/FeedCaughtUp.tsx`)이 재생한다.
 - 번치 배지 색(분위기 4종)의 토큰.
 - 광고 숨김 자리(6.1.6 상세 3): 1110판은 회색 카드와 체크 아이콘이다. 구현은 Figma `State=Hidden`대로 체크 모션과 안내 글자다. 보이는 모양은 Figma를 따르고 차이만 기록한다.
 - 광고 장소 정보(6.1.5 상세 3): 1110판은 소개와 위치(핀 아이콘)를 줄을 나눠 쓴다. 구현은 한 줄에 이어 쓰고 넘치면 줄바꿈한다. Figma 기준 확인.

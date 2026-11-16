@@ -17,7 +17,7 @@
 
 ### 범위 외
 
-- 멤버 관리 route의 초대 링크 발급 연결. 지금은 Figma 예시 값(`fixtures/invite.fixture.ts`의 `inviteLinkFixture`)이다. 번치 만들기 직후 route는 `useCreatedBunchInvitation`(`features/onboarding`)이 받은 링크를 `inviteLink`로 넘긴다.
+- 초대 링크 발급(`POST /bunches/{id}/invitations`, `shared/api/bunchInvitation.ts`·`shared/query/bunchInvitation.ts`)은 화면 밖에서 받아 `inviteLink`로 넘긴다. 멤버 관리 route는 `BunchMemberInvite`(`hooks/useMyBunchInvitation.ts`)가 지금 번치(내 기본 번치)의 링크를, 번치 만들기 직후 route는 `useCreatedBunchInvitation`(`features/onboarding`)이 만든 번치의 링크를 넘긴다. 받지 못하면 「다시 불러오기」로 다시 받는다.
 - 화면 전환: 완료 → 초대는 SSGOI `slide`(Ease Out·이동 시간 300ms)를 적용하고 뒤로 가기는 반대 방향으로 이동한다. 피드로 나가는 이동에는 전환을 등록하지 않았다. 설정과 검증 범위는 `docs/architecture/motion.md`를 따른다.
 - iPhone 상태 바·홈 인디케이터(기기 요소. Safe Area는 `AppFrame`이 처리한다).
 

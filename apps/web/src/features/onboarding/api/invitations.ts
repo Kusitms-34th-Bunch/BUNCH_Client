@@ -22,7 +22,7 @@ const cardSchema = z.object({
 const verifySchema = z.object({
   card: cardSchema,
   eligibility: z.enum(['AVAILABLE', 'ALREADY_MEMBER', 'FULL', 'LIMIT_EXCEEDED']),
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['InvitationVerification']>>;
 
 export type InvitationEligibility = z.infer<typeof verifySchema>['eligibility'];
 
@@ -66,7 +66,7 @@ export const verifyInvitation = async (invitation: string): Promise<VerifiedInvi
 const joinSchema = z.object({
   outcome: z.enum(['JOINED', 'ALREADY_MEMBER']),
   bunch: bunchSchema,
-});
+}) satisfies z.ZodType<ApiContract<components['schemas']['JoinResponse']>>;
 
 export type JoinedInvitation = { outcome: 'JOINED' | 'ALREADY_MEMBER'; bunch: CreatedBunch };
 

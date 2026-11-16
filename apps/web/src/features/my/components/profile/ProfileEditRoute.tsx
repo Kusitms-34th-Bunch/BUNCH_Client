@@ -18,8 +18,8 @@ import { ProfileEditScreen } from './ProfileEditScreen';
  * 처음 받은 값을 고정해, 편집 중에 재조회 응답이 와도 "바뀐 내용" 판단의 기준이 흔들리지 않게 함
  */
 export function ProfileEditRoute() {
-  // 실패하면 마이페이지로 이동하므로 토스트는 훅이 즉시 띄우지 않고 이동 뒤 도착 화면에서 보이게 예약
-  const { profile, isPending, isError } = useMyProfile({ notifyFailure: false });
+  // 실패하면 마이페이지로 이동하므로 토스트는 이동 뒤 도착 화면에서 보이게 예약
+  const { profile, isPending, isError } = useMyProfile();
   const [consent] = useDemographicsConsent();
   const backOr = useBackOr();
   const [initial, setInitial] = useState<MyProfile | undefined>(profile);

@@ -12,6 +12,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint . --cache --cache-strategy content",
     "check:mock-imports": "node scripts/check-mock-server-imports.mjs",
+    "check:contracts": "node scripts/check-response-contracts.mjs",
+    "check:feature-exceptions": "node scripts/check-feature-exceptions.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

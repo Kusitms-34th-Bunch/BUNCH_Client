@@ -1,8 +1,13 @@
+import type { ApiContract } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { bffApi, requestData } from './bffApi';
 
 /** 번치 이름 중복 확인 응답(`GET /bunches/name-availability`) */
-const availabilitySchema = z.object({ normalizedValue: z.string(), available: z.boolean() });
+const availabilitySchema = z.object({
+  normalizedValue: z.string(),
+  available: z.boolean(),
+}) satisfies z.ZodType<ApiContract<components['schemas']['NameAvailability']>>;
 
 /**
  * 번치 이름을 지금 쓸 수 있는지(번치 만들기·프로필 편집). 이름을 예약하지 않으므로 저장 때 서버가 다시 확인함(`BUNCH_001`)

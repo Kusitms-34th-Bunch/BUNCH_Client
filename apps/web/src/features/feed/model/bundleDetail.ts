@@ -18,6 +18,7 @@ const personSchema = z.object({
   profileAvailable: z.boolean(),
 });
 
+// 계약 미연결: 상세 화면에 필요한 필드만 받음(revision 등 생략)
 export const bundleDetailSchema = z.object({
   id: z.number().int().positive(),
   bunchId: z.number().int().positive(),
