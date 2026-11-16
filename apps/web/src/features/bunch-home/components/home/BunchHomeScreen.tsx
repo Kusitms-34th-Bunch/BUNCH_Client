@@ -11,6 +11,7 @@ import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries'
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
+import { useAccessNoticeDialog } from '../../hooks/useAccessNoticeDialog';
 import { switchStatus } from '../../lib/bunchSwitch';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchHomeHeader } from '../BunchHomeHeader';
@@ -59,35 +60,21 @@ export function BunchHomeScreen({
   });
 
   const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
+  const openNotice = useAccessNoticeDialog();
   // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움(닫힘 모션 동안 문구는 열 때 값으로 유지)
   const openUnavailable = (id: string) => {
     const bunch = findBunch(id);
     if (!bunch) return;
-    let removed = false;
-    // Esc는 안내만 닫고 목록에 남김, 「번치 목록에서 삭제」만 목록에서 지움
-    openOverlay(
-      (rootProps, close) => (
-        <ConfirmDialog
-          {...rootProps}
-          title={BUNCH_HOME_MESSAGES.unavailableTitle(bunch)}
-          description={BUNCH_HOME_MESSAGES.unavailableDescription(bunch)}
-          appearance="text"
-          confirmLabel="번치 목록에서 삭제"
-          onConfirm={() => {
-            actions.removeBunch(bunch.id);
-            removed = true;
-            close();
-          }}
-        />
-      ),
-      () => {
-        // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
+    openNotice(bunch, {
+      onRemove: () => actions.removeBunch(bunch.id),
+      // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
+      onClosed: (removed) => {
         if (removed)
           document
             .querySelector<HTMLElement>('[data-bottom-sheet]:not([data-ending-style])')
             ?.focus();
       },
-    );
+    });
   };
   // 창이 열린 사이 앞선 삭제가 끝날 수 있어 확정할 때의 최신 동작을 부름
   const deleteDraft = usePreservedCallback((id: string) => actions.deleteDraftBundle(id));

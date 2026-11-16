@@ -13,7 +13,7 @@ export type PlaceMember = {
 export type PlaceSource =
   /** 번들에서 콕함: 「{번치 이름} | {번들 제목}」 */
   | { kind: 'bundle'; bunchName: string; bundleTitle: string }
-  /** 피드 광고(BUNCH PICK)에서 콕함: 담아 온 번들이 없음 */
+  /** 피드 광고(BUNCH SPOT)에서 콕함: 담아 온 번들이 없음 */
   | { kind: 'pick' }
   /** 담아 온 번들을 볼 수 없음(삭제·비공개·차단·번치 삭제 등). 장소는 남음 */
   | { kind: 'unavailable' };
@@ -26,7 +26,5 @@ export type KokPlace = {
   address?: string | undefined;
   /** 처음 콕한 멤버 id. 번치를 나간 멤버면 null(목록에는 남고 「전체」에만 셈) */
   pickedBy: string | null;
-  /** 콕한 시각(ISO 8601, 같은 형식끼리 문자열 비교로 정렬) */
-  pickedAt: string;
   source: PlaceSource;
 };

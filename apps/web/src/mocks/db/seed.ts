@@ -3,6 +3,7 @@ import type {
   MockBundle,
   MockDbState,
   MockFollow,
+  MockKok,
   MockMember,
   MockMembership,
   MockPhoto,
@@ -190,6 +191,34 @@ const EXTERNAL_PUBLISHED_SEEDS: Readonly<Record<number, readonly PublishedSeed[]
   ],
 };
 
+// 여행쥬아의 콕한 장소(Figma 4096:76101 예시 장소). 번들 출처는 캠핑러버(3)의 공개 번들, 999는 지워진 번들(볼 수 없음)
+// 101번은 여행쥬아를 나간 회원이라 「전체」에만 셈. 장소는 번들·광고 장소와 겹치지 않게 둠(처음부터 콕한 상태가 되지 않게)
+const KOK_SEEDS: MockKok[] = (
+  [
+    ['봄날카페', '제주 제주시 애월읍', memberB, 901, null, '2026-11-07T01:00:00.000Z'],
+    ['계동 골목 식당', '서울 종로구 계동', memberB, 902, null, '2026-11-06T01:00:00.000Z'],
+    ['안목해변 커피거리', '강릉 견소동', memberB, 999, null, '2026-11-05T01:00:00.000Z'],
+    ['광안리 해변', '', memberA, null, 71, '2026-11-04T01:00:00.000Z'],
+    ['연남동 책방', '서울 마포구 연남동', memberA, 901, null, '2026-11-03T01:00:00.000Z'],
+    ['협재해변', '제주 제주시 한림읍', admin, 902, null, '2026-11-02T01:00:00.000Z'],
+    ['해리단길', '부산 해운대구 우동', 101, 901, null, '2026-11-01T01:00:00.000Z'],
+  ] as const
+).map(
+  ([name, address, pinnedByMemberId, sourceBundleId, sourceAdvertisementId, pinnedAt], index) => ({
+    id: index + 1,
+    bunchId: MOCK_BUNCH_ID,
+    provider: 'kakao',
+    externalId: `seed-kok-${index + 1}`,
+    name,
+    address,
+    sourceBundleId,
+    sourceLocationId: null,
+    sourceAdvertisementId,
+    pinnedByMemberId,
+    pinnedAt,
+  }),
+);
+
 const publishedBundles = (
   seeds: readonly PublishedSeed[] = PUBLISHED_SEEDS,
   bunchId: number = MOCK_BUNCH_ID,
@@ -369,9 +398,9 @@ export const createSeed = (): MockDbState => ({
     { bunchId: MOCK_EXTERNAL_BUNCH_IDS.private, bundleId: 901 },
     { bunchId: MOCK_SECOND_BUNCH_ID, bundleId: 901 },
   ],
-  koks: [],
+  koks: KOK_SEEDS,
   hiddenAdIds: [],
-  lastKokId: 0,
+  lastKokId: KOK_SEEDS.length,
   // 「가평 첫 캠핑」 댓글: 캠핑러버 관리자의 원댓글과 내 답글, 삭제된 원댓글, 차단한 번치(야간러너스)의 원댓글(목록·수에서 빠짐), 내 원댓글
   socialComments: [
     {

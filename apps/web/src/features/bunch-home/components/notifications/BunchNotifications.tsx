@@ -3,7 +3,8 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toDomainId } from '@/shared/api/ids';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -15,6 +16,7 @@ import {
   useOpenNotificationMutation,
   useReadAllNotificationsMutation,
 } from '../../queries/notifications';
+import { AccessNoticeDialog } from '../home/AccessNoticeDialog';
 import { BunchHomeError } from '../home/BunchHomeError';
 import { BunchNotificationsScreen } from './BunchNotificationsScreen';
 
@@ -32,6 +34,12 @@ export function BunchNotifications() {
   const readAll = useReadAllNotificationsMutation(bunch?.id);
   // 같은 알림을 연달아 눌러도 한 번만 열기(isPending은 다음 렌더부터 반영)
   const opening = useRef(false);
+  // 접근 불가 알림(`ACCESS_NOTICE`)은 이동할 화면 없이 이 화면에서 안내 창을 띄움
+  const [noticeId, setNoticeId] = useState<string>();
+  const closeNotice = () => {
+    setNoticeId(undefined);
+    opening.current = false;
+  };
   // 번치가 없는 회원은 알림 목록이 없어 번치 탭(번치 없음 안내)으로
   const noBunch = me.data !== undefined && !me.data.bunch;
   useEffect(() => {
@@ -74,6 +82,10 @@ export function BunchNotifications() {
                 toast(BUNCH_HOME_MESSAGES.notificationUnavailable);
                 return;
               }
+              if (result.target.kind === 'ACCESS_NOTICE' && result.target.noticeId) {
+                setNoticeId(toDomainId(result.target.noticeId));
+                return;
+              }
               // 이동하는 동안(덮개가 내려간 뒤 새 화면이 뜨기 전) 다시 열지 않게 가드를 풀지 않음
               router.push(notificationPath(result.target));
             },
@@ -83,6 +95,16 @@ export function BunchNotifications() {
           });
         }}
       />
+      {noticeId ? (
+        <AccessNoticeDialog
+          noticeId={noticeId}
+          onClosed={closeNotice}
+          onFailed={() => {
+            closeNotice();
+            toast(BUNCH_HOME_MESSAGES.notificationUnavailable);
+          }}
+        />
+      ) : null}
     </>
   );
 }

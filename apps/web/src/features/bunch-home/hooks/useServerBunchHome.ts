@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchHomeDetail, BunchSummary } from '../lib/types';
-import { toBunchHomeDetail, toBunchSummaries } from '../model/bunchHome';
+import { accessNoticeIdOf, toBunchHomeDetail, toBunchSummaries } from '../model/bunchHome';
 import {
   bunchHomeQueryOptions,
   draftBundlesQueryOptions,
@@ -18,6 +18,8 @@ export type ServerBunchHome =
   | { kind: 'error'; retry: () => void }
   /** 소속 번치가 없음(번치 없음 화면) */
   | { kind: 'no-bunch' }
+  /** 보던 번치가 삭제됐거나 내보내짐(`409 BUNCH_008`). 안내 뒤 기본 번치를 다시 받음(5.2.3 상세 동작 4) */
+  | { kind: 'unavailable'; noticeId: string }
   | {
       kind: 'ready';
       current: BunchHomeDetail;
@@ -65,6 +67,9 @@ export function useServerBunchHome(): ServerBunchHome {
   }, [home.data, published.data, drafts.data, members.data, myBunches.data]);
 
   if (profile.data && !profile.data.bunch) return { kind: 'no-bunch' };
+  // 받아 둔 홈이 있어도 다시 받기에서 접근 불가 안내가 오면 그 번치는 더 볼 수 없음
+  const noticeId = accessNoticeIdOf(home.error);
+  if (noticeId) return { kind: 'unavailable', noticeId };
   if (ready) return { kind: 'ready', ...ready };
   // 내 번치가 아닌 응답(소속 null)이라 변환하지 못한 경우도 처음부터 못 받은 오류로 봄
   const unusable = home.data && published.data && drafts.data && !ready;

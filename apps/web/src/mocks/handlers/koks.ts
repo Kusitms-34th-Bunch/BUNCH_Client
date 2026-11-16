@@ -1,6 +1,6 @@
 import { http } from 'msw';
 import { toWireId } from '@/shared/api/ids';
-import type { MockBundle, MockKok } from '../db/types';
+import type { MockBundle, MockDbState, MockKok } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
@@ -8,7 +8,7 @@ import { kokOf, mockLocationId } from './feed';
 import { viewerBunchId } from './follows';
 import { bundleAccess } from './likes';
 
-// 번들 장소 콕(명세 009·010·021, Swagger `BundleKoksResponse`·`KokResponse`). 지금 번치 명의
+// 번들 장소 콕(명세 005·009·010·021, Swagger `KoksResponse`·`BundleKoksResponse`·`KokResponse`). 지금 번치 명의
 
 const locationsOf = (bundle: MockBundle) =>
   bundle.locations.map((location, index) => ({
@@ -32,7 +32,97 @@ export const kokResponse = (kok: MockKok) => ({
   pinnedAt: kok.pinnedAt,
 });
 
+/** 콕한 장소 카드(명세 005). 원래 번들을 지금 볼 수 없으면 출처 값을 비움 */
+const kokCard = (state: MockDbState, kok: MockKok) => {
+  const base = {
+    id: kok.id,
+    provider: kok.provider,
+    externalId: kok.externalId,
+    name: kok.name,
+    address: kok.address || null,
+    pinnedByMemberId: kok.pinnedByMemberId,
+    pinnedAt: kok.pinnedAt,
+  };
+  const hidden = {
+    sourceBundleId: null,
+    sourceBunchId: null,
+    sourceBunchName: null,
+    sourceBundleTitle: null,
+  };
+  if (kok.sourceAdvertisementId !== null) {
+    return { ...base, sourceType: 'ADVERTISEMENT', sourceAccessible: true, ...hidden };
+  }
+  const bundle = state.bundles.find((item) => item.id === kok.sourceBundleId);
+  const bunch = state.bunches.find((item) => item.id === bundle?.bunchId);
+  const accessible =
+    bundle !== undefined &&
+    bunch !== undefined &&
+    !('error' in bundleAccess(state, bundle.id, false));
+  return accessible
+    ? {
+        ...base,
+        sourceType: 'BUNDLE',
+        sourceAccessible: true,
+        sourceBundleId: bundle.id,
+        sourceBunchId: bunch.id,
+        sourceBunchName: bunch.name,
+        sourceBundleTitle: bundle.title,
+      }
+    : { ...base, sourceType: 'BUNDLE', sourceAccessible: false, ...hidden };
+};
+
 export const kokHandlers = [
+  // GET /api/v1/pinned-places — 지금 번치의 콕(최근 콕한 순), 멤버 칩은 지금 멤버 전원(0개 포함)
+  // ponytail: 커서는 넘긴 개수(숫자 글자). 실서버는 번치·필터 문맥을 담은 불투명 값
+  http.get('/api/pinned-places', ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const size = Number(params.get('size') ?? 20);
+    const offset = Number(params.get('cursor') ?? 0);
+    if (
+      !Number.isInteger(size) ||
+      size < 1 ||
+      size > 50 ||
+      !Number.isInteger(offset) ||
+      offset < 0
+    ) {
+      return fail(400, 'COMMON_001');
+    }
+    const memberParam = params.get('memberId');
+    const memberId = memberParam === null ? undefined : toWireId(memberParam);
+    if (memberParam !== null && memberId === undefined) return fail(400, 'COMMON_001');
+    const state = mockDb.get();
+    const viewer = viewerBunchId(state);
+    if (viewer === undefined) return fail(409, 'BUNCH_010');
+    const koks = state.koks
+      .filter((kok) => kok.bunchId === viewer)
+      .sort((a, b) => b.pinnedAt.localeCompare(a.pinnedAt) || b.id - a.id);
+    const members = state.memberships
+      .filter((membership) => membership.bunchId === viewer)
+      .map((membership) => {
+        const member = state.members.find((item) => item.memberId === membership.memberId);
+        return {
+          membershipId: membership.memberId,
+          memberId: membership.memberId,
+          nickname: member?.nickname ?? null,
+          imageUrl: member?.imageUrl ?? null,
+          count: koks.filter((kok) => kok.pinnedByMemberId === membership.memberId).length,
+        };
+      });
+    // 지금 멤버 칩에 없는 멤버면 전체로 돌아감(명세 005)
+    const selected = members.some((member) => member.memberId === memberId) ? memberId : undefined;
+    const filtered =
+      selected === undefined ? koks : koks.filter((kok) => kok.pinnedByMemberId === selected);
+    const page = filtered.slice(offset, offset + size);
+    return ok({
+      bunchId: viewer,
+      selectedMemberId: selected ?? null,
+      totalCount: koks.length,
+      members,
+      items: page.map((kok) => kokCard(state, kok)),
+      nextCursor: offset + size < filtered.length ? String(offset + size) : null,
+    });
+  }),
+
   // GET /api/v1/bundles/{bundleId}/pinned-places — 장소별 지금 번치의 콕 여부(소속 번치가 없으면 모두 false)
   http.get('/api/bundles/:bundleId/pinned-places', ({ params }) => {
     const bundleId = toWireId(params.bundleId);

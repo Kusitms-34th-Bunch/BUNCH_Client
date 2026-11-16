@@ -9,19 +9,29 @@ import {
   LineTrashcanMediumIcon,
 } from '@app/design-system';
 import { LocationCard, MoreMenuSheet } from '@app/design-system/web';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import type { KokPlace, PlaceMember } from '../lib/types';
 import { PLACES_MESSAGES } from '../constants/messages';
-import { countByMember, filterByMember } from '../lib/places';
-import { ALL_MEMBERS, type KokPlace, type PlaceMember } from '../lib/types';
 import { PlaceMemberFilter } from './PlaceMemberFilter';
 
 type BunchPlacesScreenProps = {
   members: readonly PlaceMember[];
-  /** 최근에 콕한 순으로 정렬된 목록 */
-  places: readonly KokPlace[];
+  /** 멤버 id와 `ALL_MEMBERS`별 콕한 장소 수 */
+  counts: Readonly<Record<string, number>>;
+  /** 고른 칩 id. 「전체」는 `ALL_MEMBERS` */
+  selectedId: string;
+  onSelect: (_memberId: string) => void;
+  /** 고른 칩의 장소(최근에 콕한 순). 받는 중이면 없음 */
+  places: readonly KokPlace[] | undefined;
+  /** 되돌리기로 다시 생긴 장소(되돌릴 때마다 순번이 늘어남). 그 카드가 보이면 초점을 옮김 */
+  restored?: { id: string; seq: number } | undefined;
+  /** 칩을 바꿔 새 목록을 받는 중(보던 목록은 유지) */
+  busy?: boolean | undefined;
+  /** 목록을 받지 못함. 있으면 오류 안내와 「다시 시도」를 보임 */
+  onRetry?: (() => void) | undefined;
   onBack: () => void;
   /** 「주소 복사하기」를 누른 순간 바로 호출(클립보드 쓰기는 사용자 제스처 안이어야 함). 복사했는지를 돌려줌 */
   onCopyAddress: (_place: KokPlace) => Promise<boolean>;
@@ -40,7 +50,13 @@ type BunchPlacesScreenProps = {
  */
 export function BunchPlacesScreen({
   members,
+  counts,
+  selectedId,
+  onSelect,
   places,
+  restored,
+  busy = false,
+  onRetry,
   onBack,
   onCopyAddress,
   onCopyDone,
@@ -48,21 +64,17 @@ export function BunchPlacesScreen({
   onOpenBundle,
   onBrowseFeed,
 }: BunchPlacesScreenProps) {
-  const [selectedId, setSelectedId] = useState(ALL_MEMBERS);
   const openOverlay = useScreenOverlay();
   // 뺀 카드가 사라지면 초점이 body로 떨어지므로 같은 자리에 온 다음 카드(없으면 빈 상태 제목)로 옮김
   const listRef = useRef<HTMLUListElement>(null);
   const emptyRef = useRef<HTMLHeadingElement>(null);
   const focusIndex = useRef<number | null>(null);
-  // 되돌려 다시 생긴 카드를 알아보기 위해 직전 목록의 장소 id를 기억
-  const previousIds = useRef(new Set(places.map((place) => place.id)));
-
-  const counts = countByMember(places);
-  const visible = filterByMember(places, selectedId);
+  // 초점을 옮긴 되돌리기 순번(같은 되돌리기로 다시 옮기지 않게)
+  const focusedRestore = useRef(0);
+  const visible = places ?? [];
 
   useEffect(() => {
-    const previous = previousIds.current;
-    previousIds.current = new Set(places.map((place) => place.id));
+    if (!places) return;
     const index = focusIndex.current;
     if (index !== null) {
       focusIndex.current = null;
@@ -74,15 +86,13 @@ export function BunchPlacesScreen({
       return;
     }
     // 되돌리기로 다시 생긴 카드로 초점을 옮김(토스트가 사라져도 읽던 자리를 잃지 않게)
-    const restored = places.find((place) => !previous.has(place.id));
-    if (restored) {
-      listRef.current
-        ?.querySelector<HTMLElement>(
-          `[data-place-id="${restored.id}"] button[aria-label$="더보기"]`,
-        )
-        ?.focus();
-    }
-  }, [places]);
+    if (!restored || focusedRestore.current === restored.seq) return;
+    if (!places.some((place) => place.id === restored.id)) return;
+    focusedRestore.current = restored.seq;
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-place-id="${restored.id}"] button[aria-label$="더보기"]`)
+      ?.focus();
+  }, [places, restored]);
 
   const removePlace = (place: KokPlace) => {
     focusIndex.current = Math.max(
@@ -186,19 +196,35 @@ export function BunchPlacesScreen({
               </HeaderIconButton>
             }
           />
-          <PlaceMemberFilter
-            members={members}
-            selectedId={selectedId}
-            counts={counts}
-            onSelect={setSelectedId}
-          />
+          {/* 받기 전에는 개수를 몰라 칩을 그리지 않음(「전체 0」으로 보이지 않게) */}
+          {places ? (
+            <PlaceMemberFilter
+              members={members}
+              selectedId={selectedId}
+              counts={counts}
+              onSelect={onSelect}
+            />
+          ) : null}
         </>
       }
     >
       <h1 className="sr-only">{PLACES_MESSAGES.pageTitle}</h1>
-      {visible.length > 0 ? (
+      {onRetry ? (
+        <div className="gap-s8 px-padding-p8 pb-s23 flex min-h-full flex-col items-center justify-center">
+          <p role="alert" className="typography-body-3-semibold text-text-secondary text-center">
+            {PLACES_MESSAGES.error}
+          </p>
+          <Button variant="tertiary" size="md" onClick={onRetry}>
+            {PLACES_MESSAGES.retry}
+          </Button>
+        </div>
+      ) : !places ? null : visible.length > 0 ? (
         // Figma 4096:76101: 칩 아래 24(칩 영역 아래 여백 4 포함), 카드 사이 4, 좌우 16
-        <ul ref={listRef} className="gap-s2 px-padding-p8 pb-s8 flex flex-col pt-6">
+        <ul
+          ref={listRef}
+          aria-busy={busy}
+          className="gap-s2 px-padding-p8 pb-s8 flex flex-col pt-6"
+        >
           {visible.map((place) => (
             <li key={place.id} data-place-id={place.id}>
               <LocationCard

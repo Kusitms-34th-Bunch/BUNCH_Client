@@ -129,6 +129,68 @@ describe('BunchNotifications(가짜 서버)', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  // 접근 불가 알림: 이동할 화면이 없어 이 화면에서 안내(명세 072 target.noticeId → 078)
+  const addAccessNotice = () =>
+    mockDb.update((state) => ({
+      ...state,
+      notifications: [
+        {
+          id: 99,
+          bunchId: MOCK_BUNCH_ID,
+          type: 'MEMBER_REMOVED',
+          title: '큐시즘 맛집 번치에서 내보내졌어요',
+          body: '',
+          createdAt: '2026-11-16T09:00:00.000Z',
+          readAt: null,
+          target: { kind: 'ACCESS_NOTICE', bunchId: MOCK_BUNCH_ID, noticeId: 2 },
+        },
+        ...state.notifications,
+      ],
+    }));
+
+  it('접근 불가 알림을 누르면 이동하지 않고 그 번치의 안내를 띄운다', async () => {
+    addAccessNotice();
+    const user = userEvent.setup();
+    renderList();
+
+    await user.click((await cards())[0]!);
+
+    const dialog = await screen.findByRole('alertdialog', {
+      name: '큐시즘 맛집 번치에서 내보내졌어요',
+    });
+    await user.click(within(dialog).getByRole('button', { name: '번치 목록에서 삭제' }));
+    await waitFor(() =>
+      expect(mockDb.get().bunchAccessNotices.some((notice) => notice.id === 2)).toBe(false),
+    );
+    expect(push).not.toHaveBeenCalled();
+    // 지운 안내는 다시 열면 받아 둔 값이 아니라 「볼 수 없음」
+    await user.click((await cards())[0]!);
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.notificationUnavailable),
+    );
+    // 닫은 뒤 다른 알림을 다시 열 수 있음
+    await user.click((await cards())[2]!);
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1'));
+  });
+
+  it('이미 확인한 안내의 알림이면 볼 수 없다고 알린다', async () => {
+    addAccessNotice();
+    mockDb.update((state) => ({
+      ...state,
+      bunchAccessNotices: state.bunchAccessNotices.filter((notice) => notice.id !== 2),
+    }));
+    const user = userEvent.setup();
+    renderList();
+
+    await user.click((await cards())[0]!);
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.notificationUnavailable),
+    );
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it('「모두 읽음」은 지금 번치의 알림만 서버에서 읽음으로 바꾸고 결과를 알린다', async () => {
     const user = userEvent.setup();
     renderList();

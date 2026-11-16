@@ -3,7 +3,7 @@
 import { ConfirmDialog, toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDeleteBundleMutation } from '@/features/bundle/queries/bundles';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
@@ -12,7 +12,12 @@ import type { BunchHomeActions } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useServerBunchHome } from '../../hooks/useServerBunchHome';
-import { useDeleteBunchNoticeMutation, useSwitchBunchMutation } from '../../queries/bunchHome';
+import {
+  useDeleteBunchNoticeMutation,
+  useRefreshCurrentBunch,
+  useSwitchBunchMutation,
+} from '../../queries/bunchHome';
+import { AccessNoticeDialog } from './AccessNoticeDialog';
 import { BunchHomeError } from './BunchHomeError';
 import { BunchHomeScreen } from './BunchHomeScreen';
 import { NoBunchScreen } from './NoBunchScreen';
@@ -30,6 +35,11 @@ export function BunchHome() {
   const deleteBundle = useDeleteBundleMutation(profile?.bunch?.id);
   const switchBunch = useSwitchBunchMutation();
   const deleteNotice = useDeleteBunchNoticeMutation();
+  const refreshCurrentBunch = useRefreshCurrentBunch();
+  // 안내 뒤 기본 번치를 다시 받았는데도 같은 안내면 오류 화면(다시 시도)으로 둠(멈춘 로딩 방지)
+  const [handledNoticeId, setHandledNoticeId] = useState<string>();
+  const leaveUnavailable = (noticeId: string) =>
+    void refreshCurrentBunch(profile?.bunch?.id).finally(() => setHandledNoticeId(noticeId));
   const serverBunches = server.kind === 'ready' ? server.bunches : [];
   // 번치 전환·접근 불가 안내 삭제·작성 중인 번들 삭제를 서버에 보냄
   const actions: BunchHomeActions = {
@@ -57,13 +67,24 @@ export function BunchHome() {
     if (notReady) openOverlay.closeAll();
   }, [notReady, openOverlay]);
 
-  if (server.kind === 'loading') {
+  if (server.kind === 'unavailable' && server.noticeId === handledNoticeId) {
+    return <BunchHomeError onRetry={() => leaveUnavailable(server.noticeId)} />;
+  }
+  if (server.kind === 'loading' || server.kind === 'unavailable') {
     return (
       <>
         <p role="status" className="sr-only">
           번치를 불러오는 중이에요
         </p>
         <PageLoading />
+        {/* 안내를 닫거나 받지 못하면 서버가 다시 고른 번치(또는 번치 없음)로 바뀜 */}
+        {server.kind === 'unavailable' ? (
+          <AccessNoticeDialog
+            noticeId={server.noticeId}
+            onClosed={() => leaveUnavailable(server.noticeId)}
+            onFailed={() => leaveUnavailable(server.noticeId)}
+          />
+        ) : null}
       </>
     );
   }

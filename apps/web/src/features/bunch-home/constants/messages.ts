@@ -44,9 +44,9 @@ export const BUNCH_HOME_MESSAGES = {
   needMembersDescription: '번들은 번치의 멤버가 2명 이상일 때 만들 수 있어요.',
   needMembersInvite: '초대하기',
   needMembersCancel: '취소',
-  unavailableTitle: ({ name, access }: BunchSummary) =>
+  unavailableTitle: ({ name, access }: Pick<BunchSummary, 'name' | 'access'>) =>
     access === 'deleted' ? `${name} 번치가 삭제됐어요` : `${name} 번치에서 내보내졌어요`,
-  unavailableDescription: ({ access }: BunchSummary) =>
+  unavailableDescription: ({ access }: Pick<BunchSummary, 'access'>) =>
     access === 'deleted'
       ? '관리자가 번치를 삭제하여 더 이상 접근할 수 없어요.'
       : '번치 멤버 목록에서 제외되어 더 이상 번치에 참여할 수 없어요.',
