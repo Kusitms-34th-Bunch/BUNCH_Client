@@ -1,6 +1,6 @@
 import { toast } from '@app/design-system';
 import { type InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toWireId } from '@/shared/api/ids';
+import { isWireId, toDomainId } from '@/shared/api/ids';
 import type { FeedPage } from '../model/feed';
 import { hideAd, pinAd } from '../api/advertisement';
 import { unpinPlace } from '../api/kok';
@@ -17,24 +17,24 @@ export type AdKokVariables = { adId: string; viewerId: string | null } & (
 type AdKok = { pinned: boolean; pinId: number | null };
 
 // 같은 광고가 여러 자리에 와서 그 광고의 모든 자리를 함께 바꿈
-const patchAd = (data: InfiniteData<FeedPage> | undefined, adId: number, next: Partial<AdKok>) =>
+const patchAd = (data: InfiniteData<FeedPage> | undefined, adId: string, next: Partial<AdKok>) =>
   data && {
     ...data,
     pages: data.pages.map((page) => ({
       ...page,
       items: page.items.map((item) =>
-        'advertisement' in item && item.advertisement.id === adId
+        'advertisement' in item && toDomainId(item.advertisement.id) === adId
           ? { ...item, advertisement: { ...item.advertisement, ...next } }
           : item,
       ),
     })),
   };
 
-const readAd = (data: InfiniteData<FeedPage> | undefined, adId: number): AdKok | undefined =>
+const readAd = (data: InfiniteData<FeedPage> | undefined, adId: string): AdKok | undefined =>
   data?.pages
     .flatMap((page) => page.items)
     .flatMap((item) =>
-      'advertisement' in item && item.advertisement.id === adId
+      'advertisement' in item && toDomainId(item.advertisement.id) === adId
         ? [{ pinned: item.advertisement.pinned, pinId: item.advertisement.pinId ?? null }]
         : [],
     )[0];
@@ -47,7 +47,7 @@ const readAd = (data: InfiniteData<FeedPage> | undefined, adId: number): AdKok |
  */
 export const useAdKokMutation = () => {
   const queryClient = useQueryClient();
-  const write = (vars: AdKokVariables, adId: number, next: Partial<AdKok>) =>
+  const write = (vars: AdKokVariables, adId: string, next: Partial<AdKok>) =>
     queryClient.setQueryData<InfiniteData<FeedPage>>(feedKeys.list(vars.viewerId), (data) =>
       patchAd(data, adId, next),
     );
@@ -56,14 +56,13 @@ export const useAdKokMutation = () => {
     scope: KOK_SCOPE,
     // 성공하면 그 광고의 콕 ID(취소면 null)
     mutationFn: async (vars: AdKokVariables): Promise<number | null> => {
-      const adId = toWireId(vars.adId);
-      if (adId === undefined) throw new Error('invalid advertisement');
-      if (vars.pin) return (await pinAd(adId)).id;
+      if (!isWireId(vars.adId)) throw new Error('invalid advertisement');
+      if (vars.pin) return (await pinAd(vars.adId)).id;
       await unpinPlace(vars.pinId);
       return null;
     },
     onMutate: (vars) => {
-      const adId = toWireId(vars.adId) ?? 0;
+      const { adId } = vars;
       // 피드 받기는 취소하지 않음(다음 쪽 받기를 끊지 않게, 다시 받으면 서버 값으로 맞춰짐)
       const previous = readAd(
         queryClient.getQueryData<InfiniteData<FeedPage>>(feedKeys.list(vars.viewerId)),
@@ -95,11 +94,7 @@ export const useAdKokMutation = () => {
 /** 광고 숨기기(명세 023). 성공하면 앱이 켜져 있는 동안 기억(화면을 떠난 뒤 성공해도), 실패하면 공통 토스트 */
 export const useHideAdMutation = () =>
   useMutation({
-    mutationFn: (adId: string) => {
-      const id = toWireId(adId);
-      if (id === undefined) throw new Error('invalid advertisement');
-      return hideAd(id);
-    },
+    mutationFn: hideAd,
     onSuccess: (_data, adId) => markAdHidden(adId),
     meta: { errorMessage: FEED_MESSAGES.actionFailed },
   });

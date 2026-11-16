@@ -4,7 +4,7 @@
 
 - Route: `/feed`(`apps/web/src/app/(app)/(main)/feed/page.tsx`, #263). 하단 탭 화면(`MainTabPage`)
 - 소유: `features/feed`. 번치 홈 쪽 주소(알림·번치 탭·다른 번치 프로필)는 route-local `FeedRoute`가 `BUNCH_HOME_PATHS`로 조합해 넘긴다(feature끼리 import하지 않음)
-- Status: 목록은 서버(`GET /feed`, #364)이고 끝에 닿으면 다음 쪽을 이어 받는다. UI는 개발 서버 Chrome 375폭 렌더로 Figma와 대조(샘플 데이터 때). 실기기 전
+- Status: 목록은 서버(`GET /feed`, #364)이고 끝에 닿으면 다음 쪽을 이어 받는다. UI는 개발 서버 Chrome 375폭 렌더로 Figma와 대조(샘플 데이터 때). 그 샘플 데이터(`fixtures/feed.fixture.ts`)는 서버 연결 뒤 쓰는 곳이 없고 기록용으로만 남겨 두었다. 실기기 전
 - 기능명세: 피드 6.1(`docs/specs/feed.md` 구현 단위 1). 기능명세서 1110판(2026-11-10) 대조
 - 디자인 출처: Figma 피드 `4940:99466`(섹션 「피드」 `4940:100716`), 헤더 `4940:99533`, 구간 안내 `4940:101293`, 끝 안내 `4940:101966`
 

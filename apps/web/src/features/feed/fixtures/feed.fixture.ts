@@ -1,3 +1,4 @@
+// 기록용: 쓰는 곳 없음. 서버 연결 전 피드 샘플 데이터(Figma 대조에 사용), 새 코드에서 import 금지
 import { DEFAULT_BUNCH_IMAGES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { FeedBundle, FeedData } from '../lib/types';
 
