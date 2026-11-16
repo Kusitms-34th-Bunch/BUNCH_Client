@@ -543,7 +543,9 @@ describe('useDraft 요청을 보내는 중에 연결이 끊겼을 때(기능 spe
       }),
     );
 
-    act(() => view.result.current.actions.replacePhotos([third!, second!]));
+    act(() => {
+      view.result.current.actions.replacePhotos([third!, second!]);
+    });
     await act(() => wait(100));
     // 렌더(rerender) 없이 연결 상태만 바뀜: 훅의 effect가 끊김을 알아채기 전과 같은 상황
     connection.down = true;
@@ -575,8 +577,10 @@ describe('useDraft 요청을 보내는 중에 연결이 끊겼을 때(기능 spe
     );
 
     // 첫 사진을 빼는 변경이 서버로 나가 있는 동안 두 번째 사진을 빼는 변경이 대기열에 쌓임
-    act(() => view.result.current.actions.replacePhotos([second!, third!]));
-    act(() => view.result.current.actions.replacePhotos([third!]));
+    act(() => {
+      view.result.current.actions.replacePhotos([second!, third!]);
+      view.result.current.actions.replacePhotos([third!]);
+    });
     await act(() => wait(100));
     connection.down = true;
     await act(() => wait(1500));

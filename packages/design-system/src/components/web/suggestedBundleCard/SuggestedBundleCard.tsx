@@ -8,7 +8,7 @@ import {
 } from '../../../icons';
 import { cn } from '../../../utils';
 import { ColorBadge } from '../colorBadge';
-import { fitChipCount } from './fitMemberChips';
+import { fitChipCount } from './fitMemberChips.internal';
 
 export type SuggestedBundleCardProps = Omit<ComponentProps<'div'>, 'children' | 'title'> & {
   /** 번들 대표 사진 */

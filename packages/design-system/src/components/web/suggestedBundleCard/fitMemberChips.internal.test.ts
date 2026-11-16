@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitChipCount } from './fitMemberChips';
+import { fitChipCount } from './fitMemberChips.internal';
 
 // 칩 4개: 이름만 있는 칩은 50px, 「이름 외 N명」 칩은 100px
 const base = {
