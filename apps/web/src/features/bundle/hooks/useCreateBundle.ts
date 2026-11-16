@@ -23,8 +23,6 @@ type CreateOptions = {
   replace?: boolean | undefined;
   /** 마지막으로 적용한 추천 번들 id(번들 만들기 화면만 넘김) */
   recommendationId?: string | undefined;
-  /** 연결한 추천 번들이 없어져 거절됐을 때(RESOURCE_001), 호출하는 쪽이 추천 연결을 풂 */
-  onRecommendationGone?: (() => void) | undefined;
 };
 
 // PHOTO_004의 detail.missingPhotoIds, 형식이 다르면 빈 목록
@@ -54,12 +52,7 @@ export function useCreateBundle() {
   const create = (
     photoIds: readonly string[],
     participantMemberIds: readonly string[],
-    {
-      onMissingPhotos,
-      replace = false,
-      recommendationId,
-      onRecommendationGone,
-    }: CreateOptions = {},
+    { onMissingPhotos, replace = false, recommendationId }: CreateOptions = {},
   ) => {
     if (submitted.current || photoIds.length === 0 || participantMemberIds.length === 0) return;
     submitted.current = true;
@@ -92,10 +85,6 @@ export function useCreateBundle() {
             const missing = readMissingPhotoIds(error);
             onMissingPhotos?.(missing);
             notify(BUNDLE_SELECT_MESSAGES.selectionStale(missing.length || 1));
-          } else if (code === 'RESOURCE_001' && recommendationId !== undefined) {
-            // 적용한 추천 번들이 그사이 사라짐(다른 멤버가 먼저 초안을 만들었거나 다시 계산됨): 추천 연결 없이 다시 만들 수 있게 풀고 안내
-            onRecommendationGone?.();
-            notify(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
           } else if (code === 'BUNDLE_001') {
             // 번치 인원 부족과 초안 한도가 같은 코드라, 번치 멤버가 모자라면 인원 안내 아니면 한도 안내
             notify(

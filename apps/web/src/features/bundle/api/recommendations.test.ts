@@ -110,13 +110,11 @@ describe('추천 번들로 초안 만들기', () => {
     expect(draft.title).toBe('설악산 단풍 여행');
   });
 
-  it('추천 id가 없으면 제목은 비어 있고 없는 추천이면 RESOURCE_001이다', async () => {
+  it('추천 id가 없거나 없는 추천이면 제목은 비어 있다(실서버도 없는 추천 id를 거절하지 않음)', async () => {
     const plain = await createBundle(bunchId, [String(S1)], createIdempotencyKey(), ['2']);
     expect(plain.title).toBe('');
 
-    const error = await catchError(
-      createBundle(bunchId, [String(S1)], createIdempotencyKey(), ['2'], '77'),
-    );
-    expect(error.code).toBe('RESOURCE_001');
+    const unknown = await createBundle(bunchId, [String(S1)], createIdempotencyKey(), ['2'], '77');
+    expect(unknown.title).toBe('');
   });
 });

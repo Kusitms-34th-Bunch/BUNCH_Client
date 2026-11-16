@@ -216,7 +216,6 @@ export function BundleSelectProvider({
       },
       replace: fromPhotoBox,
       recommendationId: appliedId,
-      onRecommendationGone: () => setAppliedId(undefined),
     });
   };
 

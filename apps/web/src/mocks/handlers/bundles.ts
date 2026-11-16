@@ -531,14 +531,11 @@ export const bundleHandlers = [
         if (picked.some((photo) => photo === undefined)) {
           return { status: 400, body: { code: 'COMMON_001' } };
         }
-        // 연결한 추천 번들이 없어졌으면 거부, 있으면 기본 제목이 추천 제목
+        // 연결한 추천 번들이 있으면 기본 제목이 추천 제목. 없는 추천 ID는 실서버처럼 거절하지 않고 연결 없이 만듦(제목 비어 있음)
         const recommendationTitle =
           recommendationId === null
             ? undefined
             : findMockRecommendationTitle(bunchId, recommendationId);
-        if (recommendationId !== null && recommendationTitle === undefined) {
-          return { status: 404, body: { code: 'RESOURCE_001' } };
-        }
         const at = nowIso();
         const id = Math.max(0, ...current.bundles.map((bundle) => bundle.id)) + 1;
         let nextPhotoId = Math.max(0, ...current.bundles.flatMap((b) => b.photos.map((p) => p.id)));
