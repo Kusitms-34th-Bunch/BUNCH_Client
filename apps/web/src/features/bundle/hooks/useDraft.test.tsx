@@ -555,6 +555,15 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     expect(serverBundle(id)?.locations.map((location) => location.externalId)).toEqual(['a', 'b']);
   });
 
+  it('끌던 줄이 내가 막 추가한 줄이라 id가 바뀐 경우에는 지워졌다는 알림을 띄우지 않는다', async () => {
+    const { result } = await renderReady();
+    toast.mockClear();
+
+    act(() => result.current.actions.moveLocation('pending:9', 0));
+
+    expect(toast).not.toHaveBeenCalled();
+  });
+
   it('다른 멤버가 먼저 같은 장소를 넣어 서버가 거절하면 내 변경을 걷고 「이미 추가한 위치예요.」를 알린다', async () => {
     const { id, result } = await renderReady();
     // 화면은 모르는 사이 서버에 같은 장소가 들어감

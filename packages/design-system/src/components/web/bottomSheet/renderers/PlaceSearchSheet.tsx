@@ -32,10 +32,6 @@ export type PlaceSearchSheetProps = Omit<
   onSelect: (_place: PlaceSearchResult) => void;
 };
 
-/**
- * 장소 검색 시트(거의 전체 높이): 검색 입력란, 검색 전 안내, 결과(이름과 주소), 결과 없음
- * 검색 요청과 결과 보관은 호출자 담당
- */
 // 낭독 영역을 잠깐 비웠다가 문구를 다시 채워야 같은 문구(같은 결과 수)도 매번 상태 변화로 읽힘
 const STATUS_ANNOUNCE_DELAY_MS = 150;
 
@@ -80,6 +76,10 @@ const ResultStatus = ({
   );
 };
 
+/**
+ * 장소 검색 시트(거의 전체 높이): 검색 입력란, 검색 전 안내, 결과(이름과 주소), 결과 없음
+ * 검색 요청과 결과 보관은 호출자 담당
+ */
 export const PlaceSearchSheet = ({
   title,
   inputLabel,

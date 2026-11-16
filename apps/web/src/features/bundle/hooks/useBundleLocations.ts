@@ -171,7 +171,8 @@ export function useBundleLocations({ bunchId, bundleId, serverLocations, blocked
       const target = current.find((location) => location.id === targetId);
       // 끌던 줄을 그사이 다른 멤버가 지웠으면 손을 뗄 때 알림(기능 spec 4.3.10 로직 8)
       if (!target) {
-        toast(BUNDLE_MESSAGES.locationRemoved);
+        // 끄는 사이 내가 막 추가한 줄이 서버 id로 바뀐 경우는 지워진 게 아니므로 알리지 않음
+        if (!isPendingLocation({ id: targetId })) toast(BUNDLE_MESSAGES.locationRemoved);
         return;
       }
       if (isPendingLocation(target)) return;
