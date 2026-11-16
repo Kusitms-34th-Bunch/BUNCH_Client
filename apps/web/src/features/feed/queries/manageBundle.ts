@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { toWireId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import type { BundleDetailResponse } from '../model/bundleDetail';
 import type { FeedPage } from '../model/feed';
@@ -44,7 +44,7 @@ const dropFromFeed = (client: QueryClient, bundleId: string) =>
           pages: data.pages.map((page) => ({
             ...page,
             items: page.items.filter(
-              (item) => !('bundle' in item && item.bundle.id === toWireId(bundleId)),
+              (item) => !('bundle' in item && toDomainId(item.bundle.id) === bundleId),
             ),
           })),
         }

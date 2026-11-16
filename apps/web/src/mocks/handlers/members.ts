@@ -1,6 +1,6 @@
 import { http } from 'msw';
 import { toWireId } from '@/shared/api/ids';
-import type { MockDbState } from '../db/types';
+import type { MockBunchAccessNotice, MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
@@ -9,6 +9,21 @@ import { unreadCountOf } from './notifications';
 
 // 가짜 서버가 새 프로필 사진으로 쓰는 시연 이미지(올린 사진 내용은 읽지 않음)
 const MOCK_UPLOADED_PROFILE_IMAGE = '/mock/photos/C2.jpg';
+
+// ponytail: 30일 뒤 만료(expiresAt)는 시각만 내려주고 목록·조회에서 자동으로 빼지 않음
+const noticeResponse = (notice: MockBunchAccessNotice) => ({
+  ...notice,
+  expiresAt: new Date(Date.parse(notice.occurredAt) + 30 * 86_400_000).toISOString(),
+});
+
+/** 내가 소속되지 않은 번치의 안내(보던 번치가 삭제·내보내짐). 다시 들어간 번치면 안내를 무시(명세 068·074) */
+export const accessNoticeFor = (state: MockDbState, bunchId: number | undefined) =>
+  bunchId === undefined ||
+  state.memberships.some(
+    (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
+  )
+    ? undefined
+    : state.bunchAccessNotices.find((notice) => notice.bunchId === bunchId);
 
 /** 내가 메인 관리자인 번치 */
 const myOwnedBunches = (state: MockDbState) =>
@@ -84,12 +99,16 @@ export const memberHandlers = [
           },
         ];
       }),
-      // ponytail: 30일 뒤 만료(expiresAt)는 시각만 내려주고 목록에서 자동으로 빼지 않음
-      unavailableBunches: state.bunchAccessNotices.map((notice) => ({
-        ...notice,
-        expiresAt: new Date(Date.parse(notice.occurredAt) + 30 * 86_400_000).toISOString(),
-      })),
+      unavailableBunches: state.bunchAccessNotices.map(noticeResponse),
     });
+  }),
+
+  // GET /api/v1/members/me/bunch-access-notices/{noticeId}: 안내 한 건(명세 078). 확인한(지운) 안내는 RESOURCE_001
+  http.get('/api/members/me/bunch-access-notices/:noticeId', ({ params }) => {
+    const noticeId = toWireId(params.noticeId);
+    if (noticeId === undefined) return fail(400, 'COMMON_001');
+    const notice = mockDb.get().bunchAccessNotices.find((item) => item.id === noticeId);
+    return notice ? ok(noticeResponse(notice)) : fail(404, 'RESOURCE_001');
   }),
 
   // DELETE /api/v1/members/me/bunch-access-notices/{noticeId}: 전환 목록의 「번치 목록에서 삭제」
@@ -132,15 +151,19 @@ export const memberHandlers = [
     return ok({ normalizedValue: nickname, available: !nickname.includes('중복') });
   }),
 
-  // POST /api/v1/members/me/registration: multipart 본문은 읽지 않고 가입 완료만 돌려줌(가짜 서버는 이미 가입을 마친 상태)
-  http.post('/api/members/me/registration', () =>
-    ok({
+  // POST /api/v1/members/me/registration: multipart 본문은 읽지 않고 가입 완료만 기록(닉네임은 시작 데이터 그대로)
+  http.post('/api/members/me/registration', () => {
+    mockDb.update((state) => ({
+      ...state,
+      session: { ...state.session, signupStatus: 'COMPLETED' },
+    }));
+    return ok({
       memberId: MOCK_MY_MEMBER_ID,
       signupStatus: 'COMPLETED',
       nickname: '큐시즘',
       imageUrl: null,
-    }),
-  ),
+    });
+  }),
 
   // PUT /api/v1/members/me/profile: multipart `profile`(닉네임·imageAction)·`photo`(REPLACE일 때)
   // 닉네임 중복은 중복 확인과 같이 「중복」이 들어간 닉네임만, 코드는 가입과 같은 USER_002로 둠(Swagger에 오류 코드 없음)
@@ -204,7 +227,7 @@ export const memberHandlers = [
   }),
 
   // POST /api/v1/members/me/withdrawal: 다른 멤버가 있는 번치의 메인 관리자면 거절(코드는 Swagger에 없어 가짜 코드)
-  // ponytail: 시연 데이터를 지우지 않고 성공만 돌려줌(가짜 서버는 로그아웃 상태도 두지 않음)
+  // ponytail: 시연 데이터를 지우지 않고 성공만 돌려줌(이어서 화면이 부르는 로그아웃이 세션을 끝냄)
   http.post('/api/members/me/withdrawal', () => {
     const state = mockDb.get();
     const blocked = myOwnedBunches(state).some((bunch) =>
@@ -216,13 +239,16 @@ export const memberHandlers = [
     return blocked ? fail(409, 'MOCK_WITHDRAWAL_OWNER') : ok(null);
   }),
 
-  // GET /api/v1/members/me/onboarding: 가짜 서버는 가입을 마친 시연 사용자를 가정(가입 중 시나리오는 server.use로 덮어씀)
+  // GET /api/v1/members/me/onboarding: 가짜 DB의 세션(시작값은 `createSeedFor`). 로그아웃했으면 401
   http.get('/api/members/me/onboarding', () => {
-    const membership = myMembershipsByRecent(mockDb.get())[0];
+    const state = mockDb.get();
+    const { loggedIn, signupStatus, termsAccepted } = state.session;
+    if (!loggedIn) return fail(401, 'AUTH_001');
+    const membership = myMembershipsByRecent(state)[0];
     return ok({
       memberId: MOCK_MY_MEMBER_ID,
-      signupStatus: 'COMPLETED',
-      termsAccepted: true,
+      signupStatus,
+      termsAccepted,
       ...(membership ? { defaultBunchId: membership.bunchId } : {}),
     });
   }),

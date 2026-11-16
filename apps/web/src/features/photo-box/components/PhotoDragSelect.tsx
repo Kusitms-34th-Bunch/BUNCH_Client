@@ -1,29 +1,23 @@
 'use client';
 
-import {
-  type MouseEvent,
-  type PointerEvent,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-} from 'react';
+import { type PointerEvent, type ReactNode, useEffect, useRef } from 'react';
 import { usePhotoSelection } from '../contexts/photoSelection';
+import { useClickSuppression } from '../hooks/useClickSuppression';
+import { useEdgeAutoScroll } from '../hooks/useEdgeAutoScroll';
+import { useScrollActivity } from '../hooks/useScrollActivity';
 import {
   PHOTO_DRAGGABLE_ATTRIBUTE,
   PHOTO_ID_ATTRIBUTE,
   desiredStates,
   nextToggle,
+  photoElementAt,
+  photoIdAt,
 } from '../lib/dragSelect';
 
 // 이만큼 움직여야 쓸기로 봄(그 안의 흔들림은 그냥 누르기)
 const START_DISTANCE_PX = 8;
-// 포인터가 이미 처리한 탭·쓸기 뒤에 따라오는 클릭을 이 시간 동안 막음
-const CLICK_SUPPRESS_MS = 400;
 // 길게 누르기 끌기가 시작되는 시점과 이쪽 시계가 어긋나도 같은 사진이 두 번 토글되지 않도록 이만큼 일찍 끌기 쪽으로 넘김
 const LONG_PRESS_MARGIN_MS = 20;
-// 스크롤이 이 시간 안에 있었다면 누른 순간 목록이 움직이던 것(관성 스크롤을 멈추려는 터치)으로 봄
-const SCROLL_SETTLE_MS = 100;
 
 type PhotoDragSelectProps = {
   children: ReactNode;
@@ -70,27 +64,6 @@ type Gesture = {
     | undefined;
 };
 
-// 위·아래 가장자리에서 이만큼 안쪽에 들어오면 스크롤을 시작하고, 깊이 들어갈수록 빨라져 가장 끝에서 프레임당 MAX만큼 감
-const EDGE_ZONE_PX = 80;
-const MAX_SCROLL_PX_PER_FRAME = 12;
-
-/** 사진 목록을 스크롤하는 가장 가까운 조상(세로 스크롤이 실제로 가능한 것) */
-const findScroller = (element: HTMLElement | null): HTMLElement | undefined => {
-  for (let node = element?.parentElement; node; node = node.parentElement) {
-    const { overflowY } = getComputedStyle(node);
-    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
-      return node;
-    }
-  }
-  return undefined;
-};
-
-const photoElementAt = (x: number, y: number) =>
-  document.elementFromPoint(x, y)?.closest<HTMLElement>(`[${PHOTO_ID_ATTRIBUTE}]`) ?? undefined;
-
-const photoIdAt = (x: number, y: number) =>
-  photoElementAt(x, y)?.getAttribute(PHOTO_ID_ATTRIBUTE) ?? undefined;
-
 /**
  * 선택 모드에서 사진 위를 쓸어 여러 장을 한 번에 고르거나 푸는 영역(사진함·번들 만들기 공통)
  * 애플 사진처럼 시작한 사진부터 손가락이 있는 사진까지(화면 순서, 줄을 넘어가도 이어짐)가 하나의 범위가 됨
@@ -109,38 +82,10 @@ export function PhotoDragSelect({
   const selectionRef = useRef(selection);
   const onToggleRef = useRef(onToggle);
   const gestureRef = useRef<Gesture | undefined>(undefined);
-  // 쓸기가 끝난 직후 따라오는 클릭이 사진을 다시 토글하지 않게 한 번 막음
-  const suppressClickRef = useRef(false);
+  const isScrollingNow = useScrollActivity(containerRef);
+  const { suppressNextClick, clearSuppression, handleClickCapture } = useClickSuppression();
 
-  const frameRef = useRef<number | undefined>(undefined);
-
-  // 목록이 마지막으로 스크롤된 시각(관성 스크롤 중 터치를 선택으로 오인하지 않기 위함)
-  const lastScrollAtRef = useRef(0);
-  const watchedScrollerRef = useRef<HTMLElement | undefined>(undefined);
-  // 등록한 것과 해제하는 함수가 같은 참조여야 리스너가 지워지므로 렌더마다 새로 만들지 않음
-  const handleScroll = useCallback(() => {
-    lastScrollAtRef.current = Date.now();
-  }, []);
-  const watchScroller = useCallback(
-    (scroller: HTMLElement | undefined) => {
-      if (watchedScrollerRef.current === scroller) return;
-      watchedScrollerRef.current?.removeEventListener('scroll', handleScroll);
-      scroller?.addEventListener('scroll', handleScroll, { passive: true });
-      watchedScrollerRef.current = scroller;
-    },
-    [handleScroll],
-  );
-  // 첫 터치가 관성 스크롤 중이어도 막을 수 있도록 마운트 때부터 감시하고, 목록이 나중에 길어지는 경우를 위해 누를 때도 다시 찾음
-  useEffect(() => {
-    watchScroller(findScroller(containerRef.current));
-    return () => watchScroller(undefined);
-  }, [watchScroller]);
-
-  const stopAutoScroll = () => {
-    if (frameRef.current !== undefined) cancelAnimationFrame(frameRef.current);
-    frameRef.current = undefined;
-  };
-  useEffect(() => stopAutoScroll, []);
+  const { start: startEdgeScroll, stop: stopAutoScroll } = useEdgeAutoScroll(containerRef);
 
   // 손가락 아래 사진을 다시 찾아 범위를 갱신(손가락이 움직였거나 자동 스크롤로 사진이 밀렸을 때)
   const refreshRange = (sweep: NonNullable<Gesture['sweep']>) => {
@@ -158,37 +103,15 @@ export function PhotoDragSelect({
     flush();
   };
 
-  // 쓰는 동안 손가락이 보이는 영역의 위·아래 가장자리에 있으면 그쪽으로 천천히 스크롤
-  const startAutoScroll = () => {
-    const scroller = findScroller(containerRef.current);
-    if (!scroller) return;
-    const tick = () => {
-      const sweep = gestureRef.current?.sweep;
-      if (!sweep) {
-        frameRef.current = undefined;
-        return;
-      }
-      const rect = scroller.getBoundingClientRect();
-      const top = Math.max(rect.top, 0);
-      const bottom = Math.min(rect.bottom, window.innerHeight);
-      let speed = 0;
-      if (sweep.pointerY < top + EDGE_ZONE_PX) {
-        speed = -Math.min(1, (top + EDGE_ZONE_PX - sweep.pointerY) / EDGE_ZONE_PX);
-      } else if (sweep.pointerY > bottom - EDGE_ZONE_PX) {
-        speed = Math.min(1, (sweep.pointerY - (bottom - EDGE_ZONE_PX)) / EDGE_ZONE_PX);
-      }
-      if (speed !== 0) {
-        const before = scroller.scrollTop;
-        // 일부 기기는 scrollTop을 정수로 맞추므로 한 프레임에 최소 1px은 움직임
-        const step =
-          Math.sign(speed) * Math.max(1, Math.round(Math.abs(speed) * MAX_SCROLL_PX_PER_FRAME));
-        scroller.scrollTop = before + step;
-        if (scroller.scrollTop !== before) refreshRange(sweep);
-      }
-      frameRef.current = requestAnimationFrame(tick);
-    };
-    frameRef.current = requestAnimationFrame(tick);
-  };
+  // 쓰는 동안 손가락이 가장자리에 있으면 스크롤하고, 밀려난 사진으로 범위를 갱신
+  const startAutoScroll = () =>
+    startEdgeScroll(
+      () => gestureRef.current?.sweep?.pointerY,
+      () => {
+        const sweep = gestureRef.current?.sweep;
+        if (sweep) refreshRange(sweep);
+      },
+    );
 
   const flush = () => {
     const sweep = gestureRef.current?.sweep;
@@ -224,17 +147,6 @@ export function PhotoDragSelect({
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
     return () => container.removeEventListener('touchmove', handleTouchMove);
   }, []);
-
-  // 포인터가 이미 처리한 동작 뒤에 따라오는 클릭을 막는 시간(터치는 손가락을 뗀 뒤 클릭이 별도 작업으로 오므로 0ms로는 부족함)
-  const suppressTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const suppressNextClick = () => {
-    clearTimeout(suppressTimerRef.current);
-    suppressClickRef.current = true;
-    suppressTimerRef.current = setTimeout(() => {
-      suppressClickRef.current = false;
-    }, CLICK_SUPPRESS_MS);
-  };
-  useEffect(() => () => clearTimeout(suppressTimerRef.current), []);
 
   const end = () => {
     stopAutoScroll();
@@ -278,14 +190,11 @@ export function PhotoDragSelect({
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!active || !event.isPrimary || event.button !== 0) return;
-    // 새로 누르면 이전 동작의 클릭 억제는 끝냄
-    clearTimeout(suppressTimerRef.current);
-    suppressClickRef.current = false;
+    clearSuppression();
     const startElement = photoElementAt(event.clientX, event.clientY);
     const startPhotoId = startElement?.getAttribute(PHOTO_ID_ATTRIBUTE);
     if (!startElement || !startPhotoId) return;
-    watchScroller(findScroller(containerRef.current));
-    const scrolling = Date.now() - lastScrollAtRef.current < SCROLL_SETTLE_MS;
+    const scrolling = isScrollingNow();
     gestureRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -351,14 +260,6 @@ export function PhotoDragSelect({
     sweep.pointerX = event.clientX;
     sweep.pointerY = event.clientY;
     refreshRange(sweep);
-  };
-
-  // 쓸기 직후 이어지는 클릭(같은 사진 위에서 뗐을 때)이 방금 처리한 사진을 되돌리지 않게 막음
-  const handleClickCapture = (event: MouseEvent<HTMLDivElement>) => {
-    if (!suppressClickRef.current) return;
-    suppressClickRef.current = false;
-    event.preventDefault();
-    event.stopPropagation();
   };
 
   return (

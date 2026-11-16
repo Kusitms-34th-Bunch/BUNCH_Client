@@ -153,7 +153,14 @@ export type MockNotification = {
   body: string;
   createdAt: string;
   readAt: string | null;
-  target: { kind: string; bunchId: number; bundleId?: number; targetBunchId?: number };
+  target: {
+    kind: string;
+    bunchId: number;
+    bundleId?: number;
+    targetBunchId?: number;
+    /** 접근 불가 알림(`ACCESS_NOTICE`)의 안내 ID */
+    noticeId?: number;
+  };
 };
 
 /** 번치·번들·댓글 신고(접수만, 처리 결과는 화면에 없음). 번들·댓글이면 그 번들의 번치가 대상 번치 */
@@ -200,7 +207,15 @@ export type MockSocialComment = {
   deleted: boolean;
 };
 
+/** 이 브라우저의 로그인·가입 상태(`GET /members/me/onboarding`의 근거) */
+export type MockSession = {
+  loggedIn: boolean;
+  signupStatus: 'IN_PROGRESS' | 'COMPLETED';
+  termsAccepted: boolean;
+};
+
 export type MockDbState = {
+  session: MockSession;
   members: MockMember[];
   bunches: MockBunch[];
   memberships: MockMembership[];

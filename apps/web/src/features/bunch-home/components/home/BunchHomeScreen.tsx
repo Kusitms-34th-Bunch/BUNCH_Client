@@ -1,20 +1,7 @@
 'use client';
 
-import {
-  ConfirmDialog,
-  cn,
-  FillPencilMediumIcon,
-  FillPhotoMediumIcon,
-  LinePencilMediumIcon,
-  LinePhotoMediumIcon,
-  toast,
-} from '@app/design-system';
-import {
-  BunchSwitchSheet,
-  FloatingButton,
-  MenuTabs,
-  type BunchSwitchItem,
-} from '@app/design-system/web';
+import { ConfirmDialog, cn, toast } from '@app/design-system';
+import { BunchSwitchSheet, FloatingButton, type BunchSwitchItem } from '@app/design-system/web';
 import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -24,21 +11,15 @@ import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries'
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
+import { useAccessNoticeDialog } from '../../hooks/useAccessNoticeDialog';
 import { switchStatus } from '../../lib/bunchSwitch';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { BunchProfileImage } from '../BunchProfileImage';
-import { CompletedBundleGrid } from '../CompletedBundleGrid';
-import { BundleEmpty } from './BundleEmpty';
-import { DraftBundleList } from './DraftBundleList';
-
-type BundleTab = 'completed' | 'draft';
+import { BundleTabs } from './BundleTabs';
 
 const CREATE_BUNDLE_LABEL = '번들 만들기';
-
-// 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
-const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
 
 type BunchHomeScreenProps = {
   data: BunchHomeData;
@@ -64,11 +45,8 @@ export function BunchHomeScreen({
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
   const background = BUNCH_BACKGROUNDS[current.characterType];
-  const [tab, setTab] = useState<BundleTab>('completed');
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
-  // 탭을 한 번이라도 바꿨는지(첫 진입·되돌아올 때는 탭 디졸브를 재생하지 않음)
-  const [tabChanged, setTabChanged] = useState(false);
   // 헤더의 번치 전환 버튼에 시트가 열렸는지 알림
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const openOverlay = useScreenOverlay();
@@ -82,35 +60,21 @@ export function BunchHomeScreen({
   });
 
   const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
+  const openNotice = useAccessNoticeDialog();
   // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움(닫힘 모션 동안 문구는 열 때 값으로 유지)
   const openUnavailable = (id: string) => {
     const bunch = findBunch(id);
     if (!bunch) return;
-    let removed = false;
-    // Esc는 안내만 닫고 목록에 남김, 「번치 목록에서 삭제」만 목록에서 지움
-    openOverlay(
-      (rootProps, close) => (
-        <ConfirmDialog
-          {...rootProps}
-          title={BUNCH_HOME_MESSAGES.unavailableTitle(bunch)}
-          description={BUNCH_HOME_MESSAGES.unavailableDescription(bunch)}
-          appearance="text"
-          confirmLabel="번치 목록에서 삭제"
-          onConfirm={() => {
-            actions.removeBunch(bunch.id);
-            removed = true;
-            close();
-          }}
-        />
-      ),
-      () => {
-        // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
+    openNotice(bunch, {
+      onRemove: () => actions.removeBunch(bunch.id),
+      // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
+      onClosed: (removed) => {
         if (removed)
           document
             .querySelector<HTMLElement>('[data-bottom-sheet]:not([data-ending-style])')
             ?.focus();
       },
-    );
+    });
   };
   // 창이 열린 사이 앞선 삭제가 끝날 수 있어 확정할 때의 최신 동작을 부름
   const deleteDraft = usePreservedCallback((id: string) => actions.deleteDraftBundle(id));
@@ -137,7 +101,6 @@ export function BunchHomeScreen({
     // 서버 전환은 저장·다시 읽기가 끝난 뒤 토스트, 실패하면 지금 번치에 머물고 실패 안내
     Promise.resolve(actions.switchBunch(bunch.id))
       .then(() => {
-        setTab('completed');
         setSwitched(true);
         toast(BUNCH_HOME_MESSAGES.switched(bunch.name));
       })
@@ -240,65 +203,13 @@ export function BunchHomeScreen({
               followingCount: followingTab(BUNCH_HOME_PATHS.follows),
             }}
           />
-          <MenuTabs.Root
-            value={tab}
-            onValueChange={(value) => {
-              setTabChanged(true);
-              setTab(value as BundleTab);
-            }}
-            className="flex flex-1 flex-col"
-          >
-            <MenuTabs.List aria-label="번들" variant="icon">
-              <MenuTabs.IconTab
-                value="completed"
-                label="완성된 번들"
-                className="flex-1"
-                icon={<LinePhotoMediumIcon />}
-                selectedIcon={<FillPhotoMediumIcon />}
-              />
-              <MenuTabs.IconTab
-                value="draft"
-                label="작성 중인 번들"
-                className="flex-1"
-                icon={<LinePencilMediumIcon />}
-                selectedIcon={<FillPencilMediumIcon />}
-              />
-            </MenuTabs.List>
-            {/* 탭 전환 시 내용도 Dissolve / Ease out / 75ms(화면설계서 3번) */}
-            {/* 페이드는 들어오는 패널에만(나가는 패널에도 붙이면 첫 전환에 이전 내용이 0부터 다시 나타나고 Base UI가 그 애니메이션을 기다려 두 패널이 겹침) */}
-            <MenuTabs.Panel
-              value="completed"
-              className={cn(tabChanged && tab === 'completed' && panelFade)}
-            >
-              {current.completedBundles.length > 0 ? (
-                <CompletedBundleGrid bundles={current.completedBundles} />
-              ) : (
-                <div className="pt-s24">
-                  <BundleEmpty
-                    title={BUNCH_HOME_MESSAGES.completedEmptyTitle}
-                    showCreateButton
-                    onCreateBundle={onCreateBundle}
-                  />
-                </div>
-              )}
-            </MenuTabs.Panel>
-            <MenuTabs.Panel
-              value="draft"
-              className={cn(tabChanged && tab === 'draft' && panelFade)}
-            >
-              {current.draftBundles.length > 0 ? (
-                <DraftBundleList
-                  bundles={current.draftBundles}
-                  onOpen={onOpenDraft}
-                  onDelete={openDeleteDraft}
-                />
-              ) : (
-                <div className="pt-s25">
-                  <BundleEmpty title={BUNCH_HOME_MESSAGES.draftEmptyTitle} />
-                </div>
-              )}
-            </MenuTabs.Panel>
-          </MenuTabs.Root>
+          <BundleTabs
+            completedBundles={current.completedBundles}
+            draftBundles={current.draftBundles}
+            onCreateBundle={onCreateBundle}
+            onOpenDraft={onOpenDraft}
+            onDeleteDraft={openDeleteDraft}
+          />
         </div>
       </div>
     </PageShell>

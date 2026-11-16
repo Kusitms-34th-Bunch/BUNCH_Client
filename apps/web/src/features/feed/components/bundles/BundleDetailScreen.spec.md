@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/bunches/[bunchId]/bundles/[bundleId]`(`apps/web/src/app/(app)/bunches/[bunchId]/bundles/[bundleId]/page.tsx`, #266, #367에서 번치 ID를 주소에 넣음). 하단 탭 없음(`(main)` 밖). 말풍선에서는 `?focus=comments`
-- 소유: `features/feed`. 번치 쪽 주소와 번치 이름·이미지(상세 응답에 없어 번치 홈 응답의 `bunch`)는 route-local `BundleDetailRoute`가 조합해 넘긴다
+- 소유: `features/feed`. 번치 쪽 주소와 번치 이름·이미지(상세 응답에 없어 번치 홈 응답의 `bunch`)는 route-local `BundleDetailRoute`가 조합해 container `BundleDetail`에 넘긴다. 화면은 presenter `BundleDetailScreen`, 댓글 동작은 `useCommentActions`
 - Status: 내용은 서버(`GET /bunches/{bunchId}/published-bundles/{bundleId}`, 명세 084, #367). 좋아요는 서버 반영(#369, `FeedScreen.spec.md` 「좋아요」와 같은 규칙). 댓글·답글은 서버(명세 014~017, #371). 번들·댓글 신고는 서버(명세 018·019). 삭제·공개 범위는 서버(명세 048·057). 콕은 서버(명세 009·010·021). UI는 fixture 때 개발 서버 Chrome 렌더로 Figma와 대조. 실기기 전
 - 기능명세: 피드 6.2(`docs/specs/feed.md` 구현 단위 2). 기능명세서 1110판(2026-11-10) 대조
 - 디자인 출처: Figma `번들_전체` `5367:103510`, `번들_Empty` `5367:103541`, 콕 시트 `5367:112139`, 콕 취소 `5367:112361`, 참여 멤버 시트 `5367:112596`(섹션 「피드」 `4940:100716`)

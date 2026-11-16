@@ -1,3 +1,4 @@
+// 기록용: 쓰는 곳 없음. API 연결 전 멤버 샘플 데이터(#413에서 샘플 모드 제거), 새 코드에서 import 금지
 import type { BunchMember } from '../lib/types';
 
 // 멤버 API 연결 전 번치별 멤버(번치 홈 fixture의 내 역할·멤버 수와 맞춤, 퇴근런클럽은 Figma 2500:65206 예시)

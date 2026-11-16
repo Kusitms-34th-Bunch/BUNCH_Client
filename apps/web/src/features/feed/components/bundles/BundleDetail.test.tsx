@@ -10,7 +10,7 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BundleBunchSource, BundleDetailResponse } from '../../model/bundleDetail';
 import { feedKeys } from '../../queries/keys';
-import { BundleDetailScreen } from './BundleDetailScreen';
+import { BundleDetail } from './BundleDetail';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
 vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
@@ -139,7 +139,7 @@ const renderDetail = (
     client.setQueryData(feedKeys.detail(bunchId, bundleId, viewer?.id ?? null), detail);
   }
   return render(
-    <BundleDetailScreen
+    <BundleDetail
       bunchId={bunchId}
       bundleId={bundleId}
       bunch={BUNCHES[bunchId]}
@@ -204,7 +204,7 @@ beforeEach(() => {
   toast.mockClear();
 });
 
-describe('BundleDetailScreen', () => {
+describe('BundleDetail', () => {
   it('위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
     const user = userEvent.setup();
     renderDetail();
@@ -859,7 +859,7 @@ describe('BundleDetailScreen', () => {
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
     render(
-      <BundleDetailScreen
+      <BundleDetail
         bunchId="3"
         bundleId="3"
         bunch={BUNCHES['3']}
@@ -904,13 +904,7 @@ describe('BundleDetailScreen', () => {
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: null });
     client.setQueryData(feedKeys.detail('3', '3', null), DETAILS['3']);
     render(
-      <BundleDetailScreen
-        bunchId="3"
-        bundleId="3"
-        bunch={null}
-        focusComments={false}
-        links={links}
-      />,
+      <BundleDetail bunchId="3" bundleId="3" bunch={null} focusComments={false} links={links} />,
       { wrapper: createQueryWrapper(client) },
     );
     expect(screen.getByRole('heading', { level: 1, name: '여름밤 바닷가 캠핑' })).toBeTruthy();
@@ -926,7 +920,7 @@ describe('BundleDetailScreen', () => {
     const key = feedKeys.detail('3', '3', '1');
     client.setQueryData(key, DETAILS['3']);
     render(
-      <BundleDetailScreen
+      <BundleDetail
         bunchId="3"
         bundleId="3"
         bunch={BUNCHES['3']}
@@ -953,7 +947,7 @@ describe('BundleDetailScreen', () => {
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
     render(
-      <BundleDetailScreen
+      <BundleDetail
         bunchId="3"
         bundleId="3"
         bunch={BUNCHES['3']}
@@ -983,7 +977,7 @@ describe('BundleDetailScreen', () => {
       }),
     );
     render(
-      <BundleDetailScreen
+      <BundleDetail
         bunchId="3"
         bundleId="3"
         bunch={BUNCHES['3']}
@@ -1003,7 +997,7 @@ describe('BundleDetailScreen', () => {
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
     client.setQueryData(feedKeys.detail('3', '3', '1'), DETAILS['3']);
     const view = (bunch: BundleBunchSource | undefined) => (
-      <BundleDetailScreen bunchId="3" bundleId="3" bunch={bunch} focusComments links={links} />
+      <BundleDetail bunchId="3" bundleId="3" bunch={bunch} focusComments links={links} />
     );
     const { rerender } = render(view(undefined), { wrapper: createQueryWrapper(client) });
     await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
@@ -1023,13 +1017,7 @@ describe('BundleDetailScreen', () => {
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
     const view = (bunch: BundleBunchSource | undefined) => (
-      <BundleDetailScreen
-        bunchId="3"
-        bundleId="3"
-        bunch={bunch}
-        focusComments={false}
-        links={links}
-      />
+      <BundleDetail bunchId="3" bundleId="3" bunch={bunch} focusComments={false} links={links} />
     );
     const { rerender } = render(view(undefined), { wrapper: createQueryWrapper(client) });
 

@@ -13,7 +13,7 @@ description: 저장소의 코드 품질·검증 기준으로 의도된 동작을
 - 반드시 보존할 동작·public API·accessibility·performance 특성
 - Must / Should / Could 범위와 제외할 요구
 
-파일이 길거나 prop이 많다는 사실만으로 분리·공통화를 결정하지 않는다.
+파일이 길거나 prop이 많다는 사실만으로 분리·공통화를 결정하지 않는다. 다만 300줄을 넘는 컴포넌트·hook은 분리를 반드시 검토하고, 나누지 않으면 이유를 남긴다(`docs/code-quality/component-logic.md` 「파일 크기」).
 
 ## 진행
 

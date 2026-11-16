@@ -18,6 +18,9 @@ export const bunchHomeKeys = {
     [...bunchHomeKeys.follows(), 'requests', viewerId] as const,
   // 내 번치(명의)가 차단한 번치 목록. 차단·해제 뒤 무효화
   blocks: (viewerId: string | undefined) => [...bunchHomeKeys.all, 'blocks', viewerId] as const,
+  // 삭제·내보내진 번치 안내 한 건(계정 단위라 번치를 두지 않음)
+  accessNotice: (noticeId: string | undefined) =>
+    [...bunchHomeKeys.all, 'access-notice', noticeId] as const,
   // 내 번치의 알림 목록. 열기·모두 읽음 뒤 무효화(읽지 않은 수는 번치 홈·전환 목록도 함께)
   notifications: (bunchId: string | undefined) =>
     [...bunchHomeKeys.all, 'notifications', bunchId] as const,

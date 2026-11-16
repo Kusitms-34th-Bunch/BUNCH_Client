@@ -6,7 +6,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { toWireId } from '@/shared/api/ids';
+import { isWireId, toDomainId } from '@/shared/api/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import type { BundleDetailResponse } from '../model/bundleDetail';
 import type { FeedPage } from '../model/feed';
@@ -16,7 +16,7 @@ import { patchDetailLike, patchFeedLike, toggledLike, type LikeState } from '../
 import { feedKeys } from './keys';
 
 /** viewerId: 누른 시점의 화면 명의(요청 중 명의가 바뀌어도 그 요청의 캐시만 다룸) */
-export type LikeVariables = { bundleId: number; liked: boolean; viewerId: string | null };
+export type LikeVariables = { bundleId: string; liked: boolean; viewerId: string | null };
 // 캐시마다 되돌릴 값(피드 카드와 상세가 어긋나 있어도 각자 누르기 전 값으로)
 type LikeBase = { feed: LikeState | undefined; detail: LikeState | undefined };
 
@@ -33,7 +33,7 @@ const feedFilters = ({ viewerId }: LikeVariables): QueryFilters => ({
 });
 // 어느 번치 주소로 열었든 그 명의의 이 번들 상세
 const detailFilters = ({ viewerId, bundleId }: LikeVariables): QueryFilters => ({
-  queryKey: feedKeys.details(String(bundleId), viewerId),
+  queryKey: feedKeys.details(bundleId, viewerId),
 });
 
 const applyFeed = (client: QueryClient, vars: LikeVariables, next: (_: LikeState) => LikeState) =>
@@ -56,7 +56,7 @@ const read = (client: QueryClient, vars: LikeVariables): LikeBase => ({
       .flatMap(([, data]) => data?.pages ?? [])
       .flatMap((page) => page.items)
       .flatMap((item) =>
-        'bundle' in item && item.bundle.id === vars.bundleId ? [item.bundle] : [],
+        'bundle' in item && toDomainId(item.bundle.id) === vars.bundleId ? [item.bundle] : [],
       )[0],
   ),
   detail: pick(
@@ -115,8 +115,8 @@ export const useBundleLikeMutation = () => {
       const pending = pendingFor(queryClient, vars);
       // 서버의 지금 번치가 화면 명의와 다르면(다른 기기에서 전환) 명의와 목록을 다시 받음
       if (
-        (saved.currentBunchId ?? null) !==
-        (vars.viewerId ? (toWireId(vars.viewerId) ?? null) : null)
+        (saved.currentBunchId == null ? null : toDomainId(saved.currentBunchId)) !==
+        (vars.viewerId && isWireId(vars.viewerId) ? vars.viewerId : null)
       ) {
         // 뒤 요청이 남았으면 그 요청이 실패할 때 쓸 기준값은 남겨 둠
         if (pending <= 1) confirmed.delete(baseKey(vars));

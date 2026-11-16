@@ -150,6 +150,8 @@ describe('BunchMembers 서버 멤버 관리', () => {
     await confirmIn('번치에서 내보내기', '내보내기', '수인');
 
     expect(await screen.findByText('4/8명')).toBeTruthy();
+    // 내보낸 행이 사라져 초점은 「멤버 N/8명」 줄로
+    await waitFor(() => expect(document.activeElement).toHaveTextContent('4/8명'));
     expect(rows().some((row) => row.includes('수인'))).toBe(false);
     expect(toast).toHaveBeenCalledWith('수인님을 번치에서 내보냈어요.', { icon: 'success' });
   });

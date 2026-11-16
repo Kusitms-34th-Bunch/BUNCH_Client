@@ -3,9 +3,8 @@
 import { PlacePickSheet } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
-import { toWireId } from '@/shared/api/ids';
 import type { FeedPlace } from '../../lib/types';
-import { bundleKoksQueryOptions } from '../../queries/kok';
+import { bundleKoksQueryOptions, findKok } from '../../queries/kok';
 
 type PlacePickOverlayProps = ScreenOverlayProps & {
   bundleId: string;
@@ -35,8 +34,7 @@ export function PlacePickOverlay({
     ...bundleKoksQueryOptions(bundleId, viewerId),
     enabled: viewerId !== null,
   });
-  const kokOf = (place: FeedPlace) =>
-    koks.data?.locations.find((location) => location.id === toWireId(place.id));
+  const kokOf = (place: FeedPlace) => findKok(koks.data, place.id);
   return (
     <PlacePickSheet
       {...rootProps}

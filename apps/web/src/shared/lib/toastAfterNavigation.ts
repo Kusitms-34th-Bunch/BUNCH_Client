@@ -1,4 +1,5 @@
 import { toast, type ToastOptions } from '@app/design-system';
+import { createListeners } from './listeners';
 
 type PendingToast = {
   message: string;
@@ -12,18 +13,9 @@ type PendingToast = {
 const EXPIRES_MS = 5000;
 
 let pending: PendingToast | null = null;
-const listeners = new Set<() => void>();
+const { subscribe, emit } = createListeners();
 
-const emit = () => {
-  for (const listener of listeners) listener();
-};
-
-export const subscribePendingToast = (listener: () => void) => {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-};
+export const subscribePendingToast = subscribe;
 
 export const getPendingToast = () => pending;
 

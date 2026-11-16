@@ -4,11 +4,13 @@ import { bffApi, requestData } from '@/shared/api/bffApi';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { dataUrlToBlob } from '@/shared/lib/dataUrl';
 import {
+  bunchAccessNoticeResponseSchema,
   bunchHomeResponseSchema,
   bunchProfileResponseSchema,
   draftBundlesPageSchema,
   myBunchesResponseSchema,
   publishedBundlesPageSchema,
+  toBunchAccessNotice,
 } from '../model/bunchHome';
 
 // 데이터 없는 성공 응답(Swagger `ApiResponseUnit`)은 data가 빠지거나 null
@@ -61,6 +63,18 @@ export const getMyBunches = (signal?: AbortSignal) =>
 export const updateLastUsedBunch = async (bunchId: string) => {
   await requestData(bffApi.put(`${bunchPath(bunchId)}/last-used`), unitSchema, 'last used bunch');
 };
+
+/** 삭제·내보내진 번치 안내 한 건(명세 078). 확인했거나 30일이 지난 안내는 404 */
+export const getBunchAccessNotice = async (noticeId: string, signal?: AbortSignal) =>
+  toBunchAccessNotice(
+    await requestData(
+      bffApi.get(`members/me/bunch-access-notices/${encodeURIComponent(noticeId)}`, {
+        signal: signal ?? null,
+      }),
+      bunchAccessNoticeResponseSchema,
+      'bunch access notice',
+    ),
+  );
 
 /** 접근 불가 번치 안내 지우기(전환 목록의 「번치 목록에서 삭제」) */
 export const deleteBunchAccessNotice = async (noticeId: string) => {

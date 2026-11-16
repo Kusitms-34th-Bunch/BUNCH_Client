@@ -11,6 +11,8 @@ export type MockDb<T> = {
   reset: () => void;
   /** 저장된 상태를 읽어 이어서 시작하고 이후 변경을 저장, 브라우저에서 화면보다 먼저 1회 호출 */
   hydrate: () => Promise<void>;
+  /** 기다리던 저장을 바로 실행(응답 직후 화면을 새로 여는 요청이 변경을 잃지 않게) */
+  flush: () => Promise<void>;
 };
 
 type MockDbOptions<T> = {
@@ -60,6 +62,7 @@ export function createMockDb<T>({
       state = undefined;
       schedule();
     },
+    flush,
     hydrate: async () => {
       if (!storage) return;
       persisting = true;

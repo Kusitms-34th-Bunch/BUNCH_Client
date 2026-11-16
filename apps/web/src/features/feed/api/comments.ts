@@ -1,13 +1,15 @@
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
+import { requireWireId } from '@/shared/api/ids';
 import { commentItemSchema, commentPageSchema, type CommentItemResponse } from '../model/comment';
 
-const commentsPath = (bundleId: number) => `bundles/${bundleId}/comments`;
+const commentsPath = (bundleId: string) =>
+  `bundles/${requireWireId(bundleId, 'invalid bundle')}/comments`;
 const PAGE_SIZE = 20;
 const REPLY_PAGE_SIZE = 50;
 
 /** 원댓글 한 쪽(명세 014, 최신순). 지금 번치 명의로 보이는 것만 */
-export const getComments = (bundleId: number, cursor: string | undefined, signal?: AbortSignal) =>
+export const getComments = (bundleId: string, cursor: string | undefined, signal?: AbortSignal) =>
   requestData(
     bffApi.get(commentsPath(bundleId), {
       searchParams: { size: PAGE_SIZE, ...(cursor && { cursor }) },
@@ -18,7 +20,7 @@ export const getComments = (bundleId: number, cursor: string | undefined, signal
   );
 
 /** 원댓글 하나의 답글 전부(명세 015, 오래된 순). 원댓글 아래에 늘 펼쳐 보여 쪽을 끝까지 받음 */
-export const getAllReplies = async (bundleId: number, commentId: number, signal?: AbortSignal) => {
+export const getAllReplies = async (bundleId: string, commentId: number, signal?: AbortSignal) => {
   const replies: CommentItemResponse[] = [];
   const used = new Set<string>();
   let cursor: string | undefined;
@@ -42,18 +44,21 @@ export const getAllReplies = async (bundleId: number, commentId: number, signal?
   return replies;
 };
 
-/** parentId는 원댓글이면 null(생성 타입은 생략 가능 필드지만 명세 016은 null 허용) */
-export type CreateCommentInput = { content: string; parentId: number | null };
+/** parentId는 원댓글이면 null(생성 타입은 생략 가능 필드지만 명세 016은 null 허용). 바꿀 수 없는 id를 원댓글로 돌리는 판단은 hook 담당 */
+export type CreateCommentInput = { content: string; parentId: string | null };
 
 /** 지금 번치 명의로 원댓글·답글 등록(명세 016). 같은 키·내용·부모로 다시 보내면 처음 결과 */
 export const createComment = (
-  bundleId: number,
-  input: CreateCommentInput,
+  bundleId: string,
+  { content, parentId }: CreateCommentInput,
   idempotencyKey: string,
 ) =>
   requestData(
     bffApi.post(commentsPath(bundleId), {
-      json: input,
+      json: {
+        content,
+        parentId: parentId === null ? null : requireWireId(parentId, 'invalid comment'),
+      },
       headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
     }),
     commentItemSchema,
@@ -61,9 +66,9 @@ export const createComment = (
   );
 
 /** 내 댓글·답글 삭제(명세 017). 응답은 삭제 자리 */
-export const deleteComment = (bundleId: number, commentId: number) =>
+export const deleteComment = (bundleId: string, commentId: string) =>
   requestData(
-    bffApi.delete(`${commentsPath(bundleId)}/${commentId}`),
+    bffApi.delete(`${commentsPath(bundleId)}/${requireWireId(commentId, 'invalid comment')}`),
     commentItemSchema,
     'delete comment',
   );

@@ -63,6 +63,6 @@
 
 ## 검증
 
-- [x] 사용자 관찰 동작 test: `ProfilePhotoField.test.tsx`(선택지·기본 이미지·조정 연결·오류 토스트), `PhotoCropScreen.test.tsx`(로딩·완료 결과·방향키 제한·취소·초점과 inert), `ProfilePhotoField.test.tsx`의 완료 뒤 초점 복귀·불러오는 중 취소, `photoCrop.test.ts`(배율·이동 제한·자를 영역), `usePhotoPicker.test.tsx`(규칙·픽셀 상한·앱 편집 끄기·선택 콜백)
+- [x] 사용자 관찰 동작 test: `ProfilePhotoField.test.tsx`(선택지·기본 이미지·조정 연결·오류 토스트), `PhotoCropScreen.test.tsx`(로딩·완료 결과·방향키 제한·취소·초점과 inert), `ProfilePhotoField.test.tsx`의 완료 뒤 초점 복귀·불러오는 중 취소, `photoCrop.test.ts`(배율·이동 제한·자를 영역·화면 배치·읽어 주는 문구), `usePhotoPicker.test.tsx`(규칙·픽셀 상한·앱 편집 끄기·선택 콜백)
 - [x] 브라우저 확인: 개발 서버 `/my/profile`에서 선택지(기본 이미지일 때 2개), 800×500 사진 선택 → 조정 화면(Figma 구성), 방향키 2번에 20px 이동(이전 방식: 사진 이동·원 252px 고정. 2026-11-11 원 이동 방식으로 바꾼 뒤 브라우저 확인 전), 「완료」 → 원형 미리보기와 수정하기 활성
 - [ ] 앱 쉘 시뮬레이터·실기기, 스크린 리더, 실제 손가락 끌기
