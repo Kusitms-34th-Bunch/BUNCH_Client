@@ -9,7 +9,7 @@ const MAX_QUERY_LENGTH = 50;
 /**
  * 위치 검색: 브라우저에 카카오 키를 두지 않으려고 BFF가 카카오 로컬 API(키워드·주소 검색)를 대신 부름
  * 로그인한 사용자만 쓸 수 있고(access 쿠키), 키는 서버 환경 변수 `KAKAO_REST_API_KEY`에만 둠
- * 응답에는 위치마다 provider·externalId·name·address만 담고 검색 결과는 캐시하지 않음
+ * 응답에는 위치마다 provider·externalId·name·address만 담고, 브라우저·CDN은 캐시하지 않게 `no-store`를 둠(서버 안의 짧은 캐시는 kakaoPlaces)
  */
 export const GET = createAuthorizedRoute(async ({ request }) => {
   const query = (request.nextUrl.searchParams.get('q') ?? '').trim();

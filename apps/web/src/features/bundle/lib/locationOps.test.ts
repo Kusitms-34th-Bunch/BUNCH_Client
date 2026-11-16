@@ -30,6 +30,26 @@ describe('applyLocationOp', () => {
     expect(isPendingLocation(a)).toBe(false);
   });
 
+  it('검색 결과처럼 id가 든 객체를 넘겨도 임시 줄 id를 덮지 않는다', () => {
+    // 화면은 검색 결과(PlaceResult, id: 'kakao:123')를 그대로 넘김
+    const place = { ...input('x'), id: 'kakao:123' } as LocationInput;
+
+    const next = applyLocationOp([a], { no: 3, kind: 'add', place });
+
+    expect(next[1]?.id).toBe('pending:3');
+    expect(isPendingLocation(next[1]!)).toBe(true);
+    expect(next[1]).not.toHaveProperty('address', undefined);
+  });
+
+  it('replace도 검색 결과의 id로 줄 id를 바꾸지 않는다', () => {
+    const place = { ...input('x', '새 장소'), id: 'kakao:123' } as LocationInput;
+
+    const next = applyLocationOp([a, b], { no: 1, kind: 'replace', targetId: '1', place });
+
+    expect(next.map((location) => location.id)).toEqual(['1', '2']);
+    expect(next[0]?.name).toBe('새 장소');
+  });
+
   it('add는 같은 장소가 있거나 3개가 차 있으면 목록을 바꾸지 않는다', () => {
     expect(applyLocationOp([a], { no: 1, kind: 'add', place: input('1') })).toEqual([a]);
     expect(applyLocationOp([a, b, c], { no: 1, kind: 'add', place: input('x') })).toEqual([

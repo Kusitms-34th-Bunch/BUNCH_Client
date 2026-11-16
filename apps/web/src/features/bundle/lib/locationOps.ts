@@ -40,10 +40,17 @@ export const PENDING_ID_PREFIX = 'pending:';
 export const isPendingLocation = (location: Pick<DraftLocation, 'id'>) =>
   location.id.startsWith(PENDING_ID_PREFIX);
 
-const pendingRow = (no: number, place: LocationInput): DraftLocation => ({
-  id: `${PENDING_ID_PREFIX}${no}`,
-  ...place,
+// 검색 결과(PlaceResult)처럼 id가 든 객체가 넘어와도 줄 id를 덮지 않도록 필요한 필드만 골라 줄을 만듦
+const toRow = (id: string, place: LocationInput): DraftLocation => ({
+  id,
+  provider: place.provider,
+  externalId: place.externalId,
+  name: place.name,
+  address: place.address,
 });
+
+const pendingRow = (no: number, place: LocationInput): DraftLocation =>
+  toRow(`${PENDING_ID_PREFIX}${no}`, place);
 
 /**
  * 변경 하나를 목록에 적용(서버가 받아들일 결과를 먼저 보임)
@@ -71,7 +78,7 @@ export const applyLocationOp = (
           : [...locations, pendingRow(op.no, op.place)];
       }
       return locations.map((location) =>
-        location.id === op.targetId ? { id: location.id, ...op.place } : location,
+        location.id === op.targetId ? toRow(location.id, op.place) : location,
       );
     }
     case 'remove':
