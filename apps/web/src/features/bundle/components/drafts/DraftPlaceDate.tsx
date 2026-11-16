@@ -25,6 +25,8 @@ type DraftPlaceDateProps = {
   >;
   /** 위치·날짜를 고칠 수 있는지(참여 멤버만) */
   editable: boolean;
+  /** 참여 멤버인지: 아니면 위치는 장소만 보이고 X와 「+ 위치 추가」는 보이지 않음(연결이 끊겨 editable만 false인 때는 그대로 보임, 기능 spec 4.3.10) */
+  participant: boolean;
   /** 날짜 형식(올해 여부)의 기준 연도 */
   currentYear: number;
   /** 고칠 수 없는 사람이 눌렀을 때 */
@@ -39,6 +41,7 @@ export function DraftPlaceDate({
   draft,
   actions,
   editable,
+  participant,
   currentYear,
   onDenied,
 }: DraftPlaceDateProps) {
@@ -142,7 +145,8 @@ export function DraftPlaceDate({
           fieldLabel={BUNDLE_MESSAGES.locationField}
           groupLabel={BUNDLE_MESSAGES.locationField}
           onItemClear={(id) => guard(() => actions.removeLocation(id))()}
-          onAdd={draft.locations.length < MAX_LOCATIONS ? openLocation : undefined}
+          hideItemClear={!participant}
+          onAdd={participant && draft.locations.length < MAX_LOCATIONS ? openLocation : undefined}
           addMembers={toProfiles(addEditors)}
           {...(addEditors.length > 0 && {
             addMembersLabel: editingName(addEditors),

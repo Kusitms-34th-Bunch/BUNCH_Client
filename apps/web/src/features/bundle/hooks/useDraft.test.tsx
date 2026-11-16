@@ -91,6 +91,7 @@ describe('useDraft 상태', () => {
     });
 
     // 응답 전에도 화면에 보임(아직 서버 id가 없는 줄)
+    expect(ready(result.current.state).draft.locations[0]?.id).toMatch(/^pending:/);
     expect(ready(result.current.state).draft.locations.map((l) => l.name)).toEqual(['장소 X']);
     await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
     await waitFor(
@@ -533,6 +534,25 @@ describe('useDraft 참여 멤버·위치·사진', () => {
 
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationMax);
     expect(serverBundle(id)?.locations).toHaveLength(3);
+  });
+
+  it('줄을 같은 장소로 바꾸면 아무 알림 없이 그대로 두고, 다른 줄에 있는 장소로 바꾸면 「이미 추가한 위치예요.」를 알린다', async () => {
+    const { id, result } = await renderReady();
+    for (const key of ['a', 'b']) {
+      act(() => {
+        result.current.actions.addLocation(place(key, `장소 ${key}`, '주소'));
+      });
+    }
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(2), SAVE_WAIT);
+    const [first] = ready(result.current.state).draft.locations;
+    toast.mockClear();
+
+    act(() => result.current.actions.replaceLocation(first!.id, place('a', '장소 a', '주소')));
+    expect(toast).not.toHaveBeenCalled();
+
+    act(() => result.current.actions.replaceLocation(first!.id, place('b', '장소 b', '주소')));
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationDuplicate);
+    expect(serverBundle(id)?.locations.map((location) => location.externalId)).toEqual(['a', 'b']);
   });
 
   it('다른 멤버가 먼저 같은 장소를 넣어 서버가 거절하면 내 변경을 걷고 「이미 추가한 위치예요.」를 알린다', async () => {

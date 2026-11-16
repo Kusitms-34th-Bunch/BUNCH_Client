@@ -35,6 +35,8 @@ export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'titl
   onClear?: (() => void) | undefined;
   /** 지우기 버튼의 접근성 이름(기본 "{label} 지우기") */
   clearLabel?: string | undefined;
+  /** false면 선택된 값에도 지우기 버튼을 보이지 않음(고칠 수 없는 사람에게 보이는 읽기 전용 줄, 기본 true) */
+  clearable?: boolean | undefined;
 };
 
 /**
@@ -57,6 +59,7 @@ export const SelectionField = ({
   onSuggestionClick,
   onClear,
   clearLabel,
+  clearable = true,
   className,
   ...props
 }: SelectionFieldProps) => {
@@ -104,19 +107,21 @@ export const SelectionField = ({
           className="h-6 min-w-0 flex-1"
         />
         {selected ? (
-          <button
-            type="button"
-            aria-label={clearLabel ?? `${label} 지우기`}
-            onClick={onClear}
-            className={cn(
-              'text-icon-primary relative z-10 flex size-4 shrink-0 cursor-pointer touch-manipulation items-center justify-center',
-              // 보이는 16px보다 넓은 32px 터치 영역(design-system-icons.md의 Small 기준)
-              "before:absolute before:-inset-2 before:content-['']",
-              'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
-            )}
-          >
-            <LineCloseSmallIcon aria-hidden="true" />
-          </button>
+          clearable && (
+            <button
+              type="button"
+              aria-label={clearLabel ?? `${label} 지우기`}
+              onClick={onClear}
+              className={cn(
+                'text-icon-primary relative z-10 flex size-4 shrink-0 cursor-pointer touch-manipulation items-center justify-center',
+                // 보이는 16px보다 넓은 32px 터치 영역(design-system-icons.md의 Small 기준)
+                "before:absolute before:-inset-2 before:content-['']",
+                'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
+              )}
+            >
+              <LineCloseSmallIcon aria-hidden="true" />
+            </button>
+          )
         ) : (
           <LineChevronRightSmallIcon aria-hidden="true" className="text-icon-primary shrink-0" />
         )}

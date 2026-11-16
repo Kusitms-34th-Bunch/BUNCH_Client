@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { SearchField } from '../../../core/searchField';
 import { LocationListItem } from '../../locationListItem';
 import { BottomSheet, type BottomSheetRootProps } from '../BottomSheet';
@@ -35,6 +36,50 @@ export type PlaceSearchSheetProps = Omit<
  * 장소 검색 시트(거의 전체 높이): 검색 입력란, 검색 전 안내, 결과(이름과 주소), 결과 없음
  * 검색 요청과 결과 보관은 호출자 담당
  */
+// 낭독 영역을 잠깐 비웠다가 문구를 다시 채워야 같은 문구(같은 결과 수)도 매번 상태 변화로 읽힘
+const STATUS_ANNOUNCE_DELAY_MS = 150;
+
+/** 결과가 바뀔 때마다 낭독하는 상태 영역(결과 수·결과 없음, 결과를 지워 안내로 돌아가면 안내 제목) */
+const ResultStatus = ({
+  results,
+  noResultLabel,
+  resultCountLabel,
+  guideTitle,
+}: Pick<
+  PlaceSearchSheetProps,
+  'results' | 'noResultLabel' | 'resultCountLabel' | 'guideTitle'
+>) => {
+  const [text, setText] = useState('');
+  // 결과가 있다가 안내로 돌아갈 때만 안내를 읽음(시트를 처음 열 때는 읽지 않음)
+  const hadResults = useRef(false);
+
+  const message =
+    results === undefined
+      ? guideTitle
+      : results.length === 0
+        ? noResultLabel
+        : resultCountLabel(results.length);
+  const showing = results !== undefined;
+
+  useEffect(() => {
+    const announced = showing || hadResults.current ? message : '';
+    hadResults.current = showing;
+    const clear = setTimeout(() => setText(''), 0);
+    const announce = setTimeout(() => setText(announced), STATUS_ANNOUNCE_DELAY_MS);
+    return () => {
+      clearTimeout(clear);
+      clearTimeout(announce);
+    };
+    // 같은 결과 수도 새 검색이면 results가 새 배열이라 다시 읽힘
+  }, [results, showing, message]);
+
+  return (
+    <p role="status" className="sr-only">
+      {text}
+    </p>
+  );
+};
+
 export const PlaceSearchSheet = ({
   title,
   inputLabel,
@@ -69,13 +114,12 @@ export const PlaceSearchSheet = ({
       {/* 결과 줄의 구분선이 시트 양끝까지 닿도록 Body 기본 좌우 패딩을 없앰(줄 자체가 16px 패딩을 가짐) */}
       <BottomSheet.Body className="flex flex-col px-0">
         {/* 낭독 영역은 항상 마운트해 두고 문구만 바꿔야 검색 결과가 상태 변화로 읽힘 */}
-        <p role="status" className="sr-only">
-          {results === undefined
-            ? ''
-            : results.length === 0
-              ? noResultLabel
-              : resultCountLabel(results.length)}
-        </p>
+        <ResultStatus
+          results={results}
+          noResultLabel={noResultLabel}
+          resultCountLabel={resultCountLabel}
+          guideTitle={guideTitle}
+        />
         {results === undefined && (
           <div className="gap-s2 px-s8 flex flex-1 flex-col items-center justify-center text-center">
             <p className="typography-body-1-medium text-text-tertiary">{guideTitle}</p>

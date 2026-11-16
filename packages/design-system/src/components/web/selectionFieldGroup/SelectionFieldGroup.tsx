@@ -28,6 +28,8 @@ export type SelectionFieldGroupProps = Omit<ComponentProps<'div'>, 'children'> &
   onItemClick?: ((_id: string) => void) | undefined;
   /** 행의 지우기 버튼을 눌렀을 때 */
   onItemClear?: ((_id: string) => void) | undefined;
+  /** true면 줄마다 X를 보이지 않음(고칠 수 없는 사람에게 값만 보임) */
+  hideItemClear?: boolean | undefined;
   /** 지우기 버튼의 접근성 이름을 만드는 함수(기본 "{값} 지우기"). 같은 값이 여러 행일 때 구별하도록 행 순서(0부터)도 받음 */
   clearLabel?: ((_value: string, _index: number) => string) | undefined;
   /** 행의 제목 앞 아이콘 자리에 놓을 핸들(예: 드래그로 순서를 바꾸는 햄버거). 행 순서(0부터)도 받음 */
@@ -58,6 +60,7 @@ export const SelectionFieldGroup = ({
   groupLabel,
   onItemClick,
   onItemClear,
+  hideItemClear,
   clearLabel,
   itemHandle,
   itemWrapper,
@@ -102,6 +105,7 @@ export const SelectionFieldGroup = ({
             handle={itemHandle?.(item, index)}
             onFieldClick={() => onItemClick?.(item.id)}
             onClear={() => onItemClear?.(item.id)}
+            clearable={!hideItemClear}
             className={rowClassName(index)}
           />
         );

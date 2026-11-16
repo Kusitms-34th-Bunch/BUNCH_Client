@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { createContext, useContext, useEffect, useRef, type CSSProperties } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 
 // 행 안의 핸들이 그 행의 정렬 동작(잡는 곳·속성)을 받도록 래퍼가 제공하는 값
@@ -142,11 +142,15 @@ export function SortableLocationGroup({
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const nameOf = (id: string | number) => items.find((item) => item.id === id)?.value ?? '';
-  const indexOf = (id: string | number) => items.findIndex((item) => item.id === id);
+  // 끄는 동안 다른 멤버의 변경은 미뤘다가 손을 뗄 때 한 번에 반영(기능 spec 4.3.10 로직 8): 잡은 순간의 목록을 놓을 때까지 그림
+  const [frozen, setFrozen] = useState<typeof items | null>(null);
+  const shown = frozen ?? items;
+  const nameOf = (id: string | number) => shown.find((item) => item.id === id)?.value ?? '';
+  const indexOf = (id: string | number) => shown.findIndex((item) => item.id === id);
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     notifyDrag(String(active.id), false);
+    setFrozen(null);
     if (!over || active.id === over.id) return;
     onMove(String(active.id), indexOf(over.id));
   };
@@ -155,27 +159,33 @@ export function SortableLocationGroup({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={({ active }) => notifyDrag(String(active.id), true)}
+      onDragStart={({ active }) => {
+        setFrozen(items);
+        notifyDrag(String(active.id), true);
+      }}
       onDragEnd={handleDragEnd}
-      onDragCancel={({ active }) => notifyDrag(String(active.id), false)}
+      onDragCancel={({ active }) => {
+        setFrozen(null);
+        notifyDrag(String(active.id), false);
+      }}
       accessibility={{
         screenReaderInstructions: { draggable: BUNDLE_MESSAGES.locationDragInstructions },
         announcements: {
           onDragStart: ({ active }) => BUNDLE_MESSAGES.locationDragStart(nameOf(active.id)),
           onDragOver: ({ over }) =>
-            over ? BUNDLE_MESSAGES.locationDragOver(indexOf(over.id) + 1, items.length) : undefined,
+            over ? BUNDLE_MESSAGES.locationDragOver(indexOf(over.id) + 1, shown.length) : undefined,
           onDragEnd: ({ over }) =>
             over
-              ? BUNDLE_MESSAGES.locationDragEnd(indexOf(over.id) + 1, items.length)
+              ? BUNDLE_MESSAGES.locationDragEnd(indexOf(over.id) + 1, shown.length)
               : BUNDLE_MESSAGES.locationDragCancel,
           onDragCancel: () => BUNDLE_MESSAGES.locationDragCancel,
         },
       }}
     >
-      <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={shown.map((item) => item.id)} strategy={verticalListSortingStrategy}>
         <SelectionFieldGroup
           {...group}
-          items={items}
+          items={shown}
           itemHandle={(item) => (
             <LocationHandle
               label={BUNDLE_MESSAGES.locationReorderLabel(item.value)}

@@ -652,6 +652,34 @@ describe('위치와 날짜', () => {
     expect(screen.getByRole('button', { name: /^추가.*경진님이 편집 중/ })).toBeInTheDocument();
   });
 
+  it('참여 멤버가 아니면 위치는 장소만 보이고 X와 「+ 위치 추가」가 없다(기능 spec 4.3.10)', () => {
+    renderScreen({
+      viewer: outsider,
+      draft: {
+        ...draftFixture,
+        locations: [fixtureLocation('a', '장소 A'), fixtureLocation('b', '장소 B')],
+      },
+    });
+
+    expect(screen.getByText('장소 A')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '장소 A 지우기' })).toBeNull();
+    expect(
+      within(screen.getByRole('group', { name: '위치' })).queryByRole('button', { name: /추가/ }),
+    ).toBeNull();
+  });
+
+  it('연결이 끊겨 편집만 막힌 참여 멤버에게는 X와 「+ 위치 추가」가 그대로 보인다', () => {
+    renderScreen({
+      offline: true,
+      draft: { ...draftFixture, locations: [fixtureLocation('a', '장소 A')] },
+    });
+
+    expect(screen.getByRole('button', { name: '장소 A 지우기' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: '위치' })).getByRole('button', { name: /추가/ }),
+    ).toBeInTheDocument();
+  });
+
   describe('위치 순서 바꾸기', () => {
     const twoLocations = {
       ...draftFixture,
@@ -678,6 +706,25 @@ describe('위치와 날짜', () => {
       if (vi.mocked(actions.moveLocation).mock.calls.length > 0) {
         expect(actions.moveLocation).toHaveBeenCalledWith('a', 1);
       }
+    });
+
+    it('끄는 동안에는 다른 멤버가 바꾼 목록을 미뤘다가 놓을 때 반영한다', async () => {
+      const view = render(screenElement({ draft: twoLocations }));
+
+      const handle = screen.getByRole('button', { name: '장소 A 순서 바꾸기' });
+      handle.focus();
+      await userEvent.keyboard(' ');
+      // 끄는 중에 다른 멤버가 장소 B를 지움
+      view.rerender(
+        screenElement({
+          draft: { ...draftFixture, locations: [fixtureLocation('a', '장소 A')] },
+        }),
+      );
+
+      expect(screen.getByText('장소 B')).toBeInTheDocument();
+
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByText('장소 B')).toBeNull());
     });
 
     it('끌 수 없는 상태의 핸들은 포커스를 유지한 채 aria-disabled로 알린다', () => {

@@ -251,4 +251,17 @@ describe('SelectionFieldGroup', () => {
       container.querySelectorAll('[data-testid^="wrap-"] button[aria-label$="지우기"]'),
     ).toHaveLength(2);
   });
+
+  it('hideItemClear면 줄마다 X를 보이지 않고 값은 그대로 보인다', () => {
+    render(
+      <SelectionFieldGroup
+        fieldLabel="위치"
+        items={[{ id: 'a', value: '여의도한강공원' }]}
+        hideItemClear
+      />,
+    );
+
+    expect(screen.getByText('여의도한강공원')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /지우기/ })).toBeNull();
+  });
 });
