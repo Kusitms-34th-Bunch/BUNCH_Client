@@ -6,7 +6,7 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, PlaceResult } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../../constants/messages';
 import { formatDraftDate, parseDraftDate, toDraftDateString } from '../../lib/draftDate';
-import { isPendingLocation } from '../../lib/locationOps';
+import { isPendingLocation, toLiveIndex } from '../../lib/locationOps';
 import { LocationSearchSheet } from './LocationSearchSheet';
 import { PresenceScope } from './PresenceScope';
 import { SortableLocationGroup } from './SortableLocationGroup';
@@ -135,7 +135,9 @@ export function DraftPlaceDate({
           // 하나뿐이거나 권한이 없으면 끌 수 없음(눌렀을 때 이유를 안내)
           disabled={!editable || draft.locations.length < 2}
           onBlockedPress={!editable ? onDenied : undefined}
-          onMove={actions.moveLocation}
+          onMove={(id, shownIndex, overId) =>
+            actions.moveLocation(id, toLiveIndex(draft.locations, overId, shownIndex))
+          }
           onItemClick={openReplace}
           onDragStateChange={(id, dragging) =>
             dragging

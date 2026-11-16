@@ -819,6 +819,40 @@ describe('useDraft 발행', () => {
     expect(locationsAtPublish).toEqual([1]);
   });
 
+  it('위치 요청 뒤 서버 revision이 바뀌었으면 재조회한 최신 revision으로 발행한다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    // 위치 요청이 서버 revision을 올리지만 응답은 상세 revision에 반영하지 않으므로, 발행 직전 재조회가 필요함
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', () => {
+        mockDb.update((current) => ({
+          ...current,
+          bundles: current.bundles.map((bundle) =>
+            String(bundle.id) === id ? { ...bundle, revision: bundle.revision + 5 } : bundle,
+          ),
+        }));
+        return undefined;
+      }),
+    );
+    const seen: { expected: number | undefined; server: number | undefined }[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', async ({ request }) => {
+        const body = (await request.clone().json()) as { expectedRevision?: number };
+        // 요청이 닿은 때의 서버 revision(발행이 끝나면 다시 올라가므로 이때 읽음)
+        seen.push({ expected: body.expectedRevision, server: serverBundle(id)?.revision });
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+    await act(async () => {
+      expect(await result.current.actions.publish()).toBe('published');
+    });
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.expected).toBe(seen[0]?.server);
+  });
+
   it('위치 변경이 실패하면 서버에 반영되지 않은 구성으로 발행하지 않는다', async () => {
     const { id, result } = await renderReady();
     await fill(result, id);

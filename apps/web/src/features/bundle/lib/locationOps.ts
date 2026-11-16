@@ -100,6 +100,21 @@ const toNeighbor = (location: DraftLocation | undefined): LocationNeighbor | nul
     : null;
 
 /**
+ * 끌어서 놓은 자리(놓은 줄의 id)를 최신 목록에서의 자리로 바꿈
+ * 끄는 동안 화면은 잡은 순간의 목록이라, 그사이 다른 멤버가 줄을 지우거나 더했으면 그때의 자리 번호와 최신 목록이 어긋남
+ * 놓은 줄이 지워졌으면 화면에서 본 자리 번호를 최신 목록 안으로 맞춰 씀
+ */
+export const toLiveIndex = (
+  live: readonly { id: string }[],
+  overId: string,
+  shownIndex: number,
+): number => {
+  const found = live.findIndex((location) => location.id === overId);
+  if (found >= 0) return found;
+  return Math.max(0, Math.min(shownIndex, live.length - 1));
+};
+
+/**
  * 옮긴 뒤의 목록에서 그 줄의 앞·뒤 이웃(없으면 null)
  * 이웃이 그 사이 다른 장소로 교체돼도 서버 행 id는 그대로라 id로 찾아야 맞고, 서버 id가 없는 이웃만 키로 찾음
  */

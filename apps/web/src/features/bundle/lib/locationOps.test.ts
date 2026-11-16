@@ -7,6 +7,7 @@ import {
   locationKey,
   neighborsAfterMove,
   type LocationInput,
+  toLiveIndex,
 } from './locationOps';
 
 const a = fixtureLocation('1', '장소 A');
@@ -18,6 +19,22 @@ const input = (key: string, name = `장소 ${key}`): LocationInput => ({
   externalId: key,
   name,
   address: null,
+});
+
+describe('toLiveIndex', () => {
+  const rows = [{ id: '1' }, { id: '2' }, { id: '3' }];
+
+  it('놓은 줄이 최신 목록에 있으면 그 줄의 자리를 쓴다(끄는 사이 위쪽 줄이 지워져도)', () => {
+    // 화면에서는 [1, 2, 3]이었고 3 자리(2)에 놓았는데, 그사이 1이 지워져 최신 목록은 [2, 3]
+    expect(toLiveIndex([{ id: '2' }, { id: '3' }], '3', 2)).toBe(1);
+    expect(toLiveIndex(rows, '2', 0)).toBe(1);
+  });
+
+  it('놓은 줄이 지워졌으면 화면의 자리를 최신 목록 안으로 맞춘다', () => {
+    expect(toLiveIndex([{ id: '1' }], '3', 2)).toBe(0);
+    expect(toLiveIndex(rows, '9', 1)).toBe(1);
+    expect(toLiveIndex([], '9', 1)).toBe(0);
+  });
 });
 
 describe('applyLocationOp', () => {

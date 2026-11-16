@@ -99,7 +99,7 @@ type SortableLocationGroupProps = Omit<SelectionFieldGroupProps, 'itemHandle' | 
   /** 줄을 잡거나 놓거나 취소했을 때(작업 중 표시용: 시작·끝만 알리고 움직임은 알리지 않음) */
   onDragStateChange?: ((_id: string, _dragging: boolean) => void) | undefined;
   /** 끌어서 순서를 바꿨을 때(자리는 0부터) */
-  onMove: (_id: string, _toIndex: number) => void;
+  onMove: (_id: string, _toIndex: number, _overId: string) => void;
   /** 순서를 못 바꾸는 상태(하나뿐이거나 편집 중·권한 없음) */
   disabled: boolean;
   /** 못 바꾸는 상태에서 핸들을 눌렀을 때 이유 안내(없으면 아무 일 없음) */
@@ -152,7 +152,8 @@ export function SortableLocationGroup({
     notifyDrag(String(active.id), false);
     setFrozen(null);
     if (!over || active.id === over.id) return;
-    onMove(String(active.id), indexOf(over.id));
+    // 자리 번호는 화면(잡은 순간의 목록) 기준이라, 놓은 줄의 id도 함께 넘겨 최신 목록에서 다시 구하게 함
+    onMove(String(active.id), indexOf(over.id), String(over.id));
   };
 
   return (
