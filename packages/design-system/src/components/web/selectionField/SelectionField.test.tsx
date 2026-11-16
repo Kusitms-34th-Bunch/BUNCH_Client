@@ -223,4 +223,23 @@ describe('SelectionField', () => {
 
     expect(container.querySelector('img')).toBeNull();
   });
+
+  it('suggestionsDisabled면 추천 칩은 비활성으로 알리고 눌러도 알리지 않는다', () => {
+    const onSuggestionClick = vi.fn();
+    render(
+      <SelectionField
+        label="날짜 추가"
+        suggestions={['6월 20일']}
+        suggestionsDisabled
+        onSuggestionClick={onSuggestionClick}
+      />,
+    );
+    const chip = screen.getByRole('button', { name: '6월 20일' });
+
+    fireEvent.click(chip);
+
+    expect(chip.getAttribute('aria-disabled')).toBe('true');
+    expect(chip.getAttribute('tabindex')).toBe('-1');
+    expect(onSuggestionClick).not.toHaveBeenCalled();
+  });
 });

@@ -10,7 +10,14 @@ import {
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { horizontalListSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { type CSSProperties, type ReactNode, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
@@ -18,7 +25,7 @@ import type { PresenceCommands } from '../../hooks/usePresenceSender';
 import type { DraftAccess } from '../../lib/permissions';
 import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../../constants/messages';
-import { ADD_CARD_ID, AUTO_SCROLL } from '../../constants/photoList';
+import { ADD_CARD_ID, AUTO_SCROLL, LONG_PRESS_MS } from '../../constants/photoList';
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
 import { usePhotoReorder } from '../../hooks/usePhotoReorder';
 import { getRemovePhotoKind } from '../../lib/photos';
@@ -28,15 +35,22 @@ import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 type SortablePhotoItemProps = {
   id: string;
   disabled: boolean | { draggable?: boolean; droppable?: boolean };
+  /** 끌 수 없는 사람이 길게 눌렀을 때(끌기와 같은 시간을 누르면 한 번 호출, 이어지는 눌림 해제의 클릭은 막음) */
+  onLockedPress?: (() => void) | undefined;
   children: ReactNode;
 };
 
 /** 사진 한 칸: 길게 눌러 끄는 정렬 항목(키보드 끌기는 쓰지 않아 `attributes`는 붙이지 않음) */
-function SortablePhotoItem({ id, disabled, children }: SortablePhotoItemProps) {
+function SortablePhotoItem({ id, disabled, onLockedPress, children }: SortablePhotoItemProps) {
   const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     disabled,
   });
+  // 끌 수 없는 사람의 길게 누르기: 끌기 센서가 꺼져 있어 같은 시간(500ms)을 직접 재서 안내
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const pressed = useRef(false);
+  const clearPress = () => clearTimeout(pressTimer.current);
+  useEffect(() => clearPress, []);
   const style: CSSProperties = {
     // 좌우로만 움직이고 크기는 바꾸지 않음
     transform: transform
@@ -52,6 +66,26 @@ function SortablePhotoItem({ id, disabled, children }: SortablePhotoItemProps) {
       ref={setNodeRef}
       style={style}
       {...listeners}
+      {...(onLockedPress && {
+        onPointerDown: () => {
+          clearPress();
+          pressed.current = false;
+          pressTimer.current = setTimeout(() => {
+            pressed.current = true;
+            onLockedPress();
+          }, LONG_PRESS_MS);
+        },
+        onPointerUp: clearPress,
+        onPointerCancel: clearPress,
+        onPointerLeave: clearPress,
+        // 안내가 뜬 길게 누르기 뒤에 손을 떼며 생기는 클릭(사진 열기·삭제)은 막음
+        onClickCapture: (event: ReactMouseEvent) => {
+          if (!pressed.current) return;
+          pressed.current = false;
+          event.preventDefault();
+          event.stopPropagation();
+        },
+      })}
       // 떠오른 사진은 살짝 커짐(기능 spec 4.3.6 「살짝 커지며」, 105%)
       className={isDragging ? 'relative shrink-0 scale-105' : 'relative shrink-0'}
     >
@@ -221,7 +255,12 @@ export function DraftPhotos({
             className="gap-s5 px-padding-p8 -mt-1.5 -mb-1 flex scrollbar-none overflow-x-auto pt-2.5 pb-1 select-none [-webkit-touch-callout:none] [&::-webkit-scrollbar]:hidden"
           >
             {draft.photos.map((photo, index) => (
-              <SortablePhotoItem key={photo.id} id={photo.id} disabled={!reorderable}>
+              <SortablePhotoItem
+                key={photo.id}
+                id={photo.id}
+                disabled={!reorderable}
+                onLockedPress={!access.canEdit ? onDenied : undefined}
+              >
                 {/* 사진 전체를 누르는 버튼은 아래에 두고, 사진 틀은 X만 눌리게 해서 X와 사진 누르기가 겹치지 않음 */}
                 {onOpenPhoto ? (
                   <button

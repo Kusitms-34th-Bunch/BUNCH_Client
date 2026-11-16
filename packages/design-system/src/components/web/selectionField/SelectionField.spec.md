@@ -23,7 +23,7 @@
 
 ## Public API
 
-- Props: `label`(필수, 제목 글자), `fieldLabel`(어떤 필드인지 알려 주는 이름, 화면에는 안 보이고 버튼 이름 앞에 붙음), `selected`(기본 `false`), `required`(별표, 기본 `false`), `requiredLabel`(기본 "필수"), `suggestions`(추천 값 배열), `suggestionsLabel`(기본 "추천"), `onFieldClick`, `onSuggestionClick(추천 값)`, `onClear`, `clearLabel`(기본 "{label} 지우기"), 그리고 native `<div>`의 속성(`className`은 카드에 적용).
+- Props: `label`(필수, 제목 글자), `fieldLabel`(어떤 필드인지 알려 주는 이름, 화면에는 안 보이고 버튼 이름 앞에 붙음), `selected`(기본 `false`), `required`(별표, 기본 `false`), `requiredLabel`(기본 "필수"), `suggestions`(추천 값 배열), `suggestionsLabel`(기본 "추천"), `onFieldClick`, `onSuggestionClick(추천 값)`, `suggestionsDisabled`(기본 `false`, 참이면 추천 칩이 `aria-disabled`·`tabindex=-1`로 눌러도 반응이 없고 클릭은 카드의 필드 버튼이 받음), `onClear`, `clearLabel`(기본 "{label} 지우기"), 그리고 native `<div>`의 속성(`className`은 카드에 적용).
 - 값의 보관은 호출하는 쪽이다: 선택 전에는 `label`에 안내 문구, 선택 뒤에는 `label`에 선택한 값과 `selected`를 준다.
 - 호출자 소유 책임: 안내 문구·추천 값·접근성 이름의 i18n, 값을 고르는 동작, 필드 이름(`fieldLabel`). 추천 칩을 누르거나 지우기를 눌러 상태가 바뀌면 눌렀던 요소(칩 목록·지우기 버튼)가 사라져 포커스가 `body`로 떨어지므로, 키보드 사용자가 길을 잃지 않게 호출하는 쪽이 필드 버튼 등으로 포커스를 옮겨 준다(이 컴포넌트는 `ref`를 노출하지 않는다). 긴 제목은 한 줄로 잘리고 시각으로 전체를 볼 방법이 없다(스크린 리더는 전체를 읽는다).
 

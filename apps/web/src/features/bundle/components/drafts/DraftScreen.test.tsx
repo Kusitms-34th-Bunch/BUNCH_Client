@@ -206,11 +206,27 @@ describe('역할별 권한', () => {
 
   it('참여 멤버가 아닌 사람이 편집하려 하면 안내하고 값은 바뀌지 않는다', async () => {
     renderScreen({ viewer: outsider });
+    const title = screen.getByRole('textbox', { name: /제목/ });
 
-    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+    await userEvent.click(title);
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
 
+    // 포커스·커서 없이 안내만 받고 탭으로도 닿지 않음
+    expect(title).not.toHaveFocus();
+    expect(title).toHaveAttribute('tabindex', '-1');
     expect(actions.setTitle).not.toHaveBeenCalled();
+    expect(actions.presence.type).not.toHaveBeenCalled();
+  });
+
+  it('참여 멤버는 제목에 포커스를 두고 입력 시작·끝을 알린다', async () => {
+    renderScreen();
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    await userEvent.click(title);
+
+    expect(title).toHaveFocus();
+    expect(title).not.toHaveAttribute('tabindex');
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('참여 멤버가 아닌 사람이 코멘트 입력란에 닿아도 안내한다', async () => {
@@ -1117,7 +1133,17 @@ describe('나가기', () => {
 });
 
 describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
-  afterEach(() => {
+  afterEach(async () => {
+    // 손을 떼지 않고 끝난 끌기를 풀고, dnd-kit이 끌기 뒤 50ms 안에 지우는 문서 단위 클릭 차단을 가상 시간으로 흘려 지움
+    // (가상 시간을 그냥 되돌리면 이 정리가 사라져 다음 테스트의 클릭을 막음)
+    if (vi.isFakeTimers()) {
+      act(() => {
+        fireEvent.mouseUp(document);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+    }
     vi.useRealTimers();
   });
 
@@ -1241,5 +1267,99 @@ describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
 
     expect(actions.setPhotoDragging).toHaveBeenLastCalledWith(false);
     expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
+  });
+});
+
+describe('고칠 수 없는 사람의 사진 길게 누르기와 추천 날짜 칩', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const openButton = (position: number) =>
+    screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(position) });
+  const hold = async (position: number) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    fireEvent.pointerDown(openButton(position), { button: 0, clientX: 10, clientY: 10 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS);
+    });
+  };
+
+  it('참여 멤버가 아니면 사진을 길게 눌렀을 때 안내하고, 끌기는 시작되지 않는다', async () => {
+    renderScreen({ viewer: outsider });
+
+    await hold(1);
+
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+  });
+
+  it('안내가 뜬 길게 누르기 뒤에 손을 떼며 생기는 클릭은 사진을 열지 않고, 다음 짧은 누름은 연다', async () => {
+    renderScreen({ viewer: outsider });
+
+    await hold(1);
+    fireEvent.pointerUp(openButton(1));
+    fireEvent.click(openButton(1));
+    expect(onOpenPhoto).not.toHaveBeenCalled();
+
+    fireEvent.pointerDown(openButton(1), { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(openButton(1));
+    fireEvent.click(openButton(1));
+    expect(onOpenPhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it('길게 누르기 시간이 되기 전에 떼면 안내 없이 사진을 연다', async () => {
+    renderScreen({ viewer: outsider });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+    fireEvent.pointerDown(openButton(1), { button: 0, clientX: 10, clientY: 10 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS - 100);
+    });
+    fireEvent.pointerUp(openButton(1));
+    fireEvent.click(openButton(1));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS);
+    });
+
+    expect(toast).not.toHaveBeenCalled();
+    expect(onOpenPhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it('연결이 끊긴 참여 멤버가 사진을 길게 눌러도 안내하지 않는다', async () => {
+    renderScreen({ offline: true });
+
+    await hold(1);
+
+    expect(toast).not.toHaveBeenCalled();
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+  });
+
+  it('참여 멤버가 아니면 추천 날짜 칩은 눌러도 날짜가 정해지지 않고 포커스도 받지 않는다', () => {
+    renderScreen({
+      viewer: outsider,
+      draft: { ...publishable, date: null, suggestedDates: ['2026-06-20'] },
+    });
+    const chips = within(screen.getByRole('list', { name: '추천' })).getAllByRole('button');
+
+    expect(chips.length).toBeGreaterThan(0);
+    for (const chip of chips) {
+      expect(chip).toHaveAttribute('aria-disabled', 'true');
+      expect(chip).toHaveAttribute('tabindex', '-1');
+      fireEvent.click(chip);
+    }
+
+    expect(actions.setDate).not.toHaveBeenCalled();
+  });
+
+  it('참여 멤버는 추천 날짜 칩을 눌러 날짜를 정한다', async () => {
+    renderScreen({ draft: { ...publishable, date: null, suggestedDates: ['2026-06-20'] } });
+
+    await userEvent.click(
+      within(screen.getByRole('list', { name: '추천' })).getAllByRole('button')[0]!,
+    );
+
+    expect(actions.setDate).toHaveBeenCalledWith('2026-06-20');
   });
 });

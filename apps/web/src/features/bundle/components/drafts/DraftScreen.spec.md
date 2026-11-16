@@ -60,7 +60,7 @@
 - Component mapping: 헤더는 `core`의 `Header`+`HeaderIconButton`과 더보기 `IconButton`+`PhotoActionMenu`(`DraftMenu`), 아래 업로드는 `Button`, 배너는 `ErrorBanner`, 멤버는 `MemberCard`·`AddMemberCard`, 제목은 `BundleTextInput`, 사진은 `BundlePhotoEditor`, 위치·날짜는 `SelectionFieldGroup`·`SelectionField`와 `BottomSheet`·`SearchField`·`LocationListItem`·`DateChangeSheet`, 코멘트는 `BundleCommentCard`, 공개 범위 화면은 `DescriptionRadioCard`, 나가기 확인은 `Dialog`.
 - Semantic·heading: 화면 제목 `h1`(「번들 작성」, 화면에는 숨김), 각 영역은 `BundleTitle`을 `aria-labelledby`로 가리키는 `section`. 저장 상태와 사진 위치(「N장 중 M번째 사진」)는 `role="status"`.
 - 키보드: 위치·날짜 줄과 지우기, 추천 칩, 「⋯」 더보기와 메뉴 항목(Esc·바깥 누름·Tab으로 닫힘), 「업로드」는 `button`·`menuitem`이고 공개 범위 화면의 카드는 `radio`다. 확인 창은 최초 포커스가 「취소」(Dialog 기본)에 있다.
-- 읽기 전용: 제목·코멘트 입력란은 `readOnly`라 포커스는 받되 고칠 수 없다. 참여 멤버가 아니면 닿았을 때 안내한다.
+- 읽기 전용: 코멘트 입력란은 `readOnly`라 포커스는 받되 고칠 수 없고, 참여 멤버가 아니면 닿았을 때 안내한다. 제목 입력란은 고칠 수 없는 사람(참여 멤버가 아님·연결 끊김)에게 포커스·커서 없이 닿았을 때만 안내한다(`tabindex="-1"`, 눌러도 포커스가 가지 않음, 연결이 끊긴 참여 멤버에게는 안내 없음). 참여 멤버가 아니면 사진을 500ms 길게 눌러도(끌기와 같은 시간) 같은 안내를 띄우고 그 뒤 손을 뗄 때의 클릭(사진 열기·삭제)은 막으며, 추천 날짜 칩은 눌러도 반응이 없다(눌림 효과·포커스 없음, 누른 자리는 날짜 줄이 받아 안내).
 - 동작 줄이기: 「저장 중」 점은 움직이지 않는다.
 
 ## 검증
