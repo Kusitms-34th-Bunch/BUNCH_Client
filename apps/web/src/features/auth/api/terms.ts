@@ -1,38 +1,7 @@
 import { normalizeError } from '@app/api-core';
-import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { TERMS_ITEMS, type ServerTermType } from '../constants/terms';
-
-const SERVER_TERM_TYPES = ['SERVICE', 'PRIVACY', 'AGE_OVER_14', 'DEMOGRAPHICS'] as const;
-
-/** `GET /api/v1/auth/terms` 응답(명세서 기준). 약관 원문은 앱이 갖고 서버는 종류·버전만 줌 */
-// 계약 미연결: Swagger에 이 응답의 data 스키마가 없음(생성 타입이 생기면 묶음)
-const termsSchema = z.object({
-  terms: z.array(
-    z.object({
-      type: z.string(),
-      version: z.string().min(1),
-      required: z.boolean(),
-    }),
-  ),
-});
-
-type TermVersions = Partial<Record<ServerTermType, string>>;
-
-/** 현재 적용되는 약관별 버전 */
-export const getTermVersions = async (signal?: AbortSignal): Promise<TermVersions> => {
-  const { terms } = await requestData(
-    bffApi.get('auth/terms', { signal: signal ?? null }),
-    termsSchema,
-    'terms',
-  );
-  // 서버가 새 약관 종류를 추가해도 앱이 쓰는 종류만 골라 약관 전체가 막히지 않게 함
-  return Object.fromEntries(
-    terms
-      .filter(({ type }) => (SERVER_TERM_TYPES as readonly string[]).includes(type))
-      .map(({ type, version }) => [type, version]),
-  );
-};
+import { bffApi } from '@/shared/api/bffApi';
+import { getTermVersions } from '@/shared/api/termVersions';
+import { TERMS_ITEMS } from '../constants/terms';
 
 /**
  * 약관 동의 저장: 현재 버전을 읽어 필수 3종과(동의했으면) 선택 약관을 한 번에 보냄
