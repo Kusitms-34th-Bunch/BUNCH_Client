@@ -1,4 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import * as Automerge from '@automerge/automerge/slim';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  editTitle,
+  ensureTitleCrdt,
+  loadTitleDoc,
+  saveTitleDoc,
+} from '@/features/bundle/lib/titleCrdt';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '../server';
@@ -21,22 +28,18 @@ type Snapshot = {
   photos: {
     id: number;
     photoId: number;
-    caption: string;
-    captionVersion: number;
-    captionUpdatedBy: number | null;
   }[];
   participants: { memberId: number }[];
   comments: { memberId: number; content: string; version: number }[];
   dateChips: string[];
   publishBlockers: string[];
   permissions: Record<string, boolean>;
-  leases: { target: string; memberId: number }[];
   publishedAt: string | null;
 };
 
 type Envelope = {
   success: boolean;
-  data: Snapshot & { token: string; leaseVersion: number };
+  data: Snapshot;
   error: { code: string; detail: unknown } | null;
 };
 
@@ -54,8 +57,11 @@ const call = async (
   return { status: response.status, json: (await response.json()) as Envelope };
 };
 
-const create = (photoIds: number[], key = createIdempotencyKey()) =>
-  call('POST', base, { photoIds }, { 'Idempotency-Key': key });
+const create = (
+  photoIds: number[],
+  key = createIdempotencyKey(),
+  participantMemberIds: number[] = [memberA],
+) => call('POST', base, { photoIds, participantMemberIds }, { 'Idempotency-Key': key });
 
 // 내 사진(S4)과 멤버 A의 사진(S5)으로 만든 초안
 const createDraft = async () => {
@@ -63,18 +69,13 @@ const createDraft = async () => {
   return json.data as { id: number; revision: number; photos: { id: number }[] };
 };
 
-const acquire = async (bundleId: number, target: string) =>
-  (await call('POST', `${base}/${bundleId}/leases/acquire`, { target })).json.data as {
-    token: string;
-  };
-
 describe('가짜 서버 번들 초안 생성', () => {
-  it('고른 순서대로 사진을 담고 생성자와 사진 올린 멤버가 참여자가 된다', async () => {
-    const { status, json } = await create([
-      MOCK_PHOTO_IDS.S5,
-      MOCK_PHOTO_IDS.S4,
-      MOCK_PHOTO_IDS.S1,
-    ]);
+  it('고른 순서대로 사진을 담고 생성자와 고른 멤버가 참여자가 된다', async () => {
+    const { status, json } = await create(
+      [MOCK_PHOTO_IDS.S5, MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S1],
+      createIdempotencyKey(),
+      [admin, memberA],
+    );
 
     expect(status).toBe(200);
     const draft = json.data;
@@ -90,18 +91,15 @@ describe('가짜 서버 번들 초안 생성', () => {
       MOCK_PHOTO_IDS.S4,
       MOCK_PHOTO_IDS.S1,
     ]);
-    // 생성자 먼저, 이어서 사진을 올린 멤버(중복 없이)
+    // 생성자 먼저, 이어서 고른 순서대로(사진을 올렸다는 이유로 자동 참여하지 않음)
     expect(draft.participants.map((p: { memberId: number }) => p.memberId)).toEqual([
       MOCK_MY_MEMBER_ID,
-      memberA,
       admin,
+      memberA,
     ]);
     expect(draft.permissions).toMatchObject({ creator: true, participant: true, canPublish: true });
-    expect(draft.publishBlockers).toEqual([
-      'TITLE_REQUIRED',
-      'VISIBILITY_REQUIRED',
-      'COMMENTS_REQUIRED',
-    ]);
+    // 공개 범위는 최종 발행 요청에서만 확인해 준비 상태에는 넣지 않음
+    expect(draft.publishBlockers).toEqual(['TITLE_REQUIRED', 'COMMENTS_REQUIRED']);
     // 날짜를 고르기 전에는 추천 촬영일을 돌려줌
     expect(draft.dateChips).toEqual(['2026-10-18']);
   });
@@ -119,7 +117,10 @@ describe('가짜 서버 번들 초안 생성', () => {
   });
 
   it('Idempotency-Key가 없거나 사진이 0장·21장·중복이면 COMMON_001이다', async () => {
-    const noKey = await call('POST', base, { photoIds: [MOCK_PHOTO_IDS.S4] });
+    const noKey = await call('POST', base, {
+      photoIds: [MOCK_PHOTO_IDS.S4],
+      participantMemberIds: [memberA],
+    });
     const none = await create([]);
     const dup = await create([MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S4]);
     const over = await create(Array.from({ length: 21 }, (_, i) => i + 1));
@@ -130,10 +131,34 @@ describe('가짜 서버 번들 초안 생성', () => {
     }
   });
 
-  it('없는 사진이 섞이면 전체를 거부하고 초안을 만들지 않는다', async () => {
+  it('참여 멤버가 없거나 나를 넣었거나 중복이거나 번치 멤버가 아니면 COMMON_001이고 초안을 만들지 않는다', async () => {
+    const photos = [MOCK_PHOTO_IDS.S4];
+    const none = await create(photos, createIdempotencyKey(), []);
+    const self = await create(photos, createIdempotencyKey(), [MOCK_MY_MEMBER_ID]);
+    const dup = await create(photos, createIdempotencyKey(), [memberA, memberA]);
+    const stranger = await create(photos, createIdempotencyKey(), [memberA, 999]);
+    const omitted = await call(
+      'POST',
+      base,
+      { photoIds: photos },
+      { 'Idempotency-Key': createIdempotencyKey() },
+    );
+
+    for (const result of [none, self, dup, stranger, omitted]) {
+      expect(result.status).toBe(400);
+      expect(result.json.error?.code).toBe('COMMON_001');
+    }
+    expect(mockDrafts()).toHaveLength(0);
+  });
+
+  it('없는 사진이 섞이면 PHOTO_004로 전체를 거부하고 없는 사진 ID를 알려 준다', async () => {
     const result = await create([MOCK_PHOTO_IDS.S4, 999]);
 
-    expect(result.status).toBe(404);
+    expect(result.status).toBe(409);
+    expect(result.json.error).toMatchObject({
+      code: 'PHOTO_004',
+      detail: { missingPhotoIds: [999] },
+    });
     expect(mockDrafts()).toHaveLength(0);
   });
 
@@ -158,7 +183,7 @@ describe('가짜 서버 번들 초안 생성', () => {
     const missing = await call(
       'POST',
       '/api/bunches/999/bundles',
-      { photoIds: [1] },
+      { photoIds: [1], participantMemberIds: [memberA] },
       {
         'Idempotency-Key': createIdempotencyKey(),
       },
@@ -192,103 +217,32 @@ describe('가짜 서버 번들 상세 조회', () => {
   });
 });
 
-describe('가짜 서버 번들 제목·공개 범위·코멘트·캡션 저장', () => {
-  it('편집권 token으로 제목을 저장하면 제목 버전과 revision이 오른다', async () => {
+describe('가짜 서버 번들 제목·공개 범위·코멘트 저장', () => {
+  it('제목을 저장하면 제목 버전과 revision이 오른다', async () => {
     const draft = await createDraft();
-    const { token } = await acquire(draft.id, 'TITLE');
 
     const { status, json } = await call('PUT', `${base}/${draft.id}/title`, {
       value: '  설악산 단풍  ',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
 
     expect(status).toBe(200);
     expect(json.data).toMatchObject({ title: '설악산 단풍', titleVersion: 1, revision: 2 });
   });
 
-  it('편집권이 없거나 token이 다르면 BUNDLE_004이다', async () => {
-    const draft = await createDraft();
-    const body = { value: '제목', expectedVersion: 0, mode: 'DRAFT' };
-
-    const none = await call('PUT', `${base}/${draft.id}/title`, body);
-    expect(none.json.error?.code).toBe('BUNDLE_004');
-
-    await acquire(draft.id, 'TITLE');
-    const wrong = await call('PUT', `${base}/${draft.id}/title`, {
-      ...body,
-      leaseToken: createIdempotencyKey(),
-    });
-    expect(wrong.json.error?.code).toBe('BUNDLE_004');
-  });
-
-  it('다른 멤버가 편집권을 쥔 대상은 얻을 수 없다', async () => {
-    const draft = await createDraft();
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        {
-          bundleId: draft.id,
-          target: 'TITLE',
-          memberId: memberA,
-          token: createIdempotencyKey(),
-          leaseVersion: 1,
-          expiresAt: new Date(Date.now() + 10_000).toISOString(),
-        },
-      ],
-    }));
-
-    const result = await call('POST', `${base}/${draft.id}/leases/acquire`, { target: 'TITLE' });
-    expect(result.status).toBe(409);
-    expect(result.json.error?.code).toBe('BUNDLE_004');
-    // 상세 응답에는 편집권 상태가 token 없이 공개됨
-    const detail = await call('GET', `${base}/${draft.id}`);
-    expect(Object.keys(detail.json.data.leases[0] ?? {}).sort()).toEqual([
-      'expiresAt',
-      'leaseVersion',
-      'memberId',
-      'target',
-    ]);
-    expect(detail.json.data.leases[0]).toMatchObject({ target: 'TITLE', memberId: memberA });
-  });
-
-  it('만료된 편집권은 다른 멤버가 다시 얻을 수 있다', async () => {
-    const draft = await createDraft();
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        {
-          bundleId: draft.id,
-          target: 'TITLE',
-          memberId: memberA,
-          token: createIdempotencyKey(),
-          leaseVersion: 1,
-          expiresAt: new Date(Date.now() - 1000).toISOString(),
-        },
-      ],
-    }));
-
-    const result = await call('POST', `${base}/${draft.id}/leases/acquire`, { target: 'TITLE' });
-    expect(result.status).toBe(200);
-    expect(result.json.data.leaseVersion).toBe(2);
-  });
-
   it('버전이 다르면 BUNDLE_003과 현재 값·버전을 돌려준다', async () => {
     const draft = await createDraft();
-    const { token } = await acquire(draft.id, 'TITLE');
     await call('PUT', `${base}/${draft.id}/title`, {
       value: '첫 제목',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
 
     const result = await call('PUT', `${base}/${draft.id}/title`, {
       value: '다른 제목',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
     expect(result.status).toBe(409);
     expect(result.json.error).toMatchObject({
@@ -331,12 +285,10 @@ describe('가짜 서버 번들 제목·공개 범위·코멘트·캡션 저장',
     });
     expect(badValue.json.error?.code).toBe('COMMON_001');
 
-    const { token } = await acquire(draft.id, 'TITLE');
     const newline = await call('PUT', `${base}/${draft.id}/title`, {
       value: '두 줄\n제목',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
     expect(newline.json.error?.code).toBe('COMMON_001');
   });
@@ -380,34 +332,6 @@ describe('가짜 서버 번들 제목·공개 범위·코멘트·캡션 저장',
       mode: 'DRAFT',
     });
     expect(stale.json.error?.code).toBe('BUNDLE_003');
-  });
-
-  it('사진 캡션은 그 사진의 편집권으로 저장하고 사진마다 버전이 따로다', async () => {
-    const draft = await createDraft();
-    const [first, second] = draft.photos;
-    const { token } = await acquire(draft.id, `PHOTO:${first?.id}`);
-
-    const saved = await call('PUT', `${base}/${draft.id}/photos/${first?.id}/caption`, {
-      value: '오래 기억할 순간',
-      expectedVersion: 0,
-      mode: 'DRAFT',
-      leaseToken: token,
-    });
-    expect(saved.json.data.photos[0]).toMatchObject({
-      caption: '오래 기억할 순간',
-      captionVersion: 1,
-      captionUpdatedBy: MOCK_MY_MEMBER_ID,
-    });
-    expect(saved.json.data.photos[1]).toMatchObject({ id: second?.id, captionVersion: 0 });
-
-    // 다른 사진의 편집권 token으로는 저장할 수 없음
-    const other = await call('PUT', `${base}/${draft.id}/photos/${second?.id}/caption`, {
-      value: '다른 사진',
-      expectedVersion: 0,
-      mode: 'DRAFT',
-      leaseToken: token,
-    });
-    expect(other.json.error?.code).toBe('BUNDLE_004');
   });
 });
 
@@ -468,20 +392,20 @@ describe('가짜 서버 번들 참여자', () => {
 
 describe('가짜 서버 번들 발행', () => {
   // 발행 조건을 모두 채운 초안(제목·공개 범위·참여자 전원 코멘트)
-  const fillDraft = async () => {
+  const fillDraft = async ({ withVisibility = true } = {}) => {
     const draft = await createDraft();
-    const { token } = await acquire(draft.id, 'TITLE');
     await call('PUT', `${base}/${draft.id}/title`, {
       value: '설악산',
       expectedVersion: 0,
       mode: 'DRAFT',
-      leaseToken: token,
     });
-    await call('PUT', `${base}/${draft.id}/visibility`, {
-      value: 'PRIVATE',
-      expectedVersion: 0,
-      mode: 'DRAFT',
-    });
+    if (withVisibility) {
+      await call('PUT', `${base}/${draft.id}/visibility`, {
+        value: 'PRIVATE',
+        expectedVersion: 0,
+        mode: 'DRAFT',
+      });
+    }
     await call('PUT', `${base}/${draft.id}/comments/me`, {
       value: '내 코멘트',
       expectedVersion: 0,
@@ -525,7 +449,7 @@ describe('가짜 서버 번들 발행', () => {
     });
   });
 
-  it('조건을 채우면 발행되고 편집권이 풀리며 이후 초안 저장은 BUNDLE_002이다', async () => {
+  it('조건을 채우면 발행되고 이후 초안 저장은 BUNDLE_002이다', async () => {
     const id = await fillDraft();
     const result = await publish(id, await revisionOf(id));
 
@@ -533,11 +457,9 @@ describe('가짜 서버 번들 발행', () => {
     expect(result.json.data).toMatchObject({
       status: 'PUBLISHED',
       publishBlockers: [],
-      leases: [],
       permissions: { canPublish: false },
     });
     expect(result.json.data.publishedAt).not.toBeNull();
-    expect(mockDb.get().bundleLeases).toEqual([]);
 
     const late = await call('PUT', `${base}/${id}/visibility`, {
       value: 'PUBLIC',
@@ -547,12 +469,36 @@ describe('가짜 서버 번들 발행', () => {
     expect(late.json.error?.code).toBe('BUNDLE_002');
   });
 
-  it('revision이 다르면 BUNDLE_003이다', async () => {
+  it('낡은 expectedRevision도 최초 발행을 거절하지 않는다(호환 필드)', async () => {
     const id = await fillDraft();
     const result = await publish(id, 1);
 
-    expect(result.status).toBe(409);
-    expect(result.json.error?.code).toBe('BUNDLE_003');
+    expect(result.status).toBe(200);
+    expect(result.json.data.status).toBe('PUBLISHED');
+  });
+
+  it('최종 공개 범위를 함께 보내면 그 범위로 발행되고, 초안 범위도 없으면 VISIBILITY_REQUIRED다', async () => {
+    const id = await fillDraft({ withVisibility: false });
+    const missing = await call(
+      'POST',
+      `${base}/${id}/publish`,
+      {},
+      { 'Idempotency-Key': createIdempotencyKey() },
+    );
+    expect(missing.status).toBe(409);
+    expect(missing.json.error).toMatchObject({
+      code: 'BUNDLE_005',
+      detail: { reasons: ['VISIBILITY_REQUIRED'] },
+    });
+
+    const result = await call(
+      'POST',
+      `${base}/${id}/publish`,
+      { visibility: 'PUBLIC' },
+      { 'Idempotency-Key': createIdempotencyKey() },
+    );
+    expect(result.status).toBe(200);
+    expect(result.json.data).toMatchObject({ status: 'PUBLISHED', visibility: 'PUBLIC' });
   });
 
   it('같은 키로 다시 발행하면 같은 결과를 돌려주고 다른 키는 BUNDLE_002이다', async () => {
@@ -576,5 +522,286 @@ describe('가짜 서버 번들 발행', () => {
 
     const result = await publish(id, await revisionOf(id));
     expect(result.status).toBe(403);
+  });
+});
+
+describe('가짜 서버 번들 presence 조회', () => {
+  it('번치 멤버는 빈 presence를 받고 없는 번들은 RESOURCE_001이다', async () => {
+    const draft = await createDraft();
+
+    const found = await call('GET', `${base}/${draft.id}/presence`);
+    const missing = await call('GET', `${base}/999999/presence`);
+
+    expect(found.status).toBe(200);
+    expect(found.json.data).toEqual({ members: [], typing: [], editing: [] });
+    expect(missing.json.error?.code).toBe('RESOURCE_001');
+  });
+});
+
+describe('가짜 서버 번들 제목 CRDT 병합', () => {
+  beforeAll(async () => {
+    await ensureTitleCrdt();
+  });
+
+  type TitleState = {
+    title: string;
+    titleCrdtState: string;
+    titleVersion: number;
+    titleTooLong: boolean;
+  };
+  const merge = (id: number, state: unknown) =>
+    call('PATCH', `${base}/${id}/title/crdt`, { state }) as unknown as Promise<{
+      status: number;
+      json: { data: TitleState; error: { code: string } | null };
+    }>;
+
+  // 서버가 snapshot으로 준 문서에서 제목을 고친 전체 저장 문서
+  const edit = async (id: number, text: string) => {
+    const { json } = await call('GET', `${base}/${id}`);
+    const state = (json.data as unknown as { titleCrdtState: string }).titleCrdtState;
+    return saveTitleDoc(editTitle(loadTitleDoc(state), text));
+  };
+
+  it('snapshot에 CRDT 문서가 있고 병합하면 제목과 버전이 오르며 revision 없는 제목 상태를 돌려준다', async () => {
+    const draft = await createDraft();
+
+    const { status, json } = await merge(draft.id, await edit(draft.id, '  설악산 단풍  '));
+
+    expect(status).toBe(200);
+    // 표시 제목만 NFC·trim하고 정확히 네 필드만 돌려줌
+    expect(Object.keys(json.data).sort()).toEqual(
+      ['title', 'titleCrdtState', 'titleTooLong', 'titleVersion'].sort(),
+    );
+    expect(json.data).toMatchObject({ title: '설악산 단풍', titleVersion: 1, titleTooLong: false });
+  });
+
+  it('완전히 같은 문서를 다시 보내면 아무것도 바뀌지 않는다', async () => {
+    const draft = await createDraft();
+    const state = await edit(draft.id, '설악산');
+    await merge(draft.id, state);
+
+    const again = await merge(draft.id, state);
+
+    expect(again.json.data.titleVersion).toBe(1);
+  });
+
+  it('40자를 넘어도 자르지 않고 titleTooLong으로 알리며 발행 사유에 넣는다', async () => {
+    const draft = await createDraft();
+
+    const { json } = await merge(draft.id, await edit(draft.id, '가'.repeat(41)));
+    const detail = await call('GET', `${base}/${draft.id}`);
+
+    expect(json.data).toMatchObject({ title: '가'.repeat(41), titleTooLong: true });
+    expect(detail.json.data.publishBlockers).toContain('TITLE_TOO_LONG');
+  });
+
+  it('깨진 문서·줄바꿈이 든 제목·빈 상태는 COMMON_001이다', async () => {
+    const draft = await createDraft();
+
+    expect((await merge(draft.id, 'not-base64!!')).json.error?.code).toBe('COMMON_001');
+    expect((await merge(draft.id, '')).json.error?.code).toBe('COMMON_001');
+    expect((await merge(draft.id, await edit(draft.id, '한 줄\n두 줄'))).json.error?.code).toBe(
+      'COMMON_001',
+    );
+  });
+
+  it('title이 문자열이 아닌 문서는 오류로 거절한다(서버가 죽지 않고 COMMON_001)', async () => {
+    const draft = await createDraft();
+    const { json } = await call('GET', `${base}/${draft.id}`);
+    const state = (json.data as unknown as { titleCrdtState: string }).titleCrdtState;
+    // 서버 문서 위에 title을 숫자로 바꾼 변경을 얹은 문서(병합하면 이 값이 이김)
+    const broken = Automerge.change(loadTitleDoc(state), (doc) => {
+      (doc as unknown as { title: unknown }).title = 123;
+    });
+    const bytes = Automerge.save(broken);
+
+    const result = await merge(draft.id, Buffer.from(bytes).toString('base64'));
+
+    expect(result.status).toBe(400);
+    expect(result.json.error?.code).toBe('COMMON_001');
+  });
+
+  it('처음 상태 검사 뒤 문서를 준비하는 사이 번들이 발행되면 제목을 바꾸지 않고 BUNDLE_002를 돌려준다', async () => {
+    const draft = await createDraft();
+    const state = await edit(draft.id, '발행 뒤 도착한 제목');
+    const readTitle = () => mockDb.get().bundles.find((bundle) => bundle.id === draft.id)?.title;
+    const titleBefore = readTitle();
+
+    // 핸들러의 번들 조회 순서: 1) 범위 확인(초안 확인) 2) 문서 준비 3) 최신 번들 다시 읽기
+    // 2번째 조회 시점에 다른 요청이 발행한 것처럼 상태를 바꿔, 처음 검사와 최신 읽기 사이의 경합을 고정함
+    const original = mockDb.get.bind(mockDb);
+    let reads = 0;
+    const spy = vi.spyOn(mockDb, 'get').mockImplementation(() => {
+      reads += 1;
+      if (reads === 2) {
+        mockDb.update((current) => ({
+          ...current,
+          bundles: current.bundles.map((bundle) =>
+            bundle.id === draft.id ? { ...bundle, status: 'PUBLISHED' as const } : bundle,
+          ),
+        }));
+      }
+      return original();
+    });
+
+    let result;
+    try {
+      result = await merge(draft.id, state);
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(reads).toBeGreaterThanOrEqual(3);
+    expect(result.status).toBe(409);
+    expect(result.json.error?.code).toBe('BUNDLE_002');
+    expect(readTitle()).toBe(titleBefore);
+  });
+
+  it('참여하지 않은 사람은 AUTH_002, 없는 번들은 RESOURCE_001이다', async () => {
+    const draft = await createDraft();
+    const state = await edit(draft.id, '제목');
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({ ...bundle, participants: [] })),
+    }));
+
+    expect((await merge(draft.id, state)).json.error?.code).toBe('AUTH_002');
+    expect((await merge(999999, state)).json.error?.code).toBe('RESOURCE_001');
+  });
+});
+
+describe('가짜 서버 사진 픽 저장', () => {
+  type Picks = {
+    count: number;
+    pickedByMe: boolean;
+    version: number;
+    members: { memberId: number }[];
+  };
+  type PickEnvelope = { data: Picks; error: { code: string; detail: Picks } | null };
+
+  const pick = async (draftId: number, photoId: number, body: unknown) => {
+    const response = await fetch(`${base}/${draftId}/photos/${photoId}/pick`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return { status: response.status, json: (await response.json()) as PickEnvelope };
+  };
+  const snapshotPicks = async (draftId: number) =>
+    (
+      (await (await fetch(`${base}/${draftId}`)).json()) as {
+        data: { revision: number; photos: { id: number; picks: Picks }[] };
+      }
+    ).data;
+
+  it('상세 응답의 사진마다 픽 요약이 있고 처음에는 비어 있다', async () => {
+    const draft = await createDraft();
+    const { photos } = await snapshotPicks(draft.id);
+
+    expect(photos.map((photo) => photo.picks)).toEqual([
+      { count: 0, pickedByMe: false, version: 0, members: [] },
+      { count: 0, pickedByMe: false, version: 0, members: [] },
+    ]);
+  });
+
+  it('픽하면 내 픽이 더해지고 revision이 한 번 오르며 내 픽 버전이 그 revision이 된다', async () => {
+    const draft = await createDraft();
+    const photoId = draft.photos[0]!.id;
+
+    const saved = await pick(draft.id, photoId, { picked: true, expectedVersion: 0 });
+
+    expect(saved.status).toBe(200);
+    expect(saved.json.data).toMatchObject({
+      count: 1,
+      pickedByMe: true,
+      version: draft.revision + 1,
+      members: [expect.objectContaining({ memberId: MOCK_MY_MEMBER_ID })],
+    });
+    const after = await snapshotPicks(draft.id);
+    expect(after.revision).toBe(draft.revision + 1);
+    expect(after.photos[0]!.picks.pickedByMe).toBe(true);
+    expect(after.photos[1]!.picks.count).toBe(0);
+  });
+
+  it('이미 원하는 상태면 버전이 낡아도 성공하고 아무것도 바꾸지 않는다', async () => {
+    const draft = await createDraft();
+    const photoId = draft.photos[0]!.id;
+    const first = await pick(draft.id, photoId, { picked: true, expectedVersion: 0 });
+
+    const again = await pick(draft.id, photoId, { picked: true, expectedVersion: 0 });
+
+    expect(again.status).toBe(200);
+    expect(again.json.data).toEqual(first.json.data);
+    expect((await snapshotPicks(draft.id)).revision).toBe(draft.revision + 1);
+  });
+
+  it('상태를 바꾸려는데 버전이 다르면 BUNDLE_003과 현재 픽을 돌려준다', async () => {
+    const draft = await createDraft();
+    const photoId = draft.photos[0]!.id;
+    const first = await pick(draft.id, photoId, { picked: true, expectedVersion: 0 });
+
+    const conflict = await pick(draft.id, photoId, { picked: false, expectedVersion: 0 });
+
+    expect(conflict.status).toBe(409);
+    expect(conflict.json.error?.code).toBe('BUNDLE_003');
+    expect(conflict.json.error?.detail).toEqual(first.json.data);
+
+    const undone = await pick(draft.id, photoId, {
+      picked: false,
+      expectedVersion: first.json.data.version,
+    });
+    // 해제한 행도 남아 버전이 그 revision으로 오름
+    expect(undone.json.data).toMatchObject({ count: 0, pickedByMe: false });
+    expect(undone.json.data.version).toBe(draft.revision + 2);
+  });
+
+  it('잘못된 요청과 없는 사진·발행본·참여자가 아닌 사람을 거절한다', async () => {
+    const draft = await createDraft();
+    const photoId = draft.photos[0]!.id;
+    const body = { picked: true, expectedVersion: 0 };
+
+    expect((await pick(draft.id, photoId, { picked: true })).json.error?.code).toBe('COMMON_002');
+    expect(
+      (await pick(draft.id, photoId, { picked: 'yes', expectedVersion: 0 })).json.error?.code,
+    ).toBe('COMMON_002');
+    expect(
+      (await pick(draft.id, photoId, { picked: true, expectedVersion: -1 })).json.error?.code,
+    ).toBe('COMMON_001');
+    expect((await pick(draft.id, 999999, body)).status).toBe(404);
+
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({ ...bundle, status: 'PUBLISHED' as const })),
+    }));
+    expect((await pick(draft.id, photoId, body)).json.error?.code).toBe('BUNDLE_002');
+
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({
+        ...bundle,
+        status: 'DRAFT' as const,
+        participants: bundle.participants.filter((p) => p.memberId !== MOCK_MY_MEMBER_ID),
+      })),
+    }));
+    expect((await pick(draft.id, photoId, body)).json.error?.code).toBe('AUTH_002');
+  });
+
+  it('참여자를 제외하면 그 멤버의 픽도 함께 지워진다', async () => {
+    const draft = await createDraft();
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({
+        ...bundle,
+        photos: bundle.photos.map((photo) => ({
+          ...photo,
+          picks: [{ memberId: memberA, picked: true, version: 3 }],
+        })),
+      })),
+    }));
+    expect((await snapshotPicks(draft.id)).photos[0]!.picks.count).toBe(1);
+
+    await call('DELETE', `${base}/${draft.id}/participants/${memberA}`);
+
+    expect((await snapshotPicks(draft.id)).photos[0]!.picks.count).toBe(0);
   });
 });

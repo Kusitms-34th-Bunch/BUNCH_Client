@@ -5,14 +5,15 @@ import { TermsDocument } from '@/features/auth/components';
 import { MY_MESSAGES } from '@/features/my/constants/messages';
 import { MY_PATHS } from '@/features/my/constants/paths';
 
-// MY에서 보는 약관(서비스 이용약관·개인정보 처리방침)만 정적으로 만들고 그 밖의 주소(선택 약관 포함)는 404
-const MY_TERMS_IDS: readonly TermsDocumentId[] = ['service', 'privacy'];
+// MY에서 보는 약관(서비스 이용약관·개인정보 처리방침·추가 개인정보 수집 동의서 전문)만 정적으로 만들고 그 밖의 주소는 404
+const MY_TERMS_IDS: readonly TermsDocumentId[] = ['service', 'privacy', 'demographics'];
 const isMyTermsId = (value: string): value is TermsDocumentId =>
   (MY_TERMS_IDS as readonly string[]).includes(value);
 // 탭 제목·화면 밖 h1은 MY 메뉴 이름(가입 약관 원문의 제목 「필수 수집 항목 동의서」 등과 다름)
 const MY_TERMS_TITLES: Partial<Record<TermsDocumentId, string>> = {
   service: MY_MESSAGES.menu.termsOfService,
   privacy: MY_MESSAGES.menu.privacyPolicy,
+  demographics: MY_MESSAGES.termsSettings.demographics.title,
 };
 
 export const dynamicParams = false;
@@ -44,7 +45,7 @@ export default async function MyTermsPage({ params }: Params) {
         documentId={termId}
         hideTitle
         title={MY_TERMS_TITLES[termId]}
-        backFallback={MY_PATHS.home}
+        backFallback={MY_PATHS.termsAndPrivacy}
       />
     </div>
   );

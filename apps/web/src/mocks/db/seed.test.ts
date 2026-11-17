@@ -24,15 +24,15 @@ describe('UT 시나리오 시드', () => {
     ]);
   });
 
-  it('멤버는 5명이고 시연하는 사람은 관리자가 아닌 일반 멤버다', () => {
+  it('내 번치 멤버는 5명이고 시연하는 사람은 관리자가 아닌 일반 멤버다', () => {
     const { members, memberships } = createSeed();
-    expect(members.map((member) => member.nickname)).toEqual([
-      '지예',
-      '경진',
-      '은우',
-      '수인',
-      '큐시즘',
-    ]);
+    const inMyBunch = (memberId: number) =>
+      memberships.some(
+        (membership) => membership.bunchId === MOCK_BUNCH_ID && membership.memberId === memberId,
+      );
+    expect(
+      members.filter((member) => inMyBunch(member.memberId)).map((member) => member.nickname),
+    ).toEqual(['지예', '경진', '은우', '수인', '큐시즘']);
     const bunchMemberships = memberships.filter(
       (membership) => membership.bunchId === MOCK_BUNCH_ID,
     );

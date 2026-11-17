@@ -1,29 +1,13 @@
 'use client';
 
-import { ConfirmDialog, Dialog } from '@app/design-system';
+import { Dialog } from '@app/design-system';
+import { Fragment } from 'react';
 import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
 import type { DateConfirmKind } from '../lib/photoActions';
-import { PHOTO_BOX_MESSAGES } from '../constants/messages';
-
-type BundleConfirmDialogProps = ScreenOverlayProps & {
-  onConfirm: () => void;
-};
-
-/** 「번들 만들기」 확인 창: 「아니요」/「예」(1~20장일 때만 열림) */
-export function BundleConfirmDialog(props: BundleConfirmDialogProps) {
-  return (
-    <ConfirmDialog
-      {...props}
-      title={PHOTO_BOX_MESSAGES.bundleConfirmTitle}
-      description={PHOTO_BOX_MESSAGES.bundleConfirmDescription}
-      cancelLabel="아니요"
-      confirmLabel="예"
-    />
-  );
-}
+import { dateConfirmCopy, PHOTO_BOX_MESSAGES } from '../constants/messages';
 
 type DeleteConfirmDialogProps = ScreenOverlayProps & {
-  /** 고른 사진 종류에 맞는 제목과 내용(내용은 한 줄씩 나눠 보여 줌) */
+  /** 고른 사진 종류에 맞는 제목과 설명 줄(`deleteConfirmCopy`) */
   title: string;
   lines: readonly string[];
   onConfirm: () => void;
@@ -44,10 +28,11 @@ export function DeleteConfirmDialog({
       <Dialog.Content>
         <Dialog.Title>{title}</Dialog.Title>
         <Dialog.Description>
-          {lines.map((line) => (
-            <span key={line} className="block">
+          {lines.map((line, index) => (
+            <Fragment key={line}>
+              {index > 0 && <br />}
               {line}
-            </span>
+            </Fragment>
           ))}
         </Dialog.Description>
         <Dialog.Footer>
@@ -62,29 +47,29 @@ export function DeleteConfirmDialog({
 }
 
 type DateChangeConfirmDialogProps = ScreenOverlayProps & {
-  /** 고른 사진 종류(다른 멤버 사진만 / 함께 올린 사진이나 내 사진이 섞임) */
+  /** 고른 사진 종류에 맞는 문구(`getDateConfirmKind`) */
   kind: DateConfirmKind;
   onConfirm: () => void;
 };
 
 /**
- * 관리자가 다른 멤버 사진이나 함께 올린 사진의 날짜를 바꿀 때 거치는 확인 창(날짜 바꾸기 저장·끌어 놓기 공통, 기능명세서 3.4.1)
- * 「변경하기」/「취소」. 삭제 확인 창과 같은 구조(「취소」 최초 포커스)를 따름
+ * 관리자가 다른 멤버 사진이나 함께 올린 사진의 날짜를 바꿀 때 거치는 확인 창(날짜 바꾸기 저장·끌어 놓기 공통)
+ * 문구는 명세 3.4.1 원문이고, 삭제 확인 창과 같은 구조(「취소」 최초 포커스)를 따름
  */
 export function DateChangeConfirmDialog({
   kind,
   onConfirm,
   ...rootProps
 }: DateChangeConfirmDialogProps) {
-  const { title, description } = PHOTO_BOX_MESSAGES.dateConfirm(kind);
+  const copy = dateConfirmCopy(kind);
   return (
     <Dialog.Root {...rootProps}>
       <Dialog.Content>
-        <Dialog.Title>{title}</Dialog.Title>
-        <Dialog.Description>{description}</Dialog.Description>
+        <Dialog.Title>{copy.title}</Dialog.Title>
+        <Dialog.Description>{copy.description}</Dialog.Description>
         <Dialog.Footer>
           <Dialog.Confirm variant="secondary" onClick={onConfirm}>
-            변경하기
+            {PHOTO_BOX_MESSAGES.dateConfirmButton}
           </Dialog.Confirm>
           <Dialog.Cancel variant="primary">취소</Dialog.Cancel>
         </Dialog.Footer>

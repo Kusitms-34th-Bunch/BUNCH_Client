@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server';
-import { proxyToBackend } from '@/shared/api/backendProxy';
+import { proxyToBackend } from '@/shared/api/server/backendProxy';
 
 type Context = { params: Promise<{ path: string[] }> };
 

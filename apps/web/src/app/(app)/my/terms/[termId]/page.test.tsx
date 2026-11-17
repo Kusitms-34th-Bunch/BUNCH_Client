@@ -15,8 +15,12 @@ vi.mock('next/navigation', () => ({
 const params = (termId: string) => ({ params: Promise.resolve({ termId }) });
 
 describe('/my/terms/[termId] page', () => {
-  it('서비스 이용약관·개인정보 처리방침만 만든다', () => {
-    expect(generateStaticParams()).toEqual([{ termId: 'service' }, { termId: 'privacy' }]);
+  it('서비스 이용약관·개인정보 처리방침·추가 개인정보 수집 동의서만 만든다', () => {
+    expect(generateStaticParams()).toEqual([
+      { termId: 'service' },
+      { termId: 'privacy' },
+      { termId: 'demographics' },
+    ]);
   });
 
   it('원문을 보이고 약관 이름은 헤더에 보이지 않는 h1로 둔다', async () => {
@@ -37,7 +41,17 @@ describe('/my/terms/[termId] page', () => {
   it('전환 경계를 MY 약관 고정 id로 지정한다', async () => {
     const { container } = render(await MyTermsPage(params('privacy')));
 
-    expect(container.firstElementChild?.getAttribute('data-ssgoi-transition')).toBe('/my/terms');
+    expect(container.firstElementChild?.getAttribute('data-ssgoi-transition')).toBe(
+      '/my/terms/document',
+    );
+  });
+
+  it('「전문보기」로 여는 동의서 원문의 h1은 약관 및 개인정보 화면의 항목 이름이다', async () => {
+    render(await MyTermsPage(params('demographics')));
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: '추가 개인정보 수집 및 동의' }),
+    ).toBeTruthy();
   });
 
   it('제목은 약관 이름이고 검색에서 제외한다', async () => {
@@ -51,13 +65,13 @@ describe('/my/terms/[termId] page', () => {
     await expect(MyTermsPage(params('age'))).rejects.toThrow('NEXT_NOT_FOUND');
   });
 
-  it('직접 들어와 돌아갈 기록이 없으면 뒤로 가기로 MY에 간다', async () => {
+  it('직접 들어와 돌아갈 기록이 없으면 뒤로 가기로 약관 및 개인정보에 간다', async () => {
     render(await MyTermsPage(params('service')));
 
     // 테스트 환경은 기록이 1개(직접 진입)
     await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
-    expect(replace).toHaveBeenCalledWith('/my');
+    expect(replace).toHaveBeenCalledWith('/my/terms');
     expect(back).not.toHaveBeenCalled();
   });
 });

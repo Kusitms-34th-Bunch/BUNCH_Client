@@ -1,58 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import type { Draft, DraftPhoto, DraftViewer } from './types';
-import { draftFixture } from '../fixtures/draft.fixture';
-import {
-  clampCaption,
-  getPhotoEditors,
-  getRemovePhotoKind,
-  movePhoto,
-  planPhotoMoves,
-  removePhoto,
-  setPhotoCaption,
-} from './photos';
+import type { DraftPhoto } from './types';
+import { getRemovePhotoKind, movePhoto, planPhotoMoves, removePhoto } from './photos';
 
-const photo = (id: string, caption = ''): DraftPhoto => ({
+const photo = (id: string): DraftPhoto => ({
   id,
   src: `/${id}.jpg`,
   alt: id,
-  caption,
   takenAt: null,
   uploaderId: 'jiye',
 });
 
-const photos = [photo('a', '가'), photo('b'), photo('c', '다')];
-
-describe('clampCaption', () => {
-  it('200자 이하는 그대로 둔다', () => {
-    expect(clampCaption('가'.repeat(200))).toEqual({ text: '가'.repeat(200), exceeded: false });
-  });
-
-  it('200자를 넘으면 앞 200자만 남기고 넘쳤다고 알린다', () => {
-    expect(clampCaption('가'.repeat(230))).toEqual({ text: '가'.repeat(200), exceeded: true });
-  });
-
-  it('이모지는 한 글자로 세어 쪼개지 않는다', () => {
-    const result = clampCaption('😀'.repeat(201));
-    expect(result.exceeded).toBe(true);
-    expect(Array.from(result.text)).toHaveLength(200);
-  });
-});
+const photos = [photo('a'), photo('b'), photo('c')];
 
 describe('getRemovePhotoKind', () => {
   it('1장이면 막는다', () => {
-    expect(getRemovePhotoKind([photo('a', '가')])).toBe('last');
+    expect(getRemovePhotoKind([photo('a')])).toBe('last');
   });
 
-  it('2장 이상이면 캡션이 있든 없든 항상 확인을 거친다', () => {
+  it('2장 이상이면 항상 확인을 거친다', () => {
     expect(getRemovePhotoKind(photos)).toBe('confirm');
-    expect(getRemovePhotoKind([photo('a'), photo('b', '   ')])).toBe('confirm');
-  });
-});
-
-describe('setPhotoCaption', () => {
-  it('그 사진의 캡션만 바꾼다', () => {
-    const next = setPhotoCaption(photos, 'b', '새 캡션');
-    expect(next.map((item) => item.caption)).toEqual(['가', '새 캡션', '다']);
+    expect(getRemovePhotoKind([photo('a'), photo('b')])).toBe('confirm');
   });
 });
 
@@ -68,10 +35,9 @@ describe('removePhoto', () => {
 });
 
 describe('movePhoto', () => {
-  it('뒤로 옮기고 캡션이 사진을 따라간다', () => {
+  it('뒤로 옮긴다', () => {
     const next = movePhoto(photos, 'a', 2);
     expect(next.map((item) => item.id)).toEqual(['b', 'c', 'a']);
-    expect(next[2]?.caption).toBe('가');
   });
 
   it('앞으로 옮기면 맨 앞 사진이 바뀐다', () => {
@@ -86,22 +52,6 @@ describe('movePhoto', () => {
   it('같은 자리이거나 없는 사진이면 그대로 둔다', () => {
     expect(movePhoto(photos, 'b', 1)).toBe(photos);
     expect(movePhoto(photos, 'x', 0)).toBe(photos);
-  });
-});
-
-describe('getPhotoEditors', () => {
-  const viewer: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
-  const draft: Draft = {
-    ...draftFixture,
-    editing: { photoEditors: { a: ['gyeongjin', 'jiye'] } },
-  };
-
-  it('내가 아닌 편집 중인 멤버만 돌려준다', () => {
-    expect(getPhotoEditors(draft, viewer, 'a')).toEqual(['gyeongjin']);
-  });
-
-  it('편집 중인 멤버가 없으면 빈 목록이다', () => {
-    expect(getPhotoEditors(draft, viewer, 'b')).toEqual([]);
   });
 });
 

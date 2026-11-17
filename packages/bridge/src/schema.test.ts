@@ -16,6 +16,7 @@ import {
   pushDeviceTokenSchema,
   saveImagesToAlbumResultSchema,
   saveImageUrlsSchema,
+  setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   socialLoginResultSchema,
   socialProviderSchema,
@@ -289,5 +290,29 @@ void test('푸시 기기 등록 정보는 설치 UUID·토큰·환경·권한 �
     { installationId: UUID, deviceToken: 'aabbccdd', environment: 'SANDBOX' },
   ]) {
     assert.equal(pushDeviceRegistrationSchema.safeParse(invalid).success, false);
+  }
+});
+
+void test('플로팅 버튼은 정해진 아이콘과 이름만 받고, null로 지울 수 있다', () => {
+  const valid = { tab: 'bunch', button: { icon: 'add', label: '번들 만들기' } };
+  assert.equal(setNativeFloatingButtonParamsSchema.safeParse(valid).success, true);
+  assert.equal(
+    setNativeFloatingButtonParamsSchema.safeParse({ tab: 'bunch', button: null }).success,
+    true,
+  );
+  assert.equal(
+    setNativeFloatingButtonParamsSchema.safeParse({
+      tab: 'photos',
+      button: { icon: 'more', label: '메뉴 열기', disabled: true, expanded: false },
+    }).success,
+    true,
+  );
+  for (const invalid of [
+    { tab: '', button: null },
+    { tab: 'bunch', button: { icon: 'share', label: '공유' } },
+    { tab: 'bunch', button: { icon: 'add', label: '' } },
+    { tab: 'bunch', button: { icon: 'add', label: '번들 만들기', color: 'red' } },
+  ]) {
+    assert.equal(setNativeFloatingButtonParamsSchema.safeParse(invalid).success, false);
   }
 });

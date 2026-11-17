@@ -1,3 +1,4 @@
+// 기록용: 쓰는 곳 없음. API 연결 전 번치 홈 샘플 데이터(#413에서 샘플 모드 제거), 새 코드에서 import 금지
 import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
 import type { BunchHomeDetail, BunchSummary, DraftBundle } from '../lib/types';
 

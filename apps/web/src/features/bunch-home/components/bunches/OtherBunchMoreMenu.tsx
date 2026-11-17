@@ -13,8 +13,10 @@ type OtherBunchMoreMenuProps = {
   bunchName: string;
   /** 신고하는 쪽(지금 내 번치) 이름. 아직 모르면 빈 글자 */
   reporterName: string;
+  /** 차단 시작(확인 시트가 다 닫힌 뒤 부름). 처리 중 표시·완료 안내·실패 안내는 부르는 쪽 */
   onBlock: () => void;
-  onReport: (_value: { reason: string; detail: string }) => void;
+  /** 신고 접수. 결과 안내(성공·실패)는 시트가 다 닫힌 뒤 이 메뉴가 띄움 */
+  onReport: (_value: { reason: string; detail: string }) => Promise<unknown>;
 };
 
 /**
@@ -29,30 +31,37 @@ export function OtherBunchMoreMenu({
 }: OtherBunchMoreMenuProps) {
   const openOverlay = useScreenOverlay();
 
-  const openBlock = () =>
-    openOverlay((rootProps, close) => (
-      <ConfirmSheet
-        {...rootProps}
-        title={BUNCH_HOME_MESSAGES.blockQuestion(bunchName)}
-        notice={BUNCH_HOME_MESSAGES.blockNotice}
-        // Figma 5402:122972: 92px 자리 가운데에 일러스트 72×72
-        illustration={
-          <div className="flex size-full items-center justify-center">
-            <Image src={blockedBunch as StaticImageData} alt="" width={72} height={72} />
-          </div>
-        }
-        confirmLabel="차단하기"
-        onConfirm={() => {
-          close();
-          // 차단하면 화면이 접근 제한으로 바뀌어 이 메뉴가 사라지므로 닫힘을 기다리지 않음
-          onBlock();
-          toast(BUNCH_HOME_MESSAGES.blockedDone(bunchName));
-        }}
-      />
-    ));
+  const openBlock = () => {
+    let confirmed = false;
+    openOverlay(
+      (rootProps, close) => (
+        <ConfirmSheet
+          {...rootProps}
+          title={BUNCH_HOME_MESSAGES.blockQuestion(bunchName)}
+          notice={BUNCH_HOME_MESSAGES.blockNotice}
+          // Figma 5402:122972: 92px 자리 가운데에 일러스트 72×72
+          illustration={
+            <div className="flex size-full items-center justify-center">
+              <Image src={blockedBunch as StaticImageData} alt="" width={72} height={72} />
+            </div>
+          }
+          confirmLabel="차단하기"
+          onConfirm={() => {
+            confirmed = true;
+            close();
+          }}
+        />
+      ),
+      // 시트가 다 닫힌 뒤 시작(초점 복원·화면 전환이 닫힘 애니메이션과 겹치지 않게, ADR 014)
+      () => {
+        if (confirmed) onBlock();
+      },
+    );
+  };
 
   const openReport = () => {
-    let reported = false;
+    // 성공 여부(시트가 닫히기 전에 끝나도 결과를 잃지 않게 바로 받아 둠)
+    let result: Promise<boolean> | undefined;
     openOverlay(
       (rootProps, close) => (
         <ReportSheet
@@ -63,14 +72,18 @@ export function OtherBunchMoreMenu({
           detailReasonValue={REPORT_OTHER}
           onSubmit={(value) => {
             close();
-            onReport(value);
-            reported = true;
+            result = onReport(value).then(
+              () => true,
+              () => false,
+            );
           }}
         />
       ),
-      // 접수 안내는 시트가 다 닫힌 뒤(열린 시트 뒤에서 낭독이 묻히지 않게, ADR 014)
+      // 접수 안내는 시트가 다 닫히고 서버 접수가 끝난 뒤(열린 시트 뒤에서 낭독이 묻히지 않게, ADR 014)
       () => {
-        if (reported) toast(BUNCH_HOME_MESSAGES.reportedDone);
+        void result?.then((ok) =>
+          toast(ok ? BUNCH_HOME_MESSAGES.reportedDone : BUNCH_HOME_MESSAGES.reportFailed),
+        );
       },
     );
   };

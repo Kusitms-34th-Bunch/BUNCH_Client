@@ -13,16 +13,18 @@ const complete: Draft = {
   id: 'd',
   members: [member('a'), member('b')],
   title: '제목',
-  photos: [{ id: 'p1', src: '/p1.jpg', alt: '', caption: '', takenAt: null, uploaderId: 'a' }],
+  photos: [{ id: 'p1', src: '/p1.jpg', alt: '', takenAt: null, uploaderId: 'a' }],
   locations: [],
   date: null,
   suggestedDates: [],
+  picks: {},
   comments: [
     { memberId: 'a', text: '하나' },
     { memberId: 'b', text: '둘' },
   ],
   visibility: 'public',
   editing: {},
+  viewingMemberIds: [],
 };
 
 const ready = { saveStatus: 'saved', offline: false } as const;
@@ -34,6 +36,13 @@ describe('getPublishBlockers', () => {
 
   it('제목은 앞뒤 공백을 빼고 1자 이상이어야 한다', () => {
     expect(getPublishBlockers({ ...complete, title: '   ' }, ready)).toEqual(['title']);
+  });
+
+  it('동시 편집이 합쳐져 제목이 40자를 넘으면 줄일 때까지 막는다', () => {
+    expect(getPublishBlockers({ ...complete, title: '가'.repeat(41) }, ready)).toEqual([
+      'titleTooLong',
+    ]);
+    expect(getPublishBlockers({ ...complete, title: '가'.repeat(40) }, ready)).toEqual([]);
   });
 
   it('공개 범위를 골라야 한다', () => {
@@ -54,6 +63,7 @@ describe('getPublishBlockers', () => {
     expect(getPublishBlockers(missing, ready)).toEqual(['comments']);
     const blank = {
       ...complete,
+      picks: {},
       comments: [
         { memberId: 'a', text: '하나' },
         { memberId: 'b', text: ' \n ' },
@@ -78,15 +88,15 @@ describe('hasOtherEditors', () => {
   });
 
   it('제목·위치·날짜·사진·코멘트 중 하나라도 다른 멤버가 편집 중이면 참이다', () => {
-    expect(hasOtherEditors({ title: 'other' }, 'me')).toBe(true);
-    expect(hasOtherEditors({ location: 'other' }, 'me')).toBe(true);
-    expect(hasOtherEditors({ date: 'other' }, 'me')).toBe(true);
+    expect(hasOtherEditors({ titleMemberIds: ['other'] }, 'me')).toBe(true);
+    expect(hasOtherEditors({ locationAddMemberIds: ['other'] }, 'me')).toBe(true);
+    expect(hasOtherEditors({ locationEditors: { l1: ['other'] } }, 'me')).toBe(true);
+    expect(hasOtherEditors({ dateMemberIds: ['other'] }, 'me')).toBe(true);
     expect(hasOtherEditors({ photoMemberIds: ['other'] }, 'me')).toBe(true);
-    expect(hasOtherEditors({ photoEditors: { p1: ['other'] } }, 'me')).toBe(true);
     expect(hasOtherEditors({ commentMemberIds: ['other'] }, 'me')).toBe(true);
   });
 
   it('나만 편집 중이면 거짓이다', () => {
-    expect(hasOtherEditors({ title: 'me', commentMemberIds: ['me'] }, 'me')).toBe(false);
+    expect(hasOtherEditors({ titleMemberIds: ['me'], commentMemberIds: ['me'] }, 'me')).toBe(false);
   });
 });

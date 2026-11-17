@@ -18,9 +18,14 @@ type BunchNotificationsScreenProps = {
   bunchName: string | undefined;
   /** 최신순 알림. 아직 모르면 목록을 그리지 않음 */
   notifications: readonly BunchNotification[] | undefined;
+  /** 읽지 않은 알림이 있는지(서버 수 기준, 받아 온 첫 쪽 밖도 포함) */
+  hasUnread: boolean;
+  /** 진행 안내(알림을 여는 중). 있으면 상태 영역에 우선 실음 */
+  notice?: string | undefined;
   onBack: () => void;
-  onReadAll: () => void;
-  /** 알림을 눌렀을 때(종류별 이동은 해당 화면이 생길 때 연결) */
+  /** 모두 읽음. 끝나면 결과를 낭독, 실패하면 reject(안내는 부르는 쪽) */
+  onReadAll: () => Promise<unknown>;
+  /** 알림을 눌렀을 때(읽음과 종류별 이동은 부르는 쪽) */
   onOpen: (_notification: BunchNotification) => void;
 };
 
@@ -30,6 +35,8 @@ type BunchNotificationsScreenProps = {
 export function BunchNotificationsScreen({
   bunchName,
   notifications,
+  hasUnread,
+  notice,
   onBack,
   onReadAll,
   onOpen,
@@ -37,18 +44,33 @@ export function BunchNotificationsScreen({
   // 「모두 읽음」 결과 낭독(초점은 버튼에 남고 카드 이름만 바뀌어 스크린 리더가 알 수 없음)
   const [status, setStatus] = useState('');
   const frame = useRef(0);
+  // 모두 읽음 요청 중 다시 눌러도 한 번만
+  const reading = useRef(false);
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
   const readAll = () => {
     // 번치를 아직 모르면(hydration 전) 읽을 목록이 없어 결과도 알리지 않음
     if (!notifications) return;
-    const hasUnread = notifications.some((notification) => notification.unread);
-    onReadAll();
     // 같은 문구를 다시 채워도 읽히도록 비운 뒤 다음 프레임에 채움
-    setStatus('');
-    cancelAnimationFrame(frame.current);
-    frame.current = requestAnimationFrame(() =>
-      setStatus(hasUnread ? BUNCH_HOME_MESSAGES.readAllDone : BUNCH_HOME_MESSAGES.nothingToRead),
-    );
+    const announce = (message: string) => {
+      setStatus('');
+      cancelAnimationFrame(frame.current);
+      frame.current = requestAnimationFrame(() => setStatus(message));
+    };
+    // 읽을 알림이 없으면 요청하지 않음
+    if (!hasUnread) {
+      announce(BUNCH_HOME_MESSAGES.nothingToRead);
+      return;
+    }
+    if (reading.current) return;
+    reading.current = true;
+    onReadAll()
+      .then(
+        () => announce(BUNCH_HOME_MESSAGES.readAllDone),
+        () => {},
+      )
+      .finally(() => {
+        reading.current = false;
+      });
   };
 
   return (
@@ -74,7 +96,10 @@ export function BunchNotificationsScreen({
     >
       <h1 className="sr-only">{bunchName ? `${bunchName} 알림` : '알림'}</h1>
       <p role="status" className="sr-only">
-        {status}
+        {notifications === undefined
+          ? BUNCH_HOME_MESSAGES.notificationsLoading
+          : (notice ??
+            (status || (notifications.length === 0 ? BUNCH_HOME_MESSAGES.noNotifications : '')))}
       </p>
       {/* 헤더 아래 12, 안내 줄과 목록 사이 24, 카드 사이 8(Figma 1892:36948) */}
       <div className="gap-s12 pt-padding-p6 px-padding-p8 pb-s8 flex flex-col">

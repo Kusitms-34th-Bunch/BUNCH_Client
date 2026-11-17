@@ -12,7 +12,7 @@ const session = vi.hoisted(() => ({
   requestLogout: vi.fn(),
   reissueOnce: vi.fn(),
 }));
-vi.mock('@/shared/api/authSession', () => session);
+vi.mock('@/shared/api/server/authSession', () => session);
 
 const TOKENS = { accessToken: 'a.e30.s', refreshToken: 'r.e30.s' };
 

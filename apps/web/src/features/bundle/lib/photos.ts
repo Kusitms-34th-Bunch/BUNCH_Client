@@ -1,28 +1,10 @@
-import type { Draft, DraftPhoto, DraftViewer } from './types';
-import { CAPTION_MAX_LENGTH } from '../constants/messages';
-
-/** 캡션을 최대 글자 수로 자르고 넘쳤는지 알려 줌(붙여넣기로 한 번에 넘쳐도 앞 200자는 남김) */
-export const clampCaption = (value: string): { text: string; exceeded: boolean } =>
-  value.length > CAPTION_MAX_LENGTH
-    ? { text: Array.from(value).slice(0, CAPTION_MAX_LENGTH).join(''), exceeded: true }
-    : { text: value, exceeded: false };
-
-/** 다른 멤버가 그 사진을 편집 중인지(내가 편집 중인 것은 제외) */
-export const getPhotoEditors = (draft: Draft, viewer: DraftViewer, photoId: string) =>
-  (draft.editing.photoEditors?.[photoId] ?? []).filter((memberId) => memberId !== viewer.memberId);
+import type { DraftPhoto } from './types';
 
 /** 사진 빼기가 어떻게 진행되는지: 1장이면 막고, 아니면 항상 확인을 거침(Figma 4850:62115) */
 export type RemovePhotoKind = 'last' | 'confirm';
 
 export const getRemovePhotoKind = (photos: readonly DraftPhoto[]): RemovePhotoKind =>
   photos.length <= 1 ? 'last' : 'confirm';
-
-export const setPhotoCaption = (
-  photos: readonly DraftPhoto[],
-  photoId: string,
-  caption: string,
-): readonly DraftPhoto[] =>
-  photos.map((photo) => (photo.id === photoId ? { ...photo, caption } : photo));
 
 /** 사진을 빼고 나머지는 순서를 그대로 둠(1장이면 빼지 않음) */
 export const removePhoto = (
@@ -31,7 +13,7 @@ export const removePhoto = (
 ): readonly DraftPhoto[] =>
   photos.length <= 1 ? photos : photos.filter((photo) => photo.id !== photoId);
 
-/** 사진을 다른 자리로 옮김(캡션은 사진 객체에 있어 함께 따라감). 자리는 0부터이고 범위를 벗어나면 맨 끝으로 맞춤 */
+/** 사진을 다른 자리로 옮김. 자리는 0부터이고 범위를 벗어나면 맨 끝으로 맞춤 */
 export const movePhoto = (
   photos: readonly DraftPhoto[],
   photoId: string,

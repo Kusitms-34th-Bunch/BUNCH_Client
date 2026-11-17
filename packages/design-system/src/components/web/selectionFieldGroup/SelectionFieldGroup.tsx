@@ -11,6 +11,10 @@ export type SelectionFieldGroupItem = {
   id: string;
   /** 고른 값(예: "서울특별시 여의도동"): 값과 지우기 버튼이 보임 */
   value: string;
+  /** 이 행을 고르거나 옮기는 중인 멤버 프로필(값 바로 오른쪽에 겹쳐 보임, 앞에서부터 최대 8명). 장식이라 읽어 줄 문구는 `fieldLabel`에 반영 */
+  members?: readonly BundleTitleMember[] | undefined;
+  /** 이 행의 접근성 이름 앞에 붙는 필드 이름. 주면 그룹의 `fieldLabel` 대신 씀(예: "경진님이 편집 중 위치") */
+  fieldLabel?: string | undefined;
 };
 
 export type SelectionFieldGroupProps = Omit<ComponentProps<'div'>, 'children'> & {
@@ -24,6 +28,8 @@ export type SelectionFieldGroupProps = Omit<ComponentProps<'div'>, 'children'> &
   onItemClick?: ((_id: string) => void) | undefined;
   /** 행의 지우기 버튼을 눌렀을 때 */
   onItemClear?: ((_id: string) => void) | undefined;
+  /** true면 줄마다 X를 보이지 않음(고칠 수 없는 사람에게 값만 보임) */
+  hideItemClear?: boolean | undefined;
   /** 지우기 버튼의 접근성 이름을 만드는 함수(기본 "{값} 지우기"). 같은 값이 여러 행일 때 구별하도록 행 순서(0부터)도 받음 */
   clearLabel?: ((_value: string, _index: number) => string) | undefined;
   /** 행의 제목 앞 아이콘 자리에 놓을 핸들(예: 드래그로 순서를 바꾸는 햄버거). 행 순서(0부터)도 받음 */
@@ -54,6 +60,7 @@ export const SelectionFieldGroup = ({
   groupLabel,
   onItemClick,
   onItemClear,
+  hideItemClear,
   clearLabel,
   itemHandle,
   itemWrapper,
@@ -92,11 +99,13 @@ export const SelectionFieldGroup = ({
             key={item.id}
             label={item.value}
             selected
-            fieldLabel={fieldLabel}
+            fieldLabel={item.fieldLabel ?? fieldLabel}
+            members={item.members}
             clearLabel={clearLabel?.(item.value, index)}
             handle={itemHandle?.(item, index)}
             onFieldClick={() => onItemClick?.(item.id)}
             onClear={() => onItemClear?.(item.id)}
+            clearable={!hideItemClear}
             className={rowClassName(index)}
           />
         );

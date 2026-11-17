@@ -35,3 +35,11 @@ export const getUploaders = (
     const member = members.find((candidate) => candidate.id === id);
     return member ? [member] : [];
   });
+
+/** 촬영 날짜 글자(`YYYY-MM-DD…`)를 기기 시간대의 그날 0시로. 날짜를 모르면 undefined(날짜 변경 시트의 처음 선택 상태로 사용) */
+export const getTakenDate = (takenAt: string | null): Date | undefined => {
+  const dateKey = getDateKey(takenAt);
+  if (!dateKey) return undefined;
+  const [year, month, day] = dateKey.split('-').map(Number) as [number, number, number];
+  return new Date(year, month - 1, day);
+};

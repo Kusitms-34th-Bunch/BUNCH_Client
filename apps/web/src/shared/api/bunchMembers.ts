@@ -37,7 +37,7 @@ const toBunchMember = (member: z.infer<typeof bunchMemberResponseSchema>): Bunch
 });
 
 /**
- * 번치의 활성 멤버 목록(내가 속하지 않은 번치는 AUTH_002, 없는 번치는 RESOURCE_001)
+ * 번치의 활성 멤버 목록. 다른 번치는 공개거나 팔로우 승인 뒤만(아니면 AUTH_002), 없거나 차단한 번치는 BUNCH_009
  * signal은 Query가 넘겨 화면 이탈·key 변경 시 요청 취소
  * 사진이 없는 멤버는 기본 프로필 이미지로 채움
  */

@@ -1,7 +1,9 @@
 'use client';
 
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
-import { useState } from 'react';
+import { isApiError } from '@app/api-core';
+import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
 import { checkNicknameAvailability } from '@/shared/api/nickname';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
@@ -15,49 +17,78 @@ import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoVie
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import { normalizeNickname } from '@/shared/lib/nickname';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import type { ProfilePhotoChange } from '../../api/profile';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
+import { useUpdateProfileMutation } from '../../queries/profile';
 
-// 출생연도·성별은 편집 화면에서 다루지 않음(Figma 개인 프로필 편집)
-const toProfileValues = (profile: MyProfile): ProfileValues => ({
+// 저장 직전 서버가 다시 확인한 닉네임 중복(가입과 같은 코드)
+const NICKNAME_TAKEN_CODE = 'USER_002';
+
+// 출생연도·성별은 추가 개인정보에 동의한 사람만 값을 갖고 고칠 수 있음(기능명세서 7.2.6). 동의하지 않았으면 비워 둔 비활성 칸
+const toProfileValues = (profile: MyProfile, consented: boolean): ProfileValues => ({
   nickname: profile.nickname,
-  birthYear: '',
-  gender: null,
+  birthYear: consented && profile.birthYear !== undefined ? String(profile.birthYear) : '',
+  gender: consented ? (profile.gender ?? null) : null,
 });
 
 const isSameValues = (a: ProfileValues, b: ProfileValues) =>
-  normalizeNickname(a.nickname) === normalizeNickname(b.nickname);
+  normalizeNickname(a.nickname) === normalizeNickname(b.nickname) &&
+  a.birthYear === b.birthYear &&
+  a.gender === b.gender;
 
 /**
- * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 지금 값을 채운 닉네임과 프로필 사진(출생연도·성별은 없음, Figma 개인 프로필 편집)
- * 바뀐 값이 있고 모두 유효할 때만 수정하기 활성, 누르면 MY로 돌아가 토스트(저장 API 연결 전이라 이동만)
+ * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 닉네임·프로필 사진·출생연도·성별(동의한 사람만 보임), 저장되면 MY로
+ * 출생연도·성별은 프로필 수정 계약에 없어 보내지 않음(닉네임·사진만 저장, 상태별 동작은 spec, 2026-11-16 확인)
  */
 export function ProfileEditScreen({
   profile,
+  demographicsConsent,
   checkNickname = checkNicknameAvailability,
 }: {
   profile: MyProfile;
+  /** 추가 개인정보(출생연도·성별) 수집·이용 동의 여부. 동의해야 출생연도·성별 칸이 보이고 고칠 수 있음 */
+  demographicsConsent: boolean;
   /** 닉네임 중복 확인 호출(테스트에서 바꿔 끼움) */
   checkNickname?: CheckNickname | undefined;
 }) {
   const backOr = useBackOr();
   useScrollFocusedIntoView();
-  const initial = toProfileValues(profile);
+  const initial = toProfileValues(profile, demographicsConsent);
   // 지금 내 닉네임과 같으면 중복 확인을 건너뜀(기능명세서 7.2.5 로직 1)
   const fields = useProfileFields(initial, checkNickname, { currentNickname: profile.nickname });
-  // 바꾼 사진은 미리보기만(서버 반영은 프로필 수정 API 연결 시)
+  // 조정을 마친 새 사진(data URL), 기본 이미지로 바꾸면 undefined
   const [photo, setPhoto] = useState(profile.imageSrc);
-  // 저장 중 중복 탭 방지(화면 설계서 7번)
+  const save = useUpdateProfileMutation();
+  // 고른 사진을 조정하는 중에는 저장하지 않음(끝나야 새 사진이 정해짐)
+  const [photoPending, setPhotoPending] = useState(false);
+  // 저장 중·저장 뒤 돌아가는 전환 중 중복 탭 방지(화면 설계서 7번). 누르는 순간은 ref로 막아 버튼 초점을 지킴
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const [saved, setSaved] = useState(false);
   const openOverlay = useScreenOverlay();
+  const containerRef = useRef<HTMLDivElement>(null);
+  // 저장 중 이 화면을 떠났는지(뒤로 가기·언마운트)
+  const left = useRef(false);
+  useEffect(() => {
+    left.current = false;
+    return () => {
+      left.current = true;
+    };
+  }, []);
 
   const changed = photo !== profile.imageSrc || !isSameValues(fields.values, initial);
-  const canSubmit = changed && fields.isValid && !submitting;
+  const canSubmit = changed && fields.isValid && !photoPending && !saved;
   // 바꾼 내용이 있으면 나가기 전에 확인(기능명세서 7.2.1 상세 7)
   // 저장 뒤 돌아가는 전환 중에는 묻지 않음
   const back = () => {
-    if (!changed || submitting) return backOr(MY_PATHS.home);
+    // 저장 중에 떠나면 저장 뒤 이동·토스트를 하지 않음(캐시 갱신은 mutation이 그대로 함)
+    if (submitting) {
+      left.current = true;
+      return backOr(MY_PATHS.home);
+    }
+    if (!changed) return backOr(MY_PATHS.home);
     openOverlay((rootProps, close) => (
       <ConfirmDialog
         {...rootProps}
@@ -73,16 +104,59 @@ export function ProfileEditScreen({
     ));
   };
 
-  const submit = () => {
+  const photoChange = (): ProfilePhotoChange =>
+    photo === profile.imageSrc
+      ? { action: 'KEEP' }
+      : photo === undefined
+        ? { action: 'RESET' }
+        : { action: 'REPLACE', photo };
+
+  const submit = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     closeKeyboard();
+    try {
+      await save.mutateAsync({
+        nickname: normalizeNickname(fields.values.nickname),
+        photo: photoChange(),
+      });
+    } catch (error) {
+      // 다시 누를 수 있게 되돌림(기능명세서 7.2.7 예외)
+      submittingRef.current = false;
+      setSubmitting(false);
+      if (isApiError(error) && error.code === NICKNAME_TAKEN_CODE) {
+        // 오류 표시를 먼저 반영해 초점이 갈 때 오류 상태로 읽히게 함
+        flushSync(fields.markNicknameTaken);
+        // 수정하기가 비활성이 되므로 닉네임 입력으로 초점을 옮김(사진 선택용 숨은 파일 입력 제외)
+        containerRef.current?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus();
+      } else {
+        toast(MY_MESSAGES.profileSaveFailed);
+      }
+      return;
+    }
+    // 떠난 뒤에도 화면이 남는 경우(이동 실패 등) 잠긴 채 멈추지 않게 풀어 둠
+    if (left.current) {
+      submittingRef.current = false;
+      setSubmitting(false);
+      return;
+    }
+    setSaved(true);
     // MY에서 들어왔으면 그 기록으로 돌아감(replace하면 MY 기록이 두 번 쌓여 뒤로 가기가 한 번 헛돎)
     backOr(MY_PATHS.home);
     toastAfterNavigation(MY_MESSAGES.profileEdited);
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" onPointerDown={dismissKeyboard}>
+    <div
+      ref={containerRef}
+      className="flex min-h-0 flex-1 flex-col"
+      onPointerDown={dismissKeyboard}
+    >
+      {/* 저장 중 상태를 스크린 리더에 알림(aria-busy만으로는 읽히지 않는 경우가 많음) */}
+      <p role="status" className="sr-only">
+        {save.isPending ? MY_MESSAGES.profileSaving : ''}
+      </p>
       <PageShell
         header={
           <Header
@@ -96,20 +170,32 @@ export function ProfileEditScreen({
         }
         bottom={
           <div className="px-padding-p8 pt-padding-p7">
-            <Button className="w-full" disabled={!canSubmit} onClick={submit}>
+            <Button
+              className="w-full"
+              disabled={!canSubmit}
+              aria-busy={save.isPending || undefined}
+              onClick={() => void submit()}
+            >
               {MY_MESSAGES.profileEditSubmit}
             </Button>
           </div>
         }
       >
         <h1 className="sr-only">{MY_MESSAGES.profileEditTitle}</h1>
-        {/* 헤더 아래 48, 사진과 입력 칸 사이 32(Figma 개인 프로필 편집(1)) */}
-        <div className="pt-s18 flex flex-col items-center">
-          <ProfilePhotoField value={photo} onChange={setPhoto} />
-        </div>
-        <div className="pt-s14 px-padding-p8">
-          <ProfileFields fields={fields} showDemographics={false} />
-        </div>
+        {/* 저장 중에는 입력을 잠금(보낸 값과 화면 값이 달라진 채 완료되지 않게). 배치에는 영향 없음 */}
+        <fieldset disabled={submitting} className="contents">
+          {/* 헤더 아래 48, 사진과 입력 칸 사이 32(Figma 개인 프로필 편집(1)) */}
+          <div className="pt-s18 flex flex-col items-center">
+            <ProfilePhotoField
+              value={photo}
+              onChange={setPhoto}
+              onPendingChange={setPhotoPending}
+            />
+          </div>
+          <div className="pt-s14 px-padding-p8">
+            <ProfileFields fields={fields} showDemographics={demographicsConsent} />
+          </div>
+        </fieldset>
       </PageShell>
     </div>
   );

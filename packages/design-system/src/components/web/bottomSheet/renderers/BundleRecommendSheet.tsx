@@ -5,7 +5,7 @@ import { BottomSheet, type BottomSheetRootProps } from '../BottomSheet';
 
 export type BundleRecommendItem = Pick<
   SuggestedBundleCardProps,
-  'imageSrc' | 'title' | 'members' | 'photoCount' | 'month' | 'day'
+  'imageSrc' | 'title' | 'members' | 'photoCount' | 'month' | 'day' | 'year' | 'endMonth' | 'endDay'
 > & { id: string };
 
 export type BundleRecommendSheetProps = Omit<

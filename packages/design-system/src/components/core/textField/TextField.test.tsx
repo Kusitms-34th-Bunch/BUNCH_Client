@@ -173,6 +173,12 @@ describe('TextField', () => {
       expect(screen.queryByRole('status')).toBeNull();
     });
 
+    it('editing이 아니어도 호출하는 쪽이 준 aria-busy는 그대로 전달한다', () => {
+      render(<TextField label="제목" aria-busy />);
+
+      expect(screen.getByRole('textbox').getAttribute('aria-busy')).toBe('true');
+    });
+
     it('editing이 아니면 점과 진행 표시가 없다', () => {
       render(<TextField label="제목" />);
 

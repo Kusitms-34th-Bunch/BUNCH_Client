@@ -1,5 +1,5 @@
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
-import type { Draft, DraftMember, DraftViewer, PlaceResult } from '../lib/types';
+import type { Draft, DraftLocation, DraftMember, DraftViewer, PlaceResult } from '../lib/types';
 
 // 초안 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
 const samplePhoto = (hue: number) => {
@@ -54,6 +54,28 @@ export const bunchMembersFixture: readonly DraftMember[] = [
   },
 ];
 
+/** 테스트·스토리용 위치 한 줄(서버 행 id 자리에 id, 같은 장소 판별은 provider·externalId) */
+export const fixtureLocation = (
+  id: string,
+  name: string,
+  address: string | null = null,
+): DraftLocation => ({
+  id,
+  provider: 'test',
+  externalId: id,
+  name,
+  address,
+});
+
+/** 테스트·스토리용 검색 결과 한 줄 */
+export const fixturePlace = (id: string, name: string, address: string): PlaceResult => ({
+  id: `test:${id}`,
+  provider: 'test',
+  externalId: id,
+  name,
+  address,
+});
+
 export const draftFixture: Draft = {
   id: 'draft-1',
   members: [
@@ -80,7 +102,6 @@ export const draftFixture: Draft = {
       id: 'draft-photo-1',
       src: samplePhoto(205),
       alt: '한강에서 달리는 사람들 1',
-      caption: '퇴근하자마자 한강 집합! 힘들었지만 뛰고 나니 뿌듯했던 하루',
       takenAt: '2026-06-20T19:02',
       uploaderId: 'jiye',
       sourcePhotoId: 'photo-1',
@@ -89,7 +110,6 @@ export const draftFixture: Draft = {
       id: 'draft-photo-2',
       src: samplePhoto(190),
       alt: '한강에서 달리는 사람들 2',
-      caption: '',
       takenAt: '2026-06-20T19:15',
       uploaderId: 'gyeongjin',
       sourcePhotoId: 'photo-2',
@@ -98,18 +118,18 @@ export const draftFixture: Draft = {
       id: 'draft-photo-3',
       src: samplePhoto(35),
       alt: '한강에서 달리는 사람들 3',
-      caption: '',
       takenAt: '2026-06-20T19:40',
       uploaderId: 'eunwoo',
       sourcePhotoId: 'photo-3',
     },
   ],
   locations: [
-    { id: 'location-1', name: '서울특별시 여의도동' },
-    { id: 'location-2', name: '어디어디 뭐시기 카페' },
+    fixtureLocation('location-1', '서울특별시 여의도동', '서울특별시 영등포구 여의도동'),
+    fixtureLocation('location-2', '어디어디 뭐시기 카페', '서울특별시 마포구 와우산로 94'),
   ],
   date: null,
   suggestedDates: ['2026-06-20'],
+  picks: {},
   comments: [
     {
       memberId: 'jiye',
@@ -130,13 +150,14 @@ export const draftFixture: Draft = {
   ],
   visibility: null,
   editing: {},
+  viewingMemberIds: [],
 };
 
 /** 장소 검색 API 연결 전 목 결과(키워드가 이름·주소에 들어 있으면 보임) */
 export const placeFixture: readonly PlaceResult[] = [
-  { id: 'place-1', name: '여의도한강공원', address: '서울특별시 영등포구 여의동로 330' },
-  { id: 'place-2', name: '더현대 서울', address: '서울특별시 영등포구 여의대로 108' },
-  { id: 'place-3', name: '서울특별시 여의도동', address: '서울특별시 영등포구 여의도동' },
-  { id: 'place-4', name: '어디어디 뭐시기 카페', address: '서울특별시 마포구 와우산로 94' },
-  { id: 'place-5', name: '반포한강공원', address: '서울특별시 서초구 신반포로11길 40' },
+  fixturePlace('place-1', '여의도한강공원', '서울특별시 영등포구 여의동로 330'),
+  fixturePlace('place-2', '더현대 서울', '서울특별시 영등포구 여의대로 108'),
+  fixturePlace('place-3', '서울특별시 여의도동', '서울특별시 영등포구 여의도동'),
+  fixturePlace('place-4', '어디어디 뭐시기 카페', '서울특별시 마포구 와우산로 94'),
+  fixturePlace('place-5', '반포한강공원', '서울특별시 서초구 신반포로11길 40'),
 ];

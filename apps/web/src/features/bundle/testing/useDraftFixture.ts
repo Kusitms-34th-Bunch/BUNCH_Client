@@ -9,7 +9,7 @@ import {
   placeFixture,
 } from '../fixtures/draft.fixture';
 import { moveLocation } from '../lib/locations';
-import { movePhoto, removePhoto, setPhotoCaption } from '../lib/photos';
+import { movePhoto, removePhoto } from '../lib/photos';
 
 // 입력이 멈추고 이만큼 지나면 저장 완료로 봄(기능 spec 4.3.14의 「입력이 1초 멈출 때 저장」)
 const SAVE_DELAY_MS = 1000;
@@ -49,6 +49,14 @@ export function useDraftFixture(draftId: string | undefined): {
 
   const actions: DraftActions = {
     setTitle: (title) => update((current) => ({ ...current, title })),
+    setTitleComposing: () => undefined,
+    saveNow: () => undefined,
+    presence: {
+      type: () => undefined,
+      blur: () => undefined,
+      begin: () => undefined,
+      end: () => undefined,
+    },
     setComment: (memberId, text) =>
       update((current) => ({
         ...current,
@@ -63,8 +71,35 @@ export function useDraftFixture(draftId: string | undefined): {
       update((current) =>
         current.locations.length >= MAX_LOCATIONS
           ? current
-          : { ...current, locations: [...current.locations, { id: place.id, name: place.name }] },
+          : {
+              ...current,
+              locations: [
+                ...current.locations,
+                {
+                  id: place.id,
+                  provider: place.provider,
+                  externalId: place.externalId,
+                  name: place.name,
+                  address: place.address,
+                },
+              ],
+            },
       ),
+    replaceLocation: (locationId, place) =>
+      update((current) => ({
+        ...current,
+        locations: current.locations.map((location) =>
+          location.id === locationId
+            ? {
+                id: location.id,
+                provider: place.provider,
+                externalId: place.externalId,
+                name: place.name,
+                address: place.address,
+              }
+            : location,
+        ),
+      })),
     removeLocation: (locationId) =>
       update((current) => ({
         ...current,
@@ -76,29 +111,34 @@ export function useDraftFixture(draftId: string | undefined): {
         locations: [...moveLocation(current.locations, locationId, toIndex)],
       })),
     setDate: (date) => update((current) => ({ ...current, date })),
-    addMember: (memberId) =>
+    addMember: (memberId) => {
       update((current) => {
         const member = bunchMembersFixture.find((candidate) => candidate.id === memberId);
         return !member || current.members.some((joined) => joined.id === memberId)
           ? current
           : { ...current, members: [...current.members, member] };
-      }),
-    removeMember: (memberId) =>
+      });
+      return true;
+    },
+    removeMember: (memberId) => {
       update((current) => ({
         ...current,
         members: current.members.filter((member) => member.id !== memberId),
         comments: current.comments.filter((comment) => comment.memberId !== memberId),
-      })),
-    setPhotoCaption: (photoId, caption) =>
-      update((current) => ({
-        ...current,
-        photos: setPhotoCaption(current.photos, photoId, caption),
-      })),
-    removePhoto: (photoId) =>
-      update((current) => ({ ...current, photos: removePhoto(current.photos, photoId) })),
+      }));
+      return true;
+    },
+    removePhoto: (photoId) => {
+      update((current) => ({ ...current, photos: removePhoto(current.photos, photoId) }));
+      return true;
+    },
     movePhoto: (photoId, toIndex) =>
       update((current) => ({ ...current, photos: movePhoto(current.photos, photoId, toIndex) })),
-    replacePhotos: (photos) => update((current) => ({ ...current, photos })),
+    setPhotoDragging: () => undefined,
+    replacePhotos: (photos) => {
+      update((current) => ({ ...current, photos }));
+      return true;
+    },
     searchPlaces,
     publish: () => Promise.resolve('published' as const),
   };
@@ -107,6 +147,10 @@ export function useDraftFixture(draftId: string | undefined): {
     state: exists
       ? {
           kind: 'ready',
+          realtime: { down: false, retry: () => undefined },
+          titleReady: true,
+          titleFailed: false,
+          retryTitle: () => undefined,
           draft,
           viewer: draftViewerFixture,
           bunchMembers: bunchMembersFixture,

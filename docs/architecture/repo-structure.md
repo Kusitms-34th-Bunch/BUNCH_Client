@@ -8,7 +8,7 @@ apps/
 packages/
   api-core/             transport and shared API contracts
   design-system/        Figma UI 컴포넌트와 token
-  bridge/               web<->mobile-shell typed contract only (no runtime)
+  bridge/               web<->mobile-shell 메시지 계약(타입 + zod 런타임 스키마, 앱 로직 없음)
   lint-config/          shared ESLint configuration
   ts-config/            shared TypeScript configuration
 e2e/                    repository Playwright harness

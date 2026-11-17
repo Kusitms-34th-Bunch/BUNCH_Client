@@ -167,12 +167,15 @@ __metadata:
     "@app/design-system": "workspace:*"
     "@app/lint-config": "workspace:*"
     "@app/ts-config": "workspace:*"
+    "@automerge/automerge": "npm:3.2.1"
     "@dnd-kit/core": "npm:6.3.1"
     "@dnd-kit/sortable": "npm:10.0.0"
     "@dnd-kit/utilities": "npm:3.2.2"
     "@next/bundle-analyzer": "npm:^16.4.5"
     "@sentry/nextjs": "npm:^11.7.0"
     "@ssgoi/react": "npm:^7.4.1"
+    "@stomp/stompjs": "catalog:"
+    "@suspensive/react": "catalog:"
     "@tailwindcss/postcss": "npm:^4.3.3"
     "@tanstack/query-async-storage-persister": "npm:5.101.2"
     "@tanstack/react-query": "catalog:"
@@ -208,6 +211,13 @@ __metadata:
     zod: "catalog:"
   languageName: unknown
   linkType: soft
+
+"@automerge/automerge@npm:3.2.1":
+  version: 3.2.1
+  resolution: "@automerge/automerge@npm:3.2.1"
+  checksum: 10c0/ea8804e0eec547652a4ce01465a12b8d38d21abd01fc463ba2ee8d6f7a88b81f06f2fd9da8a2851578a773fcca3f2f3a32ea22566ad09aec85e967f8f7dbd50f
+  languageName: node
+  linkType: hard
 
 "@axe-core/playwright@npm:^4.14.0":
   version: 4.14.0
@@ -3588,6 +3598,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@stomp/stompjs@npm:^7.5.0":
+  version: 7.5.0
+  resolution: "@stomp/stompjs@npm:7.5.0"
+  checksum: 10c0/94b1c173ae35a7ebf0002e9b41fb2027b865813fad6bfacb038b2c3f60ffea48520bfe308b652399b0417988887e6b7b415ad8dc9f311341c26ca453fb38abd6
+  languageName: node
+  linkType: hard
+
 "@storybook/builder-vite@npm:10.5.2":
   version: 10.5.2
   resolution: "@storybook/builder-vite@npm:10.5.2"
@@ -3708,6 +3725,15 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/7bc16b8b685acae3dda5586bdd2ffff4a4e9f429ab60da3968b3d09683390d389cc0d853b27c27d44eb7cbd5ac47251914c5f73fa9ed08bb84591e408effe390
+  languageName: node
+  linkType: hard
+
+"@suspensive/react@npm:^3.21.4":
+  version: 3.21.4
+  resolution: "@suspensive/react@npm:3.21.4"
+  peerDependencies:
+    react: ^18 || ^19
+  checksum: 10c0/cbff9e0b471c67a9e7415a9fe23bcd7e039eaea6787f21142766e0a4d8d3f019ebbe2977951a33b2834a823364e2824ea5734bb6222e2a01fee1b0808003c55f
   languageName: node
   linkType: hard
 

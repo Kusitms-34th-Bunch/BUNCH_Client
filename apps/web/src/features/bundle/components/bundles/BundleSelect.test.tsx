@@ -2,10 +2,15 @@ import type * as DesignSystem from '@app/design-system';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Recommendation } from '../../lib/recommendation';
+import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { BundleSelectProvider } from '../../contexts/BundleSelectProvider';
+import {
+  recommendationDouble,
+  resetRecommendationDouble,
+} from '../../testing/recommendationDoubles';
+import { createCalls, photoBoxRefresh } from '../../testing/selectScreenDoubles';
 import { BundleSelect } from './BundleSelect';
 
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
@@ -16,10 +21,10 @@ vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
 vi.mock('../../hooks/useCreateBundle', async () => ({
   useCreateBundle: (await import('../../testing/selectScreenDoubles')).useCreateBundleDouble,
 }));
-vi.mock('../../fixtures/recommendation.fixture', async () => ({
-  recommendationFixture: (await import('../../testing/selectScreenDoubles'))
-    .legacyRecommendationFixture,
-}));
+vi.mock(
+  '../../hooks/useRecommendations',
+  async () => (await import('../../testing/recommendationDoubles')).recommendationHooksDouble,
+);
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -30,12 +35,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 }));
 
 // 앞 단계(멤버 선택)에서 경진·수인을 고른 상태로 시작(사진함 샘플의 나는 은우)
-const renderSelect = (
-  recommendations?: readonly Recommendation[],
-  initialMemberIds: readonly string[] = ['gyeongjin', 'suin'],
-) =>
+const renderSelect = (initialMemberIds: readonly string[] = ['gyeongjin', 'suin']) =>
   render(
-    <BundleSelectProvider recommendations={recommendations} initialMemberIds={initialMemberIds}>
+    <BundleSelectProvider initialMemberIds={initialMemberIds}>
       <BundleSelect currentYear={2026} />
     </BundleSelectProvider>,
   );
@@ -48,6 +50,10 @@ const sectionPhotos = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRecommendationDouble();
+  createCalls.length = 0;
+  photoBoxRefresh.calls = 0;
+  photoBoxRefresh.fail = false;
 });
 
 afterEach(() => {
@@ -125,7 +131,7 @@ describe('사진 고르기', () => {
   });
 
   it('멤버를 고르지 않고 들어오면 멤버 선택으로 되돌려 보낸다', () => {
-    renderSelect(undefined, []);
+    renderSelect([]);
 
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.members);
     expect(screen.queryByRole('radiogroup')).toBeNull();
@@ -243,11 +249,21 @@ describe('추천 번들 시트', () => {
       title: '사라진 번들',
       imageSrc: '/gone.jpg',
       memberNames: ['지예'],
-      photoIds: ['gone-1', 'gone-2'],
-      month: 9,
-      day: 27,
+      photoCount: 2,
+      startDate: '2026-09-27',
+      endDate: null,
     };
-    renderSelect([vanished]);
+    recommendationDouble.cards = [vanished];
+    recommendationDouble.details = {
+      'rec-gone': {
+        id: 'rec-gone',
+        title: '사라진 번들',
+        photos: [],
+        originalSrcById: {},
+        members: [],
+      },
+    };
+    renderSelect();
 
     await userEvent.click(sectionPhotos()[0]!);
     await userEvent.click(recommendButton());
@@ -258,8 +274,194 @@ describe('추천 번들 시트', () => {
     expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('1장 선택됨');
   });
 
+  it('누른 사이 추천이 삭제됐으면 안내하고 선택은 그대로 둔 채 최신 목록으로 시트를 다시 올린다', async () => {
+    renderSelect();
+
+    await userEvent.click(sectionPhotos()[0]!);
+    await userEvent.click(recommendButton());
+    const first = (await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!;
+    // 시트를 연 뒤 서버에서 이 추천이 삭제됨
+    recommendationDouble.deletedIds = ['rec-1'];
+    recommendationDouble.cards = recommendationDouble.cards.filter((card) => card.id !== 'rec-1');
+    await userEvent.click(first);
+
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    // 시트가 한 번 내려갔다 최신 목록(삭제된 카드 없음)으로 다시 올라옴
+    await waitFor(() => expect(recommendationDouble.listRequests).toBe(2));
+    expect(await screen.findByRole('button', { name: '한강 피크닉' })).toBeInTheDocument();
+    // 삭제된 카드를 눌렀던 선택 표시가 남지 않음
+    expect(screen.queryAllByRole('button', { pressed: true })).toHaveLength(0);
+    expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('1장 선택됨');
+  });
+
+  it('마지막으로 적용한 추천 번들 id를 초안 생성에 함께 보낸다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderSelect();
+
+    await user.click(recommendButton());
+    await user.click((await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!);
+    // 시트가 닫힌 뒤 다시 열어 다른 추천을 적용(고른 사진이 있어 변경 확인을 거침)
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await user.click(recommendButton());
+    await user.click(await screen.findByRole('button', { name: '한강 피크닉' }));
+    await user.click(
+      await within(await screen.findByRole('alertdialog')).findByRole('button', {
+        name: '변경하기',
+      }),
+    );
+    await user.click(createButton());
+
+    expect(createCalls).toHaveLength(1);
+    expect(createCalls[0]?.recommendationId).toBe('rec-3');
+  });
+
+  it('추천을 적용하지 않고 만들면 추천 번들 id를 보내지 않는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderSelect();
+
+    await user.click(sectionPhotos()[0]!);
+    await user.click(createButton());
+
+    expect(createCalls).toHaveLength(1);
+    expect(createCalls[0]?.recommendationId).toBeUndefined();
+  });
+
+  it('목록을 받는 동안 다시 눌러도 요청은 한 번이고 시트는 한 겹만 올라온다', async () => {
+    let release: () => void = () => {};
+    recommendationDouble.listGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    // 받는 동안 화면은 로딩으로 막힘
+    expect(await screen.findByTestId('lottie')).toBeInTheDocument();
+    await userEvent.click(recommendButton()).catch(() => undefined);
+    release();
+
+    expect(await screen.findAllByRole('button', { name: '성수동 러닝 모임' })).toHaveLength(2);
+    expect(recommendationDouble.listRequests).toBe(1);
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  });
+
+  it('사진을 받는 동안에는 「>」로 상세에 들어가지 않는다', async () => {
+    let release: () => void = () => {};
+    recommendationDouble.detailGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    const card = (await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!;
+    await userEvent.click(card);
+    await userEvent.click(
+      screen.getAllByRole('button', { name: '성수동 러닝 모임 상세 보기' })[0]!,
+    );
+    expect(router.push).not.toHaveBeenCalled();
+    release();
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(6)));
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('사진을 받는 사이 시트를 내려도 변경 확인 창은 그대로 뜬다', async () => {
+    let release: () => void = () => {};
+    recommendationDouble.detailGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    renderSelect();
+
+    await userEvent.click(sectionPhotos()[0]!);
+    await userEvent.click(recommendButton());
+    const card = (await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!;
+    await userEvent.click(card);
+    // 받는 사이 시트를 Esc로 내림
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    release();
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText('추천 번들 사진으로 변경할까요?')).toBeInTheDocument();
+  });
+
+  it('사진함 목록에 없는 최신 사진이 추천에 있으면 목록을 먼저 새로 받은 뒤 적용한다', async () => {
+    const detail = recommendationDouble.details['rec-1']!;
+    recommendationDouble.details = {
+      ...recommendationDouble.details,
+      'rec-1': {
+        ...detail,
+        photos: [...detail.photos, { ...detail.photos[0]!, id: 'just-uploaded' }],
+      },
+    };
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    await userEvent.click((await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(7)));
+    expect(photoBoxRefresh.calls).toBe(1);
+  });
+
+  it('사진함 목록을 새로 받지 못하면 적용하지 않고 안내한다', async () => {
+    const detail = recommendationDouble.details['rec-1']!;
+    recommendationDouble.details = {
+      ...recommendationDouble.details,
+      'rec-1': {
+        ...detail,
+        photos: [...detail.photos, { ...detail.photos[0]!, id: 'just-uploaded' }],
+      },
+    };
+    photoBoxRefresh.fail = true;
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    await userEvent.click((await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applyFailed));
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(7));
+    expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('선택한 사진이 없어요.');
+  });
+
+  it('사진함 목록에 이미 있는 사진만 적용할 때는 목록을 다시 받지 않는다', async () => {
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    await userEvent.click((await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applied(6)));
+    expect(photoBoxRefresh.calls).toBe(0);
+  });
+
+  it('추천 번들 목록을 받지 못하면 시트를 올리지 않고 안내한다', async () => {
+    recommendationDouble.failing = true;
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.recommendationsFailed),
+    );
+    expect(screen.queryByRole('button', { name: '성수동 러닝 모임' })).toBeNull();
+  });
+
+  it('추천 번들 사진을 받지 못하면 안내하고 아무것도 선택하지 않는다', async () => {
+    renderSelect();
+
+    await userEvent.click(recommendButton());
+    const card = (await screen.findAllByRole('button', { name: '성수동 러닝 모임' }))[0]!;
+    recommendationDouble.failing = true;
+    await userEvent.click(card);
+
+    expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applyFailed);
+    expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('선택한 사진이 없어요.');
+  });
+
   it('추천 번들이 없으면 제목 없이 빈 상태를 보인다', async () => {
-    renderSelect([]);
+    recommendationDouble.cards = [];
+    renderSelect();
 
     await userEvent.click(recommendButton());
 

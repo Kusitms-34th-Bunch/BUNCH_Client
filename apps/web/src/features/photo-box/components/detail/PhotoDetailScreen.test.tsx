@@ -197,6 +197,13 @@ describe('PhotoDetailScreen 헤더와 사진', () => {
     ]);
   });
 
+  it('지금 보는 사진만 사진함 썸네일과 이어지는 hero 키를 갖는다', () => {
+    const { container } = renderScreen({}, 'p3');
+
+    const keys = [...container.querySelectorAll('[data-hero-exit-key]')];
+    expect(keys.map((element) => element.getAttribute('data-hero-exit-key'))).toEqual(['photo-p3']);
+  });
+
   it('처리 중이거나 불러오지 못한 사진은 회색 자리표시로 보인다', () => {
     renderScreen({ photos: [photo('x', null, ['a'], 'processing')] }, 'x');
 
@@ -399,22 +406,20 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('사진의 촬영 날짜와 관계없이 오늘이 속한 달을 선택 없이 열고 저장은 막혀 있다(기능명세서 3.4.1)', async () => {
+  it('촬영 날짜를 고른 채 그 달로 열고 그대로는 저장할 수 없다', async () => {
     const user = userEvent.setup();
     await openDateSheet(user);
 
-    // d1의 촬영 날짜는 9월 5일이지만 시트는 오늘(10월)이 속한 달을 아무 날짜도 고르지 않은 채 엶
-    expect(screen.getByRole('grid', { name: '2026년 10월' })).toBeTruthy();
-    expect(screen.queryByRole('grid', { name: '2026년 9월' })).toBeNull();
+    expect(screen.getByRole('grid', { name: '2026년 9월' })).toBeTruthy();
     expect(
       screen
-        .getAllByRole('button', { name: /^2026년 10월 \d+일$/ })
-        .some((day) => day.parentElement?.getAttribute('aria-selected') === 'true'),
-    ).toBe(false);
+        .getByRole('button', { name: '2026년 9월 5일' })
+        .parentElement?.getAttribute('aria-selected'),
+    ).toBe('true');
     expect(screen.getByRole('button', { name: '저장' }).getAttribute('aria-disabled')).toBe('true');
   });
 
-  it('촬영 날짜를 모르는 사진도 오늘이 있는 달을 선택 없이 연다', async () => {
+  it('촬영 날짜를 모르는 사진은 오늘이 있는 달을 선택 없이 연다', async () => {
     const user = userEvent.setup();
     await openDateSheet(user, 'd2');
 
@@ -426,7 +431,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
     const user = userEvent.setup();
     await openDateSheet(user);
 
-    await user.click(screen.getByRole('button', { name: '2026년 10월 5일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(changePhotoDates).toHaveBeenCalledTimes(1));
@@ -436,7 +441,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
   it('관리자가 다른 멤버가 올린 사진의 날짜를 바꾸면 확인 창을 거친 뒤 바꾼다', async () => {
     const user = userEvent.setup();
     await openDateSheet(user, 'd3');
-    await user.click(screen.getByRole('button', { name: '2026년 10월 5일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     const dialog = await screen.findByRole('alertdialog', { name: '다른 멤버가 올린 사진이에요.' });
@@ -455,7 +460,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
   it('함께 올린 사진이면 다른 제목의 확인 창을 거친다', async () => {
     const user = userEvent.setup();
     await openDateSheet(user, 'd4');
-    await user.click(screen.getByRole('button', { name: '2026년 10월 5일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     expect(
@@ -468,7 +473,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
   it('확인 창에서 취소하면 바꾸지 않고 시트를 그대로 둔다', async () => {
     const user = userEvent.setup();
     await openDateSheet(user, 'd3');
-    await user.click(screen.getByRole('button', { name: '2026년 10월 5일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
     const dialog = await screen.findByRole('alertdialog', { name: '다른 멤버가 올린 사진이에요.' });
 
@@ -484,7 +489,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
     changePhotoDates.mockRejectedValue(new MissingPhotosError(['d1']));
     await openDateSheet(user);
 
-    await user.click(screen.getByRole('button', { name: '2026년 10월 6일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
@@ -496,13 +501,13 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
     const user = userEvent.setup();
     await openDateSheet(user);
 
-    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(changePhotoDates).toHaveBeenCalledTimes(1));
     const [ids, date] = changePhotoDates.mock.calls[0] as [string[], Date];
     expect(ids).toEqual(['d1']);
-    expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 9, 12]);
+    expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 8, 12]);
     await waitFor(() => expect(screen.queryByRole('dialog', { name: '날짜 바꾸기' })).toBeNull());
     expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChanged);
   });
@@ -512,7 +517,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
     changePhotoDates.mockRejectedValue(new Error('network'));
     await openDateSheet(user);
 
-    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed));

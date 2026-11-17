@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 
 /** 공개 초대 카드 조회 응답. 이 화면은 링크가 유효한지만 알면 돼 내용은 쓰지 않고 계약 필수 필드(`name`·`introduction`·`code`)만 검사함(카드 내용은 초대 확인 화면이 로그인 뒤 확인 API로 받음) */
+// 계약 미연결: 번치 성격(characterType)은 계약상 필수지만 빠져도 기본 이미지로 보이게 선택으로 받음
 const publicInvitationSchema = z.object({
   name: z.string(),
   introduction: z.string(),

@@ -1,0 +1,68 @@
+name: E2E Production
+
+# 운영 배포(Web Deploy)가 끝난 뒤 운영 주소에서 로그인 없이 도는 스모크(e2e/production, docs/workflows/e2e-testing.md)
+# 가짜 서버(MSW) E2E가 잡지 못하는 실서버·BFF·접근 가드 연결을 확인. 비밀을 쓰지 않고 운영 데이터를 바꾸지 않음
+on:
+  workflow_run:
+    workflows: [Web Deploy]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: 운영 스모크
+    # 배포가 성공한 이 저장소의 Web Deploy만. 수동 실행은 지금 운영 주소를 바로 확인
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.path == '.github/workflows/web-deploy.yml' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # 태그는 @playwright/test(.yarnrc.yml catalog) 버전과 같아야 함(e2e.yml과 같은 이미지)
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
+    env:
+      E2E_BASE_URL: https://app.bunch.kr
+    steps:
+      # push 배포는 배포한 커밋의 spec, 수동 배포(ref 지정)는 실행한 브랜치 head의 spec(workflow_run이 배포 ref를 주지 않음)
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      # 설치 전에 변조 가드(다른 설치 workflow와 같음)
+      - name: Check suspicious changes
+        run: node turbo/workflows/check-suspicious.mjs
+
+      - run: corepack enable
+
+      # 기본 브랜치 범위에서 돌므로 yarn 캐시를 저장하지 않음(PR이 복원하는 캐시에 닿지 않게)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: yarn install --immutable
+      - run: yarn e2e:typecheck
+      # 경로 지정: 이 분기가 없는 옛 커밋을 받으면 대상이 없어 실패(가짜 서버 E2E가 대신 돌지 않게)
+      - run: yarn e2e e2e/production
+
+      - name: Upload Playwright results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-production-results
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 14

@@ -28,18 +28,29 @@
         "NEXT_PUBLIC_SENTRY_DSN",
         "NEXT_PUBLIC_SENTRY_ENVIRONMENT",
         "NEXT_PUBLIC_API_MOCKING",
+        "NEXT_PUBLIC_WS_URL",
         "NEXT_PUBLIC_POSTHOG_KEY",
         "NEXT_PUBLIC_POSTHOG_HOST",
         "ANALYZE",
+        "NEXT_SKIP_TYPECHECK",
         "SENTRY_ORG",
         "SENTRY_PROJECT",
         "SENTRY_AUTH_TOKEN",
         "SENTRY_RELEASE"
       ]
     },
-    "typecheck": {},
-    "lint": {},
-    "test": {},
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "typecheck": {
+      "dependsOn": ["transit"]
+    },
+    "lint": {
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
+    },
     "test:watch": {
       "cache": false,
       "persistent": true

@@ -63,6 +63,8 @@ export type FeedAd = {
   tags?: readonly string[] | undefined;
   /** 현재 번치의 콕한 장소에 담겨 있음 */
   picked: boolean;
+  /** 콕 취소에 쓰는 콕 ID(콕하지 않았거나 응답 전이면 없음) */
+  pinId?: number | undefined;
 };
 
 /** 팔로우한 번치 구간과 공개 구간(앞 구간에 나온 번들은 서버가 뺌), 공개 구간 끝의 광고 */
@@ -104,17 +106,22 @@ export type FeedComment = {
   parentId?: string | undefined;
   deleted?: boolean | undefined;
   replyCount?: number | undefined;
-  /** 내가 쓴 댓글(더보기에서 삭제) */
-  mine?: boolean | undefined;
+  /** 서버 권한: 내 댓글 삭제, 원댓글에 답글, 남의 댓글 신고(명세 014, 소속 번치가 없으면 모두 false) */
+  canDelete: boolean;
+  canReply: boolean;
+  canReport: boolean;
 };
 
 export type FeedBundleDetail = FeedBundle & {
   /** 멤버 공개 번들(제목 옆 뱃지) */
   memberOnly: boolean;
-  /** 이 번들이 우리 번치 번들일 때 내 역할(메뉴 갈래, 기능명세서 6.2.11) */
-  myRole?: 'owner' | 'coOwner' | 'member' | undefined;
+  /** 수정·공개 범위를 바꿀 수 있음(서버 `permissions.canEdit`, 헤더 관리 메뉴 기능명세서 6.2.11) */
+  canEdit: boolean;
+  /** 삭제할 수 있음(서버 `permissions.canDelete`) */
+  canDelete: boolean;
+  /** 신고할 수 있음(서버 `permissions.canReport`) */
+  canReport: boolean;
   memberComments: FeedMemberComment[];
-  comments: FeedComment[];
 };
 
 export type FeedFollowStatus = 'none' | 'following' | 'requested';
@@ -126,6 +133,10 @@ export type FeedMemberBunch = {
   imageSrc?: string | undefined;
   isPrivate: boolean;
   followStatus: FeedFollowStatus;
+  /** 언팔로우·요청 취소에 쓰는 관계 ID(팔로우하지 않았으면 없음) */
+  followId?: string | undefined;
+  /** 서버가 팔로우 버튼을 보이라고 함(지금 번치 자신의 줄·소속 번치 없음이면 false) */
+  showFollowButton?: boolean | undefined;
 };
 
 export type FeedMemberProfile = {

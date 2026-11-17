@@ -18,6 +18,15 @@ describe('가짜 서버 세션', () => {
     expect(await api().get('session').json()).toEqual({ authenticated: true });
   });
 
+  it('실시간 연결용 토큰은 token과 앞으로의 만료 시각을 돌려준다', async () => {
+    const { token, expiresAt } = await api()
+      .post('auth/ws-token')
+      .json<{ token: string; expiresAt: string }>();
+
+    expect(token).not.toBe('');
+    expect(new Date(expiresAt).getTime()).toBeGreaterThan(Date.now());
+  });
+
   it('재발급과 로그아웃은 본문 없이 성공한다', async () => {
     // ky afterResponse hook이 본문 없는 204 응답을 복제하면 happy-dom 스트림 오류 발생(실제 브라우저는 무관), fetch로 확인
     for (const path of ['/api/auth/reissue', '/api/auth/logout']) {
@@ -70,13 +79,35 @@ describe('가짜 서버 번치 멤버 목록', () => {
     expect(await response.json()).toMatchObject({ success: false, error: { code: 'COMMON_001' } });
   });
 
-  it('없는 번치는 RESOURCE_001(404)이다', async () => {
+  it('없는 번치는 BUNCH_009(404)이다', async () => {
     const response = await fetch('/api/bunches/999/members');
     expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ error: { code: 'RESOURCE_001' } });
+    expect(await response.json()).toMatchObject({ error: { code: 'BUNCH_009' } });
   });
 
-  it('내가 소속이 아니면 AUTH_002(403)이다', async () => {
+  it('소속이 아니어도 공개 번치는 조회하고, 서로 차단했으면 BUNCH_009(404)이다', async () => {
+    expect(unwrapEnvelope<BunchMember[]>(await api().get('bunches/3/members').json())).toHaveLength(
+      4,
+    );
+
+    mockDb.update((state) => ({
+      ...state,
+      blocks: [
+        ...state.blocks,
+        {
+          id: 99,
+          blockerBunchId: 3,
+          targetBunchId: MOCK_BUNCH_ID,
+          createdAt: '2026-10-20T09:00:00.000Z',
+        },
+      ],
+    }));
+    const response = await fetch('/api/bunches/3/members');
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: { code: 'BUNCH_009' } });
+  });
+
+  it('소속이 아닌 비공개 번치를 팔로우 승인 없이 보면 AUTH_002(403)이다', async () => {
     mockDb.update((state) => ({
       ...state,
       memberships: state.memberships.filter(

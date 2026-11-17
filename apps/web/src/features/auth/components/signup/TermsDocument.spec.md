@@ -13,7 +13,7 @@
 - 약관 동의 화면의 약관 행 오른쪽 버튼으로 여는 약관 원문 화면. 앱 안 화면으로 열고 닫아도 동의 화면의 체크 상태가 유지된다.
 - 구성: 헤더(뒤로 가기·약관 이름), 시행일자·버전, 조항 4개(제목 + 문단 또는 번호 항목).
 - 헤더는 상단 고정이고 본문만 스크롤된다.
-- MY의 약관 화면(`/my/terms/[termId]`, #235, 화면 설계서 MY(4) 1·2번, Figma `4096:75887`·`4096:75908`)도 같은 컴포넌트를 쓴다. MY Figma는 헤더에 뒤로 가기만 있어 `hideTitle`로 약관 이름을 화면 밖 `h1`로 둔다(이름은 보조기술에 그대로 전달). 이름은 `title`로 MY 메뉴 이름(「개인정보 처리방침」)을 넘긴다. 가입 약관 원문 제목(「필수 수집 항목 동의서」)과 다르기 때문이다. 뒤로 가면 MY로 돌아가고, MY ↔ 약관은 메뉴 하위 화면과 같은 미는 slide다(전환 경계 고정 id `/my/terms`).
+- MY의 약관 화면(`/my/terms/[termId]`, #235, 화면 설계서 MY(4) 1·2번, Figma `4096:75887`·`4096:75908`)도 같은 컴포넌트를 쓴다. MY Figma는 헤더에 뒤로 가기만 있어 `hideTitle`로 약관 이름을 화면 밖 `h1`로 둔다(이름은 보조기술에 그대로 전달). 이름은 `title`로 MY 메뉴 이름(「개인정보 처리방침」)을 넘긴다. 가입 약관 원문 제목(「필수 수집 항목 동의서」)과 다르기 때문이다. 뒤로 가면 약관 및 개인정보(`/my/terms`)로 돌아가고, 약관 및 개인정보 ↔ 약관 원문은 메뉴 하위 화면과 같은 미는 slide다(전환 경계 고정 id `/my/terms/document`). 「전문보기」로 여는 추가 개인정보 수집 동의서(`demographics`)도 같은 route를 쓴다(#345).
 - 약관을 불러오지 못한 상태(화면 설계서 MY(4) 2-2: 「연결이 끊겼어요.」 배너·재시도, 「약관을 불러오지 못했어요」)는 원문이 앱 안 정적 문서라 생기지 않아 만들지 않았다. 원문을 API로 받게 되면 그때 만든다.
 
 ### 범위 외
@@ -25,7 +25,7 @@
 ## Route와 접근
 
 - Path·params·search: `/signup/terms/service`, `/signup/terms/privacy`, `/signup/terms/demographics`. `generateStaticParams`로 이 셋만 정적으로 만들고(`dynamicParams = false`) 그 밖의 값은 404다.
-- 접근 권한·guard: 아직 없다(약관 동의 화면과 같다).
+- 접근 권한·guard: 약관 동의 화면과 같다. `(app)` layout의 `AuthGate`가 가입 상태로 막아 가입 중인 사용자만 들어온다(`features/auth/lib/accessPolicy.ts`).
 - Layout·redirect·navigation: `(app)/signup/layout.tsx`(체크 상태 provider) 안에서 `SignupFrame`을 쓴다. 뒤로 가기는 `router.back()`이다.
 
 ## 상태와 흐름

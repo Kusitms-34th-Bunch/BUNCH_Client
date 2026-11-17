@@ -1,7 +1,12 @@
 import type * as DesignSystem from '@app/design-system';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockDb } from '@/mocks/db';
+import { MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
+import { fail } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { ProfileEditScreen } from './ProfileEditScreen';
 
@@ -22,10 +27,14 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
 // 닉네임 중복 확인은 기본으로 사용 가능(true)이라 응답 뒤 수정하기가 켜짐
-const renderScreen = (checkNickname = vi.fn((_nickname: string) => Promise.resolve(true))) => {
+const renderScreen = (
+  checkNickname = vi.fn((_nickname: string) => Promise.resolve(true)),
+  demographicsConsent = false,
+) => {
   render(
     <ProfileEditScreen
       profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }}
+      demographicsConsent={demographicsConsent}
       checkNickname={checkNickname}
     />,
     { wrapper: createQueryWrapper() },
@@ -42,9 +51,37 @@ describe('ProfileEditScreen', () => {
     renderScreen();
 
     expect(nicknameInput().value).toBe('으누');
-    // 출생연도·성별은 편집 화면에 없음(Figma 개인 프로필 편집)
+    expect(submitButton().disabled).toBe(true);
+  });
+
+  it('추가 개인정보에 동의하지 않았으면 출생연도·성별 칸과 비공개 안내가 보이지 않는다', () => {
+    renderScreen();
+
     expect(screen.queryByRole('textbox', { name: /출생연도/ })).toBeNull();
     expect(screen.queryByRole('group', { name: '성별' })).toBeNull();
+    expect(screen.queryByText('출생연도와 성별은 다른 사용자에게 공개되지 않아요.')).toBeNull();
+    expect(submitButton().disabled).toBe(true);
+  });
+
+  it('동의했으면 저장된 출생연도·성별이 채워지고 고칠 수 있다(기능명세서 7.2.6)', async () => {
+    const user = userEvent.setup();
+    renderScreen(undefined, true);
+
+    const birthYear = screen.getByRole<HTMLInputElement>('textbox', { name: /출생연도/ });
+    expect(birthYear.disabled).toBe(false);
+    expect(birthYear.value).toBe('2003');
+    const gender = screen.getByRole('group', { name: '성별' });
+    expect(within(gender).getByRole('button', { name: '남성' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(submitButton().disabled).toBe(true);
+
+    // 바꾸면 변경 사항이 생겨 활성, 원래 값으로 되돌리면 다시 비활성
+    await user.clear(birthYear);
+    await user.type(birthYear, '1999');
+    await waitForEnabled();
+    await user.clear(birthYear);
+    await user.type(birthYear, '2003');
     expect(submitButton().disabled).toBe(true);
   });
 
@@ -80,9 +117,106 @@ describe('ProfileEditScreen', () => {
     await waitForEnabled();
     await user.click(submitButton());
 
-    expect(replace).toHaveBeenCalledWith('/my');
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
     expect(toastAfterNavigation).toHaveBeenCalledWith('프로필을 수정했어요.');
     expect(submitButton().disabled).toBe(true);
+  });
+
+  it('닉네임과 사진 처리(그대로)를 서버에 저장한다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
+    const me = mockDb.get().members.find((member) => member.memberId === MOCK_MY_MEMBER_ID);
+    expect(me?.nickname).toBe('으누누');
+  });
+
+  it('저장할 때 서버가 닉네임 중복으로 거절하면 오류를 보이고 닉네임 입력으로 초점을 옮긴다', async () => {
+    server.use(http.put('/api/members/me/profile', () => fail(409, 'USER_002')));
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    expect(await screen.findByText('이미 사용 중인 닉네임이에요.')).toBeTruthy();
+    expect(document.activeElement).toBe(nicknameInput());
+    expect(submitButton().disabled).toBe(true);
+    expect(replace).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  /** 프로필 저장 응답을 `release`를 부를 때까지 붙잡음 */
+  const holdSave = () => {
+    const held = { release: () => undefined as void, responded: false };
+    server.use(
+      http.put('/api/members/me/profile', async () => {
+        await new Promise<void>((resolve) => {
+          held.release = resolve;
+        });
+        held.responded = true;
+        return HttpResponse.json({
+          success: true,
+          data: { memberId: MOCK_MY_MEMBER_ID, nickname: '으누누', imageUrl: null },
+        });
+      }),
+    );
+    return held;
+  };
+
+  it('저장 중에는 닉네임·사진을 바꿀 수 없다', async () => {
+    holdSave();
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() => expect(nicknameInput()).toBeDisabled());
+    expect(screen.getByRole('button', { name: '프로필 사진 변경' })).toBeDisabled();
+    expect(submitButton()).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('저장 중 뒤로 가면 저장이 끝나도 다시 이동하거나 완료 토스트를 띄우지 않는다', async () => {
+    const held = holdSave();
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+    await waitFor(() => expect(submitButton()).toHaveAttribute('aria-busy', 'true'));
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    expect(replace).toHaveBeenCalledTimes(1);
+
+    held.release();
+    await waitFor(() => expect(held.responded).toBe(true));
+    // 응답 뒤 성공 처리(내 프로필 다시 받기 포함)가 끝날 시간을 둠
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+  });
+
+  it('저장이 실패하면 머물러 토스트를 띄우고 다시 누를 수 있다', async () => {
+    server.use(http.put('/api/members/me/profile', () => fail(500, 'COMMON_500')));
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    await waitForEnabled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('MY에서 들어왔으면 저장 뒤 그 기록으로 돌아간다(MY 기록을 쌓지 않음)', async () => {
@@ -94,7 +228,7 @@ describe('ProfileEditScreen', () => {
     await waitForEnabled();
     await user.click(submitButton());
 
-    expect(back).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(back).toHaveBeenCalledTimes(1));
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -149,6 +283,7 @@ describe('ProfileEditScreen', () => {
     await user.type(nicknameInput(), '짱');
     await waitForEnabled();
     await user.click(submitButton());
+    await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalled());
 
     await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
 

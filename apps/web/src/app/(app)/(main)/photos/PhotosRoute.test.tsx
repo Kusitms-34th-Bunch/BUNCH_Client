@@ -1,4 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
+import type { ReactNode } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -16,6 +17,14 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
+// 사진 상세 슬라이드 라이브러리는 이 테스트와 관계없어 mock
+vi.mock('swiper/react', () => ({
+  Swiper: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SwiperSlide: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}));
+vi.mock('swiper/modules', () => ({ A11y: {}, Keyboard: {}, Zoom: {} }));
+vi.mock('swiper/css', () => ({}));
+vi.mock('swiper/css/zoom', () => ({}));
 
 describe('PhotosRoute 번치 전환', () => {
   it('사진함 헤더의 번치 이름을 누르면 번치 전환 시트가 열리고, 다른 번치를 고르면 그 번치의 사진함으로 바뀐다', async () => {

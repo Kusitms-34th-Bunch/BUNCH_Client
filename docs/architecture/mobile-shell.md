@@ -24,10 +24,11 @@ apps/mobile-shell/
     tab-crossfade/      탭 전환 80ms 크로스페이드·선택 햅틱(로컬 Expo 모듈, iOS ObjC)
   assets/
     tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
+    floating-icons/     플로팅 버튼 아이콘(같은 방식, 더하기·더보기)
     fonts/              Pretendard Regular(탭 라벨), 라이선스
   src/
     web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기·오류 화면)
-    tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx)
+    tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx)
     safe-area-script.ts, sentry.ts, sanitize-sentry-event.ts, web-url.ts, gallery-image.ts, permissions.ts (+ *.test.mjs)
 ```
 
@@ -63,11 +64,12 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 문서 전체의 튐(`bounces`, Android `overScrollMode`)은 끈다. 스크롤은 웹 화면 안쪽 영역(`PageShell`의 `main`)이 맡으므로, 켜 두면 화면 위쪽에서 아래로 당길 때 헤더까지 함께 내려가며 WebView 바깥의 흰 배경이 드러난다. 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(`allowsLinkPreview`, iOS)도 꺼서 앱처럼 보이게 한다. 영상은 화면 안에서 자동 재생되게 `allowsInlineMediaPlayback`과 `mediaPlaybackRequiresUserAction={false}`를 둔다(react-native-webview 기본값은 전체 화면 재생·눌러야 재생이라, 로그인 배경 영상이 첫 프레임에서 멈추고 재생 버튼이 보였다).
 - 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
 - 화면 키보드가 올라오면 하단 Safe Area를 덮는다. 화면이 `data-keyboard-open`을 표시하면 `AppFrame`이 아래 여백을 0으로 둔다. 지금은 번들 상세 댓글 입력란만 쓴다(`useKeyboardOpen`, `visualViewport` 높이 기준). iOS·Android 실기기 확인 전이다. Android가 키보드에 맞춰 WebView를 줄이면 표시가 켜지지 않고 여백이 그대로 남는다.
+- 사진 보기처럼 화면 끝까지 그리는 화면은 전환 경계 요소에 `data-bottom-bleed`를 달아 `AppFrame`의 아래 여백을 0으로 둔다. 탭 화면에서 들어올 때 쉘이 시스템 탭 바를 숨기며 아래 여백이 83px에서 34px로 바뀌는데, 여백 칸이 있으면 본문 높이가 따라 바뀌어 가운데 내용이 밀린다. 지금은 사진 상세만 쓰고, 이 화면의 하단 요소(시트·확인 창·토스트·포커스 때 보이는 확대 버튼)는 직접 `--safe-area-bottom`을 더한다.
 - 초대장처럼 Safe Area까지 배경이 이어지는 화면은 route에 `data-app-background`(브랜드 `brand`, 연보라 `brand-subtle-1`, 회색 `secondary`, 번치 성격별 `orange-50`·`pink-50`·`green-50`)를 지정한다. `AppFrame`이 CSS `:has()`로 같은 배경을 칠하며 여백 크기는 바꾸지 않는다. 로티 화면은 배경 전환이 시작될 때 같은 표식을 `PageShell`에 전달해 본문과 Safe Area를 함께 300ms ease-out으로 전환한다. 동작 줄이기에서는 배경 전환 효과를 끈다. 브랜드(`brand`)는 앱 첫 실행 인트로의 브랜드 배경이 차오르는 시점과 맞춰 200ms 뒤 550ms ease-in-out으로 전환하고, 가이드로 넘어갈 때는 화면이 흐려지는 350ms에 맞춰 돌아온다. 인트로는 안쪽 배경을 따로 칠하지 않고 `AppFrame` 배경 하나가 Safe Area까지 칠해 경계가 늦게 따라오지 않는다. 화면이 제거되면 배경도 해제된다. 아래 Safe Area는 `AppFrame`의 마지막 자식 요소가 차지한다. 쉘에서는 이 높이에 시스템 탭 바가 포함되므로, 위만 색이 있고 아래 내용은 흰색인 화면(번치 홈은 번치 성격 색, 다른 번치는 연보라)은 `data-app-background-bottom="primary"`를 함께 지정해 탭 바 뒤를 흰색으로 둔다.
 - 앱은 `app.json`의 `orientation: "portrait"`로 세로에 고정되어 있어, iPhone 기준으로 앱 안에서는 가로 모드가 생기지 않는다(`ios.supportsTablet: true`인 iPad에서도 세로로 고정되는지는 확인하지 못했다). 일반 브라우저의 가로 모드를 위해 좌우 Safe Area를 적용하고, `PageShell`의 본문은 최소 높이(8rem)를 가진다. header·bottom·Safe Area를 뺀 높이가 그보다 작으면 본문 대신 틀 전체가 넘쳐 페이지가 스크롤된다. 이때 하단 영역(CTA)은 문서를 스크롤해야 보이고, main 위에서 스크롤하면 `overscroll-y-contain` 때문에 문서로 이어지지 않아 닿기 어려울 수 있다. 하단을 항상 보이게 하는 sticky 방식과 문서 스크롤 하나로 통일하는 방식은 이득이 불분명하거나 범위가 커서 택하지 않았고, 이 한계는 실기기와 낮은 화면에서 확인한 뒤 다시 정한다.
 - 확인한 것: 브라우저에서 네이티브 값이 한 번만 적용되고 가로 모드·낮은 화면의 최소 높이 정책이 동작하는 것, 네이티브의 TypeScript 검사·iOS JS 번들 생성·값 변환 테스트. 확인하지 못한 것: iOS·Android 실기기와 시뮬레이터에서 실제 값이 들어가는지, 마운트 뒤 값이 바뀐 상태에서 새 문서를 로드할 때 `injectedJavaScriptBeforeContentLoaded`의 새 값이 쓰이는지, Android 시스템 바(edge-to-edge) 처리, 소프트 키보드와 `dvh`. 이 부분은 실기기 확인 전까지 통과로 보지 않는다.
 
-iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …」)은 `app.json`의 `ios.infoPlist.CFBundleDisplayName`(`BUNCH`)이다. `name`(`Bunch`)을 바꾸면 prebuild가 Xcode 프로젝트 이름까지 바꿀 수 있어 표시 이름만 덮어쓴다. Android 이름은 아직 `name`을 따른다. 현재 iOS `bundleIdentifier`는 `com.kyeongjooni.mobile-shell`이고 Android `package`는 아직 없다. 출시용 식별자는 스토어 등록 전에 확정한다.
+iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …」)은 `app.json`의 `ios.infoPlist.CFBundleDisplayName`(`BUNCH`)이다. `name`(`Bunch`)을 바꾸면 prebuild가 Xcode 프로젝트 이름까지 바꿀 수 있어 표시 이름만 덮어쓴다. Android 이름은 `name`을 따른다(2026-11-16 확인). 현재 iOS `bundleIdentifier`는 `com.kyeongjooni.mobile-shell`이다. Android `package`는 `app.json`에 없다(2026-11-16 확인). 출시용 식별자는 스토어 등록 전에 확정한다.
 
 ## 실행과 테스트
 
@@ -112,8 +114,23 @@ iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …�
   - iOS: 같은 모듈이 사용자 탭에서만 불리는 `tabBarController:shouldSelectViewController:`를 감싸, 원래 처리 뒤 선택이 허용됐거나 지금 탭 재선택이면 `UISelectionFeedbackGenerator`를 울린다. 라이브러리가 막은 선택에는 울리지 않는다. 이 메서드를 상위 클래스에서 물려받는 구조로 바뀌면 감싸지 않는다.
   - iOS Expo Go: 이 네이티브 모듈이 실리지 않으므로 `app/(tabs)/_layout.tsx`가 `NativeTabs`의 `tabPress`에서 `expo-haptics`의 `selectionAsync()`로 대신 울린다. 개발·배포 앱에서 두 번 울리지 않도록 `expo-constants`의 실행 환경이 Expo Go(`StoreClient`)일 때만 붙인다. 지금 탭을 다시 눌렀을 때도 `tabPress`가 오는지는 실기기에서 확인하지 않았다.
   - 안드로이드: 웹 탭 막대(`MainTabBar`)가 누를 때 bridge `tabSelectionHaptic`을 부르고, 쉘은 `expo-haptics`의 `performAndroidHapticsAsync(Segment_Tick)`(기기 햅틱 설정을 따름)로 처리한다. 이 메서드가 없는 이전 쉘에서는 웹의 브라우저 폴백(동작 없음)이 실행된다.
+- 끌기 햅틱: 번들 작성 화면에서 사진 썸네일을 길게 눌러 집어 올린 순간 한 번(기능 spec 4.3.6) 웹이 bridge `dragStartHaptic`을 부른다(쉘일 때만, 오류는 삼킴). 쉘은 `expo-haptics`로 안드로이드는 `performAndroidHapticsAsync(Long_Press)`(모든 버전에서 지원하는 길게 누르기 시스템 햅틱, 기기의 터치 피드백 설정이 꺼져 있으면 울리지 않으며, 쓸 수 없어 실패하면 `impactAsync(Medium)` 진동 모터 충격), iOS는 `impactAsync(Medium)`을 울린다. 끌기 시작 전용 `Drag_Start`는 안드로이드 14 이상만 지원하고 기기에 따라 아주 약해서 쓰지 않는다. 두 방법이 모두 실패하면 개발 중에만 콘솔에 경고한다. 브라우저에서는 웹의 폴백(동작 없음)이 실행되고, 이 메서드가 없는 이전 쉘에서는 폴백이 실행되거나 호출 오류를 웹이 삼켜 어느 쪽이든 진동만 없다. 쉘을 새로 빌드해야 울리며, 실기기 진동은 확인하지 않았다(시뮬레이터는 진동이 없음).
 - 탭 WebView 4개는 처음에 함께 만들어진다(expo-router 네이티브 탭은 모든 탭을 미리 그림). 탭마다 웹 상태가 따로라 번치 전환·로그아웃처럼 다른 탭에도 알려야 하는 변화는 아직 연결하지 않았다.
 - 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 첫 화면 → 탭 화면 전환, 탭 이동, 아이콘·선택 색·라벨 크기. 확인하지 못한 것: 실기기, 끌어서 이동·렌즈 효과의 실제 터치, VoiceOver, 탭 사이 로그인 쿠키 공유, 메모리, `hidden: true`로 돌아가기, 안드로이드에서 탭 WebView 여러 개의 뒤로가기 처리.
+
+## iOS 26 플로팅 버튼
+
+iOS 26 이상 탭 화면에서는 플로팅 버튼(번치 홈 「번들 만들기」, 사진함 「사진 올리기」·「메뉴 열기」)도 쉘이 `expo-glass-effect`의 `GlassView`로 그린다. 근거와 대안은 `docs/decisions/records/026-native-glass-floating-button.md`다.
+
+- 웹 hook `useNativeFloatingButton`(`apps/web/src/shared/hooks/`)이 `setNativeFloatingButton({ tab, button })`으로 아이콘(`add`·`more`)·접근성 이름·`disabled`·`expanded`를 보낸다. `button: null`이면 그 탭의 버튼을 지운다. 쉘이 true를 돌려주면 웹 버튼을 그리지 않는다.
+- 쉘은 iOS이고 `isLiquidGlassAvailable()`이 true이고 탭 화면일 때만 그린다. 탭 ID는 `TAB_IDS`만 받는다. 지우기 요청은 언제나 받는다.
+- 버튼은 탭별로 저장하고(`src/tabs/floating-button-store.ts`) 그 탭의 `TabScreen` 위에만 그린다. 위치는 웹과 같은 오른쪽 16px, 아래 Safe Area(탭 바 포함) 위 10px다.
+- 탭 WebView는 문서를 열기 전에 자기 탭 ID를 sessionStorage `bunch-shell-tab`에 받는다. 웹은 페이지의 탭과 이 값이 같을 때만 네이티브 버튼을 요청한다. 다른 탭 WebView가 같은 경로를 열면 웹 버튼을 그린다.
+- 눌림은 `nativeFloatingButtonPress({ tab })`로 모든 WebView에 보내고(broadcast), 웹이 탭 ID와 `document.visibilityState`로 자기 것만 처리한다.
+- 웹은 시트·대화상자가 열린 동안(`useModalOpen`), 화면에 버튼이 없을 때(`hidden`, 로딩·저장 중), 화면을 떠날 때 버튼을 지운다. 새 문서를 열 때(`onLoadStart`)와 로그아웃(`setNativeTabBar` `hidden: true`) 때는 쉘이 지운다.
+- 쉘 응답 전에는 웹 버튼을 그리지 않는다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행되고, 제한 시간을 넘긴 응답도 웹 버튼으로 처리한다.
+- 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 두 탭의 버튼 표시, 누름, 사진함 선택 모드, 시트 동안 숨김. 확인하지 못한 것: 실기기, VoiceOver로 네이티브 「⋯」에서 웹 메뉴로 들어가는 초점, 시트가 닫힌 뒤 초점 복귀, 선택 모드 전환 중 버튼 위치의 타이밍.
+- 개발 중 쉘 코드를 바꿨으면 Metro가 파일을 감시하는지 확인한다. `CI=1`로 띄운 Metro는 변경을 반영하지 않아 앱이 이전 쉘 코드를 계속 실행했다.
 
 ## Bridge 계약 (`packages/bridge`)
 
@@ -131,7 +148,7 @@ packages/bridge/
 
 ### 네이티브 쪽 구현 (`apps/mobile-shell/src/web-view/AppWebView.tsx`)
 
-실제 구현은 [AppWebView.tsx](../../apps/mobile-shell/src/web-view/AppWebView.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 지금 없다(탭 선택은 시스템 탭 바가 처리해 `nativeTabPress`를 지웠다). 여러 WebView가 같은 bridge를 쓴다.
+실제 구현은 [AppWebView.tsx](../../apps/mobile-shell/src/web-view/AppWebView.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 플로팅 버튼 눌림(`nativeFloatingButtonPress`) 하나다. 탭 WebView가 여럿이라 `postMessage`의 기본값(마지막에 만든 WebView에만 보냄) 대신 `broadcast: true`로 보낸다. 여러 WebView가 같은 bridge를 쓴다.
 
 `bridge()`에는 **인라인 객체 리터럴**을 넘긴다. 미리 `AppBridgeMethods` 타입을 선언한 변수를 넘기면 TypeScript가 index signature 불일치로 거부한다(이름 있는 타입은 fresh literal 취급을 받지 못한다).
 

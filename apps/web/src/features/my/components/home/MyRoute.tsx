@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@app/design-system';
+import { useEffect } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_CONTACT_URL } from '../../constants/paths';
@@ -9,10 +11,14 @@ import { MyScreen } from './MyScreen';
 
 /**
  * MY 탭 첫 화면과 내 프로필 API를 잇는 컨테이너
- * 첫 응답을 기다리는 동안 전체 로딩, 실패해도 메뉴는 그대로 쓸 수 있게 빈 프로필로 그림(기능명세서 7.1.1 예외)
+ * 첫 응답을 기다리는 동안 전체 로딩, 실패하면 토스트를 띄우고 메뉴는 그대로 쓸 수 있게 빈 프로필로 그림(기능명세서 7.1.1 예외)
  */
 export function MyRoute() {
-  const { profile, isPending } = useMyProfile();
+  const { profile, isPending, isError } = useMyProfile();
+
+  useEffect(() => {
+    if (isError) toast(MY_MESSAGES.profileLoadFailed);
+  }, [isError]);
 
   return (
     <>

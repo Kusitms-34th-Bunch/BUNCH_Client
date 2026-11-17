@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { bunchInvitationQueryOptions } from '@/shared/query/bunchInvitation';
 import { sharedKeys } from '@/shared/query/keys';
 import {
   createBunch,
-  issueBunchInvitation,
   resetBunchProfileImage,
   updateBunchProfileImage,
   type CreateBunchInput,
@@ -43,22 +43,9 @@ export const useChangeBunchPhotoMutation = (bunchId: string | undefined) => {
   });
 };
 
-export const onboardingKeys = {
-  // 응답을 바꾸는 입력은 번치 하나뿐
-  invitation: (bunchId: string | undefined) => ['bunch-invitation', bunchId] as const,
-};
-
 /**
  * 번치의 유효한 초대 링크. 서버가 있으면 기존 링크를, 없거나 만료됐으면 새로 발급해 돌려줌(POST지만 같은 링크라 다시 불러와도 안전)
  * 번치를 모르면 요청하지 않음. 실패하면 화면의 「다시 불러오기」로 `refetch`
  */
 export const useBunchInvitationQuery = (bunchId: string | undefined) =>
-  useQuery({
-    queryKey: onboardingKeys.invitation(bunchId),
-    queryFn: ({ signal }) => issueBunchInvitation(bunchId ?? '', signal),
-    enabled: bunchId !== undefined,
-    // 링크는 7일 유효하고 같은 링크를 돌려주므로 포커스 복귀·재연결로 다시 받지 않음
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 60_000,
-  });
+  useQuery(bunchInvitationQueryOptions(bunchId));

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { fixtureLocation } from '../fixtures/draft.fixture';
 import { moveLocation } from './locations';
 
-const a = { id: 'a', name: '서울특별시 여의도동' };
-const b = { id: 'b', name: '부산광역시 해운대구' };
-const c = { id: 'c', name: '제주특별자치도 애월읍' };
+const a = fixtureLocation('a', '서울특별시 여의도동');
+const b = fixtureLocation('b', '부산광역시 해운대구');
+const c = fixtureLocation('c', '제주특별자치도 애월읍');
 
 describe('moveLocation', () => {
   it('위치를 앞뒤로 옮긴다', () => {

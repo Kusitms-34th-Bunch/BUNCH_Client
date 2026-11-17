@@ -19,9 +19,11 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES, MAX_RECOMMEND_CHIPS } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
+import { getCardDate } from '../../lib/recommendation';
 import { SelectPhotoList } from '../SelectPhotoList';
 
 type BundleSelectProps = {
@@ -38,12 +40,29 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   const router = useRouter();
   const backOr = useBackOr();
   const select = useBundleSelect();
-  const { photoState, retry, selection, memberId, memberIds, creating, scrollTarget } = select;
+  const {
+    photoState,
+    retry,
+    selection,
+    memberId,
+    memberIds,
+    creating,
+    recommendationBusy,
+    scrollTarget,
+  } = select;
 
   const openOverlay = useScreenOverlay();
   // 추천 상세로 가면 돌아왔을 때 시트를 다시 올림
   const reopenOnReturn = useRef(false);
-  const { openSheet, closeSheet, sheetOpen } = select;
+  const { openSheet, closeSheet, sheetOpen, loadRecommendations, isRecommendationBusy } = select;
+  // 목록을 받는 사이 화면을 떠났으면 시트를 올리지 않음
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   useEffect(
     () => () => {
       if (reopenOnReturn.current) openSheet();
@@ -65,7 +84,10 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
           onConfirm={() => {
             confirmed = true;
             close();
-            confirmChange(id);
+            // 삭제됐거나 받지 못했으면 선택은 그대로 두고 시트를 다시 올림(삭제는 목록을 새로 받아 보여 줌)
+            void confirmChange(id).then((result) => {
+              if (result !== 'applied') openSheet();
+            });
           }}
         />
       ),
@@ -79,30 +101,42 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   const pickRecommendation = usePreservedCallback(select.pickRecommendation);
   const confirmChange = usePreservedCallback(select.confirmChange);
 
-  const openRecommend = usePreservedCallback(() => {
+  const openRecommend = usePreservedCallback((recommendations: readonly Recommendation[]) => {
     // 시트가 다 닫힌 뒤 확인 창을 열어 초점이 두 창 사이에서 엉키지 않게 함
     let confirmId: string | undefined;
+    let reload = false;
+    // 사진을 받는 사이 시트가 먼저 내려갔는지(내려간 뒤에는 닫힘 콜백이 이미 지나가 결과를 직접 이어서 처리)
+    let sheetClosed = false;
     openOverlay(
       (rootProps, close) => (
         <RecommendOverlay
           {...rootProps}
           initialPickedId={select.pickedId}
-          bundles={select.recommendations.map((item) => ({
+          bundles={recommendations.map((item) => ({
             id: item.id,
             imageSrc: item.imageSrc,
             title: item.title,
             members: [...item.memberNames],
-            photoCount: item.photoIds.length,
-            month: item.month,
-            day: item.day,
+            photoCount: item.photoCount,
+            ...getCardDate(item, currentYear),
           }))}
           onPick={(id) => {
-            const result = pickRecommendation(id);
-            if (result === 'deleted') return;
-            if (result === 'confirm') confirmId = id;
-            close();
+            void pickRecommendation(id).then((result) => {
+              if (result === 'failed') return;
+              // 삭제됐으면 시트를 내렸다가 최신 목록으로 다시 올림
+              if (result === 'deleted') reload = true;
+              if (result === 'confirm') confirmId = id;
+              if (sheetClosed) {
+                if (confirmId) openChangeConfirm(confirmId);
+                else if (reload) openSheet();
+                return;
+              }
+              close();
+            });
           }}
           onOpenDetail={(id) => {
+            // 사진을 받는 동안 상세로 가면 상세 화면에서 선택이 적용되므로 받기가 끝난 뒤에 이동
+            if (isRecommendationBusy()) return;
             reopenOnReturn.current = true;
             router.push(BUNDLE_SELECT_PATHS.recommendation(id));
           }}
@@ -113,7 +147,9 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
         />
       ),
       () => {
+        sheetClosed = true;
         if (confirmId) openChangeConfirm(confirmId);
+        else if (reload) openSheet();
       },
     );
   });
@@ -129,8 +165,11 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   useEffect(() => {
     if (!sheetOpen || !ready) return;
     closeSheet();
-    openRecommend();
-  }, [sheetOpen, ready, closeSheet, openRecommend]);
+    // 최신 목록을 받은 뒤 시트를 올림(받지 못하면 안내만 하고 올리지 않음)
+    void loadRecommendations().then((list) => {
+      if (list && mounted.current) openRecommend(list);
+    });
+  }, [sheetOpen, ready, closeSheet, openRecommend, loadRecommendations]);
 
   // 추천 번들을 적용하면 그 날짜 섹션으로 스크롤하고 제목에 포커스(요청마다 한 번, 끝나면 대상을 비움)
   const { clearScrollTarget } = select;
@@ -142,6 +181,9 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
     section?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
     clearScrollTarget();
   }, [scrollTarget, clearScrollTarget]);
+
+  // 번들을 만드는 중이거나 추천 번들 목록·사진을 받는 중에는 화면을 막음(중복 탭 방지)
+  const blocked = creating || recommendationBusy;
 
   if (noMembers || photoState.kind === 'loading') return <PageLoading />;
   if (photoState.kind === 'error') return <PhotoBoxError onRetry={retry} />;
@@ -167,7 +209,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
     <PageShell
       header={
         // 번들을 만드는 동안은 헤더도 막아 뒤로 가기·시트가 만드는 중에 눌리지 않게 함
-        <div inert={creating}>
+        <div inert={blocked}>
           <Header
             leading={
               <HeaderIconButton
@@ -193,7 +235,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
       }
       bottom={
         <div
-          inert={creating}
+          inert={blocked}
           // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
           className="bg-surface-primary border-border-tertiary gap-s5 pt-padding-p7 px-padding-p8 pb-s4 flex border-t"
         >
@@ -221,8 +263,8 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
           ? BUNDLE_SELECT_MESSAGES.creating
           : BUNDLE_SELECT_MESSAGES.selectionStatus(selection.length)}
       </p>
-      {/* 번들을 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
-      {creating ? <PageLoading /> : null}
+      {/* 번들을 만들거나 추천 번들을 받는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
+      {blocked ? <PageLoading /> : null}
       <SelectPhotoList
         data={data}
         selection={selection}
@@ -231,7 +273,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
         onMemberChange={select.setMemberId}
         onToggle={select.toggle}
         currentYear={currentYear}
-        inert={creating}
+        inert={blocked}
       />
     </PageShell>
   );

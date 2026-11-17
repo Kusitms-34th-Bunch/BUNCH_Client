@@ -12,8 +12,8 @@ const render = async (recommendationId: string, photoId: string) => {
 
 describe('/bunch/bundles/new/recommendations/[recommendationId]/photos/[photoId] page', () => {
   it('형식이 맞는 id는 그대로 화면에 넘긴다', async () => {
-    expect(await render('rec-1', 'photo-3')).toEqual({
-      recommendationId: 'rec-1',
+    expect(await render('31', 'photo-3')).toEqual({
+      recommendationId: '31',
       photoId: 'photo-3',
     });
   });
@@ -23,7 +23,7 @@ describe('/bunch/bundles/new/recommendations/[recommendationId]/photos/[photoId]
       recommendationId: undefined,
       photoId: 'photo-3',
     });
-    expect(await render('rec-1', 'a/b')).toEqual({ recommendationId: 'rec-1', photoId: undefined });
+    expect(await render('31', 'a/b')).toEqual({ recommendationId: '31', photoId: undefined });
   });
 
   it('검색에서 제외한다', () => {

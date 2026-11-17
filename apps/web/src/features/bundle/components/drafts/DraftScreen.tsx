@@ -24,6 +24,8 @@ type DraftScreenProps = {
   saveStatus: SaveStatus;
   /** 연결 끊김 배너를 보일지(보이는 동안 업로드 제한) */
   offline: boolean;
+  /** 제목 문서를 불러오는 동안 false(제목 입력란을 읽기 전용으로 둠) */
+  titleReady?: boolean;
   actions: DraftActions;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
   currentYear?: number | undefined;
@@ -59,6 +61,7 @@ export function DraftScreen({
   viewer,
   saveStatus,
   offline,
+  titleReady = true,
   actions,
   currentYear = new Date().getFullYear(),
   onBack,
@@ -76,15 +79,20 @@ export function DraftScreen({
   const [selfEditing, setSelfEditing] = useState<'title' | 'comment' | undefined>(undefined);
   const endSelfEditing = (field: 'title' | 'comment') =>
     setSelfEditing((current) => (current === field ? undefined : current));
-  const access = getDraftAccess(draft, viewer);
+  const baseAccess = getDraftAccess(draft, viewer);
+  // 연결이 끊긴 동안은 수정을 막음(끊긴 사이의 수정은 서버에 닿지 않으므로 받지 않음, 기능 spec 4.3.14)
+  const access = offline ? { ...baseAccess, canEdit: false } : baseAccess;
   // 공개 범위는 업로드를 누른 뒤 다음 화면에서 고르므로 이 화면의 조건에서는 뺌
   const blockers = getPublishBlockers(draft, { saveStatus, offline }).filter(
     (blocker) => blocker !== 'visibility',
   );
   const uploadReady = access.canPublish && blockers.length === 0;
 
-  const denyEdit = () => notify(BUNDLE_MESSAGES.editOnlyParticipants);
-  const blockEditing = () => notify(BUNDLE_MESSAGES.editingBlocked);
+  // 연결이 끊긴 동안의 편집은 흐리게 하지 않고 반응만 없앰(기능 spec 4.3.14), 참여 멤버가 아니면 안내
+  const denyEdit = () => {
+    if (offline && baseAccess.canEdit) return;
+    notify(BUNDLE_MESSAGES.editOnlyParticipants);
+  };
 
   // 안내 순서: 참여 멤버가 아님 → 권한 없음 → 필수 항목 부족(기능 spec 4.3.12), 막혔으면 안내하고 true
   const blockUpload = () => {
@@ -164,7 +172,6 @@ export function DraftScreen({
         draft={draft}
         viewer={viewer}
         access={access}
-        selfEditing={selfEditing !== undefined}
         onAddMember={onAddMember}
         onRemoveMember={actions.removeMember}
       />
@@ -173,19 +180,25 @@ export function DraftScreen({
         viewer={viewer}
         selfEditing={selfEditing === 'title'}
         onEditStart={() => setSelfEditing('title')}
-        onEditEnd={() => endSelfEditing('title')}
+        onEditEnd={() => {
+          endSelfEditing('title');
+          actions.saveNow();
+          actions.presence.blur('TITLE');
+        }}
         editable={access.canEdit}
         onChange={actions.setTitle}
+        onComposing={actions.setTitleComposing}
+        loading={!titleReady}
         onDenied={denyEdit}
-        onEditingBlocked={blockEditing}
       />
       <DraftPhotos
         draft={draft}
-        viewer={viewer}
         access={access}
         onRemovePhoto={actions.removePhoto}
+        onMovePhoto={actions.movePhoto}
+        onDragChange={actions.setPhotoDragging}
+        presence={actions.presence}
         onDenied={denyEdit}
-        onEditingBlocked={blockEditing}
         onOpenPhoto={onOpenPhoto}
         onOpenPick={onOpenPick}
         onImportFromBunchBox={onImportFromBunchBox}
@@ -196,7 +209,11 @@ export function DraftScreen({
         viewer={viewer}
         selfWriting={selfEditing === 'comment'}
         onWriteStart={() => setSelfEditing('comment')}
-        onWriteEnd={() => endSelfEditing('comment')}
+        onWriteEnd={() => {
+          endSelfEditing('comment');
+          actions.saveNow();
+          actions.presence.blur('COMMENT');
+        }}
         editable={access.canEdit}
         onChange={actions.setComment}
         onDenied={denyEdit}
@@ -205,9 +222,9 @@ export function DraftScreen({
         draft={draft}
         actions={actions}
         editable={access.canEdit}
+        participant={access.participant}
         currentYear={currentYear}
         onDenied={denyEdit}
-        onEditingBlocked={blockEditing}
       />
     </PageShell>
   );

@@ -1,15 +1,19 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { delay, http } from 'msw';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { delay, http, HttpResponse } from 'msw';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
-import { createBundle } from '../api/bundles';
+import type { PlaceResult } from '../lib/types';
+import type { BundleDetail } from '../model/bundle';
+import { applyBundleLocationIntent, createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
+import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
+import { bundleKeys } from '../queries/keys';
 import { type DraftState, useDraft } from './useDraft';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -20,6 +24,13 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 }));
 
 const { me, memberA, memberB } = MOCK_MEMBER_IDS;
+const place = (key: string, name: string, address: string): PlaceResult => ({
+  id: `test:${key}`,
+  provider: 'test',
+  externalId: key,
+  name,
+  address,
+});
 const bunchId = String(MOCK_BUNCH_ID);
 const SAVE_WAIT = { timeout: 5000 };
 
@@ -29,6 +40,7 @@ const newDraft = async () =>
       bunchId,
       [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5)],
       createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
     )
   ).id;
 
@@ -66,19 +78,35 @@ describe('useDraft 상태', () => {
     expect(draft.members.map((member) => member.id)).toEqual([String(me), String(memberA)]);
     expect(draft.members[0]).toMatchObject({ isCreator: true, bunchRole: 'member' });
     expect(draft.photos).toHaveLength(2);
-    expect(draft.photos[0]).toMatchObject({ src: '/mock/photos/S4.jpg', caption: '' });
+    expect(draft.photos[0]).toMatchObject({ src: '/mock/photos/S4.jpg' });
     expect(bunchMembers).toHaveLength(5);
     expect(viewer).toEqual({ memberId: String(me), bunchRole: 'member' });
     expect(saveStatus).toBe('saved');
   });
 
-  it('화면에서 위치를 바꾸면 그 뒤로는 화면 값이다', async () => {
-    const { result } = await renderReady();
+  it('위치를 더하면 화면에 먼저 보이고 서버에 저장된 뒤 서버 행 id로 바뀐다', async () => {
+    const { id, result } = await renderReady();
     act(() => {
-      result.current.actions.addLocation({ id: 'x', name: '장소 X', address: '주소 X' });
+      result.current.actions.addLocation(place('x', '장소 X', '주소 X'));
     });
 
+    // 응답 전에도 화면에 보임(아직 서버 id가 없는 줄)
+    expect(ready(result.current.state).draft.locations[0]?.id).toMatch(/^pending:/);
     expect(ready(result.current.state).draft.locations.map((l) => l.name)).toEqual(['장소 X']);
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+    await waitFor(
+      () =>
+        expect(ready(result.current.state).draft.locations).toEqual([
+          {
+            id: expect.stringMatching(/^[0-9]+$/) as string,
+            provider: 'test',
+            externalId: 'x',
+            name: '장소 X',
+            address: '주소 X',
+          },
+        ]),
+      SAVE_WAIT,
+    );
   });
 
   it('없는 번들·숫자가 아닌 id·번치 멤버가 아닌 경우는 없는 초안이다', async () => {
@@ -113,32 +141,53 @@ describe('useDraft 상태', () => {
     await waitFor(() => expect(result.current.state.kind).toBe('missing'));
   });
 
-  it('다른 멤버의 편집권은 편집 중 표시로 보이고 내 편집권은 보이지 않는다', async () => {
+  it('실시간 연결 전에는 작업 중·입장 표시가 비어 있다', async () => {
     const id = await newDraft();
-    const first = serverBundle(id)?.photos[0]?.id;
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        ['TITLE', memberA],
-        [`PHOTO:${first}`, memberA],
-        ['DATE', me],
-      ].map(([target, memberId], index) => ({
-        bundleId: Number(id),
-        target: String(target),
-        memberId: Number(memberId),
-        token: `00000000-0000-4000-8000-00000000000${index}`,
-        leaseVersion: 1,
-        expiresAt: new Date(Date.now() + 60_000).toISOString(),
-      })),
-    }));
     const { result } = renderDraft(id);
 
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
-    expect(ready(result.current.state).draft.editing).toEqual({
-      title: String(memberA),
-      photoMemberIds: [String(memberA)],
-      photoEditors: { [String(first)]: [String(memberA)] },
-    });
+    const { draft } = ready(result.current.state);
+    expect(draft.viewingMemberIds).toEqual([]);
+    expect(draft.editing.titleMemberIds ?? []).toEqual([]);
+    expect(draft.editing.photoMemberIds ?? []).toEqual([]);
+  });
+});
+
+describe('useDraft 참여 제외 안내', () => {
+  const renderWithClient = async () => {
+    const id = await newDraft();
+    const client = createTestQueryClient();
+    const view = renderHook(() => useDraft(id), { wrapper: createQueryWrapper(client) });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const removeMe = () =>
+      act(() => {
+        client.setQueryData<BundleDetail>(bundleKeys.detail(bunchId, id), (old) =>
+          old
+            ? {
+                ...old,
+                participantIds: old.participantIds.filter((memberId) => memberId !== String(me)),
+              }
+            : old,
+        );
+      });
+    return { ...view, removeMe };
+  };
+
+  it('편집 중 참여 멤버에서 빠지면 보기 전용 안내를 한 번 띄운다', async () => {
+    const { removeMe } = await renderWithClient();
+
+    removeMe();
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.removedFromDraft));
+    expect(
+      toast.mock.calls.filter(([message]) => message === BUNDLE_MESSAGES.removedFromDraft),
+    ).toHaveLength(1);
+  });
+
+  it('처음 불러온 뒤 참여 멤버가 그대로이면 띄우지 않는다', async () => {
+    await renderWithClient();
+
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.removedFromDraft);
   });
 });
 
@@ -152,11 +201,36 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).saveStatus).toBe('saving');
     await waitFor(() => expect(serverBundle(id)?.title).toBe('설악산 단풍'), SAVE_WAIT);
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
-    // 저장하면 편집권을 풀어 다른 멤버가 이어서 쓸 수 있음
-    expect(mockDb.get().bundleLeases).toEqual([]);
   });
 
-  it('공개 범위는 고르는 즉시 저장하고 내 코멘트도 저장한다', async () => {
+  it('입력란을 벗어나면 1초를 기다리지 않고 바로 저장한다', async () => {
+    const { id, result } = await renderReady();
+
+    act(() => {
+      result.current.actions.setTitle('벗어나며 저장');
+      result.current.actions.setComment(String(me), '코멘트도 함께');
+    });
+    expect(serverBundle(id)?.title).toBe('');
+    act(() => result.current.actions.saveNow());
+
+    // 입력이 멈춘 뒤 저장 대기(1초)보다 훨씬 짧게 서버에 반영됨
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('벗어나며 저장'), { timeout: 700 });
+    await waitFor(() => expect(serverBundle(id)?.comments[0]?.content).toBe('코멘트도 함께'), {
+      timeout: 700,
+    });
+  });
+
+  it('저장할 입력이 없으면 입력란을 벗어나도 요청을 보내지 않는다', async () => {
+    const { id, result } = await renderReady();
+    const before = serverBundle(id)?.revision;
+
+    act(() => result.current.actions.saveNow());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 200)));
+
+    expect(serverBundle(id)?.revision).toBe(before);
+  });
+
+  it('공개 범위는 서버에 저장하지 않고 화면에만 두며 내 코멘트는 저장한다', async () => {
     const { id, result } = await renderReady();
 
     act(() => {
@@ -164,11 +238,13 @@ describe('useDraft 저장', () => {
       result.current.actions.setComment(String(me), '함께한 하루');
     });
 
-    await waitFor(() => expect(serverBundle(id)?.visibility).toBe('PUBLIC'), SAVE_WAIT);
     await waitFor(
       () => expect(serverBundle(id)?.comments[0]).toMatchObject({ content: '함께한 하루' }),
       SAVE_WAIT,
     );
+    // 최종 선택은 업로드(발행) 요청으로만 보냄(v5 명세)
+    expect(ready(result.current.state).draft.visibility).toBe('public');
+    expect(serverBundle(id)?.visibility).toBeNull();
   });
 
   it('남의 코멘트는 저장하지 않는다', async () => {
@@ -180,19 +256,11 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).draft.comments).toEqual([]);
   });
 
-  it('사진 캡션과 날짜를 저장한다', async () => {
+  it('날짜를 저장한다', async () => {
     const { id, result } = await renderReady();
-    const photoId = ready(result.current.state).draft.photos[0]!.id;
 
-    act(() => {
-      result.current.actions.setPhotoCaption(photoId, '케이블카');
-      result.current.actions.setDate('2026-10-18');
-    });
+    act(() => result.current.actions.setDate('2026-10-18'));
 
-    await waitFor(
-      () => expect(serverBundle(id)?.photos[0]).toMatchObject({ caption: '케이블카' }),
-      SAVE_WAIT,
-    );
     await waitFor(() => expect(serverBundle(id)?.date).toBe('2026-10-18'), SAVE_WAIT);
   });
 
@@ -221,53 +289,23 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).draft.title).toBe('내 제목');
   });
 
-  it('다른 멤버가 편집권을 쥔 대상은 한 번만 안내하고 입력을 지키며 풀리면 이어서 저장한다', async () => {
-    const { id, result } = await renderReady();
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        {
-          bundleId: Number(id),
-          target: 'TITLE',
-          memberId: memberA,
-          token: '00000000-0000-4000-8000-000000000001',
-          leaseVersion: 1,
-          // 첫 저장 시도 직후 만료되어 다음 시도에서는 얻을 수 있음
-          expiresAt: new Date(Date.now() + 1500).toISOString(),
-        },
-      ],
-    }));
-
-    act(() => result.current.actions.setTitle('이어서 쓰는 제목'));
-
-    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.fieldLocked), SAVE_WAIT);
-    // 거부되는 동안에도 입력은 화면에서 사라지지 않음
-    expect(ready(result.current.state).draft.title).toBe('이어서 쓰는 제목');
-    await waitFor(() => expect(serverBundle(id)?.title).toBe('이어서 쓰는 제목'), {
-      timeout: 9000,
-    });
-    expect(
-      toast.mock.calls.filter(([message]) => message === BUNDLE_MESSAGES.fieldLocked),
-    ).toHaveLength(1);
-  }, 15_000);
-
   it('권한·상태 오류는 다시 시도하지 않고 한 번만 안내하며 입력은 그대로 둔다', async () => {
     const { result } = await renderReady();
     let calls = 0;
     server.use(
-      http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => {
+      http.put('/api/bunches/:bunchId/bundles/:id/date', () => {
         calls += 1;
         return fail(403, 'AUTH_002');
       }),
     );
 
-    act(() => result.current.actions.setVisibility('public'));
+    act(() => result.current.actions.setDate('2026-10-18'));
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed), SAVE_WAIT);
     // 재시도 간격(3초)보다 오래 기다려도 요청은 한 번뿐
     await act(() => new Promise((resolve) => setTimeout(resolve, 3500)));
     expect(calls).toBe(1);
-    expect(ready(result.current.state).draft.visibility).toBe('public');
+    expect(ready(result.current.state).draft.date).toBe('2026-10-18');
     // 저장을 포기한 상태는 「저장 중」에 고정되지 않고 「저장 실패」로 보임
     expect(ready(result.current.state).saveStatus).toBe('failed');
     expect(
@@ -289,42 +327,74 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).draft.title).toBe('여름 바다');
   });
 
-  it('다른 곳에서 제목이 바뀌면 입력 원문 대신 서버 값을 보인다', async () => {
+  it('다른 멤버가 제목을 고치면 상세를 다시 받을 때 내 문서에 병합해 보인다', async () => {
     const { id, result } = await renderReady();
     act(() => result.current.actions.setTitle('여름 '));
     await waitFor(() => expect(serverBundle(id)?.title).toBe('여름'), SAVE_WAIT);
     await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
 
-    // 다른 멤버가 제목을 바꾼 상황: 상세를 다시 받으면 서버 값이 보임
+    // 다른 멤버가 같은 문서에서 제목 뒤에 글자를 더한 상황(서버 문서가 바뀜): 상세를 다시 받으면 병합돼 보임
+    const state = serverBundle(id)?.titleCrdtState ?? '';
+    await ensureTitleCrdt();
+    const theirs = saveTitleDoc(editTitle(loadTitleDoc(state), '여름 바다'));
     mockDb.update((current) => ({
       ...current,
       bundles: current.bundles.map((bundle) => ({
         ...bundle,
-        title: '다른 멤버의 제목',
+        title: '여름 바다',
         titleVersion: bundle.titleVersion + 1,
+        titleCrdtState: theirs,
         revision: bundle.revision + 1,
       })),
     }));
+    // 공개 범위를 골라야 발행 요청이 나가고, 요청이 거절되면 상세를 다시 받음
+    act(() => result.current.actions.setVisibility('members'));
     await act(async () => {
       await result.current.actions.publish();
     });
 
-    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('다른 멤버의 제목'));
+    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('여름 바다'));
+  });
+
+  it('내가 입력한 제목과 다른 멤버의 변경이 저장되기 전에 겹쳐도 둘 다 남는다', async () => {
+    const { id, result } = await renderReady();
+    act(() => result.current.actions.setTitle('부산'));
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('부산'), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+
+    // 다른 멤버가 앞에 글자를 더해 서버에 저장하고, 나는 그 사실을 모른 채 뒤에 글자를 입력
+    await ensureTitleCrdt();
+    const base = serverBundle(id)?.titleCrdtState ?? '';
+    const theirs = saveTitleDoc(editTitle(loadTitleDoc(base), '가을 부산'));
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) => ({
+        ...bundle,
+        title: '가을 부산',
+        titleVersion: bundle.titleVersion + 1,
+        titleCrdtState: theirs,
+        revision: bundle.revision + 1,
+      })),
+    }));
+    act(() => result.current.actions.setTitle('부산 여행'));
+
+    await waitFor(() => expect(serverBundle(id)?.title).toBe('가을 부산 여행'), SAVE_WAIT);
+    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('가을 부산 여행'));
   });
 
   it('서버 오류(5xx)는 일시 오류로 보고 다시 시도해 저장한다', async () => {
     const { id, result } = await renderReady();
     let calls = 0;
     server.use(
-      http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => {
+      http.put('/api/bunches/:bunchId/bundles/:id/date', () => {
         calls += 1;
         return calls === 1 ? fail(500, 'COMMON_500') : undefined;
       }),
     );
 
-    act(() => result.current.actions.setVisibility('members'));
+    act(() => result.current.actions.setDate('2026-10-18'));
 
-    await waitFor(() => expect(serverBundle(id)?.visibility).toBe('PRIVATE'), {
+    await waitFor(() => expect(serverBundle(id)?.date).toBe('2026-10-18'), {
       timeout: 9000,
     });
     expect(calls).toBeGreaterThanOrEqual(2);
@@ -336,6 +406,7 @@ describe('useDraft 저장', () => {
       http.post('/api/bunches/:bunchId/bundles/:id/publish', () => fail(409, 'BUNDLE_002')),
     );
 
+    act(() => result.current.actions.setVisibility('members'));
     let outcome: string | undefined;
     await act(async () => {
       outcome = await result.current.actions.publish();
@@ -348,13 +419,16 @@ describe('useDraft 저장', () => {
   it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {
     const { result } = await renderReady();
     server.use(
-      http.put('/api/bunches/:bunchId/bundles/:id/visibility', async () => {
+      http.put('/api/bunches/:bunchId/bundles/:id/date', async () => {
         await delay(300);
         return undefined;
       }),
     );
 
-    act(() => result.current.actions.setVisibility('members'));
+    act(() => {
+      result.current.actions.setVisibility('members');
+      result.current.actions.setDate('2026-10-18');
+    });
     await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
     let outcome: string | undefined;
     await act(async () => {
@@ -380,12 +454,12 @@ describe('useDraft 참여 멤버·위치·사진', () => {
   it('참여 멤버를 더하고 내보내면 서버 참여자와 코멘트가 바뀐다', async () => {
     const { id, result } = await renderReady();
 
-    act(() => result.current.actions.addMember(String(memberB)));
+    act(() => void result.current.actions.addMember(String(memberB)));
     await waitFor(() =>
       expect(ready(result.current.state).draft.members.map((m) => m.id)).toContain(String(memberB)),
     );
 
-    act(() => result.current.actions.removeMember(String(memberB)));
+    act(() => void result.current.actions.removeMember(String(memberB)));
     await waitFor(() =>
       expect(ready(result.current.state).draft.members.map((m) => m.id)).not.toContain(
         String(memberB),
@@ -406,28 +480,255 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     expect(serverBundle(id)?.revision).toBe(before);
   });
 
-  it('위치는 서버로 보내지 않고 화면에서만 더하고 뺀다(최대 개수까지)', async () => {
+  it('위치를 더하고 바꾸고 옮기고 지우면 서버에 순서대로 저장된다', async () => {
     const { id, result } = await renderReady();
-    const before = serverBundle(id)?.revision;
+    const names = () => ready(result.current.state).draft.locations.map((l) => l.name);
+    const saved = () => serverBundle(id)?.locations.map((l) => l.name);
 
     act(() => {
-      result.current.actions.addLocation({ id: 'p1', name: '여의도한강공원', address: '주소' });
+      result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+      result.current.actions.addLocation(place('b', '장소 B', '주소 B'));
     });
-    expect(ready(result.current.state).draft.locations).toEqual([
-      { id: 'p1', name: '여의도한강공원' },
-    ]);
-    act(() => result.current.actions.removeLocation('p1'));
+    await waitFor(() => expect(saved()).toEqual(['장소 A', '장소 B']), SAVE_WAIT);
+    // 행 수가 아니라 두 줄 모두 서버 id를 받았는지로 기다림(낙관적으로 얹은 줄은 임시 id)
+    await waitFor(() => {
+      const rows = ready(result.current.state).draft.locations;
+      expect(rows).toHaveLength(2);
+      expect(rows.every((row) => !row.id.startsWith('pending:'))).toBe(true);
+    }, SAVE_WAIT);
 
-    expect(ready(result.current.state).draft.locations).toEqual([]);
-    expect(serverBundle(id)?.revision).toBe(before);
+    const [first, second] = ready(result.current.state).draft.locations;
+    act(() => result.current.actions.moveLocation(second!.id, 0));
+    expect(names()).toEqual(['장소 B', '장소 A']);
+    await waitFor(() => expect(saved()).toEqual(['장소 B', '장소 A']), SAVE_WAIT);
+
+    act(() => result.current.actions.replaceLocation(first!.id, place('c', '장소 C', '주소 C')));
+    expect(names()).toEqual(['장소 B', '장소 C']);
+    await waitFor(() => expect(saved()).toEqual(['장소 B', '장소 C']), SAVE_WAIT);
+
+    act(() => result.current.actions.removeLocation(second!.id));
+    expect(names()).toEqual(['장소 C']);
+    await waitFor(() => expect(saved()).toEqual(['장소 C']), SAVE_WAIT);
     await expect(result.current.actions.searchPlaces('여의도')).resolves.not.toHaveLength(0);
+  });
+
+  it('같은 장소를 다시 더하거나 3개를 넘기면 서버에 보내지 않고 명세 문구로 알린다', async () => {
+    const { id, result } = await renderReady();
+    act(() => {
+      result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+    });
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+
+    act(() => {
+      result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+    });
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationDuplicate);
+
+    for (const key of ['b', 'c']) {
+      act(() => {
+        result.current.actions.addLocation(place(key, `장소 ${key}`, '주소'));
+      });
+    }
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(3), SAVE_WAIT);
+    act(() => {
+      result.current.actions.addLocation(place('d', '장소 D', '주소 D'));
+    });
+
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationMax);
+    expect(serverBundle(id)?.locations).toHaveLength(3);
+  });
+
+  it('줄을 같은 장소로 바꾸면 아무 알림 없이 그대로 두고, 다른 줄에 있는 장소로 바꾸면 「이미 추가한 위치예요.」를 알린다', async () => {
+    const { id, result } = await renderReady();
+    for (const key of ['a', 'b']) {
+      act(() => {
+        result.current.actions.addLocation(place(key, `장소 ${key}`, '주소'));
+      });
+    }
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(2), SAVE_WAIT);
+    const [first] = ready(result.current.state).draft.locations;
+    toast.mockClear();
+
+    act(() => result.current.actions.replaceLocation(first!.id, place('a', '장소 a', '주소')));
+    expect(toast).not.toHaveBeenCalled();
+
+    act(() => result.current.actions.replaceLocation(first!.id, place('b', '장소 b', '주소')));
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationDuplicate);
+    expect(serverBundle(id)?.locations.map((location) => location.externalId)).toEqual(['a', 'b']);
+  });
+
+  it('끌던 줄이 내가 막 추가한 줄이라 id가 바뀐 경우에는 지워졌다는 알림을 띄우지 않는다', async () => {
+    const { result } = await renderReady();
+    toast.mockClear();
+
+    act(() => result.current.actions.moveLocation('pending:9', 0));
+
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  describe('위치 요청의 저장 상태·발행·연결 끊김', () => {
+    // 첫 위치 요청의 응답을 늦춰 요청이 오가는 동안을 만듦
+    const slowFirstIntent = (ms: number) => {
+      let first = true;
+      server.use(
+        http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', async () => {
+          if (first) {
+            first = false;
+            await delay(ms);
+          }
+          return undefined;
+        }),
+      );
+    };
+
+    it('위치 요청이 끝나기 전에는 「저장 중」으로 보이고 끝나면 「저장 완료」가 된다', async () => {
+      const { id, result } = await renderReady();
+      slowFirstIntent(150);
+
+      act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+
+      expect(ready(result.current.state).saveStatus).toBe('saving');
+      await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+      await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+    });
+
+    it('연결이 끊기면 아직 보내지 않은 위치 변경은 버리고 이미 보낸 것만 서버에 남는다', async () => {
+      const { id, result } = await renderReady();
+      slowFirstIntent(200);
+
+      act(() => {
+        result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+        result.current.actions.addLocation(place('b', '장소 B', '주소 B'));
+      });
+      // 첫 요청이 서버로 나간 뒤(응답은 아직 오지 않음)에 연결이 끊김
+      await act(async () => {
+        await delay(50);
+      });
+      const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      try {
+        act(() => {
+          window.dispatchEvent(new Event('offline'));
+        });
+        // 이미 나간 첫 요청의 응답이 오기 전에는 낙관적 변경을 걷어도 「저장 중」으로 보임
+        expect(ready(result.current.state).saveStatus).toBe('saving');
+        // 첫 요청이 끝난 뒤에도 대기 중이던 둘째 변경은 보내지 않음
+        await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+        await delay(300);
+        expect(serverBundle(id)?.locations.map((location) => location.name)).toEqual(['장소 A']);
+      } finally {
+        onLine.mockRestore();
+        act(() => {
+          window.dispatchEvent(new Event('online'));
+        });
+      }
+    });
+
+    it('끊김을 화면이 알아채기 전에 첫 응답이 끝나도 대기 중이던 둘째 변경은 보내기 직전에 막는다', async () => {
+      const { id, result } = await renderReady();
+      slowFirstIntent(200);
+
+      act(() => {
+        result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+        result.current.actions.addLocation(place('b', '장소 B', '주소 B'));
+      });
+      await act(async () => {
+        await delay(50);
+      });
+      // 'offline' 이벤트는 보내지 않아 화면(discard)은 아직 끊김을 모르는 상태에서 브라우저 연결만 끊김
+      const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      try {
+        await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+        await delay(300);
+
+        expect(serverBundle(id)?.locations.map((location) => location.name)).toEqual(['장소 A']);
+        // 보내지 못한 둘째 변경의 낙관적 표시도 걷힘
+        await waitFor(
+          () =>
+            expect(ready(result.current.state).draft.locations.map((row) => row.name)).toEqual([
+              '장소 A',
+            ]),
+          SAVE_WAIT,
+        );
+      } finally {
+        onLine.mockRestore();
+      }
+    });
+
+    it('지운 줄의 행 id를 새 줄이 이어받지 않는다(늦은 옛 요청이 새 줄을 건드리지 않도록)', async () => {
+      const { id, result } = await renderReady();
+
+      act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+      await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+      const firstId = serverBundle(id)?.locations[0]?.id;
+      await waitFor(
+        () => expect(ready(result.current.state).draft.locations[0]?.id).toBe(String(firstId)),
+        SAVE_WAIT,
+      );
+      act(() => result.current.actions.removeLocation(String(firstId)));
+      await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(0), SAVE_WAIT);
+      act(() => result.current.actions.addLocation(place('b', '장소 B', '주소 B')));
+      await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+
+      expect(serverBundle(id)?.locations[0]?.id).not.toBe(firstId);
+
+      // 지운 줄을 향해 늦게 도착한 옛 REMOVE·REPLACE는 새 줄을 건드리지 않음
+      const newId = serverBundle(id)?.locations[0]?.id;
+      await applyBundleLocationIntent(bunchId, id, {
+        intent: 'REMOVE',
+        targetLocationId: String(firstId),
+      });
+      await applyBundleLocationIntent(bunchId, id, {
+        intent: 'REPLACE',
+        targetLocationId: String(firstId),
+        place: place('c', '장소 C', '주소 C'),
+      });
+      const ids = serverBundle(id)?.locations.map((location) => location.id);
+      expect(ids).toContain(newId);
+      expect(serverBundle(id)?.locations.find((location) => location.id === newId)?.name).toBe(
+        '장소 B',
+      );
+    });
+  });
+
+  it('다른 멤버가 먼저 같은 장소를 넣어 서버가 거절하면 내 변경을 걷고 「이미 추가한 위치예요.」를 알린다', async () => {
+    const { id, result } = await renderReady();
+    // 화면은 모르는 사이 서버에 같은 장소가 들어감
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) =>
+        String(bundle.id) === id
+          ? {
+              ...bundle,
+              locations: [
+                { id: 77, provider: 'test', externalId: 'a', name: '장소 A', address: '주소 A' },
+              ],
+              locationsVersion: bundle.locationsVersion + 1,
+            }
+          : bundle,
+      ),
+    }));
+
+    act(() => {
+      result.current.actions.addLocation(place('a', '장소 A', '주소 A'));
+    });
+
+    await waitFor(
+      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationDuplicate),
+      SAVE_WAIT,
+    );
+    expect(serverBundle(id)?.locations).toHaveLength(1);
+    // 서버 목록의 줄 하나만 보임(내가 얹은 줄은 걷힘)
+    await waitFor(
+      () => expect(ready(result.current.state).draft.locations.map((l) => l.id)).toEqual(['77']),
+      SAVE_WAIT,
+    );
   });
 
   it('사진을 빼면 서버 구성이 바뀌고 화면도 서버 값을 보인다', async () => {
     const { id, result } = await renderReady();
     const photoId = ready(result.current.state).draft.photos[0]!.id;
 
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
     // 보내는 동안에도 화면은 바로 줄어 있음
     expect(ready(result.current.state).draft.photos).toHaveLength(1);
 
@@ -468,14 +769,13 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       id: 'temp-added',
       src: '/mock/photos/S1.jpg',
       alt: '추가한 사진',
-      caption: '',
       takenAt: null,
       uploaderId: String(me),
       sourcePhotoId: String(MOCK_PHOTO_IDS.S1),
     };
 
     // 새 사진을 맨 앞에 둔 선택 결과
-    act(() => result.current.actions.replacePhotos([added, ...current]));
+    act(() => void result.current.actions.replacePhotos([added, ...current]));
 
     await waitFor(
       () =>
@@ -486,47 +786,6 @@ describe('useDraft 참여 멤버·위치·사진', () => {
         ]),
       SAVE_WAIT,
     );
-  });
-
-  it('다른 멤버가 편집 중인 사진을 빼려 하면 서버가 거절해 안내하고 서버 구성으로 돌아온다', async () => {
-    const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
-    const created = await createBundle(
-      bunchId,
-      [P1, P2, P3, P4].map(String),
-      createIdempotencyKey(),
-    );
-    // 다른 멤버(A)가 2번 사진 캡션을 편집 중인 상태
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: [
-        ...current.bundleLeases,
-        {
-          bundleId: Number(created.id),
-          target: `PHOTO:${serverBundle(created.id)!.photos.find((photo) => photo.photoId === P2)!.id}`,
-          memberId: memberA,
-          token: '00000000-0000-4000-8000-00000000000a',
-          leaseVersion: 1,
-          expiresAt: '2999-01-01T00:00:00.000Z',
-        },
-      ],
-    }));
-    const view = renderDraft(created.id);
-    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
-    const locked = ready(view.result.current.state).draft.photos.find(
-      (photo) => photo.sourcePhotoId === String(P2),
-    )!;
-
-    act(() => view.result.current.actions.removePhoto(locked.id));
-
-    await waitFor(
-      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked),
-      SAVE_WAIT,
-    );
-    await waitFor(
-      () => expect(ready(view.result.current.state).draft.photos).toHaveLength(4),
-      SAVE_WAIT,
-    );
-    expect(serverBundle(created.id)?.photos).toHaveLength(4);
   });
 });
 
@@ -562,6 +821,237 @@ describe('useDraft 발행', () => {
     }));
   };
 
+  it('발행은 보내는 중인 위치 요청이 끝난 뒤의 서버 구성으로 한다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    let firstIntent = true;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', async () => {
+        if (firstIntent) {
+          firstIntent = false;
+          await delay(200);
+        }
+        return undefined;
+      }),
+    );
+    const locationsAtPublish: number[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        locationsAtPublish.push(serverBundle(id)?.locations.length ?? -1);
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+    await act(async () => {
+      expect(await result.current.actions.publish()).toBe('published');
+    });
+
+    expect(locationsAtPublish).toEqual([1]);
+  });
+
+  it('위치 요청 뒤 서버 revision이 바뀌었으면 재조회한 최신 revision으로 발행한다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    // 위치 요청이 서버 revision을 올리지만 응답은 상세 revision에 반영하지 않으므로, 발행 직전 재조회가 필요함
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', () => {
+        mockDb.update((current) => ({
+          ...current,
+          bundles: current.bundles.map((bundle) =>
+            String(bundle.id) === id ? { ...bundle, revision: bundle.revision + 5 } : bundle,
+          ),
+        }));
+        return undefined;
+      }),
+    );
+    const seen: { expected: number | undefined; server: number | undefined }[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', async ({ request }) => {
+        const body = (await request.clone().json()) as { expectedRevision?: number };
+        // 요청이 닿은 때의 서버 revision(발행이 끝나면 다시 올라가므로 이때 읽음)
+        seen.push({ expected: body.expectedRevision, server: serverBundle(id)?.revision });
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+    await act(async () => {
+      expect(await result.current.actions.publish()).toBe('published');
+    });
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.expected).toBe(seen[0]?.server);
+  });
+
+  it('끌던 사진을 다른 멤버가 지웠으면 손을 뗄 때 알리고 그 사진을 없앤다(기능 spec 4.3.6)', async () => {
+    const { id, result } = await renderReady();
+    const [first, second] = ready(result.current.state).draft.photos;
+    // 끄는 동안 다른 멤버가 첫 사진을 지움(화면은 이벤트를 미뤄 아직 모름)
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) =>
+        String(bundle.id) === id
+          ? { ...bundle, photos: bundle.photos.filter((photo) => photo.id !== Number(first!.id)) }
+          : bundle,
+      ),
+    }));
+
+    act(() => result.current.actions.movePhoto(first!.id, 1));
+
+    await waitFor(
+      () => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoRemovedByOther),
+      SAVE_WAIT,
+    );
+    // 일반 사진 변경 실패 안내는 띄우지 않고 최신 상세로 그 사진이 사라지는 흐름
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
+    await waitFor(
+      () =>
+        expect(ready(result.current.state).draft.photos.map((photo) => photo.id)).toEqual([
+          second!.id,
+        ]),
+      SAVE_WAIT,
+    );
+  });
+
+  it('위치 변경이 실패하면 서버에 반영되지 않은 구성으로 발행하지 않는다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const published: number[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/locations/intents', () =>
+        fail(500, 'COMMON_500'),
+      ),
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        published.push(1);
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('blocked');
+    expect(published).toEqual([]);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.locationSaveFailed);
+  });
+
+  it('위치 변경 뒤 최신 상세를 받지 못하면 낡은 revision으로 발행하지 않는다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const published: number[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        published.push(1);
+        return undefined;
+      }),
+    );
+
+    act(() => result.current.actions.addLocation(place('a', '장소 A', '주소 A')));
+    await waitFor(() => expect(serverBundle(id)?.locations).toHaveLength(1), SAVE_WAIT);
+    // 위치 요청이 끝난 뒤 발행 직전의 상세 재조회가 실패
+    server.use(http.get('/api/bunches/:bunchId/bundles/:id', () => fail(500, 'COMMON_500')));
+    act(() => result.current.actions.addLocation(place('b', '장소 B', '주소 B')));
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('failed');
+    expect(published).toEqual([]);
+  });
+
+  it('고른 공개 범위를 발행 요청 본문에 싣고, 하나도 고르지 않았으면 요청 없이 막는다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const bodies: unknown[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', async ({ request }) => {
+        bodies.push(await request.clone().json());
+        return undefined;
+      }),
+    );
+
+    await act(async () => {
+      expect(await result.current.actions.publish()).toBe('published');
+    });
+
+    // fill()이 고른 「멤버 공개」가 서버 초안에는 저장되지 않고 발행 요청에만 실림
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toMatchObject({ visibility: 'PRIVATE' });
+  });
+
+  it('네트워크 오류 뒤 같은 내용으로 다시 업로드하면 같은 요청 키로 보낸다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const keys: (string | null)[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return keys.length === 1 ? HttpResponse.error() : undefined;
+      }),
+    );
+
+    let first: string | undefined;
+    let second: string | undefined;
+    await act(async () => {
+      first = await result.current.actions.publish();
+    });
+    await act(async () => {
+      second = await result.current.actions.publish();
+    });
+
+    expect(first).toBe('failed');
+    expect(second).toBe('published');
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('서버가 요청을 거절한 뒤에는 새 요청 키를 쓴다', async () => {
+    const { id, result } = await renderReady();
+    await fill(result, id);
+    const keys: (string | null)[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return keys.length === 1 ? fail(409, 'BUNDLE_002') : undefined;
+      }),
+    );
+
+    await act(async () => {
+      await result.current.actions.publish();
+    });
+    await act(async () => {
+      await result.current.actions.publish();
+    });
+
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  it('공개 범위를 고르지 않으면 발행 요청을 보내지 않고 막는다', async () => {
+    const { result } = await renderReady();
+    let requests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        requests += 1;
+        return undefined;
+      }),
+    );
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('blocked');
+    expect(requests).toBe(0);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
+  });
+
   it('사진 변경이 실패하면 화면과 다른 서버 구성을 발행하지 않고 안내한다', async () => {
     const { id, result } = await renderReady();
     await fill(result, id);
@@ -569,7 +1059,7 @@ describe('useDraft 발행', () => {
       http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', () => fail(500, 'COMMON_500')),
     );
     const photoId = ready(result.current.state).draft.photos[0]!.id;
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
 
     let outcome: string | undefined;
     await act(async () => {
@@ -587,7 +1077,7 @@ describe('useDraft 발행', () => {
     const { id, result } = await renderReady();
     await fill(result, id);
     const photoId = ready(result.current.state).draft.photos[0]!.id;
-    act(() => result.current.actions.removePhoto(photoId));
+    act(() => void result.current.actions.removePhoto(photoId));
 
     let outcome: string | undefined;
     await act(async () => {
@@ -626,27 +1116,5 @@ describe('useDraft 발행', () => {
     expect(serverBundle(id)).toMatchObject({ status: 'PUBLISHED', title: '설악산 단풍 여행' });
     // 발행한 뒤에는 「삭제된 번들」 안내 없이 화면 이동을 기다림
     expect(result.current.state.kind).toBe('loading');
-  });
-});
-
-describe('useDraft 편집권 통로가 없는 환경', () => {
-  beforeEach(() => {
-    // 가짜 서버 모드가 아닌 빌드: 편집권 요청을 보내지 않고 실패
-    vi.stubEnv('NEXT_PUBLIC_API_MOCKING', '');
-  });
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('제목 저장은 다시 시도하지 않고 「저장 실패」로 알린다', async () => {
-    const { id, result } = await renderReady();
-
-    act(() => result.current.actions.setTitle('제목'));
-
-    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('failed'), SAVE_WAIT);
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
-    expect(serverBundle(id)?.title).toBe('');
-    // 입력은 그대로 남음
-    expect(ready(result.current.state).draft.title).toBe('제목');
   });
 });

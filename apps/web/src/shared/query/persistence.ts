@@ -2,6 +2,7 @@ import type { PersistedClient, Persister } from '@tanstack/react-query-persist-c
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { type Query, type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
+import { createListeners } from '@/shared/lib/listeners';
 
 /**
  * 쿼리 캐시 영속화(docs/architecture/data-layer.md 「캐시 영속화」)
@@ -61,17 +62,12 @@ const storagePersister = createAsyncStoragePersister({
 type OwnedClient = PersistedClient & { owner?: string };
 /** 이 화면(JS 문맥)에서 서버가 확인한 회원 ID. 확인 전(null)에는 저장하지 않고 화면도 그리지 않음 */
 let contextOwner: string | null = null;
-const ownerListeners = new Set<() => void>();
+const ownerListeners = createListeners();
 const setContextOwner = (owner: string | null) => {
   contextOwner = owner;
-  ownerListeners.forEach((listener) => listener());
+  ownerListeners.emit();
 };
-const subscribeOwner = (listener: () => void) => {
-  ownerListeners.add(listener);
-  return () => {
-    ownerListeners.delete(listener);
-  };
-};
+const subscribeOwner = ownerListeners.subscribe;
 const getContextOwner = () => contextOwner;
 /** 복원한 저장본의 회원 ID. 복원한 적 없으면 undefined, 주인 표시가 없는 저장본은 null */
 let restoredOwner: string | null | undefined;

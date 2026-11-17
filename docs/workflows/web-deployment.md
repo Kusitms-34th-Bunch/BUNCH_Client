@@ -57,6 +57,7 @@
 | secret   | `SENTRY_AUTH_TOKEN`        | 선택. 소스맵 업로드용 Sentry **Organization Auth Token**(업로드 전용 범위, 개인 토큰 아님). 저장소 코드를 실행하는 `build` job에서 보인다                                                                                                                     |
 | variable | `NEXT_PUBLIC_SENTRY_DSN`   | 오류 수집 DSN(공개 값). 환경 이름은 workflow가 `production`으로 고정                                                                                                                                                                                          |
 | variable | `NEXT_PUBLIC_POSTHOG_KEY`  | 제품 분석 프로젝트 토큰(`phc_…`, 공개 값). 약관에 동의한 회원만 수집한다(ADR 018). 비우면 수집하지 않는다. 기획 요청으로 운영 키를 넣었다(2026-11-10). 개인정보 처리방침(임시 문구)에 수집 항목·국외 이전(PostHog, 미국)을 반영하는 일은 기획에 요청해 두었다 |
+| variable | `NEXT_PUBLIC_WS_URL`       | 실시간(STOMP) 연결 주소(공개 값, 예 `wss://api.example.com/ws`, query 없이). 비우면 번들 공동 편집이 실시간으로 연결되지 않는다. 백엔드 허용 Origin 목록에 웹 주소가 등록돼 있어야 한다(ADR 024)                                                              |
 | variable | `NEXT_PUBLIC_POSTHOG_HOST` | 선택. 비우면 US(`https://us.i.posthog.com`), EU 프로젝트는 `https://eu.i.posthog.com`                                                                                                                                                                         |
 
 저장소 수준(Repository secrets)에 같은 이름을 두지 않는다. environment 제한을 거치지 않고 다른 브랜치의 workflow가 받을 수 있다.
@@ -65,9 +66,10 @@
 
 서버가 실행될 때 읽는 값만 둔다. 빌드에는 쓰지 않는다(빌드 값은 위 environment).
 
-| 변수           | 값                                                             |
-| -------------- | -------------------------------------------------------------- |
-| `API_BASE_URL` | 운영 백엔드 주소. 서버 전용이라 `NEXT_PUBLIC_`를 붙이지 않는다 |
+| 변수                 | 값                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `API_BASE_URL`       | 운영 백엔드 주소. 서버 전용이라 `NEXT_PUBLIC_`를 붙이지 않는다                                                                                    |
+| `KAKAO_REST_API_KEY` | 카카오 로컬 API(키워드·주소 검색)의 REST API 키. 번들 위치 검색 BFF(`/api/places/search`)가 서버에서만 읽는다(ADR 027). 비우면 위치 검색이 막힌다 |
 
 - `NEXT_PUBLIC_API_MOCKING`, `DEV_TOKEN_LOGIN`, `NODE_ENV`는 어디에도 넣지 않는다. 개발용 로그인은 빌드의 `NODE_ENV`가 `production`이면 꺼지는데, 이 값을 바꾸면 닉네임만으로 토큰을 받는 경로가 열릴 수 있다.
 
@@ -85,6 +87,7 @@
 - Sentry에 운영 환경(`production`) 오류가 들어온다.
 - 앱 쉘 Release 빌드가 운영 주소를 연다.
 - `/manifest.webmanifest`가 응답한다.
+- 배포가 성공하면 별도 workflow(`lighthouse-production.yml`)가 운영 주소를 측정해 릴리스 PR에 댓글을 단다(`docs/workflows/ci.md` 「운영 측정」). 배포 실행 안에서 돌지 않아 배포 캐시·artifact와 섞이지 않는다.
 
 ## 홈 화면 추가(PWA)
 
@@ -106,5 +109,5 @@
 - 이 workflow로 운영 프로젝트에 실제로 배포해 보지 않았다. 같은 단계(`YARN_NODE_LINKER` 우회 포함)를 쓰던 UT 배포 기록에도 1차 리허설 실패와 그 대응까지만 남아 있다([보관 기록](../archive/ut-deployment.md)).
 - `public/mock/photos`(약 7MB, 시연 사진)가 운영 배포에도 정적 파일로 올라간다([가짜 서버와 서버 연동 현황](./mock-server-status.md)).
 - 빌드에 Vercel 프로젝트 환경 변수를 넘기지 않으므로, `deploy --prebuilt`로 올린 서버가 실행할 때 프로젝트의 `API_BASE_URL`을 받는지는 첫 배포에서 확인한다.
-- 운영에 그대로 올라가는 샘플 동작이 있다. 예: MY의 「탈퇴하기」는 로그아웃만 하고 계정·사진을 지우지 않는다([가짜 서버와 서버 연동 현황](./mock-server-status.md)의 샘플 표). 공개 전에 숨길지 정한다.
+- 운영에 그대로 올라가는 샘플 동작이 있다. 예: 사진함의 사진 날짜 변경은 그 화면에서만 유지된다([가짜 서버와 서버 연동 현황](./mock-server-status.md)의 샘플 표). 공개 전에 숨길지 정한다.
 - 미리보기(스테이징) 배포는 없다. 로컬 서버 없이 develop을 실기기로 확인해야 하면 추가한다.

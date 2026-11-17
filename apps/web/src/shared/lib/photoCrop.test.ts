@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   circleSquare,
+  cropAnnouncement,
+  cropLayout,
   moveCropRaw,
   resizeCropFromCornerRaw,
   rubberBand,
@@ -123,5 +125,19 @@ describe('photoCrop', () => {
     const rawResize = resizeCropFromCornerRaw(crop, corner, point);
     const clampedResize = resizeCropFromCorner(crop, corner, point, LANDSCAPE, 0.5);
     expect(rubberBand(rawResize, clampedResize).width).toBe(200 + (350 - 200) * 0.25);
+  });
+  it('칸·원·원 테두리를 화면 px로 놓는다(칸은 조정 영역, 원은 사진 상자, 테두리는 칸 기준)', () => {
+    const crop = { x: 100, y: 50, width: 400, height: 200 };
+    expect(cropLayout(crop, 0.5, { left: 10, top: 20 })).toEqual({
+      frame: { width: 200, height: 100, left: 60, top: 45 },
+      circle: { width: 100, height: 100, left: 100, top: 25 },
+      ring: { width: 100, height: 100, left: 50, top: 0 },
+    });
+  });
+
+  it('칸 크기와 가운데 위치를 사진 대비 %로 읽어 준다', () => {
+    expect(cropAnnouncement({ x: 0, y: 250, width: 750, height: 504 }, PORTRAIT)).toBe(
+      '칸 가로 100%, 세로 50%, 원 가운데 가로 50%·세로 50% 위치',
+    );
   });
 });

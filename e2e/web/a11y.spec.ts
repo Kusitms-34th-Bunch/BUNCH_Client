@@ -45,6 +45,7 @@ const SCREENS: {
   {
     name: '개인 프로필 수정',
     path: '/my/profile',
+    // 선택 약관 미동의가 기본이라 출생연도·성별 칸과 비공개 안내는 보이지 않음
     knownLowContrast: [],
     ready: (page) => page.getByRole('button', { name: '프로필 사진 변경' }),
   },

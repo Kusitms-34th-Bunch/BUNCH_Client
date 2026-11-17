@@ -15,7 +15,7 @@ import type {
   PhotoBoxViewer,
   SaveResult,
 } from '../../lib/types';
-import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
+import { deleteConfirmCopy, PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoViewer } from '../../hooks/usePhotoViewer';
 import { useSaveBlockedNotice } from '../../hooks/useSaveBlockedNotice';
 import { MissingPhotosError } from '../../lib/missingPhotos';
@@ -24,10 +24,11 @@ import {
   countCoUploaded,
   getDateConfirmKind,
   getDeleteKind,
+  needsDateChangeConfirm,
   removesDraftBundlePhoto,
   type DateConfirmKind,
 } from '../../lib/photoActions';
-import { formatDetailDate } from '../../lib/photoDetail';
+import { formatDetailDate, getTakenDate } from '../../lib/photoDetail';
 import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from '../PhotoDetailMenu';
 import { DateChangeConfirmDialog, DeleteConfirmDialog } from '../PhotoSelectionDialogs';
@@ -185,15 +186,17 @@ export function PhotoDetailScreen({
     if (action === 'save') void save();
     else if (action === 'date') {
       // 연 시점의 사진 id를 고정해 시트가 열린 사이 사진이 넘어가도 처음 사진의 날짜를 바꿈
-      // 시트는 사진의 원래 날짜와 관계없이 항상 오늘이 속한 달을 선택 없이 엶(기능명세서 3.4.1)
       const photo = activePhoto;
-      const confirmKind = getDateConfirmKind([photo], viewer);
+      const confirmKind = needsDateChangeConfirm([photo], viewer)
+        ? getDateConfirmKind([photo], viewer)
+        : undefined;
       setOverlayOpen(true);
       openOverlay(
         (rootProps, close) => (
           <SavingDateSheet
             {...rootProps}
             close={close}
+            defaultDate={getTakenDate(photo.takenAt)}
             beforeSave={confirmKind ? () => askDateConfirm(confirmKind) : undefined}
             save={(date) => changeDate(photo.id, date)}
           />
@@ -203,7 +206,7 @@ export function PhotoDetailScreen({
     } else if (canManage) {
       // 연 시점의 사진 id를 고정해 그 사이 넘겨져도 다른 사진을 지우지 않음
       const { id } = activePhoto;
-      const { title, lines } = PHOTO_BOX_MESSAGES.deleteConfirm(
+      const copy = deleteConfirmCopy(
         getDeleteKind([activePhoto], viewer),
         1,
         countCoUploaded([activePhoto]),
@@ -214,8 +217,8 @@ export function PhotoDetailScreen({
         (rootProps, close) => (
           <DeleteConfirmDialog
             {...rootProps}
-            title={title}
-            lines={lines}
+            title={copy.title}
+            lines={copy.lines}
             onConfirm={() => {
               close();
               void confirmDelete(id);

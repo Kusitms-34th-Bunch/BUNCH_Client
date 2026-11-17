@@ -8,6 +8,7 @@ import { persistedQuery } from '@/shared/query/persistence';
 import type { MyBunches } from '../model/bunchHome';
 import {
   deleteBunchAccessNotice,
+  getBunchAccessNotice,
   getBunchHome,
   getDraftBundles,
   getMyBunches,
@@ -16,6 +17,8 @@ import {
   type UpdateBunchProfileInput,
   updateLastUsedBunch,
 } from '../api/bunchHome';
+import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { bunchHomeKeys } from './keys';
 
 /** 번치 홈 프로필·개수. 번치를 아직 모르면 요청하지 않음(skipToken) */
 export const bunchHomeQueryOptions = (bunchId: string | undefined) =>
@@ -79,10 +82,34 @@ export const useSwitchBunchMutation = () => {
   });
 };
 
+/** 삭제·내보내진 번치 안내 한 건. 안내 ID를 모르면 요청하지 않음 */
+export const bunchAccessNoticeQueryOptions = (noticeId: string | undefined) =>
+  queryOptions({
+    queryKey: bunchHomeKeys.accessNotice(noticeId),
+    queryFn: noticeId ? ({ signal }) => getBunchAccessNotice(noticeId, signal) : skipToken,
+  });
+
+/**
+ * 보던 번치에 더는 들어갈 수 없을 때(삭제·내보내짐, 5.2.3 상세 동작 4)
+ * 서버가 다시 고른 기본 번치(`members/me`)와 전환 목록을 받아 최근 번치나 번치 없음으로 바뀜
+ */
+export const useRefreshCurrentBunch = () => {
+  const queryClient = useQueryClient();
+  // 기본 번치가 그대로여도 접근 불가였던 번치 홈을 다시 받아 그사이 바뀐 상태를 반영
+  return (bunchId: string | undefined) =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHome(bunchId) }),
+      queryClient.invalidateQueries({ queryKey: sharedKeys.me() }),
+      queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
+    ]);
+};
+
 /** 접근 불가 번치 안내 지우기. 성공하면 다시 읽지 않고 목록에서 그 줄만 뺌 */
 export const useDeleteBunchNoticeMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
+    // 안내 창이 닫혀 호출한 화면이 사라져도 알림(전환 목록·홈·알림이 같은 문구)
+    meta: { errorMessage: BUNCH_HOME_MESSAGES.removeBunchFailed },
     // 이미 지워진 안내(404)는 지우려던 상태라 성공으로 봄
     mutationFn: (noticeId: string) =>
       deleteBunchAccessNotice(noticeId).catch((error: unknown) => {
@@ -90,6 +117,8 @@ export const useDeleteBunchNoticeMutation = () => {
         throw error;
       }),
     onSuccess: async (_data, noticeId) => {
+      // 서버에서 지운 안내라 다시 열면 받아 둔 값 대신 새로 받아 「볼 수 없음」이 되게 함
+      queryClient.removeQueries({ queryKey: bunchHomeKeys.accessNotice(noticeId) });
       // 진행 중인 목록 재조회가 지우기 전 응답으로 덮지 않게 멈춘 뒤 그 줄만 뺌
       await queryClient.cancelQueries({ queryKey: sharedKeys.myBunches() });
       queryClient.setQueryData<MyBunches>(sharedKeys.myBunches(), (current) =>

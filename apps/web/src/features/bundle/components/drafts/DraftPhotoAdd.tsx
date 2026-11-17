@@ -10,7 +10,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { DraftActions } from '../../hooks/useDraft';
-import type { Draft, DraftViewer } from '../../lib/types';
+import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import {
@@ -20,35 +20,33 @@ import {
   getMaxSelectable,
   getRemovedPhotos,
   isSameSelection,
-  isSourceLocked,
 } from '../../lib/photoAdd';
 import { SelectPhotoList } from '../SelectPhotoList';
+import { PresenceScope } from './PresenceScope';
 
 const notify = (message: string) => toast(message);
 
 type DraftPhotoAddProps = {
   draft: Draft;
-  viewer: DraftViewer;
   /** 번들에 담을 수 있는 사진의 출처인 사진함 */
   data: PhotoBoxData;
-  actions: Pick<DraftActions, 'replacePhotos'>;
+  actions: Pick<DraftActions, 'replacePhotos' | 'presence'>;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
   currentYear?: number | undefined;
   /** 변경 없이 나감(이전 화면으로) */
   onBack: () => void;
-  /** 적용을 마침(캡션 화면으로 돌아감) */
+  /** 적용을 마침(작성 화면으로 돌아감) */
   onApplied: () => void;
 };
 
 /**
  * 번들 사진 추가 화면(Figma `1782:33283` 외, 기능 spec 4.3.7): 사진함 사진을 날짜별로 보며 순서대로 골라 번들 사진을 바꿈
- * 지금 번들의 사진이 선택된 채로 열리고, 풀면 번들에서 빠지며(캡션도 함께), 새로 고르면 맨 뒤에 붙음
+ * 지금 번들의 사진이 선택된 채로 열리고, 풀면 번들에서 빠지며, 새로 고르면 맨 뒤에 붙음
  * 「적용하기」는 선택이 처음과 달라야 켜지고, 사진이 빠지면 확인한 뒤 적용함. 변경이 있는데 나가면 확인함
  * 다른 멤버가 편집 중인 사진은 풀 수 없고, 번들에 담을 수 있는 20장 한도는 사진함에 대응이 없는 번들 사진도 포함
  */
 export function DraftPhotoAdd({
   draft,
-  viewer,
   data,
   actions,
   currentYear,
@@ -71,26 +69,14 @@ export function DraftPhotoAdd({
   );
 
   const toggle = (photoId: string) => {
-    if (selection.includes(photoId) && isSourceLocked(draft, viewer, photoId)) {
-      notify(BUNDLE_MESSAGES.editingBlocked);
-      return;
-    }
     const result = toggleSelection(selection, photoId, max);
     if (result.rejected) notify(BUNDLE_SELECT_MESSAGES.maxPhotos);
     else setSelection(result.selection);
   };
 
   const commit = usePreservedCallback(() => {
-    // 확인 창이 떠 있는 사이 다른 멤버가 빠질 사진을 편집하기 시작했을 수 있어 적용 직전에 한 번 더 확인
-    if (
-      removed.some(
-        (photo) => photo.sourcePhotoId && isSourceLocked(draft, viewer, photo.sourcePhotoId),
-      )
-    ) {
-      notify(BUNDLE_MESSAGES.editingBlocked);
-      return;
-    }
-    actions.replacePhotos(applySelection(draft.photos, selection, data.photos));
+    // 연결이 끊겨 막히면 성공 안내와 화면 이동도 하지 않음(반응만 없앰, 기능 spec 4.3.14)
+    if (!actions.replacePhotos(applySelection(draft.photos, selection, data.photos))) return;
     toastAfterNavigation(BUNDLE_MESSAGES.photoAddApplied);
     onApplied();
   });
@@ -130,40 +116,43 @@ export function DraftPhotoAdd({
   };
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={back}>
-              <LineChevronLeftLargeIcon aria-hidden="true" />
-            </HeaderIconButton>
-          }
+    // 사진함에서 사진을 고르는 동안 사진을 작업 중으로 알림
+    <PresenceScope presence={actions.presence} target="PHOTOS">
+      <PageShell
+        header={
+          <Header
+            leading={
+              <HeaderIconButton label="뒤로 가기" onClick={back}>
+                <LineChevronLeftLargeIcon aria-hidden="true" />
+              </HeaderIconButton>
+            }
+          />
+        }
+        bottom={
+          <div
+            // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
+            className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t"
+          >
+            <Button className="w-full" disabled={!applicable} onClick={apply}>
+              {BUNDLE_MESSAGES.photoAddApply}
+            </Button>
+          </div>
+        }
+      >
+        <h1 className="sr-only">{BUNDLE_MESSAGES.photoAddTitle}</h1>
+        <p role="status" className="sr-only">
+          {BUNDLE_SELECT_MESSAGES.selectionStatus(selection.length)}
+        </p>
+        <SelectPhotoList
+          data={data}
+          selection={selection}
+          selectedCounts={selectedCounts}
+          memberId={memberId}
+          onMemberChange={setMemberId}
+          onToggle={toggle}
+          currentYear={currentYear}
         />
-      }
-      bottom={
-        <div
-          // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
-          className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t"
-        >
-          <Button className="w-full" disabled={!applicable} onClick={apply}>
-            {BUNDLE_MESSAGES.photoAddApply}
-          </Button>
-        </div>
-      }
-    >
-      <h1 className="sr-only">{BUNDLE_MESSAGES.photoAddTitle}</h1>
-      <p role="status" className="sr-only">
-        {BUNDLE_SELECT_MESSAGES.selectionStatus(selection.length)}
-      </p>
-      <SelectPhotoList
-        data={data}
-        selection={selection}
-        selectedCounts={selectedCounts}
-        memberId={memberId}
-        onMemberChange={setMemberId}
-        onToggle={toggle}
-        currentYear={currentYear}
-      />
-    </PageShell>
+      </PageShell>
+    </PresenceScope>
   );
 }

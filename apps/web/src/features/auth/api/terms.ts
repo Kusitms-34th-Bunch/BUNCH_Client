@@ -5,7 +5,8 @@ import { TERMS_ITEMS, type ServerTermType } from '../constants/terms';
 
 const SERVER_TERM_TYPES = ['SERVICE', 'PRIVACY', 'AGE_OVER_14', 'DEMOGRAPHICS'] as const;
 
-/** `GET /api/v1/auth/terms` 응답(Swagger에 응답 타입이 없어 명세서 기준). 약관 원문은 앱이 갖고 서버는 종류·버전만 줌 */
+/** `GET /api/v1/auth/terms` 응답(명세서 기준). 약관 원문은 앱이 갖고 서버는 종류·버전만 줌 */
+// 계약 미연결: Swagger에 이 응답의 data 스키마가 없음(생성 타입이 생기면 묶음)
 const termsSchema = z.object({
   terms: z.array(
     z.object({

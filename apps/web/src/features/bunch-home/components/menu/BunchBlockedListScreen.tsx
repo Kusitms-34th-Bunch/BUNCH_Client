@@ -3,20 +3,24 @@
 import { ActionDialog, Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { ProfileImage, ProfileListItem } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import blockedListEmpty from '@/shared/assets/images/empty/blocked-list-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { BlockedBunch } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 
 type BunchBlockedListScreenProps = {
-  /** 차단한 번치. 아직 모르면(첫 hydration) 목록을 그리지 않음 */
+  /** 차단한 번치(첫 쪽). 아직 모르면 로딩 */
   blocked: readonly BlockedBunch[] | undefined;
+  /** 전체 차단 수(목록은 첫 쪽만이라 행 수와 다를 수 있음). 없으면 행 수 */
+  total?: number | undefined;
   /** 차단 해제 가능 여부(메인·공동 관리자). 일반 멤버는 목록만 봄 */
   canUnblock: boolean;
-  onUnblock: (_blockedId: string) => void;
+  /** 해제. 끝나면 그 행이 목록에서 빠짐, 실패하면 reject(안내는 부르는 쪽) */
+  onUnblock: (_target: BlockedBunch) => Promise<unknown>;
   onBack: () => void;
 };
 
@@ -25,14 +29,31 @@ type BunchBlockedListScreenProps = {
  */
 export function BunchBlockedListScreen({
   blocked,
+  total,
   canUnblock,
   onUnblock,
   onBack,
 }: BunchBlockedListScreenProps) {
   const openOverlay = useScreenOverlay();
+  // 해제한 행이 사라지면 초점을 받는 자리(목록이 비면 빈 상태 제목). 개수 줄과 빈 상태는 동시에 그려지지 않음
+  const countRef = useRef<HTMLParagraphElement>(null);
+  const emptyRef = useRef<HTMLHeadingElement>(null);
+  // 진행 중인 해제(해제마다 새 객체). 행이 빠져 개수가 바뀐 렌더 뒤 초점을 옮기고 토스트(초점 → 토스트 순서)
+  const pending = useRef<{ id: string; name: string } | null>(null);
+  const count = blocked?.length;
+  useEffect(() => {
+    const done = pending.current;
+    // 그 행이 실제로 빠졌을 때만(다른 해제·다시 받기로 개수가 바뀐 경우는 기다림)
+    if (!done || blocked?.some((bunch) => bunch.id === done.id)) return;
+    pending.current = null;
+    (countRef.current ?? emptyRef.current)?.focus();
+    toast(BUNCH_HOME_MESSAGES.unblocked(done.name), { icon: 'success' });
+  }, [count, blocked]);
   // Figma 2141:37877: 이미지 + 「해제하기」·「취소」 세로 배치(설계의 「번치에서 내보내기」는 번치 단위 차단과 맞지 않아 뺌)
   const openUnblock = (target: BlockedBunch) => {
-    let done = false;
+    // 해제가 끝나기 전에는 다시 받지 않음(같은 DELETE가 두 번 가면 뒤 요청이 404로 실패 안내를 띄움)
+    if (pending.current) return;
+    let confirmed = false;
     openOverlay(
       (rootProps, close) => (
         <ActionDialog
@@ -44,24 +65,34 @@ export function BunchBlockedListScreen({
             {
               label: '해제하기',
               onClick: () => {
-                onUnblock(target.id);
-                done = true;
+                confirmed = true;
                 close();
               },
             },
           ]}
         />
       ),
+      // 확인 창이 다 닫힌 뒤 해제(실패 안내가 닫히는 창 뒤에 묻히지 않게). 끝나면 행이 빠진 화면이 그려진 다음
+      // 사라진 「차단해제」 대신 개수 줄(목록이 비면 빈 상태 제목)로 초점을 옮기고 토스트, 실패 안내는 부르는 쪽
       () => {
-        if (!done) return;
-        // 해제하면 돌아갈 「차단해제」 버튼이 사라지므로 개수 줄(목록이 비면 빈 상태 제목)로
-        focusRef.current?.focus();
-        toast(BUNCH_HOME_MESSAGES.unblocked(target.name), { icon: 'success' });
+        if (!confirmed || pending.current) return;
+        const request = { id: target.id, name: target.name };
+        pending.current = request;
+        void onUnblock(target).then(
+          // 이미 빠진 행이라 개수가 그대로면 잠시 뒤 토스트만(이 해제가 아직 남아 있을 때만, 다른 해제는 건드리지 않음)
+          () =>
+            setTimeout(() => {
+              if (pending.current !== request) return;
+              pending.current = null;
+              toast(BUNCH_HOME_MESSAGES.unblocked(request.name), { icon: 'success' });
+            }, 1000),
+          () => {
+            if (pending.current === request) pending.current = null;
+          },
+        );
       },
     );
   };
-  // 해제한 행이 사라지면 초점을 받는 자리(목록이 비면 빈 상태 제목). 개수 줄과 빈 상태는 동시에 그려지지 않음
-  const focusRef = useRef<HTMLElement>(null);
   const emptyDescriptionId = useId();
 
   return (
@@ -77,20 +108,23 @@ export function BunchBlockedListScreen({
       }
     >
       <h1 className="sr-only">차단 목록</h1>
+      {/* 늘 있는 상태 영역의 글자만 바꿈(새로 붙인 영역은 낭독이 안 될 수 있음) */}
+      <p role="status" className="sr-only">
+        {blocked === undefined ? BUNCH_HOME_MESSAGES.blockedListLoading : ''}
+      </p>
+      {blocked === undefined ? <PageLoading /> : null}
       {blocked && blocked.length > 0 ? (
         // 헤더 아래 12, 개수와 목록 사이 12, 행 사이 8(Figma 1873:33766)
         <div className="pt-s6 px-padding-p8 pb-s8 gap-s6 flex flex-col">
           <p
-            ref={(node) => {
-              focusRef.current = node;
-            }}
+            ref={countRef}
             tabIndex={-1}
             className="typography-body-3-semibold text-text-tertiary gap-s3 flex focus:outline-none"
           >
             <span>차단된 번치</span>
             {/* 간격은 gap이라 낭독용 띄어쓰기만 따로 둠 */}
             <span className="sr-only"> </span>
-            <span>{blocked.length}개</span>
+            <span>{total ?? blocked.length}개</span>
           </p>
           <ul className="gap-s4 flex flex-col">
             {blocked.map((bunch) => (
@@ -116,6 +150,11 @@ export function BunchBlockedListScreen({
               </li>
             ))}
           </ul>
+          {total !== undefined && total > blocked.length ? (
+            <p className="typography-caption-1-regular text-text-tertiary text-center">
+              {BUNCH_HOME_MESSAGES.blockedListMore(blocked.length)}
+            </p>
+          ) : null}
         </div>
       ) : null}
       {blocked?.length === 0 ? (
@@ -127,9 +166,7 @@ export function BunchBlockedListScreen({
             <Image src={blockedListEmpty as StaticImageData} alt="" width={72} height={72} />
             <div className="gap-s2 flex flex-col items-center">
               <h2
-                ref={(node) => {
-                  focusRef.current = node;
-                }}
+                ref={emptyRef}
                 tabIndex={-1}
                 aria-describedby={emptyDescriptionId}
                 className="typography-body-1-medium text-text-tertiary focus:outline-none"

@@ -42,12 +42,25 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     setNativeTabBar: () => Promise.resolve(false),
     // 브라우저에는 햅틱 없음
     tabSelectionHaptic: () => Promise.resolve(),
+    // 브라우저·이전 쉘에는 끌기 햅틱 없음
+    dragStartHaptic: () => Promise.resolve(),
     // 브라우저에는 시스템 탭 바 없음
     setNativeTabBarVisible: () => Promise.resolve(false),
+    // 브라우저·이 메서드가 없는 이전 쉘은 웹 플로팅 버튼 사용
+    setNativeFloatingButton: () => Promise.resolve(false),
     // 브라우저에는 앱 스플래시 없음
     appReady: () => Promise.resolve(),
   },
 });
+
+/** iOS 쉘 탭 화면의 WebView면 쉘이 sessionStorage에 넣어 준 그 탭 ID, 아니면 null */
+export const nativeShellTab = (): string | null => {
+  try {
+    return sessionStorage.getItem('bunch-shell-tab');
+  } catch {
+    return null;
+  }
+};
 
 /** initialBridge 지원 여부와 별개로 실제 네이티브 호스트 확인 */
 export const isNativeShell = () => typeof window !== 'undefined' && 'ReactNativeWebView' in window;

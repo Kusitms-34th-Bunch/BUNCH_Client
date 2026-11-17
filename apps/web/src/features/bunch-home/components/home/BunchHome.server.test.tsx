@@ -5,7 +5,12 @@ import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBundle } from '@/features/bundle/api/bundles';
 import { mockDb } from '@/mocks/db';
-import { MOCK_PHOTO_IDS, MOCK_SECOND_BUNCH_ID } from '@/mocks/db/seed';
+import {
+  MOCK_BUNCH_ID,
+  MOCK_PHOTO_IDS,
+  MOCK_SECOND_BUNCH_ID,
+  MOCK_MEMBER_IDS,
+} from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
@@ -148,7 +153,9 @@ describe('BunchHome 서버 데이터', () => {
 
   it('작성 중인 번들 탭에 서버의 초안이 카드로 보이고 누르면 작성 화면으로 이동한다', async () => {
     const { P1, P2, P3, P4 } = MOCK_PHOTO_IDS;
-    const created = await createBundle('1', [P1, P2, P3, P4].map(String), createIdempotencyKey());
+    const created = await createBundle('1', [P1, P2, P3, P4].map(String), createIdempotencyKey(), [
+      String(MOCK_MEMBER_IDS.memberA),
+    ]);
     renderHome();
 
     await screen.findByAltText(/강릉 커피 투어/);
@@ -163,6 +170,7 @@ describe('BunchHome 서버 데이터', () => {
       '1',
       [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
       createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
     );
     renderHome();
 
@@ -177,6 +185,7 @@ describe('BunchHome 서버 데이터', () => {
       '1',
       [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
       createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
     );
     renderHome();
 
@@ -192,6 +201,17 @@ describe('BunchHome 서버 데이터', () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: /제목 없는 번들 삭제/ })).toBeNull(),
     );
+  });
+
+  it('완성된 번들이 없으면 빈 상태와 「첫 번들 만들기」를 보인다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/published-bundles', () =>
+        ok({ items: [], page: 0, size: 50, totalElements: 0, hasNext: false }),
+      ),
+    );
+    renderHome();
+
+    expect(await screen.findByRole('button', { name: '첫 번들 만들기' })).toBeInTheDocument();
   });
 
   it('안전하지 않은 표지 주소의 번들은 기본 이미지로 보이고 홈은 그대로 나온다', async () => {
@@ -363,5 +383,113 @@ describe('BunchHome 서버 번치 전환', () => {
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith('참여할 수 있는 번치는 최대 10개예요.'));
     expect(push).not.toHaveBeenCalledWith(BUNCH_HOME_PATHS.startBunch);
+  });
+});
+
+// 보던 번치가 삭제됐거나 내보내짐(5.2.3 상세 동작 4): 받아 둔 기본 번치로 홈을 다시 받다 `409 BUNCH_008`
+describe('BunchHome 보던 번치에 들어갈 수 없게 됨', () => {
+  const NOTICE_ID = 30;
+  // 홈을 본 뒤 내가 여행쥬아에서 내보내지고, 홈만 다시 받음(기본 번치는 아직 받아 둔 여행쥬아)
+  const removeMeAndRefetchHome = async (client: ReturnType<typeof renderHome>) => {
+    await screen.findByRole('heading', { name: /여행쥬아/ });
+    mockDb.update((state) => ({
+      ...state,
+      memberships: state.memberships.filter(
+        (item) => !(item.bunchId === MOCK_BUNCH_ID && item.memberId === MOCK_MEMBER_IDS.me),
+      ),
+      bunchAccessNotices: [
+        ...state.bunchAccessNotices,
+        {
+          id: NOTICE_ID,
+          bunchId: MOCK_BUNCH_ID,
+          name: '여행쥬아',
+          characterType: 'TYPE_1',
+          reason: 'REMOVED',
+          occurredAt: '2026-11-16T09:00:00.000Z',
+        },
+      ],
+    }));
+    await act(() =>
+      client.invalidateQueries({ queryKey: sharedKeys.bunchHome(String(MOCK_BUNCH_ID)) }),
+    );
+  };
+
+  it('내보내졌다는 안내를 띄우고, 「번치 목록에서 삭제」하면 안내를 지우고 최근 번치로 바뀐다', async () => {
+    const user = userEvent.setup();
+    const client = renderHome();
+    await removeMeAndRefetchHome(client);
+
+    const dialog = await screen.findByRole('alertdialog', {
+      name: '여행쥬아 번치에서 내보내졌어요',
+    });
+    expect(
+      within(dialog).getByText('번치 멤버 목록에서 제외되어 더 이상 번치에 참여할 수 없어요.'),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: '번치 목록에서 삭제' }));
+
+    expect(await screen.findByRole('heading', { name: /퇴근런클럽/ })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mockDb.get().bunchAccessNotices.some((notice) => notice.id === NOTICE_ID)).toBe(false),
+    );
+  });
+
+  it('안내를 그냥 닫아도 최근 번치로 바뀌고, 안내는 전환 목록의 접근 불가 줄로 남는다', async () => {
+    const user = userEvent.setup();
+    const client = renderHome();
+    await removeMeAndRefetchHome(client);
+
+    await screen.findByRole('alertdialog', { name: '여행쥬아 번치에서 내보내졌어요' });
+    await user.keyboard('{Escape}');
+
+    expect(await screen.findByRole('heading', { name: /퇴근런클럽/ })).toBeInTheDocument();
+    expect(mockDb.get().bunchAccessNotices.some((notice) => notice.id === NOTICE_ID)).toBe(true);
+  });
+
+  it('안내를 받지 못해도 멈추지 않고 최근 번치로 바뀐다', async () => {
+    server.use(
+      http.get('/api/members/me/bunch-access-notices/:noticeId', () => fail(404, 'RESOURCE_001')),
+    );
+    const client = renderHome();
+    await removeMeAndRefetchHome(client);
+
+    expect(await screen.findByRole('heading', { name: /퇴근런클럽/ })).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('안내 뒤 다시 받아도 같은 번치를 볼 수 없으면 멈추지 않고 다시 시도할 수 있다', async () => {
+    // 서버가 기본 번치를 다시 고르지 않는 경우(여행쥬아 홈만 계속 접근 불가)
+    server.use(
+      http.get('/api/bunches/:bunchId/home', () =>
+        fail(409, 'BUNCH_008', { noticeId: 1, reason: 'DELETED' }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.keyboard('{Escape}');
+    const dialog = await screen.findByRole('alertdialog', { name: '홍대역 번치가 삭제됐어요' });
+    await user.click(within(dialog).getByRole('button', { name: '번치 목록에서 삭제' }));
+
+    expect(await screen.findByRole('button', { name: '다시 시도' })).toBeInTheDocument();
+  });
+
+  it('남은 소속 번치가 없으면 안내 뒤 번치 없음 화면이다', async () => {
+    const user = userEvent.setup();
+    const client = renderHome();
+    mockDb.update((state) => ({
+      ...state,
+      memberships: state.memberships.filter(
+        (item) => !(item.bunchId === MOCK_SECOND_BUNCH_ID && item.memberId === MOCK_MEMBER_IDS.me),
+      ),
+    }));
+    await removeMeAndRefetchHome(client);
+
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: '번치 목록에서 삭제',
+      }),
+    );
+
+    expect(await screen.findByRole('button', { name: '새 번치 만들기' })).toBeInTheDocument();
   });
 });

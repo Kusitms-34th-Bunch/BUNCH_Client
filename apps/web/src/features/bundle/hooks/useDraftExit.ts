@@ -43,7 +43,12 @@ export function useLeaveDraft(draftId: string | undefined) {
  * 주소의 사진이 처음부터 초안에 없으면 「사진함에서 삭제된 사진이에요.」 토스트 뒤 작성 화면으로 이동하고 false를 돌려줌
  * 초안이 처음 준비된 때 한 번만 판단해(그 전에는 undefined), 화면을 보는 동안 그 사진을 빼도 쫓겨나지 않음
  */
-export function useRedirectMissingPhoto(draft: Draft | undefined, photoId: string | undefined) {
+export function useRedirectMissingPhoto(
+  draft: Draft | undefined,
+  photoId: string | undefined,
+  /** 사진이 없을 때 돌아갈 화면과 안내. 기본은 작성 화면과 「사진함에서 삭제된 사진이에요.」 */
+  options?: { backPath?: string; message?: string },
+) {
   const router = useRouter();
   const [present, setPresent] = useState<boolean | undefined>(undefined);
   // 초안이 준비되는 첫 렌더에 한 번만 정함(렌더 중 상태 보정)
@@ -51,10 +56,12 @@ export function useRedirectMissingPhoto(draft: Draft | undefined, photoId: strin
     setPresent(draft.photos.some((photo) => photo.id === photoId));
   }
   const draftId = draft?.id;
+  const backPath = options?.backPath;
+  const message = options?.message;
   useEffect(() => {
     if (present !== false || draftId === undefined) return;
-    toastAfterNavigation(BUNDLE_MESSAGES.photoDeleted);
-    router.replace(BUNDLE_PATHS.draft(draftId));
-  }, [present, draftId, router]);
+    toastAfterNavigation(message ?? BUNDLE_MESSAGES.photoDeleted);
+    router.replace(backPath ?? BUNDLE_PATHS.draft(draftId));
+  }, [present, draftId, router, backPath, message]);
   return present === true;
 }

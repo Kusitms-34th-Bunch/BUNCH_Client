@@ -1,6 +1,6 @@
 'use client';
 
-import { ConfirmDialog, toast } from '@app/design-system';
+import { toast } from '@app/design-system';
 import { BunchSwitchSheet, type BunchSwitchItem } from '@app/design-system/web';
 import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
@@ -8,6 +8,7 @@ import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { BunchSummary } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { switchStatus } from '../lib/bunchSwitch';
+import { useAccessNoticeDialog } from './useAccessNoticeDialog';
 
 type UseBunchSwitchSheetOptions = {
   /** 지금 번치 id(전환 시트에서 「현재」로 표시) */
@@ -44,36 +45,22 @@ export function useBunchSwitchSheet({
 
   const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
 
+  const openNotice = useAccessNoticeDialog();
   // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움(닫힘 모션 동안 문구는 열 때 값으로 유지)
   // 시트가 열린 사이 목록이 갱신돼도(사진함은 전환 목록을 따로 받음) 고른 번치를 최신 목록에서 찾도록 열 때가 아니라 부를 때의 값을 씀
   const openUnavailable = usePreservedCallback((id: string) => {
     const bunch = findBunch(id);
     if (!bunch) return;
-    let removed = false;
-    // Esc는 안내만 닫고 목록에 남김, 「번치 목록에서 삭제」만 목록에서 지움
-    openOverlay(
-      (rootProps, close) => (
-        <ConfirmDialog
-          {...rootProps}
-          title={BUNCH_HOME_MESSAGES.unavailableTitle(bunch)}
-          description={BUNCH_HOME_MESSAGES.unavailableDescription(bunch)}
-          appearance="text"
-          confirmLabel="번치 목록에서 삭제"
-          onConfirm={() => {
-            removeBunch(bunch.id);
-            removed = true;
-            close();
-          }}
-        />
-      ),
-      () => {
-        // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
+    openNotice(bunch, {
+      onRemove: () => removeBunch(bunch.id),
+      // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
+      onClosed: (removed) => {
         if (removed)
           document
             .querySelector<HTMLElement>('[data-bottom-sheet]:not([data-ending-style])')
             ?.focus();
       },
-    );
+    });
   });
 
   const selectBunch = usePreservedCallback((id: string) => {

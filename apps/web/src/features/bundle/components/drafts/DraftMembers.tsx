@@ -5,19 +5,19 @@ import { useEffect, useRef } from 'react';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { canRemoveMember, getMemberBadge, type DraftAccess } from '../../lib/permissions';
-import { getEditingMemberIds } from '../../lib/publish';
 import { useRemoveMemberDialog } from './RemoveMemberDialog';
 
 type DraftMembersProps = {
   draft: Draft;
   viewer: DraftViewer;
   access: DraftAccess;
-  /** 내가 제목·코멘트를 입력 중인지(내 카드에도 초록 점) */
-  selfEditing?: boolean | undefined;
   /** 「추가」 카드를 눌렀을 때(참여 멤버 관리 화면 연결 전에는 생략) */
   onAddMember?: (() => void) | undefined;
   /** 내보내기 확인 창에서 「내보내기」를 눌렀을 때 */
-  onRemoveMember: (_memberId: string) => void;
+  /** 연결이 끊겨 막히면 false */
+  onRemoveMember: (_memberId: string) => boolean;
+  /** 보기만 하는 화면(발행 번들 수정): 삭제 버튼과 「추가」 카드를 권한과 관계없이 숨김 */
+  readOnly?: boolean | undefined;
 };
 
 /** 참여 멤버 가로 목록: 역할 배지, 편집 중인 멤버의 초록 점, 권한이 있을 때만 삭제 버튼(누르면 내보내기 확인 창), 맨 끝 「추가」 카드 */
@@ -25,9 +25,9 @@ export function DraftMembers({
   draft,
   viewer,
   access,
-  selfEditing = false,
   onAddMember,
   onRemoveMember,
+  readOnly = false,
 }: DraftMembersProps) {
   const openRemove = useRemoveMemberDialog();
   const listRef = useRef<HTMLUListElement>(null);
@@ -44,8 +44,8 @@ export function DraftMembers({
       .find(Boolean);
     target?.focus();
   }, [memberIds]);
-  const editingIds = new Set(getEditingMemberIds(draft.editing));
-  if (selfEditing) editingIds.add(viewer.memberId);
+  // 지금 이 초안에 들어와 있는 멤버의 초록 점(기능 spec 4.3.2)
+  const viewingIds = new Set(draft.viewingMemberIds);
 
   return (
     <section aria-labelledby="draft-members-title" className="pt-padding-p7 gap-s3 flex flex-col">
@@ -62,7 +62,7 @@ export function DraftMembers({
       >
         {draft.members.map((member, index) => {
           const badge = getMemberBadge(member);
-          const removable = canRemoveMember(draft, viewer, member);
+          const removable = !readOnly && canRemoveMember(draft, viewer, member);
           return (
             <li key={member.id} className="shrink-0">
               <MemberCard
@@ -70,9 +70,9 @@ export function DraftMembers({
                 src={member.avatarSrc}
                 memberRole={badge}
                 roleLabel={badge ? BUNDLE_MESSAGES.roleLabel[badge] : undefined}
-                editing={editingIds.has(member.id)}
+                editing={viewingIds.has(member.id)}
                 editingLabel={
-                  editingIds.has(member.id) ? BUNDLE_MESSAGES.editingLabel(member.name) : undefined
+                  viewingIds.has(member.id) ? BUNDLE_MESSAGES.viewingLabel(member.name) : undefined
                 }
                 onDelete={
                   removable
@@ -90,7 +90,7 @@ export function DraftMembers({
             </li>
           );
         })}
-        {access.canAddMember && (
+        {access.canAddMember && !readOnly && (
           <li className="shrink-0">
             <AddMemberCard onClick={onAddMember} />
           </li>

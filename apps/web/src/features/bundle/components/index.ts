@@ -4,10 +4,12 @@
 export { BundleDraft } from './drafts/BundleDraft';
 export { BundleDraftMembers } from './drafts/BundleDraftMembers';
 export { BundleDraftPhotoAdd } from './drafts/BundleDraftPhotoAdd';
-export { BundleDraftPhotoCaption } from './drafts/BundleDraftPhotoCaption';
 export { BundleDraftPhotoViewer } from './drafts/BundleDraftPhotoViewer';
 export { BundleDraftPick } from './drafts/BundleDraftPick';
 export { BundleDraftVisibility } from './drafts/BundleDraftVisibility';
+export { BundleEdit } from './edits/BundleEdit';
+export { BundleEditPhotoAdd } from './edits/BundleEditPhotoAdd';
+export { BundleEditPhotoViewer } from './edits/BundleEditPhotoViewer';
 export { BundleMemberSelect } from './bundles/BundleMemberSelect';
 export { BundleSelect } from './bundles/BundleSelect';
 export { BundleSelectLayout } from './bundles/BundleSelectLayout';

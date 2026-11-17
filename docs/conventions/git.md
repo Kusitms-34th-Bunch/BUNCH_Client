@@ -4,23 +4,27 @@
 
 ## 브랜치 전략
 
-- 작업 브랜치는 `develop`에서 만들고 `develop`으로 PR한다.
+- 작업 브랜치는 `develop`에서 만들고 `develop`으로 PR한다. 스택 PR은 앞 작업 브랜치에서 만들고 그 브랜치로 PR한 뒤, 앞 PR이 머지되면 base를 `develop`으로 바꾼다.
 - `main`은 프로덕션 전용이다. `develop`에서 `main`으로 올리는 릴리스 PR로만 바뀌고, 직접 커밋하거나 push하지 않는다.
 - 저장소의 default branch를 `develop`으로 설정한다. 이슈 브랜치 자동 생성(`create-work-branch.yml`)이 default branch에서 브랜치를 만들기 때문이다. default가 `main`이면 작업 브랜치가 프로덕션 코드에서 갈라진다.
 - 이유는 `docs/decisions/records/005-branch-strategy.md`를 확인한다.
 
 ## 이슈 생성 → 브랜치 자동 생성
 
-1. `.github/ISSUE_TEMPLATE/issue.yml`의 "📝 작업 이슈" 폼으로 이슈를 만든다. "작업 타입"은 설명이 붙은 선택지에서 고르고, "브랜치 이름"은 영문 소문자·숫자·하이픈으로 입력한다. "📌 작업 설명"과 "🛠️ 작업 목록"은 필수이며 "✅ 참고 자료 (선택)"은 선택이다. 기존 10개 타입은 유지한다.
+1. `.github/ISSUE_TEMPLATE/issue.yml`의 "📝 작업 이슈" 폼으로 이슈를 만든다. "작업 타입"은 설명이 붙은 선택지에서 고르고, "브랜치 이름"은 영문 소문자·숫자·하이픈으로 입력한다. "📌 작업 설명"과 "🛠️ 작업 목록"은 필수이며 "기준 브랜치 (선택)"과 "✅ 참고 자료 (선택)"은 선택이다. 기존 10개 타입은 유지한다.
 2. 이슈가 열리면 `create-work-branch.yml`이 실행되어:
    - `.github/scripts/parse_issue.py`로 폼 값을 파싱하고
-   - `<이슈번호>-<타입>/<브랜치명>` 형식의 브랜치를 default branch에서 만들어 push하고 (예: `12-feat/login-page`)
+   - `<이슈번호>-<타입>/<브랜치명>` 형식의 브랜치를 기준 브랜치의 최신 커밋에서 만들어 push하고 (예: `12-feat/login-page`)
+     - 기준 브랜치는 기본이 default branch이고, 폼의 "기준 브랜치 (선택)"에 원격 작업 브랜치 이름을 넣으면 그 브랜치다(스택 PR).
+     - 스크립트는 늘 default branch의 것을 실행한다. 기준 브랜치는 만들 원본으로만 쓴다.
+     - 기준 브랜치가 원격에 없으면 브랜치·라벨·담당자를 만들지 않고 댓글을 남긴 뒤 실패 처리한다.
+     - 기준 브랜치가 `.github/workflows/`를 바꿨으면 `GITHUB_TOKEN`으로는 브랜치를 만들지 못할 수 있다. 만들지 못하면 직접 만드는 명령을 댓글로 남긴다.
    - 기본 제목의 `[작업]` 접두사를 제거한 뒤 이슈 제목을 `[Type] #번호 - 제목` 형식으로 바꾸고
    - 타입에 맞는 라벨(`FEAT`, `FIX` 등)을 만들고 이슈에 붙이고
    - 작성자를 assignee로 지정하고
    - 같은 이름의 브랜치가 이미 있으면 새로 만들지 않고, 만들었는지 이미 있었는지를 댓글에 구분해 적는다.
-   - 브랜치명, 기준 브랜치, 브랜치로 옮기는 명령(`git fetch origin`, `git switch <브랜치>`)을 이슈 댓글로 남긴다.
-3. 제목이 `[작업]`만 있거나 브랜치 이름이 비어 있거나 타입을 못 찾으면 브랜치·라벨·담당자를 만들지 않고, 제목과 필수 폼 값을 확인하라는 댓글을 남긴 뒤 workflow를 실패 처리한다. 이 workflow는 이슈를 열 때만 실행되므로 내용을 고쳐도 다시 실행되지 않는다. 이슈를 닫고 새로 만든다.
+   - 브랜치명, 기준 브랜치, 브랜치로 옮기는 명령(`git fetch origin`, `git switch <브랜치>`)을 이슈 댓글로 남긴다. 기준 브랜치가 default branch가 아니면 PR base를 그 브랜치로 두고, 기준 PR이 먼저 머지되면 base를 default branch로 바꾸라고 함께 안내한다. PR base는 자동으로 바꾸지 않는다.
+3. 제목이 `[작업]`만 있거나 브랜치 이름이 비어 있거나 타입을 못 찾거나, 기준 브랜치가 브랜치 이름에 쓸 수 없는 값이거나 `main`이면 브랜치·라벨·담당자를 만들지 않고, 제목과 필수 폼 값을 확인하라는 댓글을 남긴 뒤 workflow를 실패 처리한다. 이 workflow는 이슈를 열 때만 실행되므로 내용을 고쳐도 다시 실행되지 않는다. 이슈를 닫고 새로 만든다.
 
 PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이슈 제목은 짧은 자연어 한 줄로 쓴다. 폼의 `[작업]`은 자동 정규화되며 CLI에서는 접두사 없이 쓴다. 함수·컴포넌트 이름 같은 구현 용어와 장문 서술은 피한다. 이전 폼의 "🌳 브랜치명 (Branch)"·"📂 브랜치 타입"과 단순 타입 값도 계속 인식한다. 새 폼의 설명형 타입은 이슈 파싱에서만 변환하며 PR 타입 판정 규칙은 유지한다.
 
@@ -30,7 +34,8 @@ PR을 열 때 이 이슈 제목이 PR 제목(`[Type] 제목`)이 되므로, 이�
 
 - 구현 시작 시 `docs/workflows/development.md`의 "worktree를 만드는 기준"으로 작업 위치를 선택한다. 단일 작업은 feature 브랜치·현재 세션이 기본이다. 브랜치를 옮기기 전에 `git status --short`로 변경의 소유 작업을 확인한다. 다른 작업의 변경이나 실행 중 세션이 있으면 그대로 보존하고 새 작업만 worktree로 격리한다. 같은 작업의 변경은 충돌 없이 따라가는 경우에만 브랜치를 이동하며, 자동 stash·commit·reset으로 이동을 강제하지 않는다.
 - 자동 생성된 브랜치로는 `git fetch origin && git switch <브랜치>`로 옮긴다. 직접 만들 때는 로컬 기준 브랜치를 거치지 않고 `git switch -c <이름> origin/<기준 브랜치>`로 만든다. 다른 사람이 머지하면 `origin/*`만 움직이고 로컬 브랜치는 멈춰 있어서, 로컬에서 파면 뒤처진 자리에서 시작한다.
-- `git fetch origin` 후 대상 작업 폴더에서 `git rev-list --count HEAD..origin/develop`으로 뒤처짐을 확인한다. 이슈 자동화는 default branch(`develop`)를 checkout한 HEAD에서 브랜치를 만들며, 생성 후 들어온 변경은 자동 반영하지 않는다. 미커밋 변경이 없고 작업 커밋도 없는 신규 브랜치는 `git merge --ff-only origin/develop`으로 최신화한다. 진행 중인 브랜치는 미커밋 변경을 보존하고 `develop` 반영 범위·충돌을 먼저 확인하며, 통합 커밋은 기존 커밋 승인 기준을 따른다. push된 브랜치를 자동 rebase·강제 push하지 않는다.
+- 아래에서 `<기준>`은 `origin/develop`이고, 스택 브랜치면 `origin/<기준 브랜치>`다.
+- `git fetch origin` 후 대상 작업 폴더에서 `git rev-list --count HEAD..<기준>`으로 뒤처짐을 확인한다. 이슈 자동화는 기준 브랜치를 받은 시점의 커밋에서 브랜치를 만들며, 생성 후 들어온 변경은 자동 반영하지 않는다. 미커밋 변경이 없고 작업 커밋도 없는 신규 브랜치는 `git merge --ff-only <기준>`으로 최신화한다. 진행 중인 브랜치는 미커밋 변경을 보존하고 `develop` 반영 범위·충돌을 먼저 확인하며, 통합 커밋은 기존 커밋 승인 기준을 따른다. push된 브랜치를 자동 rebase·강제 push하지 않는다.
 - 기존 PR 브랜치에 커밋을 더 올리기 전에 `gh pr view <번호> --json state`가 `MERGED`가 아닌지 확인한다. 머지된 뒤에 올린 커밋은 어디에도 반영되지 않으므로 새 이슈·브랜치·PR로 옮긴다.
 
 ### 격리·동시 구현용 worktree
@@ -73,13 +78,20 @@ checkout에는 `contents: read`, 라벨·assignee·본문 수정에는 `issues: 
 - PAT로 commit push와 PR 생성 요청을 인증해 후속 CI를 실행한다. [GitHub 공식 문서](https://docs.github.com/en/actions/concepts/security/github_token#when-github_token-triggers-workflow-runs)에 따르면 `GITHUB_TOKEN`으로 생성·갱신한 PR의 workflow는 승인 대기가 필요할 수 있다.
 - 최초 적용 시 workflow·변환 스크립트와 최신 `develop` 변경을 `design-token`에도 반영해야 한다. 이후 PR을 merge할 때 지속 사용하는 `design-token` 브랜치는 삭제하지 않고, 다음 디자인 변경 전 `develop`을 반영한다. 자동 merge·강제 push는 하지 않는다.
 
+## OpenAPI 타입 자동 PR
+
+- `.github/workflows/openapi-drift.yml`은 매일 09:00(KST)과 수동 실행 때 `develop`에서 생성 타입을 다시 만들고, 커밋본과 다르면 `openapi-sync` → `develop` PR(`[Chore] OpenAPI 생성 타입 갱신`)을 연다. 생성 파일만 바꾸고, 깨지는 코드는 그 PR의 CI(typecheck·test)로 드러난다.
+- 바뀐 계약 때문에 깨지는 코드는 `openapi-sync`에 직접 커밋해 고친다. `develop`이 여전히 스펙과 다르면 다음 실행은 열린 PR의 브랜치 위에 새 생성 결과만 커밋하고 사람이 올린 커밋을 지우지 않는다. 기능 작업에서 직접 생성한 결과가 먼저 머지돼 `develop`이 최신이 되면 열린 PR은 그대로 남으므로(머지하면 충돌) 닫는다. 열린 PR이 없을 때만 `develop`에서 브랜치를 새로 만들어 강제 push하고, 덮어쓴 이전 커밋은 실행 로그에 남긴다. 포크에서 같은 이름 브랜치로 연 PR은 무시한다. PAT는 PR 단계에서만 쓰고 설치·생성 단계에는 남기지 않는다.
+- repository Actions secret `OPENAPI_SYNC_PR_TOKEN`에 이 저장소만 선택한 fine-grained PAT(`Contents`·`Pull requests` Read and write)를 등록한다. 디자인 토큰 PAT와 따로 둔다. 없으면 PR 없이 드리프트를 실패로만 알린다.
+- PR을 merge할 때 `openapi-sync` 브랜치는 지워도 된다. 다음 드리프트 때 다시 만든다.
+
 ## Git hook (husky)
 
 사람과 agent 모두 걸린다. `yarn install`의 `prepare`가 hook을 건다.
 
 - `pre-commit`: staged 파일에 `lint-staged`(eslint·oxfmt)를 실행한다.
 - `commit-msg`: `commitlint`로 커밋 메시지 형식과 AI 출처 문구 금지를 검사한다.
-- `pre-push`: `yarn typecheck`와, vitest를 쓰는 workspace(web·admin·design-system·api-core)에서 `origin/develop` 대비 바뀐 파일과 관련된 테스트만 실행한다(`vitest run --changed`). 작은 변경은 10초 안팎이다. 전체 테스트와 `node --test` 패키지(bridge·lint-config)는 CI가 맡는다. `package.json`·vitest 설정이 바뀌면 vitest가 그 workspace 전체를 다시 돌려 1분 넘게 걸릴 수 있다. 로컬에 `origin/develop`이 없으면 `yarn test` 전체를 실행한다. 비교 기준이 오래되면 범위가 넓어지니 가끔 `git fetch origin develop`을 한다. 빌드는 오래 걸릴 수 있어 넣지 않았다.
+- `pre-push`: `yarn typecheck`만 실행한다(turbo 캐시가 있으면 몇 초, 없으면 10초 안팎). 테스트는 PR CI가 바뀐 파일과 관련된 것만(`--changed`) 실행한다. 공용 모듈을 바꾸면 로컬에서도 관련 테스트가 수백 개라 push를 수십 초씩 막았기 때문이다(2026-11-16, #410). push 전에 확인하려면 `yarn workspace @app/web vitest run --changed origin/develop`처럼 직접 실행한다. 빌드는 오래 걸릴 수 있어 넣지 않았다.
 
 실패하면 원인을 고치고 다시 시도한다. 최종 관문은 CI다.
 

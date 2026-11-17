@@ -316,7 +316,7 @@ describe('삭제 확인 창 문구(기능명세서 3.3.5)', () => {
 
     const dialog = screen.getByRole('alertdialog');
     expect(within(dialog).getByText(title)).toBeTruthy();
-    for (const line of lines) expect(within(dialog).getByText(line)).toBeTruthy();
+    for (const line of lines) expect(dialog.textContent).toContain(line);
     expect(within(dialog).getByRole('button', { name: '삭제하기' })).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: '취소' })).toBeTruthy();
   });
@@ -361,36 +361,16 @@ describe('삭제 중 사진이 사라진 경우', () => {
 });
 
 describe('번들 만들기', () => {
-  it('1~20장이면 확인 창을 띄우고 「예」를 누르면 고른 순서를 넘긴다', async () => {
+  it('1~20장이면 확인 창 없이 고른 순서를 바로 넘긴다', async () => {
     const user = userEvent.setup();
     const onCreateBundle = vi.fn();
     renderScreen(ready(dataWith(bulk(3))), { onCreateBundle });
     await startSelecting(user, 2);
 
     await runMenu(user, '번들 만들기');
-    const dialog = screen.getByRole('alertdialog');
-    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.bundleConfirmTitle)).toBeTruthy();
-    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.bundleConfirmDescription)).toBeTruthy();
 
-    await user.click(within(dialog).getByRole('button', { name: '예' }));
-
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(onCreateBundle).toHaveBeenCalledWith(['bulk-0', 'bulk-1']);
-  });
-
-  it('「아니요」를 누르면 아무것도 하지 않고 선택이 남는다', async () => {
-    const user = userEvent.setup();
-    const onCreateBundle = vi.fn();
-    renderScreen(ready(dataWith(bulk(3))), { onCreateBundle });
-    await startSelecting(user, 2);
-    await runMenu(user, '번들 만들기');
-
-    await user.click(
-      within(screen.getByRole('alertdialog')).getByRole('button', { name: '아니요' }),
-    );
-
-    expect(onCreateBundle).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
   });
 
   it('21장 이상이면 확인 창 없이 안내 토스트를 띄우고 선택을 유지한다', async () => {

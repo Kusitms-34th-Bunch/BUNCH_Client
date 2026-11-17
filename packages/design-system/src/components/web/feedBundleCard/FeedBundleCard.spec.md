@@ -17,7 +17,7 @@
 
 ## Public API
 
-- Props: `bunchName`·`bunchImageSrc`·`time`·`onBunchClick`, `members`·`onMembers`, `photos`·`title`·`titleAs`·`location`·`onLocationClick`·`date`·`onPhotoClick`, `liked`·`likeCount`·`onLike`·`commentCount`·`onComment`, native `<article>` 속성.
+- Props: `bunchName`·`bunchImageSrc`·`time`·`onBunchClick`, `members`·`onMembers`, `photos`·`title`·`titleAs`·`location`·`onLocationClick`·`date`·`onPhotoClick`·`photoHeroKey`(대표 사진의 화면 전환 공유 요소 키, BundlePhoto `heroKey`), `liked`·`likeCount`·`onLike`·`commentCount`·`onComment`, native `<article>` 속성.
 
 ## 접근성
 

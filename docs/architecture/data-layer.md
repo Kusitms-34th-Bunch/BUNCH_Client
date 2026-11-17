@@ -8,13 +8,13 @@
 - wire 필드명과 도메인 이름이 다르면(예: `pub_date` → `publishedAt`) raw 타입으로 먼저 받고 endpoint 경계에서 명시적으로 매핑한다. 필드명이 다른 응답을 `as`로 단언하면 타입 체크는 통과해도 값이 런타임에 `undefined`가 되는 버그로 이어진다.
 - 모든 endpoint 응답은 zod 스키마로 검사한 뒤 쓴다. 생성 타입은 컴파일 타임 계약일 뿐이라 서버가 실제로 다른 값을 보내도 막지 못한다.
   - 스키마는 feature `model/`에 두고 타입은 `z.infer`로 얻는다. Swagger에 있는 응답은 `schema satisfies z.ZodType<ApiContract<생성 타입>>`(`@app/api-core`)으로 생성 계약과 묶는다.
-  - `ApiContract`는 생성 타입의 최상위 선택 필드를 생략과 null 모두 허용하도록 넓힌다. 서버가 둘 중 어느 쪽으로 보낼지 생성 타입만으로는 알 수 없어서다. 선택 필드는 스키마에서 `.nullish()`로 받는다. 중첩 객체의 선택 필드는 넓히지 않으므로, 중첩 응답을 처음 연동할 때 필요하면 넓힌다.
+  - `ApiContract`는 생성 타입의 선택 필드를 생략과 null 모두 허용하도록 넓힌다. 중첩 객체와 배열 항목에도 같은 규칙을 적용한다. 서버가 둘 중 어느 쪽으로 보낼지 생성 타입만으로는 알 수 없어서다. 선택 필드는 스키마에서 `.nullish()`로 받는다.
   - 이 검사는 스키마 결과가 계약에 들어맞는지만 보는 단방향 검사다. 필수 필드 누락, 값 타입 오류, 계약에 없는 enum 값은 컴파일에서 잡는다. 계약에 없는 필드 추가, 계약보다 좁은 enum, 빠뜨린 선택 필드는 잡지 못하므로 스키마를 쓸 때 생성 타입과 직접 대조한다. 계약상 선택인 필드를 화면 때문에 필수로 받으면 그 이유를 스키마 주석에 남긴다.
   - Swagger에 아직 없는 응답만 노션 명세로 스키마를 쓰고, 올라오면 같은 방식으로 묶는다.
-  - web은 `src/shared/api/bffApi.ts`의 `requestData(request, schema, context)`로 요청한다. envelope 해제, 스키마 검사, 오류 변환을 한곳에서 한다. HTTP 오류·실패 envelope·네트워크 오류·계약 위반은 모두 `ApiError`로 던지고, 계약 위반은 code `INVALID_RESPONSE`(category `validation`, 재시도 없음)다. category `validation`은 4xx 요청 오류에도 쓰이므로 계약 위반은 code로 구분한다. 어느 응답인지와 어긋난 위치는 화면 문구가 아니라 `data`(`context`, `issues`)에 담긴다. 계약 위반을 오류 수집(Sentry)으로 보내는 것은 아직 하지 않았고 후속 과제다.
+  - web은 `src/shared/api/bffApi.ts`의 `requestData(request, schema, context)`로 요청한다. 넘기는 응답 스키마는 Swagger 생성 타입과 `satisfies z.ZodType<ApiContract<…>>`로 묶는다. 화면에 필요한 필드만 받거나 계약보다 느슨하게 받아 묶지 못하면 선언 바로 위에 `// 계약 미연결: <이유>`를 적는다. `yarn lint`의 `check:contracts`(`apps/web/scripts/check-response-contracts.mjs`)가 둘 다 없는 스키마를 막는다. 문서·주석의 「아직 생성 타입이 없다」 같은 설명은 낡기 쉬워서 이유를 검사로 드러낸다. envelope 해제, 스키마 검사, 오류 변환을 한곳에서 한다. HTTP 오류·실패 envelope·네트워크 오류·계약 위반은 모두 `ApiError`로 던지고, 계약 위반은 code `INVALID_RESPONSE`(category `validation`, 재시도 없음)다. category `validation`은 4xx 요청 오류에도 쓰이므로 계약 위반은 code로 구분한다. 어느 응답인지와 어긋난 위치는 화면 문구가 아니라 `data`(`context`, `issues`)에 담긴다. 계약 위반은 아래 「오류 보고 (web)」 기준으로 Sentry에 보낸다.
   - enum은 명세 값만 받는 닫힌 목록으로 둔다. 서버가 새 값을 보내면 화면이 추측하지 않고 계약 위반으로 드러난다.
   - `requestData`는 `data`가 있는 응답 전용이다. 본문 없는 204 응답은 본문을 읽지 않는다. 요청 함수에서 `bffApi.*`를 await하고 오류를 `normalizeError`로 감싼다(로그아웃 `shared/api/logout.ts` 기준). 같은 형태가 반복되면 `shared/api`의 공용 함수로 올린다.
-  - 재발급까지 실패한 401은 `ApiError`(category `auth`)로만 전달된다. 로그인 화면으로 보내는 처리(`createBrowserApi`의 `onUnauthorized`)는 아직 없고 로그인 API 연동 때 연결한다.
+  - 재발급까지 실패한 401은 `ApiError`(category `auth`)로만 전달된다. 403은 category `forbidden`이다. 재발급이 일시 장애(502·503·504·네트워크)로 실패하면 401로 바꾸지 않고 `server`·`network`로 전달한다(`api-boundary.md`). 화면이 같은 기준으로 쓰는 status 판정(볼 수 없음 400·403·404, 확정 거절 4xx)은 `src/shared/api/errorStatus.ts`를 쓴다. 로그인 화면으로 보내는 처리는 `AuthGate`가 가입 상태를 다시 읽을 때 맡고, `createBrowserApi`의 `onUnauthorized`는 연결하지 않는다(`shared/api/bffApi.ts`).
 - TanStack Query query key는 안정적이고 도메인 의미가 드러나야 한다. key는 feature의 `queries/keys.ts` factory 함수만 만들고, queryOptions·hook·무효화 코드는 그 함수를 호출만 한다(배열을 직접 쓰지 않는다). 모든 key는 `{feature}.all`에서 시작해 도메인 이름 함수(`nicknameAvailability(nickname)`, `mine()` → `latestMine()` 등)로 이어지고, 목록·상세 리소스가 있을 때만 `all → lists/list`, `all → details/detail` 계층(`createQueryKeys`)을 쓴다. response 결과를 바꾸는 filter·sort·cursor·id는 모두 key 함수 인자로 받고, 빈 값 제거 같은 정규화도 key 함수에서 한다. 일반 목록과 infinite 목록은 서로 다른 key를 쓰되 같은 prefix 아래에 둔다(예: `list(bunchId)` 아래 `list(bunchId, params)`와 `[...list(bunchId), 'infinite', params]`). 그러면 prefix 하나로 두 목록을 함께 invalidate할 수 있다.
 - 일반 `useQuery`, `useSuspenseQuery`, infinite query, route prefetch는 화면의 loading 경계와 navigation 요구에 맞춰 선택한다. 구체적인 선택 기준은 아래 "Query 모드 선택"을 따른다.
 - mutation 뒤 캐시 처리는 아래 "Mutation 캐시 동기화" 결정표를 따른다.
@@ -22,6 +22,7 @@
   1. 요청 전: 같은 query key로 진행 중인 조회를 취소하고, 현재 캐시 값을 스냅샷으로 남긴 뒤 optimistic 값을 적용한다.
   2. 실패 시: 스냅샷으로 롤백하고 사용자에게 실패를 알린다. 롤백 없이 에러만 삼키는 optimistic update는 리뷰에서 반려한다.
   3. 완료 시(성공·실패 무관): 해당 query key를 invalidate해 서버 응답이 최종적으로 화면을 결정하게 한다.
+     - 예외: mutation 응답이 바꾼 값 전체(예: 좋아요 여부와 수)를 돌려주고 대상이 infinite 목록이면, 성공했을 때에 한해 그 목록은 invalidate 대신 응답 값으로 캐시를 확정한다(받은 쪽 전부를 다시 받지 않게). 같은 데이터의 단건 캐시는 invalidate하고, 실패가 화면의 전제가 낡았다는 뜻(403·404·409)이면 목록도 invalidate한다. 되돌림은 목록 전체 스냅샷이 아니라 그 항목만 기준값으로 한다(`features/feed/queries/like.ts`).
   - 같은 데이터가 일반 목록과 infinite 목록에 함께 캐시돼 있으면 prefix로 `getQueriesData`(스냅샷)·`setQueriesData`(적용)를 하고, 두 캐시 모양(배열과 `pages`)을 모두 처리하는 갱신 함수 하나를 `lib/`에 순수 함수로 둔다.
 
 ## 파일 배치 (web)
@@ -33,7 +34,7 @@ apps/web/src/features/{feature}/
   api/           요청 함수(브라우저 → BFF). 백엔드 리소스 단위 파일
   queries/       keys.ts(key factory), 리소스별 queryOptions·mutation hook
   model/         (필요할 때) 응답 스키마·도메인 타입·변환
-  hooks/         화면·흐름 hook(서버 상태 아님)
+  hooks/         화면·흐름 hook(queries/의 options·mutation을 읽어 조합 가능)
 apps/web/src/shared/query/     QueryClient 설정, 여러 feature가 함께 쓰는 query(승격 시)
 apps/web/src/shared/providers/ QueryProvider(앱 공용 provider)
 apps/web/src/app/api/[...path]/route.ts   범용 BFF 프록시
@@ -43,21 +44,20 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 - **`api/`**: HTTP 요청과 계약 변환만 한다. React·TanStack Query·`next/navigation`·디자인 시스템(toast 등)을 import하지 않는다(ESLint 강제). 파일은 백엔드 리소스 단위(`api/nickname.ts`)로 나누고 함수 이름은 네트워크 동사(`get`, `create`, `update`, `remove`)로 시작한다. 경로는 BFF 기준(`/api/…`)이다.
 - **`queries/`**: query key, `queryOptions`·`infiniteQueryOptions`, mutation hook을 둔다. `queryOptions`·`useMutation`·`useQueryClient`·`QueryClient`는 `queries/`, `src/shared/query/`, `QueryProvider`에서만 import한다(ESLint 강제, 타입 import는 어디서나 허용). 파일 이름은 `api/`와 맞춘다(`api/nickname.ts` ↔ `queries/nickname.ts`).
 - **query hook은 기본으로 만들지 않는다.** 화면이 `useQuery(xxxQueryOptions(…))`처럼 options를 받아 읽는다(`useQuery`·`useSuspenseQuery`·`useInfiniteQuery`는 어디서나 사용 가능). 여러 query 조합이나 가공이 필요할 때만 `queries/`에 `use…Query`를 만든다.
-- **mutation은 항상 `queries/`의 `use…Mutation` hook으로 만든다.** 캐시 동기화(아래 "Mutation 캐시 동기화")를 한곳에 모으기 위해서다. 화면 이동·toast 같은 화면 동작은 hook에 넣지 않고 화면이 `mutate(…, { onSuccess })`로 처리한다.
+- **mutation은 항상 `queries/`의 `use…Mutation` hook으로 만든다.** 캐시 동기화(아래 "Mutation 캐시 동기화")를 한곳에 모으기 위해서다. 화면 이동·toast 같은 화면 동작은 기본으로 화면이 `mutate(…, { onSuccess })`로 처리한다. 실패 문구는 `meta.errorMessage`로 공통 처리에 맡긴다. 요청 중 화면이 사라져도 반드시 실행돼야 하는 이동(로그아웃·탈퇴·가입 뒤 이동)과 `meta.errorMessage`로 나타낼 수 없는 조건부 실패 알림(이미 취소된 콕은 알리지 않음 등)은 mutation 정의에 두고 이유를 주석으로 남긴다. `queries/`의 조회 hook은 실패 알림을 띄우지 않고 실패 여부만 돌려준다(알림은 화면이 정함).
 - **mutation 실패 알림은 공통 처리로 선언한다.** mutation에 `meta: { errorMessage }`(사용자 문구)를 주면 QueryClient의 `MutationCache.onError`가 그 문구를 toast로 띄운다. meta 타입은 TanStack Query `Register`로 고정한다. 서버 `error.message`는 문구 키라 그대로 보여 주지 않는다. code마다 다른 문구가 필요하거나 입력 칸 아래에 오류를 보여 주는 화면은 meta 없이 `mutate(…, { onError })`로 직접 처리한다. 성공 toast와 화면 이동은 계속 화면이 맡는다. 구현은 `src/shared/query/queryClient.ts`의 `MutationCache`와 `Register.mutationMeta`다.
-- **`hooks/`**: 서버 상태가 아닌 화면·흐름 hook만 둔다.
+- **`hooks/`**: 화면·흐름 hook을 둔다. `queries/`의 options를 `useQuery`로 읽거나 mutation hook을 불러 조합할 수 있다. query 정의(`queryOptions`)·mutation 정의·캐시 조작(`useQueryClient`)은 `queries/`에만 둔다(ESLint 강제).
 - 여러 feature가 같은 요청·query를 실제로 함께 쓰고 계약이 안정되면 `src/shared`(`shared/query/`)로 옮긴다. 인증 세션(로그인·재발급·로그아웃)은 모든 BFF가 쓰는 공용 인프라라 처음부터 `src/shared/api/`에 둔다.
-- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/ids.ts`로 화면 문자열 id로 바꾼다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
+- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/ids.ts`로 화면 문자열 id로 바꾼다. 화면·hook·query는 문자열 id만 넘기고, 서버 숫자로 바꾸는 `toWireId`·`requireWireId`는 `api/`에서만 쓴다(ESLint 강제). 잘못된 id로 요청을 건너뛸지는 `isWireId`로 판단한다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
 
 ### 예시
 
-실제 기준 예시는 사진함의 번치 멤버 목록(조회)과 사진 삭제(쓰기)다. 새 API는 이 파일들을 따라 만든다.
+실제 기준 예시는 번치 멤버 목록(조회, 여러 feature가 써서 shared)과 사진함 사진 삭제(쓰기)다. 새 API는 이 파일들을 따라 만든다.
 
-- `features/photo-box/model/bunchMembers.ts`: 응답 zod 스키마와 `toPhotoBoxMember`(숫자 id → 문자열, 쓰는 화면의 기존 타입으로 변환. 화면 타입을 새로 만들지 않는다)
-- `features/photo-box/api/bunchMembers.ts`: `requestData`로 요청과 변환. 조회 함수는 마지막 인자로 `signal`을 받아 ky에 넘긴다(mutation은 받지 않음. Query도 mutation에는 signal을 주지 않고, 끊어도 서버 처리는 계속돼 결과만 잃음)
-- `features/photo-box/queries/keys.ts`, `queries/bunchMembers.ts`: key factory와 `queryOptions`
-- `api/bunchMembers.test.ts`, `queries/bunchMembers.test.tsx`: MSW 가짜 서버로 확인하는 테스트(`docs/workflows/testing.md`)
-- 쓰기: `model/photos.ts`(응답 스키마), `api/photos.ts`(`requestData(bffApi.post(…, { json }))`, 화면 id → 서버 숫자), `queries/photos.ts`(`useDeletePhotosMutation`: 실패 문구 `meta`, 성공 뒤 사진 목록 prefix 무효화를 반환), `src/mocks/handlers/photos.ts`(본문 검사와 가짜 DB 변경), 각 test. 사진 목록 query는 아직 없고 #199에서 무효화 prefix `photoBoxKeys.photos(bunchId)` 아래에 추가한다(미리 key를 만들지 않는 규칙의 예외: mutation이 무효화할 prefix)
+- `src/shared/api/bunchMembers.ts`: 응답 zod 스키마(생성 계약과 `satisfies`로 묶음), 화면 모양으로 바꾸는 변환(숫자 id → 문자열), `requestData`로 요청. 조회 함수는 마지막 인자로 `signal`을 받아 ky에 넘긴다(mutation은 받지 않음. Query도 mutation에는 signal을 주지 않고, 끊어도 서버 처리는 계속돼 결과만 잃음)
+- `src/shared/query/keys.ts`, `src/shared/query/bunchMembers.ts`: key factory와 `queryOptions`
+- `src/shared/api/bunchMembers.test.ts`, `src/shared/query/bunchMembers.test.tsx`: MSW 가짜 서버로 확인하는 테스트(`docs/workflows/testing.md`)
+- 쓰기: `features/photo-box/model/photos.ts`(응답 스키마), `api/photos.ts`(`requestData(bffApi.post(…, { json }))`, 화면 id → 서버 숫자), `queries/photos.ts`(`useDeletePhotosMutation`: 실패 문구 `meta`, 성공 뒤 사진 목록 prefix `photoBoxKeys.photos(bunchId)` 무효화를 반환), `src/mocks/handlers/photos.ts`(본문 검사와 가짜 DB 변경), 각 test
 
 ```ts
 // model/bunchMembers.ts — 서버 응답 모양과 화면 모양
@@ -126,7 +126,9 @@ remove.mutate(selectedIds, {
 
 ## Query 모드 선택
 
-- `useSuspenseQuery`: 데이터 없이는 화면을 의미 있게 그릴 수 없고, route 수준 Suspense fallback으로 충분하며, `enabled`·`placeholderData`·수동 loading 분기가 필요 없고, 한 컴포넌트 안의 독립적인 suspense query가 여러 개라 waterfall이 생기지 않을 때 사용한다.
+- `useSuspenseQuery`: 데이터 없이는 화면을 의미 있게 그릴 수 없고, 화면 하나를 감싸는 `QueryBoundary`(또는 route 수준) fallback으로 충분하며, `enabled`·`placeholderData`·수동 loading 분기가 필요 없고, 한 컴포넌트 안의 독립적인 suspense query가 여러 개라 waterfall이 생기지 않을 때 사용한다.
+  - 받는 중·실패·다시 시도는 앱 공용 `QueryBoundary`(`shared/components/boundary/`, ADR 022)로 감싼다. 서버 렌더에서는 받는 중만 그리고, API 오류만 잡으며(렌더 버그는 위로 올려 오류 수집까지), 다시 시도는 이 경계 안의 실패한 query만 다시 받는다. 받는 중 안내는 경계의 늘 있는 상태 영역이 읽고, 다시 시도하면 초점은 경계 영역에 남는다. 실패 화면은 화면이 정한다(예: `BunchHomeError`).
+  - 앞 결과에 기대는 query는 컴포넌트를 나눠 차례로 읽는다. 원래 차례로 받던 화면만 옮겨 새 waterfall을 만들지 않는다(ADR 022). 또 `skipToken`이 든 queryOptions는 쓸 수 없으므로 값을 아는 경우의 정의를 따로 둔다(예: `bunchFollowRequestsQueryOptions`).
 - `useQuery`: 실행 조건이 있거나, 검색·필터·탭·form 상태가 fetch를 제어하거나, 이전 데이터를 화면에 유지해야 하거나, 화면 일부만 loading·error를 표시하거나, 수동 refetch가 상호작용의 일부이거나, 여러 독립 query를 한 컴포넌트에서 병렬로 시작해야 할 때 사용한다.
 - `useInfiniteQuery`: 첫 렌더 이후 추가 페이지를 불러오고 다음 페이지 상태를 화면에서 바로 다뤄야 할 때 사용한다.
 - `useSuspenseInfiniteQuery`: 첫 페이지가 route 진입에 필수이고 같은 Suspense fallback이 첫 fetch에도 맞을 때만 사용한다.
@@ -163,7 +165,7 @@ remove.mutate(selectedIds, {
 - 저장하지 않는 것:
   - 로그인·가입 상태(`sharedKeys.session()`). 접근 판단은 항상 서버 응답으로 한다. 저장하면 로그아웃한 기기에 이전 사용자의 화면이 잠깐 보일 수 있다.
   - 어느 번치를 볼지 정하는 값(`members/me`의 기본 번치). 저장본이 오래되면 이전 번치 홈이 먼저 보였다가 바뀐다. 이 값만 서버에서 받고, 받은 번치의 홈 데이터는 저장본으로 바로 그린다.
-  - 편집 중이거나 동시 편집 대상인 데이터(번들 편집 화면의 내용, 편집권). 번치 홈의 작성 중인 번들 목록은 홈을 그리는 데 필요해서 저장한다. 복원 뒤 5분이 지났으면 바로 다시 받는다.
+  - 편집 중이거나 동시 편집 대상인 데이터(번들 편집 화면의 내용). 번치 홈의 작성 중인 번들 목록은 홈을 그리는 데 필요해서 저장한다. 복원 뒤 5분이 지났으면 바로 다시 받는다.
   - 사진 원본 상세처럼 크거나, 오래 두면 의미가 바뀌는 데이터.
   - 한 번 보고 마는 화면의 데이터.
 - 복원한 값은 받은 시각을 그대로 가져서, `staleTime`(5분)이 지났으면 화면에 보인 뒤 바로 다시 받는다. 화면은 복원 값과 새 값의 차이를 따로 다루지 않는다.
@@ -197,3 +199,13 @@ remove.mutate(selectedIds, {
 - web에서는 server-only 경계와 browser client를 분리한다. cookie·secret을 client bundle로 보내지 않는다.
 - admin에서는 route loader와 component query의 책임을 섞지 않고, 필요한 경우 route 수준에서 prefetch한다.
 - 여러 app에서 같은 transport·생성 타입을 써도 endpoint와 query hook은 제품 의미가 같고 안정된 API일 때만 shared package로 승격한다. 공통화 전에는 각 app·feature 가까이에 둔다.
+
+## 오류 보고 (web)
+
+조회·mutation이 최종 실패하면 `createQueryClient`의 `QueryCache`·`MutationCache` `onError`가 `shared/lib/reportApiError.ts`를 거쳐 개발팀이 알아야 하는 오류만 Sentry로 보낸다(결정 기록 006의 수집 정책을 따름).
+
+- 보고: 5xx(재시도 뒤), 분류하지 못한 오류(category `unknown`), 응답 계약 위반(code `INVALID_RESPONSE`), `ApiError`가 아닌 코드 결함.
+- 제외: 401·403(세션·권한 흐름이 처리), 네트워크 오류(사용자 환경), 업무 4xx(화면이 안내). 취소된 조회는 TanStack Query가 `onError`를 부르지 않는다.
+- `ApiError`는 응답 원문이 들어 있을 수 있는 message 대신 `API <category> <status> <code>` 고정 문구로 보내고, 같은 값으로 fingerprint를 붙여 묶는다. code는 오류 코드 형식(`/^[A-Z][A-Z0-9_]{0,40}$/`)일 때만 쓴다.
+- 화면에서 직접 잡는 실패(공유 실패 등)는 그 화면이 `captureException`을 부른다.
+- mutation 안에서 `fetchQuery`로 받은 조회가 실패하면 QueryCache와 MutationCache가 한 번씩 보고한다. 같은 fingerprint로 묶이므로 이슈는 하나지만 발생 수는 두 배로 보인다.

@@ -1,7 +1,12 @@
+import type { ApiContract } from '@app/api-core';
+import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { bffApi, requestData } from './bffApi';
 
-const availabilitySchema = z.object({ normalizedValue: z.string(), available: z.boolean() });
+const availabilitySchema = z.object({
+  normalizedValue: z.string(),
+  available: z.boolean(),
+}) satisfies z.ZodType<ApiContract<components['schemas']['NameAvailability']>>;
 
 /** 닉네임을 지금 쓸 수 있는지(`GET /members/nickname-availability`). 이름을 예약하지 않으므로 저장 때 서버가 다시 확인함 */
 export const checkNicknameAvailability = async (nickname: string, signal?: AbortSignal) => {

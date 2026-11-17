@@ -20,6 +20,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/members/me/profile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['updateProfile'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/feed/advertisements/{advertisementId}/pin': {
     parameters: {
       query?: never;
@@ -244,7 +260,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/bunches/{bunchId}/bundles/{id}/photos/{photoId}/caption': {
+  '/api/v1/bunches/{bunchId}/bundles/{id}/photos/{photoId}/pick': {
     parameters: {
       query?: never;
       header?: never;
@@ -252,7 +268,7 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    put: operations['caption'];
+    put: operations['pick'];
     post?: never;
     delete?: never;
     options?: never;
@@ -302,6 +318,22 @@ export interface paths {
     get: operations['getLocations'];
     put: operations['saveDraftLocations'];
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/members/me/withdrawal': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['withdraw'];
     delete?: never;
     options?: never;
     head?: never;
@@ -708,6 +740,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/bunches/{bunchId}/bundles/{bundleId}/locations/intents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['applyLocationIntent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/auth/ws-token': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['wsToken'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/auth/terms/agreements': {
     parameters: {
       query?: never;
@@ -836,6 +900,38 @@ export interface paths {
     patch: operations['patchPreferences'];
     trace?: never;
   };
+  '/api/v1/bunches/{bunchId}/bundles/{id}/title/crdt': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['mergeTitle'];
+    trace?: never;
+  };
+  '/api/v1/pinned-places': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['list_3'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/members/{memberId}/social-profile': {
     parameters: {
       query?: never;
@@ -884,6 +980,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/members/me/withdrawal/check': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['check'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/members/me/onboarding': {
     parameters: {
       query?: never;
@@ -907,7 +1019,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['list_3'];
+    get: operations['list_4'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1083,7 +1195,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['list_4'];
+    get: operations['list_5'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1179,7 +1291,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations['list_5'];
+    get: operations['list_6'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1247,6 +1359,22 @@ export interface paths {
     put?: never;
     post?: never;
     delete: operations['delete_3'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/bunches/{bunchId}/bundles/{id}/presence': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['presence'];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1379,12 +1507,37 @@ export interface components {
       /** Format: date-time */
       registeredAt: string;
     };
-    ApiResponsePinnedPlaceResponse: {
+    MemberProfileRequest: {
+      nickname: string;
+      /** @enum {string} */
+      imageAction: 'KEEP' | 'REPLACE' | 'RESET';
+    };
+    ApiResponseMemberResponse: {
       success: boolean;
-      data?: components['schemas']['PinnedPlaceResponse'];
+      data?: components['schemas']['MemberResponse'];
       error?: components['schemas']['ApiError'];
     };
-    PinnedPlaceResponse: {
+    BunchResponse: {
+      /** Format: int64 */
+      id: number;
+      name: string;
+      /** @enum {string} */
+      characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
+      imageUrl?: string;
+    };
+    MemberResponse: {
+      /** Format: int64 */
+      memberId: number;
+      nickname?: string;
+      imageUrl?: string;
+      defaultBunch?: components['schemas']['BunchResponse'];
+    };
+    ApiResponseKokResponse: {
+      success: boolean;
+      data?: components['schemas']['KokResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    KokResponse: {
       /** Format: int64 */
       id: number;
       /** Format: int64 */
@@ -1392,7 +1545,7 @@ export interface components {
       provider: string;
       externalId: string;
       name: string;
-      address: string;
+      address?: string;
       /** @enum {string} */
       sourceType: 'BUNDLE' | 'ADVERTISEMENT';
       /** Format: int64 */
@@ -1439,14 +1592,6 @@ export interface components {
       success: boolean;
       data?: components['schemas']['BunchResponse'];
       error?: components['schemas']['ApiError'];
-    };
-    BunchResponse: {
-      /** Format: int64 */
-      id: number;
-      name: string;
-      /** @enum {string} */
-      characterType: 'TYPE_1' | 'TYPE_2' | 'TYPE_3' | 'TYPE_4';
-      imageUrl?: string;
     };
     BunchProfileRequest: {
       name: string;
@@ -1537,7 +1682,7 @@ export interface components {
       provider: string;
       externalId: string;
       name: string;
-      address: string;
+      address?: string;
       /** Format: int32 */
       position: number;
     };
@@ -1549,6 +1694,9 @@ export interface components {
       nickname?: string;
       imageUrl?: string;
       profileAvailable: boolean;
+      /** @enum {string} */
+      role?: 'OWNER' | 'CO_OWNER' | 'MEMBER';
+      creator: boolean;
     };
     BundlePermissions: {
       administrator: boolean;
@@ -1560,6 +1708,19 @@ export interface components {
       canReport: boolean;
       canLike: boolean;
       canComment: boolean;
+    };
+    BundlePhotoChangeResult: {
+      addedPhotoIds: number[];
+      rejectedPhotoIds: number[];
+      replayed: boolean;
+    };
+    BundlePhotoPicks: {
+      /** Format: int32 */
+      count: number;
+      pickedByMe: boolean;
+      /** Format: int64 */
+      version: number;
+      members: components['schemas']['BundleParticipantResponse'][];
     };
     BundlePhotoResponse: {
       /** Format: int64 */
@@ -1575,13 +1736,7 @@ export interface components {
       addedBy: number;
       /** Format: date-time */
       addedAt: string;
-      caption: string;
-      /** Format: int64 */
-      captionVersion: number;
-      /** Format: int64 */
-      captionUpdatedBy?: number;
-      /** Format: date-time */
-      captionUpdatedAt?: string;
+      picks?: components['schemas']['BundlePhotoPicks'];
     };
     BundleSnapshot: {
       /** Format: int64 */
@@ -1611,7 +1766,6 @@ export interface components {
       dateChips: string[];
       publishBlockers: string[];
       permissions: components['schemas']['BundlePermissions'];
-      leases: components['schemas']['LeaseState'][];
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -1626,15 +1780,13 @@ export interface components {
       likedByCurrentBunch: boolean;
       /** Format: int64 */
       commentCount: number;
-    };
-    LeaseState: {
-      target: string;
       /** Format: int64 */
-      memberId: number;
-      /** Format: date-time */
-      expiresAt: string;
-      /** Format: int64 */
-      leaseVersion: number;
+      publishedBy?: number;
+      publisherNickname?: string;
+      /** Format: byte */
+      titleCrdtState?: string;
+      titleTooLong: boolean;
+      photoChangeResult?: components['schemas']['BundlePhotoChangeResult'];
     };
     BundleTextRequest: {
       value: string;
@@ -1642,8 +1794,6 @@ export interface components {
       expectedVersion: number;
       /** @enum {string} */
       mode: 'DRAFT' | 'PUBLISHED';
-      /** Format: uuid */
-      leaseToken?: string;
     };
     BundleLocationInput: {
       provider: string;
@@ -1657,8 +1807,6 @@ export interface components {
       /** Format: int64 */
       expectedRevision: number;
       title: string;
-      /** @enum {string} */
-      visibility: 'PUBLIC' | 'PRIVATE';
       /** Format: date */
       date?: string;
       photos: components['schemas']['PublishedBundlePhotoInput'][];
@@ -1669,7 +1817,16 @@ export interface components {
       bundlePhotoId?: number;
       /** Format: int64 */
       photoId?: number;
-      caption: string;
+    };
+    BundlePhotoPickRequest: {
+      picked: boolean;
+      /** Format: int64 */
+      expectedVersion: number;
+    };
+    ApiResponseBundlePhotoPicks: {
+      success: boolean;
+      data?: components['schemas']['BundlePhotoPicks'];
+      error?: components['schemas']['ApiError'];
     };
     BundleDateRequest: {
       /** Format: date */
@@ -1678,15 +1835,11 @@ export interface components {
       expectedVersion: number;
       /** @enum {string} */
       mode: 'DRAFT' | 'PUBLISHED';
-      /** Format: uuid */
-      leaseToken?: string;
     };
     BundleLocationsRequest: {
       locations: components['schemas']['BundleLocationInput'][];
       /** Format: int64 */
       expectedVersion: number;
-      /** Format: uuid */
-      leaseToken?: string;
     };
     ApiResponseBundleLocationState: {
       success: boolean;
@@ -2028,10 +2181,13 @@ export interface components {
       photoIds: number[];
       /** Format: int64 */
       recommendationId?: number;
+      participantMemberIds: number[];
     };
     PublishBundleRequest: {
       /** Format: int64 */
-      expectedRevision: number;
+      expectedRevision?: number;
+      /** @enum {string} */
+      visibility?: 'PUBLIC' | 'PRIVATE';
     };
     MoveBundlePhotoRequest: {
       /** Format: int64 */
@@ -2046,10 +2202,58 @@ export interface components {
       removeBundlePhotoIds: number[];
       /** @enum {string} */
       mode: 'DRAFT' | 'PUBLISHED';
+      /** @enum {string} */
+      capacityMode: 'ATOMIC_APPLY' | 'PARTIAL_ADD';
+      reselectedPhotoIds: number[];
     };
     BundleParticipantRequest: {
       /** Format: int64 */
       memberId: number;
+    };
+    BundleLocationIntentPlace: {
+      provider: string;
+      externalId: string;
+      name: string;
+      address?: string;
+    };
+    BundleLocationIntentRequest: {
+      /** @enum {string} */
+      intent: 'ADD' | 'REPLACE' | 'REMOVE' | 'MOVE';
+      locations: components['schemas']['BundleLocationIntentPlace'][];
+      location?: components['schemas']['BundleLocationIntentPlace'];
+      /** Format: int64 */
+      targetLocationId?: number;
+      /** Format: int64 */
+      previousLocationId?: number;
+      /** Format: int64 */
+      nextLocationId?: number;
+    };
+    ApiResponseBundleLocationIntentResponse: {
+      success: boolean;
+      data?: components['schemas']['BundleLocationIntentResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    BundleLocationIntentResponse: {
+      /** Format: int64 */
+      bundleId: number;
+      /** Format: int64 */
+      revision: number;
+      /** Format: int64 */
+      locationVersion: number;
+      changed: boolean;
+      /** Format: int32 */
+      acceptedCount: number;
+      locations: components['schemas']['BundleLocationResponse'][];
+    };
+    ApiResponseWsTokenResponse: {
+      success: boolean;
+      data?: components['schemas']['WsTokenResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    WsTokenResponse: {
+      token: string;
+      /** Format: date-time */
+      expiresAt: string;
     };
     TermAgreement: {
       /** @enum {string} */
@@ -2094,7 +2298,7 @@ export interface components {
     };
     PushPreferencePatchRequest: {
       enabled?: boolean;
-      types?: {
+      categories?: {
         [key: string]: boolean;
       };
     };
@@ -2105,9 +2309,73 @@ export interface components {
     };
     PushPreferenceResponse: {
       enabled: boolean;
-      types: {
+      categories: {
         [key: string]: boolean;
       };
+    };
+    BundleTitleCrdtRequest: {
+      /** Format: byte */
+      state: string;
+    };
+    ApiResponseBundleTitleState: {
+      success: boolean;
+      data?: components['schemas']['BundleTitleState'];
+      error?: components['schemas']['ApiError'];
+    };
+    BundleTitleState: {
+      title: string;
+      /** Format: byte */
+      titleCrdtState: string;
+      /** Format: int64 */
+      titleVersion: number;
+      titleTooLong: boolean;
+    };
+    ApiResponseKoksResponse: {
+      success: boolean;
+      data?: components['schemas']['KoksResponse'];
+      error?: components['schemas']['ApiError'];
+    };
+    KokCardResponse: {
+      /** Format: int64 */
+      id: number;
+      provider: string;
+      externalId: string;
+      name: string;
+      address?: string;
+      /** Format: int64 */
+      pinnedByMemberId?: number;
+      /** Format: date-time */
+      pinnedAt: string;
+      /** @enum {string} */
+      sourceType: 'BUNDLE' | 'ADVERTISEMENT';
+      sourceAccessible: boolean;
+      /** Format: int64 */
+      sourceBundleId?: number;
+      /** Format: int64 */
+      sourceBunchId?: number;
+      sourceBunchName?: string;
+      sourceBundleTitle?: string;
+    };
+    KokMemberResponse: {
+      /** Format: int64 */
+      membershipId: number;
+      /** Format: int64 */
+      memberId: number;
+      nickname?: string;
+      imageUrl?: string;
+      /** Format: int64 */
+      count: number;
+    };
+    KoksResponse: {
+      /** Format: int64 */
+      bunchId: number;
+      /** Format: int64 */
+      selectedMemberId?: number;
+      /** Format: int64 */
+      totalCount: number;
+      members: components['schemas']['KokMemberResponse'][];
+      items: components['schemas']['KokCardResponse'][];
+      nextCursor?: string;
     };
     ApiResponseMemberSocialProfileResponse: {
       success: boolean;
@@ -2150,21 +2418,23 @@ export interface components {
       normalizedValue: string;
       available: boolean;
     };
-    ApiResponseMemberResponse: {
+    ApiResponseWithdrawalCheckResponse: {
       success: boolean;
-      data?: components['schemas']['MemberResponse'];
+      data?: components['schemas']['WithdrawalCheckResponse'];
       error?: components['schemas']['ApiError'];
     };
-    MemberResponse: {
+    WithdrawalCheckResponse: {
+      ownerBunches: components['schemas']['WithdrawalOwnerBunch'][];
+    };
+    WithdrawalOwnerBunch: {
       /** Format: int64 */
-      memberId: number;
-      nickname?: string;
+      bunchId: number;
+      name: string;
       imageUrl?: string;
-      /** Format: int32 */
-      birthYear?: number;
-      /** @enum {string} */
-      gender?: 'FEMALE' | 'MALE';
-      defaultBunch?: components['schemas']['BunchResponse'];
+      /** Format: int64 */
+      myMembershipId: number;
+      /** Format: int64 */
+      membershipVersion: number;
     };
     ApiResponseOnboardingResponse: {
       success: boolean;
@@ -2312,7 +2582,6 @@ export interface components {
       imageUrl: string;
       /** Format: int32 */
       position: number;
-      caption: string;
     };
     FeedResponse: {
       /** Format: date-time */
@@ -2337,38 +2606,38 @@ export interface components {
       provider: string;
       externalId: string;
       name: string;
-      address: string;
+      address?: string;
     };
     ApiResponseAdvertisementResponse: {
       success: boolean;
       data?: components['schemas']['AdvertisementResponse'];
       error?: components['schemas']['ApiError'];
     };
-    ApiResponseBundlePlacePinsResponse: {
+    ApiResponseBundleKoksResponse: {
       success: boolean;
-      data?: components['schemas']['BundlePlacePinsResponse'];
+      data?: components['schemas']['BundleKoksResponse'];
       error?: components['schemas']['ApiError'];
     };
-    BundlePlacePinResponse: {
-      /** Format: int64 */
-      id: number;
-      provider: string;
-      externalId: string;
-      name: string;
-      address: string;
-      /** Format: int32 */
-      position: number;
-      pinned: boolean;
-      /** Format: int64 */
-      pinId?: number;
-    };
-    BundlePlacePinsResponse: {
+    BundleKoksResponse: {
       /** Format: int64 */
       bundleId: number;
       /** Format: int64 */
       currentBunchId?: number;
       canPin: boolean;
-      locations: components['schemas']['BundlePlacePinResponse'][];
+      locations: components['schemas']['BundleLocationKokResponse'][];
+    };
+    BundleLocationKokResponse: {
+      /** Format: int64 */
+      id: number;
+      provider: string;
+      externalId: string;
+      name: string;
+      address?: string;
+      /** Format: int32 */
+      position: number;
+      pinned: boolean;
+      /** Format: int64 */
+      pinId?: number;
     };
     ApiResponseSocialCommentPage: {
       success: boolean;
@@ -2596,7 +2865,7 @@ export interface components {
       imageUrl: string;
       /** Format: int32 */
       position: number;
-      caption: string;
+      picks?: components['schemas']['BundlePhotoPicks'];
     };
     ApiResponsePhotoListResponse: {
       success: boolean;
@@ -2825,6 +3094,37 @@ export interface components {
       /** Format: int64 */
       total: number;
     };
+    ApiResponseBundlePresenceData: {
+      success: boolean;
+      data?: components['schemas']['BundlePresenceData'];
+      error?: components['schemas']['ApiError'];
+    };
+    BundleEditingState: {
+      /** Format: int64 */
+      memberId: number;
+      target: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    BundlePresenceData: {
+      members: components['schemas']['BundlePresenceMember'][];
+      typing: components['schemas']['BundleTypingState'][];
+      editing: components['schemas']['BundleEditingState'][];
+    };
+    BundlePresenceMember: {
+      /** Format: int64 */
+      memberId: number;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    BundleTypingState: {
+      /** Format: int64 */
+      memberId: number;
+      target: string;
+      text: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
     ApiResponseBundleSummary: {
       success: boolean;
       data?: components['schemas']['BundleSummary'];
@@ -2913,6 +3213,34 @@ export interface operations {
       };
     };
   };
+  updateProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'multipart/form-data': {
+          profile: components['schemas']['MemberProfileRequest'];
+          /** Format: binary */
+          photo?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseMemberResponse'];
+        };
+      };
+    };
+  };
   pin: {
     parameters: {
       query?: never;
@@ -2930,7 +3258,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          '*/*': components['schemas']['ApiResponsePinnedPlaceResponse'];
+          '*/*': components['schemas']['ApiResponseKokResponse'];
         };
       };
     };
@@ -2975,7 +3303,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          '*/*': components['schemas']['ApiResponsePinnedPlaceResponse'];
+          '*/*': components['schemas']['ApiResponseKokResponse'];
         };
       };
     };
@@ -3384,12 +3712,10 @@ export interface operations {
       };
     };
   };
-  caption: {
+  pick: {
     parameters: {
       query?: never;
-      header?: {
-        'X-Request-Id'?: string;
-      };
+      header?: never;
       path: {
         bunchId: number;
         id: number;
@@ -3399,7 +3725,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['BundleTextRequest'];
+        'application/json': components['schemas']['BundlePhotoPickRequest'];
       };
     };
     responses: {
@@ -3409,7 +3735,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          '*/*': components['schemas']['ApiResponseBundleSnapshot'];
+          '*/*': components['schemas']['ApiResponseBundlePhotoPicks'];
         };
       };
     };
@@ -3520,6 +3846,26 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseBundleLocationState'];
+        };
+      };
+    };
+  };
+  withdraw: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseUnit'];
         };
       };
     };
@@ -4269,6 +4615,55 @@ export interface operations {
       };
     };
   };
+  applyLocationIntent: {
+    parameters: {
+      query?: never;
+      header?: {
+        'X-Request-Id'?: string;
+      };
+      path: {
+        bunchId: number;
+        bundleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BundleLocationIntentRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBundleLocationIntentResponse'];
+        };
+      };
+    };
+  };
+  wsToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseWsTokenResponse'];
+        };
+      };
+    };
+  };
   agree: {
     parameters: {
       query?: never;
@@ -4477,6 +4872,59 @@ export interface operations {
       };
     };
   };
+  mergeTitle: {
+    parameters: {
+      query?: never;
+      header?: {
+        'X-Request-Id'?: string;
+      };
+      path: {
+        bunchId: number;
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BundleTitleCrdtRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBundleTitleState'];
+        };
+      };
+    };
+  };
+  list_3: {
+    parameters: {
+      query?: {
+        memberId?: number;
+        cursor?: string;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseKoksResponse'];
+        };
+      };
+    };
+  };
   get: {
     parameters: {
       query?: never;
@@ -4541,6 +4989,26 @@ export interface operations {
       };
     };
   };
+  check: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseWithdrawalCheckResponse'];
+        };
+      };
+    };
+  };
   get_1: {
     parameters: {
       query?: never;
@@ -4561,7 +5029,7 @@ export interface operations {
       };
     };
   };
-  list_3: {
+  list_4: {
     parameters: {
       query?: never;
       header?: never;
@@ -4709,7 +5177,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          '*/*': components['schemas']['ApiResponseBundlePlacePinsResponse'];
+          '*/*': components['schemas']['ApiResponseBundleKoksResponse'];
         };
       };
     };
@@ -4840,7 +5308,7 @@ export interface operations {
       };
     };
   };
-  list_4: {
+  list_5: {
     parameters: {
       query?: never;
       header?: never;
@@ -4982,7 +5450,7 @@ export interface operations {
       };
     };
   };
-  list_5: {
+  list_6: {
     parameters: {
       query?: {
         page?: number;
@@ -5117,6 +5585,29 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseUnit'];
+        };
+      };
+    };
+  };
+  presence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bunchId: number;
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseBundlePresenceData'];
         };
       };
     };

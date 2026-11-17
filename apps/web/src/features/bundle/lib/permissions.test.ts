@@ -24,9 +24,11 @@ const draft: Draft = {
   locations: [],
   date: null,
   suggestedDates: [],
+  picks: {},
   comments: [],
   visibility: 'public',
   editing: {},
+  viewingMemberIds: [],
 };
 
 const viewer = (memberId: string, bunchRole: DraftViewer['bunchRole'] = 'member'): DraftViewer => ({
