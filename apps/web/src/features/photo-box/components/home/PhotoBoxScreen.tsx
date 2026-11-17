@@ -24,7 +24,6 @@ import { PhotoBoxEmpty } from '../PhotoBoxEmpty';
 import { PhotoBoxError } from '../PhotoBoxError';
 import { PhotoBoxMore } from '../PhotoBoxMore';
 import { PhotoDragSelect } from '../PhotoDragSelect';
-import { UndatedPhotos } from '../UndatedPhotos';
 import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
 import { PhotoDragArea } from './PhotoDragArea';
@@ -262,9 +261,9 @@ export function PhotoBoxScreen({
             onSelect={setMemberId}
             selectedCounts={selectedCounts}
           />
-          {undated.length > 0 ? <UndatedPhotos photos={undated} /> : null}
           <PhotoDragArea
             sections={sections}
+            undated={undated}
             viewer={state.data.viewer}
             actions={actions}
             enabled={selecting && !flow.busy}

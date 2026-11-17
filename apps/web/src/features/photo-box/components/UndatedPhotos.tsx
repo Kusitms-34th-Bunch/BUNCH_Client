@@ -2,23 +2,38 @@
 
 import { cn } from '@app/design-system';
 import { Accordion } from '@app/design-system/web';
-import { memo, useState } from 'react';
+import { useDroppable } from '@dnd-kit/core';
+import { memo, useState, type ReactNode } from 'react';
 import type { PhotoBoxPhoto } from '../lib/types';
 import { PhotoGrid } from './PhotoGrid';
 
 type UndatedPhotosProps = {
   photos: readonly PhotoBoxPhoto[];
+  /** 끌어서 날짜를 옮길 수 있는 목록이면 그 영역의 키. 없으면 끌 수 없는 목록(번들 만들기 사진 고르기 등) */
+  sectionKey?: string | undefined;
 };
+
+/**
+ * 끄는 중에 이 영역 위로 지나가는 것을 알아보는 영역(놓을 곳은 아니고, 지나가면 처음 자리로 돌려 놓아도 변경이 없게 함)
+ * 사진이 비어 칸이 없어져도 영역 위가 가장 가까운 날짜 섹션으로 잡혀 날짜가 바뀌지 않도록 영역 전체를 등록함
+ */
+function UndatedDropZone({ id, children }: { id: string; children: ReactNode }) {
+  const { setNodeRef } = useDroppable({ id });
+  return <div ref={setNodeRef}>{children}</div>;
+}
 
 /**
  * 촬영 날짜를 확인하지 못한 사진 영역(기본 접힘, 펼치면 3열)
  * 접힌 모양은 좌우 16px 여백의 둥근 카드, 펼치면 여백 없이 전체 폭(Figma 사진함_02·03)
  * 열고 닫는 340ms 전환은 `Accordion`이 맡고, 여백·모서리 변화도 같은 값으로 전환
  */
-export const UndatedPhotos = memo(function UndatedPhotos({ photos }: UndatedPhotosProps) {
+export const UndatedPhotos = memo(function UndatedPhotos({
+  photos,
+  sectionKey,
+}: UndatedPhotosProps) {
   const [open, setOpen] = useState(false);
 
-  return (
+  const accordion = (
     <Accordion
       headingLevel={2}
       title="촬영 날짜를 확인할 사진"
@@ -31,7 +46,13 @@ export const UndatedPhotos = memo(function UndatedPhotos({ photos }: UndatedPhot
         open ? 'mx-0 rounded-none' : 'mx-s8 rounded-r4',
       )}
     >
-      <PhotoGrid photos={photos} label="촬영 날짜를 확인할 사진" />
+      <PhotoGrid photos={photos} label="촬영 날짜를 확인할 사진" sectionKey={sectionKey} />
     </Accordion>
+  );
+
+  return sectionKey === undefined ? (
+    accordion
+  ) : (
+    <UndatedDropZone id={sectionKey}>{accordion}</UndatedDropZone>
   );
 });

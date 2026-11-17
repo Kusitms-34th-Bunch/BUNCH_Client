@@ -134,6 +134,21 @@ describe('changePhotoDates', () => {
     });
   });
 
+  it('날짜가 null이면 clearDate로 날짜 없음으로 되돌린다', async () => {
+    let body: unknown;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos/date', async ({ request }) => {
+        body = await request.clone().json();
+        return undefined;
+      }),
+    );
+
+    await expect(changePhotoDates(bunchId, [myPhoto], null)).resolves.toEqual({ updatedCount: 1 });
+
+    expect(body).toEqual({ photoIds: [MOCK_PHOTO_IDS.S4], clearDate: true });
+    expect(findPhoto(MOCK_PHOTO_IDS.S4)).toMatchObject({ capturedDate: null, capturedTime: null });
+  });
+
   it('기기 시간대의 그날을 yyyy-MM-dd로 만들어 photoIds와 capturedDate만 본문에 담는다', async () => {
     let body: unknown;
     server.use(

@@ -345,7 +345,7 @@ export const photoHandlers = [
   // POST /api/v1/bunches/{bunchId}/photos/date
   // 고른 사진(1~50장, 중복 불가)의 촬영 날짜만 바꿈(시각 유지). 전부 성공 또는 전부 실패
   // 확인 순서(서버 명세): 입력·날짜 400 → 번치·소속 → 사라진 사진 409 PHOTO_004 → 권한 403 AUTH_002
-  // 날짜 없음으로 되돌리는 clearDate는 날짜 미확인 사진을 끌 수 없어 화면이 부르지 않으므로 가짜 서버도 받지 않음(400)
+  // clearDate: true면 capturedDate 없이 날짜 없음으로 되돌림(날짜 미확인 사진을 끌어 옮긴 것을 되돌릴 때)
   http.post('/api/bunches/:bunchId/photos/date', async ({ params, request }) => {
     const bunchId = toWireId(params.bunchId);
     const body = (await request.json().catch(() => null)) as {
@@ -355,15 +355,17 @@ export const photoHandlers = [
     } | null;
     const photoIds = body?.photoIds;
     const capturedDate = body?.capturedDate;
+    const clearDate = body?.clearDate === true;
     if (
       bunchId === undefined ||
       !isPhotoIdList(photoIds) ||
       photoIds.length > 50 ||
       new Set(photoIds).size !== photoIds.length ||
-      body?.clearDate === true ||
-      typeof capturedDate !== 'string' ||
-      !DATE.test(capturedDate) ||
-      capturedDate > todayInSeoul()
+      !(clearDate
+        ? capturedDate === undefined
+        : typeof capturedDate === 'string' &&
+          DATE.test(capturedDate) &&
+          capturedDate <= todayInSeoul())
     ) {
       return fail(400, 'COMMON_001');
     }
@@ -389,7 +391,11 @@ export const photoHandlers = [
     mockDb.update((current) => ({
       ...current,
       photos: current.photos.map((photo) =>
-        targets.includes(photo) ? { ...photo, capturedDate } : photo,
+        targets.includes(photo)
+          ? clearDate
+            ? { ...photo, capturedDate: null, capturedTime: null }
+            : { ...photo, capturedDate: capturedDate as string }
+          : photo,
       ),
     }));
     return ok({ updatedCount: targets.length });

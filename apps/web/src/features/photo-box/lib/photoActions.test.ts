@@ -113,6 +113,16 @@ describe('applyTakenDate', () => {
     expect(result[0]?.takenAt).toBe('2026-01-03T00:00');
   });
 
+  it('날짜가 null이면 고른 사진만 날짜 없음으로 되돌린다', () => {
+    const result = applyTakenDate(
+      [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')],
+      new Set(['1']),
+      null,
+    );
+
+    expect(result.map((p) => p.takenAt)).toEqual([null, '2026-09-26T09:05']);
+  });
+
   it('원본 목록과 고르지 않은 사진 객체를 바꾸지 않는다', () => {
     const original = [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')];
     const result = applyTakenDate(original, new Set(['1']), new Date(2026, 7, 5));

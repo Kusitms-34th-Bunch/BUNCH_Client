@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PhotoBoxActions, PhotoBoxData, PhotoBoxPhoto, PhotoBoxViewer } from '../../lib/types';
@@ -81,6 +81,51 @@ beforeEach(() => {
   toast.mockClear();
   changePhotoDates.mockReset();
   changePhotoDates.mockResolvedValue(undefined);
+});
+
+describe('날짜 미확인 사진 끌기', () => {
+  const undatedPhoto = (id: string, uploaderIds: string[]): PhotoBoxPhoto => ({
+    ...photo(id, uploaderIds),
+    takenAt: null,
+  });
+  const draggableItems = () =>
+    within(screen.getByRole('list', { name: '촬영 날짜를 확인할 사진' }))
+      .getAllByRole('listitem')
+      .map((item) => item.hasAttribute('data-photo-draggable'));
+
+  it('선택 모드에서 날짜 미확인 영역의 내 사진은 끌 수 있고 남의 사진은 끌 수 없다', async () => {
+    const user = userEvent.setup();
+    renderScreen(
+      dataWith(
+        [
+          photo('dated', ['eunwoo']),
+          undatedPhoto('mine', ['eunwoo']),
+          undatedPhoto('theirs', ['gyeongjin']),
+        ],
+        member,
+      ),
+    );
+
+    await user.click(screen.getByRole('button', { name: /촬영 날짜를 확인할 사진/ }));
+    // 선택 모드가 아니면 끌 수 없음
+    expect(draggableItems()).toEqual([false, false]);
+
+    await user.click(screen.getByRole('button', { name: '선택' }));
+
+    expect(draggableItems()).toEqual([true, false]);
+  });
+
+  it('관리자는 날짜 미확인 영역의 남의 사진도 끌 수 있다', async () => {
+    const user = userEvent.setup();
+    renderScreen(
+      dataWith([photo('dated', ['eunwoo']), undatedPhoto('theirs', ['gyeongjin'])], admin),
+    );
+
+    await user.click(screen.getByRole('button', { name: /촬영 날짜를 확인할 사진/ }));
+    await user.click(screen.getByRole('button', { name: '선택' }));
+
+    expect(draggableItems()).toEqual([true]);
+  });
 });
 
 describe('선택 모드 날짜 바꾸기', () => {

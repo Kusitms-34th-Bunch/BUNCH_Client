@@ -8,7 +8,9 @@ import {
   isTapLikeDrag,
   moveItem,
   needsDragConfirm,
+  toDragItems,
   toSectionItems,
+  UNDATED_SECTION_KEY,
 } from './photoDrag';
 
 const photo = (
@@ -97,6 +99,29 @@ describe('moveItem', () => {
     moveItem(items, 'b', '2026-09-27', 0);
 
     expect(items['2026-09-28']).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('날짜 미확인 영역', () => {
+  const section = (dateKey: string, ids: string[]): PhotoSection => ({
+    dateKey,
+    label: dateKey,
+    photos: ids.map((id) => photo(id)),
+  });
+
+  it('toDragItems는 날짜 섹션과 날짜 미확인 영역의 사진 id 순서를 함께 돌려준다', () => {
+    const items = toDragItems([section('2026-09-27', ['a', 'b'])], [photo('u1'), photo('u2')]);
+
+    expect(items).toEqual({ '2026-09-27': ['a', 'b'], [UNDATED_SECTION_KEY]: ['u1', 'u2'] });
+  });
+
+  it('날짜 미확인 사진을 날짜 섹션으로 옮기면 영역에서 빠진다', () => {
+    const items = toDragItems([section('2026-09-27', ['a'])], [photo('u1'), photo('u2')]);
+
+    const moved = moveItem(items, 'u1', '2026-09-27', 1);
+
+    expect(moved).toEqual({ '2026-09-27': ['a', 'u1'], [UNDATED_SECTION_KEY]: ['u2'] });
+    expect(findSectionKey(moved, 'u1')).toBe('2026-09-27');
   });
 });
 

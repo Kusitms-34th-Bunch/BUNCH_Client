@@ -53,7 +53,7 @@ export const useChangePhotoDatesMutation = (bunchId: string | undefined) => {
   return useMutation({
     // 삭제와 같은 이유로 연결이 끊겨 있어도 보류하지 않고 바로 보내 실패로 끝냄
     networkMode: 'always',
-    mutationFn: ({ photoIds, date }: { photoIds: readonly string[]; date: Date }) => {
+    mutationFn: ({ photoIds, date }: { photoIds: readonly string[]; date: Date | null }) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
       return changePhotoDates(bunchId, photoIds, date);
     },

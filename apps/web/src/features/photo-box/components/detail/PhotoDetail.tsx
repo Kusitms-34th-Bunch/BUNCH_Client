@@ -113,7 +113,7 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
         deleting.current = false;
       }
     },
-    changePhotoDates: async (ids: readonly string[], date: Date) => {
+    changePhotoDates: async (ids: readonly string[], date: Date | null) => {
       deleting.current = true;
       try {
         await actions.changePhotoDates(ids, date);

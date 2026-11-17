@@ -48,12 +48,12 @@ const toDateText = (date: Date) =>
  * 고른 사진(1~50장)의 촬영 날짜를 그날로 바꿈(시각은 유지, 서버가 날짜 출처를 사용자 지정으로 바꿈). 한 요청이 전부 성공 또는 전부 실패
  * 고른 사진 중 일부가 그사이 지워졌으면 `MissingPhotosError`(409 `PHOTO_004`)를 던짐
  * 그 밖의 오류: 오늘 이후 날짜·잘못된 요청 `COMMON_001`, 남의 사진을 섞은 일반 멤버·번치 멤버 아님 `AUTH_002`
- * 날짜 없음으로 되돌리는 `clearDate`는 날짜 미확인 사진을 끌 수 없어 호출하는 화면이 없으므로 연결하지 않음
+ * `date`가 `null`이면 `clearDate: true`로 날짜 없음으로 되돌림(날짜 미확인 사진을 끌어 옮긴 것을 되돌릴 때)
  */
 export const changePhotoDates = async (
   bunchId: string,
   photoIds: readonly string[],
-  date: Date,
+  date: Date | null,
 ) => {
   const wireIds = photoIds.map(toWireId);
   if (!wireIds.every((id) => id !== undefined)) {
@@ -62,10 +62,16 @@ export const changePhotoDates = async (
   try {
     return await requestData(
       bffApi.post(`bunches/${encodeURIComponent(bunchId)}/photos/date`, {
-        json: {
-          photoIds: wireIds,
-          capturedDate: toDateText(date),
-        } satisfies Omit<components['schemas']['PhotoDateChangeRequest'], 'clearDate'>,
+        json:
+          date === null
+            ? ({
+                photoIds: wireIds,
+                clearDate: true,
+              } satisfies components['schemas']['PhotoDateChangeRequest'])
+            : ({
+                photoIds: wireIds,
+                capturedDate: toDateText(date),
+              } satisfies Omit<components['schemas']['PhotoDateChangeRequest'], 'clearDate'>),
       }),
       photoDateChangeResponseSchema,
       'change photo dates',

@@ -19,7 +19,7 @@ import {
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { PhotoSection } from '../../lib/photoDate';
-import type { PhotoBoxActions, PhotoBoxViewer } from '../../lib/types';
+import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxViewer } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoDragProvider } from '../../contexts/PhotoDragContext';
 import { usePhotoSelectionActions } from '../../contexts/photoSelection';
@@ -34,9 +34,11 @@ import {
   isTapLikeDrag,
   moveItem,
   needsDragConfirm,
-  toSectionItems,
+  toDragItems,
+  UNDATED_SECTION_KEY,
 } from '../../lib/photoDrag';
 import { DateChangeConfirmDialog } from '../PhotoSelectionDialogs';
+import { UndatedPhotos } from '../UndatedPhotos';
 import { PhotoDateSection } from './PhotoDateSection';
 
 // 길게 누르기 시간은 쓸어서 고르기와 나누어 쓰도록 공유(짧게 누르면 선택·해제)
@@ -53,6 +55,8 @@ const NO_DRAGGABLE: ReadonlySet<string> = new Set();
 
 type PhotoDragAreaProps = {
   sections: readonly PhotoSection[];
+  /** 날짜를 확인하지 못한 사진. 여기서 날짜 섹션으로 끌어 옮길 수 있고, 이 영역으로 놓을 수는 없음 */
+  undated: readonly PhotoBoxPhoto[];
   viewer: PhotoBoxViewer;
   actions: PhotoBoxActions;
   /** 선택 모드이고 저장·삭제·날짜 변경이 돌고 있지 않을 때만 끌 수 있음 */
@@ -69,6 +73,7 @@ type PhotoDragAreaProps = {
  */
 export const PhotoDragArea = memo(function PhotoDragArea({
   sections,
+  undated,
   viewer,
   actions,
   enabled,
@@ -93,8 +98,9 @@ export const PhotoDragArea = memo(function PhotoDragArea({
   const [moving, setMoving] = useState(false);
 
   const photoById = useMemo(
-    () => new Map(sections.flatMap((section) => section.photos).map((p) => [p.id, p])),
-    [sections],
+    () =>
+      new Map([...undated, ...sections.flatMap((section) => section.photos)].map((p) => [p.id, p])),
+    [sections, undated],
   );
   const draggableIds = useMemo(
     () =>
@@ -118,6 +124,20 @@ export const PhotoDragArea = memo(function PhotoDragArea({
     [sections, preview, photoById],
   );
 
+  // 끌기 미리보기의 처음 모양(날짜 섹션 + 날짜 미확인 영역)
+  const initialItems = () => toDragItems(sections, undated);
+
+  // 끄는 중에는 날짜 미확인 영역도 미리보기 순서대로 늘어놓음(원래 영역이 비어도 끌기가 끝날 때까지 남겨 끄는 사진이 사라지지 않게 함)
+  const shownUndated = useMemo(
+    () =>
+      preview
+        ? (preview[UNDATED_SECTION_KEY] ?? [])
+            .map((id) => photoById.get(id))
+            .filter((photo) => photo !== undefined)
+        : undated,
+    [undated, preview, photoById],
+  );
+
   const reset = () => {
     setActiveId(undefined);
     setPreview(undefined);
@@ -134,7 +154,7 @@ export const PhotoDragArea = memo(function PhotoDragArea({
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveId(String(active.id));
-    setPreview(toSectionItems(sections));
+    setPreview(initialItems());
   };
 
   const handleDragOver = ({ active, over }: DragOverEvent) => {
@@ -144,6 +164,12 @@ export const PhotoDragArea = memo(function PhotoDragArea({
     const overIsSection = overId in preview;
     const targetKey = overIsSection ? overId : findSectionKey(preview, overId);
     if (targetKey === undefined) return;
+    // 날짜 미확인 영역에는 놓을 수 없으므로 위로 지나가면 처음 자리로 돌림
+    if (targetKey === UNDATED_SECTION_KEY) {
+      const origin = initialItems();
+      if (findSectionKey(preview, photoId) !== findSectionKey(origin, photoId)) setPreview(origin);
+      return;
+    }
     const list = preview[targetKey] ?? [];
     const index = overIsSection ? list.length : list.indexOf(overId);
     setPreview(moveItem(preview, photoId, targetKey, index));
@@ -173,10 +199,13 @@ export const PhotoDragArea = memo(function PhotoDragArea({
       action: {
         label: PHOTO_BOX_MESSAGES.undo,
         onClick: () => {
-          // 원래 날짜로 한 번 더 바꿔 되돌림(시각은 그대로라 같은 섹션의 원래 순서로 돌아옴)
+          // 원래 날짜로 한 번 더 바꿔 되돌림(시각은 그대로라 같은 섹션의 원래 순서로 돌아옴). 날짜 미확인 사진이었으면 날짜 없음으로 되돌림(`clearDate`)
           // 원래 날짜가 사진의 촬영 정보에서 온 것이어도 서버는 날짜 출처를 사용자 지정으로 바꾸므로 출처까지 완전히 원복되지는 않음
           void actions
-            .changePhotoDates([photoId], dateFromKey(fromKey))
+            .changePhotoDates(
+              [photoId],
+              fromKey === UNDATED_SECTION_KEY ? null : dateFromKey(fromKey),
+            )
             .catch((error: unknown) =>
               toast(
                 error instanceof MissingPhotosError
@@ -197,7 +226,7 @@ export const PhotoDragArea = memo(function PhotoDragArea({
       onToggle(photoId);
       return;
     }
-    const fromKey = findSectionKey(toSectionItems(sections), photoId);
+    const fromKey = findSectionKey(initialItems(), photoId);
     const toKey = preview ? findSectionKey(preview, photoId) : undefined;
     setActiveId(undefined);
     // 원래 섹션이나 섹션 밖에 놓으면 아무것도 바꾸지 않음
@@ -252,6 +281,10 @@ export const PhotoDragArea = memo(function PhotoDragArea({
       }}
     >
       <PhotoDragProvider value={{ enabled, draggableIds: moving ? NO_DRAGGABLE : draggableIds }}>
+        {/* 끌기가 시작되면 줄어드는 목록 때문에 영역이 사라지지 않도록 처음 사진이 있었는지로 보임 */}
+        {undated.length > 0 ? (
+          <UndatedPhotos photos={shownUndated} sectionKey={UNDATED_SECTION_KEY} />
+        ) : null}
         {shownSections.map((section) => (
           <PhotoDateSection key={section.dateKey} section={section} />
         ))}
