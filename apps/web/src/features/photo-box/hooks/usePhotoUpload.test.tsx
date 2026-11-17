@@ -285,6 +285,56 @@ describe('usePhotoUpload 원본 해시', () => {
   });
 });
 
+describe('usePhotoUpload UTC 오프셋·원본 유형', () => {
+  it('쉘이 준 UTC 오프셋과 원본 유형을 업로드 요청에 담고, 「다시 시도」도 같은 값을 보낸다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue({
+      status: 'picked' as const,
+      photos: [{ id: 'p1', capturedUtcOffset: '+09:00', sourceType: 'CAMERA' as const }],
+    });
+    const sent: unknown[][] = [];
+    let failNext = true;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
+        const form = await request.clone().formData();
+        sent.push([form.get('capturedUtcOffset'), form.get('sourceType')]);
+        if (failNext) {
+          failNext = false;
+          return fail(503, 'PHOTO_007');
+        }
+        return undefined;
+      }),
+    );
+    const { result } = render();
+
+    await act(() => result.current.start('album'));
+    const [, options] = lastToast() ?? [];
+    act(() => options?.action?.onClick());
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledTimes(2));
+
+    expect(sent).toEqual([
+      ['+09:00', 'CAMERA'],
+      ['+09:00', 'CAMERA'],
+    ]);
+  });
+
+  it('이전 쉘처럼 두 값이 없는 사진은 필드 없이 올린다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    let sent: unknown[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
+        const form = await request.clone().formData();
+        sent = [form.get('capturedUtcOffset'), form.get('sourceType')];
+        return undefined;
+      }),
+    );
+    const { result } = render();
+
+    await act(() => result.current.start('album'));
+
+    expect(sent).toEqual([null, null]);
+  });
+});
+
 describe('usePhotoUpload 다시 시도', () => {
   it('일시 장애로 못 올린 사진에만 「다시 시도」가 붙고, 누르면 같은 묶음 ID로 같은 파일을 다시 보낸다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2'));

@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { formatLocalDateTime, parseExifDateTime, readCapturedAt } from './photo-exif.ts';
+import {
+  classifySource,
+  formatLocalDateTime,
+  formatUtcOffset,
+  parseExifDateTime,
+  parseUtcOffset,
+  readCapturedAt,
+  readCapturedUtcOffset,
+} from './photo-exif.ts';
 
 test('EXIF 날짜·시각을 촬영 현지 날짜·시각으로 바꾼다', () => {
   assert.deepEqual(parseExifDateTime('2026:10:19 19:30:05'), {
@@ -124,4 +132,71 @@ test('최상위 값이 있으면 그것을 먼저 쓰고, 다른 하위 객체�
 
 test('{Exif}가 객체가 아니면 무시한다', () => {
   assert.deepEqual(readCapturedAt({ '{Exif}': 'oops', Exif: ['x'] }), {});
+});
+
+test('UTC 오프셋은 -12:00 ~ +14:00의 ±HH:mm만 받는다', () => {
+  assert.equal(parseUtcOffset('+09:00'), '+09:00');
+  assert.equal(parseUtcOffset(' -05:30 '), '-05:30');
+  assert.equal(parseUtcOffset('-12:00'), '-12:00');
+  assert.equal(parseUtcOffset('+14:00'), '+14:00');
+  assert.equal(parseUtcOffset('+14:30'), undefined);
+  assert.equal(parseUtcOffset('-12:30'), undefined);
+  assert.equal(parseUtcOffset('+09:60'), undefined);
+  assert.equal(parseUtcOffset('+9:00'), undefined);
+  assert.equal(parseUtcOffset('Z'), undefined);
+  assert.equal(parseUtcOffset(9), undefined);
+});
+
+test('촬영 시각의 UTC 오프셋을 읽고 없으면 없음이다', () => {
+  assert.equal(readCapturedUtcOffset({ OffsetTimeOriginal: '+09:00' }), '+09:00');
+  assert.equal(readCapturedUtcOffset({ OffsetTimeDigitized: '-05:00' }), '-05:00');
+  assert.equal(
+    readCapturedUtcOffset({ OffsetTimeOriginal: '+09:00', OffsetTimeDigitized: '-05:00' }),
+    '+09:00',
+  );
+  assert.equal(readCapturedUtcOffset({ '{Exif}': { OffsetTimeOriginal: '+01:00' } }), '+01:00');
+  assert.equal(readCapturedUtcOffset({ OffsetTimeOriginal: 'garbage' }), undefined);
+  assert.equal(readCapturedUtcOffset({}), undefined);
+  assert.equal(readCapturedUtcOffset(null), undefined);
+});
+
+test('오프셋을 읽어도 위치 같은 다른 값은 새지 않는다', () => {
+  const result = readCapturedUtcOffset({
+    OffsetTimeOriginal: '+09:00',
+    GPSLatitude: 37.5665,
+    '{GPS}': { Latitude: 37.5665 },
+  });
+  assert.equal(result, '+09:00');
+});
+
+test('기기의 UTC 오프셋을 ±HH:mm으로 돌려준다', () => {
+  // Date.getTimezoneOffset은 UTC보다 동쪽이면 음수
+  assert.equal(formatUtcOffset({ getTimezoneOffset: () => -540 }), '+09:00');
+  assert.equal(formatUtcOffset({ getTimezoneOffset: () => 300 }), '-05:00');
+  assert.equal(formatUtcOffset({ getTimezoneOffset: () => -345 }), '+05:45');
+  assert.equal(formatUtcOffset({ getTimezoneOffset: () => 0 }), '+00:00');
+});
+
+test('원본 유형: 카메라 정보가 있으면 CAMERA, EXIF만 있고 카메라 정보가 없으면 SAVED_IMAGE', () => {
+  assert.equal(classifySource({ Make: 'Apple', Model: 'iPhone 16' }), 'CAMERA');
+  assert.equal(classifySource({ Model: 'SM-S931N' }), 'CAMERA');
+  // iOS는 제조사·모델을 {TIFF}에 묶어 줌
+  assert.equal(classifySource({ '{TIFF}': { Make: 'Apple' } }), 'CAMERA');
+  assert.equal(classifySource({ Make: '  ' }), 'SAVED_IMAGE');
+  assert.equal(classifySource({}), 'SAVED_IMAGE');
+  assert.equal(classifySource({ DateTimeOriginal: '2026:10:19 19:30:05' }), 'SAVED_IMAGE');
+});
+
+test('원본 유형: EXIF를 읽지 못하면 UNKNOWN이다', () => {
+  assert.equal(classifySource(undefined), 'UNKNOWN');
+  assert.equal(classifySource(null), 'UNKNOWN');
+});
+
+test('원본 유형: 스크린샷 신호가 있으면 SCREENSHOT이다', () => {
+  assert.equal(classifySource({ '{Exif}': { UserComment: 'Screenshot' } }), 'SCREENSHOT');
+  assert.equal(classifySource({}, 'Screenshot_20261019-193005.png'), 'SCREENSHOT');
+  assert.equal(classifySource({}, '스크린샷 2026-10-19.png'), 'SCREENSHOT');
+  // 카메라 정보와 함께 있어도 스크린샷 신호를 먼저 본다
+  assert.equal(classifySource({ Make: 'Apple', UserComment: 'Screenshot' }), 'SCREENSHOT');
+  assert.equal(classifySource({}, 'IMG_1234.JPG'), 'SAVED_IMAGE');
 });

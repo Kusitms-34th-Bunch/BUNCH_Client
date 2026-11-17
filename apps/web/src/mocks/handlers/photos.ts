@@ -107,6 +107,15 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 // 서버는 오늘(Asia/Seoul) 이후 날짜를 거절함('yyyy-MM-dd'라 문자열 비교로 충분)
 const todayInSeoul = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const TIME = /^\d{2}:\d{2}:\d{2}$/;
+// 촬영 시각의 UTC 오프셋(±HH:mm, -12:00 ~ +14:00)과 원본 유형(서버 PR #153)
+const SOURCE_TYPES = ['CAMERA', 'SCREENSHOT', 'SAVED_IMAGE', 'UNKNOWN'];
+const isUtcOffset = (value: string) => {
+  const match = /^([+-])(\d{2}):([0-5]\d)$/.exec(value);
+  if (!match) return false;
+  const minutes = Number(match[2]) * 60 + Number(match[3]);
+  const signed = match[1] === '-' ? -minutes : minutes;
+  return signed >= -12 * 60 && signed <= 14 * 60;
+};
 
 type UploadRequest = {
   uploadBatchId: string;
@@ -123,6 +132,9 @@ const parseUploadRequest = (form: FormData | null) => {
   const capturedDate = form.get('capturedDate') ?? undefined;
   const capturedTime = form.get('capturedTime') ?? undefined;
   const originalFileHash = form.get('originalFileHash') ?? undefined;
+  // 빈 문자열은 보내지 않은 것으로 봄(서버)
+  const capturedUtcOffset = form.get('capturedUtcOffset') || undefined;
+  const sourceType = form.get('sourceType') || undefined;
   if (typeof uploadBatchId !== 'string' || !UUID.test(uploadBatchId)) return undefined;
   if (
     capturedDate !== undefined &&
@@ -140,6 +152,18 @@ const parseUploadRequest = (form: FormData | null) => {
   if (
     originalFileHash !== undefined &&
     (typeof originalFileHash !== 'string' || !/^[0-9a-f]{64}$/.test(originalFileHash))
+  ) {
+    return undefined;
+  }
+  if (
+    capturedUtcOffset !== undefined &&
+    !(typeof capturedUtcOffset === 'string' && isUtcOffset(capturedUtcOffset))
+  ) {
+    return undefined;
+  }
+  if (
+    sourceType !== undefined &&
+    !(typeof sourceType === 'string' && SOURCE_TYPES.includes(sourceType))
   ) {
     return undefined;
   }

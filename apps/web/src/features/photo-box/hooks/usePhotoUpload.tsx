@@ -1,6 +1,6 @@
 'use client';
 
-import type { PickedPhoto, PickPhotosResult } from '@app/bridge';
+import type { PhotoSourceType, PickedPhoto, PickPhotosResult } from '@app/bridge';
 import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { isNativeShell, photoUploadBridge } from '@/shared/bridge/client';
@@ -31,6 +31,9 @@ type UploadItem = {
   image: Blob;
   capturedDate?: string | undefined;
   capturedTime?: string | undefined;
+  /** 쉘이 원본 EXIF에서 뽑은 촬영 시각의 UTC 오프셋과 원본 유형(이전 쉘은 없음). 「다시 시도」도 같은 값을 보냄 */
+  capturedUtcOffset?: string | undefined;
+  sourceType?: PhotoSourceType | undefined;
   /** 쉘이 가공 전 원본 파일로 계산한 SHA-256. 「다시 시도」도 같은 값을 보냄 */
   originalFileHash?: string | undefined;
 };
@@ -79,6 +82,8 @@ const readPhoto = async (photo: PickedPhoto): Promise<UploadItem | null> => {
       image,
       ...(photo.capturedDate ? { capturedDate: photo.capturedDate } : {}),
       ...(photo.capturedTime ? { capturedTime: photo.capturedTime } : {}),
+      ...(photo.capturedUtcOffset ? { capturedUtcOffset: photo.capturedUtcOffset } : {}),
+      ...(photo.sourceType ? { sourceType: photo.sourceType } : {}),
       ...(originalFileHash ? { originalFileHash } : {}),
     };
   } catch {

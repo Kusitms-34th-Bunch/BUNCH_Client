@@ -22,7 +22,13 @@ import {
   UPLOAD_QUALITIES,
   UPLOAD_TARGET_BYTES,
 } from './gallery-resize';
-import { formatLocalDateTime, readCapturedAt } from './photo-exif';
+import {
+  classifySource,
+  formatLocalDateTime,
+  formatUtcOffset,
+  readCapturedAt,
+  readCapturedUtcOffset,
+} from './photo-exif';
 import {
   getPickedPhoto,
   registerPickedPhoto,
@@ -34,14 +40,20 @@ let isPicking = false;
 
 const toPickedPhoto = (asset: ImagePicker.ImagePickerAsset, fallback?: Date): PickedPhoto => {
   const id = registerPickedPhoto({ uri: asset.uri, width: asset.width, height: asset.height });
-  // asset.exif는 위치를 포함할 수 있어 여기서 촬영 날짜·시각만 꺼내고 나머지는 어디에도 넘기지 않음
+  // asset.exif는 위치를 포함할 수 있어 여기서 촬영 날짜·시각·UTC 오프셋·원본 유형만 꺼내고 나머지는 어디에도 넘기지 않음
   const found = readCapturedAt(asset.exif);
   const { capturedDate, capturedTime } =
     found.capturedDate === undefined && fallback ? formatLocalDateTime(fallback) : found;
+  // 앱 안 카메라로 직접 찍은 사진(fallback이 있는 경우)은 EXIF가 비어 있어도 카메라 원본이고, 오프셋이 없으면 기기의 현재 오프셋을 씀
+  const capturedUtcOffset =
+    readCapturedUtcOffset(asset.exif) ?? (fallback ? formatUtcOffset(fallback) : undefined);
+  const sourceType = fallback ? 'CAMERA' : classifySource(asset.exif, asset.fileName);
   return {
     id,
     ...(capturedDate ? { capturedDate } : {}),
     ...(capturedTime ? { capturedTime } : {}),
+    ...(capturedUtcOffset ? { capturedUtcOffset } : {}),
+    sourceType,
   };
 };
 
