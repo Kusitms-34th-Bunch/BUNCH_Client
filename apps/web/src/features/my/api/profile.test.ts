@@ -32,6 +32,27 @@ describe('updateMyProfile', () => {
     expect(sent).toEqual({ profile: { nickname: '큐시즘', imageAction: 'RESET' }, photo: null });
   });
 
+  it('출생연도·성별을 넣으면 서버 값으로 바꿔 함께 보내고, 비운 값은 키를 뺀다', async () => {
+    const sent = captureProfile();
+    await updateMyProfile({
+      nickname: '큐시즘',
+      photo: { action: 'KEEP' },
+      demographics: { birthYear: 2003, gender: 'female' },
+    });
+    expect(sent.profile).toEqual({
+      nickname: '큐시즘',
+      imageAction: 'KEEP',
+      demographics: { birthYear: 2003, gender: 'FEMALE' },
+    });
+
+    await updateMyProfile({
+      nickname: '큐시즘',
+      photo: { action: 'KEEP' },
+      demographics: { birthYear: undefined, gender: undefined },
+    });
+    expect(sent.profile).toEqual({ nickname: '큐시즘', imageAction: 'KEEP', demographics: {} });
+  });
+
   it('새 사진이면 JPEG 파일을 함께 보낸다', async () => {
     const sent = captureProfile();
     await updateMyProfile({

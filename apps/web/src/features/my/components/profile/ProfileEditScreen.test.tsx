@@ -135,6 +135,73 @@ describe('ProfileEditScreen', () => {
     expect(me?.nickname).toBe('으누누');
   });
 
+  it('동의했으면 출생연도·성별을 함께 저장하고, 지운 출생연도는 없음으로 저장한다', async () => {
+    mockDb.update((state) => ({
+      ...state,
+      members: state.members.map((member) =>
+        member.memberId === MOCK_MY_MEMBER_ID
+          ? { ...member, additionalInfoConsented: true, birthYear: 2003, gender: 'MALE' }
+          : member,
+      ),
+    }));
+    const user = userEvent.setup();
+    renderScreen(undefined, true);
+
+    await user.clear(screen.getByRole('textbox', { name: /출생연도/ }));
+    await user.click(screen.getByRole('button', { name: '여성' }));
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
+    const me = mockDb.get().members.find((member) => member.memberId === MOCK_MY_MEMBER_ID);
+    expect(me).toMatchObject({ birthYear: null, gender: 'FEMALE' });
+  });
+
+  it('편집 중 동의가 철회돼 칸이 숨겨지면 숨은 출생연도 값이 저장을 막지 않는다', async () => {
+    const user = userEvent.setup();
+    const profile = { nickname: '으누', birthYear: 2003, gender: 'male' as const };
+    const checkNickname = vi.fn((_nickname: string) => Promise.resolve(true));
+    const { rerender } = render(
+      <ProfileEditScreen profile={profile} demographicsConsent checkNickname={checkNickname} />,
+      { wrapper: createQueryWrapper() },
+    );
+
+    const birthYear = screen.getByRole('textbox', { name: /출생연도/ });
+    await user.clear(birthYear);
+    await user.type(birthYear, '20');
+    rerender(
+      <ProfileEditScreen
+        profile={profile}
+        demographicsConsent={false}
+        checkNickname={checkNickname}
+      />,
+    );
+    expect(screen.queryByRole('textbox', { name: /출생연도/ })).toBeNull();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+  });
+
+  it('동의하지 않았으면 출생연도·성별을 보내지 않는다', async () => {
+    let sent: unknown;
+    server.use(
+      http.put('/api/members/me/profile', async ({ request }) => {
+        const part = (await request.formData()).get('profile');
+        sent = part instanceof Blob ? JSON.parse(await part.text()) : null;
+        return HttpResponse.json({ success: true, data: { memberId: 5, nickname: '으누누' } });
+      }),
+    );
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
+    expect(sent).toEqual({ nickname: '으누누', imageAction: 'KEEP' });
+  });
+
   it('저장할 때 서버가 닉네임 중복으로 거절하면 오류를 보이고 닉네임 입력으로 초점을 옮긴다', async () => {
     server.use(http.put('/api/members/me/profile', () => fail(409, 'USER_002')));
     const user = userEvent.setup();

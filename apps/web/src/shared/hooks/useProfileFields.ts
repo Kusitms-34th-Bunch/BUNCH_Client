@@ -78,6 +78,8 @@ export function useProfileFields(
   return {
     values: { nickname, birthYear, gender },
     isValid: nicknameConfirmed && isValidBirthYear(birthYear, currentYear),
+    /** 닉네임만 유효한지(출생연도·성별 칸을 보이지 않을 때 저장 가능 판단) */
+    isNicknameValid: nicknameConfirmed,
     nicknameError,
     /** 닉네임 중복 확인이 진행 중인지(입력이 바뀐 직후부터 응답까지). 안내 문구를 보일 때 사용 */
     nicknameChecking: availability === 'checking',
