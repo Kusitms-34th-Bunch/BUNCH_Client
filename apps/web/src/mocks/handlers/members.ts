@@ -4,6 +4,7 @@ import type { MockBunchAccessNotice, MockDbState, MockMember } from '../db/types
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
+import { failIfProhibited, hasMockProhibitedWord } from '../lib/prohibitedWord';
 import { versionOf } from './memberships';
 import { unreadCountOf } from './notifications';
 
@@ -158,7 +159,13 @@ export const memberHandlers = [
   http.get('/api/members/nickname-availability', ({ request }) => {
     const nickname = new URL(request.url).searchParams.get('nickname')?.trim() ?? '';
     if (nickname === '') return fail(400, 'COMMON_001');
-    return ok({ normalizedValue: nickname, available: !nickname.includes('중복') });
+    // 금칙어가 중복보다 앞섬
+    const status = hasMockProhibitedWord(nickname)
+      ? 'PROHIBITED_WORD'
+      : nickname.includes('중복')
+        ? 'DUPLICATE'
+        : 'AVAILABLE';
+    return ok({ normalizedValue: nickname, available: status === 'AVAILABLE', status });
   }),
 
   // POST /api/v1/members/me/registration: 가입 완료를 기록(닉네임은 시작 데이터 그대로)
@@ -169,6 +176,7 @@ export const memberHandlers = [
       try {
         return part instanceof Blob
           ? (JSON.parse(await part.text()) as {
+              nickname?: string;
               demographicsConsentVersion?: string;
               birthYear?: number;
               gender?: 'FEMALE' | 'MALE';
@@ -178,6 +186,9 @@ export const memberHandlers = [
         return null;
       }
     })();
+    // 가입 완료 때 닉네임 금칙어 최종 확인(기능명세 1.4.7)
+    const prohibited = failIfProhibited({ nickname: profile?.nickname?.trim() ?? '' });
+    if (prohibited) return prohibited;
     const consented = Boolean(profile?.demographicsConsentVersion);
     mockDb.update((state) => ({
       ...state,
@@ -262,6 +273,8 @@ export const memberHandlers = [
     }
     if (action === 'REPLACE' && !(form?.get('photo') instanceof Blob))
       return fail(400, 'COMMON_001');
+    const prohibited = failIfProhibited({ nickname });
+    if (prohibited) return prohibited;
     if (nickname.includes('중복')) return fail(409, 'USER_002');
     mockDb.update((state) => ({
       ...state,
