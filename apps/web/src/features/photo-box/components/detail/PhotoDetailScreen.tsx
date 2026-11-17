@@ -28,7 +28,7 @@ import {
   removesDraftBundlePhoto,
   type DateConfirmKind,
 } from '../../lib/photoActions';
-import { formatDetailDate, getTakenDate } from '../../lib/photoDetail';
+import { formatDetailDate } from '../../lib/photoDetail';
 import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from '../PhotoDetailMenu';
 import { DateChangeConfirmDialog, DeleteConfirmDialog } from '../PhotoSelectionDialogs';
@@ -186,6 +186,7 @@ export function PhotoDetailScreen({
     if (action === 'save') void save();
     else if (action === 'date') {
       // 연 시점의 사진 id를 고정해 시트가 열린 사이 사진이 넘어가도 처음 사진의 날짜를 바꿈
+      // 시트는 사진의 원래 날짜와 관계없이 항상 오늘이 속한 달을 선택 없이 엶(기능명세서 3.4.1)
       const photo = activePhoto;
       const confirmKind = needsDateChangeConfirm([photo], viewer)
         ? getDateConfirmKind([photo], viewer)
@@ -196,7 +197,6 @@ export function PhotoDetailScreen({
           <SavingDateSheet
             {...rootProps}
             close={close}
-            defaultDate={getTakenDate(photo.takenAt)}
             beforeSave={confirmKind ? () => askDateConfirm(confirmKind) : undefined}
             save={(date) => changeDate(photo.id, date)}
           />
