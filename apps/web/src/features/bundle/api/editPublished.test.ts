@@ -231,4 +231,73 @@ describe('발행 번들 수정 API', () => {
     expect(error).toBeInstanceOf(Error);
     expect(error.code).toBeUndefined();
   });
+
+  it('사진 항목이 객체가 아니면(null) COMMON_001로 거절한다', async () => {
+    becomeOwner();
+    const { detail } = await load();
+
+    const response = await fetch(
+      `http://localhost:3000/api/bunches/${bunchId}/bundles/${PUBLISHED_ID}/published`,
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          expectedRevision: detail.revision,
+          title: '제목',
+          photos: [null],
+          locations: [],
+        }),
+      },
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it('위치를 지우면 그 번들에서 콕한 장소만 콕한 장소에서도 지운다', async () => {
+    becomeOwner();
+    const { detail, firstPhotoId } = await load();
+    const withPlaces = await editPublishedBundle(bunchId, PUBLISHED_ID, {
+      expectedRevision: detail.revision,
+      title: detail.title,
+      date: detail.date,
+      photos: [{ bundlePhotoId: firstPhotoId }],
+      locations: [place('a'), place('b')],
+    });
+    const kok = (id: number, key: string, sourceBundleId: number) => ({
+      id,
+      bunchId: MOCK_BUNCH_ID,
+      provider: 'kakao',
+      externalId: key,
+      name: `장소 ${key}`,
+      address: '',
+      sourceBundleId,
+      sourceLocationId: null,
+      sourceAdvertisementId: null,
+      pinnedByMemberId: MOCK_MY_MEMBER_ID,
+      pinnedAt: '2026-10-01T00:00:00+09:00',
+    });
+    mockDb.update((state) => ({
+      ...state,
+      koks: [
+        ...state.koks,
+        kok(98001, 'a', Number(PUBLISHED_ID)),
+        kok(98002, 'b', Number(PUBLISHED_ID)),
+        // 같은 장소라도 다른 번들에서 콕한 것은 그대로
+        kok(98003, 'b', Number(PUBLISHED_ID) + 100),
+      ],
+    }));
+
+    await editPublishedBundle(bunchId, PUBLISHED_ID, {
+      expectedRevision: withPlaces.revision,
+      title: withPlaces.title,
+      date: withPlaces.date,
+      photos: [{ bundlePhotoId: firstPhotoId }],
+      locations: [place('a')],
+    });
+
+    const ids = mockDb.get().koks.map((item) => item.id);
+    expect(ids).toContain(98001);
+    expect(ids).not.toContain(98002);
+    expect(ids).toContain(98003);
+  });
 });

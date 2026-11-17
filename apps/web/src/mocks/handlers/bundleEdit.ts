@@ -71,6 +71,8 @@ const parseBody = (body: Record<string, unknown> | null): EditBody | undefined =
     return undefined;
   }
   if (!Array.isArray(photos) || photos.length < 1 || photos.length > MAX_PHOTOS) return undefined;
+  // 항목이 객체가 아니면(null 등) 식별자를 읽기 전에 거절
+  if (!photos.every(isRecord)) return undefined;
   if (!Array.isArray(locations) || locations.length > MAX_LOCATIONS) return undefined;
   const parsedLocations = locations.map(parseLocation);
   if (parsedLocations.some((location) => location === undefined)) return undefined;
@@ -84,7 +86,7 @@ const parseBody = (body: Record<string, unknown> | null): EditBody | undefined =
     expectedRevision,
     title: trimmed,
     date: typeof date === 'string' ? date : null,
-    photos: photos as PhotoInput[],
+    photos,
     locations: ordered,
   };
 };
@@ -211,6 +213,17 @@ export const bundleEditHandlers = [
       delete next.titleCrdtState;
       return next;
     });
+    // 번들에서 콕한 장소가 새 위치 목록에 없으면 알림 없이 「콕한 장소」에서도 지움(광고에서 콕한 장소와 다른 번들의 콕은 그대로)
+    const keptKeys = new Set(
+      body.locations.map(({ provider, externalId }) => `${provider}:${externalId}`),
+    );
+    mockDb.update((latest) => ({
+      ...latest,
+      koks: latest.koks.filter(
+        (kok) =>
+          kok.sourceBundleId !== current.id || keptKeys.has(`${kok.provider}:${kok.externalId}`),
+      ),
+    }));
     return snapshotOf(current.id);
   }),
 ];
