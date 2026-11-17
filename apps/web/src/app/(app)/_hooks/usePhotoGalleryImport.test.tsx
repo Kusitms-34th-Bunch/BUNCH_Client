@@ -119,7 +119,8 @@ describe('usePhotoGalleryImport', () => {
     expect(result.current.importing).toBeUndefined();
   });
 
-  it('사진함 번치를 모르면 선택창을 열지 않고 일시적 오류를 안내한다', () => {
+  it('사진함 번치를 모르면 선택창을 열지 않고 일시적 오류를 안내하며 사진함을 다시 받는다', () => {
+    const onUnavailable = vi.fn();
     const rendered = renderHook(
       () =>
         usePhotoGalleryImport({
@@ -127,6 +128,7 @@ describe('usePhotoGalleryImport', () => {
           boxPhotos: [],
           photos: [],
           replacePhotos: vi.fn(),
+          onUnavailable,
         }),
       { wrapper: createQueryWrapper(createTestQueryClient()) },
     );
@@ -134,6 +136,7 @@ describe('usePhotoGalleryImport', () => {
     act(() => rendered.result.current.importFromGallery(5));
 
     expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.uploadFailed);
+    expect(onUnavailable).toHaveBeenCalledTimes(1);
     expect(bridge.pickGalleryImages).not.toHaveBeenCalled();
   });
 
@@ -224,6 +227,56 @@ describe('usePhotoGalleryImport', () => {
 
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
   });
+
+  it('올린 사진이 목록에 늦게 들어와도 목록을 다시 받아 번들에 붙인다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(picked('p1'));
+    serveUploads();
+    const replacePhotos = vi.fn<(_photos: readonly DraftPhoto[]) => boolean | void>();
+    const { result, rerender } = renderHook(
+      ({ boxPhotos }: { boxPhotos: readonly PhotoBoxPhoto[] }) =>
+        usePhotoGalleryImport({
+          bunchId,
+          boxPhotos,
+          photos: [draftPhoto('draft-1', '1')],
+          replacePhotos,
+        }),
+      {
+        initialProps: { boxPhotos: [] as readonly PhotoBoxPhoto[] },
+        wrapper: createQueryWrapper(createTestQueryClient()),
+      },
+    );
+
+    act(() => result.current.importFromGallery(5));
+    // 올라간 뒤에도 목록에 아직 없어 붙이지 않고 기다림
+    await waitFor(() => expect(result.current.importing).toBe(1));
+    expect(replacePhotos).not.toHaveBeenCalled();
+
+    // 다시 받은 목록에 들어오면 붙임
+    rerender({ boxPhotos: [boxPhoto('9001')] });
+    await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1));
+    expect(replacePhotos).toHaveBeenCalledWith([
+      draftPhoto('draft-1', '1'),
+      expect.objectContaining({ sourcePhotoId: '9001' }),
+    ]);
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('목록을 여러 번 다시 받아도 끝내 없으면 있는 사진만 붙이고 번들에 못 붙였다고 알린다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(picked('p1', 'p2'));
+    serveUploads();
+    // 9001만 목록에 있고 9002는 끝내 들어오지 않음
+    const { result, replacePhotos } = render({ boxPhotos: [boxPhoto('9001')] });
+
+    act(() => result.current.importFromGallery(5));
+
+    await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1), { timeout: 8000 });
+    expect(replacePhotos).toHaveBeenCalledWith([
+      draftPhoto('draft-1', '1'),
+      expect.objectContaining({ sourcePhotoId: '9001' }),
+    ]);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
+    await waitFor(() => expect(result.current.importing).toBeUndefined());
+  }, 10_000);
 
   it('이미 번들에 있는 사진은 다시 붙이지 않고 20장을 넘지 않게 붙인다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(picked('p1', 'p2', 'p3'));

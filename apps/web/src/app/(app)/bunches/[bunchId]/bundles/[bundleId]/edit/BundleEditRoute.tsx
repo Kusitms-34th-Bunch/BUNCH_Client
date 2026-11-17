@@ -19,7 +19,7 @@ const NO_DRAFT_PHOTOS: readonly DraftPhoto[] = [];
 export function BundleEditRoute() {
   const { bunchId: routeBunchId, bundleId, state, actions } = useBundleEditContext();
   const refresh = useRefreshEditedBundle(bundleId);
-  const { state: boxState } = usePhotoBox();
+  const { state: boxState, retry: retryBox } = usePhotoBox();
   const { importFromGallery, importing } = usePhotoGalleryImport({
     // 사진함은 내 기본 번치 기준이라 이 번들의 번치와 같을 때만 올림(다르면 다른 번치 사진함에 올라가지 않게 함)
     bunchId:
@@ -29,6 +29,8 @@ export function BundleEditRoute() {
     boxPhotos: boxState.kind === 'ready' ? boxState.data.photos : NO_PHOTOS,
     photos: state.kind === 'ready' ? state.draft.photos : NO_DRAFT_PHOTOS,
     replacePhotos: actions.replacePhotos,
+    // 사진함을 받지 못해 가져올 수 없으면 사진함을 다시 받아 다음 시도부터 가져올 수 있게 함
+    onUnavailable: retryBox,
   });
   return (
     <BundleEdit

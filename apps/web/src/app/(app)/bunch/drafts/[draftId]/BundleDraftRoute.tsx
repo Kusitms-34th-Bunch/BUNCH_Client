@@ -17,12 +17,14 @@ const NO_DRAFT_PHOTOS: readonly DraftPhoto[] = [];
  */
 export function BundleDraftRoute() {
   const { state, actions } = useDraftContext();
-  const { state: boxState } = usePhotoBox();
+  const { state: boxState, retry: retryBox } = usePhotoBox();
   const { importFromGallery, importing } = usePhotoGalleryImport({
     bunchId: boxState.kind === 'ready' ? boxState.data.bunch.id : undefined,
     boxPhotos: boxState.kind === 'ready' ? boxState.data.photos : NO_PHOTOS,
     photos: state.kind === 'ready' ? state.draft.photos : NO_DRAFT_PHOTOS,
     replacePhotos: actions.replacePhotos,
+    // 사진함을 받지 못해 가져올 수 없으면 사진함을 다시 받아 다음 시도부터 가져올 수 있게 함
+    onUnavailable: retryBox,
   });
   return <BundleDraft onImportFromGallery={importFromGallery} galleryImporting={importing} />;
 }

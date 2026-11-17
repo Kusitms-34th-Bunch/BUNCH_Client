@@ -2,6 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import type { DraftPhoto } from '@/features/bundle/lib/types';
 import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
 import { BUNDLE_MESSAGES, MAX_PHOTOS } from '@/features/bundle/constants/messages';
@@ -11,8 +12,20 @@ import { usePhotoUpload } from '@/features/photo-box/hooks/usePhotoUpload';
 import { MAX_PHOTOS_IN_BOX } from '@/features/photo-box/lib/photoActions';
 import { useInvalidatePhotosOf } from '@/features/photo-box/queries/photos';
 
-// 새로 올린 사진이 사진함 목록에 들어오기를 기다리는 최대 시간(목록을 다시 받은 뒤에도 화면에 반영되기까지의 여유)
-const LIST_SETTLE_WAIT_MS = 1500;
+// 올린 사진이 사진함 목록에 안 보이면(목록 조회 실패·반영 지연) 이 간격으로 목록을 다시 받고, 이 횟수까지 받아도 없으면 포기함
+const LIST_RETRY_MS = 1500;
+const LIST_MAX_ATTEMPTS = 3;
+
+type PendingAttach = {
+  /** 사진함에 올라가 번들에 붙일 사진 id(고른 순서) */
+  ids: readonly string[];
+  /** 목록을 다시 받을 번치(올리기를 시작한 번치) */
+  bunchId: string;
+  /** 지금까지 목록을 다시 받은 횟수 */
+  attempts: number;
+  /** 목록을 다시 받는 중 */
+  refreshing: boolean;
+};
 
 type UsePhotoGalleryImportOptions = {
   /** 올릴 사진함의 번치(없으면 올릴 곳이 없음) */
@@ -23,6 +36,8 @@ type UsePhotoGalleryImportOptions = {
   photos: readonly DraftPhoto[];
   /** 번들 사진을 이 구성으로 바꿈(작성 화면·수정 화면 공통). 연결이 끊겨 적용하지 못하면 false를 돌려줌(작성 화면) */
   replacePhotos: (_photos: readonly DraftPhoto[]) => boolean | void;
+  /** 사진함을 몰라 가져올 수 없을 때(사진함 조회 실패 등). 사진함을 다시 받아 다음 시도부터 가져올 수 있게 함 */
+  onUnavailable?: (() => void) | undefined;
 };
 
 /**
@@ -39,14 +54,13 @@ export function usePhotoGalleryImport({
   boxPhotos,
   photos,
   replacePhotos,
+  onUnavailable,
 }: UsePhotoGalleryImportOptions) {
   const { start } = usePhotoUpload(bunchId);
   const invalidatePhotosOf = useInvalidatePhotosOf();
   const [importing, setImporting] = useState<number | undefined>(undefined);
-  // 올린 사진을 번들에 붙이기를 기다리는 중: 목록을 받은 뒤에도 아직 없으면 잠깐 더 기다렸다가 있는 것만 붙임
-  const [pending, setPending] = useState<
-    { ids: readonly string[]; refreshed: boolean; gaveUp: boolean } | undefined
-  >(undefined);
+  // 올린 사진을 번들에 붙이기를 기다리는 중: 목록에 다 보이면 바로 붙이고, 안 보이면 목록을 몇 번 더 받은 뒤 있는 것만 붙임
+  const [pending, setPending] = useState<PendingAttach | undefined>(undefined);
   const running = useRef(false);
   const mounted = useRef(true);
   // 올리는 동안 바뀐 번들 사진과 동작을 붙일 때의 값으로 씀
@@ -68,21 +82,35 @@ export function usePhotoGalleryImport({
     setImporting(undefined);
   };
 
+  // 사진함 목록을 다시 받음. 조회가 실패해도 횟수만 세고 다음 시도로 넘어감(올린 사진 id는 그대로 보존)
+  const refreshList = usePreservedCallback((targetBunchId: string) => {
+    setPending((current) => current && { ...current, refreshing: true });
+    void invalidatePhotosOf(targetBunchId)
+      .catch(() => undefined)
+      .then(() => {
+        if (!mounted.current) return;
+        setPending(
+          (current) => current && { ...current, refreshing: false, attempts: current.attempts + 1 },
+        );
+      });
+  });
+
   useEffect(() => {
     if (!pending) return;
     const byId = new Map(boxPhotos.map((photo) => [photo.id, photo]));
     const sources = pending.ids.flatMap((id) => byId.get(id) ?? []);
-    if (sources.length < pending.ids.length && !pending.gaveUp) {
-      // 목록을 받는 중이면 받은 뒤에 다시 확인함
-      if (!pending.refreshed) return;
+    const missing = sources.length < pending.ids.length;
+    if (missing && pending.attempts < LIST_MAX_ATTEMPTS) {
+      // 받는 중이면 받은 뒤에 다시 확인하고, 아니면 목록을 다시 받음(처음은 바로, 그다음부터는 간격을 두고)
+      if (pending.refreshing) return;
       const timer = setTimeout(
-        () => setPending((current) => current && { ...current, gaveUp: true }),
-        LIST_SETTLE_WAIT_MS,
+        () => refreshList(pending.bunchId),
+        pending.attempts === 0 ? 0 : LIST_RETRY_MS,
       );
       return () => clearTimeout(timer);
     }
-    // 사진함 목록에서 끝내 찾지 못한 사진은 번들에 붙이지 못하므로 알림(사진함에는 올라가 있음)
-    if (sources.length < pending.ids.length) toast(BUNDLE_MESSAGES.photosChangeFailed);
+    // 목록을 여러 번 받아도 끝내 찾지 못한 사진은 번들에 붙이지 못하므로 알림(사진함에는 올라가 있음)
+    if (missing) toast(BUNDLE_MESSAGES.photosChangeFailed);
     const { photos: current, replacePhotos: replace } = latest.current;
     const linked = new Set(current.flatMap((photo) => photo.sourcePhotoId ?? []));
     const room = Math.max(0, MAX_PHOTOS - current.length);
@@ -95,7 +123,7 @@ export function usePhotoGalleryImport({
       toast(BUNDLE_MESSAGES.photosChangeFailed);
     }
     finish();
-  }, [pending, boxPhotos]);
+  }, [pending, boxPhotos, refreshList]);
 
   const importFromGallery = (maxCount: number) => {
     // 이미 가져오는 중이면 선택창을 다시 열지 않고 올라가는 중이라고 알림
@@ -103,14 +131,16 @@ export function usePhotoGalleryImport({
       toast(PHOTO_BOX_MESSAGES.uploading);
       return;
     }
-    if (boxPhotos.length >= MAX_PHOTOS_IN_BOX) {
-      toast(PHOTO_BOX_MESSAGES.photoBoxFull);
-      return;
-    }
     if (maxCount <= 0) return;
-    // 사진함을 아직 받지 못했거나 받지 못한 상태면 올릴 곳을 몰라 안내(선택창을 열지 않음)
+    // 사진함을 아직 받지 못했거나 받지 못한 상태면 올릴 곳을 몰라 안내하고 사진함을 다시 받음(선택창을 열지 않음)
+    // 올릴 사진함을 모르면 그 사진함이 가득 찼는지도 의미가 없어 용량 확인보다 먼저 봄
     if (!bunchId) {
       toast(PHOTO_BOX_MESSAGES.uploadFailed);
+      onUnavailable?.();
+      return;
+    }
+    if (boxPhotos.length >= MAX_PHOTOS_IN_BOX) {
+      toast(PHOTO_BOX_MESSAGES.photoBoxFull);
       return;
     }
     running.current = true;
@@ -125,19 +155,16 @@ export function usePhotoGalleryImport({
             if (mounted.current) setImporting(count);
           },
         });
-        if (result.photoIds.length === 0 || !bunchId) {
+        if (result.photoIds.length === 0) {
           finish();
           return;
         }
-        if (mounted.current) setPending({ ids: result.photoIds, refreshed: false, gaveUp: false });
-        // 새 사진이 사진함 목록에 들어올 때까지 목록을 다시 받음
-        await invalidatePhotosOf(bunchId);
+        // 목록에 들어오는 대로 붙이고, 안 보이면 effect가 목록을 다시 받음
         if (mounted.current) {
-          setPending((current) => current && { ...current, refreshed: true });
-        }
+          setPending({ ids: result.photoIds, bunchId, attempts: 0, refreshing: false });
+        } else running.current = false;
       } catch {
-        // 올라간 사진을 번들에 붙이지 못했을 수 있어 알림
-        toast(BUNDLE_MESSAGES.photosChangeFailed);
+        toast(PHOTO_BOX_MESSAGES.uploadFailed);
         finish();
       }
     })();
