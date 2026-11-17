@@ -309,7 +309,8 @@ export function usePhotoUpload(bunchId: string | undefined) {
     finish(targetBunchId, uploadBatchId, results, options);
     return {
       status: 'done',
-      photoIds: results.flatMap((result) => (result.photoId ? [result.photoId] : [])),
+      // 같은 원본을 두 번 골랐으면 서버가 같은 사진 id를 두 번 줄 수 있어 처음 나온 순서대로 한 번만 담음
+      photoIds: [...new Set(results.flatMap((result) => (result.photoId ? [result.photoId] : [])))],
       failed: results.filter((result) => result.outcome.startsWith('failed')).length,
     };
   };

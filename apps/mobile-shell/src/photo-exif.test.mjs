@@ -200,3 +200,19 @@ test('원본 유형: 스크린샷 신호가 있으면 SCREENSHOT이다', () => {
   assert.equal(classifySource({ Make: 'Apple', UserComment: 'Screenshot' }), 'SCREENSHOT');
   assert.equal(classifySource({}, 'IMG_1234.JPG'), 'SAVED_IMAGE');
 });
+
+test('오프셋은 모든 범위에서 Original을 먼저 찾고 없을 때만 Digitized로 대신한다', () => {
+  assert.equal(
+    readCapturedUtcOffset({
+      OffsetTimeDigitized: '-05:00',
+      '{Exif}': { OffsetTimeOriginal: '+09:00' },
+    }),
+    '+09:00',
+  );
+  assert.equal(readCapturedUtcOffset({ '{Exif}': { OffsetTimeDigitized: '-05:00' } }), '-05:00');
+});
+
+test('원본 유형: EXIF를 읽지 못해도 파일 이름으로 스크린샷을 알아본다', () => {
+  assert.equal(classifySource(null, 'Screenshot_20261019-193005.png'), 'SCREENSHOT');
+  assert.equal(classifySource(undefined, 'IMG_1234.JPG'), 'UNKNOWN');
+});

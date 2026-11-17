@@ -119,6 +119,24 @@ describe('usePhotoGalleryImport', () => {
     expect(result.current.importing).toBeUndefined();
   });
 
+  it('사진함 번치를 모르면 선택창을 열지 않고 일시적 오류를 안내한다', () => {
+    const rendered = renderHook(
+      () =>
+        usePhotoGalleryImport({
+          bunchId: undefined,
+          boxPhotos: [],
+          photos: [],
+          replacePhotos: vi.fn(),
+        }),
+      { wrapper: createQueryWrapper(createTestQueryClient()) },
+    );
+
+    act(() => rendered.result.current.importFromGallery(5));
+
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.uploadFailed);
+    expect(bridge.pickGalleryImages).not.toHaveBeenCalled();
+  });
+
   it('더 담을 수 없으면(0장) 선택창을 열지 않는다', () => {
     const { result } = render({});
 

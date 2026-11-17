@@ -205,7 +205,9 @@ export function DraftScreen({
         onOpenPhoto={onOpenPhoto}
         onOpenPick={onOpenPick}
         onImportFromBunchBox={onImportFromBunchBox}
-        onImportFromGallery={onImportFromGallery}
+        onImportFromGallery={(maxCount) => {
+          if (!offline) onImportFromGallery(maxCount);
+        }}
         galleryImporting={galleryImporting}
       />
       <DraftComments

@@ -43,6 +43,9 @@ export function useBunchSwitchSheet({
   // 전환 중에 다른 번치를 또 누르면 무시(앞선 전환이 끝나기 전 순서가 뒤섞이지 않게)
   const [switching, setSwitching] = useState(false);
 
+  // 시트를 연 뒤 목록이 갱신돼(번치 10개 한도 등) 바뀐 최신 동작으로 이동하도록 닫힐 때 부름
+  const addBunch = usePreservedCallback(() => onAddBunch?.());
+
   const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
 
   const openNotice = useAccessNoticeDialog();
@@ -115,7 +118,7 @@ export function useBunchSwitchSheet({
         />
       ),
       () => {
-        if (addAfterClose) onAddBunch?.();
+        if (addAfterClose) addBunch();
       },
       { live: true },
     );

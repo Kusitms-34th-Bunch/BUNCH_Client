@@ -17,11 +17,15 @@ const NO_DRAFT_PHOTOS: readonly DraftPhoto[] = [];
  * 저장하면 피드·번들 상세 캐시를 맞춰 상세가 고친 내용을 새로 받게 하고, 「내 갤러리에서 가져오기」는 사진함에 올려 수정 중인 번들 맨 뒤에 붙임
  */
 export function BundleEditRoute() {
-  const { bundleId, state, actions } = useBundleEditContext();
+  const { bunchId: routeBunchId, bundleId, state, actions } = useBundleEditContext();
   const refresh = useRefreshEditedBundle(bundleId);
   const { state: boxState } = usePhotoBox();
   const { importFromGallery, importing } = usePhotoGalleryImport({
-    bunchId: boxState.kind === 'ready' ? boxState.data.bunch.id : undefined,
+    // 사진함은 내 기본 번치 기준이라 이 번들의 번치와 같을 때만 올림(다르면 다른 번치 사진함에 올라가지 않게 함)
+    bunchId:
+      boxState.kind === 'ready' && boxState.data.bunch.id === routeBunchId
+        ? boxState.data.bunch.id
+        : undefined,
     boxPhotos: boxState.kind === 'ready' ? boxState.data.photos : NO_PHOTOS,
     photos: state.kind === 'ready' ? state.draft.photos : NO_DRAFT_PHOTOS,
     replacePhotos: actions.replacePhotos,

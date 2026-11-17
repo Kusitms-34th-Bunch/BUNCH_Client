@@ -81,6 +81,8 @@ export function usePhotoGalleryImport({
       );
       return () => clearTimeout(timer);
     }
+    // 사진함 목록에서 끝내 찾지 못한 사진은 번들에 붙이지 못하므로 알림(사진함에는 올라가 있음)
+    if (sources.length < pending.ids.length) toast(BUNDLE_MESSAGES.photosChangeFailed);
     const { photos: current, replacePhotos: replace } = latest.current;
     const linked = new Set(current.flatMap((photo) => photo.sourcePhotoId ?? []));
     const room = Math.max(0, MAX_PHOTOS - current.length);
@@ -106,6 +108,11 @@ export function usePhotoGalleryImport({
       return;
     }
     if (maxCount <= 0) return;
+    // 사진함을 아직 받지 못했거나 받지 못한 상태면 올릴 곳을 몰라 안내(선택창을 열지 않음)
+    if (!bunchId) {
+      toast(PHOTO_BOX_MESSAGES.uploadFailed);
+      return;
+    }
     running.current = true;
     setImporting(0);
     void (async () => {
@@ -129,6 +136,8 @@ export function usePhotoGalleryImport({
           setPending((current) => current && { ...current, refreshed: true });
         }
       } catch {
+        // 올라간 사진을 번들에 붙이지 못했을 수 있어 알림
+        toast(BUNDLE_MESSAGES.photosChangeFailed);
         finish();
       }
     })();

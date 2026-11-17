@@ -95,8 +95,10 @@ const OFFSET_KEYS = ['OffsetTimeOriginal', 'OffsetTimeDigitized'] as const;
 export function readCapturedUtcOffset(
   exif: Record<string, unknown> | null | undefined,
 ): string | undefined {
-  for (const scope of exifScopes(exif)) {
-    for (const key of OFFSET_KEYS) {
+  const scopes = exifScopes(exif);
+  // 키를 바깥에서 돌려 모든 범위에서 Original을 먼저 찾고, 없을 때만 Digitized로 대신함(최상위 Digitized가 {Exif}의 Original을 가리지 않게)
+  for (const key of OFFSET_KEYS) {
+    for (const scope of scopes) {
       const parsed = parseUtcOffset(scope[key]);
       if (parsed) return parsed;
     }
@@ -136,16 +138,18 @@ export function classifySource(
   exif: Record<string, unknown> | null | undefined,
   fileName?: string | null,
 ): PhotoSourceType {
+  // 파일 이름만으로 스크린샷을 알 수 있으면 EXIF를 읽지 못했어도 SCREENSHOT
+  if (typeof fileName === 'string' && SCREENSHOT_FILE_NAME.test(fileName.trim())) {
+    return 'SCREENSHOT';
+  }
   if (!exif) return 'UNKNOWN';
   const scopes = [
     ...exifScopes(exif),
     ...CAMERA_NESTED_KEYS.map((key) => exif[key]).filter(isRecord),
   ];
-  const screenshot =
-    (typeof fileName === 'string' && SCREENSHOT_FILE_NAME.test(fileName.trim())) ||
-    scopes.some(
-      (scope) => typeof scope.UserComment === 'string' && /screenshot/i.test(scope.UserComment),
-    );
+  const screenshot = scopes.some(
+    (scope) => typeof scope.UserComment === 'string' && /screenshot/i.test(scope.UserComment),
+  );
   if (screenshot) return 'SCREENSHOT';
   const camera = scopes.some((scope) => CAMERA_KEYS.some((key) => hasText(scope[key])));
   return camera ? 'CAMERA' : 'SAVED_IMAGE';

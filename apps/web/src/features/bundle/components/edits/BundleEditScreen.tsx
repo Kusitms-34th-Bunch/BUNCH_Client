@@ -80,7 +80,7 @@ export function BundleEditScreen({
   };
 
   const save = () => {
-    if (!canSave) return;
+    if (!canSave || galleryImporting !== undefined) return;
     openOverlay((rootProps, close) => (
       <ConfirmDialog
         {...rootProps}
@@ -110,7 +110,11 @@ export function BundleEditScreen({
       bottom={
         // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
         <div className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t">
-          <Button className="w-full" disabled={!canSave} onClick={save}>
+          <Button
+            className="w-full"
+            disabled={!canSave || galleryImporting !== undefined}
+            onClick={save}
+          >
             {BUNDLE_MESSAGES.editSave}
           </Button>
         </div>
