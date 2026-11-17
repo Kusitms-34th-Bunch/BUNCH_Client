@@ -161,11 +161,39 @@ export const memberHandlers = [
     return ok({ normalizedValue: nickname, available: !nickname.includes('중복') });
   }),
 
-  // POST /api/v1/members/me/registration: multipart 본문은 읽지 않고 가입 완료만 기록(닉네임은 시작 데이터 그대로)
-  http.post('/api/members/me/registration', () => {
+  // POST /api/v1/members/me/registration: 가입 완료를 기록(닉네임은 시작 데이터 그대로)
+  // multipart `profile`에 동의 버전(demographicsConsentVersion)이 있을 때만 추가 개인정보 동의와 출생연도·성별을 저장
+  http.post('/api/members/me/registration', async ({ request }) => {
+    const part = (await request.formData().catch(() => null))?.get('profile');
+    const profile = await (async () => {
+      try {
+        return part instanceof Blob
+          ? (JSON.parse(await part.text()) as {
+              demographicsConsentVersion?: string;
+              birthYear?: number;
+              gender?: 'FEMALE' | 'MALE';
+            })
+          : null;
+      } catch {
+        return null;
+      }
+    })();
+    const consented = Boolean(profile?.demographicsConsentVersion);
     mockDb.update((state) => ({
       ...state,
       session: { ...state.session, signupStatus: 'COMPLETED' },
+      members: consented
+        ? state.members.map((member) =>
+            member.memberId === MOCK_MY_MEMBER_ID
+              ? {
+                  ...member,
+                  additionalInfoConsented: true,
+                  birthYear: profile?.birthYear ?? null,
+                  gender: profile?.gender ?? null,
+                }
+              : member,
+          )
+        : state.members,
     }));
     return ok({
       memberId: MOCK_MY_MEMBER_ID,
