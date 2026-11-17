@@ -81,6 +81,26 @@ describe('ProfileEditRoute', () => {
     expect(screen.getByRole('button', { name: '여성' }).getAttribute('aria-pressed')).toBe('true');
   });
 
+  it('받아 둔 캐시 값이 아니라 이번 진입에서 다시 받은 값으로 채운다', async () => {
+    const client = createTestQueryClient();
+    // 내 프로필도 캐시에 있어야 진입 첫 렌더에 옛 값(2003)으로 고정될 수 있는 상황이 됨
+    client.setQueryData(sharedKeys.me(), {
+      memberId: '1',
+      nickname: '으누',
+      imageSrc: null,
+      bunch: null,
+    });
+    client.setQueryData(myKeys.additionalInfo(), { consented: true, birthYear: 2003 });
+    server.use(
+      http.get('/api/members/me/additional-info', () => ok({ consented: true, birthYear: 2005 })),
+    );
+
+    render(<ProfileEditRoute />, { wrapper: createQueryWrapper(client) });
+
+    const birthYear = await screen.findByRole<HTMLInputElement>('textbox', { name: /출생연도/ });
+    expect(birthYear.value).toBe('2005');
+  });
+
   it('동의하지 않았으면 출생연도·성별 칸을 보이지 않는다', async () => {
     server.use(http.get('/api/members/me/additional-info', () => ok({ consented: false })));
 

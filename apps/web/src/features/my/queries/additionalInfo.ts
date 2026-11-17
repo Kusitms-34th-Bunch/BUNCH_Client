@@ -23,6 +23,8 @@ export function useAdditionalInfo() {
     isPending: query.isPending,
     /** 요청이 끝난 뒤의 실패(재조회 중에는 실패로 보지 않음) */
     isError: query.isError && query.fetchStatus === 'idle',
+    /** 조회가 아직 끝나지 않음(받는 중이거나 오프라인이라 연결을 기다리는 중, 받아 둔 값이 있어도 참) */
+    isFetching: query.fetchStatus !== 'idle',
     /** 마지막 조회가 실패한 상태(실패 뒤 다시 받는 중에도 참, 받아 둔 옛 값으로 바꾸지 못하게 막을 때 씀) */
     hasFailed: query.status === 'error',
   };
