@@ -2,6 +2,7 @@ import { advertisementHandlers } from './advertisements';
 import { blockHandlers } from './blocks';
 import { bunchHomeHandlers } from './bunchHome';
 import { bunchOnboardingHandlers } from './bunchOnboarding';
+import { bundleEditHandlers } from './bundleEdit';
 import { bundleExitHandlers } from './bundleExit';
 import { bundlePhotoHandlers } from './bundlePhotos';
 import { bundleHandlers } from './bundles';
@@ -49,6 +50,7 @@ export const handlers = [
   ...blockHandlers,
   ...notificationHandlers,
   ...bundleHandlers,
+  ...bundleEditHandlers,
   ...bundleExitHandlers,
   ...bundlePhotoHandlers,
 ];
