@@ -88,6 +88,23 @@ describe('useBundleEdit 상태', () => {
     expect(ready(result.current.state).draft.title).toBe('강릉 커피 투어 ☕');
   });
 
+  it('캐시에 옛 초안 값이 남아 있어도 첫 응답 전에는 작성 화면으로 보내지 않는다', async () => {
+    setRole('OWNER');
+    const client = createTestQueryClient();
+    const wrapper = createQueryWrapper(client);
+    const first = renderHook(() => useBundleEdit(bunchId, PUBLISHED_ID), { wrapper });
+    await waitFor(() => expect(first.result.current.state.kind).toBe('ready'));
+    first.unmount();
+    const fresh = await getBundle(bunchId, PUBLISHED_ID);
+    // 이 번들이 초안이던 시절의 캐시가 남은 상황(그 뒤 발행됨)
+    client.setQueryData(bundleKeys.detail(bunchId, PUBLISHED_ID), { ...fresh, status: 'DRAFT' });
+
+    const { result } = renderHook(() => useBundleEdit(bunchId, PUBLISHED_ID), { wrapper });
+
+    expect(result.current.state.kind).toBe('loading');
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+  });
+
   it('연결이 없어 첫 조회가 멈추면 로딩에 머물지 않고 오류로 안내하며, 연결이 돌아오면 이어서 연다', async () => {
     setRole('OWNER');
     onlineManager.setOnline(false);

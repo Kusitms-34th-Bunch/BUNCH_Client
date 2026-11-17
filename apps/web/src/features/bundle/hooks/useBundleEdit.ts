@@ -251,7 +251,8 @@ export function useBundleEdit(
   };
 
   let state: BundleEditState;
-  if (detail?.status === 'DRAFT') state = { kind: 'draft' };
+  // 초안과 발행본은 상세 캐시를 같이 쓰므로, 캐시에 남은 옛 초안 값으로 작성 화면에 보내지 않고 연 뒤 첫 응답을 기다림
+  if (detail?.status === 'DRAFT' && detailQuery.isFetchedAfterMount) state = { kind: 'draft' };
   else if (
     profile.isError ||
     members.isError ||
