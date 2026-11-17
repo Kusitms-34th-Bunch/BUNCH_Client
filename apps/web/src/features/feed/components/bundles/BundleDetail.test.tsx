@@ -777,6 +777,16 @@ describe('BundleDetail', () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1/visibility'));
   });
 
+  it('메인 관리자는 헤더 더보기의 「수정하기」로 번들 수정 화면에 간다', async () => {
+    const user = userEvent.setup();
+    renderDetail('1');
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '수정하기' }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1/edit'));
+  });
+
   it('메인 관리자가 번들을 삭제하면 서버에서 지우고 이전 화면으로 가서 알린다', async () => {
     const removed: string[] = [];
     const detailGets = vi.fn();

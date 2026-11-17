@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { BundleSelectProvider } from '../../contexts/BundleSelectProvider';
+import {
+  recommendationDouble,
+  resetRecommendationDouble,
+} from '../../testing/recommendationDoubles';
 import { RecommendDetail } from './RecommendDetail';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
@@ -18,10 +22,10 @@ vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
 vi.mock('../../hooks/useCreateBundle', async () => ({
   useCreateBundle: (await import('../../testing/selectScreenDoubles')).useCreateBundleDouble,
 }));
-vi.mock('../../fixtures/recommendation.fixture', async () => ({
-  recommendationFixture: (await import('../../testing/selectScreenDoubles'))
-    .legacyRecommendationFixture,
-}));
+vi.mock(
+  '../../hooks/useRecommendations',
+  async () => (await import('../../testing/recommendationDoubles')).recommendationHooksDouble,
+);
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -44,6 +48,7 @@ const renderDetail = (
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRecommendationDouble();
 });
 
 describe('RecommendDetail', () => {
@@ -79,6 +84,26 @@ describe('RecommendDetail', () => {
     renderDetail('nope');
 
     expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.deletedRecommendation);
+    expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
+  });
+
+  it('받는 동안에는 로딩을 보이고 다른 화면으로 보내지 않는다', async () => {
+    recommendationDouble.detailLoading = true;
+    renderDetail('rec-1');
+
+    expect(await screen.findByTestId('lottie')).toBeInTheDocument();
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+  });
+
+  it('추천 사진을 불러오지 못하면 안내 토스트 뒤 사진 선택 화면으로 돌아간다', () => {
+    recommendationDouble.failing = true;
+    renderDetail('rec-1');
+
+    expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.recommendationsFailed);
+    expect(toastAfterNavigation).not.toHaveBeenCalledWith(
+      BUNDLE_SELECT_MESSAGES.deletedRecommendation,
+    );
     expect(router.replace).toHaveBeenCalledWith(BUNDLE_SELECT_PATHS.select);
   });
 

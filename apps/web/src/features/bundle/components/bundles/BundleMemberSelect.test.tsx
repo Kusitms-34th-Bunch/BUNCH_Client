@@ -17,6 +17,10 @@ vi.mock('@/features/photo-box/hooks/usePhotoBox', async () => ({
 vi.mock('../../hooks/useCreateBundle', async () => ({
   useCreateBundle: (await import('../../testing/selectScreenDoubles')).useCreateBundleDouble,
 }));
+vi.mock(
+  '../../hooks/useRecommendations',
+  async () => (await import('../../testing/recommendationDoubles')).recommendationHooksDouble,
+);
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 const renderMembers = () =>

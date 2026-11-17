@@ -345,6 +345,25 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 번들 상세 → 번들 수정, 수정 → 사진 추가도 한 단계 들어가는 drill
+  {
+    from: FEED_PATHS.transitionIds.bundle,
+    to: FEED_PATHS.transitionIds.bundleEdit,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.bundleEdit,
+    to: FEED_PATHS.transitionIds.bundleEditPhotoAdd,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: FEED_PATHS.transitionIds.bundleEdit,
+    to: FEED_PATHS.transitionIds.bundleEditPhotoViewer,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
   {
     from: FEED_PATHS.transitionIds.member,
     to: BUNCH_HOME_PATHS.home,

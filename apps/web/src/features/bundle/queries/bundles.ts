@@ -82,16 +82,25 @@ export const useCreateBundleMutation = (bunchId: string | undefined) => {
     mutationFn: ({
       photoIds,
       participantMemberIds,
+      recommendationId,
       idempotencyKey = createIdempotencyKey(),
     }: {
       photoIds: readonly string[];
       /** 나를 뺀 참여 멤버(1명 이상), 사진을 올린 멤버라도 고르지 않으면 참여하지 않음 */
       participantMemberIds: readonly string[];
+      /** 마지막으로 적용한 추천 번들 id */
+      recommendationId?: string | undefined;
       /** 응답이 유실된 뒤 다시 보내도 초안이 둘이 되지 않도록 호출하는 쪽이 같은 키를 유지 */
       idempotencyKey?: string;
     }) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
-      return createBundle(bunchId, photoIds, idempotencyKey, participantMemberIds);
+      return createBundle(
+        bunchId,
+        photoIds,
+        idempotencyKey,
+        participantMemberIds,
+        recommendationId,
+      );
     },
     onSuccess: (bundle) => {
       queryClient.setQueryData(bundleKeys.detail(bundle.bunchId, bundle.id), bundle);

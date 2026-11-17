@@ -122,6 +122,22 @@ const appBridge = bridge({
     Platform.OS === 'android'
       ? Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Segment_Tick)
       : Haptics.selectionAsync(),
+  // 사진을 길게 눌러 집어 올린 순간(끌기 시작): 안드로이드는 모든 버전에서 지원하는 길게 누르기 시스템 햅틱(기기의 터치 피드백 설정을 따름), 쓸 수 없으면 진동 모터 충격
+  // iOS는 중간 세기 충격. 끌기 시작 전용 햅틱(`Drag_Start`)은 안드로이드 14 이상만 지원하고 기기에 따라 아주 약해서 쓰지 않음
+  dragStartHaptic: async () => {
+    try {
+      if (Platform.OS === 'android') {
+        await Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press).catch(() =>
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+        );
+      } else {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+    } catch (error) {
+      // 햅틱은 보조 효과라 웹에 오류를 올리지 않고 개발 중에만 알림
+      if (__DEV__) console.warn('[haptic] 끌기 시작 햅틱을 울리지 못했어요', error);
+    }
+  },
 } satisfies AppBridgeMethods);
 
 // postMessage: 네이티브 → 웹 이벤트(탭 WebView 여러 개라 broadcast로 보내고 웹이 대상 확인)

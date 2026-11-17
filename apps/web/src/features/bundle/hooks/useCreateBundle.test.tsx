@@ -174,6 +174,27 @@ describe('useCreateBundle', () => {
     expect(result.current.creating).toBe(false);
   });
 
+  it('추천 번들 id를 서버에 보내 기본 제목을 추천 제목으로 만든다', async () => {
+    const { result } = renderCreate();
+    await loaded(result);
+
+    act(() => result.current.create(photoIds, participants, { recommendationId: '1' }));
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+    expect(mockDrafts()[0]?.title).toBe('설악산 단풍 여행');
+  });
+
+  it('없는 추천 번들 id도 서버가 받아들여 추천 연결 없이 초안을 만든다(실서버 확인)', async () => {
+    const { result } = renderCreate();
+    await loaded(result);
+
+    act(() => result.current.create(photoIds, participants, { recommendationId: '77' }));
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+    expect(mockDrafts()[0]?.title).toBe('');
+    expect(toast).not.toHaveBeenCalled();
+  });
+
   it('사진함에서 넘어온 흐름은 멤버 선택을 기록에 남기지 않고 replace로 이동한다', async () => {
     const { result } = renderCreate();
     await loaded(result);

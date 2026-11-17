@@ -115,6 +115,11 @@ export type DraftActions = {
   removePhoto: (_photoId: string) => boolean;
   /** 사진을 다른 자리(0부터)로 옮김. 서버 반영은 후속이라 이 화면에서만 바뀜 */
   movePhoto: (_photoId: string, _toIndex: number) => void;
+  /**
+   * 사진을 끌기 시작하거나 놓았을 때: 끄는 동안 다른 멤버의 사진 변경 이벤트는 미뤘다가 놓은 뒤 반영(기능 spec 4.3.6)
+   * 시작할 때 끌기 시작한 사진의 id를 주면, 놓은 뒤 그 사진이 다른 멤버에게 지워졌을 때(자리를 바꾸지 않고 놓은 경우 포함) 안내함
+   */
+  setPhotoDragging: (_dragging: boolean, _photoId?: string) => void;
   /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜. 연결이 끊겨 막히면 false */
   replacePhotos: (_photos: readonly DraftPhoto[]) => boolean;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
@@ -222,6 +227,12 @@ export function useDraft(draftId: string | undefined): {
   const [localPhotos, setLocalPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   const [flushing, setFlushing] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  // 사진을 끄는 중: 이벤트 보류 판단은 ref(이벤트가 올 때 읽음), 놓은 뒤 재조회는 state(effect)로 이어 감
+  const photoDragRef = useRef(false);
+  // 끌던 사진의 서버 id와, 그 끌기에서 이동 요청을 보냈는지(보냈다면 이동 응답 경로가 삭제 안내를 맡음)
+  const draggedPhotoId = useRef<string | undefined>(undefined);
+  const dragMoved = useRef(false);
+  const [photoDragging, setPhotoDraggingState] = useState(false);
   // 내가 발행해 서버가 발행본으로 바꾼 뒤에는 「없는 초안」 안내 없이 이동을 기다림
   const [publishedByMe, setPublishedByMe] = useState(false);
   // 발행 요청을 보내는 동안: 응답 전에 캐시가 먼저 PUBLISHED로 바뀌어도 내가 올리는 중이라 「업로드됐어요」 창을 띄우지 않음
@@ -240,6 +251,19 @@ export function useDraft(draftId: string | undefined): {
   const photoQueue = useRef<Promise<void>>(Promise.resolve());
   // 연결이 끊길 때마다 올림: 그 전에 대기열에 넣었지만 아직 보내지 않은 사진 변경은 버림
   const discardGeneration = useRef(0);
+  // 보내기 직전에 지금 연결이 끊겼는지 바로 확인(실시간 연결·브라우저 오프라인·보류 이벤트 재조회 실패)
+  // 끊김을 아는 상태는 렌더 뒤 effect에서 반영돼, 그 사이에 대기열의 다음 요청이 나가지 않게 함
+  const heldSyncFailedRef = useRef(false);
+  useEffect(() => {
+    heldSyncFailedRef.current = heldSyncFailed;
+  });
+  const offlineNowRef = useRef<() => boolean>(() => false);
+  useEffect(() => {
+    offlineNowRef.current = () =>
+      realtime.isDown() ||
+      (typeof navigator !== 'undefined' && !navigator.onLine) ||
+      heldSyncFailedRef.current;
+  });
   const photoOps = useRef(0);
   const photoFailed = useRef(false);
   const photoFailures = useRef(0);
@@ -307,9 +331,11 @@ export function useDraft(draftId: string | undefined): {
         const base = detailRef.current;
         const snapshot = pendingRef.current;
         if (!base || isEmpty(snapshot)) break;
+        // 이미 끊겼으면(아직 화면이 끊김을 모르는 사이도 포함) 보내지 않음. 보관한 입력은 끊김을 알아챈 뒤 폐기됨
+        if (offlineNowRef.current()) break;
         // 이 저장을 시작한 뒤 연결이 끊겨 입력이 폐기됐으면 보관해 둔 값은 더 보내지 않음
         const generation = discardGeneration.current;
-        const discarded = () => generation !== discardGeneration.current;
+        const discarded = () => generation !== discardGeneration.current || offlineNowRef.current();
         const common = { mode: 'DRAFT' as const };
         // 필드 하나 저장: 성공하면 입력을 비우고 최신 응답을 기준으로 삼음
         const run = async (save: () => Promise<BundleDetail>, onSaved: () => void) => {
@@ -544,14 +570,14 @@ export function useDraft(draftId: string | undefined): {
   };
 
   const applyPhotoMove = async ({ photoId, previous, next }: PhotoMovePlan) => {
-    adoptDetail(
-      await movePhotoMutation.mutateAsync({
-        bundlePhotoId: photoId,
-        previousBundlePhotoId: previous,
-        nextBundlePhotoId: next,
-        mode: detailRef.current?.status ?? 'DRAFT',
-      }),
-    );
+    const moved = await movePhotoMutation.mutateAsync({
+      bundlePhotoId: photoId,
+      previousBundlePhotoId: previous,
+      nextBundlePhotoId: next,
+      mode: detailRef.current?.status ?? 'DRAFT',
+    });
+    adoptDetail(moved);
+    return moved;
   };
 
   // 한 번에 하나씩 보냄, 한 번 실패하면 남은 변경은 건너뛰고(서버와 어긋난 상태) 한 번만 안내하며 서버 값으로 되돌림
@@ -560,11 +586,18 @@ export function useDraft(draftId: string | undefined): {
     setPhotoBusy(true);
     const generation = discardGeneration.current;
     photoQueue.current = photoQueue.current
-      .then(() =>
-        photoFailed.current || generation !== discardGeneration.current
-          ? undefined
-          : run(() => generation !== discardGeneration.current),
-      )
+      .then(async () => {
+        if (photoFailed.current) return;
+        // 연결이 끊겨(아직 화면이 몰라도) 보내지 않고 건너뛴 변경인지: 한 번 건너뛰면 이어지는 단계도 건너뜀
+        let dropped = false;
+        const isDropped = () => {
+          if (generation !== discardGeneration.current || offlineNowRef.current()) dropped = true;
+          return dropped;
+        };
+        if (!isDropped()) await run(isDropped);
+        // 건너뛴 변경도 발행 전 확인이 알아챌 수 있게 실패 횟수에 셈(발행하면 사진 변경이 빠진 구성이 올라가므로, 안내는 발행 때 함)
+        if (dropped) photoFailures.current += 1;
+      })
       .catch(() => {
         photoFailed.current = true;
         photoFailures.current += 1;
@@ -607,12 +640,13 @@ export function useDraft(draftId: string | undefined): {
   useEffect(() => {
     holdEventRef.current = (type) => {
       const hold =
-        (type === 'PHOTOS' && photoOps.current > 0) || (type === 'PARTICIPANTS' && participantBusy);
+        (type === 'PHOTOS' && (photoOps.current > 0 || photoDragRef.current)) ||
+        (type === 'PARTICIPANTS' && participantBusy);
       if (hold) heldEventRef.current = true;
       return hold;
     };
   });
-  const requestsBusy = photoBusy || participantBusy;
+  const requestsBusy = photoBusy || participantBusy || photoDragging;
   // 요청이 끝나면 보류했던 이벤트를 대신해 최신 상세를 받음. 받는 데 성공한 뒤에만 「놓친 변경이 있음」 표시를 지우고,
   // 실패하면 표시를 남긴 채 몇 번 다시 받아 봄(그 사이 새 요청이 시작되면 멈췄다가 다시 한가해질 때 이어서 받음)
   // 모두 실패하면 배너로 알리고 멈추며, 사용자가 「재시도」를 누르면 처음부터 다시 받음(그동안 배너와 편집 제한은 유지하고 성공해야 풂)
@@ -625,12 +659,26 @@ export function useDraft(draftId: string | undefined): {
         if (cancelled) return;
         if (!result.isError) {
           heldEventRef.current = false;
+          // 렌더 전에도 보내기 직전 확인이 바로 알도록 ref도 함께 바꿈
+          heldSyncFailedRef.current = false;
           setHeldSyncFailed(false);
+          // 끌던 사진을 다른 멤버가 지웠는데 자리를 바꾸지 않고 놓은 경우에도 놓은 뒤 안내(이동 요청을 보냈다면 그 응답 경로가 안내함)
+          const dropped = draggedPhotoId.current;
+          draggedPhotoId.current = undefined;
+          if (
+            dropped !== undefined &&
+            !dragMoved.current &&
+            result.data &&
+            !result.data.photos.some((photo) => photo.id === dropped)
+          ) {
+            toast(BUNDLE_MESSAGES.photoRemovedByOther);
+          }
           return;
         }
         if (attempt < HELD_RESYNC_MAX_ATTEMPTS) {
           retryTimer = setTimeout(() => resync(attempt + 1), HELD_RESYNC_RETRY_MS);
         } else {
+          heldSyncFailedRef.current = true;
           setHeldSyncFailed(true);
         }
       });
@@ -703,6 +751,8 @@ export function useDraft(draftId: string | undefined): {
       const current = shownPhotosRef.current;
       const next = movePhoto(current, photoId, toIndex);
       if (next.every((photo, index) => photo.id === current[index]?.id)) return;
+      // 끌기 중에 보낸 이동만 이 끌기의 이동으로 기록(끌기를 끝낸 뒤 앞·뒤로 버튼으로 옮긴 다른 이동은 아님)
+      if (photoDragRef.current) dragMoved.current = true;
       showPhotos(next);
       const index = next.findIndex((photo) => photo.id === photoId);
       const [moving, previous, following] = [next[index], next[index - 1], next[index + 1]];
@@ -713,12 +763,40 @@ export function useDraft(draftId: string | undefined): {
         if (movingId === undefined || (previous && !previousId) || (following && !nextId)) {
           throw new Error('photo is not on the server');
         }
-        await applyPhotoMove({
-          photoId: movingId,
-          previous: previousId ?? null,
-          next: nextId ?? null,
-        });
+        // 끄는 사이 다른 멤버가 지운 사진이면 서버는 변경 없이 응답하거나(삭제 확인) 알 수 없는 대상(404)으로 답함
+        // 어느 쪽이든 그 사진은 사라진 것이라 손을 뗄 때 알리고, 보류했던 변경은 놓은 뒤 재조회로 맞춤
+        const removedByOther = () => {
+          toast(BUNDLE_MESSAGES.photoRemovedByOther);
+          void refetchDetail();
+        };
+        try {
+          const moved = await applyPhotoMove({
+            photoId: movingId,
+            previous: previousId ?? null,
+            next: nextId ?? null,
+          });
+          if (!moved.photos.some((photo) => photo.id === movingId)) removedByOther();
+        } catch (error) {
+          // 404는 API 명세상 없는·삭제된 번들이나 사진이라 지운 사진으로 봄(삭제된 이웃 기준 사진은 서버가 위치를 보정해 404가 아님)
+          if (isApiError(error) && error.status === 404) return removedByOther();
+          throw error;
+        }
       });
+    },
+    setPhotoDragging: (dragging, photoId) => {
+      photoDragRef.current = dragging;
+      setPhotoDraggingState(dragging);
+      if (dragging) {
+        dragMoved.current = false;
+        const photo =
+          photoId === undefined
+            ? undefined
+            : shownPhotosRef.current.find((candidate) => candidate.id === photoId);
+        draggedPhotoId.current = photo && serverPhotoId(photo);
+      } else if (!heldEventRef.current) {
+        // 끄는 동안 사진 변경 이벤트가 없었으면 놓은 뒤 확인할 것이 없음(낡은 id가 나중의 재조회에서 안내를 만들지 않게 비움)
+        draggedPhotoId.current = undefined;
+      }
     },
     replacePhotos: (photos) => {
       const current = shownPhotosRef.current;

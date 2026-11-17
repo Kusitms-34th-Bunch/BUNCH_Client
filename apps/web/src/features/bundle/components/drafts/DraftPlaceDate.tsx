@@ -165,6 +165,8 @@ export function DraftPlaceDate({
         selected={draft.date !== null}
         suggestions={suggestions.map((suggestion) => suggestion.label)}
         onFieldClick={openDate}
+        // 참여 멤버가 아니면 추천 날짜 칩을 누를 수 없음(연결이 끊긴 참여 멤버는 그대로 보임)
+        suggestionsDisabled={!participant}
         onSuggestionClick={(label) => {
           const picked = suggestions.find((suggestion) => suggestion.label === label);
           if (picked) guard(() => actions.setDate(picked.value))();

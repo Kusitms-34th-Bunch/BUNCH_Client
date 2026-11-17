@@ -16,6 +16,8 @@ vi.mock('./useBundleRealtime', () => ({
     enabled: true,
     status: connection.down ? 'reconnecting' : 'connected',
     down: connection.down,
+    // 렌더를 기다리지 않고 지금 상태를 바로 읽음(실제 훅의 isDown과 같은 계약)
+    isDown: () => connection.down,
     retry: () => undefined,
     sendPresence: () => false,
   }),

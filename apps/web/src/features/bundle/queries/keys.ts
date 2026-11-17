@@ -4,6 +4,10 @@ export const bundleKeys = {
   // 번치를 아직 모르면 undefined(요청하지 않는 skipToken 상태의 key)
   detail: (bunchId: string | undefined, bundleId: string | undefined) =>
     [...bundleKeys.all, 'detail', bunchId, bundleId] as const,
+  recommendations: (bunchId: string | undefined) =>
+    [...bundleKeys.all, 'recommendations', bunchId] as const,
+  recommendation: (bunchId: string | undefined, id: string | undefined) =>
+    [...bundleKeys.all, 'recommendation', bunchId, id] as const,
 };
 
 // 진행 중인 변경을 화면 밖에서 구분할 때 쓰는 mutation key

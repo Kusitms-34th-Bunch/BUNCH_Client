@@ -25,6 +25,9 @@ export const BUNDLE_SELECT_MESSAGES = {
   changeConfirm: '변경하기',
   cancel: '취소',
   deletedRecommendation: '추천 번들이 삭제됐어요. 다시 확인해 주세요.',
+  // 서버 오류 안내(기능 명세에 문구가 없어 다른 화면의 실패 안내와 같은 형식으로 둔 제안)
+  recommendationsFailed: '추천 번들을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
+  applyFailed: '추천 번들을 적용하지 못했어요. 잠시 후 다시 시도해 주세요.',
   detailTitle: (title: string) => `${title} 상세`,
   viewerTitle: '사진 보기',
   creating: '번들을 만들고 있어요.',

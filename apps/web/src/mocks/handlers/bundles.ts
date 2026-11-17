@@ -16,6 +16,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
+import { findMockRecommendationTitle } from './recommendations';
 
 // 백엔드 명세(번들 초안 생성·수정·발행) 기준, 명세에 없는 부분은 `ponytail:`로 표시
 const MAX_PHOTOS = 20;
@@ -456,6 +457,9 @@ const saveField = async ({ kind, params, request }: SaveRequest) => {
   return snapshotOf(bundle.id);
 };
 
+const isPositiveInt = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+
 const isPhotoIdList = (value: unknown): value is number[] =>
   Array.isArray(value) &&
   value.every((id) => typeof id === 'number' && Number.isSafeInteger(id) && id > 0);
@@ -470,6 +474,8 @@ export const bundleHandlers = [
     const body = await readJson(request);
     const photoIds = body?.photoIds;
     const participantIds = body?.participantMemberIds;
+    // 선택 입력: 마지막으로 적용한 추천 번들 id(없으면 null)
+    const recommendationId = body?.recommendationId ?? null;
     if (
       bunchId === undefined ||
       !key ||
@@ -481,7 +487,8 @@ export const bundleHandlers = [
       !isPhotoIdList(participantIds) ||
       participantIds.length < 1 ||
       new Set(participantIds).size !== participantIds.length ||
-      participantIds.includes(MOCK_MY_MEMBER_ID)
+      participantIds.includes(MOCK_MY_MEMBER_ID) ||
+      (recommendationId !== null && !isPositiveInt(recommendationId))
     ) {
       return fail(400, 'COMMON_001');
     }
@@ -495,7 +502,7 @@ export const bundleHandlers = [
     const outcome = runIdempotent(
       `${MOCK_MY_MEMBER_ID}:${bunchId}:create`,
       key,
-      JSON.stringify({ photoIds, participantMemberIds: participantIds }),
+      JSON.stringify({ photoIds, participantMemberIds: participantIds, recommendationId }),
       () => {
         const current = mockDb.get();
         if (
@@ -524,6 +531,11 @@ export const bundleHandlers = [
         if (picked.some((photo) => photo === undefined)) {
           return { status: 400, body: { code: 'COMMON_001' } };
         }
+        // 연결한 추천 번들이 있으면 기본 제목이 추천 제목. 없는 추천 ID는 실서버처럼 거절하지 않고 연결 없이 만듦(제목 비어 있음)
+        const recommendationTitle =
+          recommendationId === null
+            ? undefined
+            : findMockRecommendationTitle(bunchId, recommendationId);
         const at = nowIso();
         const id = Math.max(0, ...current.bundles.map((bundle) => bundle.id)) + 1;
         let nextPhotoId = Math.max(0, ...current.bundles.flatMap((b) => b.photos.map((p) => p.id)));
@@ -548,8 +560,8 @@ export const bundleHandlers = [
           bunchId,
           createdBy: MOCK_MY_MEMBER_ID,
           status: 'DRAFT',
-          title: '',
-          titleVersion: 0,
+          title: recommendationTitle ?? '',
+          titleVersion: recommendationTitle === undefined ? 0 : 1,
           visibility: null,
           visibilityVersion: 0,
           date: null,

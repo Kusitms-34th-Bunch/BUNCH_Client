@@ -15,7 +15,7 @@ const render = async (recommendationId: string) => {
 
 describe('/bunch/bundles/new/recommendations/[recommendationId] page', () => {
   it('형식이 맞는 id는 그대로 화면에 넘긴다', async () => {
-    expect((await render('rec-1')).children.props.recommendationId).toBe('rec-1');
+    expect((await render('31')).children.props.recommendationId).toBe('31');
   });
 
   it('형식이 틀린 id는 undefined로 바꿔 넘긴다', async () => {
@@ -24,9 +24,7 @@ describe('/bunch/bundles/new/recommendations/[recommendationId] page', () => {
   });
 
   it('전환 경계에 규칙과 같은 고정 id를 지정한다', async () => {
-    expect((await render('rec-1'))['data-ssgoi-transition']).toBe(
-      '/bunch/bundles/new/recommendation',
-    );
+    expect((await render('31'))['data-ssgoi-transition']).toBe('/bunch/bundles/new/recommendation');
   });
 
   it('검색에서 제외한다', () => {

@@ -31,6 +31,8 @@ export type SelectionFieldProps = Omit<ComponentProps<'div'>, 'children' | 'titl
   onFieldClick?: (() => void) | undefined;
   /** 추천 값을 눌렀을 때 */
   onSuggestionClick?: ((_suggestion: string) => void) | undefined;
+  /** true면 추천 칩은 눌림 효과·포커스가 없고 눌러도 값을 고르지 않으며 누른 자리는 필드 버튼(`onFieldClick`)이 받음(고를 수 없는 사람에게 보이는 읽기 전용 칩, 기본 false) */
+  suggestionsDisabled?: boolean | undefined;
   /** 선택된 값을 지울 때(지우기 버튼은 `selected`일 때만 나타남) */
   onClear?: (() => void) | undefined;
   /** 지우기 버튼의 접근성 이름(기본 "{label} 지우기") */
@@ -57,6 +59,7 @@ export const SelectionField = ({
   suggestionsLabel = '추천',
   onFieldClick,
   onSuggestionClick,
+  suggestionsDisabled = false,
   onClear,
   clearLabel,
   clearable = true,
@@ -136,9 +139,17 @@ export const SelectionField = ({
             <li key={`${suggestion}-${index}`}>
               <ChipButton
                 size="M"
-                onClick={() => onSuggestionClick?.(suggestion)}
+                // 비활성일 때 보조 기기로 누르면(포인터는 필드 버튼이 받음) 필드를 누른 것과 같게 처리해 안내가 나가게 함
+                onClick={() =>
+                  suggestionsDisabled ? onFieldClick?.() : onSuggestionClick?.(suggestion)
+                }
+                // 눌 수 없을 때는 칩이 클릭을 받지 않아 카드 전체를 덮는 필드 버튼이 받음(눌림 효과 없음)
+                {...(suggestionsDisabled && { tabIndex: -1, 'aria-disabled': true })}
                 // 회색 카드 위에서 보이도록 칩은 흰 배경(Figma `surface-primary`)
-                className="bg-surface-primary pointer-events-auto"
+                className={cn(
+                  'bg-surface-primary',
+                  suggestionsDisabled ? 'pointer-events-none' : 'pointer-events-auto',
+                )}
               >
                 {suggestion}
               </ChipButton>

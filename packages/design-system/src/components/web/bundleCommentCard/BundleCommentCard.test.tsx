@@ -212,4 +212,12 @@ describe('BundleCommentCard', () => {
     expect(screen.getByRole('textbox').getAttribute('id')).toBe('comment');
     expect(screen.getByRole('textbox').getAttribute('aria-describedby')).toBe('comment-error');
   });
+
+  it('describedBy를 주면 입력창 설명으로 잇고, 오류 안내가 있으면 그 뒤에 붙인다', () => {
+    const { rerender } = renderCard({ id: 'comment', describedBy: 'why' });
+    expect(screen.getByRole('textbox').getAttribute('aria-describedby')).toBe('why');
+
+    rerender(<BundleCommentCard userName="지예" id="comment" error="오류" describedBy="why" />);
+    expect(screen.getByRole('textbox').getAttribute('aria-describedby')).toBe('comment-error why');
+  });
 });

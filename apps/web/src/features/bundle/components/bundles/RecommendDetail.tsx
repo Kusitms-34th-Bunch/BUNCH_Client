@@ -8,7 +8,8 @@ import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
-import { getRecommendationPhotos, groupByDate } from '../../lib/recommendation';
+import { useRecommendationDetail } from '../../hooks/useRecommendations';
+import { groupByDate } from '../../lib/recommendation';
 import { RecommendDetailScreen } from './RecommendDetailScreen';
 
 type RecommendDetailProps = {
@@ -23,18 +24,21 @@ type RecommendDetailProps = {
 export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
   const router = useRouter();
   const backOr = useBackOr();
-  const { photoState, recommendations, openSheet, memberIds } = useBundleSelect();
+  const { openSheet, memberIds } = useBundleSelect();
+  const state = useRecommendationDetail(recommendationId);
   // 새로고침·직접 주소로 들어와 멤버를 고르지 않았으면 사진 선택을 거치지 않고 첫 단계로 보냄
   const noMembers = memberIds.length === 0;
-  const photos = photoState.kind === 'ready' ? photoState.data.photos : undefined;
-  const recommendation = recommendations.find((item) => item.id === recommendationId);
-  const missing = photos !== undefined && recommendation === undefined;
-  // 사진함을 못 불러오면(오류·번치 없음) 로딩에 갇히지 않게 사진 선택 화면이 보여 주는 안내로 보냄
-  const unavailable = photoState.kind === 'error' || photoState.kind === 'no-bunch';
+  // 삭제됐거나 잘못된 id면 안내 후 목록으로, 불러오지 못했으면 로딩에 갇히지 않게 사진 선택 화면으로 보냄
+  const missing = state.kind === 'deleted';
+  const unavailable = state.kind === 'error';
 
   useEffect(() => {
     if (noMembers) router.replace(BUNDLE_SELECT_PATHS.members);
-    else if (unavailable) router.replace(BUNDLE_SELECT_PATHS.select);
+    else if (unavailable) {
+      // 이유 없이 화면이 바뀌지 않게 불러오지 못했다고 알림
+      toastAfterNavigation(BUNDLE_SELECT_MESSAGES.recommendationsFailed);
+      router.replace(BUNDLE_SELECT_PATHS.select);
+    }
   }, [noMembers, unavailable, router]);
 
   useEffect(() => {
@@ -45,15 +49,13 @@ export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
     router.replace(BUNDLE_SELECT_PATHS.select);
   }, [missing, noMembers, openSheet, router]);
 
-  if (!photos || !recommendation) return <PageLoading />;
+  if (state.kind !== 'ready') return <PageLoading />;
+  const { detail } = state;
 
   return (
     <RecommendDetailScreen
-      recommendation={recommendation}
-      sections={groupByDate(
-        getRecommendationPhotos(recommendation, photos),
-        new Date().getFullYear(),
-      )}
+      recommendation={detail}
+      sections={groupByDate(detail.photos, new Date().getFullYear())}
       onBack={() => backOr(BUNDLE_SELECT_PATHS.select)}
     />
   );

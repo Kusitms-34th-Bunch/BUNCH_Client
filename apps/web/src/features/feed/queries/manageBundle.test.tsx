@@ -10,6 +10,7 @@ import { feedKeys } from './keys';
 import {
   useDeletePublishedBundleMutation,
   useForgetBundle,
+  useRefreshEditedBundle,
   useSavePublishedVisibilityMutation,
 } from './manageBundle';
 
@@ -102,5 +103,15 @@ describe('발행 번들 삭제·공개 범위', () => {
     await act(() => result.current.mutateAsync({ ...target, value: 'PUBLIC', expectedVersion: 3 }));
 
     expect(feedIds(client.getQueryData(feedKey))).toEqual([7, 8]);
+  });
+
+  it('번들을 수정해 저장하면 상세 캐시를 비우고 피드 목록을 다시 받게 한다', () => {
+    const { client, result } = setup(() => useRefreshEditedBundle('7'));
+
+    act(() => result.current());
+
+    expect(client.getQueryData(detailKey)).toBeUndefined();
+    expect(client.getQueryData(commentsKey)).toBeUndefined();
+    expect(client.getQueryState(feedKey)?.isInvalidated).toBe(true);
   });
 });

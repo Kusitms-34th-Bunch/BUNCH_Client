@@ -1,3 +1,4 @@
+import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { delay, http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,7 +10,16 @@ import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { createBundle } from '../api/bundles';
+import { BUNDLE_MESSAGES } from '../constants/messages';
+import { bundleKeys } from '../queries/keys';
 import { type DraftState, useDraft } from './useDraft';
+
+type ToastArgs = Parameters<typeof DesignSystem.toast>;
+const toast = vi.fn<(..._args: ToastArgs) => void>();
+vi.mock('@app/design-system', async (importOriginal) => ({
+  ...(await importOriginal<typeof DesignSystem>()),
+  toast: (...args: ToastArgs) => toast(...args),
+}));
 
 // 실시간 연결 상태만 바꿔 가며 끊김 처리를 확인(연결 자체는 useBundleRealtime 테스트가 다룸)
 const connection = vi.hoisted(() => ({
@@ -58,21 +68,32 @@ const renderReady = async () => {
       [String(MOCK_MEMBER_IDS.memberA)],
     )
   ).id;
-  const view = renderHook(() => useDraft(id), {
-    wrapper: createQueryWrapper(createTestQueryClient()),
-  });
+  const client = createTestQueryClient();
+  const view = renderHook(() => useDraft(id), { wrapper: createQueryWrapper(client) });
   await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
   const goDown = () => {
     connection.down = true;
     view.rerender();
   };
-  return { id, ...view, goDown };
+  return { id, client, ...view, goDown };
 };
+
+// 다른 멤버가 사진을 지운 것으로 가짜 서버 데이터를 바꿈
+const removeServerPhoto = (bundleId: string, photoId: string) =>
+  mockDb.update((current) => ({
+    ...current,
+    bundles: current.bundles.map((bundle) =>
+      String(bundle.id) === bundleId
+        ? { ...bundle, photos: bundle.photos.filter((photo) => photo.id !== Number(photoId)) }
+        : bundle,
+    ),
+  }));
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 beforeEach(() => {
   connection.down = false;
+  toast.mockClear();
 });
 afterEach(() => {
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
@@ -159,6 +180,110 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     await waitFor(() => expect(connection.holdEvent?.('PHOTOS')).toBe(false), { timeout: 5000 });
     // 적용하지 못한 이벤트가 있었으므로 요청이 끝나면 상세를 다시 받음
     await waitFor(() => expect(detailRequests).toBeGreaterThan(0), { timeout: 5000 });
+  });
+
+  it('사진을 끄는 동안은 다른 멤버의 사진 변경을 화면에 적용하지 않고, 놓은 뒤 최신 목록으로 맞춘다(기능 spec 4.3.6)', async () => {
+    const { id, result } = await renderReady();
+    const shownIds = () => ready(result.current.state).draft.photos.map((photo) => photo.id);
+    const [first, second] = ready(result.current.state).draft.photos;
+    expect(connection.holdEvent?.('PHOTOS')).toBe(false);
+
+    act(() => result.current.actions.setPhotoDragging(true, second!.id));
+    // 끄는 동안 다른 멤버가 첫 사진을 지우고 그 저장 이벤트가 옴(적용하지 않고 보류)
+    removeServerPhoto(id, first!.id);
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    // 다른 type은 그대로 적용
+    expect(connection.holdEvent?.('DATE')).toBe(false);
+    // 끄는 동안은 화면의 목록이 그대로임
+    expect(shownIds()).toEqual([first!.id, second!.id]);
+
+    act(() => result.current.actions.setPhotoDragging(false));
+
+    expect(connection.holdEvent?.('PHOTOS')).toBe(false);
+    // 놓은 뒤 다시 받은 목록이 화면에 반영됨
+    await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
+  });
+
+  it('끄는 동안 사진 변경 이벤트가 없었다면 놓은 뒤 상세를 다시 받지 않는다', async () => {
+    const { id, client, result } = await renderReady();
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    const detailFetching = () => client.isFetching({ queryKey: bundleKeys.detail(bunchId, id) });
+
+    act(() => result.current.actions.setPhotoDragging(true, photoId));
+    act(() => result.current.actions.setPhotoDragging(false));
+
+    // 재조회가 시작됐다면 곧바로 가져오는 중으로 보이므로 기다릴 필요 없이 확인함
+    expect(detailFetching()).toBe(0);
+  });
+
+  it('끌던 사진을 다른 멤버가 지웠으면 자리를 바꾸지 않고 놓아도 놓은 뒤 안내하고 그 사진을 없앤다(기능 spec 4.3.6)', async () => {
+    const { id, result } = await renderReady();
+    const shownIds = () => ready(result.current.state).draft.photos.map((photo) => photo.id);
+    const [first, second] = ready(result.current.state).draft.photos;
+
+    act(() => result.current.actions.setPhotoDragging(true, first!.id));
+    removeServerPhoto(id, first!.id);
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    act(() => result.current.actions.setPhotoDragging(false));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoRemovedByOther), {
+      timeout: 5000,
+    });
+    await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
+    expect(toast).toHaveBeenCalledTimes(1);
+  });
+
+  it('끌던 사진이 아닌 다른 사진이 지워졌으면 지운 사진 안내를 띄우지 않는다', async () => {
+    const { id, result } = await renderReady();
+    const shownIds = () => ready(result.current.state).draft.photos.map((photo) => photo.id);
+    const [first, second] = ready(result.current.state).draft.photos;
+
+    act(() => result.current.actions.setPhotoDragging(true, first!.id));
+    removeServerPhoto(id, second!.id);
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    act(() => result.current.actions.setPhotoDragging(false));
+
+    await waitFor(() => expect(shownIds()).toEqual([first!.id]), { timeout: 5000 });
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.photoRemovedByOther);
+  });
+
+  it('끌기를 마친 직후 앞·뒤로 옮기기 버튼으로 다른 사진을 옮겨도 끌던 사진의 삭제 안내는 띄운다', async () => {
+    const { id, result } = await renderReady();
+    const [first, second] = ready(result.current.state).draft.photos;
+
+    act(() => result.current.actions.setPhotoDragging(true, first!.id));
+    removeServerPhoto(id, first!.id);
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    act(() => {
+      // 끌기는 자리를 바꾸지 않고 끝났고, 곧바로 버튼으로 다른 사진을 옮김
+      result.current.actions.setPhotoDragging(false);
+      result.current.actions.movePhoto(second!.id, 0);
+    });
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photoRemovedByOther), {
+      timeout: 5000,
+    });
+  });
+
+  it('끌던 사진이 지워졌고 자리도 바꿔 이동 요청을 보냈다면 안내는 한 번만 띄운다', async () => {
+    const { id, client, result } = await renderReady();
+    const shownIds = () => ready(result.current.state).draft.photos.map((photo) => photo.id);
+    const [first, second] = ready(result.current.state).draft.photos;
+
+    act(() => result.current.actions.setPhotoDragging(true, first!.id));
+    removeServerPhoto(id, first!.id);
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    act(() => {
+      result.current.actions.movePhoto(first!.id, 1);
+      result.current.actions.setPhotoDragging(false);
+    });
+
+    await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
+    await waitFor(() => expect(client.isFetching()).toBe(0), { timeout: 5000 });
+    // 이동 응답 경로와 놓은 뒤 재조회 경로가 둘 다 안내하지 않고 한 번만
+    expect(
+      toast.mock.calls.filter(([message]) => message === BUNDLE_MESSAGES.photoRemovedByOther),
+    ).toHaveLength(1);
   });
 
   it('요청이 끝난 뒤 다시 받은 상세로 보류했던 원격 사진 변경이 화면에 반영된다', async () => {
@@ -373,6 +498,138 @@ describe('useDraft 요청을 보내는 중에 연결이 끊겼을 때(기능 spe
     // 이미 보낸 구성 변경(첫 사진 빼기)만 반영되고, 뒤이은 이동은 보내지 않아 남은 둘의 순서는 그대로
     const after = orderOf();
     expect(after).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
+  });
+
+  it('실시간 연결만 끊기고 화면이 아직 모르는 사이 날짜 저장이 끝나도 대기 중이던 코멘트는 보내지 않는다', async () => {
+    const { id, result } = await renderReady();
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/date', async () => {
+        await delay(250);
+        return undefined;
+      }),
+    );
+
+    act(() => {
+      result.current.actions.setDate('2026-10-18');
+      result.current.actions.setComment(String(me), '끊기기 전 코멘트');
+    });
+    // 날짜 저장이 시작된 뒤(응답 전, 저장 지연 1초 직후) 렌더 없이 연결 상태만 바뀜
+    await act(() => wait(1100));
+    connection.down = true;
+    await act(() => wait(800));
+
+    expect(serverBundle(id)?.date).toBe('2026-10-18');
+    expect(serverBundle(id)?.comments).toEqual([]);
+  });
+
+  it('실시간 연결만 끊기고 화면이 아직 모르는 사이 사진 구성 요청이 끝나도 이어서 보낼 순서 이동은 보내지 않는다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [first, second, third] = ready(view.result.current.state).draft.photos;
+    const orderOf = () => serverBundle(created.id)?.photos.map((photo) => photo.id);
+    const before = orderOf();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(400);
+        return undefined;
+      }),
+    );
+
+    act(() => {
+      view.result.current.actions.replacePhotos([third!, second!]);
+    });
+    await act(() => wait(100));
+    // 렌더(rerender) 없이 연결 상태만 바뀜: 훅의 effect가 끊김을 알아채기 전과 같은 상황
+    connection.down = true;
+    await act(() => wait(1500));
+
+    // 이미 보낸 구성 변경(첫 사진 빼기)만 반영되고, 뒤이은 이동은 보내지 않아 남은 둘의 순서는 그대로
+    expect(orderOf()).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
+  });
+
+  it('실시간 연결만 끊기고 화면이 아직 모르는 사이 앞선 사진 변경이 끝나도 대기열에서 시작하지 않은 다음 변경은 보내지 않는다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [first, second, third] = ready(view.result.current.state).draft.photos;
+    const orderOf = () => serverBundle(created.id)?.photos.map((photo) => photo.id);
+    const before = orderOf();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(400);
+        return undefined;
+      }),
+    );
+
+    // 첫 사진을 빼는 변경이 서버로 나가 있는 동안 두 번째 사진을 빼는 변경이 대기열에 쌓임
+    act(() => {
+      view.result.current.actions.replacePhotos([second!, third!]);
+      view.result.current.actions.replacePhotos([third!]);
+    });
+    await act(() => wait(100));
+    connection.down = true;
+    await act(() => wait(1500));
+
+    // 이미 보낸 첫 변경만 반영되고, 아직 시작하지 않은 두 번째는 보내지 않음
+    expect(orderOf()).toEqual(before?.filter((photoId) => photoId !== Number(first!.id)));
+  });
+
+  it('사진 변경을 기다리는 사이 연결이 끊겨 대기열이 변경을 건너뛰면 사진 변경이 빠진 구성으로 발행하지 않는다', async () => {
+    const created = await createBundle(
+      bunchId,
+      [String(MOCK_PHOTO_IDS.S4), String(MOCK_PHOTO_IDS.S5), String(MOCK_PHOTO_IDS.S1)],
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const view = renderHook(() => useDraft(created.id), {
+      wrapper: createQueryWrapper(createTestQueryClient()),
+    });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    const [, second, third] = ready(view.result.current.state).draft.photos;
+    let publishRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        await delay(400);
+        return undefined;
+      }),
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () => {
+        publishRequests += 1;
+        return undefined;
+      }),
+    );
+
+    // 첫 사진을 빼는 변경이 서버로 나가 있고, 두 번째 사진을 빼는 변경이 대기열에서 기다림
+    act(() => {
+      view.result.current.actions.replacePhotos([second!, third!]);
+      view.result.current.actions.replacePhotos([third!]);
+    });
+    await act(() => wait(100));
+    // 발행을 누르면 사진 변경이 끝나기를 기다림. 그 사이 렌더 없이 연결만 끊김
+    let outcome: string | undefined;
+    const publishing = view.result.current.actions.publish().then((value) => {
+      outcome = value;
+    });
+    connection.down = true;
+    await act(() => publishing);
+
+    expect(outcome).toBe('blocked');
+    expect(publishRequests).toBe(0);
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
   });
 
   it('실시간 연결만 끊기고(브라우저는 온라인) 화면이 아직 모르는 사이 첫 응답이 끝나도 대기 중이던 위치 변경은 보내지 않는다', async () => {

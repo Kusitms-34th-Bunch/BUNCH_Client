@@ -101,6 +101,32 @@ describe('BundleDraft', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it('사진을 「뒤로」 옮긴 뒤에도 포커스가 같은 사진의 같은 버튼에 남아 연달아 옮길 수 있다', async () => {
+    renderDraft('draft-1');
+    const moveFirstBack = await screen.findByRole('button', {
+      name: BUNDLE_MESSAGES.movePhotoAfterLabel(1),
+    });
+    const firstPhotoAlt = moveFirstBack.closest('li')?.querySelector('img')?.getAttribute('alt');
+    moveFirstBack.focus();
+    // jsdom은 요소가 옮겨져도 포커스를 잃지 않지만 실제 브라우저는 잃을 수 있어, 누르는 순간 포커스를 직접 없애 복원 여부를 봄
+    moveFirstBack.addEventListener('click', () => moveFirstBack.blur());
+    await userEvent.keyboard('{Enter}');
+
+    // 첫 사진이 두 번째 자리로 가면 그 사진의 「뒤로」 버튼(이제 2번째 사진의 버튼)에 포커스가 있음
+    const active = document.activeElement as HTMLElement;
+    expect(active).toHaveAttribute('data-move', 'after');
+    expect(active).toHaveAccessibleName(BUNDLE_MESSAGES.movePhotoAfterLabel(2));
+    expect(active.closest('li')?.querySelector('img')?.getAttribute('alt')).toBe(firstPhotoAlt);
+    expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
+
+    // 이어서 한 번 더 누르면 같은 사진이 세 번째로 가고, 맨 뒤라 「뒤로」는 aria-disabled지만 포커스는 그대로
+    await userEvent.keyboard('{Enter}');
+    const last = document.activeElement as HTMLElement;
+    expect(last).toHaveAccessibleName(BUNDLE_MESSAGES.movePhotoAfterLabel(3));
+    expect(last).toHaveAttribute('aria-disabled', 'true');
+    expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(3, 3))).toBeInTheDocument();
+  });
+
   it('「추가」 카드는 참여 멤버 관리 화면으로 이동(push)한다', async () => {
     renderDraft('draft-1');
 

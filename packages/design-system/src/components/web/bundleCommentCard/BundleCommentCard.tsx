@@ -20,6 +20,8 @@ export type BundleCommentCardProps = Omit<
   profileSrc?: string | undefined;
   /** 입력창의 접근성 이름(기본 "{이름} 코멘트", currentUser면 "{이름} (나) 코멘트") */
   label?: string | undefined;
+  /** 입력창을 추가로 설명하는 요소의 id(예: 읽기 전용인 사유 안내). 오류 안내가 있으면 그 뒤에 이어 붙음 */
+  describedBy?: string | undefined;
   /** 있으면 카드 아래에 빨간 안내로 보이고 입력창을 잘못된 값(aria-invalid)으로 표시(Figma `State=Error`). 문구는 호출자가 결정 */
   error?: string | undefined;
   /** 다른 멤버가 쓰고 있는 코멘트(Figma `State=Editing`): 입력창 대신 `editingContent`(편집 중 애니메이션, 30×25 자리) 표시, 입력값은 호출자가 유지 */
@@ -42,6 +44,7 @@ export function BundleCommentCard({
   currentUserLabel = '(나)',
   profileSrc,
   label,
+  describedBy,
   error,
   editing = false,
   editingContent,
@@ -89,7 +92,9 @@ export function BundleCommentCard({
             placeholder={placeholder}
             aria-label={label ?? `${userName}${currentUser ? ` ${currentUserLabel}` : ''} 코멘트`}
             aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
+            aria-describedby={
+              [error ? errorId : undefined, describedBy].filter(Boolean).join(' ') || undefined
+            }
             className="typography-body-3-regular text-text-secondary placeholder:text-text-quinary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) focus:outline-none focus:placeholder:text-transparent"
             {...props}
           />

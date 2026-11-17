@@ -21,6 +21,8 @@ type CreateOptions = {
   onMissingPhotos?: ((_photoIds: readonly string[]) => void) | undefined;
   /** 사진함에서 넘어온 흐름은 멤버 선택을 기록에서 빼, 작성 화면의 뒤로 가기가 사진함으로 가게 함 */
   replace?: boolean | undefined;
+  /** 마지막으로 적용한 추천 번들 id(번들 만들기 화면만 넘김) */
+  recommendationId?: string | undefined;
 };
 
 // PHOTO_004의 detail.missingPhotoIds, 형식이 다르면 빈 목록
@@ -50,17 +52,17 @@ export function useCreateBundle() {
   const create = (
     photoIds: readonly string[],
     participantMemberIds: readonly string[],
-    { onMissingPhotos, replace = false }: CreateOptions = {},
+    { onMissingPhotos, replace = false, recommendationId }: CreateOptions = {},
   ) => {
     if (submitted.current || photoIds.length === 0 || participantMemberIds.length === 0) return;
     submitted.current = true;
     // 사진과 참여자 순서까지 같아야 같은 요청(서버가 다르면 REQUEST_001)
-    const signature = `${photoIds.join(',')}|${participantMemberIds.join(',')}`;
+    const signature = `${photoIds.join(',')}|${participantMemberIds.join(',')}|${recommendationId ?? ''}`;
     if (attempt.current?.signature !== signature) {
       attempt.current = { signature, key: createIdempotencyKey() };
     }
     mutation.mutate(
-      { photoIds, participantMemberIds, idempotencyKey: attempt.current.key },
+      { photoIds, participantMemberIds, recommendationId, idempotencyKey: attempt.current.key },
       {
         onSuccess: (bundle) => {
           // 같은 사진으로 다시 만들면 새 초안이 되도록 키를 비움(이동이 끝날 때까지는 submitted가 중복을 막음)

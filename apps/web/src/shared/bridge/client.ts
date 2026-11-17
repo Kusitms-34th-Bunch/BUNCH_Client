@@ -42,6 +42,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     setNativeTabBar: () => Promise.resolve(false),
     // 브라우저에는 햅틱 없음
     tabSelectionHaptic: () => Promise.resolve(),
+    // 브라우저·이전 쉘에는 끌기 햅틱 없음
+    dragStartHaptic: () => Promise.resolve(),
     // 브라우저에는 시스템 탭 바 없음
     setNativeTabBarVisible: () => Promise.resolve(false),
     // 브라우저·이 메서드가 없는 이전 쉘은 웹 플로팅 버튼 사용

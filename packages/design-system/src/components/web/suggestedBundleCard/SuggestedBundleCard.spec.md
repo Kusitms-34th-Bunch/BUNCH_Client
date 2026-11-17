@@ -13,7 +13,7 @@
 
 - 추천 번들의 대표 사진, 번들 이름, 참여 멤버 칩, 사진 수, 촬영 날짜를 한 장의 카드로 보여 준다.
 - 카드 전체를 누르는 버튼(선택 전환)과 오른쪽 화살표 버튼(상세 화면 이동)을 따로 제공한다.
-- 멤버가 `maxVisibleMembers`(기본 6)개를 넘으면 마지막 칩이 "마지막 멤버 외 N명"으로 줄어든다.
+- 멤버 칩은 한 줄에 들어가는 만큼만 보인다. 줄에 다 안 들어가거나 `maxVisibleMembers`(기본 6)개를 넘으면 마지막 칩이 "마지막 멤버 외 N명"으로 줄어들고, 「외 N명」 칩도 줄에 들어가도록 칩 수를 정한다(기능 명세 4.2.2의 「넘치면」). N은 칩으로 보이지 못한 멤버 수다.
 
 ### 제공하지 않는 동작
 
@@ -23,9 +23,9 @@
 
 ## Public API
 
-- Props: `imageSrc`, `title`, `members`(이름 배열), `photoCount`, `month`, `day`, `selected`(기본 `false`), `maxVisibleMembers`(기본 6), `imageAlt`(기본 빈 문자열), `onCardClick`, `onDetailClick`, 그리고 native `<div>`의 속성(`className`은 카드에 적용).
+- Props: `imageSrc`, `title`, `members`(이름 배열), `photoCount`, `month`, `day`, `year`(선택), `endMonth`·`endDay`(선택), `selected`(기본 `false`), `maxVisibleMembers`(기본 6), `imageAlt`(기본 빈 문자열), `onCardClick`, `onDetailClick`, 그리고 native `<div>`의 속성(`className`은 카드에 적용).
 - Controlled: `selected`는 호출하는 쪽이 보관하고 `onCardClick`에서 바꾼다. 내부 state는 없다.
-- 글자: 사진 수는 `{photoCount}장`, 날짜는 `{month}월 {day}일`로 컴포넌트가 만든다. 번들 이름·멤버 이름은 호출하는 쪽이 i18n한다.
+- 글자: 사진 수는 `{photoCount}장`, 날짜는 `{month}월 {day}일`로 컴포넌트가 만들고, `year`가 있으면 앞에 `{year}년 `을, `endDay`가 있으면 뒤에 `~{endDay}일`(월이 다르면 `~{endMonth}월 {endDay}일`)을 붙인다. 올해 여부는 호출하는 쪽이 판단해 `year`를 넘긴다(기능 명세 4.2.2). 기간(`endDay`가 있을 때)은 물결표가 스크린 리더마다 달리 읽히므로 화면의 글자는 `aria-hidden`으로 두고 「10월 19일부터 20일까지」처럼 풀어 쓴 `sr-only` 문구를 함께 둔다(다른 안내 문구와 같은 말투로 정한 읽기용 문구, 기획 원문 없음). 번들 이름·멤버 이름은 호출하는 쪽이 i18n한다.
 - 호출자 소유 책임: 카드 폭(기본 `w-full`, Figma는 348px), 선택 그룹 규칙, 상세 이동.
 
 ## 상태와 동작
@@ -35,7 +35,7 @@
 - 사진 수·날짜: 16px 아이콘 + `typography-body-3-regular`(14/21), 사이 간격 `s6`(12px), 아이콘과 글자 2px. Default `text-tertiary`.
 - Pressed: 카드 어디를 눌러도(`:active`) 카드 전체에 `overlay-hover`(검정 10%)를 얹어 사진·칩·화살표까지 어두워진다.
 - Selected: 이름·화살표·사진 수·날짜가 `text-brand`, 칩 `brand`, 안쪽 1px `border-brand-subtle` 테두리. 안쪽 링이라 선택 전후 레이아웃이 움직이지 않는다.
-- 긴 이름: 한 줄로 줄이고(`truncate`) 화살표는 그대로다. 멤버 칩 줄은 넘치면 잘린다(`overflow-hidden`).
+- 긴 이름: 한 줄로 줄이고(`truncate`) 화살표는 그대로다. 멤버 칩 줄은 칩 수를 줄여 한 줄에 맞추고, 하나만 보여도 넘치면 잘린다(`overflow-hidden`).
 - 접근성 이름: 카드 버튼은 이름이 번들 이름이고 `aria-pressed`로 선택을 알린다. 화살표 버튼은 "{번들 이름} 상세 보기"다.
 
 ## 접근성
@@ -58,7 +58,7 @@
 
 ## 확인할 항목
 
-- 멤버 축약 규칙(제안): Figma에는 칩 5개 + "은우 외 2명" 칩 하나가 그려져 있을 뿐 규칙이 없다. 마지막 칩이 "마지막 멤버 외 N명"이 되도록 했고 `maxVisibleMembers`(기본 6, 요약 칩 포함)는 Figma 칩 개수에서 정했다. 실제로 몇 칩을 보일지는 디자이너 확인이 필요하다. 표시 폭을 넘는지 재서 줄이지는 않고 칩 개수로만 줄인다.
+- 멤버 축약 규칙(제안): Figma에는 칩 5개 + "은우 외 2명" 칩 하나가 그려져 있을 뿐 규칙이 없다. 마지막 칩이 "마지막 멤버 외 N명"이 되도록 했고 `maxVisibleMembers`(기본 6, 요약 칩 포함)는 Figma 칩 개수에서 정했다. `maxVisibleMembers`는 보일 칩 수의 상한이고, 줄 너비가 모자라면 그보다 더 줄인다. 너비는 숨긴 측정 줄(`aria-hidden`, 글자는 CSS `content`)에서 칩마다(이름만 있는 칩과 「이름 외 N명」 칩) 재고 `ResizeObserver`로 카드 너비·글꼴 변화를 따라 다시 잰다(`fitMemberChips.internal.ts`). 너비를 잴 수 없는 환경(숨김·테스트)에서는 상한만 따른다. 실제로 몇 칩을 보일지는 디자이너 확인이 필요하다.
 - Figma의 `Selected` 카드는 350×308이고 `Default`는 348×308이다. 테두리 1px가 바깥 크기에 들어간 Figma의 부작용으로 보고, 폭은 호출하는 쪽이 정하며 테두리는 안쪽 링으로 그린다.
 - 카드를 누르면 Selected로 바뀌고 화살표를 누르면 상세로 이동한다는 동작은 기획 설명을 따른 것이며 Figma에는 상태 3개와 화살표 아이콘만 있다.
 - Selected 테두리 대비(위 접근성 항목). 포커스 윤곽선(`border-brand`)과 Selected 테두리(`border-brand-subtle`)가 같은 보라 계열이라 함께 있을 때 구분이 약할 수 있다(시각 확인 필요).

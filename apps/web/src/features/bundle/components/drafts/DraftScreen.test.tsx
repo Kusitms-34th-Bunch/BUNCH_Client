@@ -1,10 +1,11 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
+import { LONG_PRESS_MS } from '../../constants/photoList';
 import { draftFixture, fixtureLocation, fixturePlace } from '../../fixtures/draft.fixture';
 import { DraftScreen } from './DraftScreen';
 
@@ -36,11 +37,22 @@ const actions = {
   removeMember: vi.fn(() => true),
   removePhoto: vi.fn(() => true),
   movePhoto: vi.fn(),
+  setPhotoDragging: vi.fn(),
   replacePhotos: vi.fn(() => true),
   replaceLocation: vi.fn(),
   searchPlaces: vi.fn(() => Promise.resolve([])),
   publish: vi.fn(() => Promise.resolve('published' as const)),
 } satisfies DraftActions;
+
+// 쉘 여부와 끌기 햅틱 호출만 바꿔 가며 확인(나머지 bridge는 이 화면에서 쓰지 않음)
+const bridge = vi.hoisted(() => ({
+  inShell: false,
+  dragStartHaptic: vi.fn<() => Promise<void>>(),
+}));
+vi.mock('@/shared/bridge/client', () => ({
+  appBridge: { dragStartHaptic: () => bridge.dragStartHaptic() },
+  isNativeShell: () => bridge.inShell,
+}));
 
 const onBack = vi.fn();
 const onLeave = vi.fn();
@@ -97,6 +109,8 @@ const membersSection = () => within(screen.getByRole('region', { name: '참여 �
 
 beforeEach(() => {
   vi.clearAllMocks();
+  bridge.inShell = false;
+  bridge.dragStartHaptic.mockImplementation(() => Promise.resolve());
 });
 
 describe('DraftScreen 구성', () => {
@@ -192,11 +206,27 @@ describe('역할별 권한', () => {
 
   it('참여 멤버가 아닌 사람이 편집하려 하면 안내하고 값은 바뀌지 않는다', async () => {
     renderScreen({ viewer: outsider });
+    const title = screen.getByRole('textbox', { name: /제목/ });
 
-    await userEvent.click(screen.getByRole('textbox', { name: /제목/ }));
+    await userEvent.click(title);
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
 
+    // 포커스·커서 없이 안내만 받고 탭으로도 닿지 않음
+    expect(title).not.toHaveFocus();
+    expect(title).toHaveAttribute('tabindex', '-1');
     expect(actions.setTitle).not.toHaveBeenCalled();
+    expect(actions.presence.type).not.toHaveBeenCalled();
+  });
+
+  it('참여 멤버는 제목에 포커스를 두고 입력 시작·끝을 알린다', async () => {
+    renderScreen();
+    const title = screen.getByRole('textbox', { name: /제목/ });
+
+    await userEvent.click(title);
+
+    expect(title).toHaveFocus();
+    expect(title).not.toHaveAttribute('tabindex');
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('참여 멤버가 아닌 사람이 코멘트 입력란에 닿아도 안내한다', async () => {
@@ -1005,15 +1035,34 @@ describe('다른 멤버가 작업 중인 영역(잠그지 않음)', () => {
     expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
   });
 
-  it('참여 멤버가 아니면 사진을 지우려 할 때 안내한다', async () => {
-    renderScreen({ viewer: outsider });
+  it('사진 삭제 X는 참여 멤버에게만 보인다(기능 spec 4.3.4)', () => {
+    const { unmount } = renderScreen({ viewer: outsider });
+
+    // 참여 멤버가 아니면 사진만 보이고 삭제 X가 없음(열기 버튼은 그대로)
+    expect(
+      screen.queryByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(1) }),
+    ).toBeInTheDocument();
+    unmount();
+
+    renderScreen();
+    expect(
+      screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
+    ).toBeInTheDocument();
+  });
+
+  it('연결이 끊긴 참여 멤버에게는 삭제 X가 그대로 보이고 눌러도 반응이 없다', async () => {
+    renderScreen({ offline: true });
 
     await userEvent.click(
       screen.getByRole('button', { name: BUNDLE_MESSAGES.removePhotoLabel(1) }),
     );
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
+    expect(toast).not.toHaveBeenCalled();
     expect(actions.removePhoto).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('「사진 추가」는 초안 생성자·관리자·공동 관리자에게만 보이고 누르면 가져오기 시트가 열린다', async () => {
@@ -1099,5 +1148,303 @@ describe('나가기', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: '취소' }));
 
     expect(onLeave).not.toHaveBeenCalled();
+  });
+});
+
+describe('사진 길게 눌러 끌기(기능 spec 4.3.6, 4.3.13)', () => {
+  afterEach(async () => {
+    // 손을 떼지 않고 끝난 끌기를 풀고, dnd-kit이 끌기 뒤 50ms 안에 지우는 문서 단위 클릭 차단을 가상 시간으로 흘려 지움
+    // (가상 시간을 그냥 되돌리면 이 정리가 사라져 다음 테스트의 클릭을 막음)
+    if (vi.isFakeTimers()) {
+      act(() => {
+        fireEvent.mouseUp(document);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+    }
+    vi.useRealTimers();
+  });
+
+  // 사진의 「열기」 버튼을 마우스로 길게 누른 상태를 만듦(끌기는 사진 칸이 받음)
+  const pressPhoto = async (position: number) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const target = screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(position) });
+    fireEvent.mouseDown(target, { button: 0, clientX: 10, clientY: 10 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS);
+    });
+  };
+  const release = () => {
+    act(() => {
+      fireEvent.mouseUp(document);
+    });
+  };
+
+  it('길게 누르면 「사진」 작업 중으로 알리고 다른 멤버 변경을 미루게 하며, 놓으면 둘 다 푼다', async () => {
+    renderScreen();
+
+    await pressPhoto(1);
+
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true, publishable.photos[0]!.id);
+    expect(actions.presence.end).not.toHaveBeenCalledWith('PHOTOS');
+    // 떠오른 사진은 살짝 커짐(spec 「살짝 커지며」, 105%)
+    const lifted = screen
+      .getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(1) })
+      .closest('li');
+    expect(lifted).toHaveClass('scale-105');
+
+    release();
+    expect(lifted).not.toHaveClass('scale-105');
+
+    expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
+    expect(actions.setPhotoDragging).toHaveBeenLastCalledWith(false);
+  });
+
+  it('쉘에서는 집어 올린 순간 한 번 진동하고, 놓을 때는 진동하지 않는다', async () => {
+    bridge.inShell = true;
+    renderScreen();
+
+    await pressPhoto(1);
+    expect(bridge.dragStartHaptic).toHaveBeenCalledTimes(1);
+
+    release();
+    expect(bridge.dragStartHaptic).toHaveBeenCalledTimes(1);
+  });
+
+  it('브라우저에서는 진동을 요청하지 않는다', async () => {
+    renderScreen();
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true, publishable.photos[0]!.id);
+    expect(bridge.dragStartHaptic).not.toHaveBeenCalled();
+  });
+
+  it('진동 요청이 실패해도 끌기는 그대로 진행한다', async () => {
+    bridge.inShell = true;
+    bridge.dragStartHaptic.mockImplementation(() => Promise.reject(new Error('no haptic')));
+    renderScreen();
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true, publishable.photos[0]!.id);
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+  });
+
+  it('길게 누르기 시간이 되기 전에 놓으면 끌기가 시작되지 않는다', async () => {
+    renderScreen();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const target = screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(1) });
+
+    fireEvent.mouseDown(target, { button: 0, clientX: 10, clientY: 10 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS - 100);
+    });
+    release();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS);
+    });
+
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+    expect(actions.presence.begin).not.toHaveBeenCalledWith('PHOTOS');
+  });
+
+  it('사진이 1장이면 떠오르지 않는다', async () => {
+    renderScreen({ draft: { ...publishable, photos: publishable.photos.slice(0, 1) } });
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+    expect(actions.presence.begin).not.toHaveBeenCalledWith('PHOTOS');
+  });
+
+  it('연결이 끊겨 있으면 끌 수 없다', async () => {
+    renderScreen({ offline: true });
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+    expect(actions.presence.begin).not.toHaveBeenCalledWith('PHOTOS');
+  });
+
+  it('참여 멤버가 아니면 끌 수 없다', async () => {
+    renderScreen({ viewer: outsider });
+
+    await pressPhoto(1);
+
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+  });
+
+  it('끄는 중 화면이 사라져도 작업 중 표시와 변경 미루기를 푼다', async () => {
+    const view = renderScreen();
+    await pressPhoto(1);
+    expect(actions.setPhotoDragging).toHaveBeenCalledWith(true, publishable.photos[0]!.id);
+
+    view.unmount();
+
+    expect(actions.setPhotoDragging).toHaveBeenLastCalledWith(false);
+    expect(actions.presence.end).toHaveBeenCalledWith('PHOTOS');
+  });
+});
+
+describe('고칠 수 없는 사람의 사진 길게 누르기와 추천 날짜 칩', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const openButton = (position: number) =>
+    screen.getByRole('button', { name: BUNDLE_MESSAGES.photoOpenLabel(position) });
+  const hold = async (position: number) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    fireEvent.pointerDown(openButton(position), { button: 0, clientX: 10, clientY: 10 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS);
+    });
+  };
+
+  it('참여 멤버가 아니면 사진을 길게 눌렀을 때 안내하고, 끌기는 시작되지 않는다', async () => {
+    renderScreen({ viewer: outsider });
+
+    await hold(1);
+
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+  });
+
+  it('안내가 뜬 길게 누르기 뒤에 손을 떼며 생기는 클릭은 사진을 열지 않고, 다음 짧은 누름은 연다', async () => {
+    renderScreen({ viewer: outsider });
+
+    await hold(1);
+    fireEvent.pointerUp(openButton(1));
+    fireEvent.click(openButton(1));
+    expect(onOpenPhoto).not.toHaveBeenCalled();
+
+    fireEvent.pointerDown(openButton(1), { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(openButton(1));
+    fireEvent.click(openButton(1));
+    expect(onOpenPhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it('길게 누르기 시간이 되기 전에 떼면 안내 없이 사진을 연다', async () => {
+    renderScreen({ viewer: outsider });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+    fireEvent.pointerDown(openButton(1), { button: 0, clientX: 10, clientY: 10 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS - 100);
+    });
+    fireEvent.pointerUp(openButton(1));
+    fireEvent.click(openButton(1));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LONG_PRESS_MS);
+    });
+
+    expect(toast).not.toHaveBeenCalled();
+    expect(onOpenPhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it('연결이 끊긴 참여 멤버가 사진을 길게 눌러도 안내하지 않는다', async () => {
+    renderScreen({ offline: true });
+
+    await hold(1);
+
+    expect(toast).not.toHaveBeenCalled();
+    expect(actions.setPhotoDragging).not.toHaveBeenCalled();
+  });
+
+  it('참여 멤버가 아니면 추천 날짜 칩은 눌러도 날짜가 정해지지 않고 포커스도 받지 않는다', () => {
+    renderScreen({
+      viewer: outsider,
+      draft: { ...publishable, date: null, suggestedDates: ['2026-06-20'] },
+    });
+    const chips = within(screen.getByRole('list', { name: '추천' })).getAllByRole('button');
+
+    expect(chips.length).toBeGreaterThan(0);
+    for (const chip of chips) {
+      expect(chip).toHaveAttribute('aria-disabled', 'true');
+      expect(chip).toHaveAttribute('tabindex', '-1');
+      fireEvent.click(chip);
+    }
+
+    expect(actions.setDate).not.toHaveBeenCalled();
+    // 보조 기기로 눌러도 필드를 누른 것과 같게 안내가 나감
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editOnlyParticipants);
+  });
+
+  it('참여 멤버는 추천 날짜 칩을 눌러 날짜를 정한다', async () => {
+    renderScreen({ draft: { ...publishable, date: null, suggestedDates: ['2026-06-20'] } });
+
+    await userEvent.click(
+      within(screen.getByRole('list', { name: '추천' })).getAllByRole('button')[0]!,
+    );
+
+    expect(actions.setDate).toHaveBeenCalledWith('2026-06-20');
+  });
+});
+
+describe('사진 앞·뒤로 옮기기 버튼(키보드·스크린 리더용 대체 수단)', () => {
+  const before = (position: number) => BUNDLE_MESSAGES.movePhotoBeforeLabel(position);
+  const after = (position: number) => BUNDLE_MESSAGES.movePhotoAfterLabel(position);
+
+  it('참여 멤버에게는 사진마다 몇 번째 사진인지 담은 이름의 앞·뒤로 옮기기 버튼이 있다', () => {
+    renderScreen();
+
+    for (const position of [1, 2, 3]) {
+      expect(screen.getByRole('button', { name: before(position) })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: after(position) })).toBeInTheDocument();
+    }
+  });
+
+  it('맨 앞 사진의 「앞으로」와 맨 뒤 사진의 「뒤로」는 aria-disabled이고 눌러도 옮기지 않는다', () => {
+    renderScreen();
+
+    const first = screen.getByRole('button', { name: before(1) });
+    const last = screen.getByRole('button', { name: after(3) });
+    expect(first).toHaveAttribute('aria-disabled', 'true');
+    expect(last).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: after(1) })).not.toHaveAttribute('aria-disabled');
+
+    fireEvent.click(first);
+    fireEvent.click(last);
+
+    expect(actions.movePhoto).not.toHaveBeenCalled();
+  });
+
+  it('「뒤로」를 누르면 그 사진을 한 칸 뒤 자리로 옮기고 결과를 낭독한다', async () => {
+    renderScreen();
+    const firstPhotoId = publishable.photos[0]!.id;
+
+    fireEvent.click(screen.getByRole('button', { name: after(1) }));
+
+    expect(actions.movePhoto).toHaveBeenCalledWith(firstPhotoId, 1);
+    expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
+  });
+
+  it('「앞으로」를 누르면 그 사진을 한 칸 앞 자리로 옮긴다', async () => {
+    renderScreen();
+    const thirdPhotoId = publishable.photos[2]!.id;
+
+    fireEvent.click(screen.getByRole('button', { name: before(3) }));
+
+    expect(actions.movePhoto).toHaveBeenCalledWith(thirdPhotoId, 1);
+    expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
+  });
+
+  it('참여 멤버가 아니거나 사진이 1장이거나 연결이 끊겨 있으면 버튼이 없다', () => {
+    const { unmount } = renderScreen({ viewer: outsider });
+    expect(screen.queryByRole('button', { name: after(1) })).toBeNull();
+    unmount();
+
+    const single = renderScreen({
+      draft: { ...publishable, photos: publishable.photos.slice(0, 1) },
+    });
+    expect(screen.queryByRole('button', { name: after(1) })).toBeNull();
+    single.unmount();
+
+    renderScreen({ offline: true });
+    expect(screen.queryByRole('button', { name: after(1) })).toBeNull();
   });
 });

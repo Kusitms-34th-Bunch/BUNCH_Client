@@ -79,13 +79,19 @@ export function DraftTitleField({
         placeholder={BUNDLE_MESSAGES.titlePlaceholder}
         readOnly={!editable || loading}
         aria-busy={loading || undefined}
+        // 고칠 수 없는 사람(참여 멤버가 아님·연결 끊김)은 포커스·커서 없이 닿았을 때 안내만 받음
+        tabIndex={!editable ? -1 : undefined}
+        onMouseDown={!editable ? (event) => event.preventDefault() : undefined}
+        onClick={!editable ? onDenied : undefined}
         errorMessage={
           // 40자에 닿거나 합쳐진 결과가 넘으면 같은 오류(기능 spec 4.3.7)
           countTitleGraphemes(draft.title) >= TITLE_MAX_LENGTH
             ? BUNDLE_MESSAGES.titleMax
             : undefined
         }
-        onFocus={!editable ? onDenied : loading ? undefined : onEditStart}
+        onFocus={
+          !editable ? (event) => event.currentTarget.blur() : loading ? undefined : onEditStart
+        }
         onBlur={() => {
           // 조합이 끝나지 않은 채 포커스를 잃어도 원격 변경이 계속 미뤄지지 않게 함
           onComposing?.(false);
