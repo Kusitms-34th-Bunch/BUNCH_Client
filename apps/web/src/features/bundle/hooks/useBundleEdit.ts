@@ -120,6 +120,20 @@ const sameLocations = (a: readonly DraftLocation[], b: readonly DraftLocation[])
   );
 
 /**
+ * 충돌(BUNDLE_003) 뒤 편집 값 정리: 내가 연 뒤 서버에서 바뀐 필드는 내 편집을 버리고 최신 값을 보임
+ * 편집은 전체 목록을 덮어쓰는 저장이라, 서버에서 바뀐 필드의 내 편집을 그대로 다시 보내면 다른 곳의 변경을 조용히 지움
+ * 서버에서 바뀌지 않은 필드의 편집은 남기므로, 다시 저장하면 내가 본 값 위에서만 고쳐짐
+ */
+const reconcileOverrides = (overrides: Overrides, before: Draft, after: Draft): Overrides => {
+  const next = { ...overrides };
+  if (before.title.trim() !== after.title.trim()) delete next.title;
+  if (before.date !== after.date) delete next.date;
+  if (!sameIds(before.photos, after.photos)) delete next.photos;
+  if (!sameLocations(before.locations, after.locations)) delete next.locations;
+  return next;
+};
+
+/**
  * 발행 번들 수정 화면의 상태와 동작(기능 명세 6.2.12): 메인 관리자만, 저장 전까지 서버에 반영하지 않고 「저장」 한 번으로 최종 내용을 보냄
  * 제목·날짜·사진(추가·삭제·순서)·위치(최대 3개)만 고치고 코멘트·참여 멤버·픽은 고칠 수 없음(받은 값 그대로 보여 줌)
  * 서버 값은 화면을 열 때 한 번 받아 두고 편집 중에는 다시 받지 않음(저장하면 서버가 돌려준 값이 새 기준이 됨)
@@ -209,18 +223,10 @@ export function useBundleEdit(
     save: async () => {
       if (!detail || !values || !canSave) return 'skipped';
       const originalIds = new Set(base?.photos.map((photo) => photo.id));
-      // 이미 번들에 연결된 원본은 새로 넣지 못하므로(응답을 잃은 저장 뒤 다시 저장하는 경우) 최신 번들 사진 id로 이어 보냄
-      const linkedBySource = new Map(
-        (base?.photos ?? []).flatMap((photo) =>
-          photo.sourcePhotoId ? [[photo.sourcePhotoId, photo.id] as const] : [],
-        ),
-      );
       // 남긴 번들 사진은 번들 사진 id로, 사진함에서 새로 가져온 사진은 사진함 원본 id로 보냄
       const photos: PublishedEditInput['photos'][number][] = [];
       for (const photo of values.photos) {
-        const linkedId = photo.sourcePhotoId ? linkedBySource.get(photo.sourcePhotoId) : undefined;
         if (originalIds.has(photo.id)) photos.push({ bundlePhotoId: photo.id });
-        else if (linkedId) photos.push({ bundlePhotoId: linkedId });
         else if (photo.sourcePhotoId) photos.push({ photoId: photo.sourcePhotoId });
         // 보낼 id가 없는 사진이 있으면 조용히 빼지 않고 저장하지 않음
         else return 'failed';
@@ -241,8 +247,16 @@ export function useBundleEdit(
         if (code === 'AUTH_002') return 'forbidden';
         if (code === 'RESOURCE_001' || code === 'BUNDLE_002') return 'missing';
         if (code === 'BUNDLE_003') {
-          // 편집하는 사이 서버 값이 바뀜: 최신 값을 받아 두고(내 편집은 그대로) 다시 저장하게 함
-          await detailQuery.refetch();
+          // 편집하는 사이 서버 값이 바뀜: 최신 값을 받아 두고, 서버에서 바뀐 필드의 내 편집은 버린 채 다시 저장하게 함
+          const refreshed = (await detailQuery.refetch()).data;
+          if (base && refreshed && bunchMembers) {
+            const latest = toDraft({
+              detail: refreshed,
+              bunchMembers,
+              locations: refreshed.locations,
+            });
+            setOverrides((current) => reconcileOverrides(current, base, latest));
+          }
           return 'conflict';
         }
         return 'failed';

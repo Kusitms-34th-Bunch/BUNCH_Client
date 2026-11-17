@@ -355,6 +355,49 @@ describe('useBundleEdit 저장', () => {
     expect(outcome).toBe('saved');
   });
 
+  it('충돌 뒤에는 서버에서 바뀐 필드의 내 편집을 버리고 최신 값을 보이며, 바뀌지 않은 필드의 편집은 남긴다', async () => {
+    const { result } = await renderReady();
+    const original = ready(result.current.state).draft.photos;
+    act(() => {
+      result.current.actions.setTitle('내 제목');
+      result.current.actions.setDate('2026-09-02');
+      result.current.actions.replacePhotos([...original, newPhoto(S1)]);
+    });
+    // 내가 고치는 사이 다른 곳에서 제목과 사진을 바꿈(날짜는 그대로)
+    mockDb.update((state) => ({
+      ...state,
+      bundles: state.bundles.map((bundle) =>
+        String(bundle.id) === PUBLISHED_ID
+          ? {
+              ...bundle,
+              revision: bundle.revision + 1,
+              title: '서버 제목',
+              photos: [
+                ...bundle.photos,
+                { ...bundle.photos[0]!, id: 99001, position: bundle.photos.length },
+              ],
+            }
+          : bundle,
+      ),
+    }));
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.save();
+    });
+
+    expect(outcome).toBe('conflict');
+    await waitFor(() => expect(ready(result.current.state).draft.title).toBe('서버 제목'));
+    const state = ready(result.current.state);
+    // 서버에서 바뀐 제목·사진은 최신 값, 바뀌지 않은 날짜 편집은 그대로
+    expect(state.draft.photos.map((photo) => photo.id)).toEqual([
+      ...original.map((photo) => photo.id),
+      '99001',
+    ]);
+    expect(state.draft.date).toBe('2026-09-02');
+    expect(state.dirty).toBe(true);
+  });
+
   it('권한을 잃었으면 forbidden, 그사이 삭제됐으면 missing, 서버 오류면 failed이다', async () => {
     const { result } = await renderReady();
     act(() => result.current.actions.setTitle('제목 1'));
