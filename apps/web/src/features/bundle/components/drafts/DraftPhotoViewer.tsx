@@ -21,7 +21,7 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
-import { getDraftAccess } from '../../lib/permissions';
+import { type DraftAccess, getDraftAccess } from '../../lib/permissions';
 import { getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
 import { PresenceScope } from './PresenceScope';
 import { useRemovePhotoDialog } from './RemovePhotoDialogs';
@@ -54,6 +54,8 @@ const UNKNOWN_SOURCE: PhotoSource = { takenAt: null, uploaderIds: [] };
 type DraftPhotoViewerProps = {
   draft: Draft;
   viewer: DraftViewer;
+  /** 보는 사람이 할 수 있는 일. 없으면 초안 참여 여부로 정함(수정 화면은 메인 관리자 기준으로 넘김) */
+  access?: DraftAccess | undefined;
   actions: Pick<DraftActions, 'removePhoto' | 'presence'>;
   /** 처음 보여 줄 사진 id */
   initialPhotoId: string;
@@ -78,6 +80,7 @@ type DraftPhotoViewerProps = {
 export function DraftPhotoViewer({
   draft,
   viewer,
+  access: accessOverride,
   actions,
   initialPhotoId,
   sources,
@@ -87,7 +90,7 @@ export function DraftPhotoViewer({
   onBack,
   onPhotoChange,
 }: DraftPhotoViewerProps) {
-  const access = getDraftAccess(draft, viewer);
+  const access = accessOverride ?? getDraftAccess(draft, viewer);
   const photos = draft.photos;
   const isPicked = useIsPhotoPicked(draft);
   // 사진함 데이터를 받는 동안과 받은 뒤 원본이 없는 사진은 배지·날짜를 비움(번들에 담은 사람을 소유자로 잘못 보이지 않게)

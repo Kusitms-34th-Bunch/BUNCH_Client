@@ -9,12 +9,17 @@ export const FEED_PATHS = {
   /** 번들 공개 범위 설정(메인 관리자, Figma `5367:151676`) */
   bundleVisibility: (bunchId: string, bundleId: string) =>
     `/bunches/${bunchId}/bundles/${bundleId}/visibility`,
+  /** 번들 수정(메인 관리자, 기능명세서 6.2.12) */
+  bundleEdit: (bunchId: string, bundleId: string) => `/bunches/${bunchId}/bundles/${bundleId}/edit`,
   /** 멤버 프로필(기능명세서 6.3.3) */
   member: (memberId: string) => `/members/${memberId}`,
   /** 동적 route의 전환 경계 id(규칙과 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
   transitionIds: {
     bundle: '/bundles/detail',
     bundleVisibility: '/bundles/visibility',
+    bundleEdit: '/bundles/edit',
+    bundleEditPhotoAdd: '/bundles/edit/photo-add',
+    bundleEditPhotoViewer: '/bundles/edit/photo-viewer',
     member: '/members/profile',
   },
 } as const;

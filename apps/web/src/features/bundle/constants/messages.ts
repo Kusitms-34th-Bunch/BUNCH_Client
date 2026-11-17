@@ -102,6 +102,26 @@ export const BUNDLE_MESSAGES = {
   uploadEditingTitle: '편집 중인 멤버가 있어요',
   uploadEditingDescription: '지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있어요.',
   cancel: '취소',
+  // 발행 번들 수정 화면(기능 명세 6.2.12)
+  editTitle: '번들 수정',
+  // 불러오지 못했을 때의 안내와 버튼(사진함 오류 화면과 같은 문구)
+  loadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  retry: '다시 시도',
+  editSave: '저장',
+  editSaveTitle: '수정한 내용을 저장할까요?',
+  editSaveDescription: '변경된 내용이 기존 번들에 반영돼요.',
+  editSaveConfirm: '저장',
+  editSaved: '번들을 수정했어요',
+  editPhotoMissing: '사진을 불러올 수 없어요.',
+  editSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  editSaving: '번들을 수정하는 중이에요',
+  editLeaveTitle: '수정을 그만둘까요?',
+  editLeaveDescription: '수정한 내용은 저장되지 않아요.',
+  editLeaveConfirm: '나가기',
+  editLeaveStay: '계속 수정',
+  commentLocked: '업로드된 코멘트는 수정 불가해요.',
+  // 기능명세서 6.2.11: 화면을 연 뒤 역할이 바뀌어 수정할 수 없게 됨(피드 상세의 같은 안내와 같은 문구)
+  editPermissionChanged: '권한이 변경되어 해당 기능을 이용할 수 없어요.',
   // 멤버 내보내기 확인 창은 Figma 「멤버 삭제 프로토타입」 `2091:62913` 원문
   removeMemberTitle: (name: string) => `${name}님을 번들에서 내보낼까요?`,
   removeMemberDescription: (name: string) =>

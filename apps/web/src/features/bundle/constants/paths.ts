@@ -1,4 +1,14 @@
 export const BUNDLE_PATHS = {
+  /** 발행 번들 수정(메인 관리자) 화면 */
+  edit: (bunchId: string, bundleId: string) => `/bunches/${bunchId}/bundles/${bundleId}/edit`,
+  /** 수정 중 사진 추가(사진함에서 고르기) 화면 */
+  editPhotoAdd: (bunchId: string, bundleId: string) =>
+    `/bunches/${bunchId}/bundles/${bundleId}/edit/photos/add`,
+  /** 수정 중 사진 크게 보기 화면 */
+  editPhotoViewer: (bunchId: string, bundleId: string, photoId: string) =>
+    `/bunches/${bunchId}/bundles/${bundleId}/edit/photos/${photoId}/viewer`,
+  /** 수정을 마치거나 그만두고 돌아갈 번들 상세 */
+  publishedDetail: (bunchId: string, bundleId: string) => `/bunches/${bunchId}/bundles/${bundleId}`,
   /** 번치 홈(나가기·이탈 뒤 돌아갈 곳) */
   bunchHome: '/bunch',
   /** 공동 편집(작성) 화면 */

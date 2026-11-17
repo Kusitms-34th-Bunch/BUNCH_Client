@@ -111,8 +111,10 @@ export function useBundleOwnerMenu({
                     id: 'edit',
                     label: text.edit,
                     leftIcon: <LinePencilMediumIcon aria-hidden />,
-                    // ponytail: 번들 수정 화면(기능명세서 6.2.12)이 없어 시트만 닫음. API 연동 7번에서 이동 연결
-                    onSelect: close,
+                    onSelect: () => {
+                      next = () => router.push(FEED_PATHS.bundleEdit(bunchId, bundle.id));
+                      close();
+                    },
                   },
                   {
                     id: 'visibility',

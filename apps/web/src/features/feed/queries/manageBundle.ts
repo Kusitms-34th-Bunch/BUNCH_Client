@@ -73,6 +73,18 @@ export const useDeletePublishedBundleMutation = () => {
   });
 };
 
+/**
+ * 번들을 수정해 저장한 뒤(기능명세서 6.2.12): 그 번들의 상세·공개 범위 캐시를 비워 상세가 새로 받게 하고 피드 목록을 다시 받게 함
+ * 발행 시각·좋아요·댓글은 그대로라 피드 순서는 서버가 정함
+ */
+export const useRefreshEditedBundle = (bundleId: string) => {
+  const queryClient = useQueryClient();
+  return useCallback(() => {
+    queryClient.removeQueries({ queryKey: feedKeys.bundle(bundleId) });
+    void queryClient.invalidateQueries({ queryKey: feedKeys.lists() });
+  }, [queryClient, bundleId]);
+};
+
 /** 그 번들의 상세·댓글·공개 범위 캐시를 비움(지운 번들에 다시 들어오면 서버가 없음을 알리게) */
 export const useForgetBundle = (bundleId: string) => {
   const queryClient = useQueryClient();
