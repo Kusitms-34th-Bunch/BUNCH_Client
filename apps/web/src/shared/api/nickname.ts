@@ -3,10 +3,11 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { bffApi, requestData } from './bffApi';
 
+// `status`(AVAILABLE·DUPLICATE·PROHIBITED_WORD)는 서버가 새로 내려 주지만 아직 쓰지 않아 검증에서 뺌(`available`로 판단)
 const availabilitySchema = z.object({
   normalizedValue: z.string(),
   available: z.boolean(),
-}) satisfies z.ZodType<ApiContract<components['schemas']['NameAvailability']>>;
+}) satisfies z.ZodType<Omit<ApiContract<components['schemas']['NameAvailability']>, 'status'>>;
 
 /** 닉네임을 지금 쓸 수 있는지(`GET /members/nickname-availability`). 이름을 예약하지 않으므로 저장 때 서버가 다시 확인함 */
 export const checkNicknameAvailability = async (nickname: string, signal?: AbortSignal) => {

@@ -157,7 +157,10 @@ export const bundleTitleStateSchema = z.object({
   titleCrdtState: z.string(),
   titleVersion: z.number().int().nonnegative(),
   titleTooLong: z.boolean(),
-}) satisfies z.ZodType<ApiContract<Schemas['BundleTitleState']>>;
+  // `profanity`(금칙어 상태)와 `publishBlockers`는 서버가 새로 내려 주지만 아직 쓰지 않아 검증에서 뺌
+}) satisfies z.ZodType<
+  Omit<ApiContract<Schemas['BundleTitleState']>, 'profanity' | 'publishBlockers'>
+>;
 
 export type BundleTitleState = z.infer<typeof bundleTitleStateSchema>;
 
