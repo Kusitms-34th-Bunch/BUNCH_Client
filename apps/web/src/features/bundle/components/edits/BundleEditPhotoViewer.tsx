@@ -62,7 +62,7 @@ export function BundleEditPhotoViewer({
   }, [kind, router, editPath]);
 
   if (state.kind === 'error')
-    return <BundleEditError onRetry={state.retry} onBack={() => backOr(editPath)} />;
+    return <BundleEditError onRetry={state.retry} onBack={() => router.replace(editPath)} />;
   if (state.kind !== 'ready' || !present || initialPhotoId === undefined) return <PageLoading />;
 
   return (

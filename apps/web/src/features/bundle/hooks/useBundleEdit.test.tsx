@@ -1,3 +1,4 @@
+import { onlineManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -9,12 +10,15 @@ import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { DraftPhoto, PlaceResult } from '../lib/types';
-import { createBundle } from '../api/bundles';
+import { createBundle, getBundle } from '../api/bundles';
+import { bundleKeys } from '../queries/keys';
 import { type BundleEditState, useBundleEdit } from './useBundleEdit';
 
 const bunchId = String(MOCK_BUNCH_ID);
 const PUBLISHED_ID = '1';
 const { S1, S2 } = MOCK_PHOTO_IDS;
+// 편집하는 사이 다른 곳에서 바뀌었다고 보는 번들 날짜(시작 데이터와 다른 지난 날짜)
+const SERVER_CHANGED_DATE = '2026-09-01';
 
 const setRole = (role: 'OWNER' | 'CO_OWNER' | 'MEMBER') =>
   mockDb.update((state) => ({
@@ -61,6 +65,44 @@ const renderReady = async () => {
 };
 
 describe('useBundleEdit 상태', () => {
+  it('캐시에 옛 값이 남아 있어도 연 뒤 첫 응답 전에는 열지 않고 서버 값으로 연다', async () => {
+    setRole('OWNER');
+    const client = createTestQueryClient();
+    const wrapper = createQueryWrapper(client);
+    // 한 번 열어 프로필·멤버·상세를 캐시에 채운 뒤, 상세만 옛 값으로 돌려 둠
+    const first = renderHook(() => useBundleEdit(bunchId, PUBLISHED_ID), { wrapper });
+    await waitFor(() => expect(first.result.current.state.kind).toBe('ready'));
+    first.unmount();
+    const fresh = await getBundle(bunchId, PUBLISHED_ID);
+    client.setQueryData(bundleKeys.detail(bunchId, PUBLISHED_ID), {
+      ...fresh,
+      title: '옛 제목',
+      revision: fresh.revision - 1,
+    });
+
+    const { result } = renderHook(() => useBundleEdit(bunchId, PUBLISHED_ID), { wrapper });
+
+    // 옛 캐시로 바로 열지 않고, 첫 응답이 온 뒤 서버 값으로 열림
+    expect(result.current.state.kind).toBe('loading');
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    expect(ready(result.current.state).draft.title).toBe('강릉 커피 투어 ☕');
+  });
+
+  it('연결이 없어 첫 조회가 멈추면 로딩에 머물지 않고 오류로 안내하며, 연결이 돌아오면 이어서 연다', async () => {
+    setRole('OWNER');
+    onlineManager.setOnline(false);
+    try {
+      const { result } = renderEdit();
+
+      await waitFor(() => expect(result.current.state.kind).toBe('error'));
+
+      act(() => onlineManager.setOnline(true));
+      await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    } finally {
+      onlineManager.setOnline(true);
+    }
+  });
+
   it('메인 관리자는 서버 값 그대로 열고 바뀐 내용이 없어 저장할 수 없다', async () => {
     const { result } = await renderReady();
 
@@ -258,7 +300,9 @@ describe('useBundleEdit 저장', () => {
     mockDb.update((state) => ({
       ...state,
       bundles: state.bundles.map((bundle) =>
-        String(bundle.id) === PUBLISHED_ID ? { ...bundle, revision: bundle.revision + 1 } : bundle,
+        String(bundle.id) === PUBLISHED_ID
+          ? { ...bundle, revision: bundle.revision + 1, date: SERVER_CHANGED_DATE }
+          : bundle,
       ),
     }));
 
@@ -270,10 +314,8 @@ describe('useBundleEdit 저장', () => {
     expect(ready(result.current.state).draft.title).toBe('내 제목');
 
     // 최신 revision을 받은 뒤 다시 저장하면 성공
-    // 최신 revision이 화면 상태에 닿을 때까지 기다린 뒤(query 알림은 한 틱 뒤에 전달됨) 저장을 한 번만 호출
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    // 다른 곳에서 바뀐 서버 값(날짜)이 화면 상태에 닿으면 최신 revision도 같은 조회 결과로 들어온 것이므로, 그때 저장을 한 번만 호출
+    await waitFor(() => expect(ready(result.current.state).draft.date).toBe(SERVER_CHANGED_DATE));
     await act(async () => {
       outcome = await result.current.actions.save();
     });

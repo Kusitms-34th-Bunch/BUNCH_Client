@@ -42,7 +42,7 @@ export function BundleEdit({ onSaved, onImportFromGallery }: BundleEditProps) {
   }, [kind, router, detailPath, bundleId]);
 
   if (state.kind === 'error')
-    return <BundleEditError onRetry={state.retry} onBack={() => backOr(detailPath)} />;
+    return <BundleEditError onRetry={state.retry} onBack={() => router.replace(detailPath)} />;
   if (state.kind !== 'ready') return <PageLoading />;
 
   // 저장 결과에 따라 안내하고 이동: 성공이면 상세로, 권한을 잃었거나 사라졌으면 상세가 새로 받아 그 상태를 보임

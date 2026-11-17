@@ -252,7 +252,13 @@ export function useBundleEdit(
 
   let state: BundleEditState;
   if (detail?.status === 'DRAFT') state = { kind: 'draft' };
-  else if (profile.isError || members.isError || (detailQuery.isError && detail === undefined)) {
+  else if (
+    profile.isError ||
+    members.isError ||
+    (detailQuery.isError && detail === undefined) ||
+    // 연결이 없어 첫 조회가 멈춘 채로는 끝나지 않으므로 로딩에 머물지 않고 안내함(연결이 돌아오면 이어서 열림)
+    (detailQuery.fetchStatus === 'paused' && !detailQuery.isFetchedAfterMount)
+  ) {
     const code = errorCode(detailQuery.error);
     if (!profile.isError && !members.isError && code === 'RESOURCE_001')
       state = { kind: 'missing' };
@@ -264,7 +270,8 @@ export function useBundleEdit(
         retry: () => {
           if (profile.isError) void profile.refetch();
           if (members.isError) void members.refetch();
-          if (detailQuery.isError) void detailQuery.refetch();
+          if (detailQuery.isError || detailQuery.fetchStatus === 'paused')
+            void detailQuery.refetch();
         },
       };
     }

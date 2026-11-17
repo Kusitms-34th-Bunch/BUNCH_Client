@@ -299,6 +299,8 @@ describe('BundleEdit 접근 조건', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: '뒤로 가기' }));
 
-    expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+    // 이전 기록이 있어도 앱 밖으로 나가지 않고 상세로 보냄
+    expect(replace).toHaveBeenCalledWith(DETAIL_PATH);
+    expect(back).not.toHaveBeenCalled();
   });
 });

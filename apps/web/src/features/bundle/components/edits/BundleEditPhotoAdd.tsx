@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
-import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useBundleEditContext } from '../../contexts/bundleEditContext';
 import { clearPhotoAddEntry, isPhotoAddEntry } from '../../lib/photoAddEntry';
@@ -30,7 +29,6 @@ type BundleEditPhotoAddProps = {
  */
 export function BundleEditPhotoAdd({ photoBox }: BundleEditPhotoAddProps) {
   const router = useRouter();
-  const backOr = useBackOr();
   const { bunchId, bundleId, state, actions } = useBundleEditContext();
   // 수정 화면에서 앱 안으로 들어왔을 때만 이전 기록으로 돌아감. 직접 주소·새로고침이면 기록을 믿지 않음
   const [fromApp] = useState(isPhotoAddEntry);
@@ -44,7 +42,7 @@ export function BundleEditPhotoAdd({ photoBox }: BundleEditPhotoAddProps) {
   }, [kind, router, editPath]);
 
   if (state.kind === 'error')
-    return <BundleEditError onRetry={state.retry} onBack={() => backOr(editPath)} />;
+    return <BundleEditError onRetry={state.retry} onBack={() => router.replace(editPath)} />;
   if (state.kind !== 'ready' || photoBox.kind === 'loading') return <PageLoading />;
   if (photoBox.kind !== 'ready') return photoBox.screen;
 
