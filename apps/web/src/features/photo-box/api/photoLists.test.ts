@@ -89,7 +89,24 @@ describe('getDatedPhotosPage', () => {
     expect(page.nextCursor).toBeNull();
   });
 
-  it('작성 중인 번들 사용 여부(usedInDraftBundle)를 사진에 담고, 값이 없으면 쓰이지 않은 것으로 본다', async () => {
+  it('작성 중인 번들 사용 여부(usedInDraftBundle)가 없는 응답은 계약 위반으로 거절한다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({
+          totalCount: 1,
+          photos: [
+            { photoId: 7, thumbnailUrl: 'a.jpg', capturedDate: '2026-10-18', uploaderIds: [1] },
+          ],
+        }),
+      ),
+    );
+
+    await expect(getDatedPhotosPage({ bunchId })).rejects.toMatchObject({
+      code: INVALID_RESPONSE_CODE,
+    });
+  });
+
+  it('작성 중인 번들 사용 여부(usedInDraftBundle)를 사진에 담는다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/photos', () =>
         ok({
@@ -102,7 +119,13 @@ describe('getDatedPhotosPage', () => {
               uploaderIds: [1],
               usedInDraftBundle: true,
             },
-            { photoId: 8, thumbnailUrl: 'b.jpg', capturedDate: '2026-10-18', uploaderIds: [1] },
+            {
+              photoId: 8,
+              thumbnailUrl: 'b.jpg',
+              capturedDate: '2026-10-18',
+              uploaderIds: [1],
+              usedInDraftBundle: false,
+            },
           ],
         }),
       ),
@@ -124,6 +147,7 @@ describe('getDatedPhotosPage', () => {
               capturedDate: '2026-10-18',
               capturedTime: { hour: 9, minute: 5, second: 0, nano: 0 },
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -146,6 +170,7 @@ describe('getDatedPhotosPage', () => {
               capturedDate: '2026-10-18',
               capturedTime: '29:99',
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -168,6 +193,7 @@ describe('getDatedPhotosPage', () => {
               thumbnailUrl: 'a.jpg',
               capturedDate: '2026-10-18',
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -184,7 +210,13 @@ describe('getDatedPhotosPage', () => {
         ok({
           totalCount: 1,
           photos: [
-            { photoId: 7, thumbnailUrl: 'a.jpg', capturedDate: '2026-10-18', uploaderIds: [1] },
+            {
+              photoId: 7,
+              thumbnailUrl: 'a.jpg',
+              capturedDate: '2026-10-18',
+              uploaderIds: [1],
+              usedInDraftBundle: false,
+            },
           ],
         }),
       ),
