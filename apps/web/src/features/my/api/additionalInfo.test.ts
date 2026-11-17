@@ -71,6 +71,16 @@ describe('updateAdditionalInfoConsent', () => {
     expect(bodies).toEqual([{ agreed: true }]);
   });
 
+  it('동의할 때 약관 버전 조회가 실패하면 보내지 않고 실패로 던진다', async () => {
+    server.use(http.get('/api/auth/terms', () => fail(500, 'COMMON_500')));
+    const bodies = captureConsent();
+
+    const error = await updateAdditionalInfoConsent(true).catch((caught: unknown) => caught);
+
+    expect(isApiError(error)).toBe(true);
+    expect(bodies).toEqual([]);
+  });
+
   it('약관 버전 조회가 실패해도 버전 없이 보내 철회가 막히지 않는다', async () => {
     server.use(http.get('/api/auth/terms', () => fail(500, 'COMMON_500')));
     const bodies = captureConsent({ consented: false });

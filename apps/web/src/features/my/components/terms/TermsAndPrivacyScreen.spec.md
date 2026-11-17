@@ -34,7 +34,7 @@
 
 ## UI와 접근성
 
-- 데이터: `useAdditionalInfo`(`queries/additionalInfo.ts`) → `getAdditionalInfo`(`GET /members/me/additional-info`), `useUpdateAdditionalInfoConsentMutation` → `updateAdditionalInfoConsent`(`PUT /members/me/additional-info-consent`, `agreed`와 `GET /auth/terms`의 DEMOGRAPHICS 버전, 버전이 없거나 약관 조회가 실패하면 빼고 보내 철회가 막히지 않음). 성공하면 진행 중인 조회를 취소한 뒤 응답으로 `myKeys.additionalInfo()`를 바꾼다. 개인정보라 캐시 영속화하지 않는다.
+- 데이터: `useAdditionalInfo`(`queries/additionalInfo.ts`) → `getAdditionalInfo`(`GET /members/me/additional-info`), `useUpdateAdditionalInfoConsentMutation` → `updateAdditionalInfoConsent`(`PUT /members/me/additional-info-consent`, `agreed`와 `GET /auth/terms`의 DEMOGRAPHICS 버전, 서버가 버전을 주지 않으면 빼고 보냄. 약관 조회가 실패하면 동의는 보내지 않고 실패 토스트, 철회만 버전 없이 보내 막히지 않음). 성공하면 진행 중인 조회를 취소한 뒤 응답으로 `myKeys.additionalInfo()`를 바꾼다. 개인정보라 캐시 영속화하지 않는다.
 - 묶음 모양은 MY 메뉴와 같은 `MenuSection`(제목 `h2`, 목록 `ul`)을 쓴다. 약관 링크는 `MenuLabel`, 토글은 core `Toggle`이다.
 - 토글은 `role="switch"`이고 이름은 줄 제목(`aria-labelledby`)이다. 「전문보기」는 링크 이름에 항목 이름을 화면 밖 글자로 이어 붙여 구분한다.
 - 확인 창은 `ConfirmDialog`(alertdialog)이고 취소·확인 버튼을 둔다.
