@@ -1,6 +1,6 @@
 import { http } from 'msw';
 import { toWireId } from '@/shared/api/ids';
-import type { MockBunchAccessNotice, MockDbState } from '../db/types';
+import type { MockBunchAccessNotice, MockDbState, MockMember } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
@@ -32,6 +32,16 @@ const myOwnedBunches = (state: MockDbState) =>
     const bunch = state.bunches.find((item) => item.id === membership.bunchId);
     return bunch ? [bunch] : [];
   });
+
+/** 추가 개인정보 응답(동의하지 않았으면 값 없이 동의 여부만) */
+const additionalInfoOf = (member: MockMember) =>
+  member.additionalInfoConsented
+    ? {
+        consented: true,
+        ...(member.birthYear === null ? {} : { birthYear: member.birthYear }),
+        ...(member.gender === null ? {} : { gender: member.gender }),
+      }
+    : { consented: false };
 
 // 소속 번치 최대 개수(기능명세 5.2.4, 번치 만들기의 BUNCH_003과 같은 값)
 const MAX_ACTIVE_BUNCHES = 10;
@@ -165,20 +175,57 @@ export const memberHandlers = [
     });
   }),
 
-  // PUT /api/v1/members/me/profile: multipart `profile`(닉네임·imageAction)·`photo`(REPLACE일 때)
+  // GET /api/v1/members/me/additional-info: 추가 개인정보 동의 여부와 저장된 출생연도·성별
+  http.get('/api/members/me/additional-info', () => {
+    const me = mockDb.get().members.find((member) => member.memberId === MOCK_MY_MEMBER_ID);
+    return me ? ok(additionalInfoOf(me)) : fail(401, 'AUTH_001');
+  }),
+
+  // PUT /api/v1/members/me/additional-info-consent: 동의·철회(철회하면 출생연도·성별을 지움). 버전은 읽지 않음
+  http.put('/api/members/me/additional-info-consent', async ({ request }) => {
+    const body = (await request.json().catch(() => null)) as { agreed?: unknown } | null;
+    if (typeof body?.agreed !== 'boolean') return fail(400, 'COMMON_001');
+    const agreed = body.agreed;
+    mockDb.update((state) => ({
+      ...state,
+      members: state.members.map((member) =>
+        member.memberId === MOCK_MY_MEMBER_ID
+          ? {
+              ...member,
+              additionalInfoConsented: agreed,
+              ...(agreed ? {} : { birthYear: null, gender: null }),
+            }
+          : member,
+      ),
+    }));
+    const me = mockDb.get().members.find((member) => member.memberId === MOCK_MY_MEMBER_ID);
+    return me ? ok(additionalInfoOf(me)) : fail(401, 'AUTH_001');
+  }),
+
+  // PUT /api/v1/members/me/profile: multipart `profile`(닉네임·imageAction·demographics)·`photo`(REPLACE일 때)
   // 닉네임 중복은 중복 확인과 같이 「중복」이 들어간 닉네임만, 코드는 가입과 같은 USER_002로 둠(Swagger에 오류 코드 없음)
+  // demographics는 동의한 사람만 받고(아니면 가짜 코드로 거절, 실서버 코드는 미확인) 빠진 값은 없음(null)으로 저장
   http.put('/api/members/me/profile', async ({ request }) => {
     const form = await request.formData().catch(() => null);
     const part = form?.get('profile');
     const profile = await (async () => {
       try {
         return part instanceof Blob
-          ? (JSON.parse(await part.text()) as { nickname?: string; imageAction?: string })
+          ? (JSON.parse(await part.text()) as {
+              nickname?: string;
+              imageAction?: string;
+              demographics?: { birthYear?: number; gender?: 'FEMALE' | 'MALE' };
+            })
           : null;
       } catch {
         return null;
       }
     })();
+    const demographics = profile?.demographics;
+    const current = mockDb.get().members.find((member) => member.memberId === MOCK_MY_MEMBER_ID);
+    if (demographics && !current?.additionalInfoConsented) {
+      return fail(400, 'MOCK_ADDITIONAL_INFO_NOT_CONSENTED');
+    }
     const nickname = profile?.nickname?.trim() ?? '';
     const action = profile?.imageAction;
     if (!profile || nickname.length < 1 || nickname.length > 12) return fail(400, 'COMMON_001');
@@ -201,6 +248,12 @@ export const memberHandlers = [
                   : action === 'RESET'
                     ? null
                     : member.imageUrl,
+              ...(demographics
+                ? {
+                    birthYear: demographics.birthYear ?? null,
+                    gender: demographics.gender ?? null,
+                  }
+                : {}),
             }
           : member,
       ),

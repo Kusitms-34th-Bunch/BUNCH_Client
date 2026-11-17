@@ -10,6 +10,8 @@ export type MockMember = {
   imageUrl: string | null;
   birthYear: number | null;
   gender: 'FEMALE' | 'MALE' | null;
+  /** 추가 개인정보(출생연도·성별) 수집·이용 동의 여부(철회하면 출생연도·성별을 지움) */
+  additionalInfoConsented: boolean;
 };
 
 export type MockBunch = {
