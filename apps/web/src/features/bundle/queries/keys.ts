@@ -1,3 +1,5 @@
+import { sharedKeys } from '@/shared/query/keys';
+
 // 응답을 바꾸는 입력은 모두 key에 포함(docs/architecture/data-layer.md)
 export const bundleKeys = {
   all: ['bundle'] as const,
@@ -5,7 +7,7 @@ export const bundleKeys = {
   detail: (bunchId: string | undefined, bundleId: string | undefined) =>
     [...bundleKeys.all, 'detail', bunchId, bundleId] as const,
   // 그 번치의 번들 상세 전체(사진이 지워져 여러 초안이 바뀔 수 있을 때)
-  detailsOf: (bunchId: string | undefined) => [...bundleKeys.all, 'detail', bunchId] as const,
+  detailsOf: (bunchId: string | undefined) => sharedKeys.bundleDetailsOf(bunchId),
   recommendations: (bunchId: string | undefined) =>
     [...bundleKeys.all, 'recommendations', bunchId] as const,
   recommendation: (bunchId: string | undefined, id: string | undefined) =>

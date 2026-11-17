@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { bundleKeys } from '@/features/bundle/queries/keys';
 import { sharedKeys } from '@/shared/query/keys';
 import { changePhotoDates, removePhotos } from '../api/photos';
 import { MissingPhotosError } from '../lib/missingPhotos';
@@ -35,7 +34,7 @@ export const useDeletePhotosMutation = (bunchId: string | undefined) => {
     onSuccess: () => {
       // 사진이 사라지면 서버가 작성 중인 번들에서도 그 사진을 빼고 0장이 된 초안은 지우므로(명세 3.3.5) 그 번치의 번들 상세와 번치 홈의 작성 중인 번들도 다시 받음
       // 삭제 완료는 사진 목록만 기다리고(반환), 번들 쪽은 기다리지 않음(번들 화면을 볼 때 받아도 늦지 않아 삭제 로딩을 늘리지 않음)
-      void queryClient.invalidateQueries({ queryKey: bundleKeys.detailsOf(bunchId) });
+      void queryClient.invalidateQueries({ queryKey: sharedKeys.bundleDetailsOf(bunchId) });
       void queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHomeScope(bunchId) });
       // 반환해서 mutateAsync·isPending이 활성 목록 재요청 완료까지 대기
       return queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) });

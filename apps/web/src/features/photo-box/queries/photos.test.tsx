@@ -3,7 +3,6 @@ import { onlineManager, useInfiniteQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { bundleKeys } from '@/features/bundle/queries/keys';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
@@ -58,7 +57,7 @@ describe('useDeletePhotosMutation', () => {
   it('성공하면 서버가 작성 중인 번들에서도 사진을 빼므로 번들 상세와 번치 홈의 작성 중인 번들도 무효화한다', async () => {
     const client = createTestQueryClient();
     const draftKey = sharedKeys.draftBundles(bunchId);
-    const detailKey = bundleKeys.detail(bunchId, '5');
+    const detailKey = [...sharedKeys.bundleDetailsOf(bunchId), '5'] as const;
     client.setQueryData(draftKey, []);
     client.setQueryData(detailKey, {});
     const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
