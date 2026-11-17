@@ -105,6 +105,22 @@ describe('useBundleEdit 상태', () => {
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
   });
 
+  it('캐시에 옛 초안 값이 있는데 첫 재조회가 실패하면 작성 화면으로 보내지 않고 오류로 안내한다', async () => {
+    setRole('OWNER');
+    const client = createTestQueryClient();
+    const wrapper = createQueryWrapper(client);
+    const first = renderHook(() => useBundleEdit(bunchId, PUBLISHED_ID), { wrapper });
+    await waitFor(() => expect(first.result.current.state.kind).toBe('ready'));
+    first.unmount();
+    const fresh = await getBundle(bunchId, PUBLISHED_ID);
+    client.setQueryData(bundleKeys.detail(bunchId, PUBLISHED_ID), { ...fresh, status: 'DRAFT' });
+    server.use(http.get('/api/bunches/:bunchId/bundles/:id', () => fail(500, 'SERVER_ERROR')));
+
+    const { result } = renderHook(() => useBundleEdit(bunchId, PUBLISHED_ID), { wrapper });
+
+    await waitFor(() => expect(result.current.state.kind).toBe('error'));
+  });
+
   it('연결이 없어 첫 조회가 멈추면 로딩에 머물지 않고 오류로 안내하며, 연결이 돌아오면 이어서 연다', async () => {
     setRole('OWNER');
     onlineManager.setOnline(false);

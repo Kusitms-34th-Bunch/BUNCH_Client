@@ -252,11 +252,13 @@ export function useBundleEdit(
 
   let state: BundleEditState;
   // 초안과 발행본은 상세 캐시를 같이 쓰므로, 캐시에 남은 옛 초안 값으로 작성 화면에 보내지 않고 연 뒤 첫 응답을 기다림
-  if (detail?.status === 'DRAFT' && detailQuery.isFetchedAfterMount) state = { kind: 'draft' };
-  else if (
+  if (detail?.status === 'DRAFT' && detailQuery.isFetchedAfterMount && !detailQuery.isError) {
+    state = { kind: 'draft' };
+  } else if (
     profile.isError ||
     members.isError ||
-    (detailQuery.isError && detail === undefined) ||
+    // 재조회가 실패했는데 남은 값이 옛 초안이면 그 값으로 판단하지 않고 오류로 안내함
+    (detailQuery.isError && (detail === undefined || detail.status === 'DRAFT')) ||
     // 연결이 없어 첫 조회가 멈춘 채로는 끝나지 않으므로 로딩에 머물지 않고 안내함(연결이 돌아오면 이어서 열림)
     (detailQuery.fetchStatus === 'paused' && !detailQuery.isFetchedAfterMount)
   ) {
