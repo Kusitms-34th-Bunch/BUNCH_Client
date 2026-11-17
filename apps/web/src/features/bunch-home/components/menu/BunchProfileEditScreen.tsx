@@ -2,7 +2,7 @@
 
 import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { CameraButton, LabeledTextField, ProfileImage } from '@app/design-system/web';
-import { type ReactNode, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
@@ -12,9 +12,11 @@ import {
 } from '@/shared/hooks/useNicknameAvailability';
 import {
   BUNCH_DESCRIPTION_MAX_LENGTH,
+  BUNCH_DESCRIPTION_PROHIBITED_MESSAGE,
   BUNCH_NAME_CHECKING_MESSAGE,
   BUNCH_NAME_INVALID_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
+  BUNCH_NAME_PROHIBITED_MESSAGE,
   BUNCH_NAME_TAKEN_MESSAGE,
   type CharacterType,
   defaultBunchImage,
@@ -27,6 +29,9 @@ import { BunchVisibilityField } from './BunchVisibilityField';
 
 /** 편집할 번치의 저장된 값과 그 값의 프로필 버전 */
 type EditableProfile = BunchProfile & { profileVersion?: number | undefined };
+
+/** 저장 때 서버가 금칙어로 거부한 값(보낸 그대로). 그 칸을 고치면 안내가 사라짐 */
+export type ProhibitedValues = { name?: string | undefined; description?: string | undefined };
 /**
  * 저장할 값. 대표 사진은 그대로·새 사진·기본 이미지 중 하나
  * `expectedProfileVersion`은 폼을 연 때의 버전(그 사이 다른 곳에서 바뀌었으면 서버가 거절해 모르고 덮어쓰지 않음)
@@ -46,11 +51,15 @@ type BunchProfileEditScreenProps = {
   saving?: boolean | undefined;
   /** 저장 때 서버가 이미 쓰는 이름이라고 거절한 이름(입력란에 사용 중으로 보임) */
   takenName?: string | null | undefined;
+  /** 저장 때 서버가 금칙어로 거부한 이름·소개(입력란 아래 안내, 기능명세 5.5.5) */
+  prohibited?: ProhibitedValues | undefined;
   /** 이름 중복 확인(지금 이름은 묻지 않음). 없으면 확인하지 않음 */
   checkName?: CheckNickname | undefined;
   /** 번치 타입(대표 사진이 없을 때 보일 기본 이미지를 정함, 모르면 타입 1) */
   characterType?: CharacterType | undefined;
 };
+
+const NO_PROHIBITED: ProhibitedValues = {};
 
 /**
  * 번치 프로필 편집(기능명세 5.5): 대표 사진·이름·한 줄 소개·공개 범위를 「저장하기」로 한 번에 저장
@@ -62,6 +71,7 @@ export function BunchProfileEditScreen({
   onSave,
   saving = false,
   takenName = null,
+  prohibited = NO_PROHIBITED,
   checkName,
   characterType,
 }: BunchProfileEditScreenProps) {
@@ -82,6 +92,7 @@ export function BunchProfileEditScreen({
       onSave={onSave}
       saving={saving}
       takenName={takenName}
+      prohibited={prohibited}
       checkName={checkName}
       characterType={characterType}
     />
@@ -114,6 +125,7 @@ function ProfileForm({
   onSave,
   saving,
   takenName,
+  prohibited,
   checkName,
   characterType,
 }: {
@@ -122,10 +134,13 @@ function ProfileForm({
   onSave: (_draft: BunchProfileDraft) => void;
   saving: boolean;
   takenName: string | null;
+  prohibited: ProhibitedValues;
   checkName: CheckNickname | undefined;
   characterType: CharacterType | undefined;
 }) {
   const formId = useId();
+  const nameId = useId();
+  const descriptionId = useId();
   // 폼을 연 순간의 값과 버전으로 고정(그 뒤 다시 받은 값으로 바뀌면 입력은 그대로인데 비교·버전만 바뀌어 모르고 덮어씀)
   const [initial] = useState(latest);
   const [name, setName] = useState(initial.name);
@@ -147,6 +162,22 @@ function ProfileForm({
   );
   // 저장 때 서버가 거절한 이름은 저장 전에 받은 「사용 가능」보다 앞섬(그 사이 다른 번치가 씀). 이름을 바꾸면 다시 확인
   const taken = availability === 'taken' || (takenName !== null && takenName === normalized);
+  // 입력 때 확인과 저장 때 서버 거부 모두 금칙어로 봄. 거부된 값에서 고치면 안내를 지우고 다시 활성 조건을 따름(기능명세 5.5.5)
+  const nameProhibited =
+    availability === 'prohibited' ||
+    (prohibited.name !== undefined && prohibited.name.normalize('NFC').trim() === normalized);
+  const descriptionProhibited =
+    prohibited.description !== undefined && prohibited.description === description;
+  // 저장 거부로 저장하기가 비활성이 되면 초점을 거부된 칸(이름 먼저)으로 옮겨 바로 고칠 수 있게 함(안내는 이미 그려진 뒤)
+  useEffect(() => {
+    const target =
+      prohibited.name !== undefined
+        ? nameId
+        : prohibited.description !== undefined
+          ? descriptionId
+          : undefined;
+    if (target) document.getElementById(target)?.focus();
+  }, [prohibited, nameId, descriptionId]);
   // 앞뒤 공백만 바뀐 이름은 서버에 같은 이름으로 가므로 바뀐 것으로 보지 않음
   const changed =
     normalized !== initial.name ||
@@ -161,6 +192,8 @@ function ProfileForm({
     normalized.length > 0 &&
     !nameInvalid &&
     !taken &&
+    !nameProhibited &&
+    !descriptionProhibited &&
     availability !== 'checking' &&
     description.trim().length > 0;
   // 비공개였던 번치를 공개로 바꿀 때만 안내(Figma 1873:33513)
@@ -228,6 +261,7 @@ function ProfileForm({
           </p>
           <div className="gap-s8 flex w-full flex-col">
             <LabeledTextField
+              id={nameId}
               title="번치 이름"
               value={name}
               maxLength={BUNCH_NAME_MAX_LENGTH}
@@ -235,9 +269,11 @@ function ProfileForm({
               errorMessage={
                 nameInvalid
                   ? BUNCH_NAME_INVALID_MESSAGE
-                  : taken
-                    ? BUNCH_NAME_TAKEN_MESSAGE
-                    : undefined
+                  : nameProhibited
+                    ? BUNCH_NAME_PROHIBITED_MESSAGE
+                    : taken
+                      ? BUNCH_NAME_TAKEN_MESSAGE
+                      : undefined
               }
               // 중복 확인이 도는 동안만 보임(번치 만들기와 같음)
               helperMessage={availability === 'checking' ? BUNCH_NAME_CHECKING_MESSAGE : undefined}
@@ -248,10 +284,14 @@ function ProfileForm({
               onBlur={() => setComposing(false)}
             />
             <LabeledTextField
+              id={descriptionId}
               title="한 줄 소개"
               value={description}
               maxLength={BUNCH_DESCRIPTION_MAX_LENGTH}
               autoComplete="off"
+              errorMessage={
+                descriptionProhibited ? BUNCH_DESCRIPTION_PROHIBITED_MESSAGE : undefined
+              }
               onChange={(event) => setDescription(event.target.value)}
             />
             <BunchVisibilityField

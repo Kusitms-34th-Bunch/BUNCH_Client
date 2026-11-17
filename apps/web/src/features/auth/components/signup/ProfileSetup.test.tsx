@@ -17,7 +17,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { CHECK_FAILURE_MESSAGE } from '@/shared/hooks/useNicknameAvailability';
-import { NICKNAME_INVALID_MESSAGE, NICKNAME_TAKEN_MESSAGE } from '@/shared/lib/nickname';
+import {
+  NICKNAME_INVALID_MESSAGE,
+  NICKNAME_PROHIBITED_MESSAGE,
+  NICKNAME_TAKEN_MESSAGE,
+} from '@/shared/lib/nickname';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { TermsAgreementProvider } from '../../contexts/TermsAgreementProvider';
 import { sessionQueryOptions } from '../../queries/session';
@@ -231,7 +235,7 @@ describe('ProfileSetup', () => {
     const settle = () => act(() => vi.advanceTimersByTimeAsync(500));
 
     it('확인 중에는 시작하기가 비활성이다', async () => {
-      const check = vi.fn(() => Promise.resolve(true));
+      const check = vi.fn(() => Promise.resolve('available' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       await type();
@@ -240,7 +244,7 @@ describe('ProfileSetup', () => {
     });
 
     it('확인하는 동안 입력란 아래에 확인 중 안내를 보이고, 문제가 없으면 안내가 사라진다', async () => {
-      const check = vi.fn(() => Promise.resolve(true));
+      const check = vi.fn(() => Promise.resolve('available' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       await type();
@@ -261,7 +265,7 @@ describe('ProfileSetup', () => {
     });
 
     it('이미 사용 중이면 확인 중 안내 대신 오류 문구만 보인다', async () => {
-      const check = vi.fn(() => Promise.resolve(false));
+      const check = vi.fn(() => Promise.resolve('taken' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       await type();
@@ -276,7 +280,7 @@ describe('ProfileSetup', () => {
     });
 
     it('사용할 수 있는 닉네임이면 시작하기가 활성화된다', async () => {
-      const check = vi.fn(() => Promise.resolve(true));
+      const check = vi.fn(() => Promise.resolve('available' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       await type();
@@ -287,7 +291,7 @@ describe('ProfileSetup', () => {
     });
 
     it('이미 사용 중이면 오류 문구를 보이고 시작하기를 비활성화한다', async () => {
-      const check = vi.fn(() => Promise.resolve(false));
+      const check = vi.fn(() => Promise.resolve('taken' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       await type();
@@ -297,8 +301,19 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(true);
     });
 
+    it('금칙어가 들어 있으면 사용할 수 없다는 문구를 보이고 시작하기를 비활성화한다', async () => {
+      const check = vi.fn(() => Promise.resolve('prohibited' as const));
+      render(<ProfileSetup checkNickname={check} />);
+
+      await type();
+      await settle();
+
+      expect(screen.getByRole('alert').textContent).toBe(NICKNAME_PROHIBITED_MESSAGE);
+      expect(start().hasAttribute('disabled')).toBe(true);
+    });
+
     it('조합 중인 자모로는 중복 확인을 호출하지 않는다', async () => {
-      const check = vi.fn(() => Promise.resolve(true));
+      const check = vi.fn(() => Promise.resolve('available' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       fireEvent.compositionStart(nickname());
@@ -576,6 +591,40 @@ describe('ProfileSetup', () => {
 
       // 닉네임을 바꾸면 다시 시작할 수 있음
       await userEvent.type(nickname(), '2');
+      expect(start().hasAttribute('disabled')).toBe(false);
+    });
+
+    it('가입 완료 때 닉네임에 금칙어가 걸리면 입력란 아래에 알리고 이동하지 않는다', async () => {
+      registration.registerMember.mockRejectedValue(
+        new ApiError({
+          message: 'error.prohibited_word',
+          category: 'validation',
+          status: 400,
+          code: 'COMMON_003',
+          data: {
+            success: false,
+            data: null,
+            error: {
+              code: 'COMMON_003',
+              message: 'error.prohibited_word',
+              detail: { fields: ['nickname'] },
+            },
+          },
+        }),
+      );
+      render(<ProfileSetup />);
+      await userEvent.type(nickname(), '지원');
+
+      await userEvent.click(start());
+
+      expect(await screen.findByText(NICKNAME_PROHIBITED_MESSAGE)).toBeTruthy();
+      expect(start().hasAttribute('disabled')).toBe(true);
+      expect(replace).not.toHaveBeenCalled();
+      expect(toast).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(nickname());
+
+      await userEvent.type(nickname(), '2');
+      expect(screen.queryByText(NICKNAME_PROHIBITED_MESSAGE)).toBeNull();
       expect(start().hasAttribute('disabled')).toBe(false);
     });
 

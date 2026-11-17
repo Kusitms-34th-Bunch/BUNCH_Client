@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { checkBunchNameAvailability } from '@/shared/api/bunchNameAvailability';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
@@ -15,7 +16,11 @@ import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { toEditableBunchProfile } from '../../model/bunchHome';
 import { bunchHomeQueryOptions, useUpdateBunchProfileMutation } from '../../queries/bunchHome';
 import { BunchHomeError } from '../home/BunchHomeError';
-import { type BunchProfileDraft, BunchProfileEditScreen } from './BunchProfileEditScreen';
+import {
+  type BunchProfileDraft,
+  BunchProfileEditScreen,
+  type ProhibitedValues,
+} from './BunchProfileEditScreen';
 
 // 서버가 이름 중복으로 거절한 코드(번치 만들기와 같음)
 const NAME_TAKEN_CODE = 'BUNCH_001';
@@ -35,6 +40,7 @@ export function BunchProfileEdit() {
   const profile = home.data ? toEditableBunchProfile(home.data) : undefined;
   const update = useUpdateBunchProfileMutation(bunchId);
   const [takenName, setTakenName] = useState<string | null>(null);
+  const [prohibited, setProhibited] = useState<ProhibitedValues>({});
   // 다른 곳에서 바뀐 걸 알게 되면 폼을 최신 값으로 다시 엶
   const [formRevision, setFormRevision] = useState(0);
 
@@ -96,6 +102,21 @@ export function BunchProfileEdit() {
             setTakenName(name.normalize('NFC').trim());
             return;
           }
+          // 이름·소개에 금칙어: 걸린 칸 아래에 안내(기능명세 5.5.5). 칸을 알 수 없으면 일반 실패로 안내
+          const fields = prohibitedFieldsOf(error);
+          const nameProhibited = fields?.includes('name') ?? false;
+          const descriptionProhibited = fields?.includes('introduction') ?? false;
+          if (nameProhibited || descriptionProhibited) {
+            setProhibited({
+              ...(nameProhibited ? { name } : {}),
+              ...(descriptionProhibited ? { description } : {}),
+            });
+            return;
+          }
+          if (fields) {
+            toast(BUNCH_HOME_MESSAGES.profileSaveFailed);
+            return;
+          }
           // 버전 충돌 코드는 Swagger에 없어, 다시 받은 버전이 폼을 연 때와 다르면 다른 곳에서 바뀐 것으로 봄
           void home.refetch().then(({ data }) => {
             const latest = data?.profileVersion;
@@ -121,6 +142,7 @@ export function BunchProfileEdit() {
       onSave={save}
       saving={update.isPending}
       takenName={takenName}
+      prohibited={prohibited}
       checkName={
         bunchId === undefined
           ? undefined

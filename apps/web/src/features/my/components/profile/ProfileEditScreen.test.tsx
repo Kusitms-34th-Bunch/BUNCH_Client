@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
 import { mockDb } from '@/mocks/db';
 import { MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
@@ -26,9 +27,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
-// 닉네임 중복 확인은 기본으로 사용 가능(true)이라 응답 뒤 수정하기가 켜짐
+// 닉네임 확인은 기본으로 사용 가능이라 응답 뒤 수정하기가 켜짐
 const renderScreen = (
-  checkNickname = vi.fn((_nickname: string) => Promise.resolve(true)),
+  checkNickname = vi.fn<CheckNickname>(() => Promise.resolve('available')),
   demographicsConsent = false,
 ) => {
   render(
@@ -160,7 +161,7 @@ describe('ProfileEditScreen', () => {
   it('편집 중 동의가 철회돼 칸이 숨겨지면 숨은 출생연도 값이 저장을 막지 않는다', async () => {
     const user = userEvent.setup();
     const profile = { nickname: '으누', birthYear: 2003, gender: 'male' as const };
-    const checkNickname = vi.fn((_nickname: string) => Promise.resolve(true));
+    const checkNickname = vi.fn<CheckNickname>(() => Promise.resolve('available'));
     const { rerender } = render(
       <ProfileEditScreen profile={profile} demographicsConsent checkNickname={checkNickname} />,
       { wrapper: createQueryWrapper() },
@@ -216,6 +217,38 @@ describe('ProfileEditScreen', () => {
     expect(submitButton().disabled).toBe(true);
     expect(replace).not.toHaveBeenCalled();
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('저장 직전 확인에서 닉네임에 금칙어가 걸리면 Error 상태로 안내하고 닉네임을 고치면 풀린다', async () => {
+    server.use(
+      http.put('/api/members/me/profile', () => fail(400, 'COMMON_003', { fields: ['nickname'] })),
+    );
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    expect(await screen.findByText('사용할 수 없는 닉네임이에요')).toBeTruthy();
+    expect(nicknameInput().getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(nicknameInput());
+    expect(submitButton().disabled).toBe(true);
+    expect(replace).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
+
+    await user.type(nicknameInput(), '리');
+    expect(screen.queryByText('사용할 수 없는 닉네임이에요')).toBeNull();
+  });
+
+  it('입력을 멈춘 뒤 확인에서 금칙어가 걸리면 안내하고 수정하기를 비활성으로 둔다', async () => {
+    const user = userEvent.setup();
+    renderScreen(vi.fn<CheckNickname>(() => Promise.resolve('prohibited')));
+
+    await user.type(nicknameInput(), '누');
+
+    expect(await screen.findByText('사용할 수 없는 닉네임이에요')).toBeTruthy();
+    expect(submitButton().disabled).toBe(true);
   });
 
   /** 프로필 저장 응답을 `release`를 부를 때까지 붙잡음 */
@@ -370,7 +403,7 @@ describe('ProfileEditScreen', () => {
 
   it('이미 사용 중인 닉네임이면 오류를 보이고 수정하기를 막는다', async () => {
     const user = userEvent.setup();
-    renderScreen(vi.fn((_nickname: string) => Promise.resolve(false)));
+    renderScreen(vi.fn<CheckNickname>(() => Promise.resolve('taken')));
 
     await user.type(nicknameInput(), '짱');
 

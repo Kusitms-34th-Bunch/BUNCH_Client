@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
 import { checkNicknameAvailability } from '@/shared/api/nickname';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
@@ -137,9 +138,12 @@ export function ProfileEditScreen({
       // 다시 누를 수 있게 되돌림(기능명세서 7.2.7 예외)
       submittingRef.current = false;
       setSubmitting(false);
-      if (isApiError(error) && error.code === NICKNAME_TAKEN_CODE) {
+      const taken = isApiError(error) && error.code === NICKNAME_TAKEN_CODE;
+      // 저장 직전 확인에서 금칙어가 걸림(기능명세서 7.2.7 예외)
+      const prohibited = prohibitedFieldsOf(error)?.includes('nickname') ?? false;
+      if (taken || prohibited) {
         // 오류 표시를 먼저 반영해 초점이 갈 때 오류 상태로 읽히게 함
-        flushSync(fields.markNicknameTaken);
+        flushSync(() => fields.markNicknameRejected(prohibited ? 'prohibited' : 'taken'));
         // 수정하기가 비활성이 되므로 닉네임 입력으로 초점을 옮김(사진 선택용 숨은 파일 입력 제외)
         containerRef.current?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus();
       } else {

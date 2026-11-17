@@ -6,6 +6,7 @@ import {
   resetBunchProfileImage,
   updateBunchProfileImage,
   type CreateBunchInput,
+  validateBunchIntroduction,
 } from '../api/bunches';
 
 /**
@@ -25,6 +26,10 @@ export const useCreateBunchMutation = () => {
     },
   });
 };
+
+/** 번치 만들기 2단계 한 줄 소개 사전 검사(저장하지 않아 다시 읽을 값 없음). 실패 처리는 화면이 함(금칙어는 입력란 아래 안내) */
+export const useValidateIntroductionMutation = () =>
+  useMutation({ mutationFn: validateBunchIntroduction });
 
 /** 번치 대표 사진 변경(사진 `string`) 또는 기본 이미지 적용(`undefined`) */
 export const useChangeBunchPhotoMutation = (bunchId: string | undefined) => {

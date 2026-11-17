@@ -2,29 +2,67 @@ import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import {
   checkBunchNameAvailability,
   createBunch,
   issueBunchInvitation,
   resetBunchProfileImage,
   updateBunchProfileImage,
+  validateBunchIntroduction,
 } from './bunches';
 
 const BUNCH = { id: 7, name: '퇴근런클럽', characterType: 'TYPE_1', imageUrl: null };
 const JPEG = 'data:image/jpeg;base64,YWJj';
 
 describe('checkBunchNameAvailability', () => {
-  it('이름을 쿼리로 보내고 사용 가능 여부를 돌려준다', async () => {
+  it('이름을 쿼리로 보내고 확인 결과(사용 중)를 돌려준다', async () => {
     let received: string | null = null;
     server.use(
       http.get('/api/bunches/name-availability', ({ request }) => {
         received = new URL(request.url).searchParams.get('name');
-        return ok({ normalizedValue: '퇴근런클럽', available: false });
+        return ok({ normalizedValue: '퇴근런클럽', available: false, status: 'DUPLICATE' });
       }),
     );
 
-    expect(await checkBunchNameAvailability('퇴근런클럽')).toBe(false);
+    expect(await checkBunchNameAvailability('퇴근런클럽')).toBe('taken');
     expect(received).toBe('퇴근런클럽');
+  });
+
+  it('금칙어가 들어 있으면 prohibited를 돌려준다', async () => {
+    server.use(
+      http.get('/api/bunches/name-availability', () =>
+        ok({ normalizedValue: '나쁜말', available: false, status: 'PROHIBITED_WORD' }),
+      ),
+    );
+
+    expect(await checkBunchNameAvailability('나쁜말')).toBe('prohibited');
+  });
+});
+
+describe('validateBunchIntroduction', () => {
+  it('앞뒤 공백을 지운 소개를 보내고 통과하면 끝난다', async () => {
+    let body: unknown;
+    server.use(
+      http.post('/api/bunches/introduction-validation', async ({ request }) => {
+        body = await request.json();
+        return ok(null);
+      }),
+    );
+
+    await expect(validateBunchIntroduction('  함께 달려요 ')).resolves.toBeUndefined();
+    expect(body).toEqual({ introduction: '함께 달려요' });
+  });
+
+  it('금칙어면 걸린 칸을 담은 COMMON_003 오류로 던진다', async () => {
+    server.use(
+      http.post('/api/bunches/introduction-validation', () =>
+        fail(400, 'COMMON_003', { fields: ['introduction'] }),
+      ),
+    );
+
+    const error = await validateBunchIntroduction('나쁜말').catch((caught: unknown) => caught);
+    expect(prohibitedFieldsOf(error)).toEqual(['introduction']);
   });
 });
 

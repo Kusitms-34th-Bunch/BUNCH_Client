@@ -1,30 +1,26 @@
-import type { ApiContract } from '@app/api-core';
-import type { components } from '@app/api-core/generated';
-import { z } from 'zod';
 import { bffApi, requestData } from './bffApi';
-
-/** 번치 이름 중복 확인 응답(`GET /bunches/name-availability`) */
-// `status`(AVAILABLE·DUPLICATE·PROHIBITED_WORD)는 서버가 새로 내려 주지만 아직 쓰지 않아 검증에서 뺌(`available`로 판단)
-const availabilitySchema = z.object({
-  normalizedValue: z.string(),
-  available: z.boolean(),
-}) satisfies z.ZodType<Omit<ApiContract<components['schemas']['NameAvailability']>, 'status'>>;
+import {
+  nameAvailabilitySchema,
+  type NameCheckResult,
+  toNameCheckResult,
+} from './nameAvailability';
 
 /**
- * 번치 이름을 지금 쓸 수 있는지(번치 만들기·프로필 편집). 이름을 예약하지 않으므로 저장 때 서버가 다시 확인함(`BUNCH_001`)
+ * 번치 이름을 지금 쓸 수 있는지(`GET /bunches/name-availability`, 번치 만들기·프로필 편집): 사용 가능·사용 중·금칙어 포함
+ * 이름을 예약하지 않으므로 저장 때 서버가 다시 확인함(중복 `BUNCH_001`, 금칙어 `COMMON_003`)
  * `excludeBunchId`는 그 번치의 지금 이름을 사용 중으로 보지 않음(프로필 편집)
  */
 export const checkBunchNameAvailability = async (
   name: string,
   { excludeBunchId, signal }: { excludeBunchId?: string; signal?: AbortSignal } = {},
-) => {
-  const { available } = await requestData(
-    bffApi.get('bunches/name-availability', {
-      searchParams: { name, ...(excludeBunchId ? { excludeBunchId } : {}) },
-      signal: signal ?? null,
-    }),
-    availabilitySchema,
-    'bunch name availability',
+): Promise<NameCheckResult> =>
+  toNameCheckResult(
+    await requestData(
+      bffApi.get('bunches/name-availability', {
+        searchParams: { name, ...(excludeBunchId ? { excludeBunchId } : {}) },
+        signal: signal ?? null,
+      }),
+      nameAvailabilitySchema,
+      'bunch name availability',
+    ),
   );
-  return available;
-};
