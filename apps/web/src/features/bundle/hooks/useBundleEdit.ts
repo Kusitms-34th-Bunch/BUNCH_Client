@@ -268,7 +268,15 @@ export function useBundleEdit(
         },
       };
     }
-  } else if (!detail || !base || !values || !bunchMembers || !profile.data) {
+  } else if (
+    !detail ||
+    !base ||
+    !values ||
+    !bunchMembers ||
+    !profile.data ||
+    // 캐시에 남은 옛 값으로 먼저 열어 편집 기준과 expectedRevision이 중간에 바뀌지 않게, 연 뒤 첫 응답(성공·실패)을 기다림
+    !detailQuery.isFetchedAfterMount
+  ) {
     state = { kind: 'loading' };
   } else if (myBunchId !== bunchId || me?.role !== 'OWNER') {
     // 우리 번치의 메인 관리자만(역할이 바뀌었으면 서버가 저장도 거절함)

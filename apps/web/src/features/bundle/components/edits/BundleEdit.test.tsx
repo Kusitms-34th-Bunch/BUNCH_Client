@@ -292,4 +292,13 @@ describe('BundleEdit 접근 조건', () => {
 
     expect(await screen.findByRole('button', { name: /다시 시도/ })).toBeInTheDocument();
   });
+
+  it('오류 화면에서도 헤더 뒤로 가기로 나갈 수 있다', async () => {
+    server.use(http.get('/api/bunches/:bunchId/bundles/:id', () => fail(500, 'SERVER_ERROR')));
+    renderEdit();
+
+    await userEvent.click(await screen.findByRole('button', { name: '뒤로 가기' }));
+
+    expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+  });
 });

@@ -270,12 +270,14 @@ describe('useBundleEdit 저장', () => {
     expect(ready(result.current.state).draft.title).toBe('내 제목');
 
     // 최신 revision을 받은 뒤 다시 저장하면 성공
-    await waitFor(async () => {
-      await act(async () => {
-        outcome = await result.current.actions.save();
-      });
-      expect(outcome).toBe('saved');
+    // 최신 revision이 화면 상태에 닿을 때까지 기다린 뒤(query 알림은 한 틱 뒤에 전달됨) 저장을 한 번만 호출
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
+    await act(async () => {
+      outcome = await result.current.actions.save();
+    });
+    expect(outcome).toBe('saved');
   });
 
   it('권한을 잃었으면 forbidden, 그사이 삭제됐으면 missing, 서버 오류면 failed이다', async () => {
