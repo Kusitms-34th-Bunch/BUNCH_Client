@@ -61,7 +61,7 @@ export const uploadPhoto = async ({
     if (capturedDate) body.append('capturedDate', capturedDate);
     // 날짜 없이 시각만 보내면 서버가 거절하므로 날짜가 있을 때만 보냄
     if (capturedDate && capturedTime) body.append('capturedTime', capturedTime);
-    // 쉘이 원본 EXIF에서 뽑은 값이라 가공한 JPEG에서는 서버가 읽을 수 없음(서버 PR #153). 오프셋은 모르면 생략하고, 유형은 판단하지 못하면 UNKNOWN으로 보냄
+    // 쉘이 원본 EXIF에서 뽑은 값이라 가공한 JPEG에서는 서버가 읽을 수 없음(서버 PR #153). 두 값 모두 쉘이 준 값만 보내고(유형은 쉘이 판단하지 못하면 UNKNOWN으로 줌), 없는 값은 필드를 생략함. 서버가 거절할 값도 생략함
     if (capturedUtcOffset && isUtcOffset(capturedUtcOffset)) {
       body.append('capturedUtcOffset', capturedUtcOffset);
     }
