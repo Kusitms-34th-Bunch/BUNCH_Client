@@ -152,6 +152,8 @@ export function useBundleEdit(
   const detail = detailQuery.data;
   const save = useEditPublishedBundleMutation(bunchId);
   const [overrides, setOverrides] = useState<Overrides>({});
+  // 저장 요청이 끝난 뒤 충돌 정리(최신 값을 받아 편집 값을 맞춤)가 끝날 때까지 입력과 재저장을 막음
+  const [resolving, setResolving] = useState(false);
   // 이 화면에서 더한 위치 줄의 번호(줄 id가 겹치지 않게)
   const nextNo = useRef(0);
 
@@ -183,7 +185,8 @@ export function useBundleEdit(
       !sameLocations(values.locations, base.locations));
   const titleTrimmed = values?.title.trim() ?? '';
   const titleValid = titleTrimmed !== '' && countTitleGraphemes(titleTrimmed) <= TITLE_MAX;
-  const canSave = dirty && titleValid && !save.isPending;
+  const saving = save.isPending || resolving;
+  const canSave = dirty && titleValid && !saving;
 
   const change = (patch: Overrides) => setOverrides((current) => ({ ...current, ...patch }));
   const currentPhotos = () => values?.photos ?? [];
@@ -231,6 +234,7 @@ export function useBundleEdit(
         // 보낼 id가 없는 사진이 있으면 조용히 빼지 않고 저장하지 않음
         else return 'failed';
       }
+      setResolving(true);
       try {
         await save.mutateAsync({
           bundleId,
@@ -260,6 +264,8 @@ export function useBundleEdit(
           return 'conflict';
         }
         return 'failed';
+      } finally {
+        setResolving(false);
       }
     },
   };
@@ -321,7 +327,7 @@ export function useBundleEdit(
       viewer: { memberId: me.id, bunchRole: 'owner' },
       dirty,
       canSave,
-      saving: save.isPending,
+      saving,
     };
   }
 

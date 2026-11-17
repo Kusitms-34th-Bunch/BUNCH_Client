@@ -398,6 +398,49 @@ describe('useBundleEdit 저장', () => {
     expect(state.dirty).toBe(true);
   });
 
+  it('충돌 뒤 최신 값을 받는 동안에도 저장 중으로 두어 입력과 재저장을 막는다', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.actions.setTitle('내 제목'));
+    mockDb.update((state) => ({
+      ...state,
+      bundles: state.bundles.map((bundle) =>
+        String(bundle.id) === PUBLISHED_ID ? { ...bundle, revision: bundle.revision + 1 } : bundle,
+      ),
+    }));
+    // 충돌 뒤의 재조회 응답을 붙잡아 둠
+    let refetchStarted = false;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles/:id', async () => {
+        refetchStarted = true;
+        await gate;
+        return undefined;
+      }),
+    );
+
+    let pending: Promise<string> | undefined;
+    act(() => {
+      pending = result.current.actions.save();
+    });
+    await waitFor(() => expect(refetchStarted).toBe(true));
+
+    // 저장 요청은 끝났지만 정리가 끝나기 전이라 아직 저장 중이고 다시 저장할 수 없음
+    const during = ready(result.current.state);
+    expect(during.saving).toBe(true);
+    expect(during.canSave).toBe(false);
+
+    release();
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await pending;
+    });
+    expect(outcome).toBe('conflict');
+    await waitFor(() => expect(ready(result.current.state).saving).toBe(false));
+  });
+
   it('권한을 잃었으면 forbidden, 그사이 삭제됐으면 missing, 서버 오류면 failed이다', async () => {
     const { result } = await renderReady();
     act(() => result.current.actions.setTitle('제목 1'));
