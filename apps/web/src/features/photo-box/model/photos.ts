@@ -38,6 +38,7 @@ const capturedTimeSchema = z.union([
 
 const uploaderIdsSchema = z.array(z.number().int().positive());
 
+// `usedInDraftBundle`(작성 중인 번들에 쓰인 사진 여부)는 서버가 새로 내려 주지만 아직 쓰지 않아 검증에서 뺌(사진함 서버 변경 반영 작업에서 연결)
 const datedPhotoSchema = z.object({
   photoId: z.number().int().positive(),
   thumbnailUrl: z.string(),
@@ -45,7 +46,10 @@ const datedPhotoSchema = z.object({
   capturedTime: capturedTimeSchema.nullish(),
   uploaderIds: uploaderIdsSchema,
 }) satisfies z.ZodType<
-  Omit<ApiContract<components['schemas']['PhotoListItem']>, 'capturedTime'> & {
+  Omit<
+    ApiContract<components['schemas']['PhotoListItem']>,
+    'capturedTime' | 'usedInDraftBundle'
+  > & {
     capturedTime?: unknown;
   }
 >;
@@ -54,7 +58,9 @@ const undatedPhotoSchema = z.object({
   photoId: z.number().int().positive(),
   thumbnailUrl: z.string(),
   uploaderIds: uploaderIdsSchema,
-}) satisfies z.ZodType<ApiContract<components['schemas']['PhotoUndatedItem']>>;
+}) satisfies z.ZodType<
+  Omit<ApiContract<components['schemas']['PhotoUndatedItem']>, 'usedInDraftBundle'>
+>;
 
 /** `GET /api/v1/bunches/{bunchId}/photos` 응답(날짜를 아는 사진 한 페이지) */
 export const datedPhotosPageSchema = z.object({
@@ -70,7 +76,9 @@ export const undatedPhotosPageSchema = z.object({
   totalCount: z.number().int().nonnegative(),
   photos: z.array(undatedPhotoSchema),
   nextCursor: z.string().nullish(),
-}) satisfies z.ZodType<ApiContract<components['schemas']['PhotoUndatedResponse']>>;
+}) satisfies z.ZodType<
+  Omit<ApiContract<components['schemas']['PhotoUndatedResponse']>, 'photos'> & { photos: unknown }
+>;
 
 const pad = (value: number | undefined) => String(value ?? 0).padStart(2, '0');
 
@@ -122,7 +130,10 @@ export const photoDetailSchema = z.object({
   uploaders: z.array(photoDetailUploaderSchema),
 }) satisfies z.ZodType<
   // 중첩 배열은 계약 검사가 선택 필드를 다루지 못해 uploaders는 위 스키마에서 따로 검사
-  Omit<ApiContract<components['schemas']['PhotoDetailResponse']>, 'uploaders'> & {
+  Omit<
+    ApiContract<components['schemas']['PhotoDetailResponse']>,
+    'uploaders' | 'usedInDraftBundle'
+  > & {
     uploaders: unknown;
   }
 >;

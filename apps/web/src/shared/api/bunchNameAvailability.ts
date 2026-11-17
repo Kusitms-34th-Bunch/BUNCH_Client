@@ -4,10 +4,11 @@ import { z } from 'zod';
 import { bffApi, requestData } from './bffApi';
 
 /** 번치 이름 중복 확인 응답(`GET /bunches/name-availability`) */
+// `status`(AVAILABLE·DUPLICATE·PROHIBITED_WORD)는 서버가 새로 내려 주지만 아직 쓰지 않아 검증에서 뺌(`available`로 판단)
 const availabilitySchema = z.object({
   normalizedValue: z.string(),
   available: z.boolean(),
-}) satisfies z.ZodType<ApiContract<components['schemas']['NameAvailability']>>;
+}) satisfies z.ZodType<Omit<ApiContract<components['schemas']['NameAvailability']>, 'status'>>;
 
 /**
  * 번치 이름을 지금 쓸 수 있는지(번치 만들기·프로필 편집). 이름을 예약하지 않으므로 저장 때 서버가 다시 확인함(`BUNCH_001`)

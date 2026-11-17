@@ -36,6 +36,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/members/me/additional-info-consent': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['changeAdditionalInfoConsent'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/feed/advertisements/{advertisementId}/pin': {
     parameters: {
       query?: never;
@@ -756,6 +772,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/bunches/introduction-validation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['validateIntroduction'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/auth/ws-token': {
     parameters: {
       query?: never;
@@ -1039,6 +1071,22 @@ export interface paths {
     put?: never;
     post?: never;
     delete: operations['delete_2'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/members/me/additional-info': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readAdditionalInfo'];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1511,6 +1559,13 @@ export interface components {
       nickname: string;
       /** @enum {string} */
       imageAction: 'KEEP' | 'REPLACE' | 'RESET';
+      demographics?: components['schemas']['ProfileDemographics'];
+    };
+    ProfileDemographics: {
+      /** Format: int32 */
+      birthYear?: number;
+      /** @enum {string} */
+      gender?: 'FEMALE' | 'MALE';
     };
     ApiResponseMemberResponse: {
       success: boolean;
@@ -1531,6 +1586,22 @@ export interface components {
       nickname?: string;
       imageUrl?: string;
       defaultBunch?: components['schemas']['BunchResponse'];
+    };
+    AdditionalInfoConsentRequest: {
+      agreed: boolean;
+      version?: string;
+    };
+    AdditionalInfoResponse: {
+      consented: boolean;
+      /** Format: int32 */
+      birthYear?: number;
+      /** @enum {string} */
+      gender?: 'FEMALE' | 'MALE';
+    };
+    ApiResponseAdditionalInfoResponse: {
+      success: boolean;
+      data?: components['schemas']['AdditionalInfoResponse'];
+      error?: components['schemas']['ApiError'];
     };
     ApiResponseKokResponse: {
       success: boolean;
@@ -1660,6 +1731,11 @@ export interface components {
       data?: components['schemas']['BundleSnapshot'];
       error?: components['schemas']['ApiError'];
     };
+    BundleCommentProfanity: {
+      /** Format: int64 */
+      memberId: number;
+      hasProhibitedWord: boolean;
+    };
     BundleCommentResponse: {
       /** Format: int64 */
       memberId: number;
@@ -1738,6 +1814,11 @@ export interface components {
       addedAt: string;
       picks?: components['schemas']['BundlePhotoPicks'];
     };
+    BundleProfanityState: {
+      dictionaryVersion: string;
+      titleHasProhibitedWord: boolean;
+      comments: components['schemas']['BundleCommentProfanity'][];
+    };
     BundleSnapshot: {
       /** Format: int64 */
       id: number;
@@ -1787,6 +1868,7 @@ export interface components {
       titleCrdtState?: string;
       titleTooLong: boolean;
       photoChangeResult?: components['schemas']['BundlePhotoChangeResult'];
+      profanity?: components['schemas']['BundleProfanityState'];
     };
     BundleTextRequest: {
       value: string;
@@ -2030,6 +2112,9 @@ export interface components {
       /** Format: date */
       capturedDate?: string;
       capturedTime?: components['schemas']['LocalTime'];
+      originalFileHash?: string;
+      capturedUtcOffset?: string;
+      sourceType?: string;
     };
     ApiResponsePhotoUploadResponse: {
       success: boolean;
@@ -2245,6 +2330,9 @@ export interface components {
       acceptedCount: number;
       locations: components['schemas']['BundleLocationResponse'][];
     };
+    ValidateBunchIntroductionRequest: {
+      introduction: string;
+    };
     ApiResponseWsTokenResponse: {
       success: boolean;
       data?: components['schemas']['WsTokenResponse'];
@@ -2329,6 +2417,8 @@ export interface components {
       /** Format: int64 */
       titleVersion: number;
       titleTooLong: boolean;
+      profanity: components['schemas']['BundleProfanityState'];
+      publishBlockers: string[];
     };
     ApiResponseKoksResponse: {
       success: boolean;
@@ -2417,6 +2507,8 @@ export interface components {
     NameAvailability: {
       normalizedValue: string;
       available: boolean;
+      /** @enum {string} */
+      status: 'AVAILABLE' | 'DUPLICATE' | 'PROHIBITED_WORD';
     };
     ApiResponseWithdrawalCheckResponse: {
       success: boolean;
@@ -2880,6 +2972,7 @@ export interface components {
       capturedDate: string;
       capturedTime?: components['schemas']['LocalTime'];
       uploaderIds: number[];
+      usedInDraftBundle: boolean;
     };
     PhotoListResponse: {
       /** Format: int64 */
@@ -2899,6 +2992,7 @@ export interface components {
       /** Format: date */
       capturedDate?: string;
       uploaders: components['schemas']['PhotoDetailUploader'][];
+      usedInDraftBundle: boolean;
     };
     PhotoDetailUploader: {
       /** Format: int64 */
@@ -2916,6 +3010,7 @@ export interface components {
       photoId: number;
       thumbnailUrl: string;
       uploaderIds: number[];
+      usedInDraftBundle: boolean;
     };
     PhotoUndatedResponse: {
       /** Format: int64 */
@@ -3237,6 +3332,30 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseMemberResponse'];
+        };
+      };
+    };
+  };
+  changeAdditionalInfoConsent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AdditionalInfoConsentRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseAdditionalInfoResponse'];
         };
       };
     };
@@ -4644,6 +4763,30 @@ export interface operations {
       };
     };
   };
+  validateIntroduction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ValidateBunchIntroductionRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseUnit'];
+        };
+      };
+    };
+  };
   wsToken: {
     parameters: {
       query?: never;
@@ -5089,6 +5232,26 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseUnit'];
+        };
+      };
+    };
+  };
+  readAdditionalInfo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseAdditionalInfoResponse'];
         };
       };
     };
