@@ -96,7 +96,11 @@ export function usePhotoGalleryImport({
   }, [pending, boxPhotos]);
 
   const importFromGallery = (maxCount: number) => {
-    if (running.current) return;
+    // 이미 가져오는 중이면 선택창을 다시 열지 않고 올라가는 중이라고 알림
+    if (running.current) {
+      toast(PHOTO_BOX_MESSAGES.uploading);
+      return;
+    }
     if (boxPhotos.length >= MAX_PHOTOS_IN_BOX) {
       toast(PHOTO_BOX_MESSAGES.photoBoxFull);
       return;

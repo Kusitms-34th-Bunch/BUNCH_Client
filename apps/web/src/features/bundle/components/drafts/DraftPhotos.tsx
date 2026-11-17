@@ -343,12 +343,12 @@ export function DraftPhotos({
                 ) : null}
               </SortablePhotoItem>
             ))}
-            {/* 갤러리에서 올라가는 동안 고른 장수만큼 칸 로딩(Figma에 시안이 없어 임시 모양) */}
+            {/* 갤러리에서 올라가는 동안 고른 장수만큼 칸 로딩(Figma 시안은 없어 사진 칸과 같은 크기에 사진함 스켈레톤과 같은 회색) */}
             {Array.from({ length: galleryImporting ?? 0 }, (_, index) => (
               <li
                 key={`importing-${index}`}
                 aria-hidden="true"
-                className="bg-surface-secondary rounded-r4 aspect-square w-32.5 shrink-0 animate-pulse motion-reduce:animate-none"
+                className="bg-surface-secondary rounded-r4 aspect-square w-32.5 shrink-0"
               />
             ))}
             {access.canAddPhoto && total < MAX_PHOTOS ? (

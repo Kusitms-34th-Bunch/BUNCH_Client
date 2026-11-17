@@ -163,6 +163,8 @@ describe('usePhotoGalleryImport', () => {
     // 읽기를 풀어 주기 전까지 가져오는 중 상태 유지, 이미 가져오는 중이면 선택창 재오픈 방지
     act(() => result.current.importFromGallery(5));
     expect(bridge.pickGalleryImages).toHaveBeenCalledTimes(1);
+    // 다시 누르면 올라가는 중이라고만 알림
+    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.uploading);
     release();
   });
 
