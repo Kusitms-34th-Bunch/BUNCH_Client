@@ -43,6 +43,8 @@ export const FEED_MESSAGES = {
   // 기능명세서 6.2.8: 쓰는 사이 번들이 지워졌거나 멤버 공개로 바뀜, 답글 대상이 지워짐
   bundleGone: '더 이상 볼 수 없는 번들이에요.',
   replyTargetDeleted: '삭제된 댓글입니다',
+  // 기능명세 1.4.3 로직 4·6.2.8: 댓글·답글에 금칙어(토스트라 마침표 있음)
+  prohibitedWord: '사용할 수 없는 단어가 포함되어 있어요.',
   moreCommentsFailed: '댓글을 더 불러오지 못했어요',
   commentMenuTitle: '댓글 더보기',
   deleteComment: '삭제',
