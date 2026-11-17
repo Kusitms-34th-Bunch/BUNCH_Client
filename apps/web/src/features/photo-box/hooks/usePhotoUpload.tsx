@@ -3,6 +3,7 @@
 import type { PhotoSourceType, PickedPhoto, PickPhotosResult } from '@app/bridge';
 import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
+import { toDomainId } from '@/shared/api/ids';
 import { isNativeShell, photoUploadBridge } from '@/shared/bridge/client';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { dataUrlToBlob } from '@/shared/lib/dataUrl';
@@ -26,6 +27,35 @@ import { useInvalidatePhotosOf } from '../queries/photos';
 
 export type UploadSource = 'album' | 'camera';
 
+/** 번들 작성 화면의 「내 갤러리에서 가져오기」처럼 사진함 올리기를 다른 흐름에서 쓸 때의 옵션 */
+export type UploadStartOptions = {
+  /** 선택창에서 고를 수 있는 최대 장수(기본은 쉘 기본값 50장) */
+  limit?: number | undefined;
+  /** false면 결과 토스트에 「다시 시도」를 붙이지 않음(기본 true, 기능 spec 4.3.7) */
+  retry?: boolean | undefined;
+  /** true면 올리지 못한 사진이 있을 때만 결과 토스트를 띄움(올라간 사진은 번들에 바로 보이므로 성공 안내가 필요 없음) */
+  failuresOnly?: boolean | undefined;
+  /** 사진을 고른 직후(올리기 전)에 고른 장수를 알림 */
+  onPicked?: ((_count: number) => void) | undefined;
+};
+
+/**
+ * 한 번 올리기의 결과
+ * - `unavailable`: 쉘이 없거나 이전 쉘이라 올리지 못함(안내는 띄움), `failed`: 선택창을 열지 못함, `canceled`: 고르지 않음·권한 거부
+ * - `done`: 올렸음. `photoIds`는 사진함에 들어간 사진(새로 저장·합쳐짐·내가 이미 올린 같은 사진)의 id를 고른 순서대로, `failed`는 올리지 못한 수
+ */
+export type UploadStartResult = {
+  status: 'unavailable' | 'failed' | 'canceled' | 'done';
+  photoIds: string[];
+  failed: number;
+};
+
+const nothingUploaded = (status: UploadStartResult['status']): UploadStartResult => ({
+  status,
+  photoIds: [],
+  failed: 0,
+});
+
 /** 업로드할 사진 한 장: 쉘이 가공한 JPEG와 촬영 날짜·시각. 실패한 사진의 「다시 시도」는 이 값을 그대로 다시 보냄 */
 type UploadItem = {
   image: Blob;
@@ -40,6 +70,8 @@ type UploadItem = {
 
 type UploadResult = {
   outcome: UploadOutcome;
+  /** 사진함에 들어간 사진의 id(새로 저장·합쳐짐·내가 이미 올린 같은 사진) */
+  photoId?: string;
   retryItem?: UploadItem;
   /** 사진함 한도 오류(하루·한 번에 올릴 수 있는 수)라 같은 묶음의 남은 사진도 거절됨 */
   limited?: boolean;
@@ -53,9 +85,12 @@ const attempt = async (
   item: UploadItem,
 ): Promise<UploadResult> => {
   try {
-    const { result } = await uploadPhoto({ bunchId, uploadBatchId, ...item });
+    const { photoId, result } = await uploadPhoto({ bunchId, uploadBatchId, ...item });
     // 내가 이미 올린 같은 사진은 서버가 변경 없이 제외하므로 추가한 사진으로 세지 않음
-    return { outcome: result === 'ALREADY_UPLOADED' ? 'skipped' : 'added' };
+    return {
+      outcome: result === 'ALREADY_UPLOADED' ? 'skipped' : 'added',
+      photoId: toDomainId(photoId),
+    };
   } catch (error) {
     return isRetryableUploadError(error)
       ? { outcome: 'failed-retryable', retryItem: item }
@@ -144,7 +179,12 @@ export function usePhotoUpload(bunchId: string | undefined) {
   };
 
   // 한 묶음의 결과를 집계해 토스트를 띄우고, 새로 들어간 사진이 있으면 그 번치의 사진 목록을 다시 받음
-  const finish = (targetBunchId: string, uploadBatchId: string, results: UploadResult[]) => {
+  const finish = (
+    targetBunchId: string,
+    uploadBatchId: string,
+    results: UploadResult[],
+    options: Pick<UploadStartOptions, 'retry' | 'failuresOnly'> = {},
+  ) => {
     const summary = summarizeUpload(results.map((result) => result.outcome));
     // 끝나면 아래에서 한 번 더 받으므로 예약해 둔 갱신은 걷음
     clearTimeout(refreshTimers.current.get(targetBunchId));
@@ -157,9 +197,10 @@ export function usePhotoUpload(bunchId: string | undefined) {
     const message = uploadResultMessage(summary);
     // 올린 사진이 없으면 알릴 것이 없음
     if (message === null) return;
+    if (options.failuresOnly && summary.failed === 0) return;
     toast(
       message,
-      retryItems.length > 0
+      retryItems.length > 0 && options.retry !== false
         ? {
             action: {
               label: PHOTO_BOX_MESSAGES.uploadRetry,
@@ -183,6 +224,7 @@ export function usePhotoUpload(bunchId: string | undefined) {
                     retried.map((result) =>
                       result.outcome === 'skipped' ? { ...result, outcome: 'added' } : result,
                     ),
+                    options,
                   ),
                 );
               },
@@ -206,37 +248,45 @@ export function usePhotoUpload(bunchId: string | undefined) {
     ));
   };
 
-  const pick = (source: UploadSource): Promise<PickPhotosResult> =>
-    source === 'album' ? photoUploadBridge.pickGalleryImages() : photoUploadBridge.capturePhoto();
+  const pick = (source: UploadSource, limit?: number): Promise<PickPhotosResult> => {
+    if (source === 'camera') return photoUploadBridge.capturePhoto();
+    return limit === undefined
+      ? photoUploadBridge.pickGalleryImages()
+      : photoUploadBridge.pickGalleryImages({ limit });
+  };
 
-  const start = async (source: UploadSource) => {
+  const start = async (
+    source: UploadSource,
+    options: UploadStartOptions = {},
+  ): Promise<UploadStartResult> => {
     // 번치를 아직 모르면(화면이 준비되기 전) 올릴 곳이 없음
-    if (!bunchId) return;
+    if (!bunchId) return nothingUploaded('unavailable');
     const targetBunchId = bunchId;
     if (!isNativeShell()) {
       toast(PHOTO_BOX_MESSAGES.uploadUnavailable);
-      return;
+      return nothingUploaded('unavailable');
     }
     const method = source === 'album' ? 'pickGalleryImages' : 'capturePhoto';
     if (!photoUploadBridge.isNativeMethodAvailable(method)) {
       toast(PHOTO_BOX_MESSAGES.uploadNeedsUpdate);
-      return;
+      return nothingUploaded('unavailable');
     }
 
     let picked: PickPhotosResult;
     try {
-      picked = await pick(source);
+      picked = await pick(source, options.limit);
     } catch {
       toast(PHOTO_BOX_MESSAGES.uploadFailed);
-      return;
+      return nothingUploaded('failed');
     }
-    if (picked.status === 'canceled') return;
+    if (picked.status === 'canceled') return nothingUploaded('canceled');
     if (picked.status === 'denied') {
       // 안내 문구가 카메라 권한이므로 카메라에서만 열고, 앨범에서 거부가 오면(계약상 없음) 일반 오류로 알림
       if (source === 'camera') showCameraPermissionDialog();
       else toast(PHOTO_BOX_MESSAGES.uploadFailed);
-      return;
+      return nothingUploaded('canceled');
     }
+    options.onPicked?.(picked.photos.length);
 
     const uploadBatchId = createUploadBatchId();
     // 한도 오류를 받으면 남은 사진은 읽지도 보내지도 않고 「올리지 못한 사진」으로 셈(어차피 거절되므로)
@@ -256,7 +306,12 @@ export function usePhotoUpload(bunchId: string | undefined) {
         return result;
       }),
     );
-    finish(targetBunchId, uploadBatchId, results);
+    finish(targetBunchId, uploadBatchId, results, options);
+    return {
+      status: 'done',
+      photoIds: results.flatMap((result) => (result.photoId ? [result.photoId] : [])),
+      failed: results.filter((result) => result.outcome.startsWith('failed')).length,
+    };
   };
 
   return { start, uploading: uploadingCount > 0 };

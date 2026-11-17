@@ -34,6 +34,8 @@ type BundleEditScreenProps = {
   onImportFromBunchBox: () => void;
   /** 사진 추가 시트의 「내 갤러리에서 가져오기」(더 담을 수 있는 장수와 함께) */
   onImportFromGallery: (_maxCount: number) => void;
+  /** 갤러리에서 가져오는 중이면 고른 장수(칸 로딩과 사진 작업 중 표시에 씀) */
+  galleryImporting?: number | undefined;
 };
 
 const noop = () => undefined;
@@ -56,6 +58,7 @@ export function BundleEditScreen({
   onOpenPhoto,
   onImportFromBunchBox,
   onImportFromGallery,
+  galleryImporting,
 }: BundleEditScreenProps) {
   const openOverlay = useScreenOverlay();
 
@@ -139,6 +142,7 @@ export function BundleEditScreen({
         onDenied={noop}
         onImportFromBunchBox={onImportFromBunchBox}
         onImportFromGallery={onImportFromGallery}
+        galleryImporting={galleryImporting}
       />
       <DraftComments
         draft={draft}

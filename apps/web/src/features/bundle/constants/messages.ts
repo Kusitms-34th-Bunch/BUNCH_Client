@@ -27,6 +27,8 @@ export const BUNDLE_MESSAGES = {
   pickDeletedTitle: '삭제된 사진이에요',
   pickDeletedDescription: '삭제된 사진은 픽할 수 없어요.',
   photoCount: (count: number) => `사진 ${count}장`,
+  // 갤러리에서 가져온 사진이 올라가는 동안 읽어 주는 문구(사진함 올리기와 같음)
+  galleryUploading: '사진을 올리는 중이에요.',
   photosTitle: '사진',
   locationAdd: '위치 추가',
   locationMax: '위치는 최대 3개까지 추가할 수 있어요.',

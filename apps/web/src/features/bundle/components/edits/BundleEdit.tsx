@@ -18,6 +18,8 @@ type BundleEditProps = {
   onSaved?: (() => void) | undefined;
   /** 사진 추가 시트의 「내 갤러리에서 가져오기」(사진함 상태가 필요해 route가 연결, 더 담을 수 있는 장수와 함께) */
   onImportFromGallery: (_maxCount: number) => void;
+  /** 갤러리에서 가져오는 중이면 고른 장수(칸 로딩과 사진 작업 중 표시에 씀) */
+  galleryImporting?: number | undefined;
 };
 
 /**
@@ -25,7 +27,7 @@ type BundleEditProps = {
  * 메인 관리자가 아니면 안내 뒤, 없는 번들이거나 발행 전이면 안내 없이 상세·작성 화면으로 돌려보냄
  * 저장하면 상세로 돌아가 「번들을 수정했어요」를 알리고, 저장하는 동안은 로딩이 화면을 덮음
  */
-export function BundleEdit({ onSaved, onImportFromGallery }: BundleEditProps) {
+export function BundleEdit({ onSaved, onImportFromGallery, galleryImporting }: BundleEditProps) {
   const router = useRouter();
   const backOr = useBackOr();
   const { bunchId, bundleId, state, actions } = useBundleEditContext();
@@ -87,6 +89,7 @@ export function BundleEdit({ onSaved, onImportFromGallery }: BundleEditProps) {
             router.push(BUNDLE_PATHS.editPhotoAdd(bunchId, bundleId));
           }}
           onImportFromGallery={onImportFromGallery}
+          galleryImporting={galleryImporting}
         />
       </div>
     </>

@@ -435,7 +435,7 @@ describe('usePhotoUpload 대상 번치', () => {
     );
     const { result, rerender } = render({ id: '1' });
 
-    let started: Promise<void> = Promise.resolve();
+    let started: Promise<unknown> = Promise.resolve();
     act(() => {
       started = result.current.start('album');
     });
@@ -524,7 +524,7 @@ describe('usePhotoUpload 상태 안내', () => {
     const { result } = render();
     expect(result.current.uploading).toBe(false);
 
-    let started: Promise<void> = Promise.resolve();
+    let started: Promise<unknown> = Promise.resolve();
     act(() => {
       started = result.current.start('album');
     });
@@ -554,7 +554,7 @@ describe('usePhotoUpload 상태 안내', () => {
     );
     const { result, unmount } = render();
 
-    let started: Promise<void> = Promise.resolve();
+    let started: Promise<unknown> = Promise.resolve();
     act(() => {
       started = result.current.start('camera');
     });
@@ -622,7 +622,7 @@ describe('usePhotoUpload 사진 목록 갱신', () => {
     const spy = vi.spyOn(client, 'invalidateQueries');
     const { result } = render({ id: bunchId }, client);
 
-    let upload!: Promise<void>;
+    let upload!: Promise<unknown>;
     act(() => {
       upload = result.current.start('album');
     });
@@ -661,7 +661,7 @@ describe('usePhotoUpload 사진 목록 갱신', () => {
     const spy = vi.spyOn(client, 'invalidateQueries');
     const { result, rerender } = render({ id: '1' }, client);
 
-    let started: Promise<void> = Promise.resolve();
+    let started: Promise<unknown> = Promise.resolve();
     act(() => {
       started = result.current.start('album');
     });
