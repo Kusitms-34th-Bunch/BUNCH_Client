@@ -35,7 +35,7 @@ export const MY_MESSAGES = {
     termsSection: '이용약관',
     privacySection: '개인정보 처리 및 동의',
     demographics: {
-      title: '추가 개인정보 수집 및 동의',
+      title: '추가 개인정보 수집 및 이용 동의',
       viewFull: '전문보기',
       agree: {
         title: '추가 개인정보 수집에 동의할까요?',
@@ -47,6 +47,8 @@ export const MY_MESSAGES = {
         description: '철회 시 출생연도와 성별 정보가 삭제돼요.',
         confirm: '동의 철회',
       },
+      // 기능명세서 7.4.4·7.4.5 예외 처리(동의 상태 불러오기·저장 실패)
+      failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
     },
   },
   // 회원 탈퇴(화면 설계서 MY(5))

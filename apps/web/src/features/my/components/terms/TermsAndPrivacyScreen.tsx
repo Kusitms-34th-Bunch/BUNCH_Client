@@ -21,6 +21,8 @@ import { MenuSection } from '../MenuSection';
 type TermsAndPrivacyScreenProps = {
   /** 추가 개인정보 수집·이용 동의 상태 */
   consent: boolean;
+  /** 동의 상태를 아직 받지 못했거나 불러오기에 실패해 토글을 누를 수 없음(기능명세서 7.4.4 예외) */
+  consentDisabled?: boolean | undefined;
   /** 확인 창에서 「동의하기」·「동의 철회」를 눌렀을 때 저장 시작. 끝나면(성공·실패 모두) `done`을 불러 창을 닫음 */
   onChangeConsent: (_agreed: boolean, _done: () => void) => void;
 };
@@ -29,7 +31,11 @@ type TermsAndPrivacyScreenProps = {
  * 약관 및 개인정보(화면 설계서 MY(4), 기능명세서 7.4.4·7.4.5): 약관 원문 이동과 추가 개인정보 수집 동의 토글
  * 토글은 누르는 순간 바뀌지 않고 확인 창에서 확인해야 바뀜. 확인 창은 저장 중에 닫거나 다시 누를 수 없음
  */
-export function TermsAndPrivacyScreen({ consent, onChangeConsent }: TermsAndPrivacyScreenProps) {
+export function TermsAndPrivacyScreen({
+  consent,
+  consentDisabled = false,
+  onChangeConsent,
+}: TermsAndPrivacyScreenProps) {
   const backOr = useBackOr();
   const openOverlay = useScreenOverlay();
   const titleId = useId();
@@ -107,6 +113,7 @@ export function TermsAndPrivacyScreen({ consent, onChangeConsent }: TermsAndPriv
             <Toggle
               aria-labelledby={titleId}
               checked={consent}
+              disabled={consentDisabled}
               onChange={(event) => openConfirm(event.currentTarget.checked)}
             />
           </li>
