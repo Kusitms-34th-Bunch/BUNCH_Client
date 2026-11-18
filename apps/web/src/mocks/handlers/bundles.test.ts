@@ -548,6 +548,7 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     titleCrdtState: string;
     titleVersion: number;
     titleTooLong: boolean;
+    publishBlockers: string[];
   };
   const merge = (id: number, state: unknown) =>
     call('PATCH', `${base}/${id}/title/crdt`, { state }) as unknown as Promise<{
@@ -599,6 +600,7 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     const detail = await call('GET', `${base}/${draft.id}`);
 
     expect(json.data).toMatchObject({ title: '가'.repeat(41), titleTooLong: true });
+    expect(json.data.publishBlockers).toContain('TITLE_TOO_LONG');
     expect(detail.json.data.publishBlockers).toContain('TITLE_TOO_LONG');
   });
 
