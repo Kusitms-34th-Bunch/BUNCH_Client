@@ -14,13 +14,15 @@ describe('AdminTransferSheet', () => {
       name: '경진님을 관리자로 지정하고 나갈까요?',
     });
     expect(document.getElementById(sheet.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
-      '경진님이 번치 관리와 번들 발행 권한을 갖게 돼요.',
+      '경진님이 번치의 모든 관리 권한을 갖게 돼요.',
     );
-    expect(sheet.textContent).toContain('나가면 해당 번치에 더 이상 접근할 수 없어요.');
-    expect(sheet.textContent).toContain('함께 남긴 사진과 발행된 번들은 번치에 그대로 남아요.');
+    // 안내 문구는 기능명세 5.8.2 원문
+    expect(sheet.textContent).toContain(
+      '사진함에 직접 올린 사진은 삭제되지만, 이미 발행된 번들의 사진은 그대로 남아요.',
+    );
   });
 
-  it('「취소」는 닫기 요청, 「지정하고 나가기」는 onConfirm만 부른다', async () => {
+  it('「취소」는 닫기 요청, 「나가기」는 onConfirm만 부른다', async () => {
     const onOpenChange = vi.fn();
     const onConfirm = vi.fn();
     render(
@@ -32,7 +34,7 @@ describe('AdminTransferSheet', () => {
       />,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: '지정하고 나가기' }));
+    fireEvent.click(await screen.findByRole('button', { name: '나가기' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onOpenChange).not.toHaveBeenCalled();
 
@@ -40,7 +42,7 @@ describe('AdminTransferSheet', () => {
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
   });
 
-  it('처리 중에는 「지정하고 나가기」를 누를 수 없다', async () => {
+  it('처리 중에는 「나가기」를 누를 수 없다', async () => {
     render(
       <AdminTransferSheet
         open
@@ -52,7 +54,7 @@ describe('AdminTransferSheet', () => {
     );
 
     expect(
-      (await screen.findByRole<HTMLButtonElement>('button', { name: '지정하고 나가기' })).disabled,
+      (await screen.findByRole<HTMLButtonElement>('button', { name: '나가기' })).disabled,
     ).toBe(true);
   });
 });

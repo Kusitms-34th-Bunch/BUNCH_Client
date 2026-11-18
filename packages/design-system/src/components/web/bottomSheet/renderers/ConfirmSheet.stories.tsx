@@ -56,7 +56,7 @@ export const WithDescription: Story = {
   args: {
     title: '경진님을 관리자로 지정하고 나갈까요?',
     description: '경진님이 번치 관리와 번들 발행 권한을 갖게 돼요.',
-    confirmLabel: '지정하고 나가기',
+    confirmLabel: '나가기',
   },
 };
 export const WithoutIllustration: Story = { args: { illustration: undefined } };
