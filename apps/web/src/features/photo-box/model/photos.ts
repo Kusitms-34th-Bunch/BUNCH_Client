@@ -16,6 +16,11 @@ export const photoDeleteResponseSchema = z.object({
 
 export type PhotoDeleteResult = z.infer<typeof photoDeleteResponseSchema>;
 
+/** `POST /api/v1/bunches/{bunchId}/photos/date` 응답. 날짜를 바꾼 사진 수 */
+export const photoDateChangeResponseSchema = z.object({
+  updatedCount: z.number().int().nonnegative(),
+}) satisfies z.ZodType<ApiContract<components['schemas']['PhotoDateChangeResponse']>>;
+
 /**
  * `POST /api/v1/bunches/{bunchId}/photos` 응답. `STORED`는 새로 저장, `MERGED`는 다른 멤버가 올린 같은 사진에 올린 사람으로 추가,
  * `ALREADY_UPLOADED`는 내가 이미 올린 같은 사진(변경 없음). 세 경우 모두 사진 id를 돌려줌
@@ -44,6 +49,7 @@ const datedPhotoSchema = z.object({
   capturedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   capturedTime: capturedTimeSchema.nullish(),
   uploaderIds: uploaderIdsSchema,
+  usedInDraftBundle: z.boolean(),
 }) satisfies z.ZodType<
   Omit<ApiContract<components['schemas']['PhotoListItem']>, 'capturedTime'> & {
     capturedTime?: unknown;
@@ -54,6 +60,7 @@ const undatedPhotoSchema = z.object({
   photoId: z.number().int().positive(),
   thumbnailUrl: z.string(),
   uploaderIds: uploaderIdsSchema,
+  usedInDraftBundle: z.boolean(),
 }) satisfies z.ZodType<ApiContract<components['schemas']['PhotoUndatedItem']>>;
 
 /** `GET /api/v1/bunches/{bunchId}/photos` 응답(날짜를 아는 사진 한 페이지) */
@@ -93,6 +100,7 @@ export const toDatedPhotoBoxPhoto = (photo: z.infer<typeof datedPhotoSchema>): P
   takenAt: `${photo.capturedDate}T${toHourMinute(photo.capturedTime)}`,
   uploadedAt: toUploadedAt(photo.photoId),
   uploaderIds: photo.uploaderIds.map(toDomainId),
+  usedInDraftBundle: photo.usedInDraftBundle,
   status: 'ready',
 });
 
@@ -105,6 +113,7 @@ export const toUndatedPhotoBoxPhoto = (
   takenAt: null,
   uploadedAt: toUploadedAt(photo.photoId),
   uploaderIds: photo.uploaderIds.map(toDomainId),
+  usedInDraftBundle: photo.usedInDraftBundle,
   status: 'ready',
 });
 
@@ -120,6 +129,7 @@ export const photoDetailSchema = z.object({
   imageUrl: z.string().refine(isSafeImageUrl, 'https 주소 또는 같은 출처 경로만 허용'),
   capturedDate: z.string().nullish(),
   uploaders: z.array(photoDetailUploaderSchema),
+  usedInDraftBundle: z.boolean(),
 }) satisfies z.ZodType<
   // 중첩 배열은 계약 검사가 선택 필드를 다루지 못해 uploaders는 위 스키마에서 따로 검사
   Omit<ApiContract<components['schemas']['PhotoDetailResponse']>, 'uploaders'> & {

@@ -9,6 +9,8 @@ export const sharedKeys = {
   bunchMembers: (bunchId: string | undefined) => ['bunch-members', bunchId] as const,
   // 번치의 초대 링크(번치당 1개). 응답을 바꾸는 입력은 번치 하나뿐
   bunchInvitation: (bunchId: string | undefined) => ['bunch-invitation', bunchId] as const,
+  // 그 번치의 번들 상세 전체: 사진이 지워지면 서버가 작성 중인 번들에서도 사진을 빼므로 사진함이 번들 상세를 다시 받게 함(번들 feature의 `bundleKeys.detailsOf`와 같은 key)
+  bundleDetailsOf: (bunchId: string | undefined) => ['bundle', 'detail', bunchId] as const,
   // 번치 홈 데이터 전체: 번들 발행 뒤 한 번에 무효화해 번치 홈의 개수·목록이 함께 갱신되게 함
   bunchHomeScope: (bunchId: string | undefined) => ['bunch-home', bunchId] as const,
   bunchHome: (bunchId: string | undefined) =>

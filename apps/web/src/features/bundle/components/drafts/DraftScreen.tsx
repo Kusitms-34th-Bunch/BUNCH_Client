@@ -45,6 +45,8 @@ type DraftScreenProps = {
   onImportFromBunchBox: () => void;
   /** 사진 추가 시트의 「내 갤러리에서 가져오기」(더 담을 수 있는 장수와 함께) */
   onImportFromGallery: (_maxCount: number) => void;
+  /** 갤러리에서 가져오는 중이면 고른 장수(칸 로딩과 사진 작업 중 표시에 씀) */
+  galleryImporting?: number | undefined;
 };
 
 const notify = (message: string) => toast(message);
@@ -73,6 +75,7 @@ export function DraftScreen({
   onOpenPick,
   onImportFromBunchBox,
   onImportFromGallery,
+  galleryImporting,
 }: DraftScreenProps) {
   const openOverlay = useScreenOverlay();
   // 내가 지금 입력 중인 영역(제목·내 코멘트): 내 멤버 카드의 초록 점과 제목·코멘트 옆 프로필에 보임
@@ -202,7 +205,10 @@ export function DraftScreen({
         onOpenPhoto={onOpenPhoto}
         onOpenPick={onOpenPick}
         onImportFromBunchBox={onImportFromBunchBox}
-        onImportFromGallery={onImportFromGallery}
+        onImportFromGallery={(maxCount) => {
+          if (!offline) onImportFromGallery(maxCount);
+        }}
+        galleryImporting={galleryImporting}
       />
       <DraftComments
         draft={draft}

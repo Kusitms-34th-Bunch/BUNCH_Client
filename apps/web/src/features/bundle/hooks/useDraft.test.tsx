@@ -416,6 +416,25 @@ describe('useDraft 저장', () => {
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishConflict);
   });
 
+  it('발행 때 다시 검사한 금칙어로 거부(COMMON_003)되면 내용을 확인하라고 알리고 blocked로 끝낸다', async () => {
+    const { result } = await renderReady();
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', () =>
+        fail(400, 'COMMON_003', { fields: ['title'] }),
+      ),
+    );
+
+    act(() => result.current.actions.setVisibility('members'));
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.actions.publish();
+    });
+
+    expect(outcome).toBe('blocked');
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.publishProhibited);
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.publishFailed);
+  });
+
   it('저장이 진행 중일 때 발행을 눌러도 저장 실패로 처리하지 않고 끝나기를 기다린다', async () => {
     const { result } = await renderReady();
     server.use(

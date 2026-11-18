@@ -6,6 +6,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
+import { failIfProhibited } from '../lib/prohibitedWord';
 import { isBlockedBetween, viewerBunchId } from './follows';
 import { bundleAccess } from './likes';
 
@@ -173,6 +174,8 @@ export const commentHandlers = [
     ) {
       return fail(400, 'COMMON_001');
     }
+    const prohibited = failIfProhibited({ content });
+    if (prohibited) return prohibited;
     const state = mockDb.get();
     const access = bundleAccess(state, bundleId);
     if ('error' in access) return access.error;

@@ -2,18 +2,19 @@
 
 import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
+import type { NameCheckResult } from '../api/nameAvailability';
 
-export type NicknameAvailability = 'idle' | 'checking' | 'available' | 'taken' | 'failed';
-/** 닉네임 중복 확인 호출. 사용 가능하면 true */
-export type CheckNickname = (_nickname: string) => Promise<boolean>;
+export type NicknameAvailability = 'idle' | 'checking' | NameCheckResult | 'failed';
+/** 닉네임 확인 호출: 사용 가능·사용 중·금칙어 포함 */
+export type CheckNickname = (_nickname: string) => Promise<NameCheckResult>;
 
 export const CHECK_FAILURE_MESSAGE = '일시적인 오류가 발생했어요. 다시 시도해 주세요';
 const DEBOUNCE_MS = 500;
 
-type Result = { nickname: string; status: 'available' | 'taken' | 'failed' };
+type Result = { nickname: string; status: NameCheckResult | 'failed' };
 
 /**
- * 입력을 멈추고 0.5초 뒤 중복을 확인하는 상태
+ * 입력을 멈추고 0.5초 뒤 중복·금칙어를 확인하는 상태
  * `check`나 닉네임이 없으면 확인하지 않음(`idle`), 입력이 바뀐 직후부터 결과 도착까지는 `checking`
  * `check`는 최신 함수를 ref로 읽어, 렌더마다 새로 만든 함수여도 재호출하지 않음
  * 확인에 실패하면 `failed`와 함께 실패 토스트를 띄움(`notifyFailure: false`면 토스트 없이 `failed`만)
@@ -39,8 +40,8 @@ export function useNicknameAvailability(
     let cancelled = false;
     const timer = setTimeout(() => {
       checkRef.current?.(nickname).then(
-        (available) => {
-          if (!cancelled) setResult({ nickname, status: available ? 'available' : 'taken' });
+        (status) => {
+          if (!cancelled) setResult({ nickname, status });
         },
         () => {
           if (cancelled) return;

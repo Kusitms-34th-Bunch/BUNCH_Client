@@ -1,5 +1,6 @@
 import { http } from 'msw';
 import { mockDb } from '../db';
+import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { ok } from '../lib/envelope';
 
 // BFF 경로는 백엔드 경로에서 `/api/v1`을 뺀 경로(docs/architecture/api-boundary.md)
@@ -17,9 +18,26 @@ export const termHandlers = [
     }),
   ),
 
-  // POST /api/v1/auth/terms/agreements: 본문은 읽지 않고 약관 동의만 기록
-  http.post('/api/auth/terms/agreements', () => {
-    mockDb.update((state) => ({ ...state, session: { ...state.session, termsAccepted: true } }));
+  // POST /api/v1/auth/terms/agreements: 약관 동의를 기록하고, 선택 약관(DEMOGRAPHICS)에 동의했으면 추가 개인정보 동의로 저장
+  // 버전 값은 검사하지 않음
+  http.post('/api/auth/terms/agreements', async ({ request }) => {
+    const body = (await request.json().catch(() => null)) as {
+      agreements?: { type?: string; agreed?: boolean }[];
+    } | null;
+    const demographics = body?.agreements?.some(
+      (agreement) => agreement.type === 'DEMOGRAPHICS' && agreement.agreed === true,
+    );
+    mockDb.update((state) => ({
+      ...state,
+      session: { ...state.session, termsAccepted: true },
+      members: demographics
+        ? state.members.map((member) =>
+            member.memberId === MOCK_MY_MEMBER_ID
+              ? { ...member, additionalInfoConsented: true }
+              : member,
+          )
+        : state.members,
+    }));
     return ok(null);
   }),
 ];

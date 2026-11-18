@@ -84,6 +84,7 @@ const listPhotos = (
   const page = matched.slice(start, start + query.size);
   const last = page.at(-1);
   return {
+    bunchId,
     totalCount: matched.length,
     page,
     nextCursor:
@@ -103,7 +104,18 @@ const batchCounts = new Map<string, number>();
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+// 서버는 오늘(Asia/Seoul) 이후 날짜를 거절함('yyyy-MM-dd'라 문자열 비교로 충분)
+const todayInSeoul = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const TIME = /^\d{2}:\d{2}:\d{2}$/;
+// 촬영 시각의 UTC 오프셋(±HH:mm, -12:00 ~ +14:00)과 원본 유형(서버 PR #153)
+const SOURCE_TYPES = ['CAMERA', 'SCREENSHOT', 'SAVED_IMAGE', 'UNKNOWN'];
+const isUtcOffset = (value: string) => {
+  const match = /^([+-])(\d{2}):([0-5]\d)$/.exec(value);
+  if (!match) return false;
+  const minutes = Number(match[2]) * 60 + Number(match[3]);
+  const signed = match[1] === '-' ? -minutes : minutes;
+  return signed >= -12 * 60 && signed <= 14 * 60;
+};
 
 type UploadRequest = {
   uploadBatchId: string;
@@ -120,6 +132,9 @@ const parseUploadRequest = (form: FormData | null) => {
   const capturedDate = form.get('capturedDate') ?? undefined;
   const capturedTime = form.get('capturedTime') ?? undefined;
   const originalFileHash = form.get('originalFileHash') ?? undefined;
+  // 빈 문자열은 보내지 않은 것으로 봄(서버)
+  const capturedUtcOffset = form.get('capturedUtcOffset') || undefined;
+  const sourceType = form.get('sourceType') || undefined;
   if (typeof uploadBatchId !== 'string' || !UUID.test(uploadBatchId)) return undefined;
   if (
     capturedDate !== undefined &&
@@ -140,6 +155,18 @@ const parseUploadRequest = (form: FormData | null) => {
   ) {
     return undefined;
   }
+  if (
+    capturedUtcOffset !== undefined &&
+    !(typeof capturedUtcOffset === 'string' && isUtcOffset(capturedUtcOffset))
+  ) {
+    return undefined;
+  }
+  if (
+    sourceType !== undefined &&
+    !(typeof sourceType === 'string' && SOURCE_TYPES.includes(sourceType))
+  ) {
+    return undefined;
+  }
   return {
     uploadBatchId,
     capturedDate: capturedDate ?? null,
@@ -153,12 +180,23 @@ const sha256Hex = async (file: Blob) => {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 };
 
+// 작성 중(DRAFT) 번들에 담긴 사진 ID(서버 PR #140의 usedInDraftBundle). 발행된 번들은 사진을 지워도 남으므로 세지 않음
+const draftBundlePhotoIds = (bunchId: number) =>
+  new Set(
+    mockDb
+      .get()
+      .bundles.filter((bundle) => bundle.bunchId === bunchId && bundle.status === 'DRAFT')
+      .flatMap((bundle) => bundle.photos.map((photo) => photo.photoId))
+      .filter((photoId): photoId is number => photoId !== null),
+  );
+
 export const photoHandlers = [
   // GET /api/v1/bunches/{bunchId}/photos
   // 날짜를 아는 사진을 최신순으로(memberId로 올린 사람 필터, cursor 페이지)
   http.get('/api/bunches/:bunchId/photos', ({ params, request }) => {
     const result = listPhotos(params.bunchId, new URL(request.url), true);
     if (result.error) return result.error;
+    const used = draftBundlePhotoIds(result.bunchId);
     return ok({
       totalCount: result.totalCount,
       photos: result.page.map((photo) => ({
@@ -167,6 +205,7 @@ export const photoHandlers = [
         capturedDate: photo.capturedDate,
         capturedTime: photo.capturedTime,
         uploaderIds: photo.uploaderIds,
+        usedInDraftBundle: used.has(photo.photoId),
       })),
       nextCursor: result.nextCursor,
     });
@@ -176,12 +215,14 @@ export const photoHandlers = [
   http.get('/api/bunches/:bunchId/photos/undated', ({ params, request }) => {
     const result = listPhotos(params.bunchId, new URL(request.url), false);
     if (result.error) return result.error;
+    const used = draftBundlePhotoIds(result.bunchId);
     return ok({
       totalCount: result.totalCount,
       photos: result.page.map((photo) => ({
         photoId: photo.photoId,
         thumbnailUrl: photo.thumbnailUrl,
         uploaderIds: photo.uploaderIds,
+        usedInDraftBundle: used.has(photo.photoId),
       })),
       nextCursor: result.nextCursor,
     });
@@ -266,7 +307,15 @@ export const photoHandlers = [
     const bunchId = toWireId(params.bunchId);
     const body: unknown = await request.json().catch(() => null);
     const photoIds = (body as { photoIds?: unknown } | null)?.photoIds;
-    if (bunchId === undefined || !isPhotoIdList(photoIds)) return fail(400, 'COMMON_001');
+    // 서버는 빈 목록·50개 초과·중복·1 미만 ID를 400 COMMON_001로 거절함
+    if (
+      bunchId === undefined ||
+      !isPhotoIdList(photoIds) ||
+      photoIds.length > 50 ||
+      new Set(photoIds).size !== photoIds.length
+    ) {
+      return fail(400, 'COMMON_001');
+    }
 
     const { memberships, photos } = mockDb.get();
     const myRole = memberships.find(
@@ -277,8 +326,9 @@ export const photoHandlers = [
     const targets = photos.filter(
       (photo) => photo.bunchId === bunchId && photoIds.includes(photo.photoId),
     );
-    if (targets.length !== new Set(photoIds).size) return fail(404, 'RESOURCE_001');
-    // ponytail: 남의 사진을 지우려는 멤버의 오류 코드는 명세에 없어 AUTH_002로 대신함, 명세 확정 시 교체
+    // 고른 사진 중 일부가 그사이 지워졌으면 아무것도 삭제하지 않고 사라진 사진 ID를 요청한 순서대로 알림
+    const missingPhotoIds = photoIds.filter((id) => !targets.some((photo) => photo.photoId === id));
+    if (missingPhotoIds.length > 0) return fail(409, 'PHOTO_004', { missingPhotoIds });
     const isAdmin = myRole !== 'MEMBER';
     if (!isAdmin && targets.some((photo) => !photo.uploaderIds.includes(MOCK_MY_MEMBER_ID))) {
       return fail(403, 'AUTH_002');
@@ -291,8 +341,20 @@ export const photoHandlers = [
     const uploaderRemovedCount = targets.filter(keepsOthers).length;
     const deletedCount = targets.length - uploaderRemovedCount;
 
+    // 사진이 사라지면 작성 중인 번들에서도 빠지고(서버 처리, 명세 3.3.5 로직 4), 사진이 0장이 된 초안은 삭제됨
+    const vanishedIds = new Set(
+      targets.filter((photo) => !keepsOthers(photo)).map((photo) => photo.photoId),
+    );
     mockDb.update((current) => ({
       ...current,
+      bundles: current.bundles.flatMap((bundle) => {
+        if (bundle.status !== 'DRAFT') return [bundle];
+        const remaining = bundle.photos.filter(
+          (photo) => photo.photoId === null || !vanishedIds.has(photo.photoId),
+        );
+        if (remaining.length === bundle.photos.length) return [bundle];
+        return remaining.length === 0 ? [] : [{ ...bundle, photos: remaining }];
+      }),
       photos: current.photos.flatMap((photo) => {
         if (!targets.includes(photo)) return [photo];
         if (!keepsOthers(photo)) return [];
@@ -302,6 +364,65 @@ export const photoHandlers = [
       }),
     }));
     return ok({ deletedCount, uploaderRemovedCount });
+  }),
+
+  // POST /api/v1/bunches/{bunchId}/photos/date
+  // 고른 사진(1~50장, 중복 불가)의 촬영 날짜만 바꿈(시각 유지). 전부 성공 또는 전부 실패
+  // 확인 순서(서버 명세): 입력·날짜 400 → 번치·소속 → 사라진 사진 409 PHOTO_004 → 권한 403 AUTH_002
+  // clearDate: true면 capturedDate 없이 날짜 없음으로 되돌림(날짜 미확인 사진을 끌어 옮긴 것을 되돌릴 때)
+  http.post('/api/bunches/:bunchId/photos/date', async ({ params, request }) => {
+    const bunchId = toWireId(params.bunchId);
+    const body = (await request.json().catch(() => null)) as {
+      photoIds?: unknown;
+      capturedDate?: unknown;
+      clearDate?: unknown;
+    } | null;
+    const photoIds = body?.photoIds;
+    const capturedDate = body?.capturedDate;
+    const clearDate = body?.clearDate === true;
+    if (
+      bunchId === undefined ||
+      !isPhotoIdList(photoIds) ||
+      photoIds.length > 50 ||
+      new Set(photoIds).size !== photoIds.length ||
+      !(clearDate
+        ? capturedDate === undefined
+        : typeof capturedDate === 'string' &&
+          DATE.test(capturedDate) &&
+          capturedDate <= todayInSeoul())
+    ) {
+      return fail(400, 'COMMON_001');
+    }
+
+    const { bunches, memberships, photos } = mockDb.get();
+    if (!bunches.some((bunch) => bunch.id === bunchId)) return fail(404, 'RESOURCE_001');
+    const myRole = memberships.find(
+      (membership) => membership.bunchId === bunchId && membership.memberId === MOCK_MY_MEMBER_ID,
+    )?.role;
+    if (!myRole) return fail(403, 'AUTH_002');
+
+    const targets = photos.filter(
+      (photo) => photo.bunchId === bunchId && photoIds.includes(photo.photoId),
+    );
+    const missingPhotoIds = photoIds.filter((id) => !targets.some((photo) => photo.photoId === id));
+    if (missingPhotoIds.length > 0) return fail(409, 'PHOTO_004', { missingPhotoIds });
+    // 일반 멤버가 다른 멤버만 올린 사진을 하나라도 섞으면 아무것도 바꾸지 않음(함께 올린 사진은 올린 멤버 누구라도 가능)
+    const isAdmin = myRole !== 'MEMBER';
+    if (!isAdmin && targets.some((photo) => !photo.uploaderIds.includes(MOCK_MY_MEMBER_ID))) {
+      return fail(403, 'AUTH_002');
+    }
+
+    mockDb.update((current) => ({
+      ...current,
+      photos: current.photos.map((photo) =>
+        targets.includes(photo)
+          ? clearDate
+            ? { ...photo, capturedDate: null, capturedTime: null }
+            : { ...photo, capturedDate: capturedDate as string }
+          : photo,
+      ),
+    }));
+    return ok({ updatedCount: targets.length });
   }),
 
   // GET /api/v1/bunches/{bunchId}/photos/{photoId}
@@ -324,6 +445,7 @@ export const photoHandlers = [
     return ok({
       photoId: photo.photoId,
       imageUrl: photo.imageUrl,
+      usedInDraftBundle: draftBundlePhotoIds(bunchId).has(photo.photoId),
       ...(photo.capturedDate ? { capturedDate: photo.capturedDate } : {}),
       uploaders: photo.uploaderIds.flatMap((memberId) => {
         const member = members.find((item) => item.memberId === memberId);

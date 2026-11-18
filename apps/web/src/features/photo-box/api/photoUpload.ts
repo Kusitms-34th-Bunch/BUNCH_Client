@@ -1,6 +1,18 @@
 import { normalizeError } from '@app/api-core';
+import { PHOTO_SOURCE_TYPES, type PhotoSourceType } from '@app/bridge';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { photoUploadResponseSchema } from '../model/photos';
+
+// 쉘이 준 값이라도 서버가 거절할 값(형식·범위 밖)은 필드를 빼고 올림(한 필드 때문에 사진 업로드가 실패하지 않게 함)
+const isUtcOffset = (value: string) => {
+  const match = /^([+-])(\d{2}):([0-5]\d)$/.exec(value);
+  if (!match) return false;
+  const minutes = Number(match[2]) * 60 + Number(match[3]);
+  const signed = match[1] === '-' ? -minutes : minutes;
+  return signed >= -12 * 60 && signed <= 14 * 60;
+};
+const isSourceType = (value: string): value is PhotoSourceType =>
+  (PHOTO_SOURCE_TYPES as readonly string[]).includes(value);
 
 /** 사진 1장을 올리는 요청의 제한 시간. 모바일 네트워크에서 수 MB를 보내므로 기본보다 길게 둠 */
 const UPLOAD_TIMEOUT_MS = 60_000;
@@ -15,6 +27,10 @@ export type UploadPhotoInput = {
   capturedDate?: string | undefined;
   /** 촬영 현지 시각(HH:mm:ss). 날짜 없이 보낼 수 없음 */
   capturedTime?: string | undefined;
+  /** 촬영 시각의 UTC 오프셋(`+09:00`). 모르면 보내지 않음(서버는 한국 시간으로 봄) */
+  capturedUtcOffset?: string | undefined;
+  /** 원본 유형. 쉘이 원본 EXIF로 분류한 값이고, 이전 쉘은 보내지 않음(서버에는 값 없음으로 저장됨) */
+  sourceType?: PhotoSourceType | undefined;
   /** 가공 전 원본 파일의 SHA-256(소문자 hex 64자). 서버가 같은 원본 사진을 판별하는 데 씀. 없으면 보내지 않음 */
   originalFileHash?: string | undefined;
   signal?: AbortSignal | undefined;
@@ -32,6 +48,8 @@ export const uploadPhoto = async ({
   uploadBatchId,
   capturedDate,
   capturedTime,
+  capturedUtcOffset,
+  sourceType,
   originalFileHash,
   signal,
 }: UploadPhotoInput) => {
@@ -43,7 +61,11 @@ export const uploadPhoto = async ({
     if (capturedDate) body.append('capturedDate', capturedDate);
     // 날짜 없이 시각만 보내면 서버가 거절하므로 날짜가 있을 때만 보냄
     if (capturedDate && capturedTime) body.append('capturedTime', capturedTime);
-    // 서버가 필드 이름·형식을 확정하면 이 한 줄만 맞춤(처음 제안: 평면 폼 필드 originalFileHash, 소문자 hex 64자)
+    // 쉘이 원본 EXIF에서 뽑은 값이라 가공한 JPEG에서는 서버가 읽을 수 없음(서버 PR #153). 두 값 모두 쉘이 준 값만 보내고(유형은 쉘이 판단하지 못하면 UNKNOWN으로 줌), 없는 값은 필드를 생략함. 서버가 거절할 값도 생략함
+    if (capturedUtcOffset && isUtcOffset(capturedUtcOffset)) {
+      body.append('capturedUtcOffset', capturedUtcOffset);
+    }
+    if (sourceType && isSourceType(sourceType)) body.append('sourceType', sourceType);
     if (originalFileHash) body.append('originalFileHash', originalFileHash);
     return await requestData(
       bffApi.post(`bunches/${encodeURIComponent(bunchId)}/photos`, {

@@ -1,8 +1,10 @@
 import type { components } from '@app/api-core/generated';
 import { type ApiContract, normalizeError } from '@app/api-core';
 import { z } from 'zod';
+import type { Gender } from '@/shared/components/profile/GenderField';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { dataUrlToBlob } from '@/shared/lib/dataUrl';
+import { toServerGender } from '@/shared/lib/gender';
 
 /** 프로필 사진을 어떻게 할지: 그대로, 새 사진(조정을 마친 JPEG data URL), 기본 이미지로 */
 export type ProfilePhotoChange =
@@ -14,6 +16,11 @@ export type ProfileUpdateInput = {
   /** 앞뒤 공백을 지운 닉네임 */
   nickname: string;
   photo: ProfilePhotoChange;
+  /**
+   * 출생연도·성별. 추가 개인정보에 동의한 사람만 넣음(동의하지 않았으면 보내지 않음, 기능명세서 7.2.6)
+   * 비운 값은 키를 빼고 보내 서버가 없음(null)으로 저장함
+   */
+  demographics?: { birthYear?: number | undefined; gender?: Gender | undefined } | undefined;
 };
 
 /** `PUT /api/v1/members/me/profile` 응답. 다시 받은 내 프로필로 화면을 맞추므로 값은 검증만 함 */
@@ -24,15 +31,24 @@ const updatedProfileSchema = z.object({
 }) satisfies z.ZodType<Omit<ApiContract<components['schemas']['MemberResponse']>, 'defaultBunch'>>;
 
 /**
- * 내 프로필 수정. multipart(`profile` JSON의 닉네임·사진 처리 + 새 사진이면 `photo` JPEG)
- * 출생연도·성별은 계약에 없어 보내지 않음(필드가 생기면 여기와 `toMyProfile`을 고침, mock-server-status.md 확인 표, 2026-11-16 확인)
+ * 내 프로필 수정. multipart(`profile` JSON의 닉네임·사진 처리·출생연도와 성별 + 새 사진이면 `photo` JPEG)
  * 실패는 `ApiError`로 던짐(닉네임 중복은 가입과 같은 `USER_002`로 봄)
  */
-export const updateMyProfile = async ({ nickname, photo }: ProfileUpdateInput) => {
+export const updateMyProfile = async ({ nickname, photo, demographics }: ProfileUpdateInput) => {
   try {
     const profile = {
       nickname,
       imageAction: photo.action,
+      ...(demographics
+        ? {
+            demographics: {
+              ...(demographics.birthYear === undefined
+                ? {}
+                : { birthYear: demographics.birthYear }),
+              ...(demographics.gender ? { gender: toServerGender(demographics.gender) } : {}),
+            },
+          }
+        : {}),
     } satisfies components['schemas']['MemberProfileRequest'];
     const body = new FormData();
     body.append('profile', new Blob([JSON.stringify(profile)], { type: 'application/json' }));

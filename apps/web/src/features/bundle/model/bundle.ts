@@ -61,6 +61,18 @@ const bundleCommentSchema = z.object({
   profileAvailable: z.boolean(),
 }) satisfies z.ZodType<ApiContract<Schemas['BundleCommentResponse']>>;
 
+/**
+ * 초안의 금칙어 검사 상태(서버가 자동 저장 때 검사해 스냅샷·제목 병합 응답·TITLE/COMMENT/PARTICIPANTS 이벤트에 함께 줌)
+ * 발행본은 소급 검사하지 않아 null. 현재 참여자의 코멘트만 담김(기능명세 4.3.3 로직 5·4.3.8 로직 1)
+ */
+export const bundleProfanitySchema = z.object({
+  dictionaryVersion: z.string(),
+  titleHasProhibitedWord: z.boolean(),
+  comments: z.array(
+    z.object({ memberId: z.number().int().positive(), hasProhibitedWord: z.boolean() }),
+  ),
+}) satisfies z.ZodType<ApiContract<Schemas['BundleProfanityState']>>;
+
 const bundlePermissionsSchema = z.object({
   administrator: z.boolean(),
   creator: z.boolean(),
@@ -115,6 +127,7 @@ export const bundleSnapshotSchema = z.object({
   publishedAt: z.string().nullish(),
   publishedBy: z.number().int().positive().nullish(),
   publisherNickname: z.string().nullish(),
+  profanity: bundleProfanitySchema.nullish(),
 }) satisfies z.ZodType<
   Omit<
     ApiContract<Schemas['BundleSnapshot']>,
@@ -132,10 +145,12 @@ export const bundleSnapshotSchema = z.object({
 export type PublishBlockerReason =
   | 'TITLE_REQUIRED'
   | 'TITLE_TOO_LONG'
+  | 'TITLE_PROHIBITED_WORD'
   | 'VISIBILITY_REQUIRED'
   | 'PARTICIPANTS_REQUIRED'
   | 'PARTICIPANT_INACTIVE'
   | 'COMMENTS_REQUIRED'
+  | 'COMMENTS_PROHIBITED_WORD'
   | 'PHOTOS_REQUIRED';
 
 /** 번들 장소 작업 적용(`locations/intents`) 응답: 최신 장소 목록과 버전 */
@@ -157,6 +172,8 @@ export const bundleTitleStateSchema = z.object({
   titleCrdtState: z.string(),
   titleVersion: z.number().int().nonnegative(),
   titleTooLong: z.boolean(),
+  profanity: bundleProfanitySchema,
+  publishBlockers: z.array(z.string()),
 }) satisfies z.ZodType<ApiContract<Schemas['BundleTitleState']>>;
 
 export type BundleTitleState = z.infer<typeof bundleTitleStateSchema>;
@@ -198,6 +215,8 @@ export type BundleDetail = {
   permissions: z.infer<typeof bundlePermissionsSchema>;
   /** 병합된 제목이 40자를 넘음(자르지 않고 보존, 발행 불가 사유) */
   titleTooLong: boolean;
+  /** 초안의 금칙어 검사 결과(발행본·서버가 주지 않으면 undefined) */
+  profanity: BundleProfanity | undefined;
   /** 제목 CRDT 문서(Automerge 전체 저장 문서의 base64). 발행본에는 없음 */
   titleCrdtState: string | undefined;
   /** 발행본의 발행자 닉네임(초안에는 없음) */
@@ -276,6 +295,24 @@ export const toParticipantIds = (participants: readonly SnapshotParticipant[]): 
     .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
     .map((participant) => toDomainId(participant.memberId));
 
+/** 금칙어 검사 상태: 제목에 있는지, 금칙어가 있는 코멘트를 쓴 멤버 id */
+export type BundleProfanity = {
+  titleProhibited: boolean;
+  prohibitedCommentMemberIds: readonly string[];
+};
+
+export const toBundleProfanity = (
+  profanity: z.infer<typeof bundleProfanitySchema> | null | undefined,
+): BundleProfanity | undefined =>
+  profanity
+    ? {
+        titleProhibited: profanity.titleHasProhibitedWord,
+        prohibitedCommentMemberIds: profanity.comments
+          .filter((comment) => comment.hasProhibitedWord)
+          .map((comment) => toDomainId(comment.memberId)),
+      }
+    : undefined;
+
 export const toDetailComment = (comment: SnapshotComment): BundleDetail['comments'][number] => ({
   memberId: toDomainId(comment.memberId),
   content: comment.content,
@@ -313,6 +350,7 @@ export const toBundleDetail = (snapshot: z.infer<typeof bundleSnapshotSchema>): 
   publishBlockers: snapshot.publishBlockers,
   permissions: snapshot.permissions,
   titleTooLong: snapshot.titleTooLong,
+  profanity: toBundleProfanity(snapshot.profanity),
   titleCrdtState: snapshot.titleCrdtState ?? undefined,
   publisherNickname: snapshot.publisherNickname ?? undefined,
   photoChangeResult: snapshot.photoChangeResult
@@ -337,6 +375,11 @@ export const bundleEventEnvelopeSchema = z.object({
 const versionSchema = z.number().int().nonnegative();
 
 /** 내용 이벤트 type별 data. 모양이 다르면 이벤트로 적용하지 않고 최신 상세를 다시 받음 */
+const profanityEventFields = {
+  profanity: bundleProfanitySchema.nullish(),
+  publishBlockers: z.array(z.string()).nullish(),
+};
+
 export const bundleEventDataSchemas = {
   DATE: z.object({
     value: z.string().nullable(),
@@ -349,17 +392,20 @@ export const bundleEventDataSchemas = {
   }),
   LOCATION: z.object({ locations: z.array(bundleLocationSchema), version: versionSchema }),
   PHOTOS: z.object({ photos: z.array(bundlePhotoSchema), dateChips: z.array(z.string()) }),
-  COMMENT: bundleCommentSchema,
+  // 금칙어 상태와 발행 차단 사유는 기존 필드에 더해 오는 값(없는 이벤트도 받음)
+  COMMENT: bundleCommentSchema.extend(profanityEventFields),
   PARTICIPANTS: z.object({
     participants: z.array(bundleParticipantSchema),
     comments: z.array(bundleCommentSchema),
     removedCommentMemberIds: z.array(z.number().int().positive()).nullish(),
+    ...profanityEventFields,
   }),
   TITLE: z.object({
     title: z.string(),
     titleVersion: versionSchema,
     titleCrdtState: z.string(),
     titleTooLong: z.boolean(),
+    ...profanityEventFields,
   }),
   /** 별도 갱신(내용 revision을 올리지 않음): 배열 그대로이거나 `{ dateChips }` */
   DATE_CHIPS: z.union([

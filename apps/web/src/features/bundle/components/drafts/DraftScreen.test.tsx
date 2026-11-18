@@ -475,6 +475,34 @@ describe('입력', () => {
     expect(actions.setComment).toHaveBeenCalledWith('jiye', expect.stringContaining('!'));
   });
 
+  it('제목에 금칙어가 있으면 제목 아래에 안내하고 업로드를 막는다(기능명세 4.3.3)', async () => {
+    renderScreen({
+      viewer: creator,
+      draft: { ...publishable, prohibited: { title: true, commentMemberIds: [] } },
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(BUNDLE_MESSAGES.prohibitedWord);
+    expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(uploadButton());
+    expect(onUpload).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.uploadIncomplete);
+  });
+
+  it('다른 멤버의 코멘트에 금칙어가 있으면 그 카드 아래에 안내하고 업로드를 막는다(기능명세 4.3.8)', () => {
+    renderScreen({
+      viewer: creator,
+      draft: { ...publishable, prohibited: { title: false, commentMemberIds: ['gyeongjin'] } },
+    });
+
+    const card = screen.getByRole('textbox', { name: '경진 코멘트' });
+    expect(card).toHaveAttribute('aria-invalid', 'true');
+    // 카드 오류는 설명으로 연결되고 status 영역이 읽어 줌
+    expect(card).toHaveAccessibleDescription(
+      expect.stringContaining(BUNDLE_MESSAGES.prohibitedWord),
+    );
+    expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
+  });
+
   it('내 코멘트가 맨 위에 온다', () => {
     renderScreen({ viewer: plainMember });
 

@@ -1,19 +1,24 @@
 import type { DateConfirmKind, DeleteKind } from '../lib/photoActions';
 
 const NO_RESTORE = '삭제 이후에는 복구할 수 없어요.';
+// 사라지는 사진 중 작성 중인 번들에 쓰인 사진이 있을 때 「복구할 수 없어요」 줄만 바꿈(줄을 덧붙이지 않음, 명세 3.3.5)
+const NO_RESTORE_DRAFT_USED =
+  '작성 중인 번들에 쓰인 사진도 있어요. 삭제하면 번들에서도 빠지고 복구할 수 없어요.';
 
 /** 삭제 확인 창 문구(명세 3.3.5): 고른 사진의 종류에 따라 제목과 설명 줄이 달라짐 */
 export const deleteConfirmCopy = (
   kind: DeleteKind,
   count: number,
   coUploadedCount: number,
+  draftUsed = false,
 ): { title: string; lines: readonly string[] } => {
+  const restore = draftUsed ? NO_RESTORE_DRAFT_USED : NO_RESTORE;
   const own = count === 1 ? '이 사진을 삭제할까요?' : `선택한 사진 ${count}장을 삭제할까요?`;
   switch (kind) {
     case 'others':
-      return { title: '다른 멤버가 업로드한 사진이에요.', lines: [NO_RESTORE] };
+      return { title: '다른 멤버가 업로드한 사진이에요.', lines: [restore] };
     case 'others-included':
-      return { title: '다른 멤버가 업로드한 사진이 포함되어 있어요.', lines: [NO_RESTORE] };
+      return { title: '다른 멤버가 업로드한 사진이 포함되어 있어요.', lines: [restore] };
     case 'co-uploaded':
       return {
         title: '내가 올린 사진을 삭제할까요?',
@@ -22,10 +27,10 @@ export const deleteConfirmCopy = (
     case 'mixed':
       return {
         title: own,
-        lines: [NO_RESTORE, `다른 멤버도 올린 사진 ${coUploadedCount}장은 사진함에 남아요.`],
+        lines: [restore, `다른 멤버도 올린 사진 ${coUploadedCount}장은 사진함에 남아요.`],
       };
     case 'own':
-      return { title: own, lines: [NO_RESTORE] };
+      return { title: own, lines: [restore] };
   }
 };
 
@@ -42,6 +47,8 @@ export const dateConfirmCopy = (kind: DateConfirmKind) => ({
 export const PHOTO_BOX_MESSAGES = {
   maxSelection: '사진은 한 번에 50장까지 고를 수 있어요.',
   saving: '사진을 앨범에 저장하는 중이에요',
+  // 삭제 요청이 도는 동안 스크린 리더에게 알리는 문구(화면에는 전체 로딩이 보임, 기획 원문이 없어 임시)
+  deleting: '사진을 삭제하는 중이에요',
   dragStart: '사진을 끌고 있어요.',
   dragCancel: '끌기를 취소했어요.',
   selectionStatus: (count: number) => (count === 0 ? '선택 모드' : `${count}장 선택됨`),

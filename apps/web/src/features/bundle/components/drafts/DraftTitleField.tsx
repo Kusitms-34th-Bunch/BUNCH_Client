@@ -84,10 +84,13 @@ export function DraftTitleField({
         onMouseDown={!editable ? (event) => event.preventDefault() : undefined}
         onClick={!editable ? onDenied : undefined}
         errorMessage={
-          // 40자에 닿거나 합쳐진 결과가 넘으면 같은 오류(기능 spec 4.3.7)
-          countTitleGraphemes(draft.title) >= TITLE_MAX_LENGTH
-            ? BUNDLE_MESSAGES.titleMax
-            : undefined
+          // 금칙어는 40자 안내와 같은 자리에 보이고 업로드를 막으므로 먼저 보임(기능명세 4.3.3 상세 6)
+          draft.prohibited?.title
+            ? BUNDLE_MESSAGES.prohibitedWord
+            : // 40자에 닿거나 합쳐진 결과가 넘으면 같은 오류(기능 spec 4.3.7)
+              countTitleGraphemes(draft.title) >= TITLE_MAX_LENGTH
+              ? BUNDLE_MESSAGES.titleMax
+              : undefined
         }
         onFocus={
           !editable ? (event) => event.currentTarget.blur() : loading ? undefined : onEditStart

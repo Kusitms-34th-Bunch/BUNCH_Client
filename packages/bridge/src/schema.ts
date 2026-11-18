@@ -32,6 +32,17 @@ const isRealDate = (value: string) => {
   );
 };
 
+/** 사진의 원본 유형(서버 업로드 계약의 `sourceType`) */
+export const PHOTO_SOURCE_TYPES = ['CAMERA', 'SCREENSHOT', 'SAVED_IMAGE', 'UNKNOWN'] as const;
+export type PhotoSourceType = (typeof PHOTO_SOURCE_TYPES)[number];
+
+// 서버가 받는 UTC 오프셋 범위(-12:00 ~ +14:00)
+const isSupportedUtcOffset = (value: string) => {
+  const minutes = Number(value.slice(1, 3)) * 60 + Number(value.slice(4, 6));
+  const signed = value.startsWith('-') ? -minutes : minutes;
+  return signed >= -12 * 60 && signed <= 14 * 60;
+};
+
 /**
  * 갤러리·카메라에서 고른 사진 한 장의 정보. 사진 데이터는 담지 않고, `readPickedPhoto`로 하나씩 읽어 감
  * 촬영 날짜·시각은 사진 파일의 촬영 정보(EXIF)에서 쉘이 꺼낸 현지 값이고, 위치 정보는 어디에도 담지 않음
@@ -50,6 +61,14 @@ export const pickedPhotoSchema = z
       .string()
       .regex(/^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/)
       .optional(),
+    /** 촬영 시각의 UTC 오프셋(`+09:00`, -12:00~+14:00). 알 수 없으면 없음(서버는 한국 시간으로 봄) */
+    capturedUtcOffset: z
+      .string()
+      .regex(/^[+-]\d{2}:[0-5]\d$/)
+      .refine(isSupportedUtcOffset, 'UTC 오프셋은 -12:00 ~ +14:00이어야 해요.')
+      .optional(),
+    /** 원본 유형. 이전 쉘은 보내지 않음(서버에는 값 없음으로 저장됨). 판단하지 못하면 UNKNOWN */
+    sourceType: z.enum(PHOTO_SOURCE_TYPES).optional(),
   })
   .strict()
   .refine((photo) => photo.capturedTime === undefined || photo.capturedDate !== undefined, {

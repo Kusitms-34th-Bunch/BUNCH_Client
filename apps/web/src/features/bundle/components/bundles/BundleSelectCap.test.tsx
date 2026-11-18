@@ -37,6 +37,7 @@ const photos: PhotoBoxPhoto[] = Array.from({ length: 21 }, (_, index) => ({
   takenAt: `2026-09-27T10:${String(index).padStart(2, '0')}`,
   uploadedAt: '2026-10-01T00:00:00',
   uploaderIds: ['a'],
+  usedInDraftBundle: false,
   status: 'ready',
 }));
 const state: PhotoBoxState = {

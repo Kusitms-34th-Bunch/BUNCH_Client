@@ -15,6 +15,23 @@ type Schemas = components['schemas'];
 /** 번치 이름을 지금 쓸 수 있는지. 이름을 예약하지 않으므로 생성 때 서버가 다시 확인함(`BUNCH_001`) */
 export const checkBunchNameAvailability = (name: string) => checkSharedBunchName(name);
 
+/**
+ * 번치 만들기 2단계 「다음」 전 한 줄 소개 사전 검사(`POST /bunches/introduction-validation`, 기능명세 2.2.6 로직 4)
+ * 저장하지 않으며 통과하면 끝남. 금칙어는 400 `COMMON_003`(`detail.fields: ["introduction"]`), 그 밖의 실패도 `ApiError`로 던짐
+ * 번치를 만들 때(2.2.10) 서버가 이름·소개를 다시 검사함
+ */
+export const validateBunchIntroduction = async (introduction: string): Promise<void> => {
+  await requestData(
+    bffApi.post('bunches/introduction-validation', {
+      json: {
+        introduction: introduction.trim(),
+      } satisfies Schemas['ValidateBunchIntroductionRequest'],
+    }),
+    z.null().optional(),
+    'validate bunch introduction',
+  );
+};
+
 /** `POST /bunches`·`PUT·DELETE /bunches/{id}/profile-image` 응답 */
 export const bunchSchema = z.object({
   id: z.number().int().positive(),
@@ -53,7 +70,7 @@ export type CreateBunchInput = {
 /**
  * 번치 생성: 요청한 회원이 첫 OWNER가 됨(가입 완료 회원만, 소속은 최대 10개)
  * 같은 멱등 키·같은 입력의 재전송은 새로 만들지 않고 처음 만든 번치를 돌려줌, 같은 키에 다른 입력은 409(`REQUEST_001`)
- * 이름 중복은 409 `BUNCH_001`, 소속 한도는 409 `BUNCH_003`. 실패는 `ApiError`로 던짐
+ * 이름 중복은 409 `BUNCH_001`, 소속 한도는 409 `BUNCH_003`, 이름·소개 금칙어는 400 `COMMON_003`. 실패는 `ApiError`로 던짐
  */
 export const createBunch = async (
   { name, visibility, introduction, characterType }: CreateBunchInput,

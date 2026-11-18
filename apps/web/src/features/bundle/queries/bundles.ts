@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { PROHIBITED_WORD_CODE } from '@/shared/api/prohibitedWord';
 import { sharedKeys } from '@/shared/query/keys';
 import {
   addBundleParticipant,
@@ -29,6 +30,7 @@ import {
   type BundleEventOutcome,
   keepNewerLocations,
   keepNewerPicks,
+  titleProhibitedOf,
   withTitleState,
 } from '../lib/bundleEvents';
 import { type BundleDetail, bundleEventEnvelopeSchema, CONTENT_EVENT_TYPES } from '../model/bundle';
@@ -64,6 +66,9 @@ export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string
           titleCrdtState: previous.titleCrdtState,
           titleVersion: previous.titleVersion,
           titleTooLong: previous.titleTooLong,
+          // 제목 금칙어 여부와 제목 계열 발행 차단 사유도 지킨 제목(더 높은 버전)의 값으로 둠
+          titleProhibited: previous.profanity?.titleProhibited,
+          publishBlockers: previous.publishBlockers,
         });
         return replaceEqualDeep(previous, kept);
       }
@@ -192,7 +197,9 @@ const useBundleCacheSync = (bunchId: string | undefined, bundleId: string | unde
         readVersionConflict(error) !== undefined ||
         code === 'BUNDLE_003' ||
         code === 'BUNDLE_002' ||
-        code === 'BUNDLE_005'
+        code === 'BUNDLE_005' ||
+        // 저장·발행에서 금칙어로 거부(발행 때 다시 검사): 그사이 바뀐 제목·코멘트의 검사 상태를 받아 안내를 보임
+        code === PROHIBITED_WORD_CODE
       ) {
         return queryClient.invalidateQueries({ queryKey: key });
       }
@@ -226,7 +233,9 @@ export const useMergeTitleMutation = (
         requestId: createIdempotencyKey(),
       });
       const next = queryClient.setQueryData<BundleDetail>(key, (old) =>
-        old ? withTitleState(old, saved) : old,
+        old
+          ? withTitleState(old, { ...saved, titleProhibited: titleProhibitedOf(saved.profanity) })
+          : old,
       );
       if (!next) throw new Error('bundle detail is not loaded');
       return next;

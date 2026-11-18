@@ -6,6 +6,7 @@ import { MoreMenuSheet } from '@app/design-system/web';
 import { useState, type RefObject } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { isWireId } from '@/shared/api/ids';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { FeedComment, FeedViewer } from '../lib/types';
 import type { useBundleComments } from './useBundleComments';
@@ -93,6 +94,11 @@ export function useCommentActions({
             setReplyTarget(null);
             thread.restart();
             toast(text.replyTargetDeleted);
+            return;
+          }
+          // 금칙어: 등록하지 않고 쓴 내용·답글 작성 상태를 그대로 둔 채 안내(기능명세 6.2.8)
+          if (prohibitedFieldsOf(error)) {
+            toast(text.prohibitedWord);
             return;
           }
           failAction(error);

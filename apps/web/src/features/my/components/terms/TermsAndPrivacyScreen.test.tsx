@@ -22,7 +22,7 @@ const renderScreen = (
 // 확인 창이 열려 있으면 뒤 화면은 보조기술에서 가려지므로 hidden까지 찾음
 const toggle = () =>
   screen.getByRole<HTMLInputElement>('switch', {
-    name: '추가 개인정보 수집 및 동의',
+    name: '추가 개인정보 수집 및 이용 동의',
     hidden: true,
   });
 

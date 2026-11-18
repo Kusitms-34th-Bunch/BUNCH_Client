@@ -31,6 +31,7 @@ const photo = (
     takenAt,
     uploadedAt: `2026-10-29T09:${String(seed % 60).padStart(2, '0')}:00`,
     uploaderIds,
+    usedInDraftBundle: false,
     status,
   };
 };

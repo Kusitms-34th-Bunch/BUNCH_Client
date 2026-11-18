@@ -34,6 +34,8 @@ type BundleEditScreenProps = {
   onImportFromBunchBox: () => void;
   /** 사진 추가 시트의 「내 갤러리에서 가져오기」(더 담을 수 있는 장수와 함께) */
   onImportFromGallery: (_maxCount: number) => void;
+  /** 갤러리에서 가져오는 중이면 고른 장수(칸 로딩과 사진 작업 중 표시에 씀) */
+  galleryImporting?: number | undefined;
 };
 
 const noop = () => undefined;
@@ -56,6 +58,7 @@ export function BundleEditScreen({
   onOpenPhoto,
   onImportFromBunchBox,
   onImportFromGallery,
+  galleryImporting,
 }: BundleEditScreenProps) {
   const openOverlay = useScreenOverlay();
 
@@ -77,7 +80,7 @@ export function BundleEditScreen({
   };
 
   const save = () => {
-    if (!canSave) return;
+    if (!canSave || galleryImporting !== undefined) return;
     openOverlay((rootProps, close) => (
       <ConfirmDialog
         {...rootProps}
@@ -107,7 +110,11 @@ export function BundleEditScreen({
       bottom={
         // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
         <div className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t">
-          <Button className="w-full" disabled={!canSave} onClick={save}>
+          <Button
+            className="w-full"
+            disabled={!canSave || galleryImporting !== undefined}
+            onClick={save}
+          >
             {BUNDLE_MESSAGES.editSave}
           </Button>
         </div>
@@ -139,6 +146,7 @@ export function BundleEditScreen({
         onDenied={noop}
         onImportFromBunchBox={onImportFromBunchBox}
         onImportFromGallery={onImportFromGallery}
+        galleryImporting={galleryImporting}
       />
       <DraftComments
         draft={draft}

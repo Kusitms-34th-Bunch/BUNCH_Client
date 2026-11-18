@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
 import { checkNicknameAvailability } from '@/shared/api/nickname';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
@@ -33,14 +34,14 @@ const toProfileValues = (profile: MyProfile, consented: boolean): ProfileValues 
   gender: consented ? (profile.gender ?? null) : null,
 });
 
-const isSameValues = (a: ProfileValues, b: ProfileValues) =>
+// 출생연도·성별 영역이 보이지 않으면(동의하지 않음) 닉네임만 비교
+const isSameValues = (a: ProfileValues, b: ProfileValues, withDemographics: boolean) =>
   normalizeNickname(a.nickname) === normalizeNickname(b.nickname) &&
-  a.birthYear === b.birthYear &&
-  a.gender === b.gender;
+  (!withDemographics || (a.birthYear === b.birthYear && a.gender === b.gender));
 
 /**
  * 개인 프로필 수정(화면 설계서 MY(1) 4~8번): 닉네임·프로필 사진·출생연도·성별(동의한 사람만 보임), 저장되면 MY로
- * 출생연도·성별은 프로필 수정 계약에 없어 보내지 않음(닉네임·사진만 저장, 상태별 동작은 spec, 2026-11-16 확인)
+ * 출생연도·성별은 동의한 사람만 저장에 넣고, 비운 값은 없음으로 저장함. 동의하지 않았으면 보내지 않음(상태별 동작은 spec)
  */
 export function ProfileEditScreen({
   profile,
@@ -48,7 +49,10 @@ export function ProfileEditScreen({
   checkNickname = checkNicknameAvailability,
 }: {
   profile: MyProfile;
-  /** 추가 개인정보(출생연도·성별) 수집·이용 동의 여부. 동의해야 출생연도·성별 칸이 보이고 고칠 수 있음 */
+  /**
+   * 추가 개인정보(출생연도·성별) 수집·이용 동의 여부. 동의해야 출생연도·성별 칸이 보이고 고칠 수 있음
+   * 편집 중 false로 바뀌면(저장 실패 뒤 다시 받아 보니 다른 기기에서 철회함) 영역을 숨기고 저장에서 뺌(기능명세서 7.2.6 예외)
+   */
   demographicsConsent: boolean;
   /** 닉네임 중복 확인 호출(테스트에서 바꿔 끼움) */
   checkNickname?: CheckNickname | undefined;
@@ -78,8 +82,11 @@ export function ProfileEditScreen({
     };
   }, []);
 
-  const changed = photo !== profile.imageSrc || !isSameValues(fields.values, initial);
-  const canSubmit = changed && fields.isValid && !photoPending && !saved;
+  const changed =
+    photo !== profile.imageSrc || !isSameValues(fields.values, initial, demographicsConsent);
+  // 출생연도·성별 칸이 보이지 않으면 숨은 값으로 저장을 막지 않음(편집 중 철회로 숨겨진 경우)
+  const valid = demographicsConsent ? fields.isValid : fields.isNicknameValid;
+  const canSubmit = changed && valid && !photoPending && !saved;
   // 바꾼 내용이 있으면 나가기 전에 확인(기능명세서 7.2.1 상세 7)
   // 저장 뒤 돌아가는 전환 중에는 묻지 않음
   const back = () => {
@@ -120,14 +127,28 @@ export function ProfileEditScreen({
       await save.mutateAsync({
         nickname: normalizeNickname(fields.values.nickname),
         photo: photoChange(),
+        demographics: demographicsConsent
+          ? {
+              birthYear: fields.values.birthYear ? Number(fields.values.birthYear) : undefined,
+              gender: fields.values.gender ?? undefined,
+            }
+          : undefined,
       });
     } catch (error) {
       // 다시 누를 수 있게 되돌림(기능명세서 7.2.7 예외)
       submittingRef.current = false;
       setSubmitting(false);
-      if (isApiError(error) && error.code === NICKNAME_TAKEN_CODE) {
+      const taken = isApiError(error) && error.code === NICKNAME_TAKEN_CODE;
+      // 저장 직전 확인에서 금칙어가 걸림(기능명세서 7.2.7 예외)
+      const prohibited = prohibitedFieldsOf(error)?.includes('nickname') ?? false;
+      // 저장 중에 화면을 떠났으면 입력란 안내를 볼 수 없으므로 저장 실패를 토스트로 알림(이 변경 전과 같은 안내)
+      if (prohibited && left.current) {
+        toast(MY_MESSAGES.profileSaveFailed);
+        return;
+      }
+      if (taken || prohibited) {
         // 오류 표시를 먼저 반영해 초점이 갈 때 오류 상태로 읽히게 함
-        flushSync(fields.markNicknameTaken);
+        flushSync(() => fields.markNicknameRejected(prohibited ? 'prohibited' : 'taken'));
         // 수정하기가 비활성이 되므로 닉네임 입력으로 초점을 옮김(사진 선택용 숨은 파일 입력 제외)
         containerRef.current?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus();
       } else {

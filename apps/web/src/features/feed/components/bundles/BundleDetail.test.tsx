@@ -583,6 +583,26 @@ describe('BundleDetail', () => {
     expect(screen.getByRole('textbox')).toHaveValue('늦은 답글');
   });
 
+  it('답글에 금칙어가 있으면 등록하지 않고 쓴 내용과 답글 작성 상태를 그대로 둔 채 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post('/api/bundles/:bundleId/comments', () =>
+        fail(400, 'COMMON_003', { fields: ['content'] }),
+      ),
+    );
+    renderDetail('901');
+    await user.click(await screen.findByRole('button', { name: '지예님 댓글의 답글 1개' }));
+    await user.type(screen.getByRole('textbox'), '나쁜 답글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('사용할 수 없는 단어가 포함되어 있어요.'),
+    );
+    expect(screen.getByText('님에게 답글 남기는 중')).toBeTruthy();
+    expect(screen.getByRole('textbox')).toHaveValue('나쁜 답글');
+    expect(toast).not.toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
+  });
+
   it('쓰는 사이 번들을 볼 수 없게 됐으면 이전 화면으로 가서 알린다', async () => {
     const user = userEvent.setup();
     server.use(http.post('/api/bundles/:bundleId/comments', () => fail(404, 'RESOURCE_001')));

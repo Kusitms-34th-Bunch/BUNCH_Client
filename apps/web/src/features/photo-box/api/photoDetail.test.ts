@@ -71,7 +71,7 @@ describe('getPhotoDetail', () => {
   ])('안전하지 않은 이미지 주소(%s)는 성공으로 넘기지 않는다', async (imageUrl) => {
     server.use(
       http.get('/api/bunches/:bunchId/photos/:photoId', () =>
-        ok({ photoId: 1, imageUrl, uploaders: [] }),
+        ok({ photoId: 1, imageUrl, uploaders: [], usedInDraftBundle: false }),
       ),
     );
     await expect(getPhotoDetail(bunchId, '1')).rejects.toMatchObject({
@@ -82,7 +82,12 @@ describe('getPhotoDetail', () => {
   it('https 주소와 같은 출처 경로는 받는다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/photos/:photoId', () =>
-        ok({ photoId: 1, imageUrl: 'https://cdn.example/1.jpg', uploaders: [] }),
+        ok({
+          photoId: 1,
+          imageUrl: 'https://cdn.example/1.jpg',
+          uploaders: [],
+          usedInDraftBundle: false,
+        }),
       ),
     );
     await expect(getPhotoDetail(bunchId, '1')).resolves.toMatchObject({
