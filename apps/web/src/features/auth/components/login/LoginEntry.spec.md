@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/login`(`apps/web/src/app/(app)/login/page.tsx`)
-- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 카카오·Google을 연결했고, Apple은 SDK 연동 전이라 앱에서 Apple을 누르면 실패 토스트가 나옴(`apps/mobile-shell/src/social-login.ts`, 2026-11-16 확인). 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어와 앱 실행 시 세션 확인은 `(app)` layout의 `AuthGate`가 맡음(결정 기록 019)
+- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 카카오·Google·Apple을 연결함(`apps/mobile-shell/src/social-login.ts`, Apple은 실기기 확인 전). 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어와 앱 실행 시 세션 확인은 `(app)` layout의 `AuthGate`가 맡음(결정 기록 019)
 - 디자인 출처: Figma `로그인`(node `4744:90759`, 배경 영상 디자인. 이전 `796:4634`). 화면설계서(node `796:5339`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.2 Entry).
 
 ## 목적과 범위
@@ -87,7 +87,8 @@
 - 영상 해상도 (확인할 항목): 원본 폭이 374px라 3배 화면에서 흐릴 수 있다. 750px 이상 원본을 받으면 같은 방식으로 다시 압축한다.
 - 움직이는 배경의 일시정지 (디자인·기획 확인): 25초 영상이 계속 반복되는데 멈추는 수단이 없다. WCAG 2.2.2(5초 넘게 자동으로 움직이는 내용은 멈출 수 있어야 함)에 못 미친다. 지금은 동작 줄이기 설정을 켠 사람만 영상을 보지 않는다. 일시정지 버튼을 둘지, 한 번 재생 뒤 마지막 장면에서 멈출지 정해야 한다(Figma에 없음).
 - 낮은 화면의 워드마크 대비 (확인할 항목): 겹침 비율은 화면 높이 기준이고 워드마크는 버튼 위 40에 붙어서, 높이 약 667px 이하에서는 겹침이 진해지는 구간(50~61%)에 걸릴 수 있다. 영상이 가장 밝은 장면에서 흰 워드마크 대비가 3:1 안팎까지 내려갈 수 있어 실측이 필요하다(코드 계산값, 미검증). 새 간격(워드마크↔버튼 40, 버튼 아래 14)도 아직 측정하지 않았다.
-- 화면 전환과 고정 배경 (확인할 항목): 배경은 `position: fixed`라 조상에 `transform`이 걸리면 기준이 바뀐다. 약관에서 로그인으로 돌아올 때 dissolve 전환(`AppTransitions`)이 걸린다. 투명도 위주라 영향이 적다고 보지만 전환 중 배경 위치는 화면에서 확인하지 않았다.
+- 화면 전환과 고정 배경: 배경은 `position: fixed`라 조상에 `transform`이 걸리면 기준이 바뀐다. 인트로 → 로그인 디졸브 중에는 조상에 `will-change: opacity`만 걸려 배경이 처음부터 화면 전체를 덮는다(Chromium 측정, #439).
+- 배경이 늦게 채워짐 (수정, #439): 배경 첫 프레임(`login-poster.jpg`)을 로그인 화면이 열린 뒤에야 받아, 실기기에서 버튼보다 배경이 늦게 채워졌다. 인트로가 첫 프레임을 미리 받고(`preload`), 받기 전에는 어두운 바탕색(`bg-primitive-gray-900`, #121212, semantic 토큰 없음)을 깐다. 영상(2.7MB)은 미리 받지 않는다. 실기기 확인 전.
 - 겹침 투명도 (토큰 차이): Figma 위쪽 검정 30%는 토큰이 없어 가장 가까운 `primitive-black-alpha-40`을 썼다(흰 글자 대비에 유리한 쪽).
 - 로그인 중 모양 (디자인 확인): 선택한 버튼의 로딩 표시는 Figma에 없다(`docs/specs/login-signup.md` 디자인 확인 4번).
 - 실패 토스트 위치 (확정, 2026-11-10 개정): 기획 명세가 오류 토스트를 "하단 버튼 바로 위"에 두라고 해서(`Toast.spec.md` 표시 위치) 하단 버튼 영역(`wrapper` 앵커) 위 4px에 놓는다. 이전에는 `bottomOffset: 170`(버튼 영역 위 12px)을 손으로 계산했으나 버튼 영역 높이가 바뀌어도 자동으로 따라가도록 앵커 방식으로 바꿨다. Figma 설계서는 「오류 메시지 노출」이라고만 적었다.
