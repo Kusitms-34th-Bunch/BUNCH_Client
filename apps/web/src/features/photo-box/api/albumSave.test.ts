@@ -30,6 +30,7 @@ const serveDetails = (missing: readonly string[] = []) => {
         photoId: Number(photoId),
         imageUrl: `https://cdn.example.com/original/${photoId}.jpg`,
         uploaders: [],
+        usedInDraftBundle: false,
       });
     }),
   );
@@ -113,6 +114,7 @@ describe('saveToAlbum', () => {
           imageUrl:
             photoId === '2' ? '/mock/photos/2.jpg' : `https://cdn.example.com/${photoId}.jpg`,
           uploaders: [],
+          usedInDraftBundle: false,
         });
       }),
     );
@@ -140,6 +142,7 @@ describe('saveToAlbum', () => {
           photoId: Number(params.photoId),
           imageUrl: urls[String(params.photoId)],
           uploaders: [],
+          usedInDraftBundle: false,
         }),
       ),
     );

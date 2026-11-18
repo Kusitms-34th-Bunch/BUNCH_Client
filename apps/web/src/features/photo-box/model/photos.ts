@@ -44,6 +44,7 @@ const datedPhotoSchema = z.object({
   capturedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   capturedTime: capturedTimeSchema.nullish(),
   uploaderIds: uploaderIdsSchema,
+  usedInDraftBundle: z.boolean(),
 }) satisfies z.ZodType<
   Omit<ApiContract<components['schemas']['PhotoListItem']>, 'capturedTime'> & {
     capturedTime?: unknown;
@@ -54,6 +55,7 @@ const undatedPhotoSchema = z.object({
   photoId: z.number().int().positive(),
   thumbnailUrl: z.string(),
   uploaderIds: uploaderIdsSchema,
+  usedInDraftBundle: z.boolean(),
 }) satisfies z.ZodType<ApiContract<components['schemas']['PhotoUndatedItem']>>;
 
 /** `GET /api/v1/bunches/{bunchId}/photos` 응답(날짜를 아는 사진 한 페이지) */
@@ -120,6 +122,7 @@ export const photoDetailSchema = z.object({
   imageUrl: z.string().refine(isSafeImageUrl, 'https 주소 또는 같은 출처 경로만 허용'),
   capturedDate: z.string().nullish(),
   uploaders: z.array(photoDetailUploaderSchema),
+  usedInDraftBundle: z.boolean(),
 }) satisfies z.ZodType<
   // 중첩 배열은 계약 검사가 선택 필드를 다루지 못해 uploaders는 위 스키마에서 따로 검사
   Omit<ApiContract<components['schemas']['PhotoDetailResponse']>, 'uploaders'> & {

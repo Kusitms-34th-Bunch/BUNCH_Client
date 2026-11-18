@@ -806,6 +806,9 @@ export const bundleHandlers = [
       titleCrdtState: saved.titleCrdtState ?? next,
       titleVersion: saved.titleVersion,
       titleTooLong: countTitleGraphemes(saved.title) > TITLE_MAX,
+      // 가짜 서버는 금칙어를 판정하지 않음
+      profanity: { dictionaryVersion: 'mock', titleHasProhibitedWord: false, comments: [] },
+      publishBlockers: publishBlockers(saved),
     });
   }),
 

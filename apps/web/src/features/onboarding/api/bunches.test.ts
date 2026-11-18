@@ -19,7 +19,7 @@ describe('checkBunchNameAvailability', () => {
     server.use(
       http.get('/api/bunches/name-availability', ({ request }) => {
         received = new URL(request.url).searchParams.get('name');
-        return ok({ normalizedValue: '퇴근런클럽', available: false });
+        return ok({ normalizedValue: '퇴근런클럽', available: false, status: 'DUPLICATE' });
       }),
     );
 

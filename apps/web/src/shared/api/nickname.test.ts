@@ -10,7 +10,7 @@ describe('checkNicknameAvailability', () => {
     server.use(
       http.get('/api/members/nickname-availability', ({ request }) => {
         queries.push(new URL(request.url).searchParams.get('nickname'));
-        return ok({ normalizedValue: '지원', available: false });
+        return ok({ normalizedValue: '지원', available: false, status: 'DUPLICATE' });
       }),
     );
 

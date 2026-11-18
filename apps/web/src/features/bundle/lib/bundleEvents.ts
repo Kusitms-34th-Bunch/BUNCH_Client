@@ -12,7 +12,7 @@ import {
 /** 병합된 제목 상태(응답·이벤트)를 상세에 반영: 더 낡은 제목 버전으로 덮지 않고, 길이 초과 발행 사유도 맞춤 */
 export const withTitleState = (
   detail: BundleDetail,
-  state: BundleTitleState,
+  state: Pick<BundleTitleState, 'title' | 'titleVersion' | 'titleCrdtState' | 'titleTooLong'>,
   revision?: number,
 ): BundleDetail => {
   // 더 낡은 제목은 반영하지 않지만, 이벤트로 알게 된 revision은 맞춤(이후 이벤트가 건너뛴 것으로 보이지 않게)

@@ -257,7 +257,7 @@ describe('BunchProfileEdit', () => {
     // 중복 확인은 통과(그 사이 다른 번치가 이름을 씀)
     server.use(
       http.get('/api/bunches/name-availability', () =>
-        ok({ normalizedValue: '퇴근런클럽', available: true }),
+        ok({ normalizedValue: '퇴근런클럽', available: true, status: 'AVAILABLE' }),
       ),
     );
     const user = userEvent.setup();

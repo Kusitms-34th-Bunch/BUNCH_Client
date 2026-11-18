@@ -157,6 +157,13 @@ export const bundleTitleStateSchema = z.object({
   titleCrdtState: z.string(),
   titleVersion: z.number().int().nonnegative(),
   titleTooLong: z.boolean(),
+  // 금칙어 판정·발행 차단 사유는 아직 화면에 쓰지 않음(제목 금칙어 안내는 후속 이슈, BundleEdit.spec.md)
+  profanity: z.object({
+    dictionaryVersion: z.string(),
+    titleHasProhibitedWord: z.boolean(),
+    comments: z.array(z.object({ memberId: z.number().int(), hasProhibitedWord: z.boolean() })),
+  }),
+  publishBlockers: z.array(z.string()),
 }) satisfies z.ZodType<ApiContract<Schemas['BundleTitleState']>>;
 
 export type BundleTitleState = z.infer<typeof bundleTitleStateSchema>;

@@ -7,6 +7,7 @@ import { bffApi, requestData } from './bffApi';
 const availabilitySchema = z.object({
   normalizedValue: z.string(),
   available: z.boolean(),
+  status: z.enum(['AVAILABLE', 'DUPLICATE', 'PROHIBITED_WORD']),
 }) satisfies z.ZodType<ApiContract<components['schemas']['NameAvailability']>>;
 
 /**

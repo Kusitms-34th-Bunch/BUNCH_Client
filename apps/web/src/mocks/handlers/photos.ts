@@ -167,6 +167,7 @@ export const photoHandlers = [
         capturedDate: photo.capturedDate,
         capturedTime: photo.capturedTime,
         uploaderIds: photo.uploaderIds,
+        usedInDraftBundle: false,
       })),
       nextCursor: result.nextCursor,
     });
@@ -182,6 +183,7 @@ export const photoHandlers = [
         photoId: photo.photoId,
         thumbnailUrl: photo.thumbnailUrl,
         uploaderIds: photo.uploaderIds,
+        usedInDraftBundle: false,
       })),
       nextCursor: result.nextCursor,
     });
@@ -329,6 +331,7 @@ export const photoHandlers = [
         const member = members.find((item) => item.memberId === memberId);
         return member ? [{ memberId, nickname: member.nickname, imageUrl: member.imageUrl }] : [];
       }),
+      usedInDraftBundle: false,
     });
   }),
 ];

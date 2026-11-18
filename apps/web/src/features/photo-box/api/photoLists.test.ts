@@ -101,6 +101,7 @@ describe('getDatedPhotosPage', () => {
               capturedDate: '2026-10-18',
               capturedTime: { hour: 9, minute: 5, second: 0, nano: 0 },
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -123,6 +124,7 @@ describe('getDatedPhotosPage', () => {
               capturedDate: '2026-10-18',
               capturedTime: '29:99',
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -145,6 +147,7 @@ describe('getDatedPhotosPage', () => {
               thumbnailUrl: 'a.jpg',
               capturedDate: '2026-10-18',
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -161,7 +164,13 @@ describe('getDatedPhotosPage', () => {
         ok({
           totalCount: 1,
           photos: [
-            { photoId: 7, thumbnailUrl: 'a.jpg', capturedDate: '2026-10-18', uploaderIds: [1] },
+            {
+              photoId: 7,
+              thumbnailUrl: 'a.jpg',
+              capturedDate: '2026-10-18',
+              uploaderIds: [1],
+              usedInDraftBundle: false,
+            },
           ],
         }),
       ),

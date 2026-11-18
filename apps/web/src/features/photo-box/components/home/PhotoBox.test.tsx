@@ -182,6 +182,7 @@ describe('PhotoBox 이어 받기 실패 알림', () => {
     thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
     capturedDate: '2026-10-18',
     uploaderIds: [1],
+    usedInDraftBundle: false,
   });
 
   it('첫 쪽 뒤의 쪽을 받다 실패하면 받은 사진은 그대로 두고 오류 토스트를 띄운다', async () => {

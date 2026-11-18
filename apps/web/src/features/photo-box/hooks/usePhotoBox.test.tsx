@@ -223,6 +223,7 @@ describe('usePhotoBox', () => {
       photoId: 1,
       thumbnailUrl: '/mock/photos/S1-thumb.jpg',
       uploaderIds: [1],
+      usedInDraftBundle: false,
     };
     server.use(
       http.get('/api/bunches/:bunchId/photos', () =>
@@ -245,6 +246,7 @@ describe('usePhotoBox', () => {
       thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
       capturedDate: '2026-10-18',
       uploaderIds: [1],
+      usedInDraftBundle: false,
     });
     server.use(
       http.get('/api/bunches/:bunchId/photos', ({ request }) => {
@@ -271,6 +273,7 @@ describe('usePhotoBox', () => {
       thumbnailUrl: '/mock/photos/S1-thumb.jpg',
       capturedDate: '2026-10-18',
       uploaderIds: [1],
+      usedInDraftBundle: false,
     });
     server.use(
       http.get('/api/bunches/:bunchId/photos', ({ request }) => {
@@ -309,6 +312,7 @@ describe('usePhotoBox 이어서 불러오기', () => {
     thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
     capturedDate: '2026-10-18',
     uploaderIds: [1],
+    usedInDraftBundle: false,
   });
   // 둘째 쪽 응답을 테스트가 풀어 줄 때까지 붙잡아 첫 쪽만 온 상태를 관찰함
   const holdSecondPage = (secondPage: () => Response | Promise<Response>) => {

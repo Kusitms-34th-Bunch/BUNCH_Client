@@ -148,7 +148,12 @@ export const memberHandlers = [
   http.get('/api/members/nickname-availability', ({ request }) => {
     const nickname = new URL(request.url).searchParams.get('nickname')?.trim() ?? '';
     if (nickname === '') return fail(400, 'COMMON_001');
-    return ok({ normalizedValue: nickname, available: !nickname.includes('중복') });
+    const available = !nickname.includes('중복');
+    return ok({
+      normalizedValue: nickname,
+      available,
+      status: available ? 'AVAILABLE' : 'DUPLICATE',
+    });
   }),
 
   // POST /api/v1/members/me/registration: multipart 본문은 읽지 않고 가입 완료만 기록(닉네임은 시작 데이터 그대로)

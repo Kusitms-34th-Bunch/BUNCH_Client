@@ -548,6 +548,7 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     titleCrdtState: string;
     titleVersion: number;
     titleTooLong: boolean;
+    publishBlockers: string[];
   };
   const merge = (id: number, state: unknown) =>
     call('PATCH', `${base}/${id}/title/crdt`, { state }) as unknown as Promise<{
@@ -568,9 +569,16 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     const { status, json } = await merge(draft.id, await edit(draft.id, '  설악산 단풍  '));
 
     expect(status).toBe(200);
-    // 표시 제목만 NFC·trim하고 정확히 네 필드만 돌려줌
+    // 표시 제목만 NFC·trim하고 제목 상태 필드만 돌려줌(revision 없음)
     expect(Object.keys(json.data).sort()).toEqual(
-      ['title', 'titleCrdtState', 'titleTooLong', 'titleVersion'].sort(),
+      [
+        'profanity',
+        'publishBlockers',
+        'title',
+        'titleCrdtState',
+        'titleTooLong',
+        'titleVersion',
+      ].sort(),
     );
     expect(json.data).toMatchObject({ title: '설악산 단풍', titleVersion: 1, titleTooLong: false });
   });
@@ -592,6 +600,7 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     const detail = await call('GET', `${base}/${draft.id}`);
 
     expect(json.data).toMatchObject({ title: '가'.repeat(41), titleTooLong: true });
+    expect(json.data.publishBlockers).toContain('TITLE_TOO_LONG');
     expect(detail.json.data.publishBlockers).toContain('TITLE_TOO_LONG');
   });
 

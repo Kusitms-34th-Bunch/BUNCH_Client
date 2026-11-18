@@ -60,7 +60,8 @@ export const bunchOnboardingHandlers = [
     if (!isValidName(name)) return fail(400, 'COMMON_001');
     // 프로필 편집은 자기 번치의 지금 이름을 사용 중으로 보지 않음
     const exclude = toWireId(url.searchParams.get('excludeBunchId') ?? undefined);
-    return ok({ normalizedValue: name, available: !isNameTaken(name, exclude) });
+    const available = !isNameTaken(name, exclude);
+    return ok({ normalizedValue: name, available, status: available ? 'AVAILABLE' : 'DUPLICATE' });
   }),
 
   // POST /api/v1/bunches: 가입 완료 회원, 소속 10개 미만. 같은 멱등 키·입력은 처음 만든 번치를 돌려줌
