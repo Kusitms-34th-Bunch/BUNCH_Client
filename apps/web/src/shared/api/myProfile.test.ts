@@ -40,7 +40,7 @@ describe('getMyProfile', () => {
     },
   );
 
-  it('안전하지 않은 내 사진 주소는 null, 번치 대표 사진 주소는 성격별 기본 이미지로 둔다', async () => {
+  it('안전하지 않거나 해석할 수 없는 사진 주소는 내 사진은 null, 번치 대표 사진은 성격별 기본 이미지로 둔다', async () => {
     server.use(
       http.get('/api/members/me', () =>
         ok({
@@ -51,7 +51,7 @@ describe('getMyProfile', () => {
             id: 1,
             name: '여행쥬아',
             characterType: 'TYPE_3',
-            imageUrl: 'javascript:alert(2)',
+            imageUrl: 'https://%',
           },
         }),
       ),
