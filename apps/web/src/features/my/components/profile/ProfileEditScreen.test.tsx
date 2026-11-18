@@ -303,6 +303,30 @@ describe('ProfileEditScreen', () => {
     expect(toastAfterNavigation).not.toHaveBeenCalled();
   });
 
+  it('저장 중 뒤로 간 뒤 닉네임 금칙어로 거부되면 입력란 대신 저장 실패 토스트로 알린다', async () => {
+    let release!: () => void;
+    server.use(
+      http.put('/api/members/me/profile', async () => {
+        await new Promise<void>((resolve) => (release = resolve));
+        return fail(400, 'COMMON_003', { fields: ['nickname'] });
+      }),
+    );
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+    await waitFor(() => expect(submitButton()).toHaveAttribute('aria-busy', 'true'));
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    release();
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(screen.queryByText('사용할 수 없는 닉네임이에요')).toBeNull();
+  });
+
   it('저장이 실패하면 머물러 토스트를 띄우고 다시 누를 수 있다', async () => {
     server.use(http.put('/api/members/me/profile', () => fail(500, 'COMMON_500')));
     const user = userEvent.setup();

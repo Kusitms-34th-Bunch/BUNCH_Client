@@ -141,6 +141,11 @@ export function ProfileEditScreen({
       const taken = isApiError(error) && error.code === NICKNAME_TAKEN_CODE;
       // 저장 직전 확인에서 금칙어가 걸림(기능명세서 7.2.7 예외)
       const prohibited = prohibitedFieldsOf(error)?.includes('nickname') ?? false;
+      // 저장 중에 화면을 떠났으면 입력란 안내를 볼 수 없으므로 저장 실패를 토스트로 알림(이 변경 전과 같은 안내)
+      if (prohibited && left.current) {
+        toast(MY_MESSAGES.profileSaveFailed);
+        return;
+      }
       if (taken || prohibited) {
         // 오류 표시를 먼저 반영해 초점이 갈 때 오류 상태로 읽히게 함
         flushSync(() => fields.markNicknameRejected(prohibited ? 'prohibited' : 'taken'));
