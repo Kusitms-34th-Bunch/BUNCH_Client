@@ -117,6 +117,8 @@ type DraftPhotosProps = {
   onImportFromBunchBox: () => void;
   /** 사진 추가 시트의 「내 갤러리에서 가져오기」(더 담을 수 있는 장수와 함께) */
   onImportFromGallery: (_maxCount: number) => void;
+  /** 갤러리에서 가져오는 중이면 고른 장수(선택창이 열려 있는 동안 0). 올라가는 동안 그 수만큼 칸에 로딩을 보이고 「사진」 작업 중으로 알림 */
+  galleryImporting?: number | undefined;
 };
 
 /**
@@ -137,6 +139,7 @@ export function DraftPhotos({
   onOpenPick,
   onImportFromBunchBox,
   onImportFromGallery,
+  galleryImporting,
 }: DraftPhotosProps) {
   const total = draft.photos.length;
   const isPicked = useIsPhotoPicked(draft);
@@ -340,6 +343,14 @@ export function DraftPhotos({
                 ) : null}
               </SortablePhotoItem>
             ))}
+            {/* 갤러리에서 올라가는 동안 고른 장수만큼 칸 로딩(Figma 시안은 없어 사진 칸과 같은 크기에 사진함 스켈레톤과 같은 회색) */}
+            {Array.from({ length: galleryImporting ?? 0 }, (_, index) => (
+              <li
+                key={`importing-${index}`}
+                aria-hidden="true"
+                className="bg-surface-secondary rounded-r4 aspect-square w-32.5 shrink-0"
+              />
+            ))}
             {access.canAddPhoto && total < MAX_PHOTOS ? (
               // 끌 수는 없지만 사진이 옮겨 갈 때 함께 움직이고, 이 칸에 놓으면 맨 뒤 사진 자리로 감
               <SortablePhotoItem
@@ -359,7 +370,12 @@ export function DraftPhotos({
       <p role="status" className="sr-only">
         {moveAnnouncement}
       </p>
-      {removeOpen || importOpen || reorder.dragging ? (
+      {/* 올라가는 동안만 낭독: 선택창이 열린 동안(고른 장수 0)은 올리는 것이 없어 비워 두고, 나중에 끼워 넣은 영역은 첫 내용이 안 읽힐 수 있어 항상 렌더 */}
+      <p role="status" className="sr-only">
+        {(galleryImporting ?? 0) > 0 ? BUNDLE_MESSAGES.galleryUploading : ''}
+      </p>
+      {/* 갤러리 사진은 선택창이 열린 때부터 업로드가 끝날 때까지 사진 작업 중으로 알림(기능 spec 4.3.13) */}
+      {removeOpen || importOpen || galleryImporting !== undefined || reorder.dragging ? (
         <PresenceScope presence={presence} target="PHOTOS" />
       ) : null}
     </section>

@@ -6,6 +6,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
+import { failIfProhibited, hasMockProhibitedWord } from '../lib/prohibitedWord';
 import { readJson } from './bundles';
 
 // 백엔드 명세(번치 생성·이름 중복 확인·번치 사진·초대 발급) 기준
@@ -60,8 +61,24 @@ export const bunchOnboardingHandlers = [
     if (!isValidName(name)) return fail(400, 'COMMON_001');
     // 프로필 편집은 자기 번치의 지금 이름을 사용 중으로 보지 않음
     const exclude = toWireId(url.searchParams.get('excludeBunchId') ?? undefined);
-    const available = !isNameTaken(name, exclude);
-    return ok({ normalizedValue: name, available, status: available ? 'AVAILABLE' : 'DUPLICATE' });
+    // 금칙어가 중복보다 앞섬
+    const status = hasMockProhibitedWord(name)
+      ? 'PROHIBITED_WORD'
+      : isNameTaken(name, exclude)
+        ? 'DUPLICATE'
+        : 'AVAILABLE';
+    return ok({ normalizedValue: name, available: status === 'AVAILABLE', status });
+  }),
+
+  // POST /api/v1/bunches/introduction-validation: 번치 만들기 2단계 「다음」 전 소개 검사(저장하지 않음)
+  http.post('/api/bunches/introduction-validation', async ({ request }) => {
+    const body = await readJson(request);
+    if (!body || typeof body.introduction !== 'string') return fail(400, 'COMMON_002');
+    const introduction = body.introduction.trim();
+    if ([...introduction].length < 1 || [...introduction].length > INTRODUCTION_MAX) {
+      return fail(400, 'COMMON_001');
+    }
+    return failIfProhibited({ introduction }) ?? ok(null);
   }),
 
   // POST /api/v1/bunches: 가입 완료 회원, 소속 10개 미만. 같은 멱등 키·입력은 처음 만든 번치를 돌려줌
@@ -82,6 +99,9 @@ export const bunchOnboardingHandlers = [
     ) {
       return fail(400, 'COMMON_001');
     }
+    // 앱을 거치지 않은 요청 방어용 최종 검사(기능명세 2.2.10)
+    const prohibited = failIfProhibited({ name, introduction });
+    if (prohibited) return prohibited;
 
     const outcome = runIdempotent(
       `${MOCK_MY_MEMBER_ID}:bunch-create`,
@@ -180,6 +200,8 @@ export const bunchOnboardingHandlers = [
     if (!profile || !isValidName(name) || introduction.length === 0 || introduction.length > 50) {
       return fail(400, 'COMMON_001');
     }
+    const prohibited = failIfProhibited({ name, introduction });
+    if (prohibited) return prohibited;
     // 본문을 기다리는 사이 다른 저장이 끝났을 수 있어 지금 DB 값으로 비교(비교와 갱신 사이에는 await 없음)
     const current = mockDb.get().bunches.find((bunch) => bunch.id === owned.bunch.id);
     const version = current?.profileVersion ?? 1;

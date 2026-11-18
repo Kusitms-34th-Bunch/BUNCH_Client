@@ -1,20 +1,17 @@
 import { useInfiniteQuery, useQuery, type UseInfiniteQueryResult } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { PhotoBoxPreview } from '../lib/preview';
-import type { PhotoBoxActions, PhotoBoxData, PhotoBoxPhoto, PhotoBoxState } from '../lib/types';
+import type { PhotoBoxActions, PhotoBoxData, PhotoBoxState } from '../lib/types';
 import { saveToAlbum } from '../api/albumSave';
-import { applyTakenDate } from '../lib/photoActions';
 import {
   datedPhotosQueryOptions,
+  PHOTO_BOX_POLL_MS,
   PHOTO_BOX_STALE_TIME,
   undatedPhotosQueryOptions,
 } from '../queries/photoLists';
-import { useDeletePhotosMutation } from '../queries/photos';
-
-// 목 날짜 변경이 끝나기까지의 시간(시트의 「저장 중」 상태가 보이도록)
-const MOCK_CHANGE_DATE_DELAY_MS = 500;
+import { useChangePhotoDatesMutation, useDeletePhotosMutation } from '../queries/photos';
 
 type UsePhotoBoxResult = {
   state: PhotoBoxState;
@@ -33,8 +30,6 @@ type UsePhotoBoxResult = {
   /** 이미 받은 목록은 있는데 최신 목록을 다시 받지 못한 상태(삭제 뒤 재조회 실패 등), 화면이 안내함 */
   stale: boolean;
 };
-
-type DateChange = { ids: ReadonlySet<string>; date: Date };
 
 type UsePhotoBoxOptions = {
   /**
@@ -82,7 +77,7 @@ const retryPhotos = (query: PhotoPagesQuery) => {
 
 /**
  * 사진함 화면 상태와 동작의 호출 지점: 내 프로필(기본 번치)·멤버·사진 목록 query를 화면 상태로 합치고 삭제는 mutation으로 보냄
- * 앨범 저장은 상세 API로 받은 원본 주소를 쉘에 넘겨 기기에 저장하고, 날짜 변경은 서버 반영 전이라 이 hook 인스턴스(화면) 안에서만 목록에 덮어 보임(새로고침하거나 사진함·상세 사이를 이동하면 원래 날짜)
+ * 삭제·날짜 바꾸기는 mutation으로 서버에 보내고 성공하면 목록을 다시 받아 반영하며, 앨범 저장은 상세 API로 받은 원본 주소를 쉘에 넘겨 기기에 저장
  * `preview`는 상태 미리보기용으로 API 연결이 끝나면 함께 없앰
  */
 export function usePhotoBox(
@@ -103,7 +98,10 @@ export function usePhotoBox(
     refetch: refetchMembers,
   } = useQuery(bunchMembersQueryOptions(bunchId));
   // 사진함 화면(progressive)은 들어올 때마다 목록을 다시 받고, 번들·상세 화면은 30초 안에는 받아 둔 목록을 그대로 씀
-  const listOptions = progressive ? { staleTime: PHOTO_BOX_STALE_TIME } : undefined;
+  // 머무는 동안에는 20초마다 다시 받아 다른 멤버가 지운 사진이 오래 남지 않게 함(번들·상세 화면은 마운트할 때만)
+  const listOptions = progressive
+    ? { staleTime: PHOTO_BOX_STALE_TIME, refetchInterval: PHOTO_BOX_POLL_MS }
+    : undefined;
   const datedQuery = useInfiniteQuery(datedPhotosQueryOptions(bunchId, listOptions));
   const undatedQuery = useInfiniteQuery(undatedPhotosQueryOptions(bunchId, listOptions));
   const { data: dated, isError: datedError } = datedQuery;
@@ -116,9 +114,9 @@ export function usePhotoBox(
   const moreFailed =
     (datedQuery.isFetchNextPageError && !datedQuery.isFetchingNextPage) ||
     (undatedQuery.isFetchNextPageError && !undatedQuery.isFetchingNextPage);
-  const [dateChanges, setDateChanges] = useState<readonly DateChange[]>([]);
 
   const removeMutation = useDeletePhotosMutation(bunchId);
+  const changeDatesMutation = useChangePhotoDatesMutation(bunchId);
 
   const data = useMemo<PhotoBoxData | null>(() => {
     const bunch = profile?.bunch;
@@ -126,11 +124,8 @@ export function usePhotoBox(
     // 이어서 받는 화면이 아니면 마지막 쪽까지 받은 뒤에만 보여 줌(번들 화면은 사진 id로 전체 목록을 찾음)
     if (!progressive && hasMore) return null;
     const me = members.find((member) => member.id === profile.memberId);
-    const photos = dateChanges.reduce<readonly PhotoBoxPhoto[]>(
-      (current, change) => applyTakenDate(current, change.ids, change.date),
-      // 두 요청 사이에 촬영 날짜가 바뀌면 같은 사진이 양쪽에 있을 수 있어 id로 한 번만 남김(날짜 있는 쪽 우선)
-      [...new Map([...undated, ...dated].map((photo) => [photo.id, photo])).values()],
-    );
+    // 두 요청 사이에 촬영 날짜가 바뀌면 같은 사진이 양쪽에 있을 수 있어 id로 한 번만 남김(날짜 있는 쪽 우선)
+    const photos = [...new Map([...undated, ...dated].map((photo) => [photo.id, photo])).values()];
     let more: PhotoBoxData['more'];
     if (moreFailed) more = 'error';
     else if (hasMore) more = 'loading';
@@ -141,7 +136,7 @@ export function usePhotoBox(
       photos,
       ...(more ? { more } : {}),
     };
-  }, [profile, members, dated, undated, dateChanges, progressive, hasMore, moreFailed]);
+  }, [profile, members, dated, undated, progressive, hasMore, moreFailed]);
 
   // 이미 받은 목록이 있으면 재조회가 실패해도 화면을 유지(삭제 뒤 재조회 실패로 정상 화면이 오류로 덮이지 않게)
   // 이어서 받는 화면이 아니면 중간 쪽 실패도 오류(전체 목록이 있어야 하므로)
@@ -202,8 +197,7 @@ export function usePhotoBox(
     savePhotos: (ids) =>
       bunchId ? saveToAlbum(bunchId, ids) : Promise.resolve({ savedIds: [], failedIds: ids }),
     changePhotoDates: async (ids, date) => {
-      await new Promise((resolve) => setTimeout(resolve, MOCK_CHANGE_DATE_DELAY_MS));
-      setDateChanges((current) => [...current, { ids: new Set(ids), date }]);
+      await changeDatesMutation.mutateAsync({ photoIds: ids, date });
     },
     deletePhotos: async (ids) => {
       const { deletedCount } = await removeMutation.mutateAsync(ids);

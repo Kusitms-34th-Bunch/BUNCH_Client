@@ -34,6 +34,27 @@ describe('getPublishBlockers', () => {
     expect(getPublishBlockers(complete, ready)).toEqual([]);
   });
 
+  it('서버가 검사한 제목·코멘트 금칙어가 있으면 업로드를 막는다', () => {
+    expect(
+      getPublishBlockers({ ...complete, prohibited: { title: true, commentMemberIds: [] } }, ready),
+    ).toEqual(['titleProhibited']);
+    expect(
+      getPublishBlockers(
+        { ...complete, prohibited: { title: false, commentMemberIds: ['b'] } },
+        ready,
+      ),
+    ).toEqual(['commentsProhibited']);
+  });
+
+  it('참여 멤버가 아닌 사람의 코멘트 금칙어는 막지 않는다', () => {
+    expect(
+      getPublishBlockers(
+        { ...complete, prohibited: { title: false, commentMemberIds: ['z'] } },
+        ready,
+      ),
+    ).toEqual([]);
+  });
+
   it('제목은 앞뒤 공백을 빼고 1자 이상이어야 한다', () => {
     expect(getPublishBlockers({ ...complete, title: '   ' }, ready)).toEqual(['title']);
   });

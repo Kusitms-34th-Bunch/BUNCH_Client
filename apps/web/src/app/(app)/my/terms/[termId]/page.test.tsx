@@ -50,7 +50,7 @@ describe('/my/terms/[termId] page', () => {
     render(await MyTermsPage(params('demographics')));
 
     expect(
-      screen.getByRole('heading', { level: 1, name: '추가 개인정보 수집 및 동의' }),
+      screen.getByRole('heading', { level: 1, name: '추가 개인정보 수집 및 이용 동의' }),
     ).toBeTruthy();
   });
 

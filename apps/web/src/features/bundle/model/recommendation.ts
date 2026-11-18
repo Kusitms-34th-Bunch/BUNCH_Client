@@ -136,6 +136,8 @@ export const toRecommendationDetail = (
       // 추천 순서가 곧 표시 순서라 업로드 시각은 쓰지 않음
       uploadedAt: `${photo.capturedDate}T00:00:00`,
       uploaderIds: photo.uploaders.map((uploader) => toDomainId(uploader.memberId)),
+      // 추천 번들은 작성 중인 번들에 쓰인 사진 여부를 주지 않고 쓰지도 않음
+      usedInDraftBundle: false,
       status: 'ready',
     };
   });

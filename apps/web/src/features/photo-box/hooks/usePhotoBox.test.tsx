@@ -2,10 +2,12 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { mockDb } from '@/mocks/db';
-import { MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import { photoBoxKeys } from '../queries/keys';
+import { PHOTO_BOX_POLL_MS } from '../queries/photoLists';
 import { usePhotoBox } from './usePhotoBox';
 
 const renderPhotoBox = (options?: Parameters<typeof usePhotoBox>[1]) =>
@@ -52,6 +54,33 @@ describe('usePhotoBox 목록 다시 받기', () => {
     const { afterFirst, afterSecond } = await countPhotoListRequests();
 
     expect(afterSecond).toBe(afterFirst);
+  });
+});
+
+describe('usePhotoBox 머무는 동안 다시 받기', () => {
+  // 화면이 보이는 동안의 간격은 구독자(observer)의 옵션으로 확인(20초를 실제로 기다리지 않음)
+  const pollIntervals = async (options?: Parameters<typeof usePhotoBox>[1]) => {
+    const client = createTestQueryClient();
+    const { result } = renderHook(() => usePhotoBox(undefined, options), {
+      wrapper: createQueryWrapper(client),
+    });
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    const intervalOf = (key: readonly unknown[]) =>
+      client.getQueryCache().find({ queryKey: key })?.observers[0]?.options.refetchInterval;
+    const bunchId = String(MOCK_BUNCH_ID);
+    return [
+      intervalOf(photoBoxKeys.datedPhotos(bunchId)),
+      intervalOf(photoBoxKeys.undatedPhotos(bunchId)),
+    ];
+  };
+
+  it('사진함 화면은 머무는 동안 날짜 있음·없음 목록을 20초마다 다시 받는다', async () => {
+    expect(PHOTO_BOX_POLL_MS).toBe(20_000);
+    expect(await pollIntervals({ progressive: true })).toEqual([20_000, 20_000]);
+  });
+
+  it('번들·상세 같은 일반 사용은 마운트할 때만 받고 주기적으로 받지 않는다', async () => {
+    expect(await pollIntervals()).toEqual([false, false]);
   });
 });
 
@@ -179,18 +208,17 @@ describe('usePhotoBox', () => {
     await waitFor(() => expect(readyData(result.current.state).photos).toHaveLength(12));
   });
 
-  it('날짜를 바꾸면 이 세션 목록에서 그 날짜로 옮겨 보인다(서버 반영 전)', async () => {
+  it('날짜를 바꾸면 서버에 반영하고 목록을 다시 받아 그 날짜로 옮겨 보인다', async () => {
     const { result } = renderPhotoBox();
     await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    const mine = String(MOCK_PHOTO_IDS.S4);
 
-    await act(() =>
-      result.current.actions.changePhotoDates([String(MOCK_PHOTO_IDS.O1)], new Date(2026, 9, 20)),
-    );
+    await act(() => result.current.actions.changePhotoDates([mine], new Date(2026, 9, 20)));
 
-    const moved = readyData(result.current.state).photos.find(
-      (photo) => photo.id === String(MOCK_PHOTO_IDS.O1),
-    );
-    expect(moved?.takenAt).toBe('2026-10-20T10:00');
+    await waitFor(() => {
+      const moved = readyData(result.current.state).photos.find((photo) => photo.id === mine);
+      expect(moved?.takenAt?.startsWith('2026-10-20')).toBe(true);
+    });
   });
 
   it('멤버 목록 응답이 비어도 준비 상태로 넘어간다', async () => {

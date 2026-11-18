@@ -24,7 +24,6 @@ import { PhotoBoxEmpty } from '../PhotoBoxEmpty';
 import { PhotoBoxError } from '../PhotoBoxError';
 import { PhotoBoxMore } from '../PhotoBoxMore';
 import { PhotoDragSelect } from '../PhotoDragSelect';
-import { UndatedPhotos } from '../UndatedPhotos';
 import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
 import { PhotoDragArea } from './PhotoDragArea';
@@ -53,8 +52,10 @@ type PhotoBoxScreenProps = {
   onLoadMore?: (() => void) | undefined;
   /** 맨 위에서 당겨서 새로고침(기능 spec 3.1.1). 선택 모드·저장·삭제 중에는 당김을 끔 */
   onRefresh?: (() => Promise<void>) | undefined;
-  /** 번치 이름을 눌렀을 때(전환 목록은 추후 작업) */
+  /** 번치 이름을 눌렀을 때(번치 전환 시트 열기) */
   onBunchClick?: (() => void) | undefined;
+  /** 번치 전환 시트가 열려 있는지 */
+  switcherOpen?: boolean | undefined;
   /** 올리기 시트에서 방식을 골랐을 때(앨범·카메라 연동은 사진 올리기 이슈, 시트는 닫고 호출) */
   onUpload?: ((_source: 'album' | 'camera') => void) | undefined;
   /** 「번들 만들기」 확인 창에서 「예」를 눌렀을 때(고른 사진 id를 누른 순서대로 전달, 초안 생성·이동은 번들 작성 이슈) */
@@ -70,6 +71,7 @@ export function PhotoBoxScreen({
   onLoadMore,
   onRefresh,
   onBunchClick,
+  switcherOpen,
   onUpload,
   onCreateBundle,
 }: PhotoBoxScreenProps) {
@@ -186,6 +188,7 @@ export function PhotoBoxScreen({
 
   let statusMessage = '';
   if (flow.saving) statusMessage = PHOTO_BOX_MESSAGES.saving;
+  else if (flow.deleting) statusMessage = PHOTO_BOX_MESSAGES.deleting;
   else if (selecting) statusMessage = PHOTO_BOX_MESSAGES.selectionStatus(selection.length);
   return (
     <PageShell
@@ -195,6 +198,7 @@ export function PhotoBoxScreen({
         <PhotoBoxHeader
           bunch={bunch}
           onBunchClick={onBunchClick}
+          switcherOpen={switcherOpen}
           selecting={selecting}
           onSelectClick={flow.start}
           onCancelClick={handleCancel}
@@ -242,10 +246,10 @@ export function PhotoBoxScreen({
       <p role="status" className="sr-only">
         {statusMessage}
       </p>
-      {/* 저장하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12) */}
-      {flow.saving ? <PageLoading /> : null}
+      {/* 저장·삭제하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12, 삭제는 저장과 같은 표시) */}
+      {flow.saving || flow.deleting ? <PageLoading /> : null}
       <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
-        {/* 저장·삭제 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(헤더 「취소」만 열어 둠) */}
+        {/* 저장·삭제 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(전체 로딩이 덮는 동안은 헤더 「취소」도 눌리지 않음, 요청은 취소할 수 없어 로딩이 끝나길 기다림) */}
         <PhotoDragSelect
           className="flex min-h-full flex-col"
           inert={busy}
@@ -257,9 +261,9 @@ export function PhotoBoxScreen({
             onSelect={setMemberId}
             selectedCounts={selectedCounts}
           />
-          {undated.length > 0 ? <UndatedPhotos photos={undated} /> : null}
           <PhotoDragArea
             sections={sections}
+            undated={undated}
             viewer={state.data.viewer}
             actions={actions}
             enabled={selecting && !flow.busy}

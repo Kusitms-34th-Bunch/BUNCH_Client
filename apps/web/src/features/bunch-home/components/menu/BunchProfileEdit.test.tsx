@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { NameCheckResult } from '@/shared/api/nameAvailability';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
@@ -118,7 +119,9 @@ describe('BunchProfileEditScreen', () => {
   });
 
   it('다른 번치가 쓰는 이름이면 사용 중으로 보이고 저장할 수 없다(지금 이름은 묻지 않음)', async () => {
-    const checkName = vi.fn<(_name: string) => Promise<boolean>>().mockResolvedValue(false);
+    const checkName = vi
+      .fn<(_name: string) => Promise<NameCheckResult>>()
+      .mockResolvedValue('taken');
     const user = userEvent.setup();
     render(
       <BunchProfileEditScreen
@@ -156,6 +159,67 @@ describe('BunchProfileEditScreen', () => {
       <BunchProfileEditScreen initial={privateBunch} onBack={vi.fn()} onSave={onSave} saving />,
     );
     expect(saveButton()).toHaveProperty('disabled', true);
+  });
+
+  it('입력 때 확인에서 금칙어가 걸린 이름은 안내하고 저장할 수 없다', async () => {
+    const user = userEvent.setup();
+    render(
+      <BunchProfileEditScreen
+        initial={privateBunch}
+        onBack={vi.fn()}
+        onSave={onSave}
+        checkName={vi
+          .fn<(_name: string) => Promise<NameCheckResult>>()
+          .mockResolvedValue('prohibited')}
+      />,
+    );
+
+    await user.type(screen.getByRole('textbox', { name: '번치 이름' }), '2');
+    expect(await screen.findByText('사용할 수 없는 번치 이름이에요')).toBeTruthy();
+    expect(saveButton()).toHaveProperty('disabled', true);
+  });
+
+  it('저장 때 서버가 금칙어로 거부한 이름·소개는 각 입력란 아래에 안내하고, 고친 칸은 안내를 지운다', async () => {
+    const user = userEvent.setup();
+    render(
+      <BunchProfileEditScreen
+        initial={privateBunch}
+        onBack={vi.fn()}
+        onSave={onSave}
+        prohibited={{ name: privateBunch.name, description: privateBunch.description }}
+      />,
+    );
+    const description = screen.getByRole('textbox', { name: '한 줄 소개' });
+
+    expect(screen.getAllByText('사용할 수 없는 번치 이름이에요')).not.toHaveLength(0);
+    expect(screen.getAllByText('사용할 수 없는 단어가 포함되어 있어요')).not.toHaveLength(0);
+    expect(description.getAttribute('aria-invalid')).toBe('true');
+
+    await user.type(description, '!');
+    expect(screen.queryAllByText('사용할 수 없는 단어가 포함되어 있어요')).toHaveLength(0);
+    // 이름은 아직 거부된 값 그대로라 저장할 수 없음
+    expect(saveButton()).toHaveProperty('disabled', true);
+  });
+
+  it('응답을 기다리는 사이 이름을 고쳤으면 거부 안내가 남은 소개 칸으로 초점을 옮긴다', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <BunchProfileEditScreen initial={privateBunch} onBack={vi.fn()} onSave={onSave} />,
+    );
+    // 지금 이름·소개로 저장했다고 보고, 응답 전에 이름을 고침
+    await user.type(screen.getByRole('textbox', { name: '번치 이름' }), '2');
+
+    rerender(
+      <BunchProfileEditScreen
+        initial={privateBunch}
+        onBack={vi.fn()}
+        onSave={onSave}
+        prohibited={{ name: privateBunch.name, description: privateBunch.description }}
+      />,
+    );
+
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: '한 줄 소개' }));
+    expect(screen.queryAllByText('사용할 수 없는 번치 이름이에요')).toHaveLength(0);
   });
 
   it('폼을 연 뒤 받은 값이 바뀌어도 입력·비교·저장 버전은 연 때 그대로다', async () => {
@@ -270,6 +334,65 @@ describe('BunchProfileEdit', () => {
 
     expect(await screen.findByText('이미 사용 중인 번치 이름이에요')).toBeTruthy();
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('저장 때 서버가 소개를 금칙어로 거부하면 소개 아래에 안내하고 이동하지 않는다', async () => {
+    makeMeOwner();
+    server.use(
+      http.put('/api/bunches/:bunchId/profile', () =>
+        fail(400, 'COMMON_003', { fields: ['introduction'] }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderEdit();
+    const description = await screen.findByRole('textbox', { name: '한 줄 소개' });
+
+    await user.type(description, ' 나쁜말');
+    await waitFor(() => expect(saveButton()).toHaveProperty('disabled', false));
+    await user.click(saveButton());
+
+    expect(await screen.findAllByText('사용할 수 없는 단어가 포함되어 있어요')).not.toHaveLength(0);
+    expect(saveButton()).toHaveProperty('disabled', true);
+    // 저장하기가 비활성이 되므로 거부된 소개 칸으로 초점을 옮김
+    expect(document.activeElement).toBe(description);
+    expect(replace).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('금칙어 거부 뒤 고쳐 저장하다 다른 곳의 변경으로 폼을 다시 열면 거부된 칸으로 초점을 옮기지 않는다', async () => {
+    makeMeOwner();
+    let calls = 0;
+    server.use(
+      http.put('/api/bunches/:bunchId/profile', () => {
+        calls += 1;
+        if (calls === 1) return fail(400, 'COMMON_003', { fields: ['introduction'] });
+        // 두 번째 저장 전에 다른 기기에서 저장해 버전이 올라감
+        mockDb.update((state) => ({
+          ...state,
+          bunches: state.bunches.map((bunch) =>
+            bunch.id === MOCK_BUNCH_ID ? { ...bunch, profileVersion: 5 } : bunch,
+          ),
+        }));
+        return fail(409, 'MOCK_PROFILE_VERSION');
+      }),
+    );
+    const user = userEvent.setup();
+    renderEdit();
+    const description = await screen.findByRole('textbox', { name: '한 줄 소개' });
+    await user.type(description, ' 나쁜말');
+    await user.click(saveButton());
+    await waitFor(() => expect(document.activeElement).toBe(description));
+
+    await user.type(description, '!');
+    await user.click(saveButton());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        '다른 곳에서 프로필이 바뀌어 최신 내용으로 다시 불러왔어요.',
+      ),
+    );
+    expect(document.activeElement).not.toBe(screen.getByRole('textbox', { name: '한 줄 소개' }));
+    expect(screen.queryAllByText('사용할 수 없는 단어가 포함되어 있어요')).toHaveLength(0);
   });
 
   it('그 사이 다른 곳에서 프로필이 바뀌어 거절되면 최신 내용으로 폼을 다시 열고 알린다', async () => {

@@ -2,7 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
@@ -18,6 +18,8 @@ type BundleEditProps = {
   onSaved?: (() => void) | undefined;
   /** 사진 추가 시트의 「내 갤러리에서 가져오기」(사진함 상태가 필요해 route가 연결, 더 담을 수 있는 장수와 함께) */
   onImportFromGallery: (_maxCount: number) => void;
+  /** 갤러리에서 가져오는 중이면 고른 장수(칸 로딩과 사진 작업 중 표시에 씀) */
+  galleryImporting?: number | undefined;
 };
 
 /**
@@ -25,10 +27,12 @@ type BundleEditProps = {
  * 메인 관리자가 아니면 안내 뒤, 없는 번들이거나 발행 전이면 안내 없이 상세·작성 화면으로 돌려보냄
  * 저장하면 상세로 돌아가 「번들을 수정했어요」를 알리고, 저장하는 동안은 로딩이 화면을 덮음
  */
-export function BundleEdit({ onSaved, onImportFromGallery }: BundleEditProps) {
+export function BundleEdit({ onSaved, onImportFromGallery, galleryImporting }: BundleEditProps) {
   const router = useRouter();
   const backOr = useBackOr();
   const { bunchId, bundleId, state, actions } = useBundleEditContext();
+  // 저장 거부 뒤 오류가 붙은 입력란을 찾는 범위
+  const screenRef = useRef<HTMLDivElement>(null);
   const detailPath = BUNDLE_PATHS.publishedDetail(bunchId, bundleId);
   const kind = state.kind;
 
@@ -61,6 +65,13 @@ export function BundleEdit({ onSaved, onImportFromGallery }: BundleEditProps) {
       router.replace(detailPath);
     } else if (outcome === 'conflict' || outcome === 'failed')
       toast(BUNDLE_MESSAGES.editSaveFailed);
+    // 'prohibited'는 제목 입력란 아래에 안내하고 머묾(토스트 없음, 기능명세 6.2.12 예외)
+    // 저장 중 화면이 잠겨 초점이 사라지므로, 잠금이 풀린 뒤 오류가 붙은 제목 입력란으로 옮겨 안내가 읽히고 바로 고칠 수 있게 함
+    // 같은 제목으로 다시 거부돼도 초점을 옮기며 오류 설명이 다시 읽힘
+    else if (outcome === 'prohibited')
+      requestAnimationFrame(() =>
+        screenRef.current?.querySelector<HTMLInputElement>('input[aria-invalid="true"]')?.focus(),
+      );
   };
 
   return (
@@ -70,7 +81,7 @@ export function BundleEdit({ onSaved, onImportFromGallery }: BundleEditProps) {
         {state.saving ? BUNDLE_MESSAGES.editSaving : ''}
       </p>
       {state.saving ? <PageLoading /> : null}
-      <div inert={state.saving} className="contents">
+      <div ref={screenRef} inert={state.saving} className="contents">
         <BundleEditScreen
           draft={state.draft}
           viewer={state.viewer}
@@ -87,6 +98,7 @@ export function BundleEdit({ onSaved, onImportFromGallery }: BundleEditProps) {
             router.push(BUNDLE_PATHS.editPhotoAdd(bunchId, bundleId));
           }}
           onImportFromGallery={onImportFromGallery}
+          galleryImporting={galleryImporting}
         />
       </div>
     </>

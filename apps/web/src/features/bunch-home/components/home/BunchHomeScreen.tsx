@@ -1,7 +1,7 @@
 'use client';
 
-import { ConfirmDialog, cn, toast } from '@app/design-system';
-import { BunchSwitchSheet, FloatingButton, type BunchSwitchItem } from '@app/design-system/web';
+import { ConfirmDialog, cn } from '@app/design-system';
+import { FloatingButton } from '@app/design-system/web';
 import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -11,8 +11,7 @@ import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries'
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
-import { useAccessNoticeDialog } from '../../hooks/useAccessNoticeDialog';
-import { switchStatus } from '../../lib/bunchSwitch';
+import { useBunchSwitchSheet } from '../../hooks/useBunchSwitchSheet';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
@@ -47,8 +46,6 @@ export function BunchHomeScreen({
   const background = BUNCH_BACKGROUNDS[current.characterType];
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
-  // 헤더의 번치 전환 버튼에 시트가 열렸는지 알림
-  const [switcherOpen, setSwitcherOpen] = useState(false);
   const openOverlay = useScreenOverlay();
   const refresh = useRefreshActiveQueries();
   // iOS 26 이상 쉘은 「+」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음
@@ -59,23 +56,15 @@ export function BunchHomeScreen({
     onPress: onCreateBundle,
   });
 
-  const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
-  const openNotice = useAccessNoticeDialog();
-  // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움(닫힘 모션 동안 문구는 열 때 값으로 유지)
-  const openUnavailable = (id: string) => {
-    const bunch = findBunch(id);
-    if (!bunch) return;
-    openNotice(bunch, {
-      onRemove: () => actions.removeBunch(bunch.id),
-      // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
-      onClosed: (removed) => {
-        if (removed)
-          document
-            .querySelector<HTMLElement>('[data-bottom-sheet]:not([data-ending-style])')
-            ?.focus();
-      },
-    });
-  };
+  // 번치 전환 시트와 접근 불가 번치 안내(사진함 헤더와 같은 hook)
+  const { openSwitcher, switcherOpen } = useBunchSwitchSheet({
+    currentId: current.id,
+    bunches,
+    switchBunch: actions.switchBunch,
+    removeBunch: actions.removeBunch,
+    onSwitched: () => setSwitched(true),
+    onAddBunch,
+  });
   // 창이 열린 사이 앞선 삭제가 끝날 수 있어 확정할 때의 최신 동작을 부름
   const deleteDraft = usePreservedCallback((id: string) => actions.deleteDraftBundle(id));
   const openDeleteDraft = (target: DraftBundle) =>
@@ -92,64 +81,6 @@ export function BunchHomeScreen({
         }}
       />
     ));
-  // 전환 중에 다른 번치를 또 누르면 무시(앞선 전환이 끝나기 전 순서가 뒤섞이지 않게)
-  const [switching, setSwitching] = useState(false);
-  const selectBunch = (id: string) => {
-    const bunch = findBunch(id);
-    if (!bunch || switching) return;
-    setSwitching(true);
-    // 서버 전환은 저장·다시 읽기가 끝난 뒤 토스트, 실패하면 지금 번치에 머물고 실패 안내
-    Promise.resolve(actions.switchBunch(bunch.id))
-      .then(() => {
-        setSwitched(true);
-        toast(BUNCH_HOME_MESSAGES.switched(bunch.name));
-      })
-      .catch(() => toast(BUNCH_HOME_MESSAGES.switchFailed))
-      .finally(() => setSwitching(false));
-  };
-  // 시트가 열린 사이 목록·알림 수가 바뀌어도 최신 값으로 그림
-  const switchItems = usePreservedCallback((): BunchSwitchItem[] =>
-    bunches.map((bunch) => ({
-      id: bunch.id,
-      name: bunch.name,
-      imageSrc: bunch.imageSrc,
-      notificationCount: bunch.alertCount,
-      status: switchStatus(bunch, current.id),
-    })),
-  );
-  const openSwitcher = () => {
-    // 「새로운 번치 추가하기」: 시트가 다 내려간 뒤 이동(화면설계서 7-1)
-    let addAfterClose = false;
-    setSwitcherOpen(true);
-    openOverlay(
-      (rootProps, close) => (
-        <BunchSwitchSheet
-          {...rootProps}
-          onOpenChange={(open) => {
-            if (!open) setSwitcherOpen(false);
-            rootProps.onOpenChange(open);
-          }}
-          bunches={switchItems()}
-          onSelect={(id) => {
-            setSwitcherOpen(false);
-            close();
-            selectBunch(id);
-          }}
-          onUnavailableSelect={openUnavailable}
-          onAdd={() => {
-            addAfterClose = true;
-            setSwitcherOpen(false);
-            close();
-          }}
-        />
-      ),
-      () => {
-        if (addAfterClose) onAddBunch?.();
-      },
-      { live: true },
-    );
-  };
-
   return (
     // 성격별 배경은 헤더·프로필 이미지 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
     // 틀 배경은 위 절반 성격 색·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 성격 색, 아래는 흰색이 드러남

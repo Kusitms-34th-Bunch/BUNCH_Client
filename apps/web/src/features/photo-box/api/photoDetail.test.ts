@@ -55,9 +55,7 @@ describe('getPhotoDetail', () => {
 
   it('응답이 계약과 다르면 성공으로 넘기지 않는다', async () => {
     server.use(
-      http.get('/api/bunches/:bunchId/photos/:photoId', () =>
-        ok({ photoId: 1, uploaders: [], usedInDraftBundle: false }),
-      ),
+      http.get('/api/bunches/:bunchId/photos/:photoId', () => ok({ photoId: 1, uploaders: [] })),
     );
     await expect(getPhotoDetail(bunchId, '1')).rejects.toMatchObject({
       code: INVALID_RESPONSE_CODE,

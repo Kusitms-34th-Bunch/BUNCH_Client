@@ -18,11 +18,20 @@ import type {
 import { deleteConfirmCopy, PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoViewer } from '../../hooks/usePhotoViewer';
 import { useSaveBlockedNotice } from '../../hooks/useSaveBlockedNotice';
-import { canDeletePhotos, countCoUploaded, getDeleteKind } from '../../lib/photoActions';
-import { formatDetailDate, getTakenDate } from '../../lib/photoDetail';
+import { MissingPhotosError } from '../../lib/missingPhotos';
+import {
+  canDeletePhotos,
+  countCoUploaded,
+  getDateConfirmKind,
+  getDeleteKind,
+  needsDateChangeConfirm,
+  removesDraftBundlePhoto,
+  type DateConfirmKind,
+} from '../../lib/photoActions';
+import { formatDetailDate } from '../../lib/photoDetail';
 import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from '../PhotoDetailMenu';
-import { DeleteConfirmDialog } from '../PhotoSelectionDialogs';
+import { DateChangeConfirmDialog, DeleteConfirmDialog } from '../PhotoSelectionDialogs';
 import { PhotoViewerSwiper } from '../PhotoViewerSwiper';
 import { SavingDateSheet } from '../SavingDateSheet';
 
@@ -119,8 +128,14 @@ export function PhotoDetailScreen({
       setPending(undefined);
       notify(PHOTO_BOX_MESSAGES.dateChanged);
       return true;
-    } catch {
+    } catch (error) {
       setPending(undefined);
+      // 보던 사진이 그사이 지워졌으면 사진함으로 돌아가 안내(시트도 함께 닫힘)
+      if (error instanceof MissingPhotosError) {
+        toastAfterNavigation(PHOTO_BOX_MESSAGES.deletedPhoto);
+        onLeave();
+        return true;
+      }
       notify(PHOTO_BOX_MESSAGES.dateChangeFailed);
       return false;
     }
@@ -136,26 +151,54 @@ export function PhotoDetailScreen({
         toastAfterNavigation(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
         onLeave();
       }
-    } catch {
+    } catch (error) {
       setPending(undefined);
+      // 보던 사진이 그사이 지워졌으면 사진함으로 돌아가 안내
+      if (error instanceof MissingPhotosError) {
+        toastAfterNavigation(PHOTO_BOX_MESSAGES.deletedPhoto);
+        onLeave();
+        return;
+      }
       notify(PHOTO_BOX_MESSAGES.deleteFailed);
     }
   };
+
+  // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸, 기능명세서 3.4.1)
+  const askDateConfirm = (kind: DateConfirmKind) =>
+    new Promise<boolean>((resolve) => {
+      openOverlay(
+        (rootProps, close) => (
+          <DateChangeConfirmDialog
+            {...rootProps}
+            kind={kind}
+            onConfirm={() => {
+              resolve(true);
+              close();
+            }}
+          />
+        ),
+        () => resolve(false),
+      );
+    });
 
   const handleMenuSelect = (action: PhotoDetailMenuAction) => {
     if (pending || !activePhoto) return;
     if (action === 'save') void save();
     else if (action === 'date') {
       // 연 시점의 사진 id를 고정해 시트가 열린 사이 사진이 넘어가도 처음 사진의 날짜를 바꿈
-      const { id, takenAt } = activePhoto;
+      // 시트는 사진의 원래 날짜와 관계없이 항상 오늘이 속한 달을 선택 없이 엶(기능명세서 3.4.1)
+      const photo = activePhoto;
+      const confirmKind = needsDateChangeConfirm([photo], viewer)
+        ? getDateConfirmKind([photo], viewer)
+        : undefined;
       setOverlayOpen(true);
       openOverlay(
         (rootProps, close) => (
           <SavingDateSheet
             {...rootProps}
             close={close}
-            defaultDate={getTakenDate(takenAt)}
-            save={(date) => changeDate(id, date)}
+            beforeSave={confirmKind ? () => askDateConfirm(confirmKind) : undefined}
+            save={(date) => changeDate(photo.id, date)}
           />
         ),
         () => setOverlayOpen(false),
@@ -167,6 +210,7 @@ export function PhotoDetailScreen({
         getDeleteKind([activePhoto], viewer),
         1,
         countCoUploaded([activePhoto]),
+        removesDraftBundlePhoto([activePhoto], viewer),
       );
       setOverlayOpen(true);
       openOverlay(
@@ -235,8 +279,10 @@ export function PhotoDetailScreen({
     >
       <h1 className="sr-only">사진 상세</h1>
       <p role="status" className="sr-only">
-        {pending === 'save'
-          ? PHOTO_BOX_MESSAGES.saving
+        {pending === 'save' ? PHOTO_BOX_MESSAGES.saving : null}
+        {pending === 'delete' ? PHOTO_BOX_MESSAGES.deleting : null}
+        {pending === 'save' || pending === 'delete'
+          ? null
           : PHOTO_BOX_MESSAGES.detailPosition(activeIndex + 1, photos.length)}
       </p>
       {/* 저장·삭제 중에는 사진 영역을 inert로 막음(더보기가 포커스를 잃지 않도록 헤더는 열어 둠) */}
@@ -246,7 +292,7 @@ export function PhotoDetailScreen({
         members={members}
         inert={pending !== undefined}
       />
-      {pending === 'save' ? <PageLoading /> : null}
+      {pending === 'save' || pending === 'delete' ? <PageLoading /> : null}
     </PageShell>
   );
 }

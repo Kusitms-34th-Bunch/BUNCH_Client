@@ -50,6 +50,7 @@ const member = (memberId: number, nickname: string): MockMember => ({
   imageUrl: null,
   birthYear: null,
   gender: null,
+  additionalInfoConsented: false,
 });
 
 // 시연 번치(여행쥬아)가 가장 최근에 쓴 번치라 기본 번치가 됨

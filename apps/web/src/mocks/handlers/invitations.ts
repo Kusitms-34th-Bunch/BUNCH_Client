@@ -135,6 +135,7 @@ const addMembership = (resolved: Exclude<Resolved, { kind: 'invalid' }>): number
         imageUrl: null,
         birthYear: null,
         gender: null,
+        additionalInfoConsented: false,
       },
     ],
     bunches: [

@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
 import { mockDb } from '@/mocks/db';
 import { MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
@@ -26,9 +27,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
-// 닉네임 중복 확인은 기본으로 사용 가능(true)이라 응답 뒤 수정하기가 켜짐
+// 닉네임 확인은 기본으로 사용 가능이라 응답 뒤 수정하기가 켜짐
 const renderScreen = (
-  checkNickname = vi.fn((_nickname: string) => Promise.resolve(true)),
+  checkNickname = vi.fn<CheckNickname>(() => Promise.resolve('available')),
   demographicsConsent = false,
 ) => {
   render(
@@ -135,6 +136,73 @@ describe('ProfileEditScreen', () => {
     expect(me?.nickname).toBe('으누누');
   });
 
+  it('동의했으면 출생연도·성별을 함께 저장하고, 지운 출생연도는 없음으로 저장한다', async () => {
+    mockDb.update((state) => ({
+      ...state,
+      members: state.members.map((member) =>
+        member.memberId === MOCK_MY_MEMBER_ID
+          ? { ...member, additionalInfoConsented: true, birthYear: 2003, gender: 'MALE' }
+          : member,
+      ),
+    }));
+    const user = userEvent.setup();
+    renderScreen(undefined, true);
+
+    await user.clear(screen.getByRole('textbox', { name: /출생연도/ }));
+    await user.click(screen.getByRole('button', { name: '여성' }));
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
+    const me = mockDb.get().members.find((member) => member.memberId === MOCK_MY_MEMBER_ID);
+    expect(me).toMatchObject({ birthYear: null, gender: 'FEMALE' });
+  });
+
+  it('편집 중 동의가 철회돼 칸이 숨겨지면 숨은 출생연도 값이 저장을 막지 않는다', async () => {
+    const user = userEvent.setup();
+    const profile = { nickname: '으누', birthYear: 2003, gender: 'male' as const };
+    const checkNickname = vi.fn<CheckNickname>(() => Promise.resolve('available'));
+    const { rerender } = render(
+      <ProfileEditScreen profile={profile} demographicsConsent checkNickname={checkNickname} />,
+      { wrapper: createQueryWrapper() },
+    );
+
+    const birthYear = screen.getByRole('textbox', { name: /출생연도/ });
+    await user.clear(birthYear);
+    await user.type(birthYear, '20');
+    rerender(
+      <ProfileEditScreen
+        profile={profile}
+        demographicsConsent={false}
+        checkNickname={checkNickname}
+      />,
+    );
+    expect(screen.queryByRole('textbox', { name: /출생연도/ })).toBeNull();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+  });
+
+  it('동의하지 않았으면 출생연도·성별을 보내지 않는다', async () => {
+    let sent: unknown;
+    server.use(
+      http.put('/api/members/me/profile', async ({ request }) => {
+        const part = (await request.formData()).get('profile');
+        sent = part instanceof Blob ? JSON.parse(await part.text()) : null;
+        return HttpResponse.json({ success: true, data: { memberId: 5, nickname: '으누누' } });
+      }),
+    );
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/my'));
+    expect(sent).toEqual({ nickname: '으누누', imageAction: 'KEEP' });
+  });
+
   it('저장할 때 서버가 닉네임 중복으로 거절하면 오류를 보이고 닉네임 입력으로 초점을 옮긴다', async () => {
     server.use(http.put('/api/members/me/profile', () => fail(409, 'USER_002')));
     const user = userEvent.setup();
@@ -149,6 +217,38 @@ describe('ProfileEditScreen', () => {
     expect(submitButton().disabled).toBe(true);
     expect(replace).not.toHaveBeenCalled();
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('저장 직전 확인에서 닉네임에 금칙어가 걸리면 Error 상태로 안내하고 닉네임을 고치면 풀린다', async () => {
+    server.use(
+      http.put('/api/members/me/profile', () => fail(400, 'COMMON_003', { fields: ['nickname'] })),
+    );
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+
+    expect(await screen.findByText('사용할 수 없는 닉네임이에요')).toBeTruthy();
+    expect(nicknameInput().getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(nicknameInput());
+    expect(submitButton().disabled).toBe(true);
+    expect(replace).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
+
+    await user.type(nicknameInput(), '리');
+    expect(screen.queryByText('사용할 수 없는 닉네임이에요')).toBeNull();
+  });
+
+  it('입력을 멈춘 뒤 확인에서 금칙어가 걸리면 안내하고 수정하기를 비활성으로 둔다', async () => {
+    const user = userEvent.setup();
+    renderScreen(vi.fn<CheckNickname>(() => Promise.resolve('prohibited')));
+
+    await user.type(nicknameInput(), '누');
+
+    expect(await screen.findByText('사용할 수 없는 닉네임이에요')).toBeTruthy();
+    expect(submitButton().disabled).toBe(true);
   });
 
   /** 프로필 저장 응답을 `release`를 부를 때까지 붙잡음 */
@@ -201,6 +301,30 @@ describe('ProfileEditScreen', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(replace).toHaveBeenCalledTimes(1);
     expect(toastAfterNavigation).not.toHaveBeenCalled();
+  });
+
+  it('저장 중 뒤로 간 뒤 닉네임 금칙어로 거부되면 입력란 대신 저장 실패 토스트로 알린다', async () => {
+    let release!: () => void;
+    server.use(
+      http.put('/api/members/me/profile', async () => {
+        await new Promise<void>((resolve) => (release = resolve));
+        return fail(400, 'COMMON_003', { fields: ['nickname'] });
+      }),
+    );
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.type(nicknameInput(), '누');
+    await waitForEnabled();
+    await user.click(submitButton());
+    await waitFor(() => expect(submitButton()).toHaveAttribute('aria-busy', 'true'));
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    release();
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(screen.queryByText('사용할 수 없는 닉네임이에요')).toBeNull();
   });
 
   it('저장이 실패하면 머물러 토스트를 띄우고 다시 누를 수 있다', async () => {
@@ -303,7 +427,7 @@ describe('ProfileEditScreen', () => {
 
   it('이미 사용 중인 닉네임이면 오류를 보이고 수정하기를 막는다', async () => {
     const user = userEvent.setup();
-    renderScreen(vi.fn((_nickname: string) => Promise.resolve(false)));
+    renderScreen(vi.fn<CheckNickname>(() => Promise.resolve('taken')));
 
     await user.type(nicknameInput(), '짱');
 

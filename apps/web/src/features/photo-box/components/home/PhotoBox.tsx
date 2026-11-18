@@ -15,14 +15,16 @@ import { PhotoBoxScreen } from './PhotoBoxScreen';
 type PhotoBoxProps = {
   /** 임시 상태 미리보기(`/photos?preview=…`). API 연결 후 제거 */
   preview?: PhotoBoxPreview | undefined;
+  /** 헤더의 번치 이름을 눌렀을 때 여는 번치 전환 시트(번치 홈과 같은 시트라 route에서 조합해 넘김, 기능명세 3.1.1) */
+  bunchSwitcher?: { open: (() => void) | undefined; switcherOpen: boolean } | undefined;
 };
 
 /**
- * `/photos` 사진함 탭 화면: 상태와 동작을 가져와 화면에 연결(번치 전환·날짜 바꾸기는 아직 동작 없음)
+ * `/photos` 사진함 탭 화면: 상태와 동작을 가져와 화면에 연결(번치 전환 시트는 route가 조합해 넘김)
  * 선택 모드의 「번들 만들기」는 고른 사진을 넘기고 참여 멤버 고르기로 이동(기능 spec 3.3.4)
  * 멤버를 고르면 그 화면이 고른 사진으로 초안 생성 API를 불러 작성 화면으로 보냄
  */
-export function PhotoBox({ preview }: PhotoBoxProps) {
+export function PhotoBox({ preview, bunchSwitcher }: PhotoBoxProps) {
   const { state, actions, retry, loadMore, refresh, moreErrorAt, stale } = usePhotoBox(preview, {
     progressive: true,
   });
@@ -63,6 +65,8 @@ export function PhotoBox({ preview }: PhotoBoxProps) {
           onCreateBundle={createBundle}
           onUpload={(source) => void startUpload(source)}
           onRetry={retry}
+          onBunchClick={bunchSwitcher?.open}
+          switcherOpen={bunchSwitcher?.switcherOpen}
           onLoadMore={loadMore}
           onRefresh={refresh}
         />

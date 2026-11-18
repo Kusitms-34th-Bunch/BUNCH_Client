@@ -316,3 +316,18 @@ void test('플로팅 버튼은 정해진 아이콘과 이름만 받고, null로 
     assert.equal(setNativeFloatingButtonParamsSchema.safeParse(invalid).success, false);
   }
 });
+
+void test('고른 사진 정보는 UTC 오프셋(-12:00~+14:00)과 원본 유형이 맞을 때만 받는다', () => {
+  const parse = (value: unknown) => pickedPhotoSchema.safeParse(value).success;
+  assert.equal(parse({ id: 'p1', capturedUtcOffset: '+09:00', sourceType: 'CAMERA' }), true);
+  assert.equal(parse({ id: 'p1', capturedUtcOffset: '-12:00', sourceType: 'UNKNOWN' }), true);
+  assert.equal(parse({ id: 'p1', capturedUtcOffset: '+14:00', sourceType: 'SAVED_IMAGE' }), true);
+  assert.equal(parse({ id: 'p1', sourceType: 'SCREENSHOT' }), true);
+  // 이전 쉘은 두 값을 보내지 않음
+  assert.equal(parse({ id: 'p1' }), true);
+  assert.equal(parse({ id: 'p1', capturedUtcOffset: '+14:30' }), false);
+  assert.equal(parse({ id: 'p1', capturedUtcOffset: '-12:30' }), false);
+  assert.equal(parse({ id: 'p1', capturedUtcOffset: '+9:00' }), false);
+  assert.equal(parse({ id: 'p1', capturedUtcOffset: '+09:60' }), false);
+  assert.equal(parse({ id: 'p1', sourceType: 'GALLERY' }), false);
+});

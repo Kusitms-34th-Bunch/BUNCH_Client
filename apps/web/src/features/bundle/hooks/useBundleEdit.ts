@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { PublishedEditInput } from '../api/bundles';
@@ -42,6 +43,8 @@ export type EditSaveOutcome =
   | 'missing'
   /** 편집하는 사이 서버 값이 바뀜(BUNDLE_003): 최신 값을 받아 두었으니 다시 저장하면 됨 */
   | 'conflict'
+  /** 제목에 금칙어가 있어 서버가 거부함(COMMON_003): 제목 입력란 아래에 안내하고 머묾(기능명세 6.2.12 예외) */
+  | 'prohibited'
   | 'failed'
   /** 저장할 수 없는 상태(바뀐 내용 없음·제목이 비었음·저장 중)라 보내지 않음 */
   | 'skipped';
@@ -154,6 +157,8 @@ export function useBundleEdit(
   const [overrides, setOverrides] = useState<Overrides>({});
   // 저장 요청이 끝난 뒤 충돌 정리(최신 값을 받아 편집 값을 맞춤)가 끝날 때까지 입력과 재저장을 막음
   const [resolving, setResolving] = useState(false);
+  // 저장 때 서버가 금칙어로 거부한 제목(앞뒤 공백을 지운 값). 그 제목 그대로인 동안만 안내하고, 고치면 지움
+  const [prohibitedTitle, setProhibitedTitle] = useState<string | null>(null);
   // 이 화면에서 더한 위치 줄의 번호(줄 id가 겹치지 않게)
   const nextNo = useRef(0);
 
@@ -248,6 +253,11 @@ export function useBundleEdit(
         return 'saved';
       } catch (error) {
         const code = errorCode(error);
+        // 이 경로에서 금칙어를 검사하는 칸은 제목뿐이라 칸 이름을 읽지 못해도 제목 거부로 봄
+        if (prohibitedFieldsOf(error) !== null) {
+          setProhibitedTitle(titleTrimmed);
+          return 'prohibited';
+        }
         if (code === 'AUTH_002') return 'forbidden';
         if (code === 'RESOURCE_001' || code === 'BUNDLE_002') return 'missing';
         if (code === 'BUNDLE_003') {
@@ -323,6 +333,11 @@ export function useBundleEdit(
         // 편집 중 표시는 이 화면에서 쓰지 않음. 픽은 사진 삭제 확인(「픽한 사진이에요」)에만 쓰고 화면에는 나타나지 않음
         editing: {},
         viewingMemberIds: [],
+        // 발행본은 서버가 금칙어를 소급 검사하지 않아, 저장 때 거부된 제목만 안내(코멘트는 고칠 수 없어 대상 아님)
+        prohibited: {
+          title: prohibitedTitle !== null && titleTrimmed === prohibitedTitle,
+          commentMemberIds: [],
+        },
       },
       viewer: { memberId: me.id, bunchRole: 'owner' },
       dirty,

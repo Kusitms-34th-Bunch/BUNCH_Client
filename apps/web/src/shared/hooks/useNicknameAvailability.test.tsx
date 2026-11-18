@@ -1,6 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { NameCheckResult } from '../api/nameAvailability';
 import { CHECK_FAILURE_MESSAGE, useNicknameAvailability } from './useNicknameAvailability';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -29,7 +30,7 @@ describe('useNicknameAvailability', () => {
   });
 
   it('닉네임이 비어 있으면 확인하지 않는다', async () => {
-    const check = vi.fn(() => Promise.resolve(true));
+    const check = vi.fn(() => Promise.resolve('available' as const));
     const { result } = renderHook(() => useNicknameAvailability('', check));
     await settle();
 
@@ -38,7 +39,7 @@ describe('useNicknameAvailability', () => {
   });
 
   it('입력이 바뀐 직후에는 확인 중이고 0.5초 뒤에 호출한다', async () => {
-    const check = vi.fn(() => Promise.resolve(true));
+    const check = vi.fn(() => Promise.resolve('available' as const));
     const { result } = renderHook(() => useNicknameAvailability('지원', check));
 
     expect(result.current).toBe('checking');
@@ -51,7 +52,7 @@ describe('useNicknameAvailability', () => {
   });
 
   it('사용 중인 닉네임이면 taken이다', async () => {
-    const check = vi.fn(() => Promise.resolve(false));
+    const check = vi.fn(() => Promise.resolve('taken' as const));
     const { result } = renderHook(() => useNicknameAvailability('지원', check));
     await settle();
 
@@ -59,7 +60,7 @@ describe('useNicknameAvailability', () => {
   });
 
   it('입력을 계속 바꾸면 마지막 값으로 한 번만 확인한다', async () => {
-    const check = vi.fn(() => Promise.resolve(true));
+    const check = vi.fn(() => Promise.resolve('available' as const));
     const { rerender } = renderHook(({ value }) => useNicknameAvailability(value, check), {
       initialProps: { value: '지' },
     });
@@ -72,7 +73,7 @@ describe('useNicknameAvailability', () => {
   });
 
   it('닉네임이 바뀌면 이전 결과를 쓰지 않고 다시 확인 중이 된다', async () => {
-    const check = vi.fn(() => Promise.resolve(false));
+    const check = vi.fn(() => Promise.resolve('taken' as const));
     const { result, rerender } = renderHook(({ value }) => useNicknameAvailability(value, check), {
       initialProps: { value: '지원' },
     });
@@ -85,7 +86,7 @@ describe('useNicknameAvailability', () => {
   });
 
   it('같은 닉네임으로 되돌아와도 이전 결과를 쓰지 않고 다시 확인한다', async () => {
-    const check = vi.fn(() => Promise.resolve(false));
+    const check = vi.fn(() => Promise.resolve('taken' as const));
     const { result, rerender } = renderHook(({ value }) => useNicknameAvailability(value, check), {
       initialProps: { value: '지원' },
     });
@@ -106,7 +107,7 @@ describe('useNicknameAvailability', () => {
       ({ value }) =>
         useNicknameAvailability(value, (nickname) => {
           calls.push(nickname);
-          return Promise.resolve(true);
+          return Promise.resolve('available' as const);
         }),
       { initialProps: { value: '지원' } },
     );
@@ -119,11 +120,13 @@ describe('useNicknameAvailability', () => {
   });
 
   it('닉네임이 바뀐 뒤 늦게 도착한 응답은 무시한다', async () => {
-    let resolveFirst!: (_available: boolean) => void;
+    let resolveFirst!: (_result: NameCheckResult) => void;
     const check = vi
-      .fn<(_nickname: string) => Promise<boolean>>()
-      .mockImplementationOnce(() => new Promise<boolean>((resolve) => (resolveFirst = resolve)))
-      .mockResolvedValue(true);
+      .fn<(_nickname: string) => Promise<NameCheckResult>>()
+      .mockImplementationOnce(
+        () => new Promise<NameCheckResult>((resolve) => (resolveFirst = resolve)),
+      )
+      .mockResolvedValue('available');
     const { result, rerender } = renderHook(({ value }) => useNicknameAvailability(value, check), {
       initialProps: { value: '지원' },
     });
@@ -131,7 +134,7 @@ describe('useNicknameAvailability', () => {
 
     rerender({ value: '지원이' });
     await act(() => {
-      resolveFirst(false);
+      resolveFirst('taken');
       return Promise.resolve();
     });
     expect(result.current).toBe('checking');

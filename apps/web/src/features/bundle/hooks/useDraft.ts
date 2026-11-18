@@ -6,6 +6,7 @@ import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toWireId } from '@/shared/api/ids';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type {
@@ -893,6 +894,11 @@ export function useDraft(draftId: string | undefined): {
           error.status < 500
         )
           publishAttempt.current = undefined;
+        // 발행 잠금에서 다시 검사한 제목·코멘트에 금칙어가 있어 거부(COMMON_003): 다시 확인하라고 안내하고, 최신 상태는 다시 받아 입력란 아래 안내로 보임
+        if (prohibitedFieldsOf(error) !== null) {
+          toast(BUNDLE_MESSAGES.publishProhibited);
+          return 'blocked';
+        }
         if (readPublishBlockers(error) !== undefined) {
           toast(BUNDLE_MESSAGES.uploadIncomplete);
           return 'blocked';

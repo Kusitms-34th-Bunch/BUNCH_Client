@@ -20,6 +20,7 @@ const photo = (
   takenAt,
   uploadedAt,
   uploaderIds,
+  usedInDraftBundle: false,
   status: 'ready',
 });
 

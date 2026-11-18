@@ -4,6 +4,7 @@ import type { MockBundle, MockBundlePhoto, MockLocation } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail } from '../lib/envelope';
+import { failIfProhibited } from '../lib/prohibitedWord';
 import { changeBundle, findScope, myRoleIn, nowIso, readJson, snapshotOf } from './bundles';
 
 // 발행 번들 수정(`PUT …/bundles/{id}/published`, 서버 PR #134 기준): 메인 관리자가 최종 제목·날짜·사진 순서·위치를 한 번에 저장
@@ -103,6 +104,9 @@ export const bundleEditHandlers = [
     if (myRoleIn(mockDb.get(), bunchId) !== 'OWNER') return fail(403, 'AUTH_002');
     const body = parseBody(await readJson(request));
     if (!body) return fail(400, 'COMMON_001');
+    // 제출한 제목의 금칙어 검사(기능명세 6.2.12, 코멘트는 이 경로의 입력이 아님)
+    const prohibited = failIfProhibited({ title: body.title });
+    if (prohibited) return prohibited;
     const current = mockDb.get().bundles.find((item) => item.id === scope.bundle.id);
     if (!current) return fail(404, 'RESOURCE_001');
     // 발행 전 초안은 이 경로로 고치지 않음

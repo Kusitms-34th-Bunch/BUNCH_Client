@@ -41,7 +41,7 @@ vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => null }));
 const renderDraft = (draftId: string | undefined) =>
   render(
     <DraftProvider draftId={draftId}>
-      <BundleDraft />
+      <BundleDraft onImportFromGallery={() => undefined} />
     </DraftProvider>,
     { wrapper: createQueryWrapper(createTestQueryClient()) },
   );

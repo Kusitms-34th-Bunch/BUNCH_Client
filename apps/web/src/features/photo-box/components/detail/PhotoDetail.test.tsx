@@ -11,6 +11,7 @@ import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testin
 import type { PhotoDetailScreen } from './PhotoDetailScreen';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PHOTO_BOX_PATHS } from '../../constants/paths';
+import { MissingPhotosError } from '../../lib/missingPhotos';
 import { PhotoDetail } from './PhotoDetail';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
@@ -157,6 +158,33 @@ describe('PhotoDetail', () => {
     // 사진이 목록에서 빠져도 로딩 화면으로 바뀌지 않고 마지막 화면을 유지
     expect(screen.getByTestId('detail-screen')).toBeTruthy();
     expect(toast).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('날짜 바꾸기가 사라진 사진으로 거절돼 목록에서 빠져도 상세는 안내와 이동을 따로 하지 않는다', async () => {
+    // 서버가 그 사진을 이미 지운 상태: 날짜 변경은 409로 거절되고 목록을 다시 받으면 사진이 빠짐
+    server.use(
+      http.post('/api/bunches/:bunchId/photos/date', () => {
+        mockDb.update((current) => ({
+          ...current,
+          photos: current.photos.filter((photo) => photo.photoId !== MOCK_PHOTO_IDS.S4),
+        }));
+        return fail(409, 'PHOTO_004', { missingPhotoIds: [MOCK_PHOTO_IDS.S4] });
+      }),
+    );
+    render(<PhotoDetail photoId={firstId} />);
+    await loaded();
+
+    let rejected: unknown;
+    await act(async () => {
+      rejected = await screenProps?.actions
+        .changePhotoDates([firstId], new Date(2026, 9, 5))
+        .catch((error: unknown) => error);
+    });
+
+    expect(rejected).toBeInstanceOf(MissingPhotosError);
+    // 이탈 안내와 이동은 화면(PhotoDetailScreen)이 한 번만 하므로 상세의 사라짐 처리는 끼어들지 않음
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
   });
 

@@ -3,8 +3,9 @@ import { type ApiContract, normalizeError } from '@app/api-core';
 import { z } from 'zod';
 import type { Gender } from '@/shared/components/profile/GenderField';
 import { bffApi, requestData } from '@/shared/api/bffApi';
+import { getTermVersions } from '@/shared/api/termVersions';
 import { dataUrlToBlob } from '@/shared/lib/dataUrl';
-import { getTermVersions } from './terms';
+import { toServerGender } from '@/shared/lib/gender';
 
 /** `POST /api/v1/members/me/registration` 응답 */
 const registrationSchema = z.object({
@@ -13,8 +14,6 @@ const registrationSchema = z.object({
   nickname: z.string(),
   imageUrl: z.string().nullish(),
 }) satisfies z.ZodType<ApiContract<components['schemas']['RegistrationResponse']>>;
-
-const SERVER_GENDER = { female: 'FEMALE', male: 'MALE' } as const satisfies Record<Gender, string>;
 
 export type RegistrationInput = {
   /** 앞뒤 공백을 지운 닉네임 */
@@ -47,7 +46,7 @@ export const registerMember = async ({
       if (version) {
         profile.demographicsConsentVersion = version;
         if (birthYear !== undefined) profile.birthYear = birthYear;
-        if (gender) profile.gender = SERVER_GENDER[gender];
+        if (gender) profile.gender = toServerGender(gender);
       }
     }
 

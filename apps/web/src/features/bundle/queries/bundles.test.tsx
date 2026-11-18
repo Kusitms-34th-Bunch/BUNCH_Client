@@ -9,6 +9,7 @@ import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BundleDetail } from '../model/bundle';
+import { getBundle } from '../api/bundles';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import {
   bundleQueryOptions,
@@ -132,6 +133,9 @@ describe('번들 query·mutation', () => {
       title: '병합 응답으로 맞춘 제목',
       titleVersion: loaded.titleVersion + 3,
       titleCrdtState: 'merged-state',
+      // 병합한 제목에 금칙어가 있다는 결과도 함께 받음
+      profanity: { titleProhibited: true, prohibitedCommentMemberIds: [] },
+      publishBlockers: [...loaded.publishBlockers, 'TITLE_PROHIBITED_WORD'],
     });
     sendResponse();
     await act(async () => {
@@ -144,6 +148,10 @@ describe('번들 query·mutation', () => {
       titleVersion: loaded.titleVersion + 3,
       titleCrdtState: 'merged-state',
     });
+    // 지킨 제목의 금칙어 여부와 제목 계열 차단 사유도 낡은 상세로 되돌리지 않음
+    const kept = client.getQueryData<BundleDetail>(key) as BundleDetail;
+    expect(kept.profanity?.titleProhibited).toBe(true);
+    expect(kept.publishBlockers).toContain('TITLE_PROHIBITED_WORD');
   });
 
   it('상세 query는 번들을 아직 모르면 요청하지 않는다', () => {
@@ -304,6 +312,64 @@ describe('번들 query·mutation', () => {
 
     await waitFor(() => expect(result.current.error).toMatchObject({ code: 'BUNDLE_005' }));
     expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toMatchObject({ status: 'DRAFT' });
+  });
+
+  it('초안 상세는 제목·참여자 코멘트의 금칙어 검사 상태를 담는다', async () => {
+    const { wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const at = '2026-11-18T00:00:00Z';
+    mockDb.update((state) => ({
+      ...state,
+      bundles: state.bundles.map((bundle) =>
+        String(bundle.id) === id
+          ? {
+              ...bundle,
+              title: '금칙어 제목',
+              comments: [
+                {
+                  memberId: MOCK_MEMBER_IDS.memberA,
+                  content: '금칙어 코멘트',
+                  version: 1,
+                  createdAt: at,
+                  updatedAt: at,
+                },
+              ],
+            }
+          : bundle,
+      ),
+    }));
+
+    const detail = await getBundle(bunchId, id);
+
+    expect(detail.profanity).toEqual({
+      titleProhibited: true,
+      prohibitedCommentMemberIds: [String(MOCK_MEMBER_IDS.memberA)],
+    });
+    expect(detail.publishBlockers).toEqual(
+      expect.arrayContaining(['TITLE_PROHIBITED_WORD', 'COMMENTS_PROHIBITED_WORD']),
+    );
+  });
+
+  it('제목·코멘트에 금칙어가 있으면 발행은 COMMON_003으로 거부되고 상세를 다시 받는다', async () => {
+    const { client, wrapper } = setup();
+    const id = await createDraft(wrapper);
+    const ids = { bunchId: Number(bunchId), bundleId: Number(id) };
+    mockDb.update((state) => ({
+      ...state,
+      bundles: state.bundles.map((bundle) =>
+        bundle.id === ids.bundleId ? { ...bundle, title: '금칙어 제목' } : bundle,
+      ),
+    }));
+    const { result } = renderHook(() => usePublishBundleMutation(bunchId, id), { wrapper });
+
+    await act(async () => {
+      await result.current
+        .mutateAsync({ visibility: 'PUBLIC', expectedRevision: 1 })
+        .catch(() => undefined);
+    });
+
+    await waitFor(() => expect(result.current.error).toMatchObject({ code: 'COMMON_003' }));
+    expect(client.getQueryState(bundleKeys.detail(bunchId, id))?.isInvalidated).toBe(true);
   });
 
   describe('번들 topic 이벤트(TITLE)', () => {

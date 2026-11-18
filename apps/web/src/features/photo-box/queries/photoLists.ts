@@ -14,9 +14,18 @@ export const PHOTO_LIST_STALE_TIME = 30_000;
  */
 export const PHOTO_BOX_STALE_TIME = 0;
 
+/**
+ * 사진함에 머무는 동안 목록을 다시 받는 간격(20초)
+ * 명세(3.1.1)는 진입·앱 복귀·당겨서 새로고침으로만 반영하지만, 오래 머무는 사이 다른 멤버가 지운 사진이 남아 있어 선택·삭제가 어긋나는 것을 줄이려는 운영 안전망
+ * 화면이 가려지면(앱이 뒤로 가거나 다른 화면으로 이동) 멈추고, 돌아오면 진입·앱 복귀 갱신이 이어받음
+ */
+export const PHOTO_BOX_POLL_MS = 20_000;
+
 type PhotoListOptions = {
   /** 목록을 신선하다고 보는 시간. 기본은 `PHOTO_LIST_STALE_TIME` */
   staleTime?: number;
+  /** 화면이 보이는 동안 이 간격(ms)마다 다시 받음. 기본은 다시 받지 않음 */
+  refetchInterval?: number;
 };
 
 type PhotosPage = Awaited<ReturnType<typeof getDatedPhotosPage>>;
@@ -41,11 +50,13 @@ const flattenPages = (data: { pages: PhotosPage[] }) => data.pages.flatMap((page
  */
 export const datedPhotosQueryOptions = (
   bunchId: string | undefined,
-  { staleTime = PHOTO_LIST_STALE_TIME }: PhotoListOptions = {},
+  { staleTime = PHOTO_LIST_STALE_TIME, refetchInterval }: PhotoListOptions = {},
 ) =>
   infiniteQueryOptions({
     queryKey: photoBoxKeys.datedPhotos(bunchId),
     staleTime,
+    // 화면이 가려진 동안(백그라운드)은 기본값(refetchIntervalInBackground: false)대로 멈춤
+    refetchInterval: refetchInterval ?? false,
     initialPageParam: undefined as string | undefined,
     queryFn: bunchId
       ? ({ pageParam, signal }) => getDatedPhotosPage({ bunchId, cursor: pageParam, signal })
@@ -57,11 +68,12 @@ export const datedPhotosQueryOptions = (
 /** 날짜를 모르는 사진을 쪽 단위로 받음 */
 export const undatedPhotosQueryOptions = (
   bunchId: string | undefined,
-  { staleTime = PHOTO_LIST_STALE_TIME }: PhotoListOptions = {},
+  { staleTime = PHOTO_LIST_STALE_TIME, refetchInterval }: PhotoListOptions = {},
 ) =>
   infiniteQueryOptions({
     queryKey: photoBoxKeys.undatedPhotos(bunchId),
     staleTime,
+    refetchInterval: refetchInterval ?? false,
     initialPageParam: undefined as string | undefined,
     queryFn: bunchId
       ? ({ pageParam, signal }) => getUndatedPhotosPage({ bunchId, cursor: pageParam, signal })

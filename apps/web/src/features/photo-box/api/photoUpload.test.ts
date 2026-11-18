@@ -114,6 +114,54 @@ describe('uploadPhoto', () => {
     expect(parts.fileType).toBe('image/jpeg');
   });
 
+  it('UTC 오프셋과 원본 유형은 있을 때만 별도 필드로 보낸다', async () => {
+    const seen: Record<string, unknown>[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
+        const form = await request.clone().formData();
+        seen.push(Object.fromEntries([...form.entries()].filter(([key]) => key !== 'photo')));
+        return undefined;
+      }),
+    );
+
+    await uploadPhoto({
+      bunchId,
+      image: jpeg('meta-1'),
+      uploadBatchId: batchId(),
+      capturedUtcOffset: '+09:00',
+      sourceType: 'CAMERA',
+    });
+    await uploadPhoto({ bunchId, image: jpeg('meta-2'), uploadBatchId: batchId() });
+
+    expect(seen[0]).toMatchObject({ capturedUtcOffset: '+09:00', sourceType: 'CAMERA' });
+    expect(seen[1]).not.toHaveProperty('capturedUtcOffset');
+    expect(seen[1]).not.toHaveProperty('sourceType');
+  });
+
+  it('범위 밖 UTC 오프셋이나 모르는 원본 유형은 보내지 않고 사진은 그대로 올린다', async () => {
+    const seen: Record<string, unknown>[] = [];
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async ({ request }) => {
+        const form = await request.clone().formData();
+        seen.push(Object.fromEntries([...form.entries()].filter(([key]) => key !== 'photo')));
+        return undefined;
+      }),
+    );
+
+    await expect(
+      uploadPhoto({
+        bunchId,
+        image: jpeg('meta-bad-1'),
+        uploadBatchId: batchId(),
+        capturedUtcOffset: '+15:00',
+        sourceType: 'GALLERY' as never,
+      }),
+    ).resolves.toMatchObject({ result: 'STORED' });
+
+    expect(seen[0]).not.toHaveProperty('capturedUtcOffset');
+    expect(seen[0]).not.toHaveProperty('sourceType');
+  });
+
   it('내가 이미 올린 같은 파일은 ALREADY_UPLOADED이고 새 사진이 생기지 않는다', async () => {
     const image = jpeg('dup-me');
     const first = await uploadPhoto({ bunchId, image, uploadBatchId: batchId() });
