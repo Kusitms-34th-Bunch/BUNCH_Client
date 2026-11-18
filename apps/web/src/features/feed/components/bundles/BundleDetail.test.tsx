@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -362,41 +362,100 @@ describe('BundleDetail', () => {
     expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
   });
 
-  it('화면 전환 중에 ?focus=comments로 들어오면 전환이 끝난 뒤 입력란에 초점을 둔다', async () => {
-    const leaving = document.createElement('div');
-    leaving.setAttribute('data-page-leaving', '');
-    document.body.append(leaving);
-    try {
-      renderDetail('1', { focusComments: true });
-
-      // 나가는 화면이 남아 있는 동안은 기다림
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
-      leaving.remove();
-      await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
-    } finally {
-      // 실패해도 다음 테스트가 전환 중으로 보고 기다리지 않게
-      leaving.remove();
-    }
-  });
-
-  it('전환 표식이 남아 있어도 최대 대기 시간이 지나면 입력란에 초점을 둔다', async () => {
-    const leaving = document.createElement('div');
-    leaving.setAttribute('data-page-leaving', '');
-    document.body.append(leaving);
+  describe('화면 전환 중 진입', () => {
+    // 예약된 프레임을 직접 실행해 시간에 기대지 않고 전환 대기 분기를 검사
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextFrame = 0;
     let now = 0;
-    const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
-    try {
+    const leaving = document.createElement('div');
+    leaving.setAttribute('data-page-leaving', '');
+    const runFrames = () =>
+      act(() => {
+        const due = [...frames.values()];
+        frames.clear();
+        due.forEach((callback) => callback(now));
+      });
+    const textbox = () => screen.getByRole('textbox');
+
+    beforeEach(() => {
+      frames.clear();
+      now = 0;
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+        nextFrame += 1;
+        frames.set(nextFrame, callback);
+        return nextFrame;
+      });
+      vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => frames.delete(id));
+      vi.spyOn(performance, 'now').mockImplementation(() => now);
+      document.body.append(leaving);
+    });
+    afterEach(() => {
+      // 화면을 먼저 내려 effect 정리가 가짜 rAF 그대로 돌게 한 뒤 되돌림. 실패해도 다음 테스트가 전환 중으로 보고 기다리지 않게 표식도 지움
+      cleanup();
+      leaving.remove();
+      vi.restoreAllMocks();
+    });
+
+    it('나가는 화면이 남아 있는 동안은 기다리고, 사라진 다음 프레임에 입력란에 초점을 둔다', () => {
       renderDetail('1', { focusComments: true });
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+
+      runFrames();
+      expect(document.activeElement).not.toBe(textbox());
+
+      leaving.remove();
+      runFrames();
+      expect(document.activeElement).toBe(textbox());
+    });
+
+    it('표식이 남아 있어도 최대 대기 시간(1초)이 지나면 입력란에 초점을 둔다', () => {
+      renderDetail('1', { focusComments: true });
+
+      now = 999;
+      runFrames();
+      expect(document.activeElement).not.toBe(textbox());
 
       now = 1000;
-      await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
-    } finally {
-      clock.mockRestore();
+      runFrames();
+      expect(document.activeElement).toBe(textbox());
+    });
+
+    it('기다리는 동안 사용자가 키를 누르면 예약한 스크롤·초점을 취소한다', async () => {
+      const user = userEvent.setup();
+      renderDetail('1', { focusComments: true });
+      const section = screen.getByRole('region', { name: '댓글' });
+      vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
+
+      runFrames();
+      // 뒤로 가기 버튼으로 초점을 옮김
+      await user.tab();
+      const moved = document.activeElement;
       leaving.remove();
-    }
+      runFrames();
+
+      expect(document.activeElement).toBe(moved);
+      expect(section.closest('main')!.scrollTop).toBe(0);
+    });
+
+    it('기다리는 동안 빈 곳을 누르면(연달아 누른 두 번째 누름) 그대로 진행한다', () => {
+      renderDetail('1', { focusComments: true });
+      runFrames();
+
+      // 빈 곳(제목 글자) 누름은 진행
+      fireEvent.pointerDown(screen.getByRole('heading', { level: 1 }));
+      leaving.remove();
+      runFrames();
+      expect(document.activeElement).toBe(textbox());
+    });
+
+    it('기다리는 동안 누를 수 있는 요소를 누르면 예약한 초점을 취소한다', () => {
+      renderDetail('1', { focusComments: true });
+      runFrames();
+
+      fireEvent.pointerDown(screen.getByRole('button', { name: '뒤로 가기' }));
+      leaving.remove();
+      runFrames();
+      expect(document.activeElement).not.toBe(textbox());
+    });
   });
 
   it('?focus=comments와 ?section=comments가 함께 오면 입력란 초점을 둔다', async () => {

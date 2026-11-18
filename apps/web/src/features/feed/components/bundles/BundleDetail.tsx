@@ -40,6 +40,9 @@ type BundleDetailProps = {
 
 // 댓글 영역 진입이 화면 전환 끝을 기다리는 최대 시간(전환이 중단돼 표식이 남아도 스크롤·초점은 함)
 const ENTRY_TRANSITION_WAIT_MS = 1000;
+// 진입 대기 중 누르면 사용자 조작으로 보는 요소(누르면 초점·동작이 생기는 것)
+const INTERACTIVE_SELECTOR =
+  'a[href], button, input, textarea, select, [role="button"], [tabindex]:not([tabindex="-1"])';
 
 const codeOf = (error: unknown) => (isApiError(error) ? error.code : undefined);
 // 번들을 볼 수 없게 됨(명세 014~017: 비공개 접근 불가·차단·없음·내보내짐). 가입 미완료 등 계정 오류는 빼고 코드로 가림
@@ -159,6 +162,21 @@ export function BundleDetail({
     if (commentsEntry === null || !contentReady) return;
     const startedAt = performance.now();
     let frame = 0;
+    // 기다리는 동안 사용자가 직접 조작하면(키, 누를 수 있는 요소를 누름) 그 초점·위치를 지키도록 예약한 스크롤·초점을 취소
+    // 빈 곳 누름(말풍선을 연달아 두 번 눌러 새 화면에 떨어진 두 번째 누름 등)은 취소하지 않음
+    const stopListening = () => {
+      document.removeEventListener('keydown', cancel, true);
+      document.removeEventListener('pointerdown', cancelOnControl, true);
+    };
+    function cancel() {
+      cancelAnimationFrame(frame);
+      stopListening();
+    }
+    function cancelOnControl(event: PointerEvent) {
+      if (event.target instanceof Element && event.target.closest(INTERACTIVE_SELECTOR)) cancel();
+    }
+    document.addEventListener('keydown', cancel, true);
+    document.addEventListener('pointerdown', cancelOnControl, true);
     const run = () => {
       // 화면 전환(나가는 화면의 data-page-leaving)이 끝난 뒤 스크롤·초점. 전환이 멈춰 표식이 남아도 잠시 뒤에는 진행
       if (
@@ -168,12 +186,16 @@ export function BundleDetail({
         frame = requestAnimationFrame(run);
         return;
       }
+      stopListening();
       scrollToComments();
       if (commentsEntry === 'focus') focusInput();
     };
     // effect에서 바로 주면 RouteFocus가 이동 전에 남은 초점으로 보고 제목으로 옮기므로 다음 프레임에
     frame = requestAnimationFrame(run);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancel();
+      stopListening();
+    };
   }, [commentsEntry, contentReady, scrollToComments, focusInput]);
 
   // 목록(다음 쪽 포함)이 번들을 볼 수 없다고 하면 떠남(답글·삭제 실패 뒤 다시 받은 목록도, 답글 대상 없음과 번들 없음이 같은 404라서)
