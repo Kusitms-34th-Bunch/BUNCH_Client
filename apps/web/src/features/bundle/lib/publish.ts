@@ -5,10 +5,12 @@ import { countTitleGraphemes } from './title';
 export type PublishBlocker =
   | 'title'
   | 'titleTooLong'
+  | 'titleProhibited'
   | 'photos'
   | 'visibility'
   | 'members'
   | 'comments'
+  | 'commentsProhibited'
   | 'saving'
   | 'unsaved'
   | 'offline';
@@ -30,6 +32,8 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
   if (draft.title.trim() === '') blockers.push('title');
   // 동시 편집이 합쳐져 40자를 넘을 수 있음(자르지 않고 그대로 두며 줄일 때까지 발행을 막음)
   else if (countTitleGraphemes(draft.title) > TITLE_MAX_LENGTH) blockers.push('titleTooLong');
+  // 서버가 저장 때 검사한 금칙어(제목·코멘트)가 있는 동안 업로드할 수 없음(기능명세 4.3.12 로직 2)
+  if (draft.prohibited?.title) blockers.push('titleProhibited');
   if (draft.photos.length < 1) blockers.push('photos');
   if (draft.visibility === null) blockers.push('visibility');
   if (draft.members.length < MIN_MEMBERS) blockers.push('members');
@@ -37,6 +41,8 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
     draft.comments.some((comment) => comment.memberId === member.id && comment.text.trim() !== ''),
   );
   if (!everyoneCommented) blockers.push('comments');
+  if (draft.members.some((member) => draft.prohibited?.commentMemberIds.includes(member.id)))
+    blockers.push('commentsProhibited');
   if (context.saveStatus === 'saving') blockers.push('saving');
   if (context.saveStatus === 'failed') blockers.push('unsaved');
   if (context.offline) blockers.push('offline');

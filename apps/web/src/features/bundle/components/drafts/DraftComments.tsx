@@ -96,9 +96,14 @@ export function DraftComments({
                 readOnly={locked || !(mine && editable)}
                 describedBy={locked ? lockedNoticeId : undefined}
                 error={
-                  !locked && text.length >= COMMENT_MAX_LENGTH
-                    ? BUNDLE_MESSAGES.commentMax
-                    : undefined
+                  locked
+                    ? undefined
+                    : // 금칙어는 400자 안내와 같은 자리(카드 아래)에 보이고 다른 멤버 화면에도 보임(기능명세 4.3.8 상세 5)
+                      draft.prohibited?.commentMemberIds.includes(member.id)
+                      ? BUNDLE_MESSAGES.prohibitedWord
+                      : text.length >= COMMENT_MAX_LENGTH
+                        ? BUNDLE_MESSAGES.commentMax
+                        : undefined
                 }
                 // 남의 카드는 터치·클릭해도 포커스(테두리 강조)가 생기지 않고 Tab 순서에서도 제외
                 tabIndex={mine && !locked ? undefined : -1}

@@ -78,6 +78,11 @@ export type Draft = {
   editing: DraftEditing;
   /** 지금 이 초안에 들어와 있는 멤버(멤버 카드의 초록 점, 기능 spec 4.3.2) */
   viewingMemberIds: readonly string[];
+  /**
+   * 서버가 자동 저장 때 검사한 금칙어 결과: 제목, 금칙어가 있는 코멘트를 쓴 멤버(기능명세 4.3.3·4.3.8)
+   * 없으면 금칙어 없음. 다음 저장 결과가 올 때까지 이전 결과를 보임
+   */
+  prohibited?: { title: boolean; commentMemberIds: readonly string[] };
 };
 
 /** 지금 초안을 보는 사람. 참여 멤버가 아닌 번치 멤버도 포함 */
