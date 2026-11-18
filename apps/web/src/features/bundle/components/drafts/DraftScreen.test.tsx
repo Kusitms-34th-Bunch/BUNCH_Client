@@ -1152,7 +1152,7 @@ describe('나가기', () => {
     renderScreen({ viewer: { memberId: 'eunwoo', bunchRole: 'member' } });
 
     const dialog = await openLeaveDialog();
-    expect(within(dialog).getByText('번들에서 나가시겠어요?')).toBeInTheDocument();
+    expect(within(dialog).getByText('번들에서 나갈까요?')).toBeInTheDocument();
     expect(onLeave).not.toHaveBeenCalled();
 
     await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));

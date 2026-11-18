@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { QueryBoundary } from '@/shared/components/boundary/QueryBoundary';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
@@ -20,6 +20,13 @@ type BunchPlacesProps = {
   backHref: string;
   /** 빈 상태 「피드 둘러보기」 이동: 피드 탭 */
   feedHref: string;
+  /** 카드를 눌러 갈 번들 상세 주소(다른 기능의 경로라 route가 넘김) */
+  bundleHref: (_bunchId: string, _bundleId: string) => string;
+  /**
+   * 이동 전에 그 번들을 지금 볼 수 있는지 서버에 다시 확인(기능명세서 8.1.5 로직 1). 다른 기능의 조회라 route가 조합
+   * 볼 수 없으면 `hidden`, 확인 요청 자체가 실패하면 reject
+   */
+  checkBundle: (_bunchId: string, _bundleId: string) => Promise<'visible' | 'hidden'>;
 };
 
 const NO_OP = () => undefined;
@@ -29,7 +36,7 @@ const NOT_READY = () => Promise.resolve(false);
  * `/bunch/places` 콕한 장소: 지금 번치의 콕 목록(`GET /pinned-places`)과 받는 중·실패 처리
  * 클립보드·토스트·이동 같은 부수 효과를 소유하고 화면은 `BunchPlacesScreen`이 그림
  */
-export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
+export function BunchPlaces({ backHref, feedHref, bundleHref, checkBundle }: BunchPlacesProps) {
   const backOr = useBackOr();
   const back = () => backOr(backHref);
   // 받는 중·실패 화면: 헤더만 두고 동작은 막음
@@ -55,7 +62,13 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
       pendingLabel={PLACES_MESSAGES.loading}
       failed={(retry) => screenOf(retry)}
     >
-      <PlacesOfMyBunch pending={screenOf()} backHref={backHref} feedHref={feedHref} />
+      <PlacesOfMyBunch
+        pending={screenOf()}
+        backHref={backHref}
+        feedHref={feedHref}
+        bundleHref={bundleHref}
+        checkBundle={checkBundle}
+      />
     </QueryBoundary>
   );
 }
@@ -64,7 +77,7 @@ export function BunchPlaces({ backHref, feedHref }: BunchPlacesProps) {
 function PlacesOfMyBunch({
   pending,
   backHref,
-  feedHref,
+  ...links
 }: BunchPlacesProps & { pending: ReactNode }) {
   const router = useRouter();
   const { data: me } = useSuspenseQuery(myProfileQueryOptions());
@@ -73,18 +86,70 @@ function PlacesOfMyBunch({
     if (!bunchId) router.replace(backHref);
   }, [bunchId, backHref, router]);
 
-  return bunchId ? (
-    <PlaceList bunchId={bunchId} backHref={backHref} feedHref={feedHref} />
-  ) : (
-    pending
-  );
+  return bunchId ? <PlaceList bunchId={bunchId} backHref={backHref} {...links} /> : pending;
 }
 
-function PlaceList({ bunchId, backHref, feedHref }: BunchPlacesProps & { bunchId: string }) {
+function PlaceList({
+  bunchId,
+  backHref,
+  feedHref,
+  bundleHref,
+  checkBundle,
+}: BunchPlacesProps & { bunchId: string }) {
   const router = useRouter();
   const backOr = useBackOr();
-  const { members, counts, places, selectedId, restored, select, isSwitching, remove, restore } =
-    useBunchPlaces(bunchId);
+  const {
+    members,
+    counts,
+    places,
+    selectedId,
+    restored,
+    select,
+    isSwitching,
+    remove,
+    restore,
+    hasMore,
+    listVersion,
+    loadingMore,
+    loadMore,
+  } = useBunchPlaces(bunchId);
+  // 눌렀을 때 볼 수 없게 된 카드: 이 화면에 있는 동안 「볼 수 없는 번들이에요」로 보임(기능명세서 8.1.6 상세 4). 다시 들어오면 서버 값으로
+  const [hiddenSources, setHiddenSources] = useState<ReadonlySet<string>>(new Set());
+  // 확인하는 동안 다시 누르면 무시(첫 탭만, 기능명세서 8.1.5 예외). 이동하면 화면을 떠나므로 잠금을 풀지 않음
+  const opening = useRef(false);
+  // 확인을 기다리는 사이 화면을 떠났으면 이동·안내를 하지 않음
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const openBundle = async (place: KokPlace): Promise<'unavailable' | undefined> => {
+    if (place.source.kind !== 'bundle' || opening.current) return undefined;
+    const { bunchId: sourceBunchId, bundleId } = place.source;
+    opening.current = true;
+    let result: 'visible' | 'hidden' | 'failed';
+    try {
+      result = await checkBundle(sourceBunchId, bundleId);
+    } catch {
+      result = 'failed';
+    }
+    if (!mounted.current) return undefined;
+    if (result === 'visible') {
+      router.push(bundleHref(sourceBunchId, bundleId));
+      return undefined;
+    }
+    opening.current = false;
+    if (result === 'failed') {
+      // 확인하지 못하면 이동하지 않음(8.1.5 예외)
+      toast(PLACES_MESSAGES.error);
+      return undefined;
+    }
+    setHiddenSources((current) => new Set(current).add(place.id));
+    return 'unavailable';
+  };
 
   // 클립보드 쓰기는 누른 순간에 하고(사용자 제스처), 결과 토스트는 시트가 닫힌 뒤 화면이 부름
   const copyAddress = (place: KokPlace) => copyText(copyTextOf(place));
@@ -116,13 +181,22 @@ function PlaceList({ bunchId, backHref, feedHref }: BunchPlacesProps & { bunchId
       counts={counts}
       selectedId={selectedId}
       onSelect={select}
-      places={places}
+      places={places.map((place) =>
+        hiddenSources.has(place.id)
+          ? { ...place, source: { kind: 'unavailable' as const } }
+          : place,
+      )}
       restored={restored}
       busy={isSwitching}
       onBack={() => backOr(backHref)}
       onCopyAddress={copyAddress}
       onCopyDone={copyDone}
       onRemove={removePlace}
+      onOpenBundle={openBundle}
+      hasMore={hasMore}
+      listVersion={listVersion}
+      loadingMore={loadingMore}
+      onLoadMore={loadMore}
       onBrowseFeed={() => router.push(feedHref)}
     />
   );

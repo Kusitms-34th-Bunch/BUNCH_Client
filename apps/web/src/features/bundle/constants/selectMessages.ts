@@ -18,6 +18,11 @@ export const BUNDLE_SELECT_MESSAGES = {
   emptyTitle: '아직 추천할 번들이 없어요',
   emptyDescription: '함께한 순간이 쌓이면 번들을 추천해 드릴게요.',
   maxPhotos: '번들에는 사진을 20장까지 담을 수 있어요.',
+  // 사진 고르기에서 사진함이 비었을 때(올리기 버튼이 없어 사진함 빈 상태와 문구가 다름, 기능명세서 4.1.2)
+  noPhotos: {
+    title: '아직 사진이 없어요.',
+    description: '사진함에 사진을 올리면 번들을 만들 수 있어요.',
+  },
   applied: (count: number) => `추천 번들 사진 ${count}장이 선택되었어요.`,
   // Figma 변경 확인 모달 `2060:45262`
   changeTitle: '추천 번들 사진으로 변경할까요?',

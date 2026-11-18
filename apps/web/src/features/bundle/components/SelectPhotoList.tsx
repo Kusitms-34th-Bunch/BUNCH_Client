@@ -9,6 +9,7 @@ import { UndatedPhotos } from '@/features/photo-box/components/UndatedPhotos';
 import { PhotoSelectionProvider } from '@/features/photo-box/contexts/PhotoSelectionContext';
 import { filterByMember, splitPhotos } from '@/features/photo-box/lib/photoDate';
 import { ALL_MEMBERS, type PhotoBoxData } from '@/features/photo-box/lib/types';
+import { BUNDLE_SELECT_MESSAGES } from '../constants/selectMessages';
 import { SelectDateSection } from './SelectDateSection';
 
 type SelectPhotoListProps = {
@@ -60,7 +61,11 @@ export function SelectPhotoList({
           <SelectDateSection key={section.dateKey} section={section} />
         ))}
         {isEmpty ? (
-          <PhotoBoxEmpty reason={hasPhotos || memberId !== ALL_MEMBERS ? 'member' : 'bunch'} />
+          hasPhotos || memberId !== ALL_MEMBERS ? (
+            <PhotoBoxEmpty reason="member" />
+          ) : (
+            <PhotoBoxEmpty reason="bunch" message={BUNDLE_SELECT_MESSAGES.noPhotos} />
+          )
         ) : null}
       </PhotoDragSelect>
     </PhotoSelectionProvider>

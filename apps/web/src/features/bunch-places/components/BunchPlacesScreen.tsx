@@ -10,9 +10,12 @@ import {
 } from '@app/design-system';
 import { LocationCard, MoreMenuSheet } from '@app/design-system/web';
 import { useEffect, useRef } from 'react';
+import { useIntersectionObserver } from 'react-simplikit';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
 import type { KokPlace, PlaceMember } from '../lib/types';
 import { PLACES_MESSAGES } from '../constants/messages';
 import { PlaceMemberFilter } from './PlaceMemberFilter';
@@ -39,8 +42,19 @@ type BunchPlacesScreenProps = {
   onCopyDone: (_copied: boolean) => void;
   /** 「콕에서 빼기」(시트·모달이 닫힌 뒤 호출) */
   onRemove: (_place: KokPlace) => void;
-  /** 번들에서 담아 온 장소 카드를 누름. 없으면 카드는 눌리지 않음(번들 상세가 생기면 연결) */
-  onOpenBundle?: ((_place: KokPlace) => void) | undefined;
+  /**
+   * 번들에서 담아 온 장소 카드를 누름. 없으면 카드는 눌리지 않음
+   * 누른 순간 그 번들을 볼 수 없게 됐으면 `unavailable`을 돌려주고 화면이 볼 수 없는 번들 모달을 띄움(기능명세서 8.1.5 상세 3)
+   */
+  onOpenBundle?: ((_place: KokPlace) => Promise<'unavailable' | undefined>) | undefined;
+  /** 이어 받을 쪽이 남음(기능명세서 8.1.3 상세 5) */
+  hasMore?: boolean | undefined;
+  /** 받은 목록의 버전(쪽을 더 받거나 다시 받으면 바뀜). 바뀌면 맨 아래 감지 요소를 새로 붙여, 아직 보이면 바로 다음 쪽을 받게 함 */
+  listVersion?: number | undefined;
+  /** 다음 쪽을 받는 중(목록에 aria-busy) */
+  loadingMore?: boolean | undefined;
+  /** 목록 끝이 보이면 호출. 받는 중이면 무시함 */
+  onLoadMore?: (() => void) | undefined;
   onBrowseFeed: () => void;
 };
 
@@ -62,9 +76,21 @@ export function BunchPlacesScreen({
   onCopyDone,
   onRemove,
   onOpenBundle,
+  hasMore = false,
+  listVersion = 0,
+  loadingMore = false,
+  onLoadMore,
   onBrowseFeed,
 }: BunchPlacesScreenProps) {
   const openOverlay = useScreenOverlay();
+  // 번들 상세에서 돌아오면 보던 자리로(기능명세서 8.1.5 상세 2). 받은 쪽은 캐시에 남아 같은 높이로 다시 그려짐
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useScrollInHistory(titleRef, places !== undefined);
+  useHoldScrollOnLeave(titleRef, places !== undefined);
+  // 실패해도 감지 요소는 그대로 두어(같은 key) 다시 스크롤해 보일 때 재시도, 성공해 쪽이 늘면 key가 바뀌어 새로 붙음
+  const observeMore = useIntersectionObserver<HTMLSpanElement>((entry) => {
+    if (entry.isIntersecting) onLoadMore?.();
+  }, {});
   // 뺀 카드가 사라지면 초점이 body로 떨어지므로 같은 자리에 온 다음 카드(없으면 빈 상태 제목)로 옮김
   const listRef = useRef<HTMLUListElement>(null);
   const emptyRef = useRef<HTMLHeadingElement>(null);
@@ -180,7 +206,12 @@ export function BunchPlacesScreen({
     if (place.source.kind === 'unavailable') {
       return () => openUnavailable(place);
     }
-    if (place.source.kind === 'bundle' && onOpenBundle) return () => onOpenBundle(place);
+    if (place.source.kind === 'bundle' && onOpenBundle) {
+      return () =>
+        void onOpenBundle(place).then((result) => {
+          if (result === 'unavailable') openUnavailable(place);
+        });
+    }
     // 광고에서 콕한 장소는 담아 온 번들이 없어 눌러도 이동하지 않음(기능명세 8.1.3 상세 동작 4)
     return undefined;
   };
@@ -208,7 +239,9 @@ export function BunchPlacesScreen({
         </>
       }
     >
-      <h1 className="sr-only">{PLACES_MESSAGES.pageTitle}</h1>
+      <h1 ref={titleRef} className="sr-only">
+        {PLACES_MESSAGES.pageTitle}
+      </h1>
       {onRetry ? (
         <div className="gap-s8 px-padding-p8 pb-s23 flex min-h-full flex-col items-center justify-center">
           <p role="alert" className="typography-body-3-semibold text-text-secondary text-center">
@@ -218,25 +251,31 @@ export function BunchPlacesScreen({
             {PLACES_MESSAGES.retry}
           </Button>
         </div>
-      ) : !places ? null : visible.length > 0 ? (
+      ) : !places ? null : visible.length > 0 || hasMore ? (
+        // 보이는 카드가 모두 빠져도 다음 쪽이 남았으면 빈 상태 대신 감지 요소를 두어 이어 받음
         // Figma 4096:76101: 칩 아래 24(칩 영역 아래 여백 4 포함), 카드 사이 4, 좌우 16
-        <ul
-          ref={listRef}
-          aria-busy={busy}
-          className="gap-s2 px-padding-p8 pb-s8 flex flex-col pt-6"
-        >
-          {visible.map((place) => (
-            <li key={place.id} data-place-id={place.id}>
-              <LocationCard
-                placeName={place.name}
-                address={place.address ?? ''}
-                {...sourceProps(place)}
-                onClick={clickHandler(place)}
-                onMore={() => openMenu(place)}
-              />
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul
+            ref={listRef}
+            aria-busy={busy || loadingMore}
+            className="gap-s2 px-padding-p8 pb-s8 flex flex-col pt-6"
+          >
+            {visible.map((place) => (
+              <li key={place.id} data-place-id={place.id}>
+                <LocationCard
+                  placeName={place.name}
+                  address={place.address ?? ''}
+                  {...sourceProps(place)}
+                  onClick={clickHandler(place)}
+                  onMore={() => openMenu(place)}
+                />
+              </li>
+            ))}
+          </ul>
+          {hasMore ? (
+            <span key={listVersion} ref={observeMore} aria-hidden="true" className="block h-px" />
+          ) : null}
+        </>
       ) : (
         // Figma 4096:76353: 제목 16 medium, 설명 13 두 줄, 제목과 설명 4, 문구와 버튼 16, 버튼 40
         <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">

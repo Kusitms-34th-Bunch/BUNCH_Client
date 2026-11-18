@@ -4,7 +4,7 @@
 
 - Route: `/bunch/places`(`apps/web/src/app/(app)/bunch/places/page.tsx`, #257)
 - 소유: `features/bunch-places`. 번치 홈 프로필의 「콕한 장소」 버튼(`BunchHomeScreen` → `BUNCH_HOME_PATHS.places`)에서 들어온다. 경로 상수만 `bunch-home`에 두고 feature는 서로 import하지 않는다.
-- Status: UI와 인터랙션 구현됨(#257), 목록·빼기 서버 연결(#414, `GET /pinned-places`·`DELETE /pinned-places/{pinId}`). 실시간·번들 상세 이동·이어 불러오기는 범위 밖. 실기기 전
+- Status: UI와 인터랙션 구현됨(#257), 목록·빼기 서버 연결(#414, `GET /pinned-places`·`DELETE /pinned-places/{pinId}`). 번들 상세 이동·이어 불러오기·돌아왔을 때 칩·스크롤 유지 구현(#440). 실시간은 범위 밖. 실기기 전
 - API 연결 전에는 `fixtures/places.fixture.ts`와 화면 안의 임시 상태로 그렸고, #414에서 fixture를 지웠다.
 - 기능명세: 콕 8.1.1~8.1.9(FEED-10, 기능명세서 「콕」)
 - 디자인 출처: Figma 번치 메인 진입 `4096:76060`, 목록 `4096:76101`, 빈 상태 `4096:76353`, 주소 복사 토스트 `4096:76391`, 볼 수 없는 번들 모달 `4164:96354`, 콕에서 빼기 토스트 `4164:96560`, 화면설계서 `4164:91159`
@@ -12,6 +12,10 @@
 ## 목적과 범위
 
 ### 포함
+
+- 이어 불러오기(8.1.3): 50개씩 받고 목록 끝의 감지 요소가 보이면 `nextCursor`로 다음 쪽을 붙인다(`useSuspenseInfiniteQuery`). 실패해도 보이던 카드는 두고, 다시 끝이 보이면 재시도한다(#440).
+- 카드를 눌러 번들 상세로 이동(8.1.5): 번들에서 담아 온 카드를 누르면 route(`BunchPlacesRoute`)가 넘긴 확인(번들 상세 조회를 다시 받음)으로 지금 볼 수 있는지 보고, 볼 수 있으면 `/bunches/[bunchId]/bundles/[bundleId]`로 간다. 404·403·400이면 이동하지 않고 볼 수 없는 번들 모달, 확인 실패면 오류 토스트. 확인하는 동안 다시 눌러도 무시한다(#440).
+- 돌아왔을 때 칩·스크롤 유지(8.1.5 상세 2): 고른 칩과 스크롤을 이 화면의 history 항목에 둔다(#440).
 
 - 번치 멤버들이 콕해 둔 장소를 최근 콕한 순으로 모아 보여 준다(8.1.1, 8.1.3).
 - 멤버별 필터 칩: 「전체 N」과 멤버 칩(프로필 이미지·이름·장소 수) 중 하나만 고른다(8.1.2).
@@ -24,8 +28,6 @@
 
 ### 범위 외
 
-- 이어 불러오기(8.1.3): 첫 쪽 50개만 받는다(`api/pinnedPlaces.ts`의 `PAGE_SIZE`). 응답의 `nextCursor`로 infinite query로 바꿀 때 연결한다.
-- 카드를 눌러 번들 상세로 이동(8.1.5): 번들 상세 route(`/bunches/[bunchId]/bundles/[bundleId]`)는 있지만 `BunchPlaces`가 `onOpenBundle`을 넘기지 않아 번들에서 담아 온 카드는 눌리지 않는다(2026-11-16 확인). 광고(BUNCH SPOT)에서 콕한 카드는 담아 온 번들이 없어 원래 눌러도 이동하지 않는다.
 - 아래로 당겨 새로고침(8.1.1). 진입·앱 복귀 때 다시 받는 것은 Query 기본값(5분 지나면 다시 받음)을 따른다.
 - 보고 있던 번치가 삭제·내보내진 경우의 안내(8.1.1 예외, 5.2.3).
 
@@ -37,7 +39,7 @@
 
 ## 상태와 흐름
 
-- 초기 진입: 「전체」가 선택된 상태. 고른 칩은 화면을 나가면 기억하지 않는다(8.1.2 로직 6).
+- 초기 진입: 「전체」가 선택된 상태. 고른 칩은 화면을 나가면 기억하지 않는다(8.1.2 로직 6). 다만 번들 상세에 갔다가 뒤로 오면 같은 history 항목이라 고른 칩이 돌아온다(8.1.5 상세 2). 스크롤은 받은 쪽이 캐시에 남아 같은 높이로 다시 그려질 때만 그 자리로 돌아오고, 캐시가 지워졌으면(gcTime 5분 경과 등) 첫 쪽 높이까지만 돌아온다.
 - Loading: 처음 받는 동안 헤더만 보이고(칩은 개수를 몰라 그리지 않음) 상태 영역이 「콕한 장소를 불러오는 중이에요」를 읽는다(`QueryBoundary`). 칩을 바꿔 새 목록을 받는 동안은 보던 칩·목록을 두고 목록에 `aria-busy`를 단다(`useTransition`).
 - Empty: 고른 칩의 장소가 0개이거나 전체가 0개면 같은 빈 상태. 필터 칩은 그대로 둔다. 「전체」는 0개여도 「전체 0」, 멤버 칩은 0개면 숫자를 붙이지 않는다.
 - Error·retry: 목록을 받지 못하면 본문에 「일시적인 오류가 발생했어요. 다시 시도해 주세요」와 「다시 시도」(기능명세 8.1.1은 오류 토스트). 클립보드 복사 실패와 빼기 실패는 같은 문구의 토스트이고, 빼기 실패는 다시 받은 목록으로 카드가 돌아온다.
@@ -46,8 +48,8 @@
 
 ## 데이터 의존성
 
-- Query: `members/me`(지금 번치) → `GET /pinned-places?size=50&memberId=`(명세 005, 「전체」는 `memberId` 없음). key는 `bunchPlacesKeys.list(bunchId, memberId)`라 번치를 바꾸면 다른 목록이다. 칩 수는 응답의 `totalCount`와 `members[].count`(처음 콕한 멤버 기준), 멤버 이미지가 없으면 기본 프로필 이미지(`DEFAULT_PROFILE_IMAGE`). 닉네임이 없는 멤버는 칩을 그리지 않는다.
-- 출처: `sourceType=ADVERTISEMENT`는 「BUNCH SPOT」, `sourceAccessible=false`이거나 번치 이름·번들 제목이 비면 「볼 수 없는 번들이에요」.
+- Query: `members/me`(지금 번치) → `GET /pinned-places?size=50&memberId=&cursor=`(명세 005, 「전체」는 `memberId` 없음, 첫 쪽은 `cursor` 없음). 쪽은 `useSuspenseInfiniteQuery`로 이어 붙이고, 칩·개수는 첫 쪽 값을 쓴다. key는 `bunchPlacesKeys.list(bunchId, memberId)`라 번치를 바꾸면 다른 목록이다. 칩 수는 응답의 `totalCount`와 `members[].count`(처음 콕한 멤버 기준), 멤버 이미지가 없으면 기본 프로필 이미지(`DEFAULT_PROFILE_IMAGE`). 닉네임이 없는 멤버는 칩을 그리지 않는다.
+- 출처: `sourceType=ADVERTISEMENT`는 「BUNCH SPOT」, `sourceAccessible=false`이거나 번치 이름·번들 제목, 또는 이동에 필요한 `sourceBunchId`·`sourceBundleId`가 비면 「볼 수 없는 번들이에요」(생성 타입에서 두 ID가 optional이라, 이동할 곳을 모르는 카드는 볼 수 없는 카드로 둠. 서버가 접근 가능한 출처에 두 ID를 항상 준다고 확정되면 다시 본다).
 - Mutation·cache 영향: 서버에 복구 API가 없어(명세 005·009) 빼면 카드를 화면에서 먼저 숨기고 칩 수를 줄인 뒤, 되돌리기 토스트 시간(5초, `UNDO_DURATION`)이 지나면 `DELETE /pinned-places/{pinId}`를 보낸다. 되돌리면 보내지 않는다. 다른 장소를 또 빼거나(새 토스트가 이전 되돌리기를 대체) 화면을 떠나면 보류한 빼기를 바로 보낸다. 성공·실패 모두 `bunchPlacesKeys.lists(bunchId)`를 보지 않는 칩 목록까지 다시 받고(`refetchType: 'all'`) 숨김을 푼다. 초점은 되돌리기로 다시 생긴 카드만 받는다(칩을 바꿔 새로 보인 카드는 아님).
 
 ## UI와 접근성
