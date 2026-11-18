@@ -1,5 +1,11 @@
 import { isApiError } from '@app/api-core';
-import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  skipToken,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { getBunchMembers } from '@/shared/api/bunchMembers';
 import { toDomainId } from '@/shared/api/ids';
 import { sharedKeys } from '@/shared/query/keys';
@@ -7,6 +13,7 @@ import type { Home } from '../model/bunchHome';
 import { getBunchHome, getPublishedBundles } from '../api/bunchHome';
 import { followBunch, unfollowBunch } from '../api/follows';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { FIRST_PAGE, nextPageOf } from '../lib/pages';
 import { toBunchMembers } from '../model/memberships';
 import { bunchHomeKeys } from './keys';
 
@@ -24,18 +31,20 @@ export function usePrefetchOtherBunchHome() {
     queryClient.ensureQueryData(otherBunchHomeQueryOptions(targetId, viewerId));
 }
 
-/** 다른 번치의 공개 번들. 볼 수 있을 때만(비공개는 팔로우 승인 뒤) */
+/** 다른 번치의 공개 번들(쪽 단위). 볼 수 있을 때만(비공개는 팔로우 승인 뒤) */
 export const otherBunchPublishedQueryOptions = (
   targetId: string,
   viewerId: string | null | undefined,
   canView: boolean,
 ) =>
-  queryOptions({
-    queryKey: bunchHomeKeys.otherBunchPublished(targetId, viewerId ?? null),
+  infiniteQueryOptions({
+    queryKey: bunchHomeKeys.otherBunchPublishedPages(targetId, viewerId ?? null),
+    initialPageParam: FIRST_PAGE,
     queryFn:
       viewerId === undefined || !canView
         ? skipToken
-        : ({ signal }) => getPublishedBundles(targetId, signal),
+        : ({ pageParam, signal }) => getPublishedBundles(targetId, pageParam, signal),
+    getNextPageParam: nextPageOf,
   });
 
 /** 다른 번치의 멤버 명단. 볼 수 있을 때만(비공개는 팔로우 승인 뒤) */

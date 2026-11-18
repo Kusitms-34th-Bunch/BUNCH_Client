@@ -132,7 +132,28 @@ describe('BunchBlockedListScreen', () => {
     expect(screen.queryByRole('list')).toBeNull();
   });
 
-  it('전체 차단 수가 보이는 행보다 많으면 최근 것만 보인다고 알린다', () => {
+  it('받은 행을 모두 해제해도 다음 쪽 실패가 남으면 빈 상태 대신 「다시 시도」를 보여 준다', () => {
+    render(
+      <BunchBlockedListScreen
+        blocked={[]}
+        more={{
+          hasNextPage: true,
+          isFetching: false,
+          isFetchingNextPage: false,
+          isFetchNextPageError: true,
+          fetchNextPage: vi.fn(),
+        }}
+        canUnblock
+        onUnblock={onUnblock}
+        onBack={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '아직 차단한 번치가 없어요' })).toBeNull();
+  });
+
+  it('개수는 받은 행이 아니라 서버의 전체 차단 수다(나머지는 목록 끝에서 이어서 받음)', () => {
     render(
       <BunchBlockedListScreen
         blocked={BLOCKED}
@@ -144,7 +165,6 @@ describe('BunchBlockedListScreen', () => {
     );
 
     expect(screen.getByText('60개')).toBeInTheDocument();
-    expect(screen.getByText('최근 차단한 2개만 보여요.')).toBeInTheDocument();
   });
 
   it('목록을 받는 중이면 목록도 빈 상태도 그리지 않고 로딩을 알린다', () => {

@@ -1,6 +1,7 @@
 import {
+  type InfiniteData,
+  infiniteQueryOptions,
   type QueryClient,
-  queryOptions,
   skipToken,
   useMutation,
   useQueryClient,
@@ -13,13 +14,18 @@ import {
   readAllBunchNotifications,
 } from '../api/notifications';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { FIRST_PAGE, nextPageOf } from '../lib/pages';
 import { bunchHomeKeys } from './keys';
 
-/** 내 번치의 알림 첫 쪽. 번치를 모르면 요청하지 않음 */
+/** 내 번치의 알림(쪽 단위, 목록 끝에서 이어서 받음). 번치를 모르면 요청하지 않음 */
 export const bunchNotificationsQueryOptions = (bunchId: string | undefined) =>
-  queryOptions({
-    queryKey: bunchHomeKeys.notifications(bunchId),
-    queryFn: bunchId ? ({ signal }) => getBunchNotifications(bunchId, signal) : skipToken,
+  infiniteQueryOptions({
+    queryKey: bunchHomeKeys.notificationPages(bunchId),
+    initialPageParam: FIRST_PAGE,
+    queryFn: bunchId
+      ? ({ pageParam, signal }) => getBunchNotifications(bunchId, pageParam, signal)
+      : skipToken,
+    getNextPageParam: nextPageOf,
   });
 
 // 읽음이 바뀌면 목록과 읽지 않은 수(번치 홈 헤더·전환 목록 「알림 N개」)를 다시 받음
@@ -56,13 +62,16 @@ export const useReadAllNotificationsMutation = (bunchId: string | undefined) => 
       const { unreadCount } = await readAllBunchNotifications(bunchId);
       // 서버 처리가 끝났으면 결과 낭독 전에 받은 목록을 읽음으로 바꿔 둠(다시 받기가 실패해도 화면·낭독이 어긋나지 않게)
       const readAt = new Date().toISOString();
-      queryClient.setQueryData<NotificationPage>(
-        bunchHomeKeys.notifications(bunchId),
-        (page) =>
-          page && {
-            ...page,
-            unreadCount,
-            items: page.items.map((item) => (item.readAt ? item : { ...item, readAt })),
+      queryClient.setQueryData<InfiniteData<NotificationPage, number>>(
+        bunchHomeKeys.notificationPages(bunchId),
+        (data) =>
+          data && {
+            ...data,
+            pages: data.pages.map((page) => ({
+              ...page,
+              unreadCount,
+              items: page.items.map((item) => (item.readAt ? item : { ...item, readAt })),
+            })),
           },
       );
       void refreshUnread(queryClient, bunchId);

@@ -27,18 +27,19 @@ export const unfollowBunch = (viewerId: string, targetId: string, followId: stri
   );
 };
 
-// 목록은 한 번에 받을 수 있는 최대 쪽 크기만(더 불러오기는 UT 이후)
+// 한 번에 받을 수 있는 최대 쪽 크기. 팔로워·팔로잉은 이어서 받고 팔로우 요청은 첫 쪽만
 const LIST_PAGE_SIZE = 50;
 
-/** 번치의 팔로워·팔로잉 첫 쪽. 비공개 번치는 팔로우 승인 전 403 */
+/** 번치의 팔로워·팔로잉 한 쪽(0부터). 비공개 번치는 팔로우 승인 전 403 */
 export const getFollowRelations = (
   bunchId: string,
   kind: 'followers' | 'following',
+  page: number,
   signal?: AbortSignal,
 ) =>
   requestData(
     bffApi.get(`${bunchPath(bunchId)}/${kind}`, {
-      searchParams: { page: 0, size: LIST_PAGE_SIZE },
+      searchParams: { page, size: LIST_PAGE_SIZE },
       signal: signal ?? null,
     }),
     relationPageSchema,

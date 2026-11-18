@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -9,6 +9,7 @@ import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useViewerStale } from '../../hooks/useViewerStale';
+import { itemsOfPages } from '../../lib/pages';
 import { toBlockedBunches } from '../../model/blocks';
 import { blockedBunchesQueryOptions, useUnblockBunchMutation } from '../../queries/blocks';
 import { bunchHomeQueryOptions } from '../../queries/bunchHome';
@@ -25,7 +26,7 @@ export function BunchBlockedList() {
   const me = useQuery(myProfileQueryOptions());
   const bunchId = me.data?.bunch?.id;
   const home = useQuery(bunchHomeQueryOptions(bunchId));
-  const blocks = useQuery(blockedBunchesQueryOptions(bunchId));
+  const blocks = useInfiniteQuery(blockedBunchesQueryOptions(bunchId));
   const unblock = useUnblockBunchMutation(bunchId);
   const viewer = useViewerStale(bunchId, home, me);
   // 번치가 없는 회원은 차단 목록이 없어 번치 탭(번치 없음 안내)으로
@@ -64,8 +65,14 @@ export function BunchBlockedList() {
   return (
     <BunchBlockedListScreen
       // 역할(해제 버튼)을 알 때까지 로딩으로 둠(버튼이 나중에 나타나 행이 바뀌지 않게)
-      blocked={blocks.data && home.data ? toBlockedBunches(blocks.data) : undefined}
-      total={blocks.data?.totalElements}
+      blocked={
+        blocks.data && home.data
+          ? toBlockedBunches({ items: itemsOfPages(blocks.data.pages, (item) => item.id) })
+          : undefined
+      }
+      // 전체 수는 가장 최근에 받은 쪽의 값
+      total={blocks.data?.pages.at(-1)?.totalElements}
+      more={blocks}
       // 명의를 다시 확인하는 동안에는 해제 버튼을 숨김
       canUnblock={(role === 'OWNER' || role === 'CO_OWNER') && !viewer.stale}
       // 이 렌더(확인 창을 연 때)의 명의와 실행 때 명의가 다르면 보내지 않고 실패 안내

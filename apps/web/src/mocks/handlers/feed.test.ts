@@ -162,17 +162,35 @@ describe('가짜 서버 발행 번들 상세', () => {
     expect((await getDetail(4, 911)).status).toBe(200);
   });
 
-  it('멤버 공개 번들, 경로가 다른 번들, 없는 번치, 잘못된 ID는 오류다', async () => {
-    const own = mockDb
+  it('다른 번치의 멤버 공개 번들, 경로가 다른 번들, 없는 번치, 잘못된 ID는 오류다', async () => {
+    const other = mockDb
       .get()
-      .bundles.find((bundle) => bundle.bunchId === MOCK_BUNCH_ID && bundle.status === 'PUBLISHED')!;
-    expect(await getDetail(MOCK_BUNCH_ID, own.id)).toMatchObject({
+      .bundles.find((bundle) => bundle.bunchId !== MOCK_BUNCH_ID && bundle.status === 'PUBLISHED')!;
+    mockDb.update((state) => ({
+      ...state,
+      bundles: state.bundles.map((bundle) =>
+        bundle.id === other.id ? { ...bundle, visibility: 'PRIVATE' as const } : bundle,
+      ),
+    }));
+    expect(await getDetail(other.bunchId, other.id)).toMatchObject({
       status: 404,
       code: 'RESOURCE_001',
     });
     expect(await getDetail(4, 901)).toMatchObject({ status: 404, code: 'RESOURCE_001' });
     expect(await getDetail(999, 901)).toMatchObject({ status: 404, code: 'BUNCH_009' });
     expect(await getDetail('x', 901)).toMatchObject({ status: 400, code: 'COMMON_001' });
+  });
+
+  it('지금 번치의 멤버 공개 번들은 상세를 읽는다(서버와 같음)', async () => {
+    const own = mockDb
+      .get()
+      .bundles.find(
+        (bundle) =>
+          bundle.bunchId === MOCK_BUNCH_ID &&
+          bundle.status === 'PUBLISHED' &&
+          bundle.visibility === 'PRIVATE',
+      )!;
+    expect((await getDetail(MOCK_BUNCH_ID, own.id)).status).toBe(200);
   });
 
   it('지금 번치의 일반 멤버는 신고, 메인 관리자는 수정·삭제 권한이고, 소속 번치가 없어도 공개 번들은 읽는다', async () => {

@@ -12,7 +12,9 @@ describe('notificationPath', () => {
     ['BUNDLE_COMMENTS', { bundleId: 7 }, '/bunches/1/bundles/7?section=comments'],
     ['CANDIDATES', {}, '/bunch/bundles/new/members'],
     ['OTHER_BUNCH_PROFILE', { targetBunchId: 3 }, '/bunches/3'],
-    ['DRAFT_LIST', {}, '/bunch'],
+    // 「작성 중인 번들」 탭으로 바로(5.12.2), 초안 ID가 없는 초안 알림도 같은 탭
+    ['DRAFT_LIST', {}, '/bunch?tab=drafts'],
+    ['DRAFT', {}, '/bunch?tab=drafts'],
     ['ACCESS_NOTICE', { noticeId: 2 }, '/bunch'],
     // 필요한 ID가 없거나 모르는 종류는 번치 홈
     ['BUNDLE', {}, '/bunch'],
@@ -48,11 +50,6 @@ describe('toBunchNotifications', () => {
             target: target('BUNDLE', { bundleId: 1 }),
           },
         ],
-        page: 0,
-        size: 50,
-        totalElements: 2,
-        hasNext: false,
-        unreadCount: 1,
       },
       now,
     );
