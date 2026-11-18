@@ -194,16 +194,16 @@ const publicDetailOf = (state: MockDbState, bunchId: number, bundleId: number) =
   const bunch = state.bunches.find((item) => item.id === bunchId);
   if (!bunch) return fail(404, 'BUNCH_009');
   const bundle = state.bundles.find((item) => item.id === bundleId);
-  // 없는·초안·경로가 다른·멤버 공개(PRIVATE) 발행본은 외부 상세에서 없음
+  const viewer = viewerBunchId(state);
+  // 없는·초안·경로가 다른 발행본은 없음. 멤버 공개(PRIVATE)는 지금 번치의 번들일 때만(서버 FeedAccessRepository와 같음)
   if (
     !bundle ||
     bundle.bunchId !== bunchId ||
     bundle.status !== 'PUBLISHED' ||
-    bundle.visibility !== 'PUBLIC'
+    (bundle.visibility !== 'PUBLIC' && viewer !== bunchId)
   ) {
     return fail(404, 'RESOURCE_001');
   }
-  const viewer = viewerBunchId(state);
   // 권한·접근은 지금 번치 명의로 판단(다른 소속 번치의 역할은 보지 않음)
   const mine =
     viewer === bunchId
