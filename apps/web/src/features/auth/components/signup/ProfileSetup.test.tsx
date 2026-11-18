@@ -261,6 +261,10 @@ describe('ProfileSetup', () => {
           selector: 'p[aria-hidden="true"]',
         }),
       ).toBeNull();
+      // 기능명세 1.4.4: 확인을 통과하면 사용 가능 문구
+      expect(
+        screen.getByText('사용 가능한 닉네임이에요', { selector: 'p[aria-hidden="true"]' }),
+      ).toBeTruthy();
       expect(screen.queryByRole('alert')).toBeNull();
     });
 

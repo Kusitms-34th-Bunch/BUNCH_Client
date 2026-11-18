@@ -304,7 +304,7 @@ describe('BunchHome 서버 번치 전환', () => {
     await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
-    expect(toast).not.toHaveBeenCalledWith('번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    expect(toast).not.toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
     expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
 
     // 기본 번치는 새 번치라 이전 번치에 머물지 않고 새 번치의 오류 화면이 보임
@@ -325,7 +325,7 @@ describe('BunchHome 서버 번치 전환', () => {
     await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.'),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect(toast).not.toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.');
     expect(screen.getByRole('heading', { level: 1, name: /여행쥬아/ })).toBeTruthy();
@@ -341,7 +341,7 @@ describe('BunchHome 서버 번치 전환', () => {
     await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.'),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect(toast).not.toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.');
     expect(screen.getByRole('heading', { level: 1, name: /여행쥬아/ })).toBeTruthy();

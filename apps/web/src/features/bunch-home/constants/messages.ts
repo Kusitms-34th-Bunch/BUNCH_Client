@@ -12,25 +12,26 @@ export const BUNCH_HOME_MESSAGES = {
   // 완성된 번들 그리드에서 지워진 번들을 누름(기능명세 5.1.5)
   bundleDeleted: '삭제된 번들이에요.',
   switched: (bunchName: string) => `${bunchName} 번치로 전환했어요.`,
-  // 기획 원문 없는 임시 안내: 전환(마지막 사용 번치 저장)·접근 불가 안내 삭제를 서버에 보내지 못했을 때
-  switchFailed: '번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  profileSaveFailed: '번치 프로필을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  profileChangedElsewhere: '다른 곳에서 프로필이 바뀌어 최신 내용으로 다시 불러왔어요.',
-  memberChangeFailed: '처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  membersChangedElsewhere: '멤버 정보가 바뀌어 최신 목록으로 다시 불러왔어요.',
-  removeBunchFailed: '목록에서 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  leaveFailed: '번치를 나가지 못했어요. 잠시 후 다시 시도해 주세요.',
-  deleteFailed: '번치를 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  // 실패 안내는 기능명세 공통 문구(전환 실패 5.2.2 등)
+  switchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  profileSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  profileChangedElsewhere: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  memberChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  // 관리 작업 중 멤버 역할이 바뀜(기능명세 5.6.1)
+  membersChangedElsewhere: '멤버의 역할이 변경되었어요. 다시 확인해 주세요.',
+  removeBunchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  leaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  deleteFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   otherBunchLoading: '번치를 불러오는 중이에요',
-  followFailed: '팔로우를 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  blockFailed: '번치를 차단하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  unblockFailed: '차단을 해제하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  reportFailed: '신고를 접수하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  requestDecisionFailed: '팔로우 요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
-  requestAlreadyHandled: '이미 처리된 팔로우 요청이에요.',
+  followFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  blockFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  unblockFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  reportFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  requestDecisionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  requestAlreadyHandled: '이미 처리된 팔로우 요청이에요',
   followListLoading: '목록을 불러오는 중이에요',
   membersLoading: '멤버를 불러오는 중이에요',
-  followListFailed: '목록을 불러오지 못했어요. 다시 시도해 주세요.',
+  followListFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   // 소속 번치가 최대 개수일 때 「새로운 번치 추가하기」(5.2.4, 번치 만들기의 한도 안내와 같은 문구)
   bunchLimit: '참여할 수 있는 번치는 최대 10개예요.',
   completedEmptyTitle: '추억은 많은데, 번들은 아직!',
@@ -39,8 +40,8 @@ export const BUNCH_HOME_MESSAGES = {
   deleteDraftTitle: '작성 중인 번들을 삭제할까요?',
   deleteDraftDescription:
     '삭제한 번들은 다시 복구할 수 없지만, 사용된 사진은 사진함에 그대로 남아요.',
-  // 기획 원문 없는 임시 안내: 작성 중인 번들 삭제를 서버에 보내지 못했을 때
-  deleteDraftFailed: '번들을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  // 작성 중인 번들 삭제 실패(기능명세 5.3.2)
+  deleteDraftFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   // 번치에 나 혼자일 때 번들 만들기를 막는 안내 창(Figma `5618:81971`)
   needMembersTitle: '함께할 멤버가 없어요',
   needMembersDescription: '번들은 번치의 멤버가 2명 이상일 때 만들 수 있어요.',
@@ -67,16 +68,17 @@ export const BUNCH_HOME_MESSAGES = {
   revoked: (name: string) => `${name}님의 공동 관리자 권한을 해제했어요.`,
   transferTitle: (name: string) => `${name}님에게 관리자 권한을 넘길까요?`,
   transferDescription: '넘긴 뒤에는 일반 멤버로 번치에 남아요.',
-  transferred: (name: string) => `${name}님이 관리자가 되었어요.`,
+  transferred: (name: string) => `${name}님에게 관리자 권한을 넘겼어요.`,
   removeTitle: (name: string, bunchName: string) => `${name}님을 ${bunchName}에서 내보낼까요?`,
   removeDescription: (name: string) =>
     `${name}님이 올린 사진은 사진함에서 삭제되고, 발행된 번들에만 남아요.`,
   removed: (name: string) => `${name}님을 번치에서 내보냈어요.`,
   // 번치 나가기(화면설계서 2236:40773)
   left: (bunchName: string) => `${bunchName} 번치를 나왔어요.`,
-  transferredAndLeft: (name: string) => `${name}님을 관리자로 지정하고 나갔어요.`,
+  transferredAndLeft: (name: string) => `${name}님을 관리자로 지정하고 나왔어요.`,
   aloneTitle: '혼자 있는 번치는 나갈 수 없어요',
-  aloneDescription: '더 이상 사용하지 않는 번치는 삭제할 수 있어요.',
+  aloneDescription: '번치를 더 쓰지 않는다면 번치를 삭제해 주세요.',
+  aloneConfirm: '번치 삭제하기',
   leaveTransferTitle: '관리자 권한을 넘길 멤버를 정해주세요.',
   leaveTransferDescription: '선택한 멤버가 새로운 관리자가 돼요.',
   // 알림 목록(Figma 1892:36947)
@@ -89,11 +91,11 @@ export const BUNCH_HOME_MESSAGES = {
   openingNotification: '알림을 여는 중이에요',
   // 명세에 문구가 없어 제안(갈 화면이 사라진 알림, 삭제된 번들 등)
   notificationUnavailable: '더 이상 볼 수 없는 알림이에요.',
-  // 목록 이어서 불러오기(문구는 기획 원문 없음, 제안). 받는 중은 마침표 없이, 실패는 다른 실패 문구와 같은 형식
+  // 목록 이어서 불러오기: 받는 중 낭독은 기획 원문 없는 제안, 실패는 기능명세 공통 오류 문구
   moreLoading: '목록을 더 불러오는 중이에요',
-  moreFailed: '목록을 더 불러오지 못했어요. 다시 시도해 주세요.',
+  moreFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   moreRetry: '다시 시도',
-  readFailed: '알림을 읽음으로 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.',
+  readFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   // 번치 삭제(화면설계서 2236:41816)
   deleteTitle: (bunchName: string) => `${bunchName}${objectParticle(bunchName)} 삭제할까요?`,
   deletedItems: ['사진함 속 사진', '작성 중이거나 발행된 번들', '팔로우・좋아요・댓글'],
@@ -119,7 +121,7 @@ export const BUNCH_HOME_MESSAGES = {
   followed: (bunchName: string) => `${bunchName} 번치를 팔로우했어요.`,
   followRequested: (bunchName: string) => `${bunchName} 번치에 팔로우를 요청했어요.`,
   unfollowed: (bunchName: string) => `${bunchName} 번치 팔로우를 취소했어요.`,
-  requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
+  requestCanceled: '팔로우 요청을 취소했어요.',
   // 팔로워·팔로잉 목록과 팔로우 요청(화면설계서 2500:71333·2500:72664)
   followRequestsBanner: (count: number) => `팔로우 요청 ${count}`,
   // 요청 수를 받지 못했을 때(요청 화면에서 다시 시도)

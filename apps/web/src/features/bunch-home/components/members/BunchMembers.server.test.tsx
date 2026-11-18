@@ -89,7 +89,7 @@ describe('BunchMembers 서버 멤버 관리', () => {
     await confirmIn('공동 관리자로 지정하기', '완료', '경진');
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('처리하지 못했어요. 잠시 후 다시 시도해 주세요.'),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect((await serverRoles())['경진']).toBe('MEMBER');
     expect(await screen.findByRole('button', { name: '경진 관리' })).toBeTruthy();
@@ -180,7 +180,7 @@ describe('BunchMembers 서버 멤버 관리', () => {
       within(menu)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toContain('번치에서 내보내기');
+    ).toContain('내보내기');
     expect(within(menu).queryByRole('button', { name: '관리자 권한 넘기기' })).toBeNull();
   });
 
@@ -202,7 +202,7 @@ describe('BunchMembers 서버 멤버 관리', () => {
     await confirmIn('공동 관리자로 지정하기', '완료', '경진');
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('멤버 정보가 바뀌어 최신 목록으로 다시 불러왔어요.'),
+      expect(toast).toHaveBeenCalledWith('멤버의 역할이 변경되었어요. 다시 확인해 주세요.'),
     );
     expect(await screen.findByText('4/8명')).toBeTruthy();
     expect(toast).not.toHaveBeenCalledWith('경진님이 공동 관리자가 되었어요.', { icon: 'success' });

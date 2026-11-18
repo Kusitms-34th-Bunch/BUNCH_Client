@@ -178,21 +178,25 @@ describe('BunchBasicInfo 번치 이름 중복 확인', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('확인하는 동안 입력란 아래에 확인 중 안내를 보이고, 문제가 없으면 안내가 사라진다', async () => {
+  it('확인하는 동안 확인 중 안내를 보이고, 통과하면 사용 가능 문구로 바뀌며 다시 입력하면 지운다', async () => {
     renderChecked(vi.fn().mockResolvedValue('available'));
     const CHECKING = '사용 가능한 이름인지 확인 중이에요.';
+    const AVAILABLE = '사용 가능한 번치 이름이에요';
 
     await userEvent.type(nameInput(), '퇴근런클럽');
 
     expect(screen.getByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+    // 기능명세 2.2.3: 확인을 통과하면 입력란 아래에 사용 가능 문구
     await waitFor(
-      () => expect(screen.queryByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeNull(),
-      {
-        timeout: 2000,
-      },
+      () => expect(screen.getByText(AVAILABLE, { selector: 'p[aria-hidden="true"]' })).toBeTruthy(),
+      { timeout: 2000 },
     );
+    expect(screen.queryByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
+
+    await userEvent.type(nameInput(), '2');
+    expect(screen.queryByText(AVAILABLE, { selector: 'p[aria-hidden="true"]' })).toBeNull();
   });
 
   it('이미 사용 중이면 확인 중 안내가 사라지고 오류 문구가 보인다', async () => {

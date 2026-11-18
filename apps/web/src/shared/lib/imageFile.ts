@@ -8,7 +8,7 @@ export type ImageFileRules = {
   types: readonly string[];
   maxBytes: number;
   invalidMessage: string;
-  /** 형식은 맞지만 읽지 못한 사진(손상·브라우저 미지원)의 문구. 없으면 「이 사진은 사용할 수 없어요.」 */
+  /** 형식은 맞지만 읽지 못한 사진(손상·브라우저 미지원)의 문구. 없으면 「이 사진은 사용할 수 없어요」 */
   unreadableMessage?: string;
 };
 

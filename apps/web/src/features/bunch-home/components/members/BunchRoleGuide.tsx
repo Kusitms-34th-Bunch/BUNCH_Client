@@ -28,7 +28,7 @@ type PermissionTable = {
   note: string;
 };
 
-// Figma 2500:54066 권한 표 그대로(서버 판단 기준이 아닌 안내용, 화면설계서 1-1)
+// 권한 표(기능명세 5.6.2, 서버 판단 기준이 아닌 안내용)
 const TABLES: readonly PermissionTable[] = [
   {
     title: '번치',
@@ -39,7 +39,7 @@ const TABLES: readonly PermissionTable[] = [
       { label: '번치 삭제', values: ['all', 'none'] },
       { label: '멤버 내보내기', noted: true, values: ['all', 'all'] },
       { label: '타멤버 사진 삭제・날짜 변경', values: ['all', 'all'] },
-      { label: '다른 번치 차단', values: ['all', 'all'] },
+      { label: '다른 번치 차단 해제', values: ['all', 'all'] },
     ],
     note: '메인 관리자는 내보낼 수 없어요.',
   },

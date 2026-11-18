@@ -122,7 +122,7 @@ export function OtherBunchScreen({
             () =>
               setAnnouncement(
                 sheetFor === 'requested'
-                  ? BUNCH_HOME_MESSAGES.requestCanceled(bunch.name)
+                  ? BUNCH_HOME_MESSAGES.requestCanceled
                   : BUNCH_HOME_MESSAGES.unfollowed(bunch.name),
               ),
             () => {},

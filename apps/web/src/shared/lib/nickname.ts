@@ -1,11 +1,13 @@
 export const NICKNAME_MAX_LENGTH = 12;
 
 export const NICKNAME_INVALID_MESSAGE = '특수문자를 제외한 영문, 한글만 사용할 수 있어요.';
-export const NICKNAME_TAKEN_MESSAGE = '이미 사용 중인 닉네임이에요.';
+export const NICKNAME_TAKEN_MESSAGE = '이미 사용 중인 닉네임이에요';
 /** 금칙어가 들어 있는 닉네임(기능명세 1.4.3 로직 4, 마침표 없음) */
 export const NICKNAME_PROHIBITED_MESSAGE = '사용할 수 없는 닉네임이에요';
 /** 중복 확인이 진행되는 동안 입력란 아래에 보이는 안내(Figma, 확인이 끝나 문제가 없으면 사라짐) */
 export const NICKNAME_CHECKING_MESSAGE = '사용 가능한 닉네임인지 확인 중이에요.';
+/** 중복·금칙어 확인을 통과한 닉네임(기능명세 1.4.4·7.2.5, 지금 닉네임과 같으면 확인하지 않아 보이지 않음) */
+export const NICKNAME_AVAILABLE_MESSAGE = '사용 가능한 닉네임이에요';
 
 // 한글·영문·숫자와 사이 공백만 허용(특수문자·이모지 불가)
 const ALLOWED = /^[A-Za-z0-9가-힣 ]*$/;

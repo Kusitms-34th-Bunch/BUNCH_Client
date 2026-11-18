@@ -26,10 +26,10 @@ export function BunchStartSelect({
 }) {
   const router = useRouter();
   const backOr = useBackOr();
-  // 입력값이 없는 시작 화면이라 흐름 상태 정리 없이 피드로 이동
+  // 입력값이 없는 시작 화면이라 흐름 상태 정리 없이 피드로 이동(문구는 명세 2.2.11 그대로)
   const openExitDialog = useExitFlowDialog({
     title: '번치 만들기를 그만둘까요?',
-    description: '지금 나가면 피드로 이동해요.',
+    description: '지금 나가면 작성한 정보가 모두 사라지고 피드로 이동해요.',
     cancelLabel: '계속 만들기',
     onExit: () => router.replace(ONBOARDING_PATHS.feed),
   });

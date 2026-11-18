@@ -90,6 +90,8 @@ export function useProfileFields(
     nicknameError,
     /** 닉네임 중복 확인이 진행 중인지(입력이 바뀐 직후부터 응답까지). 안내 문구를 보일 때 사용 */
     nicknameChecking: availability === 'checking',
+    /** 입력한 닉네임이 확인을 통과했는지(저장 때 거부되지 않았을 때만). 성공 문구를 보일 때 사용 */
+    nicknameAvailable: nicknameValid && !rejectedAtSave && availability === 'available',
     birthYearError,
     setNickname,
     setComposing,

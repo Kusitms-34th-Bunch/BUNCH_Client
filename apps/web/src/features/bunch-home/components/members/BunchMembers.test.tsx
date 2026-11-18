@@ -147,8 +147,8 @@ describe('BunchMembersScreen', () => {
       within(menu)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual(['번치에서 내보내기', '취소']);
-    await user.click(within(menu).getByRole('button', { name: '번치에서 내보내기' }));
+    ).toEqual(['내보내기', '취소']);
+    await user.click(within(menu).getByRole('button', { name: '내보내기' }));
     const confirm = await screen.findByRole('alertdialog', {
       name: '수인님을 퇴근런클럽에서 내보낼까요?',
     });

@@ -83,23 +83,26 @@ export function BunchFollowsScreen({
 
   // 처리 중인 행(다시 눌러도 보내지 않음)
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
+  // 비공개 번치 요청 결과는 화면 토스트가 없어 스크린 리더에만 알림(기획 원문 없는 접근성 안내)
+  const [announcement, setAnnouncement] = useState('');
 
   const toggle = async (bunch: FollowRow) => {
     if (allBusy || pendingIds.has(bunch.id)) return;
     setPendingIds((ids) => new Set(ids).add(bunch.id));
+    // 같은 문구가 이어져도 다시 낭독되게 시작할 때 비움
+    setAnnouncement('');
     try {
       if (bunch.followStatus === 'none') {
         const status = await onFollow(bunch);
-        toast(
-          status === 'requested'
-            ? BUNCH_HOME_MESSAGES.followRequested(bunch.name)
-            : BUNCH_HOME_MESSAGES.followed(bunch.name),
-        );
+        // 비공개 번치 요청은 토스트 없이 버튼만 「요청됨」으로 바뀜(기능명세 5.10.3)
+        if (status === 'requested')
+          setAnnouncement(BUNCH_HOME_MESSAGES.followRequested(bunch.name));
+        else toast(BUNCH_HOME_MESSAGES.followed(bunch.name));
       } else {
         await onUnfollow(bunch);
         toast(
           bunch.followStatus === 'requested'
-            ? BUNCH_HOME_MESSAGES.requestCanceled(bunch.name)
+            ? BUNCH_HOME_MESSAGES.requestCanceled
             : BUNCH_HOME_MESSAGES.unfollowed(bunch.name),
         );
       }
@@ -146,7 +149,8 @@ export function BunchFollowsScreen({
     }
     if (rows.length === 0) {
       return (
-        <p className="typography-body-3-regular text-text-tertiary py-s10 text-center">{empty}</p>
+        // 빈 목록은 화면에 아무것도 두지 않음(기능명세 5.11.1), 스크린 리더에만 알림
+        <p className="sr-only">{empty}</p>
       );
     }
     return (
@@ -255,6 +259,9 @@ export function BunchFollowsScreen({
           <PageLoading />
         </>
       )}
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
     </PageShell>
   );
 }

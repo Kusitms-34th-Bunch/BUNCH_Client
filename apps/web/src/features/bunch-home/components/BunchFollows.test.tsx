@@ -98,9 +98,8 @@ describe('다른 번치 팔로워·팔로잉(가짜 서버)', () => {
     expect(
       await screen.findByRole('button', { name: '산책클럽 요청됨, 누르면 요청 취소' }),
     ).toBeInTheDocument();
-    await waitFor(() =>
-      expect(toast).toHaveBeenLastCalledWith('산책클럽 번치에 팔로우를 요청했어요.'),
-    );
+    // 요청은 토스트 없이 버튼만 바뀜(기능명세 5.10.3): 마지막 토스트는 앞의 팔로우 취소 그대로
+    expect(toast).toHaveBeenLastCalledWith('산책클럽 번치 팔로우를 취소했어요.');
     expect(myFollowOf(5)?.status).toBe('REQUESTED');
   });
 

@@ -65,6 +65,8 @@ export function BunchMembersScreen({
 }: BunchMembersScreenProps) {
   const openOverlay = useScreenOverlay();
   const summaryRef = useRef<HTMLParagraphElement>(null);
+  // 공동 관리자가 일반 멤버를 열 때는 「내보내기」, 메인 관리자는 「번치에서 내보내기」(기능명세 5.6.1)
+  const removeLabel = myRole === 'owner' ? '번치에서 내보내기' : '내보내기';
 
   const menuActions = (
     member: BunchMember,
@@ -82,13 +84,10 @@ export function BunchMembersScreen({
         ...(allowed.canTransferOwner
           ? [{ label: '관리자 권한 넘기기', onClick: () => choose('transfer') }]
           : []),
-        ...(allowed.canRemove
-          ? [{ label: '번치에서 내보내기', onClick: () => choose('remove') }]
-          : []),
+        ...(allowed.canRemove ? [{ label: removeLabel, onClick: () => choose('remove') }] : []),
       ];
     }
-    if (myRole !== 'owner')
-      return [{ label: '번치에서 내보내기', onClick: () => choose('remove') }];
+    if (myRole !== 'owner') return [{ label: removeLabel, onClick: () => choose('remove') }];
     return [
       member.role === 'coOwner'
         ? { label: '공동 관리자 해제하기', onClick: () => choose('revoke') }
