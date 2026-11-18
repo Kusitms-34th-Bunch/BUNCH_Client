@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/login`(`apps/web/src/app/(app)/login/page.tsx`)
-- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 카카오·Google·Apple을 연결함(`apps/mobile-shell/src/social-login.ts`, Apple은 실기기 확인 전). 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어와 앱 실행 시 세션 확인은 `(app)` layout의 `AuthGate`가 맡음(결정 기록 019)
+- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 카카오·Google·Apple을 연결함(`apps/mobile-shell/src/social-login.ts`). Apple은 실기기에서 ID 토큰 발급까지 확인, 서버 로그인은 확인 전(#439). 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어와 앱 실행 시 세션 확인은 `(app)` layout의 `AuthGate`가 맡음(결정 기록 019)
 - 디자인 출처: Figma `로그인`(node `4744:90759`, 배경 영상 디자인. 이전 `796:4634`). 화면설계서(node `796:5339`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.2 Entry).
 
 ## 목적과 범위
@@ -17,7 +17,7 @@
 
 ### 범위 외
 
-- 쉘의 Apple 로그인 SDK. 카카오·Google은 쉘(`apps/mobile-shell/src/social-login.ts`)이 연결했고 Apple만 실패를 돌려줘, 앱에서 Apple 버튼을 누르면 실패 토스트가 나온다(2026-11-16 확인). 웹의 호출과 BFF 로그인은 연결돼 있다.
+- Apple 로그인의 서버 로그인 완료. 쉘(`apps/mobile-shell/src/social-login.ts`)은 카카오·Google·Apple을 모두 연결했다. 실기기(iPhone 개발 빌드)에서 Apple 로그인 창·Face ID·ID 토큰 발급까지 확인했고, 서버 로그인은 `AUTH_009`로 아직 성공하지 못했다(백엔드 Apple client ID 설정 확인 필요). 가입·재로그인·취소는 확인 전이다(2026-11-18, #439).
 - 앱 실행 시 세션 확인·스플래시와 단계별 접근 제어(로그인 뒤 분기 자체는 포함, 아래 Success 참고).
 - 초대 정보 보관·전달.
 - iPhone 상태 바·홈 인디케이터. 기기 요소라 웹이 그리지 않는다(Safe Area는 `AppFrame`이 처리한다).
@@ -98,4 +98,4 @@
 - 가입 상태 조합: 가입 완료인데 약관 미동의인 응답은 서버 불변식상 없다고 보고 `signupStatus`만으로 분기한다. `GET /members/me/onboarding`은 가입 중·가입 완료 모두 허용(API 명세서)이라 신규 사용자도 조회할 수 있다. 새 `signupStatus` 값이 생기면 계약 위반으로 실패한다.
 - `/` 진입 (결정 보류): 기획은 `/`를 가입 상태로 도착 화면을 정하는 진입점으로 두지만, 지금 `/`는 개발용 임시 화면이라 가입 완료 사용자는 그대로 머문다(비로그인·가입 중은 가드가 로그인·가입 화면으로 보냄). 로그인 SDK를 연결해 실제로 앱을 열어 보는 단계에서 가입 완료 사용자의 `/`를 도착 화면으로 보내도록 바꾼다. 쉘이 앱 실행 때 여는 주소가 `/`인지도 확인하지 못했다.
 - 조회 실패의 원인 구분 (한계): 가입 상태 조회가 계약 위반이나 새 enum 값 같은 영구 실패여도 일시 오류 문구로만 보인다. 원인은 기록하지 않는다(오류 수집 연결 때 정한다).
-- 노출 전 선행 조건: 쉘의 소셜 SDK는 카카오·Google만 연결돼 있어 Apple 버튼은 실패 토스트만 나온다(2026-11-16 확인). UT·배포에 노출하기 전에 Apple을 연동하거나 Apple 버튼을 노출하지 않는다. 정적 페이지로 생성되어 색인될 수 있으므로 metadata·색인 방지(`docs/workflows/seo.md`)도 이 노출 정책에 포함해 정한다.
+- 노출 전 선행 조건: Apple 버튼은 쉘 연동까지 끝났지만 서버 로그인이 아직 성공하지 못했다(#439). UT·배포에 노출하기 전에 Apple 서버 로그인·가입·재로그인을 실기기에서 확인한다. 정적 페이지로 생성되어 색인될 수 있으므로 metadata·색인 방지(`docs/workflows/seo.md`)도 이 노출 정책에 포함해 정한다.
