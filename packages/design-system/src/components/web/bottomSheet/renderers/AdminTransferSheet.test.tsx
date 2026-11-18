@@ -13,13 +13,14 @@ describe('AdminTransferSheet', () => {
     const sheet = await screen.findByRole('dialog', {
       name: '경진님을 관리자로 지정하고 나갈까요?',
     });
-    expect(document.getElementById(sheet.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+    // 부제와 안내(기능명세 5.8.2 원문)가 모두 시트 설명으로 연결됨
+    const described = (sheet.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent);
+    expect(described).toEqual([
       '경진님이 번치의 모든 관리 권한을 갖게 돼요.',
-    );
-    // 안내 문구는 기능명세 5.8.2 원문
-    expect(sheet.textContent).toContain(
       '사진함에 직접 올린 사진은 삭제되지만, 이미 발행된 번들의 사진은 그대로 남아요.',
-    );
+    ]);
   });
 
   it('「취소」는 닫기 요청, 「나가기」는 onConfirm만 부른다', async () => {
