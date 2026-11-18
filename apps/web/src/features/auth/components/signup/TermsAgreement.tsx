@@ -36,16 +36,24 @@ export function TermsAgreement() {
     };
   }, []);
 
+  // 같은 틱의 연타도 한 번만 실행(state는 다음 렌더에야 반영)
+  const starting = useRef(false);
+  // 전체 동의로 시작된 권한 요청 중에 눌러도 저장한 뒤 그 요청이 끝나길 기다려 이동(requestAll이 진행 중인 요청을 돌려줌)
   const start = async () => {
-    if (busy) return;
-    // 저장 실패(토스트는 공통 처리) 시 체크 상태를 유지한 채 화면에 머묾
+    if (starting.current) return;
+    starting.current = true;
     try {
-      await agreeToTerms.mutateAsync({ demographics: agreed.demographics });
-    } catch {
-      return;
+      // 저장 실패(토스트는 공통 처리) 시 체크 상태를 유지한 채 화면에 머묾
+      try {
+        await agreeToTerms.mutateAsync({ demographics: agreed.demographics });
+      } catch {
+        return;
+      }
+      await requestAll();
+      if (mounted.current) router.push(SIGNUP_PATHS.profile);
+    } finally {
+      starting.current = false;
     }
-    await requestAll();
-    if (mounted.current) router.push(SIGNUP_PATHS.profile);
   };
 
   return (
@@ -76,7 +84,8 @@ export function TermsAgreement() {
             ? '앱 접근 권한을 요청하는 중이에요'
             : ''}
       </p>
-      {busy ? <PageLoading /> : null}
+      {/* 덮개는 저장 중에만. 권한 팝업이 떠 있는 동안 뒤에 로딩이 깔리지 않게(중복 실행은 aria-busy·가드가 막음) */}
+      {agreeToTerms.isPending ? <PageLoading /> : null}
       <PageHeader
         title="시작하기 전에 확인해 주세요!"
         description="서비스 이용에 필요한 필수 내용만 확인할게요."

@@ -267,17 +267,49 @@ describe('TermsAgreement', () => {
     await waitFor(() => expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull());
   });
 
-  it('권한을 요청하는 동안에는 처리 중으로 표시하고 다시 눌러도 실행하지 않는다', async () => {
+  it('권한을 요청하는 동안에는 덮개 없이 처리 중으로 표시하고, 시작하기를 누르면 저장한 뒤 그 요청을 기다린다', async () => {
     const bodies = captureAgreements();
+    let finishPermissions!: () => void;
+    permissions.requestAll.mockImplementation(
+      () => new Promise<void>((resolve) => (finishPermissions = resolve)),
+    );
     permissions.isRequesting = true;
     renderPage(REQUIRED);
 
-    // disabled가 아니라 aria-busy라 포커스를 잃지 않음
+    // disabled가 아니라 aria-busy라 포커스를 잃지 않음. 권한 팝업 뒤에 전체 로딩은 깔지 않음
     expect(start().getAttribute('aria-busy')).toBe('true');
+    expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
     expect(start().hasAttribute('disabled')).toBe(false);
     await userEvent.click(start());
 
-    expect(bodies).toEqual([]);
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    await waitFor(() => expect(permissions.requestAll).toHaveBeenCalledTimes(1));
+    // 진행 중인 권한 요청이 끝나기 전에는 이동하지 않음
+    expect(push).not.toHaveBeenCalled();
+    finishPermissions();
+    await waitFor(() => expect(push).toHaveBeenLastCalledWith(SIGNUP_PATHS.profile));
+  });
+
+  it('시작하기를 연달아 눌러도 동의는 한 번만 저장한다', async () => {
+    const bodies = captureAgreements();
+    renderPage(REQUIRED);
+
+    // 같은 틱의 연타(state가 아직 바뀌기 전)
+    start().click();
+    start().click();
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+  });
+
+  it('저장에 실패하면 다시 눌러 재시도할 수 있다', async () => {
+    const bodies = captureAgreements(true);
+    renderPage(REQUIRED);
+
+    await userEvent.click(start());
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    await userEvent.click(start());
+
+    await waitFor(() => expect(bodies).toHaveLength(2));
     expect(permissions.requestAll).not.toHaveBeenCalled();
   });
 
