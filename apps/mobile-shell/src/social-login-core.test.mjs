@@ -297,3 +297,21 @@ test('Apple nonce는 로그인마다 새로 만든다', async () => {
 
   assert.notEqual(first.nonce, second.nonce);
 });
+
+test('Apple SDK 오류 뒤 같은 로그인 함수로 다시 시도하면 로그인 창을 다시 연다', async () => {
+  let calls = 0;
+  const { appleLogin } = setupApple({
+    signIn: () => {
+      calls += 1;
+      return calls === 1
+        ? Promise.reject(new Error('sdk'))
+        : Promise.resolve({ identityToken: 'apple-token' });
+    },
+  });
+
+  await assert.rejects(appleLogin(), { message: 'Apple 로그인에 실패했어요.' });
+  const second = await appleLogin();
+
+  assert.equal(calls, 2);
+  assert.equal(second.status, 'success');
+});
