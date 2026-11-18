@@ -124,12 +124,20 @@ const BUNCHES: Record<string, BundleBunchSource> = {
   '4': { id: 4, name: '책방산책', characterType: 'TYPE_1' },
 };
 
-type RenderOptions = { viewer?: { id: string; name: string } | null; focusComments?: boolean };
+type RenderOptions = {
+  viewer?: { id: string; name: string } | null;
+  focusComments?: boolean;
+  showComments?: boolean;
+};
 
 /** 상세 응답을 캐시에 넣고 그림. 없는 번들 ID는 서버 응답(404)을 기다림 */
 const renderDetail = (
   bundleId = '1',
-  { viewer = { id: '1', name: '여행가조' }, focusComments = false }: RenderOptions = {},
+  {
+    viewer = { id: '1', name: '여행가조' },
+    focusComments = false,
+    showComments = false,
+  }: RenderOptions = {},
 ) => {
   const client = createTestQueryClient();
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: viewer });
@@ -144,6 +152,7 @@ const renderDetail = (
       bundleId={bundleId}
       bunch={BUNCHES[bunchId]}
       focusComments={focusComments}
+      showComments={showComments}
       links={links}
     />,
     { wrapper: createQueryWrapper(client) },
@@ -335,9 +344,64 @@ describe('BundleDetail', () => {
     const section = screen.getByRole('region', { name: '댓글' });
     vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
 
+    const focus = vi.spyOn(HTMLTextAreaElement.prototype, 'focus');
     await user.click(screen.getByRole('button', { name: /^댓글/ }));
     expect(section.closest('main')!.scrollTop).toBe(500);
     expect(document.activeElement).toBe(screen.getByRole('textbox'));
+    // preventScroll을 주면 iOS가 입력란을 키보드 위로 올리지 않아 가려짐
+    expect(focus).toHaveBeenCalledWith();
+    focus.mockRestore();
+  });
+
+  it('?section=comments(댓글 알림)로 들어오면 댓글 영역으로 스크롤만 하고 입력란에 초점을 주지 않는다', async () => {
+    renderDetail('1', { showComments: true });
+    const section = screen.getByRole('region', { name: '댓글' });
+    vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
+
+    await waitFor(() => expect(section.closest('main')!.scrollTop).toBe(500));
+    expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+  });
+
+  it('화면 전환 중에 ?focus=comments로 들어오면 전환이 끝난 뒤 입력란에 초점을 둔다', async () => {
+    const leaving = document.createElement('div');
+    leaving.setAttribute('data-page-leaving', '');
+    document.body.append(leaving);
+    try {
+      renderDetail('1', { focusComments: true });
+
+      // 나가는 화면이 남아 있는 동안은 기다림
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+      leaving.remove();
+      await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
+    } finally {
+      // 실패해도 다음 테스트가 전환 중으로 보고 기다리지 않게
+      leaving.remove();
+    }
+  });
+
+  it('전환 표식이 남아 있어도 최대 대기 시간이 지나면 입력란에 초점을 둔다', async () => {
+    const leaving = document.createElement('div');
+    leaving.setAttribute('data-page-leaving', '');
+    document.body.append(leaving);
+    let now = 0;
+    const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
+    try {
+      renderDetail('1', { focusComments: true });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+
+      now = 1000;
+      await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
+    } finally {
+      clock.mockRestore();
+      leaving.remove();
+    }
+  });
+
+  it('?focus=comments와 ?section=comments가 함께 오면 입력란 초점을 둔다', async () => {
+    renderDetail('1', { focusComments: true, showComments: true });
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
   });
 
   it('댓글이 없으면 빈 안내를 보인다', async () => {
@@ -894,6 +958,7 @@ describe('BundleDetail', () => {
         bundleId="3"
         bunch={BUNCHES['3']}
         focusComments={false}
+        showComments={false}
         links={links}
       />,
       { wrapper: createQueryWrapper(client) },
@@ -934,7 +999,14 @@ describe('BundleDetail', () => {
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: null });
     client.setQueryData(feedKeys.detail('3', '3', null), DETAILS['3']);
     render(
-      <BundleDetail bunchId="3" bundleId="3" bunch={null} focusComments={false} links={links} />,
+      <BundleDetail
+        bunchId="3"
+        bundleId="3"
+        bunch={null}
+        focusComments={false}
+        showComments={false}
+        links={links}
+      />,
       { wrapper: createQueryWrapper(client) },
     );
     expect(screen.getByRole('heading', { level: 1, name: '여름밤 바닷가 캠핑' })).toBeTruthy();
@@ -955,6 +1027,7 @@ describe('BundleDetail', () => {
         bundleId="3"
         bunch={BUNCHES['3']}
         focusComments={false}
+        showComments={false}
         links={links}
       />,
       { wrapper: createQueryWrapper(client) },
@@ -982,6 +1055,7 @@ describe('BundleDetail', () => {
         bundleId="3"
         bunch={BUNCHES['3']}
         focusComments={false}
+        showComments={false}
         links={links}
       />,
       { wrapper: createQueryWrapper(client) },
@@ -1012,6 +1086,7 @@ describe('BundleDetail', () => {
         bundleId="3"
         bunch={BUNCHES['3']}
         focusComments={false}
+        showComments={false}
         links={links}
       />,
       { wrapper: createQueryWrapper(createTestQueryClient()) },
@@ -1027,7 +1102,14 @@ describe('BundleDetail', () => {
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
     client.setQueryData(feedKeys.detail('3', '3', '1'), DETAILS['3']);
     const view = (bunch: BundleBunchSource | undefined) => (
-      <BundleDetail bunchId="3" bundleId="3" bunch={bunch} focusComments links={links} />
+      <BundleDetail
+        bunchId="3"
+        bundleId="3"
+        bunch={bunch}
+        focusComments
+        showComments={false}
+        links={links}
+      />
     );
     const { rerender } = render(view(undefined), { wrapper: createQueryWrapper(client) });
     await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
@@ -1047,7 +1129,14 @@ describe('BundleDetail', () => {
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
     const view = (bunch: BundleBunchSource | undefined) => (
-      <BundleDetail bunchId="3" bundleId="3" bunch={bunch} focusComments={false} links={links} />
+      <BundleDetail
+        bunchId="3"
+        bundleId="3"
+        bunch={bunch}
+        focusComments={false}
+        showComments={false}
+        links={links}
+      />
     );
     const { rerender } = render(view(undefined), { wrapper: createQueryWrapper(client) });
 

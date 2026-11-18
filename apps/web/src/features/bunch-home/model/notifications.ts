@@ -91,7 +91,8 @@ export const notificationPath = (target: NotificationTarget): string => {
       return target.bundleId ? bundlePath(target.bunchId, target.bundleId) : BUNCH_HOME_PATHS.home;
     case 'BUNDLE_COMMENTS':
       return target.bundleId
-        ? `${bundlePath(target.bunchId, target.bundleId)}?focus=comments`
+        ? // 댓글을 읽으러 들어오므로 스크롤만 하고 입력란 초점(키보드)은 주지 않음(말풍선의 ?focus=comments와 다름)
+          `${bundlePath(target.bunchId, target.bundleId)}?section=comments`
         : BUNCH_HOME_PATHS.home;
     case 'CANDIDATES':
       return BUNCH_HOME_PATHS.createBundle;

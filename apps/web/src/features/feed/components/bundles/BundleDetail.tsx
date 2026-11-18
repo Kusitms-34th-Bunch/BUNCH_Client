@@ -32,9 +32,14 @@ type BundleDetailProps = {
   bunch: BundleBunchSource | null | undefined;
   /** 말풍선에서 들어옴(?focus=comments): 댓글 영역으로 스크롤하고 입력란 활성화 */
   focusComments: boolean;
+  /** 댓글 알림에서 들어옴(?section=comments): 댓글 영역으로 스크롤만 함(읽으러 온 것이라 키보드를 올리지 않음) */
+  showComments: boolean;
   /** 다른 기능의 화면 주소(route가 조합) */
   links: { bunchHome: string; otherBunch: (_bunchId: string) => string };
 };
+
+// 댓글 영역 진입이 화면 전환 끝을 기다리는 최대 시간(전환이 중단돼 표식이 남아도 스크롤·초점은 함)
+const ENTRY_TRANSITION_WAIT_MS = 1000;
 
 const codeOf = (error: unknown) => (isApiError(error) ? error.code : undefined);
 // 번들을 볼 수 없게 됨(명세 014~017: 비공개 접근 불가·차단·없음·내보내짐). 가입 미완료 등 계정 오류는 빼고 코드로 가림
@@ -50,6 +55,7 @@ export function BundleDetail({
   bundleId,
   bunch,
   focusComments,
+  showComments,
   links,
 }: BundleDetailProps) {
   const router = useRouter();
@@ -97,10 +103,9 @@ export function BundleDetail({
   };
 
   // 입력란은 CommentComposer 안쪽이라 감싼 요소에서 찾음
-  const focusInput = useCallback(
-    () => composerRef.current?.querySelector('textarea')?.focus({ preventScroll: true }),
-    [],
-  );
+  // preventScroll이면 iOS가 입력란을 키보드 위로 올리지 않아 가려지므로 막지 않음
+  // 진입 초점은 전환이 끝난 뒤에 주므로(아래 effect) 바깥 틀이 가로로 밀릴 일도 없음
+  const focusInput = useCallback(() => composerRef.current?.querySelector('textarea')?.focus(), []);
 
   const comment = useCommentActions({
     thread,
@@ -135,23 +140,41 @@ export function BundleDetail({
   });
 
   // scrollIntoView는 전환 중 가로로 밀린 화면을 보이려고 바깥 틀까지 가로 스크롤하므로 세로 스크롤 main만 움직임
-  const goToComments = useCallback(() => {
+  const scrollToComments = useCallback(() => {
     const section = commentsRef.current;
     const main = section?.closest('main');
     if (section && main) {
       main.scrollTop += section.getBoundingClientRect().top - main.getBoundingClientRect().top;
     }
+  }, []);
+  const goToComments = useCallback(() => {
+    scrollToComments();
     focusInput();
-  }, [focusInput]);
+  }, [scrollToComments, focusInput]);
 
   // 댓글 영역은 본문이 그려진 뒤에 생김(번치 정보·상세를 받는 중에는 없음)
   const contentReady = bundle !== undefined;
+  const commentsEntry = focusComments ? 'focus' : showComments ? 'scroll' : null;
   useEffect(() => {
-    if (!focusComments || !contentReady) return;
+    if (commentsEntry === null || !contentReady) return;
+    const startedAt = performance.now();
+    let frame = 0;
+    const run = () => {
+      // 화면 전환(나가는 화면의 data-page-leaving)이 끝난 뒤 스크롤·초점. 전환이 멈춰 표식이 남아도 잠시 뒤에는 진행
+      if (
+        document.querySelector('[data-page-leaving]') !== null &&
+        performance.now() - startedAt < ENTRY_TRANSITION_WAIT_MS
+      ) {
+        frame = requestAnimationFrame(run);
+        return;
+      }
+      scrollToComments();
+      if (commentsEntry === 'focus') focusInput();
+    };
     // effect에서 바로 주면 RouteFocus가 이동 전에 남은 초점으로 보고 제목으로 옮기므로 다음 프레임에
-    const frame = requestAnimationFrame(goToComments);
+    frame = requestAnimationFrame(run);
     return () => cancelAnimationFrame(frame);
-  }, [focusComments, contentReady, goToComments]);
+  }, [commentsEntry, contentReady, scrollToComments, focusInput]);
 
   // 목록(다음 쪽 포함)이 번들을 볼 수 없다고 하면 떠남(답글·삭제 실패 뒤 다시 받은 목록도, 답글 대상 없음과 번들 없음이 같은 404라서)
   const listGone = isGone(thread.error);
