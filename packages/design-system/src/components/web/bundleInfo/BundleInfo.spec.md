@@ -10,13 +10,13 @@
 
 ## 목적과 범위
 
-- 번들 제목, 지도 핀 + 위치(밑줄, 누르면 콕하기 시트), 달력 + 날짜. 위치·날짜가 없으면 그 줄을 숨긴다.
+- 번들 제목, 지도 핀 + 위치(밑줄, 누르면 콕하기 시트), 달력 + 날짜. 밑줄은 `locationUnderline={false}`로 끈다(피드 카드는 위치가 하나일 때). 위치·날짜가 없으면 그 줄을 숨긴다.
 - `detail`: 상세 화면(제목 20/26 `text-secondary`, 줄 14/21 `text-tertiary`, 아이콘 `icon-quaternary`, 제목↔줄 10).
 - `overlay`: 사진 위(제목 16/24 흰색(Figma `Bundle Photo Card` `Type=Info`), 줄 13/18 흰색 80% 불투명, 간격 6).
 
 ## Public API
 
-- Props: `title`(필수), `location`, `onLocationClick`(없으면 위치는 글자), `date`, `variant`(`detail` 기본·`overlay`), `memberOnly`(멤버 공개 뱃지, detail만, Figma `showMemberOnlyBadge`)·`memberOnlyLabel`, `titleAs`(기본 `h2`), native `<div>` 속성.
+- Props: `title`(필수), `location`, `onLocationClick`(없으면 위치는 글자), `locationUnderline`(기본 `true`), `date`, `variant`(`detail` 기본·`overlay`), `memberOnly`(멤버 공개 뱃지, detail만, Figma `showMemberOnlyBadge`)·`memberOnlyLabel`, `titleAs`(기본 `h2`), native `<div>` 속성.
 - 위치·날짜 글자의 형식(「애월읍 외 1곳」, 「2026년 7월 9일」)은 호출자가 만든다.
 
 ## 접근성
@@ -36,5 +36,5 @@
 
 ## 검증
 
-- 단위 테스트: 제목 요소, 위치 누름, 줄 숨김.
+- 단위 테스트: 제목 요소, 위치 누름, 밑줄 끄기, 줄 숨김.
 - Storybook(Chromium) 측정: `detail` 343×84, 제목 20/26 `#25282D`, 줄 y 36·63, 아이콘 `#BCBEC2`.

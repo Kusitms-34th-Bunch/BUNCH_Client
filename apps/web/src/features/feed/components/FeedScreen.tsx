@@ -166,6 +166,8 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
           photos={bundle.photos}
           title={bundle.title}
           location={bundle.location}
+          // 「{첫 위치} 외 N곳」일 때만 밑줄(기능명세 6.1.3 상세 2)
+          locationUnderline={bundle.places.length > 1}
           onLocationClick={() => openPlaces(bundle.id, bundle.places)}
           date={bundle.date}
           onPhotoClick={() => openDetail(bundle, FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}

@@ -130,6 +130,34 @@ describe('BundlePhoto', () => {
     expect(button.querySelectorAll('[class*="absolute"]')).toHaveLength(3);
   });
 
+  it('펼친 채 다른 사진으로 넘겨 얼굴이 가려지면 접힌다(6.2.4 상세 4)', async () => {
+    let notify: (_visible: boolean) => void = () => undefined;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: (_entries: { isIntersecting: boolean }[]) => void) {
+          notify = (isIntersecting) => callback([{ isIntersecting }]);
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const pickers = ['은우', '경진', '수인'].map((name) => ({ name }));
+    const { container } = render(
+      <BundlePhoto variant="detail" photos={[{ src: 'a.jpg', pickers }]} />,
+    );
+    const button = screen.getByRole('button', { name: 'pick 은우, 경진, 수인' });
+    act(() => notify(true));
+    await userEvent.click(button);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+
+    act(() => notify(false));
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    // 안 보이는 동안 접히므로 모션을 기다리지 않고 바로 겹친 모양
+    expect(container.querySelector('ul')).toBeNull();
+  });
+
   it('접히는 도중 다시 누르면 펼친 상태로 돌아간다', async () => {
     const pickers = ['은우', '경진', '수인'].map((name) => ({ name }));
     const { container } = render(

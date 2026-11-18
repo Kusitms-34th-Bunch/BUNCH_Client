@@ -22,7 +22,10 @@ export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
   variant?: 'thumbnail' | 'detail' | undefined;
   /** thumbnail 첫 사진 위의 제목·위치·날짜 */
   info?:
-    | Pick<BundleInfoProps, 'title' | 'location' | 'onLocationClick' | 'date' | 'titleAs'>
+    | Pick<
+        BundleInfoProps,
+        'title' | 'location' | 'onLocationClick' | 'locationUnderline' | 'date' | 'titleAs'
+      >
     | undefined;
   /** thumbnail 첫 사진 위쪽의 번치(이미지·이름·경과 시간). 누르면 번치 프로필 */
   author?:
@@ -53,7 +56,7 @@ const PICK_LAYERS = [
 const PICK_FACE = 'outline-border-tertiary outline -outline-offset-1';
 
 /**
- * 사진을 pick한 멤버(Figma `PickAvatar`): 얼굴을 겹친 「pick」 버튼. 누르면 전체 멤버를 세로로 펼치고 다시 누르면 접힘
+ * 사진을 pick한 멤버(Figma `PickAvatar`): 얼굴을 겹친 「pick」 버튼. 누르면 전체 멤버를 세로로 펼치고 다시 누르거나 사진을 넘기면 접힘
  * 많으면 사진 높이 안에서 스크롤. 이름은 버튼 이름으로 모두 읽으므로 펼친 목록은 낭독에서 숨김
  */
 const PickAvatars = ({ pickers }: { pickers: NonNullable<BundlePhotoItem['pickers']> }) => {
@@ -65,7 +68,13 @@ const PickAvatars = ({ pickers }: { pickers: NonNullable<BundlePhotoItem['picker
   const [visible, setVisible] = useState(false);
   // 1명 ↔ 2명이면 칸이 다시 만들어지는데, callback ref라 새 칸을 다시 관찰함
   const facesRef = useIntersectionObserver<HTMLSpanElement>(
-    (entry) => setVisible(entry.isIntersecting),
+    (entry) => {
+      setVisible(entry.isIntersecting);
+      // 다른 사진으로 넘겨 완전히 가려지면 접음(기능명세 6.2.4 상세 4). 안 보이므로 접히는 모션 없이
+      if (entry.isIntersecting) return;
+      setExpanded(false);
+      setClosing(false);
+    },
     { threshold: 0.5 },
   );
   const float = visible ? pickMotion.float : undefined;
