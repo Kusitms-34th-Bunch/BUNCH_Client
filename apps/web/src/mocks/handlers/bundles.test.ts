@@ -568,9 +568,16 @@ describe('가짜 서버 번들 제목 CRDT 병합', () => {
     const { status, json } = await merge(draft.id, await edit(draft.id, '  설악산 단풍  '));
 
     expect(status).toBe(200);
-    // 표시 제목만 NFC·trim하고 정확히 네 필드만 돌려줌
+    // 표시 제목만 NFC·trim하고 제목 상태와 금칙어 상태·발행 차단 사유만 돌려줌(revision 없음)
     expect(Object.keys(json.data).sort()).toEqual(
-      ['title', 'titleCrdtState', 'titleTooLong', 'titleVersion'].sort(),
+      [
+        'title',
+        'titleCrdtState',
+        'titleTooLong',
+        'titleVersion',
+        'profanity',
+        'publishBlockers',
+      ].sort(),
     );
     expect(json.data).toMatchObject({ title: '설악산 단풍', titleVersion: 1, titleTooLong: false });
   });

@@ -16,6 +16,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
+import { hasMockProhibitedWord } from '../lib/prohibitedWord';
 import { findMockRecommendationTitle } from './recommendations';
 
 // 백엔드 명세(번들 초안 생성·수정·발행) 기준, 명세에 없는 부분은 `ponytail:`로 표시
@@ -80,16 +81,32 @@ export const findScope = (
   };
 };
 
+// 초안 금칙어 검사 상태(가짜 서버는 「금칙어」 낱말만 봄). 현재 참여자의 코멘트만 담음
+const profanityOf = (bundle: MockBundle) => ({
+  dictionaryVersion: 'mock',
+  titleHasProhibitedWord: hasMockProhibitedWord(bundle.title),
+  comments: bundle.participants.map(({ memberId }) => ({
+    memberId,
+    hasProhibitedWord: hasMockProhibitedWord(
+      bundle.comments.find((comment) => comment.memberId === memberId)?.content ?? '',
+    ),
+  })),
+});
+
 // 발행 준비 snapshot의 publishBlockers에는 공개 범위를 넣지 않고(finalVisibility 생략), 최종 발행 요청에서만 범위를 확인함
 const publishBlockers = (bundle: MockBundle, finalVisibility?: 'PUBLIC' | 'PRIVATE' | null) => {
   const reasons: string[] = [];
   if (bundle.title.trim() === '') reasons.push('TITLE_REQUIRED');
   if (countTitleGraphemes(bundle.title) > TITLE_MAX) reasons.push('TITLE_TOO_LONG');
+  const profanity = profanityOf(bundle);
+  if (profanity.titleHasProhibitedWord) reasons.push('TITLE_PROHIBITED_WORD');
   if (finalVisibility === null) reasons.push('VISIBILITY_REQUIRED');
   if (bundle.participants.length < MIN_BUNCH_MEMBERS) reasons.push('PARTICIPANTS_REQUIRED');
   const commented = (memberId: number) =>
     bundle.comments.some((comment) => comment.memberId === memberId && comment.content.trim());
   if (!bundle.participants.every((p) => commented(p.memberId))) reasons.push('COMMENTS_REQUIRED');
+  if (profanity.comments.some((comment) => comment.hasProhibitedWord))
+    reasons.push('COMMENTS_PROHIBITED_WORD');
   if (bundle.photos.length < 1 || bundle.photos.length > MAX_PHOTOS)
     reasons.push('PHOTOS_REQUIRED');
   return reasons;
@@ -259,6 +276,8 @@ export const toSnapshot = (bundle: MockBundle, state: MockDbState, myRole: strin
     })),
     dateChips: dateChips(bundle, state),
     publishBlockers: draft ? publishBlockers(bundle) : [],
+    // 발행본은 소급 검사하지 않아 null
+    profanity: draft ? profanityOf(bundle) : null,
     permissions: {
       administrator: isAdmin,
       creator: isCreator,
@@ -806,6 +825,8 @@ export const bundleHandlers = [
       titleCrdtState: saved.titleCrdtState ?? next,
       titleVersion: saved.titleVersion,
       titleTooLong: countTitleGraphemes(saved.title) > TITLE_MAX,
+      profanity: profanityOf(saved),
+      publishBlockers: publishBlockers(saved),
     });
   }),
 
@@ -924,6 +945,24 @@ export const bundleHandlers = [
         if (current.status === 'PUBLISHED') return { status: 409, body: { code: 'BUNDLE_002' } };
         const finalVisibility = requestedVisibility ?? current.visibility;
         const reasons = publishBlockers(current, finalVisibility);
+        // 금칙어 위반은 일반 발행 차단(BUNDLE_005) 대신 COMMON_003(걸린 칸과 코멘트 멤버)
+        const profanity = profanityOf(current);
+        const commentMemberIds = profanity.comments
+          .filter((comment) => comment.hasProhibitedWord)
+          .map((comment) => comment.memberId);
+        if (profanity.titleHasProhibitedWord || commentMemberIds.length > 0) {
+          const fields = [
+            ...(profanity.titleHasProhibitedWord ? ['title'] : []),
+            ...(commentMemberIds.length > 0 ? ['comments'] : []),
+          ];
+          return {
+            status: 400,
+            body: {
+              code: 'COMMON_003',
+              detail: { fields, ...(commentMemberIds.length > 0 ? { commentMemberIds } : {}) },
+            },
+          };
+        }
         if (reasons.length > 0) {
           return { status: 409, body: { code: 'BUNDLE_005', detail: { reasons } } };
         }
