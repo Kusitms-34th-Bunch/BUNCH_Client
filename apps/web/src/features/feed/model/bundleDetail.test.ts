@@ -64,7 +64,7 @@ describe('toFeedBundleDetail', () => {
     expect(detail.memberComments[1]).toEqual({ id: '12', name: '', comment: '', left: true });
     expect(detail.photos[0]?.pickers).toEqual([
       { name: '은우', imageSrc: DEFAULT_PROFILE_IMAGE },
-      { name: '' },
+      { name: '', imageSrc: DEFAULT_PROFILE_IMAGE },
     ]);
   });
 
