@@ -87,7 +87,13 @@ const render = (options: {
   boxPhotos?: readonly PhotoBoxPhoto[];
   photos?: readonly DraftPhoto[];
 }) => {
-  const replacePhotos = vi.fn<(_photos: readonly DraftPhoto[]) => boolean | void>();
+  const replacePhotos =
+    vi.fn<
+      (
+        _photos: readonly DraftPhoto[],
+        _options?: { partialAdd?: boolean | undefined },
+      ) => boolean | void
+    >();
   const rendered = renderHook(
     () =>
       usePhotoGalleryImport({
@@ -159,11 +165,14 @@ describe('usePhotoGalleryImport', () => {
     await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1));
 
     expect(bridge.pickGalleryImages).toHaveBeenCalledWith({ limit: 5 });
-    expect(replacePhotos).toHaveBeenCalledWith([
-      draftPhoto('draft-1', '1'),
-      expect.objectContaining({ id: 'draft-9001', sourcePhotoId: '9001' }),
-      expect.objectContaining({ id: 'draft-9002', sourcePhotoId: '9002' }),
-    ]);
+    expect(replacePhotos).toHaveBeenCalledWith(
+      [
+        draftPhoto('draft-1', '1'),
+        expect.objectContaining({ id: 'draft-9001', sourcePhotoId: '9001' }),
+        expect.objectContaining({ id: 'draft-9002', sourcePhotoId: '9002' }),
+      ],
+      expect.objectContaining({ partialAdd: true }),
+    );
     // 모두 올라가면 결과 토스트 없이 칸에 사진이 들어옴
     expect(toast).not.toHaveBeenCalled();
     await waitFor(() => expect(result.current.importing).toBeUndefined());
@@ -208,10 +217,10 @@ describe('usePhotoGalleryImport', () => {
     act(() => result.current.importFromGallery(5));
     await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1));
 
-    expect(replacePhotos).toHaveBeenCalledWith([
-      draftPhoto('draft-1', '1'),
-      expect.objectContaining({ sourcePhotoId: '9001' }),
-    ]);
+    expect(replacePhotos).toHaveBeenCalledWith(
+      [draftPhoto('draft-1', '1'), expect.objectContaining({ sourcePhotoId: '9001' })],
+      expect.objectContaining({ partialAdd: true }),
+    );
     expect(toast).toHaveBeenCalledTimes(1);
     expect(toast).toHaveBeenCalledWith('1장을 추가했어요. 1장은 올리지 못했어요.', undefined);
   });
@@ -231,7 +240,13 @@ describe('usePhotoGalleryImport', () => {
   it('올린 사진이 목록에 늦게 들어와도 목록을 다시 받아 번들에 붙인다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(picked('p1'));
     serveUploads();
-    const replacePhotos = vi.fn<(_photos: readonly DraftPhoto[]) => boolean | void>();
+    const replacePhotos =
+      vi.fn<
+        (
+          _photos: readonly DraftPhoto[],
+          _options?: { partialAdd?: boolean | undefined },
+        ) => boolean | void
+      >();
     const { result, rerender } = renderHook(
       ({ boxPhotos }: { boxPhotos: readonly PhotoBoxPhoto[] }) =>
         usePhotoGalleryImport({
@@ -254,10 +269,10 @@ describe('usePhotoGalleryImport', () => {
     // 다시 받은 목록에 들어오면 붙임
     rerender({ boxPhotos: [boxPhoto('9001')] });
     await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1));
-    expect(replacePhotos).toHaveBeenCalledWith([
-      draftPhoto('draft-1', '1'),
-      expect.objectContaining({ sourcePhotoId: '9001' }),
-    ]);
+    expect(replacePhotos).toHaveBeenCalledWith(
+      [draftPhoto('draft-1', '1'), expect.objectContaining({ sourcePhotoId: '9001' })],
+      expect.objectContaining({ partialAdd: true }),
+    );
     expect(toast).not.toHaveBeenCalled();
   });
 
@@ -270,10 +285,10 @@ describe('usePhotoGalleryImport', () => {
     act(() => result.current.importFromGallery(5));
 
     await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1), { timeout: 8000 });
-    expect(replacePhotos).toHaveBeenCalledWith([
-      draftPhoto('draft-1', '1'),
-      expect.objectContaining({ sourcePhotoId: '9001' }),
-    ]);
+    expect(replacePhotos).toHaveBeenCalledWith(
+      [draftPhoto('draft-1', '1'), expect.objectContaining({ sourcePhotoId: '9001' })],
+      expect.objectContaining({ partialAdd: true }),
+    );
     expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
     await waitFor(() => expect(result.current.importing).toBeUndefined());
   }, 10_000);
@@ -295,5 +310,40 @@ describe('usePhotoGalleryImport', () => {
     // 9001은 이미 있어 건너뛰고 남은 두 자리에 9002·9003만
     expect(next.map((photo) => photo.sourcePhotoId).slice(18)).toEqual(['9002', '9003']);
     expect(next).toHaveLength(20);
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('올리는 사이 자리가 차면 들어갈 만큼만 붙이고, 고른 장수를 넘겨 담긴 장수 안내는 화면이 한 번만 하게 한다(기능명세서 4.3.14)', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(picked('p1', 'p2'));
+    serveUploads();
+    // 고를 때는 두 자리가 남았지만 올리는 사이 19장이 됨
+    const existing = Array.from({ length: 19 }, (_, index) =>
+      draftPhoto(`draft-e${index}`, `e${index}`),
+    );
+    const { result, replacePhotos } = render({ photos: existing });
+
+    act(() => result.current.importFromGallery(2));
+    await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1));
+
+    const [next, options] = replacePhotos.mock.calls[0]!;
+    expect(next.map((photo) => photo.sourcePhotoId).slice(19)).toEqual(['9001']);
+    expect(options).toEqual({ partialAdd: true, requested: 2 });
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('올리는 사이 자리가 다 차면 붙이지 않고 「사진은 최대 20장까지 담을 수 있어요.」를 알린다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(picked('p1'));
+    serveUploads();
+    const existing = Array.from({ length: 20 }, (_, index) =>
+      draftPhoto(`draft-e${index}`, `e${index}`),
+    );
+    const { result, replacePhotos } = render({ photos: existing });
+
+    // 고를 때는 한 자리가 남아 있었던 상황
+    act(() => result.current.importFromGallery(1));
+    await waitFor(() => expect(result.current.importing).toBeUndefined());
+
+    expect(replacePhotos).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith('사진은 최대 20장까지 담을 수 있어요.');
   });
 });

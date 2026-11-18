@@ -35,7 +35,10 @@ type UsePhotoGalleryImportOptions = {
   /** 지금 번들 사진 */
   photos: readonly DraftPhoto[];
   /** 번들 사진을 이 구성으로 바꿈(작성 화면·수정 화면 공통). 연결이 끊겨 적용하지 못하면 false를 돌려줌(작성 화면) */
-  replacePhotos: (_photos: readonly DraftPhoto[]) => boolean | void;
+  replacePhotos: (
+    _photos: readonly DraftPhoto[],
+    _options?: { partialAdd?: boolean | undefined; requested?: number | undefined },
+  ) => boolean | void;
   /** 사진함을 몰라 가져올 수 없을 때(사진함 조회 실패 등). 사진함을 다시 받아 다음 시도부터 가져올 수 있게 함 */
   onUnavailable?: (() => void) | undefined;
 };
@@ -114,12 +117,15 @@ export function usePhotoGalleryImport({
     const { photos: current, replacePhotos: replace } = latest.current;
     const linked = new Set(current.flatMap((photo) => photo.sourcePhotoId ?? []));
     const room = Math.max(0, MAX_PHOTOS - current.length);
-    const added = sources
-      .filter((source) => !linked.has(source.id))
-      .slice(0, room)
-      .map(toDraftPhoto);
-    // 사진함에는 올라갔는데 번들에는 붙이지 못했으면(연결 끊김) 알림
-    if (added.length > 0 && replace([...current, ...added]) === false) {
+    const candidates = sources.filter((source) => !linked.has(source.id));
+    const added = candidates.slice(0, room).map(toDraftPhoto);
+    // 올리는 사이 다른 멤버가 자리를 다 채웠으면 붙이지 않고 알림. 일부만 들어가면 담긴 장수 안내는 결과를 아는 쪽(작성·수정 화면)이 한 번만 함(기능명세서 4.3.14 로직 4)
+    if (added.length === 0) {
+      if (candidates.length > 0) toast(BUNDLE_MESSAGES.photosAddedUpTo(0));
+    } else if (
+      replace([...current, ...added], { partialAdd: true, requested: candidates.length }) === false
+    ) {
+      // 사진함에는 올라갔는데 번들에는 붙이지 못했으면(연결 끊김) 알림
       toast(BUNDLE_MESSAGES.photosChangeFailed);
     }
     finish();

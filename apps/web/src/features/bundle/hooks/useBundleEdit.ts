@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
@@ -10,6 +11,7 @@ import type { Draft, DraftLocation, DraftPhoto, DraftViewer, PlaceResult } from 
 import type { DraftActions } from './useDraft';
 import type { PresenceCommands } from './usePresenceSender';
 import { searchPlaces as searchPlacesApi } from '../api/places';
+import { BUNDLE_MESSAGES } from '../constants/messages';
 import { toDraft } from '../lib/draftMapping';
 import {
   applyLocationOp,
@@ -216,7 +218,13 @@ export function useBundleEdit(
     },
     movePhoto: (photoId, toIndex) =>
       change({ photos: movePhoto(currentPhotos(), photoId, toIndex) }),
-    replacePhotos: (photos) => {
+    replacePhotos: (photos, options) => {
+      // 수정 화면은 혼자 고치는 구성이라 바꾼 구성으로 담긴 장수를 셈(갤러리 가져오기가 자리에 맞춰 자른 경우, 기능명세서 4.3.14)
+      if (options?.requested !== undefined) {
+        const currentIds = new Set(currentPhotos().map((photo) => photo.id));
+        const added = photos.filter((photo) => !currentIds.has(photo.id)).length;
+        if (added < options.requested) toast(BUNDLE_MESSAGES.photosAddedUpTo(added));
+      }
       change({ photos });
       return true;
     },

@@ -806,6 +806,51 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       SAVE_WAIT,
     );
   });
+
+  it('갤러리 가져오기(partialAdd)는 남은 자리까지만 담고 담긴 장수를 알린다(기능명세서 4.3.14)', async () => {
+    // 사진함에 원본을 더 넣고 19장짜리 초안을 만듦(다른 멤버가 이미 자리를 채운 상황)
+    const sample = mockDb.get().photos.find((photo) => photo.bunchId === MOCK_BUNCH_ID)!;
+    const seeded = Object.values(MOCK_PHOTO_IDS);
+    // 19장을 채우고 갤러리에서 2장을 더 가져올 만큼 원본을 더함
+    const extra = Array.from({ length: 19 - seeded.length + 2 }, (_, index) => 92001 + index);
+    mockDb.update((current) => ({
+      ...current,
+      photos: [...current.photos, ...extra.map((photoId) => ({ ...sample, photoId }))],
+    }));
+    const inBundle = [...seeded, ...extra.slice(0, 19 - seeded.length)];
+    expect(inBundle).toHaveLength(19);
+    const id = (
+      await createBundle(bunchId, inBundle.map(String), createIdempotencyKey(), [String(memberA)])
+    ).id;
+    const { result } = renderDraft(id);
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    const current = ready(result.current.state).draft.photos;
+    const fromGallery = extra.slice(19 - seeded.length).map((photoId) => ({
+      id: `temp-${photoId}`,
+      src: '/mock/photos/S1.jpg',
+      alt: '갤러리 사진',
+      takenAt: null,
+      uploaderId: String(me),
+      sourcePhotoId: String(photoId),
+    }));
+
+    act(
+      () =>
+        void result.current.actions.replacePhotos([...current, ...fromGallery], {
+          partialAdd: true,
+        }),
+    );
+
+    await waitFor(() => expect(serverBundle(id)?.photos).toHaveLength(20), SAVE_WAIT);
+    await waitFor(
+      () =>
+        expect(toast).toHaveBeenCalledWith(
+          '사진은 최대 20장까지 담을 수 있어요. 1장만 추가했어요.',
+        ),
+      SAVE_WAIT,
+    );
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
+  });
 });
 
 describe('useDraft 발행', () => {
