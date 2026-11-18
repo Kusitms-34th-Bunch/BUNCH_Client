@@ -1,12 +1,19 @@
-import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  skipToken,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { sharedKeys } from '@/shared/query/keys';
 import type { FollowDecision, FollowRequestPage } from '../model/follows';
 import { decideFollowRequest, getFollowRelations, getFollowRequests } from '../api/follows';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { FIRST_PAGE, nextPageOf } from '../lib/pages';
 import { bunchHomeKeys } from './keys';
 
 /**
- * 번치의 팔로워·팔로잉. 명의(내 기본 번치)를 알기 전(`undefined`)이나 볼 수 없을 때(비공개, 팔로우 승인 전)는 요청하지 않음
+ * 번치의 팔로워·팔로잉(쪽 단위, 목록 끝에서 이어서 받음). 명의(내 기본 번치)를 알기 전(`undefined`)이나 볼 수 없을 때(비공개, 팔로우 승인 전)는 요청하지 않음
  * 명의가 없으면(`null`, 번치 없는 회원) 서버가 정한 명의 없는 상태로 받음
  */
 export const followListQueryOptions = (
@@ -15,12 +22,14 @@ export const followListQueryOptions = (
   kind: 'followers' | 'following',
   canView: boolean,
 ) =>
-  queryOptions({
-    queryKey: bunchHomeKeys.followList(bunchId, viewerId ?? null, kind),
+  infiniteQueryOptions({
+    queryKey: bunchHomeKeys.followPages(bunchId, viewerId ?? null, kind),
+    initialPageParam: FIRST_PAGE,
     queryFn:
       viewerId === undefined || !canView
         ? skipToken
-        : ({ signal }) => getFollowRelations(bunchId, kind, signal),
+        : ({ pageParam, signal }) => getFollowRelations(bunchId, kind, pageParam, signal),
+    getNextPageParam: nextPageOf,
   });
 
 // 두 정의가 같은 key에 같은 요청을 쓰도록 한곳에 둠

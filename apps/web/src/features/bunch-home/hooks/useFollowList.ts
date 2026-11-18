@@ -1,16 +1,20 @@
-import { useQuery } from '@tanstack/react-query';
-import { type FollowListState, toFollowRows } from '../model/follows';
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  type UseInfiniteQueryResult,
+} from '@tanstack/react-query';
+import { itemsOfPages } from '../lib/pages';
+import { type FollowListState, type RelationPage, toFollowRows } from '../model/follows';
 import { FOLLOW_STATUS } from '../model/otherBunch';
 import { followListQueryOptions } from '../queries/follows';
 import { useFollowBunchMutation } from '../queries/otherBunch';
 
-const stateOf = (query: {
-  data: Parameters<typeof toFollowRows>[0] | undefined;
-  isError: boolean;
-  refetch: () => unknown;
-}): FollowListState =>
+const stateOf = (query: UseInfiniteQueryResult<InfiniteData<RelationPage>>): FollowListState =>
   query.data
-    ? { rows: toFollowRows(query.data) }
+    ? {
+        rows: toFollowRows({ items: itemsOfPages(query.data.pages, (item) => item.bunch.id) }),
+        more: query,
+      }
     : query.isError
       ? { error: { retry: () => void query.refetch() } }
       : { rows: undefined };
@@ -24,8 +28,12 @@ export function useFollowList(
   viewerId: string | null | undefined,
   canView: boolean,
 ) {
-  const followers = useQuery(followListQueryOptions(bunchId, viewerId, 'followers', canView));
-  const following = useQuery(followListQueryOptions(bunchId, viewerId, 'following', canView));
+  const followers = useInfiniteQuery(
+    followListQueryOptions(bunchId, viewerId, 'followers', canView),
+  );
+  const following = useInfiniteQuery(
+    followListQueryOptions(bunchId, viewerId, 'following', canView),
+  );
   const change = useFollowBunchMutation(viewerId);
   return {
     followers: stateOf(followers),

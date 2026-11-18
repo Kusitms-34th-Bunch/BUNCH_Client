@@ -132,7 +132,7 @@ describe('BunchBlockedListScreen', () => {
     expect(screen.queryByRole('list')).toBeNull();
   });
 
-  it('전체 차단 수가 보이는 행보다 많으면 최근 것만 보인다고 알린다', () => {
+  it('개수는 받은 행이 아니라 서버의 전체 차단 수다(나머지는 목록 끝에서 이어서 받음)', () => {
     render(
       <BunchBlockedListScreen
         blocked={BLOCKED}
@@ -144,7 +144,6 @@ describe('BunchBlockedListScreen', () => {
     );
 
     expect(screen.getByText('60개')).toBeInTheDocument();
-    expect(screen.getByText('최근 차단한 2개만 보여요.')).toBeInTheDocument();
   });
 
   it('목록을 받는 중이면 목록도 빈 상태도 그리지 않고 로딩을 알린다', () => {

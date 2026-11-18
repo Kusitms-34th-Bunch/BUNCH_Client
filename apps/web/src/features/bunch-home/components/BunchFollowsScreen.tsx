@@ -2,13 +2,14 @@
 
 import { Button, cn, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { FollowListItem, MenuTabs, NudgeBanner } from '@app/design-system/web';
-import { useState } from 'react';
+import { type RefObject, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { FollowStatus } from '../lib/types';
 import type { FollowListState, FollowRow } from '../model/follows';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { ListMore } from './ListMore';
 import { PrivateBunchNotice } from './PrivateBunchNotice';
 
 export type FollowsTab = 'followers' | 'following';
@@ -32,6 +33,8 @@ type BunchFollowsScreenProps = {
   /** 내 번치의 대기 중인 팔로우 요청 수. 0이거나 없으면 「팔로우 요청」 줄을 숨김, null(수를 못 받음)이면 수 없이 줄만 */
   pendingRequestCount?: number | null | undefined;
   onOpenRequests?: (() => void) | undefined;
+  /** 행의 이미지·이름을 눌렀을 때(그 번치 프로필로 이동, 5.11.1 상세 5) */
+  onOpenBunch?: ((_bunch: FollowRow) => void) | undefined;
   onBack: () => void;
   /** 팔로우·요청. 끝나면 서버가 정한 상태, 실패하면 reject(안내는 부르는 쪽) */
   onFollow: (_bunch: FollowRow) => Promise<FollowStatus>;
@@ -57,7 +60,7 @@ const DISSOLVE =
 
 /**
  * 팔로워·팔로잉 목록(기능명세 5.11, 화면설계서 2500:71333·2500:72664, Figma 2500:73493)
- * 버튼은 확인 없이 바로 팔로우·언팔로우하고 서버 처리가 끝나면 토스트로 알림(3-1번). 행 자체는 누를 수 없음
+ * 버튼은 확인 없이 바로 팔로우·언팔로우하고 서버 처리가 끝나면 토스트로 알림(3-1번). 이미지·이름은 그 번치 프로필로
  */
 export function BunchFollowsScreen({
   bunchName,
@@ -71,6 +74,7 @@ export function BunchFollowsScreen({
   locked = false,
   pendingRequestCount = 0,
   onOpenRequests,
+  onOpenBunch,
   onBack,
   onFollow,
   onUnfollow,
@@ -110,7 +114,14 @@ export function BunchFollowsScreen({
     }
   };
 
-  const list = ({ rows, error }: FollowListState, empty: string) => {
+  // 탭마다 목록(이어서 받기의 초점 기준)
+  const followersRef = useRef<HTMLUListElement>(null);
+  const followingRef = useRef<HTMLUListElement>(null);
+  const list = (
+    { rows, error, more }: FollowListState,
+    empty: string,
+    listRef: RefObject<HTMLUListElement | null>,
+  ) => {
     if (error) {
       return (
         <div className="gap-s6 py-s10 flex flex-col items-center">
@@ -139,39 +150,43 @@ export function BunchFollowsScreen({
       );
     }
     return (
-      <ul className="flex flex-col">
-        {rows.map((bunch) => {
-          const label = STATUS_LABELS[bunch.followStatus];
-          const busy = allBusy || pendingIds.has(bunch.id);
-          // 나 자신(명의 번치)과 명의가 없는 회원은 버튼 없음
-          const canFollow = viewerId !== null && bunch.id !== viewerId;
-          return (
-            <li key={bunch.id}>
-              <FollowListItem
-                name={bunch.name}
-                imageSrc={bunch.imageSrc}
-                isPrivate={bunch.isPrivate}
-                privateLabel="비공개 번치"
-                action={
-                  canFollow ? (
-                    // Figma SolidButton 32: 팔로우는 진한 바탕, 팔로잉·요청됨은 회색 바탕. 처리 중은 흐리게
-                    <Button
-                      size="sm"
-                      variant={bunch.followStatus === 'none' ? 'primary' : 'secondarySubtle'}
-                      aria-label={`${bunch.name} ${label}${STATUS_ACTIONS[bunch.followStatus]}`}
-                      aria-disabled={busy || undefined}
-                      className={cn('transition-opacity', busy && 'opacity-60')}
-                      onClick={() => void toggle(bunch)}
-                    >
-                      {label}
-                    </Button>
-                  ) : undefined
-                }
-              />
-            </li>
-          );
-        })}
-      </ul>
+      <>
+        <ul ref={listRef} tabIndex={-1} className="flex flex-col outline-none">
+          {rows.map((bunch) => {
+            const label = STATUS_LABELS[bunch.followStatus];
+            const busy = allBusy || pendingIds.has(bunch.id);
+            // 나 자신(명의 번치)과 명의가 없는 회원은 버튼 없음
+            const canFollow = viewerId !== null && bunch.id !== viewerId;
+            return (
+              <li key={bunch.id}>
+                <FollowListItem
+                  name={bunch.name}
+                  imageSrc={bunch.imageSrc}
+                  isPrivate={bunch.isPrivate}
+                  privateLabel="비공개 번치"
+                  onProfileClick={onOpenBunch ? () => onOpenBunch(bunch) : undefined}
+                  action={
+                    canFollow ? (
+                      // Figma SolidButton 32: 팔로우는 진한 바탕, 팔로잉·요청됨은 회색 바탕. 처리 중은 흐리게
+                      <Button
+                        size="sm"
+                        variant={bunch.followStatus === 'none' ? 'primary' : 'secondarySubtle'}
+                        aria-label={`${bunch.name} ${label}${STATUS_ACTIONS[bunch.followStatus]}`}
+                        aria-disabled={busy || undefined}
+                        className={cn('transition-opacity', busy && 'opacity-60')}
+                        onClick={() => void toggle(bunch)}
+                      >
+                        {label}
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              </li>
+            );
+          })}
+        </ul>
+        {more ? <ListMore query={more} listRef={listRef} /> : null}
+      </>
     );
   };
 
@@ -226,10 +241,10 @@ export function BunchFollowsScreen({
                   : BUNCH_HOME_MESSAGES.followRequestsBanner(pendingRequestCount)}
               </NudgeBanner>
             ) : null}
-            {list(followers, BUNCH_HOME_MESSAGES.followersEmpty)}
+            {list(followers, BUNCH_HOME_MESSAGES.followersEmpty, followersRef)}
           </MenuTabs.Panel>
           <MenuTabs.Panel value="following" className={`px-padding-p8 ${DISSOLVE}`}>
-            {list(following, BUNCH_HOME_MESSAGES.followingEmpty)}
+            {list(following, BUNCH_HOME_MESSAGES.followingEmpty, followingRef)}
           </MenuTabs.Panel>
         </MenuTabs.Root>
       ) : (

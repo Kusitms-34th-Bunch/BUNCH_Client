@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
 import { CHARACTER_TYPES, defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import type { ListMoreQuery } from '../lib/pages';
 import type { FollowBunch } from '../lib/types';
 import { FOLLOW_STATUS } from './otherBunch';
 
@@ -61,10 +62,10 @@ export type FollowDecision = 'APPROVE' | 'REJECT';
 /** 목록 한 줄(내 번치 명의의 팔로우 상태와 취소에 쓸 관계 ID) */
 export type FollowRow = FollowBunch & { followId: string | undefined };
 
-/** 탭 한 개의 목록 상태: 받는 중(rows undefined)·실패(error)·행 */
+/** 탭 한 개의 목록 상태: 받는 중(rows undefined)·실패(error)·행과 이어서 받기(more) */
 export type FollowListState =
-  | { rows: readonly FollowRow[] | undefined; error?: undefined }
-  | { rows?: undefined; error: { retry: () => void } };
+  | { rows: readonly FollowRow[] | undefined; error?: undefined; more?: ListMoreQuery | undefined }
+  | { rows?: undefined; error: { retry: () => void }; more?: undefined };
 
 /** 요청 한 줄(승인·거절은 요청 ID로) */
 export type FollowRequestRow = Pick<FollowBunch, 'id' | 'name' | 'imageSrc' | 'isPrivate'> & {
@@ -82,7 +83,7 @@ export const card = (bunch: z.infer<typeof bunchCardSchema>) => ({
   isPrivate: bunch.visibility === 'PRIVATE',
 });
 
-export const toFollowRows = (page: RelationPage): FollowRow[] =>
+export const toFollowRows = (page: Pick<RelationPage, 'items'>): FollowRow[] =>
   page.items.map((item) => ({
     ...card(item.bunch),
     followStatus: FOLLOW_STATUS[item.followState],

@@ -1,16 +1,27 @@
-import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  type InfiniteData,
+  infiniteQueryOptions,
+  skipToken,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { sharedKeys } from '@/shared/query/keys';
 import type { BlockPage } from '../model/blocks';
 import { blockBunch, getBlockedBunches, reportBunch, unblockBunch } from '../api/blocks';
 import { unfollowBunch } from '../api/follows';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { FIRST_PAGE, nextPageOf } from '../lib/pages';
 import { bunchHomeKeys } from './keys';
 
-/** 내 번치(명의)가 차단한 번치. 명의를 모르거나 번치가 없으면 요청하지 않음 */
+/** 내 번치(명의)가 차단한 번치(쪽 단위, 목록 끝에서 이어서 받음). 명의를 모르거나 번치가 없으면 요청하지 않음 */
 export const blockedBunchesQueryOptions = (viewerId: string | null | undefined) =>
-  queryOptions({
-    queryKey: bunchHomeKeys.blocks(viewerId ?? undefined),
-    queryFn: viewerId ? ({ signal }) => getBlockedBunches(viewerId, signal) : skipToken,
+  infiniteQueryOptions({
+    queryKey: bunchHomeKeys.blockPages(viewerId ?? undefined),
+    initialPageParam: FIRST_PAGE,
+    queryFn: viewerId
+      ? ({ pageParam, signal }) => getBlockedBunches(viewerId, pageParam, signal)
+      : skipToken,
+    getNextPageParam: nextPageOf,
   });
 
 /**
@@ -47,12 +58,27 @@ export const useUnblockBunchMutation = (viewerId: string | undefined) => {
     mutationFn: async ({ targetId, blockId }: { targetId: string; blockId: string }) => {
       if (!viewerId) throw new Error('차단을 해제할 내 번치가 없습니다.');
       await unblockBunch(viewerId, targetId, blockId);
-      queryClient.setQueryData<BlockPage>(bunchHomeKeys.blocks(viewerId), (page) => {
-        if (!page) return page;
-        const items = page.items.filter((item) => String(item.id) !== blockId);
-        const removed = page.items.length - items.length;
-        return { ...page, items, totalElements: Math.max(0, page.totalElements - removed) };
-      });
+      // 진행 중인 재조회가 빼기 전 응답으로 덮지 않게 멈춘 뒤 받은 쪽마다 그 줄을 빼고, 뒤 무효화가 쪽 번호를 다시 맞춤
+      await queryClient.cancelQueries({ queryKey: bunchHomeKeys.blockPages(viewerId) });
+      queryClient.setQueryData<InfiniteData<BlockPage, number>>(
+        bunchHomeKeys.blockPages(viewerId),
+        (data) => {
+          if (!data) return data;
+          const removed = data.pages.reduce(
+            (count, page) =>
+              count + page.items.filter((item) => String(item.id) === blockId).length,
+            0,
+          );
+          return {
+            ...data,
+            pages: data.pages.map((page) => ({
+              ...page,
+              items: page.items.filter((item) => String(item.id) !== blockId),
+              totalElements: Math.max(0, page.totalElements - removed),
+            })),
+          };
+        },
+      );
       void queryClient.invalidateQueries({ queryKey: bunchHomeKeys.blocks(viewerId) });
       void queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) });
     },
