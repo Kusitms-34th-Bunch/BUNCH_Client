@@ -24,7 +24,7 @@ type ProfileSetupProps = {
 };
 
 /** 프로필 저장 실패 문구(기획 1.4.7). 닉네임 중복·금칙어는 입력란 아래 문구로 따로 안내 */
-const SAVE_FAILURE_MESSAGE = '일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요';
+const SAVE_FAILURE_MESSAGE = '일시적인 오류가 발생했어요. 다시 시도해 주세요';
 /** 닉네임 중복(`POST /members/me/registration`의 409 오류 코드) */
 const NICKNAME_TAKEN_CODE = 'USER_002';
 
