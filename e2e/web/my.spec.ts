@@ -18,7 +18,7 @@ test('이미 사용 중인 닉네임은 저장하지 않고 오류를 보여 준
   await page.goto('/my/profile');
   await page.getByRole('textbox', { name: '닉네임' }).fill('중복닉');
 
-  await expect(page.getByText('이미 사용 중인 닉네임이에요.')).toBeVisible();
+  await expect(page.getByText('이미 사용 중인 닉네임이에요')).toBeVisible();
   await expect(page.getByRole('button', { name: '프로필 수정하기' })).toBeDisabled();
   await expect(page).toHaveURL(/\/my\/profile$/);
 });
