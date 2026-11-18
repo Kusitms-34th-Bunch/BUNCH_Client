@@ -14,12 +14,12 @@ export default function CreateBunchInvitePage() {
       data-ssgoi-transition={ONBOARDING_PATHS.createBunchInvite}
       className="bg-surface-primary flex h-full min-h-0 flex-1 flex-col"
     >
-      {/* 번치를 만든 직후라 닫으면 피드로(뒤로 가기로 만들기 흐름에 돌아오지 않게 replace) */}
+      {/* 번치를 만든 직후라 닫으면 새 번치 홈으로(기능명세 2.4.4·2.4.5, 뒤로 가기로 만들기 흐름에 돌아오지 않게 replace) */}
       <BunchInvite
         inviteLink={invitation.url}
         loading={invitation.loading}
         onRetry={invitation.failed ? invitation.retry : undefined}
-        leaveHref={ONBOARDING_PATHS.feed}
+        leaveHref={ONBOARDING_PATHS.bunchHome}
       />
     </div>
   );

@@ -132,12 +132,23 @@ describe('BunchBasicInfo', () => {
     expect(screen.getByRole('radio', { name: /비공개 번치/ })).toHaveProperty('checked', false);
   });
 
-  it('공백은 이름에 쓸 수 없다', async () => {
+  it('이름 안의 공백은 쓸 수 있다(기능명세 2.2.2)', async () => {
     renderStep();
 
     await userEvent.type(nameInput(), '러닝 크루');
 
-    expect(screen.getByRole('alert').textContent).toBe(ERROR_TEXT);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(nameInput().getAttribute('aria-invalid')).toBeNull();
+  });
+
+  it('공백만 입력하면 0자로 보고 다음을 끈다', async () => {
+    renderStep();
+
+    await userEvent.type(nameInput(), '   ');
+    await userEvent.click(screen.getByRole('radio', { name: /^공개 번치/ }));
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect((nextButton() as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('한글 조합 중 자모는 오류로 보지 않고 조합이 끝났는데 자모만 남으면 오류로 본다', () => {
@@ -167,12 +178,12 @@ describe('BunchBasicInfo 번치 이름 중복 확인', () => {
     const check = vi.fn().mockResolvedValue('available');
     renderChecked(check);
 
-    await userEvent.type(nameInput(), '퇴근런클럽');
+    await userEvent.type(nameInput(), ' 퇴근런 클럽 ');
     await pickVisibility();
     expect(check).not.toHaveBeenCalled();
     expect((nextButton() as HTMLButtonElement).disabled).toBe(true);
 
-    await waitFor(() => expect(check).toHaveBeenCalledWith('퇴근런클럽'), { timeout: 2000 });
+    await waitFor(() => expect(check).toHaveBeenCalledWith('퇴근런 클럽'), { timeout: 2000 });
     await waitFor(() => expect((nextButton() as HTMLButtonElement).disabled).toBe(false));
     expect(check).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('alert')).toBeNull();

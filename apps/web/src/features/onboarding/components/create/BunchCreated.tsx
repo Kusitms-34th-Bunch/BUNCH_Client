@@ -43,7 +43,7 @@ export function BunchCreated() {
             onClick={() => router.push(ONBOARDING_PATHS.createBunchInvite)}
           />
           <div className="pt-s5">
-            <Button className="w-full" onClick={() => router.replace(ONBOARDING_PATHS.feed)}>
+            <Button className="w-full" onClick={() => router.replace(ONBOARDING_PATHS.bunchHome)}>
               내 번치로 이동하기
             </Button>
           </div>

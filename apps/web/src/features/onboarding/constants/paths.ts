@@ -15,4 +15,6 @@ export const ONBOARDING_PATHS = {
   joinBunchComplete: '/onboarding/join/complete',
   // 온보딩 「나가기」·참여 완료 뒤 이동하는 피드 탭
   feed: '/feed',
+  /** 번치 탭(기본 번치 홈). 번치를 만든 직후 초대 화면을 닫으면 만든 번치가 기본 번치라 그 홈으로 감(기능명세 2.4.4·2.4.5) */
+  bunchHome: '/bunch',
 } as const;

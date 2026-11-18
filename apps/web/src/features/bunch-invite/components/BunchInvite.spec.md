@@ -18,14 +18,14 @@
 ### 범위 외
 
 - 초대 링크 발급(`POST /bunches/{id}/invitations`, `shared/api/bunchInvitation.ts`·`shared/query/bunchInvitation.ts`)은 화면 밖에서 받아 `inviteLink`로 넘긴다. 멤버 관리 route는 `BunchMemberInvite`(`hooks/useMyBunchInvitation.ts`)가 지금 번치(내 기본 번치)의 링크를, 번치 만들기 직후 route는 `useCreatedBunchInvitation`(`features/onboarding`)이 만든 번치의 링크를 넘긴다. 받지 못하면 「다시 불러오기」로 다시 받는다.
-- 화면 전환: 완료 → 초대는 SSGOI `slide`(Ease Out·이동 시간 300ms)를 적용하고 뒤로 가기는 반대 방향으로 이동한다. 피드로 나가는 이동에는 전환을 등록하지 않았다. 설정과 검증 범위는 `docs/architecture/motion.md`를 따른다.
+- 화면 전환: 완료 → 초대는 SSGOI `slide`(Ease Out·이동 시간 300ms)를 적용하고 뒤로 가기는 반대 방향으로 이동한다. 번치 홈으로 나가는 이동에는 전환을 등록하지 않았다. 설정과 검증 범위는 `docs/architecture/motion.md`를 따른다.
 - iPhone 상태 바·홈 인디케이터(기기 요소. Safe Area는 `AppFrame`이 처리한다).
 
 ## Route와 접근
 
 - Path·params·search: `/onboarding/create/invite`(번치 만들기), `/bunch/members/invite`(번치 관리). params와 search는 없다. 아래 draft provider·완료 화면 설명은 온보딩 route에만 해당하고, `/bunch/members/invite`는 draft provider 밖이다.
 - 접근 권한·guard: 번치 만들기 직후 route는 만든 번치(draft의 `createdBunch`)가 없으면(직접 진입·새로고침) 그릴 때 `useCreateBunchGuard`가 번치 만들기 첫 단계로 보낸다. 멤버 관리 route는 아직 접근 조건이 없다.
-- Layout·redirect·navigation: `create/layout.tsx`의 draft provider 안이고 `(steps)`의 헤더·진행 표시줄 틀 밖이다. `PageShell`을 한 번 쓴다. 완료 화면에서 `router.push`로 들어오며 뒤로 가기는 완료 화면으로 돌아간다(`createdBunch` 기록, `BunchCreated.spec.md`). 닫기(X)와 「나중에 할게요」는 `leaveHref`로 정한다. 번치 만들기에서는 `router.replace`로 피드(임시 `/`)로 이동해 뒤로 가기로 돌아오지 않는다. `/bunch/members/invite`는 `backOnLeave`라 이전 화면(멤버 관리·더보기 메뉴)으로 돌아가고, 기록이 없으면 멤버 관리로 `replace`한다. 메뉴·멤버 관리 ↔ 초대는 메뉴 하위 화면과 같은 미는 slide 300ms다.
+- Layout·redirect·navigation: `create/layout.tsx`의 draft provider 안이고 `(steps)`의 헤더·진행 표시줄 틀 밖이다. `PageShell`을 한 번 쓴다. 완료 화면에서 `router.push`로 들어오며 뒤로 가기는 완료 화면으로 돌아간다(`createdBunch` 기록, `BunchCreated.spec.md`). 닫기(X)와 「나중에 할게요」는 `leaveHref`로 정한다. 번치 만들기에서는 `router.replace`로 번치 탭(`/bunch`, 만든 번치가 기본 번치)으로 이동해(기능명세 2.4.4·2.4.5) 뒤로 가기로 돌아오지 않는다. `/bunch/members/invite`는 `backOnLeave`라 이전 화면(멤버 관리·더보기 메뉴)으로 돌아가고, 기록이 없으면 멤버 관리로 `replace`한다. 메뉴·멤버 관리 ↔ 초대는 메뉴 하위 화면과 같은 미는 slide 300ms다.
 
 ## 상태와 흐름
 
@@ -67,6 +67,6 @@
 - 토스트 노출 시간 (확정, 2026-10-19): 설계서의 Toast Interaction대로 3초다(`Toast.spec.md`). 등장 Fade In·Ease Out 200ms, 퇴장 Fade Out·Ease In 200ms는 sonner 기본 전환이라 맞추지 않았다.
 - 안내 문구 마침표 (확정 필요): 기본 상태 「…함께할 수 있어요.」, 복사됨 상태 「…초대할 수 있어요」로 다르다. 같은 화면이라면 어느 쪽인지 디자이너 확인. 지금은 기본 상태 문구를 쓴다.
 - 링크 값 (미정): 설계서의 기본 상태 입력창은 자리 표시 문구(`reqsaieiei///…`)다. 링크 발급 전 상태를 어떻게 보일지 정해야 한다.
-- 닫기·「나중에 할게요」 도착지 (제안): 설계서는 "생성된 번치 홈 화면"이다. 번치 홈이 없어 피드(`/`)로 임시 이동한다.
+- 닫기·「나중에 할게요」 도착지 (확정): 기능명세 2.4.4·2.4.5대로 새로 만든 번치의 홈(`/bunch`)이다(#453). 서버가 만든 번치를 기본 번치로 바꾼다는 가정(가짜 서버와 같음)에 기대며 실서버 확인 전이다.
 - 화면 전환 애니메이션 (구현, 실기기 미검증): 완료 화면 → 이 화면은 Slide In·왼쪽·300ms다. 브라우저의 뒤로 가기(스와이프 포함)는 방향 타입이 붙지 않아 방향 전환이 없다(`docs/architecture/motion.md`). 곡선·시간은 `BunchStartSelect.spec.md`의 확인할 항목(설계서와 다름)을 따른다.
 - `backOnLeave`는 `window.history.length`로만 판단한다. 외부 사이트에서 같은 탭으로 `/bunch/members/invite`에 들어오면 닫기가 앱 밖으로 나간다(다른 상세 화면과 같은 한계).
