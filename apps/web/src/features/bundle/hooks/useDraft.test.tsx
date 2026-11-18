@@ -10,7 +10,7 @@ import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { PlaceResult } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
-import { applyBundleLocationIntent, createBundle } from '../api/bundles';
+import { applyBundleLocationIntent, changeBundlePhotos, createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import { bundleKeys } from '../queries/keys';
@@ -807,6 +807,66 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     );
   });
 
+  it('갤러리 부분 추가에서 담기지 않은 사진을 빼도 뒤이은 사진 빼기는 서버에 보낸다', async () => {
+    const sample = mockDb.get().photos.find((photo) => photo.bunchId === MOCK_BUNCH_ID)!;
+    const seeded = Object.values(MOCK_PHOTO_IDS);
+    // 18장 초안 + 다른 멤버가 넣을 1장 + 내가 갤러리에서 가져올 A·B
+    const extra = Array.from({ length: 18 - seeded.length + 3 }, (_, index) => 93001 + index);
+    mockDb.update((current) => ({
+      ...current,
+      photos: [...current.photos, ...extra.map((photoId) => ({ ...sample, photoId }))],
+    }));
+    const inBundle = [...seeded, ...extra.slice(0, 18 - seeded.length)];
+    const [otherMember, a, b] = extra.slice(18 - seeded.length) as [number, number, number];
+    const id = (
+      await createBundle(bunchId, inBundle.map(String), createIdempotencyKey(), [String(memberA)])
+    ).id;
+    const { result } = renderDraft(id);
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+    const current = ready(result.current.state).draft.photos;
+    // 내 화면은 아직 18장인데 서버에서는 다른 멤버가 한 장을 먼저 넣어 19장
+    await changeBundlePhotos({
+      bunchId,
+      bundleId: id,
+      addPhotoIds: [String(otherMember)],
+      removeBundlePhotoIds: [],
+      mode: 'DRAFT',
+      idempotencyKey: createIdempotencyKey(),
+    });
+    const galleryPhoto = (photoId: number) => ({
+      id: `temp-${photoId}`,
+      src: '/mock/photos/S1.jpg',
+      alt: '갤러리 사진',
+      takenAt: null,
+      uploaderId: String(me),
+      sourcePhotoId: String(photoId),
+    });
+    const removedExisting = current[0]!;
+
+    act(() => {
+      void result.current.actions.replacePhotos([...current, galleryPhoto(a), galleryPhoto(b)], {
+        partialAdd: true,
+        requested: 2,
+      });
+      // 응답 전에 B(서버에서 거절될 사진)와 기존 사진 C를 뺌
+      void result.current.actions.removePhoto(`temp-${b}`);
+      void result.current.actions.removePhoto(removedExisting.id);
+    });
+
+    await waitFor(
+      () =>
+        expect(serverBundle(id)?.photos.map((photo) => photo.photoId)).not.toContain(
+          Number(removedExisting.sourcePhotoId),
+        ),
+      SAVE_WAIT,
+    );
+    const onServer = serverBundle(id)!.photos.map((photo) => photo.photoId);
+    expect(onServer).toContain(a);
+    expect(onServer).not.toContain(b);
+    expect(onServer).toHaveLength(19);
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.photosChangeFailed);
+  });
+
   it('갤러리 가져오기(partialAdd)는 남은 자리까지만 담고 담긴 장수를 알린다(기능명세서 4.3.14)', async () => {
     // 사진함에 원본을 더 넣고 19장짜리 초안을 만듦(다른 멤버가 이미 자리를 채운 상황)
     const sample = mockDb.get().photos.find((photo) => photo.bunchId === MOCK_BUNCH_ID)!;
@@ -838,6 +898,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
       () =>
         void result.current.actions.replacePhotos([...current, ...fromGallery], {
           partialAdd: true,
+          requested: fromGallery.length,
         }),
     );
 

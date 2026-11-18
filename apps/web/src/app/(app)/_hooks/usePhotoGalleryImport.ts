@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import type { DraftPhoto } from '@/features/bundle/lib/types';
 import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
-import { BUNDLE_MESSAGES, MAX_PHOTOS } from '@/features/bundle/constants/messages';
+import { BUNDLE_MESSAGES } from '@/features/bundle/constants/messages';
 import { toDraftPhoto } from '@/features/bundle/lib/photoAdd';
 import { PHOTO_BOX_MESSAGES } from '@/features/photo-box/constants/messages';
 import { usePhotoUpload } from '@/features/photo-box/hooks/usePhotoUpload';
@@ -116,14 +116,15 @@ export function usePhotoGalleryImport({
     if (missing) toast(BUNDLE_MESSAGES.photosChangeFailed);
     const { photos: current, replacePhotos: replace } = latest.current;
     const linked = new Set(current.flatMap((photo) => photo.sourcePhotoId ?? []));
-    const room = Math.max(0, MAX_PHOTOS - current.length);
-    const candidates = sources.filter((source) => !linked.has(source.id));
-    const added = candidates.slice(0, room).map(toDraftPhoto);
-    // 올리는 사이 다른 멤버가 자리를 다 채웠으면 붙이지 않고 알림. 일부만 들어가면 담긴 장수 안내는 결과를 아는 쪽(작성·수정 화면)이 한 번만 함(기능명세서 4.3.14 로직 4)
-    if (added.length === 0) {
-      if (candidates.length > 0) toast(BUNDLE_MESSAGES.photosAddedUpTo(0));
-    } else if (
-      replace([...current, ...added], { partialAdd: true, requested: candidates.length }) === false
+    const candidates = sources.filter((source) => !linked.has(source.id)).map(toDraftPhoto);
+    // 자리는 이 hook이 자르지 않음: 공동 편집은 서버가 남은 자리만큼 담고, 수정 화면은 그 화면이 20장에 맞춰 자름. 담긴 장수 안내도 그쪽이 한 번만 함(기능명세서 4.3.14 로직 4)
+    // 찾지 못한 사진이 있으면 그 안내가 덮이지 않게 담긴 장수 안내는 하지 않음
+    if (
+      candidates.length > 0 &&
+      replace([...current, ...candidates], {
+        partialAdd: true,
+        requested: missing ? undefined : candidates.length,
+      }) === false
     ) {
       // 사진함에는 올라갔는데 번들에는 붙이지 못했으면(연결 끊김) 알림
       toast(BUNDLE_MESSAGES.photosChangeFailed);

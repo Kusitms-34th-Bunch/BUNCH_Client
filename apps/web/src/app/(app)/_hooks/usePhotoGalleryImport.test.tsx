@@ -313,37 +313,71 @@ describe('usePhotoGalleryImport', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('올리는 사이 자리가 차면 들어갈 만큼만 붙이고, 고른 장수를 넘겨 담긴 장수 안내는 화면이 한 번만 하게 한다(기능명세서 4.3.14)', async () => {
-    bridge.pickGalleryImages.mockResolvedValue(picked('p1', 'p2'));
-    serveUploads();
-    // 고를 때는 두 자리가 남았지만 올리는 사이 19장이 됨
-    const existing = Array.from({ length: 19 }, (_, index) =>
-      draftPhoto(`draft-e${index}`, `e${index}`),
+  // 업로드하는 동안 번들 사진이 바뀌는 상황(다른 멤버가 자리를 채움)을 만들기 위해 읽기를 붙잡아 둠
+  const renderWhileUploading = (initial: readonly DraftPhoto[]) => {
+    let release!: () => void;
+    bridge.readPickedPhoto.mockImplementation(
+      (id: string) => new Promise((resolve) => (release = () => resolve(imageOf(id)))),
     );
-    const { result, replacePhotos } = render({ photos: existing });
+    const replacePhotos =
+      vi.fn<
+        (
+          _photos: readonly DraftPhoto[],
+          _options?: { partialAdd?: boolean | undefined; requested?: number | undefined },
+        ) => boolean | void
+      >();
+    const view = renderHook(
+      ({ photos }: { photos: readonly DraftPhoto[] }) =>
+        usePhotoGalleryImport({
+          bunchId,
+          boxPhotos: [boxPhoto('9001')],
+          photos,
+          replacePhotos,
+        }),
+      {
+        initialProps: { photos: initial },
+        wrapper: createQueryWrapper(createTestQueryClient()),
+      },
+    );
+    return { ...view, replacePhotos, release: () => release() };
+  };
+  const filled = (count: number) =>
+    Array.from({ length: count }, (_, index) => draftPhoto(`draft-e${index}`, `e${index}`));
 
-    act(() => result.current.importFromGallery(2));
+  it('올리는 사이 다른 멤버가 자리를 채워도 고른 사진을 자르지 않고 넘겨, 담을 장수와 안내는 받는 쪽이 정하게 한다(기능명세서 4.3.14)', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(picked('p1'));
+    serveUploads();
+    const { result, rerender, replacePhotos, release } = renderWhileUploading(filled(19));
+
+    act(() => result.current.importFromGallery(1));
+    await waitFor(() => expect(result.current.importing).toBe(1));
+    // 올라가는 동안 20장이 됨
+    rerender({ photos: filled(20) });
+    release();
     await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1));
 
     const [next, options] = replacePhotos.mock.calls[0]!;
-    expect(next.map((photo) => photo.sourcePhotoId).slice(19)).toEqual(['9001']);
-    expect(options).toEqual({ partialAdd: true, requested: 2 });
+    // 붙일 때의 최신 구성(20장) 뒤에 고른 사진을 그대로 붙여 넘김(공동 편집은 서버가 남은 자리만큼 담음)
+    expect(next).toHaveLength(21);
+    expect(next.at(-1)?.sourcePhotoId).toBe('9001');
+    expect(options).toEqual({ partialAdd: true, requested: 1 });
+    // 자리 안내는 이 hook이 띄우지 않음(받는 쪽이 한 번만)
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('올리는 사이 자리가 다 차면 붙이지 않고 「사진은 최대 20장까지 담을 수 있어요.」를 알린다', async () => {
+  it('올리는 사이 다른 멤버가 사진을 빼서 자리가 생기면 그 구성 뒤에 붙인다', async () => {
     bridge.pickGalleryImages.mockResolvedValue(picked('p1'));
     serveUploads();
-    const existing = Array.from({ length: 20 }, (_, index) =>
-      draftPhoto(`draft-e${index}`, `e${index}`),
-    );
-    const { result, replacePhotos } = render({ photos: existing });
+    const { result, rerender, replacePhotos, release } = renderWhileUploading(filled(20));
 
-    // 고를 때는 한 자리가 남아 있었던 상황
     act(() => result.current.importFromGallery(1));
-    await waitFor(() => expect(result.current.importing).toBeUndefined());
+    await waitFor(() => expect(result.current.importing).toBe(1));
+    rerender({ photos: filled(18) });
+    release();
+    await waitFor(() => expect(replacePhotos).toHaveBeenCalledTimes(1));
 
-    expect(replacePhotos).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('사진은 최대 20장까지 담을 수 있어요.');
+    const [next] = replacePhotos.mock.calls[0]!;
+    expect(next).toHaveLength(19);
+    expect(next.at(-1)?.sourcePhotoId).toBe('9001');
   });
 });
