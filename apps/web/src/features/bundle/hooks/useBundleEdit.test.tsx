@@ -1,7 +1,8 @@
+import type * as DesignSystem from '@app/design-system';
 import { onlineManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
@@ -13,6 +14,13 @@ import type { DraftPhoto, PlaceResult } from '../lib/types';
 import { createBundle, getBundle } from '../api/bundles';
 import { bundleKeys } from '../queries/keys';
 import { type BundleEditState, useBundleEdit } from './useBundleEdit';
+
+type ToastArgs = Parameters<typeof DesignSystem.toast>;
+const toast = vi.fn<(..._args: ToastArgs) => void>();
+vi.mock('@app/design-system', async (importOriginal) => ({
+  ...(await importOriginal<typeof DesignSystem>()),
+  toast: (...args: ToastArgs) => toast(...args),
+}));
 
 const bunchId = String(MOCK_BUNCH_ID);
 const PUBLISHED_ID = '1';
@@ -249,6 +257,33 @@ describe('useBundleEdit 편집', () => {
     expect(ready(result.current.state).draft.photos[0]?.id).toBe(original.id);
     act(() => void result.current.actions.removePhoto(`draft-${S1}`));
     expect(ready(result.current.state).dirty).toBe(false);
+  });
+
+  it('갤러리에서 고른 사진이 자리에 맞춰 덜 담기면 담긴 장수를 알린다(기능명세서 4.3.14)', async () => {
+    toast.mockClear();
+    const { result } = await renderReady();
+    const current = ready(result.current.state).draft.photos;
+
+    // 두 장을 골랐지만 한 장만 붙임
+    act(
+      () =>
+        void result.current.actions.replacePhotos([...current, newPhoto(S1)], {
+          partialAdd: true,
+          requested: 2,
+        }),
+    );
+    expect(toast).toHaveBeenCalledWith('사진은 최대 20장까지 담을 수 있어요. 1장만 추가했어요.');
+
+    // 고른 만큼 다 붙으면 알리지 않음
+    toast.mockClear();
+    act(
+      () =>
+        void result.current.actions.replacePhotos(
+          [...ready(result.current.state).draft.photos, newPhoto(S2)],
+          { partialAdd: true, requested: 1 },
+        ),
+    );
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('위치는 최대 3개이고 같은 장소는 더하지 않으며 더한 줄도 바꾸고 옮기고 지울 수 있다', async () => {

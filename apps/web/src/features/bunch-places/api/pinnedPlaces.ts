@@ -4,11 +4,15 @@ import { toWireId } from '@/shared/api/ids';
 import { ALL_MEMBERS } from '../lib/types';
 import { pinnedPlacesResponseSchema, toPinnedPlaces } from '../model/pinnedPlaces';
 
-// ponytail: 첫 쪽(최대 50개)만 받음, 이어 불러오기(8.1.3)는 nextCursor로 infinite query 전환
+// 한 번에 받는 장수(서버 최대 50). 다음 쪽은 응답의 nextCursor로 이어 받음(기능명세서 8.1.3 상세 5)
 const PAGE_SIZE = 50;
 
-/** 지금 번치의 콕한 장소(명세 005). 「전체」가 아니면 처음 콕한 멤버로 거름 */
-export const getPinnedPlaces = async (memberId: string, signal?: AbortSignal) => {
+/** 지금 번치의 콕한 장소(명세 005). 「전체」가 아니면 처음 콕한 멤버로 거름. `cursor`가 없으면 첫 쪽 */
+export const getPinnedPlaces = async (
+  memberId: string,
+  cursor: string | undefined,
+  signal?: AbortSignal,
+) => {
   const wireMemberId = memberId === ALL_MEMBERS ? undefined : toWireId(memberId);
   // 잘못된 id로 필터 없이 받으면 칩과 목록이 어긋나 요청 전에 막음
   if (memberId !== ALL_MEMBERS && wireMemberId === undefined) {
@@ -16,7 +20,11 @@ export const getPinnedPlaces = async (memberId: string, signal?: AbortSignal) =>
   }
   const data = await requestData(
     bffApi.get('pinned-places', {
-      searchParams: { size: PAGE_SIZE, ...(wireMemberId ? { memberId: wireMemberId } : {}) },
+      searchParams: {
+        size: PAGE_SIZE,
+        ...(wireMemberId ? { memberId: wireMemberId } : {}),
+        ...(cursor ? { cursor } : {}),
+      },
       signal: signal ?? null,
     }),
     pinnedPlacesResponseSchema,

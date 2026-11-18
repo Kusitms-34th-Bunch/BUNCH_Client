@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import type { Gender } from '../components/profile/GenderField';
 import {
-  BIRTH_YEAR_MIN,
-  getBirthYearMax,
+  BIRTH_YEAR_ERROR_MESSAGE,
   isBirthYearInRange,
   isCompleteBirthYear,
   isValidBirthYear,
@@ -76,11 +75,11 @@ export function useProfileFields(
   const currentYear = new Date().getFullYear();
   const birthYearComplete = isCompleteBirthYear(birthYear);
   const birthYearIncomplete = birthYear !== '' && !birthYearComplete;
-  // 4자리를 다 쓴 뒤 범위를 벗어났거나, 포커스를 벗어났는데 4자리가 아닐 때 안내
+  // 4자리를 다 쓴 뒤 범위를 벗어났거나, 포커스를 벗어났는데 4자리가 아닐 때 안내(두 경우 같은 문구, 기능명세서 1.4.5 상세 5·7.2.6)
   const birthYearError =
     (birthYearComplete && !isBirthYearInRange(birthYear, currentYear)) ||
     (birthYearIncomplete && birthYearBlurred)
-      ? `${BIRTH_YEAR_MIN}년부터 ${getBirthYearMax(currentYear)}년 사이로 입력해 주세요.`
+      ? BIRTH_YEAR_ERROR_MESSAGE
       : undefined;
 
   return {

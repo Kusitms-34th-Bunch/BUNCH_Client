@@ -60,6 +60,8 @@ describe('BundleDraftVisibility', () => {
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
     expect(toastAfterNavigation).toHaveBeenCalledWith(BUNDLE_MESSAGES.published);
+    // 명세 문구(기능명세서 4.3.12 상세 6)
+    expect(BUNDLE_MESSAGES.published).toBe('번들을 업로드했어요.');
   });
 
   it('돌아갈 기록이 없으면 뒤로 가기가 작성 화면으로 이동한다', async () => {

@@ -239,7 +239,7 @@ describe('내보내기', () => {
 });
 
 describe('스스로 나가기', () => {
-  it('일반 멤버는 「번들에서 나가시겠어요?」 확인 뒤 나간다', async () => {
+  it('일반 멤버는 「번들에서 나갈까요?」 확인 뒤 나간다', async () => {
     render(<Harness viewer={normal} />);
 
     await userEvent.click(screen.getByRole('button', { name: '번들에서 나가기' }));
@@ -257,8 +257,8 @@ describe('스스로 나가기', () => {
     await userEvent.click(screen.getByRole('button', { name: '번들에서 나가기' }));
     const dialog = await screen.findByRole('alertdialog');
 
-    expect(within(dialog).getByText(/작성한 코멘트가 삭제되며,/).textContent).toBe(
-      '번들에서 나가면 작성한 코멘트가 삭제되며,\n복구할 수 없어요.',
+    expect(within(dialog).getByText(/작성한 코멘트는 삭제되며,/).textContent).toBe(
+      '작성한 코멘트는 삭제되며,\n다시 참여해도 복구할 수 없어요.',
     );
   });
 
