@@ -201,6 +201,9 @@ export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
       // iOS 기본값(false)에서는 <video playsInline>이 무시되고, 두 설정 모두 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 소리 있는 영상을 넣을 때 자동 재생 여부를 함께 고려
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
+      // 웹이 코드로 입력란에 초점을 줄 때도 키보드를 띄움(댓글 말풍선·답글 남기기). iOS 기본값(true)이면 커서만 들어가고 키보드가 올라오지 않음
+      // 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 화면 진입 때 입력란에 초점을 주면 키보드가 바로 뜸(입력이 목적인 번들 상세 말풍선 진입 `?focus=comments`만 의도한 예외)
+      keyboardDisplayRequiresUserAction={false}
       // 스플래시는 웹의 appReady(도착 화면 결정)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
       // 새 문서를 열면 이전 문서가 남긴 네이티브 UI(플로팅 버튼) 정리
       onLoadStart={onLoadStart}

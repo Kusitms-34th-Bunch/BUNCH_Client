@@ -3,13 +3,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
+import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchHomeDetail, BunchSummary } from '../lib/types';
 import { accessNoticeIdOf, toBunchHomeDetail, toBunchSummaries } from '../model/bunchHome';
 import {
   bunchHomeQueryOptions,
   draftBundlesQueryOptions,
-  myBunchesQueryOptions,
   publishedBundlesQueryOptions,
 } from '../queries/bunchHome';
 

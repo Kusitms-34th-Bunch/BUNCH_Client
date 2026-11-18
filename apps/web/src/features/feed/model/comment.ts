@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CHARACTER_TYPES } from '@/shared/lib/bunchProfile';
+import { CHARACTER_TYPES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { FeedComment } from '../lib/types';
 import { badgeColorOf, formatCommentDate } from '../lib/comments';
 import { imageOrUndefined } from './feed';
@@ -46,7 +46,8 @@ export const toFeedComment = (item: CommentItemResponse): FeedComment => {
   return {
     id: String(item.id),
     author: item.author.nickname,
-    avatarSrc: imageOrUndefined(item.author.imageUrl),
+    // 사진이 없는 작성자는 다른 화면과 같은 기본 이미지(비우면 ProfileImage가 배경색 원만 그림)
+    avatarSrc: imageOrUndefined(item.author.imageUrl) ?? DEFAULT_PROFILE_IMAGE,
     bunchName: item.badge?.name,
     bunchColor: item.badge ? badgeColorOf(characterTypeOf(item.badge.characterType)) : undefined,
     date: Number.isNaN(time) ? undefined : formatCommentDate(time),

@@ -3,6 +3,7 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '@/features/photo-box/lib/types';
 import { toDomainId } from '@/shared/api/ids';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -121,9 +122,11 @@ export const toRecommendationDetail = (
         members.set(id, {
           id,
           name: uploader.nickname ?? '',
-          ...(uploader.imageUrl && isSafeImageUrl(uploader.imageUrl)
-            ? { avatarSrc: uploader.imageUrl }
-            : {}),
+          // 사진이 없는 업로더는 사진함 멤버와 같은 기본 이미지(비우면 배경색 원만 그림)
+          avatarSrc:
+            uploader.imageUrl && isSafeImageUrl(uploader.imageUrl)
+              ? uploader.imageUrl
+              : DEFAULT_PROFILE_IMAGE,
         });
       }
     }

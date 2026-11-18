@@ -1,7 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_MEMBER_IDS } from '@/mocks/db/seed';
@@ -87,6 +87,44 @@ describe('AdminTransferScreen', () => {
       'false',
     );
     expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+  });
+
+  it('대표 사진이 없는 번치는 소속 번치 목록의 타입으로 기본 이미지를 고르고, 사진이 있으면 그 사진', async () => {
+    mockDb.update((state) => ({
+      ...state,
+      bunches: state.bunches.map((bunch) =>
+        bunch.name === '여행쥬아' ? { ...bunch, imageUrl: '/mock/bunches/travel.jpg' } : bunch,
+      ),
+    }));
+    await renderScreen();
+
+    const imageOf = (name: string) => screen.getByRole('button', { name }).querySelector('img');
+    expect(imageOf('여행쥬아')).toHaveAttribute('src', '/mock/bunches/travel.jpg');
+    // 퇴근런클럽은 TYPE_2(탈퇴 확인 응답에는 타입이 없음)
+    await waitFor(() =>
+      expect(imageOf('퇴근런클럽')).toHaveAttribute('src', '/images/default-bunch/type-2.svg'),
+    );
+  });
+
+  it('소속 번치 목록을 받지 못해도 화면은 열리고 대표 사진이 없는 번치는 타입 1 기본 이미지', async () => {
+    server.use(http.get('/api/members/me/bunches', () => fail(500, 'COMMON_500')));
+    await renderScreen();
+
+    const image = screen.getByRole('button', { name: '퇴근런클럽' }).querySelector('img');
+    expect(image).toHaveAttribute('src', '/images/default-bunch/type-1.svg');
+  });
+
+  it('소속 번치 목록 응답이 늦어도 넘길 번치는 기다리지 않고 보이고, 이미지는 타입 1로 먼저 보인다', async () => {
+    server.use(
+      http.get('/api/members/me/bunches', async () => {
+        await delay('infinite');
+        return HttpResponse.json({});
+      }),
+    );
+    await renderScreen();
+
+    const image = screen.getByRole('button', { name: '퇴근런클럽' }).querySelector('img');
+    expect(image).toHaveAttribute('src', '/images/default-bunch/type-1.svg');
   });
 
   it('번치를 펼치면 나를 뺀 멤버를 고를 수 있고, 공동 관리자는 역할도 읽힌다', async () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import { commentItemSchema, toFeedComment } from './comment';
 
 const item = {
@@ -17,11 +18,11 @@ const item = {
 };
 
 describe('toFeedComment', () => {
-  it('서버 댓글을 화면 한 줄로 바꾸고 권한은 그대로 둔다', () => {
+  it('서버 댓글을 화면 한 줄로 바꾸고 권한은 그대로 두며, 사진이 없는 작성자는 기본 프로필 이미지', () => {
     expect(toFeedComment(commentItemSchema.parse(item))).toEqual({
       id: '301',
       author: '뭉치',
-      avatarSrc: undefined,
+      avatarSrc: DEFAULT_PROFILE_IMAGE,
       bunchName: '여행가조',
       bunchColor: 'pink',
       date: '2026.11.07',
@@ -34,6 +35,16 @@ describe('toFeedComment', () => {
       canReply: true,
       canReport: false,
     });
+  });
+
+  it('안전하지 않은 작성자 이미지 주소도 기본 프로필 이미지로 둔다', () => {
+    const comment = toFeedComment(
+      commentItemSchema.parse({
+        ...item,
+        author: { ...item.author, imageUrl: 'javascript:alert(1)' },
+      }),
+    );
+    expect(comment.avatarSrc).toBe(DEFAULT_PROFILE_IMAGE);
   });
 
   it('답글은 원댓글 ID, 삭제 자리는 날짜·배지 없음, 모르는 성격은 회색', () => {

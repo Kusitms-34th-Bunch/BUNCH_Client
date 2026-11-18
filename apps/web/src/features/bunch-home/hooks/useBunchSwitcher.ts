@@ -4,15 +4,12 @@ import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
+import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import type { BunchSummary } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
 import { toBunchSummaries } from '../model/bunchHome';
-import {
-  myBunchesQueryOptions,
-  useDeleteBunchNoticeMutation,
-  useSwitchBunchMutation,
-} from '../queries/bunchHome';
+import { useDeleteBunchNoticeMutation, useSwitchBunchMutation } from '../queries/bunchHome';
 import { useBunchSwitchSheet } from './useBunchSwitchSheet';
 
 type CurrentBunch = { id: string; name: string; imageSrc?: string | undefined };

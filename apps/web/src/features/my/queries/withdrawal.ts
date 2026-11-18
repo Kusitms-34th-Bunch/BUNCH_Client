@@ -1,9 +1,12 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { getMemberships, transferOwner } from '@/shared/api/bunchMemberships';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
+import { DEFAULT_PROFILE_IMAGE, defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import { sharedKeys } from '@/shared/query/keys';
+import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import { clearPersistedQueryStorage } from '@/shared/query/persistence';
 import type { OwnedBunch } from '../lib/types';
 import { getWithdrawalCheck, withdraw } from '../api/withdrawal';
@@ -37,7 +40,8 @@ export const ownedBunchesQueryOptions = () =>
                 id: toDomainId(member.membershipId),
                 // 닉네임이 없으면(탈퇴 직후 등) 선택지 이름이 비지 않게 대체 이름
                 name: member.nickname || MY_MESSAGES.transfer.unknownMember,
-                imageSrc: safeImage(member.imageUrl),
+                // 사진이 없으면 기본 프로필 이미지(비우면 배경색 원만 그림)
+                imageSrc: safeImage(member.imageUrl) ?? DEFAULT_PROFILE_IMAGE,
                 role: member.role === 'CO_OWNER' ? 'coOwner' : 'member',
               })),
           };
@@ -47,6 +51,25 @@ export const ownedBunchesQueryOptions = () =>
     },
     staleTime: 0,
   });
+
+/**
+ * 넘길 번치의 표시 이미지: 대표 사진(탈퇴 확인 응답) → 소속 번치 목록의 대표 사진 → 그 번치 타입의 기본 이미지 → 타입 1
+ * 탈퇴 확인 응답에 타입이 없어 소속 번치 목록(번치 홈과 같은 캐시)에서 찾음. 탈퇴 확인·멤버 조회가 이 목록을 기다리지 않도록 따로 읽고,
+ * 받기 전·실패하면 받아 둔(복원한) 목록이나 타입 1로 먼저 보이고 받으면 이미지만 바뀜
+ */
+export const useOwnedBunchImage = () => {
+  const { data } = useQuery({ ...myBunchesQueryOptions(), retry: false });
+  const byId = useMemo(
+    () => new Map(data?.activeBunches.map(({ bunch }) => [toDomainId(bunch.id), bunch])),
+    [data],
+  );
+  return (bunch: OwnedBunch) => {
+    const profile = byId.get(bunch.id);
+    return (
+      bunch.imageSrc ?? safeImage(profile?.imageUrl) ?? defaultBunchImage(profile?.characterType)
+    );
+  };
+};
 
 /** 넘겨야 할 번치를 지금 서버 값으로 새로 받는 함수(탈퇴 안내의 「다음」·「탈퇴하기」 직전 확인) */
 export const useFetchOwnedBunches = () => {
