@@ -2,7 +2,7 @@
 
 import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { CameraButton, LabeledTextField, ProfileImage } from '@app/design-system/web';
-import { type ReactNode, useEffect, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
@@ -168,16 +168,15 @@ function ProfileForm({
     (prohibited.name !== undefined && prohibited.name.normalize('NFC').trim() === normalized);
   const descriptionProhibited =
     prohibited.description !== undefined && prohibited.description === description;
-  // 저장 거부로 저장하기가 비활성이 되면 초점을 거부된 칸(이름 먼저)으로 옮겨 바로 고칠 수 있게 함(안내는 이미 그려진 뒤)
+  // 저장 거부로 저장하기가 비활성이 되면 초점을 안내가 남은 칸(둘 다면 이름 먼저)으로 옮겨 바로 고칠 수 있게 함(안내는 이미 그려진 뒤)
+  // 응답을 기다리는 사이 고친 칸은 안내가 없어 고르지 않음. 새 거부 응답을 받을 때 한 번만 옮김
+  const handledRejection = useRef<ProhibitedValues>(NO_PROHIBITED);
   useEffect(() => {
-    const target =
-      prohibited.name !== undefined
-        ? nameId
-        : prohibited.description !== undefined
-          ? descriptionId
-          : undefined;
+    if (handledRejection.current === prohibited) return;
+    handledRejection.current = prohibited;
+    const target = nameProhibited ? nameId : descriptionProhibited ? descriptionId : undefined;
     if (target) document.getElementById(target)?.focus();
-  }, [prohibited, nameId, descriptionId]);
+  }, [prohibited, nameProhibited, descriptionProhibited, nameId, descriptionId]);
   // 앞뒤 공백만 바뀐 이름은 서버에 같은 이름으로 가므로 바뀐 것으로 보지 않음
   const changed =
     normalized !== initial.name ||

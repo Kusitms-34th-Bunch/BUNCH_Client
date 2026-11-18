@@ -201,6 +201,27 @@ describe('BunchProfileEditScreen', () => {
     expect(saveButton()).toHaveProperty('disabled', true);
   });
 
+  it('응답을 기다리는 사이 이름을 고쳤으면 거부 안내가 남은 소개 칸으로 초점을 옮긴다', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <BunchProfileEditScreen initial={privateBunch} onBack={vi.fn()} onSave={onSave} />,
+    );
+    // 지금 이름·소개로 저장했다고 보고, 응답 전에 이름을 고침
+    await user.type(screen.getByRole('textbox', { name: '번치 이름' }), '2');
+
+    rerender(
+      <BunchProfileEditScreen
+        initial={privateBunch}
+        onBack={vi.fn()}
+        onSave={onSave}
+        prohibited={{ name: privateBunch.name, description: privateBunch.description }}
+      />,
+    );
+
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: '한 줄 소개' }));
+    expect(screen.queryAllByText('사용할 수 없는 번치 이름이에요')).toHaveLength(0);
+  });
+
   it('폼을 연 뒤 받은 값이 바뀌어도 입력·비교·저장 버전은 연 때 그대로다', async () => {
     const user = userEvent.setup();
     const { rerender } = render(
