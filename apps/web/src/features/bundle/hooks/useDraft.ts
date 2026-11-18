@@ -844,6 +844,8 @@ export function useDraft(draftId: string | undefined): {
       enqueuePhotoOp(async (discarded) => {
         const add = added.flatMap((photo) => (photo.sourcePhotoId ? [photo.sourcePhotoId] : []));
         const remove = removed.flatMap((photo) => serverPhotoId(photo) ?? []);
+        // 다시 담으려는 원본은 예전 거절 기록을 지우고 이번 결과로 정함
+        for (const id of add) rejectedSources.current.delete(id);
         if (add.length > 0 || remove.length > 0) {
           const next = await applyPhotoChanges({
             add,
@@ -857,7 +859,11 @@ export function useDraft(draftId: string | undefined): {
               ? new Set(next.photoChangeResult.addedPhotoIds)
               : new Set(add.filter((id) => onServer.has(id)));
             // 정원에 막혀 담기지 않은 사진: 그 사진을 빼는 동작은 이미 끝난 것으로 봄(뒤이은 변경이 막히지 않게)
-            for (const id of add) if (!addedIds.has(id)) rejectedSources.current.add(id);
+            // 이번에 담긴 원본은 예전에 거절된 기록을 지움(다시 담긴 사진을 빼면 서버에도 보내야 함)
+            for (const id of add) {
+              if (addedIds.has(id)) rejectedSources.current.delete(id);
+              else rejectedSources.current.add(id);
+            }
             // 고른 장수를 받은 경우에만 안내(찾지 못한 사진이 있어 다른 안내를 띄운 경우는 받지 않음)
             const wanted = options?.requested;
             if (wanted !== undefined && addedIds.size < wanted) {
