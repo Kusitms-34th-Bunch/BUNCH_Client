@@ -1,5 +1,5 @@
-import { type QueryClient, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { MyBunches } from '@/shared/api/myBunches';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { getMemberships, transferOwner } from '@/shared/api/bunchMemberships';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
@@ -18,27 +18,6 @@ import { myKeys } from './keys';
 const safeImage = (url: string | null | undefined) =>
   url && isSafeImageUrl(url) ? url : undefined;
 
-// 이 시간 안에 받은 소속 번치 목록은 다시 요청하지 않고 씀
-const MY_BUNCHES_REUSE_MS = 30_000;
-
-/**
- * 내 소속 번치의 대표 사진·타입(번치 ID별). 탈퇴 확인 응답에 타입이 없어 기본 이미지를 고르는 데 씀
- * 번치 홈이 방금 받아 둔 목록은 재사용하고, 오래된(앱 재실행 때 복원한) 목록이면 새로 받음
- * 받지 못하면 재시도 없이 빈 값(번치 이미지 때문에 탈퇴 화면이 늦어지거나 막히지 않게)
- */
-const bunchProfilesById = async (client: QueryClient) => {
-  try {
-    const { activeBunches } = await client.fetchQuery({
-      ...myBunchesQueryOptions(),
-      staleTime: MY_BUNCHES_REUSE_MS,
-      retry: false,
-    });
-    return new Map(activeBunches.map(({ bunch }) => [toDomainId(bunch.id), bunch]));
-  } catch {
-    return new Map<string, MyBunches['activeBunches'][number]['bunch']>();
-  }
-};
-
 /**
  * 탈퇴 전 넘겨야 할 번치: 메인 관리자 번치마다 멤버 목록을 받아 넘길 멤버(나 제외)를 붙이고, 나 혼자인 번치는 뺌(7.6.3 로직 4)
  * 소속 ID·버전은 방금 받은 멤버 목록 값(서버가 버전을 검사하는 목록과 같은 출처)
@@ -46,22 +25,13 @@ const bunchProfilesById = async (client: QueryClient) => {
 export const ownedBunchesQueryOptions = () =>
   queryOptions({
     queryKey: myKeys.ownedBunches(),
-    queryFn: async ({ signal, client }): Promise<OwnedBunch[]> => {
-      const [owned, profiles] = await Promise.all([
-        getWithdrawalCheck(signal),
-        bunchProfilesById(client),
-      ]);
+    queryFn: async ({ signal }): Promise<OwnedBunch[]> => {
+      const owned = await getWithdrawalCheck(signal);
       const bunches = await Promise.all(
         owned.map(async (bunch): Promise<OwnedBunch> => {
           const memberships = await getMemberships(bunch.id, signal);
-          const profile = profiles.get(bunch.id);
           return {
             ...bunch,
-            // 대표 사진(탈퇴 확인 응답, 없으면 소속 번치 목록) → 그 번치 타입의 기본 이미지. 목록에서 못 찾으면 타입 1
-            imageSrc:
-              bunch.imageSrc ??
-              safeImage(profile?.imageUrl) ??
-              defaultBunchImage(profile?.characterType),
             myMembershipId: toDomainId(memberships.myMembership.membershipId),
             membershipVersion: memberships.membershipVersion,
             candidates: memberships.members
@@ -81,6 +51,25 @@ export const ownedBunchesQueryOptions = () =>
     },
     staleTime: 0,
   });
+
+/**
+ * 넘길 번치의 표시 이미지: 대표 사진(탈퇴 확인 응답) → 소속 번치 목록의 대표 사진 → 그 번치 타입의 기본 이미지 → 타입 1
+ * 탈퇴 확인 응답에 타입이 없어 소속 번치 목록(번치 홈과 같은 캐시)에서 찾음. 탈퇴 확인·멤버 조회가 이 목록을 기다리지 않도록 따로 읽고,
+ * 받기 전·실패하면 받아 둔(복원한) 목록이나 타입 1로 먼저 보이고 받으면 이미지만 바뀜
+ */
+export const useOwnedBunchImage = () => {
+  const { data } = useQuery({ ...myBunchesQueryOptions(), retry: false });
+  const byId = useMemo(
+    () => new Map(data?.activeBunches.map(({ bunch }) => [toDomainId(bunch.id), bunch])),
+    [data],
+  );
+  return (bunch: OwnedBunch) => {
+    const profile = byId.get(bunch.id);
+    return (
+      bunch.imageSrc ?? safeImage(profile?.imageUrl) ?? defaultBunchImage(profile?.characterType)
+    );
+  };
+};
 
 /** 넘겨야 할 번치를 지금 서버 값으로 새로 받는 함수(탈퇴 안내의 「다음」·「탈퇴하기」 직전 확인) */
 export const useFetchOwnedBunches = () => {
