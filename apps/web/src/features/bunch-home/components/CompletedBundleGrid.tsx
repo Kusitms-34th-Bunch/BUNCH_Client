@@ -39,9 +39,11 @@ export function CompletedBundleGrid({
               const modified = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
               if (!onOpen || modified || event.button !== 0) return;
               event.preventDefault();
-              // 삭제된 번들이면 다시 받은 그리드에서 칸이 사라지므로 초점을 그리드로
+              // 삭제된 번들이면 칸이 사라지므로 초점을 탭 패널(마지막 칸이라 빈 상태로 바뀌어도 남음), 없으면 그리드로
               void Promise.resolve(onOpen(bundle.id)).then((deleted) => {
-                if (deleted === true) listRef?.current?.focus();
+                if (deleted !== true) return;
+                const list = listRef?.current;
+                (list?.closest<HTMLElement>('[role="tabpanel"]') ?? list)?.focus();
               });
             }}
             className="focus-visible:outline-border-brand block size-full focus-visible:outline-2 focus-visible:-outline-offset-2"

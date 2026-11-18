@@ -106,7 +106,7 @@ describe('BunchHome 이동 연결', () => {
       expect(requests).toContain(`/api/bunches/${MOCK_BUNCH_ID}/published-bundles`),
     );
     expect(push).not.toHaveBeenCalled();
-    // 누른 칸이 사라져도 초점이 문서 처음으로 빠지지 않게 그리드로
-    expect(document.activeElement).toBe(link.closest('ul'));
+    // 누른 칸이 사라져도(마지막 칸이면 빈 상태로 바뀌어도) 남는 탭 패널로
+    expect(document.activeElement).toBe(link.closest('[role="tabpanel"]'));
   });
 });

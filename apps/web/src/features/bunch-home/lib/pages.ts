@@ -6,7 +6,7 @@ export const FIRST_PAGE = 0;
 /** 목록 끝 이어서 받기(`ListMore`)에 쓰는 infinite query 상태 */
 export type ListMoreQuery = Pick<
   UseInfiniteQueryResult,
-  'hasNextPage' | 'isFetchingNextPage' | 'isFetchNextPageError' | 'fetchNextPage'
+  'hasNextPage' | 'isFetching' | 'isFetchingNextPage' | 'isFetchNextPageError' | 'fetchNextPage'
 >;
 
 /** 마지막으로 받은 쪽 다음 번호. 끝이면 undefined(TanStack이 다음 쪽 없음으로 봄) */

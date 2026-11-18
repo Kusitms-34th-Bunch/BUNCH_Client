@@ -156,10 +156,15 @@ export function BunchBlockedListScreen({
               </li>
             ))}
           </ul>
-          {more ? <ListMore query={more} listRef={listRef} /> : null}
         </div>
       ) : null}
-      {blocked?.length === 0 ? (
+      {/* 받은 행을 모두 해제해도 남은 쪽·재시도는 유지(목록 밖에 둠) */}
+      {blocked && more ? (
+        <div className="px-padding-p8">
+          <ListMore query={more} listRef={listRef} />
+        </div>
+      ) : null}
+      {blocked?.length === 0 && !more?.hasNextPage && !more?.isFetchNextPageError ? (
         // 화면설계서 3번: 안내 이미지와 문구, 별도 동작 없음(Figma 5991:161676: 이미지 72×72, 이미지와 문구 16, 제목·설명 4)
         // Figma 1873:33828은 본문 세로 가운데보다 약 38 위라 아래 여백 72로 맞춤
         <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">

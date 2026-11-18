@@ -20,9 +20,11 @@ type ListMoreProps = {
  * 「다시 시도」가 성공하면 새로 붙은 첫 항목(초점을 줄 수 없으면 목록)으로 초점 이동
  */
 export function ListMore({ query, listRef }: ListMoreProps) {
-  const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = query;
+  const { hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError, fetchNextPage } =
+    query;
   // 감지 요소는 받을 수 있을 때만 그려, 새로 붙는 순간 이미 보이면 바로 받음(실패한 뒤에는 버튼으로만)
-  const canLoad = hasNextPage && !isFetchingNextPage && !isFetchNextPageError;
+  // 재조회 중에는 그리지 않음(다음 쪽 요청이 진행 중인 재조회를 취소하지 않게)
+  const canLoad = hasNextPage && !isFetching && !isFetchNextPageError;
   const observe = useIntersectionObserver<HTMLSpanElement>((entry) => {
     if (entry.isIntersecting) void fetchNextPage();
   }, {});

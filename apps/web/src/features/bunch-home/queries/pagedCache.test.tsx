@@ -45,6 +45,21 @@ describe('쪽이 여러 개인 목록 캐시의 mutation 반영', () => {
     expect(data?.pages.map((page) => page.totalElements)).toEqual([2, 2]);
   });
 
+  it('같은 차단이 두 쪽에 겹쳐 받혀도 해제 한 번에 전체 수는 1만 준다', async () => {
+    server.use(http.delete('/api/bunches/:viewerId/blocks/:targetId', () => ok(null)));
+    const client = createTestQueryClient();
+    const block = (id: number) => ({ id, bunch: card(id), blockedAt: '2026-11-01T00:00:00Z' });
+    client.setQueryData(bunchHomeKeys.blockPages('1'), pages([[block(2)], [block(2), block(3)]]));
+    const { result } = renderHook(() => useUnblockBunchMutation('1'), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    await act(() => result.current.mutateAsync({ targetId: '2', blockId: '2' }));
+
+    const data = client.getQueryData<InfiniteData<BlockPage>>(bunchHomeKeys.blockPages('1'));
+    expect(data?.pages.map((page) => page.totalElements)).toEqual([2, 2]);
+  });
+
   it('모두 읽음은 받은 모든 쪽의 알림을 읽음으로, 읽지 않은 수를 서버 값으로 바꾼다', async () => {
     server.use(
       http.post('/api/bunches/:bunchId/notifications/read-all', () => ok({ unreadCount: 0 })),

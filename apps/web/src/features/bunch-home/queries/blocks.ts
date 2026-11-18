@@ -64,11 +64,12 @@ export const useUnblockBunchMutation = (viewerId: string | undefined) => {
         bunchHomeKeys.blockPages(viewerId),
         (data) => {
           if (!data) return data;
-          const removed = data.pages.reduce(
-            (count, page) =>
-              count + page.items.filter((item) => String(item.id) === blockId).length,
-            0,
-          );
+          // 같은 관계가 두 쪽에 겹쳐 받혀도 전체 수에서는 한 번만 뺌
+          const removed = data.pages.some((page) =>
+            page.items.some((item) => String(item.id) === blockId),
+          )
+            ? 1
+            : 0;
           return {
             ...data,
             pages: data.pages.map((page) => ({

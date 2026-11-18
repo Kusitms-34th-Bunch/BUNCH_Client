@@ -56,6 +56,8 @@ export function BunchHomeScreen({
   const background = BUNCH_BACKGROUNDS[current.characterType];
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
+  // 주소의 처음 탭은 처음 연 번치에만(전환 알림보다 새 번치 렌더가 먼저 와도 완성된 번들 탭부터)
+  const [firstBunchId] = useState(current.id);
   const openOverlay = useScreenOverlay();
   const refresh = useRefreshActiveQueries();
   // iOS 26 이상 쉘은 「+」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음
@@ -146,7 +148,7 @@ export function BunchHomeScreen({
             }}
           />
           <BundleTabs
-            initialTab={switched ? 'completed' : initialTab}
+            initialTab={switched || current.id !== firstBunchId ? 'completed' : initialTab}
             bunchId={current.id}
             onOpenBundle={onOpenBundle}
             completedMore={completedMore}
