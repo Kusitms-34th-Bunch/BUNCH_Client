@@ -265,8 +265,21 @@ describe('로그인 상태 확인(members/me/onboarding)', () => {
     ]);
 
     expect(response.status).toBe(401);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
     expect(await response.json()).toMatchObject({ code: 'BFF_UNAUTHENTICATED' });
     expect(captured).toHaveLength(0);
+  });
+
+  it('GET이 아니면 access 쿠키가 없어도 백엔드로 전달한다', async () => {
+    stubBackend(new Response('{}', { status: 401 }));
+
+    await proxyToBackend(request('members/me/onboarding', { method: 'POST', body: '{}' }), [
+      'members',
+      'me',
+      'onboarding',
+    ]);
+
+    expect(captured).toHaveLength(1);
   });
 
   it('access 쿠키가 있으면 평소처럼 백엔드로 전달한다', async () => {
@@ -279,6 +292,7 @@ describe('로그인 상태 확인(members/me/onboarding)', () => {
 
     expect(response.status).toBe(200);
     expect(captured).toHaveLength(1);
+    expect(captured[0]?.headers.get('authorization')).toBe('Bearer token');
   });
 
   it('다른 경로는 access 쿠키가 없어도 백엔드로 전달한다(공개 API)', async () => {

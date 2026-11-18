@@ -17,7 +17,7 @@ const FORWARDED_RESPONSE_HEADERS = ['cache-control', 'content-disposition', 'con
 
 // 백엔드 `auth/` 아래지만 토큰·쿠키를 다루지 않는 약관 API만 프록시 허용(정확히 일치하는 경로만)
 const PROXIED_AUTH_PATHS = ['auth/terms', 'auth/terms/agreements'];
-// 앱 진입마다 부르는 로그인 상태 확인. access 쿠키가 없으면 백엔드를 거치지 않고 바로 401(첫 실행에서 백엔드 응답을 기다리지 않게)
+// 앱 진입마다 부르는 로그인 상태 확인(GET). access 쿠키가 없으면 백엔드를 거치지 않고 바로 401(첫 실행에서 백엔드 응답을 기다리지 않게)
 // 브라우저는 이 401로 재발급을 시도하므로 refresh 쿠키만 남은 세션도 그대로 이어짐
 const SESSION_CHECK_PATH = BACKEND_PREFIX + 'members/me/onboarding';
 
@@ -54,7 +54,7 @@ export const proxyToBackend = async (request: NextRequest, segments: string[]) =
   }
 
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken && path === SESSION_CHECK_PATH) {
+  if (!accessToken && request.method === 'GET' && path === SESSION_CHECK_PATH) {
     return Response.json(
       { message: '인증이 필요합니다', code: 'BFF_UNAUTHENTICATED' },
       { status: 401, headers: { 'cache-control': 'private, no-store' } },
