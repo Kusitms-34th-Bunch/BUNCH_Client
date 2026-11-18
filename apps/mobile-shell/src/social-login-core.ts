@@ -1,5 +1,5 @@
 /**
- * 카카오 로그인 흐름(SDK 시작 → nonce 생성 → 로그인 → 결과 변환)
+ * 카카오·Google·Apple 로그인 흐름(SDK 시작 → nonce 생성 → 로그인 → 결과 변환)
  * 네이티브 모듈에 의존하지 않도록 필요한 것을 주입받아 Node 테스트로 확인(실제 SDK 연결은 `social-login.ts`)
  */
 
@@ -150,6 +150,68 @@ export const createGoogleLogin = ({
   };
 
   let inFlight: Promise<GoogleLoginOutcome> | undefined;
+  return () => {
+    inFlight ??= run().finally(() => {
+      inFlight = undefined;
+    });
+    return inFlight;
+  };
+};
+
+// ---- Apple ----
+
+export type AppleLoginDeps = {
+  /** 이 기기에서 Apple 로그인을 쓸 수 있는지(iOS 13 이상, Android 불가) */
+  isAvailable: () => Promise<boolean>;
+  /** Apple 로그인(nonce를 ID 토큰 요청에 실음). 이메일·이름은 요청하지 않음(기능명세 1.2.4) */
+  signIn: (_options: { nonce: string }) => Promise<{ identityToken: string | null }>;
+  /** 암호학적 난수(Math.random 금지) */
+  randomNonce: () => string;
+  /** SHA-256 소문자 hex(백엔드가 원본을 이 방식으로 해시해 토큰의 nonce 클레임과 비교) */
+  sha256Hex: (_value: string) => Promise<string>;
+};
+
+export type AppleLoginOutcome =
+  | { status: 'success'; provider: 'apple'; idToken: string; nonce: string }
+  | { status: 'cancelled' };
+
+/** 사용자가 Apple 로그인 창을 닫았는지(expo-apple-authentication의 취소 코드) */
+export const isAppleCancelled = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  (error as { code: unknown }).code === 'ERR_REQUEST_CANCELED';
+
+/**
+ * Apple 로그인 함수를 만듦. 진행 중이면 같은 결과를 공유하고, 오류 메시지에는 SDK 원문·토큰·nonce를 넣지 않음
+ * Apple 요청에는 원본 nonce의 SHA-256 hex를 싣고, 웹에는 원본을 돌려줌(백엔드가 원본을 해시해 토큰 클레임과 비교)
+ */
+export const createAppleLogin = ({
+  isAvailable,
+  signIn,
+  randomNonce,
+  sha256Hex,
+}: AppleLoginDeps) => {
+  const run = async (): Promise<AppleLoginOutcome> => {
+    const available = await isAvailable().catch(() => {
+      throw new Error('Apple 로그인에 실패했어요.');
+    });
+    if (!available) throw new Error('이 기기에서는 Apple 로그인을 쓸 수 없어요.');
+
+    const nonce = randomNonce();
+    let credential: { identityToken: string | null };
+    try {
+      credential = await signIn({ nonce: await sha256Hex(nonce) });
+    } catch (error) {
+      if (isAppleCancelled(error)) return { status: 'cancelled' };
+      throw new Error('Apple 로그인에 실패했어요.');
+    }
+
+    if (!credential.identityToken) throw new Error('Apple ID 토큰을 받지 못했어요.');
+    return { status: 'success', provider: 'apple', idToken: credential.identityToken, nonce };
+  };
+
+  let inFlight: Promise<AppleLoginOutcome> | undefined;
   return () => {
     inFlight ??= run().finally(() => {
       inFlight = undefined;

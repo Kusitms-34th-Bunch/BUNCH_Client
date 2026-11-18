@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  createAppleLogin,
   createGoogleLogin,
   createKakaoLogin,
+  isAppleCancelled,
   isGoogleCancelled,
   isKakaoCancelled,
 } from './social-login-core.ts';
@@ -210,4 +212,88 @@ test('구글: 취소 판별은 오류 코드만 본다', () => {
   assert.equal(isGoogleCancelled({ code: 'SIGN_IN_CANCELLED' }), true);
   assert.equal(isGoogleCancelled({ code: 'OTHER' }), false);
   assert.equal(isGoogleCancelled(new Error('SIGN_IN_CANCELLED')), false);
+});
+
+// ---- Apple ----
+
+const setupApple = (overrides = {}) => {
+  const calls = { signIn: [] };
+  let counter = 0;
+  const appleLogin = createAppleLogin({
+    isAvailable: () => Promise.resolve(true),
+    signIn: (options) => {
+      calls.signIn.push(options);
+      return Promise.resolve({ identityToken: 'apple-token' });
+    },
+    randomNonce: () => `nonce-${(counter += 1)}`,
+    sha256Hex: (value) => Promise.resolve(`sha256(${value})`),
+    ...overrides,
+  });
+  return { appleLogin, calls };
+};
+
+test('Apple 요청에는 nonce의 SHA-256 값을 싣고, 웹에는 원본 nonce와 ID 토큰을 돌려준다', async () => {
+  const { appleLogin, calls } = setupApple();
+
+  assert.deepEqual(await appleLogin(), {
+    status: 'success',
+    provider: 'apple',
+    idToken: 'apple-token',
+    nonce: 'nonce-1',
+  });
+  assert.deepEqual(calls.signIn, [{ nonce: 'sha256(nonce-1)' }]);
+});
+
+test('Apple 로그인 창을 닫으면 실패가 아니라 cancelled로 돌려준다', async () => {
+  const { appleLogin } = setupApple({
+    signIn: () => Promise.reject(Object.assign(new Error('x'), { code: 'ERR_REQUEST_CANCELED' })),
+  });
+
+  assert.deepEqual(await appleLogin(), { status: 'cancelled' });
+  assert.equal(isAppleCancelled({ code: 'ERR_REQUEST_UNKNOWN' }), false);
+});
+
+test('Apple SDK 오류는 SDK 원문 없이 일반 문구로 던진다', async () => {
+  const { appleLogin } = setupApple({
+    signIn: () => Promise.reject(new Error('raw sdk message token=abc')),
+  });
+
+  await assert.rejects(appleLogin(), { message: 'Apple 로그인에 실패했어요.' });
+});
+
+test('Apple 로그인을 쓸 수 없는 기기면 로그인 창을 열지 않고 실패한다', async () => {
+  const { appleLogin, calls } = setupApple({ isAvailable: () => Promise.resolve(false) });
+
+  await assert.rejects(appleLogin(), /쓸 수 없어요/);
+  assert.equal(calls.signIn.length, 0);
+});
+
+test('Apple ID 토큰이 없으면 실패한다', async () => {
+  const { appleLogin } = setupApple({ signIn: () => Promise.resolve({ identityToken: null }) });
+
+  await assert.rejects(appleLogin(), /ID 토큰/);
+});
+
+test('Apple 로그인이 진행 중이면 다시 눌러도 로그인 창을 한 번만 연다', async () => {
+  const { appleLogin, calls } = setupApple();
+
+  const [first, second] = await Promise.all([appleLogin(), appleLogin()]);
+
+  assert.equal(first, second);
+  assert.equal(calls.signIn.length, 1);
+});
+
+test('Apple 로그인 가능 여부 확인이 실패해도 SDK 원문 없이 일반 문구로 던진다', async () => {
+  const { appleLogin } = setupApple({ isAvailable: () => Promise.reject(new Error('raw native')) });
+
+  await assert.rejects(appleLogin(), { message: 'Apple 로그인에 실패했어요.' });
+});
+
+test('Apple nonce는 로그인마다 새로 만든다', async () => {
+  const { appleLogin } = setupApple();
+
+  const first = await appleLogin();
+  const second = await appleLogin();
+
+  assert.notEqual(first.nonce, second.nonce);
 });

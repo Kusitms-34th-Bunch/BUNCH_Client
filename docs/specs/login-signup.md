@@ -196,7 +196,7 @@ Entry와 소셜 로그인 (1.2.1~1.2.6, AUTH-01·02·06)
 | 초대 정보 보관: 24시간 보관·최신 1건·로그인 때 전달·로그아웃 삭제 | feat | invite-context       | 인증 BFF                      |      |
 | 로그인·가입 흐름 E2E: 비로그인 → Entry → 약관 → 프로필 → 도착지   | test | login-flow-e2e       | Entry·약관·프로필             |      |
 
-- 쉘 네이티브 구현은 앱 식별자(bundle identifier)와 각 소셜 서비스의 앱 등록이 있어야 한다. iOS 식별자는 `docs/architecture/mobile-shell.md`를 본다. 카카오·Google은 `apps/mobile-shell/src/social-login.ts`에 연결했다. Apple은 SDK 연동 전이라 실패를 돌려준다(2026-11-16 확인).
+- 쉘 네이티브 구현은 앱 식별자(bundle identifier)와 각 소셜 서비스의 앱 등록이 있어야 한다. iOS 식별자는 `docs/architecture/mobile-shell.md`를 본다. 카카오·Google·Apple을 `apps/mobile-shell/src/social-login.ts`에 연결했다. Apple은 실기기 확인 전이다(#439).
 - 프로필 사진은 형식·HEIC·편집 UI가 커서 프로필 설정에서 분리했다. 사진 없이도 가입 완료가 되므로 뒤로 미룰 수 있다.
 - 권장 순서: 인증 BFF와 bridge 계약 → Entry → 약관 → 프로필 → (병행) 쉘 네이티브 구현·프로필 사진·초대 정보 보관 → E2E. 구현 전에는 `assess-api-contract`, 화면 구현은 `implement-from-figma`·`create-page-feature`·`implement-form-flow`로 이어진다.
 
