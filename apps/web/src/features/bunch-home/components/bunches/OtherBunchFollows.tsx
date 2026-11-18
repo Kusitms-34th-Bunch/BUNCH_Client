@@ -99,6 +99,12 @@ export function OtherBunchFollows({
       viewerId={viewerId}
       initialTab={initialTab}
       locked={home.data !== undefined && !internal && !canView}
+      // 내 번치(명의) 행은 번치 탭, 그 밖은 그 번치 프로필
+      onOpenBunch={(row) =>
+        router.push(
+          row.id === viewerId ? BUNCH_HOME_PATHS.home : BUNCH_HOME_PATHS.otherBunch(row.id),
+        )
+      }
       onBack={back}
       onFollow={follow}
       onUnfollow={unfollow}

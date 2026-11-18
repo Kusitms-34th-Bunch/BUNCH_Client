@@ -7,18 +7,18 @@ import { blockPageSchema, bunchReportResultSchema } from '../model/blocks';
 // 데이터 없는 성공 응답(Swagger `ApiResponseUnit`)은 data가 빠지거나 null
 const unitSchema = z.null().optional();
 
-// 차단 목록은 한 번에 받을 수 있는 최대 쪽 크기만(더 불러오기는 UT 이후)
+// 차단 목록 한 쪽 크기(한 번에 받을 수 있는 최대)
 const LIST_PAGE_SIZE = 50;
 
 const bunchPath = (bunchId: string) => `bunches/${encodeURIComponent(bunchId)}`;
 const blockPath = (viewerId: string, targetId: string) =>
   `${bunchPath(viewerId)}/blocks/${encodeURIComponent(targetId)}`;
 
-/** 내 번치가 차단한 번치 첫 쪽 */
-export const getBlockedBunches = (viewerId: string, signal?: AbortSignal) =>
+/** 내 번치가 차단한 번치 한 쪽(최근 차단순, 0부터) */
+export const getBlockedBunches = (viewerId: string, page: number, signal?: AbortSignal) =>
   requestData(
     bffApi.get(`${bunchPath(viewerId)}/blocks`, {
-      searchParams: { page: 0, size: LIST_PAGE_SIZE },
+      searchParams: { page, size: LIST_PAGE_SIZE },
       signal: signal ?? null,
     }),
     blockPageSchema,

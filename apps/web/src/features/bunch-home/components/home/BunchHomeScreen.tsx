@@ -8,6 +8,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries';
+import type { ListMoreQuery } from '../../lib/pages';
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
@@ -16,7 +17,7 @@ import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { BunchProfileImage } from '../BunchProfileImage';
-import { BundleTabs } from './BundleTabs';
+import { type BundleTab, BundleTabs } from './BundleTabs';
 
 const CREATE_BUNDLE_LABEL = '번들 만들기';
 
@@ -31,6 +32,12 @@ type BunchHomeScreenProps = {
   onAddBunch?: (() => void) | undefined;
   /** 프로필의 「콕한 장소」 버튼 */
   onOpenPlaces?: (() => void) | undefined;
+  /** 완성된 번들 칸을 눌렀을 때 */
+  onOpenBundle?: ((_bundleId: string) => unknown) | undefined;
+  /** 처음 보일 번들 탭(주소 `?tab=drafts`). 번치를 전환하면 완성된 번들 탭 */
+  initialTab?: BundleTab | undefined;
+  /** 완성된 번들 이어서 받기 */
+  completedMore?: ListMoreQuery | undefined;
 };
 
 /** 번치 탭 홈: 번치 프로필, 완성된·작성 중인 번들 탭, 번치 전환 시트, 접근 불가 번치 안내 */
@@ -41,11 +48,16 @@ export function BunchHomeScreen({
   onOpenDraft,
   onAddBunch,
   onOpenPlaces,
+  onOpenBundle,
+  initialTab,
+  completedMore,
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
   const background = BUNCH_BACKGROUNDS[current.characterType];
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
+  // 주소의 처음 탭은 처음 연 번치에만(전환 알림보다 새 번치 렌더가 먼저 와도 완성된 번들 탭부터)
+  const [firstBunchId] = useState(current.id);
   const openOverlay = useScreenOverlay();
   const refresh = useRefreshActiveQueries();
   // iOS 26 이상 쉘은 「+」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음
@@ -132,9 +144,14 @@ export function BunchHomeScreen({
             countHrefs={{
               followerCount: BUNCH_HOME_PATHS.follows,
               followingCount: followingTab(BUNCH_HOME_PATHS.follows),
+              memberCount: BUNCH_HOME_PATHS.members,
             }}
           />
           <BundleTabs
+            initialTab={switched || current.id !== firstBunchId ? 'completed' : initialTab}
+            bunchId={current.id}
+            onOpenBundle={onOpenBundle}
+            completedMore={completedMore}
             completedBundles={current.completedBundles}
             draftBundles={current.draftBundles}
             onCreateBundle={onCreateBundle}

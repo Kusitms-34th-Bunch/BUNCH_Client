@@ -9,6 +9,8 @@ const objectParticle = (word: string) => {
 
 export const BUNCH_HOME_MESSAGES = {
   bundleMemberOnly: '멤버 공개',
+  // 완성된 번들 그리드에서 지워진 번들을 누름(기능명세 5.1.5)
+  bundleDeleted: '삭제된 번들이에요.',
   switched: (bunchName: string) => `${bunchName} 번치로 전환했어요.`,
   // 기획 원문 없는 임시 안내: 전환(마지막 사용 번치 저장)·접근 불가 안내 삭제를 서버에 보내지 못했을 때
   switchFailed: '번치를 전환하지 못했어요. 잠시 후 다시 시도해 주세요.',
@@ -87,6 +89,10 @@ export const BUNCH_HOME_MESSAGES = {
   openingNotification: '알림을 여는 중이에요',
   // 명세에 문구가 없어 제안(갈 화면이 사라진 알림, 삭제된 번들 등)
   notificationUnavailable: '더 이상 볼 수 없는 알림이에요.',
+  // 목록 이어서 불러오기(문구는 기획 원문 없음, 제안). 받는 중은 마침표 없이, 실패는 다른 실패 문구와 같은 형식
+  moreLoading: '목록을 더 불러오는 중이에요',
+  moreFailed: '목록을 더 불러오지 못했어요. 다시 시도해 주세요.',
+  moreRetry: '다시 시도',
   readFailed: '알림을 읽음으로 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.',
   // 번치 삭제(화면설계서 2236:41816)
   deleteTitle: (bunchName: string) => `${bunchName}${objectParticle(bunchName)} 삭제할까요?`,
@@ -143,8 +149,6 @@ export const BUNCH_HOME_MESSAGES = {
   unblockDescription: '서로의 번들과 프로필을 볼 수 있어요. 팔로우는 자동으로 돌아오지 않아요.',
   unblocked: (bunchName: string) => `${bunchName} 번치를 차단 해제했어요.`,
   blockedListLoading: '차단 목록을 불러오는 중이에요',
-  // 첫 쪽만 보일 때(더 불러오기 전)
-  blockedListMore: (shown: number) => `최근 차단한 ${shown}개만 보여요.`,
   blockedEmptyTitle: '아직 차단한 번치가 없어요',
   blockedEmptyDescription:
     '차단은 번치 멤버 모두에게 적용되며,\n서로의 번들・프로필・댓글은 보이지 않아요.',

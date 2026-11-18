@@ -7,11 +7,15 @@ import {
   TextButton,
 } from '@app/design-system';
 import { NotificationCard } from '@app/design-system/web';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import type { ListMoreQuery } from '../../lib/pages';
 import type { BunchNotification } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
+import { BUNCH_HOME_PATHS } from '../../constants/paths';
+import { ListMore } from '../ListMore';
 
 type BunchNotificationsScreenProps = {
   /** 지금 번치 이름(제목 낭독용). 아직 모르면 undefined */
@@ -27,6 +31,8 @@ type BunchNotificationsScreenProps = {
   onReadAll: () => Promise<unknown>;
   /** 알림을 눌렀을 때(읽음과 종류별 이동은 부르는 쪽) */
   onOpen: (_notification: BunchNotification) => void;
+  /** 목록 끝 이어서 받기(51번째부터, 5.12.1 로직 3) */
+  more?: ListMoreQuery | undefined;
 };
 
 /**
@@ -40,12 +46,14 @@ export function BunchNotificationsScreen({
   onBack,
   onReadAll,
   onOpen,
+  more,
 }: BunchNotificationsScreenProps) {
   // 「모두 읽음」 결과 낭독(초점은 버튼에 남고 카드 이름만 바뀌어 스크린 리더가 알 수 없음)
   const [status, setStatus] = useState('');
   const frame = useRef(0);
   // 모두 읽음 요청 중 다시 눌러도 한 번만
   const reading = useRef(false);
+  const listRef = useRef<HTMLUListElement>(null);
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
   const readAll = () => {
     // 번치를 아직 모르면(hydration 전) 읽을 목록이 없어 결과도 알리지 않음
@@ -103,13 +111,16 @@ export function BunchNotificationsScreen({
       </p>
       {/* 헤더 아래 12, 안내 줄과 목록 사이 24, 카드 사이 8(Figma 1892:36948) */}
       <div className="gap-s12 pt-padding-p6 px-padding-p8 pb-s8 flex flex-col">
-        {/* 알림 설정 화면(MY)이 생기면 그 화면으로 이동 */}
-        <p className="bg-surface-tertiary rounded-r5 px-padding-p8 py-padding-p6 typography-body-3-regular text-text-tertiary gap-s4 flex items-center justify-between break-keep">
+        {/* 누르면 알림 설정(MY 7.3, 5.12.1 상세 3) */}
+        <Link
+          href={BUNCH_HOME_PATHS.notificationSettings}
+          className="bg-surface-tertiary rounded-r5 px-padding-p8 py-padding-p6 typography-body-3-regular text-text-tertiary gap-s4 focus-visible:outline-border-brand flex items-center justify-between break-keep focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
           {BUNCH_HOME_MESSAGES.notificationSettingsNudge}
           <LineChevronRightLargeIcon aria-hidden className="text-icon-quaternary shrink-0" />
-        </p>
+        </Link>
         {notifications && notifications.length > 0 ? (
-          <ul className="gap-s4 flex flex-col">
+          <ul ref={listRef} tabIndex={-1} className="gap-s4 flex flex-col outline-none">
             {notifications.map((notification) => (
               <li key={notification.id}>
                 <NotificationCard
@@ -123,6 +134,7 @@ export function BunchNotificationsScreen({
             ))}
           </ul>
         ) : null}
+        {notifications && more ? <ListMore query={more} listRef={listRef} /> : null}
       </div>
     </PageShell>
   );

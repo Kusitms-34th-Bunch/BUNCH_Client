@@ -122,7 +122,7 @@ describe('OtherBunch 공개 번치(가짜 서버)', () => {
     expect(screen.queryByRole('link', { name: '알림' })).not.toBeInTheDocument();
   });
 
-  it('볼 수 있는 번치는 팔로워·팔로잉 수가 목록 링크이고, 멤버 수는 글자만이다', async () => {
+  it('볼 수 있는 번치는 팔로워·팔로잉·멤버 수가 목록 링크다', async () => {
     renderOther('3');
 
     await screen.findByRole('heading', { level: 1, name: '캠핑러버' });
@@ -134,8 +134,11 @@ describe('OtherBunch 공개 번치(가짜 서버)', () => {
       'href',
       `${BUNCH_HOME_PATHS.otherBunchFollows('3')}?tab=following`,
     );
-    expect(screen.queryByRole('link', { name: /멤버/ })).toBeNull();
-    expect(screen.getByText('멤버').parentElement).toHaveTextContent('4멤버');
+    // 멤버 수는 멤버 목록(5.10.1 상세 7)
+    expect(screen.getByRole('link', { name: '4 멤버' })).toHaveAttribute(
+      'href',
+      BUNCH_HOME_PATHS.otherBunchMembers('3'),
+    );
   });
 });
 
@@ -151,7 +154,7 @@ describe('OtherBunch 비공개 번치(가짜 서버)', () => {
     expect(await screen.findByRole('region', { name: '비공개 번치예요' })).toBeInTheDocument();
     expect(followerText()).toHaveTextContent('32팔로워');
     // 볼 수 없는 목록은 링크가 아님
-    expect(screen.queryByRole('link', { name: /팔로워|팔로잉/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /팔로워|팔로잉|멤버/ })).toBeNull();
     expect(screen.queryByRole('region', { name: '번들' })).toBeNull();
     // 볼 수 없는 번들은 요청하지 않음
     expect(requests).not.toContain('/api/bunches/4/published-bundles');

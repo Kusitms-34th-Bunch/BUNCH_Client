@@ -62,7 +62,10 @@ describe('다른 번치 팔로워·팔로잉(가짜 서버)', () => {
     );
     const mine = await screen.findByRole('listitem');
     expect(mine).toHaveTextContent('여행쥬아');
-    expect(within(mine).queryByRole('button')).toBeNull();
+    // 팔로우 버튼 없이 프로필(번치 탭으로 이동)만 누를 수 있음
+    expect(within(mine).getAllByRole('button')).toHaveLength(1);
+    await user.click(within(mine).getByRole('button', { name: /여행쥬아/ }));
+    expect(push).toHaveBeenCalledWith(BUNCH_HOME_PATHS.home);
 
     await user.click(screen.getByRole('tab', { name: '팔로워 23' }));
     // 최근 팔로우순, 버튼은 내 번치 명의의 상태
@@ -71,6 +74,10 @@ describe('다른 번치 팔로워·팔로잉(가짜 서버)', () => {
     ).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: /팔로우 요청/ })).toBeNull();
+
+    // 행의 이미지·이름을 누르면 그 번치 프로필(5.11.1 상세 5)
+    await user.click(screen.getByRole('button', { name: /^산책클럽\s*(,[^팔]*)?$/ }));
+    expect(push).toHaveBeenLastCalledWith(expect.stringMatching(/^\/bunches\/\d+$/));
   });
 
   it('목록 버튼으로 서버에 팔로우·언팔로우하고, 끝나면 토스트로 알린다', async () => {

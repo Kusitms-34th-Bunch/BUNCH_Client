@@ -9,8 +9,10 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchHomeActions } from '../../lib/types';
+import type { BundleTab } from './BundleTabs';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
+import { type PrefetchBundle, useOpenBundle } from '../../hooks/useOpenBundle';
 import { useServerBunchHome } from '../../hooks/useServerBunchHome';
 import {
   useDeleteBunchNoticeMutation,
@@ -25,8 +27,15 @@ import { NoBunchScreen } from './NoBunchScreen';
 // 번들은 번치 멤버가 2명 이상일 때 만들 수 있음(기획)
 const MIN_MEMBERS_FOR_BUNDLE = 2;
 
+type BunchHomeProps = {
+  /** 처음 보일 번들 탭(주소 `?tab=drafts`) */
+  initialTab?: BundleTab | undefined;
+  /** 번들 상세 미리 받기(feed query, route가 조합). 없으면 확인 없이 이동 */
+  prefetchBundle?: PrefetchBundle | undefined;
+};
+
 /** `/bunch` 번치 탭 화면: 서버 상태와 동작을 화면에 연결, 참여 번치가 없으면 번치 없음(「+」·「첫 번들 만들기」는 번들 만들기 화면으로 이동) */
-export function BunchHome() {
+export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
   const router = useRouter();
   // 번치에 나 혼자일 때 「+」·「첫 번들 만들기」를 막고 멤버 초대를 안내하는 창
   const openOverlay = useScreenOverlay();
@@ -36,6 +45,13 @@ export function BunchHome() {
   const switchBunch = useSwitchBunchMutation();
   const deleteNotice = useDeleteBunchNoticeMutation();
   const refreshCurrentBunch = useRefreshCurrentBunch();
+  const openBundle = useOpenBundle({
+    viewerId: profile === undefined ? undefined : (profile.bunch?.id ?? null),
+    prefetchBundle,
+    onDeleted: () => {
+      if (server.kind === 'ready') server.refreshCompleted();
+    },
+  });
   // 안내 뒤 기본 번치를 다시 받았는데도 같은 안내면 오류 화면(다시 시도)으로 둠(멈춘 로딩 방지)
   const [handledNoticeId, setHandledNoticeId] = useState<string>();
   const leaveUnavailable = (noticeId: string) =>
@@ -112,6 +128,9 @@ export function BunchHome() {
             : router.push(BUNCH_HOME_PATHS.startBunch)
         }
         onOpenPlaces={() => router.push(BUNCH_HOME_PATHS.places)}
+        onOpenBundle={(bundleId) => openBundle(data.current.id, bundleId)}
+        initialTab={initialTab}
+        completedMore={server.kind === 'ready' ? server.completedMore : undefined}
         // 멤버가 2명 미만이면 번들 만들기로 들어가지 않고 초대 안내(번들은 멤버가 2명 이상일 때 만들 수 있음)
         onCreateBundle={() =>
           data.current.memberCount < MIN_MEMBERS_FOR_BUNDLE

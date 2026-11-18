@@ -155,7 +155,7 @@ const safeImage = (url: string | null | undefined, fallback: string) =>
  */
 export const toBunchHomeDetail = (
   home: Home,
-  published: PublishedPage,
+  published: Pick<PublishedPage, 'items'>,
   drafts: DraftPage,
   members: readonly DraftMemberSource[],
 ): BunchHomeDetail | undefined => {

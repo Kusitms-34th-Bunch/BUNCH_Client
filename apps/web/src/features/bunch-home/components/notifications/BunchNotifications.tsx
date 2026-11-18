@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toDomainId } from '@/shared/api/ids';
@@ -10,6 +10,7 @@ import { useBackOr } from '@/shared/hooks/useBackOr';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
+import { itemsOfPages } from '../../lib/pages';
 import { notificationPath, toBunchNotifications } from '../../model/notifications';
 import {
   bunchNotificationsQueryOptions,
@@ -29,7 +30,7 @@ export function BunchNotifications() {
   const backOr = useBackOr();
   const me = useQuery(myProfileQueryOptions());
   const bunch = me.data?.bunch ?? undefined;
-  const list = useQuery(bunchNotificationsQueryOptions(bunch?.id));
+  const list = useInfiniteQuery(bunchNotificationsQueryOptions(bunch?.id));
   const open = useOpenNotificationMutation(bunch?.id);
   const readAll = useReadAllNotificationsMutation(bunch?.id);
   // 같은 알림을 연달아 눌러도 한 번만 열기(isPending은 다음 렌더부터 반영)
@@ -67,8 +68,14 @@ export function BunchNotifications() {
       {open.isPending ? <PageLoading /> : null}
       <BunchNotificationsScreen
         bunchName={bunch?.name}
-        notifications={list.data ? toBunchNotifications(list.data) : undefined}
-        hasUnread={(list.data?.unreadCount ?? 0) > 0}
+        notifications={
+          list.data
+            ? toBunchNotifications({ items: itemsOfPages(list.data.pages, (item) => item.id) })
+            : undefined
+        }
+        // 읽지 않은 수는 가장 최근에 받은 쪽의 값(쪽마다 같은 서버 수)
+        hasUnread={(list.data?.pages.at(-1)?.unreadCount ?? 0) > 0}
+        more={list}
         notice={open.isPending ? BUNCH_HOME_MESSAGES.openingNotification : undefined}
         onBack={back}
         onReadAll={() => readAll.mutateAsync()}

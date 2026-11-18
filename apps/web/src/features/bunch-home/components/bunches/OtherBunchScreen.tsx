@@ -2,11 +2,12 @@
 
 import { cn, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { FollowButton } from '@app/design-system/web';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
+import type { ListMoreQuery } from '../../lib/pages';
 import type { FollowStatus } from '../../lib/types';
 import type { OtherBunchProfile } from '../../model/otherBunch';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -15,6 +16,7 @@ import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchProfile } from '../BunchProfile';
 import { BunchProfileImage } from '../BunchProfileImage';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
+import { ListMore } from '../ListMore';
 import { PrivateBunchNotice } from '../PrivateBunchNotice';
 import { FollowCancelSheet } from './FollowCancelSheet';
 
@@ -39,6 +41,12 @@ type OtherBunchScreenProps = {
   canFollow?: boolean;
   /** 팔로워·팔로잉 목록을 볼 수 있는지(서버 판단). 볼 수 있으면 수를 링크로 */
   canViewRelations?: boolean;
+  /** 멤버 목록을 볼 수 있는지(서버 판단). 볼 수 있으면 멤버 수를 링크로 */
+  canViewMembers?: boolean;
+  /** 번들 칸을 눌렀을 때 */
+  onOpenBundle?: ((_bundleId: string) => unknown) | undefined;
+  /** 번들 이어서 받기 */
+  bundlesMore?: ListMoreQuery | undefined;
 };
 
 /**
@@ -58,8 +66,12 @@ export function OtherBunchScreen({
   notice,
   canFollow = true,
   canViewRelations = false,
+  canViewMembers = false,
+  onOpenBundle,
+  bundlesMore,
 }: OtherBunchScreenProps) {
   const openOverlay = useScreenOverlay();
+  const gridRef = useRef<HTMLUListElement>(null);
   const background = BUNCH_BACKGROUNDS[bunch.characterType];
   // 버튼 이름만 바뀌면 스크린 리더가 결과를 놓칠 수 있어 상태 영역으로도 알림(서버 반영 뒤)
   const [announcement, setAnnouncement] = useState('');
@@ -144,18 +156,19 @@ export function OtherBunchScreen({
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 pb-s8 relative -mt-5 flex flex-1 flex-col">
           {/* 프로필 아래 팔로우 버튼 16, 버튼 아래 번들·안내 16(Figma 3086:68423) */}
           <div className="gap-s8 flex flex-col">
-            {/* 팔로워·팔로잉 수는 볼 수 있을 때만 링크. 멤버 수는 내 번치 홈과 같이 글자만 */}
+            {/* 팔로워·팔로잉·멤버 수는 볼 수 있을 때만 링크(5.10.2 로직 3) */}
             <BunchProfile
               bunch={bunch}
               showPlaces={false}
-              countHrefs={
-                canViewRelations
-                  ? {
-                      followerCount: BUNCH_HOME_PATHS.otherBunchFollows(bunch.id),
-                      followingCount: followingTab(BUNCH_HOME_PATHS.otherBunchFollows(bunch.id)),
-                    }
-                  : undefined
-              }
+              countHrefs={{
+                ...(canViewRelations && {
+                  followerCount: BUNCH_HOME_PATHS.otherBunchFollows(bunch.id),
+                  followingCount: followingTab(BUNCH_HOME_PATHS.otherBunchFollows(bunch.id)),
+                }),
+                ...(canViewMembers && {
+                  memberCount: BUNCH_HOME_PATHS.otherBunchMembers(bunch.id),
+                }),
+              }}
             />
             {canFollow && (
               <div className="px-padding-p8">
@@ -181,7 +194,13 @@ export function OtherBunchScreen({
             />
           ) : (
             <section aria-label="번들">
-              <CompletedBundleGrid bundles={bunch.completedBundles} />
+              <CompletedBundleGrid
+                bunchId={bunch.id}
+                bundles={bunch.completedBundles}
+                onOpen={onOpenBundle}
+                listRef={gridRef}
+              />
+              {bundlesMore ? <ListMore query={bundlesMore} listRef={gridRef} /> : null}
             </section>
           )}
         </div>

@@ -67,6 +67,12 @@ export function MyBunchFollows({ initialTab }: { initialTab: FollowsTab }) {
         requests.isError && !requests.data ? null : (requests.data?.totalElements ?? 0)
       }
       onOpenRequests={() => router.push(BUNCH_HOME_PATHS.followRequests)}
+      // 내 번치(명의) 행은 번치 탭, 그 밖은 그 번치 프로필
+      onOpenBunch={(row) =>
+        router.push(
+          row.id === bunchId ? BUNCH_HOME_PATHS.home : BUNCH_HOME_PATHS.otherBunch(row.id),
+        )
+      }
       onBack={back}
       onFollow={follow}
       onUnfollow={unfollow}
