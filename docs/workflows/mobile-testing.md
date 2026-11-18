@@ -60,9 +60,8 @@ pnpm ios
 ```
 
 `pnpm ios`(`expo run:ios`)는 `ios/` 생성(prebuild)·CocoaPods 설치·빌드·시뮬레이터 설치와 실행·Metro 시작을 한 번에 한다. 이 경우 Metro를 따로 켜지 않는다.
-실제 iPhone은 `pnpm ios --device`로 기기를 고르고, 기기 신뢰·개발자 모드·Xcode 서명 설정이 필요하다.
-서명 팀은 지금 각자 Xcode에서 고른다(Bunch 타깃 → Signing & Capabilities → Automatically manage signing → Team). `app.json`에 팀 값이 없어서, `ios/`를 새로 만들면(`ios:sync:clean`, `ios/` 삭제 뒤 sync) 팀이 빠지고 「Signing for "Bunch" requires a development team」이 뜬다. 그때 같은 곳에서 다시 고른다. `pnpm ios:sync`(`--no-clean`)는 고른 팀을 유지한다. 개인(무료) 팀으로 설치한 앱은 7일 뒤 만료되고 푸시 같은 일부 기능을 쓸 수 없다.
-유료 Apple Developer 계정(팀)이 생기면 팀 ID를 설정으로 옮긴다(미정). 팀이 하나로 정해지면 `app.json`의 `ios.appleTeamId`에 넣는다. 사람마다 팀이 다르면 `app.config.js`가 `apps/mobile-shell/.env.local`의 값(예: `APPLE_TEAM_ID`)을 `ios.appleTeamId`로 넣게 한다. 둘 다 prebuild가 팀을 자동으로 넣어 Xcode에서 고를 필요가 없어진다.
+실제 iPhone은 `pnpm ios --device`로 기기를 고르고, 기기 신뢰·개발자 모드와, 아래 유료 팀에 초대된 Apple 계정의 Xcode 로그인이 필요하다.
+서명 팀은 `app.json`의 `ios.appleTeamId`(`9CGCR9499H`, 유료 Developer Program 팀, #439)로 정해져 있어 prebuild가 Xcode 프로젝트에 넣는다. 그래서 Xcode에서 팀을 고르지 않으며, 이 팀에 초대된 Apple 계정으로 Xcode에 로그인해야 실기기에 설치할 수 있다. Sign in with Apple capability(`ios.usesAppleSignIn`)는 개인(무료) 팀으로 서명할 수 없다.
 `pnpm android`(`expo run:android`)도 같은 방식이지만 아직 검증하지 않았다.
 Android 폴더를 맞추는 명령은 `pnpm android:sync`(`expo prebuild --platform android --no-clean`)다. Android는 CocoaPods 단계가 없고 네이티브 패키지를 Gradle이 빌드할 때 연결하므로, iOS처럼 조건부 설치 스크립트를 두지 않는다(2026-11-11 실행 약 9초). `app.json`의 Android `package`가 비어 있으면 prebuild가 기존 `android/`의 값을 `app.json`에 써 넣으니, 출시 식별자를 정하기 전에는 그 변경을 커밋하지 않는다. 처음부터 다시 만들려면 `pnpm android:sync:clean`을 쓴다.
 `ios/`, `android/`는 생성물이므로 직접 수정하거나 커밋하지 않는다.
@@ -90,7 +89,7 @@ Xcode는 앱을 설치할 뿐 JS는 Metro에서 받으므로, 이 경우에는 `
 - 네이티브 패키지·앱 설정·Expo SDK 수정: prebuild 후 앱을 다시 빌드·설치한다.
 - `packages/bridge` 수정: 앱 폴더에서 `pnpm install` 후 양쪽 타입을 검사한다.
 
-앱 식별자 `ios.bundleIdentifier`는 현재 개인 값(`com.kyeongjooni.mobile-shell`)이다. 팀 공용 값으로 바꾸는 시점은 Apple Developer·EAS 설정과 함께 정한다.
+앱 식별자 `ios.bundleIdentifier`는 유료 팀에 등록한 `kr.bunch.app`이다(#439). 바꾸면 Apple Developer App ID, 카카오·Google 콘솔의 iOS 번들 ID, 백엔드의 Apple 토큰 audience를 함께 바꾼다.
 
 ## Windows·Linux에서 확인
 
