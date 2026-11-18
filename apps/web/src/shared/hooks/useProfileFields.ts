@@ -97,7 +97,10 @@ export function useProfileFields(
     setBirthYear: (value: string) => setBirthYear(sanitizeBirthYear(value)),
     setBirthYearBlurred,
     setGender,
-    /** 저장 응답이 닉네임 중복·금칙어였을 때: 지금 닉네임을 그 이유로 사용할 수 없음으로 표시(닉네임을 바꾸면 풀림) */
+    /**
+     * 저장 응답이 닉네임 중복·금칙어였을 때: 지금 닉네임을 그 이유로 사용할 수 없음으로 표시
+     * 다른 닉네임으로 바꾸면 안내가 사라지고, 거부된 값으로 되돌아오면 다시 막음(서버가 같은 값을 다시 거부하므로)
+     */
     markNicknameRejected: (reason: 'taken' | 'prohibited') =>
       setRejectedNicknames((previous) => [...previous, { nickname: normalizedNickname, reason }]),
   };
