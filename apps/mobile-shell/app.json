@@ -53,14 +53,17 @@
         {
           "backgroundColor": "#454EDF"
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kyeongjooni.mobile-shell",
+      "bundleIdentifier": "kr.bunch.app",
+      "appleTeamId": "9CGCR9499H",
       "infoPlist": {
         "CFBundleDisplayName": "BUNCH"
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
