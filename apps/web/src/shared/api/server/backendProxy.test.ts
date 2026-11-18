@@ -194,10 +194,10 @@ describe('proxyToBackend', () => {
       }),
     );
 
-    const response = await proxyToBackend(request('members/me/onboarding'), [
+    const response = await proxyToBackend(request('members/me/profile'), [
       'members',
       'me',
-      'onboarding',
+      'profile',
     ]);
 
     expect(response.status).toBe(401);
@@ -220,10 +220,10 @@ describe('proxyToBackend', () => {
   it('백엔드 연결 실패는 502', async () => {
     stubBackend(new TypeError('fetch failed'));
 
-    const response = await proxyToBackend(request('members/me/onboarding'), [
+    const response = await proxyToBackend(request('members/me/profile'), [
       'members',
       'me',
-      'onboarding',
+      'profile',
     ]);
 
     expect(response.status).toBe(502);
@@ -234,9 +234,9 @@ describe('proxyToBackend', () => {
     vi.stubEnv('API_BASE_URL', 'https://backend.example.com/svc');
     stubBackend(new Response(null, { status: 200 }));
 
-    await proxyToBackend(request('members/me/onboarding'), ['members', 'me', 'onboarding']);
+    await proxyToBackend(request('members/me/profile'), ['members', 'me', 'profile']);
 
-    expect(captured[0]?.url).toBe('https://backend.example.com/svc/api/v1/members/me/onboarding');
+    expect(captured[0]?.url).toBe('https://backend.example.com/svc/api/v1/members/me/profile');
   });
 
   it('백엔드가 Cache-Control을 주지 않으면 저장 금지를 기본으로 붙인다', async () => {
@@ -244,12 +244,62 @@ describe('proxyToBackend', () => {
       new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
     );
 
+    const response = await proxyToBackend(request('members/me/profile'), [
+      'members',
+      'me',
+      'profile',
+    ]);
+
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+  });
+});
+
+describe('로그인 상태 확인(members/me/onboarding)', () => {
+  it('access 쿠키가 없으면 백엔드를 부르지 않고 바로 401 BFF_UNAUTHENTICATED', async () => {
+    stubBackend(new Response('{}', { status: 200 }));
+
     const response = await proxyToBackend(request('members/me/onboarding'), [
       'members',
       'me',
       'onboarding',
     ]);
 
+    expect(response.status).toBe(401);
     expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(await response.json()).toMatchObject({ code: 'BFF_UNAUTHENTICATED' });
+    expect(captured).toHaveLength(0);
+  });
+
+  it('GET이 아니면 access 쿠키가 없어도 백엔드로 전달한다', async () => {
+    stubBackend(new Response('{}', { status: 401 }));
+
+    await proxyToBackend(request('members/me/onboarding', { method: 'POST', body: '{}' }), [
+      'members',
+      'me',
+      'onboarding',
+    ]);
+
+    expect(captured).toHaveLength(1);
+  });
+
+  it('access 쿠키가 있으면 평소처럼 백엔드로 전달한다', async () => {
+    stubBackend(new Response('{"success":true}', { status: 200 }));
+
+    const response = await proxyToBackend(
+      request('members/me/onboarding', { cookie: 'accessToken=token' }),
+      ['members', 'me', 'onboarding'],
+    );
+
+    expect(response.status).toBe(200);
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.headers.get('authorization')).toBe('Bearer token');
+  });
+
+  it('다른 경로는 access 쿠키가 없어도 백엔드로 전달한다(공개 API)', async () => {
+    stubBackend(new Response('{}', { status: 200 }));
+
+    await proxyToBackend(request('invitations/abc'), ['invitations', 'abc']);
+
+    expect(captured).toHaveLength(1);
   });
 });

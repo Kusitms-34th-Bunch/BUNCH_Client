@@ -6,6 +6,7 @@ import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import type { PostLoginDestinations } from '../../lib/postLoginPath';
+import { LOGIN_BACKGROUND_POSTER, LOGIN_BACKGROUND_VIDEO } from '../../constants/loginBackground';
 import {
   LOGIN_PENDING_MESSAGE,
   type SignIn,
@@ -17,9 +18,6 @@ import { usePostLoginPath } from '../../queries/session';
 
 // SVG import 타입이 any라 정적 이미지로 명시
 const WORDMARK = wordmarkSvg as StaticImageData;
-// 배경 영상(Figma 4744:90759, 원본 47MB를 H.264 CRF 18로 다시 압축해 약 2.7MB)과 첫 프레임 포스터
-const BACKGROUND_VIDEO = '/videos/login.mp4';
-const BACKGROUND_POSTER = '/videos/login-poster.jpg';
 
 // 첫 진입 모션(디자이너 요청, Figma 값 없음): 워드마크 다음 버튼이 차례로 5px 아래에서 올라오며 나타남
 // 번치 만들기 단계 제목과 같은 600ms Slow 곡선, 동작 줄이기에서는 이동 없이 투명도만
@@ -62,17 +60,18 @@ export function LoginEntry({
 
   return (
     <>
-      {/* 화면 전체(Safe Area 포함)를 덮는 배경. 동작 줄이기 설정이면 영상을 받지 않고 첫 프레임만 보임 */}
+      {/* 화면 전체(Safe Area 포함)를 덮는 배경. 동작 줄이기 설정이면 영상을 받지 않고 첫 프레임만 보임
+          첫 프레임을 받기 전에도 흰 화면이 비치지 않게 어두운 바탕색 */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-y-0 left-1/2 w-full max-w-(--app-max-width) -translate-x-1/2 bg-cover bg-center"
-        style={{ backgroundImage: `url(${BACKGROUND_POSTER})` }}
+        className="bg-primitive-gray-900 pointer-events-none fixed inset-y-0 left-1/2 w-full max-w-(--app-max-width) -translate-x-1/2 bg-cover bg-center"
+        style={{ backgroundImage: `url(${LOGIN_BACKGROUND_POSTER})` }}
       >
         {/* iOS 자동 재생 조건: muted·playsInline */}
         {reducedMotion ? null : (
           <video
-            src={BACKGROUND_VIDEO}
-            poster={BACKGROUND_POSTER}
+            src={LOGIN_BACKGROUND_VIDEO}
+            poster={LOGIN_BACKGROUND_POSTER}
             autoPlay
             muted
             loop

@@ -3,7 +3,7 @@
 import { Button } from '@app/design-system';
 import { Label, PageHeader, TermsLabel } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { SIGNUP_PATHS } from '../../constants/paths';
 import { TERMS_ITEMS } from '../../constants/terms';
@@ -36,16 +36,28 @@ export function TermsAgreement() {
     };
   }, []);
 
+  // 같은 틱의 연타도 한 번만 실행(state는 다음 렌더에야 반영)
+  const starting = useRef(false);
+  // 저장을 시작한 뒤에는 이동할 때까지 체크를 잠금(저장한 동의와 화면 체크가 어긋나지 않게), 저장 실패 시 해제
+  const [submitted, setSubmitted] = useState(false);
+  // 전체 동의로 시작된 권한 요청 중에 눌러도 저장한 뒤 그 요청이 끝나길 기다려 이동(requestAll이 진행 중인 요청을 돌려줌)
   const start = async () => {
-    if (busy) return;
-    // 저장 실패(토스트는 공통 처리) 시 체크 상태를 유지한 채 화면에 머묾
+    if (starting.current) return;
+    starting.current = true;
+    setSubmitted(true);
     try {
-      await agreeToTerms.mutateAsync({ demographics: agreed.demographics });
-    } catch {
-      return;
+      // 저장 실패(토스트는 공통 처리) 시 체크 상태를 유지한 채 화면에 머묾
+      try {
+        await agreeToTerms.mutateAsync({ demographics: agreed.demographics });
+      } catch {
+        setSubmitted(false);
+        return;
+      }
+      await requestAll();
+      if (mounted.current) router.push(SIGNUP_PATHS.profile);
+    } finally {
+      starting.current = false;
     }
-    await requestAll();
-    if (mounted.current) router.push(SIGNUP_PATHS.profile);
   };
 
   return (
@@ -76,7 +88,8 @@ export function TermsAgreement() {
             ? '앱 접근 권한을 요청하는 중이에요'
             : ''}
       </p>
-      {busy ? <PageLoading /> : null}
+      {/* 덮개는 저장 중에만. 권한 팝업이 떠 있는 동안 뒤에 로딩이 깔리지 않게(중복 실행은 aria-busy·가드가 막음) */}
+      {agreeToTerms.isPending ? <PageLoading /> : null}
       <PageHeader
         title="시작하기 전에 확인해 주세요!"
         description="서비스 이용에 필요한 필수 내용만 확인할게요."
@@ -85,6 +98,7 @@ export function TermsAgreement() {
         <div className="px-padding-p8 gap-s6 flex flex-col">
           <Label
             checked={allAgreed}
+            disabled={submitted}
             onChange={(event) => {
               setAllAgreed(event.target.checked);
               // 체크할 때만, 한 번만(해제하거나 다시 체크해도 다시 묻지 않음)
@@ -99,6 +113,7 @@ export function TermsAgreement() {
                 key={id}
                 tag={required ? '[필수]' : '[선택]'}
                 checked={agreed[id]}
+                disabled={submitted}
                 onChange={(event) => setAgreed(id, event.target.checked)}
                 {...(documentId
                   ? {
