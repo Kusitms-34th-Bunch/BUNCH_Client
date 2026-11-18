@@ -186,6 +186,31 @@ describe('BundleEdit 저장', () => {
     expect(title).toHaveValue('고친 제목');
   });
 
+  it('제목에 금칙어가 있어 거부되면 머물러 제목 아래에 안내하고, 제목을 고치면 안내를 지운다(기능명세 6.2.12)', async () => {
+    renderEdit();
+    const title = await titleField();
+    await userEvent.clear(title);
+    // 가짜 서버는 「금칙어」 낱말이 든 제목을 거부함
+    await userEvent.type(title, '금칙어 제목');
+    await userEvent.click(saveButton());
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '저장' }),
+    );
+
+    expect(await screen.findByText(BUNDLE_MESSAGES.prohibitedWord)).toBeTruthy();
+    expect(title).toHaveAttribute('aria-invalid', 'true');
+    // 저장 중 잠금이 풀린 뒤 오류가 붙은 제목으로 초점을 옮김
+    await waitFor(() => expect(document.activeElement).toBe(title));
+    expect(replace).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
+    expect(
+      mockDb.get().bundles.find((bundle) => String(bundle.id) === PUBLISHED_ID)?.title,
+    ).not.toBe('금칙어 제목');
+
+    await userEvent.type(title, '!');
+    expect(screen.queryByText(BUNDLE_MESSAGES.prohibitedWord)).toBeNull();
+  });
+
   it('저장하는 사이 권한을 잃었으면 안내하고 상세로 돌려보낸다', async () => {
     renderEdit();
     const title = await titleField();

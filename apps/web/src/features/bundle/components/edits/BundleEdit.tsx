@@ -2,7 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
@@ -31,6 +31,8 @@ export function BundleEdit({ onSaved, onImportFromGallery, galleryImporting }: B
   const router = useRouter();
   const backOr = useBackOr();
   const { bunchId, bundleId, state, actions } = useBundleEditContext();
+  // 저장 거부 뒤 오류가 붙은 입력란을 찾는 범위
+  const screenRef = useRef<HTMLDivElement>(null);
   const detailPath = BUNDLE_PATHS.publishedDetail(bunchId, bundleId);
   const kind = state.kind;
 
@@ -63,6 +65,13 @@ export function BundleEdit({ onSaved, onImportFromGallery, galleryImporting }: B
       router.replace(detailPath);
     } else if (outcome === 'conflict' || outcome === 'failed')
       toast(BUNDLE_MESSAGES.editSaveFailed);
+    // 'prohibited'는 제목 입력란 아래에 안내하고 머묾(토스트 없음, 기능명세 6.2.12 예외)
+    // 저장 중 화면이 잠겨 초점이 사라지므로, 잠금이 풀린 뒤 오류가 붙은 제목 입력란으로 옮겨 안내가 읽히고 바로 고칠 수 있게 함
+    // 같은 제목으로 다시 거부돼도 초점을 옮기며 오류 설명이 다시 읽힘
+    else if (outcome === 'prohibited')
+      requestAnimationFrame(() =>
+        screenRef.current?.querySelector<HTMLInputElement>('input[aria-invalid="true"]')?.focus(),
+      );
   };
 
   return (
@@ -72,7 +81,7 @@ export function BundleEdit({ onSaved, onImportFromGallery, galleryImporting }: B
         {state.saving ? BUNDLE_MESSAGES.editSaving : ''}
       </p>
       {state.saving ? <PageLoading /> : null}
-      <div inert={state.saving} className="contents">
+      <div ref={screenRef} inert={state.saving} className="contents">
         <BundleEditScreen
           draft={state.draft}
           viewer={state.viewer}
