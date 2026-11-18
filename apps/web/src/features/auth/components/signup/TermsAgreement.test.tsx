@@ -298,7 +298,9 @@ describe('TermsAgreement', () => {
     start().click();
     start().click();
 
-    await waitFor(() => expect(bodies).toHaveLength(1));
+    // 흐름이 끝까지(이동) 간 뒤에 세어 늦게 도착한 두 번째 저장도 잡음
+    await waitFor(() => expect(push).toHaveBeenLastCalledWith(SIGNUP_PATHS.profile));
+    expect(bodies).toHaveLength(1);
   });
 
   it('저장에 실패하면 다시 눌러 재시도할 수 있다', async () => {
@@ -307,10 +309,38 @@ describe('TermsAgreement', () => {
 
     await userEvent.click(start());
     await waitFor(() => expect(bodies).toHaveLength(1));
+    // 실패 처리가 끝나 처리 중 표시와 체크 잠금이 풀린 뒤 다시 누름
+    await waitFor(() => expect(start().getAttribute('aria-busy')).toBeNull());
+    expect((all() as HTMLInputElement).disabled).toBe(false);
     await userEvent.click(start());
 
     await waitFor(() => expect(bodies).toHaveLength(2));
     expect(permissions.requestAll).not.toHaveBeenCalled();
+  });
+
+  it('저장을 시작하면 이동할 때까지 체크를 바꿀 수 없다', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      http.post('/api/auth/terms/agreements', async () => {
+        await gate;
+        return ok(null);
+      }),
+    );
+    renderPage(REQUIRED);
+
+    await userEvent.click(start());
+
+    await waitFor(() => expect((all() as HTMLInputElement).disabled).toBe(true));
+    for (const box of screen.getAllByRole('checkbox')) {
+      expect((box as HTMLInputElement).disabled).toBe(true);
+    }
+    // 원문 보기는 체크를 바꾸지 않아 잠그지 않음
+    expect(
+      screen.getByRole('button', { name: '서비스 이용 약관 내용 보기' }).hasAttribute('disabled'),
+    ).toBe(false);
+    release();
+    await waitFor(() => expect(push).toHaveBeenLastCalledWith(SIGNUP_PATHS.profile));
   });
 
   it('가입 상태를 다시 읽지 못하면(저장은 됐어도) 권한 요청도 이동도 하지 않는다', async () => {
