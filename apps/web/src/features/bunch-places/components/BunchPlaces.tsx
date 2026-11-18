@@ -109,7 +109,8 @@ function PlaceList({
     remove,
     restore,
     hasMore,
-    pageCount,
+    listVersion,
+    loadingMore,
     loadMore,
   } = useBunchPlaces(bunchId);
   // 눌렀을 때 볼 수 없게 된 카드: 이 화면에 있는 동안 「볼 수 없는 번들이에요」로 보임(기능명세서 8.1.6 상세 4). 다시 들어오면 서버 값으로
@@ -193,7 +194,8 @@ function PlaceList({
       onRemove={removePlace}
       onOpenBundle={openBundle}
       hasMore={hasMore}
-      pageCount={pageCount}
+      listVersion={listVersion}
+      loadingMore={loadingMore}
       onLoadMore={loadMore}
       onBrowseFeed={() => router.push(feedHref)}
     />

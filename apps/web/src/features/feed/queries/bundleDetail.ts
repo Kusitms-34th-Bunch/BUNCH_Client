@@ -35,6 +35,8 @@ export function useCheckBundleVisible() {
   return async (bunchId: string, bundleId: string): Promise<'visible' | 'hidden'> => {
     const profile = await queryClient.ensureQueryData(myProfileQueryOptions());
     const options = bundleDetailQueryOptions(bunchId, bundleId, profile.bunch?.id ?? null);
+    // 같은 key로 진행 중인 요청(미리 받기 등)은 누르기 전 권한으로 내린 결과일 수 있어 취소하고 새로 받음
+    await queryClient.cancelQueries({ queryKey: options.queryKey, exact: true });
     try {
       await queryClient.fetchQuery({ ...options, staleTime: 0 });
       return 'visible';

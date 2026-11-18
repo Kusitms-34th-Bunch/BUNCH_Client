@@ -32,6 +32,8 @@ export function useBunchPlaces(bunchId: string) {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    isFetching,
+    dataUpdatedAt,
   } = useSuspenseInfiniteQuery(pinnedPlacesQueryOptions(bunchId, selectedId));
   // 칩·개수는 첫 쪽 기준(쪽마다 같은 값), 카드는 쪽을 이어 붙이고 쪽 사이에 겹친 카드는 한 번만(받는 사이 콕이 빠져 밀린 경우)
   const first = pages.pages[0];
@@ -134,9 +136,12 @@ export function useBunchPlaces(bunchId: string) {
     isSwitching,
     // 이어 불러오기(기능명세서 8.1.3 상세 5·예외): 실패해도 보이던 카드는 두고, 다시 스크롤해 끝이 보일 때 재시도
     hasMore: hasNextPage,
-    pageCount: pages.pages.length,
+    // 받은 목록이 바뀔 때마다(이어 받기·다시 받기) 감지 요소를 새로 붙여, 끝이 아직 보이면 바로 다음 쪽을 받게 함
+    listVersion: dataUpdatedAt,
+    loadingMore: isFetchingNextPage,
     loadMore: () => {
-      if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+      // 콕 빼기 뒤 처음부터 다시 받는 중에는 이어 받기로 그 요청을 취소하지 않음(끝나면 감지 요소가 새로 붙어 다시 시도)
+      if (hasNextPage && !isFetching) void fetchNextPage();
     },
     remove,
     restore,

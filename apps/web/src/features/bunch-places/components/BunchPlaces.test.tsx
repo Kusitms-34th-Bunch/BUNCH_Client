@@ -461,8 +461,10 @@ describe('BunchPlaces 이어 불러오기(기능명세서 8.1.3)', () => {
   const observed = new Set<Element>();
   let failNext: (_value: boolean) => void = () => undefined;
   let nextRequests = 0;
+  // 지금 감지 중인 요소가 있을 때만 끝이 보였다고 알림(감지 요소가 다시 붙지 않았는데 다음 쪽을 받는 경우를 걸러냄)
   const showEnd = () =>
     act(() => {
+      if (observed.size === 0) return;
       for (const callback of callbacks) callback([{ isIntersecting: true }]);
     });
 
@@ -548,8 +550,10 @@ describe('BunchPlaces 이어 불러오기(기능명세서 8.1.3)', () => {
 
     showEnd();
     await waitFor(() => expect(nextRequests).toBe(1));
+    // 실패 처리가 끝날 때까지(받는 중 표시가 풀릴 때까지) 기다린 뒤 다시 끝을 보임
+    await waitFor(() => expect(screen.getByRole('list')).toHaveAttribute('aria-busy', 'false'));
     // 실패는 따로 알리지 않고 보이던 카드를 그대로 둠(기능명세서 8.1.3 예외)
-    await waitFor(() => expect(screen.getAllByRole('listitem')).toHaveLength(5));
+    expect(screen.getAllByRole('listitem')).toHaveLength(5);
     expect(toast).not.toHaveBeenCalled();
 
     failNext(false);

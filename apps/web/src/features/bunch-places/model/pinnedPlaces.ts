@@ -47,6 +47,8 @@ type KokCard = PinnedPlacesResponse['items'][number];
 
 /** 콕한 장소 화면이 쓰는 모양: 칩(멤버·개수)과 카드 */
 export type PinnedPlaces = {
+  /** 서버가 고른 번치(이어 받은 쪽이 같은 번치인지 확인용) */
+  bunchId: string;
   /** 서버가 거른 멤버. 고른 멤버가 지금 멤버가 아니면 서버가 「전체」로 돌려 없음(명세 005) */
   selectedMemberId: string | undefined;
   /** 번치 전체 콕 수(「전체」 칩, 고른 멤버와 무관) */
@@ -79,6 +81,7 @@ const sourceOf = (card: KokCard): PlaceSource => {
 };
 
 export const toPinnedPlaces = (data: PinnedPlacesResponse): PinnedPlaces => ({
+  bunchId: toDomainId(data.bunchId),
   selectedMemberId: data.selectedMemberId ? toDomainId(data.selectedMemberId) : undefined,
   totalCount: data.totalCount,
   // 닉네임이 없는 멤버는 칩을 그릴 수 없어 뺌. 그 멤버의 콕은 「전체」에만 남음

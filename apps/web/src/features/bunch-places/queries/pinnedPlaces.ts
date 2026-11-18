@@ -7,7 +7,14 @@ import { bunchPlacesKeys } from './keys';
 export const pinnedPlacesQueryOptions = (bunchId: string, memberId: string) =>
   infiniteQueryOptions({
     queryKey: bunchPlacesKeys.list(bunchId, memberId),
-    queryFn: ({ pageParam, signal }) => getPinnedPlaces(memberId, pageParam, signal),
+    queryFn: async ({ pageParam, signal }) => {
+      const page = await getPinnedPlaces(memberId, pageParam, signal);
+      // 서버가 지금 번치를 세션으로 고르므로, 이어 받는 사이 번치가 바뀌었으면 다른 번치의 카드를 이 목록에 붙이지 않음(실패로 두고 새 번치 기준 목록은 번치 key로 따로 받음)
+      if (pageParam !== undefined && page.bunchId !== bunchId) {
+        throw new Error(`pinned places bunch changed: ${page.bunchId}`);
+      }
+      return page;
+    },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });

@@ -49,8 +49,10 @@ type BunchPlacesScreenProps = {
   onOpenBundle?: ((_place: KokPlace) => Promise<'unavailable' | undefined>) | undefined;
   /** 이어 받을 쪽이 남음(기능명세서 8.1.3 상세 5) */
   hasMore?: boolean | undefined;
-  /** 받은 쪽 수. 쪽을 더 받으면 맨 아래 감지 요소를 새로 붙여, 아직 보이면 바로 다음 쪽을 받게 함 */
-  pageCount?: number | undefined;
+  /** 받은 목록의 버전(쪽을 더 받거나 다시 받으면 바뀜). 바뀌면 맨 아래 감지 요소를 새로 붙여, 아직 보이면 바로 다음 쪽을 받게 함 */
+  listVersion?: number | undefined;
+  /** 다음 쪽을 받는 중(목록에 aria-busy) */
+  loadingMore?: boolean | undefined;
   /** 목록 끝이 보이면 호출. 받는 중이면 무시함 */
   onLoadMore?: (() => void) | undefined;
   onBrowseFeed: () => void;
@@ -75,7 +77,8 @@ export function BunchPlacesScreen({
   onRemove,
   onOpenBundle,
   hasMore = false,
-  pageCount = 1,
+  listVersion = 0,
+  loadingMore = false,
   onLoadMore,
   onBrowseFeed,
 }: BunchPlacesScreenProps) {
@@ -248,12 +251,13 @@ export function BunchPlacesScreen({
             {PLACES_MESSAGES.retry}
           </Button>
         </div>
-      ) : !places ? null : visible.length > 0 ? (
+      ) : !places ? null : visible.length > 0 || hasMore ? (
+        // 보이는 카드가 모두 빠져도 다음 쪽이 남았으면 빈 상태 대신 감지 요소를 두어 이어 받음
         // Figma 4096:76101: 칩 아래 24(칩 영역 아래 여백 4 포함), 카드 사이 4, 좌우 16
         <>
           <ul
             ref={listRef}
-            aria-busy={busy}
+            aria-busy={busy || loadingMore}
             className="gap-s2 px-padding-p8 pb-s8 flex flex-col pt-6"
           >
             {visible.map((place) => (
@@ -269,7 +273,7 @@ export function BunchPlacesScreen({
             ))}
           </ul>
           {hasMore ? (
-            <span key={pageCount} ref={observeMore} aria-hidden="true" className="block h-px" />
+            <span key={listVersion} ref={observeMore} aria-hidden="true" className="block h-px" />
           ) : null}
         </>
       ) : (

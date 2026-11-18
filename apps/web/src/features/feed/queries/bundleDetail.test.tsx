@@ -5,6 +5,7 @@ import { mockDb } from '@/mocks/db';
 import { fail } from '@/mocks/lib/envelope';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import { server } from '@/mocks/server';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { useCheckBundleVisible } from './bundleDetail';
 import { feedKeys } from './keys';
@@ -32,9 +33,10 @@ describe('useCheckBundleVisible(기능명세서 8.1.5 로직 1)', () => {
 
     await expect(check(bunchId, bundleId)).resolves.toBe('visible');
 
-    // 지금 번치 명의와 관계없이 이 번들의 상세가 캐시에 들어감(상세 화면이 바로 그려짐)
-    const cached = client.getQueriesData({ queryKey: feedKeys.bundle(bundleId) });
-    expect(cached.some(([, data]) => data !== undefined)).toBe(true);
+    // 상세 화면이 읽는 key(지금 번치 명의)에 그대로 들어감(상세가 바로 그려짐)
+    const viewerId = client.getQueryData(myProfileQueryOptions().queryKey)?.bunch?.id ?? null;
+    expect(viewerId).not.toBeNull();
+    expect(client.getQueryData(feedKeys.detail(bunchId, bundleId, viewerId))).toBeDefined();
   });
 
   it.each([404, 403, 400])(
