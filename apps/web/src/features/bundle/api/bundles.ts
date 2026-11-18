@@ -25,6 +25,19 @@ const REQUEST_ID_HEADER = 'X-Request-Id';
 const bundlePath = (bunchId: string, bundleId: string) =>
   `bunches/${encodeURIComponent(bunchId)}/bundles/${encodeURIComponent(bundleId)}`;
 
+/** 작성 중인 번들 수(번들 만들기 진입 확인, 기능명세 4.1.1). 목록 첫 쪽의 total만 읽음 */
+export const getDraftBundleCount = async (bunchId: string, signal?: AbortSignal) =>
+  (
+    await requestData(
+      bffApi.get(`bunches/${encodeURIComponent(bunchId)}/bundles`, {
+        searchParams: { status: 'DRAFT', page: 0, size: 1 },
+        signal: signal ?? null,
+      }),
+      z.object({ total: z.number().int().nonnegative() }),
+      'draft bundle count',
+    )
+  ).total;
+
 // 화면 id가 서버 숫자로 바뀌지 않으면 요청 전에 막음(잘못된 id를 서버에 보내지 않음)
 const wireIdOrThrow = (id: string) => {
   const wire = toWireId(id);

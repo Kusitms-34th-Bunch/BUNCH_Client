@@ -1,5 +1,6 @@
 import type * as DesignSystem from '@app/design-system';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
@@ -79,7 +80,7 @@ describe('useCreateBundle', () => {
     expect(result.current.creating).toBe(false);
   });
 
-  it('번치 멤버가 1명뿐이면 멤버 초대 안내를 띄우고 이동하지 않는다', async () => {
+  it('번치 멤버가 1명뿐이면 「함께할 멤버가 없어요」 창을 띄우고 이동하지 않는다(기능명세 4.1.4)', async () => {
     mockDb.update((current) => ({
       ...current,
       memberships: current.memberships.filter((membership) => membership.memberId === 5),
@@ -89,9 +90,14 @@ describe('useCreateBundle', () => {
 
     act(() => result.current.create(photoIds, participants));
 
-    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.membersRequired));
+    const dialog = await screen.findByRole('alertdialog', { name: '함께할 멤버가 없어요' });
+    expect(toast).not.toHaveBeenCalled();
     expect(router.push).not.toHaveBeenCalled();
     expect(result.current.creating).toBe(false);
+
+    // 「초대하기」는 멤버 초대 화면으로
+    await userEvent.click(within(dialog).getByRole('button', { name: '초대하기' }));
+    expect(router.push).toHaveBeenCalledWith('/bunch/members/invite');
   });
 
   it('초안이 10개면 한도 안내를 띄운다', async () => {

@@ -69,7 +69,8 @@ describe('OtherBunch 공개 번치(가짜 서버)', () => {
     await user.click(screen.getByRole('button', { name: '팔로우' }));
     expect(await screen.findByRole('button', { name: '팔로잉' })).toBeInTheDocument();
     await waitFor(() => expect(followerText()).toHaveTextContent('24팔로워'));
-    expect(screen.getByRole('status')).toHaveTextContent('캠핑러버 번치를 팔로우했어요.');
+    // 결과는 화면 토스트(기능명세 5.10.3)
+    expect(toast).toHaveBeenCalledWith('캠핑러버 번치를 팔로우했어요.');
     expect(myExternalFollows()).toMatchObject([{ targetBunchId: 3, status: 'FOLLOWING' }]);
 
     await user.click(screen.getByRole('button', { name: '팔로잉' }));
@@ -84,7 +85,7 @@ describe('OtherBunch 공개 번치(가짜 서버)', () => {
 
     expect(await screen.findByRole('button', { name: '팔로우' })).toBeInTheDocument();
     await waitFor(() => expect(followerText()).toHaveTextContent('23팔로워'));
-    expect(screen.getByRole('status')).toHaveTextContent('캠핑러버 번치 팔로우를 취소했어요.');
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('캠핑러버 번치 팔로우를 취소했어요.'));
     expect(myExternalFollows()).toEqual([]);
   });
 
@@ -162,6 +163,8 @@ describe('OtherBunch 비공개 번치(가짜 서버)', () => {
     await user.click(screen.getByRole('button', { name: '팔로우' }));
     expect(await screen.findByRole('button', { name: '팔로우 요청됨' })).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('책방산책 번치에 팔로우를 요청했어요.');
+    // 비공개 번치 요청은 버튼만 바뀌고 화면 토스트는 없음(기능명세 5.10.3)
+    expect(toast).not.toHaveBeenCalled();
     // 요청만 보낸 상태라 여전히 가림
     expect(screen.getByRole('heading', { name: '비공개 번치예요' })).toBeInTheDocument();
 
@@ -171,6 +174,9 @@ describe('OtherBunch 비공개 번치(가짜 서버)', () => {
     await user.click(within(sheet).getByRole('button', { name: '팔로우 요청 취소' }));
 
     expect(await screen.findByRole('button', { name: '팔로우' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(expect.stringContaining('팔로우 요청을 취소했어요.')),
+    );
     expect(myExternalFollows()).toEqual([]);
   });
 
@@ -240,11 +246,17 @@ describe('OtherBunch 명의 확인', () => {
 });
 
 describe('OtherBunch 주소 처리', () => {
-  it('없는 번치와 잘못된 주소는 404로 보낸다', async () => {
+  it('삭제된 번치(404)는 「삭제된 번치예요.」 뒤 이전 화면으로 간다(기능명세 5.10.1)', async () => {
     renderOther('999');
-    await waitFor(() => expect(notFound).toHaveBeenCalled());
 
-    notFound.mockClear();
+    await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalledWith('삭제된 번치예요.'));
+    expect(toastAfterNavigation).toHaveBeenCalledTimes(1);
+    // 돌아갈 기록이 없으면 지금 입구인 피드로
+    expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.feed);
+    expect(notFound).not.toHaveBeenCalled();
+  });
+
+  it('잘못된 주소는 404로 보낸다', async () => {
     renderOther('__proto__');
     await waitFor(() => expect(notFound).toHaveBeenCalled());
   });

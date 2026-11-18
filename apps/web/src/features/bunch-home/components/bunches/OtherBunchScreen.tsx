@@ -1,6 +1,6 @@
 'use client';
 
-import { cn, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { cn, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { FollowButton } from '@app/design-system/web';
 import { type ReactNode, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
@@ -85,12 +85,11 @@ export function OtherBunchScreen({
   const follow = () => {
     setAnnouncement('');
     return onFollow().then(
-      () =>
-        setAnnouncement(
-          bunch.isPrivate
-            ? BUNCH_HOME_MESSAGES.followRequested(bunch.name)
-            : BUNCH_HOME_MESSAGES.followed(bunch.name),
-        ),
+      () => {
+        // 공개 번치는 화면 토스트(기능명세 5.10.3), 비공개 번치 요청은 버튼만 바뀌어 스크린 리더에만 알림
+        if (bunch.isPrivate) setAnnouncement(BUNCH_HOME_MESSAGES.followRequested(bunch.name));
+        else toast(BUNCH_HOME_MESSAGES.followed(bunch.name));
+      },
       () => {},
     );
   };
@@ -118,9 +117,10 @@ export function OtherBunchScreen({
         onConfirm={() => {
           close();
           setAnnouncement('');
+          // 팔로우·요청 취소 결과는 화면 토스트(기능명세 5.10.3)
           void onUnfollow().then(
             () =>
-              setAnnouncement(
+              toast(
                 sheetFor === 'requested'
                   ? BUNCH_HOME_MESSAGES.requestCanceled
                   : BUNCH_HOME_MESSAGES.unfollowed(bunch.name),

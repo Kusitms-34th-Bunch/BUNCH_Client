@@ -6,11 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { type BunchMemberActions, sortMembers } from '../../lib/members';
-import { toManagedMemberships } from '../../model/memberships';
+import { type ManagedMemberships, toManagedMemberships } from '../../model/memberships';
 import { bunchHomeQueryOptions } from '../../queries/bunchHome';
 import {
   type MembershipChange,
@@ -19,6 +20,22 @@ import {
 } from '../../queries/memberships';
 import { BunchHomeError } from '../home/BunchHomeError';
 import { BunchMembersScreen } from './BunchMembersScreen';
+
+/**
+ * 실패한 관리 작업 뒤 다시 받은 목록에서 역할이 바뀐 쪽: 내 역할이면 mine, 대상 멤버의 역할이면 target
+ * 대상이 목록에서 사라진 경우(나감·내보내짐)는 역할 변경으로 보지 않음
+ */
+const findRoleChange = (
+  before: ManagedMemberships,
+  after: ManagedMemberships,
+  change: MembershipChange,
+): 'mine' | 'target' | undefined => {
+  if (after.myRole !== before.myRole) return 'mine';
+  const roleOf = (list: ManagedMemberships, id: string) =>
+    list.members.find((member) => member.id === id)?.role;
+  const next = roleOf(after, change.membershipId);
+  return next !== undefined && next !== roleOf(before, change.membershipId) ? 'target' : undefined;
+};
 
 /**
  * `/bunch/members` 멤버 관리: 내 기본 번치(`members/me`)의 멤버 관리 목록(`GET /bunches/{id}/memberships`)
@@ -96,11 +113,21 @@ export function BunchMembers() {
               return;
             }
             setRecovering(false);
-            toast(
-              data && data.membershipVersion !== managed.version
-                ? BUNCH_HOME_MESSAGES.membersChangedElsewhere
-                : BUNCH_HOME_MESSAGES.memberChangeFailed,
-            );
+            const roleChange = data && findRoleChange(managed, toManagedMemberships(data), target);
+            if (roleChange) {
+              // 내 역할이나 대상 멤버의 역할이 바뀌었으면 안내 뒤 이전 화면(더보기)으로, 기록이 없으면 더보기 메뉴로(기능명세 5.6.1 예외 처리)
+              // 이동하며 알리는 안내라 도착 화면 기준으로 띄움(결정 기록 020)
+              toastAfterNavigation(
+                roleChange === 'mine'
+                  ? BUNCH_HOME_MESSAGES.memberManagePermissionChanged
+                  : BUNCH_HOME_MESSAGES.membersChangedElsewhere,
+              );
+              backOr(BUNCH_HOME_PATHS.menu);
+              return;
+            }
+            // 역할 변경이 아닌 실패(그사이 멤버가 나감 등 버전만 바뀐 경우 포함)는 명세에 따로 없어 공통 실패 문구로 두고 최신 목록에 머묾
+            // 5.6.1의 역할 변경 안내는 역할이 실제로 바뀐 경우에만 씀(사용자 확인)
+            toast(BUNCH_HOME_MESSAGES.memberChangeFailed);
           });
         },
       },

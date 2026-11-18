@@ -11,6 +11,8 @@ export const BUNDLE_SELECT_PATHS = {
   transitionIds: { recommendation: '/bunch/bundles/new/recommendation' },
   /** 번치 홈: 직접 주소로 들어와 돌아갈 기록이 없을 때의 이동 위치 */
   bunchHome: '/bunch',
+  /** 멤버 초대(번치에 나 혼자일 때 「함께할 멤버가 없어요」의 「초대하기」, 화면은 bunch-invite feature) */
+  memberInvite: '/bunch/members/invite',
   /** 만든 초안의 작성 화면 */
   draft: (draftId: string) => `/bunch/drafts/${draftId}`,
   /**
