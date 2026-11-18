@@ -14,9 +14,9 @@ import {
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { getMyBunches } from '@/shared/api/myBunches';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
-import { getMyBunches } from '../../api/bunchHome';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { BunchHome } from './BunchHome';
 

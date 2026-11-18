@@ -8,7 +8,6 @@ import {
   bunchHomeResponseSchema,
   bunchProfileResponseSchema,
   draftBundlesPageSchema,
-  myBunchesResponseSchema,
   publishedBundlesPageSchema,
   toBunchAccessNotice,
 } from '../model/bunchHome';
@@ -49,14 +48,6 @@ export const getDraftBundles = (bunchId: string, signal?: AbortSignal) =>
     }),
     draftBundlesPageSchema,
     'draft bundles',
-  );
-
-/** 내 소속 번치(번치 전환 목록)와 접근 불가 번치 안내 */
-export const getMyBunches = (signal?: AbortSignal) =>
-  requestData(
-    bffApi.get('members/me/bunches', { signal: signal ?? null }),
-    myBunchesResponseSchema,
-    'my bunches',
   );
 
 /** 번치 전환: 마지막 사용 번치로 저장(기본 번치가 이 번치로 바뀜). 내 번치가 아니면 AUTH_002 */
