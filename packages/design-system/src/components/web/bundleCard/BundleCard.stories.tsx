@@ -37,6 +37,8 @@ export const WithoutDelete: Story = {
 };
 
 /** 긴 이름은 한 줄 말줄임 */
+export const MutedTitle: Story = { args: { title: '제목 미정', titleMuted: true } };
+
 export const LongTitle: Story = {
   args: { title: '퇴근 후 한강 러닝 클럽 첫 번째 정기 모임 단체 사진 모음' },
 };

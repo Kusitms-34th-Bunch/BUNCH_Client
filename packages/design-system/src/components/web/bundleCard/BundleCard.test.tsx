@@ -40,6 +40,21 @@ describe('BundleCard', () => {
     expect(screen.queryByText(/^외 /)).toBeNull();
   });
 
+  it('titleMuted면 대신 넣은 제목을 흐리게 보이고, 접근성 이름은 그 문구다', () => {
+    render(
+      <BundleCard
+        title="제목 미정"
+        titleMuted
+        imageSrc="/photo.jpg"
+        members={[]}
+        onCardClick={() => {}}
+      />,
+    );
+
+    expect(screen.getByText('제목 미정').className).toContain('text-text-tertiary');
+    expect(screen.getByRole('button', { name: '제목 미정' })).toBeTruthy();
+  });
+
   it('카드와 삭제 버튼을 따로 누른다', () => {
     const onCardClick = vi.fn();
     const onDelete = vi.fn();
