@@ -64,6 +64,7 @@ path는 제안이다. 번들 상세는 여러 탭에서 들어오므로 탭 아�
 | 피드 탭 (6.1)                | `/feed`(있음)                                                         | 하단 탭. 뒤로가기 없음. 다른 탭에 갔다 오면 스크롤 위치 유지                               |
 | 번들 상세 (6.2)              | `/bunches/[bunchId]/bundles/[bundleId]`                               | 피드 카드, 알림. 번치 메인 「번들」 탭·다른 번치 프로필은 후속. 뒤로가기는 들어온 화면으로 |
 | 번들 상세 댓글로 바로 가기   | `/bunches/[bunchId]/bundles/[bundleId]?focus=comments`                | 카드·상세의 말풍선. 댓글 영역으로 스크롤하고 입력란 활성화                                 |
+| 번들 상세 댓글 보기          | `/bunches/[bunchId]/bundles/[bundleId]?section=comments`              | 댓글 알림. 댓글 영역으로 스크롤만 하고 입력란 초점(키보드)은 주지 않음                     |
 | 번들 수정 (6.2.12)           | `/bunches/[bunchId]/bundles/[bundleId]/edit`(있음, API 연동 7번 #423) | 상세 더보기 「수정하기」(메인 관리자). 저장하면 상세로                                     |
 | 번들 공개 범위 수정 (6.2.15) | `/bunches/[bunchId]/bundles/[bundleId]/visibility`(있음)              | 상세 더보기 「공개 범위 설정」(메인 관리자). 「수정하기」면 상세로                         |
 | 장소 콕하기 시트 (6.3.1)     | 카드·상세 위 바텀시트                                                 | 위치 글자                                                                                  |

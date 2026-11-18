@@ -9,7 +9,7 @@ describe('notificationPath', () => {
     ['ROLE_PERMISSIONS', {}, '/bunch/members/roles'],
     ['DRAFT', { bundleId: 7 }, '/bunch/drafts/7'],
     ['BUNDLE', { bundleId: 7 }, '/bunches/1/bundles/7'],
-    ['BUNDLE_COMMENTS', { bundleId: 7 }, '/bunches/1/bundles/7?focus=comments'],
+    ['BUNDLE_COMMENTS', { bundleId: 7 }, '/bunches/1/bundles/7?section=comments'],
     ['CANDIDATES', {}, '/bunch/bundles/new/members'],
     ['OTHER_BUNCH_PROFILE', { targetBunchId: 3 }, '/bunches/3'],
     ['DRAFT_LIST', {}, '/bunch'],

@@ -17,10 +17,12 @@ export function BundleDetailRoute({
   bunchId,
   bundleId,
   focusComments,
+  showComments,
 }: {
   bunchId: string;
   bundleId: string;
   focusComments: boolean;
+  showComments: boolean;
 }) {
   const { data: profile } = useQuery(myProfileQueryOptions());
   const viewerId = profile === undefined ? undefined : (profile.bunch?.id ?? null);
@@ -33,6 +35,7 @@ export function BundleDetailRoute({
       // 받지 못하면 null(상세는 번치 이름 없이 보임)
       bunch={home.data?.bunch ?? (home.isError ? null : undefined)}
       focusComments={focusComments}
+      showComments={showComments}
       links={links}
     />
   );

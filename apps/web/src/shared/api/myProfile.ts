@@ -2,6 +2,7 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { CHARACTER_TYPES, defaultBunchImage } from '@/shared/lib/bunchProfile';
+import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import { bffApi, requestData } from './bffApi';
 import { toDomainId } from './ids';
 
@@ -37,14 +38,17 @@ export const getMyProfile = async (signal?: AbortSignal) => {
   return {
     memberId: toDomainId(profile.memberId),
     nickname: profile.nickname ?? null,
-    imageSrc: profile.imageUrl ?? null,
+    // 사진이 없거나 안전하지 않은 주소면 null(화면이 기본 프로필 이미지를 보임)
+    imageSrc: profile.imageUrl && isSafeImageUrl(profile.imageUrl) ? profile.imageUrl : null,
     bunch: profile.defaultBunch
       ? {
           id: toDomainId(profile.defaultBunch.id),
           name: profile.defaultBunch.name,
           characterType: profile.defaultBunch.characterType,
           imageSrc:
-            profile.defaultBunch.imageUrl || defaultBunchImage(profile.defaultBunch.characterType),
+            profile.defaultBunch.imageUrl && isSafeImageUrl(profile.defaultBunch.imageUrl)
+              ? profile.defaultBunch.imageUrl
+              : defaultBunchImage(profile.defaultBunch.characterType),
         }
       : null,
   };

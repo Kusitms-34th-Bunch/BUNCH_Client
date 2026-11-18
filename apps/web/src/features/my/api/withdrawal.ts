@@ -34,6 +34,7 @@ export const getWithdrawalCheck = async (signal?: AbortSignal): Promise<Withdraw
   return ownerBunches.map((bunch) => ({
     id: toDomainId(bunch.bunchId),
     name: bunch.name,
+    // 대표 사진이 없으면 비움. 응답에 번치 타입이 없어 기본 이미지는 소속 번치 목록으로 고름(queries/withdrawal.ts)
     imageSrc: bunch.imageUrl && isSafeImageUrl(bunch.imageUrl) ? bunch.imageUrl : undefined,
   }));
 };

@@ -1,6 +1,7 @@
 import type { components } from '@app/api-core/generated';
 import { type ApiContract, isApiError } from '@app/api-core';
 import { z } from 'zod';
+import type { MyBunches } from '@/shared/api/myBunches';
 import { toDomainId } from '@/shared/api/ids';
 import {
   CHARACTER_TYPES,
@@ -198,40 +199,7 @@ export const toBunchHomeDetail = (
   };
 };
 
-/**
- * `GET /api/v1/members/me/bunches` 응답(Swagger `MyBunchesResponse`)
- * 생성 타입을 다시 만들면 번들 스키마 계약 차이가 함께 드러나 그 정리 전까지 직접 정의하고 쓰는 필드만 검사
- */
-// 계약 미연결: 번치 전환 목록에 필요한 필드만 받음(소속 myMembership 생략)
-export const myBunchesResponseSchema = z.object({
-  activeCount: z.number().int().nonnegative(),
-  maxActiveCount: z.number().int().positive(),
-  defaultBunchId: z.number().int().positive().nullish(),
-  activeBunches: z.array(
-    z.object({
-      bunch: z.object({
-        id: z.number().int().positive(),
-        name: z.string(),
-        imageUrl: z.string().nullish(),
-        characterType: z.enum(CHARACTER_TYPES),
-      }),
-      unreadCount: z.number().int().nonnegative(),
-      lastUsedAt: z.string(),
-    }),
-  ),
-  unavailableBunches: z.array(
-    z.object({
-      id: z.number().int().positive(),
-      bunchId: z.number().int().positive(),
-      name: z.string(),
-      characterType: z.enum(CHARACTER_TYPES),
-      reason: z.enum(['REMOVED', 'DELETED']),
-    }),
-  ),
-});
-
-export type MyBunches = z.infer<typeof myBunchesResponseSchema>;
-
+// `members/me/bunches` 응답 스키마·요청은 탈퇴 화면 등도 쓰므로 shared(`shared/api/myBunches.ts`)가 소유
 const lastUsedTime = (value: string) => Date.parse(value) || 0;
 
 /**

@@ -22,7 +22,8 @@ export function MemberComments({ members }: { members: FeedMemberComment[] }) {
       <div
         role="group"
         aria-label={text.memberChipsLabel}
-        className="gap-s4 px-padding-p8 flex scrollbar-none overflow-x-auto"
+        // ChipButton size M의 터치 영역(after:-inset-y-1, 위아래 4px)이 넘쳐 세로로도 스크롤되지 않게 같은 만큼 여백을 두고 바깥 간격은 음수 margin으로 유지
+        className="gap-s4 px-padding-p8 -my-1 flex scrollbar-none overflow-x-auto py-1"
       >
         {members.map((member) => (
           <ChipButton

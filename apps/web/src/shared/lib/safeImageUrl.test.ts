@@ -16,5 +16,7 @@ describe('isSafeImageUrl', () => {
     '/\\evil.example/x.jpg',
     '/a b.jpg',
     'https://a b',
+    // 모양은 https지만 해석할 수 없는 주소
+    'https://%',
   ])('%s는 거부한다', (url) => expect(isSafeImageUrl(url)).toBe(false));
 });

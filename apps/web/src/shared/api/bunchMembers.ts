@@ -2,6 +2,7 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import { bffApi, requestData } from './bffApi';
 import { toDomainId } from './ids';
 
@@ -31,8 +32,9 @@ const bunchMembersResponseSchema = z.array(bunchMemberResponseSchema);
 const toBunchMember = (member: z.infer<typeof bunchMemberResponseSchema>): BunchMember => ({
   id: toDomainId(member.memberId),
   name: member.nickname,
-  // 사진이 없거나 빈 문자열이면 기본 프로필 이미지(깨진 이미지 방지)
-  avatarSrc: member.imageUrl || DEFAULT_PROFILE_IMAGE,
+  // 사진이 없거나 빈 문자열·안전하지 않은 주소면 기본 프로필 이미지(깨진 이미지 방지)
+  avatarSrc:
+    member.imageUrl && isSafeImageUrl(member.imageUrl) ? member.imageUrl : DEFAULT_PROFILE_IMAGE,
   role: member.role,
 });
 

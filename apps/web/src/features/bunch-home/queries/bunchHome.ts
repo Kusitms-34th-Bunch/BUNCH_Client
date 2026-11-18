@@ -1,17 +1,16 @@
 import { isApiError } from '@app/api-core';
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { MyBunches } from '@/shared/api/myBunches';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { persistedQuery } from '@/shared/query/persistence';
-import type { MyBunches } from '../model/bunchHome';
 import {
   deleteBunchAccessNotice,
   getBunchAccessNotice,
   getBunchHome,
   getDraftBundles,
-  getMyBunches,
   getPublishedBundles,
   updateBunchProfile,
   type UpdateBunchProfileInput,
@@ -42,14 +41,6 @@ export const draftBundlesQueryOptions = (bunchId: string | undefined) =>
   queryOptions({
     queryKey: sharedKeys.draftBundles(bunchId),
     queryFn: bunchId ? ({ signal }) => getDraftBundles(bunchId, signal) : skipToken,
-    ...persistedQuery,
-  });
-
-/** 내 소속 번치 목록(번치 전환 시트·소속 개수 한도) */
-export const myBunchesQueryOptions = () =>
-  queryOptions({
-    queryKey: sharedKeys.myBunches(),
-    queryFn: ({ signal }) => getMyBunches(signal),
     ...persistedQuery,
   });
 

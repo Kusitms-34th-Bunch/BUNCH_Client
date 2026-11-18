@@ -2,6 +2,8 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 import type { KokPlace, PlaceMember, PlaceSource } from '../lib/types';
 
 const wireId = z.number().int().positive();
@@ -72,7 +74,11 @@ export const toPinnedPlaces = (data: PinnedPlacesResponse): PinnedPlaces => ({
           {
             id: toDomainId(member.memberId),
             name: member.nickname,
-            avatarSrc: member.imageUrl ?? undefined,
+            // 사진이 없거나 안전하지 않은 주소면 기본 프로필 이미지(비우면 배경색 원만 그림)
+            avatarSrc:
+              member.imageUrl && isSafeImageUrl(member.imageUrl)
+                ? member.imageUrl
+                : DEFAULT_PROFILE_IMAGE,
             count: member.count,
           },
         ]

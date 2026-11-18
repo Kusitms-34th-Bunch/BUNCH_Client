@@ -14,7 +14,11 @@ import type { OwnedBunch } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 import { consumeTransferFromGuide, markKeepAgreed } from '../../lib/withdrawalFlow';
-import { ownedBunchesQueryOptions, useTransferOwnershipMutation } from '../../queries/withdrawal';
+import {
+  ownedBunchesQueryOptions,
+  useOwnedBunchImage,
+  useTransferOwnershipMutation,
+} from '../../queries/withdrawal';
 
 const text = MY_MESSAGES.transfer;
 
@@ -29,6 +33,7 @@ export function AdminTransferScreen() {
   const [fromGuide] = useState(consumeTransferFromGuide);
   const progressId = useId();
   const owned = useQuery(ownedBunchesQueryOptions());
+  const bunchImageOf = useOwnedBunchImage();
   const transfer = useTransferOwnershipMutation();
   // 보내는 동안·넘긴 뒤 돌아가는 전환 동안은 누른 순간의 목록을 유지(다시 받은 목록이 비어도 화면이 바뀌지 않게)
   const [frozen, setFrozen] = useState<readonly OwnedBunch[]>();
@@ -136,7 +141,7 @@ export function AdminTransferScreen() {
                 <BunchAccordion
                   key={bunch.id}
                   name={bunch.name}
-                  imageSrc={bunch.imageSrc}
+                  imageSrc={bunchImageOf(bunch)}
                   headingLevel={2}
                   // 새 관리자를 고르면 접혔을 때 선택 상태로 표시(Figma Status=Selected)
                   selected={pickedMember !== undefined}

@@ -10,19 +10,20 @@ export default async function BundleDetailPage({
   searchParams,
 }: {
   params: Promise<{ bunchId: string; bundleId: string }>;
-  searchParams: Promise<{ focus?: string | string[] }>;
+  searchParams: Promise<{ focus?: string | string[]; section?: string | string[] }>;
 }) {
-  const [{ bunchId, bundleId }, { focus }] = await Promise.all([params, searchParams]);
+  const [{ bunchId, bundleId }, { focus, section }] = await Promise.all([params, searchParams]);
   return (
     <div
       data-ssgoi-transition={FEED_PATHS.transitionIds.bundle}
       className="bg-surface-primary flex h-full min-h-0 flex-1 flex-col"
     >
-      {/* 알 수 없는 focus 값은 무시 */}
+      {/* 알 수 없는 focus·section 값은 무시. focus는 말풍선(입력란 초점), section은 댓글 알림(스크롤만) */}
       <BundleDetailRoute
         bunchId={bunchId}
         bundleId={bundleId}
         focusComments={focus === 'comments'}
+        showComments={section === 'comments'}
       />
     </div>
   );

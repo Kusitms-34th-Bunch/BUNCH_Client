@@ -103,7 +103,8 @@ export const toFeedBundleDetail = (
                 pickers: (photo.picks?.members ?? []).map((member) =>
                   member.profileAvailable
                     ? { name: member.nickname ?? '', imageSrc: avatarOf(member) }
-                    : { name: '' },
+                    : // 볼 수 없는 멤버도 참여 멤버 칩처럼 기본 이미지(비우면 ProfileImage가 배경색 원만 그림)
+                      { name: '', imageSrc: DEFAULT_PROFILE_IMAGE },
                 ),
               },
             ]
