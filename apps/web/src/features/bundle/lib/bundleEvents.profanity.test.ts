@@ -76,6 +76,38 @@ describe('금칙어 상태가 실린 이벤트', () => {
       expect(outcome.detail.profanity?.prohibitedCommentMemberIds).toEqual(['7']);
   });
 
+  it('COMMENT 이벤트는 코멘트 금칙어·사유만 바꾸고, 먼저 받은 제목 금칙어·제목 사유는 낡은 값으로 덮지 않는다', () => {
+    // 내 제목 병합 응답으로 제목 금칙어를 이미 알고 있음
+    const titled = {
+      ...detail,
+      profanity: { titleProhibited: true, prohibitedCommentMemberIds: [] },
+      publishBlockers: ['TITLE_PROHIBITED_WORD'],
+    } as BundleDetail;
+
+    // 병합보다 먼저 처리된 코멘트 이벤트가 늦게 도착(제목 금칙어 없음으로 계산된 값)
+    const outcome = applyContentEvent(
+      titled,
+      'COMMENT',
+      {
+        ...comment,
+        profanity: profanity(false, [7]),
+        publishBlockers: ['COMMENTS_PROHIBITED_WORD'],
+      },
+      4,
+    );
+
+    expect(outcome.kind).toBe('apply');
+    if (outcome.kind !== 'apply') return;
+    expect(outcome.detail.profanity).toEqual({
+      titleProhibited: true,
+      prohibitedCommentMemberIds: ['7'],
+    });
+    expect(outcome.detail.publishBlockers).toEqual([
+      'COMMENTS_PROHIBITED_WORD',
+      'TITLE_PROHIBITED_WORD',
+    ]);
+  });
+
   it('금칙어 상태가 없는 이벤트는 기존 상태를 그대로 둔다', () => {
     const flagged = {
       ...detail,

@@ -39,14 +39,35 @@ type ProfanityChange = {
   publishBlockers?: readonly string[] | null | undefined;
 };
 
-/** 응답·이벤트에 금칙어 상태가 왔으면 그 값과 서버의 발행 차단 사유로 바꿈 */
-const profanityChanges = ({
-  profanity,
-  publishBlockers,
-}: ProfanityChange): Partial<BundleDetail> => ({
-  ...(profanity ? { profanity: toBundleProfanity(profanity) } : {}),
-  ...(publishBlockers ? { publishBlockers } : {}),
-});
+/**
+ * 코멘트 쪽 이벤트(COMMENT·PARTICIPANTS)의 금칙어 상태로는 코멘트에 관한 값만 바꿈
+ * 제목 병합 응답은 revision을 올리지 않아, 병합보다 먼저 처리된 코멘트 이벤트가 늦게 와도 제목 금칙어·제목 계열 사유를 낡은 값으로 덮지 않게 함
+ * 제목 쪽은 TITLE 이벤트·병합 응답(`withTitleState`)만 바꿈. 아직 금칙어 상태를 모르면 이벤트의 제목 값을 씀
+ */
+const commentProfanityChanges = (
+  detail: BundleDetail,
+  { profanity, publishBlockers }: ProfanityChange,
+): Partial<BundleDetail> => {
+  const incoming = toBundleProfanity(profanity);
+  return {
+    ...(incoming
+      ? {
+          profanity: {
+            titleProhibited: detail.profanity?.titleProhibited ?? incoming.titleProhibited,
+            prohibitedCommentMemberIds: incoming.prohibitedCommentMemberIds,
+          },
+        }
+      : {}),
+    ...(publishBlockers
+      ? {
+          publishBlockers: [
+            ...publishBlockers.filter((reason) => !isTitleBlocker(reason)),
+            ...detail.publishBlockers.filter(isTitleBlocker),
+          ],
+        }
+      : {}),
+  };
+};
 
 /** 병합된 제목 상태(응답·이벤트)를 상세에 반영: 더 낡은 제목 버전으로 덮지 않고, 길이 초과 발행 사유와 금칙어 상태도 맞춤 */
 export const withTitleState = (
@@ -208,7 +229,7 @@ export const applyContentEvent = (
         comments: existing
           ? detail.comments.map((comment) => (comment === existing ? incoming : comment))
           : [...detail.comments, incoming],
-        ...profanityChanges(parsed.data),
+        ...commentProfanityChanges(detail, parsed.data),
       });
     }
     case 'PARTICIPANTS': {
@@ -220,7 +241,7 @@ export const applyContentEvent = (
         comments: parsed.data.comments
           .map(toDetailComment)
           .filter((comment) => !removed.has(comment.memberId)),
-        ...profanityChanges(parsed.data),
+        ...commentProfanityChanges(detail, parsed.data),
       });
     }
     default:
