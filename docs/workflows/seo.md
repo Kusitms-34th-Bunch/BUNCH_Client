@@ -8,6 +8,7 @@
 - 공개 정적 route는 route의 성격을 설명하는 `title`, `description`을 제공한다.
 - 공개 동적 route만 실제 데이터에 근거해 `generateMetadata`를 사용한다. 존재하지 않거나 권한이 필요한 데이터를 메타데이터에서 노출하지 않는다.
 - browser에 노출되는 canonical URL, image URL, 분석 ID는 확정된 public 환경변수 또는 배포 설정에서만 가져온다. 임시 도메인이나 placeholder를 커밋하지 않는다.
+- 상대 경로 OG image의 절대 주소는 `metadataBase`를 두지 않고 Next 기본값(Vercel 배포 설정)에 맡긴다. 운영은 `VERCEL_PROJECT_PRODUCTION_URL`, 미리보기 배포는 `VERCEL_BRANCH_URL`·`VERCEL_URL`, 개발은 localhost다(next 16.4.6 `resolve-url.js` 확인, #442). 요청 헤더(Host·`x-forwarded-host`)로 만들지 않는다. 배포 뒤에는 실제 링크의 `og:image`가 운영 도메인인지 확인한다(시스템 환경 변수가 실행 시점에 없으면 localhost가 된다).
 
 ## Crawling assets
 
