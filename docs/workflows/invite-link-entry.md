@@ -1,6 +1,6 @@
 # 초대 링크 진입
 
-초대 링크(`/invite/{토큰}`)로 들어온 사람이 번치에 참여하기까지의 흐름과, 아직 연결하지 않은 것(유니버셜 링크, 링크 미리보기)을 모은다. 화면별 상세는 각 컴포넌트의 spec을 본다.
+초대 링크(`/invite/{토큰}`)로 들어온 사람이 번치에 참여하기까지의 흐름과, 아직 연결하지 않은 것(유니버셜 링크)을 모은다. 화면별 상세는 각 컴포넌트의 spec을 본다.
 
 - 진입 페이지: `apps/web/src/features/invite-entry/components/InviteEntry.spec.md`
 - 초대 진입 확인: `apps/web/src/features/onboarding/components/join/BunchJoinEntry.spec.md`
@@ -40,7 +40,6 @@
 | 앱이 링크를 웹뷰에 전달 | 앱이 링크로 열리면 mobile-shell이 `/invite/{토큰}`을 WebView에 열거나 토큰을 웹에 전달. 앱 안에서는 기존 접근 가드가 토큰 유무를 판별해 비로그인이면 로그인으로 보낸다 | mobile-shell, `packages/bridge` 계약 변경 시 보안 검토 대상                                                                        |
 | 「앱 설치하기」         | 앱스토어 앱 페이지로 이동. 지금은 `InviteEntry`의 `onInstallApp`이 없어 임시 안내 토스트만 보인다(`InviteEntry` 호출부 `app/invite/[token]/page.tsx`에서 연결)         | App Store 주소는 `https://apps.apple.com/app/id6834488511`(App Store Connect 앱 Apple ID, #439). 출시 전이라 연결 시점은 미정      |
 | 설치 직후 이어받기      | 앱을 설치한 뒤 첫 실행에서 초대 정보를 이어받는 기능(Deferred Deep Link). 기능명세 2.7.1 「구현 가능한 상황이면 구현」                                                 | 선택                                                                                                                               |
-| 링크 미리보기(OG)       | 「{번치 이름}에 초대받았어요」와 번치 프로필 이미지. 서버 렌더에서 공개 조회로 번치 정보를 읽어야 한다                                                                 | 후속                                                                                                                               |
 
 앱 밖(브라우저)에서는 소셜 로그인을 할 수 없다(`socialSignIn.ts`: 네이티브 SDK 필요). 그래서 앱 없는 사용자가 「초대장 확인하기」를 누르면 로그인 화면까지 가도 거기서 막힌다. **Universal Link가 연결되면 앱이 설치된 사용자는 이 구간을 겪지 않는다.** 앱이 없는 사용자의 흐름(앱 설치 안내)은 유니버셜 링크와 함께 정한다.
 
@@ -50,7 +49,16 @@
 
 - 반영: 초대 확인 화면(`BunchJoinInvitation`)의 봉투·인장 색과, 번치 사진이 없을 때의 기본 이미지가 카드의 `characterType`을 따른다. 이전에 타입 1로 고정했던 값은 없앴다.
 - 생성 타입: `packages/api-core/src/generated/openapi.ts`의 `InvitationCard`에만 `characterType`을 더했다. 전체를 다시 생성하면 이번 변경과 무관한 엔드포인트·스키마 차이가 크게 따라와서(최신 명세 기준) 별도 작업으로 남긴다.
-- 진입 페이지(`InviteEntry`)는 링크가 유효한지만 알면 돼 이 값을 쓰지 않는다. 링크 미리보기(OG)를 붙일 때 카드 정보와 함께 쓸 수 있다.
+- 진입 페이지(`InviteEntry`)는 링크가 유효한지만 알면 돼 이 값을 쓰지 않는다. 링크 미리보기(OG)는 번치 이름만 쓴다(아래).
+
+### 링크 미리보기(OG) — 반영함(#442)
+
+메신저에 초대 링크를 붙이면 미리보기 제목이 「{번치 이름}에 초대받았어요」로 보인다(기능명세 2.4.3·2.7.1).
+
+- `app/invite/[token]/page.tsx`의 `generateMetadata`가 서버 렌더에서 공개 조회(`GET /invitations/{token}`, `shared/api/server/invitationPreview.ts`)로 번치 이름을 읽는다. 재시도 없이 3초 안에 못 읽거나 없는·만료된 링크면 기본 제목 「bunch 초대장」이다.
+- 이미지는 번치마다 만들지 않고 고정 이미지 `public/images/og/invite.png`(Figma 「오픈그래프 이미지」 `6468:114571`, 1800×945)를 쓴다. 절대 주소는 Next 기본값을 따른다(운영 `VERCEL_PROJECT_PRODUCTION_URL`, 미리보기 배포 `VERCEL_BRANCH_URL`·`VERCEL_URL`, `docs/workflows/seo.md`).
+- 토큰이 든 주소라 `og:url`을 넣지 않고, 검색 제외(`noindex`)와 `no-referrer`는 유지한다.
+- 카카오톡 미리보기는 배포 뒤 실제 링크로 확인해야 한다(카카오는 미리보기를 캐시하므로 바꾼 뒤에는 카카오 개발자 도구의 캐시 초기화가 필요할 수 있다).
 
 ## 알려진 한계
 
