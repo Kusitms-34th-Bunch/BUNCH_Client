@@ -8,8 +8,13 @@ import { usePhotoBoxFixture } from './usePhotoBoxFixture';
 /** 사진함 목록 새로 받기의 대역: 호출 횟수를 세고, `fail`이면 거부함 */
 export const photoBoxRefresh = { calls: 0, fail: false };
 
+/** 사진함 상태의 대역: `empty`면 사진함이 빈 상태로 보임(테스트마다 되돌림) */
+export const photoBoxPreview: { value: Parameters<typeof usePhotoBoxFixture>[0] } = {
+  value: undefined,
+};
+
 export const usePhotoBoxDouble = (...args: Parameters<typeof usePhotoBoxFixture>) => ({
-  ...usePhotoBoxFixture(...args),
+  ...usePhotoBoxFixture(args[0] ?? photoBoxPreview.value),
   refresh: () => {
     photoBoxRefresh.calls += 1;
     return photoBoxRefresh.fail ? Promise.reject(new Error('refresh failed')) : Promise.resolve();
