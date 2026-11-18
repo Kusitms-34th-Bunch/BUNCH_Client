@@ -6,12 +6,12 @@ import Link from 'next/link';
 import type { PhotoSection } from '@/features/photo-box/lib/photoDate';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import type { Recommendation } from '../../lib/recommendation';
+import type { RecommendationDetail } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 
 type RecommendDetailScreenProps = {
-  recommendation: Recommendation;
+  recommendation: Pick<RecommendationDetail, 'id' | 'title'>;
   /** 추천 순서를 지킨 날짜별 사진 */
   sections: readonly PhotoSection[];
   onBack: () => void;

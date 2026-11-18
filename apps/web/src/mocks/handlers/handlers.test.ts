@@ -18,6 +18,15 @@ describe('가짜 서버 세션', () => {
     expect(await api().get('session').json()).toEqual({ authenticated: true });
   });
 
+  it('실시간 연결용 토큰은 token과 앞으로의 만료 시각을 돌려준다', async () => {
+    const { token, expiresAt } = await api()
+      .post('auth/ws-token')
+      .json<{ token: string; expiresAt: string }>();
+
+    expect(token).not.toBe('');
+    expect(new Date(expiresAt).getTime()).toBeGreaterThan(Date.now());
+  });
+
   it('재발급과 로그아웃은 본문 없이 성공한다', async () => {
     // ky afterResponse hook이 본문 없는 204 응답을 복제하면 happy-dom 스트림 오류 발생(실제 브라우저는 무관), fetch로 확인
     for (const path of ['/api/auth/reissue', '/api/auth/logout']) {
@@ -70,13 +79,35 @@ describe('가짜 서버 번치 멤버 목록', () => {
     expect(await response.json()).toMatchObject({ success: false, error: { code: 'COMMON_001' } });
   });
 
-  it('없는 번치는 RESOURCE_001(404)이다', async () => {
+  it('없는 번치는 BUNCH_009(404)이다', async () => {
     const response = await fetch('/api/bunches/999/members');
     expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ error: { code: 'RESOURCE_001' } });
+    expect(await response.json()).toMatchObject({ error: { code: 'BUNCH_009' } });
   });
 
-  it('내가 소속이 아니면 AUTH_002(403)이다', async () => {
+  it('소속이 아니어도 공개 번치는 조회하고, 서로 차단했으면 BUNCH_009(404)이다', async () => {
+    expect(unwrapEnvelope<BunchMember[]>(await api().get('bunches/3/members').json())).toHaveLength(
+      4,
+    );
+
+    mockDb.update((state) => ({
+      ...state,
+      blocks: [
+        ...state.blocks,
+        {
+          id: 99,
+          blockerBunchId: 3,
+          targetBunchId: MOCK_BUNCH_ID,
+          createdAt: '2026-10-20T09:00:00.000Z',
+        },
+      ],
+    }));
+    const response = await fetch('/api/bunches/3/members');
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: { code: 'BUNCH_009' } });
+  });
+
+  it('소속이 아닌 비공개 번치를 팔로우 승인 없이 보면 AUTH_002(403)이다', async () => {
     mockDb.update((state) => ({
       ...state,
       memberships: state.memberships.filter(
@@ -119,11 +150,9 @@ describe('가짜 서버 번치 만들기', () => {
     expect(again.id).toBe(first.id);
     const { memberships, bunches } = mockDb.get();
     expect(bunches.filter((bunch) => bunch.name === '새번치')).toHaveLength(1);
-    expect(memberships).toContainEqual({
-      bunchId: first.id,
-      memberId: MOCK_MY_MEMBER_ID,
-      role: 'OWNER',
-    });
+    expect(memberships).toContainEqual(
+      expect.objectContaining({ bunchId: first.id, memberId: MOCK_MY_MEMBER_ID, role: 'OWNER' }),
+    );
   });
 
   it('멱등 키가 없으면 400, 같은 키에 다른 입력은 409 REQUEST_001이다', async () => {
@@ -154,5 +183,84 @@ describe('가짜 서버 번치 만들기', () => {
       throwHttpErrors: false,
     });
     expect(response.status).toBe(404);
+  });
+});
+
+describe('가짜 서버 초대 확인·참여', () => {
+  const verify = (invitation: string) =>
+    api().post('invitations/verify', { json: { invitation }, throwHttpErrors: false });
+  const join = (invitation: string, key: string | null) =>
+    api().post('invitations/join', {
+      json: { invitation },
+      throwHttpErrors: false,
+      ...(key ? { headers: { 'Idempotency-Key': key } } : {}),
+    });
+
+  it('시연용 초대는 링크 URL이든 코드든 카드와 AVAILABLE을 돌려준다', async () => {
+    for (const invitation of ['mockjoin', 'https://bunch.app/invite/MOCKJOIN']) {
+      const response = await verify(invitation);
+      const body = unwrapEnvelope<{ card: { name: string }; eligibility: string }>(
+        await response.json(),
+      );
+      expect(body.card.name).toBe('여행가조');
+      expect(body.eligibility).toBe('AVAILABLE');
+    }
+  });
+
+  it('없는 초대는 404 INVITE_001이고 이미 속한 번치의 초대는 ALREADY_MEMBER다', async () => {
+    expect((await verify('NOPE0000')).status).toBe(404);
+    const body = unwrapEnvelope<{ eligibility: string }>(await (await verify('MOCK0001')).json());
+    expect(body.eligibility).toBe('ALREADY_MEMBER');
+  });
+
+  it('참여하면 MEMBER로 등록되고 같은 멱등 키는 같은 번치를 돌려주며 다시 참여하면 ALREADY_MEMBER다', async () => {
+    const first = unwrapEnvelope<{ outcome: string; bunch: { id: number } }>(
+      await (await join('MOCKJOIN', 'k-1')).json(),
+    );
+    const replay = unwrapEnvelope<{ outcome: string; bunch: { id: number } }>(
+      await (await join('MOCKJOIN', 'k-1')).json(),
+    );
+    const again = unwrapEnvelope<{ outcome: string }>(await (await join('MOCKJOIN', 'k-2')).json());
+
+    expect(first.outcome).toBe('JOINED');
+    expect(replay.bunch.id).toBe(first.bunch.id);
+    expect(again.outcome).toBe('ALREADY_MEMBER');
+    expect(mockDb.get().memberships).toContainEqual(
+      expect.objectContaining({
+        bunchId: first.bunch.id,
+        memberId: MOCK_MY_MEMBER_ID,
+        role: 'MEMBER',
+      }),
+    );
+  });
+
+  it('멱등 키가 없으면 400, 같은 키에 다른 초대는 409다', async () => {
+    expect((await join('MOCKJOIN', null)).status).toBe(400);
+    await join('MOCKJOIN', 'k-3');
+    expect((await join('MOCK0001', 'k-3')).status).toBe(409);
+  });
+
+  it('시연 초대로 참여하면 초대한 사람이 OWNER로 함께 등록되고 다시 확인해도 초대자가 보인다', async () => {
+    const joined = unwrapEnvelope<{ bunch: { id: number } }>(
+      await (await join('MOCKJOIN', 'k-owner')).json(),
+    );
+    const roles = mockDb
+      .get()
+      .memberships.filter((item) => item.bunchId === joined.bunch.id)
+      .map((item) => item.role);
+    expect(roles.sort()).toEqual(['MEMBER', 'OWNER']);
+
+    const card = unwrapEnvelope<{ inviterNickname: string | null }>(
+      await api().get('invitations/MOCKJOIN').json(),
+    );
+    expect(card.inviterNickname).toBe('민지');
+  });
+
+  it('공개 초대 조회는 로그인 없이 카드를 돌려주고, 없는 초대는 404 INVITE_001이다', async () => {
+    const card = unwrapEnvelope<{ name: string }>(await api().get('invitations/MOCKJOIN').json());
+    expect(card.name).toBe('여행가조');
+
+    const missing = await api().get('invitations/NOPE0000', { throwHttpErrors: false });
+    expect(missing.status).toBe(404);
   });
 });

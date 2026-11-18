@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from './route';
 
 const devToken = vi.hoisted(() => ({ requestDevToken: vi.fn() }));
-vi.mock('@/shared/api/devToken', () => devToken);
+vi.mock('@/shared/api/server/devToken', () => devToken);
 
 const post = (body?: unknown) =>
   new NextRequest('http://localhost:3000/api/dev/token', {

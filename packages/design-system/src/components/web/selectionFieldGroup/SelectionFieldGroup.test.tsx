@@ -216,6 +216,25 @@ describe('SelectionFieldGroup', () => {
     expect(screen.getByRole('button', { name: '부산광역시 해운대구 순서 바꾸기 2' })).toBeTruthy();
   });
 
+  it('행에 members를 주면 그 행 값 오른쪽에 프로필을 보이고 fieldLabel은 그 행 이름에 쓴다', () => {
+    const { container } = renderGroup({
+      items: [
+        {
+          id: 'a',
+          value: '서울특별시 여의도동',
+          members: [{ name: '경진', src: '/a.png' }],
+          fieldLabel: '경진님이 편집 중 위치',
+        },
+        { id: 'b', value: '부산광역시 해운대구' },
+      ],
+    });
+
+    const [first, second] = rows(container);
+    expect(first?.querySelectorAll('img')).toHaveLength(1);
+    expect(second?.querySelectorAll('img')).toHaveLength(0);
+    expect(screen.getByRole('button', { name: /경진님이 편집 중 위치/ })).toBeTruthy();
+  });
+
   it('itemWrapper는 행 모양을 그대로 받아 감싼다', () => {
     const { container } = renderGroup({
       items: [
@@ -231,5 +250,18 @@ describe('SelectionFieldGroup', () => {
     expect(
       container.querySelectorAll('[data-testid^="wrap-"] button[aria-label$="지우기"]'),
     ).toHaveLength(2);
+  });
+
+  it('hideItemClear면 줄마다 X를 보이지 않고 값은 그대로 보인다', () => {
+    render(
+      <SelectionFieldGroup
+        fieldLabel="위치"
+        items={[{ id: 'a', value: '여의도한강공원' }]}
+        hideItemClear
+      />,
+    );
+
+    expect(screen.getByText('여의도한강공원')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /지우기/ })).toBeNull();
   });
 });

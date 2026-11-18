@@ -1,40 +1,16 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
+import { useModalOpen } from '@/shared/hooks/useModalOpen';
 import { MAIN_TAB_PATHS } from '../constants/tabs';
 
 // 판정 기준은 (main) route group이 아니라 탭 경로 4개와 정확히 같은지. (main) 안에 하위 경로를 추가하면 함께 수정
 const tabPaths: readonly string[] = Object.values(MAIN_TAB_PATHS);
 
-// 바텀시트·대화상자(Base UI)는 열린 동안만 role이 dialog·alertdialog인 요소를 그림
-// 닫힘 애니메이션 중(data-ending-style)은 닫힌 것으로 봐 시트가 내려가기 시작할 때 탭 바를 바로 다시 보임
-const MODAL_SELECTOR =
-  '[role="dialog"]:not([data-ending-style]), [role="alertdialog"]:not([data-ending-style])';
 // 선택 모드처럼 탭 이동을 막는 화면(HideMainTabBar)도 웹 막대와 같이 숨김
-const hasOpenModal = () =>
-  document.querySelector(`${MODAL_SELECTOR}, [data-hide-main-tab-bar]`) !== null;
-
-/** 모달이 열려 있는지 DOM 변화로 추적(시스템 탭 바는 WebView 위의 네이티브 화면이라 웹 시트를 가림) */
-function useModalOpen() {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    // 결과는 쉘에서만 쓰여 일반 브라우저에서는 DOM 관찰 생략
-    if (!isNativeShell()) return;
-    const update = () => setOpen(hasOpenModal());
-    update();
-    const observer = new MutationObserver(update);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['data-ending-style'],
-    });
-    return () => observer.disconnect();
-  }, []);
-  return open;
-}
+const HIDE_TAB_BAR_SELECTOR = '[data-hide-main-tab-bar]';
 
 /**
  * iOS 쉘의 시스템 탭 바 표시 상태를 현재 경로에 맞춤(결정 기록 012). 탭 화면이면 표시, 탭 밖(상세·온보딩)이거나 시트·대화상자가 열려 있으면 숨김
@@ -43,7 +19,7 @@ function useModalOpen() {
  */
 export function NativeTabBarVisibility() {
   const pathname = usePathname();
-  const modalOpen = useModalOpen();
+  const modalOpen = useModalOpen(HIDE_TAB_BAR_SELECTOR);
 
   useEffect(() => {
     if (!isNativeShell()) return;

@@ -1,5 +1,6 @@
 import { bridge, createWebView } from '@webview-bridge/react-native';
 import * as Haptics from 'expo-haptics';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router, type Href } from 'expo-router';
 import { useEffect, useRef, type ComponentRef } from 'react';
 import {
@@ -15,16 +16,27 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
+  setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
   type AppBridgeMethods,
 } from '@app/bridge';
+import { saveImagesToAlbum } from '../album-save';
+import { copyToClipboard, readClipboard } from '../clipboard';
 import { pickGalleryImage } from '../gallery-image';
-import { requestPermission } from '../permissions';
+import {
+  capturePhoto,
+  pickGalleryImages,
+  readPickedPhoto,
+  releasePickedPhotos,
+} from '../gallery-upload';
+import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
+import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { socialLogin } from '../social-login';
 import { markWebReady } from '../splash/state';
-import { canShowTabs } from '../tabs/tabs';
+import { floatingButtonStore } from '../tabs/floating-button-store';
+import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { isAppWebUrl, resolveWebUrl } from '../web-url';
 
@@ -39,7 +51,18 @@ export const WEB_URL = resolveWebUrl(
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({
   pickGalleryImage,
+  pickGalleryImages,
+  capturePhoto,
+  readPickedPhoto,
+  releasePickedPhotos,
+  saveImagesToAlbum,
+  openAppSettings,
   requestPermission,
+  getPermissionStatus,
+  getPushDeviceRegistration,
+  getPushInstallationId,
+  copyToClipboard,
+  readClipboard,
   socialLogin,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
@@ -54,6 +77,7 @@ const appBridge = bridge({
         // 화면 이동 뒤 비움(탭이 모두 숨은 막대가 한 프레임 보이는 것 방지)
         router.replace('/');
         tabsStore.set(null);
+        floatingButtonStore.clear();
       }
       return Promise.resolve(true);
     }
@@ -78,6 +102,19 @@ const appBridge = bridge({
     tabsStore.set({ ...current, barHidden: !visible });
     return Promise.resolve(true);
   },
+  // iOS 26 이상 탭 화면에서만 네이티브 Liquid Glass 버튼(그 밖은 false로 웹 버튼 유지). 지우기는 항상 받음
+  setNativeFloatingButton: (params) => {
+    const { tab, button } = setNativeFloatingButtonParamsSchema.parse(params);
+    if (!isTabId(tab)) return Promise.resolve(false);
+    if (!button) {
+      floatingButtonStore.set(tab, null);
+      return Promise.resolve(true);
+    }
+    if (Platform.OS !== 'ios' || !isLiquidGlassAvailable() || !tabsStore.get())
+      return Promise.resolve(false);
+    floatingButtonStore.set(tab, button);
+    return Promise.resolve(true);
+  },
   // 안드로이드 시스템 햅틱(기기 햅틱 설정을 따름). iOS는 시스템 탭 바가 아니면 쓰이지 않아 선택 햅틱으로 대체
   // 웹이 도착 화면을 그리면 스플래시 마무리(여러 WebView가 보내도 한 번만)
   appReady: async () => markWebReady(),
@@ -85,15 +122,44 @@ const appBridge = bridge({
     Platform.OS === 'android'
       ? Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Segment_Tick)
       : Haptics.selectionAsync(),
+  // 사진을 길게 눌러 집어 올린 순간(끌기 시작): 안드로이드는 모든 버전에서 지원하는 길게 누르기 시스템 햅틱(기기의 터치 피드백 설정을 따름), 쓸 수 없으면 진동 모터 충격
+  // iOS는 중간 세기 충격. 끌기 시작 전용 햅틱(`Drag_Start`)은 안드로이드 14 이상만 지원하고 기기에 따라 아주 약해서 쓰지 않음
+  dragStartHaptic: async () => {
+    try {
+      if (Platform.OS === 'android') {
+        await Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press).catch(() =>
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+        );
+      } else {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+    } catch (error) {
+      // 햅틱은 보조 효과라 웹에 오류를 올리지 않고 개발 중에만 알림
+      if (__DEV__) console.warn('[haptic] 끌기 시작 햅틱을 울리지 못했어요', error);
+    }
+  },
 } satisfies AppBridgeMethods);
 
-const { WebView } = createWebView({
+// postMessage: 네이티브 → 웹 이벤트(탭 WebView 여러 개라 broadcast로 보내고 웹이 대상 확인)
+export const { WebView, postMessage } = createWebView({
   bridge: appBridge,
   postMessageSchema: appPostMessageSchema,
 });
 
 /** 쉘의 모든 화면이 쓰는 WebView. 출처 제한·Safe Area·뒤로가기·오류 화면 설정 포함 */
-export function AppWebView({ uri }: { uri: string }) {
+// 다른 탭의 경로를 연 WebView가 그 탭의 네이티브 버튼을 건드리지 않게 탭 ID를 알려 줌
+// WebView마다 따로이고 hydration에 지워지지 않는 sessionStorage로 전달
+const buildShellTabScript = (tabId: TabId) =>
+  `try{sessionStorage.setItem('bunch-shell-tab',${JSON.stringify(tabId)});}catch(e){}`;
+
+type AppWebViewProps = {
+  uri: string;
+  /** 탭 화면의 WebView면 그 탭 ID(웹이 sessionStorage `bunch-shell-tab`으로 자기 탭을 앎) */
+  tabId?: TabId;
+  onLoadStart?: () => void;
+};
+
+export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
   // 탭 화면에서는 가장 가까운 SafeAreaProvider의 값(탭 바 높이 포함) 사용
   const insets = useSafeAreaInsets();
   const safeAreaScript = buildSafeAreaScript(insets);
@@ -120,7 +186,9 @@ export function AppWebView({ uri }: { uri: string }) {
       ref={webViewRef}
       source={{ uri }}
       style={styles.webview}
-      injectedJavaScriptBeforeContentLoaded={safeAreaScript}
+      injectedJavaScriptBeforeContentLoaded={
+        tabId ? `${buildShellTabScript(tabId)}${safeAreaScript}` : safeAreaScript
+      }
       // WebView 자체 inset 보정 해제(웹이 여백을 적용하므로 이중 적용 방지)
       contentInsetAdjustmentBehavior="never"
       // 스크롤은 웹 화면 안쪽 영역(PageShell main)이 맡으므로 문서 전체가 당겨지며 바깥 흰 배경이 드러나지 않게
@@ -129,7 +197,16 @@ export function AppWebView({ uri }: { uri: string }) {
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
       allowsBackForwardNavigationGestures
+      // 로그인 배경 영상(muted·playsInline·autoPlay)이 자동으로 화면 안에서 재생되게. 기본값이면 멈춘 첫 프레임과 재생 버튼만 보임
+      // iOS 기본값(false)에서는 <video playsInline>이 무시되고, 두 설정 모두 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 소리 있는 영상을 넣을 때 자동 재생 여부를 함께 고려
+      allowsInlineMediaPlayback
+      mediaPlaybackRequiresUserAction={false}
+      // 웹이 코드로 입력란에 초점을 줄 때도 키보드를 띄움(댓글 말풍선·답글 남기기). iOS 기본값(true)이면 커서만 들어가고 키보드가 올라오지 않음
+      // 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 화면 진입 때 입력란에 초점을 주면 키보드가 바로 뜸(입력이 목적인 번들 상세 말풍선 진입 `?focus=comments`만 의도한 예외)
+      keyboardDisplayRequiresUserAction={false}
       // 스플래시는 웹의 appReady(도착 화면 결정)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
+      // 새 문서를 열면 이전 문서가 남긴 네이티브 UI(플로팅 버튼) 정리
+      onLoadStart={onLoadStart}
       onError={markWebReady}
       onHttpError={markWebReady}
       onNavigationStateChange={(navState) => {

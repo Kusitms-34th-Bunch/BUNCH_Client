@@ -7,15 +7,18 @@ export type InviteCardProps = Omit<
   'children' | 'title' | 'aria-labelledby'
 > & {
   bunchName: string;
-  description: string;
-  /** 초대한 사람 이름 */
-  senderName: string;
+  /** 번치 소개. 없거나 비어 있으면 소개 줄을 그리지 않음 */
+  description?: string | undefined;
+  /** 초대한 사람 이름. 없거나 비어 있으면 「From. 이름 님」 줄을 그리지 않음 */
+  senderName?: string | undefined;
   /** 번치 대표 이미지 주소. 없으면 이미지 없는 빈 원으로 표시 */
   imageSrc?: string | undefined;
   /** 이미지 설명. 비우면 장식 이미지로 숨김 처리 */
   imageAlt?: string | undefined;
   /** 「참여하기」를 눌렀을 때 호출. 참여 처리는 호출하는 쪽 담당 */
   onJoin?: (() => void) | undefined;
+  /** 참여할 수 없는 초대면 「참여하기」를 비활성으로 둠(이유는 호출하는 쪽이 알림) */
+  joinDisabled?: boolean | undefined;
 };
 
 /**
@@ -29,6 +32,7 @@ export const InviteCard = ({
   imageSrc,
   imageAlt = '',
   onJoin,
+  joinDisabled,
   className,
   id,
   ...props
@@ -55,9 +59,11 @@ export const InviteCard = ({
           >
             {bunchName}
           </h2>
-          <p className="typography-body-1-medium text-text-secondary line-clamp-2 w-full wrap-break-word">
-            {description}
-          </p>
+          {description ? (
+            <p className="typography-body-1-medium text-text-secondary line-clamp-2 w-full wrap-break-word">
+              {description}
+            </p>
+          ) : null}
         </div>
         <div className="bg-surface-secondary relative size-41.75 shrink-0 rounded-full">
           {imageSrc ? (
@@ -68,11 +74,13 @@ export const InviteCard = ({
             />
           ) : null}
         </div>
-        <p className="typography-body-1-semi-bold text-text-tertiary gap-s1 flex items-center justify-center whitespace-nowrap">
-          <span>From.</span> <span>{senderName}</span> <span>님</span>
-        </p>
+        {senderName ? (
+          <p className="typography-body-1-semi-bold text-text-tertiary gap-s1 flex items-center justify-center whitespace-nowrap">
+            <span>From.</span> <span>{senderName}</span> <span>님</span>
+          </p>
+        ) : null}
       </div>
-      <Button className="w-full" onClick={onJoin}>
+      <Button className="w-full" disabled={joinDisabled} onClick={onJoin}>
         참여하기
       </Button>
     </article>

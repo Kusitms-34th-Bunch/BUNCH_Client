@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 const root = process.cwd();
 const requiredFiles = [
@@ -187,6 +188,42 @@ for (const skillName of skillNames) {
       `${claudeSkillPath} must mirror ${skillPath} exactly. Link .claude/skills/${skillName} to .agents/skills/${skillName} instead of copying it.`,
     );
   }
+}
+
+// 문서가 백틱으로 적은 저장소 경로의 실재 확인(AGENTS.md: 예정 구조를 현재 기준으로 문서화하지 않음)
+// ponytail: 루트 기준 경로만 봄, 상대 경로·심볼은 오탐이 많아 제외
+const markdownFiles = (dir) =>
+  readdirSync(resolve(root, dir), { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory())
+      return /archive|records|notes|node_modules/.test(path) ? [] : markdownFiles(path);
+    return entry.name.endsWith('.md') ? [path] : [];
+  });
+const REPO_PATH = /^(apps|packages|docs|\.agents|\.github|\.claude|\.codex|turbo|scripts)\//;
+const brokenPaths = [
+  ...markdownFiles('docs'),
+  ...markdownFiles('.agents'),
+  'AGENTS.md',
+  ...workspacePaths.map((path) => `${path}/AGENTS.md`),
+]
+  .filter((file) => existsSync(resolve(root, file)))
+  .flatMap((file) =>
+    readFileSync(resolve(root, file), 'utf8')
+      .split('\n')
+      .flatMap((line, index) =>
+        [...line.matchAll(/`([^`\s]+)`/g)]
+          .map((match) => match[1].replace(/[:#].*$/, '').replace(/\/$/, ''))
+          .filter((path) => REPO_PATH.test(path) && !/[*{}<>[\]]|\.\.\.|…/.test(path))
+          .filter((path) => !existsSync(resolve(root, path)))
+          .map((path) => ({ at: `${file}:${index + 1}`, path })),
+      ),
+  )
+  // gitignore 대상(생성물·로컬 기준선)은 없는 게 정상
+  .filter(({ path }) => spawnSync('git', ['check-ignore', '-q', path]).status !== 0);
+if (brokenPaths.length > 0) {
+  throw new Error(
+    `문서가 가리키는 경로가 없습니다. 경로를 고치거나 서술을 지워 주세요:\n${brokenPaths.map(({ at, path }) => `- ${at} ${path}`).join('\n')}`,
+  );
 }
 
 console.log('Agent documentation structure is valid.');

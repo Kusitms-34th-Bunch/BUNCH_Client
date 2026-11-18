@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "eslint . --cache --cache-strategy content",
     "test": "vitest run",
     "test:watch": "vitest"
   },

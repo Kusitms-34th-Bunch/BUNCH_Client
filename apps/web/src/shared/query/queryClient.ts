@@ -1,11 +1,16 @@
 import { createRetryPolicy, normalizeError } from '@app/api-core';
 import { toast } from '@app/design-system';
-import { MutationCache, QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+import { reportApiError } from '../lib/reportApiError';
 
 declare module '@tanstack/react-query' {
   // 모듈 보강이라 사용처가 없음(TanStack Query가 meta 타입으로 읽음)
   // eslint-disable-next-line unused-imports/no-unused-vars
   interface Register {
+    queryMeta: {
+      /** true면 앱을 다시 열 때 복원하도록 저장(`shared/query/persistence.ts`, 로그인 상태·민감한 화면에는 쓰지 않음) */
+      persist?: boolean;
+    };
     mutationMeta: {
       /** 실패하면 띄울 토스트 문구. 없으면 공통 알림 없이 화면이 직접 처리 */
       errorMessage?: string;
@@ -23,11 +28,14 @@ export const DEFAULT_STALE_TIME = 5 * 60 * 1000;
  * 401 재발급 뒤 재시도는 browserClient가 별도로 처리
  * 기본 staleTime 5분: 5분 안에 돌아오면 다시 요청하지 않고, 지난 뒤 화면 진입·앱 복귀(포커스) 때 갱신
  * mutation 실패는 `meta.errorMessage`가 있을 때만 토스트(서버 `error.message`는 문구 키라 보여 주지 않음)
+ * 조회·mutation의 최종 실패 중 개발팀이 알아야 하는 것만 Sentry로 보고(`reportApiError`)
  */
 export const createQueryClient = () =>
   new QueryClient({
+    queryCache: new QueryCache({ onError: reportApiError }),
     mutationCache: new MutationCache({
-      onError: (_error, _variables, _context, mutation) => {
+      onError: (error, _variables, _context, mutation) => {
+        reportApiError(error);
         const message = mutation.meta?.errorMessage;
         if (message) toast(message);
       },

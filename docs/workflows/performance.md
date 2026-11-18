@@ -16,6 +16,21 @@
 - 긴 목록은 화면 밖 DOM 비용, key 안정성, virtualization 또는 점진 렌더링 필요성을 확인한다.
 - 이벤트로 처리할 수 있는 side effect를 state 변경 뒤 effect로 우회하지 않는다.
 
+## 렌더 측정
+
+리렌더·느린 상호작용은 apps/web 개발 서버에서 React DevTools MCP의 렌더 기록으로 잰다. 등록과 도구는 `docs/agent/react-devtools-mcp.md`를 따른다.
+
+1. 측정할 화면과 조작(탭 전환, 목록 스크롤 등)을 한 문장으로 정한다.
+2. 화면을 새로고침한 뒤 `react_start_profiling`을 부른다.
+3. 정한 조작을 한 번 한다.
+4. `react_stop_profiling`으로 기록을 끝낸다.
+5. `react_get_trace_overview`로 commit 수와 commit별 렌더 시간·바뀐 컴포넌트 수를 본다.
+6. 가장 오래 걸린 commit을 `react_get_commit_report`로 열어 컴포넌트별 `actualDuration`·`selfDuration`을 본다.
+7. 고친 뒤 같은 화면·같은 조작으로 2~6을 다시 하고 commit 수와 시간을 비교한다.
+
+- 개발 빌드 값이라 운영보다 느리다. 절대값이 아니라 같은 조건의 전후 비교에만 쓴다.
+- 의심 컴포넌트는 `react_get_component_by_uid`(`includeHooks: true`)로 props·hook 값이 commit마다 바뀌는지 확인한다.
+
 ## 메모리
 
 - 메모리 사용량이 문제인지 먼저 profiler로 확인한다. CPU·네트워크 지연을 메모리 최적화로 해결하려 하지 않는다.
@@ -29,7 +44,8 @@
 - package public API와 bundle 최적화가 충돌하면 package 경계를 먼저 지킨다.
 - 반복 검색, 대량 변환, date formatting처럼 hot path가 확인된 경우에만 자료구조·계산 캐싱을 바꾼다.
 - 큰 asset과 third-party SDK는 번들 분석 결과를 보고 조정한다.
-- web 클라이언트 JS 크기는 Frontend CI가 빌드 뒤 `scripts/report-web-bundle-size.mjs`로 기록한다. 공통 첫 로드 JS(프레임워크·런타임과 root·`(app)` layout 청크)와 전체 클라이언트 JS(gzip)를 `apps/web/bundle-size-baseline.json`과 비교해 10% 넘게 커지면 경고만 하고 실패시키지 않는다. CI 빌드는 `ANALYZE=true`라 `@next/bundle-analyzer`가 모듈별 크기를 `.next/analyze/client.json`에 남기고, 보고는 이를 패키지·소스 폴더(`src/features/<이름>` 등)별로 묶어 기준선보다 1KB 넘게 커진 항목과 가장 큰 항목을 표로 보여 준다. 표는 실행 화면의 Summary에 나오고, PR의 CI 결과 댓글에는 두 크기의 변화와 1KB 넘게 커진 항목 3개까지만 짧게 붙는다(web을 빌드하지 않은 PR은 빠짐). 초기 로딩이 느려졌을 때 무엇이 커졌는지 이 표에서 먼저 찾는다. 항목 크기는 모듈마다 따로 잰 gzip이라 합이 전체 크기와 맞지 않으므로 증가량 비교에만 쓴다. 의도한 증가면 CI와 같은 조건으로 `SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= ANALYZE=true yarn workspace @app/web build`를 실행한 뒤 `node scripts/report-web-bundle-size.mjs --update`로 기준선을 갱신해 함께 커밋한다. Sentry 토큰이 있으면 청크에 코드가 더 들어가 기준선이 CI보다 커지고, turbo 캐시로 복원된 `.next`는 이전 파일이 섞일 수 있어 workspace 빌드를 직접 돌린다. 측정 단계가 실패해도 job은 실패하지 않는다.
+- web 클라이언트 JS 크기는 Frontend CI가 빌드 뒤 `scripts/report-web-bundle-size.mjs`로 기록한다. 공통 첫 로드 JS(프레임워크·런타임과 root·`(app)` layout 청크)와 전체 클라이언트 JS(gzip)를 기준선과 비교해 10% 넘게 커지면 경고만 하고 실패시키지 않는다. 기준선은 `develop`·`main` push 빌드가 `--update`로 잰 결과를 Actions 캐시(`bundle-size-<OS>-<브랜치>-<SHA>`)로 저장한 것이다. PR은 base 커밋의 결과를, 없으면 그 브랜치의 가장 최근 결과를, 그것도 없으면(다른 작업 브랜치 위에 올린 PR, `main` 캐시 만료 등) `develop`의 가장 최근 결과를 받아 비교한다. 머지될 때마다 갱신되므로 기준선 파일을 커밋하지 않는다(`apps/web/bundle-size-baseline.json`은 gitignore). 이 캐시가 모두 만료(7일 미사용)되거나 저장소 한도(10GB)로 지워지면 다음 push 전까지는 「기준선 없음」으로 표시된다. CI 빌드는 `ANALYZE=true`라 `@next/bundle-analyzer`가 모듈별 크기를 `.next/analyze/client.json`에 남기고, 보고는 이를 패키지·소스 폴더(`src/features/<이름>` 등)별로 묶어 기준선보다 1KB 넘게 커진 항목과 가장 큰 항목을 표로 보여 준다. 표는 실행 화면의 Summary에 나오고, PR의 CI 결과 댓글에는 두 크기의 변화와 1KB 넘게 커진 항목 3개까지만 짧게 붙는다(web을 빌드하지 않은 PR은 빠짐). 초기 로딩이 느려졌을 때 무엇이 커졌는지 이 표에서 먼저 찾는다. 항목 크기는 모듈마다 따로 잰 gzip이라 합이 전체 크기와 맞지 않으므로 증가량 비교에만 쓴다. 로컬에서 비교하려면 CI와 같은 조건으로 `SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= ANALYZE=true yarn workspace @app/web build`를 실행해 `node scripts/report-web-bundle-size.mjs --update`로 내 기준선을 만든 뒤, 바꾼 코드로 다시 빌드해 `node scripts/report-web-bundle-size.mjs`를 실행한다. Sentry 토큰이 있으면 청크에 코드가 더 들어가 CI와 크기가 달라지고, turbo 캐시로 복원된 `.next`는 이전 파일이 섞일 수 있어 workspace 빌드를 직접 돌린다. 측정 단계가 실패해도 job은 실패하지 않는다.
+- 로딩·접근성·SEO 점수는 web이 바뀐 PR마다 `lighthouse.yml`이 runner 안의 운영 빌드로 측정해 PR 댓글로 알린다(공개 페이지만, 페이지당 1번이라 성능 점수는 흔들림). 절차와 기준선은 `docs/workflows/ci.md`의 「Lighthouse 결과 댓글」을 따른다. 실제 기기·네트워크의 속도는 이 점수로 대신하지 않는다.
 - 아이콘·컴포넌트 라이브러리를 새로 추가할 때, 그 라이브러리가 barrel entry(`export * from './module'`)로 수천 개 모듈을 재노출하면 import 하나가 개발 서버 부팅과 cold start에 수백 ms를 더한다. apps/web에서는 `next.config`의 `experimental.optimizePackageImports`에 등록해 타입·자동완성은 유지한 채 직접 import로 변환되게 하고, admin처럼 Next.js가 아닌 곳에서는 라이브러리의 서브패스에서 직접 import한다.
 
 ## WebView 첫 화면 속도 (apps/web + apps/mobile-shell)
@@ -40,6 +56,7 @@ WebView는 화면을 그리기 전에 네트워크로 HTML·JS를 받아야 해�
   - 웹: Next.js `Link`는 운영 빌드에서 화면에 보이는 링크의 경로를 기본으로 미리 받는다. 한 화면에 링크가 많아 비용이 커지는 곳(사진 격자 등)만 `prefetch={false}`로 끈다. 데이터까지 미리 받는 방법과 단계는 `docs/architecture/data-layer.md`의 "미리 불러오기"를 따른다.
   - 쉘: iOS 탭 WebView 4개는 처음부터 함께 만들어진다(`docs/architecture/mobile-shell.md`). 탭 밖 화면을 위해 WebView를 더 미리 띄우는 것은 메모리 비용이 커서, 첫 진입 지연을 측정한 뒤에만 검토한다.
 - 스트리밍 SSR: 서버가 화면을 조각으로 나눠 보내 전체를 기다리지 않고 준비된 부분부터 그린다. App Router에서는 route의 `loading.tsx`나 하위 트리의 `Suspense` 경계가 그 단위다(아래 "Next.js 서버 컴포넌트"). 지금 화면은 fixture라 쓰지 않고, 서버 데이터를 서버 컴포넌트에서 받게 될 때 `data-layer.md` "미리 불러오기" 2단계와 함께 적용한다.
+- 캐시 영속화: 앱을 다시 열 때 지난 서버 상태를 먼저 보인다(`docs/architecture/data-layer.md` 「캐시 영속화」). 로그인 상태 확인 요청 하나는 계속 기다리므로, 줄어드는 것은 그 뒤의 데이터 요청 대기다. 효과는 아직 측정하지 않았다.
 - 측정: 개선 전후를 같은 기기·네트워크에서 WebView 안의 첫 화면 표시 시간(FCP·LCP)과 화면 전환 체감으로 비교한다. 브라우저 측정을 WebView 결과로 대신하지 않는다.
 
 ## 이미지 (apps/web)

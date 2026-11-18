@@ -56,7 +56,7 @@ description: 이 저장소의 데이터 계층 기준으로 API endpoint, TanSta
 1. 계약 표를 작성한다: endpoint, input, output, 오류, 호출 위치, cache 영향.
 2. endpoint function과 request/response boundary type을 만든다.
 3. query key factory를 먼저 정의한다. key에는 모든 response-changing parameter를 넣고 finite와 infinite key를 구분한다.
-4. GET은 query hook, 생성·수정·삭제는 mutation hook으로 구현한다. query mode는 suspense 여부, 초기 data, pagination에 근거해 선택한다.
+4. GET은 query hook, 생성·수정·삭제는 mutation hook으로 구현한다. query mode는 suspense 여부, 초기 data, pagination에 근거해 선택한다. web query는 `docs/architecture/data-layer.md` 「캐시 영속화」 기준으로 저장할지(`...persistedQuery`) 정한다. 앱을 열자마자 보이는 화면의 데이터만 저장하고, 로그인 상태·편집 중 데이터·민감한 데이터는 저장하지 않는다.
 5. mutation마다 아래 중 필요한 최소 cache 동작 하나를 명시한다.
 
 | 상황                                              | 기본 선택                                  |

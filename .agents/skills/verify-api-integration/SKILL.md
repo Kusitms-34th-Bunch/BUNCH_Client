@@ -25,6 +25,7 @@ description: 변경된 API client, TanStack Query hook, mutation, query key, cac
 - response-changing filter, sort, identifier, mode가 key에 들어가는지 확인한다.
 - finite와 infinite query의 key·cache를 섞지 않는지, pagination parameter 처리가 계약에 맞는지 확인한다.
 - suspense, initial data, enabled condition, retry가 화면 UX와 오류 조건에 맞는지 확인한다.
+- web query의 저장 표시(`...persistedQuery`)가 `docs/architecture/data-layer.md` 「캐시 영속화」의 저장 기준에 맞는지 확인한다. 특히 로그인 상태·편집 중·민감한 데이터를 저장하지 않는지, 저장한 query의 응답 모양 변경이 복원 뒤 화면을 깨지 않는지 본다.
 
 ### Mutation과 cache
 

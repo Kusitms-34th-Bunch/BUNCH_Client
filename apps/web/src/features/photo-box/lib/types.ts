@@ -27,6 +27,8 @@ export type PhotoBoxPhoto = {
   uploadedAt: string;
   /** 올린 멤버(함께 올린 사진은 여러 명) */
   uploaderIds: readonly string[];
+  /** 작성 중인 번들에 담긴 사진인지. 지우면 그 번들에서도 빠지므로 삭제 확인 창 문구가 달라짐(명세 3.3.5) */
+  usedInDraftBundle: boolean;
   status: PhotoStatus;
 };
 
@@ -42,6 +44,11 @@ export type PhotoBoxData = {
   viewer: PhotoBoxViewer;
   members: readonly PhotoBoxMember[];
   photos: readonly PhotoBoxPhoto[];
+  /**
+   * 첫 쪽만 받고 나머지를 이어 받는 중이면 'loading', 이어 받다 실패했으면 'error', 다 받았으면 없음
+   * 이어 받는 동안 `photos`는 일부이므로 빈 상태나 개수는 확정이 아님
+   */
+  more?: 'loading' | 'error';
 };
 
 /** 사진함 화면 상태. API 연결 후에는 query 상태에서 변환 */
@@ -59,6 +66,11 @@ export type SaveResult = {
   savedIds: readonly string[];
   /** 저장하지 못한 사진 id */
   failedIds: readonly string[];
+  /**
+   * 저장을 시도하지 못한 이유(모든 사진이 `failedIds`에 들어감). 화면이 일반 실패 토스트 대신 이유에 맞게 안내함
+   * `denied`는 사진 저장 권한 거부, `unavailable`은 앱이 아닌 브라우저, `outdated`는 저장 기능이 없는 이전 앱
+   */
+  blocked?: 'denied' | 'unavailable' | 'outdated';
 };
 
 export type DeletePhotosResult = {
@@ -74,6 +86,9 @@ export type PhotoBoxActions = {
   savePhotos: (_ids: readonly string[]) => Promise<SaveResult>;
   /** 영구 삭제(휴지통 없음). 권한은 호출 전에 화면이 판단하고 서버가 다시 판단 */
   deletePhotos: (_ids: readonly string[]) => Promise<DeletePhotosResult>;
-  /** 촬영 날짜를 그날(기기 시간대)로 바꿈(시각 유지). 여러 장은 전부 성공 또는 전부 실패라 실패하면 거절함 */
-  changePhotoDates: (_ids: readonly string[], _date: Date) => Promise<void>;
+  /**
+   * 촬영 날짜를 그날(기기 시간대)로 바꿈(시각 유지). `null`이면 날짜 없음으로 되돌림(날짜 미확인 사진을 끌어 옮긴 것을 되돌릴 때)
+   * 여러 장은 전부 성공 또는 전부 실패라 실패하면 거절함
+   */
+  changePhotoDates: (_ids: readonly string[], _date: Date | null) => Promise<void>;
 };

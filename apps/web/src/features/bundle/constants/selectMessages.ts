@@ -25,12 +25,17 @@ export const BUNDLE_SELECT_MESSAGES = {
   changeConfirm: '변경하기',
   cancel: '취소',
   deletedRecommendation: '추천 번들이 삭제됐어요. 다시 확인해 주세요.',
+  // 서버 오류 안내(기능 명세에 문구가 없어 다른 화면의 실패 안내와 같은 형식으로 둔 제안)
+  recommendationsFailed: '추천 번들을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
+  applyFailed: '추천 번들을 적용하지 못했어요. 잠시 후 다시 시도해 주세요.',
   detailTitle: (title: string) => `${title} 상세`,
   viewerTitle: '사진 보기',
   creating: '번들을 만들고 있어요.',
   // 초안 생성 실패 안내(기획 4.1.3), 번치 인원 부족·초안 한도는 같은 오류 코드라 번치 멤버 수로 구분
   membersRequired: '번들은 멤버가 2명 이상일 때 만들 수 있어요. 멤버를 초대해 주세요.',
   draftLimit: '번들 초안은 최대 10개까지 만들 수 있어요. 기존 초안을 발행하거나 삭제해 주세요.',
+  // 사진함에서 넘어온 흐름에서 고른 사진이 모두 사라졌을 때(기능 spec 3.3.4)
+  allSelectionGone: '선택한 사진이 모두 사진함에서 사라졌어요.',
   selectionStale: (count: number) =>
     `선택한 사진 중 ${count}장이 사진함에서 삭제되어 선택이 해제됐어요.`,
   createFailed: '번들을 만들지 못했어요. 잠시 후 다시 시도해 주세요.',

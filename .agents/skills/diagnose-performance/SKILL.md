@@ -13,7 +13,7 @@ LCP/FCP/CLS/TBT, bundle size, request 수는 서로 다른 지표이므로 사�
 ## 조사 순서
 
 1. network waterfall과 독립 요청의 직렬 await를 확인한다.
-2. render profiler 또는 재현 조건으로 re-render, derived state effect, 무거운 목록·계산을 좁힌다.
+2. render profiler 또는 재현 조건으로 re-render, derived state effect, 무거운 목록·계산을 좁힌다. apps/web은 Chrome DevTools MCP가 연결돼 있으면 `docs/workflows/performance.md`의 "렌더 측정" 절차로 렌더 기록을 받는다. 연결돼 있지 않으면 측정하지 못한 것으로 보고한다.
 3. build output으로 route chunk, third-party SDK, image·font asset을 확인한다.
 4. 외부 API/CDN/extension/cache처럼 통제하지 못하는 요인을 분리한다.
 5. root cause confidence와 최소 변경 가설을 제시한다.

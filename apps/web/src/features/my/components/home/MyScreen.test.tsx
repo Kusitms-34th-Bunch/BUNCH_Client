@@ -18,7 +18,7 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 }));
 
 beforeEach(() => {
-  vi.mocked(openExternal).mockClear();
+  vi.mocked(openExternal).mockReset().mockReturnValue(true);
   vi.mocked(reloadTo).mockClear();
   vi.mocked(toast).mockClear();
 });
@@ -62,13 +62,12 @@ describe('MyScreen', () => {
         .getAllByRole('listitem')
         .map((item) => item.textContent);
     expect(items('알림')).toEqual(['알림 설정']);
-    expect(items('약관 및 정책')).toEqual(['서비스 이용약관', '개인정보 처리방침']);
+    expect(items('서비스 정보')).toEqual(['약관 및 개인정보']);
     expect(items('고객지원')).toEqual(['문의하기', '로그아웃', '탈퇴하기']);
 
     const href = (name: string) => screen.getByRole('link', { name }).getAttribute('href');
     expect(href('알림 설정')).toBe('/my/notifications');
-    expect(href('서비스 이용약관')).toBe('/my/terms/service');
-    expect(href('개인정보 처리방침')).toBe('/my/terms/privacy');
+    expect(href('약관 및 개인정보')).toBe('/my/terms');
     expect(href('탈퇴하기')).toBe('/my/withdrawal');
   });
 
@@ -90,6 +89,18 @@ describe('MyScreen', () => {
 
     expect(openExternal).toHaveBeenCalledWith('https://open.kakao.example/o/channel');
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  });
+
+  it('문의 채널 링크를 열지 못하면 오류 토스트를 띄운다', async () => {
+    vi.mocked(openExternal).mockReturnValue(false);
+    renderScreen(CONTACT_URL);
+
+    await userEvent.click(screen.getByRole('button', { name: '문의하기' }));
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '열기' }),
+    );
+
+    expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
   });
 
   it('문의 채널 주소가 없으면 「열기」를 막고, 「취소」로 닫는다', async () => {

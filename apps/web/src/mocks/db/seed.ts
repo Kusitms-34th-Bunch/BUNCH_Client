@@ -1,4 +1,38 @@
-import type { MockBundle, MockDbState, MockMember, MockMembership, MockPhoto } from './types';
+import type {
+  CharacterType,
+  MockBundle,
+  MockDbState,
+  MockFollow,
+  MockKok,
+  MockMember,
+  MockMembership,
+  MockPhoto,
+} from './types';
+
+/** 서버 `NotificationType` 21개 키(Notion 푸시 수신 설정 조회 응답 순서). 푸시 수신 설정 `types`의 키 전체 */
+export const PUSH_NOTIFICATION_TYPES = [
+  'DRAFT_PARTICIPANT_ADDED',
+  'DRAFT_ACTIVITY',
+  'COMMENT_REMINDER',
+  'DRAFT_PARTICIPANT_REMOVED',
+  'DRAFT_READY_TO_PUBLISH',
+  'DRAFT_PARTICIPANTS_INSUFFICIENT',
+  'BUNDLE_PUBLISHED',
+  'CANDIDATE_CREATED',
+  'CHARACTER_GROWN',
+  'MEMBER_JOINED',
+  'CO_OWNER_GRANTED',
+  'CO_OWNER_REVOKED',
+  'OWNER_TRANSFERRED',
+  'MEMBER_REMOVED',
+  'BUNCH_DELETED',
+  'BUNCH_VISIBILITY_CHANGED',
+  'BUNCH_FOLLOWED',
+  'FOLLOW_REQUESTED',
+  'FOLLOW_REQUEST_APPROVED',
+  'SOCIAL_COMMENT_CREATED',
+  'BUNDLE_LIKED',
+] as const;
 
 export const MOCK_BUNCH_ID = 1;
 
@@ -16,13 +50,53 @@ const member = (memberId: number, nickname: string): MockMember => ({
   imageUrl: null,
   birthYear: null,
   gender: null,
+  additionalInfoConsented: false,
 });
 
-const membership = (memberId: number, role: MockMembership['role']): MockMembership => ({
-  bunchId: MOCK_BUNCH_ID,
-  memberId,
-  role,
-});
+// 시연 번치(여행쥬아)가 가장 최근에 쓴 번치라 기본 번치가 됨
+const membership = (
+  memberId: number,
+  role: MockMembership['role'],
+  bunchId = MOCK_BUNCH_ID,
+  lastUsedAt = '2026-10-18T09:00:00.000Z',
+): MockMembership => ({ bunchId, memberId, role, lastUsedAt });
+
+/** 번치 전환 시연용 두 번째 번치(Figma 5402:105276 「퇴근런클럽」) */
+export const MOCK_SECOND_BUNCH_ID = 2;
+/** 내가 속하지 않은 번치(다른 번치 프로필·팔로우): 공개 「캠핑러버」, 비공개 「책방산책」 */
+export const MOCK_EXTERNAL_BUNCH_IDS = { public: 3, private: 4 } as const;
+
+// 팔로워·팔로잉·요청 목록용 다른 번치(화면설계서 2500:71333·2500:72664 예시 이름, 소속 없음)
+const SOCIAL_BUNCHES: readonly [
+  id: number,
+  name: string,
+  type: CharacterType,
+  isPrivate: boolean,
+][] = [
+  [5, '산책클럽', 'TYPE_1', true],
+  [6, '주말등산', 'TYPE_3', false],
+  [7, '서핑크루', 'TYPE_2', true],
+  [8, '맛집탐방대', 'TYPE_4', false],
+  [9, '침대조아', 'TYPE_1', true],
+  // 여행쥬아가 차단한 번치(Figma 1873:33766 차단 목록 예시 이름)
+  [10, '야간러너스', 'TYPE_2', false],
+  [11, '주말산책', 'TYPE_4', true],
+];
+
+// [팔로우하는 번치, 대상 번치, 상태, 시각]. 여행쥬아(1)는 팔로워 3·팔로잉 2·대기 요청 3
+const FOLLOW_SEEDS: readonly [number, number, MockFollow['status'], string][] = [
+  [5, 1, 'FOLLOWING', '2026-10-10T09:00:00.000Z'],
+  [3, 1, 'FOLLOWING', '2026-10-12T09:00:00.000Z'],
+  [6, 1, 'FOLLOWING', '2026-10-14T09:00:00.000Z'],
+  [1, 5, 'FOLLOWING', '2026-10-11T09:00:00.000Z'],
+  [1, 6, 'FOLLOWING', '2026-10-13T09:00:00.000Z'],
+  [7, 1, 'REQUESTED', '2026-10-17T09:00:00.000Z'],
+  [8, 1, 'REQUESTED', '2026-10-17T10:00:00.000Z'],
+  [9, 1, 'REQUESTED', '2026-10-15T09:00:00.000Z'],
+  [5, 3, 'FOLLOWING', '2026-10-09T09:00:00.000Z'],
+  [6, 3, 'FOLLOWING', '2026-10-08T09:00:00.000Z'],
+  [5, 4, 'FOLLOWING', '2026-10-07T09:00:00.000Z'],
+];
 
 // 날짜 그룹: S는 10월 18일, P는 10월 17일(지정 날짜 4장), O는 10월 3일
 const PHOTO_SEEDS = [
@@ -73,17 +147,94 @@ const PUBLISHED_SEEDS = [
   },
 ] as const;
 
-const publishedBundles = (): MockBundle[] =>
-  PUBLISHED_SEEDS.map((seed) => {
+type PublishedSeed = {
+  readonly id: number;
+  readonly title: string;
+  readonly date: string;
+  readonly image: string;
+  readonly createdBy: number;
+  readonly participants: readonly number[];
+  readonly publishedAt: string;
+};
+
+// 다른 번치의 발행 번들(멤버는 가짜 DB에 없어 시연 회원 ID를 빌려 씀, 다른 번치 프로필 그리드용)
+const EXTERNAL_PUBLISHED_SEEDS: Readonly<Record<number, readonly PublishedSeed[]>> = {
+  [MOCK_EXTERNAL_BUNCH_IDS.public]: [
+    {
+      id: 901,
+      title: '가평 첫 캠핑 🏕️',
+      date: '2026-10-11',
+      image: 'C1',
+      createdBy: admin,
+      participants: [admin],
+      publishedAt: '2026-10-12T09:00:00.000Z',
+    },
+    {
+      id: 902,
+      title: '여름밤 바닷가 캠핑',
+      date: '2026-08-15',
+      image: 'C2',
+      createdBy: admin,
+      participants: [admin],
+      publishedAt: '2026-08-16T09:00:00.000Z',
+    },
+  ],
+  [MOCK_EXTERNAL_BUNCH_IDS.private]: [
+    {
+      id: 911,
+      title: '노을 지는 동네 책방 투어',
+      date: '2026-10-05',
+      image: 'C2',
+      createdBy: admin,
+      participants: [admin],
+      publishedAt: '2026-10-06T09:00:00.000Z',
+    },
+  ],
+};
+
+// 여행쥬아의 콕한 장소(Figma 4096:76101 예시 장소). 번들 출처는 캠핑러버(3)의 공개 번들, 999는 지워진 번들(볼 수 없음)
+// 101번은 여행쥬아를 나간 회원이라 「전체」에만 셈. 장소는 번들·광고 장소와 겹치지 않게 둠(처음부터 콕한 상태가 되지 않게)
+const KOK_SEEDS: MockKok[] = (
+  [
+    ['봄날카페', '제주 제주시 애월읍', memberB, 901, null, '2026-11-07T01:00:00.000Z'],
+    ['계동 골목 식당', '서울 종로구 계동', memberB, 902, null, '2026-11-06T01:00:00.000Z'],
+    ['안목해변 커피거리', '강릉 견소동', memberB, 999, null, '2026-11-05T01:00:00.000Z'],
+    ['광안리 해변', '', memberA, null, 71, '2026-11-04T01:00:00.000Z'],
+    ['연남동 책방', '서울 마포구 연남동', memberA, 901, null, '2026-11-03T01:00:00.000Z'],
+    ['협재해변', '제주 제주시 한림읍', admin, 902, null, '2026-11-02T01:00:00.000Z'],
+    ['해리단길', '부산 해운대구 우동', 101, 901, null, '2026-11-01T01:00:00.000Z'],
+  ] as const
+).map(
+  ([name, address, pinnedByMemberId, sourceBundleId, sourceAdvertisementId, pinnedAt], index) => ({
+    id: index + 1,
+    bunchId: MOCK_BUNCH_ID,
+    provider: 'kakao',
+    externalId: `seed-kok-${index + 1}`,
+    name,
+    address,
+    sourceBundleId,
+    sourceLocationId: null,
+    sourceAdvertisementId,
+    pinnedByMemberId,
+    pinnedAt,
+  }),
+);
+
+const publishedBundles = (
+  seeds: readonly PublishedSeed[] = PUBLISHED_SEEDS,
+  bunchId: number = MOCK_BUNCH_ID,
+  visibility: MockBundle['visibility'] = 'PRIVATE',
+): MockBundle[] =>
+  seeds.map((seed) => {
     const at = seed.publishedAt;
     return {
       id: seed.id,
-      bunchId: MOCK_BUNCH_ID,
+      bunchId,
       createdBy: seed.createdBy,
       status: 'PUBLISHED',
       title: seed.title,
       titleVersion: 1,
-      visibility: 'PRIVATE',
+      visibility,
       visibilityVersion: 1,
       date: seed.date,
       dateVersion: 1,
@@ -99,10 +250,6 @@ const publishedBundles = (): MockBundle[] =>
           position: 0,
           addedBy: seed.createdBy,
           addedAt: at,
-          caption: '',
-          captionVersion: 0,
-          captionUpdatedBy: null,
-          captionUpdatedAt: null,
         },
       ],
       participants: seed.participants.map((memberId) => ({ memberId, joinedAt: at })),
@@ -132,12 +279,18 @@ const photos = (): MockPhoto[] =>
 
 // UT 시나리오 시작 데이터(상태 A): 비공개 번치 「여행쥬아」와 멤버 5명, 사진 13장
 export const createSeed = (): MockDbState => ({
+  session: { loggedIn: true, signupStatus: 'COMPLETED', termsAccepted: true },
   members: [
     member(admin, '지예'),
     member(memberA, '경진'),
     member(memberB, '은우'),
     member(memberC, '수인'),
     member(me, '큐시즘'),
+    // 다른 번치 멤버(명단 화면용, 내 번치와 겹치지 않는 회원)
+    ...(['솔', '하람', '도윤', '서아'] as const).map((name, index) => member(101 + index, name)),
+    ...(['지안', '루아', '하윤', '서진', '다온', '이든'] as const).map((name, index) =>
+      member(201 + index, name),
+    ),
   ],
   bunches: [
     {
@@ -147,10 +300,53 @@ export const createSeed = (): MockDbState => ({
       imageUrl: null,
       introduction: '여행 안 갈 바엔 죽을란다',
       isPrivate: true,
-      // UT 시나리오에 값이 없어 임의로 정한 시작 값
-      followerCount: 3,
-      followingCount: 2,
+      // 수는 모두 가짜 DB의 팔로우 관계(FOLLOW_SEEDS)
+      followerCount: 0,
+      followingCount: 0,
     },
+    {
+      id: MOCK_SECOND_BUNCH_ID,
+      name: '퇴근런클럽',
+      characterType: 'TYPE_2',
+      imageUrl: null,
+      introduction: '퇴근하고 한강 달리는 모임',
+      isPrivate: false,
+      followerCount: 0,
+      followingCount: 0,
+    },
+    // 다른 번치(피드 샘플의 캠핑러버·책방산책과 같은 ID)
+    {
+      id: MOCK_EXTERNAL_BUNCH_IDS.public,
+      name: '캠핑러버',
+      characterType: 'TYPE_2',
+      imageUrl: null,
+      introduction: '주말마다 캠핑장을 찾아다니는 넷',
+      isPrivate: false,
+      // 관계 밖 수 + FOLLOW_SEEDS(팔로워 2·팔로잉 1) = 23·8
+      followerCount: 21,
+      followingCount: 7,
+    },
+    {
+      id: MOCK_EXTERNAL_BUNCH_IDS.private,
+      name: '책방산책',
+      characterType: 'TYPE_4',
+      imageUrl: null,
+      introduction: '책과 커피를 기록하는 모임',
+      isPrivate: true,
+      // 관계 밖 수 + FOLLOW_SEEDS(팔로워 1) = 32·12
+      followerCount: 31,
+      followingCount: 12,
+    },
+    ...SOCIAL_BUNCHES.map(([id, name, characterType, isPrivate]) => ({
+      id,
+      name,
+      characterType,
+      imageUrl: null,
+      introduction: '',
+      isPrivate,
+      followerCount: 0,
+      followingCount: 0,
+    })),
   ],
   memberships: [
     membership(admin, 'OWNER'),
@@ -158,9 +354,210 @@ export const createSeed = (): MockDbState => ({
     membership(memberB, 'MEMBER'),
     membership(memberC, 'MEMBER'),
     membership(me, 'MEMBER'),
+    membership(admin, 'OWNER', MOCK_SECOND_BUNCH_ID, '2026-10-01T09:00:00.000Z'),
+    membership(me, 'MEMBER', MOCK_SECOND_BUNCH_ID, '2026-10-01T09:00:00.000Z'),
+    // 다른 번치의 멤버(내 소속은 없음)
+    ...[101, 102, 103, 104].map((id, index) =>
+      membership(id, index === 0 ? 'OWNER' : 'MEMBER', MOCK_EXTERNAL_BUNCH_IDS.public),
+    ),
+    ...[201, 202, 203, 204, 205, 206].map((id, index) =>
+      membership(id, index === 0 ? 'OWNER' : 'MEMBER', MOCK_EXTERNAL_BUNCH_IDS.private),
+    ),
   ],
   photos: photos(),
   // UT 시작 데이터(상태 A): 초안은 없고 번치 홈에는 기존 발행 번들 2개가 있음
-  bundles: publishedBundles(),
-  bundleLeases: [],
+  bundles: [
+    ...publishedBundles(),
+    ...publishedBundles(
+      EXTERNAL_PUBLISHED_SEEDS[MOCK_EXTERNAL_BUNCH_IDS.public],
+      MOCK_EXTERNAL_BUNCH_IDS.public,
+      'PUBLIC',
+    ),
+    ...publishedBundles(
+      EXTERNAL_PUBLISHED_SEEDS[MOCK_EXTERNAL_BUNCH_IDS.private],
+      MOCK_EXTERNAL_BUNCH_IDS.private,
+      'PUBLIC',
+    ),
+  ],
+  blocks: [
+    {
+      id: 1,
+      blockerBunchId: MOCK_BUNCH_ID,
+      targetBunchId: 11,
+      createdAt: '2026-10-05T09:00:00.000Z',
+    },
+    {
+      id: 2,
+      blockerBunchId: MOCK_BUNCH_ID,
+      targetBunchId: 10,
+      createdAt: '2026-10-08T09:00:00.000Z',
+    },
+  ],
+  reports: [],
+  // 공개 번치(3)의 「가평 첫 캠핑」에 책방산책(4)과 내 두 번째 번치(퇴근런클럽)가 누른 좋아요
+  likes: [
+    { bunchId: MOCK_EXTERNAL_BUNCH_IDS.private, bundleId: 901 },
+    { bunchId: MOCK_SECOND_BUNCH_ID, bundleId: 901 },
+  ],
+  koks: KOK_SEEDS,
+  hiddenAdIds: [],
+  lastKokId: KOK_SEEDS.length,
+  // 「가평 첫 캠핑」 댓글: 캠핑러버 관리자의 원댓글과 내 답글, 삭제된 원댓글, 차단한 번치(야간러너스)의 원댓글(목록·수에서 빠짐), 내 원댓글
+  socialComments: [
+    {
+      id: 5001,
+      bundleId: 901,
+      parentId: null,
+      memberId: admin,
+      bunchId: MOCK_EXTERNAL_BUNCH_IDS.public,
+      content: '다음엔 같이 가요!\n자리 넉넉해요',
+      createdAt: '2026-10-12T10:00:00.000Z',
+      deleted: false,
+    },
+    {
+      id: 5002,
+      bundleId: 901,
+      parentId: 5001,
+      memberId: me,
+      bunchId: MOCK_BUNCH_ID,
+      content: '좋아요 🙌',
+      createdAt: '2026-10-12T11:00:00.000Z',
+      deleted: false,
+    },
+    {
+      id: 5003,
+      bundleId: 901,
+      parentId: null,
+      memberId: memberA,
+      bunchId: MOCK_SECOND_BUNCH_ID,
+      content: '지운 댓글',
+      createdAt: '2026-10-12T12:00:00.000Z',
+      deleted: true,
+    },
+    {
+      id: 5004,
+      bundleId: 901,
+      parentId: null,
+      memberId: memberB,
+      bunchId: 10,
+      content: '차단한 번치의 댓글',
+      createdAt: '2026-10-13T09:00:00.000Z',
+      deleted: false,
+    },
+    {
+      id: 5005,
+      bundleId: 901,
+      parentId: null,
+      memberId: me,
+      bunchId: MOCK_BUNCH_ID,
+      content: '사진 너무 예뻐요',
+      createdAt: '2026-10-13T10:00:00.000Z',
+      deleted: false,
+    },
+  ],
+  // 여행쥬아: 읽지 않은 3개(최신순 앞), 읽은 1개. 마지막 번들(9999)은 지워져 열 수 없는 알림. 퇴근런클럽: 읽지 않은 1개
+  notifications: [
+    {
+      id: 1,
+      bunchId: MOCK_BUNCH_ID,
+      type: 'CANDIDATE_CREATED',
+      title: '새로운 번들 후보가 생겼어요',
+      body: '함께한 순간을 번들로 만들어 보세요.',
+      createdAt: '2026-11-13T09:00:00.000Z',
+      readAt: null,
+      target: { kind: 'CANDIDATES', bunchId: MOCK_BUNCH_ID },
+    },
+    {
+      id: 2,
+      bunchId: MOCK_BUNCH_ID,
+      type: 'BUNDLE_PUBLISHED',
+      title: '새 번들이 올라왔어요',
+      body: '번들을 확인해 보세요.',
+      createdAt: '2026-11-12T09:00:00.000Z',
+      readAt: null,
+      target: { kind: 'BUNDLE', bunchId: MOCK_BUNCH_ID, bundleId: 1 },
+    },
+    {
+      id: 3,
+      bunchId: MOCK_BUNCH_ID,
+      type: 'BUNCH_FOLLOWED',
+      title: '캠핑러버 번치가 팔로우했어요',
+      body: '번치 프로필을 확인해 보세요.',
+      createdAt: '2026-11-11T09:00:00.000Z',
+      readAt: null,
+      target: {
+        kind: 'OTHER_BUNCH_PROFILE',
+        bunchId: MOCK_BUNCH_ID,
+        targetBunchId: MOCK_EXTERNAL_BUNCH_IDS.public,
+      },
+    },
+    {
+      id: 4,
+      bunchId: MOCK_BUNCH_ID,
+      type: 'BUNDLE_LIKED',
+      title: '번들에 좋아요가 달렸어요',
+      body: '지금은 볼 수 없는 번들이에요.',
+      createdAt: '2026-11-01T09:00:00.000Z',
+      readAt: '2026-11-02T09:00:00.000Z',
+      target: { kind: 'BUNDLE', bunchId: MOCK_BUNCH_ID, bundleId: 9999 },
+    },
+    {
+      id: 5,
+      bunchId: MOCK_SECOND_BUNCH_ID,
+      type: 'MEMBER_JOINED',
+      title: '새 멤버가 들어왔어요',
+      body: '멤버를 확인해 보세요.',
+      createdAt: '2026-11-10T09:00:00.000Z',
+      readAt: null,
+      target: { kind: 'MEMBERS', bunchId: MOCK_SECOND_BUNCH_ID },
+    },
+  ],
+  follows: FOLLOW_SEEDS.map(([followerBunchId, targetBunchId, status, createdAt], index) => ({
+    id: index + 1,
+    followerBunchId,
+    targetBunchId,
+    status,
+    createdAt,
+  })),
+  // 번치 전환 목록의 접근 불가 줄(Figma 5402:105276 안내 창의 번치들)
+  bunchAccessNotices: [
+    {
+      id: 1,
+      bunchId: 90,
+      name: '홍대역',
+      characterType: 'TYPE_3',
+      reason: 'DELETED',
+      occurredAt: '2026-10-15T09:00:00.000Z',
+    },
+    {
+      id: 2,
+      bunchId: 91,
+      name: '큐시즘 맛집',
+      characterType: 'TYPE_4',
+      reason: 'REMOVED',
+      occurredAt: '2026-10-16T09:00:00.000Z',
+    },
+  ],
+  // 저장값이 없으면 전체와 모든 알림 종류가 켜짐(Notion 푸시 수신 설정 조회)
+  pushPreferences: {
+    enabled: true,
+    categories: Object.fromEntries(PUSH_NOTIFICATION_TYPES.map((type) => [type, true])),
+  },
 });
+
+/**
+ * 시작 세션 종류(`anonymous` 비로그인, `signup-terms` 약관 전 가입 중, 그 밖은 가입 완료)에 맞춘 시작 데이터
+ * 가입 중은 소속 번치가 없어 가입을 마치면 번치 시작으로 감
+ */
+export const createSeedFor = (kind: string | null): MockDbState => {
+  const seed = createSeed();
+  if (kind === 'anonymous') return { ...seed, session: { ...seed.session, loggedIn: false } };
+  if (kind === 'signup-terms') {
+    return {
+      ...seed,
+      session: { loggedIn: true, signupStatus: 'IN_PROGRESS', termsAccepted: false },
+      memberships: seed.memberships.filter(({ memberId }) => memberId !== MOCK_MY_MEMBER_ID),
+    };
+  }
+  return seed;
+};

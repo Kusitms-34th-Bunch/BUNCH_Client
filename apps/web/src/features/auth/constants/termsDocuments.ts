@@ -16,7 +16,8 @@ type TermsDocumentContent = {
   articles: readonly TermsArticle[];
 };
 
-// 임시 문구(설계서: 약관 원문은 추후 변경 예정)
+// 목업 문구(Figma 5878:77323·5878:77344·6372:43752, 출시 전 수정 예정). 세 원문이 같은 본문을 씀
+// Figma 서비스 이용약관의 「제 2조 (목적)」은 1조와 겹쳐 오타로 보고 「(용어의 정의)」 유지
 const purpose =
   '본 약관은 BUNCH 주식회사(이하 “회사”)가 제공하는 그룹 사진 기록 및 아카이빙 서비스 BUNCH(이하 “서비스”)의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.';
 const definitions = [
@@ -42,7 +43,7 @@ export const TERMS_DOCUMENTS: Record<TermsDocumentId, TermsDocumentContent> = {
     ],
   },
   privacy: {
-    title: '개인정보 처리방침',
+    title: '필수 수집 항목 동의서',
     effectiveDate: '2025. 01. 01',
     version: '1.2',
     articles: [
@@ -52,38 +53,16 @@ export const TERMS_DOCUMENTS: Record<TermsDocumentId, TermsDocumentContent> = {
       { title: '제 4조 (회원의 의무 및 데이터 보존)', paragraphs: [duty] },
     ],
   },
-  // 임시 문구(기획: 선택 약관 원문은 확인 중). 출생연도·성별 수집 동의
+  // 목업 문구(Figma 6372:43752 「선택 수집 항목 동의서」, 출시 전 수정 예정). 실제 원문은 출생연도·성별 수집 동의
   demographics: {
-    title: '추가 개인정보 수집 및 이용 동의',
+    title: '선택 수집 항목 동의서',
     effectiveDate: '2025. 01. 01',
-    version: '1.0',
+    version: '1.2',
     articles: [
-      {
-        title: '제 1조 (목적)',
-        paragraphs: [
-          '회사는 서비스 개선을 위한 통계 분석을 목적으로 출생연도와 성별을 선택적으로 수집합니다.',
-        ],
-      },
-      {
-        title: '제 2조 (수집 항목)',
-        items: [
-          '출생연도(네 자리 연도)',
-          '성별(여성 또는 남성)',
-          '입력 시점(가입 완료 때 입력한 값)',
-        ],
-      },
-      {
-        title: '제 3조 (이용 범위)',
-        paragraphs: [
-          '수집한 출생연도와 성별은 통계 분석에만 활용하며, 다른 사용자에게 공개되지 않습니다.',
-        ],
-      },
-      {
-        title: '제 4조 (동의하지 않는 경우)',
-        paragraphs: [
-          '이 항목에 동의하지 않아도 서비스를 이용할 수 있으며, 출생연도와 성별은 입력하지 않습니다.',
-        ],
-      },
+      { title: '제 1조 (목적)', paragraphs: [purpose] },
+      { title: '제 2조 (용어의 정의)', items: definitions },
+      { title: '제 3조 (약관의 효력 및 변경)', paragraphs: [amendment] },
+      { title: '제 4조 (회원의 의무 및 데이터 보존)', paragraphs: [duty] },
     ],
   },
 };

@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { OnboardingState } from '../api/onboarding';
 import { resolveAccess, type SessionState } from './accessPolicy';
 
-const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
+const DESTINATIONS = {
+  bunchHome: '/bunch',
+  bunchStart: '/onboarding',
+  inviteEntry: '/onboarding/join/enter',
+};
 
 const member = (onboarding: OnboardingState): SessionState => ({ kind: 'member', onboarding });
 const anonymous: SessionState = { kind: 'anonymous' };
@@ -98,7 +102,7 @@ describe('resolveAccess', () => {
   });
 
   describe('가입을 마친 사용자', () => {
-    it.each(['/', '/bunch', '/feed', '/onboarding', '/my/profile', '/bunch/bundles/new'])(
+    it.each(['/bunch', '/feed', '/onboarding', '/my/profile', '/bunch/bundles/new'])(
       '%s는 볼 수 있다',
       (pathname) => {
         expect(access(pathname, withBunch)).toBeNull();
@@ -106,7 +110,7 @@ describe('resolveAccess', () => {
       },
     );
 
-    it.each(['/login', '/signup/terms', '/signup/terms/service', '/signup/profile'])(
+    it.each(['/', '/login', '/signup/terms', '/signup/terms/service', '/signup/profile'])(
       '%s에 들어가면 도착 화면으로 보낸다(기본 번치가 있으면 번치 홈)',
       (pathname) => {
         expect(access(pathname, withBunch)).toBe('/bunch');
@@ -114,12 +118,38 @@ describe('resolveAccess', () => {
     );
 
     it('기본 번치가 없으면 번치 시작 선택으로 보낸다', () => {
+      expect(access('/', noBunch)).toBe('/onboarding');
       expect(access('/login', noBunch)).toBe('/onboarding');
       expect(access('/signup/profile', noBunch)).toBe('/onboarding');
     });
 
     it('이름이 비슷한 경로(/signupfoo)는 가입 화면으로 보지 않는다', () => {
       expect(access('/signupfoo', withBunch)).toBeNull();
+    });
+  });
+
+  describe('보관된 초대가 있을 때', () => {
+    const member = {
+      kind: 'member',
+      onboarding: {
+        memberId: 1,
+        signupStatus: 'COMPLETED',
+        termsAccepted: true,
+        hasDefaultBunch: true,
+      },
+    } as const;
+
+    it('가입을 마친 사용자가 첫 화면(/)·로그인·가입 화면에 있으면 초대 진입으로 보낸다', () => {
+      for (const pathname of ['/', '/login', '/intro', '/signup/profile']) {
+        expect(resolveAccess(pathname, member, DESTINATIONS, true, true)).toBe(
+          '/onboarding/join/enter',
+        );
+      }
+    });
+
+    it('다른 화면의 접근은 바꾸지 않는다(초대가 있어도 접근을 넓히거나 막지 않음)', () => {
+      expect(resolveAccess('/bunch', member, DESTINATIONS, true, true)).toBeNull();
+      expect(resolveAccess('/onboarding/join/enter', member, DESTINATIONS, true, true)).toBeNull();
     });
   });
 });

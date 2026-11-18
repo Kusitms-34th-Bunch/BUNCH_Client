@@ -3,8 +3,8 @@ import {
   ACCESS_TOKEN_COOKIE,
   clearAuthCookies,
   REFRESH_TOKEN_COOKIE,
-} from '@/shared/api/authCookies';
-import { reissueOnce, requestLogout } from '@/shared/api/authSession';
+} from '@/shared/api/server/authCookies';
+import { reissueOnce, requestLogout } from '@/shared/api/server/authSession';
 
 // access 쿠키가 만료돼 없으면 refresh로 재발급한 access 사용(백엔드 로그아웃은 access만 받음)
 const accessTokenForLogout = async (request: NextRequest) => {

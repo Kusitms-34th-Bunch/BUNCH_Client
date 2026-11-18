@@ -27,6 +27,8 @@ describe('getBunchMembers', () => {
           { memberId: 9, nickname: '수인', imageUrl: '', role: 'CO_OWNER' },
           // 생성 계약상 사진 필드는 생략될 수도 있음
           { memberId: 10, nickname: '하율', role: 'MEMBER' },
+          // 안전하지 않은 주소도 기본 이미지
+          { memberId: 11, nickname: '은우', imageUrl: 'javascript:alert(1)', role: 'MEMBER' },
         ]),
       ),
     );
@@ -36,6 +38,7 @@ describe('getBunchMembers', () => {
       { id: '8', name: '경진', avatarSrc: '/images/default-profile.svg', role: 'MEMBER' },
       { id: '9', name: '수인', avatarSrc: '/images/default-profile.svg', role: 'CO_OWNER' },
       { id: '10', name: '하율', avatarSrc: '/images/default-profile.svg', role: 'MEMBER' },
+      { id: '11', name: '은우', avatarSrc: '/images/default-profile.svg', role: 'MEMBER' },
     ]);
   });
 
@@ -69,10 +72,10 @@ describe('getBunchMembers', () => {
     expect(requestedBunchId).toBe('42');
   });
 
-  it('없는 번치는 RESOURCE_001 오류다', async () => {
+  it('없는 번치는 BUNCH_009 오류다', async () => {
     await expect(getBunchMembers('999')).rejects.toMatchObject({
       status: 404,
-      code: 'RESOURCE_001',
+      code: 'BUNCH_009',
     });
   });
 
@@ -80,7 +83,7 @@ describe('getBunchMembers', () => {
     server.use(http.get('/api/bunches/:bunchId/members', () => fail(403, 'AUTH_002')));
 
     await expect(getBunchMembers('1')).rejects.toMatchObject({
-      category: 'auth',
+      category: 'forbidden',
       code: 'AUTH_002',
     });
   });

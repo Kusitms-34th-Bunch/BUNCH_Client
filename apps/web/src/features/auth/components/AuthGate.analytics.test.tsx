@@ -15,7 +15,13 @@ vi.mock('next/navigation', () => ({
 
 const renderGate = () =>
   render(
-    <AuthGate destinations={{ bunchHome: '/bunch', bunchStart: '/onboarding' }}>
+    <AuthGate
+      destinations={{
+        bunchHome: '/bunch',
+        bunchStart: '/onboarding',
+        inviteEntry: '/onboarding/join/enter',
+      }}
+    >
       <p>보호된 화면</p>
     </AuthGate>,
     { wrapper: createQueryWrapper() },

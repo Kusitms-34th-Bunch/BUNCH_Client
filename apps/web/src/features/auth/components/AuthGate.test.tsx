@@ -5,6 +5,7 @@ import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import { clearPendingInvitation, savePendingInvitation } from '@/shared/lib/pendingInvitation';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { usePostLoginPath } from '../queries/session';
 import { AuthGate } from './AuthGate';
@@ -16,7 +17,11 @@ vi.mock('next/navigation', () => ({
   usePathname: () => navigation.pathname,
 }));
 
-const DESTINATIONS = { bunchHome: '/bunch', bunchStart: '/onboarding' };
+const DESTINATIONS = {
+  bunchHome: '/bunch',
+  bunchStart: '/onboarding',
+  inviteEntry: '/onboarding/join/enter',
+};
 
 const respondWith = (onboarding: {
   signupStatus: 'IN_PROGRESS' | 'COMPLETED';
@@ -41,10 +46,40 @@ describe('AuthGate', () => {
 
   beforeEach(() => {
     replace.mockClear();
+    clearPendingInvitation();
     navigation.pathname = '/bunch';
     // 기본은 인트로를 본 사용자. 회원 테스트가 남긴 기록에 기대지 않게 매번 다시 둠
     window.localStorage.clear();
     window.localStorage.setItem('bunch:intro-seen', '1');
+  });
+
+  describe('보관된 초대(초대 링크로 들어온 사용자)', () => {
+    it('로그인 화면에 있는 가입 완료 사용자를 번치 홈이 아니라 초대 진입으로 보낸다', async () => {
+      savePendingInvitation('ABCD2345');
+      navigation.pathname = '/login';
+      respondWith({ signupStatus: 'COMPLETED', termsAccepted: true, defaultBunchId: 7 });
+      renderGate();
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/onboarding/join/enter'));
+      expect(replace).not.toHaveBeenCalledWith('/bunch');
+    });
+
+    it('보관된 초대가 없으면 기존처럼 번치 홈으로 보낸다', async () => {
+      navigation.pathname = '/login';
+      respondWith({ signupStatus: 'COMPLETED', termsAccepted: true, defaultBunchId: 7 });
+      renderGate();
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
+    });
+
+    it('다른 화면의 접근은 바꾸지 않는다(초대가 있어도 보호된 화면이 그대로 열림)', async () => {
+      savePendingInvitation('ABCD2345');
+      respondWith({ signupStatus: 'COMPLETED', termsAccepted: true, defaultBunchId: 7 });
+      renderGate();
+
+      expect(await screen.findByText('보호된 화면')).toBeTruthy();
+      expect(replace).not.toHaveBeenCalled();
+    });
   });
 
   it('상태를 확인하는 동안에는 화면 대신 로딩만 보인다', async () => {

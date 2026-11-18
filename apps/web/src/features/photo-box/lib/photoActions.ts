@@ -23,21 +23,53 @@ export const needsDateChangeConfirm = (photos: readonly PhotoBoxPhoto[], viewer:
 /**
  * 삭제 확인 창 문구를 가르는 종류(명세 3.3.5)
  * - own: 내가 혼자 올린 사진만
- * - others: 관리자가 다른 멤버 사진을 고름(내 사진이 섞여도 포함)
+ * - others: 관리자가 다른 멤버가 올린 사진만 고름
+ * - others-included: 관리자가 내 사진과 다른 멤버 사진을 함께 고름
  * - co-uploaded: 함께 올린 사진만(내 이름만 빠짐)
  * - mixed: 혼자 올린 사진과 함께 올린 사진이 섞임
  */
-export type DeleteKind = 'own' | 'others' | 'co-uploaded' | 'mixed';
+export type DeleteKind = 'own' | 'others' | 'others-included' | 'co-uploaded' | 'mixed';
 
 export const getDeleteKind = (
   photos: readonly PhotoBoxPhoto[],
   viewer: PhotoBoxViewer,
 ): DeleteKind => {
-  if (photos.some((photo) => !photo.uploaderIds.includes(viewer.memberId))) return 'others';
+  const notMine = photos.filter((photo) => !photo.uploaderIds.includes(viewer.memberId)).length;
+  if (notMine > 0) return notMine === photos.length ? 'others' : 'others-included';
   const coUploaded = photos.filter((photo) => photo.uploaderIds.length > 1).length;
   if (coUploaded === 0) return 'own';
   return coUploaded === photos.length ? 'co-uploaded' : 'mixed';
 };
+
+/** 고른 사진 중 함께 올린 사진(올린 멤버가 둘 이상) 수. 삭제해도 사진함에 남는 사진의 수(명세 3.3.5) */
+export const countCoUploaded = (photos: readonly PhotoBoxPhoto[]) =>
+  photos.filter((photo) => photo.uploaderIds.length > 1).length;
+
+/**
+ * 날짜 변경 확인 창 문구를 가르는 종류(명세 3.4.1)
+ * - others: 관리자가 다른 멤버가 올린 사진만 고름
+ * - included: 내 사진이 섞였거나 함께 올린 사진이 있음
+ */
+export type DateConfirmKind = 'others' | 'included';
+
+export const getDateConfirmKind = (
+  photos: readonly PhotoBoxPhoto[],
+  viewer: PhotoBoxViewer,
+): DateConfirmKind =>
+  photos.length > 0 && photos.every((photo) => !photo.uploaderIds.includes(viewer.memberId))
+    ? 'others'
+    : 'included';
+
+/**
+ * 삭제하면 작성 중인 번들에서도 빠지는 사진이 있는지(명세 3.3.5)
+ * 사진이 실제로 사라질 때만 번들에서 빠진다. 함께 올린 사진에서 내 이름만 빠지는 경우는 번들에 영향이 없음
+ */
+export const removesDraftBundlePhoto = (photos: readonly PhotoBoxPhoto[], viewer: PhotoBoxViewer) =>
+  photos.some((photo) => {
+    if (!photo.usedInDraftBundle) return false;
+    const keepsOthers = photo.uploaderIds.includes(viewer.memberId) && photo.uploaderIds.length > 1;
+    return !keepsOthers;
+  });
 
 export type DeleteResult = {
   photos: readonly PhotoBoxPhoto[];
@@ -76,14 +108,17 @@ const TIME_PART = /^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})/;
 const pad = (value: number) => String(value).padStart(2, '0');
 
 /**
- * 고른 사진의 촬영 날짜를 `date`(기기 시간대의 그날)로 바꾸되 시각은 그대로 둠(시각이 없으면 00:00)
+ * 고른 사진의 촬영 날짜를 `date`(기기 시간대의 그날)로 바꾸되 시각은 그대로 둠(시각이 없으면 00:00). `null`이면 날짜 없음으로 되돌림
  * 사진함은 `takenAt`으로 섹션을 나누고 정렬하므로 바뀐 목록이 곧 재정렬 결과
  */
 export const applyTakenDate = (
   photos: readonly PhotoBoxPhoto[],
   ids: ReadonlySet<string>,
-  date: Date,
+  date: Date | null,
 ): PhotoBoxPhoto[] => {
+  if (date === null) {
+    return photos.map((photo) => (ids.has(photo.id) ? { ...photo, takenAt: null } : photo));
+  }
   const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   return photos.map((photo) => {
     if (!ids.has(photo.id)) return photo;

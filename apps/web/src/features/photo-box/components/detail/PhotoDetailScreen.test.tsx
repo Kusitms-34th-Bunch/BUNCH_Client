@@ -11,6 +11,7 @@ import type {
   SaveResult,
 } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
+import { MissingPhotosError } from '../../lib/missingPhotos';
 import { PhotoDetailScreen } from './PhotoDetailScreen';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
@@ -92,6 +93,7 @@ const photo = (
   takenAt,
   uploadedAt: '2026-10-01T00:00:00',
   uploaderIds,
+  usedInDraftBundle: false,
   status,
 });
 
@@ -193,6 +195,13 @@ describe('PhotoDetailScreen 헤더와 사진', () => {
       '사진 p3',
       '사진 p4',
     ]);
+  });
+
+  it('지금 보는 사진만 사진함 썸네일과 이어지는 hero 키를 갖는다', () => {
+    const { container } = renderScreen({}, 'p3');
+
+    const keys = [...container.querySelectorAll('[data-hero-exit-key]')];
+    expect(keys.map((element) => element.getAttribute('data-hero-exit-key'))).toEqual(['photo-p3']);
   });
 
   it('처리 중이거나 불러오지 못한 사진은 회색 자리표시로 보인다', () => {
@@ -376,7 +385,13 @@ describe('PhotoDetailScreen 더보기 메뉴', () => {
 
 describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
   // 달력은 오늘 이후를 막으므로 오늘을 고정하고, 촬영 날짜는 그보다 이른 날로 둠
-  const datePhotos = [photo('d1', '2026-09-05T14:30', ['a']), photo('d2', null, ['a'])];
+  // d3·d4는 다른 멤버가 올린 사진과 함께 올린 사진(관리자 확인 창 대상)
+  const datePhotos = [
+    photo('d1', '2026-09-05T14:30', ['a']),
+    photo('d2', null, ['a']),
+    photo('d3', '2026-09-05T14:30', ['b']),
+    photo('d4', '2026-09-05T14:30', ['a', 'b']),
+  ];
 
   const openDateSheet = async (user: ReturnType<typeof userEvent.setup>, id = 'd1') => {
     renderScreen({ photos: datePhotos }, id);
@@ -391,16 +406,18 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('촬영 날짜를 고른 채 그 달로 열고 그대로는 저장할 수 없다', async () => {
+  it('사진의 촬영 날짜와 관계없이 오늘이 속한 달을 선택 없이 열고 저장은 막혀 있다(기능명세서 3.4.1)', async () => {
     const user = userEvent.setup();
     await openDateSheet(user);
 
-    expect(screen.getByRole('grid', { name: '2026년 9월' })).toBeTruthy();
+    // d1의 촬영 날짜는 9월 5일이지만 시트는 오늘(10월)이 속한 달을 아무 날짜도 고르지 않은 채 엶
+    expect(screen.getByRole('grid', { name: '2026년 10월' })).toBeTruthy();
+    expect(screen.queryByRole('grid', { name: '2026년 9월' })).toBeNull();
     expect(
       screen
-        .getByRole('button', { name: '2026년 9월 5일' })
-        .parentElement?.getAttribute('aria-selected'),
-    ).toBe('true');
+        .getAllByRole('button', { name: /^2026년 10월 \d+일$/ })
+        .some((day) => day.parentElement?.getAttribute('aria-selected') === 'true'),
+    ).toBe(false);
     expect(screen.getByRole('button', { name: '저장' }).getAttribute('aria-disabled')).toBe('true');
   });
 
@@ -412,17 +429,87 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
     expect(screen.getByRole('button', { name: '저장' }).getAttribute('aria-disabled')).toBe('true');
   });
 
+  it('내가 올린 사진은 확인 창 없이 바로 바꾼다', async () => {
+    const user = userEvent.setup();
+    await openDateSheet(user);
+
+    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(changePhotoDates).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('관리자가 다른 멤버가 올린 사진의 날짜를 바꾸면 확인 창을 거친 뒤 바꾼다', async () => {
+    const user = userEvent.setup();
+    await openDateSheet(user, 'd3');
+    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    const dialog = await screen.findByRole('alertdialog', { name: '다른 멤버가 올린 사진이에요.' });
+    expect(
+      within(dialog).getByText('날짜를 변경하면 사진함에서 변경된 날짜로 보여요.'),
+    ).toBeTruthy();
+    expect(changePhotoDates).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: '변경하기' }));
+
+    await waitFor(() => expect(changePhotoDates).toHaveBeenCalledTimes(1));
+    const [ids] = changePhotoDates.mock.calls[0] as [string[], Date];
+    expect(ids).toEqual(['d3']);
+  });
+
+  it('함께 올린 사진이면 다른 제목의 확인 창을 거친다', async () => {
+    const user = userEvent.setup();
+    await openDateSheet(user, 'd4');
+    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(
+      await screen.findByRole('alertdialog', {
+        name: '다른 멤버가 업로드한 사진이 포함되어 있어요.',
+      }),
+    ).toBeTruthy();
+  });
+
+  it('확인 창에서 취소하면 바꾸지 않고 시트를 그대로 둔다', async () => {
+    const user = userEvent.setup();
+    await openDateSheet(user, 'd3');
+    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '다른 멤버가 올린 사진이에요.' });
+
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+
+    expect(changePhotoDates).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(screen.getByRole('dialog', { name: '날짜 바꾸기' })).toBeTruthy();
+  });
+
+  it('보던 사진이 그사이 지워져 거절되면 삭제된 사진 안내와 함께 사진함으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    changePhotoDates.mockRejectedValue(new MissingPhotosError(['d1']));
+    await openDateSheet(user);
+
+    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+    expect(toastAfterNavigation).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto);
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed);
+  });
+
   it('다른 날짜를 고르고 저장하면 날짜를 바꾸고 시트를 닫으며 토스트를 띄운다', async () => {
     const user = userEvent.setup();
     await openDateSheet(user);
 
-    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(changePhotoDates).toHaveBeenCalledTimes(1));
     const [ids, date] = changePhotoDates.mock.calls[0] as [string[], Date];
     expect(ids).toEqual(['d1']);
-    expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 8, 12]);
+    expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 9, 12]);
     await waitFor(() => expect(screen.queryByRole('dialog', { name: '날짜 바꾸기' })).toBeNull());
     expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChanged);
   });
@@ -432,7 +519,7 @@ describe('PhotoDetailScreen 날짜 바꾸기 시트', () => {
     changePhotoDates.mockRejectedValue(new Error('network'));
     await openDateSheet(user);
 
-    await user.click(screen.getByRole('button', { name: '2026년 9월 12일' }));
+    await user.click(screen.getByRole('button', { name: '2026년 10월 12일' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed));
@@ -492,6 +579,40 @@ describe('PhotoDetailScreen 저장', () => {
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveFailedAll));
   });
+
+  it('사진 저장 권한이 거부되어 있으면 오류 토스트 대신 안내 창을 띄우고, 떠 있는 동안 방향키로 넘기지 않는다', async () => {
+    const user = userEvent.setup();
+    savePhotos.mockResolvedValue({ savedIds: [], failedIds: ['p1'], blocked: 'denied' });
+    renderScreen();
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+    await user.click(screen.getByRole('menuitem', { name: '저장' }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText(PHOTO_BOX_MESSAGES.albumPermissionTitle)).toBeTruthy();
+    expect(toast).not.toHaveBeenCalled();
+    expect(swiper.keyboard.disable).toHaveBeenCalled();
+
+    vi.mocked(swiper.keyboard.enable).mockClear();
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    await waitFor(() => expect(swiper.keyboard.enable).toHaveBeenCalled());
+  });
+
+  it('앱이 아니면 저장할 수 없다는 토스트를, 저장 기능이 없는 이전 앱이면 업데이트 안내 토스트를 띄운다', async () => {
+    const user = userEvent.setup();
+    savePhotos.mockResolvedValue({ savedIds: [], failedIds: ['p1'], blocked: 'unavailable' });
+    const { unmount } = renderScreen();
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+    await user.click(screen.getByRole('menuitem', { name: '저장' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.saveUnavailable));
+    unmount();
+
+    toast.mockClear();
+    savePhotos.mockResolvedValue({ savedIds: [], failedIds: ['p1'], blocked: 'outdated' });
+    renderScreen();
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+    await user.click(screen.getByRole('menuitem', { name: '저장' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.uploadNeedsUpdate));
+  });
 });
 
 describe('PhotoDetailScreen 삭제', () => {
@@ -512,6 +633,22 @@ describe('PhotoDetailScreen 삭제', () => {
     expect(onLeave).not.toHaveBeenCalled();
   });
 
+  it('삭제하는 동안 화면 전체 로딩과 안내를 보이고, 끝나면 사진함으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    let finish!: (_result: { removedCount: number }) => void;
+    deletePhotos.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderScreen();
+    const dialog = await openDeleteDialog(user);
+
+    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+
+    expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
+    expect(screen.getByRole('status').textContent).toBe(PHOTO_BOX_MESSAGES.deleting);
+
+    finish({ removedCount: 1 });
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+  });
+
   it('확인 창을 연 사진을 지우며 그 사이 사진이 넘어가도 다른 사진을 지우지 않는다', async () => {
     const user = userEvent.setup();
     renderScreen({}, 'p1');
@@ -521,6 +658,19 @@ describe('PhotoDetailScreen 삭제', () => {
     await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
 
     expect(deletePhotos).toHaveBeenCalledWith(['p1']);
+  });
+
+  it('보던 사진이 그사이 지워져 거절되면 삭제된 사진 안내와 함께 사진함으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    deletePhotos.mockRejectedValue(new MissingPhotosError(['p1']));
+    renderScreen();
+    const dialog = await openDeleteDialog(user);
+
+    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+    expect(toastAfterNavigation).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deletedPhoto);
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed);
   });
 
   it('사진이 사라지면 삭제 토스트를 띄우고 사진함으로 돌아간다', async () => {

@@ -10,7 +10,10 @@ import {
   type CheckNickname,
 } from '@/shared/hooks/useNicknameAvailability';
 import {
+  BUNCH_NAME_CHECKING_MESSAGE,
   BUNCH_NAME_INVALID_MESSAGE,
+  BUNCH_NAME_PROHIBITED_MESSAGE,
+  BUNCH_NAME_TAKEN_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
   hasInvalidBunchNameChars,
 } from '@/shared/lib/bunchProfile';
@@ -18,16 +21,13 @@ import { checkBunchNameAvailability } from '../../api/bunches';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 
-/** 번치 이름 중복 안내(기획 2.2.3) */
-const BUNCH_NAME_TAKEN_MESSAGE = '이미 사용 중인 번치 이름이에요';
-
 type BunchBasicInfoProps = {
   /** 번치 이름 중복 확인 호출. 기본은 서버 확인, 테스트에서 대체하고 null이면 확인하지 않음 */
   checkName?: CheckNickname | null | undefined;
 };
 
 /**
- * 번치 만들기 1단계: 이름(1~12자, 입력을 멈추고 0.5초 뒤 중복 확인)과 공개 범위
+ * 번치 만들기 1단계: 이름(1~12자, 입력을 멈추고 0.5초 뒤 중복·금칙어 확인)과 공개 범위
  * 확인 요청이 실패해도 결과 문구 없이 「다음」을 열고 생성 때 서버가 최종 판단(기획 2.2.3)
  */
 export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: BunchBasicInfoProps) {
@@ -47,11 +47,13 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
   const taken =
     availability === 'taken' ||
     (availability !== 'available' && takenName !== null && takenName === normalized);
+  const prohibited = availability === 'prohibited';
   const canGoNext =
     normalized.length > 0 &&
     !invalid &&
     visibility !== null &&
     !taken &&
+    !prohibited &&
     availability !== 'checking';
 
   return (
@@ -79,8 +81,16 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
           value={name}
           maxLength={BUNCH_NAME_MAX_LENGTH}
           errorMessage={
-            invalid ? BUNCH_NAME_INVALID_MESSAGE : taken ? BUNCH_NAME_TAKEN_MESSAGE : undefined
+            invalid
+              ? BUNCH_NAME_INVALID_MESSAGE
+              : prohibited
+                ? BUNCH_NAME_PROHIBITED_MESSAGE
+                : taken
+                  ? BUNCH_NAME_TAKEN_MESSAGE
+                  : undefined
           }
+          // 중복 확인이 도는 동안만 보이고, 문제가 없으면 사라지며 중복이면 오류 문구가 대신 보임(오류가 있으면 보이지 않음)
+          helperMessage={availability === 'checking' ? BUNCH_NAME_CHECKING_MESSAGE : undefined}
           onChange={(event) => setName(event.target.value)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}

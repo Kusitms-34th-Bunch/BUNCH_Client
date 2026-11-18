@@ -1,40 +1,24 @@
 'use client';
 
-import {
-  ConfirmDialog,
-  cn,
-  FillPencilMediumIcon,
-  FillPhotoMediumIcon,
-  LinePencilMediumIcon,
-  LinePhotoMediumIcon,
-  toast,
-} from '@app/design-system';
-import {
-  BunchSwitchSheet,
-  FloatingButton,
-  MenuTabs,
-  type BunchSwitchItem,
-} from '@app/design-system/web';
+import { ConfirmDialog, cn } from '@app/design-system';
+import { FloatingButton } from '@app/design-system/web';
 import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries';
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
-import { switchStatus } from '../../lib/bunchSwitch';
+import { useBunchSwitchSheet } from '../../hooks/useBunchSwitchSheet';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { BunchProfileImage } from '../BunchProfileImage';
-import { CompletedBundleGrid } from '../CompletedBundleGrid';
-import { BundleEmpty } from './BundleEmpty';
-import { DraftBundleList } from './DraftBundleList';
+import { BundleTabs } from './BundleTabs';
 
-type BundleTab = 'completed' | 'draft';
-
-// 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
-const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
+const CREATE_BUNDLE_LABEL = '번들 만들기';
 
 type BunchHomeScreenProps = {
   data: BunchHomeData;
@@ -60,46 +44,27 @@ export function BunchHomeScreen({
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
   const background = BUNCH_BACKGROUNDS[current.characterType];
-  const [tab, setTab] = useState<BundleTab>('completed');
   // 번치를 한 번이라도 전환했는지(첫 진입에는 디졸브를 재생하지 않음)
   const [switched, setSwitched] = useState(false);
-  // 탭을 한 번이라도 바꿨는지(첫 진입·되돌아올 때는 탭 디졸브를 재생하지 않음)
-  const [tabChanged, setTabChanged] = useState(false);
-  // 헤더의 번치 전환 버튼에 시트가 열렸는지 알림
-  const [switcherOpen, setSwitcherOpen] = useState(false);
   const openOverlay = useScreenOverlay();
+  const refresh = useRefreshActiveQueries();
+  // iOS 26 이상 쉘은 「+」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음
+  const showWebCreateButton = useNativeFloatingButton({
+    tab: 'bunch',
+    icon: 'add',
+    label: CREATE_BUNDLE_LABEL,
+    onPress: onCreateBundle,
+  });
 
-  const findBunch = (id: string) => bunches.find((bunch) => bunch.id === id);
-  // 삭제·내보내진 번치는 전환하지 않고 시트 위에 안내를 띄움(닫힘 모션 동안 문구는 열 때 값으로 유지)
-  const openUnavailable = (id: string) => {
-    const bunch = findBunch(id);
-    if (!bunch) return;
-    let removed = false;
-    // Esc는 안내만 닫고 목록에 남김, 「번치 목록에서 삭제」만 목록에서 지움
-    openOverlay(
-      (rootProps, close) => (
-        <ConfirmDialog
-          {...rootProps}
-          title={BUNCH_HOME_MESSAGES.unavailableTitle(bunch)}
-          description={BUNCH_HOME_MESSAGES.unavailableDescription(bunch)}
-          appearance="text"
-          confirmLabel="번치 목록에서 삭제"
-          onConfirm={() => {
-            actions.removeBunch(bunch.id);
-            removed = true;
-            close();
-          }}
-        />
-      ),
-      () => {
-        // 안내를 연 줄이 사라져 돌아갈 곳이 없으므로 열린 전환 시트로 초점을 옮김
-        if (removed)
-          document
-            .querySelector<HTMLElement>('[data-bottom-sheet]:not([data-ending-style])')
-            ?.focus();
-      },
-    );
-  };
+  // 번치 전환 시트와 접근 불가 번치 안내(사진함 헤더와 같은 hook)
+  const { openSwitcher, switcherOpen } = useBunchSwitchSheet({
+    currentId: current.id,
+    bunches,
+    switchBunch: actions.switchBunch,
+    removeBunch: actions.removeBunch,
+    onSwitched: () => setSwitched(true),
+    onAddBunch,
+  });
   // 창이 열린 사이 앞선 삭제가 끝날 수 있어 확정할 때의 최신 동작을 부름
   const deleteDraft = usePreservedCallback((id: string) => actions.deleteDraftBundle(id));
   const openDeleteDraft = (target: DraftBundle) =>
@@ -116,61 +81,12 @@ export function BunchHomeScreen({
         }}
       />
     ));
-  const selectBunch = (id: string) => {
-    const bunch = findBunch(id);
-    if (!bunch) return;
-    setTab('completed');
-    setSwitched(true);
-    actions.switchBunch(bunch.id);
-    toast(BUNCH_HOME_MESSAGES.switched(bunch.name));
-  };
-  // 시트가 열린 사이 목록·알림 수가 바뀌어도 최신 값으로 그림
-  const switchItems = usePreservedCallback((): BunchSwitchItem[] =>
-    bunches.map((bunch) => ({
-      id: bunch.id,
-      name: bunch.name,
-      imageSrc: bunch.imageSrc,
-      notificationCount: bunch.alertCount,
-      status: switchStatus(bunch, current.id),
-    })),
-  );
-  const openSwitcher = () => {
-    // 「새로운 번치 추가하기」: 시트가 다 내려간 뒤 이동(화면설계서 7-1)
-    let addAfterClose = false;
-    setSwitcherOpen(true);
-    openOverlay(
-      (rootProps, close) => (
-        <BunchSwitchSheet
-          {...rootProps}
-          onOpenChange={(open) => {
-            if (!open) setSwitcherOpen(false);
-            rootProps.onOpenChange(open);
-          }}
-          bunches={switchItems()}
-          onSelect={(id) => {
-            setSwitcherOpen(false);
-            close();
-            selectBunch(id);
-          }}
-          onUnavailableSelect={openUnavailable}
-          onAdd={() => {
-            addAfterClose = true;
-            setSwitcherOpen(false);
-            close();
-          }}
-        />
-      ),
-      () => {
-        if (addAfterClose) onAddBunch?.();
-      },
-      { live: true },
-    );
-  };
-
   return (
     // 성격별 배경은 헤더·프로필 이미지 영역에만 두고 본문 아래 여백(탭 막대 자리)은 흰색 유지
     // 틀 배경은 위 절반 성격 색·아래 절반 흰색: iOS 바운스로 내용이 밀릴 때 위는 성격 색, 아래는 흰색이 드러남
     <PageShell
+      onRefresh={refresh}
+      refreshDisabled={switcherOpen}
       data-app-background={background.app}
       data-app-background-bottom="primary"
       className={cn('to-surface-primary bg-linear-to-b from-50% to-50%', background.frame)}
@@ -183,14 +99,17 @@ export function BunchHomeScreen({
         />
       }
       // 「+」는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
+      // 네이티브 버튼일 때도 높이 0 영역은 남김(PageShell이 이 영역을 토스트 기준으로 씀)
       bottom={
         <div className="relative h-0">
-          <FloatingButton
-            icon="add"
-            aria-label="번들 만들기"
-            onClick={onCreateBundle}
-            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
-          />
+          {showWebCreateButton ? (
+            <FloatingButton
+              icon="add"
+              aria-label={CREATE_BUNDLE_LABEL}
+              onClick={onCreateBundle}
+              className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10"
+            />
+          ) : null}
         </div>
       }
     >
@@ -215,65 +134,13 @@ export function BunchHomeScreen({
               followingCount: followingTab(BUNCH_HOME_PATHS.follows),
             }}
           />
-          <MenuTabs.Root
-            value={tab}
-            onValueChange={(value) => {
-              setTabChanged(true);
-              setTab(value as BundleTab);
-            }}
-            className="flex flex-1 flex-col"
-          >
-            <MenuTabs.List aria-label="번들" variant="icon">
-              <MenuTabs.IconTab
-                value="completed"
-                label="완성된 번들"
-                className="flex-1"
-                icon={<LinePhotoMediumIcon />}
-                selectedIcon={<FillPhotoMediumIcon />}
-              />
-              <MenuTabs.IconTab
-                value="draft"
-                label="작성 중인 번들"
-                className="flex-1"
-                icon={<LinePencilMediumIcon />}
-                selectedIcon={<FillPencilMediumIcon />}
-              />
-            </MenuTabs.List>
-            {/* 탭 전환 시 내용도 Dissolve / Ease out / 75ms(화면설계서 3번) */}
-            {/* 페이드는 들어오는 패널에만(나가는 패널에도 붙이면 첫 전환에 이전 내용이 0부터 다시 나타나고 Base UI가 그 애니메이션을 기다려 두 패널이 겹침) */}
-            <MenuTabs.Panel
-              value="completed"
-              className={cn(tabChanged && tab === 'completed' && panelFade)}
-            >
-              {current.completedBundles.length > 0 ? (
-                <CompletedBundleGrid bundles={current.completedBundles} />
-              ) : (
-                <div className="pt-s24">
-                  <BundleEmpty
-                    title={BUNCH_HOME_MESSAGES.completedEmptyTitle}
-                    showCreateButton
-                    onCreateBundle={onCreateBundle}
-                  />
-                </div>
-              )}
-            </MenuTabs.Panel>
-            <MenuTabs.Panel
-              value="draft"
-              className={cn(tabChanged && tab === 'draft' && panelFade)}
-            >
-              {current.draftBundles.length > 0 ? (
-                <DraftBundleList
-                  bundles={current.draftBundles}
-                  onOpen={onOpenDraft}
-                  onDelete={openDeleteDraft}
-                />
-              ) : (
-                <div className="pt-s25">
-                  <BundleEmpty title={BUNCH_HOME_MESSAGES.draftEmptyTitle} />
-                </div>
-              )}
-            </MenuTabs.Panel>
-          </MenuTabs.Root>
+          <BundleTabs
+            completedBundles={current.completedBundles}
+            draftBundles={current.draftBundles}
+            onCreateBundle={onCreateBundle}
+            onOpenDraft={onOpenDraft}
+            onDeleteDraft={openDeleteDraft}
+          />
         </div>
       </div>
     </PageShell>

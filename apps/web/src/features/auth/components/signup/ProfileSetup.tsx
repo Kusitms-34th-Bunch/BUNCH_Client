@@ -5,6 +5,8 @@ import { Button, toast } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
 import { useRef, useState } from 'react';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
+import { checkNicknameAvailability } from '@/shared/api/nickname';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
@@ -12,7 +14,6 @@ import { EMPTY_PROFILE_VALUES, useProfileFields } from '@/shared/hooks/useProfil
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import { normalizeNickname } from '@/shared/lib/nickname';
-import { checkNicknameAvailability } from '../../api/registration';
 import { useTermsAgreement } from '../../contexts/termsAgreementContext';
 import { useRegisterMutation } from '../../queries/signup';
 import { SignupFrame } from './SignupFrame';
@@ -22,7 +23,7 @@ type ProfileSetupProps = {
   checkNickname?: CheckNickname | null | undefined;
 };
 
-/** 프로필 저장 실패 문구(기획 1.4.7). 닉네임 중복은 입력란 아래 문구로 따로 안내 */
+/** 프로필 저장 실패 문구(기획 1.4.7). 닉네임 중복·금칙어는 입력란 아래 문구로 따로 안내 */
 const SAVE_FAILURE_MESSAGE = '일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요';
 /** 닉네임 중복(`POST /members/me/registration`의 409 오류 코드) */
 const NICKNAME_TAKEN_CODE = 'USER_002';
@@ -55,8 +56,11 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
         ...(photo ? { photo } : {}),
       });
     } catch (error) {
-      if (isApiError(error) && error.code === NICKNAME_TAKEN_CODE) {
-        fields.markNicknameTaken();
+      const taken = isApiError(error) && error.code === NICKNAME_TAKEN_CODE;
+      // 그사이 금칙어 목록에 단어가 추가됐을 수 있음(기능명세 1.4.7)
+      const prohibited = prohibitedFieldsOf(error)?.includes('nickname') ?? false;
+      if (taken || prohibited) {
+        fields.markNicknameRejected(prohibited ? 'prohibited' : 'taken');
         // 시작하기가 비활성이 되므로 포커스를 닉네임 입력으로 돌려 바로 고칠 수 있게 함
         // 첫 입력란(닉네임). 사진 선택용 숨은 파일 입력은 제외
         containerRef.current?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus();

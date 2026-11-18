@@ -79,7 +79,8 @@ export function TextField({
           {...props}
           ref={inputRef}
           aria-label={label}
-          aria-busy={editing || undefined}
+          // `editing`이 아니어도 호출하는 쪽이 준 `aria-busy`(예: 값을 불러오는 중)는 그대로 둠
+          aria-busy={editing ? true : props['aria-busy']}
         />
         {editing && editingContent ? (
           <span

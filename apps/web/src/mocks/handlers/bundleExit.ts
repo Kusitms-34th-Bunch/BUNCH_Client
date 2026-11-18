@@ -9,8 +9,7 @@ const removeBundle = (bundleId: number) =>
   mockDb.update((current) => ({
     ...current,
     bundles: current.bundles.filter((bundle) => bundle.id !== bundleId),
-    // 번들 사진·참여자·코멘트는 번들과 함께 사라지고 편집권도 같이 정리함(사진함 원본은 그대로)
-    bundleLeases: current.bundleLeases.filter((lease) => lease.bundleId !== bundleId),
+    // 번들 사진·참여자·코멘트는 번들과 함께 사라짐(사진함 원본은 그대로)
   }));
 
 export const bundleExitHandlers = [
@@ -41,12 +40,6 @@ export const bundleExitHandlers = [
       ...current,
       participants: current.participants.filter((p) => p.memberId !== MOCK_MY_MEMBER_ID),
       comments: current.comments.filter((comment) => comment.memberId !== MOCK_MY_MEMBER_ID),
-    }));
-    mockDb.update((current) => ({
-      ...current,
-      bundleLeases: current.bundleLeases.filter(
-        (lease) => !(lease.bundleId === bundle.id && lease.memberId === MOCK_MY_MEMBER_ID),
-      ),
     }));
     return snapshotOf(bundle.id);
   }),

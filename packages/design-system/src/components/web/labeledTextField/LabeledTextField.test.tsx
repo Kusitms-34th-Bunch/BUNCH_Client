@@ -173,4 +173,50 @@ describe('LabeledTextField', () => {
     );
     expect(screen.queryByText(/\/200/)).toBeNull();
   });
+
+  it('helperMessage는 입력창 아래 왼쪽에 보이고 글자 수와 같은 줄에 있다', () => {
+    render(
+      <LabeledTextField
+        title="번치 이름"
+        maxLength={12}
+        defaultValue="퇴근"
+        helperMessage="사용 가능한 이름인지 확인 중이에요."
+      />,
+    );
+
+    const helper = screen.getByText('사용 가능한 이름인지 확인 중이에요.', {
+      selector: 'p[aria-hidden]',
+    });
+    expect(helper.className).toContain('text-text-quaternary');
+    expect(helper.parentElement).toBe(screen.getByText('2/12').parentElement);
+  });
+
+  it('helperMessage는 항상 마운트된 status 영역으로 낭독되고 값을 비우면 문구가 사라진다', () => {
+    const { rerender } = render(<LabeledTextField title="번치 이름" maxLength={12} />);
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe('');
+
+    rerender(<LabeledTextField title="번치 이름" maxLength={12} helperMessage="확인 중이에요." />);
+    // 같은 요소가 문구만 바뀌어 낭독됨(새로 끼워 넣지 않음)
+    expect(screen.getByRole('status')).toBe(status);
+    expect(status.textContent).toBe('확인 중이에요.');
+
+    rerender(<LabeledTextField title="번치 이름" maxLength={12} />);
+    expect(status.textContent).toBe('');
+    expect(screen.queryByText('확인 중이에요.')).toBeNull();
+  });
+
+  it('오류 문구가 있으면 helperMessage는 보이지도 읽히지도 않는다', () => {
+    render(
+      <LabeledTextField
+        title="번치 이름"
+        errorMessage="이미 사용 중이에요"
+        helperMessage="확인 중이에요."
+      />,
+    );
+
+    expect(screen.getByRole('alert').textContent).toBe('이미 사용 중이에요');
+    expect(screen.queryByText('확인 중이에요.')).toBeNull();
+    expect(screen.getByRole('status').textContent).toBe('');
+  });
 });

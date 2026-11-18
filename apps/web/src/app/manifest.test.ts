@@ -10,8 +10,8 @@ describe('홈 화면 추가(PWA) 매니페스트', () => {
 
   it('이름은 bunch이고 주소창 없는 앱으로 번치 탭에서 시작한다', () => {
     expect(data).toMatchObject({
-      name: 'bunch',
-      short_name: 'bunch',
+      name: 'BUNCH',
+      short_name: 'BUNCH',
       start_url: '/bunch',
       display: 'standalone',
       orientation: 'portrait',

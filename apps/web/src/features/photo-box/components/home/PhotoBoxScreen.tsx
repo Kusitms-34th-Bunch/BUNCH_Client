@@ -6,7 +6,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
+import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
 import { usePhotoSelectionFlow } from '../../hooks/usePhotoSelectionFlow';
@@ -19,8 +22,8 @@ import { MemberFilter } from '../MemberFilter';
 import { NoBunch } from '../NoBunch';
 import { PhotoBoxEmpty } from '../PhotoBoxEmpty';
 import { PhotoBoxError } from '../PhotoBoxError';
+import { PhotoBoxMore } from '../PhotoBoxMore';
 import { PhotoDragSelect } from '../PhotoDragSelect';
-import { UndatedPhotos } from '../UndatedPhotos';
 import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
 import { PhotoDragArea } from './PhotoDragArea';
@@ -33,6 +36,8 @@ const noopActions: PhotoBoxActions = {
   changePhotoDates: () => Promise.resolve(),
 };
 
+const noop = () => {};
+
 // 확인 창 닫힘 전환(100ms)이 끝난 뒤에 초점을 옮기려는 지연
 const DIALOG_CLOSE_MS = 150;
 
@@ -43,8 +48,14 @@ type PhotoBoxScreenProps = {
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
   currentYear?: number | undefined;
   onRetry?: (() => void) | undefined;
-  /** 번치 이름을 눌렀을 때(전환 목록은 추후 작업) */
+  /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 아래로 다시 스크롤하면 부름 */
+  onLoadMore?: (() => void) | undefined;
+  /** 맨 위에서 당겨서 새로고침(기능 spec 3.1.1). 선택 모드·저장·삭제 중에는 당김을 끔 */
+  onRefresh?: (() => Promise<void>) | undefined;
+  /** 번치 이름을 눌렀을 때(번치 전환 시트 열기) */
   onBunchClick?: (() => void) | undefined;
+  /** 번치 전환 시트가 열려 있는지 */
+  switcherOpen?: boolean | undefined;
   /** 올리기 시트에서 방식을 골랐을 때(앨범·카메라 연동은 사진 올리기 이슈, 시트는 닫고 호출) */
   onUpload?: ((_source: 'album' | 'camera') => void) | undefined;
   /** 「번들 만들기」 확인 창에서 「예」를 눌렀을 때(고른 사진 id를 누른 순서대로 전달, 초안 생성·이동은 번들 작성 이슈) */
@@ -57,7 +68,10 @@ export function PhotoBoxScreen({
   actions = noopActions,
   currentYear = new Date().getFullYear(),
   onRetry,
+  onLoadMore,
+  onRefresh,
   onBunchClick,
+  switcherOpen,
   onUpload,
   onCreateBundle,
 }: PhotoBoxScreenProps) {
@@ -79,6 +93,9 @@ export function PhotoBoxScreen({
 
   // 사진을 지우면 눌렀던 메뉴·선택 칸이 사라지므로 화면 제목으로 초점을 옮김(web-interface-guidelines 「같은 화면에서 항목이 사라지면」, 확인 창이 닫힌 뒤)
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // 사진 상세에서 돌아오면 보던 위치로 복원(맨 위로 튀면 돌아오는 hero 사진이 화면 밖 칸으로 날아감)
+  useScrollInHistory(headingRef, ready);
+  useHoldScrollOnLeave(headingRef, ready);
   const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(focusTimer.current), []);
   const focusHeading = () => {
@@ -139,6 +156,21 @@ export function PhotoBoxScreen({
     setMenuOpen((open) => !open);
   };
 
+  // 선택 모드면 메뉴(저장·삭제 중에는 무시), 아니면 사진 올리기
+  const floatingAction = selecting ? (busy ? undefined : toggleMenu) : openUpload;
+  // iOS 26 이상 쉘은 「+」·「⋯」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음(목록 화면에서만)
+  const showWebFloatingButton = useNativeFloatingButton({
+    tab: 'photos',
+    icon: selecting ? 'more' : 'add',
+    label: selecting ? '메뉴 열기' : '사진 올리기',
+    // 저장·삭제·끌기 이동 중에도 누를 수 없음으로 알림(웹 버튼의 aria-disabled에 해당, VoiceOver 초점은 남음)
+    disabled: selecting && (selection.length === 0 || busy),
+    expanded: selecting ? menuOpen : undefined,
+    // 저장 중 화면 전체 dim(PageLoading) 위로 네이티브 버튼이 뜨지 않게
+    hidden: !ready || flow.saving,
+    onPress: floatingAction,
+  });
+
   if (state.kind === 'loading') return <PhotoBoxSkeleton />;
   if (state.kind === 'error') return <PhotoBoxError onRetry={onRetry} />;
   if (state.kind === 'no-bunch') {
@@ -151,21 +183,22 @@ export function PhotoBoxScreen({
   }
 
   const { bunch, members } = state.data;
-  const isEmpty = sections.length === 0 && undated.length === 0;
+  // 남은 사진을 받는 중이거나 받다 실패했으면 비었다고 단정할 수 없음(선택한 멤버의 사진이 받지 못한 쪽에 있을 수 있음)
+  const isEmpty = sections.length === 0 && undated.length === 0 && state.data.more === undefined;
 
   let statusMessage = '';
   if (flow.saving) statusMessage = PHOTO_BOX_MESSAGES.saving;
+  else if (flow.deleting) statusMessage = PHOTO_BOX_MESSAGES.deleting;
   else if (selecting) statusMessage = PHOTO_BOX_MESSAGES.selectionStatus(selection.length);
-  // 선택 모드면 메뉴(저장·삭제 중에는 무시), 아니면 사진 올리기
-  let floatingAction: (() => void) | undefined = openUpload;
-  if (selecting) floatingAction = busy ? undefined : toggleMenu;
-
   return (
     <PageShell
+      onRefresh={onRefresh}
+      refreshDisabled={selecting || busy}
       header={
         <PhotoBoxHeader
           bunch={bunch}
           onBunchClick={onBunchClick}
+          switcherOpen={switcherOpen}
           selecting={selecting}
           onSelectClick={flow.start}
           onCancelClick={handleCancel}
@@ -182,23 +215,26 @@ export function PhotoBoxScreen({
                 onClose={() => setMenuOpen(false)}
                 onExited={() => setMenuMounted(false)}
                 onSelect={flow.handleMenuAction}
-                triggerRef={menuTriggerRef}
+                // 네이티브 버튼이면 돌아갈 웹 버튼이 없어 닫을 때 초점을 화면 제목으로
+                triggerRef={showWebFloatingButton ? menuTriggerRef : headingRef}
               />
             </div>
           ) : null}
-          <FloatingButton
-            ref={menuTriggerRef}
-            icon={selecting ? 'more' : 'add'}
-            aria-label={selecting ? '메뉴 열기' : '사진 올리기'}
-            aria-haspopup={selecting ? 'menu' : undefined}
-            aria-expanded={selecting ? menuOpen : undefined}
-            disabled={selecting && selection.length === 0}
-            // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
-            aria-disabled={selecting && busy ? true : undefined}
-            onClick={floatingAction}
-            // 선택 모드에서 탭 바가 숨으면 탭 바 숨김과 비슷하게 200ms ease-out으로 내려감(아이콘은 FloatingButton이 크로스페이드)
-            className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10 motion-safe:transition-[bottom] motion-safe:duration-200 motion-safe:ease-out"
-          />
+          {showWebFloatingButton ? (
+            <FloatingButton
+              ref={menuTriggerRef}
+              icon={selecting ? 'more' : 'add'}
+              aria-label={selecting ? '메뉴 열기' : '사진 올리기'}
+              aria-haspopup={selecting ? 'menu' : undefined}
+              aria-expanded={selecting ? menuOpen : undefined}
+              disabled={selecting && selection.length === 0}
+              // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
+              aria-disabled={selecting && busy ? true : undefined}
+              onClick={floatingAction}
+              // 선택 모드에서 탭 바가 숨으면 탭 바 숨김과 비슷하게 200ms ease-out으로 내려감(아이콘은 FloatingButton이 크로스페이드)
+              className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))] z-10 motion-safe:transition-[bottom] motion-safe:duration-200 motion-safe:ease-out"
+            />
+          ) : null}
         </div>
       }
     >
@@ -210,10 +246,10 @@ export function PhotoBoxScreen({
       <p role="status" className="sr-only">
         {statusMessage}
       </p>
-      {/* 저장하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12) */}
-      {flow.saving ? <PageLoading /> : null}
+      {/* 저장·삭제하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12, 삭제는 저장과 같은 표시) */}
+      {flow.saving || flow.deleting ? <PageLoading /> : null}
       <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
-        {/* 저장·삭제 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(헤더 「취소」만 열어 둠) */}
+        {/* 저장·삭제 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(전체 로딩이 덮는 동안은 헤더 「취소」도 눌리지 않음, 요청은 취소할 수 없어 로딩이 끝나길 기다림) */}
         <PhotoDragSelect
           className="flex min-h-full flex-col"
           inert={busy}
@@ -225,9 +261,9 @@ export function PhotoBoxScreen({
             onSelect={setMemberId}
             selectedCounts={selectedCounts}
           />
-          {undated.length > 0 ? <UndatedPhotos photos={undated} /> : null}
           <PhotoDragArea
             sections={sections}
+            undated={undated}
             viewer={state.data.viewer}
             actions={actions}
             enabled={selecting && !flow.busy}
@@ -236,6 +272,7 @@ export function PhotoBoxScreen({
           {isEmpty ? (
             <PhotoBoxEmpty reason={memberId === ALL_MEMBERS ? 'bunch' : 'member'} />
           ) : null}
+          <PhotoBoxMore state={state.data.more} onRetry={onLoadMore ?? noop} />
         </PhotoDragSelect>
       </PhotoSelectionProvider>
     </PageShell>

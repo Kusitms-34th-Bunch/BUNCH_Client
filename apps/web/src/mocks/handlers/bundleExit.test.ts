@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+// 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
+import '../server';
 import { mockDb } from '../db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '../db/seed';
 
@@ -22,37 +24,25 @@ const call = async (method: string, path: string, body?: unknown, headers = {}) 
 };
 
 const create = async (photoIds: number[]) =>
-  (await call('POST', base, { photoIds }, { 'Idempotency-Key': createIdempotencyKey() })).json
-    .data!;
+  (
+    await call(
+      'POST',
+      base,
+      { photoIds, participantMemberIds: [MOCK_MEMBER_IDS.memberA] },
+      { 'Idempotency-Key': createIdempotencyKey() },
+    )
+  ).json.data!;
 
 const exists = (id: number) => mockDb.get().bundles.some((bundle) => bundle.id === id);
 
 describe('가짜 서버 번들 삭제', () => {
-  it('생성자가 지우면 번들과 편집권이 사라지고 data는 null이다', async () => {
+  it('생성자가 지우면 번들이 사라지고 data는 null이다', async () => {
     const draft = await create([P1, P2, P3, P4]);
-    // 다른 멤버가 위치를 편집 중인 상태
-    mockDb.update((state) => ({
-      ...state,
-      bundleLeases: [
-        ...state.bundleLeases,
-        {
-          bundleId: draft.id,
-          target: 'LOCATION',
-          memberId: MOCK_MEMBER_IDS.memberB,
-          token: '00000000-0000-4000-8000-00000000000b',
-          leaseVersion: 1,
-          expiresAt: '2999-01-01T00:00:00.000Z',
-        },
-      ],
-    }));
-    expect(mockDb.get().bundleLeases.some((lease) => lease.bundleId === draft.id)).toBe(true);
-
     const { status, json } = await call('DELETE', `${base}/${draft.id}`);
 
     expect(status).toBe(200);
     expect(json).toMatchObject({ success: true, data: null });
     expect(exists(draft.id)).toBe(false);
-    expect(mockDb.get().bundleLeases.some((lease) => lease.bundleId === draft.id)).toBe(false);
   });
 
   it('없는 번들은 RESOURCE_001, 사진함 원본은 지워지지 않는다', async () => {

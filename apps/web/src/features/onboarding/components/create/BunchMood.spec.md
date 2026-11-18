@@ -22,7 +22,7 @@
 ## Route와 접근
 
 - Path·params·search: `/onboarding/create/mood`. params와 search는 없다.
-- 접근 권한·guard: 로그인 접근 조건은 아직 없다(로그인 미구현). 입력 순서 가드는 있다. 새로고침·URL 직접 입력으로 1·2단계를 마치지 않고 열면 `useCreateBunchGuard`가 마치지 못한 첫 단계로 `router.replace`한다.
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태로 막는다(`features/auth/lib/accessPolicy.ts`, 결정 기록 019). 가입을 마친 사용자만 들어오고, 비로그인은 로그인(처음이면 인트로)으로, 가입 중이면 약관·프로필로 보낸다. 입력 순서 가드도 있다. 새로고침·URL 직접 입력으로 1·2단계를 마치지 않고 열면 `useCreateBunchGuard`가 마치지 못한 첫 단계로 `router.replace`한다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 「이전」은 `router.back()`, 모달의 「나가기」는 `router.replace(ONBOARDING_PATHS.feed)`다.
 
 ## 상태와 흐름
@@ -81,7 +81,7 @@
 - 비활성 사유 (미정): 「번치 만들기」 비활성 이유를 알리는 안내는 Figma에 없다(1·2단계와 같은 패턴, 디자이너 협의).
 - 「번치 만들기」 (확정): 눌러 서버에 만들고 성공하면 완료 화면으로 `router.replace`한다. 요청 중에는 `PageLoading`을 덮고 버튼을 잠가 중복 탭을 막는다. 직접 진입은 `useCreateBunchGuard`가 막는다.
 - 모달 문구 (확정): 설계서 5번 설명은 "홈으로 이동해요"이고 Figma 프레임은 "피드로 이동해요"다. Figma 프레임 문구를 썼다. 기획 확인.
-- 피드 경로 (미정): 「나가기」는 `ONBOARDING_PATHS.feed`(현재 `/`)로 간다. 홈의 피드 탭 route가 정해지면 값을 바꾼다. 설계서는 "홈 화면의 피드 탭"이다.
+- 피드 경로: 「나가기」는 `ONBOARDING_PATHS.feed`(피드 탭 `/feed`)로 간다. 설계서의 "홈 화면의 피드 탭"과 같다. 「나가기」 뒤 뒤로 가기로 온보딩 화면이 다시 보일 수 있는지는 실기기에서 확인하지 않았다.
 - 모달 한글 줄바꿈 (미정): 설명이 Figma에서는 "…사라지고 / 피드로 이동해요."로 어절 단위로 나뉘는데 `Dialog`는 글자 단위로 나뉜다("피/드로"). 공용 `Dialog`의 `word-break` 문제라 디자인 시스템 쪽에서 확인한다.
 - 「이전」 (확정, 설계서와 다름): 설계서는 "2단계로 이동"이고 구현은 `router.back()`이다. 직접 진입 시 이전 기록으로 나갈 수 있다.
 - 분위기 값 이름 (1110판, 확인 필요): 1110판 2.2.9는 값을 `UNIQUE`·`ENERGETIC`·`ROMANTIC`·`CALM`으로 적었다. 구현과 서버 필드는 `characterType`의 `TYPE_1`~`TYPE_4`다. 서버 enum이 바뀌는지 백엔드에 확인하고, 바뀌면 생성 요청·기본 이미지·배경색 매핑을 함께 고친다.

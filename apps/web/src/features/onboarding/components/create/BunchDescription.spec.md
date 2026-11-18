@@ -12,17 +12,17 @@
 
 - 번치를 한 줄로 소개하는 2단계의 UI와 입력 규칙.
 - 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 2단계), 제목 「번치를 소개해주세요」, 한 줄 소개 입력(`LabeledTextArea`, 최대 50자), TIP 영역(배지 + 「이런 소개는 어때요?」 + 예시 3개), 하단 「이전」·「다음」.
-- 소개를 입력하면 「다음」이 활성화된다. TIP 영역은 입력과 관계없이 항상 보인다(설계서 4번).
+- 소개를 입력하면 「다음」이 활성화된다. 「다음」을 누르면 서버가 금칙어를 먼저 검사하고(`POST /bunches/introduction-validation`, 기능명세 2.2.6 로직 4), 통과한 입력만 3단계로 넘어간다. TIP 영역은 입력과 관계없이 항상 보인다(설계서 4번).
 
 ### 범위 외
 
-- 번치 생성 API, 소개 문구의 서버 검증.
+- 번치 생성 API.
 - 단계 사이 본문 애니메이션. 진행 표시줄 채움과 제목 등장은 Header Animation(Figma `1998:35008`, 600ms Slow)을 따른다(`docs/architecture/motion.md`). 공통 `CreateBunchFrame`이 진행바를 유지한다.
 
 ## Route와 접근
 
 - Path·params·search: `/onboarding/create/description`. params와 search는 없다.
-- 접근 권한·guard: 로그인 접근 조건은 아직 없다(로그인 미구현, 확인할 항목). 입력 순서 가드는 있다. 입력값은 `create/layout.tsx`의 provider가 보관하므로 새로고침·URL 직접 입력으로 1단계(이름·공개 범위)를 거치지 않고 열면 `useCreateBunchGuard`가 화면을 그리지 않고 `ONBOARDING_PATHS.createBunch`로 `router.replace`한다. 처음 그릴 때만 판정한다.
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태로 막는다(`features/auth/lib/accessPolicy.ts`, 결정 기록 019). 가입을 마친 사용자만 들어오고, 비로그인은 로그인(처음이면 인트로)으로, 가입 중이면 약관·프로필로 보낸다. 입력 순서 가드도 있다. 입력값은 `create/layout.tsx`의 provider가 보관하므로 새로고침·URL 직접 입력으로 1단계(이름·공개 범위)를 거치지 않고 열면 `useCreateBunchGuard`가 화면을 그리지 않고 `ONBOARDING_PATHS.createBunch`로 `router.replace`한다. 처음 그릴 때만 판정한다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 「다음」은 `router.push`, 「이전」은 `router.back()`이고 헤더 뒤로 가기는 중단 확인 모달을 연다.
 
 ## 상태와 흐름
@@ -31,11 +31,13 @@
 - 입력 중: 입력할 때마다 글자 수가 바뀌고, 길어지면 줄바꿈되며 입력창 높이가 늘어난다. 50자를 넘겨서는 입력되지 않는다. Enter로 줄을 바꿀 수 없고 붙여넣은 줄바꿈은 공백으로 바뀐다.
 - 활성: 공백을 뺀 소개가 1자 이상이면 「다음」이 활성화된다. 공백만 입력하면 비활성이다.
 - 오류: 설계서에 오류 상태와 허용 문자 제한이 없어 구현하지 않았다.
-- Success·완료 후 이동: 「다음」은 `/onboarding/create/mood`(3단계)로 이동한다. 「이전」은 이전 화면(1단계)으로 돌아가고, 헤더 뒤로 가기는 중단 확인 모달을 연다.
+- Loading: 검사 중에는 「다음」만 잠그고(`disabled`·`aria-busy`) 화면 전체 로딩은 쓰지 않는다(짧은 검사라 과함, 사용자 결정 2026-11-18). 검사 중에도 소개를 고칠 수 있고, 검사를 보낸 뒤 입력이 바뀌었으면 그 응답은 버린다.
+- Error·retry: 금칙어(400 `COMMON_003`, `detail.fields: ["introduction"]`)면 넘어가지 않고 입력란 아래에 「사용할 수 없는 단어가 포함되어 있어요」(`aria-invalid`)를 보이며 입력란으로 초점을 옮긴다. 소개를 고치면 안내를 지우고 다시 누를 수 있다. 그 밖의 실패는 「일시적인 오류가 발생했어요. 다시 시도해 주세요」 토스트를 띄우고 머문다.
+- Success·완료 후 이동: 검사를 통과하면 「다음」은 `/onboarding/create/mood`(3단계)로 이동한다. 「이전」은 이전 화면(1단계)으로 돌아가고, 헤더 뒤로 가기는 중단 확인 모달을 연다.
 
 ## 데이터 의존성
 
-- Query와 enabled 조건: 없음.
+- Query와 enabled 조건: 없음. 「다음」의 소개 검사는 mutation(`useValidateIntroductionMutation`, 저장하지 않아 캐시 갱신 없음).
 - Mutation·cache 영향: 없음.
 - API 계약 확인 항목: 번치 생성 요청의 소개 필드와 길이 제한(50자) 일치.
 
@@ -59,7 +61,7 @@
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 정적 페이지로 생성되고 `next start`로 1단계 → 2단계 → 「이전」 → 1단계 입력 유지 → 다시 2단계 소개 유지를 확인함. 새로고침은 확인하지 못함(미검증)
 - [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
 - [x] 상태별 UI: 빈 입력, 입력됨(줄바꿈), 다음 활성·비활성
-- [x] 관련 test: `BunchDescription.test.tsx`(제목·진행 표시, 글자 수, 길이 제한, 다음 활성 조건, Enter 차단, 이전·뒤로 가기, TIP, 단계 사이 입력 유지)
+- [x] 관련 test: `BunchDescription.test.tsx`(제목·진행 표시, 글자 수, 길이 제한, 다음 활성 조건, 서버 검사 통과 뒤 이동, 금칙어 안내·초점·고치면 해제, 검사 실패 토스트, Enter 차단, 이전·뒤로 가기, TIP, 단계 사이 입력 유지)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
 - [x] 헤드리스 Chromium(375×812)에서 진행 표시·제목·라벨·입력창·글자 수·TIP 배지·박스·버튼 위치와 크기를 Figma와 대조(상태 바 44px 제외). 실기기와 픽셀 비교는 하지 못함
 

@@ -19,6 +19,7 @@
 - oxlint: 타입 기반 규칙(tsgolint)이 TypeScript 7을 요구하는데 TS7이 Yarn PnP를 지원하지 않고, React Compiler·TanStack Query·자체 주석 규칙은 JS 플러그인(알파)에 기대야 해 이번에는 도입하지 않는다. ESLint와 같이 돌리는 중간 단계도 만들지 않는다.
 - Biome: 포맷과 lint를 함께 바꿔야 하고 Tailwind 정렬이 없다.
 - oxfmt 출력이 Prettier와 크게 달라지거나, PnP·에디터 연동이 깨지면 재검토한다.
+- 2026-11-13 시험: PnP에서 TypeScript 7은 typecheck부터 실패한다(패키지와 extends한 workspace tsconfig를 찾지 못함). `nodeLinker: pnpm`은 의존성 경계는 지키지만 web build가 실패하고, `node-modules`는 TS7·tsgolint가 동작하지만 경계가 사라진다. 그래서 oxlint 전환은 계속 보류하고, TypeScript는 PnP에서 동작하는 6.0으로 올렸다.
 
 ## 검증
 

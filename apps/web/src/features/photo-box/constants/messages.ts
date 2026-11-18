@@ -1,9 +1,54 @@
-import type { DeleteKind } from '../lib/photoActions';
+import type { DateConfirmKind, DeleteKind } from '../lib/photoActions';
+
+const NO_RESTORE = '삭제 이후에는 복구할 수 없어요.';
+// 사라지는 사진 중 작성 중인 번들에 쓰인 사진이 있을 때 「복구할 수 없어요」 줄만 바꿈(줄을 덧붙이지 않음, 명세 3.3.5)
+const NO_RESTORE_DRAFT_USED =
+  '작성 중인 번들에 쓰인 사진도 있어요. 삭제하면 번들에서도 빠지고 복구할 수 없어요.';
+
+/** 삭제 확인 창 문구(명세 3.3.5): 고른 사진의 종류에 따라 제목과 설명 줄이 달라짐 */
+export const deleteConfirmCopy = (
+  kind: DeleteKind,
+  count: number,
+  coUploadedCount: number,
+  draftUsed = false,
+): { title: string; lines: readonly string[] } => {
+  const restore = draftUsed ? NO_RESTORE_DRAFT_USED : NO_RESTORE;
+  const own = count === 1 ? '이 사진을 삭제할까요?' : `선택한 사진 ${count}장을 삭제할까요?`;
+  switch (kind) {
+    case 'others':
+      return { title: '다른 멤버가 업로드한 사진이에요.', lines: [restore] };
+    case 'others-included':
+      return { title: '다른 멤버가 업로드한 사진이 포함되어 있어요.', lines: [restore] };
+    case 'co-uploaded':
+      return {
+        title: '내가 올린 사진을 삭제할까요?',
+        lines: ['사진은 그대로 유지되고, 업로더 목록에서 내 이름만 사라져요.'],
+      };
+    case 'mixed':
+      return {
+        title: own,
+        lines: [restore, `다른 멤버도 올린 사진 ${coUploadedCount}장은 사진함에 남아요.`],
+      };
+    case 'own':
+      return { title: own, lines: [restore] };
+  }
+};
+
+/** 날짜 변경 확인 창 문구(명세 3.4.1, 끌어 옮기기도 같음) */
+export const dateConfirmCopy = (kind: DateConfirmKind) => ({
+  title:
+    kind === 'others'
+      ? '다른 멤버가 올린 사진이에요.'
+      : '다른 멤버가 업로드한 사진이 포함되어 있어요.',
+  description: '날짜를 변경하면 사진함에서 변경된 날짜로 보여요.',
+});
 
 /** 사진함 선택·메뉴 흐름의 사용자 안내 문구(기획 문서 docs/specs/photo-box.md 3.3) */
 export const PHOTO_BOX_MESSAGES = {
   maxSelection: '사진은 한 번에 50장까지 고를 수 있어요.',
   saving: '사진을 앨범에 저장하는 중이에요',
+  // 삭제 요청이 도는 동안 스크린 리더에게 알리는 문구(화면에는 전체 로딩이 보임, 기획 원문이 없어 임시)
+  deleting: '사진을 삭제하는 중이에요',
   dragStart: '사진을 끌고 있어요.',
   dragCancel: '끌기를 취소했어요.',
   selectionStatus: (count: number) => (count === 0 ? '선택 모드' : `${count}장 선택됨`),
@@ -11,27 +56,40 @@ export const PHOTO_BOX_MESSAGES = {
   saveFailedAll: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   saveFailedSome: (count: number) => `${count}장은 저장하지 못했어요. 다시 시도해 주세요.`,
   bundleTooMany: '번들에는 사진을 20장까지 담을 수 있어요.',
-  bundleConfirmTitle: '이 사진들로 번들을 만들까요?',
-  bundleConfirmDescription: '작성 중인 번들에 담기고, 멤버들과 함께 완성할 수 있어요.',
   deleteFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  // 이어 받다 실패했을 때(명세 3.1.1의 목록 로딩 실패 토스트와 같은 문구). 보이는 재시도 수단이 없는 짧은 목록에서도 알아챌 수 있게 함
+  listMoreFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   // 기획에 원문이 없는 임시 문구: 삭제 뒤 목록을 다시 받지 못해 지운 사진이 남아 보일 수 있을 때
   listStale: '최신 사진 목록을 불러오지 못했어요. 사진함을 다시 열어 확인해 주세요.',
   deleteForbidden: '내가 올린 사진만 삭제할 수 있어요.',
-  deleteConfirmTitle: '선택한 사진을 삭제할까요?',
-  // 사진 종류별 원문은 기획 문서에 없어 모든 종류가 같은 기본 문구를 씀(분기 구조는 getDeleteKind가 이미 제공)
-  deleteConfirmDescription: (_kind: DeleteKind) => '삭제 이후에는 복구할 수 없어요.',
   deleteDone: (count: number) => `사진함에서 사진 ${count}장이 삭제되었어요.`,
   dateChanged: '사진 날짜가 변경되었어요.',
   undo: '되돌리기',
   dateForbidden: '내가 올린 사진만 날짜를 바꿀 수 있어요.',
-  // 날짜 바꾸기·끌기 확인 창 문구는 기획 문서에 원문이 없어 임시 문구(기획 확정 후 교체)
-  dateConfirmTitle: '선택한 사진의 날짜를 바꿀까요?',
-  dateConfirmDescription: '다른 멤버가 올린 사진이 포함되어 있어요.',
-  bundleCreating: '번들을 만들고 있어요.',
+  dateConfirmButton: '변경하기',
   photoBoxFull: '사진함이 가득 찼어요.',
   uploadSheetTitle: (bunchName: string) => `${bunchName}에 사진 올리기`,
   dateChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   deletedPhoto: '삭제된 사진이에요',
+  loadingMore: '사진을 더 불러오는 중이에요',
+  loadMore: '사진 더 불러오기',
+  loadMoreFailed: '사진을 더 불러오지 못했어요',
+  // 사진 올리기: 결과 문구는 lib/photoUpload.ts가 만들고, 여기에는 그 밖의 안내와 권한 모달 문구를 둠(기능명세서 3.2.2, 3.2.3)
+  uploadUnavailable: '사진 올리기는 앱에서 할 수 있어요.',
+  uploadNeedsUpdate: '앱을 최신 버전으로 업데이트해 주세요.',
+  uploadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  uploadRetry: '다시 시도',
+  // 올리는 동안 스크린 리더에게 알리는 문구(화면에는 표시를 두지 않음)
+  uploading: '사진을 올리는 중이에요.',
+  cameraPermissionTitle: '권한 설정이 필요해요',
+  cameraPermissionDescription:
+    '카메라 접근 권한이 거부되어 있어요. 설정에서 직접 허용할 수 있어요.',
+  openSettings: '설정 열기',
+  // 앨범 저장 권한 안내 문구는 기획 문서의 제안 문구(확정 전)
+  albumPermissionTitle: '사진 접근 권한이 필요해요',
+  albumPermissionDescription: '사진을 저장하려면 설정에서 사진 접근을 허용해 주세요.',
+  moveToSettings: '설정으로 이동',
+  saveUnavailable: '사진 저장은 앱에서 할 수 있어요.',
   detailPosition: (index: number, total: number) => `${total}장 중 ${index}번째 사진`,
   previousPhoto: '이전 사진',
   zoomIn: '사진 확대',

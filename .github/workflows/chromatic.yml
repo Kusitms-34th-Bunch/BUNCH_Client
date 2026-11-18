@@ -58,7 +58,8 @@ jobs:
         run: yarn workspace @app/design-system build-storybook --stats-json
 
       - if: steps.chromatic.outputs.enabled == 'true'
-        uses: chromaui/action@latest
+        # 서드파티 action은 커밋 SHA로 고정(태그가 바뀌어도 같은 코드). 올릴 때 릴리스 뒤 2주 지난 태그로
+        uses: chromaui/action@80379940a37537422d4419aa4c9578673b8bcd34 # v18.13.9
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           storybookBuildDir: packages/design-system/storybook-static

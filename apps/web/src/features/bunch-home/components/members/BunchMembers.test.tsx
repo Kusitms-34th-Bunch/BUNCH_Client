@@ -1,10 +1,9 @@
 import type * as DesignSystem from '@app/design-system';
-import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BunchMember, BunchRole } from '../../lib/types';
-import { bunchMembersFixture } from '../../fixtures/bunchMembers.fixture';
-import { type BunchMemberActions, sortMembers, useBunchMembers } from '../../hooks/useBunchMembers';
+import { type BunchMemberActions, sortMembers } from '../../lib/members';
 import { BunchMembersScreen } from './BunchMembersScreen';
 import { BunchRoleGuide } from './BunchRoleGuide';
 
@@ -24,10 +23,17 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+// Figma 2500:65206 퇴근런클럽 예시
+const MEMBERS: readonly BunchMember[] = [
+  { id: 'me', name: '은우링링링', role: 'owner', isMe: true },
+  { id: 'member-kyungjin', name: '경진', role: 'coOwner' },
+  { id: 'member-kyungjun', name: '경준', role: 'member' },
+  { id: 'member-suin', name: '수인', role: 'member' },
+  { id: 'member-jiye', name: '지예', role: 'member' },
+];
+
 const withMe = (role: BunchRole): BunchMember[] =>
-  sortMembers(
-    bunchMembersFixture['bunch-run']!.map((member) => (member.isMe ? { ...member, role } : member)),
-  );
+  sortMembers(MEMBERS.map((member) => (member.isMe ? { ...member, role } : member)));
 
 const renderScreen = (myRole: BunchRole, members = withMe(myRole)) =>
   render(
@@ -151,67 +157,6 @@ describe('BunchMembersScreen', () => {
     expect(actions.remove).toHaveBeenCalledWith('member-suin');
     await waitFor(() => expect(toast).toHaveBeenCalled());
     expect(toast).toHaveBeenCalledWith('수인님을 번치에서 내보냈어요.', expect.anything());
-  });
-});
-
-describe('BunchMembersScreen + useBunchMembers', () => {
-  function Live() {
-    const { members, myRole, actions: live } = useBunchMembers('bunch-trip');
-    return (
-      <BunchMembersScreen
-        bunchName="여행가조"
-        members={members}
-        myRole={myRole}
-        actions={live}
-        onBack={vi.fn()}
-        onInvite={vi.fn()}
-      />
-    );
-  }
-
-  it('내보내 행이 사라지면 초점을 「멤버 N/8명」 줄로 옮기고 인원을 줄인다', async () => {
-    const user = userEvent.setup();
-    render(<Live />);
-
-    await user.click(screen.getByRole('button', { name: '수인 관리' }));
-    const menu = await screen.findByRole('alertdialog', { name: '수인' });
-    await user.click(within(menu).getByRole('button', { name: '번치에서 내보내기' }));
-    const confirm = await screen.findByRole('alertdialog', {
-      name: '수인님을 여행가조에서 내보낼까요?',
-    });
-    await user.click(within(confirm).getByRole('button', { name: '내보내기' }));
-
-    await waitFor(() => expect(document.activeElement).toHaveTextContent('3/8명'));
-    expect(screen.queryByRole('button', { name: '수인 관리' })).toBeNull();
-  });
-});
-
-describe('useBunchMembers', () => {
-  it('지정·넘기기·내보내기 결과를 정렬해 돌려주고, 넘기면 나는 일반 멤버가 된다', () => {
-    const { result } = renderHook(() => useBunchMembers('bunch-run'));
-    expect(result.current.myRole).toBe('owner');
-
-    act(() => result.current.actions.setRole('member-suin', 'coOwner'));
-    expect(result.current.members?.map((member) => member.name)).toEqual([
-      '은우링링링',
-      '경진',
-      '수인',
-      '경준',
-      '지예',
-    ]);
-
-    act(() => result.current.actions.remove('member-kyungjun'));
-    expect(result.current.members).toHaveLength(4);
-
-    act(() => result.current.actions.transferOwner('member-jiye'));
-    expect(result.current.myRole).toBe('member');
-    expect(result.current.members?.[0]?.name).toBe('지예');
-  });
-
-  it('번치를 아직 모르면 멤버와 역할이 없다', () => {
-    const { result } = renderHook(() => useBunchMembers(undefined));
-    expect(result.current.members).toBeUndefined();
-    expect(result.current.myRole).toBeUndefined();
   });
 });
 

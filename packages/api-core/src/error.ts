@@ -1,6 +1,13 @@
 import { isHTTPError, isNetworkError, isTimeoutError } from 'ky';
 
-export type ApiErrorCategory = 'auth' | 'network' | 'server' | 'validation' | 'unknown';
+/** auth는 인증 만료(401), forbidden은 인증은 됐지만 권한 없음(403) */
+export type ApiErrorCategory =
+  | 'auth'
+  | 'forbidden'
+  | 'network'
+  | 'server'
+  | 'validation'
+  | 'unknown';
 
 export interface ApiErrorOptions {
   message: string;
@@ -30,7 +37,8 @@ export class ApiError extends Error {
 export const isApiError = (error: unknown): error is ApiError => error instanceof ApiError;
 
 const categoryFromStatus = (status: number): ApiErrorCategory => {
-  if (status === 401 || status === 403) return 'auth';
+  if (status === 401) return 'auth';
+  if (status === 403) return 'forbidden';
   if (status >= 500) return 'server';
   if (status >= 400) return 'validation';
   return 'unknown';

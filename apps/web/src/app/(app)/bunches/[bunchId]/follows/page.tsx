@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { OtherBunchFollows } from '@/features/bunch-home/components';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 
-// 번치 API 연결 전 fixture 화면이라 검색에서 제외
+// 로그인한 내 번치 명의로만 보이는 관계 목록이라 검색에서 제외
 export const metadata: Metadata = { title: '팔로워·팔로잉', robots: { index: false } };
 
 export default async function OtherBunchFollowsPage({

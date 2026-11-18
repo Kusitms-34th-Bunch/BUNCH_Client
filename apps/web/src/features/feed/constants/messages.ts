@@ -6,10 +6,21 @@ export const FEED_MESSAGES = {
   currentBunch: (name: string) => `${name} 번치 홈`,
   followingDone: '팔로우한 번치의 소식을 모두 확인했어요',
   allDone: '모든 피드를 확인했어요',
+  feedLoading: '피드를 불러오는 중이에요',
+  moreLoading: '피드를 더 불러오는 중이에요',
+  moreFailed: '피드를 더 불러오지 못했어요',
+  /** 이어 받기 자리(광고가 사라지고 다음 카드가 없을 때 초점을 받음) */
+  moreArea: '다음 피드',
+  retry: '다시 시도',
   /** 소속 번치가 없을 때 번치 명의 행동(기능명세서 6.1.7) */
   joinRequired: '번치에 참여하면 할 수 있어요.',
+  likeFailed: '좋아요를 반영하지 못했어요. 다시 시도해 주세요',
   back: '뒤로 가기',
   bundleUnavailable: '삭제되었거나 볼 수 없는 내용이에요',
+  bundleLoading: '번들을 불러오는 중이에요',
+  memberLoading: '멤버 프로필을 불러오는 중이에요',
+  /** 번치 정보를 받지 못했을 때 번치 버튼 이름 */
+  unknownBunch: '번치',
   commentsTitle: '댓글',
   noComments: '아직 작성된 댓글이 없어요',
   memberCommentsLabel: '멤버별 코멘트',
@@ -22,17 +33,25 @@ export const FEED_MESSAGES = {
   replyPlaceholder: '답글 달기',
   replyPlaceholderAs: (bunchRo: string) => `${bunchRo} 답글 달기`,
   /** 닉네임을 모를 때 내 댓글 작성자 */
-  me: '나',
   commentAdded: '댓글을 등록했어요',
   commentLabel: (author: string) => `${author}님의 댓글`,
+  replyLabel: (author: string) => `${author}님의 답글`,
   deletedCommentLabel: '삭제된 댓글',
   replyAdded: '답글을 등록했어요',
+  commentsLoading: '댓글을 불러오는 중이에요',
+  moreCommentsLoading: '댓글을 더 불러오는 중이에요',
+  // 기능명세서 6.2.8: 쓰는 사이 번들이 지워졌거나 멤버 공개로 바뀜, 답글 대상이 지워짐
+  bundleGone: '더 이상 볼 수 없는 번들이에요.',
+  replyTargetDeleted: '삭제된 댓글입니다',
+  // 기능명세 1.4.3 로직 4·6.2.8: 댓글·답글에 금칙어(토스트라 마침표 있음)
+  prohibitedWord: '사용할 수 없는 단어가 포함되어 있어요.',
+  moreCommentsFailed: '댓글을 더 불러오지 못했어요',
   commentMenuTitle: '댓글 더보기',
   deleteComment: '삭제',
   report: '신고',
   bundleMore: '번들 더보기',
   /** 같은 작성자 이름이 겹쳐도 내 댓글 메뉴를 구분 */
-  myCommentMore: '내 댓글 더보기',
+  myCommentMore: (preview: string) => `내 댓글 더보기: ${preview}`,
   /** 같은 작성자의 댓글이 여럿이어도 구분되게 내용 앞부분을 붙임 */
   commentMore: (author: string, preview: string) => `${author} 댓글 더보기: ${preview}`,
   reportCommentTitle: '이 댓글을 신고할까요?',
@@ -46,11 +65,13 @@ export const FEED_MESSAGES = {
   deleteBundleDescription: '데이터가 삭제되며 복구 불가능해요.',
   deleteBundleConfirm: '삭제',
   bundleDeleted: '번들을 삭제했어요',
-  bundleEdited: '번들을 수정했어요',
+  bundleDeleting: '번들을 삭제하는 중이에요',
+  visibilitySaved: '공개 범위를 수정했어요.',
   visibilityTitle: '번들의 공개 범위를 설정해 주세요',
   visibilityAll: '전체 공개',
   visibilityAllDescription: '번치의 모든 사용자가 볼 수 있어요',
   visibilityPartial: '일부 공개',
+  // Figma `5367:151697` 기준(1110판 명세는 「우리 번치의 팔로워도 볼 수 있어요」)
   visibilityPartialDescription: '우리 번치를 팔로우한 번치도 볼 수 있어요',
   visibilityMembers: '멤버 공개',
   visibilityMembersDescription: '우리 번치 멤버만 볼 수 있어요',
@@ -67,6 +88,7 @@ export const FEED_MESSAGES = {
   pickCancelConfirm: '삭제하기',
   adHide: '숨기기',
   adHideTitle: '이 장소를 숨길까요?',
+  adHiding: '장소를 숨기는 중이에요',
   adHiddenCardLabel: (title: string) => `광고 ${title}, 장소를 숨김 처리 했어요`,
   adHideDescription:
     'BUNCH 팀이 번치가 모이기 좋은 곳을 직접 골라 소개해요.\n현재 업체로부터 비용을 받고 있지 않아요.',
@@ -80,4 +102,6 @@ export const FEED_MESSAGES = {
   requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
   /** 내 정보를 받지 못해 번치 명의 행동을 할 수 없을 때 */
   actionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  // 기능명세서 6.2.11: 화면을 연 뒤 역할이 바뀌어 수정·삭제를 할 수 없게 됨
+  permissionChanged: '권한이 변경되어 해당 기능을 이용할 수 없어요.',
 } as const;

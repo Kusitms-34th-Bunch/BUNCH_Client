@@ -7,7 +7,8 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
-import type { FollowStatus, OtherBunch } from '../../lib/types';
+import type { FollowStatus } from '../../lib/types';
+import type { OtherBunchProfile } from '../../model/otherBunch';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
@@ -18,17 +19,26 @@ import { PrivateBunchNotice } from '../PrivateBunchNotice';
 import { FollowCancelSheet } from './FollowCancelSheet';
 
 type OtherBunchScreenProps = {
-  bunch: OtherBunch;
-  /** 지금 팔로우 상태(저장소 반영) */
+  bunch: OtherBunchProfile;
+  /** 지금 내 번치 명의의 팔로우 상태 */
   status: FollowStatus;
-  /** 팔로우 상태를 반영한 팔로워 수 */
-  followerCount: number;
+  /** 번들을 가리는지(비공개이고 팔로우 승인 전, 서버 판단) */
+  locked: boolean;
   onBack: () => void;
   /** 헤더 알림 옆 더보기(차단·신고) */
   more?: ReactNode;
-  onFollow: () => void;
+  /** 팔로우·요청. 끝나면 결과를 알리고, 실패하면 reject(안내는 부르는 쪽) */
+  onFollow: () => Promise<unknown>;
   /** 언팔로우·팔로우 요청 취소 */
-  onUnfollow: () => void;
+  onUnfollow: () => Promise<unknown>;
+  /** 처리 중(버튼을 다시 눌러도 보내지 않음) */
+  busy?: boolean;
+  /** 화면 단위 처리 안내(예: 차단 중). 있으면 상태 영역에 팔로우 결과 대신 이 글자 */
+  notice?: string | undefined;
+  /** 팔로우할 수 있는지(내 번치가 없으면 버튼 없음) */
+  canFollow?: boolean;
+  /** 팔로워·팔로잉 목록을 볼 수 있는지(서버 판단). 볼 수 있으면 수를 링크로 */
+  canViewRelations?: boolean;
 };
 
 /**
@@ -39,23 +49,37 @@ type OtherBunchScreenProps = {
 export function OtherBunchScreen({
   bunch,
   status,
-  followerCount,
+  locked,
   onBack,
   more,
   onFollow,
   onUnfollow,
+  busy = false,
+  notice,
+  canFollow = true,
+  canViewRelations = false,
 }: OtherBunchScreenProps) {
   const openOverlay = useScreenOverlay();
   const background = BUNCH_BACKGROUNDS[bunch.characterType];
-  const locked = bunch.isPrivate && status !== 'following';
-  // 버튼 이름만 바뀌면 스크린 리더가 결과를 놓칠 수 있어 상태 영역으로도 알림
+  // 버튼 이름만 바뀌면 스크린 리더가 결과를 놓칠 수 있어 상태 영역으로도 알림(서버 반영 뒤)
   const [announcement, setAnnouncement] = useState('');
+  // 화면 단위 안내가 시작되면 이전 결과 문구를 비움(안내가 끝난 뒤 옛 문구가 다시 낭독되지 않게, 렌더 중 상태 맞추기)
+  const [lastNotice, setLastNotice] = useState(notice);
+  if (notice !== lastNotice) {
+    setLastNotice(notice);
+    if (notice) setAnnouncement('');
+  }
+  // 같은 문구가 이어져도 다시 낭독되게 시작할 때 비움
   const follow = () => {
-    onFollow();
-    setAnnouncement(
-      bunch.isPrivate
-        ? BUNCH_HOME_MESSAGES.followRequested(bunch.name)
-        : BUNCH_HOME_MESSAGES.followed(bunch.name),
+    setAnnouncement('');
+    return onFollow().then(
+      () =>
+        setAnnouncement(
+          bunch.isPrivate
+            ? BUNCH_HOME_MESSAGES.followRequested(bunch.name)
+            : BUNCH_HOME_MESSAGES.followed(bunch.name),
+        ),
+      () => {},
     );
   };
 
@@ -81,11 +105,15 @@ export function OtherBunchScreen({
         confirmLabel={sheetFor === 'requested' ? '팔로우 요청 취소' : '팔로우 취소'}
         onConfirm={() => {
           close();
-          onUnfollow();
-          setAnnouncement(
-            sheetFor === 'requested'
-              ? BUNCH_HOME_MESSAGES.requestCanceled(bunch.name)
-              : BUNCH_HOME_MESSAGES.unfollowed(bunch.name),
+          setAnnouncement('');
+          void onUnfollow().then(
+            () =>
+              setAnnouncement(
+                sheetFor === 'requested'
+                  ? BUNCH_HOME_MESSAGES.requestCanceled(bunch.name)
+                  : BUNCH_HOME_MESSAGES.unfollowed(bunch.name),
+              ),
+            () => {},
           );
         }}
       />
@@ -116,31 +144,35 @@ export function OtherBunchScreen({
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 pb-s8 relative -mt-5 flex flex-1 flex-col">
           {/* 프로필 아래 팔로우 버튼 16, 버튼 아래 번들·안내 16(Figma 3086:68423) */}
           <div className="gap-s8 flex flex-col">
+            {/* 팔로워·팔로잉 수는 볼 수 있을 때만 링크. 멤버 수는 내 번치 홈과 같이 글자만 */}
             <BunchProfile
-              bunch={{ ...bunch, followerCount }}
+              bunch={bunch}
               showPlaces={false}
-              // 비공개 번치는 승인 전에 수치만 보이고 목록은 열 수 없음(기능명세 5.10)
               countHrefs={
-                locked
-                  ? undefined
-                  : {
+                canViewRelations
+                  ? {
                       followerCount: BUNCH_HOME_PATHS.otherBunchFollows(bunch.id),
                       followingCount: followingTab(BUNCH_HOME_PATHS.otherBunchFollows(bunch.id)),
-                      memberCount: BUNCH_HOME_PATHS.otherBunchMembers(bunch.id),
                     }
+                  : undefined
               }
             />
-            <div className="px-padding-p8">
-              <FollowButton
-                status={status === 'none' ? 'follow' : status}
-                className="w-full"
-                aria-haspopup={status === 'none' ? undefined : 'dialog'}
-                onClick={() => {
-                  if (status === 'none') return follow();
-                  openCancelSheet(status);
-                }}
-              />
-            </div>
+            {canFollow && (
+              <div className="px-padding-p8">
+                <FollowButton
+                  status={status === 'none' ? 'follow' : status}
+                  // 처리 중은 흐리게(비활성 회색은 상태가 바뀐 것처럼 보여 쓰지 않음)
+                  className={cn('w-full transition-opacity', busy && 'opacity-60')}
+                  aria-haspopup={status === 'none' ? undefined : 'dialog'}
+                  aria-busy={busy || undefined}
+                  onClick={() => {
+                    if (busy) return;
+                    if (status === 'none') return void follow();
+                    openCancelSheet(status);
+                  }}
+                />
+              </div>
+            )}
           </div>
           {locked ? (
             <PrivateBunchNotice
@@ -156,7 +188,7 @@ export function OtherBunchScreen({
       </div>
 
       <p role="status" className="sr-only">
-        {announcement}
+        {notice ?? announcement}
       </p>
     </PageShell>
   );

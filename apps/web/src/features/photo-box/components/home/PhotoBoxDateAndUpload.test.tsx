@@ -1,10 +1,11 @@
 import type * as DesignSystem from '@app/design-system';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PhotoBoxActions, PhotoBoxData, PhotoBoxPhoto, PhotoBoxViewer } from '../../lib/types';
-import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
+import { dateConfirmCopy, PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { photoBoxFixture } from '../../fixtures/photoBox.fixture';
+import { MissingPhotosError } from '../../lib/missingPhotos';
 import { MAX_PHOTOS_IN_BOX } from '../../lib/photoActions';
 import { PhotoBoxScreen } from './PhotoBoxScreen';
 
@@ -31,6 +32,7 @@ const photo = (id: string, uploaderIds: string[]): PhotoBoxPhoto => ({
   takenAt: '2026-09-27T10:00',
   uploadedAt: '2026-10-01T00:00:00',
   uploaderIds,
+  usedInDraftBundle: false,
   status: 'ready',
 });
 
@@ -81,6 +83,51 @@ beforeEach(() => {
   changePhotoDates.mockResolvedValue(undefined);
 });
 
+describe('날짜 미확인 사진 끌기', () => {
+  const undatedPhoto = (id: string, uploaderIds: string[]): PhotoBoxPhoto => ({
+    ...photo(id, uploaderIds),
+    takenAt: null,
+  });
+  const draggableItems = () =>
+    within(screen.getByRole('list', { name: '촬영 날짜를 확인할 사진' }))
+      .getAllByRole('listitem')
+      .map((item) => item.hasAttribute('data-photo-draggable'));
+
+  it('선택 모드에서 날짜 미확인 영역의 내 사진은 끌 수 있고 남의 사진은 끌 수 없다', async () => {
+    const user = userEvent.setup();
+    renderScreen(
+      dataWith(
+        [
+          photo('dated', ['eunwoo']),
+          undatedPhoto('mine', ['eunwoo']),
+          undatedPhoto('theirs', ['gyeongjin']),
+        ],
+        member,
+      ),
+    );
+
+    await user.click(screen.getByRole('button', { name: /촬영 날짜를 확인할 사진/ }));
+    // 선택 모드가 아니면 끌 수 없음
+    expect(draggableItems()).toEqual([false, false]);
+
+    await user.click(screen.getByRole('button', { name: '선택' }));
+
+    expect(draggableItems()).toEqual([true, false]);
+  });
+
+  it('관리자는 날짜 미확인 영역의 남의 사진도 끌 수 있다', async () => {
+    const user = userEvent.setup();
+    renderScreen(
+      dataWith([photo('dated', ['eunwoo']), undatedPhoto('theirs', ['gyeongjin'])], admin),
+    );
+
+    await user.click(screen.getByRole('button', { name: /촬영 날짜를 확인할 사진/ }));
+    await user.click(screen.getByRole('button', { name: '선택' }));
+
+    expect(draggableItems()).toEqual([true]);
+  });
+});
+
 describe('선택 모드 날짜 바꾸기', () => {
   // 달력은 오늘 이후를 막으므로 오늘을 고정
   beforeEach(() => {
@@ -90,6 +137,39 @@ describe('선택 모드 날짜 바꾸기', () => {
   afterEach(() => vi.useRealTimers());
 
   const own = [photo('a', ['eunwoo']), photo('b', ['eunwoo']), photo('c', ['eunwoo'])];
+
+  it('고른 사진이 그사이 지워져 거절되면 그 사진만 선택에서 빼고 시트를 닫으며 선택 모드를 유지한다', async () => {
+    const user = userEvent.setup();
+    changePhotoDates.mockRejectedValue(new MissingPhotosError(['b']));
+    renderScreen(dataWith(own));
+    await startSelecting(user, 2);
+    await openDateSheet(user);
+    await user.click(await screen.findByRole('button', { name: '2026년 10월 5일' }));
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1)));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '날짜 바꾸기' })).toBeNull());
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChanged);
+    expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
+    expect(photoButtons()[0]!.textContent).toContain('1번째 선택');
+    expect(photoButtons()[1]!.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('서버가 사라진 사진을 알려 주지 않고 거절하면 일반 실패로 다뤄 시트를 닫지 않고 선택을 유지한다', async () => {
+    const user = userEvent.setup();
+    changePhotoDates.mockRejectedValue(new MissingPhotosError([]));
+    renderScreen(dataWith(own));
+    await startSelecting(user, 2);
+    await openDateSheet(user);
+    await user.click(await screen.findByRole('button', { name: '2026년 10월 5일' }));
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.dateChangeFailed));
+    expect(screen.getByRole('dialog', { name: '날짜 바꾸기' })).toBeTruthy();
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1));
+  });
 
   it('고른 사진 전부의 날짜를 한 번에 바꾸고 선택 모드를 끝내며 토스트를 띄운다', async () => {
     const user = userEvent.setup();
@@ -138,7 +218,7 @@ describe('선택 모드 날짜 바꾸기', () => {
     expect(changePhotoDates).not.toHaveBeenCalled();
   });
 
-  it('관리자가 다른 멤버 사진을 포함해 저장하면 확인 뒤에 바꾼다', async () => {
+  it('관리자가 내 사진과 다른 멤버 사진을 함께 고르고 저장하면 확인 뒤에 바꾼다', async () => {
     const user = userEvent.setup();
     renderScreen(dataWith([photo('a', ['eunwoo']), photo('b', ['gyeongjin'])]));
     await startSelecting(user, 2);
@@ -146,13 +226,27 @@ describe('선택 모드 날짜 바꾸기', () => {
     await pickAndSave(user);
 
     expect(
-      await screen.findByRole('alertdialog', { name: PHOTO_BOX_MESSAGES.dateConfirmTitle }),
+      await screen.findByRole('alertdialog', { name: dateConfirmCopy('included').title }),
     ).toBeTruthy();
     expect(changePhotoDates).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '바꾸기' }));
+    await user.click(screen.getByRole('button', { name: '변경하기' }));
 
     await waitFor(() => expect(changePhotoDates).toHaveBeenCalledTimes(1));
+  });
+
+  it('관리자가 다른 멤버가 올린 사진만 고르면 「다른 멤버가 올린 사진이에요.」 확인 창을 본다', async () => {
+    const user = userEvent.setup();
+    renderScreen(dataWith([photo('a', ['gyeongjin']), photo('b', ['gyeongjin'])]));
+    await startSelecting(user, 2);
+    await openDateSheet(user);
+    await pickAndSave(user);
+
+    const dialog = await screen.findByRole('alertdialog', {
+      name: dateConfirmCopy('others').title,
+    });
+
+    expect(dialog).toHaveAccessibleDescription('날짜를 변경하면 사진함에서 변경된 날짜로 보여요.');
   });
 
   it('확인 창에서 취소하면 바꾸지 않고 시트를 유지한다', async () => {
@@ -161,14 +255,14 @@ describe('선택 모드 날짜 바꾸기', () => {
     await startSelecting(user, 2);
     await openDateSheet(user);
     await pickAndSave(user);
-    await screen.findByRole('alertdialog', { name: PHOTO_BOX_MESSAGES.dateConfirmTitle });
+    await screen.findByRole('alertdialog', { name: dateConfirmCopy('included').title });
 
     await user.click(screen.getByRole('button', { name: '취소' }));
 
     expect(changePhotoDates).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(
-        screen.queryByRole('alertdialog', { name: PHOTO_BOX_MESSAGES.dateConfirmTitle }),
+        screen.queryByRole('alertdialog', { name: dateConfirmCopy('included').title }),
       ).toBeNull(),
     );
     expect(screen.getByRole('dialog', { name: '날짜 바꾸기' })).toBeTruthy();

@@ -17,7 +17,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { CHECK_FAILURE_MESSAGE } from '@/shared/hooks/useNicknameAvailability';
-import { NICKNAME_INVALID_MESSAGE, NICKNAME_TAKEN_MESSAGE } from '@/shared/lib/nickname';
+import {
+  NICKNAME_INVALID_MESSAGE,
+  NICKNAME_PROHIBITED_MESSAGE,
+  NICKNAME_TAKEN_MESSAGE,
+} from '@/shared/lib/nickname';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { TermsAgreementProvider } from '../../contexts/TermsAgreementProvider';
 import { sessionQueryOptions } from '../../queries/session';
@@ -32,10 +36,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: vi.fn(),
 }));
 
-// 가입 저장·중복 확인 API는 호출 인자만 확인
+// 가입 저장 API는 호출 인자만 확인
 const registration = vi.hoisted(() => ({
   registerMember: vi.fn<(_input: unknown) => Promise<unknown>>(),
-  checkNicknameAvailability: vi.fn<(_nickname: string) => Promise<boolean>>(),
 }));
 vi.mock('../../api/registration', () => registration);
 
@@ -232,7 +235,7 @@ describe('ProfileSetup', () => {
     const settle = () => act(() => vi.advanceTimersByTimeAsync(500));
 
     it('확인 중에는 시작하기가 비활성이다', async () => {
-      const check = vi.fn(() => Promise.resolve(true));
+      const check = vi.fn(() => Promise.resolve('available' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       await type();
@@ -240,8 +243,44 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(true);
     });
 
+    it('확인하는 동안 입력란 아래에 확인 중 안내를 보이고, 문제가 없으면 안내가 사라진다', async () => {
+      const check = vi.fn(() => Promise.resolve('available' as const));
+      render(<ProfileSetup checkNickname={check} />);
+
+      await type();
+
+      expect(
+        screen.getByText('사용 가능한 닉네임인지 확인 중이에요.', {
+          selector: 'p[aria-hidden="true"]',
+        }),
+      ).toBeTruthy();
+      expect(screen.queryByRole('alert')).toBeNull();
+      await settle();
+      expect(
+        screen.queryByText('사용 가능한 닉네임인지 확인 중이에요.', {
+          selector: 'p[aria-hidden="true"]',
+        }),
+      ).toBeNull();
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('이미 사용 중이면 확인 중 안내 대신 오류 문구만 보인다', async () => {
+      const check = vi.fn(() => Promise.resolve('taken' as const));
+      render(<ProfileSetup checkNickname={check} />);
+
+      await type();
+      await settle();
+
+      expect(
+        screen.queryByText('사용 가능한 닉네임인지 확인 중이에요.', {
+          selector: 'p[aria-hidden="true"]',
+        }),
+      ).toBeNull();
+      expect(screen.getByRole('alert').textContent).toBe(NICKNAME_TAKEN_MESSAGE);
+    });
+
     it('사용할 수 있는 닉네임이면 시작하기가 활성화된다', async () => {
-      const check = vi.fn(() => Promise.resolve(true));
+      const check = vi.fn(() => Promise.resolve('available' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       await type();
@@ -252,7 +291,7 @@ describe('ProfileSetup', () => {
     });
 
     it('이미 사용 중이면 오류 문구를 보이고 시작하기를 비활성화한다', async () => {
-      const check = vi.fn(() => Promise.resolve(false));
+      const check = vi.fn(() => Promise.resolve('taken' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       await type();
@@ -262,8 +301,19 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(true);
     });
 
+    it('금칙어가 들어 있으면 사용할 수 없다는 문구를 보이고 시작하기를 비활성화한다', async () => {
+      const check = vi.fn(() => Promise.resolve('prohibited' as const));
+      render(<ProfileSetup checkNickname={check} />);
+
+      await type();
+      await settle();
+
+      expect(screen.getByRole('alert').textContent).toBe(NICKNAME_PROHIBITED_MESSAGE);
+      expect(start().hasAttribute('disabled')).toBe(true);
+    });
+
     it('조합 중인 자모로는 중복 확인을 호출하지 않는다', async () => {
-      const check = vi.fn(() => Promise.resolve(true));
+      const check = vi.fn(() => Promise.resolve('available' as const));
       render(<ProfileSetup checkNickname={check} />);
 
       fireEvent.compositionStart(nickname());
@@ -544,6 +594,40 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(false);
     });
 
+    it('가입 완료 때 닉네임에 금칙어가 걸리면 입력란 아래에 알리고 이동하지 않는다', async () => {
+      registration.registerMember.mockRejectedValue(
+        new ApiError({
+          message: 'error.prohibited_word',
+          category: 'validation',
+          status: 400,
+          code: 'COMMON_003',
+          data: {
+            success: false,
+            data: null,
+            error: {
+              code: 'COMMON_003',
+              message: 'error.prohibited_word',
+              detail: { fields: ['nickname'] },
+            },
+          },
+        }),
+      );
+      render(<ProfileSetup />);
+      await userEvent.type(nickname(), '지원');
+
+      await userEvent.click(start());
+
+      expect(await screen.findByText(NICKNAME_PROHIBITED_MESSAGE)).toBeTruthy();
+      expect(start().hasAttribute('disabled')).toBe(true);
+      expect(replace).not.toHaveBeenCalled();
+      expect(toast).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(nickname());
+
+      await userEvent.type(nickname(), '2');
+      expect(screen.queryByText(NICKNAME_PROHIBITED_MESSAGE)).toBeNull();
+      expect(start().hasAttribute('disabled')).toBe(false);
+    });
+
     it('저장하는 동안 스크린 리더에 저장 중임을 알린다', async () => {
       let finish!: () => void;
       registration.registerMember.mockImplementation(
@@ -551,17 +635,26 @@ describe('ProfileSetup', () => {
       );
       render(<ProfileSetup />);
       await userEvent.type(nickname(), '지원');
-      expect(screen.getByRole('status').textContent).toBe('');
+      // 닉네임 입력란의 안내 영역도 status라 화면의 저장 안내 문구로 찾음
+      expect(screen.getAllByRole('status').map((node) => node.textContent)).not.toContain(
+        '프로필을 저장하는 중이에요',
+      );
 
       await userEvent.click(start());
       await waitFor(() =>
-        expect(screen.getByRole('status').textContent).toBe('프로필을 저장하는 중이에요'),
+        expect(screen.getAllByRole('status').map((node) => node.textContent)).toContain(
+          '프로필을 저장하는 중이에요',
+        ),
       );
       // 저장 중에는 페이지 전체 로딩(PageLoading)으로 화면을 덮고, 끝나면 걷음
       expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
 
       act(() => finish());
-      await waitFor(() => expect(screen.getByRole('status').textContent).toBe(''));
+      await waitFor(() =>
+        expect(screen.getAllByRole('status').map((node) => node.textContent)).not.toContain(
+          '프로필을 저장하는 중이에요',
+        ),
+      );
       expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
     });
 

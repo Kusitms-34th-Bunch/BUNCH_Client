@@ -1,7 +1,13 @@
-import type { ReactNode } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import type * as DesignSystem from '@app/design-system';
+import { toast } from '@app/design-system';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http } from 'msw';
+import { type ReactNode, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fail, ok } from '@/mocks/lib/envelope';
+import { server } from '@/mocks/server';
+import { createQueryWrapper } from '@/shared/query/testing';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { CreateBunchDraftProvider } from '../../contexts/CreateBunchDraftProvider';
@@ -11,18 +17,35 @@ import { BunchDescription } from './BunchDescription';
 const push = vi.fn();
 const back = vi.fn();
 const replace = vi.fn();
-const Providers = ({ children }: { children: ReactNode }) => (
-  <CreateBunchDraftProvider>
-    <>{children}</>
-  </CreateBunchDraftProvider>
-);
+const Providers = ({ children }: { children: ReactNode }) => {
+  // 다시 그려도 같은 wrapper를 써서 입력 상태가 유지되게 함
+  const [QueryWrapper] = useState(() => createQueryWrapper());
+  return (
+    <QueryWrapper>
+      <CreateBunchDraftProvider>
+        <>{children}</>
+      </CreateBunchDraftProvider>
+    </QueryWrapper>
+  );
+};
 // 2단계 가드 통과를 위한 1단계 완료 상태
-const AfterBasicInfo = ({ children }: { children: ReactNode }) => (
-  <CreateBunchDraftProvider initial={{ name: '퇴근런클럽', visibility: 'public' }}>
-    <>{children}</>
-  </CreateBunchDraftProvider>
-);
+const AfterBasicInfo = ({ children }: { children: ReactNode }) => {
+  // 다시 그려도 같은 wrapper를 써서 입력 상태가 유지되게 함
+  const [QueryWrapper] = useState(() => createQueryWrapper());
+  return (
+    <QueryWrapper>
+      <CreateBunchDraftProvider initial={{ name: '퇴근런클럽', visibility: 'public' }}>
+        <>{children}</>
+      </CreateBunchDraftProvider>
+    </QueryWrapper>
+  );
+};
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
+// 토스트 표시는 DS의 `toast()` 담당이라 호출만 차단
+vi.mock('@app/design-system', async (importOriginal) => ({
+  ...(await importOriginal<typeof DesignSystem>()),
+  toast: vi.fn(),
+}));
 
 const renderStep = () => render(<BunchDescription />, { wrapper: AfterBasicInfo });
 const input = () => screen.getByRole('textbox', { name: '한 줄 소개' });
@@ -33,6 +56,7 @@ describe('BunchDescription', () => {
     push.mockClear();
     back.mockClear();
     replace.mockClear();
+    vi.mocked(toast).mockClear();
   });
 
   it('화면 제목을 보여 준다', () => {
@@ -57,7 +81,88 @@ describe('BunchDescription', () => {
 
     await userEvent.click(nextButton());
 
-    expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.createBunchMood);
+    await waitFor(() => expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.createBunchMood));
+  });
+
+  it('다음을 누르면 서버가 소개를 검사하고, 금칙어면 넘어가지 않고 입력란 아래에 안내한다', async () => {
+    let received: unknown;
+    server.use(
+      http.post('/api/bunches/introduction-validation', async ({ request }) => {
+        received = await request.json();
+        return fail(400, 'COMMON_003', { fields: ['introduction'] });
+      }),
+    );
+    renderStep();
+
+    await userEvent.type(input(), '나쁜 말 소개');
+    await userEvent.click(nextButton());
+
+    // 안내 문구는 화면 표시와 스크린 리더 알림 두 곳에 들어감
+    expect(await screen.findAllByText('사용할 수 없는 단어가 포함되어 있어요')).not.toHaveLength(0);
+    expect(received).toEqual({ introduction: '나쁜 말 소개' });
+    expect(push).not.toHaveBeenCalled();
+    expect(input().getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(input());
+    expect((nextButton() as HTMLButtonElement).disabled).toBe(true);
+
+    // 고치면 안내를 지우고 다시 누를 수 있음
+    await userEvent.type(input(), '!');
+    expect(screen.queryAllByText('사용할 수 없는 단어가 포함되어 있어요')).toHaveLength(0);
+    expect((nextButton() as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('검사를 보낸 뒤 소개를 고치면 그 응답으로는 넘어가지 않는다', async () => {
+    let respond!: () => void;
+    server.use(
+      http.post(
+        '/api/bunches/introduction-validation',
+        () => new Promise<Response>((resolve) => (respond = () => resolve(ok(null)))),
+      ),
+    );
+    renderStep();
+    await userEvent.type(input(), '맛집 탐방');
+    await userEvent.click(nextButton());
+    await waitFor(() => expect(respond).toBeDefined());
+
+    // 검사 중에도 소개를 고칠 수 있음(다음만 잠김)
+    expect((nextButton() as HTMLButtonElement).disabled).toBe(true);
+    await userEvent.type(input(), ' 모임');
+    respond();
+
+    await waitFor(() => expect((nextButton() as HTMLButtonElement).disabled).toBe(false));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('「다음」을 연달아 눌러도 검사는 한 번만 보낸다', async () => {
+    let calls = 0;
+    server.use(
+      http.post('/api/bunches/introduction-validation', () => {
+        calls += 1;
+        return ok(null);
+      }),
+    );
+    renderStep();
+    await userEvent.type(input(), '맛집 탐방');
+
+    fireEvent.click(nextButton());
+    fireEvent.click(nextButton());
+
+    await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
+    expect(calls).toBe(1);
+  });
+
+  it('검사가 금칙어가 아닌 이유로 실패하면 넘어가지 않고 공통 오류 토스트를 띄운다', async () => {
+    server.use(http.post('/api/bunches/introduction-validation', () => fail(503, 'COMMON_999')));
+    renderStep();
+
+    await userEvent.type(input(), '맛집 탐방');
+    await userEvent.click(nextButton());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(push).not.toHaveBeenCalled();
+    expect((nextButton() as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('공백만 입력하면 다음은 비활성이다', async () => {

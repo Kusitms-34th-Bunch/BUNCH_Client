@@ -194,4 +194,38 @@ describe('PostHog 제품 분석', () => {
     expect(event?.$set_once).toEqual({ $initial_current_url: 'https://bunch-web.vercel.app/' });
     expect(sanitizeAnalyticsEvent(null)).toBeNull();
   });
+
+  it('초대 링크의 토큰(/invite/{토큰})도 주소·이전 주소·누른 링크에서 감춘다', async () => {
+    const { sanitizeAnalyticsEvent } = await load();
+
+    const event = sanitizeAnalyticsEvent({
+      uuid: '1',
+      event: '$pageview',
+      properties: {
+        $current_url: 'https://bunch-web.vercel.app/invite/Ab3_-xYz9QwErTy',
+        $pathname: '/invite/Ab3_-xYz9QwErTy',
+        $referrer: 'https://bunch-web.vercel.app/invite/Ab3_-xYz9QwErTy?from=kakao',
+        $elements_chain: 'a:href="/invite/Ab3_-xYz9QwErTy"nth-child="1"',
+      },
+    });
+
+    expect(event?.properties).toEqual({
+      $current_url: 'https://bunch-web.vercel.app/invite/:token',
+      $pathname: '/invite/:token',
+      $referrer: 'https://bunch-web.vercel.app/invite/:token',
+      $elements_chain: 'a:href="/invite/:token"nth-child="1"',
+    });
+  });
+
+  it('경로 앞이 아닌 곳의 invite 조각은 감추지 않는다', async () => {
+    const { sanitizeAnalyticsEvent } = await load();
+
+    const event = sanitizeAnalyticsEvent({
+      uuid: '1',
+      event: '$pageview',
+      properties: { $pathname: '/onboarding/invite/share' },
+    });
+
+    expect(event?.properties).toEqual({ $pathname: '/onboarding/invite/share' });
+  });
 });

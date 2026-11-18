@@ -21,8 +21,9 @@ import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { useIsPhotoPicked } from '../../hooks/useDraftPicks';
-import { getDraftAccess } from '../../lib/permissions';
-import { getPhotoEditors, getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
+import { type DraftAccess, getDraftAccess } from '../../lib/permissions';
+import { getRemovePhotoKind, type RemovePhotoKind } from '../../lib/photos';
+import { PresenceScope } from './PresenceScope';
 import { useRemovePhotoDialog } from './RemovePhotoDialogs';
 
 // 앨범 저장 API 연결 전의 목 저장 시간: 저장 중에는 화면 전체에 딤과 로딩 점을 보임(화면설계서 5번 「저장 진행 중 로딩 애니메이션」)
@@ -41,6 +42,8 @@ const toViewerPhoto = (photo: DraftPhoto, source: PhotoSource | undefined): Phot
     takenAt,
     uploadedAt: takenAt ?? '',
     uploaderIds: source ? source.uploaderIds : [photo.uploaderId],
+    // 번들 크게 보기에는 삭제가 없어 쓰이지 않는 값
+    usedInDraftBundle: false,
     status: 'ready',
   };
 };
@@ -53,7 +56,9 @@ const UNKNOWN_SOURCE: PhotoSource = { takenAt: null, uploaderIds: [] };
 type DraftPhotoViewerProps = {
   draft: Draft;
   viewer: DraftViewer;
-  actions: Pick<DraftActions, 'removePhoto'>;
+  /** 보는 사람이 할 수 있는 일. 없으면 초안 참여 여부로 정함(수정 화면은 메인 관리자 기준으로 넘김) */
+  access?: DraftAccess | undefined;
+  actions: Pick<DraftActions, 'removePhoto' | 'presence'>;
   /** 처음 보여 줄 사진 id */
   initialPhotoId: string;
   /** 사진함 원본 사진 id별 촬영 날짜·올린 멤버. 없으면 번들에 담은 사람과 날짜 없음으로 보임 */
@@ -71,12 +76,13 @@ type DraftPhotoViewerProps = {
 
 /**
  * 번들 사진 크게 보기(Figma `1782:32882`·`1782:32912`, 기능 spec 4.3.6): 헤더에 촬영 날짜와 ⋯, 원본 비율 사진과 올린 멤버 배지
- * 좌우로 번들 순서대로 넘기고, 한 번 누르거나 확대하면 헤더와 배지를 숨김. ⋯ 메뉴는 「저장」과 참여 멤버의 「삭제」(캡션 화면 X와 같은 빼기)
+ * 좌우로 번들 순서대로 넘기고, 한 번 누르거나 확대하면 헤더와 배지를 숨김. ⋯ 메뉴는 「저장」과 참여 멤버의 「삭제」(작성 화면 X와 같은 빼기)
  * 빼면 이웃 사진으로 이어서 보여 줌. 사진 넘기기·헤더 숨김은 `usePhotoViewer`·`PhotoViewerSwiper`가 맡음
  */
 export function DraftPhotoViewer({
   draft,
   viewer,
+  access: accessOverride,
   actions,
   initialPhotoId,
   sources,
@@ -86,7 +92,7 @@ export function DraftPhotoViewer({
   onBack,
   onPhotoChange,
 }: DraftPhotoViewerProps) {
-  const access = getDraftAccess(draft, viewer);
+  const access = accessOverride ?? getDraftAccess(draft, viewer);
   const photos = draft.photos;
   const isPicked = useIsPhotoPicked(draft);
   // 사진함 데이터를 받는 동안과 받은 뒤 원본이 없는 사진은 배지·날짜를 비움(번들에 담은 사람을 소유자로 잘못 보이지 않게)
@@ -134,18 +140,15 @@ export function DraftPhotoViewer({
   const removeAndContinue = (photoId: string) => {
     const index = photos.findIndex((photo) => photo.id === photoId);
     const neighbor = photos[index + 1] ?? photos[index - 1];
-    actions.removePhoto(photoId);
+    // 연결이 끊겨 막히면 다른 사진으로 넘어가지 않음
+    if (!actions.removePhoto(photoId)) return;
     if (neighbor && photoId === activeId) showPhoto(neighbor.id);
   };
 
-  // 확인 창이 떠 있는 사이 다른 멤버가 편집을 시작했거나 사진이 이미 빠졌을 수 있어 최신 값으로 다시 확인
+  // 확인 창이 떠 있는 사이 사진이 이미 빠졌을 수 있어 최신 값으로 다시 확인
   // 그 사이 다른 멤버가 사진을 빼 한 장만 남았으면 지우지 않고 안내 창으로 바꿈
   const confirmRemove = usePreservedCallback((photoId: string) => {
     if (!photos.some((photo) => photo.id === photoId)) return false;
-    if (getPhotoEditors(draft, viewer, photoId).length > 0) {
-      notify(BUNDLE_MESSAGES.editingBlocked);
-      return false;
-    }
     if (getRemovePhotoKind(photos) === 'last') return true;
     removeAndContinue(photoId);
     return false;
@@ -175,9 +178,6 @@ export function DraftPhotoViewer({
   const requestRemove = () => {
     if (!activePhoto) return;
     if (!access.canEdit) return notify(BUNDLE_MESSAGES.editOnlyParticipants);
-    if (getPhotoEditors(draft, viewer, activePhoto.id).length > 0) {
-      return notify(BUNDLE_MESSAGES.editingBlocked);
-    }
     showRemoveDialog(getRemovePhotoKind(photos), activePhoto.id);
   };
 
@@ -256,6 +256,8 @@ export function DraftPhotoViewer({
         inert={saving}
       />
       {saving ? <PageLoading /> : null}
+      {/* 삭제 확인 창이 열려 있는 동안 사진을 작업 중으로 알림 */}
+      {removeDialogOpen ? <PresenceScope presence={actions.presence} target="PHOTOS" /> : null}
     </PageShell>
   );
 }

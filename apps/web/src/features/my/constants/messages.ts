@@ -1,9 +1,13 @@
 export const MY_MESSAGES = {
   title: 'MY',
   profileEdit: '프로필 수정',
-  sections: { notifications: '알림', terms: '약관 및 정책', support: '고객지원' },
+  // 닉네임을 아직 받지 못했을 때 프로필 행 링크의 낭독 이름
+  profileEditOwn: '내 프로필 수정',
+  profileLoading: '프로필을 불러오는 중이에요',
+  sections: { notifications: '알림', terms: '서비스 정보', support: '고객지원' },
   menu: {
     notifications: '알림 설정',
+    termsAndPrivacy: '약관 및 개인정보',
     termsOfService: '서비스 이용약관',
     privacyPolicy: '개인정보 처리방침',
     contact: '문의하기',
@@ -15,6 +19,8 @@ export const MY_MESSAGES = {
     title: "'카카오톡'에서 열기",
     description: '오픈채팅 상담 채널로 이동해요.',
     confirm: '열기',
+    // 기능명세서 7.5.1 예외 처리
+    failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   },
   logout: {
     title: '로그아웃할까요?',
@@ -23,6 +29,28 @@ export const MY_MESSAGES = {
     failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   },
   cancel: '취소',
+  // 약관 및 개인정보(화면 설계서 MY(4), 기능명세서 7.4.4·7.4.5)
+  termsSettings: {
+    title: '약관 및 개인정보',
+    termsSection: '이용약관',
+    privacySection: '개인정보 처리 및 동의',
+    demographics: {
+      title: '추가 개인정보 수집 및 이용 동의',
+      viewFull: '전문보기',
+      agree: {
+        title: '추가 개인정보 수집에 동의할까요?',
+        description: '동의 후 프로필 편집에서 출생연도와 성별을 설정할 수 있어요.',
+        confirm: '동의하기',
+      },
+      withdraw: {
+        title: '추가 개인정보 수집 동의를 철회할까요?',
+        description: '철회 시 출생연도와 성별 정보가 삭제돼요.',
+        confirm: '동의 철회',
+      },
+      // 기능명세서 7.4.4·7.4.5 예외 처리(동의 상태 불러오기·저장 실패)
+      failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    },
+  },
   // 회원 탈퇴(화면 설계서 MY(5))
   withdrawal: {
     title: '탈퇴하기 전에 확인해 주세요',
@@ -54,12 +82,18 @@ export const MY_MESSAGES = {
     ownerTitle: '관리자로 있는 번치가 있어요',
     ownerDescription: '번치의 관리자 권한을 다른 멤버에게 넘긴 뒤 탈퇴할 수 있어요.',
     ownerTransfer: '권한 넘기러 가기',
+    // 「다음」 확인 중 낭독용(Figma에 보이는 문구 없음)
+    checking: '넘길 번치를 확인하는 중이에요',
     // 기능명세서 7.6.4 예외 처리
     failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   },
   // 관리자 권한 이전(화면 설계서 MY(5) 4~5번). 화면 제목은 Figma에 없어 낭독용
   transfer: {
     title: '관리자 권한 넘기기',
+    // 낭독용(Figma에 보이는 문구 없음)
+    loading: '관리자를 넘길 번치를 불러오는 중이에요',
+    sending: '관리자 권한을 넘기는 중이에요',
+    unknownMember: '알 수 없는 멤버',
     members: '멤버',
     coOwner: '공동 관리자',
     // 고른 뒤 접힌 번치 카드에 붙여 읽는 문구(색만으로 전하지 않음)
@@ -73,8 +107,13 @@ export const MY_MESSAGES = {
   },
   // 개인 프로필 수정(화면 설계서 MY(1) 7·8번)
   profileEditTitle: '개인 프로필 수정',
+  // 기능명세서 7.1.1·7.2.1 예외 처리(프로필 불러오기 실패)
+  profileLoadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   profileEditSubmit: '프로필 수정하기',
   profileEdited: '프로필을 수정했어요.',
+  // 기능명세서 7.2.7 예외 처리(저장 실패)
+  profileSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  profileSaving: '프로필을 저장하는 중이에요',
   // 바꾼 내용이 있는데 뒤로 가기(기능명세서 7.2.1 상세 7)
   profileLeave: {
     title: '저장하지 않고 나갈까요?',
@@ -86,8 +125,13 @@ export const MY_MESSAGES = {
     title: '알림 설정',
     push: { title: '앱 푸시 알림', description: '푸시를 꺼도 앱 알림 목록에는 그대로 쌓여요.' },
     typesLabel: '받을 알림',
-    // 받을 알림을 모두 꺼 앱 푸시가 꺼졌을 때 낭독(Figma에 보이는 문구 없음)
-    pushAutoOff: '받을 알림을 모두 꺼서 앱 푸시 알림도 꺼졌어요.',
+    // 기능명세서 7.3.1·7.3.2 예외 처리(설정값 불러오기·저장 실패)
+    loadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    saveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    // 스크린 리더 안내(Figma에 보이는 문구 없음): 설정값을 받는 동안, 기기 알림 권한이 바뀌었을 때
+    loading: '알림 설정을 불러오는 중이에요',
+    deviceOffAnnounce: '기기 알림이 꺼져 있어 알림 설정을 바꿀 수 없어요',
+    deviceOnAnnounce: '기기 알림이 켜져서 알림 설정을 바꿀 수 있어요',
     types: {
       bundle: {
         title: '번들 소식',

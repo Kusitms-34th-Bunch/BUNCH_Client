@@ -2,7 +2,6 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { BunchMenu } from './BunchMenu';
 import { BunchMenuScreen } from './BunchMenuScreen';
 
 const replace = vi.fn();
@@ -124,23 +123,5 @@ describe('BunchMenuScreen', () => {
     await user.click(screen.getByRole('button', { name: '번치 나가기' }));
 
     expect(screen.queryByRole('alertdialog')).toBeNull();
-  });
-});
-
-describe('BunchMenu', () => {
-  it('돌아갈 기록이 없으면 뒤로 가기가 번치 홈으로 바꾼다', async () => {
-    const user = userEvent.setup();
-    render(<BunchMenu />);
-
-    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
-
-    expect(back).not.toHaveBeenCalled();
-    expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.home);
-  });
-  it('번치 홈에서 고른 번치의 내 역할로 메뉴를 보여 준다', () => {
-    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-gift');
-    render(<BunchMenu />);
-
-    expect(menuNames()).toEqual(['멤버 관리', '멤버 초대', '차단 목록', '번치 나가기']);
   });
 });

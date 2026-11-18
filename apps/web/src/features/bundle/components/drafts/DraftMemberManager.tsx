@@ -70,7 +70,8 @@ export function DraftMemberManager({
 
   const add = (member: DraftMember) => {
     capture();
-    actions.addMember(member.id);
+    // 연결이 끊겨 막히면 성공 안내와 포커스 이동도 하지 않음(반응만 없앰, 기능 spec 4.3.14)
+    if (!actions.addMember(member.id)) return;
     setFocusId(member.id);
     toast(BUNDLE_MESSAGES.memberAdded(member.name));
   };
@@ -167,7 +168,8 @@ export function DraftMemberManager({
                                 member,
                                 ({ id }) => {
                                   capture();
-                                  actions.removeMember(id);
+                                  // 연결이 끊겨 막히면 false: 성공 토스트와 포커스 이동을 하지 않음
+                                  return actions.removeMember(id);
                                 },
                                 // 창이 닫힌 뒤에 옮겨야 닫히는 모달에 포커스를 빼앗기지 않음
                                 ({ id }) => setFocusId(id),

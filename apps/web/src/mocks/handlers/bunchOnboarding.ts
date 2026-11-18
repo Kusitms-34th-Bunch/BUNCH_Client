@@ -6,6 +6,7 @@ import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail, ok } from '../lib/envelope';
 import { runIdempotent } from '../lib/idempotency';
+import { failIfProhibited, hasMockProhibitedWord } from '../lib/prohibitedWord';
 import { readJson } from './bundles';
 
 // 백엔드 명세(번치 생성·이름 중복 확인·번치 사진·초대 발급) 기준
@@ -55,9 +56,29 @@ const MOCK_UPLOADED_BUNCH_IMAGE = '/mock/photos/C1.jpg';
 export const bunchOnboardingHandlers = [
   // GET /api/v1/bunches/name-availability
   http.get('/api/bunches/name-availability', ({ request }) => {
-    const name = normalizeName(new URL(request.url).searchParams.get('name') ?? '');
+    const url = new URL(request.url);
+    const name = normalizeName(url.searchParams.get('name') ?? '');
     if (!isValidName(name)) return fail(400, 'COMMON_001');
-    return ok({ normalizedValue: name, available: !isNameTaken(name) });
+    // 프로필 편집은 자기 번치의 지금 이름을 사용 중으로 보지 않음
+    const exclude = toWireId(url.searchParams.get('excludeBunchId') ?? undefined);
+    // 금칙어가 중복보다 앞섬
+    const status = hasMockProhibitedWord(name)
+      ? 'PROHIBITED_WORD'
+      : isNameTaken(name, exclude)
+        ? 'DUPLICATE'
+        : 'AVAILABLE';
+    return ok({ normalizedValue: name, available: status === 'AVAILABLE', status });
+  }),
+
+  // POST /api/v1/bunches/introduction-validation: 번치 만들기 2단계 「다음」 전 소개 검사(저장하지 않음)
+  http.post('/api/bunches/introduction-validation', async ({ request }) => {
+    const body = await readJson(request);
+    if (!body || typeof body.introduction !== 'string') return fail(400, 'COMMON_002');
+    const introduction = body.introduction.trim();
+    if ([...introduction].length < 1 || [...introduction].length > INTRODUCTION_MAX) {
+      return fail(400, 'COMMON_001');
+    }
+    return failIfProhibited({ introduction }) ?? ok(null);
   }),
 
   // POST /api/v1/bunches: 가입 완료 회원, 소속 10개 미만. 같은 멱등 키·입력은 처음 만든 번치를 돌려줌
@@ -78,6 +99,9 @@ export const bunchOnboardingHandlers = [
     ) {
       return fail(400, 'COMMON_001');
     }
+    // 앱을 거치지 않은 요청 방어용 최종 검사(기능명세 2.2.10)
+    const prohibited = failIfProhibited({ name, introduction });
+    if (prohibited) return prohibited;
 
     const outcome = runIdempotent(
       `${MOCK_MY_MEMBER_ID}:bunch-create`,
@@ -110,7 +134,13 @@ export const bunchOnboardingHandlers = [
           ],
           memberships: [
             ...state.memberships,
-            { bunchId: id, memberId: MOCK_MY_MEMBER_ID, role: 'OWNER' },
+            // 만든 번치가 가장 최근 번치라 기본 번치가 됨
+            {
+              bunchId: id,
+              memberId: MOCK_MY_MEMBER_ID,
+              role: 'OWNER',
+              lastUsedAt: new Date().toISOString(),
+            },
           ],
         }));
         return { status: 200, body: { id } };
@@ -141,6 +171,59 @@ export const bunchOnboardingHandlers = [
     changeBunch(owned.bunch.id, (bunch) => ({ ...bunch, imageUrl: null }));
     const changed = mockDb.get().bunches.find((bunch) => bunch.id === owned.bunch.id);
     return changed ? ok(bunchBody(changed)) : fail(404, 'RESOURCE_001');
+  }),
+
+  // PUT /api/v1/bunches/{bunchId}/profile: OWNER만, multipart `profile`(JSON)·`photo`(선택)
+  // 가짜 서버는 사진 내용을 읽지 않고 시연용 이미지로 바꿈. 버전 충돌 코드는 Swagger에 없어 가짜 코드로 둠
+  http.put('/api/bunches/:bunchId/profile', async ({ params, request }) => {
+    if (!request.headers.get(IDEMPOTENCY_KEY_HEADER)) return fail(400, 'COMMON_001');
+    const owned = findOwnedBunch(params.bunchId);
+    if ('error' in owned) return owned.error;
+    const form = await request.formData();
+    const part = form.get('profile');
+    const parse = async () => {
+      try {
+        return part instanceof Blob ? (JSON.parse(await part.text()) as unknown) : null;
+      } catch {
+        return null;
+      }
+    };
+    const profile = (await parse()) as {
+      name?: string;
+      introduction?: string;
+      visibility?: string;
+      imageAction?: string;
+      expectedProfileVersion?: number;
+    } | null;
+    const name = normalizeName(profile?.name ?? '');
+    const introduction = (profile?.introduction ?? '').trim();
+    if (!profile || !isValidName(name) || introduction.length === 0 || introduction.length > 50) {
+      return fail(400, 'COMMON_001');
+    }
+    const prohibited = failIfProhibited({ name, introduction });
+    if (prohibited) return prohibited;
+    // 본문을 기다리는 사이 다른 저장이 끝났을 수 있어 지금 DB 값으로 비교(비교와 갱신 사이에는 await 없음)
+    const current = mockDb.get().bunches.find((bunch) => bunch.id === owned.bunch.id);
+    const version = current?.profileVersion ?? 1;
+    if (profile.expectedProfileVersion !== version) return fail(409, 'MOCK_PROFILE_VERSION');
+    if (isNameTaken(name, owned.bunch.id)) return fail(409, 'BUNCH_001');
+    if (profile.imageAction === 'REPLACE' && !(form.get('photo') instanceof Blob)) {
+      return fail(400, 'COMMON_001');
+    }
+    changeBunch(owned.bunch.id, (bunch) => ({
+      ...bunch,
+      name,
+      introduction,
+      isPrivate: profile.visibility === 'PRIVATE',
+      imageUrl:
+        profile.imageAction === 'REPLACE'
+          ? MOCK_UPLOADED_BUNCH_IMAGE
+          : profile.imageAction === 'RESET'
+            ? null
+            : bunch.imageUrl,
+      profileVersion: version + 1,
+    }));
+    return ok({ bunchId: owned.bunch.id, profileVersion: version + 1 });
   }),
 
   // POST /api/v1/bunches/{id}/invitations: 번치당 유효한 링크 1개(같은 번치는 같은 링크를 돌려줌)

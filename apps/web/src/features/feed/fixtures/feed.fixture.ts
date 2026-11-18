@@ -1,7 +1,8 @@
+// 기록용: 쓰는 곳 없음. 서버 연결 전 피드 샘플 데이터(Figma 대조에 사용), 새 코드에서 import 금지
 import { DEFAULT_BUNCH_IMAGES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
 import type { FeedBundle, FeedData } from '../lib/types';
 
-// 피드 API 연결 전 Figma 예시 값(사진은 public/mock/photos)
+// 멤버 프로필 샘플이 쓰는 Figma 예시 값(사진은 public/mock/photos). 피드 목록(#364)·상세(#367)는 서버, 프로필 연결(API 연동 9번) 때 삭제
 const HOUR = 3_600_000;
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * HOUR).toISOString();
 const members = (count: number) =>
@@ -38,7 +39,7 @@ export const feedFixture: FeedData = {
     bundle({
       id: 'bundle-2',
       // 팔로우한 비공개 번치의 번들도 이 구간에 나옴
-      bunch: { id: 'bunch-book', name: '책방산책', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_1 },
+      bunch: { id: '4', name: '책방산책', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_1 },
       publishedAt: hoursAgo(5),
       title: '노을 지는 동네 책방 투어',
       location: '망원동',
@@ -53,7 +54,7 @@ export const feedFixture: FeedData = {
   public: [
     bundle({
       id: 'bundle-3',
-      bunch: { id: 'bunch-camping', name: '캠핑러버', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2 },
+      bunch: { id: '3', name: '캠핑러버', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_2 },
       publishedAt: hoursAgo(24 * 10),
       title: '여름밤 바닷가 캠핑',
       location: undefined,

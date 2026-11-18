@@ -5,8 +5,8 @@ import { PhotoThumbnail } from '@app/design-system/web';
 import Link from 'next/link';
 import { memo, useState } from 'react';
 import type { PhotoBoxPhoto } from '../lib/types';
-import { PHOTO_BOX_PATHS } from '../constants/paths';
-import { usePhotoOrder, usePhotoSelectionActions } from '../contexts/PhotoSelectionContext';
+import { PHOTO_BOX_PATHS, photoHeroKey } from '../constants/paths';
+import { usePhotoOrder, usePhotoSelectionActions } from '../contexts/photoSelection';
 import { PHOTO_ID_ATTRIBUTE } from '../lib/dragSelect';
 
 type PhotoCellProps = {
@@ -34,9 +34,13 @@ export const PhotoCell = memo(function PhotoCell({ photo }: PhotoCellProps) {
   // 평소에는 사진 위에 상세 링크를 덮고(이름은 링크, 사진은 장식), 선택 모드에서는 PhotoThumbnail이 고르는 버튼을 덮음
   return (
     // 선택 모드에서는 세로 스크롤만 브라우저에 맡기고 가로 움직임은 쓸어서 고르기가 받음
+    // 상세에서 돌아오는 hero 사진(SSGOI가 이 칸에 붙이는 복사본)이 뒤 칸에 가리지 않게 그동안만 위로 올림
     <div
       {...{ [PHOTO_ID_ATTRIBUTE]: photo.id }}
-      className={cn('relative', active && 'touch-pan-y touch-pinch-zoom')}
+      className={cn(
+        'relative has-[>[data-ssgoi-crossfade]]:z-1',
+        active && 'touch-pan-y touch-pinch-zoom',
+      )}
     >
       <PhotoThumbnail
         src={photo.src}
@@ -47,6 +51,8 @@ export const PhotoCell = memo(function PhotoCell({ photo }: PhotoCellProps) {
         selectionOrder={order}
         onClick={active ? () => onToggle(photo.id) : undefined}
         onImageError={() => setBroken(true)}
+        // 상세의 같은 사진으로 이어지는 hero 출발점(선택 모드에서는 상세로 가지 않음)
+        {...(active ? {} : { 'data-hero-enter-key': photoHeroKey(photo.id) })}
       />
       {active ? null : (
         <Link

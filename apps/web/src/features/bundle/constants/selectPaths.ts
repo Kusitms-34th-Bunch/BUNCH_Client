@@ -13,4 +13,9 @@ export const BUNDLE_SELECT_PATHS = {
   bunchHome: '/bunch',
   /** 만든 초안의 작성 화면 */
   draft: (draftId: string) => `/bunch/drafts/${draftId}`,
+  /**
+   * 번치 홈에서 멤버·사진을 골라 만든 초안의 작성 화면: 뒤로가기가 사진 선택이 아니라 번치 홈으로 가게 `from=home`을 붙임(기능 spec 4.3.1)
+   * 기록이 아니라 주소에 담아 새로고침·화면 이동 뒤에도 유지됨
+   */
+  draftFromHome: (draftId: string) => `/bunch/drafts/${draftId}?from=home`,
 } as const;

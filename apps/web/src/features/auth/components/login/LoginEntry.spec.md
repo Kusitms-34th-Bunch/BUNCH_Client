@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - Route: `/login`(`apps/web/src/app/(app)/login/page.tsx`)
-- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 아직 없어 앱에서도 실패 토스트가 나옴. 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어와 앱 실행 시 세션 확인은 `(app)` layout의 `AuthGate`가 맡음(결정 기록 019)
+- Status: UI 구현됨(`next build` 결과를 Figma 값과 측정으로 대조함. 실기기 검증 전). 웹의 소셜 로그인 연결(bridge `socialLogin` → BFF `/api/auth/login`)은 구현됨. 쉘의 네이티브 SDK는 카카오·Google·Apple을 연결함(`apps/mobile-shell/src/social-login.ts`). Apple은 실기기에서 ID 토큰 발급까지 확인, 서버 로그인은 확인 전(#439). 로그인 뒤 가입 상태별 이동(`GET /members/me/onboarding`)도 구현됨. 접근 제어와 앱 실행 시 세션 확인은 `(app)` layout의 `AuthGate`가 맡음(결정 기록 019)
 - 디자인 출처: Figma `로그인`(node `4744:90759`, 배경 영상 디자인. 이전 `796:4634`). 화면설계서(node `796:5339`, 설계서 프레임 `796:9226`). 기능 spec은 `docs/specs/login-signup.md`(1.2 Entry).
 
 ## 목적과 범위
@@ -17,7 +17,7 @@
 
 ### 범위 외
 
-- 쉘의 네이티브 소셜 SDK(카카오·Google·Apple). 쉘의 `socialLogin`은 지금 항상 실패하는 자리라, 앱에서도 버튼을 누르면 실패 토스트가 나온다. 웹의 호출과 BFF 로그인은 연결돼 있다.
+- Apple 로그인의 서버 로그인 완료. 쉘(`apps/mobile-shell/src/social-login.ts`)은 카카오·Google·Apple을 모두 연결했다. 실기기(iPhone 개발 빌드)에서 Apple 로그인 창·Face ID·ID 토큰 발급까지 확인했고, 서버 로그인은 `AUTH_009`로 아직 성공하지 못했다(백엔드 Apple client ID 설정 확인 필요). 가입·재로그인·취소는 확인 전이다(2026-11-18, #439).
 - 앱 실행 시 세션 확인·스플래시와 단계별 접근 제어(로그인 뒤 분기 자체는 포함, 아래 Success 참고).
 - 초대 정보 보관·전달.
 - iPhone 상태 바·홈 인디케이터. 기기 요소라 웹이 그리지 않는다(Safe Area는 `AppFrame`이 처리한다).
@@ -25,7 +25,7 @@
 ## Route와 접근
 
 - Path·params·search: `/login`. params와 search는 없다.
-- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태(`GET /members/me/onboarding`)로 판단한다(`lib/accessPolicy.ts`). 비로그인은 `/login`만 볼 수 있고, 가입 완료 사용자가 `/login`·`/signup/*`에 들어오면 번치 홈이나 번치 시작 선택으로 보낸다. 가입 중 사용자의 `/login`은 막지 않는다(약관의 뒤로가기가 로그인으로 돌아오는 것이 기획 1.3.5이고 로그아웃이 아직 연결되지 않았다). 상태를 확인하는 동안에는 `PageLoading`만 보이고, 실패하면 안내와 다시 시도가 나온다.
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태(`GET /members/me/onboarding`)로 판단한다(`lib/accessPolicy.ts`). 비로그인은 `/login`만 볼 수 있고, 가입 완료 사용자가 `/login`·`/signup/*`에 들어오면 보관된 초대가 있을 때 초대 참여로, 없으면 번치 홈이나 번치 시작 선택으로 보낸다. 가입 중 사용자의 `/login`은 막지 않는다(기획 1.3.5). 약관의 뒤로가기는 로그아웃한 뒤 로그인 화면을 새로 연다(`useLeaveSignupMutation`, 2026-11-16 확인). 상태를 확인하는 동안에는 `PageLoading`만 보이고, 실패하면 안내와 다시 시도가 나온다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 이동과 redirect는 없다. 화면 전환 규칙(`AppTransitions`)에도 등록하지 않아 page 래퍼에 `data-ssgoi-transition`을 붙이지 않았다(`/signup/terms` 등으로 가는 전환 규칙을 넣을 때 함께 붙인다). 인증 전 화면이 `(app)`의 `OverlayProvider`·`Toaster`를 공유하는 것은 실패 토스트에 필요해서이고, 인증 전용 group 분리는 접근 제어를 만들 때 함께 판단한다.
 
 ## 상태와 흐름
@@ -35,9 +35,9 @@
 - Empty: 해당 없음.
 - Error·retry: 실패 시 토스트와 버튼 복귀. 토스트는 기획 명세대로 하단 버튼 영역 바로 위에 놓는다(`PageShell`의 bottom 슬롯 `wrapper` 앵커로 영역 위 4px, `Toast.spec.md`). 다시 눌러 재시도할 수 있다. 오류 원인은 따로 기록하지 않는다(Sentry 전송 없음).
 - Disabled·invalid: 다른 소셜 로그인이 진행 중인 버튼.
-- Success·완료 후 이동: 로그인에 성공하면 `GET /members/me/onboarding`으로 가입 상태를 읽어 도착 화면을 정하고(`lib/postLoginPath.ts`), 정해질 때까지 버튼을 잠근 채 둔 뒤 이동한다. 가입 완료 사용자는 로그인 화면이 기록에 남지 않게 `router.replace`, 가입 중 사용자는 약관의 뒤로가기가 로그인으로 돌아오도록 `router.push`한다(기획의 「로그인 해제」는 아직 없다). 읽은 가입 상태는 `setQueryData`로 세션 캐시에 채워 도착 화면의 `AuthGate`가 같은 상태로 판단하게 한다(같은 key를 `fetchQuery`로 다시 읽으면 가드가 로딩으로 바뀌어 로그인 화면이 사라지므로 쓰지 않는다). 규칙(기획 1.2.7·1.2.8): 가입 중이고 약관 미동의 → 약관 `/signup/terms`, 가입 중이고 동의 → 프로필 `/signup/profile`, 가입 완료이고 기본 번치(`defaultBunchId`) 있음 → 번치 홈 `/bunch`, 가입 완료이고 번치 없음 → 번치 시작 선택 `/onboarding`. 가입 완료 사용자의 두 경로는 다른 feature 소유라 `login/page.tsx`가 `destinations` prop으로 넘긴다. 마지막으로 쓴 번치가 유효한지의 판단(없으면 가장 최근 번치)은 서버가 `defaultBunchId`에 반영한다고 가정한다(확인할 항목).
+- Success·완료 후 이동: 로그인에 성공하면 `GET /members/me/onboarding`으로 가입 상태를 읽어 도착 화면을 정하고(`lib/postLoginPath.ts`), 정해질 때까지 버튼을 잠근 채 둔 뒤 이동한다. 가입 완료 사용자는 로그인 화면이 기록에 남지 않게 `router.replace`, 가입 중 사용자는 약관의 뒤로가기가 로그인으로 돌아오도록 `router.push`한다. 약관의 뒤로가기는 로그아웃한 뒤 로그인 화면을 새로 연다(기획 1.3.5, `useLeaveSignupMutation`). 읽은 가입 상태는 `setQueryData`로 세션 캐시에 채워 도착 화면의 `AuthGate`가 같은 상태로 판단하게 한다(같은 key를 `fetchQuery`로 다시 읽으면 가드가 로딩으로 바뀌어 로그인 화면이 사라지므로 쓰지 않는다). 규칙(기획 1.2.7·1.2.8): 가입 중이고 약관 미동의 → 약관 `/signup/terms`, 가입 중이고 동의 → 프로필 `/signup/profile`, 가입 완료이고 보관된 초대(`shared/lib/pendingInvitation`) 있음 → 초대 참여 `/onboarding/join/enter`(기본 번치보다 먼저), 가입 완료이고 기본 번치(`defaultBunchId`) 있음 → 번치 홈 `/bunch`, 가입 완료이고 번치 없음 → 번치 시작 선택 `/onboarding`. 가입 완료 사용자의 두 경로는 다른 feature 소유라 `login/page.tsx`가 `destinations` prop으로 넘긴다. 마지막으로 쓴 번치가 유효한지의 판단(없으면 가장 최근 번치)은 서버가 `defaultBunchId`에 반영한다고 가정한다(확인할 항목).
 - 가입 상태 조회 실패: 로그인은 됐지만 어디로 보낼지 모르므로 이동하지 않고 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」(기획 1.1.1 세션 확인 실패 문구)를 보이고 버튼이 처음 상태로 돌아온다. 쿠키는 이미 저장돼 있어 다시 누르면 이어진다. 로그인 실패 문구와는 다르다.
-- 초대 정보가 있으면 가장 먼저 초대 참여로 가야 하나(기획 1.2.8) 초대 정보 보관을 만들 때 붙인다. 쉘 SDK가 없어 실제로는 로그인이 항상 실패해 이 이동은 일어나지 않는다.
+- 초대 정보가 있으면 가장 먼저 초대 참여로 간다(기획 1.2.8). 초대 링크 진입이 초대를 보관하고(`shared/lib/pendingInvitation`), 로그인 뒤 이동(`resolvePostLoginPath`)과 `AuthGate`가 기본 번치보다 먼저 확인한다.
 
 ## 데이터 의존성
 
@@ -51,6 +51,7 @@
 ## UI와 접근성
 
 - Component mapping: `web`의 `LoginButton`(브랜드별 색·로고, 눌림 75ms Ease Out은 컴포넌트가 처리). 브랜딩 영역은 이 화면 전용이다. 워드마크는 `src/shared/assets/images/login/wordmark.svg`(흰 픽셀 SVG)를 import해 `next/image`로 표시한다(Figma `5931:161462`, 로그인 `5878:77389`). 브랜딩 변경으로 별 심볼은 뺐다. 배경은 화면 전체(Safe Area 포함)를 덮는 영상(`public/videos/login.mp4`, `muted`·`loop`·`playsInline`·자동 재생)과 첫 프레임 포스터(`login-poster.jpg`)이고, 위에 검정 겹침(위 절반 40%, 61%부터 60%)을 깐다. 동작 줄이기 설정이면 영상 요소를 그리지 않아(`useReducedMotion`) 영상을 받지도 재생하지도 않고 포스터만 보인다.
+- 첫 진입 모션(디자이너 요청, Figma·화면설계서 값 없음): 워드마크와 버튼 3개가 5px 아래에서 올라오며 나타난다. 곡선과 길이는 번치 만들기 단계 제목과 같은 `animate-step-title-in`(600ms)이다. 워드마크가 200ms 뒤 먼저 시작하고, 버튼은 350ms 뒤부터 카카오 → Google → Apple 순으로 60ms 간격이라 약 1.07초에 모두 끝난다. 인트로에서 넘어오면 페이지가 디졸브(나가기 250ms → 들어오기 250ms, `INTRO_LOGIN_DISSOLVE_DURATION_MS`)로 나타나는 동안 모션이 지나가 버리지 않게 늦게 시작한다. 크기 변화·튕김은 없다. 동작 줄이기 설정이면 이동 없이 투명도만 바뀐다. 버튼은 감싼 요소에 모션을 건다. 버튼 자체에 걸면 끝난 뒤 남는 투명도 값이 비활성(40%) 표시를 덮기 때문이다. 모션 중에도 버튼을 누를 수 있다.
 - Keyboard·focus·accessible name: 워드마크 이미지가 화면 제목(`h1`, 이름 「Bunch」)이고, 배경 영상·겹침은 `aria-hidden`이다. 버튼 이름은 「카카오 로그인」「Google로 계속하기」「Apple로 계속하기」(Figma 문구)이고 Tab 순서는 화면 순서와 같다. 비활성 버튼은 native `disabled`라 포커스가 가지 않는다. 로그인 실패 토스트는 DS `Toaster`가 알린다. `main`은 `PageShell`이 하나만 만든다.
 - Responsive·긴 텍스트·overflow: 버튼 폭은 `w-full`(화면 좌우 16px), 버튼 글자는 길면 잘린다(`LoginButton`). 375×812와 390×844에서 가로 넘침이 없다. 브랜딩 영역은 본문 영역 아래쪽(버튼 위)에 붙고, 화면이 낮아지면 본문이 스크롤된다.
 
@@ -77,7 +78,7 @@
 - 켜기: `apps/web/.env.local`에 서버 전용 `DEV_TOKEN_LOGIN=enabled`(`NEXT_PUBLIC_`를 붙이지 않음)와 `API_BASE_URL`. 운영 빌드(`NODE_ENV=production`)에서는 변수가 켜져 있어도 동작하지 않는다. 가짜 서버(`NEXT_PUBLIC_API_MOCKING`)는 꺼야 실서버로 간다.
 - 동작: 로그인 화면의 로고를 1.5초 안에 3번 연달아 누르면 맨 위에 닉네임 입력과 「개발용 로그인」이 나타난다(평소에는 숨김). 입력 후 → `POST /api/dev/token`(서버가 백엔드에서 토큰을 받아 `accessToken` httpOnly 쿠키로 저장, 204) → 소셜 로그인과 같은 `usePostLoginPath`로 가입 상태를 읽어 약관·프로필·번치 홈·번치 시작 선택으로 이동한다(가입 중 사용자의 `/login`은 가드가 막지 않아 직접 보내야 한다).
 - 한계: refresh 토큰이 없어 access 토큰이 만료되면 재발급이 되지 않으므로 다시 발급받는다. 브라우저에서 백엔드를 직접 부르면 CORS로 막히므로(사전 요청 401) 반드시 BFF를 거친다.
-- 삭제 방법: `app/api/dev/`, `features/auth/components/dev/`, `shared/api/devToken.ts`, `authCookies.ts`의 `setAccessTokenCookie`, `components/index.ts`의 `DevTokenLogin` export(`yarn gen:feature-index`), `app/(app)/login/page.tsx`의 `DEV_TOKEN_LOGIN`·`<DevTokenLogin />`, `.env.example`의 `DEV_TOKEN_LOGIN`.
+- 삭제 방법: `app/api/dev/`, `features/auth/components/dev/`, `shared/api/server/devToken.ts`, `authCookies.ts`의 `setAccessTokenCookie`, `components/index.ts`의 `DevTokenLogin` export(`yarn gen:feature-index`), `app/(app)/login/page.tsx`의 `DEV_TOKEN_LOGIN`·`<DevTokenLogin />`, `.env.example`의 `DEV_TOKEN_LOGIN`.
 
 ## 확인할 항목
 
@@ -86,7 +87,8 @@
 - 영상 해상도 (확인할 항목): 원본 폭이 374px라 3배 화면에서 흐릴 수 있다. 750px 이상 원본을 받으면 같은 방식으로 다시 압축한다.
 - 움직이는 배경의 일시정지 (디자인·기획 확인): 25초 영상이 계속 반복되는데 멈추는 수단이 없다. WCAG 2.2.2(5초 넘게 자동으로 움직이는 내용은 멈출 수 있어야 함)에 못 미친다. 지금은 동작 줄이기 설정을 켠 사람만 영상을 보지 않는다. 일시정지 버튼을 둘지, 한 번 재생 뒤 마지막 장면에서 멈출지 정해야 한다(Figma에 없음).
 - 낮은 화면의 워드마크 대비 (확인할 항목): 겹침 비율은 화면 높이 기준이고 워드마크는 버튼 위 40에 붙어서, 높이 약 667px 이하에서는 겹침이 진해지는 구간(50~61%)에 걸릴 수 있다. 영상이 가장 밝은 장면에서 흰 워드마크 대비가 3:1 안팎까지 내려갈 수 있어 실측이 필요하다(코드 계산값, 미검증). 새 간격(워드마크↔버튼 40, 버튼 아래 14)도 아직 측정하지 않았다.
-- 화면 전환과 고정 배경 (확인할 항목): 배경은 `position: fixed`라 조상에 `transform`이 걸리면 기준이 바뀐다. 약관에서 로그인으로 돌아올 때 dissolve 전환(`AppTransitions`)이 걸린다. 투명도 위주라 영향이 적다고 보지만 전환 중 배경 위치는 화면에서 확인하지 않았다.
+- 화면 전환과 고정 배경: 배경은 `position: fixed`라 조상에 `transform`이 걸리면 기준이 바뀐다. 인트로 → 로그인 디졸브 중에는 조상에 `will-change: opacity`만 걸려 배경이 처음부터 화면 전체를 덮는다(Chromium 측정, #439).
+- 배경이 늦게 채워짐 (수정, #439): 배경 첫 프레임(`login-poster.jpg`)을 로그인 화면이 열린 뒤에야 받아, 실기기에서 버튼보다 배경이 늦게 채워졌다. 인트로가 첫 프레임을 미리 받고(`preload`), 받기 전에는 어두운 바탕색(`bg-primitive-gray-900`, #121212, semantic 토큰 없음)을 깐다. 영상(2.7MB)은 미리 받지 않는다. 실기기 확인 전.
 - 겹침 투명도 (토큰 차이): Figma 위쪽 검정 30%는 토큰이 없어 가장 가까운 `primitive-black-alpha-40`을 썼다(흰 글자 대비에 유리한 쪽).
 - 로그인 중 모양 (디자인 확인): 선택한 버튼의 로딩 표시는 Figma에 없다(`docs/specs/login-signup.md` 디자인 확인 4번).
 - 실패 토스트 위치 (확정, 2026-11-10 개정): 기획 명세가 오류 토스트를 "하단 버튼 바로 위"에 두라고 해서(`Toast.spec.md` 표시 위치) 하단 버튼 영역(`wrapper` 앵커) 위 4px에 놓는다. 이전에는 `bottomOffset: 170`(버튼 영역 위 12px)을 손으로 계산했으나 버튼 영역 높이가 바뀌어도 자동으로 따라가도록 앵커 방식으로 바꿨다. Figma 설계서는 「오류 메시지 노출」이라고만 적었다.
@@ -96,4 +98,4 @@
 - 가입 상태 조합: 가입 완료인데 약관 미동의인 응답은 서버 불변식상 없다고 보고 `signupStatus`만으로 분기한다. `GET /members/me/onboarding`은 가입 중·가입 완료 모두 허용(API 명세서)이라 신규 사용자도 조회할 수 있다. 새 `signupStatus` 값이 생기면 계약 위반으로 실패한다.
 - `/` 진입 (결정 보류): 기획은 `/`를 가입 상태로 도착 화면을 정하는 진입점으로 두지만, 지금 `/`는 개발용 임시 화면이라 가입 완료 사용자는 그대로 머문다(비로그인·가입 중은 가드가 로그인·가입 화면으로 보냄). 로그인 SDK를 연결해 실제로 앱을 열어 보는 단계에서 가입 완료 사용자의 `/`를 도착 화면으로 보내도록 바꾼다. 쉘이 앱 실행 때 여는 주소가 `/`인지도 확인하지 못했다.
 - 조회 실패의 원인 구분 (한계): 가입 상태 조회가 계약 위반이나 새 enum 값 같은 영구 실패여도 일시 오류 문구로만 보인다. 원인은 기록하지 않는다(오류 수집 연결 때 정한다).
-- 노출 전 선행 조건: 쉘의 소셜 SDK가 연결되기 전에는 버튼을 눌러도 실패 토스트만 나온다. UT·배포에 노출하기 전에 연동하거나 이 route를 노출하지 않는다. 정적 페이지로 생성되어 색인될 수 있으므로 metadata·색인 방지(`docs/workflows/seo.md`)도 이 노출 정책에 포함해 정한다.
+- 노출 전 선행 조건: Apple 버튼은 쉘 연동까지 끝났지만 서버 로그인이 아직 성공하지 못했다(#439). UT·배포에 노출하기 전에 Apple 서버 로그인·가입·재로그인을 실기기에서 확인한다. 정적 페이지로 생성되어 색인될 수 있으므로 metadata·색인 방지(`docs/workflows/seo.md`)도 이 노출 정책에 포함해 정한다.

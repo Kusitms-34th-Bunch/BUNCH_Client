@@ -1,7 +1,8 @@
 import { isApiError } from '@app/api-core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { logout } from '@/shared/api/logout';
 import { sharedKeys } from '@/shared/query/keys';
-import { logout } from '../api/logout';
+import { clearPersistedQueryStorage } from '@/shared/query/persistence';
 import { registerMember } from '../api/registration';
 import { saveTermsAgreements } from '../api/terms';
 import { LOGIN_PATH } from '../constants/paths';
@@ -35,7 +36,11 @@ export const useLeaveSignupMutation = () =>
   useMutation({
     mutationFn: logout,
     meta: { errorMessage: STATUS_CHECK_FAILURE_MESSAGE },
-    onSuccess: () => reloadTo(LOGIN_PATH),
+    // 로그아웃·탈퇴와 같이 이 기기의 사용자 데이터 저장본을 지운 뒤 새로 엶
+    onSuccess: () => {
+      clearPersistedQueryStorage();
+      reloadTo(LOGIN_PATH);
+    },
   });
 
 /**

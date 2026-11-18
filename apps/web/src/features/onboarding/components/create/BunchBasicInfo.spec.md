@@ -17,13 +17,13 @@
 ### 범위 외
 
 - 번치 생성 요청과 3단계 화면(`BunchMood.spec.md`). 입력값은 create layout의 임시 상태에 보관했다가 3단계에서 한 번에 보낸다.
-- 홈(피드) 화면. 「나가기」가 이동하는 `ONBOARDING_PATHS.feed`는 현재 `/`다(아래 확인할 항목).
+- 홈(피드) 화면. 「나가기」가 이동하는 `ONBOARDING_PATHS.feed`는 피드 탭 `/feed`다.
 - 화면 전환 애니메이션(`BunchStartSelect.spec.md`의 확인할 항목). 진행 표시줄 전환은 구현했다(진행 표시줄이 단계 공통 틀에 남아 있다). 이름 중복 확인은 구현했다(아래 데이터 의존성).
 
 ## Route와 접근
 
 - Path·params·search: `/onboarding/create`. params와 search는 없다.
-- 접근 권한·guard: 아직 없다(로그인 미구현, 확인할 항목). 시작 선택 화면(`/onboarding`)의 「새 번치 만들기」가 이 경로로 이동한다.
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태로 막는다(`features/auth/lib/accessPolicy.ts`, 결정 기록 019). 가입을 마친 사용자만 들어오고, 비로그인은 로그인(처음이면 인트로)으로, 가입 중이면 약관·프로필로 보낸다. 시작 선택 화면(`/onboarding`)의 「새 번치 만들기」가 이 경로로 이동한다.
 - Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 「다음」은 `router.push`로 이동하고 redirect는 없다.
 
 ## 상태와 흐름
@@ -40,7 +40,7 @@
 
 - Query와 enabled 조건: 없음.
 - Query·cache 영향: 이름 중복 확인(`GET /bunches/name-availability`)은 입력을 멈추고 0.5초 뒤 앞뒤 공백을 지운 NFC 이름으로 호출하는 상태(`useNicknameAvailability`, `notifyFailure: false`)이며 cache를 쓰지 않는다. 규칙에 맞지 않는 이름은 묻지 않는다.
-- 중복 확인 동작: 확인 중이거나 사용 중이면 「다음」이 잠기고 「이미 사용 중인 번치 이름이에요」를 입력란 아래에 보인다. 사용 가능 결과는 문구를 보이지 않는다(닉네임과 같음). 확인 요청이 실패하면 문구·토스트 없이 「다음」을 열고 생성 때 서버가 최종 판단한다(기획 2.2.3). 생성 요청이 `BUNCH_001`로 거절한 이름은 draft의 `takenName`으로 남겨 확인 결과와 무관하게 사용 중으로 보인다.
+- 중복 확인 동작: 확인 중이거나 사용 중이면 「다음」이 잠기고 「이미 사용 중인 번치 이름이에요」를 입력란 아래에 보인다. 금칙어가 들어 있으면(`status: PROHIBITED_WORD`, 기능명세 1.4.3 로직 4·2.2.3) 「사용할 수 없는 번치 이름이에요」를 보이고 「다음」을 잠근다. 생성 때 서버가 다시 금칙어로 거부하면 3단계에서 공통 오류 토스트만 띄운다(2.2.10). 사용 가능 결과는 문구를 보이지 않는다(닉네임과 같음). 확인 요청이 실패하면 문구·토스트 없이 「다음」을 열고 생성 때 서버가 최종 판단한다(기획 2.2.3). 생성 요청이 `BUNCH_001`로 거절한 이름은 draft의 `takenName`으로 남겨 확인 결과와 무관하게 사용 중으로 보인다.
 
 ## UI와 접근성
 

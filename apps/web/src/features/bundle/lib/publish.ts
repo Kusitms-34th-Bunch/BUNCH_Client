@@ -1,11 +1,16 @@
 import type { Draft, DraftEditing, SaveStatus } from './types';
+import { TITLE_MAX_LENGTH } from '../constants/messages';
+import { countTitleGraphemes } from './title';
 
 export type PublishBlocker =
   | 'title'
+  | 'titleTooLong'
+  | 'titleProhibited'
   | 'photos'
   | 'visibility'
   | 'members'
   | 'comments'
+  | 'commentsProhibited'
   | 'saving'
   | 'unsaved'
   | 'offline';
@@ -19,12 +24,16 @@ type PublishContext = {
 const MIN_MEMBERS = 2;
 
 /**
- * 발행 조건 중 아직 채우지 못한 것(위치·날짜·캡션은 조건이 아니고 공개 범위는 하나를 골라야 함)
+ * 발행 조건 중 아직 채우지 못한 것(위치·날짜는 조건이 아니고 공개 범위는 하나를 골라야 함)
  * 비어 있으면 필수 항목을 모두 채운 것
  */
 export const getPublishBlockers = (draft: Draft, context: PublishContext): PublishBlocker[] => {
   const blockers: PublishBlocker[] = [];
   if (draft.title.trim() === '') blockers.push('title');
+  // 동시 편집이 합쳐져 40자를 넘을 수 있음(자르지 않고 그대로 두며 줄일 때까지 발행을 막음)
+  else if (countTitleGraphemes(draft.title) > TITLE_MAX_LENGTH) blockers.push('titleTooLong');
+  // 서버가 저장 때 검사한 금칙어(제목·코멘트)가 있는 동안 업로드할 수 없음(기능명세 4.3.12 로직 2)
+  if (draft.prohibited?.title) blockers.push('titleProhibited');
   if (draft.photos.length < 1) blockers.push('photos');
   if (draft.visibility === null) blockers.push('visibility');
   if (draft.members.length < MIN_MEMBERS) blockers.push('members');
@@ -32,6 +41,8 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
     draft.comments.some((comment) => comment.memberId === member.id && comment.text.trim() !== ''),
   );
   if (!everyoneCommented) blockers.push('comments');
+  if (draft.members.some((member) => draft.prohibited?.commentMemberIds.includes(member.id)))
+    blockers.push('commentsProhibited');
   if (context.saveStatus === 'saving') blockers.push('saving');
   if (context.saveStatus === 'failed') blockers.push('unsaved');
   if (context.offline) blockers.push('offline');
@@ -45,15 +56,13 @@ export const getPublishBlockers = (draft: Draft, context: PublishContext): Publi
 export const hasOtherEditors = (editing: DraftEditing, myId: string): boolean =>
   [...getEditingMemberIds(editing)].some((memberId) => memberId !== myId);
 
-/** 지금 무엇이든 편집 중인 멤버 id(제목·사진·위치·날짜·코멘트). 멤버 카드의 초록 점 기준 */
+/** 지금 무엇이든 작업 중인 멤버 id(제목·코멘트 입력, 사진·위치·날짜 작업) */
 export const getEditingMemberIds = (editing: DraftEditing): ReadonlySet<string> =>
-  new Set(
-    [
-      editing.title,
-      editing.location,
-      editing.date,
-      ...(editing.photoMemberIds ?? []),
-      ...Object.values(editing.photoEditors ?? {}).flat(),
-      ...(editing.commentMemberIds ?? []),
-    ].filter((memberId): memberId is string => memberId !== undefined),
-  );
+  new Set([
+    ...(editing.titleMemberIds ?? []),
+    ...(editing.commentMemberIds ?? []),
+    ...(editing.photoMemberIds ?? []),
+    ...(editing.locationAddMemberIds ?? []),
+    ...Object.values(editing.locationEditors ?? {}).flat(),
+    ...(editing.dateMemberIds ?? []),
+  ]);

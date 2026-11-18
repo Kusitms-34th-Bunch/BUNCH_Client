@@ -41,6 +41,7 @@ const manyPhotos = (count: number): PhotoBoxData => ({
     takenAt: '2026-09-27T10:00',
     uploadedAt: '2026-10-01T00:00:00',
     uploaderIds: ['eunwoo'],
+    usedInDraftBundle: false,
     status: 'ready',
   })),
 });
@@ -62,6 +63,17 @@ describe('PhotoBoxScreen 선택 모드', () => {
     expect(screen.queryByRole('button', { name: '선택' })).toBeNull();
     expect(screen.queryByRole('button', { name: '사진 올리기' })).toBeNull();
     expect(menuButton().hasAttribute('disabled')).toBe(true);
+  });
+
+  it('평소에는 사진 칸이 상세로 이어지는 hero 키를 갖고, 선택 모드에서는 키가 없다', async () => {
+    const user = userEvent.setup();
+    const { container } = renderScreen();
+    const first = photoBoxFixture.photos.find((photo) => photo.status === 'ready')!;
+    expect(container.querySelector(`[data-hero-enter-key="photo-${first.id}"]`)).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '선택' }));
+
+    expect(container.querySelector('[data-hero-enter-key]')).toBeNull();
   });
 
   it('선택 모드에서만 사진이 눌러서 고르는 버튼이고 하단 탭 막대 숨김 표식이 생긴다', async () => {

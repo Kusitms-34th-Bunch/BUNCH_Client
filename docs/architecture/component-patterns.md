@@ -66,6 +66,10 @@ type ActionProps =
 
 - data query, navigation, 상태 전이, side effect가 JSX보다 복잡해지면 container 또는 feature hook으로 분리한다.
 - presentational component는 데이터를 prop으로 받고 UI와 접근성 표현에 집중한다.
+- 서버 데이터를 쓰는 web 화면은 이름으로 역할을 나눈다(예: `bunch-home/components/home/BunchHome.tsx` · `BunchHomeScreen.tsx`).
+  - container `X`: route가 렌더한다. query·mutation, 이동, 토스트, 시트·확인 창 열기, 받는 중·실패·빈 상태 분기를 맡고 presenter에 `data`와 `actions`를 넘긴다.
+  - presenter `XScreen`: 받은 값으로 화면을 그린다. query·mutation·router를 직접 부르지 않고, 화면 안에서만 쓰는 UI 상태(펼침, 입력 초안, 초점)만 가진다.
+  - 한 파일이 둘 다 하면서 300줄을 넘으면 먼저 이 기준으로 나눈다(`docs/code-quality/component-logic.md` 「파일 크기」). 그래도 큰 쪽은 단일 책임 hook이나 하위 컴포넌트로 다시 나눈다.
 - 작은 화면을 형식만 맞추기 위해 container와 presentational로 나누지 않는다.
 - hook은 UI markup을 포함하지 않고 상태와 동작을 반환한다.
 - Next.js에서는 browser API나 event가 필요한 가장 작은 컴포넌트만 client component로 만든다.

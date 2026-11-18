@@ -19,45 +19,47 @@
 
 ## Tier 2: 필요 시 로드
 
-| 작업                                        | 문서                                                                                                          |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 폴더 배치, import, 공유 범위 판단           | `docs/architecture/app-structure.md`                                                                          |
-| 라이브러리 선택·도입(직접 만들기 전 확인)   | `docs/conventions/libraries.md`                                                                               |
-| package 추가·workspace 경계·Turbo generator | `docs/architecture/repo-structure.md`, `turbo.json`, `docs/workflows/turbo-generators.md`                     |
-| 새 도메인·기능의 구현 범위 정리             | `docs/workflows/feature-intake.md`, `docs/architecture/domain-ownership.md`, `docs/workflows/spec-writing.md` |
-| route·접근·redirect 판단                    | `docs/architecture/routing-and-access.md`                                                                     |
-| React/TypeScript/스타일 작성                | `docs/conventions/coding.md`                                                                                  |
-| 코드 품질·리팩터링 판단                     | `docs/code-quality/`                                                                                          |
-| hook 추출·구성                              | `docs/code-quality/component-logic.md`, `.agents/guides/hook.md`                                              |
-| 보안 경계·취약점 검토                       | `docs/workflows/security-review.md`, `docs/agent/roles/security-reviewer.md`                                  |
-| 컴포넌트 배치·API·접근성 판단               | `docs/architecture/components.md`                                                                             |
-| 컴포넌트 조합 패턴 선택                     | `docs/architecture/component-patterns.md`                                                                     |
-| 폼·포커스·터치·i18n·hydration 세부 기준     | `docs/architecture/web-interface-guidelines.md`                                                               |
-| 애니메이션·전환 추가                        | `docs/architecture/motion.md`                                                                                 |
-| API, TanStack Query, 서버·브라우저 경계     | `docs/architecture/data-layer.md`, `docs/workflows/api-integration.md`                                        |
-| BFF·인증 쿠키·범용 프록시·CSRF              | `docs/architecture/api-boundary.md`                                                                           |
-| 테스트 작성·수정                            | `docs/workflows/testing.md`, E2E는 `docs/workflows/e2e-testing.md`                                            |
-| 커밋 또는 PR 문구                           | `docs/conventions/commit.md`                                                                                  |
-| 문서·이슈·PR 본문·분석 보고 작성            | `docs/conventions/writing.md`                                                                                 |
-| PR 리뷰·inline comment 게시                 | `docs/workflows/pr-review.md`, `review-pr`                                                                    |
-| 이슈·브랜치·PR 라벨 자동화                  | `docs/conventions/git.md`                                                                                     |
-| CI 파이프라인·workflow 실패 대응            | `docs/workflows/ci.md`                                                                                        |
-| 디자인 시스템 컴포넌트                      | `docs/architecture/design-system-components.md`                                                               |
-| 아이콘 생성 파이프라인                      | `docs/architecture/design-system-icons.md`                                                                    |
-| 네이티브 쉘·web↔native bridge               | `docs/architecture/mobile-shell.md`, 실행·실기기 확인은 `docs/workflows/mobile-testing.md`                    |
-| Tailwind·token·스타일 책임                  | `docs/architecture/styling-and-tokens.md`                                                                     |
-| 성능·번들·리렌더 이슈                       | `docs/workflows/performance.md`                                                                               |
-| web 공개 페이지 metadata·색인               | `docs/workflows/seo.md`                                                                                       |
-| 가짜 서버 연동 현황·서버 명세 차이          | `docs/workflows/mock-server-status.md`                                                                        |
-| 로컬 실행·런타임·환경 변수                  | `docs/workflows/local-development.md`                                                                         |
-| 웹 배포·홈 화면 앱(PWA)                     | `docs/workflows/web-deployment.md`                                                                            |
-| 페이지·API·디자인 시스템 작업 순서          | `.agents/guides/`의 해당 guide                                                                                |
-| 구현 전·후 흐름                             | `.agents/flows/`의 해당 flow                                                                                  |
-| 장기적으로 방향을 제한하는 결정             | `docs/decisions/README.md`                                                                                    |
-| 재현 가능한 반복 장애                       | `docs/troubleshooting/README.md`                                                                              |
-| symbol·reference 탐색, Serena MCP 설정      | `docs/agent/serena-mcp.md`                                                                                    |
-| agent가 직접 브라우저로 UI 확인             | `docs/agent/agent-browser-mcp.md`                                                                             |
-| Figma 링크·스크린샷으로 UI 구현             | `docs/workflows/development.md`, `docs/workflows/figma-references.md`, `implement-from-figma`                 |
+| 작업                                             | 문서                                                                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| 폴더 배치, import, 공유 범위 판단                | `docs/architecture/app-structure.md`                                                                          |
+| 라이브러리 선택·도입(직접 만들기 전 확인)        | `docs/conventions/libraries.md`                                                                               |
+| package 추가·workspace 경계·Turbo generator      | `docs/architecture/repo-structure.md`, `turbo.json`, `docs/workflows/turbo-generators.md`                     |
+| 새 도메인·기능의 구현 범위 정리                  | `docs/workflows/feature-intake.md`, `docs/architecture/domain-ownership.md`, `docs/workflows/spec-writing.md` |
+| route·접근·redirect 판단                         | `docs/architecture/routing-and-access.md`                                                                     |
+| React/TypeScript/스타일 작성                     | `docs/conventions/coding.md`                                                                                  |
+| 코드 품질·리팩터링 판단                          | `docs/code-quality/`                                                                                          |
+| hook 추출·구성                                   | `docs/code-quality/component-logic.md`, `.agents/guides/hook.md`                                              |
+| 보안 경계·취약점 검토                            | `docs/workflows/security-review.md`, `docs/agent/roles/security-reviewer.md`                                  |
+| 컴포넌트 배치·API·접근성 판단                    | `docs/architecture/components.md`                                                                             |
+| 컴포넌트 조합 패턴 선택                          | `docs/architecture/component-patterns.md`                                                                     |
+| 폼·포커스·터치·i18n·hydration 세부 기준          | `docs/architecture/web-interface-guidelines.md`                                                               |
+| 애니메이션·전환 추가                             | `docs/architecture/motion.md`                                                                                 |
+| API, TanStack Query, 서버·브라우저 경계          | `docs/architecture/data-layer.md`, `docs/workflows/api-integration.md`                                        |
+| BFF·인증 쿠키·범용 프록시·CSRF                   | `docs/architecture/api-boundary.md`                                                                           |
+| 테스트 작성·수정                                 | `docs/workflows/testing.md`, E2E는 `docs/workflows/e2e-testing.md`                                            |
+| 커밋 또는 PR 문구                                | `docs/conventions/commit.md`                                                                                  |
+| 문서·이슈·PR 본문·분석 보고 작성                 | `docs/conventions/writing.md`                                                                                 |
+| PR 리뷰·inline comment 게시                      | `docs/workflows/pr-review.md`, `review-pr`                                                                    |
+| 이슈·브랜치·PR 라벨 자동화                       | `docs/conventions/git.md`                                                                                     |
+| CI 파이프라인·workflow 실패 대응                 | `docs/workflows/ci.md`                                                                                        |
+| 디자인 시스템 컴포넌트                           | `docs/architecture/design-system-components.md`                                                               |
+| 아이콘 생성 파이프라인                           | `docs/architecture/design-system-icons.md`                                                                    |
+| 네이티브 쉘·web↔native bridge                    | `docs/architecture/mobile-shell.md`, 실행·실기기 확인은 `docs/workflows/mobile-testing.md`                    |
+| Tailwind·token·스타일 책임                       | `docs/architecture/styling-and-tokens.md`                                                                     |
+| 성능·번들·리렌더 이슈                            | `docs/workflows/performance.md`                                                                               |
+| web 공개 페이지 metadata·색인                    | `docs/workflows/seo.md`                                                                                       |
+| 가짜 서버 연동 현황·서버 명세 차이               | `docs/workflows/mock-server-status.md`                                                                        |
+| 로컬 실행·런타임·환경 변수                       | `docs/workflows/local-development.md`                                                                         |
+| 웹 배포·홈 화면 앱(PWA)                          | `docs/workflows/web-deployment.md`                                                                            |
+| 초대 링크 진입·유니버셜 링크·초대 카드 번치 타입 | `docs/workflows/invite-link-entry.md`, 화면은 각 `*.spec.md`                                                  |
+| 페이지·API·디자인 시스템 작업 순서               | `.agents/guides/`의 해당 guide                                                                                |
+| 구현 전·후 흐름                                  | `.agents/flows/`의 해당 flow                                                                                  |
+| 장기적으로 방향을 제한하는 결정                  | `docs/decisions/README.md`                                                                                    |
+| 재현 가능한 반복 장애                            | `docs/troubleshooting/README.md`                                                                              |
+| symbol·reference 탐색, Serena MCP 설정           | `docs/agent/serena-mcp.md`                                                                                    |
+| agent가 직접 브라우저로 UI 확인                  | `docs/agent/agent-browser-mcp.md`                                                                             |
+| agent가 React 컴포넌트·렌더 시간 확인            | `docs/agent/react-devtools-mcp.md`                                                                            |
+| Figma 링크·스크린샷으로 UI 구현                  | `docs/workflows/development.md`, `docs/workflows/figma-references.md`, `implement-from-figma`                 |
 
 ## Surface reference
 
@@ -115,6 +117,16 @@ Claude Code와 Codex의 adapter는 각각 `.claude/agents/`, `.codex/agents/`에
 | 인증·BFF·공개 범위·권한, 초대·업로드, bridge, 오류 수집, 환경 변수 변경 | security-reviewer         |
 
 단순 오탈자 수정, 문서 전용 변경, 한 파일의 사소한 조정에는 이 표를 적용하지 않는다. 단, 보안 경계(인증·BFF·공개 범위·권한, 초대·업로드, bridge, 오류 수집, 환경 변수)를 바꾸면 한 파일·한 줄이어도 security-reviewer를 호출한다. 이 표와 별개로 `prepare-commit`(코드 변경 커밋)과 `prepare-pull-request`(PR)는 계획·초안을 내기 전에 `bunch-reviewer`를 호출하되, 같은 변경을 이미 리뷰했으면 결과를 재사용하고 바뀐 부분만 다시 맡긴다. 기준은 각 skill 문서를 따른다. debugger와 e2e-planner는 완료 게이트가 아니라 조사·설계가 필요한 시점에 그때그때 호출한다.
+
+### 호출 시점과 재리뷰
+
+리뷰를 여러 번 순서대로 돌리면 결과를 기다리느라 작업이 끊긴다. 한 번에 병렬로 돌리고, 다시 맡기는 경우를 줄인다.
+
+- 구현을 마치면 위 표의 필수 role과 `bunch-reviewer`를 한 번에 병렬로 호출한다. `prepare-commit`·`prepare-pull-request`는 이 결과를 재사용한다.
+- 리뷰 반영분을 다시 맡기는 경우는 셋뿐이다: Critical·Major를 고쳤을 때, 새 동작을 추가했을 때, 보안 경계를 건드렸을 때.
+- 그 밖에 리뷰어가 제시한 방향대로 고친 Minor·Suggestion은 영향받는 테스트와 회귀 테스트로 확인한다. 계획·보고에는 "재리뷰 생략(이유)"로 적는다.
+- 리뷰가 도는 동안 메인 세션은 리뷰 대상 파일을 바꾸지 않는 일을 계속한다. 작업 노트, PR 초안, 다음 이슈의 계약 확인, 브라우저 확인 준비가 해당한다. 리뷰 결과가 있어야 하는 일만 기다린다.
+- 구현 전에는 `docs/code-quality/review.md`의 「반복해서 나온 결함 패턴」을 확인 목록으로 먼저 본다. 리뷰에서 걸러질 지적을 처음 구현에서 줄인다.
 
 ## Skills
 

@@ -4,6 +4,7 @@ import {
   isValidNickname,
   NICKNAME_MAX_LENGTH,
   normalizeNickname,
+  pasteIntoNickname,
 } from './nickname';
 
 describe('nickname', () => {
@@ -66,6 +67,37 @@ describe('nickname', () => {
     it('조합 중인 자모는 조합 중일 때만 유효로 본다', () => {
       expect(isValidNickname('ㅇ', true)).toBe(true);
       expect(isValidNickname('ㅇ', false)).toBe(false);
+    });
+  });
+
+  describe('pasteIntoNickname', () => {
+    it('특수문자·이모지·줄바꿈은 빼고 선택 영역에 넣는다', () => {
+      expect(pasteIntoNickname('으누', { start: 2, end: 2 }, 'a!b@\n😀c')).toEqual({
+        value: '으누abc',
+        caret: 5,
+      });
+    });
+
+    it('커서가 가운데면 그 자리에 넣고 선택한 글자는 바꾼다', () => {
+      expect(pasteIntoNickname('가나다', { start: 1, end: 2 }, 'x!')).toEqual({
+        value: '가x다',
+        caret: 2,
+      });
+    });
+
+    it('최대 길이를 넘는 뒤쪽은 자른다', () => {
+      const result = pasteIntoNickname('가'.repeat(10), { start: 10, end: 10 }, 'abcde!');
+
+      expect(result?.value).toBe(`${'가'.repeat(10)}ab`);
+      expect(result?.caret).toBe(NICKNAME_MAX_LENGTH);
+    });
+
+    it('넣을 글자가 하나도 남지 않으면 입력을 바꾸지 않는다', () => {
+      expect(pasteIntoNickname('으누', { start: 0, end: 2 }, '!@#\n')).toBeNull();
+    });
+
+    it('분해된 자모(NFD)는 완성형으로 합쳐 넣는다', () => {
+      expect(pasteIntoNickname('', { start: 0, end: 0 }, '한'.normalize('NFD'))?.value).toBe('한');
     });
   });
 });

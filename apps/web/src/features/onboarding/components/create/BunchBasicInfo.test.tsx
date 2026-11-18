@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { NameCheckResult } from '@/shared/api/nameAvailability';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { CreateBunchDraftProvider } from '../../contexts/CreateBunchDraftProvider';
@@ -158,12 +159,12 @@ describe('BunchBasicInfo', () => {
 });
 
 describe('BunchBasicInfo 번치 이름 중복 확인', () => {
-  const renderChecked = (check: (_name: string) => Promise<boolean>) =>
+  const renderChecked = (check: (_name: string) => Promise<NameCheckResult>) =>
     render(<BunchBasicInfo checkName={check} />, { wrapper: Providers });
   const pickVisibility = () => userEvent.click(screen.getByRole('radio', { name: /^공개 번치/ }));
 
   it('입력을 멈추고 0.5초 뒤 앞뒤 공백을 지운 이름으로 확인하고 확인 중에는 다음이 잠긴다', async () => {
-    const check = vi.fn().mockResolvedValue(true);
+    const check = vi.fn().mockResolvedValue('available');
     renderChecked(check);
 
     await userEvent.type(nameInput(), '퇴근런클럽');
@@ -177,8 +178,54 @@ describe('BunchBasicInfo 번치 이름 중복 확인', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('확인하는 동안 입력란 아래에 확인 중 안내를 보이고, 문제가 없으면 안내가 사라진다', async () => {
+    renderChecked(vi.fn().mockResolvedValue('available'));
+    const CHECKING = '사용 가능한 이름인지 확인 중이에요.';
+
+    await userEvent.type(nameInput(), '퇴근런클럽');
+
+    expect(screen.getByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    await waitFor(
+      () => expect(screen.queryByText(CHECKING, { selector: 'p[aria-hidden="true"]' })).toBeNull(),
+      {
+        timeout: 2000,
+      },
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('이미 사용 중이면 확인 중 안내가 사라지고 오류 문구가 보인다', async () => {
+    renderChecked(vi.fn().mockResolvedValue('taken'));
+
+    await userEvent.type(nameInput(), '퇴근런클럽');
+
+    await waitFor(
+      () => expect(screen.getByRole('alert').textContent).toBe('이미 사용 중인 번치 이름이에요'),
+      { timeout: 2000 },
+    );
+    expect(
+      screen.queryByText('사용 가능한 이름인지 확인 중이에요.', {
+        selector: 'p[aria-hidden="true"]',
+      }),
+    ).toBeNull();
+  });
+
+  it('금칙어가 들어 있으면 사용할 수 없다는 문구를 보이고 다음은 비활성이다', async () => {
+    renderChecked(vi.fn().mockResolvedValue('prohibited'));
+
+    await userEvent.type(nameInput(), '퇴근런클럽');
+    await pickVisibility();
+
+    await waitFor(
+      () => expect(screen.getByRole('alert').textContent).toBe('사용할 수 없는 번치 이름이에요'),
+      { timeout: 2000 },
+    );
+    expect((nextButton() as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('이미 사용 중인 이름이면 입력란 아래에 안내하고 다음은 비활성이다', async () => {
-    renderChecked(vi.fn().mockResolvedValue(false));
+    renderChecked(vi.fn().mockResolvedValue('taken'));
 
     await userEvent.type(nameInput(), '퇴근런클럽');
     await pickVisibility();
@@ -203,7 +250,7 @@ describe('BunchBasicInfo 번치 이름 중복 확인', () => {
   });
 
   it('규칙에 맞지 않는 이름은 서버에 묻지 않는다', async () => {
-    const check = vi.fn().mockResolvedValue(true);
+    const check = vi.fn().mockResolvedValue('available');
     renderChecked(check);
 
     await userEvent.type(nameInput(), '퇴근런클@');
@@ -241,7 +288,7 @@ describe('BunchBasicInfo 번치 이름 중복 확인', () => {
     };
     render(
       <>
-        <BunchBasicInfo checkName={vi.fn().mockResolvedValue(true)} />
+        <BunchBasicInfo checkName={vi.fn().mockResolvedValue('available')} />
         <TakenProbe />
       </>,
       { wrapper: Providers },

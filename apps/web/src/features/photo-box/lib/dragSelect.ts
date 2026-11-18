@@ -53,3 +53,37 @@ export const nextToggle = (
   }
   return (remove ?? add)?.id;
 };
+
+// 위·아래 가장자리에서 이만큼 안쪽에 들어오면 스크롤을 시작하고, 깊이 들어갈수록 빨라져 가장 끝에서 프레임당 MAX만큼 감
+const EDGE_ZONE_PX = 80;
+const MAX_SCROLL_PX_PER_FRAME = 12;
+
+/** 손가락 높이(pointerY)와 보이는 영역(top~bottom)으로 이번 프레임에 스크롤할 px(가장자리 밖이면 0) */
+export const autoScrollStep = (pointerY: number, top: number, bottom: number): number => {
+  let speed = 0;
+  if (pointerY < top + EDGE_ZONE_PX) {
+    speed = -Math.min(1, (top + EDGE_ZONE_PX - pointerY) / EDGE_ZONE_PX);
+  } else if (pointerY > bottom - EDGE_ZONE_PX) {
+    speed = Math.min(1, (pointerY - (bottom - EDGE_ZONE_PX)) / EDGE_ZONE_PX);
+  }
+  if (speed === 0) return 0;
+  // 일부 기기는 scrollTop을 정수로 맞추므로 한 프레임에 최소 1px은 움직임
+  return Math.sign(speed) * Math.max(1, Math.round(Math.abs(speed) * MAX_SCROLL_PX_PER_FRAME));
+};
+
+/** 사진 목록을 스크롤하는 가장 가까운 조상(세로 스크롤이 실제로 가능한 것) */
+export const findScroller = (element: HTMLElement | null): HTMLElement | undefined => {
+  for (let node = element?.parentElement; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
+      return node;
+    }
+  }
+  return undefined;
+};
+
+export const photoElementAt = (x: number, y: number) =>
+  document.elementFromPoint(x, y)?.closest<HTMLElement>(`[${PHOTO_ID_ATTRIBUTE}]`) ?? undefined;
+
+export const photoIdAt = (x: number, y: number) =>
+  photoElementAt(x, y)?.getAttribute(PHOTO_ID_ATTRIBUTE) ?? undefined;

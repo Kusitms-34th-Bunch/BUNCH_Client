@@ -4,14 +4,15 @@ import { cn, ConfirmDialog } from '@app/design-system';
 import { AdPhotoCard, ConfirmSheet } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import placeHidden from '@/shared/assets/images/empty/place-hidden.svg';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { FeedAd } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { useFeedViewer } from '../hooks/useFeedViewer';
-import { markAdHidden } from '../lib/hiddenAds';
 import { subjectParticle } from '../lib/josa';
+import { useAdKokMutation, useHideAdMutation } from '../queries/advertisement';
 
 // 연타로 둘째 탭이 콕 취소로 넘어가지 않게 첫 탭만 받는 간격(기능명세서 6.1.5)
 const PICK_TAP_GUARD_MS = 400;
@@ -21,7 +22,7 @@ const COLLAPSE_MS = 400;
 
 /**
  * 피드 광고 카드(기능명세서 6.1.5~6.1.6, Figma `5081:51444`·`5367:102664`): 콕하기와 더보기 → 확인 시트 → 숨김 안내 → 접히며 사라짐
- * API 연결 전이라 콕과 숨김은 화면에서만 바뀜(구현 단위 10). 사진을 눌러 외부로 나가는 동작은 bridge가 정해지면 추가
+ * 콕은 명세 022·009, 숨김은 명세 023(숨긴 광고는 서버가 피드에서 뺌). 사진을 눌러 외부로 나가는 동작은 bridge가 정해지면 추가
  */
 export function FeedAdCard({
   ad,
@@ -32,17 +33,26 @@ export function FeedAdCard({
   onGone: (_adId: string, _hadFocus: boolean) => void;
 }) {
   const { viewer, asBunch } = useFeedViewer();
-  const [picked, setPicked] = useState(ad.picked);
+  const kok = useAdKokMutation();
+  const hide = useHideAdMutation();
+  // 확인 창이 열린 사이 명의가 바뀌었는지 볼 때 그 시점의 명의
+  const viewerId = usePreservedCallback(() =>
+    viewer === undefined ? undefined : (viewer?.bunchId ?? null),
+  );
   const reducedMotion = useReducedMotion();
   const [hidden, setHidden] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
+  // 시트가 다 닫힌 뒤에 받는 중 문구를 채움(닫히는 동안 배경의 알림은 읽히지 않음)
+  const [sheetClosed, setSheetClosed] = useState(true);
   const openOverlay = useScreenOverlay();
   const lastPickTap = useRef(0);
   const cardRef = useRef<HTMLElement>(null);
 
-  // 더보기 버튼이 사라지므로 초점을 숨김 카드로 옮김
+  // 더보기 버튼이 사라지므로 초점을 숨김 카드로 옮김(응답을 기다리는 사이 다른 곳으로 옮겼으면 그대로)
   useEffect(() => {
-    if (hidden) cardRef.current?.focus();
+    if (!hidden) return;
+    const active = document.activeElement;
+    if (!active || active === document.body) cardRef.current?.focus();
   }, [hidden]);
 
   useEffect(() => {
@@ -60,10 +70,14 @@ export function FeedAdCard({
     return () => clearTimeout(timer);
   }, [ad.id, collapsing, onGone, reducedMotion]);
 
-  const isPicked = viewer === null ? false : picked;
+  const isPicked = viewer === null ? false : ad.picked;
 
+  // 확인하면 바로 보내고(닫히는 중 화면을 떠나도 숨기기로 정한 것은 보냄), 시트가 다 닫힌 뒤 성공했으면 숨김 안내로 바꿈
+  // 실패 안내는 mutation의 공통 토스트. 받는 동안 더보기는 무시하고 카드는 aria-busy와 상태 문구로 알림
   const openHideConfirm = () => {
-    let confirmed = false;
+    if (hide.isPending) return;
+    setSheetClosed(false);
+    let result: Promise<boolean> | undefined;
     openOverlay(
       (rootProps, close) => (
         <ConfirmSheet
@@ -88,21 +102,26 @@ export function FeedAdCard({
           illustrationClassName="size-18"
           confirmLabel={text.adHide}
           onConfirm={() => {
-            // 닫히는 중 화면을 떠나도 숨기기로 정한 것은 남김
-            markAdHidden(ad.id);
-            confirmed = true;
+            result = new Promise((resolve) =>
+              hide.mutate(ad.id, {
+                onSuccess: () => resolve(true),
+                onError: () => resolve(false),
+              }),
+            );
             close();
           }}
         />
       ),
       // 시트가 다 닫힌 뒤 숨겨 초점이 더보기 버튼을 거쳐 숨김 카드로 옮겨 가게 함
       () => {
-        if (confirmed) setHidden(true);
+        setSheetClosed(true);
+        void result?.then((done) => done && setHidden(true));
       },
     );
   };
 
-  const openPickCancel = () =>
+  // 시트를 연 명의로만 보냄(그사이 명의가 바뀌었으면 보내지 않음)
+  const openPickCancel = (pinId: number, openedAs: string) =>
     openOverlay((rootProps, close) => (
       <ConfirmDialog
         {...rootProps}
@@ -111,7 +130,9 @@ export function FeedAdCard({
         cancelLabel={text.pickCancelNo}
         confirmLabel={text.pickCancelConfirm}
         onConfirm={() => {
-          setPicked(false);
+          if (viewerId() === openedAs) {
+            kok.mutate({ adId: ad.id, viewerId: openedAs, pin: false, pinId });
+          }
           close();
         }}
       />
@@ -125,6 +146,9 @@ export function FeedAdCard({
         collapsing && '-mt-s14 grid-rows-[0fr] opacity-0',
       )}
     >
+      <p role="status" className="sr-only">
+        {hide.isPending && sheetClosed ? text.adHiding : null}
+      </p>
       {/* 같은 위치의 카드로 바꿔 알림 영역을 유지해 숨김 안내가 낭독되게 함 */}
       <div className={cn('min-h-0', hidden && 'overflow-hidden')}>
         {hidden ? (
@@ -151,11 +175,15 @@ export function FeedAdCard({
               if (now - lastPickTap.current < PICK_TAP_GUARD_MS) return;
               lastPickTap.current = now;
               asBunch(() => {
-                if (isPicked) openPickCancel();
-                else setPicked(true);
+                if (!viewer) return;
+                const bunchId = viewer.bunchId;
+                // 콕 응답 전(콕 ID 없음)에는 취소를 받지 않음
+                if (!isPicked) kok.mutate({ adId: ad.id, viewerId: bunchId, pin: true });
+                else if (ad.pinId !== undefined) openPickCancel(ad.pinId, bunchId);
               });
             }}
             onMore={openHideConfirm}
+            aria-busy={hide.isPending || undefined}
           />
         )}
       </div>

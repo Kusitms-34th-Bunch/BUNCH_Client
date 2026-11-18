@@ -5,10 +5,16 @@ vi.mock('@/features/photo-box/components', () => ({ PhotoDetail: () => null }));
 
 const render = async (photoId: string) => {
   const element = await PhotoDetailPage({ params: Promise.resolve({ photoId }) });
-  return element.props as { photoId: string | undefined };
+  const { children } = element.props as { children: { props: { photoId: string | undefined } } };
+  return children.props;
 };
 
 describe('/photos/[photoId] page', () => {
+  it('전환 경계를 사진 상세 id로 지정한다', async () => {
+    const element = await PhotoDetailPage({ params: Promise.resolve({ photoId: 'photo-12' }) });
+    expect(element.props).toMatchObject({ 'data-ssgoi-transition': '/photos/detail' });
+  });
+
   it('형식이 맞는 id는 그대로 화면에 넘긴다', async () => {
     expect((await render('photo-12')).photoId).toBe('photo-12');
   });

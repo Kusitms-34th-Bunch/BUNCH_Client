@@ -5,6 +5,9 @@ import { canDeletePhotos, needsDateChangeConfirm } from './photoActions';
 /** 섹션 날짜 키별 사진 id 순서. 끄는 동안 사진이 섹션 사이를 오가는 미리보기를 이 모양으로 다룸 */
 export type SectionItems = Record<string, string[]>;
 
+/** 날짜 미확인 사진 영역의 키(날짜 섹션 키 'YYYY-MM-DD'와 겹치지 않음). 여기서만 끌어 내고 놓을 수는 없음 */
+export const UNDATED_SECTION_KEY = 'undated';
+
 /** 끌 수 있는 사진: 처리가 끝난 사진 중 내가 올렸거나(함께 올린 사진 포함) 내가 관리자인 것(삭제와 같은 권한) */
 export const canDragPhoto = (photo: PhotoBoxPhoto, viewer: PhotoBoxViewer) =>
   photo.status === 'ready' && canDeletePhotos([photo], viewer);
@@ -18,6 +21,15 @@ export const toSectionItems = (sections: readonly PhotoSection[]): SectionItems 
   Object.fromEntries(
     sections.map((section) => [section.dateKey, section.photos.map((photo) => photo.id)]),
   );
+
+/** 날짜 섹션과 날짜 미확인 영역의 사진 id 순서(끌기 미리보기의 처음 모양) */
+export const toDragItems = (
+  sections: readonly PhotoSection[],
+  undated: readonly PhotoBoxPhoto[],
+): SectionItems => ({
+  ...toSectionItems(sections),
+  [UNDATED_SECTION_KEY]: undated.map((photo) => photo.id),
+});
 
 /** 사진이 들어 있는 섹션의 키(없으면 undefined) */
 export const findSectionKey = (items: SectionItems, photoId: string): string | undefined =>

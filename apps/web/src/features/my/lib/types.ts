@@ -9,6 +9,13 @@ export type MyProfile = {
   gender?: Gender | undefined;
 };
 
+/** 추가 개인정보 수집·이용 동의 상태와 저장된 값(동의하지 않았으면 두 값 모두 없음) */
+export type AdditionalInfo = {
+  consented: boolean;
+  birthYear?: number | undefined;
+  gender?: Gender | undefined;
+};
+
 /** 알림 종류(화면 설계서 MY(3) 3번 「받을 알림」 순서) */
 export const NOTIFICATION_TYPES = ['bundle', 'member', 'follow', 'reaction'] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -24,6 +31,7 @@ export type DeviceNotificationPermission = 'granted' | 'denied';
 
 /** 권한을 넘겨받을 수 있는 멤버(나 제외) */
 export type TransferCandidate = {
+  /** 소속 ID(권한 이전 요청의 `targetMembershipId`) */
   id: string;
   name: string;
   /** 프로필 이미지 주소(없으면 배경색 원) */
@@ -38,4 +46,7 @@ export type OwnedBunch = {
   name: string;
   imageSrc?: string | undefined;
   candidates: readonly TransferCandidate[];
+  /** 이 번치에서 내 소속 ID와 멤버 목록을 받을 때의 버전(권한 이전 요청에 그대로 보냄) */
+  myMembershipId: string;
+  membershipVersion: number;
 };

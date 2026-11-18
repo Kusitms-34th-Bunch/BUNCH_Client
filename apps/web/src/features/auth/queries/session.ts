@@ -1,5 +1,6 @@
 import { isApiError } from '@app/api-core';
 import { queryOptions, useQueryClient } from '@tanstack/react-query';
+import { readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import { sharedKeys } from '@/shared/query/keys';
 import { DEFAULT_STALE_TIME } from '@/shared/query/queryClient';
 import { getOnboarding } from '../api/onboarding';
@@ -39,7 +40,8 @@ export function usePostLoginPath(destinations: PostLoginDestinations) {
     const onboarding = await getOnboarding();
     queryClient.setQueryData(sharedKeys.session(), onboarding);
     return {
-      path: resolvePostLoginPath(onboarding, destinations),
+      // 초대 링크로 들어와 로그인한 사용자는 도착지가 초대 확인(보관된 초대가 있을 때)
+      path: resolvePostLoginPath(onboarding, destinations, readPendingInvitation() !== null),
       replace: onboarding.signupStatus === 'COMPLETED',
     };
   };

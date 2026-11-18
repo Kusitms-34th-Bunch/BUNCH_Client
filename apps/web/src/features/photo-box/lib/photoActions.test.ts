@@ -4,8 +4,11 @@ import {
   applyDelete,
   applyTakenDate,
   canDeletePhotos,
+  countCoUploaded,
+  getDateConfirmKind,
   getDeleteKind,
   needsDateChangeConfirm,
+  removesDraftBundlePhoto,
 } from './photoActions';
 
 const photo = (id: string, uploaderIds: string[]): PhotoBoxPhoto => ({
@@ -15,6 +18,7 @@ const photo = (id: string, uploaderIds: string[]): PhotoBoxPhoto => ({
   takenAt: '2026-09-27T10:00',
   uploadedAt: '2026-10-01T00:00:00',
   uploaderIds,
+  usedInDraftBundle: false,
   status: 'ready',
 });
 
@@ -45,9 +49,13 @@ describe('getDeleteKind', () => {
     expect(getDeleteKind([photo('1', ['me']), photo('2', ['me', 'you'])], member)).toBe('mixed');
   });
 
-  it('내가 올리지 않은 사진이 하나라도 있으면 others', () => {
+  it('다른 멤버가 올린 사진만 고르면 others', () => {
     expect(getDeleteKind([photo('1', ['you'])], admin)).toBe('others');
-    expect(getDeleteKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('others');
+    expect(getDeleteKind([photo('1', ['you']), photo('2', ['you', 'they'])], admin)).toBe('others');
+  });
+
+  it('내 사진과 다른 멤버 사진을 함께 고르면 others-included', () => {
+    expect(getDeleteKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('others-included');
   });
 });
 
@@ -105,6 +113,16 @@ describe('applyTakenDate', () => {
     expect(result[0]?.takenAt).toBe('2026-01-03T00:00');
   });
 
+  it('날짜가 null이면 고른 사진만 날짜 없음으로 되돌린다', () => {
+    const result = applyTakenDate(
+      [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')],
+      new Set(['1']),
+      null,
+    );
+
+    expect(result.map((p) => p.takenAt)).toEqual([null, '2026-09-26T09:05']);
+  });
+
   it('원본 목록과 고르지 않은 사진 객체를 바꾸지 않는다', () => {
     const original = [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')];
     const result = applyTakenDate(original, new Set(['1']), new Date(2026, 7, 5));
@@ -129,5 +147,49 @@ describe('needsDateChangeConfirm', () => {
 
   it('일반 멤버는 확인을 거치지 않는다', () => {
     expect(needsDateChangeConfirm([photo('1', ['me', 'you'])], member)).toBe(false);
+  });
+});
+
+describe('getDateConfirmKind', () => {
+  it('다른 멤버가 올린 사진만 고르면 others', () => {
+    expect(getDateConfirmKind([photo('1', ['you']), photo('2', ['you', 'they'])], admin)).toBe(
+      'others',
+    );
+  });
+
+  it('내 사진이 섞였거나 내가 함께 올린 사진이 있으면 included', () => {
+    expect(getDateConfirmKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('included');
+    expect(getDateConfirmKind([photo('1', ['me', 'you'])], admin)).toBe('included');
+  });
+});
+
+describe('removesDraftBundlePhoto', () => {
+  const used = (id: string, uploaderIds: string[]): PhotoBoxPhoto => ({
+    ...photo(id, uploaderIds),
+    usedInDraftBundle: true,
+  });
+
+  it('사라지는 사진 중 작성 중인 번들에 쓰인 사진이 있으면 true', () => {
+    expect(removesDraftBundlePhoto([photo('1', ['me']), used('2', ['me'])], member)).toBe(true);
+  });
+
+  it('번들에 쓰인 사진이 없으면 false', () => {
+    expect(removesDraftBundlePhoto([photo('1', ['me'])], member)).toBe(false);
+  });
+
+  it('함께 올린 사진에서 내 이름만 빠지면 번들에 영향이 없어 false', () => {
+    expect(removesDraftBundlePhoto([used('1', ['me', 'you'])], member)).toBe(false);
+  });
+
+  it('관리자가 남의 사진을 지우면 함께 올린 사진도 통째로 사라져 true', () => {
+    expect(removesDraftBundlePhoto([used('1', ['you', 'they'])], admin)).toBe(true);
+  });
+});
+
+describe('countCoUploaded', () => {
+  it('올린 멤버가 둘 이상인 사진만 센다', () => {
+    expect(
+      countCoUploaded([photo('1', ['me']), photo('2', ['me', 'you']), photo('3', ['you', 'they'])]),
+    ).toBe(2);
   });
 });

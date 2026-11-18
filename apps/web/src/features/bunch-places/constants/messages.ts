@@ -4,8 +4,8 @@ export const PLACES_MESSAGES = {
   emptyTitle: '아직 콕한 장소가 없어요',
   emptyDescription: '피드에서 다른 번치의 번들을 둘러보면서\n가보고 싶은 장소를 콕 해보세요.',
   browseFeed: '피드 둘러보기',
-  /** 광고(BUNCH PICK)에서 콕한 장소는 담아 온 번들이 없어 출처 자리에 이 문구를 씀 */
-  pickSource: 'BUNCH PICK',
+  /** 광고(BUNCH SPOT)에서 콕한 장소는 담아 온 번들이 없어 출처 자리에 이 문구를 씀(기능명세 8.1.3 상세 4) */
+  pickSource: 'BUNCH SPOT',
   unavailableSource: '볼 수 없는 번들이에요',
   unavailableTitle: '이 장소가 담긴 번들을 더 이상 볼 수 없어요',
   unavailableDescription: '번들이 삭제되었거나 비공개로 바뀌었어요.',
@@ -17,4 +17,6 @@ export const PLACES_MESSAGES = {
   removed: '콕한 장소에서 뺐어요',
   undo: '되돌리기',
   error: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  retry: '다시 시도',
+  loading: '콕한 장소를 불러오는 중이에요',
 } as const;

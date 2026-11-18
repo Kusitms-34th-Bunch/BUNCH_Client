@@ -57,6 +57,84 @@ describe('getDatedPhotosPage', () => {
     expect(next.nextCursor).toBeNull();
   });
 
+  it('한 번에 서버가 허용하는 최대 100장씩 요청한다(1,000장 상한을 10번에 받음)', async () => {
+    const sizes: (string | null)[] = [];
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', ({ request }) => {
+        sizes.push(new URL(request.url).searchParams.get('size'));
+        // 기본 가짜 서버 handler가 이어서 응답
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/photos/undated', ({ request }) => {
+        sizes.push(new URL(request.url).searchParams.get('size'));
+        return undefined;
+      }),
+    );
+
+    await getDatedPhotosPage({ bunchId });
+    await getUndatedPhotosPage({ bunchId });
+
+    expect(sizes).toEqual(['100', '100']);
+  });
+
+  it('nextCursor가 빈 문자열이면 마지막 쪽으로 본다(보내지 않으면 첫 쪽을 다시 받게 됨)', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({ totalCount: 0, photos: [], nextCursor: '' }),
+      ),
+    );
+
+    const page = await getDatedPhotosPage({ bunchId });
+
+    expect(page.nextCursor).toBeNull();
+  });
+
+  it('작성 중인 번들 사용 여부(usedInDraftBundle)가 없는 응답은 계약 위반으로 거절한다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({
+          totalCount: 1,
+          photos: [
+            { photoId: 7, thumbnailUrl: 'a.jpg', capturedDate: '2026-10-18', uploaderIds: [1] },
+          ],
+        }),
+      ),
+    );
+
+    await expect(getDatedPhotosPage({ bunchId })).rejects.toMatchObject({
+      code: INVALID_RESPONSE_CODE,
+    });
+  });
+
+  it('작성 중인 번들 사용 여부(usedInDraftBundle)를 사진에 담는다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/photos', () =>
+        ok({
+          totalCount: 2,
+          photos: [
+            {
+              photoId: 7,
+              thumbnailUrl: 'a.jpg',
+              capturedDate: '2026-10-18',
+              uploaderIds: [1],
+              usedInDraftBundle: true,
+            },
+            {
+              photoId: 8,
+              thumbnailUrl: 'b.jpg',
+              capturedDate: '2026-10-18',
+              uploaderIds: [1],
+              usedInDraftBundle: false,
+            },
+          ],
+        }),
+      ),
+    );
+
+    const page = await getDatedPhotosPage({ bunchId });
+    expect(page.photos.map((photo) => photo.usedInDraftBundle)).toEqual([true, false]);
+  });
+
   it('시각이 객체(LocalTime)로 와도 같은 시각으로 바꾼다', async () => {
     server.use(
       http.get('/api/bunches/:bunchId/photos', () =>
@@ -69,6 +147,7 @@ describe('getDatedPhotosPage', () => {
               capturedDate: '2026-10-18',
               capturedTime: { hour: 9, minute: 5, second: 0, nano: 0 },
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -91,6 +170,7 @@ describe('getDatedPhotosPage', () => {
               capturedDate: '2026-10-18',
               capturedTime: '29:99',
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -113,6 +193,7 @@ describe('getDatedPhotosPage', () => {
               thumbnailUrl: 'a.jpg',
               capturedDate: '2026-10-18',
               uploaderIds: [1],
+              usedInDraftBundle: false,
             },
           ],
         }),
@@ -129,7 +210,13 @@ describe('getDatedPhotosPage', () => {
         ok({
           totalCount: 1,
           photos: [
-            { photoId: 7, thumbnailUrl: 'a.jpg', capturedDate: '2026-10-18', uploaderIds: [1] },
+            {
+              photoId: 7,
+              thumbnailUrl: 'a.jpg',
+              capturedDate: '2026-10-18',
+              uploaderIds: [1],
+              usedInDraftBundle: false,
+            },
           ],
         }),
       ),

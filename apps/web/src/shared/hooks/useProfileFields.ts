@@ -14,6 +14,7 @@ import {
   hasInvalidNicknameChars,
   isValidNickname,
   NICKNAME_INVALID_MESSAGE,
+  NICKNAME_PROHIBITED_MESSAGE,
   NICKNAME_TAKEN_MESSAGE,
   normalizeNickname,
 } from '../lib/nickname';
@@ -31,29 +32,46 @@ export const EMPTY_PROFILE_VALUES: ProfileValues = { nickname: '', birthYear: ''
  * 프로필 입력(닉네임·출생연도·성별)의 값·오류·유효 여부. 가입 프로필 작성과 MY 프로필 수정이 같은 규칙 사용
  * 닉네임은 조합 중 자모를 허용해 오류를 띄우지 않고, 유효 여부·중복 확인은 조합이 끝난 완성 값만 인정
  */
-export function useProfileFields(initial: ProfileValues, checkNickname?: CheckNickname) {
+export function useProfileFields(
+  initial: ProfileValues,
+  checkNickname?: CheckNickname,
+  { currentNickname }: { currentNickname?: string | undefined } = {},
+) {
   const [nickname, setNickname] = useState(initial.nickname);
   const [composing, setComposing] = useState(false);
   const [birthYear, setBirthYear] = useState(initial.birthYear);
   const [birthYearBlurred, setBirthYearBlurred] = useState(false);
   const [gender, setGender] = useState(initial.gender);
-  // 저장할 때 서버가 중복이라고 알려 준 닉네임(입력 때의 확인 이후에 누가 먼저 썼을 수 있음)
-  const [takenNicknames, setTakenNicknames] = useState<string[]>([]);
+  // 저장할 때 서버가 거부한 닉네임과 이유
+  // 중복: 입력 때의 확인 이후에 누가 먼저 썼을 수 있음, 금칙어: 그사이 목록에 단어가 추가됐을 수 있음(기능명세 1.4.7·7.2.7)
+  const [rejectedNicknames, setRejectedNicknames] = useState<
+    readonly { nickname: string; reason: 'taken' | 'prohibited' }[]
+  >([]);
 
   const nicknameInvalid = hasInvalidNicknameChars(nickname, composing);
   const nicknameValid = isValidNickname(nickname);
   const normalizedNickname = nicknameValid ? normalizeNickname(nickname) : '';
-  const takenAtSave = takenNicknames.includes(normalizedNickname);
-  const availability = useNicknameAvailability(normalizedNickname, checkNickname);
+  const rejectedAtSave = rejectedNicknames.find((item) => item.nickname === normalizedNickname);
+  // 지금 내 닉네임과 같으면 중복 확인을 하지 않고 결과 문구도 보이지 않음(기능명세서 7.2.5 로직 1)
+  const isCurrentNickname =
+    currentNickname !== undefined && normalizedNickname === normalizeNickname(currentNickname);
+  const availability = useNicknameAvailability(
+    normalizedNickname,
+    isCurrentNickname ? undefined : checkNickname,
+  );
+  // 저장 때 서버가 거부한 이유가 입력 때 받은 확인 결과보다 앞섬
+  const rejection = rejectedAtSave?.reason ?? availability;
   const nicknameError = nicknameInvalid
     ? NICKNAME_INVALID_MESSAGE
-    : availability === 'taken' || takenAtSave
-      ? NICKNAME_TAKEN_MESSAGE
-      : availability === 'failed'
-        ? CHECK_FAILURE_MESSAGE
-        : undefined;
+    : rejection === 'prohibited'
+      ? NICKNAME_PROHIBITED_MESSAGE
+      : rejection === 'taken'
+        ? NICKNAME_TAKEN_MESSAGE
+        : availability === 'failed'
+          ? CHECK_FAILURE_MESSAGE
+          : undefined;
   const nicknameConfirmed =
-    nicknameValid && !takenAtSave && (availability === 'idle' || availability === 'available');
+    nicknameValid && !rejectedAtSave && (availability === 'idle' || availability === 'available');
 
   const currentYear = new Date().getFullYear();
   const birthYearComplete = isCompleteBirthYear(birthYear);
@@ -68,15 +86,23 @@ export function useProfileFields(initial: ProfileValues, checkNickname?: CheckNi
   return {
     values: { nickname, birthYear, gender },
     isValid: nicknameConfirmed && isValidBirthYear(birthYear, currentYear),
+    /** 닉네임만 유효한지(출생연도·성별 칸을 보이지 않을 때 저장 가능 판단) */
+    isNicknameValid: nicknameConfirmed,
     nicknameError,
+    /** 닉네임 중복 확인이 진행 중인지(입력이 바뀐 직후부터 응답까지). 안내 문구를 보일 때 사용 */
+    nicknameChecking: availability === 'checking',
     birthYearError,
     setNickname,
     setComposing,
     setBirthYear: (value: string) => setBirthYear(sanitizeBirthYear(value)),
     setBirthYearBlurred,
     setGender,
-    /** 저장 응답이 닉네임 중복이었을 때: 지금 닉네임을 사용할 수 없음으로 표시 */
-    markNicknameTaken: () => setTakenNicknames((previous) => [...previous, normalizedNickname]),
+    /**
+     * 저장 응답이 닉네임 중복·금칙어였을 때: 지금 닉네임을 그 이유로 사용할 수 없음으로 표시
+     * 다른 닉네임으로 바꾸면 안내가 사라지고, 거부된 값으로 되돌아오면 다시 막음(서버가 같은 값을 다시 거부하므로)
+     */
+    markNicknameRejected: (reason: 'taken' | 'prohibited') =>
+      setRejectedNicknames((previous) => [...previous, { nickname: normalizedNickname, reason }]),
   };
 }
 

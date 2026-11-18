@@ -1,15 +1,7 @@
-import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BunchMember } from '../../lib/types';
-import { useBunchHome } from '../../hooks/useBunchHome';
-import { useCurrentBunchId } from '../../hooks/useCurrentBunchId';
-import { leaveBunch } from '../../hooks/useLeftBunches';
-import { BunchHome } from '../home/BunchHome';
-
-// 샘플 모드도 서버 hook을 호출하므로 QueryClient가 필요함
-const wrapper = createQueryWrapper(createTestQueryClient());
 import { BunchLeaveScreen } from './BunchLeaveScreen';
 import { BunchMenuScreen } from './BunchMenuScreen';
 
@@ -105,45 +97,5 @@ describe('BunchLeaveScreen', () => {
     await user.click(within(sheet).getByRole('button', { name: '지정하고 나가기' }));
 
     expect(onTransferAndLeave).toHaveBeenCalledWith(CANDIDATES[1]);
-  });
-});
-
-// 나간 번치는 모듈 저장소에 남으므로 순서대로 실행(앞 테스트의 결과를 이어 씀)
-describe('나간 뒤 번치 홈', () => {
-  beforeEach(() => {
-    sessionStorage.clear();
-  });
-
-  it('보고 있던 번치에서 나가면 남은 첫 번치를 보여 주고 전환 목록에서 뺀다', () => {
-    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-run');
-    const { result } = renderHook(() => useBunchHome());
-
-    act(() => {
-      leaveBunch('bunch-run');
-    });
-
-    expect(result.current.data?.current.id).toBe('bunch-trip');
-    expect(result.current.data?.bunches.map((bunch) => bunch.id)).not.toContain('bunch-run');
-  });
-
-  it('참여 번치에서 모두 나가면 번치 없음 화면을 보여 준다', async () => {
-    act(() => {
-      leaveBunch('bunch-trip');
-      leaveBunch('bunch-gift');
-    });
-    render(<BunchHome source="sample" />, { wrapper });
-
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: '참여 중인 번치가 없어요' })).toBeInTheDocument(),
-    );
-    expect(screen.getByRole('button', { name: '새 번치 만들기' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '초대 링크 참여하기' })).toBeInTheDocument();
-  });
-
-  it('모두 나간 뒤에는 다른 화면도 나간 번치를 현재 번치로 쓰지 않는다', () => {
-    sessionStorage.setItem('bunch-home:current-bunch-id', 'bunch-gift');
-    const { result } = renderHook(() => useCurrentBunchId());
-
-    expect(result.current[0]).toBeNull();
   });
 });

@@ -93,3 +93,14 @@ export const OptionalWithoutCounter: Story = {
     <Controlled {...args} title="한 줄 소개" option="optional" maxLength={undefined} />
   ),
 };
+
+/** 중복 확인처럼 진행 중인 검사의 안내 문구(오류가 없을 때) */
+export const Checking: Story = {
+  args: {
+    title: '번치 이름',
+    option: 'required',
+    maxLength: 12,
+    defaultValue: '퇴근런클럽',
+    helperMessage: '사용 가능한 이름인지 확인 중이에요.',
+  },
+};

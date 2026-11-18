@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { setAuthCookies } from '@/shared/api/authCookies';
-import { requestLogin } from '@/shared/api/authSession';
-import { parseRequestBody } from '@/shared/api/requestBody';
-import { toErrorResponse } from '@/shared/api/routeError';
+import { setAuthCookies } from '@/shared/api/server/authCookies';
+import { requestLogin } from '@/shared/api/server/authSession';
+import { parseRequestBody } from '@/shared/api/server/requestBody';
+import { toErrorResponse } from '@/shared/api/server/routeError';
 
 const loginBodySchema = z
   .object({

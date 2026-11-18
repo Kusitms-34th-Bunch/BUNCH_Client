@@ -38,6 +38,16 @@ describe('DraftMissingGate', () => {
     expect(replace).toHaveBeenCalledWith('/bunch');
   });
 
+  it('발행자 닉네임이 있으면 「{닉네임}님이 번들을 업로드해…」로 안내한다', async () => {
+    state = { kind: 'missing', reason: 'published', publisherNickname: '경진' };
+    render(<DraftMissingGate />);
+
+    const dialog = await screen.findByRole('alertdialog', { name: '번들이 업로드됐어요' });
+    expect(dialog).toHaveAccessibleDescription(
+      '경진님이 번들을 업로드해 더 이상 편집할 수 없어요.',
+    );
+  });
+
   it('다른 멤버가 업로드한 번들이면 「번들이 업로드됐어요」를 안내한다', async () => {
     state = { kind: 'missing', reason: 'published' };
     render(<DraftMissingGate />);

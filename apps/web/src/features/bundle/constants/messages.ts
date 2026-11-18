@@ -10,6 +10,8 @@ export const BUNDLE_MESSAGES = {
   titleLabel: '번들 제목',
   titlePlaceholder: '번들 제목을 입력해주세요.',
   titleMax: '제목은 40자까지 쓸 수 있어요.',
+  // 제목·코멘트에 금칙어(기능명세 1.4.3 로직 4·4.3.3·4.3.8, 입력란 아래 빨간 글씨라 마침표 없음)
+  prohibitedWord: '사용할 수 없는 단어가 포함되어 있어요',
   // 사진 제목 옆 「픽하기 >」: 대표 사진 투표 화면으로(Figma `5367:146358`)
   // 코멘트 카드 아래 안내 문구(Figma `5730:142491`, 별표 한 칸 뒤 문구)
   commentsNotice: '코멘트와 픽하기는 업로드 이후 수정이 불가해요',
@@ -23,12 +25,18 @@ export const BUNDLE_MESSAGES = {
   pickButton: '이 사진 픽하기',
   pickedButton: '사진을 픽했어요',
   pickedCount: (count: number) => `${count}명이 픽했어요`,
+  pickFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   pickDeletedTitle: '삭제된 사진이에요',
   pickDeletedDescription: '삭제된 사진은 픽할 수 없어요.',
   photoCount: (count: number) => `사진 ${count}장`,
+  // 갤러리에서 가져온 사진이 올라가는 동안 읽어 주는 문구(사진함 올리기와 같음)
+  galleryUploading: '사진을 올리는 중이에요.',
   photosTitle: '사진',
-  captionPlaceholder: '캡션 추가...',
   locationAdd: '위치 추가',
+  locationMax: '위치는 최대 3개까지 추가할 수 있어요.',
+  locationDuplicate: '이미 추가한 위치예요.',
+  locationRemoved: '다른 멤버가 삭제한 위치예요.',
+  locationSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   locationField: '위치',
   dateAdd: '날짜 추가',
   dateField: '날짜',
@@ -46,17 +54,24 @@ export const BUNDLE_MESSAGES = {
   deletedDraftTitle: '번들이 삭제됐어요',
   deletedDraftDescription: '작성 중이던 번들이 삭제되어 더 이상 편집할 수 없어요.',
   publishedDraftTitle: '번들이 업로드됐어요',
-  // 시안은 「○○님이」로 업로드한 멤버 이름을 보이지만 초안 응답에 그 정보가 없어 이름 없이 안내
-  publishedDraftDescription: '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
+  // 기능 spec 4.3.1: 「{닉네임}님이 번들을 업로드해…」. 발행자 닉네임을 받지 못했을 때만 이름 없이 안내
+  publishedDraftDescription: (nickname: string | undefined) =>
+    nickname
+      ? `${nickname}님이 번들을 업로드해 더 이상 편집할 수 없어요.`
+      : '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
   missingDraftConfirm: '확인',
   // 서버 저장·발행 실패 안내(서버 연동 때 추가한 문구)
-  fieldLocked: '다른 멤버가 편집 중이라 저장하지 못했어요.',
   saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
   publishFailed: '번들을 업로드하지 못했어요. 잠시 후 다시 시도해 주세요.',
   publishConflict: '다른 멤버가 내용을 바꿨어요. 확인한 뒤 다시 업로드해 주세요.',
+  // 발행 때 서버가 다시 검사한 제목·코멘트에 금칙어가 있음(명세에 문구 없음, 댓글 금칙어·발행 충돌 문구에 맞춤, 사용자 결정 2026-11-18)
+  publishProhibited:
+    '사용할 수 없는 단어가 포함되어 있어요. 내용을 확인한 뒤 다시 업로드해 주세요.',
   // 업로드 완료 토스트(번치 홈으로 이동하며 띄움)
   published: '업로드가 완료되었어요',
   editOnlyParticipants: '참여 멤버만 편집할 수 있어요',
+  // 편집 중 참여 멤버에서 빠졌을 때(기능 spec 4.3.2)
+  removedFromDraft: '번들 참여 멤버에서 제외되어 보기만 할 수 있어요.',
   uploadForbidden: '번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.',
   // 사진 빼기·이동·추가를 서버에 보내지 못했을 때의 임시 안내(기획 원문 없음)
   photosChangeFailed: '사진 구성을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.',
@@ -94,6 +109,26 @@ export const BUNDLE_MESSAGES = {
   uploadEditingTitle: '편집 중인 멤버가 있어요',
   uploadEditingDescription: '지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있어요.',
   cancel: '취소',
+  // 발행 번들 수정 화면(기능 명세 6.2.12)
+  editTitle: '번들 수정',
+  // 불러오지 못했을 때의 안내와 버튼(사진함 오류 화면과 같은 문구)
+  loadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  retry: '다시 시도',
+  editSave: '저장',
+  editSaveTitle: '수정한 내용을 저장할까요?',
+  editSaveDescription: '변경된 내용이 기존 번들에 반영돼요.',
+  editSaveConfirm: '저장',
+  editSaved: '번들을 수정했어요',
+  editPhotoMissing: '사진을 불러올 수 없어요.',
+  editSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  editSaving: '번들을 수정하는 중이에요',
+  editLeaveTitle: '수정을 그만둘까요?',
+  editLeaveDescription: '수정한 내용은 저장되지 않아요.',
+  editLeaveConfirm: '나가기',
+  editLeaveStay: '계속 수정',
+  commentLocked: '업로드된 코멘트는 수정 불가해요.',
+  // 기능명세서 6.2.11: 화면을 연 뒤 역할이 바뀌어 수정할 수 없게 됨(피드 상세의 같은 안내와 같은 문구)
+  editPermissionChanged: '권한이 변경되어 해당 기능을 이용할 수 없어요.',
   // 멤버 내보내기 확인 창은 Figma 「멤버 삭제 프로토타입」 `2091:62913` 원문
   removeMemberTitle: (name: string) => `${name}님을 번들에서 내보낼까요?`,
   removeMemberDescription: (name: string) =>
@@ -113,10 +148,10 @@ export const BUNDLE_MESSAGES = {
   draftDeleted: '작성 중인 번들을 삭제했어요.',
   // 기획 원문 없는 임시 안내: 나가기를 서버에 보내지 못했을 때
   leaveFailed: '번들에서 나가지 못했어요. 잠시 후 다시 시도해 주세요.',
-  // 다른 멤버가 편집 중인 영역을 눌렀을 때 토스트(Figma `2060:37684`)
-  editingBlocked: '다른 멤버가 편집 중일 땐 수정할 수 없어요.',
+  // 기획 원문 없는 접근성 이름(화면에는 안 보임): 위치·날짜 줄 이름에 붙임
   editingLabel: (name: string) => `${name}님이 편집 중`,
-  commentEditingLabel: (name: string) => `${name}님이 작성 중`,
+  // 기획 원문 없는 접근성 이름(화면에는 안 보임): 멤버 카드의 초록 점(지금 이 초안에 들어와 있는 멤버)
+  viewingLabel: (name: string) => `${name}님이 보는 중`,
   roleLabel: { owner: '번치장', coOwner: '공동 번치장', draftAuthor: '초안 작성자' },
   // 위치 순서 바꾸기(햄버거 핸들을 잡고 끌기, Figma `5367:146358`)
   locationReorderLabel: (name: string) => `${name} 순서 바꾸기`,
@@ -136,18 +171,19 @@ export const BUNDLE_MESSAGES = {
   locationNoResult: '검색 결과가 없어요',
   locationResultCount: (count: number) => `검색 결과 ${count}건`,
   searchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  // 사진 상세(캡션 화면·크게 보기, 기능 spec 4.3.4~4.3.6, Figma `1782:32837`·`2082:49108`·`2091:61896`)
-  captionLabel: '사진 캡션',
-  captionTooLong: '캡션은 200자까지 쓸 수 있어요',
+  // 사진 상세(크게 보기, 기능 spec 4.3.4~4.3.6, Figma `2082:49108`·`2091:61896`)
   photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
   photoOpenLabel: (current: number) => `${current}번째 사진 상세 보기`,
-  photoCaptionTitle: '번들 사진',
   photoViewerTitle: '사진 크게 보기',
   photoViewLabel: (current: number) => `${current}번째 사진 크게 보기`,
   removePhotoLabel: (current: number) => `${current}번째 사진 빼기`,
   photoRemoved: (left: number) => `사진을 뺐어요. ${left}장이 남았어요.`,
+  photoRemovedByOther: '다른 멤버가 삭제한 사진이에요.',
   movePhotoBefore: '사진을 앞으로 옮기기',
   movePhotoAfter: '사진을 뒤로 옮기기',
+  // 목록에서 어느 사진인지 알도록 접근성 이름에 몇 번째인지 붙임(`removePhotoLabel`과 같은 방식)
+  movePhotoBeforeLabel: (current: number) => `${current}번째 사진을 앞으로 옮기기`,
+  movePhotoAfterLabel: (current: number) => `${current}번째 사진을 뒤로 옮기기`,
   photoMoved: (position: number, total: number) => `${total}장 중 ${position}번째로 옮겼어요.`,
   photoDragStart: '사진을 끌고 있어요.',
   photoDragCancel: '끌기를 취소했어요.',
@@ -176,6 +212,5 @@ export const BUNDLE_MESSAGES = {
 export const MAX_LOCATIONS = 3;
 export const TITLE_MAX_LENGTH = 40;
 export const COMMENT_MAX_LENGTH = 400;
-/** 캡션 최대 글자 수와 번들 한 개에 담을 수 있는 사진 수(기능 spec 4.3.4·4.3.7) */
-export const CAPTION_MAX_LENGTH = 200;
+/** 번들 한 개에 담을 수 있는 사진 수(기능 spec 4.3.4·4.3.7) */
 export const MAX_PHOTOS = 20;

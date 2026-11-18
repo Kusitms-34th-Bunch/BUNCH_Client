@@ -10,3 +10,13 @@ export const toWireId = (id: string | readonly string[] | undefined): number | u
   const value = Number(id);
   return Number.isSafeInteger(value) ? value : undefined;
 };
+
+/** 서버 숫자 ID로 바꿀 수 있는 화면 id인지 판정(요청을 건너뛸지 정하는 query·화면용, 변환은 api/에서만) */
+export const isWireId = (id: string | undefined): boolean => toWireId(id) !== undefined;
+
+/** 요청 직전 변환, 바꿀 수 없으면 요청 전에 실패 처리(api/ 전용) */
+export const requireWireId = (id: string, message: string): number => {
+  const value = toWireId(id);
+  if (value === undefined) throw new Error(message);
+  return value;
+};

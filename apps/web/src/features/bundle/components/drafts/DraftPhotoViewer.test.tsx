@@ -30,7 +30,10 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 const creator: DraftViewer = { memberId: 'jiye', bunchRole: 'owner' };
 const outsider: DraftViewer = { memberId: 'outsider', bunchRole: 'member' };
 
-const actions = { removePhoto: vi.fn() };
+const actions = {
+  removePhoto: vi.fn(() => true),
+  presence: { type: vi.fn(), blur: vi.fn(), begin: vi.fn(), end: vi.fn() },
+};
 const onBack = vi.fn();
 const onPhotoChange = vi.fn();
 
@@ -57,11 +60,10 @@ const renderViewer = ({
     />,
   );
 
-const photo = (id: string, caption = ''): DraftPhoto => ({
+const photo = (id: string): DraftPhoto => ({
   id,
   src: `/${id}.jpg`,
   alt: `사진 ${id}`,
-  caption,
   takenAt: '2026-06-20T19:00',
   uploaderId: 'jiye',
 });
@@ -214,6 +216,17 @@ describe('DraftPhotoViewer 삭제', () => {
     expect(onPhotoChange).toHaveBeenCalledWith('draft-photo-3');
   });
 
+  it('연결이 끊겨 삭제가 막히면 이웃 사진으로 넘어가지 않는다', async () => {
+    actions.removePhoto.mockReturnValueOnce(false);
+    renderViewer({ initialPhotoId: 'draft-photo-2' });
+
+    await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }));
+
+    expect(actions.removePhoto).toHaveBeenCalledWith('draft-photo-2');
+    expect(onPhotoChange).not.toHaveBeenCalled();
+  });
+
   it('마지막 사진을 빼면 앞 사진으로 이어서 본다', async () => {
     renderViewer({ initialPhotoId: 'draft-photo-3' });
 
@@ -224,7 +237,7 @@ describe('DraftPhotoViewer 삭제', () => {
     expect(onPhotoChange).toHaveBeenCalledWith('draft-photo-2');
   });
 
-  it('캡션이 있는 사진도 같은 확인 창에서 「삭제하기」를 눌러야 뺀다', async () => {
+  it('첫 번째 사진도 같은 확인 창에서 「삭제하기」를 눌러야 뺀다', async () => {
     renderViewer({ initialPhotoId: 'draft-photo-1' });
 
     await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
@@ -245,16 +258,14 @@ describe('DraftPhotoViewer 삭제', () => {
     expect(actions.removePhoto).not.toHaveBeenCalled();
   });
 
-  it('다른 멤버가 편집 중인 사진은 삭제하지 못하고 안내한다', async () => {
-    const draft: Draft = {
-      ...draftFixture,
-      editing: { photoEditors: { 'draft-photo-2': ['gyeongjin'] } },
-    };
+  it('다른 멤버가 사진 작업 중이어도 삭제 확인 창을 열고, 열려 있는 동안 사진 작업을 알린다', async () => {
+    const draft: Draft = { ...draftFixture, editing: { photoMemberIds: ['gyeongjin'] } };
     renderViewer({ draft, initialPhotoId: 'draft-photo-2' });
 
     await userEvent.click((await openMenu()).getByRole('menuitem', { name: '삭제' }));
 
-    expect(toast).toHaveBeenCalledWith(BUNDLE_MESSAGES.editingBlocked);
-    expect(actions.removePhoto).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    expect(actions.presence.begin).toHaveBeenCalledWith('PHOTOS');
+    expect(toast).not.toHaveBeenCalled();
   });
 });

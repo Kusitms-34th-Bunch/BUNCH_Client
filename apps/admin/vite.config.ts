@@ -48,5 +48,13 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
+    // PR CI는 바뀐 파일과 관련된 테스트만 돌림(--changed). 테스트가 import하지 않는 것(setup·의존성·tsconfig)이 바뀌면 전체
+    forceRerunTriggers: [
+      '**/{vitest,vite}.config.*/**',
+      '**/vitest.setup.*',
+      '**/tsconfig*.json',
+      '**/yarn.lock',
+      '**/.yarnrc.yml',
+    ],
   },
 });
