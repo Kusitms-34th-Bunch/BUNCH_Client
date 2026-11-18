@@ -409,6 +409,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 콕한 장소 카드 → 그 장소를 담아 온 번들 상세도 한 단계 들어가는 drill(기능명세서 8.1.5)
+  {
+    from: BUNCH_HOME_PATHS.places,
+    to: FEED_PATHS.transitionIds.bundle,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
   {
     from: BUNCH_HOME_PATHS.follows,
     to: BUNCH_HOME_PATHS.followRequests,

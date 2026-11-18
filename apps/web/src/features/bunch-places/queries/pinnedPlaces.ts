@@ -1,13 +1,15 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { infiniteQueryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPinnedPlaces, removePinnedPlace } from '../api/pinnedPlaces';
 import { PLACES_MESSAGES } from '../constants/messages';
 import { bunchPlacesKeys } from './keys';
 
-/** 지금 번치(`bunchId`)의 콕한 장소. `memberId`는 칩(「전체」는 `ALL_MEMBERS`) */
+/** 지금 번치(`bunchId`)의 콕한 장소를 쪽 단위로. `memberId`는 칩(「전체」는 `ALL_MEMBERS`) */
 export const pinnedPlacesQueryOptions = (bunchId: string, memberId: string) =>
-  queryOptions({
+  infiniteQueryOptions({
     queryKey: bunchPlacesKeys.list(bunchId, memberId),
-    queryFn: ({ signal }) => getPinnedPlaces(memberId, signal),
+    queryFn: ({ pageParam, signal }) => getPinnedPlaces(memberId, pageParam, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
 /** 콕에서 빼기. 성공·실패 모두 칩 숫자와 목록을 다시 받음(실패하면 빼기 전 카드가 돌아옴) */

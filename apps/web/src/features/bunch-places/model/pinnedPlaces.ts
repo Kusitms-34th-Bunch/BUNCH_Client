@@ -53,15 +53,29 @@ export type PinnedPlaces = {
   totalCount: number;
   members: readonly (PlaceMember & { count: number })[];
   places: readonly KokPlace[];
+  /** 다음 쪽을 받을 커서. 마지막 쪽이면 없음 */
+  nextCursor: string | undefined;
 };
 
 // 광고 출처는 이동하지 않고, 원래 번들을 볼 수 없으면 출처 값이 비어 옴(명세 005 처리 규칙)
 const sourceOf = (card: KokCard): PlaceSource => {
   if (card.sourceType === 'ADVERTISEMENT') return { kind: 'pick' };
-  if (!card.sourceAccessible || !card.sourceBunchName || !card.sourceBundleTitle) {
+  if (
+    !card.sourceAccessible ||
+    !card.sourceBunchName ||
+    !card.sourceBundleTitle ||
+    !card.sourceBunchId ||
+    !card.sourceBundleId
+  ) {
     return { kind: 'unavailable' };
   }
-  return { kind: 'bundle', bunchName: card.sourceBunchName, bundleTitle: card.sourceBundleTitle };
+  return {
+    kind: 'bundle',
+    bunchId: toDomainId(card.sourceBunchId),
+    bundleId: toDomainId(card.sourceBundleId),
+    bunchName: card.sourceBunchName,
+    bundleTitle: card.sourceBundleTitle,
+  };
 };
 
 export const toPinnedPlaces = (data: PinnedPlacesResponse): PinnedPlaces => ({
@@ -91,4 +105,6 @@ export const toPinnedPlaces = (data: PinnedPlacesResponse): PinnedPlaces => ({
     pickedBy: card.pinnedByMemberId ? toDomainId(card.pinnedByMemberId) : null,
     source: sourceOf(card),
   })),
+  // 빈 문자열은 다음 쪽이 없는 것으로 봄(그대로 두면 커서 없이 첫 쪽을 다시 받아 끝없이 이어 받음)
+  nextCursor: data.nextCursor || undefined,
 });
