@@ -122,6 +122,8 @@ export function BunchProfileEdit() {
             const latest = data?.profileVersion;
             if (latest !== undefined && latest !== null && latest !== expectedProfileVersion) {
               setFormRevision((revision) => revision + 1);
+              // 최신 값으로 새로 여는 폼에는 예전 금칙어 거부를 남기지 않음(남기면 다시 열 때 이유 없이 그 칸으로 초점이 감)
+              setProhibited({});
               toast(BUNCH_HOME_MESSAGES.profileChangedElsewhere);
               return;
             }

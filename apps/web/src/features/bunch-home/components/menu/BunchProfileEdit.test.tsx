@@ -338,6 +338,42 @@ describe('BunchProfileEdit', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
+  it('금칙어 거부 뒤 고쳐 저장하다 다른 곳의 변경으로 폼을 다시 열면 거부된 칸으로 초점을 옮기지 않는다', async () => {
+    makeMeOwner();
+    let calls = 0;
+    server.use(
+      http.put('/api/bunches/:bunchId/profile', () => {
+        calls += 1;
+        if (calls === 1) return fail(400, 'COMMON_003', { fields: ['introduction'] });
+        // 두 번째 저장 전에 다른 기기에서 저장해 버전이 올라감
+        mockDb.update((state) => ({
+          ...state,
+          bunches: state.bunches.map((bunch) =>
+            bunch.id === MOCK_BUNCH_ID ? { ...bunch, profileVersion: 5 } : bunch,
+          ),
+        }));
+        return fail(409, 'MOCK_PROFILE_VERSION');
+      }),
+    );
+    const user = userEvent.setup();
+    renderEdit();
+    const description = await screen.findByRole('textbox', { name: '한 줄 소개' });
+    await user.type(description, ' 나쁜말');
+    await user.click(saveButton());
+    await waitFor(() => expect(document.activeElement).toBe(description));
+
+    await user.type(description, '!');
+    await user.click(saveButton());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        '다른 곳에서 프로필이 바뀌어 최신 내용으로 다시 불러왔어요.',
+      ),
+    );
+    expect(document.activeElement).not.toBe(screen.getByRole('textbox', { name: '한 줄 소개' }));
+    expect(screen.queryAllByText('사용할 수 없는 단어가 포함되어 있어요')).toHaveLength(0);
+  });
+
   it('그 사이 다른 곳에서 프로필이 바뀌어 거절되면 최신 내용으로 폼을 다시 열고 알린다', async () => {
     makeMeOwner();
     const user = userEvent.setup();
