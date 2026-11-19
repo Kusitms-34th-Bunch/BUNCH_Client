@@ -137,14 +137,18 @@ remove.mutate(selectedIds, {
 
 ## 미리 불러오기 (web)
 
-다음 화면의 데이터를 미리 받는 방법은 두 단계로 도입한다. 도입 여부는 `docs/workflows/performance.md`의 "WebView 첫 화면 속도"대로 측정한 뒤 정한다. 지금은 둘 다 구현하지 않았다(설계 단계).
+다음 화면의 데이터를 미리 받는 방법은 두 단계로 도입한다. 도입 여부는 `docs/workflows/performance.md`의 "WebView 첫 화면 속도"대로 측정한 뒤 정한다. 1단계는 번치 더보기와 하위 화면에 처음 썼다(2026-11-20, #466). 첫 진입마다 로딩이 보이는 QA 제보가 있어 측정 전에 넣었고, 효과 측정과 2단계는 아직 하지 않았다.
 
 ### 1단계: 브라우저에서 미리 받기 (먼저)
 
 - 이동 가능성이 높은 순간(셀을 누르기 시작할 때, 탭이 화면에 뜰 때 등)에 `queryClient.prefetchQuery(xxxQueryOptions(…))`를 부른다. 화면이 쓰는 것과 같은 `queryOptions`를 다시 쓰므로 key·요청·검사가 갈라지지 않는다.
 - `queryClient`는 `queries/`에서만 쓸 수 있으므로 미리 받기도 `queries/`의 hook(`usePrefetch…`)으로 만들고 화면은 그 hook만 부른다.
 - 요청이 브라우저 → BFF로 나가므로 MSW 가짜 서버와 401 재발급이 그대로 동작한다.
-- 이미 받은 데이터가 `staleTime`(5분) 안이면 다시 요청하지 않으므로, 같은 화면을 오가는 곳에서 비용이 작다. 한 화면에서 수십 개를 미리 받는 곳(사진 격자 셀마다 등)에는 쓰지 않는다.
+- 쓰는 곳(#466):
+  - 번치 홈이 그려지면 멤버 목록을 미리 받는다(`usePrefetchMemberships`). 이 목록은 화면에 들어갈 때마다 다시 받는 설정(`staleTime: 0`)이다. 그래서 미리 받기에만 30초를 줘서 번치 홈을 오갈 때마다 요청하지 않게 한다.
+  - 더보기 메뉴가 그려지면 차단 목록 첫 쪽을 미리 받는다(`usePrefetchBlockedBunches`).
+  - 초대 링크는 발급 요청(POST)이라 메뉴를 열 때가 아니라 「멤버 초대」를 누르기 시작할 때 받는다(`shared/query/bunchInvitation.ts`의 `usePrefetchBunchInvitation`, 두 feature가 함께 쓰는 query라 `shared/query`에 둠).
+- 이미 받은 데이터가 `staleTime`(기본 5분, query마다 다를 수 있음) 안이면 다시 요청하지 않으므로, 같은 화면을 오가는 곳에서 비용이 작다. 한 화면에서 수십 개를 미리 받는 곳(사진 격자 셀마다 등)에는 쓰지 않는다.
 
 ### 2단계: 서버에서 미리 받기와 스트리밍 SSR (실제 서버 연동 뒤)
 

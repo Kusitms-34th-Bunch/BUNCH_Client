@@ -144,8 +144,10 @@ describe('BunchInvite', () => {
     expect(back).not.toHaveBeenCalled();
   });
 
-  it('링크를 불러오는 중이면 페이지 전체 로딩을 덮고 복사 버튼은 잠근다', () => {
+  it('링크를 불러오는 중이면 화면 전체를 덮지 않고 입력란에 자리 표시를 그리며 복사 버튼은 잠근다', () => {
     render(<BunchInvite inviteLink={undefined} loading leaveHref={LEAVE} />);
+
+    expect(screen.getByRole('button', { name: '나중에 할게요' })).toBeTruthy();
 
     expect(screen.getByRole('status').textContent).toBe('초대 링크를 불러오는 중이에요');
     // 링크가 채워지면 풀리도록 입력란은 비어 있는 채로 뒤에 둠
@@ -153,12 +155,15 @@ describe('BunchInvite', () => {
     expect(screen.getByRole('button', { name: '초대 링크 복사' })).toHaveProperty('disabled', true);
   });
 
-  it('다시 불러오는 동안에도 버튼을 그대로 둔다(로딩 덮개가 누름을 막음)', () => {
-    render(
-      <BunchInvite inviteLink={undefined} loading onRetry={() => undefined} leaveHref={LEAVE} />,
-    );
+  it('다시 불러오는 동안에도 버튼을 그대로 두고, 눌러도 다시 요청하지 않는다', async () => {
+    const onRetry = vi.fn();
+    render(<BunchInvite inviteLink={undefined} loading onRetry={onRetry} leaveHref={LEAVE} />);
 
-    expect(screen.getByRole('button', { name: '다시 불러오기' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: '다시 불러오기' }));
+    expect(onRetry).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: '다시 불러오기' }).getAttribute('aria-disabled'),
+    ).toBe('true');
     expect(screen.getByRole('status').textContent).toBe('초대 링크를 불러오는 중이에요');
   });
 

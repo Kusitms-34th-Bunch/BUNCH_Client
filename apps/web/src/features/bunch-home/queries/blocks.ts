@@ -5,6 +5,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { sharedKeys } from '@/shared/query/keys';
 import type { BlockPage } from '../model/blocks';
 import { blockBunch, getBlockedBunches, reportBunch, unblockBunch } from '../api/blocks';
@@ -23,6 +24,16 @@ export const blockedBunchesQueryOptions = (viewerId: string | null | undefined) 
       : skipToken,
     getNextPageParam: nextPageOf,
   });
+
+/** 차단 목록 첫 쪽을 미리 받는 함수(더보기 메뉴에서). 실패는 알리지 않음(화면에 들어가면 다시 받음) */
+export const usePrefetchBlockedBunches = () => {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (viewerId: string) =>
+      void queryClient.prefetchInfiniteQuery(blockedBunchesQueryOptions(viewerId)),
+    [queryClient],
+  );
+};
 
 /**
  * 다른 번치 차단. 성공하면 남은 팔로우를 해제하고(서버가 함께 정리하는지 몰라서, 이미 정리됐으면 무시)

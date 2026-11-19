@@ -22,6 +22,25 @@ export const membershipsQueryOptions = (bunchId: string | undefined) =>
     staleTime: 0,
   });
 
+// 미리 받은 목록을 다시 미리 받지 않는 시간(화면에 들어가면 `staleTime: 0`이라 다시 받아 버전을 맞춤)
+const PREFETCH_FRESH_MS = 30_000;
+
+/**
+ * 더보기·멤버 관리를 열기 전에 멤버 목록을 미리 받는 함수. 받아 둔 목록으로 화면을 바로 그리고 들어간 뒤 최신으로 맞춤
+ * 실패해도 알리지 않음(화면에 들어가면 다시 받고 그때 오류를 보임)
+ */
+export const usePrefetchMemberships = () => {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (bunchId: string) =>
+      void queryClient.prefetchQuery({
+        ...membershipsQueryOptions(bunchId),
+        staleTime: PREFETCH_FRESH_MS,
+      }),
+    [queryClient],
+  );
+};
+
 export type MembershipChange =
   | { kind: 'role'; membershipId: string; role: Exclude<BunchRole, 'owner'> }
   | { kind: 'remove'; membershipId: string }

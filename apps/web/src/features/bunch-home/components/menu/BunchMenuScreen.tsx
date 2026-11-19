@@ -24,7 +24,12 @@ type BunchMenuScreenProps = {
   onOwnerLeave?: (() => void) | undefined;
   /** 나만 남은 번치 안내의 「삭제하기」(번치 삭제 화면으로) */
   onDeleteBunch?: (() => void) | undefined;
+  /** 「멤버 초대」를 누르기 시작하거나 초점이 갔을 때(초대 링크 미리 받기) */
+  onInviteIntent?: (() => void) | undefined;
 };
+
+// 역할을 알기 전 메뉴 자리(위 묶음 4줄·아래 1줄). Figma에 없는 상태라 다른 스켈레톤과 같은 회색
+const SKELETON_TOP_ROWS = [0, 1, 2, 3];
 
 /**
  * 번치 더보기 메뉴(기능명세 5.4): 역할별 메뉴. 메인 관리자만 프로필 편집·번치 삭제
@@ -38,6 +43,7 @@ export function BunchMenuScreen({
   onLeave,
   onOwnerLeave,
   onDeleteBunch,
+  onInviteIntent,
 }: BunchMenuScreenProps) {
   const openOverlay = useScreenOverlay();
   const openLeave = () =>
@@ -84,6 +90,10 @@ export function BunchMenuScreen({
       }
     >
       <h1 className="sr-only">{bunchName ? `${bunchName} 번치 더보기` : '번치 더보기'}</h1>
+      {/* 늘 있는 상태 영역의 글자만 바꿈(새로 붙인 영역은 낭독이 안 될 수 있음) */}
+      <p role="status" className="sr-only">
+        {myRole ? '' : BUNCH_HOME_MESSAGES.menuLoading}
+      </p>
       {/* 항목 사이 4, 묶음과 구분선 사이 12(Figma 1873:34575) */}
       {myRole ? (
         <div className="gap-s6 pt-padding-p6 flex flex-col">
@@ -115,7 +125,12 @@ export function BunchMenuScreen({
             <li>
               <MenuLabel
                 renderLink={({ className, children }) => (
-                  <Link href={BUNCH_HOME_PATHS.invite} className={className}>
+                  <Link
+                    href={BUNCH_HOME_PATHS.invite}
+                    className={className}
+                    onPointerDown={onInviteIntent}
+                    onFocus={onInviteIntent}
+                  >
                     {children}
                   </Link>
                 )}
@@ -163,7 +178,26 @@ export function BunchMenuScreen({
             ) : null}
           </ul>
         </div>
-      ) : null}
+      ) : (
+        <div className="pt-padding-p6">
+          {/* 메뉴와 같은 간격(항목 사이 4, 묶음과 구분선 사이 12). 역할을 몰라 줄 수는 대표값(위 4줄·아래 1줄) */}
+          <div aria-hidden="true" className="gap-s6 flex flex-col">
+            <div className="gap-s2 px-padding-p8 flex flex-col">
+              {SKELETON_TOP_ROWS.map((row) => (
+                <div key={row} className="px-s2 py-padding-p5">
+                  <div className="bg-surface-secondary rounded-r2 h-6 w-24" />
+                </div>
+              ))}
+            </div>
+            <MenuDivider className="mx-padding-p8" />
+            <div className="px-padding-p8">
+              <div className="px-s2 py-padding-p5">
+                <div className="bg-surface-secondary rounded-r2 h-6 w-24" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </PageShell>
   );
 }
