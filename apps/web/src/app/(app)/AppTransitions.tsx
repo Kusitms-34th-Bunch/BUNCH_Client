@@ -44,7 +44,8 @@ export const ONBOARDING_TRANSITION_DURATION_MS = 300;
 export const SIGNUP_DISSOLVE_DURATION_MS = 300;
 // 기획: 추천 번들 상세 진입은 Slide In(왼쪽 방향)·나갈 때 Slide Out(오른쪽 방향), Ease In, 200ms
 export const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
-export const BUNCH_ADD_DISSOLVE_DURATION_MS = 150;
+// 번치 전환 시트 「새로운 번치 추가하기」 → 번치 시작 선택: 화면설계서는 Dissolve 150ms지만 폰에서 바로 바뀐 것처럼 보여 axis y로(2026-11-20 사용자 결정)
+export const BUNCH_ADD_AXIS_DURATION_MS = 300;
 // 화면 설계서(MY 메뉴): 「약관 및 개인정보」 → 약관 및 개인정보 화면은 Dissolve / Ease out / 200ms, 같은 방식으로 단계마다 절반
 export const MY_TERMS_DISSOLVE_DURATION_MS = 200;
 // 인트로 → 로그인 디졸브 전체 시간(디자이너 요청, 화면설계서 값 없음). 흰 가이드에서 어두운 영상 화면으로 바뀌어 가입 화면(300ms)보다 천천히
@@ -118,10 +119,11 @@ const myTermsDissolve = fade(
   {},
   { override: { forward: tuneMyTermsDissolve, backward: tuneMyTermsDissolve } },
 );
-const tuneBunchAddDissolve = tuneTransition(BUNCH_ADD_DISSOLVE_DURATION_MS / 2);
-const bunchAddDissolve = fade(
-  {},
-  { override: { forward: tuneBunchAddDissolve, backward: tuneBunchAddDissolve } },
+// SSGOI axis y(방향형): 열 때 새 화면이 아래에서 올라오고, 닫기(뒤로 가기)는 위에서 내려감. 시트에서 이어져 새 흐름을 여는 이동
+const tuneBunchAdd = tuneTransition(BUNCH_ADD_AXIS_DURATION_MS);
+const bunchAddAxis = axis(
+  { type: 'y' },
+  { override: { forward: tuneBunchAdd, backward: tuneBunchAdd } },
 );
 // SSGOI axis z(Material 공유 축 Z): 이전 화면은 110%로 커지며 사라지고 새 화면은 90%에서 커지며 나타남. 방향이 없어 뒤로 가기로 오해하지 않음
 const tuneSceneChange = tuneTransition(SCENE_CHANGE_DURATION_MS);
@@ -279,7 +281,12 @@ const tabRules: SsgoiTransitionRule[] = tabPaths.flatMap((from) =>
 );
 const rules: SsgoiTransitionRule[] = [
   ...tabRules,
-  { from: BUNCH_HOME_PATHS.home, to: ONBOARDING_PATHS.start, transition: bunchAddDissolve },
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: ONBOARDING_PATHS.start,
+    bidirectional: true,
+    transition: bunchAddAxis,
+  },
   // 번치 홈 플로팅 버튼 → 번들 만들기(멤버 선택)는 모달처럼 아래에서 올라오고 닫으면 내려가는 sheet 프리셋(SSGOI 데모의 Home → Create)
   {
     from: BUNCH_HOME_PATHS.home,
