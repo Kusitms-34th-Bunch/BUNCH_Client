@@ -161,9 +161,10 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
     return (
       <>
         <p role="status" className="sr-only">
-          번치를 불러오는 중이에요
+          {server.kind === 'loading' ? '번치를 불러오는 중이에요' : ''}
         </p>
-        <PageLoading />
+        {/* 접근 불가 안내는 로딩 덮개 없이 창만: 덮개가 남으면 앱 스플래시가 안내 창을 가린 채 닫히지 않음(AuthGate appReady) */}
+        {server.kind === 'loading' ? <PageLoading /> : null}
         {/* 안내를 닫거나 받지 못하면 서버가 다시 고른 번치(또는 번치 없음)로 바뀜 */}
         {server.kind === 'unavailable' ? (
           <AccessNoticeDialog

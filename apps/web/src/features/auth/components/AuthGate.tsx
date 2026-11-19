@@ -9,6 +9,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
 import { usePushDeviceSync } from '@/shared/hooks/usePushDeviceSync';
+import { getPageLoadingCount, subscribePageLoading } from '@/shared/lib/pageLoadingState';
 import { readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import { useClearPersistedQueriesWhen, usePersistedOwnerReady } from '@/shared/query/persistence';
 import { SIGNUP_PATHS } from '../constants/paths';
@@ -131,13 +132,24 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
       : null,
   );
 
-  // 도착 화면이나 오류 안내를 그리게 되면 앱 쉘에 알려 스플래시를 닫음(명세 1.1: 도착지가 정해질 때까지 스플래시 유지)
+  // 도착지가 정해짐(도착 화면 또는 오류 안내를 그림)
   const settled =
     (!session && !isPending) ||
     Boolean(session && introSeen !== null && hasPendingInvitation !== null && !redirectTo);
+  // 도착 화면이 내용을 그릴 때까지(화면 전체 로딩이 없을 때) 스플래시 유지(명세 1.1: 빈 화면·중간 로딩이 보이지 않게)
+  // 보이는 WebView만 보냄: 뒤에서 미리 그려지는 탭 WebView가 스플래시를 먼저 닫지 않게, 보이게 되면 그때 보냄
+  const pageLoadingCount = useSyncExternalStore(subscribePageLoading, getPageLoadingCount, () => 1);
+  const ready = settled && pageLoadingCount === 0;
   useEffect(() => {
-    if (settled) notifyAppReady();
-  }, [settled]);
+    if (!ready) return;
+    // 보내는 순간에도 다시 확인(같은 commit에 도착 화면이 로딩을 붙인 경우)
+    const send = () => {
+      if (document.visibilityState === 'visible' && getPageLoadingCount() === 0) notifyAppReady();
+    };
+    send();
+    document.addEventListener('visibilitychange', send);
+    return () => document.removeEventListener('visibilitychange', send);
+  }, [ready]);
 
   if (!session && !isPending) {
     // Figma에 없는 상태. 번치 홈 오류 화면(`BunchHomeError`)과 같은 모양. 다시 시도 중에는 중복 요청만 막고 버튼은 그대로 둠(포커스 유지)
