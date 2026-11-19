@@ -174,6 +174,8 @@ export type MockReport = {
   commentId?: number;
   reason: 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'PERSONAL_INFORMATION' | 'OTHER';
   detail: string | null;
+  /** 접수 시각(ISO). 번들·댓글 신고의 24시간 구간 판정용, 없으면 구간 밖으로 봄 */
+  reportedAt?: string | undefined;
 };
 
 /** 번치의 콕한 장소(번치 명의, 같은 장소는 출처가 달라도 하나) */
