@@ -10,6 +10,7 @@ import { AuthGate } from './AuthGate';
 const shell = vi.hoisted(() => ({ native: false, appReady: vi.fn(() => Promise.resolve()) }));
 vi.mock('@/shared/bridge/client', () => ({
   isNativeShell: () => shell.native,
+  isHandedOffToNativeTabs: () => false,
   appBridge: { appReady: shell.appReady },
 }));
 vi.mock('next/navigation', () => ({

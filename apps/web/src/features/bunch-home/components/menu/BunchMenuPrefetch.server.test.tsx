@@ -100,19 +100,19 @@ describe('번치 더보기 미리 받기', () => {
           .then((body) => sent.push(body));
       }
     });
-    render(<BunchMenu />, { wrapper: createQueryWrapper(client) });
+    const view = render(<BunchMenu />, { wrapper: createQueryWrapper(client) });
 
     await user.click(await screen.findByRole('button', { name: '번치 나가기' }));
     await user.click(
       within(await screen.findByRole('alertdialog')).getByRole('button', { name: '나가기' }),
     );
     expect(sent).toHaveLength(0);
-    release();
-    return { sent, fresh };
+    return { sent, fresh, release, unmount: view.unmount };
   };
 
   it('다시 받는 중에 나가기를 확인하면 응답을 기다리고, 목록이 그대로면 그 버전으로 보낸다', async () => {
-    const { sent, fresh } = await leaveWhileRefetching((version) => version);
+    const { sent, fresh, release } = await leaveWhileRefetching((version) => version);
+    release();
 
     await waitFor(() => expect(sent).toHaveLength(1));
     expect(sent[0]).toMatchObject({ expectedMembershipVersion: fresh });
@@ -120,9 +120,19 @@ describe('번치 더보기 미리 받기', () => {
 
   it('기다리는 사이 목록이 바뀌었으면 보내지 않고 실패를 알린다(새 목록으로 다시 고르게)', async () => {
     toast.mockClear();
-    const { sent } = await leaveWhileRefetching((version) => version - 1);
+    const { sent, release } = await leaveWhileRefetching((version) => version - 1);
+    release();
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.leaveFailed));
+    expect(sent).toHaveLength(0);
+  });
+
+  it('기다리는 사이 화면을 떠나면 나가기를 보내지 않는다', async () => {
+    const { sent, release, unmount } = await leaveWhileRefetching((version) => version);
+    unmount();
+    release();
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
     expect(sent).toHaveLength(0);
   });
 });

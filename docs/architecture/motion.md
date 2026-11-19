@@ -30,6 +30,12 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 - `transform`과 `opacity`만 애니메이션한다. `width`, `height`, `top`, `left`, `padding`, `margin`을 애니메이션하면 매 프레임 layout을 다시 계산해 jank가 생긴다.
   - 예외: 내용 높이를 모르는 칸을 펼치고 접을 때는 `grid-template-rows` 0fr↔1fr로 자리를 벌린다(아코디언, 번치 프로필 편집 공개 안내, 신고 상세 사유). `transform`으로는 아래 내용과 시트 높이를 밀어낼 수 없다. 사용자가 누를 때 한 번만 일어나고 반복 재생되지 않아 layout 비용을 받아들인다.
 - 모션 라이브러리를 도입하면, 짧은 shorthand API(예: `x`/`y`/`scale`을 직접 넘기는 형태)가 실제로 하드웨어 가속되는 transform 문자열로 적용되는지 확인한다. 라이브러리에 따라 shorthand가 메인 스레드에서 계산되어 부하 상황에 프레임을 떨어뜨릴 수 있다.
+- 화면과 박자를 맞춰야 하는 작업은 `requestAnimationFrame`(rAF)으로 한다.
+  - 끌기·스크롤·당기기처럼 포인터·스크롤 이벤트가 프레임보다 자주 오는 동안 화면을 바꾸면, 이벤트마다 그리지 않고 프레임마다 한 번만 그린다. 값은 이벤트에서 기억하고 rAF 안에서 DOM style·CSS 변수에 쓴다(`useCropDrag`). 이때 React state로 다시 그리지 않는다(아래 「당겨서 새로고침」「스크롤로 헤더 숨김」).
+  - 계속 움직이는 효과(가장자리 자동 스크롤 등)는 `setInterval` 대신 rAF 반복으로 돌리고, 멈추거나 화면을 떠날 때 `cancelAnimationFrame`으로 끊는다(`useEdgeAutoScroll`).
+  - 크기·위치를 읽는 일(`getBoundingClientRect`, `offsetHeight`, `scrollTop`)과 쓰는 일을 한 프레임 안에서 번갈아 하지 않는다. 읽기를 먼저 모으고 쓰기는 그 뒤(다음 rAF)에 한다. 번갈아 하면 브라우저가 매번 layout을 다시 계산한다.
+  - 「화면이 그려진 다음」이 필요한 작업(새 화면의 초점 이동, 붙여넣기 뒤 커서 위치, 전환이 시작된 뒤의 스크롤)은 `setTimeout(0)`이 아니라 rAF로 미룬다(`RouteFocus`, `BundleDetail`의 「댓글로 이동」). `setTimeout`은 그리기와 박자가 맞지 않아 한 프레임 늦거나 먼저 실행될 수 있다.
+  - 예약한 rAF는 effect 정리(cleanup)에서 취소한다. 화면이 사라진 뒤 실행되면 없는 요소를 건드린다.
 - toast 추가, toggle처럼 빠르게 반복 트리거되는 대상은 `@keyframes`보다 CSS `transition`을 쓴다. transition은 진행 중에 재시작되면 현재 값에서 이어지지만, keyframes는 처음부터 다시 시작한다.
 
 ## 접근성
@@ -126,7 +132,7 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 - 시간·곡선: Slide In / Left / 이동 시간 300ms를 적용한다. 곡선은 사용자 합의에 따라 설계서의 Ease In 대신 Ease Out으로 조정한다. SSGOI의 `override`에 `easeOutIntegrator`를 넣어 CSS `cubic-bezier(0, 0, .58, 1)`의 진행도를 계산한다. 라이브러리의 `easeOut({ duration })`은 관성 기반 곡선이므로 CSS 곡선과 동일하다고 취급하지 않는다. 이동 시간과 라이브러리의 종료 판정 시간은 구분한다. 이전 200ms 설정에서 SSGOI 7.4.1의 WAAPI timeline 약 233ms를 확인했으며, 현재 300ms 설정의 실제 종료 시간은 브라우저 재검증 전이다.
 - 상태 유지: 상위 layout은 provider만 유지한다. 실제 route의 DOM에 `data-ssgoi-transition`을 지정하고, 만들기 layout 내부에서 단계 묶음·완료·초대를 구분한다. URL을 먼저 감지하는 상위 경계에서 빈 화면이 전환되는 문제를 피하려고 콘텐츠와 경계를 함께 마운트한다. 1~3단계의 헤더·Stepper와 draft provider는 유지한다. 단계 사이의 본문 전환은 현재 등록하지 않았다.
 - 하단 탭 전환 (2026-11-01, 결정 기록 017): 웹 탭 막대의 네 탭 사이 이동은 80ms 등속 크로스페이드다. 들어오는 탭은 아래에 불투명하게 두고 위로 올린 나가는 탭만 페이드해 같은 헤더가 흐려지지 않는다. 탭 page는 `MainTabPage`로 감싼다. 나가는 탭은 다른 페이지 전환처럼 `inert`로 둔다. 상태 바 영역을 칠하는 `AppFrame` 배경도 나가는 화면(`data-page-leaving`, 모든 등록 전환이 붙임)의 표식을 무시하고 화면과 함께 바뀐다. 기본 150ms ease-out, 웹 탭 막대가 있으면 80ms 등속이다. Next가 새 화면을 그리는 순간 이전 화면이 잠깐 빠져 배경이 먼저 바뀌므로 transition은 전환 전부터 `AppFrame`에 걸어 둔다. 전환 규칙이 없는 이동도 상태 바 영역은 150ms 페이드라, 번치 홈처럼 배경색이 다른 화면에서 규칙 없는 이동을 추가하면 함께 본다. SSGOI 7.4.1의 `LinearIntegrator`는 지수 감속이라 등속 integrator를 직접 둔다. iOS 앱은 시스템 탭 바라 쉘의 로컬 모듈(`apps/mobile-shell/modules/tab-crossfade`)이 같은 방식으로 전환한다.
-- 번치 추가 (2026-11-01): 화면설계서(`1892:37781` 7·8번)대로 번치 홈 전환 시트의 「새로운 번치 추가하기」는 시트가 다 내려간 뒤(`onOpenChangeComplete`) 번치 시작 선택(`/onboarding`)으로 이동하고, `/bunch` → `/onboarding`에 Dissolve / Ease out / 150ms(`fade`, 단계마다 75ms, `BUNCH_ADD_DISSOLVE_DURATION_MS`)를 등록했다. 하단 탭 막대는 `(main)` layout에 있어 전환 대상 밖이라 이동과 함께 바로 사라진다. Chromium에서 시트 닫힘 → 번치 홈 페이드 아웃 → 시작 선택 페이드 인 순서를 확인했다.
+- 번치 추가 (2026-11-01): 화면설계서(`1892:37781` 7·8번)대로 번치 홈 전환 시트의 「새로운 번치 추가하기」는 시트가 다 내려간 뒤(`onOpenChangeComplete`) 번치 시작 선택(`/onboarding`)으로 이동하고, `/bunch` → `/onboarding`에 Dissolve / Ease out / 150ms(`fade`, 단계마다 75ms)를 등록했다(아래 2026-11-20에 axis y로 대체). 하단 탭 막대는 `(main)` layout에 있어 전환 대상 밖이라 이동과 함께 바로 사라진다. Chromium에서 시트 닫힘 → 번치 홈 페이드 아웃 → 시작 선택 페이드 인 순서를 확인했다. 2026-11-20(#468, 사용자 결정): 폰에서 150ms 디졸브가 바로 바뀐 것처럼 보여 SSGOI `axis`(`type: 'y'`, 방향형) Ease out / 300ms(`BUNCH_ADD_AXIS_DURATION_MS`)로 바꿨다. 열 때 시작 선택이 아래에서 올라오고, 닫기(뒤로 가기)는 위에서 내려간다(`bidirectional`). 화면설계서 값과 달라 디자이너에게 공유한다. 브라우저·실기기 프레임은 확인하지 않았다.
 - 번치 더보기 메뉴 (2026-11-01 #169, 2026-11-02 #186에서 변경): 번치 홈 「더보기」 → 메뉴와 뒤로 가기는 SSGOI `drill`(기본 `parallax`) 프리셋에 Ease out / 250ms만 `override`로 적용한다(`BUNCH_DRILL_DURATION_MS`). 화면설계서(`1892:37780`)는 150ms지만 빨라 보여 사용자 결정으로 200ms로 했고, 2026-11-06에 다시 250ms로 늘렸다. 들어오는 화면은 오른쪽에서, 뒤 화면은 왼쪽으로 20% 함께 밀린다. 처음에는 150ms의 덮는 Move in(아래 화면 제자리)을 직접 만들었지만, 위 「프리셋 우선」 기준에 따라 같은 계열인 `drill`로 바꿨다. 그래서 뒤 화면도 움직이는 것이 화면설계서와 다르고, 이 차이는 디자이너에게 공유한다. 양방향 규칙 하나(`bidirectional`)다. 200ms 설정일 때 Chromium(앱 폭 430px)에서 열기·닫기 이동이 프레임 단위로 약 200ms에 끝나고(250ms는 프레임 측정 안 함) 프레임마다 이동 거리가 54→5px로 줄어(ease-out), 열자마자 뒤로 가도(0.08~0.3초) 두 화면에 남는 스타일이 없는 것을 확인했다. 실기기와 동작 줄이기는 확인하지 않았다.
 - 번치 더보기 메뉴의 하위 화면 (2026-11-01, 이슈 #172): 메뉴 → 프로필 편집은 화면설계서에 정의가 없어, 한 단계 들어가는 이동으로 보고 미는 `slide`·300ms ease-out(`BUNCH_MENU_SUB_SLIDE_DURATION_MS`)으로 정했다(디자이너 요청). 번치 홈 → 메뉴의 `drill`과 구분된다. 다른 하위 화면도 같은 규칙에 경로를 더한다. 멤버 관리(메뉴 ↔ 멤버 관리, 멤버 관리 ↔ 역할별 권한, 메뉴·멤버 관리 ↔ 멤버 초대)도 같은 slide다(#175). 메뉴 ↔ 차단 목록(#178), 메뉴 ↔ 새 관리자 지정(#180)도 같다. 새 관리자를 지정하고 나가면 지정 화면에서 번치 탭으로 두 칸 되돌아가므로, 이 이동에도 메뉴와 같은 `drill`(되돌아가기)을 둔다. 번치 삭제도 메뉴 ↔ 안내 ↔ 확인 문구 입력이 같은 slide이고, 삭제하면 확인 화면에서 번치 탭으로 세 칸 되돌아가 같은 `drill`을 둔다(#184).
 - 번치 알림 목록 (2026-11-02, 이슈 #186): 번치 탭 헤더 알림 → 알림 목록과 뒤로 가기는 더보기 메뉴와 같은 `drill`이다(SSGOI 데모의 Home → Notifications와 같은 프리셋). 화면설계서(`2236:41816` 3번)는 Move in / ← / Ease out / 150ms로 방향은 같다. 위에서 내려오는 `sheet` 계열도 검토했지만, 헤더의 뒤로 가기와 방향이 맞는 `drill`을 골랐다.
@@ -162,6 +168,10 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 - 번들 만들기 추천 상세 (2026-11-01, 이슈 #161): 사진 선택 `/bunch/bundles/new`와 추천 번들 상세 사이는 `slide`·200ms(`BUNDLE_DETAIL_SLIDE_DURATION_MS`)이고 양방향 규칙 하나다. 상세는 동적 route라 약관 원문처럼 고정 id(`BUNDLE_SELECT_PATHS.transitionIds.recommendation`)를 규칙과 각 화면 DOM의 `data-ssgoi-transition`에 함께 쓴다. 곡선은 온보딩과 같은 합의에 따라 설계서의 Ease In 대신 Ease Out이다. 상세 ↔ 뷰어 전환은 시안이 없어 등록하지 않았다. Chromium(headless 375px)에서 프레임을 재서 새 화면 324→0·이전 화면 0→-375, 약 185ms로 끝나는 것을 확인했고, 실기기와 동작 줄이기는 아직 확인하지 않았다.
 - 접근성: `prefers-reduced-motion` 변경을 구독해 전환 규칙을 비운다. SSGOI가 함수형 규칙을 캐시하므로 함수 안에서 설정을 읽는 것으로 대체하지 않는다. 전환 중 이전 화면은 `inert`로 포커스·접근성 탐색에서 제외하고 종료 시 복원한다.
 - 검증: 진행도 단위 테스트와 온보딩 회귀 테스트, Chromium의 순방향·뒤로 가기·입력 유지·헤더 유지·동작 줄이기 변경·좁은 화면/넓은 화면 중간 프레임을 확인한다. iOS WKWebView와 실제 화면 읽기 도구는 별도 확인이 필요하다. 네이티브 스와이프와 전환 중 빠른 연속 이동도 실기기에서 확인한다.
+
+### 목록 사진이 나타나기
+
+- 번치 홈 완성 번들 그리드(`CompletedBundleGrid`)와 작성 중 번들 카드(DS `BundleCard`)는 사진을 받는 동안 회색 자리(`surface-secondary`)를 보이고, 다 받으면 200ms ease-out으로 나타난다(#468). 원본 사진을 받느라 위에서부터 끊겨 그려지거나 툭 나타나던 것을 가린다. 이미 받아 둔 사진은 바로 보이고, 받지 못하면 회색으로 남는다. 동작 줄이기에서는 전환 없이 바로 보인다. 받는 양 자체를 줄이는 목록용 썸네일 주소는 백엔드 확인 전이다.
 
 ### 온보딩 단계 진행바
 

@@ -153,7 +153,7 @@ export function BunchInvite({
             aria-busy={loading || undefined}
             // 링크를 받는 동안 입력란 안 글자 자리(Figma에 없는 상태라 다른 스켈레톤과 같은 회색)
             editing={Boolean(loading)}
-            editingContent={<span className="bg-surface-secondary rounded-r2 block h-5 w-3/5" />}
+            editingContent={<span className="bg-surface-secondary rounded-r2 block h-5 w-40" />}
           />
         )}
         <p className="bg-surface-secondary rounded-r3 px-padding-p8 py-padding-p5 gap-s3 typography-body-3-regular text-text-tertiary flex items-center">
