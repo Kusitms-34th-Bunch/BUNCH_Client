@@ -1,4 +1,5 @@
-import { queryOptions, skipToken } from '@tanstack/react-query';
+import { queryOptions, skipToken, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { issueBunchInvitation } from '../api/bunchInvitation';
 import { sharedKeys } from './keys';
 
@@ -14,3 +15,15 @@ export const bunchInvitationQueryOptions = (bunchId: string | undefined) =>
     refetchOnReconnect: false,
     staleTime: 60_000,
   });
+
+/**
+ * 초대 화면을 열기 직전(「멤버 초대」를 누르기 시작할 때) 초대 링크를 받는 함수
+ * 발급 요청이라 메뉴를 열 때마다 받지 않고 누를 때만. 받아 둔 링크가 있으면 다시 요청하지 않음, 실패는 화면이 다시 받음
+ */
+export const usePrefetchBunchInvitation = () => {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (bunchId: string) => void queryClient.prefetchQuery(bunchInvitationQueryOptions(bunchId)),
+    [queryClient],
+  );
+};

@@ -1,11 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { usePrefetchBunchInvitation } from '@/shared/query/bunchInvitation';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useMyBunchMemberships } from '../../hooks/useMyBunchMemberships';
+import { usePrefetchBlockedBunches } from '../../queries/blocks';
 import { BunchHomeError } from '../home/BunchHomeError';
 import { BunchMenuScreen } from './BunchMenuScreen';
 
@@ -16,7 +19,14 @@ import { BunchMenuScreen } from './BunchMenuScreen';
 export function BunchMenu() {
   const router = useRouter();
   const backOr = useBackOr();
-  const { bunchName, managed, failed, retry, depart } = useMyBunchMemberships();
+  const { bunchId, bunchName, managed, failed, retry, depart } = useMyBunchMemberships();
+  // 하위 화면을 바로 그리게 미리 받음. 차단 목록은 메뉴를 그리면, 초대 링크(발급 요청)는 「멤버 초대」를 누르기 시작할 때
+  const prefetchBlocked = usePrefetchBlockedBunches();
+  const prefetchInvitation = usePrefetchBunchInvitation();
+  const menuReady = managed !== undefined;
+  useEffect(() => {
+    if (menuReady && bunchId) prefetchBlocked(bunchId);
+  }, [menuReady, bunchId, prefetchBlocked]);
 
   if (failed)
     return <BunchHomeError onRetry={retry} onBack={() => backOr(BUNCH_HOME_PATHS.home)} />;
@@ -36,6 +46,9 @@ export function BunchMenu() {
           if (bunchName) toastAfterNavigation(BUNCH_HOME_MESSAGES.left(bunchName));
         })
       }
+      onInviteIntent={() => {
+        if (bunchId) prefetchInvitation(bunchId);
+      }}
       onOwnerLeave={() => router.push(BUNCH_HOME_PATHS.leave)}
       onDeleteBunch={() => router.push(BUNCH_HOME_PATHS.delete)}
     />
