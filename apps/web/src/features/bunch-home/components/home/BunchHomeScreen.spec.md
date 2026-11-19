@@ -44,7 +44,7 @@
 
 - 화면 데이터는 `BunchHome`이 `useServerBunchHome`으로 받는다. 동작(`switchBunch`·`deleteDraftBundle`·`removeBunch`)은 서버 mutation(`useSwitchBunchMutation`·`useDeleteBundleMutation`·`useDeleteBunchNoticeMutation`)이다. 더보기 메뉴의 역할은 서버 멤버 목록(`useMyBunchMemberships`)으로 정한다.
 - 테스트는 가짜 서버(MSW)의 시작 데이터(기본 번치 여행쥬아)로 그린다(`BunchHome.test.tsx`·`BunchHome.server.test.tsx`·`BunchHome.needMembers.test.tsx`).
-- 탭·전환 시트·삭제 대상·접근 불가 안내 대상은 화면 안 상태다. 탭의 처음 값만 주소(`?tab=drafts`)로 정한다.
+- 탭·전환 시트·삭제 대상·접근 불가 안내 대상은 화면 안 상태다. 탭의 처음 값만 주소(`?tab=drafts`)로 정한다. 고른 탭은 이 화면의 history 항목에 번치 id와 함께 적어, 작성 중인 번들 등에서 뒤로 돌아오면(새로고침 포함) 그 탭으로 연다(2026-11-19 QA). 다른 번치로 바꿨거나 새로 들어오면 처음 탭이다.
 - 그리드 → 번들 상세의 삭제 확인은 feed feature의 상세 query(`usePrefetchBundleDetail`)를 route(`BunchHomeRoute`)가 넘겨 쓴다. 상세 → 번치 홈과 같은 drill 전환이다.
 
 ## 접근성

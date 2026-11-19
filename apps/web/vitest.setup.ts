@@ -20,6 +20,8 @@ afterEach(() => {
   server.resetHandlers();
   mockDb.reset();
   resetIdempotency();
+  // 화면이 history 항목에 적어 둔 값(번들 탭·콕 칩·스크롤 위치)이 다음 테스트로 새지 않게 비움(DOM 환경만)
+  if (typeof window !== 'undefined') window.history.replaceState(null, '');
 });
 afterAll(() => server.close());
 // `overlay.open`으로 여는 시트·대화상자를 그리는 자리(앱의 layout과 같은 역할)

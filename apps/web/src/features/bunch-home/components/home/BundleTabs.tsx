@@ -20,6 +20,22 @@ export type BundleTab = 'completed' | 'draft';
 // 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
 const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
 
+// 고른 탭을 이 화면의 history 항목에 번치 id와 함께 둠: 작성 중인 번들 등에서 뒤로 돌아오면 그 탭으로, 새로 들어오면 처음 탭으로
+// 번치 id가 다르면(그사이 번치를 바꿈) 쓰지 않음
+const HISTORY_KEY = 'bunchBundleTab';
+const readHistoryTab = (bunchId: string): BundleTab | undefined => {
+  if (typeof window === 'undefined') return undefined;
+  const state = window.history.state as Record<string, unknown> | null;
+  const saved = state?.[HISTORY_KEY] as { bunchId?: unknown; tab?: unknown } | undefined;
+  return saved?.bunchId === bunchId && (saved.tab === 'completed' || saved.tab === 'draft')
+    ? saved.tab
+    : undefined;
+};
+const writeHistoryTab = (bunchId: string, tab: BundleTab) => {
+  const state = window.history.state as object | null;
+  window.history.replaceState({ ...state, [HISTORY_KEY]: { bunchId, tab } }, '');
+};
+
 type BundleTabsProps = {
   /** 처음 보일 탭(알림에서 「작성 중인 번들」로 바로 들어옴, 5.12.2) */
   initialTab?: BundleTab | undefined;
@@ -49,7 +65,7 @@ export function BundleTabs({
   onOpenDraft,
   onDeleteDraft,
 }: BundleTabsProps) {
-  const [tab, setTab] = useState<BundleTab>(initialTab);
+  const [tab, setTab] = useState<BundleTab>(() => readHistoryTab(bunchId) ?? initialTab);
   const gridRef = useRef<HTMLUListElement>(null);
   // 탭을 한 번이라도 바꿨는지(첫 진입·되돌아올 때는 디졸브 생략)
   const [tabChanged, setTabChanged] = useState(false);
@@ -59,6 +75,7 @@ export function BundleTabs({
       onValueChange={(value) => {
         setTabChanged(true);
         setTab(value as BundleTab);
+        writeHistoryTab(bunchId, value as BundleTab);
       }}
       className="flex flex-1 flex-col"
     >
