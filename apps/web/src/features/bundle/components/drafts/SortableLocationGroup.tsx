@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 
 // 행 안의 핸들이 그 행의 정렬 동작(잡는 곳·속성)을 받도록 래퍼가 제공하는 값
@@ -161,6 +162,8 @@ export function SortableLocationGroup({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={({ active }) => {
+        // 손잡이로 집어 올린 순간 한 번 진동(사진 끌기와 같은 햅틱, Figma 햅틱 모음). 쉘이 아니거나 이전 쉘이면 동작 없음
+        if (isNativeShell()) void appBridge.dragStartHaptic().catch(() => {});
         setFrozen(items);
         notifyDrag(String(active.id), true);
       }}
