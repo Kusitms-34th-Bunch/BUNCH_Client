@@ -13,7 +13,7 @@ vi.mock('@/shared/bridge/client', () => ({
   appBridge: { appReady: shell.appReady },
 }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), prefetch: vi.fn() }),
   usePathname: () => '/bunch',
 }));
 

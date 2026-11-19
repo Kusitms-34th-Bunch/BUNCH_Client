@@ -8,6 +8,7 @@ import {
   type MultiAnimation,
 } from '@ssgoi/react';
 import {
+  axis,
   defineTransition,
   drill,
   fade,
@@ -53,6 +54,8 @@ export const BUNCH_MENU_SUB_SLIDE_DURATION_MS = 300;
 // 더보기 메뉴·알림 목록 진입 drill 시간. 화면설계서 Move in / ← / Ease out / 150ms가 빨라 보여 200ms(2026-11-02), 다시 250ms(2026-11-06 사용자 결정)
 export const BUNCH_DRILL_DURATION_MS = 250;
 export const TAB_CROSSFADE_DURATION_MS = 80;
+// 가입 완료 → 번치 시작, 초대 참여 완료 → 피드: 한 흐름을 마치고 다음 장면으로 넘어가는 이동(화면설계서에 정의 없음, 2026-11-20 사용자 결정)
+export const SCENE_CHANGE_DURATION_MS = 300;
 
 // 나가는 화면은 포커스·보조기술에서 제외(inert)하고 data-page-leaving 표식(AppFrame이 그 화면의 배경 표식을 무시해 상태 바 영역도 함께 전환)
 // 중단된 이전 전환에서 돌아오는 DOM은 다시 조작 가능하게 처리
@@ -119,6 +122,12 @@ const tuneBunchAddDissolve = tuneTransition(BUNCH_ADD_DISSOLVE_DURATION_MS / 2);
 const bunchAddDissolve = fade(
   {},
   { override: { forward: tuneBunchAddDissolve, backward: tuneBunchAddDissolve } },
+);
+// SSGOI axis z(Material 공유 축 Z): 이전 화면은 110%로 커지며 사라지고 새 화면은 90%에서 커지며 나타남. 방향이 없어 뒤로 가기로 오해하지 않음
+const tuneSceneChange = tuneTransition(SCENE_CHANGE_DURATION_MS);
+const sceneChange = axis(
+  { type: 'z' },
+  { override: { forward: tuneSceneChange, backward: tuneSceneChange } },
 );
 // 번치 탭 ↔ 더보기 메뉴·알림 목록(앞으로 들어가는 이동): SSGOI drill(parallax) 프리셋
 // 들어오는 화면은 오른쪽에서, 뒤 화면은 왼쪽으로 20% 함께 밀림. 시간·곡선만 Ease out / 250ms로 맞춤
@@ -610,6 +619,9 @@ const rules: SsgoiTransitionRule[] = [
     to: SIGNUP_PATHS.terms,
     transition: dissolve,
   },
+  // 가입·참여를 마치고 다음 장면으로: 되돌아오지 않는 이동(replace)이라 한 방향
+  { from: SIGNUP_PATHS.profile, to: ONBOARDING_PATHS.start, transition: sceneChange },
+  { from: ONBOARDING_PATHS.joinBunchComplete, to: ONBOARDING_PATHS.feed, transition: sceneChange },
   { from: ONBOARDING_PATHS.start, to: ONBOARDING_PATHS.createBunch, transition },
   { from: ONBOARDING_PATHS.start, to: ONBOARDING_PATHS.joinBunch, transition },
   {

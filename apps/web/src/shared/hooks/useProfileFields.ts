@@ -38,6 +38,7 @@ export function useProfileFields(
 ) {
   const [nickname, setNickname] = useState(initial.nickname);
   const [composing, setComposing] = useState(false);
+  const [nicknameFocused, setNicknameFocused] = useState(false);
   const [birthYear, setBirthYear] = useState(initial.birthYear);
   const [birthYearBlurred, setBirthYearBlurred] = useState(false);
   const [gender, setGender] = useState(initial.gender);
@@ -54,9 +55,11 @@ export function useProfileFields(
   // 지금 내 닉네임과 같으면 중복 확인을 하지 않고 결과 문구도 보이지 않음(기능명세서 7.2.5 로직 1)
   const isCurrentNickname =
     currentNickname !== undefined && normalizedNickname === normalizeNickname(currentNickname);
+  // 입력란을 벗어나면 대기 없이 바로 확인, 확인한 값은 기억(대기 0.5초는 타자 중 요청·문구 깜빡임을 막으려 유지)
   const availability = useNicknameAvailability(
     normalizedNickname,
     isCurrentNickname ? undefined : checkNickname,
+    { immediate: !nicknameFocused, remember: true },
   );
   // 저장 때 서버가 거부한 이유가 입력 때 받은 확인 결과보다 앞섬
   const rejection = rejectedAtSave?.reason ?? availability;
@@ -95,6 +98,8 @@ export function useProfileFields(
     birthYearError,
     setNickname,
     setComposing,
+    /** 닉네임 입력란의 포커스 여부. 벗어나면 대기 없이 바로 확인 */
+    setNicknameFocused,
     setBirthYear: (value: string) => setBirthYear(sanitizeBirthYear(value)),
     setBirthYearBlurred,
     setGender,

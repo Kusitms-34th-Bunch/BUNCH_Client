@@ -44,7 +44,7 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
   const containerRef = useRef<HTMLDivElement>(null);
 
   const start = async () => {
-    if (register.isPending) return;
+    if (register.isPending || register.isSuccess) return;
     closeKeyboard();
     const { nickname, birthYear, gender } = fields.values;
     try {
@@ -72,45 +72,53 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="flex min-h-0 flex-1 flex-col"
-      onPointerDown={dismissKeyboard}
-    >
-      {/* 저장 중 상태를 스크린 리더에 알림(aria-busy만으로는 읽히지 않는 경우가 많음, 화면에는 숨김) */}
+    <>
+      {/* 저장·이동 상태를 스크린 리더에 알림(aria-busy만으로는 읽히지 않는 경우가 많음, 화면에는 숨김). 잠긴 영역 밖이어야 읽힘 */}
       <p role="status" className="sr-only">
-        {register.isPending ? '프로필을 저장하는 중이에요' : ''}
+        {register.isPending
+          ? '프로필을 저장하는 중이에요'
+          : register.isSuccess
+            ? '화면을 이동하는 중이에요'
+            : ''}
       </p>
-      {register.isPending ? <PageLoading /> : null}
-      <SignupFrame
-        bottom={
-          <div className="px-padding-p8 pt-padding-p7">
-            <Button
-              className="w-full"
-              disabled={!fields.isValid}
-              aria-busy={register.isPending || undefined}
-              onClick={() => void start()}
-            >
-              BUNCH 시작하기
-            </Button>
-          </div>
-        }
+      <div
+        ref={containerRef}
+        className="flex min-h-0 flex-1 flex-col"
+        onPointerDown={dismissKeyboard}
+        // 가입을 마치면 도착 화면으로 넘어가는 동안 이 화면을 그대로 두므로(AuthGate) 다시 입력·제출하지 못하게 잠금
+        inert={register.isSuccess}
       >
-        <PageHeader
-          title="먼저 나를 소개해 볼까요?"
-          description="BUNCH에서 사용할 닉네임과 프로필 사진을 설정해 주세요."
-        />
-        <div className="pt-s18 flex flex-col items-center">
-          <ProfilePhotoField value={photo} onChange={setPhoto} />
-        </div>
-        <div className="pt-s14 px-padding-p8">
-          <ProfileFields
-            fields={fields}
-            showDemographics={showDemographics}
-            note={`출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며,\n다른 사용자에게 공개되지 않아요.`}
+        {register.isPending ? <PageLoading /> : null}
+        <SignupFrame
+          bottom={
+            <div className="px-padding-p8 pt-padding-p7">
+              <Button
+                className="w-full"
+                disabled={!fields.isValid || register.isSuccess}
+                aria-busy={register.isPending || undefined}
+                onClick={() => void start()}
+              >
+                BUNCH 시작하기
+              </Button>
+            </div>
+          }
+        >
+          <PageHeader
+            title="먼저 나를 소개해 볼까요?"
+            description="BUNCH에서 사용할 닉네임과 프로필 사진을 설정해 주세요."
           />
-        </div>
-      </SignupFrame>
-    </div>
+          <div className="pt-s18 flex flex-col items-center">
+            <ProfilePhotoField value={photo} onChange={setPhoto} />
+          </div>
+          <div className="pt-s14 px-padding-p8">
+            <ProfileFields
+              fields={fields}
+              showDemographics={showDemographics}
+              note={`출생연도와 성별은 서비스 개선을 위한 통계 분석에만 활용되며,\n다른 사용자에게 공개되지 않아요.`}
+            />
+          </div>
+        </SignupFrame>
+      </div>
+    </>
   );
 }
