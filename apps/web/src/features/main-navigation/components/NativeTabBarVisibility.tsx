@@ -26,10 +26,18 @@ export function NativeTabBarVisibility({ exitPaths = [] }: { exitPaths?: readonl
 
   useEffect(() => {
     if (!isNativeShell() || !exiting) return;
+    // 요청에 보낸 WebView 구분이 없어 화면에 보이는 WebView만 보냄: 뒤의 탭 WebView가 로그인 전 화면에 와도 보던 탭 화면을 닫지 않고,
+    // 그 탭이 보이게 되면 그때 보냄(탭 바 표시와 같은 방식)
     // 탭 화면이 아니면(첫 화면 WebView) 쉘이 그대로 둠. 선택 탭은 쉘이 쓰지 않지만 요청 형식상 넣음
-    void appBridge
-      .setNativeTabBar({ items: NATIVE_TAB_ITEMS, selectedId: 'feed', hidden: true })
-      .catch(() => {});
+    const send = () => {
+      if (document.visibilityState !== 'visible') return;
+      void appBridge
+        .setNativeTabBar({ items: NATIVE_TAB_ITEMS, selectedId: 'feed', hidden: true })
+        .catch(() => {});
+    };
+    send();
+    document.addEventListener('visibilitychange', send);
+    return () => document.removeEventListener('visibilitychange', send);
   }, [exiting]);
 
   useEffect(() => {

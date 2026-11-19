@@ -87,4 +87,26 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     rerender(<NativeTabBarVisibility exitPaths={exitPaths} />);
     expect(setNativeTabBar).toHaveBeenCalledTimes(1);
   });
+
+  it('화면에 보이지 않는 탭 WebView는 로그인 전 화면에 와도 탭 화면을 끝내지 않고, 보이게 되면 끝낸다', () => {
+    setVisibility('hidden');
+    pathname.current = '/login';
+    render(<NativeTabBarVisibility exitPaths={['/login']} />);
+    expect(setNativeTabBar).not.toHaveBeenCalled();
+
+    setVisibility('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(setNativeTabBar).toHaveBeenCalledWith(expect.objectContaining({ hidden: true }));
+  });
+
+  it('로그인 전 화면을 벗어난 뒤에는 다시 보이게 돼도 탭 화면 종료를 보내지 않는다', () => {
+    pathname.current = '/login';
+    const { rerender } = render(<NativeTabBarVisibility exitPaths={['/login']} />);
+    pathname.current = '/feed';
+    rerender(<NativeTabBarVisibility exitPaths={['/login']} />);
+    setNativeTabBar.mockClear();
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(setNativeTabBar).not.toHaveBeenCalled();
+  });
 });
