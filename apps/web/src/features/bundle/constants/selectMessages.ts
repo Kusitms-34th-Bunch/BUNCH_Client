@@ -46,6 +46,13 @@ export const BUNDLE_SELECT_MESSAGES = {
   createFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   selectionStatus: (count: number) => (count === 0 ? '선택한 사진이 없어요.' : `${count}장 선택됨`),
   photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
+  // 번들 만들기 진입 확인(기능명세 4.1.1 상세 동작 1, 3.3.4): 초안이 이미 10개
+  draftLimitEntry: '번들 초안은 최대 10개까지 만들 수 있어요.',
+  // 번치에 나 혼자일 때 번들 만들기를 막는 안내 창(기능명세 4.1.1, 4.1.4, 번치 홈과 같은 문구)
+  needMembersTitle: '함께할 멤버가 없어요',
+  needMembersDescription: '번들은 번치의 멤버가 2명 이상일 때 만들 수 있어요.',
+  needMembersInvite: '초대하기',
+  needMembersCancel: '취소',
 } as const;
 
 /** 번들 하나에 담을 수 있는 최대 사진 수(기획 4.1.2). 사진함 「번들 만들기」와 같은 값 */

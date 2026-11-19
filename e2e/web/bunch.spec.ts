@@ -8,9 +8,12 @@ test('번치 만들기 중간 단계로 바로 들어가면 첫 단계로 돌아
   ).toBeVisible();
 });
 
-test('이름·공개 범위 → 소개 → 분위기를 거쳐 번치를 만들고 피드로 이동한다', async ({ page }) => {
+test('이름·공개 범위 → 소개 → 분위기를 거쳐 번치를 만들고 새 번치 홈으로 이동한다', async ({
+  page,
+}) => {
   await page.goto('/onboarding/create');
-  await page.getByRole('textbox', { name: '번치 이름' }).fill('주말산책회');
+  // 이름 안의 공백은 쓸 수 있음(기능명세 2.2.2)
+  await page.getByRole('textbox', { name: '번치 이름' }).fill('주말 산책회');
   await page
     .getByRole('radio', { name: /공개 번치/ })
     .first()
@@ -28,12 +31,12 @@ test('이름·공개 범위 → 소개 → 분위기를 거쳐 번치를 만들�
   await page.getByRole('button', { name: '번치 만들기' }).click();
 
   await expect(page).toHaveURL(/\/onboarding\/create\/complete$/);
-  await expect(page.getByRole('heading', { level: 1, name: /주말산책회/ })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /주말 산책회/ })).toBeVisible();
 
+  // 새로 만든 번치의 홈으로 감(기능명세 2.3.4). 만든 번치가 기본 번치라 번치 탭이 그 번치를 보임
   await page.getByRole('button', { name: '내 번치로 이동하기' }).click();
-  await expect(page).toHaveURL(/\/feed$/);
-  // 만든 번치가 마지막 사용 번치라 피드의 현재 번치가 됨
-  await expect(page.getByRole('link', { name: '주말산책회 번치 홈' })).toBeVisible();
+  await expect(page).toHaveURL(/\/bunch$/);
+  await expect(page.getByRole('heading', { level: 1, name: /주말 산책회/ })).toBeVisible();
 });
 
 test('번치 홈에서 다른 번치로 전환하면 홈과 피드가 그 번치로 바뀐다', async ({ page }) => {

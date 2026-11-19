@@ -32,7 +32,7 @@ import { OtherBunchScreen } from './OtherBunchScreen';
 
 /**
  * `/bunches/[bunchId]` 다른 번치 프로필: 홈(`EXTERNAL`)·공개 번들과 팔로우를 지금 내 번치(기본 번치) 명의로
- * 내가 속한 번치면 그 번치로 전환해 번치 탭에서 보여 줌. 없는 번치는 404, 차단 관계(내가 차단·서버 403)면 접근 제한
+ * 내가 속한 번치면 그 번치로 전환해 번치 탭에서 보여 줌. 삭제된 번치(404)는 「삭제된 번치예요.」 뒤 이전 화면, 잘못된 주소는 404, 차단 관계(내가 차단·서버 403)면 접근 제한
  */
 export function OtherBunch({
   bunchId,
@@ -92,6 +92,19 @@ export function OtherBunch({
     });
   }, [internal, bunchId, router, switchBunch]);
 
+  // 없는 번치(404)는 그사이 삭제된 번치로 보고 안내 뒤 이전 화면으로(기능명세 5.10.1 예외 처리 「제안」, 한 번만)
+  // ponytail: 서버 404가 삭제와 없는 번치를 구분하지 않음. 들어오는 길이 모두 실제 번치 링크라 삭제로 봄
+  // 내가 차단한 번치는 404여도 접근 제한 화면이 앞섬: 차단 여부를 확인한 뒤(visible)에만 삭제로 보고, 확인 중이면 로딩 유지
+  const deleted =
+    isApiError(home.error) && home.error.status === 404 && access === 'visible' && !justBlocked;
+  const leftDeleted = useRef(false);
+  useEffect(() => {
+    if (!deleted || leftDeleted.current) return;
+    leftDeleted.current = true;
+    toastAfterNavigation(BUNCH_HOME_MESSAGES.bunchDeleted);
+    backOr(BUNCH_HOME_PATHS.feed);
+  }, [deleted, backOr]);
+
   // 서버가 본 명의가 캐시의 기본 번치와 다르면 다시 받고, 다시 받아도 어긋나면 다시 시도 화면(다른 기기에서 전환 등)
   const { stale: viewerStale, mismatch: viewerMismatch } = useViewerStale(viewerId, home, me);
   // 처리 중 다시 눌러도 한 번만(isPending은 다음 렌더부터 반영), 차단이 끝날 때를 기다릴 수 있게 진행 중인 요청을 둠
@@ -103,9 +116,10 @@ export function OtherBunch({
   if (access === 'blocked' || justBlocked) {
     return <BlockedBunchScreen onBack={back} focusTitle={justBlocked} />;
   }
-  // 없는 번치·잘못된 주소는 404
+  // 잘못된 주소는 404 화면, 삭제된 번치는 위에서 이전 화면으로 보내는 동안 로딩
   const errorStatus = isApiError(home.error) ? home.error.status : undefined;
-  if (errorStatus === 400 || errorStatus === 404) notFound();
+  if (errorStatus === 400) notFound();
+  if (deleted) return <BlockedBunchScreen onBack={back} checking />;
   // ponytail: 상대가 나를 차단한 응답은 명세에 없어 403을 차단으로 봄(비공개는 403이 아니라 canView로 옴), 다른 이유일 수 있어 다시 시도 둠
   if (errorStatus === 403) {
     return (

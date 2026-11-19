@@ -2,7 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { createBundle } from '@/features/bundle/api/bundles';
 import { mockDb } from '@/mocks/db';
 import {
@@ -160,12 +160,51 @@ describe('BunchHome 서버 데이터', () => {
 
     await screen.findByAltText(/강릉 커피 투어/);
     await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
-    await userEvent.click(await findDraftCard('제목 없는 번들'));
+    await userEvent.click(await findDraftCard('제목 미정'));
 
-    expect(push).toHaveBeenCalledWith(`/bunch/drafts/${created.id}`);
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/bunch/drafts/${created.id}`));
   });
 
-  it('제목을 아직 쓰지 않은 초안은 임시 이름으로 보인다', async () => {
+  // 목록을 받은 뒤 다른 멤버가 지우거나 발행한 초안(기능명세 5.3.1 예외 처리)
+  it.each([
+    ['삭제', '삭제된 번들이에요.'],
+    ['발행', '발행된 번들이에요.'],
+  ] as const)(
+    '이미 %s된 초안을 누르면 이동하지 않고 안내 뒤 목록을 갱신한다',
+    async (kind, message) => {
+      const created = await createBundle(
+        '1',
+        [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
+        createIdempotencyKey(),
+        [String(MOCK_MEMBER_IDS.memberA)],
+      );
+      renderHome();
+      await screen.findByAltText(/강릉 커피 투어/);
+      await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
+      const card = await findDraftCard('제목 미정');
+
+      mockDb.update((current) => ({
+        ...current,
+        bundles:
+          kind === '삭제'
+            ? current.bundles.filter((bundle) => String(bundle.id) !== created.id)
+            : current.bundles.map((bundle) =>
+                String(bundle.id) === created.id
+                  ? { ...bundle, status: 'PUBLISHED', publishedAt: '2026-11-19T00:00:00.000Z' }
+                  : bundle,
+              ),
+      }));
+      await userEvent.click(card);
+
+      await waitFor(() => expect(toast).toHaveBeenCalledWith(message));
+      expect(push).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: /제목 미정 삭제/ })).toBeNull(),
+      );
+    },
+  );
+
+  it('제목을 아직 쓰지 않은 초안은 「제목 미정」을 흐리게 보인다(기능명세 5.3.1)', async () => {
     await createBundle(
       '1',
       [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
@@ -177,7 +216,8 @@ describe('BunchHome 서버 데이터', () => {
     await screen.findByAltText(/강릉 커피 투어/);
     await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
 
-    expect(await findDraftCard('제목 없는 번들')).toBeInTheDocument();
+    const card = await findDraftCard('제목 미정');
+    expect(within(card).getByText('제목 미정').className).toContain('text-text-tertiary');
   });
 
   it('작성 중인 번들을 삭제하면 서버에서 지워지고 카드가 사라진다', async () => {
@@ -191,7 +231,7 @@ describe('BunchHome 서버 데이터', () => {
 
     await screen.findByAltText(/강릉 커피 투어/);
     await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
-    await userEvent.click(await screen.findByRole('button', { name: /제목 없는 번들 삭제/ }));
+    await userEvent.click(await screen.findByRole('button', { name: /제목 미정 삭제/ }));
     const dialog = await screen.findByRole('alertdialog', { name: '작성 중인 번들을 삭제할까요?' });
     await userEvent.click(within(dialog).getByRole('button', { name: '삭제하기' }));
 
@@ -199,9 +239,123 @@ describe('BunchHome 서버 데이터', () => {
       expect(mockDb.get().bundles.some((bundle) => String(bundle.id) === created.id)).toBe(false),
     );
     await waitFor(() =>
-      expect(screen.queryByRole('button', { name: /제목 없는 번들 삭제/ })).toBeNull(),
+      expect(screen.queryByRole('button', { name: /제목 미정 삭제/ })).toBeNull(),
+    );
+    expect(toast).toHaveBeenCalledWith('작성 중인 번들을 삭제했어요.');
+  });
+
+  // 서버가 요청한 사람 기준으로 계산한 삭제 권한(초안 생성자, 참여 중인 관리자)대로 휴지통을 보임(기능명세 5.3.2 로직 2)
+  it('삭제 권한이 없는 초안에는 휴지통이 없다', async () => {
+    server.use(
+      http.get('/api/bunches/:bunchId/bundles', ({ request }) =>
+        new URL(request.url).searchParams.get('status') === 'DRAFT'
+          ? ok({
+              items: [
+                {
+                  id: 77,
+                  title: '남의 초안',
+                  photos: [],
+                  participants: [],
+                  permissions: { canDelete: false },
+                },
+              ],
+              page: 0,
+              size: 50,
+              total: 1,
+            })
+          : undefined,
+      ),
+    );
+    renderHome();
+
+    await screen.findByAltText(/강릉 커피 투어/);
+    await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
+
+    expect(await findDraftCard('남의 초안')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '남의 초안 삭제' })).toBeNull();
+  });
+
+  // 삭제 API는 발행본도 지우므로 직전에 상태를 확인(기능명세 5.3.2 예외 처리)
+  it('그사이 발행된 초안은 지우지 않고 「이미 발행된 번들이에요.」를 띄운 뒤 창을 닫는다', async () => {
+    const created = await createBundle(
+      '1',
+      [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
+      createIdempotencyKey(),
+      [String(MOCK_MEMBER_IDS.memberA)],
+    );
+    const deletes: string[] = [];
+    server.events.on('request:start', ({ request }) => {
+      if (request.method === 'DELETE') deletes.push(new URL(request.url).pathname);
+    });
+    renderHome();
+
+    await screen.findByAltText(/강릉 커피 투어/);
+    await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
+    await userEvent.click(await screen.findByRole('button', { name: /제목 미정 삭제/ }));
+    const dialog = await screen.findByRole('alertdialog', { name: '작성 중인 번들을 삭제할까요?' });
+    mockDb.update((current) => ({
+      ...current,
+      bundles: current.bundles.map((bundle) =>
+        String(bundle.id) === created.id
+          ? { ...bundle, status: 'PUBLISHED', publishedAt: '2026-11-19T00:00:00.000Z' }
+          : bundle,
+      ),
+    }));
+    await userEvent.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+
+    onTestFinished(() => server.events.removeAllListeners());
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('이미 발행된 번들이에요.'));
+    expect(deletes).toEqual([]);
+    expect(mockDb.get().bundles.some((bundle) => String(bundle.id) === created.id)).toBe(true);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('alertdialog', { name: '작성 중인 번들을 삭제할까요?' }),
+      ).toBeNull(),
     );
   });
+
+  // 삭제 실패(기능명세 5.3.2 예외 처리): 충돌·권한 거부는 안내 뒤 창을 닫고, 일시적 실패는 창을 유지
+  it.each([
+    [404, 'RESOURCE_001', '이미 삭제된 번들이에요.', false],
+    [409, 'BUNDLE_002', '이미 발행된 번들이에요.', false],
+    [403, 'AUTH_002', '번들은 초안을 만든 멤버나 참여 중인 관리자만 삭제할 수 있어요.', false],
+    [500, 'COMMON_500', undefined, true],
+  ] as const)(
+    '삭제가 %i(%s)로 실패하면 알맞은 안내를 보이고 창 유지 여부를 정한다',
+    async (status, code, message, keepsDialog) => {
+      await createBundle(
+        '1',
+        [MOCK_PHOTO_IDS.S4, MOCK_PHOTO_IDS.S5].map(String),
+        createIdempotencyKey(),
+        [String(MOCK_MEMBER_IDS.memberA)],
+      );
+      server.use(http.delete('/api/bunches/:bunchId/bundles/:id', () => fail(status, code)));
+      renderHome();
+
+      await screen.findByAltText(/강릉 커피 투어/);
+      await userEvent.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
+      await userEvent.click(await screen.findByRole('button', { name: /제목 미정 삭제/ }));
+      const dialog = await screen.findByRole('alertdialog', {
+        name: '작성 중인 번들을 삭제할까요?',
+      });
+      await userEvent.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+
+      await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
+      if (message) expect(toast).toHaveBeenCalledWith(message);
+      expect(toast).not.toHaveBeenCalledWith('작성 중인 번들을 삭제했어요.');
+      if (keepsDialog) {
+        expect(
+          screen.getByRole('alertdialog', { name: '작성 중인 번들을 삭제할까요?' }),
+        ).toBeTruthy();
+      } else {
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('alertdialog', { name: '작성 중인 번들을 삭제할까요?' }),
+          ).toBeNull(),
+        );
+      }
+    },
+  );
 
   it('완성된 번들이 없으면 빈 상태와 「첫 번들 만들기」를 보인다', async () => {
     server.use(

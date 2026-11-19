@@ -162,3 +162,15 @@ export const useUpdateBunchProfileMutation = (bunchId: string | undefined) => {
       ]),
   });
 };
+
+/** 이미 삭제·발행된 초안을 알게 됐을 때 번치 홈 목록을 서버 기준으로 다시 받음(5.3.1) */
+export const useRefreshBunchHomeLists = (bunchId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return {
+    refreshDrafts: () =>
+      void queryClient.invalidateQueries({
+        queryKey: sharedKeys.bunchHomeScope(bunchId),
+        refetchType: 'all',
+      }),
+  };
+};

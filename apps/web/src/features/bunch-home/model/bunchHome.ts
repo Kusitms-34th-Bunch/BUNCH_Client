@@ -125,6 +125,8 @@ export const draftBundlesPageSchema = z.object({
       title: z.string(),
       photos: z.array(z.object({ imageUrl: z.string(), position: z.number().int().nonnegative() })),
       participants: z.array(z.object({ memberId: z.number().int().positive() })),
+      // 요청한 사람 기준 권한(서버 계산). 휴지통은 canDelete일 때만(기능명세 5.3.2 로직 1·2). 없으면 숨김
+      permissions: z.object({ canDelete: z.boolean() }).optional(),
     }),
   ),
 });
@@ -142,8 +144,8 @@ const ROLE: Readonly<Record<z.infer<typeof roleSchema>, BunchRole>> = {
   MEMBER: 'member',
 };
 
-// 기획 원문 없는 임시 이름: 제목을 아직 쓰지 않은 작성 중인 번들 카드
-const UNTITLED_DRAFT = '제목 없는 번들';
+// 제목을 아직 쓰지 않은 작성 중인 번들 카드(기능명세 5.3.1 상세 동작 2, 흐리게 표시)
+const UNTITLED_DRAFT = '제목 미정';
 
 // 안전하지 않은 이미지 주소는 항목 하나 때문에 홈 전체가 실패하지 않도록 기본 이미지로 대체
 const safeImage = (url: string | null | undefined, fallback: string) =>
@@ -175,6 +177,7 @@ export const toBunchHomeDetail = (
     followerCount: home.followerCount,
     followingCount: home.followingCount,
     memberCount: home.memberCount,
+    draftCount: home.draftCount ?? undefined,
     completedBundles: published.items.map((bundle) => ({
       id: toDomainId(bundle.id),
       title: bundle.title,
@@ -183,10 +186,12 @@ export const toBunchHomeDetail = (
     })),
     draftBundles: drafts.items.map((bundle) => {
       const first = [...bundle.photos].sort((a, b) => a.position - b.position)[0];
+      const untitled = bundle.title.trim() === '';
       return {
         id: toDomainId(bundle.id),
-        // 제목은 아직 안 쓴 초안일 수 있어 비어 있으면 임시 이름(기획 원문 없음)
-        title: bundle.title.trim() === '' ? UNTITLED_DRAFT : bundle.title,
+        title: untitled ? UNTITLED_DRAFT : bundle.title,
+        untitled,
+        canDelete: bundle.permissions?.canDelete ?? false,
         coverSrc: safeImage(first?.imageUrl, fallback),
         members: bundle.participants.flatMap(({ memberId }) => {
           const member = members.find((candidate) => candidate.id === toDomainId(memberId));

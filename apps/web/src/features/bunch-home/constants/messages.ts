@@ -42,6 +42,20 @@ export const BUNCH_HOME_MESSAGES = {
     '삭제한 번들은 다시 복구할 수 없지만, 사용된 사진은 사진함에 그대로 남아요.',
   // 작성 중인 번들 삭제 실패(기능명세 5.3.2)
   deleteDraftFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  // 작성 중인 번들 삭제 결과(기능명세 5.3.2 상세 동작 2·예외 처리)
+  draftDeleted: '작성 중인 번들을 삭제했어요.',
+  draftAlreadyPublished: '이미 발행된 번들이에요.',
+  draftAlreadyDeleted: '이미 삭제된 번들이에요.',
+  draftDeleteForbidden: '번들은 초안을 만든 멤버나 참여 중인 관리자만 삭제할 수 있어요.',
+  // 이미 삭제·발행된 초안을 열려고 함(기능명세 5.3.1 예외 처리)
+  draftGoneDeleted: '삭제된 번들이에요.',
+  draftGonePublished: '발행된 번들이에요.',
+  // 다른 번치 프로필을 열었는데 그사이 삭제됨(기능명세 5.10.1 예외 처리)
+  bunchDeleted: '삭제된 번치예요.',
+  // 멤버 관리 작업 중 내 역할이 바뀜(기능명세 5.6.1 예외 처리, 대상 멤버 역할 변경은 membersChangedElsewhere)
+  memberManagePermissionChanged: '권한이 변경되어 해당 기능을 이용할 수 없어요.',
+  // 작성 중인 번들이 이미 10개라 번들 만들기로 들어가지 않음(기능명세 4.1.1 상세 동작 1)
+  draftLimit: '번들 초안은 최대 10개까지 만들 수 있어요.',
   // 번치에 나 혼자일 때 번들 만들기를 막는 안내 창(Figma `5618:81971`)
   needMembersTitle: '함께할 멤버가 없어요',
   needMembersDescription: '번들은 번치의 멤버가 2명 이상일 때 만들 수 있어요.',
@@ -84,7 +98,6 @@ export const BUNCH_HOME_MESSAGES = {
   // 알림 목록(Figma 1892:36947)
   notificationSettingsNudge: '알림 받기를 설정하고 유용한 알림을 받아보세요.',
   readAllDone: '모든 알림을 읽음으로 바꿨어요.',
-  nothingToRead: '읽지 않은 알림이 없어요.',
   notificationsLoading: '알림을 불러오는 중이에요',
   // 빈 목록 디자인이 없어 낭독만(제안)
   noNotifications: '아직 알림이 없어요.',

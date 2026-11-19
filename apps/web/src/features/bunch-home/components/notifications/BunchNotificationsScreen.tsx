@@ -48,12 +48,15 @@ export function BunchNotificationsScreen({
   onOpen,
   more,
 }: BunchNotificationsScreenProps) {
-  // 「모두 읽음」 결과 낭독(초점은 버튼에 남고 카드 이름만 바뀌어 스크린 리더가 알 수 없음)
+  // 「모두 읽음」 결과 낭독(카드 이름만 바뀌어 스크린 리더가 알 수 없음, 초점은 비활성이 되는 버튼에서 제목으로 옮김)
   const [status, setStatus] = useState('');
   const frame = useRef(0);
   // 모두 읽음 요청 중 다시 눌러도 한 번만
   const reading = useRef(false);
   const listRef = useRef<HTMLUListElement>(null);
+  // 모두 읽은 뒤 버튼이 비활성이 되면 초점을 잃으므로 화면 제목으로 옮김
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const readAllRef = useRef<HTMLButtonElement>(null);
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
   const readAll = () => {
     // 번치를 아직 모르면(hydration 전) 읽을 목록이 없어 결과도 알리지 않음
@@ -64,16 +67,24 @@ export function BunchNotificationsScreen({
       cancelAnimationFrame(frame.current);
       frame.current = requestAnimationFrame(() => setStatus(message));
     };
-    // 읽을 알림이 없으면 요청하지 않음
-    if (!hasUnread) {
-      announce(BUNCH_HOME_MESSAGES.nothingToRead);
-      return;
-    }
-    if (reading.current) return;
+    // 읽을 알림이 없으면 버튼이 비활성이라 요청하지 않음(기능명세 5.12.1)
+    if (!hasUnread || reading.current) return;
     reading.current = true;
+    // 응답 전에 버튼이 먼저 비활성이 되면 초점이 body로 빠질 수 있어 누를 때의 초점을 기억
+    const focusedButton = document.activeElement === readAllRef.current;
     onReadAll()
       .then(
-        () => announce(BUNCH_HOME_MESSAGES.readAllDone),
+        () => {
+          // 버튼에 있던 초점이 남아 있거나 비활성으로 빠졌으면 제목으로(그사이 다른 곳으로 옮겼으면 그대로)
+          const active = document.activeElement;
+          if (
+            focusedButton &&
+            (active === readAllRef.current || active === document.body || active === null)
+          ) {
+            titleRef.current?.focus();
+          }
+          announce(BUNCH_HOME_MESSAGES.readAllDone);
+        },
         () => {},
       )
       .finally(() => {
@@ -95,14 +106,22 @@ export function BunchNotificationsScreen({
           }
           // Figma 「모두 읽음」(TextButton sm)
           trailing={
-            <TextButton size="sm" onClick={readAll}>
+            // 안 읽은 알림이 없으면 비활성(기능명세 5.12.1)
+            <TextButton
+              ref={readAllRef}
+              size="sm"
+              disabled={!notifications || !hasUnread}
+              onClick={readAll}
+            >
               모두 읽음
             </TextButton>
           }
         />
       }
     >
-      <h1 className="sr-only">{bunchName ? `${bunchName} 알림` : '알림'}</h1>
+      <h1 ref={titleRef} tabIndex={-1} className="sr-only">
+        {bunchName ? `${bunchName} 알림` : '알림'}
+      </h1>
       <p role="status" className="sr-only">
         {notifications === undefined
           ? BUNCH_HOME_MESSAGES.notificationsLoading

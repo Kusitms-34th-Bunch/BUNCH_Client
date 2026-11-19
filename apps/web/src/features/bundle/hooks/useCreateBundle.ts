@@ -10,7 +10,8 @@ import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNDLE_SELECT_MESSAGES } from '../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../constants/selectPaths';
-import { useCreateBundleMutation } from '../queries/bundles';
+import { useCreateBundleMutation, useFetchLatestBunchMembers } from '../queries/bundles';
+import { useNeedMembersDialog } from './useBundleEntryCheck';
 
 const MIN_MEMBERS = 2;
 
@@ -43,6 +44,8 @@ export function useCreateBundle() {
   const { data: profile } = useQuery(myProfileQueryOptions());
   const bunchId = profile?.bunch?.id;
   const { data: members } = useQuery(bunchMembersQueryOptions(bunchId));
+  const fetchLatestMembers = useFetchLatestBunchMembers();
+  const openNeedMembers = useNeedMembersDialog();
   const mutation = useCreateBundleMutation(bunchId);
   // 같은 틱에 연달아 호출돼도 한 번만 보내도록 ref로 막음(state 갱신 전에는 isPending이 아직 false)
   const submitted = useRef(false);
@@ -86,12 +89,17 @@ export function useCreateBundle() {
             onMissingPhotos?.(missing);
             notify(BUNDLE_SELECT_MESSAGES.selectionStale(missing.length || 1));
           } else if (code === 'BUNDLE_001') {
-            // 번치 인원 부족과 초안 한도가 같은 코드라, 번치 멤버가 모자라면 인원 안내 아니면 한도 안내
-            notify(
-              members !== undefined && members.length < MIN_MEMBERS
-                ? BUNDLE_SELECT_MESSAGES.membersRequired
-                : BUNDLE_SELECT_MESSAGES.draftLimit,
-            );
+            // 번치 인원 부족과 초안 한도가 같은 코드라 멤버 목록을 새로 받아 구분(그사이 멤버가 나갔을 수 있음)
+            // 멤버가 모자라면 「함께할 멤버가 없어요」 창(기능명세 4.1.4 예외 처리), 아니면 한도 안내
+            void fetchLatestMembers(bunchId)
+              .then(
+                (latest) => latest.length,
+                () => members?.length,
+              )
+              .then((count) => {
+                if (count !== undefined && count < MIN_MEMBERS) openNeedMembers();
+                else notify(BUNDLE_SELECT_MESSAGES.draftLimit);
+              });
           } else notify(BUNDLE_SELECT_MESSAGES.createFailed);
         },
       },

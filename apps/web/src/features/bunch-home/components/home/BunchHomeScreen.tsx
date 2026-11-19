@@ -88,8 +88,10 @@ export function BunchHomeScreen({
         cancelLabel="취소"
         confirmLabel="삭제하기"
         onConfirm={() => {
-          deleteDraft(target.id);
-          close();
+          // 일시적 실패면 창을 유지해 다시 누를 수 있게 함(기능명세 5.3.2 예외 처리)
+          void deleteDraft(target.id).then((done) => {
+            if (done) close();
+          });
         }}
       />
     ));

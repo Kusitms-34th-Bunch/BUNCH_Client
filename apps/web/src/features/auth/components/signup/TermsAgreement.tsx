@@ -15,8 +15,8 @@ import { SignupFrame } from './SignupFrame';
 
 /**
  * 약관 동의 화면(필수 3개와 선택 1개, 전체·개별 체크 동기화, 필수를 모두 동의해야 시작하기 활성화)
- * 전체 동의하기를 체크하면 시스템 권한(사진 → 카메라 → 알림)을 차례로 요청. 시작하기는 동의를 서버에 저장하고(실패하면 이동하지 않음)
- * 권한 요청이 끝나기를 기다린 뒤(전체 동의를 거치지 않았으면 여기서 요청) 프로필 화면으로 이동
+ * 시작하기는 동의를 서버에 저장하고(실패하면 이동하지 않음), 저장에 성공한 뒤에만 시스템 권한(사진 → 카메라 → 알림)을 차례로 요청한 다음
+ * 프로필 화면으로 이동(기능명세 1.3.4, 「전체 동의하기」 체크로는 요청하지 않음)
  * 뒤로 가기는 로그아웃하고 로그인 화면으로(기획 1.3.5)
  */
 export function TermsAgreement() {
@@ -40,7 +40,6 @@ export function TermsAgreement() {
   const starting = useRef(false);
   // 저장을 시작한 뒤에는 이동할 때까지 체크를 잠금(저장한 동의와 화면 체크가 어긋나지 않게), 저장 실패 시 해제
   const [submitted, setSubmitted] = useState(false);
-  // 전체 동의로 시작된 권한 요청 중에 눌러도 저장한 뒤 그 요청이 끝나길 기다려 이동(requestAll이 진행 중인 요청을 돌려줌)
   const start = async () => {
     if (starting.current) return;
     starting.current = true;
@@ -80,7 +79,7 @@ export function TermsAgreement() {
         </div>
       }
     >
-      {/* 저장·권한 요청 중 상태를 스크린 리더에 알림(화면에는 숨김). 전체 동의 체크로 권한 팝업이 뜰 때 이유를 들려줌 */}
+      {/* 저장·권한 요청 중 상태를 스크린 리더에 알림(화면에는 숨김). 권한 팝업이 뜰 때 이유를 들려줌 */}
       <p role="status" className="sr-only">
         {agreeToTerms.isPending
           ? '약관 동의를 저장하는 중이에요'
@@ -99,11 +98,7 @@ export function TermsAgreement() {
           <Label
             checked={allAgreed}
             disabled={submitted}
-            onChange={(event) => {
-              setAllAgreed(event.target.checked);
-              // 체크할 때만, 한 번만(해제하거나 다시 체크해도 다시 묻지 않음)
-              if (event.target.checked) void requestAll();
-            }}
+            onChange={(event) => setAllAgreed(event.target.checked)}
           >
             전체 동의하기
           </Label>

@@ -105,8 +105,8 @@ describe('PhotoBox 번들 만들기 연결', () => {
     await user.click(screen.getByRole('button', { name: '메뉴 열기' }));
     await user.click(screen.getByRole('menuitem', { name: '번들 만들기' }));
 
-    // 초안은 참여 멤버를 고른 뒤 그 화면에서 만듦(기능 spec 3.3.4)
-    expect(router.push).toHaveBeenCalledWith('/bunch/bundles/new/members');
+    // 초안은 참여 멤버를 고른 뒤 그 화면에서 만듦(기능 spec 3.3.4). 멤버 수·초안 수를 확인한 뒤 이동
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/bunch/bundles/new/members'));
     expect(readPhotoBoxEntry()).toHaveLength(1);
     // 멤버 고르기에서 뒤로 오면 이 선택으로 선택 모드를 이어 가도록 기억함
     expect(readPhotoBoxSelection()?.photoIds).toEqual(readPhotoBoxEntry());
@@ -125,6 +125,7 @@ describe('PhotoBox 선택 모드 이어 가기', () => {
     fireEvent.click(photo);
     await user.click(screen.getByRole('button', { name: '메뉴 열기' }));
     await user.click(screen.getByRole('menuitem', { name: '번들 만들기' }));
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
     first.unmount();
 
     // 멤버 고르기에서 뒤로 와 사진함이 다시 열린 상황

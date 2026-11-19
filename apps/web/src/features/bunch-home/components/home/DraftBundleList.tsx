@@ -17,10 +17,12 @@ export function DraftBundleList({ bundles, onOpen, onDelete }: DraftBundleListPr
         <li key={bundle.id}>
           <BundleCard
             title={bundle.title}
+            titleMuted={bundle.untitled}
             imageSrc={bundle.coverSrc}
             members={bundle.members}
             onCardClick={() => onOpen?.(bundle.id)}
-            onDelete={() => onDelete(bundle)}
+            // 삭제 권한이 있는 사람에게만 휴지통(기능명세 5.3.2 로직 2)
+            onDelete={bundle.canDelete ? () => onDelete(bundle) : undefined}
           />
         </li>
       ))}
