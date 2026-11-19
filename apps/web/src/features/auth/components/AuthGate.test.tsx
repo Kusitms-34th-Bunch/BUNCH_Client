@@ -93,6 +93,32 @@ describe('AuthGate', () => {
       expect(loadingOverlay()).toBeNull();
     });
 
+    it('가입을 마친 뒤 다른 화면을 거쳐 프로필로 다시 들어오면 로딩만 보인다(이전 방문의 가입 상태를 잇지 않음)', async () => {
+      navigation.pathname = '/signup/profile';
+      respondWith({ signupStatus: 'IN_PROGRESS', termsAccepted: true });
+      const client = createTestQueryClient();
+      // 경로는 mock이라 바뀌어도 다시 그리지 않으므로 매번 새 엘리먼트로 다시 그림
+      const gate = () => (
+        <AuthGate destinations={DESTINATIONS}>
+          <p>보호된 화면</p>
+        </AuthGate>
+      );
+      const { rerender } = render(gate(), { wrapper: createQueryWrapper(client) });
+      expect(await screen.findByText('보호된 화면')).toBeTruthy();
+      respondWith({ signupStatus: 'COMPLETED', termsAccepted: true });
+      await client.invalidateQueries();
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/onboarding'));
+
+      navigation.pathname = '/onboarding';
+      rerender(gate());
+      expect(await screen.findByText('보호된 화면')).toBeTruthy();
+      navigation.pathname = '/signup/profile';
+      rerender(gate());
+
+      expect(protectedScreen()).toBeNull();
+      expect(loadingOverlay()).not.toBeNull();
+    });
+
     it('가입을 마친 회원이 프로필 화면에 직접 들어오면 로딩만 보이고 도착 화면으로 보낸다', async () => {
       navigation.pathname = '/signup/profile';
       respondWith({ signupStatus: 'COMPLETED', termsAccepted: true });

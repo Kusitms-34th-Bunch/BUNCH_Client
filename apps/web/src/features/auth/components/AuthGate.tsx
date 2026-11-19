@@ -73,10 +73,14 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
     if (redirectTo) router.replace(redirectTo);
   }, [redirectTo, router]);
 
-  // 이 화면에서 가입 중 상태를 본 적이 있는지(방금 가입을 마친 경우와 가입 완료 회원의 직접 진입을 구분)
-  const signingUp = session?.kind === 'member' && session.onboarding.signupStatus === 'IN_PROGRESS';
+  // 이번 프로필 방문에서 가입 중 상태를 본 적이 있는지(방금 가입을 마친 경우와 가입 완료 회원의 재진입·직접 진입을 구분)
+  // 프로필을 벗어나면 지움: layout의 상태는 화면 이동에도 남아 다시 들어온 방문에 이어지지 않게 함
+  const onProfile = pathname === SIGNUP_PATHS.profile;
+  const signingUp =
+    onProfile && session?.kind === 'member' && session.onboarding.signupStatus === 'IN_PROGRESS';
   const [sawSigningUp, setSawSigningUp] = useState(false);
   if (signingUp && !sawSigningUp) setSawSigningUp(true);
+  if (!onProfile && sawSigningUp) setSawSigningUp(false);
   // 방금 가입을 마친 프로필 화면은 이동하는 동안 그대로 둠(로딩 덮개로 바꾸면 도착 화면 전환이 재생되지 않음)
   const leavingSignup =
     sawSigningUp &&

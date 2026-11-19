@@ -469,6 +469,12 @@ describe('ProfileSetup', () => {
   });
 
   it('시작하기를 누르면 프로필을 저장하고 직접 이동하지는 않는다(도착 화면은 가드가 정함)', async () => {
+    // 저장 뒤 다시 읽은 가입 상태가 가입 완료(가드가 도착 화면으로 옮김)
+    server.use(
+      http.get('/api/members/me/onboarding', () =>
+        ok({ memberId: 1, signupStatus: 'COMPLETED', termsAccepted: true }),
+      ),
+    );
     render(<ProfileSetup />);
     await userEvent.type(nickname(), ' 지원 ');
 
@@ -486,6 +492,34 @@ describe('ProfileSetup', () => {
       nickname: '지원',
       demographicsConsent: true,
     });
+  });
+
+  it('저장은 됐는데 다시 읽은 가입 상태가 아직 가입 중이면 화면을 잠그지 않고 실패 토스트를 보인다', async () => {
+    server.use(
+      http.get('/api/members/me/onboarding', () =>
+        ok({ memberId: 1, signupStatus: 'IN_PROGRESS', termsAccepted: true }),
+      ),
+    );
+    // 가드(AuthGate)처럼 가입 상태 query를 구독해야 다시 읽기가 일어남
+    function SessionObserver() {
+      useQuery(sessionQueryOptions());
+      return null;
+    }
+    render(
+      <>
+        <SessionObserver />
+        <ProfileSetup />
+      </>,
+    );
+    await userEvent.type(nickname(), '지원');
+
+    await userEvent.click(start());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(start().closest('[inert]')).toBeNull();
+    expect((start() as HTMLButtonElement).disabled).toBe(false);
   });
 
   describe('선택 약관(추가 개인정보)에 따른 입력', () => {
