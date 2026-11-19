@@ -652,8 +652,9 @@ describe('ProfileSetup', () => {
           '프로필을 저장하는 중이에요',
         ),
       );
-      // 저장 중에는 페이지 전체 로딩(PageLoading)으로 화면을 덮고, 끝나면 걷음
-      expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
+      // 짧은 저장이라 화면을 덮지 않고, 누른 즉시 시작하기를 비활성으로 바꿈
+      expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
+      expect((start() as HTMLButtonElement).disabled).toBe(true);
 
       act(() => finish());
       await waitFor(() =>

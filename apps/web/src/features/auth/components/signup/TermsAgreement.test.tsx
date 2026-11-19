@@ -15,7 +15,7 @@ import { TermsDocument } from './TermsDocument';
 
 const push = vi.fn();
 const back = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, prefetch: vi.fn() }) }));
 const permissions = vi.hoisted(() => ({
   isRequesting: false,
   requestAll: vi.fn<() => Promise<void>>(),
@@ -245,9 +245,11 @@ describe('TermsAgreement', () => {
     expect(isChecked(service())).toBe(true);
     expect(isChecked(demographics())).toBe(true);
     expect(start().hasAttribute('disabled')).toBe(false);
+    // 저장 중 비활성으로 잃은 초점을 시작하기로 돌려줌
+    await waitFor(() => expect(document.activeElement).toBe(start()));
   });
 
-  it('동의를 저장하는 동안에는 페이지 전체 로딩으로 화면을 덮고, 끝나면 걷는다', async () => {
+  it('동의를 저장하는 동안 화면을 덮지 않고 시작하기만 비활성으로 두며, 끝나면 넘어간다', async () => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
     server.use(
@@ -260,26 +262,33 @@ describe('TermsAgreement', () => {
 
     await userEvent.click(start());
 
-    await waitFor(() => expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull());
-    expect(screen.getByRole('status').textContent).toBe('약관 동의를 저장하는 중이에요');
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('약관 동의를 저장하는 중이에요'),
+    );
+    expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
+    expect(start().hasAttribute('disabled')).toBe(true);
     release();
-    await waitFor(() => expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull());
+    await waitFor(() => expect(push).toHaveBeenLastCalledWith(SIGNUP_PATHS.profile));
   });
 
-  it('권한을 요청하는 동안에는 덮개 없이 처리 중으로 표시하고, 요청이 끝난 뒤에 이동한다', async () => {
+  it('권한을 요청하는 동안에는 덮개 없이 시작하기를 비활성으로 두고, 요청이 끝난 뒤에 이동한다', async () => {
     const bodies = captureAgreements();
     let finishPermissions!: () => void;
     permissions.requestAll.mockImplementation(
       () => new Promise<void>((resolve) => (finishPermissions = resolve)),
     );
-    permissions.isRequesting = true;
-    renderPage(REQUIRED);
-
-    // disabled가 아니라 aria-busy라 포커스를 잃지 않음. 권한 팝업 뒤에 전체 로딩은 깔지 않음
-    expect(start().getAttribute('aria-busy')).toBe('true');
-    expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
-    expect(start().hasAttribute('disabled')).toBe(false);
+    const view = renderPage(REQUIRED);
     await userEvent.click(start());
+    // 권한 팝업이 떠 있는 동안(요청 중)
+    permissions.isRequesting = true;
+    view.rerender(
+      <TermsAgreementProvider initial={REQUIRED}>
+        <TermsAgreement />
+      </TermsAgreementProvider>,
+    );
+    expect(start().getAttribute('aria-busy')).toBe('true');
+    expect(start().hasAttribute('disabled')).toBe(true);
+    expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
 
     await waitFor(() => expect(bodies).toHaveLength(1));
     await waitFor(() => expect(permissions.requestAll).toHaveBeenCalledTimes(1));
@@ -342,9 +351,9 @@ describe('TermsAgreement', () => {
     await waitFor(() => expect(push).toHaveBeenLastCalledWith(SIGNUP_PATHS.profile));
   });
 
-  it('가입 상태를 다시 읽지 못하면(저장은 됐어도) 권한 요청도 이동도 하지 않는다', async () => {
+  it('저장에 성공하면 가입 상태를 다시 읽지 않고 약관 동의로 바꿔 바로 넘어간다', async () => {
     captureAgreements();
-    // 가드(AuthGate)처럼 세션 query를 구독해야 저장 뒤 다시 읽기가 일어남. 처음 한 번만 성공
+    // 가드(AuthGate)처럼 세션 query를 구독. 저장 뒤 다시 읽으면 실패하도록 둬 다시 읽지 않음을 확인
     let reads = 0;
     server.use(
       http.get('/api/members/me/onboarding', () => {
@@ -354,9 +363,10 @@ describe('TermsAgreement', () => {
           : fail(500, 'SERVER_ERROR');
       }),
     );
+    // 가입 상태 캐시의 약관 동의 값을 화면에 그려 확인
     function SessionObserver() {
-      useQuery(sessionQueryOptions());
-      return null;
+      const accepted = useQuery(sessionQueryOptions()).data?.termsAccepted;
+      return <output aria-label="약관 동의 캐시">{String(accepted)}</output>;
     }
     render(
       <TermsAgreementProvider initial={REQUIRED}>
@@ -365,13 +375,13 @@ describe('TermsAgreement', () => {
       </TermsAgreementProvider>,
     );
     await waitFor(() => expect(reads).toBe(1));
+    expect(screen.getByLabelText('약관 동의 캐시').textContent).toBe('false');
 
     await userEvent.click(start());
 
-    await waitFor(() => expect(reads).toBeGreaterThan(1));
-    await waitFor(() => expect(start().getAttribute('aria-busy')).toBeNull());
-    expect(permissions.requestAll).not.toHaveBeenCalled();
-    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(push).toHaveBeenLastCalledWith(SIGNUP_PATHS.profile));
+    expect(screen.getByLabelText('약관 동의 캐시').textContent).toBe('true');
+    expect(reads).toBe(1);
   });
 
   it('저장하는 동안에는 뒤로 가기(로그아웃)를 무시한다', async () => {

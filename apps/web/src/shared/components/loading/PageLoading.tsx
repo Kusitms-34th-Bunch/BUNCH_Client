@@ -5,7 +5,8 @@ import { markPageLoading } from '@/shared/lib/pageLoadingState';
 import { LoadingRipple } from './LoadingRipple';
 
 /**
- * 페이지 전체 로딩(앱 공통 기준, 편집 중이 아닌 로딩 상태는 모두 이 표시): 화면 전체를 `overlay-dim-subtle`로 덮고 가운데에 물결 점 패턴(`loading.json`)
+ * 페이지 전체 로딩: 화면 전체를 `overlay-dim-subtle`로 덮고 가운데에 물결 점 패턴(`loading.json`)
+ * 필요할 때만 씀: 첫 진입(보일 내용 없음)과 길거나 되돌릴 수 없는 작업. 짧은 저장 뒤 화면 이동은 버튼 비활성만(motion.md 로딩 상태)
  * 덮는 동안 아래 화면은 눌러도 반응하지 않고(스크린 리더 가상 커서는 막지 않음), 상태 안내는 호출하는 쪽의 live region이 담당
  * 키보드도 막기 위해 보이는 동안 초점을 이 덮개로 옮기고 Tab을 막음(끝나면 초점이 덮개에 남아 있을 때만 원래 자리로 되돌림)
  */
