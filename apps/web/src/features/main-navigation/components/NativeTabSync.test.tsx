@@ -1,3 +1,4 @@
+import { QueryObserver } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sharedKeys } from '@/shared/query/keys';
@@ -71,17 +72,39 @@ describe('NativeTabSync (iOS 쉘 탭 WebView 사이)', () => {
     expect(notifyNativeTabs).not.toHaveBeenCalled();
   });
 
-  it('다른 탭의 알림이면 내 정보부터 다시 받고 나머지를 받으며, 자기가 보낸 알림은 무시한다', async () => {
-    const client = renderSync();
-    const invalidate = vi.spyOn(client, 'invalidateQueries');
+  it('다른 탭의 알림이면 내 정보 응답을 받은 뒤에만 나머지를 다시 받고, 자기 알림은 무시한다', async () => {
+    const client = renderSync(me('1'));
+    let resolveMe: (_value: ReturnType<typeof me>) => void = () => {};
+    const meFn = vi
+      .fn<() => Promise<ReturnType<typeof me>>>(() => Promise.resolve(me('2')))
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveMe = resolve)));
+    const photosFn = vi.fn(() => Promise.resolve('photos'));
+    client.setQueryData(['photos'], 'photos');
+    // 화면에 붙은 쿼리(활성)처럼 구독. 저장된 값이 있어 구독만으로는 받지 않음
+    const subscriptions = [
+      new QueryObserver(client, { queryKey: sharedKeys.me(), queryFn: meFn, staleTime: Infinity }),
+      new QueryObserver(client, { queryKey: ['photos'], queryFn: photosFn, staleTime: Infinity }),
+    ].map((observer) => observer.subscribe(() => {}));
+    const emit = (from: string) =>
+      listeners.forEach((listener) => listener({ type: 'meChanged', from }));
 
-    listeners.forEach((listener) => listener({ type: 'meChanged', from: 'bunch' }));
-    expect(invalidate).not.toHaveBeenCalled();
+    emit('bunch');
+    expect(meFn).not.toHaveBeenCalled();
 
-    listeners.forEach((listener) => listener({ type: 'meChanged', from: 'photos' }));
-    await vi.waitFor(() => expect(invalidate).toHaveBeenCalledTimes(2));
-    expect(invalidate.mock.calls[0]?.[0]).toEqual({ queryKey: sharedKeys.me() });
-    expect(invalidate.mock.calls[1]?.[0]).toBeUndefined();
+    emit('photos');
+    await vi.waitFor(() => expect(meFn).toHaveBeenCalledTimes(1));
+    expect(photosFn).not.toHaveBeenCalled();
+    resolveMe(me('2'));
+    await vi.waitFor(() => expect(photosFn).toHaveBeenCalledTimes(1));
+
+    // 내 정보를 받지 못하면 나머지를 받지 않음(이전 번치 키에 새 번치 응답이 섞이지 않게)
+    await vi.waitFor(() => expect(meFn).toHaveBeenCalledTimes(2)); // 나머지 무효화에 내 정보도 포함
+    meFn.mockRejectedValueOnce(new Error('members/me 실패'));
+    emit('photos');
+    await vi.waitFor(() => expect(meFn).toHaveBeenCalledTimes(3));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(photosFn).toHaveBeenCalledTimes(1);
+    subscriptions.forEach((unsubscribe) => unsubscribe());
   });
 
   it('탭 화면 WebView가 아니면(첫 화면) 아무것도 하지 않는다', () => {

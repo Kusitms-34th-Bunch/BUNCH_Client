@@ -37,10 +37,13 @@ export function useNativeTabSync() {
     });
     const unsubscribeEvent = appBridge.addEventListener('nativeTabEvent', (event) => {
       if (event.from === tab) return;
-      // 내 정보를 먼저 받아 지금 번치를 맞춘 뒤 나머지(나간·지운 번치의 화면을 먼저 다시 받아 오류가 나지 않게)
+      // 내 정보를 먼저 받아 지금 번치를 맞춘 뒤 나머지(내 정보가 실패하면 이전 번치 키에 새 번치 응답이 섞이지 않게 멈춤)
       void queryClient
-        .invalidateQueries({ queryKey: sharedKeys.me() })
-        .then(() => queryClient.invalidateQueries());
+        .invalidateQueries({ queryKey: sharedKeys.me() }, { throwOnError: true })
+        .then(
+          () => queryClient.invalidateQueries(),
+          () => {},
+        );
     });
     return () => {
       unsubscribeCache();
