@@ -32,6 +32,25 @@ describe('BundleInfo', () => {
     expect(screen.queryByRole('img', { name: '멤버 공개' })).toBeNull();
   });
 
+  it('locationUnderline이 false면 위치에 밑줄이 없다(누를 수는 있음)', () => {
+    const { rerender } = render(
+      <BundleInfo title="제주 여행" location="애월읍" onLocationClick={vi.fn()} />,
+    );
+    expect(screen.getByRole('button', { name: '위치 애월읍' }).className).toContain('underline');
+
+    rerender(
+      <BundleInfo
+        title="제주 여행"
+        location="애월읍"
+        onLocationClick={vi.fn()}
+        locationUnderline={false}
+      />,
+    );
+    expect(screen.getByRole('button', { name: '위치 애월읍' }).className).not.toContain(
+      'underline',
+    );
+  });
+
   it('위치·날짜가 없으면 줄을 숨긴다', () => {
     render(<BundleInfo title="제주 여행" titleAs="h3" />);
 

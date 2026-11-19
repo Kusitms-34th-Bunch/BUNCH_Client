@@ -300,6 +300,20 @@ describe('FeedScreen', () => {
     expect(within(sheet).getByText('작성자')).toBeTruthy();
   });
 
+  it('위치 밑줄은 「외 N곳」(위치 2개 이상)일 때만 긋는다(6.1.3 상세 2)', async () => {
+    renderFeed(OWN);
+    await cardsLoaded();
+
+    const locations = screen.getAllByRole('button', { name: /^위치 / });
+    // 가짜 서버 카드에 두 경우가 모두 있어야 의미 있음
+    const many = locations.filter((button) => / 외 \d+곳$/.test(button.textContent ?? ''));
+    const single = locations.filter((button) => !many.includes(button));
+    expect(many.length).toBeGreaterThan(0);
+    expect(single.length).toBeGreaterThan(0);
+    for (const button of many) expect(button.className).toContain('underline');
+    for (const button of single) expect(button.className).not.toContain('underline');
+  });
+
   it('둘째 카드의 시트는 그 카드의 장소와 멤버를 보여 준다', async () => {
     const user = userEvent.setup();
     renderFeed(OWN);

@@ -9,6 +9,8 @@ export type BundleInfoProps = Omit<ComponentProps<'div'>, 'children' | 'title'> 
   location?: string | undefined;
   /** 위치를 눌렀을 때(콕하기 시트). 없으면 위치는 글자로만 보임 */
   onLocationClick?: (() => void) | undefined;
+  /** 위치 밑줄 여부. 기본 true(피드 카드는 위치가 2개 이상일 때만, 기능명세 6.1.3) */
+  locationUnderline?: boolean | undefined;
   /** 날짜 글자(예: 「2026년 7월 9일」). 없으면 줄을 숨김 */
   date?: string | undefined;
   /** detail: 상세 화면 흰 배경(제목 20) · overlay: 사진 위 흰 글자(제목 16, 위치·날짜 80% 불투명) */
@@ -23,12 +25,13 @@ export type BundleInfoProps = Omit<ComponentProps<'div'>, 'children' | 'title'> 
 
 /**
  * 번들 제목·위치·날짜(Figma `Bundle Info`, 썸네일 사진 위의 `BundleInfo`)
- * 위치·날짜 유무로 4가지 모양이 되며, 위치는 밑줄 친 글자
+ * 위치·날짜 유무로 4가지 모양이 되며, 위치는 밑줄 친 글자(`locationUnderline`으로 끔)
  */
 export const BundleInfo = ({
   title,
   location,
   onLocationClick,
+  locationUnderline = true,
   date,
   variant = 'detail',
   memberOnly = false,
@@ -78,14 +81,17 @@ export const BundleInfo = ({
                 <button
                   type="button"
                   onClick={onLocationClick}
-                  className="focus-visible:outline-border-brand relative flex min-w-0 cursor-pointer touch-manipulation text-left underline before:absolute before:-inset-x-1 before:-inset-y-2 focus-visible:outline-2"
+                  className={cn(
+                    'focus-visible:outline-border-brand relative flex min-w-0 cursor-pointer touch-manipulation text-left before:absolute before:-inset-x-1 before:-inset-y-2 focus-visible:outline-2',
+                    locationUnderline && 'underline',
+                  )}
                 >
                   <span className="sr-only">위치 </span>
                   {/* 말줄임은 안쪽 글자에 둬 넓힌 누르는 영역이 잘리지 않게 함 */}
                   <span className="truncate">{location}</span>
                 </button>
               ) : (
-                <span className="min-w-0 truncate underline">
+                <span className={cn('min-w-0 truncate', locationUnderline && 'underline')}>
                   <span className="sr-only">위치 </span>
                   {location}
                 </span>
