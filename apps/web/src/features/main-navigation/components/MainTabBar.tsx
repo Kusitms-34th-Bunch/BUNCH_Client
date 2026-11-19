@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
+import { scrollPageToTop } from '@/shared/lib/scrollPageToTop';
 import {
   MAIN_TAB_PATHS,
   MAIN_TABS,
@@ -57,6 +58,14 @@ export function MainTabBar() {
       .catch(() => setUsesNativeBar(false));
   }, [inShell, selectedId]);
 
+  // iOS 시스템 탭 바에서 보고 있는 탭을 다시 누름: 모든 탭 WebView에 오므로 보이는 내 탭만 맨 위로
+  useEffect(() => {
+    if (!inShell) return;
+    return appBridge.addEventListener('nativeTabReselect', (event) => {
+      if (event.tab === selectedId && document.visibilityState === 'visible') scrollPageToTop();
+    });
+  }, [inShell, selectedId]);
+
   // iOS 시스템 탭 바를 쓰면 웹 막대 대신 표식만 남겨 (main) 레이아웃·AppFrame이 본문을 탭 바 뒤까지 펼치게 함
   if (inShell && usesNativeBar === true) return <span hidden data-native-tab-bar="" />;
   if (inShell && usesNativeBar !== false) return null;
@@ -81,8 +90,13 @@ export function MainTabBar() {
             className={state.className}
             aria-current={state['aria-current']}
             // 탭을 누를 때마다 선택 햅틱(지금 탭 포함, iOS 시스템 탭 바와 같은 기준). 메서드가 없는 이전 쉘은 브라우저 폴백(동작 없음)
-            onClick={() => {
+            onClick={(event) => {
               if (inShell) void appBridge.tabSelectionHaptic().catch(() => {});
+              // 지금 탭의 첫 화면에서 다시 누르면 이동 대신 맨 위로(하위 화면이면 첫 화면으로 이동)
+              if (pathname === MAIN_TAB_PATHS[item.id as MainTabId]) {
+                event.preventDefault();
+                scrollPageToTop();
+              }
             }}
           >
             {state.children}

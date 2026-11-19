@@ -1,6 +1,7 @@
 import type { BridgeStore } from '@webview-bridge/types';
 import type {
   GalleryImage,
+  HapticKind,
   NativeTabEvent,
   PermissionKind,
   PermissionStatus,
@@ -21,6 +22,7 @@ export {
   appPostMessageSchema,
   clipboardTextSchema,
   galleryImageSchema,
+  hapticKindSchema,
   isSavableImageUrl,
   MAX_PICKED_PHOTOS,
   MAX_SAVE_IMAGES,
@@ -28,6 +30,7 @@ export {
   nativeFloatingButtonPressSchema,
   nativeTabBarItemSchema,
   nativeTabEventSchema,
+  nativeTabReselectSchema,
   permissionKindSchema,
   permissionStatusSchema,
   PHOTO_SOURCE_TYPES,
@@ -54,6 +57,7 @@ export {
 export type {
   AppPostMessageSchema,
   GalleryImage,
+  HapticKind,
   NativeFloatingButtonPress,
   NativeTabBarItem,
   NativeTabEvent,
@@ -122,6 +126,8 @@ export type AppBridgeMethods = {
   dragStartHaptic: () => Promise<void>;
   /** 웹이 로그인 상태를 확인해 도착 화면(또는 오류 안내)의 내용까지 그림(화면 전체 로딩이 없음). 쉘은 이때 스플래시를 닫음. 여러 번 불러도 한 번만 처리하고, 첫 화면 → 탭 화면으로 넘어가는 중에는 탭 WebView의 신호만 받음. 브라우저에서는 아무것도 하지 않음 */
   appReady: () => Promise<void>;
+  /** 화면 사건의 햅틱(완료 축하는 성공 알림, 좋아요·콕하기·피드 끝은 가벼운 충격). 브라우저·이 메서드가 없는 이전 쉘에서는 동작 없음 */
+  feedbackHaptic: (_kind: HapticKind) => Promise<void>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */
