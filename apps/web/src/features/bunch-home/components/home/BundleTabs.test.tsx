@@ -40,4 +40,19 @@ describe('BundleTabs 탭 유지', () => {
       'true',
     );
   });
+
+  it('다른 번치로 전환했다가 돌아오면 앞서 고른 탭이 아니라 처음 탭부터 보인다', async () => {
+    const user = userEvent.setup();
+    const first = renderTabs('bunch-1');
+    await user.click(screen.getByRole('tab', { name: '작성 중인 번들' }));
+    first.unmount();
+    // 번치 전환: 같은 기록 항목에서 다른 번치로 다시 그림
+    renderTabs('bunch-2').unmount();
+
+    renderTabs('bunch-1');
+    expect(screen.getByRole('tab', { name: '완성된 번들' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
 });
