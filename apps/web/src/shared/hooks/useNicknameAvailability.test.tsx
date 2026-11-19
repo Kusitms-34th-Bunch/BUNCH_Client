@@ -207,6 +207,24 @@ describe('useNicknameAvailability', () => {
     expect(check).toHaveBeenCalledTimes(1);
   });
 
+  it('이미 보낸 확인은 포커스가 바뀌어도 버리지 않고, 실패한 값으로 다시 요청·안내를 반복하지 않는다', async () => {
+    const check = vi.fn(() => Promise.reject(new Error('network')));
+    const { result, rerender } = renderHook(
+      ({ immediate }) => useNicknameAvailability('지원', check, { remember: true, immediate }),
+      { initialProps: { immediate: true } },
+    );
+    await settle();
+    expect(result.current).toBe('failed');
+
+    rerender({ immediate: false });
+    rerender({ immediate: true });
+    await settle();
+
+    expect(check).toHaveBeenCalledTimes(1);
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(result.current).toBe('failed');
+  });
+
   it('렌더마다 새 함수를 넘겨도 같은 닉네임을 다시 확인하지 않는다', async () => {
     const calls: string[] = [];
     const { result, rerender } = renderHook(

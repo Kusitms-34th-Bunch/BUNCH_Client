@@ -42,41 +42,54 @@ export function useNicknameAvailability(
   const known = remember ? remembered.get(nickname) : undefined;
   const checkRef = useRef(check);
   const notifyRef = useRef(notifyFailure);
+  const immediateRef = useRef(immediate);
+  // 대기 중인 확인을 바로 보내는 함수(보냈거나 입력이 바뀌면 null)
+  const fireNowRef = useRef<(() => void) | null>(null);
   const enabled = check !== undefined;
 
   useEffect(() => {
     checkRef.current = check;
     notifyRef.current = notifyFailure;
+    immediateRef.current = immediate;
   });
 
   useEffect(() => {
     if (!enabled || nickname === '' || known !== undefined) return;
     let cancelled = false;
-    const timer = setTimeout(
-      () => {
-        checkRef.current?.(nickname).then(
-          (status) => {
-            // 버려진 요청(입력이 바뀜)의 늦은 응답은 기억하지 않음: 같은 값으로 돌아와 다시 보낸 요청의 결과를 덮지 않게
-            if (cancelled) return;
-            if (remember) setRemembered((previous) => new Map(previous).set(nickname, status));
-            setResult({ nickname, status });
-          },
-          () => {
-            if (cancelled) return;
-            setResult({ nickname, status: 'failed' });
-            if (notifyRef.current) toast(CHECK_FAILURE_MESSAGE);
-          },
-        );
-      },
-      immediate ? 0 : DEBOUNCE_MS,
-    );
+    const fire = () => {
+      fireNowRef.current = null;
+      checkRef.current?.(nickname).then(
+        (status) => {
+          // 버려진 요청(입력이 바뀜)의 늦은 응답은 기억하지 않음: 같은 값으로 돌아와 다시 보낸 요청의 결과를 덮지 않게
+          if (cancelled) return;
+          if (remember) setRemembered((previous) => new Map(previous).set(nickname, status));
+          setResult({ nickname, status });
+        },
+        () => {
+          if (cancelled) return;
+          setResult({ nickname, status: 'failed' });
+          if (notifyRef.current) toast(CHECK_FAILURE_MESSAGE);
+        },
+      );
+    };
+    const timer = setTimeout(fire, immediateRef.current ? 0 : DEBOUNCE_MS);
+    fireNowRef.current = () => {
+      clearTimeout(timer);
+      fire();
+    };
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      fireNowRef.current = null;
       // 입력이 바뀌면 이전 결과를 버림(`remember`가 아니면 같은 값으로 되돌아와도 다시 확인)
       setResult(null);
     };
-  }, [nickname, enabled, immediate, remember, known]);
+  }, [nickname, enabled, remember, known]);
+
+  // 대기 중일 때만 남은 대기 없이 보냄. 이미 보낸 확인은 버리지 않아 포커스를 드나들어도 다시 요청·실패 안내를 반복하지 않음
+  useEffect(() => {
+    if (immediate) fireNowRef.current?.();
+  }, [immediate]);
 
   if (!enabled || nickname === '') return 'idle';
   if (known) return known;
