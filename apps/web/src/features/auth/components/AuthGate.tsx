@@ -4,7 +4,7 @@ import { Button } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
-import { appBridge, isNativeShell } from '@/shared/bridge/client';
+import { appBridge, isHandedOffToNativeTabs, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
@@ -144,6 +144,8 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
     if (!ready) return;
     // 보내는 순간에도 다시 확인(같은 commit에 도착 화면이 로딩을 붙인 경우)
     const send = () => {
+      // 탭 화면을 시작한 첫 화면 WebView는 곧 버려져 보내지 않음(탭 WebView가 보냄)
+      if (isHandedOffToNativeTabs()) return;
       if (document.visibilityState === 'visible' && getPageLoadingCount() === 0) notifyAppReady();
     };
     send();

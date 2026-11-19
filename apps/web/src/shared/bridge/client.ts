@@ -66,6 +66,19 @@ export const nativeShellTab = (): string | null => {
   }
 };
 
+let handedOffToNativeTabs = false;
+
+/**
+ * 첫 화면 WebView가 iOS 탭 화면을 시작함(곧 버려지는 WebView라 앱 스플래시는 탭 WebView가 닫음)
+ * 탭 WebView가 자기 탭 ID(sessionStorage)를 못 읽으면 첫 화면으로 잘못 보고 쉘의 10초 안전장치까지 스플래시가 남음
+ */
+export const markHandedOffToNativeTabs = () => {
+  if (nativeShellTab() === null) handedOffToNativeTabs = true;
+};
+
+/** 이 문서가 탭 화면을 시작하고 버려질 첫 화면 WebView인지 */
+export const isHandedOffToNativeTabs = () => handedOffToNativeTabs;
+
 /** initialBridge 지원 여부와 별개로 실제 네이티브 호스트 확인 */
 export const isNativeShell = () => typeof window !== 'undefined' && 'ReactNativeWebView' in window;
 
