@@ -30,6 +30,12 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 - `transform`과 `opacity`만 애니메이션한다. `width`, `height`, `top`, `left`, `padding`, `margin`을 애니메이션하면 매 프레임 layout을 다시 계산해 jank가 생긴다.
   - 예외: 내용 높이를 모르는 칸을 펼치고 접을 때는 `grid-template-rows` 0fr↔1fr로 자리를 벌린다(아코디언, 번치 프로필 편집 공개 안내, 신고 상세 사유). `transform`으로는 아래 내용과 시트 높이를 밀어낼 수 없다. 사용자가 누를 때 한 번만 일어나고 반복 재생되지 않아 layout 비용을 받아들인다.
 - 모션 라이브러리를 도입하면, 짧은 shorthand API(예: `x`/`y`/`scale`을 직접 넘기는 형태)가 실제로 하드웨어 가속되는 transform 문자열로 적용되는지 확인한다. 라이브러리에 따라 shorthand가 메인 스레드에서 계산되어 부하 상황에 프레임을 떨어뜨릴 수 있다.
+- 화면과 박자를 맞춰야 하는 작업은 `requestAnimationFrame`(rAF)으로 한다.
+  - 끌기·스크롤·당기기처럼 포인터·스크롤 이벤트가 프레임보다 자주 오는 동안 화면을 바꾸면, 이벤트마다 그리지 않고 프레임마다 한 번만 그린다. 값은 이벤트에서 기억하고 rAF 안에서 DOM style·CSS 변수에 쓴다(`useCropDrag`). 이때 React state로 다시 그리지 않는다(아래 「당겨서 새로고침」「스크롤로 헤더 숨김」).
+  - 계속 움직이는 효과(가장자리 자동 스크롤 등)는 `setInterval` 대신 rAF 반복으로 돌리고, 멈추거나 화면을 떠날 때 `cancelAnimationFrame`으로 끊는다(`useEdgeAutoScroll`).
+  - 크기·위치를 읽는 일(`getBoundingClientRect`, `offsetHeight`, `scrollTop`)과 쓰는 일을 한 프레임 안에서 번갈아 하지 않는다. 읽기를 먼저 모으고 쓰기는 그 뒤(다음 rAF)에 한다. 번갈아 하면 브라우저가 매번 layout을 다시 계산한다.
+  - 「화면이 그려진 다음」이 필요한 작업(새 화면의 초점 이동, 붙여넣기 뒤 커서 위치, 전환이 시작된 뒤의 스크롤)은 `setTimeout(0)`이 아니라 rAF로 미룬다(`RouteFocus`, `BundleDetail`의 「댓글로 이동」). `setTimeout`은 그리기와 박자가 맞지 않아 한 프레임 늦거나 먼저 실행될 수 있다.
+  - 예약한 rAF는 effect 정리(cleanup)에서 취소한다. 화면이 사라진 뒤 실행되면 없는 요소를 건드린다.
 - toast 추가, toggle처럼 빠르게 반복 트리거되는 대상은 `@keyframes`보다 CSS `transition`을 쓴다. transition은 진행 중에 재시작되면 현재 값에서 이어지지만, keyframes는 처음부터 다시 시작한다.
 
 ## 접근성
