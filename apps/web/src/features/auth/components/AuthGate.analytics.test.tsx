@@ -9,7 +9,7 @@ import { AuthGate } from './AuthGate';
 const setAnalyticsConsent = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock('@/shared/config/posthog', () => ({ setAnalyticsConsent }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), prefetch: vi.fn() }),
   usePathname: () => '/bunch',
 }));
 

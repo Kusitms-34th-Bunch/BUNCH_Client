@@ -10,7 +10,7 @@ import { AuthGate } from './AuthGate';
 const sync = vi.hoisted(() => vi.fn<(_memberId: string | null) => void>());
 vi.mock('@/shared/hooks/usePushDeviceSync', () => ({ usePushDeviceSync: sync }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), prefetch: vi.fn() }),
   usePathname: () => '/bunch',
 }));
 

@@ -477,6 +477,10 @@ describe('ProfileSetup', () => {
     await saved();
     expect(replace).not.toHaveBeenCalled();
     expect(registration.registerMember).toHaveBeenCalledTimes(1);
+    // 가드가 도착 화면으로 넘기는 동안 화면을 그대로 두므로 다시 제출하지 못하게 잠그고 이동 중임을 알림
+    expect(start().closest('[inert]')).not.toBeNull();
+    expect((start() as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('화면을 이동하는 중이에요').getAttribute('role')).toBe('status');
     // 앞뒤 공백은 지우고, 출생연도·성별을 입력하지 않았으면 보내지 않음
     expect(registration.registerMember.mock.calls[0]?.[0]).toEqual({
       nickname: '지원',

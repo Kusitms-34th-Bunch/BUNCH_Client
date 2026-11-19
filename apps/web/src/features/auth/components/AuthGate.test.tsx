@@ -11,9 +11,10 @@ import { usePostLoginPath } from '../queries/session';
 import { AuthGate } from './AuthGate';
 
 const replace = vi.fn();
+const prefetch = vi.fn();
 const navigation = vi.hoisted(() => ({ pathname: '/bunch' }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ replace, prefetch }),
   usePathname: () => navigation.pathname,
 }));
 
@@ -46,11 +47,70 @@ describe('AuthGate', () => {
 
   beforeEach(() => {
     replace.mockClear();
+    prefetch.mockClear();
     clearPendingInvitation();
     navigation.pathname = '/bunch';
     // 기본은 인트로를 본 사용자. 회원 테스트가 남긴 기록에 기대지 않게 매번 다시 둠
     window.localStorage.clear();
     window.localStorage.setItem('bunch:intro-seen', '1');
+  });
+
+  describe('가입을 마칠 때의 도착 화면(미리 받기·전환)', () => {
+    it('프로필 작성 중이면 가입을 마친 뒤 갈 번치 시작 화면을 미리 받는다', async () => {
+      navigation.pathname = '/signup/profile';
+      respondWith({ signupStatus: 'IN_PROGRESS', termsAccepted: true });
+      renderGate();
+
+      await waitFor(() => expect(prefetch).toHaveBeenCalledWith('/onboarding'));
+    });
+
+    it('보관된 초대가 있으면 초대 진입을 미리 받는다', async () => {
+      savePendingInvitation('ABCD2345');
+      navigation.pathname = '/signup/profile';
+      respondWith({ signupStatus: 'IN_PROGRESS', termsAccepted: true });
+      renderGate();
+
+      await waitFor(() => expect(prefetch).toHaveBeenCalledWith('/onboarding/join/enter'));
+    });
+
+    it('가입을 마치면 프로필 화면을 그대로 둔 채 도착 화면으로 보낸다(전환 재생)', async () => {
+      navigation.pathname = '/signup/profile';
+      respondWith({ signupStatus: 'IN_PROGRESS', termsAccepted: true });
+      const client = createTestQueryClient();
+      render(
+        <AuthGate destinations={DESTINATIONS}>
+          <p>보호된 화면</p>
+        </AuthGate>,
+        { wrapper: createQueryWrapper(client) },
+      );
+      expect(await screen.findByText('보호된 화면')).toBeTruthy();
+
+      respondWith({ signupStatus: 'COMPLETED', termsAccepted: true });
+      await client.invalidateQueries();
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/onboarding'));
+      expect(protectedScreen()).not.toBeNull();
+      expect(loadingOverlay()).toBeNull();
+    });
+
+    it('가입을 마친 회원이 프로필 화면에 직접 들어오면 로딩만 보이고 도착 화면으로 보낸다', async () => {
+      navigation.pathname = '/signup/profile';
+      respondWith({ signupStatus: 'COMPLETED', termsAccepted: true });
+      renderGate();
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/onboarding'));
+      expect(protectedScreen()).toBeNull();
+      expect(loadingOverlay()).not.toBeNull();
+    });
+
+    it('약관 화면에서는 미리 받지 않는다', async () => {
+      navigation.pathname = '/signup/terms';
+      respondWith({ signupStatus: 'IN_PROGRESS', termsAccepted: false });
+      renderGate();
+
+      expect(await screen.findByText('보호된 화면')).toBeTruthy();
+      expect(prefetch).not.toHaveBeenCalled();
+    });
   });
 
   describe('보관된 초대(초대 링크로 들어온 사용자)', () => {

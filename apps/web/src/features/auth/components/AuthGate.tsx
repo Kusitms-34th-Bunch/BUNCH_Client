@@ -3,7 +3,7 @@
 import { Button } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
-import { type ReactNode, useEffect, useSyncExternalStore } from 'react';
+import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -11,10 +11,11 @@ import { setAnalyticsConsent } from '@/shared/config/posthog';
 import { usePushDeviceSync } from '@/shared/hooks/usePushDeviceSync';
 import { readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import { useClearPersistedQueriesWhen, usePersistedOwnerReady } from '@/shared/query/persistence';
-import type { PostLoginDestinations } from '../lib/postLoginPath';
+import { SIGNUP_PATHS } from '../constants/paths';
 import { STATUS_CHECK_FAILURE_MESSAGE } from '../hooks/useSocialLogin';
 import { type SessionState, resolveAccess } from '../lib/accessPolicy';
 import { markIntroSeen, readIntroSeen } from '../lib/introSeen';
+import { type PostLoginDestinations, resolvePostLoginPath } from '../lib/postLoginPath';
 import { sessionQueryOptions } from '../queries/session';
 
 const subscribeNothing = () => () => {};
@@ -38,6 +39,7 @@ type AuthGateProps = {
 /**
  * 서버가 알려 준 로그인·가입 상태(`GET /members/me/onboarding`)로 화면 접근을 제어
  * 상태를 확인하는 동안과 다른 화면으로 보내는 동안은 화면 대신 `PageLoading`만 보임(보호된 화면이 잠깐 비치지 않게)
+ * 예외로 방금 가입을 마친 프로필 화면은 도착 화면으로 가는 동안 그대로 둬 전환이 재생되게 함(가입 완료 회원의 직접 진입은 로딩)
  * 비로그인(401)은 `sessionQueryOptions`가 `null`로 주고, 그 밖의 실패는 안내와 다시 시도(어디로 보낼지 모르므로 화면을 열지 않음)
  * 상태가 바뀌는 동작(로그인·약관 저장·가입 완료)은 `sharedKeys.session()`을 무효화해야 이 판단이 갱신됨
  */
@@ -69,6 +71,33 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
   useEffect(() => {
     if (redirectTo) router.replace(redirectTo);
   }, [redirectTo, router]);
+
+  // 이 화면에서 가입 중 상태를 본 적이 있는지(방금 가입을 마친 경우와 가입 완료 회원의 직접 진입을 구분)
+  const signingUp = session?.kind === 'member' && session.onboarding.signupStatus === 'IN_PROGRESS';
+  const [sawSigningUp, setSawSigningUp] = useState(false);
+  if (signingUp && !sawSigningUp) setSawSigningUp(true);
+  // 방금 가입을 마친 프로필 화면은 이동하는 동안 그대로 둠(로딩 덮개로 바꾸면 도착 화면 전환이 재생되지 않음)
+  const leavingSignup =
+    sawSigningUp &&
+    session?.kind === 'member' &&
+    session.onboarding.signupStatus === 'COMPLETED' &&
+    pathname === SIGNUP_PATHS.profile;
+
+  // 프로필 작성 중이면 가입을 마친 뒤 갈 화면을 미리 받아 둠(시작하기 뒤 로딩 단축)
+  const afterSignupPath =
+    session?.kind === 'member' &&
+    session.onboarding.signupStatus === 'IN_PROGRESS' &&
+    pathname === SIGNUP_PATHS.profile &&
+    hasPendingInvitation !== null
+      ? resolvePostLoginPath(
+          { ...session.onboarding, signupStatus: 'COMPLETED' },
+          destinations,
+          hasPendingInvitation,
+        )
+      : null;
+  useEffect(() => {
+    if (afterSignupPath) router.prefetch(afterSignupPath);
+  }, [afterSignupPath, router]);
 
   // 비로그인이 확인되면 이전 사용자의 저장된 캐시를 지움(로그아웃은 화면을 새로 열어 여기서 확인됨)
   useClearPersistedQueriesWhen(session?.kind === 'anonymous');
@@ -137,7 +166,7 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
     !session ||
     introSeen === null ||
     hasPendingInvitation === null ||
-    redirectTo ||
+    (redirectTo && !leavingSignup) ||
     (session.kind === 'member' && !ownerReady)
   ) {
     return (
