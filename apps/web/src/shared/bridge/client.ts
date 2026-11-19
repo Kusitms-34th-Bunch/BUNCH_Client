@@ -48,6 +48,10 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     setNativeTabBarVisible: () => Promise.resolve(false),
     // 브라우저·이 메서드가 없는 이전 쉘은 웹 플로팅 버튼 사용
     setNativeFloatingButton: () => Promise.resolve(false),
+    // 브라우저·이전 쉘은 탭 전환이 없어 부르는 쪽이 주소 이동
+    selectNativeTab: () => Promise.resolve(false),
+    // 브라우저는 탭 WebView가 하나라 알릴 다른 탭 없음
+    notifyNativeTabs: () => Promise.resolve(false),
     // 브라우저에는 앱 스플래시 없음
     appReady: () => Promise.resolve(),
   },
@@ -64,6 +68,27 @@ export const nativeShellTab = (): string | null => {
 
 /** initialBridge 지원 여부와 별개로 실제 네이티브 호스트 확인 */
 export const isNativeShell = () => typeof window !== 'undefined' && 'ReactNativeWebView' in window;
+
+// iOS 쉘의 탭 화면 ID(쉘 `src/tabs/tabs.ts`의 TAB_IDS와 같은 값). 탭 첫 화면 경로는 `/${id}`
+const SHELL_TAB_IDS = ['feed', 'photos', 'bunch', 'my'] as const;
+
+/**
+ * 다른 탭의 첫 화면(`/bunch` 등)으로 갈 때 iOS 쉘이면 그 탭으로 전환(탭마다 WebView라 주소 이동은 지금 탭 화면을 바꿈)
+ * 전환했으면 true. 쉘이 아니거나 지금 탭이거나 전환하지 못하면 false라 부르는 쪽이 주소 이동
+ */
+export const selectShellTabFor = async (href: string): Promise<boolean> => {
+  const id = SHELL_TAB_IDS.find((tab) => href === `/${tab}`);
+  // 보이지 않는 탭의 요청은 보내지 않음(사용자가 보던 탭이 바뀌지 않게)
+  if (!id || !isNativeShell() || nativeShellTab() === id) return false;
+  if (document.visibilityState !== 'visible') return false;
+  return appBridge.selectNativeTab(id).catch(() => false);
+};
+
+/** 탭 첫 화면으로 가는 이동: iOS 쉘에서 다른 탭이면 그 탭으로 전환, 아니면 `push`로 주소 이동 */
+export const openTabPath = (href: string, push: (_href: string) => void) =>
+  void selectShellTabFor(href).then((selected) => {
+    if (!selected) push(href);
+  });
 
 /** 사용자 선택 대기 중에는 타임아웃 없이 갤러리 응답 대기, 기존 브리지의 대기 정책 유지 */
 export const galleryBridge = linkBridge<AppBridge, AppPostMessageSchema>({

@@ -6,6 +6,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
+import { isNativeShell, openTabPath } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
@@ -158,8 +159,11 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
           bunchName={bundle.bunch.name}
           bunchImageSrc={bundle.bunch.imageSrc}
           time={now === null ? '' : formatElapsedTime(bundle.publishedAt, now)}
+          // 내 번치는 번치 탭 첫 화면이라 iOS 쉘에서는 번치 탭으로 전환(6.1.2 상세 동작 3)
           onBunchClick={() =>
-            router.push(ownBunch ? links.bunchHome : links.otherBunch(bundle.bunch.id))
+            ownBunch
+              ? openTabPath(links.bunchHome, (href) => router.push(href))
+              : router.push(links.otherBunch(bundle.bunch.id))
           }
           members={hideLeftMemberImages(bundle.members)}
           onMembers={() => openMembers(bundle.members)}
@@ -204,6 +208,12 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
           }
           notificationsHref={links.notifications}
           bunchHomeHref={links.bunchHome}
+          // iOS 쉘은 탭마다 WebView라 번치 탭으로 전환(6.1.2 상세 동작 3). 브라우저는 링크 그대로
+          onBunchHomeClick={(event) => {
+            if (!isNativeShell()) return;
+            event.preventDefault();
+            openTabPath(links.bunchHome, (href) => router.push(href));
+          }}
         />
       }
     >
