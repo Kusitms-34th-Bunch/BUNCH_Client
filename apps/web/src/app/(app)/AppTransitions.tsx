@@ -129,6 +129,13 @@ const bunchDrill = drill(
     override: { forward: tuneBunchDrill, backward: tuneBunchDrill },
   },
 );
+// 두 화면이 서로 앞으로 들어가는 사이(그리드 → 상세, 상세의 번치 → 번치 탭 등)의 drill
+// from·to가 같은 두 경로라 양방향 점수가 같아 SSGOI가 기록 방향(push는 앞, 뒤로 가기는 뒤)을 씀
+const historyDrill = (a: string, b: string): SsgoiTransitionRule => ({
+  from: [a, b],
+  to: [a, b],
+  transition: bunchDrill,
+});
 // 피드 카드 → 번들 상세(Figma `6892:46500` 「게시글 확대 모션」): 카드(사진과 딤·글자)가 상세의 첫 사진 자리로 옮겨 가며 상세 화면이 겹쳐 나타남
 // 카드 `data-hero-enter-key`·상세 첫 사진 `data-hero-exit-key`(BundlePhoto `heroKey`) 조합의 이유와 시간·곡선은 docs/architecture/motion.md
 const FEED_BUNDLE_HERO_MS = 550;
@@ -312,19 +319,9 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: photoHero,
   },
-  // 상세의 번치 → 번치 탭·다른 번치 프로필은 한 단계씩 들어가는 drill
-  {
-    from: FEED_PATHS.transitionIds.bundle,
-    to: BUNCH_HOME_PATHS.home,
-    bidirectional: true,
-    transition: bunchDrill,
-  },
-  {
-    from: FEED_PATHS.transitionIds.bundle,
-    to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
-    bidirectional: true,
-    transition: bunchDrill,
-  },
+  // 상세의 번치 → 번치 탭·다른 번치 프로필, 두 화면의 번들 그리드 → 상세 모두 한 단계씩 들어가는 drill
+  historyDrill(BUNCH_HOME_PATHS.home, FEED_PATHS.transitionIds.bundle),
+  historyDrill(BUNCH_HOME_PATHS.transitionIds.otherBunch, FEED_PATHS.transitionIds.bundle),
   // 참여 멤버 시트 → 멤버 프로필 → 번치 프로필도 한 단계씩 들어가는 drill
   {
     from: MAIN_TAB_PATHS.feed,
@@ -390,22 +387,61 @@ const rules: SsgoiTransitionRule[] = [
     transition: bunchDrill,
   },
   // 프로필의 팔로워·팔로잉 수 → 목록, 목록의 「팔로우 요청」 → 요청 목록도 한 단계 들어가는 drill
-  {
-    from: BUNCH_HOME_PATHS.transitionIds.otherBunch,
-    to: BUNCH_HOME_PATHS.transitionIds.otherBunchFollows,
-    bidirectional: true,
-    transition: bunchDrill,
-  },
+  // 목록의 행 → 또 다른 번치 프로필도 앞으로 들어가는 이동이라 기록 방향
+  historyDrill(
+    BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    BUNCH_HOME_PATHS.transitionIds.otherBunchFollows,
+  ),
   {
     from: BUNCH_HOME_PATHS.home,
     to: BUNCH_HOME_PATHS.follows,
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 프로필의 멤버 수 → 멤버 목록(5.1.4), 팔로워·팔로잉 행 → 그 번치 프로필(5.11.1)도 한 단계 들어가는 drill
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNCH_HOME_PATHS.members,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: BUNCH_HOME_PATHS.follows,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 알림 목록의 설정 안내 줄·알림 → 알림 설정(MY)·멤버·번치 프로필·번들 상세도 한 단계 들어가는 drill
+  {
+    from: BUNCH_HOME_PATHS.notifications,
+    to: MY_PATHS.notifications,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: BUNCH_HOME_PATHS.notifications,
+    to: BUNCH_HOME_PATHS.members,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: BUNCH_HOME_PATHS.notifications,
+    to: BUNCH_HOME_PATHS.transitionIds.otherBunch,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  historyDrill(BUNCH_HOME_PATHS.notifications, FEED_PATHS.transitionIds.bundle),
   // 콕한 장소도 번치 홈에서 한 단계 들어가는 drill
   {
     from: BUNCH_HOME_PATHS.home,
     to: BUNCH_HOME_PATHS.places,
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  // 콕한 장소 카드 → 그 장소를 담아 온 번들 상세도 한 단계 들어가는 drill(기능명세서 8.1.5)
+  {
+    from: BUNCH_HOME_PATHS.places,
+    to: FEED_PATHS.transitionIds.bundle,
     bidirectional: true,
     transition: bunchDrill,
   },
@@ -416,12 +452,8 @@ const rules: SsgoiTransitionRule[] = [
     transition: bunchDrill,
   },
   // 알림 아이콘 → 알림 목록도 메뉴와 같은 drill(화면설계서 2236:41816 3번 Move in ←과 방향 같음)
-  {
-    from: BUNCH_HOME_PATHS.home,
-    to: BUNCH_HOME_PATHS.notifications,
-    bidirectional: true,
-    transition: bunchDrill,
-  },
+  // 알림 → 번치 탭(「작성 중인 번들」 탭 등)도 앞으로 들어가는 이동이라 기록 방향
+  historyDrill(BUNCH_HOME_PATHS.home, BUNCH_HOME_PATHS.notifications),
   // 번치를 삭제하면 확인 화면에서 번치 탭으로 세 칸 되돌아감(정방향 진입은 없음)
   {
     from: BUNCH_HOME_PATHS.home,

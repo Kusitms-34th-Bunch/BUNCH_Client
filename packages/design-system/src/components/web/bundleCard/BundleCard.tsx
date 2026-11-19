@@ -23,6 +23,8 @@ export type BundleCardProps = Omit<ComponentProps<'div'>, 'children' | 'title'> 
   onDelete?: (() => void) | undefined;
   /** 삭제 버튼 접근성 이름. 기본값 `<번들 이름> 삭제` */
   deleteLabel?: string | undefined;
+  /** 제목이 비어 대신 보이는 문구(예: 「제목 미정」)면 흐리게 표시 */
+  titleMuted?: boolean | undefined;
 };
 
 /**
@@ -36,6 +38,7 @@ export const BundleCard = ({
   onCardClick,
   onDelete,
   deleteLabel,
+  titleMuted,
   className,
   ...props
 }: BundleCardProps) => {
@@ -86,7 +89,7 @@ export const BundleCard = ({
             "after:absolute after:inset-0 after:content-['']",
           )}
         >
-          <span className="block truncate">{title}</span>
+          <span className={cn('block truncate', titleMuted && 'text-text-tertiary')}>{title}</span>
           {members.length > 0 ? <span className="sr-only">, 참여자 {members.length}명</span> : null}
         </button>
         {/* 인원 수는 카드 버튼의 숨은 글자로 전달해 장식으로 숨김(Figma `Member Avatar Group`) */}

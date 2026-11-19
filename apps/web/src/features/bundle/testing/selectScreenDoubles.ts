@@ -8,12 +8,22 @@ import { usePhotoBoxFixture } from './usePhotoBoxFixture';
 /** 사진함 목록 새로 받기의 대역: 호출 횟수를 세고, `fail`이면 거부함 */
 export const photoBoxRefresh = { calls: 0, fail: false };
 
+/** 사진함 상태의 대역: `empty`면 사진함이 빈 상태로 보임(테스트마다 되돌림) */
+export const photoBoxPreview: { value: Parameters<typeof usePhotoBoxFixture>[0] } = {
+  value: undefined,
+};
+
+// 대역 상태는 모듈 함수로만 읽고 써서 hook 본문이 바깥 변수를 직접 바꾸지 않게 함(React Compiler 규칙)
+const previewOf = (preview: Parameters<typeof usePhotoBoxFixture>[0]) =>
+  preview ?? photoBoxPreview.value;
+const refreshDouble = () => {
+  photoBoxRefresh.calls += 1;
+  return photoBoxRefresh.fail ? Promise.reject(new Error('refresh failed')) : Promise.resolve();
+};
+
 export const usePhotoBoxDouble = (...args: Parameters<typeof usePhotoBoxFixture>) => ({
-  ...usePhotoBoxFixture(...args),
-  refresh: () => {
-    photoBoxRefresh.calls += 1;
-    return photoBoxRefresh.fail ? Promise.reject(new Error('refresh failed')) : Promise.resolve();
-  },
+  ...usePhotoBoxFixture(previewOf(args[0])),
+  refresh: refreshDouble,
 });
 
 // 생성 중 상태를 확인할 수 있도록 이동까지 걸리는 시간(테스트가 같은 값만큼 시간을 넘김)

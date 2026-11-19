@@ -122,12 +122,12 @@ describe('BunchCreated', () => {
     expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.createBunchInvite);
   });
 
-  it('내 번치로 이동하기는 피드로 replace한다', async () => {
+  it('내 번치로 이동하기는 새 번치 홈으로 replace한다', async () => {
     render(<BunchCreated />, { wrapper: Created });
 
     await userEvent.click(screen.getByRole('button', { name: '내 번치로 이동하기' }));
 
-    expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed);
+    expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.bunchHome);
   });
 
   it('초대 화면에서 뒤로 가서 다시 들어와도 같은 완료 화면을 보여 준다', async () => {

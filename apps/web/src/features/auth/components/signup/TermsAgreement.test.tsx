@@ -133,14 +133,13 @@ describe('TermsAgreement', () => {
     expect(screen.getByRole('status').textContent).toBe('앱 접근 권한을 요청하는 중이에요');
   });
 
-  it('전체 동의하기를 체크하면 권한을 요청하고, 해제할 때는 요청하지 않는다', async () => {
+  it('전체 동의하기를 체크하거나 해제해도 권한을 요청하지 않는다(저장에 성공한 뒤에만, 기능명세 1.3.4)', async () => {
     renderPage();
 
     await userEvent.click(all());
-    expect(permissions.requestAll).toHaveBeenCalledTimes(1);
-
     await userEvent.click(all());
-    expect(permissions.requestAll).toHaveBeenCalledTimes(1);
+
+    expect(permissions.requestAll).not.toHaveBeenCalled();
   });
 
   it('모두 체크된 상태에서 전체 동의하기를 누르면 모두 해제된다', async () => {
@@ -267,7 +266,7 @@ describe('TermsAgreement', () => {
     await waitFor(() => expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull());
   });
 
-  it('권한을 요청하는 동안에는 덮개 없이 처리 중으로 표시하고, 시작하기를 누르면 저장한 뒤 그 요청을 기다린다', async () => {
+  it('권한을 요청하는 동안에는 덮개 없이 처리 중으로 표시하고, 요청이 끝난 뒤에 이동한다', async () => {
     const bodies = captureAgreements();
     let finishPermissions!: () => void;
     permissions.requestAll.mockImplementation(

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type ComponentProps } from 'react';
-import { useIntersectionObserver } from 'react-simplikit';
+import { useMemo, useState, type ComponentProps } from 'react';
+import { mergeRefs, useIntersectionObserver } from 'react-simplikit';
 import { cn } from '../../../utils';
 import { BundleInfo, type BundleInfoProps } from '../bundleInfo';
 import { PageCounter } from '../pageCounter';
@@ -22,7 +22,10 @@ export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
   variant?: 'thumbnail' | 'detail' | undefined;
   /** thumbnail 첫 사진 위의 제목·위치·날짜 */
   info?:
-    | Pick<BundleInfoProps, 'title' | 'location' | 'onLocationClick' | 'date' | 'titleAs'>
+    | Pick<
+        BundleInfoProps,
+        'title' | 'location' | 'onLocationClick' | 'locationUnderline' | 'date' | 'titleAs'
+      >
     | undefined;
   /** thumbnail 첫 사진 위쪽의 번치(이미지·이름·경과 시간). 누르면 번치 프로필 */
   author?:
@@ -53,7 +56,7 @@ const PICK_LAYERS = [
 const PICK_FACE = 'outline-border-tertiary outline -outline-offset-1';
 
 /**
- * 사진을 pick한 멤버(Figma `PickAvatar`): 얼굴을 겹친 「pick」 버튼. 누르면 전체 멤버를 세로로 펼치고 다시 누르면 접힘
+ * 사진을 pick한 멤버(Figma `PickAvatar`): 얼굴을 겹친 「pick」 버튼. 누르면 전체 멤버를 세로로 펼치고 다시 누르거나 사진을 넘기면 접힘
  * 많으면 사진 높이 안에서 스크롤. 이름은 버튼 이름으로 모두 읽으므로 펼친 목록은 낭독에서 숨김
  */
 const PickAvatars = ({ pickers }: { pickers: NonNullable<BundlePhotoItem['pickers']> }) => {
@@ -64,10 +67,19 @@ const PickAvatars = ({ pickers }: { pickers: NonNullable<BundlePhotoItem['picker
   // 움직이는 얼굴 대신 고정된 칸을 관찰(2px 움직임이 판정을 바꿔 재생이 반복되지 않게)
   const [visible, setVisible] = useState(false);
   // 1명 ↔ 2명이면 칸이 다시 만들어지는데, callback ref라 새 칸을 다시 관찰함
-  const facesRef = useIntersectionObserver<HTMLSpanElement>(
+  const floatRef = useIntersectionObserver<HTMLSpanElement>(
     (entry) => setVisible(entry.isIntersecting),
     { threshold: 0.5 },
   );
+  // 다른 사진으로 넘겨 완전히 가려지면 모션 없이 접음(기능명세 6.2.4 상세 4). 훅이 묶음의 첫 기록만 넘겨
+  // 기준 0으로 따로 관찰(보임·가려짐이 번갈아 쌓여 펼친 뒤 첫 기록은 늘 가려짐)
+  const collapseRef = useIntersectionObserver<HTMLSpanElement>((entry) => {
+    if (entry.isIntersecting) return;
+    setExpanded(false);
+    setClosing(false);
+  }, {});
+  // 렌더마다 새 ref면 관찰을 매번 다시 시작하므로 고정
+  const facesRef = useMemo(() => mergeRefs(floatRef, collapseRef), [floatRef, collapseRef]);
   const float = visible ? pickMotion.float : undefined;
   const [first, ...rest] = pickers;
   const pressable = rest.length > 0;

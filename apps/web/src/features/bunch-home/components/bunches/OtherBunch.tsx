@@ -2,7 +2,7 @@
 
 import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toDomainId } from '@/shared/api/ids';
@@ -13,7 +13,9 @@ import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
+import { type PrefetchBundle, useOpenBundle } from '../../hooks/useOpenBundle';
 import { useViewerStale } from '../../hooks/useViewerStale';
+import { itemsOfPages } from '../../lib/pages';
 import { FOLLOW_STATUS, followIdOf, toOtherBunchProfile } from '../../model/otherBunch';
 import { useBlockBunchMutation, useReportBunchMutation } from '../../queries/blocks';
 import { useSwitchBunchMutation } from '../../queries/bunchHome';
@@ -30,9 +32,16 @@ import { OtherBunchScreen } from './OtherBunchScreen';
 
 /**
  * `/bunches/[bunchId]` 다른 번치 프로필: 홈(`EXTERNAL`)·공개 번들과 팔로우를 지금 내 번치(기본 번치) 명의로
- * 내가 속한 번치면 그 번치로 전환해 번치 탭에서 보여 줌. 없는 번치는 404, 차단 관계(내가 차단·서버 403)면 접근 제한
+ * 내가 속한 번치면 그 번치로 전환해 번치 탭에서 보여 줌. 삭제된 번치(404)는 「삭제된 번치예요.」 뒤 이전 화면, 잘못된 주소는 404, 차단 관계(내가 차단·서버 403)면 접근 제한
  */
-export function OtherBunch({ bunchId }: { bunchId: string }) {
+export function OtherBunch({
+  bunchId,
+  prefetchBundle,
+}: {
+  bunchId: string;
+  /** 번들 상세 미리 받기(feed query, route가 조합). 없으면 확인 없이 이동 */
+  prefetchBundle?: PrefetchBundle | undefined;
+}) {
   const router = useRouter();
   const backOr = useBackOr();
   const me = useQuery(myProfileQueryOptions());
@@ -40,8 +49,15 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   const viewerId = me.data ? (me.data.bunch?.id ?? null) : undefined;
   const home = useQuery(otherBunchHomeQueryOptions(bunchId, viewerId));
   const canViewBundles = home.data?.canViewBundles ?? false;
-  const published = useQuery(otherBunchPublishedQueryOptions(bunchId, viewerId, canViewBundles));
+  const published = useInfiniteQuery(
+    otherBunchPublishedQueryOptions(bunchId, viewerId, canViewBundles),
+  );
   const follow = useFollowBunchMutation(viewerId);
+  const openBundle = useOpenBundle({
+    viewerId,
+    prefetchBundle,
+    onDeleted: () => void published.refetch(),
+  });
   const switchBunch = useSwitchBunchMutation();
   const { me: reporter, access } = useBlockRelation(bunchId);
   const blockBunch = useBlockBunchMutation(viewerId);
@@ -76,6 +92,19 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
     });
   }, [internal, bunchId, router, switchBunch]);
 
+  // 없는 번치(404)는 그사이 삭제된 번치로 보고 안내 뒤 이전 화면으로(기능명세 5.10.1 예외 처리 「제안」, 한 번만)
+  // ponytail: 서버 404가 삭제와 없는 번치를 구분하지 않음. 들어오는 길이 모두 실제 번치 링크라 삭제로 봄
+  // 내가 차단한 번치는 404여도 접근 제한 화면이 앞섬: 차단 여부를 확인한 뒤(visible)에만 삭제로 보고, 확인 중이면 로딩 유지
+  const deleted =
+    isApiError(home.error) && home.error.status === 404 && access === 'visible' && !justBlocked;
+  const leftDeleted = useRef(false);
+  useEffect(() => {
+    if (!deleted || leftDeleted.current) return;
+    leftDeleted.current = true;
+    toastAfterNavigation(BUNCH_HOME_MESSAGES.bunchDeleted);
+    backOr(BUNCH_HOME_PATHS.feed);
+  }, [deleted, backOr]);
+
   // 서버가 본 명의가 캐시의 기본 번치와 다르면 다시 받고, 다시 받아도 어긋나면 다시 시도 화면(다른 기기에서 전환 등)
   const { stale: viewerStale, mismatch: viewerMismatch } = useViewerStale(viewerId, home, me);
   // 처리 중 다시 눌러도 한 번만(isPending은 다음 렌더부터 반영), 차단이 끝날 때를 기다릴 수 있게 진행 중인 요청을 둠
@@ -87,9 +116,10 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
   if (access === 'blocked' || justBlocked) {
     return <BlockedBunchScreen onBack={back} focusTitle={justBlocked} />;
   }
-  // 없는 번치·잘못된 주소는 404
+  // 잘못된 주소는 404 화면, 삭제된 번치는 위에서 이전 화면으로 보내는 동안 로딩
   const errorStatus = isApiError(home.error) ? home.error.status : undefined;
-  if (errorStatus === 400 || errorStatus === 404) notFound();
+  if (errorStatus === 400) notFound();
+  if (deleted) return <BlockedBunchScreen onBack={back} checking />;
   // ponytail: 상대가 나를 차단한 응답은 명세에 없어 403을 차단으로 봄(비공개는 403이 아니라 canView로 옴), 다른 이유일 수 있어 다시 시도 둠
   if (errorStatus === 403) {
     return (
@@ -137,7 +167,10 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
     }
   };
   const unfollow = () => run({ kind: 'unfollow', followId: followIdOf(data) });
-  const bunch = toOtherBunchProfile(data, published.data);
+  const bunch = toOtherBunchProfile(
+    data,
+    published.data && { items: itemsOfPages(published.data.pages, (bundle) => bundle.id) },
+  );
   // 차단·신고 직전 서버 명의 확인: 다시 받지 못했거나 명의가 바뀌었으면(다른 기기에서 전환) 보내지 않음
   const confirmViewer = async () => {
     const latest = await home.refetch();
@@ -190,6 +223,9 @@ export function OtherBunch({ bunchId }: { bunchId: string }) {
         // 번치가 없는 회원은 팔로우할 명의가 없어 버튼을 숨김
         canFollow={viewerId !== null}
         canViewRelations={data.canViewRelations ?? false}
+        canViewMembers={data.canViewMembers ?? false}
+        onOpenBundle={(bundleId) => openBundle(bunchId, bundleId)}
+        bundlesMore={published}
         onBack={back}
         // 내 번치(차단·신고 명의)를 모르거나 명의를 다시 확인하는 동안에는 더보기를 숨김
         // 차단 중에는 덮개가 막고, 실패하면 덮개가 초점을 더보기로 돌려주도록 그대로 둠

@@ -56,7 +56,7 @@ describe('BunchMood', () => {
     renderStep();
 
     expect(
-      screen.getByRole('heading', { level: 1, name: '우리 번치는 어떤 성격의 모임인가요?' }),
+      screen.getByRole('heading', { level: 1, name: '우리 번치는 어떤 분위기인가요?' }),
     ).toBeTruthy();
   });
 
@@ -67,7 +67,7 @@ describe('BunchMood', () => {
     expect(radios).toHaveLength(4);
     expect(radios.every((radio) => !(radio as HTMLInputElement).checked)).toBe(true);
     expect((submitButton() as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByRole('group', { name: '우리 번치는 어떤 성격의 모임인가요?' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: '우리 번치는 어떤 분위기인가요?' })).toBeTruthy();
   });
 
   it('카드를 고르면 번치 만들기가 활성화되고 다른 카드를 고르면 기존 선택이 해제된다', async () => {

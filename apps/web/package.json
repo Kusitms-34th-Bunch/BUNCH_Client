@@ -36,7 +36,7 @@
     "@webview-bridge/web": "^1.8.0",
     "ky": "catalog:",
     "lottie-react": "^3.1.2",
-    "next": "^16.4.3",
+    "next": "^16.4.6",
     "overlay-kit": "^1.9.0",
     "posthog-js": "^1.446.3",
     "react": "catalog:",
@@ -49,7 +49,7 @@
   "devDependencies": {
     "@app/lint-config": "workspace:*",
     "@app/ts-config": "workspace:*",
-    "@next/bundle-analyzer": "^16.4.5",
+    "@next/bundle-analyzer": "^16.4.6",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",

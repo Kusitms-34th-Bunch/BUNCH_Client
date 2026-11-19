@@ -10,6 +10,42 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+type Entry = { isIntersecting: boolean };
+/** 관찰자를 기준값(threshold)별로 모아 두고, 그 관찰자에 기록 묶음을 보냄 */
+const stubObservers = () => {
+  const observers: { threshold: unknown; callback: (_entries: Entry[]) => void }[] = [];
+  let observed: Element | undefined;
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      constructor(
+        callback: (_entries: Entry[]) => void,
+        options?: { threshold?: number | number[] },
+      ) {
+        observers.push({ threshold: options?.threshold, callback });
+      }
+      observe(element: Element) {
+        observed = element;
+      }
+      unobserve(element: Element) {
+        if (observed === element) observed = undefined;
+      }
+      disconnect() {
+        observed = undefined;
+      }
+    },
+  );
+  return {
+    send: (threshold: number | undefined, entries: Entry[]) =>
+      act(() => {
+        for (const observer of observers) {
+          if (observer.threshold === threshold) observer.callback(entries);
+        }
+      }),
+    observed: () => observed,
+  };
+};
+
 describe('BundlePhoto', () => {
   it('공유 요소 키는 thumbnail이면 카드 전체, detail이면 첫 사진에만 붙는다', () => {
     const { container, rerender } = render(
@@ -26,42 +62,25 @@ describe('BundlePhoto', () => {
   });
 
   it('pick 얼굴은 보일 때만 떠다니고, 사라지면 관찰을 끝낸다', () => {
-    let notify: (_visible: boolean) => void = () => undefined;
-    let observed: Element | undefined;
-    vi.stubGlobal(
-      'IntersectionObserver',
-      class {
-        constructor(callback: (_entries: { isIntersecting: boolean }[]) => void) {
-          notify = (isIntersecting) => callback([{ isIntersecting }]);
-        }
-        observe(element: Element) {
-          observed = element;
-        }
-        unobserve(element: Element) {
-          if (observed === element) observed = undefined;
-        }
-        disconnect() {
-          observed = undefined;
-        }
-      },
-    );
+    const io = stubObservers();
     const { unmount } = render(
       <BundlePhoto variant="detail" photos={[{ src: 'a.jpg', pickers: [{ name: '은우' }] }]} />,
     );
     const float = pickMotion.float as string;
 
     // 고정된 칸을 관찰하고 안쪽 얼굴이 떠다님
+    const observed = io.observed();
     expect(observed).toBe(screen.getByRole('img', { name: 'pick 은우' }).firstElementChild);
     const faces = observed?.firstElementChild;
     expect(observed?.classList.contains(float)).toBe(false);
     expect(faces?.classList.contains(float)).toBe(false);
-    act(() => notify(true));
+    io.send(0.5, [{ isIntersecting: true }]);
     expect(faces?.classList.contains(float)).toBe(true);
-    act(() => notify(false));
+    io.send(0.5, [{ isIntersecting: false }]);
     expect(faces?.classList.contains(float)).toBe(false);
 
     unmount();
-    expect(observed).toBeUndefined();
+    expect(io.observed()).toBeUndefined();
   });
 
   it('사진마다 여는 버튼이 있고 누른 사진 순번을 알린다', async () => {
@@ -128,6 +147,26 @@ describe('BundlePhoto', () => {
     fireEvent.animationEnd(container.querySelector('ul > li')!);
     expect(container.querySelector('ul')).toBeNull();
     expect(button.querySelectorAll('[class*="absolute"]')).toHaveLength(3);
+  });
+
+  it('펼친 채 다른 사진으로 넘겨 얼굴이 가려지면 접힌다(6.2.4 상세 4)', async () => {
+    const io = stubObservers();
+    const pickers = ['은우', '경진', '수인'].map((name) => ({ name }));
+    const { container } = render(
+      <BundlePhoto variant="detail" photos={[{ src: 'a.jpg', pickers }]} />,
+    );
+    const button = screen.getByRole('button', { name: 'pick 은우, 경진, 수인' });
+    io.send(0.5, [{ isIntersecting: true }]);
+    io.send(undefined, [{ isIntersecting: true }]);
+    await userEvent.click(button);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+
+    // 빠르게 넘기면 0.5 관찰자에는 「절반 아래(보임) → 가려짐」이 한 묶음으로 옴(훅은 첫 기록만 넘김)
+    io.send(0.5, [{ isIntersecting: true }, { isIntersecting: false }]);
+    io.send(undefined, [{ isIntersecting: false }]);
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    // 안 보이는 동안 접히므로 모션을 기다리지 않고 바로 겹친 모양
+    expect(container.querySelector('ul')).toBeNull();
   });
 
   it('접히는 도중 다시 누르면 펼친 상태로 돌아간다', async () => {

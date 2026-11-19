@@ -18,6 +18,11 @@ export const BUNDLE_SELECT_MESSAGES = {
   emptyTitle: '아직 추천할 번들이 없어요',
   emptyDescription: '함께한 순간이 쌓이면 번들을 추천해 드릴게요.',
   maxPhotos: '번들에는 사진을 20장까지 담을 수 있어요.',
+  // 사진 고르기에서 사진함이 비었을 때(올리기 버튼이 없어 사진함 빈 상태와 문구가 다름, 기능명세서 4.1.2)
+  noPhotos: {
+    title: '아직 사진이 없어요.',
+    description: '사진함에 사진을 올리면 번들을 만들 수 있어요.',
+  },
   applied: (count: number) => `추천 번들 사진 ${count}장이 선택되었어요.`,
   // Figma 변경 확인 모달 `2060:45262`
   changeTitle: '추천 번들 사진으로 변경할까요?',
@@ -25,9 +30,9 @@ export const BUNDLE_SELECT_MESSAGES = {
   changeConfirm: '변경하기',
   cancel: '취소',
   deletedRecommendation: '추천 번들이 삭제됐어요. 다시 확인해 주세요.',
-  // 서버 오류 안내(기능 명세에 문구가 없어 다른 화면의 실패 안내와 같은 형식으로 둔 제안)
-  recommendationsFailed: '추천 번들을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
-  applyFailed: '추천 번들을 적용하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  // 서버 오류 안내(기능명세 공통 오류 문구, 4.2.1 목록 로딩 실패)
+  recommendationsFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  applyFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   detailTitle: (title: string) => `${title} 상세`,
   viewerTitle: '사진 보기',
   creating: '번들을 만들고 있어요.',
@@ -38,9 +43,16 @@ export const BUNDLE_SELECT_MESSAGES = {
   allSelectionGone: '선택한 사진이 모두 사진함에서 사라졌어요.',
   selectionStale: (count: number) =>
     `선택한 사진 중 ${count}장이 사진함에서 삭제되어 선택이 해제됐어요.`,
-  createFailed: '번들을 만들지 못했어요. 잠시 후 다시 시도해 주세요.',
+  createFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   selectionStatus: (count: number) => (count === 0 ? '선택한 사진이 없어요.' : `${count}장 선택됨`),
   photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
+  // 번들 만들기 진입 확인(기능명세 4.1.1 상세 동작 1, 3.3.4): 초안이 이미 10개
+  draftLimitEntry: '번들 초안은 최대 10개까지 만들 수 있어요.',
+  // 번치에 나 혼자일 때 번들 만들기를 막는 안내 창(기능명세 4.1.1, 4.1.4, 번치 홈과 같은 문구)
+  needMembersTitle: '함께할 멤버가 없어요',
+  needMembersDescription: '번들은 번치의 멤버가 2명 이상일 때 만들 수 있어요.',
+  needMembersInvite: '초대하기',
+  needMembersCancel: '취소',
 } as const;
 
 /** 번들 하나에 담을 수 있는 최대 사진 수(기획 4.1.2). 사진함 「번들 만들기」와 같은 값 */

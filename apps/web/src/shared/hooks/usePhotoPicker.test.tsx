@@ -182,7 +182,7 @@ it('깨진 웹 이미지는 미리보기를 바꾸지 않는다', async () => {
   });
   await waitFor(() => expect(result.current.isPending).toBe(false));
   expect(result.current.photoUrl).toBeUndefined();
-  expect(result.current.message).toBe('이 사진은 사용할 수 없어요.');
+  expect(result.current.message).toBe('이 사진은 사용할 수 없어요');
 });
 
 it('nativeEdit가 false면 앱에 시스템 편집 없이 고르라고 요청하고, 고른 뒤 onSelect를 부른다', async () => {
@@ -254,5 +254,5 @@ it('픽셀 수가 너무 큰 웹 이미지는 바이트가 작아도 거절한�
   });
   await waitFor(() => expect(result.current.isPending).toBe(false));
   expect(result.current.photoUrl).toBeUndefined();
-  expect(result.current.message).toBe('이 사진은 사용할 수 없어요.');
+  expect(result.current.message).toBe('이 사진은 사용할 수 없어요');
 });

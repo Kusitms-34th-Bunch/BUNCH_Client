@@ -1,11 +1,12 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchHomeDetail, BunchSummary } from '../lib/types';
+import { itemsOfPages, type ListMoreQuery } from '../lib/pages';
 import { accessNoticeIdOf, toBunchHomeDetail, toBunchSummaries } from '../model/bunchHome';
 import {
   bunchHomeQueryOptions,
@@ -27,6 +28,10 @@ export type ServerBunchHome =
       bunches: readonly BunchSummary[];
       /** 소속 번치가 최대 개수라 더 참여할 수 없음(목록을 못 받으면 false, 서버가 만들 때 다시 막음) */
       atBunchLimit: boolean;
+      /** 완성된 번들 다시 받기(삭제된 번들을 눌렀을 때) */
+      refreshCompleted: () => void;
+      /** 완성된 번들 이어서 받기(그리드 끝) */
+      completedMore: ListMoreQuery;
     };
 
 /**
@@ -38,7 +43,7 @@ export function useServerBunchHome(): ServerBunchHome {
   const profile = useQuery(myProfileQueryOptions());
   const bunchId = profile.data?.bunch?.id;
   const home = useQuery(bunchHomeQueryOptions(bunchId));
-  const published = useQuery(publishedBundlesQueryOptions(bunchId));
+  const published = useInfiniteQuery(publishedBundlesQueryOptions(bunchId));
   const drafts = useQuery(draftBundlesQueryOptions(bunchId));
   const members = useQuery(bunchMembersQueryOptions(bunchId));
   const myBunches = useQuery(myBunchesQueryOptions());
@@ -46,7 +51,12 @@ export function useServerBunchHome(): ServerBunchHome {
   const ready = useMemo(() => {
     if (!home.data || !published.data || !drafts.data) return undefined;
     // 번치 멤버는 작성 중인 번들 카드의 얼굴에만 쓰여, 못 받아도 얼굴만 비우고 홈은 보임
-    const current = toBunchHomeDetail(home.data, published.data, drafts.data, members.data ?? []);
+    const current = toBunchHomeDetail(
+      home.data,
+      { items: itemsOfPages(published.data.pages, (bundle) => bundle.id) },
+      drafts.data,
+      members.data ?? [],
+    );
     if (!current) return undefined;
     // 전환 목록은 홈을 막지 않음: 못 받으면 지금 번치 하나로 보임
     const bunches: readonly BunchSummary[] = myBunches.data
@@ -70,7 +80,14 @@ export function useServerBunchHome(): ServerBunchHome {
   // 받아 둔 홈이 있어도 다시 받기에서 접근 불가 안내가 오면 그 번치는 더 볼 수 없음
   const noticeId = accessNoticeIdOf(home.error);
   if (noticeId) return { kind: 'unavailable', noticeId };
-  if (ready) return { kind: 'ready', ...ready };
+  if (ready) {
+    return {
+      kind: 'ready',
+      ...ready,
+      refreshCompleted: () => void published.refetch(),
+      completedMore: published,
+    };
+  }
   // 내 번치가 아닌 응답(소속 null)이라 변환하지 못한 경우도 처음부터 못 받은 오류로 봄
   const unusable = home.data && published.data && drafts.data && !ready;
   // 이미 받은 값이 있으면 재조회 실패로 화면을 덮지 않고, 처음부터 못 받았을 때만 오류

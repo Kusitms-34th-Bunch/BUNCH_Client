@@ -8,14 +8,14 @@ import {
 const notificationsPath = (bunchId: string) =>
   `bunches/${encodeURIComponent(bunchId)}/notifications`;
 
-// 목록은 첫 쪽만(더 불러오기는 UT 이후, 팔로우 목록과 같은 기준)
+// 알림 한 쪽 크기(팔로우 목록과 같은 기준)
 const LIST_PAGE_SIZE = 50;
 
-/** 번치의 알림 첫 쪽(최신순)과 읽지 않은 수 */
-export const getBunchNotifications = (bunchId: string, signal?: AbortSignal) =>
+/** 번치의 알림 한 쪽(최신순, 0부터)과 읽지 않은 수 */
+export const getBunchNotifications = (bunchId: string, page: number, signal?: AbortSignal) =>
   requestData(
     bffApi.get(notificationsPath(bunchId), {
-      searchParams: { page: 0, size: LIST_PAGE_SIZE },
+      searchParams: { page, size: LIST_PAGE_SIZE },
       signal: signal ?? null,
     }),
     notificationPageSchema,

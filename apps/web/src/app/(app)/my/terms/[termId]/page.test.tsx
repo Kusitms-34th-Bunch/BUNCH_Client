@@ -32,10 +32,17 @@ describe('/my/terms/[termId] page', () => {
     expect(screen.getByRole('button', { name: '뒤로 가기' })).toBeTruthy();
   });
 
-  it('개인정보 처리방침의 h1은 가입 약관 원문 제목이 아니라 MY 메뉴 이름이다', async () => {
+  it('개인정보 처리방침 주소는 가입용 수집 동의서가 아니라 MY 전용 처리방침을 연다', async () => {
     render(await MyTermsPage(params('privacy')));
 
     expect(screen.getByRole('heading', { level: 1, name: '개인정보 처리방침' })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { level: 2, name: '제 1조 (개인정보의 처리 목적)' }),
+    ).toBeTruthy();
+  });
+
+  it('MY 전용 처리방침의 문서 id는 주소로 열 수 없다', async () => {
+    await expect(MyTermsPage(params('privacyPolicy'))).rejects.toThrow('NEXT_NOT_FOUND');
   });
 
   it('전환 경계를 MY 약관 고정 id로 지정한다', async () => {

@@ -138,6 +138,34 @@ describe('BunchProfileEditScreen', () => {
     expect(checkName).not.toHaveBeenCalledWith('퇴근런클럽');
   });
 
+  it('바꾼 이름이 확인을 통과하면 사용 가능 문구를 보이고, 지금 이름으로 돌리면 지운다', async () => {
+    const checkName = vi
+      .fn<(_name: string) => Promise<NameCheckResult>>()
+      .mockResolvedValue('available');
+    const user = userEvent.setup();
+    render(
+      <BunchProfileEditScreen
+        initial={privateBunch}
+        onBack={vi.fn()}
+        onSave={onSave}
+        checkName={checkName}
+      />,
+    );
+    const AVAILABLE = '사용 가능한 번치 이름이에요';
+    // 지금 이름은 묻지 않아 문구도 없음
+    expect(screen.queryByText(AVAILABLE, { selector: 'p[aria-hidden="true"]' })).toBeNull();
+
+    const input = screen.getByRole('textbox', { name: '번치 이름' });
+    await user.type(input, '2');
+    // 기능명세 5.5.3(2.2.3과 같음): 확인을 통과하면 입력란 아래에 사용 가능 문구
+    expect(
+      await screen.findByText(AVAILABLE, { selector: 'p[aria-hidden="true"]' }, { timeout: 2000 }),
+    ).toBeTruthy();
+
+    await user.type(input, '{Backspace}');
+    expect(screen.queryByText(AVAILABLE, { selector: 'p[aria-hidden="true"]' })).toBeNull();
+  });
+
   it('저장 때 서버가 거절한 이름은 사용 중으로 보이고, 저장 중에는 저장하기를 막는다', async () => {
     const user = userEvent.setup();
     const { rerender } = render(
@@ -387,9 +415,7 @@ describe('BunchProfileEdit', () => {
     await user.click(saveButton());
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(
-        '다른 곳에서 프로필이 바뀌어 최신 내용으로 다시 불러왔어요.',
-      ),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect(document.activeElement).not.toBe(screen.getByRole('textbox', { name: '한 줄 소개' }));
     expect(screen.queryAllByText('사용할 수 없는 단어가 포함되어 있어요')).toHaveLength(0);
@@ -411,9 +437,7 @@ describe('BunchProfileEdit', () => {
     await user.click(saveButton());
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(
-        '다른 곳에서 프로필이 바뀌어 최신 내용으로 다시 불러왔어요.',
-      ),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect(replace).not.toHaveBeenCalled();
     // 고른 「공개」는 버리고 서버 값(비공개)으로 다시 엶. 다시 저장하면 새 버전으로 보냄
@@ -439,9 +463,7 @@ describe('BunchProfileEdit', () => {
     await user.click(saveButton());
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(
-        '번치 프로필을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
-      ),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect(screen.getByRole('radio', { name: '공개' })).toHaveProperty('checked', true);
     expect(screen.queryByRole('button', { name: '다시 시도' })).toBeNull();
@@ -474,9 +496,7 @@ describe('BunchProfileEdit', () => {
     await user.click(saveButton());
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(
-        '번치 프로필을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
-      ),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect(screen.getByRole('radio', { name: '공개' })).toHaveProperty('checked', true);
   });

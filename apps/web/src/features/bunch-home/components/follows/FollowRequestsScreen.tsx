@@ -159,9 +159,8 @@ export function FollowRequestsScreen({
               ) : null}
             </>
           ) : (
-            <p className="typography-body-3-regular text-text-tertiary py-s10 text-center">
-              {BUNCH_HOME_MESSAGES.requestsEmpty}
-            </p>
+            // 빈 목록은 화면에 아무것도 두지 않음(기능명세 5.11.1), 스크린 리더에만 알림
+            <p className="sr-only">{BUNCH_HOME_MESSAGES.requestsEmpty}</p>
           )}
         </div>
       ) : (

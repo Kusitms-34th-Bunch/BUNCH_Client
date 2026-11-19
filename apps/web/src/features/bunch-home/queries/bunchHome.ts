@@ -1,5 +1,11 @@
 import { isApiError } from '@app/api-core';
-import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  skipToken,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import type { MyBunches } from '@/shared/api/myBunches';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
@@ -17,6 +23,7 @@ import {
   updateLastUsedBunch,
 } from '../api/bunchHome';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { FIRST_PAGE, nextPageOf } from '../lib/pages';
 import { bunchHomeKeys } from './keys';
 
 /** 번치 홈 프로필·개수. 번치를 아직 모르면 요청하지 않음(skipToken) */
@@ -28,11 +35,18 @@ export const bunchHomeQueryOptions = (bunchId: string | undefined) =>
     ...persistedQuery,
   });
 
-/** 발행된 번들 목록. 번들 발행 뒤에는 번치 홈 key 전체와 함께 무효화됨(`sharedKeys.bunchHomeScope`) */
+/**
+ * 발행된 번들(쪽 단위, 그리드 끝에서 이어서 받음). 번들 발행 뒤에는 번치 홈 key 전체와 함께 무효화됨(`sharedKeys.bunchHomeScope`)
+ * 앱을 열자마자 보이는 그리드라 저장함(받은 쪽 모두, 복원 뒤 오래됐으면 받은 쪽을 처음부터 다시 받음)
+ */
 export const publishedBundlesQueryOptions = (bunchId: string | undefined) =>
-  queryOptions({
-    queryKey: sharedKeys.publishedBundles(bunchId),
-    queryFn: bunchId ? ({ signal }) => getPublishedBundles(bunchId, signal) : skipToken,
+  infiniteQueryOptions({
+    queryKey: bunchHomeKeys.publishedPages(bunchId),
+    initialPageParam: FIRST_PAGE,
+    queryFn: bunchId
+      ? ({ pageParam, signal }) => getPublishedBundles(bunchId, pageParam, signal)
+      : skipToken,
+    getNextPageParam: nextPageOf,
     ...persistedQuery,
   });
 
@@ -61,7 +75,7 @@ export const useSwitchBunchMutation = () => {
       await Promise.allSettled([
         // 저장해 둔 값이 5분 안이어도 전환한 번치는 서버 값으로 보임
         queryClient.fetchQuery({ ...bunchHomeQueryOptions(bunchId), staleTime: 0 }),
-        queryClient.fetchQuery({ ...publishedBundlesQueryOptions(bunchId), staleTime: 0 }),
+        queryClient.fetchInfiniteQuery({ ...publishedBundlesQueryOptions(bunchId), staleTime: 0 }),
         queryClient.fetchQuery({ ...draftBundlesQueryOptions(bunchId), staleTime: 0 }),
       ]);
       const me = await queryClient.fetchQuery({ ...myProfileQueryOptions(), staleTime: 0 });
@@ -147,4 +161,16 @@ export const useUpdateBunchProfileMutation = (bunchId: string | undefined) => {
         queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
       ]),
   });
+};
+
+/** 이미 삭제·발행된 초안을 알게 됐을 때 번치 홈 목록을 서버 기준으로 다시 받음(5.3.1) */
+export const useRefreshBunchHomeLists = (bunchId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return {
+    refreshDrafts: () =>
+      void queryClient.invalidateQueries({
+        queryKey: sharedKeys.bunchHomeScope(bunchId),
+        refetchType: 'all',
+      }),
+  };
 };

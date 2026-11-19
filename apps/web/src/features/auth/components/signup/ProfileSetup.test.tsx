@@ -261,6 +261,10 @@ describe('ProfileSetup', () => {
           selector: 'p[aria-hidden="true"]',
         }),
       ).toBeNull();
+      // 기능명세 1.4.4: 확인을 통과하면 사용 가능 문구
+      expect(
+        screen.getByText('사용 가능한 닉네임이에요', { selector: 'p[aria-hidden="true"]' }),
+      ).toBeTruthy();
       expect(screen.queryByRole('alert')).toBeNull();
     });
 
@@ -382,9 +386,7 @@ describe('ProfileSetup', () => {
       await userEvent.type(nickname(), '지원');
 
       await userEvent.type(birthYear(), '1949');
-      expect(screen.getByRole('alert').textContent).toBe(
-        `1950년부터 ${max}년 사이로 입력해 주세요.`,
-      );
+      expect(screen.getByRole('alert').textContent).toBe('출생연도를 다시 확인해 주세요.');
       expect(start().hasAttribute('disabled')).toBe(true);
 
       await userEvent.clear(birthYear());
@@ -402,7 +404,7 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(true);
 
       await userEvent.tab();
-      expect(screen.getByRole('alert')).toBeTruthy();
+      expect(screen.getByRole('alert').textContent).toBe('출생연도를 다시 확인해 주세요.');
     });
   });
 
@@ -705,9 +707,7 @@ describe('ProfileSetup', () => {
       await userEvent.click(start());
 
       await waitFor(() =>
-        expect(toast).toHaveBeenCalledWith(
-          '일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요',
-        ),
+        expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
       );
       expect(replace).not.toHaveBeenCalled();
       expect((nickname() as HTMLInputElement).value).toBe('지원');

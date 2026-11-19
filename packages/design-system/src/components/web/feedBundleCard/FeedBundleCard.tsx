@@ -20,6 +20,8 @@ export type FeedBundleCardProps = Omit<ComponentProps<'article'>, 'children' | '
   title: string;
   location?: string | undefined;
   onLocationClick?: (() => void) | undefined;
+  /** 위치 밑줄 여부(BundleInfo `locationUnderline`). 기본 true */
+  locationUnderline?: boolean | undefined;
   date?: string | undefined;
   /** 제목 요소 태그. 기본 h3(피드 화면의 h2 아래) */
   titleAs?: BundleInfoProps['titleAs'];
@@ -44,6 +46,7 @@ export const FeedBundleCard = ({
   title,
   location,
   onLocationClick,
+  locationUnderline,
   date,
   titleAs = 'h3',
   onPhotoClick,
@@ -64,7 +67,7 @@ export const FeedBundleCard = ({
     <BundlePhoto
       photos={photos.slice(0, 1)}
       author={{ name: bunchName, imageSrc: bunchImageSrc, time, onClick: onBunchClick }}
-      info={{ title, location, onLocationClick, date, titleAs }}
+      info={{ title, location, onLocationClick, locationUnderline, date, titleAs }}
       onPhotoClick={onPhotoClick}
       heroKey={photoHeroKey}
       // 피드의 카드끼리 구분되게 제목을 넣음

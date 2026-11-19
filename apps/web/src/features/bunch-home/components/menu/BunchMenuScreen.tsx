@@ -61,7 +61,7 @@ export function BunchMenuScreen({
         title={BUNCH_HOME_MESSAGES.aloneTitle}
         description={BUNCH_HOME_MESSAGES.aloneDescription}
         cancelLabel="취소"
-        confirmLabel="삭제하기"
+        confirmLabel={BUNCH_HOME_MESSAGES.aloneConfirm}
         onConfirm={() => {
           close();
           onDeleteBunch?.();

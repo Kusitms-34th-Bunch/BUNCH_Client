@@ -26,10 +26,13 @@ export const BUNCH_NAME_PROHIBITED_MESSAGE = '사용할 수 없는 번치 이름
 export const BUNCH_DESCRIPTION_PROHIBITED_MESSAGE = '사용할 수 없는 단어가 포함되어 있어요';
 /** 이름 중복 확인이 진행되는 동안 입력란 아래에 보이는 안내(Figma, 확인이 끝나 문제가 없으면 사라짐) */
 export const BUNCH_NAME_CHECKING_MESSAGE = '사용 가능한 이름인지 확인 중이에요.';
+/** 중복·금칙어 확인을 통과한 이름(기능명세 2.2.3·5.5.3, 지금 이름과 같으면 확인하지 않아 보이지 않음) */
+export const BUNCH_NAME_AVAILABLE_MESSAGE = '사용 가능한 번치 이름이에요';
 
-const NAME_PATTERN = /^[A-Za-z0-9가-힣]*$/;
+// 영문·숫자·완성형 한글·공백(기능명세 2.2.2 상세 3, 앞뒤 공백은 저장·확인 때 지움)
+const NAME_PATTERN = /^[A-Za-z0-9가-힣 ]*$/;
 // 한글 IME 조합 중 자모 허용으로 오류 깜빡임 방지
-const COMPOSING_NAME_PATTERN = /^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ]*$/;
+const COMPOSING_NAME_PATTERN = /^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ ]*$/;
 
 /** 이름에 쓸 수 없는 문자가 있는지(조합 중이면 자모 허용) */
 export const hasInvalidBunchNameChars = (name: string, composing: boolean) =>

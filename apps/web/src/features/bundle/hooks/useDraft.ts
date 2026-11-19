@@ -20,9 +20,9 @@ import type {
   SaveStatus,
 } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
-import { readPublishBlockers, readVersionConflict } from '../api/bundles';
+import { type PhotoCapacityMode, readPublishBlockers, readVersionConflict } from '../api/bundles';
 import { searchPlaces as searchPlacesApi } from '../api/places';
-import { BUNDLE_MESSAGES } from '../constants/messages';
+import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../constants/messages';
 import { toDraft, toDraftMember } from '../lib/draftMapping';
 import { movePhoto, type PhotoMovePlan, planPhotoMoves, removePhoto } from '../lib/photos';
 import { ensureTitleCrdt } from '../lib/titleCrdt';
@@ -90,6 +90,18 @@ export type DraftState =
 /** 발행 시도 결과(화면은 성공일 때만 이동하고 나머지는 안내가 이미 나감) */
 export type PublishOutcome = 'published' | 'blocked' | 'failed';
 
+export type ReplacePhotosOptions = {
+  /**
+   * 갤러리 가져오기: 고른 사진을 자르지 않고 모두 넘기면 받는 쪽이 남은 자리까지만 담음
+   * 작성 화면은 서버가 정하고(`PARTIAL_ADD`, 화면 임시 목록만 20장으로 자름), 수정 화면은 20장에 맞춰 자름
+   */
+  partialAdd?: boolean | undefined;
+  /**
+   * 사용자가 더하려던 새 사진 수. 실제로 담긴 수가 이보다 적으면 담긴 장수를 한 번 안내함(기능명세서 4.3.14 로직 4). 없으면 안내하지 않음
+   */
+  requested?: number | undefined;
+};
+
 export type DraftActions = {
   setTitle: (_title: string) => void;
   /** 한글 조합 같은 입력 중에는 원격 제목 변경을 입력이 끝난 뒤 반영하도록 알림 */
@@ -121,8 +133,11 @@ export type DraftActions = {
    * 시작할 때 끌기 시작한 사진의 id를 주면, 놓은 뒤 그 사진이 다른 멤버에게 지워졌을 때(자리를 바꾸지 않고 놓은 경우 포함) 안내함
    */
   setPhotoDragging: (_dragging: boolean, _photoId?: string) => void;
-  /** 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 서버 반영은 후속이라 이 화면에서만 바뀜. 연결이 끊겨 막히면 false */
-  replacePhotos: (_photos: readonly DraftPhoto[]) => boolean;
+  /**
+   * 사진 추가 화면에서 적용한 결과로 사진 목록 전체를 바꿈. 연결이 끊겨 막히면 false
+   * `partialAdd`는 추가만 할 때 정원(20장)이 남은 자리까지만 담고, 덜 담겼으면 담긴 장수를 안내함(갤러리에서 가져오기, 기능명세서 4.3.14)
+   */
+  replacePhotos: (_photos: readonly DraftPhoto[], _options?: ReplacePhotosOptions) => boolean;
   searchPlaces: (_keyword: string) => Promise<readonly PlaceResult[]>;
   /** 저장하지 못한 입력을 먼저 저장한 뒤 발행 */
   publish: () => Promise<PublishOutcome>;
@@ -144,7 +159,7 @@ type RawActions = Omit<
   addMember: (_memberId: string) => void;
   removeMember: (_memberId: string) => void;
   removePhoto: (_photoId: string) => void;
-  replacePhotos: (_photos: readonly DraftPhoto[]) => void;
+  replacePhotos: (_photos: readonly DraftPhoto[], _options?: ReplacePhotosOptions) => void;
 };
 
 const isEmpty = (pending: Pending) =>
@@ -269,6 +284,8 @@ export function useDraft(draftId: string | undefined): {
   const photoFailed = useRef(false);
   const photoFailures = useRef(0);
   const shownPhotosRef = useRef<readonly DraftPhoto[]>([]);
+  // 갤러리 부분 추가에서 정원에 막혀 서버에 담기지 않은 사진함 원본 id
+  const rejectedSources = useRef(new Set<string>());
   const myIdRef = useRef<string | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const inflight = useRef<Promise<boolean> | undefined>(undefined);
@@ -559,15 +576,24 @@ export function useDraft(draftId: string | undefined): {
     if (!current || next.revision >= current.revision) detailRef.current = next;
   };
 
-  const applyPhotoChanges = async ({ add, remove }: { add: string[]; remove: string[] }) => {
-    adoptDetail(
-      await changePhotos.mutateAsync({
-        addPhotoIds: add,
-        removeBundlePhotoIds: remove,
-        mode: detailRef.current?.status ?? 'DRAFT',
-        idempotencyKey: createIdempotencyKey(),
-      }),
-    );
+  const applyPhotoChanges = async ({
+    add,
+    remove,
+    capacityMode,
+  }: {
+    add: string[];
+    remove: string[];
+    capacityMode?: PhotoCapacityMode;
+  }) => {
+    const next = await changePhotos.mutateAsync({
+      addPhotoIds: add,
+      removeBundlePhotoIds: remove,
+      mode: detailRef.current?.status ?? 'DRAFT',
+      idempotencyKey: createIdempotencyKey(),
+      ...(capacityMode && { capacityMode }),
+    });
+    adoptDetail(next);
+    return next;
   };
 
   const applyPhotoMove = async ({ photoId, previous, next }: PhotoMovePlan) => {
@@ -744,6 +770,13 @@ export function useDraft(draftId: string | undefined): {
       showPhotos(next);
       enqueuePhotoOp(async () => {
         const serverId = serverPhotoId(target);
+        // 갤러리 부분 추가에서 정원에 막혀 서버에 담기지 않은 사진은 빼는 동작이 이미 끝난 상태
+        if (
+          serverId === undefined &&
+          target.sourcePhotoId &&
+          rejectedSources.current.has(target.sourcePhotoId)
+        )
+          return;
         if (serverId === undefined) throw new Error('photo is not on the server');
         await applyPhotoChanges({ add: [], remove: [serverId] });
       });
@@ -799,17 +832,47 @@ export function useDraft(draftId: string | undefined): {
         draggedPhotoId.current = undefined;
       }
     },
-    replacePhotos: (photos) => {
+    replacePhotos: (photos, options) => {
       const current = shownPhotosRef.current;
       const currentIds = new Set(current.map((photo) => photo.id));
       const keptIds = new Set(photos.map((photo) => photo.id));
       const added = photos.filter((photo) => !currentIds.has(photo.id));
       const removed = current.filter((photo) => !keptIds.has(photo.id));
-      showPhotos(photos);
+      // 갤러리 가져오기는 고른 사진을 모두 서버에 보내 서버가 남은 자리만큼 담게 하고, 화면 임시 목록만 20장으로 자름(기능명세서 4.3.14 로직 4)
+      const partialAdd = options?.partialAdd === true && removed.length === 0;
+      showPhotos(partialAdd ? photos.slice(0, MAX_PHOTOS) : photos);
       enqueuePhotoOp(async (discarded) => {
         const add = added.flatMap((photo) => (photo.sourcePhotoId ? [photo.sourcePhotoId] : []));
         const remove = removed.flatMap((photo) => serverPhotoId(photo) ?? []);
-        if (add.length > 0 || remove.length > 0) await applyPhotoChanges({ add, remove });
+        // 다시 담으려는 원본은 예전 거절 기록을 지우고 이번 결과로 정함
+        for (const id of add) rejectedSources.current.delete(id);
+        if (add.length > 0 || remove.length > 0) {
+          const next = await applyPhotoChanges({
+            add,
+            remove,
+            ...(partialAdd && { capacityMode: 'PARTIAL_ADD' as const }),
+          });
+          if (partialAdd) {
+            // 서버가 확정한 이번 요청의 추가 결과를 정본으로 셈(다른 멤버가 같은 원본을 먼저 담은 경우와 구분). 결과가 없으면 응답 구성으로 셈
+            const onServer = new Set(next.photos.flatMap((photo) => photo.sourcePhotoId ?? []));
+            const addedIds = next.photoChangeResult
+              ? new Set(next.photoChangeResult.addedPhotoIds)
+              : new Set(add.filter((id) => onServer.has(id)));
+            // 정원에 막혀 담기지 않은 사진: 그 사진을 빼는 동작은 이미 끝난 것으로 봄(뒤이은 변경이 막히지 않게)
+            // 이번에 담긴 원본은 예전에 거절된 기록을 지움(다시 담긴 사진을 빼면 서버에도 보내야 함)
+            for (const id of add) {
+              if (addedIds.has(id)) rejectedSources.current.delete(id);
+              else rejectedSources.current.add(id);
+            }
+            // 고른 장수를 받은 경우에만 안내(찾지 못한 사진이 있어 다른 안내를 띄운 경우는 받지 않음)
+            const wanted = options?.requested;
+            if (wanted !== undefined && addedIds.size < wanted) {
+              toast(BUNDLE_MESSAGES.photosAddedUpTo(addedIds.size));
+            }
+            // 서버가 새 사진을 맨 뒤에 붙이고 기존 사진 순서는 서버 값을 따름(옛 화면 순서로 기존 사진을 옮기지 않음)
+            return;
+          }
+        }
         // 요청을 기다리는 사이 연결이 끊겨 폐기됐으면 이어지는 이동 요청은 보내지 않음
         if (discarded()) return;
         // 새 사진은 서버가 맨 뒤에 붙이므로, 고른 순서와 다르면 이동으로 맞춤

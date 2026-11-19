@@ -40,7 +40,7 @@ const safeImage = (url: string | null | undefined, fallback: string) =>
 /** 다른 번치의 홈·공개 번들 응답을 프로필 모양으로. 번들을 볼 수 없으면 번들은 빈 목록 */
 export const toOtherBunchProfile = (
   home: Home,
-  published: z.infer<typeof publishedBundlesPageSchema> | undefined,
+  published: Pick<z.infer<typeof publishedBundlesPageSchema>, 'items'> | undefined,
 ): OtherBunchProfile => {
   const fallback = defaultBunchImage(home.bunch.characterType);
   return {

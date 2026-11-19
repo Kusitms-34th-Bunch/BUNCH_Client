@@ -21,7 +21,7 @@ export const bunchReportResultSchema = z.object({
 
 export type BlockPage = z.infer<typeof blockPageSchema>;
 
-export const toBlockedBunches = (page: BlockPage): BlockedBunch[] =>
+export const toBlockedBunches = (page: Pick<BlockPage, 'items'>): BlockedBunch[] =>
   page.items.map((item) => {
     const { id, name, imageSrc } = card(item.bunch);
     return { id, name, imageSrc, blockId: toDomainId(item.id) };

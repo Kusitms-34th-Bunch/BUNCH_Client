@@ -58,7 +58,7 @@ export const notificationUnreadSchema = z.object({
 }) satisfies z.ZodType<ApiContract<Schemas['NotificationUnread']>>;
 
 export const toBunchNotifications = (
-  page: NotificationPage,
+  page: Pick<NotificationPage, 'items'>,
   now: number = Date.now(),
 ): BunchNotification[] =>
   page.items.map((item) => ({
@@ -69,13 +69,12 @@ export const toBunchNotifications = (
     unread: !item.readAt,
   }));
 
-// 번들 상세는 feed feature 화면이라 URL 계약만 둠(feature import 없음)
 const bundlePath = (bunchId: number, bundleId: number) =>
-  `/bunches/${toDomainId(bunchId)}/bundles/${toDomainId(bundleId)}`;
+  BUNCH_HOME_PATHS.bundle(toDomainId(bunchId), toDomainId(bundleId));
 
 /**
  * 알림 이동 화면(기능명세 5.12.3 표의 이동 화면). 화면이 아직 없거나 필요한 ID가 없으면 번치 홈
- * ponytail: 「작성 중인 번들」 탭·추천 번들 시트를 바로 여는 주소가 없어 번치 홈·번들 만들기 시작으로 보냄
+ * ponytail: 추천 번들 시트를 바로 여는 주소가 없어 번들 만들기 시작으로 보냄(시트는 bundle feature)
  */
 export const notificationPath = (target: NotificationTarget): string => {
   switch (target.kind) {
@@ -86,7 +85,9 @@ export const notificationPath = (target: NotificationTarget): string => {
     case 'DRAFT':
       return target.bundleId
         ? BUNCH_HOME_PATHS.draft(toDomainId(target.bundleId))
-        : BUNCH_HOME_PATHS.home;
+        : BUNCH_HOME_PATHS.homeDrafts;
+    case 'DRAFT_LIST':
+      return BUNCH_HOME_PATHS.homeDrafts;
     case 'BUNDLE':
       return target.bundleId ? bundlePath(target.bunchId, target.bundleId) : BUNCH_HOME_PATHS.home;
     case 'BUNDLE_COMMENTS':
@@ -101,7 +102,7 @@ export const notificationPath = (target: NotificationTarget): string => {
         ? BUNCH_HOME_PATHS.otherBunch(toDomainId(target.targetBunchId))
         : BUNCH_HOME_PATHS.home;
     default:
-      // BUNCH_HOME, DRAFT_LIST, ACCESS_NOTICE
+      // BUNCH_HOME, ACCESS_NOTICE
       return BUNCH_HOME_PATHS.home;
   }
 };

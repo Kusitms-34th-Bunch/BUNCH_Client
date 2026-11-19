@@ -1,6 +1,8 @@
 export const BUNCH_HOME_PATHS = {
   /** 번치 탭(페이지 전환 등록 이름) */
   home: '/bunch',
+  /** 번치 탭을 「작성 중인 번들」 탭으로 엶(알림 4번 등, 5.12.2) */
+  homeDrafts: '/bunch?tab=drafts',
   /** 번들 만들기 멤버 선택 화면(번들 작성 흐름의 시작, 「+」·「첫 번들 만들기」에서 들어감) */
   createBundle: '/bunch/bundles/new/members',
   /** 작성 중인 번들 공동 편집(작성) 화면(번치 홈 「작성 중인 번들」 카드에서 들어감) */
@@ -32,7 +34,7 @@ export const BUNCH_HOME_PATHS = {
   followRequests: '/bunch/follows/requests',
   /** 차단 목록(기능명세 5.7) */
   blocked: '/bunch/menu/blocked',
-  /** 멤버 관리(기능명세 5.6). 번치 홈 프로필의 멤버 수에서도 들어올 예정이라 메뉴 밖 경로 */
+  /** 멤버 관리(기능명세 5.6). 번치 홈 프로필의 멤버 수에서도 들어와 메뉴 밖 경로 */
   members: '/bunch/members',
   /** 역할별 권한 안내(화면설계서 1-1) */
   roles: '/bunch/members/roles',
@@ -45,6 +47,10 @@ export const BUNCH_HOME_PATHS = {
   // 번치 없음(5.1.7)의 새 번치 만들기·초대 링크 참여. URL 계약만 두고 onboarding feature는 import하지 않음
   createBunch: '/onboarding/create',
   joinBunch: '/onboarding/join',
+  // 번들 상세(기능명세 6.2, 화면은 feed feature). URL 계약만 두고 feed feature는 import하지 않음
+  bundle: (bunchId: string, bundleId: string) => `/bunches/${bunchId}/bundles/${bundleId}`,
+  // 알림 설정(기능명세 7.3, 화면은 my feature). URL 계약만 두고 my feature는 import하지 않음
+  notificationSettings: '/my/notifications',
   // 차단된 번치·다른 번치 화면에서 돌아갈 곳(피드 탭). URL 계약만 두고 main-navigation feature는 import하지 않음
   feed: '/feed',
   /** 동적 route의 전환 경계 id(규칙과 각 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */

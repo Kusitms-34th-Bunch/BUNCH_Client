@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { PROHIBITED_WORD_CODE } from '@/shared/api/prohibitedWord';
+import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { sharedKeys } from '@/shared/query/keys';
 import {
   addBundleParticipant,
@@ -14,6 +15,7 @@ import {
   createBundle,
   deleteBundle,
   getBundle,
+  getDraftBundleCount,
   leaveBundle,
   moveBundlePhoto,
   publishBundle,
@@ -403,4 +405,28 @@ export const usePublishBundleMutation = (
       });
     },
   });
+};
+
+/** 번치 멤버 목록을 서버에서 새로 받음(그사이 멤버가 나갔는지 확인할 때) */
+export const useFetchLatestBunchMembers = () => {
+  const queryClient = useQueryClient();
+  return (bunchId: string | undefined) =>
+    queryClient.fetchQuery({ ...bunchMembersQueryOptions(bunchId), staleTime: 0 });
+};
+
+/**
+ * 번들 만들기 진입 확인(기능명세 4.1.1)에 쓰는 최신 값: 번치 멤버(새로 받음)와 작성 중인 번들 수
+ * 하나가 실패해도 다른 값으로 판단하도록 각각의 결과를 돌려줌
+ */
+export const useFetchBundleEntryState = () => {
+  const fetchMembers = useFetchLatestBunchMembers();
+  return (bunchId: string) =>
+    Promise.allSettled([fetchMembers(bunchId), getDraftBundleCount(bunchId)] as const);
+};
+
+/** 번들 상세를 서버에서 새로 받음(번치 홈 「작성 중인 번들」을 열거나 지우기 전 삭제·발행 여부 확인, 기능명세 5.3.1·5.3.2) */
+export const useFetchLatestBundle = (bunchId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return (bundleId: string) =>
+    queryClient.fetchQuery({ ...bundleQueryOptions(bunchId, bundleId), staleTime: 0 });
 };

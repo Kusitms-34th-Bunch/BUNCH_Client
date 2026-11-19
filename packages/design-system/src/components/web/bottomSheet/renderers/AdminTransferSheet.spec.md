@@ -14,8 +14,8 @@
 ## Public API
 
 - `open`, `onOpenChange`, `onOpenChangeComplete`: `BottomSheet.Root`와 같음.
-- `memberName`: 제목 「{이름}님을 관리자로 지정하고 나갈까요?」와 부제 「{이름}님이 번치 관리와 번들 발행 권한을 갖게 돼요.」에 쓴다.
-- `onConfirm()`: 「지정하고 나가기」. 닫기는 호출자 담당. `confirming?`: 처리 중 비활성.
+- `memberName`: 제목 「{이름}님을 관리자로 지정하고 나갈까요?」와 부제 「{이름}님이 번치의 모든 관리 권한을 갖게 돼요.」에 쓴다.
+- `onConfirm()`: 「나가기」. 닫기는 호출자 담당. `confirming?`: 처리 중 비활성.
 - `illustration?`: 제목 위 92px 그림.
 
 ## 상태와 동작
@@ -25,13 +25,13 @@
 
 ## 접근성
 
-- 제목이 시트 이름, 부제가 설명. 그림은 장식으로 다룬다(호출자가 `alt=""`).
+- 제목이 시트 이름, 부제와 안내 상자가 함께 설명으로 읽힌다(`ConfirmSheet`). 그림은 장식으로 다룬다(호출자가 `alt=""`).
 
 ## Styling과 의존성
 
 - 가운데 정렬. 손잡이 아래 40(기본 16 + `mt-s12`), 그림·제목 20(`gap-s10`), 제목·부제 2(`gap-s1`), 부제·안내 상자 32(`gap-s14`), 안내 상자·버튼 30(기본 16 + `Footer` 14).
 - 제목 `typography-heading-2-medium`(Figma Heading-2-Medium 18/500/27), 부제 `typography-caption-1-regular text-tertiary`, 안내 상자 `surface-secondary`·`typography-body-3-regular`(Figma Body-3-Regular 14/21과 같은 값).
-- 버튼 가로 2개(`Footer className="flex-row"`): `tertiary` 「취소」, `primary` 「지정하고 나가기」.
+- 버튼 가로 2개(`Footer className="flex-row"`): `tertiary` 「취소」, `primary` 「나가기」.
 
 ## 확인할 항목
 

@@ -15,7 +15,7 @@
 
 ### 범위 외
 
-- 유니버셜 링크(앱으로 먼저 넘기기), 앱스토어 이동, 설치 직후 이어받기, 링크 미리보기(OG). 모두 `docs/workflows/invite-link-entry.md`의 「아직 연결하지 않은 것」.
+- 유니버셜 링크(앱으로 먼저 넘기기), 앱스토어 이동, 설치 직후 이어받기. 모두 `docs/workflows/invite-link-entry.md`의 「아직 연결하지 않은 것」. 링크 미리보기(OG)는 route의 `generateMetadata`가 맡는다(같은 문서).
 - 로그인 판별. 이동한 곳의 접근 가드(`AuthGate`)가 맡는다.
 
 ## Route와 접근

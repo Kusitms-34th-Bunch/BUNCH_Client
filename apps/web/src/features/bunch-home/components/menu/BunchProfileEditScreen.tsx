@@ -13,6 +13,7 @@ import {
 import {
   BUNCH_DESCRIPTION_MAX_LENGTH,
   BUNCH_DESCRIPTION_PROHIBITED_MESSAGE,
+  BUNCH_NAME_AVAILABLE_MESSAGE,
   BUNCH_NAME_CHECKING_MESSAGE,
   BUNCH_NAME_INVALID_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
@@ -274,8 +275,14 @@ function ProfileForm({
                       ? BUNCH_NAME_TAKEN_MESSAGE
                       : undefined
               }
-              // 중복 확인이 도는 동안만 보임(번치 만들기와 같음)
-              helperMessage={availability === 'checking' ? BUNCH_NAME_CHECKING_MESSAGE : undefined}
+              // 확인 중 안내와 통과 문구(번치 만들기와 같음, 기능명세 5.5.3)
+              helperMessage={
+                availability === 'checking'
+                  ? BUNCH_NAME_CHECKING_MESSAGE
+                  : availability === 'available'
+                    ? BUNCH_NAME_AVAILABLE_MESSAGE
+                    : undefined
+              }
               onChange={(event) => setName(event.target.value)}
               onCompositionStart={() => setComposing(true)}
               onCompositionEnd={() => setComposing(false)}

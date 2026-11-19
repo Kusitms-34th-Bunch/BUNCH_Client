@@ -33,8 +33,20 @@ const place = (id: string, name: string, source: KokPlace['source']): KokPlace =
 });
 
 const PLACES: readonly KokPlace[] = [
-  place('1', '봄날카페', { kind: 'bundle', bunchName: '캠핑러버', bundleTitle: '가평 첫 캠핑' }),
-  place('2', '해리단길', { kind: 'bundle', bunchName: '캠핑러버', bundleTitle: '여름밤 캠핑' }),
+  place('1', '봄날카페', {
+    kind: 'bundle',
+    bunchId: '21',
+    bundleId: '31',
+    bunchName: '캠핑러버',
+    bundleTitle: '가평 첫 캠핑',
+  }),
+  place('2', '해리단길', {
+    kind: 'bundle',
+    bunchId: '21',
+    bundleId: '32',
+    bunchName: '캠핑러버',
+    bundleTitle: '여름밤 캠핑',
+  }),
   place('3', '광안리 해변', { kind: 'pick' }),
   place('4', '안목해변 커피거리', { kind: 'unavailable' }),
 ];

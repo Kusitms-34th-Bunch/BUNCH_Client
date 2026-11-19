@@ -68,7 +68,12 @@ export type CompletedBundle = {
 /** 작성 중인 번들(목록 한 줄) */
 export type DraftBundle = {
   id: string;
+  /** 보일 제목. 비어 있으면 「제목 미정」 */
   title: string;
+  /** 제목이 비어 「제목 미정」을 흐리게 보이는지 */
+  untitled?: boolean | undefined;
+  /** 휴지통을 보일지(초안 생성자, 참여 중인 관리자. 서버 계산) */
+  canDelete?: boolean | undefined;
   coverSrc: string;
   members: BundleCardMember[];
 };
@@ -91,6 +96,8 @@ export type BunchHomeDetail = {
   followerCount: number;
   followingCount: number;
   memberCount: number;
+  /** 작성 중인 번들 수(서버 draftCount). 모르면 undefined라 번들 만들기 진입을 막지 않음 */
+  draftCount?: number | undefined;
   completedBundles: readonly CompletedBundle[];
   draftBundles: readonly DraftBundle[];
 };
@@ -111,7 +118,8 @@ export type BunchHomeData = {
 export type BunchHomeActions = {
   /** 전환. 서버에 저장하면 끝날 때까지 기다릴 수 있게 Promise를 돌려줌(실패하면 reject) */
   switchBunch: (_bunchId: string) => void | Promise<void>;
-  deleteDraftBundle: (_bundleId: string) => void;
+  /** 작성 중인 번들 삭제. 확인 창을 닫아도 되면 true(성공·충돌), 일시적 실패라 창을 유지하면 false */
+  deleteDraftBundle: (_bundleId: string) => Promise<boolean>;
   /** 접근 불가 번치를 전환 목록에서 지움(「번치 목록에서 삭제」) */
   removeBunch: (_bunchId: string) => void;
 };

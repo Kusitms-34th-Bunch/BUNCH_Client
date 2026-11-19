@@ -26,7 +26,7 @@ type BunchInviteProps = {
   loading?: boolean | undefined;
   /** 링크를 불러오지 못했을 때 「다시 불러오기」로 호출. 없으면 불러오기 실패 표시를 하지 않음 */
   onRetry?: (() => void) | undefined;
-  /** 닫기·「나중에 할게요」로 갈 경로(번치 만들기 직후는 피드, 멤버 관리에서는 멤버 관리) */
+  /** 닫기·「나중에 할게요」로 갈 경로(번치 만들기 직후는 새 번치 홈, 멤버 관리에서는 멤버 관리) */
   leaveHref: string;
   /** 돌아갈 기록이 있으면 뒤로 가기로 닫음(멤버 관리·더보기 메뉴에서 들어온 경우) */
   backOnLeave?: boolean | undefined;

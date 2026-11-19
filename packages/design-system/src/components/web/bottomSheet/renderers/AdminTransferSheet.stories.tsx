@@ -31,7 +31,7 @@ const meta = {
     return (
       <>
         <Button size="md" onClick={() => setOpen(true)}>
-          관리자 지정하고 나가기
+          관리자로 지정하기
         </Button>
         <AdminTransferSheet
           {...args}

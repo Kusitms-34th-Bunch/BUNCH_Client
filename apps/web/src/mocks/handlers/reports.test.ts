@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '../db';
 import { MOCK_BUNCH_ID, MOCK_SECOND_BUNCH_ID } from '../db/seed';
 // handler 변경 때 PR CI(`--changed`)가 이 테스트를 고르게 서버를 import
@@ -17,6 +17,10 @@ const report = async (path: string, body: unknown) => {
   return { status: response.status, data: json.data, code: json.error?.code };
 };
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('가짜 서버 번들·댓글 신고', () => {
   it('번들과 남의 댓글을 지금 번치 명의로 접수한다', async () => {
     const bundle = await report('901', { reason: 'SPAM' });
@@ -29,6 +33,38 @@ describe('가짜 서버 번들·댓글 신고', () => {
       { reporterBunchId: MOCK_BUNCH_ID, bundleId: 901, reason: 'SPAM' },
       { bundleId: 901, commentId: 5001, reason: 'OTHER', detail: '광고' },
     ]);
+  });
+
+  it('같은 번치가 같은 대상을 세 번째 신고하면 409 BUNCH_011이고 접수하지 않는다', async () => {
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+    const before = mockDb.get().reports.length;
+
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({
+      status: 409,
+      code: 'BUNCH_011',
+    });
+    expect(mockDb.get().reports).toHaveLength(before);
+    // 같은 번들의 댓글은 다른 대상
+    expect(await report('901/comments/5001', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+  });
+
+  it('24시간 구간은 첫 접수부터 고정이고, 거절은 구간을 늘리지 않으며 24시간이 지나면 다시 접수한다', async () => {
+    const start = Date.parse('2026-11-19T00:00:00Z');
+    const hour = 60 * 60 * 1000;
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(start);
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+    vi.setSystemTime(start + hour);
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+    vi.setSystemTime(start + 23 * hour);
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ code: 'BUNCH_011' });
+
+    // 정확히 24시간부터 새 구간(2번째 접수·거절 시각과 무관)
+    vi.setSystemTime(start + 24 * hour);
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ code: 'BUNCH_011' });
   });
 
   it('삭제된 댓글·없는 댓글은 404, 내 댓글은 403, 잘못된 사유는 400이다', async () => {

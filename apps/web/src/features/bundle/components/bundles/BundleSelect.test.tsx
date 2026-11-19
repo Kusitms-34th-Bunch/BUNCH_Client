@@ -10,7 +10,7 @@ import {
   recommendationDouble,
   resetRecommendationDouble,
 } from '../../testing/recommendationDoubles';
-import { createCalls, photoBoxRefresh } from '../../testing/selectScreenDoubles';
+import { createCalls, photoBoxPreview, photoBoxRefresh } from '../../testing/selectScreenDoubles';
 import { BundleSelect } from './BundleSelect';
 
 const router = { push: vi.fn(), back: vi.fn(), replace: vi.fn() };
@@ -54,6 +54,7 @@ beforeEach(() => {
   createCalls.length = 0;
   photoBoxRefresh.calls = 0;
   photoBoxRefresh.fail = false;
+  photoBoxPreview.value = undefined;
 });
 
 afterEach(() => {
@@ -457,6 +458,16 @@ describe('추천 번들 시트', () => {
 
     expect(toast).toHaveBeenCalledWith(BUNDLE_SELECT_MESSAGES.applyFailed);
     expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('선택한 사진이 없어요.');
+  });
+
+  it('사진함에 사진이 없으면 사진 고르기 빈 상태 문구를 보인다(기능명세서 4.1.2, 올리기 버튼이 없어 사진함과 다름)', () => {
+    photoBoxPreview.value = 'empty';
+    renderSelect();
+
+    expect(screen.getByText('아직 사진이 없어요.')).toBeInTheDocument();
+    expect(screen.getByText('사진함에 사진을 올리면 번들을 만들 수 있어요.')).toBeInTheDocument();
+    expect(screen.queryByText('첫 번째 사진을 공유해 보세요')).toBeNull();
+    expect(createButton()).toBeDisabled();
   });
 
   it('추천 번들이 없으면 제목 없이 빈 상태를 보인다', async () => {

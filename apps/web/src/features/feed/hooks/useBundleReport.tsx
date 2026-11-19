@@ -1,6 +1,7 @@
 'use client';
 
-import { LineAlertMediumIcon } from '@app/design-system';
+import { isApiError } from '@app/api-core';
+import { LineAlertMediumIcon, toast } from '@app/design-system';
 import { MoreMenuSheet, ReportSheet } from '@app/design-system/web';
 import { isWireId } from '@/shared/api/ids';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
@@ -12,7 +13,7 @@ type ReportCallbacks = { onSuccess: () => void; onError: (_error: unknown) => vo
 
 /**
  * 번들 상세의 신고 시트(명세 018·019): 남의 번들·댓글 더보기의 「신고」 메뉴와 신고 사유 시트
- * 결과 처리(숨김·이동·안내)는 호출부 콜백
+ * 결과 처리(숨김·이동·안내)는 호출부 콜백. 24시간 안 같은 대상 3번째(`BUNCH_011`)는 여기서 검토 중 안내
  */
 export function useBundleReport({
   bundleId,
@@ -59,9 +60,15 @@ export function useBundleReport({
           />
         ),
         () => {
-          void result?.then((outcome) =>
-            outcome.ok ? callbacks.onSuccess() : callbacks.onError(outcome.error),
-          );
+          void result?.then((outcome) => {
+            if (outcome.ok) return callbacks.onSuccess();
+            // 접수되지 않았지만 이미 신고된 대상이라 실패가 아닌 안내(명세 6.2.10·6.2.14, 재시도 없음)
+            if (isApiError(outcome.error) && outcome.error.code === 'BUNCH_011') {
+              toast(text.reportLimited);
+              return;
+            }
+            callbacks.onError(outcome.error);
+          });
         },
       );
     });

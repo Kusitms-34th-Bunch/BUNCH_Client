@@ -19,7 +19,7 @@ import { useCreateBunchDraft, type Mood } from '../../contexts/createBunchDraftC
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
 import { useCreateBunchMutation } from '../../queries/bunches';
 
-const TITLE = '우리 번치는 어떤 성격의 모임인가요?';
+const TITLE = '우리 번치는 어떤 분위기인가요?';
 
 // Figma 카드(4746:64657) 순서 01~04 = 서버 캐릭터 타입 TYPE_1~4. 배경은 모두 같고 타입은 가운데 패턴 색으로 구분
 // SVG import 타입이 any라 정적 이미지로 명시, 테스트(vitest)에선 문자열이라 크기는 직접 넘김

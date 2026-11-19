@@ -199,12 +199,13 @@ describe('BunchNotifications(가짜 서버)', () => {
     const readAll = screen.getByRole('button', { name: '모두 읽음' });
     await user.click(readAll);
 
-    // 초점은 버튼에 남고 결과는 상태 영역으로 읽힘
+    // 결과는 상태 영역으로 읽히고, 버튼이 비활성이 되므로 초점은 화면 제목으로 옮김
     expect(await screen.findByText(BUNCH_HOME_MESSAGES.readAllDone)).toHaveAttribute(
       'role',
       'status',
     );
-    expect(readAll).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+    await waitFor(() => expect(readAll).toBeDisabled());
     expect(unreadOf(MOCK_BUNCH_ID)).toBe(0);
     expect(unreadOf(MOCK_SECOND_BUNCH_ID)).toBe(1);
     const after = await cards();
@@ -232,7 +233,7 @@ describe('BunchNotifications(가짜 서버)', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('읽을 알림이 없으면 요청하지 않고 없다고 알린다', async () => {
+  it('읽을 알림이 없으면 「모두 읽음」이 비활성이라 요청하지 않는다(기능명세 5.12.1)', async () => {
     mockDb.update((state) => ({
       ...state,
       notifications: state.notifications.map((item) => ({ ...item, readAt: item.createdAt })),
@@ -246,12 +247,10 @@ describe('BunchNotifications(가짜 서버)', () => {
     renderList();
     await cards();
 
-    await user.click(screen.getByRole('button', { name: '모두 읽음' }));
+    const readAll = await screen.findByRole('button', { name: '모두 읽음' });
+    await waitFor(() => expect(readAll).toBeDisabled());
+    await user.click(readAll);
 
-    expect(await screen.findByText(BUNCH_HOME_MESSAGES.nothingToRead)).toHaveAttribute(
-      'role',
-      'status',
-    );
     expect(requests).toEqual([]);
   });
 

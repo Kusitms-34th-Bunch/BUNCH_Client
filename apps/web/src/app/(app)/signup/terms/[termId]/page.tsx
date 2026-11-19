@@ -1,13 +1,16 @@
 import { notFound } from 'next/navigation';
 import { TermsDocument } from '@/features/auth/components';
 import { SIGNUP_TRANSITION_IDS } from '@/features/auth/constants/paths';
-import { isTermsDocumentId, TERMS_DOCUMENT_IDS } from '@/features/auth/constants/terms';
+import {
+  isSignupTermsDocumentId,
+  SIGNUP_TERMS_DOCUMENT_IDS,
+} from '@/features/auth/constants/terms';
 
-// 원문이 있는 약관만 정적으로 만들고 그 밖의 주소는 404
+// 로그인·회원가입 원문(서비스 이용약관·개인정보 수집 동의·추가 개인정보 수집 동의)만 정적으로 만들고 그 밖의 주소는 404
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return TERMS_DOCUMENT_IDS.map((termId) => ({ termId }));
+  return SIGNUP_TERMS_DOCUMENT_IDS.map((termId) => ({ termId }));
 }
 
 export default async function SignupTermsDocumentPage({
@@ -16,7 +19,7 @@ export default async function SignupTermsDocumentPage({
   params: Promise<{ termId: string }>;
 }) {
   const { termId } = await params;
-  if (!isTermsDocumentId(termId)) notFound();
+  if (!isSignupTermsDocumentId(termId)) notFound();
 
   return (
     <div

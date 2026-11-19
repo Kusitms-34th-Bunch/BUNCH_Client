@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import type { DraftPhoto } from '@/features/bundle/lib/types';
 import type { PhotoBoxPhoto } from '@/features/photo-box/lib/types';
-import { BUNDLE_MESSAGES, MAX_PHOTOS } from '@/features/bundle/constants/messages';
+import { BUNDLE_MESSAGES } from '@/features/bundle/constants/messages';
 import { toDraftPhoto } from '@/features/bundle/lib/photoAdd';
 import { PHOTO_BOX_MESSAGES } from '@/features/photo-box/constants/messages';
 import { usePhotoUpload } from '@/features/photo-box/hooks/usePhotoUpload';
@@ -35,7 +35,10 @@ type UsePhotoGalleryImportOptions = {
   /** 지금 번들 사진 */
   photos: readonly DraftPhoto[];
   /** 번들 사진을 이 구성으로 바꿈(작성 화면·수정 화면 공통). 연결이 끊겨 적용하지 못하면 false를 돌려줌(작성 화면) */
-  replacePhotos: (_photos: readonly DraftPhoto[]) => boolean | void;
+  replacePhotos: (
+    _photos: readonly DraftPhoto[],
+    _options?: { partialAdd?: boolean | undefined; requested?: number | undefined },
+  ) => boolean | void;
   /** 사진함을 몰라 가져올 수 없을 때(사진함 조회 실패 등). 사진함을 다시 받아 다음 시도부터 가져올 수 있게 함 */
   onUnavailable?: (() => void) | undefined;
 };
@@ -113,13 +116,17 @@ export function usePhotoGalleryImport({
     if (missing) toast(BUNDLE_MESSAGES.photosChangeFailed);
     const { photos: current, replacePhotos: replace } = latest.current;
     const linked = new Set(current.flatMap((photo) => photo.sourcePhotoId ?? []));
-    const room = Math.max(0, MAX_PHOTOS - current.length);
-    const added = sources
-      .filter((source) => !linked.has(source.id))
-      .slice(0, room)
-      .map(toDraftPhoto);
-    // 사진함에는 올라갔는데 번들에는 붙이지 못했으면(연결 끊김) 알림
-    if (added.length > 0 && replace([...current, ...added]) === false) {
+    const candidates = sources.filter((source) => !linked.has(source.id)).map(toDraftPhoto);
+    // 자리는 이 hook이 자르지 않음: 공동 편집은 서버가 남은 자리만큼 담고, 수정 화면은 그 화면이 20장에 맞춰 자름. 담긴 장수 안내도 그쪽이 한 번만 함(기능명세서 4.3.14 로직 4)
+    // 찾지 못한 사진이 있으면 그 안내가 덮이지 않게 담긴 장수 안내는 하지 않음
+    if (
+      candidates.length > 0 &&
+      replace([...current, ...candidates], {
+        partialAdd: true,
+        requested: missing ? undefined : candidates.length,
+      }) === false
+    ) {
+      // 사진함에는 올라갔는데 번들에는 붙이지 못했으면(연결 끊김) 알림
       toast(BUNDLE_MESSAGES.photosChangeFailed);
     }
     finish();

@@ -15,7 +15,7 @@ import {
 // 데이터 없는 성공 응답(Swagger `ApiResponseUnit`)은 data가 빠지거나 null
 const unitSchema = z.null().optional();
 
-// 번치 홈 「완성된 번들」·「작성 중인 번들」은 한 번에 받을 수 있는 최대 쪽 크기만 불러옴(더 불러오기는 UT 이후)
+// 한 번에 받을 수 있는 최대 쪽 크기. 「완성된 번들」은 이어서 받고 「작성 중인 번들」은 첫 쪽만
 const PUBLISHED_PAGE_SIZE = 50;
 
 const bunchPath = (bunchId: string) => `bunches/${encodeURIComponent(bunchId)}`;
@@ -28,11 +28,11 @@ export const getBunchHome = (bunchId: string, signal?: AbortSignal) =>
     'bunch home',
   );
 
-/** 발행된 번들 첫 쪽(발행 최신순) */
-export const getPublishedBundles = (bunchId: string, signal?: AbortSignal) =>
+/** 발행된 번들 한 쪽(발행 최신순, 쪽 번호는 0부터) */
+export const getPublishedBundles = (bunchId: string, page: number, signal?: AbortSignal) =>
   requestData(
     bffApi.get(`${bunchPath(bunchId)}/published-bundles`, {
-      searchParams: { page: 0, size: PUBLISHED_PAGE_SIZE },
+      searchParams: { page, size: PUBLISHED_PAGE_SIZE },
       signal: signal ?? null,
     }),
     publishedBundlesPageSchema,

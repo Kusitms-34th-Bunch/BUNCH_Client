@@ -12,7 +12,7 @@ export type PlaceMember = {
 /** 장소를 담아 온 곳 */
 export type PlaceSource =
   /** 번들에서 콕함: 「{번치 이름} | {번들 제목}」 */
-  | { kind: 'bundle'; bunchName: string; bundleTitle: string }
+  | { kind: 'bundle'; bunchId: string; bundleId: string; bunchName: string; bundleTitle: string }
   /** 피드 광고(BUNCH SPOT)에서 콕함: 담아 온 번들이 없음 */
   | { kind: 'pick' }
   /** 담아 온 번들을 볼 수 없음(삭제·비공개·차단·번치 삭제 등). 장소는 남음 */

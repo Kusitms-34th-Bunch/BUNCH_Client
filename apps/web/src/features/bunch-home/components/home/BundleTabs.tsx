@@ -6,19 +6,29 @@ import {
   LinePhotoMediumIcon,
 } from '@app/design-system';
 import { MenuTabs } from '@app/design-system/web';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { ListMoreQuery } from '../../lib/pages';
 import type { CompletedBundle, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
+import { ListMore } from '../ListMore';
 import { BundleEmpty } from './BundleEmpty';
 import { DraftBundleList } from './DraftBundleList';
 
-type BundleTab = 'completed' | 'draft';
+export type BundleTab = 'completed' | 'draft';
 
 // 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
 const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
 
 type BundleTabsProps = {
+  /** 처음 보일 탭(알림에서 「작성 중인 번들」로 바로 들어옴, 5.12.2) */
+  initialTab?: BundleTab | undefined;
+  /** 지금 번치(번들 상세 주소에 씀) */
+  bunchId: string;
+  /** 완성된 번들 칸을 눌렀을 때 */
+  onOpenBundle?: ((_bundleId: string) => unknown) | undefined;
+  /** 완성된 번들 이어서 받기(없으면 받은 것만) */
+  completedMore?: ListMoreQuery | undefined;
   completedBundles: readonly CompletedBundle[];
   draftBundles: readonly DraftBundle[];
   onCreateBundle?: (() => void) | undefined;
@@ -27,15 +37,20 @@ type BundleTabsProps = {
   onDeleteDraft: (_bundle: DraftBundle) => void;
 };
 
-/** 번치 홈의 완성된·작성 중인 번들 탭과 빈 상태. 번치를 전환하면 화면이 key로 다시 그려 완성된 번들 탭부터 */
+/** 번치 홈의 완성된·작성 중인 번들 탭과 빈 상태. 번치를 전환하면 화면이 key로 다시 그려 처음 탭부터 */
 export function BundleTabs({
+  initialTab = 'completed',
+  bunchId,
+  onOpenBundle,
+  completedMore,
   completedBundles,
   draftBundles,
   onCreateBundle,
   onOpenDraft,
   onDeleteDraft,
 }: BundleTabsProps) {
-  const [tab, setTab] = useState<BundleTab>('completed');
+  const [tab, setTab] = useState<BundleTab>(initialTab);
+  const gridRef = useRef<HTMLUListElement>(null);
   // 탭을 한 번이라도 바꿨는지(첫 진입·되돌아올 때는 디졸브 생략)
   const [tabChanged, setTabChanged] = useState(false);
   return (
@@ -69,7 +84,15 @@ export function BundleTabs({
         className={cn(tabChanged && tab === 'completed' && panelFade)}
       >
         {completedBundles.length > 0 ? (
-          <CompletedBundleGrid bundles={completedBundles} />
+          <>
+            <CompletedBundleGrid
+              bunchId={bunchId}
+              bundles={completedBundles}
+              onOpen={onOpenBundle}
+              listRef={gridRef}
+            />
+            {completedMore ? <ListMore query={completedMore} listRef={gridRef} /> : null}
+          </>
         ) : (
           <div className="pt-s24">
             <BundleEmpty

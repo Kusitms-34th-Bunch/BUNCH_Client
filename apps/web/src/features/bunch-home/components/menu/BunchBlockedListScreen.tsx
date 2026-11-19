@@ -9,14 +9,18 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import type { ListMoreQuery } from '../../lib/pages';
 import type { BlockedBunch } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
+import { ListMore } from '../ListMore';
 
 type BunchBlockedListScreenProps = {
-  /** 차단한 번치(첫 쪽). 아직 모르면 로딩 */
+  /** 차단한 번치(받은 쪽까지). 아직 모르면 로딩 */
   blocked: readonly BlockedBunch[] | undefined;
-  /** 전체 차단 수(목록은 첫 쪽만이라 행 수와 다를 수 있음). 없으면 행 수 */
+  /** 전체 차단 수(받은 쪽 밖도 포함). 없으면 행 수 */
   total?: number | undefined;
+  /** 목록 끝 이어서 받기 */
+  more?: ListMoreQuery | undefined;
   /** 차단 해제 가능 여부(메인·공동 관리자). 일반 멤버는 목록만 봄 */
   canUnblock: boolean;
   /** 해제. 끝나면 그 행이 목록에서 빠짐, 실패하면 reject(안내는 부르는 쪽) */
@@ -30,6 +34,7 @@ type BunchBlockedListScreenProps = {
 export function BunchBlockedListScreen({
   blocked,
   total,
+  more,
   canUnblock,
   onUnblock,
   onBack,
@@ -38,6 +43,7 @@ export function BunchBlockedListScreen({
   // 해제한 행이 사라지면 초점을 받는 자리(목록이 비면 빈 상태 제목). 개수 줄과 빈 상태는 동시에 그려지지 않음
   const countRef = useRef<HTMLParagraphElement>(null);
   const emptyRef = useRef<HTMLHeadingElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   // 진행 중인 해제(해제마다 새 객체). 행이 빠져 개수가 바뀐 렌더 뒤 초점을 옮기고 토스트(초점 → 토스트 순서)
   const pending = useRef<{ id: string; name: string } | null>(null);
   const count = blocked?.length;
@@ -126,7 +132,7 @@ export function BunchBlockedListScreen({
             <span className="sr-only"> </span>
             <span>{total ?? blocked.length}개</span>
           </p>
-          <ul className="gap-s4 flex flex-col">
+          <ul ref={listRef} tabIndex={-1} className="gap-s4 flex flex-col outline-none">
             {blocked.map((bunch) => (
               <li key={bunch.id}>
                 <ProfileListItem
@@ -150,14 +156,15 @@ export function BunchBlockedListScreen({
               </li>
             ))}
           </ul>
-          {total !== undefined && total > blocked.length ? (
-            <p className="typography-caption-1-regular text-text-tertiary text-center">
-              {BUNCH_HOME_MESSAGES.blockedListMore(blocked.length)}
-            </p>
-          ) : null}
         </div>
       ) : null}
-      {blocked?.length === 0 ? (
+      {/* 받은 행을 모두 해제해도 남은 쪽·재시도는 유지(목록 밖에 둠) */}
+      {blocked && more ? (
+        <div className="px-padding-p8">
+          <ListMore query={more} listRef={listRef} />
+        </div>
+      ) : null}
+      {blocked?.length === 0 && !more?.hasNextPage && !more?.isFetchNextPageError ? (
         // 화면설계서 3번: 안내 이미지와 문구, 별도 동작 없음(Figma 5991:161676: 이미지 72×72, 이미지와 문구 16, 제목·설명 4)
         // Figma 1873:33828은 본문 세로 가운데보다 약 38 위라 아래 여백 72로 맞춤
         <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">

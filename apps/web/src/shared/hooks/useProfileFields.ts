@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import type { Gender } from '../components/profile/GenderField';
 import {
-  BIRTH_YEAR_MIN,
-  getBirthYearMax,
+  BIRTH_YEAR_ERROR_MESSAGE,
   isBirthYearInRange,
   isCompleteBirthYear,
   isValidBirthYear,
@@ -76,11 +75,11 @@ export function useProfileFields(
   const currentYear = new Date().getFullYear();
   const birthYearComplete = isCompleteBirthYear(birthYear);
   const birthYearIncomplete = birthYear !== '' && !birthYearComplete;
-  // 4자리를 다 쓴 뒤 범위를 벗어났거나, 포커스를 벗어났는데 4자리가 아닐 때 안내
+  // 4자리를 다 쓴 뒤 범위를 벗어났거나, 포커스를 벗어났는데 4자리가 아닐 때 안내(두 경우 같은 문구, 기능명세서 1.4.5 상세 5·7.2.6)
   const birthYearError =
     (birthYearComplete && !isBirthYearInRange(birthYear, currentYear)) ||
     (birthYearIncomplete && birthYearBlurred)
-      ? `${BIRTH_YEAR_MIN}년부터 ${getBirthYearMax(currentYear)}년 사이로 입력해 주세요.`
+      ? BIRTH_YEAR_ERROR_MESSAGE
       : undefined;
 
   return {
@@ -91,6 +90,8 @@ export function useProfileFields(
     nicknameError,
     /** 닉네임 중복 확인이 진행 중인지(입력이 바뀐 직후부터 응답까지). 안내 문구를 보일 때 사용 */
     nicknameChecking: availability === 'checking',
+    /** 입력한 닉네임이 확인을 통과했는지(저장 때 거부되지 않았을 때만). 성공 문구를 보일 때 사용 */
+    nicknameAvailable: nicknameValid && !rejectedAtSave && availability === 'available',
     birthYearError,
     setNickname,
     setComposing,

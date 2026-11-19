@@ -6,6 +6,7 @@ import type { ProfileFieldsState } from '../../hooks/useProfileFields';
 import { closeKeyboard } from '../../lib/keyboard';
 import {
   hasInvalidNicknameChars,
+  NICKNAME_AVAILABLE_MESSAGE,
   NICKNAME_CHECKING_MESSAGE,
   NICKNAME_MAX_LENGTH,
   pasteIntoNickname,
@@ -44,7 +45,13 @@ export function ProfileFields({
         maxLength={NICKNAME_MAX_LENGTH}
         autoComplete="off"
         errorMessage={fields.nicknameError}
-        helperMessage={fields.nicknameChecking ? NICKNAME_CHECKING_MESSAGE : undefined}
+        helperMessage={
+          fields.nicknameChecking
+            ? NICKNAME_CHECKING_MESSAGE
+            : fields.nicknameAvailable
+              ? NICKNAME_AVAILABLE_MESSAGE
+              : undefined
+        }
         onChange={(event) => fields.setNickname(event.target.value)}
         onPaste={(event) => {
           // 허용하지 않는 문자가 섞였으면 그 문자만 빼고 넣음(허용 문자만이면 브라우저 기본 동작)

@@ -24,6 +24,9 @@ vi.mock('@app/design-system', async (importOriginal) => ({
   toast: (...args: ToastArgs) => toast(...args),
 }));
 
+const toastAfterNavigation = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -89,7 +92,7 @@ describe('BunchMembers 서버 멤버 관리', () => {
     await confirmIn('공동 관리자로 지정하기', '완료', '경진');
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('처리하지 못했어요. 잠시 후 다시 시도해 주세요.'),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect((await serverRoles())['경진']).toBe('MEMBER');
     expect(await screen.findByRole('button', { name: '경진 관리' })).toBeTruthy();
@@ -180,11 +183,11 @@ describe('BunchMembers 서버 멤버 관리', () => {
       within(menu)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toContain('번치에서 내보내기');
+    ).toContain('내보내기');
     expect(within(menu).queryByRole('button', { name: '관리자 권한 넘기기' })).toBeNull();
   });
 
-  it('그 사이 다른 곳에서 멤버가 바뀌어 거절되면 최신 목록으로 다시 불러오고 알린다', async () => {
+  it('그 사이 역할이 아닌 멤버 변경(내보내짐)으로 거절되면 최신 목록으로 다시 불러오고 공통 실패 문구를 띄운다', async () => {
     setMyRole('OWNER');
     renderMembers();
     await screen.findByText('5/8명');
@@ -202,10 +205,58 @@ describe('BunchMembers 서버 멤버 관리', () => {
     await confirmIn('공동 관리자로 지정하기', '완료', '경진');
 
     await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith('멤버 정보가 바뀌어 최신 목록으로 다시 불러왔어요.'),
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
+    expect(toast).not.toHaveBeenCalledWith('멤버의 역할이 변경되었어요. 다시 확인해 주세요.');
+    expect(replace).not.toHaveBeenCalled();
     expect(await screen.findByText('4/8명')).toBeTruthy();
     expect(toast).not.toHaveBeenCalledWith('경진님이 공동 관리자가 되었어요.', { icon: 'success' });
     expect((await serverRoles())['경진']).toBe('MEMBER');
+  });
+
+  // 기능명세 5.6.1 예외 처리: 목록·관리 창을 보는 사이 역할이 바뀌면 안내 뒤 더보기 메뉴로
+  const changeRoleElsewhere = (memberId: number, role: MemberRole) =>
+    mockDb.update((state) => ({
+      ...state,
+      memberships: state.memberships.map((item) =>
+        item.bunchId === MOCK_BUNCH_ID && item.memberId === memberId ? { ...item, role } : item,
+      ),
+      bunches: state.bunches.map((bunch) =>
+        bunch.id === MOCK_BUNCH_ID ? { ...bunch, membershipVersion: 2 } : bunch,
+      ),
+    }));
+
+  it('그 사이 내 역할이 바뀌어 거절되면 권한 변경을 알리고 더보기 메뉴로 돌아간다', async () => {
+    setMyRole('OWNER');
+    renderMembers();
+    await screen.findByText('5/8명');
+    changeRoleElsewhere(MOCK_MY_MEMBER_ID, 'CO_OWNER');
+
+    await confirmIn('공동 관리자로 지정하기', '완료', '경진');
+
+    await waitFor(() =>
+      expect(toastAfterNavigation).toHaveBeenCalledWith(
+        '권한이 변경되어 해당 기능을 이용할 수 없어요.',
+      ),
+    );
+    expect(replace).toHaveBeenCalledWith('/bunch/menu');
+    expect((await serverRoles())['경진']).toBe('MEMBER');
+  });
+
+  it('그 사이 대상 멤버의 역할이 바뀌어 거절되면 다시 확인하라고 알리고 더보기 메뉴로 돌아간다', async () => {
+    setMyRole('OWNER');
+    renderMembers();
+    await screen.findByText('5/8명');
+    changeRoleElsewhere(MOCK_MEMBER_IDS.memberA, 'CO_OWNER');
+
+    await confirmIn('번치에서 내보내기', '내보내기', '경진');
+
+    await waitFor(() =>
+      expect(toastAfterNavigation).toHaveBeenCalledWith(
+        '멤버의 역할이 변경되었어요. 다시 확인해 주세요.',
+      ),
+    );
+    expect(replace).toHaveBeenCalledWith('/bunch/menu');
+    expect(rows().some((row) => row.includes('경진'))).toBe(true);
   });
 });
