@@ -8,6 +8,7 @@ import { usePreservedCallback } from 'react-simplikit';
 import placeHidden from '@/shared/assets/images/empty/place-hidden.svg';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { playHaptic } from '@/shared/lib/haptic';
 import type { FeedAd } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { useFeedViewer } from '../hooks/useFeedViewer';
@@ -177,9 +178,11 @@ export function FeedAdCard({
               asBunch(() => {
                 if (!viewer) return;
                 const bunchId = viewer.bunchId;
-                // 콕 응답 전(콕 ID 없음)에는 취소를 받지 않음
-                if (!isPicked) kok.mutate({ adId: ad.id, viewerId: bunchId, pin: true });
-                else if (ad.pinId !== undefined) openPickCancel(ad.pinId, bunchId);
+                // 콕 응답 전(콕 ID 없음)에는 취소를 받지 않음. 콕하기를 누를 때만 햅틱(Figma 햅틱 모음)
+                if (!isPicked) {
+                  playHaptic('tap');
+                  kok.mutate({ adId: ad.id, viewerId: bunchId, pin: true });
+                } else if (ad.pinId !== undefined) openPickCancel(ad.pinId, bunchId);
               });
             }}
             onMore={openHideConfirm}

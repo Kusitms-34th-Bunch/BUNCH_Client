@@ -1,7 +1,9 @@
 'use client';
 
 import { cn } from '@app/design-system';
+import { useEffect } from 'react';
 import { LazyLottie } from '@/shared/components/loading/LazyLottie';
+import { playHaptic } from '@/shared/lib/haptic';
 import { createLottieLoader } from '@/shared/lib/lottieLoader';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { useInView } from '../hooks/useInView';
@@ -19,6 +21,10 @@ const loadCheck = createLottieLoader(
  */
 export function FeedCaughtUp({ kind }: { kind: 'following' | 'all' }) {
   const [ref, inView] = useInView<HTMLDivElement>();
+  // 모든 피드를 다 본 끝 안내가 화면에 들어와 처음 보일 때 햅틱(피드에 다시 들어오면 다시, 체크 로티와 같은 때)
+  useEffect(() => {
+    if (kind === 'all' && inView) playHaptic('tap');
+  }, [kind, inView]);
   // 글자는 처음부터 DOM에 두고(화면 낭독) 보이기 전에는 투명, 보이면 아이콘과 함께 나타남. 동작 줄이기면 그대로 보임
   // 체크 모션의 투명도 구간(0.233s)과 같은 페이드, 키프레임은 globals.css의 page-content-in(디자이너 확인)
   const textMotion = inView

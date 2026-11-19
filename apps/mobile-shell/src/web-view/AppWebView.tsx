@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
+  hapticKindSchema,
   nativeTabEventSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
@@ -165,6 +166,18 @@ const appBridge = bridge({
     } catch (error) {
       // 햅틱은 보조 효과라 웹에 오류를 올리지 않고 개발 중에만 알림
       if (__DEV__) console.warn('[haptic] 끌기 시작 햅틱을 울리지 못했어요', error);
+    }
+  },
+  // 화면 사건의 햅틱: 완료 축하는 성공 알림, 그 밖은 가벼운 충격. 웹 입력은 스키마로 다시 확인
+  feedbackHaptic: async (kind) => {
+    try {
+      if (hapticKindSchema.parse(kind) === 'success') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      if (__DEV__) console.warn('[haptic] 햅틱을 울리지 못했어요', error);
     }
   },
 } satisfies AppBridgeMethods);

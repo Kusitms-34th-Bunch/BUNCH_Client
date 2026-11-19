@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { playHaptic } from '@/shared/lib/haptic';
 import { CONFETTI_DURATION_MS, CONFETTI_FRAME, CONFETTI_PIECES } from '../constants/confetti';
 import { confettiKeyframes } from '../lib/confettiKeyframes';
 
@@ -24,6 +25,8 @@ export function BunchConfetti() {
   };
 
   useEffect(() => {
+    // 컨페티가 터지는 순간의 성공 햅틱(Figma 햅틱 모음, 동작 줄이기에서도 울림)
+    playHaptic('success');
     const pieces = pieceRefs.current;
     if (
       typeof pieces[0]?.body?.animate !== 'function' ||
