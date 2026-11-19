@@ -1042,8 +1042,11 @@ export function useDraft(draftId: string | undefined): {
     noAccess ||
     (detailIsError && ['RESOURCE_001', 'AUTH_002'].includes(errorCode(detailError) ?? '')) ||
     (detail?.status === 'PUBLISHED' && !publishedByMe && !publishing);
+  // 번치 멤버는 받아 둔 목록이 있으면 다시 받기에 실패해도 그대로 씀(참여 멤버 관리에 들어올 때마다 다시 받음, 상세와 같은 기준)
   const failed =
-    profileError || membersError || (detailIsError && !missing && detail === undefined);
+    profileError ||
+    (membersError && bunchMembers === undefined) ||
+    (detailIsError && !missing && detail === undefined);
   const retry = () => {
     if (profileError) void refetchProfile();
     if (membersError) void refetchMembers();

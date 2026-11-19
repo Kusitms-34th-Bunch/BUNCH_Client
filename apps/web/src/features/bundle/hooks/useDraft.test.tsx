@@ -7,6 +7,7 @@ import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed'
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { PlaceResult } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
@@ -150,6 +151,24 @@ describe('useDraft 상태', () => {
     expect(draft.viewingMemberIds).toEqual([]);
     expect(draft.editing.titleMemberIds ?? []).toEqual([]);
     expect(draft.editing.photoMemberIds ?? []).toEqual([]);
+  });
+});
+
+describe('useDraft 번치 멤버 다시 받기', () => {
+  it('받아 둔 번치 멤버가 있으면 다시 받기에 실패해도 오류 화면으로 바꾸지 않는다', async () => {
+    const id = await newDraft();
+    const client = createTestQueryClient();
+    const view = renderHook(() => useDraft(id), { wrapper: createQueryWrapper(client) });
+    await waitFor(() => expect(view.result.current.state.kind).toBe('ready'));
+    server.use(http.get('/api/bunches/:bunchId/members', () => fail(500, 'COMMON_500')));
+
+    // 참여 멤버 관리에 들어올 때의 다시 받기가 실패한 경우
+    await act(() =>
+      client.refetchQueries({ queryKey: sharedKeys.bunchMembers(bunchId) }).catch(() => {}),
+    );
+
+    expect(client.getQueryState(sharedKeys.bunchMembers(bunchId))?.status).toBe('error');
+    expect(view.result.current.state.kind).toBe('ready');
   });
 });
 
