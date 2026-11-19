@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react';
+import { type ComponentProps, useState } from 'react';
 import { LineTrashcanSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
 import { BundleParticipants } from '../bundleParticipants';
@@ -42,6 +42,9 @@ export const BundleCard = ({
   className,
   ...props
 }: BundleCardProps) => {
+  // 받은 사진 주소. 주소가 바뀌면 다시 숨겼다가 받은 뒤 나타남
+  const [loadedSrc, setLoadedSrc] = useState<string>();
+  const imageLoaded = loadedSrc === imageSrc;
   return (
     <div
       {...props}
@@ -54,12 +57,21 @@ export const BundleCard = ({
         className,
       )}
     >
-      <img
-        src={imageSrc}
-        alt=""
-        decoding="async"
-        className="rounded-r2 h-20 w-32 shrink-0 object-cover"
-      />
+      {/* 사진을 받는 동안 회색 자리, 다 받으면 짧게 나타남(받지 못하면 회색 유지) */}
+      <span className="rounded-r2 bg-surface-secondary h-20 w-32 shrink-0 overflow-hidden">
+        <img
+          ref={(img) => {
+            // 이미 받아 둔 사진(캐시)은 load 전에 끝나 있어 바로 보임
+            if (img?.complete && img.naturalWidth > 0) setLoadedSrc(imageSrc);
+          }}
+          src={imageSrc}
+          alt=""
+          decoding="async"
+          onLoad={() => setLoadedSrc(imageSrc)}
+          data-loaded={imageLoaded || undefined}
+          className="size-full object-cover opacity-0 transition-opacity duration-200 ease-out data-loaded:opacity-100 motion-reduce:transition-none"
+        />
+      </span>
       <div className="gap-s2 flex min-w-0 flex-1 flex-col">
         <div className="flex h-6 justify-end">
           {onDelete ? (
