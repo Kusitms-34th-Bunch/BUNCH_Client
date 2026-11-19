@@ -27,7 +27,8 @@ describe('PhotoDetailSlide 틀 높이', () => {
     const props = { members: [], chromeHidden: false, current: true };
     const { rerender } = render(<PhotoDetailSlide photo={photo('/thumb.jpg')} {...props} />);
     const image = screen.getByRole('img', { name: '사진' });
-    expect(frame(image).style.height).toBe('');
+    // 비율을 모르는 처음에는 정사각형 높이(전환이 숫자 높이끼리 일어나게)
+    expect(frame(image).style.height).toBe('calc(100cqw / 1)');
 
     load(image, 300, 300);
     expect(frame(image).style.height).toBe('calc(100cqw / 1)');
@@ -38,6 +39,17 @@ describe('PhotoDetailSlide 틀 높이', () => {
 
     load(image, 300, 400);
     expect(frame(image).style.height).toBe('calc(100cqw / 0.75)');
+  });
+
+  it('썸네일을 받기 전에 원본 주소로 바뀌어도 정사각형에서 원본 비율로 바뀐다', () => {
+    const props = { members: [], chromeHidden: false, current: true };
+    const { rerender } = render(<PhotoDetailSlide photo={photo('/thumb-2.jpg')} {...props} />);
+    rerender(<PhotoDetailSlide photo={photo('/original-2.jpg')} {...props} />);
+    const image = screen.getByRole('img', { name: '사진' });
+    expect(frame(image).style.height).toBe('calc(100cqw / 1)');
+
+    load(image, 300, 600);
+    expect(frame(image).style.height).toBe('calc(100cqw / 0.5)');
   });
 
   it('미리 받아 비율을 아는 원본은 처음부터 그 높이로 그린다', () => {

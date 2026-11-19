@@ -38,7 +38,8 @@ export function PhotoDetailSlide({ photo, members, chromeHidden, current }: Phot
     <div className="swiper-zoom-container @container">
       <div
         className="swiper-zoom-target relative w-full overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.2,0.9,0.3,1)] motion-reduce:transition-none"
-        style={ratio && !showPlaceholder ? { height: `calc(100cqw / ${ratio})` } : undefined}
+        // 비율을 모르는 동안은 정사각형(썸네일 모양) 높이를 잡아 원본이 오면 숫자 높이끼리 전환
+        style={showPlaceholder ? undefined : { height: `calc(100cqw / ${ratio ?? 1})` }}
       >
         {showPlaceholder ? (
           <div
@@ -54,7 +55,7 @@ export function PhotoDetailSlide({ photo, members, chromeHidden, current }: Phot
             alt={photo.alt}
             // 사진함 썸네일과 이어지는 hero 짝
             data-hero-exit-key={current ? photoHeroKey(photo.id) : undefined}
-            className={ratio ? 'block size-full object-cover' : 'block h-auto w-full'}
+            className="block size-full object-cover"
             draggable={false}
             onLoad={(event) => {
               const { naturalWidth, naturalHeight } = event.currentTarget;

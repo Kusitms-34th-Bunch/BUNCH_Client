@@ -111,6 +111,12 @@ export function PhotoBox({ preview, bunchSwitcher, checkBundleEntry }: PhotoBoxP
         onPointerDown={(event) => startWarm(event.target)}
         onPointerUp={warmNow}
         onPointerCancel={cancelWarm}
+        // 키보드로 사진 링크에 초점이 가도 같은 지연 뒤 미리 받음(Tab으로 지나가면 취소)
+        onFocus={(event) => startWarm(event.target)}
+        onBlur={(event) => {
+          // 사진 링크에서 초점이 빠질 때만 취소(다른 요소의 blur가 누르는 중인 미리 받기를 지우지 않게)
+          if (event.target instanceof Element && event.target.closest('a[href]')) cancelWarm();
+        }}
       >
         {/* 번치가 바뀌면 화면을 새로 시작해 멤버 필터는 「전체」로, 선택 모드는 해제(명세 3.1.1, 3.3.1). 처음 로딩에서 준비로 갈 때는 키가 undefined에서 번치 id로 한 번 바뀌어 새로 시작하지만 로딩 화면에는 상태가 없어 무해 */}
         <PhotoBoxScreen
