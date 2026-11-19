@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { isUnavailableTarget } from '@/shared/api/errorStatus';
+import { openTabPath } from '@/shared/bridge/client';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
@@ -291,12 +292,11 @@ export function BundleDetail({
       announcement={comment.announcement}
       actions={{
         more,
+        // 내 번치는 번치 탭 첫 화면이라 iOS 쉘에서는 번치 탭으로 전환(지금 탭이 번치면 그대로 이동)
         openBunch: () =>
-          router.push(
-            viewer?.bunchId === bundle.bunch.id
-              ? links.bunchHome
-              : links.otherBunch(bundle.bunch.id),
-          ),
+          viewer?.bunchId === bundle.bunch.id
+            ? openTabPath(links.bunchHome, (href) => router.push(href))
+            : router.push(links.otherBunch(bundle.bunch.id)),
         openMembers: () => openMembers(bundle.members),
         openPlaces: () => openPlaces(bundle.id, bundle.places),
         like: () => asBunch(() => likes.toggle(bundle)),

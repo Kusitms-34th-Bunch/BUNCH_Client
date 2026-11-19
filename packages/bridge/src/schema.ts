@@ -303,6 +303,15 @@ export const setNativeFloatingButtonParamsSchema = z
   .strict();
 export type SetNativeFloatingButtonParams = z.infer<typeof setNativeFloatingButtonParamsSchema>;
 
+/**
+ * 다른 탭 WebView에 알릴 변화(탭마다 웹 상태가 따로라 알리지 않으면 다른 탭이 이전 상태로 남음)
+ * `meChanged`: 내 정보(지금 번치·닉네임·프로필 사진)가 바뀜. `from`은 보낸 탭 ID(보낸 탭은 받지 않음)
+ */
+export const nativeTabEventSchema = z
+  .object({ type: z.enum(['meChanged']), from: z.string().min(1).max(32) })
+  .strict();
+export type NativeTabEvent = z.infer<typeof nativeTabEventSchema>;
+
 /** 네이티브 플로팅 버튼 눌림. 모든 탭 WebView에 보내므로 웹이 `tab`으로 자기 버튼인지 가림 */
 export const nativeFloatingButtonPressSchema = z.object({ tab: z.string().min(1) }).strict();
 export type NativeFloatingButtonPress = z.infer<typeof nativeFloatingButtonPressSchema>;
@@ -315,6 +324,7 @@ const validator = <T extends z.ZodType>(schema: T) => ({
 /** `createWebView({ postMessageSchema })`와 `linkBridge`가 같이 쓰는 네이티브 → 웹 이벤트 목록 */
 export const appPostMessageSchema = {
   nativeFloatingButtonPress: validator(nativeFloatingButtonPressSchema),
+  nativeTabEvent: validator(nativeTabEventSchema),
 };
 
 export type AppPostMessageSchema = typeof appPostMessageSchema;

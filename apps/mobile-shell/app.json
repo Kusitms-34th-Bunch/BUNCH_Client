@@ -34,12 +34,6 @@
         }
       ],
       "expo-router",
-      [
-        "expo-font",
-        {
-          "fonts": ["./assets/fonts/Pretendard-Regular.otf"]
-        }
-      ],
       "expo-status-bar",
       [
         "expo-build-properties",

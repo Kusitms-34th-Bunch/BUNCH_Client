@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
+  nativeTabEventSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
@@ -100,6 +101,27 @@ const appBridge = bridge({
       return Promise.resolve(false);
     if (current.barHidden === !visible) return Promise.resolve(true);
     tabsStore.set({ ...current, barHidden: !visible });
+    return Promise.resolve(true);
+  },
+  // 다른 탭으로 전환(웹이 다른 탭 첫 화면으로 가려 할 때, 6.1.2 상세 동작 3). 그 탭 WebView는 보던 화면 그대로
+  selectNativeTab: (id) => {
+    const current = tabsStore.get();
+    if (
+      Platform.OS !== 'ios' ||
+      !current ||
+      typeof id !== 'string' ||
+      !isTabId(id) ||
+      !current.items.some((item) => item.id === id)
+    )
+      return Promise.resolve(false);
+    router.navigate(`/${id}` as Href);
+    return Promise.resolve(true);
+  },
+  // 한 탭의 변화(지금 번치 등)를 모든 탭 WebView에 보냄. 보낸 탭은 웹이 `from`으로 거름
+  notifyNativeTabs: (event) => {
+    const parsed = nativeTabEventSchema.parse(event);
+    if (!tabsStore.get()) return Promise.resolve(false);
+    postMessage('nativeTabEvent', parsed, { broadcast: true });
     return Promise.resolve(true);
   },
   // iOS 26 이상 탭 화면에서만 네이티브 Liquid Glass 버튼(그 밖은 false로 웹 버튼 유지). 지우기는 항상 받음

@@ -1,21 +1,22 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  MAX_PICKED_PHOTOS,
+  MAX_UPLOAD_IMAGE_DATA_URL,
   clipboardTextSchema,
   galleryImageSchema,
   isSavableImageUrl,
-  MAX_PICKED_PHOTOS,
-  MAX_UPLOAD_IMAGE_DATA_URL,
-  pickedPhotoIdSchema,
-  pickedPhotoIdsSchema,
-  pickedPhotoSchema,
+  nativeTabEventSchema,
   pickGalleryImageOptionsSchema,
   pickGalleryImagesOptionsSchema,
   pickPhotosResultSchema,
+  pickedPhotoIdSchema,
+  pickedPhotoIdsSchema,
+  pickedPhotoSchema,
   pushDeviceRegistrationSchema,
   pushDeviceTokenSchema,
-  saveImagesToAlbumResultSchema,
   saveImageUrlsSchema,
+  saveImagesToAlbumResultSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   socialLoginResultSchema,
@@ -330,4 +331,12 @@ void test('고른 사진 정보는 UTC 오프셋(-12:00~+14:00)과 원본 유형
   assert.equal(parse({ id: 'p1', capturedUtcOffset: '+9:00' }), false);
   assert.equal(parse({ id: 'p1', capturedUtcOffset: '+09:60' }), false);
   assert.equal(parse({ id: 'p1', sourceType: 'GALLERY' }), false);
+});
+
+void test('탭 알림은 정해진 종류와 보낸 탭만 받는다', () => {
+  const parse = (value: unknown) => nativeTabEventSchema.safeParse(value).success;
+  assert.equal(parse({ type: 'meChanged', from: 'bunch' }), true);
+  assert.equal(parse({ type: 'loggedOut', from: 'bunch' }), false);
+  assert.equal(parse({ type: 'meChanged', from: '' }), false);
+  assert.equal(parse({ type: 'meChanged', from: 'bunch', extra: 1 }), false);
 });

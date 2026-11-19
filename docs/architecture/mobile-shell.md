@@ -25,7 +25,6 @@ apps/mobile-shell/
   assets/
     tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
     floating-icons/     플로팅 버튼 아이콘(같은 방식, 더하기·더보기)
-    fonts/              Pretendard Regular(탭 라벨), 라이선스
   src/
     web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기·오류 화면)
     tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx)
@@ -107,7 +106,7 @@ iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …�
 - 탭 밖 화면(`(main)` 밖의 상세·온보딩)은 같은 탭 WebView에서 열고 시스템 탭 바만 숨긴다. 웹 `NativeTabBarVisibility`가 경로마다 탭 화면 여부를 `setNativeTabBarVisible`로 보내면 쉘이 `NativeTabs`의 `hidden`을 바꾼다(iOS 18 이상은 `setTabBarHidden`). 화면에 보이는 탭 WebView만 보내고, `setNativeTabBar`는 숨김 상태를 바꾸지 않는다(뒤의 탭 WebView가 다시 불러와도 유지). 탭이 아니거나 iOS가 아니면 false를 돌려준다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행돼 탭 바가 남는다.
 - 탭 화면 파일은 `app/(tabs)/`의 `feed`·`photos`·`bunch`·`my` 4개로 고정이다(`src/tabs/tabs.ts`의 `TAB_IDS`). 웹이 이 밖의 ID를 보내면 `setNativeTabBar`가 false를 돌려 웹 막대를 쓴다. 항목이 없는 탭은 숨긴다.
 - 탭 라벨·경로는 웹이 정하고, 아이콘은 쉘이 탭 ID로 정한다. 아이콘은 웹 막대와 같은 디자인 시스템 Line·Fill 아이콘(Large 24px) SVG를 1x·2x·3x PNG로 옮긴 것이다(`assets/tab-icons/`, template으로 시스템이 색을 칠함). 디자인 시스템 아이콘이 바뀌면 다시 변환한다.
-- 선택 색은 text-primary(#121212), 라벨은 Pretendard Regular 12pt다(`app/(tabs)/_layout.tsx`). 미선택 색 text-tertiary(#535a61)도 지정했지만 iOS 26 Liquid Glass 탭 바는 배경에 맞춰 시스템이 정해 적용되지 않았다. 알약 크기·막대 높이·간격은 시스템이 정한다. `itemPositioning`·`itemWidth` 실험에서 iOS 26 알약 폭이 바뀌지 않았다.
+- 선택 색만 text-primary(#121212)로 지정한다(`app/(tabs)/_layout.tsx`의 `tintColor`). 라벨 글꼴(Pretendard)과 미선택 색을 지정하면 iOS 26 Liquid Glass 탭 바가 새로 그려질 때 한 번도 선택하지 않은 항목의 라벨을 아래로 밀고 「마이페...」처럼 잘라 그려서(그 항목을 한 번 누르면 정상, 재로그인 직후 실기기 녹화로 확인, #462) 지정하지 않고 시스템 기본(SF, 미선택 색은 시스템이 배경에 맞춤)에 맡긴다. 알약 크기·막대 높이·간격은 시스템이 정한다. `itemPositioning`·`itemWidth` 실험에서 iOS 26 알약 폭이 바뀌지 않았다.
 - 쉘은 iOS일 때만 `setNativeTabBar`에 true를 돌려준다. 브라우저·안드로이드는 false라 웹 `BottomNavigation`을 쓴다. 웹 막대는 응답 전에는 그리지 않아 쉘에서 잠깐 보였다 사라지지 않는다.
 - 탭 화면 아래 여백: 탭 안의 `SafeAreaProvider`가 탭 바 높이를 포함한 아래 Safe Area를 재서 웹에 넘긴다. 시스템 탭 바를 쓰는 동안 웹 `MainTabBar`는 막대 대신 `data-native-tab-bar` 표식만 남긴다. 그러면 `AppFrame`이 아래 Safe Area 요소의 높이를 0으로 해 본문을 탭 바 뒤까지 펼치고, `(main)` 레이아웃은 본문 안쪽 아래 여백을 `탭 바 높이 + 36px`, 떠 있는 버튼 기준을 탭 바 높이로 둔다(웹 막대와 같은 방식). 선택 모드처럼 `HideMainTabBar`가 있으면 시스템 탭 바도 숨기고, 본문은 화면 끝까지 둔 채 안쪽 아래 여백을 아래 Safe Area(홈 인디케이터)로 바꾼다. 웹 탭 막대(브라우저·PWA)도 같은 방식으로 본문을 화면 끝까지 펼치고 막대가 아래 Safe Area만큼 올라선다. 탭 바를 숨겼을 때 쉘이 넘기는 아래 Safe Area가 탭 바 높이를 빼고 다시 재지는지는 실기기에서 확인하지 않았다.
 - 탭 전환은 80ms 등속 크로스페이드다(결정 기록 017, 웹 탭 막대와 같은 값). expo-router 네이티브 탭과 react-native-screens 4.26.2에는 전환 애니메이션 설정이 없다. 그래서 로컬 Expo 모듈 `modules/tab-crossfade`가 앱 시작 때 탭 컨트롤러(`RNSTabBarController`, 자기 자신이 delegate)에 `tabBarController:animationControllerForTransitionFromViewController:toViewController:`를 런타임으로 추가한다. 들어오는 탭을 아래에 두고 위의 나가는 탭만 투명도 1→0으로 바꾼다. 화면에서 떨어졌다 다시 붙은 WebView는 약 60ms 동안 빈 화면이라, 들어오는 탭 페이지가 프레임을 두 번 그린 뒤(`requestAnimationFrame` 두 번, 페이지와 분리된 content world에서 실행, 최대 150ms) 페이드를 시작한다. 동작 줄이기 설정이면 시스템 기본(즉시 전환)이다. 라이브러리 내부 클래스 이름에 기대므로 react-native-screens를 올릴 때 클래스 이름과 delegate 구조를 다시 확인한다. 이름이 바뀌거나 링크 방식이 바뀌어(`use_frameworks!` 동적 링크) 앱 시작 때 클래스를 찾지 못하면 추가가 조용히 빠져 즉시 전환으로 돌아간다. 모듈을 바꾸면 `pod install`과 재빌드가 필요하다.
@@ -116,7 +115,12 @@ iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …�
   - iOS Expo Go: 이 네이티브 모듈이 실리지 않으므로 `app/(tabs)/_layout.tsx`가 `NativeTabs`의 `tabPress`에서 `expo-haptics`의 `selectionAsync()`로 대신 울린다. 개발·배포 앱에서 두 번 울리지 않도록 `expo-constants`의 실행 환경이 Expo Go(`StoreClient`)일 때만 붙인다. 지금 탭을 다시 눌렀을 때도 `tabPress`가 오는지는 실기기에서 확인하지 않았다.
   - 안드로이드: 웹 탭 막대(`MainTabBar`)가 누를 때 bridge `tabSelectionHaptic`을 부르고, 쉘은 `expo-haptics`의 `performAndroidHapticsAsync(Segment_Tick)`(기기 햅틱 설정을 따름)로 처리한다. 이 메서드가 없는 이전 쉘에서는 웹의 브라우저 폴백(동작 없음)이 실행된다.
 - 끌기 햅틱: 번들 작성 화면에서 사진 썸네일을 길게 눌러 집어 올린 순간 한 번(기능 spec 4.3.6) 웹이 bridge `dragStartHaptic`을 부른다(쉘일 때만, 오류는 삼킴). 쉘은 `expo-haptics`로 안드로이드는 `performAndroidHapticsAsync(Long_Press)`(모든 버전에서 지원하는 길게 누르기 시스템 햅틱, 기기의 터치 피드백 설정이 꺼져 있으면 울리지 않으며, 쓸 수 없어 실패하면 `impactAsync(Medium)` 진동 모터 충격), iOS는 `impactAsync(Medium)`을 울린다. 끌기 시작 전용 `Drag_Start`는 안드로이드 14 이상만 지원하고 기기에 따라 아주 약해서 쓰지 않는다. 두 방법이 모두 실패하면 개발 중에만 콘솔에 경고한다. 브라우저에서는 웹의 폴백(동작 없음)이 실행되고, 이 메서드가 없는 이전 쉘에서는 폴백이 실행되거나 호출 오류를 웹이 삼켜 어느 쪽이든 진동만 없다. 쉘을 새로 빌드해야 울리며, 실기기 진동은 확인하지 않았다(시뮬레이터는 진동이 없음).
-- 탭 WebView 4개는 처음에 함께 만들어진다(expo-router 네이티브 탭은 모든 탭을 미리 그림). 탭마다 웹 상태가 따로라 번치 전환·로그아웃처럼 다른 탭에도 알려야 하는 변화는 아직 연결하지 않았다.
+- 탭 WebView 4개는 처음에 함께 만들어진다(expo-router 네이티브 탭은 모든 탭을 미리 그림). 탭마다 웹 상태(화면·메모리 캐시)가 따로라 탭 사이 이동과 다른 탭에 알릴 변화를 아래처럼 맞춘다(#462).
+  - 다른 탭의 첫 화면(`/feed`·`/photos`·`/bunch`·`/my`)으로 가는 이동은 주소 이동 대신 `selectNativeTab(id)`로 그 탭을 고른다(웹 `openTabPath`, 피드 헤더·카드·번들 상세의 내 번치). 주소로 이동하면 지금 탭의 화면이 바뀌고 탭 바 선택은 그대로 남는다. 그 탭 WebView는 보던 화면을 유지한다. 탭 화면이 아니거나 없는 탭, 이전 쉘이면 false라 웹이 주소로 이동한다.
+  - 내 정보(`members/me`의 지금 번치·닉네임·프로필 사진)가 바뀌면(번치 전환·나가기·삭제·프로필 저장) 화면에 보이는 탭이 `notifyNativeTabs({ type: 'meChanged', from })`를 보내고, 쉘이 `nativeTabEvent`로 모든 탭에 보낸다. 다른 탭은 내 정보를 먼저 다시 받은 뒤 나머지 데이터를 다시 받는다(웹 `shared/query/nativeTabSync.ts`). 알림을 받고 다시 받은 탭은 보이지 않아 다시 알리지 않는다(보이지 않는 탭 WebView의 `visibilityState`가 `hidden`이라는 가정). 번치를 바꾸는 요청 중에 앱이 백그라운드로 가면 알림이 빠져, 다른 탭은 다음에 다시 받을 때까지 이전 정보로 남는다.
+  - 남은 탭 간 이동: 다른 번치 화면이 내 번치로 판정돼 `/bunch`로 바꾸는 경우(`OtherBunch`의 `replace`)와 번치 탭 하위 경로로 가는 이동은 지금 탭 화면에서 연다(주소를 바꾸는 이동이라 탭 전환으로 옮기지 않음).
+  - 탭 전환(`selectNativeTab`)과 탭 알림(`nativeTabEvent`), 숨은 탭 WebView의 `visibilityState`는 시뮬레이터·실기기에서 확인하지 않았다.
+  - 로그아웃·탈퇴로 로그인 전 화면에 오면 탭 화면을 끝내(`hidden: true`) 탭 WebView가 사라지고, 다시 로그인하면 새로 만든다. 저장 캐시는 회원별 주인 확인으로 다른 계정에 복원되지 않는다.
 - 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 첫 화면 → 탭 화면 전환, 탭 이동, 아이콘·선택 색·라벨 크기. 확인하지 못한 것: 실기기, 끌어서 이동·렌즈 효과의 실제 터치, VoiceOver, 탭 사이 로그인 쿠키 공유, 메모리, `hidden: true`로 돌아가기, 안드로이드에서 탭 WebView 여러 개의 뒤로가기 처리.
 
 ## iOS 26 플로팅 버튼
@@ -149,7 +153,7 @@ packages/bridge/
 
 ### 네이티브 쪽 구현 (`apps/mobile-shell/src/web-view/AppWebView.tsx`)
 
-실제 구현은 [AppWebView.tsx](../../apps/mobile-shell/src/web-view/AppWebView.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 플로팅 버튼 눌림(`nativeFloatingButtonPress`) 하나다. 탭 WebView가 여럿이라 `postMessage`의 기본값(마지막에 만든 WebView에만 보냄) 대신 `broadcast: true`로 보낸다. 여러 WebView가 같은 bridge를 쓴다.
+실제 구현은 [AppWebView.tsx](../../apps/mobile-shell/src/web-view/AppWebView.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 플로팅 버튼 눌림(`nativeFloatingButtonPress`)과 탭 알림(`nativeTabEvent`) 둘이다. 탭 WebView가 여럿이라 `postMessage`의 기본값(마지막에 만든 WebView에만 보냄) 대신 `broadcast: true`로 보낸다. 여러 WebView가 같은 bridge를 쓴다.
 
 `bridge()`에는 **인라인 객체 리터럴**을 넘긴다. 미리 `AppBridgeMethods` 타입을 선언한 변수를 넘기면 TypeScript가 index signature 불일치로 거부한다(이름 있는 타입은 fresh literal 취급을 받지 못한다).
 

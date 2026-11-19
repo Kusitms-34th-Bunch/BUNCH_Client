@@ -1,6 +1,7 @@
 import type { BridgeStore } from '@webview-bridge/types';
 import type {
   GalleryImage,
+  NativeTabEvent,
   PermissionKind,
   PermissionStatus,
   PickGalleryImageOptions,
@@ -26,6 +27,7 @@ export {
   MAX_UPLOAD_IMAGE_DATA_URL,
   nativeFloatingButtonPressSchema,
   nativeTabBarItemSchema,
+  nativeTabEventSchema,
   permissionKindSchema,
   permissionStatusSchema,
   PHOTO_SOURCE_TYPES,
@@ -54,6 +56,7 @@ export type {
   GalleryImage,
   NativeFloatingButtonPress,
   NativeTabBarItem,
+  NativeTabEvent,
   PermissionKind,
   PermissionStatus,
   PhotoSourceType,
@@ -109,6 +112,10 @@ export type AppBridgeMethods = {
   setNativeTabBarVisible: (_visible: boolean) => Promise<boolean>;
   /** 탭 화면의 플로팅 버튼을 네이티브 Liquid Glass로 표시·제거. 그렸으면 true(웹 버튼을 숨김), iOS 26 미만·탭 화면 밖·미지원 환경이면 false. 눌림은 `nativeFloatingButtonPress` */
   setNativeFloatingButton: (_params: SetNativeFloatingButtonParams) => Promise<boolean>;
+  /** iOS 쉘 탭 화면에서 그 탭으로 전환(탭마다 WebView라 다른 탭 경로로 주소 이동하면 지금 탭 화면이 바뀜). 전환했으면 true, 탭 화면이 아니거나 없는 탭·미지원 환경이면 false */
+  selectNativeTab: (_id: string) => Promise<boolean>;
+  /** 다른 탭 WebView에 변화를 알림(쉘이 모든 탭에 `nativeTabEvent`로 보냄). 탭 화면이 아니거나 미지원 환경이면 false */
+  notifyNativeTabs: (_event: NativeTabEvent) => Promise<boolean>;
   /** 웹 탭 막대를 누를 때의 선택 햅틱(안드로이드 쉘). iOS 시스템 탭 바는 쉘이 직접 처리 */
   tabSelectionHaptic: () => Promise<void>;
   /** 끌어서 순서를 바꾸려고 사진을 집어 올린 순간의 햅틱(번들 사진 썸네일 길게 눌러 끌기). 안드로이드는 길게 누르기 시스템 햅틱(기기의 터치 피드백 설정을 따름), iOS는 중간 세기 충격 햅틱. 브라우저·이 메서드가 없는 이전 쉘에서는 동작 없음 */
