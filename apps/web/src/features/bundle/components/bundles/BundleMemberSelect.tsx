@@ -5,7 +5,6 @@ import { ChipButton, ProfileListItem } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import type { PhotoBoxMember } from '@/features/photo-box/lib/types';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
-import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -13,6 +12,7 @@ import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
+import { BundleLoadError } from '../BundleLoadError';
 
 // 사진함 멤버 역할을 역할 배지로 옮김(일반 멤버는 배지 없음)
 const toBadge = (role: PhotoBoxMember['role']) =>
@@ -31,7 +31,7 @@ export function BundleMemberSelect() {
     useBundleSelect();
 
   if (photoState.kind === 'loading') return <PageLoading />;
-  if (photoState.kind === 'error') return <PhotoBoxError onRetry={retry} />;
+  if (photoState.kind === 'error') return <BundleLoadError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (
       <PageShell>

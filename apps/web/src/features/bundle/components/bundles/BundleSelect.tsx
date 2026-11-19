@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
-import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -24,6 +23,7 @@ import { BUNDLE_SELECT_MESSAGES, MAX_RECOMMEND_CHIPS } from '../../constants/sel
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
 import { getCardDate } from '../../lib/recommendation';
+import { BundleLoadError } from '../BundleLoadError';
 import { SelectPhotoList } from '../SelectPhotoList';
 
 type BundleSelectProps = {
@@ -186,7 +186,7 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   const blocked = creating || recommendationBusy;
 
   if (noMembers || photoState.kind === 'loading') return <PageLoading />;
-  if (photoState.kind === 'error') return <PhotoBoxError onRetry={retry} />;
+  if (photoState.kind === 'error') return <BundleLoadError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (
       <PageShell>

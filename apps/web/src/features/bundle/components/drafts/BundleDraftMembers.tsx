@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
@@ -10,6 +9,7 @@ import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useLeaveDraft } from '../../hooks/useDraftExit';
 import { isDraftCreator } from '../../lib/permissions';
+import { BundleLoadError } from '../BundleLoadError';
 import { DraftMemberManager } from './DraftMemberManager';
 
 /**
@@ -24,7 +24,7 @@ export function BundleDraftMembers() {
   const { data: profile } = useQuery(myProfileQueryOptions());
   useQuery({ ...bunchMembersQueryOptions(profile?.bunch?.id), refetchOnMount: 'always' });
 
-  if (state.kind === 'error') return <PhotoBoxError onRetry={state.retry} />;
+  if (state.kind === 'error') return <BundleLoadError onRetry={state.retry} />;
   if (state.kind !== 'ready') return <PageLoading />;
 
   return (

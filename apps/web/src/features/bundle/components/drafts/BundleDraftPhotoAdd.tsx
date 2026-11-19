@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
-import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -13,6 +12,7 @@ import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { getDraftAccess } from '../../lib/permissions';
 import { clearPhotoAddEntry, isPhotoAddEntry } from '../../lib/photoAddEntry';
+import { BundleLoadError } from '../BundleLoadError';
 import { DraftPhotoAdd } from './DraftPhotoAdd';
 
 /**
@@ -38,7 +38,7 @@ export function BundleDraftPhotoAdd() {
   }, [draftId, canEdit, router]);
 
   if (state.kind !== 'ready' || !canEdit || photoState.kind === 'loading') return <PageLoading />;
-  if (photoState.kind === 'error') return <PhotoBoxError onRetry={retry} />;
+  if (photoState.kind === 'error') return <BundleLoadError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (
       <PageShell>
