@@ -134,6 +134,35 @@ describe('useNicknameAvailability', () => {
     expect(check).toHaveBeenCalledTimes(1);
   });
 
+  it('remember여도 버려진 요청의 늦은 응답은 다시 보낸 같은 값의 결과를 덮지 않는다', async () => {
+    const resolvers: ((_result: NameCheckResult) => void)[] = [];
+    const check = vi.fn(() => new Promise<NameCheckResult>((resolve) => resolvers.push(resolve)));
+    const { result, rerender } = renderHook(
+      ({ value }) => useNicknameAvailability(value, check, { remember: true }),
+      { initialProps: { value: '지원' } },
+    );
+    await settle();
+    rerender({ value: '하나' });
+    rerender({ value: '지원' });
+    await settle();
+    expect(check).toHaveBeenCalledTimes(2);
+
+    // 다시 보낸 요청이 먼저, 버려진 첫 요청이 나중에 끝남
+    await act(async () => {
+      resolvers[1]?.('available');
+      await Promise.resolve();
+    });
+    await act(async () => {
+      resolvers[0]?.('taken');
+      await Promise.resolve();
+    });
+
+    expect(result.current).toBe('available');
+    rerender({ value: '하나' });
+    rerender({ value: '지원' });
+    expect(result.current).toBe('available');
+  });
+
   it('remember여도 실패한 값은 기억하지 않고 다시 확인한다', async () => {
     const check = vi
       .fn<(_nickname: string) => Promise<NameCheckResult>>()

@@ -56,8 +56,10 @@ export function useNicknameAvailability(
       () => {
         checkRef.current?.(nickname).then(
           (status) => {
+            // 버려진 요청(입력이 바뀜)의 늦은 응답은 기억하지 않음: 같은 값으로 돌아와 다시 보낸 요청의 결과를 덮지 않게
+            if (cancelled) return;
             if (remember) setRemembered((previous) => new Map(previous).set(nickname, status));
-            if (!cancelled) setResult({ nickname, status });
+            setResult({ nickname, status });
           },
           () => {
             if (cancelled) return;
