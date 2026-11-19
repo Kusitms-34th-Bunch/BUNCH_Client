@@ -693,6 +693,19 @@ describe('BundleDetail', () => {
     expect(toast).not.toHaveBeenCalledWith('신고가 접수됐어요.');
   });
 
+  it('같은 댓글을 세 번째 신고하면(BUNCH_011) 댓글을 남기고 검토 중이라고 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post('/api/bundles/:bundleId/comments/:commentId/reports', () => fail(409, 'BUNCH_011')),
+    );
+    renderDetail('901');
+    await reportJiye(user);
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('이미 신고가 접수되어 검토 중이에요.'));
+    expect(screen.getByRole('listitem', { name: '지예님의 댓글' })).toBeTruthy();
+    expect(toast).not.toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
+  });
+
   it('답글 대상이 그사이 지워졌으면 답글 상태를 풀고 쓴 내용은 남긴 채 알린다', async () => {
     const user = userEvent.setup();
     server.use(http.post('/api/bundles/:bundleId/comments', () => fail(409, 'BUNDLE_002')));
@@ -892,6 +905,22 @@ describe('BundleDetail', () => {
     await waitFor(() =>
       expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+    expect(back.mock.calls.length + replace.mock.calls.length).toBe(0);
+  });
+
+  it('같은 번들을 세 번째 신고하면(BUNCH_011) 화면에 남아 검토 중이라고 알린다', async () => {
+    server.use(http.post('/api/bundles/:bundleId/reports', () => fail(409, 'BUNCH_011')));
+    const user = userEvent.setup();
+    renderDetail('2');
+
+    await user.click(screen.getByRole('button', { name: '번들 더보기' }));
+    await user.click(await screen.findByRole('button', { name: '신고' }));
+    const sheet = await screen.findByRole('dialog', { name: '이 게시글을 신고할까요?' });
+    await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
+    await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('이미 신고가 접수되어 검토 중이에요.'));
     expect(toastAfterNavigation).not.toHaveBeenCalled();
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(0);
   });

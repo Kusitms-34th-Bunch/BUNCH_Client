@@ -58,6 +58,7 @@ export const FEED_MESSAGES = {
   reportBundleTitle: '이 게시글을 신고할까요?',
   reportAs: (bunchName: string) => `${bunchName} 계정으로 신고해요`,
   reported: '신고가 접수됐어요.',
+  reportLimited: '이미 신고가 접수되어 검토 중이에요.',
   edit: '수정하기',
   visibilitySetting: '공개 범위 설정',
   deleteBundle: '삭제하기',
