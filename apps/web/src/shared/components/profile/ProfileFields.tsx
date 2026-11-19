@@ -70,8 +70,12 @@ export function ProfileFields({
         }}
         onCompositionStart={() => fields.setComposing(true)}
         onCompositionEnd={() => fields.setComposing(false)}
+        onFocus={() => fields.setNicknameFocused(true)}
         // 일부 모바일 키보드의 조합 종료 없는 포커스 이탈 처리
-        onBlur={() => fields.setComposing(false)}
+        onBlur={() => {
+          fields.setComposing(false);
+          fields.setNicknameFocused(false);
+        }}
       />
       {showDemographics ? (
         <>
