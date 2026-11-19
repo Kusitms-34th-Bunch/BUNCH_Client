@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { NativeShellViewport } from './NativeShellViewport';
 
@@ -30,10 +30,17 @@ describe('NativeShellViewport', () => {
     addViewport().remove();
     render(<NativeShellViewport />);
 
-    const meta = addViewport();
-    await waitFor(() => expect(meta.content).toBe(`${BASE}, maximum-scale=1, user-scalable=no`));
-    meta.content = BASE;
-    await waitFor(() => expect(meta.content).toBe(`${BASE}, maximum-scale=1, user-scalable=no`));
+    let meta = document.createElement('meta');
+    await act(async () => {
+      meta = addViewport();
+      await Promise.resolve();
+    });
+    expect(meta.content).toBe(`${BASE}, maximum-scale=1, user-scalable=no`);
+    await act(async () => {
+      meta.content = BASE;
+      await Promise.resolve();
+    });
+    expect(meta.content).toBe(`${BASE}, maximum-scale=1, user-scalable=no`);
   });
 
   it('브라우저에서는 확대를 그대로 둔다', () => {

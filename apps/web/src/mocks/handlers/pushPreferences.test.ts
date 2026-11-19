@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '../server';
 import { mockDb } from '../db';
-import { PUSH_PREFERENCE_CATEGORIES } from '../db/seed';
 
 const URL_PATH = '/api/members/me/push-preferences';
 type Envelope = {
@@ -23,7 +22,12 @@ describe('푸시 수신 설정 handler', () => {
     const { data } = await read(await fetch(URL_PATH));
 
     expect(data?.enabled).toBe(true);
-    expect(Object.keys(data?.categories ?? {})).toEqual([...PUSH_PREFERENCE_CATEGORIES]);
+    expect(Object.keys(data?.categories ?? {})).toEqual([
+      'BUNDLE_NEWS',
+      'MEMBER_ROLE',
+      'FOLLOW',
+      'REACTION',
+    ]);
     expect(Object.values(data?.categories ?? {}).every(Boolean)).toBe(true);
   });
 
