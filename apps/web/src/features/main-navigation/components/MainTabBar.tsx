@@ -96,7 +96,14 @@ export function MainTabBar() {
             onClick={(event) => {
               if (inShell) void appBridge.tabSelectionHaptic().catch(() => {});
               // 지금 탭의 첫 화면에서 다시 누르면 이동 대신 맨 위로(하위 화면이면 첫 화면으로 이동)
-              if (pathname === MAIN_TAB_PATHS[item.id as MainTabId]) {
+              const plainClick =
+                event.button === 0 &&
+                !event.metaKey &&
+                !event.ctrlKey &&
+                !event.shiftKey &&
+                !event.altKey;
+              // 보조 키 클릭(새 탭 열기 등)은 링크 기본 동작 그대로
+              if (plainClick && pathname === MAIN_TAB_PATHS[item.id as MainTabId]) {
                 event.preventDefault();
                 scrollPageToTop();
               }
