@@ -2124,10 +2124,11 @@
   background: var(--primitive-bunch-500);
 }
 
+/* 가운데 맞춤은 transform으로: 키프레임(countOld-translate)이 translate 속성을 덮어써 translate로 맞추면 가로 -50%가 사라져 새 수와 어긋나 겹침 */
 .countOld {
   position: absolute;
   inset: 0 auto auto 50%;
-  translate: -50% 0;
+  transform: translateX(-50%);
   white-space: nowrap;
   pointer-events: none;
 }
