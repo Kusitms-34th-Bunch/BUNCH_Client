@@ -36,7 +36,7 @@ export function NoBunchScreen({ onCreateBunch, onJoinBunch }: NoBunchScreenProps
               새 번치 만들기
             </Button>
             <Button variant="tertiary" className="w-full" onClick={onJoinBunch}>
-              초대 링크 참여하기
+              초대 링크로 참여하기
             </Button>
           </div>
         </div>
