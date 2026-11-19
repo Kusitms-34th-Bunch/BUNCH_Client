@@ -233,7 +233,7 @@ describe('BunchLeave 서버 메인 관리자 나가기', () => {
     await user.click(screen.getByRole('radio', { name: '수인' }));
     await user.click(screen.getByRole('button', { name: '관리자로 지정하기' }));
     const sheet = await screen.findByRole('dialog');
-    await user.click(within(sheet).getByRole('button', { name: '지정하고 나가기' }));
+    await user.click(within(sheet).getByRole('button', { name: '나가기' }));
 
     await waitFor(() => expect(go).toHaveBeenCalledWith(-2));
     expect(toastAfterNavigation).toHaveBeenCalledWith(

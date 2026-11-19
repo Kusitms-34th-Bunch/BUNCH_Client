@@ -97,9 +97,10 @@ export const FEED_MESSAGES = {
   followLabels: { none: '팔로우', following: '팔로잉', requested: '요청됨' },
   followActions: { none: '', following: ', 누르면 팔로우 취소', requested: ', 누르면 요청 취소' },
   followed: (bunchName: string) => `${bunchName} 번치를 팔로우했어요.`,
-  followRequested: (bunchName: string) => `${bunchName} 번치에 팔로우를 요청했어요.`,
   unfollowed: (bunchName: string) => `${bunchName} 번치 팔로우를 취소했어요.`,
-  requestCanceled: (bunchName: string) => `${bunchName} 번치 팔로우 요청을 취소했어요.`,
+  // 비공개 번치 팔로우 요청 결과: 화면 토스트가 없어 스크린 리더에만 읽힘(기획 원문 없는 접근성 안내)
+  followRequested: (bunchName: string) => `${bunchName} 번치에 팔로우를 요청했어요.`,
+  requestCanceled: '팔로우 요청을 취소했어요.',
   /** 내 정보를 받지 못해 번치 명의 행동을 할 수 없을 때 */
   actionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   // 기능명세서 6.2.11: 화면을 연 뒤 역할이 바뀌어 수정·삭제를 할 수 없게 됨

@@ -17,7 +17,7 @@ type BunchLeaveScreenProps = {
   /** 관리자로 지정할 수 있는 멤버(나 제외). 아직 모르면 목록을 그리지 않음 */
   candidates: readonly BunchMember[] | undefined;
   onBack: () => void;
-  /** 확인 시트의 「지정하고 나가기」 */
+  /** 확인 시트의 「나가기」 */
   onTransferAndLeave: (_member: BunchMember) => void;
 };
 

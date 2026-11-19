@@ -10,6 +10,7 @@ import {
   type CheckNickname,
 } from '@/shared/hooks/useNicknameAvailability';
 import {
+  BUNCH_NAME_AVAILABLE_MESSAGE,
   BUNCH_NAME_CHECKING_MESSAGE,
   BUNCH_NAME_INVALID_MESSAGE,
   BUNCH_NAME_PROHIBITED_MESSAGE,
@@ -89,8 +90,14 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
                   ? BUNCH_NAME_TAKEN_MESSAGE
                   : undefined
           }
-          // 중복 확인이 도는 동안만 보이고, 문제가 없으면 사라지며 중복이면 오류 문구가 대신 보임(오류가 있으면 보이지 않음)
-          helperMessage={availability === 'checking' ? BUNCH_NAME_CHECKING_MESSAGE : undefined}
+          // 확인 중에는 확인 중 안내, 통과하면 「사용 가능한 번치 이름이에요」(기능명세 2.2.3), 오류가 있으면 오류 문구가 대신 보임
+          helperMessage={
+            availability === 'checking'
+              ? BUNCH_NAME_CHECKING_MESSAGE
+              : availability === 'available'
+                ? BUNCH_NAME_AVAILABLE_MESSAGE
+                : undefined
+          }
           onChange={(event) => setName(event.target.value)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}

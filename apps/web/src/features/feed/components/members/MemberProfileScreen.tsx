@@ -40,8 +40,9 @@ const followToast = (
   result: 'NONE' | 'REQUESTED' | 'FOLLOWING',
 ) => {
   if (result === 'FOLLOWING') return text.followed(bunch.name);
-  if (result === 'REQUESTED') return text.followRequested(bunch.name);
-  return before === 'requested' ? text.requestCanceled(bunch.name) : text.unfollowed(bunch.name);
+  // 비공개 번치 요청은 토스트 없이 버튼만 바뀜(기능명세 6.3.3 → 5.10.3)
+  if (result === 'REQUESTED') return undefined;
+  return before === 'requested' ? text.requestCanceled : text.unfollowed(bunch.name);
 };
 
 /**
@@ -57,6 +58,8 @@ export function MemberProfileScreen({ memberId, links, follow }: MemberProfileSc
   const refreshProfile = useRefreshMemberProfile(memberId);
   // 보내는 중인 번치(연타해도 한 번만)
   const [sending, setSending] = useState<ReadonlySet<string>>(new Set());
+  // 비공개 번치 요청 결과는 화면 토스트가 없어 스크린 리더에만 알림
+  const [announcement, setAnnouncement] = useState('');
   const member = profile.data;
 
   // 「다시 시도」 버튼은 받는 동안 사라지므로, 끝나면 그 화면의 제목(멤버 이름이나 실패 안내)으로 초점
@@ -137,12 +140,17 @@ export function MemberProfileScreen({ memberId, links, follow }: MemberProfileSc
       if (sending.has(bunch.id)) return;
       const status = statusOf(bunch);
       setSending((current) => new Set(current).add(bunch.id));
+      setAnnouncement('');
       void follow(
         bunch.id,
         status === 'none' ? { kind: 'follow' } : { kind: 'unfollow', followId: bunch.followId },
       )
         .then(
-          (result) => toast(followToast(bunch, status, result)),
+          (result) => {
+            if (result === 'REQUESTED') setAnnouncement(text.followRequested(bunch.name));
+            const message = followToast(bunch, status, result);
+            if (message) toast(message);
+          },
           () => undefined,
         )
         .then(refreshProfile)
@@ -214,6 +222,9 @@ export function MemberProfileScreen({ memberId, links, follow }: MemberProfileSc
           </ul>
         </section>
       ) : null}
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
     </PageShell>
   );
 }

@@ -212,7 +212,7 @@ describe('ProfileEditScreen', () => {
     await waitForEnabled();
     await user.click(submitButton());
 
-    expect(await screen.findByText('이미 사용 중인 닉네임이에요.')).toBeTruthy();
+    expect(await screen.findByText('이미 사용 중인 닉네임이에요')).toBeTruthy();
     expect(document.activeElement).toBe(nicknameInput());
     expect(submitButton().disabled).toBe(true);
     expect(replace).not.toHaveBeenCalled();
@@ -431,9 +431,7 @@ describe('ProfileEditScreen', () => {
 
     await user.type(nicknameInput(), '짱');
 
-    expect((await screen.findByRole('alert')).textContent).toContain(
-      '이미 사용 중인 닉네임이에요.',
-    );
+    expect((await screen.findByRole('alert')).textContent).toContain('이미 사용 중인 닉네임이에요');
     expect(submitButton().disabled).toBe(true);
   });
 

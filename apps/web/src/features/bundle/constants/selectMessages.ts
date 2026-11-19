@@ -30,9 +30,9 @@ export const BUNDLE_SELECT_MESSAGES = {
   changeConfirm: '변경하기',
   cancel: '취소',
   deletedRecommendation: '추천 번들이 삭제됐어요. 다시 확인해 주세요.',
-  // 서버 오류 안내(기능 명세에 문구가 없어 다른 화면의 실패 안내와 같은 형식으로 둔 제안)
-  recommendationsFailed: '추천 번들을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
-  applyFailed: '추천 번들을 적용하지 못했어요. 잠시 후 다시 시도해 주세요.',
+  // 서버 오류 안내(기능명세 공통 오류 문구, 4.2.1 목록 로딩 실패)
+  recommendationsFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  applyFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   detailTitle: (title: string) => `${title} 상세`,
   viewerTitle: '사진 보기',
   creating: '번들을 만들고 있어요.',
@@ -43,7 +43,7 @@ export const BUNDLE_SELECT_MESSAGES = {
   allSelectionGone: '선택한 사진이 모두 사진함에서 사라졌어요.',
   selectionStale: (count: number) =>
     `선택한 사진 중 ${count}장이 사진함에서 삭제되어 선택이 해제됐어요.`,
-  createFailed: '번들을 만들지 못했어요. 잠시 후 다시 시도해 주세요.',
+  createFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   selectionStatus: (count: number) => (count === 0 ? '선택한 사진이 없어요.' : `${count}장 선택됨`),
   photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
 } as const;

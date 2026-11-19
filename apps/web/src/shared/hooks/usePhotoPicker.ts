@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { galleryBridge, isNativeShell } from '@/shared/bridge/client';
 import { DEFAULT_IMAGE_RULES, type ImageFileRules } from '@/shared/lib/imageFile';
 
-const UNREADABLE_MESSAGE = '이 사진은 사용할 수 없어요.';
+const UNREADABLE_MESSAGE = '이 사진은 사용할 수 없어요';
 // 바이트는 작아도 가로세로가 아주 큰 사진은 디코딩·자르기에서 탭이 멈출 수 있어 거절(50MP)
 const MAX_IMAGE_PIXELS = 50_000_000;
 

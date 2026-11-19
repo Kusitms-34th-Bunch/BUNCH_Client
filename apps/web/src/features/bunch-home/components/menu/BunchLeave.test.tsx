@@ -57,7 +57,7 @@ describe('BunchMenuScreen 나가기', () => {
     const dialog = await screen.findByRole('alertdialog', {
       name: '혼자 있는 번치는 나갈 수 없어요',
     });
-    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '번치 삭제하기' }));
 
     expect(onDeleteBunch).toHaveBeenCalledTimes(1);
     expect(onOwnerLeave).not.toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe('BunchLeaveScreen', () => {
     expect(screen.getByRole('button', { name: '관리자로 지정하기' })).toBeDisabled();
   });
 
-  it('멤버를 고르고 확인 시트에서 「지정하고 나가기」를 누르면 그 멤버로 나간다', async () => {
+  it('멤버를 고르고 확인 시트에서 「나가기」를 누르면 그 멤버로 나간다', async () => {
     const user = userEvent.setup();
     const onTransferAndLeave = vi.fn();
     render(
@@ -94,7 +94,7 @@ describe('BunchLeaveScreen', () => {
     const sheet = await screen.findByRole('dialog', {
       name: '경진님을 관리자로 지정하고 나갈까요?',
     });
-    await user.click(within(sheet).getByRole('button', { name: '지정하고 나가기' }));
+    await user.click(within(sheet).getByRole('button', { name: '나가기' }));
 
     expect(onTransferAndLeave).toHaveBeenCalledWith(CANDIDATES[1]);
   });

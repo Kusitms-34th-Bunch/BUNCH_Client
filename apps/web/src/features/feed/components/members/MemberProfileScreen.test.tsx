@@ -144,16 +144,14 @@ describe('MemberProfileScreen', () => {
     await loaded();
 
     await user.click(screen.getByRole('button', { name: '책방산책 팔로우' }));
-    await waitFor(() =>
-      expect(toast).toHaveBeenLastCalledWith('책방산책 번치에 팔로우를 요청했어요.'),
-    );
+    const requested = await screen.findByRole('button', {
+      name: '책방산책 요청됨, 누르면 요청 취소',
+    });
+    // 요청은 토스트 없이 버튼만 바뀜(기능명세 6.3.3 → 5.10.3)
+    expect(toast).not.toHaveBeenCalled();
 
-    await user.click(
-      await screen.findByRole('button', { name: '책방산책 요청됨, 누르면 요청 취소' }),
-    );
-    await waitFor(() =>
-      expect(toast).toHaveBeenLastCalledWith('책방산책 번치 팔로우 요청을 취소했어요.'),
-    );
+    await user.click(requested);
+    await waitFor(() => expect(toast).toHaveBeenLastCalledWith('팔로우 요청을 취소했어요.'));
   });
 
   it('보내고 다시 받는 동안 같은 번치를 다시 눌러도 한 번만 보낸다', async () => {
