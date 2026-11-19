@@ -15,7 +15,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
-import { MAIN_TAB_PATHS, MAIN_TABS, findMainTab, type MainTabId } from '../constants/tabs';
+import {
+  MAIN_TAB_PATHS,
+  MAIN_TABS,
+  NATIVE_TAB_ITEMS,
+  findMainTab,
+  type MainTabId,
+} from '../constants/tabs';
 
 const ICONS: Record<MainTabId, { icon: ReactNode; selectedIcon: ReactNode }> = {
   feed: { icon: <LineHomeLargeIcon />, selectedIcon: <FillHomeLargeIcon /> },
@@ -29,8 +35,6 @@ const items: BottomNavigationItem[] = MAIN_TABS.map(({ id, label }) => ({
   label,
   ...ICONS[id],
 }));
-
-const nativeItems = MAIN_TABS.map((tab) => ({ ...tab, path: MAIN_TAB_PATHS[tab.id] }));
 
 const subscribeNone = () => () => {};
 
@@ -48,7 +52,7 @@ export function MainTabBar() {
   useEffect(() => {
     if (!inShell) return;
     appBridge
-      .setNativeTabBar({ items: nativeItems, selectedId })
+      .setNativeTabBar({ items: NATIVE_TAB_ITEMS, selectedId })
       .then(setUsesNativeBar)
       .catch(() => setUsesNativeBar(false));
   }, [inShell, selectedId]);
