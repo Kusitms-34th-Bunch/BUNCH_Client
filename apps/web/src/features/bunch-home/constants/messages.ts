@@ -92,7 +92,7 @@ export const BUNCH_HOME_MESSAGES = {
   transferredAndLeft: (name: string) => `${name}님을 관리자로 지정하고 나왔어요.`,
   aloneTitle: '혼자 있는 번치는 나갈 수 없어요',
   aloneDescription: '번치를 더 쓰지 않는다면 번치를 삭제해 주세요.',
-  aloneConfirm: '번치 삭제하기',
+  aloneConfirm: '삭제하기',
   leaveTransferTitle: '관리자 권한을 넘길 멤버를 정해주세요.',
   leaveTransferDescription: '선택한 멤버가 새로운 관리자가 돼요.',
   // 알림 목록(Figma 1892:36947)

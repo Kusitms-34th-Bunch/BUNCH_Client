@@ -44,7 +44,7 @@
 
 - 화면 데이터는 `BunchHome`이 `useServerBunchHome`으로 받는다. 동작(`switchBunch`·`deleteDraftBundle`·`removeBunch`)은 서버 mutation(`useSwitchBunchMutation`·`useDeleteBundleMutation`·`useDeleteBunchNoticeMutation`)이다. 더보기 메뉴의 역할은 서버 멤버 목록(`useMyBunchMemberships`)으로 정한다.
 - 테스트는 가짜 서버(MSW)의 시작 데이터(기본 번치 여행쥬아)로 그린다(`BunchHome.test.tsx`·`BunchHome.server.test.tsx`·`BunchHome.needMembers.test.tsx`).
-- 탭·전환 시트·삭제 대상·접근 불가 안내 대상은 화면 안 상태다. 탭의 처음 값만 주소(`?tab=drafts`)로 정한다.
+- 탭·전환 시트·삭제 대상·접근 불가 안내 대상은 화면 안 상태다. 탭의 처음 값만 주소(`?tab=drafts`)로 정한다. 고른 탭은 이 화면의 history 항목에 번치 id와 함께 적어, 작성 중인 번들 등에서 뒤로 돌아오면(새로고침 포함) 그 탭으로 연다(2026-11-19 QA). 다른 번치로 바꿨거나 새로 들어오면 처음 탭이다.
 - 그리드 → 번들 상세의 삭제 확인은 feed feature의 상세 query(`usePrefetchBundleDetail`)를 route(`BunchHomeRoute`)가 넘겨 쓴다. 상세 → 번치 홈과 같은 drill 전환이다.
 
 ## 접근성
@@ -77,7 +77,6 @@
 - 1110판 5.1.3(확인 필요): 뭉치 캐릭터가 서비스에서 빠지고, 배경 띠 오른쪽에 번치 프로필 이미지(원형, 아래쪽이 프로필 영역과 겹침)를 둔다. 발행 번들 수로 바뀌는 단계는 없다. 구현은 #300에서 이 구조로 바뀌었다(위 「프로필 이미지 영역」). 명세는 이미지 로딩에 실패해도 분위기 기본 이미지를 보이라고 하는데, 구현은 주소가 없을 때만 기본 이미지를 쓴다(확인 필요).
 - 1110판 5.1.3: 배경 띠 색은 분위기(2.2.9)의 연한 색이다. 지금 `characterType` 기준 성격 색과 같은 값인지 확인한다.
 - 1110판 5.1.4: 멤버 수를 누르면 「멤버 리스트 화면」으로 간다(이전 판은 멤버 관리). 구현은 멤버 관리 화면(`/bunch/members`, 5.6.1)으로 연결했다. 두 화면이 같은지 기획 확인이 필요하다.
-- 1110판 5.1.7: 버튼 문구가 「초대 링크로 참여하기」다. 구현(`NoBunchScreen`)은 아직 「초대 링크 참여하기」다.
 - 「콕한 장소」(이전 이름 「가볼 곳」, 2026-11-06 Figma에서 변경)는 기능명세서 「콕」 8.1로 들어왔고 화면은 `bunch-places`가 소유한다.
 - 접근 불가 안내: 명세(5.2.3)는 바깥 누름으로도 닫히는데 디자인 시스템 `ConfirmDialog`는 바깥 누름을 막는다. 버튼이 하나라 첫 초점이 「번치 목록에서 삭제」에 있어 Enter 한 번으로 지워진다(지워지는 것은 이미 접근 불가인 번치).
 - 접근 불가 행은 이제 누를 수 있는데 Figma처럼 흐림(40%)과 `text-disabled`가 겹쳐 대비가 낮다. 디자이너 확인이 필요하다.

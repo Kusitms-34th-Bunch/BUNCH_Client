@@ -57,7 +57,7 @@ describe('BunchMenuScreen 나가기', () => {
     const dialog = await screen.findByRole('alertdialog', {
       name: '혼자 있는 번치는 나갈 수 없어요',
     });
-    await user.click(within(dialog).getByRole('button', { name: '번치 삭제하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
 
     expect(onDeleteBunch).toHaveBeenCalledTimes(1);
     expect(onOwnerLeave).not.toHaveBeenCalled();

@@ -3,9 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NativeTabBarVisibility } from './NativeTabBarVisibility';
 
 const setNativeTabBarVisible = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+const setNativeTabBar = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 vi.mock('@/shared/bridge/client', () => ({
   isNativeShell: () => true,
-  appBridge: { setNativeTabBarVisible },
+  appBridge: { setNativeTabBarVisible, setNativeTabBar },
 }));
 const pathname = vi.hoisted(() => ({ current: '/bunch' }));
 vi.mock('next/navigation', () => ({ usePathname: () => pathname.current }));
@@ -15,6 +16,7 @@ const setVisibility = (state: DocumentVisibilityState) =>
 
 afterEach(() => {
   setNativeTabBarVisible.mockClear();
+  setNativeTabBar.mockClear();
   setVisibility('visible');
 });
 
@@ -62,5 +64,49 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     setVisibility('visible');
     document.dispatchEvent(new Event('visibilitychange'));
     expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(false);
+  });
+
+  it('로그인 전 화면에 오면 탭 화면을 끝내고, 탭 바 표시 여부는 보내지 않는다', () => {
+    pathname.current = '/my';
+    const { rerender } = render(<NativeTabBarVisibility exitPaths={['/login']} />);
+    expect(setNativeTabBar).not.toHaveBeenCalled();
+    setNativeTabBarVisible.mockClear();
+
+    pathname.current = '/login';
+    rerender(<NativeTabBarVisibility exitPaths={['/login']} />);
+    expect(setNativeTabBar).toHaveBeenCalledTimes(1);
+    expect(setNativeTabBar).toHaveBeenCalledWith(expect.objectContaining({ hidden: true }));
+    expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+  });
+
+  it('로그인 전 화면 사이를 오가도 탭 화면 종료는 한 번만 보낸다', () => {
+    const exitPaths = ['/intro', '/login'];
+    pathname.current = '/intro';
+    const { rerender } = render(<NativeTabBarVisibility exitPaths={exitPaths} />);
+    pathname.current = '/login';
+    rerender(<NativeTabBarVisibility exitPaths={exitPaths} />);
+    expect(setNativeTabBar).toHaveBeenCalledTimes(1);
+  });
+
+  it('화면에 보이지 않는 탭 WebView는 로그인 전 화면에 와도 탭 화면을 끝내지 않고, 보이게 되면 끝낸다', () => {
+    setVisibility('hidden');
+    pathname.current = '/login';
+    render(<NativeTabBarVisibility exitPaths={['/login']} />);
+    expect(setNativeTabBar).not.toHaveBeenCalled();
+
+    setVisibility('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(setNativeTabBar).toHaveBeenCalledWith(expect.objectContaining({ hidden: true }));
+  });
+
+  it('로그인 전 화면을 벗어난 뒤에는 다시 보이게 돼도 탭 화면 종료를 보내지 않는다', () => {
+    pathname.current = '/login';
+    const { rerender } = render(<NativeTabBarVisibility exitPaths={['/login']} />);
+    pathname.current = '/feed';
+    rerender(<NativeTabBarVisibility exitPaths={['/login']} />);
+    setNativeTabBar.mockClear();
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(setNativeTabBar).not.toHaveBeenCalled();
   });
 });

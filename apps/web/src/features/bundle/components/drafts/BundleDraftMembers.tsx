@@ -1,11 +1,15 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { useLeaveDraft } from '../../hooks/useDraftExit';
 import { isDraftCreator } from '../../lib/permissions';
+import { BundleLoadError } from '../BundleLoadError';
 import { DraftMemberManager } from './DraftMemberManager';
 
 /**
@@ -16,7 +20,11 @@ export function BundleDraftMembers() {
   const backOr = useBackOr();
   const { state, actions } = useDraftContext();
   const leaveDraft = useLeaveDraft(state.kind === 'ready' ? state.draft.id : undefined);
+  // 들어올 때마다 번치 멤버를 서버에서 새로 받음(DraftMemberManager.spec.md). 받는 동안과 실패해도 받아 둔 목록을 그대로 보임
+  const { data: profile } = useQuery(myProfileQueryOptions());
+  useQuery({ ...bunchMembersQueryOptions(profile?.bunch?.id), refetchOnMount: 'always' });
 
+  if (state.kind === 'error') return <BundleLoadError onRetry={state.retry} />;
   if (state.kind !== 'ready') return <PageLoading />;
 
   return (
