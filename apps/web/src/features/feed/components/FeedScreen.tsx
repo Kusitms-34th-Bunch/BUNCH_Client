@@ -132,7 +132,7 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
     setHiddenAds((current) => new Set(current).add(adId));
   }, []);
 
-  // 목록 끝이 보이면 다음 쪽(실패해 멈춘 동안은 「다시 시도」로만)
+  // 목록 끝 1.5화면 전에 다음 쪽(실패해 멈춘 동안은 「다시 시도」로만)
   // 감지 요소는 받을 수 있을 때만 그려, 새로 붙는 순간 이미 보이면 바로 받음
   const canLoadMore = hasNextPage && !isFetchingNextPage && !feed.isFetchNextPageError;
   const observeMore = useIntersectionObserver<HTMLSpanElement>((entry) => {
@@ -260,9 +260,13 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
             aria-label={text.moreArea}
             className="gap-s8 py-s8 relative flex flex-col items-center outline-none"
           >
-            {/* absolute라 flex 간격에 끼지 않음 */}
+            {/* absolute라 flex 간격에 끼지 않음. 위로 1.5화면 길게 그려 끝에 닿기 전에 미리 받음(스크롤 영역이 PageShell 안이라 rootMargin은 안 먹음) */}
             {canLoadMore ? (
-              <span ref={observeMore} aria-hidden="true" className="absolute top-0 size-px" />
+              <span
+                ref={observeMore}
+                aria-hidden="true"
+                className="pointer-events-none absolute top-0 h-[150svh] w-px -translate-y-full"
+              />
             ) : null}
             {(feed.isFetchNextPageError && !restarting) || retrying ? (
               <>

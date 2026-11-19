@@ -17,6 +17,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES, MAX_RECOMMEND_CHIPS } from '../../constants/selectMessages';
@@ -184,6 +185,10 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
 
   // 번들을 만드는 중이거나 추천 번들 목록·사진을 받는 중에는 화면을 막음(중복 탭 방지)
   const blocked = creating || recommendationBusy;
+  // 만드는 동안은 덮지 않고 「다음」만 비활성(짧은 저장 뒤 이동, motion.md 「로딩 상태」). 실패하면 초점을 되돌림
+  const nextDisabled = selection.length === 0 || creating;
+  // 만드는 중이 끝나는 순간 한 번만 처리(실패로 선택이 비어 꺼진 채면 초점은 옮기지 않고 요청만 끝남)
+  const [nextRef, refocusNext] = useRefocusWhenEnabled<HTMLButtonElement>(!creating);
 
   if (noMembers || photoState.kind === 'loading') return <PageLoading />;
   if (photoState.kind === 'error') return <BundleLoadError onRetry={retry} />;
@@ -235,21 +240,27 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
       }
       bottom={
         <div
-          inert={blocked}
+          inert={recommendationBusy}
           // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
           className="bg-surface-primary border-border-tertiary gap-s5 pt-padding-p7 px-padding-p8 pb-s4 flex border-t"
         >
           <Button
             variant="tertiary"
             className="min-w-0 flex-1"
+            disabled={creating}
             onClick={() => backOr(BUNDLE_SELECT_PATHS.members)}
           >
             {BUNDLE_SELECT_MESSAGES.previous}
           </Button>
           <Button
+            ref={nextRef}
             className="min-w-0 flex-1"
-            disabled={selection.length === 0}
-            onClick={select.create}
+            disabled={nextDisabled}
+            aria-busy={creating || undefined}
+            onClick={() => {
+              refocusNext();
+              select.create();
+            }}
           >
             {BUNDLE_SELECT_MESSAGES.next}
           </Button>
@@ -263,8 +274,8 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
           ? BUNDLE_SELECT_MESSAGES.creating
           : BUNDLE_SELECT_MESSAGES.selectionStatus(selection.length)}
       </p>
-      {/* 번들을 만들거나 추천 번들을 받는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
-      {blocked ? <PageLoading /> : null}
+      {/* 추천 번들을 받는 동안만 화면 전체를 dim으로 덮음(만드는 동안은 「다음」 비활성) */}
+      {recommendationBusy ? <PageLoading /> : null}
       <SelectPhotoList
         data={data}
         selection={selection}

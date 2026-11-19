@@ -3,14 +3,14 @@
 import { isApiError } from '@app/api-core';
 import { Button, toast } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
 import { checkNicknameAvailability } from '@/shared/api/nickname';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { EMPTY_PROFILE_VALUES, useProfileFields } from '@/shared/hooks/useProfileFields';
+import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import { normalizeNickname } from '@/shared/lib/nickname';
@@ -42,6 +42,17 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
   // 고른 사진(조정을 마친 JPEG data URL). 없으면 기본 이미지
   const [photo, setPhoto] = useState<string>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const startDisabled = !fields.isValid || register.isPending || register.isSuccess;
+  const [startRef, refocusStart] = useRefocusWhenEnabled<HTMLButtonElement>(!startDisabled);
+  // 닉네임이 거절되면 입력란으로 초점. 저장 중 잠금(inert)이 풀린 렌더 뒤에야 초점을 받을 수 있어 미룸
+  const [nicknameFocusRequest, setNicknameFocusRequest] = useState(0);
+  const handledNicknameFocus = useRef(0);
+  useEffect(() => {
+    if (register.isPending || handledNicknameFocus.current === nicknameFocusRequest) return;
+    handledNicknameFocus.current = nicknameFocusRequest;
+    // 첫 입력란(닉네임). 사진 선택용 숨은 파일 입력은 제외
+    containerRef.current?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus();
+  }, [register.isPending, nicknameFocusRequest]);
 
   const start = async () => {
     if (register.isPending || register.isSuccess) return;
@@ -61,10 +72,10 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
       const prohibited = prohibitedFieldsOf(error)?.includes('nickname') ?? false;
       if (taken || prohibited) {
         fields.markNicknameRejected(prohibited ? 'prohibited' : 'taken');
-        // 시작하기가 비활성이 되므로 포커스를 닉네임 입력으로 돌려 바로 고칠 수 있게 함
-        // 첫 입력란(닉네임). 사진 선택용 숨은 파일 입력은 제외
-        containerRef.current?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus();
+        // 시작하기가 비활성이 되므로 포커스를 닉네임 입력으로 돌려 바로 고칠 수 있게 함(잠금이 풀린 뒤)
+        setNicknameFocusRequest((count) => count + 1);
       } else {
+        refocusStart();
         toast(SAVE_FAILURE_MESSAGE);
       }
     }
@@ -85,16 +96,17 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
         ref={containerRef}
         className="flex min-h-0 flex-1 flex-col"
         onPointerDown={dismissKeyboard}
-        // 가입을 마치면 도착 화면으로 넘어가는 동안 이 화면을 그대로 두므로(AuthGate) 다시 입력·제출하지 못하게 잠금
-        inert={register.isSuccess}
+        // 저장 중에는 보낸 값과 화면이 어긋나지 않게, 가입을 마친 뒤에는 도착 화면으로 넘어가는 동안 잠금(덮개 대신). 실패하면 풀림
+        inert={register.isPending || register.isSuccess}
       >
-        {register.isPending ? <PageLoading /> : null}
         <SignupFrame
           bottom={
             <div className="px-padding-p8 pt-padding-p7">
               <Button
+                ref={startRef}
                 className="w-full"
-                disabled={!fields.isValid || register.isSuccess}
+                // 누르면 바로 비활성으로 바꿔 눌렸음을 보이고 저장이 끝나면 덮개 없이 넘어감(짧은 저장은 화면을 덮지 않음)
+                disabled={startDisabled}
                 aria-busy={register.isPending || undefined}
                 onClick={() => void start()}
               >

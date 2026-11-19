@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties, RefObject } from 'react';
+import type { RefObject } from 'react';
 import {
   LineCalendarMediumIcon,
   LineDownloadMediumIcon,
@@ -28,9 +28,6 @@ const DELETE: PhotoActionMenuItem<PhotoDetailMenuAction> = {
   dividerBefore: true,
 };
 
-// 헤더 아래에서 열리므로 위에서 아래로 내려오며 열림(Figma 사진 상세 설명 표)
-const DOWNWARD_MOTION = { '--menu-motion-offset': '-38px' } as CSSProperties;
-
 type PhotoDetailMenuProps = {
   /** 「날짜 바꾸기」·「삭제」는 올린 멤버·관리자만 보임 */
   canManage: boolean;
@@ -51,5 +48,5 @@ export function PhotoDetailMenu({ canManage, withDate = true, ...props }: PhotoD
       : [SAVE, { ...DELETE, dividerBefore: false }]
     : [SAVE];
 
-  return <PhotoActionMenu label="사진 메뉴" items={items} style={DOWNWARD_MOTION} {...props} />;
+  return <PhotoActionMenu label="사진 메뉴" items={items} {...props} />;
 }

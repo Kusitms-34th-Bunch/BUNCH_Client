@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '../server';
 import { mockDb } from '../db';
-import { PUSH_NOTIFICATION_TYPES } from '../db/seed';
 
 const URL_PATH = '/api/members/me/push-preferences';
 type Envelope = {
@@ -19,40 +18,45 @@ const patch = (body: unknown) =>
   });
 
 describe('푸시 수신 설정 handler', () => {
-  it('처음에는 전체와 21개 알림 종류가 모두 켜져 있다', async () => {
+  it('처음에는 전체와 4개 카테고리가 모두 켜져 있다', async () => {
     const { data } = await read(await fetch(URL_PATH));
 
     expect(data?.enabled).toBe(true);
-    expect(Object.keys(data?.categories ?? {})).toEqual([...PUSH_NOTIFICATION_TYPES]);
+    expect(Object.keys(data?.categories ?? {})).toEqual([
+      'BUNDLE_NEWS',
+      'MEMBER_ROLE',
+      'FOLLOW',
+      'REACTION',
+    ]);
     expect(Object.values(data?.categories ?? {}).every(Boolean)).toBe(true);
   });
 
   it('보낸 값만 바꾸고 전체 설정을 돌려주며 다음 조회에도 남는다', async () => {
-    const response = await patch({ categories: { COMMENT_REMINDER: false } });
+    const response = await patch({ categories: { FOLLOW: false } });
     const { data } = await read(response);
 
     expect(response.status).toBe(200);
-    expect(data?.categories.COMMENT_REMINDER).toBe(false);
-    expect(data?.categories.DRAFT_ACTIVITY).toBe(true);
+    expect(data?.categories.FOLLOW).toBe(false);
+    expect(data?.categories.BUNDLE_NEWS).toBe(true);
     expect(data?.enabled).toBe(true);
-    expect(mockDb.get().pushPreferences.categories.COMMENT_REMINDER).toBe(false);
+    expect(mockDb.get().pushPreferences.categories.FOLLOW).toBe(false);
 
     await patch({ enabled: false });
     const after = await read(await fetch(URL_PATH));
     expect(after.data?.enabled).toBe(false);
-    expect(after.data?.categories.COMMENT_REMINDER).toBe(false);
+    expect(after.data?.categories.FOLLOW).toBe(false);
   });
 
-  it('알 수 없는 알림 종류는 COMMON_001(400)이다', async () => {
-    const response = await patch({ categories: { NOT_A_TYPE: true } });
+  it('예전 알림 종류 키처럼 알 수 없는 카테고리는 COMMON_001(400)이다', async () => {
+    const response = await patch({ categories: { COMMENT_REMINDER: true } });
 
     expect(response.status).toBe(400);
     expect((await read(response)).error?.code).toBe('COMMON_001');
   });
 
   it.each([
-    ['문자열 값', { categories: { COMMENT_REMINDER: 'no' } }],
-    ['null 값', { categories: { COMMENT_REMINDER: null } }],
+    ['문자열 값', { categories: { FOLLOW: 'no' } }],
+    ['null 값', { categories: { FOLLOW: null } }],
     ['불리언이 아닌 enabled', { enabled: 'yes' }],
   ])('%s은 COMMON_002(400)이다', async (_name, body) => {
     const response = await patch(body);

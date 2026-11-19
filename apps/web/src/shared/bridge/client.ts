@@ -54,6 +54,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     notifyNativeTabs: () => Promise.resolve(false),
     // 브라우저에는 앱 스플래시 없음
     appReady: () => Promise.resolve(),
+    // 브라우저·이전 쉘에는 햅틱 없음
+    feedbackHaptic: () => Promise.resolve(),
   },
 });
 

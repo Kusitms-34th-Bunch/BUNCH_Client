@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { playHaptic } from '@/shared/lib/haptic';
 import { useQueryClientScope } from '@/shared/query/useQueryClientScope';
 import type { FeedBundleMember, FeedPlace } from '../lib/types';
 import { PlacePickOverlay } from '../components/bundles/PlacePickOverlay';
@@ -35,7 +36,11 @@ export function useBundleSheets() {
     viewer === undefined ? undefined : (viewer?.bunchId ?? null),
   );
   // 콕하기 실패는 버튼이 「콕하기」로, 콕 취소 실패는 장소가 그대로(되돌림과 안내는 mutation)
-  const sendKok = (vars: Parameters<typeof kok.mutate>[0]) => kok.mutate(vars);
+  const sendKok = (vars: Parameters<typeof kok.mutate>[0]) => {
+    // 콕하기를 누를 때만 햅틱(콕 취소는 없음, Figma 햅틱 모음)
+    if (vars.pin) playHaptic('tap');
+    kok.mutate(vars);
+  };
 
   // 콕 취소 확인 창(화면설계서 피드 2번): 무엇을 고르든 창이 다 닫힌 뒤 콕하기 시트를 다시 올려 이어서 고르게 함
   // 시트를 연 명의(openedAs)로만 보냄. 그사이 명의가 바뀌었으면 보내지 않고, 다시 올리는 시트가 새 명의로 받음

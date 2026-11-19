@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { isWireId } from '@/shared/api/ids';
+import { playHaptic } from '@/shared/lib/haptic';
 import type { FeedBundle, FeedViewer } from '../lib/types';
 import { useBundleLikeMutation } from '../queries/like';
 
@@ -20,6 +21,8 @@ export function useLikeToggle(viewer: FeedViewer | undefined) {
       const now = Date.now();
       if (now - (lastTap.current[bundle.id] ?? 0) < LIKE_TAP_GUARD_MS) return;
       lastTap.current[bundle.id] = now;
+      // 좋아요를 누를 때만 햅틱(취소는 없음, Figma 햅틱 모음)
+      if (!bundle.liked) playHaptic('tap');
       like.mutate({ bundleId: bundle.id, liked: !bundle.liked, viewerId: viewer.bunchId });
     },
   };

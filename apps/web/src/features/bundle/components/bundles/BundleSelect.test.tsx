@@ -2,6 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
 import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
@@ -104,7 +105,7 @@ describe('사진 고르기', () => {
     expect(screen.getByRole('status')).toHaveTextContent('1장 선택됨');
   });
 
-  it('「다음」을 누르면 생성 중으로 알리고 헤더·하단을 막은 뒤 작성 화면으로 이동한다', async () => {
+  it('「다음」을 누르면 생성 중으로 알리고 헤더를 막고, 덮지 않고 버튼만 비활성으로 둔 뒤 작성 화면으로 이동한다', async () => {
     // 대기를 10초로 두고 직접 넘김: 느린 CI에서 클릭·확인 사이에 대기(예전 50ms)가 먼저 끝나 이동하던 문제 방지
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
@@ -117,7 +118,9 @@ describe('사진 고르기', () => {
     expect(
       screen.getByRole('button', { name: '뒤로 가기', hidden: true }).closest('[inert]'),
     ).not.toBeNull();
-    expect(createButton().closest('[inert]')).not.toBeNull();
+    expect(createButton()).toBeDisabled();
+    expect(screen.getByRole('button', { name: BUNDLE_SELECT_MESSAGES.previous })).toBeDisabled();
+    expect(getPageLoadingCount()).toBe(0);
     expect(router.push).not.toHaveBeenCalled();
 
     await act(() => vi.advanceTimersByTimeAsync(CREATE_DELAY_MS));

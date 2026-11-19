@@ -1,37 +1,40 @@
-/* Figma 공통 모션(팝오버 메뉴 모션): 열기 400ms Gentle easing, 38px 위로 이동하며 투명도 0%→100%, 닫기는 38px 아래로 이동하며 100%→0% */
-/* Gentle은 Figma 스프링 프리셋(stiffness 100·damping 15·mass 1)이라 400ms 구간을 cubic-bezier(0.22, 0, 0.4, 0.94)로 근사(오차 0.3% 이내) */
-/* 닫기의 시간은 Figma에 따로 없어 열기와 같은 400ms */
-/* 헤더 아래처럼 위쪽에 붙는 메뉴는 --menu-motion-offset을 음수(-38px)로 주어 위에서 아래로 열리게 함(Figma 사진 상세 설명 표) */
+/* Figma 더보기 메뉴 애니메이션(사진함_08 `7548:97687`, 2026-11-20 변경): 기준점에서 커지며 나타나고 작아지며 사라짐 */
+/* 열기 scale 0.35→1·투명도 0→1, 280ms cubic-bezier(0.2, 0.9, 0.3, 1) / 닫기 1→0.35·1→0, 180ms ease-in(0.42, 0, 1, 1) */
+/* 기준점은 트리거 쪽 모서리: 기본은 오른쪽 위(헤더 「⋯」 아래 메뉴), 아래쪽 버튼 위에서 열리는 메뉴는 --menu-motion-origin을 bottom right로 줌 */
+.menu {
+  transform-origin: var(--menu-motion-origin, top right);
+}
+
 .menu[data-state='open'] {
-  animation: menuIn 400ms cubic-bezier(0.22, 0, 0.4, 0.94) both;
+  animation: menuIn 280ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 
 .menu[data-state='closed'] {
-  animation: menuOut 400ms cubic-bezier(0.22, 0, 0.4, 0.94) both;
+  animation: menuOut 180ms cubic-bezier(0.42, 0, 1, 1) both;
   pointer-events: none;
 }
 
 @keyframes menuIn {
   from {
     opacity: 0;
-    transform: translateY(var(--menu-motion-offset, 38px));
+    transform: scale(0.35);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
 @keyframes menuOut {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 
   to {
     opacity: 0;
-    transform: translateY(var(--menu-motion-offset, 38px));
+    transform: scale(0.35);
   }
 }
 
@@ -55,7 +58,7 @@
   }
 }
 
-/* 동작 줄이기: 이동은 빼고 투명도 전환만 남김 */
+/* 동작 줄이기: 크기 변화는 빼고 투명도 전환만 남김 */
 @media (prefers-reduced-motion: reduce) {
   .menu[data-state='open'] {
     animation-name: menuFadeIn;

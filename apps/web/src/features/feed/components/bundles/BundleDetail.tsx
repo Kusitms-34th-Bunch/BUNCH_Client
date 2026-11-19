@@ -22,6 +22,7 @@ import { useClientNow } from '../../hooks/useClientNow';
 import { useCommentActions } from '../../hooks/useCommentActions';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
+import { getBundlePreview } from '../../lib/bundlePreview';
 import { type BundleBunchSource, toFeedBundleDetail, toFeedBunch } from '../../model/bundleDetail';
 import { bundleDetailQueryOptions } from '../../queries/bundleDetail';
 import { BundleDetailScreen } from './BundleDetailScreen';
@@ -221,11 +222,16 @@ export function BundleDetail({
   const failed =
     !unavailable && (detail.isError || (viewer === undefined && viewerFailed)) && !detail.data;
   if ((unavailable && !detail.data) || failed || !bundle) {
+    const previewBundle = getBundlePreview(bunchId, bundleId);
     return (
       <BundleDetailScreen
         onBack={back}
         status={{
           kind: failed ? 'failed' : unavailable && !detail.data ? 'unavailable' : 'loading',
+          preview: previewBundle && {
+            bundle: previewBundle,
+            time: now === null ? '' : formatElapsedTime(previewBundle.publishedAt, now),
+          },
           titleRef: stateTitleRef,
           onRetry: () => {
             focusTitleAfterRetry.current = true;

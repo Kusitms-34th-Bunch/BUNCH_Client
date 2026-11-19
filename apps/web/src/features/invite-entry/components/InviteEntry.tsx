@@ -6,7 +6,7 @@ import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { savePendingInvitation } from '@/shared/lib/pendingInvitation';
 import { INVITATION_INVALID_CODE, INVITE_ENTRY_MESSAGES } from '../constants/messages';
 import { useLookupInvitationMutation } from '../queries/invitation';
@@ -52,6 +52,8 @@ export function InviteEntry({ token, continueHref, onInstallApp }: InviteEntryPr
   // 같은 틱에 연달아 눌러도 한 번만 보내도록 ref로 막음(state 갱신 전에는 isPending이 아직 false)
   const submitted = useRef(false);
   const { reset } = lookup;
+  const checkDisabled = lookup.isPending || lookup.isSuccess;
+  const [checkRef, refocusCheck] = useRefocusWhenEnabled<HTMLButtonElement>(!checkDisabled);
 
   // 이동한 뒤 뒤로 가기로 이 화면이 그대로 복원되면(bfcache) 성공 상태의 로딩이 남아 버튼이 다시 동작하지 않으므로 처음 상태로 되돌림
   useEffect(() => {
@@ -79,6 +81,7 @@ export function InviteEntry({ token, continueHref, onInstallApp }: InviteEntryPr
       },
       onError: (error) => {
         submitted.current = false;
+        refocusCheck();
         toast(
           isApiError(error) && error.code === INVITATION_INVALID_CODE
             ? INVITE_ENTRY_MESSAGES.invalidInvitation
@@ -142,8 +145,10 @@ export function InviteEntry({ token, continueHref, onInstallApp }: InviteEntryPr
         <Button
           variant="brand"
           className="w-full"
-          disabled={lookup.isPending}
-          aria-busy={lookup.isPending || undefined}
+          // 확인하는 동안과 이동할 때까지 비활성(화면을 덮지 않고 누름만 막음)
+          ref={checkRef}
+          disabled={checkDisabled}
+          aria-busy={checkDisabled || undefined}
           onClick={check}
         >
           초대장 확인하기
@@ -153,9 +158,12 @@ export function InviteEntry({ token, continueHref, onInstallApp }: InviteEntryPr
 
       {/* 확인 중 상태를 스크린 리더에 알림(화면에는 숨김) */}
       <p role="status" className="sr-only">
-        {lookup.isPending ? '초대 링크를 확인하는 중이에요' : ''}
+        {lookup.isPending
+          ? '초대 링크를 확인하는 중이에요'
+          : lookup.isSuccess
+            ? '화면을 이동하는 중이에요'
+            : ''}
       </p>
-      {lookup.isPending || lookup.isSuccess ? <PageLoading /> : null}
     </main>
   );
 }

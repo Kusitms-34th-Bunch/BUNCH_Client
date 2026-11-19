@@ -627,7 +627,7 @@ describe('ProfileSetup', () => {
       expect(replace).not.toHaveBeenCalled();
       expect(toast).not.toHaveBeenCalled();
       // 시작하기가 비활성이 되므로 닉네임 입력으로 포커스를 돌려줌
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       // 닉네임을 바꾸면 다시 시작할 수 있음
       await userEvent.type(nickname(), '2');
@@ -661,7 +661,7 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(true);
       expect(replace).not.toHaveBeenCalled();
       expect(toast).not.toHaveBeenCalled();
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       await userEvent.type(nickname(), '2');
       expect(screen.queryByText(NICKNAME_PROHIBITED_MESSAGE)).toBeNull();
@@ -686,8 +686,9 @@ describe('ProfileSetup', () => {
           '프로필을 저장하는 중이에요',
         ),
       );
-      // 저장 중에는 페이지 전체 로딩(PageLoading)으로 화면을 덮고, 끝나면 걷음
-      expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
+      // 짧은 저장이라 화면을 덮지 않고, 누른 즉시 시작하기를 비활성으로 바꿈
+      expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
+      expect((start() as HTMLButtonElement).disabled).toBe(true);
 
       act(() => finish());
       await waitFor(() =>
@@ -761,7 +762,7 @@ describe('ProfileSetup', () => {
     it('빈 영역을 누르면 입력창 포커스가 풀려 키보드가 닫힌다', async () => {
       render(<ProfileSetup />);
       await userEvent.click(nickname());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       await userEvent.click(screen.getByText('먼저 나를 소개해 볼까요?'));
 
@@ -782,7 +783,7 @@ describe('ProfileSetup', () => {
       await userEvent.click(nickname());
 
       fireEvent.pointerDown(female());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       fireEvent.click(female());
       expect(female().getAttribute('aria-pressed')).toBe('true');
@@ -794,7 +795,7 @@ describe('ProfileSetup', () => {
       await userEvent.type(nickname(), '지원');
 
       fireEvent.pointerDown(start());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
       expect(start().hasAttribute('disabled')).toBe(false);
 
       fireEvent.click(start());

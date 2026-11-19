@@ -28,7 +28,7 @@
 ## 상태와 흐름
 
 - 진입: 장식(로고 묶음, 픽셀 3개)이 아래에서 올라오며 나타난다(2.4초, 한 번). **CSS 키프레임만으로**(`globals.css`의 `invite-rise-*`, `animation-fill-mode: both`) 첫 페인트부터 재생해서 JS·hydration과 무관하고, 완성된 모양이 먼저 보였다가 다시 시작하는 깜빡임이 없다.
-- 「초대장 확인하기」: `GET /invitations/{토큰}`(공개). 같은 틱의 중복 탭은 ref로 막고 요청 중에는 버튼을 잠그고 `PageLoading`을 덮는다.
+- 「초대장 확인하기」: `GET /invitations/{토큰}`(공개). 같은 틱의 중복 탭은 ref로 막고 요청 중과 확인 뒤 이동할 때까지 버튼을 잠그고 화면은 덮지 않는다(2026-11-20 기준: 짧은 저장·확인 뒤 화면 이동은 덮지 않음, `docs/architecture/motion.md` 「로딩 상태」).
   - 성공: `savePendingInvitation(토큰)` 뒤 `router.push(continueHref)`. 뒤로 가기로 이 페이지에 돌아올 수 있고, 브라우저가 화면을 그대로 복원하면(bfcache, `pageshow`의 `persisted`) 로딩과 중복 탭 잠금을 풀어 다시 확인할 수 있다.
   - 404 `INVITE_001`(없음·만료·폐기, 구분하지 않음): 토스트 「유효하지 않은 링크입니다.」, 이동하지 않고 보관하지 않는다.
   - 그 밖(네트워크·서버): 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」, 다시 누를 수 있다.
@@ -43,7 +43,7 @@
 
 ## UI와 접근성
 
-- Component mapping: 디자인 시스템 `Button`(`secondary` = 앱 설치하기, `brand` = 초대장 확인하기(기본 `primary`는 검정이라 Figma의 브랜드 파랑과 다름)), `Toaster`, 앱의 `PageLoading`. 로고는 로그인 화면과 같은 `shared/assets/images/login/wordmark.svg`(비율 171:43 = Figma 226:56.7).
+- Component mapping: 디자인 시스템 `Button`(`secondary` = 앱 설치하기, `brand` = 초대장 확인하기(기본 `primary`는 검정이라 Figma의 브랜드 파랑과 다름)), `Toaster`. 로고는 로그인 화면과 같은 `shared/assets/images/login/wordmark.svg`(비율 171:43 = Figma 226:56.7).
 - 배경 사진: Figma `image 7`을 Figma에 올라간 원본 이미지(816×1456, `download_assets`의 `rawImages`)를 JPEG 품질 90(약 210KB)으로 변환한 `public/images/invite/entry-bg.jpg`를 `next/image`(`fill`, `priority`, `unoptimized`)로 쓴다. Figma 에셋 URL의 기본 export는 574×1024로 줄어 있어 화질이 깨졌고, Next 기본 최적화(품질 75 재압축)도 건너뛴다.
 - 시맨틱: `main` 안에 `h1`(로고, 이름 「Bunch」), 배경·딤·그라데이션·픽셀 장식은 `aria-hidden`. 확인 중 상태는 항상 마운트된 `role="status"`(화면에는 숨김)로 알린다.
 
