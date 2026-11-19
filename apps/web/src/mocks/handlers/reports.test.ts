@@ -31,6 +31,20 @@ describe('가짜 서버 번들·댓글 신고', () => {
     ]);
   });
 
+  it('같은 번치가 같은 대상을 세 번째 신고하면 409 BUNCH_011이고 접수하지 않는다', async () => {
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+    const before = mockDb.get().reports.length;
+
+    expect(await report('901', { reason: 'SPAM' })).toMatchObject({
+      status: 409,
+      code: 'BUNCH_011',
+    });
+    expect(mockDb.get().reports).toHaveLength(before);
+    // 같은 번들의 댓글은 다른 대상
+    expect(await report('901/comments/5001', { reason: 'SPAM' })).toMatchObject({ status: 200 });
+  });
+
   it('삭제된 댓글·없는 댓글은 404, 내 댓글은 403, 잘못된 사유는 400이다', async () => {
     expect(await report('901/comments/5003', { reason: 'SPAM' })).toMatchObject({
       status: 404,
