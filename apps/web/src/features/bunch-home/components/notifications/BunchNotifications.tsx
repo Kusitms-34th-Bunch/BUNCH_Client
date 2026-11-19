@@ -5,7 +5,6 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toDomainId } from '@/shared/api/ids';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -35,6 +34,14 @@ export function BunchNotifications() {
   const readAll = useReadAllNotificationsMutation(bunch?.id);
   // 같은 알림을 연달아 눌러도 한 번만 열기(isPending은 다음 렌더부터 반영)
   const opening = useRef(false);
+  // 여는 사이 뒤로 가서 화면이 내려갔으면 늦게 온 성공으로 이동하지 않음(덮개가 없어 뒤로 가기를 막지 않음)
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   // 접근 불가 알림(`ACCESS_NOTICE`)은 이동할 화면 없이 이 화면에서 안내 창을 띄움
   const [noticeId, setNoticeId] = useState<string>();
   const closeNotice = () => {
@@ -64,8 +71,7 @@ export function BunchNotifications() {
 
   return (
     <>
-      {/* 여는 동안 덮개(다른 알림·버튼을 막음), 안내는 화면의 늘 있는 상태 영역에 실음 */}
-      {open.isPending ? <PageLoading /> : null}
+      {/* 여는 동안 덮개 없이 다시 누름만 막음(가드), 안내는 화면의 늘 있는 상태 영역에 실음 */}
       <BunchNotificationsScreen
         bunchName={bunch?.name}
         notifications={
@@ -84,6 +90,7 @@ export function BunchNotifications() {
           opening.current = true;
           open.mutate(notification.id, {
             onSuccess: (result) => {
+              if (!mounted.current) return;
               if (!result.available || !result.target) {
                 opening.current = false;
                 toast(BUNCH_HOME_MESSAGES.notificationUnavailable);
@@ -93,7 +100,7 @@ export function BunchNotifications() {
                 setNoticeId(toDomainId(result.target.noticeId));
                 return;
               }
-              // 이동하는 동안(덮개가 내려간 뒤 새 화면이 뜨기 전) 다시 열지 않게 가드를 풀지 않음
+              // 이동하는 동안(새 화면이 뜨기 전) 다시 열지 않게 가드를 풀지 않음
               router.push(notificationPath(result.target));
             },
             onError: () => {

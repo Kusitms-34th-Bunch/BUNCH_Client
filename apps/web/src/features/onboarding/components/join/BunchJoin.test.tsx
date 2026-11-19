@@ -147,6 +147,8 @@ describe('BunchJoin', () => {
     expect(sent).toEqual({ invitation: LINK });
     expect(screen.getByLabelText('확인한 초대').textContent).toBe('여행가조');
     expect(toast).not.toHaveBeenCalled();
+    // 덮개 없이 넘어가는 동안 다시 누르지 못하게 이동이 끝날 때까지 잠금
+    expect((done() as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('보조 코드도 서버에 확인한다', async () => {
@@ -237,6 +239,8 @@ describe('BunchJoin', () => {
       expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect((done() as HTMLButtonElement).disabled).toBe(false);
+    // 확인 중 비활성으로 잃은 초점을 완료로 돌려줌
+    await waitFor(() => expect(document.activeElement).toBe(done()));
   });
 
   it('뒤로 가기는 중단 확인 모달을 열고 계속 참여하기는 모달만 닫는다', async () => {
