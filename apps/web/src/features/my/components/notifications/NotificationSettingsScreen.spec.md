@@ -38,7 +38,7 @@
 ## 데이터 의존성
 
 - Query: `notificationSettingsQueryOptions`(key `myKeys.notificationSettings()`, `GET /members/me/push-preferences`). Mutation: `useUpdateNotificationSettingsMutation`(`PATCH`, `scope`로 직렬화, optimistic 후 실패 되돌림, 다른 요청이 남아 있으면 응답으로 덮어쓰지 않음).
-- 서버 `categories` 21개 키(화면 계층에서는 `types`로 변환)와 화면 토글 4개의 대응은 `lib/notificationPreferences.ts`(`NOTIFICATION_TYPE_KEYS`)가 맡는다. 묶인 알림이 모두 켜져 있을 때만 그 토글을 켜짐으로 보이고, 토글을 누르면 묶인 키를 모두 같은 값으로 보낸다. 뭉치 성장(9)·내보내짐(14)·번치 삭제(15)·공개 범위 바뀜(16)은 어느 토글에도 묶지 않아 보내지 않는다.
+- 서버 `categories`는 카테고리 4개(`BUNDLE_NEWS`·`MEMBER_ROLE`·`FOLLOW`·`REACTION`, 화면 계층에서는 `types`로 변환)이고 화면 토글 4개와 하나씩 짝이다(`lib/notificationPreferences.ts`의 `NOTIFICATION_CATEGORY_KEYS`). 토글을 누르면 그 카테고리만 보낸다. 서버가 2026-11-19 무렵 21개 알림 종류 키에서 카테고리로 바꿔(서버 V35) 예전 키는 400 `COMMON_001`이 되었고, 앱이 예전 키를 보내 번들·멤버 토글이 저장되지 않고 되돌아갔다(2026-11-20 팀원 제보로 확인). 내보내짐(14)·번치 삭제(15)·공개 범위 바뀜(16)은 카테고리가 없어 앱 푸시가 켜져 있으면 항상 보내고, 뭉치 성장(9)은 푸시하지 않는다.
 - 화면(`NotificationSettingsScreen`)은 `settings`, `devicePermission`, `onChangePush`, `onChangeType`, `onOpenDeviceSettings?`를 prop으로 받는다.
 
 ## UI와 접근성
@@ -77,8 +77,7 @@
 - 2-1번 전체 토글 모양: 설계서 2-1 화면은 전체 토글이 흐린 모양으로 그려져 있으나 설명상 전체 토글은 계속 누를 수 있어 일반 OFF로 구현했다.
 - 화면 전환 (제안): 설계서에 정의가 없어 MY → 프로필 수정과 같은 미는 slide를 썼다.
 - 1110판 자동 OFF 제거 (반영, #332): 받을 알림 4개를 모두 꺼도 앱 푸시는 켜진 채로 둔다. 자동 OFF·낭독 문구·초점 이동을 뺐다.
-- 뭉치 성장(9번, `CHARACTER_GROWN`) (확인됨): 뭉치 알림이 기획에서 제외돼 어느 토글에도 묶지 않고 요청에도 보내지 않는다(5.12.3 9번 삭제, `BunchNotificationsScreen.spec.md`와 같음).
-- 묶음 안 알림이 섞여 있을 때 (제안): 서버 값이 묶음 안에서 서로 다르면(다른 기기·이후 세분화) 그 토글은 꺼짐으로 보인다. 누르면 묶인 키가 모두 켜진다.
+- 뭉치 성장(9번, `CHARACTER_GROWN`) (확인됨): 뭉치 알림이 기획에서 제외돼 어느 카테고리에도 속하지 않아 서버가 푸시하지 않는다(5.12.3 9번 삭제, `BunchNotificationsScreen.spec.md`와 같음).
 - 기기 권한 읽기 (실기기 확인 필요): 쉘의 `getPermissionStatus`(`Notifications.getPermissionsAsync`)와 설정에서 돌아온 뒤 재확인을 실기기에서 확인하지 못했다. 쉘이 bridge 메서드 목록을 알려 주기 전에는 0.3초 간격으로 최대 10번 다시 확인한다.
 - 낭독 안내 (반영, #332): 설정값을 받는 동안 「알림 설정을 불러오는 중이에요」(영역을 먼저 마운트하고 문구를 나중에 채움), 화면에 머무는 중 기기 알림 권한이 바뀌면 「기기 알림이 꺼져 있어 …」·「기기 알림이 켜져서 …」를 `role="status"`로 알린다. 처음 값은 알리지 않는다. 같은 로딩 안내 방식이 `MyRoute`·`ProfileEditRoute`에는 아직 없다(영역과 문구가 함께 생김).
 - 알려진 차이 (#332): 앱 푸시 OFF로 막힌 종류 토글은 이유가 `aria-describedby`로 전달되지 않는다(기기 권한 OFF만 배너로 전달). 권한이 바뀌어 토글이 비활성이 될 때 초점이 있던 토글의 초점이 사라질 수 있다. 저장 실패 토스트는 어느 토글이 되돌아갔는지 말하지 않는다. 토스트 낭독과 되돌림 낭독은 VoiceOver·TalkBack에서 확인하지 못했다.
