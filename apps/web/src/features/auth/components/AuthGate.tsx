@@ -4,7 +4,7 @@ import { Button } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
-import { appBridge, isNativeShell } from '@/shared/bridge/client';
+import { appBridge, isHandedOffToNativeTabs, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
@@ -73,10 +73,14 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
     if (redirectTo) router.replace(redirectTo);
   }, [redirectTo, router]);
 
-  // 이 화면에서 가입 중 상태를 본 적이 있는지(방금 가입을 마친 경우와 가입 완료 회원의 직접 진입을 구분)
-  const signingUp = session?.kind === 'member' && session.onboarding.signupStatus === 'IN_PROGRESS';
+  // 이번 프로필 방문에서 가입 중 상태를 본 적이 있는지(방금 가입을 마친 경우와 가입 완료 회원의 재진입·직접 진입을 구분)
+  // 프로필을 벗어나면 지움: layout의 상태는 화면 이동에도 남아 다시 들어온 방문에 이어지지 않게 함
+  const onProfile = pathname === SIGNUP_PATHS.profile;
+  const signingUp =
+    onProfile && session?.kind === 'member' && session.onboarding.signupStatus === 'IN_PROGRESS';
   const [sawSigningUp, setSawSigningUp] = useState(false);
   if (signingUp && !sawSigningUp) setSawSigningUp(true);
+  if (!onProfile && sawSigningUp) setSawSigningUp(false);
   // 방금 가입을 마친 프로필 화면은 이동하는 동안 그대로 둠(로딩 덮개로 바꾸면 도착 화면 전환이 재생되지 않음)
   const leavingSignup =
     sawSigningUp &&
@@ -144,6 +148,8 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
     if (!ready) return;
     // 보내는 순간에도 다시 확인(같은 commit에 도착 화면이 로딩을 붙인 경우)
     const send = () => {
+      // 탭 화면을 시작한 첫 화면 WebView는 곧 버려져 보내지 않음(탭 WebView가 보냄)
+      if (isHandedOffToNativeTabs()) return;
       if (document.visibilityState === 'visible' && getPageLoadingCount() === 0) notifyAppReady();
     };
     send();

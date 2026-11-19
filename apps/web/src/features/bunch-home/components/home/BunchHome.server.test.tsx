@@ -588,9 +588,17 @@ describe('BunchHome 보던 번치에 들어갈 수 없게 됨', () => {
     );
   });
 
-  it('안내를 띄우는 동안 화면 전체 로딩을 함께 두지 않는다(앱 스플래시가 안내 창을 가린 채 남지 않게)', async () => {
+  it('안내를 받는 동안은 로딩을 두고, 안내 창이 열리면 걷는다(앱 스플래시가 안내 전에 닫히거나 안내 창을 가리지 않게)', async () => {
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      http.get('/api/members/me/bunch-access-notices/:noticeId', () => held, { once: true }),
+    );
     const client = renderHome();
     await removeMeAndRefetchHome(client);
+
+    await waitFor(() => expect(getPageLoadingCount()).toBe(1));
+    release();
 
     await screen.findByRole('alertdialog', { name: '여행쥬아 번치에서 내보내졌어요' });
     expect(getPageLoadingCount()).toBe(0);

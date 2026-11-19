@@ -42,12 +42,15 @@ export function useMyBunchMemberships() {
   // 떠나는 번치의 캐시(저장된 홈·멤버 포함)는 화면이 빠질 때 지움. 요청 중 빠져도 지우게 보낼 때 기록
   // 요청 중 빠진 뒤 실패해도 지우지만 다음 진입 때 다시 받을 뿐
   const departingId = useRef<string | null>(null);
-  useEffect(
-    () => () => {
+  // 화면이 내려갔는지(목록을 기다리는 사이 떠나면 나가기·삭제를 보내지 않음)
+  const unmounted = useRef(false);
+  useEffect(() => {
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
       if (departingId.current !== null) forgetBunchCache(departingId.current);
-    },
-    [forgetBunchCache],
-  );
+    };
+  }, [forgetBunchCache]);
 
   // 번치가 없으면(모두 나감) 번치 탭으로
   const hasNoBunch = pinnedId === null && me.isSuccess && !me.data.bunch;
@@ -69,6 +72,11 @@ export function useMyBunchMemberships() {
     }
     const seenVersion = managed.version;
     void memberships.refetch({ cancelRefetch: false }).then(({ data, isError }) => {
+      // 기다리는 사이 화면을 떠났으면 사용자가 그만둔 것으로 보고 보내지 않음(보내지 않았으니 지울 캐시도 없음)
+      if (unmounted.current) {
+        departing.current = false;
+        return;
+      }
       const latest = data && !isError ? toManagedMemberships(data) : undefined;
       if (latest && latest.version === seenVersion) {
         send(latest, bunchId, departure, onDone);

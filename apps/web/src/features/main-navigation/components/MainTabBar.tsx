@@ -14,7 +14,7 @@ import { BottomNavigation, type BottomNavigationItem } from '@app/design-system/
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { appBridge, isNativeShell } from '@/shared/bridge/client';
+import { appBridge, isNativeShell, markHandedOffToNativeTabs } from '@/shared/bridge/client';
 import { scrollPageToTop } from '@/shared/lib/scrollPageToTop';
 import {
   MAIN_TAB_PATHS,
@@ -54,7 +54,10 @@ export function MainTabBar() {
     if (!inShell) return;
     appBridge
       .setNativeTabBar({ items: NATIVE_TAB_ITEMS, selectedId })
-      .then(setUsesNativeBar)
+      .then((usesNative) => {
+        if (usesNative) markHandedOffToNativeTabs();
+        setUsesNativeBar(usesNative);
+      })
       .catch(() => setUsesNativeBar(false));
   }, [inShell, selectedId]);
 
