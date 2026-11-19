@@ -167,10 +167,11 @@ describe('BunchBlockedListScreen', () => {
     expect(screen.getByText('60개')).toBeInTheDocument();
   });
 
-  it('목록을 받는 중이면 목록도 빈 상태도 그리지 않고 로딩을 알린다', () => {
+  it('목록을 받는 중이면 목록도 빈 상태도 그리지 않고 화면 전체를 덮지 않은 채 로딩을 알린다', () => {
     renderScreen(undefined);
 
     expect(screen.getByRole('status')).toHaveTextContent(BUNCH_HOME_MESSAGES.blockedListLoading);
+    expect(screen.getByRole('button', { name: '뒤로 가기' })).toBeTruthy();
     expect(screen.queryByRole('list')).toBeNull();
     expect(screen.queryByRole('heading', { name: '아직 차단한 번치가 없어요' })).toBeNull();
   });
