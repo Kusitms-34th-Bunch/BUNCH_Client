@@ -5,14 +5,15 @@ import { ChipButton, ProfileListItem } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import type { PhotoBoxMember } from '@/features/photo-box/lib/types';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
-import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
+import { BundleLoadError } from '../BundleLoadError';
 
 // 사진함 멤버 역할을 역할 배지로 옮김(일반 멤버는 배지 없음)
 const toBadge = (role: PhotoBoxMember['role']) =>
@@ -29,9 +30,11 @@ export function BundleMemberSelect() {
   const backOr = useBackOr();
   const { photoState, retry, memberIds, toggleMember, creating, fromPhotoBox, create } =
     useBundleSelect();
+  // 만들다 실패해 「다음」이 다시 켜지면 초점을 되돌림(성공하면 이동할 때까지 만드는 중이 유지됨)
+  const [nextRef, refocusNext] = useRefocusWhenEnabled<HTMLButtonElement>(!creating);
 
   if (photoState.kind === 'loading') return <PageLoading />;
-  if (photoState.kind === 'error') return <PhotoBoxError onRetry={retry} />;
+  if (photoState.kind === 'error') return <BundleLoadError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (
       <PageShell>
@@ -45,6 +48,8 @@ export function BundleMemberSelect() {
   const candidates = members.filter((member) => member.id !== viewer.memberId);
   // 번치에서 빠진 멤버가 남아 있어도 세지 않음
   const addedCount = candidates.filter((member) => memberIds.includes(member.id)).length;
+  // 만드는 동안은 덮지 않고 「다음」만 비활성(짧은 저장 뒤 이동, motion.md 「로딩 상태」)
+  const nextDisabled = addedCount === 0 || creating;
 
   return (
     <PageShell
@@ -66,14 +71,20 @@ export function BundleMemberSelect() {
       }
       bottom={
         // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
-        <div
-          inert={creating}
-          className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t"
-        >
+        <div className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t">
           <Button
+            ref={nextRef}
             className="w-full"
-            disabled={addedCount === 0 || creating}
-            onClick={() => (fromPhotoBox ? create() : router.push(BUNDLE_SELECT_PATHS.select))}
+            disabled={nextDisabled}
+            aria-busy={creating || undefined}
+            onClick={() => {
+              if (!fromPhotoBox) {
+                router.push(BUNDLE_SELECT_PATHS.select);
+                return;
+              }
+              refocusNext();
+              create();
+            }}
           >
             {BUNDLE_SELECT_MESSAGES.next}
           </Button>
@@ -126,8 +137,6 @@ export function BundleMemberSelect() {
           })}
         </ul>
       </div>
-      {/* 만드는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩 */}
-      {creating ? <PageLoading /> : null}
     </PageShell>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
-import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -12,6 +11,7 @@ import { useLeaveDraft } from '../../hooks/useDraftExit';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { isDraftCreator } from '../../lib/permissions';
 import { markPhotoAddEntry } from '../../lib/photoAddEntry';
+import { BundleLoadError } from '../BundleLoadError';
 import { DraftScreen } from './DraftScreen';
 
 type BundleDraftProps = {
@@ -35,7 +35,7 @@ export function BundleDraft({ onImportFromGallery, galleryImporting }: BundleDra
   const draftId = state.kind === 'ready' ? state.draft.id : undefined;
   const leaveDraft = useLeaveDraft(draftId);
 
-  if (state.kind === 'error') return <PhotoBoxError onRetry={state.retry} />;
+  if (state.kind === 'error') return <BundleLoadError onRetry={state.retry} />;
   if (state.kind !== 'ready' || draftId === undefined) return <PageLoading />;
 
   return (

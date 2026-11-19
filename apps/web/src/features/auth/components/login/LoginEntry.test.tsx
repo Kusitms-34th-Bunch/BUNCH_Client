@@ -2,7 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import type { ReactElement } from 'react';
 import { act, render as renderUi, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryWrapper } from '@/shared/query/testing';
 import {
   LOGIN_FAILURE_MESSAGE,
@@ -56,6 +56,9 @@ const deferredSignIn = () => {
 };
 
 describe('LoginEntry', () => {
+  // 영상·화면 상태 spy가 실패한 테스트에서 다음 테스트로 새지 않게 되돌림
+  afterEach(() => vi.restoreAllMocks());
+
   beforeEach(() => {
     toast.mockClear();
     push.mockClear();
@@ -152,6 +155,58 @@ describe('LoginEntry', () => {
     await userEvent.click(kakao());
 
     expect(signIn).toHaveBeenCalledTimes(1);
+  });
+
+  it('로그인 중 다른 앱으로 가면 배경 영상을 멈추고, 실패해 남으면 다시 재생한다', async () => {
+    const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockImplementation(() => Promise.resolve());
+    const visibility = vi.spyOn(document, 'visibilityState', 'get');
+    const { signIn, settle } = deferredSignIn();
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
+
+    await userEvent.click(kakao());
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(pause).toHaveBeenCalledTimes(1);
+
+    visibility.mockReturnValue('visible');
+    await settle(new Error('인증 실패'));
+    expect(play).toHaveBeenCalled();
+  });
+
+  it('로그인에 성공하면 돌아온 뒤에도 영상을 다시 재생하지 않는다', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockImplementation(() => Promise.resolve());
+    const visibility = vi.spyOn(document, 'visibilityState', 'get');
+    const { signIn, settle } = deferredSignIn();
+    render(
+      <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
+    );
+
+    await userEvent.click(kakao());
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await settle('success');
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(NEXT_PATH));
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it('로그인 중이 아니면 화면을 벗어나도 영상을 멈추지 않는다', () => {
+    const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    render(<LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />);
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(pause).not.toHaveBeenCalled();
   });
 
   it('실패하면 안내 토스트를 보이고 버튼이 처음 상태로 돌아온다', async () => {

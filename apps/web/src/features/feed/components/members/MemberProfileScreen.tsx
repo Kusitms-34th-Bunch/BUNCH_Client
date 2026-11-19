@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { isUnavailableTarget } from '@/shared/api/errorStatus';
+import { openTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -197,8 +198,11 @@ export function MemberProfileScreen({ memberId, links, follow }: MemberProfileSc
                     imageSrc={bunch.imageSrc}
                     isPrivate={bunch.isPrivate}
                     privateLabel={text.privateBunch}
+                    // 내 번치는 번치 탭 첫 화면이라 iOS 쉘에서는 번치 탭으로 전환
                     onProfileClick={() =>
-                      router.push(own ? links.bunchHome : links.otherBunch(bunch.id))
+                      own
+                        ? openTabPath(links.bunchHome, (href) => router.push(href))
+                        : router.push(links.otherBunch(bunch.id))
                     }
                     action={
                       // 현재 번치 자신의 줄에는 버튼 없음(서버의 showFollowButton, 소속 번치가 없으면 「팔로우」만)

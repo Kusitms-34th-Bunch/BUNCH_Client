@@ -1,6 +1,6 @@
 'use client';
 
-import type { RefObject } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import {
   LineCalendarMediumIcon,
   LineDownloadMediumIcon,
@@ -36,10 +36,13 @@ const ITEMS: readonly PhotoActionMenuItem<PhotoMenuAction>[] = [
   },
 ];
 
+// 아래쪽 플로팅 「⋯」 위에서 열리므로 오른쪽 아래 모서리에서 커지며 열림(Figma 사진함_17 `7548:97679`의 기준점 top right는 헤더 메뉴 기준이라 버튼 쪽으로 바꿈)
+const FROM_BOTTOM_RIGHT = { '--menu-motion-origin': 'bottom right' } as CSSProperties;
+
 /**
- * 선택 모드의 「⋯」 메뉴: 저장·번들 만들기·날짜 바꾸기, 구분선 아래 빨간 삭제(Figma 사진함_08)
+ * 선택 모드의 「⋯」 메뉴: 저장·번들 만들기·날짜 바꾸기, 구분선 아래 빨간 삭제(Figma 사진함_17 `7548:97550`·`7548:97595`)
  * 위치는 호출하는 쪽이 정함(「⋯」 위 10px, 오른쪽 정렬)
  */
 export function PhotoSelectionMenu(props: PhotoSelectionMenuProps) {
-  return <PhotoActionMenu label="사진 메뉴" items={ITEMS} {...props} />;
+  return <PhotoActionMenu label="사진 메뉴" items={ITEMS} style={FROM_BOTTOM_RIGHT} {...props} />;
 }

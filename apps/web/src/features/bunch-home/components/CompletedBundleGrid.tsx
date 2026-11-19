@@ -1,6 +1,6 @@
-import type { RefObject } from 'react';
 import { LineMemberSmallIcon } from '@app/design-system';
 import Link from 'next/link';
+import { type RefObject, useState } from 'react';
 import type { CompletedBundle } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
@@ -48,16 +48,13 @@ export function CompletedBundleGrid({
             }}
             className="focus-visible:outline-border-brand block size-full focus-visible:outline-2 focus-visible:-outline-offset-2"
           >
-            {/* 데이터 주소·외부 이미지를 그대로 쓰므로 next/image 최적화 대상이 아님 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <CoverImage
               src={bundle.coverSrc}
               alt={
                 bundle.memberOnly
                   ? `${bundle.title}, ${BUNCH_HOME_MESSAGES.bundleMemberOnly}`
                   : bundle.title
               }
-              className="size-full object-cover"
             />
           </Link>
           {bundle.memberOnly && (
@@ -71,5 +68,28 @@ export function CompletedBundleGrid({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** 대표 사진: 칸의 회색 배경 위에서 다 받으면 짧게 나타남(받지 못하면 회색 칸 유지) */
+function CoverImage({ src, alt }: { src: string; alt: string }) {
+  // 받은 사진 주소. 주소가 바뀌면 다시 숨겼다가 받은 뒤 나타남
+  const [loadedSrc, setLoadedSrc] = useState<string>();
+  const loaded = loadedSrc === src;
+  return (
+    // 데이터 주소·외부 이미지를 그대로 쓰므로 next/image 최적화 대상이 아님
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      ref={(img) => {
+        // 이미 받아 둔 사진(캐시)은 load 전에 끝나 있어 바로 보임
+        if (img?.complete && img.naturalWidth > 0) setLoadedSrc(src);
+      }}
+      src={src}
+      alt={alt}
+      decoding="async"
+      onLoad={() => setLoadedSrc(src)}
+      data-loaded={loaded || undefined}
+      className="size-full object-cover opacity-0 transition-opacity duration-200 ease-out data-loaded:opacity-100 motion-reduce:transition-none"
+    />
   );
 }

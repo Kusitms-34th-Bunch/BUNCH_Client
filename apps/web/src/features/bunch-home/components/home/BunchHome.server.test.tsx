@@ -15,6 +15,7 @@ import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { getMyBunches } from '@/shared/api/myBunches';
+import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -585,6 +586,22 @@ describe('BunchHome 보던 번치에 들어갈 수 없게 됨', () => {
     await waitFor(() =>
       expect(mockDb.get().bunchAccessNotices.some((notice) => notice.id === NOTICE_ID)).toBe(false),
     );
+  });
+
+  it('안내를 받는 동안은 로딩을 두고, 안내 창이 열리면 걷는다(앱 스플래시가 안내 전에 닫히거나 안내 창을 가리지 않게)', async () => {
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      http.get('/api/members/me/bunch-access-notices/:noticeId', () => held, { once: true }),
+    );
+    const client = renderHome();
+    await removeMeAndRefetchHome(client);
+
+    await waitFor(() => expect(getPageLoadingCount()).toBe(1));
+    release();
+
+    await screen.findByRole('alertdialog', { name: '여행쥬아 번치에서 내보내졌어요' });
+    expect(getPageLoadingCount()).toBe(0);
   });
 
   it('안내를 그냥 닫아도 최근 번치로 바뀌고, 안내는 전환 목록의 접근 불가 줄로 남는다', async () => {

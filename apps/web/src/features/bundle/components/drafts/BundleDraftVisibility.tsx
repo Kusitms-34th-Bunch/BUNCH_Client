@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { PhotoBoxError } from '@/features/photo-box/components/PhotoBoxError';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
@@ -12,6 +11,7 @@ import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 import { getDraftAccess } from '../../lib/permissions';
 import { getPublishBlockers } from '../../lib/publish';
+import { BundleLoadError } from '../BundleLoadError';
 import { DraftVisibilityScreen } from './DraftVisibilityScreen';
 
 type BundleDraftVisibilityProps = {
@@ -59,7 +59,7 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
     if (notReady && draftId !== undefined) router.replace(BUNDLE_PATHS.draft(draftId));
   }, [notReady, draftId, router]);
 
-  if (state.kind === 'error') return <PhotoBoxError onRetry={state.retry} />;
+  if (state.kind === 'error') return <BundleLoadError onRetry={state.retry} />;
   // 업로드 중에는 초안이 사라져도 이 화면(과 로딩)을 유지
   if (!uploading && (state.kind !== 'ready' || !draft || notReady)) return <PageLoading />;
 

@@ -21,14 +21,14 @@ export type MenuProps = Omit<ComponentProps<'div'>, 'role'> & {
 
 const itemSelector = '[role="menuitem"]';
 
-// 닫히는 모션(400ms)이 끝나지 않아도(애니메이션 취소, 조상 display:none, 탭 숨김 등) 메뉴가 남지 않도록 여유를 둔 뒤 onExited를 한 번 더 부름
-const EXIT_FALLBACK_MS = 500;
+// 닫히는 모션(180ms)이 끝나지 않아도(애니메이션 취소, 조상 display:none, 탭 숨김 등) 메뉴가 남지 않도록 여유를 둔 뒤 onExited를 한 번 더 부름
+const EXIT_FALLBACK_MS = 300;
 
 /**
  * 메뉴 컨테이너(Figma `Menu`): `MenuItem`과 `MenuDivider`를 담는 `role="menu"` 카드
  * 방향키·Home·End로 항목 포커스를 옮김. 메뉴와 항목은 tabIndex=-1이라 Tab으로 들어올 수 없으므로 열 때 호출하는 쪽이 메뉴(ref.focus()) 또는 첫 항목에 포커스를 주어야 함
  * 열고 닫는 위치·상태, Esc·바깥 클릭·Tab 이탈 닫기, 트리거의 aria-haspopup="menu"·aria-expanded도 호출하는 쪽이 맡음
- * 모션: 화면에 나타날 때 38px 위로 올라오며 나타나고(400ms), `open={false}`로 바꾸면 38px 내려가며 사라진 뒤 `onExited` 호출
+ * 모션: 화면에 나타날 때 기준점(기본 오른쪽 위)에서 커지며 나타나고(280ms), `open={false}`로 바꾸면 작아지며 사라진 뒤(180ms) `onExited` 호출
  */
 export const Menu = ({
   className,
@@ -103,7 +103,7 @@ export const Menu = ({
       inert={open ? undefined : true}
       className={cn(
         motion.menu,
-        'gap-s2 rounded-r8 bg-surface-primary p-s4 focus-visible:outline-border-brand flex w-43 flex-col shadow-[0_6px_8.5px_rgba(0,0,0,0.2)] focus-visible:outline-2 focus-visible:-outline-offset-2',
+        'gap-s2 rounded-r8 bg-surface-primary p-s4 focus-visible:outline-border-brand flex w-43 flex-col shadow-[0_0_13px_rgba(0,0,0,0.1)] focus-visible:outline-2 focus-visible:-outline-offset-2',
         className,
       )}
       onKeyDown={handleKeyDown}

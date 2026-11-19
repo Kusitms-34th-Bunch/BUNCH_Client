@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { openTabPath } from '@/shared/bridge/client';
 import { QueryBoundary } from '@/shared/components/boundary/QueryBoundary';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
@@ -197,7 +198,8 @@ function PlaceList({
       listVersion={listVersion}
       loadingMore={loadingMore}
       onLoadMore={loadMore}
-      onBrowseFeed={() => router.push(feedHref)}
+      // 피드는 다른 탭 첫 화면이라 iOS 쉘에서는 피드 탭으로 전환
+      onBrowseFeed={() => openTabPath(feedHref, (href) => router.push(href))}
     />
   );
 }

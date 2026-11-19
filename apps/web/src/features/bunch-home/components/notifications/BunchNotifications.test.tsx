@@ -103,6 +103,66 @@ describe('BunchNotifications(가짜 서버)', () => {
     );
   });
 
+  // 열기 응답을 테스트가 정한 때까지 미룸(돌려주지 않으면 기본 handler로 넘어감)
+  const holdOpen = () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/api/bunches/:bunchId/notifications/:notificationId/open', async () => {
+        await gate;
+      }),
+    );
+    return release;
+  };
+
+  it('여는 사이 뒤로 가기를 누르면 늦게 온 성공으로 알림 화면에 가지 않는다', async () => {
+    const user = userEvent.setup();
+    const release = holdOpen();
+    renderList();
+    const length = vi.spyOn(window.history, 'length', 'get').mockReturnValue(3);
+    onTestFinished(() => length.mockRestore());
+
+    const [, bundle] = await cards();
+    await user.click(bundle!);
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    release();
+
+    await waitFor(() => expect(unreadOf(MOCK_BUNCH_ID)).toBe(2));
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('여는 사이 알림 설정 안내 링크를 누르면 늦게 온 성공으로 알림 화면에 가지 않는다', async () => {
+    const user = userEvent.setup();
+    const release = holdOpen();
+    renderList();
+
+    const [, bundle] = await cards();
+    await user.click(bundle!);
+    await user.click(
+      screen.getByRole('link', { name: BUNCH_HOME_MESSAGES.notificationSettingsNudge }),
+    );
+    release();
+
+    await waitFor(() => expect(unreadOf(MOCK_BUNCH_ID)).toBe(2));
+    expect(push).not.toHaveBeenCalledWith('/bunches/1/bundles/1');
+  });
+
+  it('여는 사이 「모두 읽음」을 눌러도 이동은 그대로 이어진다', async () => {
+    const user = userEvent.setup();
+    const release = holdOpen();
+    renderList();
+
+    const [, bundle] = await cards();
+    await user.click(bundle!);
+    await user.click(screen.getByRole('button', { name: '모두 읽음' }));
+    release();
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1'));
+  });
+
   it('갈 화면이 사라진 알림은 이동하지 않고 볼 수 없다고 알린다', async () => {
     const user = userEvent.setup();
     renderList();

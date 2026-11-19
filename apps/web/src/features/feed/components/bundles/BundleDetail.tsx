@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { isUnavailableTarget } from '@/shared/api/errorStatus';
+import { openTabPath } from '@/shared/bridge/client';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
@@ -21,6 +22,7 @@ import { useClientNow } from '../../hooks/useClientNow';
 import { useCommentActions } from '../../hooks/useCommentActions';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
+import { getBundlePreview } from '../../lib/bundlePreview';
 import { type BundleBunchSource, toFeedBundleDetail, toFeedBunch } from '../../model/bundleDetail';
 import { bundleDetailQueryOptions } from '../../queries/bundleDetail';
 import { BundleDetailScreen } from './BundleDetailScreen';
@@ -220,11 +222,16 @@ export function BundleDetail({
   const failed =
     !unavailable && (detail.isError || (viewer === undefined && viewerFailed)) && !detail.data;
   if ((unavailable && !detail.data) || failed || !bundle) {
+    const previewBundle = getBundlePreview(bunchId, bundleId);
     return (
       <BundleDetailScreen
         onBack={back}
         status={{
           kind: failed ? 'failed' : unavailable && !detail.data ? 'unavailable' : 'loading',
+          preview: previewBundle && {
+            bundle: previewBundle,
+            time: now === null ? '' : formatElapsedTime(previewBundle.publishedAt, now),
+          },
           titleRef: stateTitleRef,
           onRetry: () => {
             focusTitleAfterRetry.current = true;
@@ -291,12 +298,11 @@ export function BundleDetail({
       announcement={comment.announcement}
       actions={{
         more,
+        // 내 번치는 번치 탭 첫 화면이라 iOS 쉘에서는 번치 탭으로 전환(지금 탭이 번치면 그대로 이동)
         openBunch: () =>
-          router.push(
-            viewer?.bunchId === bundle.bunch.id
-              ? links.bunchHome
-              : links.otherBunch(bundle.bunch.id),
-          ),
+          viewer?.bunchId === bundle.bunch.id
+            ? openTabPath(links.bunchHome, (href) => router.push(href))
+            : router.push(links.otherBunch(bundle.bunch.id)),
         openMembers: () => openMembers(bundle.members),
         openPlaces: () => openPlaces(bundle.id, bundle.places),
         like: () => asBunch(() => likes.toggle(bundle)),

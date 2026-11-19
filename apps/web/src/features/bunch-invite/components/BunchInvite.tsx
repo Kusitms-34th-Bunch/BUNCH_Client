@@ -14,7 +14,6 @@ import { useRouter } from 'next/navigation';
 import { useId } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { copyText } from '@/shared/lib/clipboard';
 
 // 보이는 라벨과 입력창의 접근성 이름 일치
@@ -22,7 +21,7 @@ const LINK_LABEL = '초대 링크';
 type BunchInviteProps = {
   /** 멤버에게 보낼 초대 링크. 아직 받지 못했으면 없음(복사·공유 불가) */
   inviteLink: string | undefined;
-  /** 링크를 불러오는 중이면 페이지 전체 로딩을 덮고, 링크가 채워지면 풀림 */
+  /** 링크를 불러오는 중이면 입력란에 자리 표시를 그리고, 링크가 채워지면 풀림 */
   loading?: boolean | undefined;
   /** 링크를 불러오지 못했을 때 「다시 불러오기」로 호출. 없으면 불러오기 실패 표시를 하지 않음 */
   onRetry?: (() => void) | undefined;
@@ -118,7 +117,6 @@ export function BunchInvite({
             <LineCopyLargeIcon />
           </button>
         </div>
-        {loading ? <PageLoading /> : null}
         {/* 상태 변화는 항상 마운트된 이 영역의 문구로 알림(새로 끼워 넣은 영역은 낭독되지 않을 수 있음) */}
         <p role="status" className="sr-only">
           {loading
@@ -128,7 +126,7 @@ export function BunchInvite({
               : ''}
         </p>
         {onRetry && inviteLink === undefined ? (
-          // 다시 불러오는 동안에도 버튼을 그대로 두어 키보드 초점을 잃지 않음(로딩 덮개가 누름을 막고, 끝나면 초점을 되돌림)
+          // 다시 불러오는 동안에도 버튼을 그대로 두어 키보드 초점을 잃지 않음(불러오는 중에는 눌러도 다시 요청하지 않음)
           <div className="bg-surface-secondary rounded-r3 px-padding-p8 py-padding-p5 gap-s3 flex items-center justify-between">
             <p className="typography-body-3-regular text-text-tertiary">
               초대 링크를 불러오지 못했어요.
@@ -136,14 +134,27 @@ export function BunchInvite({
             <button
               type="button"
               aria-busy={loading || undefined}
-              onClick={onRetry}
-              className="typography-body-3-semibold text-text-primary focus-visible:outline-border-brand cursor-pointer underline focus-visible:outline-2 focus-visible:outline-offset-2"
+              aria-disabled={loading || undefined}
+              onClick={() => {
+                if (!loading) onRetry();
+              }}
+              className="typography-body-3-semibold text-text-primary focus-visible:outline-border-brand cursor-pointer underline focus-visible:outline-2 focus-visible:outline-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
             >
               다시 불러오기
             </button>
           </div>
         ) : (
-          <TextField id={linkId} label={LINK_LABEL} readOnly value={inviteLink ?? ''} />
+          <TextField
+            id={linkId}
+            label={LINK_LABEL}
+            readOnly
+            value={inviteLink ?? ''}
+            placeholder=""
+            aria-busy={loading || undefined}
+            // 링크를 받는 동안 입력란 안 글자 자리(Figma에 없는 상태라 다른 스켈레톤과 같은 회색)
+            editing={Boolean(loading)}
+            editingContent={<span className="bg-surface-secondary rounded-r2 block h-5 w-40" />}
+          />
         )}
         <p className="bg-surface-secondary rounded-r3 px-padding-p8 py-padding-p5 gap-s3 typography-body-3-regular text-text-tertiary flex items-center">
           <LineAlertSmallIcon className="text-icon-tertiary shrink-0" />

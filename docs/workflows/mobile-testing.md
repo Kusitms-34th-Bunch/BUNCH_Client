@@ -45,7 +45,7 @@ yarn dev
 실제 iPhone은 PC와 같은 Wi-Fi에 연결하고 QR을 연다. Mac의 시뮬레이터는 터미널에서 `i`를 누른다.
 Expo Go에서는 앱 고유 설정·네이티브 모듈을 모두 검증할 수 없다.
 앱스토어의 Expo Go는 최신 SDK만 지원하므로 쉘의 SDK가 최신보다 낮으면 열리지 않는다(쉘은 SDK 58).
-iOS 시스템 탭 바(expo-router 네이티브 탭)와 탭 라벨 글꼴(`app.json`의 `expo-font` plugin)은 번치 개발 앱 기준이다. 이 의존성이나 `app.json`을 바꾸면 `pnpm ios:sync`(prebuild, `pod install` 포함) 뒤 개발 앱을 다시 빌드해야 반영된다.
+iOS 시스템 탭 바(expo-router 네이티브 탭)는 번치 개발 앱 기준이다. config plugin을 뺀 변경(#462의 `expo-font` 제거 등)은 `pnpm ios:sync:clean`으로 다시 만든다. 이 의존성이나 `app.json`을 바꾸면 `pnpm ios:sync`(prebuild, `pod install` 포함) 뒤 개발 앱을 다시 빌드해야 반영된다.
 
 ## iOS 개발 앱 실행 (macOS)
 
@@ -125,6 +125,13 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 첫 EAS 빌드에서는 독립 pnpm 구성이 선택되는지 확인한다.
 업로드에 `packages/bridge`, 앱 lockfile이 포함되고 `.env.local`이 제외되는지도 확인한다.
 자세한 절차는 [Expo 개발 빌드](https://docs.expo.dev/develop/development-builds/introduction/)와 [내부 배포](https://docs.expo.dev/build/internal-distribution/)를 따른다.
+
+### 버전과 빌드 번호
+
+앱 버전은 `app.json`의 `version`, iOS 빌드 번호는 `ios.buildNumber`에 둔다(2026-11-20). prebuild(`ios:sync`)가 이 값을 `Info.plist`의 `CFBundleShortVersionString`·`CFBundleVersion`에 숫자로 쓴다. 그래서 Xcode General 탭의 Build 칸을 바꿔도 Archive에는 반영되지 않는다.
+
+- Xcode Archive로 올릴 때: `ios.buildNumber`를 App Store Connect에 올린 같은 버전의 마지막 번호보다 크게 올리고 커밋한 뒤 `pnpm ios:sync`를 하고 Archive한다. 버전을 바꾸면(`version`) 빌드 번호는 다시 1부터 써도 된다.
+- EAS로 올릴 때: `eas.json`이 `appVersionSource: remote`·`autoIncrement`라 EAS가 번호를 관리하고 `ios.buildNumber`는 쓰지 않는다. 두 방법을 섞으면 번호가 겹칠 수 있으니 EAS 첫 빌드 전에 `pnpm dlx eas-cli@latest build:version:set -p ios`로 마지막 번호에 맞춘다.
 
 ### App Store 제출용 환경변수
 

@@ -4,6 +4,7 @@ import { isApiError } from '@app/api-core';
 import { useQuery } from '@tanstack/react-query';
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { openTabPath } from '@/shared/bridge/client';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
@@ -99,11 +100,11 @@ export function OtherBunchFollows({
       viewerId={viewerId}
       initialTab={initialTab}
       locked={home.data !== undefined && !internal && !canView}
-      // 내 번치(명의) 행은 번치 탭, 그 밖은 그 번치 프로필
+      // 내 번치(명의) 행은 번치 탭(iOS 쉘은 탭 전환), 그 밖은 그 번치 프로필
       onOpenBunch={(row) =>
-        router.push(
-          row.id === viewerId ? BUNCH_HOME_PATHS.home : BUNCH_HOME_PATHS.otherBunch(row.id),
-        )
+        row.id === viewerId
+          ? openTabPath(BUNCH_HOME_PATHS.home, (href) => router.push(href))
+          : router.push(BUNCH_HOME_PATHS.otherBunch(row.id))
       }
       onBack={back}
       onFollow={follow}

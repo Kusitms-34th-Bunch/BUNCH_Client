@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { ApiMockingGate } from '@/mocks/ApiMockingGate';
 import './globals.css';
+import { NativeShellViewport } from '@/shared/components/layout/NativeShellViewport';
 
 export const metadata: Metadata = {
   title: 'bunch',
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     // 네이티브 쉘이 hydration 전에 html.style에 기기별 Safe Area를 주입함
     <html lang="ko" suppressHydrationWarning>
       <body>
+        <NativeShellViewport />
         <ApiMockingGate>{children}</ApiMockingGate>
       </body>
     </html>

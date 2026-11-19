@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useQuery } from '@tanstack/react-query';
+import { notifyManager, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft, DraftPhoto } from '../lib/types';
@@ -89,9 +89,14 @@ export function useDraftPicks(
     });
   }, [cache, bunchId, bundleId]);
 
+  // 희망 상태는 방금 캐시에 쓴 서버 값이 화면의 초안(query 구독)에 닿은 뒤에 지움
+  // 캐시 쓰기는 구독자에게 다음 차례에 알리고 희망 상태 지우기는 바로 반영돼, 바로 지우면 한 번은 둘 다 없는 옛 픽이 보임(픽하기 모션이 꺼졌다 처음부터 다시 켜짐)
+  // 지우기 전에 다시 눌러 희망 상태가 바뀌었으면 남김
   const settle = useCallback(
     (photoId: string) => {
-      if (bundleId) pickIntents.clear(bundleId, photoId);
+      if (!bundleId) return;
+      const settled = pickIntents.get(bundleId, photoId);
+      notifyManager.schedule(() => pickIntents.clearIf(bundleId, photoId, settled));
     },
     [bundleId],
   );

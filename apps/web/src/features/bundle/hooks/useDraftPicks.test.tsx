@@ -109,6 +109,35 @@ describe('useDraftPicks', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
+  it('저장 응답을 캐시에 쓴 직후에도 희망 상태를 바로 지우지 않아, 화면의 초안이 늦게 바뀌어도 내 픽이 빠지지 않는다', async () => {
+    const { client, hook, photoIds, queryKey, refresh } = await setup();
+    const [first] = photoIds;
+    // 캐시에 내 픽이 쓰인 직후(같은 차례의 microtask)의 희망 상태: 화면의 초안(상위 Provider)은 아직 옛 값인 순간
+    let intentRightAfterWrite: boolean | undefined;
+    let seen = false;
+    const unsubscribe = client.getQueryCache().subscribe(() => {
+      const picked = client.getQueryData(queryKey)?.photos.find((photo) => photo.id === first)
+        ?.picks?.pickedByMe;
+      if (seen || !picked) return;
+      seen = true;
+      queueMicrotask(() => {
+        intentRightAfterWrite = Object.values(pickIntents.getSnapshot())[0];
+      });
+    });
+
+    act(() => hook.result.current.toggle(first!));
+    await waitFor(() => expect(seen).toBe(true));
+    unsubscribe();
+    // 바로 지우면 옛 초안 + 희망 상태 없음으로 한 번 그려져 픽하기 모션이 꺼졌다 처음부터 다시 켜짐
+    expect(intentRightAfterWrite).toBe(true);
+
+    // 초안이 새 값으로 바뀐 뒤 희망 상태를 지워도 내 픽은 그대로
+    refresh();
+    await waitFor(() => expect(pickIntents.getSnapshot()).toEqual({}));
+    refresh();
+    expect(hook.result.current.picks[first!]).toEqual([me]);
+  });
+
   it('다시 누르면 픽을 해제한다', async () => {
     const { hook, detail, refresh, photoIds } = await setup();
     const [first] = photoIds;

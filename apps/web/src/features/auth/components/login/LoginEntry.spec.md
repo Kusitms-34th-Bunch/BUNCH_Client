@@ -50,7 +50,7 @@
 
 ## UI와 접근성
 
-- Component mapping: `web`의 `LoginButton`(브랜드별 색·로고, 눌림 75ms Ease Out은 컴포넌트가 처리). 브랜딩 영역은 이 화면 전용이다. 워드마크는 `src/shared/assets/images/login/wordmark.svg`(흰 픽셀 SVG)를 import해 `next/image`로 표시한다(Figma `5931:161462`, 로그인 `5878:77389`). 브랜딩 변경으로 별 심볼은 뺐다. 배경은 화면 전체(Safe Area 포함)를 덮는 영상(`public/videos/login.mp4`, `muted`·`loop`·`playsInline`·자동 재생)과 첫 프레임 포스터(`login-poster.jpg`)이고, 위에 검정 겹침(위 절반 40%, 61%부터 60%)을 깐다. 동작 줄이기 설정이면 영상 요소를 그리지 않아(`useReducedMotion`) 영상을 받지도 재생하지도 않고 포스터만 보인다.
+- Component mapping: `web`의 `LoginButton`(브랜드별 색·로고, 눌림 75ms Ease Out은 컴포넌트가 처리). 브랜딩 영역은 이 화면 전용이다. 워드마크는 `src/shared/assets/images/login/wordmark.svg`(흰 픽셀 SVG)를 import해 `next/image`로 표시한다(Figma `5931:161462`, 로그인 `5878:77389`). 브랜딩 변경으로 별 심볼은 뺐다. 배경은 화면 전체(Safe Area 포함)를 덮는 영상(`public/videos/login.mp4`, `muted`·`loop`·`playsInline`·자동 재생)과 첫 프레임 포스터(`login-poster.jpg`)이고, 위에 검정 겹침(위 절반 40%, 61%부터 60%)을 깐다. 동작 줄이기 설정이면 영상 요소를 그리지 않아(`useReducedMotion`) 영상을 받지도 재생하지도 않고 포스터만 보인다. 로그인이 진행 중일 때 앱이 백그라운드로 가면(카카오톡 앱 로그인 등) 영상을 멈춘다. 돌아온 뒤에는 로그인을 마칠 때까지(성공하면 화면을 떠날 때까지) 멈춘 채로 두고, 취소·실패로 이 화면에 남으면 다시 재생한다. 돌아온 뒤 영상이 다시 재생되며 로그인 화면이 처음부터 나오는 것처럼 보인다는 QA 제보에 대한 조치다(실기기 미확인).
 - 첫 진입 모션(디자이너 요청, Figma·화면설계서 값 없음): 워드마크와 버튼 3개가 5px 아래에서 올라오며 나타난다. 곡선과 길이는 번치 만들기 단계 제목과 같은 `animate-step-title-in`(600ms)이다. 워드마크가 200ms 뒤 먼저 시작하고, 버튼은 350ms 뒤부터 카카오 → Google → Apple 순으로 60ms 간격이라 약 1.07초에 모두 끝난다. 인트로에서 넘어오면 페이지가 디졸브(나가기 250ms → 들어오기 250ms, `INTRO_LOGIN_DISSOLVE_DURATION_MS`)로 나타나는 동안 모션이 지나가 버리지 않게 늦게 시작한다. 크기 변화·튕김은 없다. 동작 줄이기 설정이면 이동 없이 투명도만 바뀐다. 버튼은 감싼 요소에 모션을 건다. 버튼 자체에 걸면 끝난 뒤 남는 투명도 값이 비활성(40%) 표시를 덮기 때문이다. 모션 중에도 버튼을 누를 수 있다.
 - Keyboard·focus·accessible name: 워드마크 이미지가 화면 제목(`h1`, 이름 「Bunch」)이고, 배경 영상·겹침은 `aria-hidden`이다. 버튼 이름은 「카카오 로그인」「Google로 계속하기」「Apple로 계속하기」(Figma 문구)이고 Tab 순서는 화면 순서와 같다. 비활성 버튼은 native `disabled`라 포커스가 가지 않는다. 로그인 실패 토스트는 DS `Toaster`가 알린다. `main`은 `PageShell`이 하나만 만든다.
 - Responsive·긴 텍스트·overflow: 버튼 폭은 `w-full`(화면 좌우 16px), 버튼 글자는 길면 잘린다(`LoginButton`). 375×812와 390×844에서 가로 넘침이 없다. 브랜딩 영역은 본문 영역 아래쪽(버튼 위)에 붙고, 화면이 낮아지면 본문이 스크롤된다.
@@ -67,7 +67,7 @@
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/login`이 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)
 - [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
 - [x] 상태별 UI: 기본·진행 중(누른 버튼 / 나머지 비활성)·실패·취소·성공 잠금을 테스트로 확인. 진행 중 버튼의 실제 모양은 눈으로 확인하지 못함
-- [x] 관련 test: `LoginEntry.test.tsx`(제목·main, 배경 영상 자동 재생 조건(`muted`·`playsInline`·`loop`)과 낭독 제외, 동작 줄이기 시 영상 없음, 버튼 순서, 소셜별 호출, 진행 중 상태, 연타 방지, 실패·취소·성공, 재시도, 앱 밖에서 누르면 실패 토스트, 진행 중 상태 안내)와 `socialSignIn.test.ts`(토큰·nonce 전달, Google nonce 생략, 취소, 쉘 밖·미지원, SDK 오류, 계약 위반·provider 불일치, BFF 실패. bridge와 `bffApi`는 가짜로 대체)
+- [x] 관련 test: `LoginEntry.test.tsx`(제목·main, 배경 영상 자동 재생 조건(`muted`·`playsInline`·`loop`)과 낭독 제외, 동작 줄이기 시 영상 없음, 로그인 중 백그라운드에서 영상 멈춤·실패 뒤 다시 재생, 버튼 순서, 소셜별 호출, 진행 중 상태, 연타 방지, 실패·취소·성공, 재시도, 앱 밖에서 누르면 실패 토스트, 진행 중 상태 안내)와 `socialSignIn.test.ts`(토큰·nonce 전달, Google nonce 생략, 취소, 쉘 밖·미지원, SDK 오류, 계약 위반·provider 불일치, BFF 실패. bridge와 `bffApi`는 가짜로 대체)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
 - [x] Chromium(dev 서버, 창 1280×577)에서 영상 자동 재생, 앱 폭 전체를 덮는 배경, (옛 구성 기준 값, 새 구성은 워드마크↔버튼 40·버튼 아래 14로 바뀌어 다시 측정 전)를 측정함. 375×812 화면과 실기기(iOS WebView 자동 재생)는 확인하지 못함
 

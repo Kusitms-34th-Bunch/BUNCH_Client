@@ -147,6 +147,8 @@ describe('BunchJoin', () => {
     expect(sent).toEqual({ invitation: LINK });
     expect(screen.getByLabelText('확인한 초대').textContent).toBe('여행가조');
     expect(toast).not.toHaveBeenCalled();
+    // 덮개 없이 넘어가는 동안 다시 누르지 못하게 이동이 끝날 때까지 잠금
+    expect((done() as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('보조 코드도 서버에 확인한다', async () => {
@@ -237,6 +239,34 @@ describe('BunchJoin', () => {
       expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
     );
     expect((done() as HTMLButtonElement).disabled).toBe(false);
+    // 확인 중 비활성으로 잃은 초점을 완료로 돌려줌
+    await waitFor(() => expect(document.activeElement).toBe(done()));
+  });
+
+  it('확인 중 입력을 비운 뒤 오류가 나도 새 링크를 입력하는 동안 초점을 빼앗지 않는다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/api/invitations/verify', async () => {
+        await gate;
+        return fail(429, 'REQUEST_002');
+      }),
+    );
+    renderJoin();
+    await userEvent.type(input(), LINK);
+    await userEvent.click(done());
+
+    await userEvent.clear(input());
+    release();
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+
+    await userEvent.type(input(), LINK);
+    expect(document.activeElement).toBe(input());
+    expect((input() as HTMLInputElement).value).toBe(LINK);
   });
 
   it('뒤로 가기는 중단 확인 모달을 열고 계속 참여하기는 모달만 닫는다', async () => {

@@ -469,6 +469,12 @@ describe('ProfileSetup', () => {
   });
 
   it('시작하기를 누르면 프로필을 저장하고 직접 이동하지는 않는다(도착 화면은 가드가 정함)', async () => {
+    // 저장 뒤 다시 읽은 가입 상태가 가입 완료(가드가 도착 화면으로 옮김)
+    server.use(
+      http.get('/api/members/me/onboarding', () =>
+        ok({ memberId: 1, signupStatus: 'COMPLETED', termsAccepted: true }),
+      ),
+    );
     render(<ProfileSetup />);
     await userEvent.type(nickname(), ' 지원 ');
 
@@ -477,11 +483,43 @@ describe('ProfileSetup', () => {
     await saved();
     expect(replace).not.toHaveBeenCalled();
     expect(registration.registerMember).toHaveBeenCalledTimes(1);
+    // 가드가 도착 화면으로 넘기는 동안 화면을 그대로 두므로 다시 제출하지 못하게 잠그고 이동 중임을 알림
+    expect(start().closest('[inert]')).not.toBeNull();
+    expect((start() as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('화면을 이동하는 중이에요').getAttribute('role')).toBe('status');
     // 앞뒤 공백은 지우고, 출생연도·성별을 입력하지 않았으면 보내지 않음
     expect(registration.registerMember.mock.calls[0]?.[0]).toEqual({
       nickname: '지원',
       demographicsConsent: true,
     });
+  });
+
+  it('저장은 됐는데 다시 읽은 가입 상태가 아직 가입 중이면 화면을 잠그지 않고 실패 토스트를 보인다', async () => {
+    server.use(
+      http.get('/api/members/me/onboarding', () =>
+        ok({ memberId: 1, signupStatus: 'IN_PROGRESS', termsAccepted: true }),
+      ),
+    );
+    // 가드(AuthGate)처럼 가입 상태 query를 구독해야 다시 읽기가 일어남
+    function SessionObserver() {
+      useQuery(sessionQueryOptions());
+      return null;
+    }
+    render(
+      <>
+        <SessionObserver />
+        <ProfileSetup />
+      </>,
+    );
+    await userEvent.type(nickname(), '지원');
+
+    await userEvent.click(start());
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+    expect(start().closest('[inert]')).toBeNull();
+    expect((start() as HTMLButtonElement).disabled).toBe(false);
   });
 
   describe('선택 약관(추가 개인정보)에 따른 입력', () => {
@@ -589,7 +627,7 @@ describe('ProfileSetup', () => {
       expect(replace).not.toHaveBeenCalled();
       expect(toast).not.toHaveBeenCalled();
       // 시작하기가 비활성이 되므로 닉네임 입력으로 포커스를 돌려줌
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       // 닉네임을 바꾸면 다시 시작할 수 있음
       await userEvent.type(nickname(), '2');
@@ -623,7 +661,7 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(true);
       expect(replace).not.toHaveBeenCalled();
       expect(toast).not.toHaveBeenCalled();
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       await userEvent.type(nickname(), '2');
       expect(screen.queryByText(NICKNAME_PROHIBITED_MESSAGE)).toBeNull();
@@ -648,8 +686,9 @@ describe('ProfileSetup', () => {
           '프로필을 저장하는 중이에요',
         ),
       );
-      // 저장 중에는 페이지 전체 로딩(PageLoading)으로 화면을 덮고, 끝나면 걷음
-      expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
+      // 짧은 저장이라 화면을 덮지 않고, 누른 즉시 시작하기를 비활성으로 바꿈
+      expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
+      expect((start() as HTMLButtonElement).disabled).toBe(true);
 
       act(() => finish());
       await waitFor(() =>
@@ -723,7 +762,7 @@ describe('ProfileSetup', () => {
     it('빈 영역을 누르면 입력창 포커스가 풀려 키보드가 닫힌다', async () => {
       render(<ProfileSetup />);
       await userEvent.click(nickname());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       await userEvent.click(screen.getByText('먼저 나를 소개해 볼까요?'));
 
@@ -744,7 +783,7 @@ describe('ProfileSetup', () => {
       await userEvent.click(nickname());
 
       fireEvent.pointerDown(female());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       fireEvent.click(female());
       expect(female().getAttribute('aria-pressed')).toBe('true');
@@ -756,7 +795,7 @@ describe('ProfileSetup', () => {
       await userEvent.type(nickname(), '지원');
 
       fireEvent.pointerDown(start());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
       expect(start().hasAttribute('disabled')).toBe(false);
 
       fireEvent.click(start());

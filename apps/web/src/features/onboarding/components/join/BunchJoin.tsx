@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useId, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { readClipboardText } from '@/shared/lib/clipboard';
 import { INVITATION_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
@@ -31,6 +31,10 @@ export function BunchJoin() {
   const verify = useVerifyInvitationMutation();
   // 같은 틱에 연달아 눌러도 한 번만 보내도록 ref로 막음(state 갱신 전에는 isPending이 아직 false)
   const submitted = useRef(false);
+  // 확인에 성공해 다음 화면으로 넘어가는 중(덮개가 없어 이동이 끝날 때까지 「완료」를 잠금)
+  const [leaving, setLeaving] = useState(false);
+  const submitDisabled = link.trim() === '' || verify.isPending || leaving;
+  const [submitRef, refocusSubmit] = useRefocusWhenEnabled<HTMLButtonElement>(!submitDisabled);
 
   const openExitDialog = useExitFlowDialog({
     title: '번치 참여를 그만둘까요?',
@@ -65,7 +69,8 @@ export function BunchJoin() {
     setPasted(false);
     verify.mutate(value, {
       onSuccess: ({ card, eligibility }) => {
-        submitted.current = false;
+        if (eligibility === 'AVAILABLE' || eligibility === 'ALREADY_MEMBER') setLeaving(true);
+        else submitted.current = false;
         if (eligibility === 'AVAILABLE') {
           flow.setVerified({ invitation: value, card });
           // 뒤로 가기로 링크를 수정할 수 있도록 push 적용
@@ -75,6 +80,7 @@ export function BunchJoin() {
           toast(ONBOARDING_MESSAGES.alreadyMember);
           router.replace(ONBOARDING_PATHS.feed);
         } else {
+          refocusSubmit();
           toast(
             eligibility === 'FULL' ? ONBOARDING_MESSAGES.fullBunch : ONBOARDING_MESSAGES.bunchLimit,
           );
@@ -82,6 +88,7 @@ export function BunchJoin() {
       },
       onError: (error) => {
         submitted.current = false;
+        refocusSubmit();
         // 없거나 만료·폐기된 초대는 서버가 구분하지 않아 같은 문구(링크 존재 여부를 드러내지 않음)
         toast(
           isApiError(error) && error.code === INVITATION_ERROR_CODES.invalid
@@ -97,7 +104,13 @@ export function BunchJoin() {
       header={
         <Header
           leading={
-            <HeaderIconButton label="뒤로 가기" onClick={openExitDialog}>
+            <HeaderIconButton
+              label="뒤로 가기"
+              // 확인 중·이동 중에는 무시(나가기 창이 뜬 채 늦게 온 성공이 다음 화면으로 넘기지 않게)
+              onClick={() => {
+                if (!verify.isPending && !leaving) openExitDialog();
+              }}
+            >
               <LineChevronLeftLargeIcon />
             </HeaderIconButton>
           }
@@ -105,11 +118,7 @@ export function BunchJoin() {
       }
       bottom={
         <div className="pt-padding-p5 px-padding-p8">
-          <Button
-            className="w-full"
-            disabled={link.trim() === '' || verify.isPending}
-            onClick={submit}
-          >
+          <Button className="w-full" ref={submitRef} disabled={submitDisabled} onClick={submit}>
             완료
           </Button>
         </div>
@@ -119,7 +128,6 @@ export function BunchJoin() {
       <p role="status" className="sr-only">
         {verify.isPending ? '초대를 확인하는 중이에요' : pasted ? '초대 링크를 붙여넣었어요' : ''}
       </p>
-      {verify.isPending ? <PageLoading /> : null}
       <PageHeader title="초대받은 번치에 참여해볼까요?" />
       <div className="pt-s6 px-padding-p8">
         <TextField

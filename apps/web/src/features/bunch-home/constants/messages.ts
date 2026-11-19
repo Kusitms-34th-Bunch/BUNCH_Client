@@ -92,7 +92,7 @@ export const BUNCH_HOME_MESSAGES = {
   transferredAndLeft: (name: string) => `${name}님을 관리자로 지정하고 나왔어요.`,
   aloneTitle: '혼자 있는 번치는 나갈 수 없어요',
   aloneDescription: '번치를 더 쓰지 않는다면 번치를 삭제해 주세요.',
-  aloneConfirm: '번치 삭제하기',
+  aloneConfirm: '삭제하기',
   leaveTransferTitle: '관리자 권한을 넘길 멤버를 정해주세요.',
   leaveTransferDescription: '선택한 멤버가 새로운 관리자가 돼요.',
   // 알림 목록(Figma 1892:36947)
@@ -164,6 +164,7 @@ export const BUNCH_HOME_MESSAGES = {
   unblockDescription: '서로의 번들과 프로필을 볼 수 있어요. 팔로우는 자동으로 돌아오지 않아요.',
   unblocked: (bunchName: string) => `${bunchName} 번치를 차단 해제했어요.`,
   blockedListLoading: '차단 목록을 불러오는 중이에요',
+  menuLoading: '메뉴를 불러오는 중이에요',
   blockedEmptyTitle: '아직 차단한 번치가 없어요',
   blockedEmptyDescription:
     '차단은 번치 멤버 모두에게 적용되며,\n서로의 번들・프로필・댓글은 보이지 않아요.',

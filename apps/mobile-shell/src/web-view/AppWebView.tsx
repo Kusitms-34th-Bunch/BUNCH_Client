@@ -16,6 +16,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
+  hapticKindSchema,
+  nativeTabEventSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
@@ -34,7 +36,12 @@ import { getPermissionStatus, openAppSettings, requestPermission } from '../perm
 import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { socialLogin } from '../social-login';
-import { markWebReady } from '../splash/state';
+import {
+  forceWebReady,
+  markTabWebViewLoading,
+  markWebReady,
+  waitForTabWebView,
+} from '../splash/state';
 import { floatingButtonStore } from '../tabs/floating-button-store';
 import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
@@ -85,6 +92,8 @@ const appBridge = bridge({
     // 이미 탭 화면이면 탭 WebView 4개의 같은 요청에 화면 이동 생략, 항목이 같으면 다시 그리기 생략
     const current = tabsStore.get();
     if (!current) {
+      // 이 요청을 보낸 첫 화면 WebView는 곧 버려지므로 스플래시는 탭 WebView의 appReady로 닫음
+      waitForTabWebView();
       tabsStore.set(next);
       router.replace(`/${next.selectedId}` as Href);
     } else if (JSON.stringify(current.items) !== JSON.stringify(next.items)) {
@@ -100,6 +109,27 @@ const appBridge = bridge({
       return Promise.resolve(false);
     if (current.barHidden === !visible) return Promise.resolve(true);
     tabsStore.set({ ...current, barHidden: !visible });
+    return Promise.resolve(true);
+  },
+  // 다른 탭으로 전환(웹이 다른 탭 첫 화면으로 가려 할 때, 6.1.2 상세 동작 3). 그 탭 WebView는 보던 화면 그대로
+  selectNativeTab: (id) => {
+    const current = tabsStore.get();
+    if (
+      Platform.OS !== 'ios' ||
+      !current ||
+      typeof id !== 'string' ||
+      !isTabId(id) ||
+      !current.items.some((item) => item.id === id)
+    )
+      return Promise.resolve(false);
+    router.navigate(`/${id}` as Href);
+    return Promise.resolve(true);
+  },
+  // 한 탭의 변화(지금 번치 등)를 모든 탭 WebView에 보냄. 보낸 탭은 웹이 `from`으로 거름
+  notifyNativeTabs: (event) => {
+    const parsed = nativeTabEventSchema.parse(event);
+    if (!tabsStore.get()) return Promise.resolve(false);
+    postMessage('nativeTabEvent', parsed, { broadcast: true });
     return Promise.resolve(true);
   },
   // iOS 26 이상 탭 화면에서만 네이티브 Liquid Glass 버튼(그 밖은 false로 웹 버튼 유지). 지우기는 항상 받음
@@ -136,6 +166,18 @@ const appBridge = bridge({
     } catch (error) {
       // 햅틱은 보조 효과라 웹에 오류를 올리지 않고 개발 중에만 알림
       if (__DEV__) console.warn('[haptic] 끌기 시작 햅틱을 울리지 못했어요', error);
+    }
+  },
+  // 화면 사건의 햅틱: 완료 축하는 성공 알림, 그 밖은 가벼운 충격. 웹 입력은 스키마로 다시 확인
+  feedbackHaptic: async (kind) => {
+    try {
+      if (hapticKindSchema.parse(kind) === 'success') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      if (__DEV__) console.warn('[haptic] 햅틱을 울리지 못했어요', error);
     }
   },
 } satisfies AppBridgeMethods);
@@ -204,11 +246,15 @@ export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
       // 웹이 코드로 입력란에 초점을 줄 때도 키보드를 띄움(댓글 말풍선·답글 남기기). iOS 기본값(true)이면 커서만 들어가고 키보드가 올라오지 않음
       // 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 화면 진입 때 입력란에 초점을 주면 키보드가 바로 뜸(입력이 목적인 번들 상세 말풍선 진입 `?focus=comments`만 의도한 예외)
       keyboardDisplayRequiresUserAction={false}
-      // 스플래시는 웹의 appReady(도착 화면 결정)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
+      // 스플래시는 웹의 appReady(도착 화면이 내용을 그림)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
       // 새 문서를 열면 이전 문서가 남긴 네이티브 UI(플로팅 버튼) 정리
-      onLoadStart={onLoadStart}
-      onError={markWebReady}
-      onHttpError={markWebReady}
+      onLoadStart={() => {
+        // 선택된 탭의 WebView만(뒤에서 미리 그려지는 다른 탭이 대기를 풀지 않게)
+        if (tabId && tabsStore.get()?.selectedId === tabId) markTabWebViewLoading();
+        onLoadStart?.();
+      }}
+      onError={forceWebReady}
+      onHttpError={forceWebReady}
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;
       }}

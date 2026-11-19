@@ -22,7 +22,7 @@
 
 - Path·params·search: `/onboarding/join/complete`. params·search는 없다.
 - 접근 권한·guard: 참여한 번치(`joinedBunch`)가 없으면(직접 진입·새로고침) 화면을 그리지 않고 링크 입력으로 `router.replace`한다. 참여하지 않았는데 「합류했어요!」가 보이는 거짓 성공 화면을 막는다.
-- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 닫기·「번치로 이동하기」는 `router.replace`로 이동한다.
+- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 닫기·「번치로 이동하기」는 `router.replace`로 이동한다. 피드로 가는 이동은 SSGOI `axis`(`type: 'z'`, Ease out 300ms) 전환이다(`app/(app)/AppTransitions.tsx`, `docs/architecture/motion.md`). iOS 앱은 피드가 탭 화면이라 쉘이 탭 화면으로 바꿔 끼워 이 웹 전환이 보이지 않는다.
 
 ## UI와 접근성
 

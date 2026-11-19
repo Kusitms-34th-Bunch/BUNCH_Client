@@ -9,29 +9,12 @@ import type {
   MockPhoto,
 } from './types';
 
-/** 서버 `NotificationType` 21개 키(Notion 푸시 수신 설정 조회 응답 순서). 푸시 수신 설정 `types`의 키 전체 */
-export const PUSH_NOTIFICATION_TYPES = [
-  'DRAFT_PARTICIPANT_ADDED',
-  'DRAFT_ACTIVITY',
-  'COMMENT_REMINDER',
-  'DRAFT_PARTICIPANT_REMOVED',
-  'DRAFT_READY_TO_PUBLISH',
-  'DRAFT_PARTICIPANTS_INSUFFICIENT',
-  'BUNDLE_PUBLISHED',
-  'CANDIDATE_CREATED',
-  'CHARACTER_GROWN',
-  'MEMBER_JOINED',
-  'CO_OWNER_GRANTED',
-  'CO_OWNER_REVOKED',
-  'OWNER_TRANSFERRED',
-  'MEMBER_REMOVED',
-  'BUNCH_DELETED',
-  'BUNCH_VISIBILITY_CHANGED',
-  'BUNCH_FOLLOWED',
-  'FOLLOW_REQUESTED',
-  'FOLLOW_REQUEST_APPROVED',
-  'SOCIAL_COMMENT_CREATED',
-  'BUNDLE_LIKED',
+/** 서버 푸시 수신 설정 카테고리 4개(서버 V35, 응답 순서). 예전 21개 알림 종류 키는 400 `COMMON_001` */
+export const PUSH_PREFERENCE_CATEGORIES = [
+  'BUNDLE_NEWS',
+  'MEMBER_ROLE',
+  'FOLLOW',
+  'REACTION',
 ] as const;
 
 export const MOCK_BUNCH_ID = 1;
@@ -541,7 +524,7 @@ export const createSeed = (): MockDbState => ({
   // 저장값이 없으면 전체와 모든 알림 종류가 켜짐(Notion 푸시 수신 설정 조회)
   pushPreferences: {
     enabled: true,
-    categories: Object.fromEntries(PUSH_NOTIFICATION_TYPES.map((type) => [type, true])),
+    categories: Object.fromEntries(PUSH_PREFERENCE_CATEGORIES.map((key) => [key, true])),
   },
 });
 

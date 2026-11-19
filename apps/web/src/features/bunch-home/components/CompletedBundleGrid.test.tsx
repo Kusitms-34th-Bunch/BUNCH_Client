@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CompletedBundleGrid } from './CompletedBundleGrid';
@@ -25,5 +25,14 @@ describe('CompletedBundleGrid', () => {
     expect(link).toHaveAttribute('href', '/bunches/1/bundles/a');
     await userEvent.click(link);
     expect(onOpen).toHaveBeenCalledWith('a');
+  });
+
+  it('사진은 다 받기 전에는 숨겨 회색 칸을 보이고, 받으면 나타난다', () => {
+    render(<CompletedBundleGrid bunchId="1" bundles={bundles} />);
+    const image = screen.getByRole('img', { name: '공개 번들' });
+
+    expect(image).not.toHaveAttribute('data-loaded');
+    fireEvent.load(image);
+    expect(image).toHaveAttribute('data-loaded');
   });
 });

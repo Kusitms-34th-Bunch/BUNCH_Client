@@ -16,6 +16,9 @@ export const MAIN_TABS: { id: MainTabId; label: string }[] = [
   { id: 'my', label: '마이페이지' },
 ];
 
+/** iOS 쉘 시스템 탭 바에 보내는 항목(탭 순서·라벨·탭 WebView가 여는 경로) */
+export const NATIVE_TAB_ITEMS = MAIN_TABS.map((tab) => ({ ...tab, path: MAIN_TAB_PATHS[tab.id] }));
+
 /** 현재 경로가 속한 탭(탭 안 하위 경로 포함), 없으면 null */
 export const findMainTab = (pathname: string): MainTabId | null =>
   MAIN_TABS.find(({ id }) => {

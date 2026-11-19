@@ -7,12 +7,13 @@ import { useEffect, useId, useRef } from 'react';
 import blockedListEmpty from '@/shared/assets/images/empty/blocked-list-empty.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { ListMoreQuery } from '../../lib/pages';
 import type { BlockedBunch } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { ListMore } from '../ListMore';
+
+const SKELETON_ROWS = [0, 1, 2];
 
 type BunchBlockedListScreenProps = {
   /** 차단한 번치(받은 쪽까지). 아직 모르면 로딩 */
@@ -118,7 +119,23 @@ export function BunchBlockedListScreen({
       <p role="status" className="sr-only">
         {blocked === undefined ? BUNCH_HOME_MESSAGES.blockedListLoading : ''}
       </p>
-      {blocked === undefined ? <PageLoading /> : null}
+      {blocked === undefined ? (
+        // 첫 목록을 받는 동안의 자리(개수 줄과 행 3개, 목록과 같은 간격). Figma에 없는 상태라 다른 스켈레톤과 같은 회색
+        <div aria-hidden="true" className="pt-s6 px-padding-p8 pb-s8 gap-s6 flex flex-col">
+          <div className="bg-surface-secondary rounded-r2 h-5 w-28" />
+          <div className="gap-s4 flex flex-col">
+            {SKELETON_ROWS.map((row) => (
+              <div
+                key={row}
+                className="border-border-tertiary rounded-r5 px-padding-p6 py-padding-p5 gap-s3 flex items-center border"
+              >
+                <div className="bg-surface-secondary size-10 shrink-0 rounded-full" />
+                <div className="bg-surface-secondary rounded-r2 h-5 w-32" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {blocked && blocked.length > 0 ? (
         // 헤더 아래 12, 개수와 목록 사이 12, 행 사이 8(Figma 1873:33766)
         <div className="pt-s6 px-padding-p8 pb-s8 gap-s6 flex flex-col">

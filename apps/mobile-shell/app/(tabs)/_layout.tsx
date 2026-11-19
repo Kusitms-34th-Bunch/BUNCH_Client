@@ -6,19 +6,31 @@ import { useSyncExternalStore } from 'react';
 import { TAB_ICONS } from '../../src/tabs/tab-icons';
 import { TAB_IDS } from '../../src/tabs/tabs';
 import { tabsStore } from '../../src/tabs/tabs-store';
+import { postMessage } from '../../src/web-view/AppWebView';
 
-// 웹 막대(BottomNavigation)와 같은 디자인 시스템 값 복사(RN은 CSS 변수 미지원): 선택 text-primary, 미선택 text-tertiary
-// 라벨 caption-1-regular(Pretendard Regular 12px, app.json의 expo-font로 포함, iOS는 PostScript 이름으로 지정)
+// 선택 색만 디자인 시스템 text-primary 복사(RN은 CSS 변수 미지원)
+// 라벨 글꼴·미선택 색은 지정하지 않음: iOS 26 탭 바가 선택된 적 없는 항목의 Pretendard 라벨을 밀고 잘라 그림(#462)
 const TEXT_PRIMARY = '#121212';
-const TEXT_TERTIARY = '#535a61';
-const LABEL = { fontFamily: 'Pretendard-Regular', fontSize: 12 } as const;
 
 // 탭 햅틱은 쉘의 네이티브 모듈(modules/tab-crossfade)이 울리지만 Expo Go에는 그 모듈이 없어 JS로 대신 울림
 // 개발·배포 앱에서 함께 울리면 두 번 나므로 Expo Go일 때만
 const inExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-const screenListeners = inExpoGo
-  ? { tabPress: () => void Haptics.selectionAsync().catch(() => {}) }
-  : undefined;
+
+// 이미 보고 있는 탭을 다시 누르면 그 탭 웹에 알려 지금 화면을 맨 위로(웹 스크롤은 WebView 안의 요소라 시스템 맨 위로가 닿지 않음)
+const screenListeners = ({
+  navigation,
+  route,
+}: {
+  navigation: { isFocused: () => boolean };
+  route: { name: string };
+}) => ({
+  tabPress: () => {
+    if (inExpoGo) void Haptics.selectionAsync().catch(() => {});
+    if (navigation.isFocused()) {
+      postMessage('nativeTabReselect', { tab: route.name }, { broadcast: true });
+    }
+  },
+});
 
 /** iOS 시스템 탭 바(iOS 26 이상은 Liquid Glass). 라벨은 웹이 보낸 항목, 아이콘은 쉘의 디자인 시스템 아이콘. 항목이 없는 탭은 숨김 */
 export default function TabsLayout() {
@@ -31,11 +43,6 @@ export default function TabsLayout() {
       hidden={tabs.barHidden ?? false}
       screenListeners={screenListeners}
       tintColor={TEXT_PRIMARY}
-      iconColor={{ default: TEXT_TERTIARY, selected: TEXT_PRIMARY }}
-      labelStyle={{
-        default: { ...LABEL, color: TEXT_TERTIARY },
-        selected: { ...LABEL, color: TEXT_PRIMARY },
-      }}
     >
       {TAB_IDS.map((id) => {
         const item = tabs.items.find((tab) => tab.id === id);

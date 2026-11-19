@@ -2,6 +2,7 @@
 
 import { LoginButton } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
+import { useEffect, useRef } from 'react';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
@@ -57,6 +58,23 @@ export function LoginEntry({
   const resolvePostLogin = usePostLoginPath(destinations);
   const { pendingProvider, login } = useSocialLogin(signIn, resolveNextPath ?? resolvePostLogin);
   const reducedMotion = useReducedMotion();
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // 카카오톡 등 다른 앱으로 갔다 오는 로그인 중에는 영상을 멈춰 둠(돌아올 때 iOS가 다시 재생해 처음부터 나오는 것처럼 보임)
+  const loggingIn = pendingProvider !== null;
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!loggingIn || !video) return;
+    const pauseWhenHidden = () => {
+      if (document.visibilityState === 'hidden') video.pause();
+    };
+    document.addEventListener('visibilitychange', pauseWhenHidden);
+    return () => {
+      document.removeEventListener('visibilitychange', pauseWhenHidden);
+      // 취소·실패로 로그인 화면에 남으면 다시 재생
+      if (video.isConnected) void video.play()?.catch(() => {});
+    };
+  }, [loggingIn]);
 
   return (
     <>
@@ -70,6 +88,7 @@ export function LoginEntry({
         {/* iOS 자동 재생 조건: muted·playsInline */}
         {reducedMotion ? null : (
           <video
+            ref={videoRef}
             src={LOGIN_BACKGROUND_VIDEO}
             poster={LOGIN_BACKGROUND_POSTER}
             autoPlay

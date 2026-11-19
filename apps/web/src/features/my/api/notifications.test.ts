@@ -8,13 +8,13 @@ describe('getPushPreferences', () => {
   it('전체 수신과 알림 종류별 수신을 돌려준다', async () => {
     server.use(
       http.get('/api/members/me/push-preferences', () =>
-        ok({ enabled: false, categories: { DRAFT_ACTIVITY: true, BUNDLE_LIKED: false } }),
+        ok({ enabled: false, categories: { BUNDLE_NEWS: true, REACTION: false } }),
       ),
     );
 
     await expect(getPushPreferences()).resolves.toEqual({
       enabled: false,
-      types: { DRAFT_ACTIVITY: true, BUNDLE_LIKED: false },
+      types: { BUNDLE_NEWS: true, REACTION: false },
     });
   });
 
@@ -24,7 +24,7 @@ describe('getPushPreferences', () => {
 
     server.use(
       http.get('/api/members/me/push-preferences', () =>
-        ok({ enabled: true, categories: { DRAFT_ACTIVITY: 'yes' } } as never),
+        ok({ enabled: true, categories: { BUNDLE_NEWS: 'yes' } } as never),
       ),
     );
     await expect(getPushPreferences()).rejects.toThrow();
@@ -37,15 +37,15 @@ describe('updatePushPreferences', () => {
     server.use(
       http.patch('/api/members/me/push-preferences', async ({ request }) => {
         bodies.push(await request.json());
-        return ok({ enabled: true, categories: { COMMENT_REMINDER: false } });
+        return ok({ enabled: true, categories: { FOLLOW: false } });
       }),
     );
 
-    await expect(updatePushPreferences({ types: { COMMENT_REMINDER: false } })).resolves.toEqual({
+    await expect(updatePushPreferences({ types: { FOLLOW: false } })).resolves.toEqual({
       enabled: true,
-      types: { COMMENT_REMINDER: false },
+      types: { FOLLOW: false },
     });
-    expect(bodies).toEqual([{ categories: { COMMENT_REMINDER: false } }]);
+    expect(bodies).toEqual([{ categories: { FOLLOW: false } }]);
   });
 
   it('서버가 거절하면 던진다', async () => {

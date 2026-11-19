@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PUSH_NOTIFICATION_TYPES } from '@/mocks/db/seed';
+import { PUSH_PREFERENCE_CATEGORIES } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -35,7 +35,7 @@ vi.mock('../../hooks/useDeviceNotificationPermission', () => ({
   }),
 }));
 
-const ALL_KEYS: readonly string[] = PUSH_NOTIFICATION_TYPES;
+const ALL_KEYS: readonly string[] = PUSH_PREFERENCE_CATEGORIES;
 
 /** 응답 시점을 test가 정하는 대기(시간 지연에 기대지 않고 순서를 결정적으로 만듦) */
 const deferred = () => {
@@ -103,7 +103,7 @@ beforeEach(() => {
 
 describe('NotificationSettingsRoute', () => {
   it('서버 설정을 받아 토글 4개로 보여 준다(묶인 알림이 하나라도 꺼져 있으면 꺼짐)', async () => {
-    useServer({ enabled: true, categories: { BUNDLE_LIKED: false, DRAFT_ACTIVITY: false } });
+    useServer({ enabled: true, categories: { REACTION: false, BUNDLE_NEWS: false } });
 
     renderRoute();
     await ready();
@@ -135,7 +135,7 @@ describe('NotificationSettingsRoute', () => {
     await waitFor(() => expect(screen.queryByText('알림 설정을 불러오는 중이에요')).toBeNull());
   });
 
-  it('종류 토글을 누르면 바로 바뀌고, 묶인 키를 모두 같은 값으로 저장한다', async () => {
+  it('종류 토글을 누르면 바로 바뀌고, 그 카테고리만 저장한다', async () => {
     useServer();
     renderRoute();
     await ready();
@@ -144,13 +144,7 @@ describe('NotificationSettingsRoute', () => {
 
     await waitFor(() => expect(toggle('팔로우').checked).toBe(false));
     await waitFor(() => expect(server_.patches).toHaveLength(1));
-    expect(server_.patches[0]).toEqual({
-      categories: {
-        BUNCH_FOLLOWED: false,
-        FOLLOW_REQUESTED: false,
-        FOLLOW_REQUEST_APPROVED: false,
-      },
-    });
+    expect(server_.patches[0]).toEqual({ categories: { FOLLOW: false } });
     // 다른 종류와 전체는 그대로
     expect(toggle('번들 소식').checked).toBe(true);
     expect(toggle('앱 푸시 알림').checked).toBe(true);
@@ -230,9 +224,9 @@ describe('NotificationSettingsRoute', () => {
     await userEvent.click(follow);
 
     await waitFor(() => expect(server_.patches).toHaveLength(3));
-    const values = server_.patches.map((patch) => (patch as Prefs).categories.BUNCH_FOLLOWED);
+    const values = server_.patches.map((patch) => (patch as Prefs).categories.FOLLOW);
     expect(values).toEqual([false, true, false]);
-    expect(server_.prefs.categories.BUNCH_FOLLOWED).toBe(false);
+    expect(server_.prefs.categories.FOLLOW).toBe(false);
     await waitFor(() => expect(toggle('팔로우').checked).toBe(false));
   });
 
@@ -286,7 +280,7 @@ describe('NotificationSettingsRoute', () => {
     );
     // 두 번째 저장(켜기)이 서버에 반영돼 화면도 켜짐으로 남음
     await waitFor(() => expect(toggle('팔로우').checked).toBe(true));
-    expect(server_.prefs.categories.BUNCH_FOLLOWED).toBe(true);
+    expect(server_.prefs.categories.FOLLOW).toBe(true);
     // 저장 후처리와 재조회까지 모두 끝난 것을 query client로 확인한 뒤(고정 대기 없이), 첫 저장 실패 때문에 서버 값을 따로 다시 받지 않았는지 확인
     // 뒤 저장과 겹쳐 낡은 값이 덮는 것을 막기 위한 동작
     await waitFor(() => {

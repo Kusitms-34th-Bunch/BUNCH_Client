@@ -101,6 +101,130 @@ describe('useNicknameAvailability', () => {
     expect(check).toHaveBeenCalledTimes(2);
   });
 
+  it('remember면 확인한 값으로 돌아왔을 때 다시 묻지 않고 바로 결과를 보인다', async () => {
+    const check = vi.fn(() => Promise.resolve('taken' as const));
+    const { result, rerender } = renderHook(
+      ({ value }) => useNicknameAvailability(value, check, { remember: true }),
+      { initialProps: { value: '지원' } },
+    );
+    await settle();
+
+    rerender({ value: '하나' });
+    rerender({ value: '지원' });
+
+    expect(result.current).toBe('taken');
+    await settle();
+    expect(check).toHaveBeenCalledTimes(1);
+  });
+
+  it('remember면 결과를 받은 뒤 포커스가 바뀌어도 결과를 유지하고 다시 묻지 않는다', async () => {
+    const check = vi.fn(() => Promise.resolve('available' as const));
+    const { result, rerender } = renderHook(
+      ({ immediate }) => useNicknameAvailability('지원', check, { remember: true, immediate }),
+      { initialProps: { immediate: false } },
+    );
+    await settle();
+
+    rerender({ immediate: true });
+    await settle();
+    rerender({ immediate: false });
+    await settle();
+
+    expect(result.current).toBe('available');
+    expect(check).toHaveBeenCalledTimes(1);
+  });
+
+  it('remember여도 버려진 요청의 늦은 응답은 다시 보낸 같은 값의 결과를 덮지 않는다', async () => {
+    const resolvers: ((_result: NameCheckResult) => void)[] = [];
+    const check = vi.fn(() => new Promise<NameCheckResult>((resolve) => resolvers.push(resolve)));
+    const { result, rerender } = renderHook(
+      ({ value }) => useNicknameAvailability(value, check, { remember: true }),
+      { initialProps: { value: '지원' } },
+    );
+    await settle();
+    rerender({ value: '하나' });
+    rerender({ value: '지원' });
+    await settle();
+    expect(check).toHaveBeenCalledTimes(2);
+
+    // 다시 보낸 요청이 먼저, 버려진 첫 요청이 나중에 끝남
+    await act(async () => {
+      resolvers[1]?.('available');
+      await Promise.resolve();
+    });
+    await act(async () => {
+      resolvers[0]?.('taken');
+      await Promise.resolve();
+    });
+
+    expect(result.current).toBe('available');
+    rerender({ value: '하나' });
+    rerender({ value: '지원' });
+    expect(result.current).toBe('available');
+  });
+
+  it('remember여도 실패한 값은 기억하지 않고 다시 확인한다', async () => {
+    const check = vi
+      .fn<(_nickname: string) => Promise<NameCheckResult>>()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValue('available');
+    const { result, rerender } = renderHook(
+      ({ value }) => useNicknameAvailability(value, check, { remember: true }),
+      { initialProps: { value: '지원' } },
+    );
+    await settle();
+    expect(result.current).toBe('failed');
+
+    rerender({ value: '하나' });
+    rerender({ value: '지원' });
+
+    expect(result.current).toBe('checking');
+    await settle();
+    expect(result.current).toBe('available');
+  });
+
+  it('immediate면 대기 없이 바로 확인한다', async () => {
+    const check = vi.fn(() => Promise.resolve('available' as const));
+    const { result } = renderHook(() =>
+      useNicknameAvailability('지원', check, { immediate: true }),
+    );
+
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(check).toHaveBeenCalledWith('지원');
+    expect(result.current).toBe('available');
+  });
+
+  it('대기 중에 immediate로 바뀌면 남은 대기 없이 확인한다', async () => {
+    const check = vi.fn(() => Promise.resolve('available' as const));
+    const { rerender } = renderHook(
+      ({ immediate }) => useNicknameAvailability('지원', check, { immediate }),
+      { initialProps: { immediate: false } },
+    );
+    await act(() => vi.advanceTimersByTimeAsync(100));
+    rerender({ immediate: true });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+
+    expect(check).toHaveBeenCalledTimes(1);
+  });
+
+  it('이미 보낸 확인은 포커스가 바뀌어도 버리지 않고, 실패한 값으로 다시 요청·안내를 반복하지 않는다', async () => {
+    const check = vi.fn(() => Promise.reject(new Error('network')));
+    const { result, rerender } = renderHook(
+      ({ immediate }) => useNicknameAvailability('지원', check, { remember: true, immediate }),
+      { initialProps: { immediate: true } },
+    );
+    await settle();
+    expect(result.current).toBe('failed');
+
+    rerender({ immediate: false });
+    rerender({ immediate: true });
+    await settle();
+
+    expect(check).toHaveBeenCalledTimes(1);
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(result.current).toBe('failed');
+  });
+
   it('렌더마다 새 함수를 넘겨도 같은 닉네임을 다시 확인하지 않는다', async () => {
     const calls: string[] = [];
     const { result, rerender } = renderHook(

@@ -766,6 +766,17 @@ describe('위치와 날짜', () => {
       }
     });
 
+    it('쉘에서는 핸들로 위치를 집어 올린 순간 한 번 진동한다', async () => {
+      bridge.inShell = true;
+      renderScreen({ draft: twoLocations });
+
+      screen.getByRole('button', { name: '장소 A 순서 바꾸기' }).focus();
+      await userEvent.keyboard(' ');
+      expect(bridge.dragStartHaptic).toHaveBeenCalledTimes(1);
+      await userEvent.keyboard('{Escape}');
+      expect(bridge.dragStartHaptic).toHaveBeenCalledTimes(1);
+    });
+
     it('끄는 동안에는 다른 멤버가 바꾼 목록을 미뤘다가 놓을 때 반영한다', async () => {
       const view = render(screenElement({ draft: twoLocations }));
 

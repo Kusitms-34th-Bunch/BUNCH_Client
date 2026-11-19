@@ -94,4 +94,15 @@ describe('BundleCard', () => {
     );
     expect(screen.getByRole('button', { name: '머그샷 삭제' })).toBeTruthy();
   });
+
+  it('대표 사진은 다 받기 전에는 숨겨 회색 자리를 보이고, 받으면 나타난다', () => {
+    const { container } = render(
+      <BundleCard title="머그샷" imageSrc="/photo.jpg" members={members} onCardClick={() => {}} />,
+    );
+    const image = container.querySelector('img')!;
+
+    expect(image.hasAttribute('data-loaded')).toBe(false);
+    fireEvent.load(image);
+    expect(image.hasAttribute('data-loaded')).toBe(true);
+  });
 });

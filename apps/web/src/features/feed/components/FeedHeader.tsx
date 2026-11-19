@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { Header, LineBellLargeIcon } from '@app/design-system';
 import { ProfileImage } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
@@ -20,6 +21,8 @@ type FeedHeaderProps = {
   onLogoClick: () => void;
   notificationsHref: string;
   bunchHomeHref: string;
+  /** 번치 이미지를 눌렀을 때(iOS 쉘의 탭 전환). 막으면(`preventDefault`) 링크 이동 안 함 */
+  onBunchHomeClick?: ((_event: MouseEvent<HTMLAnchorElement>) => void) | undefined;
 };
 
 /**
@@ -32,6 +35,7 @@ export function FeedHeader({
   onLogoClick,
   notificationsHref,
   bunchHomeHref,
+  onBunchHomeClick,
 }: FeedHeaderProps) {
   return (
     <Header
@@ -62,6 +66,7 @@ export function FeedHeader({
                 href={bunchHomeHref}
                 aria-label={text.currentBunch(viewer.name)}
                 className={iconLinkClass}
+                {...(onBunchHomeClick && { onClick: onBunchHomeClick })}
               >
                 <ProfileImage
                   size="XXS"

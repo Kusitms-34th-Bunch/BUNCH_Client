@@ -34,12 +34,6 @@
         }
       ],
       "expo-router",
-      [
-        "expo-font",
-        {
-          "fonts": ["./assets/fonts/Pretendard-Regular.otf"]
-        }
-      ],
       "expo-status-bar",
       [
         "expo-build-properties",
@@ -57,6 +51,7 @@
       "expo-apple-authentication"
     ],
     "ios": {
+      "buildNumber": "2",
       "supportsTablet": true,
       "bundleIdentifier": "kr.bunch.app",
       "appleTeamId": "9CGCR9499H",

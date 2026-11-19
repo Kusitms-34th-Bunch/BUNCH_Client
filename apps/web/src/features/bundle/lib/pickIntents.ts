@@ -33,6 +33,15 @@ export const pickIntents = {
   clear: (bundleId: string, photoId: string) => {
     if (intents.delete(keyOf(bundleId, photoId))) emit();
   },
+  /**
+   * 희망 상태가 아직 `picked`이고 저장 루프가 돌고 있지 않을 때만 지움
+   * 그사이 다시 눌러 바뀐 희망 상태는 남기고, 다시 눌러 새 루프가 돌고 있으면(같은 값으로 되돌아온 연타 포함) 그 루프가 정리함
+   */
+  clearIf: (bundleId: string, photoId: string, picked: boolean | undefined) => {
+    const key = keyOf(bundleId, photoId);
+    if (running.has(key) || intents.get(key) !== picked) return;
+    if (intents.delete(key)) emit();
+  },
   /** 이 사진의 저장 루프를 시작해도 되면 true, 이미 돌고 있으면 false(돌고 있는 루프가 새 희망 상태를 이어서 보냄) */
   begin: (bundleId: string, photoId: string) => {
     const key = keyOf(bundleId, photoId);

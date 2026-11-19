@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { logout } from '@/shared/api/logout';
 import { sharedKeys } from '@/shared/query/keys';
 import { clearPersistedQueryStorage } from '@/shared/query/persistence';
+import type { OnboardingState } from '../api/onboarding';
 import { registerMember } from '../api/registration';
 import { saveTermsAgreements } from '../api/terms';
 import { LOGIN_PATH } from '../constants/paths';
@@ -11,20 +12,31 @@ import { reloadTo } from '../lib/reloadTo';
 
 /**
  * 약관 동의 저장. 실패 토스트는 공통 처리(meta.errorMessage)
- * 성공하면 가입 상태(`sharedKeys.session()`)를 다시 읽고 기다림: 가드가 옛 상태(약관 미동의)로 프로필 이동을 되돌리지 않게 함
+ * 성공하면 가입 상태(`sharedKeys.session()`)를 바로 「약관 동의」로 바꿈: 저장 성공이 곧 동의 완료(응답 data는 null, 명세 030)라 다시 읽지 않아 한 번의 요청으로 넘어감
+ * 가드가 옛 상태(약관 미동의)로 프로필 이동을 되돌리지 않게 함. 진행 중이던 가입 상태 요청은 먼저 취소(늦게 온 옛 응답이 덮지 않게)
+ * 가입 상태를 아직 받지 않았으면(캐시 없음) 무효화로 다시 읽음
  */
 export const useAgreeToTermsMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: saveTermsAgreements,
     meta: { errorMessage: STATUS_CHECK_FAILURE_MESSAGE },
-    // 다시 읽기에 실패하면 mutation도 실패로 처리(성공으로 두면 옛 상태로 프로필 이동이 가드에 되돌려짐, 같은 버전 재저장은 서버가 중복 이력을 만들지 않음)
-    onSuccess: () =>
-      queryClient.invalidateQueries(
-        // 구독하는 곳이 없어도 다시 읽도록 `all`(가드가 이 화면에서 빠지는 구조가 돼도 기다림이 유지됨)
+    onSuccess: async () => {
+      await queryClient.cancelQueries({ queryKey: sharedKeys.session(), exact: true });
+      const session = queryClient.getQueryData<OnboardingState | null>(sharedKeys.session());
+      if (session) {
+        queryClient.setQueryData<OnboardingState>(sharedKeys.session(), {
+          ...session,
+          termsAccepted: true,
+        });
+        return;
+      }
+      // 구독하는 가드가 있어 다시 읽다 실패하면 mutation도 실패(같은 버전 재저장은 서버가 중복 이력을 만들지 않음)
+      await queryClient.invalidateQueries(
         { queryKey: sharedKeys.session(), refetchType: 'all' },
         { throwOnError: true },
-      ),
+      );
+    },
   });
 };
 
@@ -46,19 +58,26 @@ export const useLeaveSignupMutation = () =>
 /**
  * 가입 완료(프로필 저장). 실패 처리는 화면이 함(닉네임 중복은 입력란 아래 문구, 그 밖은 토스트)
  * 성공하면 가입 상태(`sharedKeys.session()`)를 다시 읽고 기다린 뒤 이동하게 함: 가드가 옛 상태(가입 중)로 이동을 되돌리지 않도록
- * 다시 읽기에 실패하면 실패로 처리(같은 프로필의 재시도는 서버가 기존 결과를 돌려줌)
+ * 다시 읽기에 실패하거나 다시 읽은 상태가 아직 가입 중이면 실패로 처리(같은 프로필의 재시도는 서버가 기존 결과를 돌려줌)
+ * 성공으로 두면 화면이 이동 중으로 잠긴 채 가드가 옮기지 않아 빠져나갈 수 없음
  * 이동은 하지 않음: 가입 완료 사용자의 도착 화면은 가드(`AuthGate`)가 정함
  */
 export const useRegisterMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: registerMember,
-    onSuccess: () =>
-      queryClient.invalidateQueries(
+    onSuccess: async () => {
+      await queryClient.invalidateQueries(
         // 구독하는 곳이 없어도 다시 읽도록 `all`(가드가 이 화면에서 빠지는 구조가 돼도 기다림이 유지됨)
         { queryKey: sharedKeys.session(), refetchType: 'all' },
         { throwOnError: true },
-      ),
+      );
+      const session = queryClient.getQueryData<OnboardingState | null>(sharedKeys.session());
+      // 읽은 상태가 있을 때만 판단(구독하는 가드가 없으면 다시 읽지 않아 비어 있음)
+      if (session !== undefined && session?.signupStatus !== 'COMPLETED') {
+        throw new Error('signup is not reflected yet');
+      }
+    },
     // 이미 가입을 마친 계정(USER_003)이거나 약관 버전이 바뀐 경우(AUTH_016)는 서버 상태가 달라졌으므로 다시 읽어 가드가 알맞은 화면으로 보냄
     onError: (error) => {
       if (isApiError(error) && (error.code === 'USER_003' || error.code === 'AUTH_016')) {

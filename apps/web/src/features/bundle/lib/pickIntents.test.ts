@@ -48,4 +48,20 @@ describe('pickIntents', () => {
 
     expect(pickIntents.begin('b1', 'p1')).toBe(true);
   });
+
+  it('조건부 지우기는 희망 상태가 그대로이고 저장 루프가 돌고 있지 않을 때만 지운다', () => {
+    pickIntents.set('b1', 'p1', true);
+    // 그사이 다시 눌러 값이 바뀜: 남김
+    pickIntents.clearIf('b1', 'p1', false);
+    expect(pickIntents.get('b1', 'p1')).toBe(true);
+
+    // 같은 값이어도 새 저장 루프가 돌고 있으면 그 루프가 정리하도록 남김
+    pickIntents.begin('b1', 'p1');
+    pickIntents.clearIf('b1', 'p1', true);
+    expect(pickIntents.get('b1', 'p1')).toBe(true);
+
+    pickIntents.end('b1', 'p1');
+    pickIntents.clearIf('b1', 'p1', true);
+    expect(pickIntents.get('b1', 'p1')).toBeUndefined();
+  });
 });

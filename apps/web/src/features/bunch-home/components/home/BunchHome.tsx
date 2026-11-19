@@ -17,11 +17,13 @@ import { type PrefetchBundle, useOpenBundle } from '../../hooks/useOpenBundle';
 import { useOpenDraft } from '../../hooks/useOpenDraft';
 import { useServerBunchHome } from '../../hooks/useServerBunchHome';
 import {
+  bunchAccessNoticeQueryOptions,
   useDeleteBunchNoticeMutation,
   useRefreshBunchHomeLists,
   useRefreshCurrentBunch,
   useSwitchBunchMutation,
 } from '../../queries/bunchHome';
+import { usePrefetchMemberships } from '../../queries/memberships';
 import { AccessNoticeDialog } from './AccessNoticeDialog';
 import { BunchHomeError } from './BunchHomeError';
 import { BunchHomeScreen } from './BunchHomeScreen';
@@ -142,6 +144,17 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
   };
 
   const notReady = server.kind !== 'ready';
+  // 접근 불가 안내를 받는 중인지(받으면 안내 창이 열리고, 실패하면 다른 번치로 넘어감)
+  const notice = useQuery(
+    bunchAccessNoticeQueryOptions(server.kind === 'unavailable' ? server.noticeId : undefined),
+  );
+  const noticeLoading = server.kind === 'unavailable' && notice.isPending && !notice.isError;
+  // 번치 홈을 그린 뒤 더보기·멤버 관리가 바로 그려지게 멤버 목록을 미리 받음
+  const prefetchMemberships = usePrefetchMemberships();
+  const readyBunchId = notReady ? undefined : profile?.bunch?.id;
+  useEffect(() => {
+    if (readyBunchId) prefetchMemberships(readyBunchId);
+  }, [readyBunchId, prefetchMemberships]);
   // 화면 상태가 바뀌어(로딩·오류) 창이 의미를 잃으면 모두 닫음
   useEffect(() => {
     if (notReady) openOverlay.closeAll();
@@ -154,9 +167,10 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
     return (
       <>
         <p role="status" className="sr-only">
-          번치를 불러오는 중이에요
+          {server.kind === 'loading' ? '번치를 불러오는 중이에요' : ''}
         </p>
-        <PageLoading />
+        {/* 접근 불가 안내는 안내를 받는 동안만 로딩, 창이 열리면 덮개를 걷음(덮개가 남으면 앱 스플래시가 안내 창을 가림, AuthGate appReady) */}
+        {server.kind === 'loading' || noticeLoading ? <PageLoading /> : null}
         {/* 안내를 닫거나 받지 못하면 서버가 다시 고른 번치(또는 번치 없음)로 바뀜 */}
         {server.kind === 'unavailable' ? (
           <AccessNoticeDialog

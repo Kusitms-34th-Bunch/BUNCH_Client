@@ -33,15 +33,15 @@
 ## 상태와 흐름
 
 - 초기 진입: 모두 체크 해제 상태이고 시작하기 버튼은 비활성이다. 약관 목록은 앱 상수(`constants/terms.ts`)이고 서버 버전은 시작하기 때 읽는다.
-- Loading·Empty: 시작하기를 누른 동안 버튼이 `aria-busy`이고 다시 눌러도 한 번만 실행하며, 동의를 저장하는 동안에만 `PageLoading`이 화면 전체를 덮는다. 권한을 요청하는 동안에는 덮개 없이 버튼 `aria-busy`와 상태 안내(「앱 접근 권한을 요청하는 중이에요」)만 둔다(시스템 권한 팝업 뒤에 로딩이 깔리지 않게, #439). 이때 시작하기를 누르면 동의를 저장한 뒤 진행 중인 권한 요청을 기다려 이동한다. 저장하는 짧은 동안에는 덮개가 권한 팝업 뒤에 잠깐 보일 수 있다. Empty는 해당 없음.
+- Loading·Empty: 시작하기를 누르면 바로 비활성(`disabled`·`aria-busy`)으로 바뀌고 다시 눌러도 한 번만 실행한다. 동의를 저장하는 동안과 권한을 요청하는 동안 모두 화면을 덮지 않는다(2026-11-20 기준: 짧은 저장·확인 뒤 화면 이동은 덮지 않음, `docs/architecture/motion.md` 「로딩 상태」). 상태 안내는 숨김 `role="status"`(「약관 동의를 저장하는 중이에요」「앱 접근 권한을 요청하는 중이에요」)가 한다. 저장이 성공하면 가입 상태를 다시 읽지 않고 캐시를 「약관 동의」로 바꿔 바로 넘어가고(요청 1번), 들어올 때 프로필 화면을 미리 받아 둔다. 저장에 실패하면 시작하기를 다시 활성으로 돌리고 초점을 돌려준다.
 - Error·retry: 저장에 실패하면 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」(공통 처리)를 보이고 체크 상태를 유지한 채 이동·권한 요청 없이 머문다. 다시 눌러 재시도한다. 로그아웃(뒤로 가기)이 실패해도 같은 토스트와 함께 머문다.
 - Disabled·invalid: 필수 약관 하나라도 체크하지 않으면 시작하기 버튼이 비활성(`disabled`)이다. 선택 약관만 체크해도 비활성이다. 안내 문구는 없다.
-- Success·완료 후 이동: 시작하기를 누르면 ① `GET /auth/terms`로 현재 버전을 읽고 ② `POST /auth/terms/agreements`로 필수 3종(`SERVICE`·`PRIVACY`·`AGE_OVER_14`)과 동의한 선택 약관(`DEMOGRAPHICS`)을 한 번에 저장하고 ③ 가입 상태(`sharedKeys.session()`)를 다시 읽어 기다린 뒤 ④ 권한 요청(`usePermissionRequests`, 사진 → 카메라 → 알림 순서로 bridge `requestPermission`을 한 권한씩 호출, 허용·거부·실패 모두 다음으로 진행)이 끝나기를 기다린다. 「전체 동의하기」 체크로는 요청하지 않는다. 권한 요청은 화면에 머무는 동안 한 번만 한다 ⑤ 프로필(`SIGNUP_PATHS.profile`)로 `push`한다. 선택 약관은 동의했을 때만 보낸다. 1110판 1.3.4는 [선택] 동의 여부를 저장한다고 하고, 백엔드는 미동의를 항목 생략으로 받는다(아래 API 계약 확인 항목). 권한 요청 중 화면을 벗어나면 이동을 생략한다. 뒤로 가기는 `POST /api/auth/logout`으로 로그인 상태를 풀고 로그인 화면을 새로 연다(기획 1.3.5, 가입 중 계정과 진행 상태는 서버에 남는다).
+- Success·완료 후 이동: 시작하기를 누르면 ① `GET /auth/terms`로 현재 버전을 읽고 ② `POST /auth/terms/agreements`로 필수 3종(`SERVICE`·`PRIVACY`·`AGE_OVER_14`)과 동의한 선택 약관(`DEMOGRAPHICS`)을 한 번에 저장하고 ③ 가입 상태(`sharedKeys.session()`) 캐시를 「약관 동의」로 바꾸고(다시 읽지 않음, 진행 중이던 가입 상태 요청은 취소) ④ 권한 요청(`usePermissionRequests`, 사진 → 카메라 → 알림 순서로 bridge `requestPermission`을 한 권한씩 호출, 허용·거부·실패 모두 다음으로 진행)이 끝나기를 기다린다. 「전체 동의하기」 체크로는 요청하지 않는다. 권한 요청은 화면에 머무는 동안 한 번만 한다 ⑤ 프로필(`SIGNUP_PATHS.profile`)로 `push`한다. 선택 약관은 동의했을 때만 보낸다. 1110판 1.3.4는 [선택] 동의 여부를 저장한다고 하고, 백엔드는 미동의를 항목 생략으로 받는다(아래 API 계약 확인 항목). 권한 요청 중 화면을 벗어나면 이동을 생략한다. 뒤로 가기는 `POST /api/auth/logout`으로 로그인 상태를 풀고 로그인 화면을 새로 연다(기획 1.3.5, 가입 중 계정과 진행 상태는 서버에 남는다).
 
 ## 데이터 의존성
 
 - Query와 enabled 조건: 약관 목록·원문은 앱 상수다. 서버의 현재 버전(`GET /api/auth/terms`, `features/auth/api/terms.ts`)은 시작하기 때 한 번 읽는다(query 캐시 없음).
-- Mutation·cache 영향: 동의 저장은 `useAgreeToTermsMutation`(`queries/signup.ts`)이고 성공하면 `sharedKeys.session()`을 무효화하고 기다린다(`AuthGate`가 옛 상태로 프로필 이동을 되돌리지 않도록). 선택 약관 동의는 서버에 미리 저장되지 않고 이 저장 요청에 실린다. 뒤로 가기는 `useLeaveSignupMutation`(로그아웃 뒤 `reloadTo`).
+- Mutation·cache 영향: 동의 저장은 `useAgreeToTermsMutation`(`queries/signup.ts`)이고 성공하면 진행 중인 `sharedKeys.session()` 요청을 취소하고 캐시의 `termsAccepted`를 true로 바꾼다(응답 data가 null이라 서버 값 대신 저장 성공을 근거로 함, `AuthGate`가 옛 상태로 프로필 이동을 되돌리지 않도록). 캐시가 없으면 무효화만 한다. 선택 약관 동의는 서버에 미리 저장되지 않고 이 저장 요청에 실린다. 뒤로 가기는 `useLeaveSignupMutation`(로그아웃 뒤 `reloadTo`).
 - API 계약 확인 항목: 선택 약관(`DEMOGRAPHICS`)에 동의하지 않으면 `agreed: false`로 보내지 않고 항목을 뺀다(백엔드 확인 2026-11-10). 남은 확인 항목은 `GET /auth/terms` 응답 모양(Swagger에 타입이 없어 명세서 기준). BFF는 백엔드 `auth/` 아래라도 약관 두 경로만 범용 프록시로 허용한다(`backendProxy.ts`).
 
 ## UI와 접근성
