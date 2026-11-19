@@ -8,7 +8,7 @@ import { TAB_IDS } from '../../src/tabs/tabs';
 import { tabsStore } from '../../src/tabs/tabs-store';
 
 // 선택 색만 디자인 시스템 text-primary 복사(RN은 CSS 변수 미지원)
-// 라벨 글꼴·미선택 색은 지정하지 않음: iOS 26 Liquid Glass 탭 바가 미선택 라벨을 아래로 밀고 잘라 그림(#462)
+// 라벨 글꼴·미선택 색은 지정하지 않음: iOS 26 탭 바가 선택된 적 없는 항목의 Pretendard 라벨을 밀고 잘라 그림(#462)
 const TEXT_PRIMARY = '#121212';
 
 // 탭 햅틱은 쉘의 네이티브 모듈(modules/tab-crossfade)이 울리지만 Expo Go에는 그 모듈이 없어 JS로 대신 울림
