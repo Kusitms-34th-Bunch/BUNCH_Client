@@ -208,7 +208,7 @@ export function PhotoBoxScreen({
       bottom={
         <div className="relative h-0">
           {selecting && menuMounted ? (
-            // 메뉴는 「⋯」 위 10px, 오른쪽 정렬(Figma 사진함_08): 「⋯」 높이 3.25rem + 간격 0.625rem
+            // 메뉴는 「⋯」 위 10px, 오른쪽 정렬(Figma 사진함_17): 「⋯」 높이 3.25rem + 간격 0.625rem
             <div className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap)+3.875rem)] z-20">
               <PhotoSelectionMenu
                 open={menuOpen}

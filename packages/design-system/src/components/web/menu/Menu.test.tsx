@@ -176,7 +176,7 @@ describe('Menu 닫힘 안전장치', () => {
     vi.useRealTimers();
   });
 
-  it('모션 끝 이벤트가 오지 않아도 500ms 뒤 onExited를 부른다', () => {
+  it('모션 끝 이벤트가 오지 않아도 300ms 뒤 onExited를 부른다', () => {
     const onExited = vi.fn();
     render(
       <Menu aria-label="m" open={false} onExited={onExited}>
@@ -184,7 +184,7 @@ describe('Menu 닫힘 안전장치', () => {
       </Menu>,
     );
     act(() => {
-      vi.advanceTimersByTime(499);
+      vi.advanceTimersByTime(299);
     });
     expect(onExited).not.toHaveBeenCalled();
 
@@ -229,7 +229,7 @@ describe('Menu 닫힘 안전장치', () => {
       </Menu>,
     );
     act(() => {
-      vi.advanceTimersByTime(300);
+      vi.advanceTimersByTime(200);
     });
     rerender(
       <Menu aria-label="m" open onExited={onExited}>

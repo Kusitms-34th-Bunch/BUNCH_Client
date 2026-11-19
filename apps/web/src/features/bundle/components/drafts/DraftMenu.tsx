@@ -2,7 +2,7 @@
 
 import { LineDotsLargeIcon, LineTransitionLeftMediumIcon } from '@app/design-system';
 import { IconButton } from '@app/design-system/web';
-import { useRef, useState, type CSSProperties } from 'react';
+import { useRef, useState } from 'react';
 import {
   PhotoActionMenu,
   type PhotoActionMenuItem,
@@ -17,9 +17,6 @@ const LEAVE: PhotoActionMenuItem<DraftMenuAction> = {
   icon: <LineTransitionLeftMediumIcon aria-hidden="true" />,
   tone: 'warning',
 };
-
-// 헤더 아래에서 열리므로 위에서 아래로 내려오며 열림(사진 상세 더보기와 같은 모션)
-const DOWNWARD_MOTION = { '--menu-motion-offset': '-38px' } as CSSProperties;
 
 type DraftMenuProps = {
   /** 「번들 나가기」를 골랐을 때(확인 창은 호출하는 쪽이 엶) */
@@ -63,7 +60,6 @@ export function DraftMenu({ onLeave }: DraftMenuProps) {
           <PhotoActionMenu
             label={BUNDLE_MESSAGES.menuLabel}
             items={[LEAVE]}
-            style={DOWNWARD_MOTION}
             open={open}
             onClose={() => setOpen(false)}
             onExited={() => setMounted(false)}
