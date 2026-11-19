@@ -49,4 +49,28 @@ describe('useRefocusWhenEnabled', () => {
     rerender(<Retry enabled failed buttonDisabled={false} />);
     expect(document.activeElement).not.toBe(getByRole('button'));
   });
+
+  it('그사이 사용자가 다른 곳(입력란)에 초점을 뒀으면 빼앗지 않는다', () => {
+    const { rerender, getByRole } = render(
+      <>
+        <input aria-label="입력" />
+        <Retry enabled={false} failed={false} />
+      </>,
+    );
+    rerender(
+      <>
+        <input aria-label="입력" />
+        <Retry enabled={false} failed />
+      </>,
+    );
+    const input = getByRole('textbox', { name: '입력' });
+    input.focus();
+    rerender(
+      <>
+        <input aria-label="입력" />
+        <Retry enabled failed />
+      </>,
+    );
+    expect(document.activeElement).toBe(input);
+  });
 });

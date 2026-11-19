@@ -13,6 +13,9 @@ export function useRefocusWhenEnabled<T extends HTMLElement>(enabled: boolean) {
   useEffect(() => {
     if (!enabled || !requested.current) return;
     requested.current = false;
+    // 그사이 사용자가 다른 곳(입력란 등)에 초점을 뒀으면 빼앗지 않음. 잃은 초점(body)일 때만 되돌림
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
     ref.current?.focus();
   }, [enabled]);
 

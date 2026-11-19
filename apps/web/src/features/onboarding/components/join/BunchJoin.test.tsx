@@ -243,6 +243,32 @@ describe('BunchJoin', () => {
     await waitFor(() => expect(document.activeElement).toBe(done()));
   });
 
+  it('확인 중 입력을 비운 뒤 오류가 나도 새 링크를 입력하는 동안 초점을 빼앗지 않는다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/api/invitations/verify', async () => {
+        await gate;
+        return fail(429, 'REQUEST_002');
+      }),
+    );
+    renderJoin();
+    await userEvent.type(input(), LINK);
+    await userEvent.click(done());
+
+    await userEvent.clear(input());
+    release();
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+    );
+
+    await userEvent.type(input(), LINK);
+    expect(document.activeElement).toBe(input());
+    expect((input() as HTMLInputElement).value).toBe(LINK);
+  });
+
   it('뒤로 가기는 중단 확인 모달을 열고 계속 참여하기는 모달만 닫는다', async () => {
     renderJoin();
 

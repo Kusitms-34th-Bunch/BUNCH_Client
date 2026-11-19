@@ -60,6 +60,8 @@ export function TermsAgreement() {
         refocusStart();
         return;
       }
+      // 저장하는 사이 화면을 떠났으면 권한을 묻지 않음
+      if (!mounted.current) return;
       await requestAll();
       if (mounted.current) router.push(SIGNUP_PATHS.profile);
     } finally {
@@ -119,7 +121,10 @@ export function TermsAgreement() {
                 onChange={(event) => setAgreed(id, event.target.checked)}
                 {...(documentId
                   ? {
-                      onViewTerms: () => router.push(SIGNUP_PATHS.termsDocument(documentId)),
+                      // 저장을 시작한 뒤에는 원문으로 떠나지 않게 무시(덮개가 없어 눌릴 수 있음)
+                      onViewTerms: () => {
+                        if (!submitted) router.push(SIGNUP_PATHS.termsDocument(documentId));
+                      },
                       viewLabel: `${label} 내용 보기`,
                     }
                   : {})}

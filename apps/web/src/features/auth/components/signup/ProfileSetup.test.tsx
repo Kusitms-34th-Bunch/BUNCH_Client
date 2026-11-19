@@ -627,7 +627,7 @@ describe('ProfileSetup', () => {
       expect(replace).not.toHaveBeenCalled();
       expect(toast).not.toHaveBeenCalled();
       // 시작하기가 비활성이 되므로 닉네임 입력으로 포커스를 돌려줌
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       // 닉네임을 바꾸면 다시 시작할 수 있음
       await userEvent.type(nickname(), '2');
@@ -661,7 +661,7 @@ describe('ProfileSetup', () => {
       expect(start().hasAttribute('disabled')).toBe(true);
       expect(replace).not.toHaveBeenCalled();
       expect(toast).not.toHaveBeenCalled();
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       await userEvent.type(nickname(), '2');
       expect(screen.queryByText(NICKNAME_PROHIBITED_MESSAGE)).toBeNull();
@@ -762,7 +762,7 @@ describe('ProfileSetup', () => {
     it('빈 영역을 누르면 입력창 포커스가 풀려 키보드가 닫힌다', async () => {
       render(<ProfileSetup />);
       await userEvent.click(nickname());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       await userEvent.click(screen.getByText('먼저 나를 소개해 볼까요?'));
 
@@ -783,7 +783,7 @@ describe('ProfileSetup', () => {
       await userEvent.click(nickname());
 
       fireEvent.pointerDown(female());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
 
       fireEvent.click(female());
       expect(female().getAttribute('aria-pressed')).toBe('true');
@@ -795,7 +795,7 @@ describe('ProfileSetup', () => {
       await userEvent.type(nickname(), '지원');
 
       fireEvent.pointerDown(start());
-      expect(document.activeElement).toBe(nickname());
+      await waitFor(() => expect(document.activeElement).toBe(nickname()));
       expect(start().hasAttribute('disabled')).toBe(false);
 
       fireEvent.click(start());
