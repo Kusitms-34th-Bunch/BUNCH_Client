@@ -1,7 +1,12 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
-import { CameraButton, LabeledTextField, ProfileImage } from '@app/design-system/web';
+import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import {
+  CameraButton,
+  LabeledTextArea,
+  LabeledTextField,
+  ProfileImage,
+} from '@app/design-system/web';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -10,6 +15,7 @@ import {
   type CheckNickname,
   useNicknameAvailability,
 } from '@/shared/hooks/useNicknameAvailability';
+import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import {
   BUNCH_DESCRIPTION_MAX_LENGTH,
   BUNCH_DESCRIPTION_PROHIBITED_MESSAGE,
@@ -22,10 +28,13 @@ import {
   type CharacterType,
   defaultBunchImage,
   hasInvalidBunchNameChars,
+  pasteBunchName,
 } from '@/shared/lib/bunchProfile';
+import { filteredPaste } from '@/shared/lib/filteredPaste';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import type { BunchProfileImageChange } from '../../api/bunchHome';
 import type { BunchProfileEdit as BunchProfile } from '../../lib/types';
+import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BunchProfileEditSkeleton } from './BunchProfileEditSkeleton';
 import { BunchVisibilityField } from './BunchVisibilityField';
 
@@ -77,10 +86,11 @@ export function BunchProfileEditScreen({
   checkName,
   characterType,
 }: BunchProfileEditScreenProps) {
-  const header = (
+  // 뒤로 가기 동작은 폼이 정함(바꾼 내용이 있으면 확인 창)
+  const header = (back: () => void) => (
     <Header
       leading={
-        <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
+        <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={back}>
           <LineChevronLeftLargeIcon />
         </HeaderIconButton>
       }
@@ -89,7 +99,7 @@ export function BunchProfileEditScreen({
   if (!initial) {
     return (
       <EditFrame
-        header={header}
+        header={header(onBack)}
         // 실제 폼과 같은 하단 저장하기(받기 전이라 막아 둠): 다 받은 뒤 하단 바가 새로 생겨 본문 높이가 바뀌지 않게
         bottom={
           <div className="pt-padding-p7 px-padding-p8">
@@ -107,6 +117,7 @@ export function BunchProfileEditScreen({
     <ProfileForm
       initial={initial}
       header={header}
+      onBack={onBack}
       onSave={onSave}
       saving={saving}
       takenName={takenName}
@@ -140,6 +151,7 @@ function EditFrame({
 function ProfileForm({
   initial: latest,
   header,
+  onBack,
   onSave,
   saving,
   takenName,
@@ -148,7 +160,8 @@ function ProfileForm({
   characterType,
 }: {
   initial: EditableProfile;
-  header: ReactNode;
+  header: (_back: () => void) => ReactNode;
+  onBack: () => void;
   onSave: (_draft: BunchProfileDraft) => void;
   saving: boolean;
   takenName: string | null;
@@ -159,6 +172,7 @@ function ProfileForm({
   const formId = useId();
   const nameId = useId();
   const descriptionId = useId();
+  const openOverlay = useScreenOverlay();
   // 폼을 연 순간의 값과 버전으로 고정(그 뒤 다시 받은 값으로 바뀌면 입력은 그대로인데 비교·버전만 바뀌어 모르고 덮어씀)
   const [initial] = useState(latest);
   const [name, setName] = useState(initial.name);
@@ -233,9 +247,29 @@ function ProfileForm({
     });
   };
 
+  // 바꾼 내용이 있으면 나가기 전에 확인(기능명세 5.5.1 상세 5, MY 프로필 수정과 같은 창). 저장 중에는 묻지 않음
+  const back = () => {
+    if (saving || !changed) return onBack();
+    // 키보드를 닫고 열어 「취소」 뒤 초점이 입력창으로 돌아가 키보드가 다시 뜨지 않게 함
+    closeKeyboard();
+    openOverlay((rootProps, close) => (
+      <ConfirmDialog
+        {...rootProps}
+        title={BUNCH_HOME_MESSAGES.profileLeave.title}
+        description={BUNCH_HOME_MESSAGES.profileLeave.description}
+        confirmLabel={BUNCH_HOME_MESSAGES.profileLeave.confirm}
+        cancelLabel={BUNCH_HOME_MESSAGES.profileLeave.cancel}
+        onConfirm={() => {
+          close();
+          onBack();
+        }}
+      />
+    ));
+  };
+
   return (
     <EditFrame
-      header={header}
+      header={header(back)}
       bottom={
         // Figma Indicator + CTA: 위 14
         <div className="pt-padding-p7 px-padding-p8">
@@ -301,20 +335,21 @@ function ProfileForm({
                     : undefined
               }
               onChange={(event) => setName(event.target.value)}
+              // 쓸 수 없는 문자를 섞어 붙여넣으면 그 문자만 빼고 넣음(기능명세 2.2.2 예외)
+              onPaste={filteredPaste(pasteBunchName, setName)}
               onCompositionStart={() => setComposing(true)}
               onCompositionEnd={() => setComposing(false)}
               // 일부 모바일 키보드의 조합 종료 없는 포커스 이탈 처리
               onBlur={() => setComposing(false)}
             />
-            <LabeledTextField
+            {/* 번치 만들기와 같은 여러 줄 입력(줄바꿈 허용, 보이는 글자 기준 50자, 기능명세 5.5.3) */}
+            <LabeledTextArea
               id={descriptionId}
-              title="한 줄 소개"
+              label="한 줄 소개"
               value={description}
               maxLength={BUNCH_DESCRIPTION_MAX_LENGTH}
               autoComplete="off"
-              errorMessage={
-                descriptionProhibited ? BUNCH_DESCRIPTION_PROHIBITED_MESSAGE : undefined
-              }
+              error={descriptionProhibited ? BUNCH_DESCRIPTION_PROHIBITED_MESSAGE : undefined}
               onChange={(event) => setDescription(event.target.value)}
             />
             <BunchVisibilityField

@@ -13,6 +13,7 @@ import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
+import { PERMISSION_DENIED_CODE } from '../../constants/roles';
 import { toEditableBunchProfile } from '../../model/bunchHome';
 import { bunchHomeQueryOptions, useUpdateBunchProfileMutation } from '../../queries/bunchHome';
 import { BunchHomeError } from '../home/BunchHomeError';
@@ -43,6 +44,8 @@ export function BunchProfileEdit() {
   const [prohibited, setProhibited] = useState<ProhibitedValues>({});
   // 다른 곳에서 바뀐 걸 알게 되면 폼을 최신 값으로 다시 엶
   const [formRevision, setFormRevision] = useState(0);
+  // 권한 변경 안내 뒤 더보기로 가는 중(이동이 끝날 때까지 나가기 확인·다시 저장을 막음)
+  const [leaving, setLeaving] = useState(false);
 
   const hasNoBunch = me.isSuccess && bunchId === undefined;
   const cannotEdit = profile !== undefined && !profile.canEdit;
@@ -104,6 +107,14 @@ export function BunchProfileEdit() {
           toastAfterNavigation(BUNCH_HOME_MESSAGES.profileSaved, { icon: 'success' });
         },
         onError: (error) => {
+          // 그 사이 메인 관리자가 아니게 됐으면 안내 뒤 더보기로(멤버 관리와 같음, 기능명세 5.4.1 예외)
+          if (isApiError(error) && error.code === PERMISSION_DENIED_CODE) {
+            setLeaving(true);
+            void home.refetch();
+            toastAfterNavigation(BUNCH_HOME_MESSAGES.memberManagePermissionChanged);
+            backOr(BUNCH_HOME_PATHS.menu);
+            return;
+          }
           if (isApiError(error) && error.code === NAME_TAKEN_CODE) {
             setTakenName(name.normalize('NFC').trim());
             return;
@@ -148,7 +159,8 @@ export function BunchProfileEdit() {
       initial={profile}
       onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
       onSave={save}
-      saving={update.isPending}
+      // 저장 성공 뒤 이동이 시작되기 전에도 나가기 확인·다시 저장을 막음
+      saving={update.isPending || update.isSuccess || leaving}
       takenName={takenName}
       prohibited={prohibited}
       checkName={

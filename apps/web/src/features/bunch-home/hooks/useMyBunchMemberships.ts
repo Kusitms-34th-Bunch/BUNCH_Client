@@ -1,11 +1,14 @@
+import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
+import { PERMISSION_DENIED_CODE } from '../constants/roles';
 import { toManagedMemberships } from '../model/memberships';
 import { bunchHomeQueryOptions } from '../queries/bunchHome';
 import {
@@ -107,10 +110,24 @@ export function useMyBunchMemberships() {
       { departure, base, idempotencyKey: attempt.current.key },
       {
         onSuccess: onDone,
-        onError: () => {
+        onError: (error) => {
           departing.current = false;
           departingId.current = null;
           setPinnedId(null);
+          // 삭제하는 사이 메인 관리자가 아니게 됐으면 권한 변경 안내(기능명세 5.4.1 예외)
+          // 다시 받은 역할이 바뀌었으면 삭제 화면이 더보기로 돌아가므로 도착 화면에 띄움(결정 기록 020)
+          if (
+            departure.kind === 'delete' &&
+            isApiError(error) &&
+            error.code === PERMISSION_DENIED_CODE
+          ) {
+            void memberships.refetch().then(({ data, isError }) => {
+              const demoted = !isError && data && toManagedMemberships(data).myRole !== 'owner';
+              if (demoted) toastAfterNavigation(BUNCH_HOME_MESSAGES.memberManagePermissionChanged);
+              else toast(BUNCH_HOME_MESSAGES.memberManagePermissionChanged);
+            });
+            return;
+          }
           toast(departFailedMessage(departure));
           // 그 사이 멤버·역할이 바뀌었으면 새 버전·역할로 다시 그림
           void memberships.refetch();
