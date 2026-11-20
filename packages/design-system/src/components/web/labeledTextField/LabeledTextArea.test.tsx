@@ -67,10 +67,13 @@ describe('LabeledTextArea', () => {
   it('한글 조합 중에는 자르지 않고 조합이 끝나면 자른다', () => {
     render(<Controlled maxLength={2} />);
     const textarea = screen.getByRole<HTMLTextAreaElement>('textbox');
-    const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
 
     fireEvent.compositionStart(textarea);
-    setValue?.call(textarea, '가나ㄷ');
+    // React 값 추적을 거치지 않는 기본 setter로 조합 중인 값을 넣음
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(
+      textarea,
+      '가나ㄷ',
+    );
     fireEvent.input(textarea, { isComposing: true });
     expect(textarea.value).toBe('가나ㄷ');
 
