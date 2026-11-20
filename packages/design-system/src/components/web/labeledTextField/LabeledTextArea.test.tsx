@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -42,6 +42,50 @@ describe('LabeledTextArea', () => {
     await userEvent.type(screen.getByRole('textbox'), '맛집탐방에진심');
 
     expect(screen.getByDisplayValue('맛집탐방')).toBe(screen.getByRole('textbox'));
+  });
+
+  it('이모지·결합 문자도 보이는 글자 하나로 세고, 최대 길이도 그 기준으로 자른다', async () => {
+    render(<Controlled maxLength={3} />);
+
+    await userEvent.type(screen.getByRole('textbox'), '😀👍🏻가나');
+
+    expect(screen.getByDisplayValue('😀👍🏻가')).toBe(screen.getByRole('textbox'));
+    expect(screen.getByText('3/3')).toBeTruthy();
+  });
+
+  it('최대 길이에서 글 가운데에 입력해도 원래 글의 끝은 지워지지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<Controlled maxLength={4} />);
+    const textarea = screen.getByRole<HTMLTextAreaElement>('textbox');
+    await user.type(textarea, '가나다라');
+
+    await user.type(textarea, '마', { initialSelectionStart: 2, initialSelectionEnd: 2 });
+
+    expect(textarea.value).toBe('가나다라');
+  });
+
+  it('한글 조합 중에는 자르지 않고 조합이 끝나면 자른다', () => {
+    render(<Controlled maxLength={2} />);
+    const textarea = screen.getByRole<HTMLTextAreaElement>('textbox');
+    const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+
+    fireEvent.compositionStart(textarea);
+    setValue?.call(textarea, '가나ㄷ');
+    fireEvent.input(textarea, { isComposing: true });
+    expect(textarea.value).toBe('가나ㄷ');
+
+    fireEvent.compositionEnd(textarea);
+    expect(textarea.value).toBe('가나');
+    expect(screen.getByText('2/2')).toBeTruthy();
+  });
+
+  it('줄바꿈은 그대로 넣고 한 글자로 센다', async () => {
+    render(<Controlled maxLength={50} />);
+
+    await userEvent.type(screen.getByRole('textbox'), '가{Enter}나');
+
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox').value).toBe('가\n나');
+    expect(screen.getByText('3/50')).toBeTruthy();
   });
 
   it('값이 바뀌면 내용 높이에 맞춰 늘어난다', async () => {

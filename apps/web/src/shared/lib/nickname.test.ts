@@ -4,7 +4,9 @@ import {
   isValidNickname,
   NICKNAME_MAX_LENGTH,
   normalizeNickname,
+  exceedsNicknameLength,
   pasteIntoNickname,
+  pasteNickname,
 } from './nickname';
 
 describe('nickname', () => {
@@ -85,11 +87,22 @@ describe('nickname', () => {
       });
     });
 
-    it('최대 길이를 넘는 뒤쪽은 자른다', () => {
+    it('최대 길이를 넘어도 자르지 않고 넣는다(초과 안내를 보이게)', () => {
       const result = pasteIntoNickname('가'.repeat(10), { start: 10, end: 10 }, 'abcde!');
 
-      expect(result?.value).toBe(`${'가'.repeat(10)}ab`);
-      expect(result?.caret).toBe(NICKNAME_MAX_LENGTH);
+      expect(result?.value).toBe(`${'가'.repeat(10)}abcde`);
+      expect(result?.caret).toBe(15);
+      expect(exceedsNicknameLength(result?.value ?? '')).toBe(true);
+    });
+
+    it('앞뒤 공백은 빼고 길이를 세어, 끝 공백만 넘치면 초과로 보지 않는다', () => {
+      expect(exceedsNicknameLength(`${'가'.repeat(12)} `)).toBe(false);
+      // 공백 포함 13자라 브라우저가 자르지 않게 직접 넣고, 공백을 뺀 12자라 초과 안내는 없음
+      expect(pasteNickname('', { start: 0, end: 0 }, ` ${'가'.repeat(12)}`)).toEqual({
+        value: ` ${'가'.repeat(12)}`,
+        caret: 13,
+      });
+      expect(pasteNickname('', { start: 0, end: 0 }, '가나다')).toBe('native');
     });
 
     it('넣을 글자가 하나도 남지 않으면 입력을 바꾸지 않는다', () => {

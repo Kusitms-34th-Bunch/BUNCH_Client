@@ -17,7 +17,9 @@ import {
   BUNCH_NAME_TAKEN_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
   hasInvalidBunchNameChars,
+  pasteBunchName,
 } from '@/shared/lib/bunchProfile';
+import { filteredPaste } from '@/shared/lib/filteredPaste';
 import { checkBunchNameAvailability } from '../../api/bunches';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
@@ -99,6 +101,8 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
                 : undefined
           }
           onChange={(event) => setName(event.target.value)}
+          // 쓸 수 없는 문자를 섞어 붙여넣으면 그 문자만 빼고 넣음(기능명세 2.2.2 예외)
+          onPaste={filteredPaste(pasteBunchName, setName)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
           // 일부 모바일 키보드의 조합 종료 없는 포커스 이탈 처리

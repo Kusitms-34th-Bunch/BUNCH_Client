@@ -102,13 +102,8 @@ export function BunchDescription() {
           value={description}
           maxLength={BUNCH_DESCRIPTION_MAX_LENGTH}
           error={prohibited ? BUNCH_DESCRIPTION_PROHIBITED_MESSAGE : undefined}
-          onChange={(event) => setDescription(event.target.value.replace(/[\r\n]+/g, ' '))}
-          // 한 줄 소개의 Enter 줄바꿈 방지(붙여넣은 줄바꿈은 공백 처리)
-          enterKeyHint="done"
-          onKeyDown={(event) => {
-            // 한글 조합 확정 Enter 허용
-            if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.preventDefault();
-          }}
+          // 줄바꿈 허용(기능명세 2.2.6), 줄바꿈도 1자
+          onChange={(event) => setDescription(event.target.value)}
         />
       </div>
       <section className="pt-s15 px-padding-p8 gap-s3 flex flex-col">

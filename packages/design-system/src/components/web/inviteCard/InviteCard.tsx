@@ -66,7 +66,7 @@ export const InviteCard = ({
             {bunchName}
           </h2>
           {description ? (
-            <p className="typography-body-1-medium text-text-secondary line-clamp-2 w-full wrap-break-word">
+            <p className="typography-body-1-medium text-text-secondary line-clamp-2 w-full wrap-break-word whitespace-pre-line">
               {description}
             </p>
           ) : null}

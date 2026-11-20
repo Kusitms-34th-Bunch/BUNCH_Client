@@ -164,6 +164,21 @@ describe('ProfileSetup', () => {
       expect(screen.getByText('12/12')).toBeTruthy();
     });
 
+    it('붙여넣기로 12자를 넘으면 자르지 않고 초과 안내를 보이며 시작하기를 비활성화한다', async () => {
+      const user = userEvent.setup();
+      render(<ProfileSetup />);
+
+      await user.click(nickname());
+      await user.paste('QA테스트닉네임가나다라마바');
+
+      expect(nickname()).toHaveProperty('value', 'QA테스트닉네임가나다라마바');
+      expect(screen.getByRole('alert').textContent).toBe('입력 가능한 글자수를 초과했어요');
+      expect(start().hasAttribute('disabled')).toBe(true);
+
+      await user.keyboard('{Backspace}{Backspace}');
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
     it('특수문자가 있으면 오류 문구를 보이고 시작하기를 비활성화한다', async () => {
       render(<ProfileSetup />);
 

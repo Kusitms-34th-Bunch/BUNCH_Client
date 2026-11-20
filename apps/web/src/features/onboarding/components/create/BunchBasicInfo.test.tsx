@@ -62,6 +62,17 @@ describe('BunchBasicInfo', () => {
     expect(screen.getByText('12/12')).toBeTruthy();
   });
 
+  it('쓸 수 없는 문자를 섞어 붙여넣으면 그 문자만 빼고 넣는다', async () => {
+    const user = userEvent.setup();
+    renderStep();
+
+    await user.click(nameInput());
+    await user.paste('모임!🎉');
+
+    expect(screen.getByDisplayValue('모임')).toBe(nameInput());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('이름만 입력하고 공개 범위를 고르지 않으면 다음은 비활성이다', async () => {
     renderStep();
 
