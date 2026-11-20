@@ -64,14 +64,19 @@ export function MemberProfileScreen({ memberId, links, follow }: MemberProfileSc
   const member = profile.data;
 
   // 「다시 시도」 버튼은 받는 동안 사라지므로, 끝나면 그 화면의 제목(멤버 이름이나 실패 안내)으로 초점
+  // 누른 「다시 시도」를 기억해, 받는 사이 사용자가 옮긴 초점(헤더의 뒤로 가기 등)은 빼앗지 않음
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const focusTitleAfterRetry = useRef(false);
+  const retryPressed = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    // 덮개 화면(제목 없음)이면 다음 렌더까지 기다림
-    if (!focusTitleAfterRetry.current || profile.isFetching || viewerFetching) return;
+    // 받는 중(스켈레톤, 제목 없음)이면 다음 렌더까지 기다림
+    const pressed = retryPressed.current;
+    if (!pressed || profile.isFetching || viewerFetching) return;
     if (!titleRef.current) return;
-    focusTitleAfterRetry.current = false;
-    titleRef.current?.focus({ preventScroll: true });
+    retryPressed.current = null;
+    // body는 옮기지 않은 것으로 봄(누른 버튼이 사라졌거나, iOS Safari처럼 눌러도 버튼에 초점이 가지 않는 경우)
+    const active = document.activeElement;
+    const moved = active && active !== document.body && active !== pressed && active.isConnected;
+    if (!moved) titleRef.current.focus({ preventScroll: true });
   });
 
   const header = (
@@ -106,8 +111,8 @@ export function MemberProfileScreen({ memberId, links, follow }: MemberProfileSc
             <Button
               variant="tertiary"
               size="md"
-              onClick={() => {
-                focusTitleAfterRetry.current = true;
+              onClick={(event) => {
+                retryPressed.current = event.currentTarget;
                 void (profile.isError ? profile.refetch() : retryViewer());
               }}
             >

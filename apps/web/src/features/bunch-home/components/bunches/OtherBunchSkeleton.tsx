@@ -1,4 +1,5 @@
 import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, Skeleton } from '@app/design-system';
+import { useEffect, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PhotoGridSkeleton } from '@/shared/components/skeleton/PhotoGridSkeleton';
@@ -16,6 +17,12 @@ type OtherBunchSkeletonProps = {
  * 뒤로 가기는 실제 버튼, 더보기는 받기 전이라 모양만(누를 수 없음). 배경은 번치 성격 색을 몰라 옅은 회색
  */
 export function OtherBunchSkeleton({ onBack }: OtherBunchSkeletonProps) {
+  // 상태 영역이 먼저 마운트된 뒤에 문구를 채워야 스크린 리더가 변화로 읽음(영역과 문구가 함께 생기면 읽히지 않을 수 있음)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <PageShell
       className="to-surface-primary from-surface-secondary bg-linear-to-b from-50% to-50%"
@@ -37,7 +44,7 @@ export function OtherBunchSkeleton({ onBack }: OtherBunchSkeletonProps) {
     >
       {/* 제목(번치 이름 h1)은 받은 뒤에만: 차단 여부를 확인하는 동안 서버 렌더에도 번치 제목을 두지 않음, 진입 초점은 실제 제목이 생기면 감 */}
       <div role="status" className="flex min-h-full flex-col">
-        <span className="sr-only">{BUNCH_HOME_MESSAGES.otherBunchLoading}</span>
+        <span className="sr-only">{mounted ? BUNCH_HOME_MESSAGES.otherBunchLoading : ''}</span>
         <div aria-hidden="true" className="bg-surface-secondary relative h-25.5 shrink-0">
           <Skeleton
             shape="round"
