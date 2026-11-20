@@ -29,6 +29,7 @@ import { BunchHomeError } from '../home/BunchHomeError';
 import { BlockedBunchScreen } from './BlockedBunchScreen';
 import { OtherBunchMoreMenu } from './OtherBunchMoreMenu';
 import { OtherBunchScreen } from './OtherBunchScreen';
+import { OtherBunchSkeleton } from './OtherBunchSkeleton';
 
 /**
  * `/bunches/[bunchId]` 다른 번치 프로필: 홈(`EXTERNAL`)·공개 번들과 팔로우를 지금 내 번치(기본 번치) 명의로
@@ -149,9 +150,10 @@ export function OtherBunch({
       />
     );
   }
-  if (access === 'checking' || !home.data || internal) {
-    return <BlockedBunchScreen onBack={back} checking />;
-  }
+  // 내 번치(INTERNAL)는 번치 탭으로 옮기는 중이라 내용 없이 상태만
+  if (internal) return <BlockedBunchScreen onBack={back} checking />;
+  // 처음 받는 중·차단 여부 확인 중은 화면 모양만(번치 내용은 아직 그리지 않음)
+  if (access === 'checking' || !home.data) return <OtherBunchSkeleton onBack={back} />;
 
   const data = home.data;
   const status = FOLLOW_STATUS[data.followState ?? 'NONE'];

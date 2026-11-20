@@ -27,6 +27,7 @@ import { usePrefetchMemberships } from '../../queries/memberships';
 import { AccessNoticeDialog } from './AccessNoticeDialog';
 import { BunchHomeError } from './BunchHomeError';
 import { BunchHomeScreen } from './BunchHomeScreen';
+import { BunchHomeSkeleton } from './BunchHomeSkeleton';
 import { NoBunchScreen } from './NoBunchScreen';
 
 // 번들은 번치 멤버가 2명 이상일 때 만들 수 있음(기획)
@@ -169,8 +170,10 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
         <p role="status" className="sr-only">
           {server.kind === 'loading' ? '번치를 불러오는 중이에요' : ''}
         </p>
+        {/* 처음 받는 중은 화면 모양을 아니까 스켈레톤(저장해 둔 홈이 있으면 바로 그려져 거치지 않음) */}
+        {server.kind === 'loading' ? <BunchHomeSkeleton /> : null}
         {/* 접근 불가 안내는 안내를 받는 동안만 로딩, 창이 열리면 덮개를 걷음(덮개가 남으면 앱 스플래시가 안내 창을 가림, AuthGate appReady) */}
-        {server.kind === 'loading' || noticeLoading ? <PageLoading /> : null}
+        {noticeLoading ? <PageLoading /> : null}
         {/* 안내를 닫거나 받지 못하면 서버가 다시 고른 번치(또는 번치 없음)로 바뀜 */}
         {server.kind === 'unavailable' ? (
           <AccessNoticeDialog

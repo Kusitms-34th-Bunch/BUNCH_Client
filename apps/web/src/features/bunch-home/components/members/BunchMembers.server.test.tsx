@@ -8,6 +8,7 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { getMemberships, transferOwner } from '../../api/memberships';
 import { BunchMembers } from './BunchMembers';
@@ -64,6 +65,16 @@ const confirmIn = async (menuLabel: string, confirmLabel: string, name: string) 
 };
 
 describe('BunchMembers 서버 멤버 관리', () => {
+  it('받는 동안은 덮개 없이 헤더와 멤버 행 스켈레톤을 보이고 받는 중을 알린다', async () => {
+    renderMembers();
+
+    expect(screen.getByRole('status').textContent).toBe('멤버를 불러오는 중이에요');
+    expect(screen.getByRole('button', { name: '뒤로 가기' })).toBeTruthy();
+    expect(getPageLoadingCount()).toBe(0);
+    await screen.findByText('5/8명');
+    expect(screen.getByRole('status').textContent).toBe('');
+  });
+
   it('서버 목록을 역할순으로 보이고, 일반 멤버는 아무도 관리하지 못한다', async () => {
     renderMembers();
 

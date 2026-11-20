@@ -13,6 +13,7 @@ import { openExternal } from '../../lib/navigation';
 import { useLogoutMutation } from '../../queries/session';
 import { MenuSection } from '../MenuSection';
 import { PendingConfirmDialog } from '../PendingConfirmDialog';
+import { MyProfileSkeleton } from './MyProfileSkeleton';
 
 type ConfirmKind = 'contact' | 'logout';
 type MenuItem = { label: string; href?: string; dialog?: ConfirmKind };
@@ -41,13 +42,15 @@ type MyScreenProps = {
   profile: MyProfile;
   /** 문의하기 카카오톡 상담 채널 주소. 없으면 확인 창의 「열기」를 막음(출시 전 주소 확정 때 넣음) */
   contactUrl?: string | undefined;
+  /** 내 프로필을 처음 받는 중이면 프로필 줄만 스켈레톤(메뉴는 그대로 쓸 수 있음) */
+  profileLoading?: boolean | undefined;
 };
 
 /**
  * MY 탭 첫 화면(화면 설계서 MY(1)·(4)): 내 프로필과 메뉴 묶음 3개, 문의하기·로그아웃 확인 창
  * 프로필은 호출하는 쪽이 전달(`MyRoute`가 내 정보 API로 받아 넘김)
  */
-export function MyScreen({ profile, contactUrl }: MyScreenProps) {
+export function MyScreen({ profile, contactUrl, profileLoading = false }: MyScreenProps) {
   const openOverlay = useScreenOverlay();
   const openConfirm = (kind: ConfirmKind) =>
     kind === 'contact'
@@ -81,23 +84,27 @@ export function MyScreen({ profile, contactUrl }: MyScreenProps) {
     <PageShell header={<Header title={<h1 className="truncate">{MY_MESSAGES.title}</h1>} />}>
       {/* 헤더 아래 12, 프로필과 메뉴 사이 20(Figma 4096:75220) */}
       <div className="gap-s10 pt-padding-p6 flex flex-col">
-        <Link
-          href={MY_PATHS.profile}
-          className="px-padding-p8 py-padding-p5 gap-s5 before:bg-overlay-hover focus-visible:outline-border-brand relative isolate flex touch-manipulation items-center before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 active:before:opacity-100 motion-reduce:before:transition-none"
-        >
-          <ProfileImage
-            src={profile.imageSrc ?? DEFAULT_PROFILE_IMAGE}
-            size="M"
-            className="border-border-tertiary border"
-          />
-          <span className="typography-body-1-semi-bold text-text-primary min-w-0 flex-1 truncate">
-            {profile.nickname}
-            <span className="sr-only">
-              {profile.nickname ? ` ${MY_MESSAGES.profileEdit}` : MY_MESSAGES.profileEditOwn}
+        {profileLoading ? (
+          <MyProfileSkeleton />
+        ) : (
+          <Link
+            href={MY_PATHS.profile}
+            className="px-padding-p8 py-padding-p5 gap-s5 before:bg-overlay-hover focus-visible:outline-border-brand relative isolate flex touch-manipulation items-center before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 active:before:opacity-100 motion-reduce:before:transition-none"
+          >
+            <ProfileImage
+              src={profile.imageSrc ?? DEFAULT_PROFILE_IMAGE}
+              size="M"
+              className="border-border-tertiary border"
+            />
+            <span className="typography-body-1-semi-bold text-text-primary min-w-0 flex-1 truncate">
+              {profile.nickname}
+              <span className="sr-only">
+                {profile.nickname ? ` ${MY_MESSAGES.profileEdit}` : MY_MESSAGES.profileEditOwn}
+              </span>
             </span>
-          </span>
-          <LineChevronRightLargeIcon className="text-icon-quaternary shrink-0" />
-        </Link>
+            <LineChevronRightLargeIcon className="text-icon-quaternary shrink-0" />
+          </Link>
+        )}
         <div className="gap-s6 flex flex-col">
           {MENU_SECTIONS.map((section) => (
             <MenuSection key={section.title} title={section.title}>

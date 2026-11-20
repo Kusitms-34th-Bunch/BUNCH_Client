@@ -32,5 +32,17 @@ describe('BundleDetailStatus 받는 중', () => {
     expect(container.querySelector('[inert]')?.textContent).toContain('가을 소풍');
     expect(container.querySelector('img[src="/a.jpg"]')).not.toBeNull();
     expect(getPageLoadingCount()).toBe(0);
+    // 사진 아래(한마디·좋아요·댓글)는 스켈레톤
+    expect(container.querySelectorAll('[inert] ~ [aria-hidden="true"]')).toHaveLength(1);
+  });
+
+  it('가진 데이터 없이 들어오면 덮개 없이 본문 전체 스켈레톤과 받는 중 안내를 보인다', () => {
+    const { container } = render(
+      <BundleDetailStatus kind="loading" titleRef={createRef()} onRetry={() => {}} />,
+    );
+    expect(screen.getByRole('status').textContent).toBe('번들을 불러오는 중이에요');
+    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(screen.queryByRole('heading')).toBeNull();
+    expect(getPageLoadingCount()).toBe(0);
   });
 });

@@ -4,7 +4,6 @@ import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -21,6 +20,12 @@ import {
 import { BunchHomeError } from '../home/BunchHomeError';
 import { BunchMembersScreen } from './BunchMembersScreen';
 
+/** 목록을 받기 전에는 누를 행이 없어 부르지 않는 동작 */
+const LOADING_ACTIONS: BunchMemberActions = {
+  setRole: () => Promise.resolve(),
+  transferOwner: () => Promise.resolve(),
+  remove: () => Promise.resolve(),
+};
 /**
  * 실패한 관리 작업 뒤 다시 받은 목록에서 역할이 바뀐 쪽: 내 역할이면 mine, 대상 멤버의 역할이면 target
  * 대상이 목록에서 사라진 경우(나감·내보내짐)는 역할 변경으로 보지 않음
@@ -82,14 +87,17 @@ export function BunchMembers() {
       />
     );
   }
+  // 받는 중은 실제 헤더와 멤버 행 스켈레톤(받는 중 안내는 화면의 상태 영역이 맡음). 목록이 없어 역할·동작은 쓰이지 않음
   if (!managed) {
     return (
-      <>
-        <p role="status" className="sr-only">
-          멤버를 불러오는 중이에요
-        </p>
-        <PageLoading />
-      </>
+      <BunchMembersScreen
+        bunchName={home.data?.bunch.name}
+        members={undefined}
+        myRole={undefined}
+        actions={LOADING_ACTIONS}
+        onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
+        onInvite={() => router.push(BUNCH_HOME_PATHS.invite)}
+      />
     );
   }
 

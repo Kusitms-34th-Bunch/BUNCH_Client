@@ -5,9 +5,9 @@ import { FollowListItem } from '@app/design-system/web';
 import { type MouseEvent, useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { FollowDecision, FollowRequestRow } from '../../model/follows';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
+import { FollowRequestsSkeleton } from './FollowRequestsSkeleton';
 
 type DecisionResult = { applied: boolean; state: 'APPROVED' | 'REJECTED' | 'UNAVAILABLE' };
 
@@ -165,7 +165,7 @@ export function FollowRequestsScreen({
         </div>
       ) : (
         // 받는 중 안내는 감싸는 경계(`QueryBoundary`)의 늘 있는 상태 영역이 읽어 줌
-        <PageLoading />
+        <FollowRequestsSkeleton />
       )}
     </PageShell>
   );

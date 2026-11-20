@@ -9,7 +9,6 @@ import { isUnavailableTarget } from '@/shared/api/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import type { FeedFollowStatus, FeedMemberBunch } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
@@ -17,6 +16,7 @@ import { FEED_PATHS } from '../../constants/paths';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { sortMemberBunches } from '../../lib/memberBunches';
 import { memberProfileQueryOptions, useRefreshMemberProfile } from '../../queries/memberProfile';
+import { MemberProfileSkeleton } from './MemberProfileSkeleton';
 
 /** 팔로우 바꾸기. 취소의 `followId`는 응답의 관계 ID */
 export type MemberFollowChange =
@@ -118,14 +118,14 @@ export function MemberProfileScreen({ memberId, links, follow }: MemberProfileSc
       </PageShell>
     );
   }
-  // 덮개가 헤더까지 덮고 초점을 가져감(앱 공통)
+  // 받는 중은 화면 모양만(뒤로 가기는 실제 헤더라 바로 누를 수 있음)
   if (!member) {
     return (
       <PageShell header={header}>
         <p role="status" className="sr-only">
           {text.memberLoading}
         </p>
-        <PageLoading />
+        <MemberProfileSkeleton />
       </PageShell>
     );
   }
