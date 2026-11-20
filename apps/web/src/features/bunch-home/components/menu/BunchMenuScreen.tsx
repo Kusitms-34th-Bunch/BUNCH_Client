@@ -1,6 +1,6 @@
 'use client';
 
-import { ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { ConfirmDialog, Header, LineChevronLeftLargeIcon, Skeleton } from '@app/design-system';
 import { MenuDivider, MenuLabel } from '@app/design-system/web';
 import Link from 'next/link';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
@@ -185,14 +185,14 @@ export function BunchMenuScreen({
             <div className="gap-s2 px-padding-p8 flex flex-col">
               {SKELETON_TOP_ROWS.map((row) => (
                 <div key={row} className="px-s2 py-padding-p5">
-                  <div className="bg-surface-secondary rounded-r2 h-6 w-24" />
+                  <Skeleton className="h-6 w-24" />
                 </div>
               ))}
             </div>
             <MenuDivider className="mx-padding-p8" />
             <div className="px-padding-p8">
               <div className="px-s2 py-padding-p5">
-                <div className="bg-surface-secondary rounded-r2 h-6 w-24" />
+                <Skeleton className="h-6 w-24" />
               </div>
             </div>
           </div>

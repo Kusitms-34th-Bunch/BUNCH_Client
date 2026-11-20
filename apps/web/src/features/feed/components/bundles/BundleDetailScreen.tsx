@@ -139,7 +139,7 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
         </div>
       }
     >
-      {/* 지우는 동안과 지운 뒤 떠날 때까지 덮개(받는 중과 같은 모양)와 안내. 실패하면 걷히고 보던 화면 그대로 */}
+      {/* 지우는 동안과 지운 뒤 떠날 때까지 덮개(`PageLoading`)와 안내. 실패하면 걷히고 보던 화면 그대로 */}
       {removing ? (
         <>
           <p role="status" className="sr-only">

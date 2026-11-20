@@ -262,6 +262,56 @@ describe('MemberProfileScreen', () => {
     expect(await loaded()).toBeTruthy();
   });
 
+  it('다시 시도로 받으면 멤버 이름 제목으로 초점을 옮긴다', async () => {
+    server.use(
+      http.get('/api/members/:memberId/social-profile', () => fail(500, 'COMMON_999'), {
+        once: true,
+      }),
+    );
+    const user = userEvent.setup();
+    renderProfile();
+
+    await screen.findByRole('alert');
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: '경진' })),
+    );
+  });
+
+  it('다시 받는 사이 뒤로 가기로 옮긴 초점은 받은 뒤에도 그대로 둔다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get('/api/members/:memberId/social-profile', () => fail(500, 'COMMON_999'), {
+        once: true,
+      }),
+    );
+    const user = userEvent.setup();
+    renderProfile();
+
+    await screen.findByRole('alert');
+    // 두 번째 요청은 풀어 줄 때까지 기다렸다가 기본 응답으로 넘김
+    server.use(
+      http.get(
+        '/api/members/:memberId/social-profile',
+        async () => {
+          await gate;
+        },
+        { once: true },
+      ),
+    );
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    const back = screen.getByRole('button', { name: '뒤로 가기' });
+    back.focus();
+    release();
+
+    expect(await loaded()).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '뒤로 가기' }));
+  });
+
   it('없거나 볼 수 없는 멤버면 안내만 보여 준다', async () => {
     renderProfile(undefined, '999');
 

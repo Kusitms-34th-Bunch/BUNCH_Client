@@ -18,6 +18,7 @@ import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
 import type { KokPlace, PlaceMember } from '../lib/types';
 import { PLACES_MESSAGES } from '../constants/messages';
+import { PlaceFilterSkeleton, PlaceListSkeleton } from './BunchPlacesSkeleton';
 import { PlaceMemberFilter } from './PlaceMemberFilter';
 
 type BunchPlacesScreenProps = {
@@ -227,7 +228,8 @@ export function BunchPlacesScreen({
               </HeaderIconButton>
             }
           />
-          {/* 받기 전에는 개수를 몰라 칩을 그리지 않음(「전체 0」으로 보이지 않게) */}
+          {/* 받기 전에는 개수를 몰라 칩 자리만 그림(「전체 0」으로 보이지 않게). 실패 화면에는 칩을 두지 않음 */}
+          {!places && !onRetry ? <PlaceFilterSkeleton /> : null}
           {places ? (
             <PlaceMemberFilter
               members={members}
@@ -251,7 +253,10 @@ export function BunchPlacesScreen({
             {PLACES_MESSAGES.retry}
           </Button>
         </div>
-      ) : !places ? null : visible.length > 0 || hasMore ? (
+      ) : !places ? (
+        // 받는 중 안내는 감싸는 경계(`QueryBoundary`)의 늘 있는 상태 영역이 읽어 줌
+        <PlaceListSkeleton />
+      ) : visible.length > 0 || hasMore ? (
         // 보이는 카드가 모두 빠져도 다음 쪽이 남았으면 빈 상태 대신 감지 요소를 두어 이어 받음
         // Figma 4096:76101: 칩 아래 24(칩 영역 아래 여백 4 포함), 카드 사이 4, 좌우 16
         <>

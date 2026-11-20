@@ -26,6 +26,7 @@ import {
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import type { BunchProfileImageChange } from '../../api/bunchHome';
 import type { BunchProfileEdit as BunchProfile } from '../../lib/types';
+import { BunchProfileEditSkeleton } from './BunchProfileEditSkeleton';
 import { BunchVisibilityField } from './BunchVisibilityField';
 
 /** 편집할 번치의 저장된 값과 그 값의 프로필 버전 */
@@ -43,7 +44,7 @@ export type BunchProfileDraft = Omit<BunchProfile, 'imageSrc'> & {
 };
 
 type BunchProfileEditScreenProps = {
-  /** 편집할 번치의 저장된 값. 아직 모르거나 메인 관리자가 아니면 undefined(폼을 그리지 않음) */
+  /** 편집할 번치의 저장된 값. 아직 받는 중이면 undefined(폼 대신 스켈레톤, 받는 중 안내는 호출자가 맡음) */
   initial: EditableProfile | undefined;
   onBack: () => void;
   /** 「저장하기」. 서버 저장·이동·토스트는 호출자 담당 */
@@ -85,7 +86,23 @@ export function BunchProfileEditScreen({
       }
     />
   );
-  if (!initial) return <EditFrame header={header} />;
+  if (!initial) {
+    return (
+      <EditFrame
+        header={header}
+        // 실제 폼과 같은 하단 저장하기(받기 전이라 막아 둠): 다 받은 뒤 하단 바가 새로 생겨 본문 높이가 바뀌지 않게
+        bottom={
+          <div className="pt-padding-p7 px-padding-p8">
+            <Button className="w-full" disabled>
+              저장하기
+            </Button>
+          </div>
+        }
+      >
+        <BunchProfileEditSkeleton />
+      </EditFrame>
+    );
+  }
   return (
     <ProfileForm
       initial={initial}

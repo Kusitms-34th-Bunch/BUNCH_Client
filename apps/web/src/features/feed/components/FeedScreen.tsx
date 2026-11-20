@@ -29,6 +29,7 @@ import { feedQueryOptions } from '../queries/feed';
 import { FeedAdCard } from './FeedAdCard';
 import { FeedCaughtUp } from './FeedCaughtUp';
 import { FeedHeader } from './FeedHeader';
+import { FeedListSkeleton } from './FeedSkeleton';
 
 type FeedScreenProps = {
   /** 다른 기능의 화면 주소(route가 조합) */
@@ -242,6 +243,8 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
             </Button>
           </div>
         ) : null}
+        {/* 첫 쪽을 받는 중(캐시가 있으면 이전 목록을 그대로 보임) */}
+        {feed.data === undefined && !firstFailed && !retrying ? <FeedListSkeleton /> : null}
         {following.length > 0 ? (
           <>
             <ul className="px-padding-p8 gap-s14 flex flex-col">{following.map(renderEntry)}</ul>
