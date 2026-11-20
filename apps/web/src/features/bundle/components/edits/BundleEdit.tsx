@@ -3,7 +3,11 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -47,7 +51,8 @@ export function BundleEdit({ onSaved, onImportFromGallery, galleryImporting }: B
 
   if (state.kind === 'error')
     return <BundleEditError onRetry={state.retry} onBack={() => router.replace(detailPath)} />;
-  if (state.kind !== 'ready') return <PageLoading />;
+  if (state.kind !== 'ready')
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
 
   // 저장 결과에 따라 안내하고 이동: 성공이면 상세로, 권한을 잃었거나 사라졌으면 상세가 새로 받아 그 상태를 보임
   const save = async () => {

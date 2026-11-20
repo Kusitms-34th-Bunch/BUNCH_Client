@@ -4,6 +4,7 @@ import { Button } from '@app/design-system';
 import { Label, PageHeader, TermsLabel } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { SIGNUP_PATHS } from '../../constants/paths';
 import { TERMS_ITEMS } from '../../constants/terms';
@@ -98,6 +99,8 @@ export function TermsAgreement() {
             ? '앱 접근 권한을 요청하는 중이에요'
             : ''}
       </p>
+      {/* 짧은 동작이라 버튼만 비활성, 1초를 넘기면 그때 덮음(motion.md 로딩 상태) */}
+      {agreeToTerms.isPending ? <PageLoading delayMs={LATE_OVERLAY_MS} /> : null}
       <PageHeader
         title="시작하기 전에 확인해 주세요!"
         description="서비스 이용에 필요한 필수 내용만 확인할게요."

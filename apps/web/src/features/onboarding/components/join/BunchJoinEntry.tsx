@@ -4,7 +4,7 @@ import { isApiError } from '@app/api-core';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { INVITATION_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/messages';
@@ -77,7 +77,8 @@ export function BunchJoinEntry() {
       <p role="status" className="sr-only">
         초대를 확인하는 중이에요
       </p>
-      <PageLoading />
+      {/* 흐름 안의 단계라 1초를 넘길 때만 덮음(motion.md 로딩 상태) */}
+      <PageLoading delayMs={LATE_OVERLAY_MS} />
     </PageShell>
   );
 }

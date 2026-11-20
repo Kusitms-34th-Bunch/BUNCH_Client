@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { replaceUrl } from '@/shared/lib/replaceUrl';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
@@ -57,7 +61,8 @@ export function RecommendViewer({ recommendationId, photoId }: RecommendViewerPr
     router.replace(BUNDLE_SELECT_PATHS.select);
   }, [missing, noMembers, openSheet, router]);
 
-  if (!detail || !present || photoId === undefined) return <PageLoading />;
+  if (!detail || !present || photoId === undefined)
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
 
   return (
     <RecommendViewerScreen

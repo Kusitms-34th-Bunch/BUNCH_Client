@@ -15,7 +15,11 @@ import { usePreservedCallback } from 'react-simplikit';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
@@ -190,7 +194,8 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
   // 만드는 중이 끝나는 순간 한 번만 처리(실패로 선택이 비어 꺼진 채면 초점은 옮기지 않고 요청만 끝남)
   const [nextRef, refocusNext] = useRefocusWhenEnabled<HTMLButtonElement>(!creating);
 
-  if (noMembers || photoState.kind === 'loading') return <PageLoading />;
+  if (noMembers || photoState.kind === 'loading')
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
   if (photoState.kind === 'error') return <BundleLoadError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (
@@ -274,6 +279,8 @@ export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleS
           ? BUNDLE_SELECT_MESSAGES.creating
           : BUNDLE_SELECT_MESSAGES.selectionStatus(selection.length)}
       </p>
+      {/* 짧은 동작이라 버튼만 비활성, 1초를 넘기면 그때 덮음(motion.md 로딩 상태) */}
+      {creating ? <PageLoading delayMs={LATE_OVERLAY_MS} /> : null}
       {/* 추천 번들을 받는 동안만 화면 전체를 dim으로 덮음(만드는 동안은 「다음」 비활성) */}
       {recommendationBusy ? <PageLoading /> : null}
       <SelectPhotoList

@@ -6,6 +6,7 @@ import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
+import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { savePendingInvitation } from '@/shared/lib/pendingInvitation';
 import { INVITATION_INVALID_CODE, INVITE_ENTRY_MESSAGES } from '../constants/messages';
@@ -164,6 +165,8 @@ export function InviteEntry({ token, continueHref, onInstallApp }: InviteEntryPr
             ? '화면을 이동하는 중이에요'
             : ''}
       </p>
+      {/* 짧은 동작이라 버튼만 비활성, 1초를 넘기면 그때 덮음(motion.md 로딩 상태) */}
+      {lookup.isPending || lookup.isSuccess ? <PageLoading delayMs={LATE_OVERLAY_MS} /> : null}
     </main>
   );
 }
