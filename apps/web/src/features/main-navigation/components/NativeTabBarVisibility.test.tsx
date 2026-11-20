@@ -10,12 +10,8 @@ const shell = vi.hoisted(() => ({ tab: null as string | null, perTab: false }));
 vi.mock('@/shared/bridge/client', () => ({
   isNativeShell: () => true,
   nativeShellTab: () => shell.tab,
-  appBridge: {
-    setNativeTabBarVisible,
-    setNativeTabBarVisibleFor,
-    setNativeTabBar,
-    isNativeMethodAvailable: () => shell.perTab,
-  },
+  hasNativeMethod: (method: string) => method === 'setNativeTabBarVisibleFor' && shell.perTab,
+  appBridge: { setNativeTabBarVisible, setNativeTabBarVisibleFor, setNativeTabBar },
 }));
 const pathname = vi.hoisted(() => ({ current: '/bunch' }));
 vi.mock('next/navigation', () => ({ usePathname: () => pathname.current }));
@@ -134,5 +130,15 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     rerender(<NativeTabBarVisibility />);
     expect(setNativeTabBarVisibleFor).toHaveBeenLastCalledWith({ tab: 'bunch', visible: true });
     expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+  });
+
+  it('이전 쉘의 탭 WebView(탭 ID는 있지만 탭별 메서드 없음)는 기존 방식으로 보낸다', () => {
+    shell.tab = 'bunch';
+    shell.perTab = false;
+    pathname.current = '/bunch/places';
+    render(<NativeTabBarVisibility />);
+
+    expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(false);
+    expect(setNativeTabBarVisibleFor).not.toHaveBeenCalled();
   });
 });

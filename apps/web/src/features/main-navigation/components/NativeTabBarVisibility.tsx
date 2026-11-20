@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { appBridge, isNativeShell, nativeShellTab } from '@/shared/bridge/client';
+import { appBridge, hasNativeMethod, isNativeShell, nativeShellTab } from '@/shared/bridge/client';
 import { useModalOpen } from '@/shared/hooks/useModalOpen';
 import { MAIN_TAB_PATHS, NATIVE_TAB_ITEMS } from '../constants/tabs';
 
@@ -46,7 +46,7 @@ export function NativeTabBarVisibility({ exitPaths = [] }: { exitPaths?: readonl
     // 탭 WebView는 자기 탭 ID와 함께 늘 보냄(쉘이 탭마다 저장하고 선택된 탭의 값만 적용, #481)
     // 첫 화면 WebView·이 메서드가 없는 이전 쉘은 화면에 보이는 WebView만 보냄
     const tab = nativeShellTab();
-    const perTab = tab !== null && appBridge.isNativeMethodAvailable('setNativeTabBarVisibleFor');
+    const perTab = tab !== null && hasNativeMethod('setNativeTabBarVisibleFor');
     if (perTab) {
       void appBridge.setNativeTabBarVisibleFor({ tab, visible }).catch(() => {});
       return;
