@@ -43,6 +43,8 @@ export const useChangeBunchPhotoMutation = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    // 같은 번치의 사진 변경은 화면을 다시 열어도 차례대로 보내 늦은 응답이 최신 사진을 덮지 않게 함
+    ...(bunchId === undefined ? {} : { scope: { id: `bunch-photo:${bunchId}` } }),
     meta: { errorMessage: ONBOARDING_MESSAGES.temporaryFailure },
     mutationFn: (photo: string | undefined) => {
       if (bunchId === undefined) throw new Error('번치를 아직 만들지 않았습니다.');
