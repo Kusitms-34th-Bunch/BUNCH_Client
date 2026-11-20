@@ -1,4 +1,4 @@
-import { useId, type ComponentProps } from 'react';
+import { useId, type ComponentProps, type Ref } from 'react';
 import { cn } from '../../../utils';
 import { Button } from '../../core/button';
 
@@ -17,8 +17,12 @@ export type InviteCardProps = Omit<
   imageAlt?: string | undefined;
   /** 「참여하기」를 눌렀을 때 호출. 참여 처리는 호출하는 쪽 담당 */
   onJoin?: (() => void) | undefined;
-  /** 참여할 수 없는 초대면 「참여하기」를 비활성으로 둠(이유는 호출하는 쪽이 알림) */
+  /** 참여할 수 없는 초대이거나 참여 요청 중이면 「참여하기」를 비활성으로 둠(이유는 호출하는 쪽이 알림) */
   joinDisabled?: boolean | undefined;
+  /** 참여 요청 중(`aria-busy`). 화면을 덮지 않고 버튼만 바쁨으로 알릴 때 */
+  joinBusy?: boolean | undefined;
+  /** 「참여하기」 버튼(요청이 실패해 다시 켜지면 호출하는 쪽이 초점을 돌려줄 때) */
+  joinRef?: Ref<HTMLButtonElement> | undefined;
 };
 
 /**
@@ -33,6 +37,8 @@ export const InviteCard = ({
   imageAlt = '',
   onJoin,
   joinDisabled,
+  joinBusy,
+  joinRef,
   className,
   id,
   ...props
@@ -80,7 +86,13 @@ export const InviteCard = ({
           </p>
         ) : null}
       </div>
-      <Button className="w-full" disabled={joinDisabled} onClick={onJoin}>
+      <Button
+        ref={joinRef}
+        className="w-full"
+        disabled={joinDisabled}
+        aria-busy={joinBusy || undefined}
+        onClick={onJoin}
+      >
         참여하기
       </Button>
     </article>

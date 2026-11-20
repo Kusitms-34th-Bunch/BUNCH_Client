@@ -207,6 +207,39 @@ describe('BunchJoinInvitation', () => {
     expect(keys[0]).toBe(keys[1]);
   });
 
+  it('참여하는 동안 화면을 덮지 않고 「참여하기」만 비활성이며, 실패하면 다시 켜지고 초점이 돌아온다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/api/invitations/join', async () => {
+        await gate;
+        return fail(503, 'AUTH_018');
+      }),
+    );
+    renderInvitation();
+
+    await userEvent.click(joinButton());
+    expect(joinButton()).toHaveProperty('disabled', true);
+    // 1초 안에는 덮지 않음(로딩 중임은 알리되 덮개는 늦게)
+    expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
+
+    release();
+    await waitFor(() => expect(joinButton()).toHaveProperty('disabled', false));
+    await waitFor(() => expect(document.activeElement).toBe(joinButton()));
+  });
+
+  it('참여 요청 중에는 뒤로 가기가 나가기 창을 열지 않는다', async () => {
+    server.use(http.post('/api/invitations/join', () => new Promise<never>(() => {})));
+    renderInvitation();
+
+    await userEvent.click(joinButton());
+    await userEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
   it('뒤로 가기는 중단 확인 모달을 열고 계속 참여하기는 모달만 닫는다', async () => {
     renderInvitation();
 

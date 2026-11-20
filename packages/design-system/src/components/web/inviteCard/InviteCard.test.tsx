@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { InviteCard } from './InviteCard';
 
@@ -95,5 +96,14 @@ describe('InviteCard', () => {
     render(<InviteCard {...props} className="custom" />);
 
     expect(screen.getByRole('article').className).toContain('custom');
+  });
+
+  it('joinBusy면 참여하기에 aria-busy를 붙이고, joinRef로 버튼에 닿는다', () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(<InviteCard {...props} joinBusy joinRef={ref} />);
+
+    const button = screen.getByRole('button', { name: '참여하기' });
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect(ref.current).toBe(button);
   });
 });
