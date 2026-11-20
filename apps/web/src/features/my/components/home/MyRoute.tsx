@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_CONTACT_URL } from '../../constants/paths';
 import { EMPTY_MY_PROFILE } from '../../lib/profile';
+import { usePrefetchNotificationSettings } from '../../queries/notifications';
 import { useMyProfile } from '../../queries/profile';
 import { MyScreen } from './MyScreen';
 
@@ -18,6 +19,11 @@ export function MyRoute() {
   useEffect(() => {
     if (isError) toast(MY_MESSAGES.profileLoadFailed);
   }, [isError]);
+  // 메뉴를 그리면 알림 설정을 미리 받아 들어가면 바로 그려지게 함(프로필 편집은 이 화면의 내 프로필을 씀)
+  const prefetchNotificationSettings = usePrefetchNotificationSettings();
+  useEffect(() => {
+    prefetchNotificationSettings();
+  }, [prefetchNotificationSettings]);
 
   return (
     <>
