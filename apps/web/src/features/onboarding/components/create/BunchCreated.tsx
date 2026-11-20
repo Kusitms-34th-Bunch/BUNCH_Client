@@ -1,13 +1,11 @@
 'use client';
 
-import { Button, toast } from '@app/design-system';
+import { Button } from '@app/design-system';
 import { BunchAvatar, InviteMemberCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
-import { ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
@@ -19,18 +17,15 @@ export function BunchCreated() {
   const router = useRouter();
   const ready = useCreateBunchGuard(3);
   const { createdBunch, updateCreatedBunch } = useCreateBunchDraft();
-  const changePhoto = useChangeBunchPhotoMutation(createdBunch?.id);
+  const changePhoto = useChangeBunchPhotoMutation(createdBunch?.id, updateCreatedBunch);
   if (!ready || !createdBunch) return null;
 
   const defaultImage = defaultBunchImage(createdBunch.characterType);
 
-  // 조정을 마친 사진은 올리고, 기본 이미지 적용(undefined)은 되돌림. 실패하면 기존 이미지 유지
+  // 조정을 마친 사진은 올리고, 기본 이미지 적용(undefined)은 되돌림. 실패하면 기존 이미지 유지(안내는 공통 토스트)
   const changeImage = (photo: string | undefined) => {
     if (changePhoto.isPending) return;
-    changePhoto.mutate(photo, {
-      onSuccess: updateCreatedBunch,
-      onError: () => toast(ONBOARDING_MESSAGES.temporaryFailure),
-    });
+    changePhoto.mutate(photo);
   };
 
   return (
@@ -54,7 +49,7 @@ export function BunchCreated() {
         <p role="status" className="sr-only">
           {changePhoto.isPending ? '번치 사진을 저장하는 중이에요' : ''}
         </p>
-        {changePhoto.isPending ? <PageLoading /> : null}
+        {/* 올리는 동안에도 덮지 않아 「내 번치로 이동하기」·「멤버 초대하기」를 누를 수 있음(기능명세 2.3.2 예외) */}
         <div className="gap-s12 flex flex-1 flex-col items-center justify-center">
           <div aria-busy={changePhoto.isPending} className="flex flex-col items-center">
             <ProfilePhotoField
