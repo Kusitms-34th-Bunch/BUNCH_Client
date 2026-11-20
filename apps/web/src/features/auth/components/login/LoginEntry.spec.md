@@ -67,7 +67,7 @@
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/login`이 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)
 - [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
 - [x] 상태별 UI: 기본·진행 중(누른 버튼 / 나머지 비활성)·실패·취소·성공 잠금을 테스트로 확인. 진행 중 버튼의 실제 모양은 눈으로 확인하지 못함
-- [x] 관련 test: `LoginEntry.test.tsx`(제목·main, 배경 영상 자동 재생 조건(`muted`·`playsInline`·`loop`)과 낭독 제외, 동작 줄이기 시 영상 없음, 로그인 중 백그라운드에서 영상 멈춤·실패 뒤 다시 재생, 버튼 순서, 소셜별 호출, 진행 중 상태, 연타 방지, 실패·취소·성공, 재시도, 앱 밖에서 누르면 실패 토스트, 진행 중 상태 안내)와 `socialSignIn.test.ts`(토큰·nonce 전달, Google nonce 생략, 취소, 쉘 밖·미지원, SDK 오류, 계약 위반·provider 불일치, BFF 실패. bridge와 `bffApi`는 가짜로 대체)
+- [x] 관련 test: `LoginEntry.test.tsx`(제목·main, 배경 영상 자동 재생 조건(`muted`·`playsInline`·`loop`)과 낭독 제외, 화면 안 이동(로그아웃 뒤)에도 소리를 끈 다음 직접 재생, 재생 중이 아닐 때 첫 프레임 덮개로 영상(iOS 재생 버튼)을 가림, 동작 줄이기를 끄면 다시 재생하고 덮개부터 보임, 동작 줄이기 시 영상 없음, 로그인 중 백그라운드에서 영상 멈춤·실패 뒤 다시 재생, 버튼 순서, 소셜별 호출, 진행 중 상태, 연타 방지, 실패·취소·성공, 재시도, 앱 밖에서 누르면 실패 토스트, 진행 중 상태 안내)와 `socialSignIn.test.ts`(토큰·nonce 전달, Google nonce 생략, 취소, 쉘 밖·미지원, SDK 오류, 계약 위반·provider 불일치, BFF 실패. bridge와 `bffApi`는 가짜로 대체)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
 - [x] Chromium(dev 서버, 창 1280×577)에서 영상 자동 재생, 앱 폭 전체를 덮는 배경, (옛 구성 기준 값, 새 구성은 워드마크↔버튼 40·버튼 아래 14로 바뀌어 다시 측정 전)를 측정함. 375×812 화면과 실기기(iOS WebView 자동 재생)는 확인하지 못함
 

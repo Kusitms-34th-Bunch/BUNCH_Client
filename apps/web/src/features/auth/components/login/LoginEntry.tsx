@@ -2,7 +2,7 @@
 
 import { LoginButton } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
@@ -58,7 +58,25 @@ export function LoginEntry({
   const resolvePostLogin = usePostLoginPath(destinations);
   const { pendingProvider, login } = useSocialLogin(signIn, resolveNextPath ?? resolvePostLogin);
   const reducedMotion = useReducedMotion();
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  // 동작 줄이기 설정을 오가며 영상이 빠졌다 다시 생기면, 새 영상은 재생 전 상태부터 시작(첫 프레임 덮개가 다시 보임)
+  const attachVideo = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video;
+    if (!video) setVideoPlaying(false);
+  }, []);
+
+  // 로그아웃 뒤처럼 화면 안에서 이동해 오면 React가 `muted`를 속성(attribute) 없이 값으로만 넣어
+  // iOS가 소리 있는 영상으로 보고 자동 재생을 막음(재생 버튼만 보임). 소리 없음을 확실히 한 뒤 직접 재생
+  // 서버·첫 렌더는 동작 줄이기로 취급해 영상이 hydration 뒤에 생기므로, 설정 값이 바뀔 때마다 다시 확인
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.defaultMuted = true;
+    video.muted = true;
+    video.setAttribute('muted', '');
+    void video.play()?.catch(() => {});
+  }, [reducedMotion]);
 
   // 카카오톡 등 다른 앱으로 갔다 오는 로그인 중에는 영상을 멈춰 둠(돌아올 때 iOS가 다시 재생해 처음부터 나오는 것처럼 보임)
   const loggingIn = pendingProvider !== null;
@@ -87,16 +105,29 @@ export function LoginEntry({
       >
         {/* iOS 자동 재생 조건: muted·playsInline */}
         {reducedMotion ? null : (
-          <video
-            ref={videoRef}
-            src={LOGIN_BACKGROUND_VIDEO}
-            poster={LOGIN_BACKGROUND_POSTER}
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="size-full object-cover"
-          />
+          <>
+            <video
+              ref={attachVideo}
+              src={LOGIN_BACKGROUND_VIDEO}
+              poster={LOGIN_BACKGROUND_POSTER}
+              autoPlay
+              muted
+              loop
+              playsInline
+              onPlaying={() => setVideoPlaying(true)}
+              onPause={() => setVideoPlaying(false)}
+              className="size-full object-cover"
+            />
+            {/* 저전력 모드 등으로 재생이 막히거나 멈추면 iOS가 영상 위에 재생 버튼을 그리므로, 재생 중이 아닐 때는 첫 프레임으로 덮음
+                영상 자체를 숨기면(투명도 0 등) iOS가 안 보이는 영상으로 보고 자동 재생을 하지 않을 수 있어 덮개를 따로 둠 */}
+            {videoPlaying ? null : (
+              <div
+                data-testid="login-video-cover"
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${LOGIN_BACKGROUND_POSTER})` }}
+              />
+            )}
+          </>
         )}
         {/* Figma 겹침: 위 절반 검정 30%, 61%부터 60%(30%는 토큰이 없어 가장 가까운 40%) */}
         <div className="from-primitive-black-alpha-40 to-primitive-black-alpha-60 absolute inset-0 bg-linear-to-b from-50% to-61%" />

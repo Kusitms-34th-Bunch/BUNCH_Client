@@ -85,6 +85,79 @@ describe('LoginEntry', () => {
     expect(video.closest('[aria-hidden="true"]')).not.toBeNull();
   });
 
+  it('화면 안에서 이동해 와도(로그아웃 뒤) 소리를 끈 다음에 직접 재생한다', () => {
+    const atPlay: { muted: boolean; defaultMuted: boolean }[] = [];
+    // 재생을 부르는 순간의 영상 상태를 기록
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => {
+      const video = document.querySelector('video')!;
+      atPlay.push({ muted: video.muted, defaultMuted: video.defaultMuted });
+      return Promise.resolve();
+    });
+    render(<LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />);
+
+    expect(atPlay).toEqual([{ muted: true, defaultMuted: true }]);
+  });
+
+  it('재생 중이 아닐 때는 첫 프레임 덮개로 영상(iOS 재생 버튼)을 가리고, 재생되면 걷고, 멈추면 다시 덮는다', () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() =>
+      Promise.reject(new Error('NotAllowedError')),
+    );
+    const { container } = render(
+      <LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />,
+    );
+    const video = container.querySelector('video')!;
+    const cover = () => screen.queryByTestId('login-video-cover');
+    expect(cover()?.style.backgroundImage).toContain('/videos/login-poster.jpg');
+
+    act(() => {
+      video.dispatchEvent(new Event('playing'));
+    });
+    expect(cover()).toBeNull();
+
+    act(() => {
+      video.dispatchEvent(new Event('pause'));
+    });
+    expect(cover()).not.toBeNull();
+  });
+
+  it('동작 줄이기가 꺼져 영상이 새로 생기면 다시 재생하고, 재생 전까지 덮개부터 보인다', () => {
+    const listeners = new Set<() => void>();
+    let reduce = false;
+    vi.stubGlobal('matchMedia', () => ({
+      get matches() {
+        return reduce;
+      },
+      addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+    }));
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockImplementation(() => Promise.resolve());
+    const setReduce = (value: boolean) =>
+      act(() => {
+        reduce = value;
+        listeners.forEach((listener) => listener());
+      });
+    try {
+      const { container } = render(
+        <LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />,
+      );
+      act(() => {
+        container.querySelector('video')!.dispatchEvent(new Event('playing'));
+      });
+      play.mockClear();
+
+      setReduce(true);
+      expect(container.querySelector('video')).toBeNull();
+      setReduce(false);
+
+      expect(play).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId('login-video-cover')).not.toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('동작 줄이기 설정이면 배경 영상을 그리지 않는다(첫 프레임 배경만 남음)', () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query.includes('reduce'),
@@ -188,6 +261,8 @@ describe('LoginEntry', () => {
     render(
       <LoginEntry destinations={DESTINATIONS} signIn={signIn} resolveNextPath={resolveNextPath} />,
     );
+    // 처음 그릴 때의 자동 재생 호출은 제외
+    play.mockClear();
 
     await userEvent.click(kakao());
     visibility.mockReturnValue('hidden');
