@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportContent, type ReportTarget } from '../api/report';
+import { feedKeys } from './keys';
 import { dropFromFeed } from './manageBundle';
 
 type ReportVariables = ReportTarget & { reason: string; detail: string };
@@ -13,8 +14,11 @@ export const useReportMutation = () => {
   return useMutation({
     mutationFn: ({ bundleId, commentId, ...value }: ReportVariables) =>
       reportContent({ bundleId, commentId }, value),
-    onSuccess: (_data, { bundleId, commentId }) => {
-      if (commentId === undefined) dropFromFeed(queryClient, bundleId);
+    onSuccess: async (_data, { bundleId, commentId }) => {
+      if (commentId !== undefined) return;
+      // 신고 전에 시작된 피드 조회가 뒤늦게 그 카드를 다시 넣지 않게 먼저 취소(좋아요와 같은 순서)
+      await queryClient.cancelQueries({ queryKey: feedKeys.lists() });
+      dropFromFeed(queryClient, bundleId);
     },
   });
 };

@@ -42,6 +42,25 @@ describe('useReportMutation', () => {
     expect(feedIds(client.getQueryData(feedKey))).toEqual([8]);
   });
 
+  it('신고 전에 시작된 피드 조회가 늦게 와도 뺀 카드를 다시 넣지 않는다', async () => {
+    server.use(http.post('/api/bundles/:bundleId/reports', () => ok({ reportId: 1 })));
+    const { client, result } = setup();
+    const before = client.getQueryData(feedKey);
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const late = client
+      .fetchQuery({ queryKey: feedKey, queryFn: () => gate.then(() => before), staleTime: 0 })
+      .catch(() => {});
+
+    await act(() => result.current.mutateAsync({ bundleId: '7', ...REPORT }));
+    release();
+    await late;
+
+    expect(feedIds(client.getQueryData(feedKey))).toEqual([8]);
+  });
+
   it('댓글 신고나 접수되지 않은 신고는 피드를 그대로 둔다', async () => {
     server.use(
       http.post('/api/bundles/:bundleId/comments/:commentId/reports', () => ok({ reportId: 1 })),
