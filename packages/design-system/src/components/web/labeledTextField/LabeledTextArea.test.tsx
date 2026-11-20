@@ -64,6 +64,41 @@ describe('LabeledTextArea', () => {
     expect(textarea.value).toBe('가나다라');
   });
 
+  it('커서 앞에 붙인 글이 뒤 글자와 이어져 한 글자가 되면 자르지 않는다(ZWJ 이모지)', () => {
+    render(<Controlled maxLength={1} />);
+    const textarea = screen.getByRole<HTMLTextAreaElement>('textbox');
+    fireEvent.change(textarea, { target: { value: '💻' } });
+
+    // 맨 앞에 「👩 + ZWJ」를 붙여 「👩‍💻」 한 글자가 됨(커서는 붙인 글 뒤)
+    const joined = '👩\u200D💻';
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(
+      textarea,
+      joined,
+    );
+    textarea.setSelectionRange(3, 3);
+    fireEvent.input(textarea);
+
+    expect(textarea.value).toBe(joined);
+    expect(screen.getByText('1/1')).toBeTruthy();
+  });
+
+  it('최대 길이에서 커서가 이어진 글자 가운데면 그 글자는 지키고 커서를 글자 끝으로 옮긴다', () => {
+    render(<Controlled maxLength={3} />);
+    const textarea = screen.getByRole<HTMLTextAreaElement>('textbox');
+    fireEvent.change(textarea, { target: { value: 'ABC💻' } });
+
+    // 「💻」 앞에 「👩 + ZWJ」를 넣어 「👩‍💻」가 되고 커서는 ZWJ 바로 뒤(글자 가운데)
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(
+      textarea,
+      'ABC👩\u200D💻',
+    );
+    textarea.setSelectionRange(6, 6);
+    fireEvent.input(textarea);
+
+    expect(textarea.value).toBe('AB👩\u200D💻');
+    expect(textarea.selectionStart).toBe(7);
+  });
+
   it('한글 조합 중에는 자르지 않고 조합이 끝나면 자른다', () => {
     render(<Controlled maxLength={2} />);
     const textarea = screen.getByRole<HTMLTextAreaElement>('textbox');

@@ -9,6 +9,9 @@ import { runIdempotent } from '../lib/idempotency';
 import { failIfProhibited, hasMockProhibitedWord } from '../lib/prohibitedWord';
 import { readJson } from './bundles';
 
+// 서버 `ProfileText.introduction`과 같이 앞뒤 공백을 지운 보이는 글자(grapheme) 수
+const introductionLength = (value: string) => [...new Intl.Segmenter().segment(value)].length;
+
 // 백엔드 명세(번치 생성·이름 중복 확인·번치 사진·초대 발급) 기준
 const NAME_MAX = 12;
 const INTRODUCTION_MAX = 50;
@@ -75,7 +78,10 @@ export const bunchOnboardingHandlers = [
     const body = await readJson(request);
     if (!body || typeof body.introduction !== 'string') return fail(400, 'COMMON_002');
     const introduction = body.introduction.trim();
-    if ([...introduction].length < 1 || [...introduction].length > INTRODUCTION_MAX) {
+    if (
+      introductionLength(introduction) < 1 ||
+      introductionLength(introduction) > INTRODUCTION_MAX
+    ) {
       return fail(400, 'COMMON_001');
     }
     return failIfProhibited({ introduction }) ?? ok(null);
@@ -92,8 +98,8 @@ export const bunchOnboardingHandlers = [
     const characterType = body.characterType as CharacterType;
     if (
       !isValidName(name) ||
-      [...introduction].length < 1 ||
-      [...introduction].length > INTRODUCTION_MAX ||
+      introductionLength(introduction) < 1 ||
+      introductionLength(introduction) > INTRODUCTION_MAX ||
       (visibility !== 'PUBLIC' && visibility !== 'PRIVATE') ||
       !CHARACTER_TYPES.includes(characterType)
     ) {
@@ -197,7 +203,12 @@ export const bunchOnboardingHandlers = [
     } | null;
     const name = normalizeName(profile?.name ?? '');
     const introduction = (profile?.introduction ?? '').trim();
-    if (!profile || !isValidName(name) || introduction.length === 0 || introduction.length > 50) {
+    if (
+      !profile ||
+      !isValidName(name) ||
+      introductionLength(introduction) === 0 ||
+      introductionLength(introduction) > 50
+    ) {
       return fail(400, 'COMMON_001');
     }
     const prohibited = failIfProhibited({ name, introduction });
