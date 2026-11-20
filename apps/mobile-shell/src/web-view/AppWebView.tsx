@@ -2,7 +2,7 @@ import { bridge, createWebView } from '@webview-bridge/react-native';
 import * as Haptics from 'expo-haptics';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router, type Href } from 'expo-router';
-import { useEffect, useRef, type ComponentRef } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
   BackHandler,
   Button,
@@ -220,6 +220,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
   const insets = useSafeAreaInsets();
   const safeAreaScript = buildSafeAreaScript(insets);
   const webViewRef = useRef<ComponentRef<typeof WebView>>(null);
+  const [webViewKey, setWebViewKey] = useState(0);
   const canGoBack = useRef(false);
 
   // Android 뒤로가기 시 웹 history 우선 처리
@@ -239,6 +240,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
 
   return (
     <WebView
+      key={webViewKey}
       ref={webViewRef}
       source={{ uri }}
       style={transparent ? [styles.webview, styles.transparent] : styles.webview}
@@ -269,6 +271,10 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       }}
       onError={forceWebReady}
       onHttpError={forceWebReady}
+      // 오래 백그라운드에 있으면 OS가 웹 프로세스를 끝내 화면이 하얗게 남으므로 다시 불러옴
+      // iOS는 같은 WebView를 다시 불러오고, Android는 끝난 WebView를 쓸 수 없어 새로 만듦
+      onContentProcessDidTerminate={() => webViewRef.current?.reload()}
+      onRenderProcessGone={() => setWebViewKey((key) => key + 1)}
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;
       }}
