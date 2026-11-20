@@ -56,6 +56,8 @@ export const WEB_URL = resolveWebUrl(
   // Release 번들에 개발 주소 인라인 방지
   __DEV__ ? process.env.EXPO_PUBLIC_DEV_WEB_URL : undefined,
   process.env.EXPO_PUBLIC_WEB_URL,
+  // E2E 전용 빌드만(같은 기기에 띄운 가짜 서버 웹을 http로 열기 위함, 결정 기록 029)
+  process.env.EXPO_PUBLIC_E2E === '1',
 );
 
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
