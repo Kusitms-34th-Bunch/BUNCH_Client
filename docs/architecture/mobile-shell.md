@@ -16,7 +16,7 @@ apps/mobile-shell/
   index.ts              Sentry 초기화 후 expo-router/entry
   app/
     _layout.tsx         SafeAreaProvider, Stack(헤더 없음)
-    index.tsx           첫 화면: WebView 하나(로그인·온보딩)
+    index.tsx           첫 화면: WebView 하나(로그인·온보딩), 로그인 화면이면 뒤에 배경 영상
     (tabs)/
       _layout.tsx       iOS 시스템 탭 바(NativeTabs)
       feed.tsx photos.tsx bunch.tsx my.tsx   탭마다 WebView
@@ -28,6 +28,7 @@ apps/mobile-shell/
   src/
     web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기·오류 화면)
     tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx)
+    login-background/         로그인 배경 영상(LoginBackgroundVideo.tsx, expo-video)과 표시 여부 저장소
     safe-area-script.ts, sentry.ts, sanitize-sentry-event.ts, web-url.ts, gallery-image.ts, permissions.ts (+ *.test.mjs)
 ```
 
@@ -50,6 +51,15 @@ apps/mobile-shell/
 - 앱 아이콘은 디자이너의 `App Icon`(1080, 모서리 투명)에서 만든다. iOS 아이콘(`assets/icon.png`, 1024)은 투명 없는 정사각형이어야 하고 모서리는 iOS가 깎으므로, 모서리를 같은 세로 그라데이션(#454EDF→#343DCE)으로 채웠다. Android 적응형 아이콘은 글리프(`android-icon-foreground.png`·`monochrome`)와 그라데이션 배경(`android-icon-background.png`)으로 나눈다. Android는 지름이 캔버스의 61%인 원 밖을 자를 수 있어 `b` 글리프를 80%로 줄였다. 웹 설정용 `favicon.png`(48)는 둥근 원본 아이콘을 줄인 것이다. `splash-icon.png`는 스플래시 Lottie 마지막 프레임의 흰 워드마크(투명 배경, 1024)로, 네이티브 스플래시가 배경만 쓰기로 해 지금은 연결하지 않았다.
 - Expo Go와 개발 빌드는 실제 스플래시를 그대로 보여주지 않는다(공식 문서). 모양과 닫히는 시점은 release 빌드에서 확인한다.
 
+### 로그인 배경 영상
+
+- iOS WebView 안의 영상은 저전력 모드에서 자동 재생이 막히고 앱을 나갔다 오면 멈춘 채 남아서, iOS 첫 화면의 로그인 배경 영상은 쉘이 `expo-video`로 WebView 뒤에 그린다(결정 기록 028, #474). 영상은 앱에 넣은 `assets/login-background/login.mp4`(웹 `public/videos/login.mp4`와 같은 파일)다.
+- 웹 로그인 화면이 bridge `setNativeLoginBackground(true)`를 보내면 쉘은 첫 화면 WebView 바탕을 투명하게 하고 뒤에 영상을 깐다. 웹은 `true`를 받으면 자기 영상·첫 프레임·바탕(`AppFrame`·`AppTransitions`·로그인 route 틀의 흰 바탕 포함, 로그인 화면의 `data-app-background="transparent"` 표식이 있을 때만)을 걷고 겹침과 버튼만 그린다. 탭 화면·안드로이드는 `false`를 돌려줘 웹 영상을 쓴다.
+- 보안 경계: 이 메서드도 다른 bridge 메서드처럼 앱 출처 페이지에서만 닿고, 인자는 boolean만 받는다. 쉘은 앱에 든 영상만 재생하고 웹이 영상 주소를 넘기는 경로는 없다. 원격 주소를 받도록 바꾸려면 보안 검토를 다시 한다.
+- 웹이 `false`를 보내거나, 첫 화면 WebView가 새 문서를 불러오기 시작하거나, 첫 화면이 사라지면(탭 화면으로 전환) 영상을 걷는다.
+- 영상은 소리 없이 반복하고 다른 앱의 음악을 끊지 않으며(`mixWithOthers`), 화면 꺼짐을 막지 않는다. 앱이 뒤로 가면(`AppState` `background`) 멈추고 앞으로 오면(`active`) 이어서 재생한다. 첫 화면 바탕색은 웹 로그인 배경과 같은 #121212다.
+- `expo-video` config plugin은 넣지 않았다(백그라운드 재생·PiP를 쓰지 않음). 네이티브 모듈이라 개발 빌드를 다시 만들어야 반영된다. 실기기 재생·앱 전환·인트로 → 로그인 전환의 겹침은 확인 전이다.
+
 iOS 입력 포커스 확대는 디자인 시스템의 `TextField`·`LabeledTextArea`에서 대응한다. 실제 글꼴을 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 입력 폭·행 높이·padding과 textarea 자동 높이도 같은 비율로 보정한다. `@supports (-webkit-touch-callout: none)`으로 iOS WebKit에 적용하며 모바일 Safari도 포함한다. 쉘에서 viewport 확대 제한을 주입하지 않는다. 실제 터치·키보드·커서·텍스트 선택·줄바꿈은 시뮬레이터와 실기기 검증이 필요하다.
 
 ## Safe Area
@@ -60,7 +70,7 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 첫 로드의 주입은 hydration 전에 `<html>`의 `style`을 변경한다. 서버가 알 수 없는 기기별 값이므로 웹 루트 layout의 `<html>`에만 `suppressHydrationWarning`을 적용한다. 하위 화면의 hydration 경고는 억제하지 않는다.
 - WebView의 `contentInsetAdjustmentBehavior`는 `"never"`로 둔다. 켜 두면 WebView가 자기 inset을 더해 같은 여백이 두 번 들어간다. 이 prop은 iOS 전용이라 Android에서는 적용되지 않으며, Android는 실기기로 따로 확인한다.
 - 상태 바 아이콘은 어두운 색(`StatusBar style="dark"`)으로 고정한다. 앱(`userInterfaceStyle: "light"`)과 웹이 밝은 화면만 있어, 기기 다크 모드를 따르는 `auto`면 Android 다크 모드에서 흰 아이콘이 흰 화면에 묻힌다.
-- 문서 전체의 튐(`bounces`, Android `overScrollMode`)은 끈다. 스크롤은 웹 화면 안쪽 영역(`PageShell`의 `main`)이 맡으므로, 켜 두면 화면 위쪽에서 아래로 당길 때 헤더까지 함께 내려가며 WebView 바깥의 흰 배경이 드러난다. 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(`allowsLinkPreview`, iOS)도 꺼서 앱처럼 보이게 한다. 영상은 화면 안에서 자동 재생되게 `allowsInlineMediaPlayback`과 `mediaPlaybackRequiresUserAction={false}`를 둔다(react-native-webview 기본값은 전체 화면 재생·눌러야 재생이라, 로그인 배경 영상이 첫 프레임에서 멈추고 재생 버튼이 보였다).
+- 문서 전체의 튐(`bounces`, Android `overScrollMode`)은 끈다. 스크롤은 웹 화면 안쪽 영역(`PageShell`의 `main`)이 맡으므로, 켜 두면 화면 위쪽에서 아래로 당길 때 헤더까지 함께 내려가며 WebView 바깥의 흰 배경이 드러난다. 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(`allowsLinkPreview`, iOS)도 꺼서 앱처럼 보이게 한다. 영상은 화면 안에서 자동 재생되게 `allowsInlineMediaPlayback`과 `mediaPlaybackRequiresUserAction={false}`를 둔다(react-native-webview 기본값은 전체 화면 재생·눌러야 재생이라, 로그인 배경 영상이 첫 프레임에서 멈추고 재생 버튼이 보였다). iOS 첫 화면의 로그인 배경은 이제 쉘이 네이티브로 그리고, 이 설정은 탭 화면·안드로이드의 웹 영상에 쓰인다.
 - 화면 전체 확대·축소(두 손가락)는 쉘에서만 막는다(2026-11-20, 팀원 제보: 번들 상세가 작게 줄어듦). 웹 `NativeShellViewport`가 쉘일 때 viewport에 `maximum-scale=1, user-scalable=no`를 덧붙이고, Next가 화면·쿼리마다 viewport를 다시 그리거나 바꿀 수 있어 `head` 변화를 지켜보며 다시 덧붙인다. 브라우저는 접근성을 위해 확대를 그대로 두고, 사진 확대는 사진 상세의 Swiper Zoom이 맡는다. 축소만 막는(`minimum-scale=1`) 방안과 비교해 앱처럼 화면을 고정하는 쪽을 골랐다. 그래서 앱 안에서는 두 손가락으로 글자를 키울 수 없고, WebView는 iOS 글자 크기 설정도 따르지 않는다(iOS 시스템 확대 기능은 남음). 저시력 사용자 대응이 필요해지면 다시 정한다. 웹 배포만으로 반영되며, 막은 뒤에도 사진 상세의 두 손가락 확대가 되는지는 실기기에서 확인하지 않았다.
 - 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
 - 화면 키보드가 올라오면 하단 Safe Area를 덮는다. 화면이 `data-keyboard-open`을 표시하면 `AppFrame`이 아래 여백을 0으로 둔다. 지금은 번들 상세 댓글 입력란만 쓴다(`useKeyboardOpen`, `visualViewport` 높이 기준). iOS·Android 실기기 확인 전이다. Android가 키보드에 맞춰 WebView를 줄이면 표시가 켜지지 않고 여백이 그대로 남는다.

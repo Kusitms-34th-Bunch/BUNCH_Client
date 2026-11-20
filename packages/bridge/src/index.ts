@@ -128,6 +128,8 @@ export type AppBridgeMethods = {
   appReady: () => Promise<void>;
   /** 화면 사건의 햅틱(완료 축하는 성공 알림, 좋아요·콕하기·피드 끝은 가벼운 충격). 브라우저·이 메서드가 없는 이전 쉘에서는 동작 없음 */
   feedbackHaptic: (_kind: HapticKind) => Promise<void>;
+  /** iOS 쉘 첫 화면 WebView 뒤에 로그인 배경 영상(앱에 든 영상)을 깔거나 걷음. 깔았으면 true(웹은 자기 영상·첫 프레임을 빼고 배경을 투명하게), 탭 화면·안드로이드·브라우저·이 메서드가 없는 이전 쉘이면 false(웹 영상 사용) */
+  setNativeLoginBackground: (_visible: boolean) => Promise<boolean>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */

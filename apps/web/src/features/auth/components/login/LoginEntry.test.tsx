@@ -15,6 +15,12 @@ import { LoginEntry } from './LoginEntry';
 const push = vi.fn();
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace }) }));
+
+// 배경을 누가 그리는지(쉘 응답)는 hook 테스트가 맡고, 여기서는 결과별 화면만 확인
+const background = vi.hoisted((): { source: 'pending' | 'native' | 'web' } => ({ source: 'web' }));
+vi.mock('../../hooks/useNativeLoginBackground', () => ({
+  useNativeLoginBackground: () => background.source,
+}));
 const NEXT_PATH = '/next';
 const DESTINATIONS = {
   bunchHome: '/bunch',
@@ -63,6 +69,35 @@ describe('LoginEntry', () => {
     toast.mockClear();
     push.mockClear();
     replace.mockClear();
+    background.source = 'web';
+  });
+
+  it('iOS 쉘이 배경 영상을 맡으면 웹 영상·첫 프레임·바탕을 빼고 겹침만 그린다', () => {
+    background.source = 'native';
+    const { container } = render(
+      <LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />,
+    );
+    const layer = screen.getByTestId('login-background');
+
+    expect(container.querySelector('video')).toBeNull();
+    expect(layer.style.backgroundImage).toBe('');
+    expect(layer.className).not.toContain('bg-primitive-gray-900');
+    expect(layer.querySelector('.bg-linear-to-b')).not.toBeNull();
+    // 바깥 틀(AppFrame)의 흰 바탕도 걷도록 표식
+    expect(container.querySelector('[data-app-background="transparent"]')).not.toBeNull();
+  });
+
+  it('쉘에 물어보는 동안에는 웹 영상 없이 첫 프레임만 보이고 바탕은 그대로 둔다', () => {
+    background.source = 'pending';
+    const { container } = render(
+      <LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />,
+    );
+
+    expect(container.querySelector('video')).toBeNull();
+    expect(screen.getByTestId('login-background').style.backgroundImage).toContain(
+      '/videos/login-poster.jpg',
+    );
+    expect(container.querySelector('[data-app-background="transparent"]')).toBeNull();
   });
 
   it('워드마크를 제목으로, 본문 영역(main)을 가진다', () => {
@@ -273,6 +308,29 @@ describe('LoginEntry', () => {
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(NEXT_PATH));
     expect(play).not.toHaveBeenCalled();
+  });
+
+  it('로그인 중이 아닐 때 앱을 나갔다 돌아와 영상이 멈춰 있으면 다시 재생한다', () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockImplementation(() => Promise.resolve());
+    const paused = vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(true);
+    const visibility = vi.spyOn(document, 'visibilityState', 'get');
+    render(<LoginEntry destinations={DESTINATIONS} resolveNextPath={resolveNextPath} />);
+    play.mockClear();
+
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(play).not.toHaveBeenCalled();
+
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(play).toHaveBeenCalledTimes(1);
+
+    // 이미 재생 중이면 다시 부르지 않음
+    paused.mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(play).toHaveBeenCalledTimes(1);
   });
 
   it('로그인 중이 아니면 화면을 벗어나도 영상을 멈추지 않는다', () => {

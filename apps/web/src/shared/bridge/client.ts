@@ -56,6 +56,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     appReady: () => Promise.resolve(),
     // 브라우저·이전 쉘에는 햅틱 없음
     feedbackHaptic: () => Promise.resolve(),
+    // 브라우저는 웹 영상으로 로그인 배경을 그림
+    setNativeLoginBackground: () => Promise.resolve(false),
   },
 });
 
