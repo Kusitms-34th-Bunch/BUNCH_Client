@@ -41,3 +41,10 @@ test('값이 같으면 같은 상태를 돌려줘 다시 그리지 않는다', (
   const focused = focusTabBar(state, 'feed');
   assert.equal(focusTabBar(focused, 'feed'), focused);
 });
+
+test('탭별 값을 받은 적 없으면(이전 웹) 탭을 바꿔도 지금 숨김을 유지한다', () => {
+  // 이전 웹은 탭 ID 없이 barHidden만 바꿈
+  const state = focusTabBar({ focusedTab: 'feed', barHidden: true }, 'bunch');
+  assert.equal(state.barHidden, true);
+  assert.equal(state.focusedTab, 'bunch');
+});

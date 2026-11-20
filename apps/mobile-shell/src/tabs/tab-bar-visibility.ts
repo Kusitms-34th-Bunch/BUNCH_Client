@@ -27,9 +27,13 @@ export const reportTabBar = <T extends TabBarVisibilityState>(
   return { ...state, hiddenByTab: { ...state.hiddenByTab, [tab]: !visible }, barHidden };
 };
 
-/** 탭이 바뀌면 그 탭이 마지막으로 알려 온 값으로 탭 바를 맞춤(알려 온 적 없으면 표시) */
+/**
+ * 탭이 바뀌면 그 탭이 마지막으로 알려 온 값으로 탭 바를 맞춤(알려 온 적 없으면 표시)
+ * 탭별 값을 한 번도 받지 않았으면(탭 ID를 보내지 않는 이전 웹) 지금 탭 바를 그대로 둠(이전 웹이 보낸 숨김 유지)
+ */
 export const focusTabBar = <T extends TabBarVisibilityState>(state: T, tab: TabId): T => {
-  const barHidden = state.hiddenByTab?.[tab] ?? false;
+  const perTab = state.hiddenByTab !== undefined && Object.keys(state.hiddenByTab).length > 0;
+  const barHidden = perTab ? (state.hiddenByTab?.[tab] ?? false) : (state.barHidden ?? false);
   if (state.focusedTab === tab && state.barHidden === barHidden) return state;
   return { ...state, focusedTab: tab, barHidden };
 };
