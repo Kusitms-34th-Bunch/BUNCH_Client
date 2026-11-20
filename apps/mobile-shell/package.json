@@ -49,6 +49,8 @@
     "ios": "expo run:ios",
     "ios:sync": "node scripts/ios-sync.mjs",
     "ios:sync:clean": "node scripts/ios-sync.mjs --clean",
+    "e2e:ios:build": "node scripts/e2e-ios-build.mjs",
+    "e2e:ios": "maestro test maestro",
     "android:sync": "expo prebuild --platform android --no-clean",
     "android:sync:clean": "expo prebuild --platform android",
     "open:ios": "open ios/*.xcworkspace",

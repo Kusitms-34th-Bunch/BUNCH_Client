@@ -1,0 +1,8 @@
+# 저장된 상태 없이 실행하고 번치 홈이 그려질 때까지 기다림(가짜 DB는 로그인·가입 완료 상태로 시작)
+appId: kr.bunch.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: '콕한 장소'
+    timeout: 60000

@@ -1,0 +1,23 @@
+appId: kr.bunch.app
+name: 탭을 바꾸면 그 탭 화면이 보이고 탭 바가 남는다
+---
+- runFlow: ../subflows/launch-fresh.yaml
+# 앱 시작 직후 첫 입력만 재시도(flows/90-startup-first-input.yaml), 그 뒤 전환은 한 번 눌러 바로 바뀌어야 함
+- runFlow:
+    file: ../subflows/tap-until-visible.yaml
+    env:
+      TARGET: '사진함'
+      MARK: '사진 올리기'
+- tapOn: '피드'
+- extendedWaitUntil:
+    visible: 'BUNCH, 맨 위로'
+    timeout: 10000
+- tapOn: '마이페이지'
+- extendedWaitUntil:
+    visible: '로그아웃'
+    timeout: 10000
+- tapOn: '번치'
+- extendedWaitUntil:
+    visible: '콕한 장소'
+    timeout: 10000
+- assertVisible: '마이페이지'

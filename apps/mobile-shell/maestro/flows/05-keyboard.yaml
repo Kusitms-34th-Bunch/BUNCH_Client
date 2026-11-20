@@ -1,0 +1,18 @@
+appId: kr.bunch.app
+name: 댓글 입력에서 키보드를 열고 닫은 뒤 돌아오면 탭 바가 보인다
+---
+- runFlow: ../subflows/launch-fresh.yaml
+- runFlow:
+    file: ../subflows/tap-until-visible.yaml
+    env:
+      TARGET: '피드'
+      MARK: 'BUNCH, 맨 위로'
+- tapOn: '댓글 4'
+- tapOn: '여행쥬아로 댓글 달기'
+- inputText: '안녕'
+- assertVisible: '보내기'
+- hideKeyboard
+- tapOn: '뒤로 가기'
+- extendedWaitUntil:
+    visible: '마이페이지'
+    timeout: 15000

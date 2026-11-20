@@ -1,0 +1,15 @@
+appId: kr.bunch.app
+name: 탭 밖 화면(콕한 장소)에서는 탭 바가 숨고 돌아오면 다시 보인다
+---
+- runFlow: ../subflows/launch-fresh.yaml
+- runFlow:
+    file: ../subflows/tap-until-visible.yaml
+    env:
+      TARGET: '콕한 장소'
+      MARK: '멤버 필터'
+- assertNotVisible: '마이페이지'
+- tapOn: '뒤로 가기'
+- extendedWaitUntil:
+    visible: '마이페이지'
+    timeout: 15000
+- assertVisible: '콕한 장소'
