@@ -106,7 +106,13 @@ export function WithdrawalScreen() {
       close();
       return;
     }
-    withdraw.mutate(undefined, { onError: close });
+    // Apple 재인증 창을 닫았으면 확인 창도 닫고 이 화면에 머묾
+    withdraw.mutate(undefined, {
+      onError: close,
+      onSuccess: (result) => {
+        if (result === 'cancelled') close();
+      },
+    });
   };
   // 권한을 넘기고 돌아와도 다시 확인해 남은 번치로 판단(화면 설계서 5-3)
   const next = async () => {

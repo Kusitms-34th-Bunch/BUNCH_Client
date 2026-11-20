@@ -6,9 +6,10 @@ import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_MEMBER_IDS } from '@/mocks/db/seed';
-import { fail } from '@/mocks/lib/envelope';
+import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import { authorizeApple } from '../../lib/appleAuthorization';
 import { reloadTo } from '../../lib/navigation';
 import { markKeepAgreed } from '../../lib/withdrawalFlow';
 import { myKeys } from '../../queries/keys';
@@ -19,6 +20,7 @@ const back = vi.fn();
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
 vi.mock('../../lib/navigation', () => ({ openExternal: vi.fn(), reloadTo: vi.fn() }));
+vi.mock('../../lib/appleAuthorization', () => ({ authorizeApple: vi.fn() }));
 // 토스트 표시는 DS의 `toast()` 담당이라 호출만 차단
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
@@ -31,6 +33,7 @@ beforeEach(() => {
   replace.mockClear();
   vi.mocked(reloadTo).mockClear();
   vi.mocked(toast).mockClear();
+  vi.mocked(authorizeApple).mockReset();
 });
 
 /** 가짜 DB에서 내가 시연 번치 두 곳의 메인 관리자가 되게 함(원래 메인 관리자는 공동 관리자로) */
@@ -119,6 +122,90 @@ describe('WithdrawalScreen', () => {
     // 탈퇴 뒤 이 기기의 인증 쿠키를 지움
     expect(withdrawn).toHaveBeenCalledTimes(1);
     expect(loggedOut).toHaveBeenCalledTimes(1);
+  });
+
+  describe('Apple 가입자', () => {
+    const asApple = (onWithdraw: (_body: unknown) => Response) =>
+      server.use(
+        http.get('/api/members/me/withdrawal/check', () =>
+          ok({ ownerBunches: [], provider: 'APPLE' }),
+        ),
+        http.post('/api/members/me/withdrawal', async ({ request }) =>
+          onWithdraw(await request.json().catch(() => null)),
+        ),
+        http.post('/api/auth/logout', () => HttpResponse.json({})),
+      );
+    const confirm = async () => {
+      await agreeAndNext();
+      const dialog = await screen.findByRole('alertdialog', { name: '정말 탈퇴하시겠어요?' });
+      await userEvent.click(within(dialog).getByRole('button', { name: '탈퇴하기' }));
+    };
+
+    it('탈퇴 직전에 Apple 재인증을 받아 그 코드와 함께 탈퇴한다', async () => {
+      const bodies: unknown[] = [];
+      asApple((body) => {
+        bodies.push(body);
+        return HttpResponse.json({ success: true, data: null });
+      });
+      vi.mocked(authorizeApple).mockResolvedValue({
+        status: 'success',
+        authorizationCode: 'code-1',
+      });
+      renderScreen();
+
+      await confirm();
+
+      await waitFor(() => expect(reloadTo).toHaveBeenCalledWith('/login'));
+      expect(bodies).toEqual([{ appleAuthorizationCode: 'code-1' }]);
+    });
+
+    it('Apple 창을 닫으면 탈퇴하지 않고 확인 창만 닫는다', async () => {
+      const withdrawn = vi.fn();
+      asApple(() => {
+        withdrawn();
+        return HttpResponse.json({ success: true, data: null });
+      });
+      vi.mocked(authorizeApple).mockResolvedValue({ status: 'cancelled' });
+      renderScreen();
+
+      await confirm();
+
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+      expect(withdrawn).not.toHaveBeenCalled();
+      expect(toast).not.toHaveBeenCalled();
+      expect(reloadTo).not.toHaveBeenCalled();
+    });
+
+    it('Apple 연결 해제에 실패하면(USER_007) 알리고, 다시 누르면 새 코드로 다시 시도한다', async () => {
+      const bodies: unknown[] = [];
+      asApple((body) => {
+        bodies.push(body);
+        return bodies.length === 1
+          ? fail(503, 'USER_007')
+          : HttpResponse.json({ success: true, data: null });
+      });
+      vi.mocked(authorizeApple)
+        .mockResolvedValueOnce({ status: 'success', authorizationCode: 'code-1' })
+        .mockResolvedValueOnce({ status: 'success', authorizationCode: 'code-2' });
+      renderScreen();
+
+      await confirm();
+      await waitFor(() =>
+        expect(toast).toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요'),
+      );
+      expect(reloadTo).not.toHaveBeenCalled();
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+
+      await userEvent.click(screen.getByRole('button', { name: '다음' }));
+      const dialog = await screen.findByRole('alertdialog', { name: '정말 탈퇴하시겠어요?' });
+      await userEvent.click(within(dialog).getByRole('button', { name: '탈퇴하기' }));
+
+      await waitFor(() => expect(reloadTo).toHaveBeenCalledWith('/login'));
+      expect(bodies).toEqual([
+        { appleAuthorizationCode: 'code-1' },
+        { appleAuthorizationCode: 'code-2' },
+      ]);
+    });
   });
 
   it('탈퇴 뒤 BFF 로그아웃이 실패해도 탈퇴는 끝난 것으로 보고 로그인 화면으로 간다', async () => {

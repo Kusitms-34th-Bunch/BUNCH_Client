@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   MAX_PICKED_PHOTOS,
   MAX_UPLOAD_IMAGE_DATA_URL,
+  appleAuthorizationResultSchema,
   clipboardTextSchema,
   galleryImageSchema,
   isSavableImageUrl,
@@ -339,4 +340,13 @@ void test('탭 알림은 정해진 종류와 보낸 탭만 받는다', () => {
   assert.equal(parse({ type: 'loggedOut', from: 'bunch' }), false);
   assert.equal(parse({ type: 'meChanged', from: '' }), false);
   assert.equal(parse({ type: 'meChanged', from: 'bunch', extra: 1 }), false);
+});
+
+test('Apple 재인증 결과는 비지 않은 4096자 이하 인증 코드이거나 cancelled다', () => {
+  const ok = (value: unknown) => appleAuthorizationResultSchema.safeParse(value).success;
+  assert.equal(ok({ status: 'success', authorizationCode: 'code' }), true);
+  assert.equal(ok({ status: 'cancelled' }), true);
+  assert.equal(ok({ status: 'success', authorizationCode: '' }), false);
+  assert.equal(ok({ status: 'success', authorizationCode: 'a'.repeat(4097) }), false);
+  assert.equal(ok({ status: 'success' }), false);
 });

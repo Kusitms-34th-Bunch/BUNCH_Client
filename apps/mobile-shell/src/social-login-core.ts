@@ -219,3 +219,42 @@ export const createAppleLogin = ({
     return inFlight;
   };
 };
+
+export type AppleAuthorizationDeps = {
+  /** 이 기기에서 Apple 로그인을 쓸 수 있는지(iOS 13 이상, Android 불가) */
+  isAvailable: () => Promise<boolean>;
+  /** Apple 로그인 창. 탈퇴 전 재인증이라 이메일·이름은 요청하지 않고 인증 코드만 씀 */
+  signIn: () => Promise<{ authorizationCode: string | null }>;
+};
+
+export type AppleAuthorizationOutcome =
+  | { status: 'success'; authorizationCode: string }
+  | { status: 'cancelled' };
+
+/**
+ * 탈퇴 전 Apple 재인증 함수를 만듦. 서버가 이 일회용 코드로 Apple 연결을 끊음(App Store 지침 5.1.1(v))
+ * 진행 중이면 같은 결과를 공유하고, 오류 메시지에는 SDK 원문·코드를 넣지 않음
+ */
+export const createAppleAuthorization = ({ isAvailable, signIn }: AppleAuthorizationDeps) => {
+  const run = async (): Promise<AppleAuthorizationOutcome> => {
+    const available = await isAvailable().catch(() => false);
+    if (!available) throw new Error('이 기기에서는 Apple 로그인을 쓸 수 없어요.');
+    let credential: { authorizationCode: string | null };
+    try {
+      credential = await signIn();
+    } catch (error) {
+      if (isAppleCancelled(error)) return { status: 'cancelled' };
+      throw new Error('Apple 인증에 실패했어요.');
+    }
+    if (!credential.authorizationCode) throw new Error('Apple 인증 코드를 받지 못했어요.');
+    return { status: 'success', authorizationCode: credential.authorizationCode };
+  };
+
+  let inFlight: Promise<AppleAuthorizationOutcome> | undefined;
+  return () => {
+    inFlight ??= run().finally(() => {
+      inFlight = undefined;
+    });
+    return inFlight;
+  };
+};

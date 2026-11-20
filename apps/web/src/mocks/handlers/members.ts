@@ -317,6 +317,8 @@ export const memberHandlers = [
         myMembershipId: MOCK_MY_MEMBER_ID,
         membershipVersion: versionOf(state, bunch.id),
       })),
+      // 시연 계정은 카카오 가입으로 봄(Apple 재인증 흐름은 화면 테스트가 handler를 바꿔 확인)
+      provider: 'KAKAO',
     });
   }),
 
