@@ -43,6 +43,8 @@ export const bunchFollowRequestsQueryOptions = (viewerId: string) =>
   queryOptions({
     queryKey: bunchHomeKeys.followRequests(viewerId),
     queryFn: requestFollowRequests(viewerId),
+    // 같은 key를 미리 받아 둬도 들어올 때마다 다시 받음(아래 정의와 같은 의도)
+    refetchOnMount: 'always',
   });
 
 /** 내 번치에 온 대기 중인 팔로우 요청. 내 번치를 모르면 요청하지 않음 */
@@ -50,6 +52,8 @@ export const followRequestsQueryOptions = (viewerId: string | undefined) =>
   queryOptions({
     queryKey: bunchHomeKeys.followRequests(viewerId),
     queryFn: viewerId ? requestFollowRequests(viewerId) : skipToken,
+    // 번치 홈이 미리 받아 둬도 들어올 때마다 다시 받음(새 요청이 늦게 보이지 않게)
+    refetchOnMount: 'always',
   });
 
 /**

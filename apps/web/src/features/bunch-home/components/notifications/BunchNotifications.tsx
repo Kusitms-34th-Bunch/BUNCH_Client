@@ -5,6 +5,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toDomainId } from '@/shared/api/ids';
+import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -84,7 +85,8 @@ export function BunchNotifications() {
 
   return (
     <>
-      {/* 여는 동안 덮개 없이 다시 누름만 막음(가드), 안내는 화면의 늘 있는 상태 영역에 실음 */}
+      {/* 여는 동안 다시 누름은 가드로 막고 1초를 넘길 때만 덮음(motion.md 로딩 상태), 안내는 화면의 늘 있는 상태 영역에 실음 */}
+      {open.isPending ? <PageLoading delayMs={LATE_OVERLAY_MS} /> : null}
       <div
         className="contents"
         // 여는 중 누른 링크(알림 설정 안내 등)는 사용자가 시작한 이동. 보조 키 클릭(새 탭)은 이 화면을 떠나지 않음

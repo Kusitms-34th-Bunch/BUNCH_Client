@@ -92,4 +92,26 @@ describe('useOpenBundle', () => {
     expect(prefetch).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledTimes(1);
   });
+
+  it('이동할 때 칸 데이터를 남기고, 삭제된 번들이면 남기지 않는다', async () => {
+    const rememberPreview = vi.fn();
+    const cell = { id: '7', title: '가을 소풍', coverSrc: '/a.jpg', bunchName: '여행쥬아' };
+    const { result, rerender } = renderHook(
+      ({ prefetchBundle }: { prefetchBundle: PrefetchBundle }) =>
+        useOpenBundle({ viewerId: '1', prefetchBundle, rememberPreview, onDeleted: vi.fn() }),
+      { initialProps: { prefetchBundle: () => Promise.resolve() } },
+    );
+
+    await act(() => result.current('1', '7', cell));
+    expect(rememberPreview).toHaveBeenCalledWith('1', cell);
+    expect(push).toHaveBeenCalledWith(HREF);
+
+    rememberPreview.mockClear();
+    rerender({
+      prefetchBundle: () =>
+        Promise.reject(new ApiError({ message: 'gone', category: 'unknown', status: 404 })),
+    });
+    await act(() => result.current('1', '7', cell));
+    expect(rememberPreview).not.toHaveBeenCalled();
+  });
 });

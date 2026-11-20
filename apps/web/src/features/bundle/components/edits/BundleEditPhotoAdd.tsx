@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useState } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useBundleEditContext } from '../../contexts/bundleEditContext';
 import { clearPhotoAddEntry, isPhotoAddEntry } from '../../lib/photoAddEntry';
@@ -43,7 +47,8 @@ export function BundleEditPhotoAdd({ photoBox }: BundleEditPhotoAddProps) {
 
   if (state.kind === 'error')
     return <BundleEditError onRetry={state.retry} onBack={() => router.replace(editPath)} />;
-  if (state.kind !== 'ready' || photoBox.kind === 'loading') return <PageLoading />;
+  if (state.kind !== 'ready' || photoBox.kind === 'loading')
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
   if (photoBox.kind !== 'ready') return photoBox.screen;
 
   const goBack = () =>

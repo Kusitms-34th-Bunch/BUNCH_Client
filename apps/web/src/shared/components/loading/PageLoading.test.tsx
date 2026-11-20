@@ -1,6 +1,6 @@
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
 import { PageLoading } from './PageLoading';
 
@@ -57,5 +57,33 @@ describe('PageLoading', () => {
       </>,
     );
     expect(document.activeElement).toBe(button);
+  });
+
+  it('delayMs를 주면 그 시간이 지나야 덮고, 그 전에 끝나면 덮지 않는다', async () => {
+    vi.useFakeTimers();
+    onTestFinished(() => void vi.useRealTimers());
+    const before = getPageLoadingCount();
+    const { container, unmount } = render(<PageLoading delayMs={1000} />);
+
+    await act(() => vi.advanceTimersByTimeAsync(999));
+    expect(container.querySelector('.fixed')).toBeNull();
+    // 덮개는 늦어도 로딩 중임은 붙는 순간부터 알림(앱 스플래시·화면 이동 뒤 토스트가 기다림)
+    expect(getPageLoadingCount()).toBe(before + 1);
+
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(container.querySelector('.fixed')).not.toBeNull();
+    expect(getPageLoadingCount()).toBe(before + 1);
+
+    unmount();
+    const early = render(<PageLoading delayMs={1000} />);
+    early.unmount();
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(getPageLoadingCount()).toBe(before);
+  });
+
+  it('label을 주면 덮개가 뜨기 전에도 상태 안내를 바로 그린다', () => {
+    const { getByRole } = render(<PageLoading delayMs={1000} label="화면을 불러오는 중이에요" />);
+
+    expect(getByRole('status').textContent).toBe('화면을 불러오는 중이에요');
   });
 });

@@ -26,6 +26,8 @@ export const bunchNotificationsQueryOptions = (bunchId: string | undefined) =>
       ? ({ pageParam, signal }) => getBunchNotifications(bunchId, pageParam, signal)
       : skipToken,
     getNextPageParam: nextPageOf,
+    // 번치 홈이 미리 받아 둬도 들어올 때마다 다시 받음(새 알림이 늦게 보이지 않게, 받아 둔 목록은 바로 보임)
+    refetchOnMount: 'always',
   });
 
 // 읽음이 바뀌면 목록과 읽지 않은 수(번치 홈 헤더·전환 목록 「알림 N개」)를 다시 받음

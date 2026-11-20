@@ -25,7 +25,7 @@ describe('BundleDetailStatus 받는 중', () => {
         kind="loading"
         titleRef={createRef()}
         onRetry={() => {}}
-        preview={{ bundle, time: '방금' }}
+        preview={{ bundle, partial: false, time: '방금' }}
       />,
     );
     expect(screen.getByRole('status').textContent).toBe('번들을 불러오는 중이에요');
@@ -44,5 +44,19 @@ describe('BundleDetailStatus 받는 중', () => {
     expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
     expect(screen.queryByRole('heading')).toBeNull();
     expect(getPageLoadingCount()).toBe(0);
+  });
+
+  it('격자 칸으로 열었으면(부분 데이터) 번치·제목·표지를 그리고 날짜 줄은 자리표시로 둔다', () => {
+    const { container } = render(
+      <BundleDetailStatus
+        kind="loading"
+        titleRef={createRef()}
+        onRetry={() => {}}
+        preview={{ bundle, partial: true, time: '' }}
+      />,
+    );
+    expect(container.querySelector('[inert]')?.textContent).toContain('가을 소풍');
+    expect(container.querySelector('img[src="/a.jpg"]')).not.toBeNull();
+    expect(container.querySelectorAll('[aria-hidden="true"] .h-4.w-32')).toHaveLength(1);
   });
 });

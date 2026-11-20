@@ -35,8 +35,8 @@ export const managedBundleQueryOptions = (
         : ({ signal }) => getManagedBundle(bunchId, bundleId, signal),
   });
 
-/** 받아 둔 피드 쪽에서 그 번들 카드를 뺌(돌아가는 동안 지운·멤버 공개 카드가 보이지 않게, 피드는 진입마다 다시 받음) */
-const dropFromFeed = (client: QueryClient, bundleId: string) =>
+/** 받아 둔 피드 쪽에서 그 번들 카드를 뺌(돌아가는 동안 지운·멤버 공개·신고한 카드가 보이지 않게, 피드는 진입마다 다시 받음) */
+export const dropFromFeed = (client: QueryClient, bundleId: string) =>
   client.setQueriesData<InfiniteData<FeedPage>>({ queryKey: feedKeys.lists() }, (data) =>
     data
       ? {

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useId, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { readClipboardText } from '@/shared/lib/clipboard';
 import { INVITATION_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/messages';
@@ -128,6 +129,8 @@ export function BunchJoin() {
       <p role="status" className="sr-only">
         {verify.isPending ? '초대를 확인하는 중이에요' : pasted ? '초대 링크를 붙여넣었어요' : ''}
       </p>
+      {/* 짧은 동작이라 버튼만 비활성, 1초를 넘기면 그때 덮음(motion.md 로딩 상태) */}
+      {verify.isPending || leaving ? <PageLoading delayMs={LATE_OVERLAY_MS} /> : null}
       <PageHeader title="초대받은 번치에 참여해볼까요?" />
       <div className="pt-s6 px-padding-p8">
         <TextField

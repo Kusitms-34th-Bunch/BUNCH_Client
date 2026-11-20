@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
@@ -49,7 +53,8 @@ export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
     router.replace(BUNDLE_SELECT_PATHS.select);
   }, [missing, noMembers, openSheet, router]);
 
-  if (state.kind !== 'ready') return <PageLoading />;
+  if (state.kind !== 'ready')
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
   const { detail } = state;
 
   return (

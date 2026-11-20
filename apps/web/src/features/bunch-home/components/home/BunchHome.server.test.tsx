@@ -67,6 +67,28 @@ describe('BunchHome 서버 데이터', () => {
     expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('홈 정보가 먼저 오면 번들 목록을 기다리지 않고 프로필을 그리고 번들 영역만 자리표시로 둔다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get('/api/bunches/:bunchId/published-bundles', async () => {
+        await gate;
+      }),
+    );
+    renderHome();
+
+    expect(await screen.findByRole('heading', { name: /여행쥬아/ })).toBeInTheDocument();
+    expect(screen.getByText('번들을 불러오는 중이에요')).toBeInTheDocument();
+    // 받기 전에는 빈 상태(「첫 번들 만들기」)를 보이지 않음
+    expect(screen.queryByRole('button', { name: '첫 번들 만들기' })).toBeNull();
+
+    release();
+    expect(await screen.findByAltText(/강릉 커피 투어/)).toBeInTheDocument();
+    expect(screen.queryByText('번들을 불러오는 중이에요')).toBeNull();
+  });
+
   it('새로 발행한 번들은 기존 번들보다 앞에 보인다(발행 뒤 번치 홈 key를 무효화하면)', async () => {
     const client = renderHome();
     await screen.findByAltText(/강릉 커피 투어/);

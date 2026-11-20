@@ -16,6 +16,7 @@ import { FEED_PATHS } from '../constants/paths';
 import { DELETED_USER_IMAGE } from '../lib/deletedUserImage';
 import { subjectParticle } from '../lib/josa';
 import { useKokMutation, useLoadBundleKoks } from '../queries/kok';
+import { usePrefetchMemberProfile } from '../queries/memberProfile';
 import { useFeedViewer } from './useFeedViewer';
 
 /**
@@ -27,6 +28,7 @@ export function useBundleSheets() {
   const openOverlay = useScreenOverlay();
   // 시트가 하단을 덮으므로 토스트는 위에
   const { viewer, asBunch } = useFeedViewer({ position: 'top' });
+  const prefetchMemberProfile = usePrefetchMemberProfile();
   const kok = useKokMutation();
   const loadKoks = useLoadBundleKoks();
   // overlay root가 Query provider 밖일 때(테스트 등)도 시트가 같은 client를 읽게 감쌈
@@ -142,7 +144,8 @@ export function useBundleSheets() {
           {...rootProps}
           members={members.map((member) => {
             if (member.left) return { name: text.leftMember, imageSrc: DELETED_USER_IMAGE };
-            const href = member.id ? FEED_PATHS.member(member.id) : undefined;
+            const memberId = member.id;
+            const href = memberId ? FEED_PATHS.member(memberId) : undefined;
             return {
               name: member.name,
               imageSrc: member.imageSrc,
@@ -153,6 +156,9 @@ export function useBundleSheets() {
                     <Link
                       href={href}
                       className={className}
+                      // 누르기 시작하거나 초점이 가면 멤버 프로필을 미리 받음
+                      onPointerDown={() => memberId && prefetchMemberProfile(memberId, viewerId())}
+                      onFocus={() => memberId && prefetchMemberProfile(memberId, viewerId())}
                       onClick={(event) => {
                         // 새 탭 열기 같은 보조 키 클릭은 링크 기본 동작대로
                         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)

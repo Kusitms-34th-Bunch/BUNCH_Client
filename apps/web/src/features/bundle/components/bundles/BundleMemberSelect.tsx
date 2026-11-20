@@ -7,7 +7,11 @@ import type { PhotoBoxMember } from '@/features/photo-box/lib/types';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
@@ -33,7 +37,8 @@ export function BundleMemberSelect() {
   // 만들다 실패해 「다음」이 다시 켜지면 초점을 되돌림(성공하면 이동할 때까지 만드는 중이 유지됨)
   const [nextRef, refocusNext] = useRefocusWhenEnabled<HTMLButtonElement>(!creating);
 
-  if (photoState.kind === 'loading') return <PageLoading />;
+  if (photoState.kind === 'loading')
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
   if (photoState.kind === 'error') return <BundleLoadError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (
@@ -97,6 +102,8 @@ export function BundleMemberSelect() {
           ? BUNDLE_SELECT_MESSAGES.creating
           : BUNDLE_SELECT_MESSAGES.membersStatus(addedCount)}
       </p>
+      {/* 짧은 동작이라 버튼만 비활성, 1초를 넘기면 그때 덮음(motion.md 로딩 상태) */}
+      {creating ? <PageLoading delayMs={LATE_OVERLAY_MS} /> : null}
       <div inert={creating}>
         <h1 className="typography-title-1-semi-bold text-text-primary px-s8 pt-s8">
           {BUNDLE_SELECT_MESSAGES.membersTitle}
