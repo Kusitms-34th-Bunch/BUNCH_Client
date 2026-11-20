@@ -15,6 +15,7 @@
 - 시스템 탭 바는 탭마다 화면을 갖는 구조라 탭마다 WebView를 하나씩 둔다. 각 WebView는 웹이 알려 준 탭 경로를 연다.
 - 첫 화면(로그인·온보딩)은 하나의 WebView다. 웹 탭 화면이 `setNativeTabBar`를 부르면 쉘이 탭 화면으로 바꾸고, `hidden: true`면 하나의 WebView로 돌아간다.
 - 탭 화면에서 탭 밖 화면(사진 상세·번들 작성·번치 시작 선택처럼 `(main)` 밖)으로 가면 같은 탭 WebView에서 시스템 탭 바만 숨긴다(2026-11-01, #165). 네이티브 앱의 푸시 화면처럼 뒤로 가기·닫기로 탭 화면에 돌아오면 탭 바가 다시 나오고 탭의 스크롤·상태가 유지된다. 웹 `NativeTabBarVisibility`(`(app)` layout)가 경로가 바뀔 때마다 지금 경로가 탭 화면(`/feed`·`/photos`·`/bunch`·`/my`)인지 `setNativeTabBarVisible`로 보낸다. 탭 WebView 4개가 쉘을 공유하므로 화면에 보이는 WebView(`document.visibilityState`)만 보내고, 다시 보이게 되면 현재 상태를 다시 보낸다. 그래서 뒤의 탭 WebView가 다시 불러와도 숨김이 풀리지 않고, 직접 진입·새로고침에도 맞는다. 탭 화면을 닫고 하나의 WebView로 돌아가는 `hidden: true`는 로그아웃처럼 앱의 탭 영역 자체를 떠날 때만 쓴다.
+- 탭 바 표시는 탭마다 따로 저장한다(2026-11-21, #481). 처음에는 화면에 보이는 WebView만 값을 보냈는데, 뒤에 있는 탭이 늦게 보낸 값이 지금 탭 바를 바꾸거나, 「피드 둘러보기」처럼 코드로 탭을 바꿀 때 새 탭이 값을 다시 보내지 않아 탭 바가 화면과 어긋났다. 이제 탭 WebView가 자기 탭 ID와 함께 보내고(`setNativeTabBarVisibleFor`), 쉘은 선택된 탭의 값만 적용하며 탭이 바뀌면(`useFocusEffect`) 그 탭의 값을 적용한다. 이 메서드가 없는 이전 쉘은 기존 방식으로 동작한다.
 - 라이브러리는 expo-router의 네이티브 탭(`expo-router/unstable-native-tabs`, SDK 57)이다. 쉘 진입점은 `index.ts`에서 Sentry를 초기화한 뒤 `expo-router/entry`를 불러온다.
 - 탭 라벨·경로는 웹이 정하고, 아이콘은 쉘이 탭 ID로 정한다(웹 막대와 같은 디자인 시스템 아이콘을 PNG로 옮김). 선택 색·라벨 크기는 디자인 토큰 값을 옮긴다.
 - 웹·안드로이드·브라우저는 기존 웹 `BottomNavigation`을 쓴다(011의 CSS 막대).
