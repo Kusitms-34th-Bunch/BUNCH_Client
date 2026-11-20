@@ -1,7 +1,7 @@
 'use client';
 
 import type { RefObject } from 'react';
-import { Button } from '@app/design-system';
+import { Button, Skeleton } from '@app/design-system';
 import { BundleAuthorInfo, BundleInfo, BundlePhoto } from '@app/design-system/web';
 import type { FeedBundle } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
@@ -14,8 +14,8 @@ export type BundleDetailStatusProps = {
   /** 볼 수 없음·실패 안내의 제목(다시 시도 뒤 초점을 받는 곳) */
   titleRef: RefObject<HTMLHeadingElement | null>;
   onRetry: () => void;
-  /** 받는 중일 때 먼저 그릴 피드 카드 데이터와 게시 경과 시간(피드에서 연 경우) */
-  preview?: { bundle: FeedBundle; time: string } | undefined;
+  /** 받는 중일 때 먼저 그릴 카드·칸 데이터와 게시 경과 시간. `partial`(격자 칸)이면 날짜 줄은 자리표시 */
+  preview?: { bundle: FeedBundle; partial: boolean; time: string } | undefined;
 };
 
 const noop = () => {};
@@ -24,7 +24,7 @@ const noop = () => {};
 export function BundleDetailStatus({ kind, titleRef, onRetry, preview }: BundleDetailStatusProps) {
   // 피드에서 왔으면 본문과 같은 자리에 번치·제목·첫 사진을 먼저 그리고 그 아래만 스켈레톤(카드 사진이 hero로 이어짐). 받기 전이라 누를 수 없게 inert
   if (kind === 'loading' && preview) {
-    const { bundle, time } = preview;
+    const { bundle, partial, time } = preview;
     return (
       <>
         <p role="status" className="sr-only">
@@ -47,8 +47,18 @@ export function BundleDetailStatus({ kind, titleRef, onRetry, preview }: BundleD
             location={bundle.location}
             onLocationClick={noop}
             date={bundle.date}
-            className="pt-padding-p8 pb-padding-p5 px-padding-p8"
+            className={
+              partial ? 'pt-padding-p8 px-padding-p8' : 'pt-padding-p8 pb-padding-p5 px-padding-p8'
+            }
           />
+          {partial ? (
+            // 칸에는 장소·날짜가 없어 BundleInfo 날짜 줄 자리만 회색(BundleDetailSkeleton과 같은 크기)
+            <div aria-hidden="true" className="px-padding-p8 pb-padding-p5 pt-s5">
+              <span className="typography-body-3-regular flex h-lh items-center">
+                <Skeleton className="h-4 w-32" />
+              </span>
+            </div>
+          ) : null}
           <BundlePhoto variant="detail" photos={bundle.photos} heroKey={bundleHeroKey(bundle.id)} />
         </div>
         <BundleDetailRestSkeleton />

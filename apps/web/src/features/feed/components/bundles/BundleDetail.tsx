@@ -222,15 +222,19 @@ export function BundleDetail({
   const failed =
     !unavailable && (detail.isError || (viewer === undefined && viewerFailed)) && !detail.data;
   if ((unavailable && !detail.data) || failed || !bundle) {
-    const previewBundle = getBundlePreview(bunchId, bundleId);
+    const preview = getBundlePreview(bunchId, bundleId);
     return (
       <BundleDetailScreen
         onBack={back}
         status={{
           kind: failed ? 'failed' : unavailable && !detail.data ? 'unavailable' : 'loading',
-          preview: previewBundle && {
-            bundle: previewBundle,
-            time: now === null ? '' : formatElapsedTime(previewBundle.publishedAt, now),
+          preview: preview && {
+            ...preview,
+            // 격자 칸(부분 데이터)은 게시 시각을 몰라 비움
+            time:
+              now === null || preview.partial
+                ? ''
+                : formatElapsedTime(preview.bundle.publishedAt, now),
           },
           titleRef: stateTitleRef,
           onRetry: () => {
