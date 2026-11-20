@@ -1,9 +1,10 @@
 import type { SetNativeTabBarParams } from '@app/bridge';
+import type { TabBarVisibilityState } from './tab-bar-visibility';
 
 type Listener = () => void;
 
-/** 탭 요청 + 탭 밖 화면(상세·온보딩)을 여는 동안의 탭 바 숨김 */
-export type TabsState = SetNativeTabBarParams & { barHidden?: boolean };
+/** 탭 요청 + 탭 밖 화면(상세·온보딩)을 여는 동안의 탭 바 숨김(탭마다 저장, 선택된 탭의 값만 적용) */
+export type TabsState = SetNativeTabBarParams & TabBarVisibilityState;
 
 let state: TabsState | null = null;
 const listeners = new Set<Listener>();
