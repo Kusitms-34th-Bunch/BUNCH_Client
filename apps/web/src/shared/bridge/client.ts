@@ -42,6 +42,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     authorizeApple: () => Promise.reject(new Error('네이티브 쉘에서만 Apple 인증을 할 수 있어요.')),
     // 브라우저에서는 웹 탭 막대 사용
     setNativeTabBar: () => Promise.resolve(false),
+    // 브라우저·이전 쉘은 탭별 표시를 모름(부르는 쪽이 isNativeMethodAvailable로 확인)
+    setNativeTabBarVisibleFor: () => Promise.resolve(false),
     // 브라우저에는 햅틱 없음
     tabSelectionHaptic: () => Promise.resolve(),
     // 브라우저·이전 쉘에는 끌기 햅틱 없음
