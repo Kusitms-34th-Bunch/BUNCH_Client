@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 
 // 아이콘 색(currentColor), subtle은 Figma 가입 단계 헤더의 연한 회색, tertiary는 Figma 약관 및 개인정보 헤더(#535A61), inversed는 어두운 배경 화면(사진 조정)
 const TONES = {
@@ -17,6 +17,8 @@ type HeaderIconButtonProps = {
   onClick?: (() => void) | undefined;
   /** 아이콘 색(기본 primary) */
   tone?: keyof typeof TONES;
+  /** 화면이 초점을 옮길 때(예: 다시 할 수 없는 실패 뒤 나가기로) */
+  ref?: Ref<HTMLButtonElement> | undefined;
 };
 
 /**
@@ -28,9 +30,11 @@ export function HeaderIconButton({
   children,
   onClick,
   tone = 'primary',
+  ref,
 }: HeaderIconButtonProps) {
   return (
     <button
+      ref={ref}
       type="button"
       aria-label={label}
       onClick={onClick}

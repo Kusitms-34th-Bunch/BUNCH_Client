@@ -230,6 +230,19 @@ describe('BunchJoinInvitation', () => {
     await waitFor(() => expect(document.activeElement).toBe(joinButton()));
   });
 
+  it('다시 해도 안 되는 실패면 「참여하기」는 잠그고 초점을 뒤로 가기로 옮긴다', async () => {
+    server.use(http.post('/api/invitations/join', () => fail(409, 'BUNCH_002')));
+    renderInvitation();
+
+    await userEvent.click(joinButton());
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '뒤로 가기' })),
+    );
+    expect(joinButton()).toHaveProperty('disabled', true);
+    expect(screen.getByRole('status').textContent).toBe('최대 인원을 초과한 번치입니다.');
+  });
+
   it('참여 요청 중에는 뒤로 가기가 나가기 창을 열지 않는다', async () => {
     server.use(http.post('/api/invitations/join', () => new Promise<never>(() => {})));
     renderInvitation();
