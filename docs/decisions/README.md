@@ -39,3 +39,4 @@
 - [025: 번들 제목은 Automerge 문서로 병합하고 WASM은 초안 화면에서만 불러온다](./records/025-title-crdt-automerge.md)
 - [026: iOS 26 쉘의 플로팅 버튼은 네이티브 Liquid Glass로 그린다](./records/026-native-glass-floating-button.md) (proposed)
 - [027: 번들 위치 검색은 웹 BFF가 카카오 로컬 API를 대신 호출한다](./records/027-kakao-place-search-bff.md) (accepted)
+- [028: iOS 쉘의 로그인 배경 영상은 네이티브로 재생한다](./records/028-native-login-background-video.md) (proposed)

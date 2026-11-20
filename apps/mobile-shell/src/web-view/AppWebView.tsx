@@ -32,6 +32,7 @@ import {
   readPickedPhoto,
   releasePickedPhotos,
 } from '../gallery-upload';
+import { loginBackgroundStore } from '../login-background/login-background-store';
 import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
 import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
 import { buildSafeAreaScript } from '../safe-area-script';
@@ -180,6 +181,17 @@ const appBridge = bridge({
       if (__DEV__) console.warn('[haptic] 햅틱을 울리지 못했어요', error);
     }
   },
+  // 로그인 배경 영상은 iOS 첫 화면에서만 네이티브로(탭 화면 WebView·안드로이드는 false로 웹 영상 사용). 걷기는 항상 받음
+  setNativeLoginBackground: (visible) => {
+    if (typeof visible !== 'boolean') return Promise.resolve(false);
+    if (!visible) {
+      loginBackgroundStore.set(false);
+      return Promise.resolve(true);
+    }
+    if (Platform.OS !== 'ios' || tabsStore.get()) return Promise.resolve(false);
+    loginBackgroundStore.set(true);
+    return Promise.resolve(true);
+  },
 } satisfies AppBridgeMethods);
 
 // postMessage: 네이티브 → 웹 이벤트(탭 WebView 여러 개라 broadcast로 보내고 웹이 대상 확인)
@@ -199,9 +211,11 @@ type AppWebViewProps = {
   /** 탭 화면의 WebView면 그 탭 ID(웹이 sessionStorage `bunch-shell-tab`으로 자기 탭을 앎) */
   tabId?: TabId;
   onLoadStart?: () => void;
+  /** 뒤에 깐 네이티브 화면(로그인 배경 영상)이 비치도록 WebView 바탕을 투명하게 */
+  transparent?: boolean;
 };
 
-export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
+export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: AppWebViewProps) {
   // 탭 화면에서는 가장 가까운 SafeAreaProvider의 값(탭 바 높이 포함) 사용
   const insets = useSafeAreaInsets();
   const safeAreaScript = buildSafeAreaScript(insets);
@@ -227,7 +241,7 @@ export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
     <WebView
       ref={webViewRef}
       source={{ uri }}
-      style={styles.webview}
+      style={transparent ? [styles.webview, styles.transparent] : styles.webview}
       injectedJavaScriptBeforeContentLoaded={
         tabId ? `${buildShellTabScript(tabId)}${safeAreaScript}` : safeAreaScript
       }
@@ -279,6 +293,10 @@ export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
 const styles = StyleSheet.create({
   webview: {
     flex: 1,
+  },
+  // iOS WebView는 바탕색이 투명이면 불투명 처리(opaque)를 꺼서 웹의 투명한 배경 뒤가 보임
+  transparent: {
+    backgroundColor: 'transparent',
   },
   error: {
     flex: 1,
