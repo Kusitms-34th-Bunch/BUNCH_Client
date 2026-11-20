@@ -76,7 +76,7 @@ type BundleTabsSkeletonProps = {
 /**
  * 완성된 번들·작성 중 탭과 번들 칸의 받는 중 자리(BundleTabs와 같은 배치)
  * 탭 아이콘은 고정 모양이라 실제로 그리고(완성된 번들 탭 선택), 번들 칸(123:163)만 회색
- * 번치 홈 전체 스켈레톤 안에서 씀. 번들 목록만 받는 중인 부분 스켈레톤은 홈·번들 목록이 모두 저장 query라 아직 연결하지 않음(#473)
+ * 번치 홈 전체 스켈레톤 안과, 홈 정보만 먼저 와서 번들 목록을 받는 중일 때(프로필은 실제로) 씀
  */
 export function BundleTabsSkeleton({ count = 9 }: BundleTabsSkeletonProps) {
   return (
