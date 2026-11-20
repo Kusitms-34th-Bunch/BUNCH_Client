@@ -18,6 +18,12 @@ const googleUrlScheme = (iosClientId) =>
   `com.googleusercontent.apps.${iosClientId.replace(/\.apps\.googleusercontent\.com$/, '')}`;
 
 module.exports = ({ config }) => {
+  // E2E 빌드 플래그는 같은 기기의 http 웹을 열게 하므로 스토어 빌드에 섞이면 멈춤(결정 기록 029)
+  if (process.env.EXPO_PUBLIC_E2E && process.env.EAS_BUILD_PROFILE === 'production') {
+    throw new Error(
+      'EXPO_PUBLIC_E2E는 E2E 빌드 전용입니다. production 빌드 환경변수에서 빼 주세요.',
+    );
+  }
   const plugins = [...(config.plugins ?? [])];
 
   const nativeAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;

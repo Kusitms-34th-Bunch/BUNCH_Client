@@ -1,0 +1,7 @@
+appId: kr.bunch.app
+name: 실행하면 스플래시 뒤 번치 홈과 시스템 탭 바가 보인다
+---
+- runFlow: ../subflows/launch-fresh.yaml
+- assertVisible: '피드'
+- assertVisible: '사진함'
+- assertVisible: '마이페이지'

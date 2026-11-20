@@ -1,0 +1,168 @@
+name: Mobile E2E
+
+# 앱 쉘 핵심 흐름을 iOS 시뮬레이터에서 Maestro로 확인(결정 기록 029)
+# macOS 러너가 무거워 PR마다가 아니라 쉘·bridge·쉘을 부르는 웹 코드가 바뀐 develop push와 수동 실행에서만 돎
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'apps/mobile-shell/**'
+      - 'packages/bridge/**'
+      # 쉘을 부르는 웹 쪽(탭 바·탭 동기화)과 flow가 판정에 쓰는 가짜 서버 데이터
+      - 'apps/web/src/shared/bridge/**'
+      - 'apps/web/src/features/main-navigation/**'
+      - 'apps/web/src/shared/query/nativeTabSync.ts'
+      - 'apps/web/src/mocks/**'
+      - '.github/workflows/mobile-e2e.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  maestro:
+    name: Maestro (iOS)
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      # setup-node의 pnpm 캐시 조회가 저장소 루트(packageManager: yarn)에서 돌아도 Corepack이 막지 않도록
+      COREPACK_ENABLE_STRICT: '0'
+      # Maestro CLI는 버전과 SHA-256을 고정해 받음(설치 스크립트를 실행하지 않음)
+      MAESTRO_VERSION: '2.12.1'
+      MAESTRO_SHA256: 54dbb0716425626604973cbb374c585ca30272375d9ce15177a1152765ddd9d7
+      WEB_URL: http://127.0.0.1:3200
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # 의존성 설치(코드가 실행될 수 있는 단계) 전 변조 징후 선검사
+      - name: 변조 가드
+        run: node turbo/workflows/check-suspicious.mjs
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - run: yarn install --immutable
+
+      # 운영 데이터를 건드리지 않게 가짜 서버(MSW)를 켠 웹 운영 빌드(Playwright E2E와 같은 방식). 가짜 DB는 로그인·가입 완료 상태로 시작
+      - name: 웹 빌드(가짜 서버)
+        env:
+          NEXT_PUBLIC_API_MOCKING: enabled
+          SENTRY_AUTH_TOKEN: ''
+          NEXT_PUBLIC_SENTRY_DSN: ''
+        run: yarn workspace @app/web build
+
+      - name: 웹 띄우기
+        env:
+          NEXT_PUBLIC_API_MOCKING: enabled
+        run: |
+          nohup yarn workspace @app/web exec next start --hostname 127.0.0.1 --port 3200 > "$RUNNER_TEMP/web.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -sf "$WEB_URL" > /dev/null && exit 0
+            sleep 2
+          done
+          echo "웹이 뜨지 않았어요" && cat "$RUNNER_TEMP/web.log" && exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/mobile-shell/pnpm-lock.yaml
+
+      - name: 쉘 의존성 설치
+        working-directory: apps/mobile-shell
+        env:
+          SENTRYCLI_SKIP_DOWNLOAD: '1'
+        run: pnpm install --frozen-lockfile
+
+      - name: CocoaPods 캐시
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: cocoapods-${{ runner.os }}-${{ hashFiles('apps/mobile-shell/pnpm-lock.yaml', 'apps/mobile-shell/app.json') }}
+          restore-keys: cocoapods-${{ runner.os }}-
+
+      - name: iOS 네이티브 프로젝트 생성
+        working-directory: apps/mobile-shell
+        run: pnpm ios:sync:clean
+
+      - name: iOS 시뮬레이터 Release 빌드(E2E)
+        working-directory: apps/mobile-shell
+        env:
+          E2E_WEB_URL: ${{ env.WEB_URL }}
+        run: node scripts/e2e-ios-build.mjs
+
+      # 빌드한 SDK와 같은 iOS 런타임의 iPhone 17 Pro(로컬 확인 기기)를 먼저, 없으면 같은 런타임의 다른 iPhone
+      - name: 시뮬레이터 준비·앱 설치
+        run: |
+          sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          udid=$(xcrun simctl list devices available -j | SDK="$sdk" node -e '
+            const { devices } = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            const runtime = `iOS-${process.env.SDK.replaceAll(".", "-")}`;
+            const list = Object.entries(devices).find(([key]) => key.endsWith(runtime))?.[1] ?? [];
+            const phones = list.filter((device) => device.name.startsWith("iPhone"));
+            const phone = phones.find((device) => device.name === "iPhone 17 Pro") ?? phones[0];
+            if (!phone) {
+              console.error(`${runtime} 런타임의 iPhone 시뮬레이터가 없어요`);
+              process.exit(1);
+            }
+            console.log(phone.udid);
+          ')
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl install "$udid" apps/mobile-shell/build/e2e/Build/Products/Release-iphonesimulator/Bunch.app
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+
+      # Maestro CLI가 쓰는 Java(러너 기본값에 기대지 않음)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Maestro 설치
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/maestro.zip" \
+            "https://github.com/mobile-dev-inc/maestro/releases/download/cli-${MAESTRO_VERSION}/maestro.zip"
+          echo "${MAESTRO_SHA256}  $RUNNER_TEMP/maestro.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/maestro.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Maestro 실행
+        id: maestro
+        working-directory: apps/mobile-shell
+        run: |
+          # 빌드 동안 웹이 죽었으면 flow 실패 대신 원인을 바로 보이게
+          curl -sf "$WEB_URL" > /dev/null || { echo "웹이 응답하지 않아요" && cat "$RUNNER_TEMP/web.log" && exit 1; }
+          maestro --device "$SIMULATOR_UDID" test --format junit --output "$RUNNER_TEMP/maestro-report.xml" --test-output-dir "$RUNNER_TEMP/maestro-output" maestro
+
+      # 아직 고치지 않은 문제(known-issue 태그)는 job을 막지 않고 결과만 남김. 통과하면 태그를 지울 때
+      # 태그로 고르면 config의 excludeTags와 겹쳐 아무 flow도 고르지 않아 파일로 실행
+      - name: 알려진 문제 확인
+        if: ${{ !cancelled() && steps.maestro.outcome != 'skipped' }}
+        working-directory: apps/mobile-shell
+        run: |
+          if maestro --device "$SIMULATOR_UDID" test maestro/flows/90-startup-first-input.yaml; then
+            echo "알려진 문제 flow가 통과했어요. 고쳐졌다면 known-issue 태그를 지워 주세요." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "알려진 문제 flow가 아직 실패해요(앱 시작 직후 입력 무시)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 결과 올리기
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-results
+          path: |
+            ${{ runner.temp }}/maestro-report.xml
+            ${{ runner.temp }}/maestro-output
+            ${{ runner.temp }}/web.log
+          if-no-files-found: ignore

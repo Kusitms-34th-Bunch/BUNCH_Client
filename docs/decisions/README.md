@@ -40,3 +40,4 @@
 - [026: iOS 26 쉘의 플로팅 버튼은 네이티브 Liquid Glass로 그린다](./records/026-native-glass-floating-button.md) (proposed)
 - [027: 번들 위치 검색은 웹 BFF가 카카오 로컬 API를 대신 호출한다](./records/027-kakao-place-search-bff.md) (accepted)
 - [028: iOS 쉘의 로그인 배경 영상은 네이티브로 재생한다](./records/028-native-login-background-video.md) (proposed)
+- [029: 앱 쉘 핵심 흐름은 Maestro로 iOS 시뮬레이터에서 확인한다](./records/029-maestro-shell-e2e.md) (proposed)
