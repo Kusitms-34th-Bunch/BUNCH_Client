@@ -227,6 +227,7 @@ packages/bridge/
 ## 소셜 로그인 bridge
 
 - `socialLogin(provider: 'kakao' | 'google' | 'apple'): Promise<SocialLoginResult>`는 쉘의 네이티브 SDK로 로그인시키고 서버 로그인에 쓸 ID 토큰을 웹에 넘기는 계약이다(`packages/bridge`의 `socialLoginResultSchema`). 서버 호출과 인증 쿠키 저장은 웹 BFF(`/api/auth/login`)가 맡고, 쉘은 토큰만 전달한다.
+- `authorizeApple(): Promise<AppleAuthorizationResult>`는 탈퇴 전 Apple 재인증이다(#479). 쉘이 Apple 로그인 창을 띄워 일회용 `authorizationCode`를 돌려주고, 웹은 이를 탈퇴 요청의 `appleAuthorizationCode`로 보내 서버가 Apple 연결을 끊는다. 창을 닫으면 `cancelled`, SDK 오류는 코드 없는 일반 문구로 reject한다(`createAppleAuthorization`). 코드는 저장하거나 로그에 남기지 않는다. 이 메서드가 없는 이전 쉘은 웹이 `isNativeMethodAvailable`로 확인해 탈퇴를 실패로 처리한다.
 - 결과는 `{ status: 'success', provider, idToken, nonce? }` 또는 `{ status: 'cancelled' }`다. 사용자가 로그인 창을 닫은 것은 실패가 아니라 `cancelled`이고, SDK·네트워크 오류는 reject다. 카카오·Apple은 `nonce`가 필수, Google은 선택이며 BFF 입력 검증과 같은 규칙이다.
 - 로그인 창은 사용자가 끝낼 때까지 기다려야 하므로 웹은 타임아웃을 끈 전용 `loginBridge`를 쓴다. 브라우저(쉘 밖)에서는 `initialBridge`가 reject하며 호출부가 로그인 실패로 처리한다.
 - 토큰 취급 규칙: 쉘은 반환 직전에 `socialLoginResultSchema.parse`로 검증하고 웹도 받은 직후 같은 검증을 한다. 토큰·nonce는 로그·`console`·오류 메시지에 넣지 않고, SDK 오류는 토큰이 없는 일반 문구로 바꿔 던진다(`src/social-login-core.ts`). 웹은 토큰을 저장하지 않고 곧바로 BFF로 보내며 `localStorage`·쿼리스트링·전역 상태에 두지 않는다.

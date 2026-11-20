@@ -1,7 +1,7 @@
 'use client';
 
 import { isApiError } from '@app/api-core';
-import { Button, toast } from '@app/design-system';
+import { Button, ButtonLink, toast } from '@app/design-system';
 import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -9,7 +9,11 @@ import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { savePendingInvitation } from '@/shared/lib/pendingInvitation';
-import { INVITATION_INVALID_CODE, INVITE_ENTRY_MESSAGES } from '../constants/messages';
+import {
+  APP_STORE_URL,
+  INVITATION_INVALID_CODE,
+  INVITE_ENTRY_MESSAGES,
+} from '../constants/messages';
 import { useLookupInvitationMutation } from '../queries/invitation';
 
 // 초대 토큰은 Base64URL(43자)이고 보조 코드는 8자라 길이는 넉넉히, 경로를 깨뜨리는 문자(`/`·`.`·`%` 등)만 거름
@@ -25,8 +29,6 @@ type InviteEntryProps = {
   token: string;
   /** 링크가 유효할 때 이어 갈 경로(초대 정보를 보관한 뒤 접근 가드가 로그인·가입·초대 확인으로 안내). 다른 feature 소유라 route가 전달 */
   continueHref: string;
-  /** 앱스토어로 이동. 유니버셜 링크를 붙일 때 연결하며, 없으면 눌렀을 때 곧 지원된다는 안내만 보임 */
-  onInstallApp?: (() => void) | undefined;
 };
 
 /** 픽셀 장식: 9px 정사각형 네 개로 이은 마름모(Figma `Pattern`) */
@@ -47,7 +49,7 @@ function PixelPattern({ className }: { className: string }) {
  * 로그인 판별은 이동한 곳의 접근 가드가 맡음(비로그인은 로그인으로, 로그인은 초대 확인으로)
  * 장식 모션은 CSS(`globals.css`의 `invite-rise-*`)가 첫 페인트부터 재생
  */
-export function InviteEntry({ token, continueHref, onInstallApp }: InviteEntryProps) {
+export function InviteEntry({ token, continueHref }: InviteEntryProps) {
   const router = useRouter();
   const lookup = useLookupInvitationMutation();
   // 같은 틱에 연달아 눌러도 한 번만 보내도록 ref로 막음(state 갱신 전에는 isPending이 아직 false)
@@ -136,13 +138,10 @@ export function InviteEntry({ token, continueHref, onInstallApp }: InviteEntryPr
         data-toast-anchor="wrapper"
         className="gap-s3 px-padding-p8 pb-padding-p19 flex flex-col"
       >
-        <Button
-          variant="secondary"
-          className="w-full"
-          onClick={onInstallApp ?? (() => toast(INVITE_ENTRY_MESSAGES.installComingSoon))}
-        >
+        {/* 외부 주소로 가는 동작이라 링크. 같은 탭에서 열어 인앱 브라우저의 새 탭 차단을 피함(기능명세 2.7.1) */}
+        <ButtonLink href={APP_STORE_URL} variant="secondary" className="w-full">
           앱 설치하기
-        </Button>
+        </ButtonLink>
         <Button
           variant="brand"
           className="w-full"

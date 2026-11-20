@@ -85,3 +85,23 @@ export const Button = ({
     </button>
   );
 };
+
+export type ButtonLinkProps = ComponentProps<'a'> & {
+  /** 접근성 이름이 되는 글자 */
+  children: ReactNode;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+};
+
+/**
+ * 버튼 모양의 링크. 다른 페이지·외부 주소로 가는 동작은 링크라 `<a href>`로 그림(길게 눌러 열기·복사, 링크 목록 탐색)
+ * 모양·눌림은 `Button`과 같고 비활성 상태는 없음
+ */
+export const ButtonLink = ({ variant, size, className, children, ...props }: ButtonLinkProps) => {
+  const { base, label } = button({ variant, size });
+  return (
+    <a className={base({ className })} {...props}>
+      <span className={label()}>{children}</span>
+    </a>
+  );
+};

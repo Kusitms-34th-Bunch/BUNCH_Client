@@ -12,7 +12,7 @@ type DraftProviderProps = {
 
 /**
  * `/bunch/drafts/[draftId]` layout이 감싸는 초안 상태: 작성 화면과 참여 멤버 관리 화면을 오가도 같은 초안을 봄
- * 이 초안 흐름을 벗어나면 사라지고, 초안 API 연결 전에는 fixture와 메모리 상태
+ * 이 초안 흐름을 벗어나면 사라짐(초안은 `useDraft`가 서버에서 받음)
  */
 export function DraftProvider({ draftId, children }: DraftProviderProps) {
   // 초안 id가 바뀌면 새로 마운트해 이전 초안의 보관 입력·화면 전용 변경이 새 초안으로 넘어가지 않게 함

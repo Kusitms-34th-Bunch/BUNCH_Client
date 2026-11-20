@@ -1,6 +1,10 @@
+import type { Metadata } from 'next';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { BunchStartSelect } from '@/features/onboarding/components';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
+
+// 계정 흐름이라 검색에서 제외
+export const metadata: Metadata = { title: '번치 시작하기', robots: { index: false } };
 
 type OnboardingPageProps = {
   searchParams: Promise<{ from?: string | string[] }>;

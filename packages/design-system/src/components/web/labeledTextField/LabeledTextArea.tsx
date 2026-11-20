@@ -16,9 +16,36 @@ export type LabeledTextAreaProps = Omit<
   error?: string | undefined;
 };
 
+// 사용자가 보는 글자(grapheme) 단위. 이모지·결합 문자도 1자
+const graphemes = (text: string) =>
+  Array.from(new Intl.Segmenter().segment(text), (part) => part.segment);
+
+/**
+ * 최대 글자 수를 넘으면 커서 앞(방금 넣은 글)만 줄인 값과 커서 자리. 커서 뒤의 원래 글은 지킴(브라우저 `maxLength`와 같음)
+ * 넘지 않으면 null
+ */
+const capToLength = (value: string, caret: number, max: number) => {
+  // 전체 문자열로 나눠야 커서 양쪽이 이어 붙는 글자(ZWJ 이모지 등)를 하나로 셈
+  const parts = graphemes(value);
+  if (parts.length <= max) return null;
+  let offset = 0;
+  let headCount = 0;
+  for (const part of parts) {
+    if (offset + part.length > caret) break;
+    offset += part.length;
+    headCount += 1;
+  }
+  const tail = parts.slice(headCount);
+  const kept = parts.slice(0, Math.max(0, max - tail.length)).join('');
+  // 커서가 글자 가운데(ZWJ 바로 뒤 등)면 그 글자는 지키고 커서를 그 글자 끝으로
+  const straddled = offset < caret ? (tail[0]?.length ?? 0) : 0;
+  return { value: kept + tail.slice(0, max).join(''), caret: kept.length + straddled };
+};
+
 /**
  * 라벨·입력창·안내 줄을 세로로 쌓은 여러 줄 입력 필드
  * 한 줄로 시작해 내용이 길어지면 줄바꿈되며 높이 증가. 라벨·입력창 모양은 `LabeledTextField`와 통일
+ * `maxLength`는 보이는 글자 수로 세고 넘는 뒤쪽을 자름(브라우저 `maxLength`는 이모지를 2자 이상으로 셈)
  */
 export function LabeledTextArea({
   label,
@@ -28,6 +55,8 @@ export function LabeledTextArea({
   value,
   maxLength,
   placeholder,
+  onChange,
+  onCompositionEnd,
   ...props
 }: LabeledTextAreaProps) {
   const generatedId = useId();
@@ -55,8 +84,36 @@ export function LabeledTextArea({
               id={inputId}
               rows={1}
               value={value}
-              maxLength={maxLength}
               placeholder={placeholder}
+              onChange={(event) => {
+                // 한글 조합 중에는 값을 바꾸면 조합이 끊길 수 있어 조합이 끝날 때 자름
+                const input = event.target;
+                const capped =
+                  maxLength !== undefined && !(event.nativeEvent as InputEvent).isComposing
+                    ? capToLength(input.value, input.selectionEnd, maxLength)
+                    : null;
+                if (capped) {
+                  input.value = capped.value;
+                  input.setSelectionRange(capped.caret, capped.caret);
+                }
+                onChange?.(event);
+              }}
+              onCompositionEnd={(event) => {
+                onCompositionEnd?.(event);
+                const input = event.currentTarget;
+                const capped =
+                  maxLength !== undefined
+                    ? capToLength(input.value, input.selectionEnd, maxLength)
+                    : null;
+                if (!capped) return;
+                // React가 값 변화를 알아채도록 기본 setter로 넣고 input 이벤트를 보내 onChange로 controlled 값에 반영
+                Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(
+                  input,
+                  capped.value,
+                );
+                input.setSelectionRange(capped.caret, capped.caret);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+              }}
               aria-invalid={error ? true : undefined}
               aria-describedby={describedBy || undefined}
               className="typography-body-3-regular text-text-primary placeholder:text-text-quinary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) focus:outline-none focus:placeholder:text-transparent"
@@ -69,7 +126,7 @@ export function LabeledTextArea({
         errorId={errorId}
         countId={countId}
         error={error}
-        count={showCount ? { current: value.length, max: maxLength } : undefined}
+        count={showCount ? { current: graphemes(value).length, max: maxLength } : undefined}
       />
     </div>
   );

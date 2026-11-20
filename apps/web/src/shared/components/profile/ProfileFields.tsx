@@ -3,13 +3,13 @@
 import { LabeledTextField } from '@app/design-system/web';
 import { useId } from 'react';
 import type { ProfileFieldsState } from '../../hooks/useProfileFields';
+import { filteredPaste } from '../../lib/filteredPaste';
 import { closeKeyboard } from '../../lib/keyboard';
 import {
-  hasInvalidNicknameChars,
   NICKNAME_AVAILABLE_MESSAGE,
   NICKNAME_CHECKING_MESSAGE,
   NICKNAME_MAX_LENGTH,
-  pasteIntoNickname,
+  pasteNickname,
 } from '../../lib/nickname';
 import { GenderField } from './GenderField';
 
@@ -53,21 +53,8 @@ export function ProfileFields({
               : undefined
         }
         onChange={(event) => fields.setNickname(event.target.value)}
-        onPaste={(event) => {
-          // 허용하지 않는 문자가 섞였으면 그 문자만 빼고 넣음(허용 문자만이면 브라우저 기본 동작)
-          const pasted = event.clipboardData.getData('text');
-          if (!hasInvalidNicknameChars(pasted, false)) return;
-          event.preventDefault();
-          const input = event.currentTarget;
-          const result = pasteIntoNickname(
-            values.nickname,
-            { start: input.selectionStart ?? 0, end: input.selectionEnd ?? 0 },
-            pasted,
-          );
-          if (!result) return;
-          fields.setNickname(result.value);
-          requestAnimationFrame(() => input.setSelectionRange(result.caret, result.caret));
-        }}
+        // 허용하지 않는 문자는 빼고, 12자를 넘으면 자르지 않고 넣어 초과 안내를 보임
+        onPaste={filteredPaste(pasteNickname, fields.setNickname)}
         onCompositionStart={() => fields.setComposing(true)}
         onCompositionEnd={() => fields.setComposing(false)}
         onFocus={() => fields.setNicknameFocused(true)}

@@ -457,6 +457,17 @@ describe('ProfileEditScreen', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('붙여넣기로 12자를 넘으면 초과 안내를 보인다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.click(nicknameInput());
+    await user.paste('가나다라마바사아자차카');
+
+    expect(nicknameInput().value).toBe('으누가나다라마바사아자차카');
+    expect(screen.getByRole('alert').textContent).toBe('입력 가능한 글자수를 초과했어요');
+  });
+
   it('제목과 사진 변경 버튼의 이름을 가진다', () => {
     renderScreen();
 

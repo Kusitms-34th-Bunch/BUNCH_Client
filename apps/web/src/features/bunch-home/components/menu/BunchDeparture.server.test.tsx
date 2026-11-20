@@ -337,4 +337,30 @@ describe('BunchDelete 서버 삭제', () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.deleteFailed));
     expect(mockDb.get().bunches.some((bunch) => bunch.id === MOCK_BUNCH_ID)).toBe(true);
   });
+
+  it('삭제하는 사이 메인 관리자가 아니게 됐으면(AUTH_002) 더보기로 돌아가 권한 변경 안내를 보인다', async () => {
+    setMyRole('OWNER');
+    server.use(
+      http.post('/api/bunches/:bunchId/deletion', () => {
+        // 그 사이 다른 기기에서 메인 관리자를 넘긴 경우
+        setMyRole('MEMBER');
+        return fail(403, 'AUTH_002');
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithQuery(<BunchDelete step="confirm" targetId={String(MOCK_BUNCH_ID)} />);
+
+    await user.type(
+      await screen.findByRole('textbox', { name: '확인 문구 입력' }),
+      '삭제하기{Enter}',
+    );
+
+    await waitFor(() =>
+      expect(toastAfterNavigation).toHaveBeenCalledWith(
+        BUNCH_HOME_MESSAGES.memberManagePermissionChanged,
+      ),
+    );
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.menu));
+    expect(toast).not.toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.deleteFailed);
+  });
 });

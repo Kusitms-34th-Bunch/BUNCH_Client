@@ -194,6 +194,31 @@ describe('BunchCreated', () => {
     expect(deleted).toBe(true);
   });
 
+  it('사진을 올리는 동안에도 화면을 덮지 않아 내 번치로 이동할 수 있다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.put('/api/bunches/7/profile-image', async () => {
+        await gate;
+        return ok(bunchBody('https://cdn.example.com/new.jpg'));
+      }),
+    );
+    render(<BunchCreated />, { wrapper: Created });
+
+    await userEvent.click(screen.getByRole('button', { name: '사진 고르기' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('번치 사진을 저장하는 중이에요'),
+    );
+    expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: '내 번치로 이동하기' }));
+
+    expect(replace).toHaveBeenCalledWith('/bunch');
+    release();
+  });
+
   it('사진 저장에 실패하면 안내하고 기존 이미지를 유지한다', async () => {
     server.use(http.put('/api/bunches/7/profile-image', () => fail(503, 'IMAGE_001')));
     const { container } = render(<BunchCreated />, { wrapper: Created });

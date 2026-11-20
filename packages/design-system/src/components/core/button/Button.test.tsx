@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Button } from './Button';
+import { Button, ButtonLink } from './Button';
 
 describe('Button', () => {
   it('글자를 이름으로 가진 button으로 렌더링한다', () => {
@@ -158,5 +158,19 @@ describe('Button', () => {
 
     expect(label.className).toContain('truncate');
     expect(label.className).toContain('min-w-0');
+  });
+});
+
+describe('ButtonLink', () => {
+  it('버튼 모양의 링크로 렌더링하고 주소를 가진다', () => {
+    render(
+      <ButtonLink href="https://example.com/app" variant="secondary">
+        앱 설치하기
+      </ButtonLink>,
+    );
+
+    const link = screen.getByRole('link', { name: '앱 설치하기' });
+    expect(link.getAttribute('href')).toBe('https://example.com/app');
+    expect(link.className).toContain('bg-surface-tertiary');
   });
 });

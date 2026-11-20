@@ -36,7 +36,7 @@ import { loginBackgroundStore } from '../login-background/login-background-store
 import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
 import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
 import { buildSafeAreaScript } from '../safe-area-script';
-import { socialLogin } from '../social-login';
+import { authorizeApple, socialLogin } from '../social-login';
 import {
   forceWebReady,
   markTabWebViewLoading,
@@ -72,6 +72,7 @@ const appBridge = bridge({
   copyToClipboard,
   readClipboard,
   socialLogin,
+  authorizeApple,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
     await Share.share({ message: title ? `${title}\n${url}` : url, url });

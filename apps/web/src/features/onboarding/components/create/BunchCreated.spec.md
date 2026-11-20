@@ -32,7 +32,7 @@
 
 ## 데이터 의존성
 
-- Query·mutation: `useChangeBunchPhotoMutation`(`PUT·DELETE /bunches/{id}/profile-image`, OWNER만). 성공하면 응답으로 draft의 `createdBunch`를 바꾸고 번치 홈(`sharedKeys.bunchHomeScope`)·내 프로필을 무효화한다. 사진은 `ProfilePhotoField`의 조정 화면(정사각 JPEG 512px)을 거치고 서버 규칙(JPEG, 정사각, 1024px 이하, 5MiB 이하)을 만족한다. 저장 중에는 `PageLoading`을 덮고 실패하면 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」와 함께 기존 이미지를 유지한다. 이름·성격·이미지 주소는 입력 중이던 임시 상태가 아니라 서버가 돌려준 `createdBunch`를 읽는다.
+- Query·mutation: `useChangeBunchPhotoMutation`(`PUT·DELETE /bunches/{id}/profile-image`, OWNER만). 성공하면 응답으로 draft의 `createdBunch`를 바꾸고 번치 홈(`sharedKeys.bunchHomeScope`)·내 프로필을 무효화한다. 사진은 `ProfilePhotoField`의 조정 화면(정사각 JPEG 512px)을 거치고 서버 규칙(JPEG, 정사각, 1024px 이하, 5MiB 이하)을 만족한다. 저장 중에는 화면을 덮지 않고(아래 「사진 저장 중」), 실패하면 공통 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」와 함께 기존 이미지를 유지한다. 이름·성격·이미지 주소는 입력 중이던 임시 상태가 아니라 서버가 돌려준 `createdBunch`를 읽는다.
 - 기본 이미지: 3단계에서 고른 성격의 기본 대표 이미지(`apps/web/public/images/default-bunch/type-1~4.svg`, Figma `5931:161617`·`161619`·`161622`·`161624`(108×108, 타입별 색: 보라·주황·분홍·초록), 각 약 0.4KB). 입력값은 생성 성공 때(`finish`) 비우고 서버가 돌려준 번치 `createdBunch`(성격 `characterType` 포함)만 남겨, 초대 화면에서 돌아와도 같은 이미지다. 성격이 없으면 타입 1 기본 이미지.
 
 ## UI와 접근성
@@ -68,8 +68,9 @@
 - 직접 진입 (확정): 만든 번치(`createdBunch`)가 없으면(새로고침·URL 직접 입력) `useCreateBunchGuard`가 화면을 그리지 않고 마치지 못한 첫 단계로 `router.replace`한다. 생성이 없었는데 「번치가 만들어졌어요!」가 보이는 거짓 성공 화면을 막는다.
 - 성공 뒤 입력값 비우기 (확정): 생성 성공 때 `finish(createdBunch)`가 입력값을 비우고 서버 응답만 남긴다. 3단계는 `router.replace`로 이동해 기록에 남지 않고, 초대 화면에서 뒤로 가면 `createdBunch`가 남아 있어 같은 완료 화면으로 돌아온다. 중단 모달의 「나가기」(`reset`)와 뒤로 가서 새로 입력을 시작하는 것(입력 setter)은 이 기록을 지워 옛 번치가 새 완료 화면에 나오지 않는다. 완료 화면이 다시 mount되면 폭죽이 다시 재생된다(허용, 제안).
 - 「멤버 초대하기」 카드 (미정): Figma 코드는 링크(`a`)로 그렸다. `InviteMemberCard`는 버튼이고 `onClick`에서 `router.push`로 초대 화면으로 이동한다. 링크 의미가 필요하면 렌더 방식을 props로 받게 바꾼다.
-- 「내 번치로 이동하기」 (미정): 도착 화면(내 번치)이 없어 동작이 없다.
+- 「내 번치로 이동하기」 (확정): 번치 홈(`/bunch`)으로 `router.replace`한다(완료 화면이 기록에 남지 않게).
 - 사진 선택 (확정): 카메라 버튼은 `ProfilePhotoField`의 사진 변경 흐름(「프로필 사진 설정」 선택지 → 앨범 → 원형 조정 → 저장)을 연다(`renderPhoto`로 `BunchAvatar`를 그림). 현재 사진이 있을 때만 「기본 이미지 적용하기」가 보인다. 서버 imageUrl은 `isSafeImageUrl`을 통과한 https 주소만 쓴다.
+- 사진 저장 중 (확정, #479): 화면을 덮지 않고 sr-only status로만 「번치 사진을 저장하는 중이에요」를 알린다. 저장 중에도 「내 번치로 이동하기」·「멤버 초대하기」를 누를 수 있고(기능명세 2.3.2 예외), 떠나도 저장은 이어져 끝나면 번치 홈을 다시 받는다. 실패 토스트는 공통 처리(`meta.errorMessage`)라 화면을 떠난 뒤에도 보인다.
 - 사진 변경 실패·권한 문구 (1110판): 2.3.2의 업로드 실패 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」는 구현됐다(#306). 명세의 권한 거부 모달(「사진 접근 권한이 필요해요」 / 「앨범에서 사진을 고르려면 설정에서 사진 접근을 허용해 주세요.」, 「취소」/「설정으로 이동」, 7.2.3과 같음)은 아직 없다. 지금은 `ProfilePhotoField`가 오류 문구를 토스트로만 보인다(확인 필요).
 - 프로필 이미지 용도 (1110판): 2.3.2는 여기서 정한 이미지가 번치 메인의 프로필 이미지(5.1.3)로 보인다고 정했다. 기본 이미지는 고른 분위기(성격)의 기본 이미지이고, 이전 판의 뭉치 캐릭터 구분은 없어졌다.
 - 기본 이미지 (제안): `BunchAvatar`가 `<img>`를 쓰고 `src`를 문자열로 받아 `next/image` 최적화를 쓰지 않는다(`docs/workflows/performance.md`). 크기를 줄여 두었으나 필요하면 `next/image` 연동을 검토한다.

@@ -1,10 +1,21 @@
-import { socialLoginResultSchema, socialProviderSchema, type SocialLoginResult } from '@app/bridge';
+import {
+  appleAuthorizationResultSchema,
+  socialLoginResultSchema,
+  socialProviderSchema,
+  type AppleAuthorizationResult,
+  type SocialLoginResult,
+} from '@app/bridge';
 import { initializeKakaoSDK } from '@react-native-kakao/core';
 import { login } from '@react-native-kakao/user';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
-import { createAppleLogin, createGoogleLogin, createKakaoLogin } from './social-login-core';
+import {
+  createAppleAuthorization,
+  createAppleLogin,
+  createGoogleLogin,
+  createKakaoLogin,
+} from './social-login-core';
 
 // `process.env.EXPO_PUBLIC_*` 직접 접근 유지(Metro는 이렇게 쓴 곳만 번들에 포함)
 const kakaoLogin = createKakaoLogin({
@@ -47,4 +58,14 @@ export async function socialLogin(provider: unknown): Promise<SocialLoginResult>
   if (parsed === 'kakao') return socialLoginResultSchema.parse(await kakaoLogin());
   if (parsed === 'google') return socialLoginResultSchema.parse(await googleLogin());
   return socialLoginResultSchema.parse(await appleLogin());
+}
+
+const appleAuthorization = createAppleAuthorization({
+  isAvailable: () => AppleAuthentication.isAvailableAsync(),
+  signIn: () => AppleAuthentication.signInAsync(),
+});
+
+/** bridge `authorizeApple`의 쉘 구현: 탈퇴 전 Apple 재인증으로 서버에 보낼 일회용 인증 코드를 돌려줌 */
+export async function authorizeApple(): Promise<AppleAuthorizationResult> {
+  return appleAuthorizationResultSchema.parse(await appleAuthorization());
 }

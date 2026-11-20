@@ -1,8 +1,12 @@
+import type { Metadata } from 'next';
 import { DevTokenLogin, LoginEntry } from '@/features/auth/components';
 import { LOGIN_PATH } from '@/features/auth/constants/paths';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { isDevTokenLoginEnabled } from '@/shared/api/server/devTokenFlag';
+
+// 계정 흐름이라 검색에서 제외
+export const metadata: Metadata = { title: '로그인', robots: { index: false } };
 
 // 가입을 마친 사용자의 도착 화면은 다른 feature 소유라 route에서 조합해 넘김
 const DESTINATIONS = {
