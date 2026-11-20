@@ -25,11 +25,21 @@ const graphemes = (text: string) =>
  * 넘지 않으면 null
  */
 const capToLength = (value: string, caret: number, max: number) => {
-  const head = graphemes(value.slice(0, caret));
-  const tail = graphemes(value.slice(caret));
-  if (head.length + tail.length <= max) return null;
-  const kept = head.slice(0, Math.max(0, max - tail.length)).join('');
-  return { value: kept + tail.slice(0, max).join(''), caret: kept.length };
+  // 전체 문자열로 나눠야 커서 양쪽이 이어 붙는 글자(ZWJ 이모지 등)를 하나로 셈
+  const parts = graphemes(value);
+  if (parts.length <= max) return null;
+  let offset = 0;
+  let headCount = 0;
+  for (const part of parts) {
+    if (offset + part.length > caret) break;
+    offset += part.length;
+    headCount += 1;
+  }
+  const tail = parts.slice(headCount);
+  const kept = parts.slice(0, Math.max(0, max - tail.length)).join('');
+  // 커서가 글자 가운데(ZWJ 바로 뒤 등)면 그 글자는 지키고 커서를 그 글자 끝으로
+  const straddled = offset < caret ? (tail[0]?.length ?? 0) : 0;
+  return { value: kept + tail.slice(0, max).join(''), caret: kept.length + straddled };
 };
 
 /**

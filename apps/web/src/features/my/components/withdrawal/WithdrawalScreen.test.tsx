@@ -124,6 +124,27 @@ describe('WithdrawalScreen', () => {
     expect(loggedOut).toHaveBeenCalledTimes(1);
   });
 
+  it('가입한 서비스를 서버가 null로 주면 재인증 없이 본문 없이 탈퇴한다', async () => {
+    const bodies: unknown[] = [];
+    server.use(
+      http.get('/api/members/me/withdrawal/check', () => ok({ ownerBunches: [], provider: null })),
+      http.post('/api/members/me/withdrawal', async ({ request }) => {
+        bodies.push(await request.text());
+        return HttpResponse.json({ success: true, data: null });
+      }),
+    );
+    allowLogout();
+    renderScreen();
+
+    await agreeAndNext();
+    const dialog = await screen.findByRole('alertdialog', { name: '정말 탈퇴하시겠어요?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: '탈퇴하기' }));
+
+    await waitFor(() => expect(reloadTo).toHaveBeenCalledWith('/login'));
+    expect(authorizeApple).not.toHaveBeenCalled();
+    expect(bodies).toEqual(['']);
+  });
+
   describe('Apple 가입자', () => {
     const asApple = (onWithdraw: (_body: unknown) => Response) =>
       server.use(
