@@ -16,6 +16,7 @@ import type { BunchNotification } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { ListMore } from '../ListMore';
+import { BunchNotificationsSkeleton } from './BunchNotificationsSkeleton';
 
 type BunchNotificationsScreenProps = {
   /** 지금 번치 이름(제목 낭독용). 아직 모르면 undefined */
@@ -138,6 +139,7 @@ export function BunchNotificationsScreen({
           {BUNCH_HOME_MESSAGES.notificationSettingsNudge}
           <LineChevronRightLargeIcon aria-hidden className="text-icon-quaternary shrink-0" />
         </Link>
+        {notifications === undefined ? <BunchNotificationsSkeleton /> : null}
         {notifications && notifications.length > 0 ? (
           <ul ref={listRef} tabIndex={-1} className="gap-s4 flex flex-col outline-none">
             {notifications.map((notification) => (

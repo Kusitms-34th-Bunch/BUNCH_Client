@@ -1,7 +1,9 @@
 'use client';
 
+import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { MyProfile } from '../../lib/types';
@@ -10,12 +12,13 @@ import { MY_PATHS } from '../../constants/paths';
 import { useAdditionalInfo } from '../../queries/additionalInfo';
 import { useMyProfile } from '../../queries/profile';
 import { ProfileEditScreen } from './ProfileEditScreen';
+import { ProfileEditSkeleton } from './ProfileEditSkeleton';
 
 type Initial = { profile: MyProfile; consented: boolean };
 
 /**
  * 개인 프로필 수정과 내 프로필·추가 개인정보 API를 잇는 컨테이너
- * 지금 값을 채워야 하므로 둘 다 받을 때까지 전체 로딩, 하나라도 받지 못하면 마이페이지로 돌아가 그 화면에서 오류 토스트를 보임(기능명세서 7.2.1 예외)
+ * 지금 값을 채워야 하므로 둘 다 받을 때까지 입력 자리만 스켈레톤(헤더·하단 버튼은 실제 모양), 하나라도 받지 못하면 마이페이지로 돌아가 그 화면에서 오류 토스트를 보임(기능명세서 7.2.1 예외)
  * 출생연도·성별은 추가 개인정보 동의 상태에 따라 표시·숨김(기능명세서 7.2.6 로직 4)
  * 이번 진입의 두 조회가 끝난 뒤의 값으로 초기값을 고정함(받아 둔 옛 캐시로 채우면 다른 기기에서 바꾼 값을 저장 때 덮어씀)
  * 고정한 뒤에는 편집 중에 재조회 응답이 와도 "바뀐 내용" 판단의 기준이 흔들리지 않게 함
@@ -60,15 +63,48 @@ export function ProfileEditRoute() {
 
   return (
     <>
-      {/* 불러오는 중임을 스크린 리더에 알림(PageLoading은 안내를 호출하는 쪽에 맡김, 항상 마운트해 변화가 읽히게 함) */}
+      {/* 불러오는 중임을 스크린 리더에 알림(스켈레톤은 숨김이라 안내를 여기서 맡음, 항상 마운트해 변화가 읽히게 함) */}
       <p role="status" className="sr-only">
         {loading ? MY_MESSAGES.profileLoading : ''}
       </p>
       {shown ? (
         <ProfileEditScreen profile={shown.profile} demographicsConsent={consented} />
       ) : loading ? (
-        <PageLoading />
+        <ProfileEditLoading
+          onBack={() => {
+            // 이미 떠났으면 받기 실패 effect가 한 번 더 뒤로 가지 않게
+            left.current = true;
+            backOr(MY_PATHS.home);
+          }}
+        />
       ) : null}
     </>
+  );
+}
+
+/** 값을 받는 동안의 화면(ProfileEditScreen과 같은 헤더·하단 버튼, 입력 자리는 스켈레톤). 저장하기는 받기 전이라 막아 둠 */
+function ProfileEditLoading({ onBack }: { onBack: () => void }) {
+  return (
+    <PageShell
+      header={
+        <Header
+          leading={
+            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
+              <LineChevronLeftLargeIcon />
+            </HeaderIconButton>
+          }
+        />
+      }
+      bottom={
+        <div className="px-padding-p8 pt-padding-p7">
+          <Button className="w-full" disabled>
+            {MY_MESSAGES.profileEditSubmit}
+          </Button>
+        </div>
+      }
+    >
+      <h1 className="sr-only">{MY_MESSAGES.profileEditTitle}</h1>
+      <ProfileEditSkeleton />
+    </PageShell>
   );
 }

@@ -64,7 +64,9 @@ export function BunchProfileEdit() {
     );
   }
 
-  // 받는 동안·다른 화면으로 보내는 동안은 로딩(번치 홈과 같은 안내)
+  // 다른 화면으로 보내는 동안은 화면 이동이라 로딩
+  if (hasNoBunch || cannotEdit) return <PageLoading />;
+  // 받는 동안은 폼 자리에 스켈레톤(헤더는 실제라 바로 뒤로 갈 수 있음)
   // 저장해 둔 값(앱 다시 열기)이 있어도 서버에서 새로 받은 뒤 폼을 엶: 폼은 연 순간의 값과 버전으로 저장함
   if (!profile?.canEdit || !home.isFetchedAfterMount) {
     return (
@@ -72,7 +74,11 @@ export function BunchProfileEdit() {
         <p role="status" className="sr-only">
           번치 프로필을 불러오는 중이에요
         </p>
-        <PageLoading />
+        <BunchProfileEditScreen
+          initial={undefined}
+          onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
+          onSave={() => {}}
+        />
       </>
     );
   }

@@ -28,7 +28,7 @@
 
 ## 상태와 흐름
 
-- 초기 진입: `NotificationSettingsRoute`가 서버 설정(`GET /members/me/push-preferences`)을 받아 토글을 채운다. 받는 동안 `PageLoading`과 스크린 리더 안내를 보이고, 받지 못하면 이전 화면으로 돌아가 그 화면에서 오류 토스트를 보인다(`toastAfterNavigation`, 7.3.1 예외).
+- 초기 진입: `NotificationSettingsRoute`가 서버 설정(`GET /members/me/push-preferences`)을 받아 토글을 채운다. 받는 동안 실제 헤더와 토글 행 스켈레톤(`NotificationSettingsSkeleton`), 스크린 리더 안내를 보이고, 받지 못하면 이전 화면으로 돌아가 그 화면에서 오류 토스트를 보인다(`toastAfterNavigation`, 7.3.1 예외).
 - 토글 저장: 누르면 바로 화면을 바꾸고(optimistic) `PATCH`로 저장한다. 같은 `scope`로 순서대로 보내 연타해도 서버에 마지막 값이 남고, 실패하면 저장 전 값으로 되돌리고 오류 토스트를 띄운 뒤 서버 값을 다시 받는다(7.3.2·7.3.3 예외).
 - 전체 OFF: 종류별 토글 비활성, 값 유지.
 - 기기 권한 OFF: 배너, 모든 토글 비활성, 값 유지.

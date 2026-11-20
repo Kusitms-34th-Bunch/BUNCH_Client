@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { OwnedBunch } from '../../lib/types';
@@ -19,6 +18,7 @@ import {
   useOwnedBunchImage,
   useTransferOwnershipMutation,
 } from '../../queries/withdrawal';
+import { AdminTransferSkeleton } from './AdminTransferSkeleton';
 
 const text = MY_MESSAGES.transfer;
 
@@ -91,11 +91,8 @@ export function AdminTransferScreen() {
       <p role="status" className="sr-only">
         {loading && owned.isPending ? text.loading : transfer.isPending ? text.sending : ''}
       </p>
-      {loading ? (
-        owned.isPending ? (
-          <PageLoading />
-        ) : null
-      ) : (
+      {/* 받지 못해 돌아가는 중에는 아무것도 그리지 않음 */}
+      {loading && !owned.isPending ? null : (
         <PageShell
           header={
             <Header
@@ -103,7 +100,11 @@ export function AdminTransferScreen() {
                 <HeaderIconButton
                   label="뒤로 가기"
                   tone="subtle"
-                  onClick={() => backOr(MY_PATHS.withdrawal)}
+                  onClick={() => {
+                    // 이미 떠났으면 받기 실패·빈 목록 effect가 한 번 더 뒤로 가지 않게
+                    left.current = true;
+                    backOr(MY_PATHS.withdrawal);
+                  }}
                 >
                   <LineChevronLeftLargeIcon />
                 </HeaderIconButton>
@@ -131,52 +132,60 @@ export function AdminTransferScreen() {
           }
         >
           <h1 className="sr-only">{text.title}</h1>
+          {/* 받는 중은 접힌 번치 카드 자리만(「다음」은 고를 번치가 없어 막혀 있음) */}
           {/* Figma 헤더 아래 16, 카드 사이 6 */}
-          <div className="gap-s3 px-padding-p8 pt-s8 pb-s8 flex flex-col">
-            {bunches.map((bunch) => {
-              const pickedMember = bunch.candidates.find(
-                (member) => member.id === selections[bunch.id],
-              );
-              return (
-                <BunchAccordion
-                  key={bunch.id}
-                  name={bunch.name}
-                  imageSrc={bunchImageOf(bunch)}
-                  headingLevel={2}
-                  // 새 관리자를 고르면 접혔을 때 선택 상태로 표시(Figma Status=Selected)
-                  selected={pickedMember !== undefined}
-                  selectedLabel={pickedMember ? text.selected(pickedMember.name) : undefined}
-                >
-                  {/* Figma 좌우 10, 「멤버」와 목록 사이 8, 멤버 사이 2 */}
-                  {/* 보내는 동안·넘긴 뒤에는 선택을 잠금(화면의 새 관리자와 실제로 넘긴 사람이 달라지지 않게) */}
-                  <fieldset disabled={transfer.isPending || done} className="px-padding-p5 min-w-0">
-                    <legend className="typography-body-4-semi-bold text-text-quaternary px-padding-p5 mb-s4">
-                      {/* 여러 번치의 같은 「멤버」 그룹을 구분하도록 번치 이름을 함께 낭독 */}
-                      <span className="sr-only">{bunch.name} </span>
-                      {text.members}
-                    </legend>
-                    <div className="gap-s1 flex flex-col">
-                      {bunch.candidates.map((member) => (
-                        <ProfileRadioCard
-                          key={member.id}
-                          name={`new-owner-${bunch.id}`}
-                          value={member.id}
-                          label={member.name}
-                          imageSrc={member.imageSrc}
-                          memberRole={member.role === 'coOwner' ? 'coOwner' : undefined}
-                          roleLabel={member.role === 'coOwner' ? text.coOwner : undefined}
-                          checked={selections[bunch.id] === member.id}
-                          onChange={() =>
-                            setSelections((prev) => ({ ...prev, [bunch.id]: member.id }))
-                          }
-                        />
-                      ))}
-                    </div>
-                  </fieldset>
-                </BunchAccordion>
-              );
-            })}
-          </div>
+          {loading ? (
+            <AdminTransferSkeleton />
+          ) : (
+            <div className="gap-s3 px-padding-p8 pt-s8 pb-s8 flex flex-col">
+              {bunches.map((bunch) => {
+                const pickedMember = bunch.candidates.find(
+                  (member) => member.id === selections[bunch.id],
+                );
+                return (
+                  <BunchAccordion
+                    key={bunch.id}
+                    name={bunch.name}
+                    imageSrc={bunchImageOf(bunch)}
+                    headingLevel={2}
+                    // 새 관리자를 고르면 접혔을 때 선택 상태로 표시(Figma Status=Selected)
+                    selected={pickedMember !== undefined}
+                    selectedLabel={pickedMember ? text.selected(pickedMember.name) : undefined}
+                  >
+                    {/* Figma 좌우 10, 「멤버」와 목록 사이 8, 멤버 사이 2 */}
+                    {/* 보내는 동안·넘긴 뒤에는 선택을 잠금(화면의 새 관리자와 실제로 넘긴 사람이 달라지지 않게) */}
+                    <fieldset
+                      disabled={transfer.isPending || done}
+                      className="px-padding-p5 min-w-0"
+                    >
+                      <legend className="typography-body-4-semi-bold text-text-quaternary px-padding-p5 mb-s4">
+                        {/* 여러 번치의 같은 「멤버」 그룹을 구분하도록 번치 이름을 함께 낭독 */}
+                        <span className="sr-only">{bunch.name} </span>
+                        {text.members}
+                      </legend>
+                      <div className="gap-s1 flex flex-col">
+                        {bunch.candidates.map((member) => (
+                          <ProfileRadioCard
+                            key={member.id}
+                            name={`new-owner-${bunch.id}`}
+                            value={member.id}
+                            label={member.name}
+                            imageSrc={member.imageSrc}
+                            memberRole={member.role === 'coOwner' ? 'coOwner' : undefined}
+                            roleLabel={member.role === 'coOwner' ? text.coOwner : undefined}
+                            checked={selections[bunch.id] === member.id}
+                            onChange={() =>
+                              setSelections((prev) => ({ ...prev, [bunch.id]: member.id }))
+                            }
+                          />
+                        ))}
+                      </div>
+                    </fieldset>
+                  </BunchAccordion>
+                );
+              })}
+            </div>
+          )}
         </PageShell>
       )}
     </>

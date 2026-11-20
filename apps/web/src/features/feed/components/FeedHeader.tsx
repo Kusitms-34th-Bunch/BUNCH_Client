@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react';
-import { Header, LineBellLargeIcon } from '@app/design-system';
+import { Header, LineBellLargeIcon, Skeleton } from '@app/design-system';
 import { ProfileImage } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import Link from 'next/link';
@@ -76,11 +76,7 @@ export function FeedHeader({
                 />
               </Link>
             ) : viewerPending ? (
-              <span
-                aria-hidden="true"
-                data-testid="feed-bunch-placeholder"
-                className="bg-surface-secondary size-7 rounded-full"
-              />
+              <Skeleton shape="round" data-testid="feed-bunch-placeholder" className="size-7" />
             ) : null}
           </span>
         )

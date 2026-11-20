@@ -21,6 +21,7 @@ import type { BunchMember, BunchRole } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { ROLE_LABELS } from '../../constants/roles';
+import { BunchMembersSkeleton } from './BunchMembersSkeleton';
 
 /** 번치 최대 인원(기능명세 5.6, 초대 안내 「번치는 최대 8명까지」) */
 const BUNCH_MEMBER_LIMIT = 8;
@@ -236,7 +237,7 @@ export function BunchMembersScreen({
     >
       <h1 className="sr-only">{bunchName ? `${bunchName} 멤버 관리` : '멤버 관리'}</h1>
       <p role="status" className="sr-only">
-        {busy ? '처리하는 중이에요' : ''}
+        {busy ? '처리하는 중이에요' : members ? '' : '멤버를 불러오는 중이에요'}
       </p>
       {/* 헤더 아래 16, 요약 줄과 목록 사이 12, 행 사이 8(Figma 2500:65206) */}
       {members ? (
@@ -281,7 +282,9 @@ export function BunchMembersScreen({
             ))}
           </ul>
         </div>
-      ) : null}
+      ) : (
+        <BunchMembersSkeleton />
+      )}
     </PageShell>
   );
 }

@@ -5,10 +5,11 @@ import { FollowListItem, MenuTabs, NudgeBanner } from '@app/design-system/web';
 import { type RefObject, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { ProfileListSkeleton } from '@/shared/components/skeleton/ProfileRowSkeleton';
 import type { FollowStatus } from '../lib/types';
 import type { FollowListState, FollowRow } from '../model/follows';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import { BunchFollowsSkeleton } from './BunchFollowsSkeleton';
 import { ListMore } from './ListMore';
 import { PrivateBunchNotice } from './PrivateBunchNotice';
 
@@ -139,12 +140,12 @@ export function BunchFollowsScreen({
     }
     if (!rows) {
       return (
-        <p
-          role="status"
-          className="typography-body-3-regular text-text-tertiary py-s10 text-center"
-        >
-          {BUNCH_HOME_MESSAGES.followListLoading}
-        </p>
+        <>
+          <p role="status" className="sr-only">
+            {BUNCH_HOME_MESSAGES.followListLoading}
+          </p>
+          <ProfileListSkeleton variant="plain" trailing={1} count={5} />
+        </>
       );
     }
     if (rows.length === 0) {
@@ -256,7 +257,7 @@ export function BunchFollowsScreen({
           <p role="status" className="sr-only">
             {BUNCH_HOME_MESSAGES.followListLoading}
           </p>
-          <PageLoading />
+          <BunchFollowsSkeleton selected={initialTab} />
         </>
       )}
       <p role="status" className="sr-only">
