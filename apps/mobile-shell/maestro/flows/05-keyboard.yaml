@@ -10,7 +10,11 @@ name: 댓글 입력에서 키보드를 열고 닫은 뒤 돌아오면 탭 바가
 - tapOn: '댓글 4'
 - tapOn: '여행쥬아로 댓글 달기'
 - inputText: '안녕'
-- assertVisible: '보내기'
+# 보내기 버튼은 빈 입력에도 보이고 비활성이라, 입력이 들어가 활성이 됐는지로 판정
+- assertVisible: '안녕'
+- assertVisible:
+    text: '보내기'
+    enabled: true
 - hideKeyboard
 - tapOn: '뒤로 가기'
 - extendedWaitUntil:
