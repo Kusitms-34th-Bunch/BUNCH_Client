@@ -17,7 +17,8 @@ const ownerBunchSchema = z.object({
 const withdrawalCheckSchema = z.object({
   ownerBunches: z.array(ownerBunchSchema),
   // 가입한 소셜 서비스. Apple이면 탈퇴 전에 Apple 재인증 코드를 함께 보냄
-  provider: z.enum(['APPLE', 'GOOGLE', 'KAKAO']).optional(),
+  // 외부 계정 중 첫 번째의 서비스. 없으면 서버가 null(`MemberWithdrawalService.check`)
+  provider: z.enum(['APPLE', 'GOOGLE', 'KAKAO']).nullish(),
 }) satisfies z.ZodType<ApiContract<components['schemas']['WithdrawalCheckResponse']>>;
 
 // 되돌릴 수 없는 요청이라 본문 모양이 달라도 성공 응답이면 탈퇴된 것으로 봄
@@ -46,7 +47,7 @@ export const getWithdrawalCheck = async (signal?: AbortSignal): Promise<Withdraw
       // 대표 사진이 없으면 비움. 응답에 번치 타입이 없어 기본 이미지는 소속 번치 목록으로 고름(queries/withdrawal.ts)
       imageSrc: bunch.imageUrl && isSafeImageUrl(bunch.imageUrl) ? bunch.imageUrl : undefined,
     })),
-    provider,
+    provider: provider ?? undefined,
   };
 };
 
