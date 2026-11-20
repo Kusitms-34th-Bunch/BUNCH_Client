@@ -8,10 +8,9 @@ const bridge = vi.hoisted(() => ({
 }));
 vi.mock('@/shared/bridge/client', () => ({
   isNativeShell: () => bridge.native,
-  appBridge: {
-    isNativeMethodAvailable: () => bridge.available,
-    copyToClipboard: (text: string) => bridge.copyToClipboard(text),
-  },
+  // 쉘이 실제로 구현했는지(쉘 안이고 메서드가 있을 때만)
+  hasNativeMethod: () => bridge.native && bridge.available,
+  appBridge: { copyToClipboard: (text: string) => bridge.copyToClipboard(text) },
   clipboardBridge: { readClipboard: () => bridge.readClipboard() },
 }));
 

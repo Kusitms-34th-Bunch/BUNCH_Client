@@ -4,6 +4,7 @@ import {
   MAX_PICKED_PHOTOS,
   MAX_UPLOAD_IMAGE_DATA_URL,
   appleAuthorizationResultSchema,
+  nativeTabBarVisibilitySchema,
   clipboardTextSchema,
   galleryImageSchema,
   isSavableImageUrl,
@@ -349,4 +350,12 @@ void test('Apple 재인증 결과는 비지 않은 4096자 이하 인증 코드�
   assert.equal(ok({ status: 'success', authorizationCode: '' }), false);
   assert.equal(ok({ status: 'success', authorizationCode: 'a'.repeat(4097) }), false);
   assert.equal(ok({ status: 'success' }), false);
+});
+
+void test('탭 바 표시 알림은 탭 ID와 표시 여부가 있어야 한다', () => {
+  const ok = (value: unknown) => nativeTabBarVisibilitySchema.safeParse(value).success;
+  assert.equal(ok({ tab: 'feed', visible: true }), true);
+  assert.equal(ok({ tab: '', visible: true }), false);
+  assert.equal(ok({ tab: 'feed' }), false);
+  assert.equal(ok({ tab: 'feed', visible: 'true' }), false);
 });

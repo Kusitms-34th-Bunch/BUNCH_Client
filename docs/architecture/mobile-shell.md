@@ -116,7 +116,8 @@ iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …�
 쉘은 화면을 직접 그리지 않지만 iOS에서는 하단 탭을 시스템 탭 바(UITabBar)로 그린다. iOS 26 이상은 시스템이 Liquid Glass로 그리고 끌어서 이동·렌즈 효과도 시스템 동작이다. 근거와 대안은 `docs/decisions/records/012-ios-system-tab-bar.md`다(011의 직접 만든 `GlassView` 막대를 대체).
 
 - 구조: 첫 화면(`app/index.tsx`)은 WebView 하나다. 웹 탭 화면(`apps/web`의 `features/main-navigation/components/MainTabBar.tsx`)이 `setNativeTabBar({ items, selectedId })`를 부르면 쉘이 `(tabs)`로 바꾸고, 탭마다 WebView가 항목의 `path`를 연다. 이미 탭 화면이면 같은 요청은 화면을 옮기지 않는다. `hidden: true`면 하나의 WebView로 돌아간다. 웹은 로그인 전 화면(인트로·로그인)에 오면 `NativeTabBarVisibility`(`exitPaths`)가 `hidden: true`를 보낸다. 요청에 보낸 WebView 구분이 없어 화면에 보이는 WebView만 보내고, 뒤의 탭 WebView는 보이게 될 때 보낸다. 로그아웃·탈퇴 뒤 로그인부터 온보딩까지 이전 탭 WebView 안에서 이어지면, 온보딩을 마치고 탭 경로로 가도 쉘이 선택 탭을 바꾸지 않아(이미 탭 화면) 엉뚱한 탭이 선택된 채 남기 때문이다.
-- 탭 밖 화면(`(main)` 밖의 상세·온보딩)은 같은 탭 WebView에서 열고 시스템 탭 바만 숨긴다. 웹 `NativeTabBarVisibility`가 경로마다 탭 화면 여부를 `setNativeTabBarVisible`로 보내면 쉘이 `NativeTabs`의 `hidden`을 바꾼다(iOS 18 이상은 `setTabBarHidden`). 화면에 보이는 탭 WebView만 보내고, `setNativeTabBar`는 숨김 상태를 바꾸지 않는다(뒤의 탭 WebView가 다시 불러와도 유지). 탭이 아니거나 iOS가 아니면 false를 돌려준다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행돼 탭 바가 남는다.
+- 탭 밖 화면(`(main)` 밖의 상세·온보딩)은 같은 탭 WebView에서 열고 시스템 탭 바만 숨긴다. 웹 `NativeTabBarVisibility`가 경로마다 탭 화면 여부를 `setNativeTabBarVisible`로 보내면 쉘이 `NativeTabs`의 `hidden`을 바꾼다(iOS 18 이상은 `setTabBarHidden`). 이전 쉘에서는 화면에 보이는 탭 WebView만 보내고(지금 방식은 아래 탭별 저장), `setNativeTabBar`는 숨김 상태를 바꾸지 않는다(뒤의 탭 WebView가 다시 불러와도 유지). 탭이 아니거나 iOS가 아니면 false를 돌려준다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행돼 탭 바가 남는다.
+- 탭 바 표시는 탭마다 저장한다(#481). 탭 WebView는 경로·시트가 바뀔 때마다 화면에 보이는지와 관계없이 `setNativeTabBarVisibleFor({ tab, visible })`로 자기 탭 값을 보낸다(탭 ID는 쉘이 넣어 준 `sessionStorage`의 `bunch-shell-tab`). 쉘은 탭별 값(`hiddenByTab`)을 저장하고 선택된 탭(`focusedTab`)의 값만 `NativeTabs`의 `hidden`에 적용한다. 탭이 바뀌면 `TabScreen`의 `useFocusEffect`가 그 탭의 값으로 맞춘다(`src/tabs/tab-bar-visibility.ts`). 이 메서드가 없는 이전 쉘에서는 웹이 화면에 보이는 WebView만 `setNativeTabBarVisible`로 보내는 기존 방식으로 돌아간다. 새 메서드가 있는지는 `hasNativeMethod`로 판정한다(아래 bridge 판정 참고). 새 쉘에 이전 웹이 붙어 탭별 값을 한 번도 받지 않았으면 탭을 바꿔도 지금 탭 바 상태를 그대로 둔다.
 - 탭 화면 파일은 `app/(tabs)/`의 `feed`·`photos`·`bunch`·`my` 4개로 고정이다(`src/tabs/tabs.ts`의 `TAB_IDS`). 웹이 이 밖의 ID를 보내면 `setNativeTabBar`가 false를 돌려 웹 막대를 쓴다. 항목이 없는 탭은 숨긴다.
 - 탭 라벨·경로는 웹이 정하고, 아이콘은 쉘이 탭 ID로 정한다. 아이콘은 웹 막대와 같은 디자인 시스템 Line·Fill 아이콘(Large 24px) SVG를 1x·2x·3x PNG로 옮긴 것이다(`assets/tab-icons/`, template으로 시스템이 색을 칠함). 디자인 시스템 아이콘이 바뀌면 다시 변환한다.
 - 선택 색만 text-primary(#121212)로 지정한다(`app/(tabs)/_layout.tsx`의 `tintColor`). 라벨 글꼴(Pretendard)과 미선택 색을 지정하면 iOS 26 Liquid Glass 탭 바가 새로 그려질 때 한 번도 선택하지 않은 항목의 라벨을 아래로 밀고 「마이페...」처럼 잘라 그려서(그 항목을 한 번 누르면 정상, 재로그인 직후 실기기 녹화로 확인, #462) 지정하지 않고 시스템 기본(SF, 미선택 색은 시스템이 배경에 맞춤)에 맡긴다. 알약 크기·막대 높이·간격은 시스템이 정한다. `itemPositioning`·`itemWidth` 실험에서 iOS 26 알약 폭이 바뀌지 않았다.
@@ -176,7 +177,7 @@ packages/bridge/
 
 실제 구현은 [bridge client](../../apps/web/src/shared/bridge/client.ts)를 따른다. `linkBridge<AppBridge, AppPostMessageSchema>`로 메서드와 이벤트 계약을 함께 지정한다.
 
-`initialBridge`는 WebView 밖(일반 브라우저)에서 실행될 때의 폴백이다. `isWebViewBridgeAvailable`로 지금 네이티브 쉘 안인지 확인할 수 있다.
+`initialBridge`는 WebView 밖(일반 브라우저)에서 실행될 때의 폴백이다. `isWebViewBridgeAvailable`로 지금 네이티브 쉘 안인지 확인할 수 있다. 다만 `@webview-bridge/web` 1.8.0은 `isWebViewBridgeAvailable`과 `isNativeMethodAvailable` 모두 initialBridge 폴백 이름까지 「있음」으로 센다. 그래서 폴백이 있는 `appBridge`로는 이전 쉘에 그 메서드가 있는지 알 수 없다. 쉘이 실제로 구현했는지는 initialBridge가 없는 bridge로 판정하는 `hasNativeMethod`(`apps/web/src/shared/bridge/client.ts`)를 쓴다(#481).
 
 ## 새 bridge 메서드를 추가하려면
 
@@ -194,7 +195,7 @@ packages/bridge/
 - 현재 사용처는 번치 생성 완료 화면, 번치 프로필 편집, 가입·MY 프로필 사진이며 모두 미리보기까지다. 이미지 API 확정 후 업로드 결과 ID/URL로 저장 계약을 연결한다. `exif: false`만으로 파일 메타데이터 제거를 보장하지 않으며 업로드 단계에서 별도 확정한다.
 - 웹 fallback은 파일 input으로 선택하고 브라우저 디코딩 성공 후 표시한다. 기본 규칙은 JPEG·PNG·WebP 최대 3MiB, 프로필 사진은 JPEG·PNG·HEIC·WebP 최대 10MiB(`PROFILE_IMAGE_RULES`, 브라우저가 HEIC를 읽지 못하면 같은 안내로 거절). 네이티브 편집 UI·HEIC 지원을 대체하지 않는다. 사진을 영구 저장하거나 localStorage에 남기지 않는다.
 - WebView 내부 이동은 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)만 허용하고 외부 주소는 OS로 전달한다. 외부 페이지가 갤러리 등 네이티브 브리지에 접근하지 못하도록 하는 경계다. 인증 redirect는 별도 계약 확정 후 연결한다.
-- 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다(`expo-image-picker`, `expo-image-manipulator`). 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`은 initialBridge 메서드도 포함). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
+- 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다(`expo-image-picker`, `expo-image-manipulator`). 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`과 `appBridge.isNativeMethodAvailable`은 initialBridge 메서드도 포함, 메서드 지원 여부는 `hasNativeMethod`). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
 
 ### 사진함 업로드용 선택·촬영 (`src/gallery-upload.ts`)
 

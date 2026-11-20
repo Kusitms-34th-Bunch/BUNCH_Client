@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
   hapticKindSchema,
+  nativeTabBarVisibilitySchema,
   nativeTabEventSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
@@ -44,6 +45,7 @@ import {
   waitForTabWebView,
 } from '../splash/state';
 import { floatingButtonStore } from '../tabs/floating-button-store';
+import { reportTabBar } from '../tabs/tab-bar-visibility';
 import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { isAppWebUrl, resolveWebUrl } from '../web-url';
@@ -99,18 +101,36 @@ const appBridge = bridge({
       tabsStore.set(next);
       router.replace(`/${next.selectedId}` as Href);
     } else if (JSON.stringify(current.items) !== JSON.stringify(next.items)) {
-      // 탭 바 표시 여부는 화면에 보이는 WebView의 setNativeTabBarVisible만 바꿈(다른 탭 WebView가 다시 불러와도 유지)
-      tabsStore.set({ ...next, barHidden: current.barHidden });
+      // 탭 바 표시 상태(탭별 값·선택 탭)는 그대로 둠(다른 탭 WebView가 다시 불러와도 유지)
+      tabsStore.set({
+        ...next,
+        barHidden: current.barHidden,
+        hiddenByTab: current.hiddenByTab,
+        focusedTab: current.focusedTab,
+      });
     }
     return Promise.resolve(true);
   },
   // 탭 밖 화면을 같은 탭 WebView에서 여는 동안 탭 바만 숨김(탭 상태 유지, 결정 기록 012). 웹은 화면에 보이는 WebView만 보냄
+  // 이전 웹(탭 ID를 보내지 않음)용: 화면에 보이는 WebView가 보낸 값으로 지금 탭 바만 바꿈
+  // 탭별로 저장하지 않음(탭 전환과 메시지 순서가 엇갈리면 다른 탭에 저장될 수 있음)
   setNativeTabBarVisible: (visible) => {
     const current = tabsStore.get();
     if (Platform.OS !== 'ios' || !current || typeof visible !== 'boolean')
       return Promise.resolve(false);
     if (current.barHidden === !visible) return Promise.resolve(true);
     tabsStore.set({ ...current, barHidden: !visible });
+    return Promise.resolve(true);
+  },
+  // 탭 WebView가 자기 탭의 값을 알림(#481): 탭마다 저장하고 선택된 탭의 값만 탭 바에 적용(뒤의 탭이 지금 탭 바를 바꾸지 않음)
+  setNativeTabBarVisibleFor: (params) => {
+    const current = tabsStore.get();
+    const parsed = nativeTabBarVisibilitySchema.safeParse(params);
+    if (Platform.OS !== 'ios' || !current || !parsed.success || !isTabId(parsed.data.tab))
+      return Promise.resolve(false);
+    const initial = isTabId(current.selectedId) ? current.selectedId : parsed.data.tab;
+    const next = reportTabBar(current, parsed.data.tab, parsed.data.visible, initial);
+    if (next !== current) tabsStore.set(next);
     return Promise.resolve(true);
   },
   // 다른 탭으로 전환(웹이 다른 탭 첫 화면으로 가려 할 때, 6.1.2 상세 동작 3). 그 탭 WebView는 보던 화면 그대로

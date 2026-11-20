@@ -21,13 +21,10 @@ permissions:
   id-token: write
 
 jobs:
-  deploy:
-    name: Deploy
+  build:
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -52,6 +49,16 @@ jobs:
         with:
           path: packages/design-system/storybook-static
 
+  # 업로드와 배포를 한 job에서 하면 deploy-pages가 방금 올린 artifact를 0개로 읽어 실패하는 경우가 있어 분리
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

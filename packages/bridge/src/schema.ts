@@ -286,6 +286,16 @@ export const setNativeTabBarParamsSchema = z.object({
   hidden: z.boolean().optional(),
 });
 
+/**
+ * 탭 WebView가 자기 탭의 탭 바 표시 여부를 알림(#481). 쉘은 탭마다 저장하고 지금 선택된 탭의 값만 적용
+ * 탭 ID는 쉘이 탭 WebView에 넣어 준 값(`sessionStorage`의 `bunch-shell-tab`)
+ */
+export const nativeTabBarVisibilitySchema = z.object({
+  tab: z.string().min(1).max(32),
+  visible: z.boolean(),
+});
+
+export type NativeTabBarVisibilityParams = z.infer<typeof nativeTabBarVisibilitySchema>;
 export type NativeTabBarItem = z.infer<typeof nativeTabBarItemSchema>;
 export type SetNativeTabBarParams = z.infer<typeof setNativeTabBarParamsSchema>;
 

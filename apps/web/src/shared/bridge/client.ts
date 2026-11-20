@@ -1,4 +1,4 @@
-import type { AppBridge, AppPostMessageSchema, ShareParams } from '@app/bridge';
+import type { AppBridge, AppBridgeMethods, AppPostMessageSchema, ShareParams } from '@app/bridge';
 import { linkBridge } from '@webview-bridge/web';
 
 /** 일반 브라우저용 폴백 제공, 메서드 추가 시 packages/bridge 계약과 함께 갱신 필요 */
@@ -42,6 +42,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     authorizeApple: () => Promise.reject(new Error('네이티브 쉘에서만 Apple 인증을 할 수 있어요.')),
     // 브라우저에서는 웹 탭 막대 사용
     setNativeTabBar: () => Promise.resolve(false),
+    // 브라우저·이전 쉘은 탭별 표시를 모름(부르는 쪽이 hasNativeMethod로 확인)
+    setNativeTabBarVisibleFor: () => Promise.resolve(false),
     // 브라우저에는 햅틱 없음
     tabSelectionHaptic: () => Promise.resolve(),
     // 브라우저·이전 쉘에는 끌기 햅틱 없음
@@ -87,6 +89,16 @@ export const isHandedOffToNativeTabs = () => handedOffToNativeTabs;
 
 /** initialBridge 지원 여부와 별개로 실제 네이티브 호스트 확인 */
 export const isNativeShell = () => typeof window !== 'undefined' && 'ReactNativeWebView' in window;
+
+// 쉘이 실제로 구현한 메서드 확인용. initialBridge가 없어 폴백 이름을 「있음」으로 세지 않음
+const nativeMethods = linkBridge<AppBridge, AppPostMessageSchema>({});
+
+/**
+ * 앱 쉘이 이 메서드를 실제로 구현했는지(이전 쉘 빌드에는 없을 수 있음)
+ * `appBridge.isNativeMethodAvailable`은 initialBridge 폴백 이름까지 있다고 답해 쓰지 않음(@webview-bridge/web 1.8.0)
+ */
+export const hasNativeMethod = (method: keyof AppBridgeMethods) =>
+  isNativeShell() && nativeMethods.isNativeMethodAvailable(method);
 
 // iOS 쉘의 탭 화면 ID(쉘 `src/tabs/tabs.ts`의 TAB_IDS와 같은 값). 탭 첫 화면 경로는 `/${id}`
 const SHELL_TAB_IDS = ['feed', 'photos', 'bunch', 'my'] as const;
