@@ -8,6 +8,7 @@ import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import { createQueryWrapper } from '@/shared/query/testing';
+import { APP_STORE_URL } from '../constants/messages';
 import { InviteEntry } from './InviteEntry';
 
 const push = vi.fn();
@@ -40,14 +41,14 @@ describe('InviteEntry', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Bunch' })).toBeTruthy();
     expect(screen.getByText('함께한 순간이 모이는 곳')).toBeTruthy();
     expect(screen.getByRole('main')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '앱 설치하기' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: '앱 설치하기' })).toBeTruthy();
     expect(checkButton()).toBeTruthy();
   });
 
   it('버튼 색은 Figma대로 앱 설치하기는 회색(secondary), 초대장 확인하기는 브랜드색이다', () => {
     renderEntry();
 
-    expect(screen.getByRole('button', { name: '앱 설치하기' }).className).toContain(
+    expect(screen.getByRole('link', { name: '앱 설치하기' }).className).toContain(
       'bg-surface-tertiary',
     );
     expect(checkButton().className).toContain('bg-surface-brand');
@@ -60,28 +61,16 @@ describe('InviteEntry', () => {
     const anchor = document.querySelector('[data-toast-anchor="wrapper"]');
     expect(anchor).not.toBeNull();
     expect(anchor?.contains(checkButton())).toBe(true);
-    expect(anchor?.contains(screen.getByRole('button', { name: '앱 설치하기' }))).toBe(true);
+    expect(anchor?.contains(screen.getByRole('link', { name: '앱 설치하기' }))).toBe(true);
   });
 
-  it('앱스토어 연결 전에도 앱 설치하기는 활성 모양이고, 누르면 곧 지원된다는 안내만 보인다', async () => {
+  it('앱 설치하기는 App Store 앱 페이지로 가는 같은 탭 링크다', () => {
     renderEntry();
-    const install = screen.getByRole('button', { name: '앱 설치하기' });
-    expect(install).toHaveProperty('disabled', false);
 
-    await userEvent.click(install);
-
-    expect(toast).toHaveBeenCalledWith('앱스토어 이동은 곧 지원돼요.');
-    expect(push).not.toHaveBeenCalled();
-  });
-
-  it('앱스토어를 연결하면(onInstallApp) 그 동작을 호출한다', async () => {
-    const onInstallApp = vi.fn();
-    renderEntry({ onInstallApp });
-
-    await userEvent.click(screen.getByRole('button', { name: '앱 설치하기' }));
-
-    expect(onInstallApp).toHaveBeenCalledTimes(1);
-    expect(toast).not.toHaveBeenCalled();
+    const install = screen.getByRole('link', { name: '앱 설치하기' });
+    expect(install.getAttribute('href')).toBe(APP_STORE_URL);
+    expect(install.getAttribute('target')).toBeNull();
+    expect(APP_STORE_URL).toBe('https://apps.apple.com/app/id6834488511');
   });
 
   it('초대장 확인하기는 공개 조회로 유효성을 확인하고, 유효하면 초대를 보관한 뒤 이어 간다', async () => {

@@ -32,7 +32,7 @@
   - 성공: `savePendingInvitation(토큰)` 뒤 `router.push(continueHref)`. 뒤로 가기로 이 페이지에 돌아올 수 있고, 브라우저가 화면을 그대로 복원하면(bfcache, `pageshow`의 `persisted`) 로딩과 중복 탭 잠금을 풀어 다시 확인할 수 있다.
   - 404 `INVITE_001`(없음·만료·폐기, 구분하지 않음): 토스트 「유효하지 않은 링크입니다.」, 이동하지 않고 보관하지 않는다.
   - 그 밖(네트워크·서버): 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」, 다시 누를 수 있다.
-- 「앱 설치하기」: Figma대로 활성 모양(회색 `secondary`)이다. `onInstallApp`이 없으면 누를 때 토스트 「앱스토어 이동은 곧 지원돼요.」(기획 원문 없는 임시 문구)만 보인다. 유니버셜 링크를 붙일 때 호출부(`page.tsx`)가 핸들러를 넘긴다.
+- 「앱 설치하기」: Figma대로 활성 모양(회색 `secondary`)이다. 외부 주소로 가는 동작이라 링크(`ButtonLink`, `<a href>`)이고 같은 탭에서 App Store 앱 페이지(`APP_STORE_URL`, `https://apps.apple.com/app/id6834488511`)를 연다(기능명세 2.7.1, 인앱 브라우저의 새 탭 차단을 피함). 앱 공개 전에는 App Store가 앱을 찾지 못한다고 보일 수 있다.
 - 동작 줄이기: `@media (prefers-reduced-motion: reduce)`에서 이동 없이 투명도 변화만 재생한다.
 - 토스트: 두 버튼이 있는 하단 영역에 `data-toast-anchor="wrapper"`를 달아 토스트가 버튼 영역 바로 위 4px에 뜬다(로그인 화면과 같은 방식).
 
@@ -68,6 +68,6 @@
 
 - 모션 반복 (확인 필요): Figma 데이터는 2.4초 주기 반복 재생이다. 장식이 계속 깜빡이는 것을 피하려고 한 번만 재생했다. 반복이 의도라면 `iterations`를 바꾼다.
 - 소개 문구 폰트 (확정 필요): Noto Sans KR → Pretendard(`typography-body-3-regular`, 14/21, 자간 0).
-- 「앱 설치하기」 임시 안내 (확인 필요): 앱스토어 연결 전에는 누르면 임시 문구 토스트만 보인다(2026-11-16 확인, `page.tsx`가 `onInstallApp`을 넘기지 않음). 문구는 기획 원문이 없다.
+- 「앱 설치하기」 연결 (반영, #479): 임시 토스트를 없애고 App Store 링크로 바꿨다. 앱 공개 전에는 App Store가 앱을 찾지 못한다고 보일 수 있다.
 - 딤 토큰 (확정): Figma의 `rgba(0,0,0,0.4)`는 `primitive-black-alpha-40`이다. `overlay-dim-subtle`은 `black-alpha-10`이라 쓰지 않았다(처음에 잘못 써서 사진이 밝았음).
 - 앱 밖 비로그인 사용자의 막힘 (후속): 브라우저에서는 소셜 로그인을 할 수 없어 「초대장 확인하기」 뒤 로그인 화면에서 막힌다. 유니버셜 링크가 앱으로 넘기면 해소된다(`docs/workflows/invite-link-entry.md`).

@@ -3,9 +3,10 @@
 export const INVITE_ENTRY_MESSAGES = {
   invalidInvitation: '유효하지 않은 링크입니다.',
   temporaryFailure: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  // 기획 원문이 없는 임시 문구(앱스토어 연결 전까지)
-  installComingSoon: '앱스토어 이동은 곧 지원돼요.',
 } as const;
+
+/** 「앱 설치하기」가 여는 App Store 앱 페이지(App Store Connect 앱 Apple ID, 기능명세 2.7.1) */
+export const APP_STORE_URL = 'https://apps.apple.com/app/id6834488511';
 
 /** 없거나 만료·폐기된 초대(서버가 구분하지 않음) */
 export const INVITATION_INVALID_CODE = 'INVITE_001';
