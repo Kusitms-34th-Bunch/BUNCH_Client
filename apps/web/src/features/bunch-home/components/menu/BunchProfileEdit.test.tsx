@@ -515,6 +515,8 @@ describe('BunchProfileEdit', () => {
 
   it('저장하는 사이 메인 관리자가 아니게 됐으면(AUTH_002) 권한 변경 안내 뒤 더보기로 돌아간다', async () => {
     makeMeOwner();
+    // 이전 기록(다른 탭 등)이 있어도 뒤로 가지 않고 더보기로 감
+    window.history.pushState(null, '', window.location.href);
     const user = userEvent.setup();
     renderEdit();
     await user.click(await screen.findByRole('radio', { name: '공개' }));
@@ -527,8 +529,8 @@ describe('BunchProfileEdit', () => {
         '권한이 변경되어 해당 기능을 이용할 수 없어요.',
       ),
     );
-    // 테스트 환경은 기록이 없어 더보기로 replace
     expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.menu);
+    expect(back).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalledWith(BUNCH_HOME_PATHS.home);
     expect(toast).not.toHaveBeenCalled();
   });

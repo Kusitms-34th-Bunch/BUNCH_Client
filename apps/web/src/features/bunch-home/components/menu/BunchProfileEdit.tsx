@@ -112,7 +112,8 @@ export function BunchProfileEdit() {
             setLeaving(true);
             void home.refetch();
             toastAfterNavigation(BUNCH_HOME_MESSAGES.memberManagePermissionChanged);
-            backOr(BUNCH_HOME_PATHS.menu);
+            // 기록과 관계없이 더보기로(직접 들어온 경우 이전 기록이 다른 탭일 수 있음)
+            router.replace(BUNCH_HOME_PATHS.menu);
             return;
           }
           if (isApiError(error) && error.code === NAME_TAKEN_CODE) {
