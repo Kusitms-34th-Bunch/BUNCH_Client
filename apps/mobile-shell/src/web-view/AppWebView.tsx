@@ -221,6 +221,9 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
   const safeAreaScript = buildSafeAreaScript(insets);
   const webViewRef = useRef<ComponentRef<typeof WebView>>(null);
   const [webViewKey, setWebViewKey] = useState(0);
+  // Android에서 새로 만들 때 다시 열 주소(마지막으로 보던 앱 주소, 처음에는 시작 주소)
+  const [restoreUri, setRestoreUri] = useState<string | null>(null);
+  const currentUrl = useRef(uri);
   const canGoBack = useRef(false);
 
   // Android 뒤로가기 시 웹 history 우선 처리
@@ -242,7 +245,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
     <WebView
       key={webViewKey}
       ref={webViewRef}
-      source={{ uri }}
+      source={{ uri: restoreUri ?? uri }}
       style={transparent ? [styles.webview, styles.transparent] : styles.webview}
       injectedJavaScriptBeforeContentLoaded={
         tabId ? `${buildShellTabScript(tabId)}${safeAreaScript}` : safeAreaScript
@@ -274,9 +277,16 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       // 오래 백그라운드에 있으면 OS가 웹 프로세스를 끝내 화면이 하얗게 남으므로 다시 불러옴
       // iOS는 같은 WebView를 다시 불러오고, Android는 끝난 WebView를 쓸 수 없어 새로 만듦
       onContentProcessDidTerminate={() => webViewRef.current?.reload()}
-      onRenderProcessGone={() => setWebViewKey((key) => key + 1)}
+      onRenderProcessGone={() => {
+        // 보던 화면으로 다시 엶(앱 출처일 때만, 저장하지 않은 입력은 복구하지 않음)
+        setRestoreUri(isAppWebUrl(currentUrl.current, WEB_URL) ? currentUrl.current : null);
+        // 새 WebView에는 기록이 없어 첫 이동 전까지 뒤로 가기를 앱에 넘김
+        canGoBack.current = false;
+        setWebViewKey((key) => key + 1);
+      }}
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;
+        currentUrl.current = navState.url;
       }}
       onShouldStartLoadWithRequest={(request) => {
         // 외부 페이지의 네이티브 브리지 접근 방지를 위해 앱 출처만 내부 이동 허용
