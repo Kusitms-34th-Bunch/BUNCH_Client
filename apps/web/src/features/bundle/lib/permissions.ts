@@ -9,7 +9,7 @@ export type DraftAccess = {
   canAddMember: boolean;
   /** 초안 생성자이거나 참여 중인 관리자(공동 관리자 포함)라 발행할 수 있는지 */
   canPublish: boolean;
-  /** 사진을 더할 수 있는지: 발행과 같이 초안 생성자·관리자·공동 관리자(참여 멤버)만 */
+  /** 사진을 더할 수 있는지: 참여 멤버 모두(접근 권한 표의 「제목·사진·위치·날짜」) */
   canAddPhoto: boolean;
 };
 
@@ -25,7 +25,7 @@ export const getDraftAccess = (draft: Draft, viewer: DraftViewer): DraftAccess =
     canEdit: participant,
     canAddMember: participant,
     canPublish: privileged,
-    canAddPhoto: privileged,
+    canAddPhoto: participant,
   };
 };
 
