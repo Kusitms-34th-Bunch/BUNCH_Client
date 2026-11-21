@@ -4,7 +4,6 @@ import { isApiError } from '@app/api-core';
 import { ConfirmDialog, LineTrashcanMediumIcon, toast } from '@app/design-system';
 import { MoreMenuSheet } from '@app/design-system/web';
 import { useState, type RefObject } from 'react';
-import { usePreservedCallback } from 'react-simplikit';
 import { isWireId } from '@/shared/api/ids';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
@@ -20,7 +19,6 @@ const codeOf = (error: unknown) => (isApiError(error) ? error.code : undefined);
 type CommentActionsOptions = {
   thread: ReturnType<typeof useBundleComments>;
   viewer: FeedViewer | null | undefined;
-  viewerId: string | null | undefined;
   asBunch: (_action: () => void) => void;
   report: ReturnType<typeof useBundleReport>;
   /** 댓글 등록·삭제·신고의 공통 실패 처리 */
@@ -30,13 +28,12 @@ type CommentActionsOptions = {
 };
 
 /**
- * 번들 상세 댓글 동작(명세 014~019): 입력 초안·답글 대상, 등록, 내 댓글 삭제, 남의 댓글 신고와 숨김
+ * 번들 상세 댓글 동작(명세 014~019): 입력 초안·답글 대상, 등록, 내 댓글 삭제, 남의 댓글 신고(숨기지 않고 접수 안내만)
  * 결과 안내·초점은 `useCommentFeedback`
  */
 export function useCommentActions({
   thread,
   viewer,
-  viewerId,
   asBunch,
   report,
   failAction,
@@ -48,21 +45,6 @@ export function useCommentActions({
   const [replyTarget, setReplyTarget] = useState<{ id: string; author: string } | null>(null);
   const openOverlay = useScreenOverlay();
   const { announcement, announce, focusAfterUpdate } = useCommentFeedback(comments, commentsRef);
-
-  // 응답을 기다리는 사이 명의(지금 번치)가 바뀌었는지(늦게 온 결과를 새 명의의 목록에 적용하지 않게)
-  const isViewer = usePreservedCallback((id: string | null | undefined) => id === viewerId);
-
-  // 남의 댓글 신고: 접수되면 그 댓글(원댓글이면 답글까지)을 바로 숨기고 그 자리 다음 댓글로 초점
-  // 시트가 닫힌 시점의 최신 목록으로 계산
-  const hideReported = usePreservedCallback((comment: FeedComment) => {
-    const index = comments.findIndex(({ id }) => id === comment.id);
-    // 숨길 범위(원댓글이면 그 답글까지) 다음의 첫 댓글, 없으면 앞 댓글
-    const gone = (item: FeedComment) => item.id === comment.id || item.parentId === comment.id;
-    const nextItem = comments.slice(index).find((item) => !gone(item)) ?? comments[index - 1];
-    focusAfterUpdate(nextItem?.id ?? 'none', text.reported);
-    thread.hide(comment.id);
-    setReplyTarget((target) => (target?.id === comment.id ? null : target));
-  });
 
   const bunchRo = viewer ? withRo(viewer.name) : null;
   const placeholder = replyTarget
@@ -146,13 +128,12 @@ export function useCommentActions({
 
   const reportComment = (comment: FeedComment) => {
     if (!isWireId(comment.id)) return;
-    const reportedAs = viewerId;
     report.openReport(
       text.reportCommentTitle,
       { commentId: comment.id },
       {
-        // 그사이 명의가 바뀌었으면 새 명의의 목록은 그대로 두고 접수만 알림
-        onSuccess: () => (isViewer(reportedAs) ? hideReported(comment) : toast(text.reported)),
+        // 신고만으로는 숨기지 않음(운영 검토 뒤 위반이면 삭제, 기능명세 6.2.14 2026-11-21 변경)
+        onSuccess: () => toast(text.reported),
         onError: (error) => {
           // 그사이 지워진 댓글이면 목록을 맞춤(번들이 사라졌으면 다시 받은 목록이 알려 떠남)
           if (codeOf(error) === 'RESOURCE_001') {

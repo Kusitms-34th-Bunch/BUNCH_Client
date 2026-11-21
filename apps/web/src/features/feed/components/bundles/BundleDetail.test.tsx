@@ -686,14 +686,14 @@ describe('BundleDetail', () => {
     await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
   };
 
-  it('남의 댓글을 신고하면 서버가 접수한 뒤 그 댓글과 답글을 숨기고 알린다', async () => {
+  it('남의 댓글을 신고하면 서버가 접수한 뒤 댓글과 답글을 그대로 두고 알린다', async () => {
     const user = userEvent.setup();
     renderDetail('901');
     await reportJiye(user);
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.'));
-    expect(screen.queryByRole('listitem', { name: '지예님의 댓글' })).toBeNull();
-    expect(screen.queryByRole('listitem', { name: '큐시즘님의 답글' })).toBeNull();
+    expect(screen.getByRole('listitem', { name: '지예님의 댓글' })).toBeTruthy();
+    expect(screen.getByRole('listitem', { name: '큐시즘님의 답글' })).toBeTruthy();
     // 5001: 지예 원댓글(답글 5002가 달린)
     expect(mockDb.get().reports.at(-1)).toMatchObject({
       bundleId: 901,
@@ -902,7 +902,7 @@ describe('BundleDetail', () => {
     expect(await screen.findByText('아직 작성된 댓글이 없어요')).toBeTruthy();
   });
 
-  it('다른 번치 번들은 헤더 더보기 → 「신고」 → 신고하면 이전 화면으로 가서 알린다', async () => {
+  it('다른 번치 번들은 헤더 더보기 → 「신고」 → 신고하면 화면에 남아 알린다', async () => {
     const user = userEvent.setup();
     renderDetail('2');
 
@@ -912,9 +912,10 @@ describe('BundleDetail', () => {
     await user.click(within(sheet).getByRole('radio', { name: '스팸' }));
     await user.click(within(sheet).getByRole('button', { name: '신고하기' }));
 
-    await waitFor(() => expect(toastAfterNavigation).toHaveBeenCalledWith('신고가 접수됐어요.'));
-    // 직접 들어온 경우(기록 없음)는 피드로 바꿔 들어감
-    expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('신고가 접수됐어요.'));
+    expect(back).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '번들 더보기' })).toBeTruthy();
   });
 
   it('번들 신고가 실패하면 화면에 남아 실패를 알린다', async () => {

@@ -5,7 +5,6 @@ import { useIntersectionObserver } from 'react-simplikit';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { isWireId } from '@/shared/api/ids';
 import type { FeedComment } from '../lib/types';
-import { hideComment } from '../lib/comments';
 import { type CommentItemResponse, toFeedComment } from '../model/comment';
 import {
   commentsQueryOptions,
@@ -22,7 +21,7 @@ type CreateCallbacks = {
 
 /**
  * 번들 상세의 댓글(명세 014~017): 원댓글을 쪽 단위로 받고, 답글이 있는 원댓글마다 답글을 받아 원댓글 아래에 펼침
- * 신고한 댓글은 화면에서만 숨김(신고 서버 반영은 API 연동 5번). 목록 끝이 보이면 다음 쪽, 실패하면 다시 내려올 때 다시 시도
+ * 목록 끝이 보이면 다음 쪽, 실패하면 다시 내려올 때 다시 시도
  */
 export function useBundleComments(
   bundleId: string,
@@ -48,16 +47,9 @@ export function useBundleComments(
   // ponytail: 답글을 받지 못하면 원댓글만 보임, 다음 진입 때 다시 받음
   const repliesOf = new Map(parents.map((root, index) => [root.id, replies[index]?.data ?? []]));
 
-  const [hiddenIds, setHiddenIds] = useState<readonly string[]>([]);
-  let comments: readonly FeedComment[] = roots
+  const comments: readonly FeedComment[] = roots
     .flatMap((root) => [root, ...(repliesOf.get(root.id) ?? [])])
     .map(toFeedComment);
-  let hiddenCount = 0;
-  for (const id of hiddenIds) {
-    const result = hideComment(comments, id);
-    comments = result.comments;
-    hiddenCount += result.hiddenCount;
-  }
 
   // 커서를 이어 쓸 수 없으면(번치 전환 등, 400) 처음부터 한 번 다시 받음. 다음 쪽을 받아야 다시 허용
   const restarted = useRef(false);
@@ -154,10 +146,8 @@ export function useBundleComments(
 
   return {
     comments,
-    /** 번들 전체 댓글·답글 수(서버, 받기 전 undefined). 화면에서 숨긴 수는 빼지 않음 */
+    /** 번들 전체 댓글·답글 수(서버, 받기 전 undefined) */
     totalCount: list.data?.pages[0]?.totalCount,
-    hiddenCount,
-    hide: (commentId: string) => setHiddenIds((ids) => [...ids, commentId]),
     loading: list.isPending,
     failed: list.isError && !list.data,
     /** 목록 받기 오류(번들을 볼 수 없게 됐는지 화면이 판단) */
