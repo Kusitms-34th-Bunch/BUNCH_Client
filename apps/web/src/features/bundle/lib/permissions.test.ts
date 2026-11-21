@@ -49,11 +49,11 @@ describe('getDraftAccess', () => {
     expect(getDraftAccess(draft, viewer('plain')).canPublish).toBe(false);
   });
 
-  it('사진은 발행과 같은 사람(초안 생성자·관리자·공동 관리자인 참여 멤버)만 더할 수 있다', () => {
+  it('사진은 참여 멤버 모두 더할 수 있고 참여 멤버가 아니면 관리자여도 못 더한다', () => {
     expect(getDraftAccess(draft, viewer('creator')).canAddPhoto).toBe(true);
     expect(getDraftAccess(draft, viewer('admin', 'owner')).canAddPhoto).toBe(true);
     expect(getDraftAccess(draft, viewer('co', 'coOwner')).canAddPhoto).toBe(true);
-    expect(getDraftAccess(draft, viewer('plain')).canAddPhoto).toBe(false);
+    expect(getDraftAccess(draft, viewer('plain')).canAddPhoto).toBe(true);
     expect(getDraftAccess(draft, viewer('outsider', 'owner')).canAddPhoto).toBe(false);
   });
 

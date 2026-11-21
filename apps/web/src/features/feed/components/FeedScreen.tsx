@@ -19,6 +19,7 @@ import { bundleHeroKey, FEED_PATHS } from '../constants/paths';
 import { useBundleSheets } from '../hooks/useBundleSheets';
 import { useClientNow } from '../hooks/useClientNow';
 import { useFeedLoadMore } from '../hooks/useFeedLoadMore';
+import { useFeedUnreadNotifications } from '../hooks/useFeedUnreadNotifications';
 import { useFeedViewer } from '../hooks/useFeedViewer';
 import { useLikeToggle } from '../hooks/useLikeToggle';
 import { useOpenBundleDetail } from '../hooks/useOpenBundleDetail';
@@ -58,6 +59,7 @@ const focusListItem = (
 export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
   const router = useRouter();
   const { viewer, viewerPending, viewerFailed, retryViewer, asBunch } = useFeedViewer();
+  const hasUnreadNotifications = useFeedUnreadNotifications(viewer);
   const reducedMotion = useReducedMotion();
   const refresh = useRefreshActiveQueries();
   const topRef = useRef<HTMLDivElement>(null);
@@ -208,6 +210,7 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
             topRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
           }
           notificationsHref={links.notifications}
+          hasUnreadNotifications={hasUnreadNotifications}
           bunchHomeHref={links.bunchHome}
           // iOS 쉘은 탭마다 WebView라 번치 탭으로 전환(6.1.2 상세 동작 3). 브라우저는 링크 그대로
           onBunchHomeClick={(event) => {

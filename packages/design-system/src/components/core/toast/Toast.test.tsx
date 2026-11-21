@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { toast } from './showToast';
+import { setToastPresenter, toast } from './showToast';
 import { Toast } from './Toast';
 import { Toaster } from './Toaster';
 
@@ -239,6 +239,25 @@ describe('toast()', () => {
       expect(insetOf()).toBe('116px');
     });
 
+    it('puts the toast 16px above a floating button when there is no tab bar', async () => {
+      addAnchor('floating', 690, { height: 52 });
+      render(<Toaster />);
+
+      await show('플로팅 버튼 위');
+
+      expect(insetOf()).toBe('126px');
+    });
+
+    it('keeps the tab bar position even if a floating button sits above it', async () => {
+      addAnchor('tab-bar', 700);
+      addAnchor('floating', 630, { height: 52 });
+      render(<Toaster />);
+
+      await show('탭 막대와 플로팅 버튼');
+
+      expect(insetOf()).toBe('116px');
+    });
+
     it('follows the highest anchor when several are visible', async () => {
       addAnchor('wrapper', 720);
       addAnchor('tab-bar', 650);
@@ -314,5 +333,48 @@ describe('toast()', () => {
     await advance(2500);
 
     expect(screen.queryByText('다시 센 두 번째')).toBeTruthy();
+  });
+
+  describe('presenter', () => {
+    it('hands bottom toasts to the presenter with resolved duration and skips the web toast', async () => {
+      const present = vi.fn(() => true);
+      const hide = vi.fn();
+      const unregister = setToastPresenter({ show: present, hide });
+      render(<Toaster />);
+      const onClick = vi.fn();
+
+      await show('되돌렸어요.', { icon: 'success', action: { label: '되돌리기', onClick } });
+
+      expect(present).toHaveBeenCalledWith({
+        message: '되돌렸어요.',
+        icon: 'success',
+        action: { label: '되돌리기', onClick },
+        duration: 5000,
+        fullWidth: true,
+      });
+      expect(screen.queryByText('되돌렸어요.')).toBeNull();
+
+      await show('계속 보여요', { duration: Infinity });
+      expect(present).toHaveBeenLastCalledWith(expect.objectContaining({ duration: null }));
+
+      unregister();
+      expect(hide).toHaveBeenCalled();
+    });
+
+    it('keeps top toasts and refused toasts on the web, closing the presenter toast', async () => {
+      const present = vi.fn(() => false);
+      const hide = vi.fn();
+      const unregister = setToastPresenter({ show: present, hide });
+      render(<Toaster />);
+
+      await show('웹으로');
+      expect(screen.getByText('웹으로')).toBeTruthy();
+      expect(hide).toHaveBeenCalledTimes(1);
+
+      await show('위쪽', { position: 'top' });
+      expect(present).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('위쪽')).toBeTruthy();
+      unregister();
+    });
   });
 });

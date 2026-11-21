@@ -210,8 +210,9 @@ jobs:
         shell: bash
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        # --regions: 이 workflow의 --prebuilt 배포는 vercel.json의 regions 미적용이라 함수 리전 직접 지정
         run: |
-          out=$(npm exec --yes -- vercel@65.1.0 deploy --prebuilt --prod --skip-domain)
+          out=$(npm exec --yes -- vercel@65.1.0 deploy --prebuilt --prod --skip-domain --regions icn1)
           url=$(printf '%s\n' "$out" | tail -n 1)
           [[ "$url" =~ ^https://[a-z0-9.-]+\.vercel\.app$ ]] || { echo "배포 URL 형식이 아닙니다: $url"; exit 1; }
           echo "url=$url" >> "$GITHUB_OUTPUT"

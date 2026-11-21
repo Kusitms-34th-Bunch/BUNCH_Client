@@ -73,6 +73,7 @@ export const initialBunchDetailFixture: BunchHomeDetail = {
   followerCount: 23,
   followingCount: 8,
   memberCount: 4,
+  unreadCount: 5,
   completedBundles: [200, 35, 190, 210, 25, 230, 150].map((hue, index) => ({
     id: `bundle-${index + 1}`,
     title: `완성된 번들 ${index + 1}`,
@@ -102,6 +103,7 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
     followerCount: 23,
     followingCount: 8,
     memberCount: 5,
+    unreadCount: 0,
     completedBundles: [],
     draftBundles: [],
   },
@@ -118,6 +120,7 @@ export const bunchDetailsFixture: Record<string, BunchHomeDetail> = {
     followerCount: 12,
     followingCount: 4,
     memberCount: 6,
+    unreadCount: 5,
     completedBundles: [],
     draftBundles: [draft('draft-6', '첫 모임', 120)],
   },
