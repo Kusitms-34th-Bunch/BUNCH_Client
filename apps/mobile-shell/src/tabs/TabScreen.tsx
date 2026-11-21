@@ -4,6 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppWebView, postMessage, WEB_URL } from '../web-view/AppWebView';
 import { floatingButtonStore } from './floating-button-store';
+import { NativeToast } from '../toast/NativeToast';
+import { toastStore } from '../toast/toast-store';
 import { NativeFloatingButton } from './NativeFloatingButton';
 import { focusTabBar } from './tab-bar-visibility';
 import { tabUrl, type TabId } from './tabs';
@@ -30,7 +32,10 @@ export function TabScreen({ id }: { id: TabId }) {
         <AppWebView
           uri={tabUrl(WEB_URL, path)}
           tabId={id}
-          onLoadStart={() => floatingButtonStore.set(id, null)}
+          onLoadStart={() => {
+            floatingButtonStore.set(id, null);
+            toastStore.hide(id);
+          }}
         />
         {button ? (
           <NativeFloatingButton
@@ -40,6 +45,13 @@ export function TabScreen({ id }: { id: TabId }) {
             }
           />
         ) : null}
+        {/* 플로팅 버튼보다 뒤에 두어 위에 그림(버튼이 토스트를 가리지 않게) */}
+        <NativeToast
+          tab={id}
+          onAction={(toastId) =>
+            postMessage('nativeToastAction', { tab: id, id: toastId }, { broadcast: true })
+          }
+        />
       </View>
     </SafeAreaProvider>
   );

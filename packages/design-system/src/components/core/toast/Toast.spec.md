@@ -32,6 +32,7 @@
   - `options.position?: 'top' | 'bottom'` — 뜨는 자리(기본 `bottom`). `top`은 헤더 바로 아래(Safe Area + 49px)에 놓인다. 사진 캡션 화면(Figma `1782:32928`·`1782:32995`, y 93)처럼 입력 중 키보드에 가려지면 안 되는 안내에 쓴다.
   - `options.fullWidth?: boolean` — 기본 `true`로 목록 폭(화면 폭 − 좌우 여백 16px)으로 편다(글자 왼쪽, 액션 버튼 오른쪽 끝). `false`면 내용 폭으로 가운데에 둔다. Figma의 모든 토스트가 343 폭이라 기본으로 삼았다(2026-11-10 사용자 결정).
   - 아래 여백 옵션은 없다. 위치는 아래 "표시 위치"의 앵커 규칙이 정한다(`bottomOffset`은 2026-11-10에 제거).
+- `setToastPresenter({ show, hide })`: 앱이 아래쪽 토스트를 다른 방법(iOS 쉘의 네이티브 토스트 등)으로 띄울 때 등록한다. `toast()`는 아래쪽 토스트를 `show`에 먼저 맡기고(노출 시간은 기본값을 채운 값, `Infinity`는 `null`), `show`가 true면 웹 토스트를 그리지 않는다. 웹 토스트를 그릴 때는 `hide`로 앱 쪽 토스트를 닫는다. 위쪽 토스트는 맡기지 않는다. 해제 함수를 돌려주며 해제할 때 `hide`를 부른다. 나중에 등록한 것이 이긴다.
 - `<Toaster />`: 화면을 그리는 앱의 최상위 layout에 한 번만 둔다(둔 layout 밖의 화면에서는 토스트가 뜨지 않는다. `apps/web`은 `(app)/layout.tsx`에 둔다). props가 없다. 위치·개수·간격은 이 컴포넌트가 정한다.
 - `Toast`(표시 전용 컴포넌트): `icon`, `action`, `children` + native `div` 속성. story와 test에서 형태를 그대로 그릴 때 쓰며, 앱은 `toast()`와 `<Toaster />`만 쓰는 것을 기본으로 한다. barrel(`export *`)로 함께 공개되지만 알림 동작은 없다.
 - 이벤트: `action.onClick`만 있다. `onClick`이 오류를 던지면 토스트를 닫지 못하므로 던지지 않아야 한다.
@@ -50,7 +51,9 @@
 - 표시 위치: 기본은 아래쪽 가운데이고 `position: 'top'`이면 위쪽 가운데(헤더 아래). 아래쪽 여백은 앱이 화면 요소에 단 `data-toast-anchor`로 정한다. `toast()`를 부르는 순간 보이는 앵커(크기가 0이거나 `inert`인 나가는 화면 제외) 중 가장 높은 위 끝을 재서 CSS 변수 `--toast-anchor-inset`(화면 아래에서의 거리)으로 올리고, `Toaster`가 `max(Safe Area + 16px, --toast-anchor-inset)`을 아래 여백으로 쓴다. 같은 동작에서 화면 상태를 바꾸고 부르는 경우(탭 막대가 다시 나타남 등)를 위해 다음 프레임에 한 번 더 잰다.
   - `data-toast-anchor="wrapper"`: 화면 하단 고정 영역(버튼·입력란). 토스트 아래 끝이 그 영역 위 끝에서 4px 위(`PageShell`의 bottom 슬롯이 단다, Figma `Bunch/Join/InvalidLink` `6079:176183`).
   - `data-toast-anchor="tab-bar"`: 하단 탭 막대 영역. 토스트 아래 끝이 막대 영역 위 끝에서 16px 위(`MainTabBar`가 단다, Figma 사진함_11 `5878:79649`의 토스트-막대 8px에서 2026-11-10 사용자 결정으로 16px). 막대가 숨겨지면(`display: none`) 앵커로 치지 않아 기본 위치가 된다.
-  - 앵커가 없는 화면은 기본 위치(Safe Area + 16px)다. 플로팅 버튼은 토스트 위치에 영향을 주지 않는다.
+  - `data-toast-anchor="floating"`: 플로팅 버튼. 토스트 아래 끝이 버튼 위 끝에서 16px 위(탭 막대와 같은 간격, 2026-11-22 제안). 탭 막대 앵커가 함께 보이면 치지 않는다. 탭 막대와 플로팅 버튼이 함께 있으면 탭 막대 기준을 지키고 플로팅 버튼은 가려져도 되며, 플로팅 버튼만 있으면 버튼 위에 뜬다(2026-11-22 사용자 결정, #503. 이전에는 플로팅 버튼이 위치에 영향을 주지 않았다).
+  - 앵커가 없는 화면은 기본 위치(Safe Area + 16px)다.
+  - 토스트 목록(sonner)의 z-index는 sonner 기본값(매우 큼)이라 웹 플로팅 버튼(`z-10`)보다 위에 그려진다. iOS 26 이상 쉘의 네이티브 플로팅 버튼은 WebView 위에 그려져 웹 토스트가 그 위로 올라가지 못한다(Expo 실기기 확인). 앱은 그 화면의 아래쪽 토스트를 `setToastPresenter`로 네이티브에 맡긴다(앱 소유, 결정 기록 030).
 - 닫는 방법: 자동 닫힘, 액션 누름, 아래로 스와이프(sonner 기본).
 - 지원하지 않는 상태: loading, disabled, error 색. 해당 상태가 디자인에 생기면 변형을 추가한다.
 - 긴 텍스트·overflow: 줄바꿈하며 토스트가 세로로 늘어난다. 버튼은 줄어들지 않는다.
@@ -94,7 +97,7 @@
 
 ## 검증
 
-- [x] 사용자 관찰 동작 test: 24개(메시지, 아이콘 장식, 액션 호출·닫힘, 자동 닫힘(액션 없으면 3초·있으면 5초·`duration` 우선), `Infinity`, 대체와 시간 재시작, live region, 기본 목록 폭·`fullWidth: false`, 앵커 위치(wrapper 4px·탭 막대 16px·가장 높은 앵커·숨김/`inert` 제외·앵커 없으면 변수 해제)) — `yarn workspace @app/design-system test`에서 이 파일 통과
+- [x] 사용자 관찰 동작 test: 30개(메시지, 아이콘 장식, 액션 호출·닫힘, 자동 닫힘(액션 없으면 3초·있으면 5초·`duration` 우선), `Infinity`, 대체와 시간 재시작, live region, 기본 목록 폭·`fullWidth: false`, 앵커 위치(wrapper 4px·탭 막대 16px·플로팅 버튼 16px·탭 막대가 있으면 플로팅 버튼 무시·가장 높은 앵커·숨김/`inert` 제외·앵커 없으면 변수 해제), presenter(아래쪽 토스트 위임·노출 시간 채움·`Infinity`→`null`·해제 시 `hide`, 위쪽·거절은 웹)) — `yarn workspace @app/design-system test`에서 이 파일 통과
 - [x] 지원 variant·edge state story: `Matrix`(네 형태 × 밝은·브랜드 배경), `LongText`, 형태별 4개, `Playground`(스냅샷 제외)
 - [x] public export 영향 확인: `yarn check:generated` 통과
 - [x] Storybook 렌더 치수 측정: 글자만 253×46, 아이콘 포함 287, 버튼 포함 높이 48, 여백 8/8/8/12, radius 12, 간격 10, 글자 14/21, 버튼 32 #eaeaea. 아이콘 색만 Figma(#00dd4b)와 저장소 토큰(#00a638)이 다르다.

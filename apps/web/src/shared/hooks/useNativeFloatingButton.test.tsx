@@ -8,7 +8,9 @@ const listeners = vi.hoisted(() => new Set<(_event: { tab: string }) => void>())
 const setNativeFloatingButton = vi.hoisted(() =>
   vi.fn((_params: unknown) => Promise.resolve(shell.shown)),
 );
+// 토스트 위임은 useNativeToastPresenter 테스트가 확인(여기서는 이전 쉘처럼 메서드 없음)
 vi.mock('@/shared/bridge/client', () => ({
+  hasNativeMethod: () => false,
   isNativeShell: () => shell.native,
   nativeShellTab: () => shell.tab,
   appBridge: {
@@ -19,6 +21,10 @@ vi.mock('@/shared/bridge/client', () => ({
     },
   },
 }));
+
+// 토스트를 쉘로 맡길지(useNativeToastPresenter의 켜짐 인자)만 기록
+const toastPresenter = vi.hoisted(() => vi.fn());
+vi.mock('./useNativeToastPresenter', () => ({ useNativeToastPresenter: toastPresenter }));
 
 const options = { tab: 'bunch', icon: 'add', label: '번들 만들기' } as const;
 const press = (tab: string) => listeners.forEach((listener) => listener({ tab }));
@@ -114,5 +120,20 @@ describe('useNativeFloatingButton', () => {
       tab: 'bunch',
       button: { icon: 'add', label: '번들 만들기' },
     });
+  });
+
+  it('시트가 열려 버튼을 지운 동안에도 토스트는 계속 쉘로 맡긴다', async () => {
+    renderHook(() => useNativeFloatingButton(options));
+    await act(() => Promise.resolve());
+    expect(toastPresenter).toHaveBeenLastCalledWith('bunch', true);
+    const sheet = document.createElement('div');
+    sheet.setAttribute('role', 'dialog');
+    await act(async () => {
+      document.body.append(sheet);
+      await Promise.resolve();
+    });
+    expect(setNativeFloatingButton).toHaveBeenLastCalledWith({ tab: 'bunch', button: null });
+    expect(toastPresenter).toHaveBeenLastCalledWith('bunch', true);
+    sheet.remove();
   });
 });

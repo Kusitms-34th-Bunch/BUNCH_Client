@@ -52,6 +52,9 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     setNativeTabBarVisible: () => Promise.resolve(false),
     // 브라우저·이 메서드가 없는 이전 쉘은 웹 플로팅 버튼 사용
     setNativeFloatingButton: () => Promise.resolve(false),
+    // 브라우저·이전 쉘은 웹 토스트(부르는 쪽이 hasNativeMethod로 확인)
+    showNativeToast: () => Promise.resolve(false),
+    hideNativeToast: () => Promise.resolve(false),
     // 브라우저·이전 쉘은 탭 전환이 없어 부르는 쪽이 주소 이동
     selectNativeTab: () => Promise.resolve(false),
     // 브라우저는 탭 WebView가 하나라 알릴 다른 탭 없음

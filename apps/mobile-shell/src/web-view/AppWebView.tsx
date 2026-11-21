@@ -17,11 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
   hapticKindSchema,
+  hideNativeToastParamsSchema,
   nativeTabBarVisibilitySchema,
   nativeTabEventSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
+  showNativeToastParamsSchema,
   type AppBridgeMethods,
 } from '@app/bridge';
 import { saveImagesToAlbum } from '../album-save';
@@ -49,6 +51,7 @@ import { floatingButtonStore } from '../tabs/floating-button-store';
 import { reportTabBar, visibleTab } from '../tabs/tab-bar-visibility';
 import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
+import { toastStore } from '../toast/toast-store';
 import { blocksBackNavigation, isAppWebUrl, resolveWebUrl } from '../web-url';
 
 // `process.env.EXPO_PUBLIC_*` 직접 접근 유지(Metro는 이렇게 쓴 곳만 번들에 포함)
@@ -104,6 +107,7 @@ const appBridge = bridge({
         router.replace('/');
         tabsStore.set(null);
         floatingButtonStore.clear();
+        toastStore.clear();
       }
       return Promise.resolve(true);
     }
@@ -180,6 +184,21 @@ const appBridge = bridge({
     if (Platform.OS !== 'ios' || !isLiquidGlassAvailable() || !tabsStore.get())
       return Promise.resolve(false);
     floatingButtonStore.set(tab, button);
+    return Promise.resolve(true);
+  },
+  // 네이티브 플로팅 버튼이 떠 있는 탭의 토스트(#503, 결정 기록 030). 탭 화면이 있는 iOS에서만, 그 밖은 false로 웹 토스트
+  showNativeToast: (params) => {
+    const parsed = showNativeToastParamsSchema.safeParse(params);
+    if (Platform.OS !== 'ios' || !tabsStore.get() || !parsed.success || !isTabId(parsed.data.tab))
+      return Promise.resolve(false);
+    const { tab, ...toast } = parsed.data;
+    toastStore.show(tab, toast);
+    return Promise.resolve(true);
+  },
+  hideNativeToast: (params) => {
+    const parsed = hideNativeToastParamsSchema.safeParse(params);
+    if (!parsed.success || !isTabId(parsed.data.tab)) return Promise.resolve(false);
+    toastStore.hide(parsed.data.tab);
     return Promise.resolve(true);
   },
   // 안드로이드 시스템 햅틱(기기 햅틱 설정을 따름). iOS는 시스템 탭 바가 아니면 쓰이지 않아 선택 햅틱으로 대체
