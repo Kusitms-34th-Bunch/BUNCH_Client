@@ -13,6 +13,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 
 /**
  * 회원가입 뒤 번치를 새로 만들지, 초대받은 번치에 참여할지 고르는 시작 화면
@@ -25,6 +26,7 @@ export function BunchStartSelect({
   closeBackHref?: string | undefined;
 }) {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.createBunch, ONBOARDING_PATHS.joinBunch);
   const backOr = useBackOr();
   // 입력값이 없는 시작 화면이라 흐름 상태 정리 없이 피드로 이동(문구는 명세 2.2.11 그대로)
   const openExitDialog = useExitFlowDialog({

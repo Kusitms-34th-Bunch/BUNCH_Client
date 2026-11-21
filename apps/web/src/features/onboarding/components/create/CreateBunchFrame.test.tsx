@@ -12,7 +12,7 @@ const back = vi.fn();
 const replace = vi.fn();
 let segment: string | null = null;
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push, back, replace }),
+  useRouter: () => ({ push, back, replace, prefetch: () => {} }),
   useSelectedLayoutSegment: () => segment,
 }));
 

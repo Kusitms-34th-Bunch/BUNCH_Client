@@ -17,6 +17,7 @@ import { BUNCH_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/messages
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft, type Mood } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 import { useCreateBunchMutation } from '../../queries/bunches';
 
 const TITLE = '우리 번치는 어떤 분위기인가요?';
@@ -32,6 +33,7 @@ const MOODS: { value: Mood; label: string; image: StaticImageData }[] = [
 
 export function BunchMood() {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.createBunchComplete);
   const draft = useCreateBunchDraft();
   const { mood, setMood } = draft;
   const ready = useCreateBunchGuard(2);

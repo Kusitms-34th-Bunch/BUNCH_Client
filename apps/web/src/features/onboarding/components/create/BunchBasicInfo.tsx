@@ -23,6 +23,7 @@ import { filteredPaste } from '@/shared/lib/filteredPaste';
 import { checkBunchNameAvailability } from '../../api/bunches';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 
 type BunchBasicInfoProps = {
   /** 번치 이름 중복 확인 호출. 기본은 서버 확인, 테스트에서 대체하고 null이면 확인하지 않음 */
@@ -35,6 +36,7 @@ type BunchBasicInfoProps = {
  */
 export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: BunchBasicInfoProps) {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.createBunchDescription);
   const { name, setName, visibility, setVisibility, takenName } = useCreateBunchDraft();
   const [composing, setComposing] = useState(false);
 

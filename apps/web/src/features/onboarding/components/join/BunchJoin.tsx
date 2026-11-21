@@ -14,6 +14,7 @@ import { INVITATION_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/mes
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
 import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 import { isInviteInput } from '../../lib/inviteLink';
 import { useVerifyInvitationMutation } from '../../queries/invitations';
 
@@ -24,6 +25,7 @@ import { useVerifyInvitationMutation } from '../../queries/invitations';
  */
 export function BunchJoin() {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.joinBunchInvitation);
   const inputId = useId();
   const [link, setLink] = useState('');
   // 붙여넣기로 채운 직후에만 스크린 리더에 알림(직접 고치면 사라짐)

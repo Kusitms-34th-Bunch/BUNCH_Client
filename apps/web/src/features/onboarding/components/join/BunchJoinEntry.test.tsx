@@ -16,7 +16,7 @@ import { JoinInvitationProvider } from '../../contexts/JoinInvitationProvider';
 import { BunchJoinEntry } from './BunchJoinEntry';
 
 const replace = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, prefetch: () => {} }) }));
 // 이동하는 동작의 토스트는 도착 화면에서 띄우도록 예약함(`toastAfterNavigation`)
 const toast = vi.fn<(_message: string) => void>();
 vi.mock('@/shared/lib/toastAfterNavigation', () => ({

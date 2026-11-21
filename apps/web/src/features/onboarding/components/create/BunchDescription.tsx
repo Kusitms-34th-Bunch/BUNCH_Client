@@ -15,6 +15,7 @@ import { ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 import { useValidateIntroductionMutation } from '../../queries/bunches';
 
 const TIPS = [
@@ -31,6 +32,7 @@ const TIPS = [
  */
 export function BunchDescription() {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.createBunchMood);
   const { description, setDescription } = useCreateBunchDraft();
   const validate = useValidateIntroductionMutation();
   // 서버가 금칙어로 거부한 소개(그 값 그대로일 때만 안내)

@@ -8,6 +8,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 import { BunchConfetti } from '../BunchConfetti';
 
 /**
@@ -16,6 +17,7 @@ import { BunchConfetti } from '../BunchConfetti';
  */
 export function BunchJoined() {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.feed);
   const flow = useJoinInvitationFlow();
   const { joinedBunch } = flow;
 
