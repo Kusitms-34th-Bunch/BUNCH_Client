@@ -43,12 +43,16 @@ type BundleTabsProps = {
   bunchId: string;
   /** 완성된 번들 칸을 눌렀을 때 */
   onOpenBundle?: ((_bundleId: string) => unknown) | undefined;
+  /** 칸에 손가락이 닿을 때(누르기 전에 삭제 여부 확인을 시작) */
+  onPressBundle?: ((_bundleId: string) => void) | undefined;
   /** 완성된 번들 이어서 받기(없으면 받은 것만) */
   completedMore?: ListMoreQuery | undefined;
   completedBundles: readonly CompletedBundle[];
   draftBundles: readonly DraftBundle[];
   onCreateBundle?: (() => void) | undefined;
   onOpenDraft?: ((_bundleId: string) => void) | undefined;
+  /** 작성 중인 번들 카드에 손가락이 닿을 때 */
+  onPressDraft?: ((_bundleId: string) => void) | undefined;
   /** 작성 중인 번들 삭제 버튼(확인 창은 화면이 띄움) */
   onDeleteDraft: (_bundle: DraftBundle) => void;
 };
@@ -58,11 +62,13 @@ export function BundleTabs({
   initialTab = 'completed',
   bunchId,
   onOpenBundle,
+  onPressBundle,
   completedMore,
   completedBundles,
   draftBundles,
   onCreateBundle,
   onOpenDraft,
+  onPressDraft,
   onDeleteDraft,
 }: BundleTabsProps) {
   const [tab, setTab] = useState<BundleTab>(() => readHistoryTab(bunchId) ?? initialTab);
@@ -112,6 +118,7 @@ export function BundleTabs({
               bunchId={bunchId}
               bundles={completedBundles}
               onOpen={onOpenBundle}
+              onPressStart={onPressBundle}
               listRef={gridRef}
             />
             {completedMore ? <ListMore query={completedMore} listRef={gridRef} /> : null}
@@ -128,7 +135,12 @@ export function BundleTabs({
       </MenuTabs.Panel>
       <MenuTabs.Panel value="draft" className={cn(tabChanged && tab === 'draft' && panelFade)}>
         {draftBundles.length > 0 ? (
-          <DraftBundleList bundles={draftBundles} onOpen={onOpenDraft} onDelete={onDeleteDraft} />
+          <DraftBundleList
+            bundles={draftBundles}
+            onOpen={onOpenDraft}
+            onPressStart={onPressDraft}
+            onDelete={onDeleteDraft}
+          />
         ) : (
           <div className="pt-s25">
             <BundleEmpty title={BUNCH_HOME_MESSAGES.draftEmptyTitle} />

@@ -62,7 +62,7 @@ export function OtherBunch({
     otherBunchPublishedQueryOptions(bunchId, viewerId, canViewBundles),
   );
   const follow = useFollowBunchMutation(viewerId);
-  const openBundle = useOpenBundle({
+  const { open: openBundle, warm: warmBundle } = useOpenBundle({
     viewerId,
     prefetchBundle,
     rememberPreview,
@@ -251,6 +251,7 @@ export function OtherBunch({
             cell && { ...cell, bunchName: bunch.name, bunchImageSrc: bunch.imageSrc },
           );
         }}
+        onPressBundle={(bundleId) => warmBundle(bunchId, bundleId)}
         bundlesMore={published}
         onBack={back}
         // 내 번치(차단·신고 명의)를 모르거나 명의를 다시 확인하는 동안에는 더보기를 숨김

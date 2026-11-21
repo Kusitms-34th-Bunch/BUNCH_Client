@@ -11,6 +11,8 @@ type CompletedBundleGridProps = {
   bundles: readonly CompletedBundle[];
   /** 칸을 눌렀을 때(삭제 확인 뒤 이동은 부르는 쪽, 삭제돼 남으면 true). 없으면 링크로 바로 이동 */
   onOpen?: ((_bundleId: string) => unknown) | undefined;
+  /** 칸에 손가락이 닿을 때(누르기 전에 삭제 여부 확인을 시작) */
+  onPressStart?: ((_bundleId: string) => void) | undefined;
   /** 그리드 목록(이어서 받기·삭제 안내 뒤 초점 자리) */
   listRef?: RefObject<HTMLUListElement | null> | undefined;
 };
@@ -23,6 +25,7 @@ export function CompletedBundleGrid({
   bunchId,
   bundles,
   onOpen,
+  onPressStart,
   listRef,
 }: CompletedBundleGridProps) {
   return (
@@ -34,6 +37,7 @@ export function CompletedBundleGrid({
         >
           <Link
             href={BUNCH_HOME_PATHS.bundle(bunchId, bundle.id)}
+            onPointerDown={() => onPressStart?.(bundle.id)}
             onClick={(event) => {
               // 보조 키·가운데 버튼 클릭은 브라우저 기본 동작(새 탭 등)에 맡김
               const modified = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;

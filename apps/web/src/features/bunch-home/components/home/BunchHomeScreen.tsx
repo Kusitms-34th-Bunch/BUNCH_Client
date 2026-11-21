@@ -29,12 +29,16 @@ type BunchHomeScreenProps = {
   onCreateBundle?: (() => void) | undefined;
   /** 작성 중인 번들 카드를 눌렀을 때 */
   onOpenDraft?: ((_bundleId: string) => void) | undefined;
+  /** 작성 중인 번들 카드에 손가락이 닿을 때 */
+  onPressDraft?: ((_bundleId: string) => void) | undefined;
   /** 전환 시트의 「새로운 번치 추가하기」 */
   onAddBunch?: (() => void) | undefined;
   /** 프로필의 「콕한 장소」 버튼 */
   onOpenPlaces?: (() => void) | undefined;
   /** 완성된 번들 칸을 눌렀을 때 */
   onOpenBundle?: ((_bundleId: string) => unknown) | undefined;
+  /** 칸에 손가락이 닿을 때(누르기 전에 삭제 여부 확인을 시작) */
+  onPressBundle?: ((_bundleId: string) => void) | undefined;
   /** 처음 보일 번들 탭(주소 `?tab=drafts`). 번치를 전환하면 완성된 번들 탭 */
   initialTab?: BundleTab | undefined;
   /** 완성된 번들 이어서 받기 */
@@ -49,9 +53,11 @@ export function BunchHomeScreen({
   actions,
   onCreateBundle,
   onOpenDraft,
+  onPressDraft,
   onAddBunch,
   onOpenPlaces,
   onOpenBundle,
+  onPressBundle,
   initialTab,
   completedMore,
   bundlesLoading = false,
@@ -164,11 +170,13 @@ export function BunchHomeScreen({
               initialTab={switched || current.id !== firstBunchId ? 'completed' : initialTab}
               bunchId={current.id}
               onOpenBundle={onOpenBundle}
+              onPressBundle={onPressBundle}
               completedMore={completedMore}
               completedBundles={current.completedBundles}
               draftBundles={current.draftBundles}
               onCreateBundle={onCreateBundle}
               onOpenDraft={onOpenDraft}
+              onPressDraft={onPressDraft}
               onDeleteDraft={openDeleteDraft}
             />
           )}
