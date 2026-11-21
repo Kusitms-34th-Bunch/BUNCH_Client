@@ -48,7 +48,7 @@ export const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
 export const BUNCH_ADD_AXIS_DURATION_MS = 300;
 // 화면 설계서(MY 메뉴): 「약관 및 개인정보」 → 약관 및 개인정보 화면은 Dissolve / Ease out / 200ms, 같은 방식으로 단계마다 절반
 export const MY_TERMS_DISSOLVE_DURATION_MS = 200;
-// 인트로 → 로그인 디졸브 전체 시간(디자이너 요청, 화면설계서 값 없음). 흰 가이드에서 어두운 영상 화면으로 바뀌어 가입 화면(300ms)보다 천천히
+// 인트로 → 로그인 교차 디졸브 시간(디자이너 요청, 화면설계서 값 없음). 흰 가이드에서 어두운 영상 화면으로 바뀌어 가입 화면(300ms)보다 천천히
 export const INTRO_LOGIN_DISSOLVE_DURATION_MS = 500;
 // 더보기 메뉴 → 하위 화면은 한 단계 들어가는 이동이라 미는 slide 300ms(화면설계서에 정의 없음, 2026-11-01 디자이너 요청)
 export const BUNCH_MENU_SUB_SLIDE_DURATION_MS = 300;
@@ -98,7 +98,12 @@ const transition = slide({}, { override: { forward: tuneSlide, backward: tuneSli
 // 단계마다 절반씩 써서 전체 300ms 유지. 규칙은 두 방향에 모두 적용
 const tuneDissolve = tuneTransition(SIGNUP_DISSOLVE_DURATION_MS / 2);
 const dissolve = fade({}, { override: { forward: tuneDissolve, backward: tuneDissolve } });
-const tuneIntroDissolve = tuneTransition(INTRO_LOGIN_DISSOLVE_DURATION_MS / 2);
+// 순서형(나간 뒤 들어옴)이면 사이에 흰 바탕이 보여(QA L3, 약 0.45초) 두 화면을 동시에 교차(startAt은 재생 때 읽음)
+const tuneIntroDissolve = ({ animation }: { animation: MultiAnimation<'out' | 'in'> }) => {
+  animation.startAt = [0, 0];
+  animation.set({ integrator: easeOutIntegrator(INTRO_LOGIN_DISSOLVE_DURATION_MS) });
+  guardOutgoing(animation);
+};
 const introDissolve = fade(
   {},
   { override: { forward: tuneIntroDissolve, backward: tuneIntroDissolve } },
