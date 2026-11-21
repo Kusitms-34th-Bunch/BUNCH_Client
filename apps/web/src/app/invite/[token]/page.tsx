@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { InviteEntry } from '@/features/invite-entry/components';
+import { APP_STORE_APP_ID, INVITE_LINK_ORIGIN } from '@/features/invite-entry/constants/messages';
+import { isInviteToken } from '@/features/invite-entry/lib/token';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { readInvitationBunchName } from '@/shared/api/server/invitationPreview';
 
@@ -28,6 +30,11 @@ export async function generateMetadata({ params }: InvitePageProps): Promise<Met
     title: DEFAULT_TITLE,
     robots: { index: false },
     referrer: 'no-referrer',
+    // iPhone·iPad Safari 위쪽의 앱 배너(Smart App Banner, Safari가 그리고 설치 여부에 따라 「열기」·「보기」). 인앱 브라우저·앱 WebView에는 뜨지 않음
+    // 「열기」는 이 초대 링크를 앱에 넘겨 유니버셜 링크와 같은 흐름으로 염. 형식이 아닌 토큰은 넘기지 않음(앱은 안내 없이 화면을 유지하므로 웹에서 무효 안내)
+    itunes: isInviteToken(token)
+      ? { appId: APP_STORE_APP_ID, appArgument: `${INVITE_LINK_ORIGIN}/invite/${token}` }
+      : { appId: APP_STORE_APP_ID },
     openGraph: { type: 'website', title, images: [OG_IMAGE] },
     twitter: { card: 'summary_large_image', title, images: [OG_IMAGE.url] },
   };

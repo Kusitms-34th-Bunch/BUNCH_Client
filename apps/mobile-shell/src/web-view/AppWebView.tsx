@@ -2,7 +2,7 @@ import { bridge, createWebView } from '@webview-bridge/react-native';
 import * as Haptics from 'expo-haptics';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router, type Href } from 'expo-router';
-import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
   BackHandler,
   Button,
@@ -33,6 +33,7 @@ import {
   readPickedPhoto,
   releasePickedPhotos,
 } from '../gallery-upload';
+import { incomingLinkStore } from '../incoming-link-store';
 import { loginBackgroundStore } from '../login-background/login-background-store';
 import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
 import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
@@ -45,7 +46,7 @@ import {
   waitForTabWebView,
 } from '../splash/state';
 import { floatingButtonStore } from '../tabs/floating-button-store';
-import { reportTabBar } from '../tabs/tab-bar-visibility';
+import { reportTabBar, visibleTab } from '../tabs/tab-bar-visibility';
 import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { isAppWebUrl, resolveWebUrl } from '../web-url';
@@ -59,6 +60,18 @@ export const WEB_URL = resolveWebUrl(
   // E2E 전용 빌드만(같은 기기에 띄운 가짜 서버 웹을 http로 열기 위함, 결정 기록 029)
   process.env.EXPO_PUBLIC_E2E === '1',
 );
+
+/** 웹 경로(`/invite/{토큰}` 등)를 이 앱이 여는 웹 주소로(개발 빌드는 개발 서버) */
+export const toAppWebUrl = (path: string) => new URL(path, WEB_URL).href;
+
+/** 지금 화면에 보이는 WebView인지: 탭 화면이면 지금 보이는 탭의 WebView, 아니면 첫 화면 WebView */
+const isVisibleWebView = (tabId: TabId | undefined) => {
+  const tabs = tabsStore.get();
+  if (!tabId) return !tabs;
+  if (!tabs) return false;
+  const initial = isTabId(tabs.selectedId) ? tabs.selectedId : tabId;
+  return visibleTab(tabs, initial) === tabId;
+};
 
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({
@@ -264,6 +277,19 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
     webViewRef.current?.injectJavaScript(safeAreaScript);
   }, [safeAreaScript]);
 
+  // 실행 중에 초대 링크로 앱이 열리면 보이는 WebView가 그 경로로 이동(지금 보던 화면은 뒤로 가기로 돌아갈 수 있게 history에 남김)
+  // 처음 실행의 링크는 첫 화면이 시작 주소로 열므로 여기서는 구독 뒤 들어온 링크만 처리
+  // 주입만으로는 링크를 지우지 않고, 그 주소로 이동을 시작했을 때(onShouldStartLoadWithRequest) 지움
+  // 다시 불러오는 중이라 주입이 무시됐으면 로드가 끝날 때 다시 넘김(받은 지 10초가 지나면 store가 버림)
+  const deliverIncomingLink = useCallback(() => {
+    const path = incomingLinkStore.get();
+    if (!path || !isVisibleWebView(tabId) || !webViewRef.current) return;
+    webViewRef.current.injectJavaScript(
+      `window.location.assign(${JSON.stringify(toAppWebUrl(path))});true;`,
+    );
+  }, [tabId]);
+  useEffect(() => incomingLinkStore.subscribe(deliverIncomingLink), [deliverIncomingLink]);
+
   return (
     <WebView
       key={webViewKey}
@@ -295,6 +321,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
         if (tabId && tabsStore.get()?.selectedId === tabId) markTabWebViewLoading();
         onLoadStart?.();
       }}
+      onLoadEnd={deliverIncomingLink}
       onError={forceWebReady}
       onHttpError={forceWebReady}
       // 오래 백그라운드에 있으면 OS가 웹 프로세스를 끝내 화면이 하얗게 남으므로 다시 불러옴
@@ -312,6 +339,9 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
         currentUrl.current = navState.url;
       }}
       onShouldStartLoadWithRequest={(request) => {
+        // 받은 초대 링크로 이동을 시작했으면 그때 비움(다시 넘기지 않게)
+        const linkPath = incomingLinkStore.get();
+        if (linkPath && request.url === toAppWebUrl(linkPath)) incomingLinkStore.clear(linkPath);
         // 외부 페이지의 네이티브 브리지 접근 방지를 위해 앱 출처만 내부 이동 허용
         if (isAppWebUrl(request.url, WEB_URL)) return true;
         Linking.openURL(request.url).catch(() => {});

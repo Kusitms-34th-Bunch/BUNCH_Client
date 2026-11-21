@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { focusTabBar, reportTabBar } from './tab-bar-visibility.ts';
+import { focusTabBar, reportTabBar, visibleTab } from './tab-bar-visibility.ts';
 
 test('지금 탭이 알려 온 값은 탭 바에 바로 적용한다', () => {
   const state = reportTabBar({ focusedTab: 'bunch' }, 'bunch', false, 'feed');
@@ -47,4 +47,9 @@ test('탭별 값을 받은 적 없으면(이전 웹) 탭을 바꿔도 지금 숨
   const state = focusTabBar({ focusedTab: 'feed', barHidden: true }, 'bunch');
   assert.equal(state.barHidden, true);
   assert.equal(state.focusedTab, 'bunch');
+});
+
+test('보이는 탭은 탭 바로 바꾼 탭, 바꾼 적 없으면 처음 고른 탭이다', () => {
+  assert.equal(visibleTab({}, 'feed'), 'feed');
+  assert.equal(visibleTab({ focusedTab: 'photos' }, 'feed'), 'photos');
 });
