@@ -42,6 +42,8 @@ function Screen({ bunchId }: { bunchId: string }) {
 }
 
 const clones = () => document.querySelectorAll('[data-bunch-switch-snapshot]');
+// 복제본도 같은 속성을 가지므로 원래 화면만
+const liveRoot = () => document.querySelector<HTMLElement>('[data-testid="root"]:not([inert])')!;
 
 describe('useBunchSwitchMotion', () => {
   it('고르면 지금 화면을 붙잡아 두고, 새 번치가 그려지면 두 화면을 움직인 뒤 치운다', async () => {
@@ -50,17 +52,20 @@ describe('useBunchSwitchMotion', () => {
     act(() => motion!.begin());
     expect(clones()).toHaveLength(1);
     // 붙잡은 화면은 상태 바 색 판단에서 빠짐
-    expect(clones()[0]!.hasAttribute('data-app-background')).toBe(false);
-    // 붙잡은 화면은 보조기술에서 빠지고, 터치는 받되(아래 화면으로 지나가지 않게) 초점은 받지 않음
+    expect(clones()[0]!.querySelector('[data-app-background]')).toBeNull();
+    // 바깥 틀은 터치를 받아 막고(inert 아님), 안의 복제 화면은 inert라 링크·버튼이 동작하지 않음
     expect(clones()[0]!.getAttribute('aria-hidden')).toBe('true');
     expect(clones()[0]!.hasAttribute('inert')).toBe(false);
-    expect(clones()[0]!.querySelector('button')!.tabIndex).toBe(-1);
+    expect(clones()[0]!.querySelector('button')!.closest('[inert]')).not.toBeNull();
+    // 원래 화면 안의 떠 있는 버튼이 복제본 위로 눌리지 않게 원래 화면은 터치를 받지 않음
+    expect(liveRoot().style.pointerEvents).toBe('none');
 
     rerender(<Screen bunchId="2" />);
 
     expect(animate).toHaveBeenCalledTimes(2);
     await act(() => Promise.resolve());
     expect(clones()).toHaveLength(0);
+    expect(liveRoot().style.pointerEvents).toBe('');
   });
 
   it('전환에 실패하면 붙잡은 화면을 바로 치우고 움직이지 않는다', () => {
@@ -70,6 +75,7 @@ describe('useBunchSwitchMotion', () => {
     act(() => motion!.cancel());
 
     expect(clones()).toHaveLength(0);
+    expect(liveRoot().style.pointerEvents).toBe('');
     expect(animate).not.toHaveBeenCalled();
   });
 

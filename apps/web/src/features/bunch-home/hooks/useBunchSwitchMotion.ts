@@ -7,7 +7,6 @@ const ENTER_SCALE = 0.9;
 const CARD_RADIUS = '1.5rem';
 // 늦게 그려지거나 같은 번치로 끝나 새 화면이 오지 않으면 복제본을 치우는 상한(기다리는 동안 화면 입력이 막히므로 짧게)
 const SNAPSHOT_CAP_MS = 3000;
-const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]';
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -16,14 +15,20 @@ const prefersReducedMotion = () =>
  * 번치 전환 모션: `begin`이 지금 화면을 복제해 고정(받는 동안 유지), 새 번치가 그려지면 복제본은 왼쪽으로·새 화면은 카드로 들어와 커짐
  * 실패하면 `cancel`. 동작 줄이기 설정이면 복제하지 않음(화면의 기존 디졸브만)
  */
+type Snapshot = { clone: HTMLElement; root: HTMLElement; timer: ReturnType<typeof setTimeout> };
+
+// 기다리기를 끝냄: 상한 타이머를 풀고 원래 화면이 다시 터치를 받게 함
+const stopWaiting = ({ root, timer }: Snapshot) => {
+  clearTimeout(timer);
+  root.style.removeProperty('pointer-events');
+};
+
 export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, bunchId: string) {
-  const snapshot = useRef<{ clone: HTMLElement; timer: ReturnType<typeof setTimeout> } | null>(
-    null,
-  );
+  const snapshot = useRef<Snapshot | null>(null);
 
   const cancel = () => {
     if (!snapshot.current) return;
-    clearTimeout(snapshot.current.timer);
+    stopWaiting(snapshot.current);
     snapshot.current.clone.remove();
     snapshot.current = null;
   };
@@ -35,13 +40,15 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
     // Web Animations를 모르는 환경(테스트 DOM 등)은 모션 없이 바로 바뀜
     if (!root || prefersReducedMotion() || typeof root.animate !== 'function') return;
     const rect = root.getBoundingClientRect();
-    const clone = root.cloneNode(true) as HTMLElement;
-    // 상태 바 색 판단·보조기술·초점에서 빼고 같은 id가 두 개 생기지 않게
-    clone.removeAttribute('data-app-background');
-    clone.removeAttribute('data-app-background-bottom');
-    for (const element of clone.querySelectorAll('[id]')) element.removeAttribute('id');
-    // inert는 hit-test에서 빠져 터치가 아래 화면으로 지나가므로 쓰지 않고 초점만 막음
-    for (const element of clone.querySelectorAll<HTMLElement>(FOCUSABLE)) element.tabIndex = -1;
+    const copy = root.cloneNode(true) as HTMLElement;
+    // 상태 바 색 판단에서 빼고 같은 id가 두 개 생기지 않게. inert로 링크·버튼 동작과 초점을 막음
+    copy.removeAttribute('data-app-background');
+    copy.removeAttribute('data-app-background-bottom');
+    for (const element of copy.querySelectorAll('[id]')) element.removeAttribute('id');
+    copy.inert = true;
+    Object.assign(copy.style, { width: '100%', height: '100%', margin: '0' });
+    // inert는 터치를 아래로 통과시키므로 바깥 틀이 받아 막음(위에 그려지게 zIndex)
+    const clone = document.createElement('div');
     clone.setAttribute('aria-hidden', 'true');
     clone.dataset.bunchSwitchSnapshot = '';
     Object.assign(clone.style, {
@@ -50,23 +57,25 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
       top: `${rect.top}px`,
       width: `${rect.width}px`,
       height: `${rect.height}px`,
-      margin: '0',
-      // 기다리는 동안 보이지 않는 아래 화면이 터치·스크롤을 받지 않게 복제본이 받아 막음
+      zIndex: '1',
       pointerEvents: 'auto',
     });
+    clone.append(copy);
     root.before(clone);
     // 복제는 스크롤 위치를 옮기지 않아 보던 자리 그대로 보이게 맞춤
     const scrolled = root.querySelector('main');
     const cloneMain = clone.querySelector('main');
     if (scrolled && cloneMain) cloneMain.scrollTop = scrolled.scrollTop;
-    snapshot.current = { clone, timer: setTimeout(cancel, SNAPSHOT_CAP_MS) };
+    // 원래 화면 안의 z-index 요소(「+」 등)는 복제본보다 위라 원래 화면이 터치를 받지 않게 함(초점은 그대로)
+    root.style.pointerEvents = 'none';
+    snapshot.current = { clone, root, timer: setTimeout(cancel, SNAPSHOT_CAP_MS) };
   };
 
   // 기다리는 사이 화면이 사라지면(새 번치를 받지 못해 오류·로딩 화면으로 바뀜) 붙잡은 화면도 치움
   useEffect(
     () => () => {
       if (!snapshot.current) return;
-      clearTimeout(snapshot.current.timer);
+      stopWaiting(snapshot.current);
       snapshot.current.clone.remove();
       snapshot.current = null;
     },
@@ -78,7 +87,7 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
     const current = snapshot.current;
     const root = anchorRef.current?.closest<HTMLElement>('[data-app-background]');
     if (!current || !root) return;
-    clearTimeout(current.timer);
+    stopWaiting(current);
     snapshot.current = null;
     const { clone } = current;
     const easing = 'cubic-bezier(0.25, 0.8, 0.25, 1)';
