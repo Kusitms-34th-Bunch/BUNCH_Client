@@ -80,27 +80,34 @@ export type FollowChange = { kind: 'follow' } | { kind: 'unfollow'; followId: st
 export const useFollowBunchMutation = (viewerId: string | null | undefined) => {
   const queryClient = useQueryClient();
   const homeKey = (targetId: string) => bunchHomeKeys.otherBunchHome(targetId, viewerId ?? null);
+  // 팔로워·팔로잉 목록 key는 [...follows(), 번치, 명의, ...]라 지금 명의의 목록만 고름(다른 명의의 행 상태는 다름)
+  const viewerAt = bunchHomeKeys.follows().length + 1;
+  const ownLists = {
+    queryKey: bunchHomeKeys.follows(),
+    predicate: (query: { queryKey: readonly unknown[] }) =>
+      query.queryKey[viewerAt] === (viewerId ?? null),
+  };
+  const mutationKey = [...bunchHomeKeys.follows(), 'change', viewerId ?? null];
   // 그 번치 홈과 팔로워·팔로잉 목록을 같은 상태로 바꿈
   const apply = (targetId: string, state: FollowState, followId?: number | null) => {
     queryClient.setQueryData<Home>(homeKey(targetId), (home) =>
       withHomeFollow(home, state, followId),
     );
-    queryClient.setQueriesData({ queryKey: bunchHomeKeys.follows() }, (data: unknown) =>
+    queryClient.setQueriesData(ownLists, (data: unknown) =>
       withListFollow(data, targetId, state, followId),
     );
   };
   return useMutation({
+    mutationKey,
     meta: { errorMessage: BUNCH_HOME_MESSAGES.followFailed },
     onMutate: async ({ targetId, change }: { targetId: string; change: FollowChange }) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: homeKey(targetId) }),
-        queryClient.cancelQueries({ queryKey: bunchHomeKeys.follows() }),
+        queryClient.cancelQueries(ownLists),
       ]);
       // 되돌림은 그 번치 항목만 기준값으로(같은 목록에서 동시에 바꾼 다른 번치 행을 덮지 않게)
       const home = queryClient.getQueryData<Home>(homeKey(targetId));
-      const lists = queryClient
-        .getQueriesData({ queryKey: bunchHomeKeys.follows() })
-        .map(([, data]) => data);
+      const lists = queryClient.getQueriesData(ownLists).map(([, data]) => data);
       const before = {
         home: home && { followState: home.followState, followId: home.followId },
         row: lists.map((data) => listFollowOf(data, targetId)).find(Boolean),
@@ -157,7 +164,7 @@ export const useFollowBunchMutation = (viewerId: string | null | undefined) => {
       }
       if (before?.row) {
         const { followState, followId } = before.row;
-        queryClient.setQueriesData({ queryKey: bunchHomeKeys.follows() }, (data: unknown) =>
+        queryClient.setQueriesData(ownLists, (data: unknown) =>
           withListFollow(data, targetId, followState, followId),
         );
       }
@@ -166,7 +173,10 @@ export const useFollowBunchMutation = (viewerId: string | null | undefined) => {
     onSettled: (_result, _error, { targetId }) => {
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) }),
-        queryClient.invalidateQueries({ queryKey: bunchHomeKeys.follows() }),
+        // 이 명의의 다른 팔로우가 아직 도는 중이면 목록은 마지막 처리가 다시 받음(서버 반영 전 표시가 되돌아가지 않게)
+        ...(queryClient.isMutating({ mutationKey }) > 1
+          ? []
+          : [queryClient.invalidateQueries({ queryKey: bunchHomeKeys.follows() })]),
         ...(viewerId
           ? [queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHome(viewerId) })]
           : []),

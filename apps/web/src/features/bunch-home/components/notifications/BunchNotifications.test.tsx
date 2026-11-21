@@ -146,12 +146,21 @@ describe('BunchNotifications(가짜 서버)', () => {
       http.post('/api/bunches/:bunchId/notifications/:notificationId/open', () => fail(500, 'X')),
     );
     const user = userEvent.setup();
-    renderList();
+    const client = createTestQueryClient();
+    render(<BunchNotifications />, { wrapper: createQueryWrapper(client) });
 
     await user.click((await cards())[1]!);
 
     expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1');
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // 실패 처리(공통 토스트를 띄울 수 있는 시점)까지 끝난 뒤 확인
+    await waitFor(() =>
+      expect(
+        client
+          .getMutationCache()
+          .getAll()
+          .map((mutation) => mutation.state.status),
+      ).toEqual(['error']),
+    );
     expect(toast).not.toHaveBeenCalled();
   });
 

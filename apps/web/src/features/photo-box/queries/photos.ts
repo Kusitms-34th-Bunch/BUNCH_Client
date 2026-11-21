@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { sharedKeys } from '@/shared/query/keys';
 import { changePhotoDates, removePhotos } from '../api/photos';
 import { MissingPhotosError } from '../lib/missingPhotos';
-import { withoutPhotos } from '../lib/photoCache';
+import { type RemovedPhoto, withoutPhotos, withPhotosBack } from '../lib/photoCache';
 import { photoBoxKeys } from './keys';
 
 // 고른 사진이 그사이 지워져 거절됐으면(`MissingPhotosError`) 사라진 사진이 목록에서 빠지도록 목록을 다시 받음
@@ -18,7 +18,7 @@ const invalidateIfMissing = (
     : undefined;
 
 /**
- * 고른 사진 삭제. 누르는 즉시 날짜별·날짜 없음 목록에서 그 사진을 빼고(실패하면 되돌림), 끝나면 목록을 뒤에서 다시 받음
+ * 고른 사진 삭제. 누르는 즉시 날짜별·날짜 없음 목록에서 사라질 사진(함께 올린 사진 제외)을 빼고(실패하면 그 사진만 되돌림), 끝나면 목록을 뒤에서 다시 받음
  * 번치를 아직 모르면(undefined) 호출은 실패, 화면은 번치가 정해진 뒤에만 부름
  * 고른 사진이 그사이 지워져 거절되면(`MissingPhotosError`) 되돌린 뒤 사라진 사진이 빠지도록 목록을 다시 받음
  * 성공·실패 토스트와 선택 처리는 화면이 결과에 따라 직접 처리(사라진 사진은 일반 실패 토스트와 문구가 달라 공통 토스트를 쓰지 않음)
@@ -26,19 +26,20 @@ const invalidateIfMissing = (
 export const useDeletePhotosMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
   const lists = [photoBoxKeys.datedPhotos(bunchId), photoBoxKeys.undatedPhotos(bunchId)];
+  const mutationKey = [...photoBoxKeys.photos(bunchId), 'delete'];
   return useMutation({
+    mutationKey,
     // 연결이 끊겨 있어도 요청을 보류하지 않고 바로 보내 실패로 끝냄(보류되면 응답이 없어 빠진 사진이 되돌아오지 않음)
     networkMode: 'always',
     onMutate: async (photoIds: readonly string[]) => {
       await Promise.all(lists.map((queryKey) => queryClient.cancelQueries({ queryKey })));
-      const snapshot = lists.map(
-        (queryKey) => [queryKey, queryClient.getQueryData(queryKey)] as const,
-      );
-      const removed = new Set(photoIds);
-      for (const queryKey of lists) {
-        queryClient.setQueryData(queryKey, (data: unknown) => withoutPhotos(data, removed));
-      }
-      return snapshot;
+      const ids = new Set(photoIds);
+      // 되돌림은 이 요청이 뺀 사진만(동시에 진행 중인 다른 삭제의 결과를 덮지 않게)
+      return lists.map((queryKey): readonly [typeof queryKey, RemovedPhoto[]] => {
+        const { data, removed } = withoutPhotos(queryClient.getQueryData(queryKey), ids);
+        queryClient.setQueryData(queryKey, data);
+        return [queryKey, removed];
+      });
     },
     mutationFn: (photoIds: readonly string[]) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
@@ -53,13 +54,17 @@ export const useDeletePhotosMutation = (bunchId: string | undefined) => {
       void queryClient.invalidateQueries({ queryKey: sharedKeys.bundleDetailsOf(bunchId) });
       void queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHomeScope(bunchId) });
     },
-    onError: (error, _photoIds, snapshot) => {
-      for (const [queryKey, data] of snapshot ?? []) queryClient.setQueryData(queryKey, data);
+    onError: (error, _photoIds, removedByList) => {
+      for (const [queryKey, removed] of removedByList ?? []) {
+        queryClient.setQueryData(queryKey, (data: unknown) => withPhotosBack(data, removed));
+      }
       // 사라진 사진으로 거절됐으면 그 사진이 빠진 목록을 받은 뒤 거절(상세 화면이 사라짐을 한 번만 알리게)
       return invalidateIfMissing(queryClient, bunchId, error);
     },
     // 성공·실패 모두 서버 기준으로 맞춤(사라진 사진으로 거절된 경우 포함). 기다리지 않아 화면은 바로 이어짐
+    // 같은 번치의 다른 삭제가 아직 도는 중이면 마지막 삭제가 다시 받음(서버 반영 전 사진이 다시 나타나지 않게)
     onSettled: () => {
+      if (queryClient.isMutating({ mutationKey }) > 1) return;
       void queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) });
     },
   });

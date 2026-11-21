@@ -190,6 +190,12 @@ describe('useFollowBunchMutation', () => {
       followedAt: '2026-11-01T00:00:00.000Z',
     });
     const listKey = bunchHomeKeys.followPages('9', viewer, 'followers');
+    // 다른 명의(번치 2)의 같은 목록: 행 상태가 명의마다 달라 바꾸면 안 됨
+    const otherViewerKey = bunchHomeKeys.followPages('9', '2', 'followers');
+    client.setQueryData(otherViewerKey, {
+      pageParams: [0],
+      pages: [{ items: [row(4, 'PRIVATE')], page: 0, size: 20, totalElements: 1, hasNext: false }],
+    });
     client.setQueryData(listKey, {
       pageParams: [0],
       pages: [
@@ -222,7 +228,15 @@ describe('useFollowBunchMutation', () => {
     });
 
     expect(states()).toEqual(['NONE', 'REQUESTED']);
+    // 4가 아직 도는 중이라 실패한 3이 목록을 다시 받지 않음(서버 반영 전 REQUESTED가 되돌아가지 않게)
+    expect(client.getQueryState(listKey)?.isInvalidated).toBe(false);
+    expect(
+      (client.getQueryData(otherViewerKey) as { pages: { items: { followState: string }[] }[] })
+        .pages[0]!.items[0]!.followState,
+    ).toBe('NONE');
     release();
     await act(() => pending);
+    // 마지막 처리가 끝나면 다시 받음
+    expect(client.getQueryState(listKey)?.isInvalidated).toBe(true);
   });
 });

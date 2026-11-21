@@ -5,7 +5,7 @@ type DraftBundleListProps = {
   bundles: readonly DraftBundle[];
   /** 카드를 눌렀을 때(번들 작성 화면 이동은 번들 작성 이슈) */
   onOpen?: ((_bundleId: string) => void) | undefined;
-  /** 카드에 손가락이 닿을 때(누르기 전에 삭제·발행 여부 확인을 시작, 휴지통을 눌러도 확인만 함) */
+  /** 카드에 손가락이 닿을 때(누르기 전에 삭제·발행 여부 확인을 시작). 휴지통은 제외 */
   onPressStart?: ((_bundleId: string) => void) | undefined;
   /** 삭제 버튼을 눌렀을 때(확인 창은 화면이 띄움) */
   onDelete: (_bundle: DraftBundle) => void;
@@ -16,7 +16,13 @@ export function DraftBundleList({ bundles, onOpen, onPressStart, onDelete }: Dra
   return (
     <ul className="gap-s5 px-s8 pt-s6 flex flex-col">
       {bundles.map((bundle) => (
-        <li key={bundle.id} onPointerDown={() => onPressStart?.(bundle.id)}>
+        <li
+          key={bundle.id}
+          // 휴지통에서는 시작하지 않음(삭제 직전 확인이 이 요청에 합류해 누르기 전 상태로 판단하지 않게)
+          onPointerDown={(event) => {
+            if ((event.target as Element).closest('[data-card-button]')) onPressStart?.(bundle.id);
+          }}
+        >
           <BundleCard
             title={bundle.title}
             titleMuted={bundle.untitled}
