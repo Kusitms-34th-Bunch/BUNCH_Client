@@ -187,6 +187,8 @@ const guardSheet =
     const track = animation.select('sheet').getMotionTracks()[0];
     if (!track) return;
     const sheetElement = track.element;
+    // 이전 전환이 걸어 둔 띠 걷기가 이번 전환의 띠를 지우지 않게
+    clearTimeout(bandTimers.get(sheetElement));
     const behind = [
       ...context.positionedParent.querySelectorAll<HTMLElement>(
         `[data-ssgoi-transition="${behindId}"]`,
@@ -196,12 +198,31 @@ const guardSheet =
     else guardPair(behind, sheetElement, track);
     // 움직이는 동안 AppFrame이 상태 바 영역 색을 시트 도착에 맞춰 천천히 바꾸도록 표식
     sheetElement.dataset.sheetMoving = '';
+    // 올라오는 동안은 상태 바 영역을 뒤 화면 색으로 둠(뒤 화면은 떠나는 화면이라 AppFrame이 무시하므로 시트에 잠시 옮김)
+    const keep = opening
+      ? behind?.querySelector('[data-app-background]')?.getAttribute('data-app-background')
+      : null;
+    if (keep) sheetElement.dataset.appBackground = keep;
+    // 시트 위 상태 바 높이의 흰 띠: 올라오며 상태 바를 덮고 내려가며 뒤 화면 색을 드러냄(색이 먼저 바뀌어 보이지 않게)
+    sheetElement.style.boxShadow =
+      '0 calc(-1 * var(--safe-area-top, 0px)) 0 var(--color-surface-primary)';
     const dispose = track.onDispose;
     track.onDispose = (disposal) => {
       dispose?.(disposal);
-      if (disposal.owns(sheetElement)) delete sheetElement.dataset.sheetMoving;
+      if (!disposal.owns(sheetElement)) return;
+      delete sheetElement.dataset.sheetMoving;
+      if (keep) delete sheetElement.dataset.appBackground;
+      // 띠는 AppFrame 색 전환(150ms)이 끝난 뒤에 걷음(도착 순간 덜 바뀐 색이 비치지 않게)
+      // ponytail: 고정 지연, 전환 시간이 바뀌면 함께 맞춤
+      bandTimers.set(
+        sheetElement,
+        setTimeout(() => sheetElement.style.removeProperty('box-shadow'), SHEET_BAND_HOLD_MS),
+      );
     };
   };
+// AppFrame 상태 바 색 전환(motion-safe duration-150)보다 조금 길게
+const SHEET_BAND_HOLD_MS = 200;
+const bandTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 const bunchSheet = sheet(
   {},
   {
