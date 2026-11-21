@@ -2,7 +2,7 @@
 
 import { ConfirmDialog, cn } from '@app/design-system';
 import { FloatingButton } from '@app/design-system/web';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
@@ -12,6 +12,7 @@ import type { ListMoreQuery } from '../../lib/pages';
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
+import { useBunchSwitchMotion } from '../../hooks/useBunchSwitchMotion';
 import { useBunchSwitchSheet } from '../../hooks/useBunchSwitchSheet';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchHomeHeader } from '../BunchHomeHeader';
@@ -78,11 +79,20 @@ export function BunchHomeScreen({
     onPress: onCreateBundle,
   });
 
+  // 번치 전환 모션(인스타 계정 전환처럼, motion.md). 고르는 즉시 지금 화면을 붙잡아 두고 실패하면 치움
+  const contentRef = useRef<HTMLDivElement>(null);
+  const switchMotion = useBunchSwitchMotion(contentRef, current.id);
   // 번치 전환 시트와 접근 불가 번치 안내(사진함 헤더와 같은 hook)
   const { openSwitcher, switcherOpen } = useBunchSwitchSheet({
     currentId: current.id,
     bunches,
-    switchBunch: actions.switchBunch,
+    switchBunch: (bunchId: string) => {
+      switchMotion.begin();
+      return Promise.resolve(actions.switchBunch(bunchId)).catch((error: unknown) => {
+        switchMotion.cancel();
+        throw error;
+      });
+    },
     removeBunch: actions.removeBunch,
     onSwitched: () => setSwitched(true),
     onAddBunch,
@@ -137,12 +147,13 @@ export function BunchHomeScreen({
         </div>
       }
     >
-      {/* 번치 전환 시 새 번치 내용을 Dissolve / Ease out / 150ms로 표시(화면설계서 7). key로 다시 그려 재생 */}
+      {/* 번치 전환은 화면 전체 모션(useBunchSwitchMotion). 동작 줄이기 설정이면 Dissolve / Ease out / 150ms(화면설계서 7) */}
       <div
         key={current.id}
+        ref={contentRef}
         className={cn(
           'flex min-h-full flex-col',
-          switched && 'animate-[page-content-in_150ms_ease-out] motion-reduce:animate-none',
+          switched && 'motion-reduce:animate-[page-content-in_150ms_ease-out]',
         )}
       >
         {/* 프로필 이미지 영역(Figma 헤더 아래 82px + 시트 둥근 모서리 뒤 20px). 90px 프로필 이미지는 영역 위에서 24px 아래에 놓여 흰 시트에 32px 걸침 */}
