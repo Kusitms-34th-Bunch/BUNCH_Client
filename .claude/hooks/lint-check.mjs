@@ -27,24 +27,38 @@ while (workspaceDir !== dirname(workspaceDir) && !existsSync(`${workspaceDir}/pa
 
 const relativeFilePath = relative(workspaceDir, absFilePath);
 
-const run = (args, cwd) => {
+// 실패 출력만 모아 agent에게 돌려줌(PostToolUse stdout 일반 문자는 Claude Code·Codex 모두 모델에 전달되지 않음)
+const failures = [];
+
+const run = (label, args, cwd) => {
   try {
-    // stdio 미지정 시 stderr가 부모로 바로 출력되어 같은 메시지 중복 출력
-    const output = execFileSync('yarn', args, {
+    execFileSync('yarn', args, {
       cwd,
       encoding: 'utf8',
       timeout: 30_000,
+      // stdio 미지정 시 stderr가 부모로 바로 출력되어 같은 메시지 중복 출력
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    console.log(output.trimEnd().split('\n').slice(-5).join('\n'));
   } catch (error) {
-    const output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
-    console.log(output.trimEnd().split('\n').slice(-5).join('\n'));
+    // 시간 초과·실행 실패(종료 코드 없음)는 검사 결과가 아니라 막지 않음
+    if (typeof error.status !== 'number') return;
+    const output = `${error.stdout ?? ''}${error.stderr ?? ''}`.trimEnd();
+    failures.push(`[${label}]\n${output.split('\n').slice(-20).join('\n')}`);
   }
 };
 
-run(['eslint', '--quiet', relativeFilePath], workspaceDir);
+run('eslint', ['eslint', '--quiet', relativeFilePath], workspaceDir);
 
 // Tailwind 표준 클래스 검사(편집기 suggestCanonicalClasses와 같은 판정, 대상 밖 파일은 스크립트가 제외)
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-run(['workspace', '@app/design-system', 'check:tailwind', absFilePath], repoRoot);
+run('tailwind', ['workspace', '@app/design-system', 'check:tailwind', absFilePath], repoRoot);
+
+// 편집은 이미 끝났으므로 되돌리지 않고, 두 도구가 함께 지원하는 decision·reason으로 고칠 내용을 전달
+if (failures.length > 0) {
+  console.log(
+    JSON.stringify({
+      decision: 'block',
+      reason: `${relativeFilePath} 검사 실패. 아래 오류를 고친 뒤 계속하세요.\n${failures.join('\n\n')}`,
+    }),
+  );
+}

@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url';
 
 const hook = fileURLToPath(new URL('./guard-rules.mjs', import.meta.url));
 
-function isDenied(command) {
+function isDenied(command, cwd) {
   const result = spawnSync('node', [hook], {
-    input: JSON.stringify({ tool_name: 'Bash', tool_input: { command } }),
+    input: JSON.stringify({ tool_name: 'Bash', cwd, tool_input: { command } }),
     encoding: 'utf8',
   });
 
@@ -88,6 +88,18 @@ for (const command of allowed) {
     assert.equal(isDenied(command), false);
   });
 }
+
+// 작업 위치가 하위 폴더여도 hook이 실행되므로(루트 기준 경로), pnpm 예외를 작업 위치로도 판정
+test('쉘 폴더에서는 경로 없는 pnpm을 허용한다', () => {
+  assert.equal(isDenied('pnpm test', '/repo/apps/mobile-shell'), false);
+  assert.equal(isDenied('pnpm exec tsc --noEmit', '/repo/apps/mobile-shell/src'), false);
+});
+
+test('쉘 밖 폴더에서는 pnpm·npm을 막는다', () => {
+  assert.equal(isDenied('pnpm install', '/repo/apps/web'), true);
+  assert.equal(isDenied('npm install', '/repo'), true);
+  assert.equal(isDenied('pnpm install', '/repo/apps/mobile-shell-old'), true);
+});
 
 function isEditDenied(filePath, newString) {
   const result = spawnSync('node', [hook], {
