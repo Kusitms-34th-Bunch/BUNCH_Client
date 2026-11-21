@@ -31,12 +31,12 @@ export type BottomSheetFooterProps = ComponentProps<'div'>;
 
 // Figma 바텀시트 모션(docs/architecture/motion.md): 열기 340ms·닫기 240ms, 아래→위 이동·투명도 40%→100%
 const ease = 'ease-[cubic-bezier(0,0,0.35,1)]';
-// 끌어서 닫을 때만: 손을 뗀 속도에 맞춘 시간(Base UI `--drawer-swipe-strength` 0.1~1, 빠르게 튕길수록 짧음), 흐림 없이 iOS 시트 감속
-// 닫기 버튼·바깥 터치는 Figma 값(240ms, 투명도 40%) 유지. Tailwind가 소스의 글자로만 클래스를 만들어 조합하지 않고 그대로 씀
+// 끌어서 닫을 때만: 손을 뗀 속도에 맞춘 시간(Base UI `--drawer-swipe-strength` 0.1~1 × 400ms, 배경과 맞추려 최소 200ms), 흐림 없이 iOS 시트 감속
+// 배경은 시트가 끝나면 함께 사라지고 속도 변수를 못 받아 200ms 고정. Tailwind가 소스의 글자로만 클래스를 만들어 그대로 씀
 const swipeDismiss =
-  'motion-safe:data-swipe-dismiss:data-ending-style:duration-[calc(var(--drawer-swipe-strength,1)*400ms)] motion-safe:data-swipe-dismiss:data-ending-style:ease-[cubic-bezier(0.32,0.72,0,1)] motion-safe:data-swipe-dismiss:data-ending-style:opacity-100';
+  'motion-safe:data-swipe-dismiss:data-ending-style:duration-[max(calc(var(--drawer-swipe-strength,1)*400ms),200ms)] motion-safe:data-swipe-dismiss:data-ending-style:ease-[cubic-bezier(0.32,0.72,0,1)] motion-safe:data-swipe-dismiss:data-ending-style:opacity-100';
 const backdropSwipeDismiss =
-  'motion-safe:[:root:has([data-bottom-sheet][data-swipe-dismiss])_&]:duration-300 motion-safe:[:root:has([data-bottom-sheet][data-swipe-dismiss])_&]:ease-[cubic-bezier(0.32,0.72,0,1)]';
+  'motion-safe:[:root:has([data-bottom-sheet][data-swipe-dismiss])_&]:duration-200 motion-safe:[:root:has([data-bottom-sheet][data-swipe-dismiss])_&]:ease-[cubic-bezier(0.32,0.72,0,1)]';
 const safeAreaBottom = 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))';
 
 const Root = ({
