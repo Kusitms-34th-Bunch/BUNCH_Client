@@ -1,8 +1,9 @@
-import { QueryClient } from '@tanstack/react-query';
+import { dehydrate, hydrate, QueryClient } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearPersistedQueryStorage,
+  persistedFirstPage,
   queryPersister,
   shouldPersistQuery,
   useClearPersistedQueriesWhen,
@@ -153,5 +154,73 @@ describe('저장본 주인 확인', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('첫 쪽만 저장하도록 표시한 쪽 단위 목록은 첫 쪽만 남기고, 메모리의 목록은 그대로 둔다', async () => {
+    vi.useFakeTimers();
+    try {
+      renderOwner(new QueryClient(), 'A');
+      const client = new QueryClient();
+      client.setQueryDefaults(['feed'], persistedFirstPage);
+      client.setQueryDefaults(['all-pages'], { meta: { persist: true } });
+      const paged = { pages: ['first', 'second'], pageParams: [null, 'cursor-2'] };
+      client.setQueryData(['feed'], paged);
+      client.setQueryData(['all-pages'], paged);
+
+      const pending = queryPersister.persistClient({
+        timestamp: Date.now(),
+        buster: '',
+        clientState: dehydrate(client, { shouldDehydrateQuery: shouldPersistQuery }),
+      });
+      await vi.advanceTimersByTimeAsync(2000);
+      await pending;
+
+      const saved = JSON.parse(localStorage.getItem(KEY)!) as {
+        clientState: { queries: { queryKey: string[]; state: { data: unknown } }[] };
+      };
+      const dataOf = (key: string) =>
+        saved.clientState.queries.find((query) => query.queryKey[0] === key)?.state.data;
+      expect(dataOf('feed')).toEqual({ pages: ['first'], pageParams: [null] });
+      expect(dataOf('all-pages')).toEqual(paged);
+      expect(client.getQueryData(['feed'])).toEqual(paged);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('첫 쪽만 남긴 저장본을 복원하면 다음 쪽을 이어 받을 수 있고, 다시 받을 때 첫 쪽부터 요청한다', async () => {
+    const client = new QueryClient();
+    // JSON으로 저장되며 첫 쪽 커서(undefined)는 null이 됨
+    hydrate(client, {
+      mutations: [],
+      queries: [
+        {
+          queryKey: ['feed'],
+          queryHash: '["feed"]',
+          state: {
+            ...client.getQueryCache().build(client, { queryKey: ['other'] }).state,
+            data: { pages: [{ next: 'cursor-2' }], pageParams: [null] },
+            status: 'success',
+            dataUpdatedAt: Date.now() - 60_000,
+          },
+        },
+      ],
+    });
+    const requested: unknown[] = [];
+    const options = {
+      queryKey: ['feed'],
+      initialPageParam: undefined as string | undefined,
+      queryFn: ({ pageParam }: { pageParam: string | undefined }) => {
+        requested.push(pageParam);
+        return { next: pageParam ? null : 'cursor-2' };
+      },
+      getNextPageParam: (page: { next: string | null }) => page.next ?? undefined,
+    };
+
+    await client.fetchInfiniteQuery({ ...options, staleTime: 0 });
+
+    expect(requested).toEqual([undefined]);
+    await client.fetchInfiniteQuery({ ...options, pages: 2, staleTime: 0 });
+    expect(requested.at(-1)).toBe('cursor-2');
   });
 });

@@ -20,6 +20,33 @@ export const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000;
  */
 export const persistedQuery = { meta: { persist: true }, gcTime: PERSIST_MAX_AGE } as const;
 
+/** 쪽 단위 목록(피드·사진함)을 첫 쪽만 저장하는 옵션. 복원 뒤 오래됐으면 첫 쪽부터 다시 받음 */
+export const persistedFirstPage = {
+  meta: { persist: true, persistFirstPageOnly: true },
+  gcTime: PERSIST_MAX_AGE,
+} as const;
+
+type PagedData = { pages: unknown[]; pageParams: unknown[] };
+const isPaged = (data: unknown): data is PagedData =>
+  typeof data === 'object' &&
+  data !== null &&
+  Array.isArray((data as PagedData).pages) &&
+  Array.isArray((data as PagedData).pageParams);
+
+// 첫 쪽만 저장하도록 표시한 query의 받은 쪽을 첫 쪽으로 줄임(메모리의 캐시는 그대로)
+const keepFirstPages = (client: PersistedClient): PersistedClient => ({
+  ...client,
+  clientState: {
+    ...client.clientState,
+    queries: client.clientState.queries.map((query) => {
+      const { data } = query.state;
+      if (!query.meta?.persistFirstPageOnly || !isPaged(data)) return query;
+      const firstPage = { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) };
+      return { ...query, state: { ...query.state, data: firstPage } };
+    }),
+  },
+});
+
 /**
  * 배포(빌드)마다 바뀌는 값. 다르면 저장본을 버려 이전 배포의 데이터 모양이 복원되지 않게 함
  * 가짜 서버 여부도 넣어 가짜 데이터와 실서버 데이터가 섞여 복원되지 않게 함
@@ -77,7 +104,7 @@ export const queryPersister: Persister = {
   persistClient: (client) => {
     const owner = contextOwner;
     if (owner === null) return;
-    const owned: OwnedClient = { ...client, owner };
+    const owned: OwnedClient = { ...keepFirstPages(client), owner };
     return storagePersister.persistClient(owned);
   },
   restoreClient: async () => {
