@@ -63,6 +63,30 @@ describe('BunchMembersScreen', () => {
     expect(screen.getByRole('img', { name: '공동 관리자' })).toBeInTheDocument();
   });
 
+  it('다른 관리자가 내보내 초점이 있던 행이 주기 갱신으로 사라지면 초점을 인원 줄로 옮기고, 다른 갱신은 초점을 그대로 둔다', () => {
+    const members = withMe('owner');
+    const { rerender } = renderScreen('owner', members);
+    const update = (next: BunchMember[]) =>
+      rerender(
+        <BunchMembersScreen
+          bunchName="퇴근런클럽"
+          members={next}
+          myRole="owner"
+          actions={actions}
+          onBack={vi.fn()}
+          onInvite={onInvite}
+        />,
+      );
+    const suinRow = screen.getAllByRole('listitem').find((item) => item.textContent === '수인')!;
+    within(suinRow).getByRole('button').focus();
+
+    update(members.map((member) => ({ ...member })));
+    expect(within(suinRow).getByRole('button')).toHaveFocus();
+
+    update(members.filter((member) => member.id !== 'member-suin'));
+    expect(screen.getByText('4/8명').closest('p')).toHaveFocus();
+  });
+
   it('헤더 「멤버 초대」를 누르면 초대 화면으로 간다', async () => {
     renderScreen('member');
 
