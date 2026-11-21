@@ -6,7 +6,7 @@
 
 ## 목적과 범위
 
-Line 36종·Fill 12종, 아이콘 48종을 크기별 SVG(small·medium·large, 총 144개)에서 SVGR로 변환해 **고정 크기 export 144개**와 `size` 선택용 export 48개로 제공한다. 기존 `size` API를 유지하면서 고정 크기 사용의 번들 비용을 줄인다. 크기별 도형(viewBox·선 굵기 포함)을 확대·축소로 대체하지 않는다. 원본을 확인한 결과 세 크기의 도형 구조는 48종 모두 같지만 선 굵기가 다르다(small 1.2, medium·large 1.5). 런타임 이름 레지스트리나 IconButton은 만들지 않는다. 생성 컴포넌트는 asset 파이프라인이 소유하며 수작업 컴포넌트 scaffold 대상이 아니다.
+Line 37종·Fill 12종, 아이콘 49종을 크기별 SVG(small·medium·large, 총 147개)에서 SVGR로 변환해 **고정 크기 export 147개**와 `size` 선택용 export 49개로 제공한다. 기존 `size` API를 유지하면서 고정 크기 사용의 번들 비용을 줄인다. 크기별 도형(viewBox·선 굵기 포함)을 확대·축소로 대체하지 않는다. 원본을 확인한 결과 세 크기의 도형 구조는 49종 모두 같고, 선으로 그린 아이콘은 크기마다 선 굵기가 다르다(small 1.2, medium·large 1.5. 채운 윤곽인 `bell-dot`은 해당 없음). 런타임 이름 레지스트리나 IconButton은 만들지 않는다. 생성 컴포넌트는 asset 파이프라인이 소유하며 수작업 컴포넌트 scaffold 대상이 아니다.
 
 ## Public API
 
@@ -64,9 +64,11 @@ Line 36종·Fill 12종, 아이콘 48종을 크기별 SVG(small·medium·large, �
 | 118:923   | Line/Icon-L/confetti (20px) | `LineConfettiIcon`, `md` |
 | 118:948   | Fill/Icon-L/confetti (20px) | `FillConfettiIcon`, `md` |
 
+2026-11-22 사용자 확인: Figma `bell-02`(Large `2776:33344`, Medium `2776:33357`, Small `2776:33358`)는 번호만으로는 뜻을 알 수 없어 모양대로 `line-bell-dot`(`LineBellDotIcon`)으로 둔다. 종 오른쪽 위에 점이 있는 모양이며 안 읽은 알림 표시에 쓴다. 점 색(`#F04D29`)이 의미를 가져 `svg-preserve/`에 두고, 몸통(Figma `#25282D`)만 원본 파일에서 `currentColor`로 바꿔 다른 Line 아이콘처럼 글자색을 따르게 했다. Figma 내보내기에 섞인 주변 캔버스는 빼고 종·점 레이어만 남겼다. Line 아이콘이지만 몸통은 선이 아니라 채운 윤곽(Figma `Subtract`)이라 선 굵기 규칙(small 1.2, medium·large 1.5)이 적용되지 않는다.
+
 Copy·Camera·Close의 대소문자도 파일명에서는 kebab-case로 통일한다.
 
-Line: add, alert, bell, calendar, camera, check, chevron-down, chevron-left, chevron-right, chevron-up, circle-check, close, confetti, copy, corner-down-right, dots, dots-vertical, download, hand-click, heart, home, lock, map-pin, member, menu, message-circle, pencil, photo, plug-off, reload, search, setting, sparkles, transition-left, trashcan, user.
+Line: add, alert, bell, bell-dot, calendar, camera, check, chevron-down, chevron-left, chevron-right, chevron-up, circle-check, close, confetti, copy, corner-down-right, dots, dots-vertical, download, hand-click, heart, home, lock, map-pin, member, menu, message-circle, pencil, photo, plug-off, reload, search, setting, sparkles, transition-left, trashcan, user.
 
 Fill: bell, calendar, camera, circle-check, confetti, flag, heart, home, map-pin, pencil, photo, user.
 
