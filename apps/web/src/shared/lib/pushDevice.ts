@@ -93,8 +93,12 @@ export const askNotificationPermission = async (): Promise<boolean> => {
     }
     await permissionBridge.requestPermission('notification');
     // 팝업이 닫히며 먼저 시작된 등록은 답하기 전 권한을 읽었을 수 있어 그 등록이 끝난 뒤 다시 맞춤
-    await inFlight;
-    await syncPushDevice();
+    // 기기 등록을 기다리지 않고 돌려줘 화면이 답한 권한을 바로 다시 읽게 함(등록은 실패해도 던지지 않음)
+    const pending = inFlight;
+    void (async () => {
+      await pending;
+      await syncPushDevice();
+    })();
     return true;
   } catch {
     return false;

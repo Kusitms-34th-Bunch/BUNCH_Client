@@ -117,6 +117,9 @@ describe('NotificationSettingsRoute(실제 기기 권한 훅)', () => {
     await waitFor(() => expect(push.checked).toBe(false));
     expect(bridge.requestPermission).not.toHaveBeenCalled();
 
+    // 키보드로 토글에 초점을 둔 채 켬(잠긴 뒤에도 초점이 토글에 남는 WebView 경로)
+    push.focus();
+    expect(document.activeElement).toBe(push);
     fireEvent.click(push);
 
     await waitFor(() => expect(bridge.requestPermission).toHaveBeenCalledWith('notification'));

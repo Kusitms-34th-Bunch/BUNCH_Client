@@ -12,4 +12,7 @@ appId: kr.bunch.app
           text: ${TARGET}
           optional: true
       - waitForAnimationToEnd
-- assertVisible: ${MARK}
+# 다음 화면이 탭을 처음 여는 경우 CI에서 로딩이 10초를 넘어 30초까지 기다림(결정 기록 029)
+- extendedWaitUntil:
+    visible: ${MARK}
+    timeout: 30000

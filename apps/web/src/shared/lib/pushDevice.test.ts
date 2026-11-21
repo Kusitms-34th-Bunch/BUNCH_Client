@@ -282,10 +282,10 @@ describe('알림 권한 묻기', () => {
 
     expect(await askNotificationPermission()).toBe(true);
     expect(mocks.requestPermission).toHaveBeenCalledWith('notification');
-    expect(mocks.registerPushDevice).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(mocks.registerPushDevice).toHaveBeenCalledTimes(1));
   });
 
-  it('팝업이 닫히며 먼저 시작된 등록이 있으면 그 뒤 답한 권한으로 다시 등록한다', async () => {
+  it('팝업이 닫히며 먼저 시작된 등록이 있으면 답은 바로 돌려주고, 그 등록이 끝난 뒤 답한 권한으로 다시 등록한다', async () => {
     const { askNotificationPermission, syncPushDevice } = await load();
     let finishEarly: (_value: unknown) => void = () => undefined;
     mocks.registerPushDevice.mockImplementationOnce(
@@ -304,12 +304,12 @@ describe('알림 권한 묻기', () => {
       return Promise.resolve('denied');
     });
 
-    const asked = askNotificationPermission();
-    await vi.waitFor(() => expect(mocks.registerPushDevice).toHaveBeenCalledTimes(1));
+    // 앞선 등록이 끝나지 않아도 답은 바로 돌려줌(화면이 답한 권한을 바로 다시 읽게)
+    expect(await askNotificationPermission()).toBe(true);
+    expect(mocks.registerPushDevice).toHaveBeenCalledTimes(1);
     finishEarly({});
 
-    expect(await asked).toBe(true);
-    expect(mocks.registerPushDevice).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(mocks.registerPushDevice).toHaveBeenCalledTimes(2));
     expect(mocks.registerPushDevice).toHaveBeenLastCalledWith(
       expect.objectContaining({ authorizationStatus: 'DENIED' }),
     );

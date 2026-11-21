@@ -68,8 +68,13 @@ export function NotificationSettingsScreen({
     wasOff.current = deviceOff;
     if (!turnedOff || !toggled.current) return;
     toggled.current = false;
+    // 잠긴 입력의 초점을 지우는지는 WebView마다 달라 남아 있어도 옮김
     const active = document.activeElement;
-    if (active === null || active === document.body) {
+    if (
+      active === null ||
+      active === document.body ||
+      (active instanceof HTMLInputElement && active.disabled)
+    ) {
       document.getElementById(deviceOffMessageId)?.focus();
     }
   }, [deviceOff, deviceOffMessageId]);
