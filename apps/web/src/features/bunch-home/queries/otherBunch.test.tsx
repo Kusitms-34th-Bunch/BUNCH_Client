@@ -54,7 +54,10 @@ const setup = () => {
   const client = createTestQueryClient();
   // 무효화를 확인할 내 번치 홈·다른 번치 홈(관찰자가 없어 다시 받지 않고 표시만 바뀜)
   client.setQueryData(sharedKeys.bunchHome(viewer), {});
-  client.setQueryData(bunchHomeKeys.otherBunchHome(target, viewer), { followState: 'NONE' });
+  client.setQueryData(bunchHomeKeys.otherBunchHome(target, viewer), {
+    followState: 'NONE',
+    bunch: { visibility: 'PUBLIC' },
+  });
   const { result } = renderHook(() => useFollowBunchMutation(viewer), {
     wrapper: createQueryWrapper(client),
   });
@@ -124,5 +127,102 @@ describe('useFollowBunchMutation', () => {
 
     expect(myExternalFollows()).toEqual([]);
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('응답을 기다리지 않고 누르는 즉시 예상 상태(공개 번치는 팔로잉)를 반영한다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.put('/api/bunches/:viewerId/following/:targetId', async () => {
+        await gate;
+      }),
+    );
+    const { client, result } = setup();
+
+    let pending: Promise<unknown> = Promise.resolve();
+    act(() => {
+      pending = result.current.mutateAsync({ targetId: target, change: { kind: 'follow' } });
+    });
+
+    await vi.waitFor(() =>
+      expect(client.getQueryData(bunchHomeKeys.otherBunchHome(target, viewer))).toMatchObject({
+        followState: 'FOLLOWING',
+      }),
+    );
+    release();
+    await act(() => pending);
+  });
+
+  it('실패하면 누르기 전 상태로 되돌리고 실패를 알린다', async () => {
+    server.use(http.put('/api/bunches/:viewerId/following/:targetId', () => fail(500, 'X')));
+    const { client, result } = setup();
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ targetId: target, change: { kind: 'follow' } }),
+      ).rejects.toBeDefined();
+    });
+
+    expect(client.getQueryData(bunchHomeKeys.otherBunchHome(target, viewer))).toMatchObject({
+      followState: 'NONE',
+    });
+    expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.followFailed);
+  });
+
+  it('실패하면 그 번치 행만 되돌리고, 같은 목록에서 동시에 바꾼 다른 번치 행은 그대로 둔다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.put('/api/bunches/:viewerId/following/:targetId', async ({ params }) => {
+        if (params.targetId === '3') return fail(500, 'X');
+        await gate;
+      }),
+    );
+    const client = createTestQueryClient();
+    const row = (id: number, visibility: 'PUBLIC' | 'PRIVATE') => ({
+      bunch: { id, name: `번치 ${id}`, characterType: 'BLUE', visibility },
+      followState: 'NONE',
+      followId: null,
+      followedAt: '2026-11-01T00:00:00.000Z',
+    });
+    const listKey = bunchHomeKeys.followPages('9', viewer, 'followers');
+    client.setQueryData(listKey, {
+      pageParams: [0],
+      pages: [
+        {
+          items: [row(3, 'PUBLIC'), row(4, 'PRIVATE')],
+          page: 0,
+          size: 20,
+          totalElements: 2,
+          hasNext: false,
+        },
+      ],
+    });
+    const { result } = renderHook(() => useFollowBunchMutation(viewer), {
+      wrapper: createQueryWrapper(client),
+    });
+    const states = () =>
+      (
+        client.getQueryData(listKey) as { pages: { items: { followState: string }[] }[] }
+      ).pages[0]!.items.map((item) => item.followState);
+
+    let pending: Promise<unknown> = Promise.resolve();
+    act(() => {
+      pending = result.current.mutateAsync({ targetId: '4', change: { kind: 'follow' } });
+    });
+    await vi.waitFor(() => expect(states()).toEqual(['NONE', 'REQUESTED']));
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ targetId: '3', change: { kind: 'follow' } }),
+      ).rejects.toBeDefined();
+    });
+
+    expect(states()).toEqual(['NONE', 'REQUESTED']);
+    release();
+    await act(() => pending);
   });
 });
