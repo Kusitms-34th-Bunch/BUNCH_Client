@@ -187,8 +187,10 @@ const guardSheet =
     const track = animation.select('sheet').getMotionTracks()[0];
     if (!track) return;
     const sheetElement = track.element;
-    // 이전 전환이 걸어 둔 띠 걷기가 이번 전환의 띠를 지우지 않게
-    clearTimeout(bandTimers.get(sheetElement));
+    // 중단된 이전 전환이 남긴 표식·띠를 지우고 이번 전환을 이 요소의 주인으로 둠
+    clearSheetMarks(sheetElement);
+    const guard: SheetGuard = {};
+    sheetGuards.set(sheetElement, guard);
     const behind = [
       ...context.positionedParent.querySelectorAll<HTMLElement>(
         `[data-ssgoi-transition="${behindId}"]`,
@@ -209,20 +211,34 @@ const guardSheet =
     const dispose = track.onDispose;
     track.onDispose = (disposal) => {
       dispose?.(disposal);
-      if (!disposal.owns(sheetElement)) return;
+      // 이 요소를 새로 맡은 전환이 있으면 그 표식을 건드리지 않음. 중단됐으면 남긴 표식만 지움
+      if (sheetGuards.get(sheetElement) !== guard) return;
+      if (!disposal.owns(sheetElement)) {
+        clearSheetMarks(sheetElement);
+        return;
+      }
       delete sheetElement.dataset.sheetMoving;
       if (keep) delete sheetElement.dataset.appBackground;
       // 띠는 AppFrame 색 전환(150ms)이 끝난 뒤에 걷음(도착 순간 덜 바뀐 색이 비치지 않게)
       // ponytail: 고정 지연, 전환 시간이 바뀌면 함께 맞춤
-      bandTimers.set(
-        sheetElement,
-        setTimeout(() => sheetElement.style.removeProperty('box-shadow'), SHEET_BAND_HOLD_MS),
+      guard.timer = setTimeout(
+        () => sheetElement.style.removeProperty('box-shadow'),
+        SHEET_BAND_HOLD_MS,
       );
     };
   };
 // AppFrame 상태 바 색 전환(motion-safe duration-150)보다 조금 길게
 const SHEET_BAND_HOLD_MS = 200;
-const bandTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+type SheetGuard = { timer?: ReturnType<typeof setTimeout> };
+// 요소마다 마지막으로 맡은 시트 전환(중단·재사용된 노드에서 이전 전환이 새 전환의 표식을 지우지 않게)
+const sheetGuards = new WeakMap<HTMLElement, SheetGuard>();
+// 시트 요소의 표식은 모두 guardSheet가 붙인 것이라 통째로 지움
+const clearSheetMarks = (element: HTMLElement) => {
+  clearTimeout(sheetGuards.get(element)?.timer);
+  delete element.dataset.sheetMoving;
+  delete element.dataset.appBackground;
+  element.style.removeProperty('box-shadow');
+};
 const bunchSheet = sheet(
   {},
   {
