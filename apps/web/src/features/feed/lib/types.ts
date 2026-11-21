@@ -95,6 +95,8 @@ export type FeedMemberComment = {
 export type FeedComment = {
   id: string;
   author: string;
+  /** 작성자 회원 ID(프로필 화면). 탈퇴 등으로 없으면 프로필을 열지 않음 */
+  memberId?: string | undefined;
   avatarSrc?: string | undefined;
   bunchName?: string | undefined;
   bunchColor?: 'brand' | 'gray' | 'pink' | 'green' | 'orange' | undefined;

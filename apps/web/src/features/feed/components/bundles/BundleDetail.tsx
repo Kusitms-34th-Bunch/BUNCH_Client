@@ -314,6 +314,8 @@ export function BundleDetail({
         reply: comment.startReply,
         myCommentMore: comment.openCommentMenu,
         reportMore: comment.openReportMenu,
+        // 참여 멤버 시트와 같은 멤버 프로필 화면(그 사용자의 참여 번치)
+        openProfile: (memberId) => router.push(FEED_PATHS.member(memberId)),
       }}
     />
   );

@@ -206,11 +206,8 @@ export function useCommentActions({
         setReplyTarget({ id: comment.id, author: comment.author });
         focusInput();
       }),
-    // 닫기 버튼이 사라지므로 초점을 입력란으로
-    cancelReply: () => {
-      setReplyTarget(null);
-      focusInput();
-    },
+    // 답글 상태만 풂(키보드를 띄우지 않음). 사라진 닫기 버튼의 초점은 화면이 옮김
+    cancelReply: () => setReplyTarget(null),
     openCommentMenu,
     openReportMenu: (comment: FeedComment) =>
       report.openReportMenu(text.commentMenuTitle, () => reportComment(comment)),

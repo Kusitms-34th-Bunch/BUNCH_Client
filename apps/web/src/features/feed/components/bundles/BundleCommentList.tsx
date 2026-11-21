@@ -41,6 +41,7 @@ type BundleCommentListProps = {
   onReply: (_comment: FeedComment) => void;
   onMyCommentMore: (_comment: FeedComment) => void;
   onReportMore: (_comment: FeedComment) => void;
+  onOpenProfile: (_memberId: string) => void;
 };
 
 /** 번들 상세 댓글 목록(명세 014~017): 받는 중·실패·빈 목록, 다음 쪽 받기와 다시 시도 */
@@ -52,6 +53,7 @@ export function BundleCommentList({
   onReply,
   onMyCommentMore,
   onReportMore,
+  onOpenProfile,
 }: BundleCommentListProps) {
   const { comments, moreRef } = thread;
   return (
@@ -89,6 +91,9 @@ export function BundleCommentList({
               >
                 <CommentItem
                   author={comment.author}
+                  onProfile={
+                    comment.memberId ? onOpenProfile.bind(null, comment.memberId) : undefined
+                  }
                   avatarSrc={comment.deleted ? DELETED_USER_IMAGE : comment.avatarSrc}
                   bunchName={comment.bunchName}
                   bunchColor={comment.bunchColor}
