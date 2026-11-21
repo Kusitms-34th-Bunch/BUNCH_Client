@@ -109,6 +109,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
         run: yarn check:boundaries
 
+      # 로컬 commit-msg hook을 건너뛴 커밋(웹 편집, hook 미설치, --no-verify)도 PR 범위에서 다시 검사
+      # merge commit으로 머지해 PR 안 커밋이 그대로 남고, 머지 커밋은 commitlint가 제외. 기준은 Test와 같은 origin/<base>
+      - name: 커밋 메시지
+        id: commitlint
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' && github.event_name == 'pull_request' }}
+        env:
+          BASE_REF: ${{ format('origin/{0}', github.base_ref) }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: yarn exec commitlint --from "$BASE_REF" --to "$HEAD_SHA" --verbose
+
       - name: 포맷(oxfmt)
         id: prettier
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && matrix.id == 'lint' }}
@@ -224,6 +234,7 @@ jobs:
             {"guard":"${{ steps.guard.outcome }}","setup":"${{ steps.setup.outcome }}",
             "generated":"${{ steps.generated.outcome }}","catalog":"${{ steps.catalog.outcome }}",
             "agent-docs":"${{ steps.agent-docs.outcome }}","boundaries":"${{ steps.boundaries.outcome }}",
+            "commitlint":"${{ steps.commitlint.outcome }}",
             "prettier":"${{ steps.prettier.outcome }}","lint":"${{ steps.lint.outcome }}",
             "test":"${{ steps.test.outcome }}","typecheck":"${{ steps.typecheck.outcome }}",
             "build":"${{ steps.build.outcome }}"}
@@ -286,6 +297,7 @@ jobs:
               ['lint', 'catalog', 'catalog'],
               ['lint', 'agent-docs', 'agent 문서'],
               ['lint', 'boundaries', '경계(boundaries)'],
+              ['lint', 'commitlint', '커밋 메시지'],
               ['lint', 'prettier', '포맷(oxfmt)'],
               ['lint', 'lint', 'ESLint·Tailwind'],
               ['lint', 'typecheck', 'TypeScript'],

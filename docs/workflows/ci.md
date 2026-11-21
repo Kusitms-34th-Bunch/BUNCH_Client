@@ -35,7 +35,7 @@ GitHub Actions가 PR과 push에서 검증을 실행한다. workflow 파일과 �
 `Frontend CI`는 PR에 단계별 결과 표를 댓글로 남긴다. 같은 PR에서는 새 댓글을 만들지 않고 기존 댓글을 갱신한다. 검사 job이 하나 실패해도 나머지는 끝까지 실행해서(`fail-fast: false`) 한 번에 모두 보여 준다. 각 job은 `변조 가드`(workflow 단계)와 `의존성 설치`(`.github/actions/setup`)를 먼저 실행하고, 하나라도 실패하면 그 job은 검사를 실행하지 않고 실패한다. 설치는 코드를 실행할 수 있는 단계라서 가드가 실패하면 하지 않는다.
 
 - `ci.yml`은 `package.json`의 `verify`와 같은 검사를 실행한다. job 구성은 다음과 같다.
-  - `Lint & Typecheck`: 생성물·catalog·agent docs·boundary·format 검사를 먼저 실행한 뒤 `yarn lint`, `yarn typecheck`.
+  - `Lint & Typecheck`: 생성물·catalog·agent docs·boundary·커밋 메시지·format 검사를 먼저 실행한 뒤 `yarn lint`, `yarn typecheck`. 커밋 메시지는 PR에서만 base부터 head까지의 커밋을 `commitlint`로 다시 검사한다. 로컬 `commit-msg` hook을 건너뛴 커밋(GitHub 웹 편집, hook 설치 전, `--no-verify`)도 잡기 위해서다. PR은 merge commit으로 머지해 PR 안 커밋이 그대로 남고, 머지 커밋은 commitlint가 제외한다. 범위의 시작은 Test와 같은 `origin/<base>`다.
   - `Test 1/4`~`Test 4/4`: `yarn test -- --shard=<n>/4 --passWithNoTests`. 가장 무거워 CI 전체 시간을 정하는 검사라, 패키지마다 테스트 파일을 4등분해 러너 4개에서 나눠 실행한다(2026-11-02 측정: 한 러너일 때 Test job 183초 중 테스트 155초, 2026-11-13 3등분 때 러너별 테스트 76~106초). 파일이 적은 패키지는 몫이 비어도 통과한다. PR에서는 `--changed=origin/<base>`를 더해 base 대비 바뀐 파일과 import로 이어진 테스트만 돌린다(아래).
   - `Build`: `yarn build`(`NEXT_SKIP_TYPECHECK`로 next build 안의 타입 검사는 건너뜀). 타입 검사(`yarn typecheck`, Next 생성 파일은 스크립트가 직접 만듦)는 `Lint & Typecheck` job에서 한다. 가장 오래 걸리던 build job(PR #350: 104~108초, 그중 TypeScript 20초)에서 타입 검사를 빼 CI 전체 시간을 줄이려는 배치다.
 - 무거운 lint와 test를 한 러너에서 함께 돌리면 코어를 나눠 써서 서로 느려진다. 반대로 job을 너무 잘게 나누면 job마다 준비(checkout·설치 약 25초)가 반복되고, 조직의 동시 실행 한도 때문에 대기열이 길어진다. 그래서 정적 검사와 typecheck는 lint 러너에, build는 따로 묶었다.
