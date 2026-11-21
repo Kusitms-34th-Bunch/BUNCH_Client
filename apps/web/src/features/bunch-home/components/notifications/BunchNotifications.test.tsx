@@ -66,6 +66,22 @@ describe('알림 입구', () => {
       '/bunch/notifications',
     );
   });
+
+  it('읽지 않은 알림이 있으면 점 있는 종과 링크 이름으로 알린다', () => {
+    render(
+      <BunchHomeHeader
+        bunchName="여행가조"
+        onBunchClick={vi.fn()}
+        switcherOpen={false}
+        className="bg-surface-brand-subtle-1"
+        hasUnreadNotifications
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: '알림, 읽지 않은 알림 있음' });
+    expect(link).toHaveAttribute('href', '/bunch/notifications');
+    expect(link.querySelector('circle')).not.toBeNull();
+  });
 });
 
 // 시작 데이터: 여행쥬아(내 기본 번치) 알림 4개(앞 3개 읽지 않음, 마지막은 지워진 번들), 퇴근런클럽 읽지 않음 1개

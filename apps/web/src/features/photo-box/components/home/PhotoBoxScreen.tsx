@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { FloatingButton, PhotoUploadSheet } from '@app/design-system/web';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FloatingButtonToastAnchor } from '@/shared/components/layout/FloatingButtonToastAnchor';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -220,6 +221,8 @@ export function PhotoBoxScreen({
       // 「+」(선택 모드에서는 「⋯」)는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
       bottom={
         <div className="relative h-0">
+          {/* 탭 막대를 숨긴 화면에서 토스트를 플로팅 버튼(웹·네이티브) 위에 띄우는 앵커 */}
+          <FloatingButtonToastAnchor className="right-s8 bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))]" />
           {selecting && menuMounted ? (
             // 메뉴는 「⋯」 위 10px, 오른쪽 정렬(Figma 사진함_17): 「⋯」 높이 3.25rem + 간격 0.625rem
             <div className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap)+3.875rem)] z-20">

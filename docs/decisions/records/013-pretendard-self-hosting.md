@@ -16,6 +16,7 @@
 - 토큰의 글꼴 변수는 layout이 불러온 글꼴로 바꾼다. 모달·토스트가 body에 portal로 그려지므로 래퍼 class가 아니라 문서 전체(`:root`)에 적용한다. `typography-*` 유틸리티는 그대로 쓴다.
 - iOS 쉘의 시스템 탭 바 라벨은 네이티브라 Pretendard Regular(otf)를 `expo-font` config plugin으로 앱에 넣고 PostScript 이름(`Pretendard-Regular`)으로 지정한다.
   - 2026-11-19 변경(#462): iOS 26 Liquid Glass 탭 바가 미선택 라벨을 아래로 밀고 잘라 그려(실기기 제보) 지정을 빼고 시스템 기본 글꼴을 쓴다. 쉘의 글꼴 파일과 plugin 설정도 지웠다.
+  - 2026-11-22 변경(#503): 쉘이 그리는 네이티브 토스트(030)에 Pretendard Regular·SemiBold otf(1.3.9)를 다시 넣었다. config plugin이 아니라 `useFonts`로 실행 중에 불러와 Expo Go에서도 동작하고 탭 바 라벨에는 쓰지 않는다.
 
 ## 비교한 대안
 

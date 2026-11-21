@@ -3,6 +3,8 @@ export const FEED_MESSAGES = {
   /** 로고 버튼(맨 위로) */
   scrollTop: 'BUNCH, 맨 위로',
   notifications: '알림',
+  // 읽지 않은 알림이 있을 때 헤더 알림 링크 이름(명세에 문구가 없어 제안, 번치 홈 헤더와 같음)
+  notificationsUnread: '알림, 읽지 않은 알림 있음',
   currentBunch: (name: string) => `${name} 번치 홈`,
   followingDone: '팔로우한 번치의 소식을 모두 확인했어요',
   allDone: '모든 피드를 확인했어요',
