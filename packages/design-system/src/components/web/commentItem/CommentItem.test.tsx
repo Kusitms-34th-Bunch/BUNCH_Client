@@ -53,6 +53,19 @@ describe('CommentItem', () => {
     expect(screen.queryByRole('button', { name: /답글/ })).toBeNull();
   });
 
+  it('onProfile이 있으면 프로필 이미지·닉네임을 눌러 열고, 초점은 이미지 버튼 하나만 받으며 삭제된 댓글은 열지 않는다', async () => {
+    const onProfile = vi.fn();
+    const { rerender } = render(<CommentItem author="은우" onProfile={onProfile} />);
+
+    await userEvent.click(screen.getByRole('button', { name: '은우 프로필 보기' }));
+    await userEvent.click(screen.getByText('은우'));
+    expect(onProfile).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+
+    rerender(<CommentItem author="은우" deleted onProfile={onProfile} />);
+    expect(screen.queryByRole('button', { name: /프로필 보기/ })).toBeNull();
+  });
+
   it('더보기는 작성자 이름이 들어간 버튼이고 누르면 알린다', async () => {
     const onMore = vi.fn();
     render(<CommentItem {...base} onMore={onMore} />);

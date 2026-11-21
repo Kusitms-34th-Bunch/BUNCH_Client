@@ -22,6 +22,7 @@ describe('toFeedComment', () => {
     expect(toFeedComment(commentItemSchema.parse(item))).toEqual({
       id: '301',
       author: '뭉치',
+      memberId: '7',
       avatarSrc: DEFAULT_PROFILE_IMAGE,
       bunchName: '여행가조',
       bunchColor: 'pink',
