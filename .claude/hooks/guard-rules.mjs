@@ -55,7 +55,10 @@ if (isCommentCheckableFile && !isGeneratedFile && !isGeneratedContent) {
 
 // apps/mobile-shell은 Expo/Metro가 Yarn PnP를 지원하지 않아 pnpm을 쓰는 예외.
 // docs/architecture/mobile-shell.md, docs/decisions/records/003-mobile-shell-pnpm-exception.md 참고.
-const targetsMobileShell = /apps\/mobile-shell/.test(content);
+// 명령에 경로가 있거나 작업 위치(hook 입력의 cwd, Claude Code·Codex 공통)가 쉘 폴더면 예외
+// ponytail: 쉘 폴더에서 `cd ../web && pnpm` 같은 우회는 못 막음, 방어의 한 겹이라 CI·리뷰가 최종 관문
+const inMobileShell = /\/apps\/mobile-shell(\/|$)/.test(payload.cwd ?? '');
+const targetsMobileShell = inMobileShell || /apps\/mobile-shell/.test(content);
 
 if (toolName === 'Bash' && !targetsMobileShell && /(^|\s)(npm|pnpm|npx)\s/.test(content)) {
   deny(
