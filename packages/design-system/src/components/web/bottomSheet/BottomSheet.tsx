@@ -31,6 +31,12 @@ export type BottomSheetFooterProps = ComponentProps<'div'>;
 
 // Figma 바텀시트 모션(docs/architecture/motion.md): 열기 340ms·닫기 240ms, 아래→위 이동·투명도 40%→100%
 const ease = 'ease-[cubic-bezier(0,0,0.35,1)]';
+// 끌어서 닫을 때만: 손을 뗀 속도에 맞춘 시간(Base UI `--drawer-swipe-strength` 0.1~1, 빠르게 튕길수록 짧음), 흐림 없이 iOS 시트 감속
+// 닫기 버튼·바깥 터치는 Figma 값(240ms, 투명도 40%) 유지. Tailwind가 소스의 글자로만 클래스를 만들어 조합하지 않고 그대로 씀
+const swipeDismiss =
+  'motion-safe:data-swipe-dismiss:data-ending-style:duration-[calc(var(--drawer-swipe-strength,1)*400ms)] motion-safe:data-swipe-dismiss:data-ending-style:ease-[cubic-bezier(0.32,0.72,0,1)] motion-safe:data-swipe-dismiss:data-ending-style:opacity-100';
+const backdropSwipeDismiss =
+  'motion-safe:[:root:has([data-bottom-sheet][data-swipe-dismiss])_&]:duration-300 motion-safe:[:root:has([data-bottom-sheet][data-swipe-dismiss])_&]:ease-[cubic-bezier(0.32,0.72,0,1)]';
 const safeAreaBottom = 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))';
 
 const Root = ({
@@ -66,6 +72,8 @@ const Content = ({
         `transition-opacity duration-340 ${ease} data-ending-style:duration-240`,
         // 닫히는 동안 두 번째 탭이 아래 화면으로 넘어가지 않게 받음(Base UI 인라인 none을 덮어씀)
         'data-ending-style:pointer-events-auto! data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0',
+        // 시트가 끌려 닫히는 동안 배경도 같은 곡선으로 걷힘(배경에는 끌어 닫기 표식이 없어 화면 전체에서 확인)
+        backdropSwipeDismiss,
         backdropClassName,
       )}
     />
@@ -92,6 +100,7 @@ const Content = ({
           'data-ending-style:translate-y-full data-ending-style:opacity-40',
           // 끄는 동안 Base UI가 넣는 transform(위로도 고무줄처럼 따라옴)을 끄고 위 translate 값(아래 방향만)으로만 움직임
           'data-swiping:transform-none! data-swiping:duration-0 data-swiping:select-none',
+          swipeDismiss,
           'motion-reduce:transition-opacity motion-reduce:data-ending-style:translate-y-0 motion-reduce:data-starting-style:translate-y-0',
           className,
         )}
