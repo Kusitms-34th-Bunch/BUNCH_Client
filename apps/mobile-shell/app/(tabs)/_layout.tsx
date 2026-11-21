@@ -1,4 +1,5 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
@@ -6,6 +7,7 @@ import { useSyncExternalStore } from 'react';
 import { TAB_ICONS } from '../../src/tabs/tab-icons';
 import { TAB_IDS } from '../../src/tabs/tabs';
 import { tabsStore } from '../../src/tabs/tabs-store';
+import { TOAST_FONTS } from '../../src/toast/fonts';
 import { postMessage } from '../../src/web-view/AppWebView';
 
 // 선택 색만 디자인 시스템 text-primary 복사(RN은 CSS 변수 미지원)
@@ -35,6 +37,8 @@ const screenListeners = ({
 /** iOS 시스템 탭 바(iOS 26 이상은 Liquid Glass). 라벨은 웹이 보낸 항목, 아이콘은 쉘의 디자인 시스템 아이콘. 항목이 없는 탭은 숨김 */
 export default function TabsLayout() {
   const tabs = useSyncExternalStore(tabsStore.subscribe, tabsStore.get);
+  // 네이티브 토스트 글꼴을 탭 화면이 열릴 때 미리 불러 둠(첫 토스트에서 글꼴이 바뀌어 보이지 않게, 결정 기록 030)
+  useFonts(TOAST_FONTS);
   // 웹이 탭 항목을 보내기 전(Fast Refresh·직접 진입)에는 첫 화면으로 복귀
   if (!tabs) return <Redirect href="/" />;
 

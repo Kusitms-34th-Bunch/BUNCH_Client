@@ -31,4 +31,17 @@ describe('FeedHeader', () => {
     rerender(<FeedHeader {...props} viewer={null} viewerPending={false} />);
     expect(screen.queryByRole('link', { name: '알림' })).toBeNull();
   });
+
+  it('읽지 않은 알림이 있으면 점 있는 종과 링크 이름으로 알린다', () => {
+    const viewer = { bunchId: 'b', name: '여행가조' };
+    const { rerender } = render(<FeedHeader {...props} viewer={viewer} viewerPending={false} />);
+    expect(screen.getByRole('link', { name: '알림' }).querySelector('circle')).toBeNull();
+
+    rerender(
+      <FeedHeader {...props} viewer={viewer} viewerPending={false} hasUnreadNotifications />,
+    );
+    const link = screen.getByRole('link', { name: '알림, 읽지 않은 알림 있음' });
+    expect(link).toHaveAttribute('href', '/n');
+    expect(link.querySelector('circle')).not.toBeNull();
+  });
 });

@@ -1104,12 +1104,12 @@ describe('다른 멤버가 작업 중인 영역(잠그지 않음)', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
-  it('「사진 추가」는 초안 생성자·관리자·공동 관리자에게만 보이고 누르면 가져오기 시트가 열린다', async () => {
-    const { unmount } = renderScreen({ viewer: plainMember });
+  it('「사진 추가」는 일반 참여 멤버에게도 보이고(참여 멤버가 아니면 없음) 누르면 가져오기 시트가 열린다', async () => {
+    const { unmount } = renderScreen({ viewer: outsider });
     expect(screen.queryByRole('button', { name: '사진 추가' })).not.toBeInTheDocument();
     unmount();
 
-    renderScreen({ viewer: creator });
+    renderScreen({ viewer: plainMember });
     await userEvent.click(screen.getByRole('button', { name: '사진 추가' }));
     await userEvent.click(await screen.findByRole('button', { name: /번치 사진함에서 가져오기/ }));
 

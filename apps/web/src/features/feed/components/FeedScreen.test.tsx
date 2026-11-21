@@ -577,7 +577,8 @@ describe('FeedScreen', () => {
     renderFeed(OWN);
     await cardsLoaded();
 
-    expect(screen.getByRole('link', { name: '알림' })).toHaveAttribute(
+    // 시작 데이터의 지금 번치(여행가조)에 읽지 않은 알림이 있어 점 있는 종과 링크 이름으로 알림
+    expect(await screen.findByRole('link', { name: '알림, 읽지 않은 알림 있음' })).toHaveAttribute(
       'href',
       '/bunch/notifications',
     );

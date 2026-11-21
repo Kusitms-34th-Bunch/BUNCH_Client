@@ -152,9 +152,22 @@ iOS 26 이상 탭 화면에서는 플로팅 버튼(번치 홈 「번들 만들�
 - 탭 WebView는 문서를 열기 전에 자기 탭 ID를 sessionStorage `bunch-shell-tab`에 받는다. 웹은 페이지의 탭과 이 값이 같을 때만 네이티브 버튼을 요청한다. 다른 탭 WebView가 같은 경로를 열면 웹 버튼을 그린다.
 - 눌림은 `nativeFloatingButtonPress({ tab })`로 모든 WebView에 보내고(broadcast), 웹이 탭 ID와 `document.visibilityState`로 자기 것만 처리한다.
 - 웹은 시트·대화상자가 열린 동안(`useModalOpen`), 화면에 버튼이 없을 때(`hidden`, 로딩·저장 중), 화면을 떠날 때 버튼을 지운다. 새 문서를 열 때(`onLoadStart`)와 로그아웃(`setNativeTabBar` `hidden: true`) 때는 쉘이 지운다.
+- 네이티브 버튼은 WebView 위라 웹 토스트가 그 뒤에 깔린다. 그래서 버튼이 떠 있는 동안은 아래쪽 토스트도 쉘이 그린다(아래 「네이티브 토스트」).
 - 쉘 응답 전에는 웹 버튼을 그리지 않는다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행되고, 제한 시간을 넘긴 응답도 웹 버튼으로 처리한다.
 - 확인한 것: iOS 시뮬레이터(iPhone 17 Pro, iOS 26.5)에서 두 탭의 버튼 표시, 누름, 사진함 선택 모드, 시트 동안 숨김. 확인하지 못한 것: 실기기, VoiceOver로 네이티브 「⋯」에서 웹 메뉴로 들어가는 초점, 시트가 닫힌 뒤 초점 복귀, 선택 모드 전환 중 버튼 위치의 타이밍.
 - 개발 중 쉘 코드를 바꿨으면 Metro가 파일을 감시하는지 확인한다. `CI=1`로 띄운 Metro는 변경을 반영하지 않아 앱이 이전 쉘 코드를 계속 실행했다.
+
+## 네이티브 토스트
+
+네이티브 플로팅 버튼이 떠 있는 탭 화면(iOS 26 번치 홈·사진함)의 아래쪽 토스트는 쉘이 그린다. 근거와 대안은 `docs/decisions/records/030-native-toast-on-floating-screens.md`다.
+
+- 디자인 시스템 `toast()`가 앱이 등록한 표시 방법(`setToastPresenter`)에 아래쪽 토스트를 먼저 맡긴다. 웹 hook `useNativeToastPresenter`(`apps/web/src/shared/hooks/`)는 `useNativeFloatingButton`이 네이티브 버튼을 쓰는 화면에 있는 동안 등록한다. 시트·대화상자·로딩으로 버튼을 잠시 지운 동안에도 유지하고(시트를 닫자마자 띄운 토스트가 다시 나온 버튼에 가리지 않게), 화면을 떠나면 해제하고 쉘 토스트를 닫는다. 위쪽 토스트는 늘 웹이다.
+- `showNativeToast({ tab, id, message, icon?, action?, duration, fullWidth })`: 쉘은 iOS이고 탭 화면일 때만 받고, 그 밖은 false다. 웹은 false·오류면 같은 토스트를 웹으로 다시 띄운다. `duration: null`은 자동으로 닫히지 않는다. `hideNativeToast({ tab })`는 그 탭 토스트를 닫는다.
+- 액션 버튼을 누르면 쉘이 `nativeToastAction({ tab, id })`를 모든 WebView에 보내고(broadcast) 퇴장 모션(200ms) 뒤 토스트를 닫는다(`hideNativeToast`로 닫을 때는 바로 사라진다). 웹은 자기 탭의 지금 토스트 id일 때만 액션을 실행한다.
+- 토스트는 탭별로 하나다(`src/toast/toast-store.ts`). 새 토스트가 이전 것을 대체하고, 자동 닫힘은 그 토스트일 때만 지운다. 새 문서를 열 때(`onLoadStart`)와 로그아웃 때 지운다.
+- `src/toast/NativeToast.tsx`가 `TabScreen`에서 플로팅 버튼보다 위에 그린다. 모양·모션·노출 시간은 디자인 시스템 Toast 값을 옮겼다(RN은 CSS 변수 미지원, 웹의 2px 흐림은 없음). 위치는 아래 여백(탭 바 포함) 위 16px이다. 플로팅 버튼(아래 여백 위 10px)과 같은 기준이라, 탭 막대를 숨긴 선택 모드에서도 버튼과 겹치는 모양이 탭 막대 화면과 같다. VoiceOver에는 `announceForAccessibility`로 문구를 알린다.
+- 성공 아이콘은 디자인 시스템 `fill-circle-check`(Large 24px)를 1x·2x·3x PNG로 옮겨 `tintColor`로 칠한다(`assets/toast-icons/`). 글꼴은 Pretendard Regular·SemiBold otf(`assets/fonts/`)를 탭 레이아웃이 `useFonts`로 미리 불러온다. 액션을 누르면 퇴장 모션 뒤 닫고, 웹이 바꾸거나 닫을 때(`hideNativeToast`)는 바로 사라진다. 아래로 밀어 닫기는 없다.
+- 이 메서드가 없는 이전 쉘에는 웹이 부르지 않아(`hasNativeMethod`) 토스트가 버튼 뒤에 깔린다.
 
 ## Bridge 계약 (`packages/bridge`)
 

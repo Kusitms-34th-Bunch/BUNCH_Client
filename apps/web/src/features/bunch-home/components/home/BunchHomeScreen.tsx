@@ -130,6 +130,7 @@ export function BunchHomeScreen({
           onBunchClick={openSwitcher}
           switcherOpen={switcherOpen}
           className={background.top}
+          hasUnreadNotifications={current.unreadCount > 0}
         />
       }
       // 「+」는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치

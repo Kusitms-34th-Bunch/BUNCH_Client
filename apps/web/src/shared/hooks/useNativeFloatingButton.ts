@@ -5,6 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { appBridge, isNativeShell, nativeShellTab } from '@/shared/bridge/client';
 import { useModalOpen } from './useModalOpen';
+import { useNativeToastPresenter } from './useNativeToastPresenter';
 
 const subscribeNever = () => () => {};
 
@@ -20,6 +21,7 @@ type Options = NonNullable<SetNativeFloatingButtonParams['button']> & {
  * iOS 26 이상 쉘이면 플로팅 버튼을 네이티브 Liquid Glass로 그리게 하고, 웹 버튼을 그릴지 돌려줌
  * 쉘 답을 받기 전에는 false(두 버튼이 겹쳐 보이지 않게), 브라우저·안드로이드·iOS 26 미만은 true
  * 시트·대화상자가 열린 동안은 네이티브 버튼을 지움(WebView 위라 시트를 가림)
+ * 네이티브 버튼을 쓰는 동안은 아래쪽 토스트도 쉘이 네이티브로 띄움(WebView 안의 토스트는 버튼 뒤에 깔림, #503)
  */
 export function useNativeFloatingButton({
   tab,
@@ -64,6 +66,9 @@ export function useNativeFloatingButton({
     if (!inShell) return;
     return () => void appBridge.setNativeFloatingButton({ tab, button: null }).catch(() => {});
   }, [inShell, tab]);
+
+  // 시트·로딩으로 버튼을 잠시 지운 동안에도 토스트는 쉘로(닫자마자 띄운 토스트가 다시 나온 버튼에 가리지 않게)
+  useNativeToastPresenter(tab, inShell && native === true);
 
   // 눌림은 모든 탭 WebView에 오므로 자기 탭·화면에 보이는 WebView만 처리
   useEffect(() => {

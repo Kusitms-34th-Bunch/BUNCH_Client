@@ -1,5 +1,12 @@
-import { AccountSwitcher, Header, LineBellLargeIcon, LineDotsLargeIcon } from '@app/design-system';
+import {
+  AccountSwitcher,
+  Header,
+  LineBellDotLargeIcon,
+  LineBellLargeIcon,
+  LineDotsLargeIcon,
+} from '@app/design-system';
 import Link from 'next/link';
+import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
 
 type BunchHomeHeaderProps = {
@@ -10,6 +17,8 @@ type BunchHomeHeaderProps = {
   switcherOpen: boolean;
   /** 배경 class(프로필 이미지 영역과 같은 번치 성격 색) */
   className: string;
+  /** 읽지 않은 알림이 있는지(알림 아이콘에 점) */
+  hasUnreadNotifications?: boolean | undefined;
 };
 
 // 24px 아이콘, 터치 영역은 before로 40px까지 넓힘(아이콘 사이 16px 간격 유지)
@@ -22,6 +31,7 @@ export function BunchHomeHeader({
   onBunchClick,
   switcherOpen,
   className,
+  hasUnreadNotifications = false,
 }: BunchHomeHeaderProps) {
   return (
     <Header
@@ -36,13 +46,17 @@ export function BunchHomeHeader({
       }
       trailing={
         <>
-          {/* 화면 이동이라 링크(새 탭 열기·가운데 클릭 지원). 안 읽은 알림 점은 Figma가 정해지면 추가 */}
+          {/* 화면 이동이라 링크(새 탭 열기·가운데 클릭 지원). 읽지 않은 알림이 있으면 점 있는 종(Figma bell-02)과 링크 이름으로 알림 */}
           <Link
             href={BUNCH_HOME_PATHS.notifications}
-            aria-label="알림"
+            aria-label={
+              hasUnreadNotifications
+                ? BUNCH_HOME_MESSAGES.notificationsUnread
+                : BUNCH_HOME_MESSAGES.notifications
+            }
             className={headerIconLinkClass}
           >
-            <LineBellLargeIcon />
+            {hasUnreadNotifications ? <LineBellDotLargeIcon /> : <LineBellLargeIcon />}
           </Link>
           <Link href={BUNCH_HOME_PATHS.menu} aria-label="더보기" className={headerIconLinkClass}>
             <LineDotsLargeIcon />

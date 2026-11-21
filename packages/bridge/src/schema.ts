@@ -336,6 +336,38 @@ export type NativeTabEvent = z.infer<typeof nativeTabEventSchema>;
 export const nativeFloatingButtonPressSchema = z.object({ tab: z.string().min(1) }).strict();
 export type NativeFloatingButtonPress = z.infer<typeof nativeFloatingButtonPressSchema>;
 
+/**
+ * 네이티브 플로팅 버튼이 떠 있는 탭 화면의 토스트를 쉘이 그림(#503, 결정 기록 030). 버튼이 WebView 위에 있어 웹 토스트가 그 뒤에 깔리기 때문
+ * 모양·노출 시간·대체 규칙은 디자인 시스템 Toast와 같음. `id`는 웹이 정하고 액션 눌림(`nativeToastAction`)에서 돌려받음
+ * `duration`이 null이면 자동으로 닫히지 않음
+ */
+export const showNativeToastParamsSchema = z
+  .object({
+    tab: z.string().min(1).max(32),
+    id: z.string().min(1).max(64),
+    message: z.string().min(1).max(200),
+    icon: z.enum(['success']).optional(),
+    action: z
+      .object({ label: z.string().min(1).max(20) })
+      .strict()
+      .optional(),
+    duration: z.number().int().min(1).max(60_000).nullable(),
+    /** false면 내용 폭으로 가운데(웹 `fullWidth: false`) */
+    fullWidth: z.boolean(),
+  })
+  .strict();
+export type ShowNativeToastParams = z.infer<typeof showNativeToastParamsSchema>;
+
+/** 그 탭의 네이티브 토스트를 닫음(웹이 웹 토스트로 바꿔 띄우거나 버튼이 사라질 때) */
+export const hideNativeToastParamsSchema = z.object({ tab: z.string().min(1).max(32) }).strict();
+export type HideNativeToastParams = z.infer<typeof hideNativeToastParamsSchema>;
+
+/** 네이티브 토스트의 액션 버튼을 누름. 모든 탭 WebView에 보내므로 웹이 `tab`·`id`로 자기 것만 처리 */
+export const nativeToastActionSchema = z
+  .object({ tab: z.string().min(1).max(32), id: z.string().min(1).max(64) })
+  .strict();
+export type NativeToastAction = z.infer<typeof nativeToastActionSchema>;
+
 /** 화면 사건에 맞춘 햅틱 종류. `success`: 완료 축하(컨페티), `tap`: 가벼운 누름(좋아요·콕하기·피드 끝) */
 export const hapticKindSchema = z.enum(['success', 'tap']);
 export type HapticKind = z.infer<typeof hapticKindSchema>;
@@ -354,6 +386,7 @@ export const appPostMessageSchema = {
   nativeFloatingButtonPress: validator(nativeFloatingButtonPressSchema),
   nativeTabEvent: validator(nativeTabEventSchema),
   nativeTabReselect: validator(nativeTabReselectSchema),
+  nativeToastAction: validator(nativeToastActionSchema),
 };
 
 export type AppPostMessageSchema = typeof appPostMessageSchema;

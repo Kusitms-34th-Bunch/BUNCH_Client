@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react';
-import { Header, LineBellLargeIcon, Skeleton } from '@app/design-system';
+import { Header, LineBellDotLargeIcon, LineBellLargeIcon, Skeleton } from '@app/design-system';
 import { ProfileImage } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import Link from 'next/link';
@@ -20,6 +20,8 @@ type FeedHeaderProps = {
   /** 로고를 눌렀을 때(맨 위로) */
   onLogoClick: () => void;
   notificationsHref: string;
+  /** 지금 번치에 읽지 않은 알림이 있는지(알림 아이콘에 점) */
+  hasUnreadNotifications?: boolean | undefined;
   bunchHomeHref: string;
   /** 번치 이미지를 눌렀을 때(iOS 쉘의 탭 전환). 막으면(`preventDefault`) 링크 이동 안 함 */
   onBunchHomeClick?: ((_event: MouseEvent<HTMLAnchorElement>) => void) | undefined;
@@ -27,13 +29,14 @@ type FeedHeaderProps = {
 
 /**
  * 피드 헤더(Figma `4940:99533`): 로고(맨 위로) · 알림 · 현재 번치 이미지(번치 홈)
- * 소속 번치가 없으면 로고만(기능명세서 6.1.7). 안 읽은 알림 점은 번치 홈 헤더처럼 Figma가 정해지면 추가
+ * 소속 번치가 없으면 로고만(기능명세서 6.1.7). 읽지 않은 알림이 있으면 점 있는 종(Figma bell-02)과 링크 이름으로 알림
  */
 export function FeedHeader({
   viewer,
   viewerPending,
   onLogoClick,
   notificationsHref,
+  hasUnreadNotifications = false,
   bunchHomeHref,
   onBunchHomeClick,
 }: FeedHeaderProps) {
@@ -55,10 +58,10 @@ export function FeedHeader({
           <span className="gap-s8 flex items-center">
             <Link
               href={notificationsHref}
-              aria-label={text.notifications}
+              aria-label={hasUnreadNotifications ? text.notificationsUnread : text.notifications}
               className={iconLinkClass}
             >
-              <LineBellLargeIcon />
+              {hasUnreadNotifications ? <LineBellDotLargeIcon /> : <LineBellLargeIcon />}
             </Link>
             {/* 받는 중에는 같은 크기의 회색 원, 요청이 실패하면 그리지 않음 */}
             {viewer ? (
