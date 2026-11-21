@@ -7,10 +7,17 @@ import { PageLoading } from './PageLoading';
 // 로티 재생 라이브러리는 모양을 검증하지 않으므로 mock
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
+// 덮개는 화면 틀 밖(body)에 그려 상태 바·홈 표시 영역까지 덮음
+const overlayOf = () => document.body.querySelector<HTMLElement>('.bg-overlay-dim-subtle');
+
 describe('PageLoading', () => {
   it('화면 전체를 dim으로 덮고 로딩 표시를 가운데에 하나만 보인다', async () => {
     const { container, findAllByTestId } = render(<PageLoading />);
-    const overlay = container.firstElementChild as HTMLElement;
+    const overlay = overlayOf()!;
+
+    // 화면 틀(전환 영역) 안이 아니라 body 바로 아래(안전 영역까지 덮도록)
+    expect(container.contains(overlay)).toBe(false);
+    expect(overlay.parentElement).toBe(document.body);
 
     expect(overlay.className).toContain('bg-overlay-dim-subtle');
     expect(overlay.className).toContain('fixed');
@@ -33,7 +40,7 @@ describe('PageLoading', () => {
     const { container } = render(<PageLoading />);
 
     expect(container.querySelector('[role="status"]')).toBeNull();
-    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(overlayOf()!.querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
 
   it('보이는 동안 초점을 덮개로 옮기고 Tab으로 뒤 화면에 닿지 않게 한 뒤, 끝나면 원래 자리로 되돌린다', async () => {
@@ -44,7 +51,7 @@ describe('PageLoading', () => {
       </>,
     );
     const button = container.querySelector('button') as HTMLButtonElement;
-    const overlay = container.querySelector('[tabindex="-1"]') as HTMLElement;
+    const overlay = overlayOf()!;
     expect(document.activeElement).toBe(overlay);
 
     await userEvent.tab();
@@ -59,19 +66,35 @@ describe('PageLoading', () => {
     expect(document.activeElement).toBe(button);
   });
 
+  it('서버에서 그려진 덮개가 하이드레이션 뒤 body로 옮겨져도 초점은 새 덮개에 있다', async () => {
+    const { hydrateRoot } = await import('react-dom/client');
+    const { renderToString } = await import('react-dom/server');
+    const host = document.createElement('div');
+    document.body.append(host);
+    host.innerHTML = renderToString(<PageLoading />);
+
+    const root = await act(() => hydrateRoot(host, <PageLoading />));
+    const overlay = overlayOf()!;
+    expect(overlay.parentElement).toBe(document.body);
+    expect(document.activeElement).toBe(overlay);
+
+    act(() => root.unmount());
+    host.remove();
+  });
+
   it('delayMs를 주면 그 시간이 지나야 덮고, 그 전에 끝나면 덮지 않는다', async () => {
     vi.useFakeTimers();
     onTestFinished(() => void vi.useRealTimers());
     const before = getPageLoadingCount();
-    const { container, unmount } = render(<PageLoading delayMs={1000} />);
+    const { unmount } = render(<PageLoading delayMs={1000} />);
 
     await act(() => vi.advanceTimersByTimeAsync(999));
-    expect(container.querySelector('.fixed')).toBeNull();
+    expect(overlayOf()).toBeNull();
     // 덮개는 늦어도 로딩 중임은 붙는 순간부터 알림(앱 스플래시·화면 이동 뒤 토스트가 기다림)
     expect(getPageLoadingCount()).toBe(before + 1);
 
     await act(() => vi.advanceTimersByTimeAsync(1));
-    expect(container.querySelector('.fixed')).not.toBeNull();
+    expect(overlayOf()).not.toBeNull();
     expect(getPageLoadingCount()).toBe(before + 1);
 
     unmount();

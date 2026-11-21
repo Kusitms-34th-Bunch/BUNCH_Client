@@ -23,11 +23,11 @@ describe('PlacePickSheet', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
-  it('「취소」는 닫기를 요청한다', async () => {
+  it('「닫기」는 시트 닫기를 요청한다', async () => {
     const onOpenChange = vi.fn();
     render(<PlacePickSheet open onOpenChange={onOpenChange} places={places} onPick={() => {}} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: '취소' }));
+    fireEvent.click(await screen.findByRole('button', { name: '닫기' }));
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });

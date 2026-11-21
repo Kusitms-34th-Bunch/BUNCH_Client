@@ -221,7 +221,7 @@ describe('BundleDetail', () => {
     await user.click(screen.getByRole('button', { name: /^위치/ }));
     expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
     expect(screen.getByText('애월 한담해변')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '취소' }));
+    await user.click(screen.getByRole('button', { name: '닫기' }));
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
     );
@@ -280,6 +280,15 @@ describe('BundleDetail', () => {
     expect(push).toHaveBeenLastCalledWith('/bunch');
   });
 
+  it('댓글 작성자의 프로필을 누르면 그 멤버 프로필 화면으로 간다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    await addComment(user, '프로필 보러 가기');
+    const comments = within(screen.getByRole('region', { name: '댓글' }));
+    await user.click(comments.getByRole('button', { name: '큐시즘 프로필 보기' }));
+    expect(push).toHaveBeenLastCalledWith(expect.stringMatching(/^\/members\/\d+$/));
+  });
+
   it('다른 번치의 번들에서 번치를 누르면 다른 번치 프로필로 간다', async () => {
     const user = userEvent.setup();
     renderDetail('2');
@@ -299,9 +308,26 @@ describe('BundleDetail', () => {
       screen.getByRole('textbox', { name: /큐시즘님에게 답글, 여행가조로 답글 달기/ }),
     ).toBeTruthy();
 
+    // 닫기는 답글 상태만 풀고 키보드를 띄우지 않게 입력란이 아닌 입력 영역 틀로 초점을 옮김
     await user.click(screen.getByRole('button', { name: '답글 그만 쓰기' }));
     expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull();
-    expect(document.activeElement).toBe(screen.getByRole('textbox'));
+    expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+    expect(document.activeElement).toContainElement(screen.getByRole('textbox'));
+  });
+
+  it('입력란 밖을 눌러 키보드가 닫히면 답글 상태도 닫히고, 쓴 글이 있으면 답글 상태를 둔다', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    await addComment(user, '내 댓글');
+
+    await user.click(screen.getByRole('button', { name: /댓글에 답글 달기/ }));
+    await user.click(screen.getByRole('heading', { level: 1 }));
+    expect(screen.queryByText('님에게 답글 남기는 중')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /댓글에 답글 달기/ }));
+    await user.type(screen.getByRole('textbox'), '쓰던 답글');
+    await user.click(screen.getByRole('heading', { level: 1 }));
+    expect(screen.getByText('님에게 답글 남기는 중')).toBeTruthy();
   });
 
   it('좋아요는 응답 전에 수와 함께 바뀌고, 실패하면 되돌린다', async () => {
