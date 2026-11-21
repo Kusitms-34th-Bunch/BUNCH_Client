@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { REFRESH_TOKEN_COOKIE, setAuthCookies } from '@/shared/api/server/authCookies';
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  setAuthCookies,
+} from '@/shared/api/server/authCookies';
 import { reissueOnce } from '@/shared/api/server/authSession';
 import { toErrorResponse } from '@/shared/api/server/routeError';
+import { NO_SESSION_CODE } from '@/shared/api/sessionCodes';
 
 /**
  * refresh 쿠키로 토큰 재발급
@@ -10,8 +15,13 @@ import { toErrorResponse } from '@/shared/api/server/routeError';
 export async function POST(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
   if (!refreshToken) {
+    // 두 쿠키가 모두 없으면 다른 탭이 갱신했을 가능성도 없어 브라우저가 세션 확인을 건너뜀(비로그인 첫 진입 요청 1번 줄임)
+    const noSession = !request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
     return NextResponse.json(
-      { message: '로그인이 필요합니다.', code: 'BFF_UNAUTHENTICATED' },
+      {
+        message: '로그인이 필요합니다.',
+        code: noSession ? NO_SESSION_CODE : 'BFF_UNAUTHENTICATED',
+      },
       { status: 401 },
     );
   }

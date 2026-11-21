@@ -1,6 +1,7 @@
 import { ApiError } from '@app/api-core';
 import { createHttpClient } from '@app/api-core/http';
 import { HTTPError, type KyInstance } from 'ky';
+import { NO_SESSION_CODE } from './sessionCodes';
 
 export interface BrowserApiOptions {
   /** BFF 주소. 기본은 같은 출처의 `/api/` */
@@ -43,11 +44,19 @@ const transientFailure = async (response: Response) => {
   });
 };
 
-// 일시 장애가 아니면 다른 탭이 먼저 교체한 새 쿠키가 있는지 확인(있으면 세션 유지)
+// 쿠키가 하나도 없다는 재발급 응답인지(비로그인 확정)
+const isNoSession = async (response: Response) => {
+  if (response.status !== 401) return false;
+  const body = (await response.json().catch(() => undefined)) as { code?: unknown } | undefined;
+  return body?.code === NO_SESSION_CODE;
+};
+
+// 일시 장애가 아니면 다른 탭이 먼저 교체한 새 쿠키가 있는지 확인(있으면 세션 유지). 쿠키가 하나도 없으면 확인하지 않음
 const reissueSession = async () => {
   const reissued = await sameOriginFetch('/api/auth/reissue', { method: 'POST' });
   if (reissued.ok) return true;
   if (TRANSIENT_STATUSES.has(reissued.status)) throw await transientFailure(reissued);
+  if (await isNoSession(reissued)) return false;
   const session = await sameOriginFetch('/api/session');
   return session.ok;
 };
