@@ -21,6 +21,24 @@ describe('PageShell', () => {
     expect(body.compareDocumentPosition(bottom) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('접는 헤더 화면에만 상태 표시줄 흐림 층을 두고 낭독에서 뺀다', () => {
+    const { container, rerender } = render(
+      <PageShell header={<p>헤더</p>}>
+        <p>본문</p>
+      </PageShell>,
+    );
+    expect(container.querySelector('[data-status-bar-blur]')).toBeNull();
+
+    rerender(
+      <PageShell header={<p>헤더</p>} collapsibleHeader>
+        <p>본문</p>
+      </PageShell>,
+    );
+    const blur = container.querySelector('[data-status-bar-blur]');
+    expect(blur?.getAttribute('aria-hidden')).toBe('true');
+    expect(blur?.children).toHaveLength(4);
+  });
+
   it('기본 배경은 흰색이고 className으로 배경색을 바꿀 수 있다', () => {
     const { container, rerender } = render(
       <PageShell>
