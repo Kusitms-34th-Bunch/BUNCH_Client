@@ -22,7 +22,7 @@
 
 ### 서버 연결(#330)
 
-- 목록: 내 기본 번치(`members/me`)의 `GET /bunches/{id}/memberships`. 번치를 전환하면 서버의 마지막 사용 번치가 바뀌어 기본 번치가 되므로(#313) 지금 보고 있는 번치와 같다. 들어올 때마다 새로 받는다(`staleTime: 0`). 번치 이름은 번치 홈(`/home`)에서 받는다. 받는 동안은 로딩(sr-only 「멤버를 불러오는 중이에요」), 받은 값이 없을 때만 오류 화면과 「다시 시도」, 기본 번치가 없으면 번치 탭으로 보낸다.
+- 목록: 내 기본 번치(`members/me`)의 `GET /bunches/{id}/memberships`. 번치를 전환하면 서버의 마지막 사용 번치가 바뀌어 기본 번치가 되므로(#313) 지금 보고 있는 번치와 같다. 들어올 때마다 새로 받고(`staleTime: 0`), 머무는 동안에도 화면이 보이면 20초마다 다시 받아 새로 가입한 멤버를 새로고침 없이 보인다(#492, `LIVE_REFRESH`). 번치 이름은 번치 홈(`/home`)에서 받는다. 받는 동안은 로딩(sr-only 「멤버를 불러오는 중이에요」), 받은 값이 없을 때만 오류 화면과 「다시 시도」, 기본 번치가 없으면 번치 탭으로 보낸다.
 - 관리 메뉴: 서버가 멤버마다 준 동작(`actions`: `canGrantCoOwner`·`canRevokeCoOwner`·`canTransferOwner`·`canRemove`)만 보이고, 하나도 없으면 「⋯」를 숨긴다. 서버가 요청 시점의 권한으로 다시 판단한다.
 - 처리: 지정·해제 `PUT …/memberships/{id}/role`(CO_OWNER·MEMBER), 내보내기 `POST …/memberships/{id}/remove`, 넘기기 `POST /bunches/{id}/owner-transfer`(`Idempotency-Key`). 모두 요청자 소속 ID(`actorMembershipId`)와 목록을 받을 때의 버전(`expectedMembershipVersion`)을 보낸다.
 - 처리 중: 창을 닫은 뒤 응답까지 「⋯」를 숨기고(같은 요청이 두 번 가지 않게) sr-only status로 「처리하는 중이에요」를 알린다.
