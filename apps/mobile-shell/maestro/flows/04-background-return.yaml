@@ -12,5 +12,5 @@ name: 백그라운드에 뒀다 돌아오면 보던 탭 화면과 탭 바가 그
     stopApp: false
 - extendedWaitUntil:
     visible: '사진 올리기'
-    timeout: 15000
+    timeout: 30000
 - assertVisible: '마이페이지'

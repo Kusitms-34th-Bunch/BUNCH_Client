@@ -1,6 +1,6 @@
 import { pushDeviceRegistrationSchema } from '@app/bridge';
 import { registerPushDevice, unregisterPushDevice } from '../api/pushDevices';
-import { isNativeShell, pushDeviceBridge } from '../bridge/client';
+import { isNativeShell, permissionBridge, pushDeviceBridge } from '../bridge/client';
 
 /** 마지막으로 서버에 등록한 정보의 서명. 같으면 다시 보내지 않음(메모리에만 두고 저장·로그하지 않음, 문서를 새로 열면 사라짐) */
 let lastSynced: string | null = null;
@@ -70,6 +70,41 @@ export const syncPushDevice = (): Promise<PushSyncResult> => {
     inFlight = undefined;
   });
   return inFlight;
+};
+
+let asking = false;
+
+/**
+ * 아직 정하지 않은 기기 알림 권한을 OS 팝업으로 묻고 답한 권한으로 기기를 다시 등록, 물었으면 true
+ * 재설치·기존 계정처럼 약관 화면을 거치지 않은 기기용. 이미 정했거나 겹친 호출·실패는 묻지 않고 false
+ */
+export const askNotificationPermission = async (): Promise<boolean> => {
+  if (asking) return false;
+  asking = true;
+  try {
+    // 지원 여부 확인도 실패하면 false(부르는 쪽이 결과를 기다리지 않아 던지면 처리되지 않은 거부가 됨)
+    if (
+      !isNativeShell() ||
+      !permissionBridge.isNativeMethodAvailable('getPermissionStatus') ||
+      !permissionBridge.isNativeMethodAvailable('requestPermission') ||
+      (await permissionBridge.getPermissionStatus('notification')) !== 'undetermined'
+    ) {
+      return false;
+    }
+    await permissionBridge.requestPermission('notification');
+    // 팝업이 닫히며 먼저 시작된 등록은 답하기 전 권한을 읽었을 수 있어 그 등록이 끝난 뒤 다시 맞춤
+    // 기기 등록을 기다리지 않고 돌려줘 화면이 답한 권한을 바로 다시 읽게 함(등록은 실패해도 던지지 않음)
+    const pending = inFlight;
+    void (async () => {
+      await pending;
+      await syncPushDevice();
+    })();
+    return true;
+  } catch {
+    return false;
+  } finally {
+    asking = false;
+  }
 };
 
 // 로그아웃이 오래 걸리지 않도록 해제 대기 상한

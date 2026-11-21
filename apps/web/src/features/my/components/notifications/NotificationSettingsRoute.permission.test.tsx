@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '@/mocks/server';
@@ -9,12 +9,19 @@ import { NotificationSettingsRoute } from './NotificationSettingsRoute';
 type Status = 'granted' | 'denied' | 'undetermined';
 const bridge = vi.hoisted(() => ({
   getPermissionStatus: vi.fn<(_kind: string) => Promise<Status>>(),
+  requestPermission: vi.fn<(_kind: string) => Promise<Status>>(),
 }));
 vi.mock('@/shared/bridge/client', () => ({
   isNativeShell: () => true,
   permissionBridge: {
     isNativeMethodAvailable: () => true,
     getPermissionStatus: bridge.getPermissionStatus,
+    requestPermission: bridge.requestPermission,
+  },
+  // 권한을 답한 뒤 기기 다시 등록: 등록할 기기가 없는 쉘로 둠
+  pushDeviceBridge: {
+    isNativeMethodAvailable: () => true,
+    getPushDeviceRegistration: () => Promise.resolve(null),
   },
   photoUploadBridge: { openAppSettings: () => Promise.resolve() },
 }));
@@ -32,6 +39,8 @@ describe('NotificationSettingsRoute(실제 기기 권한 훅)', () => {
     render(<NotificationSettingsRoute />, { wrapper: createQueryWrapper() });
 
     expect(await screen.findByText('알림 설정이 꺼져 있어요.')).toBeTruthy();
+    // 들어올 때 이미 꺼져 있으면 초점을 옮기지 않음
+    expect(document.activeElement).toBe(document.body);
     // 초기값(granted) → 첫 쉘 상태(denied)는 머무는 중 바뀐 것이 아니라 처음 상태
     expect(screen.queryByText(DEVICE_OFF_NOTICE)).toBeNull();
     expect(screen.queryByText(DEVICE_ON_NOTICE)).toBeNull();
@@ -91,5 +100,45 @@ describe('NotificationSettingsRoute(실제 기기 권한 훅)', () => {
 
     expect(screen.queryByText(DEVICE_OFF_NOTICE)).toBeNull();
     expect(screen.queryByText(DEVICE_ON_NOTICE)).toBeNull();
+  });
+
+  it('권한을 아직 정하지 않은 기기는 알림을 끄고 다시 켜면 권한을 묻고 답한 상태로 바뀐다', async () => {
+    bridge.getPermissionStatus.mockResolvedValue('undetermined');
+    bridge.requestPermission.mockImplementation(() => {
+      bridge.getPermissionStatus.mockResolvedValue('denied');
+      return Promise.resolve('denied');
+    });
+    render(<NotificationSettingsRoute />, { wrapper: createQueryWrapper() });
+    const push = await screen.findByRole<HTMLInputElement>('switch', { name: '앱 푸시 알림' });
+    await waitFor(() => expect(push.disabled).toBe(false));
+
+    // 끄는 것은 묻지 않음
+    if (push.checked) fireEvent.click(push);
+    await waitFor(() => expect(push.checked).toBe(false));
+    expect(bridge.requestPermission).not.toHaveBeenCalled();
+
+    // 키보드로 토글에 초점을 둔 채 켬(잠긴 뒤에도 초점이 토글에 남는 WebView 경로)
+    push.focus();
+    expect(document.activeElement).toBe(push);
+    fireEvent.click(push);
+
+    await waitFor(() => expect(bridge.requestPermission).toHaveBeenCalledWith('notification'));
+    // 거부하면 바로 다시 읽어 배너를 띄우고, 잠긴 토글 대신 막힌 이유로 초점을 옮김
+    const banner = await screen.findByText('알림 설정이 꺼져 있어요.');
+    await waitFor(() => expect(document.activeElement).toBe(banner));
+  });
+
+  it('이미 허용한 기기는 알림을 켜도 다시 묻지 않는다', async () => {
+    bridge.getPermissionStatus.mockResolvedValue('granted');
+    render(<NotificationSettingsRoute />, { wrapper: createQueryWrapper() });
+    const push = await screen.findByRole<HTMLInputElement>('switch', { name: '앱 푸시 알림' });
+    await waitFor(() => expect(push.disabled).toBe(false));
+
+    if (push.checked) fireEvent.click(push);
+    await waitFor(() => expect(push.checked).toBe(false));
+    fireEvent.click(push);
+    await waitFor(() => expect(push.checked).toBe(true));
+
+    expect(bridge.requestPermission).not.toHaveBeenCalled();
   });
 });

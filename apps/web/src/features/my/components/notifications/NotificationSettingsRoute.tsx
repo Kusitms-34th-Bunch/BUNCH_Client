@@ -23,7 +23,8 @@ export function NotificationSettingsRoute() {
   const backOr = useBackOr();
   const query = useQuery(notificationSettingsQueryOptions());
   const update = useUpdateNotificationSettingsMutation();
-  const { permission, ready, checking, openSettings } = useDeviceNotificationPermission();
+  const { permission, ready, checking, openSettings, askPermission } =
+    useDeviceNotificationPermission();
   const failed = query.isError && !query.data && query.fetchStatus === 'idle';
   const text = MY_MESSAGES.notifications;
   // 영역이 먼저 마운트된 뒤에 문구를 채워야 스크린 리더가 변화로 읽음(영역과 문구가 함께 생기면 읽히지 않을 수 있음)
@@ -72,8 +73,15 @@ export function NotificationSettingsRoute() {
           settings={query.data ? toNotificationSettings(query.data) : undefined}
           devicePermission={permission}
           devicePermissionChecking={checking}
-          onChangePush={(checked) => update.mutate(pushPatch(checked))}
-          onChangeType={(type, checked) => update.mutate(typePatch(type, checked))}
+          onChangePush={(checked) => {
+            update.mutate(pushPatch(checked));
+            // 켤 때 기기 권한을 아직 정하지 않았으면 함께 물음(끄고 다시 켜면 권한과 기기 등록이 맞춰짐)
+            if (checked) void askPermission();
+          }}
+          onChangeType={(type, checked) => {
+            update.mutate(typePatch(type, checked));
+            if (checked) void askPermission();
+          }}
           onOpenDeviceSettings={openSettings}
           onBack={() => {
             // 이미 떠났으면 받기 실패 effect가 한 번 더 뒤로 가지 않게
