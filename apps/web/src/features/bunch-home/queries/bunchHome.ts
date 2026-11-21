@@ -6,6 +6,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import type { MyBunches } from '@/shared/api/myBunches';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
@@ -25,6 +26,12 @@ import {
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { FIRST_PAGE, nextPageOf } from '../lib/pages';
 import { bunchHomeKeys } from './keys';
+
+/**
+ * 다른 멤버의 변경(가입, 번들 발행·초안)을 보이는 화면에 반영하는 갱신(들어올 때·앱 복귀 때·보이는 동안 20초마다)
+ * 요청이 가벼운 단건 query에만 씀(쪽 단위 목록은 홈 개수가 바뀔 때만 다시 받음, useRefetchListsOnCountChange). 가려지면 멈춤
+ */
+export const LIVE_REFRESH = { staleTime: 0, refetchInterval: 20_000 } as const;
 
 /** 번치 홈 프로필·개수. 번치를 아직 모르면 요청하지 않음(skipToken) */
 export const bunchHomeQueryOptions = (bunchId: string | undefined) =>
@@ -57,6 +64,46 @@ export const draftBundlesQueryOptions = (bunchId: string | undefined) =>
     queryFn: bunchId ? ({ signal }) => getDraftBundles(bunchId, signal) : skipToken,
     ...persistedQuery,
   });
+
+type HomeCounts = {
+  publishedCount?: number | null | undefined;
+  draftCount?: number | null | undefined;
+  memberCount?: number | undefined;
+};
+
+/**
+ * 홈 개수가 바뀐 목록(발행·작성 중 번들, 멤버)과 받기에 실패한 목록만 다시 받음(번치를 바꾼 직후 첫 값은 비교 안 함)
+ * ponytail: 한 주기에 발행 1건·삭제 1건처럼 개수가 그대로인 변화는 목록이 오래된(5분) 뒤의 진입·당겨서 새로고침 때 반영
+ */
+export const useRefetchListsOnCountChange = (
+  bunchId: string | undefined,
+  counts: HomeCounts | undefined,
+  homeUpdatedAt: number,
+) => {
+  const queryClient = useQueryClient();
+  const last = useRef<(HomeCounts & { bunchId: string }) | undefined>(undefined);
+  const { publishedCount, draftCount, memberCount } = counts ?? {};
+  useEffect(() => {
+    if (!bunchId || memberCount === undefined) return;
+    const prev = last.current;
+    last.current = { bunchId, publishedCount, draftCount, memberCount };
+    const sameBunch = prev?.bunchId === bunchId;
+    const lists = [
+      [sameBunch && prev.publishedCount !== publishedCount, bunchHomeKeys.publishedPages(bunchId)],
+      [sameBunch && prev.draftCount !== draftCount, sharedKeys.draftBundles(bunchId)],
+      [sameBunch && prev.memberCount !== memberCount, sharedKeys.bunchMembers(bunchId)],
+    ] as const;
+    for (const [changed, queryKey] of lists) {
+      // 진행 중인 다음 쪽 받기가 있어도 취소하고 첫 쪽부터 다시 받음(기본 cancelRefetch)
+      const state = queryClient.getQueryState(queryKey);
+      // 실패한 목록은 이미 다시 받는 중이면 그대로 둠(느린 장애에서 20초마다 취소되지 않게)
+      const failed = state?.status === 'error' && state.fetchStatus !== 'fetching';
+      if (changed || failed) {
+        void queryClient.invalidateQueries({ queryKey });
+      }
+    }
+  }, [queryClient, bunchId, publishedCount, draftCount, memberCount, homeUpdatedAt]);
+};
 
 /**
  * 번치 전환: 마지막 사용 번치를 저장한 뒤 기본 번치(`members/me`)를 다시 읽음

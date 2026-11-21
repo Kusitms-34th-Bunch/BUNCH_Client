@@ -11,7 +11,7 @@ import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { type BunchMemberActions, sortMembers } from '../../lib/members';
 import { type ManagedMemberships, toManagedMemberships } from '../../model/memberships';
-import { bunchHomeQueryOptions } from '../../queries/bunchHome';
+import { bunchHomeQueryOptions, LIVE_REFRESH } from '../../queries/bunchHome';
 import {
   type MembershipChange,
   membershipsQueryOptions,
@@ -52,7 +52,8 @@ export function BunchMembers() {
   const me = useQuery(myProfileQueryOptions());
   const bunchId = me.data?.bunch?.id;
   const home = useQuery(bunchHomeQueryOptions(bunchId));
-  const memberships = useQuery(membershipsQueryOptions(bunchId));
+  // 머무는 동안 새로 가입한 멤버도 보이게 주기적으로 다시 받음
+  const memberships = useQuery({ ...membershipsQueryOptions(bunchId), ...LIVE_REFRESH });
   const change = useChangeMembershipMutation(bunchId);
   // 실패 뒤 목록을 다시 받는 동안도 처리 중(오래된 버전으로 다시 보내지 않게)
   const [recovering, setRecovering] = useState(false);
