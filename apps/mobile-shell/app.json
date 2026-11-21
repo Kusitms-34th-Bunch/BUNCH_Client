@@ -58,6 +58,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "kr.bunch.app",
       "appleTeamId": "9CGCR9499H",
+      "associatedDomains": ["applinks:app.bunch.kr", "applinks:open.bunch.kr"],
       "infoPlist": {
         "CFBundleDisplayName": "BUNCH"
       },
