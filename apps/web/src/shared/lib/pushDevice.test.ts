@@ -15,9 +15,16 @@ const mocks = vi.hoisted(() => ({
   getPushInstallationId: vi.fn<() => Promise<unknown>>(),
   registerPushDevice: vi.fn<(_registration: unknown) => Promise<unknown>>(),
   unregisterPushDevice: vi.fn<(_installationId: string) => Promise<void>>(),
+  getPermissionStatus: vi.fn<(_kind: string) => Promise<string>>(),
+  requestPermission: vi.fn<(_kind: string) => Promise<string>>(),
 }));
 vi.mock('../bridge/client', () => ({
   isNativeShell: mocks.isNativeShell,
+  permissionBridge: {
+    isNativeMethodAvailable: mocks.isNativeMethodAvailable,
+    getPermissionStatus: mocks.getPermissionStatus,
+    requestPermission: mocks.requestPermission,
+  },
   pushDeviceBridge: {
     isNativeMethodAvailable: mocks.isNativeMethodAvailable,
     getPushDeviceRegistration: mocks.getPushDeviceRegistration,
@@ -41,6 +48,8 @@ beforeEach(() => {
   mocks.getPushInstallationId.mockResolvedValue(UUID);
   mocks.registerPushDevice.mockResolvedValue({});
   mocks.unregisterPushDevice.mockResolvedValue(undefined);
+  mocks.getPermissionStatus.mockResolvedValue('undetermined');
+  mocks.requestPermission.mockResolvedValue('granted');
 });
 afterEach(() => vi.useRealTimers());
 
@@ -264,5 +273,81 @@ describe('releasePushDevice', () => {
 
     expect(await syncPushDevice()).toBe('synced');
     expect(mocks.registerPushDevice).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('알림 권한 묻기', () => {
+  it('아직 정하지 않았으면 묻고, 답한 권한으로 기기를 다시 등록한다', async () => {
+    const { askNotificationPermission } = await load();
+
+    expect(await askNotificationPermission()).toBe(true);
+    expect(mocks.requestPermission).toHaveBeenCalledWith('notification');
+    expect(mocks.registerPushDevice).toHaveBeenCalledTimes(1);
+  });
+
+  it('팝업이 닫히며 먼저 시작된 등록이 있으면 그 뒤 답한 권한으로 다시 등록한다', async () => {
+    const { askNotificationPermission, syncPushDevice } = await load();
+    let finishEarly: (_value: unknown) => void = () => undefined;
+    mocks.registerPushDevice.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishEarly = resolve;
+        }),
+    );
+    mocks.requestPermission.mockImplementation(() => {
+      // 팝업이 닫힐 때 focus로 시작된 등록(답하기 전 상태를 읽음)
+      void syncPushDevice();
+      mocks.getPushDeviceRegistration.mockResolvedValue({
+        ...registration,
+        authorizationStatus: 'DENIED',
+      });
+      return Promise.resolve('denied');
+    });
+
+    const asked = askNotificationPermission();
+    await vi.waitFor(() => expect(mocks.registerPushDevice).toHaveBeenCalledTimes(1));
+    finishEarly({});
+
+    expect(await asked).toBe(true);
+    expect(mocks.registerPushDevice).toHaveBeenCalledTimes(2);
+    expect(mocks.registerPushDevice).toHaveBeenLastCalledWith(
+      expect.objectContaining({ authorizationStatus: 'DENIED' }),
+    );
+  });
+
+  it('이미 허용·거부했으면 묻지 않는다', async () => {
+    const { askNotificationPermission } = await load();
+
+    for (const status of ['granted', 'denied']) {
+      mocks.getPermissionStatus.mockResolvedValueOnce(status);
+      expect(await askNotificationPermission()).toBe(false);
+    }
+    expect(mocks.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('겹쳐 부르면 한 번만 묻는다', async () => {
+    const { askNotificationPermission } = await load();
+
+    const results = await Promise.all([askNotificationPermission(), askNotificationPermission()]);
+    expect(results).toEqual([true, false]);
+    expect(mocks.requestPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it('쉘이 아니거나 권한 요청을 모르는 쉘이면 묻지 않는다', async () => {
+    const { askNotificationPermission } = await load();
+
+    mocks.isNativeShell.mockReturnValueOnce(false);
+    expect(await askNotificationPermission()).toBe(false);
+    mocks.isNativeMethodAvailable.mockImplementation((method) => method !== 'requestPermission');
+    expect(await askNotificationPermission()).toBe(false);
+    expect(mocks.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('요청이 실패해도 던지지 않고 다음에 다시 물을 수 있다', async () => {
+    const { askNotificationPermission } = await load();
+
+    mocks.requestPermission.mockRejectedValueOnce(new Error('bridge down'));
+    expect(await askNotificationPermission()).toBe(false);
+    expect(await askNotificationPermission()).toBe(true);
   });
 });

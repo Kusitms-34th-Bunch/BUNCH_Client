@@ -2,7 +2,7 @@
 
 import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { ToggleListItem } from '@app/design-system/web';
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -60,6 +60,19 @@ export function NotificationSettingsScreen({
   // 기기 권한 때문에 막힌 토글은 배너 문구를 이유로 함께 읽음
   const disabledReason = deviceOff ? deviceOffMessageId : undefined;
   const text = MY_MESSAGES.notifications;
+  // 토글을 바꾼 직후 권한 거부로 잠기면 그 토글의 초점이 사라지므로 막힌 이유(배너 문구)로 옮김. 들어올 때 이미 꺼져 있으면 옮기지 않음
+  const toggled = useRef(false);
+  const wasOff = useRef(deviceOff);
+  useEffect(() => {
+    const turnedOff = deviceOff && !wasOff.current;
+    wasOff.current = deviceOff;
+    if (!turnedOff || !toggled.current) return;
+    toggled.current = false;
+    const active = document.activeElement;
+    if (active === null || active === document.body) {
+      document.getElementById(deviceOffMessageId)?.focus();
+    }
+  }, [deviceOff, deviceOffMessageId]);
 
   return (
     <PageShell
@@ -96,7 +109,11 @@ export function NotificationSettingsScreen({
             checked={settings.push}
             disabled={locked}
             aria-describedby={disabledReason}
-            onChange={(event) => onChangePush(event.currentTarget.checked)}
+            onChange={(event) => {
+              // 켤 때만 권한 팝업이 뜰 수 있음
+              toggled.current = event.currentTarget.checked;
+              onChangePush(event.currentTarget.checked);
+            }}
           />
           <section aria-labelledby={typesLabelId} className="gap-s3 flex flex-col">
             <h2
@@ -114,7 +131,10 @@ export function NotificationSettingsScreen({
                   checked={settings.types[type]}
                   disabled={typesDisabled}
                   aria-describedby={disabledReason}
-                  onChange={(event) => onChangeType(type, event.currentTarget.checked)}
+                  onChange={(event) => {
+                    toggled.current = event.currentTarget.checked;
+                    onChangeType(type, event.currentTarget.checked);
+                  }}
                 />
               ))}
             </div>
