@@ -264,15 +264,17 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
   // 로그인·인트로에서는 뒤로 가기를 막음(로그아웃 뒤 앞 기록으로 갔다가 다시 로그인으로 오는 반복 방지)
   const [backAllowed, setBackAllowed] = useState(() => !blocksBackNavigation(uri, WEB_URL));
 
-  // Android 뒤로가기 시 웹 history 우선 처리(막은 화면에서는 시스템 기본 동작)
+  // Android 뒤로가기 시 보이는 WebView의 웹 history 우선 처리(막은 화면에서는 시스템 기본 동작)
+  // 숨은 탭 WebView도 구독하므로 보이는 것만 처리(아니면 보이는 화면이 넘긴 뒤 숨은 탭의 기록이 되돌아감)
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (!canGoBack.current || blocksBackNavigation(currentUrl.current, WEB_URL)) return false;
+      if (!isVisibleWebView(tabId) || !canGoBack.current) return false;
+      if (blocksBackNavigation(currentUrl.current, WEB_URL)) return false;
       webViewRef.current?.goBack();
       return true;
     });
     return () => subscription.remove();
-  }, []);
+  }, [tabId]);
 
   // 값 변경 시(예: 기기 회전) 재주입 — 첫 로드는 injectedJavaScriptBeforeContentLoaded 담당
   useEffect(() => {

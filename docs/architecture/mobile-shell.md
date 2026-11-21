@@ -40,7 +40,7 @@ apps/mobile-shell/
 
 - 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)의 이동만 WebView 안에서 처리한다. 외부 주소와 `tel:`, `mailto:` 등은 `Linking.openURL`로 OS에 넘긴다. 인증 redirect는 별도 계약 확정 후 연결한다.
 - 초대 링크(`https://app.bunch.kr/invite/{토큰}`, 웹 진입 페이지가 넘기는 `https://open.bunch.kr/invite/{토큰}`)로 앱이 열리면(iOS 유니버셜 링크, `app.json`의 `ios.associatedDomains`) `app/+native-intent.tsx`가 `src/invite-link.ts`로 이 주소만 받아 토큰으로 웹 경로를 새로 만들고 `src/incoming-link-store.ts`에 보관한다. 받은 주소를 그대로 열지 않고, 앱 런타임의 URL 구현이 표준과 달라 주소 전체를 정규식으로 판별한다. 처음 실행이면 첫 화면(`app/index.tsx`)이 그 경로로 WebView를 열고, 실행 중이면 지금 보이는 WebView(탭 화면이면 탭 바로 고른 탭, `visibleTab`)가 그 경로로 이동한다. 링크는 그 주소로 이동을 시작했을 때(`onShouldStartLoadWithRequest`) 지우고, 다시 불러오는 중이라 주입이 무시됐으면 로드가 끝날 때(`onLoadEnd`) 다시 넘긴다. 그때 열지 못한 링크는 10초 뒤 버린다. 이 도메인의 그 밖의 주소는 화면을 옮기지 않는다(맞는 화면이 없어 Unmatched Route가 WebView를 가림). 도메인 연결 파일은 웹의 `/.well-known/apple-app-site-association`이고 흐름은 `docs/workflows/invite-link-entry.md`에 있다.
-- iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 웹 history에 먼저 연결한다. 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
+- iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 지금 보이는 WebView의 웹 history에 먼저 연결한다(숨은 탭 WebView는 처리하지 않음). 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
 - 로그인(`/login`)·인트로(`/intro`)에서는 둘 다 웹 history로 되돌리지 않는다(`blocksBackNavigation`, #498). 로그아웃은 현재 기록만 바꿔 앞 기록이 로그인한 사용자 화면으로 남는데, 그 화면으로 돌아가면 가드가 다시 로그인으로 보내 「확인 중 → 로그인」이 반복됐다. 쉘이 WebView의 현재 주소(`onNavigationStateChange`)로 판단하므로 bridge 계약은 바뀌지 않고, 대신 웹 경로 문자열(`LOGIN_PATH`·`INTRO_PATH`)에 기댄다(웹 상수에 쉘을 가리키는 주석). 새 쉘 빌드가 필요하다. Android WebView는 화면 안 이동(`pushState`)을 이 콜백으로 늦게 알릴 수 있어, 로그인에 막 도착한 순간의 판정은 실기기에서 확인해야 한다(어긋나면 웹이 bridge로 알리는 방식으로 바꿈).
 - 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면과 iOS 시스템 탭 바다.
 
