@@ -33,15 +33,16 @@
 
 코드를 올리지 않고 빈 프로젝트만 만든다. 저장소 밖 빈 폴더에서 `npm exec --yes -- vercel@65.1.0 login` 뒤 `npm exec --yes -- vercel@65.1.0 project create bunch-web`(팀 계정이면 `--scope <팀>`)을 실행하고, 아래 설정은 대시보드에서 한다. Project ID는 프로젝트 Settings → General, Team ID(`VERCEL_ORG_ID`)는 팀 Settings → General에서 확인한다. 로컬 작업 폴더에서 `vercel link`·`deploy`를 실행하지 않는다(gitignore 대상 비밀 파일이 올라갈 수 있는지 확인하지 않았다).
 
-| 항목                                                                 | 값                                                                       |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| 프로젝트 이름                                                        | `bunch-web`(workflow가 이 이름을 확인)                                   |
-| Git 연결                                                             | 없음(Actions로 배포)                                                     |
-| Root Directory                                                       | `apps/web`                                                               |
-| Include source files outside of the Root Directory in the Build Step | 켬                                                                       |
-| Node.js Version                                                      | 24.x(`package.json`의 `engines.node >=24`)                               |
-| Install / Build Command                                              | `apps/web/vercel.json`이 지정하므로 대시보드에서 덮어쓰지 않는다         |
-| Deployment Protection                                                | 앱 쉘과 사용자 폰에서 열려야 하므로 프로덕션 접속에 로그인이 걸리지 않게 |
+| 항목                                                                 | 값                                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 프로젝트 이름                                                        | `bunch-web`(workflow가 이 이름을 확인)                                                                                                                                                                          |
+| Git 연결                                                             | 없음(Actions로 배포)                                                                                                                                                                                            |
+| Root Directory                                                       | `apps/web`                                                                                                                                                                                                      |
+| Include source files outside of the Root Directory in the Build Step | 켬                                                                                                                                                                                                              |
+| Node.js Version                                                      | 24.x(`package.json`의 `engines.node >=24`)                                                                                                                                                                      |
+| Install / Build Command                                              | `apps/web/vercel.json`이 지정하므로 대시보드에서 덮어쓰지 않는다                                                                                                                                                |
+| Function Region                                                      | `icn1`(서울). 백엔드가 한국이라 BFF 왕복을 줄이려고 `apps/web/vercel.json`의 `regions`로 지정하고, 이 값이 대시보드(Settings → Functions)보다 우선한다. 배포 뒤 응답 헤더 `x-vercel-id`의 함수 리전 표기로 확인 |
+| Deployment Protection                                                | 앱 쉘과 사용자 폰에서 열려야 하므로 프로덕션 접속에 로그인이 걸리지 않게                                                                                                                                        |
 
 요금제와 계정 소유(개인 Hobby는 비상업 용도)는 팀이 정한다.
 
