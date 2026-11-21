@@ -16,7 +16,9 @@ const Providers = ({ children }: { children: ReactNode }) => (
     <>{children}</>
   </CreateBunchDraftProvider>
 );
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push, back, replace, prefetch: () => {} }),
+}));
 
 // 기본은 중복 확인 없이(확인 중에는 다음이 잠겨 다른 동작 검증이 흔들림), 중복 확인은 아래 별도 묶음에서 확인
 const renderStep = () => render(<BunchBasicInfo checkName={null} />, { wrapper: Providers });

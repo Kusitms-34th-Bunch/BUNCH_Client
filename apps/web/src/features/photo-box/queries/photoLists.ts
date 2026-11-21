@@ -1,4 +1,5 @@
 import { infiniteQueryOptions, skipToken } from '@tanstack/react-query';
+import { persistedFirstPage } from '@/shared/query/persistence';
 import { getDatedPhotosPage, getUndatedPhotosPage } from '../api/photos';
 import { photoBoxKeys } from './keys';
 
@@ -55,6 +56,8 @@ export const datedPhotosQueryOptions = (
   infiniteQueryOptions({
     queryKey: photoBoxKeys.datedPhotos(bunchId),
     staleTime,
+    // 앱을 다시 열면 지난 첫 쪽을 먼저 보이고 다시 받음
+    ...persistedFirstPage,
     // 화면이 가려진 동안(백그라운드)은 기본값(refetchIntervalInBackground: false)대로 멈춤
     refetchInterval: refetchInterval ?? false,
     initialPageParam: undefined as string | undefined,
@@ -73,6 +76,8 @@ export const undatedPhotosQueryOptions = (
   infiniteQueryOptions({
     queryKey: photoBoxKeys.undatedPhotos(bunchId),
     staleTime,
+    // 앱을 다시 열면 지난 첫 쪽을 먼저 보이고 다시 받음
+    ...persistedFirstPage,
     refetchInterval: refetchInterval ?? false,
     initialPageParam: undefined as string | undefined,
     queryFn: bunchId

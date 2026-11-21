@@ -18,7 +18,7 @@ import { JoinInvitationProvider } from '../../contexts/JoinInvitationProvider';
 import { BunchJoinInvitation } from './BunchJoinInvitation';
 
 const replace = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, prefetch: () => {} }) }));
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 const toastAfterNavigation = vi.fn<(_message: string) => void>();

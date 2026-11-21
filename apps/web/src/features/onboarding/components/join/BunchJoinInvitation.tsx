@@ -21,6 +21,7 @@ import {
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
 import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 import { useJoinInvitationMutation } from '../../queries/invitations';
 import { InviteReveal } from './InviteReveal';
 
@@ -38,6 +39,7 @@ const BLOCKED_REASONS: Partial<Record<string, string>> = {
 
 export function BunchJoinInvitation() {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.joinBunchComplete);
   const flow = useJoinInvitationFlow();
   const { verified } = flow;
   const join = useJoinInvitationMutation();

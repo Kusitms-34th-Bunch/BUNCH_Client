@@ -10,6 +10,8 @@ declare module '@tanstack/react-query' {
     queryMeta: {
       /** true면 앱을 다시 열 때 복원하도록 저장(`shared/query/persistence.ts`, 로그인 상태·민감한 화면에는 쓰지 않음) */
       persist?: boolean;
+      /** 쪽 단위 목록의 첫 쪽만 저장(저장본 크기와 복원 뒤 다시 받는 쪽 수를 줄임) */
+      persistFirstPageOnly?: boolean;
     };
     mutationMeta: {
       /** 실패하면 띄울 토스트 문구. 없으면 공통 알림 없이 화면이 직접 처리 */

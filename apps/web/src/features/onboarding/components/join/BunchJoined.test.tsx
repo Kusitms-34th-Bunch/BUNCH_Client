@@ -8,7 +8,7 @@ import { JoinInvitationProvider } from '../../contexts/JoinInvitationProvider';
 import { BunchJoined } from './BunchJoined';
 
 const replace = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, prefetch: () => {} }) }));
 
 const BUNCH: CreatedBunch = { id: '3', name: '여행가조', characterType: 'TYPE_3' };
 const withBunch = (joinedBunch: CreatedBunch | null) =>

@@ -16,7 +16,7 @@ import { BunchCreated } from './BunchCreated';
 
 const replace = vi.fn();
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push, prefetch: () => {} }) }));
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: vi.fn(),

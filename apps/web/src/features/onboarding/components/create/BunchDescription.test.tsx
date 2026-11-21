@@ -40,7 +40,9 @@ const AfterBasicInfo = ({ children }: { children: ReactNode }) => {
     </QueryWrapper>
   );
 };
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push, back, replace, prefetch: () => {} }),
+}));
 // 토스트 표시는 DS의 `toast()` 담당이라 호출만 차단
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),

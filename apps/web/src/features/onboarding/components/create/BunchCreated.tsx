@@ -9,12 +9,14 @@ import { defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 import { useChangeBunchPhotoMutation } from '../../queries/bunches';
 import { BunchConfetti } from '../BunchConfetti';
 
 /** 번치 생성 완료: 만든 번치의 대표 사진 변경과 멤버 초대·번치 이동 */
 export function BunchCreated() {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.createBunchInvite, ONBOARDING_PATHS.bunchHome);
   const ready = useCreateBunchGuard(3);
   const { createdBunch, updateCreatedBunch } = useCreateBunchDraft();
   const changePhoto = useChangeBunchPhotoMutation(createdBunch?.id, updateCreatedBunch);
