@@ -77,6 +77,8 @@
 
 운영 주소는 `app.bunch.kr`이다(2026-11-11, Vercel 프로젝트 `bunch-web`에 연결한 도메인). Vercel 기본 주소는 `bunch-client.vercel.app`이다.
 
+앱 열기 도메인 `open.bunch.kr`도 같은 프로젝트에 붙인다(#489). 초대 진입 페이지의 「초대장 확인하기」가 이 도메인으로 넘겨 유니버셜 링크가 앱을 열게 하고, 앱이 없으면 `next.config.mjs`의 호스트 조건 리다이렉트가 `/invite/*`를 App Store로, 연결 파일을 뺀 나머지 경로를 `app.bunch.kr`로 보낸다. Vercel에서 다른 도메인으로 리다이렉트하는 도메인으로 붙이면 연결 파일(`/.well-known/apple-app-site-association`)까지 리다이렉트돼 Apple이 받지 않으므로 production 도메인 그대로 붙인다. DNS는 CNAME `open` → Vercel이 알려 준 값이다(Cloudflare면 DNS only). 흐름은 `docs/workflows/invite-link-entry.md`.
+
 - 앱 쉘 Release 빌드의 `EXPO_PUBLIC_WEB_URL`에 운영 주소(`https://app.bunch.kr`)를 넣는다(EAS production 환경, `apps/mobile-shell/.env.production.example`).
 - 카카오·구글 콘솔에는 웹 도메인을 등록하지 않는다. 소셜 로그인은 앱 쉘의 네이티브 SDK(번들 ID 기준)로만 하고, 웹은 받은 토큰을 같은 도메인의 BFF(`/api/auth/login`)로 넘긴다. 브라우저에서는 소셜 로그인을 할 수 없다.
 - 백엔드는 BFF가 서버에서 부르므로 브라우저 CORS 허용 출처 등록이 필요 없다.

@@ -28,6 +28,13 @@ export const reportTabBar = <T extends TabBarVisibilityState>(
 };
 
 /**
+ * 지금 화면에 보이는 탭(탭 바로 바꾼 탭, 아직 바꾼 적 없으면 웹이 처음 고른 탭)
+ * 탭 전환은 `focusedTab`만 바꾸고 `selectedId`(첫 요청의 탭)는 그대로라 둘을 함께 봐야 함
+ */
+export const visibleTab = (state: TabBarVisibilityState, initialTab: TabId): TabId =>
+  state.focusedTab ?? initialTab;
+
+/**
  * 탭이 바뀌면 그 탭이 마지막으로 알려 온 값으로 탭 바를 맞춤(알려 온 적 없으면 표시)
  * 탭별 값을 한 번도 받지 않았으면(탭 ID를 보내지 않는 이전 웹) 지금 탭 바를 그대로 둠(이전 웹이 보낸 숨김 유지)
  */
