@@ -53,7 +53,7 @@ export function useServerBunchHome(): ServerBunchHome {
   const published = useInfiniteQuery(publishedBundlesQueryOptions(bunchId));
   const drafts = useQuery(draftBundlesQueryOptions(bunchId));
   const members = useQuery(bunchMembersQueryOptions(bunchId));
-  useRefetchListsOnCountChange(bunchId, home.data);
+  useRefetchListsOnCountChange(bunchId, home.data, home.dataUpdatedAt);
   const myBunches = useQuery(myBunchesQueryOptions());
 
   const ready = useMemo(() => {

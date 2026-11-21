@@ -72,11 +72,14 @@ type HomeCounts = {
 };
 
 /**
- * 주기적으로 받는 홈 정보의 개수가 바뀌었을 때만 그 목록(발행·작성 중 번들, 멤버)을 다시 받음
- * 쪽 단위 목록을 20초마다 모든 쪽 다시 받지 않게 하는 용도. 번치가 바뀐 직후 첫 값은 비교하지 않음
- * ponytail: 한 주기에 발행 1건·삭제 1건처럼 개수가 그대로인 변화는 다음 진입·당겨서 새로고침 때 반영
+ * 홈 개수가 바뀐 목록(발행·작성 중 번들, 멤버)과 받기에 실패한 목록만 다시 받음(번치를 바꾼 직후 첫 값은 비교 안 함)
+ * ponytail: 한 주기에 발행 1건·삭제 1건처럼 개수가 그대로인 변화는 목록이 오래된(5분) 뒤의 진입·당겨서 새로고침 때 반영
  */
-export const useRefetchListsOnCountChange = (bunchId: string | undefined, counts?: HomeCounts) => {
+export const useRefetchListsOnCountChange = (
+  bunchId: string | undefined,
+  counts: HomeCounts | undefined,
+  homeUpdatedAt: number,
+) => {
   const queryClient = useQueryClient();
   const last = useRef<(HomeCounts & { bunchId: string }) | undefined>(undefined);
   const { publishedCount, draftCount, memberCount } = counts ?? {};
@@ -84,17 +87,22 @@ export const useRefetchListsOnCountChange = (bunchId: string | undefined, counts
     if (!bunchId || memberCount === undefined) return;
     const prev = last.current;
     last.current = { bunchId, publishedCount, draftCount, memberCount };
-    if (prev?.bunchId !== bunchId) return;
-    const changed = [
-      prev.publishedCount !== publishedCount && bunchHomeKeys.publishedPages(bunchId),
-      prev.draftCount !== draftCount && sharedKeys.draftBundles(bunchId),
-      prev.memberCount !== memberCount && sharedKeys.bunchMembers(bunchId),
-    ];
-    for (const queryKey of changed) {
-      // 내 발행·삭제가 이미 시작한 목록 재조회는 취소하지 않고 이어 씀
-      if (queryKey) void queryClient.invalidateQueries({ queryKey }, { cancelRefetch: false });
+    const sameBunch = prev?.bunchId === bunchId;
+    const lists = [
+      [sameBunch && prev.publishedCount !== publishedCount, bunchHomeKeys.publishedPages(bunchId)],
+      [sameBunch && prev.draftCount !== draftCount, sharedKeys.draftBundles(bunchId)],
+      [sameBunch && prev.memberCount !== memberCount, sharedKeys.bunchMembers(bunchId)],
+    ] as const;
+    for (const [changed, queryKey] of lists) {
+      // 진행 중인 다음 쪽 받기가 있어도 취소하고 첫 쪽부터 다시 받음(기본 cancelRefetch)
+      const state = queryClient.getQueryState(queryKey);
+      // 실패한 목록은 이미 다시 받는 중이면 그대로 둠(느린 장애에서 20초마다 취소되지 않게)
+      const failed = state?.status === 'error' && state.fetchStatus !== 'fetching';
+      if (changed || failed) {
+        void queryClient.invalidateQueries({ queryKey });
+      }
     }
-  }, [queryClient, bunchId, publishedCount, draftCount, memberCount]);
+  }, [queryClient, bunchId, publishedCount, draftCount, memberCount, homeUpdatedAt]);
 };
 
 /**

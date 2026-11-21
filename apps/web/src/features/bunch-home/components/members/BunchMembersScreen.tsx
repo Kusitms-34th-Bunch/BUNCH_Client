@@ -148,10 +148,14 @@ export function BunchMembersScreen({
     }
   };
   // 초점 복구는 창이 닫힐 때(onClosed)가 주로 맡고, 이 effect는 창이 닫힌 뒤 응답이 와 행이 사라지는 경우의 보조
-  // 관리 처리를 한 뒤에만 동작(들어올 때·다시 받을 때 초점을 빼앗지 않음)
+  // 관리 처리 뒤나 초점이 있던 행이 사라졌을 때만 동작(들어올 때·다시 받을 때 초점을 빼앗지 않음)
   const focusAfterChange = useRef(false);
+  // 다른 관리자의 변경이 주기 갱신으로 들어와 초점이 있던 행이 사라진 경우도 같은 자리로
+  const listFocus = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (!focusAfterChange.current) return;
+    const lostRow = listFocus.current?.isConnected === false;
+    if (lostRow) listFocus.current = null;
+    if (!focusAfterChange.current && !lostRow) return;
     keepFocus();
     if (!busy) focusAfterChange.current = false;
   }, [members, busy]);
@@ -266,7 +270,12 @@ export function BunchMembersScreen({
               <LineChevronRightSmallIcon aria-hidden />
             </Link>
           </div>
-          <ul className="gap-s4 flex flex-col">
+          <ul
+            className="gap-s4 flex flex-col"
+            onFocus={(event) => {
+              listFocus.current = event.target;
+            }}
+          >
             {members.map((member) => (
               <li key={member.id}>
                 <ProfileListItem

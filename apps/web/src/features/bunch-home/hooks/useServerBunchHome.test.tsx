@@ -24,6 +24,8 @@ describe('useServerBunchHome', () => {
       client.getQueryCache().find({ queryKey, exact: true })?.observers[0]?.options;
 
     await waitFor(() => expect(client.getQueryData(draftsKey)).toBeDefined());
+    // 주기는 계약값으로 확인(상수를 잘못 바꿔도 통과하지 않게)
+    expect(LIVE_REFRESH).toEqual({ staleTime: 0, refetchInterval: 20_000 });
     expect(optionsOf(homeKey)).toMatchObject(LIVE_REFRESH);
     expect(optionsOf(publishedBundlesQueryOptions(bunchId).queryKey)?.refetchInterval).toBeFalsy();
     expect(optionsOf(draftsKey)?.refetchInterval).toBeFalsy();
@@ -45,15 +47,34 @@ describe('useServerBunchHome', () => {
     const invalidate = vi.spyOn(client, 'invalidateQueries');
     const counts = { publishedCount: 1, draftCount: 0, memberCount: 2 };
     const { rerender } = renderHook(
-      ({ bunchId, value }) => useRefetchListsOnCountChange(bunchId, value),
-      { wrapper: createQueryWrapper(client), initialProps: { bunchId: '1', value: counts } },
+      ({ bunchId, value, at }) => useRefetchListsOnCountChange(bunchId, value, at),
+      { wrapper: createQueryWrapper(client), initialProps: { bunchId: '1', value: counts, at: 1 } },
     );
 
-    rerender({ bunchId: '2', value: { publishedCount: 5, draftCount: 3, memberCount: 4 } });
+    rerender({ bunchId: '2', value: { publishedCount: 5, draftCount: 3, memberCount: 4 }, at: 2 });
     expect(invalidate).not.toHaveBeenCalled();
 
-    rerender({ bunchId: '2', value: { publishedCount: 5, draftCount: 3, memberCount: 5 } });
+    rerender({ bunchId: '2', value: { publishedCount: 5, draftCount: 3, memberCount: 5 }, at: 3 });
     expect(invalidate).toHaveBeenCalledTimes(1);
     expect(invalidate.mock.calls[0]![0]).toEqual({ queryKey: ['bunch-members', '2'] });
+  });
+
+  it('받기에 실패한 목록은 개수가 같아도 다음 홈 갱신 때 다시 받는다', async () => {
+    const client = createTestQueryClient();
+    const draftsKey = draftBundlesQueryOptions('1').queryKey;
+    await client
+      .prefetchQuery({ queryKey: draftsKey, queryFn: () => Promise.reject(new Error('fail')) })
+      .catch(() => {});
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    const counts = { publishedCount: 1, draftCount: 2, memberCount: 2 };
+    const { rerender } = renderHook(({ at }) => useRefetchListsOnCountChange('1', counts, at), {
+      wrapper: createQueryWrapper(client),
+      initialProps: { at: 1 },
+    });
+    invalidate.mockClear();
+
+    rerender({ at: 2 });
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: draftsKey });
   });
 });
