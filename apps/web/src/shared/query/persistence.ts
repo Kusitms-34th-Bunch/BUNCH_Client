@@ -109,15 +109,25 @@ export const queryPersister: Persister = {
   },
   restoreClient: async () => {
     const client = (await storagePersister.restoreClient()) as OwnedClient | undefined;
-    if (client) restoredOwner = client.owner ?? null;
-    return client;
+    if (!client) return client;
+    restoredOwner = client.owner ?? null;
+    // 저장본 시각과 별개로 받은 지 24시간이 지난 항목은 다시 메모리에 올리지 않음
+    const queries = client.clientState.queries.filter(
+      (query) => Date.now() - query.state.dataUpdatedAt < PERSIST_MAX_AGE,
+    );
+    return { ...client, clientState: { ...client.clientState, queries } };
   },
   removeClient: () => storagePersister.removeClient(),
 };
 
-/** 저장 대상: 표시한 query 중 데이터를 받은 것만(오류·로딩 상태는 남기지 않음) */
+/**
+ * 저장 대상: 표시한 query 중 데이터를 받은 지 24시간이 안 된 것만(오류·로딩 상태는 남기지 않음)
+ * 저장본 시각은 저장할 때마다 새로 찍혀, 다시 받지 않는 복원 데이터(이전 번치 사진함 등)가 계속 이어지지 않게 항목마다 기한을 봄
+ */
 export const shouldPersistQuery = (query: Query) =>
-  query.meta?.persist === true && query.state.status === 'success';
+  query.meta?.persist === true &&
+  query.state.status === 'success' &&
+  Date.now() - query.state.dataUpdatedAt < PERSIST_MAX_AGE;
 
 /** 모든 화면의 저장본을 지움(로그아웃·탈퇴 직후, 비로그인 확인) */
 export const clearPersistedQueryStorage = () => {
