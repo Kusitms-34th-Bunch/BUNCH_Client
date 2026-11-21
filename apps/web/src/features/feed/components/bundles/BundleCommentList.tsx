@@ -104,7 +104,7 @@ export function BundleCommentList({
                   replyCount={comment.replyCount}
                   // 답글은 서버 권한(삭제되지 않은 원댓글). 소속 번치가 없으면 눌렀을 때 안내
                   onReply={
-                    comment.deleted || !(comment.canReply || noBunch)
+                    comment.pending || comment.deleted || !(comment.canReply || noBunch)
                       ? undefined
                       : () => onReply(comment)
                   }
@@ -115,7 +115,7 @@ export function BundleCommentList({
                   }
                   // 서버 권한대로 내 댓글은 삭제, 남의 댓글은 신고. 소속 번치가 없으면 신고를 눌렀을 때 안내
                   onMore={
-                    comment.deleted
+                    comment.deleted || comment.pending
                       ? undefined
                       : comment.canDelete
                         ? () => onMyCommentMore(comment)

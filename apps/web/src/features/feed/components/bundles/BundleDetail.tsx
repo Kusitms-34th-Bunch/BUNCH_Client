@@ -115,7 +115,6 @@ export function BundleDetail({
   const comment = useCommentActions({
     thread,
     viewer,
-    viewerId,
     asBunch,
     report,
     failAction,
@@ -246,18 +245,12 @@ export function BundleDetail({
     );
   }
 
-  // 번들 신고: 접수되면 이전 화면(피드)으로 가서 알림(이 화면은 떠나므로 피드 위치)
+  // 번들 신고: 신고만으로는 숨기지 않아 화면에 남아 접수만 알림(기능명세 6.2.14 2026-11-21 변경)
   const reportBundle = () =>
     report.openReport(
       text.reportBundleTitle,
       {},
-      {
-        onSuccess: () => {
-          backOr(FEED_PATHS.home);
-          toastAfterNavigation(text.reported);
-        },
-        onError: failAction,
-      },
+      { onSuccess: () => toast(text.reported), onError: failAction },
     );
 
   // 헤더 더보기(기능명세서 6.2.11): 다른 번치 번들, 우리 번치 번들의 메인 관리자가 아닌 역할은 「신고」, 메인 관리자는 관리 메뉴
@@ -274,9 +267,9 @@ export function BundleDetail({
       onBack={back}
       bundle={bundle}
       time={now === null || !bundle.publishedAt ? '' : formatElapsedTime(bundle.publishedAt, now)}
-      commentCount={(thread.totalCount ?? bundle.commentCount) - thread.hiddenCount}
+      commentCount={thread.totalCount ?? bundle.commentCount}
       thread={{
-        comments: thread.comments,
+        comments: comment.comments,
         moreRef: thread.moreRef,
         loading: thread.loading,
         failed: thread.failed,

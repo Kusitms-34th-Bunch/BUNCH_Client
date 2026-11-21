@@ -34,6 +34,11 @@ export const FEED_MESSAGES = {
   replyPlaceholderAs: (bunchRo: string) => `${bunchRo} 답글 달기`,
   /** 닉네임을 모를 때 내 댓글 작성자 */
   commentAdded: '댓글을 등록했어요',
+  commentPosting: '등록 중…',
+  me: '나',
+  commentPostingAnnounce: '댓글을 등록하는 중이에요',
+  replyPostingAnnounce: '답글을 등록하는 중이에요',
+  previousCommentPosting: '앞의 댓글을 등록하는 중이에요. 잠시 뒤에 보내 주세요.',
   commentLabel: (author: string) => `${author}님의 댓글`,
   replyLabel: (author: string) => `${author}님의 답글`,
   deletedCommentLabel: '삭제된 댓글',
