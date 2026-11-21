@@ -38,11 +38,13 @@ const refreshUnread = (queryClient: QueryClient, bunchId: string) =>
     queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
   ]);
 
-/** 알림 열기(읽음 + 갈 화면). 실패하면 이동하지 않고 공통 토스트 */
+/**
+ * 알림 열기의 읽음 처리. 화면은 응답을 기다리지 않고 이미 이동하므로 실패해도 알리지 않음
+ * 성공·실패 모두 목록·읽지 않은 수를 다시 받아 서버 값으로 맞춤(캐시를 미리 바꾸지 않음)
+ */
 export const useOpenNotificationMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
   return useMutation({
-    meta: { errorMessage: BUNCH_HOME_MESSAGES.readFailed },
     mutationFn: (notificationId: string) => {
       if (!bunchId) throw new Error('알림을 열 번치가 없습니다.');
       return openBunchNotification(bunchId, notificationId);

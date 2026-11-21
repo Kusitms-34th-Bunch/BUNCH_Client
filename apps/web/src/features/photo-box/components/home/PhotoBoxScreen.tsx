@@ -50,7 +50,7 @@ type PhotoBoxScreenProps = {
   onRetry?: (() => void) | undefined;
   /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 아래로 다시 스크롤하면 부름 */
   onLoadMore?: (() => void) | undefined;
-  /** 맨 위에서 당겨서 새로고침(기능 spec 3.1.1). 선택 모드·저장·삭제 중에는 당김을 끔 */
+  /** 맨 위에서 당겨서 새로고침(기능 spec 3.1.1). 선택 모드·저장·날짜 변경 중에는 당김을 끔 */
   onRefresh?: (() => Promise<void>) | undefined;
   /** 번치 이름을 눌렀을 때(번치 전환 시트 열기) */
   onBunchClick?: (() => void) | undefined;
@@ -81,7 +81,7 @@ export function PhotoBoxScreen({
   const [menuMounted, setMenuMounted] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const openOverlay = useScreenOverlay();
-  // 끌어서 날짜를 옮기는 요청이 도는 중(저장·삭제 요청과 같이 다른 동작을 막음)
+  // 끌어서 날짜를 옮기는 요청이 도는 중(저장·날짜 변경 요청과 같이 다른 동작을 막음)
   const [dragMoving, setDragMoving] = useState(false);
   const data = state.kind === 'ready' ? state.data : undefined;
   const ready = data !== undefined;
@@ -156,14 +156,14 @@ export function PhotoBoxScreen({
     setMenuOpen((open) => !open);
   };
 
-  // 선택 모드면 메뉴(저장·삭제 중에는 무시), 아니면 사진 올리기
+  // 선택 모드면 메뉴(저장·날짜 변경 중에는 무시), 아니면 사진 올리기
   const floatingAction = selecting ? (busy ? undefined : toggleMenu) : openUpload;
   // iOS 26 이상 쉘은 「+」·「⋯」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음(목록 화면에서만)
   const showWebFloatingButton = useNativeFloatingButton({
     tab: 'photos',
     icon: selecting ? 'more' : 'add',
     label: selecting ? '메뉴 열기' : '사진 올리기',
-    // 저장·삭제·끌기 이동 중에도 누를 수 없음으로 알림(웹 버튼의 aria-disabled에 해당, VoiceOver 초점은 남음)
+    // 저장·날짜 변경·끌기 이동 중에도 누를 수 없음으로 알림(웹 버튼의 aria-disabled에 해당, VoiceOver 초점은 남음)
     disabled: selecting && (selection.length === 0 || busy),
     expanded: selecting ? menuOpen : undefined,
     // 저장 중 화면 전체 dim(PageLoading) 위로 네이티브 버튼이 뜨지 않게
@@ -188,7 +188,6 @@ export function PhotoBoxScreen({
 
   let statusMessage = '';
   if (flow.saving) statusMessage = PHOTO_BOX_MESSAGES.saving;
-  else if (flow.deleting) statusMessage = PHOTO_BOX_MESSAGES.deleting;
   else if (selecting) statusMessage = PHOTO_BOX_MESSAGES.selectionStatus(selection.length);
   return (
     <PageShell
@@ -228,7 +227,7 @@ export function PhotoBoxScreen({
               aria-haspopup={selecting ? 'menu' : undefined}
               aria-expanded={selecting ? menuOpen : undefined}
               disabled={selecting && selection.length === 0}
-              // 저장·삭제 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
+              // 저장·날짜 변경 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
               aria-disabled={selecting && busy ? true : undefined}
               onClick={floatingAction}
               // 선택 모드에서 탭 바가 숨으면 탭 바 숨김과 비슷하게 200ms ease-out으로 내려감(아이콘은 FloatingButton이 크로스페이드)
@@ -246,10 +245,10 @@ export function PhotoBoxScreen({
       <p role="status" className="sr-only">
         {statusMessage}
       </p>
-      {/* 저장·삭제하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12, 삭제는 저장과 같은 표시) */}
-      {flow.saving || flow.deleting ? <PageLoading /> : null}
+      {/* 저장하는 동안은 화면 전체를 dim으로 덮고 가운데에 로딩(Figma 사진함_12). 삭제는 기다리지 않아 덮지 않음 */}
+      {flow.saving ? <PageLoading /> : null}
       <PhotoSelectionProvider value={{ active: selecting, selection, onToggle: handleToggle }}>
-        {/* 저장·삭제 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(전체 로딩이 덮는 동안은 헤더 「취소」도 눌리지 않음, 요청은 취소할 수 없어 로딩이 끝나길 기다림) */}
+        {/* 저장·날짜 변경 요청이 도는 동안은 필터·사진을 inert로 막아 키보드·스크린 리더도 건드리지 못하게 함(전체 로딩이 덮는 동안은 헤더 「취소」도 눌리지 않음, 요청은 취소할 수 없어 로딩이 끝나길 기다림) */}
         <PhotoDragSelect
           className="flex min-h-full flex-col"
           inert={busy}

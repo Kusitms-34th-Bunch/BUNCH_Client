@@ -1,5 +1,6 @@
 import { useRouter } from 'next/navigation';
 import type { FeedBundle } from '../lib/types';
+import { FEED_PATHS } from '../constants/paths';
 import { rememberBundlePreview } from '../lib/bundlePreview';
 import { usePrefetchBundleDetail } from '../queries/bundleDetail';
 
@@ -17,9 +18,10 @@ type OpenBundleDetailOptions = {
 export function useOpenBundleDetail({ viewerId, prefetchBunch }: OpenBundleDetailOptions) {
   const router = useRouter();
   const prefetchBundleDetail = usePrefetchBundleDetail();
-  // 손가락이 닿을 때부터 받아 둠
-  const prefetch = (bundle: FeedBundle) =>
-    viewerId === undefined
+  // 손가락이 닿을 때부터 받아 둠(상세 화면 경로도 함께)
+  const prefetch = (bundle: FeedBundle) => {
+    router.prefetch(FEED_PATHS.bundle(bundle.bunch.id, bundle.id));
+    return viewerId === undefined
       ? Promise.resolve()
       : Promise.all([
           prefetchBundleDetail(bundle.bunch.id, bundle.id, viewerId),
@@ -29,6 +31,7 @@ export function useOpenBundleDetail({ viewerId, prefetchBunch }: OpenBundleDetai
           () => undefined,
           () => undefined,
         );
+  };
   // 사진·말풍선 모두 같은 상세(말풍선은 댓글로 바로). 기다리지 않고 이동하고, 상세는 받는 동안 카드 데이터로 윗부분을 먼저 그림
   const open = (bundle: FeedBundle, href: string) => {
     rememberBundlePreview(bundle);

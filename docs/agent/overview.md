@@ -51,10 +51,10 @@ route·API 계약·UI 접근성·보안 경계에 영향을 주는 변경은 완
 
 ## Hook: 자동으로 걸리는 안전장치
 
-`.claude/hooks/`의 스크립트가 Claude Code·Codex 양쪽에 등록돼 있다(`.claude/settings.json`, `.codex/hooks.json`).
+`.claude/hooks/`의 스크립트가 Claude Code·Codex 양쪽에 등록돼 있다(`.claude/settings.json`, `.codex/hooks.json`). 명령은 저장소 루트 기준 경로로 부른다(Claude Code `$CLAUDE_PROJECT_DIR`, Codex `$(git rev-parse --show-toplevel)`). 작업 위치가 `apps/web`·`apps/mobile-shell` 같은 하위 폴더여도 hook이 실행되게 하기 위해서다. 상대 경로였을 때는 하위 폴더에서 스크립트를 찾지 못해 guard가 조용히 꺼졌다.
 
-- **`guard-rules.mjs`**(PreToolUse): `console.log`, 명시적 `any`, 문장형(`~한다`)으로 끝난 코드 주석(`docs/conventions/coding.md`), `npm`/`pnpm`/`npx` 사용을 편집·커맨드 단계에서 차단한다. git 위험 명령(강제 푸시, `main` 직접 push, hook 우회, 전체 add, 되돌릴 수 없는 삭제)도 막는다(`docs/conventions/git.md`). 규칙을 바꾸면 `node --test .claude/hooks/guard-rules.test.mjs`로 확인한다.
-- **`lint-check.mjs`**(PostToolUse): 수정한 파일 하나만 바로 eslint로 검사해 결과를 보여준다. 막지는 않는다.
+- **`guard-rules.mjs`**(PreToolUse): `console.log`, 명시적 `any`, 문장형(`~한다`)으로 끝난 코드 주석(`docs/conventions/coding.md`), `npm`/`pnpm`/`npx` 사용을 편집·커맨드 단계에서 차단한다. `apps/mobile-shell`은 pnpm 예외라, 명령에 그 경로가 있거나 작업 위치(hook 입력의 `cwd`)가 그 폴더면 허용한다. git 위험 명령(강제 푸시, `main` 직접 push, hook 우회, 전체 add, 되돌릴 수 없는 삭제)도 막는다(`docs/conventions/git.md`). 규칙을 바꾸면 `node --test .claude/hooks/guard-rules.test.mjs`로 확인한다.
+- **`lint-check.mjs`**(PostToolUse): 수정한 파일 하나만 바로 eslint와 Tailwind 표준 클래스로 검사한다. 실패하면 `{"decision":"block","reason":...}`로 오류를 agent에게 돌려줘 바로 고치게 한다. 편집은 되돌리지 않는다. PostToolUse의 일반 stdout은 Claude Code·Codex 모두 모델에 전달되지 않아, 이전에는 결과가 agent에게 닿지 않았다. 통과하면 아무것도 출력하지 않는다. 시간 초과·실행 실패는 막지 않는다.
 - **`skill-suggest.mjs`**(UserPromptSubmit): 프롬프트에 Figma·디자인 구현·커밋·리뷰·리팩터링 같은 키워드가 있으면 관련 skill을 먼저 안내한다. 직접 실행하는 훅은 아니며, agent가 요청 의도를 확인해 해당 skill과 후속 지침을 읽고 적용한다. 감지 회귀 검증은 `node --test .claude/hooks/skill-suggest.test.mjs`로 실행한다.
 
 hook을 새로 추가하는 기준(보편적 정책 + 안전 문제 + 반복된 miss 입증)은 `docs/agent/maintenance.md`를 따른다. **새 hook 이벤트를 등록한 직후에는 세션을 재시작해야 반영된다** — 같은 세션 안에서 바로 발화하지 않아도 설정이 잘못된 게 아니다.

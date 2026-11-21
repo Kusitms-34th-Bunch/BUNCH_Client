@@ -51,9 +51,14 @@ export function usePhotoSelectionFlow({
   // 참여 멤버 고르기에서 뒤로 왔으면 그때 고른 사진과 번호로 선택 모드를 이어 감(기능 spec 3.3.4)
   const [resumed] = useState(readPhotoBoxSelection);
   const [selecting, setSelecting] = useState(resumed !== undefined);
+  // 늦게 끝난 삭제 실패가 그 사이 시작한 새 선택을 덮지 않게 지금 선택 중인지 확인
+  const selectingRef = useRef(selecting);
+  useEffect(() => {
+    selectingRef.current = selecting;
+  }, [selecting]);
   const [selection, setSelection] = useState<PhotoSelection>(() => [...(resumed?.photoIds ?? [])]);
 
-  const [pending, setPending] = useState<'save' | 'delete' | 'date' | undefined>(undefined);
+  const [pending, setPending] = useState<'save' | 'date' | undefined>(undefined);
   const noData = !data;
   // 목록이 준비되면(화면이 이때 다시 마운트되기도 함) 되살린 선택을 한 번 확인함
   // 다른 번치의 선택이거나 사진이 하나도 남지 않았으면 선택 모드를 켜지 않고, 일부만 사라졌으면 남은 사진만 이어 감
@@ -216,31 +221,36 @@ export function usePhotoSelectionFlow({
     return true;
   };
 
+  // 고른 사진은 누르는 즉시 목록에서 빠지므로(낙관 처리) 응답을 기다리지 않고 선택 모드를 끝냄
   const confirmDelete = usePreservedCallback(async () => {
     if (pending || !isSelectionCurrent()) return;
-    const session = sessionRef.current;
     const ids = selection;
-    setPending('delete');
+    const request = actions.deletePhotos(ids);
+    stop();
+    // 눌렀던 메뉴·선택 칸이 사라지므로 초점을 옮김
+    onDeleted?.();
+    // 그 사이 다시 고르기 시작했으면 늦은 실패로 그 선택을 덮지 않음
+    const session = sessionRef.current;
     try {
-      const { removedCount } = await actions.deletePhotos(ids);
-      setPending(undefined);
-      if (session !== sessionRef.current) return;
-      if (removedCount > 0) {
-        notify(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
-      }
-      stop();
-      // 0장이어도 선택 모드는 끝나 눌렀던 선택 칸이 사라지므로 초점을 옮김
-      onDeleted?.();
+      const { removedCount } = await request;
+      if (removedCount > 0) notify(PHOTO_BOX_MESSAGES.deleteDone(removedCount));
     } catch (error) {
-      setPending(undefined);
-      if (session !== sessionRef.current) return;
-      // 고른 사진이 그사이 지워졌으면 아무것도 삭제되지 않음: 사라진 사진만 선택에서 뺌
-      if (error instanceof MissingPhotosError) {
-        dropMissing(ids, error.missingIds, PHOTO_BOX_MESSAGES.deleteFailed);
+      // 빠졌던 사진은 mutation이 되돌림. 바로 다시 시도할 수 있게 선택을 되살림
+      const missing = new Set(error instanceof MissingPhotosError ? error.missingIds : []);
+      const remaining = ids.filter((id) => !missing.has(id));
+      if (session !== sessionRef.current || selectingRef.current) {
+        notify(PHOTO_BOX_MESSAGES.deleteFailed);
         return;
       }
-      // 실패하면 선택을 그대로 두어 바로 다시 시도할 수 있게 함
-      notify(PHOTO_BOX_MESSAGES.deleteFailed);
+      // 초점은 삭제 확정 때 옮긴 제목에 둠(상태 영역이 선택 장수를, 토스트가 실패를 알림)
+      setSelecting(true);
+      setSelection(remaining);
+      // 고른 사진이 그사이 지워졌으면 아무것도 삭제되지 않음: 사라진 사진만 선택에서 빼고 알림(명세 3.3.1)
+      notify(
+        missing.size > 0
+          ? PHOTO_BOX_MESSAGES.selectionStale(ids.length - remaining.length)
+          : PHOTO_BOX_MESSAGES.deleteFailed,
+      );
     }
   });
 
@@ -302,10 +312,9 @@ export function usePhotoSelectionFlow({
   return {
     selecting,
     selection,
-    /** 저장·삭제·날짜 변경 요청이 도는 중 */
+    /** 저장·날짜 변경 요청이 도는 중(삭제는 기다리지 않음) */
     busy: pending !== undefined,
     saving: pending === 'save',
-    deleting: pending === 'delete',
     start,
     stop,
     toggle,
