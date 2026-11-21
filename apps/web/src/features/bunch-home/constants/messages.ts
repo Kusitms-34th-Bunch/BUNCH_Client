@@ -102,6 +102,9 @@ export const BUNCH_HOME_MESSAGES = {
   aloneConfirm: '삭제하기',
   leaveTransferTitle: '관리자 권한을 넘길 멤버를 정해주세요.',
   leaveTransferDescription: '선택한 멤버가 새로운 관리자가 돼요.',
+  // 헤더 알림 링크 이름. 읽지 않은 알림이 있으면 점 있는 종과 함께 알림(명세에 문구가 없어 제안)
+  notifications: '알림',
+  notificationsUnread: '알림, 읽지 않은 알림 있음',
   // 알림 목록(Figma 1892:36947)
   notificationSettingsNudge: '알림 받기를 설정하고 유용한 알림을 받아보세요.',
   readAllDone: '모든 알림을 읽음으로 바꿨어요.',

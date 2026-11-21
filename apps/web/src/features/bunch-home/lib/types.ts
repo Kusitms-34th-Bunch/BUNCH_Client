@@ -98,6 +98,8 @@ export type BunchHomeDetail = {
   memberCount: number;
   /** 작성 중인 번들 수(서버 draftCount). 모르면 undefined라 번들 만들기 진입을 막지 않음 */
   draftCount?: number | undefined;
+  /** 이 번치의 읽지 않은 알림 수(서버 unreadCount, 없으면 0). 있으면 헤더 알림 아이콘에 점 */
+  unreadCount: number;
   completedBundles: readonly CompletedBundle[];
   draftBundles: readonly DraftBundle[];
 };
