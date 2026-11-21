@@ -6,6 +6,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import type { MyBunches } from '@/shared/api/myBunches';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
@@ -25,6 +26,12 @@ import {
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { FIRST_PAGE, nextPageOf } from '../lib/pages';
 import { bunchHomeKeys } from './keys';
+
+/**
+ * 다른 멤버의 변경(가입, 번들 발행·초안)을 보이는 화면에 반영하는 갱신(들어올 때·앱 복귀 때·보이는 동안 20초마다)
+ * 요청이 가벼운 단건 query에만 씀(쪽 단위 목록은 홈 개수가 바뀔 때만 다시 받음, useRefetchListsOnCountChange). 가려지면 멈춤
+ */
+export const LIVE_REFRESH = { staleTime: 0, refetchInterval: 20_000 } as const;
 
 /** 번치 홈 프로필·개수. 번치를 아직 모르면 요청하지 않음(skipToken) */
 export const bunchHomeQueryOptions = (bunchId: string | undefined) =>
@@ -57,6 +64,38 @@ export const draftBundlesQueryOptions = (bunchId: string | undefined) =>
     queryFn: bunchId ? ({ signal }) => getDraftBundles(bunchId, signal) : skipToken,
     ...persistedQuery,
   });
+
+type HomeCounts = {
+  publishedCount?: number | null | undefined;
+  draftCount?: number | null | undefined;
+  memberCount?: number | undefined;
+};
+
+/**
+ * 주기적으로 받는 홈 정보의 개수가 바뀌었을 때만 그 목록(발행·작성 중 번들, 멤버)을 다시 받음
+ * 쪽 단위 목록을 20초마다 모든 쪽 다시 받지 않게 하는 용도. 번치가 바뀐 직후 첫 값은 비교하지 않음
+ * ponytail: 한 주기에 발행 1건·삭제 1건처럼 개수가 그대로인 변화는 다음 진입·당겨서 새로고침 때 반영
+ */
+export const useRefetchListsOnCountChange = (bunchId: string | undefined, counts?: HomeCounts) => {
+  const queryClient = useQueryClient();
+  const last = useRef<(HomeCounts & { bunchId: string }) | undefined>(undefined);
+  const { publishedCount, draftCount, memberCount } = counts ?? {};
+  useEffect(() => {
+    if (!bunchId || memberCount === undefined) return;
+    const prev = last.current;
+    last.current = { bunchId, publishedCount, draftCount, memberCount };
+    if (prev?.bunchId !== bunchId) return;
+    const changed = [
+      prev.publishedCount !== publishedCount && bunchHomeKeys.publishedPages(bunchId),
+      prev.draftCount !== draftCount && sharedKeys.draftBundles(bunchId),
+      prev.memberCount !== memberCount && sharedKeys.bunchMembers(bunchId),
+    ];
+    for (const queryKey of changed) {
+      // 내 발행·삭제가 이미 시작한 목록 재조회는 취소하지 않고 이어 씀
+      if (queryKey) void queryClient.invalidateQueries({ queryKey }, { cancelRefetch: false });
+    }
+  }, [queryClient, bunchId, publishedCount, draftCount, memberCount]);
+};
 
 /**
  * 번치 전환: 마지막 사용 번치를 저장한 뒤 기본 번치(`members/me`)를 다시 읽음

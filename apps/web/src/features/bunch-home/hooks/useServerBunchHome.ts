@@ -11,7 +11,9 @@ import { accessNoticeIdOf, toBunchHomeDetail, toBunchSummaries } from '../model/
 import {
   bunchHomeQueryOptions,
   draftBundlesQueryOptions,
+  LIVE_REFRESH,
   publishedBundlesQueryOptions,
+  useRefetchListsOnCountChange,
 } from '../queries/bunchHome';
 
 export type ServerBunchHome =
@@ -46,10 +48,12 @@ const NO_DRAFTS = { items: [] };
 export function useServerBunchHome(): ServerBunchHome {
   const profile = useQuery(myProfileQueryOptions());
   const bunchId = profile.data?.bunch?.id;
-  const home = useQuery(bunchHomeQueryOptions(bunchId));
+  // 홈 정보(요청 1건)만 들어올 때·앱 복귀 때·보이는 동안 20초마다 다시 받아 다른 멤버의 가입·번들 개수를 확인
+  const home = useQuery({ ...bunchHomeQueryOptions(bunchId), ...LIVE_REFRESH });
   const published = useInfiniteQuery(publishedBundlesQueryOptions(bunchId));
   const drafts = useQuery(draftBundlesQueryOptions(bunchId));
   const members = useQuery(bunchMembersQueryOptions(bunchId));
+  useRefetchListsOnCountChange(bunchId, home.data);
   const myBunches = useQuery(myBunchesQueryOptions());
 
   const ready = useMemo(() => {
