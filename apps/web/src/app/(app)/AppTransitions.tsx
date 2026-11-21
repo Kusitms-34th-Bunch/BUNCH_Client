@@ -46,8 +46,6 @@ export const SIGNUP_DISSOLVE_DURATION_MS = 300;
 export const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
 // 번치 전환 시트 「새로운 번치 추가하기」 → 번치 시작 선택: 화면설계서는 Dissolve 150ms지만 폰에서 바로 바뀐 것처럼 보여 axis y로(2026-11-20 사용자 결정)
 export const BUNCH_ADD_AXIS_DURATION_MS = 300;
-// 화면 설계서(MY 메뉴): 「약관 및 개인정보」 → 약관 및 개인정보 화면은 Dissolve / Ease out / 200ms, 같은 방식으로 단계마다 절반
-export const MY_TERMS_DISSOLVE_DURATION_MS = 200;
 // 인트로 → 로그인 교차 디졸브 시간(디자이너 요청, 화면설계서 값 없음). 흰 가이드에서 어두운 영상 화면으로 바뀌어 가입 화면(300ms)보다 천천히
 export const INTRO_LOGIN_DISSOLVE_DURATION_MS = 500;
 // 더보기 메뉴 → 하위 화면은 한 단계 들어가는 이동이라 미는 slide 300ms(화면설계서에 정의 없음, 2026-11-01 디자이너 요청)
@@ -117,12 +115,6 @@ const menuSubSlide = slide(
 const bundleSlide = slide(
   {},
   { override: { forward: tuneBundleSlide, backward: tuneBundleSlide } },
-);
-// 화면설계서(번치 메인 8): 「새로운 번치 추가하기」 → 번치 시작 선택은 Dissolve / Ease out / 150ms, 같은 방식으로 단계마다 절반
-const tuneMyTermsDissolve = tuneTransition(MY_TERMS_DISSOLVE_DURATION_MS / 2);
-const myTermsDissolve = fade(
-  {},
-  { override: { forward: tuneMyTermsDissolve, backward: tuneMyTermsDissolve } },
 );
 // SSGOI axis y(방향형): 열 때 새 화면이 아래에서 올라오고, 닫기(뒤로 가기)는 위에서 내려감. 시트에서 이어져 새 흐름을 여는 이동
 const tuneBunchAdd = tuneTransition(BUNCH_ADD_AXIS_DURATION_MS);
@@ -553,12 +545,12 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: menuSubSlide,
   },
-  // MY 「약관 및 개인정보」는 Dissolve / Ease out / 200ms(화면설계서 MY 메뉴 인터랙션)
+  // MY 「약관 및 개인정보」도 다른 MY 하위 화면과 같은 slide(화면설계서는 Dissolve 200ms, 목록 안에서 혼자 달라 통일 #500)
   {
     from: MY_PATHS.home,
     to: MY_PATHS.termsAndPrivacy,
     bidirectional: true,
-    transition: myTermsDissolve,
+    transition: menuSubSlide,
   },
   // 약관 및 개인정보 → 약관 원문 화면은 같은 미는 slide(화면설계서에 전환 정의 없음). 동적 route라 고정 id 사용
   {
