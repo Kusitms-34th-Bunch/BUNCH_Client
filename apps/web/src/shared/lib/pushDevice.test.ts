@@ -343,6 +343,17 @@ describe('알림 권한 묻기', () => {
     expect(mocks.requestPermission).not.toHaveBeenCalled();
   });
 
+  it('지원 여부 확인이 실패해도 던지지 않는다', async () => {
+    const { askNotificationPermission } = await load();
+
+    mocks.isNativeMethodAvailable.mockImplementation(() => {
+      throw new Error('bridge not ready');
+    });
+    expect(await askNotificationPermission()).toBe(false);
+    mocks.isNativeMethodAvailable.mockReturnValue(true);
+    expect(await askNotificationPermission()).toBe(true);
+  });
+
   it('요청이 실패해도 던지지 않고 다음에 다시 물을 수 있다', async () => {
     const { askNotificationPermission } = await load();
 

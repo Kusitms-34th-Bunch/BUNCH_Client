@@ -79,18 +79,18 @@ let asking = false;
  * 재설치·기존 계정처럼 약관 화면을 거치지 않은 기기용. 이미 정했거나 겹친 호출·실패는 묻지 않고 false
  */
 export const askNotificationPermission = async (): Promise<boolean> => {
-  if (
-    asking ||
-    !isNativeShell() ||
-    !permissionBridge.isNativeMethodAvailable('getPermissionStatus') ||
-    !permissionBridge.isNativeMethodAvailable('requestPermission')
-  ) {
-    return false;
-  }
+  if (asking) return false;
   asking = true;
   try {
-    if ((await permissionBridge.getPermissionStatus('notification')) !== 'undetermined')
+    // 지원 여부 확인도 실패하면 false(부르는 쪽이 결과를 기다리지 않아 던지면 처리되지 않은 거부가 됨)
+    if (
+      !isNativeShell() ||
+      !permissionBridge.isNativeMethodAvailable('getPermissionStatus') ||
+      !permissionBridge.isNativeMethodAvailable('requestPermission') ||
+      (await permissionBridge.getPermissionStatus('notification')) !== 'undetermined'
+    ) {
       return false;
+    }
     await permissionBridge.requestPermission('notification');
     // 팝업이 닫히며 먼저 시작된 등록은 답하기 전 권한을 읽었을 수 있어 그 등록이 끝난 뒤 다시 맞춤
     await inFlight;
