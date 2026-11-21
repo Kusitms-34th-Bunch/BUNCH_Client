@@ -269,7 +269,7 @@ export function BundleDetail({
       time={now === null || !bundle.publishedAt ? '' : formatElapsedTime(bundle.publishedAt, now)}
       commentCount={thread.totalCount ?? bundle.commentCount}
       thread={{
-        comments: thread.comments,
+        comments: comment.comments,
         moreRef: thread.moreRef,
         loading: thread.loading,
         failed: thread.failed,

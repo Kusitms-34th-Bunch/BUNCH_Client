@@ -97,8 +97,9 @@ export function useBundleComments(
   const attempt = useRef<{ request: string; key: string } | null>(null);
   // 보내는 중 다시 누르기는 ref로 막음(isPending은 다음 렌더부터라 같은 순간의 두 번째 탭이 지나감)
   const sending = useRef(false);
+  /** 보냈으면 true, 이미 보내는 중이라 무시했으면 false */
   const create = (content: string, parentId: string | null, callbacks: CreateCallbacks) => {
-    if (sending.current) return;
+    if (sending.current) return false;
     sending.current = true;
     // 바꿀 수 없는 id는 원댓글로(요청 키도 같게)
     const parent = parentId !== null && isWireId(parentId) ? parentId : null;
@@ -123,6 +124,7 @@ export function useBundleComments(
         },
       },
     );
+    return true;
   };
 
   const removing = useRef(false);

@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
+import { delay, http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { fail, ok } from '@/mocks/lib/envelope';
@@ -745,6 +745,37 @@ describe('BundleDetail', () => {
     expect(screen.getByRole('textbox')).toHaveValue('늦은 답글');
   });
 
+  it('보내면 입력란을 비우고 응답 전까지 「등록 중…」 내 댓글을 먼저 보인 뒤 서버 댓글로 바꾼다', async () => {
+    // 응답을 늦춘 뒤 원래 handler로 넘김
+    server.use(http.post('/api/bundles/:bundleId/comments', () => delay(100)));
+    const user = userEvent.setup();
+    renderDetail('2');
+    await user.type(screen.getByRole('textbox', { name: /달기/ }), '먼저 보임');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    const pending = screen.getByText('등록 중…').closest('li');
+    expect(within(pending!).getByText('먼저 보임')).toBeTruthy();
+    expect(within(pending!).queryByRole('button', { name: /더보기|답글/ })).toBeNull();
+    expect(screen.getByText('댓글을 등록하는 중이에요')).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText('등록 중…')).toBeNull());
+    expect(screen.getAllByText('먼저 보임')).toHaveLength(1);
+  });
+
+  it('앞의 댓글을 기다리는 동안 또 보내면 쓴 글을 두고 알린다', async () => {
+    server.use(http.post('/api/bundles/:bundleId/comments', () => delay(100)));
+    const user = userEvent.setup();
+    renderDetail('2');
+    await user.type(screen.getByRole('textbox', { name: /달기/ }), '첫 글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+    await user.type(screen.getByRole('textbox'), '둘째 글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    expect(toast).toHaveBeenCalledWith('앞의 댓글을 등록하는 중이에요. 잠시 뒤에 보내 주세요.');
+    expect(screen.getByRole('textbox')).toHaveValue('둘째 글');
+    await waitFor(() => expect(screen.queryByText('등록 중…')).toBeNull());
+  });
+
   it('답글에 금칙어가 있으면 등록하지 않고 쓴 내용과 답글 작성 상태를 그대로 둔 채 알린다', async () => {
     const user = userEvent.setup();
     server.use(
@@ -762,6 +793,7 @@ describe('BundleDetail', () => {
     );
     expect(screen.getByText('님에게 답글 남기는 중')).toBeTruthy();
     expect(screen.getByRole('textbox')).toHaveValue('나쁜 답글');
+    expect(screen.queryByText('등록 중…')).toBeNull();
     expect(toast).not.toHaveBeenCalledWith('일시적인 오류가 발생했어요. 다시 시도해 주세요');
   });
 
