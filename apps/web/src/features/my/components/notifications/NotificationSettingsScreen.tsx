@@ -2,7 +2,7 @@
 
 import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { ToggleListItem } from '@app/design-system/web';
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -15,10 +15,11 @@ import {
   type NotificationType,
 } from '../../lib/types';
 import { DeviceNotificationOffBanner } from './DeviceNotificationOffBanner';
+import { NotificationSettingsSkeleton } from './NotificationSettingsSkeleton';
 
 type NotificationSettingsScreenProps = {
-  /** 지금 저장된 설정(저장 중인 변경은 이미 반영된 값) */
-  settings: NotificationSettings;
+  /** 지금 저장된 설정(저장 중인 변경은 이미 반영된 값). 처음 받는 중이면 undefined(토글 자리만 그림) */
+  settings: NotificationSettings | undefined;
   /** 기기 알림 권한. 꺼져 있으면 배너를 띄우고 토글을 모두 막음 */
   devicePermission: DeviceNotificationPermission;
   /** 기기 알림 권한을 아직 확인하는 중(쉘 첫 응답 전). 꺼져 있는지 모르므로 배너 없이 토글만 잠금 */
@@ -27,6 +28,8 @@ type NotificationSettingsScreenProps = {
   onChangePush: (_checked: boolean) => void;
   /** 알림 종류 토글을 누를 때 */
   onChangeType: (_type: NotificationType, _checked: boolean) => void;
+  /** 뒤로 가기. 없으면 MY로(기록이 있으면 이전 화면) */
+  onBack?: (() => void) | undefined;
   /** 기기 알림 설정 열기(앱이 아니면 없음) */
   onOpenDeviceSettings?: (() => void) | undefined;
 };
@@ -43,6 +46,7 @@ export function NotificationSettingsScreen({
   onChangePush,
   onChangeType,
   onOpenDeviceSettings,
+  onBack,
 }: NotificationSettingsScreenProps) {
   const backOr = useBackOr();
   const typesLabelId = useId();
@@ -52,10 +56,28 @@ export function NotificationSettingsScreen({
   const deviceOff = devicePermission === 'denied';
   // 권한을 확인하는 동안(꺼져 있는지 아직 모름)에도 잠가, 거부된 기기에서 설정이 바뀌지 않게 함(기능명세서 7.3.4)
   const locked = deviceOff || devicePermissionChecking;
-  const typesDisabled = locked || !settings.push;
+  const typesDisabled = locked || !settings?.push;
   // 기기 권한 때문에 막힌 토글은 배너 문구를 이유로 함께 읽음
   const disabledReason = deviceOff ? deviceOffMessageId : undefined;
   const text = MY_MESSAGES.notifications;
+  // 토글을 바꾼 직후 권한 거부로 잠기면 그 토글의 초점이 사라지므로 막힌 이유(배너 문구)로 옮김. 들어올 때 이미 꺼져 있으면 옮기지 않음
+  const toggled = useRef(false);
+  const wasOff = useRef(deviceOff);
+  useEffect(() => {
+    const turnedOff = deviceOff && !wasOff.current;
+    wasOff.current = deviceOff;
+    if (!turnedOff || !toggled.current) return;
+    toggled.current = false;
+    // 잠긴 입력의 초점을 지우는지는 WebView마다 달라 남아 있어도 옮김
+    const active = document.activeElement;
+    if (
+      active === null ||
+      active === document.body ||
+      (active instanceof HTMLInputElement && active.disabled)
+    ) {
+      document.getElementById(deviceOffMessageId)?.focus();
+    }
+  }, [deviceOff, deviceOffMessageId]);
 
   return (
     <PageShell
@@ -63,7 +85,11 @@ export function NotificationSettingsScreen({
         <Header
           leading={
             // Figma 헤더 뒤로 가기 아이콘 색(#bcbec2), 개인 프로필 수정과 같은 연한 회색
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={() => backOr(MY_PATHS.home)}>
+            <HeaderIconButton
+              label="뒤로 가기"
+              tone="subtle"
+              onClick={onBack ?? (() => backOr(MY_PATHS.home))}
+            >
               <LineChevronLeftLargeIcon />
             </HeaderIconButton>
           }
@@ -78,38 +104,50 @@ export function NotificationSettingsScreen({
         />
       ) : null}
       {/* 헤더(또는 배너) 아래 12, 전체 토글과 받을 알림 사이 32(Figma 4096:75318) */}
-      <div className="px-padding-p8 pt-padding-p6 gap-s14 flex flex-col">
-        <ToggleListItem
-          id={pushId}
-          title={text.push.title}
-          description={text.push.description}
-          checked={settings.push}
-          disabled={locked}
-          aria-describedby={disabledReason}
-          onChange={(event) => onChangePush(event.currentTarget.checked)}
-        />
-        <section aria-labelledby={typesLabelId} className="gap-s3 flex flex-col">
-          <h2
-            id={typesLabelId}
-            className="typography-caption-1-medium text-text-tertiary px-padding-p3"
-          >
-            {text.typesLabel}
-          </h2>
-          <div className="gap-s2 flex flex-col">
-            {NOTIFICATION_TYPES.map((type) => (
-              <ToggleListItem
-                key={type}
-                title={text.types[type].title}
-                description={text.types[type].description}
-                checked={settings.types[type]}
-                disabled={typesDisabled}
-                aria-describedby={disabledReason}
-                onChange={(event) => onChangeType(type, event.currentTarget.checked)}
-              />
-            ))}
-          </div>
-        </section>
-      </div>
+      {/* 받는 중 안내는 호출하는 쪽(NotificationSettingsRoute)의 상태 영역이 읽어 줌 */}
+      {settings ? (
+        <div className="px-padding-p8 pt-padding-p6 gap-s14 flex flex-col">
+          <ToggleListItem
+            id={pushId}
+            title={text.push.title}
+            description={text.push.description}
+            checked={settings.push}
+            disabled={locked}
+            aria-describedby={disabledReason}
+            onChange={(event) => {
+              // 켤 때만 권한 팝업이 뜰 수 있음
+              toggled.current = event.currentTarget.checked;
+              onChangePush(event.currentTarget.checked);
+            }}
+          />
+          <section aria-labelledby={typesLabelId} className="gap-s3 flex flex-col">
+            <h2
+              id={typesLabelId}
+              className="typography-caption-1-medium text-text-tertiary px-padding-p3"
+            >
+              {text.typesLabel}
+            </h2>
+            <div className="gap-s2 flex flex-col">
+              {NOTIFICATION_TYPES.map((type) => (
+                <ToggleListItem
+                  key={type}
+                  title={text.types[type].title}
+                  description={text.types[type].description}
+                  checked={settings.types[type]}
+                  disabled={typesDisabled}
+                  aria-describedby={disabledReason}
+                  onChange={(event) => {
+                    toggled.current = event.currentTarget.checked;
+                    onChangeType(type, event.currentTarget.checked);
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : (
+        <NotificationSettingsSkeleton />
+      )}
     </PageShell>
   );
 }

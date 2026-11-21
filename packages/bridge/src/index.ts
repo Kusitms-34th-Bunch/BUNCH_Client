@@ -1,5 +1,7 @@
 import type { BridgeStore } from '@webview-bridge/types';
 import type {
+  AppleAuthorizationResult,
+  NativeTabBarVisibilityParams,
   GalleryImage,
   HapticKind,
   NativeTabEvent,
@@ -19,6 +21,7 @@ import type {
 } from './schema';
 
 export {
+  appleAuthorizationResultSchema,
   appPostMessageSchema,
   clipboardTextSchema,
   galleryImageSchema,
@@ -48,6 +51,7 @@ export {
   saveImageUrlSchema,
   saveImageUrlsSchema,
   setNativeFloatingButtonParamsSchema,
+  nativeTabBarVisibilitySchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
   socialLoginResultSchema,
@@ -55,6 +59,8 @@ export {
   uploadImageSchema,
 } from './schema';
 export type {
+  AppleAuthorizationResult,
+  NativeTabBarVisibilityParams,
   AppPostMessageSchema,
   GalleryImage,
   HapticKind,
@@ -104,6 +110,8 @@ export type AppBridgeMethods = {
   getPushInstallationId: () => Promise<string | null>;
   /** 네이티브 SDK 소셜 로그인. 성공하면 서버 로그인에 쓸 ID 토큰(·nonce)을 돌려주고, 창을 닫으면 `cancelled`, SDK 오류는 reject. 미지원 환경(브라우저)에서는 reject */
   socialLogin: (_provider: SocialProvider) => Promise<SocialLoginResult>;
+  /** 탈퇴 전 Apple 재인증(Apple 로그인 창). 서버가 Apple 연결을 끊는 데 쓸 인증 코드를 돌려주고, 창을 닫으면 `cancelled`, SDK 오류는 reject. 브라우저·이 메서드가 없는 이전 쉘·Apple 로그인을 쓸 수 없는 기기(안드로이드)에서는 reject */
+  authorizeApple: () => Promise<AppleAuthorizationResult>;
   /** 텍스트를 시스템 클립보드에 복사. 성공 여부를 돌려주고(검증 실패·오류는 false) 브라우저에서는 `navigator.clipboard`로 대체. WebView의 http 개발 주소는 보안 컨텍스트가 아니라 `navigator.clipboard`가 없어서 필요 */
   copyToClipboard: (_text: string) => Promise<boolean>;
   /** 시스템 클립보드의 텍스트를 읽음. 비어 있거나 텍스트가 아니거나 상한을 넘으면 null. 사용자가 누른 동작 직후에만 호출(iOS는 붙여넣기 허용 팝업이 뜰 수 있음) */
@@ -114,6 +122,8 @@ export type AppBridgeMethods = {
   setNativeTabBar: (_params: SetNativeTabBarParams) => Promise<boolean>;
   /** iOS 탭 화면의 시스템 탭 바 표시 여부(탭 밖 화면을 여는 동안 숨김). 화면에 보이는 WebView만 호출, 탭 화면이 아니거나 미지원 환경이면 false */
   setNativeTabBarVisible: (_visible: boolean) => Promise<boolean>;
+  /** 탭 WebView가 자기 탭의 탭 바 표시 여부를 알림(#481). 쉘은 탭마다 저장하고 선택된 탭의 값만 적용해, 뒤에 있는 탭이 보낸 값이 지금 화면의 탭 바를 바꾸지 않음. 탭이 바뀌면 그 탭의 값을 적용. 탭 화면이 아니거나 미지원 환경(브라우저·안드로이드·이전 쉘)이면 false */
+  setNativeTabBarVisibleFor: (_params: NativeTabBarVisibilityParams) => Promise<boolean>;
   /** 탭 화면의 플로팅 버튼을 네이티브 Liquid Glass로 표시·제거. 그렸으면 true(웹 버튼을 숨김), iOS 26 미만·탭 화면 밖·미지원 환경이면 false. 눌림은 `nativeFloatingButtonPress` */
   setNativeFloatingButton: (_params: SetNativeFloatingButtonParams) => Promise<boolean>;
   /** iOS 쉘 탭 화면에서 그 탭으로 전환(탭마다 WebView라 다른 탭 경로로 주소 이동하면 지금 탭 화면이 바뀜). 전환했으면 true, 탭 화면이 아니거나 없는 탭·미지원 환경이면 false */
@@ -128,6 +138,8 @@ export type AppBridgeMethods = {
   appReady: () => Promise<void>;
   /** 화면 사건의 햅틱(완료 축하는 성공 알림, 좋아요·콕하기·피드 끝은 가벼운 충격). 브라우저·이 메서드가 없는 이전 쉘에서는 동작 없음 */
   feedbackHaptic: (_kind: HapticKind) => Promise<void>;
+  /** iOS 쉘 첫 화면 WebView 뒤에 로그인 배경 영상(앱에 든 영상)을 깔거나 걷음. 깔았으면 true(웹은 자기 영상·첫 프레임을 빼고 배경을 투명하게), 탭 화면·안드로이드·브라우저·이 메서드가 없는 이전 쉘이면 false(웹 영상 사용) */
+  setNativeLoginBackground: (_visible: boolean) => Promise<boolean>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */

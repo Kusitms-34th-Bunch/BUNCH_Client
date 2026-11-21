@@ -95,7 +95,7 @@ export const bunchHomeResponseSchema = z.object({
 >;
 
 /** `GET /api/v1/bunches/{bunchId}/published-bundles` 응답(발행 최신순) */
-// 계약 미연결: 카드에 필요한 필드만 받음(필수인 locations·likeCount·commentCount 등 생략), visibility는 명세에 없는 필드라 따로 받음
+// 계약 미연결: 카드에 필요한 필드만 받음(필수인 locations·likeCount·commentCount 등 생략)
 export const publishedBundlesPageSchema = z.object({
   items: z.array(
     z.object({
@@ -106,8 +106,8 @@ export const publishedBundlesPageSchema = z.object({
       date: z.string().nullish(),
       location: z.unknown().nullish(),
       publishedAt: z.string().nullish(),
-      // 명세에 아직 없는 필드(백엔드 확인 필요). 표시용이라 모르는 값이어도 목록을 깨지 않게 문자열로 받음
-      visibility: z.string().nullish(),
+      // 번들 공개 범위(`BunchPublicBundleCard.visibility`). 표시용이라 모르는 값은 비워 목록을 깨지 않음
+      visibility: z.enum(['PUBLIC', 'PRIVATE']).nullish().catch(undefined),
     }),
   ),
   page: z.number().int().nonnegative(),

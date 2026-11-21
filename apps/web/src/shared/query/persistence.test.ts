@@ -1,8 +1,10 @@
-import { QueryClient } from '@tanstack/react-query';
+import { dehydrate, hydrate, QueryClient } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearPersistedQueryStorage,
+  PERSIST_MAX_AGE,
+  persistedFirstPage,
   queryPersister,
   shouldPersistQuery,
   useClearPersistedQueriesWhen,
@@ -23,6 +25,15 @@ describe('쿼리 캐시 영속화', () => {
     const cache = client.getQueryCache();
     expect(shouldPersistQuery(cache.find({ queryKey: ['persisted'] })!)).toBe(true);
     expect(shouldPersistQuery(cache.find({ queryKey: ['memory-only'] })!)).toBe(false);
+  });
+
+  it('받은 지 24시간이 지난 데이터는 다시 저장하지 않는다(복원만 되고 다시 받지 않는 이전 번치 목록 등)', () => {
+    const client = new QueryClient();
+    client.setQueryDefaults(['persisted'], { meta: { persist: true } });
+    client.setQueryData(['persisted'], 1, { updatedAt: Date.now() - PERSIST_MAX_AGE - 1 });
+    expect(shouldPersistQuery(client.getQueryCache().find({ queryKey: ['persisted'] })!)).toBe(
+      false,
+    );
   });
 
   it('비로그인이 확인되면 저장 대상 query와 저장본을 지운다', () => {
@@ -81,6 +92,46 @@ describe('저장본 주인 확인', () => {
       clientState: { queries: [], mutations: [] },
     });
     expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('저장본 시각이 24시간 안이어도 받은 지 24시간이 지난 항목은 복원하지 않는다', async () => {
+    const state = (updatedAt: number) => ({
+      data: 1,
+      dataUpdatedAt: updatedAt,
+      dataUpdateCount: 1,
+      error: null,
+      errorUpdateCount: 0,
+      errorUpdatedAt: 0,
+      fetchFailureCount: 0,
+      fetchFailureReason: null,
+      fetchMeta: null,
+      isInvalidated: false,
+      status: 'success',
+      fetchStatus: 'idle',
+    });
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        timestamp: Date.now(),
+        buster: '',
+        owner: 'A',
+        clientState: {
+          mutations: [],
+          queries: [
+            { queryKey: ['fresh'], queryHash: '["fresh"]', state: state(Date.now()) },
+            {
+              queryKey: ['old'],
+              queryHash: '["old"]',
+              state: state(Date.now() - PERSIST_MAX_AGE - 1),
+            },
+          ],
+        },
+      }),
+    );
+
+    const restored = await queryPersister.restoreClient();
+
+    expect(restored?.clientState.queries.map((query) => query.queryKey)).toEqual([['fresh']]);
   });
 
   it('다른 회원의 저장본을 복원했으면 화면을 그리기 전에 지운다', async () => {
@@ -153,5 +204,73 @@ describe('저장본 주인 확인', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('첫 쪽만 저장하도록 표시한 쪽 단위 목록은 첫 쪽만 남기고, 메모리의 목록은 그대로 둔다', async () => {
+    vi.useFakeTimers();
+    try {
+      renderOwner(new QueryClient(), 'A');
+      const client = new QueryClient();
+      client.setQueryDefaults(['feed'], persistedFirstPage);
+      client.setQueryDefaults(['all-pages'], { meta: { persist: true } });
+      const paged = { pages: ['first', 'second'], pageParams: [null, 'cursor-2'] };
+      client.setQueryData(['feed'], paged);
+      client.setQueryData(['all-pages'], paged);
+
+      const pending = queryPersister.persistClient({
+        timestamp: Date.now(),
+        buster: '',
+        clientState: dehydrate(client, { shouldDehydrateQuery: shouldPersistQuery }),
+      });
+      await vi.advanceTimersByTimeAsync(2000);
+      await pending;
+
+      const saved = JSON.parse(localStorage.getItem(KEY)!) as {
+        clientState: { queries: { queryKey: string[]; state: { data: unknown } }[] };
+      };
+      const dataOf = (key: string) =>
+        saved.clientState.queries.find((query) => query.queryKey[0] === key)?.state.data;
+      expect(dataOf('feed')).toEqual({ pages: ['first'], pageParams: [null] });
+      expect(dataOf('all-pages')).toEqual(paged);
+      expect(client.getQueryData(['feed'])).toEqual(paged);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('첫 쪽만 남긴 저장본을 복원하면 다음 쪽을 이어 받을 수 있고, 다시 받을 때 첫 쪽부터 요청한다', async () => {
+    const client = new QueryClient();
+    // JSON으로 저장되며 첫 쪽 커서(undefined)는 null이 됨
+    hydrate(client, {
+      mutations: [],
+      queries: [
+        {
+          queryKey: ['feed'],
+          queryHash: '["feed"]',
+          state: {
+            ...client.getQueryCache().build(client, { queryKey: ['other'] }).state,
+            data: { pages: [{ next: 'cursor-2' }], pageParams: [null] },
+            status: 'success',
+            dataUpdatedAt: Date.now() - 60_000,
+          },
+        },
+      ],
+    });
+    const requested: unknown[] = [];
+    const options = {
+      queryKey: ['feed'],
+      initialPageParam: undefined as string | undefined,
+      queryFn: ({ pageParam }: { pageParam: string | undefined }) => {
+        requested.push(pageParam);
+        return { next: pageParam ? null : 'cursor-2' };
+      },
+      getNextPageParam: (page: { next: string | null }) => page.next ?? undefined,
+    };
+
+    await client.fetchInfiniteQuery({ ...options, staleTime: 0 });
+
+    expect(requested).toEqual([undefined]);
+    await client.fetchInfiniteQuery({ ...options, pages: 2, staleTime: 0 });
+    expect(requested.at(-1)).toBe('cursor-2');
   });
 });

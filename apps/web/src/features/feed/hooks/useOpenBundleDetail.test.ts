@@ -6,7 +6,7 @@ import { useOpenBundleDetail } from './useOpenBundleDetail';
 
 const push = vi.fn();
 const prefetchDetail = vi.fn<() => Promise<unknown>>();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, prefetch: vi.fn() }) }));
 vi.mock('../queries/bundleDetail', () => ({ usePrefetchBundleDetail: () => prefetchDetail }));
 
 const bundle = { id: '7', bunch: { id: '1' } } as FeedBundle;
@@ -24,7 +24,7 @@ describe('useOpenBundleDetail', () => {
     result.current.open(bundle, '/a');
     expect(push).toHaveBeenCalledWith('/a');
     expect(prefetchDetail).toHaveBeenCalledWith('1', '7', 'b1');
-    expect(getBundlePreview('1', '7')).toBe(bundle);
+    expect(getBundlePreview('1', '7')).toEqual({ bundle, partial: false });
     // 다른 번치의 같은 id는 미리 그리지 않음
     expect(getBundlePreview('2', '7')).toBeUndefined();
   });

@@ -1,30 +1,30 @@
 'use client';
 
 import type { RefObject } from 'react';
-import { Button } from '@app/design-system';
+import { Button, Skeleton } from '@app/design-system';
 import { BundleAuthorInfo, BundleInfo, BundlePhoto } from '@app/design-system/web';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { FeedBundle } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { bundleHeroKey } from '../../constants/paths';
 import { hideLeftMemberImages } from '../../lib/deletedUserImage';
+import { BundleDetailRestSkeleton, BundleDetailSkeleton } from './BundleDetailSkeleton';
 
 export type BundleDetailStatusProps = {
   kind: 'loading' | 'unavailable' | 'failed';
   /** 볼 수 없음·실패 안내의 제목(다시 시도 뒤 초점을 받는 곳) */
   titleRef: RefObject<HTMLHeadingElement | null>;
   onRetry: () => void;
-  /** 받는 중일 때 먼저 그릴 피드 카드 데이터와 게시 경과 시간(피드에서 연 경우) */
-  preview?: { bundle: FeedBundle; time: string } | undefined;
+  /** 받는 중일 때 먼저 그릴 카드·칸 데이터와 게시 경과 시간. `partial`(격자 칸)이면 날짜 줄은 자리표시 */
+  preview?: { bundle: FeedBundle; partial: boolean; time: string } | undefined;
 };
 
 const noop = () => {};
 
-/** 번들 상세 본문을 그릴 수 없을 때: 받는 중 덮개, 볼 수 없음 안내, 실패와 다시 시도 */
+/** 번들 상세 본문을 그릴 수 없을 때: 받는 중 스켈레톤, 볼 수 없음 안내, 실패와 다시 시도 */
 export function BundleDetailStatus({ kind, titleRef, onRetry, preview }: BundleDetailStatusProps) {
-  // 피드에서 왔으면 본문과 같은 자리에 번치·제목·첫 사진을 먼저 그림(카드 사진이 hero로 이어짐). 받기 전이라 누를 수 없게 inert
+  // 피드에서 왔으면 본문과 같은 자리에 번치·제목·첫 사진을 먼저 그리고 그 아래만 스켈레톤(카드 사진이 hero로 이어짐). 받기 전이라 누를 수 없게 inert
   if (kind === 'loading' && preview) {
-    const { bundle, time } = preview;
+    const { bundle, partial, time } = preview;
     return (
       <>
         <p role="status" className="sr-only">
@@ -47,21 +47,32 @@ export function BundleDetailStatus({ kind, titleRef, onRetry, preview }: BundleD
             location={bundle.location}
             onLocationClick={noop}
             date={bundle.date}
-            className="pt-padding-p8 pb-padding-p5 px-padding-p8"
+            className={
+              partial ? 'pt-padding-p8 px-padding-p8' : 'pt-padding-p8 pb-padding-p5 px-padding-p8'
+            }
           />
+          {partial ? (
+            // 칸에는 장소·날짜가 없어 BundleInfo 날짜 줄 자리만 회색(BundleDetailSkeleton과 같은 크기)
+            <div aria-hidden="true" className="px-padding-p8 pb-padding-p5 pt-s5">
+              <span className="typography-body-3-regular flex h-lh items-center">
+                <Skeleton className="h-4 w-32" />
+              </span>
+            </div>
+          ) : null}
           <BundlePhoto variant="detail" photos={bundle.photos} heroKey={bundleHeroKey(bundle.id)} />
         </div>
+        <BundleDetailRestSkeleton />
       </>
     );
   }
-  // 덮개(`PageLoading`)가 헤더까지 덮고 초점을 가져감(앱 공통). 상태 문구는 덮개와 함께 붙음
+  // 가진 데이터 없이 들어왔으면(알림·공유 링크) 본문 전체 스켈레톤. 헤더(뒤로 가기)는 실제라 바로 누를 수 있음
   if (kind === 'loading') {
     return (
       <>
         <p role="status" className="sr-only">
           {text.bundleLoading}
         </p>
-        <PageLoading />
+        <BundleDetailSkeleton />
       </>
     );
   }
@@ -75,7 +86,7 @@ export function BundleDetailStatus({ kind, titleRef, onRetry, preview }: BundleD
         </h1>
       </div>
       {failed ? (
-        // 누르면 받는 중 화면(덮개)으로 바뀜. 데이터 없이 실패한 query는 다시 받으면 pending
+        // 누르면 받는 중 화면(스켈레톤)으로 바뀜. 데이터 없이 실패한 query는 다시 받으면 pending
         <Button variant="tertiary" size="md" onClick={onRetry}>
           {text.retry}
         </Button>

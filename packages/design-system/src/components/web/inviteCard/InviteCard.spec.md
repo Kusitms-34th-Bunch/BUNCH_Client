@@ -21,7 +21,7 @@
 ## Public API
 
 - 이름 연결: `aria-labelledby`는 번치 이름 `h2`로 고정이라 받지 않는다(타입에서 제외).
-- Props: `bunchName`(필수), `description`, `senderName`(없거나 비면 해당 줄을 그리지 않음), `imageSrc`, `imageAlt`(기본 빈 문자열), `onJoin`, `joinDisabled`, 그리고 native `<article>` 속성(`className`, `id` 등). `title`은 받지 않는다.
+- Props: `bunchName`(필수), `description`, `senderName`(없거나 비면 해당 줄을 그리지 않음), `imageSrc`, `imageAlt`(기본 빈 문자열), `onJoin`, `joinDisabled`, `joinBusy`, `joinRef`, 그리고 native `<article>` 속성(`className`, `id` 등). `title`은 받지 않는다.
 - 호출자 소유 책임: 번치 이름·소개·보낸 사람 이름, 이미지 주소, 참여 동작. 「From.」·「님」·「참여하기」 문구는 컴포넌트에 고정이라 i18n은 확인할 항목이다.
 
 ## 상태와 동작
@@ -29,7 +29,8 @@
 - 이미지 없음(`imageSrc` 없음): 이미지 없이 빈 원(`surface-secondary`). Figma에 정의된 상태가 아니다.
 - 긴 번치 이름·소개: 줄바꿈되고 카드 높이가 늘어난다. 보낸 사람 줄은 한 줄(`nowrap`)이라 이름이 길면 넘칠 수 있다(Figma 설정 그대로).
 - 소개 없음·초대한 사람 없음: 해당 줄을 그리지 않는다(기획 2.6.2, 서버 카드의 소개가 비었거나 초대한 사람이 나간 경우).
-- `joinDisabled`: 「참여하기」가 비활성이 된다(다시 해도 안 되는 참여 실패 뒤). 이유는 호출하는 쪽이 토스트 등으로 알린다. 로딩·에러 상태는 없다.
+- `joinDisabled`: 「참여하기」가 비활성이 된다(다시 해도 안 되는 참여 실패 뒤, 또는 참여 요청 중). 이유는 호출하는 쪽이 토스트 등으로 알린다. 에러 상태는 없다.
+- `joinBusy`: 참여 요청 중이면 「참여하기」에 `aria-busy`(화면을 덮지 않고 버튼만 바쁨으로 알릴 때). `joinRef`: 「참여하기」 버튼 ref(요청이 실패해 다시 켜지면 호출하는 쪽이 초점을 돌려줄 때).
 
 ## 접근성
 

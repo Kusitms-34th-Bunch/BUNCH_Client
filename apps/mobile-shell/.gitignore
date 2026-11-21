@@ -40,3 +40,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Maestro E2E용 시뮬레이터 빌드 결과물(scripts/e2e-ios-build.mjs)
+/build/

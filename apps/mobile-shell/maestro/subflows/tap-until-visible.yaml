@@ -1,0 +1,18 @@
+# 누르고 다음 화면의 표식이 보일 때까지 다시 누름
+# 앱 시작 직후 한동안 입력이 무시되는 문제(QA 2차 F-3, flows/90-startup-first-input.yaml)에 다른 flow가 흔들리지 않게
+appId: kr.bunch.app
+---
+- repeat:
+    while:
+      notVisible: ${MARK}
+    times: 5
+    commands:
+      # 앞 탭이 먹고 다음 화면을 기다리는 중이면 누를 대상이 없어도 넘어감
+      - tapOn:
+          text: ${TARGET}
+          optional: true
+      - waitForAnimationToEnd
+# 다음 화면이 탭을 처음 여는 경우 CI에서 로딩이 10초를 넘어 30초까지 기다림(결정 기록 029)
+- extendedWaitUntil:
+    visible: ${MARK}
+    timeout: 30000

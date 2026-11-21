@@ -2,7 +2,11 @@
 
 import { toast } from '@app/design-system';
 import { useMemo, useState } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
@@ -54,7 +58,8 @@ export function BundleDraftPick() {
     [frozen, draft],
   );
 
-  if (!draft || !viewer || !shown) return <PageLoading />;
+  if (!draft || !viewer || !shown)
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
 
   return (
     <DraftPickScreen

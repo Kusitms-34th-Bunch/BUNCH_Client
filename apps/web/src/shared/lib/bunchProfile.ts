@@ -1,3 +1,5 @@
+import type { PasteResult } from './filteredPaste';
+
 // 번치 이름·소개 입력 규칙(번치 만들기와 프로필 편집이 함께 사용, 기능명세 2.2·5.5)
 export const BUNCH_NAME_MAX_LENGTH = 12;
 export const BUNCH_DESCRIPTION_MAX_LENGTH = 50;
@@ -37,3 +39,23 @@ const COMPOSING_NAME_PATTERN = /^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ ]*$/;
 /** 이름에 쓸 수 없는 문자가 있는지(조합 중이면 자모 허용) */
 export const hasInvalidBunchNameChars = (name: string, composing: boolean) =>
   !(composing ? COMPOSING_NAME_PATTERN : NAME_PATTERN).test(name);
+
+/**
+ * 번치 이름 입력란의 붙여넣기: 쓸 수 없는 문자는 빼고 넣고 12자를 넘는 붙여넣은 글의 뒤쪽은 자름(기능명세 2.2.2 예외)
+ * 허용 문자만이면 브라우저 기본 동작(`maxLength`가 자름). 서버는 닉네임과 같은 이름 규칙으로 검사
+ */
+export const pasteBunchName = (
+  current: string,
+  selection: { start: number; end: number },
+  pasted: string,
+): PasteResult => {
+  if (!hasInvalidBunchNameChars(pasted, false)) return 'native';
+  const clean = pasted.normalize('NFC').replace(/[^A-Za-z0-9가-힣 ]/g, '');
+  if (clean === '') return null;
+  // 남은 칸만큼만 넣어 원래 이름은 지키고 붙여넣은 글의 뒤쪽을 자름(브라우저 `maxLength`와 같음)
+  const room = BUNCH_NAME_MAX_LENGTH - (current.length - (selection.end - selection.start));
+  const inserted = clean.slice(0, Math.max(0, room));
+  if (inserted === '') return null;
+  const value = current.slice(0, selection.start) + inserted + current.slice(selection.end);
+  return { value, caret: selection.start + inserted.length };
+};

@@ -1,8 +1,9 @@
 'use client';
 
 import { permissionStatusSchema } from '@app/bridge';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { isNativeShell, permissionBridge, photoUploadBridge } from '@/shared/bridge/client';
+import { askNotificationPermission } from '@/shared/lib/pushDevice';
 import type { DeviceNotificationPermission } from '../lib/types';
 
 // 쉘이 bridge 메서드 목록을 알려 주기 전에는 지원 여부를 알 수 없어 짧게 몇 번 다시 확인
@@ -19,11 +20,13 @@ const CHECK_CAP_MS = 1000;
  * `ready`는 쉘에서 첫 상태를 받았는지(읽을 필요가 없는 브라우저는 처음부터 true). 첫 값은 변화가 아니라 처음 상태라 변화 안내의 기준으로만 씀
  * 겹쳐 보낸 읽기는 마지막 요청의 응답만 반영함(앞선 요청의 낡은 값이 나중에 도착해도 덮지 않음)
  * 「설정으로 이동」은 쉘에서만 줌(브라우저에는 앱 설정이 없음)
+ * `askPermission`은 아직 정하지 않은 권한을 OS 팝업으로 묻고 답한 상태를 다시 읽음(알림을 켤 때, 재설치 등으로 한 번도 묻지 않은 기기)
  */
 export function useDeviceNotificationPermission() {
   const [permission, setPermission] = useState<DeviceNotificationPermission>('granted');
   const [ready, setReady] = useState(() => !isNativeShell());
   const [checking, setChecking] = useState(() => isNativeShell());
+  const refreshRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!isNativeShell()) return;
@@ -62,11 +65,13 @@ export function useDeviceNotificationPermission() {
       if (document.visibilityState === 'visible') refresh();
     };
 
+    refreshRef.current = () => refresh();
     refresh();
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
     return () => {
       cancelled = true;
+      refreshRef.current = null;
       clearTimeout(retryTimer);
       clearTimeout(capTimer);
       document.removeEventListener('visibilitychange', onVisible);
@@ -78,5 +83,15 @@ export function useDeviceNotificationPermission() {
     void photoUploadBridge.openAppSettings().catch(() => undefined);
   }, []);
 
-  return { permission, ready, checking, openSettings: isNativeShell() ? openSettings : undefined };
+  const askPermission = useCallback(async () => {
+    if (await askNotificationPermission()) refreshRef.current?.();
+  }, []);
+
+  return {
+    permission,
+    ready,
+    checking,
+    openSettings: isNativeShell() ? openSettings : undefined,
+    askPermission,
+  };
 }

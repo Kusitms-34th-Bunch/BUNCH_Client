@@ -20,6 +20,33 @@ export const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000;
  */
 export const persistedQuery = { meta: { persist: true }, gcTime: PERSIST_MAX_AGE } as const;
 
+/** 쪽 단위 목록(피드·사진함)을 첫 쪽만 저장하는 옵션. 복원 뒤 오래됐으면 첫 쪽부터 다시 받음 */
+export const persistedFirstPage = {
+  meta: { persist: true, persistFirstPageOnly: true },
+  gcTime: PERSIST_MAX_AGE,
+} as const;
+
+type PagedData = { pages: unknown[]; pageParams: unknown[] };
+const isPaged = (data: unknown): data is PagedData =>
+  typeof data === 'object' &&
+  data !== null &&
+  Array.isArray((data as PagedData).pages) &&
+  Array.isArray((data as PagedData).pageParams);
+
+// 첫 쪽만 저장하도록 표시한 query의 받은 쪽을 첫 쪽으로 줄임(메모리의 캐시는 그대로)
+const keepFirstPages = (client: PersistedClient): PersistedClient => ({
+  ...client,
+  clientState: {
+    ...client.clientState,
+    queries: client.clientState.queries.map((query) => {
+      const { data } = query.state;
+      if (!query.meta?.persistFirstPageOnly || !isPaged(data)) return query;
+      const firstPage = { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) };
+      return { ...query, state: { ...query.state, data: firstPage } };
+    }),
+  },
+});
+
 /**
  * 배포(빌드)마다 바뀌는 값. 다르면 저장본을 버려 이전 배포의 데이터 모양이 복원되지 않게 함
  * 가짜 서버 여부도 넣어 가짜 데이터와 실서버 데이터가 섞여 복원되지 않게 함
@@ -77,20 +104,30 @@ export const queryPersister: Persister = {
   persistClient: (client) => {
     const owner = contextOwner;
     if (owner === null) return;
-    const owned: OwnedClient = { ...client, owner };
+    const owned: OwnedClient = { ...keepFirstPages(client), owner };
     return storagePersister.persistClient(owned);
   },
   restoreClient: async () => {
     const client = (await storagePersister.restoreClient()) as OwnedClient | undefined;
-    if (client) restoredOwner = client.owner ?? null;
-    return client;
+    if (!client) return client;
+    restoredOwner = client.owner ?? null;
+    // 저장본 시각과 별개로 받은 지 24시간이 지난 항목은 다시 메모리에 올리지 않음
+    const queries = client.clientState.queries.filter(
+      (query) => Date.now() - query.state.dataUpdatedAt < PERSIST_MAX_AGE,
+    );
+    return { ...client, clientState: { ...client.clientState, queries } };
   },
   removeClient: () => storagePersister.removeClient(),
 };
 
-/** 저장 대상: 표시한 query 중 데이터를 받은 것만(오류·로딩 상태는 남기지 않음) */
+/**
+ * 저장 대상: 표시한 query 중 데이터를 받은 지 24시간이 안 된 것만(오류·로딩 상태는 남기지 않음)
+ * 저장본 시각은 저장할 때마다 새로 찍혀, 다시 받지 않는 복원 데이터(이전 번치 사진함 등)가 계속 이어지지 않게 항목마다 기한을 봄
+ */
 export const shouldPersistQuery = (query: Query) =>
-  query.meta?.persist === true && query.state.status === 'success';
+  query.meta?.persist === true &&
+  query.state.status === 'success' &&
+  Date.now() - query.state.dataUpdatedAt < PERSIST_MAX_AGE;
 
 /** 모든 화면의 저장본을 지움(로그아웃·탈퇴 직후, 비로그인 확인) */
 export const clearPersistedQueryStorage = () => {

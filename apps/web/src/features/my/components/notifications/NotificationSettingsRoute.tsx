@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { DeviceNotificationPermission } from '../../lib/types';
@@ -18,13 +17,14 @@ import { NotificationSettingsScreen } from './NotificationSettingsScreen';
 
 /**
  * 알림 설정과 푸시 수신 설정 API·기기 알림 권한을 잇는 컨테이너
- * 설정값을 받을 때까지 전체 로딩, 받지 못하면 이전 화면으로 돌아가 그 화면에서 오류 토스트를 보임(기능명세서 7.3.1 예외)
+ * 설정값을 받을 때까지 토글 자리만 스켈레톤(헤더는 실제라 바로 뒤로 갈 수 있음), 받지 못하면 이전 화면으로 돌아가 그 화면에서 오류 토스트를 보임(기능명세서 7.3.1 예외)
  */
 export function NotificationSettingsRoute() {
   const backOr = useBackOr();
   const query = useQuery(notificationSettingsQueryOptions());
   const update = useUpdateNotificationSettingsMutation();
-  const { permission, ready, checking, openSettings } = useDeviceNotificationPermission();
+  const { permission, ready, checking, openSettings, askPermission } =
+    useDeviceNotificationPermission();
   const failed = query.isError && !query.data && query.fetchStatus === 'idle';
   const text = MY_MESSAGES.notifications;
   // 영역이 먼저 마운트된 뒤에 문구를 채워야 스크린 리더가 변화로 읽음(영역과 문구가 함께 생기면 읽히지 않을 수 있음)
@@ -61,24 +61,34 @@ export function NotificationSettingsRoute() {
 
   return (
     <>
-      {/* 불러오는 중임을 스크린 리더에 알림(PageLoading은 안내를 호출하는 쪽에 맡김) */}
+      {/* 불러오는 중임을 스크린 리더에 알림(스켈레톤은 숨김이라 안내를 여기서 맡음) */}
       <p role="status" className="sr-only">
         {mounted && query.isPending ? text.loading : ''}
       </p>
       <p role="status" className="sr-only">
         {permissionNotice}
       </p>
-      {query.data ? (
+      {query.data || query.isPending ? (
         <NotificationSettingsScreen
-          settings={toNotificationSettings(query.data)}
+          settings={query.data ? toNotificationSettings(query.data) : undefined}
           devicePermission={permission}
           devicePermissionChecking={checking}
-          onChangePush={(checked) => update.mutate(pushPatch(checked))}
-          onChangeType={(type, checked) => update.mutate(typePatch(type, checked))}
+          onChangePush={(checked) => {
+            update.mutate(pushPatch(checked));
+            // 켤 때 기기 권한을 아직 정하지 않았으면 함께 물음(끄고 다시 켜면 권한과 기기 등록이 맞춰짐)
+            if (checked) void askPermission();
+          }}
+          onChangeType={(type, checked) => {
+            update.mutate(typePatch(type, checked));
+            if (checked) void askPermission();
+          }}
           onOpenDeviceSettings={openSettings}
+          onBack={() => {
+            // 이미 떠났으면 받기 실패 effect가 한 번 더 뒤로 가지 않게
+            left.current = true;
+            backOr(MY_PATHS.home);
+          }}
         />
-      ) : query.isPending ? (
-        <PageLoading />
       ) : null}
     </>
   );

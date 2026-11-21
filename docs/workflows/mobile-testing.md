@@ -146,8 +146,34 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 | `SENTRY_AUTH_TOKEN`              | 소스맵 업로드 사용 시 토큰, Secret |
 
 등록 후 `--profile production`으로 빌드한다. 빌드 전에 `EXPO_PUBLIC_WEB_URL`이 등록됐는지 반드시 확인한다. 등록하지 않으면 빌드는 성공하고 설치한 앱이 시작하자마자 종료된다(`preview`도 같다). 빌드 후에는 설치한 앱이 열리는지 첫 실행을 확인하고, 운영 웹 접속과 앱 식별자·버전도 확인한다.
+쉘이나 쉘을 부르는 웹 코드를 바꿨으면 빌드 전에 쉘 E2E(아래 「쉘 E2E(Maestro)」)를 로컬에서 돌리거나 `mobile-e2e.yml`을 수동 실행해 통과를 확인한다.
 개발용 `.env.local`을 운영 값으로 덮어쓰지 않는다. Xcode에서 직접 Archive할 때는 해당 빌드에도 운영 변수를 별도로 적용해야 한다.
 스토어 제출에는 유료 Apple Developer 계정이 필요하며, 현재 제출용 빌드는 검증하지 않았다.
+
+## 쉘 E2E(Maestro)
+
+앱 쉘의 핵심 흐름(실행·탭 전환·탭 밖 화면·백그라운드 복귀·키보드)은 Maestro로 iOS 시뮬레이터에서 확인한다(결정 기록 029). flow는 `apps/mobile-shell/maestro/`에 있다.
+
+준비: Xcode·iOS 시뮬레이터, Java, [Maestro CLI](https://github.com/mobile-dev-inc/maestro/releases)(CI와 같은 2.12.1). Maestro는 저장소 의존성이 아니라 각자 설치한다.
+
+```bash
+# 터미널 1: 저장소 루트. 가짜 서버(MSW)를 켠 웹 운영 빌드를 127.0.0.1:3200에 띄움
+NEXT_PUBLIC_API_MOCKING=enabled SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= yarn workspace @app/web build
+NEXT_PUBLIC_API_MOCKING=enabled yarn workspace @app/web exec next start --hostname 127.0.0.1 --port 3200
+
+# 터미널 2: apps/mobile-shell. E2E 빌드를 만들어 켜 둔 시뮬레이터에 설치하고 flow 실행
+pnpm ios:sync:clean
+pnpm e2e:ios:build
+xcrun simctl install booted build/e2e/Build/Products/Release-iphonesimulator/Bunch.app
+pnpm e2e:ios
+```
+
+- E2E 빌드는 `EXPO_PUBLIC_E2E=1`로 같은 기기의 http 웹만 열 수 있게 만든 Release 빌드다. 스토어 빌드에 쓰지 않으며, EAS production 빌드에 이 값이 있으면 `app.config.js`가 빌드를 멈춘다. EAS를 거치지 않는 Release 빌드(Xcode Archive 등)는 막지 않으므로 `.env.local`에 이 값을 남기지 않는다.
+- flow는 웹이 정한 문구(탭 이름 등)로 판정해 시뮬레이터 언어와 관계없이 같은 결과를 낸다. 시스템 문구(예: 「탭 막대」)는 판정에 쓰지 않는다.
+- 가짜 DB가 로그인·가입 완료 상태로 시작하고, 각 flow는 `clearState`로 저장된 상태 없이 시작한다.
+- `known-issue` 태그 flow(`90-startup-first-input.yaml`)는 아직 고치지 않은 문제를 재현하므로 기본 실행에서 빠진다. 따로 돌리려면 `maestro test maestro/flows/90-startup-first-input.yaml`(태그로 고르면 `config.yaml`의 `excludeTags`와 겹쳐 아무 flow도 고르지 않음). CI는 이 flow를 job을 막지 않는 단계로 돌려 결과를 실행 요약에 남긴다.
+- 시뮬레이터는 실기기와 입력·렌더 속도가 달라, 통과해도 실기기 확인을 대신하지 않는다.
+- 실행 기록·스크린샷은 `~/.maestro/tests/`에 남는다. 개인정보가 없는 가짜 데이터지만 공유할 때는 필요한 화면만 고른다.
 
 ## 테스트와 오류 해결
 

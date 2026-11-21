@@ -13,7 +13,11 @@ import type { BunchHomeActions } from '../../lib/types';
 import type { BundleTab } from './BundleTabs';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
-import { type PrefetchBundle, useOpenBundle } from '../../hooks/useOpenBundle';
+import {
+  type PrefetchBundle,
+  type RememberBundlePreview,
+  useOpenBundle,
+} from '../../hooks/useOpenBundle';
 import { useOpenDraft } from '../../hooks/useOpenDraft';
 import { useServerBunchHome } from '../../hooks/useServerBunchHome';
 import {
@@ -24,9 +28,11 @@ import {
   useSwitchBunchMutation,
 } from '../../queries/bunchHome';
 import { usePrefetchMemberships } from '../../queries/memberships';
+import { usePrefetchMyBunchLists } from '../../queries/prefetchLists';
 import { AccessNoticeDialog } from './AccessNoticeDialog';
 import { BunchHomeError } from './BunchHomeError';
 import { BunchHomeScreen } from './BunchHomeScreen';
+import { BunchHomeSkeleton } from './BunchHomeSkeleton';
 import { NoBunchScreen } from './NoBunchScreen';
 
 // 번들은 번치 멤버가 2명 이상일 때 만들 수 있음(기획)
@@ -51,10 +57,19 @@ type BunchHomeProps = {
   initialTab?: BundleTab | undefined;
   /** 번들 상세 미리 받기(feed query, route가 조합). 없으면 확인 없이 이동 */
   prefetchBundle?: PrefetchBundle | undefined;
+  /** 격자 칸으로 연 번들을 상세가 받는 동안 먼저 그리게 남김(feed, route가 조합) */
+  rememberPreview?: RememberBundlePreview | undefined;
+  /** 「콕한 장소」를 미리 받음(bunch-places, route가 조합) */
+  prefetchPlaces?: ((_bunchId: string) => void) | undefined;
 };
 
 /** `/bunch` 번치 탭 화면: 서버 상태와 동작을 화면에 연결, 참여 번치가 없으면 번치 없음(「+」·「첫 번들 만들기」는 번들 만들기 화면으로 이동) */
-export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
+export function BunchHome({
+  initialTab,
+  prefetchBundle,
+  rememberPreview,
+  prefetchPlaces,
+}: BunchHomeProps = {}) {
   const router = useRouter();
   // 번치에 나 혼자일 때 「+」·「첫 번들 만들기」를 막고 멤버 초대를 안내하는 창
   const openOverlay = useScreenOverlay();
@@ -69,15 +84,16 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
   };
   // 삭제 직전 상태 확인부터 삭제 응답까지 한 번만(확인하는 동안은 mutation이 아직 pending이 아님)
   const deletingDraft = useRef(false);
-  const openDraft = useOpenDraft({
+  const { open: openDraft, warm: warmDraft } = useOpenDraft({
     prefetchDraft: draftCheck.fetchDraft,
     onGone: draftCheck.refreshDrafts,
   });
   const deleteNotice = useDeleteBunchNoticeMutation();
   const refreshCurrentBunch = useRefreshCurrentBunch();
-  const openBundle = useOpenBundle({
+  const { open: openBundle, warm: warmBundle } = useOpenBundle({
     viewerId: profile === undefined ? undefined : (profile.bunch?.id ?? null),
     prefetchBundle,
+    rememberPreview,
     onDeleted: () => {
       if (server.kind === 'ready') server.refreshCompleted();
     },
@@ -150,11 +166,16 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
   );
   const noticeLoading = server.kind === 'unavailable' && notice.isPending && !notice.isError;
   // 번치 홈을 그린 뒤 더보기·멤버 관리가 바로 그려지게 멤버 목록을 미리 받음
+  // 팔로워·팔로잉·팔로우 요청·알림 목록도 미리 받아 들어가면 바로 그려지게 함
   const prefetchMemberships = usePrefetchMemberships();
+  const prefetchLists = usePrefetchMyBunchLists();
   const readyBunchId = notReady ? undefined : profile?.bunch?.id;
   useEffect(() => {
-    if (readyBunchId) prefetchMemberships(readyBunchId);
-  }, [readyBunchId, prefetchMemberships]);
+    if (!readyBunchId) return;
+    prefetchMemberships(readyBunchId);
+    prefetchLists(readyBunchId);
+    prefetchPlaces?.(readyBunchId);
+  }, [readyBunchId, prefetchMemberships, prefetchLists, prefetchPlaces]);
   // 화면 상태가 바뀌어(로딩·오류) 창이 의미를 잃으면 모두 닫음
   useEffect(() => {
     if (notReady) openOverlay.closeAll();
@@ -169,8 +190,10 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
         <p role="status" className="sr-only">
           {server.kind === 'loading' ? '번치를 불러오는 중이에요' : ''}
         </p>
+        {/* 처음 받는 중은 화면 모양을 아니까 스켈레톤(저장해 둔 홈이 있으면 바로 그려져 거치지 않음) */}
+        {server.kind === 'loading' ? <BunchHomeSkeleton /> : null}
         {/* 접근 불가 안내는 안내를 받는 동안만 로딩, 창이 열리면 덮개를 걷음(덮개가 남으면 앱 스플래시가 안내 창을 가림, AuthGate appReady) */}
-        {server.kind === 'loading' || noticeLoading ? <PageLoading /> : null}
+        {noticeLoading ? <PageLoading /> : null}
         {/* 안내를 닫거나 받지 못하면 서버가 다시 고른 번치(또는 번치 없음)로 바뀜 */}
         {server.kind === 'unavailable' ? (
           <AccessNoticeDialog
@@ -206,9 +229,21 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
             : router.push(BUNCH_HOME_PATHS.startBunch)
         }
         onOpenPlaces={() => router.push(BUNCH_HOME_PATHS.places)}
-        onOpenBundle={(bundleId) => openBundle(data.current.id, bundleId)}
+        onOpenBundle={(bundleId) => {
+          const cell = data.current.completedBundles.find((bundle) => bundle.id === bundleId);
+          return openBundle(
+            data.current.id,
+            bundleId,
+            cell && {
+              ...cell,
+              bunchName: data.current.name,
+              bunchImageSrc: data.current.imageSrc,
+            },
+          );
+        }}
         initialTab={initialTab}
         completedMore={server.kind === 'ready' ? server.completedMore : undefined}
+        bundlesLoading={server.kind === 'ready' && server.bundlesLoading}
         // 멤버가 2명 미만이면 번들 만들기로 들어가지 않고 초대 안내, 초안이 이미 10개면 토스트(기능명세 4.1.1 상세 동작 1)
         onCreateBundle={() =>
           data.current.memberCount < MIN_MEMBERS_FOR_BUNDLE
@@ -230,6 +265,8 @@ export function BunchHome({ initialTab, prefetchBundle }: BunchHomeProps = {}) {
               : router.push(BUNCH_HOME_PATHS.createBundle)
         }
         onOpenDraft={(bundleId) => void openDraft(bundleId)}
+        onPressDraft={warmDraft}
+        onPressBundle={(bundleId) => warmBundle(data.current.id, bundleId)}
       />
     </>
   );

@@ -40,7 +40,9 @@ const AfterBasicInfo = ({ children }: { children: ReactNode }) => {
     </QueryWrapper>
   );
 };
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push, back, replace, prefetch: () => {} }),
+}));
 // 토스트 표시는 DS의 `toast()` 담당이라 호출만 차단
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
@@ -181,22 +183,13 @@ describe('BunchDescription', () => {
     expect(screen.getByText('50/50')).toBeTruthy();
   });
 
-  it('Enter로 줄을 바꿀 수 없다', async () => {
+  it('Enter로 줄을 바꿀 수 있고, 줄바꿈과 이모지는 한 글자로 센다', async () => {
     renderStep();
 
-    await userEvent.type(input(), '맛집{Enter}탐방');
+    await userEvent.type(input(), '맛집{Enter}탐방😀');
 
-    expect(screen.getByDisplayValue('맛집탐방')).toBe(input());
-  });
-
-  it('한글 조합 중 확정 Enter는 막지 않는다', () => {
-    renderStep();
-
-    const composing = fireEvent.keyDown(input(), { key: 'Enter', isComposing: true });
-    const plain = fireEvent.keyDown(input(), { key: 'Enter' });
-
-    expect(composing).toBe(true);
-    expect(plain).toBe(false);
+    expect((input() as HTMLTextAreaElement).value).toBe('맛집\n탐방😀');
+    expect(screen.getByText('6/50')).toBeTruthy();
   });
 
   it('이전은 이전 화면으로 돌아간다', async () => {

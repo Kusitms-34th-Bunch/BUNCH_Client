@@ -8,6 +8,7 @@ import {
   type CreateBunchInput,
   validateBunchIntroduction,
 } from '../api/bunches';
+import { ONBOARDING_MESSAGES } from '../constants/messages';
 
 /**
  * 번치 생성. 성공하면 가입 상태(`sharedKeys.session()`)를 다시 읽음: 소속 번치가 생겨 기본 번치가 바뀌므로
@@ -31,17 +32,28 @@ export const useCreateBunchMutation = () => {
 export const useValidateIntroductionMutation = () =>
   useMutation({ mutationFn: validateBunchIntroduction });
 
-/** 번치 대표 사진 변경(사진 `string`) 또는 기본 이미지 적용(`undefined`) */
-export const useChangeBunchPhotoMutation = (bunchId: string | undefined) => {
+/**
+ * 번치 대표 사진 변경(사진 `string`) 또는 기본 이미지 적용(`undefined`)
+ * 올리는 중 화면을 떠나도 끝나면 번치 홈을 다시 받고, 실패 안내도 화면과 관계없이 공통 토스트(기능명세 2.3.2 예외)
+ */
+export const useChangeBunchPhotoMutation = (
+  bunchId: string | undefined,
+  // 완료 화면의 만든 번치 갱신. 저장 중 화면을 떠나도 돌아왔을 때 새 사진이 보이게 여기서 부름
+  onChanged?: (_bunch: Awaited<ReturnType<typeof updateBunchProfileImage>>) => void,
+) => {
   const queryClient = useQueryClient();
   return useMutation({
+    // 같은 번치의 사진 변경은 화면을 다시 열어도 차례대로 보내 늦은 응답이 최신 사진을 덮지 않게 함
+    ...(bunchId === undefined ? {} : { scope: { id: `bunch-photo:${bunchId}` } }),
+    meta: { errorMessage: ONBOARDING_MESSAGES.temporaryFailure },
     mutationFn: (photo: string | undefined) => {
       if (bunchId === undefined) throw new Error('번치를 아직 만들지 않았습니다.');
       return photo === undefined
         ? resetBunchProfileImage(bunchId)
         : updateBunchProfileImage(bunchId, photo);
     },
-    onSuccess: () => {
+    onSuccess: (bunch) => {
+      onChanged?.(bunch);
       void queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHomeScope(bunchId) });
       void queryClient.invalidateQueries({ queryKey: sharedKeys.me() });
     },

@@ -13,7 +13,11 @@ import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
-import { type PrefetchBundle, useOpenBundle } from '../../hooks/useOpenBundle';
+import {
+  type PrefetchBundle,
+  type RememberBundlePreview,
+  useOpenBundle,
+} from '../../hooks/useOpenBundle';
 import { useViewerStale } from '../../hooks/useViewerStale';
 import { itemsOfPages } from '../../lib/pages';
 import { FOLLOW_STATUS, followIdOf, toOtherBunchProfile } from '../../model/otherBunch';
@@ -25,10 +29,12 @@ import {
   otherBunchPublishedQueryOptions,
   useFollowBunchMutation,
 } from '../../queries/otherBunch';
+import { usePrefetchOtherBunchLists } from '../../queries/prefetchLists';
 import { BunchHomeError } from '../home/BunchHomeError';
 import { BlockedBunchScreen } from './BlockedBunchScreen';
 import { OtherBunchMoreMenu } from './OtherBunchMoreMenu';
 import { OtherBunchScreen } from './OtherBunchScreen';
+import { OtherBunchSkeleton } from './OtherBunchSkeleton';
 
 /**
  * `/bunches/[bunchId]` 다른 번치 프로필: 홈(`EXTERNAL`)·공개 번들과 팔로우를 지금 내 번치(기본 번치) 명의로
@@ -37,10 +43,13 @@ import { OtherBunchScreen } from './OtherBunchScreen';
 export function OtherBunch({
   bunchId,
   prefetchBundle,
+  rememberPreview,
 }: {
   bunchId: string;
   /** 번들 상세 미리 받기(feed query, route가 조합). 없으면 확인 없이 이동 */
   prefetchBundle?: PrefetchBundle | undefined;
+  /** 격자 칸으로 연 번들을 상세가 받는 동안 먼저 그리게 남김(feed, route가 조합) */
+  rememberPreview?: RememberBundlePreview | undefined;
 }) {
   const router = useRouter();
   const backOr = useBackOr();
@@ -53,13 +62,22 @@ export function OtherBunch({
     otherBunchPublishedQueryOptions(bunchId, viewerId, canViewBundles),
   );
   const follow = useFollowBunchMutation(viewerId);
-  const openBundle = useOpenBundle({
+  const { open: openBundle, warm: warmBundle } = useOpenBundle({
     viewerId,
     prefetchBundle,
+    rememberPreview,
     onDeleted: () => void published.refetch(),
   });
   const switchBunch = useSwitchBunchMutation();
   const { me: reporter, access } = useBlockRelation(bunchId);
+  // 화면을 그린 뒤 볼 수 있는 멤버·팔로워·팔로잉을 미리 받아 들어가면 바로 그려지게 함(차단 확인 뒤, 명의를 안 뒤)
+  const prefetchLists = usePrefetchOtherBunchLists();
+  const canViewMembers = home.data?.canViewMembers ?? false;
+  const canViewRelations = home.data?.canViewRelations ?? false;
+  useEffect(() => {
+    if (access !== 'visible' || viewerId === undefined) return;
+    prefetchLists(bunchId, viewerId, { members: canViewMembers, relations: canViewRelations });
+  }, [access, viewerId, bunchId, canViewMembers, canViewRelations, prefetchLists]);
   const blockBunch = useBlockBunchMutation(viewerId);
   const reportBunch = useReportBunchMutation(viewerId);
   // 이 화면에서 차단한 명의·번치 이름(접근 제한으로 바꾸고 제목 초점 뒤 완료 토스트). 명의가 바뀌면 적용하지 않음
@@ -149,9 +167,10 @@ export function OtherBunch({
       />
     );
   }
-  if (access === 'checking' || !home.data || internal) {
-    return <BlockedBunchScreen onBack={back} checking />;
-  }
+  // 내 번치(INTERNAL)는 번치 탭으로 옮기는 중이라 내용 없이 상태만
+  if (internal) return <BlockedBunchScreen onBack={back} checking />;
+  // 처음 받는 중·차단 여부 확인 중은 화면 모양만(번치 내용은 아직 그리지 않음)
+  if (access === 'checking' || !home.data) return <OtherBunchSkeleton onBack={back} />;
 
   const data = home.data;
   const status = FOLLOW_STATUS[data.followState ?? 'NONE'];
@@ -224,7 +243,15 @@ export function OtherBunch({
         canFollow={viewerId !== null}
         canViewRelations={data.canViewRelations ?? false}
         canViewMembers={data.canViewMembers ?? false}
-        onOpenBundle={(bundleId) => openBundle(bunchId, bundleId)}
+        onOpenBundle={(bundleId) => {
+          const cell = bunch.completedBundles.find((bundle) => bundle.id === bundleId);
+          return openBundle(
+            bunchId,
+            bundleId,
+            cell && { ...cell, bunchName: bunch.name, bunchImageSrc: bunch.imageSrc },
+          );
+        }}
+        onPressBundle={(bundleId) => warmBundle(bunchId, bundleId)}
         bundlesMore={published}
         onBack={back}
         // 내 번치(차단·신고 명의)를 모르거나 명의를 다시 확인하는 동안에는 더보기를 숨김

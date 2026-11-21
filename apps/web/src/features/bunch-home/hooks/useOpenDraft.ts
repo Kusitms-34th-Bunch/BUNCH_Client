@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useLayoutEffect, useRef } from 'react';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
+import { WARM_REUSE_MS } from './useOpenBundle';
 
 /** 초안 상세를 미리 받아 상태를 돌려줌(bundle feature의 query라 부르는 쪽이 조합). 없는 초안이면 reject */
 export type PrefetchDraft = (_bundleId: string) => Promise<{ status: 'DRAFT' | 'PUBLISHED' }>;
@@ -22,10 +23,13 @@ type OpenDraftOptions = {
 /**
  * 작성 중인 번들 카드 → 공동 편집(5.3.1 상세 동작 3). 상세를 먼저 받아 이미 삭제됐으면 「삭제된 번들이에요.」,
  * 이미 발행됐으면 「발행된 번들이에요.」를 띄우고 이동 대신 목록을 갱신(5.3.1 예외 처리)
+ * `warm`은 카드에 손가락이 닿을 때 확인을 시작해 떼기 전에 끝나게 함(`open`이 그 결과를 이어 씀)
  * ponytail: 400ms 안에 답이 없으면 확인 없이 이동, 늦게 알게 된 경우는 작성 화면의 안내가 맡음
  */
 export function useOpenDraft({ prefetchDraft, onGone }: OpenDraftOptions) {
   const router = useRouter();
+  // 카드별로 시작한 확인(누를 때 꺼내 쓰고 지움)
+  const checks = useRef(new Map<string, { at: number; pending: Promise<Gone> }>());
   // 확인을 기다리는 동안 다시 누르면 무시, 그 사이 화면을 떠나면 이동하지 않음
   const opening = useRef(false);
   const mounted = useRef(true);
@@ -36,16 +40,31 @@ export function useOpenDraft({ prefetchDraft, onGone }: OpenDraftOptions) {
     };
   }, []);
 
-  return async (bundleId: string) => {
-    if (opening.current) return;
-    opening.current = true;
-    const checked = prefetchDraft(bundleId).then(
+  const check = (bundleId: string) => {
+    const found = checks.current.get(bundleId);
+    if (found && Date.now() - found.at < WARM_REUSE_MS) return found.pending;
+    const pending = prefetchDraft(bundleId).then(
       (draft): Gone => (draft.status === 'PUBLISHED' ? 'published' : undefined),
       (error: unknown): Gone =>
         isApiError(error) && (error.status === 404 || error.code === 'RESOURCE_001')
           ? 'deleted'
           : undefined,
     );
+    checks.current.set(bundleId, { at: Date.now(), pending });
+    return pending;
+  };
+
+  const warm = (bundleId: string) => {
+    router.prefetch(BUNCH_HOME_PATHS.draft(bundleId));
+    void check(bundleId);
+  };
+
+  const open = async (bundleId: string) => {
+    if (opening.current) return;
+    opening.current = true;
+    const checked = check(bundleId);
+    // 다음 누름은 새로 확인(초안은 매번 최신 상태가 필요)
+    checks.current.delete(bundleId);
     const timeout = new Promise<Gone>((resolve) =>
       setTimeout(() => resolve(undefined), PREFETCH_WAIT_MS),
     );
@@ -63,4 +82,6 @@ export function useOpenDraft({ prefetchDraft, onGone }: OpenDraftOptions) {
     );
     onGone();
   };
+
+  return { open, warm };
 }

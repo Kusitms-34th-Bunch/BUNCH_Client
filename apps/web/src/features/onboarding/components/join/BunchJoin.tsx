@@ -7,12 +7,14 @@ import { useRouter } from 'next/navigation';
 import { useId, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { readClipboardText } from '@/shared/lib/clipboard';
 import { INVITATION_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
 import { useExitFlowDialog } from '../../hooks/useExitFlowDialog';
+import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';
 import { isInviteInput } from '../../lib/inviteLink';
 import { useVerifyInvitationMutation } from '../../queries/invitations';
 
@@ -23,6 +25,7 @@ import { useVerifyInvitationMutation } from '../../queries/invitations';
  */
 export function BunchJoin() {
   const router = useRouter();
+  usePrefetchNextSteps(ONBOARDING_PATHS.joinBunchInvitation);
   const inputId = useId();
   const [link, setLink] = useState('');
   // 붙여넣기로 채운 직후에만 스크린 리더에 알림(직접 고치면 사라짐)
@@ -128,6 +131,8 @@ export function BunchJoin() {
       <p role="status" className="sr-only">
         {verify.isPending ? '초대를 확인하는 중이에요' : pasted ? '초대 링크를 붙여넣었어요' : ''}
       </p>
+      {/* 짧은 동작이라 버튼만 비활성, 1초를 넘기면 그때 덮음(motion.md 로딩 상태) */}
+      {verify.isPending || leaving ? <PageLoading delayMs={LATE_OVERLAY_MS} /> : null}
       <PageHeader title="초대받은 번치에 참여해볼까요?" />
       <div className="pt-s6 px-padding-p8">
         <TextField

@@ -15,6 +15,13 @@ export const BUNCH_HOME_MESSAGES = {
   // 실패 안내는 기능명세 공통 문구(전환 실패 5.2.2 등)
   switchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   profileSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  // 바꾼 내용이 있는데 뒤로 가기(기능명세 5.5.1 상세 5, MY 프로필 수정과 같은 문구)
+  profileLeave: {
+    title: '저장하지 않고 나갈까요?',
+    description: '변경한 내용이 반영되지 않아요.',
+    confirm: '나가기',
+    cancel: '취소',
+  },
   profileChangedElsewhere: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   memberChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   // 관리 작업 중 멤버 역할이 바뀜(기능명세 5.6.1)
@@ -101,8 +108,7 @@ export const BUNCH_HOME_MESSAGES = {
   notificationsLoading: '알림을 불러오는 중이에요',
   // 빈 목록 디자인이 없어 낭독만(제안)
   noNotifications: '아직 알림이 없어요.',
-  openingNotification: '알림을 여는 중이에요',
-  // 명세에 문구가 없어 제안(갈 화면이 사라진 알림, 삭제된 번들 등)
+  // 명세에 문구가 없어 제안(이미 확인해 사라진 접근 불가 안내. 다른 알림은 도착 화면이 안내)
   notificationUnavailable: '더 이상 볼 수 없는 알림이에요.',
   // 목록 이어서 불러오기: 받는 중 낭독은 기획 원문 없는 제안, 실패는 기능명세 공통 오류 문구
   moreLoading: '목록을 더 불러오는 중이에요',

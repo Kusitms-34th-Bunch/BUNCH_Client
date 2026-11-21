@@ -1937,6 +1937,9 @@ export interface components {
       locationVersion: number;
       locations: components['schemas']['BundleLocationResponse'][];
     };
+    WithdrawalRequest: {
+      appleAuthorizationCode?: string;
+    };
     RegistrationRequest: {
       nickname: string;
       /** Format: int32 */
@@ -2517,6 +2520,8 @@ export interface components {
     };
     WithdrawalCheckResponse: {
       ownerBunches: components['schemas']['WithdrawalOwnerBunch'][];
+      /** @enum {string} */
+      provider?: 'APPLE' | 'GOOGLE' | 'KAKAO';
     };
     WithdrawalOwnerBunch: {
       /** Format: int64 */
@@ -2882,6 +2887,8 @@ export interface components {
       likedByCurrentBunch: boolean;
       /** Format: int64 */
       commentCount: number;
+      /** @enum {string} */
+      visibility?: 'PUBLIC' | 'PRIVATE';
     };
     BunchPublicLocation: {
       name: string;
@@ -3976,7 +3983,11 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['WithdrawalRequest'];
+      };
+    };
     responses: {
       /** @description OK */
       200: {

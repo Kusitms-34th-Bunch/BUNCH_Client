@@ -13,6 +13,7 @@ import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
+import { PERMISSION_DENIED_CODE } from '../../constants/roles';
 import { toEditableBunchProfile } from '../../model/bunchHome';
 import { bunchHomeQueryOptions, useUpdateBunchProfileMutation } from '../../queries/bunchHome';
 import { BunchHomeError } from '../home/BunchHomeError';
@@ -43,6 +44,8 @@ export function BunchProfileEdit() {
   const [prohibited, setProhibited] = useState<ProhibitedValues>({});
   // 다른 곳에서 바뀐 걸 알게 되면 폼을 최신 값으로 다시 엶
   const [formRevision, setFormRevision] = useState(0);
+  // 권한 변경 안내 뒤 더보기로 가는 중(이동이 끝날 때까지 나가기 확인·다시 저장을 막음)
+  const [leaving, setLeaving] = useState(false);
 
   const hasNoBunch = me.isSuccess && bunchId === undefined;
   const cannotEdit = profile !== undefined && !profile.canEdit;
@@ -64,7 +67,9 @@ export function BunchProfileEdit() {
     );
   }
 
-  // 받는 동안·다른 화면으로 보내는 동안은 로딩(번치 홈과 같은 안내)
+  // 다른 화면으로 보내는 동안은 화면 이동이라 로딩
+  if (hasNoBunch || cannotEdit) return <PageLoading />;
+  // 받는 동안은 폼 자리에 스켈레톤(헤더는 실제라 바로 뒤로 갈 수 있음)
   // 저장해 둔 값(앱 다시 열기)이 있어도 서버에서 새로 받은 뒤 폼을 엶: 폼은 연 순간의 값과 버전으로 저장함
   if (!profile?.canEdit || !home.isFetchedAfterMount) {
     return (
@@ -72,7 +77,11 @@ export function BunchProfileEdit() {
         <p role="status" className="sr-only">
           번치 프로필을 불러오는 중이에요
         </p>
-        <PageLoading />
+        <BunchProfileEditScreen
+          initial={undefined}
+          onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
+          onSave={() => {}}
+        />
       </>
     );
   }
@@ -98,6 +107,15 @@ export function BunchProfileEdit() {
           toastAfterNavigation(BUNCH_HOME_MESSAGES.profileSaved, { icon: 'success' });
         },
         onError: (error) => {
+          // 그 사이 메인 관리자가 아니게 됐으면 안내 뒤 더보기로(멤버 관리와 같음, 기능명세 5.4.1 예외)
+          if (isApiError(error) && error.code === PERMISSION_DENIED_CODE) {
+            setLeaving(true);
+            void home.refetch();
+            toastAfterNavigation(BUNCH_HOME_MESSAGES.memberManagePermissionChanged);
+            // 기록과 관계없이 더보기로(직접 들어온 경우 이전 기록이 다른 탭일 수 있음)
+            router.replace(BUNCH_HOME_PATHS.menu);
+            return;
+          }
           if (isApiError(error) && error.code === NAME_TAKEN_CODE) {
             setTakenName(name.normalize('NFC').trim());
             return;
@@ -142,7 +160,8 @@ export function BunchProfileEdit() {
       initial={profile}
       onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
       onSave={save}
-      saving={update.isPending}
+      // 저장 성공 뒤 이동이 시작되기 전에도 나가기 확인·다시 저장을 막음
+      saving={update.isPending || update.isSuccess || leaving}
       takenName={takenName}
       prohibited={prohibited}
       checkName={

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  createAppleAuthorization,
   createAppleLogin,
   createGoogleLogin,
   createKakaoLogin,
@@ -314,4 +315,40 @@ test('Apple SDK 오류 뒤 같은 로그인 함수로 다시 시도하면 로그
 
   assert.equal(calls, 2);
   assert.equal(second.status, 'success');
+});
+
+// ---- Apple 재인증(탈퇴) ----
+
+test('Apple 재인증은 인증 코드를 돌려주고, 창을 닫으면 cancelled다', async () => {
+  const authorize = createAppleAuthorization({
+    isAvailable: () => Promise.resolve(true),
+    signIn: () => Promise.resolve({ authorizationCode: 'auth-code' }),
+  });
+  assert.deepEqual(await authorize(), { status: 'success', authorizationCode: 'auth-code' });
+
+  const closed = createAppleAuthorization({
+    isAvailable: () => Promise.resolve(true),
+    signIn: () => Promise.reject(Object.assign(new Error('x'), { code: 'ERR_REQUEST_CANCELED' })),
+  });
+  assert.deepEqual(await closed(), { status: 'cancelled' });
+});
+
+test('Apple 재인증 실패는 SDK 원문 없이 던지고, 쓸 수 없는 기기·코드 없음도 실패다', async () => {
+  const failing = createAppleAuthorization({
+    isAvailable: () => Promise.resolve(true),
+    signIn: () => Promise.reject(new Error('raw sdk message code=abc')),
+  });
+  await assert.rejects(failing(), (error) => !String(error.message).includes('abc'));
+
+  const unavailable = createAppleAuthorization({
+    isAvailable: () => Promise.resolve(false),
+    signIn: () => Promise.resolve({ authorizationCode: 'auth-code' }),
+  });
+  await assert.rejects(unavailable(), /쓸 수 없어요/);
+
+  const noCode = createAppleAuthorization({
+    isAvailable: () => Promise.resolve(true),
+    signIn: () => Promise.resolve({ authorizationCode: null }),
+  });
+  await assert.rejects(noCode(), /받지 못했어요/);
 });

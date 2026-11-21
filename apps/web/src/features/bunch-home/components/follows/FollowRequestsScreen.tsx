@@ -5,9 +5,9 @@ import { FollowListItem } from '@app/design-system/web';
 import { type MouseEvent, useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { FollowDecision, FollowRequestRow } from '../../model/follows';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
+import { FollowRequestsSkeleton } from './FollowRequestsSkeleton';
 
 type DecisionResult = { applied: boolean; state: 'APPROVED' | 'REJECTED' | 'UNAVAILABLE' };
 
@@ -56,12 +56,12 @@ export function FollowRequestsScreen({
     if (pendingIds.has(request.requestId)) return;
     const row = event.currentTarget.closest('li');
     setPendingIds((ids) => new Set(ids).add(request.requestId));
+    // 누르는 즉시 행이 빠지므로(낙관 처리) 보내기 전에 정함: 이 행에 초점이 있었으면 빠진 뒤 개수 줄로
+    const active = document.activeElement;
+    focusCount.current = !active || active === document.body || !!row?.contains(active);
     try {
       const result = await onDecide(request, decision);
-      // 처리한 행에 초점이 있었으면(행이 빠지며 초점을 잃음) 개수 줄로
-      const active = document.activeElement;
-      focusCount.current = !active || active === document.body || !!row?.contains(active);
-      // 행이 이미 빠져 다시 그려졌으면 바로 옮김
+      // 행이 이미 빠져 다시 그려졌는데 아직 옮기지 못했으면 지금 옮김
       if (focusCount.current && !row?.isConnected) {
         focusCount.current = false;
         countRef.current?.focus();
@@ -77,7 +77,8 @@ export function FollowRequestsScreen({
           : BUNCH_HOME_MESSAGES.requestRejected(request.name),
       );
     } catch {
-      // 실패 안내는 mutation 공통 토스트(meta)
+      // 행이 되돌아오므로 초점은 옮기지 않음. 실패 안내는 mutation 공통 토스트(meta)
+      focusCount.current = false;
     } finally {
       setPendingIds((ids) => {
         const next = new Set(ids);
@@ -165,7 +166,7 @@ export function FollowRequestsScreen({
         </div>
       ) : (
         // 받는 중 안내는 감싸는 경계(`QueryBoundary`)의 늘 있는 상태 영역이 읽어 줌
-        <PageLoading />
+        <FollowRequestsSkeleton />
       )}
     </PageShell>
   );

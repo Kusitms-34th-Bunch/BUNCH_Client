@@ -42,6 +42,8 @@ type PageShellProps = {
     | 'orange-50'
     | 'pink-50'
     | 'green-50'
+    // 뒤의 네이티브 화면이 비치게 바탕을 걷음(iOS 쉘의 로그인 배경 영상)
+    | 'transparent'
     | undefined;
   /** 아래 Safe Area만 다른 색일 때(위는 data-app-background, 아래 내용은 흰색인 화면) */
   'data-app-background-bottom'?: 'primary' | undefined;

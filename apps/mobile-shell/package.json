@@ -30,6 +30,7 @@
     "expo-router": "~58.0.30",
     "expo-splash-screen": "~58.0.13",
     "expo-status-bar": "~58.0.4",
+    "expo-video": "~58.0.14",
     "react": "19.3.0",
     "react-native": "0.88.1",
     "react-native-safe-area-context": "~5.11.1",
@@ -42,12 +43,14 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/web-url.test.mjs src/gallery-resize.test.mjs src/photo-exif.test.mjs src/picked-photos.test.mjs src/cache-path.test.mjs src/social-login-core.test.mjs src/push-device-core.test.mjs src/sdk-callback-url.test.mjs src/clipboard-core.test.mjs src/tabs/*.test.mjs src/splash/*.test.mjs",
+    "test": "node --test src/safe-area-script.test.mjs src/sanitize-sentry-event.test.mjs src/web-url.test.mjs src/gallery-resize.test.mjs src/photo-exif.test.mjs src/picked-photos.test.mjs src/cache-path.test.mjs src/social-login-core.test.mjs src/push-device-core.test.mjs src/sdk-callback-url.test.mjs src/invite-link.test.mjs src/incoming-link-store.test.mjs src/clipboard-core.test.mjs src/tabs/*.test.mjs src/splash/*.test.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "ios:sync": "node scripts/ios-sync.mjs",
     "ios:sync:clean": "node scripts/ios-sync.mjs --clean",
+    "e2e:ios:build": "node scripts/e2e-ios-build.mjs",
+    "e2e:ios": "maestro test maestro",
     "android:sync": "expo prebuild --platform android --no-clean",
     "android:sync:clean": "expo prebuild --platform android",
     "open:ios": "open ios/*.xcworkspace",

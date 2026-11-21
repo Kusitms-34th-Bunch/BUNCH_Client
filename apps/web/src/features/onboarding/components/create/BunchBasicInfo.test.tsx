@@ -16,7 +16,9 @@ const Providers = ({ children }: { children: ReactNode }) => (
     <>{children}</>
   </CreateBunchDraftProvider>
 );
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push, back, replace, prefetch: () => {} }),
+}));
 
 // 기본은 중복 확인 없이(확인 중에는 다음이 잠겨 다른 동작 검증이 흔들림), 중복 확인은 아래 별도 묶음에서 확인
 const renderStep = () => render(<BunchBasicInfo checkName={null} />, { wrapper: Providers });
@@ -60,6 +62,17 @@ describe('BunchBasicInfo', () => {
 
     expect(screen.getByDisplayValue('가나다라마바사아자차카타')).toBe(nameInput());
     expect(screen.getByText('12/12')).toBeTruthy();
+  });
+
+  it('쓸 수 없는 문자를 섞어 붙여넣으면 그 문자만 빼고 넣는다', async () => {
+    const user = userEvent.setup();
+    renderStep();
+
+    await user.click(nameInput());
+    await user.paste('모임!🎉');
+
+    expect(screen.getByDisplayValue('모임')).toBe(nameInput());
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('이름만 입력하고 공개 범위를 고르지 않으면 다음은 비활성이다', async () => {

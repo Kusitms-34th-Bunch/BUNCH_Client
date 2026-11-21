@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
 import { checkNicknameAvailability } from '@/shared/api/nickname';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
+import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { EMPTY_PROFILE_VALUES, useProfileFields } from '@/shared/hooks/useProfileFields';
@@ -92,6 +93,8 @@ export function ProfileSetup({ checkNickname = checkNicknameAvailability }: Prof
             ? '화면을 이동하는 중이에요'
             : ''}
       </p>
+      {/* 짧은 동작이라 버튼만 비활성, 1초를 넘기면 그때 덮음(motion.md 로딩 상태) */}
+      {register.isPending || register.isSuccess ? <PageLoading delayMs={LATE_OVERLAY_MS} /> : null}
       <div
         ref={containerRef}
         className="flex min-h-0 flex-1 flex-col"

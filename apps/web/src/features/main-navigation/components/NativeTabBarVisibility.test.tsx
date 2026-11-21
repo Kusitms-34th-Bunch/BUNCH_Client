@@ -3,10 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NativeTabBarVisibility } from './NativeTabBarVisibility';
 
 const setNativeTabBarVisible = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+const setNativeTabBarVisibleFor = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const setNativeTabBar = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+// 기본은 이전 쉘(첫 화면 WebView): 탭 ID가 없고 탭별 메서드도 없음
+const shell = vi.hoisted(() => ({ tab: null as string | null, perTab: false }));
 vi.mock('@/shared/bridge/client', () => ({
   isNativeShell: () => true,
-  appBridge: { setNativeTabBarVisible, setNativeTabBar },
+  nativeShellTab: () => shell.tab,
+  hasNativeMethod: (method: string) => method === 'setNativeTabBarVisibleFor' && shell.perTab,
+  appBridge: { setNativeTabBarVisible, setNativeTabBarVisibleFor, setNativeTabBar },
 }));
 const pathname = vi.hoisted(() => ({ current: '/bunch' }));
 vi.mock('next/navigation', () => ({ usePathname: () => pathname.current }));
@@ -16,7 +21,10 @@ const setVisibility = (state: DocumentVisibilityState) =>
 
 afterEach(() => {
   setNativeTabBarVisible.mockClear();
+  setNativeTabBarVisibleFor.mockClear();
   setNativeTabBar.mockClear();
+  shell.tab = null;
+  shell.perTab = false;
   setVisibility('visible');
 });
 
@@ -108,5 +116,29 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
 
     document.dispatchEvent(new Event('visibilitychange'));
     expect(setNativeTabBar).not.toHaveBeenCalled();
+  });
+
+  it('탭별 메서드가 있는 쉘의 탭 WebView는 화면에 보이지 않아도 자기 탭 값으로 보낸다(#481)', () => {
+    shell.tab = 'bunch';
+    shell.perTab = true;
+    setVisibility('hidden');
+    pathname.current = '/bunch/places';
+    const { rerender } = render(<NativeTabBarVisibility />);
+    expect(setNativeTabBarVisibleFor).toHaveBeenLastCalledWith({ tab: 'bunch', visible: false });
+
+    pathname.current = '/bunch';
+    rerender(<NativeTabBarVisibility />);
+    expect(setNativeTabBarVisibleFor).toHaveBeenLastCalledWith({ tab: 'bunch', visible: true });
+    expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+  });
+
+  it('이전 쉘의 탭 WebView(탭 ID는 있지만 탭별 메서드 없음)는 기존 방식으로 보낸다', () => {
+    shell.tab = 'bunch';
+    shell.perTab = false;
+    pathname.current = '/bunch/places';
+    render(<NativeTabBarVisibility />);
+
+    expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(false);
+    expect(setNativeTabBarVisibleFor).not.toHaveBeenCalled();
   });
 });

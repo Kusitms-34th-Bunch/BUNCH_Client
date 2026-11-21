@@ -5,7 +5,11 @@ import { useEffect, useState } from 'react';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
@@ -37,7 +41,8 @@ export function BundleDraftPhotoAdd() {
     router.replace(BUNDLE_PATHS.draft(draftId));
   }, [draftId, canEdit, router]);
 
-  if (state.kind !== 'ready' || !canEdit || photoState.kind === 'loading') return <PageLoading />;
+  if (state.kind !== 'ready' || !canEdit || photoState.kind === 'loading')
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
   if (photoState.kind === 'error') return <BundleLoadError onRetry={retry} />;
   if (photoState.kind === 'no-bunch') {
     return (

@@ -25,9 +25,10 @@ export default function NotFound() {
             <p className="typography-body-3-regular text-text-tertiary break-keep">
               주소가 바뀌었거나 더 이상 볼 수 없는 화면이에요.
             </p>
+            {/* 보이는 글자는 그대로 두고 누르는 영역만 사방 12px 넓혀 44px 이상(글줄 22px) */}
             <Link
               href={MAIN_TAB_PATHS.bunch}
-              className="typography-body-2-medium text-text-brand mt-s4 underline underline-offset-4"
+              className="typography-body-2-medium text-text-brand mt-s4 relative underline underline-offset-4 after:absolute after:-inset-3 after:content-['']"
             >
               번치 탭으로 가기
             </Link>

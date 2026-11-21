@@ -39,7 +39,9 @@ const AfterDescription = ({ children }: { children: ReactNode }) => (
     </CreateBunchDraftProvider>
   </Query>
 );
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push, back, replace, prefetch: () => {} }),
+}));
 
 const renderStep = () => render(<BunchMood />, { wrapper: AfterDescription });
 const submitButton = () => screen.getByRole('button', { name: '번치 만들기' });

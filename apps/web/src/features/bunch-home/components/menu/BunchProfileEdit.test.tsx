@@ -1,5 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -116,6 +116,50 @@ describe('BunchProfileEditScreen', () => {
 
     await user.click(screen.getByText('공개 범위'));
     expect(document.activeElement).not.toBe(description);
+  });
+
+  it('바꾼 내용이 없으면 바로 나가고, 있으면 「저장하지 않고 나갈까요?」를 물은 뒤 나간다', async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    render(<BunchProfileEditScreen initial={privateBunch} onBack={onBack} onSave={onSave} />);
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+
+    await user.type(screen.getByRole('textbox', { name: '한 줄 소개' }), '!');
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '저장하지 않고 나갈까요?' });
+    expect(within(dialog).getByText('변경한 내용이 반영되지 않아요.')).toBeTruthy();
+    expect(onBack).toHaveBeenCalledTimes(1);
+
+    await user.click(within(dialog).getByRole('button', { name: '나가기' }));
+    expect(onBack).toHaveBeenCalledTimes(2);
+  });
+
+  it('나가기 확인에서 「취소」를 누르면 입력한 내용 그대로 남는다', async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    render(<BunchProfileEditScreen initial={privateBunch} onBack={onBack} onSave={onSave} />);
+    const description = screen.getByRole('textbox', { name: '한 줄 소개' });
+
+    await user.type(description, '!');
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '저장하지 않고 나갈까요?' });
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+
+    expect(onBack).not.toHaveBeenCalled();
+    expect((description as HTMLTextAreaElement).value.endsWith('!')).toBe(true);
+  });
+
+  it('한 줄 소개는 Enter로 줄을 바꿀 수 있다', async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    const description = screen.getByRole('textbox', { name: '한 줄 소개' });
+
+    await user.clear(description);
+    await user.type(description, '맛집{Enter}탐방');
+
+    expect((description as HTMLTextAreaElement).value).toBe('맛집\n탐방');
   });
 
   it('다른 번치가 쓰는 이름이면 사용 중으로 보이고 저장할 수 없다(지금 이름은 묻지 않음)', async () => {
@@ -467,6 +511,28 @@ describe('BunchProfileEdit', () => {
     );
     expect(screen.getByRole('radio', { name: '공개' })).toHaveProperty('checked', true);
     expect(screen.queryByRole('button', { name: '다시 시도' })).toBeNull();
+  });
+
+  it('저장하는 사이 메인 관리자가 아니게 됐으면(AUTH_002) 권한 변경 안내 뒤 더보기로 돌아간다', async () => {
+    makeMeOwner();
+    // 이전 기록(다른 탭 등)이 있어도 뒤로 가지 않고 더보기로 감
+    window.history.pushState(null, '', window.location.href);
+    const user = userEvent.setup();
+    renderEdit();
+    await user.click(await screen.findByRole('radio', { name: '공개' }));
+    server.use(http.put('/api/bunches/:bunchId/profile', () => fail(403, 'AUTH_002')));
+
+    await user.click(saveButton());
+
+    await waitFor(() =>
+      expect(toastAfterNavigation).toHaveBeenCalledWith(
+        '권한이 변경되어 해당 기능을 이용할 수 없어요.',
+      ),
+    );
+    expect(replace).toHaveBeenCalledWith(BUNCH_HOME_PATHS.menu);
+    expect(back).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalledWith(BUNCH_HOME_PATHS.home);
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('저장해 둔 값(앱 다시 열기)이 있어도 서버에서 새로 받은 값으로 연다', async () => {

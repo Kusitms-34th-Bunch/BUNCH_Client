@@ -34,7 +34,12 @@ export function DeviceNotificationOffBanner({
       <span className="inline-flex shrink-0">
         <BellOffIcon />
       </span>
-      <p id={messageId} className="typography-body-3-regular min-w-0 flex-1">
+      {/* 토글을 켜다 권한을 거부해 토글이 잠기면 화면이 초점을 이 문구로 옮김 */}
+      <p
+        id={messageId}
+        tabIndex={-1}
+        className="typography-body-3-regular min-w-0 flex-1 outline-none"
+      >
         {MY_MESSAGES.notifications.deviceOff}
       </p>
       {onOpenSettings ? (

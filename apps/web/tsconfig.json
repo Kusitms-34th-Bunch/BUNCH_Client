@@ -11,6 +11,7 @@
   "include": [
     "next-env.d.ts",
     "src",
+    "src/app/.well-known/**/*.ts",
     "next.config.mjs",
     "sentry.*.config.ts",
     "vitest.config.ts",

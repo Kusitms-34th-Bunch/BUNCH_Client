@@ -10,11 +10,13 @@ import {
   sanitizeBirthYear,
 } from '../lib/birthYear';
 import {
+  exceedsNicknameLength,
   hasInvalidNicknameChars,
   isValidNickname,
   NICKNAME_INVALID_MESSAGE,
   NICKNAME_PROHIBITED_MESSAGE,
   NICKNAME_TAKEN_MESSAGE,
+  NICKNAME_TOO_LONG_MESSAGE,
   normalizeNickname,
 } from '../lib/nickname';
 import {
@@ -65,13 +67,15 @@ export function useProfileFields(
   const rejection = rejectedAtSave?.reason ?? availability;
   const nicknameError = nicknameInvalid
     ? NICKNAME_INVALID_MESSAGE
-    : rejection === 'prohibited'
-      ? NICKNAME_PROHIBITED_MESSAGE
-      : rejection === 'taken'
-        ? NICKNAME_TAKEN_MESSAGE
-        : availability === 'failed'
-          ? CHECK_FAILURE_MESSAGE
-          : undefined;
+    : exceedsNicknameLength(nickname)
+      ? NICKNAME_TOO_LONG_MESSAGE
+      : rejection === 'prohibited'
+        ? NICKNAME_PROHIBITED_MESSAGE
+        : rejection === 'taken'
+          ? NICKNAME_TAKEN_MESSAGE
+          : availability === 'failed'
+            ? CHECK_FAILURE_MESSAGE
+            : undefined;
   const nicknameConfirmed =
     nicknameValid && !rejectedAtSave && (availability === 'idle' || availability === 'available');
 

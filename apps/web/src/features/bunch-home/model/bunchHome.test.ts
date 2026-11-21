@@ -36,12 +36,12 @@ describe('toBunchHomeDetail', () => {
       title: `번들 ${id}`,
       visibility,
     });
-    const detail = toBunchHomeDetail(
-      home(),
-      { ...empty, items: [item(1, 'PRIVATE'), item(2, 'PUBLIC'), item(3), item(4, 'FOLLOWERS')] },
-      { items: [] },
-      [],
-    );
+    // 모르는 값은 응답을 읽을 때 비워 목록 전체가 실패하지 않음
+    const published = publishedBundlesPageSchema.parse({
+      ...empty,
+      items: [item(1, 'PRIVATE'), item(2, 'PUBLIC'), item(3), item(4, 'FOLLOWERS')],
+    });
+    const detail = toBunchHomeDetail(home(), published, { items: [] }, []);
 
     expect(detail?.completedBundles.map((bundle) => bundle.memberOnly)).toEqual([
       true,

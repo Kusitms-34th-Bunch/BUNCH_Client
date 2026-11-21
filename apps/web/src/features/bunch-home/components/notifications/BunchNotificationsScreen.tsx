@@ -16,6 +16,7 @@ import type { BunchNotification } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { ListMore } from '../ListMore';
+import { BunchNotificationsSkeleton } from './BunchNotificationsSkeleton';
 
 type BunchNotificationsScreenProps = {
   /** 지금 번치 이름(제목 낭독용). 아직 모르면 undefined */
@@ -24,8 +25,6 @@ type BunchNotificationsScreenProps = {
   notifications: readonly BunchNotification[] | undefined;
   /** 읽지 않은 알림이 있는지(서버 수 기준, 받아 온 첫 쪽 밖도 포함) */
   hasUnread: boolean;
-  /** 진행 안내(알림을 여는 중). 있으면 상태 영역에 우선 실음 */
-  notice?: string | undefined;
   onBack: () => void;
   /** 모두 읽음. 끝나면 결과를 낭독, 실패하면 reject(안내는 부르는 쪽) */
   onReadAll: () => Promise<unknown>;
@@ -42,7 +41,6 @@ export function BunchNotificationsScreen({
   bunchName,
   notifications,
   hasUnread,
-  notice,
   onBack,
   onReadAll,
   onOpen,
@@ -125,8 +123,7 @@ export function BunchNotificationsScreen({
       <p role="status" className="sr-only">
         {notifications === undefined
           ? BUNCH_HOME_MESSAGES.notificationsLoading
-          : (notice ??
-            (status || (notifications.length === 0 ? BUNCH_HOME_MESSAGES.noNotifications : '')))}
+          : status || (notifications.length === 0 ? BUNCH_HOME_MESSAGES.noNotifications : '')}
       </p>
       {/* 헤더 아래 12, 안내 줄과 목록 사이 24, 카드 사이 8(Figma 1892:36948) */}
       <div className="gap-s12 pt-padding-p6 px-padding-p8 pb-s8 flex flex-col">
@@ -138,6 +135,7 @@ export function BunchNotificationsScreen({
           {BUNCH_HOME_MESSAGES.notificationSettingsNudge}
           <LineChevronRightLargeIcon aria-hidden className="text-icon-quaternary shrink-0" />
         </Link>
+        {notifications === undefined ? <BunchNotificationsSkeleton /> : null}
         {notifications && notifications.length > 0 ? (
           <ul ref={listRef} tabIndex={-1} className="gap-s4 flex flex-col outline-none">
             {notifications.map((notification) => (

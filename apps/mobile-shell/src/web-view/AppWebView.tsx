@@ -2,7 +2,7 @@ import { bridge, createWebView } from '@webview-bridge/react-native';
 import * as Haptics from 'expo-haptics';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router, type Href } from 'expo-router';
-import { useEffect, useRef, type ComponentRef } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
   BackHandler,
   Button,
@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
   hapticKindSchema,
+  nativeTabBarVisibilitySchema,
   nativeTabEventSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
@@ -32,10 +33,12 @@ import {
   readPickedPhoto,
   releasePickedPhotos,
 } from '../gallery-upload';
+import { incomingLinkStore } from '../incoming-link-store';
+import { loginBackgroundStore } from '../login-background/login-background-store';
 import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
 import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
 import { buildSafeAreaScript } from '../safe-area-script';
-import { socialLogin } from '../social-login';
+import { authorizeApple, socialLogin } from '../social-login';
 import {
   forceWebReady,
   markTabWebViewLoading,
@@ -43,6 +46,7 @@ import {
   waitForTabWebView,
 } from '../splash/state';
 import { floatingButtonStore } from '../tabs/floating-button-store';
+import { reportTabBar, visibleTab } from '../tabs/tab-bar-visibility';
 import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { isAppWebUrl, resolveWebUrl } from '../web-url';
@@ -53,7 +57,21 @@ export const WEB_URL = resolveWebUrl(
   // Release 번들에 개발 주소 인라인 방지
   __DEV__ ? process.env.EXPO_PUBLIC_DEV_WEB_URL : undefined,
   process.env.EXPO_PUBLIC_WEB_URL,
+  // E2E 전용 빌드만(같은 기기에 띄운 가짜 서버 웹을 http로 열기 위함, 결정 기록 029)
+  process.env.EXPO_PUBLIC_E2E === '1',
 );
+
+/** 웹 경로(`/invite/{토큰}` 등)를 이 앱이 여는 웹 주소로(개발 빌드는 개발 서버) */
+export const toAppWebUrl = (path: string) => new URL(path, WEB_URL).href;
+
+/** 지금 화면에 보이는 WebView인지: 탭 화면이면 지금 보이는 탭의 WebView, 아니면 첫 화면 WebView */
+const isVisibleWebView = (tabId: TabId | undefined) => {
+  const tabs = tabsStore.get();
+  if (!tabId) return !tabs;
+  if (!tabs) return false;
+  const initial = isTabId(tabs.selectedId) ? tabs.selectedId : tabId;
+  return visibleTab(tabs, initial) === tabId;
+};
 
 // bridge의 index signature 충족을 위해 인라인 객체 리터럴 사용
 const appBridge = bridge({
@@ -71,6 +89,7 @@ const appBridge = bridge({
   copyToClipboard,
   readClipboard,
   socialLogin,
+  authorizeApple,
   share: async (params) => {
     const { url, title } = shareParamsSchema.parse(params);
     await Share.share({ message: title ? `${title}\n${url}` : url, url });
@@ -97,18 +116,36 @@ const appBridge = bridge({
       tabsStore.set(next);
       router.replace(`/${next.selectedId}` as Href);
     } else if (JSON.stringify(current.items) !== JSON.stringify(next.items)) {
-      // 탭 바 표시 여부는 화면에 보이는 WebView의 setNativeTabBarVisible만 바꿈(다른 탭 WebView가 다시 불러와도 유지)
-      tabsStore.set({ ...next, barHidden: current.barHidden });
+      // 탭 바 표시 상태(탭별 값·선택 탭)는 그대로 둠(다른 탭 WebView가 다시 불러와도 유지)
+      tabsStore.set({
+        ...next,
+        barHidden: current.barHidden,
+        hiddenByTab: current.hiddenByTab,
+        focusedTab: current.focusedTab,
+      });
     }
     return Promise.resolve(true);
   },
   // 탭 밖 화면을 같은 탭 WebView에서 여는 동안 탭 바만 숨김(탭 상태 유지, 결정 기록 012). 웹은 화면에 보이는 WebView만 보냄
+  // 이전 웹(탭 ID를 보내지 않음)용: 화면에 보이는 WebView가 보낸 값으로 지금 탭 바만 바꿈
+  // 탭별로 저장하지 않음(탭 전환과 메시지 순서가 엇갈리면 다른 탭에 저장될 수 있음)
   setNativeTabBarVisible: (visible) => {
     const current = tabsStore.get();
     if (Platform.OS !== 'ios' || !current || typeof visible !== 'boolean')
       return Promise.resolve(false);
     if (current.barHidden === !visible) return Promise.resolve(true);
     tabsStore.set({ ...current, barHidden: !visible });
+    return Promise.resolve(true);
+  },
+  // 탭 WebView가 자기 탭의 값을 알림(#481): 탭마다 저장하고 선택된 탭의 값만 탭 바에 적용(뒤의 탭이 지금 탭 바를 바꾸지 않음)
+  setNativeTabBarVisibleFor: (params) => {
+    const current = tabsStore.get();
+    const parsed = nativeTabBarVisibilitySchema.safeParse(params);
+    if (Platform.OS !== 'ios' || !current || !parsed.success || !isTabId(parsed.data.tab))
+      return Promise.resolve(false);
+    const initial = isTabId(current.selectedId) ? current.selectedId : parsed.data.tab;
+    const next = reportTabBar(current, parsed.data.tab, parsed.data.visible, initial);
+    if (next !== current) tabsStore.set(next);
     return Promise.resolve(true);
   },
   // 다른 탭으로 전환(웹이 다른 탭 첫 화면으로 가려 할 때, 6.1.2 상세 동작 3). 그 탭 WebView는 보던 화면 그대로
@@ -180,6 +217,17 @@ const appBridge = bridge({
       if (__DEV__) console.warn('[haptic] 햅틱을 울리지 못했어요', error);
     }
   },
+  // 로그인 배경 영상은 iOS 첫 화면에서만 네이티브로(탭 화면 WebView·안드로이드는 false로 웹 영상 사용). 걷기는 항상 받음
+  setNativeLoginBackground: (visible) => {
+    if (typeof visible !== 'boolean') return Promise.resolve(false);
+    if (!visible) {
+      loginBackgroundStore.set(false);
+      return Promise.resolve(true);
+    }
+    if (Platform.OS !== 'ios' || tabsStore.get()) return Promise.resolve(false);
+    loginBackgroundStore.set(true);
+    return Promise.resolve(true);
+  },
 } satisfies AppBridgeMethods);
 
 // postMessage: 네이티브 → 웹 이벤트(탭 WebView 여러 개라 broadcast로 보내고 웹이 대상 확인)
@@ -199,13 +247,19 @@ type AppWebViewProps = {
   /** 탭 화면의 WebView면 그 탭 ID(웹이 sessionStorage `bunch-shell-tab`으로 자기 탭을 앎) */
   tabId?: TabId;
   onLoadStart?: () => void;
+  /** 뒤에 깐 네이티브 화면(로그인 배경 영상)이 비치도록 WebView 바탕을 투명하게 */
+  transparent?: boolean;
 };
 
-export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
+export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: AppWebViewProps) {
   // 탭 화면에서는 가장 가까운 SafeAreaProvider의 값(탭 바 높이 포함) 사용
   const insets = useSafeAreaInsets();
   const safeAreaScript = buildSafeAreaScript(insets);
   const webViewRef = useRef<ComponentRef<typeof WebView>>(null);
+  const [webViewKey, setWebViewKey] = useState(0);
+  // Android에서 새로 만들 때 다시 열 주소(마지막으로 보던 앱 주소, 처음에는 시작 주소)
+  const [restoreUri, setRestoreUri] = useState<string | null>(null);
+  const currentUrl = useRef(uri);
   const canGoBack = useRef(false);
 
   // Android 뒤로가기 시 웹 history 우선 처리
@@ -223,11 +277,25 @@ export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
     webViewRef.current?.injectJavaScript(safeAreaScript);
   }, [safeAreaScript]);
 
+  // 실행 중에 초대 링크로 앱이 열리면 보이는 WebView가 그 경로로 이동(지금 보던 화면은 뒤로 가기로 돌아갈 수 있게 history에 남김)
+  // 처음 실행의 링크는 첫 화면이 시작 주소로 열므로 여기서는 구독 뒤 들어온 링크만 처리
+  // 주입만으로는 링크를 지우지 않고, 그 주소로 이동을 시작했을 때(onShouldStartLoadWithRequest) 지움
+  // 다시 불러오는 중이라 주입이 무시됐으면 로드가 끝날 때 다시 넘김(받은 지 10초가 지나면 store가 버림)
+  const deliverIncomingLink = useCallback(() => {
+    const path = incomingLinkStore.get();
+    if (!path || !isVisibleWebView(tabId) || !webViewRef.current) return;
+    webViewRef.current.injectJavaScript(
+      `window.location.assign(${JSON.stringify(toAppWebUrl(path))});true;`,
+    );
+  }, [tabId]);
+  useEffect(() => incomingLinkStore.subscribe(deliverIncomingLink), [deliverIncomingLink]);
+
   return (
     <WebView
+      key={webViewKey}
       ref={webViewRef}
-      source={{ uri }}
-      style={styles.webview}
+      source={{ uri: restoreUri ?? uri }}
+      style={transparent ? [styles.webview, styles.transparent] : styles.webview}
       injectedJavaScriptBeforeContentLoaded={
         tabId ? `${buildShellTabScript(tabId)}${safeAreaScript}` : safeAreaScript
       }
@@ -253,12 +321,27 @@ export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
         if (tabId && tabsStore.get()?.selectedId === tabId) markTabWebViewLoading();
         onLoadStart?.();
       }}
+      onLoadEnd={deliverIncomingLink}
       onError={forceWebReady}
       onHttpError={forceWebReady}
+      // 오래 백그라운드에 있으면 OS가 웹 프로세스를 끝내 화면이 하얗게 남으므로 다시 불러옴
+      // iOS는 같은 WebView를 다시 불러오고, Android는 끝난 WebView를 쓸 수 없어 새로 만듦
+      onContentProcessDidTerminate={() => webViewRef.current?.reload()}
+      onRenderProcessGone={() => {
+        // 보던 화면으로 다시 엶(앱 출처일 때만, 저장하지 않은 입력은 복구하지 않음)
+        setRestoreUri(isAppWebUrl(currentUrl.current, WEB_URL) ? currentUrl.current : null);
+        // 새 WebView에는 기록이 없어 첫 이동 전까지 뒤로 가기를 앱에 넘김
+        canGoBack.current = false;
+        setWebViewKey((key) => key + 1);
+      }}
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;
+        currentUrl.current = navState.url;
       }}
       onShouldStartLoadWithRequest={(request) => {
+        // 받은 초대 링크로 이동을 시작했으면 그때 비움(다시 넘기지 않게)
+        const linkPath = incomingLinkStore.get();
+        if (linkPath && request.url === toAppWebUrl(linkPath)) incomingLinkStore.clear(linkPath);
         // 외부 페이지의 네이티브 브리지 접근 방지를 위해 앱 출처만 내부 이동 허용
         if (isAppWebUrl(request.url, WEB_URL)) return true;
         Linking.openURL(request.url).catch(() => {});
@@ -279,6 +362,10 @@ export function AppWebView({ uri, tabId, onLoadStart }: AppWebViewProps) {
 const styles = StyleSheet.create({
   webview: {
     flex: 1,
+  },
+  // iOS WebView는 바탕색이 투명이면 불투명 처리(opaque)를 꺼서 웹의 투명한 배경 뒤가 보임
+  transparent: {
+    backgroundColor: 'transparent',
   },
   error: {
     flex: 1,

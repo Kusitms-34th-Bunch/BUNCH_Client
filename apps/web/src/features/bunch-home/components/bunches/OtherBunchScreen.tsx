@@ -45,6 +45,8 @@ type OtherBunchScreenProps = {
   canViewMembers?: boolean;
   /** 번들 칸을 눌렀을 때 */
   onOpenBundle?: ((_bundleId: string) => unknown) | undefined;
+  /** 칸에 손가락이 닿을 때(누르기 전에 삭제 여부 확인을 시작) */
+  onPressBundle?: ((_bundleId: string) => void) | undefined;
   /** 번들 이어서 받기 */
   bundlesMore?: ListMoreQuery | undefined;
 };
@@ -68,6 +70,7 @@ export function OtherBunchScreen({
   canViewRelations = false,
   canViewMembers = false,
   onOpenBundle,
+  onPressBundle,
   bundlesMore,
 }: OtherBunchScreenProps) {
   const openOverlay = useScreenOverlay();
@@ -198,6 +201,7 @@ export function OtherBunchScreen({
                 bunchId={bunch.id}
                 bundles={bunch.completedBundles}
                 onOpen={onOpenBundle}
+                onPressStart={onPressBundle}
                 listRef={gridRef}
               />
               {bundlesMore ? <ListMore query={bundlesMore} listRef={gridRef} /> : null}

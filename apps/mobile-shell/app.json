@@ -45,16 +45,20 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#454EDF"
+          "backgroundColor": "#454EDF",
+          "image": "./assets/splash-blank.png",
+          "imageWidth": 1
         }
       ],
       "expo-apple-authentication"
     ],
     "ios": {
       "buildNumber": "2",
+      "config": { "usesNonExemptEncryption": false },
       "supportsTablet": true,
       "bundleIdentifier": "kr.bunch.app",
       "appleTeamId": "9CGCR9499H",
+      "associatedDomains": ["applinks:app.bunch.kr", "applinks:open.bunch.kr"],
       "infoPlist": {
         "CFBundleDisplayName": "BUNCH"
       },

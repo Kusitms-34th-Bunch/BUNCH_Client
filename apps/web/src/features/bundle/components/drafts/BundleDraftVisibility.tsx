@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type { DraftVisibility } from '../../lib/types';
@@ -61,7 +65,8 @@ export function BundleDraftVisibility({ bunchPrivate = false }: BundleDraftVisib
 
   if (state.kind === 'error') return <BundleLoadError onRetry={state.retry} />;
   // 업로드 중에는 초안이 사라져도 이 화면(과 로딩)을 유지
-  if (!uploading && (state.kind !== 'ready' || !draft || notReady)) return <PageLoading />;
+  if (!uploading && (state.kind !== 'ready' || !draft || notReady))
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
 
   const upload = () => {
     if (!draft || submitted.current || draft.visibility === null) return;

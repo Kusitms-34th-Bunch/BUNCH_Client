@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
@@ -36,7 +40,8 @@ export function BundleDraft({ onImportFromGallery, galleryImporting }: BundleDra
   const leaveDraft = useLeaveDraft(draftId);
 
   if (state.kind === 'error') return <BundleLoadError onRetry={state.retry} />;
-  if (state.kind !== 'ready' || draftId === undefined) return <PageLoading />;
+  if (state.kind !== 'ready' || draftId === undefined)
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
 
   return (
     <>

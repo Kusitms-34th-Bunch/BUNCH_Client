@@ -2,7 +2,11 @@
 
 import { useMemo } from 'react';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
@@ -49,7 +53,8 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
   const sourcesPending = photoBox.kind === 'loading';
   const present = useRedirectMissingPhoto(ready ? state.draft : undefined, initialPhotoId);
 
-  if (state.kind !== 'ready' || !present || initialPhotoId === undefined) return <PageLoading />;
+  if (state.kind !== 'ready' || !present || initialPhotoId === undefined)
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
 
   const { draft, viewer } = state;
   return (

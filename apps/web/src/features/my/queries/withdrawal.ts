@@ -12,6 +12,7 @@ import type { OwnedBunch } from '../lib/types';
 import { getWithdrawalCheck, withdraw } from '../api/withdrawal';
 import { MY_MESSAGES } from '../constants/messages';
 import { MY_PATHS } from '../constants/paths';
+import { authorizeApple } from '../lib/appleAuthorization';
 import { reloadTo } from '../lib/navigation';
 import { myKeys } from './keys';
 
@@ -26,7 +27,7 @@ export const ownedBunchesQueryOptions = () =>
   queryOptions({
     queryKey: myKeys.ownedBunches(),
     queryFn: async ({ signal }): Promise<OwnedBunch[]> => {
-      const owned = await getWithdrawalCheck(signal);
+      const { ownerBunches: owned } = await getWithdrawalCheck(signal);
       const bunches = await Promise.all(
         owned.map(async (bunch): Promise<OwnedBunch> => {
           const memberships = await getMemberships(bunch.id, signal);
@@ -132,13 +133,25 @@ export const useTransferOwnershipMutation = () => {
 
 /**
  * 회원 탈퇴. 실패 토스트는 공통 처리(meta.errorMessage)
+ * Apple 가입자는 직전에 Apple 재인증을 받아 그 코드로 탈퇴(코드는 일회용이라 다시 누르면 새로 받음). 창을 닫으면 `cancelled`로 끝냄
  * 성공하면 이 기기의 저장본을 지우고 로그인 화면을 새로 엶(메모리의 사용자 데이터까지 비움). 요청 중 화면이 사라져도 실행되도록 여기서 처리
  */
 export const useWithdrawMutation = () =>
   useMutation({
-    mutationFn: withdraw,
+    mutationFn: async (): Promise<'withdrawn' | 'cancelled'> => {
+      const { provider } = await getWithdrawalCheck();
+      let appleAuthorizationCode: string | undefined;
+      if (provider === 'APPLE') {
+        const result = await authorizeApple();
+        if (result.status === 'cancelled') return 'cancelled';
+        appleAuthorizationCode = result.authorizationCode;
+      }
+      await withdraw(appleAuthorizationCode);
+      return 'withdrawn';
+    },
     meta: { errorMessage: MY_MESSAGES.withdrawal.failed },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result === 'cancelled') return;
       clearPersistedQueryStorage();
       reloadTo(MY_PATHS.login);
     },

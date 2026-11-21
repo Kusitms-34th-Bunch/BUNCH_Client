@@ -1,6 +1,6 @@
 import { act, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
+import { delay, http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
@@ -13,7 +13,7 @@ import { FeedScreen } from './FeedScreen';
 
 const push = vi.fn();
 const toast = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, prefetch: vi.fn() }) }));
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -387,6 +387,29 @@ describe('FeedScreen', () => {
     await waitFor(() => expect(cards()).toHaveLength(3));
     expect(cursors).toEqual([null, 'next']);
     expect(screen.getByText('모든 피드를 확인했어요')).toBeInTheDocument();
+  });
+
+  it('앱을 다시 열어 저장된 첫 쪽이 보이는 동안에는 다시 받기가 끝난 뒤에 새 커서로 이어 받는다', async () => {
+    const cursors: (string | null)[] = [];
+    server.use(
+      http.get('/api/feed', async ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor');
+        cursors.push(cursor);
+        if (cursor === null) await delay(50);
+        return ok(cursor === 'next' ? page(PUBLIC_ITEMS) : page(FOLLOWING_ITEMS, 'next'));
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: OWN });
+    // 저장본에서 복원한 첫 쪽(그 사이 바뀌어 이 커서로는 이어 받을 수 없음)
+    client.setQueryData(feedKeys.list(OWN.id), {
+      pages: [page(FOLLOWING_ITEMS, 'old')],
+      pageParams: [null],
+    });
+    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });
+
+    await waitFor(() => expect(cursors).toEqual([null, 'next']));
+    expect(cursors).not.toContain('old');
   });
 
   it('번치·팔로우가 바뀌어 다음 쪽이 FEED_001이면 처음부터 다시 받는다', async () => {

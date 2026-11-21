@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { type ComponentProps, useCallback, useEffect } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { BUNDLE_PATHS } from '../../constants/paths';
@@ -63,7 +67,8 @@ export function BundleEditPhotoViewer({
 
   if (state.kind === 'error')
     return <BundleEditError onRetry={state.retry} onBack={() => router.replace(editPath)} />;
-  if (state.kind !== 'ready' || !present || initialPhotoId === undefined) return <PageLoading />;
+  if (state.kind !== 'ready' || !present || initialPhotoId === undefined)
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
 
   return (
     <DraftPhotoViewer

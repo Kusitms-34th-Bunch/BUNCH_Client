@@ -103,90 +103,65 @@ describe('BunchNotifications(가짜 서버)', () => {
     );
   });
 
-  // 열기 응답을 테스트가 정한 때까지 미룸(돌려주지 않으면 기본 handler로 넘어감)
-  const holdOpen = () => {
-    let release = () => {};
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
+  it('읽음 처리를 기다리지 않고 바로 이동한다', async () => {
+    // 열기 응답이 오지 않아도 이동
     server.use(
-      http.post('/api/bunches/:bunchId/notifications/:notificationId/open', async () => {
-        await gate;
-      }),
+      http.post(
+        '/api/bunches/:bunchId/notifications/:notificationId/open',
+        () => new Promise<never>(() => {}),
+      ),
     );
-    return release;
-  };
-
-  it('여는 사이 뒤로 가기를 누르면 늦게 온 성공으로 알림 화면에 가지 않는다', async () => {
     const user = userEvent.setup();
-    const release = holdOpen();
-    renderList();
-    const length = vi.spyOn(window.history, 'length', 'get').mockReturnValue(3);
-    onTestFinished(() => length.mockRestore());
-
-    const [, bundle] = await cards();
-    await user.click(bundle!);
-    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
-    release();
-
-    await waitFor(() => expect(unreadOf(MOCK_BUNCH_ID)).toBe(2));
-    expect(back).toHaveBeenCalledTimes(1);
-    expect(push).not.toHaveBeenCalled();
-  });
-
-  it('여는 사이 알림 설정 안내 링크를 누르면 늦게 온 성공으로 알림 화면에 가지 않는다', async () => {
-    const user = userEvent.setup();
-    const release = holdOpen();
     renderList();
 
     const [, bundle] = await cards();
     await user.click(bundle!);
-    await user.click(
-      screen.getByRole('link', { name: BUNCH_HOME_MESSAGES.notificationSettingsNudge }),
-    );
-    release();
 
-    await waitFor(() => expect(unreadOf(MOCK_BUNCH_ID)).toBe(2));
-    expect(push).not.toHaveBeenCalledWith('/bunches/1/bundles/1');
+    expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1');
   });
 
-  it('여는 사이 「모두 읽음」을 눌러도 이동은 그대로 이어진다', async () => {
+  it('같은 알림을 연달아 눌러도 한 번만 연다', async () => {
     const user = userEvent.setup();
-    const release = holdOpen();
     renderList();
 
     const [, bundle] = await cards();
-    await user.click(bundle!);
-    await user.click(screen.getByRole('button', { name: '모두 읽음' }));
-    release();
+    await user.dblClick(bundle!);
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1'));
+    expect(push).toHaveBeenCalledTimes(1);
   });
 
-  it('갈 화면이 사라진 알림은 이동하지 않고 볼 수 없다고 알린다', async () => {
+  it('갈 화면이 사라진 알림도 바로 이동하고 도착 화면이 안내한다', async () => {
     const user = userEvent.setup();
     renderList();
 
     const list = await cards();
     await user.click(list[3]!);
 
-    await waitFor(() =>
-      expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.notificationUnavailable),
-    );
-    expect(push).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
   });
 
-  it('알림 열기에 실패하면 이동하지 않고 실패를 알린다', async () => {
+  it('읽음 처리에 실패해도 이동은 그대로고 실패를 알리지 않는다', async () => {
     server.use(
       http.post('/api/bunches/:bunchId/notifications/:notificationId/open', () => fail(500, 'X')),
     );
     const user = userEvent.setup();
-    renderList();
+    const client = createTestQueryClient();
+    render(<BunchNotifications />, { wrapper: createQueryWrapper(client) });
 
-    await user.click((await cards())[0]!);
+    await user.click((await cards())[1]!);
 
-    await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.readFailed));
-    expect(push).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledWith('/bunches/1/bundles/1');
+    // 실패 처리(공통 토스트를 띄울 수 있는 시점)까지 끝난 뒤 확인
+    await waitFor(() =>
+      expect(
+        client
+          .getMutationCache()
+          .getAll()
+          .map((mutation) => mutation.state.status),
+      ).toEqual(['error']),
+    );
+    expect(toast).not.toHaveBeenCalled();
   });
 
   // 접근 불가 알림: 이동할 화면이 없어 이 화면에서 안내(명세 072 target.noticeId → 078)

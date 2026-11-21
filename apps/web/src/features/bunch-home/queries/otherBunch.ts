@@ -13,6 +13,14 @@ import type { Home } from '../model/bunchHome';
 import { getBunchHome, getPublishedBundles } from '../api/bunchHome';
 import { followBunch, unfollowBunch } from '../api/follows';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
+import {
+  expectedFollowState,
+  type FollowState,
+  listFollowOf,
+  listVisibilityOf,
+  withHomeFollow,
+  withListFollow,
+} from '../lib/followCache';
 import { FIRST_PAGE, nextPageOf } from '../lib/pages';
 import { toBunchMembers } from '../model/memberships';
 import { bunchHomeKeys } from './keys';
@@ -66,13 +74,52 @@ export const otherBunchMembersQueryOptions = (
 export type FollowChange = { kind: 'follow' } | { kind: 'unfollow'; followId: string | undefined };
 
 /**
- * 팔로우·요청·취소. 성공하면 응답의 상태를 바로 반영하고, 개수·열람 범위가 바뀌므로 그 번치와 내 번치 홈을 다시 받은 뒤 끝냄
- * 실패하면 공통 토스트(meta)와 함께 그 번치를 다시 받음(그 사이 상태가 바뀌었을 수 있음)
+ * 팔로우·요청·취소. 누르는 즉시 예상 상태(공개는 팔로잉, 비공개는 요청됨, 취소는 없음)를 그 번치 홈과 팔로워·팔로잉 목록에 반영
+ * 성공하면 응답 상태로 확정하고 개수·열람 범위는 뒤에서 다시 받음(기다리지 않음). 실패하면 되돌리고 공통 토스트(meta)
  */
 export const useFollowBunchMutation = (viewerId: string | null | undefined) => {
   const queryClient = useQueryClient();
+  const homeKey = (targetId: string) => bunchHomeKeys.otherBunchHome(targetId, viewerId ?? null);
+  // 팔로워·팔로잉 목록 key는 [...follows(), 번치, 명의, ...]라 지금 명의의 목록만 고름(다른 명의의 행 상태는 다름)
+  const viewerAt = bunchHomeKeys.follows().length + 1;
+  const ownLists = {
+    queryKey: bunchHomeKeys.follows(),
+    predicate: (query: { queryKey: readonly unknown[] }) =>
+      query.queryKey[viewerAt] === (viewerId ?? null),
+  };
+  const mutationKey = [...bunchHomeKeys.follows(), 'change', viewerId ?? null];
+  // 그 번치 홈과 팔로워·팔로잉 목록을 같은 상태로 바꿈
+  const apply = (targetId: string, state: FollowState, followId?: number | null) => {
+    queryClient.setQueryData<Home>(homeKey(targetId), (home) =>
+      withHomeFollow(home, state, followId),
+    );
+    queryClient.setQueriesData(ownLists, (data: unknown) =>
+      withListFollow(data, targetId, state, followId),
+    );
+  };
   return useMutation({
+    mutationKey,
     meta: { errorMessage: BUNCH_HOME_MESSAGES.followFailed },
+    onMutate: async ({ targetId, change }: { targetId: string; change: FollowChange }) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: homeKey(targetId) }),
+        queryClient.cancelQueries(ownLists),
+      ]);
+      // 되돌림은 그 번치 항목만 기준값으로(같은 목록에서 동시에 바꾼 다른 번치 행을 덮지 않게)
+      const home = queryClient.getQueryData<Home>(homeKey(targetId));
+      const lists = queryClient.getQueriesData(ownLists).map(([, data]) => data);
+      const before = {
+        home: home && { followState: home.followState, followId: home.followId },
+        row: lists.map((data) => listFollowOf(data, targetId)).find(Boolean),
+      };
+      // 공개 여부를 캐시에서 모르면 팔로우는 응답을 기다려 반영
+      const visibility =
+        home?.bunch.visibility ??
+        lists.map((data) => listVisibilityOf(data, targetId)).find(Boolean);
+      if (change.kind === 'unfollow') apply(targetId, 'NONE', null);
+      else if (visibility) apply(targetId, expectedFollowState(visibility));
+      return before;
+    },
     mutationFn: async ({ targetId, change }: { targetId: string; change: FollowChange }) => {
       if (!viewerId) throw new Error('팔로우할 내 번치가 없습니다.');
       const unfollow = async (followId: string | undefined) => {
@@ -100,22 +147,40 @@ export const useFollowBunchMutation = (viewerId: string | null | undefined) => {
         change.kind === 'follow'
           ? await followBunch(viewerId, targetId)
           : await unfollow(change.followId);
-      const followId = 'followId' in result && result.followId ? result.followId : null;
-      queryClient.setQueryData<Home>(bunchHomeKeys.otherBunchHome(targetId, viewerId), (home) =>
-        home ? { ...home, followState: result.followState, followId } : home,
+      // 팔로우 응답에 관계 ID가 없으면 아는 값을 유지(지우면 다음 취소가 ID를 다시 얻으려 PUT을 보냄), 취소는 관계가 없어짐
+      apply(
+        targetId,
+        result.followState,
+        change.kind === 'unfollow' ? null : 'followId' in result ? result.followId : undefined,
       );
-      // 그 번치가 들어 있는 모든 목록의 버튼·수도 바뀜(피드 멤버 프로필은 들어올 때마다 다시 받음)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) }),
-        queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHome(viewerId) }),
-        queryClient.invalidateQueries({ queryKey: bunchHomeKeys.follows() }),
-      ]);
       return result.followState;
     },
-    onError: (_error, { targetId }) =>
-      Promise.all([
+    onError: (_error, { targetId }, before) => {
+      const prevHome = before?.home;
+      if (prevHome) {
+        queryClient.setQueryData<Home>(homeKey(targetId), (home) =>
+          withHomeFollow(home, prevHome.followState ?? 'NONE', prevHome.followId ?? null),
+        );
+      }
+      if (before?.row) {
+        const { followState, followId } = before.row;
+        queryClient.setQueriesData(ownLists, (data: unknown) =>
+          withListFollow(data, targetId, followState, followId),
+        );
+      }
+    },
+    // 개수·열람 범위·버튼은 서버 값으로 맞춤(그 번치가 들어 있는 모든 목록, 피드 멤버 프로필은 들어올 때마다 다시 받음)
+    onSettled: (_result, _error, { targetId }) => {
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) }),
-        queryClient.invalidateQueries({ queryKey: bunchHomeKeys.follows() }),
-      ]),
+        // 이 명의의 다른 팔로우가 아직 도는 중이면 목록은 마지막 처리가 다시 받음(서버 반영 전 표시가 되돌아가지 않게)
+        ...(queryClient.isMutating({ mutationKey }) > 1
+          ? []
+          : [queryClient.invalidateQueries({ queryKey: bunchHomeKeys.follows() })]),
+        ...(viewerId
+          ? [queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHome(viewerId) })]
+          : []),
+      ]);
+    },
   });
 };

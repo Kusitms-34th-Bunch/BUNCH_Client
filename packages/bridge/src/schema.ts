@@ -237,6 +237,16 @@ export const socialLoginResultSchema = z.discriminatedUnion('status', [
 export type SocialLoginResult = z.infer<typeof socialLoginResultSchema>;
 
 /**
+ * 탈퇴 전 Apple 재인증 결과: 서버가 Apple 연결을 끊는 데 쓰는 일회용 인증 코드(서버 `WithdrawalRequest.appleAuthorizationCode`, 최대 4096자)
+ * 사용자가 창을 닫으면 실패가 아니라 `cancelled`, SDK 오류는 reject. 코드는 로그·오류에 남기지 않음
+ */
+export const appleAuthorizationResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('success'), authorizationCode: z.string().min(1).max(4096) }),
+  z.object({ status: z.literal('cancelled') }),
+]);
+export type AppleAuthorizationResult = z.infer<typeof appleAuthorizationResultSchema>;
+
+/**
  * 클립보드로 주고받는 텍스트: 초대 링크·주소 수준의 짧은 문자열만 허용(큰 데이터가 브리지로 오가지 않게 상한을 둠)
  * 복사 입력과 읽기 결과 모두 같은 규칙으로 검증하고, 규칙을 어기면 복사는 실패, 읽기는 비어 있는 것으로 취급
  */
@@ -276,6 +286,16 @@ export const setNativeTabBarParamsSchema = z.object({
   hidden: z.boolean().optional(),
 });
 
+/**
+ * 탭 WebView가 자기 탭의 탭 바 표시 여부를 알림(#481). 쉘은 탭마다 저장하고 지금 선택된 탭의 값만 적용
+ * 탭 ID는 쉘이 탭 WebView에 넣어 준 값(`sessionStorage`의 `bunch-shell-tab`)
+ */
+export const nativeTabBarVisibilitySchema = z.object({
+  tab: z.string().min(1).max(32),
+  visible: z.boolean(),
+});
+
+export type NativeTabBarVisibilityParams = z.infer<typeof nativeTabBarVisibilitySchema>;
 export type NativeTabBarItem = z.infer<typeof nativeTabBarItemSchema>;
 export type SetNativeTabBarParams = z.infer<typeof setNativeTabBarParamsSchema>;
 

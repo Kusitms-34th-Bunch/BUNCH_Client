@@ -16,7 +16,7 @@ apps/mobile-shell/
   index.ts              Sentry 초기화 후 expo-router/entry
   app/
     _layout.tsx         SafeAreaProvider, Stack(헤더 없음)
-    index.tsx           첫 화면: WebView 하나(로그인·온보딩)
+    index.tsx           첫 화면: WebView 하나(로그인·온보딩), 로그인 화면이면 뒤에 배경 영상
     (tabs)/
       _layout.tsx       iOS 시스템 탭 바(NativeTabs)
       feed.tsx photos.tsx bunch.tsx my.tsx   탭마다 WebView
@@ -28,6 +28,7 @@ apps/mobile-shell/
   src/
     web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기·오류 화면)
     tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx)
+    login-background/         로그인 배경 영상(LoginBackgroundVideo.tsx, expo-video)과 표시 여부 저장소
     safe-area-script.ts, sentry.ts, sanitize-sentry-event.ts, web-url.ts, gallery-image.ts, permissions.ts (+ *.test.mjs)
 ```
 
@@ -38,17 +39,27 @@ apps/mobile-shell/
 `src/web-view/AppWebView.tsx`가 쉘의 모든 WebView(첫 화면, 탭마다 하나)에 다음 기본 동작을 건다.
 
 - 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)의 이동만 WebView 안에서 처리한다. 외부 주소와 `tel:`, `mailto:` 등은 `Linking.openURL`로 OS에 넘긴다. 인증 redirect는 별도 계약 확정 후 연결한다.
+- 초대 링크(`https://app.bunch.kr/invite/{토큰}`, 웹 진입 페이지가 넘기는 `https://open.bunch.kr/invite/{토큰}`)로 앱이 열리면(iOS 유니버셜 링크, `app.json`의 `ios.associatedDomains`) `app/+native-intent.tsx`가 `src/invite-link.ts`로 이 주소만 받아 토큰으로 웹 경로를 새로 만들고 `src/incoming-link-store.ts`에 보관한다. 받은 주소를 그대로 열지 않고, 앱 런타임의 URL 구현이 표준과 달라 주소 전체를 정규식으로 판별한다. 처음 실행이면 첫 화면(`app/index.tsx`)이 그 경로로 WebView를 열고, 실행 중이면 지금 보이는 WebView(탭 화면이면 탭 바로 고른 탭, `visibleTab`)가 그 경로로 이동한다. 링크는 그 주소로 이동을 시작했을 때(`onShouldStartLoadWithRequest`) 지우고, 다시 불러오는 중이라 주입이 무시됐으면 로드가 끝날 때(`onLoadEnd`) 다시 넘긴다. 그때 열지 못한 링크는 10초 뒤 버린다. 이 도메인의 그 밖의 주소는 화면을 옮기지 않는다(맞는 화면이 없어 Unmatched Route가 WebView를 가림). 도메인 연결 파일은 웹의 `/.well-known/apple-app-site-association`이고 흐름은 `docs/workflows/invite-link-entry.md`에 있다.
 - iOS는 `allowsBackForwardNavigationGestures`로 스와이프 뒤로가기를 허용하고, Android는 하드웨어 뒤로가기를 웹 history에 먼저 연결한다. 더 되돌릴 곳이 없으면 앱 기본 동작에 맡긴다.
 - 로드에 실패하면 WebView의 빈 화면 대신 간단한 안내와 "다시 시도" 버튼을 보여준다. WebView 밖의 네이티브 UI는 이 오류 화면과 iOS 시스템 탭 바다.
 
 ### 스플래시
 
 - 앱을 켤 때 웹이 뜨기 전 화면이라 웹이 아니라 쉘이 맡는다. 디자인은 Figma `5931:170225`와 디자이너 Lottie(`Splash`)다. 흰 모듈 48개가 날아와 `bunch` 워드마크가 되는 4초(240f) 연출이다.
-- OS가 띄우는 네이티브 스플래시는 정지 이미지만 되므로 두 겹으로 나눈다. 네이티브는 `expo-splash-screen` config plugin(`app.json`)으로 브랜드 배경(`bunch-500`, #454EDF)만 둔다. Lottie 첫 프레임도 배경뿐이라, 워드마크를 넣으면 애니메이션이 시작될 때 사라졌다 다시 모이는 것처럼 보인다. 네이티브 설정이라 새로 빌드해야 반영된다.
+- OS가 띄우는 네이티브 스플래시는 정지 이미지만 되므로 두 겹으로 나눈다. 네이티브는 `expo-splash-screen` config plugin(`app.json`)으로 브랜드 배경(`bunch-500`, #454EDF)만 둔다. Lottie 첫 프레임도 배경뿐이라, 워드마크를 넣으면 애니메이션이 시작될 때 사라졌다 다시 모이는 것처럼 보인다. 네이티브 설정이라 새로 빌드해야 반영된다. `expo-splash-screen` 플러그인은 이미지가 있을 때만 storyboard 배경을 브랜드 색(`SplashScreenBackground`)으로 칠하고, 없으면 기본값 흰색(`systemBackgroundColor`)을 남겨 앱을 켤 때 흰 화면이 잠깐 보였다(2026-11-20 #477). 그래서 1px 투명 이미지(`assets/splash-blank.png`, `imageWidth: 1`)를 지정해 배경만 파랗게 칠한다.
 - 앱 JS가 뜨면 `src/splash/SplashOverlay.tsx`가 같은 색 화면을 덮고 네이티브 스플래시를 닫는다. 모듈의 시작·도착 위치와 시각은 Lottie 키프레임을 `src/splash/modules.ts`로 옮겼다. 곡선은 이동 `cubic-bezier(0.33, 0, 0.15, 1)`, 나타남 `cubic-bezier(0.35, 0, 0.35, 1)`이다. 새 의존성 없이 React Native `Animated`(네이티브 드라이버)로 그리며, 네이티브 드라이버가 선형 보간만 하므로 곡선을 13개 점으로 나눠 넘긴다.
-- 웹의 도착 화면이 내용을 그릴 때까지 연출을 반복한다(명세 1.1, #468). 웹의 `AuthGate`는 로그인 상태를 확인해 도착지가 정해지고, 화면 전체 로딩(`PageLoading`)이 하나도 없으며, 그 WebView가 보일 때(`visibilityState`) bridge `appReady`를 한 번 보낸다(브라우저에서는 보내지 않음). 그래서 번치 홈처럼 데이터를 받는 동안 화면 전체 로딩을 띄우는 도착 화면은 스플래시 뒤 그 로딩 없이 바로 보인다(스켈레톤처럼 화면 전체 로딩이 아닌 표시는 기다리지 않음). 숨은 탭 WebView의 로드 실패(`onError`·`onHttpError`)도 스플래시를 닫는 것은 한계로 남긴다. 첫 화면 WebView가 탭 화면을 요청하면(`setNativeTabBar`) 그 WebView는 곧 버려지므로, 쉘은 선택된 탭의 WebView가 불러오기 시작할 때까지 `appReady`를 무시한다(`src/splash/ready-gate.ts`). bridge는 보낸 WebView를 구분하지 못하므로 웹도 막는다: 첫 화면 WebView가 탭 화면을 시작하면(`setNativeTabBar`가 true) 그 문서는 `appReady`를 보내지 않는다(`shared/bridge/client.ts`의 `markHandedOffToNativeTabs`, 실기기 확인 전). 쉘은 이 신호, WebView 로드 실패(`onError`·`onHttpError`, 오류 화면이 보이게), 10초 대기(기획 1.1.1의 세션 확인 한계와 같음, 더 짧으면 첫 실행·느린 네트워크에서 웹 로딩 화면이 드러남) 중 먼저 오는 마무리 신호를 받으면, 그 회차의 조립(131.7f)이 끝날 때까지 기다린 뒤 300ms 페이드로 사라진다. 동작 줄이기에서는 완성된 워드마크만 보인다. 장식 화면이라 보조 기술에서 숨긴다.
+- 웹의 도착 화면이 내용을 그릴 때까지 연출을 반복한다(명세 1.1, #468). 웹의 `AuthGate`는 로그인 상태를 확인해 도착지가 정해지고, 화면 전체 로딩(`PageLoading`)이 하나도 없으며, 그 WebView가 보일 때(`visibilityState`) bridge `appReady`를 한 번 보낸다(브라우저에서는 보내지 않음). 그래서 데이터를 받는 동안 화면 전체 로딩을 띄우는 도착 화면은 스플래시 뒤 그 로딩 없이 바로 보인다. 스켈레톤처럼 화면 전체 로딩이 아닌 표시는 기다리지 않아, 번치 홈·피드·MY의 첫 진입은 스플래시가 닫힌 뒤 스켈레톤이 보일 수 있다(#473). 숨은 탭 WebView의 로드 실패(`onError`·`onHttpError`)도 스플래시를 닫는 것은 한계로 남긴다. 첫 화면 WebView가 탭 화면을 요청하면(`setNativeTabBar`) 그 WebView는 곧 버려지므로, 쉘은 선택된 탭의 WebView가 불러오기 시작할 때까지 `appReady`를 무시한다(`src/splash/ready-gate.ts`). bridge는 보낸 WebView를 구분하지 못하므로 웹도 막는다: 첫 화면 WebView가 탭 화면을 시작하면(`setNativeTabBar`가 true) 그 문서는 `appReady`를 보내지 않는다(`shared/bridge/client.ts`의 `markHandedOffToNativeTabs`, 실기기 확인 전). 쉘은 이 신호, WebView 로드 실패(`onError`·`onHttpError`, 오류 화면이 보이게), 10초 대기(기획 1.1.1의 세션 확인 한계와 같음, 더 짧으면 첫 실행·느린 네트워크에서 웹 로딩 화면이 드러남) 중 먼저 오는 마무리 신호를 받으면, 그 회차의 조립(131.7f)이 끝날 때까지 기다린 뒤 300ms 페이드로 사라진다. 동작 줄이기에서는 완성된 워드마크만 보인다. 장식 화면이라 보조 기술에서 숨긴다.
 - 앱 아이콘은 디자이너의 `App Icon`(1080, 모서리 투명)에서 만든다. iOS 아이콘(`assets/icon.png`, 1024)은 투명 없는 정사각형이어야 하고 모서리는 iOS가 깎으므로, 모서리를 같은 세로 그라데이션(#454EDF→#343DCE)으로 채웠다. Android 적응형 아이콘은 글리프(`android-icon-foreground.png`·`monochrome`)와 그라데이션 배경(`android-icon-background.png`)으로 나눈다. Android는 지름이 캔버스의 61%인 원 밖을 자를 수 있어 `b` 글리프를 80%로 줄였다. 웹 설정용 `favicon.png`(48)는 둥근 원본 아이콘을 줄인 것이다. `splash-icon.png`는 스플래시 Lottie 마지막 프레임의 흰 워드마크(투명 배경, 1024)로, 네이티브 스플래시가 배경만 쓰기로 해 지금은 연결하지 않았다.
 - Expo Go와 개발 빌드는 실제 스플래시를 그대로 보여주지 않는다(공식 문서). 모양과 닫히는 시점은 release 빌드에서 확인한다.
+
+### 로그인 배경 영상
+
+- iOS WebView 안의 영상은 저전력 모드에서 자동 재생이 막히고 앱을 나갔다 오면 멈춘 채 남아서, iOS 첫 화면의 로그인 배경 영상은 쉘이 `expo-video`로 WebView 뒤에 그린다(결정 기록 028, #474). 영상은 앱에 넣은 `assets/login-background/login.mp4`(웹 `public/videos/login.mp4`와 같은 파일)다.
+- 웹 로그인 화면이 bridge `setNativeLoginBackground(true)`를 보내면 쉘은 첫 화면 WebView 바탕을 투명하게 하고 뒤에 영상을 깐다. 웹은 `true`를 받으면 자기 영상·첫 프레임·바탕(`AppFrame`·`AppTransitions`·로그인 route 틀의 흰 바탕 포함, 로그인 화면의 `data-app-background="transparent"` 표식이 있을 때만)을 걷고 겹침과 버튼만 그린다. 탭 화면·안드로이드는 `false`를 돌려줘 웹 영상을 쓴다.
+- 보안 경계: 이 메서드도 다른 bridge 메서드처럼 앱 출처 페이지에서만 닿고, 인자는 boolean만 받는다. 쉘은 앱에 든 영상만 재생하고 웹이 영상 주소를 넘기는 경로는 없다. 원격 주소를 받도록 바꾸려면 보안 검토를 다시 한다.
+- 웹이 `false`를 보내거나, 첫 화면 WebView가 새 문서를 불러오기 시작하거나, 첫 화면이 사라지면(탭 화면으로 전환) 영상을 걷는다.
+- 영상은 소리 없이 반복하고 다른 앱의 음악을 끊지 않으며(`mixWithOthers`), 화면 꺼짐을 막지 않는다. 앱이 뒤로 가면(`AppState` `background`) 멈추고 앞으로 오면(`active`) 이어서 재생한다. 첫 화면 바탕색은 웹 로그인 배경과 같은 #121212다.
+- `expo-video` config plugin은 넣지 않았다(백그라운드 재생·PiP를 쓰지 않음). 네이티브 모듈이라 개발 빌드를 다시 만들어야 반영된다. 실기기 재생·앱 전환·인트로 → 로그인 전환의 겹침은 확인 전이다.
 
 iOS 입력 포커스 확대는 디자인 시스템의 `TextField`·`LabeledTextArea`에서 대응한다. 실제 글꼴을 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 입력 폭·행 높이·padding과 textarea 자동 높이도 같은 비율로 보정한다. `@supports (-webkit-touch-callout: none)`으로 iOS WebKit에 적용하며 모바일 Safari도 포함한다. 쉘에서 viewport 확대 제한을 주입하지 않는다. 실제 터치·키보드·커서·텍스트 선택·줄바꿈은 시뮬레이터와 실기기 검증이 필요하다.
 
@@ -60,7 +71,9 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 첫 로드의 주입은 hydration 전에 `<html>`의 `style`을 변경한다. 서버가 알 수 없는 기기별 값이므로 웹 루트 layout의 `<html>`에만 `suppressHydrationWarning`을 적용한다. 하위 화면의 hydration 경고는 억제하지 않는다.
 - WebView의 `contentInsetAdjustmentBehavior`는 `"never"`로 둔다. 켜 두면 WebView가 자기 inset을 더해 같은 여백이 두 번 들어간다. 이 prop은 iOS 전용이라 Android에서는 적용되지 않으며, Android는 실기기로 따로 확인한다.
 - 상태 바 아이콘은 어두운 색(`StatusBar style="dark"`)으로 고정한다. 앱(`userInterfaceStyle: "light"`)과 웹이 밝은 화면만 있어, 기기 다크 모드를 따르는 `auto`면 Android 다크 모드에서 흰 아이콘이 흰 화면에 묻힌다.
-- 문서 전체의 튐(`bounces`, Android `overScrollMode`)은 끈다. 스크롤은 웹 화면 안쪽 영역(`PageShell`의 `main`)이 맡으므로, 켜 두면 화면 위쪽에서 아래로 당길 때 헤더까지 함께 내려가며 WebView 바깥의 흰 배경이 드러난다. 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(`allowsLinkPreview`, iOS)도 꺼서 앱처럼 보이게 한다. 영상은 화면 안에서 자동 재생되게 `allowsInlineMediaPlayback`과 `mediaPlaybackRequiresUserAction={false}`를 둔다(react-native-webview 기본값은 전체 화면 재생·눌러야 재생이라, 로그인 배경 영상이 첫 프레임에서 멈추고 재생 버튼이 보였다).
+- 문서 전체의 튐(`bounces`, Android `overScrollMode`)은 끈다. 스크롤은 웹 화면 안쪽 영역(`PageShell`의 `main`)이 맡으므로, 켜 두면 화면 위쪽에서 아래로 당길 때 헤더까지 함께 내려가며 WebView 바깥의 흰 배경이 드러난다. 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(`allowsLinkPreview`, iOS)도 꺼서 앱처럼 보이게 한다. 영상은 화면 안에서 자동 재생되게 `allowsInlineMediaPlayback`과 `mediaPlaybackRequiresUserAction={false}`를 둔다(react-native-webview 기본값은 전체 화면 재생·눌러야 재생이라, 로그인 배경 영상이 첫 프레임에서 멈추고 재생 버튼이 보였다). iOS 첫 화면의 로그인 배경은 이제 쉘이 네이티브로 그리고, 이 설정은 탭 화면·안드로이드의 웹 영상에 쓰인다.
+- 오래 백그라운드에 있으면 OS가 WebView의 웹 프로세스를 끝내 화면이 하얗게 남는다(2026-11-20 #477, 원인 추정). iOS는 `onContentProcessDidTerminate`에서 같은 WebView를 다시 불러오고, Android는 끝난 WebView를 쓸 수 없어 `onRenderProcessGone`에서 key를 바꿔 새로 만든다. 실기기에서 재현해 확인하지 않았다.
+- 수출 규정: 앱은 OS 암호 기능(`expo-crypto` 난수·SHA-256)과 HTTPS만 써 면제 대상이라 `app.json`의 `ios.config.usesNonExemptEncryption: false`로 `Info.plist`에 `ITSAppUsesNonExemptEncryption = NO`를 쓴다(App Store Connect의 암호화 질문을 매번 묻지 않음).
 - 화면 전체 확대·축소(두 손가락)는 쉘에서만 막는다(2026-11-20, 팀원 제보: 번들 상세가 작게 줄어듦). 웹 `NativeShellViewport`가 쉘일 때 viewport에 `maximum-scale=1, user-scalable=no`를 덧붙이고, Next가 화면·쿼리마다 viewport를 다시 그리거나 바꿀 수 있어 `head` 변화를 지켜보며 다시 덧붙인다. 브라우저는 접근성을 위해 확대를 그대로 두고, 사진 확대는 사진 상세의 Swiper Zoom이 맡는다. 축소만 막는(`minimum-scale=1`) 방안과 비교해 앱처럼 화면을 고정하는 쪽을 골랐다. 그래서 앱 안에서는 두 손가락으로 글자를 키울 수 없고, WebView는 iOS 글자 크기 설정도 따르지 않는다(iOS 시스템 확대 기능은 남음). 저시력 사용자 대응이 필요해지면 다시 정한다. 웹 배포만으로 반영되며, 막은 뒤에도 사진 상세의 두 손가락 확대가 되는지는 실기기에서 확인하지 않았다.
 - 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
 - 화면 키보드가 올라오면 하단 Safe Area를 덮는다. 화면이 `data-keyboard-open`을 표시하면 `AppFrame`이 아래 여백을 0으로 둔다. 지금은 번들 상세 댓글 입력란만 쓴다(`useKeyboardOpen`, `visualViewport` 높이 기준). iOS·Android 실기기 확인 전이다. Android가 키보드에 맞춰 WebView를 줄이면 표시가 켜지지 않고 여백이 그대로 남는다.
@@ -104,7 +117,8 @@ iOS에 보이는 앱 이름(홈 화면, 권한 창 제목 「'BUNCH'에서 …�
 쉘은 화면을 직접 그리지 않지만 iOS에서는 하단 탭을 시스템 탭 바(UITabBar)로 그린다. iOS 26 이상은 시스템이 Liquid Glass로 그리고 끌어서 이동·렌즈 효과도 시스템 동작이다. 근거와 대안은 `docs/decisions/records/012-ios-system-tab-bar.md`다(011의 직접 만든 `GlassView` 막대를 대체).
 
 - 구조: 첫 화면(`app/index.tsx`)은 WebView 하나다. 웹 탭 화면(`apps/web`의 `features/main-navigation/components/MainTabBar.tsx`)이 `setNativeTabBar({ items, selectedId })`를 부르면 쉘이 `(tabs)`로 바꾸고, 탭마다 WebView가 항목의 `path`를 연다. 이미 탭 화면이면 같은 요청은 화면을 옮기지 않는다. `hidden: true`면 하나의 WebView로 돌아간다. 웹은 로그인 전 화면(인트로·로그인)에 오면 `NativeTabBarVisibility`(`exitPaths`)가 `hidden: true`를 보낸다. 요청에 보낸 WebView 구분이 없어 화면에 보이는 WebView만 보내고, 뒤의 탭 WebView는 보이게 될 때 보낸다. 로그아웃·탈퇴 뒤 로그인부터 온보딩까지 이전 탭 WebView 안에서 이어지면, 온보딩을 마치고 탭 경로로 가도 쉘이 선택 탭을 바꾸지 않아(이미 탭 화면) 엉뚱한 탭이 선택된 채 남기 때문이다.
-- 탭 밖 화면(`(main)` 밖의 상세·온보딩)은 같은 탭 WebView에서 열고 시스템 탭 바만 숨긴다. 웹 `NativeTabBarVisibility`가 경로마다 탭 화면 여부를 `setNativeTabBarVisible`로 보내면 쉘이 `NativeTabs`의 `hidden`을 바꾼다(iOS 18 이상은 `setTabBarHidden`). 화면에 보이는 탭 WebView만 보내고, `setNativeTabBar`는 숨김 상태를 바꾸지 않는다(뒤의 탭 WebView가 다시 불러와도 유지). 탭이 아니거나 iOS가 아니면 false를 돌려준다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행돼 탭 바가 남는다.
+- 탭 밖 화면(`(main)` 밖의 상세·온보딩)은 같은 탭 WebView에서 열고 시스템 탭 바만 숨긴다. 웹 `NativeTabBarVisibility`가 경로마다 탭 화면 여부를 `setNativeTabBarVisible`로 보내면 쉘이 `NativeTabs`의 `hidden`을 바꾼다(iOS 18 이상은 `setTabBarHidden`). 이전 쉘에서는 화면에 보이는 탭 WebView만 보내고(지금 방식은 아래 탭별 저장), `setNativeTabBar`는 숨김 상태를 바꾸지 않는다(뒤의 탭 WebView가 다시 불러와도 유지). 탭이 아니거나 iOS가 아니면 false를 돌려준다. 메서드가 없는 이전 쉘은 웹의 브라우저 폴백(false)이 실행돼 탭 바가 남는다.
+- 탭 바 표시는 탭마다 저장한다(#481). 탭 WebView는 경로·시트가 바뀔 때마다 화면에 보이는지와 관계없이 `setNativeTabBarVisibleFor({ tab, visible })`로 자기 탭 값을 보낸다(탭 ID는 쉘이 넣어 준 `sessionStorage`의 `bunch-shell-tab`). 쉘은 탭별 값(`hiddenByTab`)을 저장하고 선택된 탭(`focusedTab`)의 값만 `NativeTabs`의 `hidden`에 적용한다. 탭이 바뀌면 `TabScreen`의 `useFocusEffect`가 그 탭의 값으로 맞춘다(`src/tabs/tab-bar-visibility.ts`). 이 메서드가 없는 이전 쉘에서는 웹이 화면에 보이는 WebView만 `setNativeTabBarVisible`로 보내는 기존 방식으로 돌아간다. 새 메서드가 있는지는 `hasNativeMethod`로 판정한다(아래 bridge 판정 참고). 새 쉘에 이전 웹이 붙어 탭별 값을 한 번도 받지 않았으면 탭을 바꿔도 지금 탭 바 상태를 그대로 둔다.
 - 탭 화면 파일은 `app/(tabs)/`의 `feed`·`photos`·`bunch`·`my` 4개로 고정이다(`src/tabs/tabs.ts`의 `TAB_IDS`). 웹이 이 밖의 ID를 보내면 `setNativeTabBar`가 false를 돌려 웹 막대를 쓴다. 항목이 없는 탭은 숨긴다.
 - 탭 라벨·경로는 웹이 정하고, 아이콘은 쉘이 탭 ID로 정한다. 아이콘은 웹 막대와 같은 디자인 시스템 Line·Fill 아이콘(Large 24px) SVG를 1x·2x·3x PNG로 옮긴 것이다(`assets/tab-icons/`, template으로 시스템이 색을 칠함). 디자인 시스템 아이콘이 바뀌면 다시 변환한다.
 - 선택 색만 text-primary(#121212)로 지정한다(`app/(tabs)/_layout.tsx`의 `tintColor`). 라벨 글꼴(Pretendard)과 미선택 색을 지정하면 iOS 26 Liquid Glass 탭 바가 새로 그려질 때 한 번도 선택하지 않은 항목의 라벨을 아래로 밀고 「마이페...」처럼 잘라 그려서(그 항목을 한 번 누르면 정상, 재로그인 직후 실기기 녹화로 확인, #462) 지정하지 않고 시스템 기본(SF, 미선택 색은 시스템이 배경에 맞춤)에 맡긴다. 알약 크기·막대 높이·간격은 시스템이 정한다. `itemPositioning`·`itemWidth` 실험에서 iOS 26 알약 폭이 바뀌지 않았다.
@@ -164,7 +178,7 @@ packages/bridge/
 
 실제 구현은 [bridge client](../../apps/web/src/shared/bridge/client.ts)를 따른다. `linkBridge<AppBridge, AppPostMessageSchema>`로 메서드와 이벤트 계약을 함께 지정한다.
 
-`initialBridge`는 WebView 밖(일반 브라우저)에서 실행될 때의 폴백이다. `isWebViewBridgeAvailable`로 지금 네이티브 쉘 안인지 확인할 수 있다.
+`initialBridge`는 WebView 밖(일반 브라우저)에서 실행될 때의 폴백이다. `isWebViewBridgeAvailable`로 지금 네이티브 쉘 안인지 확인할 수 있다. 다만 `@webview-bridge/web` 1.8.0은 `isWebViewBridgeAvailable`과 `isNativeMethodAvailable` 모두 initialBridge 폴백 이름까지 「있음」으로 센다. 그래서 폴백이 있는 `appBridge`로는 이전 쉘에 그 메서드가 있는지 알 수 없다. 쉘이 실제로 구현했는지는 initialBridge가 없는 bridge로 판정하는 `hasNativeMethod`(`apps/web/src/shared/bridge/client.ts`)를 쓴다(#481).
 
 ## 새 bridge 메서드를 추가하려면
 
@@ -182,7 +196,7 @@ packages/bridge/
 - 현재 사용처는 번치 생성 완료 화면, 번치 프로필 편집, 가입·MY 프로필 사진이며 모두 미리보기까지다. 이미지 API 확정 후 업로드 결과 ID/URL로 저장 계약을 연결한다. `exif: false`만으로 파일 메타데이터 제거를 보장하지 않으며 업로드 단계에서 별도 확정한다.
 - 웹 fallback은 파일 input으로 선택하고 브라우저 디코딩 성공 후 표시한다. 기본 규칙은 JPEG·PNG·WebP 최대 3MiB, 프로필 사진은 JPEG·PNG·HEIC·WebP 최대 10MiB(`PROFILE_IMAGE_RULES`, 브라우저가 HEIC를 읽지 못하면 같은 안내로 거절). 네이티브 편집 UI·HEIC 지원을 대체하지 않는다. 사진을 영구 저장하거나 localStorage에 남기지 않는다.
 - WebView 내부 이동은 설정한 웹 주소와 같은 origin(프로토콜·호스트·포트)만 허용하고 외부 주소는 OS로 전달한다. 외부 페이지가 갤러리 등 네이티브 브리지에 접근하지 못하도록 하는 경계다. 인증 redirect는 별도 계약 확정 후 연결한다.
-- 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다(`expo-image-picker`, `expo-image-manipulator`). 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`은 initialBridge 메서드도 포함). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
+- 모듈·config plugin 추가 후 기존 개발 앱은 prebuild와 재빌드가 필요하다(`expo-image-picker`, `expo-image-manipulator`). 이전 쉘에서 이 메서드를 지원하지 않으면 웹에 업데이트 안내를 표시한다. 웹 fallback 여부는 `isNativeShell()`의 `window.ReactNativeWebView` 존재 여부로 구분한다(`isWebViewBridgeAvailable`과 `appBridge.isNativeMethodAvailable`은 initialBridge 메서드도 포함, 메서드 지원 여부는 `hasNativeMethod`). 사용자가 선택을 마칠 때까지 기다리도록 전용 `galleryBridge`의 timeout만 끄고 갤러리 오류는 reject로 전달한다. 기존 `appBridge`의 대기 정책은 유지한다. 실제 iPhone 갤러리·취소·오류·편집 동작은 별도 검증한다.
 
 ### 사진함 업로드용 선택·촬영 (`src/gallery-upload.ts`)
 
@@ -196,7 +210,7 @@ packages/bridge/
 - iOS는 촬영 정보를 `{Exif}` 하위 객체에 묶어 줄 수 있어 최상위와 `{Exif}`·`Exif` 안을 읽는다. 기기별 실제 키 구조는 실기기에서 확인해야 한다.
 - 선택기가 앱 캐시에 만든 원본 복사본(위치를 포함할 수 있음)은 `releasePickedPhotos`가 놓아 줄 때 `expo-file-system`으로 함께 지운다(`src/cache-cleanup.ts`). 가공 결과 파일(`saveAsync`)은 base64를 받은 직후 지운다. **앱 캐시 폴더 안의 파일만 지우고**(`src/cache-path.ts`) 사용자의 앨범 원본은 건드리지 않으며, 지우지 못해도 업로드는 막지 않는다. 웹은 사진을 읽은 뒤 바로 놓아 줘도 되고, 실패한 사진의 재시도는 웹이 들고 있는 가공 결과로 한다. `expo-file-system`을 이 쉘의 직접 의존성으로 추가했으므로 개발 앱·배포 빌드는 다시 빌드해야 한다(Expo Go는 영향 없음). 가공 결과의 위치 제거는 소스 코드 읽기에 근거한 추론이라 실기기에서 올린 사진을 확인해야 한다.
 - `saveImagesToAlbum(urls)`는 공개 https 이미지 주소(최대 50개, IP 주소·`user:pass@`·localhost·내부 호스트 이름은 계약 `isSavableImageUrl`이 거절. 웹이 주소 하나 때문에 묶음이 거절되지 않게 사진별로 먼저 거르고, 쉘도 같은 검사로 다시 막는다)를 쉘이 앱 캐시로 내려받아(`expo-file-system`, 3장씩 동시) `expo-media-library`로 앨범에 저장하고 임시 파일을 바로 지운다(`src/album-save.ts`). 결과는 `saved`(주소 순서대로 사진별 성공 여부)나 `denied`(저장 권한 거부, 팝업은 처음 한 번만)다. 저장 권한만 요청한다(`requestPermissionsAsync(true)`). iOS는 사진 추가 권한이지만 Android는 `expo-media-library` 플러그인이 읽기 권한도 매니페스트에 넣어 쓰기 전용이 아닐 수 있어 실기기에서 어떤 팝업이 뜨는지 확인해야 한다. 사진을 다 받기 전에 사용자가 선택 모드를 취소해도 쉘의 저장은 끝까지 진행된다(취소할 수 없고 결과 안내만 생략). 허용 호스트 목록은 운영 이미지 호스트가 정해지면 쉘 설정으로 좁힌다. 주소 검사는 처음 주소만 하므로, `File.downloadFileAsync`가 리다이렉트를 따라가는지는 expo-file-system 동작이라 확인하지 못했다(미확인). 따라간다면 이미지 호스트가 리다이렉트를 내줄 때 검사하지 않은 주소로 갈 수 있어, 허용 호스트를 좁힐 때 함께 확인한다. 사진 데이터는 웹으로 넘기지 않는다. `expo-media-library`는 네이티브 모듈이라 개발 앱·배포 빌드를 다시 빌드해야 하고(Expo Go는 영향 없음), 설치할 때 `pnpm-workspace.yaml`의 `minimumReleaseAgeExclude`에 버전이 한 줄 추가됐다.
-- `getPushDeviceRegistration()`·`getPushInstallationId()`는 서버 푸시 기기 등록(`PUT·DELETE /members/me/push-devices/{installationId}`)에 필요한 값을 웹에 준다(`src/push-device.ts`, 순수 로직은 `src/push-device-core.ts`로 Node 테스트). 서버 계약이 APNs 기준(16진수 토큰, `SANDBOX`·`PRODUCTION`)이라 **iOS 쉘만** 값을 주고, 안드로이드·브라우저·토큰을 받지 못한 기기(시뮬레이터, Expo Go)는 null이다. 설치 ID(UUID)는 쉘이 처음 만들어 앱 문서 폴더(`push-installation-id.txt`)에 저장하고 계정이 바뀌어도 같다(저장하지 못하면 호출마다 다른 기기로 등록되므로 null). 환경은 `__DEV__`이면 `SANDBOX`, 아니면 `PRODUCTION`이다. 서버 호출과 인증 쿠키는 웹 BFF가 맡고 쉘은 서버를 부르지 않는다. 토큰은 기기를 가리키는 값이라 웹은 서버로 보내기만 하고 로그·오류·저장소에 남기지 않으며, 쉘과 웹 양쪽이 서버 계약(`pushDeviceRegistrationSchema`)으로 다시 검증한다. 웹은 가입을 마친 로그인 상태에서 앱을 열 때와 앞으로 돌아올 때 값이 바뀌었으면 다시 등록하고(`usePushDeviceSync`), 로그아웃 때 세션을 지우기 전에 해제한다(`shared/api/logout.ts`, 실패·3초 초과여도 로그아웃은 계속). **실기기에서 확인하지 못했다**: 토큰이 실제로 오는지, 설치 ID 파일 읽기·쓰기(`expo-file-system`의 `File`), 환경 판정이 TestFlight·App Store 빌드에서 맞는지(빌드 프로필별 `aps-environment`)를 확인해야 한다. APNs topic 등 서버 쪽 설정은 서버에 있다.
+- `getPushDeviceRegistration()`·`getPushInstallationId()`는 서버 푸시 기기 등록(`PUT·DELETE /members/me/push-devices/{installationId}`)에 필요한 값을 웹에 준다(`src/push-device.ts`, 순수 로직은 `src/push-device-core.ts`로 Node 테스트). 서버 계약이 APNs 기준(16진수 토큰, `SANDBOX`·`PRODUCTION`)이라 **iOS 쉘만** 값을 주고, 안드로이드·브라우저·토큰을 받지 못한 기기(시뮬레이터, Expo Go)는 null이다. 설치 ID(UUID)는 쉘이 처음 만들어 앱 문서 폴더(`push-installation-id.txt`)에 저장하고 계정이 바뀌어도 같다(저장하지 못하면 호출마다 다른 기기로 등록되므로 null). 환경은 `__DEV__`이면 `SANDBOX`, 아니면 `PRODUCTION`이다. 서버 호출과 인증 쿠키는 웹 BFF가 맡고 쉘은 서버를 부르지 않는다. 토큰은 기기를 가리키는 값이라 웹은 서버로 보내기만 하고 로그·오류·저장소에 남기지 않으며, 쉘과 웹 양쪽이 서버 계약(`pushDeviceRegistrationSchema`)으로 다시 검증한다. 웹은 가입을 마친 로그인 상태에서 앱을 열 때와 앞으로 돌아올 때 값이 바뀌었으면 다시 등록하고(`usePushDeviceSync`), 알림 권한을 아직 정하지 않은 기기(재설치·기존 계정이라 약관 화면의 권한 요청을 거치지 않음)는 화면에 보이는 WebView에서 켜진 2초 뒤에 한 번 권한을 묻고(그때 묻지 못했으면 앞으로 돌아올 때) 답한 상태로 다시 등록한다(`askNotificationPermission`, 알림 설정에서 토글을 켤 때도 같음). 권한을 묻지 않으면 iOS 설정에 알림 항목이 생기지 않고 서버는 `NOT_DETERMINED` 기기에 보내지 않는다. 로그아웃 때 세션을 지우기 전에 해제한다(`shared/api/logout.ts`, 실패·3초 초과여도 로그아웃은 계속). **실기기에서 확인하지 못했다**: 토큰이 실제로 오는지, 설치 ID 파일 읽기·쓰기(`expo-file-system`의 `File`), 환경 판정이 TestFlight·App Store 빌드에서 맞는지(빌드 프로필별 `aps-environment`)를 확인해야 한다. APNs topic 등 서버 쪽 설정은 서버에 있다.
 - `openAppSettings()`는 앱의 시스템 설정 화면을 연다(`src/permissions.ts`).
 
 ## 클립보드 bridge
@@ -215,6 +229,7 @@ packages/bridge/
 ## 소셜 로그인 bridge
 
 - `socialLogin(provider: 'kakao' | 'google' | 'apple'): Promise<SocialLoginResult>`는 쉘의 네이티브 SDK로 로그인시키고 서버 로그인에 쓸 ID 토큰을 웹에 넘기는 계약이다(`packages/bridge`의 `socialLoginResultSchema`). 서버 호출과 인증 쿠키 저장은 웹 BFF(`/api/auth/login`)가 맡고, 쉘은 토큰만 전달한다.
+- `authorizeApple(): Promise<AppleAuthorizationResult>`는 탈퇴 전 Apple 재인증이다(#479). 쉘이 Apple 로그인 창을 띄워 일회용 `authorizationCode`를 돌려주고, 웹은 이를 탈퇴 요청의 `appleAuthorizationCode`로 보내 서버가 Apple 연결을 끊는다. 창을 닫으면 `cancelled`, SDK 오류는 코드 없는 일반 문구로 reject한다(`createAppleAuthorization`). 코드는 저장하거나 로그에 남기지 않는다. 이 메서드가 없는 이전 쉘은 웹이 `isNativeMethodAvailable`로 확인해 탈퇴를 실패로 처리한다.
 - 결과는 `{ status: 'success', provider, idToken, nonce? }` 또는 `{ status: 'cancelled' }`다. 사용자가 로그인 창을 닫은 것은 실패가 아니라 `cancelled`이고, SDK·네트워크 오류는 reject다. 카카오·Apple은 `nonce`가 필수, Google은 선택이며 BFF 입력 검증과 같은 규칙이다.
 - 로그인 창은 사용자가 끝낼 때까지 기다려야 하므로 웹은 타임아웃을 끈 전용 `loginBridge`를 쓴다. 브라우저(쉘 밖)에서는 `initialBridge`가 reject하며 호출부가 로그인 실패로 처리한다.
 - 토큰 취급 규칙: 쉘은 반환 직전에 `socialLoginResultSchema.parse`로 검증하고 웹도 받은 직후 같은 검증을 한다. 토큰·nonce는 로그·`console`·오류 메시지에 넣지 않고, SDK 오류는 토큰이 없는 일반 문구로 바꿔 던진다(`src/social-login-core.ts`). 웹은 토큰을 저장하지 않고 곧바로 BFF로 보내며 `localStorage`·쿼리스트링·전역 상태에 두지 않는다.

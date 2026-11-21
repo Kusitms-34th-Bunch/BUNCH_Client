@@ -1,7 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import {
+  LATE_OVERLAY_MS,
+  PAGE_LOADING_LABEL,
+  PageLoading,
+} from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -25,7 +29,8 @@ export function BundleDraftMembers() {
   useQuery({ ...bunchMembersQueryOptions(profile?.bunch?.id), refetchOnMount: 'always' });
 
   if (state.kind === 'error') return <BundleLoadError onRetry={state.retry} />;
-  if (state.kind !== 'ready') return <PageLoading />;
+  if (state.kind !== 'ready')
+    return <PageLoading delayMs={LATE_OVERLAY_MS} label={PAGE_LOADING_LABEL} />;
 
   return (
     <DraftMemberManager

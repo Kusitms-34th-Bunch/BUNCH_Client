@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/guard-rules.mjs"
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/guard-rules.mjs\""
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/skill-suggest.mjs"
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/skill-suggest.mjs\""
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/lint-check.mjs"
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/lint-check.mjs\""
           }
         ]
       }

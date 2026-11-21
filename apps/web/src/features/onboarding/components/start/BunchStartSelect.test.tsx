@@ -7,7 +7,9 @@ import { BunchStartSelect } from './BunchStartSelect';
 const push = vi.fn();
 const back = vi.fn();
 const replace = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, back, replace }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push, back, replace, prefetch: () => {} }),
+}));
 
 describe('BunchStartSelect', () => {
   beforeEach(() => {

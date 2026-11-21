@@ -32,25 +32,8 @@ export function BunchNotifications() {
   const list = useInfiniteQuery(bunchNotificationsQueryOptions(bunch?.id));
   const open = useOpenNotificationMutation(bunch?.id);
   const readAll = useReadAllNotificationsMutation(bunch?.id);
-  // 같은 알림을 연달아 눌러도 한 번만 열기(isPending은 다음 렌더부터 반영)
+  // 같은 알림을 연달아 눌러도 한 번만 열기(이동은 다음 화면이 뜰 때까지 이어짐)
   const opening = useRef(false);
-  // 여는 사이 뒤로 가서 화면이 내려갔으면 늦게 온 성공으로 이동하지 않음(덮개가 없어 뒤로 가기를 막지 않음)
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-  // 여는 사이 사용자가 다른 이동(뒤로 가기·링크·OS 뒤로)을 시작했으면 늦게 온 성공이 그 이동을 덮지 않게 함
-  const leaving = useRef(false);
-  useEffect(() => {
-    const onPopState = () => {
-      if (opening.current) leaving.current = true;
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
   // 접근 불가 알림(`ACCESS_NOTICE`)은 이동할 화면 없이 이 화면에서 안내 창을 띄움
   const [noticeId, setNoticeId] = useState<string>();
   const closeNotice = () => {
@@ -63,11 +46,7 @@ export function BunchNotifications() {
     if (noBunch) router.replace(BUNCH_HOME_PATHS.home);
   }, [noBunch, router]);
   // 직접 진입이라 돌아갈 기록이 없으면 번치 홈으로 이동
-  const back = () => {
-    // 여는 중에 뒤로 가면 늦게 온 성공이 이 이동을 덮지 않게 기록
-    if (opening.current) leaving.current = true;
-    backOr(BUNCH_HOME_PATHS.home);
-  };
+  const back = () => backOr(BUNCH_HOME_PATHS.home);
 
   if ((me.isError && !me.data) || (list.isError && !list.data)) {
     return (
@@ -84,64 +63,33 @@ export function BunchNotifications() {
 
   return (
     <>
-      {/* 여는 동안 덮개 없이 다시 누름만 막음(가드), 안내는 화면의 늘 있는 상태 영역에 실음 */}
-      <div
-        className="contents"
-        // 여는 중 누른 링크(알림 설정 안내 등)는 사용자가 시작한 이동. 보조 키 클릭(새 탭)은 이 화면을 떠나지 않음
-        onClickCapture={(event) => {
-          const plainClick =
-            event.button === 0 &&
-            !event.metaKey &&
-            !event.ctrlKey &&
-            !event.shiftKey &&
-            !event.altKey;
-          if (opening.current && plainClick && (event.target as Element).closest('a[href]'))
-            leaving.current = true;
-        }}
-      >
-        <BunchNotificationsScreen
-          bunchName={bunch?.name}
-          notifications={
-            list.data
-              ? toBunchNotifications({ items: itemsOfPages(list.data.pages, (item) => item.id) })
-              : undefined
+      <BunchNotificationsScreen
+        bunchName={bunch?.name}
+        notifications={
+          list.data
+            ? toBunchNotifications({ items: itemsOfPages(list.data.pages, (item) => item.id) })
+            : undefined
+        }
+        // 읽지 않은 수는 가장 최근에 받은 쪽의 값(쪽마다 같은 서버 수)
+        hasUnread={(list.data?.pages.at(-1)?.unreadCount ?? 0) > 0}
+        more={list}
+        onBack={back}
+        onReadAll={() => readAll.mutateAsync()}
+        // 읽음 처리(열기 요청)를 기다리지 않고 목록의 이동 대상으로 바로 감. 갈 수 없게 된 대상은 도착 화면이 안내
+        onOpen={(notification) => {
+          const item = list.data?.pages
+            .flatMap((page) => page.items)
+            .find((candidate) => toDomainId(candidate.id) === notification.id);
+          if (!item || opening.current) return;
+          opening.current = true;
+          open.mutate(notification.id);
+          if (item.target.kind === 'ACCESS_NOTICE' && item.target.noticeId) {
+            setNoticeId(toDomainId(item.target.noticeId));
+            return;
           }
-          // 읽지 않은 수는 가장 최근에 받은 쪽의 값(쪽마다 같은 서버 수)
-          hasUnread={(list.data?.pages.at(-1)?.unreadCount ?? 0) > 0}
-          more={list}
-          notice={open.isPending ? BUNCH_HOME_MESSAGES.openingNotification : undefined}
-          onBack={back}
-          onReadAll={() => readAll.mutateAsync()}
-          onOpen={(notification) => {
-            if (opening.current) return;
-            opening.current = true;
-            open.mutate(notification.id, {
-              onSuccess: (result) => {
-                if (!mounted.current || leaving.current) {
-                  opening.current = false;
-                  leaving.current = false;
-                  return;
-                }
-                if (!result.available || !result.target) {
-                  opening.current = false;
-                  toast(BUNCH_HOME_MESSAGES.notificationUnavailable);
-                  return;
-                }
-                if (result.target.kind === 'ACCESS_NOTICE' && result.target.noticeId) {
-                  setNoticeId(toDomainId(result.target.noticeId));
-                  return;
-                }
-                // 이동하는 동안(새 화면이 뜨기 전) 다시 열지 않게 가드를 풀지 않음
-                router.push(notificationPath(result.target));
-              },
-              onError: () => {
-                opening.current = false;
-                leaving.current = false;
-              },
-            });
-          }}
-        />
-      </div>
+          router.push(notificationPath(item.target));
+        }}
+      />
       {noticeId ? (
         <AccessNoticeDialog
           noticeId={noticeId}

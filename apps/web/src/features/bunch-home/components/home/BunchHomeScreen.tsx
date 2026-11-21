@@ -2,7 +2,7 @@
 
 import { ConfirmDialog, cn } from '@app/design-system';
 import { FloatingButton } from '@app/design-system/web';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
@@ -12,11 +12,13 @@ import type { ListMoreQuery } from '../../lib/pages';
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
+import { useBunchSwitchMotion } from '../../hooks/useBunchSwitchMotion';
 import { useBunchSwitchSheet } from '../../hooks/useBunchSwitchSheet';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { BunchProfileImage } from '../BunchProfileImage';
+import { BundleTabsSkeleton } from './BunchHomeSkeleton';
 import { type BundleTab, BundleTabs } from './BundleTabs';
 
 const CREATE_BUNDLE_LABEL = '번들 만들기';
@@ -28,16 +30,22 @@ type BunchHomeScreenProps = {
   onCreateBundle?: (() => void) | undefined;
   /** 작성 중인 번들 카드를 눌렀을 때 */
   onOpenDraft?: ((_bundleId: string) => void) | undefined;
+  /** 작성 중인 번들 카드에 손가락이 닿을 때 */
+  onPressDraft?: ((_bundleId: string) => void) | undefined;
   /** 전환 시트의 「새로운 번치 추가하기」 */
   onAddBunch?: (() => void) | undefined;
   /** 프로필의 「콕한 장소」 버튼 */
   onOpenPlaces?: (() => void) | undefined;
   /** 완성된 번들 칸을 눌렀을 때 */
   onOpenBundle?: ((_bundleId: string) => unknown) | undefined;
+  /** 칸에 손가락이 닿을 때(누르기 전에 삭제 여부 확인을 시작) */
+  onPressBundle?: ((_bundleId: string) => void) | undefined;
   /** 처음 보일 번들 탭(주소 `?tab=drafts`). 번치를 전환하면 완성된 번들 탭 */
   initialTab?: BundleTab | undefined;
   /** 완성된 번들 이어서 받기 */
   completedMore?: ListMoreQuery | undefined;
+  /** 번들 목록을 받는 중: 탭·번들 칸 자리표시(프로필은 실제로 그림) */
+  bundlesLoading?: boolean | undefined;
 };
 
 /** 번치 탭 홈: 번치 프로필, 완성된·작성 중인 번들 탭, 번치 전환 시트, 접근 불가 번치 안내 */
@@ -46,11 +54,14 @@ export function BunchHomeScreen({
   actions,
   onCreateBundle,
   onOpenDraft,
+  onPressDraft,
   onAddBunch,
   onOpenPlaces,
   onOpenBundle,
+  onPressBundle,
   initialTab,
   completedMore,
+  bundlesLoading = false,
 }: BunchHomeScreenProps) {
   const { current, bunches } = data;
   const background = BUNCH_BACKGROUNDS[current.characterType];
@@ -68,11 +79,20 @@ export function BunchHomeScreen({
     onPress: onCreateBundle,
   });
 
+  // 번치 전환 모션(인스타 계정 전환처럼, motion.md). 고르는 즉시 지금 화면을 붙잡아 두고 실패하면 치움
+  const contentRef = useRef<HTMLDivElement>(null);
+  const switchMotion = useBunchSwitchMotion(contentRef, current.id);
   // 번치 전환 시트와 접근 불가 번치 안내(사진함 헤더와 같은 hook)
   const { openSwitcher, switcherOpen } = useBunchSwitchSheet({
     currentId: current.id,
     bunches,
-    switchBunch: actions.switchBunch,
+    switchBunch: (bunchId: string) => {
+      switchMotion.begin();
+      return Promise.resolve(actions.switchBunch(bunchId)).catch((error: unknown) => {
+        switchMotion.cancel();
+        throw error;
+      });
+    },
     removeBunch: actions.removeBunch,
     onSwitched: () => setSwitched(true),
     onAddBunch,
@@ -127,12 +147,13 @@ export function BunchHomeScreen({
         </div>
       }
     >
-      {/* 번치 전환 시 새 번치 내용을 Dissolve / Ease out / 150ms로 표시(화면설계서 7). key로 다시 그려 재생 */}
+      {/* 번치 전환은 화면 전체 모션(useBunchSwitchMotion). 동작 줄이기 설정이면 Dissolve / Ease out / 150ms(화면설계서 7) */}
       <div
         key={current.id}
+        ref={contentRef}
         className={cn(
           'flex min-h-full flex-col',
-          switched && 'animate-[page-content-in_150ms_ease-out] motion-reduce:animate-none',
+          switched && 'motion-reduce:animate-[page-content-in_150ms_ease-out]',
         )}
       >
         {/* 프로필 이미지 영역(Figma 헤더 아래 82px + 시트 둥근 모서리 뒤 20px). 90px 프로필 이미지는 영역 위에서 24px 아래에 놓여 흰 시트에 32px 걸침 */}
@@ -149,17 +170,27 @@ export function BunchHomeScreen({
               memberCount: BUNCH_HOME_PATHS.members,
             }}
           />
-          <BundleTabs
-            initialTab={switched || current.id !== firstBunchId ? 'completed' : initialTab}
-            bunchId={current.id}
-            onOpenBundle={onOpenBundle}
-            completedMore={completedMore}
-            completedBundles={current.completedBundles}
-            draftBundles={current.draftBundles}
-            onCreateBundle={onCreateBundle}
-            onOpenDraft={onOpenDraft}
-            onDeleteDraft={openDeleteDraft}
-          />
+          {/* 늘 있는 상태 영역에서 문구만 바꿈(새로 끼운 영역은 낭독이 안 될 수 있음) */}
+          <p role="status" className="sr-only">
+            {bundlesLoading ? '번들을 불러오는 중이에요' : ''}
+          </p>
+          {bundlesLoading ? (
+            <BundleTabsSkeleton />
+          ) : (
+            <BundleTabs
+              initialTab={switched || current.id !== firstBunchId ? 'completed' : initialTab}
+              bunchId={current.id}
+              onOpenBundle={onOpenBundle}
+              onPressBundle={onPressBundle}
+              completedMore={completedMore}
+              completedBundles={current.completedBundles}
+              draftBundles={current.draftBundles}
+              onCreateBundle={onCreateBundle}
+              onOpenDraft={onOpenDraft}
+              onPressDraft={onPressDraft}
+              onDeleteDraft={openDeleteDraft}
+            />
+          )}
         </div>
       </div>
     </PageShell>

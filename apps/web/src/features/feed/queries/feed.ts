@@ -1,5 +1,6 @@
 import { infiniteQueryOptions, skipToken, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { persistedFirstPage } from '@/shared/query/persistence';
 import { getFeedPage } from '../api/feed';
 import { feedKeys } from './keys';
 
@@ -16,6 +17,8 @@ export const feedQueryOptions = (viewerId: string | null | undefined) =>
         ? skipToken
         : ({ pageParam, signal }) => getFeedPage(pageParam, signal),
     refetchOnMount: 'always',
+    // 앱을 다시 열면 지난 첫 쪽을 먼저 보이고 다시 받음(차단·팔로우 변경은 다시 받은 뒤 반영)
+    ...persistedFirstPage,
     // 같은 cursor가 다시 오면 무한 반복하지 않고 거기서 끝냄
     getNextPageParam: (lastPage, _pages, _lastParam, allParams) =>
       lastPage.hasNext && lastPage.nextCursor && !allParams.includes(lastPage.nextCursor)

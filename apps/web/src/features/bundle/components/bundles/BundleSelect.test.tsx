@@ -2,7 +2,6 @@ import type * as DesignSystem from '@app/design-system';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
 import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
@@ -120,7 +119,8 @@ describe('사진 고르기', () => {
     ).not.toBeNull();
     expect(createButton()).toBeDisabled();
     expect(screen.getByRole('button', { name: BUNDLE_SELECT_MESSAGES.previous })).toBeDisabled();
-    expect(getPageLoadingCount()).toBe(0);
+    // 1초 안에는 덮지 않음(로딩 중임은 알리되 덮개는 늦게)
+    expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
     expect(router.push).not.toHaveBeenCalled();
 
     await act(() => vi.advanceTimersByTimeAsync(CREATE_DELAY_MS));

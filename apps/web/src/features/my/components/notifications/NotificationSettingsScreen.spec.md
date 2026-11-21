@@ -5,7 +5,7 @@
 - Route: `/my/notifications`(`app/(app)/my/notifications/page.tsx`, 하단 탭 없음)
 - Status: UI 구현됨(Figma 값과 측정으로 대조함. 알림 설정 API·기기 권한 읽기 연결됨(#332), 실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 알림 설정(node `4096:75318`·`4096:75334`·`4096:75350`·`4096:75367`), 화면 설계서 `MY(3)`(node `4164:82271`)
-- 이슈: #221, #332(알림 설정 API·기기 알림 권한 연결)
+- 이슈: #221, #332(알림 설정 API·기기 알림 권한 연결), #485(묻지 않은 알림 권한 요청)
 
 ## 목적과 범위
 
@@ -28,12 +28,12 @@
 
 ## 상태와 흐름
 
-- 초기 진입: `NotificationSettingsRoute`가 서버 설정(`GET /members/me/push-preferences`)을 받아 토글을 채운다. 받는 동안 `PageLoading`과 스크린 리더 안내를 보이고, 받지 못하면 이전 화면으로 돌아가 그 화면에서 오류 토스트를 보인다(`toastAfterNavigation`, 7.3.1 예외).
+- 초기 진입: `NotificationSettingsRoute`가 서버 설정(`GET /members/me/push-preferences`)을 받아 토글을 채운다. 받는 동안 실제 헤더와 토글 행 스켈레톤(`NotificationSettingsSkeleton`), 스크린 리더 안내를 보이고, 받지 못하면 이전 화면으로 돌아가 그 화면에서 오류 토스트를 보인다(`toastAfterNavigation`, 7.3.1 예외).
 - 토글 저장: 누르면 바로 화면을 바꾸고(optimistic) `PATCH`로 저장한다. 같은 `scope`로 순서대로 보내 연타해도 서버에 마지막 값이 남고, 실패하면 저장 전 값으로 되돌리고 오류 토스트를 띄운 뒤 서버 값을 다시 받는다(7.3.2·7.3.3 예외).
 - 전체 OFF: 종류별 토글 비활성, 값 유지.
 - 기기 권한 OFF: 배너, 모든 토글 비활성, 값 유지.
 - 화면은 `settings`를 prop으로만 그리고 저장은 `onChangePush`·`onChangeType`으로 알린다(상태를 들고 있지 않음). 권한이 다시 켜지면(prop이 바뀌면) 배너가 사라지고 받은 값 그대로 돌아온다.
-- 기기 알림 권한은 `useDeviceNotificationPermission`이 쉘 bridge `getPermissionStatus('notification')`로 상태만 읽는다(OS 권한 창을 띄우지 않음). 화면에 들어올 때와 앱으로 돌아올 때(탭이 다시 보이거나 창이 포커스를 받을 때) 다시 읽는다. `denied`만 꺼짐으로 보고, 브라우저·오래된 쉘·읽기 실패·`undetermined`는 켜짐으로 둔다. 「설정으로 이동」은 쉘에서만 `openAppSettings`로 연다(7.3.4). 쉘에서 첫 상태를 받기 전(최대 1초, `CHECK_CAP_MS`)에는 꺼져 있는지 아직 모르므로 배너 없이 토글만 잠가 거부된 기기에서 설정이 바뀌지 않게 한다(`devicePermissionChecking`). 상한이 지나거나 읽지 못하면(읽기를 지원하지 않는 오래된 쉘 등) 켜짐으로 풀리고, 상한 뒤에 꺼짐으로 확인되면 그때 배너와 비활성으로 바뀐다. 오래된 쉘은 들어올 때마다 최대 1초 잠긴다.
+- 기기 알림 권한은 `useDeviceNotificationPermission`이 쉘 bridge `getPermissionStatus('notification')`로 상태만 읽는다(OS 권한 창을 띄우지 않음). 화면에 들어올 때와 앱으로 돌아올 때(탭이 다시 보이거나 창이 포커스를 받을 때) 다시 읽는다. `denied`만 꺼짐으로 보고, 브라우저·오래된 쉘·읽기 실패·`undetermined`는 켜짐으로 둔다. 「앱 푸시 알림」이나 종류 토글을 켤 때 권한이 `undetermined`이면(재설치·기존 계정이라 약관 화면에서 묻지 않은 기기) 저장과 함께 bridge `requestPermission('notification')`으로 OS 권한 창을 띄우고, 답한 뒤 상태를 다시 읽고 기기를 다시 등록한다(`askPermission`, #485). 그래서 켜져 보이던 토글을 끄고 다시 켜면 권한과 푸시 기기 등록이 맞춰진다. 끌 때와 이미 정한 권한은 묻지 않는다. 토글을 바꾼 직후 거부로 토글이 잠기면 사라진 초점을 배너 문구(`tabIndex=-1`)로 옮긴다. 들어올 때 이미 꺼져 있으면 옮기지 않는다. 「설정으로 이동」은 쉘에서만 `openAppSettings`로 연다(7.3.4). 쉘에서 첫 상태를 받기 전(최대 1초, `CHECK_CAP_MS`)에는 꺼져 있는지 아직 모르므로 배너 없이 토글만 잠가 거부된 기기에서 설정이 바뀌지 않게 한다(`devicePermissionChecking`). 상한이 지나거나 읽지 못하면(읽기를 지원하지 않는 오래된 쉘 등) 켜짐으로 풀리고, 상한 뒤에 꺼짐으로 확인되면 그때 배너와 비활성으로 바뀐다. 오래된 쉘은 들어올 때마다 최대 1초 잠긴다.
 
 ## 데이터 의존성
 

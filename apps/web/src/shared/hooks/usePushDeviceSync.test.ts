@@ -7,19 +7,32 @@ const mocks = vi.hoisted(() => ({
   isNativeShell: vi.fn(() => true),
   syncPushDevice: vi.fn<() => Promise<Result>>(),
   resetPushDeviceSync: vi.fn(),
+  askNotificationPermission: vi.fn(() => Promise.resolve(false)),
+  isHandedOffToNativeTabs: vi.fn(() => false),
 }));
-vi.mock('../bridge/client', () => ({ isNativeShell: mocks.isNativeShell }));
+vi.mock('../bridge/client', () => ({
+  isNativeShell: mocks.isNativeShell,
+  isHandedOffToNativeTabs: mocks.isHandedOffToNativeTabs,
+}));
 vi.mock('../lib/pushDevice', () => ({
   syncPushDevice: mocks.syncPushDevice,
   resetPushDeviceSync: mocks.resetPushDeviceSync,
+  askNotificationPermission: mocks.askNotificationPermission,
 }));
+const setVisibility = (state: DocumentVisibilityState) =>
+  Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.isNativeShell.mockReturnValue(true);
   mocks.syncPushDevice.mockResolvedValue('synced');
+  mocks.isHandedOffToNativeTabs.mockReturnValue(false);
+  setVisibility('visible');
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  setVisibility('visible');
+});
 
 describe('usePushDeviceSync', () => {
   it('켜지지 않았거나(비로그인·가입 중) 쉘이 아니면 등록하지 않는다', () => {
@@ -108,5 +121,64 @@ describe('usePushDeviceSync', () => {
     await act(async () => {
       await Promise.resolve();
     });
+  });
+
+  it('켜지고 잠시 뒤 알림 권한을 묻고, 묻지 못했으면 돌아올 때 다시 묻는다', () => {
+    vi.useFakeTimers();
+    renderHook(() => usePushDeviceSync('1'));
+    expect(mocks.askNotificationPermission).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(mocks.askNotificationPermission).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mocks.askNotificationPermission).toHaveBeenCalledTimes(2);
+  });
+
+  it('보이지 않는 탭 WebView와 탭으로 넘긴 첫 화면은 권한을 묻지 않는다', () => {
+    vi.useFakeTimers();
+    setVisibility('hidden');
+    renderHook(() => usePushDeviceSync('1'));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(mocks.askNotificationPermission).not.toHaveBeenCalled();
+
+    setVisibility('visible');
+    mocks.isHandedOffToNativeTabs.mockReturnValue(true);
+    renderHook(() => usePushDeviceSync('2'));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(mocks.askNotificationPermission).not.toHaveBeenCalled();
+  });
+
+  it('비로그인·가입 중이면 권한을 묻지 않는다', () => {
+    vi.useFakeTimers();
+    renderHook(() => usePushDeviceSync(null));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(mocks.askNotificationPermission).not.toHaveBeenCalled();
+  });
+
+  it('한 번 물었으면 돌아와도 자동으로 다시 묻지 않는다', async () => {
+    vi.resetModules();
+    const { usePushDeviceSync: fresh } = await import('./usePushDeviceSync');
+    mocks.askNotificationPermission.mockResolvedValue(true);
+    vi.useFakeTimers();
+    renderHook(() => fresh('1'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mocks.askNotificationPermission).toHaveBeenCalledTimes(1);
   });
 });

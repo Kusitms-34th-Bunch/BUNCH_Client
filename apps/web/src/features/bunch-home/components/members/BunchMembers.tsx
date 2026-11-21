@@ -4,7 +4,6 @@ import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -12,7 +11,7 @@ import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { type BunchMemberActions, sortMembers } from '../../lib/members';
 import { type ManagedMemberships, toManagedMemberships } from '../../model/memberships';
-import { bunchHomeQueryOptions } from '../../queries/bunchHome';
+import { bunchHomeQueryOptions, LIVE_REFRESH } from '../../queries/bunchHome';
 import {
   type MembershipChange,
   membershipsQueryOptions,
@@ -21,6 +20,12 @@ import {
 import { BunchHomeError } from '../home/BunchHomeError';
 import { BunchMembersScreen } from './BunchMembersScreen';
 
+/** 목록을 받기 전에는 누를 행이 없어 부르지 않는 동작 */
+const LOADING_ACTIONS: BunchMemberActions = {
+  setRole: () => Promise.resolve(),
+  transferOwner: () => Promise.resolve(),
+  remove: () => Promise.resolve(),
+};
 /**
  * 실패한 관리 작업 뒤 다시 받은 목록에서 역할이 바뀐 쪽: 내 역할이면 mine, 대상 멤버의 역할이면 target
  * 대상이 목록에서 사라진 경우(나감·내보내짐)는 역할 변경으로 보지 않음
@@ -47,7 +52,8 @@ export function BunchMembers() {
   const me = useQuery(myProfileQueryOptions());
   const bunchId = me.data?.bunch?.id;
   const home = useQuery(bunchHomeQueryOptions(bunchId));
-  const memberships = useQuery(membershipsQueryOptions(bunchId));
+  // 머무는 동안 새로 가입한 멤버도 보이게 주기적으로 다시 받음
+  const memberships = useQuery({ ...membershipsQueryOptions(bunchId), ...LIVE_REFRESH });
   const change = useChangeMembershipMutation(bunchId);
   // 실패 뒤 목록을 다시 받는 동안도 처리 중(오래된 버전으로 다시 보내지 않게)
   const [recovering, setRecovering] = useState(false);
@@ -82,14 +88,17 @@ export function BunchMembers() {
       />
     );
   }
+  // 받는 중은 실제 헤더와 멤버 행 스켈레톤(받는 중 안내는 화면의 상태 영역이 맡음). 목록이 없어 역할·동작은 쓰이지 않음
   if (!managed) {
     return (
-      <>
-        <p role="status" className="sr-only">
-          멤버를 불러오는 중이에요
-        </p>
-        <PageLoading />
-      </>
+      <BunchMembersScreen
+        bunchName={home.data?.bunch.name}
+        members={undefined}
+        myRole={undefined}
+        actions={LOADING_ACTIONS}
+        onBack={() => backOr(BUNCH_HOME_PATHS.menu)}
+        onInvite={() => router.push(BUNCH_HOME_PATHS.invite)}
+      />
     );
   }
 
