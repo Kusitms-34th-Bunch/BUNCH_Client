@@ -124,6 +124,31 @@ describe('createBrowserApi', () => {
     expect(onUnauthorized).not.toHaveBeenCalled();
   });
 
+  it('재발급이 세션 없음(쿠키가 하나도 없음)이면 세션을 확인하지 않고 비로그인으로 끝낸다', async () => {
+    const paths: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: Request | string) => {
+        const path = new URL(
+          typeof input === 'string' ? input : input.url,
+          'https://app.example.com',
+        ).pathname;
+        paths.push(path);
+        if (path === '/api/auth/reissue') {
+          return Promise.resolve(json({ code: 'BFF_NO_SESSION' }, 401));
+        }
+        return Promise.resolve(json({}, 401));
+      }),
+    );
+    const onUnauthorized = vi.fn();
+
+    const api = createBrowserApi({ baseUrl: 'https://app.example.com/api/', onUnauthorized });
+
+    await expect(api.get('users')).rejects.toMatchObject({ response: { status: 401 } });
+    expect(paths).toEqual(['/api/users', '/api/auth/reissue']);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
   it('같은 /api/auth/ 아래여도 약관 API의 401은 재발급 뒤 재시도한다(로그인·재발급·로그아웃만 제외)', async () => {
     const paths: string[] = [];
     let termsCalls = 0;

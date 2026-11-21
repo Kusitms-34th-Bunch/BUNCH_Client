@@ -87,11 +87,19 @@ describe('POST /api/auth/reissue', () => {
     expect(response.cookies.get('accessToken')?.value).toBe(TOKENS.accessToken);
   });
 
-  it('refresh 쿠키가 없으면 백엔드를 부르지 않고 401', async () => {
+  it('refresh 쿠키가 없으면 백엔드를 부르지 않고 401, 두 쿠키가 모두 없으면 세션 없음으로 답한다', async () => {
     const response = await reissue(post('reissue'));
 
     expect(response.status).toBe(401);
+    expect(await response.json()).toMatchObject({ code: 'BFF_NO_SESSION' });
     expect(session.reissueOnce).not.toHaveBeenCalled();
+  });
+
+  it('access 쿠키만 남아 있으면 세션 없음으로 답하지 않는다(브라우저가 세션을 다시 확인)', async () => {
+    const response = await reissue(post('reissue', { cookie: 'accessToken=new' }));
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toMatchObject({ code: 'BFF_UNAUTHENTICATED' });
   });
 
   it('재발급이 401이어도 쿠키를 지우지 않는다(다른 탭이 먼저 교체한 새 쿠키 보호)', async () => {

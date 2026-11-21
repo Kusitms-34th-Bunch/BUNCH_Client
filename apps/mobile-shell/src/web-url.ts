@@ -33,6 +33,14 @@ export function resolveWebUrl(
   return value;
 }
 
+// 로그인 전 첫 화면(웹 `LOGIN_PATH`·`INTRO_PATH`). 앞 기록이 로그인한 사용자 화면이라 뒤로 가면 가드가 다시 여기로 보내 반복됨
+const NO_BACK_PATHS = new Set(['/login', '/intro']);
+
+/** 뒤로 가기(iOS 스와이프·Android 뒤로 버튼)로 웹 기록을 되돌리지 않을 앱 화면인지 */
+export function blocksBackNavigation(value: string, appUrl: string) {
+  return isAppWebUrl(value, appUrl) && NO_BACK_PATHS.has(new URL(value).pathname);
+}
+
 export function isAppWebUrl(value: string, appUrl: string) {
   try {
     const url = new URL(value);

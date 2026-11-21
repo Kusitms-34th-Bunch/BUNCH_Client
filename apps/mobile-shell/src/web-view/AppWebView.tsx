@@ -49,7 +49,7 @@ import { floatingButtonStore } from '../tabs/floating-button-store';
 import { reportTabBar, visibleTab } from '../tabs/tab-bar-visibility';
 import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
-import { isAppWebUrl, resolveWebUrl } from '../web-url';
+import { blocksBackNavigation, isAppWebUrl, resolveWebUrl } from '../web-url';
 
 // `process.env.EXPO_PUBLIC_*` 직접 접근 유지(Metro는 이렇게 쓴 곳만 번들에 포함)
 export const WEB_URL = resolveWebUrl(
@@ -261,16 +261,20 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
   const [restoreUri, setRestoreUri] = useState<string | null>(null);
   const currentUrl = useRef(uri);
   const canGoBack = useRef(false);
+  // 로그인·인트로에서는 뒤로 가기를 막음(로그아웃 뒤 앞 기록으로 갔다가 다시 로그인으로 오는 반복 방지)
+  const [backAllowed, setBackAllowed] = useState(() => !blocksBackNavigation(uri, WEB_URL));
 
-  // Android 뒤로가기 시 웹 history 우선 처리
+  // Android 뒤로가기 시 보이는 WebView의 웹 history 우선 처리(막은 화면에서는 시스템 기본 동작)
+  // 숨은 탭 WebView도 구독하므로 보이는 것만 처리(아니면 보이는 화면이 넘긴 뒤 숨은 탭의 기록이 되돌아감)
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (!canGoBack.current) return false;
+      if (!isVisibleWebView(tabId) || !canGoBack.current) return false;
+      if (blocksBackNavigation(currentUrl.current, WEB_URL)) return false;
       webViewRef.current?.goBack();
       return true;
     });
     return () => subscription.remove();
-  }, []);
+  }, [tabId]);
 
   // 값 변경 시(예: 기기 회전) 재주입 — 첫 로드는 injectedJavaScriptBeforeContentLoaded 담당
   useEffect(() => {
@@ -306,7 +310,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       overScrollMode="never"
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
-      allowsBackForwardNavigationGestures
+      allowsBackForwardNavigationGestures={backAllowed}
       // 로그인 배경 영상(muted·playsInline·autoPlay)이 자동으로 화면 안에서 재생되게. 기본값이면 멈춘 첫 프레임과 재생 버튼만 보임
       // iOS 기본값(false)에서는 <video playsInline>이 무시되고, 두 설정 모두 이 WebView가 여는 모든 앱 출처 페이지에 적용됨(전역). 소리 있는 영상을 넣을 때 자동 재생 여부를 함께 고려
       allowsInlineMediaPlayback
@@ -337,6 +341,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;
         currentUrl.current = navState.url;
+        setBackAllowed(!blocksBackNavigation(navState.url, WEB_URL));
       }}
       onShouldStartLoadWithRequest={(request) => {
         // 받은 초대 링크로 이동을 시작했으면 그때 비움(다시 넘기지 않게)
