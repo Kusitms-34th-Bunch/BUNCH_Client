@@ -84,13 +84,13 @@ export function BunchHome({
   };
   // 삭제 직전 상태 확인부터 삭제 응답까지 한 번만(확인하는 동안은 mutation이 아직 pending이 아님)
   const deletingDraft = useRef(false);
-  const openDraft = useOpenDraft({
+  const { open: openDraft, warm: warmDraft } = useOpenDraft({
     prefetchDraft: draftCheck.fetchDraft,
     onGone: draftCheck.refreshDrafts,
   });
   const deleteNotice = useDeleteBunchNoticeMutation();
   const refreshCurrentBunch = useRefreshCurrentBunch();
-  const openBundle = useOpenBundle({
+  const { open: openBundle, warm: warmBundle } = useOpenBundle({
     viewerId: profile === undefined ? undefined : (profile.bunch?.id ?? null),
     prefetchBundle,
     rememberPreview,
@@ -265,6 +265,8 @@ export function BunchHome({
               : router.push(BUNCH_HOME_PATHS.createBundle)
         }
         onOpenDraft={(bundleId) => void openDraft(bundleId)}
+        onPressDraft={warmDraft}
+        onPressBundle={(bundleId) => warmBundle(data.current.id, bundleId)}
       />
     </>
   );

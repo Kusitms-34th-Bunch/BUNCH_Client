@@ -108,8 +108,7 @@ export const BUNCH_HOME_MESSAGES = {
   notificationsLoading: '알림을 불러오는 중이에요',
   // 빈 목록 디자인이 없어 낭독만(제안)
   noNotifications: '아직 알림이 없어요.',
-  openingNotification: '알림을 여는 중이에요',
-  // 명세에 문구가 없어 제안(갈 화면이 사라진 알림, 삭제된 번들 등)
+  // 명세에 문구가 없어 제안(이미 확인해 사라진 접근 불가 안내. 다른 알림은 도착 화면이 안내)
   notificationUnavailable: '더 이상 볼 수 없는 알림이에요.',
   // 목록 이어서 불러오기: 받는 중 낭독은 기획 원문 없는 제안, 실패는 기능명세 공통 오류 문구
   moreLoading: '목록을 더 불러오는 중이에요',

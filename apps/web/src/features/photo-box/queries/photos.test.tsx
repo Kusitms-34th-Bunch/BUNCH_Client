@@ -45,7 +45,7 @@ describe('useDeletePhotosMutation', () => {
       wrapper: createQueryWrapper(client),
     });
 
-    // onSuccess가 무효화를 반환하므로 mutateAsync가 끝나면 캐시 상태가 확정됨
+    // 무효화는 mutateAsync를 기다리게 하지 않지만 끝날 때 바로 표시됨
     await act(() => result.current.mutateAsync([String(MOCK_PHOTO_IDS.S4)]));
 
     expect(isInvalidated(keys.photos)).toBe(true);
@@ -94,9 +94,43 @@ describe('useDeletePhotosMutation', () => {
     );
   });
 
-  it('실패하면 캐시는 그대로 두고 토스트는 띄우지 않는다(화면이 결과에 따라 직접 안내)', async () => {
+  const pagesOf = (...ids: string[]) => ({
+    pageParams: [undefined],
+    pages: [{ photos: ids.map((id) => ({ id })), nextCursor: null }],
+  });
+  const idsIn = (data: unknown) =>
+    (data as ReturnType<typeof pagesOf>).pages.flatMap((page) => page.photos.map((p) => p.id));
+
+  it('응답을 기다리지 않고 누르는 즉시 날짜별·날짜 없음 목록에서 고른 사진을 뺀다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/api/bunches/:bunchId/photos/delete', async () => {
+        await gate;
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(photoBoxKeys.datedPhotos(bunchId), pagesOf('1', '2'));
+    client.setQueryData(photoBoxKeys.undatedPhotos(bunchId), pagesOf('3'));
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    act(() => result.current.mutate(['1', '3']));
+
+    await waitFor(() =>
+      expect(idsIn(client.getQueryData(photoBoxKeys.datedPhotos(bunchId)))).toEqual(['2']),
+    );
+    expect(idsIn(client.getQueryData(photoBoxKeys.undatedPhotos(bunchId)))).toEqual([]);
+    release();
+  });
+
+  it('실패하면 뺀 사진을 되돌리고 토스트 없이 목록을 서버 기준으로 다시 받는다(안내는 화면 몫)', async () => {
     server.use(http.post('/api/bunches/:bunchId/photos/delete', () => fail(500, 'COMMON_500')));
-    const { client, keys, isInvalidated } = createSeededClient();
+    const client = createTestQueryClient();
+    client.setQueryData(photoBoxKeys.datedPhotos(bunchId), pagesOf('1', '2'));
     const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
       wrapper: createQueryWrapper(client),
     });
@@ -105,8 +139,22 @@ describe('useDeletePhotosMutation', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toMatchObject({ code: 'COMMON_500' });
+    expect(idsIn(client.getQueryData(photoBoxKeys.datedPhotos(bunchId)))).toEqual(['1', '2']);
+    expect(client.getQueryState(photoBoxKeys.datedPhotos(bunchId))?.isInvalidated).toBe(true);
     expect(toast).not.toHaveBeenCalled();
-    expect(isInvalidated(keys.photos)).toBe(false);
+  });
+
+  it('성공하면 지운 사진의 상세 캐시를 지운다(다시 받으면 404)', async () => {
+    const client = createTestQueryClient();
+    const photoId = String(MOCK_PHOTO_IDS.S4);
+    client.setQueryData(photoBoxKeys.photoDetail(bunchId, photoId), { id: photoId });
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    await act(() => result.current.mutateAsync([photoId]));
+
+    expect(client.getQueryData(photoBoxKeys.photoDetail(bunchId, photoId))).toBeUndefined();
   });
 
   it('고른 사진이 그사이 지워져 거절되면 사라진 사진이 빠지도록 목록을 다시 받는다', async () => {

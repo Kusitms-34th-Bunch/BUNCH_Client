@@ -324,6 +324,33 @@ describe('팔로우 요청 승인·거절(가짜 서버)', () => {
     expect(mockDb.get().follows.find((f) => f.followerBunchId === 8)).toBeUndefined();
   });
 
+  it('응답을 기다리지 않고 누르는 즉시 행을 빼고 초점을 개수 줄로 옮긴다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/api/bunches/:viewerId/follow-requests/:requestId/decision', async () => {
+        await gate;
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithQuery(<FollowRequests />);
+
+    const count = await screen.findByText('대기 중인 요청 3개');
+    await user.click(screen.getByRole('button', { name: '서핑크루 팔로우 요청 승인' }));
+
+    // 응답 전
+    expect(await screen.findByText('대기 중인 요청 2개')).toBe(count);
+    expect(screen.queryByRole('button', { name: '서핑크루 팔로우 요청 승인' })).toBeNull();
+    expect(count).toHaveFocus();
+    expect(toast).not.toHaveBeenCalled();
+    release();
+    await waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith('서핑크루 번치의 팔로우 요청을 승인했어요.'),
+    );
+  });
+
   it('다른 멤버가 먼저 처리했으면 그 결과를 알리고, 없어진 요청은 조용히 행만 뺀다', async () => {
     const user = userEvent.setup();
     renderWithQuery(<FollowRequests />);
@@ -354,7 +381,42 @@ describe('팔로우 요청 승인·거절(가짜 서버)', () => {
     expect(mockDb.get().follows.find((f) => f.followerBunchId === 9)?.status).toBe('FOLLOWING');
   });
 
-  it('처리에 실패하면 행을 남기고 실패를 알린다', async () => {
+  it('한 요청이 실패하면 그 행만 되돌리고, 함께 처리 중인 다른 요청은 빠진 채로 둔다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post(
+        '/api/bunches/:viewerId/follow-requests/:requestId/decision',
+        async ({ request }) => {
+          const body = (await request.clone().json()) as { decision: string };
+          if (body.decision === 'REJECT') return fail(500, 'X');
+          await gate;
+        },
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithQuery(<FollowRequests />);
+    await screen.findByText('대기 중인 요청 3개');
+
+    await user.click(screen.getByRole('button', { name: '서핑크루 팔로우 요청 승인' }));
+    await user.click(screen.getByRole('button', { name: '맛집탐방대 팔로우 요청 거절' }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.requestDecisionFailed),
+    );
+    expect(screen.getByRole('button', { name: '맛집탐방대 팔로우 요청 거절' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '서핑크루 팔로우 요청 승인' })).toBeNull();
+    expect(screen.getByText('대기 중인 요청 2개')).toBeInTheDocument();
+    // 승인까지 끝내고 마침(다음 테스트의 가짜 DB를 바꾸지 않게)
+    release();
+    await waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith('서핑크루 번치의 팔로우 요청을 승인했어요.'),
+    );
+  });
+
+  it('처리에 실패하면 뺀 행을 되돌리고 실패를 알린다', async () => {
     server.use(
       http.post('/api/bunches/:viewerId/follow-requests/:requestId/decision', () => fail(500, 'X')),
     );
@@ -366,6 +428,7 @@ describe('팔로우 요청 승인·거절(가짜 서버)', () => {
       expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.requestDecisionFailed),
     );
     expect(screen.getByText('대기 중인 요청 3개')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '서핑크루 팔로우 요청 승인' })).toBeInTheDocument();
   });
 
   it('요청을 모두 처리하면 빈 안내를 보인다', async () => {

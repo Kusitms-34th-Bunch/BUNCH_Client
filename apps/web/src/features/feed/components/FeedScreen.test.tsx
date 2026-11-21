@@ -13,7 +13,7 @@ import { FeedScreen } from './FeedScreen';
 
 const push = vi.fn();
 const toast = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, prefetch: vi.fn() }) }));
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<object>()),
