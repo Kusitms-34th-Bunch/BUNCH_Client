@@ -54,6 +54,15 @@ type PageShellProps = {
 const MAIN_CLASS =
   'min-h-32 flex-1 scroll-pb-(--main-tab-bar-height,0px) scrollbar-none overflow-y-auto overscroll-y-contain pb-(--main-tab-bar-scroll-inset,0px)';
 
+// 접는 헤더가 숨은 동안 상태 표시줄 뒤로 지나가는 본문을 흐림(Instagram 방식, motion.md 피드 헤더)
+// 세기가 다른 층을 겹쳐 위가 가장 흐리고 아래로 갈수록 사라지게 함. 한 장을 투명도로 옅게 하면 경계가 보이고, 흰색을 얹으면 띠처럼 보여 쓰지 않음
+const STATUS_BAR_BLUR_LAYERS = [
+  'backdrop-blur-[1px] mask-[linear-gradient(to_bottom,black,transparent)]',
+  'backdrop-blur-[2px] mask-[linear-gradient(to_bottom,black,transparent_75%)]',
+  'backdrop-blur-xs mask-[linear-gradient(to_bottom,black,transparent_50%)]',
+  'backdrop-blur-sm mask-[linear-gradient(to_bottom,black,transparent_25%)]',
+];
+
 /**
  * 헤더·본문·하단 슬롯 배치와 본문 스크롤 담당. 본문 좌우 패딩·Safe Area는 다루지 않음
  * `<main>`은 이 셸만 생성(화면당 PageShell 1회, 중첩 금지)
@@ -132,6 +141,17 @@ export function PageShell({
           )}
         >
           {header}
+        </div>
+      ) : null}
+      {collapsible ? (
+        <div
+          aria-hidden
+          data-status-bar-blur=""
+          className="pointer-events-none absolute inset-x-0 top-0 z-20 h-(--safe-area-top)"
+        >
+          {STATUS_BAR_BLUR_LAYERS.map((layer) => (
+            <div key={layer} className={cn('absolute inset-0', layer)} />
+          ))}
         </div>
       ) : null}
       {onRefresh ? (

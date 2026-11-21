@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { isAppWebUrl, resolveWebUrl } from './web-url.ts';
+import { blocksBackNavigation, isAppWebUrl, resolveWebUrl } from './web-url.ts';
 
 test('개발 앱은 로컬 주소, Release 앱은 운영 주소를 선택한다', () => {
   const local = 'http://localhost:3000';
@@ -66,4 +66,14 @@ test('로컬 앱 출처도 프로토콜·호스트·포트가 일치해야 한�
   const appUrl = 'http://localhost:3000';
   assert.equal(isAppWebUrl(`${appUrl}/onboarding`, appUrl), true);
   assert.equal(isAppWebUrl('http://localhost:3001', appUrl), false);
+});
+
+test('로그인·인트로 화면에서만 뒤로 가기로 웹 기록을 되돌리지 않는다(앱 출처일 때만)', () => {
+  const app = 'https://app.example.com';
+  assert.equal(blocksBackNavigation(`${app}/login`, app), true);
+  assert.equal(blocksBackNavigation(`${app}/intro?from=x`, app), true);
+  assert.equal(blocksBackNavigation(`${app}/bunch`, app), false);
+  assert.equal(blocksBackNavigation(`${app}/login/terms`, app), false);
+  assert.equal(blocksBackNavigation('https://other.example.com/login', app), false);
+  assert.equal(blocksBackNavigation('not a url', app), false);
 });

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { markPageLoading } from '@/shared/lib/pageLoadingState';
 import { LoadingRipple } from './LoadingRipple';
 
@@ -47,7 +48,9 @@ export function PageLoading({ delayMs = 0, label }: PageLoadingProps = {}) {
 
 function PageLoadingOverlay() {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const hydrated = useSyncExternalStore(subscribeNothing, onClient, onServer);
 
+  // body로 옮겨지면 덮개 노드가 새로 만들어져 초점·Tab 막기를 새 노드에 다시 검
   useEffect(() => {
     const overlay = overlayRef.current;
     if (!overlay) return;
@@ -70,9 +73,9 @@ function PageLoadingOverlay() {
         previous.focus({ preventScroll: true });
       }
     };
-  }, []);
+  }, [hydrated]);
 
-  return (
+  const overlay = (
     <div
       ref={overlayRef}
       tabIndex={-1}
@@ -81,4 +84,11 @@ function PageLoadingOverlay() {
       <LoadingRipple />
     </div>
   );
+  // 화면 틀(전환 영역)이 fixed의 기준이 되고 넘친 곳을 잘라 상태 바·홈 표시 영역이 남으므로 body에 그림
+  // 서버 렌더·하이드레이션 중에는 제자리(같은 마크업), 그 뒤 body로
+  return hydrated ? createPortal(overlay, document.body) : overlay;
 }
+
+const subscribeNothing = () => () => {};
+const onClient = () => true;
+const onServer = () => false;

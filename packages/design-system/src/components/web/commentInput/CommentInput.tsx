@@ -30,6 +30,10 @@ export type CommentInputProps = Omit<
   disabled?: boolean | undefined;
 };
 
+// 보내기 그래픽 겹치기: 같은 칸에 두고 투명도 전환. 누름은 기존처럼 바로 바뀌게 짧게
+const ICON_LAYER =
+  'col-start-1 row-start-1 transition-opacity duration-200 ease-out group-active:duration-75 motion-reduce:transition-none';
+
 /**
  * 댓글 입력칸(Figma `Input Field`): 둥근 회색 칸 안의 여러 줄 입력과 보내기 버튼(`IconButton/ArrowUp`)
  * 줄바꿈을 유지하므로 Enter는 줄바꿈이고 보내기는 버튼으로만 함. 입력이 늘면 4줄까지 칸이 커지고 이후 스크롤
@@ -89,18 +93,16 @@ export const CommentInput = ({
         disabled={!canSubmit}
         className={cn(
           // 30px 그래픽, 누르는 영역은 before로 40px까지 넓힘(입력칸과 겹치지 않는 범위)
-          'group relative flex size-7.5 shrink-0 cursor-pointer touch-manipulation rounded-full before:absolute before:-inset-1.25 disabled:cursor-default',
+          'group relative grid size-7.5 shrink-0 cursor-pointer touch-manipulation rounded-full before:absolute before:-inset-1.25 disabled:cursor-default',
           'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
         )}
       >
-        {canSubmit ? (
-          <>
-            <GraphicCommentSendIcon className="group-active:hidden" />
-            <GraphicCommentSendPressedIcon className="hidden group-active:block" />
-          </>
-        ) : (
-          <GraphicCommentSendDisabledIcon />
-        )}
+        {/* 회색 위에 브랜드색·누름 그래픽을 겹쳐 위 층만 투명도로 전환(중간에 원이 옅어지지 않게, 동작 줄이기면 바로) */}
+        <GraphicCommentSendDisabledIcon className="col-start-1 row-start-1" />
+        <GraphicCommentSendIcon className={cn(ICON_LAYER, !canSubmit && 'opacity-0')} />
+        <GraphicCommentSendPressedIcon
+          className={cn(ICON_LAYER, 'opacity-0', canSubmit && 'group-active:opacity-100')}
+        />
       </button>
     </form>
   );

@@ -33,6 +33,8 @@ export type CommentItemProps = Omit<ComponentProps<'div'>, 'children'> & {
   onMore?: (() => void) | undefined;
   /** 더보기 버튼 접근성 이름. 기본값 `<작성자> 댓글 더보기` */
   moreLabel?: string | undefined;
+  /** 작성자 프로필 열기. 있으면 프로필 이미지·닉네임을 누를 수 있음(삭제된 댓글은 무시) */
+  onProfile?: (() => void) | undefined;
 };
 
 const DELETED_AUTHOR = '작성자';
@@ -55,10 +57,19 @@ export const CommentItem = ({
   onReply,
   onMore,
   moreLabel,
+  onProfile,
   className,
   ...props
 }: CommentItemProps) => {
   const name = deleted ? DELETED_AUTHOR : author;
+  const openProfile = deleted ? undefined : onProfile;
+  const avatar = (
+    <ProfileImage
+      src={avatarSrc}
+      size="XS"
+      className="outline-border-tertiary outline -outline-offset-1"
+    />
+  );
 
   return (
     <div
@@ -73,11 +84,18 @@ export const CommentItem = ({
       {reply ? (
         <LineCornerDownRightSmallIcon aria-hidden className="text-icon-quaternary shrink-0" />
       ) : null}
-      <ProfileImage
-        src={avatarSrc}
-        size="XS"
-        className="outline-border-tertiary outline -outline-offset-1"
-      />
+      {openProfile ? (
+        <button
+          type="button"
+          aria-label={`${name} 프로필 보기`}
+          onClick={openProfile}
+          className="focus-visible:outline-border-brand shrink-0 cursor-pointer rounded-full focus-visible:outline-2"
+        >
+          {avatar}
+        </button>
+      ) : (
+        avatar
+      )}
       <div className={cn('flex min-w-0 flex-1 flex-col', deleted ? 'gap-s1' : 'gap-s5')}>
         {/* 들여쓰기·화살표가 보이지 않는 낭독에서 원댓글과 구분 */}
         {reply ? <span className="sr-only">답글</span> : null}
@@ -85,14 +103,27 @@ export const CommentItem = ({
           <div className="flex items-start">
             <div className="gap-s1 flex min-w-0 flex-1 flex-col">
               <div className="gap-s3 flex min-w-0 items-center">
-                <span
-                  className={cn(
-                    'typography-body-3-semibold truncate',
-                    deleted ? 'text-text-quaternary' : 'text-text-secondary',
-                  )}
-                >
-                  {name}
-                </span>
+                {openProfile ? (
+                  // 같은 동작의 프로필 이미지 버튼이 이름을 읽으므로 닉네임은 터치만 받고 초점·낭독에서 뺌
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    onClick={openProfile}
+                    className="typography-body-3-semibold text-text-secondary min-w-0 cursor-pointer truncate text-left"
+                  >
+                    {name}
+                  </button>
+                ) : (
+                  <span
+                    className={cn(
+                      'typography-body-3-semibold truncate',
+                      deleted ? 'text-text-quaternary' : 'text-text-secondary',
+                    )}
+                  >
+                    {name}
+                  </span>
+                )}
                 {!deleted && bunchName ? (
                   <ColorBadge color={bunchColor} size="sm">
                     {bunchName}

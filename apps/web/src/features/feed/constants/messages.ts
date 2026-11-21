@@ -34,6 +34,11 @@ export const FEED_MESSAGES = {
   replyPlaceholderAs: (bunchRo: string) => `${bunchRo} 답글 달기`,
   /** 닉네임을 모를 때 내 댓글 작성자 */
   commentAdded: '댓글을 등록했어요',
+  commentPosting: '등록 중…',
+  me: '나',
+  commentPostingAnnounce: '댓글을 등록하는 중이에요',
+  replyPostingAnnounce: '답글을 등록하는 중이에요',
+  previousCommentPosting: '앞의 댓글을 등록하는 중이에요. 잠시 뒤에 보내 주세요.',
   commentLabel: (author: string) => `${author}님의 댓글`,
   replyLabel: (author: string) => `${author}님의 답글`,
   deletedCommentLabel: '삭제된 댓글',
@@ -43,6 +48,8 @@ export const FEED_MESSAGES = {
   // 기능명세서 6.2.8: 쓰는 사이 번들이 지워졌거나 멤버 공개로 바뀜, 답글 대상이 지워짐
   bundleGone: '더 이상 볼 수 없는 번들이에요.',
   replyTargetDeleted: '삭제된 댓글입니다',
+  /** 번들 상세 하단 댓글 입력 영역(답글 닫기 뒤 초점이 가는 자리) */
+  composerGroup: '댓글 작성',
   // 기능명세 1.4.3 로직 4·6.2.8: 댓글·답글에 금칙어(토스트라 마침표 있음)
   prohibitedWord: '사용할 수 없는 단어가 포함되어 있어요.',
   moreCommentsFailed: '댓글을 더 불러오지 못했어요',

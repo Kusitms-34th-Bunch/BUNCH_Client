@@ -16,6 +16,7 @@ import type { FeedBundleDetail, FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { bundleHeroKey } from '../../constants/paths';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
+import { usePhotoPinchZoom } from '../../hooks/usePhotoPinchZoom';
 import { hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { BundleCommentList, type BundleCommentThread } from './BundleCommentList';
 import { BundleDetailStatus, type BundleDetailStatusProps } from './BundleDetailStatus';
@@ -72,6 +73,7 @@ type BundleDetailBodyProps = {
     reply: (_comment: FeedComment) => void;
     myCommentMore: (_comment: FeedComment) => void;
     reportMore: (_comment: FeedComment) => void;
+    openProfile: (_memberId: string) => void;
   };
 };
 
@@ -87,6 +89,7 @@ type BundleDetailScreenProps = { onBack: () => void } & (
  */
 export function BundleDetailScreen(props: BundleDetailScreenProps) {
   const keyboardOpen = useKeyboardOpen();
+  const photosRef = usePhotoPinchZoom();
   if (props.status) {
     return (
       <PageShell header={<BundleDetailHeader onBack={props.onBack} />}>
@@ -125,13 +128,35 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
         />
       }
       bottom={
-        <div ref={composerRef} data-keyboard-open={keyboardOpen ? '' : undefined}>
+        <div
+          ref={composerRef}
+          data-keyboard-open={keyboardOpen ? '' : undefined}
+          // 닫기 버튼이 사라진 뒤 초점을 받는 자리(입력란에 주면 키보드가 올라옴), 초점이 오면 이름을 읽음
+          tabIndex={-1}
+          role="group"
+          aria-label={text.composerGroup}
+          className="outline-none"
+          // 입력란 밖을 눌러 키보드가 닫히면 답글 상태도 닫음(쓴 글이 있으면 일반 댓글로 바뀌지 않게 둠)
+          onBlur={(event) => {
+            if (replyAuthor === null || composerProps.value.trim() !== '') return;
+            const area = event.currentTarget;
+            // iOS는 버튼을 눌러도 초점을 주지 않아 X를 누를 때도 blur가 먼저 옴: 클릭이 끝난 뒤 초점 자리로 판단
+            // 앱 전환(창이 초점을 잃음)은 입력란 밖을 누른 것이 아니라 닫지 않음
+            setTimeout(() => {
+              if (!document.hasFocus() || area.contains(document.activeElement)) return;
+              onCancelReply();
+            });
+          }}
+        >
           {replyAuthor !== null ? (
             <CommentComposer
               {...composerProps}
               maxLength={COMMENT_MAX_LENGTH}
               replyTarget={replyAuthor}
-              onCancelReply={onCancelReply}
+              onCancelReply={() => {
+                onCancelReply();
+                composerRef.current?.focus({ preventScroll: true });
+              }}
             />
           ) : (
             <CommentComposer {...composerProps} maxLength={COMMENT_MAX_LENGTH} />
@@ -167,7 +192,10 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
         className="pt-padding-p8 pb-padding-p5 px-padding-p8"
       />
       {/* 피드 카드 사진이 이 첫 사진 자리로 옮겨 옴(AppTransitions의 피드 → 상세 hero) */}
-      <BundlePhoto variant="detail" photos={bundle.photos} heroKey={bundleHeroKey(bundle.id)} />
+      {/* 사진만 두 손가락으로 확대(usePhotoPinchZoom) */}
+      <div ref={photosRef}>
+        <BundlePhoto variant="detail" photos={bundle.photos} heroKey={bundleHeroKey(bundle.id)} />
+      </div>
       <MemberComments members={bundle.memberComments} />
       <BundleEngagement
         liked={bundle.liked}
@@ -186,6 +214,7 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
         onReply={actions.reply}
         onMyCommentMore={actions.myCommentMore}
         onReportMore={actions.reportMore}
+        onOpenProfile={actions.openProfile}
       />
     </PageShell>
   );

@@ -14,6 +14,7 @@ import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
 import { usePhotoSelectionFlow } from '../../hooks/usePhotoSelectionFlow';
 import { LONG_PRESS_MS } from '../../lib/dragSelect';
+import { readHistoryMemberFilter, writeHistoryMemberFilter } from '../../lib/memberFilterHistory';
 import { MAX_PHOTOS_IN_BOX } from '../../lib/photoActions';
 import { filterByMember, splitPhotos } from '../../lib/photoDate';
 import { countSelectedByMember, type PhotoSelection } from '../../lib/selection';
@@ -75,7 +76,7 @@ export function PhotoBoxScreen({
   onUpload,
   onCreateBundle,
 }: PhotoBoxScreenProps) {
-  const [memberId, setMemberId] = useState<string>(ALL_MEMBERS);
+  const [memberFilter, setMemberFilter] = useState(readHistoryMemberFilter);
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
@@ -90,6 +91,19 @@ export function PhotoBoxScreen({
     if (!ready) openOverlay.closeAll();
   }, [ready, openOverlay]);
   const photos = data?.photos;
+  // 다른 번치의 필터거나 그 멤버가 목록에 없으면(나감 등) 「전체」
+  const memberId =
+    data &&
+    memberFilter?.bunchId === data.bunch.id &&
+    data.members.some((member) => member.id === memberFilter.memberId)
+      ? memberFilter.memberId
+      : ALL_MEMBERS;
+  const selectMember = (id: string) => {
+    if (!data) return;
+    const next = { bunchId: data.bunch.id, memberId: id };
+    setMemberFilter(next);
+    writeHistoryMemberFilter(next);
+  };
 
   // 사진을 지우면 눌렀던 메뉴·선택 칸이 사라지므로 화면 제목으로 초점을 옮김(web-interface-guidelines 「같은 화면에서 항목이 사라지면」, 확인 창이 닫힌 뒤)
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -257,7 +271,7 @@ export function PhotoBoxScreen({
           <MemberFilter
             members={members}
             selectedId={memberId}
-            onSelect={setMemberId}
+            onSelect={selectMember}
             selectedCounts={selectedCounts}
           />
           <PhotoDragArea

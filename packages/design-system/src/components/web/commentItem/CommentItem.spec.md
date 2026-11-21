@@ -24,7 +24,7 @@
 
 ## Public API
 
-- Props: `author`(필수), `avatarSrc`, `bunchName`, `bunchColor`(기본 brand), `date`, `content`, `reply`, `deleted`, `replyCount`(0이면 「답글 달기」), `onReply`, `onMore`, `moreLabel`(기본 `<닉네임> 댓글 더보기`), native `<div>` 속성.
+- Props: `author`(필수), `avatarSrc`, `bunchName`, `bunchColor`(기본 brand), `date`, `content`, `reply`, `deleted`, `replyCount`(0이면 「답글 달기」), `onReply`, `onMore`, `moreLabel`(기본 `<닉네임> 댓글 더보기`), `onProfile`(있으면 프로필 이미지가 「<닉네임> 프로필 보기」 버튼이 되고 닉네임도 눌러 열림. 닉네임은 같은 동작이라 초점·낭독에서 빼 탭 순서가 하나만 늘어남. 삭제된 댓글은 무시), native `<div>` 속성.
 - Figma 이름 대응: `Type=Comment`→기본, `Type2`→`reply`, `Type3`→`deleted`, `Type4`→`deleted`+`reply`. `showReplyCount`→`onReply` 유무.
 
 ## 상태와 동작
@@ -67,5 +67,5 @@
 
 ## 검증
 
-- 단위 테스트: 닉네임·배지·날짜·본문 줄바꿈, 「답글 N」·「답글 달기」와 누름, 답글에는 답글 버튼 없음, 삭제된 모양의 숨김, 더보기 이름과 누름.
+- 단위 테스트: 닉네임·배지·날짜·본문 줄바꿈, 「답글 N」·「답글 달기」와 누름, 답글에는 답글 버튼 없음, 삭제된 모양의 숨김, 더보기 이름과 누름, `onProfile`(이미지·닉네임 누름, 초점은 이미지 버튼 하나, 삭제된 댓글은 열지 않음).
 - Storybook(Chromium) 측정: 원댓글 374×143, 프로필 (0,14) 34, 닉네임 (42,14) 14/21 600 `#25282D`, 배지 12/16 `#454EDF`·`#F1F2FF`, 날짜 (42,37) 12/16 `#969AA0`, 본문 (42,59) 14/21, 답글 (42,111) 13/18, 더보기 (358,14) 16. 답글 109·삭제 69·삭제된 답글 63으로 Figma와 같음. 스크린 리더·실기기는 확인하지 않았다.

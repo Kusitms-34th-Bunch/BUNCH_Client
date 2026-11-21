@@ -95,6 +95,8 @@ export type FeedMemberComment = {
 export type FeedComment = {
   id: string;
   author: string;
+  /** 작성자 회원 ID(프로필 화면). 탈퇴 등으로 없으면 프로필을 열지 않음 */
+  memberId?: string | undefined;
   avatarSrc?: string | undefined;
   bunchName?: string | undefined;
   bunchColor?: 'brand' | 'gray' | 'pink' | 'green' | 'orange' | undefined;
@@ -106,6 +108,8 @@ export type FeedComment = {
   parentId?: string | undefined;
   deleted?: boolean | undefined;
   replyCount?: number | undefined;
+  /** 보낸 뒤 응답 전까지 화면에만 먼저 보이는 내 댓글(약한 낙관 반영, 서버 캐시에는 넣지 않음) */
+  pending?: boolean | undefined;
   /** 서버 권한: 내 댓글 삭제, 원댓글에 답글, 남의 댓글 신고(명세 014, 소속 번치가 없으면 모두 false) */
   canDelete: boolean;
   canReply: boolean;

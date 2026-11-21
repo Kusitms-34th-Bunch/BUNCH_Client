@@ -1,5 +1,6 @@
 import type { SignupTermsDocumentId } from './terms';
 
+// 쉘이 이 두 경로에서 뒤로 가기를 막음(apps/mobile-shell/src/web-url.ts `NO_BACK_PATHS`), 바꾸면 함께 바꿈
 export const LOGIN_PATH = '/login';
 /** 앱을 처음 실행한 사람에게만 보이는 인트로와 온보딩 가이드 */
 export const INTRO_PATH = '/intro';

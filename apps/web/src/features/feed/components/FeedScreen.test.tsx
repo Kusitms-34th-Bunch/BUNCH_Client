@@ -289,7 +289,7 @@ describe('FeedScreen', () => {
 
     await user.click(within(cards()[0]!).getByRole('button', { name: /위치/ }));
     expect(await screen.findByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '취소' }));
+    await user.click(screen.getByRole('button', { name: '닫기' }));
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
     );
@@ -326,7 +326,7 @@ describe('FeedScreen', () => {
     ) as HTMLElement;
     expect(within(places).getByText('망원동 책방')).toBeTruthy();
     expect(within(places).queryByText('애월 한담해변')).toBeNull();
-    await user.click(screen.getByRole('button', { name: '취소' }));
+    await user.click(screen.getByRole('button', { name: '닫기' }));
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: '어느 장소를 콕할까요?' })).toBeNull(),
     );

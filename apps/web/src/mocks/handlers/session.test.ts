@@ -81,7 +81,10 @@ describe('가짜 서버 세션 전환', () => {
 
     expect((await onboarding()).status).toBe(401);
     expect((await fetch('/api/session')).status).toBe(401);
-    expect((await fetch('/api/auth/reissue', { method: 'POST' })).status).toBe(401);
+    const reissued = await fetch('/api/auth/reissue', { method: 'POST' });
+    expect(reissued.status).toBe(401);
+    // 쿠키가 없는 상태라 실제 BFF처럼 세션 없음(브라우저가 세션 확인을 건너뜀)
+    expect(await reissued.json()).toMatchObject({ code: 'BFF_NO_SESSION' });
   });
 
   it('비로그인 세션은 처음부터 401이다', async () => {

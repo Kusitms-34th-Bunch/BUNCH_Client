@@ -183,6 +183,23 @@ describe('PhotoBoxScreen 멤버 필터', () => {
     ]);
   });
 
+  it('사진 상세에 다녀와 다시 그려져도 고른 멤버를 유지하고, 다른 번치면 전체로 시작한다', async () => {
+    window.history.replaceState(null, '');
+    const user = userEvent.setup();
+    const { unmount } = renderScreen();
+    await user.click(screen.getByRole('radio', { name: '경진' }));
+    unmount();
+
+    // 같은 history 항목으로 돌아와 화면을 다시 그림
+    const again = renderScreen();
+    expect(screen.getByRole('radio', { name: '경진' }).getAttribute('aria-checked')).toBe('true');
+    again.unmount();
+
+    renderScreen(ready({ ...photoBoxFixture, bunch: { ...photoBoxFixture.bunch, id: 'other' } }));
+    expect(screen.getByRole('radio', { name: '전체' }).getAttribute('aria-checked')).toBe('true');
+    window.history.replaceState(null, '');
+  });
+
   it('Tab은 선택된 칩 하나에만 머문다', () => {
     renderScreen();
     const radios = screen.getAllByRole('radio');

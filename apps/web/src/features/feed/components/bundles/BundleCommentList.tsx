@@ -41,6 +41,7 @@ type BundleCommentListProps = {
   onReply: (_comment: FeedComment) => void;
   onMyCommentMore: (_comment: FeedComment) => void;
   onReportMore: (_comment: FeedComment) => void;
+  onOpenProfile: (_memberId: string) => void;
 };
 
 /** 번들 상세 댓글 목록(명세 014~017): 받는 중·실패·빈 목록, 다음 쪽 받기와 다시 시도 */
@@ -52,6 +53,7 @@ export function BundleCommentList({
   onReply,
   onMyCommentMore,
   onReportMore,
+  onOpenProfile,
 }: BundleCommentListProps) {
   const { comments, moreRef } = thread;
   return (
@@ -89,6 +91,9 @@ export function BundleCommentList({
               >
                 <CommentItem
                   author={comment.author}
+                  onProfile={
+                    comment.memberId ? onOpenProfile.bind(null, comment.memberId) : undefined
+                  }
                   avatarSrc={comment.deleted ? DELETED_USER_IMAGE : comment.avatarSrc}
                   bunchName={comment.bunchName}
                   bunchColor={comment.bunchColor}
@@ -99,7 +104,7 @@ export function BundleCommentList({
                   replyCount={comment.replyCount}
                   // 답글은 서버 권한(삭제되지 않은 원댓글). 소속 번치가 없으면 눌렀을 때 안내
                   onReply={
-                    comment.deleted || !(comment.canReply || noBunch)
+                    comment.pending || comment.deleted || !(comment.canReply || noBunch)
                       ? undefined
                       : () => onReply(comment)
                   }
@@ -110,7 +115,7 @@ export function BundleCommentList({
                   }
                   // 서버 권한대로 내 댓글은 삭제, 남의 댓글은 신고. 소속 번치가 없으면 신고를 눌렀을 때 안내
                   onMore={
-                    comment.deleted
+                    comment.deleted || comment.pending
                       ? undefined
                       : comment.canDelete
                         ? () => onMyCommentMore(comment)

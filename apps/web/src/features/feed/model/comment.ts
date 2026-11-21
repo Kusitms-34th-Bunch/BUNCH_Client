@@ -46,6 +46,7 @@ export const toFeedComment = (item: CommentItemResponse): FeedComment => {
   return {
     id: String(item.id),
     author: item.author.nickname,
+    memberId: item.author.memberId == null ? undefined : String(item.author.memberId),
     // 사진이 없는 작성자는 다른 화면과 같은 기본 이미지(비우면 ProfileImage가 배경색 원만 그림)
     avatarSrc: imageOrUndefined(item.author.imageUrl) ?? DEFAULT_PROFILE_IMAGE,
     bunchName: item.badge?.name,

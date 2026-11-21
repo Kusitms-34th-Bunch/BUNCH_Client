@@ -7,7 +7,6 @@ import { fail, ok } from '../lib/envelope';
 import { commentCountOf } from './comments';
 import { isBlockedBetween, viewerBunchId } from './follows';
 import { likeOf } from './likes';
-import { myMembershipsByRecent } from './members';
 
 /** 가짜 DB 장소에는 행 ID가 없어 번들 ID와 순서로 만든 장소 ID(피드·상세·콕 응답이 함께 씀) */
 export const mockLocationId = (bundleId: number, index: number) => bundleId * 10 + index + 1;
@@ -83,16 +82,13 @@ const decodeCursor = (value: string): Cursor | undefined => {
   return undefined;
 };
 
-/** 커서를 받은 뒤 지금 번치·소속·승인 팔로우가 바뀌었는지 가리는 값(바뀌면 FEED_001) */
+/** 커서를 받은 뒤 지금 번치·승인 팔로우가 바뀌었는지 가리는 값(바뀌면 FEED_001). 다른 소속 번치는 피드 구성과 무관해 넣지 않음 */
 const contextOf = (state: MockDbState, viewer: number | undefined) => {
-  const mine = myMembershipsByRecent(state)
-    .map((membership) => membership.bunchId)
-    .sort((a, b) => a - b);
   const follows = state.follows
     .filter((follow) => follow.followerBunchId === viewer && follow.status === 'FOLLOWING')
     .map((follow) => follow.targetBunchId)
     .sort((a, b) => a - b);
-  return `${viewer ?? '-'}|${mine.join(',')}|${follows.join(',')}`;
+  return `${viewer ?? '-'}|${follows.join(',')}`;
 };
 
 const newestFirst = (a: MockBundle, b: MockBundle) =>
@@ -101,7 +97,6 @@ const newestFirst = (a: MockBundle, b: MockBundle) =>
 /** 기준 시각의 피드 번들 전체(팔로잉 구간 → 공개 구간) */
 const feedBundles = (state: MockDbState, viewer: number | undefined, anchor: string) => {
   const anchorMs = Date.parse(anchor);
-  const mine = new Set(myMembershipsByRecent(state).map((membership) => membership.bunchId));
   const followed = new Set(
     state.follows
       .filter((follow) => follow.followerBunchId === viewer && follow.status === 'FOLLOWING')
@@ -128,7 +123,8 @@ const feedBundles = (state: MockDbState, viewer: number | undefined, anchor: str
   const publicBundles = visible
     .filter(
       (bundle) =>
-        !followingIds.has(bundle.id) && !mine.has(bundle.bunchId) && isPublicBunch(bundle.bunchId),
+        // 현재 번치가 올린 번들만 뺌. 내가 속한 다른 번치의 번들은 보임(기능명세 6.1.1 로직 6, 2026-11-21 변경)
+        !followingIds.has(bundle.id) && bundle.bunchId !== viewer && isPublicBunch(bundle.bunchId),
     )
     .sort(newestFirst);
   return [

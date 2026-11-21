@@ -22,7 +22,7 @@ export type PlacePickSheetProps = Omit<
 };
 
 /**
- * 장소 콕하기 시트(Figma `5367:112296`): 「어느 장소를 콕할까요?」, 장소 줄 목록, 「취소」
+ * 장소 콕하기 시트(Figma `5367:112296`): 「어느 장소를 콕할까요?」, 장소 줄 목록, 「닫기」(QA 2026-11-21, Figma는 「취소」)
  * 항목을 눌러도 자동으로 닫지 않음
  */
 export const PlacePickSheet = ({ places, onPick, ...rootProps }: PlacePickSheetProps) => (
@@ -48,7 +48,7 @@ export const PlacePickSheet = ({ places, onPick, ...rootProps }: PlacePickSheetP
       </BottomSheet.Body>
       <BottomSheet.Footer>
         <Button variant="secondary" onClick={() => rootProps.onOpenChange(false)}>
-          취소
+          닫기
         </Button>
       </BottomSheet.Footer>
     </BottomSheet.Content>

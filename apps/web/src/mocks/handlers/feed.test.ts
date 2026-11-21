@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MockBundle } from '../db/types';
 import { mockDb } from '../db';
-import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID } from '../db/seed';
+import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID, MOCK_SECOND_BUNCH_ID } from '../db/seed';
 // handler 변경 때 PR CI(`--changed`)가 이 테스트를 고르게 서버를 import
 import '@/mocks/server';
 
@@ -46,6 +46,25 @@ describe('가짜 서버 피드', () => {
       canInteract: true,
       endReached: true,
     });
+  });
+
+  it('내가 속한 다른 번치의 공개 번들은 보이고, 지금 번치가 올린 번들만 뺀다', async () => {
+    mockDb.update((state) => ({
+      ...state,
+      bunches: state.bunches.map((bunch) =>
+        bunch.id === MOCK_BUNCH_ID ? { ...bunch, isPrivate: false } : bunch,
+      ),
+      bundles: [
+        ...state.bundles,
+        publicCopy(960, 1, MOCK_SECOND_BUNCH_ID),
+        publicCopy(961, 1, MOCK_BUNCH_ID),
+      ],
+    }));
+
+    const ids = bundleIds((await getFeed()).data);
+
+    expect(ids).toContain(960);
+    expect(ids).not.toContain(961);
   });
 
   it('최근 14일 안의 팔로우한 번치 번들이 먼저 오고 그 뒤에 구간 끝 안내가 한 번 온다', async () => {
