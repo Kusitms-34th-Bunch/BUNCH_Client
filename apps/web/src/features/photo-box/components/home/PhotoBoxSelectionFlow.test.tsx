@@ -344,6 +344,22 @@ describe('삭제 중 사진이 사라진 경우', () => {
     expect(photoButtons()[2]!.textContent).toContain('2번째 선택');
   });
 
+  it('고른 사진이 모두 사라졌으면 삭제 실패가 아니라 선택 해제를 알리고 선택 모드를 유지한다', async () => {
+    const user = userEvent.setup();
+    deletePhotos.mockRejectedValue(new MissingPhotosError(['bulk-0', 'bulk-1']));
+    renderScreen(ready(dataWith(bulk(3))));
+    await startSelecting(user, 2);
+    await runMenu(user, '삭제');
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(2)));
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed);
+    expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
+  });
+
   it('서버가 사라진 사진을 알려 주지 않으면 일반 삭제 실패로 다루고 선택을 그대로 둔다', async () => {
     const user = userEvent.setup();
     deletePhotos.mockRejectedValue(new MissingPhotosError([]));
@@ -517,7 +533,7 @@ describe('저장·삭제 중 안전장치', () => {
     expect(photoButtons()[0]!.getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('삭제하는 동안 화면 전체 로딩과 안내를 보이고 끝나면 걷는다', async () => {
+  it('삭제는 응답을 기다리지 않고 바로 선택 모드를 끝내며 화면을 덮지 않고, 끝나면 사라진 장수를 알린다', async () => {
     const user = userEvent.setup();
     let finish!: (_result: { removedCount: number }) => void;
     deletePhotos.mockReturnValue(new Promise((resolve) => (finish = resolve)));
@@ -529,14 +545,15 @@ describe('저장·삭제 중 안전장치', () => {
       within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
     );
 
-    expect(screen.getByTestId('lottie')).toBeTruthy();
-    expect(pageStatus().textContent).toBe(PHOTO_BOX_MESSAGES.deleting);
+    expect(screen.queryByTestId('lottie')).toBeNull();
+    expect(screen.getByRole('button', { name: '선택' })).toBeTruthy();
+    expect(toast).not.toHaveBeenCalled();
 
     finish({ removedCount: 2 });
-    await waitFor(() => expect(screen.queryByTestId('lottie')).toBeNull());
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteDone(2)));
   });
 
-  it('삭제 요청이 실패하면 오류 토스트를 띄우고 선택을 그대로 둔다', async () => {
+  it('삭제 요청이 실패하면 오류 토스트를 띄우고 고른 선택을 되살린다', async () => {
     const user = userEvent.setup();
     deletePhotos.mockRejectedValue(new Error('network'));
     renderScreen(ready(dataWith(bulk(3))));
@@ -555,27 +572,24 @@ describe('저장·삭제 중 안전장치', () => {
     ).toBeNull();
   });
 
-  it('삭제 요청이 도는 동안에는 「⋯」가 막히고 사진도 더 고를 수 없다', async () => {
+  it('삭제가 늦게 실패해도 그 사이 새로 시작한 선택은 덮지 않는다', async () => {
     const user = userEvent.setup();
-    let finish!: (_result: { removedCount: number }) => void;
-    deletePhotos.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    let fail!: (_error: Error) => void;
+    deletePhotos.mockReturnValue(new Promise((_, reject) => (fail = reject)));
     renderScreen(ready(dataWith(bulk(3))));
     await startSelecting(user, 1);
     await runMenu(user, '삭제');
-
     await user.click(
       within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
     );
 
-    expect(screen.getByRole('button', { name: '메뉴 열기' }).getAttribute('aria-disabled')).toBe(
-      'true',
-    );
+    await startSelecting(user, 0);
     await user.click(photoButtons()[2]!);
-    expect(photoButtons()[2]!.getAttribute('aria-pressed')).toBe('false');
-    expect(deletePhotos).toHaveBeenCalledTimes(1);
+    fail(new Error('network'));
 
-    finish({ removedCount: 1 });
-    await waitFor(() => expect(screen.getByRole('button', { name: '선택' })).toBeTruthy());
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.deleteFailed));
+    expect(photoButtons()[2]!.getAttribute('aria-pressed')).toBe('true');
+    expect(photoButtons()[0]!.getAttribute('aria-pressed')).toBe('false');
   });
 });
 
