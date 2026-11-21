@@ -87,8 +87,10 @@ export function useCommentActions({
         onSuccess: (saved) => {
           setPending(null);
           announce(parentId ? text.replyAdded : text.commentAdded);
-          // 다음 글을 쓰는 중이면 초점을 옮기지 않음(키보드가 내려가 입력이 끊기지 않게)
-          if (draftRef.current.trim() === '') focusAfterUpdate(String(saved.id));
+          // 다음 글을 쓰거나 다른 답글을 고른 중이면 초점을 옮기지 않음(키보드가 내려가고 답글 상태가 풀리지 않게)
+          if (draftRef.current.trim() === '' && replyTargetRef.current === null) {
+            focusAfterUpdate(String(saved.id));
+          }
         },
         // 실패하면 먼저 보인 댓글을 빼고 쓴 글을 입력란에 되돌림
         // 그사이 새 글을 쓰거나 다른 답글을 골랐으면 그 상태는 두고 글만 앞에 붙임(글과 답글 대상이 엇갈려 짝지어지지 않게)

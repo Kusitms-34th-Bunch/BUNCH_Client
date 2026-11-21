@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { delay, http } from 'msw';
+import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { fail, ok } from '@/mocks/lib/envelope';
@@ -212,6 +212,16 @@ beforeEach(() => {
   replace.mockClear();
   toast.mockClear();
 });
+
+/** 댓글 등록 응답을 테스트가 풀어 줄 때까지 막고, 풀면 원래 handler로 넘김(돌려준 함수로 풂) */
+const holdCommentPost = () => {
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  server.use(http.post('/api/bundles/:bundleId/comments', () => gate));
+  return () => release();
+};
 
 describe('BundleDetail', () => {
   it('위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
@@ -746,8 +756,8 @@ describe('BundleDetail', () => {
   });
 
   it('보내면 입력란을 비우고 응답 전까지 「등록 중…」 내 댓글을 먼저 보인 뒤 서버 댓글로 바꾼다', async () => {
-    // 응답을 늦춘 뒤 원래 handler로 넘김
-    server.use(http.post('/api/bundles/:bundleId/comments', () => delay(100)));
+    // 테스트가 풀어 줄 때까지 응답을 막은 뒤 원래 handler로 넘김
+    const release = holdCommentPost();
     const user = userEvent.setup();
     renderDetail('2');
     await user.type(screen.getByRole('textbox', { name: /달기/ }), '먼저 보임');
@@ -758,12 +768,13 @@ describe('BundleDetail', () => {
     expect(within(pending!).getByText('먼저 보임')).toBeTruthy();
     expect(within(pending!).queryByRole('button', { name: /더보기|답글/ })).toBeNull();
     expect(screen.getByText('댓글을 등록하는 중이에요')).toBeTruthy();
+    release();
     await waitFor(() => expect(screen.queryByText('등록 중…')).toBeNull());
     expect(screen.getAllByText('먼저 보임')).toHaveLength(1);
   });
 
   it('앞의 댓글을 기다리는 동안 또 보내면 쓴 글을 두고 알린다', async () => {
-    server.use(http.post('/api/bundles/:bundleId/comments', () => delay(100)));
+    const release = holdCommentPost();
     const user = userEvent.setup();
     renderDetail('2');
     await user.type(screen.getByRole('textbox', { name: /달기/ }), '첫 글');
@@ -773,7 +784,23 @@ describe('BundleDetail', () => {
 
     expect(toast).toHaveBeenCalledWith('앞의 댓글을 등록하는 중이에요. 잠시 뒤에 보내 주세요.');
     expect(screen.getByRole('textbox')).toHaveValue('둘째 글');
+    release();
     await waitFor(() => expect(screen.queryByText('등록 중…')).toBeNull());
+  });
+
+  it('응답을 기다리는 동안 다른 댓글의 답글을 골랐으면 성공해도 초점을 옮기지 않고 답글 상태를 둔다', async () => {
+    const release = holdCommentPost();
+    const user = userEvent.setup();
+    renderDetail('901');
+    const input = await screen.findByRole('textbox', { name: /달기/ });
+    await user.type(input, '먼저 보낸 글');
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+    await user.click(await screen.findByRole('button', { name: '지예님 댓글의 답글 1개' }));
+    release();
+
+    await waitFor(() => expect(screen.queryByText('등록 중…')).toBeNull());
+    expect(screen.getByText('님에게 답글 남기는 중')).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole('textbox'));
   });
 
   it('답글에 금칙어가 있으면 등록하지 않고 쓴 내용과 답글 작성 상태를 그대로 둔 채 알린다', async () => {
