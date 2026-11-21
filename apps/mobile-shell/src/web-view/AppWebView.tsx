@@ -2,7 +2,7 @@ import { bridge, createWebView } from '@webview-bridge/react-native';
 import * as Haptics from 'expo-haptics';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router, type Href } from 'expo-router';
-import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
   BackHandler,
   Button,
@@ -279,18 +279,16 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
 
   // 실행 중에 초대 링크로 앱이 열리면 보이는 WebView가 그 경로로 이동(지금 보던 화면은 뒤로 가기로 돌아갈 수 있게 history에 남김)
   // 처음 실행의 링크는 첫 화면이 시작 주소로 열므로 여기서는 구독 뒤 들어온 링크만 처리
-  useEffect(
-    () =>
-      incomingLinkStore.subscribe(() => {
-        const path = incomingLinkStore.get();
-        if (!path || !isVisibleWebView(tabId) || !webViewRef.current) return;
-        incomingLinkStore.clear(path);
-        webViewRef.current.injectJavaScript(
-          `window.location.assign(${JSON.stringify(toAppWebUrl(path))});true;`,
-        );
-      }),
-    [tabId],
-  );
+  // 주입만으로는 링크를 지우지 않고, 그 주소로 이동을 시작했을 때(onShouldStartLoadWithRequest) 지움
+  // 다시 불러오는 중이라 주입이 무시됐으면 로드가 끝날 때 다시 넘김(받은 지 10초가 지나면 store가 버림)
+  const deliverIncomingLink = useCallback(() => {
+    const path = incomingLinkStore.get();
+    if (!path || !isVisibleWebView(tabId) || !webViewRef.current) return;
+    webViewRef.current.injectJavaScript(
+      `window.location.assign(${JSON.stringify(toAppWebUrl(path))});true;`,
+    );
+  }, [tabId]);
+  useEffect(() => incomingLinkStore.subscribe(deliverIncomingLink), [deliverIncomingLink]);
 
   return (
     <WebView
@@ -323,6 +321,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
         if (tabId && tabsStore.get()?.selectedId === tabId) markTabWebViewLoading();
         onLoadStart?.();
       }}
+      onLoadEnd={deliverIncomingLink}
       onError={forceWebReady}
       onHttpError={forceWebReady}
       // 오래 백그라운드에 있으면 OS가 웹 프로세스를 끝내 화면이 하얗게 남으므로 다시 불러옴
@@ -340,6 +339,9 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
         currentUrl.current = navState.url;
       }}
       onShouldStartLoadWithRequest={(request) => {
+        // 받은 초대 링크로 이동을 시작했으면 그때 비움(다시 넘기지 않게)
+        const linkPath = incomingLinkStore.get();
+        if (linkPath && request.url === toAppWebUrl(linkPath)) incomingLinkStore.clear(linkPath);
         // 외부 페이지의 네이티브 브리지 접근 방지를 위해 앱 출처만 내부 이동 허용
         if (isAppWebUrl(request.url, WEB_URL)) return true;
         Linking.openURL(request.url).catch(() => {});
