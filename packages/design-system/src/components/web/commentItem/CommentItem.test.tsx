@@ -22,6 +22,13 @@ describe('CommentItem', () => {
     expect(body.className).toContain('whitespace-pre-line');
   });
 
+  it('contentId를 주면 본문(삭제 안내 포함) 요소에 그 id를 단다', () => {
+    const { rerender } = render(<CommentItem {...base} contentId="body-1" />);
+    expect(screen.getByText(/와 정말 재미있겠어요/).id).toBe('body-1');
+    rerender(<CommentItem {...base} deleted contentId="body-1" />);
+    expect(screen.getByText('삭제된 댓글입니다').id).toBe('body-1');
+  });
+
   it('답글 버튼은 수가 있으면 「답글 N」, 없으면 「답글 달기」이고 누르면 알린다', async () => {
     const onReply = vi.fn();
     const { rerender } = render(<CommentItem {...base} replyCount={1} onReply={onReply} />);
