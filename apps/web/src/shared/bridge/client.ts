@@ -67,6 +67,10 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     setNativeLoginBackground: () => Promise.resolve(false),
     // 브라우저에는 푸시로 여는 일이 없음
     takeOpenedPush: () => Promise.resolve(null),
+    // 브라우저·이전 쉘은 웹 안에서 전환 모션(부르는 쪽이 hasNativeMethod로 확인)
+    beginScreenSwitch: () => Promise.resolve(false),
+    finishScreenSwitch: () => Promise.resolve(),
+    cancelScreenSwitch: () => Promise.resolve(),
   },
 });
 

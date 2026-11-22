@@ -9,6 +9,7 @@ import {
   galleryImageSchema,
   isSavableImageUrl,
   nativeTabEventSchema,
+  nativeTabLongPressSchema,
   pushOpenSchema,
   pickGalleryImageOptionsSchema,
   pickGalleryImagesOptionsSchema,
@@ -413,4 +414,12 @@ void test('푸시 알림은 종류·수신함 번치와 양의 정수 ID만 받�
   // 쉘이 아는 필드만 골라 보내므로 모르는 필드는 거절
   assert.equal(parse({ target: { ...target, parentCommentId: null }, notificationId: 801 }), false);
   assert.equal(parse({ target, notificationId: 801, extra: 1 }), false);
+});
+
+void test('탭 꾹 누르기는 탭 ID(1~32자)만 받는다', () => {
+  const parse = (value: unknown) => nativeTabLongPressSchema.safeParse(value).success;
+  assert.equal(parse({ tab: 'bunch' }), true);
+  assert.equal(parse({ tab: '' }), false);
+  assert.equal(parse({ tab: 'x'.repeat(33) }), false);
+  assert.equal(parse({ tab: 'bunch', index: 2 }), false);
 });

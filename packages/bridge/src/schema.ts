@@ -404,6 +404,10 @@ export type HapticKind = z.infer<typeof hapticKindSchema>;
 export const nativeTabReselectSchema = z.object({ tab: z.string().min(1).max(32) }).strict();
 export type NativeTabReselect = z.infer<typeof nativeTabReselectSchema>;
 
+/** 이미 선택된 탭을 꾹 누름(번치 탭은 전환 시트). 모든 탭 WebView에 보내므로 웹이 `tab`으로 자기 탭인지 가림 */
+export const nativeTabLongPressSchema = z.object({ tab: z.string().min(1).max(32) }).strict();
+export type NativeTabLongPress = z.infer<typeof nativeTabLongPressSchema>;
+
 // @webview-bridge의 이벤트 schema에 필요한 validate 인터페이스 적용
 const validator = <T extends z.ZodType>(schema: T) => ({
   validate: (data: unknown): z.infer<T> => schema.parse(data),
@@ -414,6 +418,7 @@ export const appPostMessageSchema = {
   nativeFloatingButtonPress: validator(nativeFloatingButtonPressSchema),
   nativeTabEvent: validator(nativeTabEventSchema),
   nativeTabReselect: validator(nativeTabReselectSchema),
+  nativeTabLongPress: validator(nativeTabLongPressSchema),
   nativeToastAction: validator(nativeToastActionSchema),
   pushOpened: validator(pushOpenedSchema),
 };
