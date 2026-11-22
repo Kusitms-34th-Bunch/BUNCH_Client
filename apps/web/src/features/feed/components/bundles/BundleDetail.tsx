@@ -4,7 +4,7 @@ import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { isUnavailableTarget } from '@/shared/api/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
@@ -42,6 +42,8 @@ type BundleDetailProps = {
 
 // 댓글 영역 진입이 화면 전환 끝을 기다리는 최대 시간(전환이 중단돼 표식이 남아도 스크롤·초점은 함)
 const ENTRY_TRANSITION_WAIT_MS = 1000;
+// 부드러운 스크롤이 끝났다는 신호를 못 받을 때 키보드를 올리는 상한
+const SMOOTH_SCROLL_CAP_MS = 900;
 // 진입 대기 중 누르면 사용자 조작으로 보는 요소(누르면 초점·동작이 생기는 것)
 const INTERACTIVE_SELECTOR =
   'a[href], button, input, textarea, select, [role="button"], [tabindex]:not([tabindex="-1"])';
@@ -144,12 +146,41 @@ export function BundleDetail({
   });
 
   // scrollIntoView는 전환 중 가로로 밀린 화면을 보이려고 바깥 틀까지 가로 스크롤하므로 세로 스크롤 main만 움직임
-  const scrollToComments = useCallback(() => {
+  // smooth: 전환 뒤 말풍선 진입은 툭 넘어가지 않게 부드럽게(동작 줄이기면 바로). 스크롤이 끝나면 onDone, 돌려준 함수는 진행 중인 기다림을 멈춤
+  const scrollToComments = useCallback((smooth = false, onDone?: () => void) => {
     const section = commentsRef.current;
     const main = section?.closest('main');
-    if (section && main) {
-      main.scrollTop += section.getBoundingClientRect().top - main.getBoundingClientRect().top;
+    if (!section || !main) {
+      onDone?.();
+      return () => {};
     }
+    // 끝까지 내려도 닿지 않는 위치면 실제로 움직이지 않아 scrollend가 오지 않으므로 갈 수 있는 끝으로 맞춤
+    const top = Math.min(
+      main.scrollTop + section.getBoundingClientRect().top - main.getBoundingClientRect().top,
+      main.scrollHeight - main.clientHeight,
+    );
+    const animate =
+      smooth &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      Math.abs(top - main.scrollTop) > 1;
+    if (!animate) {
+      main.scrollTop = top;
+      onDone?.();
+      return () => {};
+    }
+    // scrollend를 모르는 WebView도 있어 끝을 놓치지 않게 상한 시간도 둠
+    const stop = () => {
+      main.removeEventListener('scrollend', finish);
+      clearTimeout(timer);
+    };
+    function finish() {
+      stop();
+      onDone?.();
+    }
+    const timer = setTimeout(finish, SMOOTH_SCROLL_CAP_MS);
+    main.addEventListener('scrollend', finish);
+    main.scrollTo({ top, behavior: 'smooth' });
+    return stop;
   }, []);
   const goToComments = useCallback(() => {
     scrollToComments();
@@ -163,14 +194,20 @@ export function BundleDetail({
     if (commentsEntry === null || !contentReady) return;
     const startedAt = performance.now();
     let frame = 0;
+    let cancelled = false;
     // 기다리는 동안 사용자가 직접 조작하면(키, 누를 수 있는 요소를 누름) 그 초점·위치를 지키도록 예약한 스크롤·초점을 취소
     // 빈 곳 누름(말풍선을 연달아 두 번 눌러 새 화면에 떨어진 두 번째 누름 등)은 취소하지 않음
+    let stopScroll = () => {};
     const stopListening = () => {
       document.removeEventListener('keydown', cancel, true);
       document.removeEventListener('pointerdown', cancelOnControl, true);
+      document.removeEventListener('touchstart', cancel, true);
+      document.removeEventListener('wheel', cancel, true);
     };
     function cancel() {
+      cancelled = true;
       cancelAnimationFrame(frame);
+      stopScroll();
       stopListening();
     }
     function cancelOnControl(event: PointerEvent) {
@@ -187,17 +224,34 @@ export function BundleDetail({
         frame = requestAnimationFrame(run);
         return;
       }
-      stopListening();
-      scrollToComments();
-      if (commentsEntry === 'focus') focusInput();
+      // 말풍선 진입은 열리기 전에 이미 내려 둠(아래 layout effect): 그사이 늦게 그려진 내용만 바로 맞추고 키보드
+      // 알림 진입은 전환 뒤 부드럽게. 키보드는 스크롤이 끝난 뒤(도중에 올리면 iOS가 화면을 함께 밀어 어긋남)
+      // 스크롤 중 손가락·휠로 직접 움직이거나, 초점이 이미 제목 밖(스크린 리더로 읽는 중 등)이면 초점을 옮기지 않음
+      document.addEventListener('touchstart', cancel, true);
+      document.addEventListener('wheel', cancel, true);
+      stopScroll = scrollToComments(commentsEntry !== 'focus', () => {
+        stopListening();
+        const focused = document.activeElement;
+        const untouched = !focused || focused === document.body || focused.tagName === 'H1';
+        if (!cancelled && untouched && commentsEntry === 'focus') focusInput();
+      });
     };
     // effect에서 바로 주면 RouteFocus가 이동 전에 남은 초점으로 보고 제목으로 옮기므로 다음 프레임에
     frame = requestAnimationFrame(run);
-    return () => {
-      cancel();
-      stopListening();
-    };
+    return cancel;
   }, [commentsEntry, contentReady, scrollToComments, focusInput]);
+
+  // 말풍선 진입: 피드 카드가 열리는(zoom) 동안 이미 댓글이 보이게, 내용이 처음 그려질 때 화면에 보이기 전에 한 번 내림
+  const presetComments = useRef(false);
+  useLayoutEffect(() => {
+    if (commentsEntry !== 'focus' || !contentReady || presetComments.current) return;
+    presetComments.current = true;
+    // 목록이 오기 전에도 댓글 영역 맨 위까지 내려갈 수 있게 화면 높이만큼 자리를 둠(열린 뒤 위치가 다시 넘어가지 않게)
+    const section = commentsRef.current;
+    const main = section?.closest('main');
+    if (section && main) section.style.minHeight = `${main.clientHeight}px`;
+    scrollToComments();
+  }, [commentsEntry, contentReady, scrollToComments]);
 
   // 목록(다음 쪽 포함)이 번들을 볼 수 없다고 하면 떠남(답글·삭제 실패 뒤 다시 받은 목록도, 답글 대상 없음과 번들 없음이 같은 404라서)
   const listGone = isGone(thread.error);
@@ -227,6 +281,7 @@ export function BundleDetail({
         onBack={back}
         status={{
           kind: failed ? 'failed' : unavailable && !detail.data ? 'unavailable' : 'loading',
+          commentsEntry: focusComments,
           preview: preview && {
             ...preview,
             // 격자 칸(부분 데이터)은 게시 시각을 몰라 비움

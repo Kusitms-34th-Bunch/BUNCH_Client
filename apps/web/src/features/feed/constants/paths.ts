@@ -16,6 +16,8 @@ export const FEED_PATHS = {
   /** 동적 route의 전환 경계 id(규칙과 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
   transitionIds: {
     bundle: '/bundles/detail',
+    // 말풍선 진입(같은 상세, 피드 카드가 열리는 zoom을 쓰려고 이름만 나눔)
+    bundleComments: '/bundles/detail/comments',
     bundleVisibility: '/bundles/visibility',
     bundleEdit: '/bundles/edit',
     bundleEditPhotoAdd: '/bundles/edit/photo-add',

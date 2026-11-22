@@ -51,6 +51,9 @@ const focusListItem = (
   target?.focus({ preventScroll: true });
 };
 
+// 말풍선 진입이 상세를 기다리는 최대 시간(넘으면 받는 중 화면으로 열고 도착하면 댓글로 내림)
+const COMMENTS_OPEN_WAIT_MS = 400;
+
 /**
  * 피드 탭(기능명세서 6.1, Figma `4940:99466`): 팔로우한 번치 구간 → 구간 안내 → 공개 구간 → 끝 안내
  * 서버(`GET /feed`)가 정한 순서대로 그리고, 끝에 닿으면 다음 쪽을 이어서 받음
@@ -153,6 +156,8 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
       // 상세에서 돌아오는 hero 사진(SSGOI 복사본)이 아래 카드에 가리지 않게 그동안만 위로 올림
       <li
         key={bundle.id}
+        // 말풍선 진입 zoom의 출발 카드(상세 쪽 enter 표식과 같은 값)
+        data-zoom-exit-key={bundleHeroKey(bundle.id)}
         className="has-data-ssgoi-crossfade:relative has-data-ssgoi-crossfade:z-1"
       >
         <FeedBundleCard
@@ -176,10 +181,12 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
           onLocationClick={() => openPlaces(bundle.id, bundle.places)}
           date={bundle.date}
           onPhotoClick={() => openDetail(bundle, FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
-          // 사진에 손가락이 닿을 때만 미리 받음(하트·번치·스크롤 시작 터치는 제외)
+          // 사진·말풍선에 손가락이 닿을 때만 미리 받음(하트·번치·스크롤 시작 터치는 제외)
           onPointerDown={(event) => {
-            if ((event.target as Element).closest('[data-hero-enter-key]'))
-              void prefetchDetail(bundle);
+            const target = event.target as Element;
+            if (target.closest('[data-engagement="comment"]'))
+              void prefetchDetail(bundle, { withComments: true });
+            else if (target.closest('[data-hero-enter-key]')) void prefetchDetail(bundle);
           }}
           // 번들 상세의 첫 사진과 이어 그림(AppTransitions의 피드 → 상세 hero)
           photoHeroKey={bundleHeroKey(bundle.id)}
@@ -188,7 +195,11 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
           onLike={() => asBunch(() => likes.toggle(bundle))}
           commentCount={bundle.commentCount}
           onComment={() =>
-            openDetail(bundle, FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id))
+            // 상세를 받은 뒤 열어야 카드가 열리며 바로 댓글 위치가 보임(최대 400ms만 기다림)
+            openDetail(bundle, FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id), {
+              waitMs: COMMENTS_OPEN_WAIT_MS,
+              withComments: true,
+            })
           }
         />
       </li>
