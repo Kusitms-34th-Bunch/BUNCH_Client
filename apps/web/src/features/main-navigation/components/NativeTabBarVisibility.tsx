@@ -11,9 +11,30 @@ const tabPaths: readonly string[] = Object.values(MAIN_TAB_PATHS);
 
 // 선택 모드처럼 탭 이동을 막는 화면(HideMainTabBar)도 웹 막대와 같이 숨김
 const HIDE_TAB_BAR_SELECTOR = '[data-hide-main-tab-bar]';
-// 화면 전환 sheet가 움직이는 동안 그 화면에 붙는 표식(AppTransitions guardSheet)과 기다리는 최대 시간
-const SHEET_MOVING_SELECTOR = '[data-sheet-moving]';
-const SHEET_WAIT_MS = 1000;
+// 탭 바 자리를 가릴 수 있는 것: 움직이는 화면 sheet(AppTransitions guardSheet), 전환 중 나가는 화면, 닫히는 중인 바텀시트·대화상자
+const COVER_SELECTOR =
+  '[data-sheet-moving], [data-page-leaving], [role="dialog"][data-ending-style], [role="alertdialog"][data-ending-style]';
+// 기다리는 최대 시간(멈춘 전환·남은 표식에도 탭 바가 영영 숨지 않게)
+const COVER_WAIT_MS = 1000;
+// 탭 바 자리(화면 아래 15%)를 이 비율 넘게 덮는 것이 있으면 기다림
+const TAB_BAR_ZONE_RATIO = 0.15;
+const COVER_THRESHOLD = 0.2;
+
+/**
+ * 시스템 탭 바는 웹 위에 그려져 웹 화면 아래로 내릴 수 없어, 다시 보일 때 그 자리를 덮던 것이 비켜난 뒤에 보임
+ * (스프링·전환이 다 끝나기를 기다리지 않고 실제 위치로 판단)
+ */
+const somethingCoversTabBar = () => {
+  const zoneTop = window.innerHeight * (1 - TAB_BAR_ZONE_RATIO);
+  const zoneArea = window.innerWidth * (window.innerHeight - zoneTop);
+  if (zoneArea <= 0) return false;
+  return [...document.querySelectorAll(COVER_SELECTOR)].some((element) => {
+    const rect = element.getBoundingClientRect();
+    const width = Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0);
+    const height = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, zoneTop);
+    return width > 0 && height > 0 && (width * height) / zoneArea > COVER_THRESHOLD;
+  });
+};
 
 /**
  * iOS 쉘의 시스템 탭 바 표시 상태를 현재 경로에 맞춤(결정 기록 012). 탭 화면이면 표시, 탭 밖(상세·온보딩)이거나 시트·대화상자가 열려 있으면 숨김
@@ -58,21 +79,17 @@ export function NativeTabBarVisibility({ exitPaths = [] }: { exitPaths?: readonl
       if (document.visibilityState !== 'visible') return;
       void appBridge.setNativeTabBarVisible(visible).catch(() => {});
     };
-    // 시스템 탭 바는 웹 화면 위에 그려져 시트 아래로 내릴 수 없으므로, 시트가 내려가는 동안에는 다 내려간 뒤에 보임(최대 1초)
+    // 다시 보일 때는 탭 바 자리를 덮던 시트·나가는 화면·닫히는 바텀시트가 비켜난 뒤에(최대 1초)
     const startedAt = performance.now();
     let frame = 0;
     const sendWhenSettled = () => {
-      if (
-        visible &&
-        document.querySelector(SHEET_MOVING_SELECTOR) !== null &&
-        performance.now() - startedAt < SHEET_WAIT_MS
-      ) {
+      if (visible && somethingCoversTabBar() && performance.now() - startedAt < COVER_WAIT_MS) {
         frame = requestAnimationFrame(sendWhenSettled);
         return;
       }
       send();
     };
-    // 보일 때는 전환이 시작될(시트 표식이 붙을) 한 프레임 뒤부터 확인. 숨길 때와 보이지 않는 WebView(프레임이 멈춤)는 바로
+    // 보일 때는 전환이 시작될(표식이 붙을) 한 프레임 뒤부터 확인. 숨길 때와 보이지 않는 WebView(프레임이 멈춤)는 바로
     if (visible && document.visibilityState === 'visible')
       frame = requestAnimationFrame(sendWhenSettled);
     else send();

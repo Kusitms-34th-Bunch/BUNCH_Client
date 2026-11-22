@@ -72,22 +72,78 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     await mutate(() => sheet.remove());
   });
 
-  it('시트가 내려가는 동안(data-sheet-moving)에는 탭 바를 보이지 않고, 다 내려간 뒤 보인다', () => {
+  // happy-dom은 배치가 없어 덮는 요소의 화면 위치를 직접 줌(화면 전체 폭, 윗변만 바꿈)
+  const coverAt = (element: HTMLElement, topRatio: number) =>
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      right: window.innerWidth,
+      top: window.innerHeight * topRatio,
+      bottom: window.innerHeight * (topRatio + 1),
+    } as DOMRect);
+  const runFramesWith = () => {
     const frames: FrameRequestCallback[] = [];
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       frames.push(callback);
       return frames.length;
     });
-    const sheet = document.body.appendChild(document.createElement('div'));
-    sheet.setAttribute('data-sheet-moving', '');
+    return () => act(() => frames.splice(0).forEach((callback) => callback(0)));
+  };
+
+  it.each([
+    [
+      '움직이는 화면 sheet',
+      (element: HTMLElement) => element.setAttribute('data-sheet-moving', ''),
+    ],
+    [
+      '전환 중 나가는 화면',
+      (element: HTMLElement) => element.setAttribute('data-page-leaving', ''),
+    ],
+    [
+      '닫히는 중인 바텀시트',
+      (element: HTMLElement) => {
+        element.setAttribute('role', 'dialog');
+        element.setAttribute('data-ending-style', '');
+      },
+    ],
+  ])(
+    '%s가 탭 바 자리를 덮는 동안은 기다리고, 비켜나면 다 끝나기 전이라도 보인다',
+    (_name, mark) => {
+      const runFrames = runFramesWith();
+      const cover = document.body.appendChild(document.createElement('div'));
+      mark(cover);
+      const rect = coverAt(cover, 0.5);
+      pathname.current = '/bunch';
+      render(<NativeTabBarVisibility />);
+      runFrames();
+      expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+
+      // 표식은 아직 있지만 윗변이 탭 바 자리(아래 15%)를 거의 지남
+      rect.mockReturnValue({
+        left: 0,
+        right: window.innerWidth,
+        top: window.innerHeight * 0.98,
+        bottom: window.innerHeight * 1.98,
+      } as DOMRect);
+      runFrames();
+      expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
+      cover.remove();
+    },
+  );
+
+  it('덮는 것이 사라지지 않아도 1초가 지나면 보인다', () => {
+    const runFrames = runFramesWith();
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0);
+    const cover = document.body.appendChild(document.createElement('div'));
+    cover.setAttribute('data-page-leaving', '');
+    coverAt(cover, 0);
     pathname.current = '/bunch';
     render(<NativeTabBarVisibility />);
-    act(() => frames.splice(0).forEach((callback) => callback(0)));
+    runFrames();
     expect(setNativeTabBarVisible).not.toHaveBeenCalled();
-
-    sheet.remove();
-    act(() => frames.splice(0).forEach((callback) => callback(0)));
+    now.mockReturnValue(1000);
+    runFrames();
     expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
+    cover.remove();
   });
 
   it('화면에 보이지 않는 탭 WebView는 보내지 않고, 다시 보이면 현재 상태를 보낸다', () => {
