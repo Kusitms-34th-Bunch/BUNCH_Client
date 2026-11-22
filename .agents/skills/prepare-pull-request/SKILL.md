@@ -60,7 +60,7 @@ PR 초안을 쓰기 **전에** 브랜치(`<base>...HEAD`)의 리뷰 상태를 �
 
 제목과 본문 전문을 **채팅 메시지 안에** 복사 가능한 Markdown 코드 블록으로 제공한다. 파일 경로나 링크로 초안 본문을 대신하지 않는다.
 
-- 본문 파일은 사용자가 파일 저장을 요청했을 때, 또는 승인된 `gh pr create`를 실행하기 직전에만 만든다. 초안을 낼 때 미리 만들지 않고, 명령에는 경로만 적는다. 경로는 Git에 올라가지 않는 `.agents/state/pr-body/<브랜치 이름>.md`다(브랜치 이름의 `/`는 `-`로 바꾼다). skill을 시작할 때 이 폴더에서 3일 넘은 파일을 `find .agents/state/pr-body -type f -mtime +3 -delete`로 지운다. 사용자가 직접 올려 남은 파일도 이렇게 정리된다.
+- 본문 파일은 사용자가 파일 저장을 요청했을 때, 또는 승인된 `gh pr create`를 실행하기 직전에만 만든다. 초안을 낼 때 미리 만들지 않고, 명령에는 경로만 적는다. 경로는 Git에 올라가지 않는 `.agents/state/pr-body/<브랜치 이름>.md`다(브랜치 이름의 `/`는 `-`로 바꾼다). skill을 시작할 때 `mkdir -p .agents/state/pr-body`로 폴더를 만든 뒤(새로 받은 저장소에는 없음) 3일 넘은 파일을 `find .agents/state/pr-body -type f -mtime +3 -delete`로 지운다. 사용자가 직접 올려 남은 파일도 이렇게 정리된다.
 
 - `develop` → `main` 릴리스 PR은 타입 접두사 없이 `develop to main` 같은 제목을 사용한다. 그 외 PR은 필요한 경우 70자 이내 제목을 `[Type] 제목`(예: `[Feat] 로그인 페이지`) 형식으로 제안한다. 브랜치가 `<이슈번호>-<type>/<이름>`이면 PR을 열 때 workflow가 이슈 제목으로 같은 형식에 맞춘다.
 - `develop` → `main` 릴리스 PR은 `docs/conventions/git.md`의 릴리스 본문을 사용한다. 그 외 PR은 템플릿 모든 section을 같은 순서로 채운 Markdown 초안을 제공한다. 모든 PR에 `git push -u origin <브랜치>`, `gh pr create --base <base> --title "<제목>" --body-file <파일>` 명령을 제공한다. 본문을 저장할 파일 경로를 명시하되 파일은 만들지 않고, 사용자가 요청하면 그 경로에 저장한다.
