@@ -8,6 +8,7 @@ export { BunchLeave } from './menu/BunchLeave';
 export { BunchMembers } from './members/BunchMembers';
 export { BunchMenu } from './menu/BunchMenu';
 export { BunchNotifications } from './notifications/BunchNotifications';
+export { PushOpenNavigator } from './notifications/PushOpenNavigator';
 export { BunchProfileEdit } from './menu/BunchProfileEdit';
 export { BunchRoleGuide } from './members/BunchRoleGuide';
 export { FollowRequests } from './follows/FollowRequests';
