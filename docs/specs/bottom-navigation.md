@@ -30,7 +30,7 @@
 - 탭 4개, 막대 순서: 피드 · 사진함 · 번치 · MY(내부 기획 문서의 화면 구조, Figma 막대와 같은 순서).
 - 선택된 탭은 현재 route로 정해진다. 탭을 누르면 그 탭의 route로 이동한다.
 - 사진함 탭은 지금 보고 있는 Bunch의 사진함을 바로 연다(내부 기획 문서). 탭 안에서 Bunch를 바꾸지 않는다.
-- 탭 route는 임시로 `/feed`·`/photos`·`/bunch`·`/my`다(`features/main-navigation/constants/tabs.ts`). 탭 안 하위 경로(`/bunch/...`)도 그 탭이 선택된다. 같은 탭을 다시 눌렀을 때의 동작(맨 위로 스크롤·새로고침·무반응)은 확인할 항목이다.
+- 탭 route는 임시로 `/feed`·`/photos`·`/bunch`·`/my`다(`features/main-navigation/constants/tabs.ts`). 탭 안 하위 경로(`/bunch/...`)도 그 탭이 선택된다. 같은 탭을 다시 누르면 그 탭 화면을 맨 위로 스크롤한다(하위 화면에는 탭 막대가 없음). 300ms 안에 두 번 다시 누르면 탭 화면에 두 번 누르기를 알린다(`shared/lib/mainTabGesture`, 지금은 번치 탭만 최근 번치로 전환, #518). 웹 막대에서 번치 탭 첫 화면의 번치 탭을 500ms 누르고 있으면 꾹 누르기를 알린다(번치 전환 시트).
 - iOS 쉘은 시스템 탭 바가 탭을 그리고 탭마다 WebView가 탭 경로를 연다. 탭 이동은 웹 이동이 아니라 시스템이 화면을 바꾸는 것이다(`docs/decisions/records/012-ios-system-tab-bar.md`).
 
 ## 요구사항
