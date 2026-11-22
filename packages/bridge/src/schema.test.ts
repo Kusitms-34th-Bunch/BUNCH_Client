@@ -20,6 +20,8 @@ import {
   saveImageUrlsSchema,
   saveImagesToAlbumResultSchema,
   setNativeFloatingButtonParamsSchema,
+  showNativeToastParamsSchema,
+  nativeToastActionSchema,
   setNativeTabBarParamsSchema,
   socialLoginResultSchema,
   socialProviderSchema,
@@ -358,4 +360,37 @@ void test('탭 바 표시 알림은 탭 ID와 표시 여부가 있어야 한다'
   assert.equal(ok({ tab: '', visible: true }), false);
   assert.equal(ok({ tab: 'feed' }), false);
   assert.equal(ok({ tab: 'feed', visible: 'true' }), false);
+});
+
+void test('네이티브 토스트는 정해진 형태만 받는다', () => {
+  const valid = {
+    tab: 'bunch',
+    id: 't1',
+    message: '번치로 전환했어요.',
+    duration: 3000,
+    fullWidth: true,
+  };
+  assert.equal(showNativeToastParamsSchema.safeParse(valid).success, true);
+  assert.equal(
+    showNativeToastParamsSchema.safeParse({
+      ...valid,
+      icon: 'success',
+      action: { label: '되돌리기' },
+      duration: null,
+    }).success,
+    true,
+  );
+  for (const invalid of [
+    { ...valid, message: '' },
+    { ...valid, message: '가'.repeat(201) },
+    { ...valid, icon: 'error' },
+    { ...valid, action: { label: '되돌리기', href: 'javascript:alert(1)' } },
+    { ...valid, duration: 0 },
+    { ...valid, duration: 1.5 },
+    { ...valid, color: 'red' },
+  ]) {
+    assert.equal(showNativeToastParamsSchema.safeParse(invalid).success, false);
+  }
+  assert.equal(nativeToastActionSchema.safeParse({ tab: 'bunch', id: 't1' }).success, true);
+  assert.equal(nativeToastActionSchema.safeParse({ tab: 'bunch' }).success, false);
 });

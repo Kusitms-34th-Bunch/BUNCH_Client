@@ -41,3 +41,4 @@
 - [027: 번들 위치 검색은 웹 BFF가 카카오 로컬 API를 대신 호출한다](./records/027-kakao-place-search-bff.md) (accepted)
 - [028: iOS 쉘의 로그인 배경 영상은 네이티브로 재생한다](./records/028-native-login-background-video.md) (proposed)
 - [029: 앱 쉘 핵심 흐름은 Maestro로 iOS 시뮬레이터에서 확인한다](./records/029-maestro-shell-e2e.md) (proposed)
+- [030: 네이티브 플로팅 버튼이 떠 있는 화면의 토스트는 쉘이 네이티브로 띄운다](./records/030-native-toast-on-floating-screens.md) (proposed)

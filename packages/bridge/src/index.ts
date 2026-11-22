@@ -12,9 +12,11 @@ import type {
   PickPhotosResult,
   PushDeviceRegistration,
   SaveImagesToAlbumResult,
+  HideNativeToastParams,
   SetNativeFloatingButtonParams,
   SetNativeTabBarParams,
   ShareParams,
+  ShowNativeToastParams,
   SocialLoginResult,
   SocialProvider,
   UploadImage,
@@ -34,6 +36,9 @@ export {
   nativeTabBarItemSchema,
   nativeTabEventSchema,
   nativeTabReselectSchema,
+  nativeToastActionSchema,
+  hideNativeToastParamsSchema,
+  showNativeToastParamsSchema,
   permissionKindSchema,
   permissionStatusSchema,
   PHOTO_SOURCE_TYPES,
@@ -67,6 +72,9 @@ export type {
   NativeFloatingButtonPress,
   NativeTabBarItem,
   NativeTabEvent,
+  NativeToastAction,
+  HideNativeToastParams,
+  ShowNativeToastParams,
   PermissionKind,
   PermissionStatus,
   PhotoSourceType,
@@ -126,6 +134,10 @@ export type AppBridgeMethods = {
   setNativeTabBarVisibleFor: (_params: NativeTabBarVisibilityParams) => Promise<boolean>;
   /** 탭 화면의 플로팅 버튼을 네이티브 Liquid Glass로 표시·제거. 그렸으면 true(웹 버튼을 숨김), iOS 26 미만·탭 화면 밖·미지원 환경이면 false. 눌림은 `nativeFloatingButtonPress` */
   setNativeFloatingButton: (_params: SetNativeFloatingButtonParams) => Promise<boolean>;
+  /** 네이티브 플로팅 버튼이 떠 있는 탭의 토스트를 쉘이 띄움. 띄웠으면 true(웹 토스트를 그리지 않음). 이전 쉘에는 없어 웹이 `hasNativeMethod`로 확인 */
+  showNativeToast: (_params: ShowNativeToastParams) => Promise<boolean>;
+  /** 그 탭의 네이티브 토스트를 닫음 */
+  hideNativeToast: (_params: HideNativeToastParams) => Promise<boolean>;
   /** iOS 쉘 탭 화면에서 그 탭으로 전환(탭마다 WebView라 다른 탭 경로로 주소 이동하면 지금 탭 화면이 바뀜). 전환했으면 true, 탭 화면이 아니거나 없는 탭·미지원 환경이면 false */
   selectNativeTab: (_id: string) => Promise<boolean>;
   /** 다른 탭 WebView에 변화를 알림(쉘이 모든 탭에 `nativeTabEvent`로 보냄). 탭 화면이 아니거나 미지원 환경이면 false */

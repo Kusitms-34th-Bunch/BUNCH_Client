@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { FloatingButton, PhotoUploadSheet } from '@app/design-system/web';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FloatingButtonToastAnchor } from '@/shared/components/layout/FloatingButtonToastAnchor';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -10,6 +11,7 @@ import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
+import type { UploadStatus } from '../../lib/uploadStatus';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
 import { usePhotoSelectionFlow } from '../../hooks/usePhotoSelectionFlow';
@@ -29,6 +31,7 @@ import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
 import { PhotoDragArea } from './PhotoDragArea';
 import { PhotoSelectionMenu } from './PhotoSelectionMenu';
+import { PhotoUploadStatus } from './PhotoUploadStatus';
 
 // API 연결 전 기본 동작: 모두 성공하고 아무것도 사라지지 않음
 const noopActions: PhotoBoxActions = {
@@ -61,6 +64,8 @@ type PhotoBoxScreenProps = {
   onUpload?: ((_source: 'album' | 'camera') => void) | undefined;
   /** 「번들 만들기」 확인 창에서 「예」를 눌렀을 때(고른 사진 id를 누른 순서대로 전달, 초안 생성·이동은 번들 작성 이슈) */
   onCreateBundle?: ((_selection: PhotoSelection) => void) | undefined;
+  /** 이 번치의 업로드 상태(멤버 칩 아래 상태 줄). 없으면 줄이 자리를 차지하지 않음 */
+  uploadStatus?: UploadStatus | undefined;
 };
 
 /** 사진함 탭 화면. 상태(로딩·오류·번치 없음·목록)를 받아 그리고 멤버 필터와 선택 모드(메뉴·저장·번들·삭제)를 관리 */
@@ -75,6 +80,7 @@ export function PhotoBoxScreen({
   switcherOpen,
   onUpload,
   onCreateBundle,
+  uploadStatus,
 }: PhotoBoxScreenProps) {
   const [memberFilter, setMemberFilter] = useState(readHistoryMemberFilter);
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
@@ -220,6 +226,8 @@ export function PhotoBoxScreen({
       // 「+」(선택 모드에서는 「⋯」)는 스크롤과 상관없이 고정: 본문 바로 아래의 높이 0 영역에 겹쳐 배치
       bottom={
         <div className="relative h-0">
+          {/* 탭 막대를 숨긴 화면에서 토스트를 플로팅 버튼(웹·네이티브) 위에 띄우는 앵커 */}
+          <FloatingButtonToastAnchor className="right-s8 bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))]" />
           {selecting && menuMounted ? (
             // 메뉴는 「⋯」 위 10px, 오른쪽 정렬(Figma 사진함_17): 「⋯」 높이 3.25rem + 간격 0.625rem
             <div className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap)+3.875rem)] z-20">
@@ -274,6 +282,7 @@ export function PhotoBoxScreen({
             onSelect={selectMember}
             selectedCounts={selectedCounts}
           />
+          <PhotoUploadStatus status={uploadStatus} bunchName={bunch.name} />
           <PhotoDragArea
             sections={sections}
             undated={undated}

@@ -1,6 +1,6 @@
 # Design System Icons
 
-Figma의 Line 36종·Fill 12종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 144개)를 SVGR로 변환해 **고정 크기 export 144개**와 기존 `size`(`sm`·`md`·`lg`) 선택용 export 48개로 제공한다. 고정 크기가 기본이며 크기가 실행 중 바뀔 때만 `size` API를 사용한다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
+Figma의 Line 37종·Fill 12종을 Small(16)·Medium(20)·Large(24) 원본으로 제공한다. 크기별 SVG(총 147개)를 SVGR로 변환해 **고정 크기 export 147개**와 기존 `size`(`sm`·`md`·`lg`) 선택용 export 49개로 제공한다. 고정 크기가 기본이며 크기가 실행 중 바뀔 때만 `size` API를 사용한다. 크기마다 도형과 선 굵기가 다르게 그려져 있어서(small 1.2, medium·large 1.5) 단순 확대·축소로 대체하지 않는다. 이름 정규화와 접근성 계약은 `packages/design-system/src/icons/icons.spec.md`를 따른다.
 
 ## 왜 design-system인가
 
@@ -14,7 +14,7 @@ Figma의 Line 36종·Fill 12종을 Small(16)·Medium(20)·Large(24) 원본으로
 ```text
 packages/design-system/src/icons/
   svg/            currentColor로 정규화할 원본 SVG(단색 아이콘)
-  svg-preserve/   원본 색을 유지해야 하는 SVG(로고, 브랜드 마크)
+  svg-preserve/   원본 색을 유지해야 하는 SVG(로고, 브랜드 마크, 점 있는 종)
   svg-graphic/    크기가 하나뿐인 컬러 그래픽 아이콘(graphic-<이름>.svg)
   generated/      생성된 TSX 컴포넌트 + barrel index.ts (직접 수정 금지)
 ```
@@ -55,7 +55,7 @@ SVGR은 sanitizer가 아니다. 외부에서 받은 SVG(특히 Figma export, 디
 
 이 검증은 정규식 기반 1차 차단이라 모든 우회를 막지 못한다. 새 SVG를 들일 때는 리뷰에서 원본도 직접 확인한다.
 
-metadata는 변환 전에 제거한다. Line/Fill 세트는 모두 단색이며, white는 clipPath 내부에만 있어 `svg-preserve/`의 아이콘은 없다. 컬러 아이콘은 `svg-graphic/`의 그래픽 아이콘뿐이다.
+metadata는 변환 전에 제거한다. Line/Fill 세트는 `line-bell-dot`을 빼면 모두 단색이며, white는 clipPath 내부에만 있다. `line-bell-dot`은 점 색이 의미를 가져 `svg-preserve/`에 두고, 몸통만 원본 파일에서 `currentColor`로 적어 글자색을 따르게 했다. 그 밖의 컬러 아이콘은 `svg-graphic/`의 그래픽 아이콘이다.
 
 이 검증 없이 아이콘 생성 스크립트를 만들지 않는다. `docs/workflows/security-review.md`의 XSS 기준과 같은 이유다 — 신뢰할 수 없는 입력이 렌더링 가능한 코드로 바뀌는 경로다.
 

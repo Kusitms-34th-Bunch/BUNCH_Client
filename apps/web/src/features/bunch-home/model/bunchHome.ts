@@ -178,6 +178,7 @@ export const toBunchHomeDetail = (
     followingCount: home.followingCount,
     memberCount: home.memberCount,
     draftCount: home.draftCount ?? undefined,
+    unreadCount: home.unreadCount ?? 0,
     completedBundles: published.items.map((bundle) => ({
       id: toDomainId(bundle.id),
       title: bundle.title,

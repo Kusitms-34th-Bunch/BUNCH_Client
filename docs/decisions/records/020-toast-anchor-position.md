@@ -23,4 +23,5 @@
 - 새 하단 고정 영역은 `PageShell`의 `bottom` 슬롯을 쓰면 자동으로 앵커가 된다. 슬롯 밖 고정 요소는 `data-toast-anchor="wrapper"`를 직접 단다.
 - 이동하면서 알리는 새 호출은 `toast()`가 아니라 `toastAfterNavigation()`을 쓴다.
 - 플로팅 버튼은 토스트 위치에 영향을 주지 않는다. 피드·번치 홈의 「+」 높이 정렬(77)은 없어지고 탭 막대 위 16px로 통일된다.
+- 2026-11-22 개정(#503): 탭 막대를 숨기고 플로팅 버튼만 남는 화면(사진함 선택 모드)에서 토스트가 버튼에 가려져, 플로팅 버튼 앵커(`floating`, 위 16px)를 더했다. 탭 막대가 함께 보이면 플로팅 버튼 앵커는 치지 않아 위 규칙(탭 막대 기준, 플로팅 버튼은 가려져도 됨)이 유지된다. 앱은 `FloatingButtonToastAnchor`를 플로팅 버튼 자리에 두고, 이 앵커는 하단 탭 막대가 숨겨졌을 때만 크기를 가진다(iOS 시스템 탭 바는 웹에 탭 막대 앵커가 없어서).
 - 관련: [008](./008-toast-sonner.md), `packages/design-system/src/components/core/toast/Toast.spec.md`

@@ -79,8 +79,12 @@ export const PHOTO_BOX_MESSAGES = {
   uploadNeedsUpdate: '앱을 최신 버전으로 업데이트해 주세요.',
   uploadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
   uploadRetry: '다시 시도',
-  // 올리는 동안 스크린 리더에게 알리는 문구(화면에는 표시를 두지 않음)
+  // 올리는 중 안내(문구는 기획 원문이 없어 임시). 사진함은 스크린 리더 live region에, 번들 작성의 가져오기는 토스트에 씀
   uploading: '사진을 올리는 중이에요.',
+  // 사진함 상단 업로드 상태 줄(Figma 사진함_02 Upload Status) 「{번치 이름}에 N장 업로드 중..」의 번치 이름 뒤 부분
+  // 번치 이름이 길면 이름만 줄이려고 나눠 둠. 완료 문구는 결과 토스트 문구를 그대로 씀
+  uploadStatusTitleSuffix: (total: number) => `에 ${total}장 업로드 중..`,
+  uploadStatusBundleHint: '번들을 업로드해보세요.',
   cameraPermissionTitle: '권한 설정이 필요해요',
   cameraPermissionDescription:
     '카메라 접근 권한이 거부되어 있어요. 설정에서 직접 허용할 수 있어요.',
