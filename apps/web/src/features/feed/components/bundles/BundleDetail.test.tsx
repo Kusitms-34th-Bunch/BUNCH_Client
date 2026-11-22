@@ -297,6 +297,16 @@ describe('BundleDetail', () => {
     expect(push).toHaveBeenLastCalledWith('/bunch');
   });
 
+  it('번치로 갈 때 상세 틀의 전환 id를 drill용으로 바꾸고, 이 화면에 남은 채 다음 입력이 오면 되돌린다', async () => {
+    const user = userEvent.setup();
+    const { container } = renderDetail();
+    container.setAttribute('data-ssgoi-transition', '/bundles/detail');
+    await user.click(screen.getByRole('button', { name: /여행가조/ }));
+    expect(container.getAttribute('data-ssgoi-transition')).toBe('/bundles/detail/to-bunch');
+    fireEvent.pointerDown(document.body);
+    expect(container.getAttribute('data-ssgoi-transition')).toBe('/bundles/detail');
+  });
+
   it('댓글 작성자의 프로필을 누르면 그 멤버 프로필 화면으로 간다', async () => {
     const user = userEvent.setup();
     renderDetail();

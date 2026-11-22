@@ -73,8 +73,14 @@ export function BundleDetailStatus({
             }
           />
           {partial ? (
-            // 칸에는 장소·날짜가 없어 BundleInfo 날짜 줄 자리만 회색(BundleDetailSkeleton과 같은 크기)
-            <div aria-hidden="true" className="px-padding-p8 pb-padding-p5 pt-s5">
+            // 칸에는 장소·날짜가 없어 BundleInfo 위치·날짜 두 줄 자리를 회색으로 잡음(한 줄만 잡으면 위치가 있는 번들에서 다 받은 뒤 사진이 한 줄 밀림)
+            <div
+              aria-hidden="true"
+              className="px-padding-p8 pb-padding-p5 pt-s5 gap-s3 flex flex-col"
+            >
+              <span className="typography-body-3-regular flex h-lh items-center">
+                <Skeleton className="h-4 w-40" />
+              </span>
               <span className="typography-body-3-regular flex h-lh items-center">
                 <Skeleton className="h-4 w-32" />
               </span>

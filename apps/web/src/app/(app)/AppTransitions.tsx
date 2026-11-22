@@ -175,7 +175,7 @@ const photoHero = hero(
 // 상세를 이미 댓글 위치로 내려 두고 열어 사진이 이어지는 hero 대신 씀(motion.md). 나가는 화면은 경계 id로 찾아 다른 전환과 같은 표식
 type ZoomGroup = 'overlay' | 'content' | 'chrome' | 'background' | 'tile';
 const guardZoom =
-  (opening: boolean) =>
+  (opening: boolean, behindIds: readonly string[], frontId: string) =>
   ({
     animation,
     context,
@@ -191,14 +191,26 @@ const guardZoom =
           `[data-ssgoi-transition="${id}"]`,
         ),
       ].at(-1);
-    const feed = last(MAIN_TAB_PATHS.feed);
-    const detail = last(FEED_PATHS.transitionIds.bundleComments);
-    if (opening) guardPair(detail, feed, track);
-    else guardPair(feed, detail, track);
+    const behind = behindIds.map(last).find(Boolean);
+    const front = last(frontId);
+    if (opening) guardPair(front, behind, track);
+    else guardPair(behind, front, track);
   };
-const feedCommentsZoom = zoom(
-  { type: 'static' },
-  { override: { forward: guardZoom(true), backward: guardZoom(false) } },
+const zoomOver = (behindIds: readonly string[], frontId: string) =>
+  zoom(
+    { type: 'static' },
+    {
+      override: {
+        forward: guardZoom(true, behindIds, frontId),
+        backward: guardZoom(false, behindIds, frontId),
+      },
+    },
+  );
+const feedCommentsZoom = zoomOver([MAIN_TAB_PATHS.feed], FEED_PATHS.transitionIds.bundleComments);
+// 번치 탭·다른 번치 프로필 격자 → 번들 상세: 인스타 프로필 그리드 → 게시물(SSGOI showcase Instagram 「Grid → Post」 zoom static)
+const bunchGridZoom = zoomOver(
+  [BUNCH_HOME_PATHS.home, BUNCH_HOME_PATHS.transitionIds.otherBunch],
+  FEED_PATHS.transitionIds.bundle,
 );
 // sheet 프리셋은 움직이는 화면(sheet)만 track이라 뒤 화면은 경계 id로 찾아 나가는 화면 표식(상태 바 색 즉시 전환)
 // 중단된 이전 전환의 노드가 남아 있을 수 있어 같은 id 중 가장 나중에 붙은 노드 사용
@@ -416,13 +428,19 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: photoHero,
   },
-  // 번치 탭·다른 번치 프로필의 번들 격자 → 상세도 칸 사진을 상세 첫 사진으로 잇는 같은 hero(같은 사진이 이어짐, 화면설계서에 정의 없음)
-  // 상세의 번치 → 번치 탭·다른 번치 프로필도 이 규칙의 돌아가는 방향(격자 칸이 있으면 그 자리로, 없으면 겹쳐 바뀜)
+  // 번치 탭·다른 번치 프로필의 번들 격자 → 상세는 칸이 상세 화면 전체로 열리는 zoom static(인스타 프로필 그리드 → 게시물, 사용자 결정)
+  // 칸 사진을 상세 첫 사진으로 잇는 hero로 바꾸려면 transition만 feedBundleHero로(칸의 hero 키·자르기는 그대로 둠, motion.md)
   {
     from: [BUNCH_HOME_PATHS.home, BUNCH_HOME_PATHS.transitionIds.otherBunch],
     to: FEED_PATHS.transitionIds.bundle,
     bidirectional: true,
-    transition: feedBundleHero,
+    transition: bunchGridZoom,
+  },
+  // 상세의 번치 이름 → 번치 탭·다른 번치 프로필은 새 화면으로 들어가는 drill(이동 직전에 상세 틀 id를 바꿔 위 zoom과 구분, BundleDetail)
+  {
+    from: FEED_PATHS.transitionIds.bundleToBunch,
+    to: [BUNCH_HOME_PATHS.home, BUNCH_HOME_PATHS.transitionIds.otherBunch],
+    transition: bunchDrill,
   },
   // 말풍선으로 연 상세에서 번치로 가는 이동도 같은 drill
   historyDrill(BUNCH_HOME_PATHS.home, FEED_PATHS.transitionIds.bundleComments),

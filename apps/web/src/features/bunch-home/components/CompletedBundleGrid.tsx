@@ -34,12 +34,15 @@ export function CompletedBundleGrid({
       {bundles.map((bundle) => (
         <li
           key={bundle.id}
-          className="bg-surface-secondary relative aspect-123/163 overflow-hidden"
+          // 칸은 자르지 않음: hero가 날아가는 사본을 링크 옆(이 칸 안)에 넣어서, 자르면 사본이 칸 밖에서 보이지 않음(사진 자르기는 링크가 함)
+          className="bg-surface-secondary relative aspect-123/163"
         >
           <Link
             href={BUNCH_HOME_PATHS.bundle(bunchId, bundle.id)}
-            // 칸 사진을 상세 첫 사진으로 잇는 hero 짝(AppTransitions)
+            // 칸 사진을 상세 첫 사진으로 잇는 hero 짝(지금은 zoom, hero로 되돌릴 때 씀)
             data-hero-enter-key={bundleHeroKey(bundle.id)}
+            // 칸이 상세 화면 전체로 열리는 zoom 짝(상세 틀 안에 같은 값의 enter 표식)
+            data-zoom-exit-key={bundleHeroKey(bundle.id)}
             onPointerDown={() => onPressStart?.(bundle.id)}
             onClick={(event) => {
               // 보조 키·가운데 버튼 클릭은 브라우저 기본 동작(새 탭 등)에 맡김
@@ -53,16 +56,20 @@ export function CompletedBundleGrid({
                 (list?.closest<HTMLElement>('[role="tabpanel"]') ?? list)?.focus();
               });
             }}
-            className="focus-visible:outline-border-brand block size-full focus-visible:outline-2 focus-visible:-outline-offset-2"
+            // hero는 스스로 넘친 곳을 자르는 요소만 그 틀·모서리 반경으로 봄(반경 0 → 상세 사진 24px로 이어짐)
+            className="focus-visible:outline-border-brand block size-full overflow-hidden focus-visible:outline-2 focus-visible:-outline-offset-2"
           >
-            <CoverImage
-              src={bundle.coverSrc}
-              alt={
-                bundle.memberOnly
-                  ? `${bundle.title}, ${BUNCH_HOME_MESSAGES.bundleMemberOnly}`
-                  : bundle.title
-              }
-            />
+            {/* 사진을 한 번 감쌈(hero로 되돌릴 때): hero는 바로 아래 자식이 사진이면 날아가는 사본을 칸 안에 넣어 잘리므로 피드 카드처럼 페이지 위 층에 그리게 함 */}
+            <span className="block size-full">
+              <CoverImage
+                src={bundle.coverSrc}
+                alt={
+                  bundle.memberOnly
+                    ? `${bundle.title}, ${BUNCH_HOME_MESSAGES.bundleMemberOnly}`
+                    : bundle.title
+                }
+              />
+            </span>
           </Link>
           {bundle.memberOnly && (
             <span
@@ -78,23 +85,38 @@ export function CompletedBundleGrid({
   );
 }
 
-/** 대표 사진: 칸의 회색 배경 위에서 다 받으면 짧게 나타남(받지 못하면 회색 칸 유지) */
+// 한 번 다 받은 표지 주소. 상세에서 돌아와 격자를 다시 그릴 때 회색 칸으로 비었다가 나타나지 않게(전환이 그 칸으로 접힘)
+// 계속 쌓이지 않게 상한을 넘으면 비움
+const shownCovers = new Set<string>();
+const SHOWN_COVERS_LIMIT = 200;
+const rememberShownCover = (src: string) => {
+  if (shownCovers.size >= SHOWN_COVERS_LIMIT) shownCovers.clear();
+  shownCovers.add(src);
+};
+
+/** 대표 사진: 칸의 회색 배경 위에서 다 받으면 짧게 나타남(받지 못하면 회색 칸 유지, 이미 본 사진은 바로) */
 function CoverImage({ src, alt }: { src: string; alt: string }) {
   // 받은 사진 주소. 주소가 바뀌면 다시 숨겼다가 받은 뒤 나타남
   const [loadedSrc, setLoadedSrc] = useState<string>();
-  const loaded = loadedSrc === src;
+  const loaded = loadedSrc === src || shownCovers.has(src);
   return (
     // 데이터 주소·외부 이미지를 그대로 쓰므로 next/image 최적화 대상이 아님
     // eslint-disable-next-line @next/next/no-img-element
     <img
       ref={(img) => {
         // 이미 받아 둔 사진(캐시)은 load 전에 끝나 있어 바로 보임
-        if (img?.complete && img.naturalWidth > 0) setLoadedSrc(src);
+        if (img?.complete && img.naturalWidth > 0) {
+          rememberShownCover(src);
+          setLoadedSrc(src);
+        }
       }}
       src={src}
       alt={alt}
       decoding="async"
-      onLoad={() => setLoadedSrc(src)}
+      onLoad={() => {
+        rememberShownCover(src);
+        setLoadedSrc(src);
+      }}
       data-loaded={loaded || undefined}
       className="size-full object-cover opacity-0 transition-opacity duration-200 ease-out data-loaded:opacity-100 motion-reduce:transition-none"
     />
