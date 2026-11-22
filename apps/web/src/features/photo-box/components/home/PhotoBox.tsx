@@ -9,6 +9,7 @@ import type { PhotoBoxPreview } from '../../lib/preview';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoBox } from '../../hooks/usePhotoBox';
 import { usePhotoUpload } from '../../hooks/usePhotoUpload';
+import { useUploadStatus } from '../../hooks/useUploadStatus';
 import { PHOTO_ID_ATTRIBUTE } from '../../lib/dragSelect';
 import { rememberPhotoBoxSelection } from '../../lib/selectionResume';
 import { usePrefetchPhotoOriginal } from '../../queries/photoDetail';
@@ -74,12 +75,19 @@ export function PhotoBox({ preview, bunchSwitcher, checkBundleEntry }: PhotoBoxP
     if (bunchId !== undefined) rememberPhotoBoxSelection(bunchId, selection);
     router.push(BUNDLE_SELECT_PATHS.members);
   };
-  // 올리기는 올리기를 시작한 시점의 번치에 저장
-  const { start: startUpload, uploading } = usePhotoUpload(
-    state.kind === 'ready' ? state.data.bunch.id : undefined,
-  );
   // 화면을 새로 시작하는 기준: 준비된 번치의 id. 로딩·오류로 잠깐 바뀌어도 마지막 번치 id를 유지해, 같은 번치로 돌아올 때는 선택 모드와 멤버 필터를 지우지 않음
   const readyBunchId = state.kind === 'ready' ? state.data.bunch.id : undefined;
+  // 올리기는 올리기를 시작한 시점의 번치에 저장
+  const { start: startUpload } = usePhotoUpload(readyBunchId);
+  // 진행·결과는 화면 밖 저장소에 있어 다른 탭에 다녀와도 남음. 보이는 번치의 것만 씀
+  const uploadStatus = useUploadStatus(readyBunchId);
+  let uploadAnnouncement = '';
+  if (uploadStatus?.phase === 'uploading') uploadAnnouncement = PHOTO_BOX_MESSAGES.uploading;
+  else if (uploadStatus?.phase === 'complete') {
+    uploadAnnouncement = uploadStatus.withBundleHint
+      ? `${uploadStatus.message} ${PHOTO_BOX_MESSAGES.uploadStatusBundleHint}`
+      : uploadStatus.message;
+  }
   const readyBunchIdRef = useRef(readyBunchId);
   const mounted = useRef(true);
   useEffect(() => {
@@ -124,7 +132,8 @@ export function PhotoBox({ preview, bunchSwitcher, checkBundleEntry }: PhotoBoxP
           state={state}
           actions={actions}
           onCreateBundle={(selection) => void createBundle(selection)}
-          onUpload={(source) => void startUpload(source)}
+          onUpload={(source) => void startUpload(source, { statusLine: true })}
+          uploadStatus={uploadStatus}
           onRetry={retry}
           onBunchClick={bunchSwitcher?.open}
           switcherOpen={bunchSwitcher?.switcherOpen}
@@ -132,9 +141,9 @@ export function PhotoBox({ preview, bunchSwitcher, checkBundleEntry }: PhotoBoxP
           onRefresh={refresh}
         />
       </div>
-      {/* 올리는 동안은 화면을 막거나 진행 표시를 두지 않고 다 올라간 사진부터 목록에 들어오게 함(기획 확정). 사진함을 보거나 다른 화면으로 가도 계속 올라가며, 스크린 리더에게만 문구로 알림 */}
+      {/* 올리는 동안 화면을 막지 않고 멤버 칩 아래 상태 줄로 진행·결과를 보임. 시작과 결과는 화면이 inert여도 들리도록 화면 밖 live region으로 알림 */}
       <p role="status" className="sr-only">
-        {uploading ? PHOTO_BOX_MESSAGES.uploading : ''}
+        {uploadAnnouncement}
       </p>
     </>
   );

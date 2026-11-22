@@ -2,7 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import { act, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
@@ -10,6 +10,7 @@ import { server } from '@/mocks/server';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type * as PhotoUploadLib from '../lib/photoUpload';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
+import { uploadStatusStore } from '../lib/uploadStatus';
 import { photoBoxKeys } from '../queries/keys';
 import { usePhotoUpload } from './usePhotoUpload';
 
@@ -80,6 +81,10 @@ const lastToast = () => toastSpy.mock.calls.at(-1);
 
 beforeEach(() => {
   toastSpy.mockClear();
+  uploadStatusStore.reset();
+  // jsdom에는 blob 주소 만들기가 없어 상태 줄 썸네일 주소를 고정 값으로 대신함
+  URL.createObjectURL = vi.fn(() => 'blob:thumbnail');
+  URL.revokeObjectURL = vi.fn();
   bridge.native = true;
   bridge.methodAvailable = true;
   bridge.pickGalleryImages.mockReset();
@@ -508,9 +513,19 @@ describe('usePhotoUpload 한도와 보내기 전 확인', () => {
   });
 });
 
-describe('usePhotoUpload 상태 안내', () => {
-  it('올리는 동안 uploading이 true이고 끝나면 false다(화면 밖 안내용)', async () => {
-    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+describe('usePhotoUpload 업로드 상태 줄', () => {
+  const statusOf = () => uploadStatusStore.getSnapshot()[bunchId];
+  // 사진함 화면이 이 번치의 상태 줄을 보고 있는 경우
+  let unwatch: () => void = () => {};
+  beforeEach(() => {
+    unwatch = uploadStatusStore.watch(bunchId);
+  });
+  afterEach(() => {
+    unwatch();
+  });
+
+  it('올리는 동안 전체·끝난 장수와 첫 사진 썸네일을 기록하고, 끝나면 결과 문구를 남기며 토스트는 띄우지 않는다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2'));
     let release: () => void = () => {};
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -522,19 +537,178 @@ describe('usePhotoUpload 상태 안내', () => {
       }),
     );
     const { result } = render();
-    expect(result.current.uploading).toBe(false);
 
     let started: Promise<unknown> = Promise.resolve();
     act(() => {
-      started = result.current.start('album');
+      started = result.current.start('album', { statusLine: true });
     });
-    await waitFor(() => expect(result.current.uploading).toBe(true));
+    await waitFor(() => expect(statusOf()?.thumbnailUrl).toBe('blob:thumbnail'));
+    // 두 장 모두 받았지만 응답 전이라 진행 바는 반만 참
+    await waitFor(() =>
+      expect(statusOf()).toMatchObject({ phase: 'uploading', total: 2, done: 0, steps: 2 }),
+    );
 
     release();
     await act(() => started);
-    expect(result.current.uploading).toBe(false);
+    expect(statusOf()).toMatchObject({
+      phase: 'complete',
+      total: 2,
+      done: 2,
+      steps: 4,
+      message: '2장의 사진을 사진함에 추가했어요.',
+      withBundleHint: true,
+    });
+    expect(toastSpy).not.toHaveBeenCalled();
   });
 
+  it('일부를 올리지 못해도 한 장이라도 추가됐으면 결과 문구와 함께 둘째 줄 안내를 붙인다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2'));
+    let calls = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', () => {
+        calls += 1;
+        return calls === 1 ? ok({ photoId: 7_001, result: 'STORED' }) : fail(409, 'PHOTO_001');
+      }),
+    );
+    const { result } = render();
+
+    await act(() => result.current.start('album', { statusLine: true }));
+
+    expect(statusOf()).toMatchObject({
+      phase: 'complete',
+      message: '1장을 추가했어요. 1장은 올리지 못했어요.',
+      withBundleHint: true,
+    });
+    expect(toastSpy).not.toHaveBeenCalled();
+  });
+
+  it('한도 오류로 남은 사진을 건너뛰거나 읽지 못한 사진도 끝난 장수에 세어 완료하고, 추가한 사진이 없으면 둘째 줄이 없다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1', 'p2', 'p3', 'p4', 'p5'));
+    bridge.readPickedPhoto.mockImplementation((id: string) =>
+      id === 'p1' ? Promise.reject(new Error('read failed')) : Promise.resolve(imageOf(id)),
+    );
+    server.use(http.post('/api/bunches/:bunchId/photos', () => fail(409, 'PHOTO_002')));
+    const { result } = render();
+
+    await act(() => result.current.start('album', { statusLine: true }));
+
+    expect(statusOf()).toMatchObject({
+      phase: 'complete',
+      total: 5,
+      done: 5,
+      steps: 10,
+      message: '사진을 올리지 못했어요.',
+      withBundleHint: false,
+    });
+    expect(toastSpy).not.toHaveBeenCalled();
+  });
+
+  it('상태 줄을 보는 화면이 없으면(사진 상세 등) 결과를 토스트로 대신 알린다', async () => {
+    unwatch();
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    const { result } = render();
+
+    await act(() => result.current.start('album', { statusLine: true }));
+
+    expect(statusOf()?.phase).toBe('complete');
+    expect(lastToast()).toEqual(['1장의 사진을 사진함에 추가했어요.', undefined]);
+  });
+
+  it('다른 탭에 가 있어 페이지가 숨어 있으면 결과 토스트를 미뤘다가 다시 보일 때 띄우고, 그때부터 상태 줄 유지 시간을 센다', async () => {
+    unwatch();
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    const { result } = render();
+
+    await act(() => result.current.start('album', { statusLine: true }));
+    expect(toastSpy).not.toHaveBeenCalled();
+    expect(statusOf()).toMatchObject({ phase: 'complete', shownAt: undefined });
+
+    visibility.mockReturnValue('visible');
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(lastToast()).toEqual(['1장의 사진을 사진함에 추가했어요.', undefined]);
+    const shown = statusOf();
+    expect(shown?.phase === 'complete' ? typeof shown.shownAt : undefined).toBe('number');
+    visibility.mockRestore();
+  });
+
+  it('숨어 있는 사이 사진함이 다른 번치로 바뀌었으면 다시 보일 때 원래 번치의 결과를 토스트로 알린다', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    const { result } = render();
+
+    await act(() => result.current.start('album', { statusLine: true }));
+    expect(toastSpy).not.toHaveBeenCalled();
+
+    // 다른 탭에서 번치를 바꿔 숨은 사진함이 다른 번치를 보게 됨
+    unwatch();
+    unwatch = uploadStatusStore.watch('other-bunch');
+    visibility.mockReturnValue('visible');
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(lastToast()).toEqual(['1장의 사진을 사진함에 추가했어요.', undefined]);
+    visibility.mockRestore();
+  });
+
+  it('올리는 중에 사진함을 다른 번치로 바꿨으면 원래 번치의 결과를 토스트로 알린다', async () => {
+    unwatch();
+    unwatch = uploadStatusStore.watch('other-bunch');
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    const { result } = render();
+
+    await act(() => result.current.start('album', { statusLine: true }));
+
+    expect(lastToast()).toEqual(['1장의 사진을 사진함에 추가했어요.', undefined]);
+  });
+
+  it('「다시 시도」할 사진이 있으면 토스트를 띄우고, 누르면 상태 줄이 다시 시도한 사진으로 새로 시작한다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    let calls = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', () => {
+        calls += 1;
+        return calls === 1 ? fail(503, 'PHOTO_007') : undefined;
+      }),
+    );
+    const { result } = render();
+
+    await act(() => result.current.start('album', { statusLine: true }));
+    expect(statusOf()).toMatchObject({
+      phase: 'complete',
+      message: '사진을 올리지 못했어요.',
+      withBundleHint: false,
+    });
+    const [message, options] = lastToast() ?? [];
+    expect(message).toBe('사진을 올리지 못했어요.');
+    expect(options?.action?.label).toBe(PHOTO_BOX_MESSAGES.uploadRetry);
+
+    act(() => options?.action?.onClick());
+    expect(statusOf()).toMatchObject({ phase: 'uploading', total: 1, done: 0, steps: 0 });
+    await waitFor(() =>
+      expect(statusOf()).toMatchObject({
+        phase: 'complete',
+        message: '1장의 사진을 사진함에 추가했어요.',
+      }),
+    );
+    // 다시 시도가 모두 성공하면 다시 토스트를 띄우지 않음
+    expect(toastSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('상태 줄을 쓰지 않으면(번들 작성의 가져오기) 상태를 기록하지 않는다', async () => {
+    bridge.pickGalleryImages.mockResolvedValue(pickedAlbum('p1'));
+    const { result } = render();
+
+    await act(() => result.current.start('album'));
+
+    expect(statusOf()).toBeUndefined();
+    expect(lastToast()).toEqual(['1장의 사진을 사진함에 추가했어요.', undefined]);
+  });
+});
+
+describe('usePhotoUpload 상태 안내', () => {
   it('앨범 선택에서 권한 거부가 오면(계약상 없음) 카메라 안내 창 대신 일반 오류로 알린다', async () => {
     bridge.pickGalleryImages.mockResolvedValue({ status: 'denied' });
     const { result } = render();
