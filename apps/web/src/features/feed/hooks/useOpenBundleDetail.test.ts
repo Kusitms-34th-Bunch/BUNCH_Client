@@ -90,10 +90,13 @@ describe('useOpenBundleDetail', () => {
       vi.advanceTimersByTime(400);
       expect(push).not.toHaveBeenCalled();
 
-      const hidden = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      // 기다리는 사이 잠깐 숨겨졌다가(앱 탭 전환 등) 돌아와도 이동하지 않음
       result.current.open(bundle, '/c', { waitMs: 400 });
-      vi.advanceTimersByTime(400);
+      const hidden = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
       hidden.mockRestore();
+      document.dispatchEvent(new Event('visibilitychange'));
+      vi.advanceTimersByTime(400);
       expect(push).not.toHaveBeenCalled();
 
       const { result: other, unmount } = renderHook(() => useOpenBundleDetail({ viewerId: 'b1' }));

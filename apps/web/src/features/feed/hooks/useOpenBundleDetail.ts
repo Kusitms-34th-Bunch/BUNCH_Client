@@ -59,19 +59,23 @@ export function useOpenBundleDetail({ viewerId, prefetchBunch }: OpenBundleDetai
       return;
     }
     if (cancelPending.current) return;
-    // 기다리는 사이 다른 화면·앱 탭으로 갔으면(탭 WebView는 숨어도 주소가 그대로) 이동하지 않음
+    // 기다리는 사이 다른 화면으로 갔거나 한 번이라도 숨겨졌으면(앱 탭 WebView는 숨어도 주소가 그대로) 이동하지 않음
     const from = window.location.href;
+    const cancelWhenHidden = () => {
+      if (document.visibilityState === 'hidden') cancel();
+    };
     const cancel = () => {
       clearTimeout(timer);
+      document.removeEventListener('visibilitychange', cancelWhenHidden);
       cancelPending.current = null;
     };
     const go = () => {
       if (cancelPending.current !== cancel) return;
       cancel();
-      if (window.location.href === from && document.visibilityState === 'visible')
-        router.push(href);
+      if (window.location.href === from) router.push(href);
     };
     const timer = setTimeout(go, waitMs);
+    document.addEventListener('visibilitychange', cancelWhenHidden);
     cancelPending.current = cancel;
     void ready.then(go);
   };

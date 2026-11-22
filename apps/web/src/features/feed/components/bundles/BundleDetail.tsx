@@ -195,13 +195,14 @@ export function BundleDetail({
     const startedAt = performance.now();
     let frame = 0;
     let cancelled = false;
-    // 기다리는 동안 사용자가 직접 조작하면(키, 누를 수 있는 요소를 누름) 그 초점·위치를 지키도록 예약한 스크롤·초점을 취소
-    // 빈 곳 누름(말풍선을 연달아 두 번 눌러 새 화면에 떨어진 두 번째 누름 등)은 취소하지 않음
+    // 기다리는 동안 사용자가 직접 조작하면(키, 누를 수 있는 요소를 누름, 휠·손가락으로 끌어 스크롤) 그 초점·위치를 지키도록 취소
+    // 빈 곳 누름(말풍선을 연달아 두 번 눌러 새 화면에 떨어진 두 번째 누름 등)은 끌지 않으므로 취소하지 않음
     let stopScroll = () => {};
     const stopListening = () => {
       document.removeEventListener('keydown', cancel, true);
       document.removeEventListener('pointerdown', cancelOnControl, true);
       document.removeEventListener('touchstart', cancel, true);
+      document.removeEventListener('touchmove', cancel, true);
       document.removeEventListener('wheel', cancel, true);
     };
     function cancel() {
@@ -215,6 +216,8 @@ export function BundleDetail({
     }
     document.addEventListener('keydown', cancel, true);
     document.addEventListener('pointerdown', cancelOnControl, true);
+    document.addEventListener('touchmove', cancel, true);
+    document.addEventListener('wheel', cancel, true);
     const run = () => {
       // 화면 전환(나가는 화면의 data-page-leaving)이 끝난 뒤 스크롤·초점. 전환이 멈춰 표식이 남아도 잠시 뒤에는 진행
       if (
@@ -226,9 +229,8 @@ export function BundleDetail({
       }
       // 말풍선 진입은 열리기 전에 이미 내려 둠(아래 layout effect): 그사이 늦게 그려진 내용만 바로 맞추고 키보드
       // 알림 진입은 전환 뒤 부드럽게. 키보드는 스크롤이 끝난 뒤(도중에 올리면 iOS가 화면을 함께 밀어 어긋남)
-      // 스크롤 중 손가락·휠로 직접 움직이거나, 초점이 이미 제목 밖(스크린 리더로 읽는 중 등)이면 초점을 옮기지 않음
+      // 스크롤 중 손가락을 대거나(부드러운 스크롤을 멈춤), 초점이 이미 제목 밖(스크린 리더로 읽는 중 등)이면 초점을 옮기지 않음
       document.addEventListener('touchstart', cancel, true);
-      document.addEventListener('wheel', cancel, true);
       stopScroll = scrollToComments(commentsEntry !== 'focus', () => {
         stopListening();
         const focused = document.activeElement;

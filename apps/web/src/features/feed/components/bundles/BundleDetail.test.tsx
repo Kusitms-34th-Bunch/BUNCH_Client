@@ -543,6 +543,28 @@ describe('BundleDetail', () => {
       expect(document.activeElement).toBe(textbox());
     });
 
+    it('기다리는 동안 휠이나 손가락으로 끌어 스크롤하면 예약한 스크롤·초점을 취소한다', () => {
+      for (const scroll of [
+        (target: Element) => fireEvent.wheel(target),
+        (target: Element) => fireEvent.touchMove(target),
+      ]) {
+        const { unmount } = renderDetail('1', { showComments: true });
+        const section = screen.getByRole('region', { name: '댓글' });
+        placeComments(section);
+        const main = section.closest('main')!;
+        const scrollTo = vi.fn();
+        main.scrollTo = scrollTo as typeof main.scrollTo;
+        runFrames();
+
+        scroll(main);
+        leaving.remove();
+        runFrames();
+        expect(scrollTo).not.toHaveBeenCalled();
+        unmount();
+        document.body.append(leaving);
+      }
+    });
+
     it('기다리는 동안 누를 수 있는 요소를 누르면 예약한 초점을 취소한다', () => {
       renderDetail('1', { focusComments: true });
       runFrames();
