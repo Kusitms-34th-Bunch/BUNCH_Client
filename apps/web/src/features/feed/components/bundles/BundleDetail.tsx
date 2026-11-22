@@ -56,9 +56,8 @@ const INTERACTIVE_SELECTOR =
 const SEEK_SECTION_DELAY_MS = 500;
 const SEEK_CAP_MS = 4000;
 const SEEK_MAX_PAGES = 5;
-// 스크롤 뒤 대상이 가운데에서 이만큼 넘게 벗어나면 다시 맞춤(최대 횟수)
+// 맞춘 뒤 대상이 가운데에서 이만큼 넘게 벗어나면 다시 맞춤
 const SEEK_ALIGN_TOLERANCE_PX = 24;
-const SEEK_MAX_REALIGNS = 2;
 
 // 전환이 화면을 scale로 키우는 중이면 화면 좌표가 배율만큼 줄어 scrollTop 단위로 되돌림
 const viewScale = (main: HTMLElement) =>
@@ -308,32 +307,44 @@ export function BundleDetail({
     let seekStartedAt: number | undefined;
     let pages = 0;
     let sectionShown = false;
-    let realigns = 0;
     function seek() {
       if (cancelled) return;
       seekStartedAt ??= performance.now();
       const item = commentsRef.current?.querySelector<HTMLElement>(`#comment-${targetCommentId}`);
       if (item) {
-        // 위쪽 원댓글의 답글이 늦게 와 끼어들면 대상이 밀려 있어 가운데에서 벗어났으면 다시 맞춤, 맞으면 초점
-        const settle = () => {
+        // 맞춘 뒤 찾기 상한까지 위치를 지킴: 위쪽 원댓글의 답글이 늦게 그려져 대상이 밀리면 바로 되돌림
+        // 조작·다른 주체의 스크롤(스크린 리더·스위치 등은 터치 이벤트가 없음)·초점 이탈이면 멈춤. 긴 댓글은 윗부분을 맞춤
+        let lastTop: number | undefined;
+        const hold = () => {
           const main = item.closest('main');
-          if (main && realigns < SEEK_MAX_REALIGNS && !cancelled) {
-            const box = item.getBoundingClientRect();
-            const off =
-              (box.top - main.getBoundingClientRect().top) / viewScale(main) -
-              (main.clientHeight - item.offsetHeight) / 2;
-            const room =
-              off > 0 ? main.scrollHeight - main.clientHeight - main.scrollTop : main.scrollTop;
-            if (Math.abs(off) > SEEK_ALIGN_TOLERANCE_PX && room > SEEK_ALIGN_TOLERANCE_PX) {
-              realigns += 1;
-              seek();
-              return;
-            }
+          if (
+            cancelled ||
+            !main ||
+            document.activeElement !== item ||
+            // 소수 배율 기기의 1px 재정렬은 사용자 스크롤로 보지 않음
+            (lastTop !== undefined && Math.abs(main.scrollTop - lastTop) > 1) ||
+            performance.now() - (seekStartedAt ?? 0) > SEEK_CAP_MS
+          ) {
+            stopListening();
+            return;
           }
-          stopListening();
+          const off =
+            (item.getBoundingClientRect().top - main.getBoundingClientRect().top) /
+              viewScale(main) -
+            Math.max((main.clientHeight - item.offsetHeight) / 2, 0);
+          const room =
+            off > 0 ? main.scrollHeight - main.clientHeight - main.scrollTop : main.scrollTop;
+          if (Math.abs(off) > SEEK_ALIGN_TOLERANCE_PX && room > SEEK_ALIGN_TOLERANCE_PX)
+            main.scrollTop += off;
+          lastTop = main.scrollTop;
+          frame = requestAnimationFrame(hold);
+        };
+        const settle = () => {
           if (cancelled) return;
           const focused = document.activeElement;
           if (!focused || focused === document.body || focused.tagName === 'H1') quietFocus(item);
+          // 초점을 옮기지 않았으면(스크린 리더로 읽는 중 등) 위치도 그 사용자에게 맡김
+          hold();
         };
         stopScroll();
         stopScroll = scrollToComments(

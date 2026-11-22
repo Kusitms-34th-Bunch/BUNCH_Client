@@ -36,10 +36,14 @@ afterEach(() => {
 });
 
 describe('usePhotoPinchZoom', () => {
-  it('복제본 디코딩이 끝나기 전에는 원본을 그대로 보이고 복제본은 투명하다', () => {
-    const decode = vi
-      .spyOn(HTMLImageElement.prototype, 'decode')
-      .mockImplementation(() => new Promise<void>(() => {}));
+  it('복제본 디코딩이 끝나기 전에는 원본을 그대로 보이고 복제본은 투명하다', async () => {
+    let decoded = () => {};
+    const decode = vi.spyOn(HTMLImageElement.prototype, 'decode').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          decoded = resolve;
+        }),
+    );
     try {
       const { getByAltText } = render(<Photos />);
       const photo = getByAltText('둘째 사진');
@@ -54,6 +58,11 @@ describe('usePhotoPinchZoom', () => {
 
       // 디코딩 전에 손을 떼면 복제본을 치우고, 뒤늦게 끝나도 원본을 숨기지 않음
       photo.dispatchEvent(touchEvent('touchend', [{ target: photo, x: 100, y: 100 }]));
+      expect(zoomClone()).toBeNull();
+      await act(async () => {
+        decoded();
+        await Promise.resolve();
+      });
       expect(zoomClone()).toBeNull();
       expect(photo.style.visibility).toBe('');
     } finally {

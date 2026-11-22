@@ -47,6 +47,8 @@ const opened = (target: PushOpen['target'], notificationId: number | null = 5): 
 
 const renderNavigator = () =>
   render(<PushOpenNavigator />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+// 쉘 알림 구독은 프로필을 받아 로그인이 확인된 뒤에 생김(그때 처음 가져가기도 시도함)
+const signedInReady = () => waitFor(() => expect(bridge.listeners.has('pushOpened')).toBe(true));
 
 describe('PushOpenNavigator', () => {
   const openCalls: string[] = [];
@@ -134,7 +136,9 @@ describe('PushOpenNavigator', () => {
     bridge.tab = null;
     bridge.takeOpenedPush.mockResolvedValue(opened({ kind: 'MEMBERS', bunchId: MOCK_BUNCH_ID }));
     renderNavigator();
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await signedInReady();
+    // 가드는 기다리는 일 없이 바로 돌아가 알림 직후에 판정할 수 있음
+    bridge.listeners.get('pushOpened')?.();
     expect(bridge.takeOpenedPush).not.toHaveBeenCalled();
   });
 
@@ -156,8 +160,8 @@ describe('PushOpenNavigator', () => {
     try {
       bridge.takeOpenedPush.mockResolvedValue(opened({ kind: 'MEMBERS', bunchId: MOCK_BUNCH_ID }));
       renderNavigator();
+      await signedInReady();
       bridge.listeners.get('pushOpened')?.();
-      await new Promise((resolve) => setTimeout(resolve, 50));
       expect(bridge.takeOpenedPush).not.toHaveBeenCalled();
     } finally {
       visibility.mockRestore();
