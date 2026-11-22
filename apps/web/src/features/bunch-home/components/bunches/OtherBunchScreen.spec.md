@@ -42,7 +42,7 @@
 - 시트는 Figma Bottom Sheet 05 모양이지만 디자인 시스템 `AdminTransferSheet`는 관리자 지정 문구가 고정이라, 같은 `BottomSheet` 부품으로 화면 쪽(`FollowCancelSheet`)에서 조립했다.
 - 프로필 영역은 번치 홈의 `BunchProfile`을 재사용하고 「콕한 장소」는 숨긴다(Figma `3086:68423`에 없음). 버튼이 없어도 수치 줄 높이 32를 지켜 Figma와 위치를 맞췄다.
 - 잘못된 주소(400)는 404(`notFound`). 서버 404는 위의 삭제된 번치 처리다. 그 밖의 실패는 뒤로 가기가 있는 다시 시도 화면. 루트 `app/not-found.tsx`가 앱 틀 안에서 안내와 「번치 탭으로 가기」를 보여 준다(없는 주소의 404도 같이 씀).
-- 전환: 피드 → 프로필 → 멤버 목록, 프로필 → 번들 상세는 `drill`(`docs/architecture/motion.md`). 뒤로 가기는 기록이 없으면 프로필은 피드, 멤버 목록은 프로필로 `replace`.
+- 전환: 피드 → 프로필 → 멤버 목록은 `drill`, 프로필 격자 → 번들 상세는 칸 사진을 상세 첫 사진으로 잇는 `hero`(#514, `docs/architecture/motion.md`). 뒤로 가기는 기록이 없으면 프로필은 피드, 멤버 목록은 프로필로 `replace`.
 
 ## UI와 접근성
 

@@ -1,6 +1,7 @@
 import { LineMemberSmallIcon } from '@app/design-system';
 import Link from 'next/link';
 import { type RefObject, useState } from 'react';
+import { bundleHeroKey } from '@/shared/lib/heroKeys';
 import type { CompletedBundle } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
@@ -19,7 +20,7 @@ type CompletedBundleGridProps = {
 
 /**
  * 완성된 번들 대표 사진 3열 그리드(123×163 비율, 사이 1px, 위 2px, 좌우 2px), 멤버 공개 번들은 오른쪽 위에 멤버 아이콘
- * 칸은 번들 상세(6.2) 링크, 이름은 사진 대체 텍스트
+ * 칸은 번들 상세(6.2) 링크, 이름은 사진 대체 텍스트. 칸 사진은 상세 첫 사진으로 이어지는 hero로 열림
  */
 export function CompletedBundleGrid({
   bunchId,
@@ -37,6 +38,8 @@ export function CompletedBundleGrid({
         >
           <Link
             href={BUNCH_HOME_PATHS.bundle(bunchId, bundle.id)}
+            // 칸 사진을 상세 첫 사진으로 잇는 hero 짝(AppTransitions)
+            data-hero-enter-key={bundleHeroKey(bundle.id)}
             onPointerDown={() => onPressStart?.(bundle.id)}
             onClick={(event) => {
               // 보조 키·가운데 버튼 클릭은 브라우저 기본 동작(새 탭 등)에 맡김
