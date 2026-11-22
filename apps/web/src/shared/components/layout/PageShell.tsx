@@ -126,6 +126,8 @@ export function PageShell({
         'bg-surface-primary flex min-h-0 flex-1 flex-col',
         collapsible &&
           'relative -mt-(--safe-area-top) overflow-hidden [--page-top-inset:var(--page-header-height,calc(var(--safe-area-top)+3rem))]',
+        // 나가는 동안은 상태 표시줄 자리를 잘라 냄: 흰 헤더가 drill 내내 남지 않고 다른 화면처럼 틀 색(AppFrame)이 함께 바뀜
+        collapsible && 'in-data-page-leaving:[clip-path:inset(var(--safe-area-top)_0_0_0)]',
         className,
       )}
     >

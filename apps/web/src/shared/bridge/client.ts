@@ -65,6 +65,8 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     feedbackHaptic: () => Promise.resolve(),
     // 브라우저는 웹 영상으로 로그인 배경을 그림
     setNativeLoginBackground: () => Promise.resolve(false),
+    // 브라우저에는 푸시로 여는 일이 없음
+    takeOpenedPush: () => Promise.resolve(null),
   },
 });
 

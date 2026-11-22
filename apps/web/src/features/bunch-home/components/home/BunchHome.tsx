@@ -106,7 +106,9 @@ export function BunchHome({
   // 번치 전환·접근 불가 안내 삭제·작성 중인 번들 삭제를 서버에 보냄
   const actions: BunchHomeActions = {
     // 새 번치 홈과 기본 번치를 받을 때까지 기다려 전환 토스트가 새 번치 화면과 함께 뜸
-    switchBunch: (bunchId: string) => switchBunch.mutateAsync(bunchId),
+    switchBunch: async (bunchId: string) => {
+      await switchBunch.mutateAsync(bunchId);
+    },
     removeBunch: (bunchId: string) => {
       const noticeId = serverBunches.find((bunch) => bunch.id === bunchId)?.noticeId;
       if (!noticeId || deleteNotice.isPending) return;

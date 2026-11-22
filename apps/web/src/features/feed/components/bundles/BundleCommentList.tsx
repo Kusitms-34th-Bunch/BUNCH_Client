@@ -79,6 +79,10 @@ export function BundleCommentList({
                 key={comment.id}
                 id={`comment-${comment.id}`}
                 tabIndex={-1}
+                // 초점을 받으면(알림 진입·등록) 작성자 이름 다음에 본문도 읽힘. 삭제된 댓글은 이름에 담겨 제외
+                aria-describedby={
+                  !comment.deleted && comment.content ? `comment-body-${comment.id}` : undefined
+                }
                 // 등록·삭제 뒤 초점이 오면 어떤 댓글인지 읽히게 이름을 붙임
                 aria-label={
                   comment.deleted
@@ -87,9 +91,10 @@ export function BundleCommentList({
                       ? text.replyLabel(comment.author)
                       : text.commentLabel(comment.author)
                 }
-                className="focus-visible:outline-border-brand rounded-r4 focus-visible:outline-2"
+                className="focus-visible:outline-border-brand rounded-r4 focus-visible:outline-2 data-quiet-focus:focus-visible:outline-none"
               >
                 <CommentItem
+                  contentId={`comment-body-${comment.id}`}
                   author={comment.author}
                   onProfile={
                     comment.memberId ? onOpenProfile.bind(null, comment.memberId) : undefined

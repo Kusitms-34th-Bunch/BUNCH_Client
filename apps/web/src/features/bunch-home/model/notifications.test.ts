@@ -10,6 +10,19 @@ describe('notificationPath', () => {
     ['DRAFT', { bundleId: 7 }, '/bunch/drafts/7'],
     ['BUNDLE', { bundleId: 7 }, '/bunches/1/bundles/7'],
     ['BUNDLE_COMMENTS', { bundleId: 7 }, '/bunches/1/bundles/7?section=comments'],
+    // 다른 번치 번들의 댓글·답글·좋아요: 받은 번치(1)가 아니라 번들 소유 번치(77)
+    [
+      'BUNDLE_COMMENTS',
+      { bundleId: 7, targetBunchId: 77, sourceBunchId: 77 },
+      '/bunches/77/bundles/7?section=comments',
+    ],
+    ['BUNDLE', { bundleId: 7, targetBunchId: 77 }, '/bunches/77/bundles/7'],
+    // 댓글·답글 알림은 그 댓글까지(답글이면 답글 ID)
+    [
+      'BUNDLE_COMMENTS',
+      { bundleId: 7, commentId: 912 },
+      '/bunches/1/bundles/7?section=comments&comment=912',
+    ],
     ['CANDIDATES', {}, '/bunch/bundles/new/members'],
     ['OTHER_BUNCH_PROFILE', { targetBunchId: 3 }, '/bunches/3'],
     // 「작성 중인 번들」 탭으로 바로(5.12.2), 초안 ID가 없는 초안 알림도 같은 탭
@@ -23,6 +36,13 @@ describe('notificationPath', () => {
   ])('%s %o → %s', (kind, ids, path) => {
     expect(notificationPath(target(kind, ids))).toBe(path);
   });
+});
+
+it('푸시로 열면 댓글 알림 주소에 via=push를 붙인다(상세가 처음부터 그 댓글 위치)', () => {
+  expect(
+    notificationPath(target('BUNDLE_COMMENTS', { bundleId: 7, commentId: 9 }), { fromPush: true }),
+  ).toBe('/bunches/1/bundles/7?section=comments&comment=9&via=push');
+  expect(notificationPath(target('MEMBERS'), { fromPush: true })).toBe('/bunch/members');
 });
 
 describe('toBunchNotifications', () => {

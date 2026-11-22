@@ -20,6 +20,7 @@ import {
   hideNativeToastParamsSchema,
   nativeTabBarVisibilitySchema,
   nativeTabEventSchema,
+  pushOpenSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
@@ -39,6 +40,7 @@ import { incomingLinkStore } from '../incoming-link-store';
 import { loginBackgroundStore } from '../login-background/login-background-store';
 import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
 import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
+import { pushOpenStore } from '../push-open-store';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { authorizeApple, socialLogin } from '../social-login';
 import {
@@ -89,6 +91,14 @@ const appBridge = bridge({
   getPermissionStatus,
   getPushDeviceRegistration,
   getPushInstallationId,
+  // 푸시로 연 알림은 화면에 보이는 WebView(웹이 보낸 자기 탭 ID, 첫 화면은 null)만 가져감
+  takeOpenedPush: (tab) => {
+    const tabId = typeof tab === 'string' && isTabId(tab) ? tab : undefined;
+    if (tab !== null && !tabId) return Promise.resolve(null);
+    if (!isVisibleWebView(tabId)) return Promise.resolve(null);
+    const open = pushOpenStore.take();
+    return Promise.resolve(open && pushOpenSchema.safeParse(open).success ? open : null);
+  },
   copyToClipboard,
   readClipboard,
   socialLogin,

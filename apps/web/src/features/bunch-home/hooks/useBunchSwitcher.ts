@@ -43,7 +43,9 @@ export function useBunchSwitcher(current: CurrentBunch | undefined) {
   const { openSwitcher, switcherOpen } = useBunchSwitchSheet({
     currentId: currentId ?? '',
     bunches,
-    switchBunch: (bunchId) => switchBunch.mutateAsync(bunchId),
+    switchBunch: async (bunchId) => {
+      await switchBunch.mutateAsync(bunchId);
+    },
     removeBunch: (bunchId) => {
       const noticeId = bunches.find((bunch) => bunch.id === bunchId)?.noticeId;
       if (!noticeId || deleteNotice.isPending) return;

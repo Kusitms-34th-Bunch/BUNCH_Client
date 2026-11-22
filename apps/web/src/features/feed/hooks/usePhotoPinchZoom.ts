@@ -94,9 +94,17 @@ export function usePhotoPinchZoom() {
         zIndex: '41',
         pointerEvents: 'none',
         transformOrigin: `${startMid.x - rect.left}px ${startMid.y - rect.top}px`,
+        opacity: '0',
       });
       document.body.append(backdrop, clone);
-      photo.style.visibility = 'hidden';
+      // 복제본은 새 img라 다시 디코딩함(lazy로 받은 둘째 사진부터 빈칸·점점 그려짐이 보였음). 다 그린 뒤 원본과 바꿈
+      backdrop.style.visibility = 'hidden';
+      const show = () => {
+        if (session?.clone !== clone) return;
+        clone.style.removeProperty('opacity');
+        backdrop.style.removeProperty('visibility');
+        photo.style.visibility = 'hidden';
+      };
       session = {
         photo,
         clone,
@@ -105,6 +113,8 @@ export function usePhotoPinchZoom() {
         startMid,
         transform: 'none',
       };
+      if (typeof clone.decode === 'function') clone.decode().then(show, show);
+      else show();
     };
 
     const move = (event: TouchEvent) => {

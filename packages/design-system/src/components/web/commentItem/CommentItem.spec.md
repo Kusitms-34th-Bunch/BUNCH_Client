@@ -24,7 +24,7 @@
 
 ## Public API
 
-- Props: `author`(필수), `avatarSrc`, `bunchName`, `bunchColor`(기본 brand), `date`, `content`, `reply`, `deleted`, `replyCount`(0이면 「답글 달기」), `onReply`, `onMore`, `moreLabel`(기본 `<닉네임> 댓글 더보기`), `onProfile`(있으면 프로필 이미지가 「<닉네임> 프로필 보기」 버튼이 되고 닉네임도 눌러 열림. 닉네임은 같은 동작이라 초점·낭독에서 빼 탭 순서가 하나만 늘어남. 삭제된 댓글은 무시), native `<div>` 속성.
+- Props: `author`(필수), `avatarSrc`, `bunchName`, `bunchColor`(기본 brand), `date`, `content`, `contentId`(본문·삭제 안내 요소의 id. 바깥 요소가 `aria-describedby`로 본문을 읽게 할 때), `reply`, `deleted`, `replyCount`(0이면 「답글 달기」), `onReply`, `onMore`, `moreLabel`(기본 `<닉네임> 댓글 더보기`), `onProfile`(있으면 프로필 이미지가 「<닉네임> 프로필 보기」 버튼이 되고 닉네임도 눌러 열림. 닉네임은 같은 동작이라 초점·낭독에서 빼 탭 순서가 하나만 늘어남. 삭제된 댓글은 무시), native `<div>` 속성.
 - Figma 이름 대응: `Type=Comment`→기본, `Type2`→`reply`, `Type3`→`deleted`, `Type4`→`deleted`+`reply`. `showReplyCount`→`onReply` 유무.
 
 ## 상태와 동작

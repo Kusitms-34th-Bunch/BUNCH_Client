@@ -9,6 +9,7 @@ import {
   galleryImageSchema,
   isSavableImageUrl,
   nativeTabEventSchema,
+  pushOpenSchema,
   pickGalleryImageOptionsSchema,
   pickGalleryImagesOptionsSchema,
   pickPhotosResultSchema,
@@ -393,4 +394,23 @@ void test('네이티브 토스트는 정해진 형태만 받는다', () => {
   }
   assert.equal(nativeToastActionSchema.safeParse({ tab: 'bunch', id: 't1' }).success, true);
   assert.equal(nativeToastActionSchema.safeParse({ tab: 'bunch' }).success, false);
+});
+
+void test('푸시 알림은 종류·수신함 번치와 양의 정수 ID만 받고 알림 ID는 없으면 null이다', () => {
+  const parse = (value: unknown) => pushOpenSchema.safeParse(value).success;
+  const target = {
+    kind: 'BUNDLE_COMMENTS',
+    bunchId: 42,
+    bundleId: 305,
+    targetBunchId: 77,
+    commentId: 912,
+  };
+  assert.equal(parse({ target, notificationId: 801 }), true);
+  assert.equal(parse({ target: { kind: 'MEMBERS', bunchId: 42 }, notificationId: null }), true);
+  assert.equal(parse({ target: { ...target, bunchId: 0 }, notificationId: 801 }), false);
+  assert.equal(parse({ target: { ...target, commentId: '912' }, notificationId: 801 }), false);
+  assert.equal(parse({ target: { ...target, kind: '' }, notificationId: 801 }), false);
+  // 쉘이 아는 필드만 골라 보내므로 모르는 필드는 거절
+  assert.equal(parse({ target: { ...target, parentCommentId: null }, notificationId: 801 }), false);
+  assert.equal(parse({ target, notificationId: 801, extra: 1 }), false);
 });

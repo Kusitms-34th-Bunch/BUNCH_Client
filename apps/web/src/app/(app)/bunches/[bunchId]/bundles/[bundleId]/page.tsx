@@ -11,9 +11,17 @@ export default async function BundleDetailPage({
   searchParams,
 }: {
   params: Promise<{ bunchId: string; bundleId: string }>;
-  searchParams: Promise<{ focus?: string | string[]; section?: string | string[] }>;
+  searchParams: Promise<{
+    focus?: string | string[];
+    section?: string | string[];
+    comment?: string | string[];
+    via?: string | string[];
+  }>;
 }) {
-  const [{ bunchId, bundleId }, { focus, section }] = await Promise.all([params, searchParams]);
+  const [{ bunchId, bundleId }, { focus, section, comment, via }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const fromBubble = focus === 'comments';
   return (
     <div
@@ -25,7 +33,7 @@ export default async function BundleDetailPage({
       // 복제본은 계산된 스타일을 inline으로 받고 zoom 표식이 지워져서 enter 표식이 없는 형제를 important로 숨김
       className={`bg-surface-primary flex h-full min-h-0 flex-1 flex-col ${fromBubble ? '[&>:not([data-zoom-enter-key])]:invisible!' : ''}`}
     >
-      {/* 알 수 없는 focus·section 값은 무시. focus는 말풍선(입력란 초점), section은 댓글 알림(스크롤만) */}
+      {/* 알 수 없는 focus·section·comment 값은 무시. focus는 말풍선(입력란 초점), section은 댓글 알림(스크롤만), comment는 그 알림의 댓글 ID, via=push는 푸시로 열림 */}
       {/* zoom은 화면 안에서 같은 값의 enter 표식을 정확히 하나 찾음(틀 자신은 찾지 않아 안쪽에 둠, 피드 카드는 exit 표식) */}
       <div data-zoom-enter-key={bundleHeroKey(bundleId)} className="flex min-h-0 flex-1 flex-col">
         <BundleDetailRoute
@@ -33,6 +41,12 @@ export default async function BundleDetailPage({
           bundleId={bundleId}
           focusComments={focus === 'comments'}
           showComments={section === 'comments'}
+          targetCommentId={
+            section === 'comments' && typeof comment === 'string' && /^[1-9]\d{0,18}$/.test(comment)
+              ? comment
+              : undefined
+          }
+          instantComment={via === 'push'}
         />
       </div>
     </div>
