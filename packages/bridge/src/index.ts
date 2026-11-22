@@ -11,6 +11,7 @@ import type {
   PickGalleryImagesOptions,
   PickPhotosResult,
   PushDeviceRegistration,
+  PushOpen,
   SaveImagesToAlbumResult,
   HideNativeToastParams,
   SetNativeFloatingButtonParams,
@@ -52,6 +53,8 @@ export {
   pushDeviceRegistrationSchema,
   pushDeviceTokenSchema,
   pushEnvironmentSchema,
+  pushOpenedSchema,
+  pushOpenSchema,
   saveImagesToAlbumResultSchema,
   saveImageUrlSchema,
   saveImageUrlsSchema,
@@ -83,6 +86,8 @@ export type {
   PickGalleryImagesOptions,
   PickPhotosResult,
   PushDeviceRegistration,
+  PushOpen,
+  PushOpened,
   SaveImagesToAlbumResult,
   SetNativeFloatingButtonParams,
   SetNativeTabBarParams,
@@ -152,6 +157,8 @@ export type AppBridgeMethods = {
   feedbackHaptic: (_kind: HapticKind) => Promise<void>;
   /** iOS 쉘 첫 화면 WebView 뒤에 로그인 배경 영상(앱에 든 영상)을 깔거나 걷음. 깔았으면 true(웹은 자기 영상·첫 프레임을 빼고 배경을 투명하게), 탭 화면·안드로이드·브라우저·이 메서드가 없는 이전 쉘이면 false(웹 영상 사용) */
   setNativeLoginBackground: (_visible: boolean) => Promise<boolean>;
+  /** 푸시를 눌러 앱을 연 알림을 한 번 가져감(가져가면 쉘에서 비움). 화면에 보이는 WebView(자기 탭 ID, 첫 화면은 null)만 받고, 없거나 받은 지 오래면 null. 브라우저·이 메서드가 없는 이전 쉘에서는 null */
+  takeOpenedPush: (_tab: string | null) => Promise<PushOpen | null>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */
