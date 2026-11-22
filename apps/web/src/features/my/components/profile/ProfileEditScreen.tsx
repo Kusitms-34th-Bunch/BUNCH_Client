@@ -47,6 +47,7 @@ export function ProfileEditScreen({
   profile,
   demographicsConsent,
   checkNickname = checkNicknameAvailability,
+  pending = false,
 }: {
   profile: MyProfile;
   /**
@@ -56,6 +57,8 @@ export function ProfileEditScreen({
   demographicsConsent: boolean;
   /** 닉네임 중복 확인 호출(테스트에서 바꿔 끼움) */
   checkNickname?: CheckNickname | undefined;
+  /** 받아 둔 값으로 먼저 그리고 새 값을 받는 중: 입력·저장을 막음(옛 값으로 저장해 다른 기기의 변경을 덮지 않게) */
+  pending?: boolean | undefined;
 }) {
   const backOr = useBackOr();
   useScrollFocusedIntoView();
@@ -86,7 +89,7 @@ export function ProfileEditScreen({
     photo !== profile.imageSrc || !isSameValues(fields.values, initial, demographicsConsent);
   // 출생연도·성별 칸이 보이지 않으면 숨은 값으로 저장을 막지 않음(편집 중 철회로 숨겨진 경우)
   const valid = demographicsConsent ? fields.isValid : fields.isNicknameValid;
-  const canSubmit = changed && valid && !photoPending && !saved;
+  const canSubmit = changed && valid && !photoPending && !saved && !pending;
   // 바꾼 내용이 있으면 나가기 전에 확인(기능명세서 7.2.1 상세 7)
   // 저장 뒤 돌아가는 전환 중에는 묻지 않음
   const back = () => {
@@ -203,8 +206,12 @@ export function ProfileEditScreen({
         }
       >
         <h1 className="sr-only">{MY_MESSAGES.profileEditTitle}</h1>
-        {/* 저장 중에는 입력을 잠금(보낸 값과 화면 값이 달라진 채 완료되지 않게). 배치에는 영향 없음 */}
-        <fieldset disabled={submitting} className="contents">
+        {/* 저장 중·새 값을 받는 중에는 입력을 잠금(보낸 값과 화면 값이 달라진 채 완료되지 않게). 배치에는 영향 없음 */}
+        <fieldset
+          disabled={submitting || pending}
+          aria-busy={pending || undefined}
+          className="contents"
+        >
           {/* 헤더 아래 48, 사진과 입력 칸 사이 32(Figma 개인 프로필 편집(1)) */}
           <div className="pt-s18 flex flex-col items-center">
             <ProfilePhotoField

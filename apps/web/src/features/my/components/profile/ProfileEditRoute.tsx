@@ -18,7 +18,8 @@ type Initial = { profile: MyProfile; consented: boolean };
 
 /**
  * 개인 프로필 수정과 내 프로필·추가 개인정보 API를 잇는 컨테이너
- * 지금 값을 채워야 하므로 둘 다 받을 때까지 입력 자리만 스켈레톤(헤더·하단 버튼은 실제 모양), 하나라도 받지 못하면 마이페이지로 돌아가 그 화면에서 오류 토스트를 보임(기능명세서 7.2.1 예외)
+ * 마이페이지가 받아 둔 내 프로필(닉네임·사진)이 있으면 그 값으로 바로 그리고, 이번 진입의 두 조회가 끝날 때까지 입력·저장을 막음
+ * 받아 둔 값이 없으면 본문 전체 스켈레톤(헤더·하단 버튼은 실제 모양), 하나라도 받지 못하면 마이페이지로 돌아가 그 화면에서 오류 토스트를 보임(기능명세서 7.2.1 예외)
  * 출생연도·성별은 추가 개인정보 동의 상태에 따라 표시·숨김(기능명세서 7.2.6 로직 4)
  * 이번 진입의 두 조회가 끝난 뒤의 값으로 초기값을 고정함(받아 둔 옛 캐시로 채우면 다른 기기에서 바꾼 값을 저장 때 덮어씀)
  * 고정한 뒤에는 편집 중에 재조회 응답이 와도 "바뀐 내용" 판단의 기준이 흔들리지 않게 함
@@ -51,8 +52,35 @@ export function ProfileEditRoute() {
   const loading = !shown && !failed;
   const consented =
     shown !== undefined && shown.consented && (infoQuery.additionalInfo?.consented ?? true);
+  // 고정 전에 먼저 그릴 받아 둔 값(출생연도·성별은 받아 둔 동의 정보가 있을 때만)
+  const cached: Initial | undefined =
+    !shown && !failed && profileQuery.profile
+      ? {
+          profile: {
+            ...profileQuery.profile,
+            birthYear: infoQuery.additionalInfo?.birthYear,
+            gender: infoQuery.additionalInfo?.gender,
+          },
+          consented: infoQuery.additionalInfo?.consented ?? false,
+        }
+      : undefined;
   // backOr는 렌더마다 새로 만들어지므로 한 번만 돌아가도록 막음
   const left = useRef(false);
+  // 받아 둔 값으로 먼저 그렸는지(새 값 화면으로 바뀔 때 초점·완료 안내)
+  const [showedCached, setShowedCached] = useState(false);
+  if (cached && !showedCached) setShowedCached(true);
+  const screenRef = useRef<HTMLDivElement>(null);
+  const fresh = shown !== undefined;
+  // 새 값 화면으로 새로 그리면 이전 화면에 있던 초점이 문서로 빠짐: 화면 제목으로 옮겨 스크린 리더 위치를 지킴
+  useEffect(() => {
+    if (!fresh || !showedCached) return;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    const title = screenRef.current?.querySelector<HTMLElement>('h1');
+    if (!title) return;
+    title.tabIndex = -1;
+    title.focus({ preventScroll: true });
+  }, [fresh, showedCached]);
 
   useEffect(() => {
     if (!failed || left.current) return;
@@ -65,24 +93,38 @@ export function ProfileEditRoute() {
     <>
       {/* 불러오는 중임을 스크린 리더에 알림(스켈레톤은 숨김이라 안내를 여기서 맡음, 항상 마운트해 변화가 읽히게 함) */}
       <p role="status" className="sr-only">
-        {loading ? MY_MESSAGES.profileLoading : ''}
+        {loading
+          ? MY_MESSAGES.profileLoading
+          : fresh && showedCached
+            ? MY_MESSAGES.profileLoaded
+            : ''}
       </p>
-      {shown ? (
-        <ProfileEditScreen profile={shown.profile} demographicsConsent={consented} />
-      ) : loading ? (
-        <ProfileEditLoading
-          onBack={() => {
-            // 이미 떠났으면 받기 실패 effect가 한 번 더 뒤로 가지 않게
-            left.current = true;
-            backOr(MY_PATHS.home);
-          }}
-        />
-      ) : null}
+      <div ref={screenRef} className="contents">
+        {shown ? (
+          // 받아 둔 값으로 그린 화면을 이번 진입의 값으로 새로 그림(입력 전이라 잃는 편집 없음)
+          <ProfileEditScreen key="fresh" profile={shown.profile} demographicsConsent={consented} />
+        ) : cached ? (
+          <ProfileEditScreen
+            key="cached"
+            profile={cached.profile}
+            demographicsConsent={cached.consented}
+            pending
+          />
+        ) : loading ? (
+          <ProfileEditLoading
+            onBack={() => {
+              // 이미 떠났으면 받기 실패 effect가 한 번 더 뒤로 가지 않게
+              left.current = true;
+              backOr(MY_PATHS.home);
+            }}
+          />
+        ) : null}
+      </div>
     </>
   );
 }
 
-/** 값을 받는 동안의 화면(ProfileEditScreen과 같은 헤더·하단 버튼, 입력 자리는 스켈레톤). 저장하기는 받기 전이라 막아 둠 */
+/** 받아 둔 값도 없이 받는 동안의 화면(ProfileEditScreen과 같은 헤더·하단 버튼, 본문 전체 스켈레톤). 저장하기는 받기 전이라 막아 둠 */
 function ProfileEditLoading({ onBack }: { onBack: () => void }) {
   return (
     <PageShell
