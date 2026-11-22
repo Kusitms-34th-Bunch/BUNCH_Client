@@ -120,13 +120,53 @@ describe('PhotoDetailSlide 틀 높이', () => {
     expect(container.querySelectorAll('[data-hero-exit-key]')[0]).toBe(original);
   });
 
+  it('load 뒤에도 디코딩이 끝나기 전에는 바꾸지 않고, 디코딩에 실패하면 썸네일을 그대로 둔다', async () => {
+    let finish = () => {};
+    let fail = () => {};
+    const decode = vi
+      .spyOn(HTMLImageElement.prototype, 'decode')
+      .mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)))
+      .mockImplementationOnce(
+        () => new Promise<void>((_, reject) => (fail = () => reject(new Error('decode')))),
+      );
+    try {
+      const done = render(<PhotoDetailSlide photo={photo('/thumb-9.jpg')} {...props} />);
+      load(screen.getByRole('img', { name: '사진' }), 300, 300);
+      done.rerender(<PhotoDetailSlide photo={photo('/original-9.jpg')} {...props} />);
+      load(pending(done.container, '/original-9.jpg'), 300, 400);
+      await nextFrame();
+      expect(screen.getByRole('img', { name: '사진' }).getAttribute('src')).toBe('/thumb-9.jpg');
+      await act(async () => {
+        finish();
+        await Promise.resolve();
+      });
+      await nextFrame();
+      expect(screen.getByRole('img', { name: '사진' }).getAttribute('src')).toBe('/original-9.jpg');
+      done.unmount();
+
+      const failed = render(<PhotoDetailSlide photo={photo('/thumb-10.jpg')} {...props} />);
+      load(screen.getByRole('img', { name: '사진' }), 300, 300);
+      failed.rerender(<PhotoDetailSlide photo={photo('/original-10.jpg')} {...props} />);
+      load(pending(failed.container, '/original-10.jpg'), 300, 400);
+      await act(async () => {
+        fail();
+        await Promise.resolve();
+      });
+      await nextFrame();
+      expect(screen.getByRole('img', { name: '사진' }).getAttribute('src')).toBe('/thumb-10.jpg');
+      expect(failed.container.querySelector('img[src="/original-10.jpg"]')).toBeNull();
+    } finally {
+      decode.mockRestore();
+    }
+  });
+
   describe('들어오는 화면 전환 중', () => {
     afterEach(() => {
       document.querySelector('[data-page-leaving]')?.remove();
       vi.restoreAllMocks();
     });
 
-    it('hero가 날아가는 동안(나가는 화면 표식) 원본이 와도 바꾸지 않고 끝난 뒤 바꾼다', () => {
+    it('hero가 날아가는 동안(나가는 화면 표식) 원본이 와도 바꾸지 않고 끝난 뒤 바꾼다', async () => {
       const frames: FrameRequestCallback[] = [];
       vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
         frames.push(callback);
@@ -139,6 +179,8 @@ describe('PhotoDetailSlide 틀 높이', () => {
       );
       rerender(<PhotoDetailSlide photo={photo('/original-6.jpg')} {...props} />);
       load(pending(container, '/original-6.jpg'), 300, 600);
+      // decode 완료를 기다림
+      await act(async () => {});
       // 표식이 남아 있는 동안 프레임이 돌아도 바꾸지 않음
       act(() => frames.splice(0).forEach((callback) => callback(0)));
       expect(screen.getByRole('img', { name: '사진' }).getAttribute('src')).toBe('/thumb-6.jpg');

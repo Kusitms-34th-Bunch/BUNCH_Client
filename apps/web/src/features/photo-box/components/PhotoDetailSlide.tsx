@@ -37,6 +37,8 @@ export function PhotoDetailSlide({ photo, members, chromeHidden, current }: Phot
   const [shownSrc, setShownSrc] = useState(photo.src);
   // 새 이미지가 페이드인하는 동안 아래에 남겨 둘 이전 이미지
   const [underSrc, setUnderSrc] = useState<string | null>(null);
+  // 페이드 중 동작 줄이기를 켜면 animationend가 오지 않으므로 바로 치움(남으면 hero 짝이 이전 썸네일에 남음)
+  if (reducedMotion && underSrc !== null) setUnderSrc(null);
   // 받은 비율을 다시 그리게 하는 값(비율은 photoRatio가 주소별로 기억)
   const [, setRatioVersion] = useState(0);
   // 숨겨 받던 새 이미지 중 다 받은 주소. 전환이 끝나면 보이는 이미지로 바꿈
@@ -125,12 +127,15 @@ export function PhotoDetailSlide({ photo, members, chromeHidden, current }: Phot
               draggable={false}
               onLoad={(event) => {
                 if (role === 'pending') {
-                  rememberPhotoRatio(
-                    src,
-                    event.currentTarget.naturalWidth,
-                    event.currentTarget.naturalHeight,
+                  const image = event.currentTarget;
+                  rememberPhotoRatio(src, image.naturalWidth, image.naturalHeight);
+                  // load는 디코딩 완료를 보장하지 않아 decode 뒤에 바꿈(실패하면 실패 주소로 두고 썸네일 유지)
+                  const decoded =
+                    typeof image.decode === 'function' ? image.decode() : Promise.resolve();
+                  decoded.then(
+                    () => setReadySrc(src),
+                    () => setBrokenSrcs((list) => (list.includes(src) ? list : [...list, src])),
                   );
-                  setReadySrc(src);
                 } else if (role === 'shown') remember(event.currentTarget, src);
               }}
               onAnimationEnd={role === 'shown' ? () => setUnderSrc(null) : undefined}
