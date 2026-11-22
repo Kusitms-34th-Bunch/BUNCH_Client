@@ -1,5 +1,5 @@
-import { render } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { act, render } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { usePhotoPinchZoom } from './usePhotoPinchZoom';
 
 function Photos({ loading = false }: { loading?: boolean }) {
@@ -36,7 +36,32 @@ afterEach(() => {
 });
 
 describe('usePhotoPinchZoom', () => {
-  it('같은 사진에 두 손가락을 대고 벌리면 화면 위 복제본이 커지고, 손을 떼면 치우고 원래 사진을 다시 보인다', () => {
+  it('복제본 디코딩이 끝나기 전에는 원본을 그대로 보이고 복제본은 투명하다', () => {
+    const decode = vi
+      .spyOn(HTMLImageElement.prototype, 'decode')
+      .mockImplementation(() => new Promise<void>(() => {}));
+    try {
+      const { getByAltText } = render(<Photos />);
+      const photo = getByAltText('둘째 사진');
+      photo.dispatchEvent(
+        touchEvent('touchstart', [
+          { target: photo, x: 100, y: 100 },
+          { target: photo, x: 140, y: 100 },
+        ]),
+      );
+      expect((zoomClone() as HTMLElement).style.opacity).toBe('0');
+      expect(photo.style.visibility).toBe('');
+
+      // 디코딩 전에 손을 떼면 복제본을 치우고, 뒤늦게 끝나도 원본을 숨기지 않음
+      photo.dispatchEvent(touchEvent('touchend', [{ target: photo, x: 100, y: 100 }]));
+      expect(zoomClone()).toBeNull();
+      expect(photo.style.visibility).toBe('');
+    } finally {
+      decode.mockRestore();
+    }
+  });
+
+  it('같은 사진에 두 손가락을 대고 벌리면 화면 위 복제본이 커지고, 손을 떼면 치우고 원래 사진을 다시 보인다', async () => {
     const { getByAltText, getByRole } = render(<Photos />);
     const photo = getByAltText('첫 사진');
     const button = getByRole('button');
@@ -48,7 +73,10 @@ describe('usePhotoPinchZoom', () => {
     button.dispatchEvent(start);
     expect(start.defaultPrevented).toBe(true);
     expect(zoomClone()).not.toBeNull();
+    // 복제본을 다 그린 뒤에 원본과 바꿈
+    await act(() => Promise.resolve());
     expect(photo.style.visibility).toBe('hidden');
+    expect((zoomClone() as HTMLElement).style.opacity).toBe('');
 
     const move = touchEvent('touchmove', [
       { target: photo, x: 80, y: 100 },
