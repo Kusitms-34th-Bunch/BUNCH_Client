@@ -18,11 +18,15 @@ export function BundleDetailRoute({
   bundleId,
   focusComments,
   showComments,
+  targetCommentId,
+  instantComment,
 }: {
   bunchId: string;
   bundleId: string;
   focusComments: boolean;
   showComments: boolean;
+  targetCommentId?: string | undefined;
+  instantComment?: boolean | undefined;
 }) {
   const { data: profile } = useQuery(myProfileQueryOptions());
   const viewerId = profile === undefined ? undefined : (profile.bunch?.id ?? null);
@@ -36,6 +40,8 @@ export function BundleDetailRoute({
       bunch={home.data?.bunch ?? (home.isError ? null : undefined)}
       focusComments={focusComments}
       showComments={showComments}
+      targetCommentId={targetCommentId}
+      instantComment={instantComment}
       links={links}
     />
   );

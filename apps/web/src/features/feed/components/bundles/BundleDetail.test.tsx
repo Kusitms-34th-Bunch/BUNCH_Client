@@ -128,6 +128,8 @@ type RenderOptions = {
   viewer?: { id: string; name: string } | null;
   focusComments?: boolean;
   showComments?: boolean;
+  targetCommentId?: string;
+  instantComment?: boolean;
 };
 
 /** 상세 응답을 캐시에 넣고 그림. 없는 번들 ID는 서버 응답(404)을 기다림 */
@@ -137,6 +139,8 @@ const renderDetail = (
     viewer = { id: '1', name: '여행가조' },
     focusComments = false,
     showComments = false,
+    targetCommentId,
+    instantComment,
   }: RenderOptions = {},
 ) => {
   const client = createTestQueryClient();
@@ -153,6 +157,8 @@ const renderDetail = (
       bunch={BUNCHES[bunchId]}
       focusComments={focusComments}
       showComments={showComments}
+      targetCommentId={targetCommentId}
+      instantComment={instantComment}
       links={links}
     />,
     { wrapper: createQueryWrapper(client) },
@@ -415,6 +421,33 @@ describe('BundleDetail', () => {
     expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
   });
 
+  it('?comment=(댓글 알림의 댓글 ID)로 들어오면 답글까지 찾아가 초점을 준다', async () => {
+    renderDetail('901', { showComments: true, targetCommentId: '5002' });
+    const region = screen.getByRole('region', { name: '댓글' });
+    await within(region).findByText('좋아요 🙌');
+    const reply = within(region).getByRole('listitem', { name: '큐시즘님의 답글' });
+
+    await waitFor(() => expect(document.activeElement).toBe(reply));
+    // 코드로 준 초점은 떠날 때까지 테두리를 감춤
+    expect(reply.hasAttribute('data-quiet-focus')).toBe(true);
+    // 키보드를 쓰기 시작하면 바로 테두리를 보임
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(reply.hasAttribute('data-quiet-focus')).toBe(false);
+    expect(document.activeElement).toBe(reply);
+    // 초점을 받으면 작성자 이름 다음에 본문도 읽힘
+    const body = document.getElementById(reply.getAttribute('aria-describedby')!);
+    expect(body?.textContent).toBeTruthy();
+    expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+  });
+
+  it('알림의 댓글이 다음 쪽에 있으면 그 쪽을 받아 찾아간다', async () => {
+    seedManyComments(25);
+    renderDetail('901', { showComments: true, targetCommentId: '6000' });
+
+    expect(await screen.findByText('오래된 댓글 1', {}, { timeout: 3000 })).toBeTruthy();
+    await waitFor(() => expect(document.activeElement?.id).toBe('comment-6000'));
+  });
+
   describe('화면 전환 중 진입', () => {
     // 예약된 프레임을 직접 실행해 시간에 기대지 않고 전환 대기 분기를 검사
     const frames = new Map<number, FrameRequestCallback>();
@@ -510,6 +543,44 @@ describe('BundleDetail', () => {
       act(() => {
         main.dispatchEvent(new Event('scrollend'));
       });
+      expect(document.activeElement).not.toBe(textbox());
+    });
+
+    it('푸시로 열면(via=push) 전환을 기다리지 않고 애니메이션 없이 그 댓글 위치에 둔다', async () => {
+      renderDetail('901', { showComments: true, targetCommentId: '5002', instantComment: true });
+      const region = screen.getByRole('region', { name: '댓글' });
+      await within(region).findByText('좋아요 🙌');
+      const main = region.closest('main')!;
+      const scrollTo = vi.fn();
+      main.scrollTo = scrollTo as typeof main.scrollTo;
+
+      // 나가는 화면 표식이 남아 있어도 기다리지 않음
+      runFrames();
+      runFrames();
+      const reply = within(region).getByRole('listitem', { name: '큐시즘님의 답글' });
+      expect(document.activeElement).toBe(reply);
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('알림의 댓글이 없으면(지워짐 등) 잠시 뒤 댓글 영역을 보이고, 상한이 지나면 찾기를 멈춘다', async () => {
+      renderDetail('901', { showComments: true, targetCommentId: '99999' });
+      const region = screen.getByRole('region', { name: '댓글' });
+      await within(region).findByText('좋아요 🙌');
+      const main = region.closest('main')!;
+      placeComments(region);
+      const scrollTo = vi.fn();
+      main.scrollTo = scrollTo as typeof main.scrollTo;
+      leaving.remove();
+
+      runFrames();
+      runFrames();
+      expect(scrollTo).not.toHaveBeenCalled();
+      now = 600;
+      runFrames();
+      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'smooth' });
+      now = 5000;
+      runFrames();
+      expect(frames.size).toBe(0);
       expect(document.activeElement).not.toBe(textbox());
     });
 

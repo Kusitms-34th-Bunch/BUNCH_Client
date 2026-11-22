@@ -69,14 +69,18 @@ export const toBunchNotifications = (
     unread: !item.readAt,
   }));
 
-const bundlePath = (bunchId: number, bundleId: number) =>
-  BUNCH_HOME_PATHS.bundle(toDomainId(bunchId), toDomainId(bundleId));
+// 번들 주소의 번치는 번들 소유 번치. 소셜 알림(댓글·답글·좋아요)은 targetBunchId, 없으면 알림을 받은 번치(bunchId)(명세 070·072)
+const bundlePath = (target: NotificationTarget, bundleId: number) =>
+  BUNCH_HOME_PATHS.bundle(toDomainId(target.targetBunchId ?? target.bunchId), toDomainId(bundleId));
 
 /**
  * 알림 이동 화면(기능명세 5.12.3 표의 이동 화면). 화면이 아직 없거나 필요한 ID가 없으면 번치 홈
  * ponytail: 추천 번들 시트를 바로 여는 주소가 없어 번들 만들기 시작으로 보냄(시트는 bundle feature)
  */
-export const notificationPath = (target: NotificationTarget): string => {
+export const notificationPath = (
+  target: NotificationTarget,
+  { fromPush = false }: { fromPush?: boolean } = {},
+): string => {
   switch (target.kind) {
     case 'MEMBERS':
       return BUNCH_HOME_PATHS.members;
@@ -89,11 +93,12 @@ export const notificationPath = (target: NotificationTarget): string => {
     case 'DRAFT_LIST':
       return BUNCH_HOME_PATHS.homeDrafts;
     case 'BUNDLE':
-      return target.bundleId ? bundlePath(target.bunchId, target.bundleId) : BUNCH_HOME_PATHS.home;
+      return target.bundleId ? bundlePath(target, target.bundleId) : BUNCH_HOME_PATHS.home;
     case 'BUNDLE_COMMENTS':
       return target.bundleId
         ? // 댓글을 읽으러 들어오므로 스크롤만 하고 입력란 초점(키보드)은 주지 않음(말풍선의 ?focus=comments와 다름)
-          `${bundlePath(target.bunchId, target.bundleId)}?section=comments`
+          // commentId(새 댓글·답글 ID)가 있으면 그 댓글까지
+          `${bundlePath(target, target.bundleId)}?section=comments${target.commentId ? `&comment=${target.commentId}${fromPush ? '&via=push' : ''}` : ''}`
         : BUNCH_HOME_PATHS.home;
     case 'CANDIDATES':
       return BUNCH_HOME_PATHS.createBundle;
