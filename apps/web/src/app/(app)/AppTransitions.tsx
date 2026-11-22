@@ -18,6 +18,7 @@ import {
   slide,
   type TransitionDirection,
   WebAnimation,
+  zoom,
 } from '@ssgoi/react/view-transitions';
 import { type ReactNode, useMemo } from 'react';
 import {
@@ -169,6 +170,35 @@ const feedBundleHero = hero(
 const photoHero = hero(
   { type: 'fade', variant: 'smooth' },
   { override: { forward: tuneFeedBundleHero, backward: guardHero } },
+);
+// 피드 말풍선 → 번들 상세(댓글): 눌린 카드가 상세 화면 전체로 열리는 zoom static(뒤 피드는 그대로, 뒤로 가면 카드로 접힘)
+// 상세를 이미 댓글 위치로 내려 두고 열어 사진이 이어지는 hero 대신 씀(motion.md). 나가는 화면은 경계 id로 찾아 다른 전환과 같은 표식
+type ZoomGroup = 'overlay' | 'content' | 'chrome' | 'background' | 'tile';
+const guardZoom =
+  (opening: boolean) =>
+  ({
+    animation,
+    context,
+  }: {
+    animation: MultiAnimation<ZoomGroup>;
+    context: { positionedParent: HTMLElement };
+  }) => {
+    const groups: ZoomGroup[] = ['tile', 'content', 'overlay', 'chrome', 'background'];
+    const track = groups.map((group) => animation.select(group).getMotionTracks()[0]).find(Boolean);
+    const last = (id: string) =>
+      [
+        ...context.positionedParent.querySelectorAll<HTMLElement>(
+          `[data-ssgoi-transition="${id}"]`,
+        ),
+      ].at(-1);
+    const feed = last(MAIN_TAB_PATHS.feed);
+    const detail = last(FEED_PATHS.transitionIds.bundleComments);
+    if (opening) guardPair(detail, feed, track);
+    else guardPair(feed, detail, track);
+  };
+const feedCommentsZoom = zoom(
+  { type: 'static' },
+  { override: { forward: guardZoom(true), backward: guardZoom(false) } },
 );
 // sheet 프리셋은 움직이는 화면(sheet)만 track이라 뒤 화면은 경계 id로 찾아 나가는 화면 표식(상태 바 색 즉시 전환)
 // 중단된 이전 전환의 노드가 남아 있을 수 있어 같은 id 중 가장 나중에 붙은 노드 사용
@@ -355,6 +385,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 피드 말풍선 → 번들 상세(댓글)는 카드가 화면으로 열리는 zoom
+  {
+    from: MAIN_TAB_PATHS.feed,
+    to: FEED_PATHS.transitionIds.bundleComments,
+    bidirectional: true,
+    transition: feedCommentsZoom,
+  },
   // 피드 카드 → 번들 상세는 카드 사진을 상세 첫 사진으로 잇는 hero(Figma는 들어갈 때만 정의, 돌아올 때도 같은 곡선으로 되돌림)
   {
     from: MAIN_TAB_PATHS.feed,
@@ -372,6 +409,9 @@ const rules: SsgoiTransitionRule[] = [
   // 상세의 번치 → 번치 탭·다른 번치 프로필, 두 화면의 번들 그리드 → 상세 모두 한 단계씩 들어가는 drill
   historyDrill(BUNCH_HOME_PATHS.home, FEED_PATHS.transitionIds.bundle),
   historyDrill(BUNCH_HOME_PATHS.transitionIds.otherBunch, FEED_PATHS.transitionIds.bundle),
+  // 말풍선으로 연 상세에서 번치로 가는 이동도 같은 drill
+  historyDrill(BUNCH_HOME_PATHS.home, FEED_PATHS.transitionIds.bundleComments),
+  historyDrill(BUNCH_HOME_PATHS.transitionIds.otherBunch, FEED_PATHS.transitionIds.bundleComments),
   // 참여 멤버 시트 → 멤버 프로필 → 번치 프로필도 한 단계씩 들어가는 drill
   {
     from: MAIN_TAB_PATHS.feed,
@@ -380,21 +420,21 @@ const rules: SsgoiTransitionRule[] = [
     transition: bunchDrill,
   },
   {
-    from: FEED_PATHS.transitionIds.bundle,
+    from: [FEED_PATHS.transitionIds.bundle, FEED_PATHS.transitionIds.bundleComments],
     to: FEED_PATHS.transitionIds.member,
     bidirectional: true,
     transition: bunchDrill,
   },
   // 번들 상세 → 공개 범위 설정도 한 단계 들어가는 drill
   {
-    from: FEED_PATHS.transitionIds.bundle,
+    from: [FEED_PATHS.transitionIds.bundle, FEED_PATHS.transitionIds.bundleComments],
     to: FEED_PATHS.transitionIds.bundleVisibility,
     bidirectional: true,
     transition: bunchDrill,
   },
   // 번들 상세 → 번들 수정, 수정 → 사진 추가도 한 단계 들어가는 drill
   {
-    from: FEED_PATHS.transitionIds.bundle,
+    from: [FEED_PATHS.transitionIds.bundle, FEED_PATHS.transitionIds.bundleComments],
     to: FEED_PATHS.transitionIds.bundleEdit,
     bidirectional: true,
     transition: bunchDrill,

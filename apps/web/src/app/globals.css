@@ -25,6 +25,8 @@
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
+    /* 문서는 스크롤하지 않음(앱 틀이 화면 높이, 스크롤은 main): 화면 전환이 잠깐 넘쳐도 스크롤바가 깜빡이지 않게 */
+    scrollbar-width: none;
   }
 
   /* 입력 칸만 다시 허용. 다른 글의 선택이 필요하면 Tailwind select-text(길게 누르기 메뉴는 계속 막힘) */

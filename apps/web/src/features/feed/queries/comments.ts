@@ -32,6 +32,13 @@ export const commentsQueryOptions = (bundleId: string, viewerId: string | null |
         : undefined,
   });
 
+/** 다른 화면에서 들어오기 전에 원댓글 첫 쪽을 미리 받음(말풍선 진입이 처음부터 댓글 위치에 서도록) */
+export const usePrefetchComments = () => {
+  const queryClient = useQueryClient();
+  return (bundleId: string, viewerId: string | null) =>
+    queryClient.prefetchInfiniteQuery(commentsQueryOptions(bundleId, viewerId));
+};
+
 /** 원댓글 하나의 답글 전부(오래된 순) */
 export const repliesQueryOptions = (bundleId: string, viewerId: string | null, parentId: number) =>
   queryOptions({
