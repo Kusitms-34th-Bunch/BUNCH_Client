@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { bundleHeroKey, FEED_PATHS } from '@/features/feed/constants/paths';
+import { FEED_PATHS } from '@/features/feed/constants/paths';
+import { bundleHeroKey } from '@/shared/lib/heroKeys';
 import { BundleDetailRoute } from './BundleDetailRoute';
 
 // 지금 번치 명의로 보는 화면이라 검색에서 제외(다른 번치 프로필과 같음)
@@ -26,10 +27,7 @@ export default async function BundleDetailPage({
     >
       {/* 알 수 없는 focus·section 값은 무시. focus는 말풍선(입력란 초점), section은 댓글 알림(스크롤만) */}
       {/* zoom은 화면 안에서 같은 값의 enter 표식을 정확히 하나 찾음(틀 자신은 찾지 않아 안쪽에 둠, 피드 카드는 exit 표식) */}
-      <div
-        data-zoom-enter-key={fromBubble ? bundleHeroKey(bundleId) : undefined}
-        className="flex min-h-0 flex-1 flex-col"
-      >
+      <div data-zoom-enter-key={bundleHeroKey(bundleId)} className="flex min-h-0 flex-1 flex-col">
         <BundleDetailRoute
           bunchId={bunchId}
           bundleId={bundleId}

@@ -153,14 +153,14 @@ export function BunchHomeScreen({
         key={current.id}
         ref={contentRef}
         className={cn(
-          'flex min-h-full flex-col',
+          'relative flex min-h-full flex-col',
           switched && 'motion-reduce:animate-[page-content-in_150ms_ease-out]',
         )}
       >
+        {/* 프로필 이미지는 배경 영역 밖 형제로 둠: hero가 영역마다 따로 흐리게 하면(투명도는 쌓임 맥락을 만듦) 배경 안의 이미지가 흰 시트 아래로 깔렸다가 끝나면 올라옴 */}
+        <BunchProfileImage imageSrc={current.imageSrc} characterType={current.characterType} />
         {/* 프로필 이미지 영역(Figma 헤더 아래 82px + 시트 둥근 모서리 뒤 20px). 90px 프로필 이미지는 영역 위에서 24px 아래에 놓여 흰 시트에 32px 걸침 */}
-        <div className={cn('relative h-25.5 shrink-0', background.top)}>
-          <BunchProfileImage imageSrc={current.imageSrc} characterType={current.characterType} />
-        </div>
+        <div className={cn('h-25.5 shrink-0', background.top)} />
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">
           <BunchProfile
             bunch={current}

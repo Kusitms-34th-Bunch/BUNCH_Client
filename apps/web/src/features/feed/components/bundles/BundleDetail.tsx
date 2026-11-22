@@ -22,6 +22,7 @@ import { useClientNow } from '../../hooks/useClientNow';
 import { useCommentActions } from '../../hooks/useCommentActions';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
+import { leaveToBunch, returnFromBunch } from '../../lib/bunchDrillId';
 import { getBundlePreview } from '../../lib/bundlePreview';
 import { type BundleBunchSource, toFeedBundleDetail, toFeedBunch } from '../../model/bundleDetail';
 import { bundleDetailQueryOptions } from '../../queries/bundleDetail';
@@ -126,6 +127,13 @@ export function BundleDetail({
 
   // 받는 중 화면에서 시작하면 댓글 영역이 그려진 뒤 붙잡기 등록
   useHoldScrollOnLeave(commentsRef, bundle !== undefined);
+  // 번치 이름으로 떠났던 항목에 뒤로 가기로 돌아오면 같은 drill id 적용(SSGOI가 들어오는 화면을 읽기 전)
+  const bodyShown = bundle !== undefined;
+  useLayoutEffect(() => {
+    if (!bodyShown) return;
+    const page = commentsRef.current?.closest('[data-ssgoi-transition]');
+    if (page) returnFromBunch(page);
+  }, [bodyShown]);
 
   // 다시 시도(상세나 내 정보)를 받는 중
   const retrying = detail.isFetching || viewerFetching;
@@ -353,10 +361,16 @@ export function BundleDetail({
       actions={{
         more,
         // 내 번치는 번치 탭 첫 화면이라 iOS 쉘에서는 번치 탭으로 전환(지금 탭이 번치면 그대로 이동)
-        openBunch: () =>
-          viewer?.bunchId === bundle.bunch.id
-            ? openTabPath(links.bunchHome, (href) => router.push(href))
-            : router.push(links.otherBunch(bundle.bunch.id)),
+        openBunch: () => {
+          // 번치 화면 ↔ 상세는 격자 zoom 규칙이라, 번치 이름으로 가는 이동은 상세 틀의 전환 id를 바꿔 drill로(SSGOI가 id 변경을 바로 다시 읽음)
+          const pushAsDrill = (href: string) => {
+            const page = commentsRef.current?.closest('[data-ssgoi-transition]');
+            if (page) leaveToBunch(page);
+            router.push(href);
+          };
+          if (viewer?.bunchId === bundle.bunch.id) openTabPath(links.bunchHome, pushAsDrill);
+          else pushAsDrill(links.otherBunch(bundle.bunch.id));
+        },
         openMembers: () => openMembers(bundle.members),
         openPlaces: () => openPlaces(bundle.id, bundle.places),
         like: () => asBunch(() => likes.toggle(bundle)),

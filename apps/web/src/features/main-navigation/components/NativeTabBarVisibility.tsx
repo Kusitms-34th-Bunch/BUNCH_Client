@@ -11,6 +11,9 @@ const tabPaths: readonly string[] = Object.values(MAIN_TAB_PATHS);
 
 // 선택 모드처럼 탭 이동을 막는 화면(HideMainTabBar)도 웹 막대와 같이 숨김
 const HIDE_TAB_BAR_SELECTOR = '[data-hide-main-tab-bar]';
+// 화면 전환 sheet가 움직이는 동안 그 화면에 붙는 표식(AppTransitions guardSheet)과 기다리는 최대 시간
+const SHEET_MOVING_SELECTOR = '[data-sheet-moving]';
+const SHEET_WAIT_MS = 1000;
 
 /**
  * iOS 쉘의 시스템 탭 바 표시 상태를 현재 경로에 맞춤(결정 기록 012). 탭 화면이면 표시, 탭 밖(상세·온보딩)이거나 시트·대화상자가 열려 있으면 숨김
@@ -47,17 +50,38 @@ export function NativeTabBarVisibility({ exitPaths = [] }: { exitPaths?: readonl
     // 첫 화면 WebView·이 메서드가 없는 이전 쉘은 화면에 보이는 WebView만 보냄
     const tab = nativeShellTab();
     const perTab = tab !== null && hasNativeMethod('setNativeTabBarVisibleFor');
-    if (perTab) {
-      void appBridge.setNativeTabBarVisibleFor({ tab, visible }).catch(() => {});
-      return;
-    }
     const send = () => {
+      if (perTab) {
+        void appBridge.setNativeTabBarVisibleFor({ tab, visible }).catch(() => {});
+        return;
+      }
       if (document.visibilityState !== 'visible') return;
       void appBridge.setNativeTabBarVisible(visible).catch(() => {});
     };
-    send();
+    // 시스템 탭 바는 웹 화면 위에 그려져 시트 아래로 내릴 수 없으므로, 시트가 내려가는 동안에는 다 내려간 뒤에 보임(최대 1초)
+    const startedAt = performance.now();
+    let frame = 0;
+    const sendWhenSettled = () => {
+      if (
+        visible &&
+        document.querySelector(SHEET_MOVING_SELECTOR) !== null &&
+        performance.now() - startedAt < SHEET_WAIT_MS
+      ) {
+        frame = requestAnimationFrame(sendWhenSettled);
+        return;
+      }
+      send();
+    };
+    // 보일 때는 전환이 시작될(시트 표식이 붙을) 한 프레임 뒤부터 확인. 숨길 때와 보이지 않는 WebView(프레임이 멈춤)는 바로
+    if (visible && document.visibilityState === 'visible')
+      frame = requestAnimationFrame(sendWhenSettled);
+    else send();
+    if (perTab) return () => cancelAnimationFrame(frame);
     document.addEventListener('visibilitychange', send);
-    return () => document.removeEventListener('visibilitychange', send);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('visibilitychange', send);
+    };
   }, [pathname, modalOpen, exiting]);
 
   return null;

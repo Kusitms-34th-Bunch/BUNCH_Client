@@ -1,5 +1,5 @@
 import { act, render } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NativeTabBarVisibility } from './NativeTabBarVisibility';
 
 const setNativeTabBarVisible = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
@@ -19,7 +19,16 @@ vi.mock('next/navigation', () => ({ usePathname: () => pathname.current }));
 const setVisibility = (state: DocumentVisibilityState) =>
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: state });
 
+// 보일 때는 한 프레임 뒤에 보냄(시트 확인): 기본은 프레임을 바로 실행해 기존 흐름 그대로 확인
+beforeEach(() => {
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    callback(0);
+    return 0;
+  });
+});
+
 afterEach(() => {
+  vi.restoreAllMocks();
   setNativeTabBarVisible.mockClear();
   setNativeTabBarVisibleFor.mockClear();
   setNativeTabBar.mockClear();
@@ -61,6 +70,24 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
     // 지운 뒤의 감지 콜백도 테스트 안에서 끝냄(다음 테스트로 새지 않게)
     await mutate(() => sheet.remove());
+  });
+
+  it('시트가 내려가는 동안(data-sheet-moving)에는 탭 바를 보이지 않고, 다 내려간 뒤 보인다', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const sheet = document.body.appendChild(document.createElement('div'));
+    sheet.setAttribute('data-sheet-moving', '');
+    pathname.current = '/bunch';
+    render(<NativeTabBarVisibility />);
+    act(() => frames.splice(0).forEach((callback) => callback(0)));
+    expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+
+    sheet.remove();
+    act(() => frames.splice(0).forEach((callback) => callback(0)));
+    expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
   });
 
   it('화면에 보이지 않는 탭 WebView는 보내지 않고, 다시 보이면 현재 상태를 보낸다', () => {
@@ -130,6 +157,8 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     rerender(<NativeTabBarVisibility />);
     expect(setNativeTabBarVisibleFor).toHaveBeenLastCalledWith({ tab: 'bunch', visible: true });
     expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+    // 보이지 않는 WebView는 프레임이 멈출 수 있어 프레임을 기다리지 않고 바로 보냄
+    expect(window.requestAnimationFrame).not.toHaveBeenCalled();
   });
 
   it('이전 쉘의 탭 WebView(탭 ID는 있지만 탭별 메서드 없음)는 기존 방식으로 보낸다', () => {
