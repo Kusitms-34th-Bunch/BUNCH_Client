@@ -31,7 +31,7 @@ WebView 기본 동작(스플래시·로그인 배경 영상 포함)과 Safe Area
 - 영상은 소리 없이 반복하고 다른 앱의 음악을 끊지 않으며(`mixWithOthers`), 화면 꺼짐을 막지 않는다. 앱이 뒤로 가면(`AppState` `background`) 멈추고 앞으로 오면(`active`) 이어서 재생한다. 첫 화면 바탕색은 웹 로그인 배경과 같은 #121212다.
 - `expo-video` config plugin은 넣지 않았다(백그라운드 재생·PiP를 쓰지 않음). 네이티브 모듈이라 개발 빌드를 다시 만들어야 반영된다. 실기기 재생·앱 전환·인트로 → 로그인 전환의 겹침은 확인 전이다.
 
-iOS 입력 포커스 확대는 디자인 시스템의 `TextField`·`LabeledTextArea`에서 대응한다. 실제 글꼴을 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 입력 폭·행 높이·padding과 textarea 자동 높이도 같은 비율로 보정한다. `@supports (-webkit-touch-callout: none)`으로 iOS WebKit에 적용하며 모바일 Safari도 포함한다. 쉘에서 viewport 확대 제한을 주입하지 않는다. 실제 터치·키보드·커서·텍스트 선택·줄바꿈은 시뮬레이터와 실기기 검증이 필요하다.
+iOS 입력 포커스 확대는 디자인 시스템의 `TextField`·`LabeledTextArea`에서 대응한다. 실제 글꼴을 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다. 입력 폭·행 높이·padding과 textarea 자동 높이도 같은 비율로 보정한다. `@supports (-webkit-touch-callout: none)`으로 iOS WebKit에 적용하며 모바일 Safari도 포함한다. 입력 포커스 대응에는 viewport 확대 제한을 쓰지 않는다. 쉘이 화면 전체 확대를 막는 것은 별도 결정이다(아래 「화면 전체 확대·축소」). 실제 터치·키보드·커서·텍스트 선택·줄바꿈은 시뮬레이터와 실기기 검증이 필요하다.
 
 ## Safe Area
 
