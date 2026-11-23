@@ -8,6 +8,7 @@ import { formatDetailDate } from '@/features/photo-box/lib/photoDetail';
 import { getViewerHeaderClass } from '@/features/photo-box/lib/photoViewerStyle';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 
 type RecommendViewerScreenProps = {
@@ -17,7 +18,7 @@ type RecommendViewerScreenProps = {
   /** 처음 보여 줄 사진 id */
   initialPhotoId: string;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   onBack: () => void;
   /** 다른 사진으로 넘어갔을 때(주소를 맞추는 호출 지점) */
   onPhotoChange?: ((_photoId: string) => void) | undefined;
@@ -32,10 +33,12 @@ export function RecommendViewerScreen({
   photos,
   members,
   initialPhotoId,
-  currentYear = new Date().getFullYear(),
+  currentYear: currentYearProp,
   onBack,
   onPhotoChange,
 }: RecommendViewerScreenProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   const photoViewer = usePhotoViewer({ photos, initialPhotoId, onPhotoChange });
   const { activeIndex, chromeHidden } = photoViewer;
   const activePhoto = photos[activeIndex];

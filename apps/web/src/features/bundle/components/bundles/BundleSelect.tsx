@@ -21,6 +21,7 @@ import {
   PageLoading,
 } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { Recommendation } from '../../model/recommendation';
@@ -33,7 +34,7 @@ import { SelectPhotoList } from '../SelectPhotoList';
 
 type BundleSelectProps = {
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
 };
 
 /**
@@ -41,7 +42,9 @@ type BundleSelectProps = {
  * 헤더 오른쪽 「추천 번들 보기」는 고른 사진과 관계없이 늘 켜져 있고, 하단 「이전」은 멤버 선택으로, 「다음」은 1장 이상 골라야 켜지며 초안을 만듦
  * 멤버를 고르지 않고 직접 주소로 들어오면 멤버 선택으로 되돌림(새로고침하면 선택이 사라지므로 같은 처리)
  */
-export function BundleSelect({ currentYear = new Date().getFullYear() }: BundleSelectProps) {
+export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   const router = useRouter();
   const backOr = useBackOr();
   const select = useBundleSelect();

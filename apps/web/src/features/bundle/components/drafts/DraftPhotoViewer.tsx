@@ -17,6 +17,7 @@ import { getViewerHeaderClass } from '@/features/photo-box/lib/photoViewerStyle'
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -68,7 +69,7 @@ type DraftPhotoViewerProps = {
   /** 올린 멤버를 찾을 번치 멤버(번들 참여자가 아닌 소유자도 포함). 없으면 번들 참여자 */
   bunchMembers?: readonly PhotoBoxMember[] | undefined;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   onBack: () => void;
   /** 다른 사진으로 넘어갔을 때(주소를 맞추는 호출 지점) */
   onPhotoChange: (_photoId: string) => void;
@@ -88,10 +89,12 @@ export function DraftPhotoViewer({
   sources,
   sourcesPending = false,
   bunchMembers,
-  currentYear = new Date().getFullYear(),
+  currentYear: currentYearProp,
   onBack,
   onPhotoChange,
 }: DraftPhotoViewerProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   const access = accessOverride ?? getDraftAccess(draft, viewer);
   const photos = draft.photos;
   const isPicked = useIsPhotoPicked(draft);

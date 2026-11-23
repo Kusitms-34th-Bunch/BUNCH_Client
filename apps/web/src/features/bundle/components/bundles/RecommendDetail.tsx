@@ -8,6 +8,7 @@ import {
   PageLoading,
 } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
@@ -28,6 +29,7 @@ type RecommendDetailProps = {
 export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
   const router = useRouter();
   const backOr = useBackOr();
+  const currentYear = useCurrentYear();
   const { openSheet, memberIds } = useBundleSelect();
   const state = useRecommendationDetail(recommendationId);
   // 새로고침·직접 주소로 들어와 멤버를 고르지 않았으면 사진 선택을 거치지 않고 첫 단계로 보냄
@@ -60,7 +62,7 @@ export function RecommendDetail({ recommendationId }: RecommendDetailProps) {
   return (
     <RecommendDetailScreen
       recommendation={detail}
-      sections={groupByDate(detail.photos, new Date().getFullYear())}
+      sections={groupByDate(detail.photos, currentYear)}
       onBack={() => backOr(BUNDLE_SELECT_PATHS.select)}
     />
   );

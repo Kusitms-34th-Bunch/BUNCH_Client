@@ -7,6 +7,7 @@ import { FloatingButtonToastAnchor } from '@/shared/components/layout/FloatingBu
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
@@ -50,7 +51,7 @@ type PhotoBoxScreenProps = {
   /** 저장·삭제 같은 서버·기기 동작 */
   actions?: PhotoBoxActions | undefined;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   onRetry?: (() => void) | undefined;
   /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 아래로 다시 스크롤하면 부름 */
   onLoadMore?: (() => void) | undefined;
@@ -72,7 +73,7 @@ type PhotoBoxScreenProps = {
 export function PhotoBoxScreen({
   state,
   actions = noopActions,
-  currentYear = new Date().getFullYear(),
+  currentYear: currentYearProp,
   onRetry,
   onLoadMore,
   onRefresh,
@@ -82,6 +83,8 @@ export function PhotoBoxScreen({
   onCreateBundle,
   uploadStatus,
 }: PhotoBoxScreenProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   const [memberFilter, setMemberFilter] = useState(readHistoryMemberFilter);
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);

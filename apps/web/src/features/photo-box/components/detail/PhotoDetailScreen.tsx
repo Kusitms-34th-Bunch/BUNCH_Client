@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import type {
@@ -44,7 +45,7 @@ type PhotoDetailScreenProps = {
   initialPhotoId: string;
   actions: PhotoBoxActions;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   onBack: () => void;
   /** 사진이 사라지게 삭제해 사진함으로 돌아갈 때 */
   onLeave: () => void;
@@ -65,11 +66,13 @@ export function PhotoDetailScreen({
   viewer,
   initialPhotoId,
   actions,
-  currentYear = new Date().getFullYear(),
+  currentYear: currentYearProp,
   onBack,
   onLeave,
   onPhotoChange,
 }: PhotoDetailScreenProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
