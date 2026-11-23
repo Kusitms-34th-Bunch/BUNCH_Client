@@ -27,7 +27,8 @@ jobs:
   maestro:
     name: Maestro (iOS)
     runs-on: macos-26
-    timeout-minutes: 60
+    # 캐시가 없는 첫 실행은 iOS 빌드만 약 20분이라 flow까지 60분을 넘겨 취소됐음(2026-11-23). 캐시가 맞으면 훨씬 짧음
+    timeout-minutes: 120
     env:
       # setup-node의 pnpm 캐시 조회가 저장소 루트(packageManager: yarn)에서 돌아도 Corepack이 막지 않도록
       COREPACK_ENABLE_STRICT: '0'
@@ -106,7 +107,34 @@ jobs:
           SENTRYCLI_SKIP_DOWNLOAD: '1'
         run: pnpm install --frozen-lockfile
 
+      # 네이티브 지문(app.json·네이티브 패키지·modules/*): 같으면 ios/(Pods 포함)를 그대로 쓰고 생성 단계를 건너뜀
+      - name: 네이티브 지문
+        id: fingerprint
+        working-directory: apps/mobile-shell
+        run: |
+          hash=$(node -e "require(require.resolve('@expo/fingerprint', { paths: [require.resolve('expo/package.json')] })).createFingerprintAsync('.').then((f) => console.log(f.hash))")
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+          # ios/.xcode.env.local에 node 절대 경로가 들어가 Node가 바뀌면 다른 캐시로(지문에는 Node 버전이 없음)
+          echo "node=$(node -v)" >> "$GITHUB_OUTPUT"
+
+      - name: iOS 네이티브 프로젝트 캐시
+        id: ios-cache
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile-shell/ios
+          key: e2e-ios-${{ runner.os }}-${{ steps.fingerprint.outputs.node }}-${{ steps.fingerprint.outputs.hash }}
+
+      # 빌드 중간 결과(e2e-ios-build.mjs의 derivedDataPath). 지문이 달라도 최근 것으로 증분 빌드(JS만 바뀌면 묶기만 다시)
+      # 키는 지문 단위로만(실행마다 수 GB를 새로 저장해 저장소 캐시 한도를 채우지 않게)
+      - name: iOS 빌드 중간 결과 캐시
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile-shell/build/e2e
+          key: e2e-derived-${{ runner.os }}-${{ steps.fingerprint.outputs.node }}-${{ steps.fingerprint.outputs.hash }}
+          restore-keys: e2e-derived-${{ runner.os }}-${{ steps.fingerprint.outputs.node }}-
+
       - name: CocoaPods 캐시
+        if: steps.ios-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ~/Library/Caches/CocoaPods
@@ -114,6 +142,7 @@ jobs:
           restore-keys: cocoapods-${{ runner.os }}-
 
       - name: iOS 네이티브 프로젝트 생성
+        if: steps.ios-cache.outputs.cache-hit != 'true'
         working-directory: apps/mobile-shell
         run: pnpm ios:sync:clean
 

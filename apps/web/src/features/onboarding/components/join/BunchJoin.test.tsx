@@ -6,6 +6,7 @@ import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
+import { getPendingToast, settlePendingToast } from '@/shared/lib/toastAfterNavigation';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
@@ -186,8 +187,10 @@ describe('BunchJoin', () => {
     await userEvent.click(done());
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith(ONBOARDING_PATHS.feed));
-    expect(toast).toHaveBeenCalledWith('이미 참여 중인 번치예요.');
+    // 안내는 도착 화면에서 보이게 예약(쉘에서 다른 탭으로 전환하면 그 탭의 쉘 토스트)
+    expect(getPendingToast()?.message).toBe('이미 참여 중인 번치예요.');
     expect(push).not.toHaveBeenCalled();
+    settlePendingToast(false);
   });
 
   it('붙여넣은 링크의 확인이 실패해도 붙여넣기 알림이 다시 나오지 않는다', async () => {

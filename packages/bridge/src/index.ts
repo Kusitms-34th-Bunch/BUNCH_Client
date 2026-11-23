@@ -36,6 +36,7 @@ export {
   nativeFloatingButtonPressSchema,
   nativeTabBarItemSchema,
   nativeTabEventSchema,
+  nativeTabLongPressSchema,
   nativeTabReselectSchema,
   nativeToastActionSchema,
   hideNativeToastParamsSchema,
@@ -159,6 +160,12 @@ export type AppBridgeMethods = {
   setNativeLoginBackground: (_visible: boolean) => Promise<boolean>;
   /** 푸시를 눌러 앱을 연 알림을 한 번 가져감(가져가면 쉘에서 비움). 화면에 보이는 WebView(자기 탭 ID, 첫 화면은 null)만 받고, 없거나 받은 지 오래면 null. 브라우저·이 메서드가 없는 이전 쉘에서는 null */
   takeOpenedPush: (_tab: string | null) => Promise<PushOpen | null>;
+  /** 화면 전체(상태 바·시스템 탭 바 포함)를 붙잡아 덮음(번치 전환 시작, 덮는 동안 입력 막힘). 화면에 보이는 WebView(자기 탭 ID)만, 덮었으면 true. 동작 줄이기·브라우저·이전 쉘이면 false */
+  beginScreenSwitch: (_tab: string | null) => Promise<boolean>;
+  /** 붙잡은 화면은 왼쪽으로 밀려 나가고 지금 화면이 둥근 카드로 들어와 커짐. 끝나면 resolve, 덮은 게 없으면 바로 */
+  finishScreenSwitch: () => Promise<void>;
+  /** 덮은 화면을 모션 없이 치움(전환 실패) */
+  cancelScreenSwitch: () => Promise<void>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */

@@ -1,0 +1,24 @@
+appId: kr.bunch.app
+name: 번치 탭을 꾹 누르면 번치 전환 시트가 열리고 고른 번치로 바뀐다
+---
+# 시스템 탭 바의 꾹 누르기는 쉘 네이티브 제스처(modules/tab-crossfade)라 웹 E2E로 확인할 수 없음(#518)
+# 가짜 DB는 「여행쥬아」에서 시작(launch-fresh가 저장 상태를 지움)
+- runFlow: ../subflows/launch-fresh.yaml
+# 앱 시작 직후 첫 입력이 무시될 수 있어(QA 2차 F-3) 시트가 보일 때까지 다시 누름
+- repeat:
+    while:
+      notVisible: '번치 전환하기'
+    times: 5
+    commands:
+      - longPressOn: '번치'
+      - waitForAnimationToEnd
+- assertVisible: '번치 전환하기'
+- tapOn: '퇴근런클럽'
+# 시트가 닫힌 뒤 화면 전체 번치 전환(modules/screen-switch)과 전환 토스트로 실제로 바뀌었는지 확인
+- extendedWaitUntil:
+    notVisible: '번치 전환하기'
+    timeout: 15000
+- extendedWaitUntil:
+    visible: '퇴근런클럽 번치로 전환했어요.*'
+    timeout: 30000
+- assertVisible: '마이페이지'

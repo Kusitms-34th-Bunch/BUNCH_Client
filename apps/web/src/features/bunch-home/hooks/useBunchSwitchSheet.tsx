@@ -124,5 +124,6 @@ export function useBunchSwitchSheet({
     );
   };
 
-  return { openSwitcher, switcherOpen };
+  // switchTo: 시트 없이 바로 전환(번치 탭 두 번 누르기). 토스트·실패 처리는 시트에서 고를 때와 같음
+  return { openSwitcher, switcherOpen, switchTo: selectBunch };
 }

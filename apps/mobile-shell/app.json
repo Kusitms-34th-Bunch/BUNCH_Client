@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bunch",
     "slug": "mobile-shell",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -53,14 +53,16 @@
       "expo-apple-authentication"
     ],
     "ios": {
-      "buildNumber": "2",
+      "buildNumber": "1",
       "config": { "usesNonExemptEncryption": false },
       "supportsTablet": true,
       "bundleIdentifier": "kr.bunch.app",
       "appleTeamId": "9CGCR9499H",
       "associatedDomains": ["applinks:app.bunch.kr", "applinks:open.bunch.kr"],
       "infoPlist": {
-        "CFBundleDisplayName": "BUNCH"
+        "CFBundleDisplayName": "BUNCH",
+        "CFBundleDevelopmentRegion": "ko",
+        "CFBundleLocalizations": ["ko"]
       },
       "usesAppleSignIn": true
     },

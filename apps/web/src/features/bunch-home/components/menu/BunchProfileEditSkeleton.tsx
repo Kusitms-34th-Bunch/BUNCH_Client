@@ -3,7 +3,7 @@ import { TextFieldSkeleton } from '@/shared/components/skeleton/TextFieldSkeleto
 
 /**
  * 번치 프로필 편집 본문의 받는 중 자리(BunchProfileEditScreen과 같은 여백, Figma에 없는 상태)
- * 번치 사진(90px)과 이름·한 줄 소개 값만 회색, 입력란 제목·테두리·글자 수 자리는 실제 배치
+ * 번치 사진(90px)과 이름·한 줄 소개 입력란(제목·글자 수 포함) 모두 회색
  */
 export function BunchProfileEditSkeleton() {
   return (
@@ -13,8 +13,8 @@ export function BunchProfileEditSkeleton() {
     >
       <Skeleton shape="round" className="size-22.5" />
       <div className="gap-s8 flex w-full flex-col">
-        <TextFieldSkeleton label="번치 이름" counter valueClassName="w-24" />
-        <TextFieldSkeleton label="한 줄 소개" counter valueClassName="w-48" />
+        <TextFieldSkeleton labelClassName="w-14" counter />
+        <TextFieldSkeleton labelClassName="w-16" counter />
       </div>
     </div>
   );
