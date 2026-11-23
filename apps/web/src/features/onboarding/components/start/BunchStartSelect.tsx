@@ -8,6 +8,7 @@ import {
 } from '@app/design-system';
 import { EntryCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
+import { replaceTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -33,7 +34,7 @@ export function BunchStartSelect({
     title: '번치 만들기를 그만둘까요?',
     description: '지금 나가면 작성한 정보가 모두 사라지고 피드로 이동해요.',
     cancelLabel: '계속 만들기',
-    onExit: () => router.replace(ONBOARDING_PATHS.feed),
+    onExit: () => replaceTabPath(ONBOARDING_PATHS.feed, (href) => router.replace(href)),
   });
 
   return (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { replaceTabPath } from '@/shared/bridge/client';
 import { ONBOARDING_PATHS } from '../constants/paths';
 import { useCreateBunchDraft } from '../contexts/createBunchDraftContext';
 import { useExitFlowDialog } from './useExitFlowDialog';
@@ -16,7 +17,7 @@ export function useExitCreateBunchDialog() {
     cancelLabel: '계속 만들기',
     onExit: () => {
       reset();
-      router.replace(ONBOARDING_PATHS.feed);
+      replaceTabPath(ONBOARDING_PATHS.feed, (href) => router.replace(href));
     },
   });
 }

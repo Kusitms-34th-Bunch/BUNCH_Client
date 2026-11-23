@@ -3,6 +3,7 @@
 import { isApiError } from '@app/api-core';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { replaceTabPath } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
@@ -52,8 +53,9 @@ export function BunchJoinEntry() {
         } else if (eligibility === 'ALREADY_MEMBER') {
           // 오류로 막지 않고 알린 뒤 번치로 이동
           clearPendingInvitation();
-          toastAfterNavigation(ONBOARDING_MESSAGES.alreadyMember);
-          router.replace(ONBOARDING_PATHS.feed);
+          replaceTabPath(ONBOARDING_PATHS.feed, (href) => router.replace(href), {
+            toast: ONBOARDING_MESSAGES.alreadyMember,
+          });
         } else {
           leave(ONBOARDING_MESSAGES.fullBunch, { clear: true });
         }

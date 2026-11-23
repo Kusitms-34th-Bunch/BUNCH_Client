@@ -5,6 +5,7 @@ import { Button, Header, LineChevronLeftLargeIcon, TextField, toast } from '@app
 import { PageHeader } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useId, useRef, useState } from 'react';
+import { replaceTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
@@ -43,7 +44,7 @@ export function BunchJoin() {
     title: '번치 참여를 그만둘까요?',
     description: '지금 나가면 번치에 참여하지 않고 피드로 이동해요.',
     cancelLabel: '계속 참여하기',
-    onExit: () => router.replace(ONBOARDING_PATHS.feed),
+    onExit: () => replaceTabPath(ONBOARDING_PATHS.feed, (href) => router.replace(href)),
   });
 
   const paste = async () => {
@@ -80,8 +81,9 @@ export function BunchJoin() {
           router.push(ONBOARDING_PATHS.joinBunchInvitation);
         } else if (eligibility === 'ALREADY_MEMBER') {
           // 오류로 막지 않고 알린 뒤 번치로 이동(기획 2.5.4)
-          toast(ONBOARDING_MESSAGES.alreadyMember);
-          router.replace(ONBOARDING_PATHS.feed);
+          replaceTabPath(ONBOARDING_PATHS.feed, (href) => router.replace(href), {
+            toast: ONBOARDING_MESSAGES.alreadyMember,
+          });
         } else {
           refocusSubmit();
           toast(

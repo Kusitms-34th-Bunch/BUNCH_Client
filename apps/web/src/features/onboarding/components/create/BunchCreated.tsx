@@ -3,6 +3,7 @@
 import { Button } from '@app/design-system';
 import { BunchAvatar, InviteMemberCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
+import { replaceTabPath } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
@@ -40,7 +41,12 @@ export function BunchCreated() {
             onClick={() => router.push(ONBOARDING_PATHS.createBunchInvite)}
           />
           <div className="pt-s5">
-            <Button className="w-full" onClick={() => router.replace(ONBOARDING_PATHS.bunchHome)}>
+            <Button
+              className="w-full"
+              onClick={() =>
+                replaceTabPath(ONBOARDING_PATHS.bunchHome, (href) => router.replace(href))
+              }
+            >
               내 번치로 이동하기
             </Button>
           </div>
