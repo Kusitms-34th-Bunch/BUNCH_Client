@@ -9,6 +9,8 @@ private let cardScale: CGFloat = 0.92
 private let cardRadius: CGFloat = 40
 // 끝 신호가 오지 않으면 덮개를 치우는 상한(JS가 멈춰도 입력이 막힌 채 남지 않게, 쉘 JS 상한과 같은 값)
 private let coverCap: TimeInterval = 3
+// 숨은 탭 미리 그리기: 탭마다 지금 화면 뒤에 붙여 두는 시간
+private let warmUpHold: TimeInterval = 0.4
 
 public class ScreenSwitchModule: Module {
   private var cover: UIView?
@@ -61,6 +63,8 @@ public class ScreenSwitchModule: Module {
         content.transform = CGAffineTransform(scaleX: cardScale, y: cardScale)
       } completion: { _ in
         cover.removeFromSuperview()
+        // 커지기 시작할 때 끝을 알림: JS가 상태 바를 커지는 동안 함께 다시 보임(다 커진 뒤 따로 나타나면 깜빡여 보임, #532)
+        promise.resolve(nil)
         UIView.animate(withDuration: growDuration, delay: 0, options: [.curveEaseOut]) {
           content.transform = .identity
           content.layer.cornerRadius = 0
@@ -70,7 +74,6 @@ public class ScreenSwitchModule: Module {
           self.busy = false
           // 새 번치 화면을 VoiceOver가 처음부터 읽게
           UIAccessibility.post(notification: .screenChanged, argument: nil)
-          promise.resolve(nil)
         }
       }
     }.runOnQueue(.main)
@@ -78,6 +81,52 @@ public class ScreenSwitchModule: Module {
     AsyncFunction("cancel") { () in
       self.removeCover()
     }.runOnQueue(.main)
+
+    // 선택되지 않은 탭 WebView는 창에 붙은 적이 없어 WebKit이 그리기·rAF를 멈춰 둠. 처음 누르면 밀린 작업이 몰려 한 박자 늦음(#532)
+    // 지금 화면 뒤(가장 아래)에 하나씩 잠깐 붙여 한 번 그려 둠. 스플래시가 닫힌 뒤 쉘 JS가 부름(뒤 탭의 준비 신호가 스플래시를 닫지 않게)
+    AsyncFunction("warmUpTabs") { () in
+      guard let window = Self.keyWindow(), let controller = Self.findTabBarController(window.rootViewController) else {
+        return
+      }
+      self.warmUp(controller, index: 0)
+    }.runOnQueue(.main)
+  }
+
+  // 탭 하나씩: 지금 탭·이미 창에 붙은 탭은 건너뜀, 탭 화면이 창에서 떨어졌거나 앱이 비활성이면 멈춤(그 실행에서는 다시 하지 않음)
+  private func warmUp(_ controller: UITabBarController, index: Int) {
+    let children = controller.viewControllers ?? []
+    guard index < children.count, controller.view.window != nil,
+      UIApplication.shared.applicationState == .active
+    else { return }
+    let child = children[index]
+    guard child !== controller.selectedViewController, child.isViewLoaded, child.view.window == nil else {
+      warmUp(controller, index: index + 1)
+      return
+    }
+    let host = controller.view!
+    let view = child.view!
+    let hidden = view.accessibilityElementsHidden
+    // 붙여 둔 동안 VoiceOver가 뒤 탭을 읽지 않게
+    view.accessibilityElementsHidden = true
+    view.frame = host.bounds
+    host.insertSubview(view, at: 0)
+    DispatchQueue.main.asyncAfter(deadline: .now() + warmUpHold) { [weak self, weak controller, weak child] in
+      view.accessibilityElementsHidden = hidden
+      // 그사이 그 탭을 골랐으면 떼지 않음(iOS가 옮겨 갔거나 아직 같은 자리에 둔 채 보이는 중)
+      if view.superview === host, let controller, child !== controller.selectedViewController {
+        view.removeFromSuperview()
+      }
+      if let controller { self?.warmUp(controller, index: index + 1) }
+    }
+  }
+
+  private static func findTabBarController(_ controller: UIViewController?) -> UITabBarController? {
+    guard let controller else { return nil }
+    if let tabs = controller as? UITabBarController { return tabs }
+    for child in controller.children {
+      if let found = findTabBarController(child) { return found }
+    }
+    return findTabBarController(controller.presentedViewController)
   }
 
   // 움직이지 않고 치움(취소·상한). 움직이는 중이면 그 마무리가 busy를 푼다

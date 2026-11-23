@@ -25,9 +25,6 @@ type FeedBundleItemProps = {
   onLike: (_bundle: FeedBundle) => void;
 };
 
-// 말풍선 진입이 상세를 기다리는 최대 시간(넘으면 받는 중 화면으로 열고 도착하면 댓글로 내림)
-const COMMENTS_OPEN_WAIT_MS = 400;
-
 /** 피드 목록 한 칸(번들 카드) */
 export function FeedBundleItem({
   bundle,
@@ -41,6 +38,7 @@ export function FeedBundleItem({
   onLike,
 }: FeedBundleItemProps) {
   const router = useRouter();
+  const detailHref = FEED_PATHS.bundle(bundle.bunch.id, bundle.id);
   return (
     // 상세에서 돌아오는 hero 사진(SSGOI 복사본)이 아래 카드에 가리지 않게 그동안만 위로 올림
     <li
@@ -68,7 +66,7 @@ export function FeedBundleItem({
         locationUnderline={bundle.places.length > 1}
         onLocationClick={() => onPlaces(bundle.id, bundle.places)}
         date={bundle.date}
-        onPhotoClick={() => openDetail(bundle, FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
+        onPhotoClick={() => openDetail(bundle, detailHref)}
         // 사진·말풍선에 손가락이 닿을 때만 미리 받음(하트·번치·스크롤 시작 터치는 제외)
         onPointerDown={(event) => {
           const target = event.target;
@@ -83,10 +81,9 @@ export function FeedBundleItem({
         likeCount={bundle.likeCount}
         onLike={() => onLike(bundle)}
         commentCount={bundle.commentCount}
+        // 기다리지 않고 바로 zoom(받는 중이면 도착할 때 댓글로 내림, #532)
         onComment={() =>
-          // 상세를 받은 뒤 열어야 카드가 열리며 바로 댓글 위치가 보임(최대 400ms만 기다림)
           openDetail(bundle, FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id), {
-            waitMs: COMMENTS_OPEN_WAIT_MS,
             withComments: true,
           })
         }
