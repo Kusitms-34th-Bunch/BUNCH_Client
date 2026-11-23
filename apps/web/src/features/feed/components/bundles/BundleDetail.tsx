@@ -9,6 +9,7 @@ import { usePreservedCallback } from 'react-simplikit';
 import { isUnavailableTarget } from '@/shared/api/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
 import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
+import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
@@ -162,6 +163,8 @@ export function BundleDetail({
     targetCommentId,
     instantComment,
   });
+  // 다른 화면에 갔다가 뒤로 돌아오면 떠날 때의 위치로. 댓글 진입이 댓글 영역 자리를 둔 뒤 복원(호출 순서 = layout effect 순서)
+  useScrollInHistory(commentsRef, contentReady);
 
   // 목록(다음 쪽 포함)이 번들을 볼 수 없다고 하면 떠남(답글·삭제 실패 뒤 다시 받은 목록도, 답글 대상 없음과 번들 없음이 같은 404라서)
   const listGone = isGone(thread.error);

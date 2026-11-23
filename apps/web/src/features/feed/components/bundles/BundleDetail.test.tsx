@@ -785,6 +785,29 @@ describe('BundleDetail', () => {
     expect(firstChild.style.transform).toBe('translateY(-400px)');
   });
 
+  describe('다른 화면에 갔다가 뒤로 돌아옴(이 기록 항목에 떠날 때의 스크롤이 저장돼 있음)', () => {
+    afterEach(() => window.history.replaceState(null, ''));
+
+    it('떠날 때의 스크롤 위치로 복원한다', () => {
+      window.history.replaceState({ pageScroll: 300 }, '');
+      const { container } = renderDetail('1', { viewer: null });
+
+      expect(container.querySelector('main')!.scrollTop).toBe(300);
+    });
+
+    it('?focus=comments로 들어왔던 화면이면 진입 스크롤·입력란 초점을 다시 하지 않는다', async () => {
+      window.history.replaceState({ pageScroll: 120 }, '');
+      renderDetail('1', { focusComments: true });
+      const section = screen.getByRole('region', { name: '댓글' });
+      placeComments(section);
+
+      // 진입 처리는 다음 프레임부터 돌므로 몇 프레임 기다림
+      await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      expect(section.closest('main')!.scrollTop).toBe(120);
+      expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+    });
+  });
+
   it('키보드가 올라와 보이는 높이가 줄면 입력란에 표식을 달고, 내려가면 뗀다', () => {
     const viewport = Object.assign(new EventTarget(), {
       height: window.innerHeight - 300,
