@@ -7,8 +7,8 @@ import { countSelectedByMember, toggleSelection } from '@/features/photo-box/lib
 import { ALL_MEMBERS, type PhotoBoxData } from '@/features/photo-box/lib/types';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';

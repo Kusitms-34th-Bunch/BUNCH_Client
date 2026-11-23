@@ -1,7 +1,7 @@
 import type { PhotoSourceType, PickedPhoto } from '@app/bridge';
 import { toDomainId } from '@/shared/api/ids';
 import { photoUploadBridge } from '@/shared/bridge/client';
-import { dataUrlToBlob } from '@/shared/lib/dataUrl';
+import { dataUrlToBlob } from '@/shared/lib/image/dataUrl';
 import { uploadPhoto } from '../api/photoUpload';
 import {
   isRetryableUploadError,

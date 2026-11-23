@@ -1,5 +1,5 @@
 import { ConfirmDialog } from '@app/design-system';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchSummary } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 

@@ -6,7 +6,7 @@ import { MoreMenuSheet } from '@app/design-system/web';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { isWireId } from '@/shared/api/ids';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { FeedComment, FeedViewer } from '../lib/types';
 import type { useBundleComments } from './useBundleComments';
 import type { useBundleReport } from './useBundleReport';

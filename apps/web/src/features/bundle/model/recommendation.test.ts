@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import { recommendationDetailSchema, toRecommendationDetail } from './recommendation';
 
 const photo = (photoId: number, uploaders: { memberId: number; imageUrl?: string | null }[]) => ({

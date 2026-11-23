@@ -1,7 +1,7 @@
 import { ApiError, INVALID_RESPONSE_CODE } from '@app/api-core';
 import { captureException } from '@sentry/nextjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { reportApiError, shouldReportApiError } from './reportApiError';
+import { reportApiError, shouldReportApiError } from '@/shared/lib/reportApiError';
 
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 

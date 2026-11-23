@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createListeners } from './listeners';
+import { createListeners } from '@/shared/lib/listeners';
 
 describe('createListeners', () => {
   it('구독한 함수만 알림을 받고, 해제하면 더 받지 않음', () => {

@@ -8,7 +8,7 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
+import { getPageLoadingCount } from '@/shared/lib/navigation/pageLoadingState';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { getMemberships, transferOwner } from '../../api/memberships';
 import { BunchMembers } from './BunchMembers';
@@ -26,7 +26,7 @@ vi.mock('@app/design-system', async (importOriginal) => ({
 }));
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 beforeEach(() => {
   vi.clearAllMocks();

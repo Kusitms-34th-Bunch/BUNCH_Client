@@ -16,8 +16,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { appBridge, isNativeShell, markHandedOffToNativeTabs } from '@/shared/bridge/client';
-import { emitMainTabGesture } from '@/shared/lib/mainTabGesture';
-import { scrollPageToTop } from '@/shared/lib/scrollPageToTop';
+import { emitMainTabGesture } from '@/shared/lib/navigation/mainTabGesture';
+import { scrollPageToTop } from '@/shared/lib/navigation/scrollPageToTop';
 import {
   MAIN_TAB_PATHS,
   MAIN_TABS,

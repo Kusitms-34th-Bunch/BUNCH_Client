@@ -3,12 +3,12 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { MyBunches } from '@/shared/api/myBunches';
 import { toDomainId } from '@/shared/api/ids';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import {
   CHARACTER_TYPES,
   DEFAULT_PROFILE_IMAGE,
   defaultBunchImage,
-} from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+} from '@/shared/lib/profile/bunchProfile';
 import type { BunchHomeDetail, BunchRole, BunchSummary } from '../lib/types';
 
 type Schemas = components['schemas'];

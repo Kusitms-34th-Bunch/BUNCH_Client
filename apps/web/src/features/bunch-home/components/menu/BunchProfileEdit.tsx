@@ -9,7 +9,7 @@ import { checkBunchNameAvailability } from '@/shared/api/bunchNameAvailability';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchProfileDraft, ProhibitedValues } from '../../lib/profileEdit';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';

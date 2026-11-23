@@ -7,7 +7,7 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_MEMBER_IDS } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import {
   clearKeepAgreed,
@@ -20,7 +20,7 @@ import { AdminTransferScreen } from './AdminTransferScreen';
 const back = vi.fn();
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), back, replace }) }));
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation: vi.fn() }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation: vi.fn() }));
 vi.mock('@app/design-system', async (importOriginal) => ({
   ...(await importOriginal<typeof DesignSystem>()),
   toast: vi.fn(),

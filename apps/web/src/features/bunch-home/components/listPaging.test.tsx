@@ -20,7 +20,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
   notFound: vi.fn(),
 }));
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation: vi.fn() }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation: vi.fn() }));
 vi.mock('@/shared/lib/lottieLight', () => ({ LottieLight: () => <span data-testid="lottie" /> }));
 
 // 목록 끝 표시가 관찰되면 바로 화면에 보인 것으로 알림(피드 테스트와 같은 방식)

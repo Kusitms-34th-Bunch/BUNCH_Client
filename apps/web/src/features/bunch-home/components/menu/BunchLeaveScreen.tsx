@@ -8,7 +8,7 @@ import { usePreservedCallback } from 'react-simplikit';
 import ownerAssign from '@/shared/assets/images/empty/owner-assign.svg';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchMember } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { ROLE_LABELS } from '../../constants/roles';

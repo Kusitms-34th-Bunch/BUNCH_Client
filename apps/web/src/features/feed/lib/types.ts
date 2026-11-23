@@ -1,4 +1,4 @@
-import type { CharacterType } from '@/shared/lib/bunchProfile';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
 
 export type FeedBunch = { id: string; name: string; imageSrc?: string | undefined };
 

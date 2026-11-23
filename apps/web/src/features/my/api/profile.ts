@@ -3,8 +3,8 @@ import { type ApiContract, normalizeError } from '@app/api-core';
 import { z } from 'zod';
 import type { Gender } from '@/shared/components/profile/GenderField';
 import { bffApi, requestData } from '@/shared/api/bffApi';
-import { dataUrlToBlob } from '@/shared/lib/dataUrl';
-import { toServerGender } from '@/shared/lib/gender';
+import { dataUrlToBlob } from '@/shared/lib/image/dataUrl';
+import { toServerGender } from '@/shared/lib/profile/gender';
 
 /** 프로필 사진을 어떻게 할지: 그대로, 새 사진(조정을 마친 JPEG data URL), 기본 이미지로 */
 export type ProfilePhotoChange =

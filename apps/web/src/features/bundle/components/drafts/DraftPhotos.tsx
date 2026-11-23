@@ -12,7 +12,7 @@ import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortabl
 import { useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { PresenceCommands } from '../../hooks/usePresenceSender';
 import type { DraftAccess } from '../../lib/permissions';
 import type { Draft } from '../../lib/types';

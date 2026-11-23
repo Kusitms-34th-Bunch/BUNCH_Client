@@ -2,7 +2,7 @@ import { normalizeError } from '@app/api-core';
 import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
-import { dataUrlToBlob } from '@/shared/lib/dataUrl';
+import { dataUrlToBlob } from '@/shared/lib/image/dataUrl';
 import { bunchAccessNoticeResponseSchema, toBunchAccessNotice } from '../model/bunchAccessNotice';
 import {
   bunchHomeResponseSchema,

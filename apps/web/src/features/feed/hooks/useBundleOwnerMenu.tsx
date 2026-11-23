@@ -11,9 +11,9 @@ import {
 import { MoreMenuSheet } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import type { FeedBundleDetail } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { FEED_PATHS } from '../constants/paths';

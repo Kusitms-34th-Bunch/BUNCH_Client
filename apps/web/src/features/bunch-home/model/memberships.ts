@@ -4,8 +4,8 @@ import { z } from 'zod';
 import type { BunchMember as SharedBunchMember } from '@/shared/api/bunchMembers';
 import type { MembershipsResponse, membershipRoleSchema } from '@/shared/api/bunchMemberships';
 import { toDomainId } from '@/shared/api/ids';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import type { BunchMember, BunchRole } from '../lib/types';
 
 type ServerRole = z.infer<typeof membershipRoleSchema>;

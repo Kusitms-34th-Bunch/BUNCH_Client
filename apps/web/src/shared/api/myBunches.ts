@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CHARACTER_TYPES } from '@/shared/lib/bunchProfile';
+import { CHARACTER_TYPES } from '@/shared/lib/profile/bunchProfile';
 import { bffApi, requestData } from './bffApi';
 
 /**

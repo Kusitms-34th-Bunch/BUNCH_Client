@@ -1,4 +1,4 @@
-import type { CharacterType } from '@/shared/lib/bunchProfile';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
 import type { FeedComment } from './types';
 
 /** 번치 성격별 배지 색(번치 메인 배경과 같은 계열) */

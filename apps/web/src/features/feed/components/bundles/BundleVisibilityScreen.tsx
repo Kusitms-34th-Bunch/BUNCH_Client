@@ -10,7 +10,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
 import { useFeedViewer } from '../../hooks/useFeedViewer';

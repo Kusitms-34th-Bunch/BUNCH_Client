@@ -10,11 +10,12 @@ import {
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import {
   type CheckNickname,
   useNicknameAvailability,
-} from '@/shared/hooks/useNicknameAvailability';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+} from '@/shared/hooks/profile/useNicknameAvailability';
+import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
 import {
   BUNCH_DESCRIPTION_MAX_LENGTH,
   BUNCH_DESCRIPTION_PROHIBITED_MESSAGE,
@@ -24,9 +25,8 @@ import {
   defaultBunchImage,
   hasInvalidBunchNameChars,
   pasteBunchName,
-} from '@/shared/lib/bunchProfile';
-import { filteredPaste } from '@/shared/lib/filteredPaste';
-import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
+} from '@/shared/lib/profile/bunchProfile';
+import { filteredPaste } from '@/shared/lib/profile/filteredPaste';
 import type { BunchProfileImageChange } from '../../api/bunchHome';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import {

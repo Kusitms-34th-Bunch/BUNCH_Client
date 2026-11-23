@@ -4,7 +4,7 @@ import { http } from 'msw';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { FeedBundleMember, FeedPlace } from '../lib/types';

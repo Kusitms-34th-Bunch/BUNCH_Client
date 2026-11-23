@@ -7,9 +7,9 @@ import { useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import type {
   PhotoBoxActions,
   PhotoBoxMember,

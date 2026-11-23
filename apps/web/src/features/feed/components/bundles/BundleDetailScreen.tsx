@@ -12,7 +12,7 @@ import {
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
-import { bundleHeroKey } from '@/shared/lib/heroKeys';
+import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import type { FeedBundleDetail, FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';

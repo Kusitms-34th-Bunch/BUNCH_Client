@@ -1,5 +1,5 @@
 import type { BundleCardMember } from '@app/design-system/web';
-import type { CharacterType } from '@/shared/lib/bunchProfile';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
 
 /** 지금 번치에서 내 역할(기능명세 5장 권한 표). 메뉴 항목과 할 수 있는 일이 달라짐 */
 export type BunchRole = 'owner' | 'coOwner' | 'member';

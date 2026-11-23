@@ -5,7 +5,7 @@ import { ChipButton, ProfileListItem } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftMember, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';

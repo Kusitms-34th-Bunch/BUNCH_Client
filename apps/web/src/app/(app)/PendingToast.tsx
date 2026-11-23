@@ -2,12 +2,15 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useSyncExternalStore } from 'react';
-import { getPageLoadingCount, subscribePageLoading } from '@/shared/lib/pageLoadingState';
+import {
+  getPageLoadingCount,
+  subscribePageLoading,
+} from '@/shared/lib/navigation/pageLoadingState';
 import {
   getPendingToast,
   settlePendingToast,
   subscribePendingToast,
-} from '@/shared/lib/toastAfterNavigation';
+} from '@/shared/lib/navigation/toastAfterNavigation';
 
 // 도착 화면의 PageLoading이 붙을 시간을 주기 위해 경로가 바뀐 뒤 최소로 기다리는 프레임 수
 const MIN_FRAMES = 2;

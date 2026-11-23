@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { useBackOr } from './useBackOr';
+import { useBackOr } from '@/shared/hooks/useBackOr';
 
 const router = vi.hoisted(() => ({ back: vi.fn(), replace: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));

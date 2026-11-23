@@ -2,7 +2,7 @@
 
 import { cn } from '@app/design-system';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import type { CharacterType } from '@/shared/lib/bunchProfile';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
 import {
   INVITE_REVEAL_CARD_READY,
   INVITE_REVEAL_COLORS,

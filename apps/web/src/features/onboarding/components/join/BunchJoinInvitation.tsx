@@ -10,9 +10,9 @@ import { replaceTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
-import { defaultBunchImage } from '@/shared/lib/bunchProfile';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
 import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
+import { defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import {
   BUNCH_ERROR_CODES,
   INVITATION_ERROR_CODES,

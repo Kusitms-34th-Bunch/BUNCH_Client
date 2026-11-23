@@ -3,7 +3,7 @@
 import { permissionStatusSchema } from '@app/bridge';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isNativeShell, permissionBridge, photoUploadBridge } from '@/shared/bridge/client';
-import { askNotificationPermission } from '@/shared/lib/pushDevice';
+import { askNotificationPermission } from '@/shared/lib/native/pushDevice';
 import type { DeviceNotificationPermission } from '../lib/types';
 
 // 쉘이 bridge 메서드 목록을 알려 주기 전에는 지원 여부를 알 수 없어 짧게 몇 번 다시 확인

@@ -8,14 +8,14 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import {
   useNicknameAvailability,
   type CheckNickname,
-} from '@/shared/hooks/useNicknameAvailability';
+} from '@/shared/hooks/profile/useNicknameAvailability';
 import {
   BUNCH_NAME_MAX_LENGTH,
   bunchNameMessages,
   hasInvalidBunchNameChars,
   pasteBunchName,
-} from '@/shared/lib/bunchProfile';
-import { filteredPaste } from '@/shared/lib/filteredPaste';
+} from '@/shared/lib/profile/bunchProfile';
+import { filteredPaste } from '@/shared/lib/profile/filteredPaste';
 import { checkBunchNameAvailability } from '../../api/bunches';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';

@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { NeedMembersDialog } from '../components/bundles/NeedMembersDialog';
 import { BUNDLE_SELECT_MESSAGES } from '../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../constants/selectPaths';

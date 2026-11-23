@@ -5,7 +5,7 @@ import type { PickPhotosResult } from '@app/bridge';
 import { toast } from '@app/design-system';
 import { useEffect, useRef } from 'react';
 import { isNativeShell, photoUploadBridge } from '@/shared/bridge/client';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { CameraPermissionDialog } from '../components/PhotoUploadDialogs';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import {

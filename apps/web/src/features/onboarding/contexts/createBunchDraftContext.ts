@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, type Dispatch, type SetStateAction } from 'react';
-import type { CharacterType } from '@/shared/lib/bunchProfile';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
 import type { CreatedBunch } from '../api/bunches';
 
 export type Visibility = 'private' | 'public';

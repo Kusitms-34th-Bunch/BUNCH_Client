@@ -4,8 +4,8 @@ import { z } from 'zod';
 import type { Gender } from '@/shared/components/profile/GenderField';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { getTermVersions } from '@/shared/api/termVersions';
-import { dataUrlToBlob } from '@/shared/lib/dataUrl';
-import { toServerGender } from '@/shared/lib/gender';
+import { dataUrlToBlob } from '@/shared/lib/image/dataUrl';
+import { toServerGender } from '@/shared/lib/profile/gender';
 
 /** `POST /api/v1/members/me/registration` 응답 */
 const registrationSchema = z.object({

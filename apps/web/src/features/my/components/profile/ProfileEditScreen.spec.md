@@ -42,7 +42,7 @@
 
 - 화면은 `profile`(`nickname`, `imageSrc?`, `birthYear?`, `gender?`)을 prop으로 받는다.
 - Mutation: `useUpdateProfileMutation`(`queries/profile.ts`) → `updateMyProfile`(`api/profile.ts`, `PUT /members/me/profile`). multipart `profile`(닉네임, `imageAction`, 동의했으면 `demographics`) + 새 사진이면 `photo`(JPEG). 사진이 그대로면 `KEEP`, 기본 이미지로 바꾸면 `RESET`, 새로 고르면 `REPLACE`.
-- 출생연도·성별: 동의한 사람만 `demographics`(`birthYear`·`gender`)를 보내고 비운 값은 키를 빼 서버가 없음(null)으로 저장한다. 동의하지 않았으면 `demographics`를 보내지 않는다. 성별은 서버 `FEMALE`·`MALE`과 화면 `female`·`male`을 `lib/gender.ts`로 바꾼다. 내 정보(`MemberResponse`)에는 두 값이 없어 추가 개인정보 응답에서 받는다.
+- 출생연도·성별: 동의한 사람만 `demographics`(`birthYear`·`gender`)를 보내고 비운 값은 키를 빼 서버가 없음(null)으로 저장한다. 동의하지 않았으면 `demographics`를 보내지 않는다. 성별은 서버 `FEMALE`·`MALE`과 화면 `female`·`male`을 `shared/lib/profile/gender.ts`로 바꾼다. 내 정보(`MemberResponse`)에는 두 값이 없어 추가 개인정보 응답에서 받는다.
 
 ## UI와 접근성
 

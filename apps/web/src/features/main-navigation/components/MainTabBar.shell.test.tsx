@@ -1,6 +1,6 @@
 import { act, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { onMainTabGesture } from '@/shared/lib/mainTabGesture';
+import { onMainTabGesture } from '@/shared/lib/navigation/mainTabGesture';
 import { MainTabBar } from './MainTabBar';
 
 // iOS 쉘: 시스템 탭 바가 보낸 다시 누름·꾹 누름을 웹 막대와 같은 제스처로 바꾸는지

@@ -1,5 +1,5 @@
 // 기록용: 쓰는 곳 없음. API 연결 전 번치 홈 샘플 데이터(#413에서 샘플 모드 제거), 새 코드에서 import 금지
-import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/bunchProfile';
+import { DEFAULT_BUNCH_IMAGES } from '@/shared/lib/profile/bunchProfile';
 import type { BunchHomeDetail, BunchSummary, DraftBundle } from '../lib/types';
 
 // 번치·번들 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)

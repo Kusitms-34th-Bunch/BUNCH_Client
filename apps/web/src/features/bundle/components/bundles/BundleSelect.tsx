@@ -19,10 +19,10 @@ import {
   PAGE_LOADING_LABEL,
   PageLoading,
 } from '@/shared/components/loading/PageLoading';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES, MAX_RECOMMEND_CHIPS } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';

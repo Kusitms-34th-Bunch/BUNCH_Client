@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { replaceUrl } from '@/shared/lib/replaceUrl';
+import { replaceUrl } from '@/shared/lib/navigation/replaceUrl';
 import { parsePhotoId } from '../lib/draftId';
 
 // 보던 사진 id를 이 history 항목에 적어 두는 키

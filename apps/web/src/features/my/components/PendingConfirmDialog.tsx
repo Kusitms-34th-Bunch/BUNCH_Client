@@ -2,7 +2,7 @@
 
 import { ConfirmDialog } from '@app/design-system';
 import { useState } from 'react';
-import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 
 type PendingConfirmDialogProps = ScreenOverlayProps & {
   title: string;

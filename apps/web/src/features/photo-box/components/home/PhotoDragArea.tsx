@@ -17,7 +17,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { memo, useEffect, useMemo } from 'react';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { PhotoSection } from '../../lib/photoDate';
 import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxViewer } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';

@@ -15,7 +15,7 @@ import blockedListEmpty from '@/shared/assets/images/empty/blocked-list-empty.sv
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileListSkeleton } from '@/shared/components/skeleton/ProfileRowSkeleton';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { ListMoreQuery } from '../../lib/pages';
 import type { BlockedBunch } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';

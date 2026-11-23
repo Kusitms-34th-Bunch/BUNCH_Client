@@ -4,8 +4,8 @@ import { ConfirmDialog, Header, LineChevronRightLargeIcon, toast } from '@app/de
 import { MenuLabel, ProfileImage } from '@app/design-system/web';
 import Link from 'next/link';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';

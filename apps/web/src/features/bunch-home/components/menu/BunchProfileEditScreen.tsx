@@ -2,8 +2,8 @@
 
 import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
-import { type CheckNickname } from '@/shared/hooks/useNicknameAvailability';
-import { type CharacterType } from '@/shared/lib/bunchProfile';
+import { type CheckNickname } from '@/shared/hooks/profile/useNicknameAvailability';
+import { type CharacterType } from '@/shared/lib/profile/bunchProfile';
 import {
   type BunchProfileDraft,
   type EditableProfile,

@@ -4,7 +4,7 @@ import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft } from '../lib/types';
 import { BUNDLE_MESSAGES } from '../constants/messages';

@@ -1,7 +1,10 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { markPageLoading } from '@/shared/lib/pageLoadingState';
-import { settlePendingToast, toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { markPageLoading } from '@/shared/lib/navigation/pageLoadingState';
+import {
+  settlePendingToast,
+  toastAfterNavigation,
+} from '@/shared/lib/navigation/toastAfterNavigation';
 import { PendingToast } from './PendingToast';
 
 const toast = vi.hoisted(() => vi.fn());

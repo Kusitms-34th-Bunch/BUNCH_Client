@@ -1,7 +1,7 @@
 import { Header, LineChevronLeftLargeIcon, TextButton } from '@app/design-system';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { useCropDrag } from '../../hooks/useCropDrag';
+import { useCropDrag } from '@/shared/hooks/profile/useCropDrag';
 import {
   clampCrop,
   type Crop,
@@ -12,7 +12,7 @@ import {
   initialCrop,
   moveCrop,
   resizeCropBy,
-} from '../../lib/photoCrop';
+} from '@/shared/lib/image/photoCrop';
 import { HeaderIconButton } from '../layout/HeaderIconButton';
 import { LoadingRipple } from '../loading/LoadingRipple';
 import { CropFrame } from './CropFrame';

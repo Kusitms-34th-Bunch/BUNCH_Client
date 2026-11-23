@@ -4,7 +4,7 @@ import type { RefObject } from 'react';
 import { Button, Skeleton } from '@app/design-system';
 import { BundleAuthorInfo, BundleInfo, BundlePhoto } from '@app/design-system/web';
 import { LoadingRipple } from '@/shared/components/loading/LoadingRipple';
-import { bundleHeroKey } from '@/shared/lib/heroKeys';
+import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import type { FeedBundle } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { hideLeftMemberImages } from '../../lib/deletedUserImage';

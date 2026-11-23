@@ -1,7 +1,7 @@
 'use client';
 
 import { DateChangeSheet, SelectionField } from '@app/design-system/web';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, PlaceResult } from '../../lib/types';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../../constants/messages';

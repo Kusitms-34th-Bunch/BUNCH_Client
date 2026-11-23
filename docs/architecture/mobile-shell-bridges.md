@@ -33,7 +33,7 @@
 - `copyToClipboard(text): Promise<boolean>`와 `readClipboard(): Promise<string | null>`는 쉘이 `expo-clipboard`로 시스템 클립보드를 복사·읽는 계약이다. WebView의 개발 주소(`http://<LAN IP>`)는 보안 컨텍스트가 아니라 `navigator.clipboard`가 없고, 배포 주소(https)에서도 iOS WebView의 `readText()`는 허용 팝업이 뜨거나 거부될 수 있어서 네이티브로 처리한다.
 - 입력과 읽기 결과는 모두 `clipboardTextSchema`(1~2048자 문자열)로 검증하고, 어긋나면 복사는 `false`, 읽기는 `null`이다. 쉘은 오류를 웹에 던지지 않는다(`src/clipboard-core.ts`, Node 테스트로 확인). 큰 데이터나 텍스트가 아닌 값이 브리지로 오가지 않게 하는 상한이다.
 - 읽기는 사용자가 누른 동작 직후에만 부르는 것이 호출부 규약이다(붙여넣기 버튼 한 곳). 쉘이 사용자 동작을 강제하지는 않아서, 앱 출처 페이지의 스크립트(예: XSS)가 직접 부르면 막지 못한다. iOS는 다른 앱에서 복사한 내용을 읽을 때 OS가 붙여넣기 허용 팝업을 띄우지만 Android는 앱이 포그라운드일 때 조용히 읽힌다. WebView 최상위 이동은 앱 출처만 허용하므로(위 이동 제한) 외부 페이지가 최상위로 올라와 이 메서드를 부르지는 못한다. 앱 출처 페이지 안의 외부 iframe은 iOS에서는 같은 핸들러로 걸러지지만 Android는 이 핸들러로 막지 못할 수 있다(react-native-webview 동작 미확인, 지금은 외부 iframe을 넣는 코드가 없다).
-- 웹은 `shared/lib/clipboard.ts`의 `copyText`·`readClipboardText`만 쓴다. 쉘 안에서 이 메서드가 있으면 브리지를, 없으면(이전 쉘 빌드) `navigator.clipboard`로 대체하고, 브라우저는 `navigator.clipboard`를 쓴다. 읽기는 사용자가 팝업에 응답할 때까지 기다려야 해서 읽기 전용 `clipboardBridge`의 timeout만 껐고, 복사는 기본 `appBridge`의 timeout을 쓴다.
+- 웹은 `shared/lib/native/clipboard.ts`의 `copyText`·`readClipboardText`만 쓴다. 쉘 안에서 이 메서드가 있으면 브리지를, 없으면(이전 쉘 빌드) `navigator.clipboard`로 대체하고, 브라우저는 `navigator.clipboard`를 쓴다. 읽기는 사용자가 팝업에 응답할 때까지 기다려야 해서 읽기 전용 `clipboardBridge`의 timeout만 껐고, 복사는 기본 `appBridge`의 timeout을 쓴다.
 - 새 네이티브 모듈이라 **개발 앱(dev client)은 다시 빌드**해야 한다. Expo Go는 `expo-clipboard`를 포함한다. 실기기에서 복사·붙여넣기 동작과 iOS 붙여넣기 팝업은 확인하지 못했다.
 
 ## WebView 미디어 재생

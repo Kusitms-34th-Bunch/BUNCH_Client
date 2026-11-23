@@ -4,7 +4,7 @@ import { FeedBundleCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { openTabPath } from '@/shared/bridge/client';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
-import { bundleHeroKey } from '@/shared/lib/heroKeys';
+import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import type { useOpenBundleDetail } from '../hooks/useOpenBundleDetail';
 import type { FeedBundle } from '../lib/types';
 import { FEED_PATHS } from '../constants/paths';

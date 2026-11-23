@@ -15,7 +15,7 @@ import { useId } from 'react';
 import { isNativeShell, shareBridge } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { copyText } from '@/shared/lib/clipboard';
+import { copyText } from '@/shared/lib/native/clipboard';
 
 // 보이는 라벨과 입력창의 접근성 이름 일치
 const LINK_LABEL = '초대 링크';

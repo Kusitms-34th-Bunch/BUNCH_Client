@@ -1,7 +1,7 @@
 import { LineMemberSmallIcon } from '@app/design-system';
 import Link from 'next/link';
 import { type RefObject, useState } from 'react';
-import { bundleHeroKey } from '@/shared/lib/heroKeys';
+import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import type { CompletedBundle } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';

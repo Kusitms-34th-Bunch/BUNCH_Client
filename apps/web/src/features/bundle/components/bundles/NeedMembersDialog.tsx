@@ -1,5 +1,5 @@
 import { ConfirmDialog } from '@app/design-system';
-import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 
 type NeedMembersDialogProps = ScreenOverlayProps & {

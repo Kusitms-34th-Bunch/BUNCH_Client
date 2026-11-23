@@ -8,11 +8,11 @@ import { FloatingButtonToastAnchor } from '@/shared/components/layout/FloatingBu
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useNativeFloatingButton } from '@/shared/hooks/native/useNativeFloatingButton';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
+import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
-import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
 import type { UploadStatus } from '../../lib/uploadStatus';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';

@@ -16,7 +16,7 @@ const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 // 클립보드 복사와 페이지 밖 이동(앱 열기 도메인, 카카오톡 외부 열기)은 기록만 함
 const copyText = vi.fn<(_text: string) => Promise<boolean>>(() => Promise.resolve(true));
-vi.mock('@/shared/lib/clipboard', () => ({ copyText: (text: string) => copyText(text) }));
+vi.mock('@/shared/lib/native/clipboard', () => ({ copyText: (text: string) => copyText(text) }));
 const open = vi.fn<(_url: string) => void>();
 vi.mock('../lib/externalLink', async (importOriginal) => ({
   ...(await importOriginal<typeof ExternalLink>()),

@@ -1,6 +1,6 @@
 import { normalizeError } from '@app/api-core';
+import { releasePushDevice, syncPushDevice } from '@/shared/lib/native/pushDevice';
 import { clearPendingInvitation } from '../lib/pendingInvitation';
-import { releasePushDevice, syncPushDevice } from '../lib/pushDevice';
 import { bffApi } from './bffApi';
 
 /**

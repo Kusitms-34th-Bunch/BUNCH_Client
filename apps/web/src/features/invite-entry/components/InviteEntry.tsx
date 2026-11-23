@@ -8,8 +8,8 @@ import { useEffect, useEffectEvent, useRef, useSyncExternalStore } from 'react';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
-import { copyText } from '@/shared/lib/clipboard';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
+import { copyText } from '@/shared/lib/native/clipboard';
 import { savePendingInvitation } from '@/shared/lib/pendingInvitation';
 import {
   APP_STORE_URL,

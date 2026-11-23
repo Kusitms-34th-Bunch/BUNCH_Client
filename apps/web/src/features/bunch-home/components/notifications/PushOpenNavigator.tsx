@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { toDomainId } from '@/shared/api/ids';
 import { appBridge, hasNativeMethod, nativeShellTab, openTabPath } from '@/shared/bridge/client';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { notificationPath } from '../../model/notifications';

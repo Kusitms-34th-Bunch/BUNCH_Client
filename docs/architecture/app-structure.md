@@ -19,6 +19,12 @@
 - 웹 앱에서 import하는 이미지·로티 등 정적 자산은 `src/shared/assets/`에서 종류별로 관리한다(예: `lotties/`). URL로 직접 제공하는 파일은 `public/`에 둔다. 재생 컴포넌트·hook·도메인 로직은 자산과 함께 옮기지 않고 해당 feature에 둔다.
 - 다른 feature의 내부 파일은 import하지 않는다(lint로 검사, 기준과 예외는 `docs/architecture/domain-ownership.md`). 둘 이상의 feature가 쓰게 되면 `shared`로 옮기거나 route에서 조합한다.
 - 둘 이상의 feature가 같은 뜻으로 쓰는 경로·문구는 `shared/constants/`(`paths.ts`의 `APP_PATHS`, `messages.ts`의 `COMMON_MESSAGES`)에 둔다. 각 feature 상수는 자기 이름(상황별 key)을 유지하고 값만 가져온다. 한 feature만 쓰는 값은 그 feature에 둔다.
+- `shared/lib`·`shared/hooks`는 관심사별 하위 폴더에 둔다. 같은 관심사 파일이 셋 미만이면 하위 폴더를 만들지 않고 바로 아래에 둔다. 어느 관심사에도 맞지 않는 범용 파일도 바로 아래에 둔다.
+  - `profile`: 이름·닉네임·성별·출생연도 입력과 프로필 사진 자르기
+  - `image`: 사진 읽기·자르기·주소 검사
+  - `navigation`: 화면 이동·기록·전환 키·이동 뒤 안내
+  - `native`: 앱 쉘 기능(클립보드·진동·푸시·사진 선택·네이티브 버튼과 토스트)
+  - `scroll`·`overlay`(hooks만): 스크롤 위치·헤더 숨김, 창 열림·초점 복원
 - `features/<feature>/components/index.ts`는 route가 쓰는 화면 컴포넌트만 내보내는 생성 배럴이다. `yarn gen:feature-index`(`turbo/workflows/gen-feature-barrels.mjs`)가 `src/app`이 `@/features/<feature>/components`에서 import하는 이름을 읽어 만들고, `check:generated`가 최신 여부를 검사한다. 직접 고치지 않는다. route(`src/app`)는 이 배럴로 import하고, feature 내부 파일은 배럴을 거치지 않고 상대 경로로 직접 import한다(순환 import 방지). 내부 부품은 route가 import하지 않으므로 공개되지 않는다. 새 화면을 route에서 쓰기 시작하면 `yarn gen:feature-index`를 실행한다. 화면이 많아져 로드가 느려지면 흐름별 배럴로 나눈다.
 - 해당 domain 안에서만 쓰면 `features`에 두고, 두 곳 이상에서 쓰게 되면 `shared`로 올린다.
 - 서버 전용 코드는 browser client 경로에 섞지 않는다.

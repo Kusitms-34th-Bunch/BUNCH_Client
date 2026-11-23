@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { replaceTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { defaultBunchImage } from '@/shared/lib/bunchProfile';
+import { defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
 import { usePrefetchNextSteps } from '../../hooks/usePrefetchNextSteps';

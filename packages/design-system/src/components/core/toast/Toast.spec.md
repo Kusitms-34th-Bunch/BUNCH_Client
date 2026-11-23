@@ -38,7 +38,7 @@
 - 이벤트: `action.onClick`만 있다. `onClick`이 오류를 던지면 토스트를 닫지 못하므로 던지지 않아야 한다.
 - Controlled / uncontrolled: 해당 없음(표시 상태는 sonner가 가진다).
 - 호출자 소유 책임: 메시지 문구(i18n), 액션 동작, 언제 어떤 종류를 띄울지, `<Toaster />`를 앱에 한 번 두는 것, 아래 여백이 쓰는 CSS 변수 `--safe-area-bottom`의 정의(앱이 정의하고 없으면 `env()`로 대체한다), 화면 하단 고정 영역·탭 막대 요소에 `data-toast-anchor`를 다는 것(아래 "표시 위치").
-- 화면을 이동하는 동작의 토스트는 이동 전에 `toast()`를 부르면 나가는 화면 기준 위치에 뜨므로 앱이 도착 화면에서 띄운다. `apps/web`은 `toastAfterNavigation()`(`@/shared/lib/toastAfterNavigation`)으로 예약하고 `(app)/layout.tsx`의 `<PendingToast />`가 도착 화면의 전환·전체 로딩(`PageLoading`)이 끝난 뒤 `toast()`를 부른다. 이 규칙은 앱 소유이고 이 패키지는 모른다.
+- 화면을 이동하는 동작의 토스트는 이동 전에 `toast()`를 부르면 나가는 화면 기준 위치에 뜨므로 앱이 도착 화면에서 띄운다. `apps/web`은 `toastAfterNavigation()`(`@/shared/lib/navigation/toastAfterNavigation`)으로 예약하고 `(app)/layout.tsx`의 `<PendingToast />`가 도착 화면의 전환·전체 로딩(`PageLoading`)이 끝난 뒤 `toast()`를 부른다. 이 규칙은 앱 소유이고 이 패키지는 모른다.
 
 ## 상태와 동작
 

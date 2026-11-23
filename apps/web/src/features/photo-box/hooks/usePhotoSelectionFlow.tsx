@@ -2,7 +2,7 @@
 import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { PhotoBoxActions, PhotoBoxData, SaveResult } from '../lib/types';
 import { DateChangeConfirmDialog, DeleteConfirmDialog } from '../components/PhotoSelectionDialogs';
 import { SavingDateSheet } from '../components/SavingDateSheet';
