@@ -37,6 +37,22 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 - Xcode Archive로 올릴 때: `ios.buildNumber`를 App Store Connect에 올린 같은 버전의 마지막 번호보다 크게 올리고 커밋한 뒤 `pnpm ios:sync`를 하고 Archive한다. 버전을 바꾸면(`version`) 빌드 번호는 다시 1부터 써도 된다.
 - EAS로 올릴 때: `eas.json`이 `appVersionSource: remote`·`autoIncrement`라 EAS가 번호를 관리하고 `ios.buildNumber`는 쓰지 않는다. 두 방법을 섞으면 번호가 겹칠 수 있으니 EAS 첫 빌드 전에 `pnpm dlx eas-cli@latest build:version:set -p ios`로 마지막 번호에 맞춘다.
 
+#### 버전을 올리는 기준
+
+앱 버전은 `주.부.수`(MAJOR.MINOR.PATCH) 세 자리다(2026-11-23 사용자 결정). 화면은 웹이라 웹만 바뀌면 스토어에 다시 내지 않으므로, 새 앱 파일(네이티브)을 제출할 때만 버전을 올린다.
+
+| 바뀐 것                                            | 올리는 자리                | 예                                       |
+| -------------------------------------------------- | -------------------------- | ---------------------------------------- |
+| 웹만                                               | 올리지 않음(제출하지 않음) | 화면·문구·웹 버그                        |
+| 네이티브 버그 수정, 앱 설정                        | 수(PATCH)                  | 쉘 버그, 언어·권한 문구 설정             |
+| 새 네이티브 기능(로컬 모듈, bridge 메서드)         | 부(MINOR)                  | 탭 꾹 누르기·화면 전체 전환(#518, 1.1.0) |
+| 최소 iOS 버전 상향, 이전 웹과 함께 쓸 수 없는 변경 | 주(MAJOR)                  |                                          |
+
+- 한 자리를 올리면 그 오른쪽 자리는 0으로 돌린다(1.0.1 → 1.1.0, 1.4.2 → 2.0.0). 자리마다 10을 넘어도 이어서 센다(1.9.0 → 1.10.0).
+- 한 번의 제출에 여러 종류가 섞이면 가장 큰 자리 하나만 올린다.
+- 같은 버전을 다시 제출할 때(심사 거절 뒤 수정 등)는 버전은 두고 빌드 번호만 올린다.
+- 새 bridge 메서드를 쓰는 웹은 그 메서드가 없는 이전 앱 버전에서도 동작해야 한다(`hasNativeMethod`로 확인).
+
 ### App Store 제출용 환경변수
 
 양식은 [`.env.production.example`](../../apps/mobile-shell/.env.production.example)에 둔다.
