@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { replaceUrl } from '@/shared/lib/replaceUrl';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
@@ -38,9 +39,10 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   const backOr = useBackOr();
   const { state, actions } = usePhotoBox();
   const data = state.kind === 'ready' ? state.data : undefined;
+  const currentYear = useCurrentYear();
   const photos = useMemo(
-    () => (data ? getDetailOrder(data.photos, new Date().getFullYear()) : []),
-    [data],
+    () => (data ? getDetailOrder(data.photos, currentYear) : []),
+    [data, currentYear],
   );
   const present = photos.some((photo) => photo.id === photoId);
   // 지금 보는 사진과 양옆 사진의 원본만 받아 쓰고, 받기 전에는 목록의 썸네일을 그대로 보여 줌

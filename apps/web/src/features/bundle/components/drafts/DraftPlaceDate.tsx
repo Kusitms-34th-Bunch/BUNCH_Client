@@ -28,7 +28,7 @@ type DraftPlaceDateProps = {
   /** 참여 멤버인지: 아니면 위치는 장소만 보이고 X와 「+ 위치 추가」는 보이지 않음(연결이 끊겨 editable만 false인 때는 그대로 보임, 기능 spec 4.3.10) */
   participant: boolean;
   /** 날짜 형식(올해 여부)의 기준 연도 */
-  currentYear: number;
+  currentYear: number | null;
   /** 고칠 수 없는 사람이 눌렀을 때 */
   onDenied: () => void;
 };

@@ -24,7 +24,7 @@ export const getDateKey = (takenAt: string | null): string | null => {
 };
 
 /** 올해는 「9월 28일 일요일」, 올해가 아니면 요일 없이 「2025년 9월 28일」 */
-export const formatSectionDate = (dateKey: string, currentYear: number): string => {
+export const formatSectionDate = (dateKey: string, currentYear: number | null): string => {
   const [year, month, day] = dateKey.split('-').map(Number) as [number, number, number];
   if (year !== currentYear) return `${year}년 ${month}월 ${day}일`;
   const weekday = WEEKDAYS[new Date(year, month - 1, day).getDay()];
@@ -45,7 +45,10 @@ const byTakenAtDesc = (a: PhotoBoxPhoto, b: PhotoBoxPhoto) => {
 };
 
 /** 촬영 날짜별 섹션(최신 날짜가 위)과 날짜 미확인 사진으로 나눔 */
-export const splitPhotos = (photos: readonly PhotoBoxPhoto[], currentYear: number): SplitPhotos => {
+export const splitPhotos = (
+  photos: readonly PhotoBoxPhoto[],
+  currentYear: number | null,
+): SplitPhotos => {
   const byDate = new Map<string, PhotoBoxPhoto[]>();
   const undated: PhotoBoxPhoto[] = [];
 

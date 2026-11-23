@@ -32,7 +32,7 @@ type DraftPhotoAddProps = {
   data: PhotoBoxData;
   actions: Pick<DraftActions, 'replacePhotos' | 'presence'>;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   /** 변경 없이 나감(이전 화면으로) */
   onBack: () => void;
   /** 적용을 마침(작성 화면으로 돌아감) */

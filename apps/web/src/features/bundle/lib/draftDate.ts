@@ -11,7 +11,7 @@ export const toDraftDateString = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 /** 올해는 「6월 20일」, 올해가 아니면 「2025년 12월 24일」 */
-export const formatDraftDate = (value: string, currentYear: number): string => {
+export const formatDraftDate = (value: string, currentYear: number | null): string => {
   const date = parseDraftDate(value);
   if (!date) return value;
   const label = `${date.getMonth() + 1}월 ${date.getDate()}일`;

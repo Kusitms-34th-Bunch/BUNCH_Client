@@ -4,6 +4,7 @@ import { Button, ConfirmDialog, toast } from '@app/design-system';
 import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftViewer, SaveStatus } from '../../lib/types';
@@ -28,7 +29,7 @@ type DraftScreenProps = {
   titleReady?: boolean;
   actions: DraftActions;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   onBack: () => void;
   /** 나가기 확인 창에서 「나가기」를 눌렀을 때 */
   onLeave: () => void;
@@ -65,7 +66,7 @@ export function DraftScreen({
   offline,
   titleReady = true,
   actions,
-  currentYear = new Date().getFullYear(),
+  currentYear: currentYearProp,
   onBack,
   onLeave,
   onRetry,
@@ -77,6 +78,8 @@ export function DraftScreen({
   onImportFromGallery,
   galleryImporting,
 }: DraftScreenProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   const openOverlay = useScreenOverlay();
   // 내가 지금 입력 중인 영역(제목·내 코멘트): 내 멤버 카드의 초록 점과 제목·코멘트 옆 프로필에 보임
   const [selfEditing, setSelfEditing] = useState<'title' | 'comment' | undefined>(undefined);

@@ -14,14 +14,14 @@ export const parsePhotoId = (value: string): string | undefined =>
  */
 export const getDetailOrder = (
   photos: readonly PhotoBoxPhoto[],
-  currentYear: number,
+  currentYear: number | null,
 ): PhotoBoxPhoto[] => {
   const { sections, undated } = splitPhotos(photos, currentYear);
   return [...sections.flatMap((section) => section.photos), ...undated];
 };
 
 /** 헤더 날짜: 사진함과 같은 형식, 촬영 날짜를 확인하지 못했으면 「날짜 미확인」 */
-export const formatDetailDate = (takenAt: string | null, currentYear: number): string => {
+export const formatDetailDate = (takenAt: string | null, currentYear: number | null): string => {
   const dateKey = getDateKey(takenAt);
   return dateKey ? formatSectionDate(dateKey, currentYear) : '날짜 미확인';
 };

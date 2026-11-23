@@ -3,6 +3,7 @@
 import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { BundleEditActions } from '../../hooks/useBundleEdit';
 import type { Draft, DraftViewer } from '../../lib/types';
@@ -23,7 +24,7 @@ type BundleEditScreenProps = {
   /** 「저장」을 누를 수 있는지(바뀐 내용이 있고 제목이 비어 있지 않음) */
   canSave: boolean;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   /** 뒤로 나가기를 확정했을 때(바뀐 내용이 없으면 바로, 있으면 「나가기」를 눌렀을 때) */
   onLeave: () => void;
   /** 저장 확인 창에서 「저장」을 눌렀을 때 */
@@ -52,7 +53,7 @@ export function BundleEditScreen({
   actions,
   dirty,
   canSave,
-  currentYear = new Date().getFullYear(),
+  currentYear: currentYearProp,
   onLeave,
   onSave,
   onOpenPhoto,
@@ -60,6 +61,8 @@ export function BundleEditScreen({
   onImportFromGallery,
   galleryImporting,
 }: BundleEditScreenProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   const openOverlay = useScreenOverlay();
 
   const back = () => {
