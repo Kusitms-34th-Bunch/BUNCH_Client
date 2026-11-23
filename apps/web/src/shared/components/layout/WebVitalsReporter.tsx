@@ -17,6 +17,60 @@ type Metric = NextWebVitalsMetric & {
   rating?: string;
   navigationType?: string;
   navigationURL?: string;
+  attribution?: InpAttribution;
+};
+
+// INP 원인(next.config `webVitalsAttribution`, web-vitals attribution 빌드)에서 쓰는 값
+type InpAttribution = {
+  interactionTarget?: string;
+  interactionType?: string;
+  inputDelay?: number;
+  processingDuration?: number;
+  presentationDelay?: number;
+  loadState?: string;
+  longestScript?: { entry?: { invokerType?: string; sourceURL?: string } };
+};
+
+// 누른 요소 선택자의 길이 상한(긴 class 묶음으로 이벤트가 커지지 않게)
+const TARGET_MAX_LENGTH = 120;
+
+/** 누른 요소 선택자(태그·class·id): 댓글 번호 같은 숫자 ID는 가리고(경로 정제와 같은 기준) 길이를 자름 */
+const cleanTarget = (target: string) => target.replace(/\d+/g, ':n').slice(0, TARGET_MAX_LENGTH);
+
+/**
+ * 가장 오래 걸린 스크립트: 앱 청크(같은 출처 `/_next/static/`)만 파일 이름, 그 밖은 종류만
+ * 인라인 스크립트는 주소가 문서 주소라 파일 이름 자리에 초대 토큰·ID가 올 수 있음
+ */
+const scriptSource = (sourceURL: string | undefined) => {
+  if (!sourceURL) return undefined;
+  try {
+    const url = new URL(sourceURL, window.location.href);
+    if (url.origin !== window.location.origin) return 'external';
+    return url.pathname.startsWith('/_next/static/') ? url.pathname.split('/').pop() : 'inline';
+  } catch {
+    return undefined;
+  }
+};
+
+/** 어떤 조작이 느렸는지(INP만): 누른 요소, 입력 대기·처리·그리기 시간, 가장 오래 걸린 스크립트 파일 */
+const inpDetails = (metric: Metric) => {
+  const attribution = metric.name === 'INP' ? metric.attribution : undefined;
+  if (!attribution) return {};
+  const script = attribution.longestScript?.entry;
+  const round = (value: number | undefined) =>
+    value === undefined ? undefined : Math.round(value);
+  return {
+    inp_target: attribution.interactionTarget
+      ? cleanTarget(attribution.interactionTarget)
+      : undefined,
+    inp_type: attribution.interactionType,
+    inp_input_delay: round(attribution.inputDelay),
+    inp_processing: round(attribution.processingDuration),
+    inp_presentation: round(attribution.presentationDelay),
+    inp_load_state: attribution.loadState,
+    inp_script_type: script?.invokerType,
+    inp_script_source: scriptSource(script?.sourceURL),
+  };
 };
 
 // 측정한 화면의 경로(지원 브라우저는 화면 이동마다 navigationURL을 줌). 없으면 보고 시점 경로
@@ -43,6 +97,7 @@ const report = (metric: Metric) => {
     // 경로의 ID·초대 토큰은 보내기 직전 정제(sanitizeAnalyticsEvent)
     path: metricPath(metric),
     surface: isNativeShell() ? 'app' : 'web',
+    ...inpDetails(metric),
   });
 };
 
