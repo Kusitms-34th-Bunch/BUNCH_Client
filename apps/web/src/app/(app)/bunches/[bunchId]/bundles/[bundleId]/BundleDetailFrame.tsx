@@ -1,6 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { FEED_PATHS } from '@/features/feed/constants/paths';
 import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import { BundleDetailRoute } from './BundleDetailRoute';
@@ -11,7 +12,21 @@ const COMMENT_ID = /^[1-9]\d{0,18}$/;
  * 상세 화면 틀(전환 이름·zoom 표식)과 주소 query 해석
  * query는 클라이언트에서 읽음: 서버가 읽으면 요청마다 그리는 화면이 되어 미리 받기·캐시가 안 되고 누른 뒤 서버 왕복을 기다림(#532)
  */
-export function BundleDetailFrame({ bunchId, bundleId }: { bunchId: string; bundleId: string }) {
+type FrameProps = { bunchId: string; bundleId: string };
+
+/**
+ * query를 읽는 부분만 감쌈(정적 화면이라 서버가 처음 그릴 때는 query를 몰라 hydration 뒤에 그림)
+ * page에서 감싸면 화면 코드를 받는 동안 새 경계가 빈 화면을 먼저 보여 피드가 내려갔다 다시 붙음(#532, 처음 여는 상세)
+ */
+export function BundleDetailFrame(props: FrameProps) {
+  return (
+    <Suspense>
+      <Frame {...props} />
+    </Suspense>
+  );
+}
+
+function Frame({ bunchId, bundleId }: FrameProps) {
   const query = useSearchParams();
   // 같은 이름이 둘 이상이면(?focus=a&focus=b) 알 수 없는 값으로 봄
   const single = (key: string) => {

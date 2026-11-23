@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 import { isWireId } from '@/shared/api/ids';
 import { BundleDetailFrame } from './BundleDetailFrame';
 
@@ -21,10 +20,5 @@ export default async function BundleDetailPage({
   const { bunchId, bundleId } = await params;
   // 서버 ID 형식이 아닌 주소는 그리지 않음(아무 경로나 정적 캐시에 쌓이지 않게, 수정 화면과 같은 기준)
   if (!isWireId(bunchId) || !isWireId(bundleId)) notFound();
-  return (
-    // 주소 query는 클라이언트에서 읽음(정적 화면이라 서버는 모름). 화면 이동 때는 바로 그려지고 처음 열 때만 hydration 뒤
-    <Suspense>
-      <BundleDetailFrame bunchId={bunchId} bundleId={bundleId} />
-    </Suspense>
-  );
+  return <BundleDetailFrame bunchId={bunchId} bundleId={bundleId} />;
 }
