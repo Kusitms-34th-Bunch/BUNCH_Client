@@ -73,7 +73,8 @@ export default function TabsLayout() {
       {TAB_IDS.map((id) => {
         const item = tabs.items.find((tab) => tab.id === id);
         return (
-          <NativeTabs.Trigger key={id} name={id} hidden={!item}>
+          // testID: E2E(Maestro)가 시뮬레이터 언어와 관계없이 탭 바 버튼을 고르는 식별자(탭 화면도 탭 이름과 같은 이름이라 이름으로는 못 고름)
+          <NativeTabs.Trigger key={id} name={id} hidden={!item} testID={`tab-${id}`}>
             <NativeTabs.Trigger.Label>{item?.label ?? id}</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon src={TAB_ICONS[id]} renderingMode="template" />
           </NativeTabs.Trigger>

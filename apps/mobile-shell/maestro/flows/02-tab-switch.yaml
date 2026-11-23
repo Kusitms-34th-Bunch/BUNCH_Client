@@ -5,31 +5,25 @@ name: 탭을 바꾸면 그 탭 화면이 보이고 탭 바가 남는다
 # 앱 시작 직후 첫 입력만 재시도(flows/90-startup-first-input.yaml), 그 뒤 전환은 한 번 눌러 바뀌어야 함
 # 탭을 처음 열면 그 탭 WebView가 페이지를 새로 받아 CI에서 10초를 넘겨 상한은 30초
 - runFlow:
-    file: ../subflows/tap-until-visible.yaml
+    file: ../subflows/tap-tab-until-visible.yaml
     env:
-      TARGET: '사진함'
+      TAB_ID: 'tab-photos'
       MARK: '사진 올리기'
 - tapOn:
-    text: '피드'
-    # 탭 화면도 같은 이름이라(화면 전체) 탭 바 안의 버튼만 고름(#534)
-    childOf:
-      text: 'Tab Bar'
+    # 탭 화면도 탭 이름과 같은 이름이라 탭 바 버튼의 식별자로 고름(시뮬레이터 언어와 무관, #534)
+    id: 'tab-feed'
 - extendedWaitUntil:
     visible: 'BUNCH, 맨 위로'
     timeout: 30000
 - tapOn:
-    text: '마이페이지'
-    # 탭 화면도 같은 이름이라(화면 전체) 탭 바 안의 버튼만 고름(#534)
-    childOf:
-      text: 'Tab Bar'
+    # 탭 화면도 탭 이름과 같은 이름이라 탭 바 버튼의 식별자로 고름(시뮬레이터 언어와 무관, #534)
+    id: 'tab-my'
 - extendedWaitUntil:
     visible: '로그아웃'
     timeout: 30000
 - tapOn:
-    text: '번치'
-    # 탭 화면도 같은 이름이라(화면 전체) 탭 바 안의 버튼만 고름(#534)
-    childOf:
-      text: 'Tab Bar'
+    # 탭 화면도 탭 이름과 같은 이름이라 탭 바 버튼의 식별자로 고름(시뮬레이터 언어와 무관, #534)
+    id: 'tab-bunch'
 - extendedWaitUntil:
     visible: '콕한 장소'
     timeout: 30000
