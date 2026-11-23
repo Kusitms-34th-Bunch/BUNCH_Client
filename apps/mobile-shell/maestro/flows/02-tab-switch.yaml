@@ -9,15 +9,27 @@ name: 탭을 바꾸면 그 탭 화면이 보이고 탭 바가 남는다
     env:
       TARGET: '사진함'
       MARK: '사진 올리기'
-- tapOn: '피드'
+- tapOn:
+    text: '피드'
+    # 탭 화면도 같은 이름이라(화면 전체) 탭 바 안의 버튼만 고름(#534)
+    childOf:
+      text: 'Tab Bar'
 - extendedWaitUntil:
     visible: 'BUNCH, 맨 위로'
     timeout: 30000
-- tapOn: '마이페이지'
+- tapOn:
+    text: '마이페이지'
+    # 탭 화면도 같은 이름이라(화면 전체) 탭 바 안의 버튼만 고름(#534)
+    childOf:
+      text: 'Tab Bar'
 - extendedWaitUntil:
     visible: '로그아웃'
     timeout: 30000
-- tapOn: '번치'
+- tapOn:
+    text: '번치'
+    # 탭 화면도 같은 이름이라(화면 전체) 탭 바 안의 버튼만 고름(#534)
+    childOf:
+      text: 'Tab Bar'
 - extendedWaitUntil:
     visible: '콕한 장소'
     timeout: 30000

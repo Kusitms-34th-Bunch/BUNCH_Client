@@ -10,7 +10,11 @@ name: 번치 탭을 두 번 누르면 최근 번치로 바뀌고, 다시 두 번
       notVisible: '퇴근런클럽'
     times: 5
     commands:
-      - doubleTapOn: '번치'
+      - doubleTapOn:
+          text: '번치'
+          # 탭 화면도 같은 이름이라(화면 전체) 탭 바 안의 버튼만 고름(#534)
+          childOf:
+            text: 'Tab Bar'
       - waitForAnimationToEnd
 # 시트 없이 바로 바뀌고 전환 토스트로 실제로 바뀌었는지 확인
 - extendedWaitUntil:
@@ -21,7 +25,11 @@ name: 번치 탭을 두 번 누르면 최근 번치로 바뀌고, 다시 두 번
 - extendedWaitUntil:
     notVisible: '퇴근런클럽 번치로 전환했어요.*'
     timeout: 15000
-- doubleTapOn: '번치'
+- doubleTapOn:
+    text: '번치'
+    # 탭 화면도 같은 이름이라(화면 전체) 탭 바 안의 버튼만 고름(#534)
+    childOf:
+      text: 'Tab Bar'
 - extendedWaitUntil:
     visible: '여행쥬아 번치로 전환했어요.*'
     timeout: 30000
