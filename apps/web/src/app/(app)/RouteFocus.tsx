@@ -3,18 +3,39 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
+import { quietFocus } from '@/shared/lib/quietFocus';
 
 const tabPaths: readonly string[] = Object.values(MAIN_TAB_PATHS);
 // 전환 중 나가는 화면(AppTransitions)과 열린 모달 바깥(Base UI)은 inert
 const OUTSIDE = '[inert], [data-page-leaving]';
 const SELECTED_TAB = '[data-main-tab-bar] [aria-current="page"]';
 
+// 텍스트 입력은 뺌(초점을 주면 iOS 키보드가 올라옴)
+const FOCUSABLE = 'a[href], button:not([disabled])';
+
 const findHeading = () =>
   [...document.querySelectorAll('h1')].find((heading) => !heading.closest(OUTSIDE));
 
+// 뒤로 가기로 돌아온 화면: 떠날 때 스크롤이 이 기록 항목에 저장돼 있음(useScrollInHistory)
+const returnedToSavedScroll = () => {
+  const saved = (window.history.state as { pageScroll?: unknown } | null)?.pageScroll;
+  return typeof saved === 'number' && saved > 0;
+};
+
+/** 복원된 위치에서 위쪽이 보이는 첫 링크·버튼(접는 헤더에 가린 위쪽 여백은 뺌) */
+const findVisibleControl = (main: HTMLElement) => {
+  const box = main.getBoundingClientRect();
+  const top = box.top + (Number.parseFloat(getComputedStyle(main).scrollPaddingTop) || 0);
+  return [...main.querySelectorAll<HTMLElement>(FOCUSABLE)].find((element) => {
+    if (element.closest(OUTSIDE)) return false;
+    const rect = element.getBoundingClientRect();
+    return rect.height > 0 && rect.top >= top && rect.top < box.bottom;
+  });
+};
+
 /**
  * 다른 화면으로 이동하면(앞으로·뒤로) 새 화면의 h1으로 초점(docs/architecture/web-interface-guidelines.md)
- * 처음 로드는 브라우저 기본, 하단 탭을 눌러 탭 루트끼리 이동하면 누른 탭에 초점 유지
+ * 뒤로 가기로 스크롤을 복원한 화면은 보이는 첫 요소로(Tab이 맨 위로 튀지 않게). 처음 로드는 브라우저 기본, 탭 루트끼리는 누른 탭 유지
  */
 export function RouteFocus() {
   const pathname = usePathname();
@@ -30,6 +51,7 @@ export function RouteFocus() {
 
     // 이동을 누른 요소(나가는 화면·닫히는 모달 안)와 이 컴포넌트가 준 제목 초점은 남은 초점으로 보지 않음
     const pressed = document.activeElement;
+    const restored = returnedToSavedScroll();
     let focused: Element | null = null;
     // 기다리는 사이 사용자나 화면이 다른 곳으로 옮긴 초점은 그대로 둠
     const focusMovedElsewhere = () => {
@@ -51,10 +73,21 @@ export function RouteFocus() {
     function focusHeading() {
       if (focusMovedElsewhere()) return observer.disconnect();
       const heading = findHeading();
-      if (!heading || heading === document.activeElement) return;
-      focused = heading;
-      heading.tabIndex = -1;
-      heading.focus({ preventScroll: true });
+      // 복원은 내용이 그려진 뒤라, 복원 전에는 제목에 두었다가 복원되면 보이는 요소로 옮김
+      const main = heading?.closest('main');
+      const target =
+        restored && main && main.scrollTop > 0 ? (findVisibleControl(main) ?? heading) : heading;
+      if (!target || target === document.activeElement) return;
+      focused = target;
+      if (target !== heading) {
+        // 조작 요소는 iOS가 코드로 준 초점에도 테두리를 그려, 키를 누르기 전까지 감춤
+        // 한 번 옮기면 관찰을 멈춤(뒤늦은 DOM 변화로 사용자가 만지지 않은 초점이 다시 옮겨지지 않게)
+        quietFocus(target);
+        observer.disconnect();
+        return;
+      }
+      target.tabIndex = -1;
+      target.focus({ preventScroll: true });
     }
     // 제목이 늦게 그려지거나, 초점을 준 제목에 나가는 화면 표식이 늦게 붙으면 다시 찾음
     // ponytail: 사용자가 초점을 옮기거나 다음 이동 때까지 관찰(DOM 변경마다 프레임당 h1 조회 한 번)

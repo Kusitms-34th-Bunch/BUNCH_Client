@@ -14,6 +14,14 @@
   --safe-area-right: var(--native-safe-area-right, env(safe-area-inset-right, 0px));
 }
 
+/* 코드로 준 초점(quietFocus)은 터치 기기(iOS가 테두리를 그림)에서 키 입력 전까지 테두리를 감춤
+   층 밖에 두어 컴포넌트의 focus-visible 유틸리티보다 우선. 키보드로 돌아온 데스크톱은 그대로 보임 */
+@media (pointer: coarse) {
+  [data-quiet-focus]:focus-visible {
+    outline: none;
+  }
+}
+
 /* 화면 이동 뒤 초점을 받는 제목(RouteFocus)은 조작 요소가 아니라 테두리를 그리지 않음 */
 @layer base {
   h1[tabindex='-1']:focus {
