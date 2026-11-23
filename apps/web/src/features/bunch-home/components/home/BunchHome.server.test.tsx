@@ -1,7 +1,7 @@
 import type * as DesignSystem from '@app/design-system';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
+import { delay, http } from 'msw';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { createBundle } from '@/features/bundle/api/bundles';
 import { mockDb } from '@/mocks/db';
@@ -20,6 +20,7 @@ import { getPageLoadingCount } from '@/shared/lib/navigation/pageLoadingState';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
+import { useSwitchBunchMutation } from '../../queries/bunchHome';
 import { BunchHome } from './BunchHome';
 
 const push = vi.fn();
@@ -503,6 +504,32 @@ describe('BunchHome 서버 번치 전환', () => {
     expect(order.indexOf('GET start bundles')).toBeLessThan(putEnd);
     expect(order.indexOf('GET start published-bundles')).toBeLessThan(putEnd);
     expect(order.indexOf('GET start home')).toBeGreaterThan(putEnd);
+  });
+
+  it('전환이 겹치면 늦게 끝난 이전 전환이 내 정보(기본 번치)를 덮지 않는다', async () => {
+    // 이전 전환(다른 번치)은 번치 홈 응답이 늦고, 나중 전환(원래 번치)은 저장이 조금 늦음(푸시 열기는 시트의 중복 방지를 거치지 않음)
+    server.use(
+      http.get(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/home`, async () => {
+        await delay(200);
+      }),
+      http.put(`/api/bunches/${MOCK_BUNCH_ID}/last-used`, async () => {
+        await delay(50);
+      }),
+    );
+    const client = createTestQueryClient();
+    const { result } = renderHook(() => useSwitchBunchMutation(), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    await act(() =>
+      Promise.allSettled([
+        result.current.mutateAsync(String(MOCK_SECOND_BUNCH_ID)),
+        result.current.mutateAsync(String(MOCK_BUNCH_ID)),
+      ]),
+    );
+    expect(client.getQueryData<{ bunch: { id: string } | null }>(sharedKeys.me())?.bunch?.id).toBe(
+      String(MOCK_BUNCH_ID),
+    );
   });
 
   it('번치 탭을 두 번 누르면 시트 없이 가장 최근에 쓴 다른 번치로 전환한다', async () => {

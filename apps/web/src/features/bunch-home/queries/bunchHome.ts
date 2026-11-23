@@ -112,10 +112,14 @@ export const useRefetchListsOnCountChange = (
  * 기본 번치가 요청한 번치로 바뀌지 않았으면 실패로 던짐(성공 토스트만 뜨고 화면이 그대로인 것을 막음)
  * 미리 받기가 실패해도 기본 번치는 확인함: 저장이 됐으면 전환 성공이고 새 번치 홈은 화면이 다시 받음
  */
+// 가장 최근에 시작한 번치 전환(시트·푸시 열기 등 여러 곳에서 겹쳐 불릴 수 있음). 늦게 끝난 이전 전환이 내 정보를 덮지 않게
+let latestSwitch = 0;
+
 export const useSwitchBunchMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (bunchId: string) => {
+      const mine = ++latestSwitch;
       // 발행·작성 중 목록은 번치 id로만 정해져 저장과 동시에 받음(차례로 받으면 왕복이 하나 늘어 전환이 늦음, #532)
       // 번치 홈은 지금 번치인지(isCurrentBunch 등)가 저장 결과에 달려 저장 뒤 내 정보와 함께 받음. 5분 안의 저장값이어도 서버 값으로
       const lists = Promise.allSettled([
@@ -133,7 +137,7 @@ export const useSwitchBunchMutation = () => {
           .catch(() => undefined),
         getMyProfile(),
       ]);
-      queryClient.setQueryData(sharedKeys.me(), me);
+      if (mine === latestSwitch) queryClient.setQueryData(sharedKeys.me(), me);
       if (me.bunch?.id !== bunchId) throw new Error('default bunch did not change');
       // 전환한 번치(이름으로 안내할 때 씀)
       return me.bunch;
