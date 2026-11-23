@@ -67,6 +67,8 @@ export const BundleCard = ({
           src={imageSrc}
           alt=""
           decoding="async"
+          // 목록에서 화면 밖 카드는 다가올 때 받음(#534)
+          loading="lazy"
           onLoad={() => setLoadedSrc(imageSrc)}
           data-loaded={imageLoaded || undefined}
           className="size-full object-cover opacity-0 transition-opacity duration-200 ease-out data-loaded:opacity-100 motion-reduce:transition-none"

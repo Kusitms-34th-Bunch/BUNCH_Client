@@ -29,6 +29,8 @@ export type FeedBundleCardProps = Omit<ComponentProps<'article'>, 'children' | '
   onPhotoClick: (_index: number) => void;
   /** 번들 상세로 넘어갈 때 대표 사진을 이어 그릴 공유 요소 키(BundlePhoto `heroKey`) */
   photoHeroKey?: string | undefined;
+  /** 대표 사진을 먼저 받을지(BundlePhoto `priority`). 피드 맨 위 카드는 true, 아래 카드는 false */
+  photoPriority?: boolean | undefined;
 } & Pick<BundleEngagementProps, 'liked' | 'likeCount' | 'onLike' | 'commentCount' | 'onComment'>;
 
 /**
@@ -51,6 +53,7 @@ export const FeedBundleCard = ({
   titleAs = 'h3',
   onPhotoClick,
   photoHeroKey,
+  photoPriority,
   liked,
   likeCount,
   onLike,
@@ -70,6 +73,7 @@ export const FeedBundleCard = ({
       info={{ title, location, onLocationClick, locationUnderline, date, titleAs }}
       onPhotoClick={onPhotoClick}
       heroKey={photoHeroKey}
+      priority={photoPriority}
       // 피드의 카드끼리 구분되게 제목을 넣음
       photoLabel={() => `${title} 사진 열기`}
     />

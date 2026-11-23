@@ -282,6 +282,20 @@ describe('FeedScreen', () => {
     expect(screen.queryByRole('article', { name: '광고 플로디스튜디오' })).toBeNull();
   });
 
+  it('위 3장은 사진을 바로 받고 맨 위는 우선순위까지 높인다(#534)', async () => {
+    renderFeed(OWN);
+    await cardsLoaded();
+    // 카드 안 첫 img는 대표 사진(번치 프로필 이미지는 그 위에 겹친 뒤쪽 요소)
+    const photos = cards().map((card) => card.querySelector('img'));
+    expect(photos[0]?.getAttribute('fetchpriority')).toBe('high');
+    expect(photos.slice(0, 3).map((img) => img?.getAttribute('loading'))).toEqual([
+      null,
+      null,
+      null,
+    ]);
+    // 4번째부터 lazy(priority=false)인 것은 BundlePhoto 테스트가 확인(이 목록은 3장)
+  });
+
   it('카드의 위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
     const user = userEvent.setup();
     renderFeed(OWN);

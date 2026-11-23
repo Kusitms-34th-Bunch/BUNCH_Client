@@ -17,7 +17,7 @@
 
 ## Public API
 
-- Props: `bunchName`·`bunchImageSrc`·`time`·`onBunchClick`, `members`·`onMembers`, `photos`·`title`·`titleAs`·`location`·`onLocationClick`·`locationUnderline`(BundleInfo로 전달, 기본 `true`)·`date`·`onPhotoClick`·`photoHeroKey`(대표 사진의 화면 전환 공유 요소 키, BundlePhoto `heroKey`), `liked`·`likeCount`·`onLike`·`commentCount`·`onComment`, native `<article>` 속성.
+- Props: `bunchName`·`bunchImageSrc`·`time`·`onBunchClick`, `members`·`onMembers`, `photos`·`title`·`titleAs`·`location`·`onLocationClick`·`locationUnderline`(BundleInfo로 전달, 기본 `true`)·`date`·`onPhotoClick`·`photoHeroKey`(대표 사진의 화면 전환 공유 요소 키, BundlePhoto `heroKey`)·`photoPriority`(대표 사진을 먼저 받을지, BundlePhoto `priority`. 피드 맨 위 카드만 `true`), `liked`·`likeCount`·`onLike`·`commentCount`·`onComment`, native `<article>` 속성.
 
 ## 접근성
 

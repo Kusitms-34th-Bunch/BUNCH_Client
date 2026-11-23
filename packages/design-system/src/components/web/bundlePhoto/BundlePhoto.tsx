@@ -39,6 +39,11 @@ export type BundlePhotoProps = Omit<ComponentProps<'div'>, 'children'> & {
    * thumbnail은 카드 전체(사진과 위 글자)에 `data-hero-enter-key`, detail은 첫 사진에 `data-hero-exit-key`(두 장을 페이지 위 층에 그려 줄 스크롤에 잘리지 않음)
    */
   heroKey?: string | undefined;
+  /**
+   * 첫 사진을 받는 순서. true: 다른 이미지보다 먼저(화면 맨 위 카드, LCP), false: 화면에 다가올 때(아래 카드)
+   * 없으면 첫 사진은 바로, 나머지는 다가올 때
+   */
+  priority?: boolean | undefined;
 };
 
 // Figma `Bundle Photo Card` 그라데이션(토큰 없음, 디자인 값 유지)
@@ -58,6 +63,7 @@ export const BundlePhoto = ({
   onPhotoClick,
   photoLabel = (index, total) => `번들 사진 ${index + 1}/${total} 열기`,
   heroKey,
+  priority,
   className,
   ...props
 }: BundlePhotoProps) => {
@@ -104,7 +110,8 @@ export const BundlePhoto = ({
               src={photo.src}
               alt={photo.alt ?? ''}
               decoding="async"
-              loading={index === 0 ? undefined : 'lazy'}
+              loading={index === 0 && priority !== false ? undefined : 'lazy'}
+              fetchPriority={index === 0 && priority ? 'high' : undefined}
               className="absolute inset-0 size-full object-cover"
             />
             {cover && index === 0 && author ? (

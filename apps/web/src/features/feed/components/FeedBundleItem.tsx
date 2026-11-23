@@ -23,6 +23,8 @@ type FeedBundleItemProps = {
   onMembers: (_members: FeedBundle['members']) => void;
   onPlaces: (_bundleId: string, _places: FeedBundle['places']) => void;
   onLike: (_bundle: FeedBundle) => void;
+  /** 사진 받는 순서(BundlePhoto `priority`): 맨 위 true, 그다음 몇 장은 바로(undefined), 그 아래 false(다가올 때) */
+  photoPriority: boolean | undefined;
 };
 
 /** 피드 목록 한 칸(번들 카드) */
@@ -36,6 +38,7 @@ export function FeedBundleItem({
   onMembers,
   onPlaces,
   onLike,
+  photoPriority,
 }: FeedBundleItemProps) {
   const router = useRouter();
   const detailHref = FEED_PATHS.bundle(bundle.bunch.id, bundle.id);
@@ -77,6 +80,7 @@ export function FeedBundleItem({
         }}
         // 번들 상세의 첫 사진과 이어 그림(AppTransitions의 피드 → 상세 hero)
         photoHeroKey={bundleHeroKey(bundle.id)}
+        photoPriority={photoPriority}
         liked={bundle.liked}
         likeCount={bundle.likeCount}
         onLike={() => onLike(bundle)}

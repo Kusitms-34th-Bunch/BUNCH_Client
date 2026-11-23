@@ -3,6 +3,8 @@
 @import '@app/design-system/utilities.css';
 /* 앱 밖 패키지라 자동 감지되지 않아 디자인 시스템 컴포넌트의 Tailwind class 스캔 등록 */
 @source '../../../../packages/design-system/src';
+/* Storybook 예시에만 쓰인 class는 앱 CSS에 넣지 않음(#534) */
+@source not '../../../../packages/design-system/src/**/*.stories.tsx';
 
 :root {
   --app-max-width: 430px;
