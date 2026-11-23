@@ -1,4 +1,5 @@
 'use client';
+// 크기 유지: 메뉴의 저장·날짜·삭제가 같은 요청 중·창 열림 상태로 넘기기 키와 낭독·로딩을 함께 막음
 
 import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
 import { IconButton } from '@app/design-system/web';

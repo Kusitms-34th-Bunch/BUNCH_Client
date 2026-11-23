@@ -1,4 +1,5 @@
 'use client';
+// 크기 유지: 선택 모드·끌기 이동·저장 중 상태를 플로팅 버튼·메뉴·inert·상태 낭독이 함께 읽는 한 화면
 
 import { toast } from '@app/design-system';
 import { FloatingButton, PhotoUploadSheet } from '@app/design-system/web';

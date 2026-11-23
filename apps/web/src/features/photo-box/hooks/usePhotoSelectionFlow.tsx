@@ -1,3 +1,4 @@
+// 크기 유지: 저장·번들·날짜·삭제가 같은 선택·요청 중 상태·선택 회차와 사라진 사진 확인을 함께 씀
 import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
