@@ -10,16 +10,7 @@ import {
   useSyncExternalStore,
   type ComponentRef,
 } from 'react';
-import {
-  BackHandler,
-  Button,
-  Linking,
-  Platform,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { BackHandler, Linking, Platform, Share, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
@@ -33,7 +24,6 @@ import {
   shareParamsSchema,
   showNativeToastParamsSchema,
   type AppBridgeMethods,
-  type SetNativeFloatingButtonParams,
 } from '@app/bridge';
 import { saveImagesToAlbum } from '../album-save';
 import { copyToClipboard, readClipboard } from '../clipboard';
@@ -63,7 +53,9 @@ import {
   markWebReady,
   waitForTabWebView,
 } from '../splash/state';
+import { createFloatingButtonGuard } from '../tabs/floating-button-guard';
 import { floatingButtonStore } from '../tabs/floating-button-store';
+import { WebLoadError } from './WebLoadError';
 import { reportTabBar, visibleTab } from '../tabs/tab-bar-visibility';
 import { canShowTabs, isTabId, isTabRootUrl, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
@@ -83,15 +75,14 @@ export const WEB_URL = resolveWebUrl(
 /** 웹 경로(`/invite/{토큰}` 등)를 이 앱이 여는 웹 주소로(개발 빌드는 개발 서버) */
 export const toAppWebUrl = (path: string) => new URL(path, WEB_URL).href;
 
-// 탭 WebView마다 지금 주소(플로팅 버튼 안전장치). 아직 모르면 첫 화면으로 봄
-const tabUrls = new Map<TabId, string>();
-// 첫 화면이 아닐 때 받은 버튼(첫 화면으로 돌아오는 순간 주소 갱신보다 요청이 먼저 오는 경우를 위해 보관했다가 그림)
-const pendingButtons = new Map<TabId, NonNullable<SetNativeFloatingButtonParams['button']>>();
-const isOnTabRoot = (tab: TabId) => {
-  const url = tabUrls.get(tab);
-  const path = tabsStore.get()?.items.find((item) => item.id === tab)?.path;
-  return !url || !path || isTabRootUrl(url, path);
-};
+// 플로팅 버튼은 그 탭이 첫 화면일 때만 그림(src/tabs/floating-button-guard.ts). 탭 경로를 모르면 첫 화면으로 봄
+const floatingButtons = createFloatingButtonGuard({
+  isRoot: (tab, url) => {
+    const path = tabsStore.get()?.items.find((item) => item.id === tab)?.path;
+    return !path || isTabRootUrl(url, path);
+  },
+  show: floatingButtonStore.set,
+});
 
 /** 지금 화면에 보이는 WebView인지: 탭 화면이면 지금 보이는 탭의 WebView, 아니면 첫 화면 WebView */
 const isVisibleWebView = (tabId: TabId | undefined) => {
@@ -220,19 +211,12 @@ const appBridge = bridge({
     const { tab, button } = setNativeFloatingButtonParamsSchema.parse(params);
     if (!isTabId(tab)) return Promise.resolve(false);
     if (!button) {
-      pendingButtons.delete(tab);
-      floatingButtonStore.set(tab, null);
+      floatingButtons.request(tab, null);
       return Promise.resolve(true);
     }
     if (Platform.OS !== 'ios' || !isLiquidGlassAvailable() || !tabsStore.get())
       return Promise.resolve(false);
-    // 안전장치: 그 탭이 첫 화면이 아니면 그리지 않고 보관(전환 중 나가는 화면이 늦게 보내도 하위 화면에 뜨지 않게)
-    if (!isOnTabRoot(tab)) {
-      pendingButtons.set(tab, button);
-      return Promise.resolve(true);
-    }
-    pendingButtons.delete(tab);
-    floatingButtonStore.set(tab, button);
+    floatingButtons.request(tab, button);
     return Promise.resolve(true);
   },
   // 네이티브 플로팅 버튼이 떠 있는 탭의 토스트(#503, 결정 기록 030). 탭 화면이 있는 iOS에서만, 그 밖은 false로 웹 토스트
@@ -394,6 +378,8 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       keyboardDisplayRequiresUserAction={false}
       // iOS 키보드 위 입력 보조 막대(이전·다음·완료) 숨김(기획 결정, 앱처럼 보이게). 키보드는 입력란 밖을 눌러 닫음. 모든 입력란에 적용(전역)
       hideKeyboardAccessoryView
+      // Android 시스템 글자 크기로 웹 화면 전체가 커지지 않게(웹 글자 크기는 디자인 토큰 기준)
+      textZoom={100}
       // 스플래시는 웹의 appReady(도착 화면이 내용을 그림)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
       // 새 문서를 열면 이전 문서가 남긴 네이티브 UI(플로팅 버튼) 정리
       onLoadStart={() => {
@@ -417,16 +403,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;
         currentUrl.current = navState.url;
-        if (tabId) {
-          tabUrls.set(tabId, navState.url);
-          // 첫 화면을 떠나면 그 탭의 플로팅 버튼을 지우고(웹 정리가 늦거나 빠져도), 돌아오면 보관한 버튼을 그림
-          const pending = pendingButtons.get(tabId);
-          if (!isOnTabRoot(tabId)) floatingButtonStore.set(tabId, null);
-          else if (pending) {
-            pendingButtons.delete(tabId);
-            floatingButtonStore.set(tabId, pending);
-          }
-        }
+        if (tabId) floatingButtons.reportUrl(tabId, navState.url);
         setBackAllowed(!blocksBackNavigation(navState.url, WEB_URL));
       }}
       onShouldStartLoadWithRequest={(request) => {
@@ -438,14 +415,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
         Linking.openURL(request.url).catch(() => {});
         return false;
       }}
-      renderError={() => (
-        <View style={styles.error}>
-          <Text style={styles.errorText}>
-            화면을 불러오지 못했어요.{'\n'}네트워크를 확인해 주세요.
-          </Text>
-          <Button title="다시 시도" onPress={() => webViewRef.current?.reload()} />
-        </View>
-      )}
+      renderError={() => <WebLoadError onRetry={() => webViewRef.current?.reload()} />}
     />
   );
 }
@@ -457,15 +427,5 @@ const styles = StyleSheet.create({
   // iOS WebView는 바탕색이 투명이면 불투명 처리(opaque)를 꺼서 웹의 투명한 배경 뒤가 보임
   transparent: {
     backgroundColor: 'transparent',
-  },
-  error: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    padding: 24,
-  },
-  errorText: {
-    textAlign: 'center',
   },
 });
