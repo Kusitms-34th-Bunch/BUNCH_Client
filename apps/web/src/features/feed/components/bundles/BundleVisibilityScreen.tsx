@@ -42,8 +42,8 @@ export function BundleVisibilityScreen({
   const detail = useQuery(managedBundleQueryOptions(bunchId, bundleId, viewerId));
   const save = useSavePublishedVisibilityMutation();
   // 메뉴를 숨기는 것만으로는 막히지 않아 직접 들어와도 서버가 수정 권한을 준 사람만, 발행본만 바꿈
-  // 권한을 잃은 뒤 다시 받기가 403·404면 받아 둔 값이 있어도 볼 수 없다는 안내로
-  const lost = isApiError(detail.error) && [403, 404].includes(detail.error.status ?? 0);
+  // 권한을 잃은 뒤 다시 받기가 볼 수 없음(400·403·404, 처음 불러오기 실패와 같은 기준)이면 받아 둔 값이 있어도 볼 수 없다는 안내로
+  const lost = isUnavailableTarget(detail.error);
   const canEdit = !lost && detail.data?.status === 'PUBLISHED' && detail.data.permissions.canEdit;
   const saved = detail.data?.visibility === 'PRIVATE';
   const [picked, setPicked] = useState<boolean | null>(null);
