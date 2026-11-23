@@ -57,6 +57,16 @@
 | 카드 영역 | 제목 아래 36, 좌우 16, 카드 간격 13 | `pt-s15 px-padding-p8 gap-3.25`               |
 | 카드      | 343×210, radius 16, 사진 배경       | `EntryCard`                                   |
 
+## 모션
+
+화면별 전환·모션의 결정과 확인 기록이다. 공용 규칙은 `docs/architecture/motion.md`를 따른다.
+
+- 효과: 온보딩 시작 → 만들기·참여, 만들기 완료 → 초대는 `slide`를 사용한다. 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. 반대 이동은 방향을 뒤집는다. 페이드는 섞지 않고 경계 밖을 잘라낸다. 참여 화면의 시각 전환은 미검증이다.
+- 시간·곡선: Slide In / Left / 이동 시간 300ms를 적용한다. 곡선은 사용자 합의에 따라 설계서의 Ease In 대신 Ease Out으로 조정한다. SSGOI의 `override`에 `easeOutIntegrator`를 넣어 CSS `cubic-bezier(0, 0, .58, 1)`의 진행도를 계산한다. 라이브러리의 `easeOut({ duration })`은 관성 기반 곡선이므로 CSS 곡선과 동일하다고 취급하지 않는다. 이동 시간과 라이브러리의 종료 판정 시간은 구분한다. 이전 200ms 설정에서 SSGOI 7.4.1의 WAAPI timeline 약 233ms를 확인했으며, 현재 300ms 설정의 실제 종료 시간은 브라우저 재검증 전이다.
+- 상태 유지: 상위 layout은 provider만 유지한다. 실제 route의 DOM에 `data-ssgoi-transition`을 지정하고, 만들기 layout 내부에서 단계 묶음·완료·초대를 구분한다. URL을 먼저 감지하는 상위 경계에서 빈 화면이 전환되는 문제를 피하려고 콘텐츠와 경계를 함께 마운트한다. 1~3단계의 헤더·Stepper와 draft provider는 유지한다. 단계 사이의 본문 전환은 현재 등록하지 않았다.
+- 번치 홈 「새로운 번치 추가하기」 → 이 화면(`axis` y)은 `docs/specs/bunch-home.md`의 「모션」에 있다.
+- 프로필 작성 → 이 화면(가입 완료, `axis` z)은 `docs/specs/login-signup.md`의 「모션」에 있다.
+
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: 이전에 `next build`에서 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 지금은 `from` 쿼리를 읽어 요청마다 렌더되는 동적 route다. 새로고침·뒤로 가기는 확인하지 못함(미검증)

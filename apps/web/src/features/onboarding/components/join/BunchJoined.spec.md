@@ -39,6 +39,10 @@
 | 본문 아래        | 40                                             | `pb-padding-p18`                       |
 | 하단 버튼        | 48, 위 10 좌우 16                              | `Button` `pt-padding-p5 px-padding-p8` |
 
+## 모션
+
+- 참여 완료 → 피드(`axis` z)는 `docs/specs/login-signup.md`의 「모션」에 있다. 컨페티는 `BunchJoinInvitation.spec.md`의 「모션」에 있다.
+
 ## 검증
 
 - [x] 관련 test: `BunchJoined.test.tsx`(제목·안내·main, 장식 이미지, 닫기·이동), `BunchConfetti.test.tsx`
