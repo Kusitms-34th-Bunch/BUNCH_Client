@@ -208,6 +208,7 @@ __metadata:
     typescript: "catalog:"
     vite: "catalog:"
     vitest: "catalog:"
+    web-vitals: "npm:^6.2.3"
     zod: "catalog:"
   languageName: unknown
   linkType: soft

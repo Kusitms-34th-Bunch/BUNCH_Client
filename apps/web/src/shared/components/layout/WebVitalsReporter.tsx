@@ -1,7 +1,8 @@
 'use client';
 
-import type { NextWebVitalsMetric } from 'next/app';
 import { useReportWebVitals } from 'next/web-vitals';
+import { useEffect } from 'react';
+import { onINP } from 'web-vitals/attribution';
 import { isNativeShell } from '@/shared/bridge/client';
 import { captureWebVital } from '@/shared/config/posthog';
 
@@ -12,15 +13,18 @@ const SAMPLE_RATE = 1;
 // 방문(문서)마다 한 번 정함(같은 방문의 지표가 일부만 빠지지 않게)
 const sampled = typeof window !== 'undefined' && Math.random() < SAMPLE_RATE;
 
-// Next 공개 타입에 없지만 실제 값(web-vitals Metric)에 있는 필드
-type Metric = NextWebVitalsMetric & {
+// 보내는 데 쓰는 지표 값(Next hook과 web-vitals attribution이 주는 값의 공통 부분)
+type Metric = {
+  id: string;
+  name: string;
+  value: number;
   rating?: string;
   navigationType?: string;
   navigationURL?: string;
   attribution?: InpAttribution;
 };
 
-// INP 원인(next.config `webVitalsAttribution`, web-vitals attribution 빌드)에서 쓰는 값
+// INP 원인(web-vitals attribution 빌드의 onINP)에서 쓰는 값
 type InpAttribution = {
   interactionTarget?: string;
   interactionType?: string;
@@ -101,11 +105,18 @@ const report = (metric: Metric) => {
   });
 };
 
+// INP는 원인 정보가 붙은 onINP로만 보냄(Next hook은 원인 없는 web-vitals 빌드라 같은 값이 두 번 가지 않게)
+// 모듈 수준 함수: Next hook은 넘긴 함수가 바뀌면 측정을 다시 등록함
+const reportExceptInp = (metric: Metric) => {
+  if (metric.name !== 'INP') report(metric);
+};
+
 /**
  * 실제 사용자 기기의 Web Vitals를 제품 분석으로 보냄(ADR 023 4번). 제품 분석에 동의한 회원만 실제로 전송됨
  * 동의가 정해지기 전에 나온 첫 화면 지표는 captureWebVital이 잠시 모아 둠
  */
 export function WebVitalsReporter() {
-  useReportWebVitals(report);
+  useReportWebVitals(reportExceptInp);
+  useEffect(() => onINP(report, { reportSoftNavs: true }), []);
   return null;
 }

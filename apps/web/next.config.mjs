@@ -23,8 +23,6 @@ const withBundleAnalyzer = bundleAnalyzer({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactCompiler: true,
-  // INP는 어떤 조작이 느렸는지(누른 요소·지연 구간)를 함께 받음(WebVitalsReporter, #534)
-  experimental: { webVitalsAttribution: ['INP'] },
   // CI는 앞 단계(tsc)에서 같은 타입 검사를 하므로 빌드 안의 검사를 건너뜀. 배포 빌드는 이 값이 없어 그대로 검사
   typescript: { ignoreBuildErrors: process.env.NEXT_SKIP_TYPECHECK === 'true' },
   // next dev가 AGENTS.md에 넣는 안내 블록 끄기(Yarn PnP라 블록이 가리키는 node_modules/next/dist/docs 경로가 없음)

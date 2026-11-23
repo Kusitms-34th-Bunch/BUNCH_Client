@@ -12,6 +12,14 @@ vi.mock('next/web-vitals', () => ({
     reporter.report = report;
   },
 }));
+// INP는 web-vitals attribution 빌드의 onINP로 받음(Next hook의 INP는 원인 정보가 없어 버림)
+const inp = vi.hoisted((): { report?: Report; options?: unknown } => ({}));
+vi.mock('web-vitals/attribution', () => ({
+  onINP: (report: Report, options: unknown) => {
+    inp.report = report;
+    inp.options = options;
+  },
+}));
 
 const metric = (name: string, value: number) => ({
   id: `v-${name}`,
@@ -54,7 +62,12 @@ describe('WebVitalsReporter', () => {
     window.history.replaceState(null, '', '/feed');
     render(<WebVitalsReporter />);
 
-    reporter.report?.({
+    // Next hook으로 온 INP(원인 없음)는 버림
+    reporter.report?.(metric('INP', 466));
+    expect(captureWebVital).not.toHaveBeenCalled();
+    expect(inp.options).toEqual({ reportSoftNavs: true });
+
+    inp.report?.({
       ...metric('INP', 466),
       attribution: {
         interactionTarget: '#comment-7',
@@ -71,7 +84,7 @@ describe('WebVitalsReporter', () => {
         },
       },
     });
-    // LCP는 원인 정보가 와도 보내지 않음(INP만 켬)
+    // LCP는 원인 정보가 와도 보내지 않음(INP만)
     reporter.report?.({ ...metric('LCP', 900), attribution: { interactionTarget: 'img' } });
 
     expect(captureWebVital).toHaveBeenNthCalledWith(
@@ -96,7 +109,7 @@ describe('WebVitalsReporter', () => {
     ['다른 출처 스크립트', 'https://cdn.example.com/sdk.js', 'external'],
   ])('%s는 파일 이름 대신 종류만 보낸다', (_name, sourceURL, expected) => {
     render(<WebVitalsReporter />);
-    reporter.report?.({
+    inp.report?.({
       ...metric('INP', 300),
       attribution: { longestScript: { entry: { invokerType: 'classic-script', sourceURL } } },
     });
@@ -110,7 +123,7 @@ describe('WebVitalsReporter', () => {
     render(<WebVitalsReporter />);
 
     reporter.report?.({
-      ...metric('INP', 80),
+      ...metric('LCP', 80),
       navigationURL: 'https://example.com/bunch/12?tab=a',
     });
 
@@ -121,7 +134,7 @@ describe('WebVitalsReporter', () => {
     vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() });
     render(<WebVitalsReporter />);
 
-    reporter.report?.(metric('INP', 80));
+    reporter.report?.(metric('LCP', 80));
 
     expect(captureWebVital).toHaveBeenCalledWith(expect.objectContaining({ surface: 'app' }));
   });
