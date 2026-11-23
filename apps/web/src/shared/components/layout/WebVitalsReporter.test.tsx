@@ -40,6 +40,7 @@ describe('WebVitalsReporter', () => {
     expect(captureWebVital).toHaveBeenCalledTimes(2);
     expect(captureWebVital).toHaveBeenNthCalledWith(1, {
       metric: 'LCP',
+      metric_id: 'v-LCP',
       value: 1235,
       rating: 'good',
       navigation_type: 'navigate',

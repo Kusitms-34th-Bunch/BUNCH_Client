@@ -272,6 +272,18 @@ describe('PostHog 제품 분석', () => {
     expect(posthog.capture).toHaveBeenCalledWith('web_vitals', { metric: 'INP', value: 90 });
   });
 
+  it('SDK를 불러오는 사이 미동의로 바뀌면 앞선 동의 호출은 수집을 켜지 않고 그사이 지표도 보내지 않는다', async () => {
+    const { captureWebVital, setAnalyticsConsent } = await load();
+
+    const consent = setAnalyticsConsent('1');
+    const revoke = setAnalyticsConsent(null);
+    captureWebVital({ metric: 'LCP', value: 1200 });
+    await Promise.all([consent, revoke]);
+
+    expect(posthog.opt_in_capturing).not.toHaveBeenCalled();
+    expect(posthog.capture).not.toHaveBeenCalled();
+  });
+
   it('동의를 거둔 뒤의 성능 지표는 보내지 않는다', async () => {
     const { captureWebVital, setAnalyticsConsent } = await load();
 

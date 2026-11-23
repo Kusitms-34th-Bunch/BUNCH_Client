@@ -139,12 +139,16 @@ const writeMember = (memberId: string) => {
  * 동의하지 않았으면(비로그인·미동의) SDK를 불러오지 않고, 이미 켜져 있었으면 끄고 익명 ID를 새로 만듦
  * 로그아웃은 문서를 새로 열어 이 정리가 실행되지 않으므로, 다음 회원이 동의할 때 회원을 비교해 이어지지 않게 함
  */
+// 마지막 동의 호출 순번(SDK 로딩을 기다리는 사이 상태가 바뀌면 앞선 호출은 아무것도 하지 않게)
+let latestConsent = 0;
+
 export async function setAnalyticsConsent(memberId: string | null) {
-  if (memberId === null && !ready) {
-    settleVitals(undefined);
-    return;
-  }
+  const call = ++latestConsent;
+  // 미동의는 기다리기 전에 확정(로딩 중에 들어온 지표가 앞선 동의 호출로 나가지 않게)
+  if (memberId === null) settleVitals(undefined);
+  if (memberId === null && !ready) return;
   const posthog = await loadAnalytics();
+  if (call !== latestConsent) return;
   if (!posthog) {
     settleVitals(undefined);
     return;
@@ -159,7 +163,6 @@ export async function setAnalyticsConsent(memberId: string | null) {
     settleVitals(posthog);
     return;
   }
-  settleVitals(undefined);
   if (posthog.has_opted_in_capturing()) {
     posthog.opt_out_capturing();
     posthog.reset();

@@ -33,6 +33,8 @@ const report = (metric: Metric) => {
   if (!sampled || !VITALS.has(metric.name)) return;
   captureWebVital({
     metric: metric.name,
+    // 같은 방문에서 CLS·INP가 값이 바뀌어 다시 보고되면 같은 ID(집계는 ID별 마지막 값)
+    metric_id: metric.id,
     // CLS는 단위 없는 점수, 나머지는 ms
     value:
       metric.name === 'CLS' ? Math.round(metric.value * 1000) / 1000 : Math.round(metric.value),
