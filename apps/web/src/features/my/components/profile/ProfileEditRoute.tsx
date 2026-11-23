@@ -66,21 +66,24 @@ export function ProfileEditRoute() {
       : undefined;
   // backOr는 렌더마다 새로 만들어지므로 한 번만 돌아가도록 막음
   const left = useRef(false);
-  // 받아 둔 값으로 먼저 그렸는지(새 값 화면으로 바뀔 때 초점·완료 안내)
-  const [showedCached, setShowedCached] = useState(false);
-  if (cached && !showedCached) setShowedCached(true);
-  const screenRef = useRef<HTMLDivElement>(null);
   const fresh = shown !== undefined;
+  // 새 값 화면 전에 받아 둔 값 화면·스켈레톤을 보였는지(바뀔 때 초점·완료 안내)
+  const [showedPlaceholder, setShowedPlaceholder] = useState(false);
+  if ((cached || loading) && !showedPlaceholder) setShowedPlaceholder(true);
+  const screenRef = useRef<HTMLDivElement>(null);
+  const markLeft = () => {
+    left.current = true;
+  };
   // 새 값 화면으로 새로 그리면 이전 화면에 있던 초점이 문서로 빠짐: 화면 제목으로 옮겨 스크린 리더 위치를 지킴
   useEffect(() => {
-    if (!fresh || !showedCached) return;
+    if (!fresh || !showedPlaceholder) return;
     const active = document.activeElement;
     if (active && active !== document.body) return;
     const title = screenRef.current?.querySelector<HTMLElement>('h1');
     if (!title) return;
     title.tabIndex = -1;
     title.focus({ preventScroll: true });
-  }, [fresh, showedCached]);
+  }, [fresh, showedPlaceholder]);
 
   useEffect(() => {
     if (!failed || left.current) return;
@@ -95,7 +98,7 @@ export function ProfileEditRoute() {
       <p role="status" className="sr-only">
         {loading
           ? MY_MESSAGES.profileLoading
-          : fresh && showedCached
+          : fresh && showedPlaceholder
             ? MY_MESSAGES.profileLoaded
             : ''}
       </p>
@@ -109,12 +112,13 @@ export function ProfileEditRoute() {
             profile={cached.profile}
             demographicsConsent={cached.consented}
             pending
+            onLeave={markLeft}
           />
         ) : loading ? (
           <ProfileEditLoading
             onBack={() => {
               // 이미 떠났으면 받기 실패 effect가 한 번 더 뒤로 가지 않게
-              left.current = true;
+              markLeft();
               backOr(MY_PATHS.home);
             }}
           />

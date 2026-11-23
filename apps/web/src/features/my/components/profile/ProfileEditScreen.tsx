@@ -48,6 +48,7 @@ export function ProfileEditScreen({
   demographicsConsent,
   checkNickname = checkNicknameAvailability,
   pending = false,
+  onLeave,
 }: {
   profile: MyProfile;
   /**
@@ -59,8 +60,14 @@ export function ProfileEditScreen({
   checkNickname?: CheckNickname | undefined;
   /** 받아 둔 값으로 먼저 그리고 새 값을 받는 중: 입력·저장을 막음(옛 값으로 저장해 다른 기기의 변경을 덮지 않게) */
   pending?: boolean | undefined;
+  /** 뒤로 가기로 떠나기 직전 알림(컨테이너가 받기 실패 때 한 번 더 뒤로 가지 않게) */
+  onLeave?: (() => void) | undefined;
 }) {
   const backOr = useBackOr();
+  const leave = () => {
+    onLeave?.();
+    backOr(MY_PATHS.home);
+  };
   useScrollFocusedIntoView();
   const initial = toProfileValues(profile, demographicsConsent);
   // 지금 내 닉네임과 같으면 중복 확인을 건너뜀(기능명세서 7.2.5 로직 1)
@@ -96,9 +103,10 @@ export function ProfileEditScreen({
     // 저장 중에 떠나면 저장 뒤 이동·토스트를 하지 않음(캐시 갱신은 mutation이 그대로 함)
     if (submitting) {
       left.current = true;
-      return backOr(MY_PATHS.home);
+      return leave();
     }
-    if (!changed) return backOr(MY_PATHS.home);
+    // 받는 중에는 입력이 잠겨 바꾼 값이 없음(늦게 온 출생연도 등으로 기준값만 바뀐 것)
+    if (pending || !changed) return leave();
     openOverlay((rootProps, close) => (
       <ConfirmDialog
         {...rootProps}
@@ -108,7 +116,7 @@ export function ProfileEditScreen({
         cancelLabel={MY_MESSAGES.cancel}
         onConfirm={() => {
           close();
-          backOr(MY_PATHS.home);
+          leave();
         }}
       />
     ));
