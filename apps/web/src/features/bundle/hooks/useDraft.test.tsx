@@ -4,6 +4,7 @@ import { delay, http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { changeBundle, snapshotOf } from '@/mocks/handlers/bundles';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
@@ -11,7 +12,9 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { PlaceResult } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
-import { applyBundleLocationIntent, changeBundlePhotos, createBundle } from '../api/bundles';
+import { createBundle } from '../api/bundles';
+import { applyBundleLocationIntent } from '../api/locations';
+import { changeBundlePhotos } from '../api/photos';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import { bundleKeys } from '../queries/keys';
@@ -964,6 +967,54 @@ describe('useDraft 발행', () => {
       })),
     }));
   };
+
+  it('늦게 도착한 낡은 저장 응답이 먼저 끝난 사진 변경의 revision을 덮지 않고 최신 revision으로 발행한다', async () => {
+    const { id, result } = await renderReady();
+    const bundleId = Number(id);
+    // 날짜 저장은 받는 즉시 서버에 반영하되 응답만 붙잡아 둠(그 뒤 사진 변경이 더 높은 revision으로 먼저 끝남)
+    let releaseDate: () => void = () => undefined;
+    const dateGate = new Promise<void>((resolve) => (releaseDate = resolve));
+    let dateReceived = false;
+    const published: number[] = [];
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/date', async ({ request }) => {
+        const body = (await request.json()) as { value?: string };
+        changeBundle(bundleId, (bundle) => ({
+          ...bundle,
+          date: body.value ?? null,
+          dateVersion: bundle.dateVersion + 1,
+        }));
+        const stale = snapshotOf(bundleId);
+        dateReceived = true;
+        await dateGate;
+        return stale;
+      }),
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', async ({ request }) => {
+        published.push(((await request.json()) as { expectedRevision: number }).expectedRevision);
+        return undefined;
+      }),
+    );
+
+    act(() => {
+      result.current.actions.setVisibility('members');
+      result.current.actions.setDate('2026-10-18');
+    });
+    await waitFor(() => expect(dateReceived).toBe(true), SAVE_WAIT);
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    act(() => void result.current.actions.removePhoto(photoId));
+    await waitFor(() => expect(serverBundle(id)?.photos).toHaveLength(1), SAVE_WAIT);
+    const photoRevision = serverBundle(id)!.revision;
+    await waitFor(
+      () => expect(ready(result.current.state).draft.photos).toHaveLength(1),
+      SAVE_WAIT,
+    );
+
+    releaseDate();
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+    await act(async () => void (await result.current.actions.publish()));
+
+    expect(published).toEqual([photoRevision]);
+  });
 
   it('발행은 보내는 중인 위치 요청이 끝난 뒤의 서버 구성으로 한다', async () => {
     const { id, result } = await renderReady();

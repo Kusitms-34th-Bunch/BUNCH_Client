@@ -1,3 +1,4 @@
+// 크기 유지: 상세 응답 스키마·변환과 실시간 이벤트 스키마가 같은 하위 스키마(사진·위치·코멘트·참여자)를 함께 씀
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
@@ -140,18 +141,6 @@ export const bundleSnapshotSchema = z.object({
     permissions: unknown;
   }
 >;
-
-/** 발행 차단 사유(BUNDLE_005 detail.reasons와 같은 값) */
-export type PublishBlockerReason =
-  | 'TITLE_REQUIRED'
-  | 'TITLE_TOO_LONG'
-  | 'TITLE_PROHIBITED_WORD'
-  | 'VISIBILITY_REQUIRED'
-  | 'PARTICIPANTS_REQUIRED'
-  | 'PARTICIPANT_INACTIVE'
-  | 'COMMENTS_REQUIRED'
-  | 'COMMENTS_PROHIBITED_WORD'
-  | 'PHOTOS_REQUIRED';
 
 /** 번들 장소 작업 적용(`locations/intents`) 응답: 최신 장소 목록과 버전 */
 export const bundleLocationIntentResultSchema = z.object({

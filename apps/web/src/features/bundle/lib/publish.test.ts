@@ -1,6 +1,8 @@
+import { ApiError } from '@app/api-core';
 import { describe, expect, it } from 'vitest';
 import type { Draft, DraftMember } from './types';
-import { getPublishBlockers, hasOtherEditors } from './publish';
+import { BUNDLE_MESSAGES } from '../constants/messages';
+import { classifyPublishError, getPublishBlockers, hasOtherEditors } from './publish';
 
 const member = (id: string): DraftMember => ({
   id,
@@ -119,5 +121,34 @@ describe('hasOtherEditors', () => {
 
   it('나만 편집 중이면 거짓이다', () => {
     expect(hasOtherEditors({ titleMemberIds: ['me'], commentMemberIds: ['me'] }, 'me')).toBe(false);
+  });
+});
+
+describe('classifyPublishError', () => {
+  const apiError = (status: number, code?: string, data?: unknown) =>
+    new ApiError({ message: 'x', category: 'validation', status, code, data });
+
+  it('발행 차단(BUNDLE_005)은 막힘으로, 4xx라 요청 키를 비운다', () => {
+    expect(classifyPublishError(apiError(409, 'BUNDLE_005', { error: { detail: {} } }))).toEqual({
+      outcome: 'blocked',
+      message: BUNDLE_MESSAGES.uploadIncomplete,
+      keepKey: false,
+    });
+  });
+
+  it('버전 충돌·이미 발행됨은 충돌 안내로 실패 처리한다', () => {
+    expect(classifyPublishError(apiError(409, 'BUNDLE_002'))).toMatchObject({
+      outcome: 'failed',
+      message: BUNDLE_MESSAGES.publishConflict,
+    });
+  });
+
+  it('응답이 없거나 5xx면 같은 요청 키를 유지한다', () => {
+    expect(classifyPublishError(new Error('offline'))).toEqual({
+      outcome: 'failed',
+      message: BUNDLE_MESSAGES.publishFailed,
+      keepKey: true,
+    });
+    expect(classifyPublishError(apiError(503)).keepKey).toBe(true);
   });
 });

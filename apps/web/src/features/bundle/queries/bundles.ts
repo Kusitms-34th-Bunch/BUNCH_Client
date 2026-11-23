@@ -1,40 +1,33 @@
-import {
-  queryOptions,
-  replaceEqualDeep,
-  skipToken,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
+// 크기 유지: 상세 query와 초안 mutation이 같은 상세 key·캐시 동기화(useBundleCacheSync)와 이벤트 적용을 함께 씀
+import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { PROHIBITED_WORD_CODE } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { sharedKeys } from '@/shared/query/keys';
+import { errorCodeOf } from '../api/bundleErrors';
 import {
   addBundleParticipant,
-  changeBundlePhotos,
   createBundle,
   deleteBundle,
   getBundle,
   getDraftBundleCount,
   leaveBundle,
-  moveBundlePhoto,
   publishBundle,
-  readVersionConflict,
   removeBundleParticipant,
   saveBundleComment,
   mergeBundleTitle,
   saveBundleDate,
-  saveBundleVisibility,
 } from '../api/bundles';
+import { changeBundlePhotos, moveBundlePhoto } from '../api/photos';
 import {
   applyContentEvent,
   applyDateChips,
   type BundleEventOutcome,
-  keepNewerLocations,
-  keepNewerPicks,
-  titleProhibitedOf,
+  mergeFetchedDetail,
   withTitleState,
+  titleProhibitedOf,
 } from '../lib/bundleEvents';
+import { pickNewerDetail } from '../lib/draftMapping';
 import { type BundleDetail, bundleEventEnvelopeSchema, CONTENT_EVENT_TYPES } from '../model/bundle';
 import { bundleKeys, bundleMutationKeys } from './keys';
 
@@ -52,30 +45,9 @@ export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string
   queryOptions({
     queryKey: bundleKeys.detail(bunchId, bundleId),
     queryFn: bunchId && bundleId ? ({ signal }) => getBundle(bunchId, bundleId, signal) : skipToken,
-    // 먼저 보낸 재조회 응답이 그사이 이벤트로 맞춘 더 새 상태를 낡은 revision으로 덮지 않음(setQueryData에도 적용됨)
-    // 같거나 더 새 revision이면 응답을 쓰되, 바뀌지 않은 부분은 기본 구조 공유로 참조를 유지해 불필요한 리렌더를 막음
-    structuralSharing: (old, next) => {
-      const previous = old as BundleDetail | undefined;
-      const incoming = next as BundleDetail;
-      if (!previous) return incoming;
-      if (previous.revision > incoming.revision) return previous;
-      // 픽 저장 응답도 revision을 바꾸지 않아, 같은 revision의 낡은 상세가 방금 저장한 픽을 되돌리지 않게 함
-      const current = keepNewerLocations(previous, keepNewerPicks(previous, incoming));
-      // 제목 병합 응답은 revision을 바꾸지 않아, 같은 revision의 낡은 상세가 더 높은 제목 버전을 되돌리지 않게 함
-      if (previous.titleCrdtState !== undefined && previous.titleVersion > current.titleVersion) {
-        const kept = withTitleState(current, {
-          title: previous.title,
-          titleCrdtState: previous.titleCrdtState,
-          titleVersion: previous.titleVersion,
-          titleTooLong: previous.titleTooLong,
-          // 제목 금칙어 여부와 제목 계열 발행 차단 사유도 지킨 제목(더 높은 버전)의 값으로 둠
-          titleProhibited: previous.profanity?.titleProhibited,
-          publishBlockers: previous.publishBlockers,
-        });
-        return replaceEqualDeep(previous, kept);
-      }
-      return replaceEqualDeep(previous, current);
-    },
+    // 구조 공유 규칙은 mergeFetchedDetail(setQueryData에도 적용됨)
+    structuralSharing: (old, next) =>
+      mergeFetchedDetail(old as BundleDetail | undefined, next as BundleDetail),
   });
 
 /**
@@ -189,14 +161,11 @@ const useBundleCacheSync = (bunchId: string | undefined, bundleId: string | unde
   return {
     // 응답이 뒤바뀌어 도착해도 더 최신 revision을 낡은 응답으로 덮지 않음
     onSuccess: (bundle: BundleDetail) =>
-      queryClient.setQueryData<BundleDetail>(key, (old) =>
-        old && old.revision > bundle.revision ? old : bundle,
-      ),
+      queryClient.setQueryData<BundleDetail>(key, (old) => pickNewerDetail(old, bundle)),
     onError: (error: unknown) => {
       // 충돌 응답의 detail 모양과 상관없이 버전·상태 불일치(BUNDLE_003·BUNDLE_002)와 발행 거절(BUNDLE_005, 그 사이 다른 멤버가 바꿨을 수 있음)은 최신 상세를 다시 받음
-      const code = (error as { code?: string } | null)?.code;
+      const code = errorCodeOf(error);
       if (
-        readVersionConflict(error) !== undefined ||
         code === 'BUNDLE_003' ||
         code === 'BUNDLE_002' ||
         code === 'BUNDLE_005' ||
@@ -285,16 +254,6 @@ export const useApplyBundleEvent = (bunchId: string | undefined, bundleId: strin
     settle(applyContentEvent(current, type, data, revision));
   };
 };
-
-export const useSaveVisibilityMutation = (
-  bunchId: string | undefined,
-  bundleId: string | undefined,
-) =>
-  useMutation({
-    mutationFn: (input: FieldInput<'PUBLIC' | 'PRIVATE'>) =>
-      saveBundleVisibility({ ...requireIds(bunchId, bundleId), ...input }),
-    ...useBundleCacheSync(bunchId, bundleId),
-  });
 
 export const useSaveDateMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
   useMutation({

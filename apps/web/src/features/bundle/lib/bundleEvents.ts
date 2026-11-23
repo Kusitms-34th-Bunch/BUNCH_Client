@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import { replaceEqualDeep } from '@tanstack/react-query';
 import { toDomainId } from '@/shared/api/ids';
 import {
   type BundleDetail,
@@ -253,4 +254,32 @@ export const applyContentEvent = (
 export const applyDateChips = (detail: BundleDetail, data: unknown): BundleEventOutcome => {
   const parsed = bundleEventDataSchemas.DATE_CHIPS.safeParse(data);
   return parsed.success ? apply({ ...detail, dateChips: parsed.data }) : REFETCH;
+};
+
+/**
+ * 다시 받은 상세를 캐시 값과 합침(상세 query의 구조 공유)
+ * 낡은 revision 응답은 버리고, 같거나 더 새 revision이면 쓰되 바뀌지 않은 부분은 참조를 유지
+ */
+export const mergeFetchedDetail = (
+  previous: BundleDetail | undefined,
+  incoming: BundleDetail,
+): BundleDetail => {
+  if (!previous) return incoming;
+  if (previous.revision > incoming.revision) return previous;
+  // 픽 저장 응답도 revision을 바꾸지 않아, 같은 revision의 낡은 상세가 방금 저장한 픽을 되돌리지 않게 함
+  const current = keepNewerLocations(previous, keepNewerPicks(previous, incoming));
+  // 제목 병합 응답은 revision을 바꾸지 않아, 같은 revision의 낡은 상세가 더 높은 제목 버전을 되돌리지 않게 함
+  if (previous.titleCrdtState !== undefined && previous.titleVersion > current.titleVersion) {
+    const kept = withTitleState(current, {
+      title: previous.title,
+      titleCrdtState: previous.titleCrdtState,
+      titleVersion: previous.titleVersion,
+      titleTooLong: previous.titleTooLong,
+      // 제목 금칙어 여부와 제목 계열 발행 차단 사유도 지킨 제목(더 높은 버전)의 값으로 둠
+      titleProhibited: previous.profanity?.titleProhibited,
+      publishBlockers: previous.publishBlockers,
+    });
+    return replaceEqualDeep(previous, kept);
+  }
+  return replaceEqualDeep(previous, current);
 };
