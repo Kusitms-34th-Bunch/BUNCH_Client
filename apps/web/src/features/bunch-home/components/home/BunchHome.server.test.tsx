@@ -467,6 +467,44 @@ describe('BunchHome 서버 번치 전환', () => {
     expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
   });
 
+  it('전환할 때 새 번치 번들 목록은 저장과 동시에, 번치 홈은 저장이 끝난 뒤 받는다', async () => {
+    // 번치 홈은 지금 번치인지가 저장 결과에 달려 저장 전에 받으면 이전 기준 값이 들어감(#532)
+    const order: string[] = [];
+    const onStart = ({ request }: { request: Request }) => {
+      const path = new URL(request.url).pathname;
+      if (path.includes(`/bunches/${MOCK_SECOND_BUNCH_ID}/`))
+        order.push(`${request.method} start ${path.split('/').pop()}`);
+    };
+    const onEnd = ({ request }: { request: Request }) => {
+      if (request.method === 'PUT') order.push('PUT end');
+    };
+    server.events.on('request:start', onStart);
+    server.events.on('request:end', onEnd);
+    onTestFinished(() => {
+      server.events.removeListener('request:start', onStart);
+      server.events.removeListener('request:end', onEnd);
+    });
+    const user = userEvent.setup();
+    renderHome();
+
+    const sheet = await openSwitcher(user);
+    await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ })).toBeTruthy();
+
+    expect(order).toEqual(
+      expect.arrayContaining([
+        'PUT end',
+        'GET start published-bundles',
+        'GET start bundles',
+        'GET start home',
+      ]),
+    );
+    const putEnd = order.indexOf('PUT end');
+    expect(order.indexOf('GET start bundles')).toBeLessThan(putEnd);
+    expect(order.indexOf('GET start published-bundles')).toBeLessThan(putEnd);
+    expect(order.indexOf('GET start home')).toBeGreaterThan(putEnd);
+  });
+
   it('번치 탭을 두 번 누르면 시트 없이 가장 최근에 쓴 다른 번치로 전환한다', async () => {
     const client = renderHome();
     await screen.findByRole('heading', { level: 1, name: /여행쥬아/ });

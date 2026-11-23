@@ -10,8 +10,8 @@ import { useEffect, useRef } from 'react';
 import type { MyBunches } from '@/shared/api/myBunches';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
+import { getMyProfile } from '@/shared/api/myProfile';
 import { sharedKeys } from '@/shared/query/keys';
-import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { persistedQuery } from '@/shared/query/persistence';
 import {
   deleteBunchAccessNotice,
@@ -106,7 +106,7 @@ export const useRefetchListsOnCountChange = (
 };
 
 /**
- * 번치 전환: 마지막 사용 번치를 저장한 뒤 기본 번치(`members/me`)를 다시 읽음
+ * 번치 전환: 마지막 사용 번치를 저장한 뒤 기본 번치(`members/me`)를 다시 읽음(번들 목록은 저장과 함께, 번치 홈은 저장 뒤 받음)
  * 사진함·번들 만들기 등 앱 전체가 기본 번치를 보므로 모두 새 번치 기준이 됨(5.2.2 로직 2)
  * 새 번치 홈을 먼저 받아 두어 기본 번치가 바뀔 때 로딩 화면 없이 새 번치가 바로 그려짐
  * 기본 번치가 요청한 번치로 바뀌지 않았으면 실패로 던짐(성공 토스트만 뜨고 화면이 그대로인 것을 막음)
@@ -116,16 +116,24 @@ export const useSwitchBunchMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (bunchId: string) => {
-      await updateLastUsedBunch(bunchId);
-      // 저장 전에 시작한 members/me 응답(이전 번치)을 다시 쓰지 않게 멈춤
-      await queryClient.cancelQueries({ queryKey: sharedKeys.me() });
-      await Promise.allSettled([
-        // 저장해 둔 값이 5분 안이어도 전환한 번치는 서버 값으로 보임
-        queryClient.fetchQuery({ ...bunchHomeQueryOptions(bunchId), staleTime: 0 }),
+      // 발행·작성 중 목록은 번치 id로만 정해져 저장과 동시에 받음(차례로 받으면 왕복이 하나 늘어 전환이 늦음, #532)
+      // 번치 홈은 지금 번치인지(isCurrentBunch 등)가 저장 결과에 달려 저장 뒤 내 정보와 함께 받음. 5분 안의 저장값이어도 서버 값으로
+      const lists = Promise.allSettled([
         queryClient.fetchInfiniteQuery({ ...publishedBundlesQueryOptions(bunchId), staleTime: 0 }),
         queryClient.fetchQuery({ ...draftBundlesQueryOptions(bunchId), staleTime: 0 }),
       ]);
-      const me = await queryClient.fetchQuery({ ...myProfileQueryOptions(), staleTime: 0 });
+      await updateLastUsedBunch(bunchId);
+      // 저장 전에 시작한 members/me 응답(이전 번치)을 다시 쓰지 않게 멈춤
+      await queryClient.cancelQueries({ queryKey: sharedKeys.me() });
+      // 내 정보는 캐시 밖에서 받아 번치 홈까지 받은 뒤 넣음(먼저 넣으면 홈이 오기 전에 새 번치로 바뀌어 로딩이 보임)
+      const [, , me] = await Promise.all([
+        lists,
+        queryClient
+          .fetchQuery({ ...bunchHomeQueryOptions(bunchId), staleTime: 0 })
+          .catch(() => undefined),
+        getMyProfile(),
+      ]);
+      queryClient.setQueryData(sharedKeys.me(), me);
       if (me.bunch?.id !== bunchId) throw new Error('default bunch did not change');
       // 전환한 번치(이름으로 안내할 때 씀)
       return me.bunch;
