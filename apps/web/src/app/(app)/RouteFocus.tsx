@@ -66,17 +66,20 @@ export function RouteFocus() {
       );
     };
     let frame = 0;
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((records) => {
       cancelAnimationFrame(frame);
+      // 복원 대기가 키 입력으로 끝나면 그 키(Tab)의 기본 동작 전에 바로 옮김(프레임을 기다리면 제목 다음 맨 위 요소로 감)
+      if (records.some((record) => record.attributeName === 'data-scroll-restoring'))
+        return focusHeading();
       frame = requestAnimationFrame(focusHeading);
     });
     function focusHeading() {
       if (focusMovedElsewhere()) return observer.disconnect();
       const heading = findHeading();
-      // 복원은 내용이 그려진 뒤라, 복원 전에는 제목에 두었다가 복원되면 보이는 요소로 옮김
+      // 복원 전(높이가 모자라 다시 맞추는 중 포함)에는 제목에 두었다가 복원되면 보이는 요소로 옮김
       const main = heading?.closest('main');
-      const target =
-        restored && main && main.scrollTop > 0 ? (findVisibleControl(main) ?? heading) : heading;
+      const settled = main && main.scrollTop > 0 && !main.hasAttribute('data-scroll-restoring');
+      const target = restored && settled ? (findVisibleControl(main) ?? heading) : heading;
       if (!target || target === document.activeElement) return;
       focused = target;
       if (target !== heading) {
@@ -94,7 +97,7 @@ export function RouteFocus() {
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      attributeFilter: ['inert', 'data-page-leaving'],
+      attributeFilter: ['inert', 'data-page-leaving', 'data-scroll-restoring'],
     });
     // 전환이 나가는 화면을 표시한 뒤 찾도록 한 프레임 뒤에 시작
     frame = requestAnimationFrame(focusHeading);

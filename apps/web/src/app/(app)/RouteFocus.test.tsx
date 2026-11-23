@@ -265,6 +265,27 @@ describe('RouteFocus: 뒤로 가기로 위치를 복원한 화면', () => {
     expect(profile).toHaveFocus();
   });
 
+  it('높이가 모자라 위치를 다시 맞추는 동안은 제목에 두고, 맞춘 뒤 보이는 버튼으로 옮긴다', async () => {
+    const { rerender } = renderScreen(<Screen title="멤버 프로필" />);
+    window.history.replaceState({ pageScroll: 2400 }, '');
+    navigate(rerender, '/bunches/3/bundles/901', <Restored />);
+    const main = document.querySelector('main')!;
+    main.dataset.scrollRestoring = '';
+    main.scrollTop = 1000;
+    placeAt(main, 0, 600);
+    placeAt(screen.getByRole('heading', { name: '번들 상세' }), -1000);
+    placeAt(screen.getByRole('button', { name: '위쪽 버튼' }), -950);
+    const profile = screen.getByRole('button', { name: '지예 프로필 보기' });
+    placeAt(profile, 120);
+    const heading = screen.getByRole('heading', { name: '번들 상세' });
+    await waitFor(() => expect(heading).toHaveFocus());
+
+    // 키 입력으로 대기가 끝나면 그 키(Tab)의 기본 동작 전, 같은 작업 안(microtask)에서 옮김
+    delete main.dataset.scrollRestoring;
+    await Promise.resolve();
+    expect(profile).toHaveFocus();
+  });
+
   it('저장된 위치가 없으면(처음 들어온 화면) 지금처럼 제목에 초점을 준다', async () => {
     const { rerender } = renderScreen(<Screen title="멤버 프로필" />);
     navigate(rerender, '/bunches/3/bundles/901', <Restored />);
