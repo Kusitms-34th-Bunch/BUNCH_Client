@@ -13,6 +13,7 @@ const posthog = vi.hoisted(() => {
       state.optedIn = false;
     }),
     reset: vi.fn(),
+    capture: vi.fn(),
   };
 });
 vi.mock('posthog-js', () => ({ default: posthog }));
@@ -22,9 +23,13 @@ const load = () => import('./posthog');
 beforeEach(() => {
   posthog.state.optedIn = false;
   window.localStorage.clear();
-  [posthog.init, posthog.opt_in_capturing, posthog.opt_out_capturing, posthog.reset].forEach((fn) =>
-    fn.mockClear(),
-  );
+  [
+    posthog.init,
+    posthog.opt_in_capturing,
+    posthog.opt_out_capturing,
+    posthog.reset,
+    posthog.capture,
+  ].forEach((fn) => fn.mockClear());
   vi.stubEnv('NODE_ENV', 'production');
   vi.stubEnv('NEXT_PUBLIC_API_MOCKING', '');
   vi.stubEnv('NEXT_PUBLIC_POSTHOG_KEY', 'phc_test');
@@ -227,5 +232,71 @@ describe('PostHog 제품 분석', () => {
     });
 
     expect(event?.properties).toEqual({ $pathname: '/onboarding/invite/share' });
+  });
+
+  it('동의가 정해지기 전에 나온 성능 지표는 모아 두었다가 동의한 회원이면 보내고, 그 뒤 지표는 바로 보낸다', async () => {
+    const { captureWebVital, setAnalyticsConsent } = await load();
+
+    captureWebVital({ metric: 'LCP', value: 1200 });
+    captureWebVital({ metric: 'FCP', value: 800 });
+    expect(posthog.capture).not.toHaveBeenCalled();
+
+    await setAnalyticsConsent('1');
+    expect(posthog.capture).toHaveBeenCalledWith('web_vitals', { metric: 'LCP', value: 1200 });
+    expect(posthog.capture).toHaveBeenCalledWith('web_vitals', { metric: 'FCP', value: 800 });
+
+    captureWebVital({ metric: 'INP', value: 90 });
+    expect(posthog.capture).toHaveBeenLastCalledWith('web_vitals', { metric: 'INP', value: 90 });
+  });
+
+  it('동의하지 않았으면 모아 둔 성능 지표를 보내지 않고 버린다', async () => {
+    const { captureWebVital, setAnalyticsConsent } = await load();
+
+    captureWebVital({ metric: 'LCP', value: 1200 });
+    await setAnalyticsConsent(null);
+    captureWebVital({ metric: 'CLS', value: 0.02 });
+
+    expect(posthog.init).not.toHaveBeenCalled();
+    expect(posthog.capture).not.toHaveBeenCalled();
+  });
+
+  it('동의하지 않은 동안 나온 성능 지표는 같은 문서에서 나중에 동의해도 보내지 않는다', async () => {
+    const { captureWebVital, setAnalyticsConsent } = await load();
+
+    await setAnalyticsConsent(null);
+    captureWebVital({ metric: 'CLS', value: 0.02 });
+    await setAnalyticsConsent('1');
+    expect(posthog.capture).not.toHaveBeenCalled();
+
+    captureWebVital({ metric: 'INP', value: 90 });
+    expect(posthog.capture).toHaveBeenCalledWith('web_vitals', { metric: 'INP', value: 90 });
+  });
+
+  it('동의를 거둔 뒤의 성능 지표는 보내지 않는다', async () => {
+    const { captureWebVital, setAnalyticsConsent } = await load();
+
+    await setAnalyticsConsent('1');
+    await setAnalyticsConsent(null);
+    captureWebVital({ metric: 'LCP', value: 1200 });
+
+    expect(posthog.capture).not.toHaveBeenCalled();
+  });
+
+  it('성능 지표의 경로도 보내기 전에 숫자 ID와 초대 토큰을 감춘다', async () => {
+    const { sanitizeAnalyticsEvent } = await load();
+
+    const sent = sanitizeAnalyticsEvent({
+      uuid: '1',
+      event: 'web_vitals',
+      properties: { metric: 'LCP', path: '/bunch/12/bundles/34' },
+    });
+    const invite = sanitizeAnalyticsEvent({
+      uuid: '2',
+      event: 'web_vitals',
+      properties: { metric: 'LCP', path: '/invite/abcDEF123' },
+    });
+
+    expect(sent?.properties.path).toBe('/bunch/:id/bundles/:id');
+    expect(invite?.properties.path).toBe('/invite/:token');
   });
 });
