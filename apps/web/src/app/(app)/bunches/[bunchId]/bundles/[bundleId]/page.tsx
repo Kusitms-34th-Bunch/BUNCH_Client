@@ -1,54 +1,30 @@
 import type { Metadata } from 'next';
-import { FEED_PATHS } from '@/features/feed/constants/paths';
-import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
-import { BundleDetailRoute } from './BundleDetailRoute';
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import { isWireId } from '@/shared/api/ids';
+import { BundleDetailFrame } from './BundleDetailFrame';
 
 // 지금 번치 명의로 보는 화면이라 검색에서 제외(다른 번치 프로필과 같음)
 export const metadata: Metadata = { title: '번들', robots: { index: false } };
 
+// 처음 방문할 때 한 번 그려 두는 정적 화면: 피드에서 미리 받아 두고 누르자마자 열림(요청마다 그리면 누른 뒤 서버 왕복을 기다림, #532)
+// 서버 출력은 사용자와 무관한 틀뿐이고 내용은 클라이언트가 받음
+export function generateStaticParams() {
+  return [];
+}
+
 export default async function BundleDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ bunchId: string; bundleId: string }>;
-  searchParams: Promise<{
-    focus?: string | string[];
-    section?: string | string[];
-    comment?: string | string[];
-    via?: string | string[];
-  }>;
 }) {
-  const [{ bunchId, bundleId }, { focus, section, comment, via }] = await Promise.all([
-    params,
-    searchParams,
-  ]);
-  const fromBubble = focus === 'comments';
+  const { bunchId, bundleId } = await params;
+  // 서버 ID 형식이 아닌 주소는 그리지 않음(아무 경로나 정적 캐시에 쌓이지 않게, 수정 화면과 같은 기준)
+  if (!isWireId(bunchId) || !isWireId(bundleId)) notFound();
   return (
-    <div
-      // 말풍선 진입은 피드 카드가 화면으로 열리는 zoom(AppTransitions), 그 밖은 같은 상세 규칙
-      data-ssgoi-transition={
-        fromBubble ? FEED_PATHS.transitionIds.bundleComments : FEED_PATHS.transitionIds.bundle
-      }
-      // zoom이 열리는 동안 덮는 피드 카드 복제본(맨 위 사진부터 보임)을 숨김: 이미 댓글 위치인 상세가 카드 자리에서 바로 펼쳐지게
-      // 복제본은 계산된 스타일을 inline으로 받고 zoom 표식이 지워져서 enter 표식이 없는 형제를 important로 숨김
-      className={`bg-surface-primary flex h-full min-h-0 flex-1 flex-col ${fromBubble ? '[&>:not([data-zoom-enter-key])]:invisible!' : ''}`}
-    >
-      {/* 알 수 없는 focus·section·comment 값은 무시. focus는 말풍선(입력란 초점), section은 댓글 알림(스크롤만), comment는 그 알림의 댓글 ID, via=push는 푸시로 열림 */}
-      {/* zoom은 화면 안에서 같은 값의 enter 표식을 정확히 하나 찾음(틀 자신은 찾지 않아 안쪽에 둠, 피드 카드는 exit 표식) */}
-      <div data-zoom-enter-key={bundleHeroKey(bundleId)} className="flex min-h-0 flex-1 flex-col">
-        <BundleDetailRoute
-          bunchId={bunchId}
-          bundleId={bundleId}
-          focusComments={focus === 'comments'}
-          showComments={section === 'comments'}
-          targetCommentId={
-            section === 'comments' && typeof comment === 'string' && /^[1-9]\d{0,18}$/.test(comment)
-              ? comment
-              : undefined
-          }
-          instantComment={via === 'push'}
-        />
-      </div>
-    </div>
+    // 주소 query는 클라이언트에서 읽음(정적 화면이라 서버는 모름). 화면 이동 때는 바로 그려지고 처음 열 때만 hydration 뒤
+    <Suspense>
+      <BundleDetailFrame bunchId={bunchId} bundleId={bundleId} />
+    </Suspense>
   );
 }

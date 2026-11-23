@@ -5,8 +5,9 @@ import { getBundlePreview } from '../lib/bundlePreview';
 import { useOpenBundleDetail } from './useOpenBundleDetail';
 
 const push = vi.fn();
+const routePrefetch = vi.fn();
 const prefetchDetail = vi.fn<() => Promise<unknown>>();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, prefetch: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, prefetch: routePrefetch }) }));
 vi.mock('../queries/bundleDetail', () => ({ usePrefetchBundleDetail: () => prefetchDetail }));
 const prefetchComments = vi.fn<() => Promise<unknown>>(() => Promise.resolve());
 vi.mock('../queries/comments', () => ({ usePrefetchComments: () => prefetchComments }));
@@ -16,6 +17,7 @@ const bundle = { id: '7', bunch: { id: '1' } } as FeedBundle;
 describe('useOpenBundleDetail', () => {
   beforeEach(() => {
     push.mockReset();
+    routePrefetch.mockReset();
     prefetchDetail.mockReset();
   });
 
@@ -39,73 +41,21 @@ describe('useOpenBundleDetail', () => {
     expect(prefetchDetail).not.toHaveBeenCalled();
   });
 
-  it('waitMs를 주면 상세를 받을 때까지 기다렸다가 이동하고, 기다리는 동안 다시 누른 것은 무시한다', async () => {
-    let resolve = () => {};
-    prefetchDetail.mockReturnValue(
-      new Promise<void>((done) => {
-        resolve = done;
-      }),
-    );
+  it('말풍선도 기다리지 않고 바로 이동하며, 말풍선 주소(query 포함)와 댓글 목록을 미리 받는다', () => {
+    prefetchDetail.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useOpenBundleDetail({ viewerId: 'b1' }));
 
-    result.current.open(bundle, '/c', { waitMs: 400, withComments: true });
-    result.current.open(bundle, '/c', { waitMs: 400, withComments: true });
-    expect(push).not.toHaveBeenCalled();
+    result.current.open(bundle, '/a?focus=comments', { withComments: true });
+    expect(push).toHaveBeenCalledWith('/a?focus=comments');
+    expect(routePrefetch).toHaveBeenCalledWith('/bunches/1/bundles/7?focus=comments');
     expect(prefetchComments).toHaveBeenCalledWith('7', 'b1');
-    resolve();
-    await vi.waitFor(() => expect(push).toHaveBeenCalledTimes(1));
-    expect(push).toHaveBeenCalledWith('/c');
   });
 
-  it('waitMs가 지나도 받지 못했으면 그대로 이동한다', () => {
-    vi.useFakeTimers();
-    try {
-      prefetchDetail.mockReturnValue(new Promise(() => {}));
-      const { result } = renderHook(() => useOpenBundleDetail({ viewerId: 'b1' }));
+  it('사진은 query 없는 상세 주소를 미리 받는다', () => {
+    prefetchDetail.mockReturnValue(Promise.resolve());
+    const { result } = renderHook(() => useOpenBundleDetail({ viewerId: 'b1' }));
 
-      result.current.open(bundle, '/c', { waitMs: 400 });
-      vi.advanceTimersByTime(399);
-      expect(push).not.toHaveBeenCalled();
-      vi.advanceTimersByTime(1);
-      expect(push).toHaveBeenCalledWith('/c');
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('기다리는 사이 사진을 누르거나 다른 화면·숨은 탭이 되거나 화면이 사라지면 기다리던 이동은 하지 않는다', () => {
-    vi.useFakeTimers();
-    try {
-      prefetchDetail.mockReturnValue(new Promise(() => {}));
-      const { result } = renderHook(() => useOpenBundleDetail({ viewerId: 'b1' }));
-
-      result.current.open(bundle, '/c', { waitMs: 400 });
-      result.current.open(bundle, '/a');
-      vi.advanceTimersByTime(400);
-      expect(push.mock.calls).toEqual([['/a']]);
-
-      push.mockReset();
-      result.current.open(bundle, '/c', { waitMs: 400 });
-      window.history.pushState(null, '', '/bunch');
-      vi.advanceTimersByTime(400);
-      expect(push).not.toHaveBeenCalled();
-
-      // 기다리는 사이 잠깐 숨겨졌다가(앱 탭 전환 등) 돌아와도 이동하지 않음
-      result.current.open(bundle, '/c', { waitMs: 400 });
-      const hidden = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
-      document.dispatchEvent(new Event('visibilitychange'));
-      hidden.mockRestore();
-      document.dispatchEvent(new Event('visibilitychange'));
-      vi.advanceTimersByTime(400);
-      expect(push).not.toHaveBeenCalled();
-
-      const { result: other, unmount } = renderHook(() => useOpenBundleDetail({ viewerId: 'b1' }));
-      other.current.open(bundle, '/c', { waitMs: 400 });
-      unmount();
-      vi.advanceTimersByTime(400);
-      expect(push).not.toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
+    void result.current.prefetch(bundle);
+    expect(routePrefetch).toHaveBeenCalledWith('/bunches/1/bundles/7');
   });
 });
