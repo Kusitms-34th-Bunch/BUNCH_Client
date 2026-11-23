@@ -4,6 +4,7 @@ import {
   applyRecommendation,
   getApplyDateKey,
   getCardDate,
+  toRecommendCards,
   groupByDate,
   parseRecommendationId,
   type Recommendation,
@@ -121,5 +122,21 @@ describe('groupByDate', () => {
     const sections = groupByDate([photos[3]!, photos[0]!], 2026);
 
     expect(sections.map((section) => section.label)).toEqual(['9월 27일 일요일', '날짜 미확인']);
+  });
+});
+
+describe('toRecommendCards', () => {
+  it('추천을 순서 그대로 시트 카드 모양으로 바꾼다', () => {
+    expect(toRecommendCards([card('2026-10-17', null)], 2026)).toEqual([
+      {
+        id: '1',
+        imageSrc: '/p1.jpg',
+        title: '성수동 러닝 모임',
+        members: ['지예'],
+        photoCount: 6,
+        month: 10,
+        day: 17,
+      },
+    ]);
   });
 });

@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
+import type { CheckNickname } from '@/shared/hooks/profile/useNicknameAvailability';
 import { mockDb } from '@/mocks/db';
 import { MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
@@ -12,7 +12,7 @@ import { createQueryWrapper } from '@/shared/query/testing';
 import { ProfileEditScreen } from './ProfileEditScreen';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();

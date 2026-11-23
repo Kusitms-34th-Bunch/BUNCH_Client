@@ -1,12 +1,12 @@
 import { ActionDialog, toast } from '@app/design-system';
 import { CameraButton, ProfileImage } from '@app/design-system/web';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { usePhotoPicker } from '@/shared/hooks/native/usePhotoPicker';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { PROFILE_IMAGE_RULES } from '@/shared/lib/image/imageFile';
+import { closeKeyboard } from '@/shared/lib/keyboard';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import { isNativeShell } from '../../bridge/client';
-import { usePhotoPicker } from '../../hooks/usePhotoPicker';
-import { DEFAULT_PROFILE_IMAGE } from '../../lib/bunchProfile';
-import { PROFILE_IMAGE_RULES } from '../../lib/imageFile';
-import { closeKeyboard } from '../../lib/keyboard';
 import { PhotoCropScreen } from './PhotoCropScreen';
 
 // 작은 사진은 바로 조정 화면으로, 오래 걸릴 때만 「사진을 불러오는 중」(화면 설계서 MY(2) 6번)

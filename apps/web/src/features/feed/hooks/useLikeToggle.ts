@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { isWireId } from '@/shared/api/ids';
-import { playHaptic } from '@/shared/lib/haptic';
+import { playHaptic } from '@/shared/lib/native/haptic';
 import type { FeedBundle, FeedViewer } from '../lib/types';
 import { useBundleLikeMutation } from '../queries/like';
 

@@ -1472,6 +1472,42 @@ describe('사진 앞·뒤로 옮기기 버튼(키보드·스크린 리더용 대
     expect(await screen.findByText(BUNDLE_MESSAGES.photoMoved(2, 3))).toBeInTheDocument();
   });
 
+  it('옮긴 자리가 화면에 그려지면 옮긴 사진의 같은 버튼으로 초점을 돌려준다', () => {
+    const view = renderScreen();
+    const [first, second, third] = publishable.photos;
+    const button = screen.getByRole('button', { name: after(1) });
+    button.focus();
+
+    fireEvent.click(button);
+    // 자리가 바뀌며 브라우저가 초점을 잃은 상황을 만듦
+    button.blur();
+    // 자리가 바뀌기 전 렌더에서는 초점을 옮기지 않음
+    view.rerender(screenElement({ draft: { ...publishable } }));
+    expect(document.body).toHaveFocus();
+
+    view.rerender(screenElement({ draft: { ...publishable, photos: [second!, first!, third!] } }));
+    expect(screen.getByRole('button', { name: after(2) })).toHaveFocus();
+  });
+
+  it('1초 안에 자리가 바뀌지 않으면 초점 복원을 버려 나중의 다른 변경에서 초점을 가져가지 않는다', () => {
+    vi.useFakeTimers();
+    try {
+      const view = renderScreen();
+      const [first, second, third] = publishable.photos;
+      fireEvent.click(screen.getByRole('button', { name: after(1) }));
+      act(() => void vi.advanceTimersByTime(1000));
+      const other = screen.getByRole('button', { name: '업로드' });
+      other.focus();
+
+      view.rerender(
+        screenElement({ draft: { ...publishable, photos: [second!, first!, third!] } }),
+      );
+      expect(other).toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('참여 멤버가 아니거나 사진이 1장이거나 연결이 끊겨 있으면 버튼이 없다', () => {
     const { unmount } = renderScreen({ viewer: outsider });
     expect(screen.queryByRole('button', { name: after(1) })).toBeNull();

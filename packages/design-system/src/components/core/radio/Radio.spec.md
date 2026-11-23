@@ -37,6 +37,12 @@
 - 키보드 포커스(`:focus-visible`): 2px `border-brand` 윤곽선.
 - 동작 줄이기·전환: 전환 효과가 없다.
 
+## 모션
+
+화면별 전환·모션의 결정과 확인 기록이다. 공용 규칙은 `docs/architecture/motion.md`를 따른다.
+
+- 라디오 선택 (2026-11-02, 사용자 결정): 디자인 시스템 `Radio`·`RadioButton`(신고 사유 등)의 가운데 점이 선택되면 절반 크기에서 커지며 나타나고 해제되면 줄며 사라진다. 테두리 색도 같이 150ms ease-out이다. 즉시 바뀌어 고른 항목이 덜 드러나던 것을 보완한다. Figma와 화면설계서에 정의가 없어 디자이너에게 공유한다. CSS `transition`(`scale`·`opacity`)만 쓰고 동작 줄이기에서는 끈다. Storybook(Chromium)에서 사유를 바꿀 때 새 점 0.5→1, 이전 점 1→0.5가 약 150ms에 끝나는 것을 확인했다.
+
 ## 접근성
 
 - Semantic element: native `<input type="radio">`(투명하게 20px 원 위를 덮음). 키보드·스크린 리더 동작은 브라우저 기본이다.

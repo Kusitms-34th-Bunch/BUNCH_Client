@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { describe, expect, it } from 'vitest';
-import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
+import { getPageLoadingCount } from '@/shared/lib/navigation/pageLoadingState';
 import type { FeedBundle } from '../../lib/types';
 import { BundleDetailStatus } from './BundleDetailStatus';
 

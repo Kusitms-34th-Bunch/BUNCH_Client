@@ -6,7 +6,7 @@ import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { getPendingToast, settlePendingToast } from '@/shared/lib/toastAfterNavigation';
+import { getPendingToast, settlePendingToast } from '@/shared/lib/navigation/toastAfterNavigation';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';

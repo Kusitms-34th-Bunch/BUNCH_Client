@@ -51,6 +51,10 @@
 | 카드와 버튼    | 카드 좌우 16, 버튼 위 10                                                   | `px-padding-p8`, `pt-s5`                                          |
 | 폭죽 조각      | 10×10 또는 12×12 정사각형 16개, 색 `#454edf` `#ffa100` `#ff6ccd` `#26e26a` | 토큰 없는 장식 색을 인라인 값으로(데이터 `constants/confetti.ts`) |
 
+## 모션
+
+- 컨페티 모션 기록은 `BunchJoinInvitation.spec.md`의 「모션」(온보딩 초대장·컨페티)에 있다.
+
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 정적 페이지로 생성되고 `next start`에서 직접 URL 렌더·재생·종료 후 조각 제거를 확인함. 새로고침·뒤로 가기는 미검증

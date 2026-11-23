@@ -5,7 +5,7 @@ import { MenuDivider, MenuLabel } from '@app/design-system/web';
 import Link from 'next/link';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchRole } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';

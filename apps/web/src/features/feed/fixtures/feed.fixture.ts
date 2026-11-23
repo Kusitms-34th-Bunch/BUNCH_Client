@@ -1,5 +1,5 @@
 // 기록용: 쓰는 곳 없음. 서버 연결 전 피드 샘플 데이터(Figma 대조에 사용), 새 코드에서 import 금지
-import { DEFAULT_BUNCH_IMAGES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { DEFAULT_BUNCH_IMAGES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import type { FeedBundle, FeedData } from '../lib/types';
 
 // 멤버 프로필 샘플이 쓰는 Figma 예시 값(사진은 public/mock/photos). 피드 목록(#364)·상세(#367)는 서버, 프로필 연결(API 연동 9번) 때 삭제

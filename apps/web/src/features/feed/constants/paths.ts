@@ -1,6 +1,8 @@
+import { APP_PATHS } from '@/shared/constants/paths';
+
 export const FEED_PATHS = {
   /** 피드 탭 */
-  home: '/feed',
+  home: APP_PATHS.feed,
   /** 번들 상세(기능명세서 6.2). 발행 번들 상세 API(명세 084)가 번치 ID를 함께 받아 주소에 둠 */
   bundle: (bunchId: string, bundleId: string) => `/bunches/${bunchId}/bundles/${bundleId}`,
   /** 번들 상세 댓글 영역으로 바로 가기 */

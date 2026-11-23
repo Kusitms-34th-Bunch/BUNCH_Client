@@ -16,12 +16,12 @@ import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { CHECK_FAILURE_MESSAGE } from '@/shared/hooks/useNicknameAvailability';
+import { CHECK_FAILURE_MESSAGE } from '@/shared/hooks/profile/useNicknameAvailability';
 import {
   NICKNAME_INVALID_MESSAGE,
   NICKNAME_PROHIBITED_MESSAGE,
   NICKNAME_TAKEN_MESSAGE,
-} from '@/shared/lib/nickname';
+} from '@/shared/lib/profile/nickname';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { TermsAgreementProvider } from '../../contexts/TermsAgreementProvider';
 import { sessionQueryOptions } from '../../queries/session';

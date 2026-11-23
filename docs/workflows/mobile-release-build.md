@@ -35,6 +35,10 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 앱 버전은 `app.json`의 `version`, iOS 빌드 번호는 `ios.buildNumber`에 둔다(2026-11-20). prebuild(`ios:sync`)가 이 값을 `Info.plist`의 `CFBundleShortVersionString`·`CFBundleVersion`에 숫자로 쓴다. 그래서 Xcode General 탭의 Version·Build 칸을 바꿔도 Archive에는 반영되지 않는다. General 탭이 보여 주는 빌드 설정(`MARKETING_VERSION`·`CURRENT_PROJECT_VERSION`)은 prebuild가 바꾸지 않아 템플릿 값(1.0)이 남으므로, `ios:sync`가 끝에 이 두 값도 `app.json`으로 맞춘다(2026-11-23).
 
 - Xcode Archive로 올릴 때: `ios.buildNumber`를 App Store Connect에 올린 같은 버전의 마지막 번호보다 크게 올리고 커밋한 뒤 `pnpm ios:sync`를 하고 Archive한다. 버전을 바꾸면(`version`) 빌드 번호는 다시 1부터 써도 된다.
+- Xcode Archive의 Sentry 소스맵 업로드는 Xcode 셸 단계에서 돌아 앱 폴더 `.env.local`을 읽지 않는다. 그래서 `pnpm ios:sync`(`--clean` 포함)가 `ios/.xcode.env.local`(gitignore)에 `.env.local`의 `SENTRY_AUTH_TOKEN`을 빌드 때 읽어 `export`하는 줄을 넣는다(토큰 값은 복사하지 않음). 이 줄이 없으면 Archive가 `Auth token required`로 실패한다(2026-11-23). 업로드 없이 올리려면 같은 파일에 `export SENTRY_DISABLE_AUTO_UPLOAD=true`를 둔다(오류 화면의 스택을 읽을 수 없게 됨).
+- 업로드 뒤 App Store Connect의 알려진 경고(2026-11-23 확인, 업로드는 성공). 둘 다 무시해도 된다.
+  - `SDK version issue`: 2027년 4월부터 Xcode 27(iOS 27 SDK) 빌드만 받는다는 예고다. 그 전에 Xcode를 올리고 Expo SDK 호환을 함께 확인한다.
+  - `Upload Symbols Failed`: React·hermesvm·ReactNativeDependencies·SDWebImage·ExpoImageManipulator처럼 미리 빌드된 프레임워크는 dSYM을 함께 배포하지 않는다. Apple 크래시 리포트에서 그 프레임워크 안의 위치만 주소로 보이고, 앱 실행·심사에는 영향이 없다. 없애려면 소스 빌드(`buildReactNativeFromSource` 등)가 필요해 빌드 시간이 크게 늘어 쓰지 않는다. 오류는 Sentry로 본다.
 - EAS로 올릴 때: `eas.json`이 `appVersionSource: remote`·`autoIncrement`라 EAS가 번호를 관리하고 `ios.buildNumber`는 쓰지 않는다. 두 방법을 섞으면 번호가 겹칠 수 있으니 EAS 첫 빌드 전에 `pnpm dlx eas-cli@latest build:version:set -p ios`로 마지막 번호에 맞춘다.
 
 #### 버전을 올리는 기준

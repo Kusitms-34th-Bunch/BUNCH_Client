@@ -2,7 +2,7 @@
 
 import { Dialog } from '@app/design-system';
 import { Fragment } from 'react';
-import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { DateConfirmKind } from '../lib/photoActions';
 import { dateConfirmCopy, PHOTO_BOX_MESSAGES } from '../constants/messages';
 

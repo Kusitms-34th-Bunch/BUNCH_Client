@@ -5,7 +5,7 @@ import { Label, PageHeader, TermsLabel } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
 import { SIGNUP_PATHS } from '../../constants/paths';
 import { TERMS_ITEMS } from '../../constants/terms';
 import { useTermsAgreement } from '../../contexts/termsAgreementContext';

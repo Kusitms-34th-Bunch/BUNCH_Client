@@ -2,7 +2,14 @@
 // pod install은 다음 빌드를 크게 늘려서(약 200초) 필요할 때만 실행. `--clean`이면 ios/를 새로 만듦(pod install 포함)
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 
 process.env.DEVELOPER_DIR ||= '/Applications/Xcode.app/Contents/Developer';
 const STAMP = 'ios/.pods-lock-hash';
@@ -63,6 +70,27 @@ if (existsSync(PBXPROJ)) {
         /CURRENT_PROJECT_VERSION = [^;]+;/g,
         `CURRENT_PROJECT_VERSION = ${expo.ios.buildNumber};`,
       ),
+  );
+}
+
+// Xcode 셸 단계(Sentry 소스맵 업로드)는 앱 폴더 .env.local을 읽지 않음. 토큰 값은 복사하지 않고 빌드 때 읽게 하는 줄만 넣음
+const XCODE_ENV_LOCAL = 'ios/.xcode.env.local';
+const SENTRY_ENV_MARKER = '# Sentry 소스맵 업로드 토큰';
+// 파일은 pod install이 NODE_BINARY와 함께 만듦(먼저 만들면 pod install이 NODE_BINARY를 쓰지 않음)
+if (
+  existsSync(XCODE_ENV_LOCAL) &&
+  !readOrEmpty(XCODE_ENV_LOCAL).toString().includes(SENTRY_ENV_MARKER)
+) {
+  appendFileSync(
+    XCODE_ENV_LOCAL,
+    [
+      '',
+      `${SENTRY_ENV_MARKER}: 앱 폴더 .env.local에서 읽음(Xcode 셸 단계는 .env.local을 읽지 않음)`,
+      'if [ -z "$SENTRY_AUTH_TOKEN" ] && [ -f "$PROJECT_DIR/../.env.local" ]; then',
+      `  export SENTRY_AUTH_TOKEN="$(grep -E '^(export +)?SENTRY_AUTH_TOKEN=' "$PROJECT_DIR/../.env.local" | head -1 | cut -d= -f2- | tr -d '"'"'"'\\r')"`,
+      'fi',
+      '',
+    ].join('\n'),
   );
 }
 

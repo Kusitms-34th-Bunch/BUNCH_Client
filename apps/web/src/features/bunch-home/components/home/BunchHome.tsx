@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useDeleteBundleMutation, useFetchLatestBundle } from '@/features/bundle/queries/bundles';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchHomeActions } from '../../lib/types';
 import type { BundleTab } from './BundleTabs';

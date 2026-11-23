@@ -8,7 +8,7 @@ import { AuthGate } from './AuthGate';
 
 // 푸시 등록 hook이 어떤 상태에서 켜지는지만 확인(등록 동작 자체는 hook·lib 테스트가 다룸)
 const sync = vi.hoisted(() => vi.fn<(_memberId: string | null) => void>());
-vi.mock('@/shared/hooks/usePushDeviceSync', () => ({ usePushDeviceSync: sync }));
+vi.mock('@/shared/hooks/native/usePushDeviceSync', () => ({ usePushDeviceSync: sync }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn(), prefetch: vi.fn() }),
   usePathname: () => '/bunch',

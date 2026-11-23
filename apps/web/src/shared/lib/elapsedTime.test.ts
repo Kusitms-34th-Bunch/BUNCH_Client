@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatElapsedTime } from './elapsedTime';
+import { formatElapsedTime } from '@/shared/lib/elapsedTime';
 
 const now = new Date(2026, 6, 20, 12, 0).getTime();
 const ago = (minutes: number) => new Date(now - minutes * 60_000).toISOString();

@@ -1,13 +1,13 @@
 import type { components } from '@app/api-core/generated';
 import { type ApiContract, normalizeError } from '@app/api-core';
 import { z } from 'zod';
-import type { CharacterType } from '@/shared/lib/bunchProfile';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { checkBunchNameAvailability as checkSharedBunchName } from '@/shared/api/bunchNameAvailability';
 import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
 import { toDomainId } from '@/shared/api/ids';
-import { dataUrlToBlob } from '@/shared/lib/dataUrl';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import { dataUrlToBlob } from '@/shared/lib/image/dataUrl';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import type { Visibility } from '../contexts/createBunchDraftContext';
 
 type Schemas = components['schemas'];

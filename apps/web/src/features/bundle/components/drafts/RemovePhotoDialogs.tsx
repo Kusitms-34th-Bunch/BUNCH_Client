@@ -1,7 +1,7 @@
 'use client';
 
 import { ConfirmDialog, Dialog } from '@app/design-system';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { RemovePhotoKind } from '../../lib/photos';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 

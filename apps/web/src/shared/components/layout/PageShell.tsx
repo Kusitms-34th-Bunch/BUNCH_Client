@@ -3,8 +3,8 @@
 import { cn } from '@app/design-system';
 import { useRef, type ReactNode } from 'react';
 import { RefreshSpark } from '@/shared/components/refresh/RefreshSpark';
-import { useHideOnScroll } from '@/shared/hooks/useHideOnScroll';
-import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh';
+import { useHideOnScroll } from '@/shared/hooks/scroll/useHideOnScroll';
+import { usePullToRefresh } from '@/shared/hooks/scroll/usePullToRefresh';
 
 const REFRESH_STATUS_MESSAGES = {
   idle: '',

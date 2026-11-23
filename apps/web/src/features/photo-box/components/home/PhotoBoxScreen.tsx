@@ -1,4 +1,5 @@
 'use client';
+// 크기 유지: 선택 모드·끌기 이동·저장 중 상태를 플로팅 버튼·메뉴·inert·상태 낭독이 함께 읽는 한 화면
 
 import { toast } from '@app/design-system';
 import { FloatingButton, PhotoUploadSheet } from '@app/design-system/web';
@@ -7,11 +8,11 @@ import { FloatingButtonToastAnchor } from '@/shared/components/layout/FloatingBu
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useNativeFloatingButton } from '@/shared/hooks/native/useNativeFloatingButton';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
+import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
-import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
 import type { UploadStatus } from '../../lib/uploadStatus';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';

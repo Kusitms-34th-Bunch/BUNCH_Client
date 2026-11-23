@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { BundleBunchSource, BundleDetailResponse } from '../../model/bundleDetail';
@@ -13,7 +13,7 @@ import { feedKeys } from '../../queries/keys';
 import { BundleDetail } from './BundleDetail';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 const push = vi.fn();
 const back = vi.fn();

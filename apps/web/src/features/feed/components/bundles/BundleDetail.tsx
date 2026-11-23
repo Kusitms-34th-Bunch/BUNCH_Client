@@ -8,10 +8,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { isUnavailableTarget } from '@/shared/api/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
+import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
 import { useBundleComments } from '../../hooks/useBundleComments';
@@ -20,6 +20,7 @@ import { useBundleReport } from '../../hooks/useBundleReport';
 import { useBundleSheets } from '../../hooks/useBundleSheets';
 import { useClientNow } from '../../hooks/useClientNow';
 import { useCommentActions } from '../../hooks/useCommentActions';
+import { useCommentsEntry } from '../../hooks/useCommentsEntry';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import { useLikeToggle } from '../../hooks/useLikeToggle';
 import { leaveToBunch, returnFromBunch } from '../../lib/bunchDrillId';
@@ -44,42 +45,6 @@ type BundleDetailProps = {
   /** 다른 기능의 화면 주소(route가 조합) */
   links: { bunchHome: string; otherBunch: (_bunchId: string) => string };
 };
-
-// 댓글 영역 진입이 화면 전환 끝을 기다리는 최대 시간(전환이 중단돼 표식이 남아도 스크롤·초점은 함)
-const ENTRY_TRANSITION_WAIT_MS = 1000;
-// 부드러운 스크롤이 끝났다는 신호를 못 받을 때 키보드를 올리는 상한
-const SMOOTH_SCROLL_CAP_MS = 900;
-// 진입 대기 중 누르면 사용자 조작으로 보는 요소(누르면 초점·동작이 생기는 것)
-const INTERACTIVE_SELECTOR =
-  'a[href], button, input, textarea, select, [role="button"], [tabindex]:not([tabindex="-1"])';
-// 알림의 댓글 찾기: 이 시간이 지나도 없으면 먼저 댓글 영역을 보여 주고, 상한까지 다음 쪽을 받으며 기다림(답글은 원댓글 뒤에 따로 옴)
-const SEEK_SECTION_DELAY_MS = 500;
-const SEEK_CAP_MS = 4000;
-const SEEK_MAX_PAGES = 5;
-// 맞춘 뒤 대상이 가운데에서 이만큼 넘게 벗어나면 다시 맞춤
-const SEEK_ALIGN_TOLERANCE_PX = 24;
-
-// 전환이 화면을 scale로 키우는 중이면 화면 좌표가 배율만큼 줄어 scrollTop 단위로 되돌림
-const viewScale = (main: HTMLElement) =>
-  main.offsetHeight > 0 ? main.getBoundingClientRect().height / main.offsetHeight || 1 : 1;
-
-// 코드로 준 초점은 iOS에서 키보드 초점 테두리가 그려져 키 입력·떠남 전까지 감춤(스크린 리더 낭독은 유지)
-// 앱 전환으로 문서 초점이 빠지는 blur는 무시(돌아오면 같은 요소에 초점이 복원됨)
-function quietFocus(item: HTMLElement) {
-  item.dataset.quietFocus = '';
-  const reveal = () => {
-    delete item.dataset.quietFocus;
-    item.removeEventListener('blur', onBlur);
-    document.removeEventListener('keydown', reveal, true);
-  };
-  const onBlur = () => {
-    if (document.hasFocus()) reveal();
-  };
-  item.addEventListener('blur', onBlur);
-  document.addEventListener('keydown', reveal, true);
-  item.focus({ preventScroll: true });
-  if (document.activeElement !== item) reveal();
-}
 
 const codeOf = (error: unknown) => (isApiError(error) ? error.code : undefined);
 // 번들을 볼 수 없게 됨(명세 014~017: 비공개 접근 불가·차단·없음·내보내짐). 가입 미완료 등 계정 오류는 빼고 코드로 가림
@@ -114,14 +79,10 @@ export function BundleDetail({
   const likes = useLikeToggle(viewer);
   const commentsRef = useRef<HTMLElement>(null);
   const { openPlaces, openMembers } = useBundleSheets();
+  // 번치 정보를 받지 못해도 내용은 보임(기본 이미지와 「번치」, 버튼 이름이 비지 않게)
+  const bundleBunch = bunch ? toFeedBunch(bunch) : { id: bunchId, name: text.unknownBunch };
   const bundle =
-    !detail.data || bunch === undefined
-      ? undefined
-      : toFeedBundleDetail(
-          detail.data,
-          // 번치 정보를 받지 못해도 내용은 보임(기본 이미지와 「번치」, 버튼 이름이 비지 않게)
-          bunch ? toFeedBunch(bunch) : { id: bunchId, name: text.unknownBunch },
-        );
+    !detail.data || bunch === undefined ? undefined : toFeedBundleDetail(detail.data, bundleBunch);
   // 「다시 시도」가 성공해 버튼이 사라지면 번들 제목으로 초점
   const focusTitleAfterRetry = useRef(false);
 
@@ -187,206 +148,20 @@ export function BundleDetail({
     title.focus({ preventScroll: true });
   });
 
-  // scrollIntoView는 전환 중 가로로 밀린 화면을 보이려고 바깥 틀까지 가로 스크롤하므로 세로 스크롤 main만 움직임
-  // smooth: 부드럽게(동작 줄이기면 바로), 끝나면 onDone, 돌려준 함수는 기다림을 멈춤. item을 주면 영역 맨 위 대신 그 댓글을 가운데로
-  const scrollToComments = useCallback(
-    (smooth = false, onDone?: () => void, item?: HTMLElement) => {
-      const section = commentsRef.current;
-      const main = section?.closest('main');
-      if (!section || !main) {
-        onDone?.();
-        return () => {};
-      }
-      const target = item ?? section;
-      const offset = item ? (main.clientHeight - item.offsetHeight) / 2 : 0;
-      const scale = viewScale(main);
-      // 끝까지 내려도 닿지 않는 위치면 실제로 움직이지 않아 scrollend가 오지 않으므로 갈 수 있는 끝으로 맞춤
-      const top = Math.max(
-        0,
-        Math.min(
-          main.scrollTop +
-            (target.getBoundingClientRect().top - main.getBoundingClientRect().top) / scale -
-            Math.max(offset, 0),
-          main.scrollHeight - main.clientHeight,
-        ),
-      );
-      const animate =
-        smooth &&
-        !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
-        Math.abs(top - main.scrollTop) > 1;
-      if (!animate) {
-        main.scrollTop = top;
-        onDone?.();
-        return () => {};
-      }
-      // scrollend를 모르는 WebView도 있어 끝을 놓치지 않게 상한 시간도 둠
-      const stop = () => {
-        main.removeEventListener('scrollend', finish);
-        clearTimeout(timer);
-      };
-      function finish() {
-        stop();
-        onDone?.();
-      }
-      const timer = setTimeout(finish, SMOOTH_SCROLL_CAP_MS);
-      main.addEventListener('scrollend', finish);
-      main.scrollTo({ top, behavior: 'smooth' });
-      return stop;
-    },
-    [],
-  );
-  const goToComments = useCallback(() => {
-    scrollToComments();
-    focusInput();
-  }, [scrollToComments, focusInput]);
-
-  // 알림의 댓글 찾기가 진입 effect를 다시 시작하지 않고 최신 목록 상태를 읽음
-  const threadRef = useRef(thread);
-  useEffect(() => {
-    threadRef.current = thread;
-  });
-
   // 댓글 영역은 본문이 그려진 뒤에 생김(번치 정보·상세를 받는 중에는 없음)
   const contentReady = bundle !== undefined;
-  const commentsEntry = focusComments ? 'focus' : showComments ? 'scroll' : null;
-  useEffect(() => {
-    if (commentsEntry === null || !contentReady) return;
-    const startedAt = performance.now();
-    let frame = 0;
-    let cancelled = false;
-    // 기다리는 동안 사용자가 직접 조작하면(키, 누를 수 있는 요소를 누름, 휠·손가락으로 끌어 스크롤) 그 초점·위치를 지키도록 취소
-    // 빈 곳 누름(말풍선을 연달아 두 번 눌러 새 화면에 떨어진 두 번째 누름 등)은 끌지 않으므로 취소하지 않음
-    let stopScroll = () => {};
-    const stopListening = () => {
-      document.removeEventListener('keydown', cancel, true);
-      document.removeEventListener('pointerdown', cancelOnControl, true);
-      document.removeEventListener('touchstart', cancel, true);
-      document.removeEventListener('touchmove', cancel, true);
-      document.removeEventListener('wheel', cancel, true);
-    };
-    function cancel() {
-      cancelled = true;
-      cancelAnimationFrame(frame);
-      stopScroll();
-      stopListening();
-    }
-    function cancelOnControl(event: PointerEvent) {
-      if (event.target instanceof Element && event.target.closest(INTERACTIVE_SELECTOR)) cancel();
-    }
-    document.addEventListener('keydown', cancel, true);
-    document.addEventListener('pointerdown', cancelOnControl, true);
-    document.addEventListener('touchmove', cancel, true);
-    document.addEventListener('wheel', cancel, true);
-    const run = () => {
-      // 화면 전환(나가는 화면의 data-page-leaving)이 끝난 뒤 스크롤·초점. 전환이 멈춰 표식이 남아도 잠시 뒤에는 진행
-      if (
-        !(instantComment && targetCommentId) &&
-        document.querySelector('[data-page-leaving]') !== null &&
-        performance.now() - startedAt < ENTRY_TRANSITION_WAIT_MS
-      ) {
-        frame = requestAnimationFrame(run);
-        return;
-      }
-      // 말풍선 진입은 열리기 전에 이미 내려 둠(아래 layout effect): 그사이 늦게 그려진 내용만 바로 맞추고 키보드
-      // 알림 진입은 전환 뒤 부드럽게. 키보드는 스크롤이 끝난 뒤(도중에 올리면 iOS가 화면을 함께 밀어 어긋남)
-      // 스크롤 중 손가락을 대거나(부드러운 스크롤을 멈춤), 초점이 이미 제목 밖(스크린 리더로 읽는 중 등)이면 초점을 옮기지 않음
-      document.addEventListener('touchstart', cancel, true);
-      if (commentsEntry === 'scroll' && targetCommentId) {
-        seek();
-        return;
-      }
-      stopScroll = scrollToComments(commentsEntry !== 'focus', () => {
-        stopListening();
-        const focused = document.activeElement;
-        const untouched = !focused || focused === document.body || focused.tagName === 'H1';
-        if (!cancelled && untouched && commentsEntry === 'focus') focusInput();
-      });
-    };
-    // 알림의 댓글: 그려질 때까지 다음 쪽을 받으며 기다린 뒤 가운데로 스크롤, 초점을 줌
-    // 못 찾으면(지워짐·숨김·상한 초과) 댓글 영역 맨 위에 둠
-    let seekStartedAt: number | undefined;
-    let pages = 0;
-    let sectionShown = false;
-    function seek() {
-      if (cancelled) return;
-      seekStartedAt ??= performance.now();
-      const item = commentsRef.current?.querySelector<HTMLElement>(`#comment-${targetCommentId}`);
-      if (item) {
-        // 맞춘 뒤 찾기 상한까지 위치를 지킴: 위쪽 원댓글의 답글이 늦게 그려져 대상이 밀리면 바로 되돌림
-        // 조작·다른 주체의 스크롤(스크린 리더·스위치 등은 터치 이벤트가 없음)·초점 이탈이면 멈춤. 긴 댓글은 윗부분을 맞춤
-        let lastTop: number | undefined;
-        const hold = () => {
-          const main = item.closest('main');
-          if (
-            cancelled ||
-            !main ||
-            document.activeElement !== item ||
-            // 소수 배율 기기의 1px 재정렬은 사용자 스크롤로 보지 않음
-            (lastTop !== undefined && Math.abs(main.scrollTop - lastTop) > 1) ||
-            performance.now() - (seekStartedAt ?? 0) > SEEK_CAP_MS
-          ) {
-            stopListening();
-            return;
-          }
-          const off =
-            (item.getBoundingClientRect().top - main.getBoundingClientRect().top) /
-              viewScale(main) -
-            Math.max((main.clientHeight - item.offsetHeight) / 2, 0);
-          const room =
-            off > 0 ? main.scrollHeight - main.clientHeight - main.scrollTop : main.scrollTop;
-          if (Math.abs(off) > SEEK_ALIGN_TOLERANCE_PX && room > SEEK_ALIGN_TOLERANCE_PX)
-            main.scrollTop += off;
-          lastTop = main.scrollTop;
-          frame = requestAnimationFrame(hold);
-        };
-        const settle = () => {
-          if (cancelled) return;
-          const focused = document.activeElement;
-          if (!focused || focused === document.body || focused.tagName === 'H1') quietFocus(item);
-          // 초점을 옮기지 않았으면(스크린 리더로 읽는 중 등) 위치도 그 사용자에게 맡김
-          hold();
-        };
-        stopScroll();
-        stopScroll = scrollToComments(
-          !instantComment,
-          // 애니메이션 없는 이동은 바로 끝나서 늦게 그려진 내용이 자리를 잡은 다음 프레임에 판정
-          () => (instantComment ? (frame = requestAnimationFrame(settle)) : settle()),
-          item,
-        );
-        return;
-      }
-      const elapsed = performance.now() - seekStartedAt;
-      const list = threadRef.current;
-      if (!sectionShown && (elapsed > SEEK_SECTION_DELAY_MS || list.failed || list.moreFailed)) {
-        sectionShown = true;
-        stopScroll = scrollToComments(!instantComment);
-      }
-      if (elapsed > SEEK_CAP_MS || list.failed || list.moreFailed) {
-        stopListening();
-        return;
-      }
-      if (list.canLoadMore && !list.loading && pages < SEEK_MAX_PAGES) {
-        pages += 1;
-        void list.loadMore();
-      }
-      frame = requestAnimationFrame(seek);
-    }
-    // effect에서 바로 주면 RouteFocus가 이동 전에 남은 초점으로 보고 제목으로 옮기므로 다음 프레임에
-    frame = requestAnimationFrame(run);
-    return cancel;
-  }, [commentsEntry, contentReady, scrollToComments, focusInput, targetCommentId, instantComment]);
-
-  // 말풍선 진입: 피드 카드가 열리는(zoom) 동안 이미 댓글이 보이게, 내용이 처음 그려질 때 화면에 보이기 전에 한 번 내림
-  const presetComments = useRef(false);
-  useLayoutEffect(() => {
-    if (commentsEntry !== 'focus' || !contentReady || presetComments.current) return;
-    presetComments.current = true;
-    // 목록이 오기 전에도 댓글 영역 맨 위까지 내려갈 수 있게 화면 높이만큼 자리를 둠(열린 뒤 위치가 다시 넘어가지 않게)
-    const section = commentsRef.current;
-    const main = section?.closest('main');
-    if (section && main) section.style.minHeight = `${main.clientHeight}px`;
-    scrollToComments();
-  }, [commentsEntry, contentReady, scrollToComments]);
+  let commentsEntry: 'focus' | 'scroll' | null = null;
+  if (focusComments) commentsEntry = 'focus';
+  else if (showComments) commentsEntry = 'scroll';
+  const goToComments = useCommentsEntry({
+    commentsRef,
+    thread,
+    focusInput,
+    entry: commentsEntry,
+    contentReady,
+    targetCommentId,
+    instantComment,
+  });
 
   // 목록(다음 쪽 포함)이 번들을 볼 수 없다고 하면 떠남(답글·삭제 실패 뒤 다시 받은 목록도, 답글 대상 없음과 번들 없음이 같은 404라서)
   const listGone = isGone(thread.error);
@@ -409,13 +184,17 @@ export function BundleDetail({
   // 이미 받은 상세가 있으면 다시 받기가 실패해도 보던 내용을 그대로 둠
   const failed =
     !unavailable && (detail.isError || (viewer === undefined && viewerFailed)) && !detail.data;
-  if ((unavailable && !detail.data) || failed || !bundle) {
+  const gone = unavailable && !detail.data;
+  if (gone || failed || !bundle) {
+    let kind: 'failed' | 'unavailable' | 'loading' = 'loading';
+    if (failed) kind = 'failed';
+    else if (gone) kind = 'unavailable';
     const preview = getBundlePreview(bunchId, bundleId);
     return (
       <BundleDetailScreen
         onBack={back}
         status={{
-          kind: failed ? 'failed' : unavailable && !detail.data ? 'unavailable' : 'loading',
+          kind,
           commentsEntry: focusComments,
           preview: preview && {
             ...preview,
@@ -446,11 +225,9 @@ export function BundleDetail({
   // 헤더 더보기(기능명세서 6.2.11): 다른 번치 번들, 우리 번치 번들의 메인 관리자가 아닌 역할은 「신고」, 메인 관리자는 관리 메뉴
   // 메뉴 갈래는 서버 권한(수정·삭제 권한이면 관리 메뉴, 신고 권한이면 신고). 모두 없으면 버튼 없음
   const isOwner = bundle.canEdit || bundle.canDelete;
-  const more = isOwner
-    ? () => openOwnerMenu(bundle)
-    : bundle.canReport
-      ? () => report.openReportMenu(text.bundleMore, reportBundle)
-      : undefined;
+  let more: (() => void) | undefined;
+  if (isOwner) more = () => openOwnerMenu(bundle);
+  else if (bundle.canReport) more = () => report.openReportMenu(text.bundleMore, reportBundle);
 
   return (
     <BundleDetailScreen

@@ -1,6 +1,6 @@
 import type { PointerEvent, RefObject } from 'react';
 import { cn } from '@app/design-system';
-import type { Box, Corner } from '../../lib/photoCrop';
+import type { Box, Corner } from '@/shared/lib/image/photoCrop';
 
 const CORNERS: { corner: Corner; className: string; border: string }[] = [
   {

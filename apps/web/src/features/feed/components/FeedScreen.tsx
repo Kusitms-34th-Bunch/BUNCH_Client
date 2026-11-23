@@ -1,22 +1,17 @@
 'use client';
 
 import { Button } from '@app/design-system';
-import { FeedBundleCard } from '@app/design-system/web';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
 import { isNativeShell, openTabPath } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
+import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
+import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
-import { formatElapsedTime } from '@/shared/lib/elapsedTime';
-import { bundleHeroKey } from '@/shared/lib/heroKeys';
 import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries';
-import type { FeedBundle } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
-import { FEED_PATHS } from '../constants/paths';
 import { useBundleSheets } from '../hooks/useBundleSheets';
 import { useClientNow } from '../hooks/useClientNow';
 import { useFeedLoadMore } from '../hooks/useFeedLoadMore';
@@ -24,11 +19,11 @@ import { useFeedUnreadNotifications } from '../hooks/useFeedUnreadNotifications'
 import { useFeedViewer } from '../hooks/useFeedViewer';
 import { useLikeToggle } from '../hooks/useLikeToggle';
 import { useOpenBundleDetail } from '../hooks/useOpenBundleDetail';
-import { hideLeftMemberImages } from '../lib/deletedUserImage';
 import { readHiddenAds } from '../lib/hiddenAds';
 import { type FeedEntry, splitFeedSections, toFeedEntries } from '../model/feed';
 import { feedQueryOptions } from '../queries/feed';
 import { FeedAdCard } from './FeedAdCard';
+import { FeedBundleItem } from './FeedBundleItem';
 import { FeedCaughtUp } from './FeedCaughtUp';
 import { FeedHeader } from './FeedHeader';
 import { FeedListSkeleton } from './FeedSkeleton';
@@ -52,9 +47,6 @@ const focusListItem = (
     fallbacks.find((element) => element !== null);
   target?.focus({ preventScroll: true });
 };
-
-// 말풍선 진입이 상세를 기다리는 최대 시간(넘으면 받는 중 화면으로 열고 도착하면 댓글로 내림)
-const COMMENTS_OPEN_WAIT_MS = 400;
 
 /**
  * 피드 탭(기능명세서 6.1, Figma `4940:99466`): 팔로우한 번치 구간 → 구간 안내 → 공개 구간 → 끝 안내
@@ -146,68 +138,31 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
     if (entry.isIntersecting) void loadMore();
   }, {});
 
-  const renderEntry = (entry: FeedEntry) =>
-    entry.kind === 'bundle' ? (
-      renderCard(entry.bundle)
-    ) : entry.kind === 'ad' ? (
-      <FeedAdCard key={entry.key} ad={entry.ad} onGone={handleAdGone} />
-    ) : null;
-
-  const renderCard = (bundle: FeedBundle) => {
-    const ownBunch = viewer?.bunchId === bundle.bunch.id;
-    return (
-      // 상세에서 돌아오는 hero 사진(SSGOI 복사본)이 아래 카드에 가리지 않게 그동안만 위로 올림
-      <li
-        key={bundle.id}
-        // 말풍선 진입 zoom의 출발 카드(상세 쪽 enter 표식과 같은 값)
-        data-zoom-exit-key={bundleHeroKey(bundle.id)}
-        className="has-data-ssgoi-crossfade:relative has-data-ssgoi-crossfade:z-1"
-      >
-        <FeedBundleCard
-          titleAs="h2"
-          bunchName={bundle.bunch.name}
-          bunchImageSrc={bundle.bunch.imageSrc}
-          time={now === null ? '' : formatElapsedTime(bundle.publishedAt, now)}
-          // 내 번치는 번치 탭 첫 화면이라 iOS 쉘에서는 번치 탭으로 전환(6.1.2 상세 동작 3)
-          onBunchClick={() =>
-            ownBunch
-              ? openTabPath(links.bunchHome, (href) => router.push(href))
-              : router.push(links.otherBunch(bundle.bunch.id))
-          }
-          members={hideLeftMemberImages(bundle.members)}
-          onMembers={() => openMembers(bundle.members)}
-          photos={bundle.photos}
-          title={bundle.title}
-          location={bundle.location}
-          // 「{첫 위치} 외 N곳」일 때만 밑줄(기능명세 6.1.3 상세 2)
-          locationUnderline={bundle.places.length > 1}
-          onLocationClick={() => openPlaces(bundle.id, bundle.places)}
-          date={bundle.date}
-          onPhotoClick={() => openDetail(bundle, FEED_PATHS.bundle(bundle.bunch.id, bundle.id))}
-          // 사진·말풍선에 손가락이 닿을 때만 미리 받음(하트·번치·스크롤 시작 터치는 제외)
-          onPointerDown={(event) => {
-            const target = event.target as Element;
-            if (target.closest('[data-engagement="comment"]'))
-              void prefetchDetail(bundle, { withComments: true });
-            else if (target.closest('[data-hero-enter-key]')) void prefetchDetail(bundle);
-          }}
-          // 번들 상세의 첫 사진과 이어 그림(AppTransitions의 피드 → 상세 hero)
-          photoHeroKey={bundleHeroKey(bundle.id)}
-          liked={bundle.liked}
-          likeCount={bundle.likeCount}
-          onLike={() => asBunch(() => likes.toggle(bundle))}
-          commentCount={bundle.commentCount}
-          onComment={() =>
-            // 상세를 받은 뒤 열어야 카드가 열리며 바로 댓글 위치가 보임(최대 400ms만 기다림)
-            openDetail(bundle, FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id), {
-              waitMs: COMMENTS_OPEN_WAIT_MS,
-              withComments: true,
-            })
-          }
+  const renderEntry = (entry: FeedEntry) => {
+    if (entry.kind === 'bundle')
+      return (
+        <FeedBundleItem
+          key={entry.bundle.id}
+          bundle={entry.bundle}
+          now={now}
+          ownBunch={viewer?.bunchId === entry.bundle.bunch.id}
+          links={links}
+          openDetail={openDetail}
+          prefetchDetail={prefetchDetail}
+          onMembers={openMembers}
+          onPlaces={openPlaces}
+          onLike={(bundle) => asBunch(() => likes.toggle(bundle))}
         />
-      </li>
-    );
+      );
+    if (entry.kind === 'ad')
+      return <FeedAdCard key={entry.key} ad={entry.ad} onGone={handleAdGone} />;
+    return null;
   };
+
+  // 늘 있는 상태 영역에서 글자만 바꿔 받는 중을 읽어 줌
+  let statusText = '';
+  if (feed.data === undefined && !firstFailed) statusText = text.feedLoading;
+  else if (isFetchingNextPage) statusText = text.moreLoading;
 
   return (
     <PageShell
@@ -309,13 +264,8 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
             ) : null}
           </div>
         ) : null}
-        {/* 늘 있는 상태 영역에서 글자만 바꿔 받는 중을 읽어 줌 */}
         <p role="status" className="sr-only">
-          {feed.data === undefined && !firstFailed
-            ? text.feedLoading
-            : isFetchingNextPage
-              ? text.moreLoading
-              : ''}
+          {statusText}
         </p>
         {feed.data !== undefined && !hasNextPage ? (
           <div

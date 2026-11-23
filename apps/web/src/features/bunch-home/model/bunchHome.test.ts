@@ -1,11 +1,7 @@
 import { ApiError } from '@app/api-core';
 import { describe, expect, it } from 'vitest';
-import {
-  accessNoticeIdOf,
-  publishedBundlesPageSchema,
-  toBunchHomeDetail,
-  type Home,
-} from './bunchHome';
+import { accessNoticeIdOf } from './bunchAccessNotice';
+import { publishedBundlesPageSchema, toBunchHomeDetail, type Home } from './bunchHome';
 
 const home = (bunch: Partial<Home['bunch']> = {}): Home => ({
   bunch: { id: 1, name: '퇴근런클럽', characterType: 'TYPE_2', visibility: 'PUBLIC', ...bunch },

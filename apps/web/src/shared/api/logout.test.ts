@@ -12,7 +12,7 @@ import { logout } from './logout';
 const order = vi.hoisted((): string[] => []);
 const releasePushDevice = vi.hoisted(() => vi.fn());
 const syncPushDevice = vi.hoisted(() => vi.fn());
-vi.mock('../lib/pushDevice', () => ({ releasePushDevice, syncPushDevice }));
+vi.mock('@/shared/lib/native/pushDevice', () => ({ releasePushDevice, syncPushDevice }));
 
 beforeEach(() => {
   clearPendingInvitation();

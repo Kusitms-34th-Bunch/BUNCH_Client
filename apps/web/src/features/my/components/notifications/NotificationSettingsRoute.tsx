@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import type { DeviceNotificationPermission } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';

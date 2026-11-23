@@ -55,6 +55,15 @@
 | 공개 범위 영역 | 위 36, 제목과 카드 간격 4, 카드 간격 6 | `pt-s15 px-padding-p8`, `legend pb-s2`, `gap-s3` |
 | 하단 버튼      | 위 10, 좌우 16, 높이 48                | `pt-s5 px-padding-p8`, `Button`                  |
 
+## 모션
+
+화면별 전환·모션의 결정과 확인 기록이다. 공용 규칙은 `docs/architecture/motion.md`를 따른다.
+
+### 온보딩 단계 진행바
+
+- Header Animation(Figma `1998:35008`, Smart animation·Slow·600ms): 진행바는 현재 단계의 막대만 채우고(2026-11 Figma 수정, 이전에는 누적) 새 막대가 왼쪽에서 오른쪽으로 늘어난다(Fill Right). 제목은 5px 아래에서 올라오며 나타난다(Slide Up). 곡선은 둘 다 Slow 근사 `cubic-bezier(0.24, 0.3, 0.14, 1)`이다. Figma가 지정한 곡선이라 공통 규칙의 「진행바는 `linear`」의 예외다. 이전 기준(화면설계서 `791:8480` 「진행바만 인터랙션 O」, 색만 300ms)을 대체한다.
+- `CreateBunchFrame`이 같은 `Stepper` 요소를 유지하고 `current`만 바꾼다. 첫 표시는 `@starting-style`로 채운다. 제목은 단계 화면마다 새로 마운트되므로 `PageHeader`에 `animate-step-title-in`(`globals.css`의 keyframe·`@utility`)을 건다. `@starting-style`을 지원하지 않는 브라우저(Safari 17.5·Chrome 117 미만)에서는 첫 표시 채움 없이 채운 상태로 바로 보인다. 모션 감소 설정에서는 둘 다 끈다. 전체 페이지의 300ms 슬라이드와 별도이다.
+
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/onboarding/create`가 정적 페이지로 생성되고 `next start`로 렌더를 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)

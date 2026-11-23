@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { PlaceSearchSheet } from '@app/design-system/web';
 import { useEffect, useState } from 'react';
-import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { PlaceResult } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 

@@ -1,3 +1,5 @@
+import { createListeners } from '@/shared/lib/listeners';
+
 /**
  * 픽 화면이 서버에 보낼 「원하는 최종 상태」와 진행 중인 저장을 화면(hook 인스턴스) 밖에서 번들·사진별로 하나씩만 둠
  * 화면을 나갔다 다시 들어와도 같은 사진에는 저장 루프가 하나뿐이고, 새 화면의 누름이 같은 희망 상태를 갱신함
@@ -5,25 +7,20 @@
  */
 const intents = new Map<string, boolean>();
 const running = new Set<string>();
-const listeners = new Set<() => void>();
+const listeners = createListeners();
 let snapshot: Readonly<Record<string, boolean>> = {};
 
 const keyOf = (bundleId: string, photoId: string) => `${bundleId}:${photoId}`;
 
 const emit = () => {
   snapshot = Object.fromEntries(intents);
-  for (const listener of listeners) listener();
+  listeners.emit();
 };
 
 export const pickIntents = {
   /** 번들 id가 앞에 붙은 키로 된 희망 상태 전체(변할 때만 새 객체) */
   getSnapshot: () => snapshot,
-  subscribe: (listener: () => void) => {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  },
+  subscribe: listeners.subscribe,
   keyOf,
   get: (bundleId: string, photoId: string) => intents.get(keyOf(bundleId, photoId)),
   set: (bundleId: string, photoId: string, picked: boolean) => {

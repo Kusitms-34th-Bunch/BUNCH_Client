@@ -1,4 +1,4 @@
-import type { LottieLight } from './lottieLight';
+import type { LottieLight } from '@/shared/lib/lottieLight';
 
 export type LoadedLottie = { Player: typeof LottieLight; data: object };
 
@@ -6,7 +6,7 @@ export type LoadedLottie = { Player: typeof LottieLight; data: object };
 export function createLottieLoader(loadData: () => Promise<{ default: object }>) {
   let loading: Promise<LoadedLottie> | undefined;
   return () => {
-    loading ??= Promise.all([import('./lottieLight'), loadData()])
+    loading ??= Promise.all([import('@/shared/lib/lottieLight'), loadData()])
       .then(([library, animation]) => ({ Player: library.LottieLight, data: animation.default }))
       .catch((error: unknown) => {
         loading = undefined;

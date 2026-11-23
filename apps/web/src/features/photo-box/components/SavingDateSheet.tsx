@@ -2,7 +2,7 @@
 
 import { DateChangeSheet } from '@app/design-system/web';
 import { useState } from 'react';
-import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 
 type SavingDateSheetProps = ScreenOverlayProps & {
   close: () => void;

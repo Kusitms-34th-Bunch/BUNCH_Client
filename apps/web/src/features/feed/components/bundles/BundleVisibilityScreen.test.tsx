@@ -10,7 +10,7 @@ import { feedKeys } from '../../queries/keys';
 import { BundleVisibilityScreen } from './BundleVisibilityScreen';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 const back = vi.fn();
 const replace = vi.fn();

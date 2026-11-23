@@ -16,18 +16,18 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { memo, useEffect, useMemo, useState } from 'react';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { memo, useEffect, useMemo } from 'react';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { PhotoSection } from '../../lib/photoDate';
 import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxViewer } from '../../lib/types';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoDragProvider } from '../../contexts/PhotoDragContext';
 import { usePhotoSelectionActions } from '../../contexts/photoSelection';
+import { usePhotoDragMove } from '../../hooks/usePhotoDragMove';
 import { LONG_PRESS_MS } from '../../lib/dragSelect';
 import { MissingPhotosError } from '../../lib/missingPhotos';
 import { getDateConfirmKind } from '../../lib/photoActions';
 import {
-  type SectionItems,
   canDragPhoto,
   dateFromKey,
   findSectionKey,
@@ -87,15 +87,12 @@ export const PhotoDragArea = memo(function PhotoDragArea({
       activationConstraint: { delay: LONG_PRESS_MS, tolerance: LONG_PRESS_TOLERANCE_PX },
     }),
   );
-  const [activeId, setActiveId] = useState<string | undefined>(undefined);
-  // 끄는 동안과 날짜 변경 요청이 도는 동안만 값이 있는 미리보기 순서
-  const [preview, setPreview] = useState<SectionItems | undefined>(undefined);
-  // 관리자가 다른 멤버 사진을 놓았을 때 확인을 기다리는 이동(확인 창이 열려 있는 동안만 값이 있음)
-  const [moveToConfirm, setMoveToConfirm] = useState(false);
+  // 미리보기 순서는 끄는 동안과 놓은 뒤 확인·요청이 끝날 때까지만 있음
+  // 날짜 변경 요청이 도는 동안(`moving`)은 새로 끌지 못하게 막음(미리보기와 요청 결과가 엉키지 않도록)
+  const dragMove = usePhotoDragMove();
+  const { activeId, preview, moving, reset } = dragMove;
   const openOverlay = useScreenOverlay();
   const { onToggle } = usePhotoSelectionActions();
-  // 날짜 변경 요청이 도는 동안은 새로 끌지 못하게 막음(미리보기와 요청 결과가 엉키지 않도록)
-  const [moving, setMoving] = useState(false);
 
   const photoById = useMemo(
     () =>
@@ -138,23 +135,15 @@ export const PhotoDragArea = memo(function PhotoDragArea({
     [undated, preview, photoById],
   );
 
-  const reset = () => {
-    setActiveId(undefined);
-    setPreview(undefined);
-    setMoveToConfirm(false);
-  };
-
   // 선택 모드가 끝나거나 저장·삭제가 시작되어 끌 수 없게 되면 끌던 상태를 걷음
-  const dragging = activeId !== undefined || preview !== undefined || moveToConfirm;
-  if (!enabled && !moving && dragging) reset();
+  if (!enabled && dragMove.state.phase !== 'idle' && !moving) reset();
   // 화면 상태가 바뀌어(끌 수 없게 됨) 창이 의미를 잃으면 모두 닫음
   useEffect(() => {
     if (!enabled) openOverlay.closeAll();
   }, [enabled, openOverlay]);
 
   const handleDragStart = ({ active }: DragStartEvent) => {
-    setActiveId(String(active.id));
-    setPreview(initialItems());
+    dragMove.start(String(active.id), initialItems());
   };
 
   const handleDragOver = ({ active, over }: DragOverEvent) => {
@@ -167,21 +156,22 @@ export const PhotoDragArea = memo(function PhotoDragArea({
     // 날짜 미확인 영역에는 놓을 수 없으므로 위로 지나가면 처음 자리로 돌림
     if (targetKey === UNDATED_SECTION_KEY) {
       const origin = initialItems();
-      if (findSectionKey(preview, photoId) !== findSectionKey(origin, photoId)) setPreview(origin);
+      if (findSectionKey(preview, photoId) !== findSectionKey(origin, photoId)) {
+        dragMove.setPreview(origin);
+      }
       return;
     }
     const list = preview[targetKey] ?? [];
     const index = overIsSection ? list.length : list.indexOf(overId);
-    setPreview(moveItem(preview, photoId, targetKey, index));
+    dragMove.setPreview(moveItem(preview, photoId, targetKey, index));
   };
 
   const move = async (photoId: string, fromKey: string, toKey: string) => {
-    setMoving(true);
+    dragMove.move();
     onMovingChange?.(true);
     try {
       await actions.changePhotoDates([photoId], dateFromKey(toKey));
     } catch (error) {
-      setMoving(false);
       onMovingChange?.(false);
       reset();
       // 끌던 사진이 그사이 지워졌으면 아무것도 바뀌지 않고 목록에서 빠짐
@@ -192,7 +182,6 @@ export const PhotoDragArea = memo(function PhotoDragArea({
       );
       return;
     }
-    setMoving(false);
     onMovingChange?.(false);
     reset();
     toast(PHOTO_BOX_MESSAGES.dateChanged, {
@@ -228,16 +217,15 @@ export const PhotoDragArea = memo(function PhotoDragArea({
     }
     const fromKey = findSectionKey(initialItems(), photoId);
     const toKey = preview ? findSectionKey(preview, photoId) : undefined;
-    setActiveId(undefined);
     // 원래 섹션이나 섹션 밖에 놓으면 아무것도 바꾸지 않음
     if (!over || fromKey === undefined || toKey === undefined || fromKey === toKey) {
-      setPreview(undefined);
+      reset();
       return;
     }
     // 확인이 필요하면 놓은 자리에 둔 채 확인 창을 띄움
     const photo = photoById.get(photoId);
     if (photo && needsDragConfirm(photo, viewer)) {
-      setMoveToConfirm(true);
+      dragMove.confirm();
       // 「취소」와 Esc만 onOpenChange로 오고(확인 버튼은 닫기 동작이 없음), 취소하면 놓은 자리를 걷고 원래 자리로 돌림
       openOverlay((rootProps, close) => (
         <DateChangeConfirmDialog
@@ -248,7 +236,6 @@ export const PhotoDragArea = memo(function PhotoDragArea({
             rootProps.onOpenChange(open);
           }}
           onConfirm={() => {
-            setMoveToConfirm(false);
             close();
             void move(photoId, fromKey, toKey);
           }}

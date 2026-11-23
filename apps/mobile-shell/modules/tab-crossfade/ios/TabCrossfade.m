@@ -2,7 +2,7 @@
 #import <WebKit/WebKit.h>
 #import <objc/runtime.h>
 
-// 탭 전환 시간(웹 AppTransitions의 TAB_CROSSFADE_DURATION_MS와 같은 값)
+// 탭 전환 시간(웹 app/(app)/_transitions/tabCrossfade.ts의 TAB_CROSSFADE_DURATION_MS와 같은 값)
 static const NSTimeInterval kTabCrossfadeDuration = 0.08;
 // 들어오는 탭 WebView가 다시 그려지기를 기다리는 최대 시간. 다시 붙은 WebView는 약 60ms 빈 화면이라 그린 뒤 페이드
 static const NSTimeInterval kWebViewPaintTimeout = 0.15;

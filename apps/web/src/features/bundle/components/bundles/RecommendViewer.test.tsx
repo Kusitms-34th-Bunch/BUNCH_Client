@@ -13,7 +13,7 @@ import {
 import { RecommendViewer } from './RecommendViewer';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 // 재생·제스처 라이브러리는 모양과 제스처를 검증하지 않으므로 mock
 vi.mock('swiper/react', () => ({

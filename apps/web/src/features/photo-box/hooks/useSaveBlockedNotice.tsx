@@ -2,7 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { photoUploadBridge } from '@/shared/bridge/client';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { SaveResult } from '../lib/types';
 import { AlbumPermissionDialog } from '../components/PhotoUploadDialogs';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';

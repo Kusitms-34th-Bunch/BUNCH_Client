@@ -2,7 +2,7 @@
 
 - 상태: accepted
 - 기록일: 2026-11-01
-- 구현 상태(2026-11-01 확인): 구현됨(#162). 웹은 `AppTransitions.tsx`의 탭 크로스페이드와 `MainTabPage`(탭 page 전환 대상), iOS 앱은 `apps/mobile-shell/modules/tab-crossfade`. 웹은 개발 서버 Chromium에서 사진함↔번치 양방향을 측정했다. iOS 시뮬레이터와 안드로이드 에뮬레이터에서 동작을 확인했고 실기기는 확인하지 않았다.
+- 구현 상태(2026-11-01 확인): 구현됨(#162). 웹은 `apps/web/src/app/(app)/_transitions/tabCrossfade.ts`의 탭 크로스페이드(`AppTransitions.tsx`가 등록)와 `MainTabPage`(탭 page 전환 대상), iOS 앱은 `apps/mobile-shell/modules/tab-crossfade`. 웹은 개발 서버 Chromium에서 사진함↔번치 양방향을 측정했다. iOS 시뮬레이터와 안드로이드 에뮬레이터에서 동작을 확인했고 실기기는 확인하지 않았다.
 
 ## 배경
 
@@ -39,7 +39,7 @@
 
 ## 영향
 
-- 탭 page는 `MainTabPage`(불투명 배경 + `data-ssgoi-transition`)로 감싸고, `AppTransitions.tsx`가 네 탭 사이 모든 이동에 `defineTransition`으로 만든 크로스페이드를 등록한다. SSGOI가 나가는 화면을 `position: absolute`로 겹치므로 나가는 화면은 z-index 2, 들어오는 화면은 z-index 1로 둔다.
+- 탭 page는 `MainTabPage`(불투명 배경 + `data-ssgoi-transition`)로 감싸고, `AppTransitions.tsx`가 네 탭 사이 모든 이동에 `defineTransition`으로 만든 크로스페이드(`_transitions/tabCrossfade.ts`)를 등록한다. SSGOI가 나가는 화면을 `position: absolute`로 겹치므로 나가는 화면은 z-index 2, 들어오는 화면은 z-index 1로 둔다.
 - SSGOI 7.4.1의 `LinearIntegrator`는 이름과 달리 남은 거리에 비례해 움직여(지수 감속) 80ms를 주면 300ms 넘게 끌린다. 그래서 등속 integrator를 직접 둔다. 라이브러리를 올릴 때 다시 확인한다.
 - 탭은 하루에도 여러 번 오가는 요소라 [motion.md](../../architecture/motion.md)의 빈도 기준상 모션을 최소화한다. 80ms 투명도 전환만 쓰는 것은 그 기준 안에서 고른 값이다.
 - iOS 쉘은 라이브러리 내부 클래스 이름(`RNSTabBarController`)과 그 클래스가 자기 자신을 delegate로 두는 구조에 기댄다. 바뀌면 추가가 조용히 빠져 즉시 전환으로 돌아가므로, react-native-screens를 올릴 때 다시 확인한다.

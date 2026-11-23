@@ -2,8 +2,8 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { toDomainId } from '@/shared/api/ids';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import type { KokPlace, PlaceMember, PlaceSource } from '../lib/types';
 
 const wireId = z.number().int().positive();

@@ -4,7 +4,7 @@ import { toast } from '@app/design-system';
 import { BunchSwitchSheet, type BunchSwitchItem } from '@app/design-system/web';
 import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchSummary } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { switchStatus } from '../lib/bunchSwitch';

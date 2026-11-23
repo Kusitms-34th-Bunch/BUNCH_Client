@@ -1,4 +1,5 @@
 'use client';
+// 크기 유지: 빼기 뒤 초점 이동·되돌리기 초점·더보기 시트가 같은 목록과 ref를 함께 쓰는 한 화면
 
 import {
   Button,
@@ -13,11 +14,12 @@ import { useEffect, useRef } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
+import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
 import type { KokPlace, PlaceMember } from '../lib/types';
 import { PLACES_MESSAGES } from '../constants/messages';
+import { placeSourceProps } from '../lib/places';
 import { PlaceFilterSkeleton, PlaceListSkeleton } from './BunchPlacesSkeleton';
 import { PlaceMemberFilter } from './PlaceMemberFilter';
 
@@ -191,18 +193,6 @@ export function BunchPlacesScreen({
     );
   };
 
-  const sourceProps = (place: KokPlace) => {
-    if (place.source.kind === 'bundle') {
-      return { source: place.source.bunchName, bundleTitle: place.source.bundleTitle };
-    }
-    return {
-      source:
-        place.source.kind === 'pick'
-          ? PLACES_MESSAGES.pickSource
-          : PLACES_MESSAGES.unavailableSource,
-    };
-  };
-
   const clickHandler = (place: KokPlace) => {
     if (place.source.kind === 'unavailable') {
       return () => openUnavailable(place);
@@ -215,6 +205,74 @@ export function BunchPlacesScreen({
     }
     // 광고에서 콕한 장소는 담아 온 번들이 없어 눌러도 이동하지 않음(기능명세 8.1.3 상세 동작 4)
     return undefined;
+  };
+
+  // 본문: 실패, 받는 중, 목록, 빈 상태 순
+  const body = () => {
+    if (onRetry) {
+      return (
+        <div className="gap-s8 px-padding-p8 pb-s23 flex min-h-full flex-col items-center justify-center">
+          <p role="alert" className="typography-body-3-semibold text-text-secondary text-center">
+            {PLACES_MESSAGES.error}
+          </p>
+          <Button variant="tertiary" size="md" onClick={onRetry}>
+            {PLACES_MESSAGES.retry}
+          </Button>
+        </div>
+      );
+    }
+    // 받는 중 안내는 감싸는 경계(`QueryBoundary`)의 늘 있는 상태 영역이 읽어 줌
+    if (!places) return <PlaceListSkeleton />;
+    // 보이는 카드가 모두 빠져도 다음 쪽이 남았으면 빈 상태 대신 감지 요소를 두어 이어 받음
+    if (visible.length > 0 || hasMore) {
+      return (
+        // Figma 4096:76101: 칩 아래 24(칩 영역 아래 여백 4 포함), 카드 사이 4, 좌우 16
+        <>
+          <ul
+            ref={listRef}
+            aria-busy={busy || loadingMore}
+            className="gap-s2 px-padding-p8 pb-s8 flex flex-col pt-6"
+          >
+            {visible.map((place) => (
+              <li key={place.id} data-place-id={place.id}>
+                <LocationCard
+                  placeName={place.name}
+                  address={place.address ?? ''}
+                  {...placeSourceProps(place)}
+                  onClick={clickHandler(place)}
+                  onMore={() => openMenu(place)}
+                />
+              </li>
+            ))}
+          </ul>
+          {hasMore ? (
+            <span key={listVersion} ref={observeMore} aria-hidden="true" className="block h-px" />
+          ) : null}
+        </>
+      );
+    }
+    return (
+      // Figma 4096:76353: 제목 16 medium, 설명 13 두 줄, 제목과 설명 4, 문구와 버튼 16, 버튼 40
+      <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">
+        <div className="gap-s8 flex flex-col items-center">
+          <div className="gap-s2 flex flex-col items-center text-center">
+            <h2
+              ref={emptyRef}
+              tabIndex={-1}
+              className="typography-body-1-medium text-text-secondary focus:outline-none"
+            >
+              {PLACES_MESSAGES.emptyTitle}
+            </h2>
+            <p className="typography-body-4-regular text-text-tertiary break-keep whitespace-pre-line">
+              {PLACES_MESSAGES.emptyDescription}
+            </p>
+          </div>
+          <Button size="md" className="w-full" onClick={onBrowseFeed}>
+            {PLACES_MESSAGES.browseFeed}
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -244,65 +302,7 @@ export function BunchPlacesScreen({
       <h1 ref={titleRef} className="sr-only">
         {PLACES_MESSAGES.pageTitle}
       </h1>
-      {onRetry ? (
-        <div className="gap-s8 px-padding-p8 pb-s23 flex min-h-full flex-col items-center justify-center">
-          <p role="alert" className="typography-body-3-semibold text-text-secondary text-center">
-            {PLACES_MESSAGES.error}
-          </p>
-          <Button variant="tertiary" size="md" onClick={onRetry}>
-            {PLACES_MESSAGES.retry}
-          </Button>
-        </div>
-      ) : !places ? (
-        // 받는 중 안내는 감싸는 경계(`QueryBoundary`)의 늘 있는 상태 영역이 읽어 줌
-        <PlaceListSkeleton />
-      ) : visible.length > 0 || hasMore ? (
-        // 보이는 카드가 모두 빠져도 다음 쪽이 남았으면 빈 상태 대신 감지 요소를 두어 이어 받음
-        // Figma 4096:76101: 칩 아래 24(칩 영역 아래 여백 4 포함), 카드 사이 4, 좌우 16
-        <>
-          <ul
-            ref={listRef}
-            aria-busy={busy || loadingMore}
-            className="gap-s2 px-padding-p8 pb-s8 flex flex-col pt-6"
-          >
-            {visible.map((place) => (
-              <li key={place.id} data-place-id={place.id}>
-                <LocationCard
-                  placeName={place.name}
-                  address={place.address ?? ''}
-                  {...sourceProps(place)}
-                  onClick={clickHandler(place)}
-                  onMore={() => openMenu(place)}
-                />
-              </li>
-            ))}
-          </ul>
-          {hasMore ? (
-            <span key={listVersion} ref={observeMore} aria-hidden="true" className="block h-px" />
-          ) : null}
-        </>
-      ) : (
-        // Figma 4096:76353: 제목 16 medium, 설명 13 두 줄, 제목과 설명 4, 문구와 버튼 16, 버튼 40
-        <div className="px-padding-p8 pb-s23 flex min-h-full items-center justify-center">
-          <div className="gap-s8 flex flex-col items-center">
-            <div className="gap-s2 flex flex-col items-center text-center">
-              <h2
-                ref={emptyRef}
-                tabIndex={-1}
-                className="typography-body-1-medium text-text-secondary focus:outline-none"
-              >
-                {PLACES_MESSAGES.emptyTitle}
-              </h2>
-              <p className="typography-body-4-regular text-text-tertiary break-keep whitespace-pre-line">
-                {PLACES_MESSAGES.emptyDescription}
-              </p>
-            </div>
-            <Button size="md" className="w-full" onClick={onBrowseFeed}>
-              {PLACES_MESSAGES.browseFeed}
-            </Button>
-          </div>
-        </div>
-      )}
+      {body()}
     </PageShell>
   );
 }

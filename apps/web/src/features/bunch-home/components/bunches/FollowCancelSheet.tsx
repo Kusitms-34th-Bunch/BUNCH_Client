@@ -1,7 +1,7 @@
 'use client';
 
 import { ConfirmSheet, ProfileImage } from '@app/design-system/web';
-import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 
 type FollowCancelSheetProps = ScreenOverlayProps & {
   bunchName: string;

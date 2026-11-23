@@ -22,7 +22,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, prefetch: () =>
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
 const toastAfterNavigation = vi.fn<(_message: string) => void>();
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({
   toastAfterNavigation: (message: string) => toastAfterNavigation(message),
 }));
 vi.mock('@app/design-system', async (importOriginal) => ({

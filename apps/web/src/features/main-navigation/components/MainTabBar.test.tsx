@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { onMainTabGesture } from '@/shared/lib/mainTabGesture';
+import { onMainTabGesture } from '@/shared/lib/navigation/mainTabGesture';
 import { MainTabBar } from './MainTabBar';
 
 const route = vi.hoisted(() => ({ pathname: '/feed' }));

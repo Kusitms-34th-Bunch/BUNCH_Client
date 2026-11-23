@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { FEED_PATHS } from '@/features/feed/constants/paths';
-import { bundleHeroKey } from '@/shared/lib/heroKeys';
+import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import { BundleDetailRoute } from './BundleDetailRoute';
 
 // 지금 번치 명의로 보는 화면이라 검색에서 제외(다른 번치 프로필과 같음)

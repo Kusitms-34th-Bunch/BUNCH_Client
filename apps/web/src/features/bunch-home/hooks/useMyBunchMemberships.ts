@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';

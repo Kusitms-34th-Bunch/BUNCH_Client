@@ -3,8 +3,8 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { bffApi, requestData } from '@/shared/api/bffApi';
 import { toDomainId } from '@/shared/api/ids';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { clearPendingInvitation } from '@/shared/lib/pendingInvitation';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
 
 const ownerBunchSchema = z.object({
   bunchId: z.number().int().positive(),

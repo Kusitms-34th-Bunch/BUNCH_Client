@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import { bundleDetailSchema, toFeedBundleDetail, toFeedBunch } from './bundleDetail';
 
 const person = (memberId: number | null, nickname: string, profileAvailable = true) => ({

@@ -3,8 +3,8 @@
 import { cn } from '@app/design-system';
 import { useEffect } from 'react';
 import { LazyLottie } from '@/shared/components/loading/LazyLottie';
-import { playHaptic } from '@/shared/lib/haptic';
 import { createLottieLoader } from '@/shared/lib/lottieLoader';
+import { playHaptic } from '@/shared/lib/native/haptic';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { useInView } from '../hooks/useInView';
 

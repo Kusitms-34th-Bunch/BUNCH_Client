@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog } from '@app/design-system';
-import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 
 type LeaveDraftDialogProps = ScreenOverlayProps & {

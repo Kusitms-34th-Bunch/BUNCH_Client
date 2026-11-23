@@ -8,9 +8,8 @@ import {
   LineSparklesSmallIcon,
   TextButton,
 } from '@app/design-system';
-import { BundleRecommendSheet } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
@@ -20,17 +19,18 @@ import {
   PAGE_LOADING_LABEL,
   PageLoading,
 } from '@/shared/components/loading/PageLoading';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES, MAX_RECOMMEND_CHIPS } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
-import { getCardDate } from '../../lib/recommendation';
+import { toRecommendCards } from '../../lib/recommendation';
 import { BundleLoadError } from '../BundleLoadError';
 import { SelectPhotoList } from '../SelectPhotoList';
+import { RecommendOverlay } from './RecommendOverlay';
 
 type BundleSelectProps = {
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
@@ -120,14 +120,7 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
         <RecommendOverlay
           {...rootProps}
           initialPickedId={select.pickedId}
-          bundles={recommendations.map((item) => ({
-            id: item.id,
-            imageSrc: item.imageSrc,
-            title: item.title,
-            members: [...item.memberNames],
-            photoCount: item.photoCount,
-            ...getCardDate(item, currentYear),
-          }))}
+          bundles={toRecommendCards(recommendations, currentYear)}
           onPick={(id) => {
             void pickRecommendation(id).then((result) => {
               if (result === 'failed') return;
@@ -297,28 +290,5 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
         inert={blocked}
       />
     </PageShell>
-  );
-}
-
-type RecommendOverlayProps = Omit<
-  ComponentProps<typeof BundleRecommendSheet>,
-  'selectedId' | 'onSelect'
-> & {
-  initialPickedId: string | undefined;
-  onPick: (_id: string) => void;
-};
-
-/** 시트가 열린 채 카드를 눌러도(사진이 사라진 추천) 선택 모양이 바뀌게 함(overlay는 열 때의 값으로 그려짐) */
-function RecommendOverlay({ initialPickedId, onPick, ...props }: RecommendOverlayProps) {
-  const [pickedId, setPickedId] = useState(initialPickedId);
-  return (
-    <BundleRecommendSheet
-      {...props}
-      selectedId={pickedId}
-      onSelect={(id) => {
-        setPickedId(id);
-        onPick(id);
-      }}
-    />
   );
 }

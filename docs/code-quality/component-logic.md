@@ -31,7 +31,7 @@
 - 서버 데이터를 쓰는 화면이면 container·presenter 분리부터 본다(`docs/architecture/component-patterns.md` 「Container, presentational component, feature hook」).
 - 검토는 SRP로 한다. 파일 안의 흐름마다 "무엇이 바뀌면 이 코드를 고치는가"를 적어 보고, 변경 이유가 둘 이상이면 위 판단 순서대로 순수 함수·단일 책임 hook·하위 컴포넌트로 나눈다.
 - 나눈 결과가 화면 상태를 여러 개 주고받아야만 동작하면(응집도가 낮아지면) 나누지 않는다. 이때는 파일 맨 위에 `// 크기 유지: <이유>`를 한 줄 남긴다.
-- 예외: route별 설정 표(`AppTransitions` 등), 스키마 계약(`packages/bridge`), 가짜 서버 데이터·handler(`src/mocks/`), 생성 파일. 이 파일들은 크기보다 한곳에 모여 있는 것이 읽기 쉽다. 팀원이 작업 중인 `features/bundle/`은 임시로 빼고, 그 작업이 머지된 뒤 정리한다.
+- 예외: route별 설정 표(`AppTransitions` 등), 스키마 계약(`packages/bridge`), 가짜 서버 데이터·handler(`src/mocks/`), 생성 파일. 이 파일들은 크기보다 한곳에 모여 있는 것이 읽기 쉽다.
 - `yarn lint`의 `check:file-size`(`apps/web/scripts/check-file-size.mjs`)가 `apps/web/src`의 `.ts`·`.tsx`(테스트·스토리 제외) 가운데 300줄을 넘었는데 예외도 이유 주석도 없는 파일을 경고로 알린다(막지 않음). 컴포넌트·hook이 아닌 api·lib 파일도 같은 기준으로 본다.
 
 ## 판단 순서

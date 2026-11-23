@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchMemberActions } from '../../lib/members';
 import type { BunchMember, BunchRole } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';

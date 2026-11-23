@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { markPageLoading } from '@/shared/lib/pageLoadingState';
+import { markPageLoading } from '@/shared/lib/navigation/pageLoadingState';
 import { LoadingRipple } from './LoadingRipple';
 
 /** 짧은 동작·흐름 안의 단계에서 덮개를 늦게 띄우는 기준 시간(이 안에 끝나면 덮지 않음, motion.md 로딩 상태) */

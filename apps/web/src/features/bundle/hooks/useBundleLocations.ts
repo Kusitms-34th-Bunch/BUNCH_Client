@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DraftLocation } from '../lib/types';
-import { applyBundleLocationIntent, readLocationRejection } from '../api/bundles';
+import { applyBundleLocationIntent, readLocationRejection } from '../api/locations';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
 import {
   applyLocationOps,

@@ -1,3 +1,5 @@
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
+
 export const MY_MESSAGES = {
   title: 'MY',
   profileEdit: '프로필 수정',
@@ -21,13 +23,13 @@ export const MY_MESSAGES = {
     description: '오픈채팅 상담 채널로 이동해요.',
     confirm: '열기',
     // 기능명세서 7.5.1 예외 처리
-    failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    failed: COMMON_MESSAGES.temporaryFailure,
   },
   logout: {
     title: '로그아웃할까요?',
     confirm: '로그아웃',
     // 기능명세서 7.5.2 예외 처리
-    failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    failed: COMMON_MESSAGES.temporaryFailure,
   },
   cancel: '취소',
   // 약관 및 개인정보(화면 설계서 MY(4), 기능명세서 7.4.4·7.4.5)
@@ -49,7 +51,7 @@ export const MY_MESSAGES = {
         confirm: '동의 철회',
       },
       // 기능명세서 7.4.4·7.4.5 예외 처리(동의 상태 불러오기·저장 실패)
-      failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+      failed: COMMON_MESSAGES.temporaryFailure,
     },
   },
   // 회원 탈퇴(화면 설계서 MY(5))
@@ -86,7 +88,7 @@ export const MY_MESSAGES = {
     // 「다음」 확인 중 낭독용(Figma에 보이는 문구 없음)
     checking: '넘길 번치를 확인하는 중이에요',
     // 기능명세서 7.6.4 예외 처리
-    failed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    failed: COMMON_MESSAGES.temporaryFailure,
   },
   // 관리자 권한 이전(화면 설계서 MY(5) 4~5번). 화면 제목은 Figma에 없어 낭독용
   transfer: {
@@ -109,16 +111,16 @@ export const MY_MESSAGES = {
   // 개인 프로필 수정(화면 설계서 MY(1) 7·8번)
   profileEditTitle: '개인 프로필 수정',
   // 기능명세서 7.1.1·7.2.1 예외 처리(프로필 불러오기 실패)
-  profileLoadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  profileLoadFailed: COMMON_MESSAGES.temporaryFailure,
   profileEditSubmit: '프로필 수정하기',
   profileEdited: '프로필을 수정했어요.',
   // 기능명세서 7.2.7 예외 처리(저장 실패)
-  profileSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  profileSaveFailed: COMMON_MESSAGES.temporaryFailure,
   profileSaving: '프로필을 저장하는 중이에요',
   // 바꾼 내용이 있는데 뒤로 가기(기능명세서 7.2.1 상세 7)
   profileLeave: {
-    title: '저장하지 않고 나갈까요?',
-    description: '변경한 내용이 반영되지 않아요.',
+    title: COMMON_MESSAGES.leaveWithoutSavingTitle,
+    description: COMMON_MESSAGES.leaveWithoutSavingDescription,
     confirm: '나가기',
   },
   // 알림 설정(화면 설계서 MY(3))
@@ -127,8 +129,8 @@ export const MY_MESSAGES = {
     push: { title: '앱 푸시 알림', description: '푸시를 꺼도 앱 알림 목록에는 그대로 쌓여요.' },
     typesLabel: '받을 알림',
     // 기능명세서 7.3.1·7.3.2 예외 처리(설정값 불러오기·저장 실패)
-    loadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-    saveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+    loadFailed: COMMON_MESSAGES.temporaryFailure,
+    saveFailed: COMMON_MESSAGES.temporaryFailure,
     // 스크린 리더 안내(Figma에 보이는 문구 없음): 설정값을 받는 동안, 기기 알림 권한이 바뀌었을 때
     loading: '알림 설정을 불러오는 중이에요',
     deviceOffAnnounce: '기기 알림이 꺼져 있어 알림 설정을 바꿀 수 없어요',

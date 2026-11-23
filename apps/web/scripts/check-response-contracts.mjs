@@ -6,8 +6,6 @@ import { fileURLToPath } from 'node:url';
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const MARKER = '계약 미연결:';
-// ponytail: 팀원 작업 중인 feature는 표시를 달 수 없어 통째로 제외, 그 작업이 머지되면 지우고 표시 추가
-const PENDING_DIRS = ['features/bundle/'];
 
 const sourceFiles = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -130,7 +128,6 @@ const missing = new Set();
 const unresolved = new Set();
 for (const file of sourceFiles(SRC)) {
   const rel = relative(SRC, file);
-  if (PENDING_DIRS.some((dir) => rel.startsWith(dir))) continue;
   const text = readFileSync(file, 'utf8');
   for (const match of text.matchAll(/\brequestData\s*\(/g)) {
     const start = match.index + match[0].length;

@@ -2,7 +2,7 @@
 
 import { PlacePickSheet } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
-import type { ScreenOverlayProps } from '@/shared/hooks/useScreenOverlay';
+import type { ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { FeedPlace } from '../../lib/types';
 import { bundleKoksQueryOptions, findKok } from '../../queries/kok';
 

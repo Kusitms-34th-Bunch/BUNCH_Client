@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { appBridge, hasNativeMethod, isNativeShell, nativeShellTab } from '@/shared/bridge/client';
-import { useModalOpen } from '@/shared/hooks/useModalOpen';
+import { useModalOpen } from '@/shared/hooks/overlay/useModalOpen';
 import { MAIN_TAB_PATHS, NATIVE_TAB_ITEMS } from '../constants/tabs';
 
 // 판정 기준은 (main) route group이 아니라 탭 경로 4개와 정확히 같은지. (main) 안에 하위 경로를 추가하면 함께 수정

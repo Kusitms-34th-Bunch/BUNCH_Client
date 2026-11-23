@@ -4,7 +4,7 @@ import {
   PENDING_INVITATION_TTL_MS,
   readPendingInvitation,
   savePendingInvitation,
-} from './pendingInvitation';
+} from '@/shared/lib/pendingInvitation';
 
 const NOW = 1_700_000_000_000;
 

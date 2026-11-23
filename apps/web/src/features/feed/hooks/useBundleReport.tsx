@@ -4,7 +4,7 @@ import { isApiError } from '@app/api-core';
 import { LineAlertMediumIcon, toast } from '@app/design-system';
 import { MoreMenuSheet, ReportSheet } from '@app/design-system/web';
 import { isWireId } from '@/shared/api/ids';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import { FEED_MESSAGES as text } from '../constants/messages';
 import { useReportMutation } from '../queries/report';

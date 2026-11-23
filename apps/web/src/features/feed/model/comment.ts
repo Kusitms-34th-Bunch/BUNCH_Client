@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CHARACTER_TYPES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { CHARACTER_TYPES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import type { FeedComment } from '../lib/types';
 import { badgeColorOf, formatCommentDate } from '../lib/comments';
 import { imageOrUndefined } from './feed';

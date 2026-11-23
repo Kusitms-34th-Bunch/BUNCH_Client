@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
 
 export type SocialProvider = 'kakao' | 'google' | 'apple';
 /** 사용자가 소셜 로그인 창을 닫은 경우는 `cancelled`로 반환(화면에서는 실패와 같은 토스트) */
@@ -11,7 +12,7 @@ export type SignIn = (_provider: SocialProvider) => Promise<SocialLoginResult>;
 
 export const LOGIN_FAILURE_MESSAGE = '로그인에 실패했어요. 다시 시도해 주세요';
 /** 로그인은 됐지만 가입 상태를 읽지 못해 어디로 보낼지 모를 때(기획 1.1.1의 세션 확인 실패 문구) */
-export const STATUS_CHECK_FAILURE_MESSAGE = '일시적인 오류가 발생했어요. 다시 시도해 주세요';
+export const STATUS_CHECK_FAILURE_MESSAGE = COMMON_MESSAGES.temporaryFailure;
 
 export const LOGIN_PENDING_MESSAGE = '로그인하는 중이에요';
 

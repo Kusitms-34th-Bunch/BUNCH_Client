@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft, DraftPhoto } from '../lib/types';
 import type { PhotoPicks } from '../model/bundle';
-import { readPickConflict, saveBundlePhotoPick } from '../api/bundles';
+import { readPickConflict, saveBundlePhotoPick } from '../api/photoPicks';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { toDraft } from '../lib/draftMapping';
 import { pickIntents } from '../lib/pickIntents';

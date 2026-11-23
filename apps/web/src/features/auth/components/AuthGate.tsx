@@ -8,8 +8,11 @@ import { appBridge, isHandedOffToNativeTabs, isNativeShell } from '@/shared/brid
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
-import { usePushDeviceSync } from '@/shared/hooks/usePushDeviceSync';
-import { getPageLoadingCount, subscribePageLoading } from '@/shared/lib/pageLoadingState';
+import { usePushDeviceSync } from '@/shared/hooks/native/usePushDeviceSync';
+import {
+  getPageLoadingCount,
+  subscribePageLoading,
+} from '@/shared/lib/navigation/pageLoadingState';
 import { readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import { useClearPersistedQueriesWhen, usePersistedOwnerReady } from '@/shared/query/persistence';
 import { SIGNUP_PATHS } from '../constants/paths';

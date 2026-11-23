@@ -1,5 +1,5 @@
 import { ProfileImage } from '@app/design-system/web';
-import { type CharacterType, defaultBunchImage } from '@/shared/lib/bunchProfile';
+import { type CharacterType, defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 
 type BunchProfileImageProps = {
   /** 번치 대표 이미지 주소. 없으면 번치 성격별 기본 이미지 */

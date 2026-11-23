@@ -12,8 +12,8 @@ import {
   PAGE_LOADING_LABEL,
   PageLoading,
 } from '@/shared/components/loading/PageLoading';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
