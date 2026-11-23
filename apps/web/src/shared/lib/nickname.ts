@@ -1,8 +1,9 @@
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
 import type { PasteResult } from './filteredPaste';
 
 export const NICKNAME_MAX_LENGTH = 12;
 
-export const NICKNAME_INVALID_MESSAGE = '특수문자를 제외한 영문, 한글만 사용할 수 있어요.';
+export const NICKNAME_INVALID_MESSAGE = COMMON_MESSAGES.nameCharactersInvalid;
 export const NICKNAME_TAKEN_MESSAGE = '이미 사용 중인 닉네임이에요';
 /** 붙여넣기로 12자를 넘은 닉네임(기능명세 1.4.3, 직접 입력은 12자에서 멈춤) */
 export const NICKNAME_TOO_LONG_MESSAGE = '입력 가능한 글자수를 초과했어요';

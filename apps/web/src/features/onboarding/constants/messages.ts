@@ -1,8 +1,10 @@
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
+
 /** 번치 만들기·사진 변경·초대 링크·초대 참여의 공통 안내(기획 2.2.10·2.3.2·2.4.1·2.5.4) */
 export const ONBOARDING_MESSAGES = {
-  temporaryFailure: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  bunchLimit: '참여할 수 있는 번치는 최대 10개예요.',
-  invalidInvitation: '유효하지 않은 링크입니다.',
+  temporaryFailure: COMMON_MESSAGES.temporaryFailure,
+  bunchLimit: COMMON_MESSAGES.bunchLimit,
+  invalidInvitation: COMMON_MESSAGES.invalidInvitation,
   fullBunch: '최대 인원을 초과한 번치입니다.',
   alreadyMember: '이미 참여 중인 번치예요.',
 } as const;

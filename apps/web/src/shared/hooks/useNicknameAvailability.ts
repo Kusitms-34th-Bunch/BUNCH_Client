@@ -2,13 +2,14 @@
 
 import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
 import type { NameCheckResult } from '../api/nameAvailability';
 
 export type NicknameAvailability = 'idle' | 'checking' | NameCheckResult | 'failed';
 /** 닉네임 확인 호출: 사용 가능·사용 중·금칙어 포함 */
 export type CheckNickname = (_nickname: string) => Promise<NameCheckResult>;
 
-export const CHECK_FAILURE_MESSAGE = '일시적인 오류가 발생했어요. 다시 시도해 주세요';
+export const CHECK_FAILURE_MESSAGE = COMMON_MESSAGES.temporaryFailure;
 const DEBOUNCE_MS = 500;
 
 type Result = { nickname: string; status: NameCheckResult | 'failed' };

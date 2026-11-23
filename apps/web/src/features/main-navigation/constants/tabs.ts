@@ -1,9 +1,11 @@
+import { APP_PATHS } from '@/shared/constants/paths';
+
 // 탭 경로는 탭 화면이 정해지기 전 임시 값(docs/specs/bottom-navigation.md 확인할 항목)
 export const MAIN_TAB_PATHS = {
-  feed: '/feed',
-  photos: '/photos',
-  bunch: '/bunch',
-  my: '/my',
+  feed: APP_PATHS.feed,
+  photos: APP_PATHS.photos,
+  bunch: APP_PATHS.bunch,
+  my: APP_PATHS.my,
 } as const;
 
 export type MainTabId = keyof typeof MAIN_TAB_PATHS;

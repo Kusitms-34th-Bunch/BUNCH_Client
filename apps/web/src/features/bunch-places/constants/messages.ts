@@ -1,3 +1,5 @@
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
+
 /** 콕한 장소 화면 문구(기능명세 8.1.1~8.1.9, 화면설계서 4164:91159) */
 export const PLACES_MESSAGES = {
   pageTitle: '콕한 장소',
@@ -16,7 +18,7 @@ export const PLACES_MESSAGES = {
   addressCopied: '주소를 복사했어요.',
   removed: '콕한 장소에서 뺐어요',
   undo: '되돌리기',
-  error: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  error: COMMON_MESSAGES.temporaryFailure,
   retry: '다시 시도',
   loading: '콕한 장소를 불러오는 중이에요',
 } as const;

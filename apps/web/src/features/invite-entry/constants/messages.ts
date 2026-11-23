@@ -1,8 +1,10 @@
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
+
 /** 초대 진입 페이지의 안내(기능명세 2.5.4와 같은 문구) */
 // 429 `REQUEST_002`(공개 조회는 IP당 분당 60회)는 기획 문구가 없어 일시적 오류 문구로 처리함(같은 IP를 쓰는 인앱 브라우저에서는 즉시 재시도가 다시 429일 수 있음)
 export const INVITE_ENTRY_MESSAGES = {
-  invalidInvitation: '유효하지 않은 링크입니다.',
-  temporaryFailure: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  invalidInvitation: COMMON_MESSAGES.invalidInvitation,
+  temporaryFailure: COMMON_MESSAGES.temporaryFailure,
   // iOS가 아닌 기기(Android·PC)에서 「앱 설치하기」를 눌렀을 때. 기획 원문이 없는 임시 문구(#489)
   iosOnly: '지금은 iOS 앱만 지원해요.',
 } as const;
