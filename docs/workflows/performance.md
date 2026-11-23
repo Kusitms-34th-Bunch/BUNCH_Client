@@ -84,7 +84,7 @@ apps/web은 아직 Server Action을 쓰지 않지만, 도입하면 아래 기준
 
 - 대상 route, 측정 방식, device·network·cache 조건, 변경 전후 결과, 남은 불확실성을 PR 또는 작업 기록에 남긴다.
 - 최적화 전에 원인을 먼저 지목한다. LCP라면 어떤 요소와 어느 단계가 지연을 차지하는지, INP라면 어떤 상호작용이 가장 느렸고 시간이 어디서 쓰였는지, CLS라면 어떤 요소가 밀렸는지 먼저 밝힌다. 원인을 지목하지 않은 최적화 목록은 실제로 그 지표를 개선했다는 근거가 아니다.
-- 실사용자 지표(p75 등 field data)와 로컬·CI에서 측정한 lab 진단을 같은 것으로 취급하지 않는다. lab 결과는 하나의 device·network 조건에서의 진단 샘플이며, field data 없이 "실사용자 체감이 좋아졌다"고 단정하지 않는다.
+- 실사용자 지표(p75 등 field data)와 로컬·CI에서 측정한 lab 진단을 같은 것으로 취급하지 않는다. lab 결과는 하나의 device·network 조건에서의 진단 샘플이며, field data 없이 "실사용자 체감이 좋아졌다"고 단정하지 않는다. 운영 field data는 PostHog `web_vitals` 이벤트(화면별 p75, 동의한 회원만, ADR 023)로 본다.
 - LCP, FCP, CLS, TBT 같은 browser metric과 bundle/resource 크기는 같은 문제로 취급하지 않는다. 사용자 증상에 맞는 지표를 고른다.
 - 외부 API, CDN image, third-party SDK, browser extension, local cache가 결과에 미치는 영향을 기록한다. 제어할 수 없는 병목을 코드 최적화 효과로 주장하지 않는다.
 - async 영역은 가능한 크기를 예약해 layout shift를 피하고, 초기 화면에 불필요한 SDK·asset은 실제 진입 시점에 맞춰 지연한다.
