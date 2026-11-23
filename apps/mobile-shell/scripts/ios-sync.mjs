@@ -51,6 +51,21 @@ if (process.argv.includes('--clean') || !existsSync('ios')) {
   if (readOrEmpty(STAMP).toString() !== podInputsHash()) run('pod', ['install'], 'ios');
 }
 
+// prebuild는 Info.plist에만 버전을 씀. Xcode General 탭이 보여 주는 빌드 설정도 app.json 값으로 맞춤(템플릿 1.0이 남아 헷갈리지 않게)
+const { expo } = JSON.parse(readFileSync('app.json', 'utf8'));
+const PBXPROJ = 'ios/Bunch.xcodeproj/project.pbxproj';
+if (existsSync(PBXPROJ)) {
+  writeFileSync(
+    PBXPROJ,
+    readFileSync(PBXPROJ, 'utf8')
+      .replace(/MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${expo.version};`)
+      .replace(
+        /CURRENT_PROJECT_VERSION = [^;]+;/g,
+        `CURRENT_PROJECT_VERSION = ${expo.ios.buildNumber};`,
+      ),
+  );
+}
+
 // Expo의 pod install은 실패해도 경고만 내므로, CocoaPods가 끝까지 설치한 경우(두 lock이 같음)에만 기록
 const podsInstalled =
   existsSync('ios/Podfile.lock') &&

@@ -32,7 +32,7 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 
 ### 버전과 빌드 번호
 
-앱 버전은 `app.json`의 `version`, iOS 빌드 번호는 `ios.buildNumber`에 둔다(2026-11-20). prebuild(`ios:sync`)가 이 값을 `Info.plist`의 `CFBundleShortVersionString`·`CFBundleVersion`에 숫자로 쓴다. 그래서 Xcode General 탭의 Build 칸을 바꿔도 Archive에는 반영되지 않는다.
+앱 버전은 `app.json`의 `version`, iOS 빌드 번호는 `ios.buildNumber`에 둔다(2026-11-20). prebuild(`ios:sync`)가 이 값을 `Info.plist`의 `CFBundleShortVersionString`·`CFBundleVersion`에 숫자로 쓴다. 그래서 Xcode General 탭의 Version·Build 칸을 바꿔도 Archive에는 반영되지 않는다. General 탭이 보여 주는 빌드 설정(`MARKETING_VERSION`·`CURRENT_PROJECT_VERSION`)은 prebuild가 바꾸지 않아 템플릿 값(1.0)이 남으므로, `ios:sync`가 끝에 이 두 값도 `app.json`으로 맞춘다(2026-11-23).
 
 - Xcode Archive로 올릴 때: `ios.buildNumber`를 App Store Connect에 올린 같은 버전의 마지막 번호보다 크게 올리고 커밋한 뒤 `pnpm ios:sync`를 하고 Archive한다. 버전을 바꾸면(`version`) 빌드 번호는 다시 1부터 써도 된다.
 - EAS로 올릴 때: `eas.json`이 `appVersionSource: remote`·`autoIncrement`라 EAS가 번호를 관리하고 `ios.buildNumber`는 쓰지 않는다. 두 방법을 섞으면 번호가 겹칠 수 있으니 EAS 첫 빌드 전에 `pnpm dlx eas-cli@latest build:version:set -p ios`로 마지막 번호에 맞춘다.
