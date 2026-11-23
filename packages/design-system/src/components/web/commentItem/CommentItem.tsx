@@ -21,6 +21,8 @@ export type CommentItemProps = Omit<ComponentProps<'div'>, 'children'> & {
   date?: string | undefined;
   /** 본문. 줄바꿈 유지 */
   content?: string | undefined;
+  /** 본문(삭제 안내 포함) 요소의 id. 바깥 요소가 `aria-describedby`로 본문을 읽게 할 때 */
+  contentId?: string | undefined;
   /** 답글이면 들여쓰기와 꺾인 화살표 */
   reply?: boolean | undefined;
   /** 삭제된 댓글·답글: 「작성자」·「삭제된 댓글입니다」만 보이고 배지·날짜·답글 버튼은 숨김 */
@@ -51,6 +53,7 @@ export const CommentItem = ({
   bunchColor = 'brand',
   date,
   content,
+  contentId,
   reply = false,
   deleted = false,
   replyCount = 0,
@@ -147,9 +150,14 @@ export const CommentItem = ({
             ) : null}
           </div>
           {deleted ? (
-            <p className="typography-body-4-regular text-text-quaternary">{DELETED_CONTENT}</p>
+            <p id={contentId} className="typography-body-4-regular text-text-quaternary">
+              {DELETED_CONTENT}
+            </p>
           ) : content ? (
-            <p className="typography-body-3-regular text-text-secondary wrap-break-word whitespace-pre-line">
+            <p
+              id={contentId}
+              className="typography-body-3-regular text-text-secondary wrap-break-word whitespace-pre-line"
+            >
               {content}
             </p>
           ) : null}

@@ -12,9 +12,9 @@ import {
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { bundleHeroKey } from '@/shared/lib/heroKeys';
 import type { FeedBundleDetail, FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
-import { bundleHeroKey } from '../../constants/paths';
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { usePhotoPinchZoom } from '../../hooks/usePhotoPinchZoom';
 import { hideLeftMemberImages } from '../../lib/deletedUserImage';

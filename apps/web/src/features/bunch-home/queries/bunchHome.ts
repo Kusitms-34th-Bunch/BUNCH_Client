@@ -127,6 +127,8 @@ export const useSwitchBunchMutation = () => {
       ]);
       const me = await queryClient.fetchQuery({ ...myProfileQueryOptions(), staleTime: 0 });
       if (me.bunch?.id !== bunchId) throw new Error('default bunch did not change');
+      // 전환한 번치(이름으로 안내할 때 씀)
+      return me.bunch;
     },
     // 실패해도 서버에 저장됐을 수 있어 기본 번치를 서버 기준으로 다시 맞춤
     onError: () => queryClient.invalidateQueries({ queryKey: sharedKeys.me() }),

@@ -40,7 +40,9 @@ describe('useOpenBundle', () => {
     );
 
     const opened = open();
-    await act(() => vi.advanceTimersByTimeAsync(400));
+    await act(() => vi.advanceTimersByTimeAsync(399));
+    expect(push).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1));
 
     await expect(opened).resolves.toBe(false);
     expect(push).toHaveBeenCalledWith(HREF);

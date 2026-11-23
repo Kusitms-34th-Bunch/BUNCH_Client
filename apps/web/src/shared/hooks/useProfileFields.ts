@@ -19,6 +19,7 @@ import {
   NICKNAME_TOO_LONG_MESSAGE,
   normalizeNickname,
 } from '../lib/nickname';
+import { useCurrentYear } from './useCurrentYear';
 import {
   CHECK_FAILURE_MESSAGE,
   type CheckNickname,
@@ -79,19 +80,22 @@ export function useProfileFields(
   const nicknameConfirmed =
     nicknameValid && !rejectedAtSave && (availability === 'idle' || availability === 'available');
 
-  const currentYear = new Date().getFullYear();
+  // 올해를 모르는 첫 렌더(서버 렌더·hydration)는 범위 검사를 미룸
+  const currentYear = useCurrentYear();
   const birthYearComplete = isCompleteBirthYear(birthYear);
   const birthYearIncomplete = birthYear !== '' && !birthYearComplete;
   // 4자리를 다 쓴 뒤 범위를 벗어났거나, 포커스를 벗어났는데 4자리가 아닐 때 안내(두 경우 같은 문구, 기능명세서 1.4.5 상세 5·7.2.6)
   const birthYearError =
-    (birthYearComplete && !isBirthYearInRange(birthYear, currentYear)) ||
+    (birthYearComplete && currentYear !== null && !isBirthYearInRange(birthYear, currentYear)) ||
     (birthYearIncomplete && birthYearBlurred)
       ? BIRTH_YEAR_ERROR_MESSAGE
       : undefined;
 
   return {
     values: { nickname, birthYear, gender },
-    isValid: nicknameConfirmed && isValidBirthYear(birthYear, currentYear),
+    isValid:
+      nicknameConfirmed &&
+      (currentYear === null ? birthYear === '' : isValidBirthYear(birthYear, currentYear)),
     /** 닉네임만 유효한지(출생연도·성별 칸을 보이지 않을 때 저장 가능 판단) */
     isNicknameValid: nicknameConfirmed,
     nicknameError,

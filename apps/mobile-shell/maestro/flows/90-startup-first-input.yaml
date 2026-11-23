@@ -1,8 +1,6 @@
 appId: kr.bunch.app
 name: 앱 시작 직후 처음 누른 탭과 버튼이 바로 동작한다
-# 지금은 시작 직후 한동안 탭 바와 웹 버튼 입력이 모두 무시됨(QA 2차 F-3). 고치면 known-issue 태그를 지워 CI에 넣음
-tags:
-  - known-issue
+# 스플래시 덮개가 사라지는 동안 입력을 먹던 문제(QA 2차 F-3, #520). 덮는 동안 아래 화면은 숨겨져, 덮개가 흐려지기 시작한 뒤 누름
 ---
 - runFlow: ../subflows/launch-fresh.yaml
 - tapOn: '콕한 장소'

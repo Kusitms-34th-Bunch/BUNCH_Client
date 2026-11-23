@@ -2,9 +2,16 @@ import type * as DesignSystem from '@app/design-system';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type * as BridgeClient from '@/shared/bridge/client';
 import { BunchInvite } from './BunchInvite';
 
 const captureException = vi.hoisted(() => vi.fn());
+// 앱 쉘의 공유 시트(쉘 흉내일 때만 불림)
+const nativeShare = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/bridge/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof BridgeClient>()),
+  shareBridge: { share: nativeShare },
+}));
 vi.mock('@sentry/nextjs', () => ({ captureException }));
 
 const replace = vi.fn();
@@ -80,6 +87,42 @@ describe('BunchInvite', () => {
     await flush();
 
     expect(share).toHaveBeenCalledWith({ url: LINK });
+  });
+
+  it('앱 쉘에서는 웹 공유가 없어도 공유 버튼을 주고 앱의 공유 시트로 보낸다', async () => {
+    setNavigator({ share: undefined });
+    nativeShare.mockReset().mockResolvedValue(undefined);
+    try {
+      vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() });
+      render(<BunchInvite inviteLink={LINK} leaveHref={LEAVE} />);
+      await userEvent.click(screen.getByRole('button', { name: '초대 링크 복사' }));
+
+      shareAction().onClick();
+      await flush();
+
+      expect(nativeShare).toHaveBeenCalledWith({ url: LINK });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('앱 쉘에서 공유 시트가 실패하면 직접 전송 안내와 오류를 남긴다', async () => {
+    setNavigator({ share: undefined });
+    const error = new Error('share failed');
+    nativeShare.mockReset().mockRejectedValue(error);
+    try {
+      vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() });
+      render(<BunchInvite inviteLink={LINK} leaveHref={LEAVE} />);
+      await userEvent.click(screen.getByRole('button', { name: '초대 링크 복사' }));
+
+      shareAction().onClick();
+      await flush();
+
+      expect(captureException).toHaveBeenCalledWith(error);
+      expect(toast).toHaveBeenLastCalledWith('공유하지 못했어요. 복사한 링크를 직접 보내주세요.');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('공유를 지원하지 않으면 복사 성공 토스트에 공유 버튼을 제공하지 않는다', async () => {

@@ -12,6 +12,7 @@ import { PageHeader } from '@app/design-system/web';
 import { captureException } from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
 import { useId } from 'react';
+import { isNativeShell, shareBridge } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { copyText } from '@/shared/lib/clipboard';
@@ -45,14 +46,19 @@ export function BunchInvite({
   const leave = () =>
     backOnLeave && window.history.length > 1 ? router.back() : router.replace(leaveHref);
 
+  // 쉘은 네이티브 공유 시트(웹 navigator.share가 없어도 됨), 브라우저는 navigator.share가 있을 때만
+  const canShare = () => isNativeShell() || typeof navigator.share === 'function';
+
   const share = async () => {
     if (!inviteLink) return;
-    if (!navigator.share) {
+    if (!canShare()) {
       toast('공유를 지원하지 않는 환경이에요. 복사한 링크를 직접 보내주세요.');
       return;
     }
     try {
-      await navigator.share({ url: inviteLink });
+      // 쉘은 네이티브 공유 시트(실패는 reject), 브라우저는 Web Share
+      if (isNativeShell()) await shareBridge.share({ url: inviteLink });
+      else await navigator.share({ url: inviteLink });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       captureException(error);
@@ -68,10 +74,7 @@ export function BunchInvite({
       return;
     }
     toast('초대 링크가 복사되었어요.', {
-      action:
-        typeof navigator.share === 'function'
-          ? { label: '공유', onClick: () => void share() }
-          : undefined,
+      action: canShare() ? { label: '공유', onClick: () => void share() } : undefined,
     });
   };
 

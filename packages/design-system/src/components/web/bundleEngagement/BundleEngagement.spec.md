@@ -15,7 +15,7 @@
 
 ## Public API
 
-- Props: `liked`·`likeCount`·`onLike`(필수), `commentCount`(필수), `onComment`(없으면 댓글 수는 글자), `members`·`onMembers`, native `<div>` 속성.
+- Props: `liked`·`likeCount`·`onLike`(필수), `commentCount`(필수), `onComment`(없으면 댓글 수는 글자, 있으면 버튼에 `data-engagement="comment"`를 붙여 화면이 누르기 시작한 곳을 구분할 수 있음), `members`·`onMembers`, native `<div>` 속성.
 
 ## 접근성
 

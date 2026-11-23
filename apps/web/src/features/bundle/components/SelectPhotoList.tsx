@@ -9,6 +9,7 @@ import { UndatedPhotos } from '@/features/photo-box/components/UndatedPhotos';
 import { PhotoSelectionProvider } from '@/features/photo-box/contexts/PhotoSelectionContext';
 import { filterByMember, splitPhotos } from '@/features/photo-box/lib/photoDate';
 import { ALL_MEMBERS, type PhotoBoxData } from '@/features/photo-box/lib/types';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { BUNDLE_SELECT_MESSAGES } from '../constants/selectMessages';
 import { SelectDateSection } from './SelectDateSection';
 
@@ -21,7 +22,7 @@ type SelectPhotoListProps = {
   onMemberChange: (_memberId: string) => void;
   onToggle: (_photoId: string) => void;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   /** 번들을 만드는 동안처럼 목록을 누를 수 없게 함 */
   inert?: boolean | undefined;
 };
@@ -37,9 +38,11 @@ export function SelectPhotoList({
   memberId,
   onMemberChange,
   onToggle,
-  currentYear = new Date().getFullYear(),
+  currentYear: currentYearProp,
   inert,
 }: SelectPhotoListProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   const { sections, undated } = useMemo(
     () => splitPhotos(filterByMember(data.photos, memberId), currentYear),
     [data.photos, memberId, currentYear],

@@ -2,16 +2,43 @@
 // pod install은 다음 빌드를 크게 늘려서(약 200초) 필요할 때만 실행. `--clean`이면 ios/를 새로 만듦(pod install 포함)
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 
 process.env.DEVELOPER_DIR ||= '/Applications/Xcode.app/Contents/Developer';
 const STAMP = 'ios/.pods-lock-hash';
-const POD_INPUTS = ['pnpm-lock.yaml', 'ios/Podfile', 'ios/Podfile.properties.json'];
+// 앱 안 네이티브 모듈(modules/*)을 더하거나 설정·소스 파일을 바꿔도 lock은 그대로라 이것도 입력으로 봄
+const localModuleInputs = () =>
+  existsSync('modules')
+    ? readdirSync('modules', { recursive: true })
+        .map(String)
+        // 설정·podspec 내용과 ios 소스 파일 목록(podspec의 소스 경로는 pod install 때 펼쳐져 새 파일도 다시 설치해야 함)
+        .filter(
+          (path) =>
+            path.endsWith('expo-module.config.json') ||
+            path.endsWith('.podspec') ||
+            isModuleSource(path),
+        )
+        .sort()
+        .map((path) => `modules/${path}`)
+    : [];
+const POD_INPUTS = () => [
+  'pnpm-lock.yaml',
+  'ios/Podfile',
+  'ios/Podfile.properties.json',
+  ...localModuleInputs(),
+];
 const run = (cmd, args, cwd) => execFileSync(cmd, args, { stdio: 'inherit', cwd });
 const readOrEmpty = (path) => (existsSync(path) ? readFileSync(path) : '');
+// 소스 파일은 있고 없음(경로)만 봄. 내용까지 보면 코드를 고칠 때마다 pod install(약 200초)이 돎
+const isModuleSource = (path) => /\/ios\/.+\.(swift|m|mm|h)$/.test(path);
 const podInputsHash = () => {
   const hash = createHash('sha256');
-  for (const path of POD_INPUTS) hash.update(readOrEmpty(path)).update('\0');
+  for (const path of POD_INPUTS())
+    hash
+      .update(path)
+      .update('\0')
+      .update(isModuleSource(path) ? '' : readOrEmpty(path))
+      .update('\0');
   return hash.digest('hex');
 };
 
@@ -22,6 +49,21 @@ if (process.argv.includes('--clean') || !existsSync('ios')) {
   run('pnpm', ['exec', 'expo', 'prebuild', '--platform', 'ios', '--no-clean']);
   // prebuild는 직접 추가한 네이티브 패키지를 감지하지 못해 pod install을 건너뜀
   if (readOrEmpty(STAMP).toString() !== podInputsHash()) run('pod', ['install'], 'ios');
+}
+
+// prebuild는 Info.plist에만 버전을 씀. Xcode General 탭이 보여 주는 빌드 설정도 app.json 값으로 맞춤(템플릿 1.0이 남아 헷갈리지 않게)
+const { expo } = JSON.parse(readFileSync('app.json', 'utf8'));
+const PBXPROJ = 'ios/Bunch.xcodeproj/project.pbxproj';
+if (existsSync(PBXPROJ)) {
+  writeFileSync(
+    PBXPROJ,
+    readFileSync(PBXPROJ, 'utf8')
+      .replace(/MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${expo.version};`)
+      .replace(
+        /CURRENT_PROJECT_VERSION = [^;]+;/g,
+        `CURRENT_PROJECT_VERSION = ${expo.ios.buildNumber};`,
+      ),
+  );
 }
 
 // Expo의 pod install은 실패해도 경고만 내므로, CocoaPods가 끝까지 설치한 경우(두 lock이 같음)에만 기록

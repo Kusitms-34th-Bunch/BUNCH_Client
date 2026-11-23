@@ -48,6 +48,8 @@ export const BundleEngagement = ({
       {onComment ? (
         <button
           type="button"
+          // 화면이 누르기 시작한 곳을 구분할 수 있게
+          data-engagement="comment"
           onClick={onComment}
           className="gap-s1 typography-body-3-regular text-text-tertiary focus-visible:outline-border-brand rounded-r2 relative inline-flex shrink-0 cursor-pointer touch-manipulation items-center before:absolute before:-inset-x-1 before:-inset-y-2.5 focus-visible:outline-2"
         >

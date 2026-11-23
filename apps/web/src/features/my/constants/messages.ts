@@ -4,6 +4,7 @@ export const MY_MESSAGES = {
   // 닉네임을 아직 받지 못했을 때 프로필 행 링크의 낭독 이름
   profileEditOwn: '내 프로필 수정',
   profileLoading: '프로필을 불러오는 중이에요',
+  profileLoaded: '프로필을 불러왔어요',
   sections: { notifications: '알림', terms: '서비스 정보', support: '고객지원' },
   menu: {
     notifications: '알림 설정',

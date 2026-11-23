@@ -1,5 +1,6 @@
 import type { AppBridge, AppBridgeMethods, AppPostMessageSchema, ShareParams } from '@app/bridge';
 import { linkBridge } from '@webview-bridge/web';
+import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 
 /** 일반 브라우저용 폴백 제공, 메서드 추가 시 packages/bridge 계약과 함께 갱신 필요 */
 export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
@@ -65,6 +66,12 @@ export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({
     feedbackHaptic: () => Promise.resolve(),
     // 브라우저는 웹 영상으로 로그인 배경을 그림
     setNativeLoginBackground: () => Promise.resolve(false),
+    // 브라우저에는 푸시로 여는 일이 없음
+    takeOpenedPush: () => Promise.resolve(null),
+    // 브라우저·이전 쉘은 웹 안에서 전환 모션(부르는 쪽이 hasNativeMethod로 확인)
+    beginScreenSwitch: () => Promise.resolve(false),
+    finishScreenSwitch: () => Promise.resolve(),
+    cancelScreenSwitch: () => Promise.resolve(),
   },
 });
 
@@ -124,6 +131,39 @@ export const openTabPath = (href: string, push: (_href: string) => void) =>
     if (!selected) push(href);
   });
 
+/**
+ * 흐름(번치 만들기·참여)을 마치고 탭 첫 화면으로 가는 이동(`replace`)
+ * iOS 쉘에서 다른 탭이면 그 탭으로 전환하고, 이 WebView는 자기 탭 첫 화면으로 되돌림(탭 바와 화면이 어긋나거나 흐름 화면이 남지 않게)
+ */
+export const replaceTabPath = (
+  href: string,
+  replace: (_href: string) => void,
+  { toast }: { toast?: string | undefined } = {},
+) =>
+  // 안내를 띄울 쉘 토스트가 없는 이전 쉘은 전환하지 않음(가려질 WebView에 안내가 떠 보이지 않으므로)
+  void (
+    toast && !hasNativeMethod('showNativeToast') ? Promise.resolve(false) : selectShellTabFor(href)
+  ).then((selected) => {
+    const own = SHELL_TAB_IDS.find((tab) => tab === nativeShellTab());
+    const target = SHELL_TAB_IDS.find((tab) => href === `/${tab}`);
+    // 이 WebView는 곧 가려지므로 결과 안내는 전환한 탭에 쉘 토스트로(웹 토스트와 같은 3초)
+    if (selected && target && toast) {
+      void appBridge
+        .showNativeToast({
+          tab: target,
+          id: `${target}-switch-${Date.now()}`,
+          message: toast,
+          duration: TAB_SWITCH_TOAST_MS,
+          fullWidth: true,
+        })
+        .catch(() => {});
+    } else if (toast) toastAfterNavigation(toast);
+    replace(selected && own ? `/${own}` : href);
+  });
+
+// 디자인 시스템 토스트 기본 표시 시간(액션 없음)과 같은 값
+const TAB_SWITCH_TOAST_MS = 3000;
+
 /** 사용자 선택 대기 중에는 타임아웃 없이 갤러리 응답 대기, 기존 브리지의 대기 정책 유지 */
 export const galleryBridge = linkBridge<AppBridge, AppPostMessageSchema>({
   timeout: 0,
@@ -162,6 +202,12 @@ export const permissionBridge = linkBridge<AppBridge, AppPostMessageSchema>({
 export const pushDeviceBridge = linkBridge<AppBridge, AppPostMessageSchema>({
   timeout: 10_000,
   throwOnError: ['getPushDeviceRegistration', 'getPushInstallationId'],
+});
+
+/** 공유 시트는 사용자가 대상을 고를 때까지 기다리므로 타임아웃 없음, 실패는 reject(사용자 취소는 쉘이 오류 없이 끝냄) */
+export const shareBridge = linkBridge<AppBridge, AppPostMessageSchema>({
+  timeout: 0,
+  throwOnError: ['share'],
 });
 
 /** 클립보드 읽기 전용: iOS는 사용자가 붙여넣기를 허용할 때까지 기다리므로 타임아웃 없음(복사는 기본 `appBridge`의 타임아웃을 씀) */

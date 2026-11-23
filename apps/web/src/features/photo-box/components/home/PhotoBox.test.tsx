@@ -15,6 +15,7 @@ import {
   readPhotoBoxSelection,
   rememberPhotoBoxSelection,
 } from '../../lib/selectionResume';
+import { uploadStatusStore } from '../../lib/uploadStatus';
 import { PhotoBox } from './PhotoBox';
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -59,6 +60,10 @@ beforeEach(() => {
   clearPhotoBoxEntry();
   clearPhotoBoxSelection();
   vi.clearAllMocks();
+  uploadStatusStore.reset();
+  // jsdom에는 blob 주소 만들기가 없어 상태 줄 썸네일 주소를 고정 값으로 대신함
+  URL.createObjectURL = vi.fn(() => 'blob:thumbnail');
+  URL.revokeObjectURL = vi.fn();
   bridge.pickGalleryImages.mockResolvedValue({ status: 'picked', photos: [{ id: 'p1' }] });
   // JPEG 시작 바이트(FF D8 FF)로 시작하는 작은 이미지
   bridge.readPickedPhoto.mockResolvedValue({
@@ -82,12 +87,22 @@ describe('PhotoBox 사진 올리기', () => {
     await user.click(await screen.findByRole('button', { name: '사진 올리기' }));
     await user.click(await screen.findByRole('button', { name: '앨범에서 선택' }));
 
-    // 올리는 중임을 스크린 리더에게만 알리고, 화면 전체 로딩이나 잠금은 없음
-    await waitFor(() => expect(screen.getByText(PHOTO_BOX_MESSAGES.uploading)).toBeInTheDocument());
+    // 멤버 칩 아래 상태 줄에 진행을 보이고 스크린 리더에게도 알리며, 화면 전체 로딩이나 잠금은 없음
+    expect(await screen.findByRole('progressbar', { name: /1장 업로드 중\.\.$/ })).toBeTruthy();
+    expect(screen.getByText(PHOTO_BOX_MESSAGES.uploading)).toBeInTheDocument();
     expect(screen.queryByTestId('lottie')).toBeNull();
     expect(screen.getByRole('button', { name: '선택' }).closest('[inert]')).toBeNull();
 
-    await waitFor(() => expect(screen.queryByText(PHOTO_BOX_MESSAGES.uploading)).toBeNull());
+    // 끝나면 결과 문구가 상태 줄에 보이고(둘째 줄 안내 포함) 결과 토스트는 띄우지 않음
+    const result = '1장의 사진을 사진함에 추가했어요.';
+    await waitFor(() =>
+      expect(
+        screen.getByText(`${result} ${PHOTO_BOX_MESSAGES.uploadStatusBundleHint}`),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByText(result)).toBeInTheDocument();
+    expect(screen.getByText(PHOTO_BOX_MESSAGES.uploadStatusBundleHint)).toBeInTheDocument();
+    expect(toastSpy.mock.calls.map(([message]) => message)).not.toContain(result);
   });
 });
 

@@ -34,3 +34,23 @@ describe('hasNativeMethod', () => {
     expect(client.hasNativeMethod('setNativeTabBarVisibleFor')).toBe(true);
   });
 });
+
+describe('replaceTabPath(쉘 토스트가 있는 쉘)', () => {
+  it('다른 탭으로 전환하면 결과 안내를 그 탭의 쉘 토스트로 보내고, 이 WebView는 자기 탭 첫 화면으로 되돌린다', async () => {
+    const client = await loadClient(['showNativeToast']);
+    const postMessage = vi.fn();
+    (window as BridgeWindow).ReactNativeWebView = { postMessage };
+    sessionStorage.setItem('bunch-shell-tab', 'bunch');
+    // 탭 전환은 폴백 메서드라 결과만 바꿔 끼움
+    vi.spyOn(client.appBridge, 'selectNativeTab').mockResolvedValue(true);
+    const replace = vi.fn();
+
+    client.replaceTabPath('/feed', replace, { toast: '이미 참여 중인 번치예요.' });
+
+    await vi.waitFor(() => expect(replace).toHaveBeenCalledWith('/bunch'));
+    const sent = postMessage.mock.calls.map(([message]) => String(message)).join('\n');
+    expect(sent).toContain('showNativeToast');
+    expect(sent).toContain('이미 참여 중인 번치예요.');
+    sessionStorage.clear();
+  });
+});

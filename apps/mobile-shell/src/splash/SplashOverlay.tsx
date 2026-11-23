@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
 import { SPLASH_MODULES } from './modules';
 import { hideNativeSplash, onWebReady } from './state';
@@ -38,11 +39,13 @@ function eased(
 }
 
 /**
- * 앱을 켤 때 웹이 뜰 때까지 덮는 스플래시. 모듈 48개가 날아와 bunch 워드마크가 되는 4초 연출을 반복
+ * 앱을 켤 때 웹이 뜰 때까지 화면(children)을 덮는 스플래시. 모듈 48개가 날아와 bunch 워드마크가 되는 4초 연출을 반복
  * 웹이 준비되면 그 회차의 조립이 끝난 뒤 페이드로 사라짐. 동작 줄이기면 완성된 워드마크만 보임
  */
-export function SplashOverlay() {
+export function SplashOverlay({ children }: { children: ReactNode }) {
   const [done, setDone] = useState(false);
+  // 흐려지기 시작함: 이때부터 누름은 아래 화면으로(QA 2차 F-3, 사라지는 덮개가 첫 입력을 먹음)
+  const [leaving, setLeaving] = useState(false);
   const [still, setStill] = useState<boolean | null>(null);
   const clock = useRef(new Animated.Value(0)).current;
   const fade = useRef(new Animated.Value(1)).current;
@@ -83,6 +86,7 @@ export function SplashOverlay() {
       const wait = Math.max(frameMs(ASSEMBLED_FRAME) - inCycle, 0);
       timer = setTimeout(() => {
         loop?.stop();
+        setLeaving(true);
         Animated.timing(fade, { toValue: 0, duration: FADE_MS, useNativeDriver: true }).start(() =>
           setDone(true),
         );
@@ -105,29 +109,47 @@ export function SplashOverlay() {
     [clock],
   );
 
-  if (done) return null;
+  // 덮는 동안 아래 화면은 보조 기술·UI 테스트에서 숨김(보이지 않는 화면을 읽거나 눌러 입력이 사라지지 않게, iOS·Android)
+  const covering = !done && !leaving;
   return (
-    <Animated.View
-      style={[styles.root, { opacity: fade }]}
-      // 같은 색 화면이 덮은 뒤에 네이티브 스플래시를 닫아 깜빡이지 않게
-      onLayout={hideNativeSplash}
-      // 장식 화면이라 보조 기술에서 숨김(그 아래 웹 화면이 곧 읽힘)
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-    >
-      <View style={styles.wordmark}>
-        {modules.map(({ translateX, translateY, opacity }, index) => (
-          <Animated.View
-            key={index}
-            style={[styles.module, { opacity, transform: [{ translateX }, { translateY }] }]}
-          />
-        ))}
+    <>
+      <View
+        style={styles.content}
+        accessibilityElementsHidden={covering}
+        importantForAccessibility={covering ? 'no-hide-descendants' : 'auto'}
+      >
+        {children}
       </View>
-    </Animated.View>
+      {done ? null : (
+        <Animated.View
+          style={[styles.root, { opacity: fade }]}
+          // 같은 색 화면이 덮은 뒤에 네이티브 스플래시를 닫아 깜빡이지 않게
+          onLayout={hideNativeSplash}
+          // 흐려지기 시작하면 누름·초점을 아래 화면으로
+          pointerEvents={leaving ? 'none' : 'auto'}
+          accessible={!leaving}
+          accessibilityLabel="번치를 불러오는 중"
+          accessibilityState={{ busy: true }}
+          importantForAccessibility={leaving ? 'no-hide-descendants' : 'yes'}
+        >
+          {/* 브랜드 파란 바탕이라 상태 바 아이콘을 흰색으로(흐려지기 시작하면 공용 설정으로) */}
+          {leaving ? null : <StatusBar style="light" />}
+          <View style={styles.wordmark}>
+            {modules.map(({ translateX, translateY, opacity }, index) => (
+              <Animated.View
+                key={index}
+                style={[styles.module, { opacity, transform: [{ translateX }, { translateY }] }]}
+              />
+            ))}
+          </View>
+        </Animated.View>
+      )}
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  content: { flex: 1 },
   root: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',

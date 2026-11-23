@@ -56,6 +56,16 @@ export const useOpenNotificationMutation = (bunchId: string | undefined) => {
   });
 };
 
+/** 푸시로 연 알림의 읽음 처리: 번치가 알림마다 달라(수신함 `target.bunchId`) 변수로 받음. 실패해도 알리지 않음 */
+export const useOpenPushNotificationMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bunchId, notificationId }: { bunchId: string; notificationId: string }) =>
+      openBunchNotification(bunchId, notificationId),
+    onSettled: (_data, _error, { bunchId }) => void refreshUnread(queryClient, bunchId),
+  });
+};
+
 /** 알림 모두 읽음. 실패하면 공통 토스트 */
 export const useReadAllNotificationsMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();

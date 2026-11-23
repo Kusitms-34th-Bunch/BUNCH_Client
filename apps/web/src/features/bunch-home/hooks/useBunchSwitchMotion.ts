@@ -1,12 +1,19 @@
 import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react';
+import { appBridge, hasNativeMethod, nativeShellTab } from '@/shared/bridge/client';
 
-// 인스타 계정 전환 실측(약 330ms): 지금 화면은 왼쪽으로 밀려 나가고, 새 화면은 90% 둥근 카드로 오른쪽에서 들어와 커짐
-// 맞는 SSGOI 프리셋이 없고(drill은 더보기 진입과 같아 보이고 film은 세로) SSGOI 7은 화면 안 전환이 없어 Web Animations로 직접 정의(motion.md)
-export const BUNCH_SWITCH_MS = 330;
-const ENTER_SCALE = 0.9;
+// 인스타 계정 전환 녹화(2026-11-23) 기준: 지금 화면은 왼쪽으로 나가고 새 화면이 92% 둥근 카드로 들어온 뒤(앞 36%) 커짐
+// iOS 쉘은 상태 바·시스템 탭 바까지 쉘이 네이티브로 움직임. 맞는 SSGOI 프리셋이 없어 Web Animations로 직접 정의(motion.md)
+export const BUNCH_SWITCH_MS = 470;
+const SLIDE_PART = 0.36;
+const ENTER_SCALE = 0.92;
 const CARD_RADIUS = '1.5rem';
 // 늦게 그려지거나 같은 번치로 끝나 새 화면이 오지 않으면 복제본을 치우는 상한(기다리는 동안 화면 입력이 막히므로 짧게)
 const SNAPSHOT_CAP_MS = 3000;
+// 시트에서 골랐으면 시트가 다 닫힌 뒤 쉘이 화면을 찍게 기다리는 최대 시간(닫히는 시트가 사진에 남지 않게)
+const SHEET_CLOSE_WAIT_MS = 500;
+
+// 쉘 화면 전체 전환의 진행: 시트 닫힘 대기 → 덮음 → 끝 알림. aborted면 덮이는 즉시 치움
+type NativeCover = { stage: 'waiting' | 'covered' | 'finishing'; aborted: boolean };
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -25,8 +32,20 @@ const stopWaiting = ({ root, timer }: Snapshot) => {
 
 export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, bunchId: string) {
   const snapshot = useRef<Snapshot | null>(null);
+  // iOS 쉘이 화면 전체를 덮는 전환(새 번치가 그려지면 쉘에 끝을 알림)
+  const nativeCover = useRef<NativeCover | null>(null);
+
+  // 쉘 전환을 버림: 이미 덮였으면 치우고, 아직이면 덮이는 즉시 치우게 표시
+  const abortNative = () => {
+    const current = nativeCover.current;
+    nativeCover.current = null;
+    if (!current) return;
+    current.aborted = true;
+    if (current.stage === 'covered') void appBridge.cancelScreenSwitch().catch(() => {});
+  };
 
   const cancel = () => {
+    abortNative();
     if (!snapshot.current) return;
     stopWaiting(snapshot.current);
     snapshot.current.clone.remove();
@@ -35,6 +54,35 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
 
   const begin = () => {
     cancel();
+    if (!prefersReducedMotion() && hasNativeMethod('beginScreenSwitch')) {
+      const current: NativeCover = { stage: 'waiting', aborted: false };
+      nativeCover.current = current;
+      const startedAt = performance.now();
+      const cover = () => {
+        if (current.aborted) return;
+        if (
+          document.querySelector('[data-bottom-sheet]') !== null &&
+          performance.now() - startedAt < SHEET_CLOSE_WAIT_MS
+        ) {
+          requestAnimationFrame(cover);
+          return;
+        }
+        void appBridge
+          .beginScreenSwitch(nativeShellTab())
+          .catch(() => false)
+          .then((covered) => {
+            if (!covered) {
+              if (nativeCover.current === current) nativeCover.current = null;
+              return;
+            }
+            // 덮는 사이 새 번치가 먼저 그려졌거나 취소됐으면 움직이지 않고 치움
+            if (current.aborted) void appBridge.cancelScreenSwitch().catch(() => {});
+            else current.stage = 'covered';
+          });
+      };
+      cover();
+      return;
+    }
     // PageShell 바깥 요소(헤더 포함 화면 전체)
     const root = anchorRef.current?.closest<HTMLElement>('[data-app-background]');
     // Web Animations를 모르는 환경(테스트 DOM 등)은 모션 없이 바로 바뀜
@@ -74,6 +122,7 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
   // 기다리는 사이 화면이 사라지면(새 번치를 받지 못해 오류·로딩 화면으로 바뀜) 붙잡은 화면도 치움
   useEffect(
     () => () => {
+      abortNative();
       if (!snapshot.current) return;
       stopWaiting(snapshot.current);
       snapshot.current.clone.remove();
@@ -84,6 +133,28 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
 
   // 새 번치가 그려진 직후(그리기 전) 두 화면을 함께 움직임
   useLayoutEffect(() => {
+    // 쉘이 덮었으면 새 화면이 실제로 그려진 뒤(두 프레임) 쉘이 움직임. 아직 덮기 전이면 모션 없이 바뀜
+    const native = nativeCover.current;
+    if (native) {
+      if (native.stage !== 'covered') {
+        abortNative();
+        return;
+      }
+      native.stage = 'finishing';
+      nativeCover.current = null;
+      let sent = false;
+      let frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => {
+          sent = true;
+          void appBridge.finishScreenSwitch().catch(() => {});
+        });
+      });
+      // 알리기 전에 정리되면(화면이 사라짐) 덮개를 남기지 않게 취소
+      return () => {
+        cancelAnimationFrame(frame);
+        if (!sent) void appBridge.cancelScreenSwitch().catch(() => {});
+      };
+    }
     const current = snapshot.current;
     const root = anchorRef.current?.closest<HTMLElement>('[data-app-background]');
     if (!current || !root) return;
@@ -104,7 +175,7 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
         {
           transform: `translateX(0) scale(${ENTER_SCALE})`,
           borderRadius: CARD_RADIUS,
-          offset: 0.6,
+          offset: SLIDE_PART,
         },
         { transform: 'none', borderRadius: '0' },
       ],

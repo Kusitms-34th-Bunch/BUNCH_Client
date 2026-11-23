@@ -16,6 +16,10 @@ export const FEED_PATHS = {
   /** 동적 route의 전환 경계 id(규칙과 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
   transitionIds: {
     bundle: '/bundles/detail',
+    // 말풍선 진입(같은 상세, 피드 카드가 열리는 zoom을 쓰려고 이름만 나눔)
+    bundleComments: '/bundles/detail/comments',
+    // 상세의 번치 이름 → 번치 화면: 격자 zoom 규칙 대신 새 화면으로 들어가는 drill을 쓰려고 이동 직전에 상세 틀의 전환 id를 바꿈
+    bundleToBunch: '/bundles/detail/to-bunch',
     bundleVisibility: '/bundles/visibility',
     bundleEdit: '/bundles/edit',
     bundleEditPhotoAdd: '/bundles/edit/photo-add',
@@ -23,6 +27,3 @@ export const FEED_PATHS = {
     member: '/members/profile',
   },
 } as const;
-
-/** 피드 카드 사진과 번들 상세 첫 사진을 잇는 화면 전환 공유 요소 키(SSGOI hero, BundlePhoto `heroKey`) */
-export const bundleHeroKey = (bundleId: string) => `bundle-photo-${bundleId}`;

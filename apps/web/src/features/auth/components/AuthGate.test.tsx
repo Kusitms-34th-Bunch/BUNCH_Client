@@ -39,7 +39,9 @@ const renderGate = () =>
   );
 
 const protectedScreen = () => screen.queryByText('보호된 화면');
-const loadingOverlay = () => document.querySelector('.bg-overlay-dim-subtle');
+// 화면 대신 로딩만 보이는 상태(덮개는 1초가 지나야 그려져 가드의 상태 안내로 판정)
+const loadingOverlay = () =>
+  screen.queryByText(/^(로그인 상태를 확인하는 중이에요|화면을 이동하는 중이에요)$/);
 
 describe('AuthGate', () => {
   // 포커스 테스트가 중간에 실패해도 다음 테스트에 포커스 상태가 남지 않게 되돌림
@@ -182,6 +184,8 @@ describe('AuthGate', () => {
 
     expect(loadingOverlay()).not.toBeNull();
     expect(screen.getByRole('status').textContent).toBe('로그인 상태를 확인하는 중이에요');
+    // 확인은 보통 1초 안이라 그 전에는 덮지 않음(앱 탭 WebView가 열릴 때 덮개가 번쩍이지 않게)
+    expect(document.querySelector('.bg-overlay-dim-subtle')).toBeNull();
     expect(protectedScreen()).toBeNull();
     expect(replace).not.toHaveBeenCalled();
 
@@ -304,6 +308,8 @@ describe('AuthGate', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/login'));
     expect(protectedScreen()).toBeNull();
     expect(loadingOverlay()).not.toBeNull();
+    // 한 번 도착한 뒤 다시 로딩이면 열린 모달 등을 바로 막도록 덮개를 늦추지 않음
+    expect(document.querySelector('.bg-overlay-dim-subtle')).not.toBeNull();
   });
 
   it('약관에 동의하지 않은 가입 중 사용자가 다른 화면에 들어오면 약관으로 보낸다', async () => {

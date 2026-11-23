@@ -18,6 +18,7 @@ import {
   slide,
   type TransitionDirection,
   WebAnimation,
+  zoom,
 } from '@ssgoi/react/view-transitions';
 import { type ReactNode, useMemo } from 'react';
 import {
@@ -137,7 +138,7 @@ const bunchDrill = drill(
     override: { forward: tuneBunchDrill, backward: tuneBunchDrill },
   },
 );
-// 두 화면이 서로 앞으로 들어가는 사이(그리드 → 상세, 상세의 번치 → 번치 탭 등)의 drill
+// 두 화면이 서로 앞으로 들어가는 사이(알림 ↔ 번치 탭·번들 상세, 다른 번치 ↔ 팔로우 목록 등)의 drill
 // from·to가 같은 두 경로라 양방향 점수가 같아 SSGOI가 기록 방향(push는 앞, 뒤로 가기는 뒤)을 씀
 const historyDrill = (a: string, b: string): SsgoiTransitionRule => ({
   from: [a, b],
@@ -170,6 +171,47 @@ const photoHero = hero(
   { type: 'fade', variant: 'smooth' },
   { override: { forward: tuneFeedBundleHero, backward: guardHero } },
 );
+// 피드 말풍선 → 번들 상세(댓글): 눌린 카드가 상세 화면 전체로 열리는 zoom static(뒤 피드는 그대로, 뒤로 가면 카드로 접힘)
+// 상세를 이미 댓글 위치로 내려 두고 열어 사진이 이어지는 hero 대신 씀(motion.md). 나가는 화면은 경계 id로 찾아 다른 전환과 같은 표식
+type ZoomGroup = 'overlay' | 'content' | 'chrome' | 'background' | 'tile';
+const guardZoom =
+  (opening: boolean, behindIds: readonly string[], frontId: string) =>
+  ({
+    animation,
+    context,
+  }: {
+    animation: MultiAnimation<ZoomGroup>;
+    context: { positionedParent: HTMLElement };
+  }) => {
+    const groups: ZoomGroup[] = ['tile', 'content', 'overlay', 'chrome', 'background'];
+    const track = groups.map((group) => animation.select(group).getMotionTracks()[0]).find(Boolean);
+    const last = (id: string) =>
+      [
+        ...context.positionedParent.querySelectorAll<HTMLElement>(
+          `[data-ssgoi-transition="${id}"]`,
+        ),
+      ].at(-1);
+    const behind = behindIds.map(last).find(Boolean);
+    const front = last(frontId);
+    if (opening) guardPair(front, behind, track);
+    else guardPair(behind, front, track);
+  };
+const zoomOver = (behindIds: readonly string[], frontId: string) =>
+  zoom(
+    { type: 'static' },
+    {
+      override: {
+        forward: guardZoom(true, behindIds, frontId),
+        backward: guardZoom(false, behindIds, frontId),
+      },
+    },
+  );
+const feedCommentsZoom = zoomOver([MAIN_TAB_PATHS.feed], FEED_PATHS.transitionIds.bundleComments);
+// 번치 탭·다른 번치 프로필 격자 → 번들 상세: 인스타 프로필 그리드 → 게시물(SSGOI showcase Instagram 「Grid → Post」 zoom static)
+const bunchGridZoom = zoomOver(
+  [BUNCH_HOME_PATHS.home, BUNCH_HOME_PATHS.transitionIds.otherBunch],
+  FEED_PATHS.transitionIds.bundle,
+);
 // sheet 프리셋은 움직이는 화면(sheet)만 track이라 뒤 화면은 경계 id로 찾아 나가는 화면 표식(상태 바 색 즉시 전환)
 // 중단된 이전 전환의 노드가 남아 있을 수 있어 같은 id 중 가장 나중에 붙은 노드 사용
 const guardSheet =
@@ -201,10 +243,32 @@ const guardSheet =
     const keep = opening
       ? behind?.querySelector('[data-app-background]')?.getAttribute('data-app-background')
       : null;
-    if (keep) sheetElement.dataset.appBackground = keep;
-    // 시트 위 상태 바 높이의 흰 띠: 올라오며 상태 바를 덮고 내려가며 뒤 화면 색을 드러냄(색이 먼저 바뀌어 보이지 않게)
+    if (keep) {
+      sheetElement.dataset.appBackground = keep;
+      // 스프링 멈춤 신호(onDispose)는 보이는 도착보다 1초 넘게 늦어 실제 위치로 판단: 절반을 지나면 배경 색을 300ms에 걸쳐 바꾸기 시작하고
+      // 남은 이동이 1px 아래면(도착) 남은 색 전환 없이 바로 맞춤
+      let moved = false;
+      let farthest = 0;
+      const watch = () => {
+        const offset = new DOMMatrixReadOnly(getComputedStyle(sheetElement).transform).m42;
+        farthest = Math.max(farthest, Math.abs(offset));
+        if (moved && Math.abs(offset) < farthest / 2) delete sheetElement.dataset.appBackground;
+        if (Math.abs(offset) >= 1) moved = true;
+        else if (moved) {
+          delete sheetElement.dataset.appBackground;
+          delete sheetElement.dataset.sheetMoving;
+          sheetElement.dataset.sheetArrived = '';
+          return;
+        }
+        guard.frame = requestAnimationFrame(watch);
+      };
+      guard.frame = requestAnimationFrame(watch);
+    }
+    // 시트 위·아래 안전 영역 높이의 흰 띠: 올라오며 상태 바·아래 영역을 덮고 내려가며 뒤 화면 색을 드러냄(iOS 전체 화면 모달처럼)
+    // 전환 영역은 넘침을 잘라서 띠가 있는 동안만 위아래로 넓힘(data-sheet-band, 아래 전환 영역 className)
+    sheetElement.dataset.sheetBand = '';
     sheetElement.style.boxShadow =
-      '0 calc(-1 * var(--safe-area-top, 0px)) 0 var(--color-surface-primary)';
+      '0 calc(-1 * var(--safe-area-top, 0px)) 0 var(--color-surface-primary), 0 var(--safe-area-bottom, 0px) 0 var(--color-surface-primary)';
     const dispose = track.onDispose;
     track.onDispose = (disposal) => {
       dispose?.(disposal);
@@ -214,37 +278,46 @@ const guardSheet =
         clearSheetMarks(sheetElement);
         return;
       }
+      if (guard.frame !== undefined) cancelAnimationFrame(guard.frame);
       delete sheetElement.dataset.sheetMoving;
+      delete sheetElement.dataset.sheetArrived;
       if (keep) delete sheetElement.dataset.appBackground;
       // 띠는 AppFrame 색 전환(150ms)이 끝난 뒤에 걷음(도착 순간 덜 바뀐 색이 비치지 않게)
       // ponytail: 고정 지연, 전환 시간이 바뀌면 함께 맞춤
-      guard.timer = setTimeout(
-        () => sheetElement.style.removeProperty('box-shadow'),
-        SHEET_BAND_HOLD_MS,
-      );
+      guard.timer = setTimeout(() => {
+        sheetElement.style.removeProperty('box-shadow');
+        delete sheetElement.dataset.sheetBand;
+      }, SHEET_BAND_HOLD_MS);
     };
   };
 // AppFrame 상태 바 색 전환(motion-safe duration-150)보다 조금 길게
 const SHEET_BAND_HOLD_MS = 200;
-type SheetGuard = { timer?: ReturnType<typeof setTimeout> };
+type SheetGuard = { timer?: ReturnType<typeof setTimeout>; frame?: number };
 // 요소마다 마지막으로 맡은 시트 전환(중단·재사용된 노드에서 이전 전환이 새 전환의 표식을 지우지 않게)
 const sheetGuards = new WeakMap<HTMLElement, SheetGuard>();
 // 시트 요소의 표식은 모두 guardSheet가 붙인 것이라 통째로 지움
 const clearSheetMarks = (element: HTMLElement) => {
   clearTimeout(sheetGuards.get(element)?.timer);
+  const frame = sheetGuards.get(element)?.frame;
+  if (frame !== undefined) cancelAnimationFrame(frame);
   delete element.dataset.sheetMoving;
+  delete element.dataset.sheetArrived;
+  delete element.dataset.sheetBand;
   delete element.dataset.appBackground;
   element.style.removeProperty('box-shadow');
 };
-const bunchSheet = sheet(
-  {},
-  {
-    override: {
-      forward: guardSheet(true, BUNCH_HOME_PATHS.home),
-      backward: guardSheet(false, BUNCH_HOME_PATHS.home),
+const sheetOver = (behindId: string) =>
+  sheet(
+    {},
+    {
+      override: {
+        forward: guardSheet(true, behindId),
+        backward: guardSheet(false, behindId),
+      },
     },
-  },
-);
+  );
+const bunchSheet = sheetOver(BUNCH_HOME_PATHS.home);
+const notificationSheet = sheetOver(BUNCH_HOME_PATHS.notifications);
 // 결정 기록 017: 하단 탭 사이 80ms 등속 크로스페이드. 들어오는 탭은 아래에 불투명하게 두고 위로 올린 나가는 탭만 페이드
 // 두 탭을 함께 페이드하면 같은 자리의 같은 헤더가 중간에 흐려지므로 위 화면만 투명도를 바꿈(SSGOI가 나가는 화면을 absolute로 겹침)
 // SSGOI 7.4.1의 LinearIntegrator는 남은 거리에 비례해 움직여(지수 감속) 등속이 아니라 직접 등속으로 진행
@@ -328,6 +401,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchSheet,
   },
+  // 작성 중인 번들 → 번들 작성 화면도 만들기를 이어서 하는 흐름이라 같은 sheet(화면설계서에 정의 없음)
+  {
+    from: BUNCH_HOME_PATHS.home,
+    to: BUNDLE_PATHS.transitionIds.draft,
+    bidirectional: true,
+    transition: bunchSheet,
+  },
   // 멤버 선택 → 사진 선택은 옆으로 넘어가는 슬라이드
   {
     from: BUNDLE_SELECT_PATHS.members,
@@ -355,6 +435,13 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: bunchDrill,
   },
+  // 피드 말풍선 → 번들 상세(댓글)는 카드가 화면으로 열리는 zoom
+  {
+    from: MAIN_TAB_PATHS.feed,
+    to: FEED_PATHS.transitionIds.bundleComments,
+    bidirectional: true,
+    transition: feedCommentsZoom,
+  },
   // 피드 카드 → 번들 상세는 카드 사진을 상세 첫 사진으로 잇는 hero(Figma는 들어갈 때만 정의, 돌아올 때도 같은 곡선으로 되돌림)
   {
     from: MAIN_TAB_PATHS.feed,
@@ -369,9 +456,23 @@ const rules: SsgoiTransitionRule[] = [
     bidirectional: true,
     transition: photoHero,
   },
-  // 상세의 번치 → 번치 탭·다른 번치 프로필, 두 화면의 번들 그리드 → 상세 모두 한 단계씩 들어가는 drill
-  historyDrill(BUNCH_HOME_PATHS.home, FEED_PATHS.transitionIds.bundle),
-  historyDrill(BUNCH_HOME_PATHS.transitionIds.otherBunch, FEED_PATHS.transitionIds.bundle),
+  // 번치 탭·다른 번치 프로필의 번들 격자 → 상세는 칸이 상세 화면 전체로 열리는 zoom static(인스타 프로필 그리드 → 게시물, 사용자 결정)
+  // 칸 사진을 상세 첫 사진으로 잇는 hero로 바꾸려면 transition만 feedBundleHero로(칸의 hero 키·자르기는 그대로 둠, motion.md)
+  {
+    from: [BUNCH_HOME_PATHS.home, BUNCH_HOME_PATHS.transitionIds.otherBunch],
+    to: FEED_PATHS.transitionIds.bundle,
+    bidirectional: true,
+    transition: bunchGridZoom,
+  },
+  // 상세의 번치 이름 → 번치 탭·다른 번치 프로필은 새 화면으로 들어가는 drill(이동 직전에 상세 틀 id를 바꿔 위 zoom과 구분, BundleDetail)
+  {
+    from: FEED_PATHS.transitionIds.bundleToBunch,
+    to: [BUNCH_HOME_PATHS.home, BUNCH_HOME_PATHS.transitionIds.otherBunch],
+    transition: bunchDrill,
+  },
+  // 말풍선으로 연 상세에서 번치로 가는 이동도 같은 drill
+  historyDrill(BUNCH_HOME_PATHS.home, FEED_PATHS.transitionIds.bundleComments),
+  historyDrill(BUNCH_HOME_PATHS.transitionIds.otherBunch, FEED_PATHS.transitionIds.bundleComments),
   // 참여 멤버 시트 → 멤버 프로필 → 번치 프로필도 한 단계씩 들어가는 drill
   {
     from: MAIN_TAB_PATHS.feed,
@@ -380,21 +481,21 @@ const rules: SsgoiTransitionRule[] = [
     transition: bunchDrill,
   },
   {
-    from: FEED_PATHS.transitionIds.bundle,
+    from: [FEED_PATHS.transitionIds.bundle, FEED_PATHS.transitionIds.bundleComments],
     to: FEED_PATHS.transitionIds.member,
     bidirectional: true,
     transition: bunchDrill,
   },
   // 번들 상세 → 공개 범위 설정도 한 단계 들어가는 drill
   {
-    from: FEED_PATHS.transitionIds.bundle,
+    from: [FEED_PATHS.transitionIds.bundle, FEED_PATHS.transitionIds.bundleComments],
     to: FEED_PATHS.transitionIds.bundleVisibility,
     bidirectional: true,
     transition: bunchDrill,
   },
   // 번들 상세 → 번들 수정, 수정 → 사진 추가도 한 단계 들어가는 drill
   {
-    from: FEED_PATHS.transitionIds.bundle,
+    from: [FEED_PATHS.transitionIds.bundle, FEED_PATHS.transitionIds.bundleComments],
     to: FEED_PATHS.transitionIds.bundleEdit,
     bidirectional: true,
     transition: bunchDrill,
@@ -481,6 +582,19 @@ const rules: SsgoiTransitionRule[] = [
     transition: bunchDrill,
   },
   historyDrill(BUNCH_HOME_PATHS.notifications, FEED_PATHS.transitionIds.bundle),
+  // 역할 권한·번들 작성 화면도 알림에서는 한 단계 들어가는 drill, 추천 후보(번들 만들기 시작)는 번치 홈의 +와 같은 sheet
+  {
+    from: BUNCH_HOME_PATHS.notifications,
+    to: [BUNCH_HOME_PATHS.roles, BUNDLE_PATHS.transitionIds.draft],
+    bidirectional: true,
+    transition: bunchDrill,
+  },
+  {
+    from: BUNCH_HOME_PATHS.notifications,
+    to: BUNDLE_SELECT_PATHS.members,
+    bidirectional: true,
+    transition: notificationSheet,
+  },
   // 콕한 장소도 번치 홈에서 한 단계 들어가는 drill
   {
     from: BUNCH_HOME_PATHS.home,
@@ -684,7 +798,7 @@ export function AppTransitions({ children }: { children: ReactNode }) {
           iOS 쉘의 로그인 화면(transparent)도 WebView 뒤 네이티브 배경 영상이 비치도록 비움 */}
       {/* 접는 헤더 화면(피드)은 본문이 상태 표시줄 뒤까지 올라가므로 위로 상태 표시줄 높이만큼만 더 보이게 자름(가로 전환은 그대로 틀 안) */}
       {/* overflow-x:clip + overflow-y:visible은 WebKit이 세로 ±2^24px 클립 층으로 만들어 iOS에서 내용이 1pt 밀리고 맨 위에 흰 선이 생겨 유한한 clip-path를 씀 */}
-      <div className="bg-surface-primary relative isolate flex min-h-0 flex-1 flex-col overflow-hidden has-data-collapsible-header:overflow-visible has-data-collapsible-header:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-[[data-app-background=brand],[data-app-background=transparent],[data-brand-leaving]]:bg-transparent">
+      <div className="bg-surface-primary relative isolate flex min-h-0 flex-1 flex-col overflow-hidden has-data-collapsible-header:overflow-visible has-data-collapsible-header:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-data-sheet-band:overflow-visible has-data-sheet-band:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_calc(var(--safe-area-bottom)*-1)_0)] has-[[data-app-background=brand],[data-app-background=transparent],[data-brand-leaving]]:bg-transparent">
         {children}
       </div>
     </Ssgoi>

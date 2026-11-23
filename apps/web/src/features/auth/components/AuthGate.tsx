@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
 import { appBridge, isHandedOffToNativeTabs, isNativeShell } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
 import { usePushDeviceSync } from '@/shared/hooks/usePushDeviceSync';
 import { getPageLoadingCount, subscribePageLoading } from '@/shared/lib/pageLoadingState';
@@ -140,6 +140,9 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
   const settled =
     (!session && !isPending) ||
     Boolean(session && introSeen !== null && hasPendingInvitation !== null && !redirectTo);
+  // 한 번 도착한 뒤 다시 로딩이면(가입 상태 변경·회원 전환) 열린 모달 등을 바로 막도록 덮개를 늦추지 않음
+  const [wasSettled, setWasSettled] = useState(false);
+  if (settled && !wasSettled) setWasSettled(true);
   // 도착 화면이 내용을 그릴 때까지(화면 전체 로딩이 없을 때) 스플래시 유지(명세 1.1: 빈 화면·중간 로딩이 보이지 않게)
   // 보이는 WebView만 보냄: 뒤에서 미리 그려지는 탭 WebView가 스플래시를 먼저 닫지 않게, 보이게 되면 그때 보냄
   const pageLoadingCount = useSyncExternalStore(subscribePageLoading, getPageLoadingCount, () => 1);
@@ -192,7 +195,8 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
         <p role="status" className="sr-only">
           {redirectTo ? '화면을 이동하는 중이에요' : '로그인 상태를 확인하는 중이에요'}
         </p>
-        <PageLoading />
+        {/* 첫 확인은 보통 1초 안이라 넘길 때만 덮음(앱 탭 WebView가 열릴 때마다 덮개가 번쩍이지 않게), 스플래시 판정은 붙는 순간부터 */}
+        <PageLoading delayMs={wasSettled ? 0 : LATE_OVERLAY_MS} />
       </>
     );
   }

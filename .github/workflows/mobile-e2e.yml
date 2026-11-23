@@ -27,7 +27,8 @@ jobs:
   maestro:
     name: Maestro (iOS)
     runs-on: macos-26
-    timeout-minutes: 60
+    # 캐시가 없는 첫 실행은 iOS 빌드만 약 20분이라 flow까지 60분을 넘겨 취소됐음(2026-11-23). 캐시가 맞으면 훨씬 짧음
+    timeout-minutes: 120
     env:
       # setup-node의 pnpm 캐시 조회가 저장소 루트(packageManager: yarn)에서 돌아도 Corepack이 막지 않도록
       COREPACK_ENABLE_STRICT: '0'
@@ -35,6 +36,8 @@ jobs:
       MAESTRO_VERSION: '2.12.1'
       MAESTRO_SHA256: 54dbb0716425626604973cbb374c585ca30272375d9ce15177a1152765ddd9d7
       WEB_URL: http://127.0.0.1:3200
+      # 드라이버 시작 대기의 최대치(ms). 부팅은 아래에서 빌드와 겹쳐 끝내고, 이 값은 느린 러너의 안전 상한
+      MAESTRO_DRIVER_STARTUP_TIMEOUT: '300000'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,6 +46,26 @@ jobs:
       # 의존성 설치(코드가 실행될 수 있는 단계) 전 변조 징후 선검사
       - name: 변조 가드
         run: node turbo/workflows/check-suspicious.mjs
+
+      # 빌드할 SDK와 같은 iOS 런타임의 iPhone 17 Pro(로컬 확인 기기)를 먼저, 없으면 같은 런타임의 다른 iPhone
+      # 첫 부팅은 데이터 이전으로 2분 넘게 걸려(2026-11-22 실패) 빌드(약 20분)와 겹치게 맨 앞에서 부팅만 시작
+      - name: 시뮬레이터 부팅 시작
+        run: |
+          sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          udid=$(xcrun simctl list devices available -j | SDK="$sdk" node -e '
+            const { devices } = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            const runtime = `iOS-${process.env.SDK.replaceAll(".", "-")}`;
+            const list = Object.entries(devices).find(([key]) => key.endsWith(runtime))?.[1] ?? [];
+            const phones = list.filter((device) => device.name.startsWith("iPhone"));
+            const phone = phones.find((device) => device.name === "iPhone 17 Pro") ?? phones[0];
+            if (!phone) {
+              console.error(`${runtime} 런타임의 iPhone 시뮬레이터가 없어요`);
+              process.exit(1);
+            }
+            console.log(phone.udid);
+          ')
+          xcrun simctl boot "$udid"
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
 
       - run: corepack enable
 
@@ -84,7 +107,34 @@ jobs:
           SENTRYCLI_SKIP_DOWNLOAD: '1'
         run: pnpm install --frozen-lockfile
 
+      # 네이티브 지문(app.json·네이티브 패키지·modules/*): 같으면 ios/(Pods 포함)를 그대로 쓰고 생성 단계를 건너뜀
+      - name: 네이티브 지문
+        id: fingerprint
+        working-directory: apps/mobile-shell
+        run: |
+          hash=$(node -e "require(require.resolve('@expo/fingerprint', { paths: [require.resolve('expo/package.json')] })).createFingerprintAsync('.').then((f) => console.log(f.hash))")
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+          # ios/.xcode.env.local에 node 절대 경로가 들어가 Node가 바뀌면 다른 캐시로(지문에는 Node 버전이 없음)
+          echo "node=$(node -v)" >> "$GITHUB_OUTPUT"
+
+      - name: iOS 네이티브 프로젝트 캐시
+        id: ios-cache
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile-shell/ios
+          key: e2e-ios-${{ runner.os }}-${{ steps.fingerprint.outputs.node }}-${{ steps.fingerprint.outputs.hash }}
+
+      # 빌드 중간 결과(e2e-ios-build.mjs의 derivedDataPath). 지문이 달라도 최근 것으로 증분 빌드(JS만 바뀌면 묶기만 다시)
+      # 키는 지문 단위로만(실행마다 수 GB를 새로 저장해 저장소 캐시 한도를 채우지 않게)
+      - name: iOS 빌드 중간 결과 캐시
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile-shell/build/e2e
+          key: e2e-derived-${{ runner.os }}-${{ steps.fingerprint.outputs.node }}-${{ steps.fingerprint.outputs.hash }}
+          restore-keys: e2e-derived-${{ runner.os }}-${{ steps.fingerprint.outputs.node }}-
+
       - name: CocoaPods 캐시
+        if: steps.ios-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ~/Library/Caches/CocoaPods
@@ -92,6 +142,7 @@ jobs:
           restore-keys: cocoapods-${{ runner.os }}-
 
       - name: iOS 네이티브 프로젝트 생성
+        if: steps.ios-cache.outputs.cache-hit != 'true'
         working-directory: apps/mobile-shell
         run: pnpm ios:sync:clean
 
@@ -101,26 +152,11 @@ jobs:
           E2E_WEB_URL: ${{ env.WEB_URL }}
         run: node scripts/e2e-ios-build.mjs
 
-      # 빌드한 SDK와 같은 iOS 런타임의 iPhone 17 Pro(로컬 확인 기기)를 먼저, 없으면 같은 런타임의 다른 iPhone
+      # 앞에서 시작한 부팅이 끝났는지 확인(보통 빌드 동안 끝나 바로 지나감)
       - name: 시뮬레이터 준비·앱 설치
         run: |
-          sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
-          udid=$(xcrun simctl list devices available -j | SDK="$sdk" node -e '
-            const { devices } = JSON.parse(require("fs").readFileSync(0, "utf8"));
-            const runtime = `iOS-${process.env.SDK.replaceAll(".", "-")}`;
-            const list = Object.entries(devices).find(([key]) => key.endsWith(runtime))?.[1] ?? [];
-            const phones = list.filter((device) => device.name.startsWith("iPhone"));
-            const phone = phones.find((device) => device.name === "iPhone 17 Pro") ?? phones[0];
-            if (!phone) {
-              console.error(`${runtime} 런타임의 iPhone 시뮬레이터가 없어요`);
-              process.exit(1);
-            }
-            console.log(phone.udid);
-          ')
-          xcrun simctl boot "$udid"
-          xcrun simctl bootstatus "$udid" -b
-          xcrun simctl install "$udid" apps/mobile-shell/build/e2e/Build/Products/Release-iphonesimulator/Bunch.app
-          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          xcrun simctl install "$SIMULATOR_UDID" apps/mobile-shell/build/e2e/Build/Products/Release-iphonesimulator/Bunch.app
 
       # Maestro CLI가 쓰는 Java(러너 기본값에 기대지 않음)
       - uses: actions/setup-java@v4
@@ -143,18 +179,6 @@ jobs:
           # 빌드 동안 웹이 죽었으면 flow 실패 대신 원인을 바로 보이게
           curl -sf "$WEB_URL" > /dev/null || { echo "웹이 응답하지 않아요" && cat "$RUNNER_TEMP/web.log" && exit 1; }
           maestro --device "$SIMULATOR_UDID" test --format junit --output "$RUNNER_TEMP/maestro-report.xml" --test-output-dir "$RUNNER_TEMP/maestro-output" maestro
-
-      # 아직 고치지 않은 문제(known-issue 태그)는 job을 막지 않고 결과만 남김. 통과하면 태그를 지울 때
-      # 태그로 고르면 config의 excludeTags와 겹쳐 아무 flow도 고르지 않아 파일로 실행
-      - name: 알려진 문제 확인
-        if: ${{ !cancelled() && steps.maestro.outcome != 'skipped' }}
-        working-directory: apps/mobile-shell
-        run: |
-          if maestro --device "$SIMULATOR_UDID" test maestro/flows/90-startup-first-input.yaml; then
-            echo "알려진 문제 flow가 통과했어요. 고쳐졌다면 known-issue 태그를 지워 주세요." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "알려진 문제 flow가 아직 실패해요(앱 시작 직후 입력 무시)." >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: 결과 올리기
         if: failure()

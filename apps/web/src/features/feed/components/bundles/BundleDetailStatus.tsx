@@ -3,9 +3,10 @@
 import type { RefObject } from 'react';
 import { Button, Skeleton } from '@app/design-system';
 import { BundleAuthorInfo, BundleInfo, BundlePhoto } from '@app/design-system/web';
+import { LoadingRipple } from '@/shared/components/loading/LoadingRipple';
+import { bundleHeroKey } from '@/shared/lib/heroKeys';
 import type { FeedBundle } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
-import { bundleHeroKey } from '../../constants/paths';
 import { hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { BundleDetailRestSkeleton, BundleDetailSkeleton } from './BundleDetailSkeleton';
 
@@ -16,12 +17,32 @@ export type BundleDetailStatusProps = {
   onRetry: () => void;
   /** 받는 중일 때 먼저 그릴 카드·칸 데이터와 게시 경과 시간. `partial`(격자 칸)이면 날짜 줄은 자리표시 */
   preview?: { bundle: FeedBundle; partial: boolean; time: string } | undefined;
+  /** 말풍선 진입: 게시물 윗부분 대신 댓글 자리 로딩만(받은 뒤 댓글 위치로 넘어가 보이지 않게) */
+  commentsEntry?: boolean | undefined;
 };
 
 const noop = () => {};
 
 /** 번들 상세 본문을 그릴 수 없을 때: 받는 중 스켈레톤, 볼 수 없음 안내, 실패와 다시 시도 */
-export function BundleDetailStatus({ kind, titleRef, onRetry, preview }: BundleDetailStatusProps) {
+export function BundleDetailStatus({
+  kind,
+  titleRef,
+  onRetry,
+  preview,
+  commentsEntry = false,
+}: BundleDetailStatusProps) {
+  if (kind === 'loading' && commentsEntry) {
+    return (
+      <>
+        <p role="status" className="sr-only">
+          {text.bundleLoading}
+        </p>
+        <div className="flex flex-1 items-center justify-center">
+          <LoadingRipple />
+        </div>
+      </>
+    );
+  }
   // 피드에서 왔으면 본문과 같은 자리에 번치·제목·첫 사진을 먼저 그리고 그 아래만 스켈레톤(카드 사진이 hero로 이어짐). 받기 전이라 누를 수 없게 inert
   if (kind === 'loading' && preview) {
     const { bundle, partial, time } = preview;
@@ -52,8 +73,14 @@ export function BundleDetailStatus({ kind, titleRef, onRetry, preview }: BundleD
             }
           />
           {partial ? (
-            // 칸에는 장소·날짜가 없어 BundleInfo 날짜 줄 자리만 회색(BundleDetailSkeleton과 같은 크기)
-            <div aria-hidden="true" className="px-padding-p8 pb-padding-p5 pt-s5">
+            // 칸에는 장소·날짜가 없어 BundleInfo 위치·날짜 두 줄 자리를 회색으로 잡음(한 줄만 잡으면 위치가 있는 번들에서 다 받은 뒤 사진이 한 줄 밀림)
+            <div
+              aria-hidden="true"
+              className="px-padding-p8 pb-padding-p5 pt-s5 gap-s3 flex flex-col"
+            >
+              <span className="typography-body-3-regular flex h-lh items-center">
+                <Skeleton className="h-4 w-40" />
+              </span>
               <span className="typography-body-3-regular flex h-lh items-center">
                 <Skeleton className="h-4 w-32" />
               </span>

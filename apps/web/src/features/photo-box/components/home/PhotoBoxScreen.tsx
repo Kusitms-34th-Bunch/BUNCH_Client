@@ -7,10 +7,12 @@ import { FloatingButtonToastAnchor } from '@/shared/components/layout/FloatingBu
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
 import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
+import type { UploadStatus } from '../../lib/uploadStatus';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
 import { usePhotoSelectionFlow } from '../../hooks/usePhotoSelectionFlow';
@@ -30,6 +32,7 @@ import { PhotoBoxHeader } from './PhotoBoxHeader';
 import { PhotoBoxSkeleton } from './PhotoBoxSkeleton';
 import { PhotoDragArea } from './PhotoDragArea';
 import { PhotoSelectionMenu } from './PhotoSelectionMenu';
+import { PhotoUploadStatus } from './PhotoUploadStatus';
 
 // API 연결 전 기본 동작: 모두 성공하고 아무것도 사라지지 않음
 const noopActions: PhotoBoxActions = {
@@ -48,7 +51,7 @@ type PhotoBoxScreenProps = {
   /** 저장·삭제 같은 서버·기기 동작 */
   actions?: PhotoBoxActions | undefined;
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
-  currentYear?: number | undefined;
+  currentYear?: number | null | undefined;
   onRetry?: (() => void) | undefined;
   /** 첫 쪽 뒤의 쪽을 받다 실패했을 때 아래로 다시 스크롤하면 부름 */
   onLoadMore?: (() => void) | undefined;
@@ -62,13 +65,15 @@ type PhotoBoxScreenProps = {
   onUpload?: ((_source: 'album' | 'camera') => void) | undefined;
   /** 「번들 만들기」 확인 창에서 「예」를 눌렀을 때(고른 사진 id를 누른 순서대로 전달, 초안 생성·이동은 번들 작성 이슈) */
   onCreateBundle?: ((_selection: PhotoSelection) => void) | undefined;
+  /** 이 번치의 업로드 상태(멤버 칩 아래 상태 줄). 없으면 줄이 자리를 차지하지 않음 */
+  uploadStatus?: UploadStatus | undefined;
 };
 
 /** 사진함 탭 화면. 상태(로딩·오류·번치 없음·목록)를 받아 그리고 멤버 필터와 선택 모드(메뉴·저장·번들·삭제)를 관리 */
 export function PhotoBoxScreen({
   state,
   actions = noopActions,
-  currentYear = new Date().getFullYear(),
+  currentYear: currentYearProp,
   onRetry,
   onLoadMore,
   onRefresh,
@@ -76,7 +81,10 @@ export function PhotoBoxScreen({
   switcherOpen,
   onUpload,
   onCreateBundle,
+  uploadStatus,
 }: PhotoBoxScreenProps) {
+  const clientYear = useCurrentYear();
+  const currentYear = currentYearProp ?? clientYear;
   const [memberFilter, setMemberFilter] = useState(readHistoryMemberFilter);
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
   const [menuOpen, setMenuOpen] = useState(false);
@@ -277,6 +285,7 @@ export function PhotoBoxScreen({
             onSelect={selectMember}
             selectedCounts={selectedCounts}
           />
+          <PhotoUploadStatus status={uploadStatus} bunchName={bunch.name} />
           <PhotoDragArea
             sections={sections}
             undated={undated}

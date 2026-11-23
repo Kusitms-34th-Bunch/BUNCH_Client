@@ -2,17 +2,15 @@ import { bridge, createWebView } from '@webview-bridge/react-native';
 import * as Haptics from 'expo-haptics';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router, type Href } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
-  BackHandler,
-  Button,
-  Linking,
-  Platform,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentRef,
+} from 'react';
+import { BackHandler, Linking, Platform, Share, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appPostMessageSchema,
@@ -20,6 +18,7 @@ import {
   hideNativeToastParamsSchema,
   nativeTabBarVisibilitySchema,
   nativeTabEventSchema,
+  pushOpenSchema,
   setNativeFloatingButtonParamsSchema,
   setNativeTabBarParamsSchema,
   shareParamsSchema,
@@ -39,6 +38,13 @@ import { incomingLinkStore } from '../incoming-link-store';
 import { loginBackgroundStore } from '../login-background/login-background-store';
 import { getPermissionStatus, openAppSettings, requestPermission } from '../permissions';
 import { getPushDeviceRegistration, getPushInstallationId } from '../push-device';
+import { pushOpenStore } from '../push-open-store';
+import {
+  beginScreenSwitch,
+  cancelScreenSwitch,
+  finishScreenSwitch,
+  insetsHold,
+} from '../screen-switch';
 import { buildSafeAreaScript } from '../safe-area-script';
 import { authorizeApple, socialLogin } from '../social-login';
 import {
@@ -47,9 +53,11 @@ import {
   markWebReady,
   waitForTabWebView,
 } from '../splash/state';
+import { createFloatingButtonGuard } from '../tabs/floating-button-guard';
 import { floatingButtonStore } from '../tabs/floating-button-store';
+import { WebLoadError } from './WebLoadError';
 import { reportTabBar, visibleTab } from '../tabs/tab-bar-visibility';
-import { canShowTabs, isTabId, type TabId } from '../tabs/tabs';
+import { canShowTabs, isTabId, isTabRootUrl, type TabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { toastStore } from '../toast/toast-store';
 import { blocksBackNavigation, isAppWebUrl, resolveWebUrl } from '../web-url';
@@ -66,6 +74,15 @@ export const WEB_URL = resolveWebUrl(
 
 /** 웹 경로(`/invite/{토큰}` 등)를 이 앱이 여는 웹 주소로(개발 빌드는 개발 서버) */
 export const toAppWebUrl = (path: string) => new URL(path, WEB_URL).href;
+
+// 플로팅 버튼은 그 탭이 첫 화면일 때만 그림(src/tabs/floating-button-guard.ts). 탭 경로를 모르면 첫 화면으로 봄
+const floatingButtons = createFloatingButtonGuard({
+  isRoot: (tab, url) => {
+    const path = tabsStore.get()?.items.find((item) => item.id === tab)?.path;
+    return !path || isTabRootUrl(url, path);
+  },
+  show: floatingButtonStore.set,
+});
 
 /** 지금 화면에 보이는 WebView인지: 탭 화면이면 지금 보이는 탭의 WebView, 아니면 첫 화면 WebView */
 const isVisibleWebView = (tabId: TabId | undefined) => {
@@ -89,6 +106,22 @@ const appBridge = bridge({
   getPermissionStatus,
   getPushDeviceRegistration,
   getPushInstallationId,
+  // 푸시로 연 알림은 화면에 보이는 WebView(웹이 보낸 자기 탭 ID, 첫 화면은 null)만 가져감
+  takeOpenedPush: (tab) => {
+    const tabId = typeof tab === 'string' && isTabId(tab) ? tab : undefined;
+    if (tab !== null && !tabId) return Promise.resolve(null);
+    if (!isVisibleWebView(tabId)) return Promise.resolve(null);
+    const open = pushOpenStore.take();
+    return Promise.resolve(open && pushOpenSchema.safeParse(open).success ? open : null);
+  },
+  // 번치 전환: 화면에 보이는 WebView(자기 탭 ID)만 화면을 덮을 수 있음(뒤 탭이 화면을 가려 입력을 막지 않게)
+  beginScreenSwitch: (tab) => {
+    const tabId = typeof tab === 'string' && isTabId(tab) ? tab : undefined;
+    if (!tabId || !isVisibleWebView(tabId)) return Promise.resolve(false);
+    return beginScreenSwitch();
+  },
+  finishScreenSwitch,
+  cancelScreenSwitch,
   copyToClipboard,
   readClipboard,
   socialLogin,
@@ -178,12 +211,12 @@ const appBridge = bridge({
     const { tab, button } = setNativeFloatingButtonParamsSchema.parse(params);
     if (!isTabId(tab)) return Promise.resolve(false);
     if (!button) {
-      floatingButtonStore.set(tab, null);
+      floatingButtons.request(tab, null);
       return Promise.resolve(true);
     }
     if (Platform.OS !== 'ios' || !isLiquidGlassAvailable() || !tabsStore.get())
       return Promise.resolve(false);
-    floatingButtonStore.set(tab, button);
+    floatingButtons.request(tab, button);
     return Promise.resolve(true);
   },
   // 네이티브 플로팅 버튼이 떠 있는 탭의 토스트(#503, 결정 기록 030). 탭 화면이 있는 iOS에서만, 그 밖은 false로 웹 토스트
@@ -272,7 +305,13 @@ type AppWebViewProps = {
 
 export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: AppWebViewProps) {
   // 탭 화면에서는 가장 가까운 SafeAreaProvider의 값(탭 바 높이 포함) 사용
-  const insets = useSafeAreaInsets();
+  const liveInsets = useSafeAreaInsets();
+  // 번치 전환 동안은 상태 바를 숨겨 바뀐 값 대신 전환 전 값을 유지(화면이 위아래로 밀리지 않게)
+  const insetsHeld = useSyncExternalStore(insetsHold.subscribe, insetsHold.get);
+  const [insets, setInsets] = useState(liveInsets);
+  useEffect(() => {
+    if (!insetsHeld) setInsets(liveInsets);
+  }, [insetsHeld, liveInsets]);
   const safeAreaScript = buildSafeAreaScript(insets);
   const webViewRef = useRef<ComponentRef<typeof WebView>>(null);
   const [webViewKey, setWebViewKey] = useState(0);
@@ -339,6 +378,8 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       keyboardDisplayRequiresUserAction={false}
       // iOS 키보드 위 입력 보조 막대(이전·다음·완료) 숨김(기획 결정, 앱처럼 보이게). 키보드는 입력란 밖을 눌러 닫음. 모든 입력란에 적용(전역)
       hideKeyboardAccessoryView
+      // Android 시스템 글자 크기로 웹 화면 전체가 커지지 않게(웹 글자 크기는 디자인 토큰 기준)
+      textZoom={100}
       // 스플래시는 웹의 appReady(도착 화면이 내용을 그림)로 닫음. 페이지를 못 불러오면 오류 화면이 보이게 바로 닫음
       // 새 문서를 열면 이전 문서가 남긴 네이티브 UI(플로팅 버튼) 정리
       onLoadStart={() => {
@@ -362,6 +403,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       onNavigationStateChange={(navState) => {
         canGoBack.current = navState.canGoBack;
         currentUrl.current = navState.url;
+        if (tabId) floatingButtons.reportUrl(tabId, navState.url);
         setBackAllowed(!blocksBackNavigation(navState.url, WEB_URL));
       }}
       onShouldStartLoadWithRequest={(request) => {
@@ -373,14 +415,7 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
         Linking.openURL(request.url).catch(() => {});
         return false;
       }}
-      renderError={() => (
-        <View style={styles.error}>
-          <Text style={styles.errorText}>
-            화면을 불러오지 못했어요.{'\n'}네트워크를 확인해 주세요.
-          </Text>
-          <Button title="다시 시도" onPress={() => webViewRef.current?.reload()} />
-        </View>
-      )}
+      renderError={() => <WebLoadError onRetry={() => webViewRef.current?.reload()} />}
     />
   );
 }
@@ -392,15 +427,5 @@ const styles = StyleSheet.create({
   // iOS WebView는 바탕색이 투명이면 불투명 처리(opaque)를 꺼서 웹의 투명한 배경 뒤가 보임
   transparent: {
     backgroundColor: 'transparent',
-  },
-  error: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    padding: 24,
-  },
-  errorText: {
-    textAlign: 'center',
   },
 });

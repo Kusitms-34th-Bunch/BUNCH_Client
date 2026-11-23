@@ -97,8 +97,137 @@ describe('ProfileEditRoute', () => {
 
     render(<ProfileEditRoute />, { wrapper: createQueryWrapper(client) });
 
-    const birthYear = await screen.findByRole<HTMLInputElement>('textbox', { name: /출생연도/ });
-    expect(birthYear.value).toBe('2005');
+    // 받아 둔 값(2003)으로 먼저 보여도 입력이 풀리는 건 이번 진입의 값(2005)을 받은 뒤
+    await waitFor(() =>
+      expect(screen.getByRole<HTMLInputElement>('textbox', { name: /출생연도/ })).toBeEnabled(),
+    );
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: /출생연도/ }).value).toBe('2005');
+  });
+
+  it('마이페이지가 받아 둔 닉네임은 스켈레톤 없이 바로 보이고, 새 값을 받을 때까지 입력·저장을 막는다', async () => {
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: '1',
+      nickname: '으누',
+      imageSrc: null,
+      bunch: null,
+    });
+    // 새 응답은 테스트가 보낼 때까지 보류
+    let respond = () => {};
+    const held = new Promise<void>((resolve) => {
+      respond = resolve;
+    });
+    server.use(
+      http.get('/api/members/me', async () => {
+        await held;
+        return ok({ memberId: 1, nickname: '으누', imageUrl: null, defaultBunch: null });
+      }),
+    );
+
+    render(<ProfileEditRoute />, { wrapper: createQueryWrapper(client) });
+
+    const input = screen.getByRole<HTMLInputElement>('textbox', { name: /닉네임/ });
+    expect(input.value).toBe('으누');
+    expect(input).toBeDisabled();
+    expect(screen.getByRole('button', { name: '프로필 수정하기' })).toBeDisabled();
+
+    expect(screen.getByText('프로필을 불러오는 중이에요')).toBeInTheDocument();
+    // 기다리는 동안 입력 영역이 처리 중임을 알림
+    expect(input.closest('fieldset')).toHaveAttribute('aria-busy', 'true');
+
+    respond();
+    await waitFor(() => expect(screen.getByRole('textbox', { name: /닉네임/ })).toBeEnabled());
+    // 새 값 화면으로 바뀐 것을 알리고, 문서로 빠진 초점을 화면 제목으로 옮김
+    expect(screen.getByText('프로필을 불러왔어요')).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 }));
+  });
+
+  it('받아 둔 값 없이 스켈레톤에서 뒤로 가기에 초점이 있었으면, 새 화면이 그려질 때 제목으로 옮기고 도착을 알린다', async () => {
+    let respond = () => {};
+    const held = new Promise<void>((resolve) => {
+      respond = resolve;
+    });
+    server.use(
+      http.get('/api/members/me', async () => {
+        await held;
+        return ok({ memberId: 1, nickname: '으누', imageUrl: null, defaultBunch: null });
+      }),
+    );
+
+    render(<ProfileEditRoute />, { wrapper: createQueryWrapper() });
+
+    screen.getByRole('button', { name: '뒤로 가기' }).focus();
+    respond();
+    await screen.findByRole('textbox', { name: /닉네임/ });
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 })),
+    );
+    expect(screen.getByText('프로필을 불러왔어요')).toBeInTheDocument();
+  });
+
+  it('받아 둔 값 화면에서 뒤로 간 뒤 조회가 실패해도 한 번만 돌아간다', async () => {
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: '1',
+      nickname: '으누',
+      imageSrc: null,
+      bunch: null,
+    });
+    let respond = () => {};
+    const held = new Promise<void>((resolve) => {
+      respond = resolve;
+    });
+    server.use(
+      http.get('/api/members/me', async () => {
+        await held;
+        return fail(500, 'COMMON_500');
+      }),
+    );
+    const user = userEvent.setup();
+
+    render(<ProfileEditRoute />, { wrapper: createQueryWrapper(client) });
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    expect(replace).toHaveBeenCalledTimes(1);
+    respond();
+    await waitFor(() => expect(client.getQueryState(sharedKeys.me())?.fetchStatus).toBe('idle'));
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(toastAfterNavigation).not.toHaveBeenCalled();
+  });
+
+  it('새 값을 받는 중에 뒤로 가면, 늦게 온 출생연도로 기준값만 바뀌었어도 나가기 확인을 묻지 않는다', async () => {
+    const client = createTestQueryClient();
+    client.setQueryData(sharedKeys.me(), {
+      memberId: '1',
+      nickname: '으누',
+      imageSrc: null,
+      bunch: null,
+    });
+    let respond = () => {};
+    const held = new Promise<void>((resolve) => {
+      respond = resolve;
+    });
+    server.use(
+      http.get('/api/members/me', async () => {
+        await held;
+        return ok({ memberId: 1, nickname: '으누', imageUrl: null, defaultBunch: null });
+      }),
+      http.get('/api/members/me/additional-info', () =>
+        ok({ consented: true, birthYear: 2003, gender: null }),
+      ),
+    );
+    const user = userEvent.setup();
+
+    render(<ProfileEditRoute />, { wrapper: createQueryWrapper(client) });
+    await waitFor(() =>
+      expect(client.getQueryData(myKeys.additionalInfo())).toMatchObject({ birthYear: 2003 }),
+    );
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(replace).toHaveBeenCalledWith('/my');
+    respond();
+    await waitFor(() => expect(client.getQueryState(sharedKeys.me())?.fetchStatus).toBe('idle'));
   });
 
   it('동의하지 않았으면 출생연도·성별 칸을 보이지 않는다', async () => {

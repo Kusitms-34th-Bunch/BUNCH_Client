@@ -3,6 +3,7 @@
 import { Button, Header, LineCloseLargeIcon } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { replaceTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
@@ -27,7 +28,7 @@ export function BunchJoined() {
 
   if (!joinedBunch) return null;
   const leave = () => {
-    router.replace(ONBOARDING_PATHS.feed);
+    replaceTabPath(ONBOARDING_PATHS.feed, (href) => router.replace(href));
   };
   const imageSrc = joinedBunch.imageUrl ?? defaultBunchImage(joinedBunch.characterType);
   const bunchName = joinedBunch.name;

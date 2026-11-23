@@ -151,11 +151,10 @@ export function OtherBunchScreen({
         />
       }
     >
-      <div className="flex min-h-full flex-col">
-        {/* 번치 홈과 같은 성격별 배경·프로필 이미지 영역과 흰 시트(Figma 3086:70741) */}
-        <div className={cn('relative h-25.5 shrink-0', background.top)}>
-          <BunchProfileImage imageSrc={bunch.imageSrc} characterType={bunch.characterType} />
-        </div>
+      <div className="relative flex min-h-full flex-col">
+        {/* 번치 홈과 같은 성격별 배경·프로필 이미지 영역과 흰 시트(Figma 3086:70741). 이미지는 배경 밖 형제(전환 중 시트 아래로 깔리지 않게, BunchHomeScreen) */}
+        <BunchProfileImage imageSrc={bunch.imageSrc} characterType={bunch.characterType} />
+        <div className={cn('h-25.5 shrink-0', background.top)} />
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 pb-s8 relative -mt-5 flex flex-1 flex-col">
           {/* 프로필 아래 팔로우 버튼 16, 버튼 아래 번들·안내 16(Figma 3086:68423) */}
           <div className="gap-s8 flex flex-col">

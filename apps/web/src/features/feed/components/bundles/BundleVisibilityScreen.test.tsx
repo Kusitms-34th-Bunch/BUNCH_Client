@@ -116,21 +116,27 @@ describe('BundleVisibilityScreen', () => {
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(0);
   });
 
-  it('권한을 잃은 뒤 다시 받기도 거절되면 볼 수 없다는 안내로 바뀐다', async () => {
-    server.use(
-      http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => fail(403, 'AUTH_002')),
-      http.get('/api/bunches/:bunchId/bundles/:id', () => fail(403, 'AUTH_002')),
-    );
-    const user = userEvent.setup();
-    renderScreen();
+  it.each([
+    [403, 'AUTH_002'],
+    [400, 'COMMON_001'],
+  ])(
+    '권한을 잃은 뒤 다시 받기가 %i면 처음 불러오기 실패와 같이 볼 수 없다는 안내로 바뀐다',
+    async (status, code) => {
+      server.use(
+        http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => fail(403, 'AUTH_002')),
+        http.get('/api/bunches/:bunchId/bundles/:id', () => fail(status, code)),
+      );
+      const user = userEvent.setup();
+      renderScreen();
 
-    await user.click(screen.getByRole('radio', { name: /전체 공개/ }));
-    await user.click(screen.getByRole('button', { name: '수정하기' }));
+      await user.click(screen.getByRole('radio', { name: /전체 공개/ }));
+      await user.click(screen.getByRole('button', { name: '수정하기' }));
 
-    expect(
-      await screen.findByRole('heading', { name: '삭제되었거나 볼 수 없는 내용이에요' }),
-    ).toHaveFocus();
-  });
+      expect(
+        await screen.findByRole('heading', { name: '삭제되었거나 볼 수 없는 내용이에요' }),
+      ).toHaveFocus();
+    },
+  );
 
   it('비공개 번치면 「전체 공개」 대신 「일부 공개」다', () => {
     renderScreen('1', true);

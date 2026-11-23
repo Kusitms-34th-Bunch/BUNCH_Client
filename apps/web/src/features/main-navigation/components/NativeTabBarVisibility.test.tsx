@@ -1,5 +1,5 @@
 import { act, render } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NativeTabBarVisibility } from './NativeTabBarVisibility';
 
 const setNativeTabBarVisible = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
@@ -19,7 +19,16 @@ vi.mock('next/navigation', () => ({ usePathname: () => pathname.current }));
 const setVisibility = (state: DocumentVisibilityState) =>
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: state });
 
+// 보일 때는 한 프레임 뒤에 보냄(시트 확인): 기본은 프레임을 바로 실행해 기존 흐름 그대로 확인
+beforeEach(() => {
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    callback(0);
+    return 0;
+  });
+});
+
 afterEach(() => {
+  vi.restoreAllMocks();
   setNativeTabBarVisible.mockClear();
   setNativeTabBarVisibleFor.mockClear();
   setNativeTabBar.mockClear();
@@ -61,6 +70,80 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
     // 지운 뒤의 감지 콜백도 테스트 안에서 끝냄(다음 테스트로 새지 않게)
     await mutate(() => sheet.remove());
+  });
+
+  // happy-dom은 배치가 없어 덮는 요소의 화면 위치를 직접 줌(화면 전체 폭, 윗변만 바꿈)
+  const coverAt = (element: HTMLElement, topRatio: number) =>
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      right: window.innerWidth,
+      top: window.innerHeight * topRatio,
+      bottom: window.innerHeight * (topRatio + 1),
+    } as DOMRect);
+  const runFramesWith = () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    return () => act(() => frames.splice(0).forEach((callback) => callback(0)));
+  };
+
+  it.each([
+    [
+      '움직이는 화면 sheet',
+      (element: HTMLElement) => element.setAttribute('data-sheet-moving', ''),
+    ],
+    [
+      '전환 중 나가는 화면',
+      (element: HTMLElement) => element.setAttribute('data-page-leaving', ''),
+    ],
+    [
+      '닫히는 중인 바텀시트',
+      (element: HTMLElement) => {
+        element.setAttribute('role', 'dialog');
+        element.setAttribute('data-ending-style', '');
+      },
+    ],
+  ])(
+    '%s가 탭 바 자리를 덮는 동안은 기다리고, 비켜나면 다 끝나기 전이라도 보인다',
+    (_name, mark) => {
+      const runFrames = runFramesWith();
+      const cover = document.body.appendChild(document.createElement('div'));
+      mark(cover);
+      const rect = coverAt(cover, 0.5);
+      pathname.current = '/bunch';
+      render(<NativeTabBarVisibility />);
+      runFrames();
+      expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+
+      // 표식은 아직 있지만 윗변이 탭 바 자리(아래 15%)를 거의 지남
+      rect.mockReturnValue({
+        left: 0,
+        right: window.innerWidth,
+        top: window.innerHeight * 0.98,
+        bottom: window.innerHeight * 1.98,
+      } as DOMRect);
+      runFrames();
+      expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
+      cover.remove();
+    },
+  );
+
+  it('덮는 것이 사라지지 않아도 1초가 지나면 보인다', () => {
+    const runFrames = runFramesWith();
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0);
+    const cover = document.body.appendChild(document.createElement('div'));
+    cover.setAttribute('data-page-leaving', '');
+    coverAt(cover, 0);
+    pathname.current = '/bunch';
+    render(<NativeTabBarVisibility />);
+    runFrames();
+    expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+    now.mockReturnValue(1000);
+    runFrames();
+    expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
+    cover.remove();
   });
 
   it('화면에 보이지 않는 탭 WebView는 보내지 않고, 다시 보이면 현재 상태를 보낸다', () => {
@@ -130,6 +213,8 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     rerender(<NativeTabBarVisibility />);
     expect(setNativeTabBarVisibleFor).toHaveBeenLastCalledWith({ tab: 'bunch', visible: true });
     expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+    // 보이지 않는 WebView는 프레임이 멈출 수 있어 프레임을 기다리지 않고 바로 보냄
+    expect(window.requestAnimationFrame).not.toHaveBeenCalled();
   });
 
   it('이전 쉘의 탭 WebView(탭 ID는 있지만 탭별 메서드 없음)는 기존 방식으로 보낸다', () => {

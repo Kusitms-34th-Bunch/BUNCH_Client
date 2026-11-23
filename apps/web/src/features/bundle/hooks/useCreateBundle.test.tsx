@@ -149,6 +149,29 @@ describe('useCreateBundle', () => {
     expect(keys[2]).not.toBe(keys[1]);
   });
 
+  it.each([408, 429])(
+    '%i 응답 뒤 다시 만들면 같은 멱등 키로 보낸다(서버가 이미 만들었을 수 있음)',
+    async (status) => {
+      const { result } = renderCreate();
+      await loaded(result);
+      const keys: (string | null)[] = [];
+      server.use(
+        http.post('/api/bunches/:bunchId/bundles', ({ request }) => {
+          keys.push(request.headers.get('Idempotency-Key'));
+          return keys.length === 1 ? fail(status, 'COMMON_500') : undefined;
+        }),
+      );
+
+      act(() => result.current.create(photoIds, participants));
+      await waitFor(() => expect(keys).toHaveLength(1));
+      await waitFor(() => expect(result.current.creating).toBe(false));
+      act(() => result.current.create(photoIds, participants));
+      await waitFor(() => expect(keys).toHaveLength(2));
+
+      expect(keys[1]).toBe(keys[0]);
+    },
+  );
+
   it('고른 참여 멤버를 요청에 담아 보내고, 참여 멤버가 없으면 요청하지 않는다', async () => {
     const { result } = renderCreate();
     await loaded(result);

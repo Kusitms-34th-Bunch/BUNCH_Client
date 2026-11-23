@@ -6,13 +6,13 @@ import { InviteCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { isDefiniteRejection } from '@/shared/api/errorStatus';
+import { replaceTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
 import { defaultBunchImage } from '@/shared/lib/bunchProfile';
 import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import {
   BUNCH_ERROR_CODES,
   INVITATION_ERROR_CODES,
@@ -60,7 +60,7 @@ export function BunchJoinInvitation() {
     onExit: () => {
       // 참여를 그만두면 보관한 초대도 지움(다음 로그인 때 다시 초대로 보내지 않게)
       clearPendingInvitation();
-      router.replace(ONBOARDING_PATHS.feed);
+      replaceTabPath(ONBOARDING_PATHS.feed, (href) => router.replace(href));
     },
   });
 
@@ -89,10 +89,11 @@ export function BunchJoinInvitation() {
         onSuccess: ({ outcome, bunch }) => {
           if (outcome === 'ALREADY_MEMBER') {
             // 확인한 뒤 다른 곳에서 이미 참여한 경우: 오류로 막지 않고 알린 뒤 번치로 이동
-            toastAfterNavigation(ONBOARDING_MESSAGES.alreadyMember);
             clearPendingInvitation();
             flow.discardIdempotencyKey();
-            router.replace(ONBOARDING_PATHS.feed);
+            replaceTabPath(ONBOARDING_PATHS.feed, (href) => router.replace(href), {
+              toast: ONBOARDING_MESSAGES.alreadyMember,
+            });
             return;
           }
           // 성공한 요청의 키는 더 쓰지 않음(뒤로 가서 같은 링크로 다시 시도하면 새 키로 서버가 판단)

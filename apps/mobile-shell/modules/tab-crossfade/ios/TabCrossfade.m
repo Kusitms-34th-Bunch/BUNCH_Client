@@ -98,6 +98,127 @@ static id<UIViewControllerAnimatedTransitioning> BNTabAnimationController(
   return [BNTabCrossfadeAnimator new];
 }
 
+// 탭 꾹 누르기를 JS(TabLongPressModule)에 알리는 알림 이름. userInfo의 index는 탭 바에 보이는 순서
+NSString *const BNTabLongPressNotification = @"BNTabLongPress";
+// 꾹 누르기를 받을 탭 순서(쉘 JS가 TabLongPressModule로 저장, 없으면 꺼짐). 그 밖의 탭은 평소처럼 다시 누름으로
+static NSString *const BNTabLongPressIndexKey = @"BNTabLongPressEnabledIndex";
+
+/** 탭 바의 항목 버튼들. iOS 버전마다 내부 클래스 이름이 달라 이름에 Tab·Button이 든 UIControl을 모음(iOS 26은 `_UITabButton`) */
+static void BNCollectTabButtons(UIView *view, NSMutableArray<UIView *> *buttons)
+{
+  for (UIView *subview in view.subviews) {
+    NSString *name = NSStringFromClass([subview class]);
+    if ([subview isKindOfClass:[UIControl class]] && [name containsString:@"Tab"] && [name containsString:@"Button"]) {
+      [buttons addObject:subview];
+    } else {
+      BNCollectTabButtons(subview, buttons);
+    }
+  }
+}
+
+/**
+ * 누른 위치의 탭 순서. iOS 26은 선택 렌즈용으로 같은 버튼을 두 겹 그려 같은 자리의 버튼을 하나로 셈
+ * 버튼 자리 수가 항목 수와 다르면(내부 구조 변경) 찾지 않음
+ */
+static NSInteger BNTabIndexAtPoint(UITabBar *tabBar, CGPoint point)
+{
+  NSMutableArray<UIView *> *buttons = [NSMutableArray array];
+  BNCollectTabButtons(tabBar, buttons);
+  NSMutableArray<NSValue *> *frames = [NSMutableArray array];
+  for (UIView *button in buttons) {
+    CGRect frame = [button convertRect:button.bounds toView:tabBar];
+    BOOL seen = NO;
+    for (NSValue *value in frames) {
+      if (fabs(CGRectGetMidX(value.CGRectValue) - CGRectGetMidX(frame)) < 1) {
+        seen = YES;
+        break;
+      }
+    }
+    if (!seen) {
+      [frames addObject:[NSValue valueWithCGRect:frame]];
+    }
+  }
+  if (frames.count == 0 || frames.count != tabBar.items.count) {
+    return NSNotFound;
+  }
+  [frames sortUsingComparator:^NSComparisonResult(NSValue *a, NSValue *b) {
+    CGFloat ax = CGRectGetMinX(a.CGRectValue);
+    CGFloat bx = CGRectGetMinX(b.CGRectValue);
+    return ax < bx ? NSOrderedAscending : (ax > bx ? NSOrderedDescending : NSOrderedSame);
+  }];
+  // 이웃 버튼 영역이 조금 겹쳐서 누른 곳을 품은 버튼 중 가운데가 가장 가까운 것
+  NSInteger found = NSNotFound;
+  CGFloat nearest = CGFLOAT_MAX;
+  for (NSUInteger index = 0; index < frames.count; index++) {
+    CGRect frame = frames[index].CGRectValue;
+    CGFloat distance = fabs(CGRectGetMidX(frame) - point.x);
+    if (CGRectContainsPoint(frame, point) && distance < nearest) {
+      nearest = distance;
+      found = (NSInteger)index;
+    }
+  }
+  return found;
+}
+
+/** 꾹 누르기를 받는 탭을 보고 있을 때 그 탭을 꾹 누르면(0.5초) 햅틱 뒤 JS에 알림. 그 밖에는 시작하지 않아 평소처럼 탭 이동·다시 누름 */
+@interface BNTabLongPressHandler : NSObject <UIGestureRecognizerDelegate>
+@end
+
+@implementation BNTabLongPressHandler
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)recognizer
+{
+  UITabBar *tabBar = (UITabBar *)recognizer.view;
+  NSNumber *enabled = [[NSUserDefaults standardUserDefaults] objectForKey:BNTabLongPressIndexKey];
+  NSInteger index = BNTabIndexAtPoint(tabBar, [recognizer locationInView:tabBar]);
+  return enabled != nil && index == enabled.integerValue && tabBar.selectedItem != nil &&
+      (NSUInteger)index == [tabBar.items indexOfObject:tabBar.selectedItem];
+}
+
+// 탭 바 자체의 누름·끌기(iOS 26 선택 렌즈) 인식을 막지 않음
+- (BOOL)gestureRecognizer:(__unused UIGestureRecognizer *)recognizer
+    shouldRecognizeSimultaneouslyWithGestureRecognizer:(__unused UIGestureRecognizer *)other
+{
+  return YES;
+}
+
+- (void)handleLongPress:(UILongPressGestureRecognizer *)recognizer
+{
+  if (recognizer.state != UIGestureRecognizerStateBegan) {
+    return;
+  }
+  UITabBar *tabBar = (UITabBar *)recognizer.view;
+  NSInteger index = BNTabIndexAtPoint(tabBar, [recognizer locationInView:tabBar]);
+  if (index == NSNotFound) {
+    return;
+  }
+  [[UIImpactFeedbackGenerator new] impactOccurred];
+  [[NSNotificationCenter defaultCenter] postNotificationName:BNTabLongPressNotification
+                                                      object:nil
+                                                    userInfo:@{@"index" : @(index)}];
+}
+
+@end
+
+static const void *kBNTabLongPressHandlerKey = &kBNTabLongPressHandlerKey;
+
+static void BNInstallTabLongPress(UITabBarController *controller)
+{
+  UITabBar *tabBar = controller.tabBar;
+  if (!tabBar || objc_getAssociatedObject(tabBar, kBNTabLongPressHandlerKey)) {
+    return;
+  }
+  BNTabLongPressHandler *handler = [BNTabLongPressHandler new];
+  UILongPressGestureRecognizer *recognizer =
+      [[UILongPressGestureRecognizer alloc] initWithTarget:handler action:@selector(handleLongPress:)];
+  recognizer.minimumPressDuration = 0.5;
+  recognizer.delegate = handler;
+  // 인식되면 손을 뗄 때의 탭 선택(다시 누름·맨 위로)을 보내지 않음
+  recognizer.cancelsTouchesInView = YES;
+  [tabBar addGestureRecognizer:recognizer];
+  objc_setAssociatedObject(tabBar, kBNTabLongPressHandlerKey, handler, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
 /**
  * react-native-screens의 탭 컨트롤러(RNSTabBarController, 자기 자신이 delegate)에 탭 전환 애니메이션과 탭 햅틱을 연결
  * 애니메이션: 전환 애니메이션 delegate 메서드를 추가. 라이브러리가 직접 구현하게 되면 추가하지 않고 그쪽 동작을 따름
@@ -116,6 +237,21 @@ static id<UIViewControllerAnimatedTransitioning> BNTabAnimationController(
   }
   SEL animationSelector = @selector(tabBarController:animationControllerForTransitionFromViewController:toViewController:);
   class_addMethod(tabBarController, animationSelector, (IMP)BNTabAnimationController, "@@:@@@");
+
+  // 꾹 누르기: 탭 컨트롤러가 화면에 붙을 때 탭 바에 제스처를 한 번 붙임(라이브러리가 직접 구현한 메서드를 감쌈)
+  SEL attachSelector = @selector(didMoveToParentViewController:);
+  Method attach = class_getInstanceMethod(tabBarController, attachSelector);
+  Method attachInherited = class_getInstanceMethod(class_getSuperclass(tabBarController), attachSelector);
+  if (attach && !(attachInherited && method_getImplementation(attachInherited) == method_getImplementation(attach))) {
+    void (*originalAttach)(id, SEL, UIViewController *) =
+        (void (*)(id, SEL, UIViewController *))method_getImplementation(attach);
+    method_setImplementation(attach, imp_implementationWithBlock(^(UITabBarController *controller, UIViewController *parent) {
+      originalAttach(controller, attachSelector, parent);
+      if (parent) {
+        BNInstallTabLongPress(controller);
+      }
+    }));
+  }
 
   SEL shouldSelectSelector = @selector(tabBarController:shouldSelectViewController:);
   Method shouldSelect = class_getInstanceMethod(tabBarController, shouldSelectSelector);

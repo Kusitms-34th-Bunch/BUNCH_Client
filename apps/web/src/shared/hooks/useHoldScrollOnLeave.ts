@@ -8,10 +8,16 @@ import { useLayoutEffect, type RefObject } from 'react';
 export function useHoldScrollOnLeave(anchorRef: RefObject<HTMLElement | null>, ready = true) {
   useLayoutEffect(() => {
     const main = anchorRef.current?.closest('main');
-    // Strict Mode의 재실행으로 남은 값 제거(그대로 두면 복원한 스크롤과 겹쳐 2배로 밀림)
+    // Strict Mode의 재실행으로 남은 값을 스크롤로 되돌림(지우기만 하면 맨 위로, 두면 복원한 스크롤과 겹쳐 2배로 밀림)
+    const held = main?.firstElementChild instanceof HTMLElement ? main.firstElementChild : null;
+    const transform = held?.style.transform ?? '';
+    const offset = transform.startsWith('translateY(')
+      ? -Number.parseFloat(transform.slice('translateY('.length))
+      : 0;
     for (const child of main?.children ?? []) {
       if (child instanceof HTMLElement) child.style.transform = '';
     }
+    if (main && offset > 0) main.scrollTop = offset;
     return () => {
       if (!main?.scrollTop) return;
       for (const child of main.children) {

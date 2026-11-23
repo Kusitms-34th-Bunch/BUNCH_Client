@@ -15,3 +15,4 @@ export { MyBunchFollows } from './follows/MyBunchFollows';
 export { OtherBunch } from './bunches/OtherBunch';
 export { OtherBunchFollows } from './bunches/OtherBunchFollows';
 export { OtherBunchMembers } from './bunches/OtherBunchMembers';
+export { PushOpenNavigator } from './notifications/PushOpenNavigator';

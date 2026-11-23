@@ -15,6 +15,7 @@ import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
 import { getMyBunches } from '@/shared/api/myBunches';
+import { emitMainTabGesture } from '@/shared/lib/mainTabGesture';
 import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -464,6 +465,96 @@ describe('BunchHome 서버 번치 전환', () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
     // 서버의 기본 번치가 바뀌어 다른 화면(사진함·번들 만들기)도 새 번치를 봄
     expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
+  });
+
+  it('번치 탭을 두 번 누르면 시트 없이 가장 최근에 쓴 다른 번치로 전환한다', async () => {
+    const client = renderHome();
+    await screen.findByRole('heading', { level: 1, name: /여행쥬아/ });
+    await waitFor(() => expect(client.getQueryData(sharedKeys.myBunches())).toBeDefined());
+
+    act(() => {
+      emitMainTabGesture({ tab: 'bunch', kind: 'doublePress' });
+    });
+
+    expect(await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ })).toBeTruthy();
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
+    expect(screen.queryByRole('dialog', { name: '번치 전환하기' })).toBeNull();
+    expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
+  });
+
+  // 전환은 시작하는 순간 mutation이 진행 중이 되어, 알림 직후 진행 중인 mutation이 없으면 전환하지 않은 것
+  const readyHome = async () => {
+    const client = renderHome();
+    await screen.findByRole('heading', { level: 1, name: /여행쥬아/ });
+    await waitFor(() => expect(client.getQueryData(sharedKeys.myBunches())).toBeDefined());
+    return client;
+  };
+
+  it('번치 탭을 꾹 누르면 헤더 번치 이름과 같은 전환 시트를 연다', async () => {
+    await readyHome();
+
+    act(() => {
+      emitMainTabGesture({ tab: 'bunch', kind: 'longPress' });
+    });
+    const sheet = await screen.findByRole('dialog', { name: '번치 전환하기' });
+    expect(within(sheet).getByRole('button', { name: /퇴근런클럽/ })).toBeTruthy();
+  });
+
+  // 초점 복귀는 시트(Base UI)가 함: 열 때 초점이 있던 곳으로
+  it('꾹 누르기로 연 시트를 닫으면 초점이 연 곳으로 돌아온다', async () => {
+    const user = userEvent.setup();
+    await readyHome();
+    // 하단 탭 링크 대신(탭 막대는 다른 feature) 누를 때 초점이 있던 요소
+    const opener = document.createElement('a');
+    opener.href = '/bunch';
+    opener.textContent = '번치';
+    document.body.append(opener);
+    onTestFinished(() => opener.remove());
+    opener.focus();
+
+    act(() => {
+      emitMainTabGesture({ tab: 'bunch', kind: 'longPress' });
+    });
+    await screen.findByRole('dialog', { name: '번치 전환하기' });
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '번치 전환하기' })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+  });
+
+  it('다른 탭의 두 번 누르기는 번치를 전환하지 않는다', async () => {
+    const client = await readyHome();
+
+    act(() => {
+      emitMainTabGesture({ tab: 'feed', kind: 'doublePress' });
+    });
+    expect(client.isMutating()).toBe(0);
+  });
+
+  it('전환 시트가 열려 있으면 두 번 눌러도 전환하지 않는다', async () => {
+    const user = userEvent.setup();
+    const client = await readyHome();
+    await openSwitcher(user);
+
+    act(() => {
+      emitMainTabGesture({ tab: 'bunch', kind: 'doublePress' });
+    });
+    expect(client.isMutating()).toBe(0);
+  });
+
+  it('소속 번치가 하나뿐이면 두 번 눌러도 전환하지 않는다', async () => {
+    mockDb.update((state) => ({
+      ...state,
+      memberships: state.memberships.filter(
+        (item) => item.memberId !== MOCK_MEMBER_IDS.me || item.bunchId === MOCK_BUNCH_ID,
+      ),
+    }));
+    const client = await readyHome();
+
+    act(() => {
+      emitMainTabGesture({ tab: 'bunch', kind: 'doublePress' });
+    });
+    expect(client.isMutating()).toBe(0);
   });
 
   it('저장은 됐는데 새 번치 홈 미리 받기만 실패하면 전환 성공으로 알리고 새 번치 오류 화면에서 다시 받는다', async () => {

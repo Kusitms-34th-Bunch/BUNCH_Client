@@ -62,6 +62,7 @@ export const posthogOptions = {
   // 오류 수집은 Sentry 담당(ADR 006)
   capture_exceptions: false,
   // 프로젝트 설정만으로 설문·위젯이 화면에 뜨거나 성능 수집이 늘지 않게 고정
+  // Web Vitals는 PostHog 확장 스크립트 대신 Next가 잰 값을 `web_vitals` 이벤트로 보냄(captureWebVital, ADR 023)
   disable_surveys: true,
   disable_conversations: true,
   disable_product_tours: true,
@@ -75,6 +76,30 @@ const analyticsKey = () =>
     : undefined;
 
 let ready: Promise<PostHog | undefined> | undefined;
+
+// 수집에 동의해 켜진 SDK(동의가 정해지기 전·동의하지 않았으면 없음)
+let capturing: PostHog | undefined;
+// 동의가 정해지기 전에 나온 성능 지표(첫 화면 LCP·FCP·TTFB는 로그인 확인보다 먼저 나옴). 동의하면 보내고 아니면 버림
+const pendingVitals: Properties[] = [];
+// 동의 여부가 한 번이라도 정해졌는지(미동의로 정해진 뒤의 지표는 나중에 동의해도 보내지 않게)
+let vitalsDecided = false;
+const MAX_PENDING_VITALS = 20;
+
+/** 성능 지표 한 건을 `web_vitals` 이벤트로. 동의 전이면 잠시 모아 두고, 동의하지 않은 사용자면 보내지 않음 */
+export const captureWebVital = (properties: Properties) => {
+  if (capturing) {
+    capturing.capture('web_vitals', properties);
+    return;
+  }
+  if (!vitalsDecided && pendingVitals.length < MAX_PENDING_VITALS) pendingVitals.push(properties);
+};
+
+const settleVitals = (posthog: PostHog | undefined) => {
+  capturing = posthog;
+  vitalsDecided = true;
+  const pending = pendingVitals.splice(0);
+  if (posthog) pending.forEach((properties) => posthog.capture('web_vitals', properties));
+};
 
 /** 키가 있으면 PostHog를 늦게 불러와 초기화. 동의를 확인한 뒤에만 부름(이전 사용자의 저장된 동의로 먼저 수집되지 않게) */
 const loadAnalytics = () =>
@@ -114,10 +139,20 @@ const writeMember = (memberId: string) => {
  * 동의하지 않았으면(비로그인·미동의) SDK를 불러오지 않고, 이미 켜져 있었으면 끄고 익명 ID를 새로 만듦
  * 로그아웃은 문서를 새로 열어 이 정리가 실행되지 않으므로, 다음 회원이 동의할 때 회원을 비교해 이어지지 않게 함
  */
+// 마지막 동의 호출 순번(SDK 로딩을 기다리는 사이 상태가 바뀌면 앞선 호출은 아무것도 하지 않게)
+let latestConsent = 0;
+
 export async function setAnalyticsConsent(memberId: string | null) {
+  const call = ++latestConsent;
+  // 미동의는 기다리기 전에 확정(로딩 중에 들어온 지표가 앞선 동의 호출로 나가지 않게)
+  if (memberId === null) settleVitals(undefined);
   if (memberId === null && !ready) return;
   const posthog = await loadAnalytics();
-  if (!posthog) return;
+  if (call !== latestConsent) return;
+  if (!posthog) {
+    settleVitals(undefined);
+    return;
+  }
   if (memberId !== null) {
     if (readMember() !== memberId) {
       // reset은 opt_in 전에(뒤에 하면 기본값인 꺼짐으로 돌아감)
@@ -125,6 +160,7 @@ export async function setAnalyticsConsent(memberId: string | null) {
       writeMember(memberId);
     }
     if (!posthog.has_opted_in_capturing()) posthog.opt_in_capturing();
+    settleVitals(posthog);
     return;
   }
   if (posthog.has_opted_in_capturing()) {

@@ -128,6 +128,8 @@ type RenderOptions = {
   viewer?: { id: string; name: string } | null;
   focusComments?: boolean;
   showComments?: boolean;
+  targetCommentId?: string;
+  instantComment?: boolean;
 };
 
 /** 상세 응답을 캐시에 넣고 그림. 없는 번들 ID는 서버 응답(404)을 기다림 */
@@ -137,6 +139,8 @@ const renderDetail = (
     viewer = { id: '1', name: '여행가조' },
     focusComments = false,
     showComments = false,
+    targetCommentId,
+    instantComment,
   }: RenderOptions = {},
 ) => {
   const client = createTestQueryClient();
@@ -153,6 +157,8 @@ const renderDetail = (
       bunch={BUNCHES[bunchId]}
       focusComments={focusComments}
       showComments={showComments}
+      targetCommentId={targetCommentId}
+      instantComment={instantComment}
       links={links}
     />,
     { wrapper: createQueryWrapper(client) },
@@ -223,6 +229,13 @@ const holdCommentPost = () => {
   return () => release();
 };
 
+/** 댓글 영역을 본문 500px 아래에 두고 본문이 그만큼 내려갈 수 있게 함(happy-dom은 배치를 계산하지 않음) */
+const placeComments = (section: HTMLElement) => {
+  vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
+  const main = section.closest('main');
+  if (main) Object.defineProperty(main, 'scrollHeight', { value: 2000, configurable: true });
+};
+
 describe('BundleDetail', () => {
   it('위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
     const user = userEvent.setup();
@@ -288,6 +301,16 @@ describe('BundleDetail', () => {
     renderDetail();
     await user.click(screen.getByRole('button', { name: /여행가조/ }));
     expect(push).toHaveBeenLastCalledWith('/bunch');
+  });
+
+  it('번치로 갈 때 상세 틀의 전환 id를 drill용으로 바꾸고, 이 화면에 남은 채 다음 입력이 오면 되돌린다', async () => {
+    const user = userEvent.setup();
+    const { container } = renderDetail();
+    container.setAttribute('data-ssgoi-transition', '/bundles/detail');
+    await user.click(screen.getByRole('button', { name: /여행가조/ }));
+    expect(container.getAttribute('data-ssgoi-transition')).toBe('/bundles/detail/to-bunch');
+    fireEvent.pointerDown(document.body);
+    expect(container.getAttribute('data-ssgoi-transition')).toBe('/bundles/detail');
   });
 
   it('댓글 작성자의 프로필을 누르면 그 멤버 프로필 화면으로 간다', async () => {
@@ -378,7 +401,7 @@ describe('BundleDetail', () => {
     const user = userEvent.setup();
     renderDetail();
     const section = screen.getByRole('region', { name: '댓글' });
-    vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
+    placeComments(section);
 
     const focus = vi.spyOn(HTMLTextAreaElement.prototype, 'focus');
     await user.click(screen.getByRole('button', { name: /^댓글/ }));
@@ -392,10 +415,37 @@ describe('BundleDetail', () => {
   it('?section=comments(댓글 알림)로 들어오면 댓글 영역으로 스크롤만 하고 입력란에 초점을 주지 않는다', async () => {
     renderDetail('1', { showComments: true });
     const section = screen.getByRole('region', { name: '댓글' });
-    vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
+    placeComments(section);
 
     await waitFor(() => expect(section.closest('main')!.scrollTop).toBe(500));
     expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+  });
+
+  it('?comment=(댓글 알림의 댓글 ID)로 들어오면 답글까지 찾아가 초점을 준다', async () => {
+    renderDetail('901', { showComments: true, targetCommentId: '5002' });
+    const region = screen.getByRole('region', { name: '댓글' });
+    await within(region).findByText('좋아요 🙌');
+    const reply = within(region).getByRole('listitem', { name: '큐시즘님의 답글' });
+
+    await waitFor(() => expect(document.activeElement).toBe(reply));
+    // 코드로 준 초점은 떠날 때까지 테두리를 감춤
+    expect(reply.hasAttribute('data-quiet-focus')).toBe(true);
+    // 키보드를 쓰기 시작하면 바로 테두리를 보임
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(reply.hasAttribute('data-quiet-focus')).toBe(false);
+    expect(document.activeElement).toBe(reply);
+    // 초점을 받으면 작성자 이름 다음에 본문도 읽힘
+    const body = document.getElementById(reply.getAttribute('aria-describedby')!);
+    expect(body?.textContent).toBeTruthy();
+    expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+  });
+
+  it('알림의 댓글이 다음 쪽에 있으면 그 쪽을 받아 찾아간다', async () => {
+    seedManyComments(25);
+    renderDetail('901', { showComments: true, targetCommentId: '6000' });
+
+    expect(await screen.findByText('오래된 댓글 1', {}, { timeout: 3000 })).toBeTruthy();
+    await waitFor(() => expect(document.activeElement?.id).toBe('comment-6000'));
   });
 
   describe('화면 전환 중 진입', () => {
@@ -443,6 +493,189 @@ describe('BundleDetail', () => {
       expect(document.activeElement).toBe(textbox());
     });
 
+    it('말풍선 진입은 카드가 열리기 전에 이미 댓글 위치로 내려 두고, 전환이 끝나면 입력란에 초점을 둔다', () => {
+      // 처음 그려지는 순간의 배치(happy-dom은 배치가 없음): 댓글 영역은 main 내용의 500px 지점, 스크롤만큼 올라감
+      // defineProperty 설명 객체의 메서드는 this가 any라 요소로 바꿔 씀
+      const proto = HTMLElement.prototype;
+      const height = Object.getOwnPropertyDescriptor(proto, 'scrollHeight');
+      const patched = proto as unknown as Record<string, unknown>;
+      Object.defineProperty(proto, 'getBoundingClientRect', {
+        configurable: true,
+        value() {
+          const element = this as HTMLElement;
+          if (element.tagName !== 'SECTION') return { top: 0 } as DOMRect;
+          return { top: 500 - (element.closest('main')?.scrollTop ?? 0) } as DOMRect;
+        },
+      });
+      Object.defineProperty(proto, 'scrollHeight', {
+        configurable: true,
+        get() {
+          return (this as HTMLElement).tagName === 'MAIN' ? 2000 : 0;
+        },
+      });
+      try {
+        renderDetail('1', { focusComments: true });
+        const main = screen.getByRole('region', { name: '댓글' }).closest('main')!;
+        // 전환이 끝나기 전(나가는 화면 표식이 남아 있음)에 이미 댓글 위치
+        expect(main.scrollTop).toBe(500);
+        leaving.remove();
+        runFrames();
+        expect(main.scrollTop).toBe(500);
+        expect(document.activeElement).toBe(textbox());
+      } finally {
+        delete patched.getBoundingClientRect;
+        if (height) Object.defineProperty(proto, 'scrollHeight', height);
+        else delete patched.scrollHeight;
+      }
+    });
+
+    it('알림 진입은 전환이 끝나면 댓글로 부드럽게 내리고 초점은 옮기지 않는다', () => {
+      renderDetail('1', { showComments: true });
+      const section = screen.getByRole('region', { name: '댓글' });
+      const main = section.closest('main')!;
+      placeComments(section);
+      const scrollTo = vi.fn();
+      main.scrollTo = scrollTo as typeof main.scrollTo;
+
+      leaving.remove();
+      runFrames();
+      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'smooth' });
+      act(() => {
+        main.dispatchEvent(new Event('scrollend'));
+      });
+      expect(document.activeElement).not.toBe(textbox());
+    });
+
+    it('푸시로 열면(via=push) 전환을 기다리지 않고 애니메이션 없이 그 댓글 위치에 둔다', async () => {
+      renderDetail('901', { showComments: true, targetCommentId: '5002', instantComment: true });
+      const region = screen.getByRole('region', { name: '댓글' });
+      await within(region).findByText('좋아요 🙌');
+      const main = region.closest('main')!;
+      const scrollTo = vi.fn();
+      main.scrollTo = scrollTo as typeof main.scrollTo;
+
+      // 나가는 화면 표식이 남아 있어도 기다리지 않음
+      runFrames();
+      runFrames();
+      const reply = within(region).getByRole('listitem', { name: '큐시즘님의 답글' });
+      expect(document.activeElement).toBe(reply);
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('찾은 뒤 위쪽 답글이 늦게 그려져 대상이 밀리면 상한까지 바로 되돌리고, 상한이 지나면 멈춘다', async () => {
+      renderDetail('901', { showComments: true, targetCommentId: '5002', instantComment: true });
+      const region = screen.getByRole('region', { name: '댓글' });
+      await within(region).findByText('좋아요 🙌');
+      const main = region.closest('main')!;
+      // happy-dom은 배치가 없어 스크롤 가능한 높이만 줌
+      Object.defineProperty(main, 'scrollHeight', { configurable: true, value: 2000 });
+      runFrames();
+      runFrames();
+      const reply = within(region).getByRole('listitem', { name: '큐시즘님의 답글' });
+      expect(document.activeElement).toBe(reply);
+
+      // 늦게 그려진 답글로 대상이 300px 아래로 밀림
+      const box = vi.spyOn(reply, 'getBoundingClientRect').mockReturnValue({ top: 300 } as DOMRect);
+      runFrames();
+      expect(main.scrollTop).toBe(300);
+      // 되돌린 뒤 제자리면 더 쓰지 않음
+      box.mockReturnValue({ top: 0 } as DOMRect);
+      runFrames();
+      expect(main.scrollTop).toBe(300);
+
+      now = 5000;
+      runFrames();
+      expect(frames.size).toBe(0);
+    });
+
+    // 위 테스트와 같은 진입: 대상 답글에 초점이 갈 때까지
+    const enterReply = async () => {
+      renderDetail('901', { showComments: true, targetCommentId: '5002', instantComment: true });
+      const region = screen.getByRole('region', { name: '댓글' });
+      await within(region).findByText('좋아요 🙌');
+      const main = region.closest('main')!;
+      Object.defineProperty(main, 'scrollHeight', { configurable: true, value: 2000 });
+      runFrames();
+      runFrames();
+      const reply = within(region).getByRole('listitem', { name: '큐시즘님의 답글' });
+      expect(document.activeElement).toBe(reply);
+      return { main, reply };
+    };
+
+    it('화면보다 긴 댓글은 윗부분을 맞춘 채 두고 가운데로 내리지 않는다', async () => {
+      const { main, reply } = await enterReply();
+      Object.defineProperty(main, 'clientHeight', { configurable: true, value: 400 });
+      Object.defineProperty(reply, 'offsetHeight', { configurable: true, value: 1000 });
+      runFrames();
+      expect(main.scrollTop).toBe(0);
+    });
+
+    it('위치를 지키는 동안 화면에 손을 대면 멈추고 되돌리지 않는다', async () => {
+      const { main, reply } = await enterReply();
+      fireEvent.touchStart(document);
+      vi.spyOn(reply, 'getBoundingClientRect').mockReturnValue({ top: 300 } as DOMRect);
+      runFrames();
+      expect(main.scrollTop).toBe(0);
+      expect(frames.size).toBe(0);
+    });
+
+    it('터치 이벤트 없이 스크롤되면(스크린 리더·스위치 조작) 사용자 위치로 보고 되돌리지 않는다', async () => {
+      const { main, reply } = await enterReply();
+      runFrames();
+      main.scrollTop = 120;
+      vi.spyOn(reply, 'getBoundingClientRect').mockReturnValue({ top: 300 } as DOMRect);
+      runFrames();
+      expect(main.scrollTop).toBe(120);
+      expect(frames.size).toBe(0);
+    });
+
+    it('이미 다른 곳에 초점이 있어 옮기지 않았으면 위치도 지키지 않는다', async () => {
+      renderDetail('901', { showComments: true, targetCommentId: '5002', instantComment: true });
+      const region = screen.getByRole('region', { name: '댓글' });
+      await within(region).findByText('좋아요 🙌');
+      const main = region.closest('main')!;
+      Object.defineProperty(main, 'scrollHeight', { configurable: true, value: 2000 });
+      const reply = within(region).getByRole('listitem', { name: '큐시즘님의 답글' });
+      vi.spyOn(reply, 'getBoundingClientRect').mockReturnValue({ top: 300 } as DOMRect);
+      act(() => screen.getByRole('textbox').focus());
+      runFrames();
+      runFrames();
+      runFrames();
+      expect(document.activeElement).not.toBe(reply);
+      expect(frames.size).toBe(0);
+    });
+
+    it('초점이 대상 밖으로 가면(스크린 리더 탐색 등) 위치 지키기를 멈춘다', async () => {
+      const { main, reply } = await enterReply();
+      act(() => screen.getByRole('textbox').focus());
+      vi.spyOn(reply, 'getBoundingClientRect').mockReturnValue({ top: 300 } as DOMRect);
+      runFrames();
+      expect(main.scrollTop).toBe(0);
+      expect(frames.size).toBe(0);
+    });
+
+    it('알림의 댓글이 없으면(지워짐 등) 잠시 뒤 댓글 영역을 보이고, 상한이 지나면 찾기를 멈춘다', async () => {
+      renderDetail('901', { showComments: true, targetCommentId: '99999' });
+      const region = screen.getByRole('region', { name: '댓글' });
+      await within(region).findByText('좋아요 🙌');
+      const main = region.closest('main')!;
+      placeComments(region);
+      const scrollTo = vi.fn();
+      main.scrollTo = scrollTo as typeof main.scrollTo;
+      leaving.remove();
+
+      runFrames();
+      runFrames();
+      expect(scrollTo).not.toHaveBeenCalled();
+      now = 600;
+      runFrames();
+      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'smooth' });
+      now = 5000;
+      runFrames();
+      expect(frames.size).toBe(0);
+      expect(document.activeElement).not.toBe(textbox());
+    });
+
     it('표식이 남아 있어도 최대 대기 시간(1초)이 지나면 입력란에 초점을 둔다', () => {
       renderDetail('1', { focusComments: true });
 
@@ -459,7 +692,7 @@ describe('BundleDetail', () => {
       const user = userEvent.setup();
       renderDetail('1', { focusComments: true });
       const section = screen.getByRole('region', { name: '댓글' });
-      vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
+      placeComments(section);
 
       runFrames();
       // 뒤로 가기 버튼으로 초점을 옮김
@@ -481,6 +714,28 @@ describe('BundleDetail', () => {
       leaving.remove();
       runFrames();
       expect(document.activeElement).toBe(textbox());
+    });
+
+    it('기다리는 동안 휠이나 손가락으로 끌어 스크롤하면 예약한 스크롤·초점을 취소한다', () => {
+      for (const scroll of [
+        (target: Element) => fireEvent.wheel(target),
+        (target: Element) => fireEvent.touchMove(target),
+      ]) {
+        const { unmount } = renderDetail('1', { showComments: true });
+        const section = screen.getByRole('region', { name: '댓글' });
+        placeComments(section);
+        const main = section.closest('main')!;
+        const scrollTo = vi.fn();
+        main.scrollTo = scrollTo as typeof main.scrollTo;
+        runFrames();
+
+        scroll(main);
+        leaving.remove();
+        runFrames();
+        expect(scrollTo).not.toHaveBeenCalled();
+        unmount();
+        document.body.append(leaving);
+      }
     });
 
     it('기다리는 동안 누를 수 있는 요소를 누르면 예약한 초점을 취소한다', () => {
@@ -509,7 +764,7 @@ describe('BundleDetail', () => {
     Element.prototype.scrollIntoView = scrollIntoView;
     renderDetail('1', { focusComments: true });
     const section = screen.getByRole('region', { name: '댓글' });
-    vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 500 } as DOMRect);
+    placeComments(section);
 
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')));
     expect(section.closest('main')!.scrollTop).toBe(500);

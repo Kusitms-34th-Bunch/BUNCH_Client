@@ -2,11 +2,12 @@
 
 import { ConfirmDialog, cn } from '@app/design-system';
 import { FloatingButton } from '@app/design-system/web';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
 import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { onMainTabGesture } from '@/shared/lib/mainTabGesture';
 import { useRefreshActiveQueries } from '@/shared/query/useRefreshActiveQueries';
 import type { ListMoreQuery } from '../../lib/pages';
 import type { BunchHomeActions, BunchHomeData, DraftBundle } from '../../lib/types';
@@ -83,7 +84,7 @@ export function BunchHomeScreen({
   const contentRef = useRef<HTMLDivElement>(null);
   const switchMotion = useBunchSwitchMotion(contentRef, current.id);
   // 번치 전환 시트와 접근 불가 번치 안내(사진함 헤더와 같은 hook)
-  const { openSwitcher, switcherOpen } = useBunchSwitchSheet({
+  const { openSwitcher, switcherOpen, switchTo } = useBunchSwitchSheet({
     currentId: current.id,
     bunches,
     switchBunch: (bunchId: string) => {
@@ -97,6 +98,28 @@ export function BunchHomeScreen({
     onSwitched: () => setSwitched(true),
     onAddBunch,
   });
+  // 번치 탭 두 번 누르기: 전환 목록의 두 번째(지금 번치 다음으로 최근에 쓴 번치, 서버 lastUsedAt 순)로 전환
+  // 소속 번치가 하나뿐이면 아무것도 하지 않음. 접근 불가 번치는 access로 거름
+  const recentBunchId = bunches.find(
+    (bunch) => bunch.id !== current.id && bunch.access === 'active',
+  )?.id;
+  const switchToRecent = usePreservedCallback(() => {
+    if (recentBunchId !== undefined && !switcherOpen) switchTo(recentBunchId);
+  });
+  // 번치 탭 꾹 누르기: 헤더 번치 이름을 누를 때와 같은 전환 시트
+  const openSwitcherOnce = usePreservedCallback(() => {
+    if (!switcherOpen) openSwitcher();
+  });
+  useEffect(
+    () =>
+      onMainTabGesture((gesture) => {
+        if (gesture.tab !== 'bunch') return false;
+        if (gesture.kind === 'doublePress') switchToRecent();
+        else openSwitcherOnce();
+        return true;
+      }),
+    [switchToRecent, openSwitcherOnce],
+  );
   // 창이 열린 사이 앞선 삭제가 끝날 수 있어 확정할 때의 최신 동작을 부름
   const deleteDraft = usePreservedCallback((id: string) => actions.deleteDraftBundle(id));
   const openDeleteDraft = (target: DraftBundle) =>
@@ -153,14 +176,14 @@ export function BunchHomeScreen({
         key={current.id}
         ref={contentRef}
         className={cn(
-          'flex min-h-full flex-col',
+          'relative flex min-h-full flex-col',
           switched && 'motion-reduce:animate-[page-content-in_150ms_ease-out]',
         )}
       >
+        {/* 프로필 이미지는 배경 영역 밖 형제로 둠: hero가 영역마다 따로 흐리게 하면(투명도는 쌓임 맥락을 만듦) 배경 안의 이미지가 흰 시트 아래로 깔렸다가 끝나면 올라옴 */}
+        <BunchProfileImage imageSrc={current.imageSrc} characterType={current.characterType} />
         {/* 프로필 이미지 영역(Figma 헤더 아래 82px + 시트 둥근 모서리 뒤 20px). 90px 프로필 이미지는 영역 위에서 24px 아래에 놓여 흰 시트에 32px 걸침 */}
-        <div className={cn('relative h-25.5 shrink-0', background.top)}>
-          <BunchProfileImage imageSrc={current.imageSrc} characterType={current.characterType} />
-        </div>
+        <div className={cn('h-25.5 shrink-0', background.top)} />
         <div className="bg-surface-primary rounded-t-r10 pt-padding-p16 gap-s8 relative -mt-5 flex flex-1 flex-col">
           <BunchProfile
             bunch={current}

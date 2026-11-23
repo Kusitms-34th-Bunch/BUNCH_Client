@@ -1,5 +1,4 @@
 import {
-  cn,
   FillPencilMediumIcon,
   FillPhotoMediumIcon,
   LinePencilMediumIcon,
@@ -10,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ListMoreQuery } from '../../lib/pages';
 import type { CompletedBundle, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
+import { TAB_SLIDE_PANEL_CLASS, useTabSlideMotion } from '../../hooks/useTabSlideMotion';
 import { CompletedBundleGrid } from '../CompletedBundleGrid';
 import { ListMore } from '../ListMore';
 import { BundleEmpty } from './BundleEmpty';
@@ -17,8 +17,8 @@ import { DraftBundleList } from './DraftBundleList';
 
 export type BundleTab = 'completed' | 'draft';
 
-// 탭 전환 시 내용 Dissolve / Ease out / 75ms(화면설계서 3)
-const panelFade = 'animate-[page-content-in_75ms_ease-out] motion-reduce:animate-none';
+// 탭 순서(밀기 방향: 오른쪽 탭으로 가면 새 패널이 오른쪽에서 들어옴)
+const TAB_ORDER: readonly BundleTab[] = ['completed', 'draft'];
 
 // 고른 탭을 이 화면의 history 항목에 번치 id와 함께 둠: 작성 중인 번들 등에서 뒤로 돌아오면 그 탭으로, 새로 들어오면 처음 탭으로
 // 번치 id가 다르면(그사이 번치를 바꿈) 쓰지 않음
@@ -79,14 +79,17 @@ export function BundleTabs({
     writeHistoryTab(bunchId, firstTab.current);
   }, [bunchId]);
   const gridRef = useRef<HTMLUListElement>(null);
-  // 탭을 한 번이라도 바꿨는지(첫 진입·되돌아올 때는 디졸브 생략)
-  const [tabChanged, setTabChanged] = useState(false);
+  // 탭 전환: 패널이 밑줄과 같은 방향으로 좌우로 밀림(화면설계서 3의 75ms 디졸브 대신, motion.md)
+  const panelsRef = useRef<HTMLDivElement>(null);
+  const slide = useTabSlideMotion(panelsRef, tab);
   return (
     <MenuTabs.Root
       value={tab}
       onValueChange={(value) => {
-        setTabChanged(true);
-        setTab(value as BundleTab);
+        const next = value as BundleTab;
+        if (next === tab) return;
+        slide.begin(TAB_ORDER.indexOf(next) > TAB_ORDER.indexOf(tab) ? 1 : -1);
+        setTab(next);
         writeHistoryTab(bunchId, value as BundleTab);
       }}
       className="flex flex-1 flex-col"
@@ -107,46 +110,45 @@ export function BundleTabs({
           selectedIcon={<FillPencilMediumIcon />}
         />
       </MenuTabs.List>
-      {/* 페이드는 들어오는 패널에만(나가는 패널에도 붙이면 첫 전환에 이전 내용이 0부터 다시 나타나고 Base UI가 그 애니메이션을 기다려 두 패널이 겹침) */}
-      <MenuTabs.Panel
-        value="completed"
-        className={cn(tabChanged && tab === 'completed' && panelFade)}
-      >
-        {completedBundles.length > 0 ? (
-          <>
-            <CompletedBundleGrid
-              bunchId={bunchId}
-              bundles={completedBundles}
-              onOpen={onOpenBundle}
-              onPressStart={onPressBundle}
-              listRef={gridRef}
+      {/* 밀기 동안 나가는 패널이 이 틀 안에 겹쳐 남음(useTabSlideMotion) */}
+      <div ref={panelsRef} className="relative flex flex-1 flex-col">
+        <MenuTabs.Panel value="completed" className={TAB_SLIDE_PANEL_CLASS}>
+          {completedBundles.length > 0 ? (
+            <>
+              <CompletedBundleGrid
+                bunchId={bunchId}
+                bundles={completedBundles}
+                onOpen={onOpenBundle}
+                onPressStart={onPressBundle}
+                listRef={gridRef}
+              />
+              {completedMore ? <ListMore query={completedMore} listRef={gridRef} /> : null}
+            </>
+          ) : (
+            <div className="pt-s24">
+              <BundleEmpty
+                title={BUNCH_HOME_MESSAGES.completedEmptyTitle}
+                showCreateButton
+                onCreateBundle={onCreateBundle}
+              />
+            </div>
+          )}
+        </MenuTabs.Panel>
+        <MenuTabs.Panel value="draft" className={TAB_SLIDE_PANEL_CLASS}>
+          {draftBundles.length > 0 ? (
+            <DraftBundleList
+              bundles={draftBundles}
+              onOpen={onOpenDraft}
+              onPressStart={onPressDraft}
+              onDelete={onDeleteDraft}
             />
-            {completedMore ? <ListMore query={completedMore} listRef={gridRef} /> : null}
-          </>
-        ) : (
-          <div className="pt-s24">
-            <BundleEmpty
-              title={BUNCH_HOME_MESSAGES.completedEmptyTitle}
-              showCreateButton
-              onCreateBundle={onCreateBundle}
-            />
-          </div>
-        )}
-      </MenuTabs.Panel>
-      <MenuTabs.Panel value="draft" className={cn(tabChanged && tab === 'draft' && panelFade)}>
-        {draftBundles.length > 0 ? (
-          <DraftBundleList
-            bundles={draftBundles}
-            onOpen={onOpenDraft}
-            onPressStart={onPressDraft}
-            onDelete={onDeleteDraft}
-          />
-        ) : (
-          <div className="pt-s25">
-            <BundleEmpty title={BUNCH_HOME_MESSAGES.draftEmptyTitle} />
-          </div>
-        )}
-      </MenuTabs.Panel>
+          ) : (
+            <div className="pt-s25">
+              <BundleEmpty title={BUNCH_HOME_MESSAGES.draftEmptyTitle} />
+            </div>
+          )}
+        </MenuTabs.Panel>
+      </div>
     </MenuTabs.Root>
   );
 }

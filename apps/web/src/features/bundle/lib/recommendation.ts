@@ -36,7 +36,7 @@ const toDateParts = (date: string) => {
  * 카드 날짜(기능 명세 4.2.2): 자정을 넘긴 묶음은 끝 날짜까지(`10월 19일~20일`), 올해가 아니면 시작 날짜 앞에 연도
  * 끝 날짜가 시작과 같으면 하루짜리로 봄
  */
-export const getCardDate = (recommendation: Recommendation, currentYear: number) => {
+export const getCardDate = (recommendation: Recommendation, currentYear: number | null) => {
   const start = toDateParts(recommendation.startDate);
   const end = recommendation.endDate ? toDateParts(recommendation.endDate) : undefined;
   const range = end && recommendation.endDate !== recommendation.startDate ? end : undefined;
@@ -51,7 +51,7 @@ export const getCardDate = (recommendation: Recommendation, currentYear: number)
 /** 추천 순서를 지킨 채 같은 촬영일끼리 묶음(날짜가 처음 나온 순서). 날짜를 모르는 사진은 맨 뒤 */
 export const groupByDate = (
   photos: readonly PhotoBoxPhoto[],
-  currentYear: number,
+  currentYear: number | null,
 ): PhotoSection[] => {
   const sections: PhotoSection[] = [];
   const undated: PhotoBoxPhoto[] = [];
