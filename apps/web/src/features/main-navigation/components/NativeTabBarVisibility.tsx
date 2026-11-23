@@ -19,10 +19,26 @@ const COVER_WAIT_MS = 1000;
 // 탭 바 자리(화면 아래 15%)를 이 비율 넘게 덮는 것이 있으면 기다림
 const TAB_BAR_ZONE_RATIO = 0.15;
 const COVER_THRESHOLD = 0.2;
+// 이만큼 넘게 흐려진 것은 덮지 않은 것으로 봄(상세에서 돌아올 때 나가는 화면은 제자리에서 흐려지기만 해 끝까지 기다리면 탭 바가 늦게 나옴, #532)
+const FADED_OPACITY = 0.5;
+
+/** 조상까지 곱한 실제 투명도(값이 없으면 1) */
+const visibleOpacity = (element: Element) => {
+  let opacity = 1;
+  for (
+    let node: Element | null = element;
+    node && node !== document.body;
+    node = node.parentElement
+  ) {
+    const value = Number.parseFloat(getComputedStyle(node).opacity);
+    if (!Number.isNaN(value)) opacity *= value;
+  }
+  return opacity;
+};
 
 /**
  * 시스템 탭 바는 웹 위에 그려져 웹 화면 아래로 내릴 수 없어, 다시 보일 때 그 자리를 덮던 것이 비켜난 뒤에 보임
- * (스프링·전환이 다 끝나기를 기다리지 않고 실제 위치로 판단)
+ * (스프링·전환이 다 끝나기를 기다리지 않고 실제 위치·투명도로 판단)
  */
 const somethingCoversTabBar = () => {
   const zoneTop = window.innerHeight * (1 - TAB_BAR_ZONE_RATIO);
@@ -32,7 +48,13 @@ const somethingCoversTabBar = () => {
     const rect = element.getBoundingClientRect();
     const width = Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0);
     const height = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, zoneTop);
-    return width > 0 && height > 0 && (width * height) / zoneArea > COVER_THRESHOLD;
+    return (
+      width > 0 &&
+      height > 0 &&
+      (width * height) / zoneArea > COVER_THRESHOLD &&
+      // 바텀시트는 내려가며 함께 흐려져 반쯤 남은 채 투명도가 먼저 떨어지므로 나가는 화면에만 적용
+      !(element.hasAttribute('data-page-leaving') && visibleOpacity(element) <= FADED_OPACITY)
+    );
   });
 };
 
