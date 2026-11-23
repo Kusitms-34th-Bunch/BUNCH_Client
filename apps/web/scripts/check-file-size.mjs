@@ -8,12 +8,7 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const LIMIT = 300;
 const KEEP = '크기 유지:';
 // 설정 표·가짜 서버는 한곳에 모여 있는 편이 읽기 쉬워 제외
-const SKIP = [
-  'mocks/',
-  'app/(app)/AppTransitions.tsx',
-  // ponytail: 팀원 작업 중인 feature는 그 작업이 머지된 뒤 정리
-  'features/bundle/',
-];
+const SKIP = ['mocks/', 'app/(app)/AppTransitions.tsx'];
 
 const files = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
