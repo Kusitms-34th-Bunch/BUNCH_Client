@@ -22,6 +22,13 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 Figma
 - overlay, dialog, toast처럼 전역 stacking 관계가 반복되면 숫자 복사가 아니라 의미 기반 token을 도입할지 검토한다.
 - workspace package의 class가 app build에서 누락되지 않도록, package component를 도입할 때 Tailwind source scanning 범위를 실제 build로 확인한다.
 
+## CSS를 어디에 쓰는지
+
+- 기본은 Tailwind class다. 아래 둘만 CSS 파일에 쓴다.
+- **CSS 모듈**(`*.module.css`, 쓰는 컴포넌트 옆): Tailwind로 쓰기 어려운 스타일을 한 컴포넌트나 한 묶음만 쓸 때. 여러 단계 `@keyframes`, `@property` 등록, `[data-pull] > main > *` 같은 구조 선택자가 해당한다. 클래스·키프레임 이름에 해시가 붙어 다른 화면과 겹치지 않고, 컴포넌트를 지우면 함께 사라진다. 클래스 이름은 접두어 없이 camelCase로 써서 `styles.logo`처럼 부른다(모듈 이름이 소유 범위). 예: `inviteRise.module.css`, `shared/components/refresh/pullRefresh.module.css`.
+- **전역**(`apps/web/src/app/globals.css`): Tailwind·token import, 전역 CSS 변수, `@layer base` 규칙, 그리고 둘 이상의 feature가 쓰는 `@utility`·키프레임만. 한 화면 전용 스타일은 두지 않는다(2026-11-23, 325줄 → 80줄 정리).
+- 디자인 시스템 컴포넌트의 모듈은 같은 기준으로 컴포넌트 폴더에 둔다.
+
 ## token 승격 기준
 
 아래가 모두 맞을 때만 공통 token을 만든다.

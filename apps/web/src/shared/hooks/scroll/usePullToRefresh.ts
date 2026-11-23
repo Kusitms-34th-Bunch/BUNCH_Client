@@ -7,11 +7,11 @@ export const PULL_THRESHOLD_PX = 64;
 const PULL_MAX_PX = 72;
 /** 이 거리보다 적게 움직인 터치는 탭·스크롤로 보고 당김으로 취급하지 않음 */
 const START_SLOP_PX = 8;
-/** 열리고 닫히는 시간(Figma 3.5초 타임라인의 0.6초 구간). 곡선은 globals.css의 `.pull-refresh` */
+/** 열리고 닫히는 시간(Figma 3.5초 타임라인의 0.6초 구간). 곡선은 `pullRefresh.module.css` */
 const SETTLE_MS = 600;
 /** 새로고침이 순식간에 끝나도 표시가 깜빡이지 않도록 열린 채 유지하는 최소 시간 */
 const MIN_REFRESH_MS = 600;
-/** 표시기의 위치와 크기(globals.css `.pull-refresh-indicator`, `RefreshSpark`와 같아야 함). 스크롤로 내용이 표시기 자리를 덮는 만큼 표시기를 흐리게 하는 계산에 씀 */
+/** 표시기의 위치와 크기(`pullRefresh.module.css`의 표시기, `RefreshSpark`와 같아야 함). 스크롤로 내용이 표시기 자리를 덮는 만큼 표시기를 흐리게 하는 계산에 씀 */
 const INDICATOR_TOP_PX = 20;
 const INDICATOR_SIZE_PX = 36;
 /** 「새로고침을 마쳤어요」 안내를 남겨 두는 시간 */
