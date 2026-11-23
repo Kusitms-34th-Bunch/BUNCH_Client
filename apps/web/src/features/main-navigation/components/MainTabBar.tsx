@@ -104,8 +104,14 @@ export function MainTabBar() {
   useEffect(endPress, [pathname]);
 
   // 다른 탭을 거쳐 온 누름이 앞선 기록과 이어 세어지지 않게 탭이 바뀌면 비움
+  // iOS 쉘은 탭마다 WebView라 selectedId가 그대로여서, 이 WebView가 가려질 때도 비움
   useEffect(() => {
     lastReselect.current = undefined;
+    const clearWhenHidden = () => {
+      if (document.visibilityState === 'hidden') lastReselect.current = undefined;
+    };
+    document.addEventListener('visibilitychange', clearWhenHidden);
+    return () => document.removeEventListener('visibilitychange', clearWhenHidden);
   }, [selectedId]);
 
   // iOS 시스템 탭 바에서 보고 있는 탭을 다시 누름: 모든 탭 WebView에 오므로 보이는 내 탭만 맨 위로

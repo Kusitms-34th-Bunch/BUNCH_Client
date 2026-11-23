@@ -76,4 +76,24 @@ describe('MainTabBar(iOS 쉘)', () => {
       unsubscribe();
     }
   });
+
+  it('다른 탭에 다녀오면(이 WebView가 가려짐) 앞선 다시 누름과 이어 세지 않는다', () => {
+    const now = vi.spyOn(performance, 'now');
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const { gestures, unsubscribe } = renderBar('/bunch');
+    try {
+      now.mockReturnValue(0);
+      send('nativeTabReselect', 'bunch');
+      visibility.mockReturnValue('hidden');
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      visibility.mockReturnValue('visible');
+      now.mockReturnValue(200);
+      send('nativeTabReselect', 'bunch');
+      expect(gestures).toEqual([]);
+    } finally {
+      unsubscribe();
+    }
+  });
 });
