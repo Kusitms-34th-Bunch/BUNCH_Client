@@ -5,6 +5,8 @@ type ScreenSwitchModule = {
   begin: () => Promise<boolean>;
   finish: () => Promise<void>;
   cancel: () => Promise<void>;
+  // 이전 빌드에는 없음
+  warmUpTabs?: () => Promise<void>;
 };
 
 // 쉘의 네이티브 모듈(modules/screen-switch). Expo Go와 이전 개발 앱에는 없음
@@ -86,3 +88,15 @@ const settle = async (run: () => Promise<void> | undefined, animation: 'fade' | 
 export const finishScreenSwitch = () => settle(() => ScreenSwitch?.finish(), 'fade');
 
 export const cancelScreenSwitch = () => settle(() => ScreenSwitch?.cancel(), 'none');
+
+// 스플래시가 닫힌 뒤 이만큼 지나 숨은 탭을 미리 그림(지금 탭의 첫 그리기·요청과 겹치지 않게)
+const WARM_UP_DELAY_MS = 1500;
+
+/** 숨은 탭 WebView를 한 번씩 그려 둠(처음 누른 탭이 늦게 열리지 않게, #532). 동작 줄이기와 무관 */
+export const warmUpTabsLater = () => {
+  const timer = setTimeout(
+    () => void ScreenSwitch?.warmUpTabs?.().catch(() => {}),
+    WARM_UP_DELAY_MS,
+  );
+  return () => clearTimeout(timer);
+};

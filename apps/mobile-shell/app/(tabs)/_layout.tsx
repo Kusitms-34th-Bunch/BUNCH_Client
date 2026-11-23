@@ -4,6 +4,8 @@ import * as Haptics from 'expo-haptics';
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useEffect, useSyncExternalStore } from 'react';
+import { warmUpTabsLater } from '../../src/screen-switch';
+import { onWebReady } from '../../src/splash/state';
 import { TAB_ICONS } from '../../src/tabs/tab-icons';
 import { listenTabLongPress } from '../../src/tabs/tab-long-press';
 import { TAB_IDS } from '../../src/tabs/tabs';
@@ -48,6 +50,17 @@ export default function TabsLayout() {
       ),
     [],
   );
+  // 스플래시가 닫힌 뒤 숨은 탭을 미리 그림(그 전에 붙이면 뒤 탭의 준비 신호가 지금 탭보다 먼저 스플래시를 닫음)
+  useEffect(() => {
+    let cancelWarmUp = () => {};
+    const stopListening = onWebReady(() => {
+      cancelWarmUp = warmUpTabsLater();
+    });
+    return () => {
+      stopListening();
+      cancelWarmUp();
+    };
+  }, []);
   // 웹이 탭 항목을 보내기 전(Fast Refresh·직접 진입)에는 첫 화면으로 복귀
   if (!tabs) return <Redirect href="/" />;
 
