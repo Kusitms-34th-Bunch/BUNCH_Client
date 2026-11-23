@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ApiMockingGate } from '@/mocks/ApiMockingGate';
 import './globals.css';
 import { NativeShellViewport } from '@/shared/components/layout/NativeShellViewport';
+import { WebVitalsReporter } from '@/shared/components/layout/WebVitalsReporter';
 
 export const metadata: Metadata = {
   title: 'bunch',
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="ko" suppressHydrationWarning>
       <body>
         <NativeShellViewport />
+        <WebVitalsReporter />
         <ApiMockingGate>{children}</ApiMockingGate>
       </body>
     </html>
