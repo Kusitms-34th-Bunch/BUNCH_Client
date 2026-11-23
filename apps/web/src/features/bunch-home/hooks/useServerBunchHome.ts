@@ -7,7 +7,8 @@ import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchHomeDetail, BunchSummary } from '../lib/types';
 import { itemsOfPages, type ListMoreQuery } from '../lib/pages';
-import { accessNoticeIdOf, toBunchHomeDetail, toBunchSummaries } from '../model/bunchHome';
+import { accessNoticeIdOf } from '../model/bunchAccessNotice';
+import { toBunchHomeDetail, toBunchSummaries } from '../model/bunchHome';
 import {
   bunchHomeQueryOptions,
   draftBundlesQueryOptions,

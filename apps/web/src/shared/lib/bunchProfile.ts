@@ -1,3 +1,5 @@
+import type { NicknameAvailability } from '@/shared/hooks/useNicknameAvailability';
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
 import type { PasteResult } from './filteredPaste';
 
 // 번치 이름·소개 입력 규칙(번치 만들기와 프로필 편집이 함께 사용, 기능명세 2.2·5.5)
@@ -20,7 +22,7 @@ export const defaultBunchImage = (type?: CharacterType | null) =>
 /** 사진이 없는 사용자(멤버·내 프로필)의 기본 이미지. 번치 타입과 관계없이 하나(Figma 5931:166793) */
 export const DEFAULT_PROFILE_IMAGE = '/images/default-profile.svg';
 
-export const BUNCH_NAME_INVALID_MESSAGE = '특수문자를 제외한 영문, 한글만 사용할 수 있어요.';
+export const BUNCH_NAME_INVALID_MESSAGE = COMMON_MESSAGES.nameCharactersInvalid;
 /** 다른 번치가 쓰는 이름(번치 만들기·프로필 편집) */
 export const BUNCH_NAME_TAKEN_MESSAGE = '이미 사용 중인 번치 이름이에요';
 /** 금칙어가 들어 있는 번치 이름·한 줄 소개(기능명세 1.4.3 로직 4, 마침표 없음) */
@@ -59,3 +61,31 @@ export const pasteBunchName = (
   const value = current.slice(0, selection.start) + inserted + current.slice(selection.end);
   return { value, caret: selection.start + inserted.length };
 };
+
+/** 번치 이름 입력란의 오류·안내 문구(번치 만들기·프로필 편집 공통). 오류는 문자 규칙, 금칙어, 사용 중 순 */
+export const bunchNameMessages = ({
+  invalid,
+  prohibited,
+  taken,
+  availability,
+}: {
+  invalid: boolean;
+  prohibited: boolean;
+  taken: boolean;
+  availability: NicknameAvailability;
+}) => ({
+  errorMessage: invalid
+    ? BUNCH_NAME_INVALID_MESSAGE
+    : prohibited
+      ? BUNCH_NAME_PROHIBITED_MESSAGE
+      : taken
+        ? BUNCH_NAME_TAKEN_MESSAGE
+        : undefined,
+  // 확인 중 안내와 통과 문구(기능명세 2.2.3·5.5.3), 오류가 있으면 입력란이 오류 문구를 대신 보임
+  helperMessage:
+    availability === 'checking'
+      ? BUNCH_NAME_CHECKING_MESSAGE
+      : availability === 'available'
+        ? BUNCH_NAME_AVAILABLE_MESSAGE
+        : undefined,
+});

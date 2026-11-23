@@ -11,17 +11,14 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
+import type { BunchProfileDraft, ProhibitedValues } from '../../lib/profileEdit';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { PERMISSION_DENIED_CODE } from '../../constants/roles';
 import { toEditableBunchProfile } from '../../model/bunchHome';
 import { bunchHomeQueryOptions, useUpdateBunchProfileMutation } from '../../queries/bunchHome';
 import { BunchHomeError } from '../home/BunchHomeError';
-import {
-  type BunchProfileDraft,
-  BunchProfileEditScreen,
-  type ProhibitedValues,
-} from './BunchProfileEditScreen';
+import { BunchProfileEditScreen } from './BunchProfileEditScreen';
 
 // 서버가 이름 중복으로 거절한 코드(번치 만들기와 같음)
 const NAME_TAKEN_CODE = 'BUNCH_001';

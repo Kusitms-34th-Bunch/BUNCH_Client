@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { hasInvalidBunchNameChars, pasteBunchName } from './bunchProfile';
+import {
+  BUNCH_NAME_AVAILABLE_MESSAGE,
+  BUNCH_NAME_CHECKING_MESSAGE,
+  BUNCH_NAME_INVALID_MESSAGE,
+  BUNCH_NAME_PROHIBITED_MESSAGE,
+  BUNCH_NAME_TAKEN_MESSAGE,
+  bunchNameMessages,
+  hasInvalidBunchNameChars,
+  pasteBunchName,
+} from './bunchProfile';
 
 describe('hasInvalidBunchNameChars', () => {
   it('영문·숫자·완성형 한글·공백만 허용한다', () => {
@@ -41,5 +50,32 @@ describe('pasteBunchName', () => {
       value: `${'가'.repeat(5)}ab${'가'.repeat(5)}`,
       caret: 7,
     });
+  });
+});
+
+describe('bunchNameMessages', () => {
+  const none = { invalid: false, prohibited: false, taken: false, availability: 'idle' } as const;
+
+  it('오류는 문자 규칙, 금칙어, 사용 중 순으로 하나만 고른다', () => {
+    expect(
+      bunchNameMessages({ ...none, invalid: true, prohibited: true, taken: true }).errorMessage,
+    ).toBe(BUNCH_NAME_INVALID_MESSAGE);
+    expect(bunchNameMessages({ ...none, prohibited: true, taken: true }).errorMessage).toBe(
+      BUNCH_NAME_PROHIBITED_MESSAGE,
+    );
+    expect(bunchNameMessages({ ...none, taken: true }).errorMessage).toBe(BUNCH_NAME_TAKEN_MESSAGE);
+    expect(bunchNameMessages(none).errorMessage).toBeUndefined();
+  });
+
+  it('확인 중과 사용 가능일 때만 안내 문구를 낸다', () => {
+    expect(bunchNameMessages({ ...none, availability: 'checking' }).helperMessage).toBe(
+      BUNCH_NAME_CHECKING_MESSAGE,
+    );
+    expect(bunchNameMessages({ ...none, availability: 'available' }).helperMessage).toBe(
+      BUNCH_NAME_AVAILABLE_MESSAGE,
+    );
+    for (const availability of ['idle', 'taken', 'prohibited', 'failed'] as const) {
+      expect(bunchNameMessages({ ...none, availability }).helperMessage).toBeUndefined();
+    }
   });
 });

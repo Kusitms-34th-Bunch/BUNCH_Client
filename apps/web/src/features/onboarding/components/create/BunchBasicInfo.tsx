@@ -10,12 +10,8 @@ import {
   type CheckNickname,
 } from '@/shared/hooks/useNicknameAvailability';
 import {
-  BUNCH_NAME_AVAILABLE_MESSAGE,
-  BUNCH_NAME_CHECKING_MESSAGE,
-  BUNCH_NAME_INVALID_MESSAGE,
-  BUNCH_NAME_PROHIBITED_MESSAGE,
-  BUNCH_NAME_TAKEN_MESSAGE,
   BUNCH_NAME_MAX_LENGTH,
+  bunchNameMessages,
   hasInvalidBunchNameChars,
   pasteBunchName,
 } from '@/shared/lib/bunchProfile';
@@ -85,23 +81,8 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
           placeholder="번치 이름을 입력해주세요"
           value={name}
           maxLength={BUNCH_NAME_MAX_LENGTH}
-          errorMessage={
-            invalid
-              ? BUNCH_NAME_INVALID_MESSAGE
-              : prohibited
-                ? BUNCH_NAME_PROHIBITED_MESSAGE
-                : taken
-                  ? BUNCH_NAME_TAKEN_MESSAGE
-                  : undefined
-          }
           // 확인 중에는 확인 중 안내, 통과하면 「사용 가능한 번치 이름이에요」(기능명세 2.2.3), 오류가 있으면 오류 문구가 대신 보임
-          helperMessage={
-            availability === 'checking'
-              ? BUNCH_NAME_CHECKING_MESSAGE
-              : availability === 'available'
-                ? BUNCH_NAME_AVAILABLE_MESSAGE
-                : undefined
-          }
+          {...bunchNameMessages({ invalid, prohibited, taken, availability })}
           onChange={(event) => setName(event.target.value)}
           // 쓸 수 없는 문자를 섞어 붙여넣으면 그 문자만 빼고 넣음(기능명세 2.2.2 예외)
           onPaste={filteredPaste(pasteBunchName, setName)}
