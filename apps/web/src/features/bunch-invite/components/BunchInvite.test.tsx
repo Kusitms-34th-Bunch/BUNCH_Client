@@ -2,6 +2,7 @@ import type * as DesignSystem from '@app/design-system';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { appBridge } from '@/shared/bridge/client';
 import { BunchInvite } from './BunchInvite';
 
 const captureException = vi.hoisted(() => vi.fn());
@@ -80,6 +81,24 @@ describe('BunchInvite', () => {
     await flush();
 
     expect(share).toHaveBeenCalledWith({ url: LINK });
+  });
+
+  it('앱 쉘에서는 웹 공유가 없어도 공유 버튼을 주고 앱의 공유 시트로 보낸다', async () => {
+    vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() });
+    setNavigator({ share: undefined });
+    const nativeShare = vi.spyOn(appBridge, 'share').mockResolvedValue(undefined);
+    try {
+      render(<BunchInvite inviteLink={LINK} leaveHref={LEAVE} />);
+      await userEvent.click(screen.getByRole('button', { name: '초대 링크 복사' }));
+
+      shareAction().onClick();
+      await flush();
+
+      expect(nativeShare).toHaveBeenCalledWith({ url: LINK });
+    } finally {
+      nativeShare.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('공유를 지원하지 않으면 복사 성공 토스트에 공유 버튼을 제공하지 않는다', async () => {
