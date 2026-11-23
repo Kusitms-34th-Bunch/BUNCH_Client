@@ -15,11 +15,12 @@ function RootLayout() {
   useEffect(() => listenPushOpens(() => postMessage('pushOpened', {}, { broadcast: true })), []);
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false, animation: 'none' }} />
-      {/* 앱·웹이 밝은 화면만 있어 어두운 아이콘 고정(auto는 Android 다크 모드에서 흰 아이콘이 흰 화면에 묻힘) */}
+      {/* 기본은 어두운 아이콘(웹 화면이 밝음). 스플래시·로그인 배경 영상이 나중에 붙어 흰 아이콘으로 덮어씀 */}
       <StatusBar style="dark" />
-      {/* 웹 첫 페이지가 뜰 때까지 덮는 로고 애니메이션 */}
-      <SplashOverlay />
+      {/* 웹 첫 페이지가 뜰 때까지 화면을 덮는 로고 애니메이션 */}
+      <SplashOverlay>
+        <Stack screenOptions={{ headerShown: false, animation: 'none' }} />
+      </SplashOverlay>
     </SafeAreaProvider>
   );
 }

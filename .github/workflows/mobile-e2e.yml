@@ -180,18 +180,6 @@ jobs:
           curl -sf "$WEB_URL" > /dev/null || { echo "웹이 응답하지 않아요" && cat "$RUNNER_TEMP/web.log" && exit 1; }
           maestro --device "$SIMULATOR_UDID" test --format junit --output "$RUNNER_TEMP/maestro-report.xml" --test-output-dir "$RUNNER_TEMP/maestro-output" maestro
 
-      # 아직 고치지 않은 문제(known-issue 태그)는 job을 막지 않고 결과만 남김. 통과하면 태그를 지울 때
-      # 태그로 고르면 config의 excludeTags와 겹쳐 아무 flow도 고르지 않아 파일로 실행
-      - name: 알려진 문제 확인
-        if: ${{ !cancelled() && steps.maestro.outcome != 'skipped' }}
-        working-directory: apps/mobile-shell
-        run: |
-          if maestro --device "$SIMULATOR_UDID" test --test-output-dir "$RUNNER_TEMP/maestro-known-output" maestro/flows/90-startup-first-input.yaml; then
-            echo "알려진 문제 flow가 통과했어요. 고쳐졌다면 known-issue 태그를 지워 주세요." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "알려진 문제 flow가 아직 실패해요(앱 시작 직후 입력 무시)." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
       - name: 결과 올리기
         if: failure()
         uses: actions/upload-artifact@v4
@@ -200,6 +188,5 @@ jobs:
           path: |
             ${{ runner.temp }}/maestro-report.xml
             ${{ runner.temp }}/maestro-output
-            ${{ runner.temp }}/maestro-known-output
             ${{ runner.temp }}/web.log
           if-no-files-found: ignore

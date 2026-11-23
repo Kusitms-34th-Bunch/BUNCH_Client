@@ -21,6 +21,6 @@ pnpm e2e:ios
 - E2E 빌드는 `EXPO_PUBLIC_E2E=1`로 같은 기기의 http 웹만 열 수 있게 만든 Release 빌드다. 스토어 빌드에 쓰지 않으며, EAS production 빌드에 이 값이 있으면 `app.config.js`가 빌드를 멈춘다. EAS를 거치지 않는 Release 빌드(Xcode Archive 등)는 막지 않으므로 `.env.local`에 이 값을 남기지 않는다.
 - flow는 웹이 정한 문구(탭 이름 등)로 판정해 시뮬레이터 언어와 관계없이 같은 결과를 낸다. 시스템 문구(예: 「탭 막대」)는 판정에 쓰지 않는다.
 - 가짜 DB가 로그인·가입 완료 상태로 시작하고, 각 flow는 `clearState`로 저장된 상태 없이 시작한다.
-- `known-issue` 태그 flow(`90-startup-first-input.yaml`)는 아직 고치지 않은 문제를 재현하므로 기본 실행에서 빠진다. 따로 돌리려면 `maestro test maestro/flows/90-startup-first-input.yaml`(태그로 고르면 `config.yaml`의 `excludeTags`와 겹쳐 아무 flow도 고르지 않음). CI는 이 flow를 job을 막지 않는 단계로 돌려 결과를 실행 요약에 남긴다.
+- `known-issue` 태그 flow는 아직 고치지 않은 문제를 재현하므로 기본 실행에서 빠진다(`config.yaml`의 `excludeTags`). 따로 돌릴 때는 파일 경로로 실행한다(태그로 고르면 `excludeTags`와 겹쳐 아무 flow도 고르지 않음). 지금은 해당 flow가 없다: 시작 직후 입력 무시(`90-startup-first-input.yaml`)를 #520에서 고쳐 기본 실행에 넣었고, CI의 별도 확인 단계도 지웠다(2026-11-23). 다시 생기면 job을 막지 않는 단계를 둔다.
 - 시뮬레이터는 실기기와 입력·렌더 속도가 달라, 통과해도 실기기 확인을 대신하지 않는다.
 - 실행 기록·스크린샷은 `~/.maestro/tests/`에 남는다. 개인정보가 없는 가짜 데이터지만 공유할 때는 필요한 화면만 고른다.
