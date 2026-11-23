@@ -46,6 +46,9 @@
 - 큰 asset과 third-party SDK는 번들 분석 결과를 보고 조정한다.
 - web 클라이언트 JS 크기는 Frontend CI가 빌드 뒤 `scripts/report-web-bundle-size.mjs`로 기록한다. 공통 첫 로드 JS(프레임워크·런타임과 root·`(app)` layout 청크)와 전체 클라이언트 JS(gzip)를 기준선과 비교해 10% 넘게 커지면 경고만 하고 실패시키지 않는다. 기준선은 `develop`·`main` push 빌드가 `--update`로 잰 결과를 Actions 캐시(`bundle-size-<OS>-<브랜치>-<SHA>`)로 저장한 것이다. PR은 base 커밋의 결과를, 없으면 그 브랜치의 가장 최근 결과를, 그것도 없으면(다른 작업 브랜치 위에 올린 PR, `main` 캐시 만료 등) `develop`의 가장 최근 결과를 받아 비교한다. 머지될 때마다 갱신되므로 기준선 파일을 커밋하지 않는다(`apps/web/bundle-size-baseline.json`은 gitignore). 이 캐시가 모두 만료(7일 미사용)되거나 저장소 한도(10GB)로 지워지면 다음 push 전까지는 「기준선 없음」으로 표시된다. CI 빌드는 `ANALYZE=true`라 `@next/bundle-analyzer`가 모듈별 크기를 `.next/analyze/client.json`에 남기고, 보고는 이를 패키지·소스 폴더(`src/features/<이름>` 등)별로 묶어 기준선보다 1KB 넘게 커진 항목과 가장 큰 항목을 표로 보여 준다. 표는 실행 화면의 Summary에 나오고, PR의 CI 결과 댓글에는 두 크기의 변화와 1KB 넘게 커진 항목 3개까지만 짧게 붙는다(web을 빌드하지 않은 PR은 빠짐). 초기 로딩이 느려졌을 때 무엇이 커졌는지 이 표에서 먼저 찾는다. 항목 크기는 모듈마다 따로 잰 gzip이라 합이 전체 크기와 맞지 않으므로 증가량 비교에만 쓴다. 로컬에서 비교하려면 CI와 같은 조건으로 `SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= ANALYZE=true yarn workspace @app/web build`를 실행해 `node scripts/report-web-bundle-size.mjs --update`로 내 기준선을 만든 뒤, 바꾼 코드로 다시 빌드해 `node scripts/report-web-bundle-size.mjs`를 실행한다. Sentry 토큰이 있으면 청크에 코드가 더 들어가 CI와 크기가 달라지고, turbo 캐시로 복원된 `.next`는 이전 파일이 섞일 수 있어 workspace 빌드를 직접 돌린다. 측정 단계가 실패해도 job은 실패하지 않는다.
 - 로딩·접근성·SEO 점수는 web이 바뀐 PR마다 `lighthouse.yml`이 runner 안의 운영 빌드로 측정해 PR 댓글로 알린다(공개 페이지만, 페이지당 1번이라 성능 점수는 흔들림). 절차와 기준선은 `docs/workflows/ci.md`의 「Lighthouse 결과 댓글」을 따른다. 실제 기기·네트워크의 속도는 이 점수로 대신하지 않는다.
+- apps/web `package.json`의 `sideEffects`는 CSS와 Sentry 초기화 파일(`src/instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`)만 부수효과로 둔다(#534). 쓰지 않는 모듈을 통째로 빼려는 설정이라, import만 해도 무언가를 실행하는 파일(전역 등록·초기화)을 새로 만들면 이 목록에 넣는다. 빠지면 그 동작이 조용히 사라진다. `instrumentation-client.ts`는 Next가 import만으로 붙여 넣지 않으면 `Sentry.init`이 빠진다.
+- Sentry는 성능 추적을 쓰지 않아(결정 기록 006) `withSentryConfig`의 `bundleSizeOptimizations`로 추적·디버그 코드를 뺀다. 추적을 켜면 `excludeTracing`을 지운다.
+- 측정(#534, `ANALYZE=true` 운영 빌드, gzip): 공통 첫 로드 JS 223.7KB → 187.9KB, 로그인 화면이 처음 받는 JS 621KB → 488KB. `sideEffects`·Sentry 설정으로 -14KB, 모든 화면에 붙는 layout이 feature 배럴 대신 파일을 직접 import해 -119KB(`docs/architecture/app-structure.md`).
 - 아이콘·컴포넌트 라이브러리를 새로 추가할 때, 그 라이브러리가 barrel entry(`export * from './module'`)로 수천 개 모듈을 재노출하면 import 하나가 개발 서버 부팅과 cold start에 수백 ms를 더한다. apps/web에서는 `next.config`의 `experimental.optimizePackageImports`에 등록해 타입·자동완성은 유지한 채 직접 import로 변환되게 하고, admin처럼 Next.js가 아닌 곳에서는 라이브러리의 서브패스에서 직접 import한다.
 
 ## WebView 첫 화면 속도 (apps/web + apps/mobile-shell)
@@ -82,11 +85,83 @@ apps/web은 아직 Server Action을 쓰지 않지만, 도입하면 아래 기준
 - 인증·DB 조회처럼 `fetch`가 아닌 비동기 작업을 같은 요청 안에서 여러 번 호출하면 `React.cache()`로 중복 호출을 막는다. 인자를 객체로 넘기면 매번 새 참조라 캐시가 항상 miss되므로, 원시값 인자를 우선한다.
 - Server Action은 그 자체로 공개 endpoint다. middleware나 상위 layout의 접근 제어에만 기대지 않고, 각 action 내부에서 인증·권한을 다시 확인한다. `docs/workflows/security-review.md`를 함께 따른다.
 
+## 운영 Web Vitals 보기 (PostHog SQL)
+
+PostHog의 **SQL**(HogQL 편집기, 데이터 소스 `PostHog (ClickHouse)`)에 아래 쿼리를 그대로 붙여 실행한다. 대시보드는 아직 없다(ADR 023). CLS·INP는 같은 방문에서 값이 바뀌면 같은 `metric_id`로 다시 오므로 ID별 마지막 값(`argMax`)으로 줄인 뒤 센다. 표본(`samples`)이 수십 개 미만이면 경향으로만 본다.
+
+- `surface`는 `app`(쉘 WebView)과 `web`(브라우저)을 나눈다. 앱 체감은 `app`을 본다.
+- 기간은 `INTERVAL 14 DAY`를 바꾼다. 배포 전후를 비교하려면 `timestamp` 조건을 배포 시각 앞뒤로 나눠 두 번 실행한다.
+- 기준: LCP 2.5초 이하·INP 200ms 이하·CLS 0.1 이하가 「좋음」, LCP 4초·INP 500ms·CLS 0.25 초과가 「나쁨」.
+
+### 화면별 지표(첫 로드, 75번째 백분위)
+
+```sql
+SELECT
+  path,
+  metric,
+  surface,
+  count() AS samples,
+  round(quantile(0.75)(value), 3) AS p75
+FROM (
+  SELECT
+    properties.metric_id AS id,
+    argMax(properties.path, timestamp) AS path,
+    argMax(properties.metric, timestamp) AS metric,
+    argMax(properties.surface, timestamp) AS surface,
+    argMax(properties.navigation_type, timestamp) AS nav,
+    argMax(toFloat(properties.value), timestamp) AS value
+  FROM events
+  WHERE event = 'web_vitals'
+    AND timestamp > now() - INTERVAL 14 DAY
+  GROUP BY id
+)
+WHERE nav != 'soft-navigation'
+GROUP BY path, metric, surface
+ORDER BY path, metric, surface
+```
+
+### 느린 조작 찾기(INP 원인, 앱)
+
+`inp_target`은 누른 요소의 선택자다(#534부터 수집). 처리 시간(`processing_p75`)이 크면 누른 뒤 실행되는 코드(이벤트 처리·렌더)가, 그리기 시간(`presentation_p75`)이 크면 그 뒤 화면을 다시 그리는 비용이 원인이다.
+
+```sql
+SELECT
+  path,
+  inp_target,
+  count() AS samples,
+  round(quantile(0.75)(value)) AS inp_p75,
+  round(quantile(0.75)(input_delay)) AS input_delay_p75,
+  round(quantile(0.75)(processing)) AS processing_p75,
+  round(quantile(0.75)(presentation)) AS presentation_p75,
+  any(script_source) AS script_source
+FROM (
+  SELECT
+    properties.metric_id AS id,
+    argMax(properties.path, timestamp) AS path,
+    argMax(properties.inp_target, timestamp) AS inp_target,
+    argMax(toFloat(properties.value), timestamp) AS value,
+    argMax(toFloat(properties.inp_input_delay), timestamp) AS input_delay,
+    argMax(toFloat(properties.inp_processing), timestamp) AS processing,
+    argMax(toFloat(properties.inp_presentation), timestamp) AS presentation,
+    argMax(properties.inp_script_source, timestamp) AS script_source
+  FROM events
+  WHERE event = 'web_vitals'
+    AND properties.metric = 'INP'
+    AND properties.surface = 'app'
+    AND timestamp > now() - INTERVAL 14 DAY
+  GROUP BY id
+)
+WHERE inp_target IS NOT NULL
+GROUP BY path, inp_target
+ORDER BY inp_p75 DESC
+LIMIT 20
+```
+
 ## 검증 기록
 
 - 대상 route, 측정 방식, device·network·cache 조건, 변경 전후 결과, 남은 불확실성을 PR 또는 작업 기록에 남긴다.
 - 최적화 전에 원인을 먼저 지목한다. LCP라면 어떤 요소와 어느 단계가 지연을 차지하는지, INP라면 어떤 상호작용이 가장 느렸고 시간이 어디서 쓰였는지, CLS라면 어떤 요소가 밀렸는지 먼저 밝힌다. 원인을 지목하지 않은 최적화 목록은 실제로 그 지표를 개선했다는 근거가 아니다.
-- 실사용자 지표(p75 등 field data)와 로컬·CI에서 측정한 lab 진단을 같은 것으로 취급하지 않는다. lab 결과는 하나의 device·network 조건에서의 진단 샘플이며, field data 없이 "실사용자 체감이 좋아졌다"고 단정하지 않는다. 운영 field data는 PostHog `web_vitals` 이벤트(화면별 p75, 동의한 회원만, ADR 023)로 본다.
+- 실사용자 지표(p75 등 field data)와 로컬·CI에서 측정한 lab 진단을 같은 것으로 취급하지 않는다. lab 결과는 하나의 device·network 조건에서의 진단 샘플이며, field data 없이 "실사용자 체감이 좋아졌다"고 단정하지 않는다. 운영 field data는 PostHog `web_vitals` 이벤트(화면별 p75, 동의한 회원만, ADR 023)로 보고, 쿼리는 위 「운영 Web Vitals 보기」를 쓴다.
 - LCP, FCP, CLS, TBT 같은 browser metric과 bundle/resource 크기는 같은 문제로 취급하지 않는다. 사용자 증상에 맞는 지표를 고른다.
 - 외부 API, CDN image, third-party SDK, browser extension, local cache가 결과에 미치는 영향을 기록한다. 제어할 수 없는 병목을 코드 최적화 효과로 주장하지 않는다.
 - async 영역은 가능한 크기를 예약해 layout shift를 피하고, 초기 화면에 불필요한 SDK·asset은 실제 진입 시점에 맞춰 지연한다.
