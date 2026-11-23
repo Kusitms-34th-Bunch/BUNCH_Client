@@ -46,7 +46,13 @@ Safe Area 여백(상하좌우)은 웹의 `AppFrame`(`apps/web/src/shared/compone
 - 수출 규정: 앱은 OS 암호 기능(`expo-crypto` 난수·SHA-256)과 HTTPS만 써 면제 대상이라 `app.json`의 `ios.config.usesNonExemptEncryption: false`로 `Info.plist`에 `ITSAppUsesNonExemptEncryption = NO`를 쓴다(App Store Connect의 암호화 질문을 매번 묻지 않음).
 - 화면 전체 확대·축소(두 손가락)는 쉘에서만 막는다(2026-11-20, 팀원 제보: 번들 상세가 작게 줄어듦). 웹 `NativeShellViewport`가 쉘일 때 viewport에 `maximum-scale=1, user-scalable=no`를 덧붙이고, Next가 화면·쿼리마다 viewport를 다시 그리거나 바꿀 수 있어 `head` 변화를 지켜보며 다시 덧붙인다. 브라우저는 접근성을 위해 확대를 그대로 두고, 사진 확대는 사진 상세의 Swiper Zoom이 맡는다. 축소만 막는(`minimum-scale=1`) 방안과 비교해 앱처럼 화면을 고정하는 쪽을 골랐다. 그래서 앱 안에서는 두 손가락으로 글자를 키울 수 없고, WebView는 iOS 글자 크기 설정도 따르지 않는다(iOS 시스템 확대 기능은 남음). 저시력 사용자 대응이 필요해지면 다시 정한다. 웹 배포만으로 반영되며, 막은 뒤에도 사진 상세의 두 손가락 확대가 되는지는 실기기에서 확인하지 않았다.
 - 화면 컴포넌트(`PageShell`, 각 화면)는 Safe Area 여백을 다시 더하지 않는다.
-- 화면 키보드가 올라오면 하단 Safe Area를 덮는다. 화면이 `data-keyboard-open`을 표시하면 `AppFrame`이 아래 여백을 0으로 둔다. 지금은 번들 상세 댓글 입력란만 쓴다(`useKeyboardOpen`, `visualViewport` 높이 기준). iOS·Android 실기기 확인 전이다. Android가 키보드에 맞춰 WebView를 줄이면 표시가 켜지지 않고 여백이 그대로 남는다.
+- iOS WKWebView는 키보드가 떠도 레이아웃 높이(`100dvh`)가 줄지 않는다. 그래서 아래쪽 입력란을 보이려고 문서 전체를 위로 올리고, 헤더는 상태 바 뒤로 밀려 누를 수 없었다(#532, TestFlight 실기기). 키보드를 연 채 백그라운드에 갔다 돌아오면 올라간 위치가 그대로 남기도 했다.
+- 앱 공통 `KeyboardViewport`(`(app)/layout`)가 `visualViewport`를 보고 처리한다.
+  - 키보드가 떠 있는 동안 `html`에 `data-keyboard-open`과 보이는 높이(`--keyboard-viewport-height`)를 둔다. `AppFrame`은 이 높이로 줄고 하단 Safe Area를 0으로 둔다.
+  - 문서 위치는 0으로 되돌린다. 아래 입력란은 키보드 바로 위에, 헤더는 맨 위에 남는다. 본문에 가린 입력란은 본문(`main`)만 스크롤해 보인다.
+  - 키보드가 닫힐 때와 앱으로 돌아올 때도 남은 위치를 되돌린다. 핀치 확대 중에는 건드리지 않는다.
+  - 번들 상세는 전부터 쓰던 `useKeyboardOpen`으로도 같은 표식을 둔다.
+- 단위 테스트로만 확인했고 iOS 실기기 확인 전이다. Android가 키보드에 맞춰 WebView를 줄이면 표식이 켜지지 않고 여백이 그대로 남는다.
 - 웹이 코드로 입력란에 초점을 줄 때도(댓글 말풍선·「답글 남기기」, 서버가 거절한 입력란으로 초점 이동) 키보드가 올라오도록 `keyboardDisplayRequiresUserAction={false}`를 둔다. react-native-webview의 iOS 기본값(`true`)에서는 커서만 들어가고 키보드가 올라오지 않는다. 이 WebView가 여는 모든 앱 출처 페이지에 적용되므로, 화면에 들어오자마자 입력란에 초점을 주면 키보드가 바로 뜬다. 지금은 입력이 목적인 번들 상세 `?focus=comments` 진입(말풍선)만 의도한 예외이고(댓글 알림은 `?section=comments`로 스크롤만 함), 그 밖에는 진입 때 입력란에 초점을 주지 않는다. 시뮬레이터·실기기 확인 전이다.
 - iOS 키보드 위의 입력 보조 막대(이전·다음 화살표와 완료 체크)는 `hideKeyboardAccessoryView`로 숨긴다(#502, 기획 결정). 웹 화면에 이 막대가 있으면 앱이 아닌 웹처럼 보이기 때문이다. 모든 입력란에 적용되며, 완료 버튼이 없어져 키보드는 입력란 밖을 눌러야 닫힌다. return 키가 없는 숫자 키패드(출생연도), return이 줄바꿈인 여러 줄 입력란(댓글), 나중에 쓸 `<select>`·날짜 선택 휠도 같다. 실기기 확인 전이다.
 - 사진 보기처럼 화면 끝까지 그리는 화면은 전환 경계 요소에 `data-bottom-bleed`를 달아 `AppFrame`의 아래 여백을 0으로 둔다. 탭 화면에서 들어올 때 쉘이 시스템 탭 바를 숨기며 아래 여백이 83px에서 34px로 바뀌는데, 여백 칸이 있으면 본문 높이가 따라 바뀌어 가운데 내용이 밀린다. 지금은 사진 상세만 쓰고, 이 화면의 하단 요소(시트·확인 창·토스트·포커스 때 보이는 확대 버튼)는 직접 `--safe-area-bottom`을 더한다.
