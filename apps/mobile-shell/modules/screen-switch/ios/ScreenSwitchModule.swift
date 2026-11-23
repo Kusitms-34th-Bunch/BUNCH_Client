@@ -61,6 +61,8 @@ public class ScreenSwitchModule: Module {
         content.transform = CGAffineTransform(scaleX: cardScale, y: cardScale)
       } completion: { _ in
         cover.removeFromSuperview()
+        // 커지기 시작할 때 끝을 알림: JS가 상태 바를 커지는 동안 함께 다시 보임(다 커진 뒤 따로 나타나면 깜빡여 보임, #532)
+        promise.resolve(nil)
         UIView.animate(withDuration: growDuration, delay: 0, options: [.curveEaseOut]) {
           content.transform = .identity
           content.layer.cornerRadius = 0
@@ -70,7 +72,6 @@ public class ScreenSwitchModule: Module {
           self.busy = false
           // 새 번치 화면을 VoiceOver가 처음부터 읽게
           UIAccessibility.post(notification: .screenChanged, argument: nil)
-          promise.resolve(nil)
         }
       }
     }.runOnQueue(.main)

@@ -59,7 +59,8 @@ export const beginScreenSwitch = async () => {
   if (mine !== generation) return false;
   if (!covered) {
     active = false;
-    setInsetsHeld(false);
+    // 바로 풀지 않음: 앞 전환이 커지는 중이라 거절됐으면 그 전환의 고정(상태 바가 돌아온 뒤 400ms)을 지킴
+    releaseInsetsLater();
     return false;
   }
   setStatusBarHidden(true, 'none');
