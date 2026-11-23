@@ -26,8 +26,8 @@ apps/mobile-shell/
     tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
     floating-icons/     플로팅 버튼 아이콘(같은 방식, 더하기·더보기)
   src/
-    web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기·오류 화면)
-    tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx)
+    web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기), 불러오기 실패 화면(WebLoadError.tsx)
+    tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx, 첫 화면에서만 그리는 안전장치 floating-button-guard.ts)
     login-background/         로그인 배경 영상(LoginBackgroundVideo.tsx, expo-video)과 표시 여부 저장소
     safe-area-script.ts, sentry.ts, sanitize-sentry-event.ts, web-url.ts, gallery-image.ts, permissions.ts (+ *.test.mjs)
 ```
