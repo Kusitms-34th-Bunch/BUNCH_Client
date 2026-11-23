@@ -41,12 +41,25 @@ describe('KeyboardViewport', () => {
   });
 
   it('키보드를 연 채 백그라운드에 갔다 돌아와 문서가 올라가 있으면 되돌림', () => {
-    stubViewport(window.innerHeight);
+    const viewport = stubViewport(window.innerHeight - 300);
     render(<KeyboardViewport />);
+    act(() => void viewport.dispatchEvent(new Event('resize')));
+    // 백그라운드에서 키보드가 닫히며 위치가 남음
+    viewport.height = window.innerHeight;
     Object.defineProperty(window, 'scrollY', { value: 280, configurable: true });
+    vi.mocked(window.scrollTo).mockClear();
 
     act(() => void document.dispatchEvent(new Event('visibilitychange')));
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
+  it('키보드가 열린 적 없는 문서 스크롤(낮은 화면에서 하단 버튼까지 내림)은 초점이 옮겨도 그대로 둠', () => {
+    stubViewport(window.innerHeight);
+    render(<KeyboardViewport />);
+    Object.defineProperty(window, 'scrollY', { value: 200, configurable: true });
+
+    act(() => void document.dispatchEvent(new Event('focusout')));
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 
   it('앱 틀 밖(body 포털의 모달·시트) 입력란이면 iOS가 올린 위치를 두고 높이만 맞춤', () => {
@@ -89,8 +102,14 @@ describe('KeyboardViewport', () => {
     vi.spyOn(main, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 400 } as DOMRect);
     vi.spyOn(input, 'getBoundingClientRect').mockReturnValue({ top: 420, bottom: 480 } as DOMRect);
 
-    viewport.height = window.innerHeight - 300;
+    viewport.height = window.innerHeight - 150;
     act(() => void viewport.dispatchEvent(new Event('resize')));
     expect(main.scrollTop).toBe(96);
+
+    // 키보드가 더 올라와 본문이 줄면 다시 가린 만큼 한 번 더 내림
+    vi.spyOn(main, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 300 } as DOMRect);
+    viewport.height = window.innerHeight - 300;
+    act(() => void viewport.dispatchEvent(new Event('resize')));
+    expect(main.scrollTop).toBe(96 + 196);
   });
 });

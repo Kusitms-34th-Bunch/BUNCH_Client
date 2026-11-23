@@ -10,6 +10,8 @@ const REVEAL_MARGIN = 16;
 
 /** 본문(main)만 스크롤해 초점 입력란을 보이게(scrollIntoView는 문서까지 스크롤해 다시 밀림) */
 const revealFocused = () => {
+  // 확대해 읽는 중에는 시점을 입력란으로 되돌리지 않음
+  if (window.visualViewport && window.visualViewport.scale > 1.01) return;
   const active = document.activeElement;
   if (!(active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement)) return;
   const main = active.closest('main');
@@ -31,11 +33,13 @@ export function KeyboardViewport() {
     if (!viewport) return;
     const root = document.documentElement;
     let frame = 0;
+    // 키보드가 올린 위치가 남아 있을 수 있음(열렸던 뒤 0을 확인할 때까지). 키보드와 무관한 문서 스크롤(낮은 화면)은 건드리지 않음
+    let residue = false;
     const sync = () => {
       // 확대 중에도 높이는 레이아웃 기준(보이는 높이 × 배율)으로 맞춤
       const height = viewport.height * viewport.scale;
       const open = isKeyboardShown(viewport);
-      const wasOpen = root.hasAttribute('data-keyboard-open');
+      if (open) residue = true;
       if (open) {
         root.style.setProperty(HEIGHT_VAR, `${height}px`);
         root.setAttribute('data-keyboard-open', '');
@@ -49,13 +53,11 @@ export function KeyboardViewport() {
         active instanceof Element &&
         active !== document.body &&
         !active.closest('[data-app-frame]');
-      if (
-        viewport.scale <= 1.01 &&
-        !outsideFrame &&
-        (window.scrollY !== 0 || viewport.offsetTop !== 0)
-      )
-        window.scrollTo(0, 0);
-      if (open && !wasOpen) revealFocused();
+      const shifted = window.scrollY !== 0 || viewport.offsetTop !== 0;
+      if (residue && viewport.scale <= 1.01 && !outsideFrame && shifted) window.scrollTo(0, 0);
+      else if (!open && !shifted) residue = false;
+      // 키보드 높이가 여러 번에 걸쳐 바뀌어도 매번 확인(이미 보이면 움직이지 않음)
+      if (open) revealFocused();
     };
     // 키보드가 닫히는 중이나 복귀 직후에는 값이 늦게 바뀌어 다음 프레임에도 한 번 더
     const syncSoon = () => {
