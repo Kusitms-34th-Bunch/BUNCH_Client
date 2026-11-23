@@ -110,10 +110,12 @@ public class ScreenSwitchModule: Module {
     view.accessibilityElementsHidden = true
     view.frame = host.bounds
     host.insertSubview(view, at: 0)
-    DispatchQueue.main.asyncAfter(deadline: .now() + warmUpHold) { [weak self, weak controller] in
+    DispatchQueue.main.asyncAfter(deadline: .now() + warmUpHold) { [weak self, weak controller, weak child] in
       view.accessibilityElementsHidden = hidden
-      // 그사이 그 탭을 골라 iOS가 옮겨 간 화면은 떼지 않음
-      if view.superview === host { view.removeFromSuperview() }
+      // 그사이 그 탭을 골랐으면 떼지 않음(iOS가 옮겨 갔거나 아직 같은 자리에 둔 채 보이는 중)
+      if view.superview === host, let controller, child !== controller.selectedViewController {
+        view.removeFromSuperview()
+      }
       if let controller { self?.warmUp(controller, index: index + 1) }
     }
   }
