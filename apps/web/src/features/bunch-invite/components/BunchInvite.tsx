@@ -12,7 +12,7 @@ import { PageHeader } from '@app/design-system/web';
 import { captureException } from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
 import { useId } from 'react';
-import { appBridge, isNativeShell } from '@/shared/bridge/client';
+import { isNativeShell, shareBridge } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { copyText } from '@/shared/lib/clipboard';
@@ -56,7 +56,9 @@ export function BunchInvite({
       return;
     }
     try {
-      await appBridge.share({ url: inviteLink });
+      // 쉘은 네이티브 공유 시트(실패는 reject), 브라우저는 Web Share
+      if (isNativeShell()) await shareBridge.share({ url: inviteLink });
+      else await navigator.share({ url: inviteLink });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       captureException(error);

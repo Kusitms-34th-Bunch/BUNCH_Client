@@ -204,5 +204,11 @@ export const pushDeviceBridge = linkBridge<AppBridge, AppPostMessageSchema>({
   throwOnError: ['getPushDeviceRegistration', 'getPushInstallationId'],
 });
 
+/** 공유 시트는 사용자가 대상을 고를 때까지 기다리므로 타임아웃 없음, 실패는 reject(사용자 취소는 쉘이 오류 없이 끝냄) */
+export const shareBridge = linkBridge<AppBridge, AppPostMessageSchema>({
+  timeout: 0,
+  throwOnError: ['share'],
+});
+
 /** 클립보드 읽기 전용: iOS는 사용자가 붙여넣기를 허용할 때까지 기다리므로 타임아웃 없음(복사는 기본 `appBridge`의 타임아웃을 씀) */
 export const clipboardBridge = linkBridge<AppBridge, AppPostMessageSchema>({ timeout: 0 });
