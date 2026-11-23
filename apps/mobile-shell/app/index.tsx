@@ -1,3 +1,4 @@
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { incomingLinkStore } from '../src/incoming-link-store';
@@ -23,6 +24,8 @@ export default function SingleWebViewScreen() {
   return (
     <View style={styles.screen}>
       {loginBackground ? <LoginBackgroundVideo /> : null}
+      {/* 어두운 배경 영상 위라 상태 바 아이콘을 흰색으로(영상을 걷으면 공용 설정으로 돌아감) */}
+      {loginBackground ? <StatusBar style="light" /> : null}
       <AppWebView
         uri={openedLink ? toAppWebUrl(openedLink) : WEB_URL}
         transparent={loginBackground}

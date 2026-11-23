@@ -56,13 +56,18 @@
       "buildNumber": "1",
       "config": { "usesNonExemptEncryption": false },
       "supportsTablet": true,
+      "requireFullScreen": true,
       "bundleIdentifier": "kr.bunch.app",
       "appleTeamId": "9CGCR9499H",
       "associatedDomains": ["applinks:app.bunch.kr", "applinks:open.bunch.kr"],
       "infoPlist": {
         "CFBundleDisplayName": "BUNCH",
         "CFBundleDevelopmentRegion": "ko",
-        "CFBundleLocalizations": ["ko"]
+        "CFBundleLocalizations": ["ko"],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown"
+        ]
       },
       "usesAppleSignIn": true
     },
