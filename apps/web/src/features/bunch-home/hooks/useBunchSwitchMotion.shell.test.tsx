@@ -49,6 +49,7 @@ const covered = () =>
 describe('useBunchSwitchMotion(iOS 쉘)', () => {
   afterEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('고르면 쉘이 화면을 덮고, 새 번치가 그려진 뒤 쉘에 끝을 알린다(웹 복제본은 만들지 않음)', async () => {
@@ -104,6 +105,8 @@ describe('useBunchSwitchMotion(iOS 쉘)', () => {
   });
 
   it('시트에서 골랐으면 시트가 다 닫힌 뒤에 쉘이 화면을 찍는다(닫히는 시트가 사진에 남지 않게)', async () => {
+    // 대기 상한(500ms) 판단을 실제 시계에서 떼어 냄(느린 실행에서 상한이 지나 먼저 찍지 않게)
+    vi.spyOn(performance, 'now').mockReturnValue(0);
     render(<Screen bunchId="1" />);
     const sheet = document.body.appendChild(document.createElement('div'));
     sheet.setAttribute('data-bottom-sheet', '');
@@ -115,5 +118,21 @@ describe('useBunchSwitchMotion(iOS 쉘)', () => {
     sheet.remove();
     await nextFrames();
     expect(bridge.beginScreenSwitch).toHaveBeenCalledWith('bunch');
+  });
+
+  it('시트가 상한(500ms)이 지나도 남아 있으면 기다리지 않고 쉘이 화면을 찍는다', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0);
+    render(<Screen bunchId="1" />);
+    const sheet = document.body.appendChild(document.createElement('div'));
+    sheet.setAttribute('data-bottom-sheet', '');
+
+    act(() => motion!.begin());
+    await nextFrames();
+    expect(bridge.beginScreenSwitch).not.toHaveBeenCalled();
+
+    now.mockReturnValue(500);
+    await nextFrames();
+    expect(bridge.beginScreenSwitch).toHaveBeenCalledWith('bunch');
+    sheet.remove();
   });
 });
