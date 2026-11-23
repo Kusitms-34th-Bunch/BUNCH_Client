@@ -282,6 +282,24 @@ describe('FeedScreen', () => {
     expect(screen.queryByRole('article', { name: '광고 플로디스튜디오' })).toBeNull();
   });
 
+  it('위 번들 3장은 사진을 바로 받고(맨 위는 우선순위까지) 4번째부터는 다가올 때 받으며, 사이의 광고는 장 수에서 빠진다(#534)', async () => {
+    const [publicBundle] = PUBLIC_ITEMS;
+    const fourth = {
+      type: 'BUNDLE',
+      segment: 'PUBLIC',
+      bundle: card({ id: 4, title: '네 번째 번들' }),
+    };
+    // 번들 2장 → (팔로잉 끝) → 광고 → 번들 2장
+    serveFeed([...FOLLOWING_ITEMS, AD, publicBundle, fourth]);
+    renderFeed(OWN);
+    await screen.findByRole('article', { name: /네 번째 번들/ });
+    // 카드 안 첫 img는 대표 사진(번치 프로필 이미지는 그 위에 겹친 뒤쪽 요소)
+    const photos = cards().map((card) => card.querySelector('img'));
+    expect(photos).toHaveLength(4);
+    expect(photos[0]?.getAttribute('fetchpriority')).toBe('high');
+    expect(photos.map((img) => img?.getAttribute('loading'))).toEqual([null, null, null, 'lazy']);
+  });
+
   it('카드의 위치와 참여 멤버를 누르면 각 시트가 열린다', async () => {
     const user = userEvent.setup();
     renderFeed(OWN);

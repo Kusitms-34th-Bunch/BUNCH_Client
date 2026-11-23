@@ -3,9 +3,9 @@ name: 댓글 입력에서 키보드를 열고 닫은 뒤 돌아오면 탭 바가
 ---
 - runFlow: ../subflows/launch-fresh.yaml
 - runFlow:
-    file: ../subflows/tap-until-visible.yaml
+    file: ../subflows/tap-tab-until-visible.yaml
     env:
-      TARGET: '피드'
+      TAB_ID: 'tab-feed'
       MARK: 'BUNCH, 맨 위로'
 - tapOn: '댓글 4'
 - tapOn: '여행쥬아로 댓글 달기'

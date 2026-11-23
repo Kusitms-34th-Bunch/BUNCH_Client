@@ -42,7 +42,7 @@ Tailwind CSS는 app 스타일 구현 도구이고, `@app/design-system`은 Figma
 
 결정 근거는 [013](../decisions/records/013-pretendard-self-hosting.md)이다. 외부 CDN 글꼴을 쓰지 않고 저장소에 둔 파일을 직접 호스팅한다.
 
-- 앱 화면(`apps/web`의 `(app)` route group)과 404, 초대 링크 진입 페이지(아래 항목): `apps/web/src/app/fonts/pretendard.ts`가 `apps/web/src/app/fonts/PretendardVariable.woff2`(Pretendard 1.3.9 가변 폰트, 굵기 45~920)를 `next/font/local`로 불러오고 `(app)/layout.tsx`와 루트 `not-found.tsx`가 그 스타일을 넣어, 토큰 변수 `--primitive-font-family-pretendard`와 `body`의 `font-family`를 그 글꼴로 바꾼다. 모달·토스트가 body에 portal로 그려지므로 `:root`에 적용한다. `typography-*` 유틸리티는 바꾸지 않는다.
+- 앱 화면(`apps/web`의 `(app)` route group)과 404, 초대 링크 진입 페이지(아래 항목): `apps/web/src/app/fonts/pretendard.ts`가 `apps/web/src/app/fonts/BunchSansVariable.woff2`(Pretendard 1.3.9 가변 폰트를 굵기 400~700·쓰는 글자 범위로 줄인 수정본, 만드는 방법은 결정 기록 013)를 `next/font/local`로 불러오고 `(app)/layout.tsx`와 루트 `not-found.tsx`가 그 스타일을 넣어, 토큰 변수 `--primitive-font-family-pretendard`와 `body`의 `font-family`를 그 글꼴로 바꾼다. 모달·토스트가 body에 portal로 그려지므로 `:root`에 적용한다. `typography-*` 유틸리티는 바꾸지 않는다.
 - 처음 오는 사용자가 보는 웹 화면(웹 초대장 등): `(app)` group 밖에 둔다. 큰 파일을 루트 layout에서 불러오지 않는 이유가 이것이다. 초대 링크 진입 페이지(`app/invite/layout.tsx`)는 지금 앱 화면과 같은 가변 글꼴(`pretendardFontStyle`)을 쓴다. Pretendard 동적 서브셋은 적용하지 않았다(2026-11-16 확인).
 - iOS 쉘 시스템 탭 바 라벨: 글꼴을 지정하지 않고 시스템 기본 글꼴을 쓴다. Pretendard를 지정하면 iOS 26 Liquid Glass 탭 바가 미선택 라벨을 잘라 그린다(`docs/architecture/mobile-shell.md`, #462).
 - 라이선스(SIL OFL 1.1)는 글꼴 파일 옆의 `Pretendard-LICENSE.txt`에 둔다. 버전을 올릴 때 웹 파일과 라이선스를 함께 바꾼다.

@@ -9,7 +9,8 @@ export const metadata: Metadata = {
   title: 'bunch',
   // 홈 화면에 추가하면 주소창 없이 실행(iOS), 홈 화면 이름은 bunch, 아이콘은 임시 이미지(확정되면 public/icons 교체)
   appleWebApp: { capable: true, title: 'bunch', statusBarStyle: 'default' },
-  icons: { apple: '/icons/apple-touch-icon.png' },
+  // 브라우저 탭 아이콘(없으면 브라우저가 /favicon.ico를 찾다 404, #534)
+  icons: { icon: '/icons/icon-192.png', apple: '/icons/apple-touch-icon.png' },
   // 가짜 서버를 켠 UT 빌드는 검색에 노출하지 않음
   ...(process.env.NEXT_PUBLIC_API_MOCKING === 'enabled' && {
     robots: { index: false, follow: false },

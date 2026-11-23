@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { Toaster } from '@app/design-system';
 import { OverlayProvider } from 'overlay-kit';
-import { AuthGate } from '@/features/auth/components';
+import { AuthGate } from '@/features/auth/components/AuthGate';
 import { INTRO_PATH, LOGIN_PATH } from '@/features/auth/constants/paths';
-import { PushOpenNavigator } from '@/features/bunch-home/components';
+import { PushOpenNavigator } from '@/features/bunch-home/components/notifications/PushOpenNavigator';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
-import { NativeTabBarVisibility, NativeTabSync } from '@/features/main-navigation/components';
+import { NativeTabBarVisibility } from '@/features/main-navigation/components/NativeTabBarVisibility';
+import { NativeTabSync } from '@/features/main-navigation/components/NativeTabSync';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { AppFrame } from '@/shared/components/layout/AppFrame';
 import { KeyboardViewport } from '@/shared/components/layout/KeyboardViewport';

@@ -52,6 +52,9 @@ const focusListItem = (
  * 피드 탭(기능명세서 6.1, Figma `4940:99466`): 팔로우한 번치 구간 → 구간 안내 → 공개 구간 → 끝 안내
  * 서버(`GET /feed`)가 정한 순서대로 그리고, 끝에 닿으면 다음 쪽을 이어서 받음
  */
+// 사진을 바로 받는 위쪽 카드 수(그 아래는 lazy)
+const EAGER_PHOTO_CARDS = 3;
+
 export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
   const router = useRouter();
   const { viewer, viewerPending, viewerFailed, retryViewer, asBunch } = useFeedViewer();
@@ -118,6 +121,11 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
   const shown = (entry: FeedEntry) => (entry.kind === 'ad' ? !hiddenAds.has(entry.ad.id) : true);
   const entries = feed.data ? toFeedEntries(feed.data.pages).filter(shown) : [];
   const { following, followingDone, rest } = splitFeedSections(entries);
+  // 위 3장은 사진을 바로 받고(맨 위는 우선순위까지), 그 아래는 다가올 때(첫 화면에 10장을 한꺼번에 받지 않게, #534)
+  // 3장까지 바로 받는 이유: iOS WebView는 lazy를 미리 받는 거리가 짧아 빠르게 내리면 바로 아래 사진이 잠깐 빔
+  const eagerBundleIds = [...following, ...rest]
+    .flatMap((entry) => (entry.kind === 'bundle' ? [entry.bundle.id] : []))
+    .slice(0, EAGER_PHOTO_CARDS);
   const handleAdGone = useCallback((adId: string, hadFocus: boolean) => {
     // 초점이 있던 카드가 없어지므로 다음 카드로 옮김(없으면 이어 받기 자리나 끝 안내)
     if (hadFocus) {
@@ -152,6 +160,13 @@ export function FeedScreen({ links, prefetchBunch }: FeedScreenProps) {
           onMembers={openMembers}
           onPlaces={openPlaces}
           onLike={(bundle) => asBunch(() => likes.toggle(bundle))}
+          photoPriority={
+            entry.bundle.id === eagerBundleIds[0]
+              ? true
+              : eagerBundleIds.includes(entry.bundle.id)
+                ? undefined
+                : false
+          }
         />
       );
     if (entry.kind === 'ad')

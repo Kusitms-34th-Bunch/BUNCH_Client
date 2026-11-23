@@ -12,7 +12,5 @@ export { BundleEditPhotoAdd } from './edits/BundleEditPhotoAdd';
 export { BundleEditPhotoViewer } from './edits/BundleEditPhotoViewer';
 export { BundleMemberSelect } from './bundles/BundleMemberSelect';
 export { BundleSelect } from './bundles/BundleSelect';
-export { BundleSelectLayout } from './bundles/BundleSelectLayout';
-export { DraftMissingGate } from './drafts/DraftMissingGate';
 export { RecommendDetail } from './bundles/RecommendDetail';
 export { RecommendViewer } from './bundles/RecommendViewer';

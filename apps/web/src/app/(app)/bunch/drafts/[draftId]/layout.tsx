@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { DraftMissingGate } from '@/features/bundle/components';
+import { DraftMissingGate } from '@/features/bundle/components/drafts/DraftMissingGate';
 import { DraftProvider } from '@/features/bundle/contexts/DraftProvider';
 import { parseDraftId } from '@/features/bundle/lib/draftId';
 

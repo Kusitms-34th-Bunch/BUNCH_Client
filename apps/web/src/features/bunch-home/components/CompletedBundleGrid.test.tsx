@@ -9,6 +9,36 @@ const bundles = [
 ];
 
 describe('CompletedBundleGrid', () => {
+  it('첫 화면의 12칸은 사진을 바로 받고 그 아래 칸은 다가올 때 받는다(#534)', () => {
+    const many = Array.from({ length: 14 }, (_, index) => ({
+      ...bundles[0]!,
+      id: `m${index}`,
+      coverSrc: `/c${index}.jpg`,
+    }));
+    const { container } = render(<CompletedBundleGrid bunchId="1" bundles={many} />);
+    const loading = [...container.querySelectorAll('img')].map((img) =>
+      img.getAttribute('loading'),
+    );
+    expect(loading.slice(0, 12)).toEqual(Array(12).fill(null));
+    expect(loading.slice(12)).toEqual(['lazy', 'lazy']);
+  });
+
+  it('아래 칸이라도 한 번 받은 사진은 다시 그릴 때 바로 받는다(상세에서 돌아오는 전환)', () => {
+    const many = Array.from({ length: 14 }, (_, index) => ({
+      ...bundles[0]!,
+      id: `s${index}`,
+      coverSrc: `/seen${index}.jpg`,
+    }));
+    const { container, unmount } = render(<CompletedBundleGrid bunchId="1" bundles={many} />);
+    const last = [...container.querySelectorAll('img')].at(-1)!;
+    expect(last.getAttribute('loading')).toBe('lazy');
+    fireEvent.load(last);
+    unmount();
+
+    const again = render(<CompletedBundleGrid bunchId="1" bundles={many} />);
+    expect([...again.container.querySelectorAll('img')].at(-1)!.getAttribute('loading')).toBeNull();
+  });
+
   it('멤버 공개 번들만 아이콘을 얹고 대체 텍스트로 알린다', () => {
     const { container } = render(<CompletedBundleGrid bunchId="1" bundles={bundles} />);
 

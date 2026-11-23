@@ -3,9 +3,9 @@ name: 백그라운드에 뒀다 돌아오면 보던 탭 화면과 탭 바가 그
 ---
 - runFlow: ../subflows/launch-fresh.yaml
 - runFlow:
-    file: ../subflows/tap-until-visible.yaml
+    file: ../subflows/tap-tab-until-visible.yaml
     env:
-      TARGET: '사진함'
+      TAB_ID: 'tab-photos'
       MARK: '사진 올리기'
 - pressKey: home
 - launchApp:

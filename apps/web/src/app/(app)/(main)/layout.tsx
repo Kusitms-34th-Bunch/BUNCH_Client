@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { MainTabBar } from '@/features/main-navigation/components';
+import { MainTabBar } from '@/features/main-navigation/components/MainTabBar';
 
 // 하단 탭이 있는 화면(피드·사진함·번치·MY)
 // 웹 탭바는 본문 위에 떠 있고(막대 64px + 아래 여백 16px + 아래 Safe Area, 본문은 화면 끝까지) 탭바가 보일 때만 아래 변수가 채워짐

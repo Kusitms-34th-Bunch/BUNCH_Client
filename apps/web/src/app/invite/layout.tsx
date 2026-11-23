@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Toaster } from '@app/design-system';
-import { NativeTabBarVisibility } from '@/features/main-navigation/components';
+import { NativeTabBarVisibility } from '@/features/main-navigation/components/NativeTabBarVisibility';
 import { QueryProvider } from '@/shared/providers/QueryProvider';
 import { pretendardFontStyle } from '../fonts/pretendard';
 

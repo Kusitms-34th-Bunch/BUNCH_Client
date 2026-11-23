@@ -2,6 +2,12 @@
   "name": "@app/web",
   "version": "0.0.0",
   "private": true,
+  "sideEffects": [
+    "**/*.css",
+    "./src/instrumentation-client.ts",
+    "./sentry.server.config.ts",
+    "./sentry.edge.config.ts"
+  ],
   "engines": {
     "node": ">=24"
   },
@@ -44,6 +50,7 @@
     "react-simplikit": "catalog:",
     "server-only": "^0.0.1",
     "swiper": "^14.3.0",
+    "web-vitals": "^6.2.3",
     "zod": "catalog:"
   },
   "devDependencies": {

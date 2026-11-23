@@ -142,6 +142,8 @@ export const SuggestedBundleCard = ({
         src={imageSrc}
         alt={imageAlt}
         decoding="async"
+        // 목록에서 화면 밖 카드는 다가올 때 받음(#534)
+        loading="lazy"
         className="rounded-r4 h-44.5 w-full object-cover"
       />
       <div className="gap-s4 flex w-full flex-col items-start">
