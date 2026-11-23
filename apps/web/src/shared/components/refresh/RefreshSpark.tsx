@@ -1,4 +1,5 @@
 import { cn } from '@app/design-system';
+import pullStyles from './pullRefresh.module.css';
 
 /** Spark 패턴 모듈(4px 정사각형) 왼쪽 위 좌표: 7×7 격자의 홀수 칸으로 이은 번치 마름모(Figma `5371:13751`, 가운데 정렬 28×28) */
 const MODULES: ReadonlyArray<readonly [number, number]> = [
@@ -33,8 +34,8 @@ export function RefreshSpark({ className }: RefreshSparkProps) {
       viewBox="0 0 36 36"
       className={cn(
         'fill-primitive-gray-300 size-9 shrink-0 origin-center',
-        // 당기기 시작하면(`.pull-refresh`의 data-pull) 바로 90°씩 끊어 돈다(Figma `6672:47287`, 2초 주기). 동작 줄이기에서는 멈춤
-        'group-data-pull/pull:animate-refresh-spark-spin motion-reduce:animate-none',
+        // 당기기 시작하면(컨테이너의 data-pull) 바로 90°씩 끊어 도는 회전(Figma `6672:47287`, 2초 주기, `pullRefresh.module.css`)
+        pullStyles.spark,
         className,
       )}
       shapeRendering="crispEdges"

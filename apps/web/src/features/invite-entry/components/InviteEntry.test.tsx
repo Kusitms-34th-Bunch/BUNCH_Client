@@ -11,6 +11,7 @@ import { createQueryWrapper } from '@/shared/query/testing';
 import type * as ExternalLink from '../lib/externalLink';
 import { APP_STORE_URL } from '../constants/messages';
 import { InviteEntry } from './InviteEntry';
+import styles from './inviteRise.module.css';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
@@ -244,8 +245,9 @@ describe('InviteEntry', () => {
     it('로고 묶음과 픽셀 장식 세 곳이 CSS 모션 클래스를 가진다(JS 없이 첫 페인트부터 재생)', () => {
       const { container } = renderEntry();
 
-      for (const name of ['logo', 'pattern-left', 'pattern-right', 'module']) {
-        expect(container.querySelectorAll(`.invite-rise-${name}`)).toHaveLength(1);
+      // 모듈 클래스 이름(테스트 환경에서도 해시가 붙음)
+      for (const name of [styles.logo, styles.patternLeft, styles.patternRight, styles.module]) {
+        expect(container.getElementsByClassName(name!)).toHaveLength(1);
       }
     });
 
@@ -259,10 +261,10 @@ describe('InviteEntry', () => {
     it('장식은 보조 기술에서 숨기고 로고(h1)는 숨기지 않는다', () => {
       const { container } = renderEntry();
 
-      expect(
-        container.querySelectorAll('.invite-rise-pattern-left[aria-hidden="true"]'),
-      ).toHaveLength(1);
-      expect(container.querySelectorAll('.invite-rise-module[aria-hidden="true"]')).toHaveLength(1);
+      for (const name of [styles.patternLeft, styles.module]) {
+        const [decoration] = container.getElementsByClassName(name!);
+        expect(decoration).toHaveAttribute('aria-hidden', 'true');
+      }
       expect(screen.getByRole('heading', { level: 1, name: 'Bunch' })).toBeTruthy();
     });
   });

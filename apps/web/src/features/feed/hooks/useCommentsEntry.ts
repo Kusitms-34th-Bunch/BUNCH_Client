@@ -1,6 +1,7 @@
 'use client';
 
 import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { quietFocus } from '@/shared/lib/quietFocus';
 import type { useBundleComments } from './useBundleComments';
 import { alignDistance, alignedScrollTop, scrollRoom } from '../lib/commentScroll';
 
@@ -32,23 +33,9 @@ const SEEK_MAX_PAGES = 5;
 // 맞춘 뒤 대상이 가운데에서 이만큼 넘게 벗어나면 다시 맞춤
 const SEEK_ALIGN_TOLERANCE_PX = 24;
 
-// 코드로 준 초점은 iOS에서 키보드 초점 테두리가 그려져 키 입력·떠남 전까지 감춤(스크린 리더 낭독은 유지)
-// 앱 전환으로 문서 초점이 빠지는 blur는 무시(돌아오면 같은 요소에 초점이 복원됨)
-function quietFocus(item: HTMLElement) {
-  item.dataset.quietFocus = '';
-  const reveal = () => {
-    delete item.dataset.quietFocus;
-    item.removeEventListener('blur', onBlur);
-    document.removeEventListener('keydown', reveal, true);
-  };
-  const onBlur = () => {
-    if (document.hasFocus()) reveal();
-  };
-  item.addEventListener('blur', onBlur);
-  document.addEventListener('keydown', reveal, true);
-  item.focus({ preventScroll: true });
-  if (document.activeElement !== item) reveal();
-}
+// 이 기록 항목에 떠날 때의 스크롤이 저장돼 있음(useScrollInHistory): 뒤로 가기로 돌아온 화면
+const hasSavedScroll = () =>
+  typeof (window.history.state as { pageScroll?: unknown } | null)?.pageScroll === 'number';
 
 /** 댓글 진입(말풍선·알림)의 스크롤·초점 처리. 「댓글로 가기」 동작을 돌려줌 */
 export function useCommentsEntry({
@@ -60,6 +47,11 @@ export function useCommentsEntry({
   targetCommentId,
   instantComment,
 }: CommentsEntryOptions) {
+  // 돌아온 화면은 저장된 위치를 지키고 진입 스크롤·초점을 다시 하지 않음. 처음 붙을 때 한 번 정함(진입 스크롤 뒤에는 위치가 저장되므로)
+  const returned = useRef<boolean | null>(null);
+  useLayoutEffect(() => {
+    returned.current ??= hasSavedScroll();
+  }, []);
   // scrollIntoView는 전환 중 가로로 밀린 화면을 보이려고 바깥 틀까지 가로 스크롤하므로 세로 스크롤 main만 움직임
   // smooth: 부드럽게(동작 줄이기면 바로), 끝나면 onDone, 돌려준 함수는 기다림을 멈춤. item을 주면 영역 맨 위 대신 그 댓글을 가운데로
   const scrollToComments = useCallback(
@@ -108,7 +100,7 @@ export function useCommentsEntry({
   });
 
   useEffect(() => {
-    if (commentsEntry === null || !contentReady) return;
+    if (commentsEntry === null || !contentReady || returned.current) return;
     const startedAt = performance.now();
     let frame = 0;
     let cancelled = false;
@@ -246,10 +238,11 @@ export function useCommentsEntry({
     if (commentsEntry !== 'focus' || !contentReady || presetComments.current) return;
     presetComments.current = true;
     // 목록이 오기 전에도 댓글 영역 맨 위까지 내려갈 수 있게 화면 높이만큼 자리를 둠(열린 뒤 위치가 다시 넘어가지 않게)
+    // 돌아온 화면도 자리는 둠(떠날 때 위치가 이 높이 안이라 복원이 잘리지 않게), 내리기는 복원에 맡김
     const section = commentsRef.current;
     const main = section?.closest('main');
     if (section && main) section.style.minHeight = `${main.clientHeight}px`;
-    scrollToComments();
+    if (!returned.current) scrollToComments();
   }, [commentsEntry, contentReady, scrollToComments, commentsRef]);
 
   return goToComments;
