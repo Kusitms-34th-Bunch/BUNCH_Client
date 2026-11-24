@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- 소유 경계: design-system (`web`)
+- 소유 경계: design-system (`core`, 어드민도 캘린더를 써서 2026-11-25 #562에서 `web`에서 옮김. 공개 주소 `@app/design-system`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Calender Item`(node `1577:13366`). 변형은 `State=Active·Pressed·Selected·Disabled·hidden` 5개다.
 

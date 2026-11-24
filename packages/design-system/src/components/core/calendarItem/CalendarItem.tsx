@@ -39,7 +39,7 @@ export const CalendarItem = ({
       aria-disabled={disabled || undefined}
       onClick={disabled ? undefined : onClick}
       className={cn(
-        'typography-body-1-medium relative isolate flex size-11.5 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full',
+        'press-scale-small typography-body-1-medium relative isolate flex size-11.5 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full',
         // 윤곽선이 뒤에 오는 이웃 칸의 배경에 가려지지 않게 포커스된 칸을 위로 올림
         'focus-visible:outline-border-brand focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2',
         selected
