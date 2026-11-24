@@ -27,6 +27,8 @@ export const useDeletePhotosMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
   const lists = [photoBoxKeys.datedPhotos(bunchId), photoBoxKeys.undatedPhotos(bunchId)];
   const mutationKey = [...photoBoxKeys.photos(bunchId), 'delete'];
+  // 이 삭제 말고 같은 번치의 다른 삭제가 아직 도는 중인지
+  const othersDeleting = () => queryClient.isMutating({ mutationKey }) > 1;
   return useMutation({
     mutationKey,
     // 연결이 끊겨 있어도 요청을 보류하지 않고 바로 보내 실패로 끝냄(보류되면 응답이 없어 빠진 사진이 되돌아오지 않음)
@@ -34,37 +36,47 @@ export const useDeletePhotosMutation = (bunchId: string | undefined) => {
     onMutate: async (photoIds: readonly string[]) => {
       await Promise.all(lists.map((queryKey) => queryClient.cancelQueries({ queryKey })));
       const ids = new Set(photoIds);
+      const kept = new Set<string>();
       // 되돌림은 이 요청이 뺀 사진만(동시에 진행 중인 다른 삭제의 결과를 덮지 않게)
-      return lists.map((queryKey): readonly [typeof queryKey, RemovedPhoto[]] => {
-        const { data, removed } = withoutPhotos(queryClient.getQueryData(queryKey), ids);
-        queryClient.setQueryData(queryKey, data);
-        return [queryKey, removed];
+      const removedByList = lists.map((queryKey): readonly [typeof queryKey, RemovedPhoto[]] => {
+        const result = withoutPhotos(queryClient.getQueryData(queryKey), ids);
+        queryClient.setQueryData(queryKey, result.data);
+        result.kept.forEach((id) => kept.add(id));
+        return [queryKey, result.removed];
       });
+      return { removedByList, kept };
     },
     mutationFn: (photoIds: readonly string[]) => {
       if (!bunchId) return Promise.reject(new Error('bunch is not loaded'));
       return removePhotos(bunchId, photoIds);
     },
-    onSuccess: (_result, photoIds) => {
+    onSuccess: (_result, photoIds, context) => {
       // 지운 사진의 상세는 다시 받으면 404라 캐시에서 지움(미리 받기가 남은 캐시를 돌려주지 않게)
+      // 함께 올린 사진은 사진함에 남아 상세도 그대로 둠(지우면 원본 주소가 사라져 썸네일로 줄었다 커짐)
+      // 아직 받지 않은 쪽에 있는 함께 올린 사진은 알 수 없어 지움(다시 받을 때 깜빡임만 생김)
       for (const photoId of photoIds) {
+        if (context.kept.has(photoId)) continue;
         queryClient.removeQueries({ queryKey: photoBoxKeys.photoDetail(bunchId, photoId) });
       }
       // 사진이 사라지면 서버가 작성 중인 번들에서도 그 사진을 빼고 0장이 된 초안은 지우므로(명세 3.3.5) 그 번치의 번들 상세와 번치 홈의 작성 중인 번들도 다시 받음
       void queryClient.invalidateQueries({ queryKey: sharedKeys.bundleDetailsOf(bunchId) });
       void queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHomeScope(bunchId) });
     },
-    onError: (error, _photoIds, removedByList) => {
-      for (const [queryKey, removed] of removedByList ?? []) {
-        queryClient.setQueryData(queryKey, (data: unknown) => withPhotosBack(data, removed));
+    onError: (error, _photoIds, context) => {
+      // 서버에 이미 없는 사진은 되돌리지 않음(다시 받기 전에 없는 사진이 목록에 다시 보이지 않게)
+      const gone = new Set(error instanceof MissingPhotosError ? error.missingIds : []);
+      for (const [queryKey, removed] of context?.removedByList ?? []) {
+        const back = removed.filter(({ photo }) => !gone.has(photo.id));
+        queryClient.setQueryData(queryKey, (data: unknown) => withPhotosBack(data, back));
       }
       // 사라진 사진으로 거절됐으면 그 사진이 빠진 목록을 받은 뒤 거절(상세 화면이 사라짐을 한 번만 알리게)
-      return invalidateIfMissing(queryClient, bunchId, error);
+      // 다른 삭제가 도는 중이면 받지 않고 마지막 삭제에 맡김(서버 반영 전 목록으로 그 삭제가 뺀 사진이 되돌아오지 않게)
+      return othersDeleting() ? undefined : invalidateIfMissing(queryClient, bunchId, error);
     },
-    // 성공·실패 모두 서버 기준으로 맞춤(사라진 사진으로 거절된 경우 포함). 기다리지 않아 화면은 바로 이어짐
-    // 같은 번치의 다른 삭제가 아직 도는 중이면 마지막 삭제가 다시 받음(서버 반영 전 사진이 다시 나타나지 않게)
-    onSettled: () => {
-      if (queryClient.isMutating({ mutationKey }) > 1) return;
+    // 성공·실패 모두 서버 기준으로 맞춤. 기다리지 않아 화면은 바로 이어짐
+    // 다른 삭제가 도는 중이면 마지막 삭제가 받고, 사라진 사진으로 거절된 경우는 onError가 이미 받음
+    onSettled: (_result, error) => {
+      if (othersDeleting() || error instanceof MissingPhotosError) return;
       void queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) });
     },
   });

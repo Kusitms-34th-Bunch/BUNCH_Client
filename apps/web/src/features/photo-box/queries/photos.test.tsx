@@ -4,7 +4,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
-import { fail } from '@/mocks/lib/envelope';
+import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
@@ -169,6 +169,145 @@ describe('useDeletePhotosMutation', () => {
     expect(result.current.error).toBeInstanceOf(MissingPhotosError);
     expect(isInvalidated(keys.photos)).toBe(true);
     expect(isInvalidated(keys.otherBunchPhotos)).toBe(false);
+  });
+
+  // 이 번치 사진 목록을 무효화한 횟수
+  const countPhotoInvalidations = (client: ReturnType<typeof createTestQueryClient>) => {
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    return () =>
+      spy.mock.calls.filter(
+        ([filters]) =>
+          JSON.stringify(filters?.queryKey) === JSON.stringify(photoBoxKeys.photos(bunchId)),
+      ).length;
+  };
+
+  it('사라진 사진으로 거절되면 목록을 한 번만 다시 받는다', async () => {
+    const client = createTestQueryClient();
+    const count = countPhotoInvalidations(client);
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    await act(() => result.current.mutateAsync(['999']).catch(() => undefined));
+
+    expect(count()).toBe(1);
+  });
+
+  it('다른 빼기가 진행 중일 때 사라진 사진으로 거절돼도 목록을 다시 받지 않고 마지막 빼기에 맡긴다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/api/bunches/:bunchId/photos/delete', async ({ request }) => {
+        const body = (await request.json()) as { photoIds: number[] };
+        if (body.photoIds.includes(999)) return fail(409, 'PHOTO_004', { missingPhotoIds: [999] });
+        await gate;
+        return ok({ deletedCount: 1, uploaderRemovedCount: 0 });
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(photoBoxKeys.datedPhotos(bunchId), pagesOf('1', '2'));
+    const count = countPhotoInvalidations(client);
+    const first = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(client),
+    });
+    const second = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    act(() => first.result.current.mutate(['1']));
+    await waitFor(() =>
+      expect(idsIn(client.getQueryData(photoBoxKeys.datedPhotos(bunchId)))).toEqual(['2']),
+    );
+    await act(() => second.result.current.mutateAsync(['999']).catch(() => undefined));
+
+    expect(count()).toBe(0);
+    release();
+    await waitFor(() => expect(count()).toBe(1));
+  });
+
+  it('사라진 사진으로 거절되면 서버에 없는 사진은 되돌리지 않고, 목록을 다시 받은 뒤에 거절한다', async () => {
+    const own = String(MOCK_PHOTO_IDS.S4);
+    const gone = String(MOCK_PHOTO_IDS.S5);
+    // 다시 받기 GET을 붙잡아 두는 문(처음 받기는 그대로 통과)
+    let holdRefetch = false;
+    let heldRequests = 0;
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/api/bunches/:bunchId/photos/delete', () =>
+        fail(409, 'PHOTO_004', { missingPhotoIds: [MOCK_PHOTO_IDS.S5] }),
+      ),
+      http.get('/api/bunches/:bunchId/photos', async () => {
+        if (holdRefetch) {
+          heldRequests += 1;
+          await gate;
+        }
+        // 기본 가짜 서버 응답으로 넘김
+        return undefined;
+      }),
+    );
+    const client = createTestQueryClient();
+    const wrapper = createQueryWrapper(client);
+    const list = renderHook(() => useInfiniteQuery(datedPhotosQueryOptions(bunchId)), { wrapper });
+    await waitFor(() => expect(list.result.current.data).toBeDefined());
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), { wrapper });
+    holdRefetch = true;
+
+    let settled = false;
+    let rejection: unknown;
+    act(() => {
+      void result.current.mutateAsync([own, gone]).then(
+        () => (settled = true),
+        (error: unknown) => {
+          settled = true;
+          rejection = error;
+        },
+      );
+    });
+
+    // 응답 전: 내 사진은 되돌아오고 서버에 없는 사진은 빠진 채(빼기 전·직후에는 둘 다 참이 아님), 거절은 아직
+    const ids = () => list.result.current.data?.map((photo) => photo.id) ?? [];
+    await waitFor(() => expect(ids().includes(own) && !ids().includes(gone)).toBe(true));
+    // 목록 다시 받기가 서버에 나가 응답을 기다리는 동안은 거절하지 않음
+    await waitFor(() => expect(heldRequests).toBe(1));
+    expect(settled).toBe(false);
+
+    // 응답 뒤: 목록을 다 받은 다음 거절
+    release();
+    await waitFor(() => expect(settled).toBe(true));
+    expect(list.result.current.isFetching).toBe(false);
+    expect(rejection).toBeInstanceOf(MissingPhotosError);
+    expect(heldRequests).toBe(1);
+  });
+
+  it('함께 올린 사진은 목록에 남으므로 빼기가 성공해도 그 사진의 상세 캐시는 지우지 않는다', async () => {
+    // 시드에는 함께 올린 사진이 없어 서버 응답만 대신함(하나는 지워지고 하나는 내 표시만 빠짐)
+    server.use(
+      http.post('/api/bunches/:bunchId/photos/delete', () =>
+        ok({ deletedCount: 1, uploaderRemovedCount: 1 }),
+      ),
+    );
+    const client = createTestQueryClient();
+    const own = String(MOCK_PHOTO_IDS.S4);
+    const shared = String(MOCK_PHOTO_IDS.S5);
+    client.setQueryData(photoBoxKeys.datedPhotos(bunchId), {
+      pageParams: [undefined],
+      pages: [{ photos: [{ id: own }, { id: shared, uploaderIds: ['1', '2'] }], nextCursor: null }],
+    });
+    client.setQueryData(photoBoxKeys.photoDetail(bunchId, own), { id: own });
+    client.setQueryData(photoBoxKeys.photoDetail(bunchId, shared), { id: shared });
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
+      wrapper: createQueryWrapper(client),
+    });
+
+    await act(() => result.current.mutateAsync([own, shared]));
+
+    expect(client.getQueryData(photoBoxKeys.photoDetail(bunchId, own))).toBeUndefined();
+    expect(client.getQueryData(photoBoxKeys.photoDetail(bunchId, shared))).toEqual({ id: shared });
   });
 });
 
