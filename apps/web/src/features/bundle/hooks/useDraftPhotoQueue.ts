@@ -5,6 +5,7 @@ import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { reportApiError } from '@/shared/lib/reportApiError';
 import type { DraftPhoto } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
 import {
@@ -154,7 +155,9 @@ export function useDraftPhotoQueue({
         // 건너뛴 변경도 발행 전 확인이 알아챌 수 있게 실패 횟수에 셈(발행하면 사진 변경이 빠진 구성이 올라가므로, 안내는 발행 때 함)
         if (dropped) failures.current += 1;
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        // API 실패는 mutation이 이미 보고함. 대기열 불변식 위반(서버 id 없는 사진) 같은 코드 결함만 보고
+        if (!isApiError(error)) reportApiError(error);
         failed.current = true;
         failures.current += 1;
         toast(BUNDLE_MESSAGES.photosChangeFailed);

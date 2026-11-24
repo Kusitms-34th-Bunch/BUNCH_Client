@@ -4,6 +4,7 @@ import { toast } from '@app/design-system';
 import { notifyManager, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { apiErrorCode, apiErrorStatus } from '@/shared/api/client/errorStatus';
+import { reportApiError } from '@/shared/lib/reportApiError';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft, DraftPhoto } from '../lib/types';
 import type { PhotoPicks } from '../model/bundle';
@@ -141,6 +142,8 @@ export function useDraftPicks(
               continue;
             }
             settle(photoId);
+            // mutation을 거치지 않는 요청이라 직접 보고(업무 거절·네트워크는 보고 기준에서 빠짐)
+            reportApiError(error);
             const status = apiErrorStatus(error);
             const code = apiErrorCode(error);
             // 사진이 없어졌거나(404): 최신 상세로 맞추고, 누른 사진이라 화면이 바로 삭제 안내를 띄움

@@ -2,6 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { reportApiError } from '@/shared/lib/reportApiError';
 import type { DraftLocation } from '../lib/types';
 import { applyBundleLocationIntent, readLocationRejection } from '../api/locations';
 import { BUNDLE_MESSAGES, MAX_LOCATIONS } from '../constants/messages';
@@ -132,6 +133,8 @@ export function useBundleLocations({
           sentCount.current += 1;
         } catch (error) {
           failedCount.current += 1;
+          // mutation을 거치지 않는 요청이라 직접 보고(업무 거절·네트워크는 보고 기준에서 빠짐)
+          reportApiError(error);
           const rejection = readLocationRejection(error);
           if (rejection) {
             toast(REJECTION_MESSAGE[rejection]);
