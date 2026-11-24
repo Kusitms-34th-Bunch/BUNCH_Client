@@ -1,7 +1,6 @@
 'use client';
 
-import { Header, LineDotsLargeIcon, toast } from '@app/design-system';
-import { IconButton } from '@app/design-system/web';
+import { Header, IconButton, LineDotsLargeIcon, toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '@/features/photo-box/lib/types';

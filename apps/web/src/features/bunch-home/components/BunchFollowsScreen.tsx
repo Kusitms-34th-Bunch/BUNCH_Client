@@ -178,7 +178,7 @@ export function BunchFollowsScreen({
                         variant={bunch.followStatus === 'none' ? 'primary' : 'secondarySubtle'}
                         aria-label={`${bunch.name} ${label}${STATUS_ACTIONS[bunch.followStatus]}`}
                         aria-disabled={busy || undefined}
-                        className={cn('transition-opacity', busy && 'opacity-60')}
+                        className={cn(busy && 'opacity-60')}
                         onClick={() => void toggle(bunch)}
                       >
                         {label}

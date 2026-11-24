@@ -3,7 +3,7 @@ import { LineChevronRightLargeIcon } from '../../../icons';
 import { IconButton } from './IconButton';
 
 const meta = {
-  title: 'Web/Button/IconButton',
+  title: 'Components/IconButton',
   component: IconButton,
   args: { 'aria-label': '다음', children: <LineChevronRightLargeIcon /> },
 } satisfies Meta<typeof IconButton>;

@@ -182,14 +182,14 @@ export function BunchMenuScreen({
           <div aria-hidden="true" className="gap-s6 flex flex-col">
             <div className="gap-s2 px-padding-p8 flex flex-col">
               {SKELETON_TOP_ROWS.map((row) => (
-                <div key={row} className="px-s2 py-padding-p5">
+                <div key={row} className="px-s4 py-padding-p5">
                   <Skeleton className="h-6 w-24" />
                 </div>
               ))}
             </div>
             <MenuDivider className="mx-padding-p8" />
             <div className="px-padding-p8">
-              <div className="px-s2 py-padding-p5">
+              <div className="px-s4 py-padding-p5">
                 <Skeleton className="h-6 w-24" />
               </div>
             </div>

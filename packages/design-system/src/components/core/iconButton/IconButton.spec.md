@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- 소유 경계: design-system (`web`)
+- 소유 경계: design-system (`core`, 어드민도 캘린더를 써서 2026-11-25 #562에서 `web`에서 옮김. 공개 주소 `@app/design-system`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Icon Button`(node `1577:13532`). 변형은 `Variant=Subtle·Outline·Primary` × `state=Default·Pressed` 6개다. `Calendar`의 이전·다음 달 화살표가 이 컴포넌트(Subtle)를 쓴다.
 

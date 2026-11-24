@@ -121,7 +121,7 @@ export function FollowRequestsScreen({
                               size="sm"
                               aria-label={`${request.name} 팔로우 요청 승인`}
                               aria-disabled={busy || undefined}
-                              className={cn('transition-opacity', busy && 'opacity-60')}
+                              className={cn(busy && 'opacity-60')}
                               onClick={(event) => void decide(event, request, 'APPROVE')}
                             >
                               승인
@@ -131,7 +131,7 @@ export function FollowRequestsScreen({
                               variant="secondarySubtle"
                               aria-label={`${request.name} 팔로우 요청 거절`}
                               aria-disabled={busy || undefined}
-                              className={cn('transition-opacity', busy && 'opacity-60')}
+                              className={cn(busy && 'opacity-60')}
                               onClick={(event) => void decide(event, request, 'REJECT')}
                             >
                               거절

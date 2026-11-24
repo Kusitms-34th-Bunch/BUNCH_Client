@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- 소유 경계: design-system (`web`)
+- 소유 경계: design-system (`core`, 어드민도 캘린더를 써서 2026-11-25 #562에서 `web`에서 옮김. 공개 주소 `@app/design-system`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Calender`(node `1601:13761`, 섹션 `1853:26817`). 날짜 칸은 `Calender Item`(node `1577:13366`)이다.
 - 의존: `CalendarItem`, `IconButton`(헤더 화살표), 아이콘 `LineChevronLeftLargeIcon`·`LineChevronRightLargeIcon`. 라이브러리(`react-day-picker` 등)는 쓰지 않고 `Date`로 직접 계산한다.

@@ -121,8 +121,8 @@ export function BunchMood() {
                 <label
                   key={item.value}
                   className={cn(
-                    // 선택 테두리 1px는 안쪽 선(outline)이라 카드 크기가 변하지 않음. 눌림은 카드 전체 검정 10% 겹침
-                    'rounded-r4 p-padding-p6 gap-s4 bg-surface-secondary has-checked:outline-border-primary relative flex h-48 cursor-pointer touch-manipulation flex-col items-center justify-center overflow-hidden outline -outline-offset-1 outline-transparent',
+                    // 선택 테두리 1px는 안쪽 선(outline)이라 카드 크기가 변하지 않음. 눌림은 카드 전체 검정 10% 겹침과 0.98 축소(Card)
+                    'press-scale-large rounded-r4 p-padding-p6 gap-s4 bg-surface-secondary has-checked:outline-border-primary relative flex h-48 cursor-pointer touch-manipulation flex-col items-center justify-center overflow-hidden outline -outline-offset-1 outline-transparent',
                     'after:bg-overlay-hover after:pointer-events-none after:absolute after:inset-0 after:opacity-0 active:after:opacity-100',
                     // 선택 테두리 색보다 포커스 색이 우선
                     'has-focus-visible:outline-border-brand! has-focus-visible:outline-2 has-focus-visible:outline-offset-2',

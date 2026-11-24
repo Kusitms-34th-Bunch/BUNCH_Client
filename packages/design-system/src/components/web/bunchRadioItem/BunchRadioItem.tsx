@@ -26,7 +26,7 @@ export const BunchRadioItem = ({
 }: BunchRadioItemProps) => (
   <label
     className={cn(
-      'rounded-r4 px-padding-p5 py-padding-p3 gap-s4 group relative flex w-full cursor-pointer touch-manipulation items-center justify-between',
+      'press-scale-large rounded-r4 px-padding-p5 py-padding-p3 gap-s4 group relative flex w-full cursor-pointer touch-manipulation items-center justify-between',
       // 선택됨·누르는 중: 바탕 overlay-hover(10%)
       'has-checked:bg-overlay-hover not-has-disabled:active:bg-overlay-hover',
       'has-disabled:cursor-not-allowed has-disabled:opacity-(--semantic-opacity-disabled)',

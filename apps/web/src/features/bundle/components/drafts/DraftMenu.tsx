@@ -1,7 +1,6 @@
 'use client';
 
-import { LineDotsLargeIcon, LineTransitionLeftMediumIcon } from '@app/design-system';
-import { IconButton } from '@app/design-system/web';
+import { IconButton, LineDotsLargeIcon, LineTransitionLeftMediumIcon } from '@app/design-system';
 import { useRef } from 'react';
 import {
   PhotoActionMenu,

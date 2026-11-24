@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useId, useRef, useState, type ComponentProps, type KeyboardEvent } from 'react';
 import { LineChevronLeftLargeIcon, LineChevronRightLargeIcon } from '../../../icons';
 import { cn } from '../../../utils';
