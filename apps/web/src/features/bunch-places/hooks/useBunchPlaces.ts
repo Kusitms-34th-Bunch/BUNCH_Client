@@ -19,7 +19,7 @@ const writeHistoryMember = (memberId: string) => {
 
 /**
  * 지금 번치(`bunchId`)의 콕한 장소와 멤버 칩, 콕에서 빼기·되돌리기
- * 서버에 복구 API가 없어 뺀 카드는 화면에서 먼저 숨기고 되돌리기 시간이 지나면 삭제 요청(명세 005·009)
+ * 서버에 복구 API가 없어 뺀 카드는 화면에서 먼저 숨기고 되돌리기 시간이 지나면 삭제 요청(명세 005·009, 2026-11-23 확인)
  */
 export function useBunchPlaces(bunchId: string) {
   const [selectedId, setSelectedId] = useState(() => readHistoryMember() ?? ALL_MEMBERS);
