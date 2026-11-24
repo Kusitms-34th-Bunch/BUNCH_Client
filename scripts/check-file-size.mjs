@@ -4,11 +4,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SRC = fileURLToPath(new URL('../src', import.meta.url));
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+// web과 쉘 소스(쉘 화면 route `app/` 포함). 쉘 파일이 경고 없이 커지던 것을 막으려고 넓힘(#540)
+const SOURCES = ['apps/web/src', 'apps/mobile-shell/src', 'apps/mobile-shell/app'];
 const LIMIT = 300;
 const KEEP = '크기 유지:';
 // 설정 표·가짜 서버는 한곳에 모여 있는 편이 읽기 쉬워 제외
-const SKIP = ['mocks/', 'app/(app)/AppTransitions.tsx'];
+const SKIP = ['apps/web/src/mocks/', 'apps/web/src/app/(app)/AppTransitions.tsx'];
 
 const files = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -17,14 +19,14 @@ const files = (dir) =>
     return /\.tsx?$/.test(entry.name) && !/\.(test|stories)\.tsx?$/.test(entry.name) ? [path] : [];
   });
 
-const large = files(SRC)
-  .map((file) => ({ rel: relative(SRC, file), text: readFileSync(file, 'utf8') }))
+const large = SOURCES.flatMap((source) => files(join(ROOT, source)))
+  .map((file) => ({ rel: relative(ROOT, file), text: readFileSync(file, 'utf8') }))
   .filter(({ rel }) => !SKIP.some((skip) => rel.startsWith(skip)))
   .map(({ rel, text }) => ({ rel, lines: text.split('\n').length - 1, text }))
   .filter(({ lines, text }) => lines > LIMIT && !text.slice(0, 500).includes(KEEP));
 
 if (large.length > 0) {
   console.warn(
-    `${LIMIT}줄을 넘는 파일 ${large.length}개(경고, 막지 않음). 변경 이유가 둘 이상이면 나누고, 나누지 않으면 맨 위에 \`// ${KEEP} <이유>\`(docs/code-quality/component-logic.md 「파일 크기」):\n${large.map(({ rel, lines }) => `  - src/${rel} ${lines}줄`).join('\n')}`,
+    `${LIMIT}줄을 넘는 파일 ${large.length}개(경고, 막지 않음). 변경 이유가 둘 이상이면 나누고, 나누지 않으면 맨 위에 \`// ${KEEP} <이유>\`(docs/code-quality/component-logic.md 「파일 크기」):\n${large.map(({ rel, lines }) => `  - ${rel} ${lines}줄`).join('\n')}`,
   );
 }
