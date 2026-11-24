@@ -1,9 +1,12 @@
 'use client';
 
+import { captureException } from '@sentry/nextjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { reportApiError, shouldReportApiError } from '@/shared/lib/reportApiError';
 import { isRealtimeEnabled, realtimeUrl } from '@/shared/realtime/config';
 import {
   createStompConnection,
+  type RealtimeErrorKind,
   type RealtimeStatus,
   type StompConnection,
 } from '@/shared/realtime/stompConnection';
@@ -49,6 +52,11 @@ export type BundleRealtimeHandlers = {
   /** 연결(재연결 포함)이 맺어지고 구독을 마친 직후. 놓친 presence를 다시 읽을 때 씀 */
   onConnected?: () => void;
 };
+
+/** 같은 종류의 실패는 이 간격에 한 번만 보고(무료 플랜 한도, 붙자마자 끊기는 연결·서버 배포 때 반복됨) */
+const REPORT_INTERVAL_MS = 10 * 60_000;
+/** 이만큼 숨겨졌다 돌아오면 연결됨이어도 새 연결로 갈아 끼움(하트비트가 없어 그사이 죽은 연결을 모름) */
+const LONG_HIDDEN_MS = 30_000;
 
 const DISABLED: BundleRealtime = {
   enabled: false,
@@ -124,6 +132,27 @@ export function useBundleRealtime(
   useEffect(() => {
     const url = realtimeUrl();
     if (!enabled || bunchId === undefined || bundleId === undefined || url === undefined) return;
+    // 종류별 마지막 보고 시각
+    const reportedAt = new Map<RealtimeErrorKind, number>();
+    const report = (kind: RealtimeErrorKind, error?: unknown) => {
+      const last = reportedAt.get(kind);
+      if (last !== undefined && Date.now() - last < REPORT_INTERVAL_MS) return;
+      // 토큰 발급은 API 오류 기준을 따름(401·403·네트워크는 보고하지 않음)
+      if (kind === 'token' && !shouldReportApiError(error)) return;
+      reportedAt.set(kind, Date.now());
+      if (kind === 'token') {
+        reportApiError(error);
+        return;
+      }
+      if (kind === 'handler') {
+        captureException(error, { fingerprint: ['realtime', kind] });
+        return;
+      }
+      // frame 내용·주소·토큰 없이 고정 문구만
+      const failure = new Error(`Realtime ${kind}`);
+      failure.name = 'RealtimeError';
+      captureException(failure, { fingerprint: ['realtime', kind] });
+    };
     const applyPresence = (body: unknown) => {
       const parsed = presenceEventSchema.safeParse(body);
       if (parsed.success) handlersRef.current?.onPresence?.(parsed.data.data);
@@ -132,10 +161,11 @@ export function useBundleRealtime(
       url,
       getToken: async () => (await fetchWsToken()).token,
       onStatus: setStatus,
+      onError: report,
       onConnected: (reconnected) => {
         // 구독을 맺은 직후 최신 상세로 맞춤: 상세를 받은 뒤 구독 전까지, 또는 끊긴 사이의 변경은 이벤트로 오지 않음(삭제·발행·권한 변화도 이 결과로 처리됨)
-        // 재연결이면 다 받을 때까지 편집을 막음
-        resync(reconnected);
+        // 재연결이거나 앞서 받지 못한 상세가 있으면(갈아 끼운 연결 포함) 다 받을 때까지 편집을 막음
+        resync(reconnected || syncRef.current !== 'idle');
         handlersRef.current?.onConnected?.();
       },
     });
@@ -155,7 +185,26 @@ export function useBundleRealtime(
       connection.subscribe(leases, () => undefined),
     ];
     connection.start();
+    // 네트워크·화면이 돌아오면 재연결 대기를 기다리지 않음(받지 못한 상세도 다시 받음)
+    const resume = () => {
+      if (syncRef.current === 'failed') resync(true);
+      connection.resume();
+    };
+    let hiddenAt: number | undefined;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+        return;
+      }
+      if (hiddenAt !== undefined && Date.now() - hiddenAt >= LONG_HIDDEN_MS) connection.refresh();
+      hiddenAt = undefined;
+      resume();
+    };
+    window.addEventListener('online', resume);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      window.removeEventListener('online', resume);
+      document.removeEventListener('visibilitychange', onVisibility);
       // 화면을 나가거나 발행·삭제로 닫을 때는 연결을 닫기 전에 입장을 끝냄(서버의 끊김 유예를 기다리지 않음)
       connection.publish(bundleDestinations(bunchId, bundleId).presence, { action: 'LEAVE' });
       unsubscribers.forEach((unsubscribe) => unsubscribe());

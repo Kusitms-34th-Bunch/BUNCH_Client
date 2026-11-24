@@ -15,6 +15,8 @@ type FakeConnection = {
   started: boolean;
   stopped: boolean;
   retried: number;
+  resumed: number;
+  refreshed: number;
 };
 
 vi.mock('@/shared/realtime/stompConnection', () => ({
@@ -27,6 +29,8 @@ vi.mock('@/shared/realtime/stompConnection', () => ({
       started: false,
       stopped: false,
       retried: 0,
+      resumed: 0,
+      refreshed: 0,
     };
     connections.push(fake);
     return {
@@ -38,6 +42,12 @@ vi.mock('@/shared/realtime/stompConnection', () => ({
       },
       retryNow: () => {
         fake.retried += 1;
+      },
+      resume: () => {
+        fake.resumed += 1;
+      },
+      refresh: () => {
+        fake.refreshed += 1;
       },
       subscribe: (destination: string, handler: (_body: unknown) => void) => {
         fake.subscribed.push(destination);
@@ -52,6 +62,9 @@ vi.mock('@/shared/realtime/stompConnection', () => ({
     };
   },
 }));
+
+const captureException = vi.hoisted(() => vi.fn());
+vi.mock('@sentry/nextjs', () => ({ captureException }));
 
 const fetchWsToken = vi.hoisted(() => vi.fn());
 vi.mock('@/shared/realtime/wsToken', () => ({ fetchWsToken }));
@@ -72,6 +85,7 @@ const emit = (status: RealtimeStatus) => {
 beforeEach(() => {
   connections.length = 0;
   fetchWsToken.mockReset();
+  captureException.mockReset();
   vi.stubEnv('NEXT_PUBLIC_WS_URL', 'wss://api.example.com/ws');
   vi.stubEnv('NEXT_PUBLIC_API_MOCKING', '');
 });
@@ -317,6 +331,106 @@ describe('useBundleRealtime', () => {
         { destination: '/app/bunches/1/bundles/2/presence', body: { action: 'LEAVE' } },
       ]);
       expect(connections[0]?.stopped).toBe(true);
+    });
+  });
+
+  describe('실패 보고', () => {
+    const fail = (kind: string, error?: unknown) =>
+      act(() => connections.at(-1)?.options.onError?.(kind as never, error));
+
+    it('STOMP ERROR는 고정 문구로 10분에 한 번만 보고한다(다시 연결돼도 그 안에는 다시 보내지 않음)', () => {
+      vi.useFakeTimers();
+      render();
+      fail('stomp');
+      fail('stomp');
+      expect(captureException).toHaveBeenCalledTimes(1);
+      const [error, context] = captureException.mock.calls[0] as [Error, unknown];
+      expect(error.message).toBe('Realtime stomp');
+      expect(context).toEqual({ fingerprint: ['realtime', 'stomp'] });
+
+      act(() => connections.at(-1)?.options.onConnected?.(true));
+      fail('stomp');
+      expect(captureException).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(10 * 60_000);
+      fail('stomp');
+      expect(captureException).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+    });
+
+    it('토큰 발급은 5xx만 보고하고 세션 만료(401)는 보고하지 않는다', async () => {
+      const { ApiError } = await import('@app/api-core');
+      render();
+      fail('token', new ApiError({ message: 'unauthorized', category: 'auth', status: 401 }));
+      expect(captureException).not.toHaveBeenCalled();
+
+      fail('token', new ApiError({ message: 'raw body', category: 'server', status: 503 }));
+      expect(captureException).toHaveBeenCalledTimes(1);
+      const [error] = captureException.mock.calls[0] as [Error];
+      expect(error.message).not.toContain('raw body');
+    });
+
+    it('구독 처리 함수의 예외는 원래 오류로 보고한다', () => {
+      render();
+      const failure = new Error('handler failed');
+      fail('handler', failure);
+      expect(captureException).toHaveBeenCalledWith(failure, {
+        fingerprint: ['realtime', 'handler'],
+      });
+    });
+  });
+
+  describe('복귀 재연결', () => {
+    const setVisibility = (state: DocumentVisibilityState) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: state });
+      act(() => void document.dispatchEvent(new Event('visibilitychange')));
+    };
+    afterEach(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      vi.useRealTimers();
+    });
+
+    it('네트워크가 돌아오면 재연결 대기를 기다리지 않게 한다', () => {
+      render();
+      act(() => void window.dispatchEvent(new Event('online')));
+      expect(connections[0]?.resumed).toBe(1);
+    });
+
+    it('잠깐 숨겼다 돌아오면 이어 붙이기만 하고, 30초 넘게 숨겼다 돌아오면 새 연결로 갈아 끼운다', () => {
+      vi.useFakeTimers();
+      render();
+      setVisibility('hidden');
+      vi.advanceTimersByTime(29_000);
+      setVisibility('visible');
+      expect(connections[0]).toMatchObject({ resumed: 1, refreshed: 0 });
+
+      setVisibility('hidden');
+      vi.advanceTimersByTime(30_000);
+      setVisibility('visible');
+      expect(connections[0]).toMatchObject({ resumed: 2, refreshed: 1 });
+    });
+
+    it('받지 못한 상세가 남은 채 연결을 갈아 끼우면 다시 받을 때까지 끊김으로 둔다', async () => {
+      const { result, invalidate } = render();
+      emit('connected');
+      emit('reconnecting');
+      invalidate.mockRejectedValueOnce(new Error('offline'));
+      emit('connected');
+      act(() => connections.at(-1)?.options.onConnected?.(true));
+      await waitFor(() => expect(result.current.down).toBe(true));
+
+      // 갈아 끼운 연결이 붙었지만 이번 재조회도 실패
+      invalidate.mockRejectedValueOnce(new Error('offline'));
+      act(() => connections.at(-1)?.options.onConnected?.(false));
+      await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(2));
+      expect(result.current.down).toBe(true);
+    });
+
+    it('화면을 떠나면 더 이상 복귀 이벤트에 반응하지 않는다', () => {
+      const { unmount } = render();
+      unmount();
+      act(() => void window.dispatchEvent(new Event('online')));
+      expect(connections[0]?.resumed).toBe(0);
     });
   });
 });
