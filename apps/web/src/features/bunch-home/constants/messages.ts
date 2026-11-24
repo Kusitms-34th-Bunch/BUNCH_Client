@@ -175,6 +175,8 @@ export const BUNCH_HOME_MESSAGES = {
   unblocked: (bunchName: string) => `${bunchName} 번치를 차단 해제했어요.`,
   blockedListLoading: '차단 목록을 불러오는 중이에요',
   menuLoading: '메뉴를 불러오는 중이에요',
+  deleteLoading: '번치 정보를 불러오는 중이에요',
+  deleteTitleLoading: '번치 삭제',
   blockedEmptyTitle: '아직 차단한 번치가 없어요',
   blockedEmptyDescription:
     '차단은 번치 멤버 모두에게 적용되며,\n서로의 번들・프로필・댓글은 보이지 않아요.',

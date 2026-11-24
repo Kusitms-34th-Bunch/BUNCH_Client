@@ -8,13 +8,14 @@ import { usePreservedCallback } from 'react-simplikit';
 import ownerAssign from '@/shared/assets/images/empty/owner-assign.svg';
 import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { ProfileListSkeleton } from '@/shared/components/skeleton/ProfileRowSkeleton';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchMember } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { ROLE_LABELS } from '../../constants/roles';
 
 type BunchLeaveScreenProps = {
-  /** 관리자로 지정할 수 있는 멤버(나 제외). 아직 모르면 목록을 그리지 않음 */
+  /** 관리자로 지정할 수 있는 멤버(나 제외). 아직 모르면 후보 자리를 회색으로 그림 */
   candidates: readonly BunchMember[] | undefined;
   onBack: () => void;
   /** 확인 시트의 「나가기」 */
@@ -100,8 +101,15 @@ export function BunchLeaveScreen({
               ))}
             </div>
           </fieldset>
-        ) : null}
+        ) : (
+          // 후보 자리(실제 카드와 같은 여백·사이 20)
+          <ProfileListSkeleton variant="card" count={4} className="gap-s5 px-padding-p8" />
+        )}
       </div>
+      {/* 늘 있는 상태 영역에 받는 중 문구만 넣었다 뺌 */}
+      <p role="status" className="sr-only">
+        {candidates ? '' : BUNCH_HOME_MESSAGES.membersLoading}
+      </p>
     </PageShell>
   );
 }

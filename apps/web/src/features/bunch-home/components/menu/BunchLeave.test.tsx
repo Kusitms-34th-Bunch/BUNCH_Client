@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BunchMember } from '../../lib/types';
+import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BunchLeaveScreen } from './BunchLeaveScreen';
 import { BunchMenuScreen } from './BunchMenuScreen';
 
@@ -65,6 +66,21 @@ describe('BunchMenuScreen 나가기', () => {
 });
 
 describe('BunchLeaveScreen', () => {
+  it('후보를 받는 동안 빈칸 대신 후보 자리를 그리고 받는 중을 알린다', () => {
+    const { container } = render(
+      <BunchLeaveScreen candidates={undefined} onBack={vi.fn()} onTransferAndLeave={vi.fn()} />,
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent(BUNCH_HOME_MESSAGES.membersLoading);
+    expect(
+      container
+        .querySelector('[class~="motion-safe:animate-pulse"]')
+        ?.closest('[aria-hidden="true"]'),
+    ).not.toBeNull();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.getByRole('button', { name: '관리자로 지정하기' })).toBeDisabled();
+  });
+
   it('새 관리자를 고르기 전에는 「관리자로 지정하기」가 비활성이다', () => {
     render(
       <BunchLeaveScreen candidates={CANDIDATES} onBack={vi.fn()} onTransferAndLeave={vi.fn()} />,
