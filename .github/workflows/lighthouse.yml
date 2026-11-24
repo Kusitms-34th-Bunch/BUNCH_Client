@@ -190,13 +190,20 @@ jobs:
       pull-requests: write
 
     steps:
-      # 묶음마다 lighthouse/lighthouse-report-<id>/ 아래로 받음
-      - name: Download Lighthouse reports
+      # 묶음마다 lighthouse/lighthouse-report-<id>/ 아래로 받음. pattern 하나로 받으면 v5부터 하나만 있을 때 폴더 없이 풀려 이름별로 받음
+      - name: Download Lighthouse report (public)
         continue-on-error: true
         uses: actions/download-artifact@v7
         with:
-          pattern: lighthouse-report-*
-          path: lighthouse
+          name: lighthouse-report-public
+          path: lighthouse/lighthouse-report-public
+
+      - name: Download Lighthouse report (signed-in)
+        continue-on-error: true
+        uses: actions/download-artifact@v7
+        with:
+          name: lighthouse-report-signed-in
+          path: lighthouse/lighthouse-report-signed-in
 
       # 댓글 하나를 찾아 갱신(새 커밋마다 댓글이 쌓이지 않게)
       - name: Comment Lighthouse result on the pull request
