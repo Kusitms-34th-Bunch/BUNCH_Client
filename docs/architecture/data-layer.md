@@ -58,7 +58,7 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 - `src/shared/query/keys.ts`, `src/shared/query/bunchMembers.ts`: key factory와 `queryOptions`(앱을 열자마자 보이는 데이터라 `...persistedQuery`)
 - `src/shared/api/bunchMembers.test.ts`, `src/shared/query/bunchMembers.test.tsx`: MSW 가짜 서버로 확인하는 테스트(`docs/workflows/testing.md`)
 - 쓰기: `features/bunch-home/api/blocks.ts`, `queries/blocks.ts`(`useBlockBunchMutation`: 실패 문구 `meta`, 성공 뒤 관련 key 무효화), `src/mocks/handlers/blocks.ts`, 각 test
-- optimistic 쓰기: `features/photo-box/queries/photos.ts`(`useDeletePhotosMutation`: 목록에서 먼저 빼고 실패하면 그 사진만 되돌린 뒤 `onSettled`에서 무효화). 실패 문구가 결과마다 달라 `meta` 없이 화면이 토스트를 띄운다.
+- optimistic 쓰기: `features/photo-box/queries/photos.ts`(`useDeletePhotosMutation`: 목록에서 먼저 빼고 실패하면 그 사진만 되돌린 뒤 `onSettled`에서 무효화. 고른 사진이 그사이 지워져 거절되면 서버에 없는 사진은 되돌리지 않고 `onError`에서 한 번만 다시 받으며, 다른 삭제가 진행 중이면 다시 받기를 마지막 삭제에 맡긴다). 실패 문구가 결과마다 달라 `meta` 없이 화면이 토스트를 띄운다.
 
 ```ts
 // shared/api/bunchMembers.ts — 서버 응답 모양, 화면 모양, 요청 함수
