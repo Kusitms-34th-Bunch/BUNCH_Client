@@ -4,7 +4,14 @@ import { routeBundleEvent } from './bundleEvents';
 
 // 판정이 보는 필드(revision·상태)만 채운 상세
 const detail = (revision: number, status = 'DRAFT') =>
-  ({ revision, status, dateChips: [] }) as unknown as BundleDetail;
+  ({
+    revision,
+    status,
+    title: '제목',
+    date: null,
+    dateVersion: 0,
+    dateChips: [],
+  }) as unknown as BundleDetail;
 
 const event = (type: string, revision?: number | null, data: unknown = {}) => ({
   type,
@@ -37,5 +44,30 @@ describe('routeBundleEvent', () => {
 
   it('바로 다음 revision의 data 모양이 다르면 추측하지 않고 다시 받는다', () => {
     expect(routeBundleEvent(detail(5), event('COMMENT', 6, { wrong: true })).kind).toBe('refetch');
+  });
+
+  it('바로 다음 revision의 내용 이벤트는 그 값과 revision을 반영하고 나머지 필드는 둔다', () => {
+    const outcome = routeBundleEvent(
+      detail(5),
+      event('DATE', 6, { value: '2026-11-24', version: 1, dateChips: ['2026-11-23'] }),
+    );
+
+    if (outcome.kind !== 'apply') throw new Error(`outcome is ${outcome.kind}`);
+    expect(outcome.detail).toMatchObject({
+      revision: 6,
+      date: '2026-11-24',
+      dateVersion: 1,
+      dateChips: ['2026-11-23'],
+      title: '제목',
+    });
+  });
+
+  it('날짜 칩 이벤트는 배열·객체 모두 칩만 바꾸고 revision은 그대로 둔다', () => {
+    for (const data of [['2026-11-20'], { dateChips: ['2026-11-20'] }]) {
+      const outcome = routeBundleEvent(detail(5), event('DATE_CHIPS', null, data));
+
+      if (outcome.kind !== 'apply') throw new Error(`outcome is ${outcome.kind}`);
+      expect(outcome.detail).toMatchObject({ revision: 5, dateChips: ['2026-11-20'] });
+    }
   });
 });

@@ -314,19 +314,25 @@ describe('useDraft 저장', () => {
   it('충돌 뒤 최신 상세를 받지 못하면 곧바로 같은 버전을 다시 보내 포기하지 않고 일시 오류 간격으로 기다린다', async () => {
     const { id, result } = await renderReady();
     let saves = 0;
+    let detailFailures = 0;
     server.use(
       http.put('/api/bunches/:bunchId/bundles/:id/date', () => {
         saves += 1;
         return fail(409, 'BUNDLE_003');
       }),
-      http.get('/api/bunches/:bunchId/bundles/:id', () => fail(500, 'COMMON_500')),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailFailures += 1;
+        return fail(500, 'COMMON_500');
+      }),
     );
 
     act(() => result.current.actions.setDate('2026-10-18'));
 
-    await waitFor(() => expect(saves).toBe(1), SAVE_WAIT);
-    // 짧은 충돌 간격(200ms부터)이면 이 사이에 여러 번 보내고 약 3초 만에 저장 실패로 포기함
-    await act(() => new Promise((resolve) => setTimeout(resolve, 2000)));
+    // 충돌 뒤 최신 상세 조회가 실패로 끝난 것을 확인한 다음부터 잼(짧은 간격이면 이 뒤 200ms에 다시 보냄)
+    await waitFor(() => expect(detailFailures).toBeGreaterThan(0), SAVE_WAIT);
+    expect(saves).toBe(1);
+    // 일시 오류 간격(3초)의 1/3. 짧은 간격(200·400·600ms…)이면 이 사이 세 번 넘게 보냄
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1000)));
     expect(saves).toBe(1);
     expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
     expect(ready(result.current.state).draft.date).toBe('2026-10-18');

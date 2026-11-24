@@ -214,8 +214,10 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     expect(connection.holdEvent?.('PHOTOS')).toBe(true);
     // 다른 멤버의 코멘트 이벤트가 revision을 건너뛰어 상세를 다시 받는 경우와 같음
     await act(() => client.refetchQueries({ queryKey: bundleKeys.detail(bunchId, id) }));
-    // 받은 상세가 렌더에 반영될 시간을 둠(반영되면 끄는 중 목록이 바뀐 것)
-    await act(() => wait(300));
+    // 같은 상세에서 만드는 픽 목록에서 지운 사진이 빠질 때까지 기다림(새 상세가 화면 값에 반영됨)
+    await waitFor(() =>
+      expect(ready(result.current.state).draft.picks).not.toHaveProperty(first!.id),
+    );
     expect(shownIds()).toEqual([first!.id, second!.id]);
 
     act(() => result.current.actions.setPhotoDragging(false));
