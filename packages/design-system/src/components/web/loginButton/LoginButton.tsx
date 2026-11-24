@@ -8,7 +8,7 @@ import { tv } from '../../../utils';
 const loginButton = tv({
   base: [
     'relative isolate inline-flex h-s18 w-full max-w-full cursor-pointer touch-manipulation items-center justify-center gap-s3 overflow-clip rounded-r6 px-padding-p8 py-padding-p7 typography-login-button',
-    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-overlay-login-pressed before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+    'press-overlay before:-z-10 before:bg-overlay-login-pressed',
     'not-disabled:active:before:opacity-100',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand',
     'disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',

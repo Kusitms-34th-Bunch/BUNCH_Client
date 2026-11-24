@@ -7,3 +7,23 @@
     display: none;
   }
 }
+
+/* 누르면 나타나는 덮개의 공통 바탕(위치·처음 숨김·75ms 전환, 동작 줄이기면 전환 없음). 색·모서리·쌓임·누르는 조건은 쓰는 곳이 정함 */
+@utility press-overlay {
+  &::before {
+    content: var(--tw-content);
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition-property: opacity;
+    --tw-duration: 75ms;
+    transition-duration: 75ms;
+    /* Tailwind `ease-out`과 같은 곡선(CSS 키워드 ease-out과 다름) */
+    --tw-ease: var(--ease-out);
+    transition-timing-function: var(--ease-out);
+    @media (prefers-reduced-motion: reduce) {
+      transition-property: none;
+    }
+  }
+}

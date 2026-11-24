@@ -47,7 +47,7 @@ export const CalendarItem = ({
           : [
               'bg-surface-primary text-text-primary',
               // 눌림은 칸 위에 겹쳐 글자까지 함께 어두워지게 처리
-              'before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-10 before:rounded-full before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+              'before:bg-overlay-hover press-overlay before:z-10 before:rounded-full',
               '[&:not([aria-disabled=true])]:active:before:opacity-100',
             ],
         // 선택된 칸은 비활성이어도 어두운 배경에 흰 글자를 유지(연한 글자가 어두운 배경에 묻히지 않게 처리)

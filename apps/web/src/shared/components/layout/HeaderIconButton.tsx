@@ -8,7 +8,7 @@ const TONES = {
   inversed: 'text-icon-inversed',
 } as const;
 
-type HeaderIconButtonProps = {
+export type HeaderIconButtonProps = {
   /** 접근성 이름(아이콘만 있어서 필수) */
   label: string;
   /** 24px 아이콘. 장식용이며 버튼 이름으로 대체 */

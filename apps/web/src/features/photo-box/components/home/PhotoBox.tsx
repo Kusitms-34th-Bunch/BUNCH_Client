@@ -20,7 +20,7 @@ import { PhotoBoxScreen } from './PhotoBoxScreen';
 const WARM_DELAY_MS = 100;
 
 type PhotoBoxProps = {
-  /** 임시 상태 미리보기(`/photos?preview=…`). API 연결 후 제거 */
+  /** 개발용 상태 미리보기(`/photos?preview=…`) */
   preview?: PhotoBoxPreview | undefined;
   /** 헤더의 번치 이름을 눌렀을 때 여는 번치 전환 시트(번치 홈과 같은 시트라 route에서 조합해 넘김, 기능명세 3.1.1) */
   bunchSwitcher?: { open: (() => void) | undefined; switcherOpen: boolean } | undefined;

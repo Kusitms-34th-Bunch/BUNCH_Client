@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode, RefObject } from 'react';
-import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon } from '@app/design-system';
+import { Header, LineDotsLargeIcon } from '@app/design-system';
 import {
   BundleAuthorInfo,
   BundleEngagement,
@@ -9,6 +9,7 @@ import {
   BundlePhoto,
   CommentComposer,
 } from '@app/design-system/web';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -26,16 +27,7 @@ const COMMENT_MAX_LENGTH = 200;
 
 /** 뒤로 버튼이 있는 상세 헤더(본문·안내 화면 공통) */
 function BundleDetailHeader({ onBack, trailing }: { onBack: () => void; trailing?: ReactNode }) {
-  return (
-    <Header
-      leading={
-        <HeaderIconButton label={text.back} onClick={onBack}>
-          <LineChevronLeftLargeIcon />
-        </HeaderIconButton>
-      }
-      trailing={trailing}
-    />
-  );
+  return <Header leading={<HeaderBackButton onClick={onBack} />} trailing={trailing} />;
 }
 
 type BundleDetailBodyProps = {

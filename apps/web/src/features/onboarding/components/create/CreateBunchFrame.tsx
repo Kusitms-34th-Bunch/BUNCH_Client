@@ -1,10 +1,10 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Header } from '@app/design-system';
 import { Stepper } from '@app/design-system/web';
 import { useSelectedLayoutSegment } from 'next/navigation';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { useExitCreateBunchDialog } from '../../hooks/useExitCreateBunchDialog';
 
 const TOTAL_STEPS = 3;
@@ -20,13 +20,7 @@ export function CreateBunchFrame({ children }: { children: ReactNode }) {
   return (
     <div className="bg-surface-primary flex min-h-0 flex-1 flex-col">
       <div className="shrink-0">
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={openExitDialog}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
+        <Header leading={<HeaderBackButton onClick={openExitDialog} />} />
         <div className="bg-surface-primary px-padding-p8 pt-padding-p6">
           <Stepper total={TOTAL_STEPS} current={step} />
         </div>

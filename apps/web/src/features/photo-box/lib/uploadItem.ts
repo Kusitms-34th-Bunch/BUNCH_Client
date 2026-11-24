@@ -79,6 +79,6 @@ export const readPhoto = async (photo: PickedPhoto): Promise<UploadItem | null> 
   } catch {
     return null;
   } finally {
-    await photoUploadBridge.releasePickedPhotos([photo.id]).catch(() => undefined);
+    await skipPhoto(photo);
   }
 };

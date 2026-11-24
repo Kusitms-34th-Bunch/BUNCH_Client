@@ -5,14 +5,13 @@ import {
   Button,
   ConfirmDialog,
   Header,
-  LineChevronLeftLargeIcon,
   LineCopyMediumIcon,
   LineTrashcanMediumIcon,
 } from '@app/design-system';
 import { LocationCard, MoreMenuSheet } from '@app/design-system/web';
 import { useEffect, useRef } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
@@ -279,13 +278,7 @@ export function BunchPlacesScreen({
     <PageShell
       header={
         <>
-          <Header
-            leading={
-              <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-                <LineChevronLeftLargeIcon />
-              </HeaderIconButton>
-            }
-          />
+          <Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />
           {/* 받기 전에는 개수를 몰라 칩 자리만 그림(「전체 0」으로 보이지 않게). 실패 화면에는 칩을 두지 않음 */}
           {!places && !onRetry ? <PlaceFilterSkeleton /> : null}
           {places ? (

@@ -1,13 +1,13 @@
 'use client';
 
 import { isApiError } from '@app/api-core';
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, ConfirmDialog, Header, toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CheckNickname } from '@/shared/hooks/profile/useNicknameAvailability';
 import { checkNicknameAvailability } from '@/shared/api/nickname';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
@@ -198,9 +198,7 @@ export function ProfileEditScreen({
           <Header
             leading={
               // Figma 헤더 뒤로 가기 아이콘 색(#bcbec2), 가입 단계와 같은 연한 회색
-              <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={back}>
-                <LineChevronLeftLargeIcon />
-              </HeaderIconButton>
+              <HeaderBackButton tone="subtle" onClick={back} />
             }
           />
         }

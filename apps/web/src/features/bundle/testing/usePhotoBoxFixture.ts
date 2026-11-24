@@ -2,12 +2,9 @@ import { useMemo, useState } from 'react';
 import type { PhotoBoxPreview } from '@/features/photo-box/lib/preview';
 import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxState } from '@/features/photo-box/lib/types';
 import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
-import { applyDelete, applyTakenDate } from '@/features/photo-box/lib/photoActions';
 
 // 목 저장이 끝나기까지의 시간(화면 전체 로딩이 보이도록)
 const MOCK_SAVE_DELAY_MS = 800;
-// 목 날짜 변경이 끝나기까지의 시간(시트의 「저장 중」 상태가 보이도록)
-const MOCK_CHANGE_DATE_DELAY_MS = 500;
 
 type UsePhotoBoxResult = {
   state: PhotoBoxState;
@@ -36,14 +33,11 @@ export function usePhotoBoxFixture(preview?: PhotoBoxPreview): UsePhotoBoxResult
       await new Promise((resolve) => setTimeout(resolve, MOCK_SAVE_DELAY_MS));
       return { savedIds: ids, failedIds: [] };
     },
-    changePhotoDates: async (ids, date) => {
-      await new Promise((resolve) => setTimeout(resolve, MOCK_CHANGE_DATE_DELAY_MS));
-      setPhotos((current) => applyTakenDate(current, new Set(ids), date));
-    },
+    // 번들 화면은 날짜 변경·삭제를 쓰지 않아 최소 동작만 둠(실제 동작은 photo-box 테스트가 확인)
+    changePhotoDates: () => Promise.resolve(),
     deletePhotos: (ids) => {
-      const result = applyDelete(photos, new Set(ids), photoBoxFixture.viewer);
-      setPhotos(result.photos);
-      return Promise.resolve({ removedCount: result.removedCount });
+      setPhotos((current) => current.filter((photo) => !ids.includes(photo.id)));
+      return Promise.resolve({ removedCount: ids.length });
     },
   };
 

@@ -1,12 +1,12 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header } from '@app/design-system';
 import { AdminTransferSheet, PageHeader, ProfileRadioCard } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import { useId, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import ownerAssign from '@/shared/assets/images/empty/owner-assign.svg';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchMember } from '../../lib/types';
@@ -58,15 +58,7 @@ export function BunchLeaveScreen({
 
   return (
     <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
+      header={<Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />}
       bottom={
         // Figma Indicator + CTA: 위 14. 처음엔 선택이 없어 비활성(화면설계서 1번)
         <div className="pt-padding-p7 px-padding-p8">

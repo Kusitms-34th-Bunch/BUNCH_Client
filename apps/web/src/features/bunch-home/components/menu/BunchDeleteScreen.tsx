@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header } from '@app/design-system';
 import { LabeledTextField, PageHeader } from '@app/design-system/web';
 import { useId, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 
@@ -40,15 +40,7 @@ export function BunchDeleteScreen({
 
   return (
     <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
+      header={<Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />}
       bottom={
         // Figma Indicator + CTA: 위 14
         <div className="pt-padding-p7 px-padding-p8">

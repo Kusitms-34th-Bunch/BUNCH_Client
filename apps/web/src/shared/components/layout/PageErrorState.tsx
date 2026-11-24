@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header } from '@app/design-system';
 import { COMMON_MESSAGES } from '@/shared/constants/messages';
-import { HeaderIconButton } from './HeaderIconButton';
+import { HeaderBackButton } from './HeaderBackButton';
 import { PageShell } from './PageShell';
 
 type PageErrorStateProps = {
@@ -12,7 +12,7 @@ type PageErrorStateProps = {
   /** 있으면 헤더에 뒤로 가기를 둠(오류가 계속될 때 이 화면에서 나갈 수 있게) */
   onBack?: (() => void) | undefined;
   /** 뒤로 가기 아이콘 색(기본 primary) */
-  backTone?: ComponentProps<typeof HeaderIconButton>['tone'] | undefined;
+  backTone?: ComponentProps<typeof HeaderBackButton>['tone'] | undefined;
   /** 다시 받는 중(버튼은 그대로 두고 aria-busy만, 초점 유지) */
   retrying?: boolean | undefined;
 };
@@ -29,13 +29,7 @@ export function PageErrorState({
     <PageShell
       header={
         onBack ? (
-          <Header
-            leading={
-              <HeaderIconButton label="뒤로 가기" tone={backTone} onClick={onBack}>
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
-            }
-          />
+          <Header leading={<HeaderBackButton tone={backTone} onClick={onBack} />} />
         ) : undefined
       }
     >

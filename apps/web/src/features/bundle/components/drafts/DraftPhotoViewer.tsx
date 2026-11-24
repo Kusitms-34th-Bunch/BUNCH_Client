@@ -1,6 +1,6 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
+import { Header, LineDotsLargeIcon, toast } from '@app/design-system';
 import { IconButton } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
@@ -14,7 +14,7 @@ import { PHOTO_BOX_MESSAGES } from '@/features/photo-box/constants/messages';
 import { usePhotoViewer } from '@/features/photo-box/hooks/usePhotoViewer';
 import { formatDetailDate } from '@/features/photo-box/lib/photoDetail';
 import { getViewerHeaderClass } from '@/features/photo-box/lib/photoViewerStyle';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useExitableOpen } from '@/shared/hooks/overlay/useExitableOpen';
@@ -201,11 +201,7 @@ export function DraftPhotoViewer({
       header={
         <div className={getViewerHeaderClass(chromeHidden)}>
           <Header
-            leading={
-              <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
-            }
+            leading={<HeaderBackButton onClick={onBack} />}
             title={
               sourcesPending
                 ? ''

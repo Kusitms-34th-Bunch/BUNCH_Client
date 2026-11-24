@@ -1,11 +1,11 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header } from '@app/design-system';
 import { ChipButton, ProfileListItem } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import type { PhotoBoxMember } from '@/features/photo-box/lib/types';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import {
   LATE_OVERLAY_MS,
@@ -63,13 +63,10 @@ export function BundleMemberSelect() {
         <div inert={creating}>
           <Header
             leading={
-              <HeaderIconButton
-                label={BUNDLE_SELECT_MESSAGES.back}
+              <HeaderBackButton
                 // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동
                 onClick={() => backOr(BUNDLE_SELECT_PATHS.bunchHome)}
-              >
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
+              />
             }
           />
         </div>

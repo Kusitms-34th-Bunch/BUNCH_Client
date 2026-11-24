@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, ConfirmDialog, Header } from '@app/design-system';
 import { BundlePickPhoto } from '@app/design-system/web';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
@@ -146,17 +146,7 @@ export function DraftPickScreen({
   const nameOf = (memberId: string) => members.find((member) => member.id === memberId)?.name ?? '';
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-              <LineChevronLeftLargeIcon aria-hidden="true" />
-            </HeaderIconButton>
-          }
-        />
-      }
-    >
+    <PageShell header={<Header leading={<HeaderBackButton onClick={onBack} />} />}>
       <div className="pt-padding-p15 gap-s2 flex flex-col items-center text-center">
         <p className="typography-body-4-semi-bold text-text-quaternary px-padding-p8 w-full">
           {BUNDLE_MESSAGES.pickNotice}

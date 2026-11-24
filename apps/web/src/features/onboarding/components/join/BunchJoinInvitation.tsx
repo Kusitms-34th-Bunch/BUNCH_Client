@@ -1,12 +1,12 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Header, toast } from '@app/design-system';
 import { InviteCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { apiErrorCode, isDefiniteRejection } from '@/shared/api/client/errorStatus';
 import { replaceTabPath } from '@/shared/bridge/client';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
@@ -129,16 +129,13 @@ export function BunchJoinInvitation() {
         <Header
           className="bg-transparent"
           leading={
-            <HeaderIconButton
+            <HeaderBackButton
               ref={backRef}
-              label="뒤로 가기"
               // 참여 요청 중·성공 뒤 이동 중에는 나가기 창을 열지 않음(늦게 온 성공이 창 뒤에서 화면을 옮기지 않게)
               onClick={() => {
                 if (!joinInFlight) openExitDialog();
               }}
-            >
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            />
           }
         />
       }

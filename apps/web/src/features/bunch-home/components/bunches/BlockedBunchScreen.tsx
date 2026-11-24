@@ -1,10 +1,10 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header } from '@app/design-system';
 import Image, { type StaticImageData } from 'next/image';
 import { useEffect, useRef } from 'react';
 import blockedBunch from '@/shared/assets/images/empty/blocked-bunch.svg';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 
@@ -32,17 +32,7 @@ export function BlockedBunchScreen({
   }, [focusTitle]);
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
-    >
+    <PageShell header={<Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />}>
       {checking ? (
         // 불러오는 동안 제목·내용 없이(차단한 번치 내용이 잠깐 보이지 않게) 상태만 알림
         <p role="status" className="sr-only">

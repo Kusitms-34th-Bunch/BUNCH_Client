@@ -13,17 +13,22 @@ import {
   undatedPhotosPageSchema,
 } from '../model/photos';
 
+// 화면 id가 서버 숫자로 바뀌지 않으면 요청 전에 막음(잘못된 id를 서버에 보내지 않음)
+const toWireIds = (photoIds: readonly string[]) => {
+  const wireIds = photoIds.map(toWireId);
+  if (!wireIds.every((id) => id !== undefined)) {
+    throw new ApiError({ category: 'validation', message: 'invalid photo id' });
+  }
+  return wireIds;
+};
+
 /**
  * 고른 사진 삭제. 멤버는 내가 올린 사진만, 관리자는 모든 사진(docs/specs/photo-box.md 3.3.5)
  * 고른 사진 중 일부가 그사이 지워졌으면 아무것도 삭제하지 않고 `MissingPhotosError`(409 `PHOTO_004`, `detail.missingPhotoIds`)를 던짐
  * 그 밖의 오류: 권한 밖·번치 멤버 아님 `AUTH_002`, 잘못된 요청 `COMMON_001`
  */
 export const removePhotos = async (bunchId: string, photoIds: readonly string[]) => {
-  const wireIds = photoIds.map(toWireId);
-  // 화면 id가 서버 숫자로 바뀌지 않으면 요청 전에 막음(잘못된 id를 서버에 보내지 않음)
-  if (!wireIds.every((id) => id !== undefined)) {
-    throw new ApiError({ category: 'validation', message: 'invalid photo id' });
-  }
+  const wireIds = toWireIds(photoIds);
   try {
     return await requestData(
       bffApi.post(`bunches/${encodeURIComponent(bunchId)}/photos/delete`, {
@@ -55,10 +60,7 @@ export const changePhotoDates = async (
   photoIds: readonly string[],
   date: Date | null,
 ) => {
-  const wireIds = photoIds.map(toWireId);
-  if (!wireIds.every((id) => id !== undefined)) {
-    throw new ApiError({ category: 'validation', message: 'invalid photo id' });
-  }
+  const wireIds = toWireIds(photoIds);
   try {
     return await requestData(
       bffApi.post(`bunches/${encodeURIComponent(bunchId)}/photos/date`, {

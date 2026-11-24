@@ -56,4 +56,4 @@
 
 ## 검증
 
-단위 테스트(변형별 클래스와 테두리 유무, 이름, 클릭, 아이콘 숨김, 눌림 오버레이 클래스(`pointer-events-none`·`z-10` 포함), `type`)와 Storybook 렌더로 세 변형의 Default·Pressed를 Figma 내보내기와 같은 조건에서 비교했다. 40×40 크기, Default 배경 Subtle·Outline `#FFFFFF`·Primary `#25282D`, Pressed 배경 Subtle·Outline `#E5E5E5`·Primary `#212428`, Outline 테두리 `#EAEAEA`(눌러도 그대로), 아이콘 선 `#121212`·흰색이 Figma 값과 같다. 스크린 리더, 실기기 터치, 키보드 포커스 윤곽선의 실제 모양, 강제 색상 모드는 확인하지 않았다.
+단위 테스트(변형별 클래스와 테두리 유무, 이름, 클릭, 아이콘 숨김, 눌림 오버레이 클래스(공통 바탕 `press-overlay`와 `z-10`), `type`)와 Storybook 렌더로 세 변형의 Default·Pressed를 Figma 내보내기와 같은 조건에서 비교했다. 40×40 크기, Default 배경 Subtle·Outline `#FFFFFF`·Primary `#25282D`, Pressed 배경 Subtle·Outline `#E5E5E5`·Primary `#212428`, Outline 테두리 `#EAEAEA`(눌러도 그대로), 아이콘 선 `#121212`·흰색이 Figma 값과 같다. 스크린 리더, 실기기 터치, 키보드 포커스 윤곽선의 실제 모양, 강제 색상 모드는 확인하지 않았다.

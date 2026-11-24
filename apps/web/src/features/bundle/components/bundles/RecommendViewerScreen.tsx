@@ -1,12 +1,12 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Header } from '@app/design-system';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '@/features/photo-box/lib/types';
 import { PhotoViewerSwiper } from '@/features/photo-box/components/PhotoViewerSwiper';
 import { usePhotoViewer } from '@/features/photo-box/hooks/usePhotoViewer';
 import { formatDetailDate } from '@/features/photo-box/lib/photoDetail';
 import { getViewerHeaderClass } from '@/features/photo-box/lib/photoViewerStyle';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
@@ -50,11 +50,7 @@ export function RecommendViewerScreen({
       header={
         <div className={getViewerHeaderClass(chromeHidden)}>
           <Header
-            leading={
-              <HeaderIconButton label={BUNDLE_SELECT_MESSAGES.back} onClick={onBack}>
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
-            }
+            leading={<HeaderBackButton onClick={onBack} />}
             title={formatDetailDate(activePhoto.takenAt, currentYear)}
           />
         </div>

@@ -80,11 +80,10 @@ describe('IconButton', () => {
 
     expect(classList.contains('before:bg-overlay-hover')).toBe(true);
     expect(classList.contains('active:before:opacity-100')).toBe(true);
-    expect(classList.contains('motion-reduce:before:transition-none')).toBe(true);
-    // 오버레이가 클릭·포커스를 가로채지 않고 아이콘 위까지 덮음
-    expect(classList.contains('before:pointer-events-none')).toBe(true);
+    // 위치·포인터 무시·75ms 전환·동작 줄이기 끔은 공통 덮개 바탕(utilities.css의 press-overlay)이 맡음
+    expect(classList.contains('press-overlay')).toBe(true);
+    // 아이콘 위까지 덮음
     expect(classList.contains('before:z-10')).toBe(true);
-    expect(classList.contains('before:inset-0')).toBe(true);
   });
 
   it('type을 다시 정할 수 있고 className·button 속성이 합쳐진다', () => {

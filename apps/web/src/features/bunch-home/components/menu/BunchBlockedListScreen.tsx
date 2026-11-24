@@ -1,18 +1,11 @@
 'use client';
 
-import {
-  ActionDialog,
-  Button,
-  Header,
-  LineChevronLeftLargeIcon,
-  Skeleton,
-  toast,
-} from '@app/design-system';
+import { ActionDialog, Button, Header, Skeleton, toast } from '@app/design-system';
 import { ProfileImage, ProfileListItem } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import { useEffect, useId, useRef } from 'react';
 import blockedListEmpty from '@/shared/assets/images/empty/blocked-list-empty.svg';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileListSkeleton } from '@/shared/components/skeleton/ProfileRowSkeleton';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
@@ -109,17 +102,7 @@ export function BunchBlockedListScreen({
   const emptyDescriptionId = useId();
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
-    >
+    <PageShell header={<Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />}>
       <h1 className="sr-only">차단 목록</h1>
       {/* 늘 있는 상태 영역의 글자만 바꿈(새로 붙인 영역은 낭독이 안 될 수 있음) */}
       <p role="status" className="sr-only">

@@ -1,7 +1,7 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { Button, Header } from '@app/design-system';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { type CheckNickname } from '@/shared/hooks/profile/useNicknameAvailability';
 import { type CharacterType } from '@/shared/lib/profile/bunchProfile';
 import {
@@ -47,13 +47,7 @@ export function BunchProfileEditScreen({
 }: BunchProfileEditScreenProps) {
   // 뒤로 가기 동작은 폼이 정함(바꾼 내용이 있으면 확인 창)
   const header = (back: () => void) => (
-    <Header
-      leading={
-        <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={back}>
-          <LineChevronLeftLargeIcon />
-        </HeaderIconButton>
-      }
-    />
+    <Header leading={<HeaderBackButton tone="subtle" onClick={back} />} />
   );
   if (!initial) {
     return (

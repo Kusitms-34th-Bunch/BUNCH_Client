@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, cn, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, cn, Header, toast } from '@app/design-system';
 import { FollowListItem } from '@app/design-system/web';
 import { type MouseEvent, useEffect, useRef, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { FollowDecision, FollowRequestRow } from '../../model/follows';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -89,17 +89,7 @@ export function FollowRequestsScreen({
   };
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
-    >
+    <PageShell header={<Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />}>
       <h1 className="sr-only">팔로우 요청</h1>
       {requests ? (
         // 헤더 아래 12, 개수 줄과 목록 사이 12(Figma 2500:73508)

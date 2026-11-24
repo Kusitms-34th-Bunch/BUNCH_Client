@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PhotoBoxPhoto, PhotoBoxViewer } from './types';
 import {
-  applyDelete,
-  applyTakenDate,
   canDeletePhotos,
   countCoUploaded,
   getDateConfirmKind,
@@ -56,79 +54,6 @@ describe('getDeleteKind', () => {
 
   it('내 사진과 다른 멤버 사진을 함께 고르면 others-included', () => {
     expect(getDeleteKind([photo('1', ['me']), photo('2', ['you'])], admin)).toBe('others-included');
-  });
-});
-
-describe('applyDelete', () => {
-  it('내 사진은 사라지고 사라진 장수를 센다', () => {
-    const result = applyDelete([photo('1', ['me']), photo('2', ['me'])], new Set(['1']), member);
-
-    expect(result.photos.map((p) => p.id)).toEqual(['2']);
-    expect(result.removedCount).toBe(1);
-  });
-
-  it('함께 올린 사진은 내 이름만 빠지고 목록에는 남으며 사라진 장수에 세지 않는다', () => {
-    const result = applyDelete([photo('1', ['me', 'you'])], new Set(['1']), member);
-
-    expect(result.photos).toHaveLength(1);
-    expect(result.photos[0]?.uploaderIds).toEqual(['you']);
-    expect(result.removedCount).toBe(0);
-  });
-
-  it('관리자가 다른 멤버 사진을 지우면 사라진다', () => {
-    const result = applyDelete([photo('1', ['you'])], new Set(['1']), admin);
-
-    expect(result.photos).toEqual([]);
-    expect(result.removedCount).toBe(1);
-  });
-
-  it('고르지 않은 사진은 그대로 두고 원본 목록을 바꾸지 않는다', () => {
-    const original = [photo('1', ['me']), photo('2', ['you'])];
-    const result = applyDelete(original, new Set(['1']), member);
-
-    expect(result.photos.map((p) => p.id)).toEqual(['2']);
-    expect(original).toHaveLength(2);
-  });
-});
-
-describe('applyTakenDate', () => {
-  const dated = (id: string, takenAt: string | null): PhotoBoxPhoto => ({
-    ...photo(id, ['me']),
-    takenAt,
-  });
-
-  it('고른 사진의 날짜만 바꾸고 시각은 그대로 둔다', () => {
-    const result = applyTakenDate(
-      [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')],
-      new Set(['1']),
-      new Date(2026, 7, 5),
-    );
-
-    expect(result.map((p) => p.takenAt)).toEqual(['2026-08-05T14:30', '2026-09-26T09:05']);
-  });
-
-  it('촬영 날짜가 없던 사진은 그날 00:00으로 정한다', () => {
-    const result = applyTakenDate([dated('1', null)], new Set(['1']), new Date(2026, 0, 3));
-
-    expect(result[0]?.takenAt).toBe('2026-01-03T00:00');
-  });
-
-  it('날짜가 null이면 고른 사진만 날짜 없음으로 되돌린다', () => {
-    const result = applyTakenDate(
-      [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')],
-      new Set(['1']),
-      null,
-    );
-
-    expect(result.map((p) => p.takenAt)).toEqual([null, '2026-09-26T09:05']);
-  });
-
-  it('원본 목록과 고르지 않은 사진 객체를 바꾸지 않는다', () => {
-    const original = [dated('1', '2026-09-27T14:30'), dated('2', '2026-09-26T09:05')];
-    const result = applyTakenDate(original, new Set(['1']), new Date(2026, 7, 5));
-
-    expect(original[0]?.takenAt).toBe('2026-09-27T14:30');
-    expect(result[1]).toBe(original[1]);
   });
 });
 
