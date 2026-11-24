@@ -13,8 +13,18 @@ permissions:
 
 jobs:
   e2e:
+    name: E2E (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # 엔진별로 러너를 나눠 동시에 돌림(한 job에서 차례로 돌리면 web spec이 두 번이라 시간이 두 배)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: chromium
+            projects: --project=admin-chromium --project=web-chromium
+          - name: webkit
+            projects: --project=web-webkit
     # 브라우저·시스템 라이브러리·글꼴이 든 Playwright 공식 이미지에서 실행해 매번 설치하지 않음
     # 태그는 @playwright/test(.yarnrc.yml catalog) 버전과 같아야 함(다르면 브라우저 실행 파일을 못 찾아 실패)
     container:
@@ -34,14 +44,16 @@ jobs:
       - run: node --version && yarn --version
 
       - run: yarn install --immutable
-      - run: yarn e2e:typecheck
-      - run: yarn e2e
+      # 타입 검사는 엔진과 무관해 한 job에서만
+      - if: matrix.name == 'chromium'
+        run: yarn e2e:typecheck
+      - run: yarn e2e ${{ matrix.projects }}
 
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.name }}
           path: playwright-report
           if-no-files-found: ignore
 
@@ -49,6 +61,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: test-results
+          name: test-results-${{ matrix.name }}
           path: test-results
           if-no-files-found: ignore
