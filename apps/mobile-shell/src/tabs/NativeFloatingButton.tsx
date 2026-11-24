@@ -25,6 +25,8 @@ export function NativeFloatingButton({ button, onPress }: { button: Button; onPr
   const insets = useSafeAreaInsets();
   return (
     <Pressable
+      // E2E(Maestro)가 같은 이름의 웹 버튼과 구분해 이 버튼을 고르는 식별자
+      testID="native-floating-button"
       accessibilityRole="button"
       accessibilityLabel={button.label}
       accessibilityState={{ disabled: button.disabled ?? false, expanded: button.expanded }}

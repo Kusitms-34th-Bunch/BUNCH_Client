@@ -1,0 +1,21 @@
+appId: kr.bunch.app
+name: 번치 탭의 네이티브 플로팅 버튼으로 번들 만들기에 들어가고 돌아오면 버튼이 다시 보인다
+---
+# iOS 26 시스템 플로팅 버튼(Liquid Glass)은 쉘이 그려 웹 E2E로 확인할 수 없음. 같은 이름의 웹 버튼과 구분하려고 식별자로 고름
+# iOS 26 미만 시뮬레이터는 네이티브 버튼이 없어 이 flow가 실패함(CI는 빌드 SDK와 같은 iOS 런타임)
+- runFlow: ../subflows/launch-fresh.yaml
+- runFlow:
+    file: ../subflows/tap-tab-until-visible.yaml
+    env:
+      TAB_ID: 'native-floating-button'
+      MARK: '누구와 함께 만들까요?'
+# 탭 밖 화면이라 탭 바와 플로팅 버튼이 숨음
+- assertNotVisible: '마이페이지'
+- assertNotVisible:
+    id: 'native-floating-button'
+- tapOn: '뒤로 가기'
+- extendedWaitUntil:
+    visible: '콕한 장소'
+    timeout: 15000
+- assertVisible:
+    id: 'native-floating-button'
