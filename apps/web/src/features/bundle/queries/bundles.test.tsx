@@ -11,13 +11,13 @@ import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testin
 import type { BundleDetail } from '../model/bundle';
 import { getBundle } from '../api/bundles';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
+import { useApplyBundleEvent } from './bundleRealtime';
 import {
   bundleQueryOptions,
   useCreateBundleMutation,
   useDeleteBundleMutation,
   useLeaveBundleMutation,
   usePublishBundleMutation,
-  useApplyBundleEvent,
   useMergeTitleMutation,
   useSaveCommentMutation,
 } from './bundles';

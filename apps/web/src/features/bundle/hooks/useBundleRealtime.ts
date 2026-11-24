@@ -13,7 +13,7 @@ import {
 import { fetchWsToken } from '@/shared/realtime/wsToken';
 import { type PresenceData, presenceEventSchema } from '../lib/presence';
 import { bundleEventEnvelopeSchema } from '../model/bundle';
-import { useApplyBundleEvent, useRefetchBundleDetail } from '../queries/bundles';
+import { useApplyBundleEvent, useRefetchBundleDetail } from '../queries/bundleRealtime';
 
 /** 번들 초안의 STOMP destination(v5 실시간 명세) */
 export const bundleDestinations = (bunchId: string, bundleId: string) => ({

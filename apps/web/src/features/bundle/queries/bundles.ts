@@ -1,10 +1,11 @@
-// 크기 유지: 상세 query와 초안 mutation이 같은 상세 key·캐시 동기화(useBundleCacheSync)와 이벤트 적용을 함께 씀
+// 크기 유지: 상세 query와 초안 mutation이 같은 상세 key·캐시 동기화(useBundleCacheSync)를 함께 씀. 실시간 반영은 bundleRealtime.ts
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiErrorCode } from '@/shared/api/client/errorStatus';
 import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { PROHIBITED_WORD_CODE } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { sharedKeys } from '@/shared/query/keys';
+import type { BundleDetail } from '../model/bundle';
 import {
   addBundleParticipant,
   createBundle,
@@ -19,10 +20,9 @@ import {
   saveBundleDate,
 } from '../api/bundles';
 import { changeBundlePhotos, moveBundlePhoto } from '../api/photos';
-import { type BundleEventOutcome, mergeFetchedDetail, routeBundleEvent } from '../lib/bundleEvents';
+import { mergeFetchedDetail } from '../lib/bundleEvents';
 import { titleProhibitedOf, withTitleState } from '../lib/bundleTitleState';
 import { pickNewerDetail } from '../lib/draftMapping';
-import { type BundleDetail, bundleEventEnvelopeSchema } from '../model/bundle';
 import { bundleKeys, bundleMutationKeys } from './keys';
 
 /** 번들(초안·발행본) 상세. 번치나 번들을 아직 모르면 요청하지 않음(skipToken) */
@@ -125,19 +125,6 @@ export const useLeaveBundleMutation = (bunchId: string | undefined) => {
   });
 };
 
-/** 번들 상세를 최신으로 다시 받음(실시간 연결이 끊겼다 돌아왔을 때처럼 놓친 변경을 맞출 때). 받지 못하면 reject */
-export const useRefetchBundleDetail = (
-  bunchId: string | undefined,
-  bundleId: string | undefined,
-) => {
-  const queryClient = useQueryClient();
-  return () =>
-    queryClient.refetchQueries(
-      { queryKey: bundleKeys.detail(bunchId, bundleId), exact: true },
-      { throwOnError: true },
-    );
-};
-
 // 저장·참여자 변경 성공 응답(전체 BundleSnapshot)으로 상세 캐시를 바로 갱신하고,
 // 버전 충돌이면 서버의 최신 상세를 다시 받아 화면이 최신 버전으로 이어서 저장하게 함
 const useBundleCacheSync = (bunchId: string | undefined, bundleId: string | undefined) => {
@@ -197,28 +184,6 @@ export const useMergeTitleMutation = (
       return next;
     },
   });
-};
-
-/**
- * 번들 topic으로 온 이벤트를 상세 캐시에 반영(v5 실시간 명세 6절)
- * - 내용 이벤트(revision 있음): 이미 반영된 revision은 무시, 바로 다음이면 type별 data를 적용, 건너뛰었으면 놓친 이벤트가 있다는 뜻이라 최신 상세를 다시 받음(이벤트는 재생되지 않음)
- * - PERMISSIONS·DELETED·CREATED·PUBLISHED·EDITED: revision 검사 없이 항상 상세를 다시 받아 확인(발행·삭제·참여 제외 화면은 그 결과로 정해짐)
- * - DATE_CHIPS: 내용 revision을 올리지 않는 별도 갱신이라 revision 검사를 하지 않음. PRESENCE 등 그 밖의 type은 건드리지 않음
- * 같은 이벤트가 다시 와도 결과가 같음
- */
-export const useApplyBundleEvent = (bunchId: string | undefined, bundleId: string | undefined) => {
-  const queryClient = useQueryClient();
-  const key = bundleKeys.detail(bunchId, bundleId);
-  const refetch = () => void queryClient.invalidateQueries({ queryKey: key });
-  const settle = (outcome: BundleEventOutcome) => {
-    if (outcome.kind === 'apply') queryClient.setQueryData<BundleDetail>(key, outcome.detail);
-    else if (outcome.kind === 'refetch') refetch();
-  };
-  return (body: unknown) => {
-    const envelope = bundleEventEnvelopeSchema.safeParse(body);
-    if (!envelope.success) return;
-    settle(routeBundleEvent(queryClient.getQueryData<BundleDetail>(key), envelope.data));
-  };
 };
 
 export const useSaveDateMutation = (bunchId: string | undefined, bundleId: string | undefined) =>
