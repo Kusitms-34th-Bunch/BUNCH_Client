@@ -35,7 +35,7 @@ jobs:
       # setup-node의 pnpm 캐시 조회가 저장소 루트(packageManager: yarn)에서 돌아도 Corepack이 막지 않도록
       COREPACK_ENABLE_STRICT: '0'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
 
@@ -52,7 +52,7 @@ jobs:
 
       - name: Node 설정
         id: node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm

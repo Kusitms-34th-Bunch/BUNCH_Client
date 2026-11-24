@@ -35,7 +35,7 @@ jobs:
       E2E_BASE_URL: https://app.bunch.kr
     steps:
       # push 배포는 배포한 커밋의 spec, 수동 배포(ref 지정)는 실행한 브랜치 head의 spec(workflow_run이 배포 ref를 주지 않음)
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
@@ -47,7 +47,7 @@ jobs:
       - run: corepack enable
 
       # 기본 브랜치 범위에서 돌므로 yarn 캐시를 저장하지 않음(PR이 복원하는 캐시에 닿지 않게)
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
 
@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload Playwright results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-production-results
           path: |

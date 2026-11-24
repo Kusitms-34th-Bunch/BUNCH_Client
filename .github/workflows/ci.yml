@@ -43,7 +43,7 @@ jobs:
 
     steps:
       # PR의 바뀐 패키지 판정(--affected)에 base 브랜치 이력 필요
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
 
@@ -59,7 +59,7 @@ jobs:
       # Turbo는 입력이 같은 패키지의 결과를 재사용. job별 키로 나눠 job끼리 같은 키를 저장하려다 충돌하지 않게 함
       - name: Restore Turbo cache
         id: turbo-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ matrix.id }}-${{ github.sha }}
@@ -69,7 +69,7 @@ jobs:
       - name: Restore Next.js build cache
         id: next-cache
         if: matrix.id == 'build'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
@@ -79,7 +79,7 @@ jobs:
       # 다른 파일의 타입이 바뀌어도 캐시된 타입 기반 규칙 결과는 갱신되지 않으므로 push는 캐시 없이 전체 검사 후 저장
       - name: Restore ESLint cache
         if: matrix.id == 'lint' && github.event_name == 'pull_request'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             .eslintcache
@@ -168,7 +168,7 @@ jobs:
       # 번들 크기 기준선은 base 브랜치(develop·main) push 빌드가 잰 결과. PR은 base 커밋의 결과, 없으면 그 브랜치의 가장 최근 결과와 비교
       - name: Restore bundle size baseline
         if: ${{ !cancelled() && steps.build.outcome == 'success' && hashFiles('apps/web/.next/build-manifest.json') != '' }}
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: apps/web/bundle-size-baseline.json
           key: bundle-size-${{ runner.os }}-${{ github.base_ref || github.ref_name }}-${{ github.event.pull_request.base.sha || github.sha }}
@@ -194,7 +194,7 @@ jobs:
 
       - name: Save bundle size baseline
         if: ${{ !cancelled() && steps.bundle-baseline.outcome == 'success' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: apps/web/bundle-size-baseline.json
           key: bundle-size-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
@@ -203,7 +203,7 @@ jobs:
       # actions/cache의 자동 저장은 job 성공 시에만 실행되므로 검사 결과와 상관없이 직접 저장. Turbo는 성공한 작업만 캐시
       - name: Save Turbo cache
         if: ${{ !cancelled() && github.event_name == 'push' && steps.setup.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ matrix.id }}-${{ github.sha }}
@@ -211,7 +211,7 @@ jobs:
       # develop·main push의 전체 검사 결과만 저장(PR 결과로 기준 캐시가 바뀌지 않게)
       - name: Save ESLint cache
         if: ${{ !cancelled() && matrix.id == 'lint' && github.event_name == 'push' && steps.lint.outcome == 'success' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             .eslintcache
@@ -221,7 +221,7 @@ jobs:
 
       - name: Save Next.js build cache
         if: ${{ !cancelled() && matrix.id == 'build' && steps.build.outcome == 'success' && steps.next-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
@@ -242,7 +242,7 @@ jobs:
 
       - name: Upload check results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ci-result-${{ matrix.id }}
           # bundle-size.md는 build job에서 web을 빌드했을 때만 있음
@@ -265,7 +265,7 @@ jobs:
       - name: Download check results
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: ci-result-*
           path: ci-results
@@ -280,7 +280,7 @@ jobs:
         continue-on-error: true
         # API 지연으로 필수 체크 job 전체가 시간 초과되지 않게 단계 단위 제한
         timeout-minutes: 2
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           CHECKS_RESULT: ${{ needs.checks.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
