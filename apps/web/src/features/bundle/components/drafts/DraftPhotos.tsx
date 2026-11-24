@@ -78,7 +78,7 @@ export function DraftPhotos({
   // 시트가 열린 사이 장수가 바뀌어도 고른 순간의 남은 장수로 가져옴
   const importFromGallery = usePreservedCallback(() => onImportFromGallery(MAX_PHOTOS - total));
   const isPickedNow = usePreservedCallback(isPicked);
-  // 시트가 열려 있는 동안 사진을 작업 중으로 알림: 열 때의 presence(연결 전에는 아무것도 보내지 않음)가 굳지 않도록 열림 상태만 두고 현재 presence로 알림
+  // 시트가 열려 있는 동안 사진을 작업 중으로 알림: 열림 상태만 두고 화면의 PresenceScope로 알림
   const [importOpen, setImportOpen] = useState(false);
   const openImport = () => {
     // 시트 카드를 연타해도 고른 출처를 한 번만 처리
