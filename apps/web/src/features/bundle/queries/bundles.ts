@@ -20,25 +20,15 @@ import {
 } from '../api/bundles';
 import { changeBundlePhotos, moveBundlePhoto } from '../api/photos';
 import {
-  applyContentEvent,
-  applyDateChips,
   type BundleEventOutcome,
   mergeFetchedDetail,
+  routeBundleEvent,
   withTitleState,
   titleProhibitedOf,
 } from '../lib/bundleEvents';
 import { pickNewerDetail } from '../lib/draftMapping';
-import { type BundleDetail, bundleEventEnvelopeSchema, CONTENT_EVENT_TYPES } from '../model/bundle';
+import { type BundleDetail, bundleEventEnvelopeSchema } from '../model/bundle';
 import { bundleKeys, bundleMutationKeys } from './keys';
-
-/** revision 검사 없이 항상 최신 상세로 확인하는 상태 전환 이벤트 */
-const STATE_CHANGE_EVENT_TYPES: readonly string[] = [
-  'PERMISSIONS',
-  'DELETED',
-  'CREATED',
-  'PUBLISHED',
-  'EDITED',
-];
 
 /** 번들(초안·발행본) 상세. 번치나 번들을 아직 모르면 요청하지 않음(skipToken) */
 export const bundleQueryOptions = (bunchId: string | undefined, bundleId: string | undefined) =>
@@ -232,26 +222,7 @@ export const useApplyBundleEvent = (bunchId: string | undefined, bundleId: strin
   return (body: unknown) => {
     const envelope = bundleEventEnvelopeSchema.safeParse(body);
     if (!envelope.success) return;
-    const { type, revision, data } = envelope.data;
-    const current = queryClient.getQueryData<BundleDetail>(key);
-
-    // 권한·삭제·발행 같은 상태 전환은 revision과 상관없이 확인해야 하므로 중복 제거 없이 항상 다시 받음
-    // 방송 data의 권한은 요청한 사람마다 달라 쓰지 않음
-    if (STATE_CHANGE_EVENT_TYPES.includes(type)) {
-      if (current) refetch();
-      return;
-    }
-    if (type === 'DATE_CHIPS') {
-      if (current && current.status === 'DRAFT') settle(applyDateChips(current, data));
-      return;
-    }
-    if (!(CONTENT_EVENT_TYPES as readonly string[]).includes(type) || revision == null) return;
-    if (!current || current.status !== 'DRAFT' || revision <= current.revision) return;
-    if (revision > current.revision + 1) {
-      refetch();
-      return;
-    }
-    settle(applyContentEvent(current, type, data, revision));
+    settle(routeBundleEvent(queryClient.getQueryData<BundleDetail>(key), envelope.data));
   };
 };
 
