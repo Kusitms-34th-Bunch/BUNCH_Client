@@ -38,7 +38,8 @@ describe('MenuItem', () => {
     render(<MenuItem>저장</MenuItem>);
     const cls = screen.getByRole('menuitem').className;
     expect(cls).toContain('before:bg-overlay-hover');
-    expect(cls).toContain('before:duration-75');
+    // 75ms 전환은 공통 덮개 바탕(press-overlay)이 맡음
+    expect(cls).toContain('press-overlay');
     expect(cls).toContain('active:before:opacity-100');
   });
 

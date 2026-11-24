@@ -29,7 +29,7 @@ export const MenuItem = ({
     tabIndex={-1}
     className={cn(
       'gap-s4 rounded-r6 px-s8 py-s5 typography-body-2-semibold relative isolate flex min-h-11 w-full cursor-pointer touch-manipulation items-center overflow-clip text-left font-(--semantic-font-weights-pretendard-1)',
-      'before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+      'before:bg-overlay-hover press-overlay before:-z-10',
       'active:before:opacity-100',
       'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:-outline-offset-2',
       tone === 'warning' ? 'text-system-fail-text' : 'text-text-secondary',

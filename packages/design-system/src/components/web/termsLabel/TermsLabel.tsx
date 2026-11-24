@@ -31,7 +31,7 @@ export const TermsLabel = ({
       // 눌림은 체크 영역(label)을 누를 때만 표시(chevron 버튼과 비활성은 제외)
       // 눌림: 선택된 모양(아이콘 80%·진한 글자)에 overlay-dim-subtle(10%)를 아이콘·글자 위까지 덮는다. Figma 실측: 아이콘 #a2a4a7→#919395
       'pr-padding-p4 relative isolate flex w-full items-center justify-between',
-      'before:bg-overlay-dim-subtle before:pointer-events-none before:absolute before:inset-0 before:z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+      'before:bg-overlay-dim-subtle press-overlay before:z-10',
       'has-[label:active]:not-has-[input:disabled]:before:opacity-100',
       className,
     )}

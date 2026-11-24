@@ -6,7 +6,7 @@ const iconButton = tv({
   base: [
     'relative isolate inline-flex size-10 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full',
     // 눌림은 버튼 위에 겹쳐 아이콘까지 함께 어두워지게 처리, 다른 버튼과 같은 75ms ease-out 전환(동작 줄이기에서는 끔)
-    'before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-10 before:rounded-full before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+    'before:bg-overlay-hover press-overlay before:z-10 before:rounded-full',
     'active:before:opacity-100',
     'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
   ],
