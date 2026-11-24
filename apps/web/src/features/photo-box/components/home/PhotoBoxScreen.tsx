@@ -36,7 +36,7 @@ import { PhotoDragArea } from './PhotoDragArea';
 import { PhotoSelectionMenu } from './PhotoSelectionMenu';
 import { PhotoUploadStatus } from './PhotoUploadStatus';
 
-// API 연결 전 기본 동작: 모두 성공하고 아무것도 사라지지 않음
+// actions를 넘기지 않을 때(테스트·미리보기)의 기본 동작: 모두 성공하고 아무것도 사라지지 않음
 const noopActions: PhotoBoxActions = {
   savePhotos: (ids) => Promise.resolve({ savedIds: ids, failedIds: [] }),
   deletePhotos: () => Promise.resolve({ removedCount: 0 }),

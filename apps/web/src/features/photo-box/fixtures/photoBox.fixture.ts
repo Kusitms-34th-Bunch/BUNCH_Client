@@ -1,7 +1,7 @@
 import { DEFAULT_BUNCH_IMAGES, DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import type { PhotoBoxData, PhotoBoxPhoto, PhotoStatus } from '../lib/types';
 
-// 사진 목록·멤버 목록 API 연결 전 Figma 예시 값 사용(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
+// 테스트·미리보기용 Figma 예시 값(저장소에 사진 에셋이 없어 색 그라데이션 SVG를 데이터 주소로 사용)
 const HUES = [205, 190, 35, 160, 330, 260];
 
 const samplePhoto = (seed: number) => {

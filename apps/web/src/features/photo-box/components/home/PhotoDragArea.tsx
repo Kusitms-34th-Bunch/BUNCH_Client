@@ -65,6 +65,12 @@ type PhotoDragAreaProps = {
   onMovingChange?: ((_moving: boolean) => void) | undefined;
 };
 
+// 날짜 바꾸기 실패 문구: 끌던 사진이 그사이 지워졌으면 삭제 안내
+const dateChangeFailure = (error: unknown) =>
+  error instanceof MissingPhotosError
+    ? PHOTO_BOX_MESSAGES.deletedPhoto
+    : PHOTO_BOX_MESSAGES.dateChangeFailed;
+
 /**
  * 선택 모드에서 사진을 길게 눌러 다른 날짜 섹션으로 끌어 옮기는 영역
  * 끄는 동안은 섹션별 순서만 미리 바꿔 주변 사진이 비켜 자리를 보여 주고, 놓으면 그 섹션 날짜로 바꿈
@@ -175,11 +181,7 @@ export const PhotoDragArea = memo(function PhotoDragArea({
       onMovingChange?.(false);
       reset();
       // 끌던 사진이 그사이 지워졌으면 아무것도 바뀌지 않고 목록에서 빠짐
-      toast(
-        error instanceof MissingPhotosError
-          ? PHOTO_BOX_MESSAGES.deletedPhoto
-          : PHOTO_BOX_MESSAGES.dateChangeFailed,
-      );
+      toast(dateChangeFailure(error));
       return;
     }
     onMovingChange?.(false);
@@ -195,13 +197,7 @@ export const PhotoDragArea = memo(function PhotoDragArea({
               [photoId],
               fromKey === UNDATED_SECTION_KEY ? null : dateFromKey(fromKey),
             )
-            .catch((error: unknown) =>
-              toast(
-                error instanceof MissingPhotosError
-                  ? PHOTO_BOX_MESSAGES.deletedPhoto
-                  : PHOTO_BOX_MESSAGES.dateChangeFailed,
-              ),
-            );
+            .catch((error: unknown) => toast(dateChangeFailure(error)));
         },
       },
     });

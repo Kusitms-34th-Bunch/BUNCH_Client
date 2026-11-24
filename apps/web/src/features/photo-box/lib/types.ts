@@ -51,7 +51,7 @@ export type PhotoBoxData = {
   more?: 'loading' | 'error';
 };
 
-/** 사진함 화면 상태. API 연결 후에는 query 상태에서 변환 */
+/** 사진함 화면 상태(`usePhotoBox`가 query 상태에서 변환) */
 export type PhotoBoxState =
   | { kind: 'loading' }
   | { kind: 'error' }

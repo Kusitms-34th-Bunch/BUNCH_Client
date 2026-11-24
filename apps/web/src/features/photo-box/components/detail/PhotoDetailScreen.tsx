@@ -1,10 +1,9 @@
 'use client';
-// 크기 유지: 메뉴의 저장·날짜·삭제가 같은 요청 중·창 열림 상태로 넘기기 키와 낭독·로딩을 함께 막음
 
-import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
+import { Header, LineDotsLargeIcon, toast } from '@app/design-system';
 import { IconButton } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useExitableOpen } from '@/shared/hooks/overlay/useExitableOpen';
@@ -29,12 +28,12 @@ import {
   getDeleteKind,
   needsDateChangeConfirm,
   removesDraftBundlePhoto,
-  type DateConfirmKind,
 } from '../../lib/photoActions';
 import { formatDetailDate } from '../../lib/photoDetail';
 import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
+import { askDateChangeConfirm } from '../askDateChangeConfirm';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from '../PhotoDetailMenu';
-import { DateChangeConfirmDialog, DeleteConfirmDialog } from '../PhotoSelectionDialogs';
+import { DeleteConfirmDialog } from '../PhotoSelectionDialogs';
 import { PhotoViewerSwiper } from '../PhotoViewerSwiper';
 import { SavingDateSheet } from '../SavingDateSheet';
 
@@ -162,24 +161,6 @@ export function PhotoDetailScreen({
     }
   };
 
-  // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸, 기능명세서 3.4.1)
-  const askDateConfirm = (kind: DateConfirmKind) =>
-    new Promise<boolean>((resolve) => {
-      openOverlay(
-        (rootProps, close) => (
-          <DateChangeConfirmDialog
-            {...rootProps}
-            kind={kind}
-            onConfirm={() => {
-              resolve(true);
-              close();
-            }}
-          />
-        ),
-        () => resolve(false),
-      );
-    });
-
   const handleMenuSelect = (action: PhotoDetailMenuAction) => {
     if (pending || !activePhoto) return;
     if (action === 'save') void save();
@@ -196,7 +177,10 @@ export function PhotoDetailScreen({
           <SavingDateSheet
             {...rootProps}
             close={close}
-            beforeSave={confirmKind ? () => askDateConfirm(confirmKind) : undefined}
+            // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸, 기능명세서 3.4.1)
+            beforeSave={
+              confirmKind ? () => askDateChangeConfirm(openOverlay, confirmKind) : undefined
+            }
             save={(date) => changeDate(photo.id, date)}
           />
         ),
@@ -242,11 +226,7 @@ export function PhotoDetailScreen({
       header={
         <div className={getViewerHeaderClass(chromeHidden)}>
           <Header
-            leading={
-              <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
-            }
+            leading={<HeaderBackButton onClick={onBack} />}
             title={formatDetailDate(activePhoto.takenAt, currentYear)}
             trailing={
               <IconButton
