@@ -1,7 +1,8 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, render, renderHook } from '@testing-library/react';
+import { memo } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PresenceData } from '../lib/presence';
-import { usePresence } from './usePresence';
+import type { DraftPresence, PresenceData } from '../lib/presence';
+import { type PresenceState, usePresence } from './usePresence';
 
 const getBundlePresence = vi.hoisted(() => vi.fn());
 vi.mock('../api/bundles', () => ({ getBundlePresence }));
@@ -114,5 +115,38 @@ describe('usePresence', () => {
     });
 
     expect(result.current.presence.viewingMemberIds).toEqual(['12']);
+  });
+
+  it('만료 시각만 바뀐 같은 내용의 PRESENCE는 화면 값을 새로 만들지 않아 받는 화면이 다시 그려지지 않는다', () => {
+    // 작성 화면처럼 presence를 받는 자식(memo)이 실제로 다시 그려진 횟수를 셈
+    const childRender = vi.fn();
+    const Child = memo(function Child(_props: { presence: DraftPresence }) {
+      childRender();
+      return null;
+    });
+    const captured = vi.fn<(_state: PresenceState) => void>();
+    const latest = () => captured.mock.lastCall![0];
+    function Host() {
+      const presenceState = usePresence('1', '2');
+      captured(presenceState);
+      return <Child presence={presenceState.presence} />;
+    }
+    render(<Host />);
+    act(() => latest().apply(viewers(12, 13)));
+    const before = childRender.mock.calls.length;
+
+    // 5초마다 오는 같은 내용의 갱신(서버가 만료 시각만 늘림) 10번
+    for (let index = 1; index <= 10; index += 1) {
+      act(() =>
+        latest().apply({
+          members: [12, 13].map((memberId) => ({ memberId, expiresAt: at(15 + index * 5) })),
+          typing: [],
+          editing: [],
+        }),
+      );
+    }
+
+    expect(childRender.mock.calls.length - before).toBe(0);
+    expect(latest().presence.viewingMemberIds).toEqual(['12', '13']);
   });
 });

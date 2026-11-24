@@ -19,13 +19,8 @@ import {
   saveBundleDate,
 } from '../api/bundles';
 import { changeBundlePhotos, moveBundlePhoto } from '../api/photos';
-import {
-  type BundleEventOutcome,
-  mergeFetchedDetail,
-  routeBundleEvent,
-  withTitleState,
-  titleProhibitedOf,
-} from '../lib/bundleEvents';
+import { type BundleEventOutcome, mergeFetchedDetail, routeBundleEvent } from '../lib/bundleEvents';
+import { titleProhibitedOf, withTitleState } from '../lib/bundleTitleState';
 import { pickNewerDetail } from '../lib/draftMapping';
 import { type BundleDetail, bundleEventEnvelopeSchema } from '../model/bundle';
 import { bundleKeys, bundleMutationKeys } from './keys';

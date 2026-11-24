@@ -36,7 +36,7 @@
     "check:tailwind": "yarn workspace @app/design-system check:tailwind",
     "check:mock-imports": "yarn workspace @app/web check:mock-imports",
     "check:contracts": "yarn workspace @app/web check:contracts",
-    "check:file-size": "yarn workspace @app/web check:file-size",
+    "check:file-size": "node scripts/check-file-size.mjs",
     "check:feature-exceptions": "yarn workspace @app/web check:feature-exceptions",
     "gen": "turbo gen",
     "gen:api-types": "node scripts/generate-openapi-types.mjs",

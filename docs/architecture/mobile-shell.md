@@ -29,7 +29,8 @@ apps/mobile-shell/
     toast-icons/, fonts/, login-background/   네이티브 토스트 아이콘, 글꼴, 로그인 배경 영상
     floating-icons/     플로팅 버튼 아이콘(같은 방식, 더하기·더보기)
   src/
-    web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기), 불러오기 실패 화면(WebLoadError.tsx)
+    web-view/                 공통 WebView(AppWebView.tsx: 출처 제한·Safe Area·뒤로가기), 불러오기 실패 화면(WebLoadError.tsx)
+                              bridge 구현(app-bridge.ts가 모아 WebView·postMessage를 만듦, 탭 화면 bridge-tabs.ts, 햅틱 bridge-haptics.ts), 웹 주소(app-web-url.ts), 보이는 WebView 판정(visible-web-view.ts)
     tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx, 첫 화면에서만 그리는 안전장치 floating-button-guard.ts)
     login-background/         로그인 배경 영상(LoginBackgroundVideo.tsx, expo-video)과 표시 여부 저장소
     splash/, toast/           스플래시 덮개, 네이티브 토스트
@@ -100,11 +101,11 @@ packages/bridge/
 - `packages/bridge`는 Yarn workspace 멤버다. `apps/web`은 평소처럼 `@app/bridge`를 import한다.
 - `apps/mobile-shell`은 Yarn workspace 밖에 있어 `"@app/bridge": "file:../../packages/bridge"`로 참조한다. `packages/bridge`를 수정하면 `apps/mobile-shell`에서 `pnpm install`을 다시 실행해야 반영된다.
 
-### 네이티브 쪽 구현 (`apps/mobile-shell/src/web-view/AppWebView.tsx`)
+### 네이티브 쪽 구현 (`apps/mobile-shell/src/web-view/app-bridge.ts`)
 
-실제 구현은 [AppWebView.tsx](../../apps/mobile-shell/src/web-view/AppWebView.tsx)를 따른다. `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 플로팅 버튼 눌림(`nativeFloatingButtonPress`), 탭 알림(`nativeTabEvent`), 탭 다시 누름(`nativeTabReselect`), 탭 꾹 누름(`nativeTabLongPress`), 토스트 동작(`nativeToastAction`), 눌린 푸시(`pushOpened`)다. 탭 WebView가 여럿이라 `postMessage`의 기본값(마지막에 만든 WebView에만 보냄) 대신 `broadcast: true`로 보낸다. 여러 WebView가 같은 bridge를 쓴다.
+실제 구현은 [app-bridge.ts](../../apps/mobile-shell/src/web-view/app-bridge.ts)를 따른다. 탭 바·탭 전환·플로팅 버튼·탭 화면 토스트 처리는 `bridge-tabs.ts`, 햅틱은 `bridge-haptics.ts`에 두고 `app-bridge.ts`가 펼쳐 넣는다(#540). `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 플로팅 버튼 눌림(`nativeFloatingButtonPress`), 탭 알림(`nativeTabEvent`), 탭 다시 누름(`nativeTabReselect`), 탭 꾹 누름(`nativeTabLongPress`), 토스트 동작(`nativeToastAction`), 눌린 푸시(`pushOpened`)다. 탭 WebView가 여럿이라 `postMessage`의 기본값(마지막에 만든 WebView에만 보냄) 대신 `broadcast: true`로 보낸다. 여러 WebView가 같은 bridge를 쓴다.
 
-`bridge()`에는 **인라인 객체 리터럴**을 넘긴다. 미리 `AppBridgeMethods` 타입을 선언한 변수를 넘기면 TypeScript가 index signature 불일치로 거부한다(이름 있는 타입은 fresh literal 취급을 받지 못한다).
+`bridge()`에는 **인라인 객체 리터럴**을 넘긴다(기능별 처리 표는 그 안에 펼쳐 넣음). 미리 `AppBridgeMethods` 타입을 선언한 변수를 넘기면 TypeScript가 index signature 불일치로 거부한다(이름 있는 타입은 fresh literal 취급을 받지 못한다).
 
 ### 웹 쪽 호출 (`apps/web/src/shared/bridge/client.ts`)
 
@@ -116,7 +117,7 @@ packages/bridge/
 
 1. `packages/bridge/src/schema.ts`에 zod schema를 추가한다.
 2. `packages/bridge/src/index.ts`의 `AppBridgeMethods`에 메서드 시그니처를 추가한다.
-3. `apps/mobile-shell/src/web-view/AppWebView.tsx`의 `bridge({...})`에 실제 네이티브 구현을 추가한다.
+3. `apps/mobile-shell/src/web-view/app-bridge.ts`의 `bridge({...})`에 실제 네이티브 구현을 추가한다. 탭 화면 기능이면 `bridge-tabs.ts`, 햅틱이면 `bridge-haptics.ts`에 둔다. 한 메서드는 한 곳에만 둔다. 같은 이름이 직접 쓴 메서드와 기능별 표 양쪽에 있으면 TS2783, 기능별 표끼리 겹치면 `bridgeGroupsDisjoint` 타입 검사가 컴파일 오류로 막는다(펼칠 때 뒤 값이 조용히 덮어쓰기 때문).
 4. `apps/web`의 bridge client에 `initialBridge` 폴백을 추가한다(웹 전용 대체 동작이 있다면).
 5. 양쪽에서 typecheck를 돌려 계약이 어긋나지 않는지 확인한다(`yarn workspace @app/bridge typecheck`, `apps/mobile-shell`에서 `pnpm exec tsc --noEmit`).
 
