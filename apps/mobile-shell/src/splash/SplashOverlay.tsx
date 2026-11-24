@@ -10,8 +10,8 @@ const LOOP_FRAMES = 240;
 const ASSEMBLED_FRAME = 132;
 const MODULE = 8;
 const WORDMARK = { width: 192, height: 48 };
-// bunch-500. app.json의 네이티브 스플래시 배경과 같아야 이어질 때 티가 안 남
-const BRAND = '#454EDF';
+// gray-800. app.json의 네이티브 스플래시 배경과 같아야 이어질 때 티가 안 남
+const BACKGROUND = '#191B1F';
 const FADE_MS = 300;
 const MOVE = Easing.bezier(0.33, 0, 0.15, 1);
 const APPEAR = Easing.bezier(0.35, 0, 0.35, 1);
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BRAND,
+    backgroundColor: BACKGROUND,
   },
   wordmark: {
     width: WORDMARK.width,
