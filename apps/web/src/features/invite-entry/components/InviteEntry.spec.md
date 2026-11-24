@@ -48,7 +48,7 @@
 ## UI와 접근성
 
 - Component mapping: 디자인 시스템 `Button`(`secondary` = 앱 설치하기, `brand` = 초대장 확인하기(기본 `primary`는 검정이라 Figma의 브랜드 파랑과 다름)), `Toaster`. 로고는 로그인 화면과 같은 `shared/assets/images/login/wordmark.svg`(비율 171:43 = Figma 226:56.7).
-- 배경 사진: Figma `image 7`을 Figma에 올라간 원본 이미지(816×1456, `download_assets`의 `rawImages`)를 JPEG 품질 90(약 210KB)으로 변환한 `public/images/invite/entry-bg.jpg`를 `next/image`(`fill`, `priority`, `unoptimized`)로 쓴다. Figma 에셋 URL의 기본 export는 574×1024로 줄어 있어 화질이 깨졌고, Next 기본 최적화(품질 75 재압축)도 건너뛴다.
+- 배경 사진: 디자이너에게 받은 딤 없는 원본 사진(1354×1630)에서 Figma `image 7`과 같은 영역(가로 233~1145, 912×1630)을 잘라 WebP 품질 90(약 160KB, #554)로 만든 `public/images/invite/entry-bg.webp`를 `next/image`(`fill`, `priority`, `unoptimized`)로 쓴다. Figma 에셋 URL의 기본 export는 574×1024로 줄어 있어 화질이 깨졌고, Next 기본 최적화(품질 75 재압축)도 건너뛴다.
 - 시맨틱: `main` 안에 `h1`(로고, 이름 「Bunch」), 배경·딤·그라데이션·픽셀 장식은 `aria-hidden`. 확인 중 상태는 항상 마운트된 `role="status"`(화면에는 숨김)로 알린다.
 
 | Figma           | 값                                                                                                                        | 사용한 토큰·utility                                                                      |
