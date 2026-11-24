@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Toaster } from '@app/design-system';
 import { OverlayProvider } from 'overlay-kit';
+import { AppInstallGuide, AppOnlyGate } from '@/features/app-install-guide/components';
 import { AuthGate } from '@/features/auth/components/AuthGate';
 import { INTRO_PATH, LOGIN_PATH } from '@/features/auth/constants/paths';
 import { PushOpenNavigator } from '@/features/bunch-home/components/notifications/PushOpenNavigator';
@@ -17,6 +18,7 @@ import { PendingToast } from './PendingToast';
 import { RouteFocus } from './RouteFocus';
 
 // 일반 화면 틀(폭·Safe Area·높이) — 전체 화면 캔버스 화면은 이 group 밖에 배치
+// AppOnlyGate: 이 group의 화면은 앱 쉘 안에서만 열고 브라우저에서는 앱 설치 안내(초대장 /invite는 group 밖이라 그대로 열림)
 // Toaster: `toast()`가 띄우는 알림을 그리는 자리(앱에 한 번만 배치)
 // OverlayProvider: `overlay.open()`으로 여는 모달·바텀시트를 그리는 자리(overlay-kit)
 // QueryProvider: 서버 상태 캐시(TanStack Query). 모달 안 화면도 쓰도록 OverlayProvider 바깥에 배치
@@ -41,11 +43,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <QueryProvider>
       <OverlayProvider>
         <style>{pretendardFontStyle}</style>
-        <AppFrame>
-          <AuthGate destinations={DESTINATIONS}>
-            <AppTransitions>{children}</AppTransitions>
-          </AuthGate>
-        </AppFrame>
+        <AppOnlyGate fallback={<AppInstallGuide />}>
+          <AppFrame>
+            <AuthGate destinations={DESTINATIONS}>
+              <AppTransitions>{children}</AppTransitions>
+            </AuthGate>
+          </AppFrame>
+        </AppOnlyGate>
         <NativeTabBarVisibility exitPaths={SIGNED_OUT_PATHS} />
         <NativeTabSync />
         <PushOpenNavigator />

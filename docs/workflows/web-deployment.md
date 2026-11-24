@@ -96,6 +96,7 @@
 
 ## 홈 화면 추가(PWA)
 
+- 홈 화면에 추가한 웹 앱도 브라우저라서 열면 앱 설치 안내가 보인다(`docs/architecture/routing-and-access.md` 「앱 안에서만 여는 화면」). 아래 매니페스트·아이콘은 그대로 두었다.
 - 설치 앱 이름은 매니페스트(`app/manifest.ts`의 `name`·`short_name`)와 iOS(`app/layout.tsx`의 `appleWebApp.title`) 모두 **BUNCH**(`SITE_NAME`)로, 네이티브 앱 이름과 같다.
 - 설치한 앱은 `/bunch`(번치 홈)에서 시작하고 주소창 없이(`display: standalone`) 세로로 열린다.
 - 아이콘(`apps/web/public/icons`)은 앱 아이콘(`apps/mobile-shell/assets/icon.png`, 1024)을 줄인 것이다. 글리프가 maskable 안전 영역(반지름 40%) 안이라 maskable에도 같은 그림을 쓴다. 앱 아이콘이 바뀌면 같은 파일명으로 다시 만든다.
