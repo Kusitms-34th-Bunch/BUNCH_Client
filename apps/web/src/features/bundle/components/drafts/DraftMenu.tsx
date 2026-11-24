@@ -2,11 +2,12 @@
 
 import { LineDotsLargeIcon, LineTransitionLeftMediumIcon } from '@app/design-system';
 import { IconButton } from '@app/design-system/web';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import {
   PhotoActionMenu,
   type PhotoActionMenuItem,
 } from '@/features/photo-box/components/PhotoActionMenu';
+import { useExitableOpen } from '@/shared/hooks/overlay/useExitableOpen';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 
 type DraftMenuAction = 'leave';
@@ -29,18 +30,8 @@ type DraftMenuProps = {
  * 위치는 가까운 `relative` 조상(헤더 래퍼) 기준으로 헤더 바로 아래 오른쪽
  */
 export function DraftMenu({ onLeave }: DraftMenuProps) {
-  const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const menu = useExitableOpen();
   const triggerRef = useRef<HTMLButtonElement>(null);
-
-  const toggle = () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setMounted(true);
-    setOpen(true);
-  };
 
   return (
     <>
@@ -48,21 +39,21 @@ export function DraftMenu({ onLeave }: DraftMenuProps) {
         ref={triggerRef}
         aria-label={BUNDLE_MESSAGES.menuOpenLabel}
         aria-haspopup="menu"
-        aria-expanded={open}
+        aria-expanded={menu.open}
         // 터치 영역(양옆 8px)이 화면 가장자리에서 16px 안쪽에 아이콘이 오도록 바깥으로 뺌
         className="-mr-s4"
-        onClick={toggle}
+        onClick={menu.toggle}
       >
         <LineDotsLargeIcon aria-hidden="true" />
       </IconButton>
-      {mounted ? (
+      {menu.mounted ? (
         <div className="right-s8 absolute top-full z-20">
           <PhotoActionMenu
             label={BUNDLE_MESSAGES.menuLabel}
             items={[LEAVE]}
-            open={open}
-            onClose={() => setOpen(false)}
-            onExited={() => setMounted(false)}
+            open={menu.open}
+            onClose={menu.close}
+            onExited={menu.exited}
             onSelect={onLeave}
             triggerRef={triggerRef}
           />
