@@ -78,7 +78,7 @@ export function TermsAndPrivacyScreen({
           <li>
             <MenuLink href={MY_PATHS.privacyPolicy}>{MY_MESSAGES.menu.privacyPolicy}</MenuLink>
           </li>
-          <li className="px-s2 py-padding-p5 gap-s4 flex items-center justify-between">
+          <li className="px-s4 py-padding-p5 gap-s4 flex items-center justify-between">
             <span className="gap-s2 flex min-w-0 flex-col items-start">
               <span
                 id={titleId}

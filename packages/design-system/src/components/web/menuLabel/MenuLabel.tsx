@@ -35,7 +35,7 @@ export const MenuLabel = (props: MenuLabelProps) => {
   const danger = tone === 'danger';
   const state: MenuLabelLinkState = {
     className: cn(
-      'rounded-r4 px-s2 py-padding-p5 gap-s4 group relative isolate flex w-full cursor-pointer touch-manipulation items-center justify-between text-left',
+      'press-scale-large rounded-r4 px-s4 py-padding-p5 gap-s4 group relative isolate flex w-full cursor-pointer touch-manipulation items-center justify-between text-left',
       'before:rounded-r4 before:bg-overlay-hover press-overlay before:-z-10',
       // 비활성은 눌림 없이 전체 40%(Figma Disabled)
       'not-disabled:active:before:opacity-100 disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',
