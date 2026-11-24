@@ -4,7 +4,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toWireId } from '@/shared/api/client/ids';
+import { isWireId } from '@/shared/api/client/ids';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { DraftActions, DraftState, RawActions } from '../lib/draftContract';
@@ -58,7 +58,7 @@ export function useDraft(draftId: string | undefined): {
   actions: DraftActions;
 } {
   // 서버 번들 ID는 숫자라 숫자로 바꿀 수 없는 주소는 없는 초안으로 처리
-  const bundleId = draftId !== undefined && toWireId(draftId) !== undefined ? draftId : undefined;
+  const bundleId = draftId !== undefined && isWireId(draftId) ? draftId : undefined;
   const {
     data: profile,
     isError: profileError,

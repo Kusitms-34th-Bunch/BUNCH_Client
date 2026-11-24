@@ -157,9 +157,13 @@ export const removeBundleParticipant = async (
     'remove participant',
   );
 
-/** 번들 삭제: 생성자나 번치 관리자만, 번들·참여자·코멘트가 사라지고 사진함 원본은 그대로(응답 data는 null) */
+/** 번들 삭제: 생성자나 번치 관리자만, 번들·참여자·코멘트가 사라지고 사진함 원본은 그대로(응답 data는 null이거나 생략, 다른 삭제 요청과 같은 기준) */
 export const deleteBundle = async (bunchId: string, bundleId: string) => {
-  await requestData(bffApi.delete(bundlePath(bunchId, bundleId)), z.null(), 'delete bundle');
+  await requestData(
+    bffApi.delete(bundlePath(bunchId, bundleId)),
+    z.null().optional(),
+    'delete bundle',
+  );
 };
 
 // 생성자가 나가면 초안이 삭제되어 data가 null

@@ -69,7 +69,7 @@ type DecideFollowRequest = {
  */
 export const useDecideFollowRequestMutation = (viewerId: string | undefined) => {
   const queryClient = useQueryClient();
-  const mutationKey = ['bunch-home', 'decide-follow-request', viewerId];
+  const mutationKey = bunchHomeKeys.decideFollowRequest(viewerId);
   return useMutation({
     mutationKey,
     meta: { errorMessage: BUNCH_HOME_MESSAGES.requestDecisionFailed },

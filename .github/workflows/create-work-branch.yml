@@ -9,8 +9,29 @@ permissions:
   issues: write
 
 jobs:
-  create:
+  # 공개 저장소라 누구나 이슈를 열 수 있어, 저장소 쓰기 권한(write 이상)이 있는 사람이 연 이슈만 브랜치를 만듦
+  # author_association은 org 멤버십을 비공개로 둔 팀원을 CONTRIBUTOR·NONE으로 보내 걸러질 수 있어 권한을 직접 조회
+  authorize:
     if: github.event.issue.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      allowed: ${{ steps.permission.outputs.allowed }}
+    steps:
+      - id: permission
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          permission=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$AUTHOR/permission" --jq .permission || echo none)
+          case "$permission" in
+            admin|maintain|write) echo "allowed=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "쓰기 권한이 없는 작성자($permission)라 브랜치를 만들지 않습니다."; echo "allowed=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+  create:
+    needs: authorize
+    if: needs.authorize.outputs.allowed == 'true'
     runs-on: ubuntu-latest
 
     steps:

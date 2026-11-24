@@ -1,7 +1,23 @@
 name: E2E
 
 on:
+  # 문서·에이전트 지침만 바뀐 PR은 건너뜀(E2E는 필수 체크가 아니라 머지를 막지 않음)
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '.agents/**'
+      - '.claude/**'
+      - '.codex/**'
+      - '**/*.md'
+  # develop에서도 돌려 캐시를 develop 범위에 남김. PR 범위 캐시는 PR을 닫으면 지워져(cache-cleanup) 새 PR이 늘 빈 캐시로 시작했음
+  push:
+    branches: [develop]
+    paths-ignore:
+      - 'docs/**'
+      - '.agents/**'
+      - '.claude/**'
+      - '.codex/**'
+      - '**/*.md'
   workflow_dispatch:
 
 concurrency:
@@ -33,6 +49,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # 설치 전에 변조 가드(다른 workflow와 같음). develop push가 공유 캐시 범위에 저장하는 job이 됨
+      - run: node turbo/workflows/check-suspicious.mjs
+
       - run: corepack enable
 
       - uses: actions/setup-node@v6
@@ -45,7 +64,7 @@ jobs:
 
       - run: yarn install --immutable
 
-      # 가짜 서버 웹 빌드의 Next 캐시. 같은 PR의 다음 push부터 컴파일을 이어 받음(E2E는 PR에서만 돌아 첫 실행은 캐시 없음)
+      # 가짜 서버 웹 빌드의 Next 캐시. develop push가 남긴 캐시를 새 PR이 이어 받음(restore-keys로 소스가 달라도 가장 가까운 것)
       - uses: actions/cache@v5
         with:
           path: apps/web/.next/cache
