@@ -24,7 +24,7 @@
 
 - Path·params·search: `/my/notifications`, 없음. 입구는 MY 메뉴 「알림 설정」(`MY_PATHS.notifications`).
 - 접근 권한·guard: `(app)` 그룹 기준을 따른다. 추가한 guard는 없다.
-- Layout·navigation: `(main)` 밖이라 하단 탭이 없다. page가 전환 경계(`data-ssgoi-transition="/my/notifications"`)를 두고 MY와 프로필 수정과 같은 미는 slide(`menuSubSlide`)로 오간다. 뒤로 가기는 `useBackOr(MY_PATHS.home)`.
+- Layout·navigation: `(main)` 밖이라 하단 탭이 없다. page가 전환 경계(`data-ssgoi-transition="/my/notifications"`)를 두고 MY와 프로필 수정과 같은 미는 slide(`pushSlide`)로 오간다. 뒤로 가기는 `useBackOr(MY_PATHS.home)`.
 
 ## 상태와 흐름
 

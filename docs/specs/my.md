@@ -149,9 +149,9 @@
 
 화면별 전환·모션의 결정과 확인 기록이다. 공용 규칙은 [motion.md](../architecture/motion.md)를 따른다.
 
-- MY 회원 탈퇴 (2026-11-07, 이슈 #238): MY → 회원 탈퇴 안내와 뒤로 가기도 같은 미는 `slide` 300ms(`menuSubSlide`)다. 화면 설계서에 전환 정의는 없다. 프레임 측정·실기기·동작 줄이기는 확인 전이다. 탈퇴 안내 ↔ 관리자 권한 이전(`/my/withdrawal/transfer`, 이슈 #240)도 같은 `menuSubSlide`다.
-- MY 약관 및 개인정보 (2026-11-22, #500, 사용자 결정): MY → 「약관 및 개인정보」는 화면설계서(MY 메뉴 인터랙션)의 Dissolve / Ease out / 200ms였지만, 프로필 수정·알림 설정·회원 탈퇴가 모두 미는 `slide` 300ms(`menuSubSlide`)라 같은 목록에서 혼자 다르게 보였다(팀 QA). 다른 MY 하위 화면과 같은 `menuSubSlide`로 통일했다. 디자이너에게 공유한다. 실기기는 확인 전이다.
-- MY 약관 화면 (2026-11-06, 이슈 #235): MY → 서비스 이용약관·개인정보 처리방침과 뒤로 가기는 프로필 수정·알림 설정과 같은 미는 `slide` 300ms(`menuSubSlide`)다. 화면 설계서에 전환 정의는 없다. 동적 route라 고정 id(`MY_PATHS.transitionIds.terms`)를 규칙과 화면 DOM의 `data-ssgoi-transition`에 함께 쓴다.
+- MY 회원 탈퇴 (2026-11-07, 이슈 #238): MY → 회원 탈퇴 안내와 뒤로 가기도 같은 미는 `slide` 350ms(`pushSlide`, #560)다. 화면 설계서에 전환 정의는 없다. 프레임 측정·실기기·동작 줄이기는 확인 전이다. 탈퇴 안내 ↔ 관리자 권한 이전(`/my/withdrawal/transfer`, 이슈 #240)도 같은 `pushSlide`다.
+- MY 약관 및 개인정보 (2026-11-22, #500, 사용자 결정): MY → 「약관 및 개인정보」는 화면설계서(MY 메뉴 인터랙션)의 Dissolve / Ease out / 200ms였지만, 프로필 수정·알림 설정·회원 탈퇴가 모두 미는 `slide` 350ms(`pushSlide`, #560)라 같은 목록에서 혼자 다르게 보였다(팀 QA). 다른 MY 하위 화면과 같은 `pushSlide`로 통일했다. 디자이너에게 공유한다. 실기기는 확인 전이다.
+- MY 약관 화면 (2026-11-06, 이슈 #235): MY → 서비스 이용약관·개인정보 처리방침과 뒤로 가기는 프로필 수정·알림 설정과 같은 미는 `slide` 350ms(`pushSlide`, #560)다. 화면 설계서에 전환 정의는 없다. 동적 route라 고정 id(`MY_PATHS.transitionIds.terms`)를 규칙과 화면 DOM의 `data-ssgoi-transition`에 함께 쓴다.
 
 ## API 계약
 

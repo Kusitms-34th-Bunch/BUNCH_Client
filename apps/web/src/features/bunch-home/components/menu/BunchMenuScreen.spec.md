@@ -22,7 +22,7 @@
 
 - Path: `/bunch/menu`. params·search 없음. 탭 경로 밖이라 iOS 앱에서는 시스템 탭 바가 숨는다(결정 기록 012).
 - 접근 권한·guard: 화면은 역할로 메뉴만 나눈다. 이름·역할은 내 기본 번치와 멤버 관리 목록의 내 역할을 따르고, 서버가 요청 시점의 역할로 다시 판단한다.
-- 진입: 번치 홈 헤더 「더보기」 링크(`Link`, 새 탭 열기·가운데 클릭 지원). 메뉴는 SSGOI `drill` 프리셋으로 오른쪽에서 들어오고 번치 홈은 왼쪽으로 20% 함께 밀린다. 뒤로 가면 반대로 움직인다(Ease out / 250ms. 화면설계서 `1892:37780`의 150ms보다 길게 했고, 뒤 화면이 움직이는 점도 설계서와 다름). 전환 경계는 page의 `data-ssgoi-transition`, 규칙은 `AppTransitions`다(`docs/architecture/motion.md`).
+- 진입: 번치 홈 헤더 「더보기」 링크(`Link`, 새 탭 열기·가운데 클릭 지원). 메뉴는 SSGOI `drill` 프리셋으로 오른쪽에서 들어오고 번치 홈은 왼쪽으로 20% 함께 밀린다. 뒤로 가면 반대로 움직인다. 시간·곡선은 350ms로 천천히 시작해 길게 감속한다(#560, FE 판단, 화면설계서 `1892:37780`은 150ms). 뒤 화면이 움직이는 점과 상태 바 영역이 화면과 함께 밀리는 점은 설계서와 다르다. 전환 경계는 page의 `data-ssgoi-transition`, 규칙은 `AppTransitions`다(`docs/architecture/motion.md`).
 - 뒤로 가기: 기록이 있으면 `router.back()`, 직접 진입이라 없으면 번치 홈으로 `replace`. 기록 유무는 `window.history.length > 1`로만 판단한다(사진 상세와 같은 방식).
 - Layout: `(app)` layout 안에서 `PageShell` 한 번. `robots: noindex`.
 

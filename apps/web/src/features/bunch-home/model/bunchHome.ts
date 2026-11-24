@@ -206,8 +206,14 @@ const lastUsedTime = (value: string) => Date.parse(value) || 0;
 /**
  * 번치 전환 목록: 지금 번치를 맨 위, 나머지 소속 번치는 최근 사용순, 접근 불가 번치는 맨 아래(5.2.1)
  * 접근 불가 줄은 같은 번치의 안내가 여러 건일 수 있어 안내 ID로 구분
+ * 목록을 못 받았거나 지금 번치가 없는 낡은 목록이면(iOS 앱은 탭마다 캐시가 따로라 다른 탭에서 만든 번치가 늦게 반영) 지금 번치를 맨 위에 넣음
  */
-export const toBunchSummaries = (data: MyBunches, currentId: string): BunchSummary[] => {
+export const toBunchSummaries = (
+  data: MyBunches | undefined,
+  current: BunchSummary,
+): BunchSummary[] => {
+  if (!data) return [current];
+  const currentId = current.id;
   const active = [...data.activeBunches]
     .sort((a, b) => lastUsedTime(b.lastUsedAt) - lastUsedTime(a.lastUsedAt))
     .map(({ bunch, unreadCount }): BunchSummary => ({
@@ -225,11 +231,8 @@ export const toBunchSummaries = (data: MyBunches, currentId: string): BunchSumma
     access: notice.reason === 'DELETED' ? 'deleted' : 'removed',
     noticeId: toDomainId(notice.id),
   }));
-  return [
-    ...active.filter((bunch) => bunch.id === currentId),
-    ...active.filter((bunch) => bunch.id !== currentId),
-    ...unavailable,
-  ];
+  const listed = active.find((bunch) => bunch.id === currentId);
+  return [listed ?? current, ...active.filter((bunch) => bunch.id !== currentId), ...unavailable];
 };
 
 /** `PUT /bunches/{bunchId}/profile` 응답. 값은 쓰지 않아 정수·범위 제약 없이 숫자만 확인 */

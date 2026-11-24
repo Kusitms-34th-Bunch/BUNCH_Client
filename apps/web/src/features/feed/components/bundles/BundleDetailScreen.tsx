@@ -125,7 +125,8 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
           data-keyboard-open={keyboardOpen ? '' : undefined}
           // 닫기 버튼이 사라진 뒤 초점을 받는 자리(입력란에 주면 키보드가 올라옴), 초점이 오면 이름을 읽음
           tabIndex={-1}
-          role="group"
+          // 화면 아래에 따로 붙어 main 밖이라 영역(landmark)으로 둠(axe region)
+          role="region"
           aria-label={text.composerGroup}
           className="outline-none"
           // 입력란 밖을 눌러 키보드가 닫히면 답글 상태도 닫음(쓴 글이 있으면 일반 댓글로 바뀌지 않게 둠)

@@ -119,3 +119,15 @@ export const useForgetBunchCache = () => {
     [queryClient],
   );
 };
+
+/**
+ * 내 소속 번치 목록을 다시 받는 함수(번치 전환 시트를 열 때)
+ * iOS 앱은 탭마다 캐시가 따로라 다른 탭에서 만들거나 참여한 번치가 빠져 있을 수 있음
+ */
+export const useRefreshMyBunches = () => {
+  const queryClient = useQueryClient();
+  return useCallback(
+    () => void queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
+    [queryClient],
+  );
+};

@@ -1,10 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { onMainTabGesture } from '@/shared/lib/navigation/mainTabGesture';
 import { MainTabBar } from './MainTabBar';
 
 const route = vi.hoisted(() => ({ pathname: '/feed' }));
 vi.mock('next/navigation', () => ({ usePathname: () => route.pathname }));
+// 맨 위로 움직이는 방식은 scrollPageToTop.test.ts가 확인하고, 여기서는 부르는지만 봄
+const scrollPageToTop = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/navigation/scrollPageToTop', () => ({ scrollPageToTop }));
 
 describe('MainTabBar', () => {
   afterEach(() => {
@@ -27,15 +30,13 @@ describe('MainTabBar', () => {
         <MainTabBar />
       </>,
     );
-    const page = screen.getByTestId('page');
-    const scrollTo = vi.fn();
-    page.scrollTo = scrollTo;
+    scrollPageToTop.mockClear();
     const feed = container.querySelector<HTMLAnchorElement>('a[aria-current="page"]')!;
 
     const click = new MouseEvent('click', { bubbles: true, cancelable: true });
     fireEvent(feed, click);
     expect(click.defaultPrevented).toBe(true);
-    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+    expect(scrollPageToTop).toHaveBeenCalled();
   });
 
   it('지금 탭을 짧은 간격으로 두 번 다시 누르면 그 탭 화면에 두 번 누르기를 알리고, 간격이 길면 알리지 않는다', () => {
@@ -94,13 +95,12 @@ describe('MainTabBar', () => {
         <MainTabBar />
       </>,
     );
-    const scrollTo = vi.fn();
-    screen.getByTestId('page').scrollTo = scrollTo;
+    scrollPageToTop.mockClear();
     const feed = container.querySelector<HTMLAnchorElement>('a[aria-current="page"]')!;
 
     const click = new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true });
     fireEvent(feed, click);
-    expect(scrollTo).not.toHaveBeenCalled();
+    expect(scrollPageToTop).not.toHaveBeenCalled();
     expect(click.defaultPrevented).toBe(false);
   });
 
@@ -119,15 +119,14 @@ describe('MainTabBar', () => {
           <MainTabBar />
         </>,
       );
-      const scrollTo = vi.fn();
-      screen.getByTestId('page').scrollTo = scrollTo;
+      scrollPageToTop.mockClear();
       const bunch = container.querySelector<HTMLAnchorElement>('a[href="/bunch"]')!;
-      return { bunch, gestures, unsubscribe, scrollTo };
+      return { bunch, gestures, unsubscribe };
     };
     const down = { isPrimary: true, button: 0, clientX: 10, clientY: 10 };
 
     it('번치 탭 첫 화면에서 번치 탭을 누르고 있으면 꾹 누르기를 알리고, 손을 뗀 click은 무시한다', () => {
-      const { bunch, gestures, unsubscribe, scrollTo } = renderOn('/bunch');
+      const { bunch, gestures, unsubscribe } = renderOn('/bunch');
       try {
         fireEvent.pointerDown(bunch, down);
         vi.advanceTimersByTime(499);
@@ -140,7 +139,7 @@ describe('MainTabBar', () => {
         fireEvent(bunch, click);
         expect(click.defaultPrevented).toBe(true);
         // 다시 누르기(맨 위로)로 처리하지 않음
-        expect(scrollTo).not.toHaveBeenCalled();
+        expect(scrollPageToTop).not.toHaveBeenCalled();
         expect(gestures).toHaveLength(1);
       } finally {
         unsubscribe();
@@ -148,7 +147,7 @@ describe('MainTabBar', () => {
     });
 
     it('꾹 누른 뒤 click이 오지 않아도 다른 탭 click과 시간이 지난 click은 막지 않는다', () => {
-      const { bunch, unsubscribe, scrollTo } = renderOn('/bunch');
+      const { bunch, unsubscribe } = renderOn('/bunch');
       try {
         fireEvent.pointerDown(bunch, down);
         vi.advanceTimersByTime(500);
@@ -164,7 +163,7 @@ describe('MainTabBar', () => {
         fireEvent.pointerUp(bunch);
         vi.advanceTimersByTime(1000);
         fireEvent.click(bunch, { detail: 1 });
-        expect(scrollTo).toHaveBeenCalled();
+        expect(scrollPageToTop).toHaveBeenCalled();
       } finally {
         unsubscribe();
       }
@@ -181,14 +180,13 @@ describe('MainTabBar', () => {
             <MainTabBar />
           </>,
         );
-        const scrollTo = vi.fn();
-        screen.getByTestId('page').scrollTo = scrollTo;
+        scrollPageToTop.mockClear();
         const bunch = container.querySelector<HTMLAnchorElement>('a[href="/bunch"]')!;
         fireEvent.pointerDown(bunch, down);
         vi.advanceTimersByTime(500);
         fireEvent.pointerUp(bunch);
         fireEvent.click(bunch, { detail: 1 });
-        expect(scrollTo).toHaveBeenCalled();
+        expect(scrollPageToTop).toHaveBeenCalled();
       } finally {
         unsubscribe();
       }

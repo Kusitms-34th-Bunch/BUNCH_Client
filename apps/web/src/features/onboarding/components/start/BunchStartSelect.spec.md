@@ -62,7 +62,7 @@
 화면별 전환·모션의 결정과 확인 기록이다. 공용 규칙은 `docs/architecture/motion.md`를 따른다.
 
 - 효과: 온보딩 시작 → 만들기·참여, 만들기 완료 → 초대는 `slide`를 사용한다. 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. 반대 이동은 방향을 뒤집는다. 페이드는 섞지 않고 경계 밖을 잘라낸다. 참여 화면의 시각 전환은 미검증이다.
-- 시간·곡선: Slide In / Left / 이동 시간 300ms를 적용한다. 곡선은 사용자 합의에 따라 설계서의 Ease In 대신 Ease Out으로 조정한다. SSGOI의 `override`에 `easeOutIntegrator`를 넣어 CSS `cubic-bezier(0, 0, .58, 1)`의 진행도를 계산한다. 라이브러리의 `easeOut({ duration })`은 관성 기반 곡선이므로 CSS 곡선과 동일하다고 취급하지 않는다. 이동 시간과 라이브러리의 종료 판정 시간은 구분한다. 이전 200ms 설정에서 SSGOI 7.4.1의 WAAPI timeline 약 233ms를 확인했으며, 현재 300ms 설정의 실제 종료 시간은 브라우저 재검증 전이다.
+- 시간·곡선: Slide In / Left. 설계서는 Ease In이었고 사용자 합의로 Ease Out 300ms를 썼다. 2026-11-25(#560)부터 다른 화면 이동과 같은 350ms·`cubic-bezier(0.4, 0, 0.2, 1)`(`cubicBezierIntegrator`)이며 근거는 [motion.md](../../../../../../../docs/architecture/motion.md) 「화면 이동 시간」이다. 실제 종료 시간은 브라우저 재검증 전이다.
 - 상태 유지: 상위 layout은 provider만 유지한다. 실제 route의 DOM에 `data-ssgoi-transition`을 지정하고, 만들기 layout 내부에서 단계 묶음·완료·초대를 구분한다. URL을 먼저 감지하는 상위 경계에서 빈 화면이 전환되는 문제를 피하려고 콘텐츠와 경계를 함께 마운트한다. 1~3단계의 헤더·Stepper와 draft provider는 유지한다. 단계 사이의 본문 전환은 현재 등록하지 않았다.
 - 번치 홈 「새로운 번치 추가하기」 → 이 화면(`axis` y)은 `docs/specs/bunch-home.md`의 「모션」에 있다.
 - 프로필 작성 → 이 화면(가입 완료, `axis` z)은 `docs/specs/login-signup.md`의 「모션」에 있다.
@@ -86,6 +86,6 @@
 - 제목 색 (제안): Figma는 `black`(변수 없음)이고 구현은 토큰 `text-primary`(#121212)다. 디자이너 확인.
 - 카드 문구·그래픽 (반영): Figma Entry Card 기준으로 「초대 받은 번치 참여하기」(띄어쓰기 포함)와 Create·Join 그래픽 2종을 반영했다. 배경 사진은 Figma 내보내기를 JPEG로 줄여 `public/images/onboarding/`에 두었다.
 - 웹 앱의 디자인 시스템 사용 (결정): 이 화면이 `apps/web`의 첫 디자인 시스템 소비다. `globals.css`에 디자인 시스템 소스를 Tailwind `@source`로 등록했다(`docs/decisions/records/008-toast-sonner.md`의 제약). `transpilePackages` 없이 빌드가 통과했다.
-- 화면 전환: SSGOI `slide`로 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. Ease Out·이동 시간 300ms이며 첫 진입과 동작 줄이기 설정에서는 움직이지 않는다. 경로·시간·종료 판정·검증 범위는 `docs/architecture/motion.md`의 페이지 전환을 따른다. 참여 화면의 시각 전환은 미검증이다.
+- 화면 전환: SSGOI `slide`로 새 화면은 오른쪽에서 들어오고 기존 화면은 왼쪽으로 화면 폭만큼 밀린다. 이동 시간·곡선은 화면 이동 공통 350ms(#560)이며 첫 진입과 동작 줄이기 설정에서는 움직이지 않는다. 경로·시간·종료 판정·검증 범위는 `docs/architecture/motion.md`의 페이지 전환을 따른다. 참여 화면의 시각 전환은 미검증이다.
 - 진행바 전환 방식 (결정): 헤더와 진행 표시줄을 단계 공통 틀(`CreateBunchFrame`, `create/(steps)/layout.tsx`)로 올려 단계 route가 바뀌어도 같은 요소가 남게 했고, 막대는 `Stepper`가 현재 단계의 막대만 채우고 새 막대가 왼쪽에서 오른쪽으로 600ms Slow 근사 곡선으로 늘어난다(`docs/architecture/motion.md`). 현재 단계는 주소 조각(`description`·`mood`)으로 정한다. 완료 화면은 이 틀 밖이다(`create/complete`). 진행 표시줄은 본문 스크롤 밖에 고정된다(이전에는 제목과 함께 스크롤됐다). 페이지 전환 방식을 정할 때 이 구조를 유지할지 함께 판단한다.
 - 뒤로 가기 후 모달 (미검증): 모달을 연 채 브라우저 뒤로 가기를 하면 단계 화면은 바뀌는데 모달은 `OverlayProvider`에 남을 수 있다. 「나가기」로 이동한 뒤 브라우저 뒤로 가기로 이전 단계에 돌아오면 입력이 비어 있다.
