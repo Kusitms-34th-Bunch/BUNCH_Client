@@ -8,6 +8,7 @@ import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchSummary } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { switchStatus } from '../lib/bunchSwitch';
+import { useRefreshMyBunches } from '../queries/memberships';
 import { useAccessNoticeDialog } from './useAccessNoticeDialog';
 
 type UseBunchSwitchSheetOptions = {
@@ -38,6 +39,7 @@ export function useBunchSwitchSheet({
   onAddBunch,
 }: UseBunchSwitchSheetOptions) {
   const openOverlay = useScreenOverlay();
+  const refreshMyBunches = useRefreshMyBunches();
   // 헤더의 번치 전환 버튼에 시트가 열렸는지 알림
   const [switcherOpen, setSwitcherOpen] = useState(false);
   // 전환 중에 다른 번치를 또 누르면 무시(앞선 전환이 끝나기 전 순서가 뒤섞이지 않게)
@@ -92,6 +94,8 @@ export function useBunchSwitchSheet({
   );
 
   const openSwitcher = () => {
+    // 열 때마다 목록을 다시 받음(열린 시트는 live로 갱신)
+    refreshMyBunches();
     // 「새로운 번치 추가하기」: 시트가 다 내려간 뒤 이동(화면설계서 7-1)
     let addAfterClose = false;
     setSwitcherOpen(true);
