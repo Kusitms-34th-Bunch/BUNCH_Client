@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { readHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 import { replaceUrl } from '@/shared/lib/navigation/replaceUrl';
 import { parsePhotoId } from '../lib/draftId';
 
@@ -8,10 +9,7 @@ import { parsePhotoId } from '../lib/draftId';
 const PHOTO_ID_KEY = 'bundleDraftPhotoId';
 
 const readSavedPhotoId = (): string | undefined => {
-  if (typeof window === 'undefined') return undefined;
-  const state: unknown = window.history.state;
-  if (typeof state !== 'object' || state === null) return undefined;
-  const saved = (state as Record<string, unknown>)[PHOTO_ID_KEY];
+  const saved = readHistoryEntry(PHOTO_ID_KEY);
   return typeof saved === 'string' ? parsePhotoId(saved) : undefined;
 };
 

@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { MAIN_TAB_PATHS } from '@/features/main-navigation/constants/tabs';
+import { readHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 import { quietFocus } from '@/shared/lib/quietFocus';
 
 const tabPaths: readonly string[] = Object.values(MAIN_TAB_PATHS);
@@ -18,7 +19,7 @@ const findHeading = () =>
 
 // 뒤로 가기로 돌아온 화면: 떠날 때 스크롤이 이 기록 항목에 저장돼 있음(useScrollInHistory)
 const returnedToSavedScroll = () => {
-  const saved = (window.history.state as { pageScroll?: unknown } | null)?.pageScroll;
+  const saved = readHistoryEntry('pageScroll');
   return typeof saved === 'number' && saved > 0;
 };
 

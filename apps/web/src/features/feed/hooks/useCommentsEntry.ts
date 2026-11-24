@@ -1,6 +1,7 @@
 'use client';
 
 import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { readHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 import { quietFocus } from '@/shared/lib/quietFocus';
 import type { useBundleComments } from './useBundleComments';
 import { alignDistance, alignedScrollTop, scrollRoom } from '../lib/commentScroll';
@@ -34,8 +35,7 @@ const SEEK_MAX_PAGES = 5;
 const SEEK_ALIGN_TOLERANCE_PX = 24;
 
 // 이 기록 항목에 떠날 때의 스크롤이 저장돼 있음(useScrollInHistory): 뒤로 가기로 돌아온 화면
-const hasSavedScroll = () =>
-  typeof (window.history.state as { pageScroll?: unknown } | null)?.pageScroll === 'number';
+const hasSavedScroll = () => typeof readHistoryEntry('pageScroll') === 'number';
 
 /** 댓글 진입(말풍선·알림)의 스크롤·초점 처리. 「댓글로 가기」 동작을 돌려줌 */
 export function useCommentsEntry({

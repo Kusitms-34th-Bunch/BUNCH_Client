@@ -1,5 +1,6 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { readHistoryEntry, writeHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 import { ALL_MEMBERS, type KokPlace } from '../lib/types';
 import { pinnedPlacesQueryOptions, useRemovePinnedPlaceMutation } from '../queries/pinnedPlaces';
 
@@ -9,14 +10,11 @@ export const UNDO_DURATION = 5000;
 // 고른 칩을 이 화면의 history 항목에 둠: 번들 상세에서 돌아오면 그 칩으로, 새로 들어오면 「전체」로(기능명세서 8.1.5 상세 2·8.1.2 로직 6)
 const HISTORY_KEY = 'placesMember';
 const readHistoryMember = () => {
-  if (typeof window === 'undefined') return undefined;
-  const state = window.history.state as Record<string, unknown> | null;
-  const value = state?.[HISTORY_KEY];
+  const value = readHistoryEntry(HISTORY_KEY);
   return typeof value === 'string' ? value : undefined;
 };
 const writeHistoryMember = (memberId: string) => {
-  const state = window.history.state as object | null;
-  window.history.replaceState({ ...state, [HISTORY_KEY]: memberId }, '');
+  writeHistoryEntry({ [HISTORY_KEY]: memberId });
 };
 
 /**

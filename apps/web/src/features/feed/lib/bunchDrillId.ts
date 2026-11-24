@@ -1,3 +1,8 @@
+import {
+  readHistoryEntry,
+  removeHistoryEntry,
+  writeHistoryEntry,
+} from '@/shared/lib/navigation/historyEntry';
 import { FEED_PATHS } from '../constants/paths';
 
 const ATTR = 'data-ssgoi-transition';
@@ -21,18 +26,12 @@ const holdBunchDrillId = (page: Element) => {
     window.addEventListener(type, restore, { capture: true, signal: listening.signal });
 };
 
-const clearLeftToBunch = () => {
-  const state = window.history.state as Record<string, unknown> | null;
-  if (!state?.[HISTORY_KEY]) return;
-  const { [HISTORY_KEY]: _, ...rest } = state;
-  window.history.replaceState(rest, '');
-};
+const clearLeftToBunch = () => removeHistoryEntry(HISTORY_KEY);
 
 /** 번치 이름으로 떠나기 직전: drill id 적용과 이 기록 항목 표시(돌아올 때 같은 id 사용) */
 export const leaveToBunch = (page: Element) => {
   holdBunchDrillId(page);
-  const state = window.history.state as object | null;
-  window.history.replaceState({ ...state, [HISTORY_KEY]: true }, '');
+  writeHistoryEntry({ [HISTORY_KEY]: true });
 };
 
 // 돌아오는 drill이 끝나길 기다리는 최대 시간
@@ -44,9 +43,8 @@ const RETURN_WAIT_MS = 1000;
  * 뒤로 가기의 popstate는 Next가 먼저 처리해 전환이 시작된 뒤라, 입력을 기다리지 않고 끝나는 시점에 되돌림
  */
 export const returnFromBunch = (page: Element) => {
-  const state = window.history.state as Record<string, unknown> | null;
   const id = page.getAttribute(ATTR);
-  if (!state?.[HISTORY_KEY] || !id || id === BUNCH_DRILL_ID) return;
+  if (!readHistoryEntry(HISTORY_KEY) || !id || id === BUNCH_DRILL_ID) return;
   page.setAttribute(ATTR, BUNCH_DRILL_ID);
   // 표시는 지금 항목일 때 바로 지움(기다리는 동안 다른 화면으로 가면 엉뚱한 항목을 지움)
   clearLeftToBunch();
