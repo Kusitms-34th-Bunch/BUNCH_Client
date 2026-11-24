@@ -59,7 +59,7 @@ E2E_BASE_URL=https://app.bunch.kr yarn e2e
 - `data-testid`는 접근 가능한 이름이나 role로 안정적으로 찾을 수 없을 때만 추가한다.
 - route guard, navigation, API cache와 mutation 이후 이동처럼 단위 테스트로 증명하기 어려운 핵심 흐름을 우선한다.
 - 임의의 sleep이나 retry 증가로 flaky test를 숨기지 않는다. selector, server startup, 비동기 상태 중 원인을 먼저 분류한다. 예외는 접근 가드 밖이라 hydration 전에 그려지는 화면(초대 진입)의 첫 클릭이다. 그 전 클릭은 무시되므로 결과가 보일 때까지 다시 누르되 클릭과 재시도에 시간 상한을 둔다(`e2e/web/invite.spec.ts`의 `clickUntil`).
-- CI는 워커 2개·재시도 1회다(`playwright.config.ts`). 러너 4코어에서 admin dev 서버·web 운영 서버와 함께 돌릴 수 있는 수이고, 재시도는 한 번의 일시 실패만 넘겨 불안정한 테스트가 숨지 않게 한다(2026-11-13 로컬 `CI=1`: 워커 1·재시도 2 36.7초 → 워커 2·재시도 1 26.0초, 7개 모두 통과). 워커가 둘이라 spec이 동시에 돌므로, 테스트끼리 가짜 서버 데이터를 공유하지 않게 각 테스트가 자기 데이터를 준비한다.
+- CI는 워커 4개·재시도 1회다(`playwright.config.ts`). 러너 코어 수(4)에 맞춘 수이고, 재시도는 한 번의 일시 실패만 넘겨 불안정한 테스트가 숨지 않게 한다. 2026-11-25 로컬 CI 설정(`CI=true`, 워커 4, 두 엔진 2회 반복)에서 232개가 통과했고 흔들린 테스트는 없었다. CI에서 느려지거나 흔들리면 3개로 줄인다(2026-11-13 기록: 워커 1·재시도 2 36.7초 → 워커 2·재시도 1 26.0초). spec이 동시에 돌므로, 테스트끼리 가짜 서버 데이터를 공유하지 않게 각 테스트가 자기 데이터를 준비한다.
 - 앱 WebView의 iOS 엔진은 WebKit이라 web spec은 `web-chromium`(Pixel 7)과 `web-webkit`(iPhone 15) 두 project에서 모두 돈다. 기기 종류에 따라 결과가 갈리는 테스트는 `test.use({ userAgent })`로 기기를 고정한다(예: `invite.spec.ts`의 iOS가 아닌 기기). 특정 브라우저에서만 실패하면 flaky로 단정하지 않고 trace의 스크린샷과 page snapshot부터 확인한다. 다른 프로젝트에서는 mutation 직후 navigate의 cache 레이스가 WebKit에서만 재현됐고, timeout을 늘려서는 풀리지 않았다(`docs/architecture/data-layer.md`).
 - 인증이 필요 없는 핵심 화면에는 `@axe-core/playwright` 같은 자동 접근성 검사를 smoke에 더할 수 있다. 알려진 대비 예외를 뺀 모든 위반 0(impact 무관)을 기준으로 삼되, 자동 검사는 수동 접근성 확인을 대체하지 않는다.
 - Playwright의 auto-wait와 `expect`의 관찰 조건을 사용하고, 고정 시간 대기는 추가하지 않는다.
