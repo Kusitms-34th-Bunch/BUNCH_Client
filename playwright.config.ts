@@ -43,6 +43,14 @@ export default defineConfig({
           timeout: 120_000,
           expect: { timeout: 30_000 },
         },
+        {
+          // 앱 WebView의 iOS 엔진(WebKit)에서만 나는 레이스를 잡으려고 같은 spec을 iPhone으로 한 번 더
+          name: 'web-webkit',
+          testMatch: /web\/.*\.spec\.ts/,
+          use: { ...devices['iPhone 15'], baseURL: webBaseUrl },
+          timeout: 120_000,
+          expect: { timeout: 30_000 },
+        },
       ],
   webServer: productionBaseUrl
     ? []
