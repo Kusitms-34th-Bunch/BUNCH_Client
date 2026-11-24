@@ -21,7 +21,7 @@ yarn e2e:ui
 yarn e2e:report
 ```
 
-CI(`e2e.yml`)는 브라우저가 든 Playwright 공식 이미지에서 `yarn install` → `yarn e2e:typecheck` → `yarn e2e --project=…` 순으로 실행한다(브라우저 설치 단계 없음). 엔진별 matrix로 러너 2대(`chromium`: admin·web chromium과 타입 검사, `webkit`: web webkit)가 동시에 돌아 web spec이 늘어도 한 엔진 분량만 기다린다. 한 엔진에서 더 길어지면 `--shard`로 같은 엔진을 다시 나눈다.
+CI(`e2e.yml`)는 브라우저가 든 Playwright 공식 이미지에서 `yarn install` → `yarn e2e:typecheck` → `yarn e2e --project=…` 순으로 실행한다(브라우저 설치 단계 없음). 엔진별 matrix로 러너 2대(`chromium`: admin·web chromium과 타입 검사, `webkit`: web webkit)가 동시에 돌아 web spec이 늘어도 한 엔진 분량만 기다린다. 한 엔진에서 더 길어지면 `--shard`로 같은 엔진을 다시 나눈다. CI의 E2E 빌드는 타입 검사를 생략하고(`NEXT_SKIP_TYPECHECK`, 같은 PR의 `Verify`가 검사) 엔진별 `.next/cache`를 이어 받는다(같은 PR의 다음 push부터). 2026-11-24 첫 분리 실행(#557): job당 설치 약 50초, 빌드 약 2분, 테스트 chromium 76초·webkit 120초.
 
 `playwright.config.ts`가 admin dev server를 `127.0.0.1:5173`에서 시작하거나 재사용한다. `--strictPort`로 포트 fallback을 막아, 다른 프로세스가 이미 그 포트를 쓰고 있으면 조용히 다른 포트로 옮겨가 엉뚱한 인스턴스를 테스트하는 대신 즉시 실패하게 한다.
 

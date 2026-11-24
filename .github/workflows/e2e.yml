@@ -44,6 +44,13 @@ jobs:
       - run: node --version && yarn --version
 
       - run: yarn install --immutable
+
+      # 가짜 서버 웹 빌드의 Next 캐시. 같은 PR의 다음 push부터 컴파일을 이어 받음(E2E는 PR에서만 돌아 첫 실행은 캐시 없음)
+      - uses: actions/cache@v5
+        with:
+          path: apps/web/.next/cache
+          key: e2e-next-${{ matrix.name }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**', 'packages/*/src/**') }}
+          restore-keys: e2e-next-${{ matrix.name }}-${{ hashFiles('yarn.lock') }}-
       # 타입 검사는 엔진과 무관해 한 job에서만
       - if: matrix.name == 'chromium'
         run: yarn e2e:typecheck

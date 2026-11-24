@@ -71,6 +71,8 @@ export default defineConfig({
           url: webBaseUrl,
           env: {
             NEXT_PUBLIC_API_MOCKING: 'enabled',
+            // CI는 같은 PR의 Verify가 타입을 검사하므로 E2E 빌드에서는 생략
+            NEXT_SKIP_TYPECHECK: process.env.CI ? 'true' : '',
             SENTRY_AUTH_TOKEN: '',
             NEXT_PUBLIC_SENTRY_DSN: '',
           },
