@@ -3,8 +3,10 @@ import { replaceEqualDeep } from '@tanstack/react-query';
 import { toDomainId } from '@/shared/api/client/ids';
 import {
   type BundleDetail,
+  type bundleEventEnvelopeSchema,
   type BundleTitleState,
   bundleEventDataSchemas,
+  CONTENT_EVENT_TYPES,
   type bundleProfanitySchema,
   toBundleProfanity,
   toDetailComment,
@@ -151,6 +153,7 @@ export type BundleEventOutcome =
   | { kind: 'ignore' };
 
 const REFETCH: BundleEventOutcome = { kind: 'refetch' };
+const IGNORE: BundleEventOutcome = { kind: 'ignore' };
 const apply = (detail: BundleDetail): BundleEventOutcome => ({ kind: 'apply', detail });
 
 /**
@@ -282,4 +285,33 @@ export const mergeFetchedDetail = (
     return replaceEqualDeep(previous, kept);
   }
   return replaceEqualDeep(previous, current);
+};
+
+/** revision 검사 없이 항상 최신 상세로 확인하는 상태 전환 이벤트 */
+const STATE_CHANGE_EVENT_TYPES: readonly string[] = [
+  'PERMISSIONS',
+  'DELETED',
+  'CREATED',
+  'PUBLISHED',
+  'EDITED',
+];
+
+/**
+ * 실시간 이벤트 하나를 지금 상세 캐시에 어떻게 반영할지 판정(상태 전환 → 날짜 칩 → 내용 이벤트 순)
+ * 상태 전환은 revision과 상관없이 다시 받고, 내용 이벤트는 이미 반영됨·바로 다음·건너뜀으로 나눔. 캐시가 없거나 초안이 아니면 무시
+ */
+export const routeBundleEvent = (
+  current: BundleDetail | undefined,
+  { type, revision, data }: z.infer<typeof bundleEventEnvelopeSchema>,
+): BundleEventOutcome => {
+  // 권한·삭제·발행 같은 상태 전환은 revision과 상관없이 확인해야 하므로 중복 제거 없이 항상 다시 받음
+  // 방송 data의 권한은 요청한 사람마다 달라 쓰지 않음
+  if (STATE_CHANGE_EVENT_TYPES.includes(type)) return current ? REFETCH : IGNORE;
+  if (type === 'DATE_CHIPS') {
+    return current && current.status === 'DRAFT' ? applyDateChips(current, data) : IGNORE;
+  }
+  if (!(CONTENT_EVENT_TYPES as readonly string[]).includes(type) || revision == null) return IGNORE;
+  if (!current || current.status !== 'DRAFT' || revision <= current.revision) return IGNORE;
+  if (revision > current.revision + 1) return REFETCH;
+  return applyContentEvent(current, type, data, revision);
 };

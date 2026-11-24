@@ -262,11 +262,11 @@ export function useDraft(draftId: string | undefined): {
     return { memberId: myId, bunchRole: members.find((m) => m.id === myId)?.bunchRole ?? 'member' };
   }, [bunchMembers, members, myId]);
 
-  const localPhotos = photoQueue.localPhotos;
+  const { localPhotos, frozenPhotos } = photoQueue;
   const draft = useMemo<Draft | undefined>(() => {
     if (!detail || !bunchMembers || !myId) return undefined;
     const base = toDraft({ detail, bunchMembers, locations });
-    const photos = localPhotos ?? base.photos;
+    const photos = localPhotos ?? frozenPhotos ?? base.photos;
     return {
       ...base,
       // 제목은 로컬 CRDT 문서의 원문(입력 중 띄어쓰기·커서 위치 유지, 원격 변경 병합). 문서를 불러오기 전에는 서버 제목
@@ -286,6 +286,7 @@ export function useDraft(draftId: string | undefined): {
     myId,
     pending,
     localPhotos,
+    frozenPhotos,
     titleCrdt.text,
     presenceState.presence,
     visibilityChoice,

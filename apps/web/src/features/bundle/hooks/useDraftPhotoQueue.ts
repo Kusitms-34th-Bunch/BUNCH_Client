@@ -60,6 +60,8 @@ export function useDraftPhotoQueue({
   // 사진을 끄는 중: 이벤트 보류 판단은 ref(이벤트가 올 때 읽음), 놓은 뒤 재조회는 state(effect)로 이어 감
   const dragRef = useRef(false);
   const [dragging, setDragging] = useState(false);
+  // 끌기 시작 때 보이던 목록: 끄는 동안 다른 경로(건너뛴 이벤트·자동 저장 응답·재연결)로 받은 상세가 목록을 바꾸지 않게 고정(기능 spec 4.3.6)
+  const [frozenPhotos, setFrozenPhotos] = useState<readonly DraftPhoto[] | undefined>(undefined);
   // 끌던 사진의 서버 id와, 그 끌기에서 이동 요청을 보냈는지(보냈다면 이동 응답 경로가 삭제 안내를 맡음)
   const draggedPhotoId = useRef<string | undefined>(undefined);
   const dragMoved = useRef(false);
@@ -243,6 +245,7 @@ export function useDraftPhotoQueue({
     setPhotoDragging: (isDragging: boolean, photoId: string | undefined, heldEvent: boolean) => {
       dragRef.current = isDragging;
       setDragging(isDragging);
+      setFrozenPhotos(isDragging ? shownPhotosRef.current : undefined);
       if (isDragging) {
         dragMoved.current = false;
         const photo =
@@ -315,6 +318,8 @@ export function useDraftPhotoQueue({
 
   return {
     localPhotos,
+    /** 끄는 동안 고정한 목록(끄는 중이 아니면 undefined). 화면 값(`localPhotos`)이 있으면 그쪽이 우선 */
+    frozenPhotos,
     /** 보내는 중이거나 기다리는 사진 변경이 있음 */
     busy,
     dragging,
@@ -333,6 +338,8 @@ export function useDraftPhotoQueue({
     discard: () => {
       discardGeneration.current += 1;
       setLocalPhotos(undefined);
+      // 연결이 끊기면 지금처럼 서버 값을 보임
+      setFrozenPhotos(undefined);
     },
   };
 }

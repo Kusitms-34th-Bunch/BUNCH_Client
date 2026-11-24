@@ -151,7 +151,8 @@ export function useDraftAutosave({
               // 최신 상세를 받아 그 버전으로 이어서 저장
               const latest = await refetchDetail();
               if (latest.data) writeDetail(latest.data);
-              retryAfter = CONFLICT_RETRY_DELAY_MS;
+              // 최신 상세를 받지 못했으면 같은 버전으로 곧바로 다시 보내 봐야 또 충돌하므로 일시 오류 간격으로 기다림
+              retryAfter = latest.isError ? RETRY_DELAY_MS : CONFLICT_RETRY_DELAY_MS;
             } else if (!isRetryable(error)) {
               giveUp();
               // 삭제·발행·권한 변화는 상세를 다시 받아 화면이 알맞은 상태로 바뀌게 함

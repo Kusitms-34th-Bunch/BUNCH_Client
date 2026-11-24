@@ -204,6 +204,26 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
   });
 
+  it('끄는 동안 다른 경로로 상세를 다시 받아도(건너뛴 이벤트·자동 저장 응답·재연결) 화면의 사진 목록은 그대로다(기능 spec 4.3.6)', async () => {
+    const { id, client, result } = await renderReady();
+    const shownIds = () => ready(result.current.state).draft.photos.map((photo) => photo.id);
+    const [first, second] = ready(result.current.state).draft.photos;
+
+    act(() => result.current.actions.setPhotoDragging(true, second!.id));
+    removeServerPhoto(id, first!.id);
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    // 다른 멤버의 코멘트 이벤트가 revision을 건너뛰어 상세를 다시 받는 경우와 같음
+    await act(() => client.refetchQueries({ queryKey: bundleKeys.detail(bunchId, id) }));
+    // 같은 상세에서 만드는 픽 목록에서 지운 사진이 빠질 때까지 기다림(새 상세가 화면 값에 반영됨)
+    await waitFor(() =>
+      expect(ready(result.current.state).draft.picks).not.toHaveProperty(first!.id),
+    );
+    expect(shownIds()).toEqual([first!.id, second!.id]);
+
+    act(() => result.current.actions.setPhotoDragging(false));
+    await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
+  });
+
   it('끄는 동안 사진 변경 이벤트가 없었다면 놓은 뒤 상세를 다시 받지 않는다', async () => {
     const { id, client, result } = await renderReady();
     const photoId = ready(result.current.state).draft.photos[0]!.id;
