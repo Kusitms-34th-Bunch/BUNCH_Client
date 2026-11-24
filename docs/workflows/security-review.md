@@ -47,6 +47,11 @@
 - **사진 업로드**(`features/photo-box`, `features/bundle`, `shared/hooks/native/usePhotoPicker`): 파일 형식·크기를 확장자만으로 판단하지 않는지, 업로드 전후로 위치(EXIF GPS) 같은 메타데이터가 다른 번치에 공개되는 경로가 없는지 본다. 크기 제한은 백엔드(파일 6MB·요청 7MB)보다 작은 Vercel 요청 본문 한도(약 4.5MB)를 넘지 않게 둔다(업로드 4.4MB `features/photo-box/lib/photoUpload.ts`, 쉘 목표 4MiB).
 - **web ↔ 네이티브 bridge**(`packages/bridge`, `apps/web/src/shared/bridge`, `apps/mobile-shell`): 메시지를 스키마(`packages/bridge/src/schema.ts`)로 검증하는지, 웹 페이지가 네이티브 권한(카메라·사진·파일)을 사용자 동작 없이 부르거나 임의 URL을 열게 하는 경로가 없는지 본다.
 - **오류 수집**(`apps/web/src/shared/config/sentry.ts`): 사진·초대 코드·토큰·사용자 입력 같은 내용이 아니라 식별자만 보내는지 본다.
+- **응답 보안 헤더**(`apps/web/src/shared/config/securityHeaders.mjs`): 브라우저가 새 외부 출처(스크립트·연결·이미지)에 접속하게 되면 CSP 지시문에 그 출처를 추가했는지 본다. 강제 CSP는 출처와 무관한 `frame-ancestors 'none'`·`object-src 'none'`·`base-uri 'self'`만 유지한다.
+  - 나머지 CSP는 Report-Only이고 위반은 Sentry 보고 주소(DSN에서 계산)로 받는다. 초대 페이지는 주소에 토큰이 있어 보고 주소를 뺀다. 이 정책은 문서를 새로 받을 때 정해지므로, 초대 주소로는 화면 안 이동 없이 문서를 새로 받아 들어가게 둔다. 강제 전환은 운영 위반 보고를 모은 뒤 따로 한다.
+  - 스크립트는 Next 인라인 스크립트 때문에 `'unsafe-inline'`을 쓴다. nonce를 쓰면 모든 페이지가 동적 렌더가 되므로 쓰지 않는다.
+  - 사진 주소 도메인이 정해지지 않아 `img-src`는 `https:` 전체다.
+  - zod는 파서 컴파일에 `new Function`을 써서 `instrumentation-client.ts`에서 끈다(`z.config({ jitless: true })`). 위반 0건은 `e2e/web/security-headers.spec.ts`가 확인한다.
 - **환경 변수**: 서버 전용 값(`API_BASE_URL` 등)에 `NEXT_PUBLIC_`·`VITE_`를 붙이지 않는지 본다.
 
 ## 심각도
