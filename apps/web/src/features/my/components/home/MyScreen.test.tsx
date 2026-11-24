@@ -1,4 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
+import type { ComponentProps } from 'react';
 import { toast } from '@app/design-system';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -8,7 +9,14 @@ import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper } from '@/shared/query/testing';
 import { openExternal, reloadTo } from '../../lib/navigation';
+import { useLogoutMutation } from '../../queries/session';
 import { MyScreen } from './MyScreen';
+
+// 로그아웃은 컨테이너(MyRoute)처럼 실제 mutation으로 연결(가짜 서버까지 확인)
+function ConnectedMyScreen(props: Omit<ComponentProps<typeof MyScreen>, 'onLogout'>) {
+  const logout = useLogoutMutation();
+  return <MyScreen {...props} onLogout={(onError) => logout.mutate(undefined, { onError })} />;
+}
 
 vi.mock('../../lib/navigation', () => ({ openExternal: vi.fn(), reloadTo: vi.fn() }));
 // 토스트 표시는 DS의 `toast()` 담당이라 호출만 차단
@@ -26,7 +34,7 @@ beforeEach(() => {
 const CONTACT_URL = 'https://open.kakao.example/o/channel';
 
 const renderScreen = (contactUrl?: string) =>
-  render(<MyScreen profile={{ nickname: '으누' }} contactUrl={contactUrl} />, {
+  render(<ConnectedMyScreen profile={{ nickname: '으누' }} contactUrl={contactUrl} />, {
     wrapper: createQueryWrapper(),
   });
 
@@ -42,7 +50,7 @@ describe('MyScreen', () => {
 
   it('프로필 사진이 있으면 장식 이미지로 보여 준다', () => {
     const { container } = render(
-      <MyScreen profile={{ nickname: '으누', imageSrc: 'https://cdn.example/me.jpg' }} />,
+      <ConnectedMyScreen profile={{ nickname: '으누', imageSrc: 'https://cdn.example/me.jpg' }} />,
       { wrapper: createQueryWrapper() },
     );
 

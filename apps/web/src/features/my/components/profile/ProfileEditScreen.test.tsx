@@ -1,4 +1,5 @@
 import type * as DesignSystem from '@app/design-system';
+import type { ComponentProps } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -9,7 +10,16 @@ import { MOCK_MY_MEMBER_ID } from '@/mocks/db/seed';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { createQueryWrapper } from '@/shared/query/testing';
+import { useUpdateProfileMutation } from '../../queries/profile';
 import { ProfileEditScreen } from './ProfileEditScreen';
+
+// 저장은 컨테이너(ProfileEditRoute)처럼 실제 mutation으로 연결(가짜 서버까지 확인)
+function ConnectedProfileEditScreen(
+  props: Omit<ComponentProps<typeof ProfileEditScreen>, 'onSave' | 'saving'>,
+) {
+  const save = useUpdateProfileMutation();
+  return <ProfileEditScreen {...props} onSave={save.mutateAsync} saving={save.isPending} />;
+}
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
 vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
@@ -33,7 +43,7 @@ const renderScreen = (
   demographicsConsent = false,
 ) => {
   render(
-    <ProfileEditScreen
+    <ConnectedProfileEditScreen
       profile={{ nickname: '으누', birthYear: 2003, gender: 'male' }}
       demographicsConsent={demographicsConsent}
       checkNickname={checkNickname}
@@ -163,7 +173,11 @@ describe('ProfileEditScreen', () => {
     const profile = { nickname: '으누', birthYear: 2003, gender: 'male' as const };
     const checkNickname = vi.fn<CheckNickname>(() => Promise.resolve('available'));
     const { rerender } = render(
-      <ProfileEditScreen profile={profile} demographicsConsent checkNickname={checkNickname} />,
+      <ConnectedProfileEditScreen
+        profile={profile}
+        demographicsConsent
+        checkNickname={checkNickname}
+      />,
       { wrapper: createQueryWrapper() },
     );
 
@@ -171,7 +185,7 @@ describe('ProfileEditScreen', () => {
     await user.clear(birthYear);
     await user.type(birthYear, '20');
     rerender(
-      <ProfileEditScreen
+      <ConnectedProfileEditScreen
         profile={profile}
         demographicsConsent={false}
         checkNickname={checkNickname}
