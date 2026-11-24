@@ -6,7 +6,7 @@ import { useIntersectionObserver } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
 import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { scrollPageToTop } from '@/shared/lib/navigation/scrollPageToTop';
 import type { useOpenBundleDetail } from '../hooks/useOpenBundleDetail';
 import type { FeedBundle, FeedViewer } from '../lib/types';
 import { FEED_MESSAGES as text } from '../constants/messages';
@@ -87,7 +87,6 @@ export function FeedScreen({
   onLike,
   onBunchHomeClick,
 }: FeedScreenProps) {
-  const reducedMotion = useReducedMotion();
   const { topRef, endRef, moreRef, titleRef, retryButtonRef, retry, focusNextOfFocused } =
     useFeedListFocus({ retrying, fetching, onRetry });
   // 경과 시간은 브라우저에서만 계산(서버 렌더와 시계·시간대가 달라 글자가 어긋나지 않게)
@@ -164,9 +163,8 @@ export function FeedScreen({
         <FeedHeader
           viewer={viewer}
           viewerPending={viewerPending}
-          onLogoClick={() =>
-            topRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
-          }
+          // scrollIntoView는 바깥 틀까지 함께 스크롤해 화면이 헤더만큼 밀려서 피드 목록(main)만 올림(탭 다시 누르기와 같음)
+          onLogoClick={scrollPageToTop}
           notificationsHref={links.notifications}
           hasUnreadNotifications={hasUnreadNotifications}
           bunchHomeHref={links.bunchHome}

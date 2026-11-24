@@ -590,6 +590,20 @@ describe('Feed', () => {
     }
   });
 
+  it('로고를 누르면 피드 목록(main)만 맨 위로 올리고 바깥 틀은 스크롤하지 않는다', async () => {
+    const user = userEvent.setup();
+    renderFeed(OWN);
+    await cardsLoaded();
+    const main = screen.getByRole('main');
+    main.scrollTop = 300;
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
+
+    await user.click(screen.getByRole('button', { name: 'BUNCH, 맨 위로' }));
+
+    await waitFor(() => expect(main.scrollTop).toBe(0));
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
   it('헤더에 알림과 지금 번치(번치 홈)가 있고, 카드에서 누르는 곳마다 다른 화면으로 간다', async () => {
     const user = userEvent.setup();
     renderFeed(OWN);
