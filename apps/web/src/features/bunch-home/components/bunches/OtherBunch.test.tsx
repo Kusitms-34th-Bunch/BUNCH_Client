@@ -301,11 +301,9 @@ describe('OtherBunchMembers', () => {
     expect(await screen.findByText(BUNCH_HOME_MESSAGES.membersLoading)).toBeInTheDocument();
     expect(screen.queryAllByRole('listitem')).toHaveLength(0);
     // 자리표시는 보조 기술에서 숨김(skeleton.md)
-    expect(
-      container
-        .querySelector('[class~="motion-safe:animate-pulse"]')
-        ?.closest('[aria-hidden="true"]'),
-    ).not.toBeNull();
+    const placeholder = container.querySelector('[class~="motion-safe:animate-pulse"]');
+    expect(placeholder).toBeInTheDocument();
+    expect(placeholder?.closest('[aria-hidden="true"]')).toBeInTheDocument();
 
     release();
     expect(await screen.findAllByRole('listitem')).toHaveLength(4);

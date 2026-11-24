@@ -69,11 +69,9 @@ describe('BunchDeleteScreen', () => {
       );
 
       expect(screen.getByRole('status')).toHaveTextContent(BUNCH_HOME_MESSAGES.deleteLoading);
-      expect(
-        container
-          .querySelector('[class~="motion-safe:animate-pulse"]')
-          ?.closest('[aria-hidden="true"]'),
-      ).not.toBeNull();
+      const placeholder = container.querySelector('[class~="motion-safe:animate-pulse"]');
+      expect(placeholder).toBeInTheDocument();
+      expect(placeholder?.closest('[aria-hidden="true"]')).toBeInTheDocument();
       // 받기 전에는 실제 입력란을 두지 않음(skeleton.md)
       expect(screen.queryByRole('textbox')).toBeNull();
       expect(screen.queryByText('퇴근런클럽')).toBeNull();

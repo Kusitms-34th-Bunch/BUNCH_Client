@@ -72,11 +72,9 @@ describe('BunchLeaveScreen', () => {
     );
 
     expect(screen.getByRole('status')).toHaveTextContent(BUNCH_HOME_MESSAGES.membersLoading);
-    expect(
-      container
-        .querySelector('[class~="motion-safe:animate-pulse"]')
-        ?.closest('[aria-hidden="true"]'),
-    ).not.toBeNull();
+    const placeholder = container.querySelector('[class~="motion-safe:animate-pulse"]');
+    expect(placeholder).toBeInTheDocument();
+    expect(placeholder?.closest('[aria-hidden="true"]')).toBeInTheDocument();
     expect(screen.queryAllByRole('radio')).toHaveLength(0);
     expect(screen.getByRole('button', { name: '관리자로 지정하기' })).toBeDisabled();
   });
