@@ -35,7 +35,7 @@ jobs:
         https://app.bunch.kr/invite/lighthouse-check
     steps:
       # 보고 스크립트와 Yarn 버전 파일만 받음(저장소 코드를 설치·실행하지 않음)
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
           sparse-checkout: |
@@ -46,7 +46,7 @@ jobs:
 
       - run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
 
@@ -62,7 +62,7 @@ jobs:
 
       # 직전 운영 측정과 비교(main 배포마다 갱신)
       - name: Restore Lighthouse baseline
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: apps/web/lighthouse-baseline.json
           key: lighthouse-${{ runner.os }}-production-${{ github.run_id }}-${{ github.run_attempt }}
@@ -86,14 +86,14 @@ jobs:
 
       - name: Save Lighthouse baseline
         if: steps.baseline.outcome == 'success'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: apps/web/lighthouse-baseline.json
           key: lighthouse-${{ runner.os }}-production-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload Lighthouse report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lighthouse-production
           path: |
@@ -118,14 +118,14 @@ jobs:
     steps:
       - name: Download Lighthouse report
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: lighthouse-production
           path: lighthouse
 
       - name: Comment on the release pull request
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
