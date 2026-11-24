@@ -60,6 +60,8 @@
 | variable | `NEXT_PUBLIC_POSTHOG_KEY`  | 제품 분석 프로젝트 토큰(`phc_…`, 공개 값). 약관에 동의한 회원만 수집한다(ADR 018). 비우면 수집하지 않는다. 기획 요청으로 운영 키를 넣었다(2026-11-10). 개인정보 처리방침(임시 문구)에 수집 항목·국외 이전(PostHog, 미국)을 반영하는 일은 기획에 요청해 두었다 |
 | variable | `NEXT_PUBLIC_WS_URL`       | 실시간(STOMP) 연결 주소(공개 값, 예 `wss://api.example.com/ws`, query 없이). 비우면 번들 공동 편집이 실시간으로 연결되지 않는다. 백엔드 허용 Origin 목록에 웹 주소가 등록돼 있어야 한다(ADR 024)                                                              |
 | variable | `NEXT_PUBLIC_POSTHOG_HOST` | 선택. 비우면 US(`https://us.i.posthog.com`), EU 프로젝트는 `https://eu.i.posthog.com`                                                                                                                                                                         |
+| variable | `GOOGLE_SITE_VERIFICATION` | 선택. Google Search Console 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                             |
+| variable | `NAVER_SITE_VERIFICATION`  | 선택. 네이버 서치어드바이저 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                             |
 
 저장소 수준(Repository secrets)에 같은 이름을 두지 않는다. environment 제한을 거치지 않고 다른 브랜치의 workflow가 받을 수 있다.
 
