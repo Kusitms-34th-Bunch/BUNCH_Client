@@ -7,6 +7,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { openTabPath } from '@/shared/bridge/client';
 import { QueryBoundary } from '@/shared/components/boundary/QueryBoundary';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import { copyText } from '@/shared/lib/native/clipboard';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -119,13 +120,7 @@ function PlaceList({
   // 확인하는 동안 다시 누르면 무시(첫 탭만, 기능명세서 8.1.5 예외). 이동하면 화면을 떠나므로 잠금을 풀지 않음
   const opening = useRef(false);
   // 확인을 기다리는 사이 화면을 떠났으면 이동·안내를 하지 않음
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const mounted = useMountedRef();
 
   const openBundle = async (place: KokPlace): Promise<'unavailable' | undefined> => {
     if (place.source.kind !== 'bundle' || opening.current) return undefined;

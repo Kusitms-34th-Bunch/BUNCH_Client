@@ -16,6 +16,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 import { clearKeepAgreed, markTransferFromGuide, peekKeepAgreed } from '../../lib/withdrawalFlow';
@@ -43,14 +44,7 @@ export function WithdrawalScreen() {
   const [checking, setChecking] = useState(false);
   const checkingRef = useRef(false);
   // 확인 요청 중 화면을 떠났으면 결과로 창을 열지 않음(떠난 화면의 창이 다른 화면 위에 남지 않게)
-  const mounted = useRef(true);
-  // Strict Mode의 다시 붙이기에서도 true로 되돌림(정리만 하면 개발 모드에서 false로 굳음)
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const mounted = useMountedRef();
   // 최종 확인 창이 다 닫힌 뒤 할 일(안내 창 열기·토스트). 닫히는 창의 초점 복귀와 겹치지 않게 미룸
   const afterConfirmClosed = useRef<(() => void) | undefined>(undefined);
   const openConfirm = () =>

@@ -1,6 +1,7 @@
 import { galleryImageSchema } from '@app/bridge';
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { galleryBridge, isNativeShell } from '@/shared/bridge/client';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import { DEFAULT_IMAGE_RULES, type ImageFileRules } from '@/shared/lib/image/imageFile';
 
 const UNREADABLE_MESSAGE = '이 사진은 사용할 수 없어요';
@@ -53,17 +54,10 @@ export function usePhotoPicker({
 }: PhotoPickerOptions = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isPicking = useRef(false);
-  const isMounted = useRef(true);
+  const isMounted = useMountedRef();
   const [photoUrl, setPhotoUrl] = useState<string>();
   const [isPending, setIsPending] = useState(false);
   const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
 
   const selectPhoto = async (read: () => Promise<string | null>) => {
     if (isPicking.current) return;
