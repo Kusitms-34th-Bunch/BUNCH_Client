@@ -4,8 +4,9 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../../../utils';
 import { useBottomNavigationGesture } from './useBottomNavigationGesture.internal';
 
-export type BottomNavigationItem = {
-  id: string;
+/** `Id`: 항목 id의 리터럴 union(호출하는 쪽이 선택 콜백·`renderItem`에서 단언 없이 씀) */
+export type BottomNavigationItem<Id extends string = string> = {
+  id: Id;
   /** 보이는 라벨이자 접근성 이름 */
   label: string;
   /** 미선택 아이콘(Line, 24px), 접근성 이름은 `label`로 제공 */
@@ -23,20 +24,23 @@ export type BottomNavigationItemState = {
   'aria-current': 'page' | undefined;
 };
 
-export type BottomNavigationProps = Omit<ComponentProps<'nav'>, 'children' | 'aria-label'> & {
+export type BottomNavigationProps<Id extends string = string> = Omit<
+  ComponentProps<'nav'>,
+  'children' | 'aria-label'
+> & {
   /** 막대의 접근성 이름(예: "주요 메뉴") */
   'aria-label': string;
-  items: BottomNavigationItem[];
+  items: BottomNavigationItem<Id>[];
   /** 선택된 항목의 id, 목록에 없으면 모두 미선택 처리 */
   selectedId: string;
   /** 반투명 글라스 효과(기본 false), 디자인 외 제안은 결정 기록 011 참고 */
   glass?: boolean;
   /** 기본 button의 선택 콜백, `renderItem` 사용 시 호출 제외 */
   // eslint-disable-next-line unused-imports/no-unused-vars -- 함수 type의 매개변수 이름은 문서용
-  onItemSelect?: (id: string) => void;
+  onItemSelect?: (id: Id) => void;
   /** 항목 렌더링 재정의(예: 링크), 기본 요소는 button */
   // eslint-disable-next-line unused-imports/no-unused-vars -- 함수 type의 매개변수 이름은 문서용
-  renderItem?: (item: BottomNavigationItem, state: BottomNavigationItemState) => ReactNode;
+  renderItem?: (item: BottomNavigationItem<Id>, state: BottomNavigationItemState) => ReactNode;
 };
 
 // 글라스 효과의 선택 근거는 docs/decisions/records/011-bottom-navigation-glass-by-platform.md 참고
@@ -51,7 +55,7 @@ const itemBase =
   'flex h-s20 w-s24 max-w-full cursor-pointer touch-manipulation flex-col items-center justify-center gap-s2 rounded-full py-s3 typography-caption-1-regular focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand';
 
 /** 항목·선택·렌더링은 호출자, 위치·Safe Area는 PageShell 소유 */
-export const BottomNavigation = ({
+export const BottomNavigation = <Id extends string = string>({
   items,
   selectedId,
   glass = false,
@@ -65,7 +69,7 @@ export const BottomNavigation = ({
   onPointerLeave,
   onClickCapture,
   ...props
-}: BottomNavigationProps) => {
+}: BottomNavigationProps<Id>) => {
   const selectedIndex = items.findIndex((item) => item.id === selectedId);
   const { listRef, pillRef, scrub, visualIndex, isEnlarged, navProps } = useBottomNavigationGesture(
     {
