@@ -33,7 +33,21 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 
 - `scale(0)`에서 시작하지 않는다. `scale(0.9~0.97)` + `opacity: 0`에서 시작한다.
 - 팝오버·드롭다운은 트리거 쪽에서 자라나도록 `transform-origin`을 트리거 위치에 맞춘다. 모달은 예외로, 화면 중앙에 뜨므로 `transform-origin: center`를 유지한다.
-- 버튼 눌림 피드백은 디자이너 공통 지침 `Dissolve / Ease Out / 75ms`를 따른다(2026-10-22, 이전 100ms). 크기를 바꾸지 않고 눌림 오버레이의 투명도만 75ms ease-out으로 바꾼다. 적용: `Button`, `TextButton`, `LoginButton`, `Label`, `TermsLabel`, `CameraButton`(디자인 시스템). 동작 줄이기에서는 전환을 끈다. 곡선은 `Button`·`TextButton`이 CSS Ease Out(`cubic-bezier(0,0,0.58,1)`), 나머지는 Tailwind `ease-out`(`cubic-bezier(0,0,0.2,1)`)이라 아직 다르다.
+- 버튼 눌림 피드백은 디자이너 공통 지침 `Dissolve / Ease Out / 75ms`를 따른다(2026-10-22, 이전 100ms). 눌림 오버레이의 투명도는 75ms ease-out으로 바꾸고, 2026-11-25(#562)부터 크기도 함께 살짝 줄인다(아래 「눌림 효과」). 적용: `Button`, `TextButton`, `LoginButton`, `Label`, `TermsLabel`, `CameraButton`(디자인 시스템). 동작 줄이기에서는 전환을 끈다. 곡선은 `Button`·`TextButton`이 CSS Ease Out(`cubic-bezier(0,0,0.58,1)`), 나머지는 Tailwind `ease-out`(`cubic-bezier(0,0,0.2,1)`)이라 아직 다르다.
+
+### 눌림 효과
+
+- 누르는 동안 살짝 줄었다가 떼면 돌아온다(Figma 「Press Interaction · 눌림 효과」 `7982:51780`, 2026-11-25 #562). 색은 각 컴포넌트의 Pressed 색을 그대로 쓰고, 크기는 `scale`로만 바꿔 레이아웃은 그대로다. 다만 누르는 동안 브라우저는 줄어든 박스로 터치 위치를 판정해, 가장자리를 누른 손가락이 박스 밖이 되면 눌림이 풀리고 `click`이 나지 않을 수 있다(한 변에 약 1~2.5%, 실기기 확인 전).
+- 디자인 시스템 유틸리티(`packages/design-system/src/styles/utilities.css`)를 루트 요소에 쓴다.
+  - `press-scale-small`(0.95): 칩, 아이콘 버튼, 캘린더 날짜, 글자 버튼, 번치 이름 전환(`AccountSwitcher`)
+  - `press-scale-medium`(0.97): `Button`(SolidButton), 팔로우 버튼
+  - `press-scale-large`(0.98): 번치 분위기 카드(Card), 라디오 카드(`RadioCard`·`DescriptionRadioCard`), 업로드 선택 카드, 목록 줄(`MenuLabel`·`MenuItem`·`BunchListItem`·`BunchRadioItem`(Profile - Label)·`NotificationCard`(Alert_Label)·`NudgeBanner`·`Label`). 목록 줄은 회색 배경과 내용이 함께 줄어든다. 추천 번들 카드는 카드 버튼을 누를 때만 줄어든다(위에 겹친 「상세 보기」를 누를 때는 그대로). 그래서 유틸리티 대신 같은 값(0.98·100/180ms·곡선)을 직접 쓰므로 수치를 바꾸면 함께 바꾼다.
+  - 입력 필드는 쓰지 않는다(배경색만).
+  - 디자인 명세에 없어 적용하지 않은 눌림 요소: `ProfileRadioCard`, `TermsLabel`, `ProfileListItem`, `BundleCard`, `EntryCard`, `InviteMemberCard`, `LocationCard`, `LoginButton`, `FloatingButton`, `CameraButton`, `MenuTabs`, `TextButtonUnderline`, `BunchLabel`. 디자이너 확인 뒤 추가한다.
+- 시간·곡선: 누를 때 100ms, 뗄 때 180ms, `cubic-bezier(0.2, 0, 0, 1)`, 기준점 가운데, 튕김 없음. 헤더 안의 번치 이름 전환은 왼쪽 가운데 기준이라 제목이 옆으로 움직이지 않는다.
+- 유틸리티가 루트의 색 전환(`color`·`background-color`·`border-color`·`opacity`, 기본 75ms)도 함께 정해 `transition`이 서로 덮어쓰지 않는다. 색 전환 시간·곡선이 다르면 `--press-color-duration`·`--press-color-ease`로 바꾼다(칩 300ms, 버튼 CSS Ease Out). 루트에 `transition-colors`를 따로 두지 않는다.
+- 비활성(`disabled`, `aria-disabled`, 안의 입력이 비활성)에서는 줄어들지 않는다. 마우스 호버 표시는 칩만 뺐다(디자인이 Hover를 Pressed로 바꿈). 라디오 카드의 선택 전 호버는 이전 시안 그대로 두었다. 동작 줄이기에서는 줄지 않고 색도 전환 없이 바로 바뀐다.
+- CSS `:active`로 처리해 스크롤이 시작되면 브라우저가 눌림을 풀고, 누른 채 영역 밖으로 나가 떼면 `click`이 나지 않는다. iOS·Android 실기기 느낌은 확인 전이다.
 
 ## 성능
 

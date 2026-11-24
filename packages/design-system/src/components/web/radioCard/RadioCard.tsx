@@ -23,10 +23,11 @@ export const RadioCard = ({ className, title, description, ...props }: RadioCard
     // eslint-disable-next-line jsx-a11y/label-has-associated-control -- 글자가 탐색 깊이(2)보다 아래라 생기는 오탐, Radio와 글자 모두 label 안
     <label
       className={cn(
-        'bg-surface-secondary px-padding-p8 py-s9 gap-s7 rounded-r4 relative isolate flex w-full cursor-pointer touch-manipulation items-center',
+        'press-scale-large bg-surface-secondary px-padding-p8 py-s9 gap-s7 rounded-r4 relative isolate flex w-full cursor-pointer touch-manipulation items-center',
         // hover는 카드 위에 겹쳐 라디오 원까지 함께 어두워지게 처리
         'before:rounded-r4 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-10 before:opacity-0',
-        'hover:not-has-checked:before:opacity-100',
+        // Pressed(2026-11-25): 선택 여부와 관계없이 누르는 동안 overlay-hover
+        'hover:not-has-checked:before:opacity-100 active:not-has-disabled:before:opacity-100',
         'has-checked:bg-surface-brand-subtle-1 has-checked:ring-border-brand-subtle has-checked:ring-1 has-checked:ring-inset',
         'has-focus-visible:outline-border-brand has-focus-visible:outline-2 has-focus-visible:outline-offset-2',
         className,

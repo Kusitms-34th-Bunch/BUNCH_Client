@@ -129,6 +129,8 @@ export const SuggestedBundleCard = ({
     <div
       className={cn(
         'bg-surface-primary rounded-r8 p-s8 gap-s4 relative isolate flex w-full flex-col overflow-clip',
+        // 눌림 축소(0.98)도 덮개와 같은 조건: 카드 버튼을 누를 때만(위에 겹친 「상세 보기」를 누를 때는 그대로)
+        'transition-[scale] duration-180 ease-[cubic-bezier(0.2,0,0,1)] has-[[data-card-button]:active]:scale-98 has-[[data-card-button]:active]:duration-100 motion-reduce:has-[[data-card-button]:active]:scale-none',
         // 눌림은 카드 위에 겹쳐 사진·칩·화살표까지 함께 어두워지게 처리
         'before:rounded-r8 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-20 before:opacity-0',
         'has-[[data-card-button]:active]:before:opacity-100',

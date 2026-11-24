@@ -25,12 +25,13 @@ describe('ChipButton', () => {
     expect(screen.getByRole('button').className).toContain(height);
   });
 
-  it('solid 기본은 회색 채움이고 호버에 오버레이가 켜진다', () => {
+  it('solid 기본은 회색 채움이고 누르는 동안(Pressed) 오버레이가 켜지며 호버로는 켜지지 않는다', () => {
     render(<ChipButton>칩</ChipButton>);
     const cls = screen.getByRole('button').className;
     expect(cls).toContain('bg-surface-secondary');
     expect(cls).toContain('text-text-tertiary');
-    expect(cls).toContain('hover:before:opacity-100');
+    expect(cls).toContain('active:before:opacity-100');
+    expect(cls).not.toContain('hover:');
     expect(cls).toContain('before:bg-overlay-hover');
   });
 
@@ -42,12 +43,13 @@ describe('ChipButton', () => {
     expect(cls).not.toContain('hover:before:opacity-100');
   });
 
-  it('avatar 호버는 흰색 기준 오버레이다', () => {
+  it('avatar Pressed는 흰색 기준 오버레이다', () => {
     render(<ChipButton variant="avatar">칩</ChipButton>);
     const cls = screen.getByRole('button').className;
     expect(cls).toContain('bg-surface-secondary');
-    expect(cls).toContain('hover:bg-surface-primary');
-    expect(cls).toContain('hover:before:opacity-100');
+    expect(cls).toContain('active:bg-surface-primary');
+    expect(cls).toContain('active:before:opacity-100');
+    expect(cls).not.toContain('hover:');
   });
 
   it.each([
@@ -166,12 +168,11 @@ describe('ChipButton', () => {
 });
 
 describe('ChipButton 모션', () => {
-  it('색과 오버레이는 Dissolve·Ease out·300ms로 바뀐다', () => {
+  it('색과 오버레이는 Dissolve·Ease out·300ms로 바뀌고 누르는 동안 0.95로 줄어든다', () => {
     render(<ChipButton>칩</ChipButton>);
     const { classList } = screen.getByRole('button');
-    expect(classList.contains('transition-colors')).toBe(true);
-    expect(classList.contains('duration-300')).toBe(true);
-    expect(classList.contains('ease-out')).toBe(true);
+    expect(classList.contains('press-scale-small')).toBe(true);
+    expect(classList.contains('[--press-color-duration:300ms]')).toBe(true);
     expect(classList.contains('before:duration-300')).toBe(true);
     expect(classList.contains('before:duration-75')).toBe(false);
   });

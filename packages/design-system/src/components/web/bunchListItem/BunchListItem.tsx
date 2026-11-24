@@ -42,7 +42,7 @@ export const BunchListItem = ({
       aria-current={status === 'current' ? 'true' : undefined}
       onClick={isSelectable ? onClick : undefined}
       className={cn(
-        'rounded-r4 px-padding-p5 py-padding-p3 gap-s5 relative isolate flex w-full touch-manipulation items-center text-left',
+        'press-scale-large rounded-r4 px-padding-p5 py-padding-p3 gap-s5 relative isolate flex w-full touch-manipulation items-center text-left',
         'before:rounded-r4 before:bg-overlay-hover press-overlay before:-z-10',
         'not-aria-disabled:cursor-pointer not-aria-disabled:active:before:opacity-100 aria-disabled:cursor-not-allowed',
         status !== 'default' && 'opacity-(--semantic-opacity-disabled)',

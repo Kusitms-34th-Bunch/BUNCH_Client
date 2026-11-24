@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 값과 대조함. 실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `ChipButton`(node `1303:14763`). Figma 변형 `Size`(S·M·L) × `Variant`(Solid·Outline·Avatar) × `State`(Default·Hover·Selected). 이슈 #98.
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `ChipButton`(node `1303:14763`). Figma 변형 `Size`(S·M·L) × `Variant`(Solid·Outline·Avatar) × `State`(Default·Pressed·Selected). 이슈 #98. 2026-11-25 디자인에서 Hover를 Pressed로 이름만 바꿨다(생김새 같음, #562).
 
 ## 목적과 범위
 
@@ -13,7 +13,7 @@
 - 필터·선택용 알약 모양 버튼. 글자와 선택적 개수(`(3)`), 왼쪽 × 아이콘 또는 왼쪽 24px 원 이미지(avatar), 오른쪽 아래 화살표 아이콘을 둘 수 있다.
 - 크기: S 높이 32 · M 36 · L 38. 좌우 여백은 S·M 10, L 12(avatar는 아래 표).
 - 선택됨(Selected): 어두운 배경(`surface-inversed`) + 흰 글자. Outline은 테두리도 같은 어두운 색.
-- 호버: 아래 "상태와 동작".
+- 눌림(Pressed): 아래 "상태와 동작".
 
 ### 제공하지 않는 동작
 
@@ -30,14 +30,14 @@
 
 ## 상태와 동작
 
-| Variant | Default                                            | Hover(Figma 실측)                 | Selected                                         |
-| ------- | -------------------------------------------------- | --------------------------------- | ------------------------------------------------ |
-| Solid   | `surface-secondary`(#f5f5f5), 글자 `text-tertiary` | #dcdcdc(검정 10%를 #f5f5f5 위에)  | `surface-inversed`(#25282d), 글자 흰색           |
-| Outline | `surface-primary` + 1px `border-tertiary`          | 흰색 그대로(Figma에서 변화 없음)  | `surface-inversed` + 1px 같은 색 테두리, 흰 글자 |
-| Avatar  | `surface-secondary`                                | #e5e5e5(검정 10%를 **흰색** 위에) | `surface-inversed`, 흰 글자                      |
+| Variant | Default                                            | Pressed(Figma 실측, 이전 이름 Hover) | Selected                                         |
+| ------- | -------------------------------------------------- | ------------------------------------ | ------------------------------------------------ |
+| Solid   | `surface-secondary`(#f5f5f5), 글자 `text-tertiary` | #dcdcdc(검정 10%를 #f5f5f5 위에)     | `surface-inversed`(#25282d), 글자 흰색           |
+| Outline | `surface-primary` + 1px `border-tertiary`          | 흰색 그대로(Figma에서 변화 없음)     | `surface-inversed` + 1px 같은 색 테두리, 흰 글자 |
+| Avatar  | `surface-secondary`                                | #e5e5e5(검정 10%를 **흰색** 위에)    | `surface-inversed`, 흰 글자                      |
 
-- 호버 오버레이는 `overlay-hover`(검정 10%)이고, 선택된 칩에서는 호버 변화가 없다(Figma에 없음).
-- 모션(Figma 공통 모션의 칩버튼 모션, 2026-10-30): 누르는 동안(`active`)이 Hover 모양이고(마우스 호버와 같은 모양) 손을 떼면 Selected로 바뀌며, 둘 다 Dissolve·Ease out·300ms다. 배경·글자·테두리 색은 `transition-colors`로, 오버레이는 투명도로 300ms에 섞인다. 이전에는 호버 75ms였다. Outline은 Figma Hover가 변하지 않아 누르는 동안에도 변화가 없고, 동작 줄이기에서는 전환을 끈다. "Ease out"은 Tailwind `ease-out`(`cubic-bezier(0, 0, 0.2, 1)`)이라 CSS 표준 곡선과 다르다(`docs/architecture/motion.md`).
+- 누르는 동안(Pressed) 오버레이는 `overlay-hover`(검정 10%)이고, 선택된 칩에서는 변화가 없다(Figma에 없음). 마우스 호버로는 켜지 않는다(#562, 터치 기기에서 호버가 남지 않게). 누르는 동안 0.95로 줄어든다(`press-scale-small`, `docs/architecture/motion.md` 「눌림 효과」).
+- 모션(Figma 공통 모션의 칩버튼 모션, 2026-10-30): 누르는 동안(`active`)이 Pressed 모양이고 손을 떼면 Selected로 바뀌며, 둘 다 Dissolve·Ease out·300ms다. 배경·글자·테두리 색은 `press-scale-small`의 색 전환(`--press-color-duration` 300ms)으로, 오버레이는 투명도로 300ms에 섞인다. 이전에는 호버 75ms였다. Outline은 Figma Pressed가 변하지 않아 누르는 동안에도 변화가 없고, 동작 줄이기에서는 전환을 끈다. "Ease out"은 Tailwind `ease-out`(`cubic-bezier(0, 0, 0.2, 1)`)이라 CSS 표준 곡선과 다르다(`docs/architecture/motion.md`).
 - avatar 좌우 여백: S 4/8 · M 6/8 · L 8/10.
 - 아이콘: S·M은 16px(Small), L은 20px(Medium). 개수 글자는 L에서만 16/24(Figma 값).
 
@@ -62,7 +62,7 @@
 
 ## 디자이너 확인 항목
 
-- Outline의 Hover가 Default와 같은 흰색이다(Figma 레이어가 흰색이 검정 위에 놓여 변화가 없음). 의도인지, 다른 변형처럼 10% 어둡게 해야 하는지 확인이 필요하다.
-- Avatar의 Hover가 Default(#f5f5f5)가 아니라 흰색 기준(#e5e5e5)이라, 호버하면 오히려 기본보다 어두워지는 정도가 Solid(#dcdcdc)와 다르다. 의도 확인이 필요하다.
+- Outline의 Pressed(이전 Hover)가 Default와 같은 흰색이다(Figma 레이어가 흰색이 검정 위에 놓여 변화가 없음). 의도인지, 다른 변형처럼 10% 어둡게 해야 하는지 확인이 필요하다.
+- Avatar의 Pressed(이전 Hover)가 Default(#f5f5f5)가 아니라 흰색 기준(#e5e5e5)이라, 누르면 오히려 기본보다 어두워지는 정도가 Solid(#dcdcdc)와 다르다. 의도 확인이 필요하다.
 - L 크기에서만 개수 글자가 16/24(-0.25)라 라벨(14/21)과 크기가 다르다. 의도 확인이 필요하다.
 - Solid 기본(#f5f5f5 배경, #535a61 글자)의 대비는 약 7:1이라 문제 없지만, Outline·Avatar 테두리(#eaeaea)는 흰 배경 대비 1.2:1이라 경계 인식은 배경색 차에 기대지 않는다.

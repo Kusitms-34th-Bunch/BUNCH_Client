@@ -16,7 +16,7 @@ export const Label = ({ className, children, ...props }: LabelProps) => (
   <label
     className={cn(
       // 눌림: 선택된 모양(채운 아이콘·진한 글자·불투명)에 overlay-pressed(20%)를 아이콘·글자 위까지 덮는다. Figma 실측: 배경 #f1f2ff→#c1c2cc, 아이콘 #a7adff→#868acc
-      'group/label rounded-r4 relative isolate block w-full cursor-pointer touch-manipulation',
+      'press-scale-large group/label rounded-r4 relative isolate block w-full cursor-pointer touch-manipulation',
       'before:bg-overlay-pressed before:rounded-r4 press-overlay before:z-10',
       '[&:active:not(:has(input:disabled))]:before:opacity-100',
       // 비활성(disabled)일 때는 눌러도 눌림 모양 없음

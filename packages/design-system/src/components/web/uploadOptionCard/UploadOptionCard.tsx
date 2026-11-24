@@ -41,7 +41,7 @@ export const UploadOptionCard = ({
       aria-describedby={`${id}-description`}
       className={cn(
         // Figma 높이 82px은 토큰에 없어 기본 scale 20.5 적용
-        'group/option bg-surface-secondary px-s7 gap-s5 rounded-r4 relative isolate flex min-h-20.5 w-full cursor-pointer touch-manipulation items-center text-left',
+        'press-scale-large group/option bg-surface-secondary px-s7 gap-s5 rounded-r4 relative isolate flex min-h-20.5 w-full cursor-pointer touch-manipulation items-center text-left',
         'before:rounded-r4 before:bg-overlay-hover before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out active:before:opacity-100 motion-reduce:before:transition-none',
         'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
         className,

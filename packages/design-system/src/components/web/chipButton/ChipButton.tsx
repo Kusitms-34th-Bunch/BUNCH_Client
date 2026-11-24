@@ -17,7 +17,7 @@ const chipButton = tv({
   base: [
     'relative isolate inline-flex shrink-0 cursor-pointer touch-manipulation items-center justify-center gap-s2 rounded-full whitespace-nowrap typography-body-3-regular',
     'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-overlay-hover before:opacity-0 before:transition-opacity before:duration-300 before:ease-out motion-reduce:before:transition-none',
-    'transition-colors duration-300 ease-out motion-reduce:transition-none',
+    'press-scale-small [--press-color-duration:300ms] motion-reduce:transition-none',
     "after:absolute after:inset-x-0 after:content-['']",
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand',
   ],
@@ -41,14 +41,13 @@ const chipButton = tv({
     {
       variant: 'solid',
       selected: false,
-      class: 'bg-surface-secondary hover:before:opacity-100 active:before:opacity-100',
+      class: 'bg-surface-secondary active:before:opacity-100',
     },
     { variant: 'outline', selected: false, class: 'bg-surface-primary' },
     {
       variant: 'avatar',
       selected: false,
-      class:
-        'bg-surface-secondary hover:bg-surface-primary hover:before:opacity-100 active:bg-surface-primary active:before:opacity-100',
+      class: 'bg-surface-secondary active:bg-surface-primary active:before:opacity-100',
     },
     // Figma border-strong(#25282d)은 토큰이 없고 surface-inversed와 같은 값
     { variant: 'outline', selected: true, class: 'border-surface-inversed' },
