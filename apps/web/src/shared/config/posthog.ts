@@ -42,6 +42,7 @@ export const sanitizeAnalyticsEvent = (event: CaptureResult | null) => {
 };
 
 export const posthogOptions = {
+  // 기본 호스트를 바꾸면 CSP 허용 출처(securityHeaders.mjs)도 함께 변경
   api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
   // SDK 기본값 묶음 고정(클릭 자동 수집·SPA 페이지 이동 수집 포함), 올릴 때 변경 내역 확인
   defaults: '2026-08-30',
