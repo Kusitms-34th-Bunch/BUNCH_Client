@@ -95,8 +95,9 @@ iOS 앱이 App Store에 출시돼(App Store만, Android 앱 없음) 링크를 �
 
 메신저에 초대 링크를 붙이면 미리보기 제목이 「{번치 이름}에 초대받았어요」로 보인다(기능명세 2.4.3·2.7.1).
 
-- `app/invite/[token]/page.tsx`의 `generateMetadata`가 서버 렌더에서 공개 조회(`GET /invitations/{token}`, `shared/api/server/invitationPreview.ts`)로 번치 이름을 읽는다. 재시도 없이 3초 안에 못 읽거나 없는·만료된 링크면 기본 제목 「bunch 초대장」이다.
+- `app/invite/[token]/page.tsx`의 `generateMetadata`가 서버 렌더에서 공개 조회(`GET /invitations/{token}`, `shared/api/server/invitationPreview.ts`)로 번치 이름을 읽는다. 재시도 없이 3초 안에 못 읽거나 없는·만료된 링크면 기본 제목 「BUNCH 초대장」이다.
 - 이미지는 번치마다 만들지 않고 고정 이미지 `public/images/og/invite.png`(Figma 「오픈그래프 이미지」 `6468:114571`, 1800×945)를 쓴다. 절대 주소는 Next 기본값을 따른다(운영 `VERCEL_PROJECT_PRODUCTION_URL`, 미리보기 배포 `VERCEL_BRANCH_URL`·`VERCEL_URL`, `docs/workflows/seo.md`).
+- 설명은 고정 문구 「초대장을 열고 함께한 순간을 기록해 보세요.」다(기획 원문이 없는 임시 문구, #554). 토큰이나 번치 정보는 넣지 않는다.
 - 토큰이 든 주소라 `og:url`을 넣지 않고, 검색 제외(`noindex`)와 `no-referrer`는 유지한다.
 - 카카오톡 미리보기는 배포 뒤 실제 링크로 확인해야 한다(카카오는 미리보기를 캐시하므로 바꾼 뒤에는 카카오 개발자 도구의 캐시 초기화가 필요할 수 있다).
 

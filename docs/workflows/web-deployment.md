@@ -94,9 +94,9 @@
 
 ## 홈 화면 추가(PWA)
 
-- 설치 앱 이름은 매니페스트(`app/manifest.ts`의 `name`·`short_name`)가 **BUNCH**, iOS(`app/layout.tsx`의 `appleWebApp.title`)가 **bunch**다.
+- 설치 앱 이름은 매니페스트(`app/manifest.ts`의 `name`·`short_name`)와 iOS(`app/layout.tsx`의 `appleWebApp.title`) 모두 **BUNCH**(`SITE_NAME`)로, 네이티브 앱 이름과 같다.
 - 설치한 앱은 `/bunch`(번치 홈)에서 시작하고 주소창 없이(`display: standalone`) 세로로 열린다.
-- 아이콘은 임시 아이콘(눈 캐릭터 이미지)이다. 실제 아이콘이 오면(1024px 정사각 원본 권장) `apps/web/public/icons`의 같은 파일명으로 교체한다.
+- 아이콘(`apps/web/public/icons`)은 앱 아이콘(`apps/mobile-shell/assets/icon.png`, 1024)을 줄인 것이다. 글리프가 maskable 안전 영역(반지름 40%) 안이라 maskable에도 같은 그림을 쓴다. 앱 아이콘이 바뀌면 같은 파일명으로 다시 만든다.
 
 | 파일                           | 크기      | 쓰이는 곳                                                        |
 | ------------------------------ | --------- | ---------------------------------------------------------------- |
@@ -111,6 +111,6 @@
 
 ## 아직 확인하지 않은 것
 
-- `public/mock/photos`(약 7MB, 시연 사진)가 운영 배포에도 정적 파일로 올라간다([가짜 서버와 서버 연동 현황](./mock-server-status.md)).
+- `public/mock/photos`(WebP 약 5MB, 시연 사진)가 운영 배포에도 정적 파일로 올라간다([가짜 서버와 서버 연동 현황](./mock-server-status.md)).
 - 운영에 그대로 올라가는 샘플 동작은 없다(2026-11-24 확인). [가짜 서버와 서버 연동 현황](./mock-server-status.md)의 샘플 표에 남은 장소 검색은 가짜 서버를 켤 때만 샘플이고, 운영은 실제 BFF를 쓴다.
 - 미리보기(스테이징) 배포는 없다. 로컬 서버 없이 develop을 실기기로 확인해야 하면 추가한다.

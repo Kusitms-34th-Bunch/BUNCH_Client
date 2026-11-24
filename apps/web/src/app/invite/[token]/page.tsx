@@ -4,8 +4,11 @@ import { APP_STORE_APP_ID, INVITE_LINK_ORIGIN } from '@/features/invite-entry/co
 import { isInviteToken } from '@/features/invite-entry/lib/token';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { readInvitationBunchName } from '@/shared/api/server/invitationPreview';
+import { SITE_NAME } from '@/shared/constants/site';
 
-const DEFAULT_TITLE = 'bunch 초대장';
+const DEFAULT_TITLE = `${SITE_NAME} 초대장`;
+// 미리보기 카드 제목 아래 한 줄. 기획 원문이 없는 임시 문구
+const DESCRIPTION = '초대장을 열고 함께한 순간을 기록해 보세요.';
 // Figma 「오픈그래프 이미지」(6468:114571), 1.5배 내보내기
 const OG_IMAGE = {
   url: '/images/og/invite.png',
@@ -28,6 +31,7 @@ export async function generateMetadata({ params }: InvitePageProps): Promise<Met
 
   return {
     title: DEFAULT_TITLE,
+    description: DESCRIPTION,
     robots: { index: false },
     referrer: 'no-referrer',
     // iPhone·iPad Safari 위쪽의 앱 배너(Smart App Banner, Safari가 그리고 설치 여부에 따라 「열기」·「보기」). 인앱 브라우저·앱 WebView에는 뜨지 않음
@@ -35,8 +39,13 @@ export async function generateMetadata({ params }: InvitePageProps): Promise<Met
     itunes: isInviteToken(token)
       ? { appId: APP_STORE_APP_ID, appArgument: `${INVITE_LINK_ORIGIN}/invite/${token}` }
       : { appId: APP_STORE_APP_ID },
-    openGraph: { type: 'website', title, images: [OG_IMAGE] },
-    twitter: { card: 'summary_large_image', title, images: [OG_IMAGE.url] },
+    openGraph: { type: 'website', title, description: DESCRIPTION, images: [OG_IMAGE] },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: DESCRIPTION,
+      images: [OG_IMAGE.url],
+    },
   };
 }
 

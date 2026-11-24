@@ -36,7 +36,9 @@
         "SENTRY_ORG",
         "SENTRY_PROJECT",
         "SENTRY_AUTH_TOKEN",
-        "SENTRY_RELEASE"
+        "SENTRY_RELEASE",
+        "GOOGLE_SITE_VERIFICATION",
+        "NAVER_SITE_VERIFICATION"
       ]
     },
     "transit": {
