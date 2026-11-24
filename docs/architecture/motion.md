@@ -45,7 +45,7 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
   - 입력 필드는 쓰지 않는다(배경색만).
   - 디자인 명세에 없어 적용하지 않은 눌림 요소: `ProfileRadioCard`, `TermsLabel`, `ProfileListItem`, `BundleCard`, `EntryCard`, `InviteMemberCard`, `LocationCard`, `LoginButton`, `FloatingButton`, `CameraButton`, `MenuTabs`, `TextButtonUnderline`, `BunchLabel`. 디자이너 확인 뒤 추가한다.
 - 시간·곡선: 누를 때 100ms, 뗄 때 180ms, `cubic-bezier(0.2, 0, 0, 1)`, 기준점 가운데, 튕김 없음. 헤더 안의 번치 이름 전환은 왼쪽 가운데 기준이라 제목이 옆으로 움직이지 않는다.
-- 유틸리티가 루트의 색 전환(`color`·`background-color`·`border-color`·`opacity`, 기본 75ms)도 함께 정해 `transition`이 서로 덮어쓰지 않는다. 색 전환 시간·곡선이 다르면 `--press-color-duration`·`--press-color-ease`로 바꾼다(칩 300ms, 버튼 CSS Ease Out). 루트에 `transition-colors`를 따로 두지 않는다.
+- 유틸리티가 루트의 색 전환(`color`·`background-color`·`border-color`·`opacity`, 기본 75ms)도 함께 정해 `transition`이 서로 덮어쓰지 않는다. 색 전환 시간·곡선이 다르면 `--press-color-duration`·`--press-color-ease`로 바꾼다(칩 300ms, 버튼 CSS Ease Out). 루트에 `transition-colors`를 따로 두지 않고, 쓰는 쪽도 이 컴포넌트에 `className`으로 `transition-*`를 넘기지 않는다(뒤에 오는 클래스가 평상시 전환을 덮어 뗄 때 축소가 바로 튀어 돌아옴).
 - 비활성(`disabled`, `aria-disabled`, 안의 입력이 비활성)에서는 줄어들지 않는다. 마우스 호버 표시는 칩만 뺐다(디자인이 Hover를 Pressed로 바꿈). 라디오 카드의 선택 전 호버는 이전 시안 그대로 두었다. 동작 줄이기에서는 줄지 않고 색도 전환 없이 바로 바뀐다.
 - CSS `:active`로 처리해 스크롤이 시작되면 브라우저가 눌림을 풀고, 누른 채 영역 밖으로 나가 떼면 `click`이 나지 않는다. iOS·Android 실기기 느낌은 확인 전이다.
 

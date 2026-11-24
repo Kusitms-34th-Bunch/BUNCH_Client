@@ -8,10 +8,10 @@ import {
 } from '../../../icons';
 import { tv } from '../../../utils';
 
-// Figma 공통 모션(칩버튼 모션): 누르는 동안 Hover 모양, 손을 떼면 Selected로 바뀌며 둘 다 Dissolve·Ease out·300ms
-// Hover 모양은 검정 10%(overlay-hover)를 배경 위·글자 아래(-z-10 pseudo, isolate)에 덮음. 마우스 호버와 누르는 동안(active) 같은 모양
+// Figma 공통 모션(칩버튼 모션): 누르는 동안 Pressed 모양, 손을 떼면 Selected로 바뀌며 둘 다 Dissolve·Ease out·300ms
+// Pressed 모양은 검정 10%(overlay-hover)를 배경 위·글자 아래(-z-10 pseudo, isolate)에 덮음. 마우스 호버로는 켜지 않음(2026-11-25 Hover→Pressed)
 // 배경·글자·테두리 색은 transition으로 섞이고(Selected 전환), 오버레이는 투명도로 섞임
-// Figma 실측: Solid 호버 #f5f5f5→#dcdcdc, Avatar 호버는 흰색 기준 #e5e5e5(기본 #f5f5f5와 다름), Outline 호버는 흰색 그대로
+// Figma 실측: Solid Pressed #f5f5f5→#dcdcdc, Avatar Pressed는 흰색 기준 #e5e5e5(기본 #f5f5f5와 다름), Outline Pressed는 흰색 그대로
 // 터치 영역은 after로 위아래만 44px까지 넓힘(가로는 옆 칩과 겹치지 않게 그대로)
 const chipButton = tv({
   base: [
