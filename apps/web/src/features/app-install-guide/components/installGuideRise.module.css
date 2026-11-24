@@ -1,0 +1,25 @@
+/* 안내 화면 등장(Figma 8038:187365·8038:187551), 요소마다 --rise-distance·--rise-duration·--rise-delay를 주고 한 번만 재생
+ * 동작 줄이기에서는 이동 없이 투명도만 0.3초 */
+@keyframes install-guide-rise {
+  from {
+    translate: 0 var(--rise-distance);
+  }
+}
+
+@keyframes install-guide-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.rise {
+  animation:
+    install-guide-rise var(--rise-duration) cubic-bezier(0.25, 0.1, 0.25, 1) var(--rise-delay) both,
+    install-guide-fade var(--rise-duration) cubic-bezier(0.4, 0, 0.2, 1) var(--rise-delay) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: install-guide-fade 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+}
