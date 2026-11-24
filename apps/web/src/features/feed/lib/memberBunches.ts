@@ -1,3 +1,5 @@
+import type { FeedFollowStatus, FeedMemberBunch, FeedViewer } from './types';
+
 const rank = (name: string) => {
   const first = name.trim().charAt(0);
   if (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(first)) return 0;
@@ -12,3 +14,9 @@ export const sortMemberBunches = <T extends { name: string }>(bunches: readonly 
     (a, b) =>
       rank(a.name) - rank(b.name) || a.name.localeCompare(b.name, 'ko', { sensitivity: 'base' }),
   );
+
+/** 지금 번치 기준 팔로우 상태. 소속 번치가 없으면 모두 「팔로우」 */
+export const memberBunchFollowStatus = (
+  viewer: FeedViewer | null | undefined,
+  bunch: FeedMemberBunch,
+): FeedFollowStatus => (viewer === null ? 'none' : bunch.followStatus);

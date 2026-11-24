@@ -6,7 +6,7 @@ import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
-import { type MemberFollowChange, MemberProfileScreen } from './MemberProfileScreen';
+import { MemberProfile, type MemberFollowChange } from './MemberProfile';
 
 const push = vi.fn();
 const toast = vi.fn();
@@ -63,7 +63,7 @@ const renderProfile = (
 ) => {
   const client = createTestQueryClient();
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch });
-  render(<MemberProfileScreen memberId={memberId} links={links} follow={follow} />, {
+  render(<MemberProfile memberId={memberId} links={links} follow={follow} />, {
     wrapper: createQueryWrapper(client),
   });
 };
@@ -80,7 +80,7 @@ beforeEach(() => {
   serveProfile();
 });
 
-describe('MemberProfileScreen', () => {
+describe('MemberProfile', () => {
   it('서버의 닉네임과 참여 번치를 정렬해 보여 준다', async () => {
     renderProfile();
 
@@ -241,7 +241,7 @@ describe('MemberProfileScreen', () => {
 
   it('지금 번치를 받는 중에는 멤버 프로필을 받지 않고 불러오는 중이다', () => {
     server.use(http.get('/api/members/me', () => new Promise<never>(() => {})));
-    render(<MemberProfileScreen memberId="2" links={links} follow={follow} />, {
+    render(<MemberProfile memberId="2" links={links} follow={follow} />, {
       wrapper: createQueryWrapper(createTestQueryClient()),
     });
 

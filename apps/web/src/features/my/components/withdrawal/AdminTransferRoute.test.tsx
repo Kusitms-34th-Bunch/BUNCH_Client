@@ -15,7 +15,7 @@ import {
   markTransferFromGuide,
   peekKeepAgreed,
 } from '../../lib/withdrawalFlow';
-import { AdminTransferScreen } from './AdminTransferScreen';
+import { AdminTransferRoute } from './AdminTransferRoute';
 
 const back = vi.fn();
 const replace = vi.fn();
@@ -56,7 +56,7 @@ beforeEach(() => {
 let queryClient = createTestQueryClient();
 const renderScreen = async () => {
   queryClient = createTestQueryClient();
-  render(<AdminTransferScreen />, { wrapper: createQueryWrapper(queryClient) });
+  render(<AdminTransferRoute />, { wrapper: createQueryWrapper(queryClient) });
   await screen.findByRole('button', { name: '여행쥬아' });
 };
 const openBunch = (name: string) => userEvent.click(screen.getByRole('button', { name }));
@@ -73,7 +73,7 @@ const pickAll = async () => {
   await pick('퇴근런클럽', '지예');
 };
 
-describe('AdminTransferScreen', () => {
+describe('AdminTransferRoute', () => {
   it('서버가 알려 준 메인 관리자 번치를 접힌 상태로 보여 주고 「다음」은 막혀 있다', async () => {
     await renderScreen();
 
@@ -234,7 +234,7 @@ describe('AdminTransferScreen', () => {
 
   it('넘길 번치가 없으면 탈퇴 안내로 돌아간다', async () => {
     mockDb.reset();
-    render(<AdminTransferScreen />, { wrapper: createQueryWrapper() });
+    render(<AdminTransferRoute />, { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/my/withdrawal'));
     expect(toastAfterNavigation).not.toHaveBeenCalled();
@@ -243,7 +243,7 @@ describe('AdminTransferScreen', () => {
   it('탈퇴 안내에서 들어왔는데 넘길 번치가 없으면 탈퇴 안내로 돌아가고 확인 체크를 유지한다', async () => {
     mockDb.reset();
     markTransferFromGuide();
-    render(<AdminTransferScreen />, { wrapper: createQueryWrapper() });
+    render(<AdminTransferRoute />, { wrapper: createQueryWrapper() });
 
     // 기록이 없는 테스트 환경이라 useBackOr가 탈퇴 안내로 바꿔 이동
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/my/withdrawal'));
@@ -279,7 +279,7 @@ describe('AdminTransferScreen', () => {
 
   it('목록을 받지 못하면 탈퇴 안내로 돌아가 그 화면에서 실패를 알린다', async () => {
     server.use(http.get('/api/members/me/withdrawal/check', () => fail(500, 'COMMON_500')));
-    render(<AdminTransferScreen />, { wrapper: createQueryWrapper() });
+    render(<AdminTransferRoute />, { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/my/withdrawal'));
     expect(toastAfterNavigation).toHaveBeenCalledWith(

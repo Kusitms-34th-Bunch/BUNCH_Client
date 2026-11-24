@@ -9,7 +9,7 @@ import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { clearHiddenAds } from '../lib/hiddenAds';
 import { feedKeys } from '../queries/keys';
-import { FeedScreen } from './FeedScreen';
+import { Feed } from './Feed';
 
 const push = vi.fn();
 const toast = vi.fn();
@@ -159,7 +159,7 @@ const serveFeed = (items: unknown[]) => server.use(http.get('/api/feed', () => o
 const renderFeed = (bunch: { id: string; name: string } | null) => {
   const client = createTestQueryClient();
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch });
-  return render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });
+  return render(<Feed links={links} />, { wrapper: createQueryWrapper(client) });
 };
 
 const OWN = { id: '1', name: '여행가조' };
@@ -201,7 +201,7 @@ beforeEach(() => {
   toast.mockClear();
 });
 
-describe('FeedScreen', () => {
+describe('Feed', () => {
   it('숨긴 광고는 안내 뒤 목록에서 빠지고, 초점은 끝 안내로 옮긴다', async () => {
     renderFeed(OWN);
     const ad = await screen.findByRole('article', { name: '광고 플로디스튜디오' });
@@ -424,7 +424,7 @@ describe('FeedScreen', () => {
       pages: [page(FOLLOWING_ITEMS, 'old')],
       pageParams: [null],
     });
-    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });
+    render(<Feed links={links} />, { wrapper: createQueryWrapper(client) });
 
     await waitFor(() => expect(cursors).toEqual([null, 'next']));
     expect(cursors).not.toContain('old');
@@ -580,7 +580,7 @@ describe('FeedScreen', () => {
         pages: [page([...FOLLOWING_ITEMS, ...PUBLIC_ITEMS])],
         pageParams: [undefined],
       });
-      const { container } = render(<FeedScreen links={links} />, {
+      const { container } = render(<Feed links={links} />, {
         wrapper: createQueryWrapper(client),
       });
 
@@ -679,7 +679,7 @@ describe('FeedScreen', () => {
           }),
       ),
     );
-    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+    render(<Feed links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '일시적인 오류가 발생했어요. 다시 시도해 주세요',
@@ -698,7 +698,7 @@ describe('FeedScreen', () => {
       http.get('/api/members/me', () => fail(500, 'COMMON_500'), { once: true }),
       http.get('/api/feed', () => fail(500, 'X')),
     );
-    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+    render(<Feed links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
 
     await user.click(await screen.findByRole('button', { name: '다시 시도' }));
 
@@ -735,7 +735,7 @@ describe('FeedScreen', () => {
       requests.push(new URL(request.url).pathname);
     });
     server.use(http.get('/api/members/me', () => new Promise<never>(() => {})));
-    const { unmount } = render(<FeedScreen links={links} />, {
+    const { unmount } = render(<Feed links={links} />, {
       wrapper: createQueryWrapper(createTestQueryClient()),
     });
     expect(screen.getByTestId('feed-bunch-placeholder')).toBeInTheDocument();
@@ -744,7 +744,7 @@ describe('FeedScreen', () => {
     unmount();
 
     server.use(http.get('/api/members/me', () => fail(500, 'COMMON_500')));
-    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+    render(<Feed links={links} />, { wrapper: createQueryWrapper(createTestQueryClient()) });
     await waitFor(() => expect(screen.queryByTestId('feed-bunch-placeholder')).toBeNull());
     expect(screen.getByRole('link', { name: '알림' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /번치 홈/ })).toBeNull();
@@ -754,7 +754,7 @@ describe('FeedScreen', () => {
     server.use(http.put('/api/bundles/:bundleId/like', () => new Promise<never>(() => {})));
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: OWN });
-    render(<FeedScreen links={links} />, { wrapper: createQueryWrapper(client) });
+    render(<Feed links={links} />, { wrapper: createQueryWrapper(client) });
     await cardsLoaded();
     const publicCard = () => cards().at(-1)!;
     await userEvent.click(within(publicCard()).getByRole('button', { name: /좋아요/ }));
