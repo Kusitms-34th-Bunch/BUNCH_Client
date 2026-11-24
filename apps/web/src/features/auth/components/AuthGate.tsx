@@ -1,11 +1,10 @@
 'use client';
 
-import { Button } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
 import { appBridge, isHandedOffToNativeTabs, isNativeShell } from '@/shared/bridge/client';
-import { PageShell } from '@/shared/components/layout/PageShell';
+import { PageErrorState } from '@/shared/components/layout/PageErrorState';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
 import { setAnalyticsConsent } from '@/shared/config/posthog';
 import { usePushDeviceSync } from '@/shared/hooks/native/usePushDeviceSync';
@@ -16,7 +15,6 @@ import {
 import { readPendingInvitation } from '@/shared/lib/pendingInvitation';
 import { useClearPersistedQueriesWhen, usePersistedOwnerReady } from '@/shared/query/persistence';
 import { SIGNUP_PATHS } from '../constants/paths';
-import { STATUS_CHECK_FAILURE_MESSAGE } from '../hooks/useSocialLogin';
 import { type SessionState, resolveAccess } from '../lib/accessPolicy';
 import { markIntroSeen, readIntroSeen } from '../lib/introSeen';
 import { type PostLoginDestinations, resolvePostLoginPath } from '../lib/postLoginPath';
@@ -164,26 +162,15 @@ export function AuthGate({ destinations, children }: AuthGateProps) {
   }, [ready]);
 
   if (!session && !isPending) {
-    // Figma에 없는 상태. 번치 홈 오류 화면(`BunchHomeError`)과 같은 모양. 다시 시도 중에는 중복 요청만 막고 버튼은 그대로 둠(포커스 유지)
+    // 다시 시도 중에는 중복 요청만 막고 버튼은 그대로 둠(포커스 유지)
     return (
-      <PageShell>
-        <h1 className="sr-only">BUNCH</h1>
-        <div className="gap-s8 px-s8 flex h-full flex-col items-center justify-center">
-          <p role="alert" className="typography-body-3-semibold text-text-secondary text-center">
-            {STATUS_CHECK_FAILURE_MESSAGE}
-          </p>
-          <Button
-            variant="tertiary"
-            size="md"
-            aria-busy={isFetching || undefined}
-            onClick={() => {
-              if (!isFetching) void refetch();
-            }}
-          >
-            다시 시도
-          </Button>
-        </div>
-      </PageShell>
+      <PageErrorState
+        title="BUNCH"
+        retrying={isFetching}
+        onRetry={() => {
+          if (!isFetching) void refetch();
+        }}
+      />
     );
   }
   if (
