@@ -311,6 +311,31 @@ describe('useDraft 저장', () => {
     expect(ready(result.current.state).draft.title).toBe('내 제목');
   });
 
+  it('충돌 뒤 최신 상세를 받지 못하면 곧바로 같은 버전을 다시 보내 포기하지 않고 일시 오류 간격으로 기다린다', async () => {
+    const { id, result } = await renderReady();
+    let saves = 0;
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/date', () => {
+        saves += 1;
+        return fail(409, 'BUNDLE_003');
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => fail(500, 'COMMON_500')),
+    );
+
+    act(() => result.current.actions.setDate('2026-10-18'));
+
+    await waitFor(() => expect(saves).toBe(1), SAVE_WAIT);
+    // 짧은 충돌 간격(200ms부터)이면 이 사이에 여러 번 보내고 약 3초 만에 저장 실패로 포기함
+    await act(() => new Promise((resolve) => setTimeout(resolve, 2000)));
+    expect(saves).toBe(1);
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
+    expect(ready(result.current.state).draft.date).toBe('2026-10-18');
+
+    // 서버가 다시 응답하면 다음 재시도(3초 뒤)에서 최신 상세를 받아 저장을 마침(남은 입력이 다음 테스트로 새지 않음)
+    server.resetHandlers();
+    await waitFor(() => expect(serverBundle(id)?.date).toBe('2026-10-18'), { timeout: 8000 });
+  });
+
   it('권한·상태 오류는 다시 시도하지 않고 한 번만 안내하며 입력은 그대로 둔다', async () => {
     const { result } = await renderReady();
     let calls = 0;
