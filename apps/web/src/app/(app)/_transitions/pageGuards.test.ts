@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { guardOutgoing, guardSheet, guardZoom } from './pageGuards';
+import { guardPush, guardOutgoing, guardSheet, guardZoom } from './pageGuards';
 
 type Disposal = { reason: 'finished'; owns: (_element: HTMLElement) => boolean };
 type Track = { element: HTMLElement; onDispose?: (_context: Disposal) => void };
@@ -229,5 +229,56 @@ describe('guardSheet', () => {
     expect(sheetElement.dataset.sheetBand).toBe('');
     expect(sheetElement.dataset.appBackground).toBe('brand');
     expect(frames.size).toBe(1);
+  });
+});
+
+describe('guardPush', () => {
+  it('두 화면에 자기 배경색의 상태 바 띠를 붙이고 나가는 화면 표식도 붙인다', () => {
+    const incoming = screen('in');
+    const outgoing = screen('out', 'brand-subtle-1');
+
+    guardPush(fakeAnimation({ in: { element: incoming }, out: { element: outgoing } }));
+
+    expect(incoming.dataset.pushBand).toBe('');
+    expect(incoming.style.boxShadow).toContain('var(--color-surface-primary)');
+    expect(outgoing.dataset.pushBand).toBe('');
+    expect(outgoing.style.boxShadow).toContain('var(--color-surface-brand-subtle-1)');
+    expect(outgoing.dataset.pageLeaving).toBe('');
+  });
+
+  it('투명 배경 화면(로그인 영상)에는 띠를 붙이지 않는다', () => {
+    const incoming = screen('in', 'transparent');
+
+    guardPush(fakeAnimation({ in: { element: incoming }, out: { element: screen('out') } }));
+
+    expect(incoming.dataset.pushBand).toBeUndefined();
+    expect(incoming.style.boxShadow).toBe('');
+  });
+
+  it('같은 화면에 sheet 띠가 남아 있으면 화면 이동 정리가 그 띠를 지우지 않는다', () => {
+    const page = screen('in');
+    const track: Track = { element: page };
+    guardPush(fakeAnimation({ in: track, out: { element: screen('out') } }));
+    page.dataset.sheetBand = '';
+
+    track.onDispose?.(owned());
+
+    expect(page.dataset.pushBand).toBeUndefined();
+    expect(page.style.boxShadow).not.toBe('');
+  });
+
+  it('전환이 끝나면 띠를 걷고, 같은 화면을 새 전환이 맡았으면 이전 정리가 새 띠를 지우지 않는다', () => {
+    const page = screen('in', 'secondary');
+    const first: Track = { element: page };
+    guardPush(fakeAnimation({ in: first, out: { element: screen('out') } }));
+    const second: Track = { element: page };
+    guardPush(fakeAnimation({ in: second, out: { element: screen('out') } }));
+
+    first.onDispose?.(owned());
+    expect(page.dataset.pushBand).toBe('');
+
+    second.onDispose?.(owned());
+    expect(page.dataset.pushBand).toBeUndefined();
+    expect(page.style.boxShadow).toBe('');
   });
 });

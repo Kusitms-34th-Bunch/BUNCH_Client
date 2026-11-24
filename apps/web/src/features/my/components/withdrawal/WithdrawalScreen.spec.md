@@ -27,7 +27,7 @@
 
 - Path·params·search: `/my/withdrawal`, 없음. 입구는 MY 메뉴 「탈퇴하기」(`MY_PATHS.withdrawal`).
 - 접근 권한·guard: `(app)` 그룹 기준을 따른다. 추가한 guard는 없다.
-- Layout·navigation: `(main)` 밖이라 하단 탭이 없다. page가 전환 경계(`data-ssgoi-transition="/my/withdrawal"`)를 두고 MY와 다른 하위 화면과 같은 미는 slide(`menuSubSlide`)로 오간다. 뒤로 가기는 `useBackOr(MY_PATHS.home)`.
+- Layout·navigation: `(main)` 밖이라 하단 탭이 없다. page가 전환 경계(`data-ssgoi-transition="/my/withdrawal"`)를 두고 MY와 다른 하위 화면과 같은 미는 slide(`pushSlide`)로 오간다. 뒤로 가기는 `useBackOr(MY_PATHS.home)`.
 
 ## 상태와 흐름
 

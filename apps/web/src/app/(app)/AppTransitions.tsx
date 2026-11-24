@@ -27,21 +27,24 @@ import {
   easeOutIntegrator,
 } from '@/shared/components/layout/easeOutIntegrator.internal';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { guardHero, guardOutgoing, guardSheet, guardZoom } from './_transitions/pageGuards';
+import {
+  guardHero,
+  guardOutgoing,
+  guardPush,
+  guardSheet,
+  guardZoom,
+} from './_transitions/pageGuards';
 import { tabCrossfade } from './_transitions/tabCrossfade';
 
-const ONBOARDING_TRANSITION_DURATION_MS = 300;
 const SIGNUP_DISSOLVE_DURATION_MS = 300;
-// 기획: 추천 번들 상세 진입은 Slide In(왼쪽 방향)·나갈 때 Slide Out(오른쪽 방향), Ease In, 200ms
-const BUNDLE_DETAIL_SLIDE_DURATION_MS = 200;
 // 번치 전환 시트 「새로운 번치 추가하기」 → 번치 시작 선택: 화면설계서는 Dissolve 150ms지만 폰에서 바로 바뀐 것처럼 보여 axis y로(2026-11-20 사용자 결정)
 const BUNCH_ADD_AXIS_DURATION_MS = 300;
 // 인트로 → 로그인 교차 디졸브 시간(디자이너 요청, 화면설계서 값 없음). 흰 가이드에서 어두운 영상 화면으로 바뀌어 가입 화면(300ms)보다 천천히
 const INTRO_LOGIN_DISSOLVE_DURATION_MS = 500;
-// 더보기 메뉴 → 하위 화면은 한 단계 들어가는 이동이라 미는 slide 300ms(화면설계서에 정의 없음, 2026-11-01 디자이너 요청)
-const BUNCH_MENU_SUB_SLIDE_DURATION_MS = 300;
-// 더보기 메뉴·알림 목록 진입 drill 시간. 화면설계서 Move in / ← / Ease out / 150ms가 빨라 보여 200ms(2026-11-02), 다시 250ms(2026-11-06 사용자 결정)
-const BUNCH_DRILL_DURATION_MS = 250;
+// 화면 이동(drill·slide) 시간·곡선: 설계서 값(150~300ms)보다 길고, motion.md 기본(ease-out)과 달리 천천히 시작해 길게 감속(근거 docs/architecture/motion.md)
+// 실기기는 새 화면 첫 그림까지 약 90ms가 걸려 그동안 이동이 지나감(ease-out 250ms는 첫 프레임에 약 48%)
+const PUSH_DURATION_MS = 350;
+const PUSH_EASING = [0.4, 0, 0.2, 1] as const;
 // 가입 완료 → 번치 시작, 초대 참여 완료 → 피드: 한 흐름을 마치고 다음 장면으로 넘어가는 이동(화면설계서에 정의 없음, 2026-11-20 사용자 결정)
 const SCENE_CHANGE_DURATION_MS = 300;
 
@@ -51,8 +54,13 @@ const tuneTransition =
     animation.set({ integrator: easeOutIntegrator(durationMs) });
     guardOutgoing(animation);
   };
-const tuneSlide = tuneTransition(ONBOARDING_TRANSITION_DURATION_MS);
-const transition = slide({}, { override: { forward: tuneSlide, backward: tuneSlide } });
+// 상태 바 영역도 화면마다 자기 색 띠로 함께 밀림(guardPush)
+const tunePush = ({ animation }: { animation: MultiAnimation<'out' | 'in'> }) => {
+  animation.set({ integrator: cubicBezierIntegrator(PUSH_DURATION_MS, PUSH_EASING) });
+  guardPush(animation);
+};
+// 순서가 있는 단계·한 단계 들어가는 하위 화면의 미는 slide(온보딩·가입·메뉴 하위·MY 하위·번들 작성 하위·추천 번들)
+const pushSlide = slide({}, { override: { forward: tunePush, backward: tunePush } });
 // 기획: 가입 화면의 헤더 뒤로 가기는 Dissolve / Ease out / 300ms. fade는 나가는 화면이 사라진 뒤 들어오는 화면이 나타나는 순차 방식이라
 // 단계마다 절반씩 써서 전체 300ms 유지. 규칙은 두 방향에 모두 적용
 const tuneDissolve = tuneTransition(SIGNUP_DISSOLVE_DURATION_MS / 2);
@@ -67,16 +75,6 @@ const introDissolve = fade(
   {},
   { override: { forward: tuneIntroDissolve, backward: tuneIntroDissolve } },
 );
-const tuneBundleSlide = tuneTransition(BUNDLE_DETAIL_SLIDE_DURATION_MS);
-const tuneMenuSubSlide = tuneTransition(BUNCH_MENU_SUB_SLIDE_DURATION_MS);
-const menuSubSlide = slide(
-  {},
-  { override: { forward: tuneMenuSubSlide, backward: tuneMenuSubSlide } },
-);
-const bundleSlide = slide(
-  {},
-  { override: { forward: tuneBundleSlide, backward: tuneBundleSlide } },
-);
 // SSGOI axis y(방향형): 열 때 새 화면이 아래에서 올라오고, 닫기(뒤로 가기)는 위에서 내려감. 시트에서 이어져 새 흐름을 여는 이동
 const tuneBunchAdd = tuneTransition(BUNCH_ADD_AXIS_DURATION_MS);
 const bunchAddAxis = axis(
@@ -90,12 +88,11 @@ const sceneChange = axis(
   { override: { forward: tuneSceneChange, backward: tuneSceneChange } },
 );
 // 번치 탭 ↔ 더보기 메뉴·알림 목록(앞으로 들어가는 이동): SSGOI drill(parallax) 프리셋
-// 들어오는 화면은 오른쪽에서, 뒤 화면은 왼쪽으로 20% 함께 밀림. 시간·곡선만 Ease out / 250ms로 맞춤
-const tuneBunchDrill = tuneTransition(BUNCH_DRILL_DURATION_MS);
+// 들어오는 화면은 오른쪽에서, 뒤 화면은 왼쪽으로 20% 함께 밀림
 const bunchDrill = drill(
   {},
   {
-    override: { forward: tuneBunchDrill, backward: tuneBunchDrill },
+    override: { forward: tunePush, backward: tunePush },
   },
 );
 // 두 화면이 서로 앞으로 들어가는 사이(알림 ↔ 번치 탭·번들 상세, 다른 번치 ↔ 팔로우 목록 등)의 drill
@@ -187,7 +184,7 @@ const rules: SsgoiTransitionRule[] = [
     from: BUNDLE_SELECT_PATHS.members,
     to: BUNDLE_SELECT_PATHS.select,
     bidirectional: true,
-    transition: bundleSlide,
+    transition: pushSlide,
   },
   {
     from: BUNCH_HOME_PATHS.home,
@@ -403,146 +400,146 @@ const rules: SsgoiTransitionRule[] = [
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.profile,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // MY 프로필 행 → 개인 프로필 수정도 번치 프로필 편집과 같은 미는 slide(화면설계서에 전환 정의 없음, 2026-11-05 사용자 결정)
   {
     from: MY_PATHS.home,
     to: MY_PATHS.profile,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // MY 알림 설정도 같은 미는 slide(화면설계서에 전환 정의 없음, 프로필 수정과 맞춤)
   {
     from: MY_PATHS.home,
     to: MY_PATHS.notifications,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // MY 회원 탈퇴도 같은 미는 slide(화면설계서에 전환 정의 없음)
   {
     from: MY_PATHS.home,
     to: MY_PATHS.withdrawal,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // 탈퇴 안내 → 관리자 권한 이전도 같은 미는 slide(화면설계서에 전환 정의 없음)
   {
     from: MY_PATHS.withdrawal,
     to: MY_PATHS.withdrawalTransfer,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // MY 「약관 및 개인정보」도 다른 MY 하위 화면과 같은 slide(화면설계서는 Dissolve 200ms, 목록 안에서 혼자 달라 통일 #500)
   {
     from: MY_PATHS.home,
     to: MY_PATHS.termsAndPrivacy,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // 약관 및 개인정보 → 약관 원문 화면은 같은 미는 slide(화면설계서에 전환 정의 없음). 동적 route라 고정 id 사용
   {
     from: MY_PATHS.termsAndPrivacy,
     to: MY_PATHS.transitionIds.terms,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // 멤버 관리와 권한 안내도 메뉴 하위 화면과 같은 미는 slide(화면설계서에 전환 정의 없음)
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.members,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   {
     from: BUNCH_HOME_PATHS.members,
     to: BUNCH_HOME_PATHS.roles,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.leave,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // 번치 삭제 안내 → 확인 문구 입력도 한 단계씩 들어가는 slide
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.delete,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   {
     from: BUNCH_HOME_PATHS.delete,
     to: BUNCH_HOME_PATHS.deleteConfirm,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.blocked,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   // 멤버 초대는 멤버 관리 헤더와 더보기 메뉴 두 곳에서 들어옴
   {
     from: BUNCH_HOME_PATHS.members,
     to: BUNCH_HOME_PATHS.invite,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   {
     from: BUNCH_HOME_PATHS.menu,
     to: BUNCH_HOME_PATHS.invite,
     bidirectional: true,
-    transition: menuSubSlide,
+    transition: pushSlide,
   },
   {
     from: BUNDLE_SELECT_PATHS.select,
     to: BUNDLE_SELECT_PATHS.transitionIds.recommendation,
     bidirectional: true,
-    transition: bundleSlide,
+    transition: pushSlide,
   },
   // 번들 작성 화면 ↔ 참여 멤버 관리·사진 크게 보기는 온보딩과 같은 슬라이드(300ms). 뒤로 가기는 방향이 반대
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.members,
     bidirectional: true,
-    transition,
+    transition: pushSlide,
   },
   // 작성 화면 → 대표 사진 투표(「픽하기 >」)도 참여 멤버 관리와 같은 슬라이드
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.pick,
     bidirectional: true,
-    transition,
+    transition: pushSlide,
   },
   // 작성 화면 → 공개 범위(업로드 직전)도 같은 슬라이드
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.visibility,
     bidirectional: true,
-    transition,
+    transition: pushSlide,
   },
   // 작성 화면 → 사진 상세(크게 보기)도 같은 슬라이드
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.viewer,
     bidirectional: true,
-    transition,
+    transition: pushSlide,
   },
   {
     from: BUNDLE_PATHS.transitionIds.draft,
     to: BUNDLE_PATHS.transitionIds.photoAdd,
     bidirectional: true,
-    transition: bundleSlide,
+    transition: pushSlide,
   },
   // 인트로 → 로그인: 화면설계서에 없어 디졸브. 흰 화면에서 어두운 영상 화면으로 바뀌어 가입 화면보다 천천히. 앞으로만 넘어가 한 방향
   { from: INTRO_PATH, to: LOGIN_PATH, transition: introDissolve },
   { from: SIGNUP_PATHS.terms, to: LOGIN_PATH, transition: dissolve },
   // 약관 ↔ 프로필: 가입 단계라 온보딩과 같은 슬라이드, 뒤로 가기는 반대 방향(화면설계서의 디졸브 대신, 2026-11-11 결정)
-  { from: SIGNUP_PATHS.terms, to: SIGNUP_PATHS.profile, transition },
+  { from: SIGNUP_PATHS.terms, to: SIGNUP_PATHS.profile, transition: pushSlide },
   {
     from: SIGNUP_TRANSITION_IDS.termsDocument,
     to: SIGNUP_PATHS.terms,
@@ -551,12 +548,12 @@ const rules: SsgoiTransitionRule[] = [
   // 가입·참여를 마치고 다음 장면으로: 되돌아오지 않는 이동(replace)이라 한 방향
   { from: SIGNUP_PATHS.profile, to: ONBOARDING_PATHS.start, transition: sceneChange },
   { from: ONBOARDING_PATHS.joinBunchComplete, to: ONBOARDING_PATHS.feed, transition: sceneChange },
-  { from: ONBOARDING_PATHS.start, to: ONBOARDING_PATHS.createBunch, transition },
-  { from: ONBOARDING_PATHS.start, to: ONBOARDING_PATHS.joinBunch, transition },
+  { from: ONBOARDING_PATHS.start, to: ONBOARDING_PATHS.createBunch, transition: pushSlide },
+  { from: ONBOARDING_PATHS.start, to: ONBOARDING_PATHS.joinBunch, transition: pushSlide },
   {
     from: ONBOARDING_PATHS.createBunchComplete,
     to: ONBOARDING_PATHS.createBunchInvite,
-    transition,
+    transition: pushSlide,
   },
 ];
 
@@ -572,7 +569,7 @@ export function AppTransitions({ children }: { children: ReactNode }) {
           iOS 쉘의 로그인 화면(transparent)도 WebView 뒤 네이티브 배경 영상이 비치도록 비움 */}
       {/* 접는 헤더 화면(피드)은 본문이 상태 표시줄 뒤까지 올라가므로 위로 상태 표시줄 높이만큼만 더 보이게 자름(가로 전환은 그대로 틀 안) */}
       {/* overflow-x:clip + overflow-y:visible은 WebKit이 세로 ±2^24px 클립 층으로 만들어 iOS에서 내용이 1pt 밀리고 맨 위에 흰 선이 생겨 유한한 clip-path를 씀 */}
-      <div className="bg-surface-primary relative isolate flex min-h-0 flex-1 flex-col overflow-hidden has-data-collapsible-header:overflow-visible has-data-collapsible-header:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-data-sheet-band:overflow-visible has-data-sheet-band:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_calc(var(--safe-area-bottom)*-1)_0)] has-[[data-app-background=brand],[data-app-background=transparent],[data-brand-leaving]]:bg-transparent">
+      <div className="bg-surface-primary relative isolate flex min-h-0 flex-1 flex-col overflow-hidden has-data-collapsible-header:overflow-visible has-data-collapsible-header:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-data-push-band:overflow-visible has-data-push-band:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-data-sheet-band:overflow-visible has-data-sheet-band:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_calc(var(--safe-area-bottom)*-1)_0)] has-[[data-app-background=brand],[data-app-background=transparent],[data-brand-leaving]]:bg-transparent">
         {children}
       </div>
     </Ssgoi>

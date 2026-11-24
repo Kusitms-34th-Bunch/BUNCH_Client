@@ -27,7 +27,7 @@
 
 - Path·params·search: `/my/withdrawal/transfer`, 없음. 입구는 탈퇴 안내의 권한 이전 안내 창 「권한 넘기러 가기」.
 - 접근 권한·guard: `(app)` 그룹 기준을 따른다. 추가한 guard는 없다. 넘길 번치가 없으면(직접 진입, 그사이 모두 넘어감) 토스트 없이 탈퇴 안내로 돌아간다. 탈퇴 안내에서 들어왔으면 확인 체크를 유지한다.
-- Layout·navigation: page가 전환 경계(`data-ssgoi-transition="/my/withdrawal/transfer"`)를 두고, 탈퇴 안내와 미는 slide(`menuSubSlide`)로 오간다. 뒤로 가기는 `useBackOr(MY_PATHS.withdrawal)`이다. 완료 뒤에는 탈퇴 안내의 「권한 넘기러 가기」로 들어왔으면(`markTransferFromGuide`) 뒤로 가기로 돌아가고, 주소로 바로 들어왔으면 탈퇴 안내로 `replace`한다. 항상 `replace`하면 정상 흐름에서 탈퇴 안내가 기록에 두 번 남는다.
+- Layout·navigation: page가 전환 경계(`data-ssgoi-transition="/my/withdrawal/transfer"`)를 두고, 탈퇴 안내와 미는 slide(`pushSlide`)로 오간다. 뒤로 가기는 `useBackOr(MY_PATHS.withdrawal)`이다. 완료 뒤에는 탈퇴 안내의 「권한 넘기러 가기」로 들어왔으면(`markTransferFromGuide`) 뒤로 가기로 돌아가고, 주소로 바로 들어왔으면 탈퇴 안내로 `replace`한다. 항상 `replace`하면 정상 흐름에서 탈퇴 안내가 기록에 두 번 남는다.
 
 ## 상태와 흐름
 

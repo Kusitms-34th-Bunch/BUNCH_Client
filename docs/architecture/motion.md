@@ -18,8 +18,16 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 ## Easing과 duration
 
 - 진입·이탈은 `ease-out`, 화면 안에서의 이동·모핑은 `ease-in-out`, hover·색상 전환은 `ease`, 등속(마퀴, 진행바)은 `linear`를 쓴다.
-- 기본 진입에는 `ease-in`을 피한다. 온보딩의 페이지 Slide In은 끝에서 감속하도록 Ease Out 300ms를 적용한다.
-- duration 기준: 버튼 피드백 100–160ms, 툴팁·작은 팝오버 125–200ms, 드롭다운·셀렉트 150–250ms, 모달·drawer 200–500ms. UI 애니메이션은 300ms를 넘지 않는다.
+- 기본 진입에는 `ease-in`을 피한다.
+- duration 기준: 버튼 피드백 100–160ms, 툴팁·작은 팝오버 125–200ms, 드롭다운·셀렉트 150–250ms, 모달·drawer 200–500ms. UI 애니메이션은 300ms를 넘지 않는다. 화면 이동은 아래 「화면 이동 시간」의 예외다.
+
+### 화면 이동 시간
+
+- 한 단계 들어가는 이동(`drill`)과 단계·하위 화면으로 미는 이동(`slide`)은 모두 350ms, `cubic-bezier(0.4, 0, 0.2, 1)`(천천히 시작해 길게 감속)이다(#560, FE 판단). 값은 `AppTransitions.tsx`의 `PUSH_DURATION_MS`·`PUSH_EASING` 하나로 둔다.
+- 위 진입 기본(ease-out)과 다른 이유: 실기기는 새 화면을 처음 그리기까지 약 90ms가 걸려 그동안 이동이 지나간다. ease-out 250ms는 첫 보이는 프레임에 이미 약 48%였고(120fps 녹화, 브라우저는 6~11%), 같은 90ms 동안 ease-out 300ms는 45%, 200ms는 63%를 지난다(계산값). 새 곡선 350ms는 약 25%이고 마지막 25% 시간의 이동도 9%에서 4%로 줄어 끝이 부드럽다.
+- 이동하는 동안 두 화면은 각자 배경색의 상태 바 높이 띠를 달고 함께 밀린다(`_transitions/pageGuards.ts`의 `guardPush`). 상태 바 영역을 `AppFrame`이 따로 페이드하면 화면이 도착하기 전에 색이 먼저 바뀌었다.
+- 맨 위로(탭 다시 누르기·피드 로고)도 같은 시간·곡선으로 직접 스크롤한다(`shared/lib/navigation/scrollPageToTop.ts`). 브라우저 기본 smooth는 거리마다 속도가 달라 WebKit에서 시작·끝이 끊겨 보였다. 두 화면보다 멀면 한 화면 위치로 바로 옮긴 뒤 그만큼만 움직이고, 손가락·휠이 닿으면 멈춘다.
+- 실기기 확인은 전이다.
 
 ## 물리감
 
@@ -116,7 +124,7 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 3. 프리셋으로 표현할 수 없을 때만 직접 만들고, 해당 기능 스펙의 「모션」 절에 이유를 적는다. 지금은 하단 탭 크로스페이드(결정 기록 017, 프리셋 `fade`가 순차 방식이라 같은 헤더가 흐려짐)가 해당한다.
 4. 어느 전환이든 나가는 화면 처리(`inert`, `data-page-leaving`)는 `override`로 더한다.
 
-- 설정: `apps/web/src/app/(app)/AppTransitions.tsx`의 경로 쌍과 `ONBOARDING_TRANSITION_DURATION_MS`를 수정한다. 전역 provider만 공유하며, 등록하지 않은 이동과 첫 진입에는 전환을 적용하지 않는다. 나가는 화면 표식·상태 바 처리는 같은 폴더의 `_transitions/pageGuards.ts`, 하단 탭 크로스페이드는 `_transitions/tabCrossfade.ts`에 둔다.
+- 설정: `apps/web/src/app/(app)/AppTransitions.tsx`의 경로 쌍과 화면 이동 공통 시간(`PUSH_DURATION_MS`·`PUSH_EASING`)을 수정한다. 전역 provider만 공유하며, 등록하지 않은 이동과 첫 진입에는 전환을 적용하지 않는다. 나가는 화면 표식·상태 바 처리는 같은 폴더의 `_transitions/pageGuards.ts`, 하단 탭 크로스페이드는 `_transitions/tabCrossfade.ts`에 둔다.
 - 접근성: `prefers-reduced-motion` 변경을 구독해 전환 규칙을 비운다. SSGOI가 함수형 규칙을 캐시하므로 함수 안에서 설정을 읽는 것으로 대체하지 않는다. 전환 중 이전 화면은 `inert`로 포커스·접근성 탐색에서 제외하고 종료 시 복원한다.
 - 검증: 진행도 단위 테스트와 온보딩 회귀 테스트, Chromium의 순방향·뒤로 가기·입력 유지·헤더 유지·동작 줄이기 변경·좁은 화면/넓은 화면 중간 프레임을 확인한다. iOS WKWebView와 실제 화면 읽기 도구는 별도 확인이 필요하다. 네이티브 스와이프와 전환 중 빠른 연속 이동도 실기기에서 확인한다.
 - 화면별 전환(어느 이동에 어떤 프리셋·시간을 썼고 어떻게 확인했는지)은 각 기능 스펙의 「모션」 절에 있다(2026-11-23 옮김).

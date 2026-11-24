@@ -1,5 +1,7 @@
+import type { ComponentProps } from 'react';
 import { type MultiAnimation } from '@ssgoi/react';
 import { type WebAnimation } from '@ssgoi/react/view-transitions';
+import type { PageShell } from '@/shared/components/layout/PageShell';
 
 // 나가는 화면은 포커스·보조기술에서 제외(inert)하고 data-page-leaving 표식(AppFrame이 그 화면의 배경 표식을 무시해 상태 바 영역도 함께 전환)
 // 중단된 이전 전환에서 돌아오는 DOM은 다시 조작 가능하게 처리
@@ -76,7 +78,8 @@ const clearSheetMarks = (element: HTMLElement) => {
   delete element.dataset.sheetArrived;
   delete element.dataset.sheetBand;
   delete element.dataset.appBackground;
-  element.style.removeProperty('box-shadow');
+  // 화면 이동 띠가 같은 요소에 붙어 있으면 그 띠는 guardPush 정리에 맡김
+  if (element.dataset.pushBand === undefined) element.style.removeProperty('box-shadow');
 };
 // sheet 프리셋은 움직이는 화면(sheet)만 track이라 뒤 화면은 경계 id로 찾아 나가는 화면 표식(상태 바 색 즉시 전환)
 // 중단된 이전 전환의 노드가 남아 있을 수 있어 같은 id 중 가장 나중에 붙은 노드 사용
@@ -151,8 +154,64 @@ export const guardSheet =
       // 띠는 AppFrame 색 전환(150ms)이 끝난 뒤에 걷음(도착 순간 덜 바뀐 색이 비치지 않게)
       // ponytail: 고정 지연, 전환 시간이 바뀌면 함께 맞춤
       guard.timer = setTimeout(() => {
-        sheetElement.style.removeProperty('box-shadow');
+        if (sheetElement.dataset.pushBand === undefined) {
+          sheetElement.style.removeProperty('box-shadow');
+        }
         delete sheetElement.dataset.sheetBand;
       }, SHEET_BAND_HOLD_MS);
     };
   };
+
+// 화면 배경 표식 → 상태 바 띠 색(AppFrame이 칠하는 색과 같음, 투명은 띠 없음)
+type BandBackground = Exclude<
+  NonNullable<ComponentProps<typeof PageShell>['data-app-background']>,
+  'transparent'
+>;
+// 키를 PageShell 목록으로 묶어 배경 값이 늘면 typecheck에서 걸림
+const BAND_COLORS: Record<BandBackground, string> = {
+  'brand-subtle-1': 'var(--color-surface-brand-subtle-1)',
+  brand: 'var(--color-surface-brand)',
+  secondary: 'var(--color-surface-secondary)',
+  'orange-50': 'var(--color-primitive-orange-50)',
+  'pink-50': 'var(--color-primitive-pink-50)',
+  'green-50': 'var(--color-primitive-green-50)',
+};
+const bandColorOf = (page: HTMLElement) => {
+  const marker = page.matches('[data-app-background]')
+    ? page
+    : page.querySelector('[data-app-background]');
+  const value = marker?.getAttribute('data-app-background');
+  if (value === 'transparent') return undefined;
+  return (value && BAND_COLORS[value as BandBackground]) || 'var(--color-surface-primary)';
+};
+// 요소마다 마지막으로 띠를 붙인 전환(중단 뒤 이전 전환의 정리가 새 띠를 지우지 않게)
+const pushBands = new WeakMap<HTMLElement, object>();
+/**
+ * drill·slide 동안 두 화면 위에 상태 바 높이의 자기 색 띠를 붙여 상태 바 영역도 화면과 함께 밀림
+ * (AppFrame 색은 띠 아래에서 바뀌어 보이지 않음, 전환 영역은 data-push-band 동안 위로 넓힘)
+ */
+export const guardPush = (animation: MultiAnimation<'out' | 'in'>) => {
+  guardOutgoing(animation);
+  for (const track of [
+    animation.select('in').getMotionTracks()[0],
+    animation.select('out').getMotionTracks()[0],
+  ]) {
+    if (!track) continue;
+    const page = track.element;
+    const color = bandColorOf(page);
+    if (!color) continue;
+    const owner = {};
+    pushBands.set(page, owner);
+    page.dataset.pushBand = '';
+    page.style.boxShadow = `0 calc(-1 * var(--safe-area-top, 0px)) 0 ${color}`;
+    const dispose = track.onDispose;
+    track.onDispose = (context) => {
+      dispose?.(context);
+      if (pushBands.get(page) !== owner) return;
+      pushBands.delete(page);
+      delete page.dataset.pushBand;
+      // sheet 띠가 같은 요소에 남아 있으면 그 띠는 sheet 정리에 맡김
+      if (page.dataset.sheetBand === undefined) page.style.removeProperty('box-shadow');
+    };
+  }
+};
