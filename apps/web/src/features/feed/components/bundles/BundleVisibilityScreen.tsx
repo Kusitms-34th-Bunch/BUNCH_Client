@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header } from '@app/design-system';
 import { DescriptionRadioCard } from '@app/design-system/web';
 import { type RefObject, useId, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { FEED_MESSAGES as text } from '../../constants/messages';
@@ -57,15 +57,7 @@ export function BundleVisibilityScreen({
     },
   ];
 
-  const header = (
-    <Header
-      leading={
-        <HeaderIconButton label={text.back} onClick={onBack}>
-          <LineChevronLeftLargeIcon aria-hidden="true" />
-        </HeaderIconButton>
-      }
-    />
-  );
+  const header = <Header leading={<HeaderBackButton onClick={onBack} />} />;
 
   if (state === 'failed') {
     return (

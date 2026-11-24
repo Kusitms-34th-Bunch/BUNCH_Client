@@ -1,16 +1,10 @@
 'use client';
 
-import {
-  ConfirmDialog,
-  Header,
-  LineChevronLeftLargeIcon,
-  Toggle,
-  type ConfirmDialogProps,
-} from '@app/design-system';
+import { ConfirmDialog, Header, Toggle, type ConfirmDialogProps } from '@app/design-system';
 import { MenuLabel, TextButtonUnderline } from '@app/design-system/web';
 import Link from 'next/link';
 import { useId, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay, type ScreenOverlayProps } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -67,13 +61,7 @@ export function TermsAndPrivacyScreen({
         <Header
           leading={
             // Figma 약관 및 개인정보 헤더 뒤로 가기 아이콘 색(#535A61, icon-tertiary). 다른 MY 하위 화면의 연한 회색(#bcbec2)과 다름
-            <HeaderIconButton
-              label="뒤로 가기"
-              tone="tertiary"
-              onClick={() => backOr(MY_PATHS.home)}
-            >
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            <HeaderBackButton tone="tertiary" onClick={() => backOr(MY_PATHS.home)} />
           }
         />
       }

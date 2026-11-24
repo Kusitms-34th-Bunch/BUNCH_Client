@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, Checkbox, cn, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Checkbox, cn, Header } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
 import { useEffect, useId, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { MY_MESSAGES } from '../../constants/messages';
 import { clearKeepAgreed, peekKeepAgreed } from '../../lib/withdrawalFlow';
@@ -32,9 +32,7 @@ export function WithdrawalScreen({ checking, onNext, onBack }: WithdrawalScreenP
         <Header
           leading={
             // Figma 헤더 뒤로 가기 아이콘 색(#bcbec2), 다른 MY 하위 화면과 같은 연한 회색
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            <HeaderBackButton tone="subtle" onClick={onBack} />
           }
         />
       }

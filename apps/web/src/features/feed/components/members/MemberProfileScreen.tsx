@@ -1,9 +1,9 @@
 'use client';
 
 import type { RefObject } from 'react';
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header } from '@app/design-system';
 import { FollowListItem, ProfileImage } from '@app/design-system/web';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { FeedMemberBunch, FeedMemberProfile, FeedViewer } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
@@ -43,15 +43,7 @@ export function MemberProfileScreen({
   onOpenBunch,
   onToggleFollow,
 }: MemberProfileScreenProps) {
-  const header = (
-    <Header
-      leading={
-        <HeaderIconButton label={text.back} onClick={onBack}>
-          <LineChevronLeftLargeIcon />
-        </HeaderIconButton>
-      }
-    />
-  );
+  const header = <Header leading={<HeaderBackButton onClick={onBack} />} />;
 
   const statusOf = (bunch: FeedMemberBunch) => memberBunchFollowStatus(viewer, bunch);
 

@@ -4,7 +4,6 @@ import {
   Button,
   ConfirmDialog,
   Header,
-  LineChevronLeftLargeIcon,
   LineSparklesSmallIcon,
   TextButton,
 } from '@app/design-system';
@@ -12,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import {
   LATE_OVERLAY_MS,
@@ -213,13 +212,10 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
         <div inert={blocked}>
           <Header
             leading={
-              <HeaderIconButton
-                label={BUNDLE_SELECT_MESSAGES.back}
+              <HeaderBackButton
                 // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로 가면 고른 사진은 버려짐)
                 onClick={() => backOr(BUNDLE_SELECT_PATHS.bunchHome)}
-              >
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
+              />
             }
             title={BUNDLE_SELECT_MESSAGES.title}
             trailing={

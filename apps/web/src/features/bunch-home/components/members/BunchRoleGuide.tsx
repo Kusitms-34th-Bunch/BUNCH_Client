@@ -1,9 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { cn, Header, LineChevronLeftLargeIcon, LineCloseSmallIcon } from '@app/design-system';
+import { cn, Header, LineCloseSmallIcon } from '@app/design-system';
 import { RoleBadge, type RoleBadgeRole } from '@app/design-system/web';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -118,13 +118,7 @@ export function BunchRoleGuide() {
       header={
         <Header
           leading={
-            <HeaderIconButton
-              label="뒤로 가기"
-              tone="subtle"
-              onClick={() => backOr(BUNCH_HOME_PATHS.members)}
-            >
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            <HeaderBackButton tone="subtle" onClick={() => backOr(BUNCH_HOME_PATHS.members)} />
           }
         />
       }

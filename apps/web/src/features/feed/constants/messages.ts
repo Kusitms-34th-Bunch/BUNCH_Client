@@ -19,7 +19,6 @@ export const FEED_MESSAGES = {
   /** 소속 번치가 없을 때 번치 명의 행동(기능명세서 6.1.7) */
   joinRequired: '번치에 참여하면 할 수 있어요.',
   likeFailed: '좋아요를 반영하지 못했어요. 다시 시도해 주세요',
-  back: '뒤로 가기',
   bundleUnavailable: '삭제되었거나 볼 수 없는 내용이에요',
   bundleLoading: '번들을 불러오는 중이에요',
   memberLoading: '멤버 프로필을 불러오는 중이에요',

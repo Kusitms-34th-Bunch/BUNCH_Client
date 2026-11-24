@@ -5,7 +5,6 @@ import {
   type ActionDialogAction,
   Header,
   LineAddSmallIcon,
-  LineChevronLeftLargeIcon,
   LineChevronRightSmallIcon,
   TextButton,
   toast,
@@ -13,7 +12,7 @@ import {
 import { ProfileImage, ProfileListItem } from '@app/design-system/web';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchMemberActions } from '../../lib/members';
@@ -224,9 +223,7 @@ export function BunchMembersScreen({
           leading={
             // Figma 뒤로 가기와 제목 사이 8: 40px 버튼의 오른쪽 여백(8)만큼 제목을 당김(버튼 터치 영역은 그대로)
             <span className="-mr-s4 flex shrink-0">
-              <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-                <LineChevronLeftLargeIcon />
-              </HeaderIconButton>
+              <HeaderBackButton tone="subtle" onClick={onBack} />
             </span>
           }
           title={bunchName}

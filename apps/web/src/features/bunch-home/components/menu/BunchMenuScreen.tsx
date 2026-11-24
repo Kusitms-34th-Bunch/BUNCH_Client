@@ -1,9 +1,9 @@
 'use client';
 
-import { ConfirmDialog, Header, LineChevronLeftLargeIcon, Skeleton } from '@app/design-system';
+import { ConfirmDialog, Header, Skeleton } from '@app/design-system';
 import { MenuDivider, MenuLabel } from '@app/design-system/web';
 import Link from 'next/link';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { BunchRole } from '../../lib/types';
@@ -82,9 +82,7 @@ export function BunchMenuScreen({
         <Header
           leading={
             // Figma 헤더 뒤로 가기 아이콘 색(가입 단계 헤더와 같은 연한 회색)
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            <HeaderBackButton tone="subtle" onClick={onBack} />
           }
         />
       }

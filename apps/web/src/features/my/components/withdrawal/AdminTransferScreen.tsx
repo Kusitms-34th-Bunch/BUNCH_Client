@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header } from '@app/design-system';
 import { BunchAccordion, ProfileRadioCard } from '@app/design-system/web';
 import { useId, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { OwnedBunch } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
@@ -50,15 +50,7 @@ export function AdminTransferScreen({
 
   return (
     <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
+      header={<Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />}
       bottom={
         <div className="px-padding-p8">
           {/* 막힌 이유와 남은 번치를 보조기기에 전달(접힌 카드는 선택 여부가 보이지 않음) */}

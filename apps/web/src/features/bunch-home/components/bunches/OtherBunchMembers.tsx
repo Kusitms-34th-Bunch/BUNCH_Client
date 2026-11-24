@@ -1,11 +1,11 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Header } from '@app/design-system';
 import { ProfileListItem } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { notFound } from 'next/navigation';
 import { apiErrorStatus } from '@/shared/api/client/errorStatus';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { loadFailed } from '@/shared/query/loadFailed';
@@ -76,17 +76,7 @@ export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
   const loading = !locked && !members.data;
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={back}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
-    >
+    <PageShell header={<Header leading={<HeaderBackButton tone="subtle" onClick={back} />} />}>
       <h1 className="sr-only">{`${home.data.bunch.name} 멤버`}</h1>
       {locked ? (
         <PrivateBunchNotice

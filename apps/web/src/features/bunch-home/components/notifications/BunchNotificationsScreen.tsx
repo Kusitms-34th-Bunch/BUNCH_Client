@@ -1,15 +1,10 @@
 'use client';
 
-import {
-  Header,
-  LineChevronLeftLargeIcon,
-  LineChevronRightLargeIcon,
-  TextButton,
-} from '@app/design-system';
+import { Header, LineChevronRightLargeIcon, TextButton } from '@app/design-system';
 import { NotificationCard } from '@app/design-system/web';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { ListMoreQuery } from '../../lib/pages';
 import type { BunchNotification } from '../../lib/types';
@@ -97,11 +92,7 @@ export function BunchNotificationsScreen({
       header={
         <Header
           className="bg-surface-secondary"
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
+          leading={<HeaderBackButton tone="subtle" onClick={onBack} />}
           // Figma 「모두 읽음」(TextButton sm)
           trailing={
             // 안 읽은 알림이 없으면 비활성(기능명세 5.12.1)
