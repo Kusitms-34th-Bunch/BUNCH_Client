@@ -29,8 +29,36 @@ permissions:
   contents: read
 
 jobs:
+  # 같은 커밋의 main CI(Frontend CI)가 성공해야 배포(검사를 통과하지 못한 커밋이 운영에 올라가지 않게)
+  # workflow_run 트리거는 기본 브랜치(develop) 범위로 돌아 main으로 제한한 environment를 못 써서, push로 시작해 CI 결과를 기다림
+  wait-ci:
+    name: CI 결과 기다리기
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      actions: read
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          for _ in $(seq 1 70); do
+            result=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow 'Frontend CI' --commit "$SHA" --event push \
+              --json status,conclusion --jq '.[0] | "\(.status) \(.conclusion)"' || echo 'retry')
+            case "$result" in
+              'completed success') echo "CI 성공: $SHA"; exit 0 ;;
+              completed*) echo "CI가 성공하지 않아 배포하지 않습니다: $result"; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "CI 결과를 기다리다 시간이 지났습니다."; exit 1
+
   settings:
     name: 프로젝트 확인
+    needs: wait-ci
+    # 수동 실행은 기다리지 않음(main에 있던 커밋만 받는 확인은 빌드 job이 함)
+    if: ${{ !cancelled() && (needs.wait-ci.result == 'success' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
@@ -83,6 +111,8 @@ jobs:
   build:
     name: 빌드
     needs: settings
+    # 수동 실행은 wait-ci가 skipped라 조건이 없으면 skipped가 이어져 빌드·배포가 조용히 건너뛰어짐
+    if: ${{ !cancelled() && needs.settings.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: production
@@ -118,6 +148,17 @@ jobs:
         with:
           name: vercel-project
           path: .vercel
+
+      # 빌드 때 화면 코드에 박히는 공개 값이 비면 오류 수집·분석·실시간이 조용히 꺼진 채 배포되므로 막음
+      - name: 필수 공개 변수 확인
+        env:
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+          NEXT_PUBLIC_WS_URL: ${{ vars.NEXT_PUBLIC_WS_URL }}
+        run: |
+          for name in NEXT_PUBLIC_SENTRY_DSN NEXT_PUBLIC_POSTHOG_KEY NEXT_PUBLIC_WS_URL; do
+            test -n "${!name}" || { echo "$name 변수가 비어 있습니다(GitHub environment production)."; exit 1; }
+          done
 
       # 서버 전용 값(API_BASE_URL)은 Vercel 프로젝트 환경 변수로 실행할 때 들어감
       # --standalone: 배포 job에는 저장소가 없으므로 함수가 쓰는 파일을 결과물 안에 복사(기본은 저장소 경로만 가리킴)
@@ -155,6 +196,7 @@ jobs:
   deploy:
     name: 배포
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production

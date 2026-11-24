@@ -6,7 +6,7 @@
 
 `.github/workflows/web-deploy.yml`이 배포한다.
 
-- **자동**: develop → main PR이 머지되면(main push) 배포한다. 웹 빌드에 영향이 없는 변경(문서 등)만 들어오면 실행하지 않는다(`paths`).
+- **자동**: develop → main PR이 머지되면(main push) 배포한다. 웹 빌드에 영향이 없는 변경(문서 등)만 들어오면 실행하지 않는다(`paths`). 같은 커밋의 main CI(`Frontend CI`)가 성공한 뒤에만 다음 단계로 넘어가고, 실패하거나 취소되면 배포하지 않는다(`wait-ci`). CI를 다시 실행해 성공시켰다면 Web Deploy의 실패한 job을 다시 실행하면 이어서 배포된다. main에 연달아 push하면 앞 커밋의 CI가 취소(`cancel-in-progress`)되어 그 배포는 실패로 끝나고, 뒤 커밋이 배포된다. 빌드에 들어가는 필수 공개 변수(`NEXT_PUBLIC_SENTRY_DSN`·`NEXT_PUBLIC_POSTHOG_KEY`·`NEXT_PUBLIC_WS_URL`)가 비어 있으면 빌드 전에 실패한다.
 - **수동**: Actions 탭 → Web Deploy → Run workflow에서 ref를 골라 다시 올린다(기본 main, main에 있던 커밋만). workflow 파일이 기본 브랜치(develop)에 있어야 Actions 탭에 보인다. 루트 설정(`tsconfig.json`, `turbo/**` 등)만 바꾼 변경은 자동 배포되지 않으므로 필요하면 수동 실행한다.
 - **블루그린 전환**: 새 버전을 운영 환경 변수로 올리되 운영 주소는 연결하지 않고(`--skip-domain`), 그 배포 주소에서 `/login`과 `/manifest.webmanifest`가 열리는지 확인한 뒤에만 운영 주소를 넘긴다(`vercel promote`). 확인이 실패하면 사용자는 이전 버전을 계속 본다. 보호된 배포 주소는 `vercel curl`이 토큰으로 열어 별도 우회 secret이 필요 없다.
 - **되돌리기**: Vercel 배포는 버전마다 그대로 남아 있어, 대시보드의 Instant Rollback(또는 이전 배포 promote)으로 다시 빌드하지 않고 바로 이전 버전으로 돌린다. 이전 커밋을 다시 빌드할 때만 수동 실행을 쓴다.
