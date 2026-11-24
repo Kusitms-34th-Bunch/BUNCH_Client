@@ -151,4 +151,16 @@ describe('classifyPublishError', () => {
     });
     expect(classifyPublishError(apiError(503)).keepKey).toBe(true);
   });
+
+  it('408·429는 서버가 이미 발행했을 수 있어 같은 요청 키를 유지한다(새 키로 두 번 발행하지 않게)', () => {
+    for (const status of [408, 429]) {
+      expect(classifyPublishError(apiError(status))).toEqual({
+        outcome: 'failed',
+        message: BUNDLE_MESSAGES.publishFailed,
+        keepKey: true,
+      });
+    }
+    // 그 밖의 4xx는 확정 거절이라 키를 비움
+    expect(classifyPublishError(apiError(404)).keepKey).toBe(false);
+  });
 });
