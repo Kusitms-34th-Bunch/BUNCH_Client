@@ -33,7 +33,7 @@ const HAND_OFF_GUARD_MS = 1500;
 
 // SVG import 타입이 any라 정적 이미지로 명시. 로그인 화면과 같은 로고 파일(비율 171:43 = Figma 226:56.7)
 const WORDMARK = wordmarkSvg as StaticImageData;
-const BACKGROUND = '/images/invite/entry-bg.jpg';
+const BACKGROUND = '/images/invite/entry-bg.webp';
 
 type InviteEntryProps = {
   /** 주소의 초대 토큰 */

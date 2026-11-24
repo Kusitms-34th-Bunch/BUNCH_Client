@@ -12,7 +12,11 @@
 
 ## Crawling assets
 
-- 실제 공개 URL과 색인 대상 route가 정해지면 `app/sitemap.ts`, `app/robots.ts`, favicon·apple touch icon·OG image를 추가한다.
+- 색인 대상은 로그인(`/login`, 서비스 첫 화면) 하나다(2026-11-24). 운영 주소는 `https://app.bunch.kr`(`shared/constants/site.ts`의 `SITE_ORIGIN`, 주소·스토어 정보는 이 파일에 모음)이고, `app/sitemap.ts`에는 로그인만, `app/robots.ts`는 BFF(`/api/`)만 빼고 수집을 연다. 수집을 막으면 페이지의 `noindex`를 읽지 못해 외부에 걸린 링크가 URL만 색인될 수 있어서, 색인은 각 페이지의 `noindex`로 막는다. 가짜 서버를 켠 빌드는 전부 막는다.
+- 서비스 이름은 앱스토어와 웹 모두 `BUNCH`다(`SITE_NAME`, 로고 그림만 소문자 `bunch`). 로그인 화면의 제목은 `BUNCH - 함께한 순간이 모이는 곳`, 설명은 슬로건(`SITE_SLOGAN`), canonical은 운영 절대 주소, 공유 이미지는 공용 OG 이미지(`public/images/og/default.png`, Figma 「오픈그래프 이미지」 슬로건판 1800×945, `SITE_OG_IMAGE`)다. root layout도 같은 이미지를 기본 미리보기로 두고, 초대장은 전용 이미지(`invite.png`)로 덮어쓴다. 그 밖의 로그인 뒤 화면은 각 route에서 `noindex`를 둔다.
+- 검색 등록 확인 태그는 root layout이 `GOOGLE_SITE_VERIFICATION`·`NAVER_SITE_VERIFICATION`(서버 환경 변수)으로 넣는다. 정적 화면은 빌드할 때 값을 넣으므로 운영 값은 GitHub environment `production`의 variable로 두고 `web-deploy.yml` 빌드 단계가 넘긴다(Vercel 프로젝트 변수는 빌드에 닿지 않음). 비면 태그를 넣지 않는다. 로그인은 `og:url`·`og:locale`(`ko_KR`)과 Safari 앱 배너(`itunes.appId`)를 둔다.
+- 초대장(`/invite/[token]`)은 토큰이 든 주소라 `noindex`로 두고 수집만 허용한다. 공유 미리보기(제목·설명·OG 이미지)가 이 화면의 목적이다(`docs/workflows/invite-link-entry.md`).
+- 탭 아이콘은 `app/favicon.ico`(16·32·48)와 `public/icons`의 PNG다. 앱 아이콘이 바뀌면 함께 다시 만든다(`docs/workflows/web-deployment.md`).
 - 인증, 개인 데이터, preview 전용 route는 sitemap에 넣지 않는다.
 - 새 공개 페이지는 heading 구조, 의미 있는 이미지 alt, 공유 미리보기 metadata를 함께 확인한다.
 

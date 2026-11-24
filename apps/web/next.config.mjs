@@ -53,7 +53,7 @@ const nextConfig = {
     })),
   // 앱 열기 도메인(open.bunch.kr): 초대 진입 페이지의 「초대장 확인하기」가 다른 도메인으로 넘겨 유니버셜 링크가 앱을 열게 함(같은 도메인 안 이동으로는 열리지 않음)
   // 앱이 있으면 iOS가 요청 전에 앱을 열고, 여기까지 오면 앱이 없는 것이라 화면 없이 곧바로 App Store로 보냄(흰 화면 없이 진입 페이지가 남은 채 이동)
-  // 연결 파일(/.well-known/apple-app-site-association)은 리다이렉트하면 Apple이 받지 않아 /invite만 보냄. 값은 features/invite-entry/constants/messages.ts와 같음
+  // 연결 파일(/.well-known/apple-app-site-association)은 리다이렉트하면 Apple이 받지 않아 /invite만 보냄. 값은 src/shared/constants/site.ts와 같음
   // 그 밖의 경로는 이 도메인에 화면(로그인 등)이 하나 더 생기지 않게 운영 주소로 보냄. 호스트 값은 정규식이라 점을 이스케이프
   redirects: async () => [
     {

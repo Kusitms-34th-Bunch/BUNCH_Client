@@ -57,7 +57,7 @@ describe('번들 API', () => {
       permissions: { creator: true, canPublish: true },
     });
     expect(draft.photos.map((photo) => photo.sourcePhotoId)).toEqual(photos);
-    expect(draft.photos[0]?.src).toBe('/mock/photos/S4.jpg');
+    expect(draft.photos[0]?.src).toBe('/mock/photos/S4.webp');
   });
 
   it('고른 사진·참여자 id를 서버 숫자로 바꿔 순서대로 보내고 멱등 키를 헤더에 싣는다', async () => {

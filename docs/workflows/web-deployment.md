@@ -60,6 +60,8 @@
 | variable | `NEXT_PUBLIC_POSTHOG_KEY`  | 제품 분석 프로젝트 토큰(`phc_…`, 공개 값). 약관에 동의한 회원만 수집한다(ADR 018). 비우면 수집하지 않는다. 기획 요청으로 운영 키를 넣었다(2026-11-10). 개인정보 처리방침(임시 문구)에 수집 항목·국외 이전(PostHog, 미국)을 반영하는 일은 기획에 요청해 두었다 |
 | variable | `NEXT_PUBLIC_WS_URL`       | 실시간(STOMP) 연결 주소(공개 값, 예 `wss://api.example.com/ws`, query 없이). 비우면 번들 공동 편집이 실시간으로 연결되지 않는다. 백엔드 허용 Origin 목록에 웹 주소가 등록돼 있어야 한다(ADR 024)                                                              |
 | variable | `NEXT_PUBLIC_POSTHOG_HOST` | 선택. 비우면 US(`https://us.i.posthog.com`), EU 프로젝트는 `https://eu.i.posthog.com`                                                                                                                                                                         |
+| variable | `GOOGLE_SITE_VERIFICATION` | 선택. Google Search Console 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                             |
+| variable | `NAVER_SITE_VERIFICATION`  | 선택. 네이버 서치어드바이저 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                             |
 
 저장소 수준(Repository secrets)에 같은 이름을 두지 않는다. environment 제한을 거치지 않고 다른 브랜치의 workflow가 받을 수 있다.
 
@@ -94,9 +96,9 @@
 
 ## 홈 화면 추가(PWA)
 
-- 설치 앱 이름은 매니페스트(`app/manifest.ts`의 `name`·`short_name`)가 **BUNCH**, iOS(`app/layout.tsx`의 `appleWebApp.title`)가 **bunch**다.
+- 설치 앱 이름은 매니페스트(`app/manifest.ts`의 `name`·`short_name`)와 iOS(`app/layout.tsx`의 `appleWebApp.title`) 모두 **BUNCH**(`SITE_NAME`)로, 네이티브 앱 이름과 같다.
 - 설치한 앱은 `/bunch`(번치 홈)에서 시작하고 주소창 없이(`display: standalone`) 세로로 열린다.
-- 아이콘은 임시 아이콘(눈 캐릭터 이미지)이다. 실제 아이콘이 오면(1024px 정사각 원본 권장) `apps/web/public/icons`의 같은 파일명으로 교체한다.
+- 아이콘(`apps/web/public/icons`)은 앱 아이콘(`apps/mobile-shell/assets/icon.png`, 1024)을 줄인 것이다. 글리프가 maskable 안전 영역(반지름 40%) 안이라 maskable에도 같은 그림을 쓴다. 앱 아이콘이 바뀌면 같은 파일명으로 다시 만든다.
 
 | 파일                           | 크기      | 쓰이는 곳                                                        |
 | ------------------------------ | --------- | ---------------------------------------------------------------- |
@@ -111,6 +113,6 @@
 
 ## 아직 확인하지 않은 것
 
-- `public/mock/photos`(약 7MB, 시연 사진)가 운영 배포에도 정적 파일로 올라간다([가짜 서버와 서버 연동 현황](./mock-server-status.md)).
+- `public/mock/photos`(WebP 약 5MB, 시연 사진)가 운영 배포에도 정적 파일로 올라간다([가짜 서버와 서버 연동 현황](./mock-server-status.md)).
 - 운영에 그대로 올라가는 샘플 동작은 없다(2026-11-24 확인). [가짜 서버와 서버 연동 현황](./mock-server-status.md)의 샘플 표에 남은 장소 검색은 가짜 서버를 켤 때만 샘플이고, 운영은 실제 BFF를 쓴다.
 - 미리보기(스테이징) 배포는 없다. 로컬 서버 없이 develop을 실기기로 확인해야 하면 추가한다.

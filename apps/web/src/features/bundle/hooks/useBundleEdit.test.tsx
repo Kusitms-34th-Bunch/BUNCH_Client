@@ -48,7 +48,7 @@ const place = (key: string): PlaceResult => ({
 
 const newPhoto = (source: number): DraftPhoto => ({
   id: `draft-${source}`,
-  src: `/mock/photos/${source}.jpg`,
+  src: `/mock/photos/${source}.webp`,
   alt: `사진 ${source}`,
   takenAt: null,
   uploaderId: String(MOCK_MY_MEMBER_ID),

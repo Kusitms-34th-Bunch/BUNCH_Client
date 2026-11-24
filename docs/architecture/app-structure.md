@@ -20,7 +20,7 @@
 - 역할 폴더가 커지면 같은 역할 안에서 화면(흐름)별 하위 폴더로 묶는다(예: `components/join`, `hooks/join`, `lib/join`). 화면 흐름이 같아도 역할이 다른 파일을 `components/join`에 함께 넣지 않는다. 흐름 이름은 route에서 feature 기본 경로(그 feature 화면이 공통으로 시작하는 경로, 예: bunch-home·bundle은 `/bunch`, photo-box는 `/photos`) 다음 첫 조각으로 정한다. 기본 경로 자체는 `home`, 기본 경로 바로 다음 조각이 동적이면 `detail`, 기본 경로 밖의 route는 그 첫 조각이다(예: `/bunch/menu/leave` → `components/menu`, `/bunch/drafts/[draftId]` → `components/drafts`, `/photos/[photoId]` → `components/detail`, `/bunches/[bunchId]` → `components/bunches`). 부품은 그것을 쓰는 화면의 폴더를 따라간다. 여러 흐름이 쓰거나 다른 feature가 import하는 파일, 그런 공용 파일만 쓰는 부품은 해당 역할 폴더 바로 아래에 둔다. 테스트는 대상 구현 파일 옆에 두고, 컴포넌트 spec은 `docs/workflows/spec-writing.md`를 따른다.
 - 웹 앱에서 import하는 이미지·로티 등 정적 자산은 `src/shared/assets/`에서 종류별로 관리한다(예: `lotties/`). URL로 직접 제공하는 파일은 `public/`에 둔다. 재생 컴포넌트·hook·도메인 로직은 자산과 함께 옮기지 않고 해당 feature에 둔다.
 - 다른 feature의 내부 파일은 import하지 않는다(lint로 검사, 기준과 예외는 `docs/architecture/domain-ownership.md`). 둘 이상의 feature가 쓰게 되면 `shared`로 옮기거나 route에서 조합한다.
-- 둘 이상의 feature가 같은 뜻으로 쓰는 경로·문구는 `shared/constants/`(`paths.ts`의 `APP_PATHS`, `messages.ts`의 `COMMON_MESSAGES`)에 둔다. 각 feature 상수는 자기 이름(상황별 key)을 유지하고 값만 가져온다. 한 feature만 쓰는 값은 그 feature에 둔다.
+- 둘 이상의 feature가 같은 뜻으로 쓰는 경로·문구는 `shared/constants/`(`paths.ts`의 `APP_PATHS`, `messages.ts`의 `COMMON_MESSAGES`)에 둔다. 각 feature 상수는 자기 이름(상황별 key)을 유지하고 값만 가져온다. 한 feature만 쓰는 값은 그 feature에 둔다. 예외로 서비스 전체에 걸린 주소·스토어 정보(운영·앱 열기 도메인, App Store ID, 서비스 이름·슬로건)는 쓰는 곳이 하나여도 `shared/constants/site.ts`에 모은다. 도메인·스토어가 바뀔 때 한 곳에서 고치기 위해서다.
 - `shared/lib`·`shared/hooks`·`shared/api`는 관심사별 하위 폴더에 둔다. 나누는 기준은 위 「역할 폴더가 커지면」을 따른다.
   - `profile`: 이름·닉네임·성별·출생연도 입력과 프로필 사진 자르기
   - `image`: 사진 읽기·자르기·주소 검사

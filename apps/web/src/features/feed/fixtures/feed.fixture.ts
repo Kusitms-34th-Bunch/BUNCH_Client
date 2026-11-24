@@ -12,7 +12,7 @@ const members = (count: number) =>
     imageSrc: DEFAULT_PROFILE_IMAGE,
     role: index === 0 ? ('owner' as const) : undefined,
   }));
-const photos = (...names: string[]) => names.map((name) => ({ src: `/mock/photos/${name}.jpg` }));
+const photos = (...names: string[]) => names.map((name) => ({ src: `/mock/photos/${name}.webp` }));
 
 const bundle = (overrides: Partial<FeedBundle> & Pick<FeedBundle, 'id'>): FeedBundle => ({
   bunch: { id: 'bunch-trip', name: '여행가조', imageSrc: DEFAULT_BUNCH_IMAGES.TYPE_3 },
@@ -70,7 +70,7 @@ export const feedFixture: FeedData = {
     {
       id: 'ad-flody',
       title: '플로디스튜디오',
-      imageSrc: '/mock/photos/AD1.jpg',
+      imageSrc: '/mock/photos/AD1.webp',
       logoSrc: '/images/feed/bunch-spot-logo.svg',
       tagline: '여기서 뭉쳐봐요!',
       description: '도자기 원데이 클래스',

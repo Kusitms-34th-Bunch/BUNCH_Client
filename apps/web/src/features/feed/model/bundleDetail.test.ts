@@ -17,11 +17,11 @@ const response = bundleDetailSchema.parse({
   date: '2026-08-15',
   publishedAt: null,
   photos: [
-    { id: 2, imageUrl: '/mock/photos/P2.jpg', position: 1, picks: null },
+    { id: 2, imageUrl: '/mock/photos/P2.webp', position: 1, picks: null },
     { id: 3, imageUrl: 'javascript:alert(1)', position: 2 },
     {
       id: 1,
-      imageUrl: '/mock/photos/P1.jpg',
+      imageUrl: '/mock/photos/P1.webp',
       position: 0,
       picks: { members: [person(1, '은우'), person(null, '작성자', false)] },
     },
@@ -48,8 +48,8 @@ describe('toFeedBundleDetail', () => {
 
   it('사진·장소를 position 순으로 두고, 안전하지 않은 사진 주소는 뺀다', () => {
     expect(detail.photos.map((photo) => photo.src)).toEqual([
-      '/mock/photos/P1.jpg',
-      '/mock/photos/P2.jpg',
+      '/mock/photos/P1.webp',
+      '/mock/photos/P2.webp',
     ]);
     expect(detail.location).toBe('애월 한담해변 외 1곳');
     expect(detail.places.map((place) => place.name)).toEqual(['애월 한담해변', '한라산']);

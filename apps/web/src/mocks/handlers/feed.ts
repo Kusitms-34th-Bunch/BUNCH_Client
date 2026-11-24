@@ -24,7 +24,7 @@ export const MOCK_ADS = [
     id: 71,
     name: '플로디스튜디오',
     introduction: '여기서 뭉쳐봐요!',
-    photoUrl: '/mock/photos/AD1.jpg',
+    photoUrl: '/mock/photos/AD1.webp',
     tags: ['최대 4인', '1인 5~6만원', '예약 가능', '프라이빗 클래스'],
     externalLink: null,
     place: {

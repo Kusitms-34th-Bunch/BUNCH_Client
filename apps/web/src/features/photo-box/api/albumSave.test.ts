@@ -112,7 +112,7 @@ describe('saveToAlbum', () => {
         return ok({
           photoId: Number(photoId),
           imageUrl:
-            photoId === '2' ? '/mock/photos/2.jpg' : `https://cdn.example.com/${photoId}.jpg`,
+            photoId === '2' ? '/mock/photos/2.webp' : `https://cdn.example.com/${photoId}.jpg`,
           uploaders: [],
           usedInDraftBundle: false,
         });

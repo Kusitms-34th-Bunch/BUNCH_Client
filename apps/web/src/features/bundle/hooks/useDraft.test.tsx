@@ -82,7 +82,7 @@ describe('useDraft 상태', () => {
     expect(draft.members.map((member) => member.id)).toEqual([String(me), String(memberA)]);
     expect(draft.members[0]).toMatchObject({ isCreator: true, bunchRole: 'member' });
     expect(draft.photos).toHaveLength(2);
-    expect(draft.photos[0]).toMatchObject({ src: '/mock/photos/S4.jpg' });
+    expect(draft.photos[0]).toMatchObject({ src: '/mock/photos/S4.webp' });
     expect(bunchMembers).toHaveLength(5);
     expect(viewer).toEqual({ memberId: String(me), bunchRole: 'member' });
     expect(saveStatus).toBe('saved');
@@ -839,7 +839,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     const current = ready(result.current.state).draft.photos;
     const added = {
       id: 'temp-added',
-      src: '/mock/photos/S1.jpg',
+      src: '/mock/photos/S1.webp',
       alt: '추가한 사진',
       takenAt: null,
       uploaderId: String(me),
@@ -888,7 +888,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     });
     const galleryPhoto = (photoId: number) => ({
       id: `temp-${photoId}`,
-      src: '/mock/photos/S1.jpg',
+      src: '/mock/photos/S1.webp',
       alt: '갤러리 사진',
       takenAt: null,
       uploaderId: String(me),
@@ -940,7 +940,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     const current = ready(result.current.state).draft.photos;
     const fromGallery = extra.slice(19 - seeded.length).map((photoId) => ({
       id: `temp-${photoId}`,
-      src: '/mock/photos/S1.jpg',
+      src: '/mock/photos/S1.webp',
       alt: '갤러리 사진',
       takenAt: null,
       uploaderId: String(me),

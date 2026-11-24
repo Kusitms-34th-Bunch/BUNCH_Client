@@ -27,7 +27,7 @@ describe('추천 번들 목록', () => {
     expect(list.map((item) => item.title)).toEqual(['설악산 단풍 여행', '속초에서 보낸 주말']);
     expect(list[0]).toMatchObject({
       id: '1',
-      imageSrc: '/mock/photos/S1.jpg',
+      imageSrc: '/mock/photos/S1.webp',
       photoCount: 6,
       startDate: '2026-10-18',
       endDate: null,
@@ -49,7 +49,7 @@ describe('추천 번들 목록', () => {
 
     expect(list.map((item) => item.title)).toEqual(['설악산 단풍 여행']);
     expect(list[0]?.photoCount).toBe(5);
-    expect(list[0]?.imageSrc).toBe('/mock/photos/S2.jpg');
+    expect(list[0]?.imageSrc).toBe('/mock/photos/S2.webp');
   });
 
   it('없는 번치는 RESOURCE_001이다', async () => {
@@ -67,7 +67,7 @@ describe('추천 번들 상세', () => {
     );
     expect(detail.photos[0]).toMatchObject({
       takenAt: '2026-10-17T07:05',
-      src: '/mock/photos/P1-thumb.jpg',
+      src: '/mock/photos/P1-thumb.webp',
       status: 'ready',
     });
     expect(detail.photos[0]?.uploaderIds).toHaveLength(1);
