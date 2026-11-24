@@ -31,6 +31,7 @@ export function BundleDraftPick() {
   const { picks, toggle, entry } = useDraftPicks(
     draft,
     viewer?.memberId,
+    // 브라우저 오프라인은 빠짐(그 순간 누르면 요청 뒤 실패 안내, 명세 4.3.14와 다름). 판정 차이는 DraftScreen.spec.md
     state.kind === 'ready' && state.realtime.down,
     setGoneId,
   );

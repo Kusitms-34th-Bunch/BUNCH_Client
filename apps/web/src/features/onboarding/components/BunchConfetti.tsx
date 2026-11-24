@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { playHaptic } from '@/shared/lib/haptic';
+import { playHaptic } from '@/shared/lib/native/haptic';
 import { CONFETTI_DURATION_MS, CONFETTI_FRAME, CONFETTI_PIECES } from '../constants/confetti';
 import { confettiKeyframes } from '../lib/confettiKeyframes';
 

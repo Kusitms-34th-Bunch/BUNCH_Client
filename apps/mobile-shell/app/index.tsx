@@ -4,7 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { incomingLinkStore } from '../src/incoming-link-store';
 import { LoginBackgroundVideo } from '../src/login-background/LoginBackgroundVideo';
 import { loginBackgroundStore } from '../src/login-background/login-background-store';
-import { AppWebView, WEB_URL, toAppWebUrl } from '../src/web-view/AppWebView';
+import { AppWebView } from '../src/web-view/AppWebView';
+import { WEB_URL, toAppWebUrl } from '../src/web-view/app-web-url';
 
 export default function SingleWebViewScreen() {
   const loginBackground = useSyncExternalStore(

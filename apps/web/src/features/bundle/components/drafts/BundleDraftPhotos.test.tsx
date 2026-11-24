@@ -8,7 +8,7 @@ import { DraftProvider } from '../../contexts/DraftProvider';
 import { BundleDraftPhotoViewer } from './BundleDraftPhotoViewer';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 vi.mock('swiper/react', () => ({
   Swiper: ({ children }: { children: ReactNode }) => <div>{children}</div>,

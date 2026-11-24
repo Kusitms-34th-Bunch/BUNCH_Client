@@ -1,5 +1,5 @@
 import { queryOptions, skipToken, useQueryClient } from '@tanstack/react-query';
-import { isUnavailableTarget } from '@/shared/api/errorStatus';
+import { isUnavailableTarget } from '@/shared/api/client/errorStatus';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { getBundleDetail } from '../api/bundleDetail';
 import { feedKeys } from './keys';

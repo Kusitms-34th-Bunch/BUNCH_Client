@@ -4,14 +4,17 @@ import { delay, http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
+import { changeBundle, snapshotOf } from '@/mocks/handlers/bundles';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { PlaceResult } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
-import { applyBundleLocationIntent, changeBundlePhotos, createBundle } from '../api/bundles';
+import { createBundle } from '../api/bundles';
+import { applyBundleLocationIntent } from '../api/locations';
+import { changeBundlePhotos } from '../api/photos';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import { bundleKeys } from '../queries/keys';
@@ -79,7 +82,7 @@ describe('useDraft 상태', () => {
     expect(draft.members.map((member) => member.id)).toEqual([String(me), String(memberA)]);
     expect(draft.members[0]).toMatchObject({ isCreator: true, bunchRole: 'member' });
     expect(draft.photos).toHaveLength(2);
-    expect(draft.photos[0]).toMatchObject({ src: '/mock/photos/S4.jpg' });
+    expect(draft.photos[0]).toMatchObject({ src: '/mock/photos/S4.webp' });
     expect(bunchMembers).toHaveLength(5);
     expect(viewer).toEqual({ memberId: String(me), bunchRole: 'member' });
     expect(saveStatus).toBe('saved');
@@ -306,6 +309,37 @@ describe('useDraft 저장', () => {
     );
     // 내 입력은 충돌 중에도 화면에서 사라지지 않음
     expect(ready(result.current.state).draft.title).toBe('내 제목');
+  });
+
+  it('충돌 뒤 최신 상세를 받지 못하면 곧바로 같은 버전을 다시 보내 포기하지 않고 일시 오류 간격으로 기다린다', async () => {
+    const { id, result } = await renderReady();
+    let saves = 0;
+    let detailFailures = 0;
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/date', () => {
+        saves += 1;
+        return fail(409, 'BUNDLE_003');
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailFailures += 1;
+        return fail(500, 'COMMON_500');
+      }),
+    );
+
+    act(() => result.current.actions.setDate('2026-10-18'));
+
+    // 충돌 뒤 최신 상세 조회가 실패로 끝난 것을 확인한 다음부터 잼(짧은 간격이면 이 뒤 200ms에 다시 보냄)
+    await waitFor(() => expect(detailFailures).toBeGreaterThan(0), SAVE_WAIT);
+    expect(saves).toBe(1);
+    // 일시 오류 간격(3초)의 1/3. 짧은 간격(200·400·600ms…)이면 이 사이 세 번 넘게 보냄
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+    expect(saves).toBe(1);
+    expect(toast).not.toHaveBeenCalledWith(BUNDLE_MESSAGES.saveFailed);
+    expect(ready(result.current.state).draft.date).toBe('2026-10-18');
+
+    // 서버가 다시 응답하면 다음 재시도(3초 뒤)에서 최신 상세를 받아 저장을 마침(남은 입력이 다음 테스트로 새지 않음)
+    server.resetHandlers();
+    await waitFor(() => expect(serverBundle(id)?.date).toBe('2026-10-18'), { timeout: 8000 });
   });
 
   it('권한·상태 오류는 다시 시도하지 않고 한 번만 안내하며 입력은 그대로 둔다', async () => {
@@ -805,7 +839,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     const current = ready(result.current.state).draft.photos;
     const added = {
       id: 'temp-added',
-      src: '/mock/photos/S1.jpg',
+      src: '/mock/photos/S1.webp',
       alt: '추가한 사진',
       takenAt: null,
       uploaderId: String(me),
@@ -854,7 +888,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     });
     const galleryPhoto = (photoId: number) => ({
       id: `temp-${photoId}`,
-      src: '/mock/photos/S1.jpg',
+      src: '/mock/photos/S1.webp',
       alt: '갤러리 사진',
       takenAt: null,
       uploaderId: String(me),
@@ -906,7 +940,7 @@ describe('useDraft 참여 멤버·위치·사진', () => {
     const current = ready(result.current.state).draft.photos;
     const fromGallery = extra.slice(19 - seeded.length).map((photoId) => ({
       id: `temp-${photoId}`,
-      src: '/mock/photos/S1.jpg',
+      src: '/mock/photos/S1.webp',
       alt: '갤러리 사진',
       takenAt: null,
       uploaderId: String(me),
@@ -964,6 +998,54 @@ describe('useDraft 발행', () => {
       })),
     }));
   };
+
+  it('늦게 도착한 낡은 저장 응답이 먼저 끝난 사진 변경의 revision을 덮지 않고 최신 revision으로 발행한다', async () => {
+    const { id, result } = await renderReady();
+    const bundleId = Number(id);
+    // 날짜 저장은 받는 즉시 서버에 반영하되 응답만 붙잡아 둠(그 뒤 사진 변경이 더 높은 revision으로 먼저 끝남)
+    let releaseDate: () => void = () => undefined;
+    const dateGate = new Promise<void>((resolve) => (releaseDate = resolve));
+    let dateReceived = false;
+    const published: number[] = [];
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/date', async ({ request }) => {
+        const body = (await request.json()) as { value?: string };
+        changeBundle(bundleId, (bundle) => ({
+          ...bundle,
+          date: body.value ?? null,
+          dateVersion: bundle.dateVersion + 1,
+        }));
+        const stale = snapshotOf(bundleId);
+        dateReceived = true;
+        await dateGate;
+        return stale;
+      }),
+      http.post('/api/bunches/:bunchId/bundles/:id/publish', async ({ request }) => {
+        published.push(((await request.json()) as { expectedRevision: number }).expectedRevision);
+        return undefined;
+      }),
+    );
+
+    act(() => {
+      result.current.actions.setVisibility('members');
+      result.current.actions.setDate('2026-10-18');
+    });
+    await waitFor(() => expect(dateReceived).toBe(true), SAVE_WAIT);
+    const photoId = ready(result.current.state).draft.photos[0]!.id;
+    act(() => void result.current.actions.removePhoto(photoId));
+    await waitFor(() => expect(serverBundle(id)?.photos).toHaveLength(1), SAVE_WAIT);
+    const photoRevision = serverBundle(id)!.revision;
+    await waitFor(
+      () => expect(ready(result.current.state).draft.photos).toHaveLength(1),
+      SAVE_WAIT,
+    );
+
+    releaseDate();
+    await waitFor(() => expect(ready(result.current.state).saveStatus).toBe('saved'), SAVE_WAIT);
+    await act(async () => void (await result.current.actions.publish()));
+
+    expect(published).toEqual([photoRevision]);
+  });
 
   it('발행은 보내는 중인 위치 요청이 끝난 뒤의 서버 구성으로 한다', async () => {
     const { id, result } = await renderReady();

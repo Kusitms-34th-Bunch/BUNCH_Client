@@ -6,7 +6,7 @@ import {
   loadTitleDoc,
   saveTitleDoc,
 } from '@/features/bundle/lib/titleCrdt';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '../server';
 import { mockDb } from '../db';

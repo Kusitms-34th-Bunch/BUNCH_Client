@@ -6,7 +6,7 @@
 
 `.github/workflows/web-deploy.yml`이 배포한다.
 
-- **자동**: develop → main PR이 머지되면(main push) 배포한다. 웹 빌드에 영향이 없는 변경(문서 등)만 들어오면 실행하지 않는다(`paths`).
+- **자동**: develop → main PR이 머지되면(main push) 배포한다. 웹 빌드에 영향이 없는 변경(문서 등)만 들어오면 실행하지 않는다(`paths`). 같은 커밋의 main CI(`Frontend CI`)가 성공한 뒤에만 다음 단계로 넘어가고, 실패하거나 취소되면 배포하지 않는다(`wait-ci`). CI를 다시 실행해 성공시켰다면 Web Deploy의 실패한 job을 다시 실행하면 이어서 배포된다. main에 연달아 push하면 앞 커밋의 CI가 취소(`cancel-in-progress`)되어 그 배포는 실패로 끝나고, 뒤 커밋이 배포된다. 빌드에 들어가는 필수 공개 변수(`NEXT_PUBLIC_SENTRY_DSN`·`NEXT_PUBLIC_POSTHOG_KEY`·`NEXT_PUBLIC_WS_URL`)가 비어 있으면 빌드 전에 실패한다.
 - **수동**: Actions 탭 → Web Deploy → Run workflow에서 ref를 골라 다시 올린다(기본 main, main에 있던 커밋만). workflow 파일이 기본 브랜치(develop)에 있어야 Actions 탭에 보인다. 루트 설정(`tsconfig.json`, `turbo/**` 등)만 바꾼 변경은 자동 배포되지 않으므로 필요하면 수동 실행한다.
 - **블루그린 전환**: 새 버전을 운영 환경 변수로 올리되 운영 주소는 연결하지 않고(`--skip-domain`), 그 배포 주소에서 `/login`과 `/manifest.webmanifest`가 열리는지 확인한 뒤에만 운영 주소를 넘긴다(`vercel promote`). 확인이 실패하면 사용자는 이전 버전을 계속 본다. 보호된 배포 주소는 `vercel curl`이 토큰으로 열어 별도 우회 secret이 필요 없다.
 - **되돌리기**: Vercel 배포는 버전마다 그대로 남아 있어, 대시보드의 Instant Rollback(또는 이전 배포 promote)으로 다시 빌드하지 않고 바로 이전 버전으로 돌린다. 이전 커밋을 다시 빌드할 때만 수동 실행을 쓴다.
@@ -60,6 +60,8 @@
 | variable | `NEXT_PUBLIC_POSTHOG_KEY`  | 제품 분석 프로젝트 토큰(`phc_…`, 공개 값). 약관에 동의한 회원만 수집한다(ADR 018). 비우면 수집하지 않는다. 기획 요청으로 운영 키를 넣었다(2026-11-10). 개인정보 처리방침(임시 문구)에 수집 항목·국외 이전(PostHog, 미국)을 반영하는 일은 기획에 요청해 두었다 |
 | variable | `NEXT_PUBLIC_WS_URL`       | 실시간(STOMP) 연결 주소(공개 값, 예 `wss://api.example.com/ws`, query 없이). 비우면 번들 공동 편집이 실시간으로 연결되지 않는다. 백엔드 허용 Origin 목록에 웹 주소가 등록돼 있어야 한다(ADR 024)                                                              |
 | variable | `NEXT_PUBLIC_POSTHOG_HOST` | 선택. 비우면 US(`https://us.i.posthog.com`), EU 프로젝트는 `https://eu.i.posthog.com`                                                                                                                                                                         |
+| variable | `GOOGLE_SITE_VERIFICATION` | 선택. Google Search Console 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                             |
+| variable | `NAVER_SITE_VERIFICATION`  | 선택. 네이버 서치어드바이저 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                             |
 
 저장소 수준(Repository secrets)에 같은 이름을 두지 않는다. environment 제한을 거치지 않고 다른 브랜치의 workflow가 받을 수 있다.
 
@@ -94,9 +96,10 @@
 
 ## 홈 화면 추가(PWA)
 
-- 앱 이름은 **bunch**다(`app/manifest.ts`의 `name`·`short_name`, iOS는 `app/layout.tsx`의 `appleWebApp.title`).
+- 홈 화면에 추가한 웹 앱도 브라우저라서 열면 앱 설치 안내가 보인다(`docs/architecture/routing-and-access.md` 「앱 안에서만 여는 화면」). 아래 매니페스트·아이콘은 그대로 두었다.
+- 설치 앱 이름은 매니페스트(`app/manifest.ts`의 `name`·`short_name`)와 iOS(`app/layout.tsx`의 `appleWebApp.title`) 모두 **BUNCH**(`SITE_NAME`)로, 네이티브 앱 이름과 같다.
 - 설치한 앱은 `/bunch`(번치 홈)에서 시작하고 주소창 없이(`display: standalone`) 세로로 열린다.
-- 아이콘은 임시 아이콘(눈 캐릭터 이미지)이다. 실제 아이콘이 오면(1024px 정사각 원본 권장) `apps/web/public/icons`의 같은 파일명으로 교체한다.
+- 아이콘(`apps/web/public/icons`)은 앱 아이콘(`apps/mobile-shell/assets/icon.png`, 1024)을 줄인 것이다. 글리프가 maskable 안전 영역(반지름 40%) 안이라 maskable에도 같은 그림을 쓴다. 앱 아이콘이 바뀌면 같은 파일명으로 다시 만든다.
 
 | 파일                           | 크기      | 쓰이는 곳                                                        |
 | ------------------------------ | --------- | ---------------------------------------------------------------- |
@@ -107,10 +110,10 @@
 - iOS: Safari 공유 메뉴 → 「홈 화면에 추가」. Android: Chrome 메뉴 → 「앱 설치」 또는 「홈 화면에 추가」.
 - 매니페스트와 아이콘 파일의 존재는 자동 테스트(`app/manifest.test.ts`)가 확인한다. 실기기에서 이름·아이콘·주소창 없음은 확인하지 않았다.
 
+- 2026-11-22 이 workflow로 운영에 배포했다(2026-11-24 사용자 확인). 빌드에 Vercel 프로젝트 환경 변수를 넘기지 않아도, `deploy --prebuilt`로 올린 서버는 실행할 때 프로젝트의 `API_BASE_URL`을 받아 실서버를 부른다.
+
 ## 아직 확인하지 않은 것
 
-- 이 workflow로 운영 프로젝트에 실제로 배포해 보지 않았다. 같은 단계(`YARN_NODE_LINKER` 우회 포함)를 쓰던 UT 배포 기록에도 1차 리허설 실패와 그 대응까지만 남아 있다([보관 기록](../archive/ut-deployment.md)).
-- `public/mock/photos`(약 7MB, 시연 사진)가 운영 배포에도 정적 파일로 올라간다([가짜 서버와 서버 연동 현황](./mock-server-status.md)).
-- 빌드에 Vercel 프로젝트 환경 변수를 넘기지 않으므로, `deploy --prebuilt`로 올린 서버가 실행할 때 프로젝트의 `API_BASE_URL`을 받는지는 첫 배포에서 확인한다.
-- 운영에 그대로 올라가는 샘플 동작이 있다. 예: 사진함의 사진 날짜 변경은 그 화면에서만 유지된다([가짜 서버와 서버 연동 현황](./mock-server-status.md)의 샘플 표). 공개 전에 숨길지 정한다.
+- `public/mock/photos`(WebP 약 5MB, 시연 사진)가 운영 배포에도 정적 파일로 올라간다([가짜 서버와 서버 연동 현황](./mock-server-status.md)).
+- 운영에 그대로 올라가는 샘플 동작은 없다(2026-11-24 확인). [가짜 서버와 서버 연동 현황](./mock-server-status.md)의 샘플 표에 남은 장소 검색은 가짜 서버를 켤 때만 샘플이고, 운영은 실제 BFF를 쓴다.
 - 미리보기(스테이징) 배포는 없다. 로컬 서버 없이 develop을 실기기로 확인해야 하면 추가한다.

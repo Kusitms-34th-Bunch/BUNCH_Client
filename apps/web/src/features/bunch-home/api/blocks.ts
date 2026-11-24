@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { toWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { toWireId } from '@/shared/api/client/ids';
 import { toReportRequest } from '@/shared/lib/reportReasons';
 import { blockPageSchema, bunchReportResultSchema } from '../model/blocks';
 

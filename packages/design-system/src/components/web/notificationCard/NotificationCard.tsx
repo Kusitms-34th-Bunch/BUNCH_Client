@@ -51,7 +51,7 @@ export const NotificationCard = ({
     aria-disabled={disabled ? true : undefined}
     onClick={disabled ? undefined : onClick}
     className={cn(
-      'bg-surface-primary rounded-r5 px-padding-p8 py-padding-p7 gap-s2 flex w-full touch-manipulation flex-col text-left',
+      'press-scale-large bg-surface-primary rounded-r5 px-padding-p8 py-padding-p7 gap-s2 flex w-full touch-manipulation flex-col text-left',
       // 눌림은 바탕 layer로 겹쳐 글자는 그대로 유지
       'not-aria-disabled:cursor-pointer not-aria-disabled:active:bg-[linear-gradient(var(--color-overlay-pressed),var(--color-overlay-pressed))]',
       'aria-disabled:cursor-not-allowed aria-disabled:opacity-(--semantic-opacity-disabled)',

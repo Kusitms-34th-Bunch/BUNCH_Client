@@ -8,8 +8,8 @@ import { useEffect, useEffectEvent, useRef, useSyncExternalStore } from 'react';
 import wordmarkSvg from '@/shared/assets/images/login/wordmark.svg';
 import { appBridge, isNativeShell } from '@/shared/bridge/client';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
-import { copyText } from '@/shared/lib/clipboard';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
+import { copyText } from '@/shared/lib/native/clipboard';
 import { savePendingInvitation } from '@/shared/lib/pendingInvitation';
 import {
   APP_STORE_URL,
@@ -21,6 +21,7 @@ import { kakaoTalkReopenInviteUrl, openExternalUrl, openInviteUrl } from '../lib
 import { isIosDevice, isKakaoTalkInApp } from '../lib/platform';
 import { isInviteToken } from '../lib/token';
 import { useLookupInvitationMutation } from '../queries/invitation';
+import styles from './inviteRise.module.css';
 
 const subscribeNothing = () => () => {};
 // 서버·hydration 중에는 앱 밖으로 봄(브라우저 화면이 기본)
@@ -32,7 +33,7 @@ const HAND_OFF_GUARD_MS = 1500;
 
 // SVG import 타입이 any라 정적 이미지로 명시. 로그인 화면과 같은 로고 파일(비율 171:43 = Figma 226:56.7)
 const WORDMARK = wordmarkSvg as StaticImageData;
-const BACKGROUND = '/images/invite/entry-bg.jpg';
+const BACKGROUND = '/images/invite/entry-bg.webp';
 
 type InviteEntryProps = {
   /** 주소의 초대 토큰 */
@@ -58,7 +59,7 @@ function PixelPattern({ className }: { className: string }) {
  * 「초대장 확인하기」
  * - 앱 안: 공개 조회로 링크가 유효한지 확인한 뒤 초대 정보를 보관하고 `continueHref`로 이동(로그인 판별은 이동한 곳의 접근 가드)
  * - 앱 밖: 앱이 있으면 앱(초대 토큰 그대로), 없으면 App Store로 넘김(`continueInApp`)
- * 장식 모션은 CSS(`globals.css`의 `invite-rise-*`)가 첫 페인트부터 재생
+ * 장식 모션은 CSS(`inviteRise.module.css`)가 첫 페인트부터 재생
  */
 export function InviteEntry({ token, continueHref }: InviteEntryProps) {
   const router = useRouter();
@@ -192,14 +193,16 @@ export function InviteEntry({ token, continueHref }: InviteEntryProps) {
         className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-56.5 bg-[linear-gradient(to_top,rgb(0_0_0/0.65)_16.499%,rgb(0_0_0/0.4)_54.139%,rgb(0_0_0/0.08)_90.299%,rgb(0_0_0/0)_98.68%)]"
       />
 
-      <PixelPattern className="invite-rise-pattern-left top-[25.34%] left-[10.67%]" />
-      <PixelPattern className="invite-rise-pattern-right top-[13.53%] right-[8.53%]" />
+      <PixelPattern className={`${styles.patternLeft} top-[25.34%] left-[10.67%]`} />
+      <PixelPattern className={`${styles.patternRight} top-[13.53%] right-[8.53%]`} />
       <span
         aria-hidden="true"
-        className="invite-rise-module bg-icon-inversed absolute top-58.25 left-[calc(20%-2px)] size-2.25"
+        className={`${styles.module} bg-icon-inversed absolute top-58.25 left-[calc(20%-2px)] size-2.25`}
       />
 
-      <div className="invite-rise-logo gap-s8 px-padding-p8 relative flex flex-col items-center pt-31.5">
+      <div
+        className={`${styles.logo} gap-s8 px-padding-p8 relative flex flex-col items-center pt-31.5`}
+      >
         <h1>
           <Image src={WORDMARK} alt="Bunch" width={226} height={57} priority />
         </h1>

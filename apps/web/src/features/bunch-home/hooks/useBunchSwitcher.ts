@@ -28,13 +28,16 @@ export function useBunchSwitcher(current: CurrentBunch | undefined) {
   const currentId = current?.id;
   const currentName = current?.name;
   const currentImage = current?.imageSrc;
-  // 전환 목록은 화면을 막지 않음: 못 받으면 지금 번치 하나로 보임
+  // 전환 목록은 화면을 막지 않음: 못 받았거나 낡았어도 지금 번치는 보임
   const bunches = useMemo<readonly BunchSummary[]>(() => {
     if (currentId === undefined || currentName === undefined) return [];
-    if (myBunches.data) return toBunchSummaries(myBunches.data, currentId);
-    return [
-      { id: currentId, name: currentName, imageSrc: currentImage, alertCount: 0, access: 'active' },
-    ];
+    return toBunchSummaries(myBunches.data, {
+      id: currentId,
+      name: currentName,
+      imageSrc: currentImage,
+      alertCount: 0,
+      access: 'active',
+    });
   }, [currentId, currentName, currentImage, myBunches.data]);
   const atBunchLimit = myBunches.data
     ? myBunches.data.activeCount >= myBunches.data.maxActiveCount

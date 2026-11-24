@@ -2,6 +2,8 @@
 
 web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 admin 모션에는 CSS transition·Web Animations API를 사용하며, 아래 기준을 함께 따른다.
 
+화면별 전환·모션 기록은 각 기능 스펙의 「모션」 절에 둔다(`docs/specs/`의 기능 스펙, 기능 스펙이 없는 화면·컴포넌트는 co-located spec). 이 문서에는 여러 화면에 걸친 규칙만 둔다.
+
 ## 애니메이션을 넣을지 판단
 
 | 사용 빈도                                       | 판단              |
@@ -16,25 +18,47 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 ## Easing과 duration
 
 - 진입·이탈은 `ease-out`, 화면 안에서의 이동·모핑은 `ease-in-out`, hover·색상 전환은 `ease`, 등속(마퀴, 진행바)은 `linear`를 쓴다.
-- 기본 진입에는 `ease-in`을 피한다. 온보딩의 페이지 Slide In은 끝에서 감속하도록 Ease Out 300ms를 적용한다.
-- duration 기준: 버튼 피드백 100–160ms, 툴팁·작은 팝오버 125–200ms, 드롭다운·셀렉트 150–250ms, 모달·drawer 200–500ms. UI 애니메이션은 300ms를 넘지 않는다.
+- 기본 진입에는 `ease-in`을 피한다.
+- duration 기준: 버튼 피드백 100–160ms, 툴팁·작은 팝오버 125–200ms, 드롭다운·셀렉트 150–250ms, 모달·drawer 200–500ms. UI 애니메이션은 300ms를 넘지 않는다. 화면 이동은 아래 「화면 이동 시간」의 예외다.
+
+### 화면 이동 시간
+
+- 한 단계 들어가는 이동(`drill`)과 단계·하위 화면으로 미는 이동(`slide`)은 모두 350ms, `cubic-bezier(0.4, 0, 0.2, 1)`(천천히 시작해 길게 감속)이다(#560, FE 판단). 값은 `AppTransitions.tsx`의 `PUSH_DURATION_MS`·`PUSH_EASING` 하나로 둔다.
+- 위 진입 기본(ease-out)과 다른 이유: 실기기는 새 화면을 처음 그리기까지 약 90ms가 걸려 그동안 이동이 지나간다. ease-out 250ms는 첫 보이는 프레임에 이미 약 48%였고(120fps 녹화, 브라우저는 6~11%), 같은 90ms 동안 ease-out 300ms는 45%, 200ms는 63%를 지난다(계산값). 새 곡선 350ms는 약 25%이고 마지막 25% 시간의 이동도 9%에서 4%로 줄어 끝이 부드럽다.
+- 이동하는 동안 두 화면은 각자 배경색의 상태 바 높이 띠를 달고 함께 밀린다(`_transitions/pageGuards.ts`의 `guardPush`). 상태 바 영역을 `AppFrame`이 따로 페이드하면 화면이 도착하기 전에 색이 먼저 바뀌었다.
+- 맨 위로(탭 다시 누르기·피드 로고)도 같은 시간·곡선으로 직접 스크롤한다(`shared/lib/navigation/scrollPageToTop.ts`). 브라우저 기본 smooth는 거리마다 속도가 달라 WebKit에서 시작·끝이 끊겨 보였다. 두 화면보다 멀면 한 화면 위치로 바로 옮긴 뒤 그만큼만 움직이고, 손가락·휠이 닿으면 멈춘다.
+- 실기기 확인은 전이다.
 
 ## 물리감
 
 - `scale(0)`에서 시작하지 않는다. `scale(0.9~0.97)` + `opacity: 0`에서 시작한다.
 - 팝오버·드롭다운은 트리거 쪽에서 자라나도록 `transform-origin`을 트리거 위치에 맞춘다. 모달은 예외로, 화면 중앙에 뜨므로 `transform-origin: center`를 유지한다.
-- 버튼 눌림 피드백은 디자이너 공통 지침 `Dissolve / Ease Out / 75ms`를 따른다(2026-10-22, 이전 100ms). 크기를 바꾸지 않고 눌림 오버레이의 투명도만 75ms ease-out으로 바꾼다. 적용: `Button`, `TextButton`, `LoginButton`, `Label`, `TermsLabel`, `CameraButton`(디자인 시스템). 동작 줄이기에서는 전환을 끈다. 곡선은 `Button`·`TextButton`이 CSS Ease Out(`cubic-bezier(0,0,0.58,1)`), 나머지는 Tailwind `ease-out`(`cubic-bezier(0,0,0.2,1)`)이라 아직 다르다.
+- 버튼 눌림 피드백은 디자이너 공통 지침 `Dissolve / Ease Out / 75ms`를 따른다(2026-10-22, 이전 100ms). 눌림 오버레이의 투명도는 75ms ease-out으로 바꾸고, 2026-11-25(#562)부터 크기도 함께 살짝 줄인다(아래 「눌림 효과」). 적용: `Button`, `TextButton`, `LoginButton`, `Label`, `TermsLabel`, `CameraButton`(디자인 시스템). 동작 줄이기에서는 전환을 끈다. 곡선은 `Button`·`TextButton`이 CSS Ease Out(`cubic-bezier(0,0,0.58,1)`), 나머지는 Tailwind `ease-out`(`cubic-bezier(0,0,0.2,1)`)이라 아직 다르다.
+
+### 눌림 효과
+
+- 누르는 동안 살짝 줄었다가 떼면 돌아온다(Figma 「Press Interaction · 눌림 효과」 `7982:51780`, 2026-11-25 #562). 색은 각 컴포넌트의 Pressed 색을 그대로 쓰고, 크기는 `scale`로만 바꿔 레이아웃은 그대로다. 다만 누르는 동안 브라우저는 줄어든 박스로 터치 위치를 판정해, 가장자리를 누른 손가락이 박스 밖이 되면 눌림이 풀리고 `click`이 나지 않을 수 있다(한 변에 약 1~2.5%, 실기기 확인 전).
+- 디자인 시스템 유틸리티(`packages/design-system/src/styles/utilities.css`)를 루트 요소에 쓴다.
+  - `press-scale-small`(0.95): 칩, 아이콘 버튼, 캘린더 날짜, 글자 버튼, 번치 이름 전환(`AccountSwitcher`)
+  - `press-scale-medium`(0.97): `Button`(SolidButton), 팔로우 버튼
+  - `press-scale-large`(0.98): 번치 분위기 카드(Card), 라디오 카드(`RadioCard`·`DescriptionRadioCard`), 업로드 선택 카드, 목록 줄(`MenuLabel`·`MenuItem`·`BunchListItem`·`BunchRadioItem`(Profile - Label)·`NotificationCard`(Alert_Label)·`NudgeBanner`·`Label`). 목록 줄은 회색 배경과 내용이 함께 줄어든다. 추천 번들 카드는 카드 버튼을 누를 때만 줄어든다(위에 겹친 「상세 보기」를 누를 때는 그대로). 그래서 유틸리티 대신 같은 값(0.98·100/180ms·곡선)을 직접 쓰므로 수치를 바꾸면 함께 바꾼다.
+  - 입력 필드는 쓰지 않는다(배경색만).
+  - 디자인 명세에 없어 적용하지 않은 눌림 요소: `ProfileRadioCard`, `TermsLabel`, `ProfileListItem`, `BundleCard`, `EntryCard`, `InviteMemberCard`, `LocationCard`, `LoginButton`, `FloatingButton`, `CameraButton`, `MenuTabs`, `TextButtonUnderline`, `BunchLabel`. 디자이너 확인 뒤 추가한다.
+- 시간·곡선: 누를 때 100ms, 뗄 때 180ms, `cubic-bezier(0.2, 0, 0, 1)`, 기준점 가운데, 튕김 없음. 헤더 안의 번치 이름 전환은 왼쪽 가운데 기준이라 제목이 옆으로 움직이지 않는다.
+- 유틸리티가 루트의 색 전환(`color`·`background-color`·`border-color`·`opacity`, 기본 75ms)도 함께 정해 `transition`이 서로 덮어쓰지 않는다. 색 전환 시간·곡선이 다르면 `--press-color-duration`·`--press-color-ease`로 바꾼다(칩 300ms, 버튼 CSS Ease Out). 루트에 `transition-colors`를 따로 두지 않고, 쓰는 쪽도 이 컴포넌트에 `className`으로 `transition-*`를 넘기지 않는다(뒤에 오는 클래스가 평상시 전환을 덮어 뗄 때 축소가 바로 튀어 돌아옴).
+- 비활성(`disabled`, `aria-disabled`, 안의 입력이 비활성)에서는 줄어들지 않는다. 마우스 호버 표시는 칩만 뺐다(디자인이 Hover를 Pressed로 바꿈). 라디오 카드의 선택 전 호버는 이전 시안 그대로 두었다. 동작 줄이기에서는 줄지 않고 색도 전환 없이 바로 바뀐다.
+- CSS `:active`로 처리해 스크롤이 시작되면 브라우저가 눌림을 풀고, 누른 채 영역 밖으로 나가 떼면 `click`이 나지 않는다. iOS·Android 실기기 느낌은 확인 전이다.
 
 ## 성능
 
-- `transform`과 `opacity`만 애니메이션한다. `width`, `height`, `top`, `left`, `padding`, `margin`을 애니메이션하면 매 프레임 layout을 다시 계산해 jank가 생긴다.
+- `transform`과 `opacity`만 애니메이션한다(예외: 아래 표의 메뉴 탭 선택 밑줄 `left`·`width` 250ms). `width`, `height`, `top`, `left`, `padding`, `margin`을 애니메이션하면 매 프레임 layout을 다시 계산해 jank가 생긴다.
   - 예외: 내용 높이를 모르는 칸을 펼치고 접을 때는 `grid-template-rows` 0fr↔1fr로 자리를 벌린다(아코디언, 번치 프로필 편집 공개 안내, 신고 상세 사유). `transform`으로는 아래 내용과 시트 높이를 밀어낼 수 없다. 사용자가 누를 때 한 번만 일어나고 반복 재생되지 않아 layout 비용을 받아들인다.
 - 모션 라이브러리를 도입하면, 짧은 shorthand API(예: `x`/`y`/`scale`을 직접 넘기는 형태)가 실제로 하드웨어 가속되는 transform 문자열로 적용되는지 확인한다. 라이브러리에 따라 shorthand가 메인 스레드에서 계산되어 부하 상황에 프레임을 떨어뜨릴 수 있다.
 - 화면과 박자를 맞춰야 하는 작업은 `requestAnimationFrame`(rAF)으로 한다.
-  - 끌기·스크롤·당기기처럼 포인터·스크롤 이벤트가 프레임보다 자주 오는 동안 화면을 바꾸면, 이벤트마다 그리지 않고 프레임마다 한 번만 그린다. 값은 이벤트에서 기억하고 rAF 안에서 DOM style·CSS 변수에 쓴다(`useCropDrag`). 이때 React state로 다시 그리지 않는다([motion-components.md](motion-components.md)의 「당겨서 새로고침」「스크롤로 헤더 숨김」).
+  - 끌기·스크롤·당기기처럼 포인터·스크롤 이벤트가 프레임보다 자주 오는 동안 화면을 바꾸면, 이벤트마다 그리지 않고 프레임마다 한 번만 그린다. 값은 이벤트에서 기억하고 rAF 안에서 DOM style·CSS 변수에 쓴다(`useCropDrag`). 이때 React state로 다시 그리지 않는다([feed.md](../specs/feed.md)의 「모션」 「당겨서 새로고침」「스크롤로 헤더 숨김」).
   - 계속 움직이는 효과(가장자리 자동 스크롤 등)는 `setInterval` 대신 rAF 반복으로 돌리고, 멈추거나 화면을 떠날 때 `cancelAnimationFrame`으로 끊는다(`useEdgeAutoScroll`).
   - 크기·위치를 읽는 일(`getBoundingClientRect`, `offsetHeight`, `scrollTop`)과 쓰는 일을 한 프레임 안에서 번갈아 하지 않는다. 읽기를 먼저 모으고 쓰기는 그 뒤(다음 rAF)에 한다. 번갈아 하면 브라우저가 매번 layout을 다시 계산한다.
-  - 「화면이 그려진 다음」이 필요한 작업(새 화면의 초점 이동, 붙여넣기 뒤 커서 위치, 전환이 시작된 뒤의 스크롤)은 `setTimeout(0)`이 아니라 rAF로 미룬다(`RouteFocus`, `BundleDetail`의 「댓글로 이동」). `setTimeout`은 그리기와 박자가 맞지 않아 한 프레임 늦거나 먼저 실행될 수 있다.
+  - 「화면이 그려진 다음」이 필요한 작업(새 화면의 초점 이동, 붙여넣기 뒤 커서 위치, 전환이 시작된 뒤의 스크롤)은 `setTimeout(0)`이 아니라 rAF로 미룬다(`RouteFocus`, 번들 상세 댓글로 이동 `useCommentsEntry`). `setTimeout`은 그리기와 박자가 맞지 않아 한 프레임 늦거나 먼저 실행될 수 있다.
   - 예약한 rAF는 effect 정리(cleanup)에서 취소한다. 화면이 사라진 뒤 실행되면 없는 요소를 건드린다.
 - toast 추가, toggle처럼 빠르게 반복 트리거되는 대상은 `@keyframes`보다 CSS `transition`을 쓴다. transition은 진행 중에 재시작되면 현재 값에서 이어지지만, keyframes는 처음부터 다시 시작한다.
 
@@ -56,12 +80,12 @@ Figma `공통 모션`(node `1962:18333`)이 정한 값이다. 디자이너가 �
 | 토스트              | Smart animation, `0, 0, 0.35, 1`, 350ms. 등장 5px 위로 이동·0%→100%, 퇴장 5px 아래로 이동·100%→0%. 노출 3초, 액션 버튼 포함 5초                                                         | `Toaster`가 sonner 항목에 transition을 덮어씀. 퇴장은 sonner가 200ms 뒤 항목을 제거해 200ms에 끝나게 함. 노출 시간은 `toast()`가 정함(액션이 있으면 5초)                                                                                                                                                                                                                                                                                                                                                        |
 | 팝오버 메뉴         | 더보기 메뉴 애니메이션(`7548:97687`, 2026-11-20 변경): 열기 scale 0.35→1·0%→100%, 280ms `cubic-bezier(0.2, 0.9, 0.3, 1)`. 닫기 1→0.35·100%→0%, 180ms ease-in. 트리거 쪽 모서리에서 커짐 | `Menu`의 `open`·`onExited`. 기준점 기본은 오른쪽 위, 아래쪽 버튼 위 메뉴는 `--menu-motion-origin: bottom right`. 이전 값(38px 이동·Gentle 400ms)을 대체                                                                                                                                                                                                                                                                                                                                                         |
 | 참여 멤버 카드 이동 | Smart animation, Gentle, 400ms(화면설계서 `2034:22714` 「멤버카드 목록 이동 인터랙션」). 「멤버 추가하기」와 「참여 멤버」 사이로 카드가 옮겨갈 때                                      | `useMoveAnimation`: 상태를 바꾸기 직전 위치를 기억하고 렌더 직후 달라진 만큼 `transform`으로 이동(FLIP). 곡선은 Gentle 스프링 근사 `cubic-bezier(0.22, 0, 0.4, 0.94)`(팝오버 메뉴가 쓰던 값)로 근사, 동작 줄이기에서는 이동하지 않음                                                                                                                                                                                                                                                                            |
-| 번들 사진 삭제      | Smart Animate, Slow, 350ms(화면설계서 `2034:24751`의 「사진 삭제 인터랙션」). 사진을 빼면 남은 사진과 「+ 사진 추가」 카드가 빈자리를 메우며 이동                                       | `useMoveAnimation(SLOW_MOVE)`(FLIP, 이 모션을 쓰던 캡션 화면이 제거돼(#354) 지금은 쓰는 곳이 없고 작성 화면 썸네일 삭제 모션에서 이어 씀). Slow(스프링 80·20·1)는 과감쇠라 0.92초에 99%에 닿으므로 350ms 구간으로 압축해 `cubic-bezier(0.24, 0.3, 0.14, 1)`로 근사(오차 0.6% 이내). 이동 동안 스크롤 스냅을 꺼야 목록이 끌려가지 않음                                                                                                                                                                           |
+| 번들 사진 삭제      | Smart Animate, Slow, 350ms(화면설계서 `2034:24751`의 「사진 삭제 인터랙션」). 사진을 빼면 남은 사진과 「+ 사진 추가」 카드가 빈자리를 메우며 이동                                       | `useMoveAnimation(SLOW_MOVE)`(FLIP, 이 모션을 쓰던 캡션 화면이 제거돼(#354) 지금은 `SLOW_MOVE`를 쓰는 곳이 없음. `useMoveAnimation`은 참여 멤버 관리(`DraftMemberManager`)가 기본값 400ms로만 씀, 2026-11-24 확인). Slow(스프링 80·20·1)는 과감쇠라 0.92초에 99%에 닿으므로 350ms 구간으로 압축해 `cubic-bezier(0.24, 0.3, 0.14, 1)`로 근사(오차 0.6% 이내). 이동 동안 스크롤 스냅을 꺼야 목록이 끌려가지 않음                                                                                                  |
 | 칩 버튼             | 누르는 동안 Hover, 손을 떼면 Selected. 둘 다 Dissolve·Ease out·300ms                                                                                                                    | `ChipButton`의 색 transition과 오버레이 투명도 300ms. 눌리는 동안(`active`)과 마우스 호버가 같은 Hover 모양                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 버튼                | 누르는 동안 Dissolve·Ease out·75ms                                                                                                                                                      | 위 "Easing과 duration"의 버튼 눌림 항목                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 바텀시트            | `0, 0, 0.35, 1`. 열기 340ms 아래에서 위로·40%→100%, 닫기 240ms 위에서 아래로·100%→40%. 드래그를 놓으면 내려가며 닫힘                                                                    | `BottomSheet`의 Popup·Backdrop transition. 끄는 동안은 transition을 끄고 손을 따라 움직인다. `40%→100%`는 토스트와 같은 표기라 투명도로 해석. 끌어서 닫을 때만 흐려지지 않고 손을 뗀 속도에 맞춘 시간(400ms × `--drawer-swipe-strength`, 최소 200ms)·`0.32, 0.72, 0, 1`로 내려가고 배경은 200ms에 걷힌다(#492, 배경은 시트가 끝나면 함께 사라지고 속도 변수를 받지 못해 시트 최소 시간에 맞춤. 240ms 고정이면 긴 시트가 뚝 끊겨 보였음. 디자이너 공유). 동작 줄이기 설정이면 이 값을 쓰지 않고 기본 닫힘 그대로 |
 | 모달                | 패널 중앙에서 opacity 0→1·scale 1.3→1, 200ms `0.03, 0.4, 0.1, 1`. 딤 100ms `0, 0, 0.15, 1`. 닫힘은 크기 유지·패널과 딤 100ms `0.35, 0, 1, 1` 페이드 아웃                                | `Dialog`(`ConfirmDialog`·`ActionDialog` 포함)의 Popup·Backdrop 기본 transition. 값 출처는 온보딩 나가기 모달(`BunchMood.spec.md`)                                                                                                                                                                                                                                                                                                                                                                               |
-| 메뉴 탭(아이콘)     | 탭을 누르면 Dissolve·Ease out·75ms(화면설계서 `1892:37781` 3번)                                                                                                                         | `MenuTabs.IconTab`이 겹친 Line·Fill 아이콘 투명도·색을 75ms ease-out으로 바꿈. 선택 밑줄은 Dissolve 대신 250ms ease-out으로 미끄러짐([motion-page-transitions.md](motion-page-transitions.md)의 「메뉴 탭 밑줄 이동」). 번치 홈 탭 패널은 좌우 밀기([motion-page-transitions.md](motion-page-transitions.md)의 「번치 홈 번들 탭 패널 밀기」)                                                                                                                                                                   |
+| 메뉴 탭(아이콘)     | 탭을 누르면 Dissolve·Ease out·75ms(화면설계서 `1892:37781` 3번)                                                                                                                         | `MenuTabs.IconTab`이 겹친 Line·Fill 아이콘 투명도·색을 75ms ease-out으로 바꿈. 선택 밑줄은 Dissolve 대신 250ms ease-out으로 미끄러짐([bunch-home.md](../specs/bunch-home.md)의 「모션」 「메뉴 탭 밑줄 이동」). 번치 홈 탭 패널은 좌우 밀기([bunch-home.md](../specs/bunch-home.md)의 「모션」 「번치 홈 번들 탭 패널 밀기」)                                                                                                                                                                                   |
 
 - 위쪽 토스트(`toast`의 `position: 'top'`, 제거된 사진 캡션 화면에서 쓰던 규칙): 같은 곡선·350ms로 등장은 5px 아래로 내려오며 0%→100%, 퇴장은 5px 위로 올라가며 100%→0%(화면설계서 `2034:24751` 3번, Chrome에서 프레임 측정으로 44→49px·49→44px 확인).
 - 토스트·메뉴처럼 반복해서 열리는 요소는 `@keyframes`보다 transition을 우선하지만, 메뉴는 열릴 때마다 처음부터 재생하는 모양이라 `@keyframes`를 쓴다(닫는 도중 다시 열면 현재 위치에서 이어지지 않는 점은 수용).
@@ -70,20 +94,51 @@ Figma `공통 모션`(node `1962:18333`)이 정한 값이다. 디자이너가 �
 
 ## 사진함 업로드 상태 줄
 
-[motion-components.md](motion-components.md)로 옮겼다(문서 길이, 2026-11-23).
+[photo-box.md](../specs/photo-box.md)의 「모션」으로 옮겼다(화면별 기록, 2026-11-23).
 
 ## 당겨서 새로고침
 
-[motion-components.md](motion-components.md)로 옮겼다(문서 길이, 2026-11-23).
+[feed.md](../specs/feed.md)의 「모션」으로 옮겼다(화면별 기록, 2026-11-23). 피드·번치 홈·사진함이 함께 쓰고 Figma 기준이 피드 화면이다.
 
 ## 스크롤로 헤더 숨김
 
-[motion-components.md](motion-components.md)로 옮겼다(문서 길이, 2026-11-23).
+[feed.md](../specs/feed.md)의 「모션」으로 옮겼다(화면별 기록, 2026-11-23).
 
 ## Lottie
 
-[motion-components.md](motion-components.md)로 옮겼다(문서 길이, 2026-11-23).
+디자이너가 Lottie 애니메이션을 전달할 예정이다(2026-10-14). 온보딩에 쓸 예정이고, 로그인 화면에 쓸지는 미정이다. 재생 라이브러리는 `lottie-react`(3.1.2, 2026-10-19 사용자 확인 후 `apps/web`에 추가)다. 아래는 도입 기준과 첫 도입(초대 링크 확인 화면의 초대장 로티)의 결과다. 초대장 연출은 2026-11 Figma 변경(`Seal & Flip`)으로 코드 모션으로 바뀌었고(`apps/web/src/features/onboarding/components/join/BunchJoinInvitation.spec.md`의 「모션」), 로티는 로딩·편집 중·피드 끝 표시에 쓴다.
+
+- 온보딩은 로그인 뒤에 나오므로, 첫 화면 로딩을 늦추지 않고 동적 import로 자산을 받을 수 있다. 온보딩 한 단계가 보이는 동안 다음 단계의 자산을 미리 받아 두면 전환할 때 끊기지 않는다(FE 판단). 로그인 화면에 쓰기로 정해지면 그 화면은 첫 렌더가 늦어질 수 있으니 다시 판단한다.
+- 자산 형식(`.json` 또는 압축된 `.lottie`)과 재생 라이브러리는 디자이너의 자산을 받은 뒤 정한다. 다른 프로젝트에서는 `lottie-react`를 썼다. production dependency 추가는 사용자 확인을 받는다.
+- 웹 앱의 로티 JSON은 `apps/web/src/shared/assets/lotties/`에서 관리한다. 재생 컴포넌트와 기능 로직은 사용하는 feature에 둔다. 앱 전용 자산을 디자인 시스템으로 옮기지 않는다.
+- 재생 컴포넌트는 브라우저 API를 쓰므로 클라이언트 컴포넌트(`'use client'`)로 둔다. 서버 컴포넌트에서 직접 import하지 않는다.
+- 자산이 50KB 이상이면 동적 import로 쓰는 시점에 받는다(제안). 정적 import하면 그 화면 번들에 JSON 전체가 들어간다. PR에는 자산 용량을 적는다.
+- `prefers-reduced-motion: reduce`이면 자동 재생과 반복을 끄고 정지 프레임을 보여준다. 애니메이션을 유일한 정보 전달 수단으로 쓰지 않고, 같은 정보를 텍스트로도 준다.
+- 장식용이면 `aria-hidden`을 주고, 의미가 있으면 텍스트 대체를 함께 준다.
+- 컨테이너 크기를 고정해서, 자산을 받기 전후에 layout이 밀리지 않게 한다.
+- 위 "애니메이션을 넣을지 판단" 표를 따른다. 자주 보는 요소에는 쓰지 않고 온보딩, 축하, 로딩 같은 드문 장면에 쓴다. "UI 애니메이션은 300ms를 넘지 않는다"는 전환에 대한 규칙이라 Lottie 연출 길이에는 적용하지 않지만, 재생 중에도 사용자의 interaction을 막지 않는다.
+- 복잡한 애니메이션은 WebView에서 프레임이 떨어질 수 있다. 렌더러 선택과 프레임은 실기기에서 확인한다(FE 판단, 미검증).
+- 테스트에서는 재생 라이브러리를 mock한다. 애니메이션의 모양은 테스트하지 않는다.
+- 도입 결과 (2026-10-19): `lottie-react` 3.x는 엔진 세 빌드(full·svg·light)를 함께 내보내서 모듈 전체를 동적 `import()`하면 셋이 모두 내려받아진다(합계 약 180KB gzip). 표현식이 없는 로티는 light 빌드만 쓰도록 `export { LottieLight } from 'lottie-react'` 래퍼(`shared/lib/lottieLight.ts`)를 동적 import해서 엔진 하나(약 164KB)와 래퍼(약 47KB)만 내려받는다. 새 로티를 넣을 때 표현식이 있으면 `LottieSvg`로 바꾼다.
+- 자산 위치 (확정): 로티 JSON은 `apps/web/src/shared/assets/lotties/`에 두고 재생 컴포넌트에서 동적 import한다. 초대장 로티(`inviteAnimation.json`)는 코드 모션으로 대체해 삭제했다(#292).
+- 로딩 상태 (2026-11-09, 앞으로의 기준): 「편집 중」(Editing)이 아닌 로딩 표시는 모두 디자이너가 전달한 `loading.json`(90×90, 물결처럼 번지는 점 패턴, 표현식 없음)으로 처리한다. 덮개를 쓸 때는 사진별·요소별이 아니라 페이지 전체에 하며, 화면 전체를 `overlay-dim-subtle`로 덮고 가운데에 재생한다. 2026-11-20(디자이너 확인)부터 덮개는 필요할 때만 쓴다. 보여 줄 내용이 아직 없을 때(첫 진입)와 기다리는 동안 다른 것을 누르면 안 되는 길거나 되돌릴 수 없는 작업(사진 업로드·여러 장 저장·삭제, 번치 만들기, 번들 발행, 발행한 번들 수정 저장 등)에는 덮는다. 짧은 저장·확인 뒤 다음 화면으로 넘어가는 동작(약관·프로필 시작하기, 초대 코드·링크 확인, 알림 열기, 번들 초안 만들기)은 덮지 않고 누른 버튼을 바로 비활성으로 바꾼 뒤 끝나면 넘어간다. 첫 진입도 화면 모양을 알면 스켈레톤을 우선한다(#466). 버튼만 비활성으로 바꾼 짧은 동작이 1초를 넘기면 그때 덮는다(`PageLoading`의 `delayMs`, `LATE_OVERLAY_MS` 1000ms, 2026-11-20 #477 제안값). 흐름 안의 단계(번들 만들기·편집, 초대 확인 진입)의 첫 진입 로딩도 1초를 넘길 때만 덮는다. 로그인 확인 가드(`AuthGate`)의 덮개도 첫 확인은 1초를 넘길 때만 덮는다(#505). 한 번 화면이 정해진 뒤 다시 로딩되면 바로 덮는다. 앱은 탭마다 WebView가 따로 열려 각 탭이 로그인 상태를 새로 확인하는데, 바로 덮으면 탭을 열 때마다 덮개가 번쩍인 뒤 스켈레톤으로 바뀌었다(로그인된 브라우저에서 탭 주소를 새로 열어 약 2초 덮개 확인, 개발 서버). 앱 스플래시를 닫는 판정은 덮개가 보이는지가 아니라 `PageLoading`이 붙었는지로 하므로 그대로다. 스켈레톤을 만드는 기준(층·배치, 회색으로 그리는 범위, 안내)은 `skeleton.md`를 따른다. 같은 이름의 이전 로티(점 3개, 2026-10-31)를 2026-11-09에 물결 점 패턴으로 교체했다. 자산은 `apps/web/src/shared/assets/lotties/loading.json`, 공통 컴포넌트는 `shared/components/loading/PageLoading.tsx`(dim + 로티)와 `LoadingRipple.tsx`다. 재생은 `shared/components/loading/LazyLottie.tsx`, 엔진(`shared/lib/lottieLight.ts`)과 JSON의 동적 import·캐시는 `shared/lib/lottieLoader.ts`가 맡는다. 엔진·JSON은 모듈에서 한 번만 받아 공유하고, 동작 줄이기에서는 첫 프레임에 정지하며, 받지 못하면 빈 자리만 남긴다. 상태 안내는 사용하는 화면이 live region으로 맡고, 덮개가 필요한 로딩은 `PageLoading`으로 쓴다. 화면 전체 로딩(`PageLoading`)의 덮개는 하이드레이션 뒤 `document.body`에 그린다. 화면 틀(전환 영역)이 `fixed`의 기준이 되고 넘친 곳을 잘라 상태 바·홈 표시 영역이 흰색으로 남았기 때문이다(#500, 2026-11-21 팀 QA).
+- 편집 중 표시 (Editing): 번들 작성 화면의 「다른 멤버가 편집 중」은 초록 점과 「○○님이 편집 중」 문구로 보인다(2026-11-15 presence 개편부터). 그 전에 쓰던 디자이너 전달 로티 `editing.json`(점 3개, 2026-11-01)과 `EditingLottie`는 쓰는 곳이 없어 2026-11-24에 지웠다(#546). DS `TextField`·`BundleCommentCard`의 `editingContent`는 앱이 넘기는 표시 자리로 남아 있다.
+- 재생 실패 (확정): 로티가 화면 전환을 이끄는 경우(로딩 화면) 라이브러리·자산을 못 받거나 재생 오류가 나면 멈추지 않고 다음 화면으로 넘긴다. 앱 첫 실행 인트로(`IntroMotion`)가 이 경우다(이전 초대장 로딩 화면은 코드 모션으로 대체되어 삭제).
+- 동작 줄이기 (확정): 정지 프레임이 의미가 없는 장면은 로티를 불러오지 않고 짧게 안내만 둔 뒤 넘어간다. 로티를 쓰는 화면이 새로 생길 때의 기준이다.
+- 앱 첫 실행 인트로(2026-11-10)의 로티·줄 모션 기록은 [login-signup.md](../specs/login-signup.md)의 「모션」으로 옮겼다(2026-11-23).
 
 ## 페이지 전환
 
-[motion-page-transitions.md](motion-page-transitions.md)로 옮겼다(문서 길이, 2026-11-23).
+web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한다. React 실험 기능 `ViewTransition`과 별도의 전역 전환 CSS는 사용하지 않는다.
+
+전환을 고르는 순서는 아래와 같다(2026-11-02 결정). 라이브러리를 들인 이유가 검증된 전환을 그대로 쓰는 것이라, 직접 만든 전환은 예외로만 둔다.
+
+1. SSGOI 프리셋(`drill`·`slide`·`sheet`·`fade`·`zoom`·`hero` 등)에서 화면 관계에 맞는 것을 고른다. 목록 → 상세처럼 한 단계 들어가는 이동은 `drill`, 순서가 있는 단계는 `slide`, 모달 같은 화면은 `sheet`다.
+2. 화면설계서의 시간·곡선은 프리셋의 `override`로만 맞춘다(예: `slide`에 `easeOutIntegrator`). 프리셋 기본값이 화면 관계에 맞으면 그대로 둔다.
+3. 프리셋으로 표현할 수 없을 때만 직접 만들고, 해당 기능 스펙의 「모션」 절에 이유를 적는다. 지금은 하단 탭 크로스페이드(결정 기록 017, 프리셋 `fade`가 순차 방식이라 같은 헤더가 흐려짐)가 해당한다.
+4. 어느 전환이든 나가는 화면 처리(`inert`, `data-page-leaving`)는 `override`로 더한다.
+
+- 설정: `apps/web/src/app/(app)/AppTransitions.tsx`의 경로 쌍과 화면 이동 공통 시간(`PUSH_DURATION_MS`·`PUSH_EASING`)을 수정한다. 전역 provider만 공유하며, 등록하지 않은 이동과 첫 진입에는 전환을 적용하지 않는다. 나가는 화면 표식·상태 바 처리는 같은 폴더의 `_transitions/pageGuards.ts`, 하단 탭 크로스페이드는 `_transitions/tabCrossfade.ts`에 둔다.
+- 접근성: `prefers-reduced-motion` 변경을 구독해 전환 규칙을 비운다. SSGOI가 함수형 규칙을 캐시하므로 함수 안에서 설정을 읽는 것으로 대체하지 않는다. 전환 중 이전 화면은 `inert`로 포커스·접근성 탐색에서 제외하고 종료 시 복원한다.
+- 검증: 진행도 단위 테스트와 온보딩 회귀 테스트, Chromium의 순방향·뒤로 가기·입력 유지·헤더 유지·동작 줄이기 변경·좁은 화면/넓은 화면 중간 프레임을 확인한다. iOS WKWebView와 실제 화면 읽기 도구는 별도 확인이 필요하다. 네이티브 스와이프와 전환 중 빠른 연속 이동도 실기기에서 확인한다.
+- 화면별 전환(어느 이동에 어떤 프리셋·시간을 썼고 어떻게 확인했는지)은 각 기능 스펙의 「모션」 절에 있다(2026-11-23 옮김).

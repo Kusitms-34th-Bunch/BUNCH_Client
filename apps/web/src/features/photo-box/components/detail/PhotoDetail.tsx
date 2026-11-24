@@ -7,8 +7,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { replaceUrl } from '@/shared/lib/replaceUrl';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { replaceUrl } from '@/shared/lib/navigation/replaceUrl';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PHOTO_BOX_PATHS } from '../../constants/paths';
 import { usePhotoBox } from '../../hooks/usePhotoBox';
@@ -70,8 +70,8 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   const [entered, setEntered] = useState(false);
   if (data !== undefined && present && !entered) setEntered(true);
   const missing = data !== undefined && !present && !entered;
-  // 들어온 뒤 다른 곳에서 지워져 지금 보는 사진이 목록에서 사라진 경우(내가 삭제하는 동안은 삭제 흐름이 처리)
-  const deleting = useRef(false);
+  // 들어온 뒤 다른 곳에서 지워져 지금 보는 사진이 목록에서 사라진 경우(내가 지우거나 날짜를 바꾸는 동안은 그 흐름이 처리)
+  const ownChange = useRef(false);
   const vanished = entered && data !== undefined && currentIndex < 0;
   // 오류·번치 없음은 상세에서 보여 줄 화면이 없어 사진함으로 보냄(사진함이 오류 화면과 다시 시도를 가짐)
   const unavailable = state.kind === 'error' || state.kind === 'no-bunch';
@@ -88,7 +88,7 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
   }, [goneOnServer, invalidatePhotos, router]);
 
   useEffect(() => {
-    if (!vanished || deleting.current) return;
+    if (!vanished || ownChange.current) return;
     toastAfterNavigation(PHOTO_BOX_MESSAGES.deletedPhoto);
     router.replace(PHOTO_BOX_PATHS.list);
   }, [vanished, router]);
@@ -105,24 +105,19 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
 
   // 내가 사진을 지우거나 날짜를 바꾸는 동안에는 목록에서 사라져도 별도 안내 없이 화면의 이탈 흐름(토스트·이동)에 맡김
   // (날짜 바꾸기가 사라진 사진으로 거절되면 목록을 다시 받아 사진이 빠진 뒤에 화면이 같은 안내로 이동하므로 안내가 두 번 실행되지 않게 함)
+  const whileOwnChange = async <T,>(run: () => Promise<T>) => {
+    ownChange.current = true;
+    try {
+      return await run();
+    } finally {
+      ownChange.current = false;
+    }
+  };
   const guardedActions = {
     ...actions,
-    deletePhotos: async (ids: readonly string[]) => {
-      deleting.current = true;
-      try {
-        return await actions.deletePhotos(ids);
-      } finally {
-        deleting.current = false;
-      }
-    },
-    changePhotoDates: async (ids: readonly string[], date: Date | null) => {
-      deleting.current = true;
-      try {
-        await actions.changePhotoDates(ids, date);
-      } finally {
-        deleting.current = false;
-      }
-    },
+    deletePhotos: (ids: readonly string[]) => whileOwnChange(() => actions.deletePhotos(ids)),
+    changePhotoDates: (ids: readonly string[], date: Date | null) =>
+      whileOwnChange(() => actions.changePhotoDates(ids, date)),
   };
 
   if (!data || photoId === undefined || (!present && !entered)) return <PageLoading />;

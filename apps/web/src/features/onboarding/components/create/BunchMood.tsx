@@ -1,12 +1,11 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { Button, cn, toast } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
-import { isDefiniteRejection } from '@/shared/api/errorStatus';
+import { apiErrorCode, isDefiniteRejection } from '@/shared/api/client/errorStatus';
 import mood1 from '@/shared/assets/images/bunch-mood/type-1.svg';
 import mood2 from '@/shared/assets/images/bunch-mood/type-2.svg';
 import mood3 from '@/shared/assets/images/bunch-mood/type-3.svg';
@@ -67,7 +66,7 @@ export function BunchMood() {
         },
         onError: (error) => {
           submitted.current = false;
-          const code = isApiError(error) ? error.code : undefined;
+          const code = apiErrorCode(error);
           // 서버가 요청을 거절한 경우(4xx)는 같은 키로 다시 보내면 거절이 재생될 수 있어 키를 버림
           // 408·429는 서버가 이미 처리했을 수 있어 같은 키로 다시 보내 중복 생성을 막음
           if (isDefiniteRejection(error)) draft.discardIdempotencyKey();
@@ -122,8 +121,8 @@ export function BunchMood() {
                 <label
                   key={item.value}
                   className={cn(
-                    // 선택 테두리 1px는 안쪽 선(outline)이라 카드 크기가 변하지 않음. 눌림은 카드 전체 검정 10% 겹침
-                    'rounded-r4 p-padding-p6 gap-s4 bg-surface-secondary has-checked:outline-border-primary relative flex h-48 cursor-pointer touch-manipulation flex-col items-center justify-center overflow-hidden outline -outline-offset-1 outline-transparent',
+                    // 선택 테두리 1px는 안쪽 선(outline)이라 카드 크기가 변하지 않음. 눌림은 카드 전체 검정 10% 겹침과 0.98 축소(Card)
+                    'press-scale-large rounded-r4 p-padding-p6 gap-s4 bg-surface-secondary has-checked:outline-border-primary relative flex h-48 cursor-pointer touch-manipulation flex-col items-center justify-center overflow-hidden outline -outline-offset-1 outline-transparent',
                     'after:bg-overlay-hover after:pointer-events-none after:absolute after:inset-0 after:opacity-0 active:after:opacity-100',
                     // 선택 테두리 색보다 포커스 색이 우선
                     'has-focus-visible:outline-border-brand! has-focus-visible:outline-2 has-focus-visible:outline-offset-2',

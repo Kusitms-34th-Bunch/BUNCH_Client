@@ -1,9 +1,9 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { toDomainId } from '@/shared/api/ids';
-import { defaultBunchImage } from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import { toDomainId } from '@/shared/api/client/ids';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
+import { defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import type { FollowStatus, OtherBunch } from '../lib/types';
 import type { Home, publishedBundlesPageSchema } from './bunchHome';
 

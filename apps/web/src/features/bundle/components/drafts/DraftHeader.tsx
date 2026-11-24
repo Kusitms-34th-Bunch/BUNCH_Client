@@ -1,6 +1,6 @@
-import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Header } from '@app/design-system';
 import { ErrorBanner } from '@app/design-system/web';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import type { SaveStatus } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { DraftMenu } from './DraftMenu';
@@ -35,11 +35,7 @@ export function DraftHeader({
       {/* 더보기 메뉴가 헤더 바로 아래에 뜨도록 위치 기준 */}
       <div className="relative">
         <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-              <LineChevronLeftLargeIcon aria-hidden="true" />
-            </HeaderIconButton>
-          }
+          leading={<HeaderBackButton onClick={onBack} />}
           title={<SaveStatusText status={saveStatus} />}
           trailing={canLeave ? <DraftMenu onLeave={onLeave} /> : undefined}
         />

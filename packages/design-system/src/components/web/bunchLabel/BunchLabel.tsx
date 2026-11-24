@@ -22,7 +22,7 @@ export const BunchLabel = ({ name, imageSrc, className, ...props }: BunchLabelPr
       // 테두리는 Figma처럼 안쪽 선(크기에 포함되지 않음, 높이 54)
       'inset-ring-border-tertiary bg-surface-primary rounded-r4 px-padding-p4 py-padding-p5 gap-s4 relative flex w-full cursor-pointer touch-manipulation items-center justify-between text-left inset-ring',
       // 눌림: 이미지·바탕 위로 overlay-hover를 덮음(Figma Pressed)
-      'before:rounded-r4 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+      'before:rounded-r4 before:bg-overlay-hover press-overlay before:z-10',
       'enabled:active:before:opacity-100',
       'disabled:bg-surface-disabled disabled:inset-ring-border-disabled disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',
       // 고대비 모드는 box-shadow(inset-ring)를 그리지 않아 같은 자리에 1px 선을 따로 그림

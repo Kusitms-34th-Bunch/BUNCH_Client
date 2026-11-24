@@ -32,7 +32,7 @@ jobs:
         id: chromatic
         run: echo "enabled=${{ env.CHROMATIC_PROJECT_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: steps.chromatic.outputs.enabled == 'true'
         with:
           fetch-depth: 0
@@ -46,7 +46,7 @@ jobs:
       - if: steps.chromatic.outputs.enabled == 'true'
         run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         if: steps.chromatic.outputs.enabled == 'true'
         with:
           node-version: 24

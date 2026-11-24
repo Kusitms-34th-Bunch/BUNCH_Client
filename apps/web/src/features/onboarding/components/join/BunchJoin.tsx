@@ -1,16 +1,16 @@
 'use client';
 
 import { isApiError } from '@app/api-core';
-import { Button, Header, LineChevronLeftLargeIcon, TextField, toast } from '@app/design-system';
+import { Button, Header, TextField, toast } from '@app/design-system';
 import { PageHeader } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useId, useRef, useState } from 'react';
 import { replaceTabPath } from '@/shared/bridge/client';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
-import { readClipboardText } from '@/shared/lib/clipboard';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
+import { readClipboardText } from '@/shared/lib/native/clipboard';
 import { INVITATION_ERROR_CODES, ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useJoinInvitationFlow } from '../../contexts/joinInvitationContext';
@@ -109,15 +109,12 @@ export function BunchJoin() {
       header={
         <Header
           leading={
-            <HeaderIconButton
-              label="뒤로 가기"
+            <HeaderBackButton
               // 확인 중·이동 중에는 무시(나가기 창이 뜬 채 늦게 온 성공이 다음 화면으로 넘기지 않게)
               onClick={() => {
                 if (!verify.isPending && !leaving) openExitDialog();
               }}
-            >
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            />
           }
         />
       }

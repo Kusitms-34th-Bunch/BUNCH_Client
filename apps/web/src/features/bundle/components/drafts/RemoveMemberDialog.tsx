@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, toast } from '@app/design-system';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { DraftMember } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 

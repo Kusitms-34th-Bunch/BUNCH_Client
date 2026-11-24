@@ -6,23 +6,20 @@ import { mockDrafts } from '@/mocks/db/drafts';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
+import { readPublishBlockers } from './bundleErrors';
 import {
   addBundleParticipant,
-  changeBundlePhotos,
   createBundle,
   getBundle,
-  moveBundlePhoto,
   publishBundle,
-  readPublishBlockers,
-  readVersionConflict,
   removeBundleParticipant,
   saveBundleComment,
   saveBundleDate,
   mergeBundleTitle,
-  saveBundleVisibility,
 } from './bundles';
+import { changeBundlePhotos, moveBundlePhoto } from './photos';
 
 const bunchId = String(MOCK_BUNCH_ID);
 const { memberA, memberB, me } = MOCK_MEMBER_IDS;
@@ -60,7 +57,7 @@ describe('번들 API', () => {
       permissions: { creator: true, canPublish: true },
     });
     expect(draft.photos.map((photo) => photo.sourcePhotoId)).toEqual(photos);
-    expect(draft.photos[0]?.src).toBe('/mock/photos/S4.jpg');
+    expect(draft.photos[0]?.src).toBe('/mock/photos/S4.webp');
   });
 
   it('고른 사진·참여자 id를 서버 숫자로 바꿔 순서대로 보내고 멱등 키를 헤더에 싣는다', async () => {
@@ -117,15 +114,12 @@ describe('번들 API', () => {
       requestId: createIdempotencyKey(),
     });
     expect(merged).toMatchObject({ title: '설악산', titleVersion: 1, titleTooLong: false });
-    await saveBundleVisibility({ ...base, value: 'PRIVATE', expectedVersion: 0 });
     await saveBundleDate({ ...base, value: '2026-10-18', expectedVersion: 0 });
     const saved = await saveBundleComment({ ...base, value: '내 코멘트', expectedVersion: 0 });
 
     expect(saved).toMatchObject({
       title: '설악산',
       titleVersion: 1,
-      visibility: 'PRIVATE',
-      visibilityVersion: 1,
       date: '2026-10-18',
       dateVersion: 1,
       dateChips: [],
@@ -134,22 +128,6 @@ describe('번들 API', () => {
     // 날짜를 null로 저장하면 날짜 필드를 보내지 않아 해제됨
     const cleared = await saveBundleDate({ ...base, value: null, expectedVersion: 1 });
     expect(cleared.date).toBeNull();
-  });
-
-  it('버전이 어긋나면 BUNDLE_003이고 현재 값과 버전을 읽을 수 있다', async () => {
-    const draft = await createBundle(bunchId, photos, createIdempotencyKey(), [
-      String(MOCK_MEMBER_IDS.memberA),
-    ]);
-    const base = { bunchId, bundleId: draft.id, mode: 'DRAFT' } as const;
-    await saveBundleVisibility({ ...base, value: 'PUBLIC', expectedVersion: 0 });
-
-    const error = await catchError(
-      saveBundleVisibility({ ...base, value: 'PRIVATE', expectedVersion: 0 }),
-    );
-
-    expect(error).toMatchObject({ status: 409, code: 'BUNDLE_003' });
-    expect(readVersionConflict(error)).toEqual({ value: 'PUBLIC', version: 1 });
-    expect(readVersionConflict(new Error('x'))).toBeUndefined();
   });
 
   it('참여자를 더하고 제외하면 참여 목록이 바뀐다', async () => {

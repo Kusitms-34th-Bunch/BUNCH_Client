@@ -130,6 +130,37 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     },
   );
 
+  it('제자리에서 흐려지며 나가는 화면(상세 → 피드)은 반 넘게 흐려지면 다 사라지기 전이라도 보인다(#532)', () => {
+    const runFrames = runFramesWith();
+    const cover = document.body.appendChild(document.createElement('div'));
+    cover.setAttribute('data-page-leaving', '');
+    coverAt(cover, 0);
+    pathname.current = '/feed';
+    render(<NativeTabBarVisibility />);
+    cover.style.opacity = '0.7';
+    runFrames();
+    expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+
+    cover.style.opacity = '0.4';
+    runFrames();
+    expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
+    cover.remove();
+  });
+
+  it('닫히는 바텀시트는 흐려져도 탭 바 자리에 남아 있으면 기다린다(내려가며 함께 흐려짐)', () => {
+    const runFrames = runFramesWith();
+    const cover = document.body.appendChild(document.createElement('div'));
+    cover.setAttribute('role', 'dialog');
+    cover.setAttribute('data-ending-style', '');
+    cover.style.opacity = '0.4';
+    coverAt(cover, 0.5);
+    pathname.current = '/feed';
+    render(<NativeTabBarVisibility />);
+    runFrames();
+    expect(setNativeTabBarVisible).not.toHaveBeenCalled();
+    cover.remove();
+  });
+
   it('덮는 것이 사라지지 않아도 1초가 지나면 보인다', () => {
     const runFrames = runFramesWith();
     const now = vi.spyOn(performance, 'now').mockReturnValue(0);

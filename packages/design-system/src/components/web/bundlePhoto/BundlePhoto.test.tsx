@@ -47,6 +47,23 @@ const stubObservers = () => {
 };
 
 describe('BundlePhoto', () => {
+  it.each([
+    [undefined, null, null],
+    [true, null, 'high'],
+    [false, 'lazy', null],
+  ])(
+    'priority=%s이면 첫 사진 loading=%s, fetchpriority=%s이고 나머지 사진은 늘 lazy',
+    (priority, loading, fetchPriority) => {
+      const { container } = render(
+        <BundlePhoto variant="detail" photos={photos} priority={priority} />,
+      );
+      const [first, ...others] = container.querySelectorAll('img');
+      expect(first?.getAttribute('loading')).toBe(loading);
+      expect(first?.getAttribute('fetchpriority')).toBe(fetchPriority);
+      for (const img of others) expect(img.getAttribute('loading')).toBe('lazy');
+    },
+  );
+
   it('공유 요소 키는 thumbnail이면 카드 전체, detail이면 첫 사진에만 붙는다', () => {
     const { container, rerender } = render(
       <BundlePhoto photos={photos} heroKey="bundle-photo-1" />,

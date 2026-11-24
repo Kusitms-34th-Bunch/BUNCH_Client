@@ -1,13 +1,13 @@
+import { APP_PATHS } from '@/shared/constants/paths';
+
 export const PHOTO_BOX_PATHS = {
   /** 사진함 탭(상세에서 돌아갈 곳) */
-  list: '/photos',
+  list: APP_PATHS.photos,
   /** 사진 상세 */
   detail: (photoId: string) => `/photos/${photoId}`,
   // 번치 없음 화면에서 이어지는 온보딩 route(URL 계약만 두고 onboarding feature는 import하지 않음)
-  createBunch: '/onboarding/create',
-  joinBunch: '/onboarding/join',
-  // 번들 만들기에서 만든 초안의 작성 화면(URL 계약만 두고 bundle feature는 import하지 않음)
-  draft: (draftId: string) => `/bunch/drafts/${draftId}`,
+  createBunch: APP_PATHS.createBunch,
+  joinBunch: APP_PATHS.joinBunch,
   /** 동적 route의 전환 경계 id(규칙과 화면 DOM의 data-ssgoi-transition에 함께 사용). 실제 URL이 아님 */
   transitionIds: {
     detail: '/photos/detail',

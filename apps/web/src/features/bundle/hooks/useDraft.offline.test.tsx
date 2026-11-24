@@ -7,7 +7,7 @@ import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed'
 import { fail } from '@/mocks/lib/envelope';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import { server } from '@/mocks/server';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { createBundle } from '../api/bundles';
 import { BUNDLE_MESSAGES } from '../constants/messages';
@@ -204,6 +204,26 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
   });
 
+  it('끄는 동안 다른 경로로 상세를 다시 받아도(건너뛴 이벤트·자동 저장 응답·재연결) 화면의 사진 목록은 그대로다(기능 spec 4.3.6)', async () => {
+    const { id, client, result } = await renderReady();
+    const shownIds = () => ready(result.current.state).draft.photos.map((photo) => photo.id);
+    const [first, second] = ready(result.current.state).draft.photos;
+
+    act(() => result.current.actions.setPhotoDragging(true, second!.id));
+    removeServerPhoto(id, first!.id);
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    // 다른 멤버의 코멘트 이벤트가 revision을 건너뛰어 상세를 다시 받는 경우와 같음
+    await act(() => client.refetchQueries({ queryKey: bundleKeys.detail(bunchId, id) }));
+    // 같은 상세에서 만드는 픽 목록에서 지운 사진이 빠질 때까지 기다림(새 상세가 화면 값에 반영됨)
+    await waitFor(() =>
+      expect(ready(result.current.state).draft.picks).not.toHaveProperty(first!.id),
+    );
+    expect(shownIds()).toEqual([first!.id, second!.id]);
+
+    act(() => result.current.actions.setPhotoDragging(false));
+    await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
+  });
+
   it('끄는 동안 사진 변경 이벤트가 없었다면 놓은 뒤 상세를 다시 받지 않는다', async () => {
     const { id, client, result } = await renderReady();
     const photoId = ready(result.current.state).draft.photos[0]!.id;
@@ -335,6 +355,32 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     await waitFor(() => expect(shownIds()).toEqual([second!.id]), { timeout: 5000 });
   });
 
+  it('내 참여 멤버 변경 요청이 진행 중이면 PARTICIPANTS 이벤트만 보류하고 끝나면 최신 상세로 맞춘다', async () => {
+    const { result } = await renderReady();
+    let detailRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/participants', async () => {
+        await delay(200);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        return undefined;
+      }),
+    );
+    expect(connection.holdEvent?.('PARTICIPANTS')).toBe(false);
+
+    act(() => void result.current.actions.addMember(String(MOCK_MEMBER_IDS.memberB)));
+
+    // 요청 상태(isPending)는 다음 렌더에 반영됨
+    await waitFor(() => expect(connection.holdEvent?.('PARTICIPANTS')).toBe(true));
+    expect(connection.holdEvent?.('PHOTOS')).toBe(false);
+    await waitFor(() => expect(connection.holdEvent?.('PARTICIPANTS')).toBe(false), {
+      timeout: 5000,
+    });
+    await waitFor(() => expect(detailRequests).toBeGreaterThan(0), { timeout: 5000 });
+  });
+
   // 보류한 이벤트를 대신하는 재조회가 실패하는 경우: 사진 3장 번들에서 내가 첫 사진을 빼는 동안 이벤트를 보류시킴
   const startHeldRequest = async () => {
     const created = await createBundle(
@@ -435,6 +481,37 @@ describe('useDraft 내 변경 요청 중의 저장 이벤트', () => {
     releaseRetry();
     await waitFor(() => expect(shownIds()).toEqual([second.id]), { timeout: 5000 });
     await waitFor(() => expect(banner()).toBe(false));
+  });
+
+  it('재조회를 다시 받기 전에 새 요청이 시작되면 기다렸다가, 요청이 끝난 뒤 처음부터 다시 받는다', async () => {
+    const { view, first, second, shownIds } = await startHeldRequest();
+    let detailRequests = 0;
+    let changeRequests = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/bundles/:id/photos/changes', async () => {
+        changeRequests += 1;
+        // 두 번째 요청은 재조회 재시도 간격(1초)보다 오래 걸림
+        await delay(changeRequests === 1 ? 200 : 1500);
+        return undefined;
+      }),
+      http.get('/api/bunches/:bunchId/bundles/:id', () => {
+        detailRequests += 1;
+        return detailRequests === 1 ? fail(500, 'SERVER_ERROR') : undefined;
+      }),
+    );
+
+    act(() => void view.result.current.actions.removePhoto(first.id));
+    expect(connection.holdEvent?.('PHOTOS')).toBe(true);
+    await waitFor(() => expect(detailRequests).toBe(1), { timeout: 5000 });
+    act(() => void view.result.current.actions.removePhoto(second.id));
+
+    // 요청이 진행 중인 동안에는 예약했던 재시도를 보내지 않음
+    await act(() => wait(1200));
+    expect(detailRequests).toBe(1);
+
+    // 요청이 끝나면 다시 받아 화면을 맞춤
+    await waitFor(() => expect(detailRequests).toBe(2), { timeout: 5000 });
+    await waitFor(() => expect(shownIds()).toHaveLength(1), { timeout: 5000 });
   });
 });
 

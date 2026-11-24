@@ -15,33 +15,28 @@ permissions:
   contents: read
 
 jobs:
-  build-and-pr:
+  # 비밀 없음: 의존성 설치·저장소 스크립트는 이 job에서만 실행(공급망 코드가 토큰에 닿지 않게)
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
     steps:
-      - name: Check automation token
-        env:
-          PR_TOKEN: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
-        run: |
-          if [ -z "$PR_TOKEN" ]; then
-            echo "Set DESIGN_TOKENS_PR_TOKEN with Contents and Pull requests read/write access to this repository."
-            exit 1
-          fi
-
-      # PAT-authenticated pushes and PRs allow their CI workflows to run without bot approval.
-      # 토큰을 .git에 남기지 않음(설치·변환 단계의 코드가 읽지 못하게). push할 때만 그 단계에서 넘김
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: design-token
-          fetch-depth: 0
           persist-credentials: false
+
+      - name: Record source commit
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Suspicious file guard
         run: node turbo/workflows/check-suspicious.mjs
 
       - run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: yarn
@@ -54,6 +49,63 @@ jobs:
           yarn tokens:check
           yarn workspace @app/design-system test scripts/tokens.test.ts
 
+      # 게시 job에는 생성 CSS 한 파일만 넘김
+      - uses: actions/upload-artifact@v6
+        with:
+          name: design-tokens-css
+          path: packages/design-system/tokens/tokens.css
+          if-no-files-found: error
+          retention-days: 1
+
+  # 비밀 있음: 설치·저장소 스크립트를 실행하지 않고 받은 CSS만 커밋·push·PR
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check automation token
+        env:
+          PR_TOKEN: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
+        run: |
+          if [ -z "$PR_TOKEN" ]; then
+            echo "Set DESIGN_TOKENS_PR_TOKEN with Contents and Pull requests read/write access to this repository."
+            exit 1
+          fi
+
+      # PAT-authenticated pushes and PRs allow their CI workflows to run without bot approval.
+      # 변환 job이 검사한 커밋 그대로(그 사이 design-token이 움직였으면 아래 push가 fast-forward로 실패). 토큰은 .git에 남기지 않음
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: design-tokens-css
+          path: ${{ runner.temp }}/design-tokens
+
+      # 받은 것이 일반 파일 하나이고 크기가 정상일 때만 그 경로에 둠
+      - name: Place generated CSS
+        run: |
+          dir="$RUNNER_TEMP/design-tokens"
+          file="$dir/tokens.css"
+          if [ "$(find "$dir" -mindepth 1 | wc -l)" -ne 1 ] || [ ! -f "$file" ] || [ -L "$file" ]; then
+            echo "Artifact must contain only tokens.css as a regular file."
+            exit 1
+          fi
+          size=$(stat -c %s "$file")
+          if [ "$size" -eq 0 ] || [ "$size" -gt 1048576 ]; then
+            echo "Unexpected tokens.css size: $size bytes."
+            exit 1
+          fi
+          # 받는 자리가 링크면 runner의 다른 파일(예: ~/.gitconfig)을 덮을 수 있어 멈춤
+          if [ -L packages/design-system/tokens/tokens.css ]; then
+            echo "packages/design-system/tokens/tokens.css must not be a symlink."
+            exit 1
+          fi
+          cp "$file" packages/design-system/tokens/tokens.css
+
       - name: Commit generated CSS
         env:
           PR_TOKEN: ${{ secrets.DESIGN_TOKENS_PR_TOKEN }}
@@ -62,7 +114,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add packages/design-system/tokens/tokens.css
           if ! git diff --cached --quiet; then
-            # 앞 단계(설치·변환)가 심었을 수 있는 git hook·credential helper가 이 단계의 토큰을 보지 못하게 commit·push 모두 끔
             git -c core.hooksPath=/dev/null commit -m "chore: 디자인 토큰 자동 변환"
             git -c core.hooksPath=/dev/null -c credential.helper= push "https://x-access-token:${PR_TOKEN}@github.com/${{ github.repository }}.git" HEAD:design-token
           fi

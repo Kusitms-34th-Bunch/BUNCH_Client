@@ -1,5 +1,8 @@
+import { apiErrorCode, isDefiniteRejection } from '@/shared/api/client/errorStatus';
+import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import type { Draft, DraftEditing, SaveStatus } from './types';
-import { TITLE_MAX_LENGTH } from '../constants/messages';
+import { readPublishBlockers } from '../api/bundleErrors';
+import { BUNDLE_MESSAGES, TITLE_MAX_LENGTH } from '../constants/messages';
 import { countTitleGraphemes } from './title';
 
 export type PublishBlocker =
@@ -66,3 +69,27 @@ export const getEditingMemberIds = (editing: DraftEditing): ReadonlySet<string> 
     ...Object.values(editing.locationEditors ?? {}).flat(),
     ...(editing.dateMemberIds ?? []),
   ]);
+
+/** 발행 실패를 화면 결과·안내 문구·요청 키 유지 여부로 분류 */
+export const classifyPublishError = (
+  error: unknown,
+): { outcome: 'blocked' | 'failed'; message: string; keepKey: boolean } => {
+  // 확정 거절(408·429를 뺀 4xx)이면 같은 요청이 다시 거절될 수 있어 키를 비움
+  // 응답 없음·5xx·408·429와 서버 응답이 아닌 오류는 서버가 이미 발행했을 수 있어 같은 키로 다시 보냄
+  const keepKey = !isDefiniteRejection(error);
+  // 발행 잠금에서 다시 검사한 제목·코멘트에 금칙어가 있어 거부(COMMON_003): 최신 상태는 다시 받아 입력란 아래 안내로 보임
+  if (prohibitedFieldsOf(error) !== null) {
+    return { outcome: 'blocked', message: BUNDLE_MESSAGES.publishProhibited, keepKey };
+  }
+  if (readPublishBlockers(error) !== undefined) {
+    return { outcome: 'blocked', message: BUNDLE_MESSAGES.uploadIncomplete, keepKey };
+  }
+  const code = apiErrorCode(error);
+  // 충돌(BUNDLE_003)과 이미 발행됨·본문 불일치(BUNDLE_002)는 최신 내용을 확인하고 다시 해야 하는 같은 상황
+  const conflict = code === 'BUNDLE_003' || code === 'BUNDLE_002';
+  return {
+    outcome: 'failed',
+    message: conflict ? BUNDLE_MESSAGES.publishConflict : BUNDLE_MESSAGES.publishFailed,
+    keepKey,
+  };
+};

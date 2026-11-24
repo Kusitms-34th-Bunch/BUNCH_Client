@@ -20,7 +20,7 @@ export const CameraButton = ({ type = 'button', className, ...props }: CameraBut
     className={cn(
       // Figma 28px는 토큰에 없어 기본 scale(size-7) 적용. 배경은 Figma surface-inversed-lighter(#535a61)와 같은 값의 icon-tertiary
       'bg-icon-tertiary text-icon-inversed relative isolate inline-flex size-7 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full',
-      'before:bg-overlay-pressed before:pointer-events-none before:absolute before:inset-0 before:rounded-full before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+      'before:bg-overlay-pressed press-overlay before:rounded-full',
       'not-disabled:active:before:opacity-100',
       'after:absolute after:-inset-1.5 after:content-[""] disabled:after:hidden',
       'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',

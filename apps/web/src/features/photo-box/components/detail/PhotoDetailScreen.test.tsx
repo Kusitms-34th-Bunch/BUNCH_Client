@@ -15,7 +15,7 @@ import { MissingPhotosError } from '../../lib/missingPhotos';
 import { PhotoDetailScreen } from './PhotoDetailScreen';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 // 재생·제스처 라이브러리는 모양과 제스처를 검증하지 않으므로 mock하고 이벤트는 붙잡아 직접 호출
 type SwiperLike = {

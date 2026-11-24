@@ -1,14 +1,16 @@
 'use client';
 
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, ConfirmDialog, Header } from '@app/design-system';
 import { BundlePickPhoto } from '@app/design-system/web';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import type { DraftMember, DraftPhoto } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
 import { chunk, hasPicked, pickersOf, type Picks } from '../../lib/picks';
+import { PickGlint, PickMiniGlint } from './PickGlint';
 import styles from './pickMotion.module.css';
 
 // 사진 폭 295 + 간격 10: 가로로 넘긴 거리를 사진 번호로 바꾸는 기준(Figma `5699:103586`)
@@ -17,65 +19,6 @@ const PHOTO_STEP = 295 + 10;
 const PICKERS_PER_ROW = 4;
 // 픽하기 모션 길이(ms, Figma 5699:103708의 3.4초)
 const PICK_MOTION_MS = 3400;
-// 글린트 모듈 13칸의 [left, top] px(Figma 노드 순서, 10px 칸, 70×70 안)
-const GLINT_CELLS = [
-  [30, 0],
-  [30, 10],
-  [20, 20],
-  [40, 20],
-  [0, 30],
-  [10, 30],
-  [30, 30],
-  [50, 30],
-  [60, 30],
-  [20, 40],
-  [40, 40],
-  [30, 50],
-  [30, 60],
-] as const;
-// 내 칩 옆 작은 글린트 모듈 13칸(2px 칸, 14×14 안)
-const MINI_CELLS = [
-  [6, 0],
-  [6, 2],
-  [4, 4],
-  [8, 4],
-  [0, 6],
-  [2, 6],
-  [6, 6],
-  [10, 6],
-  [12, 6],
-  [4, 8],
-  [8, 8],
-  [6, 10],
-  [6, 12],
-] as const;
-// 노드별 키프레임 클래스(순서는 위 칸과 같음)
-const GLINT_CLASSES = [
-  styles.glintModule0,
-  styles.glintModule1,
-  styles.glintModule2,
-  styles.glintModule3,
-  styles.glintModule4,
-  styles.glintModule5,
-  styles.glintModule6,
-  styles.glintModule7,
-  styles.glintModule8,
-  styles.glintModule9,
-  styles.glintModule10,
-  styles.glintModule11,
-  styles.glintModule12,
-];
-const SPARK_CLASSES = [
-  styles.spark0,
-  styles.spark1,
-  styles.spark2,
-  styles.spark3,
-  styles.spark4,
-  styles.spark5,
-  styles.spark6,
-  styles.spark7,
-];
-
 type DraftPickScreenProps = {
   photos: readonly DraftPhoto[];
   members: readonly DraftMember[];
@@ -117,6 +60,7 @@ export function DraftPickScreen({
 }: DraftPickScreenProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const openOverlay = useScreenOverlay();
+  const reducedMotion = useReducedMotion();
   const listRef = useRef<HTMLUListElement>(null);
   // 픽하기 모션: 어느 사진에서 시작했는지와 픽하기 전 픽한 수(3.4초 뒤 사라짐)
   const [fx, setFx] = useState<{ photoId: string; prevCount: number } | null>(null);
@@ -162,10 +106,9 @@ export function DraftPickScreen({
     const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (direction === 0 || event.altKey || event.ctrlKey || event.metaKey) return;
     event.preventDefault();
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     listRef.current?.scrollBy({
       left: direction * PHOTO_STEP,
-      behavior: reduced ? 'auto' : 'smooth',
+      behavior: reducedMotion ? 'auto' : 'smooth',
     });
   };
   // 서버 응답으로 사진이 없다고 확인되면 곧바로 안내(최신 openDeletedNotice를 ref로 거쳐 `deletedNoticeFor`가 바뀔 때만 실행)
@@ -189,8 +132,7 @@ export function DraftPickScreen({
       return;
     }
     // 픽할 때만 모션(해제에는 없음), 동작 줄이기면 생략
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    if (!picked && !reduced) {
+    if (!picked && !reducedMotion) {
       setFx({ photoId: active.id, prevCount: ordered.length });
       clearTimeout(fxTimer.current);
       fxTimer.current = setTimeout(() => setFx(null), PICK_MOTION_MS);
@@ -204,17 +146,7 @@ export function DraftPickScreen({
   const nameOf = (memberId: string) => members.find((member) => member.id === memberId)?.name ?? '';
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-              <LineChevronLeftLargeIcon aria-hidden="true" />
-            </HeaderIconButton>
-          }
-        />
-      }
-    >
+    <PageShell header={<Header leading={<HeaderBackButton onClick={onBack} />} />}>
       <div className="pt-padding-p15 gap-s2 flex flex-col items-center text-center">
         <p className="typography-body-4-semi-bold text-text-quaternary px-padding-p8 w-full">
           {BUNDLE_MESSAGES.pickNotice}
@@ -258,23 +190,7 @@ export function DraftPickScreen({
                     : undefined
               }
             />
-            {fxOn && index === current ? (
-              <div aria-hidden="true">
-                <span className={styles.dim} />
-                <span className={styles.glint}>
-                  {GLINT_CELLS.map(([left, top], i) => (
-                    <span
-                      key={i}
-                      className={`${styles.glintModule} ${GLINT_CLASSES[i]}`}
-                      style={{ left, top }}
-                    />
-                  ))}
-                </span>
-                {SPARK_CLASSES.map((cls, i) => (
-                  <span key={i} className={`${styles.spark} ${cls}`} />
-                ))}
-              </div>
-            ) : null}
+            {fxOn && index === current ? <PickGlint /> : null}
           </li>
         ))}
       </ul>
@@ -324,13 +240,7 @@ export function DraftPickScreen({
                       : 'bg-surface-secondary text-text-tertiary px-padding-p4 py-padding-p2 rounded-r4 typography-body-3-regular'
                   } ${fxOn ? (memberId === viewerId ? styles.badgeMe : rowIndex === 0 ? styles.badgeOther : '') : ''}`}
                 >
-                  {fxOn && memberId === viewerId ? (
-                    <span aria-hidden="true" className={styles.mini}>
-                      {MINI_CELLS.map(([left, top], i) => (
-                        <span key={i} className={styles.miniModule} style={{ left, top }} />
-                      ))}
-                    </span>
-                  ) : null}
+                  {fxOn && memberId === viewerId ? <PickMiniGlint /> : null}
                   {nameOf(memberId)}
                   {memberId === viewerId ? (
                     <span className="sr-only">{BUNDLE_MESSAGES.pickedByMe}</span>

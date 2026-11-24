@@ -28,6 +28,17 @@ test.describe('앱 안에서 연 초대 링크', () => {
     await expect(page.getByRole('article', { name: /여행가조/ })).toBeVisible();
   });
 
+  test('이미 참여 중인 번치의 초대 링크는 피드로 보내고 이미 참여 중이라고 알린다', async ({
+    page,
+  }) => {
+    // 가짜 서버가 발급한 형식(MOCK+번치 id)의 여행쥬아 초대. 나는 이미 여행쥬아 멤버
+    await asAppShell(page);
+    await page.goto('/invite/MOCK0001');
+
+    await expect(page).toHaveURL(/\/feed$/);
+    await expect(page.getByText('이미 참여 중인 번치예요.')).toBeVisible();
+  });
+
   test('없는 초대 링크는 안내 토스트를 띄우고 초대를 보관하지 않는다', async ({ page }) => {
     await asAppShell(page);
     await page.goto('/invite/NOPE0000');
@@ -64,14 +75,21 @@ test('보관된 초대로 참여하면 참여 완료 뒤 피드로 이동하고 
 });
 
 test.describe('앱 밖(브라우저)에서 연 초대 링크', () => {
-  test('iOS가 아닌 기기는 초대장 확인하기를 눌러도 이동하지 않고 iOS 앱만 있다고 알린다', async ({
-    page,
-  }) => {
-    await page.goto('/invite/MOCKJOIN');
-    await clickUntil(page.getByRole('button', { name: '초대장 확인하기' }), () =>
-      expect(page.getByText('지금은 iOS 앱만 지원해요.')).toBeVisible({ timeout: 2_000 }),
-    );
-    await expect(page).toHaveURL(/\/invite\/MOCKJOIN$/);
+  test.describe('Android', () => {
+    // WebKit project는 iPhone 기기라 iOS가 아닌 경우를 user agent로 고정
+    test.use({
+      userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 Chrome/131.0 Mobile',
+    });
+
+    test('iOS가 아닌 기기는 초대장 확인하기를 눌러도 이동하지 않고 iOS 앱만 있다고 알린다', async ({
+      page,
+    }) => {
+      await page.goto('/invite/MOCKJOIN');
+      await clickUntil(page.getByRole('button', { name: '초대장 확인하기' }), () =>
+        expect(page.getByText('지금은 iOS 앱만 지원해요.')).toBeVisible({ timeout: 2_000 }),
+      );
+      await expect(page).toHaveURL(/\/invite\/MOCKJOIN$/);
+    });
   });
 
   test.describe('iPhone', () => {

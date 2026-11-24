@@ -12,8 +12,9 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   // 재시도 1회: 불안정한 테스트를 숨기지 않으면서 한 번의 일시 실패는 넘김(2회는 실패 시간만 늘림)
   retries: process.env.CI ? 1 : 0,
-  // 러너 4코어에서 dev 서버 2개와 함께 워커 2개(1개면 spec이 순서대로만 돎)
-  ...(process.env.CI ? { workers: 2 } : {}),
+  // 러너 4코어에 코어 수만큼 워커 4개(가짜 DB는 브라우저마다 따로라 테스트끼리 섞이지 않음)
+  // 로컬 CI 설정 2회 반복 232개 흔들림 0(2026-11-25), CI에서 느려지거나 흔들리면 3개로
+  ...(process.env.CI ? { workers: 4 } : {}),
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     trace: 'on-first-retry',
@@ -43,6 +44,14 @@ export default defineConfig({
           timeout: 120_000,
           expect: { timeout: 30_000 },
         },
+        {
+          // 앱 WebView의 iOS 엔진(WebKit)에서만 나는 레이스를 잡으려고 같은 spec을 iPhone으로 한 번 더
+          name: 'web-webkit',
+          testMatch: /web\/.*\.spec\.ts/,
+          use: { ...devices['iPhone 15'], baseURL: webBaseUrl },
+          timeout: 120_000,
+          expect: { timeout: 30_000 },
+        },
       ],
   webServer: productionBaseUrl
     ? []
@@ -63,6 +72,8 @@ export default defineConfig({
           url: webBaseUrl,
           env: {
             NEXT_PUBLIC_API_MOCKING: 'enabled',
+            // CI는 같은 PR의 Verify가 타입을 검사하므로 E2E 빌드에서는 생략
+            NEXT_SKIP_TYPECHECK: process.env.CI ? 'true' : '',
             SENTRY_AUTH_TOKEN: '',
             NEXT_PUBLIC_SENTRY_DSN: '',
           },

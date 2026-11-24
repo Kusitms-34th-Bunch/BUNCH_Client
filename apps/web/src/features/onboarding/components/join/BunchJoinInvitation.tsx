@@ -1,18 +1,17 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
-import { Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Header, toast } from '@app/design-system';
 import { InviteCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { isDefiniteRejection } from '@/shared/api/errorStatus';
+import { apiErrorCode, isDefiniteRejection } from '@/shared/api/client/errorStatus';
 import { replaceTabPath } from '@/shared/bridge/client';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
-import { defaultBunchImage } from '@/shared/lib/bunchProfile';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
 import { clearPendingInvitation, readPendingInvitation } from '@/shared/lib/pendingInvitation';
+import { defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import {
   BUNCH_ERROR_CODES,
   INVITATION_ERROR_CODES,
@@ -106,7 +105,7 @@ export function BunchJoinInvitation() {
         },
         onError: (error) => {
           joining.current = false;
-          const code = isApiError(error) ? error.code : undefined;
+          const code = apiErrorCode(error);
           // 서버가 요청을 거절한 경우(4xx)는 같은 키로 다시 보내면 거절이 재생될 수 있어(서버 정책은 확인 필요) 키를 버림. 408·429는 서버가 처리했을 수 있어 유지
           if (isDefiniteRejection(error)) flow.discardIdempotencyKey();
           const blocked = code === undefined ? undefined : BLOCKED_REASONS[code];
@@ -130,16 +129,13 @@ export function BunchJoinInvitation() {
         <Header
           className="bg-transparent"
           leading={
-            <HeaderIconButton
+            <HeaderBackButton
               ref={backRef}
-              label="뒤로 가기"
               // 참여 요청 중·성공 뒤 이동 중에는 나가기 창을 열지 않음(늦게 온 성공이 창 뒤에서 화면을 옮기지 않게)
               onClick={() => {
                 if (!joinInFlight) openExitDialog();
               }}
-            >
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            />
           }
         />
       }

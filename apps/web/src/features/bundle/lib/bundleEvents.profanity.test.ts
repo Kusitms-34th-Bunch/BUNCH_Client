@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BundleDetail } from '../model/bundle';
-import { applyContentEvent, withTitleState } from './bundleEvents';
+import { applyContentEvent } from './bundleEvents';
+import { withTitleState } from './bundleTitleState';
 
 // 이 테스트가 보는 필드(revision·제목·코멘트·금칙어·발행 차단 사유)만 채운 상세
 const detail = {

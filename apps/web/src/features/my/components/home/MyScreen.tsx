@@ -4,13 +4,12 @@ import { ConfirmDialog, Header, LineChevronRightLargeIcon, toast } from '@app/de
 import { MenuLabel, ProfileImage } from '@app/design-system/web';
 import Link from 'next/link';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 import { openExternal } from '../../lib/navigation';
-import { useLogoutMutation } from '../../queries/session';
 import { MenuSection } from '../MenuSection';
 import { PendingConfirmDialog } from '../PendingConfirmDialog';
 import { MyProfileSkeleton } from './MyProfileSkeleton';
@@ -44,13 +43,15 @@ type MyScreenProps = {
   contactUrl?: string | undefined;
   /** 내 프로필을 처음 받는 중이면 프로필 줄만 스켈레톤(메뉴는 그대로 쓸 수 있음) */
   profileLoading?: boolean | undefined;
+  /** 로그아웃 요청(확인 창의 「로그아웃」), 실패하면 `onError`로 창이 닫히고 안내 */
+  onLogout: (_onError: () => void) => void;
 };
 
 /**
  * MY 탭 첫 화면(화면 설계서 MY(1)·(4)): 내 프로필과 메뉴 묶음 3개, 문의하기·로그아웃 확인 창
  * 프로필은 호출하는 쪽이 전달(`MyRoute`가 내 정보 API로 받아 넘김)
  */
-export function MyScreen({ profile, contactUrl, profileLoading = false }: MyScreenProps) {
+export function MyScreen({ profile, contactUrl, profileLoading = false, onLogout }: MyScreenProps) {
   const openOverlay = useScreenOverlay();
   const openConfirm = (kind: ConfirmKind) =>
     kind === 'contact'
@@ -75,10 +76,9 @@ export function MyScreen({ profile, contactUrl, profileLoading = false }: MyScre
             title={MY_MESSAGES.logout.title}
             cancelLabel={MY_MESSAGES.cancel}
             confirmLabel={MY_MESSAGES.logout.confirm}
-            run={(onError) => logout.mutate(undefined, { onError })}
+            run={onLogout}
           />
         ));
-  const logout = useLogoutMutation();
 
   return (
     <PageShell header={<Header title={<h1 className="truncate">{MY_MESSAGES.title}</h1>} />}>

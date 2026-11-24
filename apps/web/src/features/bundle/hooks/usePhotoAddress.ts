@@ -1,17 +1,15 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { replaceUrl } from '@/shared/lib/replaceUrl';
+import { readHistoryEntry } from '@/shared/lib/navigation/historyEntry';
+import { replaceUrl } from '@/shared/lib/navigation/replaceUrl';
 import { parsePhotoId } from '../lib/draftId';
 
 // 보던 사진 id를 이 history 항목에 적어 두는 키
 const PHOTO_ID_KEY = 'bundleDraftPhotoId';
 
 const readSavedPhotoId = (): string | undefined => {
-  if (typeof window === 'undefined') return undefined;
-  const state: unknown = window.history.state;
-  if (typeof state !== 'object' || state === null) return undefined;
-  const saved = (state as Record<string, unknown>)[PHOTO_ID_KEY];
+  const saved = readHistoryEntry(PHOTO_ID_KEY);
   return typeof saved === 'string' ? parsePhotoId(saved) : undefined;
 };
 

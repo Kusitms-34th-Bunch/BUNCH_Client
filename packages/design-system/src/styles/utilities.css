@@ -7,3 +7,72 @@
     display: none;
   }
 }
+
+/* 누르면 나타나는 덮개의 공통 바탕(위치·처음 숨김·75ms 전환, 동작 줄이기면 전환 없음). 색·모서리·쌓임·누르는 조건은 쓰는 곳이 정함 */
+@utility press-overlay {
+  &::before {
+    content: var(--tw-content);
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition-property: opacity;
+    --tw-duration: 75ms;
+    transition-duration: 75ms;
+    /* Tailwind `ease-out`과 같은 곡선(CSS 키워드 ease-out과 다름) */
+    --tw-ease: var(--ease-out);
+    transition-timing-function: var(--ease-out);
+    @media (prefers-reduced-motion: reduce) {
+      transition-property: none;
+    }
+  }
+}
+
+/*
+ * 누르는 동안 살짝 줄어드는 효과(Press Interaction, 2026-11-25 디자인). 크기는 scale로만 바꿔 레이아웃은 그대로(누르는 동안 hit-test는 줄어든 박스)
+ * 누를 때 100ms·뗄 때 180ms cubic-bezier(0.2, 0, 0, 1), 비활성(안의 입력 포함)이면 줄지 않고, 동작 줄이기면 줄지 않으며 색은 전환 없이 바로 바뀜
+ * 루트의 색·그림자(선택 ring) 전환도 함께 정해 transition이 서로 덮어쓰지 않게 함(루트에 transition 클래스를 따로 두지 않음). 색 전환 시간·곡선은 --press-color-duration·--press-color-ease로 바꿈
+ */
+@utility press-scale {
+  --press-color-transition:
+    color var(--press-color-duration, 75ms) var(--press-color-ease, var(--ease-out)),
+    background-color var(--press-color-duration, 75ms) var(--press-color-ease, var(--ease-out)),
+    border-color var(--press-color-duration, 75ms) var(--press-color-ease, var(--ease-out)),
+    opacity var(--press-color-duration, 75ms) var(--press-color-ease, var(--ease-out)),
+    box-shadow var(--press-color-duration, 75ms) var(--press-color-ease, var(--ease-out));
+  transition:
+    var(--press-color-transition),
+    scale 180ms cubic-bezier(0.2, 0, 0, 1);
+  &:active:not(:disabled, [aria-disabled='true'], :has(:disabled)) {
+    scale: var(--press-scale, 0.97);
+    transition:
+      var(--press-color-transition),
+      scale 100ms cubic-bezier(0.2, 0, 0, 1);
+  }
+  /* 동작 줄이기: 줄지 않고 색도 바로 바뀜(쓰는 곳의 motion-reduce:transition-none과 같은 결과) */
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:active:not(:disabled, [aria-disabled='true'], :has(:disabled)) {
+      scale: none;
+      transition: none;
+    }
+  }
+}
+
+/* 작은 요소(칩·아이콘 버튼·캘린더 날짜·글자 버튼·번치 이름 전환) 0.95 */
+@utility press-scale-small {
+  @apply press-scale;
+  --press-scale: 0.95;
+}
+
+/* 일반 버튼(SolidButton·팔로우 버튼) 0.97 */
+@utility press-scale-medium {
+  @apply press-scale;
+  --press-scale: 0.97;
+}
+
+/* 큰 카드와 목록 줄(배경과 내용이 함께 줄어듦) 0.98 */
+@utility press-scale-large {
+  @apply press-scale;
+  --press-scale: 0.98;
+}

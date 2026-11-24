@@ -2205,6 +2205,8 @@ export interface components {
       sourceBunchId?: number;
       /** Format: int64 */
       commentId?: number;
+      /** Format: int64 */
+      parentCommentId?: number;
     };
     ApiResponseNotificationUnread: {
       success: boolean;

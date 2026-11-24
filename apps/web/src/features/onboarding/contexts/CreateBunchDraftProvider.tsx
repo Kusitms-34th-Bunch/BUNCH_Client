@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import type { CreatedBunch } from '../api/bunches';
 import { CreateBunchDraftContext, type Mood, type Visibility } from './createBunchDraftContext';
 

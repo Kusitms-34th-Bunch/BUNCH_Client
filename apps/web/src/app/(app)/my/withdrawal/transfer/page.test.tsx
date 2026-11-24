@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import MyWithdrawalTransferPage, { metadata } from './page';
 
-vi.mock('@/features/my/components', () => ({ AdminTransferScreen: () => null }));
+vi.mock('@/features/my/components', () => ({ AdminTransferRoute: () => null }));
 
 describe('/my/withdrawal/transfer page', () => {
   it('전환 경계(data-ssgoi-transition)를 권한 이전 경로로 지정한다', () => {

@@ -3,8 +3,9 @@ import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
@@ -143,7 +144,7 @@ export function useMyBunchMemberships() {
     bunchName: home.data?.bunch.name ?? (pinnedId === null ? me.data?.bunch?.name : undefined),
     managed,
     /** 받은 값이 하나도 없을 때만 오류(다시 받기만 실패하면 그리던 화면 유지) */
-    failed: (me.isError && !me.data) || (memberships.isError && !memberships.data),
+    failed: loadFailed(me) || loadFailed(memberships),
     retry: () => {
       if (me.isError) void me.refetch();
       if (memberships.isError) void memberships.refetch();

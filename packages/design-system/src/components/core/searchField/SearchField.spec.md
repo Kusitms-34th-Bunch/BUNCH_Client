@@ -11,6 +11,7 @@
 ### 제공하는 동작
 
 - `role="search"` form 안의 한 줄 검색 입력창. 왼쪽에 16px 검색 아이콘(장식), 오른쪽에 입력창.
+- iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다(`TextField`와 같은 `inputScale.module.css`, 포커스 확대 방지).
 - Enter(모바일 키보드의 검색 키, `enterKeyHint="search"`)를 누르면 `onSearch`를 현재 입력값과 함께 호출한다.
 
 ### 제공하지 않는 동작

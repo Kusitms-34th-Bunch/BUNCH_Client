@@ -1,7 +1,7 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import type { PushPreferencePatch, PushPreferences } from '../lib/notificationPreferences';
 
 const pushPreferencesSchema = z.object({

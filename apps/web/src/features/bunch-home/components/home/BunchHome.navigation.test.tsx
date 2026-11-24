@@ -39,6 +39,17 @@ const firstBundleLink = () =>
     .find((link) => link.getAttribute('href')?.startsWith(`/bunches/${MOCK_BUNCH_ID}/bundles/`));
 
 describe('BunchHome 이동 연결', () => {
+  it('번들 만들기를 이동 전에 다시 눌러도 번들 만들기로 한 번만 이동한다', async () => {
+    await renderHome();
+    const create = screen.getAllByRole('button', { name: '번들 만들기' })[0]!;
+
+    await userEvent.click(create);
+    await userEvent.click(create);
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith('/bunch/bundles/new/members');
+  });
+
   it('멤버 수는 멤버 목록 링크다(5.1.4 상세 5)', async () => {
     await renderHome();
 

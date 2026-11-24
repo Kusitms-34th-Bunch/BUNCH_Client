@@ -3,7 +3,7 @@ import { fn } from 'storybook/test';
 import { LocationCard } from './LocationCard';
 
 const meta = {
-  title: 'Components/LocationCard',
+  title: 'Web/Card/LocationCard',
   component: LocationCard,
   args: {
     placeName: '봄날카페',

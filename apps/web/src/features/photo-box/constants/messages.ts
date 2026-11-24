@@ -1,3 +1,4 @@
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
 import type { DateConfirmKind, DeleteKind } from '../lib/photoActions';
 
 const NO_RESTORE = '삭제 이후에는 복구할 수 없어요.';
@@ -53,12 +54,12 @@ export const PHOTO_BOX_MESSAGES = {
   dragCancel: '끌기를 취소했어요.',
   selectionStatus: (count: number) => (count === 0 ? '선택 모드' : `${count}장 선택됨`),
   saveDone: '이미지 저장이 완료되었어요.',
-  saveFailedAll: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  saveFailedAll: COMMON_MESSAGES.temporaryFailure,
   saveFailedSome: (count: number) => `${count}장은 저장하지 못했어요. 다시 시도해 주세요.`,
   bundleTooMany: '번들에는 사진을 20장까지 담을 수 있어요.',
-  deleteFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  deleteFailed: COMMON_MESSAGES.temporaryFailure,
   // 이어 받다 실패했을 때(명세 3.1.1의 목록 로딩 실패 토스트와 같은 문구). 보이는 재시도 수단이 없는 짧은 목록에서도 알아챌 수 있게 함
-  listMoreFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  listMoreFailed: COMMON_MESSAGES.temporaryFailure,
   // 기획에 원문이 없는 임시 문구: 삭제 뒤 목록을 다시 받지 못해 지운 사진이 남아 보일 수 있을 때
   listStale: '최신 사진 목록을 불러오지 못했어요. 사진함을 다시 열어 확인해 주세요.',
   deleteForbidden: '내가 올린 사진만 삭제할 수 있어요.',
@@ -69,15 +70,15 @@ export const PHOTO_BOX_MESSAGES = {
   dateConfirmButton: '변경하기',
   photoBoxFull: '사진함이 가득 찼어요.',
   uploadSheetTitle: (bunchName: string) => `${bunchName}에 사진 올리기`,
-  dateChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  deletedPhoto: '삭제된 사진이에요',
+  dateChangeFailed: COMMON_MESSAGES.temporaryFailure,
+  deletedPhoto: COMMON_MESSAGES.deletedPhoto,
   loadingMore: '사진을 더 불러오는 중이에요',
   loadMore: '사진 더 불러오기',
   loadMoreFailed: '사진을 더 불러오지 못했어요',
   // 사진 올리기: 결과 문구는 lib/photoUpload.ts가 만들고, 여기에는 그 밖의 안내와 권한 모달 문구를 둠(기능명세서 3.2.2, 3.2.3)
   uploadUnavailable: '사진 올리기는 앱에서 할 수 있어요.',
   uploadNeedsUpdate: '앱을 최신 버전으로 업데이트해 주세요.',
-  uploadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  uploadFailed: COMMON_MESSAGES.temporaryFailure,
   uploadRetry: '다시 시도',
   // 올리는 중 안내(문구는 기획 원문이 없어 임시). 사진함은 스크린 리더 live region에, 번들 작성의 가져오기는 토스트에 씀
   uploading: '사진을 올리는 중이에요.',

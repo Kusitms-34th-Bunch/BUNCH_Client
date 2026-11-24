@@ -7,7 +7,7 @@ EAS 빌드, 버전·빌드 번호, App Store 제출용 환경변수다. 개발 �
 로컬 Xcode 실행에는 EAS가 필요 없다. 클라우드 빌드는 앱 폴더에서 준비한다.
 
 1. `pnpm dlx eas-cli@latest login` 후 `pnpm dlx eas-cli@latest init`으로 프로젝트를 연결한다.
-2. EAS의 개발 환경에는 `EXPO_PUBLIC_DEV_WEB_URL`, 미리보기·운영 환경에는 `EXPO_PUBLIC_WEB_URL`을 설정한다. Release 앱은 HTTPS 웹 주소를 쓴다.
+2. EAS의 개발 환경에는 `EXPO_PUBLIC_DEV_WEB_URL`, 미리보기·운영 환경에는 `EXPO_PUBLIC_WEB_URL`을 설정한다. 모든 환경에 `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY`·`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`(Plain text)도 등록한다. 없으면 `app.config.js`가 EAS 빌드를 멈춘다. Release 앱은 HTTPS 웹 주소를 쓴다.
 3. Sentry를 쓰면 `EXPO_PUBLIC_SENTRY_DSN`과 업로드용 Secret `SENTRY_AUTH_TOKEN`을 설정한다.
 4. iPhone 빌드는 유료 Apple Developer 계정·서명을 준비하고 `pnpm dlx eas-cli@latest device:create`로 기기를 등록한다.
 
@@ -35,6 +35,10 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 앱 버전은 `app.json`의 `version`, iOS 빌드 번호는 `ios.buildNumber`에 둔다(2026-11-20). prebuild(`ios:sync`)가 이 값을 `Info.plist`의 `CFBundleShortVersionString`·`CFBundleVersion`에 숫자로 쓴다. 그래서 Xcode General 탭의 Version·Build 칸을 바꿔도 Archive에는 반영되지 않는다. General 탭이 보여 주는 빌드 설정(`MARKETING_VERSION`·`CURRENT_PROJECT_VERSION`)은 prebuild가 바꾸지 않아 템플릿 값(1.0)이 남으므로, `ios:sync`가 끝에 이 두 값도 `app.json`으로 맞춘다(2026-11-23).
 
 - Xcode Archive로 올릴 때: `ios.buildNumber`를 App Store Connect에 올린 같은 버전의 마지막 번호보다 크게 올리고 커밋한 뒤 `pnpm ios:sync`를 하고 Archive한다. 버전을 바꾸면(`version`) 빌드 번호는 다시 1부터 써도 된다.
+- Xcode Archive의 Sentry 소스맵 업로드는 Xcode 셸 단계에서 돌아 앱 폴더 `.env.local`을 읽지 않는다. 그래서 `pnpm ios:sync`(`--clean` 포함)가 `ios/.xcode.env.local`(gitignore)에 `.env.local`의 `SENTRY_AUTH_TOKEN`을 빌드 때 읽어 `export`하는 줄을 넣는다(토큰 값은 복사하지 않음). 이 줄이 없으면 Archive가 `Auth token required`로 실패한다(2026-11-23). 업로드 없이 올리려면 같은 파일에 `export SENTRY_DISABLE_AUTO_UPLOAD=true`를 둔다(오류 화면의 스택을 읽을 수 없게 됨).
+- 업로드 뒤 App Store Connect의 알려진 경고(2026-11-23 확인, 업로드는 성공). 둘 다 무시해도 된다.
+  - `SDK version issue`: 2027년 4월부터 Xcode 27(iOS 27 SDK) 빌드만 받는다는 예고다. 그 전에 Xcode를 올리고 Expo SDK 호환을 함께 확인한다.
+  - `Upload Symbols Failed`: React·hermesvm·ReactNativeDependencies·SDWebImage·ExpoImageManipulator처럼 미리 빌드된 프레임워크는 dSYM을 함께 배포하지 않는다. Apple 크래시 리포트에서 그 프레임워크 안의 위치만 주소로 보이고, 앱 실행·심사에는 영향이 없다. 없애려면 소스 빌드(`buildReactNativeFromSource` 등)가 필요해 빌드 시간이 크게 늘어 쓰지 않는다. 오류는 Sentry로 본다.
 - EAS로 올릴 때: `eas.json`이 `appVersionSource: remote`·`autoIncrement`라 EAS가 번호를 관리하고 `ios.buildNumber`는 쓰지 않는다. 두 방법을 섞으면 번호가 겹칠 수 있으니 EAS 첫 빌드 전에 `pnpm dlx eas-cli@latest build:version:set -p ios`로 마지막 번호에 맞춘다.
 
 #### 버전을 올리는 기준
@@ -58,14 +62,16 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 양식은 [`.env.production.example`](../../apps/mobile-shell/.env.production.example)에 둔다.
 파일 자체는 자동 적용되지 않는다. EAS 프로젝트 설정의 **Environment variables**에서 `production` 환경에 등록한다.
 
-| 변수                             | 값·공개 범위                       |
-| -------------------------------- | ---------------------------------- |
-| `EXPO_PUBLIC_WEB_URL`            | 실제 운영 HTTPS 주소, Plain text   |
-| `EXPO_PUBLIC_SENTRY_DSN`         | 오류 수집 사용 시 DSN, Plain text  |
-| `EXPO_PUBLIC_SENTRY_ENVIRONMENT` | `production` (`eas.json`에 설정됨) |
-| `SENTRY_AUTH_TOKEN`              | 소스맵 업로드 사용 시 토큰, Secret |
+| 변수                               | 값·공개 범위                                         |
+| ---------------------------------- | ---------------------------------------------------- |
+| `EXPO_PUBLIC_WEB_URL`              | 실제 운영 HTTPS 주소, Plain text                     |
+| `EXPO_PUBLIC_SENTRY_DSN`           | 오류 수집 사용 시 DSN, Plain text                    |
+| `EXPO_PUBLIC_SENTRY_ENVIRONMENT`   | `production` (`eas.json`에 설정됨)                   |
+| `SENTRY_AUTH_TOKEN`                | 소스맵 업로드 사용 시 토큰, Secret                   |
+| `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY` | 카카오 네이티브 앱 키, Plain text(없으면 빌드 멈춤)  |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 구글 iOS 클라이언트 ID, Plain text(없으면 빌드 멈춤) |
 
 등록 후 `--profile production`으로 빌드한다. 빌드 전에 `EXPO_PUBLIC_WEB_URL`이 등록됐는지 반드시 확인한다. 등록하지 않으면 빌드는 성공하고 설치한 앱이 시작하자마자 종료된다(`preview`도 같다). 빌드 후에는 설치한 앱이 열리는지 첫 실행을 확인하고, 운영 웹 접속과 앱 식별자·버전도 확인한다.
-쉘이나 쉘을 부르는 웹 코드를 바꿨으면 빌드 전에 쉘 E2E(아래 「쉘 E2E(Maestro)」)를 로컬에서 돌리거나 `mobile-e2e.yml`을 수동 실행해 통과를 확인한다.
+쉘이나 쉘을 부르는 웹 코드를 바꿨으면 빌드 전에 쉘 E2E([mobile-e2e.md](./mobile-e2e.md))를 로컬에서 돌리거나 `mobile-e2e.yml`을 수동 실행해 통과를 확인한다.
 개발용 `.env.local`을 운영 값으로 덮어쓰지 않는다. Xcode에서 직접 Archive할 때는 해당 빌드에도 운영 변수를 별도로 적용해야 한다.
 스토어 제출에는 유료 Apple Developer 계정이 필요하며, 현재 제출용 빌드는 검증하지 않았다.

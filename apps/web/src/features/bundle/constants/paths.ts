@@ -1,3 +1,5 @@
+import { APP_PATHS } from '@/shared/constants/paths';
+
 export const BUNDLE_PATHS = {
   /** 발행 번들 수정(메인 관리자) 화면 */
   edit: (bunchId: string, bundleId: string) => `/bunches/${bunchId}/bundles/${bundleId}/edit`,
@@ -10,7 +12,7 @@ export const BUNDLE_PATHS = {
   /** 수정을 마치거나 그만두고 돌아갈 번들 상세 */
   publishedDetail: (bunchId: string, bundleId: string) => `/bunches/${bunchId}/bundles/${bundleId}`,
   /** 번치 홈(나가기·이탈 뒤 돌아갈 곳) */
-  bunchHome: '/bunch',
+  bunchHome: APP_PATHS.bunch,
   /** 공동 편집(작성) 화면 */
   draft: (draftId: string) => `/bunch/drafts/${draftId}`,
   /** 대표 사진 투표(「마음에 드는 사진을 픽해보세요」) 화면 */

@@ -10,7 +10,9 @@ name: 번치 탭을 꾹 누르면 번치 전환 시트가 열리고 고른 번�
       notVisible: '번치 전환하기'
     times: 5
     commands:
-      - longPressOn: '번치'
+      - longPressOn:
+          # 탭 화면도 탭 이름과 같은 이름이라 탭 바 버튼의 식별자로 고름(시뮬레이터 언어와 무관, #534)
+          id: 'tab-bunch'
       - waitForAnimationToEnd
 - assertVisible: '번치 전환하기'
 - tapOn: '퇴근런클럽'

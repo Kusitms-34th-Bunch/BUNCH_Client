@@ -1,7 +1,8 @@
-import { Header, LineChevronLeftLargeIcon, TextButton } from '@app/design-system';
+import { Header, TextButton } from '@app/design-system';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { useCropDrag } from '../../hooks/useCropDrag';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
+import { useCropDrag } from '@/shared/hooks/profile/useCropDrag';
 import {
   clampCrop,
   type Crop,
@@ -12,8 +13,7 @@ import {
   initialCrop,
   moveCrop,
   resizeCropBy,
-} from '../../lib/photoCrop';
-import { HeaderIconButton } from '../layout/HeaderIconButton';
+} from '@/shared/lib/image/photoCrop';
 import { LoadingRipple } from '../loading/LoadingRipple';
 import { CropFrame } from './CropFrame';
 
@@ -181,11 +181,7 @@ export function PhotoCropScreen({ src, onCancel, onComplete, onFail }: PhotoCrop
       </h2>
       <Header
         className="bg-transparent"
-        leading={
-          <HeaderIconButton label="뒤로 가기" tone="inversed" onClick={onCancel}>
-            <LineChevronLeftLargeIcon />
-          </HeaderIconButton>
-        }
+        leading={<HeaderBackButton tone="inversed" onClick={onCancel} />}
         trailing={
           <TextButton
             size="sm"

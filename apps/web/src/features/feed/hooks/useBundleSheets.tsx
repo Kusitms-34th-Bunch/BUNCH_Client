@@ -4,10 +4,11 @@ import { ConfirmDialog, toast } from '@app/design-system';
 import { BundleMembersSheet } from '@app/design-system/web';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { playHaptic } from '@/shared/lib/haptic';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
+import { playHaptic } from '@/shared/lib/native/haptic';
 import { useQueryClientScope } from '@/shared/query/useQueryClientScope';
 import type { FeedBundleMember, FeedPlace } from '../lib/types';
 import { PlacePickOverlay } from '../components/bundles/PlacePickOverlay';
@@ -77,13 +78,7 @@ export function useBundleSheets() {
   // 콕 여부를 받은 뒤에 시트를 엶(받는 중 「콕하기」로 보여 잘못 누르지 않게). 받지 못하면 안내, 다시 누르면 다시 받음
   const opening = useRef(false);
   // 받는 동안 화면을 떠났으면 열지 않음(떠난 화면의 시트가 다음 화면에 남지 않게)
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const mounted = useMountedRef();
   const loadAndShowPlaces = async (bundleId: string, places: FeedPlace[]) => {
     if (opening.current || viewerId() === undefined) return;
     opening.current = true;

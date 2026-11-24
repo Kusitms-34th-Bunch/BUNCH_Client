@@ -286,12 +286,15 @@ export const setNativeTabBarParamsSchema = z.object({
   hidden: z.boolean().optional(),
 });
 
+/** 탭 WebView를 가리키는 탭 ID(쉘이 넣어 준 `bunch-shell-tab` 값) */
+const tabIdSchema = z.string().min(1).max(32);
+
 /**
  * 탭 WebView가 자기 탭의 탭 바 표시 여부를 알림(#481). 쉘은 탭마다 저장하고 지금 선택된 탭의 값만 적용
  * 탭 ID는 쉘이 탭 WebView에 넣어 준 값(`sessionStorage`의 `bunch-shell-tab`)
  */
 export const nativeTabBarVisibilitySchema = z.object({
-  tab: z.string().min(1).max(32),
+  tab: tabIdSchema,
   visible: z.boolean(),
 });
 
@@ -343,7 +346,7 @@ export type NativeFloatingButtonPress = z.infer<typeof nativeFloatingButtonPress
  */
 export const showNativeToastParamsSchema = z
   .object({
-    tab: z.string().min(1).max(32),
+    tab: tabIdSchema,
     id: z.string().min(1).max(64),
     message: z.string().min(1).max(200),
     icon: z.enum(['success']).optional(),
@@ -359,12 +362,12 @@ export const showNativeToastParamsSchema = z
 export type ShowNativeToastParams = z.infer<typeof showNativeToastParamsSchema>;
 
 /** 그 탭의 네이티브 토스트를 닫음(웹이 웹 토스트로 바꿔 띄우거나 버튼이 사라질 때) */
-export const hideNativeToastParamsSchema = z.object({ tab: z.string().min(1).max(32) }).strict();
+export const hideNativeToastParamsSchema = z.object({ tab: tabIdSchema }).strict();
 export type HideNativeToastParams = z.infer<typeof hideNativeToastParamsSchema>;
 
 /** 네이티브 토스트의 액션 버튼을 누름. 모든 탭 WebView에 보내므로 웹이 `tab`·`id`로 자기 것만 처리 */
 export const nativeToastActionSchema = z
-  .object({ tab: z.string().min(1).max(32), id: z.string().min(1).max(64) })
+  .object({ tab: tabIdSchema, id: z.string().min(1).max(64) })
   .strict();
 export type NativeToastAction = z.infer<typeof nativeToastActionSchema>;
 
@@ -401,11 +404,11 @@ export const hapticKindSchema = z.enum(['success', 'tap']);
 export type HapticKind = z.infer<typeof hapticKindSchema>;
 
 /** 이미 선택된 탭을 다시 누름(웹이 지금 화면을 맨 위로). 모든 탭 WebView에 보내므로 웹이 `tab`으로 자기 탭인지 가림 */
-export const nativeTabReselectSchema = z.object({ tab: z.string().min(1).max(32) }).strict();
+export const nativeTabReselectSchema = z.object({ tab: tabIdSchema }).strict();
 export type NativeTabReselect = z.infer<typeof nativeTabReselectSchema>;
 
 /** 이미 선택된 탭을 꾹 누름(번치 탭은 전환 시트). 모든 탭 WebView에 보내므로 웹이 `tab`으로 자기 탭인지 가림 */
-export const nativeTabLongPressSchema = z.object({ tab: z.string().min(1).max(32) }).strict();
+export const nativeTabLongPressSchema = z.object({ tab: tabIdSchema }).strict();
 export type NativeTabLongPress = z.infer<typeof nativeTabLongPressSchema>;
 
 // @webview-bridge의 이벤트 schema에 필요한 validate 인터페이스 적용

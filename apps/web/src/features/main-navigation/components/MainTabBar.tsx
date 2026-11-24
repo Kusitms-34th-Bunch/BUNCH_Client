@@ -16,8 +16,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { appBridge, isNativeShell, markHandedOffToNativeTabs } from '@/shared/bridge/client';
-import { emitMainTabGesture } from '@/shared/lib/mainTabGesture';
-import { scrollPageToTop } from '@/shared/lib/scrollPageToTop';
+import { emitMainTabGesture } from '@/shared/lib/navigation/mainTabGesture';
+import { scrollPageToTop } from '@/shared/lib/navigation/scrollPageToTop';
 import {
   MAIN_TAB_PATHS,
   MAIN_TABS,
@@ -33,7 +33,7 @@ const ICONS: Record<MainTabId, { icon: ReactNode; selectedIcon: ReactNode }> = {
   my: { icon: <LineUserLargeIcon />, selectedIcon: <FillUserLargeIcon /> },
 };
 
-const items: BottomNavigationItem[] = MAIN_TABS.map(({ id, label }) => ({
+const items: BottomNavigationItem<MainTabId>[] = MAIN_TABS.map(({ id, label }) => ({
   id,
   label,
   ...ICONS[id],
@@ -156,11 +156,11 @@ export function MainTabBar() {
         items={items}
         selectedId={selectedId}
         renderItem={(item, state) => {
-          const tabId = item.id as MainTabId;
+          const tabId = item.id;
           const longPressable = LONG_PRESS_TABS.has(tabId) && pathname === MAIN_TAB_PATHS[tabId];
           return (
             <Link
-              href={MAIN_TAB_PATHS[item.id as MainTabId]}
+              href={MAIN_TAB_PATHS[tabId]}
               className={state.className}
               aria-current={state['aria-current']}
               onPointerDown={(event) => {
@@ -217,7 +217,7 @@ export function MainTabBar() {
                   !event.shiftKey &&
                   !event.altKey;
                 // 보조 키 클릭(새 탭 열기 등)은 링크 기본 동작 그대로
-                if (plainClick && pathname === MAIN_TAB_PATHS[item.id as MainTabId]) {
+                if (plainClick && pathname === MAIN_TAB_PATHS[tabId]) {
                   event.preventDefault();
                   // 포인터 클릭은 detail이 1 이상, 키보드 클릭은 0
                   reselect(item.id, event.detail > 0);

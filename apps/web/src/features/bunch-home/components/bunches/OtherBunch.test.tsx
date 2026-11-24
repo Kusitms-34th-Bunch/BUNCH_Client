@@ -30,7 +30,7 @@ const notFound = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({ useRouter: () => ({ back, replace }), notFound }));
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -283,6 +283,32 @@ describe('OtherBunchMembers', () => {
     render(<OtherBunchMembers bunchId={bunchId} />, {
       wrapper: createQueryWrapper(createTestQueryClient()),
     });
+
+  it('명단을 받는 동안 빈칸 대신 목록 자리를 그리고 받는 중을 알린다', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get('/api/bunches/:bunchId/members', async () => {
+        await gate;
+        return undefined;
+      }),
+    );
+    const { container } = renderMembers('3');
+
+    // 차단 여부 확인(앞 단계) 뒤 명단을 받는 단계까지 기다림
+    expect(await screen.findByText(BUNCH_HOME_MESSAGES.membersLoading)).toBeInTheDocument();
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+    // 자리표시는 보조 기술에서 숨김(skeleton.md)
+    const placeholder = container.querySelector('[class~="motion-safe:animate-pulse"]');
+    expect(placeholder).toBeInTheDocument();
+    expect(placeholder?.closest('[aria-hidden="true"]')).toBeInTheDocument();
+
+    release();
+    expect(await screen.findAllByRole('listitem')).toHaveLength(4);
+    expect(screen.queryByText(BUNCH_HOME_MESSAGES.membersLoading)).toBeNull();
+  });
 
   it('그 번치의 멤버를 서버 순서(관리자 먼저)로 관리 동작 없이 보여 준다', async () => {
     renderMembers('3');

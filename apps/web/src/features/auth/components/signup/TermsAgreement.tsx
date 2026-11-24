@@ -5,7 +5,8 @@ import { Label, PageHeader, TermsLabel } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { LATE_OVERLAY_MS, PageLoading } from '@/shared/components/loading/PageLoading';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import { SIGNUP_PATHS } from '../../constants/paths';
 import { TERMS_ITEMS } from '../../constants/terms';
 import { useTermsAgreement } from '../../contexts/termsAgreementContext';
@@ -29,13 +30,7 @@ export function TermsAgreement() {
   const busy = isRequesting || agreeToTerms.isPending;
 
   // 권한 요청 중 화면을 벗어났으면(뒤로 가기) 끝난 뒤 프로필 이동 생략
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const mounted = useMountedRef();
   // 저장이 끝나는 즉시 넘어가도록 다음 화면(프로필)을 미리 받아 둠
   useEffect(() => {
     router.prefetch(SIGNUP_PATHS.profile);

@@ -1,7 +1,23 @@
 name: E2E
 
 on:
+  # 문서·에이전트 지침만 바뀐 PR은 건너뜀(E2E는 필수 체크가 아니라 머지를 막지 않음)
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '.agents/**'
+      - '.claude/**'
+      - '.codex/**'
+      - '**/*.md'
+  # develop에서도 돌려 캐시를 develop 범위에 남김. PR 범위 캐시는 PR을 닫으면 지워져(cache-cleanup) 새 PR이 늘 빈 캐시로 시작했음
+  push:
+    branches: [develop]
+    paths-ignore:
+      - 'docs/**'
+      - '.agents/**'
+      - '.claude/**'
+      - '.codex/**'
+      - '**/*.md'
   workflow_dispatch:
 
 concurrency:
@@ -13,19 +29,32 @@ permissions:
 
 jobs:
   e2e:
+    name: E2E (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # 엔진별로 러너를 나눠 동시에 돌림(한 job에서 차례로 돌리면 web spec이 두 번이라 시간이 두 배)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: chromium
+            projects: --project=admin-chromium --project=web-chromium
+          - name: webkit
+            projects: --project=web-webkit
     # 브라우저·시스템 라이브러리·글꼴이 든 Playwright 공식 이미지에서 실행해 매번 설치하지 않음
     # 태그는 @playwright/test(.yarnrc.yml catalog) 버전과 같아야 함(다르면 브라우저 실행 파일을 못 찾아 실패)
     container:
       image: mcr.microsoft.com/playwright:v1.61.1-noble
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # 설치 전에 변조 가드(다른 workflow와 같음). develop push가 공유 캐시 범위에 저장하는 job이 됨
+      - run: node turbo/workflows/check-suspicious.mjs
 
       - run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: yarn
@@ -34,21 +63,30 @@ jobs:
       - run: node --version && yarn --version
 
       - run: yarn install --immutable
-      - run: yarn e2e:typecheck
-      - run: yarn e2e
+
+      # 가짜 서버 웹 빌드의 Next 캐시. develop push가 남긴 캐시를 새 PR이 이어 받음(restore-keys로 소스가 달라도 가장 가까운 것)
+      - uses: actions/cache@v5
+        with:
+          path: apps/web/.next/cache
+          key: e2e-next-${{ matrix.name }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**', 'packages/*/src/**') }}
+          restore-keys: e2e-next-${{ matrix.name }}-${{ hashFiles('yarn.lock') }}-
+      # 타입 검사는 엔진과 무관해 한 job에서만
+      - if: matrix.name == 'chromium'
+        run: yarn e2e:typecheck
+      - run: yarn e2e ${{ matrix.projects }}
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.name }}
           path: playwright-report
           if-no-files-found: ignore
 
       - name: Upload Playwright results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: test-results
+          name: test-results-${{ matrix.name }}
           path: test-results
           if-no-files-found: ignore

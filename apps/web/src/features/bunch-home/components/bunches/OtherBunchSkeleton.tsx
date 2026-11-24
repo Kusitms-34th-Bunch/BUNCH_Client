@@ -1,6 +1,6 @@
-import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, Skeleton } from '@app/design-system';
+import { Header, LineDotsLargeIcon, Skeleton } from '@app/design-system';
 import { useEffect, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PhotoGridSkeleton } from '@/shared/components/skeleton/PhotoGridSkeleton';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -29,11 +29,7 @@ export function OtherBunchSkeleton({ onBack }: OtherBunchSkeletonProps) {
       header={
         <Header
           className="bg-surface-secondary"
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
+          leading={<HeaderBackButton onClick={onBack} />}
           trailing={
             <span aria-hidden="true" className="text-icon-primary flex">
               <LineDotsLargeIcon />

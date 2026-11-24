@@ -12,6 +12,14 @@ vi.mock('next/web-vitals', () => ({
     reporter.report = report;
   },
 }));
+// INP는 web-vitals attribution 빌드의 onINP로 받음(Next hook의 INP는 원인 정보가 없어 버림)
+const inp = vi.hoisted((): { report?: Report; options?: unknown } => ({}));
+vi.mock('web-vitals/attribution', () => ({
+  onINP: (report: Report, options: unknown) => {
+    inp.report = report;
+    inp.options = options;
+  },
+}));
 
 const metric = (name: string, value: number) => ({
   id: `v-${name}`,
@@ -50,12 +58,72 @@ describe('WebVitalsReporter', () => {
     expect(captureWebVital).toHaveBeenNthCalledWith(2, expect.objectContaining({ value: 0.046 }));
   });
 
+  it('INP는 어떤 조작이 느렸는지(누른 요소·지연 구간·가장 긴 스크립트 파일)를 함께 보내고 숫자 ID는 가린다', () => {
+    window.history.replaceState(null, '', '/feed');
+    render(<WebVitalsReporter />);
+
+    // Next hook으로 온 INP(원인 없음)는 버림
+    reporter.report?.(metric('INP', 466));
+    expect(captureWebVital).not.toHaveBeenCalled();
+    expect(inp.options).toEqual({ reportSoftNavs: true });
+
+    inp.report?.({
+      ...metric('INP', 466),
+      attribution: {
+        interactionTarget: '#comment-7',
+        interactionType: 'pointer',
+        inputDelay: 12.4,
+        processingDuration: 380.6,
+        presentationDelay: 73.2,
+        loadState: 'complete',
+        longestScript: {
+          entry: {
+            invokerType: 'event-listener',
+            sourceURL: `${window.location.origin}/_next/static/chunks/4499-abc.js?v=1`,
+          },
+        },
+      },
+    });
+    // LCP는 원인 정보가 와도 보내지 않음(INP만)
+    reporter.report?.({ ...metric('LCP', 900), attribution: { interactionTarget: 'img' } });
+
+    expect(captureWebVital).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        metric: 'INP',
+        inp_target: '#comment-:n',
+        inp_type: 'pointer',
+        inp_input_delay: 12,
+        inp_processing: 381,
+        inp_presentation: 73,
+        inp_load_state: 'complete',
+        inp_script_type: 'event-listener',
+        inp_script_source: '4499-abc.js',
+      }),
+    );
+    expect(captureWebVital.mock.calls[1]?.[0]).not.toHaveProperty('inp_target');
+  });
+
+  it.each([
+    ['인라인 스크립트(문서 주소, 초대 토큰 포함)', '/invite/AbC123token', 'inline'],
+    ['다른 출처 스크립트', 'https://cdn.example.com/sdk.js', 'external'],
+  ])('%s는 파일 이름 대신 종류만 보낸다', (_name, sourceURL, expected) => {
+    render(<WebVitalsReporter />);
+    inp.report?.({
+      ...metric('INP', 300),
+      attribution: { longestScript: { entry: { invokerType: 'classic-script', sourceURL } } },
+    });
+    expect(captureWebVital).toHaveBeenCalledWith(
+      expect.objectContaining({ inp_script_source: expected }),
+    );
+  });
+
   it('측정한 화면 주소(navigationURL)가 있으면 보고 시점 경로 대신 그 경로를 보낸다', () => {
     window.history.replaceState(null, '', '/my');
     render(<WebVitalsReporter />);
 
     reporter.report?.({
-      ...metric('INP', 80),
+      ...metric('LCP', 80),
       navigationURL: 'https://example.com/bunch/12?tab=a',
     });
 
@@ -66,7 +134,7 @@ describe('WebVitalsReporter', () => {
     vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() });
     render(<WebVitalsReporter />);
 
-    reporter.report?.(metric('INP', 80));
+    reporter.report?.(metric('LCP', 80));
 
     expect(captureWebVital).toHaveBeenCalledWith(expect.objectContaining({ surface: 'app' }));
   });

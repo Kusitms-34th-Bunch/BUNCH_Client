@@ -1,3 +1,4 @@
+import { createListeners } from '@/shared/lib/listeners';
 import { summarizeUpload, uploadResultMessage, type UploadOutcome } from './photoUpload';
 
 /**
@@ -81,7 +82,7 @@ type Entry = {
 };
 
 const entries = new Map<string, Entry>();
-const listeners = new Set<() => void>();
+const listeners = createListeners();
 // 번치별로 상태 줄을 보고 있는 화면 수(사진함이 준비 상태로 그 번치를 보일 때만 셈)
 const watchers = new Map<string, number>();
 let snapshot: Readonly<Record<string, UploadStatus>> = {};
@@ -90,7 +91,7 @@ const EMPTY: Readonly<Record<string, UploadStatus>> = {};
 
 const emit = () => {
   snapshot = Object.fromEntries([...entries].map(([bunchId, entry]) => [bunchId, entry.status]));
-  for (const listener of listeners) listener();
+  listeners.emit();
 };
 
 // 페이지가 화면에 보이는지. 앱은 탭마다 WebView가 따로라 다른 탭에 가 있으면 사진함 WebView가 숨음
@@ -133,12 +134,7 @@ export const uploadStatusStore = {
   getSnapshot: () => snapshot,
   /** 서버 렌더에는 올리는 중인 사진이 없음 */
   getServerSnapshot: () => EMPTY,
-  subscribe: (listener: () => void) => {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  },
+  subscribe: listeners.subscribe,
   /** 이 번치의 상태 줄을 보이는 화면이 있다고 등록함. 돌려준 함수로 해제 */
   watch: (bunchId: string) => {
     watchers.set(bunchId, (watchers.get(bunchId) ?? 0) + 1);

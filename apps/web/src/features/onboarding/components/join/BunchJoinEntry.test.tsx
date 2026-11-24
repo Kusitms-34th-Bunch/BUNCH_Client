@@ -19,7 +19,7 @@ const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, prefetch: () => {} }) }));
 // 이동하는 동작의 토스트는 도착 화면에서 띄우도록 예약함(`toastAfterNavigation`)
 const toast = vi.fn<(_message: string) => void>();
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({
   toastAfterNavigation: (message: string) => toast(message),
 }));
 

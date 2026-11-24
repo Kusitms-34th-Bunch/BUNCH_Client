@@ -1,19 +1,14 @@
 import type { BunchMember } from '@/shared/api/bunchMembers';
+import { BUNCH_ROLE_FROM_SERVER } from '@/shared/lib/bunchRole';
 import type { BundleDetail } from '../model/bundle';
-import type { BunchRole, Draft, DraftLocation, DraftMember } from './types';
-
-const ROLE: Readonly<Record<BunchMember['role'], BunchRole>> = {
-  OWNER: 'owner',
-  CO_OWNER: 'coOwner',
-  MEMBER: 'member',
-};
+import type { Draft, DraftComment, DraftLocation, DraftMember } from './types';
 
 /** 번치 멤버를 초안 화면의 멤버 모양으로 변환(초안 생성자 여부는 번들마다 다름) */
 export const toDraftMember = (member: BunchMember, createdBy: string): DraftMember => ({
   id: member.id,
   name: member.name,
   avatarSrc: member.avatarSrc,
-  bunchRole: ROLE[member.role],
+  bunchRole: BUNCH_ROLE_FROM_SERVER[member.role],
   isCreator: member.id === createdBy,
 });
 
@@ -67,4 +62,25 @@ export const toDraft = ({ detail, bunchMembers, locations }: ToDraftInput): Draf
       commentMemberIds: detail.profanity?.prohibitedCommentMemberIds ?? [],
     },
   };
+};
+
+/** 두 상세 가운데 revision이 같거나 더 새로운 쪽(늦게 도착한 낡은 응답이 최신 기준을 덮지 않게 함) */
+export const pickNewerDetail = (
+  current: BundleDetail | undefined,
+  next: BundleDetail,
+): BundleDetail => (!current || next.revision >= current.revision ? next : current);
+
+/** 저장 전인 내 코멘트 입력을 코멘트 목록에 얹음(내 코멘트가 없으면 맨 뒤에 더함) */
+export const withPendingComment = (
+  comments: readonly DraftComment[],
+  myId: string,
+  pending: string | undefined,
+): readonly DraftComment[] => {
+  if (pending === undefined) return comments;
+  if (!comments.some((comment) => comment.memberId === myId)) {
+    return [...comments, { memberId: myId, text: pending }];
+  }
+  return comments.map((comment) =>
+    comment.memberId === myId ? { ...comment, text: pending } : comment,
+  );
 };

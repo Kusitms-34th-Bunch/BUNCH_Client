@@ -1,11 +1,12 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { useQuery } from '@tanstack/react-query';
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { apiErrorStatus } from '@/shared/api/client/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { useBlockRelation } from '../../hooks/useBlockRelation';
@@ -54,7 +55,7 @@ export function OtherBunchFollows({
     router.replace(internal.isCurrentBunch ? mine : BUNCH_HOME_PATHS.otherBunch(bunchId));
   }, [internal, initialTab, bunchId, router]);
 
-  const errorStatus = isApiError(home.error) ? home.error.status : undefined;
+  const errorStatus = apiErrorStatus(home.error);
   // 내가 차단했거나, 상대가 나를 차단해 서버가 403을 준 번치(프로필과 같은 판단)
   const blocked = access === 'blocked' || errorStatus === 403;
   // 기록이 없으면 프로필로, 차단한 번치면 프로필도 접근 제한이라 피드로
@@ -75,7 +76,7 @@ export function OtherBunchFollows({
   }
   if (access === 'checking') return <BlockedBunchScreen onBack={back} checking />;
   // 다시 받아도 명의가 어긋나거나 다시 받기가 실패하면 버튼을 막아 두지 않고 다시 시도 화면
-  if ((me.isError && !me.data) || (home.isError && !home.data) || viewer.mismatch) {
+  if (loadFailed(me) || loadFailed(home) || viewer.mismatch) {
     return (
       <BunchHomeError
         onRetry={() => {

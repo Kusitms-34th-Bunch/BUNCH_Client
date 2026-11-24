@@ -14,10 +14,13 @@ import { uploadStatusStore } from '../lib/uploadStatus';
 import { photoBoxKeys } from '../queries/keys';
 import { usePhotoUpload } from './usePhotoUpload';
 
-// 올리는 도중 목록 갱신 간격을 짧게 해서 테스트가 오래 걸리지 않게 함
+// 올리는 도중 목록 갱신 간격을 짧게 해서 테스트가 오래 걸리지 않게 함(필요한 테스트만 바꿈)
+const refreshInterval = vi.hoisted(() => ({ ms: 30 }));
 vi.mock('../lib/photoUpload', async (importOriginal) => ({
   ...(await importOriginal<typeof PhotoUploadLib>()),
-  UPLOAD_LIST_REFRESH_MS: 30,
+  get UPLOAD_LIST_REFRESH_MS() {
+    return refreshInterval.ms;
+  },
 }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
@@ -81,6 +84,7 @@ const lastToast = () => toastSpy.mock.calls.at(-1);
 
 beforeEach(() => {
   toastSpy.mockClear();
+  refreshInterval.ms = 30;
   uploadStatusStore.reset();
   // jsdom에는 blob 주소 만들기가 없어 상태 줄 썸네일 주소를 고정 값으로 대신함
   URL.createObjectURL = vi.fn(() => 'blob:thumbnail');
@@ -810,6 +814,50 @@ describe('usePhotoUpload 사진 목록 갱신', () => {
     await act(() => upload);
     // 끝나면 한 번 더 받음(예약해 둔 갱신은 걷어서 겹치지 않음)
     expect(invalidatedKeys(spy)).toHaveLength(2);
+  });
+
+  it('올리는 중인 다른 묶음이 있으면, 새 사진 없이 끝난 묶음이 그 묶음의 목록 갱신 예약을 지우지 않는다', async () => {
+    // 예약이 돌기 전에 B가 끝나도록 간격을 넉넉히(기다리는 한도 1초보다는 짧게)
+    refreshInterval.ms = 300;
+    bridge.pickGalleryImages
+      .mockResolvedValueOnce(pickedAlbum('a1', 'a2'))
+      .mockResolvedValueOnce(pickedAlbum('b1'));
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let calls = 0;
+    server.use(
+      http.post('/api/bunches/:bunchId/photos', async () => {
+        calls += 1;
+        // 묶음 A의 둘째 사진은 붙잡아 두고, 묶음 B의 사진은 한도로 거절(새 사진 없음)
+        if (calls === 2) await gate;
+        if (calls === 3) return fail(409, 'PHOTO_001');
+        return undefined;
+      }),
+    );
+    const client = createTestQueryClient();
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    const { result } = render({ id: bunchId }, client);
+
+    let uploadA!: Promise<unknown>;
+    act(() => {
+      uploadA = result.current.start('album');
+    });
+    const timeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    try {
+      // A의 첫 사진이 올라가 300ms 갱신 예약이 실제로 걸린 뒤(둘째 사진은 붙잡힌 채) B를 올림
+      await waitFor(() =>
+        expect(timeoutSpy.mock.calls.some(([, delay]) => delay === refreshInterval.ms)).toBe(true),
+      );
+      await act(() => result.current.start('album'));
+      // 전제: B는 예약이 돌기 전에 끝남(아니면 결함이 있어도 통과하므로 여기서 실패로 드러냄)
+      expect(invalidatedKeys(spy)).toEqual([]);
+      // A가 끝나기 전에도 A의 첫 사진이 목록에 반영됨
+      await waitFor(() => expect(invalidatedKeys(spy)).toEqual([photoBoxKeys.photos(bunchId)]));
+    } finally {
+      release();
+      timeoutSpy.mockRestore();
+    }
+    await act(() => uploadA);
   });
 
   it('한도·형식 오류로 하나도 못 올렸으면 목록을 다시 받지 않는다', async () => {

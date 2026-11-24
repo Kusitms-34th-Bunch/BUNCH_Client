@@ -43,7 +43,7 @@ const bunchId = String(MOCK_BUNCH_ID);
 
 const boxPhoto = (id: string): PhotoBoxPhoto => ({
   id,
-  src: `/mock/photos/${id}.jpg`,
+  src: `/mock/photos/${id}.webp`,
   alt: `사진 ${id}`,
   takenAt: '2026-10-18T10:00',
   uploadedAt: '2026-10-18T10:00:00',
@@ -54,7 +54,7 @@ const boxPhoto = (id: string): PhotoBoxPhoto => ({
 
 const draftPhoto = (id: string, sourcePhotoId?: string): DraftPhoto => ({
   id,
-  src: `/mock/photos/${id}.jpg`,
+  src: `/mock/photos/${id}.webp`,
   alt: id,
   takenAt: null,
   uploaderId: '1',

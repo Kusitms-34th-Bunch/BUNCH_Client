@@ -4,33 +4,33 @@ import {
   Button,
   ConfirmDialog,
   Header,
-  LineChevronLeftLargeIcon,
   LineSparklesSmallIcon,
   TextButton,
 } from '@app/design-system';
-import { BundleRecommendSheet } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { NoBunch } from '@/features/photo-box/components/NoBunch';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import {
   LATE_OVERLAY_MS,
   PAGE_LOADING_LABEL,
   PageLoading,
 } from '@/shared/components/loading/PageLoading';
+import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnabled';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useRefocusWhenEnabled } from '@/shared/hooks/useRefocusWhenEnabled';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES, MAX_RECOMMEND_CHIPS } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';
-import { getCardDate } from '../../lib/recommendation';
+import { toRecommendCards } from '../../lib/recommendation';
 import { BundleLoadError } from '../BundleLoadError';
 import { SelectPhotoList } from '../SelectPhotoList';
+import { RecommendOverlay } from './RecommendOverlay';
 
 type BundleSelectProps = {
   /** 날짜 형식(올해 여부)의 기준 연도. 기본은 올해 */
@@ -64,13 +64,7 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
   const reopenOnReturn = useRef(false);
   const { openSheet, closeSheet, sheetOpen, loadRecommendations, isRecommendationBusy } = select;
   // 목록을 받는 사이 화면을 떠났으면 시트를 올리지 않음
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const mounted = useMountedRef();
   useEffect(
     () => () => {
       if (reopenOnReturn.current) openSheet();
@@ -120,14 +114,7 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
         <RecommendOverlay
           {...rootProps}
           initialPickedId={select.pickedId}
-          bundles={recommendations.map((item) => ({
-            id: item.id,
-            imageSrc: item.imageSrc,
-            title: item.title,
-            members: [...item.memberNames],
-            photoCount: item.photoCount,
-            ...getCardDate(item, currentYear),
-          }))}
+          bundles={toRecommendCards(recommendations, currentYear)}
           onPick={(id) => {
             void pickRecommendation(id).then((result) => {
               if (result === 'failed') return;
@@ -177,7 +164,7 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
     void loadRecommendations().then((list) => {
       if (list && mounted.current) openRecommend(list);
     });
-  }, [sheetOpen, ready, closeSheet, openRecommend, loadRecommendations]);
+  }, [sheetOpen, ready, closeSheet, openRecommend, loadRecommendations, mounted]);
 
   // 추천 번들을 적용하면 그 날짜 섹션으로 스크롤하고 제목에 포커스(요청마다 한 번, 끝나면 대상을 비움)
   const { clearScrollTarget } = select;
@@ -225,13 +212,10 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
         <div inert={blocked}>
           <Header
             leading={
-              <HeaderIconButton
-                label={BUNDLE_SELECT_MESSAGES.back}
+              <HeaderBackButton
                 // 직접 주소로 들어와 돌아갈 기록이 없으면 번치 홈으로 이동(뒤로 가면 고른 사진은 버려짐)
                 onClick={() => backOr(BUNDLE_SELECT_PATHS.bunchHome)}
-              >
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
+              />
             }
             title={BUNDLE_SELECT_MESSAGES.title}
             trailing={
@@ -297,28 +281,5 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
         inert={blocked}
       />
     </PageShell>
-  );
-}
-
-type RecommendOverlayProps = Omit<
-  ComponentProps<typeof BundleRecommendSheet>,
-  'selectedId' | 'onSelect'
-> & {
-  initialPickedId: string | undefined;
-  onPick: (_id: string) => void;
-};
-
-/** 시트가 열린 채 카드를 눌러도(사진이 사라진 추천) 선택 모양이 바뀌게 함(overlay는 열 때의 값으로 그려짐) */
-function RecommendOverlay({ initialPickedId, onPick, ...props }: RecommendOverlayProps) {
-  const [pickedId, setPickedId] = useState(initialPickedId);
-  return (
-    <BundleRecommendSheet
-      {...props}
-      selectedId={pickedId}
-      onSelect={(id) => {
-        setPickedId(id);
-        onPick(id);
-      }}
-    />
   );
 }

@@ -37,7 +37,7 @@
 
 | Figma                                                          | 구현                                                                                                       |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 패딩 좌우 `spacing-s2`(4)·위아래 `padding-p5`(10), radius `r4` | `px-s2 py-padding-p5 rounded-r4`                                                                           |
+| 패딩 좌우 `spacing-s4`(8)·위아래 `padding-p5`(10), radius `r4` | `px-s4 py-padding-p5 rounded-r4`                                                                           |
 | Body-2-Medium(15/22), `text-secondary`                         | `typography-body-2-medium text-text-secondary`                                                             |
 | `Line/Icon-M/chevron-right` 20                                 | `LineChevronRightMediumIcon`, `text-icon-quaternary`                                                       |
 | Pressed `overlay-hover`                                        | `before:bg-overlay-hover`                                                                                  |
@@ -48,6 +48,7 @@
 
 - `danger` 글자(`system-fail-text` #f04d29, 15px 중간 굵기)는 흰 바탕에서 약 3.6:1로 AA 4.5:1에 못 미친다(계산값). Figma 지정 색이라 그대로 두었고, 휴지통 아이콘이 함께 있어 색만으로 뜻을 전하지는 않는다. `TextButton` warning(약 3.7:1)과 함께 어두운 빨강 토큰을 디자인에 요청할 대상
 
+- 디자인 변경 (반영, 2026-11-25 #562): 좌우 안쪽 여백 4→8. 누르면 회색 배경과 글자 사이가 4px뿐이라 붙어 보였다. 크기(343×42)와 화면 좌우 16px 여백은 그대로이고, 글자 시작은 화면에서 20→24px. 누르는 동안 배경과 내용이 함께 0.98로 줄어든다(`press-scale-large`).
 - 디자인 변경 (반영, 2026-11-03 확인): 좌우 패딩 10→4, 글자 Body-1-Medium→Body-2-Medium, 높이 44→42. Bottom Sheet 06(`2487:46356`)은 새 값을 쓰고, 번치 더보기 화면(`1873:34575`)은 아직 다른 컴포넌트 `Label - Status`(좌우 16+10, 16/24)다.
 - 화살표 색: Figma 변수 `icon-quaternary`(#bcbec2)와 같다(2026-11-01 확인).
 - 앞 아이콘 색 (제안): 이 컴포넌트의 Figma 변수에 아이콘 색이 `icon-quaternary`·`icon-disabled`만 있어 화살표와 같은 `icon-quaternary`를 썼다. 기본 컴포넌트는 앞 아이콘이 꺼져 있어 켠 상태의 색을 화면으로 확인하지 못했다. Bottom Sheet 09(`3740:78862`)의 인스턴스는 앞 아이콘이 #25282D(`icon-secondary`)라 `PinnedPlaceSheet`는 아이콘에 색을 따로 준다. 기본값을 바꿀지 디자이너 확인 필요. 아이콘에 직접 준 색은 비활성(`group-disabled`)의 `icon-disabled`보다 우선하므로, 비활성 항목에서는 이 방식으로 덮지 않는다.

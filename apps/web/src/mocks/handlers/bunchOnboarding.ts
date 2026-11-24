@@ -1,6 +1,6 @@
 import { http } from 'msw';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
-import { toWireId } from '@/shared/api/ids';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
+import { toWireId } from '@/shared/api/client/ids';
 import type { CharacterType, MockBunch } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
@@ -54,7 +54,7 @@ const changeBunch = (bunchId: number, change: (_bunch: MockBunch) => MockBunch) 
   }));
 
 /** 가짜 서버가 올린 번치 사진 대신 쓰는 시연용 이미지(서버는 업로드한 파일의 https 주소를 돌려줌) */
-const MOCK_UPLOADED_BUNCH_IMAGE = '/mock/photos/C1.jpg';
+const MOCK_UPLOADED_BUNCH_IMAGE = '/mock/photos/C1.webp';
 
 export const bunchOnboardingHandlers = [
   // GET /api/v1/bunches/name-availability

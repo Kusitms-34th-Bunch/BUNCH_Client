@@ -1,5 +1,5 @@
 import { http } from 'msw';
-import { toWireId } from '@/shared/api/ids';
+import { toWireId } from '@/shared/api/client/ids';
 import type { MockBundle, MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';
@@ -24,7 +24,7 @@ export const MOCK_ADS = [
     id: 71,
     name: '플로디스튜디오',
     introduction: '여기서 뭉쳐봐요!',
-    photoUrl: '/mock/photos/AD1.jpg',
+    photoUrl: '/mock/photos/AD1.webp',
     tags: ['최대 4인', '1인 5~6만원', '예약 가능', '프라이빗 클래스'],
     externalLink: null,
     place: {

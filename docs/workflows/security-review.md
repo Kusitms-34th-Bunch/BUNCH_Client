@@ -22,7 +22,7 @@
 
 ## 확인 항목
 
-- **XSS**: 사용자 입력이나 외부 응답을 `dangerouslySetInnerHTML`, 직접 DOM 삽입, 템플릿 문자열로 렌더링하는 경로에 escaping·sanitize가 있는가. Content-Security-Policy는 이 저장소에 없다(2026-11-16 확인, `apps/web/next.config.mjs`에 헤더 없음). 도입한다면 `script-src`에 `unsafe-inline`·`unsafe-eval` 없이 nonce 기반으로 구성하고, `<meta>` 태그가 아니라 실제 HTTP 응답 헤더로 전달한다(`frame-ancestors` 등 일부 지시문은 `<meta>`에서 무시된다).
+- **XSS**: 사용자 입력이나 외부 응답을 `dangerouslySetInnerHTML`, 직접 DOM 삽입, 템플릿 문자열로 렌더링하는 경로에 escaping·sanitize가 있는가. CSP는 아직 Report-Only라 XSS를 막아 주지 않으므로 escaping·sanitize가 1차 방어다. CSP 기준은 아래 「응답 보안 헤더」를 따른다.
 - **인증·권한 경계**: route guard, server action, API 호출이 로그인 여부뿐 아니라 리소스 소유권·역할까지 검증하는가. 클라이언트 쪽 조건부 렌더링만으로 접근을 막고 있지 않은가. Server Action(`'use server'`)은 middleware나 상위 layout의 접근 제어를 거치지 않고 직접 호출될 수 있는 공개 endpoint다 — action 함수 내부에서 그 자체로 인증·권한을 다시 검증하는가.
 - **secret 노출**: 서버 전용 값(API 키, 내부 URL, 토큰)이 client component, 브라우저 번들, 커밋된 파일로 새지 않는가. `NEXT_PUBLIC_`, `VITE_` 접두사가 실제로 공개해도 되는 값에만 붙는가.
 - **IDOR**: URL·payload의 id 값을 서버가 요청자 소유인지 검증 없이 그대로 조회·수정에 쓰지 않는가.
@@ -44,9 +44,14 @@
 - **공개 범위·관계·역할**: 비공개 번치는 승인된 팔로워가 아니면 수치까지만, 차단 관계면 프로필·번들·명단 모두 볼 수 없다(기능명세 5.10). 역할별 권한은 `docs/specs/bunch-home.md`의 표를 따른다. API를 연결한 화면은 이 판정을 클라이언트 숨김(링크 제거, 조건부 렌더)만으로 하지 않는지, 잠긴 화면에서 목록 query를 보내지 않는지(`enabled: false`), 서버가 같은 조건으로 거절하는지 본다. API 연결 전 fixture·메모리 저장소 화면의 클라이언트 판정은 알려진 단계적 한계라 finding으로 올리지 않고, 화면 규칙과 어긋나는지만 본다.
 - **BFF·인증 쿠키**: `docs/architecture/api-boundary.md`가 기준이다. 새 Route Handler가 `createAuthorizedRoute`·`createServerApi`를 거치는지, 범용 프록시(`src/app/api/[...path]`)의 경로 정규화·헤더 걸러내기·쿠키 미전달이 약해지지 않았는지, `src/proxy.ts`의 상태 변경 요청 `Sec-Fetch-Site` 검사가 우회되지 않는지, 토큰을 브라우저 코드가 읽거나 저장하지 않는지 본다.
 - **초대 링크·코드**(`features/bunch-invite`, `features/onboarding`): 코드가 추측 가능하거나 URL·로그·Sentry로 새지 않는지, 만료·재사용 처리를 클라이언트만 믿지 않는지 본다.
-- **사진 업로드**(`features/photo-box`, `features/bundle`, `shared/hooks/usePhotoPicker`): 파일 형식·크기를 확장자만으로 판단하지 않는지, 업로드 전후로 위치(EXIF GPS) 같은 메타데이터가 다른 번치에 공개되는 경로가 없는지 본다. 크기 제한은 백엔드(파일 6MB·요청 7MB)와 맞춘다.
+- **사진 업로드**(`features/photo-box`, `features/bundle`, `shared/hooks/native/usePhotoPicker`): 파일 형식·크기를 확장자만으로 판단하지 않는지, 업로드 전후로 위치(EXIF GPS) 같은 메타데이터가 다른 번치에 공개되는 경로가 없는지 본다. 크기 제한은 백엔드(파일 6MB·요청 7MB)보다 작은 Vercel 요청 본문 한도(약 4.5MB)를 넘지 않게 둔다(업로드 4.4MB `features/photo-box/lib/photoUpload.ts`, 쉘 목표 4MiB).
 - **web ↔ 네이티브 bridge**(`packages/bridge`, `apps/web/src/shared/bridge`, `apps/mobile-shell`): 메시지를 스키마(`packages/bridge/src/schema.ts`)로 검증하는지, 웹 페이지가 네이티브 권한(카메라·사진·파일)을 사용자 동작 없이 부르거나 임의 URL을 열게 하는 경로가 없는지 본다.
 - **오류 수집**(`apps/web/src/shared/config/sentry.ts`): 사진·초대 코드·토큰·사용자 입력 같은 내용이 아니라 식별자만 보내는지 본다.
+- **응답 보안 헤더**(`apps/web/src/shared/config/securityHeaders.mjs`): 브라우저가 새 외부 출처(스크립트·연결·이미지)에 접속하게 되면 CSP 지시문에 그 출처를 추가했는지 본다. 강제 CSP는 출처와 무관한 `frame-ancestors 'none'`·`object-src 'none'`·`base-uri 'self'`만 유지한다.
+  - 나머지 CSP는 Report-Only이고 위반은 Sentry 보고 주소(DSN에서 계산)로 받는다. 초대 페이지는 주소에 토큰이 있어 보고 주소를 뺀다. 이 정책은 문서를 새로 받을 때 정해지므로, 초대 주소로는 화면 안 이동 없이 문서를 새로 받아 들어가게 둔다. 강제 전환은 운영 위반 보고를 모은 뒤 따로 한다.
+  - 스크립트는 Next 인라인 스크립트 때문에 `'unsafe-inline'`을 쓴다. nonce를 쓰면 모든 페이지가 동적 렌더가 되므로 쓰지 않는다.
+  - 사진 주소 도메인이 정해지지 않아 `img-src`는 `https:` 전체다.
+  - zod는 파서 컴파일에 `new Function`을 써서 `instrumentation-client.ts`에서 끈다(`z.config({ jitless: true })`). 위반 0건은 `e2e/web/security-headers.spec.ts`가 확인한다.
 - **환경 변수**: 서버 전용 값(`API_BASE_URL` 등)에 `NEXT_PUBLIC_`·`VITE_`를 붙이지 않는지 본다.
 
 ## 심각도

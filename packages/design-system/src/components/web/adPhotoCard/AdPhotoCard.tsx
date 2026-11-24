@@ -120,6 +120,7 @@ export const AdPhotoCard = (props: AdPhotoCardProps) => {
         src={imageSrc}
         alt={imageAlt}
         decoding="async"
+        loading="lazy"
         className="absolute inset-0 size-full object-cover"
       />
       <div

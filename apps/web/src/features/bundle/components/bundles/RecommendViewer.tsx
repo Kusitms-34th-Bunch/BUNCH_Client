@@ -8,8 +8,8 @@ import {
   PageLoading,
 } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { replaceUrl } from '@/shared/lib/replaceUrl';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { replaceUrl } from '@/shared/lib/navigation/replaceUrl';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
 import { useBundleSelect } from '../../contexts/bundleSelectContext';

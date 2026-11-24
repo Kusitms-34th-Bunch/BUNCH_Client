@@ -2,6 +2,12 @@
   "name": "@app/web",
   "version": "0.0.0",
   "private": true,
+  "sideEffects": [
+    "**/*.css",
+    "./src/instrumentation-client.ts",
+    "./sentry.server.config.ts",
+    "./sentry.edge.config.ts"
+  ],
   "engines": {
     "node": ">=24"
   },
@@ -13,7 +19,6 @@
     "lint": "eslint . --cache --cache-strategy content",
     "check:mock-imports": "node scripts/check-mock-server-imports.mjs",
     "check:contracts": "node scripts/check-response-contracts.mjs",
-    "check:file-size": "node scripts/check-file-size.mjs",
     "check:feature-exceptions": "node scripts/check-feature-exceptions.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -44,6 +49,7 @@
     "react-simplikit": "catalog:",
     "server-only": "^0.0.1",
     "swiper": "^14.3.0",
+    "web-vitals": "^6.2.3",
     "zod": "catalog:"
   },
   "devDependencies": {

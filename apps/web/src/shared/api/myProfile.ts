@@ -1,10 +1,10 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { CHARACTER_TYPES, defaultBunchImage } from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
-import { bffApi, requestData } from './bffApi';
-import { toDomainId } from './ids';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
+import { CHARACTER_TYPES, defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
+import { bffApi, requestData } from './client/bffApi';
+import { toDomainId } from './client/ids';
 
 const defaultBunchSchema = z.object({
   id: z.number().int().positive(),

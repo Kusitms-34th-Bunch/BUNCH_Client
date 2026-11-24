@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, Header, toast } from '@app/design-system';
 import { DescriptionRadioCard } from '@app/design-system/web';
 import { useId } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import type { DraftVisibility } from '../../lib/types';
@@ -59,13 +59,7 @@ export function DraftVisibilityScreen({
     <PageShell
       header={
         <div inert={uploading}>
-          <Header
-            leading={
-              <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
-            }
-          />
+          <Header leading={<HeaderBackButton onClick={onBack} />} />
         </div>
       }
       bottom={

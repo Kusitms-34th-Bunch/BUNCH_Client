@@ -1,4 +1,5 @@
 'use client';
+// 크기 유지: 선택 모드·끌기 이동·저장 중 상태를 플로팅 버튼·메뉴·inert·상태 낭독이 함께 읽는 한 화면
 
 import { toast } from '@app/design-system';
 import { FloatingButton, PhotoUploadSheet } from '@app/design-system/web';
@@ -7,11 +8,12 @@ import { FloatingButtonToastAnchor } from '@/shared/components/layout/FloatingBu
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useNativeFloatingButton } from '@/shared/hooks/native/useNativeFloatingButton';
+import { useExitableOpen } from '@/shared/hooks/overlay/useExitableOpen';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
+import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useHoldScrollOnLeave } from '@/shared/hooks/useHoldScrollOnLeave';
-import { useNativeFloatingButton } from '@/shared/hooks/useNativeFloatingButton';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { useScrollInHistory } from '@/shared/hooks/useScrollInHistory';
 import type { UploadStatus } from '../../lib/uploadStatus';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { PhotoSelectionProvider } from '../../contexts/PhotoSelectionContext';
@@ -34,7 +36,7 @@ import { PhotoDragArea } from './PhotoDragArea';
 import { PhotoSelectionMenu } from './PhotoSelectionMenu';
 import { PhotoUploadStatus } from './PhotoUploadStatus';
 
-// API 연결 전 기본 동작: 모두 성공하고 아무것도 사라지지 않음
+// actions를 넘기지 않을 때(테스트·미리보기)의 기본 동작: 모두 성공하고 아무것도 사라지지 않음
 const noopActions: PhotoBoxActions = {
   savePhotos: (ids) => Promise.resolve({ savedIds: ids, failedIds: [] }),
   deletePhotos: () => Promise.resolve({ removedCount: 0 }),
@@ -87,8 +89,7 @@ export function PhotoBoxScreen({
   const currentYear = currentYearProp ?? clientYear;
   const [memberFilter, setMemberFilter] = useState(readHistoryMemberFilter);
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuMounted, setMenuMounted] = useState(false);
+  const menu = useExitableOpen();
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const openOverlay = useScreenOverlay();
   // 끌어서 날짜를 옮기는 요청이 도는 중(저장·날짜 변경 요청과 같이 다른 동작을 막음)
@@ -146,12 +147,11 @@ export function PhotoBoxScreen({
   const handleToggle = (photoId: string) => {
     flow.toggle(photoId);
     // 고른 사진이 없어지면 「⋯」가 꺼지므로 열려 있던 메뉴도 닫음
-    if (selection.length === 1 && selection[0] === photoId) setMenuOpen(false);
+    if (selection.length === 1 && selection[0] === photoId) menu.close();
   };
   const handleCancel = () => {
     flow.stop();
-    setMenuOpen(false);
-    setMenuMounted(false);
+    menu.hide();
   };
   // 사진함이 가득 차면 시트를 열지 않고 토스트로만 알림(명세 3.2.1)
   const openUpload = () => {
@@ -174,13 +174,8 @@ export function PhotoBoxScreen({
       );
     });
   };
-  const toggleMenu = () => {
-    setMenuMounted(true);
-    setMenuOpen((open) => !open);
-  };
-
   // 선택 모드면 메뉴(저장·날짜 변경 중에는 무시), 아니면 사진 올리기
-  const floatingAction = selecting ? (busy ? undefined : toggleMenu) : openUpload;
+  const floatingAction = selecting ? (busy ? undefined : menu.toggle) : openUpload;
   // iOS 26 이상 쉘은 「+」·「⋯」를 네이티브 Liquid Glass로 그리고 웹 버튼은 그리지 않음(목록 화면에서만)
   const showWebFloatingButton = useNativeFloatingButton({
     tab: 'photos',
@@ -188,7 +183,7 @@ export function PhotoBoxScreen({
     label: selecting ? '메뉴 열기' : '사진 올리기',
     // 저장·날짜 변경·끌기 이동 중에도 누를 수 없음으로 알림(웹 버튼의 aria-disabled에 해당, VoiceOver 초점은 남음)
     disabled: selecting && (selection.length === 0 || busy),
-    expanded: selecting ? menuOpen : undefined,
+    expanded: selecting ? menu.open : undefined,
     // 저장 중 화면 전체 dim(PageLoading) 위로 네이티브 버튼이 뜨지 않게
     hidden: !ready || flow.saving,
     onPress: floatingAction,
@@ -231,13 +226,13 @@ export function PhotoBoxScreen({
         <div className="relative h-0">
           {/* 탭 막대를 숨긴 화면에서 토스트를 플로팅 버튼(웹·네이티브) 위에 띄우는 앵커 */}
           <FloatingButtonToastAnchor className="right-s8 bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap))]" />
-          {selecting && menuMounted ? (
+          {selecting && menu.mounted ? (
             // 메뉴는 「⋯」 위 10px, 오른쪽 정렬(Figma 사진함_17): 「⋯」 높이 3.25rem + 간격 0.625rem
             <div className="right-s8 absolute bottom-[calc(var(--main-tab-bar-height)+var(--main-tab-bar-float-gap)+3.875rem)] z-20">
               <PhotoSelectionMenu
-                open={menuOpen}
-                onClose={() => setMenuOpen(false)}
-                onExited={() => setMenuMounted(false)}
+                open={menu.open}
+                onClose={menu.close}
+                onExited={menu.exited}
                 onSelect={flow.handleMenuAction}
                 // 네이티브 버튼이면 돌아갈 웹 버튼이 없어 닫을 때 초점을 화면 제목으로
                 triggerRef={showWebFloatingButton ? menuTriggerRef : headingRef}
@@ -250,7 +245,7 @@ export function PhotoBoxScreen({
               icon={selecting ? 'more' : 'add'}
               aria-label={selecting ? '메뉴 열기' : '사진 올리기'}
               aria-haspopup={selecting ? 'menu' : undefined}
-              aria-expanded={selecting ? menuOpen : undefined}
+              aria-expanded={selecting ? menu.open : undefined}
               disabled={selecting && selection.length === 0}
               // 저장·날짜 변경 중에는 포커스를 잃지 않도록 disabled 대신 aria-disabled를 쓰고 누름만 무시
               aria-disabled={selecting && busy ? true : undefined}

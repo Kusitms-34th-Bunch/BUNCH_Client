@@ -24,6 +24,10 @@
 - 선택: 1px `icon-tertiary` 링, 지름 9.6px `icon-tertiary` 점.
 - 비활성: 행 전체 `opacity-disabled`(40%), 누를 수 없음. Figma에 없는 상태라 제안 값이다.
 
+## 모션
+
+- 가운데 점의 선택 전환 기록은 `packages/design-system/src/components/core/radio/Radio.spec.md`의 「모션」에 있다.
+
 ## 접근성
 
 - native radio라 화살표 키 이동·Space 선택이 브라우저 기본으로 동작한다.

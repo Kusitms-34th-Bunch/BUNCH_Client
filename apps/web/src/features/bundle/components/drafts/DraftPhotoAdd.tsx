@@ -1,14 +1,14 @@
 'use client';
 
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, ConfirmDialog, Header, toast } from '@app/design-system';
 import { useMemo, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { countSelectedByMember, toggleSelection } from '@/features/photo-box/lib/selection';
 import { ALL_MEMBERS, type PhotoBoxData } from '@/features/photo-box/lib/types';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -119,15 +119,7 @@ export function DraftPhotoAdd({
     // 사진함에서 사진을 고르는 동안 사진을 작업 중으로 알림
     <PresenceScope presence={actions.presence} target="PHOTOS">
       <PageShell
-        header={
-          <Header
-            leading={
-              <HeaderIconButton label="뒤로 가기" onClick={back}>
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
-            }
-          />
-        }
+        header={<Header leading={<HeaderBackButton onClick={back} />} />}
         bottom={
           <div
             // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만

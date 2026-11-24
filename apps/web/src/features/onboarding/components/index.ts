@@ -10,4 +10,3 @@ export { BunchJoinInvitation } from './join/BunchJoinInvitation';
 export { BunchJoined } from './join/BunchJoined';
 export { BunchMood } from './create/BunchMood';
 export { BunchStartSelect } from './start/BunchStartSelect';
-export { CreateBunchFrame } from './create/CreateBunchFrame';

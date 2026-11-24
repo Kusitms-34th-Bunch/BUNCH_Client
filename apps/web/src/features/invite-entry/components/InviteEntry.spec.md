@@ -27,7 +27,7 @@
 
 ## 상태와 흐름
 
-- 진입: 장식(로고 묶음, 픽셀 3개)이 아래에서 올라오며 나타난다(2.4초, 한 번). **CSS 키프레임만으로**(`globals.css`의 `invite-rise-*`, `animation-fill-mode: both`) 첫 페인트부터 재생해서 JS·hydration과 무관하고, 완성된 모양이 먼저 보였다가 다시 시작하는 깜빡임이 없다.
+- 진입: 장식(로고 묶음, 픽셀 3개)이 아래에서 올라오며 나타난다(2.4초, 한 번). **CSS 키프레임만으로**(`inviteRise.module.css`, `animation-fill-mode: both`) 첫 페인트부터 재생해서 JS·hydration과 무관하고, 완성된 모양이 먼저 보였다가 다시 시작하는 깜빡임이 없다.
 - 「초대장 확인하기」(앱 안): `GET /invitations/{토큰}`(공개). 같은 틱의 중복 탭은 ref로 막고 요청 중과 확인 뒤 이동할 때까지 버튼을 잠그고 화면은 덮지 않는다(2026-11-20 기준: 짧은 저장·확인 뒤 화면 이동은 덮지 않음, `docs/architecture/motion.md` 「로딩 상태」).
   - 성공(앱 안): `savePendingInvitation(토큰)` 뒤 `router.replace(continueHref)`. 브라우저가 화면을 그대로 복원하면(bfcache, `pageshow`의 `persisted`) 로딩과 중복 탭 잠금을 푼다.
   - 앱 밖: 서버에 묻지 않고(iOS는 누른 그 순간의 이동만 앱을 열고 복사도 누른 동작 안에서만 허용) 형식만 확인한 뒤 넘긴다. 카카오톡 인앱 브라우저(iOS, User-Agent `KAKAOTALK`)는 `kakaotalk://web/openExternal?url={이 페이지 출처}/invite/{토큰}`, 그 밖의 iPhone·iPad는 `https://app.bunch.kr/invite/{토큰}`을 안내 없이 복사하고 `https://open.bunch.kr/invite/{토큰}`(앱이 있으면 앱, 없으면 서버가 App Store로), iOS가 아니면 토스트 「지금은 iOS 앱만 지원해요.」. 초대는 보관하지 않고 버튼은 잠그지 않는다. 이동은 `lib/externalLink.ts`의 `openExternalUrl`.
@@ -48,7 +48,7 @@
 ## UI와 접근성
 
 - Component mapping: 디자인 시스템 `Button`(`secondary` = 앱 설치하기, `brand` = 초대장 확인하기(기본 `primary`는 검정이라 Figma의 브랜드 파랑과 다름)), `Toaster`. 로고는 로그인 화면과 같은 `shared/assets/images/login/wordmark.svg`(비율 171:43 = Figma 226:56.7).
-- 배경 사진: Figma `image 7`을 Figma에 올라간 원본 이미지(816×1456, `download_assets`의 `rawImages`)를 JPEG 품질 90(약 210KB)으로 변환한 `public/images/invite/entry-bg.jpg`를 `next/image`(`fill`, `priority`, `unoptimized`)로 쓴다. Figma 에셋 URL의 기본 export는 574×1024로 줄어 있어 화질이 깨졌고, Next 기본 최적화(품질 75 재압축)도 건너뛴다.
+- 배경 사진: 디자이너에게 받은 딤 없는 원본 사진(1354×1630)에서 Figma `image 7`과 같은 영역(가로 233~1145, 912×1630)을 잘라 WebP 품질 90(약 160KB, #554)로 만든 `public/images/invite/entry-bg.webp`를 `next/image`(`fill`, `priority`, `unoptimized`)로 쓴다. Figma 에셋 URL의 기본 export는 574×1024로 줄어 있어 화질이 깨졌고, Next 기본 최적화(품질 75 재압축)도 건너뛴다.
 - 시맨틱: `main` 안에 `h1`(로고, 이름 「Bunch」), 배경·딤·그라데이션·픽셀 장식은 `aria-hidden`. 확인 중 상태는 항상 마운트된 `role="status"`(화면에는 숨김)로 알린다.
 
 | Figma           | 값                                                                                                                        | 사용한 토큰·utility                                                                      |
@@ -59,7 +59,7 @@
 | 소개 문구       | Noto Sans KR 14/20, 자간 -0.28, 흰색                                                                                      | `typography-body-3-regular text-text-inversed`(폰트 차이는 확인할 항목)                  |
 | 픽셀 장식       | 9px 정사각형, 흰색(`gray-000`)                                                                                            | `bg-icon-inversed size-2.25`                                                             |
 | 버튼            | 높이 48, 좌우 16, 아래 44, 간격 6. 앱 설치하기 `surface-tertiary`+`text-primary`, 초대장 확인하기 `surface-brand`+흰 글씨 | `Button`(기본 lg) `variant="secondary"`·`"brand"`, `px-padding-p8 pb-padding-p19 gap-s3` |
-| 모션            | 2.4초, 위 12~18px에서 올라오며 투명→불투명, 곡선 `0.33,0,0.15,1`·`0.4,0,0.2,1`                                            | `globals.css`의 `invite-rise-*` 키프레임(Figma 값 그대로, `transform`·`opacity`만)       |
+| 모션            | 2.4초, 위 12~18px에서 올라오며 투명→불투명, 곡선 `0.33,0,0.15,1`·`0.4,0,0.2,1`                                            | `inviteRise.module.css` 키프레임(Figma 값 그대로, `transform`·`opacity`만)               |
 
 ## 검증
 

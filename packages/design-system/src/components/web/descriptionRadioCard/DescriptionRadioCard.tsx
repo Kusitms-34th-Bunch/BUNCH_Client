@@ -29,11 +29,11 @@ export const DescriptionRadioCard = ({
   return (
     <label
       className={cn(
-        'bg-surface-secondary rounded-r4 px-padding-p8 py-s9 gap-s7 group relative isolate flex w-full cursor-pointer touch-manipulation items-center',
+        'press-scale-large bg-surface-secondary rounded-r4 px-padding-p8 py-s9 gap-s7 group relative isolate flex w-full cursor-pointer touch-manipulation items-center',
         // 눌림은 글자 뒤 layer로 겹쳐 글자는 그대로 유지. While Pressing / Dissolve / Ease out / 75ms(화면설계서 2145:39607)
         'before:rounded-r4 before:bg-overlay-pressed before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out not-has-disabled:active:before:opacity-100',
-        // 선택: On Click / Dissolve / Ease out / 75ms
-        'transition-[background-color,box-shadow] duration-75 ease-out motion-reduce:transition-none motion-reduce:before:transition-none',
+        // 선택: On Click / Dissolve / Ease out / 75ms(배경·ring 전환은 press-scale-large가 함께 맡음)
+        'motion-reduce:before:transition-none',
         'has-checked:bg-surface-brand-subtle-1 has-checked:ring-border-brand-subtle has-checked:ring-1 has-checked:ring-inset',
         'has-disabled:cursor-not-allowed has-disabled:opacity-(--semantic-opacity-disabled)',
         className,

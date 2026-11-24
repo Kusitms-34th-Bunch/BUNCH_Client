@@ -11,23 +11,30 @@ export type RemovedPhoto = { page: number; photo: CachedPhoto; following: string
 const disappears = (photo: CachedPhoto, ids: ReadonlySet<string>) =>
   ids.has(photo.id) && (photo.uploaderIds?.length ?? 1) <= 1;
 
-/** 쪽 단위 사진 목록 캐시에서 삭제로 사라질 사진을 빼고, 뺀 사진과 자리를 함께 돌려줌. 모르는 모양은 그대로 */
+/**
+ * 쪽 단위 사진 목록 캐시에서 삭제로 사라질 사진을 빼고, 뺀 사진과 자리를 함께 돌려줌. 모르는 모양은 그대로
+ * `kept`: 골랐지만 함께 올린 사진이라 목록에 남는 사진 id
+ */
 export const withoutPhotos = (
   data: unknown,
   ids: ReadonlySet<string>,
-): { data: unknown; removed: RemovedPhoto[] } => {
-  if (!isPhotoPages(data)) return { data, removed: [] };
+): { data: unknown; removed: RemovedPhoto[]; kept: string[] } => {
+  if (!isPhotoPages(data)) return { data, removed: [], kept: [] };
   const removed: RemovedPhoto[] = [];
+  const kept: string[] = [];
   const pages = data.pages.map((page, pageIndex) => ({
     ...page,
     photos: page.photos.filter((photo, index) => {
-      if (!disappears(photo, ids)) return true;
+      if (!disappears(photo, ids)) {
+        if (ids.has(photo.id)) kept.push(photo.id);
+        return true;
+      }
       const following = page.photos.slice(index + 1).map((next) => next.id);
       removed.push({ page: pageIndex, photo, following });
       return false;
     }),
   }));
-  return { data: { ...data, pages }, removed };
+  return { data: { ...data, pages }, removed, kept };
 };
 
 /** 실패한 삭제가 뺀 사진만 원래 자리에 되돌림(그 사이 다른 삭제가 뺀 사진은 그대로). 이미 있으면 넣지 않음 */

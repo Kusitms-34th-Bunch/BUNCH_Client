@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { getBunchMembers } from '@/shared/api/bunchMembers';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import type { Home } from '../model/bunchHome';
 import { getBunchHome, getPublishedBundles } from '../api/bunchHome';
@@ -87,7 +87,7 @@ export const useFollowBunchMutation = (viewerId: string | null | undefined) => {
     predicate: (query: { queryKey: readonly unknown[] }) =>
       query.queryKey[viewerAt] === (viewerId ?? null),
   };
-  const mutationKey = [...bunchHomeKeys.follows(), 'change', viewerId ?? null];
+  const mutationKey = bunchHomeKeys.changeFollow(viewerId);
   // 그 번치 홈과 팔로워·팔로잉 목록을 같은 상태로 바꿈
   const apply = (targetId: string, state: FollowState, followId?: number | null) => {
     queryClient.setQueryData<Home>(homeKey(targetId), (home) =>

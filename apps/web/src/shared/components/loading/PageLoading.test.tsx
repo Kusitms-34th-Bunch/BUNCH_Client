@@ -1,7 +1,7 @@
 import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
-import { getPageLoadingCount } from '@/shared/lib/pageLoadingState';
+import { getPageLoadingCount } from '@/shared/lib/navigation/pageLoadingState';
 import { PageLoading } from './PageLoading';
 
 // 로티 재생 라이브러리는 모양을 검증하지 않으므로 mock

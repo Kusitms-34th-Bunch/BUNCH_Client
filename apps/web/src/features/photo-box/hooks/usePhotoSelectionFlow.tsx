@@ -1,9 +1,11 @@
+// 크기 유지: 저장·번들·날짜·삭제가 같은 선택·요청 중 상태·선택 회차와 사라진 사진 확인을 함께 씀
 import { toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { PhotoBoxActions, PhotoBoxData, SaveResult } from '../lib/types';
-import { DateChangeConfirmDialog, DeleteConfirmDialog } from '../components/PhotoSelectionDialogs';
+import { askDateChangeConfirm } from '../components/askDateChangeConfirm';
+import { DeleteConfirmDialog } from '../components/PhotoSelectionDialogs';
 import { SavingDateSheet } from '../components/SavingDateSheet';
 import { deleteConfirmCopy, PHOTO_BOX_MESSAGES } from '../constants/messages';
 import { MissingPhotosError } from '../lib/missingPhotos';
@@ -15,7 +17,6 @@ import {
   getDeleteKind,
   removesDraftBundlePhoto,
   needsDateChangeConfirm,
-  type DateConfirmKind,
   type DeleteKind,
 } from '../lib/photoActions';
 import { pruneSelection, toggleSelection, type PhotoSelection } from '../lib/selection';
@@ -31,7 +32,7 @@ type UsePhotoSelectionFlowOptions = {
   /** 목록 데이터(준비되기 전에는 undefined) */
   data: PhotoBoxData | undefined;
   actions: PhotoBoxActions;
-  /** 「번들 만들기」 확인 뒤 호출(초안 생성과 편집 화면 이동은 번들 작성 이슈가 맡음) */
+  /** 「번들 만들기」 확인 뒤 호출(초안 생성과 편집 화면 이동은 호출하는 쪽이 맡음) */
   onCreateBundle?: ((_selection: PhotoSelection) => void) | undefined;
   /** 삭제 요청이 끝나 선택 모드를 닫은 직후(사라진 사진이 0장인 경우도 포함). 눌렀던 메뉴·선택 칸이 사라져 초점이 갈 곳을 잃으므로 화면이 초점을 옮기는 호출 지점 */
   onDeleted?: (() => void) | undefined;
@@ -279,28 +280,11 @@ export function usePhotoSelectionFlow({
   };
 
   // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸)
-  const askDateConfirm = (kind: DateConfirmKind) =>
-    new Promise<boolean>((resolve) => {
-      openOverlay(
-        (rootProps, close) => (
-          <DateChangeConfirmDialog
-            {...rootProps}
-            kind={kind}
-            onConfirm={() => {
-              resolve(true);
-              close();
-            }}
-          />
-        ),
-        () => resolve(false),
-      );
-    });
-
   const checkDate = usePreservedCallback(async () => {
     if (pending || !data || !isSelectionCurrent()) return false;
     return (
       !needsDateChangeConfirm(selectedPhotos, data.viewer) ||
-      (await askDateConfirm(getDateConfirmKind(selectedPhotos, data.viewer)))
+      (await askDateChangeConfirm(openOverlay, getDateConfirmKind(selectedPhotos, data.viewer)))
     );
   });
 

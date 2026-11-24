@@ -45,7 +45,10 @@
 - 반복 검색, 대량 변환, date formatting처럼 hot path가 확인된 경우에만 자료구조·계산 캐싱을 바꾼다.
 - 큰 asset과 third-party SDK는 번들 분석 결과를 보고 조정한다.
 - web 클라이언트 JS 크기는 Frontend CI가 빌드 뒤 `scripts/report-web-bundle-size.mjs`로 기록한다. 공통 첫 로드 JS(프레임워크·런타임과 root·`(app)` layout 청크)와 전체 클라이언트 JS(gzip)를 기준선과 비교해 10% 넘게 커지면 경고만 하고 실패시키지 않는다. 기준선은 `develop`·`main` push 빌드가 `--update`로 잰 결과를 Actions 캐시(`bundle-size-<OS>-<브랜치>-<SHA>`)로 저장한 것이다. PR은 base 커밋의 결과를, 없으면 그 브랜치의 가장 최근 결과를, 그것도 없으면(다른 작업 브랜치 위에 올린 PR, `main` 캐시 만료 등) `develop`의 가장 최근 결과를 받아 비교한다. 머지될 때마다 갱신되므로 기준선 파일을 커밋하지 않는다(`apps/web/bundle-size-baseline.json`은 gitignore). 이 캐시가 모두 만료(7일 미사용)되거나 저장소 한도(10GB)로 지워지면 다음 push 전까지는 「기준선 없음」으로 표시된다. CI 빌드는 `ANALYZE=true`라 `@next/bundle-analyzer`가 모듈별 크기를 `.next/analyze/client.json`에 남기고, 보고는 이를 패키지·소스 폴더(`src/features/<이름>` 등)별로 묶어 기준선보다 1KB 넘게 커진 항목과 가장 큰 항목을 표로 보여 준다. 표는 실행 화면의 Summary에 나오고, PR의 CI 결과 댓글에는 두 크기의 변화와 1KB 넘게 커진 항목 3개까지만 짧게 붙는다(web을 빌드하지 않은 PR은 빠짐). 초기 로딩이 느려졌을 때 무엇이 커졌는지 이 표에서 먼저 찾는다. 항목 크기는 모듈마다 따로 잰 gzip이라 합이 전체 크기와 맞지 않으므로 증가량 비교에만 쓴다. 로컬에서 비교하려면 CI와 같은 조건으로 `SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= ANALYZE=true yarn workspace @app/web build`를 실행해 `node scripts/report-web-bundle-size.mjs --update`로 내 기준선을 만든 뒤, 바꾼 코드로 다시 빌드해 `node scripts/report-web-bundle-size.mjs`를 실행한다. Sentry 토큰이 있으면 청크에 코드가 더 들어가 CI와 크기가 달라지고, turbo 캐시로 복원된 `.next`는 이전 파일이 섞일 수 있어 workspace 빌드를 직접 돌린다. 측정 단계가 실패해도 job은 실패하지 않는다.
-- 로딩·접근성·SEO 점수는 web이 바뀐 PR마다 `lighthouse.yml`이 runner 안의 운영 빌드로 측정해 PR 댓글로 알린다(공개 페이지만, 페이지당 1번이라 성능 점수는 흔들림). 절차와 기준선은 `docs/workflows/ci.md`의 「Lighthouse 결과 댓글」을 따른다. 실제 기기·네트워크의 속도는 이 점수로 대신하지 않는다.
+- 로딩·접근성·SEO 점수는 web이 바뀐 PR마다 `lighthouse.yml`이 runner 안의 운영 빌드로 측정해 PR 댓글로 알린다(공개 페이지와 가짜 서버로 띄운 로그인 뒤 화면, 페이지당 1번이라 성능 점수는 흔들림). 절차와 기준선은 `docs/workflows/ci.md`의 「Lighthouse 결과 댓글」을 따른다. 실제 기기·네트워크의 속도는 이 점수로 대신하지 않는다.
+- apps/web `package.json`의 `sideEffects`는 CSS와 Sentry 초기화 파일(`src/instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`)만 부수효과로 둔다(#534). 쓰지 않는 모듈을 통째로 빼려는 설정이라, import만 해도 무언가를 실행하는 파일(전역 등록·초기화)을 새로 만들면 이 목록에 넣는다. 빠지면 그 동작이 조용히 사라진다. `instrumentation-client.ts`는 Next가 import만으로 붙여 넣지 않으면 `Sentry.init`이 빠진다.
+- Sentry는 성능 추적을 쓰지 않아(결정 기록 006) `withSentryConfig`의 `bundleSizeOptimizations`로 추적·디버그 코드를 뺀다. 추적을 켜면 `excludeTracing`을 지운다.
+- 측정(#534, `ANALYZE=true` 운영 빌드, gzip): 공통 첫 로드 JS 223.7KB → 187.9KB, 로그인 화면이 처음 받는 JS 621KB → 488KB. `sideEffects`·Sentry 설정으로 -14KB, 모든 화면에 붙는 layout이 feature 배럴 대신 파일을 직접 import해 -119KB(`docs/architecture/app-structure.md`).
 - 아이콘·컴포넌트 라이브러리를 새로 추가할 때, 그 라이브러리가 barrel entry(`export * from './module'`)로 수천 개 모듈을 재노출하면 import 하나가 개발 서버 부팅과 cold start에 수백 ms를 더한다. apps/web에서는 `next.config`의 `experimental.optimizePackageImports`에 등록해 타입·자동완성은 유지한 채 직접 import로 변환되게 하고, admin처럼 Next.js가 아닌 곳에서는 라이브러리의 서브패스에서 직접 import한다.
 
 ## WebView 첫 화면 속도 (apps/web + apps/mobile-shell)
@@ -55,7 +58,7 @@ WebView는 화면을 그리기 전에 네트워크로 HTML·JS를 받아야 해�
 - 다음 화면 미리 받기(프리로드): 사용자가 갈 수 있는 화면이 정해져 있으면 미리 받아 둔다. 데이터·메모리 비용이 들므로 진입 빈도와 중요도가 높은 화면에만 쓴다.
   - 웹: Next.js `Link`는 운영 빌드에서 화면에 보이는 링크의 경로를 기본으로 미리 받는다. 한 화면에 링크가 많아 비용이 커지는 곳(사진 격자 등)만 `prefetch={false}`로 끈다. 버튼에서 `router.push`·`replace`로 넘기는 화면은 미리 받지 않아 누른 뒤에 화면 정보(RSC)와 코드 조각을 받는다(운영 빌드 요청 기록으로 확인). 다음 단계가 정해진 흐름(온보딩)은 화면이 그려질 때 `router.prefetch`로 받는다(`usePrefetchNextSteps`, #494). 데이터까지 미리 받는 방법과 단계는 `docs/architecture/data-layer.md`의 "미리 불러오기"를 따른다.
   - 쉘: iOS 탭 WebView 4개는 처음부터 함께 만들어진다(`docs/architecture/mobile-shell.md`). 탭 밖 화면을 위해 WebView를 더 미리 띄우는 것은 메모리 비용이 커서, 첫 진입 지연을 측정한 뒤에만 검토한다.
-- 스트리밍 SSR: 서버가 화면을 조각으로 나눠 보내 전체를 기다리지 않고 준비된 부분부터 그린다. App Router에서는 route의 `loading.tsx`나 하위 트리의 `Suspense` 경계가 그 단위다(아래 "Next.js 서버 컴포넌트"). 지금 화면은 fixture라 쓰지 않고, 서버 데이터를 서버 컴포넌트에서 받게 될 때 `data-layer.md` "미리 불러오기" 2단계와 함께 적용한다.
+- 스트리밍 SSR: 서버가 화면을 조각으로 나눠 보내 전체를 기다리지 않고 준비된 부분부터 그린다. App Router에서는 route의 `loading.tsx`나 하위 트리의 `Suspense` 경계가 그 단위다(아래 "Next.js 서버 컴포넌트"). 지금 화면은 데이터를 브라우저에서 TanStack Query로 받아 이 방식을 쓰지 않는다(2026-11-24 확인). 서버 데이터를 서버 컴포넌트에서 받게 될 때 `data-layer.md` "미리 불러오기" 2단계와 함께 적용한다.
 - 캐시 영속화: 앱을 다시 열 때 지난 서버 상태를 먼저 보인다(`docs/architecture/data-layer.md` 「캐시 영속화」). 로그인 상태 확인 요청 하나는 계속 기다리므로, 줄어드는 것은 그 뒤의 데이터 요청 대기다. 로컬 운영 빌드 + 가짜 서버(요청마다 300ms 지연을 임시로 넣음)에서 저장본이 있을 때 첫 내용까지 피드 962→667ms, 사진함 966→663ms로 요청 한 번만큼 줄었다(번치 홈은 이미 667ms, 2026-11-21 #494, 5회 중앙값). 실기기·실서버는 측정하지 않았다.
 - 비로그인 첫 진입(#498): 쿠키가 없으면 재발급 응답(`BFF_NO_SESSION`)으로 세션 확인을 건너뛰어 요청이 3번에서 2번이 됐다. 로컬 운영 빌드 + 가짜 서버(요청마다 300ms 임시 지연)에서 `/bunch`를 열어 `/login`에 도착하기까지 1268→971ms(5회 중앙값)다. 로그인 버튼은 그 뒤 등장 모션(350ms 늦게 시작)으로 나타난다. 앱에서는 이 시간 동안 스플래시가 유지된다. 실기기·실서버는 측정하지 않았다.
 - 로컬 측정의 한계: 가짜 서버가 서비스 워커라 페이지에 건 네트워크 제한(Chrome DevTools throttling)이 화면 이동 요청에 걸리지 않는다. 화면 이동 시간은 실기기나 실서버에서 잰다.
@@ -63,7 +66,7 @@ WebView는 화면을 그리기 전에 네트워크로 HTML·JS를 받아야 해�
 
 ## 이미지 (apps/web)
 
-아직 이미지를 쓰는 화면이 없지만, 추가하면 아래 기준을 적용한다.
+이미지를 쓰는 화면에는 아래 기준을 적용한다.
 
 - `<img>` 태그 대신 `next/image`를 쓴다. raw `<img>`와 video poster는 Next.js가 최적화·lazy loading을 자동 적용하지 않는다.
 - LCP 요소가 될 이미지(최초 화면의 hero, 대표 이미지)에는 `priority`를 주고 lazy loading을 끈다. 그 외 이미지는 `next/image`의 기본 lazy loading에 맡긴다.
@@ -74,17 +77,91 @@ WebView는 화면을 그리기 전에 네트워크로 HTML·JS를 받아야 해�
 
 apps/web은 아직 Server Action을 쓰지 않지만, 도입하면 아래 기준을 적용한다.
 
+- 자주 들어가는 화면 route는 요청마다 그리는 route(빌드 표 `ƒ`)로 두지 않는다. Next는 이런 route를 미리 받지 않고 받은 결과도 캐시하지 않아, 운영에서는 누른 뒤 서버 응답이 와야 화면 전환이 시작된다(#532 번들 상세, TestFlight 실기기). 서버 출력이 사용자와 무관한 틀뿐이면 `searchParams`를 서버에서 읽지 말고 클라이언트(`useSearchParams`, `Suspense` 안)에서 읽는다. 동적 경로 조각은 빈 `generateStaticParams`로 처음 방문할 때 한 번 그려 캐시한다(빌드 표 `●`). `Suspense`는 page에 두지 않고 `useSearchParams`를 부르는 안쪽 컴포넌트만 감싼다. page에서 감싸면 화면 코드를 받는 동안 새로 생긴 경계가 빈 화면(fallback)을 먼저 보여, 이전 화면이 내려갔다가 전환이 다시 붙는다(#532, 처음 여는 상세에서 약 0.3초 빈 화면, E2E로 발견). 상세의 하위 route(수정·공개 범위)는 아직 `ƒ`다.
+
 - async 컴포넌트가 데이터를 기다리는 동안 화면 전체를 막지 않는다. 데이터가 필요한 하위 트리만 `Suspense`로 감싸 나머지 레이아웃을 먼저 보여준다. 레이아웃이 데이터에 따라 달라지거나 layout shift를 피해야 하는 경우는 예외로 남긴다.
 - 형제 컴포넌트가 각자 fetch하면 병렬로 실행된다. 부모 컴포넌트가 fetch를 먼저 `await`한 뒤 자식을 렌더링하면, 자식이 그 값을 쓰지 않아도 같이 지연된다 — composition으로 형제 관계를 유지한다.
 - Server Component에서 Client Component로 넘기는 값은 실제로 쓰는 필드만 좁혀서 전달한다. RSC 경계는 전달한 모든 필드를 직렬화해 응답 크기에 그대로 반영한다.
 - 인증·DB 조회처럼 `fetch`가 아닌 비동기 작업을 같은 요청 안에서 여러 번 호출하면 `React.cache()`로 중복 호출을 막는다. 인자를 객체로 넘기면 매번 새 참조라 캐시가 항상 miss되므로, 원시값 인자를 우선한다.
 - Server Action은 그 자체로 공개 endpoint다. middleware나 상위 layout의 접근 제어에만 기대지 않고, 각 action 내부에서 인증·권한을 다시 확인한다. `docs/workflows/security-review.md`를 함께 따른다.
 
+## 운영 Web Vitals 보기 (PostHog SQL)
+
+PostHog의 **SQL**(HogQL 편집기, 데이터 소스 `PostHog (ClickHouse)`)에 아래 쿼리를 그대로 붙여 실행한다. 대시보드는 아직 없다(ADR 023, 2026-11-23 확인). CLS·INP는 같은 방문에서 값이 바뀌면 같은 `metric_id`로 다시 오므로 ID별 마지막 값(`argMax`)으로 줄인 뒤 센다. 표본(`samples`)이 수십 개 미만이면 경향으로만 본다.
+
+- `surface`는 `app`(쉘 WebView)과 `web`(브라우저)을 나눈다. 앱 체감은 `app`을 본다.
+- 기간은 `INTERVAL 14 DAY`를 바꾼다. 배포 전후를 비교하려면 `timestamp` 조건을 배포 시각 앞뒤로 나눠 두 번 실행한다.
+- 기준: LCP 2.5초 이하·INP 200ms 이하·CLS 0.1 이하가 「좋음」, LCP 4초·INP 500ms·CLS 0.25 초과가 「나쁨」.
+
+### 화면별 지표(첫 로드, 75번째 백분위)
+
+```sql
+SELECT
+  path,
+  metric,
+  surface,
+  count() AS samples,
+  round(quantile(0.75)(value), 3) AS p75
+FROM (
+  SELECT
+    properties.metric_id AS id,
+    argMax(properties.path, timestamp) AS path,
+    argMax(properties.metric, timestamp) AS metric,
+    argMax(properties.surface, timestamp) AS surface,
+    argMax(properties.navigation_type, timestamp) AS nav,
+    argMax(toFloat(properties.value), timestamp) AS value
+  FROM events
+  WHERE event = 'web_vitals'
+    AND timestamp > now() - INTERVAL 14 DAY
+  GROUP BY id
+)
+WHERE nav != 'soft-navigation'
+GROUP BY path, metric, surface
+ORDER BY path, metric, surface
+```
+
+### 느린 조작 찾기(INP 원인, 앱)
+
+`inp_target`은 누른 요소의 선택자다(#534부터 수집). 처리 시간(`processing_p75`)이 크면 누른 뒤 실행되는 코드(이벤트 처리·렌더)가, 그리기 시간(`presentation_p75`)이 크면 그 뒤 화면을 다시 그리는 비용이 원인이다.
+
+```sql
+SELECT
+  path,
+  inp_target,
+  count() AS samples,
+  round(quantile(0.75)(value)) AS inp_p75,
+  round(quantile(0.75)(input_delay)) AS input_delay_p75,
+  round(quantile(0.75)(processing)) AS processing_p75,
+  round(quantile(0.75)(presentation)) AS presentation_p75,
+  any(script_source) AS script_source
+FROM (
+  SELECT
+    properties.metric_id AS id,
+    argMax(properties.path, timestamp) AS path,
+    argMax(properties.inp_target, timestamp) AS inp_target,
+    argMax(toFloat(properties.value), timestamp) AS value,
+    argMax(toFloat(properties.inp_input_delay), timestamp) AS input_delay,
+    argMax(toFloat(properties.inp_processing), timestamp) AS processing,
+    argMax(toFloat(properties.inp_presentation), timestamp) AS presentation,
+    argMax(properties.inp_script_source, timestamp) AS script_source
+  FROM events
+  WHERE event = 'web_vitals'
+    AND properties.metric = 'INP'
+    AND properties.surface = 'app'
+    AND timestamp > now() - INTERVAL 14 DAY
+  GROUP BY id
+)
+WHERE inp_target IS NOT NULL
+GROUP BY path, inp_target
+ORDER BY inp_p75 DESC
+LIMIT 20
+```
+
 ## 검증 기록
 
 - 대상 route, 측정 방식, device·network·cache 조건, 변경 전후 결과, 남은 불확실성을 PR 또는 작업 기록에 남긴다.
 - 최적화 전에 원인을 먼저 지목한다. LCP라면 어떤 요소와 어느 단계가 지연을 차지하는지, INP라면 어떤 상호작용이 가장 느렸고 시간이 어디서 쓰였는지, CLS라면 어떤 요소가 밀렸는지 먼저 밝힌다. 원인을 지목하지 않은 최적화 목록은 실제로 그 지표를 개선했다는 근거가 아니다.
-- 실사용자 지표(p75 등 field data)와 로컬·CI에서 측정한 lab 진단을 같은 것으로 취급하지 않는다. lab 결과는 하나의 device·network 조건에서의 진단 샘플이며, field data 없이 "실사용자 체감이 좋아졌다"고 단정하지 않는다. 운영 field data는 PostHog `web_vitals` 이벤트(화면별 p75, 동의한 회원만, ADR 023)로 본다.
+- 실사용자 지표(p75 등 field data)와 로컬·CI에서 측정한 lab 진단을 같은 것으로 취급하지 않는다. lab 결과는 하나의 device·network 조건에서의 진단 샘플이며, field data 없이 "실사용자 체감이 좋아졌다"고 단정하지 않는다. 운영 field data는 PostHog `web_vitals` 이벤트(화면별 p75, 동의한 회원만, ADR 023)로 보고, 쿼리는 위 「운영 Web Vitals 보기」를 쓴다.
 - LCP, FCP, CLS, TBT 같은 browser metric과 bundle/resource 크기는 같은 문제로 취급하지 않는다. 사용자 증상에 맞는 지표를 고른다.
 - 외부 API, CDN image, third-party SDK, browser extension, local cache가 결과에 미치는 영향을 기록한다. 제어할 수 없는 병목을 코드 최적화 효과로 주장하지 않는다.
 - async 영역은 가능한 크기를 예약해 layout shift를 피하고, 초기 화면에 불필요한 SDK·asset은 실제 진입 시점에 맞춰 지연한다.

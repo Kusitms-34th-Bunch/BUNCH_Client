@@ -4,12 +4,14 @@ import * as Haptics from 'expo-haptics';
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useEffect, useSyncExternalStore } from 'react';
+import { warmUpTabsLater } from '../../src/screen-switch';
+import { onWebReady } from '../../src/splash/state';
 import { TAB_ICONS } from '../../src/tabs/tab-icons';
 import { listenTabLongPress } from '../../src/tabs/tab-long-press';
 import { TAB_IDS } from '../../src/tabs/tabs';
 import { tabsStore } from '../../src/tabs/tabs-store';
 import { TOAST_FONTS } from '../../src/toast/fonts';
-import { postMessage } from '../../src/web-view/AppWebView';
+import { postMessage } from '../../src/web-view/app-bridge';
 
 // 선택 색만 디자인 시스템 text-primary 복사(RN은 CSS 변수 미지원)
 // 라벨 글꼴·미선택 색은 지정하지 않음: iOS 26 탭 바가 선택된 적 없는 항목의 Pretendard 라벨을 밀고 잘라 그림(#462)
@@ -48,6 +50,17 @@ export default function TabsLayout() {
       ),
     [],
   );
+  // 스플래시가 닫힌 뒤 숨은 탭을 미리 그림(그 전에 붙이면 뒤 탭의 준비 신호가 지금 탭보다 먼저 스플래시를 닫음)
+  useEffect(() => {
+    let cancelWarmUp = () => {};
+    const stopListening = onWebReady(() => {
+      cancelWarmUp = warmUpTabsLater();
+    });
+    return () => {
+      stopListening();
+      cancelWarmUp();
+    };
+  }, []);
   // 웹이 탭 항목을 보내기 전(Fast Refresh·직접 진입)에는 첫 화면으로 복귀
   if (!tabs) return <Redirect href="/" />;
 
@@ -60,7 +73,8 @@ export default function TabsLayout() {
       {TAB_IDS.map((id) => {
         const item = tabs.items.find((tab) => tab.id === id);
         return (
-          <NativeTabs.Trigger key={id} name={id} hidden={!item}>
+          // testID: E2E(Maestro)가 시뮬레이터 언어와 관계없이 탭 바 버튼을 고르는 식별자(탭 화면도 탭 이름과 같은 이름이라 이름으로는 못 고름)
+          <NativeTabs.Trigger key={id} name={id} hidden={!item} testID={`tab-${id}`}>
             <NativeTabs.Trigger.Label>{item?.label ?? id}</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon src={TAB_ICONS[id]} renderingMode="template" />
           </NativeTabs.Trigger>

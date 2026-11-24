@@ -29,7 +29,7 @@ export const FloatingButton = ({
       className={cn(
         // 그림자는 Figma 값(0 4 6 12%)과 같은 토큰이 없어 임의 값 적용
         'bg-surface-primary text-icon-primary relative isolate inline-grid size-13 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-full shadow-[0_4px_6px_rgba(0,0,0,0.12)]',
-        'before:bg-overlay-pressed before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-full before:opacity-0 before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
+        'before:bg-overlay-pressed press-overlay before:-z-10 before:rounded-full',
         'not-disabled:active:before:opacity-100',
         'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
         'disabled:text-icon-disabled disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',

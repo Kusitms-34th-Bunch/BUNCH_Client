@@ -1,11 +1,11 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon, LineCloseMediumIcon, toast } from '@app/design-system';
+import { Header, LineCloseMediumIcon, toast } from '@app/design-system';
 import { ChipButton, ProfileListItem } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftMember, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -77,17 +77,7 @@ export function DraftMemberManager({
   };
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-              <LineChevronLeftLargeIcon aria-hidden="true" />
-            </HeaderIconButton>
-          }
-        />
-      }
-    >
+    <PageShell header={<Header leading={<HeaderBackButton onClick={onBack} />} />}>
       <h1 className="sr-only">참여 멤버 관리</h1>
       <div ref={root} className="px-padding-p8 pb-s16 gap-s14 flex flex-col pt-1.25">
         {access.canAddMember && addable.length > 0 && (

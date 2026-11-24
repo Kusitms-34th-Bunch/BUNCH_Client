@@ -2,9 +2,9 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '@/features/photo-box/lib/types';
-import { toDomainId } from '@/shared/api/ids';
-import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import { toDomainId } from '@/shared/api/client/ids';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
+import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const imageUrlSchema = z.string().refine(isSafeImageUrl);

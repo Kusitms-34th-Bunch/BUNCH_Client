@@ -196,3 +196,100 @@ describe('RouteFocus', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: '피드' })).toHaveFocus());
   });
 });
+
+describe('RouteFocus: 뒤로 가기로 위치를 복원한 화면', () => {
+  // happy-dom은 배치를 계산하지 않으므로 요소 위치를 지정(main은 0~600)
+  const placeAt = (element: Element, top: number, height = 40) =>
+    vi
+      .spyOn(element, 'getBoundingClientRect')
+      .mockReturnValue({ top, bottom: top + height, height } as DOMRect);
+
+  function Restored() {
+    return (
+      <main>
+        <h1>번들 상세</h1>
+        <button type="button">위쪽 버튼</button>
+        <button type="button">지예 프로필 보기</button>
+      </main>
+    );
+  }
+
+  beforeEach(() => window.history.replaceState(null, ''));
+
+  it('떠날 때 위치가 저장된 기록 항목으로 돌아오면 제목 대신 복원된 화면에 보이는 첫 버튼에 초점을 준다', async () => {
+    const { rerender } = renderScreen(<Screen title="멤버 프로필" />);
+    window.history.replaceState({ pageScroll: 500 }, '');
+    navigate(rerender, '/bunches/3/bundles/901', <Restored />);
+    const main = document.querySelector('main')!;
+    main.scrollTop = 500;
+    placeAt(main, 0, 600);
+    placeAt(screen.getByRole('heading', { name: '번들 상세' }), -500);
+    placeAt(screen.getByRole('button', { name: '위쪽 버튼' }), -450);
+    placeAt(screen.getByRole('button', { name: '지예 프로필 보기' }), 120);
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '지예 프로필 보기' })).toHaveFocus(),
+    );
+    // 코드로 준 초점이라 키를 누르기 전까지 테두리를 감춤(iOS)
+    expect(screen.getByRole('button', { name: '지예 프로필 보기' })).toHaveAttribute(
+      'data-quiet-focus',
+    );
+  });
+
+  it('보이는 첫 요소가 입력란이면 건너뛰고(iOS 키보드 방지) 그 아래 버튼에 초점을 주며, 뒤늦은 DOM 변화로 다시 옮기지 않는다', async () => {
+    function WithInput({ late }: { late: boolean }) {
+      return (
+        <main>
+          <h1>번들 상세</h1>
+          {late && <button type="button">늦게 생긴 버튼</button>}
+          <textarea aria-label="댓글 입력" />
+          <button type="button">지예 프로필 보기</button>
+        </main>
+      );
+    }
+    const { rerender } = renderScreen(<Screen title="멤버 프로필" />);
+    window.history.replaceState({ pageScroll: 500 }, '');
+    navigate(rerender, '/bunches/3/bundles/901', <WithInput late={false} />);
+    const main = document.querySelector('main')!;
+    main.scrollTop = 500;
+    placeAt(main, 0, 600);
+    placeAt(screen.getByRole('heading', { name: '번들 상세' }), -500);
+    placeAt(screen.getByRole('textbox', { name: '댓글 입력' }), 60);
+    const profile = screen.getByRole('button', { name: '지예 프로필 보기' });
+    placeAt(profile, 120);
+    await waitFor(() => expect(profile).toHaveFocus());
+
+    rerender(<WithInput late />);
+    placeAt(screen.getByRole('button', { name: '늦게 생긴 버튼' }), 10);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    expect(profile).toHaveFocus();
+  });
+
+  it('높이가 모자라 위치를 다시 맞추는 동안은 제목에 두고, 맞춘 뒤 보이는 버튼으로 옮긴다', async () => {
+    const { rerender } = renderScreen(<Screen title="멤버 프로필" />);
+    window.history.replaceState({ pageScroll: 2400 }, '');
+    navigate(rerender, '/bunches/3/bundles/901', <Restored />);
+    const main = document.querySelector('main')!;
+    main.dataset.scrollRestoring = '';
+    main.scrollTop = 1000;
+    placeAt(main, 0, 600);
+    placeAt(screen.getByRole('heading', { name: '번들 상세' }), -1000);
+    placeAt(screen.getByRole('button', { name: '위쪽 버튼' }), -950);
+    const profile = screen.getByRole('button', { name: '지예 프로필 보기' });
+    placeAt(profile, 120);
+    const heading = screen.getByRole('heading', { name: '번들 상세' });
+    await waitFor(() => expect(heading).toHaveFocus());
+
+    // 키 입력으로 대기가 끝나면 그 키(Tab)의 기본 동작 전, 같은 작업 안(microtask)에서 옮김
+    delete main.dataset.scrollRestoring;
+    await Promise.resolve();
+    expect(profile).toHaveFocus();
+  });
+
+  it('저장된 위치가 없으면(처음 들어온 화면) 지금처럼 제목에 초점을 준다', async () => {
+    const { rerender } = renderScreen(<Screen title="멤버 프로필" />);
+    navigate(rerender, '/bunches/3/bundles/901', <Restored />);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '번들 상세' })).toHaveFocus());
+  });
+});

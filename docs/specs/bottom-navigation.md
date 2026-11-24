@@ -30,7 +30,7 @@
 - 탭 4개, 막대 순서: 피드 · 사진함 · 번치 · MY(내부 기획 문서의 화면 구조, Figma 막대와 같은 순서).
 - 선택된 탭은 현재 route로 정해진다. 탭을 누르면 그 탭의 route로 이동한다.
 - 사진함 탭은 지금 보고 있는 Bunch의 사진함을 바로 연다(내부 기획 문서). 탭 안에서 Bunch를 바꾸지 않는다.
-- 탭 route는 임시로 `/feed`·`/photos`·`/bunch`·`/my`다(`features/main-navigation/constants/tabs.ts`). 탭 안 하위 경로(`/bunch/...`)도 그 탭이 선택된다. 같은 탭을 다시 누르면 그 탭 화면을 맨 위로 스크롤한다(하위 화면에는 탭 막대가 없음). 300ms 안에 두 번 다시 누르면 탭 화면에 두 번 누르기를 알린다(`shared/lib/mainTabGesture`, 지금은 번치 탭만 최근 번치로 전환, #518). 웹 막대에서 번치 탭 첫 화면의 번치 탭을 500ms 누르고 있으면 꾹 누르기를 알린다(번치 전환 시트).
+- 탭 route는 임시로 `/feed`·`/photos`·`/bunch`·`/my`다(`features/main-navigation/constants/tabs.ts`). 탭 안 하위 경로(`/bunch/...`)도 그 탭이 선택된다. 같은 탭을 다시 누르면 그 탭 화면을 맨 위로 스크롤한다(하위 화면에는 탭 막대가 없음). 300ms 안에 두 번 다시 누르면 탭 화면에 두 번 누르기를 알린다(`shared/lib/navigation/mainTabGesture`, 지금은 번치 탭만 최근 번치로 전환, #518). 웹 막대에서 번치 탭 첫 화면의 번치 탭을 500ms 누르고 있으면 꾹 누르기를 알린다(번치 전환 시트).
 - iOS 쉘은 시스템 탭 바가 탭을 그리고 탭마다 WebView가 탭 경로를 연다. 탭 이동은 웹 이동이 아니라 시스템이 화면을 바꾸는 것이다(`docs/decisions/records/012-ios-system-tab-bar.md`).
 
 ## 요구사항
@@ -58,6 +58,12 @@
 - 성공(선택됨): 탭 4개 각각이 선택된 상태가 Figma에 있다(`BottomNavigation` 변형 4개).
 - 눌림·포커스·비활성: Figma에서 확인하지 못했다. 확인할 항목.
 - 긴 라벨·큰 글꼴·390px 폭: 라벨 한 줄 말줄임과 항목 폭 균등 분배를 구현 때 확인한다.
+
+## 모션
+
+화면별 전환·모션의 결정과 확인 기록이다. 공용 규칙은 [motion.md](../architecture/motion.md)를 따른다.
+
+- 하단 탭 전환 (2026-11-01, 결정 기록 017): 웹 탭 막대의 네 탭 사이 이동은 80ms 등속 크로스페이드다. 들어오는 탭은 아래에 불투명하게 두고 위로 올린 나가는 탭만 페이드해 같은 헤더가 흐려지지 않는다. 탭 page는 `MainTabPage`로 감싼다. 나가는 탭은 다른 페이지 전환처럼 `inert`로 둔다. 상태 바 영역을 칠하는 `AppFrame` 배경도 나가는 화면(`data-page-leaving`, 모든 등록 전환이 붙임)의 표식을 무시하고 화면과 함께 바뀐다. 기본 150ms ease-out, 웹 탭 막대가 있으면 80ms 등속이다. Next가 새 화면을 그리는 순간 이전 화면이 잠깐 빠져 배경이 먼저 바뀌므로 transition은 전환 전부터 `AppFrame`에 걸어 둔다. 전환 규칙이 없는 이동도 상태 바 영역은 150ms 페이드라, 번치 홈처럼 배경색이 다른 화면에서 규칙 없는 이동을 추가하면 함께 본다. SSGOI 7.4.1의 `LinearIntegrator`는 지수 감속이라 등속 integrator를 직접 둔다. iOS 앱은 시스템 탭 바라 쉘의 로컬 모듈(`apps/mobile-shell/modules/tab-crossfade`)이 같은 방식으로 전환한다.
 
 ## API 계약
 

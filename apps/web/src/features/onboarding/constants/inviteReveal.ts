@@ -1,4 +1,4 @@
-import type { CharacterType } from '@/shared/lib/bunchProfile';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
 
 // Figma `6174:15909`(Bunch/Join/Motion · D · Seal & Flip) 모션 데이터. 모든 시각은 전체 길이 대비 0~1
 /** Figma 타임라인 4.2초. 2.5초에 제목이 나타나면 이후는 정지 */

@@ -1,9 +1,11 @@
 import { ApiError } from '@app/api-core';
 import { describe, expect, it } from 'vitest';
+import type { BunchSummary } from '../lib/types';
+import { accessNoticeIdOf } from './bunchAccessNotice';
 import {
-  accessNoticeIdOf,
   publishedBundlesPageSchema,
   toBunchHomeDetail,
+  toBunchSummaries,
   type Home,
 } from './bunchHome';
 
@@ -89,5 +91,45 @@ describe('accessNoticeIdOf', () => {
     expect(accessNoticeIdOf(apiError('BUNCH_008', null))).toBeUndefined();
     expect(accessNoticeIdOf(new Error('x'))).toBeUndefined();
     expect(accessNoticeIdOf(null)).toBeUndefined();
+  });
+});
+
+describe('toBunchSummaries', () => {
+  const current: BunchSummary = { id: '9', name: '테스트용', alertCount: 0, access: 'active' };
+  const active = (id: number, name: string, lastUsedAt: string) => ({
+    bunch: { id, name, characterType: 'TYPE_1' as const },
+    unreadCount: 0,
+    lastUsedAt,
+  });
+  const list = (activeBunches: ReturnType<typeof active>[]) => ({
+    activeCount: activeBunches.length,
+    maxActiveCount: 10,
+    activeBunches,
+    unavailableBunches: [],
+  });
+
+  it('지금 번치를 맨 위에, 나머지는 최근 사용순으로 둔다', () => {
+    const result = toBunchSummaries(
+      list([
+        active(1, '오래된', '2026-11-01T00:00:00Z'),
+        active(9, '테스트용', '2026-11-02T00:00:00Z'),
+        active(2, '최근', '2026-11-03T00:00:00Z'),
+      ]),
+      current,
+    );
+    expect(result.map((bunch) => bunch.name)).toEqual(['테스트용', '최근', '오래된']);
+  });
+
+  it('목록이 낡아 지금 번치가 없어도(다른 탭에서 만든 번치) 지금 번치를 맨 위에 보인다', () => {
+    expect(toBunchSummaries(list([]), current)).toEqual([current]);
+    expect(
+      toBunchSummaries(list([active(1, '퇴근런클럽', '2026-11-01T00:00:00Z')]), current).map(
+        (bunch) => bunch.name,
+      ),
+    ).toEqual(['테스트용', '퇴근런클럽']);
+  });
+
+  it('목록을 못 받았으면 지금 번치 하나만 보인다', () => {
+    expect(toBunchSummaries(undefined, current)).toEqual([current]);
   });
 });

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { replaceTabPath } from '@/shared/bridge/client';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
-import { defaultBunchImage } from '@/shared/lib/bunchProfile';
+import { defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';
 import { useCreateBunchGuard } from '../../hooks/useCreateBunchGuard';

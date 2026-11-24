@@ -1,40 +1,33 @@
 'use client';
+// 크기 유지: 세 query의 로딩·오류·권한 판단과 편집 값·저장이 같은 서버 기준(base)과 편집 값을 함께 씀
 
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
-import type { PublishedEditInput } from '../api/bundles';
-import type { Draft, DraftLocation, DraftPhoto, DraftViewer, PlaceResult } from '../lib/types';
+import type { LocationOp } from '../lib/locationOps';
+import type { Draft, DraftViewer, PlaceResult } from '../lib/types';
 import type { DraftActions } from './useDraft';
 import type { PresenceCommands } from './usePresenceSender';
 import { searchPlaces as searchPlacesApi } from '../api/places';
-import { BUNDLE_MESSAGES, MAX_PHOTOS } from '../constants/messages';
-import { toDraft } from '../lib/draftMapping';
+import { BUNDLE_MESSAGES, MAX_PHOTOS, TITLE_MAX_LENGTH } from '../constants/messages';
 import {
-  applyLocationOp,
-  isPendingLocation,
-  PENDING_ID_PREFIX,
-  type LocationOp,
-} from '../lib/locationOps';
+  applyOp,
+  type EditValues,
+  type Overrides,
+  reconcileOverrides,
+  sameIds,
+  sameLocations,
+  toEditPhotos,
+} from '../lib/bundleEdit';
+import { toDraft } from '../lib/draftMapping';
 import { moveLocation } from '../lib/locations';
 import { movePhoto, removePhoto } from '../lib/photos';
 import { countTitleGraphemes } from '../lib/title';
 import { bundleEditQueryOptions, useEditPublishedBundleMutation } from '../queries/bundleEdit';
-
-/** 수정 화면의 편집 값(저장 전까지 이 화면에서만 바뀌고 서버에는 보내지 않음) */
-type EditValues = {
-  title: string;
-  /** 'YYYY-MM-DD', 없으면 null */
-  date: string | null;
-  photos: readonly DraftPhoto[];
-  locations: readonly DraftLocation[];
-};
-
-// 바꾼 필드만 담음(없는 필드는 서버에서 받은 값). 날짜는 null이 「지운 값」이라 undefined로 「바꾸지 않음」을 나타냄
-type Overrides = { [Key in keyof EditValues]?: EditValues[Key] };
 
 /** 저장 결과: 화면이 안내와 이동을 정함 */
 export type EditSaveOutcome =
@@ -99,45 +92,6 @@ const NO_PRESENCE: PresenceCommands = {
   end: () => undefined,
 };
 
-const TITLE_MAX = 40;
-const errorCode = (error: unknown) => (error as { code?: string } | null)?.code;
-
-// 이 화면에서 더한 위치는 서버 id가 아직 없지만 눌러서 바꾸거나 옮길 수 있어야 하므로 `pending:` 표시를 바꿔 「new:」로 둠
-const NEW_ID_PREFIX = 'new:';
-const applyOp = (locations: readonly DraftLocation[], op: LocationOp): readonly DraftLocation[] =>
-  applyLocationOp(locations, op).map((location) =>
-    isPendingLocation(location)
-      ? { ...location, id: `${NEW_ID_PREFIX}${location.id.slice(PENDING_ID_PREFIX.length)}` }
-      : location,
-  );
-
-const sameIds = (a: readonly { id: string }[], b: readonly { id: string }[]) =>
-  a.length === b.length && a.every((item, index) => item.id === b[index]?.id);
-
-const sameLocations = (a: readonly DraftLocation[], b: readonly DraftLocation[]) =>
-  a.length === b.length &&
-  a.every(
-    (item, index) =>
-      item.provider === b[index]?.provider &&
-      item.externalId === b[index]?.externalId &&
-      item.name === b[index]?.name &&
-      item.address === b[index]?.address,
-  );
-
-/**
- * 충돌(BUNDLE_003) 뒤 편집 값 정리: 내가 연 뒤 서버에서 바뀐 필드는 내 편집을 버리고 최신 값을 보임
- * 편집은 전체 목록을 덮어쓰는 저장이라, 서버에서 바뀐 필드의 내 편집을 그대로 다시 보내면 다른 곳의 변경을 조용히 지움
- * 서버에서 바뀌지 않은 필드의 편집은 남기므로, 다시 저장하면 내가 본 값 위에서만 고쳐짐
- */
-const reconcileOverrides = (overrides: Overrides, before: Draft, after: Draft): Overrides => {
-  const next = { ...overrides };
-  if (before.title.trim() !== after.title.trim()) delete next.title;
-  if (before.date !== after.date) delete next.date;
-  if (!sameIds(before.photos, after.photos)) delete next.photos;
-  if (!sameLocations(before.locations, after.locations)) delete next.locations;
-  return next;
-};
-
 /**
  * 발행 번들 수정 화면의 상태와 동작(기능 명세 6.2.12): 메인 관리자만, 저장 전까지 서버에 반영하지 않고 「저장」 한 번으로 최종 내용을 보냄
  * 제목·날짜·사진(추가·삭제·순서)·위치(최대 3개)만 고치고 코멘트·참여 멤버·픽은 고칠 수 없음(받은 값 그대로 보여 줌)
@@ -191,7 +145,7 @@ export function useBundleEdit(
       !sameIds(values.photos, base.photos) ||
       !sameLocations(values.locations, base.locations));
   const titleTrimmed = values?.title.trim() ?? '';
-  const titleValid = titleTrimmed !== '' && countTitleGraphemes(titleTrimmed) <= TITLE_MAX;
+  const titleValid = titleTrimmed !== '' && countTitleGraphemes(titleTrimmed) <= TITLE_MAX_LENGTH;
   const saving = save.isPending || resolving;
   const canSave = dirty && titleValid && !saving;
 
@@ -243,15 +197,9 @@ export function useBundleEdit(
     setPhotoDragging: () => undefined,
     save: async () => {
       if (!detail || !values || !canSave) return 'skipped';
-      const originalIds = new Set(base?.photos.map((photo) => photo.id));
-      // 남긴 번들 사진은 번들 사진 id로, 사진함에서 새로 가져온 사진은 사진함 원본 id로 보냄
-      const photos: PublishedEditInput['photos'][number][] = [];
-      for (const photo of values.photos) {
-        if (originalIds.has(photo.id)) photos.push({ bundlePhotoId: photo.id });
-        else if (photo.sourcePhotoId) photos.push({ photoId: photo.sourcePhotoId });
-        // 보낼 id가 없는 사진이 있으면 조용히 빼지 않고 저장하지 않음
-        else return 'failed';
-      }
+      const photos = toEditPhotos(values.photos, new Set(base?.photos.map((photo) => photo.id)));
+      // 보낼 id가 없는 사진이 있으면 조용히 빼지 않고 저장하지 않음
+      if (!photos) return 'failed';
       setResolving(true);
       try {
         await save.mutateAsync({
@@ -265,7 +213,7 @@ export function useBundleEdit(
         setOverrides({});
         return 'saved';
       } catch (error) {
-        const code = errorCode(error);
+        const code = apiErrorCode(error);
         // 이 경로에서 금칙어를 검사하는 칸은 제목뿐이라 칸 이름을 읽지 못해도 제목 거부로 봄
         if (prohibitedFieldsOf(error) !== null) {
           setProhibitedTitle(titleTrimmed);
@@ -305,7 +253,7 @@ export function useBundleEdit(
     // 연결이 없어 첫 조회가 멈춘 채로는 끝나지 않으므로 로딩에 머물지 않고 안내함(연결이 돌아오면 이어서 열림)
     (detailQuery.fetchStatus === 'paused' && !detailQuery.isFetchedAfterMount)
   ) {
-    const code = errorCode(detailQuery.error);
+    const code = apiErrorCode(detailQuery.error);
     if (!profile.isError && !members.isError && code === 'RESOURCE_001')
       state = { kind: 'missing' };
     else if (!profile.isError && !members.isError && code === 'AUTH_002') {

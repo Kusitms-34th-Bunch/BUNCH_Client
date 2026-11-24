@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
 import { clearPhotoBoxSelection } from '@/features/photo-box/lib/selectionResume';
-import { isDefiniteRejection } from '@/shared/api/errorStatus';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { apiErrorCode, isDefiniteRejection } from '@/shared/api/client/errorStatus';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNDLE_SELECT_MESSAGES } from '../constants/selectMessages';
@@ -80,7 +80,7 @@ export function useCreateBundle() {
         onError: (error) => {
           // 실패하면 다시 시도할 수 있게 풂(성공은 이동이 끝날 때까지 유지)
           submitted.current = false;
-          const code = (error as { code?: string }).code;
+          const code = apiErrorCode(error);
           // 서버가 확정 거절한 경우만 다음 시도를 새 요청으로(같은 키면 거절이 다시 재생될 수 있음)
           // 응답 없음·5xx·408·429는 이미 처리됐을 수 있어 키 유지(새 키면 초안이 한 번 더 생김)
           if (isDefiniteRejection(error)) attempt.current = undefined;

@@ -26,11 +26,19 @@ route는 raw API 요청, domain mutation, 복잡한 form state, 재사용 UI 구
 - client-only storage 값만으로 server 접근 제어가 완료됐다고 간주하지 않는다.
 - 역할·권한 체계가 아직 확정되지 않았으면 임의의 enum, middleware, route group을 만들지 않고 확인할 항목으로 남긴다.
 
+## 앱 안에서만 여는 화면 (web)
+
+- `(app)` 그룹의 화면은 iOS 앱 쉘 안에서만 연다. 브라우저(모바일·PC, 홈 화면에 추가한 웹 앱 포함)로 들어오면 `(app)` layout의 `AppOnlyGate`(`features/app-install-guide`)가 화면 대신 앱 설치 안내를 보여 준다. 로그인·가입·온보딩도 앱에서만 한다(브라우저에는 소셜 로그인이 없다).
+- 쉘 여부는 쉘이 WebView에 주입하는 `window.ReactNativeWebView`로 판단한다(`isNativeShell`). 이미 설치된 이전 쉘 빌드에는 서버가 알아볼 표시(User-Agent 등)가 없어 서버(proxy)에서 막지 않는다. 서버 렌더·hydration 동안은 `AuthGate`의 로딩을 그리고 바로 다음 렌더에서 안내로 바꾼다.
+- 브라우저에서도 열리는 경로는 `(app)` 밖의 초대 링크 진입(`/invite/[token]`), BFF(`/api/*`), 앱 연결 파일(`/.well-known/*`), 없는 주소·오류 화면(`not-found`·`global-error`), 검색·설치 파일(`robots.txt`·`sitemap.xml`·`manifest.webmanifest`)뿐이다.
+- 예외: 로컬 개발 서버(`NODE_ENV=development`)와 가짜 서버 빌드(`NEXT_PUBLIC_API_MOCKING=enabled`, Playwright E2E·UT)는 브라우저에서도 그대로 연다. 시뮬레이터·실기기의 쉘은 언제나 열린다.
+- 이 장치는 화면 노출만 정하고 데이터 접근 제어는 백엔드 API가 한다. 브라우저의 `window` 객체로 판단해 사용자가 직접 우회할 수 있으므로 권한 판단을 얹지 않는다. 가짜 서버 예외는 운영 배포의 MSW 제외 검사(`docs/workflows/web-deployment.md`)가 같은 조건을 막는다.
+
 ## 로그인·가입 상태 가드 (web)
 
 - `(app)` layout의 `AuthGate`(`features/auth`)가 서버가 알려 준 가입 상태(`GET /members/me/onboarding`)로 화면 접근을 판단하고 `router.replace`로 보낸다. 판단 규칙은 `lib/accessPolicy.ts`의 순수 함수이며, 근거와 한계는 `docs/decisions/records/019-client-auth-gate.md`를 따른다.
 - 새 route는 기본으로 「가입을 마친 사용자만」이다. 가입 전 화면(`/intro`, `/login`, `/signup/*`)의 예외는 `accessPolicy.ts`에서만 정한다.
-- 공개 route는 `(app)` 그룹 밖에 둔다. `/invite/[token]`(초대 링크 진입 페이지)은 앱 밖(카카오톡 등)에서 들어온 비로그인 사용자도 봐야 해서 `AuthGate`·`AppFrame` 밖에 있고, 자체 layout(`app/invite/layout.tsx`)에 폰트·`QueryProvider`·`Toaster`만 둔다(`OverlayProvider`·`PendingToast`·`RouteFocus` 없음). 이 페이지에서 `(app)` 안으로 이동하면 그곳의 가드가 로그인 여부를 판별한다(`docs/workflows/invite-link-entry.md`).
+- 공개 route는 `(app)` 그룹 밖에 둔다. `/invite/[token]`(초대 링크 진입 페이지)은 앱 밖(카카오톡 등)에서 들어온 비로그인 사용자도 봐야 해서 `AuthGate`·`AppFrame` 밖에 있고, 자체 layout(`app/invite/layout.tsx`)에 폰트·`QueryProvider`·`Toaster`·`NativeTabBarVisibility`(iOS 탭 바 숨김)만 둔다(`OverlayProvider`·`PendingToast`·`RouteFocus` 없음). 이 페이지에서 `(app)` 안으로 이동하면 그곳의 가드가 로그인 여부를 판별한다(`docs/workflows/invite-link-entry.md`).
 - 보관된 초대(`shared/lib/pendingInvitation.ts`)가 있으면 가입 완료 사용자가 로그인·가입 화면에서 이동할 도착지가 번치 홈이 아니라 초대 진입(`/onboarding/join/enter`)이다. 접근을 넓히거나 막지는 않고 도착지만 바꾼다(`resolvePostLoginPath`의 `hasPendingInvitation`).
 - 비로그인 사용자의 첫 화면은 앱 첫 실행 인트로(`/intro`)다. 본 기록(`features/auth/lib/introSeen.ts`)은 WebView 저장소에 두어 앱을 다시 설치하면 다시 보인다. 이 기록은 인트로와 로그인 중 어느 화면을 보일지만 정하고 접근 범위를 넓히지 않는다. 로그인한 사용자는 본 것으로 기록한다.
 - 로그인·가입 상태가 바뀌는 동작은 `sharedKeys.session()`을 무효화하고 기다린 뒤 이동한다. 로그인은 가드가 로딩으로 바뀌지 않도록 가입 상태를 직접 읽어 같은 key에 `setQueryData`로 채운다.

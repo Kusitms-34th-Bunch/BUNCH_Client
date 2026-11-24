@@ -1,4 +1,4 @@
-import type { CharacterType } from '@/shared/lib/bunchProfile';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
 
 /** 번치 성격별 위쪽 배경(Figma 번치 메인 1873:29989). TYPE_1 연보라는 brand-subtle-1과 같은 값 */
 export const BUNCH_BACKGROUNDS = {

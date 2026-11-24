@@ -1,15 +1,16 @@
+import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
-import { type ApiContract, isApiError } from '@app/api-core';
 import { z } from 'zod';
 import type { MyBunches } from '@/shared/api/myBunches';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
+import { BUNCH_ROLE_FROM_SERVER } from '@/shared/lib/bunchRole';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import {
   CHARACTER_TYPES,
   DEFAULT_PROFILE_IMAGE,
   defaultBunchImage,
-} from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
-import type { BunchAccessNotice, BunchHomeDetail, BunchRole, BunchSummary } from '../lib/types';
+} from '@/shared/lib/profile/bunchProfile';
+import type { BunchHomeDetail, BunchSummary } from '../lib/types';
 
 type Schemas = components['schemas'];
 
@@ -138,12 +139,6 @@ type DraftPage = z.infer<typeof draftBundlesPageSchema>;
 /** 참여 멤버 카드에 쓰는 번치 멤버(이름·프로필 이미지, id로 찾음) */
 export type DraftMemberSource = { id: string; name: string; avatarSrc: string };
 
-const ROLE: Readonly<Record<z.infer<typeof roleSchema>, BunchRole>> = {
-  OWNER: 'owner',
-  CO_OWNER: 'coOwner',
-  MEMBER: 'member',
-};
-
 // 제목을 아직 쓰지 않은 작성 중인 번들 카드(기능명세 5.3.1 상세 동작 2, 흐리게 표시)
 const UNTITLED_DRAFT = '제목 미정';
 
@@ -173,7 +168,7 @@ export const toBunchHomeDetail = (
     stage: home.stage,
     description: home.bunch.introduction ?? '',
     isPrivate: home.bunch.visibility === 'PRIVATE',
-    myRole: ROLE[home.myMembership.role],
+    myRole: BUNCH_ROLE_FROM_SERVER[home.myMembership.role],
     followerCount: home.followerCount,
     followingCount: home.followingCount,
     memberCount: home.memberCount,
@@ -211,8 +206,14 @@ const lastUsedTime = (value: string) => Date.parse(value) || 0;
 /**
  * 번치 전환 목록: 지금 번치를 맨 위, 나머지 소속 번치는 최근 사용순, 접근 불가 번치는 맨 아래(5.2.1)
  * 접근 불가 줄은 같은 번치의 안내가 여러 건일 수 있어 안내 ID로 구분
+ * 목록을 못 받았거나 지금 번치가 없는 낡은 목록이면(iOS 앱은 탭마다 캐시가 따로라 다른 탭에서 만든 번치가 늦게 반영) 지금 번치를 맨 위에 넣음
  */
-export const toBunchSummaries = (data: MyBunches, currentId: string): BunchSummary[] => {
+export const toBunchSummaries = (
+  data: MyBunches | undefined,
+  current: BunchSummary,
+): BunchSummary[] => {
+  if (!data) return [current];
+  const currentId = current.id;
   const active = [...data.activeBunches]
     .sort((a, b) => lastUsedTime(b.lastUsedAt) - lastUsedTime(a.lastUsedAt))
     .map(({ bunch, unreadCount }): BunchSummary => ({
@@ -230,11 +231,8 @@ export const toBunchSummaries = (data: MyBunches, currentId: string): BunchSumma
     access: notice.reason === 'DELETED' ? 'deleted' : 'removed',
     noticeId: toDomainId(notice.id),
   }));
-  return [
-    ...active.filter((bunch) => bunch.id === currentId),
-    ...active.filter((bunch) => bunch.id !== currentId),
-    ...unavailable,
-  ];
+  const listed = active.find((bunch) => bunch.id === currentId);
+  return [listed ?? current, ...active.filter((bunch) => bunch.id !== currentId), ...unavailable];
 };
 
 /** `PUT /bunches/{bunchId}/profile` 응답. 값은 쓰지 않아 정수·범위 제약 없이 숫자만 확인 */
@@ -269,38 +267,3 @@ export const toEditableBunchProfile = (home: Home): EditableBunchProfile => ({
     home.myMembership !== undefined &&
     home.permissions.canEditProfile,
 });
-
-/** `GET /api/v1/members/me/bunch-access-notices/{noticeId}` 응답(명세 078): 삭제·내보내진 번치의 안내 */
-export const bunchAccessNoticeResponseSchema = z.object({
-  id: z.number().int().positive(),
-  bunchId: z.number().int().positive(),
-  name: z.string(),
-  characterType: z.enum(CHARACTER_TYPES),
-  reason: z.enum(['REMOVED', 'DELETED']),
-  occurredAt: z.string(),
-  expiresAt: z.string(),
-}) satisfies z.ZodType<ApiContract<Schemas['BunchAccessNoticeResponse']>>;
-
-export const toBunchAccessNotice = (
-  notice: z.infer<typeof bunchAccessNoticeResponseSchema>,
-): BunchAccessNotice => ({
-  noticeId: toDomainId(notice.id),
-  name: notice.name,
-  access: notice.reason === 'DELETED' ? 'deleted' : 'removed',
-});
-
-// 내보내졌거나 삭제된 번치를 보려 할 때 서버 오류 본문(명세 074 등 `409 BUNCH_008`, detail에 안내 ID)
-// 계약 미연결: Swagger `ApiError.detail`에 필드가 없어 노션 명세 기준
-const accessUnavailableErrorSchema = z.object({
-  error: z.object({
-    code: z.literal('BUNCH_008'),
-    detail: z.object({ noticeId: z.number().int().positive() }),
-  }),
-});
-
-/** `BUNCH_008` 오류면 그 안내 ID, 아니면 undefined */
-export const accessNoticeIdOf = (error: unknown): string | undefined => {
-  if (!isApiError(error)) return undefined;
-  const parsed = accessUnavailableErrorSchema.safeParse(error.data);
-  return parsed.success ? toDomainId(parsed.data.error.detail.noticeId) : undefined;
-};

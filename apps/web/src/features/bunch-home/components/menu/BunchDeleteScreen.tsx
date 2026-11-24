@@ -1,16 +1,24 @@
 'use client';
 
-import { Button, Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Button, Header, Skeleton } from '@app/design-system';
 import { LabeledTextField, PageHeader } from '@app/design-system/web';
 import { useId, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { TextFieldSkeleton } from '@/shared/components/skeleton/TextFieldSkeleton';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
+
+// 번치 정보 값 한 줄의 받는 중 자리
+const ValueSkeleton = () => (
+  <span aria-hidden="true" className="inline-flex h-lh items-center">
+    <Skeleton className="h-3.5 w-24" />
+  </span>
+);
 
 type BunchDeleteScreenProps = {
   /** 안내(삭제되는 항목) 또는 확인 문구 입력 */
   step: 'info' | 'confirm';
-  /** 아직 모르면(hydration 전) 본문을 그리지 않음 */
+  /** 아직 모르면(받는 중·hydration 전) 서버 값 자리만 회색으로 그림 */
   bunchName: string | undefined;
   /** 소속 멤버 이름(나는 「(나)」를 붙여 맨 앞) */
   memberNames: readonly string[];
@@ -40,15 +48,7 @@ export function BunchDeleteScreen({
 
   return (
     <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
+      header={<Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />}
       bottom={
         // Figma Indicator + CTA: 위 14
         <div className="pt-padding-p7 px-padding-p8">
@@ -57,17 +57,37 @@ export function BunchDeleteScreen({
               다음
             </Button>
           ) : (
-            <Button type="submit" form={formId} className="w-full" disabled={!confirmed}>
+            <Button
+              type="submit"
+              form={formId}
+              className="w-full"
+              disabled={!confirmed || bunchName === undefined}
+            >
               삭제하기
             </Button>
           )}
         </div>
       }
     >
-      {bunchName === undefined ? null : step === 'info' ? (
+      {step === 'info' ? (
         // 제목 아래 20(Figma 21), 안내 상자 사이 12(Figma 2255:43337)
         <div className="gap-s10 pb-s8 flex flex-col">
-          <PageHeader title={BUNCH_HOME_MESSAGES.deleteTitle(bunchName)} />
+          <PageHeader
+            title={
+              bunchName === undefined ? (
+                <>
+                  {/* 받는 중에도 제목이 비어 읽히지 않게(받는 중 안내는 상태 영역) */}
+                  <span className="sr-only">{BUNCH_HOME_MESSAGES.deleteTitleLoading}</span>
+                  {/* 행 높이 28px 안에 24px 자리 */}
+                  <span aria-hidden="true" className="flex h-lh items-center">
+                    <Skeleton className="h-6 w-52" />
+                  </span>
+                </>
+              ) : (
+                BUNCH_HOME_MESSAGES.deleteTitle(bunchName)
+              )
+            }
+          />
           <div className="gap-s6 px-padding-p8 flex flex-col">
             <section className="bg-surface-secondary rounded-r5 p-padding-p8 gap-s3 flex flex-col">
               <h2 className="typography-body-2-semibold text-text-primary">삭제되는 항목</h2>
@@ -94,41 +114,45 @@ export function BunchDeleteScreen({
             description={BUNCH_HOME_MESSAGES.deleteConfirmDescription}
           />
           <div className="gap-s15 px-padding-p8 flex flex-col">
-            <form
-              id={formId}
-              className="gap-s3 flex flex-col"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (confirmed) onDelete();
-              }}
-            >
-              <LabeledTextField
-                title="확인 문구 입력"
-                placeholder={BUNCH_HOME_MESSAGES.deleteConfirmPhrase}
-                value={phrase}
-                onChange={(event) => setPhrase(event.target.value)}
-                autoComplete="off"
-                spellCheck={false}
-                aria-describedby={hintId}
-              />
-              <p id={hintId} className="typography-caption-1-medium text-system-fail-text">
-                <span aria-hidden="true">*</span>
-                {BUNCH_HOME_MESSAGES.deleteConfirmHint}
-              </p>
-            </form>
+            {bunchName === undefined ? (
+              <TextFieldSkeleton labelClassName="w-20" />
+            ) : (
+              <form
+                id={formId}
+                className="gap-s3 flex flex-col"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (confirmed) onDelete();
+                }}
+              >
+                <LabeledTextField
+                  title="확인 문구 입력"
+                  placeholder={BUNCH_HOME_MESSAGES.deleteConfirmPhrase}
+                  value={phrase}
+                  onChange={(event) => setPhrase(event.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                  aria-describedby={hintId}
+                />
+                <p id={hintId} className="typography-caption-1-medium text-system-fail-text">
+                  <span aria-hidden="true">*</span>
+                  {BUNCH_HOME_MESSAGES.deleteConfirmHint}
+                </p>
+              </form>
+            )}
             <section className="bg-surface-secondary rounded-r5 pt-padding-p6 pb-padding-p8 px-padding-p8 gap-s4 flex flex-col">
               <h2 className="typography-body-2-semibold text-text-secondary">삭제할 번치 정보</h2>
               <dl className="typography-body-3-regular text-text-tertiary gap-s2 flex flex-col">
                 <div className="gap-s2 flex">
                   <dt className="shrink-0 after:content-[':']">번치명</dt>
                   <dd className="typography-body-3-semibold min-w-0 wrap-break-word">
-                    {bunchName}
+                    {bunchName ?? <ValueSkeleton />}
                   </dd>
                 </div>
                 <div className="gap-s2 flex">
                   <dt className="shrink-0 after:content-[':']">소속 멤버</dt>
                   <dd className="typography-body-3-semibold min-w-0 wrap-break-word">
-                    {memberNames.join(', ')}
+                    {bunchName === undefined ? <ValueSkeleton /> : memberNames.join(', ')}
                   </dd>
                 </div>
               </dl>
@@ -136,6 +160,10 @@ export function BunchDeleteScreen({
           </div>
         </div>
       )}
+      {/* 늘 있는 상태 영역에 받는 중 문구만 넣었다 뺌 */}
+      <p role="status" className="sr-only">
+        {bunchName === undefined ? BUNCH_HOME_MESSAGES.deleteLoading : ''}
+      </p>
     </PageShell>
   );
 }

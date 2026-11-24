@@ -4,8 +4,9 @@ import { toast } from '@app/design-system';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -48,7 +49,7 @@ export function BunchNotifications() {
   // 직접 진입이라 돌아갈 기록이 없으면 번치 홈으로 이동
   const back = () => backOr(BUNCH_HOME_PATHS.home);
 
-  if ((me.isError && !me.data) || (list.isError && !list.data)) {
+  if (loadFailed(me) || loadFailed(list)) {
     return (
       <BunchHomeError
         onRetry={() => {

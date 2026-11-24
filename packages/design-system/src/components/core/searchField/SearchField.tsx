@@ -4,6 +4,7 @@ import { type ComponentProps, type SubmitEvent, useRef } from 'react';
 import { LineSearchIcon } from '../../../icons';
 import { cn } from '../../../utils';
 import { fieldText } from '../textField/fieldText';
+import inputScale from '../textField/inputScale.module.css';
 
 export type SearchFieldProps = Omit<ComponentProps<'input'>, 'type' | 'ref'> & {
   /** Enter(키보드의 검색 키)를 누를 때 현재 입력값과 함께 호출 */
@@ -41,19 +42,23 @@ export function SearchField({
       )}
     >
       <LineSearchIcon size="sm" aria-hidden="true" className="text-icon-quaternary shrink-0" />
-      <input
-        ref={inputRef}
-        type="search"
-        enterKeyHint="search"
-        placeholder={placeholder}
-        aria-label={inputLabel}
-        disabled={disabled}
-        className={cn(
-          fieldText,
-          'py-padding-p1 disabled:text-text-disabled focus:outline-none disabled:cursor-not-allowed [&::-webkit-search-cancel-button]:hidden',
-        )}
-        {...props}
-      />
+      {/* iOS 포커스 확대 방지: 16px로 그린 뒤 14px 크기로 줄임(TextField와 같은 보정)
+          input은 block으로 두어 줄 높이 여유로 커지지 않게 함(감싸기 전 높이 41px 유지) */}
+      <div className={inputScale.inputSlot}>
+        <input
+          ref={inputRef}
+          type="search"
+          enterKeyHint="search"
+          placeholder={placeholder}
+          aria-label={inputLabel}
+          disabled={disabled}
+          className={cn(
+            fieldText,
+            'block py-padding-p1 disabled:text-text-disabled focus:outline-none disabled:cursor-not-allowed [&::-webkit-search-cancel-button]:hidden',
+          )}
+          {...props}
+        />
+      </div>
     </form>
   );
 }

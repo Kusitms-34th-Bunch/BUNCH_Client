@@ -1,7 +1,7 @@
+import type { BunchRole } from '@/shared/lib/bunchRole';
 import type { Picks } from './picks';
 
-/** 번치에서의 역할. 번들 화면의 권한과 역할 배지를 정하는 기준 */
-export type BunchRole = 'owner' | 'coOwner' | 'member';
+export type { BunchRole };
 
 export type DraftMember = {
   id: string;

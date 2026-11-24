@@ -16,6 +16,12 @@ function parameter(value: number, first: number, second: number) {
   return (low + high) / 2;
 }
 
+/** CSS cubic-bezier(x1, y1, x2, y2) 곡선: 진행 시간 비율(0~1) → 진행 거리 비율(0~1) */
+export function cubicBezierEasing([x1, y1, x2, y2]: readonly [number, number, number, number]) {
+  return (time: number) =>
+    time <= 0 ? 0 : time >= 1 ? 1 : bezier(parameter(time, x1, x2), y1, y2);
+}
+
 /** SSGOI의 spring 대신 CSS cubic-bezier(x1, y1, x2, y2) 곡선을 정해진 시간 동안 재생(제어점은 0~1 안만) */
 export function cubicBezierIntegrator(
   durationMs: number,

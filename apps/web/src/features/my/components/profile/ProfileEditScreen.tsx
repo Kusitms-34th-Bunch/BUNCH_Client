@@ -1,28 +1,27 @@
 'use client';
 
 import { isApiError } from '@app/api-core';
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, ConfirmDialog, Header, toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import type { CheckNickname } from '@/shared/hooks/useNicknameAvailability';
+import type { CheckNickname } from '@/shared/hooks/profile/useNicknameAvailability';
 import { checkNicknameAvailability } from '@/shared/api/nickname';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileFields } from '@/shared/components/profile/ProfileFields';
 import { ProfilePhotoField } from '@/shared/components/profile/ProfilePhotoField';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { type ProfileValues, useProfileFields } from '@/shared/hooks/profile/useProfileFields';
+import { useScrollFocusedIntoView } from '@/shared/hooks/scroll/useScrollFocusedIntoView';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { type ProfileValues, useProfileFields } from '@/shared/hooks/useProfileFields';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { useScrollFocusedIntoView } from '@/shared/hooks/useScrollFocusedIntoView';
 import { closeKeyboard, dismissKeyboard } from '@/shared/lib/keyboard';
-import { normalizeNickname } from '@/shared/lib/nickname';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
-import type { ProfilePhotoChange } from '../../api/profile';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
+import { normalizeNickname } from '@/shared/lib/profile/nickname';
+import type { ProfilePhotoChange, ProfileUpdateInput } from '../../api/profile';
 import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
-import { useUpdateProfileMutation } from '../../queries/profile';
 
 // 저장 직전 서버가 다시 확인한 닉네임 중복(가입과 같은 코드)
 const NICKNAME_TAKEN_CODE = 'USER_002';
@@ -49,6 +48,8 @@ export function ProfileEditScreen({
   checkNickname = checkNicknameAvailability,
   pending = false,
   onLeave,
+  onSave,
+  saving,
 }: {
   profile: MyProfile;
   /**
@@ -62,6 +63,10 @@ export function ProfileEditScreen({
   pending?: boolean | undefined;
   /** 뒤로 가기로 떠나기 직전 알림(컨테이너가 받기 실패 때 한 번 더 뒤로 가지 않게) */
   onLeave?: (() => void) | undefined;
+  /** 저장(서버 반영). 실패하면 거절되고 화면이 오류 종류로 안내를 고름 */
+  onSave: (_input: ProfileUpdateInput) => Promise<unknown>;
+  /** 저장 요청 중 */
+  saving: boolean;
 }) {
   const backOr = useBackOr();
   const leave = () => {
@@ -74,7 +79,6 @@ export function ProfileEditScreen({
   const fields = useProfileFields(initial, checkNickname, { currentNickname: profile.nickname });
   // 조정을 마친 새 사진(data URL), 기본 이미지로 바꾸면 undefined
   const [photo, setPhoto] = useState(profile.imageSrc);
-  const save = useUpdateProfileMutation();
   // 고른 사진을 조정하는 중에는 저장하지 않음(끝나야 새 사진이 정해짐)
   const [photoPending, setPhotoPending] = useState(false);
   // 저장 중·저장 뒤 돌아가는 전환 중 중복 탭 방지(화면 설계서 7번). 누르는 순간은 ref로 막아 버튼 초점을 지킴
@@ -135,7 +139,7 @@ export function ProfileEditScreen({
     setSubmitting(true);
     closeKeyboard();
     try {
-      await save.mutateAsync({
+      await onSave({
         nickname: normalizeNickname(fields.values.nickname),
         photo: photoChange(),
         demographics: demographicsConsent
@@ -187,16 +191,14 @@ export function ProfileEditScreen({
     >
       {/* 저장 중 상태를 스크린 리더에 알림(aria-busy만으로는 읽히지 않는 경우가 많음) */}
       <p role="status" className="sr-only">
-        {save.isPending ? MY_MESSAGES.profileSaving : ''}
+        {saving ? MY_MESSAGES.profileSaving : ''}
       </p>
       <PageShell
         header={
           <Header
             leading={
               // Figma 헤더 뒤로 가기 아이콘 색(#bcbec2), 가입 단계와 같은 연한 회색
-              <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={back}>
-                <LineChevronLeftLargeIcon />
-              </HeaderIconButton>
+              <HeaderBackButton tone="subtle" onClick={back} />
             }
           />
         }
@@ -205,7 +207,7 @@ export function ProfileEditScreen({
             <Button
               className="w-full"
               disabled={!canSubmit}
-              aria-busy={save.isPending || undefined}
+              aria-busy={saving || undefined}
               onClick={() => void submit()}
             >
               {MY_MESSAGES.profileEditSubmit}

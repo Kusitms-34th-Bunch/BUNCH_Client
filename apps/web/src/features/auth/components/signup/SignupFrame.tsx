@@ -1,9 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Header } from '@app/design-system';
 import { useRouter } from 'next/navigation';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 
@@ -30,17 +30,14 @@ export function SignupFrame({ title, bottom, backFallback, onBack, children }: S
         <Header
           leading={
             // Figma 헤더 뒤로 가기 아이콘 색(#bcbec2) 적용
-            <HeaderIconButton
-              label="뒤로 가기"
+            <HeaderBackButton
               tone="subtle"
               onClick={() => {
                 if (onBack) onBack();
                 else if (backFallback) backOr(backFallback);
                 else router.back();
               }}
-            >
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            />
           }
           title={title}
         />

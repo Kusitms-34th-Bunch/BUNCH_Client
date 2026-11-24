@@ -10,7 +10,7 @@ import { PageShell } from '@/shared/components/layout/PageShell';
 import {
   BUNCH_DESCRIPTION_MAX_LENGTH,
   BUNCH_DESCRIPTION_PROHIBITED_MESSAGE,
-} from '@/shared/lib/bunchProfile';
+} from '@/shared/lib/profile/bunchProfile';
 import { ONBOARDING_MESSAGES } from '../../constants/messages';
 import { ONBOARDING_PATHS } from '../../constants/paths';
 import { useCreateBunchDraft } from '../../contexts/createBunchDraftContext';

@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 로그인 없이 열리는 페이지(운영 빌드). `/login`은 로그인 전이면 `/intro`로 이동해 뺌
+          # 로그인 없이 열리는 페이지(운영 빌드). 쉘 밖이라 `/intro`는 앱 설치 안내, `/login`도 같은 안내라 뺌
           # 초대 토큰은 버튼을 눌러야 확인하므로 가짜 토큰으로도 실제 초대 링크의 첫 화면과 같음
           - id: public
             title: 공개 페이지
@@ -66,7 +66,7 @@ jobs:
 
     steps:
       # git 인증이 필요 없어 토큰을 남기지 않음(아래 `yarn dlx`가 lockfile 밖 의존성을 받아 실행하므로)
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
 
@@ -79,7 +79,7 @@ jobs:
 
       # CI build job이 저장한 Next 빌드 캐시를 이어 받기만 함(저장은 CI가 담당)
       - name: Restore Next.js build cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**') }}
@@ -92,7 +92,7 @@ jobs:
           NEXT_PUBLIC_API_MOCKING: ${{ matrix.mocking }}
         run: yarn workspace @app/web build
 
-      # 실제 백엔드 없이 모든 요청에 401(로그인 전)만 주는 API. API_BASE_URL이 없으면 세션 확인이 실패해 오류 화면이 측정됨
+      # 실제 백엔드 없이 모든 요청에 401(로그인 전)만 주는 API. 아래 기동 확인이 이 응답까지 봄
       # 측정 인프라 실패는 체크를 실패시키지 않고 댓글로 알림
       - name: Start web
         id: start
@@ -131,7 +131,7 @@ jobs:
       # PR은 base 커밋의 결과, 없으면 develop의 가장 최근 결과와 비교
       - name: Restore Lighthouse baseline
         if: github.event_name == 'pull_request' && steps.lighthouse.outcome == 'success'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: apps/web/lighthouse-baseline.json
           key: lighthouse-${{ runner.os }}-${{ matrix.id }}-develop-${{ github.event.pull_request.base.sha }}
@@ -156,14 +156,14 @@ jobs:
 
       - name: Save Lighthouse baseline
         if: steps.baseline.outcome == 'success'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: apps/web/lighthouse-baseline.json
           key: lighthouse-${{ runner.os }}-${{ matrix.id }}-develop-${{ github.sha }}
 
       - name: Upload Lighthouse report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lighthouse-report-${{ matrix.id }}
           path: |
@@ -190,18 +190,25 @@ jobs:
       pull-requests: write
 
     steps:
-      # 묶음마다 lighthouse/lighthouse-report-<id>/ 아래로 받음
-      - name: Download Lighthouse reports
+      # 묶음마다 lighthouse/lighthouse-report-<id>/ 아래로 받음. pattern 하나로 받으면 v5부터 하나만 있을 때 폴더 없이 풀려 이름별로 받음
+      - name: Download Lighthouse report (public)
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
-          pattern: lighthouse-report-*
-          path: lighthouse
+          name: lighthouse-report-public
+          path: lighthouse/lighthouse-report-public
+
+      - name: Download Lighthouse report (signed-in)
+        continue-on-error: true
+        uses: actions/download-artifact@v7
+        with:
+          name: lighthouse-report-signed-in
+          path: lighthouse/lighthouse-report-signed-in
 
       # 댓글 하나를 찾아 갱신(새 커밋마다 댓글이 쌓이지 않게)
       - name: Comment Lighthouse result on the pull request
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:

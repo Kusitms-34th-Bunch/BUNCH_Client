@@ -195,7 +195,7 @@ describe('PhotoBox 오류 복구', () => {
 describe('PhotoBox 이어 받기 실패 알림', () => {
   const photo = (photoId: number) => ({
     photoId,
-    thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
+    thumbnailUrl: `/mock/photos/${photoId}-thumb.webp`,
     capturedDate: '2026-10-18',
     uploaderIds: [1],
     usedInDraftBundle: false,

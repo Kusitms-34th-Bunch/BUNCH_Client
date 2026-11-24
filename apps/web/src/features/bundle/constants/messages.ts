@@ -1,3 +1,5 @@
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
+
 /** 번들 작성 화면의 사용자 안내 문구(기획 문서 docs/specs/bundle-create.md 4.3) */
 export const BUNDLE_MESSAGES = {
   headerSaved: '저장 완료',
@@ -25,8 +27,8 @@ export const BUNDLE_MESSAGES = {
   pickButton: '이 사진 픽하기',
   pickedButton: '사진을 픽했어요',
   pickedCount: (count: number) => `${count}명이 픽했어요`,
-  pickFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  pickDeletedTitle: '삭제된 사진이에요',
+  pickFailed: COMMON_MESSAGES.temporaryFailure,
+  pickDeletedTitle: COMMON_MESSAGES.deletedPhoto,
   pickDeletedDescription: '삭제된 사진은 픽할 수 없어요.',
   photoCount: (count: number) => `사진 ${count}장`,
   // 갤러리에서 가져온 사진이 올라가는 동안 읽어 주는 문구(사진함 올리기와 같음)
@@ -36,7 +38,7 @@ export const BUNDLE_MESSAGES = {
   locationMax: '위치는 최대 3개까지 추가할 수 있어요.',
   locationDuplicate: '이미 추가한 위치예요.',
   locationRemoved: '다른 멤버가 삭제한 위치예요.',
-  locationSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  locationSaveFailed: COMMON_MESSAGES.temporaryFailure,
   locationField: '위치',
   dateAdd: '날짜 추가',
   dateField: '날짜',
@@ -61,10 +63,10 @@ export const BUNDLE_MESSAGES = {
       : '다른 멤버가 번들을 업로드해 더 이상 편집할 수 없어요.',
   missingDraftConfirm: '확인',
   // 서버 저장·발행 실패는 기능명세 공통 오류 문구(4.3.9·4.3.12 예외)
-  saveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
-  publishFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  saveFailed: COMMON_MESSAGES.temporaryFailure,
+  publishFailed: COMMON_MESSAGES.temporaryFailure,
   // 버전 충돌은 명세에 따로 없어 서버 오류와 같은 공통 문구(기능명세 4.3.9 예외)
-  publishConflict: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  publishConflict: COMMON_MESSAGES.temporaryFailure,
   // 발행 때 서버가 다시 검사한 제목·코멘트에 금칙어가 있음(명세에 문구 없음, 댓글 금칙어 문구에 다시 업로드 안내를 붙임, 사용자 결정 2026-11-18)
   publishProhibited:
     '사용할 수 없는 단어가 포함되어 있어요. 내용을 확인한 뒤 다시 업로드해 주세요.',
@@ -80,7 +82,7 @@ export const BUNDLE_MESSAGES = {
       ? '사진은 최대 20장까지 담을 수 있어요.'
       : `사진은 최대 20장까지 담을 수 있어요. ${count}장만 추가했어요.`,
   // 사진 빼기·이동·추가를 서버에 보내지 못했을 때(기능명세 공통 오류 문구)
-  photosChangeFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  photosChangeFailed: COMMON_MESSAGES.temporaryFailure,
   uploadUnsaved: '저장하지 못한 내용이 있어요. 내용을 다시 바꾸면 저장을 다시 시도해요.',
   uploadSaving: '저장이 끝난 뒤에 업로드할 수 있어요.',
   uploadIncomplete: '필수 항목을 모두 입력해야 업로드 할 수 있어요.',
@@ -106,7 +108,7 @@ export const BUNDLE_MESSAGES = {
   visibilityAllDescription: '번치의 모든 사용자가 볼 수 있어요',
   visibilityPartial: '일부 공개',
   visibilityPartialDescription: '우리 번치의 팔로워도 볼 수 있어요',
-  visibilityMembersDescription: '우리 번치 멤버만 볼 수 있어요',
+  visibilityMembersDescription: COMMON_MESSAGES.visibilityMembersDescription,
   visibilityNotice: '* 업로드 이후에는 관리자만 수정하거나 삭제할 수 있어요.',
   uploading: '업로드 중',
   // 공개 범위 화면으로 넘어가는 동안 낭독용 안내
@@ -118,7 +120,7 @@ export const BUNDLE_MESSAGES = {
   // 발행 번들 수정 화면(기능 명세 6.2.12)
   editTitle: '번들 수정',
   // 불러오지 못했을 때의 안내와 버튼(사진함 오류 화면과 같은 문구)
-  loadFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  loadFailed: COMMON_MESSAGES.temporaryFailure,
   retry: '다시 시도',
   editSave: '저장',
   editSaveTitle: '수정한 내용을 저장할까요?',
@@ -126,7 +128,7 @@ export const BUNDLE_MESSAGES = {
   editSaveConfirm: '저장',
   editSaved: '번들을 수정했어요',
   editPhotoMissing: '사진을 불러올 수 없어요.',
-  editSaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  editSaveFailed: COMMON_MESSAGES.temporaryFailure,
   editSaving: '번들을 수정하는 중이에요',
   editLeaveTitle: '수정을 그만둘까요?',
   editLeaveDescription: '수정한 내용은 저장되지 않아요.',
@@ -134,7 +136,7 @@ export const BUNDLE_MESSAGES = {
   editLeaveStay: '계속 수정',
   commentLocked: '업로드된 코멘트는 수정 불가해요.',
   // 기능명세서 6.2.11: 화면을 연 뒤 역할이 바뀌어 수정할 수 없게 됨(피드 상세의 같은 안내와 같은 문구)
-  editPermissionChanged: '권한이 변경되어 해당 기능을 이용할 수 없어요.',
+  editPermissionChanged: COMMON_MESSAGES.permissionChanged,
   // 멤버 내보내기 확인 창은 Figma 「멤버 삭제 프로토타입」 `2091:62913` 원문
   removeMemberTitle: (name: string) => `${name}님을 번들에서 내보낼까요?`,
   removeMemberDescription: (name: string) =>
@@ -151,9 +153,9 @@ export const BUNDLE_MESSAGES = {
   leaveMemberLabel: '번들에서 나가기',
   selfSuffix: '(나)',
   // 초안 생성자가 나가면 작성 중인 번들이 삭제되어 알림(확인 창 문구는 일반 멤버와 같음)
-  draftDeleted: '작성 중인 번들을 삭제했어요.',
+  draftDeleted: COMMON_MESSAGES.draftDeleted,
   // 나가기를 서버에 보내지 못했을 때(기능명세 공통 오류 문구)
-  leaveFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  leaveFailed: COMMON_MESSAGES.temporaryFailure,
   // 기획 원문 없는 접근성 이름(화면에는 안 보임): 위치·날짜 줄 이름에 붙임
   editingLabel: (name: string) => `${name}님이 편집 중`,
   // 기획 원문 없는 접근성 이름(화면에는 안 보임): 멤버 카드의 초록 점(지금 이 초안에 들어와 있는 멤버)
@@ -176,7 +178,7 @@ export const BUNDLE_MESSAGES = {
     '게시글에 태그한 위치는 해당 게시글을\n보는 다른 사람들에게도 표시돼요.',
   locationNoResult: '검색 결과가 없어요',
   locationResultCount: (count: number) => `검색 결과 ${count}건`,
-  searchFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  searchFailed: COMMON_MESSAGES.temporaryFailure,
   // 사진 상세(크게 보기, 기능 spec 4.3.4~4.3.6, Figma `2082:49108`·`2091:61896`)
   photoPosition: (current: number, total: number) => `${total}장 중 ${current}번째 사진`,
   photoOpenLabel: (current: number) => `${current}번째 사진 상세 보기`,
@@ -209,8 +211,8 @@ export const BUNDLE_MESSAGES = {
   photoAddApplied: '변경사항이 적용되었어요.',
   photoAddRemoveTitle: (count: number) => `사진 ${count}장이 번들에서 빠져요`,
   photoAddRemoveDescription: '빠진 사진의 픽도 함께 사라져요.',
-  photoAddLeaveTitle: '저장하지 않고 나갈까요?',
-  photoAddLeaveDescription: '변경한 내용이 반영되지 않아요.',
+  photoAddLeaveTitle: COMMON_MESSAGES.leaveWithoutSavingTitle,
+  photoAddLeaveDescription: COMMON_MESSAGES.leaveWithoutSavingDescription,
   photoAddLeaveConfirm: '나가기',
 } as const;
 

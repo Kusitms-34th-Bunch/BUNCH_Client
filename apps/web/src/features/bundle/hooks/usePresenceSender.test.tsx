@@ -36,6 +36,52 @@ describe('usePresenceSender', () => {
     expect(send).not.toHaveBeenCalled();
   });
 
+  it('작업 중 연결이 끊기고 그사이 작업을 끝내면 다시 연결된 뒤 그 작업을 다시 알리지 않는다', () => {
+    const { result, rerender } = render();
+    // 끌기 시작 때 받은 명령으로 시작하고, 끝낼 때는 그때 화면이 가진 명령을 씀(DraftPlaceDate)
+    act(() => result.current.begin('LOCATION:1'));
+    rerender({ connected: false, viewing: true, participant: true });
+    act(() => result.current.end('LOCATION:1'));
+    send.mockClear();
+
+    rerender({ connected: true, viewing: true, participant: true });
+    act(() => void vi.advanceTimersByTime(5_000));
+
+    expect(bodies()).not.toContainEqual({ action: 'BEGIN', target: 'LOCATION:1' });
+    expect(bodies()).toContainEqual({ action: 'VIEW' });
+  });
+
+  it('끊긴 동안 시작한 작업은 보내지 않고, 다시 연결되면 입장과 함께 한 번 알린다', () => {
+    const { result, rerender } = render({ connected: false });
+    act(() => result.current.begin('PHOTOS'));
+    expect(send).not.toHaveBeenCalled();
+
+    rerender({ connected: true, viewing: true, participant: true });
+
+    expect(bodies()).toEqual([{ action: 'VIEW' }, { action: 'BEGIN', target: 'PHOTOS' }]);
+  });
+
+  it('연결된 채로 초안이 아니게 되면(발행·삭제) 진행 중이던 작업의 END를 보낸다', () => {
+    const { result, rerender } = render();
+    act(() => result.current.begin('DATE'));
+    send.mockClear();
+
+    rerender({ connected: true, viewing: false, participant: true });
+
+    expect(bodies()).toEqual([{ action: 'END', target: 'DATE' }]);
+  });
+
+  it('작업 중에 참여 멤버에서 빠지면 다시 연결돼도 그 작업을 다시 알리지 않는다', () => {
+    const { result, rerender } = render();
+    act(() => result.current.begin('PHOTOS'));
+    rerender({ connected: false, viewing: true, participant: false });
+    send.mockClear();
+
+    rerender({ connected: true, viewing: true, participant: false });
+
+    expect(bodies()).toEqual([{ action: 'VIEW' }]);
+  });
+
   it('비텍스트 작업은 BEGIN을 바로 보내고 5초마다 VIEW와 함께 갱신하며 END는 그 target만 끝낸다', () => {
     const { result } = render();
     send.mockClear();

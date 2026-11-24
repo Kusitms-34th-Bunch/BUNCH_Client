@@ -1,3 +1,4 @@
+// 크기 유지: 약관 원문(조항 순서대로 한곳에)
 import { email, h3, link, ol, p, type TermsDocumentContent, ul } from './types';
 
 /**

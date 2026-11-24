@@ -8,7 +8,10 @@ name: 앱 시작 직후 처음 누른 탭과 버튼이 바로 동작한다
     visible: '멤버 필터'
     timeout: 3000
 - runFlow: ../subflows/launch-fresh.yaml
-- tapOn: '사진함'
+- tapOn:
+    # 탭 화면도 탭 이름과 같은 이름이라 탭 바 버튼의 식별자로 고름(시뮬레이터 언어와 무관, #534)
+    id: 'tab-photos'
+# 처음 보이는 탭 WebView는 CI 시뮬레이터에서 그리기가 늦어(5초 걸린 기록) 넉넉히. 입력이 무시되면 상한과 상관없이 실패
 - extendedWaitUntil:
     visible: '사진 올리기'
-    timeout: 3000
+    timeout: 10000

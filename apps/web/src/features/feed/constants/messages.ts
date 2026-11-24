@@ -1,10 +1,12 @@
+import { COMMON_MESSAGES } from '@/shared/constants/messages';
+
 export const FEED_MESSAGES = {
   title: '피드',
   /** 로고 버튼(맨 위로) */
   scrollTop: 'BUNCH, 맨 위로',
   notifications: '알림',
   // 읽지 않은 알림이 있을 때 헤더 알림 링크 이름(명세에 문구가 없어 제안, 번치 홈 헤더와 같음)
-  notificationsUnread: '알림, 읽지 않은 알림 있음',
+  notificationsUnread: COMMON_MESSAGES.notificationsUnread,
   currentBunch: (name: string) => `${name} 번치 홈`,
   followingDone: '팔로우한 번치의 소식을 모두 확인했어요',
   allDone: '모든 피드를 확인했어요',
@@ -17,7 +19,6 @@ export const FEED_MESSAGES = {
   /** 소속 번치가 없을 때 번치 명의 행동(기능명세서 6.1.7) */
   joinRequired: '번치에 참여하면 할 수 있어요.',
   likeFailed: '좋아요를 반영하지 못했어요. 다시 시도해 주세요',
-  back: '뒤로 가기',
   bundleUnavailable: '삭제되었거나 볼 수 없는 내용이에요',
   bundleLoading: '번들을 불러오는 중이에요',
   memberLoading: '멤버 프로필을 불러오는 중이에요',
@@ -66,7 +67,7 @@ export const FEED_MESSAGES = {
   reportCommentTitle: '이 댓글을 신고할까요?',
   reportBundleTitle: '이 게시글을 신고할까요?',
   reportAs: (bunchName: string) => `${bunchName} 계정으로 신고해요`,
-  reported: '신고가 접수됐어요.',
+  reported: COMMON_MESSAGES.reported,
   reportLimited: '이미 신고가 접수되어 검토 중이에요.',
   edit: '수정하기',
   visibilitySetting: '공개 범위 설정',
@@ -84,7 +85,7 @@ export const FEED_MESSAGES = {
   // Figma `5367:151697` 기준(1110판 명세는 「우리 번치의 팔로워도 볼 수 있어요」)
   visibilityPartialDescription: '우리 번치를 팔로우한 번치도 볼 수 있어요',
   visibilityMembers: '멤버 공개',
-  visibilityMembersDescription: '우리 번치 멤버만 볼 수 있어요',
+  visibilityMembersDescription: COMMON_MESSAGES.visibilityMembersDescription,
   cancel: '취소',
   deleteCommentTitle: '댓글을 삭제할까요?',
   deleteCommentDescription: '데이터가 삭제되며 복구 불가능해요.',
@@ -110,9 +111,9 @@ export const FEED_MESSAGES = {
   unfollowed: (bunchName: string) => `${bunchName} 번치 팔로우를 취소했어요.`,
   // 비공개 번치 팔로우 요청 결과: 화면 토스트가 없어 스크린 리더에만 읽힘(기획 원문 없는 접근성 안내)
   followRequested: (bunchName: string) => `${bunchName} 번치에 팔로우를 요청했어요.`,
-  requestCanceled: '팔로우 요청을 취소했어요.',
+  requestCanceled: COMMON_MESSAGES.followRequestCanceled,
   /** 내 정보를 받지 못해 번치 명의 행동을 할 수 없을 때 */
-  actionFailed: '일시적인 오류가 발생했어요. 다시 시도해 주세요',
+  actionFailed: COMMON_MESSAGES.temporaryFailure,
   // 기능명세서 6.2.11: 화면을 연 뒤 역할이 바뀌어 수정·삭제를 할 수 없게 됨
-  permissionChanged: '권한이 변경되어 해당 기능을 이용할 수 없어요.',
+  permissionChanged: COMMON_MESSAGES.permissionChanged,
 } as const;

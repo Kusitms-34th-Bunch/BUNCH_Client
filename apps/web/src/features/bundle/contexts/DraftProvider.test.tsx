@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import '@/mocks/server';
 import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_PHOTO_IDS, MOCK_MEMBER_IDS } from '@/mocks/db/seed';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { createBundle } from '../api/bundles';
 import { useDraftContext } from './draftContext';

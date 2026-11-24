@@ -1,7 +1,6 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
-import { IconButton } from '@app/design-system/web';
+import { Header, IconButton, LineDotsLargeIcon, toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '@/features/photo-box/lib/types';
@@ -14,9 +13,10 @@ import { PHOTO_BOX_MESSAGES } from '@/features/photo-box/constants/messages';
 import { usePhotoViewer } from '@/features/photo-box/hooks/usePhotoViewer';
 import { formatDetailDate } from '@/features/photo-box/lib/photoDetail';
 import { getViewerHeaderClass } from '@/features/photo-box/lib/photoViewerStyle';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useExitableOpen } from '@/shared/hooks/overlay/useExitableOpen';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
 import type { DraftActions } from '../../hooks/useDraft';
 import type { Draft, DraftPhoto, DraftViewer } from '../../lib/types';
@@ -116,8 +116,7 @@ export function DraftPhotoViewer({
       avatarSrc: member.avatarSrc,
     }));
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuMounted, setMenuMounted] = useState(false);
+  const menu = useExitableOpen();
   const openRemove = useRemovePhotoDialog();
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -129,15 +128,10 @@ export function DraftPhotoViewer({
     photos,
     initialPhotoId,
     onPhotoChange,
-    keyboardBlocked: menuOpen || removeDialogOpen || saving,
+    keyboardBlocked: menu.open || removeDialogOpen || saving,
   });
   const { activeId, activeIndex, chromeHidden, showPhoto } = photoViewer;
   const activePhoto = photos[activeIndex];
-
-  const toggleMenu = () => {
-    setMenuMounted(true);
-    setMenuOpen((open) => !open);
-  };
 
   // 빼고 나면 같은 자리에 온 다음 사진(마지막이었으면 앞 사진)을 이어서 보여 줌
   const removeAndContinue = (photoId: string) => {
@@ -206,11 +200,7 @@ export function DraftPhotoViewer({
       header={
         <div className={getViewerHeaderClass(chromeHidden)}>
           <Header
-            leading={
-              <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
-            }
+            leading={<HeaderBackButton onClick={onBack} />}
             title={
               sourcesPending
                 ? ''
@@ -221,22 +211,22 @@ export function DraftPhotoViewer({
                 ref={menuTriggerRef}
                 aria-label="더보기"
                 aria-haspopup="menu"
-                aria-expanded={menuOpen}
+                aria-expanded={menu.open}
                 aria-disabled={saving ? true : undefined}
-                onClick={saving ? undefined : toggleMenu}
+                onClick={saving ? undefined : menu.toggle}
               >
                 <LineDotsLargeIcon aria-hidden="true" />
               </IconButton>
             }
           />
-          {menuMounted ? (
+          {menu.mounted ? (
             <div className="right-s8 absolute top-full z-20">
               <PhotoDetailMenu
                 canManage={access.canEdit}
                 withDate={false}
-                open={menuOpen}
-                onClose={() => setMenuOpen(false)}
-                onExited={() => setMenuMounted(false)}
+                open={menu.open}
+                onClose={menu.close}
+                onExited={menu.exited}
                 onSelect={handleMenuSelect}
                 triggerRef={menuTriggerRef}
               />

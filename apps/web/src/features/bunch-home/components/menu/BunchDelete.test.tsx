@@ -7,7 +7,7 @@ import { BunchDeleteScreen } from './BunchDeleteScreen';
 import { BunchMenuScreen } from './BunchMenuScreen';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 const back = vi.fn();
 const replace = vi.fn();
@@ -60,6 +60,36 @@ describe('BunchDeleteScreen', () => {
     expect(BUNCH_HOME_MESSAGES.deleteTitle('여행가조')).toBe('여행가조를 삭제할까요?');
     expect(BUNCH_HOME_MESSAGES.deleteTitle('Run 7')).toBe('Run 7를 삭제할까요?');
   });
+
+  it.each(['info', 'confirm'] as const)(
+    '번치 정보를 받는 동안(%s) 빈칸 대신 서버 값 자리만 회색으로 그리고 입력·진행은 막는다',
+    (step) => {
+      const { container } = render(
+        <BunchDeleteScreen {...screenProps} step={step} bunchName={undefined} />,
+      );
+
+      expect(screen.getByRole('status')).toHaveTextContent(BUNCH_HOME_MESSAGES.deleteLoading);
+      const placeholder = container.querySelector('[class~="motion-safe:animate-pulse"]');
+      expect(placeholder).toBeInTheDocument();
+      expect(placeholder?.closest('[aria-hidden="true"]')).toBeInTheDocument();
+      // 받기 전에는 실제 입력란을 두지 않음(skeleton.md)
+      expect(screen.queryByRole('textbox')).toBeNull();
+      expect(screen.queryByText('퇴근런클럽')).toBeNull();
+      expect(screen.queryByText(/은우링링링/)).toBeNull();
+      // 받는 중에도 제목은 비어 읽히지 않음
+      expect(
+        screen.getByRole('heading', {
+          level: 1,
+          name:
+            step === 'info'
+              ? BUNCH_HOME_MESSAGES.deleteTitleLoading
+              : BUNCH_HOME_MESSAGES.deleteConfirmTitle,
+        }),
+      ).toBeInTheDocument();
+      const action = screen.getByRole('button', { name: step === 'info' ? '다음' : '삭제하기' });
+      expect(action).toBeDisabled();
+    },
+  );
 
   it('확인 문구를 정확히 입력해야 「삭제하기」가 켜지고, 누르면 삭제한다', async () => {
     const user = userEvent.setup();

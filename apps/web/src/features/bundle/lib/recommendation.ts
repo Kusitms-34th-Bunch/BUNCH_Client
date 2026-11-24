@@ -5,7 +5,7 @@ import {
   getDateKey,
   type PhotoSection,
 } from '@/features/photo-box/lib/photoDate';
-import { isWireId } from '@/shared/api/ids';
+import { isWireId } from '@/shared/api/client/ids';
 import type { Recommendation, RecommendationDetail } from '../model/recommendation';
 import { MAX_SELECT_PHOTOS } from '../constants/selectMessages';
 
@@ -47,6 +47,20 @@ export const getCardDate = (recommendation: Recommendation, currentYear: number 
     ...(range ? { endMonth: range.month, endDay: range.day } : {}),
   };
 };
+
+/** 추천 번들 시트의 카드 목록(추천 순서 그대로, 날짜는 `getCardDate`) */
+export const toRecommendCards = (
+  recommendations: readonly Recommendation[],
+  currentYear: number | null,
+) =>
+  recommendations.map((item) => ({
+    id: item.id,
+    imageSrc: item.imageSrc,
+    title: item.title,
+    members: [...item.memberNames],
+    photoCount: item.photoCount,
+    ...getCardDate(item, currentYear),
+  }));
 
 /** 추천 순서를 지킨 채 같은 촬영일끼리 묶음(날짜가 처음 나온 순서). 날짜를 모르는 사진은 맨 뒤 */
 export const groupByDate = (

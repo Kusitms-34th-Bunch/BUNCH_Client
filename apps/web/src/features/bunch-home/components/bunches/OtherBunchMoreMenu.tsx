@@ -4,7 +4,7 @@ import { LineDotsLargeIcon, toast } from '@app/design-system';
 import { ConfirmSheet, MoreMenuSheet, ReportSheet } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import blockedBunch from '@/shared/assets/images/empty/blocked-bunch.svg';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { headerIconLinkClass } from '../BunchHomeHeader';

@@ -2,9 +2,10 @@
 
 import { cn } from '@app/design-system';
 import { useRef, type ReactNode } from 'react';
+import pullStyles from '@/shared/components/refresh/pullRefresh.module.css';
 import { RefreshSpark } from '@/shared/components/refresh/RefreshSpark';
-import { useHideOnScroll } from '@/shared/hooks/useHideOnScroll';
-import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh';
+import { useHideOnScroll } from '@/shared/hooks/scroll/useHideOnScroll';
+import { usePullToRefresh } from '@/shared/hooks/scroll/usePullToRefresh';
 
 const REFRESH_STATUS_MESSAGES = {
   idle: '',
@@ -157,12 +158,12 @@ export function PageShell({
         </div>
       ) : null}
       {onRefresh ? (
-        // 내용(`main`의 직계 자식)과 표시기가 `--pull-y`·`--pull-p`를 받아 움직임(globals.css `.pull-refresh`)
+        // 내용(`main`의 직계 자식)과 표시기가 `--pull-y`·`--pull-p`를 받아 움직임(`pullRefresh.module.css`)
         <div
           ref={refreshContainerRef}
-          className="pull-refresh group/pull relative isolate flex min-h-32 flex-1 flex-col"
+          className={cn(pullStyles.container, 'relative isolate flex min-h-32 flex-1 flex-col')}
         >
-          <div aria-hidden className="pull-refresh-indicator">
+          <div aria-hidden className={pullStyles.indicator}>
             <RefreshSpark />
           </div>
           {/* 새로고침 중·끝남을 스크린 리더에 알림(항상 마운트해 문구만 바꿈) */}

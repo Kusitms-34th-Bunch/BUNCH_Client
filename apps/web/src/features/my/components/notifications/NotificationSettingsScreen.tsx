@@ -1,9 +1,9 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Header } from '@app/design-system';
 import { ToggleListItem } from '@app/design-system/web';
 import { useEffect, useId, useRef } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { MY_MESSAGES } from '../../constants/messages';
@@ -85,13 +85,7 @@ export function NotificationSettingsScreen({
         <Header
           leading={
             // Figma 헤더 뒤로 가기 아이콘 색(#bcbec2), 개인 프로필 수정과 같은 연한 회색
-            <HeaderIconButton
-              label="뒤로 가기"
-              tone="subtle"
-              onClick={onBack ?? (() => backOr(MY_PATHS.home))}
-            >
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
+            <HeaderBackButton tone="subtle" onClick={onBack ?? (() => backOr(MY_PATHS.home))} />
           }
         />
       }

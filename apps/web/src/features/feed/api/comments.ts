@@ -1,6 +1,6 @@
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
-import { requireWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
+import { requireWireId } from '@/shared/api/client/ids';
 import { commentItemSchema, commentPageSchema, type CommentItemResponse } from '../model/comment';
 
 const commentsPath = (bundleId: string) =>

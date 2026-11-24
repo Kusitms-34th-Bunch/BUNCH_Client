@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { CHARACTER_TYPES } from '@/shared/lib/bunchProfile';
-import { bffApi, requestData } from './bffApi';
+import { CHARACTER_TYPES } from '@/shared/lib/profile/bunchProfile';
+import { bffApi, requestData } from './client/bffApi';
 
 /**
  * `GET /api/v1/members/me/bunches` 응답(Swagger `MyBunchesResponse`)

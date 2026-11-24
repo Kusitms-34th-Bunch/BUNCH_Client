@@ -1,10 +1,10 @@
 'use client';
 
-import { Button, ConfirmDialog, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { Button, ConfirmDialog, Header, toast } from '@app/design-system';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
 import type { BundleEditActions } from '../../hooks/useBundleEdit';
 import type { Draft, DraftViewer } from '../../lib/types';
 import { BUNDLE_MESSAGES } from '../../constants/messages';
@@ -101,15 +101,7 @@ export function BundleEditScreen({
 
   return (
     <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={back}>
-              <LineChevronLeftLargeIcon aria-hidden="true" />
-            </HeaderIconButton>
-          }
-        />
-      }
+      header={<Header leading={<HeaderBackButton onClick={back} />} />}
       bottom={
         // 안전 영역은 AppFrame이 이미 띄우므로 버튼 아래 간격만
         <div className="bg-surface-primary border-border-tertiary pt-padding-p7 px-padding-p8 pb-s4 border-t">

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useDeleteBundleMutation, useFetchLatestBundle } from '@/features/bundle/queries/bundles';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchHomeActions } from '../../lib/types';
 import type { BundleTab } from './BundleTabs';
@@ -71,6 +71,12 @@ export function BunchHome({
   prefetchPlaces,
 }: BunchHomeProps = {}) {
   const router = useRouter();
+  // 이동이 끝나기 전 다시 누른 입력은 무시(네이티브 플로팅 버튼은 전환 중에도 남아 같은 화면이 두 번 쌓임)
+  const creatingBundle = useRef(false);
+  const startCreateBundle = () => {
+    creatingBundle.current = true;
+    router.push(BUNCH_HOME_PATHS.createBundle);
+  };
   // 번치에 나 혼자일 때 「+」·「첫 번들 만들기」를 막고 멤버 초대를 안내하는 창
   const openOverlay = useScreenOverlay();
   const server = useServerBunchHome();
@@ -248,23 +254,25 @@ export function BunchHome({
         bundlesLoading={server.kind === 'ready' && server.bundlesLoading}
         // 멤버가 2명 미만이면 번들 만들기로 들어가지 않고 초대 안내, 초안이 이미 10개면 토스트(기능명세 4.1.1 상세 동작 1)
         onCreateBundle={() =>
-          data.current.memberCount < MIN_MEMBERS_FOR_BUNDLE
-            ? openOverlay((rootProps, close) => (
-                <ConfirmDialog
-                  {...rootProps}
-                  title={BUNCH_HOME_MESSAGES.needMembersTitle}
-                  description={BUNCH_HOME_MESSAGES.needMembersDescription}
-                  confirmLabel={BUNCH_HOME_MESSAGES.needMembersInvite}
-                  cancelLabel={BUNCH_HOME_MESSAGES.needMembersCancel}
-                  onConfirm={() => {
-                    close();
-                    router.push(BUNCH_HOME_PATHS.invite);
-                  }}
-                />
-              ))
-            : (data.current.draftCount ?? 0) >= MAX_DRAFT_BUNDLES
-              ? toast(BUNCH_HOME_MESSAGES.draftLimit)
-              : router.push(BUNCH_HOME_PATHS.createBundle)
+          creatingBundle.current
+            ? undefined
+            : data.current.memberCount < MIN_MEMBERS_FOR_BUNDLE
+              ? openOverlay((rootProps, close) => (
+                  <ConfirmDialog
+                    {...rootProps}
+                    title={BUNCH_HOME_MESSAGES.needMembersTitle}
+                    description={BUNCH_HOME_MESSAGES.needMembersDescription}
+                    confirmLabel={BUNCH_HOME_MESSAGES.needMembersInvite}
+                    cancelLabel={BUNCH_HOME_MESSAGES.needMembersCancel}
+                    onConfirm={() => {
+                      close();
+                      router.push(BUNCH_HOME_PATHS.invite);
+                    }}
+                  />
+                ))
+              : (data.current.draftCount ?? 0) >= MAX_DRAFT_BUNDLES
+                ? toast(BUNCH_HOME_MESSAGES.draftLimit)
+                : startCreateBundle()
         }
         onOpenDraft={(bundleId) => void openDraft(bundleId)}
         onPressDraft={warmDraft}

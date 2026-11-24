@@ -9,19 +9,17 @@ import { checkBunchNameAvailability } from '@/shared/api/bunchNameAvailability';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
+import type { BunchProfileDraft, ProhibitedValues } from '../../lib/profileEdit';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { PERMISSION_DENIED_CODE } from '../../constants/roles';
 import { toEditableBunchProfile } from '../../model/bunchHome';
 import { bunchHomeQueryOptions, useUpdateBunchProfileMutation } from '../../queries/bunchHome';
 import { BunchHomeError } from '../home/BunchHomeError';
-import {
-  type BunchProfileDraft,
-  BunchProfileEditScreen,
-  type ProhibitedValues,
-} from './BunchProfileEditScreen';
+import { BunchProfileEditScreen } from './BunchProfileEditScreen';
 
 // 서버가 이름 중복으로 거절한 코드(번치 만들기와 같음)
 const NAME_TAKEN_CODE = 'BUNCH_001';
@@ -55,7 +53,7 @@ export function BunchProfileEdit() {
   }, [hasNoBunch, cannotEdit, router]);
 
   // 받은 값이 하나도 없을 때만 오류 화면(다시 받기만 실패하면 입력 중인 폼을 지우지 않음)
-  if ((me.isError && !me.data) || (home.isError && !home.data)) {
+  if (loadFailed(me) || loadFailed(home)) {
     return (
       <BunchHomeError
         onRetry={() => {

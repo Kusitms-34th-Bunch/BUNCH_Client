@@ -2,15 +2,15 @@
 
 import { LabeledTextField } from '@app/design-system/web';
 import { useId } from 'react';
-import type { ProfileFieldsState } from '../../hooks/useProfileFields';
-import { filteredPaste } from '../../lib/filteredPaste';
-import { closeKeyboard } from '../../lib/keyboard';
+import type { ProfileFieldsState } from '@/shared/hooks/profile/useProfileFields';
+import { closeKeyboard } from '@/shared/lib/keyboard';
+import { filteredPaste } from '@/shared/lib/profile/filteredPaste';
 import {
   NICKNAME_AVAILABLE_MESSAGE,
   NICKNAME_CHECKING_MESSAGE,
   NICKNAME_MAX_LENGTH,
   pasteNickname,
-} from '../../lib/nickname';
+} from '@/shared/lib/profile/nickname';
 import { GenderField } from './GenderField';
 
 type ProfileFieldsProps = {

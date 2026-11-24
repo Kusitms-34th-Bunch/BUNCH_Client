@@ -2,7 +2,7 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { pushDeviceRegistrationSchema, type PushDeviceRegistration } from '@app/bridge';
 import { z } from 'zod';
-import { bffApi, requestData } from './bffApi';
+import { bffApi, requestData } from './client/bffApi';
 
 const pushDeviceSchema = z.object({
   installationId: z.uuid(),

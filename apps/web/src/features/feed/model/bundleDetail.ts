@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import {
   type CharacterType,
   defaultBunchImage,
   DEFAULT_PROFILE_IMAGE,
-} from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+} from '@/shared/lib/profile/bunchProfile';
 import type { FeedBunch, FeedBundleDetail } from '../lib/types';
 import { imageOrUndefined, toDateLabel, toLocationLabel } from './feed';
 

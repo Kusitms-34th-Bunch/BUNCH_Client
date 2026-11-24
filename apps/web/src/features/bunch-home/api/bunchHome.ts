@@ -1,15 +1,14 @@
 import { normalizeError } from '@app/api-core';
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
-import { dataUrlToBlob } from '@/shared/lib/dataUrl';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
+import { dataUrlToBlob } from '@/shared/lib/image/dataUrl';
+import { bunchAccessNoticeResponseSchema, toBunchAccessNotice } from '../model/bunchAccessNotice';
 import {
-  bunchAccessNoticeResponseSchema,
   bunchHomeResponseSchema,
   bunchProfileResponseSchema,
   draftBundlesPageSchema,
   publishedBundlesPageSchema,
-  toBunchAccessNotice,
 } from '../model/bunchHome';
 
 // 데이터 없는 성공 응답(Swagger `ApiResponseUnit`)은 data가 빠지거나 null

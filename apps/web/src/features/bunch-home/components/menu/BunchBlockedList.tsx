@@ -5,6 +5,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -41,12 +42,7 @@ export function BunchBlockedList() {
     current.current = { bunchId, stale: viewer.stale };
   }, [bunchId, viewer.stale]);
 
-  if (
-    (me.isError && !me.data) ||
-    (blocks.isError && !blocks.data) ||
-    (home.isError && !home.data) ||
-    viewer.mismatch
-  ) {
+  if (loadFailed(me) || loadFailed(blocks) || loadFailed(home) || viewer.mismatch) {
     return (
       <BunchHomeError
         onRetry={() => {

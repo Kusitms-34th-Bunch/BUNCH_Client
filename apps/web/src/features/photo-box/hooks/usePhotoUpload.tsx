@@ -1,29 +1,31 @@
 'use client';
+// 크기 유지: 묶음 올리기·결과 알림·다시 시도가 같은 목록 갱신 예약과 상태 줄을 씀(한 장 전송은 lib/uploadItem)
 
-import type { PhotoSourceType, PickedPhoto, PickPhotosResult } from '@app/bridge';
+import type { PickPhotosResult } from '@app/bridge';
 import { toast } from '@app/design-system';
 import { useEffect, useRef } from 'react';
-import { toDomainId } from '@/shared/api/ids';
 import { isNativeShell, photoUploadBridge } from '@/shared/bridge/client';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { dataUrlToBlob } from '@/shared/lib/dataUrl';
-import { uploadPhoto } from '../api/photoUpload';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import { CameraPermissionDialog } from '../components/PhotoUploadDialogs';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import {
   createUploadBatchId,
-  isRetryableUploadError,
-  isUploadableJpeg,
-  isUploadLimitError,
-  isUploadOutcomeUnknown,
   runPool,
   summarizeUpload,
   UPLOAD_CONCURRENCY,
   UPLOAD_LIST_REFRESH_MS,
   uploadResultMessage,
-  type UploadOutcome,
 } from '../lib/photoUpload';
+import {
+  attemptUpload,
+  readPhoto,
+  skipPhoto,
+  type UploadItem,
+  type UploadResult,
+} from '../lib/uploadItem';
 import { isPageVisible, uploadStatusStore } from '../lib/uploadStatus';
+import { useInvalidatePhotosOf } from '../queries/photos';
 
 // 페이지가 보이면 바로, 숨어 있으면 다시 보일 때 한 번 실행
 const whenPageVisible = (run: () => void) => {
@@ -38,7 +40,6 @@ const whenPageVisible = (run: () => void) => {
   };
   document.addEventListener('visibilitychange', onChange);
 };
-import { useInvalidatePhotosOf } from '../queries/photos';
 
 export type UploadSource = 'album' | 'camera';
 
@@ -76,76 +77,20 @@ const nothingUploaded = (status: UploadStartResult['status']): UploadStartResult
   failed: 0,
 });
 
-/** 업로드할 사진 한 장: 쉘이 가공한 JPEG와 촬영 날짜·시각. 실패한 사진의 「다시 시도」는 이 값을 그대로 다시 보냄 */
-type UploadItem = {
-  image: Blob;
-  capturedDate?: string | undefined;
-  capturedTime?: string | undefined;
-  /** 쉘이 원본 EXIF에서 뽑은 촬영 시각의 UTC 오프셋과 원본 유형(이전 쉘은 없음). 「다시 시도」도 같은 값을 보냄 */
-  capturedUtcOffset?: string | undefined;
-  sourceType?: PhotoSourceType | undefined;
-  /** 쉘이 가공 전 원본 파일로 계산한 SHA-256. 「다시 시도」도 같은 값을 보냄 */
-  originalFileHash?: string | undefined;
-};
+type FinishOptions = Pick<UploadStartOptions, 'retry' | 'failuresOnly' | 'statusLine'>;
 
-type UploadResult = {
-  outcome: UploadOutcome;
-  /** 사진함에 들어간 사진의 id(새로 저장·합쳐짐·내가 이미 올린 같은 사진) */
-  photoId?: string;
-  retryItem?: UploadItem;
-  /** 사진함 한도 오류(하루·한 번에 올릴 수 있는 수)라 같은 묶음의 남은 사진도 거절됨 */
-  limited?: boolean;
-  /** 서버에 저장됐는지 알 수 없는 실패(코드 없는 5xx, 성공 응답을 읽지 못함)라 목록을 다시 받아야 함 */
-  unknown?: boolean;
-};
-
-const attempt = async (
-  bunchId: string,
-  uploadBatchId: string,
-  item: UploadItem,
-): Promise<UploadResult> => {
-  try {
-    const { photoId, result } = await uploadPhoto({ bunchId, uploadBatchId, ...item });
-    // 내가 이미 올린 같은 사진은 서버가 변경 없이 제외하므로 추가한 사진으로 세지 않음
-    return {
-      outcome: result === 'ALREADY_UPLOADED' ? 'skipped' : 'added',
-      photoId: toDomainId(photoId),
-    };
-  } catch (error) {
-    return isRetryableUploadError(error)
-      ? { outcome: 'failed-retryable', retryItem: item }
-      : {
-          outcome: 'failed',
-          limited: isUploadLimitError(error),
-          unknown: isUploadOutcomeUnknown(error),
-        };
-  }
-};
-
-// 보내지 않기로 한 사진도 쉘이 들고 있지 않도록 놓아 줌
-const skipPhoto = (photo: PickedPhoto) =>
-  photoUploadBridge.releasePickedPhotos([photo.id]).catch(() => undefined);
-
-// 쉘에서 사진 한 장을 읽어 오고 바로 놓아 줌(쉘이 캐시의 원본 복사본을 지움). 실패한 사진의 재시도는 여기서 받은 이미지로 하므로 놓아 줘도 됨
-// 쉘이 준 이미지도 보내기 전에 한 번 더 확인함(비어 있거나 JPEG가 아니거나 배포처 본문 제한을 넘으면 보내지 않고 「올리지 못한 사진」으로 셈)
-const readPhoto = async (photo: PickedPhoto): Promise<UploadItem | null> => {
-  try {
-    const { dataUrl, originalFileHash } = await photoUploadBridge.readPickedPhoto(photo.id);
-    const image = dataUrlToBlob(dataUrl);
-    if (!(await isUploadableJpeg(image))) return null;
-    return {
-      image,
-      ...(photo.capturedDate ? { capturedDate: photo.capturedDate } : {}),
-      ...(photo.capturedTime ? { capturedTime: photo.capturedTime } : {}),
-      ...(photo.capturedUtcOffset ? { capturedUtcOffset: photo.capturedUtcOffset } : {}),
-      ...(photo.sourceType ? { sourceType: photo.sourceType } : {}),
-      ...(originalFileHash ? { originalFileHash } : {}),
-    };
-  } catch {
-    return null;
-  } finally {
-    await photoUploadBridge.releasePickedPhotos([photo.id]).catch(() => undefined);
-  }
+type UploadBatch<Source> = {
+  targetBunchId: string;
+  uploadBatchId: string;
+  /** 진행을 기록할 상태 줄의 번치(기록하지 않으면 없음) */
+  statusBunchId: string | undefined;
+  sources: readonly Source[];
+  /** 보낼 파일로 준비함. 읽지 못하면 null */
+  load: (_source: Source) => Promise<UploadItem | null>;
+  /** 한도 오류 뒤 보내지 않는 사진의 정리 */
+  skip?: ((_source: Source) => Promise<unknown>) | undefined;
+  /** 「다시 시도」 묶음: 받아 둔 파일을 그대로 보내 받기 단계가 없음 */
+  retried: boolean;
 };
 
 /**
@@ -163,14 +108,12 @@ export function usePhotoUpload(bunchId: string | undefined) {
   const invalidatePhotosOf = useInvalidatePhotosOf();
   const openOverlay = useScreenOverlay();
   // 선택·촬영 창을 기다리는 사이 화면이 떠났으면 권한 안내 창을 열지 않음(떠난 화면의 창이 남지 않게)
-  const mounted = useRef(true);
+  const mounted = useMountedRef();
   // 번치마다 한 번만 걸어 두는 목록 갱신 예약(올리는 도중 새로 올라간 사진을 반영함)
   const refreshTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => {
-    mounted.current = true;
     const timers = refreshTimers.current;
     return () => {
-      mounted.current = false;
       timers.forEach((timer) => clearTimeout(timer));
       timers.clear();
     };
@@ -189,22 +132,96 @@ export function usePhotoUpload(bunchId: string | undefined) {
     );
   };
 
+  /**
+   * 사진 묶음 하나를 최대 `UPLOAD_CONCURRENCY`장씩 동시에 올리고 결과를 고른 순서대로 돌려줌
+   * 상태 줄 번치가 있으면 시작·사진별 결과·끝을 기록함
+   */
+  const runUploadBatch = async <Source,>({
+    targetBunchId,
+    uploadBatchId,
+    statusBunchId,
+    sources,
+    load,
+    skip,
+    retried,
+  }: UploadBatch<Source>): Promise<UploadResult[]> => {
+    if (statusBunchId !== undefined) uploadStatusStore.begin(statusBunchId, sources.length);
+    // `read`면 받을 때 채운 반 칸을 뺀 나머지만 채움. 다시 시도는 받기 단계가 없어 한 칸을 다 채움
+    const report = (result: UploadResult, read: boolean) => {
+      if (statusBunchId !== undefined)
+        uploadStatusStore.advance(statusBunchId, result.outcome, read);
+      return result;
+    };
+    // 한도 오류를 받으면 남은 사진은 읽지도 보내지도 않고 「올리지 못한 사진」으로 셈(어차피 거절되므로)
+    let limitReached = false;
+    try {
+      return await runPool(sources, UPLOAD_CONCURRENCY, async (source): Promise<UploadResult> => {
+        if (limitReached) {
+          await skip?.(source);
+          return report({ outcome: 'failed' }, false);
+        }
+        const item = await load(source);
+        // 사진을 읽지 못한 것도 「올리지 못한 사진」으로만 셈(다시 시도 대상 아님)
+        if (!item) return report({ outcome: 'failed' }, false);
+        if (statusBunchId !== undefined) {
+          // 쉘 사진은 받은 순간 반 칸을 채우고, 둘 다 처음 받은·보내는 사진을 썸네일로 씀
+          if (retried) uploadStatusStore.setThumbnail(statusBunchId, item.image);
+          else uploadStatusStore.markRead(statusBunchId, item.image);
+        }
+        const result = await attemptUpload(targetBunchId, uploadBatchId, item);
+        if (result.outcome === 'failed' && result.limited) limitReached = true;
+        if (result.outcome === 'added') scheduleListRefresh(targetBunchId);
+        // 다시 시도 대상은 응답이 끊겨 서버 저장 여부를 몰랐던 사진이라, 이미 있다고 나오면 방금 올라간 것으로 셈
+        return report(
+          retried && result.outcome === 'skipped' ? { ...result, outcome: 'added' } : result,
+          !retried,
+        );
+      });
+    } finally {
+      if (statusBunchId !== undefined) uploadStatusStore.end(statusBunchId);
+    }
+  };
+
+  // 결과 토스트의 「다시 시도」: 네트워크 실패만 같은 묶음 ID로 다시 올리고 이 사진들의 결과를 다시 알림
+  const retryFailed = async (
+    targetBunchId: string,
+    uploadBatchId: string,
+    retryItems: UploadItem[],
+    options: FinishOptions,
+  ) => {
+    const results = await runUploadBatch({
+      targetBunchId,
+      uploadBatchId,
+      statusBunchId: options.statusLine ? targetBunchId : undefined,
+      sources: retryItems,
+      load: (item) => Promise.resolve(item),
+      retried: true,
+    });
+    finish(targetBunchId, uploadBatchId, results, options);
+  };
+
   // 한 묶음의 결과를 집계해 토스트를 띄우고, 새로 들어간 사진이 있으면 그 번치의 사진 목록을 다시 받음
   const finish = (
     targetBunchId: string,
     uploadBatchId: string,
     results: UploadResult[],
-    options: Pick<UploadStartOptions, 'retry' | 'failuresOnly' | 'statusLine'> = {},
+    options: FinishOptions = {},
   ) => {
     const summary = summarizeUpload(results.map((result) => result.outcome));
-    // 끝나면 아래에서 한 번 더 받으므로 예약해 둔 갱신은 걷음
-    clearTimeout(refreshTimers.current.get(targetBunchId));
-    refreshTimers.current.delete(targetBunchId);
     // 응답을 받기 전에 끊긴 사진(다시 시도 대상)과 결과를 알 수 없는 실패(코드 없는 5xx 등)도 서버에는 저장됐을 수 있어 목록을 다시 받음
-    if (summary.added > 0 || summary.retryable > 0 || results.some((result) => result.unknown)) {
+    if (
+      summary.added > 0 ||
+      summary.retryable > 0 ||
+      results.some((result) => result.outcome === 'failed' && result.unknown)
+    ) {
+      // 지금 다시 받으므로 예약해 둔 갱신은 걷음. 다시 받지 않으면 같은 번치의 다른 묶음이 건 예약을 남김
+      clearTimeout(refreshTimers.current.get(targetBunchId));
+      refreshTimers.current.delete(targetBunchId);
       void invalidatePhotosOf(targetBunchId);
     }
-    const retryItems = results.flatMap((result) => (result.retryItem ? [result.retryItem] : []));
+    const retryItems = results.flatMap((result) =>
+      result.outcome === 'failed-retryable' ? [result.retryItem] : [],
+    );
     const message = uploadResultMessage(summary);
     // 올린 사진이 없으면 알릴 것이 없음
     if (message === null) return;
@@ -217,56 +234,7 @@ export function usePhotoUpload(bunchId: string | undefined) {
           ? {
               action: {
                 label: PHOTO_BOX_MESSAGES.uploadRetry,
-                // 못 올린 사진 중 네트워크 실패만 같은 묶음 ID로 다시 올리고, 끝나면 이 사진들의 결과 토스트를 다시 띄움
-                onClick: () => {
-                  // 다시 시도에서도 한도 오류를 받으면 남은 사진은 보내지 않음
-                  let limitReached = false;
-                  const statusBunchId = options.statusLine ? targetBunchId : undefined;
-                  if (statusBunchId !== undefined) {
-                    uploadStatusStore.begin(statusBunchId, retryItems.length);
-                    if (retryItems[0])
-                      uploadStatusStore.setThumbnail(statusBunchId, retryItems[0].image);
-                  }
-                  void runPool(
-                    retryItems,
-                    UPLOAD_CONCURRENCY,
-                    async (item): Promise<UploadResult> => {
-                      if (limitReached) {
-                        if (statusBunchId !== undefined) {
-                          uploadStatusStore.advance(statusBunchId, 'failed', false);
-                        }
-                        return { outcome: 'failed' };
-                      }
-                      const result = await attempt(targetBunchId, uploadBatchId, item);
-                      if (result.limited) limitReached = true;
-                      if (result.outcome === 'added') scheduleListRefresh(targetBunchId);
-                      // 아래 결과 집계와 같이, 다시 시도에서 이미 있다고 나온 사진은 방금 올라간 것으로 셈
-                      // 다시 시도는 받아 둔 파일을 그대로 보내 받기 단계가 없으므로 결과가 나올 때 한 칸을 다 채움
-                      if (statusBunchId !== undefined) {
-                        uploadStatusStore.advance(
-                          statusBunchId,
-                          result.outcome === 'skipped' ? 'added' : result.outcome,
-                          false,
-                        );
-                      }
-                      return result;
-                    },
-                  )
-                    .finally(() => {
-                      if (statusBunchId !== undefined) uploadStatusStore.end(statusBunchId);
-                    })
-                    .then((retried) =>
-                      // 다시 시도 대상은 응답이 끊겨 서버 저장 여부를 몰랐던 사진이라, 이번에 이미 있다고 나오면 방금 올라간 것으로 셈
-                      finish(
-                        targetBunchId,
-                        uploadBatchId,
-                        retried.map((result) =>
-                          result.outcome === 'skipped' ? { ...result, outcome: 'added' } : result,
-                        ),
-                        options,
-                      ),
-                    );
-                },
+                onClick: () => void retryFailed(targetBunchId, uploadBatchId, retryItems, options),
               },
             }
           : undefined,
@@ -343,43 +311,26 @@ export function usePhotoUpload(bunchId: string | undefined) {
 
     const uploadBatchId = createUploadBatchId();
     // 상태 줄을 쓰면 사진을 받을 때와 결과가 나올 때 진행을 기록함(빈 선택은 알릴 것이 없어 시작하지 않음)
-    const statusBunchId =
-      options.statusLine && picked.photos.length > 0 ? targetBunchId : undefined;
-    if (statusBunchId !== undefined) uploadStatusStore.begin(statusBunchId, picked.photos.length);
-    const report = (result: UploadResult, read: boolean) => {
-      if (statusBunchId !== undefined) {
-        uploadStatusStore.advance(statusBunchId, result.outcome, read);
-      }
-      return result;
-    };
-    // 한도 오류를 받으면 남은 사진은 읽지도 보내지도 않고 「올리지 못한 사진」으로 셈(어차피 거절되므로)
-    let limitReached = false;
-    const results = await runPool(
-      picked.photos,
-      UPLOAD_CONCURRENCY,
-      async (photo): Promise<UploadResult> => {
-        if (limitReached) {
-          await skipPhoto(photo);
-          return report({ outcome: 'failed' }, false);
-        }
-        const item = await readPhoto(photo);
-        // 사진을 읽지 못한 것도 「올리지 못한 사진」으로만 셈(다시 시도 대상 아님)
-        if (!item) return report({ outcome: 'failed' }, false);
-        // 받은 순간 진행 바를 반 칸 채우고, 처음 받은 사진을 썸네일로 씀
-        if (statusBunchId !== undefined) uploadStatusStore.markRead(statusBunchId, item.image);
-        const result = await attempt(targetBunchId, uploadBatchId, item);
-        if (result.limited) limitReached = true;
-        if (result.outcome === 'added') scheduleListRefresh(targetBunchId);
-        return report(result, true);
-      },
-    ).finally(() => {
-      if (statusBunchId !== undefined) uploadStatusStore.end(statusBunchId);
+    const results = await runUploadBatch({
+      targetBunchId,
+      uploadBatchId,
+      statusBunchId: options.statusLine && picked.photos.length > 0 ? targetBunchId : undefined,
+      sources: picked.photos,
+      load: readPhoto,
+      skip: skipPhoto,
+      retried: false,
     });
     finish(targetBunchId, uploadBatchId, results, options);
     return {
       status: 'done',
       // 같은 원본을 두 번 골랐으면 서버가 같은 사진 id를 두 번 줄 수 있어 처음 나온 순서대로 한 번만 담음
-      photoIds: [...new Set(results.flatMap((result) => (result.photoId ? [result.photoId] : [])))],
+      photoIds: [
+        ...new Set(
+          results.flatMap((result) =>
+            result.outcome === 'added' || result.outcome === 'skipped' ? [result.photoId] : [],
+          ),
+        ),
+      ],
       failed: results.filter((result) => result.outcome.startsWith('failed')).length,
     };
   };

@@ -1,6 +1,6 @@
 import { http } from 'msw';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
-import { toWireId } from '@/shared/api/ids';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
+import { toWireId } from '@/shared/api/client/ids';
 import type { MemberRole, MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';

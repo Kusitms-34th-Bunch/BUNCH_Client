@@ -17,7 +17,7 @@ vi.mock('@/shared/bridge/client', () => ({
 }));
 
 // BFF 로그인 요청의 경로·본문만 확인(204 응답 처리는 로그인 API 테스트 범위 밖)
-vi.mock('@/shared/api/bffApi', () => ({
+vi.mock('@/shared/api/client/bffApi', () => ({
   bffApi: { post: (path: string, options: { json: unknown }) => mocks.post(path, options) },
 }));
 

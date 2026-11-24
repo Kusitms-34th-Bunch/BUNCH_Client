@@ -1,7 +1,7 @@
 import { unwrapEnvelope } from '@app/api-core';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { createBrowserApi } from '@/shared/api/browserClient';
+import { createBrowserApi } from '@/shared/api/client/browserClient';
 import { mockDb } from '../db';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_MY_MEMBER_ID } from '../db/seed';
 import { fail } from '../lib/envelope';

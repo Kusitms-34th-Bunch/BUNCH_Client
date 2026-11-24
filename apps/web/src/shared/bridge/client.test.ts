@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getPendingToast, settlePendingToast } from '@/shared/lib/toastAfterNavigation';
+import { getPendingToast, settlePendingToast } from '@/shared/lib/navigation/toastAfterNavigation';
 import { appBridge, galleryBridge, isNativeShell, openTabPath, replaceTabPath } from './client';
 
 afterEach(() => vi.unstubAllGlobals());

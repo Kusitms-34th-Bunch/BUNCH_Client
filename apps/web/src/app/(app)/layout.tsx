@@ -1,13 +1,16 @@
 import type { ReactNode } from 'react';
 import { Toaster } from '@app/design-system';
 import { OverlayProvider } from 'overlay-kit';
-import { AuthGate } from '@/features/auth/components';
+import { AppInstallGuide, AppOnlyGate } from '@/features/app-install-guide/components';
+import { AuthGate } from '@/features/auth/components/AuthGate';
 import { INTRO_PATH, LOGIN_PATH } from '@/features/auth/constants/paths';
-import { PushOpenNavigator } from '@/features/bunch-home/components';
+import { PushOpenNavigator } from '@/features/bunch-home/components/notifications/PushOpenNavigator';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
-import { NativeTabBarVisibility, NativeTabSync } from '@/features/main-navigation/components';
+import { NativeTabBarVisibility } from '@/features/main-navigation/components/NativeTabBarVisibility';
+import { NativeTabSync } from '@/features/main-navigation/components/NativeTabSync';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { AppFrame } from '@/shared/components/layout/AppFrame';
+import { KeyboardViewport } from '@/shared/components/layout/KeyboardViewport';
 import { QueryProvider } from '@/shared/providers/QueryProvider';
 import { pretendardFontStyle } from '../fonts/pretendard';
 import { AppTransitions } from './AppTransitions';
@@ -15,6 +18,7 @@ import { PendingToast } from './PendingToast';
 import { RouteFocus } from './RouteFocus';
 
 // 일반 화면 틀(폭·Safe Area·높이) — 전체 화면 캔버스 화면은 이 group 밖에 배치
+// AppOnlyGate: 이 group의 화면은 앱 쉘 안에서만 열고 브라우저에서는 앱 설치 안내(초대장 /invite는 group 밖이라 그대로 열림)
 // Toaster: `toast()`가 띄우는 알림을 그리는 자리(앱에 한 번만 배치)
 // OverlayProvider: `overlay.open()`으로 여는 모달·바텀시트를 그리는 자리(overlay-kit)
 // QueryProvider: 서버 상태 캐시(TanStack Query). 모달 안 화면도 쓰도록 OverlayProvider 바깥에 배치
@@ -22,6 +26,7 @@ import { RouteFocus } from './RouteFocus';
 //   로그인 전 화면(인트로·로그인)은 auth 소유라 여기서 넘김: 그 화면에 오면 탭 화면을 끝냄
 // NativeTabSync: iOS 쉘 탭 WebView 사이에서 내 정보(지금 번치·프로필) 변화를 알리고 받아 다시 받음(Query 안이어야 함)
 // PushOpenNavigator: iOS 쉘에서 푸시를 눌러 앱을 열면 알림 목록과 같은 화면으로(Query 안이어야 함)
+// KeyboardViewport: 키보드가 떠 있는 동안 앱 틀을 보이는 높이로 줄이고 iOS가 올린 문서를 되돌림(헤더가 상태 바 뒤로 밀리지 않게)
 // RouteFocus: 다른 화면으로 이동하면 새 화면의 h1으로 초점(모든 화면 공통이라 여기 배치)
 // PendingToast: 화면 이동과 함께 예약한 토스트를 도착 화면의 전환·로딩이 끝난 뒤 띄움(모든 화면 공통이라 여기 배치)
 // AuthGate: 서버가 알려 준 로그인·가입 상태로 화면 접근을 제어(Query 안이어야 함). 가입을 마친 사용자의 도착 경로는 다른 feature 소유라 여기서 조합
@@ -38,14 +43,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <QueryProvider>
       <OverlayProvider>
         <style>{pretendardFontStyle}</style>
-        <AppFrame>
-          <AuthGate destinations={DESTINATIONS}>
-            <AppTransitions>{children}</AppTransitions>
-          </AuthGate>
-        </AppFrame>
+        <AppOnlyGate fallback={<AppInstallGuide />}>
+          <AppFrame>
+            <AuthGate destinations={DESTINATIONS}>
+              <AppTransitions>{children}</AppTransitions>
+            </AuthGate>
+          </AppFrame>
+        </AppOnlyGate>
         <NativeTabBarVisibility exitPaths={SIGNED_OUT_PATHS} />
         <NativeTabSync />
         <PushOpenNavigator />
+        <KeyboardViewport />
         <RouteFocus />
         <PendingToast />
         <Toaster />

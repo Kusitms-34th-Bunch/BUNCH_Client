@@ -1,14 +1,14 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon, LineDotsLargeIcon, toast } from '@app/design-system';
-import { IconButton } from '@app/design-system/web';
+import { Header, IconButton, LineDotsLargeIcon, toast } from '@app/design-system';
 import { useEffect, useRef, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
+import { useExitableOpen } from '@/shared/hooks/overlay/useExitableOpen';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import type {
   PhotoBoxActions,
   PhotoBoxMember,
@@ -27,12 +27,12 @@ import {
   getDeleteKind,
   needsDateChangeConfirm,
   removesDraftBundlePhoto,
-  type DateConfirmKind,
 } from '../../lib/photoActions';
 import { formatDetailDate } from '../../lib/photoDetail';
 import { getViewerHeaderClass } from '../../lib/photoViewerStyle';
+import { askDateChangeConfirm } from '../askDateChangeConfirm';
 import { PhotoDetailMenu, type PhotoDetailMenuAction } from '../PhotoDetailMenu';
-import { DateChangeConfirmDialog, DeleteConfirmDialog } from '../PhotoSelectionDialogs';
+import { DeleteConfirmDialog } from '../PhotoSelectionDialogs';
 import { PhotoViewerSwiper } from '../PhotoViewerSwiper';
 import { SavingDateSheet } from '../SavingDateSheet';
 
@@ -74,8 +74,7 @@ export function PhotoDetailScreen({
   const clientYear = useCurrentYear();
   const currentYear = currentYearProp ?? clientYear;
   // 메뉴는 닫히는 모션이 끝날 때까지 화면에 남기므로 열림과 마운트를 따로 둠
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuMounted, setMenuMounted] = useState(false);
+  const menu = useExitableOpen();
   const openOverlay = useScreenOverlay();
   const notifySaveBlocked = useSaveBlockedNotice();
   // 시트·확인 창이 떠 있는 동안 방향키로 넘기지 않음
@@ -88,16 +87,11 @@ export function PhotoDetailScreen({
     photos,
     initialPhotoId,
     onPhotoChange,
-    keyboardBlocked: menuOpen || overlayOpen || pending !== undefined,
+    keyboardBlocked: menu.open || overlayOpen || pending !== undefined,
   });
   const { activeIndex, chromeHidden } = photoViewer;
   const activePhoto = photos[activeIndex];
   const canManage = activePhoto ? canDeletePhotos([activePhoto], viewer) : false;
-
-  const toggleMenu = () => {
-    setMenuMounted(true);
-    setMenuOpen((open) => !open);
-  };
 
   const save = async () => {
     if (!activePhoto) return;
@@ -166,24 +160,6 @@ export function PhotoDetailScreen({
     }
   };
 
-  // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸, 기능명세서 3.4.1)
-  const askDateConfirm = (kind: DateConfirmKind) =>
-    new Promise<boolean>((resolve) => {
-      openOverlay(
-        (rootProps, close) => (
-          <DateChangeConfirmDialog
-            {...rootProps}
-            kind={kind}
-            onConfirm={() => {
-              resolve(true);
-              close();
-            }}
-          />
-        ),
-        () => resolve(false),
-      );
-    });
-
   const handleMenuSelect = (action: PhotoDetailMenuAction) => {
     if (pending || !activePhoto) return;
     if (action === 'save') void save();
@@ -200,7 +176,10 @@ export function PhotoDetailScreen({
           <SavingDateSheet
             {...rootProps}
             close={close}
-            beforeSave={confirmKind ? () => askDateConfirm(confirmKind) : undefined}
+            // 관리자가 다른 멤버 사진의 날짜를 바꿀 때 거치는 확인(열린 시트 위에 뜸, 기능명세서 3.4.1)
+            beforeSave={
+              confirmKind ? () => askDateChangeConfirm(openOverlay, confirmKind) : undefined
+            }
             save={(date) => changeDate(photo.id, date)}
           />
         ),
@@ -246,32 +225,28 @@ export function PhotoDetailScreen({
       header={
         <div className={getViewerHeaderClass(chromeHidden)}>
           <Header
-            leading={
-              <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-                <LineChevronLeftLargeIcon aria-hidden="true" />
-              </HeaderIconButton>
-            }
+            leading={<HeaderBackButton onClick={onBack} />}
             title={formatDetailDate(activePhoto.takenAt, currentYear)}
             trailing={
               <IconButton
                 ref={menuTriggerRef}
                 aria-label="더보기"
                 aria-haspopup="menu"
-                aria-expanded={menuOpen}
+                aria-expanded={menu.open}
                 aria-disabled={pending ? true : undefined}
-                onClick={pending ? undefined : toggleMenu}
+                onClick={pending ? undefined : menu.toggle}
               >
                 <LineDotsLargeIcon aria-hidden="true" />
               </IconButton>
             }
           />
-          {menuMounted ? (
+          {menu.mounted ? (
             <div className="right-s8 absolute top-full z-20">
               <PhotoDetailMenu
                 canManage={canManage}
-                open={menuOpen}
-                onClose={() => setMenuOpen(false)}
-                onExited={() => setMenuMounted(false)}
+                open={menu.open}
+                onClose={menu.close}
+                onExited={menu.exited}
                 onSelect={handleMenuSelect}
                 triggerRef={menuTriggerRef}
               />

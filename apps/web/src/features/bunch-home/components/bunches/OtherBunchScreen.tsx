@@ -1,12 +1,12 @@
 'use client';
 
-import { cn, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { cn, Header, toast } from '@app/design-system';
 import { FollowButton } from '@app/design-system/web';
 import { type ReactNode, useRef, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
-import { useScreenOverlay } from '@/shared/hooks/useScreenOverlay';
-import { defaultBunchImage } from '@/shared/lib/bunchProfile';
+import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import type { ListMoreQuery } from '../../lib/pages';
 import type { FollowStatus } from '../../lib/types';
 import type { OtherBunchProfile } from '../../model/otherBunch';
@@ -142,11 +142,7 @@ export function OtherBunchScreen({
       header={
         <Header
           className={background.top}
-          leading={
-            <HeaderIconButton label="뒤로 가기" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
+          leading={<HeaderBackButton onClick={onBack} />}
           trailing={more}
         />
       }

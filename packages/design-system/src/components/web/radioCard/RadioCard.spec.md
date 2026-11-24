@@ -33,7 +33,7 @@
 - 크기: 두 글자 줄이 한 줄씩이면 높이 78px, 안쪽 여백 위아래 18px·좌우 16px, 라디오와 글자 사이 14px, 제목과 설명 사이 4px, radius 8px. 부모 폭을 채운다(`w-full`).
 - 글자: 제목 15/22 Medium, 설명 12/16 Regular.
 - 긴 글자: 줄바꿈하고 카드 높이가 늘어난다. `LongLabel` story로 확인한다.
-- 누르는 동안(`:active`): 안의 `Radio`가 Pressed(회색 링·점)로 보인다. 카드 글자 쪽을 눌러도 같다(`core/radio`의 `label:active` 조건, Chromium 확인).
+- 누르는 동안(`:active`, Figma Selected=Pressed, 2026-11-25 #562): 선택 여부와 관계없이 카드 전체에 `overlay-hover`(10%)를 얹고 0.98로 줄어든다(`press-scale-large`). 안의 `Radio`가 Pressed(회색 링·점)로 보인다. 카드 글자 쪽을 눌러도 같다(`core/radio`의 `label:active` 조건, Chromium 확인).
 
 ## 접근성
 

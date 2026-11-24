@@ -7,7 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../src/splash/state';
 import { listenPushOpens } from '../src/push-open';
 import { SplashOverlay } from '../src/splash/SplashOverlay';
-import { postMessage } from '../src/web-view/AppWebView';
+import { postMessage } from '../src/web-view/app-bridge';
 
 /** 첫 화면(WebView 하나, 로그인·온보딩)과 웹 요청 시 `(tabs)` 시스템 탭 화면 사이의 전환 틀 */
 function RootLayout() {

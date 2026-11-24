@@ -35,11 +35,12 @@
 
 4번을 고르고 3번과 함께 쓴다(2026-11-23, #524). 회귀는 PR의 가짜 서버 측정으로, 운영 품질은 공개 페이지 측정과 실사용 지표로 본다. 1번은 백엔드와 측정 전용 계정이 합의되면 다시 본다.
 
-- 수집: `apps/web/src/shared/components/layout/WebVitalsReporter.tsx`가 Next `useReportWebVitals`로 LCP·INP·CLS·FCP·TTFB를 받아 PostHog `web_vitals` 이벤트로 보낸다(`captureWebVital`). PostHog의 성능 자동 수집(`capture_performance`)은 PostHog에서 확장 스크립트를 받아 와서 끈 채로 두고, Sentry 성능 추적도 쓰지 않는다(ADR 006).
+- 수집: `apps/web/src/shared/components/layout/WebVitalsReporter.tsx`가 Next `useReportWebVitals`로 LCP·CLS·FCP·TTFB를, `web-vitals/attribution`의 `onINP`로 INP를 받아 PostHog `web_vitals` 이벤트로 보낸다(`captureWebVital`). PostHog의 성능 자동 수집(`capture_performance`)은 PostHog에서 확장 스크립트를 받아 와서 끈 채로 두고, Sentry 성능 추적도 쓰지 않는다(ADR 006).
 - 동의: 제품 분석에 동의한 회원만 보낸다(ADR 018). 첫 화면 지표는 로그인 확인보다 먼저 나오므로 동의가 정해질 때까지 최대 20건을 모아 두었다가, 동의하면 보내고 아니면 버린다. 미동의로 정해진 뒤에 나온 지표는 같은 방문에서 나중에 동의해도 보내지 않는다. 동의 상태가 SDK 로딩 중에 바뀌면 마지막 호출만 따른다.
 - 속성: 지표 이름·지표 ID(`metric_id`)·값(ms, CLS는 점수)·평가(`rating`)·이동 종류·경로·`surface`(앱 WebView면 `app`, 아니면 `web`). 경로는 보내기 직전 정제로 숫자 ID와 초대 토큰을 감춘다. 사용자 글자는 보내지 않는다.
+- INP 원인(2026-11-24, #534): 운영 앱 p75에서 LCP는 1.1~1.45초로 좋았지만 INP가 번치·피드·MY에서 430~480ms(표본 7~27)라 어떤 조작이 느린지 함께 받는다. INP만 `web-vitals` 패키지의 attribution 빌드(`web-vitals/attribution`의 `onINP`)로 직접 받고 Next hook의 INP는 버린다(Next 16 `useReportWebVitals`는 원인 정보가 없는 빌드를 직접 불러 `experimental.webVitalsAttribution`이 적용되지 않음). 패키지는 Sentry·PostHog가 이미 쓰는 6.2.x라 설치가 늘지는 않지만, Next 내장 web-vitals가 hook 때문에 남아 attribution `onINP` 코드만큼 클라이언트 번들이 커진다. INP 이벤트에만 `inp_target`(누른 요소의 태그·class·id 선택자, 숫자는 모두 `:n`, 120자까지), `inp_type`, `inp_input_delay`·`inp_processing`·`inp_presentation`(ms), `inp_load_state`, `inp_script_type`·`inp_script_source`(가장 오래 걸린 스크립트의 종류와 파일 이름. 같은 출처 `/_next/static/` 앱 청크만 파일 이름이고, 그 밖은 `inline`·`external`. 인라인 스크립트는 주소가 문서 주소라 초대 토큰이 섞일 수 있어서다. 보안 리뷰)를 더한다. 화면별로 `inp_target`을 묶어 p75 처리 시간이 큰 조작부터 고친다(같은 절의 「느린 조작 찾기」 쿼리).
 - 표본: 방문(문서)마다 한 번 정한다. 사용자가 적은 지금은 전부(`SAMPLE_RATE = 1`)이고, 이벤트 한도(ADR 018, 월 100만 건)에 다가가면 줄인다.
-- 기준값: 화면(경로)별 75번째 백분위를 본다. 화면 이동 뒤 표본(`navigation_type`이 `soft-navigation`)은 첫 로드와 나눠 본다. CLS·INP는 같은 방문에서 값이 바뀌면 같은 `metric_id`로 다시 오므로 ID별 마지막 값만 쓴다. PostHog 대시보드 구성은 저장소 밖이라 아직 하지 않았다(2026-11-23).
+- 기준값: 화면(경로)별 75번째 백분위를 본다. 화면 이동 뒤 표본(`navigation_type`이 `soft-navigation`)은 첫 로드와 나눠 본다. CLS·INP는 같은 방문에서 값이 바뀌면 같은 `metric_id`로 다시 오므로 ID별 마지막 값만 쓴다. PostHog 대시보드 구성은 저장소 밖이라 아직 하지 않았다(2026-11-23). 보는 방법(복사해 쓰는 PostHog SQL)은 `docs/workflows/performance.md`의 「운영 Web Vitals 보기」에 둔다(2026-11-24 첫 확인).
 - 한계: 경로는 측정한 화면 주소(`navigationURL`)를 쓰되, 이를 주지 않는 브라우저에서는 보고 시점의 경로라 INP·CLS가 옮긴 화면으로 기록될 수 있다. 동의하지 않은 회원과 로그인 전 화면은 빠진다.
 
 ## 결정 전 상태(2026-11-15~23)

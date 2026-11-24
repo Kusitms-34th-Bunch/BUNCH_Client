@@ -36,7 +36,7 @@
 
 - Figma에 컴포넌트로 정의된 UI(버튼, 입력, 헤더, 다이얼로그처럼 모양과 상태·접근성 계약을 가진 부품)는 사용처 수와 관계없이 디자인 시스템에 둔다. 두 곳 이상 쓰일 때까지 기다리지 않는다.
 - 패키지 안은 두 구역으로 나눈다. 폴더 이름은 그 UI를 쓰는 앱 폴더 이름을 따른다.
-  - `src/components/core/`: 모든 앱(web·admin)이 쓰는 기본 부품. 제품 문구·route·데이터를 모른다. 공개 주소는 `@app/design-system`이다.
+  - `src/components/core/`: 모든 앱(web·admin)이 쓰는 기본 부품. 제품 문구·route·데이터를 모른다. 공개 주소는 `@app/design-system`이다. 앱은 `tokens.css`·`utilities.css`를 import하고 Tailwind `@source`로 패키지 소스를 스캔 등록해야 class가 생긴다(web은 `apps/web/src/app/globals.css`, admin은 `apps/admin/src/index.css`에서 core·아이콘만 스캔, 2026-11-25 #564).
   - `src/components/web/`: `apps/web` 전용 UI(예: 하단 내비게이션 `BottomNavigation`). BUNCH 사용자 앱의 문구·모양을 가질 수 있다. 공개 주소는 `@app/design-system/web`이고 루트 barrel에는 포함하지 않는다.
 - 구역 선택 질문은 하나다. "BUNCH 사용자 앱에서만 의미가 있는가?" 예면 `web`, 아니면 `core`. `web`에서 어드민도 필요해지면 제품 문구를 props로 빼고 `core`로 옮긴다.
 - 의존 방향은 한쪽이다. `web`은 `core`를 쓸 수 있고, `core`는 `web`을 import하지 않는다(ESLint `no-restricted-imports`로 검사). `apps/admin`은 `@app/design-system/web`을 import하지 않는다(같은 규칙).
@@ -44,7 +44,7 @@
 - DS 컴포넌트를 묶어 domain 문구, route, 데이터, 사용자 행동을 붙이는 조합은 앱의 `src/features/<feature>/`에 둔다(예: 탭 4개의 라벨·경로·현재 탭 판정).
 - 화면 틀(`AppFrame`, `PageShell`)과 route shell처럼 앱 전용 layout은 디자인 시스템에 두지 않는다.
 - 한 화면에서만 쓰는 일회성 배치(Figma 컴포넌트가 아닌 화면 조립)는 DS가 아니라 page·feature 가까이에 둔다.
-- `web` 컴포넌트의 Storybook title은 `Web/<종류>/<이름>`이다. 종류는 Button, Selection, Input, ListItem, Card, Profile, Photo, Navigation, Overlay, Feedback 중 하나다(렌더러는 틀 아래, 예: `Web/Overlay/BottomSheet/ConfirmSheet`). 폴더는 종류로 나누지 않고 구역 바로 아래에 둔다. 생성기는 `Components/<이름>`을 만들므로 `web`이면 title을 고친다. 새로 만들기 전에 같은 종류 아래에 비슷한 컴포넌트가 있는지 먼저 본다.
+- `web` 컴포넌트의 Storybook title은 `Web/<종류>/<이름>`이다. 종류는 Button, Selection, Input, ListItem, Card, Profile, Photo, Navigation, Overlay, Feedback, Feed 중 하나다(렌더러는 틀 아래, 예: `Web/Overlay/BottomSheet/ConfirmSheet`). 폴더는 종류로 나누지 않고 구역 바로 아래에 둔다. 생성기는 `Components/<이름>`을 만들므로 `web`이면 title을 고친다. 새로 만들기 전에 같은 종류 아래에 비슷한 컴포넌트가 있는지 먼저 본다.
 - 어드민 전용 UI가 DS 수준의 검증(Storybook·Chromatic)이 필요해지면 그때 `src/components/admin/`을 추가한다. 비어 있는 구역은 미리 만들지 않는다.
 
 ## 생성 구조

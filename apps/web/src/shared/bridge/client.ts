@@ -1,6 +1,6 @@
 import type { AppBridge, AppBridgeMethods, AppPostMessageSchema, ShareParams } from '@app/bridge';
 import { linkBridge } from '@webview-bridge/web';
-import { toastAfterNavigation } from '@/shared/lib/toastAfterNavigation';
+import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 
 /** 일반 브라우저용 폴백 제공, 메서드 추가 시 packages/bridge 계약과 함께 갱신 필요 */
 export const appBridge = linkBridge<AppBridge, AppPostMessageSchema>({

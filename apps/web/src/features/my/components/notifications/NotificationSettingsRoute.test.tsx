@@ -11,7 +11,7 @@ import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testin
 import { NotificationSettingsRoute } from './NotificationSettingsRoute';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
-vi.mock('@/shared/lib/toastAfterNavigation', () => ({ toastAfterNavigation }));
+vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
 
 const replace = vi.fn();
 const back = vi.fn();

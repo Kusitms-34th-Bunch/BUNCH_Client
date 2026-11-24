@@ -9,12 +9,33 @@ permissions:
   issues: write
 
 jobs:
-  create:
+  # 공개 저장소라 누구나 이슈를 열 수 있어, 저장소 쓰기 권한(write 이상)이 있는 사람이 연 이슈만 브랜치를 만듦
+  # author_association은 org 멤버십을 비공개로 둔 팀원을 CONTRIBUTOR·NONE으로 보내 걸러질 수 있어 권한을 직접 조회
+  authorize:
     if: github.event.issue.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      allowed: ${{ steps.permission.outputs.allowed }}
+    steps:
+      - id: permission
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          permission=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$AUTHOR/permission" --jq .permission || echo none)
+          case "$permission" in
+            admin|maintain|write) echo "allowed=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "쓰기 권한이 없는 작성자($permission)라 브랜치를 만들지 않습니다."; echo "allowed=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+  create:
+    needs: authorize
+    if: needs.authorize.outputs.allowed == 'true'
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.repository.default_branch }}
 
@@ -54,7 +75,7 @@ jobs:
       - name: Apply issue metadata
         id: metadata
         if: steps.work.outputs.matched == 'true' && steps.base.outputs.found == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           ISSUE_TITLE: ${{ steps.work.outputs.issue_title }}
           LABEL_NAME: ${{ steps.work.outputs.label }}
@@ -106,7 +127,7 @@ jobs:
 
       - name: Share branch name
         if: steps.work.outputs.matched == 'true' && steps.base.outputs.found == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           BRANCH_NAME: ${{ steps.work.outputs.branch_name }}
           BASE_BRANCH: ${{ steps.base.outputs.ref }}
@@ -175,7 +196,7 @@ jobs:
       # 예: 기준 브랜치가 workflow 파일을 바꿨으면 GITHUB_TOKEN(workflows 권한 없음)으로는 push가 거부될 수 있음
       - name: Report branch creation failure
         if: failure() && steps.work.outputs.matched == 'true' && (steps.base.outcome == 'failure' || steps.branch.outcome == 'failure')
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           BRANCH_NAME: ${{ steps.work.outputs.branch_name }}
           BASE_BRANCH: ${{ steps.base.outputs.ref }}
@@ -211,7 +232,7 @@ jobs:
 
       - name: Report missing base branch
         if: steps.work.outputs.matched == 'true' && steps.base.outputs.found != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           BASE_BRANCH: ${{ steps.base.outputs.ref }}
         with:
@@ -231,7 +252,7 @@ jobs:
 
       - name: Report invalid issue form
         if: steps.work.outputs.matched != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.issues.createComment({

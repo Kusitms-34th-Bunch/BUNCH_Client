@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { requireWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { requireWireId } from '@/shared/api/client/ids';
 import { bundleKoksSchema, kokSchema } from '../model/kok';
 
 /** 번들 장소별 지금 번치의 콕 여부(명세 021, 다른 번들·광고에서 콕한 같은 장소도 콕한 것) */

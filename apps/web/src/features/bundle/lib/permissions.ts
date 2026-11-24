@@ -1,4 +1,5 @@
-import type { BunchRole, Draft, DraftMember, DraftViewer } from './types';
+import { isAdminRole } from '@/shared/lib/bunchRole';
+import type { Draft, DraftMember, DraftViewer } from './types';
 
 export type DraftAccess = {
   /** 이 초안의 참여 멤버인지. 아니면 보기 전용 */
@@ -12,8 +13,6 @@ export type DraftAccess = {
   /** 사진을 더할 수 있는지: 참여 멤버 모두(접근 권한 표의 「제목·사진·위치·날짜」) */
   canAddPhoto: boolean;
 };
-
-const isAdminRole = (role: BunchRole) => role === 'owner' || role === 'coOwner';
 
 /** docs/specs/bundle-create.md 「대상 사용자와 접근 권한」 표 */
 export const getDraftAccess = (draft: Draft, viewer: DraftViewer): DraftAccess => {

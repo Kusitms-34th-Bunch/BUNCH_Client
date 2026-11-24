@@ -8,7 +8,7 @@ const publicDir = join(process.cwd(), 'public');
 describe('홈 화면 추가(PWA) 매니페스트', () => {
   const data = manifest();
 
-  it('이름은 bunch이고 주소창 없는 앱으로 번치 탭에서 시작한다', () => {
+  it('이름은 BUNCH이고 주소창 없는 앱으로 번치 탭에서 시작한다', () => {
     expect(data).toMatchObject({
       name: 'BUNCH',
       short_name: 'BUNCH',

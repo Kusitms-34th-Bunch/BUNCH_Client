@@ -1,10 +1,10 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { getMemberships, transferOwner } from '@/shared/api/bunchMemberships';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { toDomainId } from '@/shared/api/ids';
-import { DEFAULT_PROFILE_IMAGE, defaultBunchImage } from '@/shared/lib/bunchProfile';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { toDomainId } from '@/shared/api/client/ids';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
+import { DEFAULT_PROFILE_IMAGE, defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import { clearPersistedQueryStorage } from '@/shared/query/persistence';

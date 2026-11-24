@@ -1,8 +1,8 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { toDomainId } from '@/shared/api/ids';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import { toDomainId } from '@/shared/api/client/ids';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import type { PhotoBoxPhoto } from '../lib/types';
 
 /**

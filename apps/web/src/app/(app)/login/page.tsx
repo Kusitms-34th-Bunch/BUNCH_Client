@@ -4,9 +4,40 @@ import { LOGIN_PATH } from '@/features/auth/constants/paths';
 import { BUNCH_HOME_PATHS } from '@/features/bunch-home/constants/paths';
 import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { isDevTokenLoginEnabled } from '@/shared/api/server/devTokenFlag';
+import {
+  APP_STORE_APP_ID,
+  SITE_NAME,
+  SITE_OG_IMAGE,
+  SITE_ORIGIN,
+  SITE_SLOGAN,
+} from '@/shared/constants/site';
 
-// 계정 흐름이라 검색에서 제외
-export const metadata: Metadata = { title: '로그인', robots: { index: false } };
+// 서비스 첫 화면이라 유일한 색인 대상(robots·sitemap). 이미지 절대 주소는 Next 기본값(docs/workflows/seo.md)
+const TITLE = `${SITE_NAME} - ${SITE_SLOGAN}`;
+const PAGE_URL = `${SITE_ORIGIN}${LOGIN_PATH}`;
+
+export const metadata: Metadata = {
+  title: { absolute: TITLE },
+  description: SITE_SLOGAN,
+  alternates: { canonical: PAGE_URL },
+  // iPhone·iPad Safari로 열었을 때 위쪽 앱 배너(앱 WebView·인앱 브라우저에는 안 뜸)
+  itunes: { appId: APP_STORE_APP_ID },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    url: PAGE_URL,
+    locale: 'ko_KR',
+    title: TITLE,
+    description: SITE_SLOGAN,
+    images: [SITE_OG_IMAGE],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: SITE_SLOGAN,
+    images: [SITE_OG_IMAGE.url],
+  },
+};
 
 // 가입을 마친 사용자의 도착 화면은 다른 feature 소유라 route에서 조합해 넘김
 const DESTINATIONS = {

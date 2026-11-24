@@ -1,7 +1,7 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 
 /** `GET /api/v1/members/me/onboarding` 응답. 로그인 뒤 어느 화면으로 보낼지 정하는 데만 씀 */
 const onboardingSchema = z.object({

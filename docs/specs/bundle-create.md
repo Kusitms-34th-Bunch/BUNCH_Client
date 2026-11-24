@@ -235,6 +235,14 @@
 - 성공: 초안 생성 후 이동, 추천 적용 토스트, 멤버 추가·제외 토스트, 사진 추가 적용 토스트, 저장 완료 표시, 발행 토스트.
 - 접근성: 사진 선택 번호는 선택 상태·순서로 읽혀야 한다. 길게 눌러 순서 바꾸기는 키보드·스크린 리더용 대체(예: 앞·뒤로 옮기기 동작)가 필요하다. 편집 중 표시와 저장 상태, 연결 끊김 배너는 상태 변화로 읽혀야 한다(live region).
 
+## 모션
+
+화면별 전환·모션의 결정과 확인 기록이다. 공용 규칙은 [motion.md](../architecture/motion.md)를 따른다.
+
+- 번들 작성 화면 이동 (2026-11-02, 이슈 #173): 작성 화면 ↔ 참여 멤버 관리, 작성 화면 ↔ 크게 보기는 온보딩과 같은 `slide` 양방향 규칙이다(기획 확인, 시간은 [motion.md](../architecture/motion.md) 「화면 이동 시간」의 350ms). 동적 route라 고정 id(`BUNDLE_PATHS.transitionIds`의 draft·members·viewer)를 규칙과 각 page의 DOM에 함께 쓴다. 사진 캡션 화면은 제거되어 규칙도 없다(#354). Chrome(375px)에서 새 화면 341→0·이전 화면 0→-375, 뒤로 가기는 반대로 약 300ms에 움직이는 것을 네 방향 모두 확인했고(300ms 설정 때), 실기기와 동작 줄이기는 확인하지 않았다.
+- 번들 만들기 추천 상세 (2026-11-01, 이슈 #161): 사진 선택 `/bunch/bundles/new`와 추천 번들 상세 사이는 `slide`이고(기획은 200ms, 2026-11-25 #560부터 다른 화면 이동과 같은 350ms) 양방향 규칙 하나다. 상세는 동적 route라 약관 원문처럼 고정 id(`BUNDLE_SELECT_PATHS.transitionIds.recommendation`)를 규칙과 각 화면 DOM의 `data-ssgoi-transition`에 함께 쓴다. 곡선은 설계서의 Ease In 대신 처음에는 Ease Out(온보딩과 같은 합의)이었고, 지금은 화면 이동 공통 `cubic-bezier(0.4, 0, 0.2, 1)`이다. 상세 ↔ 뷰어 전환은 시안이 없어 등록하지 않았다. Chromium(headless 375px)에서 프레임을 재서 새 화면 324→0·이전 화면 0→-375, 약 185ms로 끝나는 것을 확인했고(200ms 설정 때), 실기기와 동작 줄이기는 아직 확인하지 않았다.
+- 번치 홈 「번들 만들기」 → 사진 선택(`sheet`)은 [bunch-home.md](./bunch-home.md)의 「모션」에 있다.
+
 ## API 계약
 
 백엔드 명세(API 명세 v5)가 있다. 사진 픽 저장은 `PUT /bunches/{bunchId}/bundles/{id}/photos/{photoId}/pick`으로 연결했고(#402), 나머지 동작은 각 이슈에서 연결하며 그때 method·path·필드를 확인한다. 아래는 화면이 필요로 하는 동작 목록이다. 일반 요청은 범용 BFF 프록시로 호출한다(`docs/architecture/api-boundary.md`).

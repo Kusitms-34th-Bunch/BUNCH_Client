@@ -1,10 +1,10 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import type { CharacterType } from '@/shared/lib/bunchProfile';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
-import { isSafeImageUrl } from '@/shared/lib/safeImageUrl';
+import type { CharacterType } from '@/shared/lib/profile/bunchProfile';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
+import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { bunchSchema, toCreatedBunch, type CreatedBunch } from './bunches';
 
 type Schemas = components['schemas'];

@@ -249,7 +249,7 @@ describe('usePhotoBox', () => {
   it('날짜 있는 목록과 없는 목록에 같은 사진이 있으면 한 번만 보인다', async () => {
     const row = {
       photoId: 1,
-      thumbnailUrl: '/mock/photos/S1-thumb.jpg',
+      thumbnailUrl: '/mock/photos/S1-thumb.webp',
       uploaderIds: [1],
       usedInDraftBundle: false,
     };
@@ -271,7 +271,7 @@ describe('usePhotoBox', () => {
   it('목록이 여러 쪽이어도 마지막 쪽까지 모아 전체를 돌려준다', async () => {
     const photo = (photoId: number) => ({
       photoId,
-      thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
+      thumbnailUrl: `/mock/photos/${photoId}-thumb.webp`,
       capturedDate: '2026-10-18',
       uploaderIds: [1],
       usedInDraftBundle: false,
@@ -298,7 +298,7 @@ describe('usePhotoBox', () => {
     let calls = 0;
     const photo = (photoId: number) => ({
       photoId,
-      thumbnailUrl: '/mock/photos/S1-thumb.jpg',
+      thumbnailUrl: '/mock/photos/S1-thumb.webp',
       capturedDate: '2026-10-18',
       uploaderIds: [1],
       usedInDraftBundle: false,
@@ -337,7 +337,7 @@ describe('usePhotoBox', () => {
 describe('usePhotoBox 이어서 불러오기', () => {
   const photo = (photoId: number) => ({
     photoId,
-    thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
+    thumbnailUrl: `/mock/photos/${photoId}-thumb.webp`,
     capturedDate: '2026-10-18',
     uploaderIds: [1],
     usedInDraftBundle: false,

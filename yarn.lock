@@ -23,6 +23,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@app/admin@workspace:apps/admin"
   dependencies:
+    "@app/design-system": "workspace:*"
     "@app/lint-config": "workspace:*"
     "@app/ts-config": "workspace:*"
     "@babel/core": "catalog:"
@@ -208,6 +209,7 @@ __metadata:
     typescript: "catalog:"
     vite: "catalog:"
     vitest: "catalog:"
+    web-vitals: "npm:^6.2.3"
     zod: "catalog:"
   languageName: unknown
   linkType: soft

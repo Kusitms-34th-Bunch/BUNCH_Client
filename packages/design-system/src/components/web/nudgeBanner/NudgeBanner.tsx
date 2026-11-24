@@ -16,7 +16,7 @@ export const NudgeBanner = ({ children, className, ...props }: NudgeBannerProps)
     type="button"
     {...props}
     className={cn(
-      'bg-surface-secondary rounded-r4 px-padding-p8 py-padding-p7 gap-s4 group flex w-full cursor-pointer touch-manipulation items-center justify-between text-left',
+      'press-scale-large bg-surface-secondary rounded-r4 px-padding-p8 py-padding-p7 gap-s4 group flex w-full cursor-pointer touch-manipulation items-center justify-between text-left',
       // 눌림은 바탕 layer로 겹쳐 글자는 그대로 유지
       'enabled:active:bg-[linear-gradient(var(--color-overlay-pressed),var(--color-overlay-pressed))]',
       'disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',

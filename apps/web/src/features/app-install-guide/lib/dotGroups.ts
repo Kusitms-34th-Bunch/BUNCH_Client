@@ -1,0 +1,14 @@
+// Figma 「Dot Pattern / animated」(8038:186719)의 점 위치. 10px 격자(가로 144칸·세로 20칸) 칸 번호(행×144+열)를 36진수 세 글자씩 이어 씀
+// 묶음 8개는 Figma 「dots 1」~「dots 8」 그대로(반짝임·이동 단위)
+export const DOT_GROUPS = [
+  '0gc0wq0y814g1571bn1bp1c21de1e01e81fn1g31gf1h71hp1i71ih1nq1ov1pa1pl1q41qb1qd1qe1rs1sk1sv1tg1tm1to1ts1wj1xn20e20h20r21a21g22y23824a24i26j26l26w27u27v27w',
+  '0oe0w411h15317m18v1c11c51c91cm1dm1eg1es1ff1gn1gx1h11ic1jo1k71l41li1lo1mi1ml1od1on1pn1qj1qk1qp1qv1s11sc1sq1su1u31xb1xj1zg20220i21021221921q23a23k24825l25q26b26v27927s',
+  '0ma0qe0wd10r10x11311m12f14q15a15l18c18f18p1ah1al1aq1d01fi1gv1kq1kw1l61nm1o51oh1sw1tl1uo1wh1wk1yw20920f22423i26m26u27i',
+  '0wu12b14z18518l1911aa1bf1bs1cd1ek1fo1hm1jn1k61kc1l31lq1mg1mk1ot1rb1ri1rl1rp1t61tk1tq1uc1uq1ur1ut1w91wb1yj1z11z320j24e25327427p',
+  '0p30t30yg0zq13n14r14t17i18r18u19l1a41ai1ce1ee1gr1h31kg1ks1lt1nh1ni1nj1o91ph1qf1si1ss1t41un1vd1ye1ys1zn21m22o22q22x23923h23s24r275',
+  '0or0t50vj0wg0wp0ws0yk0yu14515q19519j1a71ad1c81ei1em1ga1gt1hi1hj1id1ju1ku1l01lc1lk1mo1of1or1p61pj1qr1rj1t21uk1ve1vo1vq1vu1ws1wu1y91yd1yz20b20s21821c22g22u22v23t24d24g25f25n27x',
+  '0sf0sr0vk0xa10y1931bh1bo1cw1h91il1jl1le1ma1nl1no1ow1p11pg1rk1s81u91ua1ue1ui1w31x51xl1xp1yn1yt20821i21o22s23u24f24h24x25625925j26r',
+  '0kg0wv0yh10c10d12g14a15416g18x1a91bj1c41co1cp1cs1ct1cu1ew1fm1g71gd1gi1gp1ia1if1ii1jh1jk1k01ke1l71l81lf1mb1p31p51p91pk1qi1rh1sa1sd1t81u81ug1w21w71wf1wg1wp1x31xo20720c20g20y21622k24924l25g26f26h26p26t',
+] as const;
+
+export const DOT_GRID = { columns: 144, rows: 20, cell: 10 } as const;

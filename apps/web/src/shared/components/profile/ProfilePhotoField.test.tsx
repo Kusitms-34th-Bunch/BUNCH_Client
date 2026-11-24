@@ -3,7 +3,7 @@ import { toast } from '@app/design-system';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PROFILE_IMAGE_RULES } from '../../lib/imageFile';
+import { PROFILE_IMAGE_RULES } from '@/shared/lib/image/imageFile';
 import { ProfilePhotoField } from './ProfilePhotoField';
 
 vi.mock('@app/design-system', async (importOriginal) => ({
@@ -28,7 +28,7 @@ const picker = vi.hoisted(() => {
     handleFileChange: vi.fn(),
   };
 });
-vi.mock('../../hooks/usePhotoPicker', () => ({
+vi.mock('@/shared/hooks/native/usePhotoPicker', () => ({
   usePhotoPicker: (options: PickerOptions) => {
     picker.options = options;
     return picker;

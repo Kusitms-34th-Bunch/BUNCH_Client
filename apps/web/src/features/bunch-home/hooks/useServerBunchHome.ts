@@ -7,7 +7,8 @@ import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchHomeDetail, BunchSummary } from '../lib/types';
 import { itemsOfPages, type ListMoreQuery } from '../lib/pages';
-import { accessNoticeIdOf, toBunchHomeDetail, toBunchSummaries } from '../model/bunchHome';
+import { accessNoticeIdOf } from '../model/bunchAccessNotice';
+import { toBunchHomeDetail, toBunchSummaries } from '../model/bunchHome';
 import {
   bunchHomeQueryOptions,
   draftBundlesQueryOptions,
@@ -67,18 +68,14 @@ export function useServerBunchHome(): ServerBunchHome {
       members.data ?? [],
     );
     if (!current) return undefined;
-    // 전환 목록은 홈을 막지 않음: 못 받으면 지금 번치 하나로 보임
-    const bunches: readonly BunchSummary[] = myBunches.data
-      ? toBunchSummaries(myBunches.data, current.id)
-      : [
-          {
-            id: current.id,
-            name: current.name,
-            imageSrc: current.imageSrc,
-            alertCount: home.data.unreadCount ?? 0,
-            access: 'active',
-          },
-        ];
+    // 전환 목록은 홈을 막지 않음: 못 받았거나 낡았어도 지금 번치는 보임
+    const bunches: readonly BunchSummary[] = toBunchSummaries(myBunches.data, {
+      id: current.id,
+      name: current.name,
+      imageSrc: current.imageSrc,
+      alertCount: home.data.unreadCount ?? 0,
+      access: 'active',
+    });
     const atBunchLimit = myBunches.data
       ? myBunches.data.activeCount >= myBunches.data.maxActiveCount
       : false;

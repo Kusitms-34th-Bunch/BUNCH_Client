@@ -3,8 +3,9 @@ import { mockDb } from '@/mocks/db';
 import { MOCK_BUNCH_ID, MOCK_MY_MEMBER_ID, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 // 가짜 서버 응답에 기대므로 직접 연결(PR의 `--changed`가 handler 변경 때 이 테스트를 고르게)
 import '@/mocks/server';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { createBundle, editPublishedBundle, getBundle } from './bundles';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { editPublishedBundle } from './bundleEdit';
+import { createBundle, getBundle } from './bundles';
 
 const bunchId = String(MOCK_BUNCH_ID);
 // 시작 데이터의 발행 번들(번치 홈의 완성된 번들 C1)

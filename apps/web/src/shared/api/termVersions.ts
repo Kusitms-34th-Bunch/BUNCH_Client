@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { bffApi, requestData } from './bffApi';
+import { bffApi, requestData } from './client/bffApi';
 
 /** 서버의 약관 종류(`GET /auth/terms`의 `type`, 동의 저장의 `type`) */
 export const SERVER_TERM_TYPES = ['SERVICE', 'PRIVACY', 'AGE_OVER_14', 'DEMOGRAPHICS'] as const;

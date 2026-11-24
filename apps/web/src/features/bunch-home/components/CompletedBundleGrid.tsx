@@ -1,7 +1,7 @@
 import { LineMemberSmallIcon } from '@app/design-system';
 import Link from 'next/link';
 import { type RefObject, useState } from 'react';
-import { bundleHeroKey } from '@/shared/lib/heroKeys';
+import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import type { CompletedBundle } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
 import { BUNCH_HOME_PATHS } from '../constants/paths';
@@ -31,7 +31,7 @@ export function CompletedBundleGrid({
 }: CompletedBundleGridProps) {
   return (
     <ul ref={listRef} tabIndex={-1} className="px-s1 pt-s1 grid grid-cols-3 gap-px outline-none">
-      {bundles.map((bundle) => (
+      {bundles.map((bundle, index) => (
         <li
           key={bundle.id}
           // 칸은 자르지 않음: hero가 날아가는 사본을 링크 옆(이 칸 안)에 넣어서, 자르면 사본이 칸 밖에서 보이지 않음(사진 자르기는 링크가 함)
@@ -63,6 +63,7 @@ export function CompletedBundleGrid({
             <span className="block size-full">
               <CoverImage
                 src={bundle.coverSrc}
+                lazy={index >= EAGER_COVERS}
                 alt={
                   bundle.memberOnly
                     ? `${bundle.title}, ${BUNCH_HOME_MESSAGES.bundleMemberOnly}`
@@ -85,6 +86,9 @@ export function CompletedBundleGrid({
   );
 }
 
+// 첫 화면에 보이는 줄(3열 × 4줄)은 바로 받고 그 아래는 다가올 때(번치 탭의 LCP가 첫 칸 사진이라 위쪽은 미루지 않음, #534)
+const EAGER_COVERS = 12;
+
 // 한 번 다 받은 표지 주소. 상세에서 돌아와 격자를 다시 그릴 때 회색 칸으로 비었다가 나타나지 않게(전환이 그 칸으로 접힘)
 // 계속 쌓이지 않게 상한을 넘으면 비움
 const shownCovers = new Set<string>();
@@ -95,7 +99,7 @@ const rememberShownCover = (src: string) => {
 };
 
 /** 대표 사진: 칸의 회색 배경 위에서 다 받으면 짧게 나타남(받지 못하면 회색 칸 유지, 이미 본 사진은 바로) */
-function CoverImage({ src, alt }: { src: string; alt: string }) {
+function CoverImage({ src, alt, lazy }: { src: string; alt: string; lazy: boolean }) {
   // 받은 사진 주소. 주소가 바뀌면 다시 숨겼다가 받은 뒤 나타남
   const [loadedSrc, setLoadedSrc] = useState<string>();
   const loaded = loadedSrc === src || shownCovers.has(src);
@@ -113,6 +117,8 @@ function CoverImage({ src, alt }: { src: string; alt: string }) {
       src={src}
       alt={alt}
       decoding="async"
+      // 이미 받은 사진은 바로(상세에서 아래 칸으로 돌아오는 전환 첫 프레임이 비지 않게)
+      loading={lazy && !shownCovers.has(src) ? 'lazy' : undefined}
       onLoad={() => {
         rememberShownCover(src);
         setLoadedSrc(src);

@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, cn, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
+import { Button, cn, Header, toast } from '@app/design-system';
 import { FollowListItem, MenuTabs, NudgeBanner } from '@app/design-system/web';
 import { type RefObject, useRef, useState } from 'react';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { ProfileListSkeleton } from '@/shared/components/skeleton/ProfileRowSkeleton';
 import type { FollowStatus } from '../lib/types';
@@ -178,7 +178,7 @@ export function BunchFollowsScreen({
                         variant={bunch.followStatus === 'none' ? 'primary' : 'secondarySubtle'}
                         aria-label={`${bunch.name} ${label}${STATUS_ACTIONS[bunch.followStatus]}`}
                         aria-disabled={busy || undefined}
-                        className={cn('transition-opacity', busy && 'opacity-60')}
+                        className={cn(busy && 'opacity-60')}
                         onClick={() => void toggle(bunch)}
                       >
                         {label}
@@ -196,17 +196,7 @@ export function BunchFollowsScreen({
   };
 
   return (
-    <PageShell
-      header={
-        <Header
-          leading={
-            <HeaderIconButton label="뒤로 가기" tone="subtle" onClick={onBack}>
-              <LineChevronLeftLargeIcon />
-            </HeaderIconButton>
-          }
-        />
-      }
-    >
+    <PageShell header={<Header leading={<HeaderBackButton tone="subtle" onClick={onBack} />} />}>
       <h1 className="sr-only">{bunchName ? `${bunchName} 팔로워·팔로잉` : '팔로워·팔로잉'}</h1>
       {locked ? (
         <PrivateBunchNotice

@@ -11,15 +11,15 @@ import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testin
 import type { BundleDetail } from '../model/bundle';
 import { getBundle } from '../api/bundles';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
+import { useApplyBundleEvent } from './bundleRealtime';
 import {
   bundleQueryOptions,
   useCreateBundleMutation,
   useDeleteBundleMutation,
   useLeaveBundleMutation,
   usePublishBundleMutation,
-  useApplyBundleEvent,
   useMergeTitleMutation,
-  useSaveVisibilityMutation,
+  useSaveCommentMutation,
 } from './bundles';
 import { bundleKeys } from './keys';
 
@@ -184,30 +184,45 @@ describe('번들 query·mutation', () => {
     });
   });
 
-  it('버전 충돌이면 최신 상세를 다시 받아 캐시가 서버 값으로 맞춰진다', async () => {
+  it('코멘트 저장이 버전 충돌(BUNDLE_003)이면 최신 상세를 다시 받아 캐시가 서버 값으로 맞춰진다', async () => {
     const { client, wrapper } = setup();
     const id = await createDraft(wrapper);
     // 캐시를 읽고 있는 화면이 있어야 무효화가 재요청으로 이어짐
     renderHook(() => useQuery(bundleQueryOptions(bunchId, id)), { wrapper });
-    const { result } = renderHook(() => useSaveVisibilityMutation(bunchId, id), { wrapper });
+    const { result } = renderHook(() => useSaveCommentMutation(bunchId, id), { wrapper });
     await act(async () => {
-      await result.current.mutateAsync({ value: 'PUBLIC', expectedVersion: 0, mode: 'DRAFT' });
+      await result.current.mutateAsync({ value: '첫 코멘트', expectedVersion: 0, mode: 'DRAFT' });
     });
+    // 다른 기기에서 내 코멘트를 고친 상황(캐시는 모름)
+    mockDb.update((state) => ({
+      ...state,
+      bundles: state.bundles.map((bundle) =>
+        String(bundle.id) === id
+          ? {
+              ...bundle,
+              comments: bundle.comments.map((comment) =>
+                comment.memberId === MOCK_MEMBER_IDS.me
+                  ? { ...comment, content: '다른 기기 코멘트', version: 2 }
+                  : comment,
+              ),
+              revision: bundle.revision + 1,
+            }
+          : bundle,
+      ),
+    }));
 
     // 오래된 버전으로 다시 저장 → BUNDLE_003
     await act(async () => {
       await result.current
-        .mutateAsync({ value: 'PRIVATE', expectedVersion: 0, mode: 'DRAFT' })
+        .mutateAsync({ value: '새 코멘트', expectedVersion: 1, mode: 'DRAFT' })
         .catch(() => undefined);
     });
 
     await waitFor(() =>
-      expect(client.getQueryState(bundleKeys.detail(bunchId, id))?.isInvalidated).toBe(false),
+      expect(client.getQueryData<BundleDetail>(bundleKeys.detail(bunchId, id))?.comments).toEqual([
+        expect.objectContaining({ content: '다른 기기 코멘트', version: 2 }),
+      ]),
     );
-    expect(client.getQueryData(bundleKeys.detail(bunchId, id))).toMatchObject({
-      visibility: 'PUBLIC',
-      visibilityVersion: 1,
-    });
   });
 
   it('발행에 성공하면 번치 홈 데이터(프로필·완성된 번들)를 무효화한다', async () => {

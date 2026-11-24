@@ -1,6 +1,7 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs/config';
 import { networkInterfaces } from 'node:os';
+import { inviteSecurityHeaders, securityHeaders } from './src/shared/config/securityHeaders.mjs';
 
 // React DevTools MCP(react-devtools-cdt-mcp): 개발 서버에서만 클라이언트 진입점 맨 앞에 넣음
 // Next 개발 도구 화면이 자기 react-dom을 앱보다 먼저 hook에 연결해서, 그보다 먼저 붙어야 컴포넌트 도구가 동작함
@@ -42,9 +43,22 @@ const nextConfig = {
     // 쿼리 캐시 저장본의 버전(배포마다 달라 이전 배포의 저장본을 버림). Vercel은 커밋, 그 밖은 서버를 켠 시각
     NEXT_PUBLIC_APP_BUILD: process.env.VERCEL_GIT_COMMIT_SHA ?? String(Date.now()),
   },
+  // public/의 이미지·영상은 이름에 해시가 없어(같은 이름으로 교체) 하루만 캐시하고 그 뒤 일주일은 받아 둔 것을 쓰며 뒤에서 확인(#534)
+  // 지정하지 않으면 매번 다시 확인해 다시 방문할 때마다 파일마다 요청이 한 번씩 나감
+  headers: async () => [
+    // 보안 헤더는 모든 응답에(#558, src/shared/config/securityHeaders.mjs)
+    { source: '/:path*', headers: securityHeaders(process.env) },
+    { source: '/invite/:path*', headers: inviteSecurityHeaders(process.env) },
+    ...['/images/:path*', '/videos/:path*', '/icons/:path*'].map((source) => ({
+      source,
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+      ],
+    })),
+  ],
   // 앱 열기 도메인(open.bunch.kr): 초대 진입 페이지의 「초대장 확인하기」가 다른 도메인으로 넘겨 유니버셜 링크가 앱을 열게 함(같은 도메인 안 이동으로는 열리지 않음)
   // 앱이 있으면 iOS가 요청 전에 앱을 열고, 여기까지 오면 앱이 없는 것이라 화면 없이 곧바로 App Store로 보냄(흰 화면 없이 진입 페이지가 남은 채 이동)
-  // 연결 파일(/.well-known/apple-app-site-association)은 리다이렉트하면 Apple이 받지 않아 /invite만 보냄. 값은 features/invite-entry/constants/messages.ts와 같음
+  // 연결 파일(/.well-known/apple-app-site-association)은 리다이렉트하면 Apple이 받지 않아 /invite만 보냄. 값은 src/shared/constants/site.ts와 같음
   // 그 밖의 경로는 이 도메인에 화면(로그인 등)이 하나 더 생기지 않게 운영 주소로 보냄. 호스트 값은 정규식이라 점을 이스케이프
   redirects: async () => [
     {
@@ -79,6 +93,8 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   project: process.env.SENTRY_PROJECT ?? 'javascript-nextjs',
   silent: true,
   telemetry: false,
+  // 성능 추적(tracing)은 쓰지 않아(결정 기록 006) SDK의 추적·디버그 코드를 번들에서 뺌(#534). 추적을 켜게 되면 excludeTracing을 지움
+  bundleSizeOptimizations: { excludeTracing: true, excludeDebugStatements: true },
   sourcemaps: {
     disable: !process.env.SENTRY_AUTH_TOKEN,
     deleteSourcemapsAfterUpload: true,

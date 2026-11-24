@@ -1,10 +1,10 @@
 'use client';
 
-import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
+import { Header } from '@app/design-system';
 import { PhotoThumbnail } from '@app/design-system/web';
 import Link from 'next/link';
 import type { PhotoSection } from '@/features/photo-box/lib/photoDate';
-import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
+import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import type { RecommendationDetail } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES } from '../../constants/selectMessages';
@@ -26,14 +26,7 @@ export function RecommendDetailScreen({
   return (
     <PageShell
       header={
-        <Header
-          leading={
-            <HeaderIconButton label={BUNDLE_SELECT_MESSAGES.back} onClick={onBack}>
-              <LineChevronLeftLargeIcon aria-hidden="true" />
-            </HeaderIconButton>
-          }
-          title={recommendation.title}
-        />
+        <Header leading={<HeaderBackButton onClick={onBack} />} title={recommendation.title} />
       }
     >
       <h1 className="sr-only">{BUNDLE_SELECT_MESSAGES.detailTitle(recommendation.title)}</h1>
