@@ -44,7 +44,7 @@
 | `Editing`  | 지우기 변형만 강한 테두리, 나머지는 기본 | `editingContent`(왼쪽 가운데), 입력창은 `opacity-0`·`aria-busy` |
 | `Disabled` | `border-secondary`                       | 전체 40% 투명                                                   |
 
-- `Editing` 애니메이션: 컴포넌트가 직접 그리지 않고 `editingContent`로 받는다(디자이너 확정으로 앱의 `editing.json` 로티를 씀). 입력창 왼쪽 가운데에 놓이고 클릭을 막지 않으며 보조 기술에는 숨긴다. 동작 줄이기는 넘기는 쪽이 처리한다.
+- `Editing` 표시: 컴포넌트가 직접 그리지 않고 `editingContent`로 받는다(예전에는 앱의 `editing.json` 로티를 넘겼고 2026-11-24에 지움, 지금은 초대 화면의 받는 중 표시가 씀). 입력창 왼쪽 가운데에 놓이고 클릭을 막지 않으며 보조 기술에는 숨긴다. 동작 줄이기는 넘기는 쪽이 처리한다.
 - 지우기 버튼은 `readOnly`면 숨긴다(Figma에 없는 상태). 비활성이면 보이지만 누를 수 없다.
 - 긴 값은 입력창에서 한 줄로 잘린다.
 - iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다(`inputScale.module.css`).
@@ -65,7 +65,7 @@
 
 ## 확인할 항목
 
-- `Editing`의 의미 (확정, 디자이너 전달): 「다른 멤버가 편집 중」 표시이고 앱이 `editing.json` 로티를 `editingContent`로 넘긴다. 컴포넌트는 `editing` prop으로만 켠다.
+- `Editing`의 의미 (확정, 디자이너 전달): 「다른 멤버가 편집 중」 표시였고, 앱이 넘기는 내용은 `editingContent`로 받는다(`editing.json` 로티는 2026-11-24에 지움). 컴포넌트는 `editing` prop으로만 켠다.
 - `Editing`의 테두리 (제안): Figma가 `Editing`에서 지우기 변형만 강한 테두리를 쓰고 기본·버튼 변형은 기본 테두리라서 그대로 옮겼다. 의도한 규칙인지 확인이 필요하다.
 - 지우기 변형의 빈 값 (확정, Figma): 값이 없어도 지우기 버튼이 보인다. 누르면 `onClear`만 호출한다.
 - `Editing` 안내 (제안): 점은 `aria-hidden`이고 `aria-busy`만으로는 상태가 거의 읽히지 않는다. `editingLabel`을 주면 `role="status"` 문구로 읽는다(화면에는 안 보임). 문구는 호출하는 쪽이 정한다. 입력은 `editing` 중에도 계속 가능하고 내용만 가려지니, 입력을 막으려면 호출하는 쪽이 `readOnly`를 함께 준다.
