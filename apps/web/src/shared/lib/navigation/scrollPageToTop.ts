@@ -33,6 +33,11 @@ export function scrollPageToTop() {
     if (stopRunning === stop) stopRunning = undefined;
   };
   const step = (now: number) => {
+    // 움직이는 중 화면을 떠났으면(전환 중 inert, 떼어짐) 더 쓰지 않음(나가는 화면의 스크롤 붙잡기와 겹치지 않게)
+    if (!main.isConnected || main.closest('[inert]')) {
+      stop();
+      return;
+    }
     const progress = Math.min(1, (now - startedAt) / DURATION_MS);
     main.scrollTop = from * (1 - ease(progress));
     if (progress < 1) frame = requestAnimationFrame(step);

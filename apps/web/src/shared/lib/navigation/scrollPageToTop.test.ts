@@ -84,3 +84,17 @@ it('움직이는 중 다시 누르면 앞 움직임을 멈추고 지금 위치�
   vi.advanceTimersByTime(200);
   expect(main.scrollTop).toBe(0);
 });
+
+it('움직이는 중 화면을 떠나면(inert) 더 이상 스크롤 값을 쓰지 않는다', () => {
+  reduceMotion(false);
+  const main = mainAt(1000);
+
+  scrollPageToTop();
+  vi.advanceTimersByTime(100);
+  main.setAttribute('inert', '');
+  // 나가는 화면을 붙잡는 쪽이 정해 둔 값
+  main.scrollTop = 700;
+  vi.advanceTimersByTime(100);
+
+  expect(main.scrollTop).toBe(700);
+});
