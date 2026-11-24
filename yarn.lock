@@ -23,6 +23,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@app/admin@workspace:apps/admin"
   dependencies:
+    "@app/design-system": "workspace:*"
     "@app/lint-config": "workspace:*"
     "@app/ts-config": "workspace:*"
     "@babel/core": "catalog:"

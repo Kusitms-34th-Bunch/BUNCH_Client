@@ -15,6 +15,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@app/design-system": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "react": "catalog:",
