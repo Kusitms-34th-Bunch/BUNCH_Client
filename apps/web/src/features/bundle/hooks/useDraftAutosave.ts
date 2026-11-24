@@ -3,8 +3,8 @@
 import type { QueryObserverResult } from '@tanstack/react-query';
 import { toast } from '@app/design-system';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { apiErrorCode, apiErrorStatus } from '@/shared/api/errorStatus';
 import type { BundleDetail } from '../model/bundle';
-import { errorCodeOf } from '../api/bundleErrors';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { pickNewerDetail } from '../lib/draftMapping';
 
@@ -16,7 +16,7 @@ const CONFLICT_RETRY_DELAY_MS = 200;
 // 다시 시도하면 될 수 있는 오류: 응답이 없는 네트워크 오류, 서버 오류(5xx)
 // 그 밖의 거절(다른 사람이 발행·삭제, 인증·권한, 잘못된 입력 등 4xx)은 같은 요청을 다시 보내도 같은 결과
 const isRetryable = (error: unknown) => {
-  const { status } = (error as { status?: number } | null) ?? {};
+  const status = apiErrorStatus(error);
   return status === undefined || status >= 500;
 };
 
@@ -147,7 +147,7 @@ export function useDraftAutosave({
             failures.current = 0;
             onSaved();
           } catch (error) {
-            if (errorCodeOf(error) === 'BUNDLE_003') {
+            if (apiErrorCode(error) === 'BUNDLE_003') {
               // 최신 상세를 받아 그 버전으로 이어서 저장
               const latest = await refetchDetail();
               if (latest.data) writeDetail(latest.data);

@@ -5,10 +5,12 @@ import { toast } from '@app/design-system';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { apiErrorStatus } from '@/shared/api/errorStatus';
 import { toDomainId } from '@/shared/api/ids';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -135,7 +137,7 @@ export function OtherBunch({
     return <BlockedBunchScreen onBack={back} focusTitle={justBlocked} />;
   }
   // 잘못된 주소는 404 화면, 삭제된 번치는 위에서 이전 화면으로 보내는 동안 로딩
-  const errorStatus = isApiError(home.error) ? home.error.status : undefined;
+  const errorStatus = apiErrorStatus(home.error);
   if (errorStatus === 400) notFound();
   if (deleted) return <BlockedBunchScreen onBack={back} checking />;
   // ponytail: 상대가 나를 차단한 응답은 명세에 없어 403을 차단으로 봄(비공개는 403이 아니라 canView로 옴), 다른 이유일 수 있어 다시 시도 둠
@@ -152,8 +154,8 @@ export function OtherBunch({
   }
   // 내 정보·홈을 처음부터 못 받았거나, 다른 번치 판단에 필요한 값이 없는 응답이면 다시 시도
   if (
-    (me.isError && !me.data) ||
-    (home.isError && !home.data) ||
+    loadFailed(me) ||
+    loadFailed(home) ||
     (home.data && !home.data.accessScope) ||
     viewerMismatch
   ) {

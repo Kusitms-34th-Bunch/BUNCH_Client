@@ -128,6 +128,7 @@ remove.mutate(selectedIds, {
 
 - `useSuspenseQuery`: 데이터 없이는 화면을 의미 있게 그릴 수 없고, 화면 하나를 감싸는 `QueryBoundary`(또는 route 수준) fallback으로 충분하며, `enabled`·`placeholderData`·수동 loading 분기가 필요 없고, 한 컴포넌트 안의 독립적인 suspense query가 여러 개라 waterfall이 생기지 않을 때 사용한다.
   - 받는 중·실패·다시 시도는 앱 공용 `QueryBoundary`(`shared/components/boundary/`, ADR 022)로 감싼다. 서버 렌더에서는 받는 중만 그리고, API 오류만 잡으며(렌더 버그는 위로 올려 오류 수집까지), 다시 시도는 이 경계 안의 실패한 query만 다시 받는다. 받는 중 안내는 경계의 늘 있는 상태 영역이 읽고, 다시 시도하면 초점은 경계 영역에 남는다. 실패 화면은 화면이 정한다(예: `BunchHomeError`).
+  - 화면 전체 실패 안내를 보일지는 `shared/query/loadFailed.ts`의 `loadFailed(query)`(실패했고 받은 값이 없음)로 정한다. 다시 받는 중에도 실패 화면을 유지하고 「다시 시도」 버튼에 초점이 남는다. 받아 둔 값이 있으면 다시 받기가 실패해도 그 값을 보인다. 다시 받는 동안 받는 중 화면으로 바꾸는 화면(MY 프로필·추가 정보, 알림 설정)만 `fetchStatus === 'idle'`까지 본다. `null`을 값으로 받는 query는 「없음」과 구분되지 않아 `loadFailed`의 타입이 막는다. 모양은 `shared/components/layout/PageErrorState`다.
   - 앞 결과에 기대는 query는 컴포넌트를 나눠 차례로 읽는다. 원래 차례로 받던 화면만 옮겨 새 waterfall을 만들지 않는다(ADR 022). 또 `skipToken`이 든 queryOptions는 쓸 수 없으므로 값을 아는 경우의 정의를 따로 둔다(예: `bunchFollowRequestsQueryOptions`).
 - `useQuery`: 실행 조건이 있거나, 검색·필터·탭·form 상태가 fetch를 제어하거나, 이전 데이터를 화면에 유지해야 하거나, 화면 일부만 loading·error를 표시하거나, 수동 refetch가 상호작용의 일부이거나, 여러 독립 query를 한 컴포넌트에서 병렬로 시작해야 할 때 사용한다.
 - `useInfiniteQuery`: 첫 렌더 이후 추가 페이지를 불러오고 다음 페이지 상태를 화면에서 바로 다뤄야 할 때 사용한다.

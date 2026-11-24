@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
 import { useFollowList } from '../../hooks/useFollowList';
@@ -34,7 +35,7 @@ export function MyBunchFollows({ initialTab }: { initialTab: FollowsTab }) {
   const back = () => backOr(BUNCH_HOME_PATHS.home);
 
   // 다시 받아도 명의가 어긋나거나 다시 받기가 실패하면 버튼을 막아 두지 않고 다시 시도 화면
-  if ((me.isError && !me.data) || (home.isError && !home.data) || viewer.mismatch) {
+  if (loadFailed(me) || loadFailed(home) || viewer.mismatch) {
     return (
       <BunchHomeError
         onRetry={() => {
@@ -63,9 +64,7 @@ export function MyBunchFollows({ initialTab }: { initialTab: FollowsTab }) {
       viewerId={bunchId}
       initialTab={initialTab}
       // 요청 수를 못 받으면 수 없이 줄만 보임(요청 화면에서 다시 시도)
-      pendingRequestCount={
-        requests.isError && !requests.data ? null : (requests.data?.totalElements ?? 0)
-      }
+      pendingRequestCount={loadFailed(requests) ? null : (requests.data?.totalElements ?? 0)}
       onOpenRequests={() => router.push(BUNCH_HOME_PATHS.followRequests)}
       // 내 번치(명의) 행은 번치 탭, 그 밖은 그 번치 프로필
       onOpenBunch={(row) =>

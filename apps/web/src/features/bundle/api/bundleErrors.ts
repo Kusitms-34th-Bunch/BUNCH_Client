@@ -3,9 +3,6 @@ import { z } from 'zod';
 
 // 번들 API 오류 응답 판독(요청 도구 없이 화면·lib에서도 읽음)
 
-/** 오류의 서버 코드(`BUNDLE_003` 등), 없으면 undefined */
-export const errorCodeOf = (error: unknown) => (error as { code?: string } | null)?.code;
-
 const errorEnvelopeSchema = z.object({ error: z.object({ detail: z.unknown() }) });
 
 /** 오류 응답 본문의 `error.detail`을 스키마로 읽음(모양이 다르면 undefined) */

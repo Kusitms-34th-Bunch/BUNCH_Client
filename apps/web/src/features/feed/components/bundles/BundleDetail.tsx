@@ -1,12 +1,11 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
-import { isUnavailableTarget } from '@/shared/api/errorStatus';
+import { apiErrorCode, isUnavailableTarget } from '@/shared/api/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
 import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
 import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
@@ -47,10 +46,9 @@ type BundleDetailProps = {
   links: { bunchHome: string; otherBunch: (_bunchId: string) => string };
 };
 
-const codeOf = (error: unknown) => (isApiError(error) ? error.code : undefined);
 // 번들을 볼 수 없게 됨(명세 014~017: 비공개 접근 불가·차단·없음·내보내짐). 가입 미완료 등 계정 오류는 빼고 코드로 가림
 const isGone = (error: unknown) =>
-  ['AUTH_002', 'BUNCH_009', 'RESOURCE_001', 'BUNCH_008'].includes(codeOf(error) ?? '');
+  ['AUTH_002', 'BUNCH_009', 'RESOURCE_001', 'BUNCH_008'].includes(apiErrorCode(error) ?? '');
 
 /**
  * 번들 상세(기능명세서 6.2): 상세·댓글·명의를 받아 `BundleDetailScreen`에 넘기고 이동·토스트·시트·초점을 맡음
@@ -102,7 +100,7 @@ export function BundleDetail({
       leaveGone();
       return;
     }
-    if (codeOf(error) === 'BUNCH_010') void retryViewer();
+    if (apiErrorCode(error) === 'BUNCH_010') void retryViewer();
     toast(text.actionFailed);
   };
 

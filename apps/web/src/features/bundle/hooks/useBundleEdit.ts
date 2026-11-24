@@ -4,6 +4,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
+import { apiErrorCode } from '@/shared/api/errorStatus';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -90,8 +91,6 @@ const NO_PRESENCE: PresenceCommands = {
   begin: () => undefined,
   end: () => undefined,
 };
-
-const errorCode = (error: unknown) => (error as { code?: string } | null)?.code;
 
 /**
  * 발행 번들 수정 화면의 상태와 동작(기능 명세 6.2.12): 메인 관리자만, 저장 전까지 서버에 반영하지 않고 「저장」 한 번으로 최종 내용을 보냄
@@ -214,7 +213,7 @@ export function useBundleEdit(
         setOverrides({});
         return 'saved';
       } catch (error) {
-        const code = errorCode(error);
+        const code = apiErrorCode(error);
         // 이 경로에서 금칙어를 검사하는 칸은 제목뿐이라 칸 이름을 읽지 못해도 제목 거부로 봄
         if (prohibitedFieldsOf(error) !== null) {
           setProhibitedTitle(titleTrimmed);
@@ -254,7 +253,7 @@ export function useBundleEdit(
     // 연결이 없어 첫 조회가 멈춘 채로는 끝나지 않으므로 로딩에 머물지 않고 안내함(연결이 돌아오면 이어서 열림)
     (detailQuery.fetchStatus === 'paused' && !detailQuery.isFetchedAfterMount)
   ) {
-    const code = errorCode(detailQuery.error);
+    const code = apiErrorCode(detailQuery.error);
     if (!profile.isError && !members.isError && code === 'RESOURCE_001')
       state = { kind: 'missing' };
     else if (!profile.isError && !members.isError && code === 'AUTH_002') {

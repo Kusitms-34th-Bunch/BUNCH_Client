@@ -9,6 +9,7 @@ import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
+import { loadFailed } from '@/shared/query/loadFailed';
 import type { OwnedBunch } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
@@ -43,7 +44,7 @@ export function AdminTransferScreen() {
   const [done, setDone] = useState(false);
   // 보내는 중 다시 누르기 방지(버튼을 disabled로 바꾸면 초점이 빠져서 ref로 막음)
   const sending = useRef(false);
-  const failed = owned.isError && owned.data === undefined;
+  const failed = loadFailed(owned);
   // 넘길 번치가 없음(그사이 모두 넘어감·나 혼자 남음): 이 화면에 남을 이유가 없어 탈퇴 안내로
   const empty = owned.data?.length === 0 && frozen === undefined && !done;
   const left = useRef(false);

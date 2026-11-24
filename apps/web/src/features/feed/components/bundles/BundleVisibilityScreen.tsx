@@ -1,11 +1,10 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { DescriptionRadioCard } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
-import { isUnavailableTarget } from '@/shared/api/errorStatus';
+import { apiErrorCode, isUnavailableTarget } from '@/shared/api/errorStatus';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
@@ -65,7 +64,7 @@ export function BundleVisibilityScreen({
   // 저장 실패(6.2.15 로직): 권한을 잃었으면 알리고 다시 받아 볼 수 없다는 안내로, 그사이 지워졌으면 피드로
   // 다른 곳에서 먼저 바꿔 버전이 어긋나면(BUNDLE_003) 최신 값을 다시 받고 고른 값은 둠
   const failSave = (error: unknown) => {
-    const code = isApiError(error) ? error.code : undefined;
+    const code = apiErrorCode(error);
     if (code === 'RESOURCE_001') {
       backOr(FEED_PATHS.home);
       toastAfterNavigation(text.bundleGone);

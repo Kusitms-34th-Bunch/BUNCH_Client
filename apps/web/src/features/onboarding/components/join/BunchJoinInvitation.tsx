@@ -1,11 +1,10 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { InviteCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { isDefiniteRejection } from '@/shared/api/errorStatus';
+import { apiErrorCode, isDefiniteRejection } from '@/shared/api/errorStatus';
 import { replaceTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -106,7 +105,7 @@ export function BunchJoinInvitation() {
         },
         onError: (error) => {
           joining.current = false;
-          const code = isApiError(error) ? error.code : undefined;
+          const code = apiErrorCode(error);
           // 서버가 요청을 거절한 경우(4xx)는 같은 키로 다시 보내면 거절이 재생될 수 있어(서버 정책은 확인 필요) 키를 버림. 408·429는 서버가 처리했을 수 있어 유지
           if (isDefiniteRejection(error)) flow.discardIdempotencyKey();
           const blocked = code === undefined ? undefined : BLOCKED_REASONS[code];

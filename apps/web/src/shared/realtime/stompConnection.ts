@@ -1,5 +1,5 @@
-import { isApiError } from '@app/api-core';
 import { Client, type IFrame, type IMessage } from '@stomp/stompjs';
+import { apiErrorStatus } from '../api/errorStatus';
 
 export type RealtimeStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'closed';
 
@@ -155,7 +155,7 @@ export const createStompConnection = ({
       (error: unknown) => {
         if (mine !== generation) return;
         // 세션이 끝났으면(401·403) 다시 시도해도 같으므로 멈춤. 「재시도」로는 다시 해 볼 수 있음
-        const status = isApiError(error) ? error.status : undefined;
+        const status = apiErrorStatus(error);
         if (status === 401 || status === 403) {
           // 한 번 연결됐던 세션이면 끊김으로 남겨 편집을 계속 막고, 처음 연결 전이면 닫기만 함
           setStatus(everConnected ? 'reconnecting' : 'closed');

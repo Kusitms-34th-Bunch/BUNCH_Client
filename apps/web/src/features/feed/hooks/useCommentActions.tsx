@@ -1,9 +1,9 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { ConfirmDialog, LineTrashcanMediumIcon, toast } from '@app/design-system';
 import { MoreMenuSheet } from '@app/design-system/web';
 import { useEffect, useRef, useState, type RefObject } from 'react';
+import { apiErrorCode } from '@/shared/api/errorStatus';
 import { isWireId } from '@/shared/api/ids';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
@@ -14,8 +14,6 @@ import { FEED_MESSAGES as text } from '../constants/messages';
 import { badgeColorOf } from '../lib/comments';
 import { withRo } from '../lib/josa';
 import { useCommentFeedback } from './useCommentFeedback';
-
-const codeOf = (error: unknown) => (isApiError(error) ? error.code : undefined);
 
 type CommentActionsOptions = {
   thread: ReturnType<typeof useBundleComments>;
@@ -99,7 +97,10 @@ export function useCommentActions({
           const untouched = draftRef.current.trim() === '' && replyTargetRef.current === null;
           setDraft(draftRef.current.trim() ? `${value}\n${draftRef.current}` : value);
           // 답글 대상이 그사이 지워졌거나 숨겨짐: 답글 상태는 되돌리지 않고 목록을 맞춤(번들이 사라졌으면 다시 받은 목록이 알려 떠남)
-          if (codeOf(error) === 'BUNDLE_002' || (parentId && codeOf(error) === 'RESOURCE_001')) {
+          if (
+            apiErrorCode(error) === 'BUNDLE_002' ||
+            (parentId && apiErrorCode(error) === 'RESOURCE_001')
+          ) {
             // 기다리는 사이 같은 원댓글에 다시 답글을 눌렀으면 그 답글 상태도 풂
             if (replyTargetRef.current?.id === parentId) setReplyTarget(null);
             thread.restart();
@@ -149,7 +150,7 @@ export function useCommentActions({
           },
           onError: (error) => {
             // 이미 지워졌거나 없는 댓글이면 바뀐 상태로 맞추고 따로 알리지 않음(번들이 사라졌으면 다시 받은 목록이 알려 떠남)
-            if (codeOf(error) === 'RESOURCE_001') {
+            if (apiErrorCode(error) === 'RESOURCE_001') {
               thread.restart();
               return;
             }
@@ -170,7 +171,7 @@ export function useCommentActions({
         onSuccess: () => toast(text.reported),
         onError: (error) => {
           // 그사이 지워진 댓글이면 목록을 맞춤(번들이 사라졌으면 다시 받은 목록이 알려 떠남)
-          if (codeOf(error) === 'RESOURCE_001') {
+          if (apiErrorCode(error) === 'RESOURCE_001') {
             thread.restart();
             return;
           }

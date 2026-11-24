@@ -2,14 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { apiErrorCode } from '@/shared/api/errorStatus';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Recommendation, RecommendationDetail } from '../model/recommendation';
 import { recommendationQueryOptions, useRecommendationFetchers } from '../queries/recommendations';
 
-const errorCode = (error: unknown) => (error as { code?: string } | null)?.code;
-
 /** 없거나 삭제된 추천 번들(RESOURCE_001)인지. 다른 번치의 추천 번호도 같은 코드 */
-const isDeleted = (error: unknown) => errorCode(error) === 'RESOURCE_001';
+const isDeleted = (error: unknown) => apiErrorCode(error) === 'RESOURCE_001';
 
 /** 추천 번들을 불러오는 쪽이 받는 결과: 삭제됨(404)과 그 밖의 실패를 구분 */
 export type RecommendationLoad<T> =
