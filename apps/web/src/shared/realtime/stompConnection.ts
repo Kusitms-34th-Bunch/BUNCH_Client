@@ -94,6 +94,8 @@ export const createStompConnection = ({
   let deferred = false;
   // 끊김 없이 갈아 끼우는 중인 연결(성공해도 재연결로 알리지 않음)
   let refreshing = false;
+  // 지금 client의 STOMP 세션이 맺어졌는지(갈아 끼우는 중에는 「연결됨」이어도 새 client가 아직 세션이 없어 보내면 예외)
+  let sessionReady = false;
   // 이 값이 바뀌면 낡은 연결 시도의 늦은 콜백을 무시함
   let generation = 0;
   const handlers = new Map<string, Set<(_body: unknown) => void>>();
@@ -106,7 +108,7 @@ export const createStompConnection = ({
   };
 
   const attachSubscription = (destination: string) => {
-    if (!client || active.has(destination)) return;
+    if (!client || !sessionReady || active.has(destination)) return;
     const subscription = client.subscribe(destination, (message) => {
       const body = parseBody(message);
       handlers.get(destination)?.forEach((handler) => {
@@ -152,6 +154,7 @@ export const createStompConnection = ({
     clearTimeout(stableTimer);
     stableTimer = undefined;
     active.clear();
+    sessionReady = false;
     const current = client;
     client = undefined;
     // 서버의 RECEIPT를 기다리지 않고 바로 닫음(RECEIPT가 오지 않으면 소켓이 남음). 먼저 보낸 frame은 닫기 전에 나감
@@ -186,6 +189,7 @@ export const createStompConnection = ({
             const reconnected = everConnected && !refreshing;
             everConnected = true;
             refreshing = false;
+            sessionReady = true;
             clearTimeout(stableTimer);
             stableTimer = setTimeout(() => {
               attempt = 0;
@@ -281,7 +285,7 @@ export const createStompConnection = ({
       };
     },
     publish: (destination, body) => {
-      if (status !== 'connected' || !client) return false;
+      if (status !== 'connected' || !client || !sessionReady) return false;
       client.publish({ destination, body: JSON.stringify(body) });
       return true;
     },

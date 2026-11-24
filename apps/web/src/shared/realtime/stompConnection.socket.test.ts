@@ -131,4 +131,26 @@ describe('createStompConnection(실제 stompjs Client)', () => {
     expect(onConnected).toHaveBeenLastCalledWith(false);
     connection.stop();
   });
+
+  it('갈아 끼우는 중 새 소켓이 CONNECTED를 받기 전에는 보내지 않고, 받은 뒤에는 보내며, 멈추면 새 소켓을 닫는다', async () => {
+    const { connection } = setup();
+    connection.start();
+    await flush();
+    socket(0).open();
+    socket(0).receive(CONNECTED);
+
+    connection.refresh();
+    await flush();
+    socket(1).open();
+    // 토큰은 받았지만 STOMP 세션은 아직 없음(상태는 「연결됨」 유지)
+    expect(connection.status()).toBe('connected');
+    expect(connection.publish('/app/presence', { action: 'VIEW' })).toBe(false);
+    // 새 세션이 맺어지면 다시 보냄
+    socket(1).receive(CONNECTED);
+    expect(connection.publish('/app/presence', { action: 'VIEW' })).toBe(true);
+
+    connection.publish('/app/presence', { action: 'LEAVE' });
+    connection.stop();
+    expect(socket(1).closed).toBe(true);
+  });
 });
