@@ -25,6 +25,11 @@ export const bunchHomeKeys = {
     [...bunchHomeKeys.followList(bunchId, viewerId, kind), 'infinite'] as const,
   followRequests: (viewerId: string | undefined) =>
     [...bunchHomeKeys.follows(), 'requests', viewerId] as const,
+  // mutation key: 진행 중인 같은 종류 요청 수를 셀 때(isMutating) 씀
+  decideFollowRequest: (viewerId: string | undefined) =>
+    [...bunchHomeKeys.followRequests(viewerId), 'decide'] as const,
+  changeFollow: (viewerId: string | null | undefined) =>
+    [...bunchHomeKeys.follows(), 'change', viewerId ?? null] as const,
   // 내 번치(명의)가 차단한 번치 목록. 차단·해제 뒤 무효화
   blocks: (viewerId: string | undefined) => [...bunchHomeKeys.all, 'blocks', viewerId] as const,
   blockPages: (viewerId: string | undefined) =>

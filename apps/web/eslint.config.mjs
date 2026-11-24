@@ -125,9 +125,8 @@ export default [
   {
     // 화면 id→서버 숫자 변환은 요청 층(api/)에서만(docs/architecture/data-layer.md "파일 배치 (web)")
     // 다른 import 제한 규칙을 덮어쓰지 않게 별도 규칙(no-restricted-syntax)으로 둠
-    // ponytail: bundle은 동시 작업 중인 위반이 남아 제외, 그 작업이 머지되면 ignores에서 제거
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/**/api/**', 'src/**/*.test.{ts,tsx}', 'src/mocks/**', 'src/features/bundle/**'],
+    ignores: ['src/**/api/**', 'src/**/*.test.{ts,tsx}', 'src/mocks/**'],
     rules: {
       'no-restricted-syntax': [
         'error',
