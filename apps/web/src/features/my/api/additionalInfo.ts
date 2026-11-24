@@ -1,7 +1,7 @@
 import type { components } from '@app/api-core/generated';
 import { type ApiContract, normalizeError } from '@app/api-core';
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import { getTermVersions, type TermVersions } from '@/shared/api/termVersions';
 import { fromServerGender } from '@/shared/lib/profile/gender';
 import type { AdditionalInfo } from '../lib/types';

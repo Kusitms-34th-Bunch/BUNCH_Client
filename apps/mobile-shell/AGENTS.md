@@ -9,8 +9,8 @@ Root `AGENTS.md`와 `docs/architecture/mobile-shell.md`를 먼저 따른다. 이
 
 ## 폴더 구조
 
-- 루트에는 Expo 진입점(`index.ts`)과 설정(`app.json`, `metro.config.js`, `tsconfig.json`, `package.json`)만 둔다. 화면 route는 `app/`(expo-router)에 둔다.
-- 런타임 코드와 테스트는 `src/`에 둔다. 기능별 파일 묶음은 기능 폴더에 함께 두며, WebView 공통 설정과 bridge는 `src/web-view/`, 탭 정의·아이콘·저장소는 `src/tabs/`가 소유한다. `scripts/`는 빌드·개발용 CLI 스크립트가 생길 때만 쓴다.
+- 루트에는 Expo 진입점(`index.ts`)과 설정(`app.json`, `app.config.js`, `eas.json`, `metro.config.js`, `tsconfig.json`, `package.json`, `pnpm-workspace.yaml`)만 둔다. 로컬 네이티브 모듈은 `modules/`, 쉘 E2E는 `maestro/`에 둔다. 화면 route는 `app/`(expo-router)에 둔다.
+- 런타임 코드와 테스트는 `src/`에 둔다. 기능별 파일 묶음은 기능 폴더에 함께 두며, WebView 공통 설정과 bridge는 `src/web-view/`, 탭 정의·아이콘·저장소는 `src/tabs/`가 소유한다. `scripts/`에는 빌드·개발용 CLI 스크립트(`ios-sync.mjs`, `e2e-ios-build.mjs`)를 둔다.
 
 ## 패키지 매니저 예외
 
@@ -26,5 +26,5 @@ Root `AGENTS.md`와 `docs/architecture/mobile-shell.md`를 먼저 따른다. 이
 
 ## 검증
 
-- `pnpm typecheck`(또는 `npx tsc --noEmit`), `npx expo lint`를 변경 범위에 맞춰 실행한다.
+- `pnpm test`와 `pnpm exec tsc --noEmit`을 실행한다(CI `mobile-shell.yml`과 같음). eslint 설정이 없어 lint는 돌리지 않는다(2026-11-24 확인).
 - WebView가 가리키는 `apps/web` URL은 환경변수로 관리하고 repo에 실제 배포 주소를 하드코딩하지 않는다.

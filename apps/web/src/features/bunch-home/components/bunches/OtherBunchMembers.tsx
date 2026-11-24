@@ -1,13 +1,14 @@
 'use client';
 
-import { isApiError } from '@app/api-core';
 import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { ProfileListItem } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { notFound } from 'next/navigation';
+import { apiErrorStatus } from '@/shared/api/client/errorStatus';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -20,8 +21,6 @@ import {
 import { BunchHomeError } from '../home/BunchHomeError';
 import { PrivateBunchNotice } from '../PrivateBunchNotice';
 import { BlockedBunchScreen } from './BlockedBunchScreen';
-
-const statusOf = (error: unknown) => (isApiError(error) ? error.status : undefined);
 
 /**
  * `/bunches/[bunchId]/members` 다른 번치의 멤버 목록(화면설계서 2500:71333 4번)
@@ -36,8 +35,8 @@ export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
   const canView = home.data?.canViewMembers ?? false;
   const members = useQuery(otherBunchMembersQueryOptions(bunchId, viewerId, canView));
   const { access } = useBlockRelation(bunchId);
-  const errorStatus = statusOf(home.error);
-  const membersStatus = statusOf(members.error);
+  const errorStatus = apiErrorStatus(home.error);
+  const membersStatus = apiErrorStatus(members.error);
   // 접근 불가 안내(409 BUNCH_008: 나를 내보냈거나 지운 번치), 명단 404(BUNCH_009: 그사이 차단·삭제)는 다시 받아도 같음
   const unavailable = errorStatus === 409 || membersStatus === 409 || membersStatus === 404;
   const blocked = access === 'blocked' || errorStatus === 403 || unavailable;
@@ -59,8 +58,8 @@ export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
     );
   }
   // 명단 403(AUTH_002)은 그사이 비공개로 바뀌었거나 팔로우가 끊긴 경우라 잠금으로, 나머지는 다시 시도
-  const membersFailed = members.isError && !members.data && membersStatus !== 403;
-  if ((me.isError && !me.data) || (home.isError && !home.data) || membersFailed) {
+  const membersFailed = loadFailed(members) && membersStatus !== 403;
+  if (loadFailed(me) || loadFailed(home) || membersFailed) {
     return (
       <BunchHomeError
         onRetry={() => {

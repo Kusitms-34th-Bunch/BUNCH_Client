@@ -1,7 +1,7 @@
 import type { components } from '@app/api-core/generated';
 import { ApiError, normalizeError } from '@app/api-core';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { toDomainId, toWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { toDomainId, toWireId } from '@/shared/api/client/ids';
 import { toMissingPhotosError } from '../lib/missingPhotos';
 import {
   datedPhotosPageSchema,

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const FEATURES = fileURLToPath(new URL('../src/features', import.meta.url));
 // [import하는 feature, import되는 feature, 상한(import 문 수, 2026-11-16 기준)]
 const LIMITS = [
-  ['bundle', 'photo-box', 56],
+  ['bundle', 'photo-box', 55],
   ['bunch-home', 'bundle', 2],
   ['photo-box', 'bundle', 3],
 ];

@@ -3,6 +3,7 @@
 import { toast } from '@app/design-system';
 import { notifyManager, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { apiErrorCode, apiErrorStatus } from '@/shared/api/client/errorStatus';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft, DraftPhoto } from '../lib/types';
 import type { PhotoPicks } from '../model/bundle';
@@ -18,8 +19,6 @@ export type PickEntry = { photos: readonly DraftPhoto[]; picks: Picks };
 
 // 버전 충돌을 서버의 현재 픽으로 맞추고 같은 희망 상태를 다시 보내는 최대 횟수(그 뒤에도 어긋나면 실패로 봄)
 const MAX_CONFLICT_RETRIES = 2;
-
-const errorStatus = (error: unknown) => (error as { status?: number } | null)?.status;
 
 const NO_INTENTS: Readonly<Record<string, boolean>> = {};
 
@@ -142,8 +141,8 @@ export function useDraftPicks(
               continue;
             }
             settle(photoId);
-            const status = errorStatus(error);
-            const code = (error as { code?: string } | null)?.code;
+            const status = apiErrorStatus(error);
+            const code = apiErrorCode(error);
             // 사진이 없어졌거나(404): 최신 상세로 맞추고, 누른 사진이라 화면이 바로 삭제 안내를 띄움
             // 이미 발행됨(BUNDLE_002): 최신 상세로 맞춤(안내는 화면이 발행 상태 변화로 띄움)
             if (status === 404 || code === 'BUNDLE_002') {

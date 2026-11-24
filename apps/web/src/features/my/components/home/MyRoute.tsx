@@ -7,6 +7,7 @@ import { MY_CONTACT_URL } from '../../constants/paths';
 import { EMPTY_MY_PROFILE } from '../../lib/profile';
 import { usePrefetchNotificationSettings } from '../../queries/notifications';
 import { useMyProfile } from '../../queries/profile';
+import { useLogoutMutation } from '../../queries/session';
 import { MyScreen } from './MyScreen';
 
 /**
@@ -15,6 +16,7 @@ import { MyScreen } from './MyScreen';
  */
 export function MyRoute() {
   const { profile, isPending, isError } = useMyProfile();
+  const logout = useLogoutMutation();
 
   useEffect(() => {
     if (isError) toast(MY_MESSAGES.profileLoadFailed);
@@ -35,6 +37,7 @@ export function MyRoute() {
         profile={profile ?? EMPTY_MY_PROFILE}
         contactUrl={MY_CONTACT_URL}
         profileLoading={isPending}
+        onLogout={(onError) => logout.mutate(undefined, { onError })}
       />
     </>
   );

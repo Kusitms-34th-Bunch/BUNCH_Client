@@ -177,12 +177,12 @@
 
 ## 영향받는 컴포넌트
 
-| 컴포넌트                                 | 변경 사항                                                                        |
-| ---------------------------------------- | -------------------------------------------------------------------------------- |
-| `ProfileEditScreen`                      | 중복 확인 연결, 저장 mutation과 실패 처리                                        |
-| `NotificationSettingsScreen`             | 저장 mutation과 되돌림, 자동 OFF 제거(1110판)                                    |
-| `WithdrawalScreen`·`AdminTransferScreen` | 넘길 번치 query(`ownedBunchesQueryOptions`)·권한 이전·탈퇴 mutation(#404)        |
-| `features/auth` `TermsDocument`          | (보류) 서버 원문·불러오기 실패 상태는 원문 API가 없어 하지 않음(2026-11-16 확인) |
+| 컴포넌트                               | 변경 사항                                                                        |
+| -------------------------------------- | -------------------------------------------------------------------------------- |
+| `ProfileEditRoute`                     | 중복 확인 연결, 저장 mutation과 실패 처리                                        |
+| `NotificationSettingsScreen`           | 저장 mutation과 되돌림, 자동 OFF 제거(1110판)                                    |
+| `WithdrawalRoute`·`AdminTransferRoute` | 넘길 번치 query(`ownedBunchesQueryOptions`)·권한 이전·탈퇴 mutation(#404)        |
+| `features/auth` `TermsDocument`        | (보류) 서버 원문·불러오기 실패 상태는 원문 API가 없어 하지 않음(2026-11-16 확인) |
 
 ## 구현 단위와 이슈
 

@@ -1,5 +1,5 @@
 import { http } from 'msw';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
 import type { CharacterType, MockBunch } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';

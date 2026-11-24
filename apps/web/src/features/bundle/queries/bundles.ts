@@ -1,10 +1,10 @@
 // 크기 유지: 상세 query와 초안 mutation이 같은 상세 key·캐시 동기화(useBundleCacheSync)와 이벤트 적용을 함께 씀
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { PROHIBITED_WORD_CODE } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { sharedKeys } from '@/shared/query/keys';
-import { errorCodeOf } from '../api/bundleErrors';
 import {
   addBundleParticipant,
   createBundle,
@@ -164,7 +164,7 @@ const useBundleCacheSync = (bunchId: string | undefined, bundleId: string | unde
       queryClient.setQueryData<BundleDetail>(key, (old) => pickNewerDetail(old, bundle)),
     onError: (error: unknown) => {
       // 충돌 응답의 detail 모양과 상관없이 버전·상태 불일치(BUNDLE_003·BUNDLE_002)와 발행 거절(BUNDLE_005, 그 사이 다른 멤버가 바꿨을 수 있음)은 최신 상세를 다시 받음
-      const code = errorCodeOf(error);
+      const code = apiErrorCode(error);
       if (
         code === 'BUNDLE_003' ||
         code === 'BUNDLE_002' ||

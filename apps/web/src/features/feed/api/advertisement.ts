@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { requireWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { requireWireId } from '@/shared/api/client/ids';
 import { kokSchema } from '../model/kok';
 
 /** 광고 장소 콕하기(명세 022). 이미 콕한 장소면 그 콕을 돌려줌. 취소는 번들 장소와 같은 콕 취소(명세 009) */

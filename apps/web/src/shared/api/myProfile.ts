@@ -3,8 +3,8 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { CHARACTER_TYPES, defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
-import { bffApi, requestData } from './bffApi';
-import { toDomainId } from './ids';
+import { bffApi, requestData } from './client/bffApi';
+import { toDomainId } from './client/ids';
 
 const defaultBunchSchema = z.object({
   id: z.number().int().positive(),

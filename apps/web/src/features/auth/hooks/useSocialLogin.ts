@@ -1,11 +1,13 @@
 'use client';
 
+import type { SocialProvider } from '@app/bridge';
 import { toast } from '@app/design-system';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { COMMON_MESSAGES } from '@/shared/constants/messages';
 
-export type SocialProvider = 'kakao' | 'google' | 'apple';
+// 로그인 제공자는 쉘 bridge 계약과 같은 값(앱에서는 네이티브 로그인으로 넘김)
+export type { SocialProvider } from '@app/bridge';
 /** 사용자가 소셜 로그인 창을 닫은 경우는 `cancelled`로 반환(화면에서는 실패와 같은 토스트) */
 export type SocialLoginResult = 'success' | 'cancelled';
 export type SignIn = (_provider: SocialProvider) => Promise<SocialLoginResult>;

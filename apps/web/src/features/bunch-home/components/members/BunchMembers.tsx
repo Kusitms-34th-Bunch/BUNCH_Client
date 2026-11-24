@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BUNCH_HOME_PATHS } from '../../constants/paths';
@@ -71,7 +72,7 @@ export function BunchMembers() {
   }, [hasNoBunch, router]);
 
   // 받은 값이 하나도 없을 때만 오류 화면(다시 받기만 실패하면 목록을 지우지 않음)
-  if ((me.isError && !me.data) || (memberships.isError && !memberships.data) || refreshFailed) {
+  if (loadFailed(me) || loadFailed(memberships) || refreshFailed) {
     return (
       <BunchHomeError
         onBack={() => backOr(BUNCH_HOME_PATHS.menu)}

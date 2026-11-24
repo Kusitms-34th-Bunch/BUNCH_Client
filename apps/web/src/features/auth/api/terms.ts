@@ -1,5 +1,5 @@
 import { normalizeError } from '@app/api-core';
-import { bffApi } from '@/shared/api/bffApi';
+import { bffApi } from '@/shared/api/client/bffApi';
 import { getTermVersions } from '@/shared/api/termVersions';
 import { TERMS_ITEMS } from '../constants/terms';
 

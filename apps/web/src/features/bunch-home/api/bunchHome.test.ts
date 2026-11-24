@@ -2,7 +2,7 @@ import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
 import { updateBunchProfile } from './bunchHome';
 
 const JPEG = 'data:image/jpeg;base64,/9j/2wBDAA==';

@@ -1,6 +1,6 @@
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { sharedKeys } from '@/shared/query/keys';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchRole } from '../lib/types';

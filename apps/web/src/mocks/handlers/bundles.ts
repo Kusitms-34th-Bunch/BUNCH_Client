@@ -9,8 +9,8 @@ import {
   saveTitleDoc,
   titleText,
 } from '@/features/bundle/lib/titleCrdt';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
-import { toWireId } from '@/shared/api/ids';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
+import { toWireId } from '@/shared/api/client/ids';
 import type { MockBundle, MockBundlePhoto, MockDbState, MockLocation } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID } from '../db/seed';

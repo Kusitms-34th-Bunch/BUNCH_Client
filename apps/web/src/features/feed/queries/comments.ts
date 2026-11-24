@@ -8,7 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { isWireId, toDomainId } from '@/shared/api/ids';
+import { isWireId, toDomainId } from '@/shared/api/client/ids';
 import type { BundleDetailResponse } from '../model/bundleDetail';
 import type { CommentItemResponse, CommentPage } from '../model/comment';
 import type { FeedPage } from '../model/feed';

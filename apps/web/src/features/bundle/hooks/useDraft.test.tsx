@@ -7,7 +7,7 @@ import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed'
 import { changeBundle, snapshotOf } from '@/mocks/handlers/bundles';
 import { fail } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import type { PlaceResult } from '../lib/types';

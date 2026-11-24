@@ -8,7 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { isWireId, toDomainId } from '@/shared/api/ids';
+import { isWireId, toDomainId } from '@/shared/api/client/ids';
 import type { BundleKoks } from '../model/kok';
 import { getBundleKoks, pinPlace, unpinPlace } from '../api/kok';
 import { FEED_MESSAGES } from '../constants/messages';

@@ -1,4 +1,4 @@
-import { bffApi, requestData } from './bffApi';
+import { bffApi, requestData } from './client/bffApi';
 import {
   nameAvailabilitySchema,
   type NameCheckResult,

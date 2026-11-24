@@ -23,6 +23,7 @@ import { useRefocusWhenEnabled } from '@/shared/hooks/overlay/useRefocusWhenEnab
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { useCurrentYear } from '@/shared/hooks/useCurrentYear';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import type { Recommendation } from '../../model/recommendation';
 import { BUNDLE_SELECT_MESSAGES, MAX_RECOMMEND_CHIPS } from '../../constants/selectMessages';
 import { BUNDLE_SELECT_PATHS } from '../../constants/selectPaths';
@@ -64,13 +65,7 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
   const reopenOnReturn = useRef(false);
   const { openSheet, closeSheet, sheetOpen, loadRecommendations, isRecommendationBusy } = select;
   // 목록을 받는 사이 화면을 떠났으면 시트를 올리지 않음
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const mounted = useMountedRef();
   useEffect(
     () => () => {
       if (reopenOnReturn.current) openSheet();
@@ -170,7 +165,7 @@ export function BundleSelect({ currentYear: currentYearProp }: BundleSelectProps
     void loadRecommendations().then((list) => {
       if (list && mounted.current) openRecommend(list);
     });
-  }, [sheetOpen, ready, closeSheet, openRecommend, loadRecommendations]);
+  }, [sheetOpen, ready, closeSheet, openRecommend, loadRecommendations, mounted]);
 
   // 추천 번들을 적용하면 그 날짜 섹션으로 스크롤하고 제목에 포커스(요청마다 한 번, 끝나면 대상을 비움)
   const { clearScrollTarget } = select;

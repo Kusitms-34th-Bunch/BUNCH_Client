@@ -1,5 +1,5 @@
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { requireWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { requireWireId } from '@/shared/api/client/ids';
 import { toReportRequest } from '@/shared/lib/reportReasons';
 import { reportResultSchema } from '../model/report';
 

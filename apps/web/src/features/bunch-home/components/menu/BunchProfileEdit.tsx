@@ -10,6 +10,7 @@ import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
+import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchProfileDraft, ProhibitedValues } from '../../lib/profileEdit';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -52,7 +53,7 @@ export function BunchProfileEdit() {
   }, [hasNoBunch, cannotEdit, router]);
 
   // 받은 값이 하나도 없을 때만 오류 화면(다시 받기만 실패하면 입력 중인 폼을 지우지 않음)
-  if ((me.isError && !me.data) || (home.isError && !home.data)) {
+  if (loadFailed(me) || loadFailed(home)) {
     return (
       <BunchHomeError
         onRetry={() => {

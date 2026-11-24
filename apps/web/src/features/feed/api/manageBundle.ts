@@ -1,6 +1,6 @@
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import { managedBundleSchema } from '../model/manageBundle';
 
 const bundlePath = (bunchId: string, bundleId: string) =>

@@ -1,7 +1,7 @@
 import { ApiError } from '@app/api-core';
 import { createHttpClient } from '@app/api-core/http';
 import { HTTPError, type KyInstance } from 'ky';
-import { NO_SESSION_CODE } from './sessionCodes';
+import { NO_SESSION_CODE } from '../sessionCodes';
 
 export interface BrowserApiOptions {
   /** BFF 주소. 기본은 같은 출처의 `/api/` */

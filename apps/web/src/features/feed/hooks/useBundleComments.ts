@@ -2,8 +2,9 @@ import { isApiError } from '@app/api-core';
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { isWireId } from '@/shared/api/ids';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { isWireId } from '@/shared/api/client/ids';
+import { loadFailed } from '@/shared/query/loadFailed';
 import type { FeedComment } from '../lib/types';
 import { type CommentItemResponse, toFeedComment } from '../model/comment';
 import {
@@ -151,7 +152,7 @@ export function useBundleComments(
     /** 번들 전체 댓글·답글 수(서버, 받기 전 undefined) */
     totalCount: list.data?.pages[0]?.totalCount,
     loading: list.isPending,
-    failed: list.isError && !list.data,
+    failed: loadFailed(list),
     /** 목록 받기 오류(번들을 볼 수 없게 됐는지 화면이 판단) */
     error: list.error,
     retry: () => void list.refetch(),

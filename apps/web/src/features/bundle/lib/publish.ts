@@ -1,7 +1,8 @@
 import { isApiError } from '@app/api-core';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import type { Draft, DraftEditing, SaveStatus } from './types';
-import { errorCodeOf, readPublishBlockers } from '../api/bundleErrors';
+import { readPublishBlockers } from '../api/bundleErrors';
 import { BUNDLE_MESSAGES, TITLE_MAX_LENGTH } from '../constants/messages';
 import { countTitleGraphemes } from './title';
 
@@ -89,7 +90,7 @@ export const classifyPublishError = (
   if (readPublishBlockers(error) !== undefined) {
     return { outcome: 'blocked', message: BUNDLE_MESSAGES.uploadIncomplete, keepKey };
   }
-  const code = errorCodeOf(error);
+  const code = apiErrorCode(error);
   // 충돌(BUNDLE_003)과 이미 발행됨·본문 불일치(BUNDLE_002)는 최신 내용을 확인하고 다시 해야 하는 같은 상황
   const conflict = code === 'BUNDLE_003' || code === 'BUNDLE_002';
   return {

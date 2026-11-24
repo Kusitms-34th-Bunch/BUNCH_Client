@@ -1,4 +1,4 @@
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import { bundleDetailSchema } from '../model/bundleDetail';
 
 /** 발행 번들 상세(명세 084). 볼 수 있는지는 서버가 지금 번치 명의로 판단 */

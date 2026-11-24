@@ -45,7 +45,7 @@
 - 반복 검색, 대량 변환, date formatting처럼 hot path가 확인된 경우에만 자료구조·계산 캐싱을 바꾼다.
 - 큰 asset과 third-party SDK는 번들 분석 결과를 보고 조정한다.
 - web 클라이언트 JS 크기는 Frontend CI가 빌드 뒤 `scripts/report-web-bundle-size.mjs`로 기록한다. 공통 첫 로드 JS(프레임워크·런타임과 root·`(app)` layout 청크)와 전체 클라이언트 JS(gzip)를 기준선과 비교해 10% 넘게 커지면 경고만 하고 실패시키지 않는다. 기준선은 `develop`·`main` push 빌드가 `--update`로 잰 결과를 Actions 캐시(`bundle-size-<OS>-<브랜치>-<SHA>`)로 저장한 것이다. PR은 base 커밋의 결과를, 없으면 그 브랜치의 가장 최근 결과를, 그것도 없으면(다른 작업 브랜치 위에 올린 PR, `main` 캐시 만료 등) `develop`의 가장 최근 결과를 받아 비교한다. 머지될 때마다 갱신되므로 기준선 파일을 커밋하지 않는다(`apps/web/bundle-size-baseline.json`은 gitignore). 이 캐시가 모두 만료(7일 미사용)되거나 저장소 한도(10GB)로 지워지면 다음 push 전까지는 「기준선 없음」으로 표시된다. CI 빌드는 `ANALYZE=true`라 `@next/bundle-analyzer`가 모듈별 크기를 `.next/analyze/client.json`에 남기고, 보고는 이를 패키지·소스 폴더(`src/features/<이름>` 등)별로 묶어 기준선보다 1KB 넘게 커진 항목과 가장 큰 항목을 표로 보여 준다. 표는 실행 화면의 Summary에 나오고, PR의 CI 결과 댓글에는 두 크기의 변화와 1KB 넘게 커진 항목 3개까지만 짧게 붙는다(web을 빌드하지 않은 PR은 빠짐). 초기 로딩이 느려졌을 때 무엇이 커졌는지 이 표에서 먼저 찾는다. 항목 크기는 모듈마다 따로 잰 gzip이라 합이 전체 크기와 맞지 않으므로 증가량 비교에만 쓴다. 로컬에서 비교하려면 CI와 같은 조건으로 `SENTRY_AUTH_TOKEN= NEXT_PUBLIC_SENTRY_DSN= ANALYZE=true yarn workspace @app/web build`를 실행해 `node scripts/report-web-bundle-size.mjs --update`로 내 기준선을 만든 뒤, 바꾼 코드로 다시 빌드해 `node scripts/report-web-bundle-size.mjs`를 실행한다. Sentry 토큰이 있으면 청크에 코드가 더 들어가 CI와 크기가 달라지고, turbo 캐시로 복원된 `.next`는 이전 파일이 섞일 수 있어 workspace 빌드를 직접 돌린다. 측정 단계가 실패해도 job은 실패하지 않는다.
-- 로딩·접근성·SEO 점수는 web이 바뀐 PR마다 `lighthouse.yml`이 runner 안의 운영 빌드로 측정해 PR 댓글로 알린다(공개 페이지만, 페이지당 1번이라 성능 점수는 흔들림). 절차와 기준선은 `docs/workflows/ci.md`의 「Lighthouse 결과 댓글」을 따른다. 실제 기기·네트워크의 속도는 이 점수로 대신하지 않는다.
+- 로딩·접근성·SEO 점수는 web이 바뀐 PR마다 `lighthouse.yml`이 runner 안의 운영 빌드로 측정해 PR 댓글로 알린다(공개 페이지와 가짜 서버로 띄운 로그인 뒤 화면, 페이지당 1번이라 성능 점수는 흔들림). 절차와 기준선은 `docs/workflows/ci.md`의 「Lighthouse 결과 댓글」을 따른다. 실제 기기·네트워크의 속도는 이 점수로 대신하지 않는다.
 - apps/web `package.json`의 `sideEffects`는 CSS와 Sentry 초기화 파일(`src/instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`)만 부수효과로 둔다(#534). 쓰지 않는 모듈을 통째로 빼려는 설정이라, import만 해도 무언가를 실행하는 파일(전역 등록·초기화)을 새로 만들면 이 목록에 넣는다. 빠지면 그 동작이 조용히 사라진다. `instrumentation-client.ts`는 Next가 import만으로 붙여 넣지 않으면 `Sentry.init`이 빠진다.
 - Sentry는 성능 추적을 쓰지 않아(결정 기록 006) `withSentryConfig`의 `bundleSizeOptimizations`로 추적·디버그 코드를 뺀다. 추적을 켜면 `excludeTracing`을 지운다.
 - 측정(#534, `ANALYZE=true` 운영 빌드, gzip): 공통 첫 로드 JS 223.7KB → 187.9KB, 로그인 화면이 처음 받는 JS 621KB → 488KB. `sideEffects`·Sentry 설정으로 -14KB, 모든 화면에 붙는 layout이 feature 배럴 대신 파일을 직접 import해 -119KB(`docs/architecture/app-structure.md`).
@@ -58,7 +58,7 @@ WebView는 화면을 그리기 전에 네트워크로 HTML·JS를 받아야 해�
 - 다음 화면 미리 받기(프리로드): 사용자가 갈 수 있는 화면이 정해져 있으면 미리 받아 둔다. 데이터·메모리 비용이 들므로 진입 빈도와 중요도가 높은 화면에만 쓴다.
   - 웹: Next.js `Link`는 운영 빌드에서 화면에 보이는 링크의 경로를 기본으로 미리 받는다. 한 화면에 링크가 많아 비용이 커지는 곳(사진 격자 등)만 `prefetch={false}`로 끈다. 버튼에서 `router.push`·`replace`로 넘기는 화면은 미리 받지 않아 누른 뒤에 화면 정보(RSC)와 코드 조각을 받는다(운영 빌드 요청 기록으로 확인). 다음 단계가 정해진 흐름(온보딩)은 화면이 그려질 때 `router.prefetch`로 받는다(`usePrefetchNextSteps`, #494). 데이터까지 미리 받는 방법과 단계는 `docs/architecture/data-layer.md`의 "미리 불러오기"를 따른다.
   - 쉘: iOS 탭 WebView 4개는 처음부터 함께 만들어진다(`docs/architecture/mobile-shell.md`). 탭 밖 화면을 위해 WebView를 더 미리 띄우는 것은 메모리 비용이 커서, 첫 진입 지연을 측정한 뒤에만 검토한다.
-- 스트리밍 SSR: 서버가 화면을 조각으로 나눠 보내 전체를 기다리지 않고 준비된 부분부터 그린다. App Router에서는 route의 `loading.tsx`나 하위 트리의 `Suspense` 경계가 그 단위다(아래 "Next.js 서버 컴포넌트"). 지금 화면은 fixture라 쓰지 않고, 서버 데이터를 서버 컴포넌트에서 받게 될 때 `data-layer.md` "미리 불러오기" 2단계와 함께 적용한다.
+- 스트리밍 SSR: 서버가 화면을 조각으로 나눠 보내 전체를 기다리지 않고 준비된 부분부터 그린다. App Router에서는 route의 `loading.tsx`나 하위 트리의 `Suspense` 경계가 그 단위다(아래 "Next.js 서버 컴포넌트"). 지금 화면은 데이터를 브라우저에서 TanStack Query로 받아 이 방식을 쓰지 않는다(2026-11-24 확인). 서버 데이터를 서버 컴포넌트에서 받게 될 때 `data-layer.md` "미리 불러오기" 2단계와 함께 적용한다.
 - 캐시 영속화: 앱을 다시 열 때 지난 서버 상태를 먼저 보인다(`docs/architecture/data-layer.md` 「캐시 영속화」). 로그인 상태 확인 요청 하나는 계속 기다리므로, 줄어드는 것은 그 뒤의 데이터 요청 대기다. 로컬 운영 빌드 + 가짜 서버(요청마다 300ms 지연을 임시로 넣음)에서 저장본이 있을 때 첫 내용까지 피드 962→667ms, 사진함 966→663ms로 요청 한 번만큼 줄었다(번치 홈은 이미 667ms, 2026-11-21 #494, 5회 중앙값). 실기기·실서버는 측정하지 않았다.
 - 비로그인 첫 진입(#498): 쿠키가 없으면 재발급 응답(`BFF_NO_SESSION`)으로 세션 확인을 건너뛰어 요청이 3번에서 2번이 됐다. 로컬 운영 빌드 + 가짜 서버(요청마다 300ms 임시 지연)에서 `/bunch`를 열어 `/login`에 도착하기까지 1268→971ms(5회 중앙값)다. 로그인 버튼은 그 뒤 등장 모션(350ms 늦게 시작)으로 나타난다. 앱에서는 이 시간 동안 스플래시가 유지된다. 실기기·실서버는 측정하지 않았다.
 - 로컬 측정의 한계: 가짜 서버가 서비스 워커라 페이지에 건 네트워크 제한(Chrome DevTools throttling)이 화면 이동 요청에 걸리지 않는다. 화면 이동 시간은 실기기나 실서버에서 잰다.
@@ -66,7 +66,7 @@ WebView는 화면을 그리기 전에 네트워크로 HTML·JS를 받아야 해�
 
 ## 이미지 (apps/web)
 
-아직 이미지를 쓰는 화면이 없지만, 추가하면 아래 기준을 적용한다.
+이미지를 쓰는 화면에는 아래 기준을 적용한다.
 
 - `<img>` 태그 대신 `next/image`를 쓴다. raw `<img>`와 video poster는 Next.js가 최적화·lazy loading을 자동 적용하지 않는다.
 - LCP 요소가 될 이미지(최초 화면의 hero, 대표 이미지)에는 `priority`를 주고 lazy loading을 끈다. 그 외 이미지는 `next/image`의 기본 lazy loading에 맡긴다.
@@ -87,7 +87,7 @@ apps/web은 아직 Server Action을 쓰지 않지만, 도입하면 아래 기준
 
 ## 운영 Web Vitals 보기 (PostHog SQL)
 
-PostHog의 **SQL**(HogQL 편집기, 데이터 소스 `PostHog (ClickHouse)`)에 아래 쿼리를 그대로 붙여 실행한다. 대시보드는 아직 없다(ADR 023). CLS·INP는 같은 방문에서 값이 바뀌면 같은 `metric_id`로 다시 오므로 ID별 마지막 값(`argMax`)으로 줄인 뒤 센다. 표본(`samples`)이 수십 개 미만이면 경향으로만 본다.
+PostHog의 **SQL**(HogQL 편집기, 데이터 소스 `PostHog (ClickHouse)`)에 아래 쿼리를 그대로 붙여 실행한다. 대시보드는 아직 없다(ADR 023, 2026-11-23 확인). CLS·INP는 같은 방문에서 값이 바뀌면 같은 `metric_id`로 다시 오므로 ID별 마지막 값(`argMax`)으로 줄인 뒤 센다. 표본(`samples`)이 수십 개 미만이면 경향으로만 본다.
 
 - `surface`는 `app`(쉘 WebView)과 `web`(브라우저)을 나눈다. 앱 체감은 `app`을 본다.
 - 기간은 `INTERVAL 14 DAY`를 바꾼다. 배포 전후를 비교하려면 `timestamp` 조건을 배포 시각 앞뒤로 나눠 두 번 실행한다.

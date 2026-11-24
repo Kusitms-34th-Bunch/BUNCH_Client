@@ -6,6 +6,7 @@ import { toast } from '@app/design-system';
 import { useEffect, useRef } from 'react';
 import { isNativeShell, photoUploadBridge } from '@/shared/bridge/client';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import { CameraPermissionDialog } from '../components/PhotoUploadDialogs';
 import { PHOTO_BOX_MESSAGES } from '../constants/messages';
 import {
@@ -107,14 +108,12 @@ export function usePhotoUpload(bunchId: string | undefined) {
   const invalidatePhotosOf = useInvalidatePhotosOf();
   const openOverlay = useScreenOverlay();
   // 선택·촬영 창을 기다리는 사이 화면이 떠났으면 권한 안내 창을 열지 않음(떠난 화면의 창이 남지 않게)
-  const mounted = useRef(true);
+  const mounted = useMountedRef();
   // 번치마다 한 번만 걸어 두는 목록 갱신 예약(올리는 도중 새로 올라간 사진을 반영함)
   const refreshTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => {
-    mounted.current = true;
     const timers = refreshTimers.current;
     return () => {
-      mounted.current = false;
       timers.forEach((timer) => clearTimeout(timer));
       timers.clear();
     };

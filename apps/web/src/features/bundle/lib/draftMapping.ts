@@ -1,19 +1,14 @@
 import type { BunchMember } from '@/shared/api/bunchMembers';
+import { BUNCH_ROLE_FROM_SERVER } from '@/shared/lib/bunchRole';
 import type { BundleDetail } from '../model/bundle';
-import type { BunchRole, Draft, DraftComment, DraftLocation, DraftMember } from './types';
-
-const ROLE: Readonly<Record<BunchMember['role'], BunchRole>> = {
-  OWNER: 'owner',
-  CO_OWNER: 'coOwner',
-  MEMBER: 'member',
-};
+import type { Draft, DraftComment, DraftLocation, DraftMember } from './types';
 
 /** 번치 멤버를 초안 화면의 멤버 모양으로 변환(초안 생성자 여부는 번들마다 다름) */
 export const toDraftMember = (member: BunchMember, createdBy: string): DraftMember => ({
   id: member.id,
   name: member.name,
   avatarSrc: member.avatarSrc,
-  bunchRole: ROLE[member.role],
+  bunchRole: BUNCH_ROLE_FROM_SERVER[member.role],
   isCreator: member.id === createdBy,
 });
 

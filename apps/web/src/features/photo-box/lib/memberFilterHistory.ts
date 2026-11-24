@@ -1,3 +1,4 @@
+import { readHistoryEntry, writeHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 /** 사진함에서 고른 멤버 필터. 번치 id와 함께 둬 그사이 번치를 바꿨으면 쓰지 않음 */
 export type MemberFilterSelection = { bunchId: string; memberId: string };
 
@@ -5,15 +6,14 @@ export type MemberFilterSelection = { bunchId: string; memberId: string };
 const HISTORY_KEY = 'photoBoxMember';
 
 export const readHistoryMemberFilter = (): MemberFilterSelection | undefined => {
-  if (typeof window === 'undefined') return undefined;
-  const state = window.history.state as Record<string, unknown> | null;
-  const saved = state?.[HISTORY_KEY] as { bunchId?: unknown; memberId?: unknown } | undefined;
+  const saved = readHistoryEntry(HISTORY_KEY) as
+    | { bunchId?: unknown; memberId?: unknown }
+    | undefined;
   return typeof saved?.bunchId === 'string' && typeof saved.memberId === 'string'
     ? { bunchId: saved.bunchId, memberId: saved.memberId }
     : undefined;
 };
 
 export const writeHistoryMemberFilter = (selection: MemberFilterSelection) => {
-  const state = window.history.state as object | null;
-  window.history.replaceState({ ...state, [HISTORY_KEY]: selection }, '');
+  writeHistoryEntry({ [HISTORY_KEY]: selection });
 };

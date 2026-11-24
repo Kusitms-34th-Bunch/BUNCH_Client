@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { otherBunchHomeQueryOptions } from '@/features/bunch-home/queries/otherBunch';
-import { BundleVisibilityScreen } from '@/features/feed/components';
+import { BundleVisibility } from '@/features/feed/components';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 
 /**
@@ -21,7 +21,7 @@ export function BundleVisibilityRoute({
   const { data: home } = useQuery(otherBunchHomeQueryOptions(bunchId, viewerId));
 
   return (
-    <BundleVisibilityScreen
+    <BundleVisibility
       bunchId={bunchId}
       bundleId={bundleId}
       bunchPrivate={home?.bunch.visibility === 'PRIVATE'}

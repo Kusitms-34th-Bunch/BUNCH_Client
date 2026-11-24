@@ -3,8 +3,8 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
-import { bffApi, requestData } from './bffApi';
-import { toDomainId } from './ids';
+import { bffApi, requestData } from './client/bffApi';
+import { toDomainId } from './client/ids';
 
 export type BunchMemberRole = 'OWNER' | 'CO_OWNER' | 'MEMBER';
 

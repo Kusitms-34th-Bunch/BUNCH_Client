@@ -50,7 +50,7 @@
 
 - Query: `members/me`(지금 번치) → `GET /pinned-places?size=50&memberId=&cursor=`(명세 005, 「전체」는 `memberId` 없음, 첫 쪽은 `cursor` 없음). 쪽은 `useSuspenseInfiniteQuery`로 이어 붙이고, 칩·개수는 첫 쪽 값을 쓴다. key는 `bunchPlacesKeys.list(bunchId, memberId)`라 번치를 바꾸면 다른 목록이다. 칩 수는 응답의 `totalCount`와 `members[].count`(처음 콕한 멤버 기준), 멤버 이미지가 없으면 기본 프로필 이미지(`DEFAULT_PROFILE_IMAGE`). 닉네임이 없는 멤버는 칩을 그리지 않는다.
 - 출처: `sourceType=ADVERTISEMENT`는 「BUNCH SPOT」, `sourceAccessible=false`이거나 번치 이름·번들 제목, 또는 이동에 필요한 `sourceBunchId`·`sourceBundleId`가 비면 「볼 수 없는 번들이에요」(생성 타입에서 두 ID가 optional이라, 이동할 곳을 모르는 카드는 볼 수 없는 카드로 둠. 서버가 접근 가능한 출처에 두 ID를 항상 준다고 확정되면 다시 본다).
-- Mutation·cache 영향: 서버에 복구 API가 없어(명세 005·009) 빼면 카드를 화면에서 먼저 숨기고 칩 수를 줄인 뒤, 되돌리기 토스트 시간(5초, `UNDO_DURATION`)이 지나면 `DELETE /pinned-places/{pinId}`를 보낸다. 되돌리면 보내지 않는다. 다른 장소를 또 빼거나(새 토스트가 이전 되돌리기를 대체) 화면을 떠나면 보류한 빼기를 바로 보낸다. 성공·실패 모두 `bunchPlacesKeys.lists(bunchId)`를 보지 않는 칩 목록까지 다시 받고(`refetchType: 'all'`) 숨김을 푼다. 초점은 되돌리기로 다시 생긴 카드만 받는다(칩을 바꿔 새로 보인 카드는 아님).
+- Mutation·cache 영향: 서버에 복구 API가 없어(명세 005·009, 2026-11-23 생성 명세 확인) 빼면 카드를 화면에서 먼저 숨기고 칩 수를 줄인 뒤, 되돌리기 토스트 시간(5초, `UNDO_DURATION`)이 지나면 `DELETE /pinned-places/{pinId}`를 보낸다. 되돌리면 보내지 않는다. 다른 장소를 또 빼거나(새 토스트가 이전 되돌리기를 대체) 화면을 떠나면 보류한 빼기를 바로 보낸다. 성공·실패 모두 `bunchPlacesKeys.lists(bunchId)`를 보지 않는 칩 목록까지 다시 받고(`refetchType: 'all'`) 숨김을 푼다. 초점은 되돌리기로 다시 생긴 카드만 받는다(칩을 바꿔 새로 보인 카드는 아님).
 
 ## UI와 접근성
 

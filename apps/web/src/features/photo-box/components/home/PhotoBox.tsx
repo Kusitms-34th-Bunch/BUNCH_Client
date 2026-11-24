@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { BUNDLE_SELECT_PATHS } from '@/features/bundle/constants/selectPaths';
 import { startFromPhotoBox } from '@/features/bundle/lib/photoBoxEntry';
+import { useMountedRef } from '@/shared/hooks/useMountedRef';
 import type { PhotoBoxPreview } from '../../lib/preview';
 import { PHOTO_BOX_MESSAGES } from '../../constants/messages';
 import { usePhotoBox } from '../../hooks/usePhotoBox';
@@ -89,13 +90,7 @@ export function PhotoBox({ preview, bunchSwitcher, checkBundleEntry }: PhotoBoxP
       : uploadStatus.message;
   }
   const readyBunchIdRef = useRef(readyBunchId);
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const mounted = useMountedRef();
   useEffect(() => {
     readyBunchIdRef.current = readyBunchId;
   }, [readyBunchId]);

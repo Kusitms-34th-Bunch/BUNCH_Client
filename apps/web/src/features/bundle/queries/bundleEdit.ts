@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { sharedKeys } from '@/shared/query/keys';
 import { editPublishedBundle, type PublishedEditInput } from '../api/bundleEdit';
 import { bundleQueryOptions } from './bundles';

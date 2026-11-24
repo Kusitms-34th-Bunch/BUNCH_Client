@@ -13,7 +13,7 @@ import { authorizeApple } from '../../lib/appleAuthorization';
 import { reloadTo } from '../../lib/navigation';
 import { markKeepAgreed } from '../../lib/withdrawalFlow';
 import { myKeys } from '../../queries/keys';
-import { WithdrawalScreen } from './WithdrawalScreen';
+import { WithdrawalRoute } from './WithdrawalRoute';
 
 const push = vi.fn();
 const back = vi.fn();
@@ -57,7 +57,7 @@ const allowLogout = () => server.use(http.post('/api/auth/logout', () => HttpRes
 const renderScreen = (hasOwnedBunch = false) => {
   // 가짜 DB 기본값은 메인 관리자인 번치가 없음
   if (hasOwnedBunch) makeMeOwner();
-  return render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+  return render(<WithdrawalRoute />, { wrapper: createQueryWrapper() });
 };
 
 const agreeAndNext = async () => {
@@ -65,7 +65,7 @@ const agreeAndNext = async () => {
   await userEvent.click(screen.getByRole('button', { name: '다음' }));
 };
 
-describe('WithdrawalScreen', () => {
+describe('WithdrawalRoute', () => {
   it('삭제되는 정보와 남는 기록을 묶음으로 보여 준다', () => {
     renderScreen();
 
@@ -352,7 +352,7 @@ describe('WithdrawalScreen', () => {
   it('확인 중 화면을 떠나면 확인이 끝나도 창을 열지 않는다', async () => {
     const held = holdCheck();
     const client = createTestQueryClient();
-    const { unmount } = render(<WithdrawalScreen />, { wrapper: createQueryWrapper(client) });
+    const { unmount } = render(<WithdrawalRoute />, { wrapper: createQueryWrapper(client) });
     await userEvent.click(screen.getByRole('checkbox', { name: '안내 사항을 모두 확인했어요.' }));
     await userEvent.click(screen.getByRole('button', { name: '다음' }));
     await waitFor(() =>
@@ -411,20 +411,20 @@ describe('WithdrawalScreen', () => {
 
   it('권한을 넘기고 돌아오면 확인 체크를 유지해 「다음」이 바로 풀려 있다', () => {
     markKeepAgreed(true);
-    const { unmount } = render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+    const { unmount } = render(<WithdrawalRoute />, { wrapper: createQueryWrapper() });
 
     expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '다음' }).disabled).toBe(false);
 
     // 한 번만 유지하고 다음 진입부터는 해제
     unmount();
-    render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+    render(<WithdrawalRoute />, { wrapper: createQueryWrapper() });
     expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(false);
   });
 
   it('권한 이전 화면에 주소로 바로 들어와 넘겼으면 체크를 유지하지 않는다', () => {
     markKeepAgreed(false);
-    render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+    render(<WithdrawalRoute />, { wrapper: createQueryWrapper() });
 
     expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(false);
   });
@@ -441,7 +441,7 @@ describe('WithdrawalScreen', () => {
             : [],
       ),
     }));
-    render(<WithdrawalScreen />, { wrapper: createQueryWrapper() });
+    render(<WithdrawalRoute />, { wrapper: createQueryWrapper() });
 
     await agreeAndNext();
 

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
+import { readHistoryEntry, writeHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 
 const SAVE_DELAY_MS = 100;
 // 복원 위치까지 높이가 생기길 기다리는 상한(댓글·목록 첫 응답)
@@ -33,7 +34,8 @@ export function useScrollInHistory(anchorRef: RefObject<HTMLElement | null>, rea
     if (!ready || restored.current) return;
     restored.current = true;
     const main = anchorRef.current?.closest('main');
-    const target = (window.history.state as { pageScroll?: number } | null)?.pageScroll;
+    const saved = readHistoryEntry('pageScroll');
+    const target = typeof saved === 'number' ? saved : undefined;
     if (!main || !target) return;
     main.scrollTop = target;
     if (main.scrollTop >= target - 1) return;
@@ -60,8 +62,7 @@ export function useScrollInHistory(anchorRef: RefObject<HTMLElement | null>, rea
       // 터치 없이 다른 주체(스크린 리더 등)가 움직였으면 그 위치를 지키고 저장
       if (Math.abs(main.scrollTop - lastTop) > 1) {
         stop();
-        const state = window.history.state as object | null;
-        window.history.replaceState({ ...state, pageScroll: main.scrollTop }, '');
+        writeHistoryEntry({ pageScroll: main.scrollTop });
         return;
       }
       main.scrollTop = target;
@@ -83,8 +84,7 @@ export function useScrollInHistory(anchorRef: RefObject<HTMLElement | null>, rea
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         if (pending.current !== null) return;
-        const state = window.history.state as object | null;
-        window.history.replaceState({ ...state, pageScroll: main.scrollTop }, '');
+        writeHistoryEntry({ pageScroll: main.scrollTop });
       }, SAVE_DELAY_MS);
     };
     main.addEventListener('scroll', save, { passive: true });

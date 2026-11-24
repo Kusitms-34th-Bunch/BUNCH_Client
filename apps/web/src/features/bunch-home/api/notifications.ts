@@ -1,4 +1,4 @@
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import {
   notificationOpenSchema,
   notificationPageSchema,

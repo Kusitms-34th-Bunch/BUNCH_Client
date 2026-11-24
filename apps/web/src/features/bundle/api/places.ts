@@ -1,6 +1,6 @@
 import { normalizeError, parseOrThrow } from '@app/api-core';
 import { z } from 'zod';
-import { bffApi } from '@/shared/api/bffApi';
+import { bffApi } from '@/shared/api/client/bffApi';
 import type { PlaceResult } from '../lib/types';
 
 const placeSearchSchema = z.object({

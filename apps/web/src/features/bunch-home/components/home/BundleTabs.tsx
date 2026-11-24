@@ -6,6 +6,7 @@ import {
 } from '@app/design-system';
 import { MenuTabs } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
+import { readHistoryEntry, writeHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 import type { ListMoreQuery } from '../../lib/pages';
 import type { CompletedBundle, DraftBundle } from '../../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
@@ -24,16 +25,13 @@ const TAB_ORDER: readonly BundleTab[] = ['completed', 'draft'];
 // 번치 id가 다르면(그사이 번치를 바꿈) 쓰지 않음
 const HISTORY_KEY = 'bunchBundleTab';
 const readHistoryTab = (bunchId: string): BundleTab | undefined => {
-  if (typeof window === 'undefined') return undefined;
-  const state = window.history.state as Record<string, unknown> | null;
-  const saved = state?.[HISTORY_KEY] as { bunchId?: unknown; tab?: unknown } | undefined;
+  const saved = readHistoryEntry(HISTORY_KEY) as { bunchId?: unknown; tab?: unknown } | undefined;
   return saved?.bunchId === bunchId && (saved.tab === 'completed' || saved.tab === 'draft')
     ? saved.tab
     : undefined;
 };
 const writeHistoryTab = (bunchId: string, tab: BundleTab) => {
-  const state = window.history.state as object | null;
-  window.history.replaceState({ ...state, [HISTORY_KEY]: { bunchId, tab } }, '');
+  writeHistoryEntry({ [HISTORY_KEY]: { bunchId, tab } });
 };
 
 type BundleTabsProps = {

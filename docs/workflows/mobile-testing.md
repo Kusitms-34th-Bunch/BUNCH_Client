@@ -13,7 +13,7 @@ cd apps/mobile-shell
 pnpm install --frozen-lockfile
 ```
 
-앱 폴더의 `.env.example`을 참고해 `.env.local`에 개발 주소 `EXPO_PUBLIC_DEV_WEB_URL`과 운영 주소 `EXPO_PUBLIC_WEB_URL`을 설정한다.
+앱 폴더의 `.env.example`을 참고해 `.env.local`에 개발 주소 `EXPO_PUBLIC_DEV_WEB_URL`과 운영 주소 `EXPO_PUBLIC_WEB_URL`을 설정한다. 소셜 로그인을 확인하려면 카카오·구글 키도 채운다(없으면 prebuild가 로그인 설정을 넣지 않음).
 개발 실행(`__DEV__`)은 개발 주소를, Release 빌드는 운영 주소를 자동 선택한다.
 주소가 없으면 다른 환경의 주소로 대체하지 않고 앱 시작 시 예외로 중단한다. 개발 중에는 오류 화면이 뜨며, 릴리스 빌드에서는 앱이 바로 종료될 수 있다.
 

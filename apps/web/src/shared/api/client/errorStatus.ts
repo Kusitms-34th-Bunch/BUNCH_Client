@@ -2,6 +2,12 @@ import { isApiError } from '@app/api-core';
 
 // 화면이 여러 곳에서 같은 기준으로 쓰는 오류 판정(status 묶음을 화면마다 다시 적지 않게)
 
+/** 서버 오류 코드(`BUNDLE_003` 등), API 오류가 아니거나 코드가 없으면 undefined */
+export const apiErrorCode = (error: unknown) => (isApiError(error) ? error.code : undefined);
+
+/** HTTP 상태 코드, API 오류가 아니거나 응답이 없으면(네트워크 오류) undefined */
+export const apiErrorStatus = (error: unknown) => (isApiError(error) ? error.status : undefined);
+
 /**
  * 볼 대상이 없거나 볼 수 없음: 없음·삭제(404), 권한 없음(403), 잘못된 주소(400)
  * 다시 시도로 풀리지 않아 「볼 수 없음」 안내로 보냄. 그 밖의 실패는 다시 시도 대상

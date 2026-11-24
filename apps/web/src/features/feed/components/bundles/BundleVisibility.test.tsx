@@ -7,7 +7,7 @@ import { server } from '@/mocks/server';
 import { sharedKeys } from '@/shared/query/keys';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { feedKeys } from '../../queries/keys';
-import { BundleVisibilityScreen } from './BundleVisibilityScreen';
+import { BundleVisibility } from './BundleVisibility';
 
 const toastAfterNavigation = vi.hoisted(() => vi.fn());
 vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation }));
@@ -35,7 +35,7 @@ const renderScreen = (bundleId = '1', bunchPrivate = false) => {
   const client = createTestQueryClient();
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
   client.setQueryData(feedKeys.managed('1', bundleId, '1'), managed(bundleId === '1'));
-  render(<BundleVisibilityScreen bunchId="1" bundleId={bundleId} bunchPrivate={bunchPrivate} />, {
+  render(<BundleVisibility bunchId="1" bundleId={bundleId} bunchPrivate={bunchPrivate} />, {
     wrapper: createQueryWrapper(client),
   });
 };
@@ -44,7 +44,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('BundleVisibilityScreen', () => {
+describe('BundleVisibility', () => {
   it('지금 공개 범위가 골라져 있고, 바꾸기 전에는 「수정하기」가 꺼져 있다', () => {
     renderScreen();
 
@@ -157,7 +157,7 @@ describe('BundleVisibilityScreen', () => {
     server.use(http.get('/api/bunches/:bunchId/bundles/:id', () => fail(500, 'COMMON_999')));
     const client = createTestQueryClient();
     client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
-    render(<BundleVisibilityScreen bunchId="1" bundleId="9" bunchPrivate={false} />, {
+    render(<BundleVisibility bunchId="1" bundleId="9" bunchPrivate={false} />, {
       wrapper: createQueryWrapper(client),
     });
 

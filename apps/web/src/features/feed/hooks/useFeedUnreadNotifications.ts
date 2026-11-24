@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import type { FeedViewer } from '../lib/types';
 
@@ -8,7 +8,7 @@ const UNREAD_REFRESH = { staleTime: 0, refetchInterval: 20_000 } as const;
 
 /**
  * 지금 번치에 읽지 않은 알림이 있는지(피드 헤더 알림 아이콘의 점)
- * 알림 수만 주는 API가 없어 번치 전환 목록(`members/me/bunches`)의 번치별 unreadCount를 씀. 알림을 읽으면 이 목록도 다시 받음
+ * 알림 수만 주는 API가 없어(2026-11-23 생성 명세 확인) 번치 전환 목록(`members/me/bunches`)의 번치별 unreadCount를 씀. 알림을 읽으면 이 목록도 다시 받음
  * 받기 전·실패·번치 없음은 점 없음
  */
 export function useFeedUnreadNotifications(viewer: FeedViewer | undefined) {

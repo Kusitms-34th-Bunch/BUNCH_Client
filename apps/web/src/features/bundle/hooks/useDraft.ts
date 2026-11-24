@@ -4,8 +4,9 @@
 import { toast } from '@app/design-system';
 import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { toWireId } from '@/shared/api/ids';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { toWireId } from '@/shared/api/client/ids';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type {
@@ -19,7 +20,6 @@ import type {
   SaveStatus,
 } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
-import { errorCodeOf } from '../api/bundleErrors';
 import { searchPlaces as searchPlacesApi } from '../api/places';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { pickNewerDetail, toDraft, toDraftMember, withPendingComment } from '../lib/draftMapping';
@@ -511,7 +511,7 @@ export function useDraft(draftId: string | undefined): {
   const missing =
     bundleId === undefined ||
     noAccess ||
-    (detailIsError && ['RESOURCE_001', 'AUTH_002'].includes(errorCodeOf(detailError) ?? '')) ||
+    (detailIsError && ['RESOURCE_001', 'AUTH_002'].includes(apiErrorCode(detailError) ?? '')) ||
     (detail?.status === 'PUBLISHED' && publishPhase === 'idle');
   // 번치 멤버는 받아 둔 목록이 있으면 다시 받기에 실패해도 그대로 씀(참여 멤버 관리에 들어올 때마다 다시 받음, 상세와 같은 기준)
   const failed =

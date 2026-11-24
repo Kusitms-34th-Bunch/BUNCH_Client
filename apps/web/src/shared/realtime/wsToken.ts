@@ -1,6 +1,6 @@
 import { normalizeError, parseOrThrow } from '@app/api-core';
 import { z } from 'zod';
-import { bffApi } from '../api/bffApi';
+import { bffApi } from '../api/client/bffApi';
 
 const wsTokenSchema = z.object({
   token: z.string().min(1),

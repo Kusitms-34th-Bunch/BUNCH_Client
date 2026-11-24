@@ -3,17 +3,13 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { BunchMember as SharedBunchMember } from '@/shared/api/bunchMembers';
 import type { MembershipsResponse, membershipRoleSchema } from '@/shared/api/bunchMemberships';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
+import { BUNCH_ROLE_FROM_SERVER } from '@/shared/lib/bunchRole';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 import type { BunchMember, BunchRole } from '../lib/types';
 
 type ServerRole = z.infer<typeof membershipRoleSchema>;
-const ROLE: Readonly<Record<ServerRole, BunchRole>> = {
-  OWNER: 'owner',
-  CO_OWNER: 'coOwner',
-  MEMBER: 'member',
-};
 /** 화면 역할 → 서버 역할(역할 변경 요청) */
 export const SERVER_ROLE: Readonly<Record<BunchRole, ServerRole>> = {
   owner: 'OWNER',
@@ -38,11 +34,11 @@ export const toManagedMemberships = (data: MembershipsResponse): ManagedMembersh
     name: member.nickname || UNKNOWN_MEMBER_NAME,
     imageSrc:
       member.imageUrl && isSafeImageUrl(member.imageUrl) ? member.imageUrl : DEFAULT_PROFILE_IMAGE,
-    role: ROLE[member.role],
+    role: BUNCH_ROLE_FROM_SERVER[member.role],
     isMe: member.isMe,
     actions: member.actions,
   })),
-  myRole: ROLE[data.myMembership.role],
+  myRole: BUNCH_ROLE_FROM_SERVER[data.myMembership.role],
   myMembershipId: toDomainId(data.myMembership.membershipId),
   version: data.membershipVersion,
 });
@@ -53,7 +49,7 @@ export const toBunchMembers = (members: readonly SharedBunchMember[]): BunchMemb
     id: member.id,
     name: member.name,
     imageSrc: isSafeImageUrl(member.avatarSrc) ? member.avatarSrc : DEFAULT_PROFILE_IMAGE,
-    role: ROLE[member.role],
+    role: BUNCH_ROLE_FROM_SERVER[member.role],
   }));
 
 /** 나가기·삭제 응답. 다음 기본 번치는 `members/me`를 다시 받아 확인해 값은 검증만 함 */

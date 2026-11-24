@@ -1,5 +1,5 @@
 import type { PhotoSourceType, PickedPhoto } from '@app/bridge';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { photoUploadBridge } from '@/shared/bridge/client';
 import { dataUrlToBlob } from '@/shared/lib/image/dataUrl';
 import { uploadPhoto } from '../api/photoUpload';

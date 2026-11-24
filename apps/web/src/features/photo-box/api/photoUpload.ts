@@ -1,6 +1,6 @@
 import { normalizeError } from '@app/api-core';
 import { PHOTO_SOURCE_TYPES, type PhotoSourceType } from '@app/bridge';
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import { photoUploadResponseSchema } from '../model/photos';
 
 // 쉘이 준 값이라도 서버가 거절할 값(형식·범위 밖)은 필드를 빼고 올림(한 필드 때문에 사진 업로드가 실패하지 않게 함)

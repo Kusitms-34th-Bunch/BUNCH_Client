@@ -10,7 +10,7 @@ import type { MyProfile } from '../../lib/types';
 import { MY_MESSAGES } from '../../constants/messages';
 import { MY_PATHS } from '../../constants/paths';
 import { useAdditionalInfo } from '../../queries/additionalInfo';
-import { useMyProfile } from '../../queries/profile';
+import { useMyProfile, useUpdateProfileMutation } from '../../queries/profile';
 import { ProfileEditScreen } from './ProfileEditScreen';
 import { ProfileEditSkeleton } from './ProfileEditSkeleton';
 
@@ -28,6 +28,7 @@ type Initial = { profile: MyProfile; consented: boolean };
 export function ProfileEditRoute() {
   // 실패하면 마이페이지로 이동하므로 토스트는 이동 뒤 도착 화면에서 보이게 예약
   const profileQuery = useMyProfile();
+  const save = useUpdateProfileMutation();
   const infoQuery = useAdditionalInfo();
   const backOr = useBackOr();
   // 진입 때 다시 받기(refetchOnMount: always)가 끝나야 이번 진입의 값으로 봄
@@ -105,7 +106,13 @@ export function ProfileEditRoute() {
       <div ref={screenRef} className="contents">
         {shown ? (
           // 받아 둔 값으로 그린 화면을 이번 진입의 값으로 새로 그림(입력 전이라 잃는 편집 없음)
-          <ProfileEditScreen key="fresh" profile={shown.profile} demographicsConsent={consented} />
+          <ProfileEditScreen
+            key="fresh"
+            profile={shown.profile}
+            demographicsConsent={consented}
+            onSave={save.mutateAsync}
+            saving={save.isPending}
+          />
         ) : cached ? (
           <ProfileEditScreen
             key="cached"
@@ -113,6 +120,8 @@ export function ProfileEditRoute() {
             demographicsConsent={cached.consented}
             pending
             onLeave={markLeft}
+            onSave={save.mutateAsync}
+            saving={save.isPending}
           />
         ) : loading ? (
           <ProfileEditLoading

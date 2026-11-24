@@ -1,5 +1,5 @@
 import { http } from 'msw';
-import { toWireId } from '@/shared/api/ids';
+import { toWireId } from '@/shared/api/client/ids';
 import type { MockDbState } from '../db/types';
 import { mockDb } from '../db';
 import { fail, ok } from '../lib/envelope';

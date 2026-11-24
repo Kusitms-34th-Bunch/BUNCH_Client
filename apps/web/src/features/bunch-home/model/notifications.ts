@@ -1,7 +1,7 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
 import type { BunchNotification } from '../lib/types';
 import { BUNCH_HOME_PATHS } from '../constants/paths';

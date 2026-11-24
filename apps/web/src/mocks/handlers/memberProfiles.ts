@@ -1,5 +1,5 @@
 import { http } from 'msw';
-import { toWireId } from '@/shared/api/ids';
+import { toWireId } from '@/shared/api/client/ids';
 import { mockDb } from '../db';
 import { fail, ok } from '../lib/envelope';
 import { cardOf, followOf, isBlockedBetween, viewerBunchId } from './follows';

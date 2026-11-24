@@ -1,7 +1,7 @@
 import type { components } from '@app/api-core/generated';
 import { type ApiContract, isApiError } from '@app/api-core';
 import { z } from 'zod';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { CHARACTER_TYPES } from '@/shared/lib/profile/bunchProfile';
 import type { BunchAccessNotice } from '../lib/types';
 

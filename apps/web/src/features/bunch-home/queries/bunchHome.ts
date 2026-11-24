@@ -8,8 +8,8 @@ import {
 } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import type { MyBunches } from '@/shared/api/myBunches';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { toDomainId } from '@/shared/api/ids';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { toDomainId } from '@/shared/api/client/ids';
 import { getMyProfile } from '@/shared/api/myProfile';
 import { sharedKeys } from '@/shared/query/keys';
 import { persistedQuery } from '@/shared/query/persistence';
