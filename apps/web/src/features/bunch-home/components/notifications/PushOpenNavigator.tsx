@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { appBridge, hasNativeMethod, nativeShellTab, openTabPath } from '@/shared/bridge/client';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';

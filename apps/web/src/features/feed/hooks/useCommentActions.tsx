@@ -3,8 +3,8 @@
 import { ConfirmDialog, LineTrashcanMediumIcon, toast } from '@app/design-system';
 import { MoreMenuSheet } from '@app/design-system/web';
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { apiErrorCode } from '@/shared/api/errorStatus';
-import { isWireId } from '@/shared/api/ids';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
+import { isWireId } from '@/shared/api/client/ids';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { FeedComment, FeedViewer } from '../lib/types';

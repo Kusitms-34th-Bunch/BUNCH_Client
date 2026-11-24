@@ -4,9 +4,9 @@
 import { toast } from '@app/design-system';
 import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiErrorCode } from '@/shared/api/errorStatus';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
-import { toWireId } from '@/shared/api/ids';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { toWireId } from '@/shared/api/client/ids';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type {

@@ -1,7 +1,7 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { CHARACTER_TYPES, defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import type { ListMoreQuery } from '../lib/pages';

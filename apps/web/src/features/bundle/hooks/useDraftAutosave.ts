@@ -3,7 +3,7 @@
 import type { QueryObserverResult } from '@tanstack/react-query';
 import { toast } from '@app/design-system';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
-import { apiErrorCode, apiErrorStatus } from '@/shared/api/errorStatus';
+import { apiErrorCode, apiErrorStatus } from '@/shared/api/client/errorStatus';
 import type { BundleDetail } from '../model/bundle';
 import { BUNDLE_MESSAGES } from '../constants/messages';
 import { pickNewerDetail } from '../lib/draftMapping';

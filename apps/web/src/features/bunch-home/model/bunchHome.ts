@@ -2,7 +2,7 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { MyBunches } from '@/shared/api/myBunches';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { BUNCH_ROLE_FROM_SERVER } from '@/shared/lib/bunchRole';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import {

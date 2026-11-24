@@ -1,8 +1,8 @@
 import type { components } from '@app/api-core/generated';
 import { type ApiContract } from '@app/api-core';
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
 import { presenceDataSchema } from '../lib/presence';
 import {
   type BundleDetail,

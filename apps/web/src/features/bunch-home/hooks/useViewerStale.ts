@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 
 type MeQuery = {
   refetch: () => unknown;

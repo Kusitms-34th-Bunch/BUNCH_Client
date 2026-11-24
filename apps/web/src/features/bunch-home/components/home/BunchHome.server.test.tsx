@@ -13,7 +13,7 @@ import {
 } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { getMyBunches } from '@/shared/api/myBunches';
 import { emitMainTabGesture } from '@/shared/lib/navigation/mainTabGesture';
 import { getPageLoadingCount } from '@/shared/lib/navigation/pageLoadingState';

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import { BundleEditProvider } from '@/features/bundle/contexts/BundleEditProvider';
-import { isWireId } from '@/shared/api/ids';
+import { isWireId } from '@/shared/api/client/ids';
 
 type BundleEditLayoutProps = {
   children: ReactNode;

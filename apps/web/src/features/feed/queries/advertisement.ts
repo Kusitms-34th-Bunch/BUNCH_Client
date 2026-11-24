@@ -1,6 +1,6 @@
 import { toast } from '@app/design-system';
 import { type InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
-import { isWireId, toDomainId } from '@/shared/api/ids';
+import { isWireId, toDomainId } from '@/shared/api/client/ids';
 import type { FeedPage } from '../model/feed';
 import { hideAd, pinAd } from '../api/advertisement';
 import { unpinPlace } from '../api/kok';

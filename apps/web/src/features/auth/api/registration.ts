@@ -2,7 +2,7 @@ import type { components } from '@app/api-core/generated';
 import { type ApiContract, normalizeError } from '@app/api-core';
 import { z } from 'zod';
 import type { Gender } from '@/shared/components/profile/GenderField';
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import { getTermVersions } from '@/shared/api/termVersions';
 import { dataUrlToBlob } from '@/shared/lib/image/dataUrl';
 import { toServerGender } from '@/shared/lib/profile/gender';

@@ -1,6 +1,6 @@
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type * as BffApiModule from '@/shared/api/bffApi';
+import type * as BffApiModule from '@/shared/api/client/bffApi';
 import { ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
 import { registerMember } from './registration';
@@ -9,7 +9,7 @@ import { registerMember } from './registration';
 const post = vi.hoisted(() =>
   vi.fn<(_path: string, _options: { body: FormData }) => { json: () => Promise<unknown> }>(),
 );
-vi.mock('@/shared/api/bffApi', async (importOriginal) => {
+vi.mock('@/shared/api/client/bffApi', async (importOriginal) => {
   const original = await importOriginal<typeof BffApiModule>();
   return { ...original, bffApi: { ...original.bffApi, post } };
 });

@@ -6,7 +6,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { isWireId, toDomainId } from '@/shared/api/ids';
+import { isWireId, toDomainId } from '@/shared/api/client/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import type { BundleDetailResponse } from '../model/bundleDetail';
 import type { FeedPage } from '../model/feed';

@@ -5,7 +5,7 @@ import { PageHeader } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
-import { apiErrorCode, isDefiniteRejection } from '@/shared/api/errorStatus';
+import { apiErrorCode, isDefiniteRejection } from '@/shared/api/client/errorStatus';
 import mood1 from '@/shared/assets/images/bunch-mood/type-1.svg';
 import mood2 from '@/shared/assets/images/bunch-mood/type-2.svg';
 import mood3 from '@/shared/assets/images/bunch-mood/type-3.svg';

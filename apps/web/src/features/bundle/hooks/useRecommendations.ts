@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { apiErrorCode } from '@/shared/api/errorStatus';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Recommendation, RecommendationDetail } from '../model/recommendation';
 import { recommendationQueryOptions, useRecommendationFetchers } from '../queries/recommendations';

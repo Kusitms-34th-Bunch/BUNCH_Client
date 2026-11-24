@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
-import { apiErrorCode, isUnavailableTarget } from '@/shared/api/errorStatus';
+import { apiErrorCode, isUnavailableTarget } from '@/shared/api/client/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
 import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
 import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';

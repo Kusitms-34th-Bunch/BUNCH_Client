@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { apiErrorStatus } from '@/shared/api/errorStatus';
+import { apiErrorStatus } from '@/shared/api/client/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { loadFailed } from '@/shared/query/loadFailed';

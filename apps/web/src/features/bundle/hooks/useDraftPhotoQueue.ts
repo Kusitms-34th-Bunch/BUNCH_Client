@@ -4,7 +4,7 @@
 import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import type { DraftPhoto } from '../lib/types';
 import type { BundleDetail } from '../model/bundle';
 import {

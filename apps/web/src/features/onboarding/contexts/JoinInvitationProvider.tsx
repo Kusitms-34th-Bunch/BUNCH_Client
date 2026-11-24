@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState, type ReactNode } from 'react';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import type { CreatedBunch } from '../api/bunches';
 import { JoinInvitationContext, type VerifiedJoin } from './joinInvitationContext';
 

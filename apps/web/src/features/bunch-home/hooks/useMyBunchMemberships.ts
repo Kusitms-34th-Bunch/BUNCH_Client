@@ -3,7 +3,7 @@ import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';

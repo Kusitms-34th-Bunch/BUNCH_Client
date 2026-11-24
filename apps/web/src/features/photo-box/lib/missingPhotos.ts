@@ -1,5 +1,5 @@
 import { ApiError } from '@app/api-core';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 
 /**
  * 고른 사진 중 일부가 그사이 지워져 서버가 아무것도 바꾸지 않고 거절한 오류(`409 PHOTO_004`)

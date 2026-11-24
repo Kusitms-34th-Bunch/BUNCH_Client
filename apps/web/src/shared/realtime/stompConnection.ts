@@ -1,5 +1,5 @@
 import { Client, type IFrame, type IMessage } from '@stomp/stompjs';
-import { apiErrorStatus } from '../api/errorStatus';
+import { apiErrorStatus } from '../api/client/errorStatus';
 
 export type RealtimeStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'closed';
 

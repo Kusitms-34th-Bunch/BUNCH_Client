@@ -4,7 +4,7 @@ import { Header, LineChevronLeftLargeIcon } from '@app/design-system';
 import { ProfileListItem } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { notFound } from 'next/navigation';
-import { apiErrorStatus } from '@/shared/api/errorStatus';
+import { apiErrorStatus } from '@/shared/api/client/errorStatus';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useBackOr } from '@/shared/hooks/useBackOr';

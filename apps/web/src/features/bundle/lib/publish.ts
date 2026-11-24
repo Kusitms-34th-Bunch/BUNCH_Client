@@ -1,5 +1,5 @@
 import { isApiError } from '@app/api-core';
-import { apiErrorCode } from '@/shared/api/errorStatus';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import type { Draft, DraftEditing, SaveStatus } from './types';
 import { readPublishBlockers } from '../api/bundleErrors';

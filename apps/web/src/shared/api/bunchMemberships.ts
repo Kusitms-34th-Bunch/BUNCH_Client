@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { bffApi, requestData } from './bffApi';
-import { IDEMPOTENCY_KEY_HEADER } from './idempotencyKey';
-import { toWireId } from './ids';
+import { bffApi, requestData } from './client/bffApi';
+import { IDEMPOTENCY_KEY_HEADER } from './client/idempotencyKey';
+import { toWireId } from './client/ids';
 
 // 멤버 관리 목록·메인 관리자 넘기기. 번치 홈 멤버 관리와 MY 탈퇴 전 권한 넘기기가 함께 씀
 

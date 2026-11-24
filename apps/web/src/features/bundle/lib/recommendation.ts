@@ -5,7 +5,7 @@ import {
   getDateKey,
   type PhotoSection,
 } from '@/features/photo-box/lib/photoDate';
-import { isWireId } from '@/shared/api/ids';
+import { isWireId } from '@/shared/api/client/ids';
 import type { Recommendation, RecommendationDetail } from '../model/recommendation';
 import { MAX_SELECT_PHOTOS } from '../constants/selectMessages';
 

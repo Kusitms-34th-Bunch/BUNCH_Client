@@ -1,5 +1,5 @@
 import type { InfiniteData } from '@tanstack/react-query';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import type { Home } from '../model/bunchHome';
 import type { RelationPage } from '../model/follows';
 

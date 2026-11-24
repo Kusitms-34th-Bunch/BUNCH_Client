@@ -133,7 +133,7 @@ export default [
         'error',
         {
           selector:
-            'ImportDeclaration[source.value=/shared\\/api\\/ids$/] ImportSpecifier[imported.name=/^(toWireId|requireWireId)$/]',
+            'ImportDeclaration[source.value=/shared\\/api\\/client\\/ids$/] ImportSpecifier[imported.name=/^(toWireId|requireWireId)$/]',
           message:
             '서버 숫자 ID 변환(toWireId)은 api/의 요청 함수 안에서만 합니다. 화면·hook·query는 문자열 id를 넘기고, 요청 여부 판단은 isWireId로 합니다.',
         },

@@ -1,5 +1,5 @@
 import { http } from 'msw';
-import { toWireId } from '@/shared/api/ids';
+import { toWireId } from '@/shared/api/client/ids';
 import type { MockPhoto } from '../db/types';
 import { mockDb } from '../db';
 import { MOCK_MY_MEMBER_ID, MOCK_PHOTO_IDS } from '../db/seed';

@@ -1,7 +1,7 @@
 import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
-import { bffApi, requestData } from './bffApi';
+import { bffApi, requestData } from './client/bffApi';
 
 /** `POST /bunches/{id}/invitations` 응답 */
 const invitationSchema = z.object({

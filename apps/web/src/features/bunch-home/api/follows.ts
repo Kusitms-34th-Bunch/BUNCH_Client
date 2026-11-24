@@ -1,5 +1,5 @@
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { toWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { toWireId } from '@/shared/api/client/ids';
 import {
   type FollowDecision,
   followDecisionResultSchema,

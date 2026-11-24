@@ -4,7 +4,7 @@ import { toast } from '@app/design-system';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';

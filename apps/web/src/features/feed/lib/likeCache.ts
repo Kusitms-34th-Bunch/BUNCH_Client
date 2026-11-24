@@ -1,5 +1,5 @@
 import type { InfiniteData } from '@tanstack/react-query';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import type { BundleDetailResponse } from '../model/bundleDetail';
 import type { FeedPage } from '../model/feed';
 

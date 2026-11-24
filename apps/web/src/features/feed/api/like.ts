@@ -1,5 +1,5 @@
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { requireWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { requireWireId } from '@/shared/api/client/ids';
 import { likeResponseSchema } from '../model/like';
 
 const likePath = (bundleId: string) => `bundles/${requireWireId(bundleId, 'invalid bundle')}/like`;

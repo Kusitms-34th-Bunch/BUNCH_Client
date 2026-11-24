@@ -1,6 +1,6 @@
 import { ApiError } from '@app/api-core';
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import type { LocationInput } from '../lib/locationOps';
 import { bundleLocationIntentResultSchema, toLocationIntentResult } from '../model/bundle';
 import { readErrorDetail } from './bundleErrors';

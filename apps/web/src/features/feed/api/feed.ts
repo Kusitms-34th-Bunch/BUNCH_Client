@@ -1,4 +1,4 @@
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import { feedPageSchema } from '../model/feed';
 
 /** 한 번에 받을 번들 수(광고·안내 제외, 서버 허용 1~50). 카드가 커서 10개도 몇 화면이고, 끝 전에 미리 받아 첫 응답을 가볍게 */

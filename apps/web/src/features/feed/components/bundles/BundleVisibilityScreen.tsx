@@ -4,7 +4,7 @@ import { Button, Header, LineChevronLeftLargeIcon, toast } from '@app/design-sys
 import { DescriptionRadioCard } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
-import { apiErrorCode, isUnavailableTarget } from '@/shared/api/errorStatus';
+import { apiErrorCode, isUnavailableTarget } from '@/shared/api/client/errorStatus';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { PageLoading } from '@/shared/components/loading/PageLoading';

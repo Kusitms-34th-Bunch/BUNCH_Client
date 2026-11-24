@@ -6,7 +6,7 @@ import { mockDrafts } from '@/mocks/db/drafts';
 import { MOCK_BUNCH_ID, MOCK_MEMBER_IDS, MOCK_PHOTO_IDS } from '@/mocks/db/seed';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { editTitle, ensureTitleCrdt, loadTitleDoc, saveTitleDoc } from '../lib/titleCrdt';
 import { readPublishBlockers } from './bundleErrors';
 import {

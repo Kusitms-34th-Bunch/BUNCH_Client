@@ -1,6 +1,6 @@
 import { ApiError } from '@app/api-core';
-import { type bffApi, requestData } from '@/shared/api/bffApi';
-import { toWireId } from '@/shared/api/ids';
+import { type bffApi, requestData } from '@/shared/api/client/bffApi';
+import { toWireId } from '@/shared/api/client/ids';
 import { bundleSnapshotSchema, toBundleDetail } from '../model/bundle';
 
 // 번들 API 파일이 함께 쓰는 요청 도구

@@ -1,6 +1,6 @@
 import type { components } from '@app/api-core/generated';
-import { bffApi } from '@/shared/api/bffApi';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { bffApi } from '@/shared/api/client/bffApi';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import type { LocationInput } from '../lib/locationOps';
 import type { BundleDetail } from '../model/bundle';
 import { bundlePath, REQUEST_ID_HEADER, requestBundle, wireIdOrThrow } from './bundleRequest';

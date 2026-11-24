@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import { replaceEqualDeep } from '@tanstack/react-query';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import {
   type BundleDetail,
   type BundleTitleState,

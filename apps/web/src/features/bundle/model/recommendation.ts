@@ -2,7 +2,7 @@ import type { ApiContract } from '@app/api-core';
 import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { PhotoBoxMember, PhotoBoxPhoto } from '@/features/photo-box/lib/types';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';
 

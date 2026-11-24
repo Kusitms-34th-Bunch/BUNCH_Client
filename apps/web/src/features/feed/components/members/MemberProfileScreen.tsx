@@ -5,7 +5,7 @@ import { FollowListItem, ProfileImage } from '@app/design-system/web';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { isUnavailableTarget } from '@/shared/api/errorStatus';
+import { isUnavailableTarget } from '@/shared/api/client/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';

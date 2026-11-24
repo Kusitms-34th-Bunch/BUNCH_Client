@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import {
   type CharacterType,

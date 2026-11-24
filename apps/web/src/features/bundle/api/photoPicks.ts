@@ -1,6 +1,6 @@
 import type { components } from '@app/api-core/generated';
 import { ApiError } from '@app/api-core';
-import { bffApi, requestData } from '@/shared/api/bffApi';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
 import { bundlePhotoPicksSchema, type PhotoPicks, toPhotoPicks } from '../model/bundle';
 import { readErrorDetail } from './bundleErrors';
 import { bundlePath, wireIdOrThrow } from './bundleRequest';

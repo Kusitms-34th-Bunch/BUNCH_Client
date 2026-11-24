@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { isWireId } from '@/shared/api/ids';
+import { isWireId } from '@/shared/api/client/ids';
 import { BundleDetailFrame } from './BundleDetailFrame';
 
 // 지금 번치 명의로 보는 화면이라 검색에서 제외(다른 번치 프로필과 같음)

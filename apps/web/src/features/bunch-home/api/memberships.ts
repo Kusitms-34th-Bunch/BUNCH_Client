@@ -1,4 +1,3 @@
-import { bffApi, requestData } from '@/shared/api/bffApi';
 import {
   type MembershipChangeBase,
   membershipBaseBody as baseBody,
@@ -6,7 +5,8 @@ import {
   membershipsPath,
   toMembershipWireId as wire,
 } from '@/shared/api/bunchMemberships';
-import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/idempotencyKey';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { IDEMPOTENCY_KEY_HEADER } from '@/shared/api/client/idempotencyKey';
 import type { BunchRole } from '../lib/types';
 import { departureResultSchema, SERVER_ROLE } from '../model/memberships';
 

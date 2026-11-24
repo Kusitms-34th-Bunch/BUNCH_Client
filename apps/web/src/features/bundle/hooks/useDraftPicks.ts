@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { notifyManager, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { apiErrorCode, apiErrorStatus } from '@/shared/api/errorStatus';
+import { apiErrorCode, apiErrorStatus } from '@/shared/api/client/errorStatus';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft, DraftPhoto } from '../lib/types';
 import type { PhotoPicks } from '../model/bundle';

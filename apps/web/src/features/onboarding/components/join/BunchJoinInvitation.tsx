@@ -4,7 +4,7 @@ import { Header, LineChevronLeftLargeIcon, toast } from '@app/design-system';
 import { InviteCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { apiErrorCode, isDefiniteRejection } from '@/shared/api/errorStatus';
+import { apiErrorCode, isDefiniteRejection } from '@/shared/api/client/errorStatus';
 import { replaceTabPath } from '@/shared/bridge/client';
 import { HeaderIconButton } from '@/shared/components/layout/HeaderIconButton';
 import { PageShell } from '@/shared/components/layout/PageShell';

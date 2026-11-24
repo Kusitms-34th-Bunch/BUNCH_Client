@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { getBunchMembers } from '@/shared/api/bunchMembers';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { sharedKeys } from '@/shared/query/keys';
 import type { Home } from '../model/bunchHome';
 import { getBunchHome, getPublishedBundles } from '../api/bunchHome';

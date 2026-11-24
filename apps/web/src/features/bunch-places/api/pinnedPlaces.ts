@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { bffApi, requestData } from '@/shared/api/bffApi';
-import { toWireId } from '@/shared/api/ids';
+import { bffApi, requestData } from '@/shared/api/client/bffApi';
+import { toWireId } from '@/shared/api/client/ids';
 import { ALL_MEMBERS } from '../lib/types';
 import { pinnedPlacesResponseSchema, toPinnedPlaces } from '../model/pinnedPlaces';
 

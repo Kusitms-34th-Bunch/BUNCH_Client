@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import type { FeedViewer } from '../lib/types';
 

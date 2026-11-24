@@ -1,7 +1,7 @@
 // 크기 유지: 상세 query와 초안 mutation이 같은 상세 key·캐시 동기화(useBundleCacheSync)와 이벤트 적용을 함께 씀
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiErrorCode } from '@/shared/api/errorStatus';
-import { createIdempotencyKey } from '@/shared/api/idempotencyKey';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
+import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { PROHIBITED_WORD_CODE } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { sharedKeys } from '@/shared/query/keys';

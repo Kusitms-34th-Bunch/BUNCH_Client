@@ -4,7 +4,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
-import { apiErrorCode } from '@/shared/api/errorStatus';
+import { apiErrorCode } from '@/shared/api/client/errorStatus';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';

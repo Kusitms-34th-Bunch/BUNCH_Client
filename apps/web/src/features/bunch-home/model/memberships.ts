@@ -3,7 +3,7 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { BunchMember as SharedBunchMember } from '@/shared/api/bunchMembers';
 import type { MembershipsResponse, membershipRoleSchema } from '@/shared/api/bunchMemberships';
-import { toDomainId } from '@/shared/api/ids';
+import { toDomainId } from '@/shared/api/client/ids';
 import { BUNCH_ROLE_FROM_SERVER } from '@/shared/lib/bunchRole';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { DEFAULT_PROFILE_IMAGE } from '@/shared/lib/profile/bunchProfile';

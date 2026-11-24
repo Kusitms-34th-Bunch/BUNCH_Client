@@ -1,6 +1,6 @@
 import type { SocialProvider } from '@app/bridge';
 import { normalizeError } from '@app/api-core';
-import { bffApi } from '@/shared/api/bffApi';
+import { bffApi } from '@/shared/api/client/bffApi';
 
 export type SocialLoginRequest = {
   provider: SocialProvider;
