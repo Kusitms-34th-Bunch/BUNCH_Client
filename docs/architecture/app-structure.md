@@ -5,15 +5,15 @@
 - `src/app`은 Next.js route, layout, metadata와 provider 조립을 담당한다.
 - 화면·feature 로직은 `src/features`, 재사용 가능한 인프라는 `src/shared`에 둔다. 디자인 시스템 UI 컴포넌트를 조합해 domain 문구·route·데이터·행동을 붙이는 것은 `src/features`가 맡는다.
 - `shared`는 특정 domain이나 route를 import하지 않는다(`apps/web/eslint.config.mjs`가 `@/features/*`·`@/app/*` import를 막음).
-- `src/mocks`는 가짜 백엔드(MSW handler, 가짜 DB, 켜는 게이트)만 둔다. 화면 코드(`features`)는 import하지 않고, `app/layout.tsx`의 `ApiMockingGate`와 테스트 setup(`vitest.setup.ts`)만 쓴다. handler는 UI feature가 아니라 백엔드 resource 단위로 나눈다(`handlers/members.ts`).
+- `src/mocks`는 가짜 백엔드(MSW handler, 가짜 DB, 켜는 게이트)만 둔다. 화면 코드(`features`)는 import하지 않는다. 운영 코드는 `app/layout.tsx`의 `ApiMockingGate`만 쓰고, 테스트는 `vitest.setup.ts`와 각 테스트 파일이 `mocks/server`·`mocks/db`를 import한다(가짜 DB를 쓰면 server import 필수, `yarn lint`의 `check:mock-imports`). handler는 UI feature가 아니라 백엔드 resource 단위로 나눈다(`handlers/members.ts`).
 - `shared/config`에는 특정 영역에 속하지 않는 환경 변수와 라이브러리 초기화·옵션 객체(예: Sentry), `shared/lib`에는 feature `lib/`와 같이 순수 함수와 라이브러리 연결 래퍼를 둔다. 앱 전체가 기대는 인프라이거나 파일이 여러 개로 늘어날 설정은 영역 폴더(`api/`, `query/`, `bridge/`)로 두고, 그 영역의 환경 변수도 영역 폴더에서 읽는다. 앱 공용 provider는 `shared/providers/`에 두고 조립은 layout이 맡는다.
 - `shared`는 역할별 폴더만 둔다. 도메인 폴더(예: `shared/lib/invitation/`)는 만들지 않는다. `features`의 도메인 경계를 `shared` 안에 다시 만들면 둘 곳을 정하는 기준이 둘로 갈라진다.
   - 역할 폴더가 커지면 같은 역할 안에서 주제별 하위 폴더로 묶는다(예: `lib/image/`, `lib/navigation/`, `hooks/overlay/`, `hooks/scroll/`).
-  - 기준은 한 주제의 구현 파일이 5~6개를 넘거나 찾기 불편해질 때다. 그 전에는 평평하게 둔다.
-  - `shared/api`는 서버 전용 파일을 `shared/api/server/`로 나눴다(2026-11-16, 서버 전용 10개). 나눈 기준은 파일 수보다 실행 위치다. 쿠키·토큰을 다루는 서버 코드와 브라우저 요청 코드가 한 폴더에 섞이면 import해도 되는지가 이름으로 구분되지 않는다.
+  - 기준은 같은 주제의 구현 파일이 3개 이상일 때다(테스트 제외). 2개 이하인 주제와 어느 주제에도 맞지 않는 범용 파일은 역할 폴더 바로 아래에 둔다(2026-11-24 사용자 결정).
+  - `shared/api`는 서버 전용 파일을 `shared/api/server/`로 나눴다(2026-11-16, 서버 전용 10개, 지금은 12개). 나눈 기준은 파일 수보다 실행 위치다. 쿠키·토큰을 다루는 서버 코드와 브라우저 요청 코드가 한 폴더에 섞이면 import해도 되는지가 이름으로 구분되지 않는다.
   - `shared/lib`·`shared/hooks`는 주제별 하위 폴더로 나눴다(2026-11-23). `lib`는 `image/`·`navigation/`·`native/`·`profile/`, `hooks`는 `native/`·`overlay/`·`profile/`·`scroll/`다.
-  - 구현 파일이 2~3개인 주제는 역할 폴더 바로 아래에 둔다(예: 로티 `lottieLight`·`lottieLoader`, 2026-11-24 확인).
-  - `shared/api`는 `server/` 밖 구현 파일이 18개이고 주제마다 5개 이하라 평평하게 둔다(2026-11-24 확인). 나누게 되면 요청 기반 파일(`bffApi`·`browserClient`·`errorStatus`·`idempotencyKey`·`ids`)부터 역할 폴더로 뺀다(제안). 번치·내 계정처럼 도메인으로 나누지 않는다.
+  - 예: 로티(`lottieLight`·`lottieLoader`)는 2개라 `lib/` 바로 아래에 있다.
+  - `shared/api`는 요청 기반 파일(`bffApi`·`browserClient`·`errorStatus`·`idempotencyKey`·`ids`)을 `shared/api/client/`로 나눴다(2026-11-24). 여러 feature가 쓰는 요청 함수는 `shared/api/` 바로 아래에 둔다. 번치·내 계정처럼 도메인으로 나누지 않는다(위 도메인 폴더 금지).
 - feature 폴더는 역할별로 나눈다(예: `components` UI, `constants` 상수, `hooks` 일반 hook, `contexts` context·provider, `lib`·`utils` 순수 함수, `fixtures` API 연결 전 샘플 데이터·테스트 공용 값). 필요한 폴더만 만들고(빈 폴더는 `.gitkeep`), 정해진 목록은 없다. `features/auth`가 역할 폴더 스캐폴딩의 예이고, API 연동 파일(`api/`, `queries/`, 필요할 때 `model/`)은 `docs/architecture/data-layer.md`의 "파일 배치 (web)"를 따른다.
 - 폴더 이름은 같은 종류를 여러 개 모으면 복수(`components/`, `hooks/`, `providers/`, feature의 `queries/`), 영역·인프라를 부르면 단수(`api/`, `query/`, `config/`, `lib/`)로 짓는다.
 - `components/`에는 UI 컴포넌트와 해당 컴포넌트의 테스트·spec·스타일만 둔다. 공개 컴포넌트 export용 `index.ts`는 예외다. 화면 전용이어도 별도 파일로 분리한 hook은 `hooks/`, 순수 함수는 `lib/`·`utils/`, 라이브러리 연결 래퍼는 `lib/`에 둔다. 상수·타입도 별도 파일이면 각 역할 폴더로 분리한다. 컴포넌트 파일 안의 작은 handler·상수까지 억지로 추출하지 않는다.
@@ -21,7 +21,7 @@
 - 웹 앱에서 import하는 이미지·로티 등 정적 자산은 `src/shared/assets/`에서 종류별로 관리한다(예: `lotties/`). URL로 직접 제공하는 파일은 `public/`에 둔다. 재생 컴포넌트·hook·도메인 로직은 자산과 함께 옮기지 않고 해당 feature에 둔다.
 - 다른 feature의 내부 파일은 import하지 않는다(lint로 검사, 기준과 예외는 `docs/architecture/domain-ownership.md`). 둘 이상의 feature가 쓰게 되면 `shared`로 옮기거나 route에서 조합한다.
 - 둘 이상의 feature가 같은 뜻으로 쓰는 경로·문구는 `shared/constants/`(`paths.ts`의 `APP_PATHS`, `messages.ts`의 `COMMON_MESSAGES`)에 둔다. 각 feature 상수는 자기 이름(상황별 key)을 유지하고 값만 가져온다. 한 feature만 쓰는 값은 그 feature에 둔다.
-- `shared/lib`·`shared/hooks`는 관심사별 하위 폴더에 둔다. 같은 관심사 파일이 셋 미만이면 하위 폴더를 만들지 않고 바로 아래에 둔다. 어느 관심사에도 맞지 않는 범용 파일도 바로 아래에 둔다.
+- `shared/lib`·`shared/hooks`·`shared/api`는 관심사별 하위 폴더에 둔다. 나누는 기준은 위 「역할 폴더가 커지면」을 따른다.
   - `profile`: 이름·닉네임·성별·출생연도 입력과 프로필 사진 자르기
   - `image`: 사진 읽기·자르기·주소 검사
   - `navigation`: 화면 이동·기록·전환 키·이동 뒤 안내

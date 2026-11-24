@@ -7,7 +7,7 @@ EAS 빌드, 버전·빌드 번호, App Store 제출용 환경변수다. 개발 �
 로컬 Xcode 실행에는 EAS가 필요 없다. 클라우드 빌드는 앱 폴더에서 준비한다.
 
 1. `pnpm dlx eas-cli@latest login` 후 `pnpm dlx eas-cli@latest init`으로 프로젝트를 연결한다.
-2. EAS의 개발 환경에는 `EXPO_PUBLIC_DEV_WEB_URL`, 미리보기·운영 환경에는 `EXPO_PUBLIC_WEB_URL`을 설정한다. Release 앱은 HTTPS 웹 주소를 쓴다.
+2. EAS의 개발 환경에는 `EXPO_PUBLIC_DEV_WEB_URL`, 미리보기·운영 환경에는 `EXPO_PUBLIC_WEB_URL`을 설정한다. 모든 환경에 `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY`·`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`(Plain text)도 등록한다. 없으면 `app.config.js`가 EAS 빌드를 멈춘다. Release 앱은 HTTPS 웹 주소를 쓴다.
 3. Sentry를 쓰면 `EXPO_PUBLIC_SENTRY_DSN`과 업로드용 Secret `SENTRY_AUTH_TOKEN`을 설정한다.
 4. iPhone 빌드는 유료 Apple Developer 계정·서명을 준비하고 `pnpm dlx eas-cli@latest device:create`로 기기를 등록한다.
 
@@ -62,14 +62,16 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 양식은 [`.env.production.example`](../../apps/mobile-shell/.env.production.example)에 둔다.
 파일 자체는 자동 적용되지 않는다. EAS 프로젝트 설정의 **Environment variables**에서 `production` 환경에 등록한다.
 
-| 변수                             | 값·공개 범위                       |
-| -------------------------------- | ---------------------------------- |
-| `EXPO_PUBLIC_WEB_URL`            | 실제 운영 HTTPS 주소, Plain text   |
-| `EXPO_PUBLIC_SENTRY_DSN`         | 오류 수집 사용 시 DSN, Plain text  |
-| `EXPO_PUBLIC_SENTRY_ENVIRONMENT` | `production` (`eas.json`에 설정됨) |
-| `SENTRY_AUTH_TOKEN`              | 소스맵 업로드 사용 시 토큰, Secret |
+| 변수                               | 값·공개 범위                                         |
+| ---------------------------------- | ---------------------------------------------------- |
+| `EXPO_PUBLIC_WEB_URL`              | 실제 운영 HTTPS 주소, Plain text                     |
+| `EXPO_PUBLIC_SENTRY_DSN`           | 오류 수집 사용 시 DSN, Plain text                    |
+| `EXPO_PUBLIC_SENTRY_ENVIRONMENT`   | `production` (`eas.json`에 설정됨)                   |
+| `SENTRY_AUTH_TOKEN`                | 소스맵 업로드 사용 시 토큰, Secret                   |
+| `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY` | 카카오 네이티브 앱 키, Plain text(없으면 빌드 멈춤)  |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 구글 iOS 클라이언트 ID, Plain text(없으면 빌드 멈춤) |
 
 등록 후 `--profile production`으로 빌드한다. 빌드 전에 `EXPO_PUBLIC_WEB_URL`이 등록됐는지 반드시 확인한다. 등록하지 않으면 빌드는 성공하고 설치한 앱이 시작하자마자 종료된다(`preview`도 같다). 빌드 후에는 설치한 앱이 열리는지 첫 실행을 확인하고, 운영 웹 접속과 앱 식별자·버전도 확인한다.
-쉘이나 쉘을 부르는 웹 코드를 바꿨으면 빌드 전에 쉘 E2E(아래 「쉘 E2E(Maestro)」)를 로컬에서 돌리거나 `mobile-e2e.yml`을 수동 실행해 통과를 확인한다.
+쉘이나 쉘을 부르는 웹 코드를 바꿨으면 빌드 전에 쉘 E2E([mobile-e2e.md](./mobile-e2e.md))를 로컬에서 돌리거나 `mobile-e2e.yml`을 수동 실행해 통과를 확인한다.
 개발용 `.env.local`을 운영 값으로 덮어쓰지 않는다. Xcode에서 직접 Archive할 때는 해당 빌드에도 운영 변수를 별도로 적용해야 한다.
 스토어 제출에는 유료 Apple Developer 계정이 필요하며, 현재 제출용 빌드는 검증하지 않았다.

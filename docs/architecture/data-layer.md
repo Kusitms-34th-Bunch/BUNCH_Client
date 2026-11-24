@@ -7,15 +7,15 @@
 - OpenAPI 생성 계약은 `packages/api-core/src/generated/openapi.ts`에 둔다. 생성 파일은 endpoint 경계에서만 사용하고 UI에는 필요한 형태로 좁혀 전달한다.
 - wire 필드명과 도메인 이름이 다르면(예: `pub_date` → `publishedAt`) raw 타입으로 먼저 받고 endpoint 경계에서 명시적으로 매핑한다. 필드명이 다른 응답을 `as`로 단언하면 타입 체크는 통과해도 값이 런타임에 `undefined`가 되는 버그로 이어진다.
 - 모든 endpoint 응답은 zod 스키마로 검사한 뒤 쓴다. 생성 타입은 컴파일 타임 계약일 뿐이라 서버가 실제로 다른 값을 보내도 막지 못한다.
-  - 스키마는 feature `model/`에 두고 타입은 `z.infer`로 얻는다. Swagger에 있는 응답은 `schema satisfies z.ZodType<ApiContract<생성 타입>>`(`@app/api-core`)으로 생성 계약과 묶는다.
+  - 스키마는 그 요청 함수 파일(`api/`)에 두고 타입은 `z.infer`로 얻는다. 여러 파일이 같은 스키마를 쓰거나 변환이 커지면 `model/`로 뺀다. Swagger에 있는 응답은 `schema satisfies z.ZodType<ApiContract<생성 타입>>`(`@app/api-core`)으로 생성 계약과 묶는다.
   - `ApiContract`는 생성 타입의 선택 필드를 생략과 null 모두 허용하도록 넓힌다. 중첩 객체와 배열 항목에도 같은 규칙을 적용한다. 서버가 둘 중 어느 쪽으로 보낼지 생성 타입만으로는 알 수 없어서다. 선택 필드는 스키마에서 `.nullish()`로 받는다.
   - 이 검사는 스키마 결과가 계약에 들어맞는지만 보는 단방향 검사다. 필수 필드 누락, 값 타입 오류, 계약에 없는 enum 값은 컴파일에서 잡는다. 계약에 없는 필드 추가, 계약보다 좁은 enum, 빠뜨린 선택 필드는 잡지 못하므로 스키마를 쓸 때 생성 타입과 직접 대조한다. 계약상 선택인 필드를 화면 때문에 필수로 받으면 그 이유를 스키마 주석에 남긴다.
   - Swagger에 아직 없는 응답만 노션 명세로 스키마를 쓰고, 올라오면 같은 방식으로 묶는다.
-  - web은 `src/shared/api/bffApi.ts`의 `requestData(request, schema, context)`로 요청한다. 넘기는 응답 스키마는 Swagger 생성 타입과 `satisfies z.ZodType<ApiContract<…>>`로 묶는다. 화면에 필요한 필드만 받거나 계약보다 느슨하게 받아 묶지 못하면 선언 바로 위에 `// 계약 미연결: <이유>`를 적는다. `yarn lint`의 `check:contracts`(`apps/web/scripts/check-response-contracts.mjs`)가 둘 다 없는 스키마를 막는다. 문서·주석의 「아직 생성 타입이 없다」 같은 설명은 낡기 쉬워서 이유를 검사로 드러낸다. envelope 해제, 스키마 검사, 오류 변환을 한곳에서 한다. HTTP 오류·실패 envelope·네트워크 오류·계약 위반은 모두 `ApiError`로 던지고, 계약 위반은 code `INVALID_RESPONSE`(category `validation`, 재시도 없음)다. category `validation`은 4xx 요청 오류에도 쓰이므로 계약 위반은 code로 구분한다. 어느 응답인지와 어긋난 위치는 화면 문구가 아니라 `data`(`context`, `issues`)에 담긴다. 계약 위반은 아래 「오류 보고 (web)」 기준으로 Sentry에 보낸다.
+  - web은 `src/shared/api/client/bffApi.ts`의 `requestData(request, schema, context)`로 요청한다. 넘기는 응답 스키마는 Swagger 생성 타입과 `satisfies z.ZodType<ApiContract<…>>`로 묶는다. 화면에 필요한 필드만 받거나 계약보다 느슨하게 받아 묶지 못하면 선언 바로 위에 `// 계약 미연결: <이유>`를 적는다. `yarn lint`의 `check:contracts`(`apps/web/scripts/check-response-contracts.mjs`)가 둘 다 없는 스키마를 막는다. 문서·주석의 「아직 생성 타입이 없다」 같은 설명은 낡기 쉬워서 이유를 검사로 드러낸다. envelope 해제, 스키마 검사, 오류 변환을 한곳에서 한다. HTTP 오류·실패 envelope·네트워크 오류·계약 위반은 모두 `ApiError`로 던지고, 계약 위반은 code `INVALID_RESPONSE`(category `validation`, 재시도 없음)다. category `validation`은 4xx 요청 오류에도 쓰이므로 계약 위반은 code로 구분한다. 어느 응답인지와 어긋난 위치는 화면 문구가 아니라 `data`(`context`, `issues`)에 담긴다. 계약 위반은 아래 「오류 보고 (web)」 기준으로 Sentry에 보낸다.
   - enum은 명세 값만 받는 닫힌 목록으로 둔다. 서버가 새 값을 보내면 화면이 추측하지 않고 계약 위반으로 드러난다.
   - `requestData`는 `data`가 있는 응답 전용이다. 본문 없는 204 응답은 본문을 읽지 않는다. 요청 함수에서 `bffApi.*`를 await하고 오류를 `normalizeError`로 감싼다(로그아웃 `shared/api/logout.ts` 기준). 같은 형태가 반복되면 `shared/api`의 공용 함수로 올린다.
-  - 재발급까지 실패한 401은 `ApiError`(category `auth`)로만 전달된다. 403은 category `forbidden`이다. 재발급이 일시 장애(502·503·504·네트워크)로 실패하면 401로 바꾸지 않고 `server`·`network`로 전달한다(`api-boundary.md`). 화면이 같은 기준으로 쓰는 status 판정(볼 수 없음 400·403·404, 확정 거절 4xx)은 `src/shared/api/errorStatus.ts`를 쓴다. 로그인 화면으로 보내는 처리는 `AuthGate`가 가입 상태를 다시 읽을 때 맡고, `createBrowserApi`의 `onUnauthorized`는 연결하지 않는다(`shared/api/bffApi.ts`).
-- TanStack Query query key는 안정적이고 도메인 의미가 드러나야 한다. key는 feature의 `queries/keys.ts` factory 함수만 만들고, queryOptions·hook·무효화 코드는 그 함수를 호출만 한다(배열을 직접 쓰지 않는다). 모든 key는 `{feature}.all`에서 시작해 도메인 이름 함수(`nicknameAvailability(nickname)`, `mine()` → `latestMine()` 등)로 이어지고, 목록·상세 리소스가 있을 때만 `all → lists/list`, `all → details/detail` 계층(`createQueryKeys`)을 쓴다. response 결과를 바꾸는 filter·sort·cursor·id는 모두 key 함수 인자로 받고, 빈 값 제거 같은 정규화도 key 함수에서 한다. 일반 목록과 infinite 목록은 서로 다른 key를 쓰되 같은 prefix 아래에 둔다(예: `list(bunchId)` 아래 `list(bunchId, params)`와 `[...list(bunchId), 'infinite', params]`). 그러면 prefix 하나로 두 목록을 함께 invalidate할 수 있다.
+  - 재발급까지 실패한 401은 `ApiError`(category `auth`)로만 전달된다. 403은 category `forbidden`이다. 재발급이 일시 장애(502·503·504·네트워크)로 실패하면 401로 바꾸지 않고 `server`·`network`로 전달한다(`api-boundary.md`). 화면이 같은 기준으로 쓰는 status 판정(볼 수 없음 400·403·404, 확정 거절 4xx)은 `src/shared/api/client/errorStatus.ts`를 쓴다. 로그인 화면으로 보내는 처리는 `AuthGate`가 가입 상태를 다시 읽을 때 맡고, `createBrowserApi`의 `onUnauthorized`는 연결하지 않는다(`shared/api/client/bffApi.ts`).
+- TanStack Query query key는 안정적이고 도메인 의미가 드러나야 한다. key는 feature의 `queries/keys.ts` factory 함수만 만들고, queryOptions·hook·무효화 코드는 그 함수를 호출만 한다(배열을 직접 쓰지 않는다). feature key는 `{feature}.all`에서 시작해 도메인 이름 함수(예: `photoBoxKeys.photos(bunchId)` → `datedPhotos(bunchId)`)로 이어지고, 여러 feature가 함께 쓰는 `sharedKeys`(`shared/query/keys.ts`)는 `all` 없이 리소스 이름(`['bunch-members', bunchId]`)으로 시작한다. `@app/api-core`의 `createQueryKeys`(`all → lists/list`, `all → details/detail`)는 앱에서 아직 쓰지 않고 key는 손으로 쓴 객체다(2026-11-24 확인). response 결과를 바꾸는 filter·sort·cursor·id는 모두 key 함수 인자로 받고, 빈 값 제거 같은 정규화도 key 함수에서 한다. 일반 목록과 infinite 목록은 서로 다른 key를 쓰되 같은 prefix 아래에 둔다(예: `list(bunchId)` 아래 `list(bunchId, params)`와 `[...list(bunchId), 'infinite', params]`). 그러면 prefix 하나로 두 목록을 함께 invalidate할 수 있다.
 - 일반 `useQuery`, `useSuspenseQuery`, infinite query, route prefetch는 화면의 loading 경계와 navigation 요구에 맞춰 선택한다. 구체적인 선택 기준은 아래 "Query 모드 선택"을 따른다.
 - mutation 뒤 캐시 처리는 아래 "Mutation 캐시 동기화" 결정표를 따른다.
 - optimistic update는 아래 3단계 계약을 모두 지킬 수 있을 때만 사용한다. 하나라도 근거 없이 생략되면 성공 응답 뒤 갱신을 선택한다.
@@ -27,13 +27,13 @@
 
 ## 파일 배치 (web)
 
-API 연동 코드는 그 데이터를 쓰는 feature 안에 층별 폴더로 둔다. 폴더는 실제로 쓸 때만 만든다(빈 폴더를 미리 만들지 않는다).
+API 연동 코드는 그 데이터를 쓰는 feature 안에 층별 폴더로 둔다. 폴더는 실제로 쓸 때만 만든다(web은 빈 폴더와 `.gitkeep`을 두지 않는다).
 
 ```text
 apps/web/src/features/{feature}/
   api/           요청 함수(브라우저 → BFF). 백엔드 리소스 단위 파일
   queries/       keys.ts(key factory), 리소스별 queryOptions·mutation hook
-  model/         (필요할 때) 응답 스키마·도메인 타입·변환
+  model/         (필요할 때) 여러 파일이 쓰는 응답 스키마·도메인 타입·변환
   hooks/         화면·흐름 hook(queries/의 options·mutation을 읽어 조합 가능)
 apps/web/src/shared/query/     QueryClient 설정, 여러 feature가 함께 쓰는 query(승격 시)
 apps/web/src/shared/providers/ QueryProvider(앱 공용 provider)
@@ -41,82 +41,89 @@ apps/web/src/app/api/[...path]/route.ts   범용 BFF 프록시
 apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·삭제)
 ```
 
-- **`api/`**: HTTP 요청과 계약 변환만 한다. React·TanStack Query·`next/navigation`·디자인 시스템(toast 등)을 import하지 않는다(ESLint 강제). 파일은 백엔드 리소스 단위(`api/nickname.ts`)로 나누고 함수 이름은 네트워크 동사(`get`, `create`, `update`, `remove`)로 시작한다. 경로는 BFF 기준(`/api/…`)이다.
+- **`api/`**: HTTP 요청과 계약 변환만 한다. React·TanStack Query·`next/navigation`·디자인 시스템(toast 등)을 import하지 않는다. feature `api/`는 ESLint가 막고, `shared/api/`의 요청 함수도 같은 기준을 따른다(검사 대상 아님). 파일은 백엔드 리소스 단위(`api/nickname.ts`)로 나누고 함수 이름은 네트워크 동사(`get`, `create`, `update`, `remove`)로 시작한다. 경로는 BFF 기준(`/api/…`)이다.
 - **`queries/`**: query key, `queryOptions`·`infiniteQueryOptions`, mutation hook을 둔다. `queryOptions`·`useMutation`·`useQueryClient`·`QueryClient`는 `queries/`, `src/shared/query/`, `QueryProvider`에서만 import한다(ESLint 강제, 타입 import는 어디서나 허용). 파일 이름은 `api/`와 맞춘다(`api/nickname.ts` ↔ `queries/nickname.ts`).
 - **query hook은 기본으로 만들지 않는다.** 화면이 `useQuery(xxxQueryOptions(…))`처럼 options를 받아 읽는다(`useQuery`·`useSuspenseQuery`·`useInfiniteQuery`는 어디서나 사용 가능). 여러 query 조합이나 가공이 필요할 때만 `queries/`에 `use…Query`를 만든다.
 - **mutation은 항상 `queries/`의 `use…Mutation` hook으로 만든다.** 캐시 동기화(아래 "Mutation 캐시 동기화")를 한곳에 모으기 위해서다. 화면 이동·toast 같은 화면 동작은 기본으로 화면이 `mutate(…, { onSuccess })`로 처리한다. 실패 문구는 `meta.errorMessage`로 공통 처리에 맡긴다. 요청 중 화면이 사라져도 반드시 실행돼야 하는 이동(로그아웃·탈퇴·가입 뒤 이동)과 `meta.errorMessage`로 나타낼 수 없는 조건부 실패 알림(이미 취소된 콕은 알리지 않음 등)은 mutation 정의에 두고 이유를 주석으로 남긴다. `queries/`의 조회 hook은 실패 알림을 띄우지 않고 실패 여부만 돌려준다(알림은 화면이 정함).
 - **mutation 실패 알림은 공통 처리로 선언한다.** mutation에 `meta: { errorMessage }`(사용자 문구)를 주면 QueryClient의 `MutationCache.onError`가 그 문구를 toast로 띄운다. meta 타입은 TanStack Query `Register`로 고정한다. 서버 `error.message`는 문구 키라 그대로 보여 주지 않는다. code마다 다른 문구가 필요하거나 입력 칸 아래에 오류를 보여 주는 화면은 meta 없이 `mutate(…, { onError })`로 직접 처리한다. 성공 toast와 화면 이동은 계속 화면이 맡는다. 구현은 `src/shared/query/queryClient.ts`의 `MutationCache`와 `Register.mutationMeta`다.
 - **`hooks/`**: 화면·흐름 hook을 둔다. `queries/`의 options를 `useQuery`로 읽거나 mutation hook을 불러 조합할 수 있다. query 정의(`queryOptions`)·mutation 정의·캐시 조작(`useQueryClient`)은 `queries/`에만 둔다(ESLint 강제).
 - 여러 feature가 같은 요청·query를 실제로 함께 쓰고 계약이 안정되면 `src/shared`(`shared/query/`)로 옮긴다. 인증 세션(로그인·재발급·로그아웃)은 모든 BFF가 쓰는 공용 인프라라 처음부터 `src/shared/api/`에 둔다.
-- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/ids.ts`로 화면 문자열 id로 바꾼다. 화면·hook·query는 문자열 id만 넘기고, 서버 숫자로 바꾸는 `toWireId`·`requireWireId`는 `api/`에서만 쓴다(ESLint 강제). 잘못된 id로 요청을 건너뛸지는 `isWireId`로 판단한다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
+- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/client/ids.ts`로 화면 문자열 id로 바꾼다. 화면·hook·query는 문자열 id만 넘기고, 서버 숫자로 바꾸는 `toWireId`·`requireWireId`는 `api/`에서만 쓴다(ESLint 강제, `features/bundle`은 남은 위반 때문에 임시 제외, `apps/web/eslint.config.mjs`). 잘못된 id로 요청을 건너뛸지는 `isWireId`로 판단한다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
 
 ### 예시
 
-실제 기준 예시는 번치 멤버 목록(조회, 여러 feature가 써서 shared)과 사진함 사진 삭제(쓰기)다. 새 API는 이 파일들을 따라 만든다.
+실제 기준 예시는 번치 멤버 목록(조회, 여러 feature가 써서 shared)과 번치 차단(쓰기, 실패 문구 `meta`)이다. 새 API는 이 파일들을 따라 만든다. 아래 코드는 실제 파일에서 주석을 줄였다(2026-11-24 기준).
 
-- `src/shared/api/bunchMembers.ts`: 응답 zod 스키마(생성 계약과 `satisfies`로 묶음), 화면 모양으로 바꾸는 변환(숫자 id → 문자열), `requestData`로 요청. 조회 함수는 마지막 인자로 `signal`을 받아 ky에 넘긴다(mutation은 받지 않음. Query도 mutation에는 signal을 주지 않고, 끊어도 서버 처리는 계속돼 결과만 잃음)
-- `src/shared/query/keys.ts`, `src/shared/query/bunchMembers.ts`: key factory와 `queryOptions`
+- `src/shared/api/bunchMembers.ts`: 응답 zod 스키마(생성 계약과 `satisfies`로 묶음, 파일 안 비공개), 화면 모양으로 바꾸는 변환(숫자 id → 문자열), `requestData`로 요청. 조회 함수는 마지막 인자로 `signal`을 받아 ky에 넘긴다(mutation은 받지 않음. Query도 mutation에는 signal을 주지 않고, 끊어도 서버 처리는 계속돼 결과만 잃음)
+- `src/shared/query/keys.ts`, `src/shared/query/bunchMembers.ts`: key factory와 `queryOptions`(앱을 열자마자 보이는 데이터라 `...persistedQuery`)
 - `src/shared/api/bunchMembers.test.ts`, `src/shared/query/bunchMembers.test.tsx`: MSW 가짜 서버로 확인하는 테스트(`docs/workflows/testing.md`)
-- 쓰기: `features/photo-box/model/photos.ts`(응답 스키마), `api/photos.ts`(`requestData(bffApi.post(…, { json }))`, 화면 id → 서버 숫자), `queries/photos.ts`(`useDeletePhotosMutation`: 실패 문구 `meta`, 성공 뒤 사진 목록 prefix `photoBoxKeys.photos(bunchId)` 무효화를 반환), `src/mocks/handlers/photos.ts`(본문 검사와 가짜 DB 변경), 각 test
+- 쓰기: `features/bunch-home/api/blocks.ts`, `queries/blocks.ts`(`useBlockBunchMutation`: 실패 문구 `meta`, 성공 뒤 관련 key 무효화), `src/mocks/handlers/blocks.ts`, 각 test
+- optimistic 쓰기: `features/photo-box/queries/photos.ts`(`useDeletePhotosMutation`: 목록에서 먼저 빼고 실패하면 그 사진만 되돌린 뒤 `onSettled`에서 무효화). 실패 문구가 결과마다 달라 `meta` 없이 화면이 토스트를 띄운다.
 
 ```ts
-// model/bunchMembers.ts — 서버 응답 모양과 화면 모양
+// shared/api/bunchMembers.ts — 서버 응답 모양, 화면 모양, 요청 함수
 const bunchMemberResponseSchema = z.object({
   memberId: z.number().int().positive(),
   nickname: z.string(),
-  imageUrl: z.string().nullable(),
+  imageUrl: z.string().nullish(),
   role: z.enum(['OWNER', 'CO_OWNER', 'MEMBER']),
-});
-export const bunchMembersResponseSchema = z.array(bunchMemberResponseSchema);
+}) satisfies z.ZodType<ApiContract<components['schemas']['BunchMemberResponse']>>;
+const bunchMembersResponseSchema = z.array(bunchMemberResponseSchema);
 
-// api/bunchMembers.ts — 요청 함수(조회는 Query의 signal을 받아 ky에 넘김)
+const toBunchMember = (member: z.infer<typeof bunchMemberResponseSchema>): BunchMember => ({
+  id: toDomainId(member.memberId),
+  name: member.nickname,
+  avatarSrc:
+    member.imageUrl && isSafeImageUrl(member.imageUrl) ? member.imageUrl : DEFAULT_PROFILE_IMAGE,
+  role: member.role,
+});
+
 export const getBunchMembers = async (bunchId: string, signal?: AbortSignal) => {
   const members = await requestData(
     bffApi.get(`bunches/${encodeURIComponent(bunchId)}/members`, { signal: signal ?? null }),
     bunchMembersResponseSchema,
     'bunch members',
   );
-  return members.map(toPhotoBoxMember);
+  return members.map(toBunchMember);
 };
 
-// queries/keys.ts — key factory
-export const photoBoxKeys = {
-  all: ['photo-box'] as const,
-  members: (bunchId: string | undefined) => [...photoBoxKeys.all, 'members', bunchId] as const,
+// shared/query/keys.ts — key factory
+export const sharedKeys = {
+  bunchMembers: (bunchId: string | undefined) => ['bunch-members', bunchId] as const,
 };
 
-// queries/bunchMembers.ts — queryOptions(입력이 없으면 skipToken으로 요청하지 않음)
+// shared/query/bunchMembers.ts — queryOptions(입력이 없으면 skipToken으로 요청하지 않음)
 export const bunchMembersQueryOptions = (bunchId: string | undefined) =>
   queryOptions({
-    queryKey: photoBoxKeys.members(bunchId),
+    queryKey: sharedKeys.bunchMembers(bunchId),
     // 화면 이탈·key 변경 때 Query가 signal로 진행 중 요청을 취소
     queryFn: bunchId ? ({ signal }) => getBunchMembers(bunchId, signal) : skipToken,
+    ...persistedQuery,
   });
 
-// queries/photos.ts — mutation hook(캐시 동기화와 실패 문구만)
-export const useDeletePhotosMutation = (bunchId: string) => {
+// features/bunch-home/queries/blocks.ts — mutation hook(캐시 동기화와 실패 문구만)
+export const useBlockBunchMutation = (viewerId: string | null | undefined) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (photoIds: readonly string[]) => removePhotos(bunchId, photoIds),
-    meta: { errorMessage: PHOTO_BOX_MESSAGES.deleteFailed },
-    // 반환해서 mutateAsync·isPending이 활성 목록 재요청 완료까지 대기
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) }),
+    meta: { errorMessage: BUNCH_HOME_MESSAGES.blockFailed },
+    mutationFn: async ({ targetId }: { targetId: string }) => {
+      if (!viewerId) throw new Error('차단할 내 번치가 없습니다.');
+      await blockBunch(viewerId, targetId);
+      // 기다려서 mutateAsync·isPending이 차단 목록 재요청 완료까지 대기
+      await queryClient.invalidateQueries({ queryKey: bunchHomeKeys.blocks(viewerId) });
+      void queryClient.invalidateQueries({ queryKey: bunchHomeKeys.otherBunch(targetId) });
+    },
   });
 };
 
-// 화면 — 읽기와 화면 동작
-const { data: members, error } = useQuery(bunchMembersQueryOptions(bunchId));
-const remove = useDeletePhotosMutation(bunchId);
-remove.mutate(selectedIds, {
-  // 함께 올린 사진은 남으므로 고른 장수가 아니라 실제로 사라진 장수, 0장이면 토스트 없음
-  onSuccess: ({ deletedCount }) => {
-    if (deletedCount > 0) toast(PHOTO_BOX_MESSAGES.deleteDone(deletedCount));
-  },
-});
-// 중복 제출은 remove.isPending을 버튼 disabled에 연결해 막는다
+// 화면 — 읽기와 화면 동작(성공 토스트·이동은 화면이 정함)
+const { data: members } = useQuery(bunchMembersQueryOptions(bunchId));
+const block = useBlockBunchMutation(viewerId);
+block.mutate({ targetId }, { onSuccess: () => toast(BUNCH_HOME_MESSAGES.blockedDone(bunchName)) });
+// 중복 제출은 block.isPending을 버튼 disabled에 연결해 막는다
 ```
 
-`bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스이고 `requestData`와 함께 `src/shared/api/bffApi.ts`에 있다. QueryClient는 `src/shared/providers/`의 `QueryProvider`가 `(app)` layout에서 제공한다(그룹 밖 화면이 query를 쓰게 되면 캐시를 나누지 않도록 `QueryProvider`를 root layout으로 올린다). 서버 prefetch를 쓰게 되면 요청 단위 `getQueryClient` 구조로 바꾼다. 조회는 네트워크 오류·5xx만 1회 재시도하고(`createRetryPolicy`), 4xx와 mutation은 재시도하지 않는다.
+`bffApi`는 `createBrowserApi()`로 만든 앱 공용 인스턴스이고 `requestData`와 함께 `src/shared/api/client/bffApi.ts`에 있다. QueryClient는 `src/shared/providers/`의 `QueryProvider`가 제공한다. `(app)` layout과 공개 초대 layout(`app/invite/layout.tsx`)이 각각 두므로 두 영역은 캐시를 공유하지 않는다(2026-11-24 확인). 서버 prefetch를 쓰게 되면 요청 단위 `getQueryClient` 구조로 바꾼다. 조회는 네트워크 오류·5xx만 1회 재시도하고(`createRetryPolicy`), 4xx와 mutation은 재시도하지 않는다.
 
 조회의 기본 `staleTime`은 5분이고, 포커스 갱신(`refetchOnWindowFocus`)은 기본값(켜짐)을 유지한다. 5분 안에 화면이나 앱으로 돌아오면 다시 요청하지 않는다. 5분이 지난 뒤 돌아오면 새로 가져온다. 거의 바뀌지 않는 데이터는 그 `queryOptions`에서 `staleTime`을 늘린다. 다른 사용자의 행동으로 바뀌는 데이터(알림, 팔로우 요청 등)는 줄인다. 전역 기본값은 바꾸지 않는다.
 
@@ -145,7 +152,7 @@ remove.mutate(selectedIds, {
 - 이동 가능성이 높은 순간(셀을 누르기 시작할 때, 탭이 화면에 뜰 때 등)에 `queryClient.prefetchQuery(xxxQueryOptions(…))`를 부른다. 화면이 쓰는 것과 같은 `queryOptions`를 다시 쓰므로 key·요청·검사가 갈라지지 않는다.
 - `queryClient`는 `queries/`에서만 쓸 수 있으므로 미리 받기도 `queries/`의 hook(`usePrefetch…`)으로 만들고 화면은 그 hook만 부른다.
 - 요청이 브라우저 → BFF로 나가므로 MSW 가짜 서버와 401 재발급이 그대로 동작한다.
-- 쓰는 곳(#466):
+- 처음 쓴 곳(#466). 그 뒤 피드 번들 상세·댓글, 다른 번치 홈, 콕한 장소, 알림 설정, 사진 원본 등으로 늘었고, 각 feature `queries/`의 `usePrefetch…` hook이다(2026-11-24 기준 13개):
   - 번치 홈이 그려지면 멤버 목록을 미리 받는다(`usePrefetchMemberships`). 이 목록은 화면에 들어갈 때마다 다시 받는 설정(`staleTime: 0`)이다. 그래서 미리 받기에만 30초를 줘서 번치 홈을 오갈 때마다 요청하지 않게 한다.
   - 더보기 메뉴가 그려지면 차단 목록 첫 쪽을 미리 받는다(`usePrefetchBlockedBunches`).
   - 초대 링크는 발급 요청(POST)이라 메뉴를 열 때가 아니라 「멤버 초대」를 누르기 시작할 때 받는다(`shared/query/bunchInvitation.ts`의 `usePrefetchBunchInvitation`, 두 feature가 함께 쓰는 query라 `shared/query`에 둠).
@@ -165,7 +172,7 @@ remove.mutate(selectedIds, {
 
 앱을 다시 열면 지난 서버 상태를 먼저 보이고, 오래된 값은 뒤에서 다시 받는다. WebView 첫 화면이 요청을 모두 기다리지 않게 하려는 것이다(`docs/workflows/performance.md` 「WebView 첫 화면 속도」). 구현은 `src/shared/query/persistence.ts`와 `QueryProvider`(`PersistQueryClientProvider`)가 맡는다.
 
-- 저장은 query마다 정한다. `queryOptions`에 `...persistedQuery`(`meta: { persist: true }`와 `gcTime` 24시간)를 펼친 query만, 데이터를 받은 상태일 때 localStorage에 남긴다. 메모리에서 지워진 query는 저장본에서도 빠져서 `gcTime`을 저장 기간만큼 늘린다. 표시가 없으면 메모리에만 있다.
+- 저장은 query마다 정한다. `queryOptions`에 `...persistedQuery`(`meta: { persist: true }`와 `gcTime` 24시간)나 첫 쪽만 저장하는 `...persistedFirstPage`(`meta.persistFirstPageOnly`도 켬)를 펼친 query만, 데이터를 받은 상태일 때 localStorage에 남긴다. 메모리에서 지워진 query는 저장본에서도 빠져서 `gcTime`을 저장 기간만큼 늘린다. 표시가 없으면 메모리에만 있다.
 - 저장하는 것: 앱을 열자마자 보이는 화면의 데이터(지금은 번치 홈 프로필·완성된 번들·작성 중인 번들, 번치 전환 목록, 번치 멤버, 피드 첫 쪽, 사진함 첫 쪽). 이어서 받는 목록(완성된 번들)은 받은 쪽을 모두 저장하고, 복원 뒤 오래됐으면 받은 쪽을 처음부터 차례로 다시 받는다. 많이 받으면 localStorage 상한(약 5MB)에 가까워지고 복원 뒤 재요청이 쪽 수만큼 늘어나는 것은 감수한다(첫 화면을 바로 그리는 쪽을 택함).
 - 피드와 사진함(날짜 있는 사진·날짜 모르는 사진)은 끝없이 이어 받는 목록이라 첫 쪽만 저장한다(`persistedFirstPage`, 저장할 때만 첫 쪽으로 줄이고 메모리의 목록은 그대로). 첫 화면에 필요한 것은 첫 쪽뿐이고, 받은 쪽을 모두 저장하면 저장본이 커지고 복원 뒤 다시 받는 쪽도 늘어난다. 둘 다 화면에 들어올 때 다시 받으므로(피드 `refetchOnMount: 'always'`, 사진함 화면 `staleTime: 0`, 번들·사진 상세 화면은 30초) 저장본은 다시 받는 동안만 보인다(#494, 2026-11-21). 번치를 바꾸거나 내보내진 뒤 이전 번치의 사진함 저장본은 화면에 쓰이지 않고(어느 번치를 볼지는 서버의 기본 번치로 정함) 데이터를 받은 지 24시간이 지나면 복원하지 않고, 그 뒤의 첫 저장(캐시가 바뀔 때)에서 저장본에서도 빠진다. 그 탭을 다시 열기 전까지는 기기에 남는다(저장 대상은 항목마다 받은 시각으로 거름. 저장본 시각은 저장할 때마다 새로 찍혀, 이것만 보면 다시 받지 않는 복원 데이터가 계속 이어짐). 다시 받기에 실패하면 피드는 안내 없이 저장본을 계속 보인다(사진함은 오래된 목록 안내).
 - 저장하지 않는 것:

@@ -12,7 +12,7 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   // 재시도 1회: 불안정한 테스트를 숨기지 않으면서 한 번의 일시 실패는 넘김(2회는 실패 시간만 늘림)
   retries: process.env.CI ? 1 : 0,
-  // 러너 4코어에서 dev 서버 2개와 함께 워커 2개(1개면 spec이 순서대로만 돎)
+  // 러너 4코어에서 admin dev 서버·web 운영 서버와 함께 워커 2개(1개면 spec이 순서대로만 돎)
   ...(process.env.CI ? { workers: 2 } : {}),
   reporter: process.env.CI ? 'github' : 'list',
   use: {

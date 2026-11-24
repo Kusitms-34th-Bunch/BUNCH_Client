@@ -109,7 +109,7 @@ iOS 앱이 App Store에 출시돼(App Store만, Android 앱 없음) 링크를 �
 
 ## 백엔드·팀에 확인할 것
 
-- 초대 입력 형식: 보조 코드의 문자 범위(프론트는 영숫자 8자 또는 43자 Base64URL 토큰만 서버로 보낸다), 서버가 허용하는 초대 URL의 path(origin은 `app.bunch.kr`로 확정).
+- 초대 입력 형식: 보조 코드의 문자 범위(직접 입력은 영숫자 8자 또는 43자 Base64URL만, 초대 링크 진입과 쉘은 `[A-Za-z0-9_-]` 8~64자를 서버로 보낸다), 서버가 허용하는 초대 URL의 path(origin은 `app.bunch.kr`로 확정).
 - 멱등 키: 사용자 단위로 범위가 지정되는지, 키 길이 제한, 4xx 실패 응답도 같은 키로 재생하는지(프론트는 4xx 뒤 키를 버리고 408·429는 유지한다).
 - 공개 조회(`GET /invitations/{token}`)에 만료된 access 쿠키가 Bearer로 붙을 때의 처리: BFF 프록시는 쿠키가 있으면 경로와 상관없이 `Authorization`을 붙인다. 서버가 공개 경로의 무효 Bearer를 무시하는지, 401로 거부하는지 확인이 필요하다(거부하면 로그인했다가 만료된 사용자가 링크를 열 때 일시적 오류로 보인다).
 - 공개 조회 응답의 `imageUrl`·`inviterNickname`: OpenAPI는 non-null, Notion 명세는 null 가능으로 어긋나 있다(프론트는 둘 다 받는다).

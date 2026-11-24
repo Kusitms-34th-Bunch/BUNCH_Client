@@ -21,15 +21,20 @@ apps/mobile-shell/
       _layout.tsx       iOS 시스템 탭 바(NativeTabs)
       feed.tsx photos.tsx bunch.tsx my.tsx   탭마다 WebView
   modules/
-    tab-crossfade/      탭 전환 80ms 크로스페이드·선택 햅틱(로컬 Expo 모듈, iOS ObjC)
+    tab-crossfade/      탭 전환 80ms 크로스페이드·선택 햅틱·탭 바 꾹 누르기 제스처(로컬 Expo 모듈, iOS ObjC)
+    screen-switch/      번치 전환 때 화면 전체를 덮는 모션
+    tab-long-press/     tab-crossfade가 잡은 꾹 누르기를 JS 이벤트로 넘기고 받을 탭을 정함
   assets/
     tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
+    toast-icons/, fonts/, login-background/   네이티브 토스트 아이콘, 글꼴, 로그인 배경 영상
     floating-icons/     플로팅 버튼 아이콘(같은 방식, 더하기·더보기)
   src/
     web-view/AppWebView.tsx   bridge 구현과 공통 WebView(출처 제한·Safe Area·뒤로가기), 불러오기 실패 화면(WebLoadError.tsx)
     tabs/                     탭 ID·경로 판정(tabs.ts), 아이콘(tab-icons.ts), 저장소, 탭 화면(TabScreen.tsx), 플로팅 버튼(NativeFloatingButton.tsx, 첫 화면에서만 그리는 안전장치 floating-button-guard.ts)
     login-background/         로그인 배경 영상(LoginBackgroundVideo.tsx, expo-video)과 표시 여부 저장소
-    safe-area-script.ts, sentry.ts, sanitize-sentry-event.ts, web-url.ts, gallery-image.ts, permissions.ts (+ *.test.mjs)
+    splash/, toast/           스플래시 덮개, 네이티브 토스트
+    그 밖의 bridge 구현       사진(gallery-*, picked-photos, photo-exif, album-save, cache-*), 푸시(push-*), 로그인(social-login*), 초대 링크(invite-link, incoming-link-store), clipboard*, screen-switch.ts, permissions.ts
+    safe-area-script.ts, sentry.ts, sanitize-sentry-event.ts, web-url.ts (+ *.test.mjs)
 ```
 
 검증은 `apps/mobile-shell`에서 `pnpm test`와 `pnpm exec tsc --noEmit`으로 실행한다.
@@ -50,7 +55,7 @@ apps/mobile-shell/
 
 ## 권한과 출시 전 확인
 
-가입 때 사진·카메라·알림 권한을 요청하는 `requestPermission`과, 팝업 없이 현재 상태만 읽는 `getPermissionStatus`(bridge, `src/permissions.ts`)만 구현했다(약관 화면의 시작하기가 사진 → 카메라 → 알림 순서로 호출, 허용·거부와 무관하게 다음으로 진행). 사진·카메라는 `expo-image-picker`, 알림은 `expo-notifications`로 요청하며 상태는 `granted`·`denied`(다시 물을 수 없음)·`undetermined`로 돌려준다. 사용 목적 문구는 `app.json`의 `expo-image-picker` 플러그인에 Figma Alert 문구로 넣었다. 새 네이티브 모듈이라 개발 앱·EAS 빌드는 다시 만들어야 하고, 실기기에서 팝업은 확인하지 못했다. 나머지 항목은 아직 구현 전이다. 다른 프로젝트의 App Store 심사 경험(UGC 신고·차단 미구현으로 1.2 거절)에서 가져온 확인 목록이며, 내부 기획 문서의 앱 심사 항목과 함께 본다. `getPermissionStatus`는 알림 설정 화면이 기기 알림 권한을 읽고 설정에서 돌아온 뒤 다시 확인하는 데 쓰며 `Notifications.getPermissionsAsync`를 부른다. 실기기에서 확인하지 못했다. bridge 계약이 바뀌었으니 쉘 폴더에서 `pnpm install`을 다시 실행해 bridge 타입을 받아야 한다.
+가입 때 사진·카메라·알림 권한을 요청하는 `requestPermission`, 팝업 없이 현재 상태만 읽는 `getPermissionStatus`(사진·카메라·알림), 기기 설정을 여는 `openAppSettings`(bridge, `src/permissions.ts`)를 구현했다(약관 화면의 시작하기가 사진 → 카메라 → 알림 순서로 호출, 허용·거부와 무관하게 다음으로 진행). 사진·카메라는 `expo-image-picker`, 알림은 `expo-notifications`로 요청하며 상태는 `granted`·`denied`(다시 물을 수 없음)·`undetermined`로 돌려준다. 사용 목적 문구는 `app.json`의 `expo-image-picker` 플러그인에 Figma Alert 문구로 넣었다. 새 네이티브 모듈이라 개발 앱·EAS 빌드는 다시 만들어야 하고, 실기기에서 팝업은 확인하지 못했다. 나머지 항목은 아직 구현 전이다. 다른 프로젝트의 App Store 심사 경험(UGC 신고·차단 미구현으로 1.2 거절)에서 가져온 확인 목록이며, 내부 기획 문서의 앱 심사 항목과 함께 본다. `getPermissionStatus`는 알림 설정 화면이 기기 알림 권한을 읽고 설정에서 돌아온 뒤 다시 확인하는 데 쓰며, 알림이면 `Notifications.getPermissionsAsync`를 부른다. 실기기에서 확인하지 못했다. bridge 계약이 바뀌었으니 쉘 폴더에서 `pnpm install`을 다시 실행해 bridge 타입을 받아야 한다.
 
 - iOS는 권한 팝업을 한 번 거절하면 앱에서 다시 띄울 수 없다. `denied` 상태는 팝업 재요청이 아니라 설정 화면 안내로 처리한다.
 - 사진·카메라·알림 권한의 사용 목적 문구(`Info.plist`의 `NS*UsageDescription` 등)는 사용자가 읽는 한국어로 적고, 실제 사용 목적과 어긋나지 않게 한다. 위치 권한은 받지 않고 사진의 위치 정보도 쓰지 않는다. 업로드 전에 앱이 촬영 날짜·시간만 뽑고 GPS를 포함한 위치 메타데이터를 모두 지운다(서버가 받은 뒤 지우면 위치가 서버로 간 것이 된다, 내부 기획 문서).
@@ -105,7 +110,7 @@ packages/bridge/
 
 실제 구현은 [bridge client](../../apps/web/src/shared/bridge/client.ts)를 따른다. `linkBridge<AppBridge, AppPostMessageSchema>`로 메서드와 이벤트 계약을 함께 지정한다.
 
-`initialBridge`는 WebView 밖(일반 브라우저)에서 실행될 때의 폴백이다. `isWebViewBridgeAvailable`로 지금 네이티브 쉘 안인지 확인할 수 있다. 다만 `@webview-bridge/web` 1.8.0은 `isWebViewBridgeAvailable`과 `isNativeMethodAvailable` 모두 initialBridge 폴백 이름까지 「있음」으로 센다. 그래서 폴백이 있는 `appBridge`로는 이전 쉘에 그 메서드가 있는지 알 수 없다. 쉘이 실제로 구현했는지는 initialBridge가 없는 bridge로 판정하는 `hasNativeMethod`(`apps/web/src/shared/bridge/client.ts`)를 쓴다(#481).
+`initialBridge`는 WebView 밖(일반 브라우저)에서 실행될 때의 폴백이다. 웹은 지금 네이티브 쉘 안인지를 `isNativeShell()`(`apps/web/src/shared/bridge/client.ts`)로 판정하고 `isWebViewBridgeAvailable`은 쓰지 않는다. `@webview-bridge/web` 1.8.0은 `isWebViewBridgeAvailable`과 `isNativeMethodAvailable` 모두 initialBridge 폴백 이름까지 「있음」으로 센다. 그래서 폴백이 있는 `appBridge`로는 이전 쉘에 그 메서드가 있는지 알 수 없다. 쉘이 실제로 구현했는지는 initialBridge가 없는 bridge로 판정하는 `hasNativeMethod`(`apps/web/src/shared/bridge/client.ts`)를 쓴다(#481).
 
 ## 새 bridge 메서드를 추가하려면
 
@@ -138,7 +143,7 @@ packages/bridge/
 ## 오류 모니터링
 
 - 네이티브 쉘은 `@sentry/react-native`로 조직 `bunch-01`의 `bunch-mobile` 프로젝트에 오류를 보낸다. WebView 안의 웹 오류는 기존 웹 Sentry 프로젝트가 수집한다.
-- `index.ts`에서 앱을 읽기 전에 SDK를 초기화하고, `App`을 `Sentry.wrap`으로 감싼다. 개발 모드에서는 전송을 끄며, 배포 빌드와 `EXPO_PUBLIC_SENTRY_DSN`이 있을 때만 수집한다.
+- `index.ts`가 앱을 읽기 전에 `src/sentry.ts`로 SDK를 초기화하고, 루트 레이아웃(`app/_layout.tsx`)을 `Sentry.wrap`으로 감싼다. 개발 모드에서는 전송을 끄며, 배포 빌드와 `EXPO_PUBLIC_SENTRY_DSN`이 있을 때만 수집한다.
 - `apps/mobile-shell/.env.local`에 `EXPO_PUBLIC_DEV_WEB_URL`(개발), `EXPO_PUBLIC_WEB_URL`(Release), `EXPO_PUBLIC_SENTRY_DSN`을 설정한다. 소스맵·네이티브 심볼 업로드용 `SENTRY_AUTH_TOKEN`은 빌드 전용 비밀값이며 `EXPO_PUBLIC_` 접두사를 붙이지 않는다. EAS 빌드에는 별도로 비밀 환경변수를 설정해야 한다.
 - `metro.config.js`는 Sentry Debug ID를 번들·소스맵에 추가하고, `app.json`의 Sentry Expo config plugin은 네이티브 빌드 업로드를 구성한다. `ios/`, `android/` 생성물은 저장소에 추가하지 않는다.
 - 성능 추적·Replay·로그·세션 추적과 breadcrumb를 끈다. JavaScript 이벤트는 사용자·요청·부가 정보를 제거하고 오류 설명·타입·스택을 남긴다. 오류 설명의 URL·이메일·토큰·비밀번호·한국 휴대전화 패턴은 웹과 동일하게 마스킹한다. 패턴 밖 개인정보를 탐지하지 못하므로 오류 메시지에 사용자 원문을 넣지 않는다. **네이티브 크래시는 JavaScript `beforeSend`를 거치지 않는다.** 네이티브 이벤트의 전체 개인정보 제거를 보장하지 않으며 출시 전에 Sentry 서버 측 데이터 정제와 실제 크래시 내용을 점검한다.

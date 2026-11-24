@@ -89,7 +89,7 @@ checkout에는 `contents: read`, 라벨·assignee·본문 수정에는 `issues: 
 
 사람과 agent 모두 걸린다. `yarn install`의 `prepare`가 hook을 건다.
 
-- `pre-commit`: staged 파일에 `lint-staged`(eslint·oxfmt)를 실행한다.
+- `pre-commit`: staged 파일에 `lint-staged`(eslint·Tailwind 표준 클래스 자동 수정·oxfmt)를 실행한다.
 - `commit-msg`: `commitlint`로 커밋 메시지 형식과 AI 출처 문구 금지를 검사한다. hook을 건너뛴 커밋은 PR CI(`Lint & Typecheck`의 커밋 메시지 단계)가 다시 검사한다. GitHub 웹에서 커밋할 때(리뷰 제안 일괄 반영의 기본 메시지 `Apply suggestions from code review` 등)도 메시지를 `type: subject`로 고친다.
 - `pre-push`: `yarn typecheck`만 실행한다(turbo 캐시가 있으면 몇 초, 없으면 10초 안팎). 테스트는 PR CI가 바뀐 파일과 관련된 것만(`--changed`) 실행한다. 공용 모듈을 바꾸면 로컬에서도 관련 테스트가 수백 개라 push를 수십 초씩 막았기 때문이다(2026-11-16, #410). push 전에 확인하려면 `yarn workspace @app/web vitest run --changed origin/develop`처럼 직접 실행한다. 빌드는 오래 걸릴 수 있어 넣지 않았다.
 

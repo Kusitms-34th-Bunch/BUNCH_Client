@@ -11,7 +11,7 @@
 
 ## Environment variables
 
-- 예시 파일은 각 앱의 `.env.example`만 커밋하고 실제 `.env*` 값은 커밋하지 않는다.
+- 예시 파일(`*.example`)만 커밋하고 실제 `.env*` 값은 커밋하지 않는다.
 - Next.js의 `NEXT_PUBLIC_*`, Vite의 `VITE_*`, Expo의 `EXPO_PUBLIC_*`는 클라이언트 번들에 노출한다. 비밀값은 이 접두사를 사용하지 않는다.
 - 각 앱의 `build` task는 해당 앱의 `.env*` 변경을 Turbo cache input으로 포함한다.
 

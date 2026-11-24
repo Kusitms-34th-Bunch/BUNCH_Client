@@ -94,7 +94,7 @@
 
 ## 홈 화면 추가(PWA)
 
-- 앱 이름은 **bunch**다(`app/manifest.ts`의 `name`·`short_name`, iOS는 `app/layout.tsx`의 `appleWebApp.title`).
+- 설치 앱 이름은 매니페스트(`app/manifest.ts`의 `name`·`short_name`)가 **BUNCH**, iOS(`app/layout.tsx`의 `appleWebApp.title`)가 **bunch**다.
 - 설치한 앱은 `/bunch`(번치 홈)에서 시작하고 주소창 없이(`display: standalone`) 세로로 열린다.
 - 아이콘은 임시 아이콘(눈 캐릭터 이미지)이다. 실제 아이콘이 오면(1024px 정사각 원본 권장) `apps/web/public/icons`의 같은 파일명으로 교체한다.
 
@@ -107,10 +107,10 @@
 - iOS: Safari 공유 메뉴 → 「홈 화면에 추가」. Android: Chrome 메뉴 → 「앱 설치」 또는 「홈 화면에 추가」.
 - 매니페스트와 아이콘 파일의 존재는 자동 테스트(`app/manifest.test.ts`)가 확인한다. 실기기에서 이름·아이콘·주소창 없음은 확인하지 않았다.
 
+- 2026-11-22 이 workflow로 운영에 배포했다(2026-11-24 사용자 확인). 빌드에 Vercel 프로젝트 환경 변수를 넘기지 않아도, `deploy --prebuilt`로 올린 서버는 실행할 때 프로젝트의 `API_BASE_URL`을 받아 실서버를 부른다.
+
 ## 아직 확인하지 않은 것
 
-- 이 workflow로 운영 프로젝트에 실제로 배포해 보지 않았다. 같은 단계(`YARN_NODE_LINKER` 우회 포함)를 쓰던 UT 배포 기록에도 1차 리허설 실패와 그 대응까지만 남아 있다([보관 기록](../archive/ut-deployment.md)).
 - `public/mock/photos`(약 7MB, 시연 사진)가 운영 배포에도 정적 파일로 올라간다([가짜 서버와 서버 연동 현황](./mock-server-status.md)).
-- 빌드에 Vercel 프로젝트 환경 변수를 넘기지 않으므로, `deploy --prebuilt`로 올린 서버가 실행할 때 프로젝트의 `API_BASE_URL`을 받는지는 첫 배포에서 확인한다.
-- 운영에 그대로 올라가는 샘플 동작이 있다. 예: 사진함의 사진 날짜 변경은 그 화면에서만 유지된다([가짜 서버와 서버 연동 현황](./mock-server-status.md)의 샘플 표). 공개 전에 숨길지 정한다.
+- 운영에 그대로 올라가는 샘플 동작은 없다(2026-11-24 확인). [가짜 서버와 서버 연동 현황](./mock-server-status.md)의 샘플 표에 남은 장소 검색은 가짜 서버를 켤 때만 샘플이고, 운영은 실제 BFF를 쓴다.
 - 미리보기(스테이징) 배포는 없다. 로컬 서버 없이 develop을 실기기로 확인해야 하면 추가한다.
