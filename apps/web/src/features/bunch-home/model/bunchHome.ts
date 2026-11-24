@@ -3,13 +3,14 @@ import type { components } from '@app/api-core/generated';
 import { z } from 'zod';
 import type { MyBunches } from '@/shared/api/myBunches';
 import { toDomainId } from '@/shared/api/ids';
+import { BUNCH_ROLE_FROM_SERVER } from '@/shared/lib/bunchRole';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import {
   CHARACTER_TYPES,
   DEFAULT_PROFILE_IMAGE,
   defaultBunchImage,
 } from '@/shared/lib/profile/bunchProfile';
-import type { BunchHomeDetail, BunchRole, BunchSummary } from '../lib/types';
+import type { BunchHomeDetail, BunchSummary } from '../lib/types';
 
 type Schemas = components['schemas'];
 
@@ -138,12 +139,6 @@ type DraftPage = z.infer<typeof draftBundlesPageSchema>;
 /** 참여 멤버 카드에 쓰는 번치 멤버(이름·프로필 이미지, id로 찾음) */
 export type DraftMemberSource = { id: string; name: string; avatarSrc: string };
 
-const ROLE: Readonly<Record<z.infer<typeof roleSchema>, BunchRole>> = {
-  OWNER: 'owner',
-  CO_OWNER: 'coOwner',
-  MEMBER: 'member',
-};
-
 // 제목을 아직 쓰지 않은 작성 중인 번들 카드(기능명세 5.3.1 상세 동작 2, 흐리게 표시)
 const UNTITLED_DRAFT = '제목 미정';
 
@@ -173,7 +168,7 @@ export const toBunchHomeDetail = (
     stage: home.stage,
     description: home.bunch.introduction ?? '',
     isPrivate: home.bunch.visibility === 'PRIVATE',
-    myRole: ROLE[home.myMembership.role],
+    myRole: BUNCH_ROLE_FROM_SERVER[home.myMembership.role],
     followerCount: home.followerCount,
     followingCount: home.followingCount,
     memberCount: home.memberCount,
