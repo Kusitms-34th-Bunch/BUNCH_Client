@@ -57,3 +57,13 @@ test('번치 홈에서 다른 번치로 전환하면 홈과 피드가 그 번치
   await expect(page).toHaveURL(/\/feed$/);
   await expect(page.getByRole('link', { name: '퇴근런클럽 번치 홈' })).toBeVisible();
 });
+
+test('이미 있는 번치 이름으로는 다음 단계로 가지 못한다', async ({ page }) => {
+  await page.goto('/onboarding/create');
+  const name = page.getByRole('textbox', { name: '번치 이름' });
+  await name.fill('퇴근런클럽');
+
+  await expect(page.getByText('이미 사용 중인 번치 이름이에요')).toBeVisible();
+  await expect(name).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByRole('button', { name: '다음' })).toBeDisabled();
+});

@@ -2,7 +2,7 @@
 
 앱 쉘 핵심 흐름을 iOS 시뮬레이터에서 Maestro로 확인하는 방법이다(결정 기록 029). 개발 앱 실행은 [mobile-testing.md](mobile-testing.md)를 본다.
 
-앱 쉘의 핵심 흐름(실행·탭 전환·탭 밖 화면·백그라운드 복귀·키보드·번치 탭 꾹 누르기와 두 번 누르기)은 Maestro로 iOS 시뮬레이터에서 확인한다(결정 기록 029). flow는 `apps/mobile-shell/maestro/`에 있다.
+앱 쉘의 핵심 흐름(실행·탭 전환·탭 밖 화면·백그라운드 복귀·키보드·번치 탭 꾹 누르기와 두 번 누르기·네이티브 플로팅 버튼으로 번들 만들기 진입)은 Maestro로 iOS 시뮬레이터에서 확인한다(결정 기록 029). flow는 `apps/mobile-shell/maestro/`에 있다.
 
 준비: Xcode·iOS 시뮬레이터, Java, [Maestro CLI](https://github.com/mobile-dev-inc/maestro/releases)(CI와 같은 2.12.1). Maestro는 저장소 의존성이 아니라 각자 설치한다.
 
@@ -24,5 +24,7 @@ pnpm e2e:ios
 - `known-issue` 태그 flow는 아직 고치지 않은 문제를 재현하므로 기본 실행에서 빠진다(`config.yaml`의 `excludeTags`). 따로 돌릴 때는 파일 경로로 실행한다(태그로 고르면 `excludeTags`와 겹쳐 아무 flow도 고르지 않음). 지금은 해당 flow가 없다: 시작 직후 입력 무시(`90-startup-first-input.yaml`)를 #520에서 고쳐 기본 실행에 넣었고, CI의 별도 확인 단계도 지웠다(2026-11-23). 다시 생기면 job을 막지 않는 단계를 둔다.
 - 시뮬레이터는 실기기와 입력·렌더 속도가 달라, 통과해도 실기기 확인을 대신하지 않는다.
 - 시스템 탭 바의 탭은 이름이 아니라 탭 버튼의 식별자로 고른다(`id: 'tab-bunch'`, 쉘 `app/(tabs)/_layout.tsx`의 `NativeTabs.Trigger` `testID`가 iOS accessibility identifier가 됨). 탭 화면 전체가 탭 이름과 같은 접근성 이름을 가져, 이름만 쓰면 Maestro가 화면 전체를 골라 그 가운데(번치 홈 그리드 칸)를 누른다(2026-11-24 CI, 번치 탭 꾹 누르기·두 번 누르기 flow가 번들 상세로 넘어가 실패). 첫 입력 재시도도 탭은 `subflows/tap-tab-until-visible.yaml`(`TAB_ID`)로, 웹 화면 안 요소만 `tap-until-visible.yaml`(`TARGET`)로 누른다. 시스템이 붙이는 탭 바 이름(`Tab Bar`)은 시뮬레이터 언어에 따라 바뀌어 쓰지 않는다.
+- iOS 26 네이티브 플로팅 버튼도 같은 이름(「번들 만들기」)의 웹 버튼과 구분하려고 식별자로 고른다(`id: 'native-floating-button'`, `src/tabs/NativeFloatingButton.tsx`의 `testID`). iOS 26 미만 시뮬레이터에는 네이티브 버튼이 없어 `08-floating-create-bundle.yaml`이 실패한다(#556).
+- 웹 화면 로직(이동·캐시 반영·권한 분기)은 Playwright가 지키고, Maestro는 웹으로 재현할 수 없는 쉘 네이티브 구간만 다룬다. 같은 흐름을 두 곳에서 지키지 않는다.
 - 처음 보이는 탭 WebView는 CI 시뮬레이터에서 그리기가 5초 넘게 걸린 기록이 있다. 화면 요소를 기다리는 상한은 10초 이상으로 둔다(입력이 무시되는 문제는 상한과 상관없이 실패로 잡힘).
 - 실행 기록·스크린샷은 `~/.maestro/tests/`에 남는다. 개인정보가 없는 가짜 데이터지만 공유할 때는 필요한 화면만 고른다.

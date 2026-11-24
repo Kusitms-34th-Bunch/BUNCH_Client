@@ -43,6 +43,14 @@ export default defineConfig({
           timeout: 120_000,
           expect: { timeout: 30_000 },
         },
+        {
+          // 앱 WebView의 iOS 엔진(WebKit)에서만 나는 레이스를 잡으려고 같은 spec을 iPhone으로 한 번 더
+          name: 'web-webkit',
+          testMatch: /web\/.*\.spec\.ts/,
+          use: { ...devices['iPhone 15'], baseURL: webBaseUrl },
+          timeout: 120_000,
+          expect: { timeout: 30_000 },
+        },
       ],
   webServer: productionBaseUrl
     ? []
@@ -63,6 +71,8 @@ export default defineConfig({
           url: webBaseUrl,
           env: {
             NEXT_PUBLIC_API_MOCKING: 'enabled',
+            // CI는 같은 PR의 Verify가 타입을 검사하므로 E2E 빌드에서는 생략
+            NEXT_SKIP_TYPECHECK: process.env.CI ? 'true' : '',
             SENTRY_AUTH_TOKEN: '',
             NEXT_PUBLIC_SENTRY_DSN: '',
           },
