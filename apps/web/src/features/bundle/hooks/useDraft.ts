@@ -108,7 +108,7 @@ export function useDraft(draftId: string | undefined): {
     bundleId,
     serverLocations: detail?.locations ?? NO_LOCATIONS,
     blocked: false,
-    // 실시간 연결이 끊긴 순간 바로(렌더 전에) 대기 중인 변경을 막음. 브라우저 오프라인은 보지 않음(판정 차이는 DraftScreen.spec.md)
+    // 실시간 연결이 끊긴 순간 바로(렌더 전에) 대기 중인 변경을 막음. 브라우저 오프라인은 hook이 직접 보고, 보류 재조회 실패는 보지 않음(DraftScreen.spec.md)
     isOffline: realtime.isDown,
   });
   const locations = placeActions.locations;
