@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { reportApiError } from '@/shared/lib/reportApiError';
 import type { BundleDetail } from '../model/bundle';
 import {
   editTitle,
@@ -75,7 +76,9 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
       .then(() => {
         if (!cancelled) apply();
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        // 오프라인의 청크 로드 실패는 사용자 환경이라 보고하지 않음
+        if (typeof navigator === 'undefined' || navigator.onLine) reportApiError(error);
         if (!cancelled) setFailed(true);
       });
     return () => {

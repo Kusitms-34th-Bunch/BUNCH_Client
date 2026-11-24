@@ -32,8 +32,11 @@ class FakeClient {
     this.activated = true;
   }
 
-  deactivate() {
+  deactivateOptions: unknown;
+
+  deactivate(options?: unknown) {
     this.deactivated = true;
+    this.deactivateOptions = options;
     return Promise.resolve();
   }
 
@@ -51,6 +54,11 @@ class FakeClient {
     this.config.onConnect?.({} as IFrame);
   }
 
+  // 서버가 ERROR frame을 보냄
+  stompError() {
+    this.config.onStompError?.({ body: 'secret detail' } as IFrame);
+  }
+
   // 연결이 끊김
   drop() {
     this.config.onWebSocketClose?.({});
@@ -64,17 +72,27 @@ class FakeClient {
 const TOPIC = '/topic/bunches/1/bundles/2';
 const last = () => FakeClient.instances.at(-1)!;
 
-const setup = (getToken = vi.fn(() => Promise.resolve('token-1'))) => {
+// 화면이 숨겨졌는지(테스트가 바꿈)
+let hidden = false;
+
+const setup = (
+  getToken = vi.fn(() => Promise.resolve('token-1')),
+  random: () => number = () => 0.5,
+) => {
   const statuses: RealtimeStatus[] = [];
   const onConnected = vi.fn();
+  const onError = vi.fn();
   const connection = createStompConnection({
     url: 'wss://api.example.com/ws',
     getToken,
     onStatus: (status) => statuses.push(status),
     onConnected,
+    onError,
+    random,
+    isHidden: () => hidden,
     createClient: (config) => new FakeClient(config as Config) as never,
   });
-  return { connection, statuses, onConnected, getToken };
+  return { connection, statuses, onConnected, onError, getToken };
 };
 
 // 토큰 요청(Promise)이 끝나도록 마이크로태스크를 비움
@@ -83,6 +101,7 @@ const flush = () => vi.advanceTimersByTimeAsync(0);
 beforeEach(() => {
   vi.useFakeTimers();
   FakeClient.instances = [];
+  hidden = false;
 });
 
 afterEach(() => {
@@ -425,5 +444,167 @@ describe('createStompConnection', () => {
     expect(statuses.at(-1)).toBe('reconnecting');
     await vi.advanceTimersByTimeAsync(60_000);
     expect(getToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('소켓을 닫을 때 서버의 RECEIPT를 기다리지 않고 바로 닫는다', async () => {
+    const { connection } = setup();
+    connection.start();
+    await flush();
+    const only = last();
+    only.connect();
+
+    connection.stop();
+
+    expect(only.deactivateOptions).toEqual({ force: true });
+    expect(only.config).toMatchObject({ discardWebsocketOnCommFailure: true });
+  });
+
+  it('재연결 대기는 ±20% 안에서 흔든다', async () => {
+    const { connection, getToken } = setup(undefined, () => 0);
+    connection.start();
+    await flush();
+    last().drop();
+
+    // 첫 대기 1초의 80%
+    await vi.advanceTimersByTimeAsync(799);
+    expect(getToken).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(getToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('숨겨진 동안 끊기면 다시 연결하지 않고, resume()에서 한 번 연결한다', async () => {
+    const { connection, getToken, statuses } = setup();
+    connection.start();
+    await flush();
+    last().connect();
+    hidden = true;
+
+    last().drop();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(getToken).toHaveBeenCalledTimes(1);
+    expect(statuses.at(-1)).toBe('reconnecting');
+
+    hidden = false;
+    connection.resume();
+    await flush();
+    expect(getToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('숨겨진 동안의 resume()(네트워크 복귀)으로는 다시 붙지 않는다', async () => {
+    const { connection, getToken } = setup();
+    connection.start();
+    await flush();
+    last().connect();
+    hidden = true;
+    last().drop();
+
+    connection.resume();
+    await flush();
+    expect(getToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('resume()은 재연결을 기다릴 때만 바로 연결하고, 연결 중·연결됨이면 무시한다', async () => {
+    const { connection, getToken } = setup();
+    connection.start();
+    // 토큰을 기다리는 중
+    connection.resume();
+    await flush();
+    expect(getToken).toHaveBeenCalledTimes(1);
+
+    last().connect();
+    connection.resume();
+    await flush();
+    expect(getToken).toHaveBeenCalledTimes(1);
+
+    last().drop();
+    connection.resume();
+    await flush();
+    expect(getToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('refresh()는 「연결됨」을 유지한 채 새 연결로 갈아 끼우고 재연결로 알리지 않는다', async () => {
+    const { connection, statuses, onConnected } = setup();
+    connection.subscribe(TOPIC, () => undefined);
+    connection.start();
+    await flush();
+    const first = last();
+    first.connect();
+
+    connection.refresh();
+    expect(first.deactivated).toBe(true);
+    // 새 연결이 맺어지기 전에는 보내지 않음
+    expect(connection.publish(TOPIC, {})).toBe(false);
+    await flush();
+    const second = last();
+    expect(second).not.toBe(first);
+    second.connect();
+
+    expect(statuses).toEqual(['connecting', 'connected']);
+    expect(onConnected).toHaveBeenLastCalledWith(false);
+    expect(second.subscriptions.has(TOPIC)).toBe(true);
+  });
+
+  it('갈아 끼운 연결이 실패하면 평소처럼 끊김으로 바꾸고, 다시 붙으면 재연결로 알린다', async () => {
+    const { connection, statuses, onConnected } = setup();
+    connection.start();
+    await flush();
+    last().connect();
+
+    connection.refresh();
+    await flush();
+    last().drop();
+    expect(statuses.at(-1)).toBe('reconnecting');
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    last().connect();
+    expect(onConnected).toHaveBeenLastCalledWith(true);
+  });
+
+  it('토큰 발급 실패와 STOMP ERROR는 알리되 frame 내용은 넘기지 않는다', async () => {
+    const tokenError = new ApiError({ category: 'server', status: 503, message: 'down' });
+    const getToken = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(tokenError)
+      .mockResolvedValue('token-1');
+    const { connection, onError } = setup(getToken);
+    connection.start();
+    await flush();
+    expect(onError).toHaveBeenCalledWith('token', tokenError);
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    last().stompError();
+    expect(onError).toHaveBeenLastCalledWith('stomp');
+  });
+
+  it('구독 처리 함수가 던지면 알리고 다른 구독자는 계속 받는다', async () => {
+    const { connection, onError } = setup();
+    const failure = new Error('handler failed');
+    const received: unknown[] = [];
+    connection.subscribe(TOPIC, () => {
+      throw failure;
+    });
+    connection.subscribe(TOPIC, (body) => received.push(body));
+    connection.start();
+    await flush();
+    last().connect();
+
+    last().receive(TOPIC, '{"a":1}');
+
+    expect(onError).toHaveBeenCalledWith('handler', failure);
+    expect(received).toEqual([{ a: 1 }]);
+  });
+
+  it('온라인인데 최대 대기까지 계속 실패하면 알린다', async () => {
+    const { connection, onError } = setup();
+    connection.start();
+    await flush();
+    // 1·2·4·8초 대기 동안은 알리지 않음
+    for (const delay of [1_000, 2_000, 4_000, 8_000]) {
+      last().drop();
+      expect(onError).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(delay);
+    }
+    last().drop();
+    expect(onError).toHaveBeenCalledWith('stalled');
   });
 });

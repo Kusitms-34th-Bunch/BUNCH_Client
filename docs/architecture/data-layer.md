@@ -220,5 +220,6 @@ block.mutate({ targetId }, { onSuccess: () => toast(BUNCH_HOME_MESSAGES.blockedD
 - 보고: 5xx(재시도 뒤), 분류하지 못한 오류(category `unknown`), 응답 계약 위반(code `INVALID_RESPONSE`), `ApiError`가 아닌 코드 결함.
 - 제외: 401·403(세션·권한 흐름이 처리), 네트워크 오류(사용자 환경), 업무 4xx(화면이 안내). 취소된 조회는 TanStack Query가 `onError`를 부르지 않는다.
 - `ApiError`는 응답 원문이 들어 있을 수 있는 message 대신 `API <category> <status> <code>` 고정 문구로 보내고, 같은 값으로 fingerprint를 붙여 묶는다. code는 오류 코드 형식(`/^[A-Z][A-Z0-9_]{0,40}$/`)일 때만 쓴다.
-- 화면에서 직접 잡는 실패(공유 실패 등)는 그 화면이 `captureException`을 부른다.
+- 화면에서 직접 잡는 실패(공유 실패 등)는 그 화면이 `captureException`을 부른다. mutation을 거치지 않고 API를 부르는 대기열(번들 장소·픽, 제목 문서 불러오기)도 그 hook이 `reportApiError`를 부른다. 제목 문서의 청크 로드 실패는 오프라인이면 보내지 않는다.
+- 번들 실시간 연결(`useBundleRealtime`)은 토큰 발급 실패(`reportApiError` 기준), STOMP ERROR frame, 구독 처리 함수의 예외, 온라인인데 최대 재연결 대기까지 이어진 실패를 보고한다. 붙자마자 끊기는 연결이 반복돼도 종류별로 10분에 한 번만 보내고, frame 본문·헤더·주소·토큰 없이 `Realtime <종류>` 고정 문구와 fingerprint만 쓴다.
 - mutation 안에서 `fetchQuery`로 받은 조회가 실패하면 QueryCache와 MutationCache가 한 번씩 보고한다. 같은 fingerprint로 묶이므로 이슈는 하나지만 발생 수는 두 배로 보인다.
