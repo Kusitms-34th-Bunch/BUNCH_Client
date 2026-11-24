@@ -45,8 +45,8 @@ const card = (overrides: Record<string, unknown> & { id: number }) => ({
   publishedAt: hoursAgo(48),
   title: '제주 3박4일 여행 아카이빙',
   date: '2026-07-09',
-  coverImageUrl: '/mock/photos/P1.jpg',
-  photos: [1, 2].map((n) => ({ id: n, imageUrl: `/mock/photos/P${n}.jpg`, position: n - 1 })),
+  coverImageUrl: '/mock/photos/P1.webp',
+  photos: [1, 2].map((n) => ({ id: n, imageUrl: `/mock/photos/P${n}.webp`, position: n - 1 })),
   locations: [
     {
       id: 11,
@@ -73,7 +73,7 @@ const AD = {
     id: 71,
     name: '플로디스튜디오',
     introduction: '여기서 뭉쳐봐요!',
-    photoUrl: '/mock/photos/AD1.jpg',
+    photoUrl: '/mock/photos/AD1.webp',
     tags: ['최대 4인'],
     externalLink: null,
     place: {

@@ -13,7 +13,7 @@ describe('getPhotoDetail', () => {
   it('사진의 원본 이미지 주소를 돌려준다', async () => {
     await expect(getPhotoDetail(bunchId, String(MOCK_PHOTO_IDS.S1))).resolves.toEqual({
       id: String(MOCK_PHOTO_IDS.S1),
-      imageSrc: '/mock/photos/S1.jpg',
+      imageSrc: '/mock/photos/S1.webp',
     });
   });
 
@@ -28,7 +28,7 @@ describe('getPhotoDetail', () => {
     }));
 
     await expect(getPhotoDetail(bunchId, String(MOCK_PHOTO_IDS.O1))).resolves.toMatchObject({
-      imageSrc: '/mock/photos/O1.jpg',
+      imageSrc: '/mock/photos/O1.webp',
     });
   });
 

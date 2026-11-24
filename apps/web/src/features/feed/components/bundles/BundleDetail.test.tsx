@@ -56,7 +56,7 @@ const REPORT = { canEdit: false, canDelete: false, canReport: true };
 const photos = (picks: number[]) =>
   picks.map((count, index) => ({
     id: index + 1,
-    imageUrl: `/mock/photos/P${index + 1}.jpg`,
+    imageUrl: `/mock/photos/P${index + 1}.webp`,
     position: index,
     picks: { members: pickers(count) },
   }));

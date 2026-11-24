@@ -9,7 +9,7 @@ import { versionOf } from './memberships';
 import { unreadCountOf } from './notifications';
 
 // 가짜 서버가 새 프로필 사진으로 쓰는 시연 이미지(올린 사진 내용은 읽지 않음)
-const MOCK_UPLOADED_PROFILE_IMAGE = '/mock/photos/C2.jpg';
+const MOCK_UPLOADED_PROFILE_IMAGE = '/mock/photos/C2.webp';
 
 // ponytail: 30일 뒤 만료(expiresAt)는 시각만 내려주고 목록·조회에서 자동으로 빼지 않음
 const noticeResponse = (notice: MockBunchAccessNotice) => ({

@@ -4,8 +4,8 @@ import { recommendationDetailSchema, toRecommendationDetail } from './recommenda
 
 const photo = (photoId: number, uploaders: { memberId: number; imageUrl?: string | null }[]) => ({
   photoId,
-  thumbnailUrl: `/mock/photos/${photoId}-thumb.jpg`,
-  imageUrl: `/mock/photos/${photoId}.jpg`,
+  thumbnailUrl: `/mock/photos/${photoId}-thumb.webp`,
+  imageUrl: `/mock/photos/${photoId}.webp`,
   capturedDate: '2026-10-17',
   capturedTime: '07:05:00',
   uploaders: uploaders.map((uploader) => ({ nickname: `멤버${uploader.memberId}`, ...uploader })),

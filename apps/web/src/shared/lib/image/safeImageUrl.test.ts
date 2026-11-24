@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 
 describe('isSafeImageUrl', () => {
-  it.each(['https://cdn.example/1.jpg', '/mock/photos/S1.jpg', '/img/1.jpg'])(
+  it.each(['https://cdn.example/1.jpg', '/mock/photos/S1.webp', '/img/1.jpg'])(
     '%s는 허용한다',
     (url) => expect(isSafeImageUrl(url)).toBe(true),
   );

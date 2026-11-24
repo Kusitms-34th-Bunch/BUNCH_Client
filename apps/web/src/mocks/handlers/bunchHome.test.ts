@@ -178,7 +178,7 @@ describe('가짜 서버 번치 발행 번들 목록', () => {
     expect(json.data).toMatchObject({ page: 0, size: 20, totalElements: 3, hasNext: false });
     expect(json.data.items[1]).toMatchObject({
       title: '강릉 커피 투어 ☕',
-      coverImageUrl: '/mock/photos/C1.jpg',
+      coverImageUrl: '/mock/photos/C1.webp',
       date: '2026-09-20',
       location: null,
       publishedAt: '2026-09-21T09:00:00.000Z',

@@ -77,10 +77,10 @@ describe('PhotoDetail', () => {
 
     await loaded();
     const srcOf = (id: string) => screenProps?.photos.find((photo) => photo.id === id)?.src;
-    expect(srcOf(firstId)).toBe('/mock/photos/S4-thumb.jpg');
-    await waitFor(() => expect(srcOf(firstId)).toBe('/mock/photos/S4.jpg'));
+    expect(srcOf(firstId)).toBe('/mock/photos/S4-thumb.webp');
+    await waitFor(() => expect(srcOf(firstId)).toBe('/mock/photos/S4.webp'));
     // 멀리 있는 사진은 아직 받지 않아 썸네일 그대로
-    expect(srcOf(String(MOCK_PHOTO_IDS.O1))).toBe('/mock/photos/O1-thumb.jpg');
+    expect(srcOf(String(MOCK_PHOTO_IDS.O1))).toBe('/mock/photos/O1-thumb.webp');
   });
 
   it('보는 중에 다른 곳에서 지워져 목록에서 사라지면 안내하고 사진함으로 이동한다', async () => {

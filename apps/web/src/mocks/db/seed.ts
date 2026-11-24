@@ -229,7 +229,7 @@ const publishedBundles = (
           id: seed.id,
           photoId: null,
           imageAssetId: 9000 + seed.id,
-          imageUrl: `${PHOTO_DIR}/${seed.image}.jpg`,
+          imageUrl: `${PHOTO_DIR}/${seed.image}.webp`,
           position: 0,
           addedBy: seed.createdBy,
           addedAt: at,
@@ -256,8 +256,8 @@ const photos = (): MockPhoto[] =>
     uploaderIds: [...photo.uploaderIds],
     capturedDate: photo.date,
     capturedTime: photo.time,
-    thumbnailUrl: `${PHOTO_DIR}/${photo.label}-thumb.jpg`,
-    imageUrl: `${PHOTO_DIR}/${photo.label}.jpg`,
+    thumbnailUrl: `${PHOTO_DIR}/${photo.label}-thumb.webp`,
+    imageUrl: `${PHOTO_DIR}/${photo.label}.webp`,
   }));
 
 // UT 시나리오 시작 데이터(상태 A): 비공개 번치 「여행쥬아」와 멤버 5명, 사진 13장
