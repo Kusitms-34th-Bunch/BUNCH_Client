@@ -227,23 +227,61 @@ describe('useDeletePhotosMutation', () => {
     await waitFor(() => expect(count()).toBe(1));
   });
 
-  it('사라진 사진으로 거절되면 서버에 없는 사진은 목록에 되돌리지 않고 남은 사진만 되돌린다', async () => {
+  it('사라진 사진으로 거절되면 서버에 없는 사진은 되돌리지 않고, 목록을 다시 받은 뒤에 거절한다', async () => {
+    const own = String(MOCK_PHOTO_IDS.S4);
+    const gone = String(MOCK_PHOTO_IDS.S5);
+    // 다시 받기 GET을 붙잡아 두는 문(처음 받기는 그대로 통과)
+    let holdRefetch = false;
+    let heldRequests = 0;
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     server.use(
       http.post('/api/bunches/:bunchId/photos/delete', () =>
-        fail(409, 'PHOTO_004', { missingPhotoIds: [2] }),
+        fail(409, 'PHOTO_004', { missingPhotoIds: [MOCK_PHOTO_IDS.S5] }),
       ),
+      http.get('/api/bunches/:bunchId/photos', async () => {
+        if (holdRefetch) {
+          heldRequests += 1;
+          await gate;
+        }
+        // 기본 가짜 서버 응답으로 넘김
+        return undefined;
+      }),
     );
     const client = createTestQueryClient();
-    client.setQueryData(photoBoxKeys.datedPhotos(bunchId), pagesOf('1', '2', '3'));
-    // 다시 받기는 이 테스트의 관심 밖이라 막음(되돌린 직후 캐시만 봄)
-    vi.spyOn(client, 'invalidateQueries').mockResolvedValue();
-    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), {
-      wrapper: createQueryWrapper(client),
+    const wrapper = createQueryWrapper(client);
+    const list = renderHook(() => useInfiniteQuery(datedPhotosQueryOptions(bunchId)), { wrapper });
+    await waitFor(() => expect(list.result.current.data).toBeDefined());
+    const { result } = renderHook(() => useDeletePhotosMutation(bunchId), { wrapper });
+    holdRefetch = true;
+
+    let settled = false;
+    let rejection: unknown;
+    act(() => {
+      void result.current.mutateAsync([own, gone]).then(
+        () => (settled = true),
+        (error: unknown) => {
+          settled = true;
+          rejection = error;
+        },
+      );
     });
 
-    await act(() => result.current.mutateAsync(['1', '2']).catch(() => undefined));
+    // 응답 전: 내 사진은 되돌아오고 서버에 없는 사진은 빠진 채(빼기 전·직후에는 둘 다 참이 아님), 거절은 아직
+    const ids = () => list.result.current.data?.map((photo) => photo.id) ?? [];
+    await waitFor(() => expect(ids().includes(own) && !ids().includes(gone)).toBe(true));
+    // 목록 다시 받기가 서버에 나가 응답을 기다리는 동안은 거절하지 않음
+    await waitFor(() => expect(heldRequests).toBe(1));
+    expect(settled).toBe(false);
 
-    expect(idsIn(client.getQueryData(photoBoxKeys.datedPhotos(bunchId)))).toEqual(['1', '3']);
+    // 응답 뒤: 목록을 다 받은 다음 거절
+    release();
+    await waitFor(() => expect(settled).toBe(true));
+    expect(list.result.current.isFetching).toBe(false);
+    expect(rejection).toBeInstanceOf(MissingPhotosError);
+    expect(heldRequests).toBe(1);
   });
 
   it('함께 올린 사진은 목록에 남으므로 빼기가 성공해도 그 사진의 상세 캐시는 지우지 않는다', async () => {
