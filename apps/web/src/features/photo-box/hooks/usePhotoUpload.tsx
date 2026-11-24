@@ -208,15 +208,15 @@ export function usePhotoUpload(bunchId: string | undefined) {
     options: FinishOptions = {},
   ) => {
     const summary = summarizeUpload(results.map((result) => result.outcome));
-    // 끝나면 아래에서 한 번 더 받으므로 예약해 둔 갱신은 걷음
-    clearTimeout(refreshTimers.current.get(targetBunchId));
-    refreshTimers.current.delete(targetBunchId);
     // 응답을 받기 전에 끊긴 사진(다시 시도 대상)과 결과를 알 수 없는 실패(코드 없는 5xx 등)도 서버에는 저장됐을 수 있어 목록을 다시 받음
     if (
       summary.added > 0 ||
       summary.retryable > 0 ||
       results.some((result) => result.outcome === 'failed' && result.unknown)
     ) {
+      // 지금 다시 받으므로 예약해 둔 갱신은 걷음. 다시 받지 않으면 같은 번치의 다른 묶음이 건 예약을 남김
+      clearTimeout(refreshTimers.current.get(targetBunchId));
+      refreshTimers.current.delete(targetBunchId);
       void invalidatePhotosOf(targetBunchId);
     }
     const retryItems = results.flatMap((result) =>

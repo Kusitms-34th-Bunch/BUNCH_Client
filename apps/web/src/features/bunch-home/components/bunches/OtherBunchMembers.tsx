@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { apiErrorStatus } from '@/shared/api/client/errorStatus';
 import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
+import { ProfileListSkeleton } from '@/shared/components/skeleton/ProfileRowSkeleton';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { loadFailed } from '@/shared/query/loadFailed';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -96,6 +97,13 @@ export function OtherBunchMembers({ bunchId }: { bunchId: string }) {
             </li>
           ))}
         </ul>
+      ) : loading ? (
+        // 명단 자리(실제 목록과 같은 여백·행 사이 20)
+        <ProfileListSkeleton
+          variant="card"
+          count={5}
+          className="gap-s5 px-padding-p8 pt-padding-p6 pb-s8"
+        />
       ) : null}
       {/* 늘 있는 상태 영역에 로딩 문구만 넣었다 뺌(새로 끼운 영역은 낭독되지 않을 수 있음) */}
       <p role="status" className="sr-only">
