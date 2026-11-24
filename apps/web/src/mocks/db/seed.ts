@@ -529,8 +529,8 @@ export const createSeed = (): MockDbState => ({
 });
 
 /**
- * 시작 세션 종류(`anonymous` 비로그인, `signup-terms` 약관 전 가입 중, 그 밖은 가입 완료)에 맞춘 시작 데이터
- * 가입 중은 소속 번치가 없어 가입을 마치면 번치 시작으로 감
+ * 시작 세션 종류(`anonymous` 비로그인, `signup-terms` 약관 전 가입 중, `owner` 여행쥬아 관리자, 그 밖은 가입 완료)에 맞춘 시작 데이터
+ * 가입 중은 소속 번치가 없어 가입을 마치면 번치 시작으로 감. `owner`는 지예와 역할을 맞바꿔 관리자 전용 흐름(번들 수정·삭제, 번치 삭제·관리자 넘기기)을 시작할 수 있음
  */
 export const createSeedFor = (kind: string | null): MockDbState => {
   const seed = createSeed();
@@ -540,6 +540,17 @@ export const createSeedFor = (kind: string | null): MockDbState => {
       ...seed,
       session: { loggedIn: true, signupStatus: 'IN_PROGRESS', termsAccepted: false },
       memberships: seed.memberships.filter(({ memberId }) => memberId !== MOCK_MY_MEMBER_ID),
+    };
+  }
+  if (kind === 'owner') {
+    return {
+      ...seed,
+      memberships: seed.memberships.map((item) => {
+        if (item.bunchId !== MOCK_BUNCH_ID) return item;
+        if (item.memberId === MOCK_MY_MEMBER_ID) return { ...item, role: 'OWNER' };
+        if (item.role === 'OWNER') return { ...item, role: 'MEMBER' };
+        return item;
+      }),
     };
   }
   return seed;

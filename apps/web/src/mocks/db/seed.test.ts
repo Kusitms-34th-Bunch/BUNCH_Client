@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   createSeed,
+  createSeedFor,
   MOCK_BUNCH_ID,
   MOCK_MEMBER_IDS,
   MOCK_MY_MEMBER_ID,
@@ -108,5 +109,21 @@ describe('UT 시나리오 시드', () => {
       expect(existsSync(join(publicDir, thumbnailUrl)), thumbnailUrl).toBe(true);
       expect(existsSync(join(publicDir, imageUrl)), imageUrl).toBe(true);
     }
+  });
+});
+
+describe('시작 세션', () => {
+  it('owner는 여행쥬아의 관리자가 나 하나이고 다른 번치의 역할은 그대로다', () => {
+    const { memberships } = createSeedFor('owner');
+    const owners = (bunchId: number) =>
+      memberships.filter((item) => item.bunchId === bunchId && item.role === 'OWNER');
+
+    expect(owners(MOCK_BUNCH_ID).map((item) => item.memberId)).toEqual([me]);
+    expect(memberships).toContainEqual(
+      expect.objectContaining({ bunchId: MOCK_BUNCH_ID, memberId: admin, role: 'MEMBER' }),
+    );
+    expect(memberships.filter((item) => item.bunchId !== MOCK_BUNCH_ID)).toEqual(
+      createSeed().memberships.filter((item) => item.bunchId !== MOCK_BUNCH_ID),
+    );
   });
 });
