@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 로그인 없이 열리는 페이지(운영 빌드). `/login`은 로그인 전이면 `/intro`로 이동해 뺌
+          # 로그인 없이 열리는 페이지(운영 빌드). 쉘 밖이라 `/intro`는 앱 설치 안내, `/login`도 같은 안내라 뺌
           # 초대 토큰은 버튼을 눌러야 확인하므로 가짜 토큰으로도 실제 초대 링크의 첫 화면과 같음
           - id: public
             title: 공개 페이지
@@ -92,7 +92,7 @@ jobs:
           NEXT_PUBLIC_API_MOCKING: ${{ matrix.mocking }}
         run: yarn workspace @app/web build
 
-      # 실제 백엔드 없이 모든 요청에 401(로그인 전)만 주는 API. API_BASE_URL이 없으면 세션 확인이 실패해 오류 화면이 측정됨
+      # 실제 백엔드 없이 모든 요청에 401(로그인 전)만 주는 API. 아래 기동 확인이 이 응답까지 봄
       # 측정 인프라 실패는 체크를 실패시키지 않고 댓글로 알림
       - name: Start web
         id: start

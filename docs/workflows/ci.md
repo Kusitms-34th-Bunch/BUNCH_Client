@@ -56,12 +56,12 @@ GitHub 공식 action은 런타임이 Node 24인 메이저를 쓴다(2026-11-24, 
 `lighthouse.yml`은 PR의 web을 배포하지 않고 runner 안에서 측정한다. 운영 배포는 `main` push 때만 되어 PR의 변경이 배포 주소에 없고, PR 미리보기 배포는 Vercel 토큰과 접속 보호 우회가 필요하기 때문이다. 운영 주소는 배포 뒤 따로 잰다(아래 「운영 측정」).
 
 - 측정 묶음은 matrix `measure`의 두 job이다. 빌드가 달라 동시에 돌린다.
-  - `public`(공개 페이지): 운영 빌드로 로그인 없이 열리는 `/intro`, `/invite/<토큰>`을 잰다.
+  - `public`(공개 페이지): 운영 빌드로 로그인 없이 열리는 `/intro`, `/invite/<토큰>`을 잰다. 측정 브라우저는 앱 쉘이 아니라서 `/intro`는 앱 설치 안내 화면이다(`docs/architecture/routing-and-access.md` 「앱 안에서만 여는 화면」).
   - `signed-in`(로그인 화면): `NEXT_PUBLIC_API_MOCKING=enabled` 빌드로 `/feed`, `/bunch`, `/my`를 잰다. 로그인 여부는 화면이 세션 요청으로 정하는데(`proxy.ts`는 CSRF 검사만 함), 가짜 서버가 이 요청에 시작 데이터의 계정으로 답해 쿠키 없이 로그인 상태가 그려진다. 가짜 서버 코드와 준비 대기(`ApiMockingGate`)가 들어가 성능 절대값은 운영과 다르므로, 댓글에 그 사실을 적고 기준선 대비 변화로 회귀를 본다. 이 빌드는 PostHog 수집을 끈다(`shared/config/posthog.ts`).
 
 - 순서: 변조 가드 → 설치 → CI build job이 저장한 Next 빌드 캐시 복원(저장하지 않음) → `yarn workspace @app/web build`(`NEXT_SKIP_TYPECHECK`) → 모든 요청에 401만 주는 API stub(127.0.0.1:3399)과 `next start`(127.0.0.1:3300, `API_BASE_URL`은 stub) → `@lhci/cli collect`(runner의 Chrome, 페이지마다 따로 재서 한 페이지가 열리지 않아도 나머지는 잼, 페이지당 1번, `--settings.locale=ko`, HTML 리포트용 전체 페이지 스크린샷은 끔) → `scripts/report-lighthouse.mjs`.
-- stub이 없으면 `API_BASE_URL`이 비어 세션 확인이 실패하고, `/intro` 대신 「일시적인 오류」 화면이 측정된다. stub은 로그인 전 상태만 흉내 내므로 실제 백엔드 응답 시간은 점수에 들어가지 않는다.
-- `/login`은 로그인 전이면 `/intro`로 이동해서 뺐다. 초대 토큰은 버튼을 눌러야 확인하므로 가짜 토큰으로도 실제 초대 링크의 첫 화면과 같다. 페이지는 matrix의 `urls`에서 바꾼다.
+- `public` 묶음의 화면(설치 안내·초대장)은 세션 결과와 상관없이 그려지지만, stub은 서버 기동 확인 단계가 쓰므로 그대로 둔다. stub은 로그인 전 상태만 흉내 내므로 실제 백엔드 응답 시간은 점수에 들어가지 않는다.
+- `/login`은 `/intro`와 같은 안내 화면이라 뺐다. 초대 토큰은 버튼을 눌러야 확인하므로 가짜 토큰으로도 실제 초대 링크의 첫 화면과 같다. 페이지는 matrix의 `urls`에서 바꾼다.
 - 댓글은 묶음마다 페이지별 점수(성능·접근성·권장사항·SEO), develop 기준선과의 차이, 점수에 반영되는 항목 중 통과하지 못한 것(감점이 큰 순 5개)이다. 측정하지 못한 항목(예: `NO_LCP`)은 이유를 한 줄로, 열리지 않은 페이지는 「측정하지 못한 페이지」로 적는다. 전체 리포트는 artifact `lighthouse-report-<묶음>`(7일)에 있다.
 - 페이지당 1번 측정이라 성능 점수는 실행마다 흔들린다. 그래서 성능은 기준선과 10점 미만 차이를 표시하지 않고(`NOISE`), 어떤 점수도 PR을 실패시키지 않는다. 2026-11-15 같은 코드를 두 번 측정했을 때 `/invite` 성능이 75와 69로 6점 차이가 났다. 접근성·권장사항·SEO는 두 실행에서 같았다. 기준선이 쌓이면 흔들리는 폭을 다시 보고 이 값을 조정한다.
 - 서버 기동·Lighthouse·보고가 실패해도 체크는 실패하지 않고, 그 묶음 자리를 「이번 커밋은 측정하지 못했습니다」로 덮어써 이전 커밋의 결과가 남아 보이지 않게 한다. web 빌드 실패만 체크를 실패시킨다(같은 실패를 `Frontend CI`의 Build도 알린다). `next start` 로그는 artifact에 함께 올린다.
@@ -71,7 +71,7 @@ GitHub 공식 action은 런타임이 Node 24인 메이저를 쓴다(2026-11-24, 
 
 ### 운영 측정
 
-- `lighthouse-production.yml`은 `Web Deploy` 실행이 성공으로 끝난 뒤(`workflow_run`) 운영 주소(`https://app.bunch.kr`)를 잰다. 대상은 `/intro`, `/invite/<토큰>`이고 페이지당 3번 잰 뒤 성능 중앙값 실행 하나로 보고한다. 실제 CDN·이미지 최적화·캐시 헤더·백엔드 응답이 들어간 점수다.
+- `lighthouse-production.yml`은 `Web Deploy` 실행이 성공으로 끝난 뒤(`workflow_run`) 운영 주소(`https://app.bunch.kr`)를 잰다. 대상은 `/intro`(앱 설치 안내), `/invite/<토큰>`이고 페이지당 3번 잰 뒤 성능 중앙값 실행 하나로 보고한다. 실제 CDN·이미지 최적화·캐시 헤더·백엔드 응답이 들어간 점수다.
 - 배포 workflow와 실행을 나눴다. lockfile 밖 도구(`yarn dlx`로 받는 Lighthouse)가 배포 실행의 `main` 범위 캐시나 배포 묶음 artifact에 닿지 않게 하려는 것이다. 측정이 배포 동시 실행 그룹(`web-deploy`)을 점유해 다음 배포를 기다리게 하지도 않는다. `workflow_run`은 기본 브랜치(develop)의 workflow 파일로, develop 범위에서 실행된다.
 - Vercel 토큰과 environment가 없고, 저장소는 `package.json`·`.yarnrc.yml`·보고 스크립트만 받아 설치·빌드하지 않는다. 측정·보고 실패는 배포 결과에 영향이 없고, 배포가 실패한 실행은 재지 않는다.
 - 2026-11-15 기준 `/invite`는 아직 `main`에 없어 404다. 다음 릴리스 전까지 「측정하지 못한 페이지」로 나온다. 운영 기준선은 3번 다 잰 페이지만 갱신하고, 열리지 않거나 일부만 잰 페이지는 이전 값을 유지한다(보고에 「일부만 측정한 페이지」로 표시).
