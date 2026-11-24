@@ -71,6 +71,9 @@ export function usePresence(
     return () => clearTimeout(timer);
   }, [visible]);
 
-  const presence = useMemo(() => toDraftPresence(visible), [visible]);
+  // 만료 시각만 바뀐 갱신(5초마다)은 내용이 같아 이전 값을 그대로 씀: 받는 작성 화면 전체가 다시 그려지지 않게(#540, 같은 갱신 10번에 10 → 0)
+  // DraftPresence는 문자열·배열·문자열 맵만 담아 JSON으로 그대로 오감(Date·Set·undefined 필드를 더하면 이 비교를 바꿀 것)
+  const signature = useMemo(() => JSON.stringify(toDraftPresence(visible)), [visible]);
+  const presence = useMemo(() => JSON.parse(signature) as DraftPresence, [signature]);
   return { presence, apply, refresh };
 }
