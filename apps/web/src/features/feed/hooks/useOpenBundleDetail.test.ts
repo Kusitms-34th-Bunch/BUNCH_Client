@@ -41,6 +41,22 @@ describe('useOpenBundleDetail', () => {
     expect(prefetchDetail).not.toHaveBeenCalled();
   });
 
+  it('명의를 모르는 동안 미리 받으려던 카드는 명의가 확인되면 받는다(#573)', () => {
+    prefetchDetail.mockReturnValue(Promise.resolve());
+    const { result, rerender } = renderHook(
+      ({ viewerId }: { viewerId: string | undefined }) => useOpenBundleDetail({ viewerId }),
+      { initialProps: { viewerId: undefined as string | undefined } },
+    );
+
+    void result.current.prefetch(bundle);
+    expect(prefetchDetail).not.toHaveBeenCalled();
+
+    rerender({ viewerId: 'b1' });
+    expect(prefetchDetail).toHaveBeenCalledWith('1', '7', 'b1');
+    rerender({ viewerId: 'b1' });
+    expect(prefetchDetail).toHaveBeenCalledTimes(1);
+  });
+
   it('말풍선도 기다리지 않고 바로 이동하며, 말풍선 주소(query 포함)와 댓글 목록을 미리 받는다', () => {
     prefetchDetail.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useOpenBundleDetail({ viewerId: 'b1' }));

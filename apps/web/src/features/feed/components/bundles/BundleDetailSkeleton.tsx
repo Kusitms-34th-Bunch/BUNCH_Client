@@ -70,3 +70,41 @@ export function BundleDetailSkeleton() {
     </div>
   );
 }
+
+// 댓글 본문 폭(한두 단어~한 줄 대표값)
+const COMMENT_WIDTHS = ['w-32', 'w-48', 'w-40'];
+
+/**
+ * 번들 상세의 댓글 목록 자리(들어오는 전환이 끝나기 전, #573)
+ * BundleCommentList·CommentItem과 같은 여백·줄 높이: 목록 좌우 16·위 16, 한 줄 위아래 14, 사진 XS 34px·사이 12
+ */
+export function BundleCommentsSkeleton() {
+  return (
+    <div aria-hidden="true" className="px-padding-p8 pt-padding-p8">
+      {COMMENT_WIDTHS.map((width, index) => (
+        <div key={index} className="gap-s4 py-padding-p7 flex items-start">
+          <Skeleton shape="round" className="size-8.5 shrink-0" />
+          <div className="gap-s5 flex min-w-0 flex-1 flex-col">
+            <div className="gap-s3 flex flex-col">
+              <div className="gap-s1 flex flex-col">
+                <span className="typography-body-3-semibold flex h-lh items-center">
+                  <Skeleton className="h-4 w-16" />
+                </span>
+                <span className="typography-caption-1-regular flex h-lh items-center">
+                  <Skeleton className="h-3 w-12" />
+                </span>
+              </div>
+              <span className="typography-body-3-regular flex h-lh items-center">
+                <Skeleton tone="strong" className={`h-4 ${width}`} />
+              </span>
+            </div>
+            {/* 답글 달기 줄 */}
+            <span className="typography-body-4-regular flex h-lh items-center">
+              <Skeleton className="h-3 w-14" />
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

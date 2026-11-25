@@ -32,11 +32,15 @@ describe('CompletedBundleGrid', () => {
     const { container, unmount } = render(<CompletedBundleGrid bunchId="1" bundles={many} />);
     const last = [...container.querySelectorAll('img')].at(-1)!;
     expect(last.getAttribute('loading')).toBe('lazy');
+    expect(last.getAttribute('decoding')).toBe('async');
     fireEvent.load(last);
     unmount();
 
     const again = render(<CompletedBundleGrid bunchId="1" bundles={many} />);
-    expect([...again.container.querySelectorAll('img')].at(-1)!.getAttribute('loading')).toBeNull();
+    const seen = [...again.container.querySelectorAll('img')].at(-1)!;
+    expect(seen.getAttribute('loading')).toBeNull();
+    // 돌아오는 전환 첫 프레임에 비지 않게 동기 decode(#573)
+    expect(seen.getAttribute('decoding')).toBeNull();
   });
 
   it('멤버 공개 번들만 아이콘을 얹고 대체 텍스트로 알린다', () => {

@@ -2,13 +2,20 @@
 
 import { FeedBundleCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import { openTabPath } from '@/shared/bridge/client';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
 import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import type { useOpenBundleDetail } from '../hooks/useOpenBundleDetail';
 import type { FeedBundle } from '../lib/types';
 import { FEED_PATHS } from '../constants/paths';
+import { useInView } from '../hooks/useInView';
 import { hideLeftMemberImages } from '../lib/deletedUserImage';
+
+// 보인 카드의 상세 미리 받기: 스크롤·그리기를 막지 않게 한가할 때(늦어도 이 안에), 한가함을 알 수 없는 브라우저는 잠시 뒤
+const IDLE_TIMEOUT_MS = 2000;
+const IDLE_FALLBACK_MS = 300;
 
 type BundleDetailOpener = ReturnType<typeof useOpenBundleDetail>;
 
@@ -42,9 +49,22 @@ export function FeedBundleItem({
 }: FeedBundleItemProps) {
   const router = useRouter();
   const detailHref = FEED_PATHS.bundle(bundle.bunch.id, bundle.id);
+  // 화면에 보인 카드는 한가할 때 상세를 미리 받아, 누르면 다 받은 상세로 바로 hero(받는 중 화면을 거치지 않게, #573)
+  const [viewRef, inView] = useInView<HTMLLIElement>();
+  const prefetchOnView = usePreservedCallback(() => void prefetchDetail(bundle));
+  useEffect(() => {
+    if (!inView) return;
+    if (typeof requestIdleCallback === 'undefined') {
+      const timer = setTimeout(prefetchOnView, IDLE_FALLBACK_MS);
+      return () => clearTimeout(timer);
+    }
+    const id = requestIdleCallback(prefetchOnView, { timeout: IDLE_TIMEOUT_MS });
+    return () => cancelIdleCallback(id);
+  }, [inView, prefetchOnView]);
   return (
     // 상세에서 돌아오는 hero 사진(SSGOI 복사본)이 아래 카드에 가리지 않게 그동안만 위로 올림
     <li
+      ref={viewRef}
       // 말풍선 진입 zoom의 출발 카드(상세 쪽 enter 표식과 같은 값)
       data-zoom-exit-key={bundleHeroKey(bundle.id)}
       className="has-data-ssgoi-crossfade:relative has-data-ssgoi-crossfade:z-1"

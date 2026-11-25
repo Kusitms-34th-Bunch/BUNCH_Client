@@ -2,6 +2,7 @@ import type { ResponsePromise } from 'ky';
 import type { z, ZodType } from 'zod';
 import { normalizeError, parseOrThrow, unwrapEnvelope } from '@app/api-core';
 import { createBrowserApi } from './browserClient';
+import { stableSignedUrls } from './stableSignedUrls';
 
 /**
  * 브라우저 → BFF 요청 클라이언트. feature `api/` 함수에서만 사용
@@ -19,7 +20,8 @@ export const requestData = async <Schema extends ZodType>(
   context: string,
 ): Promise<z.infer<Schema>> => {
   try {
-    return parseOrThrow<Schema>(schema, unwrapEnvelope(await request.json()), context);
+    const data = stableSignedUrls(unwrapEnvelope(await request.json()));
+    return parseOrThrow<Schema>(schema, data, context);
   } catch (error) {
     throw normalizeError(error);
   }
