@@ -30,7 +30,7 @@
 
 ## Public API
 
-- Props: `label`(필수, 접근성 이름), `action`, `onClear`, `clearLabel`(기본 「입력 지우기」), `editing`, `disabled`, `value`·`onChange`·`placeholder`(기본 「글, 제목, 내용을 입력해주세요.」) 등 native `input` 속성(`type`·`size`·`ref`·`aria-label` 제외).
+- Props: `label`(필수, 접근성 이름), `action`, `onClear`, `clearLabel`(기본 「입력 지우기」), `onEnterKey`, `enterKeyHint`(기본 `done`), `editing`, `disabled`, `value`·`onChange`·`placeholder`(기본 「글, 제목, 내용을 입력해주세요.」) 등 native `input` 속성(`type`·`size`·`ref`·`aria-label` 제외).
 - `className`은 입력창 바깥 행에 적용된다.
 - 호출자 소유 책임: 값과 `onClear` 처리, 버튼 영역의 동작·접근성 이름.
 
@@ -47,6 +47,7 @@
 - `Editing` 표시: 컴포넌트가 직접 그리지 않고 `editingContent`로 받는다(예전에는 앱의 `editing.json` 로티를 넘겼고 2026-11-24에 지움, 지금은 초대 화면의 받는 중 표시가 씀). 입력창 왼쪽 가운데에 놓이고 클릭을 막지 않으며 보조 기술에는 숨긴다. 동작 줄이기는 넘기는 쪽이 처리한다.
 - 지우기 버튼은 `readOnly`면 숨긴다(Figma에 없는 상태). 비활성이면 보이지만 누를 수 없다.
 - 긴 값은 입력창에서 한 줄로 잘린다.
+- 키보드 Enter 키는 기본 완료(`enterKeyHint="done"`, iOS는 체크 키)다(#579). `onEnterKey`를 주면 Enter에서 form 자동 제출 대신 그것만 부르고, 주지 않으면 브라우저 기본 동작(form 자동 제출)을 유지한다. 완료 키는 터치 기기(`pointer: coarse`)에서만 누른 뒤 키보드를 닫고(초점은 문서로 빠짐), 데스크톱 키보드 사용자와 `onEnterKey` 없는 form 입력(기본 제출에 초점이 필요)은 초점을 유지한다. `onEnterKey` 없는 form 입력은 제출 뒤에도 키보드가 열려 있을 수 있어, 닫으려면 제출 처리에서 닫거나 `onEnterKey`를 쓴다. 외장 키보드를 붙인 iPad도 터치 기기로 판정돼 키보드를 닫는다(웹에서 화면 키보드 유무를 정확히 알 수 없음). `enterKeyHint="next"`면 닫지 않고 `onEnterKey`가 다음 칸으로 초점을 옮긴다. 한글 조합을 확정하는 Enter(`isComposing`, Safari의 `keyCode` 229)는 무시한다.
 - iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소해 14px 디자인을 유지한다(`inputScale.module.css`).
 
 ## 접근성

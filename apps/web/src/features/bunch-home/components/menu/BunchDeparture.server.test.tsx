@@ -296,12 +296,11 @@ describe('BunchDelete 서버 삭제', () => {
     );
     await preloadNextBunch(client);
 
-    // 처리 중의 Enter 반복·연타
-    await user.type(
-      await screen.findByRole('textbox', { name: '확인 문구 입력' }),
-      '삭제하기{Enter}{Enter}',
-    );
-    await user.click(screen.getByRole('button', { name: '삭제하기' }));
+    // 처리 중의 연타
+    await user.type(await screen.findByRole('textbox', { name: '확인 문구 입력' }), '삭제하기');
+    const deleteButton = screen.getByRole('button', { name: '삭제하기' });
+    await user.click(deleteButton);
+    await user.click(deleteButton);
 
     await waitFor(() => expect(go).toHaveBeenCalledWith(-3));
     expect(go).toHaveBeenCalledTimes(1);
@@ -329,10 +328,8 @@ describe('BunchDelete 서버 삭제', () => {
     const user = userEvent.setup();
     renderWithQuery(<BunchDelete step="confirm" targetId={String(MOCK_BUNCH_ID)} />);
 
-    await user.type(
-      await screen.findByRole('textbox', { name: '확인 문구 입력' }),
-      '삭제하기{Enter}',
-    );
+    await user.type(await screen.findByRole('textbox', { name: '확인 문구 입력' }), '삭제하기');
+    await user.click(screen.getByRole('button', { name: '삭제하기' }));
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(BUNCH_HOME_MESSAGES.deleteFailed));
     expect(mockDb.get().bunches.some((bunch) => bunch.id === MOCK_BUNCH_ID)).toBe(true);
@@ -350,10 +347,8 @@ describe('BunchDelete 서버 삭제', () => {
     const user = userEvent.setup();
     renderWithQuery(<BunchDelete step="confirm" targetId={String(MOCK_BUNCH_ID)} />);
 
-    await user.type(
-      await screen.findByRole('textbox', { name: '확인 문구 입력' }),
-      '삭제하기{Enter}',
-    );
+    await user.type(await screen.findByRole('textbox', { name: '확인 문구 입력' }), '삭제하기');
+    await user.click(screen.getByRole('button', { name: '삭제하기' }));
 
     await waitFor(() =>
       expect(toastAfterNavigation).toHaveBeenCalledWith(

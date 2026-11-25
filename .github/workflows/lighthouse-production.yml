@@ -27,11 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      # 로그인 없이 열리는 페이지만(운영 로그인 화면은 docs/decisions/records/023 참고)
+      # 로그인 없이 열리는 페이지만(앱 설치 안내는 뺌, 운영 로그인 화면은 docs/decisions/records/023 참고)
       # 페이지당 측정 횟수(보고 스크립트가 일부만 잰 페이지를 가려냄)
       LIGHTHOUSE_RUNS: 3
       LIGHTHOUSE_URLS: >-
-        https://app.bunch.kr/intro
         https://app.bunch.kr/invite/lighthouse-check
     steps:
       # 보고 스크립트와 Yarn 버전 파일만 받음(저장소 코드를 설치·실행하지 않음)

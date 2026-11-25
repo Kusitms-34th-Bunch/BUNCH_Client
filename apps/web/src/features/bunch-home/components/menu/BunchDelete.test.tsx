@@ -109,13 +109,15 @@ describe('BunchDeleteScreen', () => {
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('확인 문구를 맞게 입력하고 Enter를 누르면 삭제한다', async () => {
+  it('확인 문구를 맞게 입력해도 Enter(키보드 완료 키)로는 삭제하지 않는다(#579)', async () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();
     render(<BunchDeleteScreen {...screenProps} step="confirm" onDelete={onDelete} />);
 
     await user.type(screen.getByRole('textbox', { name: '확인 문구 입력' }), '삭제하기{Enter}');
 
+    expect(onDelete).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '삭제하기' }));
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 

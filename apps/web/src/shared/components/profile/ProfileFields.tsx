@@ -33,6 +33,7 @@ export function ProfileFields({
 }: ProfileFieldsProps) {
   const noteId = useId();
   const birthYearHintId = useId();
+  const birthYearId = useId();
   const { values } = fields;
 
   return (
@@ -53,6 +54,11 @@ export function ProfileFields({
               : undefined
         }
         onChange={(event) => fields.setNickname(event.target.value)}
+        // 출생연도 칸이 있으면 키보드 다음 키로 그 칸에(#579), 없으면 완료 키로 키보드만 닫음
+        {...(showDemographics && {
+          enterKeyHint: 'next' as const,
+          onEnterKey: () => document.getElementById(birthYearId)?.focus(),
+        })}
         // 허용하지 않는 문자는 빼고, 12자를 넘으면 자르지 않고 넣어 초과 안내를 보임
         onPaste={filteredPaste(pasteNickname, fields.setNickname)}
         onCompositionStart={() => fields.setComposing(true)}
@@ -70,6 +76,7 @@ export function ProfileFields({
             숫자 4자리로 입력해 주세요.
           </span>
           <LabeledTextField
+            id={birthYearId}
             title="출생연도"
             placeholder="EX)1998"
             inputMode="numeric"

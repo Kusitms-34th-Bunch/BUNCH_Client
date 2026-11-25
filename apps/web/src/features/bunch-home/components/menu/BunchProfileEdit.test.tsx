@@ -59,6 +59,16 @@ describe('BunchProfileEditScreen', () => {
     expect(saveButton()).toHaveProperty('disabled', true);
   });
 
+  it('번치 이름의 다음 키는 저장하지 않고 한 줄 소개 칸으로 옮긴다(#579)', async () => {
+    renderScreen();
+    const name = screen.getByRole('textbox', { name: '번치 이름' });
+    expect(name.getAttribute('enterkeyhint')).toBe('next');
+
+    await userEvent.type(name, '{Enter}');
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: /한 줄 소개/ }));
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it('이름을 바꿔 저장하면 바뀐 값과 사진 그대로(KEEP)로 onSave를 부른다', async () => {
     const user = userEvent.setup();
     renderScreen();

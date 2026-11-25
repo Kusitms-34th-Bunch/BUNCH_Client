@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TextField } from './TextField';
 
 const container = () => screen.getByRole('textbox').parentElement!.parentElement!;
@@ -20,6 +20,112 @@ describe('TextField', () => {
     render(<TextField label="제목" value="부산" onChange={vi.fn()} />);
 
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  describe('키보드 Enter 키', () => {
+    // 터치 기기(화면 키보드) 여부
+    const setTouch = (coarse: boolean) =>
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: coarse && query === '(pointer: coarse)',
+      }));
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('기본은 완료 키이고 onEnterKey가 있으면 form 자동 제출 대신 부르고, 터치 기기면 키보드를 닫는다', async () => {
+      setTouch(true);
+      const onEnterKey = vi.fn();
+      const onSubmit = vi.fn();
+      render(
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmit();
+          }}
+        >
+          <TextField label="제목" onEnterKey={onEnterKey} />
+          <button type="submit">저장</button>
+        </form>,
+      );
+      const input = screen.getByRole('textbox', { name: '제목' });
+      expect(input.getAttribute('enterkeyhint')).toBe('done');
+
+      await userEvent.type(input, '부산{Enter}');
+      expect(onEnterKey).toHaveBeenCalledTimes(1);
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(document.activeElement).not.toBe(input);
+    });
+
+    it('onEnterKey가 없으면 form 자동 제출을 그대로 두고, 데스크톱에서는 초점을 유지한다', async () => {
+      setTouch(false);
+      const onSubmit = vi.fn();
+      render(
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmit();
+          }}
+        >
+          <TextField label="제목" />
+          <button type="submit">저장</button>
+        </form>,
+      );
+      const input = screen.getByRole('textbox', { name: '제목' });
+
+      await userEvent.type(input, '{Enter}');
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('터치 기기에서도 onEnterKey 없는 form 입력은 초점을 남겨 기본 제출에 맡기고, form 밖이면 키보드를 닫는다', async () => {
+      setTouch(true);
+      const onSubmit = vi.fn();
+      render(
+        <>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSubmit();
+            }}
+          >
+            <TextField label="폼 안" />
+            <button type="submit">저장</button>
+          </form>
+          <TextField label="폼 밖" />
+        </>,
+      );
+      const inForm = screen.getByRole('textbox', { name: '폼 안' });
+      await userEvent.type(inForm, '{Enter}');
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(document.activeElement).toBe(inForm);
+
+      const outside = screen.getByRole('textbox', { name: '폼 밖' });
+      await userEvent.type(outside, '{Enter}');
+      expect(document.activeElement).not.toBe(outside);
+    });
+
+    it('다음 키는 키보드를 닫지 않고 onEnterKey에 맡긴다', async () => {
+      setTouch(true);
+      const onEnterKey = vi.fn();
+      render(<TextField label="제목" enterKeyHint="next" onEnterKey={onEnterKey} />);
+      const input = screen.getByRole('textbox', { name: '제목' });
+
+      await userEvent.type(input, '{Enter}');
+      expect(input.getAttribute('enterkeyhint')).toBe('next');
+      expect(onEnterKey).toHaveBeenCalledTimes(1);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('한글 조합을 확정하는 Enter(isComposing, Safari의 keyCode 229)는 무시한다', () => {
+      setTouch(true);
+      const onEnterKey = vi.fn();
+      render(<TextField label="제목" onEnterKey={onEnterKey} />);
+      const input = screen.getByRole('textbox', { name: '제목' });
+      input.focus();
+
+      fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+      fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 });
+      expect(onEnterKey).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(input);
+    });
   });
 
   describe('지우기 변형(onClear)', () => {

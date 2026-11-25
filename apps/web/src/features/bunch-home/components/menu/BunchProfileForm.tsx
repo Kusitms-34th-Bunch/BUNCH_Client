@@ -235,6 +235,9 @@ export function ProfileForm({
                 availability,
               })}
               onChange={(event) => setName(event.target.value)}
+              // 키보드 다음 키로 한 줄 소개 칸으로(#579)
+              enterKeyHint="next"
+              onEnterKey={() => document.getElementById(descriptionId)?.focus()}
               // 쓸 수 없는 문자를 섞어 붙여넣으면 그 문자만 빼고 넣음(기능명세 2.2.2 예외)
               onPaste={filteredPaste(pasteBunchName, setName)}
               onCompositionStart={() => setComposing(true)}

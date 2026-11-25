@@ -145,6 +145,20 @@ describe('ProfileSetup', () => {
     expect(nickname().getAttribute('aria-required')).toBe('true');
   });
 
+  it('키보드 키: 닉네임은 다음 키로 출생연도에, 출생연도는 완료 키다(#579)', async () => {
+    render(<ProfileSetup />);
+    expect(nickname().getAttribute('enterkeyhint')).toBe('next');
+    expect(birthYear().getAttribute('enterkeyhint')).toBe('done');
+
+    await userEvent.type(nickname(), '{Enter}');
+    expect(document.activeElement).toBe(birthYear());
+  });
+
+  it('출생연도가 없으면 닉네임은 완료 키다', () => {
+    render(<ProfileSetup />, { demographics: false });
+    expect(nickname().getAttribute('enterkeyhint')).toBe('done');
+  });
+
   describe('닉네임', () => {
     it('입력하면 글자 수가 갱신되고 시작하기가 활성화된다', async () => {
       render(<ProfileSetup />);
