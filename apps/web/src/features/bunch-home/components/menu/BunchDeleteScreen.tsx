@@ -130,6 +130,10 @@ export function BunchDeleteScreen({
                   placeholder={BUNCH_HOME_MESSAGES.deleteConfirmPhrase}
                   value={phrase}
                   onChange={(event) => setPhrase(event.target.value)}
+                  // 키보드 완료 키도 「삭제하기」와 같은 제출(문구가 맞을 때만 삭제, #579)
+                  onEnterKey={() =>
+                    (document.getElementById(formId) as HTMLFormElement | null)?.requestSubmit()
+                  }
                   autoComplete="off"
                   spellCheck={false}
                   aria-describedby={hintId}

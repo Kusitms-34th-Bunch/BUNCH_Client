@@ -144,6 +144,10 @@ export function BunchJoin() {
             setPasted(false);
           }}
           inputMode="url"
+          // 키보드 완료 키는 「완료」 버튼과 같음(#579)
+          onEnterKey={() => {
+            if (!submitDisabled) submit();
+          }}
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
