@@ -1,4 +1,6 @@
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
+import { usePreservedCallback } from 'react-simplikit';
 import type { FeedBundle } from '../lib/types';
 import { FEED_PATHS } from '../constants/paths';
 import { rememberBundlePreview } from '../lib/bundlePreview';
@@ -20,6 +22,7 @@ export function useOpenBundleDetail({ viewerId, prefetchBunch }: OpenBundleDetai
   const router = useRouter();
   const prefetchBundleDetail = usePrefetchBundleDetail();
   const prefetchComments = usePrefetchComments();
+  const waiting = useRef(new Map<string, FeedBundle>());
   // 손가락이 닿을 때부터 받아 둠(상세 화면 경로도 함께)
   // withComments: 말풍선 진입은 댓글 목록도(목록이 와야 댓글 위치까지 내려갈 수 있음)
   const prefetch = (
@@ -32,17 +35,20 @@ export function useOpenBundleDetail({ viewerId, prefetchBunch }: OpenBundleDetai
         ? FEED_PATHS.bundleComments(bundle.bunch.id, bundle.id)
         : FEED_PATHS.bundle(bundle.bunch.id, bundle.id),
     );
-    return viewerId === undefined
-      ? Promise.resolve()
-      : Promise.all([
-          prefetchBundleDetail(bundle.bunch.id, bundle.id, viewerId),
-          prefetchBunch?.(bundle.bunch.id, viewerId),
-          withComments ? prefetchComments(bundle.id, viewerId) : undefined,
-          // 실패해도 이동은 막지 않음(상세가 다시 받고 실패 안내)
-        ]).then(
-          () => undefined,
-          () => undefined,
-        );
+    // 명의를 아직 모르면 기억해 두고 확인되면 받음(앱을 열자마자 보인 카드가 빠지지 않게, #573)
+    if (viewerId === undefined) {
+      if (!withComments) waiting.current.set(bundle.id, bundle);
+      return Promise.resolve();
+    }
+    return Promise.all([
+      prefetchBundleDetail(bundle.bunch.id, bundle.id, viewerId),
+      prefetchBunch?.(bundle.bunch.id, viewerId),
+      withComments ? prefetchComments(bundle.id, viewerId) : undefined,
+      // 실패해도 이동은 막지 않음(상세가 다시 받고 실패 안내)
+    ]).then(
+      () => undefined,
+      () => undefined,
+    );
   };
   // 사진·말풍선 모두 기다리지 않고 바로 이동(말풍선은 댓글로). 상세는 받는 동안 카드 데이터로 윗부분을 먼저 그림
   const open = (
@@ -54,6 +60,15 @@ export function useOpenBundleDetail({ viewerId, prefetchBunch }: OpenBundleDetai
     void prefetch(bundle, { withComments });
     router.push(href);
   };
+
+  const flushWaiting = usePreservedCallback(() => {
+    const bundles = [...waiting.current.values()];
+    waiting.current.clear();
+    for (const bundle of bundles) void prefetch(bundle);
+  });
+  useEffect(() => {
+    if (viewerId !== undefined) flushWaiting();
+  }, [viewerId, flushWaiting]);
 
   return { prefetch, open };
 }
