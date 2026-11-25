@@ -100,6 +100,7 @@ export function BunchDescription() {
       <div ref={containerRef} className="pt-s15 px-padding-p8">
         <LabeledTextArea
           label="한 줄 소개"
+          option="required"
           placeholder="우리 번치를 간단하게 소개해주세요"
           value={description}
           maxLength={BUNCH_DESCRIPTION_MAX_LENGTH}

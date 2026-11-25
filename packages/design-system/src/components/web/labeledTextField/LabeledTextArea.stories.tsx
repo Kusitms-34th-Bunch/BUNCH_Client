@@ -38,6 +38,9 @@ export const Wrapped: Story = {
   },
 };
 
+/** 라벨 옆 필수 별표(`option="required"`) */
+export const Required: Story = { args: { value: '', onChange: () => {}, option: 'required' } };
+
 export const Error: Story = {
   args: { value: '소개', onChange: () => {}, error: '입력할 수 없는 문자가 있어요.' },
 };
