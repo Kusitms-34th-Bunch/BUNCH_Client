@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { mockDb } from '@/mocks/db';
 import { fail, ok } from '@/mocks/lib/envelope';
 import { server } from '@/mocks/server';
@@ -398,14 +398,37 @@ describe('BundleDetail', () => {
   });
 
   it('새로 들어오면 전환이 끝날 때까지 댓글 자리는 스켈레톤이고, 나가는 화면 표식이 사라지면 댓글을 그린다(#573)', async () => {
+    // 프레임을 직접 진행(시간 대기로는 확인 프레임이 몇 번 돌았는지 보장할 수 없음)
     const leaving = document.createElement('div');
     leaving.dataset.pageLeaving = '';
+    const frames: FrameRequestCallback[] = [];
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const caf = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    onTestFinished(() => {
+      raf.mockRestore();
+      caf.mockRestore();
+      leaving.remove();
+    });
+    const runFrames = (count: number) =>
+      act(() => {
+        for (let index = 0; index < count; index += 1) {
+          frames.splice(0).forEach((callback) => callback(performance.now()));
+        }
+      });
     document.body.append(leaving);
     renderDetail();
-    await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    await screen.findByRole('heading', { level: 1 });
+
+    runFrames(5);
     expect(screen.queryByRole('region', { name: '댓글' })).toBeNull();
+    // 기다리는 동안에도 같은 상태 영역이 받는 중을 알림
+    expect(screen.getByRole('status')).toHaveTextContent('댓글을 불러오는 중');
 
     leaving.remove();
+    runFrames(1);
     expect(await screen.findByRole('region', { name: '댓글' })).toBeTruthy();
   });
 

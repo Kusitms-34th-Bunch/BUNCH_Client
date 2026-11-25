@@ -203,6 +203,14 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
         className="pb-padding-p8 pt-6"
       />
       <div aria-hidden="true" className="bg-surface-secondary h-2" />
+      {/* 늘 있는 상태 영역에서 글자만 바꿔 읽어 줌(댓글을 받는 중·전환 뒤 그리기 전, 등록 결과). 스켈레톤·목록이 바뀌어도 같은 노드(#573) */}
+      <p role="status" className="sr-only">
+        {commentsDeferred || thread.loading
+          ? text.commentsLoading
+          : thread.fetchingMore
+            ? text.moreCommentsLoading
+            : announcement}
+      </p>
       {commentsDeferred ? (
         // 댓글 영역 ref로 화면(main·전환 틀)을 찾는 처리(떠날 때 스크롤 붙잡기·번치 drill)가 그대로 동작하게 자리에 붙임
         <div ref={commentsRef as RefObject<HTMLDivElement | null>}>
@@ -212,7 +220,6 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
         <BundleCommentList
           thread={thread}
           sectionRef={commentsRef}
-          announcement={announcement}
           noBunch={noBunch}
           onReply={actions.reply}
           onMyCommentMore={actions.myCommentMore}

@@ -34,8 +34,6 @@ type BundleCommentListProps = {
   thread: BundleCommentThread;
   /** 댓글 영역(스크롤·초점 대상). 화면이 위치를 계산하고 결과 초점을 옮김 */
   sectionRef: RefObject<HTMLElement | null>;
-  /** 상태 영역에 읽어 줄 등록 결과(받는 중 안내가 우선) */
-  announcement: string;
   /** 소속 번치가 없음: 답글·신고를 눌렀을 때 안내하도록 버튼을 둠 */
   noBunch: boolean;
   onReply: (_comment: FeedComment) => void;
@@ -48,7 +46,6 @@ type BundleCommentListProps = {
 export function BundleCommentList({
   thread,
   sectionRef,
-  announcement,
   noBunch,
   onReply,
   onMyCommentMore,
@@ -58,14 +55,6 @@ export function BundleCommentList({
   const { comments, moreRef } = thread;
   return (
     <>
-      {/* 늘 있는 상태 영역에서 글자만 바꿔 읽어 줌(등록 결과, 댓글을 받는 중) */}
-      <p role="status" className="sr-only">
-        {thread.loading
-          ? text.commentsLoading
-          : thread.fetchingMore
-            ? text.moreCommentsLoading
-            : announcement}
-      </p>
       <section
         ref={sectionRef}
         aria-label={text.commentsTitle}
