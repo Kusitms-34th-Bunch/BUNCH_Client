@@ -18,7 +18,7 @@
 
 ## Public API
 
-- Props: `photos`(`{ src, alt?, pickers? }[]`, 필수), `variant`, `info`(제목·위치·날짜), `author`(`name`·`imageSrc`·`time`·`onClick`), `onPhotoClick(index)`, `photoLabel(index, total)`, `heroKey`(화면 전환 공유 요소 키. thumbnail은 카드 전체에 `data-hero-enter-key`, detail은 첫 사진에 `data-hero-exit-key`), `priority`(첫 사진을 받는 순서. `true`면 다른 이미지보다 먼저 `fetchPriority="high"`, `false`면 화면에 다가올 때 `loading="lazy"`, 없으면 첫 사진은 바로·나머지는 다가올 때, #534), native `<div>` 속성.
+- Props: `photos`(`{ src, alt?, pickers? }[]`, 필수), `variant`, `info`(제목·위치·날짜), `author`(`name`·`imageSrc`·`time`·`onClick`), `onPhotoClick(index)`, `photoLabel(index, total)`, `heroKey`(화면 전환 공유 요소 키. thumbnail은 카드 전체에 `data-hero-enter-key`, detail은 첫 사진에 `data-hero-exit-key`. 키가 있으면 그 첫 사진만 `decoding` 없음(SSGOI 데모와 같게), 나머지는 `async`. async면 hero 복사본·돌아온 카드가 decode 전까지 비어 보임. 피드 카드마다 첫 사진을 바로 decode해 생기는 스크롤 비용은 측정하지 않음, #573), `priority`(첫 사진을 받는 순서. `true`면 다른 이미지보다 먼저 `fetchPriority="high"`, `false`면 화면에 다가올 때 `loading="lazy"`, 없으면 첫 사진은 바로·나머지는 다가올 때, #534), native `<div>` 속성.
 
 ## 접근성
 
