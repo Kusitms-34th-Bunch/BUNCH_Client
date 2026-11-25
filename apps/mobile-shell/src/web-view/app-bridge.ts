@@ -8,6 +8,7 @@ import {
   type AppBridgeMethods,
 } from '@app/bridge';
 import { saveImagesToAlbum } from '../album-save';
+import { getAppVersion } from '../app-version';
 import { copyToClipboard, readClipboard } from '../clipboard';
 import { pickGalleryImage } from '../gallery-image';
 import {
@@ -47,6 +48,7 @@ const appBridge = bridge({
   getPermissionStatus,
   getPushDeviceRegistration,
   getPushInstallationId,
+  getAppVersion,
   // 푸시로 연 알림은 화면에 보이는 WebView(웹이 보낸 자기 탭 ID, 첫 화면은 null)만 가져감
   takeOpenedPush: (tab) => {
     const tabId = typeof tab === 'string' && isTabId(tab) ? tab : undefined;
