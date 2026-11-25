@@ -530,9 +530,12 @@ describe('BunchHome 서버 번치 전환', () => {
   });
 
   it('먼저 바꾼 뒤 저장이 실패하면 원래 번치로 되돌린다', async () => {
+    // 바뀐 제목을 확인한 뒤에 저장 실패를 돌려줌(타이머에 맡기면 홈 렌더가 늦을 때 먼저 되돌아감)
+    let failSave!: () => void;
+    const saving = new Promise<void>((resolve) => (failSave = resolve));
     server.use(
       http.put(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/last-used`, async () => {
-        await delay(50);
+        await saving;
         return fail(500, 'COMMON_001', 'server error');
       }),
     );
@@ -542,6 +545,7 @@ describe('BunchHome 서버 번치 전환', () => {
     const sheet = await openSwitcher(user);
     await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
     expect(await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ })).toBeTruthy();
+    failSave();
     expect(await screen.findByRole('heading', { level: 1, name: /여행쥬아/ })).toBeTruthy();
   });
 
