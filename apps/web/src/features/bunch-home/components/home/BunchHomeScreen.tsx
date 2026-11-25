@@ -16,6 +16,7 @@ import { BUNCH_HOME_PATHS, followingTab } from '../../constants/paths';
 import { useBunchSwitchMotion } from '../../hooks/useBunchSwitchMotion';
 import { useBunchSwitchSheet } from '../../hooks/useBunchSwitchSheet';
 import { BUNCH_BACKGROUNDS } from '../../lib/bunchTheme';
+import { usePrefetchBunchHome } from '../../queries/bunchHome';
 import { BunchHomeHeader } from '../BunchHomeHeader';
 import { BunchProfile } from '../BunchProfile';
 import { BunchProfileImage } from '../BunchProfileImage';
@@ -87,13 +88,15 @@ export function BunchHomeScreen({
   const { openSwitcher, switcherOpen, switchTo } = useBunchSwitchSheet({
     currentId: current.id,
     bunches,
-    switchBunch: (bunchId: string) => {
-      switchMotion.begin();
-      return Promise.resolve(actions.switchBunch(bunchId)).catch((error: unknown) => {
-        switchMotion.cancel();
-        throw error;
-      });
-    },
+    // 화면을 붙잡은 뒤 전환(전환은 새 번치 홈을 받는 즉시 지금 번치를 바꿔 붙잡기 전에 바뀌면 모션이 빠짐)
+    switchBunch: (bunchId: string) =>
+      switchMotion
+        .begin()
+        .then(() => actions.switchBunch(bunchId))
+        .catch((error: unknown) => {
+          switchMotion.cancel();
+          throw error;
+        }),
     removeBunch: actions.removeBunch,
     onSwitched: () => setSwitched(true),
     onAddBunch,
@@ -103,6 +106,7 @@ export function BunchHomeScreen({
   const recentBunchId = bunches.find(
     (bunch) => bunch.id !== current.id && bunch.access === 'active',
   )?.id;
+  usePrefetchBunchHome(recentBunchId);
   const switchToRecent = usePreservedCallback(() => {
     if (recentBunchId !== undefined && !switcherOpen) switchTo(recentBunchId);
   });

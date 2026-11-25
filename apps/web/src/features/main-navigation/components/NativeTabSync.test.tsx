@@ -2,6 +2,7 @@ import { QueryObserver } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sharedKeys } from '@/shared/query/keys';
+import { writeLocalOnly } from '@/shared/query/nativeTabSync';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
 import { NativeTabSync } from './NativeTabSync';
 
@@ -62,6 +63,22 @@ describe('NativeTabSync (iOS 쉘 탭 WebView 사이)', () => {
     client.setQueryData(sharedKeys.me(), me(null));
     client.setQueryData(sharedKeys.me(), me(null, '새 닉네임'));
     expect(notifyNativeTabs).toHaveBeenCalledTimes(2);
+  });
+
+  it('저장 전에 이 탭에만 먼저 쓴 값은 알리지 않고, 저장 뒤 같은 값을 쓰면 그때 알린다(번치 전환, #568)', () => {
+    const client = renderSync(me('1'));
+    writeLocalOnly(() => client.setQueryData(sharedKeys.me(), me('2')));
+    expect(notifyNativeTabs).not.toHaveBeenCalled();
+
+    client.setQueryData(sharedKeys.me(), me('2'));
+    expect(notifyNativeTabs).toHaveBeenCalledTimes(1);
+  });
+
+  it('먼저 쓴 값을 되돌리면(저장 실패) 알리지 않는다', () => {
+    const client = renderSync(me('1'));
+    writeLocalOnly(() => client.setQueryData(sharedKeys.me(), me('2')));
+    client.setQueryData(sharedKeys.me(), me('1'));
+    expect(notifyNativeTabs).not.toHaveBeenCalled();
   });
 
   it('보이지 않는 탭(알림을 받고 다시 받은 탭)은 다시 알리지 않는다', () => {
