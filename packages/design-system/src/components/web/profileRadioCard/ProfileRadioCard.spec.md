@@ -5,7 +5,7 @@
 - 소유 경계: design-system `web` 구역
 - Status: 구현됨(Storybook 치수 확인, 실기기 미검증)
 - Figma: 「번치 및 번치 관련 상세 화면 컴포넌트」(`1873:31851`)의 `Profile Radio Card`(`1659:15379`: Disabled `1659:15378`, Default `1659:15505`, Pressed `1659:15525`, Selected `1659:15536`)
-- 이슈: #140
+- 이슈: #140, 2026-11-24 색상 변경 #570(「11/24(화) 색상변경 관련 UI」 「색상 수정된 컴포넌트」 `1659:15379`, 번치 나가기 `7916:104421`)
 
 ## 목적과 범위
 
@@ -23,7 +23,7 @@
 
 - Default: 바탕 `surface-primary`, 라디오 빈 원.
 - Pressed(누르는 동안): 카드 바탕과 프로필 이미지에 `overlay-hover`(10%)를 겹치고, 라디오는 회색 링·점(`core/radio`의 눌림, 카드 어디를 눌러도 적용)이다. 이름 글자는 어두워지지 않는다.
-- Selected: 바탕 `surface-brand-subtle-1`, 카드 테두리 없음, 프로필 이미지 테두리 `border-brand-subtle`, 라디오는 `core/radio`의 Selected(2026-11-24부터 `icon-tertiary` 회색 점).
+- Selected: 바탕은 그대로 `surface-primary`, 안쪽 1px `border-strong-lighter`(`#969AA0`) 링, 프로필 이미지 테두리는 Default와 같음(2026-11-24 색상 변경으로 `surface-brand-subtle-1` 바탕·`border-brand-subtle` 이미지 테두리에서 변경), 라디오는 `core/radio`의 Selected(2026-11-24부터 `icon-tertiary` 회색 점).
 - Disabled: 카드 40% 흐림, 이름 `text-disabled`, 누를 수 없음.
 - 긴 이름은 한 줄에서 말줄임하고 `title`로 전체를 보여 준다. 터치·키보드 사용자는 툴팁을 볼 수 없어서, 동명이인이나 긴 이름을 구분할 방법은 호출 화면이 정한다(스크린 리더는 전체 이름을 읽음).
 
@@ -36,21 +36,22 @@
 
 ## Styling과 의존성
 
-| Figma                                                              | 구현                                                        |
-| ------------------------------------------------------------------ | ----------------------------------------------------------- |
-| 패딩 12·10, radius `r5`, 바탕 `surface-primary`, 높이 60           | `px-padding-p6 py-padding-p5 rounded-r5 bg-surface-primary` |
-| 이미지·이름 간격 6                                                 | `gap-s3`                                                    |
-| 역할 배지 16, 이미지와 12 겹침                                     | `RoleBadge` + `-ml-3`(눌림은 `brightness-90`)               |
-| 이미지 40, 테두리 `border-tertiary`(선택 시 `border-brand-subtle`) | `ProfileImage` `size="S"` + `border`                        |
-| 이름 Body-1-Medium, `text-primary`(비활성 `text-disabled`)         | `typography-body-1-medium`                                  |
-| Control Radio 20                                                   | `Radio`(`core/radio`)                                       |
-| 선택 바탕 `surface-brand-subtle-1`                                 | `has-checked:bg-surface-brand-subtle-1`                     |
-| 눌림 `overlay-hover`(10%)                                          | 바탕 겹침 layer(글자는 그대로)                              |
-| 흐림 `opacity-disabled`(40)                                        | `opacity-(--semantic-opacity-disabled)`                     |
+| Figma                                                                                                                                             | 구현                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 패딩 12·10, radius `r5`, 바탕 `surface-primary`, 높이 60                                                                                          | `px-padding-p6 py-padding-p5 rounded-r5 bg-surface-primary`                        |
+| 이미지·이름 간격 6                                                                                                                                | `gap-s3`                                                                           |
+| 역할 배지 16, 이미지와 12 겹침                                                                                                                    | `RoleBadge` + `-ml-3`(눌림은 `brightness-90`)                                      |
+| 이미지 40, 테두리 `border-primary`(`#BCBEC2`, 선택과 관계없이, 2026-11-24 색상 변경으로 `border-tertiary`·선택 시 `border-brand-subtle`에서 변경) | `ProfileImage` `size="S"` + `border`                                               |
+| 이름 Body-1-Medium, `text-primary`(비활성 `text-disabled`)                                                                                        | `typography-body-1-medium`                                                         |
+| Control Radio 20                                                                                                                                  | `Radio`(`core/radio`)                                                              |
+| 선택 1px `border-strong-lighter`(2026-11-24 색상 변경)                                                                                            | `has-checked:ring-border-strong-lighter has-checked:ring-1 has-checked:ring-inset` |
+| 눌림 `overlay-hover`(10%)                                                                                                                         | 바탕 겹침 layer(글자는 그대로)                                                     |
+| 흐림 `opacity-disabled`(40)                                                                                                                       | `opacity-(--semantic-opacity-disabled)`                                            |
 
 ## 확인할 항목
 
 - 디자인 변경 (반영, 2026-11-02 확인): 바탕 `surface-secondary`→`surface-primary`, 이미지·이름 간격 8→6, 선택 카드 테두리 삭제, 역할 배지 추가.
+- 선택 테두리 (반영, 2026-11-24 색상 변경): 11-02에 지웠던 선택 카드 테두리가 회색 `border-strong-lighter`로 다시 생겼다. 안쪽 `ring`이라 선택 전후 크기가 움직이지 않는다. 테두리는 흰 배경 위 약 2.8:1로 3:1에 못 미치지만 라디오 점·native `checked`로도 전달되고, 같은 테두리를 쓰는 `DescriptionRadioCard`처럼 시안 그대로 둔다.
 - Pressed의 이미지 테두리 (제안): Figma Pressed 이미지 테두리가 검정이지만 겹침 효과의 결과로 보고 따로 그리지 않았다.
 - 초점 표시 (확인): 키보드 초점 테두리는 20px 라디오 원에만 그려진다(`core/radio`). 카드 전체에 그릴지는 Figma 초점 표현을 확인한 뒤 정한다.
 
