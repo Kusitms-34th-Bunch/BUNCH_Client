@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, ConfirmDialog, Header } from '@app/design-system';
+import { Button, cn, ConfirmDialog, Header } from '@app/design-system';
 import { BundlePickPhoto } from '@app/design-system/web';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
@@ -200,9 +200,10 @@ export function DraftPickScreen({
       {active ? (
         <div className={`pt-s5 px-padding-p8 flex flex-col items-center ${fxOn ? styles.fx : ''}`}>
           <Button
-            variant={picked ? 'brand' : 'brandSubtle'}
+            variant="secondary"
             size="md"
-            className={fxOn ? `w-73.75 ${styles.button}` : 'w-73.75'}
+            // 픽한 상태: Figma대로 회색 바탕에 누름 덮개(overlay-hover)를 켜 둔 모양
+            className={cn('w-73.75', picked && 'before:opacity-100', fxOn && styles.button)}
             onClick={handlePick}
           >
             {picked ? BUNDLE_MESSAGES.pickedButton : BUNDLE_MESSAGES.pickButton}
@@ -236,7 +237,7 @@ export function DraftPickScreen({
                   key={memberId}
                   className={`${
                     memberId === viewerId
-                      ? 'bg-surface-brand-subtle-1 text-text-brand px-padding-p4 py-padding-p2 rounded-r4 typography-body-3-regular relative'
+                      ? 'bg-surface-inversed-lighter text-text-inversed px-padding-p4 py-padding-p2 rounded-r4 typography-body-3-regular relative'
                       : 'bg-surface-secondary text-text-tertiary px-padding-p4 py-padding-p2 rounded-r4 typography-body-3-regular'
                   } ${fxOn ? (memberId === viewerId ? styles.badgeMe : rowIndex === 0 ? styles.badgeOther : '') : ''}`}
                 >
