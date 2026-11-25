@@ -244,4 +244,60 @@ describe('KeyboardViewport', () => {
     act(() => void viewport.dispatchEvent(new Event('resize')));
     expect(main.scrollTop).toBe(96 + 196);
   });
+
+  it('앱 틀이 다 줄어든 뒤에도 초점 입력란이 가리면 한 번 더 내림(줄어드는 중에는 다른 알림이 없어도)', async () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      const viewport = stubViewport(window.innerHeight);
+      const { container } = render(
+        <main>
+          <textarea aria-label="소개" />
+          <KeyboardViewport />
+        </main>,
+      );
+      const main = container.querySelector('main')!;
+      const input = container.querySelector('textarea')!;
+      input.focus();
+      const mainRect = vi
+        .spyOn(main, 'getBoundingClientRect')
+        .mockReturnValue({ top: 0, bottom: 400 } as DOMRect);
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue({
+        top: 320,
+        bottom: 380,
+      } as DOMRect);
+
+      viewport.height = window.innerHeight - 300;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      expect(main.scrollTop).toBe(0);
+
+      // 줄어드는 동안 본문 아래 경계가 올라가 입력란을 가림
+      mainRect.mockReturnValue({ top: 0, bottom: 300 } as DOMRect);
+      await act(() => vi.advanceTimersByTimeAsync(320));
+      expect(main.scrollTop).toBe(96);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('쉘 알림으로 열린 뒤 키보드 높이가 바뀌면, 늦게 바뀌는 이전 보이는 높이로 목표를 덮지 않음', async () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      const viewport = stubViewport(window.innerHeight);
+      render(<KeyboardViewport />);
+      const height = () => root.style.getPropertyValue('--keyboard-viewport-height');
+
+      act(() => sendNativeKeyboard({ height: 300, duration: 250 }));
+      await act(() => vi.advanceTimersByTimeAsync(270));
+      viewport.height = window.innerHeight - 300;
+
+      // 이모지 키보드처럼 높이만 바뀜. 보이는 높이는 아직 이전 값인 채 스크롤 알림이 먼저 옴
+      act(() => sendNativeKeyboard({ height: 400, duration: 250 }));
+      act(() => void viewport.dispatchEvent(new Event('scroll')));
+      expect(root.style.getPropertyValue('--keyboard-follow-ms')).toBe('250ms');
+      await act(() => vi.advanceTimersByTimeAsync(270));
+      expect(height()).toBe(`${window.innerHeight - 400}px`);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

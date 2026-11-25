@@ -79,7 +79,11 @@ export function KeyboardViewport() {
         const progress = Math.min(1, (now - startedAt) / duration);
         apply(progress === 1 ? to : from + (to - from) * followEase(progress));
         if (progress < 1) heightFrame = requestAnimationFrame(step);
-        else root.removeAttribute('data-keyboard-moving');
+        else {
+          root.removeAttribute('data-keyboard-moving');
+          // 줄어드는 동안 본문 아래 경계가 올라가 입력란이 키보드 뒤에 남지 않게 다 줄어든 뒤 한 번 더
+          if (target !== null) revealFocused();
+        }
       };
       heightFrame = requestAnimationFrame(step);
     };
@@ -93,8 +97,8 @@ export function KeyboardViewport() {
       const open = nativeOpen ?? (keyboardShown && !dismissing);
       if (open) residue = true;
       if (open) {
-        // 쉘 알림 뒤 보이는 높이가 아직 바뀌기 전이면 쉘이 정한 목표를 유지
-        if (keyboardShown) moveHeight(height);
+        // 쉘 알림이 있으면 쉘이 정한 목표·시간을 유지(늦게 바뀌는 보이는 높이로 덮지 않음), 없을 때만 보이는 높이로
+        if (keyboardShown && nativeOpen === undefined) moveHeight(height);
         root.setAttribute('data-keyboard-open', '');
       } else {
         moveHeight(null);
