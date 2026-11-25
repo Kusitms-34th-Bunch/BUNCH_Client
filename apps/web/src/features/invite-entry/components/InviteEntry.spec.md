@@ -34,7 +34,7 @@
 - 카카오톡 인앱 브라우저(iOS): 열리자마자 한 번 위의 외부 열기를 요청한다(형식이 아닌 토큰은 보내지 않음). 막혀 남으면 「초대장 확인하기」가 같은 요청을 다시 한다. 앱 있으면 앱, 없으면 Safari로 열릴 것으로 예상하나 실기기 확인 전이다.
   - 404 `INVITE_001`(없음·만료·폐기, 구분하지 않음): 토스트 「유효하지 않은 링크입니다.」, 이동하지 않고 보관하지 않는다.
   - 그 밖(네트워크·서버): 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」, 다시 누를 수 있다.
-- 「앱 설치하기」: Figma대로 활성 모양(회색 `secondary`)이다. 외부 주소로 가는 동작이라 링크(`ButtonLink`, `<a href>`)이고 같은 탭에서 App Store 앱 페이지(`APP_STORE_URL`, `https://apps.apple.com/app/id6834488511`)를 연다(기능명세 2.7.1, 인앱 브라우저의 새 탭 차단을 피함). iPhone·iPad가 아니면(Android·PC, iPadOS는 Mac처럼 알려 터치 지점 수로 구분) 링크 대신 같은 모양의 버튼으로 그리고, 누르면 토스트 「지금은 iOS 앱만 지원해요.」(기획 원문 없는 임시 문구)를 띄운다. 서버·hydration은 링크로 그린다.
+- 「앱 설치하기」: Figma대로 활성 모양(검정 `primary`, 2026-11-24 색상 변경으로 회색 `secondary`에서 변경)이다. 외부 주소로 가는 동작이라 링크(`ButtonLink`, `<a href>`)이고 같은 탭에서 App Store 앱 페이지(`APP_STORE_URL`, `https://apps.apple.com/app/id6834488511`)를 연다(기능명세 2.7.1, 인앱 브라우저의 새 탭 차단을 피함). iPhone·iPad가 아니면(Android·PC, iPadOS는 Mac처럼 알려 터치 지점 수로 구분) 링크 대신 같은 모양의 버튼으로 그리고, 누르면 토스트 「지금은 iOS 앱만 지원해요.」(기획 원문 없는 임시 문구)를 띄운다. 서버·hydration은 링크로 그린다.
 - 앱 안(쉘 WebView, `isNativeShell`): 유니버셜 링크로 앱이 열려 쉘이 이 경로를 연 경우다. 「앱 설치하기」를 그리지 않고(서버·hydration은 앱 밖으로 그린 뒤 사라짐), iOS 시스템 탭 바는 layout의 `NativeTabBarVisibility`가 숨긴다. 누르지 않아도 한 번 바로 확인한다. 성공하면 `router.replace`로 이어 가서 뒤로 가기로 돌아와 다시 확인되지 않는다. 실패(무효·형식 오류·일시 오류)는 토스트를 띄우고 이 화면에 머물며 「초대장 확인하기」로 다시 시도할 수 있고, 처음 실행이면 접근 가드를 거치지 않아 이 화면이 앱 스플래시를 닫는다(`appBridge.appReady`).
 - Smart App Banner: route metadata의 `itunes`(`appId`, 「열기」가 앱에 넘기는 `appArgument` = 이 초대 링크). iPhone·iPad Safari에서만 Safari가 그린다(모양 변경 불가, 인앱 브라우저·앱 WebView에는 없음).
 - 동작 줄이기: `@media (prefers-reduced-motion: reduce)`에서 이동 없이 투명도 변화만 재생한다.
@@ -47,19 +47,19 @@
 
 ## UI와 접근성
 
-- Component mapping: 디자인 시스템 `Button`(`secondary` = 앱 설치하기, `brand` = 초대장 확인하기(기본 `primary`는 검정이라 Figma의 브랜드 파랑과 다름)), `Toaster`. 로고는 로그인 화면과 같은 `shared/assets/images/login/wordmark.svg`(비율 171:43 = Figma 226:56.7).
+- Component mapping: 디자인 시스템 `Button`(`primary` = 앱 설치하기, `secondary` = 초대장 확인하기. 2026-11-24 색상 변경 전에는 `secondary`·`brand`), `Toaster`. 로고는 로그인 화면과 같은 `shared/assets/images/login/wordmark.svg`(비율 171:43 = Figma 226:56.7).
 - 배경 사진: 디자이너에게 받은 딤 없는 원본 사진(1354×1630)에서 Figma `image 7`과 같은 영역(가로 233~1145, 912×1630)을 잘라 WebP 품질 90(약 160KB, #554)로 만든 `public/images/invite/entry-bg.webp`를 `next/image`(`fill`, `priority`, `unoptimized`)로 쓴다. Figma 에셋 URL의 기본 export는 574×1024로 줄어 있어 화질이 깨졌고, Next 기본 최적화(품질 75 재압축)도 건너뛴다.
 - 시맨틱: `main` 안에 `h1`(로고, 이름 「Bunch」), 배경·딤·그라데이션·픽셀 장식은 `aria-hidden`. 확인 중 상태는 항상 마운트된 `role="status"`(화면에는 숨김)로 알린다.
 
-| Figma           | 값                                                                                                                        | 사용한 토큰·utility                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| 배경 딤         | 검정 40%                                                                                                                  | `bg-primitive-black-alpha-40`(`overlay-dim-subtle`은 10%라 Figma와 다름)                 |
-| 아래 그라데이션 | 높이 226, 0.65 → 0.4 → 0.08 → 0(위로 갈수록 투명)                                                                         | `h-56.5 bg-[linear-gradient(to_top,…)]`(토큰 없음, `EntryCard`는 0.6이라 같지 않음)      |
-| 로고 위치·크기  | 위에서 126, 폭 226                                                                                                        | `pt-31.5`, `width={226}`                                                                 |
-| 소개 문구       | Noto Sans KR 14/20, 자간 -0.28, 흰색                                                                                      | `typography-body-3-regular text-text-inversed`(폰트 차이는 확인할 항목)                  |
-| 픽셀 장식       | 9px 정사각형, 흰색(`gray-000`)                                                                                            | `bg-icon-inversed size-2.25`                                                             |
-| 버튼            | 높이 48, 좌우 16, 아래 44, 간격 6. 앱 설치하기 `surface-tertiary`+`text-primary`, 초대장 확인하기 `surface-brand`+흰 글씨 | `Button`(기본 lg) `variant="secondary"`·`"brand"`, `px-padding-p8 pb-padding-p19 gap-s3` |
-| 모션            | 2.4초, 위 12~18px에서 올라오며 투명→불투명, 곡선 `0.33,0,0.15,1`·`0.4,0,0.2,1`                                            | `inviteRise.module.css` 키프레임(Figma 값 그대로, `transform`·`opacity`만)               |
+| Figma           | 값                                                                                                                                                 | 사용한 토큰·utility                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 배경 딤         | 검정 40%                                                                                                                                           | `bg-primitive-black-alpha-40`(`overlay-dim-subtle`은 10%라 Figma와 다름)                   |
+| 아래 그라데이션 | 높이 226, 0.4 → 0.1 → 0.04 → 0(위로 갈수록 투명, 2026-11-24 색상 변경으로 0.65 → 0.4 → 0.08 → 0에서 변경)                                          | `h-56.5 bg-[linear-gradient(to_top,…)]`(토큰 없음, `EntryCard`는 0.6이라 같지 않음)        |
+| 로고 위치·크기  | 위에서 126, 폭 226                                                                                                                                 | `pt-31.5`, `width={226}`                                                                   |
+| 소개 문구       | Noto Sans KR 14/20, 자간 -0.28, 흰색                                                                                                               | `typography-body-3-regular text-text-inversed`(폰트 차이는 확인할 항목)                    |
+| 픽셀 장식       | 9px 정사각형, 흰색(`gray-000`)                                                                                                                     | `bg-icon-inversed size-2.25`                                                               |
+| 버튼            | 높이 48, 좌우 16, 아래 44, 간격 6. 앱 설치하기 `surface-inversed`+흰 글씨, 초대장 확인하기 `surface-tertiary`+`text-primary`(2026-11-24 색상 변경) | `Button`(기본 lg) `variant="primary"`·`"secondary"`, `px-padding-p8 pb-padding-p19 gap-s3` |
+| 모션            | 2.4초, 위 12~18px에서 올라오며 투명→불투명, 곡선 `0.33,0,0.15,1`·`0.4,0,0.2,1`                                                                     | `inviteRise.module.css` 키프레임(Figma 값 그대로, `transform`·`opacity`만)                 |
 
 ## 검증
 
@@ -70,6 +70,7 @@
 
 ## 확인할 항목
 
+- 버튼 위계·비활성 표현 (디자이너 확인, 2026-11-24 색상 변경): 검정 「앱 설치하기」가 먼저 눈에 띄고 주 행동인 「초대장 확인하기」는 회색이 됐다. 회색 `secondary`는 바탕(`surface-tertiary`)과 비활성 바탕(`surface-disabled`)이 같은 `#EAEAEA`라, 앱 안에서 확인하는 동안에는 글자만 회색(`text-disabled`)으로 바뀐다(`aria-busy`는 그대로 전달). 그라데이션이 옅어져 밝은 사진 위에서는 회색 버튼 위쪽 경계가 3:1에 못 미칠 수 있어(흰 사진 가정 계산) 실제 렌더로 확인한다.
 - 모션 반복 (확인 필요): Figma 데이터는 2.4초 주기 반복 재생이다. 장식이 계속 깜빡이는 것을 피하려고 한 번만 재생했다. 반복이 의도라면 `iterations`를 바꾼다.
 - 소개 문구 폰트 (확정 필요): Noto Sans KR → Pretendard(`typography-body-3-regular`, 14/21, 자간 0).
 - 「앱 설치하기」 연결 (반영, #479): 임시 토스트를 없애고 App Store 링크로 바꿨다.

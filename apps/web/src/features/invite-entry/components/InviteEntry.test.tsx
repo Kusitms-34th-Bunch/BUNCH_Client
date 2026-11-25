@@ -72,13 +72,13 @@ describe('InviteEntry', () => {
     expect(checkButton()).toBeTruthy();
   });
 
-  it('버튼 색은 Figma대로 앱 설치하기는 회색(secondary), 초대장 확인하기는 브랜드색이다', () => {
+  it('버튼 색은 Figma대로 앱 설치하기는 검정(primary), 초대장 확인하기는 회색(secondary)이다', () => {
     renderEntry();
 
     expect(screen.getByRole('link', { name: '앱 설치하기' }).className).toContain(
-      'bg-surface-tertiary',
+      'bg-surface-inversed',
     );
-    expect(checkButton().className).toContain('bg-surface-brand');
+    expect(checkButton().className).toContain('bg-surface-tertiary');
     expect(checkButton().className).not.toContain('bg-surface-inversed');
   });
 
