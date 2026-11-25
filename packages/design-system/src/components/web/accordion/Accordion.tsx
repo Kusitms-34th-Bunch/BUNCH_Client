@@ -11,7 +11,7 @@ export type AccordionProps = Omit<ComponentProps<'div'>, 'title' | 'onChange'> &
   title: string;
   /** 있으면 제목이 18px SemiBold로 커지고 설명 줄을 보임(Figma `Description=True`) */
   description?: string | undefined;
-  /** 제목 옆 브랜드색 개수(예: "9장"), 그대로 그림 */
+  /** 제목 옆 개수(예: "9장"), 그대로 그림 */
   count?: ReactNode | undefined;
   open?: boolean | undefined;
   defaultOpen?: boolean | undefined;
@@ -89,7 +89,7 @@ export const Accordion = ({
                 {title}
               </span>
               {count === undefined ? null : (
-                <span id={`${id}-count`} className="text-text-brand shrink-0">
+                <span id={`${id}-count`} className="text-text-secondary shrink-0">
                   {count}
                 </span>
               )}

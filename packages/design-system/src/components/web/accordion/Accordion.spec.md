@@ -31,7 +31,7 @@
 ## 상태와 동작
 
 - Figma 변형 6종: 닫힘 × 설명 있음/없음 × 기본/눌림, 열림 × 설명 있음/없음 × 기본.
-- 설명이 있으면(Description=True) 제목이 18px SemiBold(`heading-2-semibold`, 줄 높이 27)이고 `count`(브랜드색)·설명(13px Regular, `text-tertiary`)을 보인다. 설명이 없으면 제목이 16px Medium(`body-1-medium`, 줄 높이 24)이다.
+- 설명이 있으면(Description=True) 제목이 18px SemiBold(`heading-2-semibold`, 줄 높이 27)이고 `count`(`text-secondary`, 2026-11-24 색상 변경으로 브랜드색에서 변경)·설명(13px Regular, `text-tertiary`)을 보인다. 설명이 없으면 제목이 16px Medium(`body-1-medium`, 줄 높이 24)이다.
 - 배경: 설명이 있거나 열려 있으면 `surface-secondary`, 닫혀 있고 설명이 없으면 `surface-primary`(흰색).
 - 쉐브론: 닫힘은 아래(`LineChevronDownSmallIcon`), 열림은 위(`LineChevronUpSmallIcon`), 16px, `icon-primary`.
 - 눌림(`:active`): 항목 전체에 `overlay-hover`(10%)를 배경 층으로 깐다. 글자는 어두워지지 않는다.
@@ -53,16 +53,16 @@
 
 ## Styling과 의존성
 
-| Figma             | 값                          | 사용한 토큰·utility                                      |
-| ----------------- | --------------------------- | -------------------------------------------------------- |
-| 안쪽 여백·줄 간격 | 16px, 4px                   | `p-s8 gap-s2`                                            |
-| 배경              | `#F5F5F5` / 흰색            | `bg-surface-secondary` / `bg-surface-primary`            |
-| 제목(설명 있음)   | 18/27 SemiBold, -0.5        | `typography-heading-2-semibold text-text-primary`        |
-| 제목(설명 없음)   | 16/24 Medium, -0.25         | `typography-body-1-medium text-text-primary`             |
-| 개수              | 제목과 같은 글자, `#454EDF` | `text-text-brand`                                        |
-| 설명              | 13/18 Regular, `#535A61`    | `typography-body-4-regular text-text-tertiary`           |
-| 눌림              | 검정 10%                    | `bg-overlay-hover`(배경 층)                              |
-| 쉐브론            | 16px, `#121212`             | `Line{Up,Down}ChevronSmall` 아이콘 + `text-icon-primary` |
+| Figma             | 값                                                | 사용한 토큰·utility                                      |
+| ----------------- | ------------------------------------------------- | -------------------------------------------------------- |
+| 안쪽 여백·줄 간격 | 16px, 4px                                         | `p-s8 gap-s2`                                            |
+| 배경              | `#F5F5F5` / 흰색                                  | `bg-surface-secondary` / `bg-surface-primary`            |
+| 제목(설명 있음)   | 18/27 SemiBold, -0.5                              | `typography-heading-2-semibold text-text-primary`        |
+| 제목(설명 없음)   | 16/24 Medium, -0.25                               | `typography-body-1-medium text-text-primary`             |
+| 개수              | 제목과 같은 글자, `#25282D`(2026-11-24 색상 변경) | `text-text-secondary`                                    |
+| 설명              | 13/18 Regular, `#535A61`                          | `typography-body-4-regular text-text-tertiary`           |
+| 눌림              | 검정 10%                                          | `bg-overlay-hover`(배경 층)                              |
+| 쉐브론            | 16px, `#121212`                                   | `Line{Up,Down}ChevronSmall` 아이콘 + `text-icon-primary` |
 
 - 타이포 이름: Figma `Body-4-Regular`(13/18)와 이름·값이 같은 `body-4-regular`를 쓴다(2026-10-31 토큰 이름을 Figma와 맞춤).
 - dependency 추가 없음. 아이콘은 기존 `LineChevron*SmallIcon`을 쓴다.
