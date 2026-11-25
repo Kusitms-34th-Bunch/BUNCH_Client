@@ -123,7 +123,6 @@ export const SuggestedBundleCard = ({
   const lastChip = chips.at(-1);
   if (hiddenCount > 0 && lastChip !== undefined)
     chips[chips.length - 1] = `${lastChip} 외 ${hiddenCount}명`;
-  const chipColor = selected ? 'brand' : 'gray';
 
   return (
     <div
@@ -135,7 +134,7 @@ export const SuggestedBundleCard = ({
         'before:rounded-r8 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-20 before:opacity-0',
         'has-[[data-card-button]:active]:before:opacity-100',
         'has-[[data-card-button]:focus-visible]:outline-border-brand has-[[data-card-button]:focus-visible]:outline-2 has-[[data-card-button]:focus-visible]:outline-offset-2',
-        selected && 'ring-border-brand-subtle ring-1 ring-inset',
+        selected && 'ring-border-strong-lighter ring-1 ring-inset',
         className,
       )}
       {...props}
@@ -156,10 +155,9 @@ export const SuggestedBundleCard = ({
             aria-pressed={selected}
             onClick={onCardClick}
             className={cn(
-              'typography-body-1-semi-bold min-w-0 flex-1 cursor-pointer touch-manipulation text-left outline-none',
+              'typography-body-1-semi-bold text-text-tertiary min-w-0 flex-1 cursor-pointer touch-manipulation text-left outline-none',
               // 버튼을 카드 전체로 넓혀 어디를 눌러도 카드가 눌리게 처리
               "after:absolute after:inset-0 after:content-['']",
-              selected ? 'text-text-brand' : 'text-text-tertiary',
             )}
           >
             <span className="block truncate">{title}</span>
@@ -169,10 +167,9 @@ export const SuggestedBundleCard = ({
             aria-label={`${title} 상세 보기`}
             onClick={onDetailClick}
             className={cn(
-              'focus-visible:outline-border-brand relative z-10 flex size-5 shrink-0 cursor-pointer touch-manipulation items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2',
+              'focus-visible:outline-border-brand text-text-tertiary relative z-10 flex size-5 shrink-0 cursor-pointer touch-manipulation items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2',
               // 보이는 크기는 20px로 두고 터치 영역만 40px로 넓힘(Medium 아이콘 기준)
               "before:absolute before:-inset-2.5 before:content-['']",
-              selected ? 'text-text-brand' : 'text-text-tertiary',
             )}
           >
             <LineChevronRightMediumIcon aria-hidden="true" />
@@ -187,7 +184,7 @@ export const SuggestedBundleCard = ({
             >
               {chips.map((chip, index) => (
                 <li key={`${chip}-${index}`} className="shrink-0">
-                  <ColorBadge color={chipColor}>{chip}</ColorBadge>
+                  <ColorBadge color="gray">{chip}</ColorBadge>
                 </li>
               ))}
             </ul>
@@ -199,7 +196,7 @@ export const SuggestedBundleCard = ({
             >
               {members.slice(0, capCount).map((name, index) => (
                 <li key={`plain-${index}`} data-chip="plain" className="shrink-0">
-                  <ColorBadge color={chipColor}>
+                  <ColorBadge color="gray">
                     <span data-text={name} className="before:content-[attr(data-text)]" />
                   </ColorBadge>
                 </li>
@@ -207,7 +204,7 @@ export const SuggestedBundleCard = ({
               {members.slice(0, capCount).map((name, index) =>
                 index + 1 < members.length ? (
                   <li key={`summary-${index}`} data-chip="summary" className="shrink-0">
-                    <ColorBadge color={chipColor}>
+                    <ColorBadge color="gray">
                       <span
                         data-text={`${name} 외 ${members.length - index - 1}명`}
                         className="before:content-[attr(data-text)]"
@@ -219,12 +216,7 @@ export const SuggestedBundleCard = ({
             </ul>
           </div>
         )}
-        <div
-          className={cn(
-            'typography-body-3-regular gap-s6 flex w-full items-center',
-            selected ? 'text-text-brand' : 'text-text-tertiary',
-          )}
-        >
+        <div className="typography-body-3-regular gap-s6 text-text-tertiary flex w-full items-center">
           <span className="flex items-center gap-0.5">
             <LinePhotoSmallIcon aria-hidden="true" />
             {photoCount}장

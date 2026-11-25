@@ -110,6 +110,8 @@ export function AdminTransferScreen({
                         imageSrc={member.imageSrc}
                         memberRole={member.role === 'coOwner' ? 'coOwner' : undefined}
                         roleLabel={member.role === 'coOwner' ? text.coOwner : undefined}
+                        // Figma 탈퇴하기(7916:104588): 아코디언 안 멤버 카드는 선택 테두리 없이 라디오 점으로만 표시
+                        className="has-checked:ring-transparent"
                         checked={selections[bunch.id] === member.id}
                         onChange={() =>
                           setSelections((prev) => ({ ...prev, [bunch.id]: member.id }))

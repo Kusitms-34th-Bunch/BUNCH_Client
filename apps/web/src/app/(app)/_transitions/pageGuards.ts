@@ -175,7 +175,7 @@ type BandBackground = Exclude<
 // 키를 PageShell 목록으로 묶어 배경 값이 늘면 typecheck에서 걸림
 const BAND_COLORS: Record<BandBackground, string> = {
   'brand-subtle-1': 'var(--color-surface-brand-subtle-1)',
-  brand: 'var(--color-surface-brand)',
+  brand: 'var(--color-primitive-gray-800)',
   secondary: 'var(--color-surface-secondary)',
   'orange-50': 'var(--color-primitive-orange-50)',
   'pink-50': 'var(--color-primitive-pink-50)',

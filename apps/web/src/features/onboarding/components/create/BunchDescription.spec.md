@@ -11,7 +11,7 @@
 ### 포함
 
 - 번치를 한 줄로 소개하는 2단계의 UI와 입력 규칙.
-- 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 2단계), 제목 「번치를 소개해주세요」, 한 줄 소개 입력(`LabeledTextArea`, 최대 50자), TIP 영역(배지 + 「이런 소개는 어때요?」 + 예시 3개), 하단 「이전」·「다음」.
+- 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 2단계), 제목 「번치를 소개해주세요」, 한 줄 소개 입력(`LabeledTextArea`, 최대 50자, 필수 별표 `option="required"`), TIP 영역(배지 + 「이런 소개는 어때요?」 + 예시 3개), 하단 「이전」·「다음」.
 - 소개를 입력하면 「다음」이 활성화된다. 「다음」을 누르면 서버가 금칙어를 먼저 검사하고(`POST /bunches/introduction-validation`, 기능명세 2.2.6 로직 4), 통과한 입력만 3단계로 넘어간다. TIP 영역은 입력과 관계없이 항상 보인다(설계서 4번).
 
 ### 범위 외
@@ -43,18 +43,18 @@
 
 ## UI와 접근성
 
-- Component mapping: `CreateBunchFrame`(헤더·진행 표시줄, `BunchBasicInfo.spec.md`), `PageHeader`(제목만), `LabeledTextArea`(한 줄 소개), `Badge`(`size="sm"`, TIP), `Button`(`secondary` 이전 / `primary` 다음).
+- Component mapping: `CreateBunchFrame`(헤더·진행 표시줄, `BunchBasicInfo.spec.md`), `PageHeader`(제목만), `LabeledTextArea`(한 줄 소개), `Badge`(`variant="strong" color="gray" size="sm"`, TIP), `Button`(`secondary` 이전 / `primary` 다음).
 - Keyboard·focus·accessible name: 소개 입력은 보이는 라벨 「한 줄 소개」로 이름을 얻고 글자 수는 입력창 설명으로 연결된다. TIP 영역은 `h2`와 목록이라 구조로 읽힌다. 「다음」은 비활성일 때 native `disabled`다.
 - Responsive·긴 텍스트·overflow: 입력창은 줄바꿈되고 높이가 늘어난다. 375px에서 가로 넘침이 없다.
 
-| Figma          | 값                                                                         | 사용한 토큰·utility                           |
-| -------------- | -------------------------------------------------------------------------- | --------------------------------------------- |
-| 소개 입력 영역 | 위 36, 좌우 16                                                             | `pt-s15 px-padding-p8`                        |
-| TIP 영역       | 위 36, 배지와 제목 간격 6, 박스까지 6                                      | `pt-s15 px-padding-p8 gap-s3`, `gap-s3`       |
-| TIP 배지       | 7×3 패딩, 12/16 Medium, `chip-blue`                                        | `Badge size="sm"`                             |
-| 예시 박스      | 패딩 16, radius 8, `surface-secondary`, 13/18 `text-tertiary`, 목록 간격 4 | `p-s8 rounded-r4 bg-surface-secondary gap-s2` |
-| 목록 들여쓰기  | 19.5                                                                       | `ms-[19.5px]`(토큰 없음)                      |
-| 하단 버튼      | 위 10, 좌우 16, 간격 10, 「이전」 88px                                     | `pt-s5 px-padding-p8 gap-s5`, `w-22`          |
+| Figma          | 값                                                                                    | 사용한 토큰·utility                             |
+| -------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 소개 입력 영역 | 위 36, 좌우 16                                                                        | `pt-s15 px-padding-p8`                          |
+| TIP 영역       | 위 36, 배지와 제목 간격 6, 박스까지 6                                                 | `pt-s15 px-padding-p8 gap-s3`, `gap-s3`         |
+| TIP 배지       | 7×3 패딩, 12/16 Medium, 바탕 `chip-gray-fg`·글자 `chip-gray-bg`(2026-11-24 색상 변경) | `Badge variant="strong" color="gray" size="sm"` |
+| 예시 박스      | 패딩 16, radius 8, `surface-secondary`, 13/18 `text-tertiary`, 목록 간격 4            | `p-s8 rounded-r4 bg-surface-secondary gap-s2`   |
+| 목록 들여쓰기  | 19.5                                                                                  | `ms-[19.5px]`(토큰 없음)                        |
+| 하단 버튼      | 위 10, 좌우 16, 간격 10, 「이전」 88px                                                | `pt-s5 px-padding-p8 gap-s5`, `w-22`            |
 
 ## 검증
 

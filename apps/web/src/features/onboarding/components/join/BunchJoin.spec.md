@@ -44,19 +44,19 @@
 
 ## UI와 접근성
 
-- Component mapping: `core`의 `Header`(뒤로 가기), `TextField`(`action` 슬롯에 `Button brandSubtle sm`「붙여넣기」), `Button`(「완료」), `toast()`. `web`의 `PageHeader`(제목만). 중단 모달은 feature 공용 `ExitFlowDialog`(`hooks/useExitFlowDialog`)이고 번치 만들기 흐름과 같이 쓴다. 링크 형식 검사는 `lib/inviteLink.ts`다.
+- Component mapping: `core`의 `Header`(뒤로 가기), `TextField`(`action` 슬롯에 `Button secondary sm`「붙여넣기」), `Button`(「완료」), `toast()`. `web`의 `PageHeader`(제목만). 중단 모달은 feature 공용 `ExitFlowDialog`(`hooks/useExitFlowDialog`)이고 번치 만들기 흐름과 같이 쓴다. 링크 형식 검사는 `lib/inviteLink.ts`다.
 - 「완료」 비활성: 입력이 비면 `disabled`이고 이유는 별도로 전달하지 않는다(Figma가 비활성 상태를 정의했고 입력창의 이름·안내 문구가 이유를 설명한다). 이유 전달이 필요하면 `aria-disabled`와 `aria-describedby`로 바꾼다(접근성 리뷰의 제안).
 - Keyboard·focus·accessible name: 뒤로 가기, 링크 입력창(이름 「초대 링크」, `inputMode=url`, 자동 완성·대문자·맞춤법 검사 끔), 「붙여넣기」, 「완료」. 토스트의 읽기는 `sonner`의 `aria-live` 영역이 맡는다(`Toast.spec.md`). 모달은 첫 초점이 「계속 참여하기」이고 ESC는 모달만 닫는다(`Dialog.spec.md`).
 - Responsive·긴 텍스트: 링크는 입력창 안에서 한 줄로 잘린다(전체를 선택해 확인할 수 있다). 375px에서 가로 넘침이 없다.
 
-| Figma        | 값                                                                                   | 사용한 토큰·utility                          |
-| ------------ | ------------------------------------------------------------------------------------ | -------------------------------------------- |
-| 제목         | Title-1 22/28, 위 12, 좌우 16                                                        | `PageHeader`(제목만)                         |
-| 입력창       | 343×46, radius 10, 테두리 `border-secondary`, 제목 아래 12                           | `TextField`, `pt-s6 px-padding-p8`           |
-| 「붙여넣기」 | 32 높이, 12 좌우, radius 8, 13/600, 배경 `surface-brand-subtle-1`, 글자 `text-brand` | `Button variant="brandSubtle" size="sm"`     |
-| 「완료」     | 343×48, 17/600, 위 10 좌우 16, 비활성 `surface-disabled`                             | `Button`(기본) `pt-padding-p5 px-padding-p8` |
-| 토스트       | 343×46, 「완료」 영역 위 4                                                           | `toast()` (`wrapper` 앵커)                   |
-| 중단 모달    | 311 폭, 제목·설명·버튼 2개                                                           | `Dialog` 부품(`ExitFlowDialog`)              |
+| Figma        | 값                                                                               | 사용한 토큰·utility                          |
+| ------------ | -------------------------------------------------------------------------------- | -------------------------------------------- |
+| 제목         | Title-1 22/28, 위 12, 좌우 16                                                    | `PageHeader`(제목만)                         |
+| 입력창       | 343×46, radius 10, 테두리 `border-secondary`, 제목 아래 12                       | `TextField`, `pt-s6 px-padding-p8`           |
+| 「붙여넣기」 | 32 높이, 12 좌우, radius 8, 13/600, 배경 `surface-tertiary`, 글자 `text-primary` | `Button variant="secondary" size="sm"`       |
+| 「완료」     | 343×48, 17/600, 위 10 좌우 16, 비활성 `surface-disabled`                         | `Button`(기본) `pt-padding-p5 px-padding-p8` |
+| 토스트       | 343×46, 「완료」 영역 위 4                                                       | `toast()` (`wrapper` 앵커)                   |
+| 중단 모달    | 311 폭, 제목·설명·버튼 2개                                                       | `Dialog` 부품(`ExitFlowDialog`)              |
 
 ## 검증
 
@@ -67,7 +67,7 @@
 
 ## 확인할 항목
 
-- 「붙여넣기」 버튼 배경 토큰 (해소, 2026-10-19): 저장소 `surface-brand-subtle-1`이 `#e2e4ff`로 Figma(`#f1f2ff`)와 달랐으나 `develop`의 PR #60으로 `bunch-50`이 되어 같아졌다(코드 변경 없음).
+- 「붙여넣기」 버튼 색 (해소, 2026-11-24): Figma 색상 변경으로 `brandSubtle`에서 `secondary`(`surface-tertiary`·`text-primary`)로 바꿨다. 이전 기록(2026-10-19): 저장소 `surface-brand-subtle-1`이 `#e2e4ff`로 Figma(`#f1f2ff`)와 달랐으나 `develop`의 PR #60으로 `bunch-50`이 되어 같아졌다(코드 변경 없음).
 - 모달 취소 버튼 글자 (확정, 2026-10-19, 사용자 확인): 「계속 참여하기」다. 참여 흐름 확인 화면 Figma(`791:13839`)와 같고, 이 화면 Figma(`791:13773`)와 설계서 본문의 「계속 만들기」는 만들기 흐름 문구가 남은 것으로 본다.
 - 키보드 상태 Figma의 「붙여넣기」 버튼 글자 (확인 필요): 노드 `1229:11098`의 버튼이 「BUTTON」(자리 표시 글자)으로 남아 있어 「붙여넣기」로 구현했다.
 - 링크 형식 (확인 필요): 호스트(운영 도메인)가 정해지지 않아 `https`와 `/invite/<코드>` 경로만 검사한다. 호스트를 제한할지, 링크가 짧은 코드만 받는 형태인지 확인한다.

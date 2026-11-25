@@ -190,7 +190,7 @@ export function InviteEntry({ token, continueHref }: InviteEntryProps) {
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-56.5 bg-[linear-gradient(to_top,rgb(0_0_0/0.65)_16.499%,rgb(0_0_0/0.4)_54.139%,rgb(0_0_0/0.08)_90.299%,rgb(0_0_0/0)_98.68%)]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-56.5 bg-[linear-gradient(to_top,rgb(0_0_0/0.4)_16.499%,rgb(0_0_0/0.1)_48.072%,rgb(0_0_0/0.04)_65.847%,rgb(0_0_0/0)_98.68%)]"
       />
 
       <PixelPattern className={`${styles.patternLeft} top-[25.34%] left-[10.67%]`} />
@@ -220,12 +220,12 @@ export function InviteEntry({ token, continueHref }: InviteEntryProps) {
         {/* iPhone·iPad는 외부 주소로 가는 동작이라 링크(같은 탭에서 열어 인앱 브라우저의 새 탭 차단을 피함, 기능명세 2.7.1)
             그 밖의 기기는 이동할 곳이 없어 같은 모양의 버튼으로 안내만, 이미 앱 안이면 숨김 */}
         {inShell ? null : installable ? (
-          <ButtonLink href={APP_STORE_URL} variant="secondary" className="w-full">
+          <ButtonLink href={APP_STORE_URL} variant="primary" className="w-full">
             앱 설치하기
           </ButtonLink>
         ) : (
           <Button
-            variant="secondary"
+            variant="primary"
             className="w-full"
             onClick={() => toast(INVITE_ENTRY_MESSAGES.iosOnly)}
           >
@@ -233,7 +233,7 @@ export function InviteEntry({ token, continueHref }: InviteEntryProps) {
           </Button>
         )}
         <Button
-          variant="brand"
+          variant="secondary"
           className="w-full"
           // 앱 안에서 확인하는 동안과 이동할 때까지 비활성(화면을 덮지 않고 누름만 막음). 앱 밖은 잠그지 않고 바로 넘김
           ref={checkRef}

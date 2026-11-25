@@ -3,6 +3,7 @@
 import { useId, useRef, type ComponentProps } from 'react';
 import { cn } from '../../../utils';
 import inputScale from '../../core/textField/inputScale.module.css';
+import { Option, type OptionVariant } from '../option';
 import { FieldFooter } from './fieldFooter.internal';
 import { useTextareaAutoHeight } from './useTextareaAutoHeight.internal';
 
@@ -12,6 +13,8 @@ export type LabeledTextAreaProps = Omit<
 > & {
   /** 입력창 위에 보이는 라벨이자 입력창의 접근성 이름 */
   label: string;
+  /** 라벨 옆 필수·선택 표시(`LabeledTextField`의 `option`과 같음) */
+  option?: OptionVariant | undefined;
   /** 있으면 입력창 아래에 빨간 안내로 보이고 입력창을 잘못된 값(aria-invalid)으로 표시. 문구는 호출자가 결정 */
   error?: string | undefined;
 };
@@ -49,6 +52,7 @@ const capToLength = (value: string, caret: number, max: number) => {
  */
 export function LabeledTextArea({
   label,
+  option,
   error,
   className,
   id,
@@ -57,6 +61,7 @@ export function LabeledTextArea({
   placeholder,
   onChange,
   onCompositionEnd,
+  'aria-required': ariaRequired,
   ...props
 }: LabeledTextAreaProps) {
   const generatedId = useId();
@@ -74,8 +79,21 @@ export function LabeledTextArea({
   return (
     <div className={cn('gap-s3 flex w-full flex-col', className)}>
       <div className="gap-s2 flex flex-col">
-        <label htmlFor={inputId} className="typography-body-3-semibold text-text-secondary">
+        <label
+          htmlFor={inputId}
+          className="typography-body-3-semibold gap-s2 text-text-secondary flex items-center"
+        >
           {label}
+          {/* 필수는 별표(입력칸의 aria-required가 낭독), 선택은 「선택」 글자. `LabeledTextField`와 같음 */}
+          {option === 'required' ? (
+            <span
+              aria-hidden="true"
+              className="typography-body-1-semi-bold text-icon-secondary shrink-0"
+            >
+              *
+            </span>
+          ) : null}
+          {option === 'optional' ? <Option variant="optional" /> : null}
         </label>
         <div className="rounded-r5 border-border-secondary bg-surface-primary px-padding-p8 py-padding-p5 focus-within:border-primitive-gray-700 border forced-colors:focus-within:outline-2 forced-colors:focus-within:outline-offset-2">
           <div className={inputScale.textareaSlot}>
@@ -115,6 +133,7 @@ export function LabeledTextArea({
                 input.dispatchEvent(new Event('input', { bubbles: true }));
               }}
               aria-invalid={error ? true : undefined}
+              aria-required={option === 'required' ? true : ariaRequired}
               aria-describedby={describedBy || undefined}
               className="typography-body-3-regular text-text-primary placeholder:text-text-quinary py-padding-p1 block w-full resize-none overflow-hidden bg-transparent placeholder:font-(--semantic-font-weights-pretendard-1) placeholder:tracking-(--semantic-letter-spacing-1) focus:outline-none focus:placeholder:text-transparent"
               {...props}

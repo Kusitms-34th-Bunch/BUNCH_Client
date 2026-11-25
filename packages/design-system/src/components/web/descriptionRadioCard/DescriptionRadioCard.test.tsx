@@ -30,6 +30,16 @@ describe('DescriptionRadioCard', () => {
     expect(screen.getByRole<HTMLInputElement>('radio', { name: '공개' }).checked).toBe(true);
   });
 
+  it('기본은 surface-secondary 바탕에 border-secondary 테두리, 선택하면 테두리만 border-strong-lighter', () => {
+    const { container } = render(<DescriptionRadioCard title="공개" name="visibility" />);
+    const card = container.firstElementChild;
+
+    expect(card?.classList.contains('bg-surface-secondary')).toBe(true);
+    expect(card?.classList.contains('ring-border-secondary')).toBe(true);
+    expect(card?.classList.contains('has-checked:ring-border-strong-lighter')).toBe(true);
+    expect(card?.className).not.toContain('has-checked:bg-');
+  });
+
   it('비활성이면 눌러도 선택되지 않는다', () => {
     render(<DescriptionRadioCard title="공개" name="visibility" value="public" disabled />);
 
@@ -46,23 +56,22 @@ describe('DescriptionRadioCard', () => {
     );
   });
 
-  it('카드는 반경 r4, 좌우 16·위아래 18 여백, 라디오와 글자 사이 14px이다', () => {
+  it('카드는 반경 r5, 사방 12 여백, 라디오와 글자 사이 10px이다', () => {
     const { container } = render(
       <DescriptionRadioCard name="g" value="a" title="비공개" description="설명" />,
     );
     const card = container.firstElementChild as HTMLElement;
 
-    expect(card.classList.contains('rounded-r4')).toBe(true);
-    expect(card.classList.contains('px-padding-p8')).toBe(true);
-    expect(card.classList.contains('py-s9')).toBe(true);
-    expect(card.classList.contains('gap-s7')).toBe(true);
+    expect(card.classList.contains('rounded-r5')).toBe(true);
+    expect(card.classList.contains('p-padding-p6')).toBe(true);
+    expect(card.classList.contains('gap-s5')).toBe(true);
   });
 
-  it('제목은 Body-2-Medium text-tertiary, 설명은 Caption-1-Regular이다', () => {
+  it('제목은 Body-3-Semibold text-primary, 설명은 Caption-1-Regular이다', () => {
     render(<DescriptionRadioCard name="g" value="a" title="비공개" description="설명" />);
 
-    expect(screen.getByText('비공개').classList.contains('typography-body-2-medium')).toBe(true);
-    expect(screen.getByText('비공개').classList.contains('text-text-tertiary')).toBe(true);
+    expect(screen.getByText('비공개').classList.contains('typography-body-3-semibold')).toBe(true);
+    expect(screen.getByText('비공개').classList.contains('text-text-primary')).toBe(true);
     expect(screen.getByText('설명').classList.contains('typography-caption-1-regular')).toBe(true);
   });
 });

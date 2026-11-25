@@ -12,9 +12,9 @@ const Shape = (props: ComponentProps<'svg'>) => (
     viewBox="0 0 30 30"
     {...props}
   >
-    <use xlinkHref="#GraphicCommentSendPressedIcon__a" fill="#454EDF" />
+    <use xlinkHref="#GraphicCommentSendPressedIcon__a" fill="#25282D" />
     <use xlinkHref="#GraphicCommentSendPressedIcon__a" fill="#000" fillOpacity={0.2} />
-    <use xlinkHref="#GraphicCommentSendPressedIcon__b" stroke="#454EDF" />
+    <use xlinkHref="#GraphicCommentSendPressedIcon__b" stroke="#25282D" />
     <use xlinkHref="#GraphicCommentSendPressedIcon__b" stroke="#000" strokeOpacity={0.2} />
     <path
       stroke="#fff"

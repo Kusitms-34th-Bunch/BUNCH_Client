@@ -85,7 +85,7 @@ export const LabeledTextField = ({
           {option === 'required' ? (
             <span
               aria-hidden="true"
-              className="typography-body-1-semi-bold text-icon-brand shrink-0"
+              className="typography-body-1-semi-bold text-icon-secondary shrink-0"
             >
               *
             </span>
