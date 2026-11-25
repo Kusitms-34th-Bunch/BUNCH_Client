@@ -2121,7 +2121,7 @@
   position: absolute;
   width: 2px;
   height: 2px;
-  background: var(--primitive-bunch-500);
+  background: var(--primitive-gray-scale-gray-900);
 }
 
 /* 가운데 맞춤은 transform으로: 키프레임(countOld-translate)이 translate 속성을 덮어써 translate로 맞추면 가로 -50%가 사라져 새 수와 어긋나 겹침 */
