@@ -11,7 +11,11 @@ const clamp = (value: number, max: number) => Math.min(max, Math.max(0, Math.rou
 export const listenKeyboardFrames = (send: (height: number, duration: number) => void) => {
   if (Platform.OS !== 'ios') return () => {};
   const subscription = Keyboard.addListener('keyboardWillChangeFrame', (event: KeyboardEvent) => {
-    const covered = Dimensions.get('screen').height - event.endCoordinates.screenY;
+    const screenHeight = Dimensions.get('screen').height;
+    const { screenY, height } = event.endCoordinates;
+    // iPad 플로팅·분할 키보드는 화면 아래를 덮지 않아 0(아래에 붙었거나 화면 밖으로 내려간 키보드만 덮는 높이 계산)
+    const docked = screenY + height >= screenHeight - 1;
+    const covered = docked ? screenHeight - screenY : 0;
     // bridge 계약 범위(높이 0~2000, 시간 0~1000) 밖 값이면 보내기 전 검증에서 예외가 나므로 잘라서 보냄
     send(clamp(covered, MAX_HEIGHT), clamp(event.duration, MAX_DURATION_MS));
   });
