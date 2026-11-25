@@ -13,8 +13,8 @@ const Shape = (props: ComponentProps<'svg'>) => (
   >
     <g strokeLinecap="round" strokeLinejoin="round">
       <path
-        fill="#454EDF"
-        stroke="#454EDF"
+        fill="#25282D"
+        stroke="#25282D"
         strokeWidth={2}
         d="M3.75 15a11.25 11.25 0 1 0 22.5 0 11.25 11.25 0 0 0-22.5 0"
       />
