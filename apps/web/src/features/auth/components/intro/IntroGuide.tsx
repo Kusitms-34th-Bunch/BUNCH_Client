@@ -127,11 +127,7 @@ export function IntroGuide({ onDone }: { onDone: () => void }) {
         <div ref={bottomRef} className="px-padding-p8 h-s16 flex items-center justify-between">
           {/* Figma Indicator: 점 묶음 둘레 10px */}
           <PaginationIndicator total={PAGES.length} current={page + 1} className="p-2.5" />
-          <Button
-            size="md"
-            variant={page === LAST ? 'brand' : 'primary'}
-            onClick={() => void next().catch(() => {})}
-          >
+          <Button size="md" variant="primary" onClick={() => void next().catch(() => {})}>
             {page === LAST ? '시작하기' : '다음'}
           </Button>
         </div>

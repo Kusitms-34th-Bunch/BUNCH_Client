@@ -24,7 +24,7 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 
 ## Public API
 
-- Props: `label`(필수), `error`, 그리고 `<textarea>`의 속성(`value`, `onChange`, `maxLength`, `placeholder`, `id`, `className` 등). `rows`·`aria-label`·`aria-describedby`는 받지 않는다.
+- Props: `label`(필수), `option`(`required` / `optional`, `LabeledTextField`와 같은 표시: 필수는 `icon-secondary` 별표와 입력창 `aria-required`, 선택은 `Option` 「선택」. 2026-11-24 온보딩 「한 줄 소개」 시안의 별표 때문에 추가), `error`, 그리고 `<textarea>`의 속성(`value`, `onChange`, `maxLength`, `placeholder`, `id`, `className` 등). `rows`·`aria-label`·`aria-describedby`는 받지 않는다.
 - `className`은 바깥 래퍼에 붙는다. `id`가 없으면 자동 생성한다.
 - 호출자 소유 책임: 라벨·안내 문구, 검증 규칙, 값 상태.
 

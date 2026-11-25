@@ -11,7 +11,7 @@
 
 ### 제공하는 동작
 
-- 부모 폭을 채우는 입력 행(Figma 기준 343px): 제목 + 필수 표시(별표 `*`, `icon-brand` 16px) 또는 선택 표시(`Option` 「선택」) + 입력창 + 오른쪽 아래 글자 수 또는 왼쪽 아래 오류 문구.
+- 부모 폭을 채우는 입력 행(Figma 기준 343px): 제목 + 필수 표시(별표 `*`, `icon-secondary` 16px) 또는 선택 표시(`Option` 「선택」) + 입력창 + 오른쪽 아래 글자 수 또는 왼쪽 아래 오류 문구.
 - 입력창은 core `TextField`를 그대로 쓴다. 나머지 props는 입력창(`input`)에 전달된다.
 - 글자 수: `maxLength`를 주면 오른쪽 아래에 "현재/최대"(예: `0/12`)를 보이고, 입력은 그 길이로 제한된다. controlled(`value`) 길이 또는 uncontrolled 입력의 실시간 길이를 센다.
 - 지우기 버튼과 버튼 영역은 없다. Figma의 입력창이 기본 변형이라 지우기(Delete)·버튼 변형은 쓰지 않고 `onClear`·`action`도 받지 않는다.
@@ -59,7 +59,7 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 
 ## Styling과 의존성
 
-- Token: `gap-s3`·`gap-s2`, `typography-body-3-semibold`(제목 14/21 SemiBold), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-4-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 선택 표시는 `Option`, 필수 별표는 `typography-body-1-semi-bold text-icon-brand`(Figma `Wanted Sans` 16/22는 저장소에 없어 Pretendard, `BundleTitle`과 같음)를 쓴다. 필수 표시는 2026-11-04 Figma에서 「필수」 글자가 별표로 바뀌었다.
+- Token: `gap-s3`·`gap-s2`, `typography-body-3-semibold`(제목 14/21 SemiBold), `text-text-secondary`, `typography-caption-1-medium`·`text-system-fail-text`(오류, `#f04d29`), `typography-body-4-regular`·`text-text-tertiary`(글자 수), `--semantic-opacity-disabled`. 입력창은 core `TextField`, 선택 표시는 `Option`, 필수 별표는 `typography-body-1-semi-bold text-icon-secondary`(Figma `Wanted Sans` 16/22는 저장소에 없어 Pretendard, `BundleTitle`과 같음)를 쓴다. 필수 표시는 2026-11-04 Figma에서 「필수」 글자가 별표로 바뀌었고, 2026-11-24 색상 변경으로 별표 색이 `icon-brand`에서 `icon-secondary`가 됐다.
 - dependency 추가 없음.
 - Storybook state matrix: `Default`, `Focused`, `Filled`, `Editing`, `ErrorState`, `Disabled`, `DisabledWithError`, `LimitWithoutCounter`, `OptionalWithoutCounter`.
 

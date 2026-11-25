@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Header } from '@app/design-system';
-import { DescriptionRadioCard } from '@app/design-system/web';
+import { RadioCard } from '@app/design-system/web';
 import { type RefObject, useId, useState } from 'react';
 import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -134,7 +134,7 @@ export function BundleVisibilityScreen({
         className="gap-s4 px-padding-p8 pt-s8 flex flex-col"
       >
         {options.map((option) => (
-          <DescriptionRadioCard
+          <RadioCard
             key={String(option.memberOnly)}
             name="bundle-visibility"
             value={option.memberOnly ? 'members' : 'public'}

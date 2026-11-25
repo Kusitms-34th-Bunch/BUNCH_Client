@@ -148,7 +148,7 @@ export function BunchJoin() {
           autoCapitalize="none"
           spellCheck={false}
           action={
-            <Button variant="brandSubtle" size="sm" onClick={() => void paste()}>
+            <Button variant="secondary" size="sm" onClick={() => void paste()}>
               붙여넣기
             </Button>
           }

@@ -36,6 +36,15 @@ describe('ProfileRadioCard', () => {
     expect(container.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
   });
 
+  it('선택 표시는 회색 링이고 바탕색과 이미지 테두리는 바꾸지 않는다', () => {
+    const { container } = render(<ProfileRadioCard label="경진" name="member" value="1" />);
+    const card = container.firstElementChild;
+
+    expect(card?.classList.contains('has-checked:ring-border-strong-lighter')).toBe(true);
+    expect(card?.className).not.toContain('has-checked:bg-');
+    expect(container.innerHTML).not.toContain('group-has-checked:border-');
+  });
+
   it('카드를 누르면 선택되고, 그룹 안에서 하나만 선택된다', () => {
     render(
       <>

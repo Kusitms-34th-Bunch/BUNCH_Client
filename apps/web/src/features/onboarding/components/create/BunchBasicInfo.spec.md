@@ -11,7 +11,7 @@
 ### 포함
 
 - 번치를 새로 만들 때 번치 이름과 공개 범위(비공개/공개)를 정하는 첫 단계의 UI와 입력 규칙.
-- 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 1단계), 제목 「어떤 번치를 만들까요?」, 번치 이름 입력(`LabeledTextField`), 공개 범위(`DescriptionRadioCard` 2개, 공개 → 비공개 순), 하단 「다음」 버튼. 입력값은 `useCreateBunchDraft`로 읽고 쓴다.
+- 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 1단계), 제목 「어떤 번치를 만들까요?」, 번치 이름 입력(`LabeledTextField`, 필수 별표 `option="required"`), 공개 범위(`RadioCard` 2개, 공개 → 비공개 순), 하단 「다음」 버튼. 입력값은 `useCreateBunchDraft`로 읽고 쓴다.
 - 번치 이름은 영문·한글·숫자만 쓸 수 있고 최대 12자다. 이름과 공개 범위를 모두 정하면 「다음」이 활성화된다.
 
 ### 범위 외
@@ -44,8 +44,8 @@
 
 ## UI와 접근성
 
-- Component mapping: `CreateBunchFrame`(`(steps)/layout.tsx`가 1~3단계에 한 번 씌우는 틀: `Header`의 뒤로 가기가 `ExitFlowDialog`를 열고 `Stepper`가 단계 사이에 남는다), `PageHeader`(제목만), `LabeledTextField`(번치 이름), `fieldset`·`legend`+`DescriptionRadioCard`(공개 범위, Figma 주석「기존 Radio Card 사용」), `Button`(다음).
-- Keyboard·focus·accessible name: 번치 이름 입력은 보이는 라벨로 이름을 얻고 오류는 `aria-invalid`와 안내 문구로 읽힌다. 공개 범위는 「공개 범위」 `legend`의 라디오 그룹이라 방향키로 선택을 옮긴다. 「다음」은 비활성일 때 native `disabled`다.
+- Component mapping: `CreateBunchFrame`(`(steps)/layout.tsx`가 1~3단계에 한 번 씌우는 틀: `Header`의 뒤로 가기가 `ExitFlowDialog`를 열고 `Stepper`가 단계 사이에 남는다), `PageHeader`(제목만), `LabeledTextField`(번치 이름), `fieldset`·`legend`+`RadioCard`(공개 범위, Figma `Radio Card` 인스턴스. 2026-11-24까지 `DescriptionRadioCard`를 썼으나 Figma 컴포넌트가 달라 바꿈), `Button`(다음).
+- Keyboard·focus·accessible name: 번치 이름 입력은 보이는 라벨로 이름을 얻고 오류는 `aria-invalid`와 안내 문구로 읽힌다. 공개 범위는 「공개 범위」 `legend`의 라디오 그룹이라 방향키로 선택을 옮긴다. 키보드 초점 테두리는 라디오 원에 그린다(2026-11-24 `RadioCard`로 바꾼 뒤에도 이전 `DescriptionRadioCard`와 같게 유지). 「다음」은 비활성일 때 native `disabled`다.
 - Responsive·긴 텍스트·overflow: 입력창과 카드는 `w-full`이고 좌우 16px다. 375px에서 가로 넘침이 없고 본문이 길어지면 스크롤한다.
 
 | Figma          | 값                                     | 사용한 토큰·utility                              |
@@ -63,6 +63,10 @@
 
 - Header Animation(Figma `1998:35008`, Smart animation·Slow·600ms): 진행바는 현재 단계의 막대만 채우고(2026-11 Figma 수정, 이전에는 누적) 새 막대가 왼쪽에서 오른쪽으로 늘어난다(Fill Right). 제목은 5px 아래에서 올라오며 나타난다(Slide Up). 곡선은 둘 다 Slow 근사 `cubic-bezier(0.24, 0.3, 0.14, 1)`이다. Figma가 지정한 곡선이라 공통 규칙의 「진행바는 `linear`」의 예외다. 이전 기준(화면설계서 `791:8480` 「진행바만 인터랙션 O」, 색만 300ms)을 대체한다.
 - `CreateBunchFrame`이 같은 `Stepper` 요소를 유지하고 `current`만 바꾼다. 첫 표시는 `@starting-style`로 채운다. 제목은 단계 화면마다 새로 마운트되므로 `PageHeader`에 `animate-step-title-in`(`globals.css`의 keyframe·`@utility`)을 건다. `@starting-style`을 지원하지 않는 브라우저(Safari 17.5·Chrome 117 미만)에서는 첫 표시 채움 없이 채운 상태로 바로 보인다. 모션 감소 설정에서는 둘 다 끈다. 전체 페이지의 300ms 슬라이드와 별도이다.
+
+### 공개 범위 카드 눌림
+
+- 2026-11-24 Figma 색상 변경에서 카드가 `Radio Card` 인스턴스라 `RadioCard`로 바꿨다. 누르는 동안 카드 전체(글자 포함)에 `overlay-hover`(10%)를 전환 없이 바로 얹고 0.98로 줄어든다(Figma `Radio Card` Selected=Pressed). 마우스 환경에서는 선택 전 hover도 같은 겹침이다. 이전 `DescriptionRadioCard`는 글자 뒤에 `overlay-pressed`를 75ms로 깔았다.
 
 ## 검증
 

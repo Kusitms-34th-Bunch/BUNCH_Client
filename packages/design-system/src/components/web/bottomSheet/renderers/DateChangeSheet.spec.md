@@ -32,7 +32,7 @@
 
 ## Styling과 의존성
 
-- `BottomSheet`(`handle={false}`, `pt-padding-p7`), `Calendar`, `TextButton variant="primary" size="md"`.
+- `BottomSheet`(`handle={false}`, `pt-padding-p7`), `Calendar`, `TextButton variant="secondary" size="md"`(「저장」 글자 `text-secondary`, 2026-11-24 색상 변경으로 `primary` 브랜드색에서 변경).
 - 비활성 「저장」 글자색 `text-disabled`.
 
 ## 확인할 항목
