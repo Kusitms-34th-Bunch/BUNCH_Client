@@ -142,6 +142,44 @@ describe('ProfileEditRoute', () => {
     expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 }));
   });
 
+  it('터치 기기는 받아 둔 값으로 먼저 그려도, 이번 진입의 값을 받아 입력이 풀린 뒤 닉네임에 초점을 줌(#568)', async () => {
+    const matchMedia = vi
+      .spyOn(window, 'matchMedia')
+      .mockImplementation(
+        (query: string) =>
+          ({ matches: query === '(pointer: coarse)', media: query }) as MediaQueryList,
+      );
+    try {
+      const client = createTestQueryClient();
+      client.setQueryData(sharedKeys.me(), {
+        memberId: '1',
+        nickname: '으누',
+        imageSrc: null,
+        bunch: null,
+      });
+      let respond = () => {};
+      const held = new Promise<void>((resolve) => {
+        respond = resolve;
+      });
+      server.use(
+        http.get('/api/members/me', async () => {
+          await held;
+          return ok({ memberId: 1, nickname: '으누', imageUrl: null, defaultBunch: null });
+        }),
+      );
+
+      render(<ProfileEditRoute />, { wrapper: createQueryWrapper(client) });
+      // 받는 동안은 입력란이 잠겨 초점을 주지 않음
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      expect(screen.getByRole('textbox', { name: /닉네임/ })).not.toHaveFocus();
+
+      respond();
+      await waitFor(() => expect(screen.getByRole('textbox', { name: /닉네임/ })).toHaveFocus());
+    } finally {
+      matchMedia.mockRestore();
+    }
+  });
+
   it('받아 둔 값 없이 스켈레톤에서 뒤로 가기에 초점이 있었으면, 새 화면이 그려질 때 제목으로 옮기고 도착을 알린다', async () => {
     let respond = () => {};
     const held = new Promise<void>((resolve) => {

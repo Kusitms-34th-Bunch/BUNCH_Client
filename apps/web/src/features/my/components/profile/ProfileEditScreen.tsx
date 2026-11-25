@@ -25,6 +25,8 @@ import { MY_PATHS } from '../../constants/paths';
 
 // 저장 직전 서버가 다시 확인한 닉네임 중복(가입과 같은 코드)
 const NICKNAME_TAKEN_CODE = 'USER_002';
+// 화면 전환이 끝나길 기다리는 최대 시간(멈춘 전환·남은 표식에도 초점은 줌)
+const FOCUS_WAIT_MS = 1000;
 
 // 출생연도·성별은 추가 개인정보에 동의한 사람만 값을 갖고 고칠 수 있음(기능명세서 7.2.6). 동의하지 않았으면 비워 둔 비활성 칸
 const toProfileValues = (profile: MyProfile, consented: boolean): ProfileValues => ({
@@ -94,6 +96,33 @@ export function ProfileEditScreen({
     return () => {
       left.current = true;
     };
+  }, []);
+  // 터치 기기는 들어오면 닉네임 입력란에 초점(키보드가 바로 올라옴, #568). 화면 전환이 끝난 뒤(도중에 키보드가 올라오면 흔들림)
+  // 키보드 사용자는 제목에서 시작(RouteFocus), 그사이 다른 곳을 건드렸으면(초점이 제목·문서 밖) 그대로 둠
+  useEffect(() => {
+    if (!window.matchMedia?.('(pointer: coarse)').matches) return;
+    const startedAt = performance.now();
+    let frame = 0;
+    const focusNickname = () => {
+      if (
+        document.querySelector('[data-page-leaving]') !== null &&
+        performance.now() - startedAt < FOCUS_WAIT_MS
+      ) {
+        frame = requestAnimationFrame(focusNickname);
+        return;
+      }
+      const active = document.activeElement;
+      if (active && active !== document.body && active.tagName !== 'H1') return;
+      const input = containerRef.current?.querySelector<HTMLInputElement>(
+        'input:not([type="file"])',
+      );
+      // 받아 둔 값 화면은 받는 동안 잠김: 새 값 화면이 다시 그려질 때 그 화면이 초점을 줌(「불러왔어요」 안내 뒤)
+      if (!input || input.disabled || input.closest('fieldset[disabled]')) return;
+      input.focus({ preventScroll: true });
+      input.setSelectionRange(input.value.length, input.value.length);
+    };
+    frame = requestAnimationFrame(focusNickname);
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const changed =
