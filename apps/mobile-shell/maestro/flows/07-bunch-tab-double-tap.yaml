@@ -4,20 +4,23 @@ name: 번치 탭을 두 번 누르면 최근 번치로 바뀌고, 다시 두 번
 # 시스템 탭 바의 다시 누름(nativeTabReselect)이 두 번 오는지는 쉘에서만 확인됨(#518)
 # 가짜 DB는 「여행쥬아」에서 시작, 최근 사용순 두 번째가 「퇴근런클럽」
 - runFlow: ../subflows/launch-fresh.yaml
-# 앱 시작 직후 첫 입력이 무시될 수 있어(QA 2차 F-3) 바뀔 때까지 다시 두 번 누름
+# 앱 시작 직후 첫 입력이 무시될 수 있어(QA 2차 F-3) 전환 토스트가 보일 때까지 다시 두 번 누름
+# 번치 이름은 저장 전에 먼저 바뀌어(#568) 이름으로 기다리면 그 사이 토스트가 사라져 놓칠 수 있음. 전환 성공은 토스트로만 판단
+# 토스트가 10초 넘게 늦으면 다시 두 번 눌러 여행쥬아로 되돌릴 수 있음(이 flow가 뒤 단계에서 실패하면 이 경로를 의심)
 - repeat:
     while:
-      notVisible: '퇴근런클럽'
+      notVisible: '퇴근런클럽 번치로 전환했어요.*'
     times: 5
     commands:
       - doubleTapOn:
           # 탭 화면도 탭 이름과 같은 이름이라 탭 바 버튼의 식별자로 고름(시뮬레이터 언어와 무관, #534)
           id: 'tab-bunch'
-      - waitForAnimationToEnd
-# 시트 없이 바로 바뀌고 전환 토스트로 실제로 바뀌었는지 확인
-- extendedWaitUntil:
-    visible: '퇴근런클럽 번치로 전환했어요.*'
-    timeout: 30000
+      - extendedWaitUntil:
+          visible: '퇴근런클럽 번치로 전환했어요.*'
+          timeout: 10000
+          optional: true
+# 시트 없이 바로 바뀌었는지 확인
+- assertVisible: '퇴근런클럽 번치로 전환했어요.*'
 - assertNotVisible: '번치 전환하기'
 # 그 뒤 입력은 한 번에 동작해야 함(재시도 없음). 앞 토스트가 사라진 뒤 누름
 - extendedWaitUntil:
