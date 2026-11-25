@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { guardPush, guardOutgoing, guardSheet, guardZoom } from './pageGuards';
+import { guardPush, guardOutgoing, guardSheet, guardZoom, playAfterPaint } from './pageGuards';
 
 type Disposal = { reason: 'finished'; owns: (_element: HTMLElement) => boolean };
 type Track = { element: HTMLElement; onDispose?: (_context: Disposal) => void };
@@ -305,5 +305,50 @@ describe('guardPush', () => {
     second.onDispose?.(owned());
     expect(page.dataset.pushBand).toBeUndefined();
     expect(page.style.boxShadow).toBe('');
+  });
+});
+
+describe('playAfterPaint', () => {
+  const frames = () => {
+    const queue: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      queue.push(callback),
+    );
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+      if (id) queue[id - 1] = () => {};
+    });
+    return () => queue.splice(0).forEach((callback) => callback(0));
+  };
+
+  it('첫 재생은 시작 모습에서 멈췄다가 두 프레임 뒤에 이어 가고, 다음 재생은 바로 한다(#573)', () => {
+    const flush = frames();
+    const calls: string[] = [];
+    const animation = { play: () => calls.push('play'), pause: () => calls.push('pause') };
+    playAfterPaint(animation);
+
+    animation.play();
+    expect(calls).toEqual(['play', 'pause']);
+    flush();
+    expect(calls).toEqual(['play', 'pause']);
+    flush();
+    expect(calls).toEqual(['play', 'pause', 'play']);
+
+    animation.play();
+    expect(calls).toEqual(['play', 'pause', 'play', 'play']);
+  });
+
+  it('기다리는 사이 멈추거나 되돌리면 이어 가지 않고 원래 동작만 한다', () => {
+    const flush = frames();
+    const play = vi.fn();
+    const reverse = vi.fn();
+    const animation = { play, pause: vi.fn(), reverse };
+    playAfterPaint(animation);
+
+    animation.play();
+    animation.reverse();
+    flush();
+    flush();
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(reverse).toHaveBeenCalledTimes(1);
   });
 });

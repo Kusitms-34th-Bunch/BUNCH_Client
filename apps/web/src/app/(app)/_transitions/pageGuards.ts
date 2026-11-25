@@ -27,6 +27,38 @@ const guardPair = (
     delete outgoing.dataset.pageLeaving;
   };
 };
+type Playable = { play?: () => void; pause?: () => void; [stop: string]: unknown };
+const INTERRUPTS = ['stop', 'cancel', 'pause', 'reverse', 'complete'] as const;
+// 첫 재생을 시작 모습에서 멈춰 두고 도착 화면이 그려진 두 프레임 뒤에 이어 감(iOS는 돌아온 피드를 그리기 전에 재생해 첫 프레임이 하얗게 빔, #573)
+// 바로 재생 → 멈춤이라 시작 모습(zoom은 재생 때 적용)이 먼저 보임. 그 사이 다른 조작이 오면 이어 가지 않음
+export const playAfterPaint = (animation: Playable) => {
+  const { play, pause } = animation;
+  if (typeof play !== 'function' || typeof pause !== 'function') return;
+  let frame = 0;
+  const skip = () => {
+    cancelAnimationFrame(frame);
+    frame = 0;
+  };
+  animation.play = () => {
+    animation.play = play;
+    play.call(animation);
+    pause.call(animation);
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        play.call(animation);
+      });
+    });
+  };
+  for (const name of INTERRUPTS) {
+    const original = animation[name];
+    if (typeof original !== 'function') continue;
+    animation[name] = (...args: unknown[]) => {
+      skip();
+      return (original as (..._args: unknown[]) => unknown).apply(animation, args);
+    };
+  }
+};
 export const guardOutgoing = (animation: MultiAnimation<'out' | 'in'>) => {
   const outgoing = animation.select('out').getMotionTracks()[0];
   guardPair(animation.select('in').getMotionTracks()[0]?.element, outgoing?.element, outgoing);
@@ -39,6 +71,7 @@ export const guardHero = ({
 }) => {
   const outgoing = animation.select('out').getMotionTracks()[0];
   guardPair(animation.select('in').getMotionTracks()[0]?.element, outgoing?.element, outgoing);
+  playAfterPaint(animation as unknown as Playable);
 };
 // zoom 프리셋의 나가는 화면은 경계 id로 찾아 다른 전환과 같은 표식
 type ZoomGroup = 'overlay' | 'content' | 'chrome' | 'background' | 'tile';
@@ -68,6 +101,7 @@ export const guardZoom =
     // 뒤 화면도 자기 색 띠로 상태 바를 덮어 둠(나가는 화면 표식으로 앱 틀 색이 먼저 흰색이 되는 것을 가림, 드릴과 같음)
     if (front && track) attachPushBand(front, track, true);
     if (behind && track) attachPushBand(behind, track);
+    playAfterPaint(animation as unknown as Playable);
   };
 // AppFrame 상태 바 색 전환(motion-safe duration-150)보다 조금 길게
 const SHEET_BAND_HOLD_MS = 200;
