@@ -23,7 +23,7 @@
 
 - Default: 바탕 `surface-primary`, 라디오 빈 원.
 - Pressed(누르는 동안): 카드 바탕과 프로필 이미지에 `overlay-hover`(10%)를 겹치고, 라디오는 회색 링·점(`core/radio`의 눌림, 카드 어디를 눌러도 적용)이다. 이름 글자는 어두워지지 않는다.
-- Selected: 바탕 `surface-brand-subtle-1`, 카드 테두리 없음, 프로필 이미지 테두리 `border-brand-subtle`, 라디오 브랜드색 점.
+- Selected: 바탕 `surface-brand-subtle-1`, 카드 테두리 없음, 프로필 이미지 테두리 `border-brand-subtle`, 라디오는 `core/radio`의 Selected(2026-11-24부터 `icon-tertiary` 회색 점).
 - Disabled: 카드 40% 흐림, 이름 `text-disabled`, 누를 수 없음.
 - 긴 이름은 한 줄에서 말줄임하고 `title`로 전체를 보여 준다. 터치·키보드 사용자는 툴팁을 볼 수 없어서, 동명이인이나 긴 이름을 구분할 방법은 호출 화면이 정한다(스크린 리더는 전체 이름을 읽음).
 

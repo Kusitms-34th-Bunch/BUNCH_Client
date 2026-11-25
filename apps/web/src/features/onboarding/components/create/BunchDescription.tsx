@@ -110,7 +110,9 @@ export function BunchDescription() {
       </div>
       <section className="pt-s15 px-padding-p8 gap-s3 flex flex-col">
         <div className="gap-s3 flex items-center">
-          <Badge size="sm">TIP</Badge>
+          <Badge variant="strong" color="gray" size="sm">
+            TIP
+          </Badge>
           <h2 className="typography-body-3-semibold text-text-primary">이런 소개는 어때요?</h2>
         </div>
         {/* 토큰이 없는 목록 들여쓰기에 Figma 값 19.5px 적용 */}

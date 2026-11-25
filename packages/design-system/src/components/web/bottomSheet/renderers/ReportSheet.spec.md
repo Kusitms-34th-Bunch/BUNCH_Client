@@ -47,7 +47,7 @@
 - 부제 대비 (확인 필요): 부제는 Figma대로 `text-quaternary`(#969aa0)라 흰 바탕 대비가 약 2.8:1로 WCAG 4.5:1에 못 미친다. 누구 이름으로 신고하는지 알리는 정보라 토큰 단위로 디자이너 확인이 필요하다(2026-11-04 접근성 리뷰).
 
 - 닫기 버튼 (제안): Figma 07·08에 없지만 끌기·ESC를 못 쓰는 사용자를 위해 추가했다. 디자이너 확인 필요.
-- 필수 표시 (해결): Figma 「상세 사유 *」대로 `LabeledTextField` `option="required"`의 브랜드 색 별표를 쓴다(2026-11-04 `Labled_Text_Field` 원본도 별표로 바뀜).
+- 필수 표시 (해결): Figma 「상세 사유 *」대로 `LabeledTextField` `option="required"`의 별표를 쓴다(2026-11-24부터 `icon-secondary`)(2026-11-04 `Labled_Text_Field` 원본도 별표로 바뀜).
 - 입력 중 닫힘 (미정): 끌기·ESC는 입력 중에도 닫는다. 닫기 전 확인은 feature에서 정한다.
 - 「신고하기」 비활성 이유 (제안): `Button`의 `disabled`를 그대로 써 이유를 안내하지 않는다. 사유 목록이 바로 위에 있어 순서상 알 수 있다고 판단했다. 상세 입력 칸이 나타날 때 알림(live region)도 없다.
 

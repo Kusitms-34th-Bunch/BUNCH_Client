@@ -24,7 +24,7 @@ export const Radio = ({ className, ...props }: RadioProps) => (
       className={cn(
         'bg-surface-primary border-border-tertiary pointer-events-none relative size-full rounded-full border',
         'before:absolute before:top-1/2 before:left-1/2 before:size-3 before:-translate-x-1/2 before:-translate-y-1/2 before:rounded-full before:opacity-0',
-        'peer-checked:border-icon-brand peer-checked:before:bg-icon-brand peer-checked:before:scale-100 peer-checked:before:opacity-100',
+        'peer-checked:border-icon-tertiary peer-checked:before:bg-icon-tertiary peer-checked:before:scale-100 peer-checked:before:opacity-100',
         // 선택 전환: 가운데 점이 작게 시작해 커지며 나타남(150ms ease-out, 2026-11-02 사용자 결정), 테두리 색도 같이
         'transition-colors duration-150 ease-out before:scale-50 before:transition-[opacity,scale] before:duration-150 before:ease-out motion-reduce:transition-none motion-reduce:before:transition-none',
         // 누르는 동안(선택 전): 회색 링과 점

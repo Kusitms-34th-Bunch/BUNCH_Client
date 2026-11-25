@@ -43,14 +43,14 @@ describe('RadioCard', () => {
     expect(screen.getByRole('group', { name: '공개 범위' })).toBeTruthy();
   });
 
-  it('카드 안 라디오는 자체 포커스 윤곽선을 끄고 카드가 그린다', () => {
+  it('포커스 윤곽선은 카드가 아니라 라디오 원에 그린다', () => {
     const { container } = render(<RadioCard name="visibility" {...PUBLIC} />);
     const radioWrapper = screen.getByRole('radio').parentElement;
 
-    expect(radioWrapper?.classList.contains('has-focus-visible:outline-0')).toBe(true);
-    expect(radioWrapper?.classList.contains('has-focus-visible:outline-2')).toBe(false);
+    expect(radioWrapper?.classList.contains('has-focus-visible:outline-2')).toBe(true);
+    expect(radioWrapper?.classList.contains('has-focus-visible:outline-0')).toBe(false);
     expect(container.firstElementChild?.classList.contains('has-focus-visible:outline-2')).toBe(
-      true,
+      false,
     );
   });
 
