@@ -32,6 +32,7 @@ route는 raw API 요청, domain mutation, 복잡한 form state, 재사용 UI 구
 - 쉘 여부는 쉘이 WebView에 주입하는 `window.ReactNativeWebView`로 판단한다(`isNativeShell`). 이미 설치된 이전 쉘 빌드에는 서버가 알아볼 표시(User-Agent 등)가 없어 서버(proxy)에서 막지 않는다. 서버 렌더·hydration 동안은 `AuthGate`의 로딩을 그리고 바로 다음 렌더에서 안내로 바꾼다.
 - 브라우저에서도 열리는 경로는 `(app)` 밖의 초대 링크 진입(`/invite/[token]`), BFF(`/api/*`), 앱 연결 파일(`/.well-known/*`), 없는 주소·오류 화면(`not-found`·`global-error`), 검색·설치 파일(`robots.txt`·`sitemap.xml`·`manifest.webmanifest`)뿐이다.
 - 예외: 로컬 개발 서버(`NODE_ENV=development`)와 가짜 서버 빌드(`NEXT_PUBLIC_API_MOCKING=enabled`, Playwright E2E·UT)는 브라우저에서도 그대로 연다. 시뮬레이터·실기기의 쉘은 언제나 열린다.
+- 쉘 안에서 최소 버전보다 낮은 앱은 `(app)` layout의 업데이트 모달(`features/app-update`, #577)이 닫을 수 없게 덮는다. `(app)` 밖(초대 링크 진입·없는 주소)은 덮지 않고, 확인에 실패하거나 응답 전에는 막지 않는다.
 - 이 장치는 화면 노출만 정하고 데이터 접근 제어는 백엔드 API가 한다. 브라우저의 `window` 객체로 판단해 사용자가 직접 우회할 수 있으므로 권한 판단을 얹지 않는다. 가짜 서버 예외는 운영 배포의 MSW 제외 검사(`docs/workflows/web-deployment.md`)가 같은 조건을 막는다.
 
 ## 로그인·가입 상태 가드 (web)

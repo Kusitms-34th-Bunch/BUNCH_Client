@@ -57,6 +57,15 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 - 같은 버전을 다시 제출할 때(심사 거절 뒤 수정 등)는 버전은 두고 빌드 번호만 올린다.
 - 새 bridge 메서드를 쓰는 웹은 그 메서드가 없는 이전 앱 버전에서도 동작해야 한다(`hasNativeMethod`로 확인).
 
+#### 이전 앱을 업데이트로 막기
+
+웹과 함께 쓸 수 없게 된 이전 앱은 `apps/web/src/features/app-update/lib/appVersionPolicy.ts`의 `MINIMUM_APP_VERSION`을 올려 막는다(#577). 이 값보다 낮은 앱은 닫을 수 없는 업데이트 모달을 본다. 웹 배포만으로 적용되며, 새로 연 앱은 약 1분(응답 캐시 60초), 이미 열려 있던 앱은 마지막 확인에서 30분이 지나 앱으로 돌아올 때 막힌다.
+
+- 새 버전이 App Store에서 「판매 중」이 된 뒤에 올린다. 심사 중에 올리면 사용자가 받을 업데이트가 없다. 심사 빌드는 더 새 버전이라 막히지 않는다.
+- 같은 버전 안의 이전 빌드만 막을 때는 `build`도 올린다.
+- 버전을 알려 주지 못하는 이전 앱(1.1.1 이하)은 1.1.1 빌드 1로 보고 비교한다. 최소값을 이보다 올리면 이전 앱 모두가 막힌다.
+- 빌드 번호는 `app.json`의 `ios.buildNumber`를 읽는다(Xcode Archive 기준). EAS의 자동 번호(`autoIncrement`)는 이 값에 반영되지 않으므로, EAS로 바꿀 때는 쉘이 읽는 값부터 다시 정한다(그 전에는 `build` 비교가 맞지 않음).
+
 ### App Store 제출용 환경변수
 
 양식은 [`.env.production.example`](../../apps/mobile-shell/.env.production.example)에 둔다.
