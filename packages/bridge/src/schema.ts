@@ -399,6 +399,18 @@ export type PushOpen = z.infer<typeof pushOpenSchema>;
 export const pushOpenedSchema = z.object({}).strict();
 export type PushOpened = z.infer<typeof pushOpenedSchema>;
 
+/**
+ * 설치된 앱의 버전(`1.2.0`, App Store 버전)과 빌드 번호(`3`). 웹이 최소 버전과 비교해 업데이트 모달을 띄움(#577)
+ * 같은 형식을 웹 route(`/api/app-version`)의 입력 검증에도 씀
+ */
+export const appVersionSchema = z
+  .object({
+    version: z.string().regex(/^\d{1,4}(\.\d{1,4}){0,2}$/),
+    build: z.string().regex(/^\d{1,9}$/),
+  })
+  .strict();
+export type AppVersion = z.infer<typeof appVersionSchema>;
+
 /** 화면 사건에 맞춘 햅틱 종류. `success`: 완료 축하(컨페티), `tap`: 가벼운 누름(좋아요·콕하기·피드 끝) */
 export const hapticKindSchema = z.enum(['success', 'tap']);
 export type HapticKind = z.infer<typeof hapticKindSchema>;
