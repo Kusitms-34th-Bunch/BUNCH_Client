@@ -100,7 +100,7 @@ describe('BunchAccordion', () => {
     expect(container.firstElementChild?.classList.contains('mt-2')).toBe(true);
   });
 
-  it('selected면 접혔을 때만 브랜드 배경·테두리로 표시하고, 고른 값을 이름 뒤에 읽는다', async () => {
+  it('selected면 접혔을 때만 회색 선택 배경·테두리로 표시하고, 고른 값을 이름 뒤에 읽는다', async () => {
     const { container } = render(
       <BunchAccordion name="퇴근런클럽" selected selectedLabel="새 관리자: 서현">
         <p>멤버</p>
@@ -109,12 +109,12 @@ describe('BunchAccordion', () => {
     const card = container.firstElementChild as HTMLElement;
     const header = screen.getByRole('button', { name: /^퇴근런클럽\s?, 새 관리자: 서현$/ });
 
-    expect(card.className).toContain('bg-surface-brand-subtle-1');
-    expect(card.className).toContain('outline-border-brand-subtle');
+    expect(card.className).toContain('bg-surface-secondary');
+    expect(card.className).toContain('outline-border-secondary');
 
     await userEvent.click(header);
     expect(card.className).toContain('bg-surface-primary');
-    expect(card.className).not.toContain('bg-surface-brand-subtle-1');
+    expect(card.className).not.toContain('bg-surface-secondary');
   });
 
   it('selected가 아니면 고른 값 문구를 읽지 않는다', () => {

@@ -18,7 +18,7 @@ export type BunchAccordionProps = Omit<ComponentProps<'div'>, 'title' | 'onChang
   onOpenChange?: ((_open: boolean) => void) | undefined;
   /** 비활성: 카드 전체 40%, 누를 수 없음 */
   disabled?: boolean | undefined;
-  /** 안에서 무언가 고른 상태(Figma `Status=Selected`). 접혔을 때만 연한 브랜드 배경·테두리로 표시 */
+  /** 안에서 무언가 고른 상태(Figma `Status=Selected`). 접혔을 때만 회색 배경·테두리로 표시 */
   selected?: boolean | undefined;
   /** 고른 값 낭독(예: 「새 관리자: 서현」). `selected`를 쓰면 함께 줌(빠지면 선택이 색으로만 전달됨) */
   selectedLabel?: string | undefined;
@@ -76,7 +76,7 @@ export const BunchAccordion = ({
         // 선택 표시 전환(화면 설계서: On click / Dissolve / Ease out / 200ms)
         'rounded-r4 overflow-hidden outline -outline-offset-1 transition-colors duration-200 ease-out motion-reduce:transition-none',
         showSelected
-          ? 'bg-surface-brand-subtle-1 outline-border-brand-subtle'
+          ? 'bg-surface-secondary outline-border-secondary'
           : 'bg-surface-primary outline-border-tertiary',
         disabled && 'opacity-(--semantic-opacity-disabled)',
         className,
@@ -107,7 +107,7 @@ export const BunchAccordion = ({
           </span>
           <Chevron
             aria-hidden="true"
-            className={cn('shrink-0', showSelected ? 'text-chip-blue-fg' : 'text-icon-quaternary')}
+            className={cn('shrink-0', showSelected ? 'text-icon-tertiary' : 'text-icon-quaternary')}
           />
         </button>
       </Heading>
