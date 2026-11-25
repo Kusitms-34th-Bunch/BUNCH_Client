@@ -63,6 +63,11 @@ export const guardZoom =
     const front = last(frontId);
     if (opening) guardPair(front, behind, track);
     else guardPair(behind, front, track);
+    // 열리고 접히는 상세 화면이 상태 바 뒤까지 함께 커지고 줄어듦(인스타처럼 화면 전체가 카드로, #568)
+    // 반경 0인 zoom 전제: 띠 자르기(globals.css data-zoom-band)가 SSGOI 반경 자르기를 덮음
+    // 뒤 화면도 자기 색 띠로 상태 바를 덮어 둠(나가는 화면 표식으로 앱 틀 색이 먼저 흰색이 되는 것을 가림, 드릴과 같음)
+    if (front && track) attachPushBand(front, track, true);
+    if (behind && track) attachPushBand(behind, track);
   };
 // AppFrame 상태 바 색 전환(motion-safe duration-150)보다 조금 길게
 const SHEET_BAND_HOLD_MS = 200;
@@ -196,22 +201,29 @@ export const guardPush = (animation: MultiAnimation<'out' | 'in'>) => {
     animation.select('in').getMotionTracks()[0],
     animation.select('out').getMotionTracks()[0],
   ]) {
-    if (!track) continue;
-    const page = track.element;
-    const color = bandColorOf(page);
-    if (!color) continue;
-    const owner = {};
-    pushBands.set(page, owner);
-    page.dataset.pushBand = '';
-    page.style.boxShadow = `0 calc(-1 * var(--safe-area-top, 0px)) 0 ${color}`;
-    const dispose = track.onDispose;
-    track.onDispose = (context) => {
-      dispose?.(context);
-      if (pushBands.get(page) !== owner) return;
-      pushBands.delete(page);
-      delete page.dataset.pushBand;
-      // sheet 띠가 같은 요소에 남아 있으면 그 띠는 sheet 정리에 맡김
-      if (page.dataset.sheetBand === undefined) page.style.removeProperty('box-shadow');
-    };
+    if (track) attachPushBand(track.element, track);
   }
+};
+/**
+ * 전환하는 화면 위에 상태 바 높이의 자기 색 띠를 붙이고 끝나면 치움(전환 영역은 data-push-band 동안 위로 넓힘)
+ * zoom은 화면 자신에 반경 자르기(clip-path)를 걸어 띠가 잘리므로 data-zoom-band로 위쪽만 넓힘(globals.css)
+ */
+const attachPushBand = (page: HTMLElement, track: WebAnimation, zoom = false) => {
+  const color = bandColorOf(page);
+  if (!color) return;
+  const owner = {};
+  pushBands.set(page, owner);
+  page.dataset.pushBand = '';
+  if (zoom) page.dataset.zoomBand = '';
+  page.style.boxShadow = `0 calc(-1 * var(--safe-area-top, 0px)) 0 ${color}`;
+  const dispose = track.onDispose;
+  track.onDispose = (context) => {
+    dispose?.(context);
+    if (pushBands.get(page) !== owner) return;
+    pushBands.delete(page);
+    delete page.dataset.pushBand;
+    delete page.dataset.zoomBand;
+    // sheet 띠가 같은 요소에 남아 있으면 그 띠는 sheet 정리에 맡김
+    if (page.dataset.sheetBand === undefined) page.style.removeProperty('box-shadow');
+  };
 };

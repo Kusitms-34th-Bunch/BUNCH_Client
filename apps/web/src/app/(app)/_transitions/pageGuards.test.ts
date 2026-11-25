@@ -101,6 +101,31 @@ describe('guardZoom', () => {
     expect(front.dataset.pageLeaving).toBe('');
     expect(behind.dataset.pageLeaving).toBeUndefined();
   });
+
+  it('열리는 상세 화면에 상태 바 띠와 zoom 띠 표식을 붙이고 전환이 끝나면 치운다(#568)', () => {
+    const parent = document.createElement('div');
+    const behind = screen('feed');
+    const front = screen('detail');
+    parent.append(behind, front);
+    const track: Track = { element: front };
+
+    guardZoom(
+      true,
+      ['feed'],
+      'detail',
+    )({ animation: fakeAnimation({ content: track }), context: { positionedParent: parent } });
+    expect(front.dataset.pushBand).toBe('');
+    expect(front.dataset.zoomBand).toBe('');
+    expect(front.style.boxShadow).toContain('safe-area-top');
+    expect(behind.dataset.zoomBand).toBeUndefined();
+    expect(behind.dataset.pushBand).toBe('');
+
+    track.onDispose?.(owned());
+    expect(behind.dataset.pushBand).toBeUndefined();
+    expect(front.dataset.pushBand).toBeUndefined();
+    expect(front.dataset.zoomBand).toBeUndefined();
+    expect(front.style.boxShadow).toBe('');
+  });
 });
 
 describe('guardSheet', () => {

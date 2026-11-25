@@ -117,21 +117,35 @@ const feedBundleHero = hero(
   { type: 'fade' },
   { override: { forward: tuneFeedBundleHero, backward: tuneFeedBundleHero } },
 );
-// 사진함 썸네일 → 사진 상세 hero(Figma에 정의 없음). 들어갈 때는 spring이 처음에 급해 확대보다 바뀌는 느낌이라 피드와 같은 곡선
+// 사진함 썸네일 → 사진 상세 hero(Figma에 정의 없음). 들어갈 때는 피드와 같은 곡선을 조금 짧게(550ms는 느리다는 사용자 의견, #568)
 // 돌아갈 때는 부드러운 spring(smooth) 그대로(사용자 확인)
+const PHOTO_HERO_MS = 450;
+const tunePhotoHero = ({ animation }: { animation: MultiAnimation<'shared' | 'out' | 'in'> }) => {
+  animation.set({ integrator: cubicBezierIntegrator(PHOTO_HERO_MS, [0.3, 0, 0.15, 1]) });
+  guardHero({ animation });
+};
 const photoHero = hero(
   { type: 'fade', variant: 'smooth' },
-  { override: { forward: tuneFeedBundleHero, backward: guardHero } },
+  { override: { forward: tunePhotoHero, backward: guardHero } },
 );
 // 피드 말풍선 → 번들 상세(댓글): 눌린 카드가 상세 화면 전체로 열리는 zoom static(뒤 피드는 그대로, 뒤로 가면 카드로 접힘)
 // 상세를 이미 댓글 위치로 내려 두고 열어 사진이 이어지는 hero 대신 씀(motion.md). 나가는 화면은 경계 id로 찾아 다른 전환과 같은 표식
+// 시간·곡선: 기본 spring은 약 0.2초에 90%라 빠르게 느껴져, 바로 출발하되 90%를 약 0.25초로 늦춘 450ms 감속 곡선(#568)
+const ZOOM_MS = 450;
+const ZOOM_EASING = [0.3, 0.7, 0.4, 1] as const;
+const tuneZoom =
+  (opening: boolean, behindIds: readonly string[], frontId: string) =>
+  (params: Parameters<ReturnType<typeof guardZoom>>[0]) => {
+    params.animation.set({ integrator: cubicBezierIntegrator(ZOOM_MS, ZOOM_EASING) });
+    guardZoom(opening, behindIds, frontId)(params);
+  };
 const zoomOver = (behindIds: readonly string[], frontId: string) =>
   zoom(
     { type: 'static' },
     {
       override: {
-        forward: guardZoom(true, behindIds, frontId),
-        backward: guardZoom(false, behindIds, frontId),
+        forward: tuneZoom(true, behindIds, frontId),
+        backward: tuneZoom(false, behindIds, frontId),
       },
     },
   );
