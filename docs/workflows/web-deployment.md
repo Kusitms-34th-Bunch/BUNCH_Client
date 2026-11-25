@@ -50,19 +50,19 @@
 
 모든 job이 이 environment를 쓴다. **Deployment branches를 `main`으로 제한**해 다른 브랜치의 workflow가 secret을 받지 못하게 한다. Required reviewers는 선택이다(켜면 job마다 승인을 요청한다).
 
-| 종류     | 이름                         | 값                                                                                                                                                                                                                                                            |
-| -------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| secret   | `VERCEL_TOKEN`               | Vercel 계정 Settings → Tokens에서 만든 토큰(가능하면 운영 프로젝트의 팀으로 범위를 좁힘)                                                                                                                                                                      |
-| secret   | `VERCEL_ORG_ID`              | 팀 Settings → General의 Team ID(Hobby도 `team_…` 형태)                                                                                                                                                                                                        |
-| secret   | `VERCEL_WEB_PROJECT_ID`      | 프로젝트 Settings → General의 Project ID                                                                                                                                                                                                                      |
-| secret   | `SENTRY_AUTH_TOKEN`          | 선택. 소스맵 업로드용 Sentry **Organization Auth Token**(업로드 전용 범위, 개인 토큰 아님). 저장소 코드를 실행하는 `build` job에서 보인다                                                                                                                     |
-| variable | `NEXT_PUBLIC_SENTRY_DSN`     | 오류 수집 DSN(공개 값). 환경 이름은 workflow가 `production`으로 고정                                                                                                                                                                                          |
-| variable | `NEXT_PUBLIC_POSTHOG_KEY`    | 제품 분석 프로젝트 토큰(`phc_…`, 공개 값). 약관에 동의한 회원만 수집한다(ADR 018). 비우면 수집하지 않는다. 기획 요청으로 운영 키를 넣었다(2026-11-10). 개인정보 처리방침(임시 문구)에 수집 항목·국외 이전(PostHog, 미국)을 반영하는 일은 기획에 요청해 두었다 |
-| variable | `NEXT_PUBLIC_WS_URL`         | 실시간(STOMP) 연결 주소(공개 값, 예 `wss://api.example.com/ws`, query 없이). 비우면 번들 공동 편집이 실시간으로 연결되지 않는다. 백엔드 허용 Origin 목록에 웹 주소가 등록돼 있어야 한다(ADR 024)                                                              |
-| variable | `NEXT_PUBLIC_WS_URL_STAGING` | 선택. TestFlight 테스터용 쉘이 연결하는 개발 백엔드 실시간 주소(#581). 비우면 테스터 빌드는 실시간 연결을 하지 않는다. 개발 백엔드 허용 Origin에 운영 웹 주소가 있어야 한다                                                                                   |
-| variable | `NEXT_PUBLIC_POSTHOG_HOST`   | 선택. 비우면 US(`https://us.i.posthog.com`), EU 프로젝트는 `https://eu.i.posthog.com`                                                                                                                                                                         |
-| variable | `GOOGLE_SITE_VERIFICATION`   | 선택. Google Search Console 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                             |
-| variable | `NAVER_SITE_VERIFICATION`    | 선택. 네이버 서치어드바이저 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                             |
+| 종류     | 이름                         | 값                                                                                                                                                                                                                                                                                    |
+| -------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| secret   | `VERCEL_TOKEN`               | Vercel 계정 Settings → Tokens에서 만든 토큰(가능하면 운영 프로젝트의 팀으로 범위를 좁힘)                                                                                                                                                                                              |
+| secret   | `VERCEL_ORG_ID`              | 팀 Settings → General의 Team ID(Hobby도 `team_…` 형태)                                                                                                                                                                                                                                |
+| secret   | `VERCEL_WEB_PROJECT_ID`      | 프로젝트 Settings → General의 Project ID                                                                                                                                                                                                                                              |
+| secret   | `SENTRY_AUTH_TOKEN`          | 선택. 소스맵 업로드용 Sentry **Organization Auth Token**(업로드 전용 범위, 개인 토큰 아님). 저장소 코드를 실행하는 `build` job에서 보인다                                                                                                                                             |
+| variable | `NEXT_PUBLIC_SENTRY_DSN`     | 오류 수집 DSN(공개 값). 환경 이름은 workflow가 `production`으로 고정                                                                                                                                                                                                                  |
+| variable | `NEXT_PUBLIC_POSTHOG_KEY`    | 제품 분석 프로젝트 토큰(`phc_…`, 공개 값). 약관에 동의한 회원만 수집한다(ADR 018). 비우면 수집하지 않는다. 기획 요청으로 운영 키를 넣었다(2026-11-10). 개인정보 처리방침(임시 문구)에 수집 항목·국외 이전(PostHog, 미국)을 반영하는 일은 기획에 요청해 두었다                         |
+| variable | `NEXT_PUBLIC_WS_URL`         | 실시간(STOMP) 연결 주소(공개 값, 예 `wss://api.example.com/ws`, query 없이). 비우면 번들 공동 편집이 실시간으로 연결되지 않는다. 백엔드 허용 Origin 목록에 웹 주소가 등록돼 있어야 한다(ADR 024)                                                                                      |
+| variable | `NEXT_PUBLIC_WS_URL_STAGING` | 선택. TestFlight 테스터용 쉘이 연결하는 개발 백엔드 실시간 주소(#581). 비우면 테스터 빌드는 실시간 연결을 하지 않는다. 개발 백엔드 허용 Origin에 운영 웹 주소가 있어야 한다. `API_BASE_URL_STAGING`(Vercel)과 함께 넣거나 함께 비운다(하나만 있으면 실시간 토큰과 연결 서버가 엇갈림) |
+| variable | `NEXT_PUBLIC_POSTHOG_HOST`   | 선택. 비우면 US(`https://us.i.posthog.com`), EU 프로젝트는 `https://eu.i.posthog.com`                                                                                                                                                                                                 |
+| variable | `GOOGLE_SITE_VERIFICATION`   | 선택. Google Search Console 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                                                     |
+| variable | `NAVER_SITE_VERIFICATION`    | 선택. 네이버 서치어드바이저 「HTML 태그」 방식의 `content` 값(공개 값). 비우면 태그를 넣지 않는다                                                                                                                                                                                     |
 
 저장소 수준(Repository secrets)에 같은 이름을 두지 않는다. environment 제한을 거치지 않고 다른 브랜치의 workflow가 받을 수 있다.
 
@@ -70,11 +70,11 @@
 
 서버가 실행될 때 읽는 값만 둔다. 빌드에는 쓰지 않는다(빌드 값은 위 environment).
 
-| 변수                   | 값                                                                                                                                                   |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `API_BASE_URL`         | 운영 백엔드 주소. 서버 전용이라 `NEXT_PUBLIC_`를 붙이지 않는다                                                                                       |
-| `API_BASE_URL_STAGING` | 선택. TestFlight 테스터용 쉘의 요청만 보낼 개발 백엔드 주소(#581, `docs/workflows/mobile-release-build.md`). 비우면 테스터 빌드도 운영 백엔드를 본다 |
-| `KAKAO_REST_API_KEY`   | 카카오 로컬 API(키워드·주소 검색)의 REST API 키. 번들 위치 검색 BFF(`/api/places/search`)가 서버에서만 읽는다(ADR 027). 비우면 위치 검색이 막힌다    |
+| 변수                   | 값                                                                                                                                                                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `API_BASE_URL`         | 운영 백엔드 주소. 서버 전용이라 `NEXT_PUBLIC_`를 붙이지 않는다                                                                                                                                                                   |
+| `API_BASE_URL_STAGING` | 선택. TestFlight 테스터용 쉘의 요청만 보낼 개발 백엔드 주소(#581, `docs/workflows/mobile-release-build.md`). 비우면 테스터 빌드도 운영 백엔드를 본다. `NEXT_PUBLIC_WS_URL_STAGING`(GitHub environment)과 함께 넣거나 함께 비운다 |
+| `KAKAO_REST_API_KEY`   | 카카오 로컬 API(키워드·주소 검색)의 REST API 키. 번들 위치 검색 BFF(`/api/places/search`)가 서버에서만 읽는다(ADR 027). 비우면 위치 검색이 막힌다                                                                                |
 
 - `NEXT_PUBLIC_API_MOCKING`, `NODE_ENV`는 어디에도 넣지 않는다. 가짜 서버가 켜지거나, 인증 쿠키의 `Secure` 판정(`authCookies.ts`)이 바뀐다.
 

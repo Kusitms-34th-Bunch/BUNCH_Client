@@ -1,9 +1,11 @@
 import { dehydrate, hydrate, QueryClient } from '@tanstack/react-query';
+import { persistQueryClientRestore } from '@tanstack/react-query-persist-client';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearPersistedQueryStorage,
   PERSIST_MAX_AGE,
+  persistBusterFor,
   persistedFirstPage,
   queryPersister,
   shouldPersistQuery,
@@ -272,5 +274,73 @@ describe('저장본 주인 확인', () => {
     expect(requested).toEqual([undefined]);
     await client.fetchInfiniteQuery({ ...options, pages: 2, staleTime: 0 });
     expect(requested.at(-1)).toBe('cursor-2');
+  });
+});
+
+describe('저장본 백엔드 환경(#581)', () => {
+  const key = 'bunch-query-cache:';
+  const staging = persistBusterFor('Mozilla/5.0 (iPhone) BunchShell/staging');
+  const production = persistBusterFor('Mozilla/5.0 (iPhone)');
+  // 같은 회원 ID(A)로 테스터용 쉘이 남긴 저장본
+  const saveStaging = () =>
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        timestamp: Date.now(),
+        buster: staging,
+        owner: 'A',
+        clientState: {
+          mutations: [],
+          queries: [
+            {
+              queryKey: ['photos'],
+              queryHash: '["photos"]',
+              state: {
+                data: 'dev-data',
+                dataUpdatedAt: Date.now(),
+                dataUpdateCount: 1,
+                error: null,
+                errorUpdateCount: 0,
+                errorUpdatedAt: 0,
+                fetchFailureCount: 0,
+                fetchFailureReason: null,
+                fetchMeta: null,
+                isInvalidated: false,
+                status: 'success',
+                fetchStatus: 'idle',
+              },
+            },
+          ],
+        },
+      }),
+    );
+  beforeEach(() => {
+    // 앞 테스트의 복원 주인·저장본을 되돌림
+    renderHook(() => useClearPersistedQueriesWhen(true), {
+      wrapper: createQueryWrapper(new QueryClient()),
+    });
+  });
+  const restore = async (buster: string) => {
+    const client = new QueryClient();
+    await persistQueryClientRestore({
+      queryClient: client,
+      persister: queryPersister,
+      maxAge: PERSIST_MAX_AGE,
+      buster,
+    });
+    return client;
+  };
+
+  it('테스터용 쉘과 운영 앱은 저장본 조건이 다르다', () => {
+    expect(staging).not.toBe(production);
+  });
+
+  it('같은 환경이면 복원하고, 다른 환경이면 회원 ID가 같아도 복원하지 않고 지운다', async () => {
+    saveStaging();
+    expect((await restore(staging)).getQueryData(['photos'])).toBe('dev-data');
+
+    saveStaging();
+    expect((await restore(production)).getQueryData(['photos'])).toBeUndefined();
+    expect(localStorage.getItem(key)).toBeNull();
   });
 });
