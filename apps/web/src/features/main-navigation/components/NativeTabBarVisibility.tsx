@@ -19,8 +19,9 @@ const COVER_WAIT_MS = 1000;
 // 탭 바 자리(화면 아래 15%)를 이 비율 넘게 덮는 것이 있으면 기다림
 const TAB_BAR_ZONE_RATIO = 0.15;
 const COVER_THRESHOLD = 0.2;
-// 이만큼 넘게 흐려진 것은 덮지 않은 것으로 봄(상세에서 돌아올 때 나가는 화면은 제자리에서 흐려지기만 해 끝까지 기다리면 탭 바가 늦게 나옴, #532)
-const FADED_OPACITY = 0.5;
+// 흐려지기 시작한 나가는 화면은 덮지 않은 것으로 봄(상세에서 돌아오는 hero는 제자리에서 흐려지기만 함, #532)
+// 절반(0.5)까지 기다리면 뒤 화면이 비치기 시작하고 약 140ms 뒤에 나와 늦어 보였음(CPU 4배 측정, #568)
+const FADED_OPACITY = 0.95;
 
 /** 조상까지 곱한 실제 투명도(값이 없으면 1) */
 const visibleOpacity = (element: Element) => {

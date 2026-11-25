@@ -11,7 +11,7 @@ import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
 import { BunchHome } from './BunchHome';
 
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, prefetch: vi.fn() }) }));
 
 type ToastArgs = Parameters<typeof DesignSystem.toast>;
 const toast = vi.fn<(..._args: ToastArgs) => void>();
@@ -80,7 +80,7 @@ describe('BunchHome 이동 연결', () => {
     );
   });
 
-  it('그리드 칸을 누르면 상세를 확인한 뒤 번들 상세로 이동한다(5.1.5)', async () => {
+  it('그리드 칸에 닿으면 상세 확인을 시작하고, 누르면 번들 상세로 이동한다(5.1.5)', async () => {
     const user = userEvent.setup();
     const prefetchBundle = vi.fn<PrefetchBundle>(() => Promise.resolve());
     await renderHome({ prefetchBundle });

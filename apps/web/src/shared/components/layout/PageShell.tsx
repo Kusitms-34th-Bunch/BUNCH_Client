@@ -117,6 +117,8 @@ export function PageShell({
   return (
     <div
       ref={rootRef}
+      // 화면 전체를 찾는 표식(번치 전환 모션이 붙잡을 화면)
+      data-page-shell=""
       // 바깥 전환 틀(AppTransitions)이 위쪽을 자르지 않게 하는 표식
       data-collapsible-header={collapsible ? '' : undefined}
       data-app-background={appBackground}

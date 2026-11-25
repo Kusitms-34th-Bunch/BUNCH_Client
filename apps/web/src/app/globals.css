@@ -80,3 +80,9 @@
 @utility animate-step-title-in {
   animation: step-title-in 600ms cubic-bezier(0.24, 0.3, 0.14, 1) both;
 }
+
+/* zoom으로 열리고 접히는 상세 화면의 상태 바 띠(pageGuards attachPushBand)가 SSGOI 반경 자르기에 잘리지 않게 위쪽만 넓힘
+ * 격자 칸·말풍선 카드와 상세 모두 반경 0이라 SSGOI 값(inset(0% round 0%))을 덮어도 모양이 같음 */
+[data-zoom-band] {
+  clip-path: inset(calc(var(--safe-area-top, 0px) * -1) 0 0 0) !important;
+}

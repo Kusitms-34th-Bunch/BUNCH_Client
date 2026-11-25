@@ -78,10 +78,11 @@ export const BundleAuthorInfo = (props: BundleAuthorInfoProps) => {
   } = props;
   return (
     <div className={cn('bg-surface-primary flex items-start', className)} {...rest}>
+      {/* 누르는 영역은 이미지·이름·시간까지(오른쪽 빈 곳은 번치로 가지 않게 mr-auto로 비움) */}
       <button
         type="button"
         onClick={onBunchClick}
-        className="gap-s4 focus-visible:outline-border-brand rounded-r2 flex min-w-0 flex-1 cursor-pointer touch-manipulation items-center text-left focus-visible:outline-2"
+        className="gap-s4 focus-visible:outline-border-brand rounded-r2 mr-auto flex min-w-0 cursor-pointer touch-manipulation items-center text-left focus-visible:outline-2"
       >
         <ProfileImage
           size="XS"

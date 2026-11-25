@@ -5,6 +5,19 @@ import { sharedKeys } from './keys';
 
 const ME_HASH = hashKey(sharedKeys.me());
 
+// 서버에 저장되기 전에 이 탭에만 먼저 쓰는 중(번치 전환의 낙관적 값). 다른 탭이 저장 전 서버 값을 받아 남지 않게 알리지 않음
+// 캐시는 쓴 객체를 복사해 저장하므로 객체가 아니라 쓰는 동안의 표시로 구분(캐시 구독은 쓰기 안에서 바로 불림)
+let writingLocalOnly = false;
+/** 다른 탭에 알리지 않고 내 정보를 씀(저장이 끝난 뒤 쓰는 값이 다시 알림) */
+export const writeLocalOnly = (write: () => void) => {
+  writingLocalOnly = true;
+  try {
+    write();
+  } finally {
+    writingLocalOnly = false;
+  }
+};
+
 // 다른 탭이 알아야 하는 내 정보: 지금 번치(전환·나가기·삭제·번치 프로필)와 내 닉네임·사진
 const watched = (data: unknown) => {
   const me = data as
@@ -29,6 +42,7 @@ export function useNativeTabSync() {
     const unsubscribeCache = queryClient.getQueryCache().subscribe((event) => {
       if (event.type !== 'updated' || event.action.type !== 'success') return;
       if (event.query.queryHash !== ME_HASH) return;
+      if (writingLocalOnly) return;
       const next = watched(event.query.state.data);
       const changed = last !== undefined && last !== next;
       last = next;

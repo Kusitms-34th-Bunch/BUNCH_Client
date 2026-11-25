@@ -40,16 +40,17 @@ export const getMyProfile = async (signal?: AbortSignal) => {
     nickname: profile.nickname ?? null,
     // 사진이 없거나 안전하지 않은 주소면 null(화면이 기본 프로필 이미지를 보임)
     imageSrc: profile.imageUrl && isSafeImageUrl(profile.imageUrl) ? profile.imageUrl : null,
-    bunch: profile.defaultBunch
-      ? {
-          id: toDomainId(profile.defaultBunch.id),
-          name: profile.defaultBunch.name,
-          characterType: profile.defaultBunch.characterType,
-          imageSrc:
-            profile.defaultBunch.imageUrl && isSafeImageUrl(profile.defaultBunch.imageUrl)
-              ? profile.defaultBunch.imageUrl
-              : defaultBunchImage(profile.defaultBunch.characterType),
-        }
-      : null,
+    bunch: profile.defaultBunch ? toMyBunch(profile.defaultBunch) : null,
   };
 };
+
+/** 서버 번치(기본 번치·번치 홈의 번치)를 내 정보의 지금 번치 모양으로(대표 이미지가 없거나 안전하지 않으면 성격별 기본 이미지) */
+export const toMyBunch = (bunch: z.infer<typeof defaultBunchSchema>) => ({
+  id: toDomainId(bunch.id),
+  name: bunch.name,
+  characterType: bunch.characterType,
+  imageSrc:
+    bunch.imageUrl && isSafeImageUrl(bunch.imageUrl)
+      ? bunch.imageUrl
+      : defaultBunchImage(bunch.characterType),
+});

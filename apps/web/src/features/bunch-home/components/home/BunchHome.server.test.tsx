@@ -468,8 +468,8 @@ describe('BunchHome 서버 번치 전환', () => {
     expect((await getMyBunches()).defaultBunchId).toBe(MOCK_SECOND_BUNCH_ID);
   });
 
-  it('전환할 때 새 번치 번들 목록은 저장과 동시에, 번치 홈은 저장이 끝난 뒤 받는다', async () => {
-    // 번치 홈은 지금 번치인지가 저장 결과에 달려 저장 전에 받으면 이전 기준 값이 들어감(#532)
+  it('전환할 때 새 번치 번들 목록·번치 홈은 저장과 동시에 받고, 번치 홈은 저장 뒤 서버 값으로 한 번 더 받는다', async () => {
+    // 바로 그리려고 저장 전에 받고(#568), 지금 번치인지가 저장 결과에 달려 저장 뒤 다시 맞춤(#532)
     const order: string[] = [];
     const onStart = ({ request }: { request: Request }) => {
       const path = new URL(request.url).pathname;
@@ -503,7 +503,50 @@ describe('BunchHome 서버 번치 전환', () => {
     const putEnd = order.indexOf('PUT end');
     expect(order.indexOf('GET start bundles')).toBeLessThan(putEnd);
     expect(order.indexOf('GET start published-bundles')).toBeLessThan(putEnd);
-    expect(order.indexOf('GET start home')).toBeGreaterThan(putEnd);
+    expect(order.indexOf('GET start home')).toBeLessThan(putEnd);
+    expect(order.lastIndexOf('GET start home')).toBeGreaterThan(putEnd);
+  });
+
+  it('저장이 늦어도 새 번치 홈을 받으면 저장을 기다리지 않고 새 번치로 바꾼다', async () => {
+    let finishSave = () => {};
+    const saving = new Promise<void>((resolve) => {
+      finishSave = resolve;
+    });
+    server.use(
+      http.put(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/last-used`, async () => {
+        await saving;
+      }),
+    );
+    const user = userEvent.setup();
+    renderHome();
+
+    const sheet = await openSwitcher(user);
+    await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ })).toBeTruthy();
+    expect(toast).not.toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.');
+
+    finishSave();
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
+  });
+
+  it('먼저 바꾼 뒤 저장이 실패하면 원래 번치로 되돌린다', async () => {
+    // 바뀐 제목을 확인한 뒤에 저장 실패를 돌려줌(타이머에 맡기면 홈 렌더가 늦을 때 먼저 되돌아감)
+    let failSave!: () => void;
+    const saving = new Promise<void>((resolve) => (failSave = resolve));
+    server.use(
+      http.put(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/last-used`, async () => {
+        await saving;
+        return fail(500, 'COMMON_001', 'server error');
+      }),
+    );
+    const user = userEvent.setup();
+    renderHome();
+
+    const sheet = await openSwitcher(user);
+    await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ })).toBeTruthy();
+    failSave();
+    expect(await screen.findByRole('heading', { level: 1, name: /여행쥬아/ })).toBeTruthy();
   });
 
   it('전환이 겹치면 늦게 끝난 이전 전환이 내 정보(기본 번치)를 덮지 않는다', async () => {

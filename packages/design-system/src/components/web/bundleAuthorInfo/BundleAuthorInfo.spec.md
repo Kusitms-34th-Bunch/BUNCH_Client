@@ -17,7 +17,7 @@
 ## Public API
 
 - 공통: `imageSrc`, native `<div>` 속성.
-- 기본(`variant` 생략): `bunchName`·`time`·`onBunchClick`(필수), `members`·`onMembers`.
+- 기본(`variant` 생략): `bunchName`·`time`·`onBunchClick`(필수), `members`·`onMembers`. 번치로 가는 누르는 영역은 이미지·이름·시간 글자까지이고, 그 오른쪽 빈 곳은 누르지 않는다(#568).
 - 광고(`variant="ad"`): `badge`·`tagline`(필수), `actions`(콕하기·더보기 버튼, 장소 콕 항목·광고 카드 이슈에서 조립).
 
 ## 접근성

@@ -55,7 +55,7 @@
 | 입력 칸             | 닉네임(필수, n/12)    | `ProfileFields`                         |
 | 수정하기            | Primary L, 위 여백 14 | `Button`, `px-padding-p8 pt-padding-p7` |
 
-- Keyboard·focus·accessible name: 숨긴 `h1` 「개인 프로필 수정」, 사진 변경 버튼 이름 「프로필 사진 변경」. 입력 칸 접근성은 `ProfileFields`(가입과 같음). 빈 영역을 누르면 키보드를 닫고, 포커스된 입력 칸은 보이게 스크롤한다. 닉네임은 별표와 `aria-required`로 필수임을 전달한다.
+- Keyboard·focus·accessible name: 숨긴 `h1` 「개인 프로필 수정」, 사진 변경 버튼 이름 「프로필 사진 변경」. 입력 칸 접근성은 `ProfileFields`(가입과 같음). 빈 영역을 누르면 키보드를 닫고, 포커스된 입력 칸은 보이게 스크롤한다. 터치 기기(`(pointer: coarse)`)에서는 들어오는 전환이 끝난 뒤(최대 1초) 초점이 아직 문서나 제목에 있으면 첫 입력란(닉네임)에 초점을 주고 커서를 끝에 둬 키보드를 바로 올린다(#568, Toss 비교 사용자 결정). 마우스 기기는 제목에 초점을 두는 기존 동작 그대로다. 닉네임은 별표와 `aria-required`로 필수임을 전달한다.
 - Responsive·긴 텍스트·overflow: 입력 칸은 화면 폭을 채우고, 본문은 `PageShell`에서 스크롤된다.
 
 ## 검증
