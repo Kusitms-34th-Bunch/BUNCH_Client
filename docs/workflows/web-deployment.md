@@ -76,7 +76,7 @@
 | `API_BASE_URL_STAGING` | 선택. TestFlight 테스터용 쉘의 요청만 보낼 개발 백엔드 주소(#581, `docs/workflows/mobile-release-build.md`). 비우면 테스터 빌드도 운영 백엔드를 본다 |
 | `KAKAO_REST_API_KEY`   | 카카오 로컬 API(키워드·주소 검색)의 REST API 키. 번들 위치 검색 BFF(`/api/places/search`)가 서버에서만 읽는다(ADR 027). 비우면 위치 검색이 막힌다    |
 
-- `NEXT_PUBLIC_API_MOCKING`, `DEV_TOKEN_LOGIN`, `NODE_ENV`는 어디에도 넣지 않는다. 개발용 로그인은 빌드의 `NODE_ENV`가 `production`이면 꺼지는데, 이 값을 바꾸면 닉네임만으로 토큰을 받는 경로가 열릴 수 있다.
+- `NEXT_PUBLIC_API_MOCKING`, `NODE_ENV`는 어디에도 넣지 않는다. 가짜 서버가 켜지거나, 인증 쿠키의 `Secure` 판정(`authCookies.ts`)이 바뀐다.
 
 ## 운영 주소 연결
 

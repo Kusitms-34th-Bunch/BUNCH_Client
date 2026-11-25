@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/auth/components', () => ({
-  DevTokenLogin: () => null,
   LoginEntry: () => null,
 }));
 

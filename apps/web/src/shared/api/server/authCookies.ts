@@ -68,14 +68,3 @@ export const clearAuthCookies = (response: NextResponse, request: NextRequest) =
   response.cookies.set(names.access, '', cookieOptions(request, '/'));
   response.cookies.set(names.refresh, '', cookieOptions(request, REFRESH_TOKEN_PATH));
 };
-
-/** access 토큰만 발급(개발 전용 토큰 로그인용). 이전 계정의 refresh 쿠키가 남아 재발급 때 계정이 섞이지 않게 함께 비우고, refresh 토큰이 없어 만료되면 다시 발급받아야 함 */
-export const setAccessTokenCookie = (
-  response: NextResponse,
-  request: NextRequest,
-  accessToken: string,
-) => {
-  const names = authCookieNames(request);
-  response.cookies.set(names.access, accessToken, cookieOptions(request, '/', accessToken));
-  response.cookies.set(names.refresh, '', cookieOptions(request, REFRESH_TOKEN_PATH));
-};
