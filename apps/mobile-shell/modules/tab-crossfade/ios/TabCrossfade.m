@@ -200,6 +200,83 @@ static NSInteger BNTabIndexAtPoint(UITabBar *tabBar, CGPoint point)
 
 @end
 
+/**
+ * iOS 26 UIKit 버그(FB24250687): 탭 바가 화면에 붙은 뒤 첫 레이아웃 전에 항목의 제목·이미지(비동기 PNG 아이콘)가 바뀌면
+ * 선택하지 않은 탭 라벨을 찌그러뜨려 아래로 밀어 그림(누르면 그 탭만 정상, #575·#462). react-native-screens PR #5242와 같은 우회
+ */
+static const void *kBNTitleRefitPendingKey = &kBNTitleRefitPendingKey;
+
+// 탭을 설치한 뒤 다음 레이아웃에서 한 번 라벨을 다시 맞추도록 표시(iOS 27은 버그가 없어 하지 않음)
+static void BNMarkTitleRefit(UITabBarController *controller)
+{
+  if (@available(iOS 27.0, *)) {
+    return;
+  }
+  if (@available(iOS 26.0, *)) {
+    objc_setAssociatedObject(controller, kBNTitleRefitPendingKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [controller.view setNeedsLayout];
+  }
+}
+
+// 화면에 붙은 뒤 탭 바를 먼저 레이아웃하고, 같은 제목을 nil을 거쳐 다시 넣어 UIKit이 라벨 크기를 다시 맞추게 함(같은 값 대입은 무시됨)
+static void BNRefitTabTitlesIfNeeded(UITabBarController *controller)
+{
+  if (!objc_getAssociatedObject(controller, kBNTitleRefitPendingKey) || !controller.view.window) {
+    return;
+  }
+  // VoiceOver 초점이 탭 바 안이면 다음 레이아웃으로 미룸(제목을 다시 넣으면 초점이 풀리거나 다시 읽힘, 낭독은 접근성 라벨이라 잘림과 무관)
+  if (UIAccessibilityIsVoiceOverRunning()) {
+    id focused = UIAccessibilityFocusedElement(UIAccessibilityNotificationVoiceOverIdentifier);
+    if ([focused isKindOfClass:[UIView class]] && [(UIView *)focused isDescendantOfView:controller.tabBar]) {
+      return;
+    }
+  }
+  objc_setAssociatedObject(controller, kBNTitleRefitPendingKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  [controller.tabBar layoutIfNeeded];
+  for (UITabBarItem *item in controller.tabBar.items) {
+    NSString *title = item.title;
+    if (title.length == 0) {
+      continue;
+    }
+    item.title = nil;
+    item.title = title;
+  }
+}
+
+// 탭 설치(UIKit 공개 API: 이전 방식 setViewControllers, iOS 26.1+ setTabs) 뒤에 표시를 남기게 감쌈. 상속 구현이면 이 클래스에만 덮어씀
+static void BNWrapTabInstall(Class tabBarController, SEL selector)
+{
+  Method method = class_getInstanceMethod(tabBarController, selector);
+  if (!method) {
+    return;
+  }
+  void (*original)(id, SEL, id, BOOL) = (void (*)(id, SEL, id, BOOL))method_getImplementation(method);
+  IMP wrapped = imp_implementationWithBlock(^(UITabBarController *controller, id value, BOOL animated) {
+    original(controller, selector, value, animated);
+    BNMarkTitleRefit(controller);
+  });
+  if (!class_addMethod(tabBarController, selector, wrapped, method_getTypeEncoding(method))) {
+    method_setImplementation(method, wrapped);
+  }
+}
+
+static void BNWrapLayoutForTitleRefit(Class tabBarController)
+{
+  SEL selector = @selector(viewDidLayoutSubviews);
+  Method method = class_getInstanceMethod(tabBarController, selector);
+  if (!method) {
+    return;
+  }
+  void (*original)(id, SEL) = (void (*)(id, SEL))method_getImplementation(method);
+  IMP wrapped = imp_implementationWithBlock(^(UITabBarController *controller) {
+    original(controller, selector);
+    BNRefitTabTitlesIfNeeded(controller);
+  });
+  if (!class_addMethod(tabBarController, selector, wrapped, method_getTypeEncoding(method))) {
+    method_setImplementation(method, wrapped);
+  }
+}
+
 static const void *kBNTabLongPressHandlerKey = &kBNTabLongPressHandlerKey;
 
 static void BNInstallTabLongPress(UITabBarController *controller)
@@ -237,6 +314,11 @@ static void BNInstallTabLongPress(UITabBarController *controller)
   }
   SEL animationSelector = @selector(tabBarController:animationControllerForTransitionFromViewController:toViewController:);
   class_addMethod(tabBarController, animationSelector, (IMP)BNTabAnimationController, "@@:@@@");
+
+  // iOS 26 탭 라벨 잘림 우회(위 BNRefitTabTitlesIfNeeded)
+  BNWrapTabInstall(tabBarController, @selector(setViewControllers:animated:));
+  BNWrapTabInstall(tabBarController, NSSelectorFromString(@"setTabs:animated:"));
+  BNWrapLayoutForTitleRefit(tabBarController);
 
   // 꾹 누르기: 탭 컨트롤러가 화면에 붙을 때 탭 바에 제스처를 한 번 붙임(라이브러리가 직접 구현한 메서드를 감쌈)
   SEL attachSelector = @selector(didMoveToParentViewController:);
