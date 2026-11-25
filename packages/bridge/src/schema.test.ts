@@ -8,6 +8,7 @@ import {
   clipboardTextSchema,
   galleryImageSchema,
   isSavableImageUrl,
+  nativeKeyboardSchema,
   nativeTabEventSchema,
   nativeTabLongPressSchema,
   pushOpenSchema,
@@ -422,4 +423,13 @@ void test('탭 꾹 누르기는 탭 ID(1~32자)만 받는다', () => {
   assert.equal(parse({ tab: '' }), false);
   assert.equal(parse({ tab: 'x'.repeat(33) }), false);
   assert.equal(parse({ tab: 'bunch', index: 2 }), false);
+});
+
+void test('키보드 알림은 덮는 높이와 시간만 받음', () => {
+  const parse = (value: unknown) => nativeKeyboardSchema.safeParse(value).success;
+  assert.equal(parse({ height: 336, duration: 250 }), true);
+  assert.equal(parse({ height: 0, duration: 250 }), true);
+  assert.equal(parse({ height: -1, duration: 250 }), false);
+  assert.equal(parse({ height: 336, duration: 5000 }), false);
+  assert.equal(parse({ height: 336, duration: 250, screenY: 500 }), false);
 });

@@ -411,6 +411,15 @@ export type NativeTabReselect = z.infer<typeof nativeTabReselectSchema>;
 export const nativeTabLongPressSchema = z.object({ tab: tabIdSchema }).strict();
 export type NativeTabLongPress = z.infer<typeof nativeTabLongPressSchema>;
 
+/**
+ * iOS 키보드가 움직이기 직전 알림(keyboardWillChangeFrame, #568). 웹이 같은 시간 동안 앱 틀 높이를 키보드에 맞춤
+ * `height`는 화면 아래에서 키보드가 덮는 높이(pt, 닫힘은 0), `duration`은 키보드 애니메이션 시간(ms). 모든 WebView에 보내므로 보이는 화면만 따름
+ */
+export const nativeKeyboardSchema = z
+  .object({ height: z.number().min(0).max(2000), duration: z.number().min(0).max(1000) })
+  .strict();
+export type NativeKeyboard = z.infer<typeof nativeKeyboardSchema>;
+
 // @webview-bridge의 이벤트 schema에 필요한 validate 인터페이스 적용
 const validator = <T extends z.ZodType>(schema: T) => ({
   validate: (data: unknown): z.infer<T> => schema.parse(data),
@@ -419,6 +428,7 @@ const validator = <T extends z.ZodType>(schema: T) => ({
 /** `createWebView({ postMessageSchema })`와 `linkBridge`가 같이 쓰는 네이티브 → 웹 이벤트 목록 */
 export const appPostMessageSchema = {
   nativeFloatingButtonPress: validator(nativeFloatingButtonPressSchema),
+  nativeKeyboard: validator(nativeKeyboardSchema),
   nativeTabEvent: validator(nativeTabEventSchema),
   nativeTabReselect: validator(nativeTabReselectSchema),
   nativeTabLongPress: validator(nativeTabLongPressSchema),
