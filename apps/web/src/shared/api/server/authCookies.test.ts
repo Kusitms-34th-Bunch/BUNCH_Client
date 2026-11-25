@@ -2,7 +2,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clearAuthCookies, secondsUntilExpiry, setAuthCookies } from './authCookies';
+import {
+  authCookieNames,
+  clearAuthCookies,
+  secondsUntilExpiry,
+  setAuthCookies,
+} from './authCookies';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -67,5 +72,38 @@ describe('clearAuthCookies', () => {
       maxAge: 0,
       path: '/api/auth',
     });
+  });
+});
+
+describe('authCookieNames(#581)', () => {
+  const staging = (userAgent: string) =>
+    new NextRequest('https://app.example.com/api/auth/login', {
+      headers: { 'user-agent': userAgent },
+    });
+  const tokens = {
+    accessToken: jwt({ exp: Math.floor(Date.now() / 1000) + 60 }),
+    refreshToken: jwt({ exp: Math.floor(Date.now() / 1000) + 120 }),
+  };
+
+  it('테스터용 쉘 요청은 _stg 쿠키를 쓰고 운영 쿠키는 건드리지 않는다', () => {
+    vi.stubEnv('API_BASE_URL_STAGING', 'https://dev.example.com');
+    const request = staging('Mozilla/5.0 (iPhone) BunchShell/staging');
+    expect(authCookieNames(request)).toEqual({
+      access: 'accessToken_stg',
+      refresh: 'refreshToken_stg',
+    });
+
+    const response = new NextResponse(null);
+    setAuthCookies(response, request, tokens);
+    expect(response.cookies.get('accessToken_stg')?.value).toBe(tokens.accessToken);
+    expect(response.cookies.get('accessToken')).toBeUndefined();
+  });
+
+  it('일반 요청이나 개발 주소가 없는 배포는 기존 쿠키 이름을 쓴다', () => {
+    vi.stubEnv('API_BASE_URL_STAGING', 'https://dev.example.com');
+    expect(authCookieNames(staging('Mozilla/5.0 (iPhone)')).access).toBe('accessToken');
+
+    vi.stubEnv('API_BASE_URL_STAGING', '');
+    expect(authCookieNames(staging('BunchShell/staging')).access).toBe('accessToken');
   });
 });

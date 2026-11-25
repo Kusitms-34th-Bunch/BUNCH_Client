@@ -12,6 +12,6 @@ const devTokenSchema = z.object({ accessToken: z.string().min(1) });
 export const requestDevToken = async (nickname: string) =>
   devTokenSchema.parse(
     unwrapEnvelope(
-      await createServerApi().post('api/v1/auth/dev/token', { json: { nickname } }).json(),
+      await (await createServerApi()).post('api/v1/auth/dev/token', { json: { nickname } }).json(),
     ),
   );

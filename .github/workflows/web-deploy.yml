@@ -169,6 +169,8 @@ jobs:
           NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
           NEXT_PUBLIC_WS_URL: ${{ vars.NEXT_PUBLIC_WS_URL }}
+          # 선택. TestFlight 테스터용 쉘이 연결하는 개발 백엔드 실시간 주소(#581). 비우면 테스터 빌드는 실시간 연결 안 함
+          NEXT_PUBLIC_WS_URL_STAGING: ${{ vars.NEXT_PUBLIC_WS_URL_STAGING }}
           # 검색 등록 확인 태그(공개 값). 정적 화면 head에 빌드 때 들어가므로 여기서 넘김
           GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
           NAVER_SITE_VERIFICATION: ${{ vars.NAVER_SITE_VERIFICATION }}

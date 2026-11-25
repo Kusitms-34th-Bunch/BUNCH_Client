@@ -1,3 +1,5 @@
+import { STAGING_SHELL_USER_AGENT } from '@app/bridge';
+
 /**
  * 실시간(STOMP) 연결 주소와 사용 여부
  * 브라우저가 백엔드 `/ws`에 직접 연결하므로 공개 환경 변수(`NEXT_PUBLIC_WS_URL`, 예: `wss://api.example.com/ws`)를 쓰고
@@ -6,8 +8,15 @@
  */
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
 
+// TestFlight 테스터용 쉘은 개발 백엔드에 연결(#581). 개발 주소가 없으면 운영 주소 대신 연결하지 않음(토큰이 개발 백엔드 것이라)
+const isStagingShell = () =>
+  typeof navigator !== 'undefined' && navigator.userAgent.includes(STAGING_SHELL_USER_AGENT);
+
 export const realtimeUrl = (): string | undefined => {
-  const raw = process.env.NEXT_PUBLIC_WS_URL;
+  // Next가 빌드 때 값을 넣도록 직접 접근
+  const raw = isStagingShell()
+    ? process.env.NEXT_PUBLIC_WS_URL_STAGING
+    : process.env.NEXT_PUBLIC_WS_URL;
   if (!raw) return undefined;
   try {
     const url = new URL(raw);

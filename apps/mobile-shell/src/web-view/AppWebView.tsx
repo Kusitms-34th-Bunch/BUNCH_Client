@@ -18,6 +18,7 @@ import { tabsStore } from '../tabs/tabs-store';
 import { blocksBackNavigation, isAppWebUrl } from '../web-url';
 import { WEB_URL, toAppWebUrl } from './app-web-url';
 import { WebView } from './app-bridge';
+import { shellUserAgentName } from './user-agent';
 import { floatingButtons, isVisibleWebView } from './visible-web-view';
 
 /** 쉘의 모든 화면이 쓰는 WebView. 출처 제한·Safe Area·뒤로가기·오류 화면 설정 포함 */
@@ -89,6 +90,8 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       key={webViewKey}
       ref={webViewRef}
       source={{ uri: restoreUri ?? uri }}
+      // TestFlight 테스터용 빌드만 개발 서버 표시(웹이 개발 백엔드로 보냄, #581). Metro가 넣도록 직접 접근
+      applicationNameForUserAgent={shellUserAgentName(process.env.EXPO_PUBLIC_API_ENV)}
       style={transparent ? [styles.webview, styles.transparent] : styles.webview}
       injectedJavaScriptBeforeContentLoaded={
         tabId ? `${buildShellTabScript(tabId)}${safeAreaScript}` : safeAreaScript

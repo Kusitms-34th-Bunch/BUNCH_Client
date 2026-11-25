@@ -9,7 +9,7 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 - 로그인·재발급은 access·refresh 토큰을 응답 본문으로 주고, 인증은 `Authorization: Bearer`로만 받는다. 백엔드는 쿠키와 `Set-Cookie`를 쓰지 않고 CORS도 꺼져 있어 브라우저가 직접 호출할 수 없다.
 - 응답은 `{ success, data, error: { code, message, detail } }` envelope이다. 성공은 `@app/api-core`의 `unwrapEnvelope`로 `data`를 꺼내고, 실패는 `normalizeError`가 `error` 안의 `code`·`message`를 읽는다.
 - 재발급은 refresh 토큰을 원자적으로 교체한다. 같은 refresh 토큰으로 두 번 재발급하면 두 번째는 401이다.
-- 백엔드 주소는 서버 전용 환경 변수 `API_BASE_URL`이다. `NEXT_PUBLIC_`를 붙이지 않는다. 끝 `/`는 없어도 보정한다(경로가 든 주소 대응).
+- 백엔드 주소는 서버 전용 환경 변수 `API_BASE_URL`이다. `NEXT_PUBLIC_`를 붙이지 않는다. 끝 `/`는 없어도 보정한다(경로가 든 주소 대응). `API_BASE_URL_STAGING`이 있으면 TestFlight 테스터용 쉘의 요청(User-Agent에 `BunchShell/staging`)만 그 주소로 보낸다(`serverClient.ts`의 `apiBaseUrl`, #581). 이 표시는 꾸밀 수 있어 접근 제어에 쓰지 않는다.
 - CSRF: 백엔드는 CSRF·Origin 검사가 없어 BFF가 막는다. 쿠키는 `SameSite=Lax`이고, `src/proxy.ts`(Next.js proxy, `/api/*`)가 모든 BFF 요청 앞에서 상태 변경 요청(GET·HEAD 외)의 `Sec-Fetch-Site`가 `cross-site`·`same-site`(형제 서브도메인)이면 403(`BFF_CROSS_SITE`)으로 막는다. 그래서 새 Route Handler는 따로 검사하지 않는다. `Sec-Fetch-Site`를 보내지 않는 오래된 브라우저(Safari 16.4 미만 등)는 SameSite=Lax로 cross-site만 막고 same-site는 막지 못한다. 백엔드 GET은 상태를 바꾸지 않는다는 전제다.
 
 ## 구성 요소(`src/shared/api/`)

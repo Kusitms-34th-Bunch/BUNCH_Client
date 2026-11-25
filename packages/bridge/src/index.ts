@@ -68,6 +68,7 @@ export {
   shareParamsSchema,
   socialLoginResultSchema,
   socialProviderSchema,
+  STAGING_SHELL_USER_AGENT,
   uploadImageSchema,
 } from './schema';
 export type {

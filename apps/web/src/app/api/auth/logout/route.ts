@@ -1,17 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import {
-  ACCESS_TOKEN_COOKIE,
-  clearAuthCookies,
-  REFRESH_TOKEN_COOKIE,
-} from '@/shared/api/server/authCookies';
+import { authCookieNames, clearAuthCookies } from '@/shared/api/server/authCookies';
 import { reissueOnce, requestLogout } from '@/shared/api/server/authSession';
 
 // access 쿠키가 만료돼 없으면 refresh로 재발급한 access 사용(백엔드 로그아웃은 access만 받음)
 const accessTokenForLogout = async (request: NextRequest) => {
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+  const names = authCookieNames(request);
+  const accessToken = request.cookies.get(names.access)?.value;
   if (accessToken) return accessToken;
 
-  const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  const refreshToken = request.cookies.get(names.refresh)?.value;
   if (!refreshToken) return undefined;
   return (await reissueOnce(refreshToken).catch(() => undefined))?.accessToken;
 };

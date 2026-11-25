@@ -66,6 +66,19 @@ pnpm dlx eas-cli@latest build --platform ios --profile development
 - 버전을 알려 주지 못하는 이전 앱(1.1.1 이하)은 1.1.1 빌드 1로 보고 비교한다. 최소값을 이보다 올리면 이전 앱 모두가 막힌다.
 - 빌드 번호는 `app.json`의 `ios.buildNumber`를 읽는다(Xcode Archive 기준). EAS의 자동 번호(`autoIncrement`)는 이 값에 반영되지 않으므로, EAS로 바꿀 때는 쉘이 읽는 값부터 다시 정한다(그 전에는 `build` 비교가 맞지 않음).
 
+### TestFlight 테스터용 빌드와 심사용 빌드
+
+TestFlight 테스터는 개발 백엔드를, 심사자와 App Store 사용자는 운영 백엔드를 쓴다(#581). 웹은 운영 하나이고, 테스터용 쉘만 WebView User-Agent 끝에 `BunchShell/staging`을 붙인다. 웹이 이 표시를 보면 서버 요청은 `API_BASE_URL_STAGING`, 실시간 연결은 `NEXT_PUBLIC_WS_URL_STAGING`으로 보낸다.
+
+- 같은 버전을 빌드 번호만 달리해 두 번 Archive한다. 테스터용은 `pnpm ios:sync --staging` 뒤 Archive해 TestFlight 테스터 그룹에만 배포하고, 심사용은 `pnpm ios:sync`(옵션 없음) 뒤 Archive해 심사에 제출한다. `ios:sync`가 `ios/.xcode.env.local`에 `EXPO_PUBLIC_API_ENV=staging` 줄을 넣거나 지우고, 실행 끝에 이번 Archive가 어느 쪽인지 출력한다.
+- 실행 중에 TestFlight인지 판별(sandbox 영수증)하지 않는다. 심사 기기도 같은 판정이라 심사자가 개발 서버에 붙는다.
+- 테스터 요청은 로그인 쿠키 이름도 따로 쓴다(`accessToken_stg`·`refreshToken_stg`, `authCookieNames`). 같은 기기에서 운영 앱과 TestFlight 앱을 오가도 운영 토큰이 개발 백엔드로, 개발 토큰이 운영으로 가지 않고, 앱마다 따로 로그인 상태가 남는다. 테스터 요청의 프록시 응답은 공유 캐시에 남지 않게 항상 `private, no-store`다.
+- `EXPO_PUBLIC_API_ENV`는 앱 폴더 `.env*`에 넣지 않는다. Archive 번들이 `.env*`도 읽어 `pnpm ios:sync`로 지워지지 않고 심사용에 남는다.
+- 웹의 두 변수(`API_BASE_URL_STAGING`, `NEXT_PUBLIC_WS_URL_STAGING`)는 함께 넣거나 함께 비운다. 하나만 있으면 실시간 토큰과 연결 서버가 엇갈린다.
+- 테스터가 개발 백엔드에서 만든 초대 링크는 개발 데이터라 운영 사용자·링크 미리보기에서는 열리지 않는다.
+- 표시는 누구나 꾸밀 수 있어 권한 판단에 쓰지 않는다. 꾸미면 운영 웹을 거쳐 개발 백엔드에 붙을 뿐이다.
+- `EXPO_PUBLIC_*` 값은 번들 캐시 키에 들어가 값이 바뀌면 캐시가 갈린다(`babel-preset-expo` 58 코드 확인). 실제 빌드로는 확인하지 못했으니 첫 테스터용·심사용 빌드에서 각각 어느 서버 데이터가 보이는지 확인한다.
+
 ### App Store 제출용 환경변수
 
 양식은 [`.env.production.example`](../../apps/mobile-shell/.env.production.example)에 둔다.

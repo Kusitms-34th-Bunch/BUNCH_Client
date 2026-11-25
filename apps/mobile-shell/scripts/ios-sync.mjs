@@ -94,6 +94,30 @@ if (
   );
 }
 
+// TestFlight 테스터용 빌드(`--staging`)만 개발 서버 표시를 켜고, 아니면 지움(심사·출시 빌드에 남지 않게, #581)
+const STAGING_LINE = 'export EXPO_PUBLIC_API_ENV=staging # pnpm ios:sync --staging';
+const staging = process.argv.includes('--staging');
+if (existsSync(XCODE_ENV_LOCAL)) {
+  const lines = readOrEmpty(XCODE_ENV_LOCAL)
+    .toString()
+    .split('\n')
+    .filter((line) => line !== STAGING_LINE);
+  writeFileSync(XCODE_ENV_LOCAL, [...lines, ...(staging ? [STAGING_LINE] : [])].join('\n'));
+}
+if (staging && !existsSync(XCODE_ENV_LOCAL)) {
+  // 표시를 넣지 못하면 테스터 빌드가 운영 서버에 붙으므로 Archive 전에 멈춤
+  console.error(
+    `${XCODE_ENV_LOCAL}이 없어 개발 서버 표시를 넣지 못했어요. pod install을 확인한 뒤 다시 실행하세요.`,
+  );
+  process.exitCode = 1;
+} else {
+  console.log(
+    staging
+      ? '이번 Archive: TestFlight 테스터용(개발 서버). 심사 제출용은 `pnpm ios:sync`로 다시 맞추세요.'
+      : '이번 Archive: 심사·출시용(운영 서버).',
+  );
+}
+
 // Expo의 pod install은 실패해도 경고만 내므로, CocoaPods가 끝까지 설치한 경우(두 lock이 같음)에만 기록
 const podsInstalled =
   existsSync('ios/Podfile.lock') &&

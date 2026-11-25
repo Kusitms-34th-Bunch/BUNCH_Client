@@ -1,9 +1,9 @@
 import 'server-only';
 import { ApiError } from '@app/api-core';
 import { type NextRequest } from 'next/server';
-import { ACCESS_TOKEN_COOKIE } from './authCookies';
+import { authCookieNames } from './authCookies';
 import { toErrorResponse } from './routeError';
-import { apiBaseUrl } from './serverClient';
+import { apiBaseUrl, isStagingUserAgent } from './serverClient';
 
 const BACKEND_PREFIX = 'api/v1/';
 const TIMEOUT_MS = 10_000;
@@ -53,7 +53,7 @@ export const proxyToBackend = async (request: NextRequest, segments: string[]) =
     );
   }
 
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+  const accessToken = request.cookies.get(authCookieNames(request).access)?.value;
   if (!accessToken && request.method === 'GET' && path === SESSION_CHECK_PATH) {
     return Response.json(
       { message: '인증이 필요합니다', code: 'BFF_UNAUTHENTICATED' },
@@ -62,7 +62,7 @@ export const proxyToBackend = async (request: NextRequest, segments: string[]) =
   }
 
   try {
-    const baseUrl = apiBaseUrl();
+    const baseUrl = await apiBaseUrl();
     const target = new URL(path + request.nextUrl.search, baseUrl);
 
     const headers = new Headers();
@@ -92,8 +92,14 @@ export const proxyToBackend = async (request: NextRequest, segments: string[]) =
       if (value) responseHeaders.set(name, value);
     }
     // 사용자별 응답이 브라우저·중간 캐시에 남지 않도록 기본은 저장 금지
-    if (!responseHeaders.has('cache-control'))
+    // 테스터용 쉘(개발 백엔드) 응답은 같은 주소의 운영 응답과 공유 캐시에서 섞이지 않게 항상 저장 금지(#581)
+    if (
+      !responseHeaders.has('cache-control') ||
+      isStagingUserAgent(request.headers.get('user-agent'))
+    )
       responseHeaders.set('cache-control', 'private, no-store');
+    // 개발 백엔드를 쓰는 배포는 같은 주소라도 User-Agent에 따라 응답 백엔드가 달라 캐시 키에 포함
+    if (process.env.API_BASE_URL_STAGING) responseHeaders.append('vary', 'User-Agent');
     return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
   } catch (error) {
     if (error instanceof ApiError) return toErrorResponse(error);
