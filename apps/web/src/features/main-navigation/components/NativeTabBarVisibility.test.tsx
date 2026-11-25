@@ -130,18 +130,17 @@ describe('NativeTabBarVisibility (iOS 쉘)', () => {
     },
   );
 
-  it('제자리에서 흐려지며 나가는 화면(상세 → 피드)은 반 넘게 흐려지면 다 사라지기 전이라도 보인다(#532)', () => {
+  it('제자리에서 흐려지며 나가는 화면(상세 → 피드)은 흐려지기 시작하면 다 사라지기 전이라도 보인다(#532, #568)', () => {
     const runFrames = runFramesWith();
     const cover = document.body.appendChild(document.createElement('div'));
     cover.setAttribute('data-page-leaving', '');
     coverAt(cover, 0);
     pathname.current = '/feed';
     render(<NativeTabBarVisibility />);
-    cover.style.opacity = '0.7';
     runFrames();
     expect(setNativeTabBarVisible).not.toHaveBeenCalled();
 
-    cover.style.opacity = '0.4';
+    cover.style.opacity = '0.9';
     runFrames();
     expect(setNativeTabBarVisible).toHaveBeenLastCalledWith(true);
     cover.remove();
