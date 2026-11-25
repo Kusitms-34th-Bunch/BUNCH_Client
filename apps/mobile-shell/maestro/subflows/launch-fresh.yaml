@@ -4,6 +4,9 @@ appId: kr.bunch.app
 ---
 - launchApp:
     clearState: true
+    # 알림 권한을 미리 허용(웹이 묻는 시스템 창이 앱 화면을 덮으면 Maestro가 그 아래 요소를 찾지 못함)
+    permissions:
+      notifications: allow
 - extendedWaitUntil:
     visible: '콕한 장소'
     timeout: 120000
