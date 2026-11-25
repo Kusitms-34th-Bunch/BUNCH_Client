@@ -397,10 +397,23 @@ describe('BundleDetail', () => {
     expect(toast).toHaveBeenCalledWith('번치에 참여하면 할 수 있어요.');
   });
 
+  it('새로 들어오면 전환이 끝날 때까지 댓글 자리는 스켈레톤이고, 나가는 화면 표식이 사라지면 댓글을 그린다(#573)', async () => {
+    const leaving = document.createElement('div');
+    leaving.dataset.pageLeaving = '';
+    document.body.append(leaving);
+    renderDetail();
+    await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    expect(screen.queryByRole('region', { name: '댓글' })).toBeNull();
+
+    leaving.remove();
+    expect(await screen.findByRole('region', { name: '댓글' })).toBeTruthy();
+  });
+
   it('말풍선을 누르면 댓글 영역으로 스크롤하고 입력란에 초점을 둔다', async () => {
     const user = userEvent.setup();
     renderDetail();
-    const section = screen.getByRole('region', { name: '댓글' });
+    // 새로 들어오면 댓글 목록은 전환이 끝난 뒤 그려짐(#573)
+    const section = await screen.findByRole('region', { name: '댓글' });
     placeComments(section);
 
     const focus = vi.spyOn(HTMLTextAreaElement.prototype, 'focus');
@@ -944,7 +957,7 @@ describe('BundleDetail', () => {
 
   it('서버 댓글을 원댓글 최신순, 답글은 그 아래로 보이고 메뉴는 서버 권한을 따른다', async () => {
     renderDetail('901');
-    const region = screen.getByRole('region', { name: '댓글' });
+    const region = await screen.findByRole('region', { name: '댓글' });
     await within(region).findByText('좋아요 🙌');
 
     const items = within(region).getAllByRole('listitem');

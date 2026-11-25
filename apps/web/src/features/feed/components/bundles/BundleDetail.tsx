@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { apiErrorCode, isUnavailableTarget } from '@/shared/api/client/errorStatus';
 import { openTabPath } from '@/shared/bridge/client';
@@ -11,9 +11,11 @@ import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave
 import { useScrollInHistory } from '@/shared/hooks/scroll/useScrollInHistory';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { formatElapsedTime } from '@/shared/lib/elapsedTime';
+import { readHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { FEED_MESSAGES as text } from '../../constants/messages';
 import { FEED_PATHS } from '../../constants/paths';
+import { useAfterEnterTransition } from '../../hooks/useAfterEnterTransition';
 import { useBundleComments } from '../../hooks/useBundleComments';
 import { useBundleOwnerMenu } from '../../hooks/useBundleOwnerMenu';
 import { useBundleReport } from '../../hooks/useBundleReport';
@@ -161,8 +163,20 @@ export function BundleDetail({
     targetCommentId,
     instantComment,
   });
+  // 새로 들어올 때 댓글 목록은 전환이 끝난 뒤 그림(전환 시작 프레임을 가볍게, #573). 댓글로 가야 하거나 돌아와 위치를 복원할 때는 바로
+  const [deferComments] = useState(
+    () =>
+      commentsEntry === null &&
+      typeof readHistoryEntry('pageScroll') !== 'number' &&
+      // 동작 줄이기면 전환이 없어 기다릴 것이 없음
+      !(
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      ),
+  );
+  const commentsShown = useAfterEnterTransition(deferComments);
   // 다른 화면에 갔다가 뒤로 돌아오면 떠날 때의 위치로. 댓글 진입이 댓글 영역 자리를 둔 뒤 복원(호출 순서 = layout effect 순서)
-  useScrollInHistory(commentsRef, contentReady);
+  useScrollInHistory(commentsRef, contentReady && commentsShown);
 
   // 목록(다음 쪽 포함)이 번들을 볼 수 없다고 하면 떠남(답글·삭제 실패 뒤 다시 받은 목록도, 답글 대상 없음과 번들 없음이 같은 404라서)
   const listGone = isGone(thread.error);
@@ -250,6 +264,7 @@ export function BundleDetail({
       }}
       removing={removing}
       noBunch={viewer === null}
+      commentsDeferred={!commentsShown}
       commentsRef={commentsRef}
       composerRef={composerRef}
       composer={{

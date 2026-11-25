@@ -70,3 +70,20 @@ export function BundleDetailSkeleton() {
     </div>
   );
 }
+
+/** 번들 상세의 댓글 목록 자리(들어오는 전환이 끝나기 전, #573). 댓글 한 줄: 프로필 사진·이름·본문 */
+export function BundleCommentsSkeleton() {
+  return (
+    <div aria-hidden="true" className="px-padding-p8 pt-padding-p8 gap-s7 flex flex-col">
+      {['w-32', 'w-48', 'w-40'].map((width, index) => (
+        <div key={index} className="gap-s4 flex">
+          <Skeleton shape="round" className="size-8 shrink-0" />
+          <div className="gap-s2 flex min-w-0 flex-1 flex-col pt-1">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton tone="strong" className={`h-4 ${width}`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

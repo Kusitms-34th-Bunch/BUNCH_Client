@@ -20,6 +20,7 @@ import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { usePhotoPinchZoom } from '../../hooks/usePhotoPinchZoom';
 import { hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { BundleCommentList, type BundleCommentThread } from './BundleCommentList';
+import { BundleCommentsSkeleton } from './BundleDetailSkeleton';
 import { BundleDetailStatus, type BundleDetailStatusProps } from './BundleDetailStatus';
 import { MemberComments } from './MemberComments';
 
@@ -40,6 +41,8 @@ type BundleDetailBodyProps = {
   removing: boolean;
   /** 소속 번치가 없음: 답글·신고를 눌렀을 때 안내하도록 버튼을 둠 */
   noBunch: boolean;
+  /** 댓글 목록을 아직 그리지 않음(들어오는 전환 중, 그동안 자리만 스켈레톤) */
+  commentsDeferred: boolean;
   /** 댓글 영역·입력란(container가 스크롤·초점을 옮김) */
   commentsRef: RefObject<HTMLElement | null>;
   composerRef: RefObject<HTMLDivElement | null>;
@@ -97,6 +100,7 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
     thread,
     removing,
     noBunch,
+    commentsDeferred,
     commentsRef,
     composerRef,
     composer,
@@ -199,16 +203,23 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
         className="pb-padding-p8 pt-6"
       />
       <div aria-hidden="true" className="bg-surface-secondary h-2" />
-      <BundleCommentList
-        thread={thread}
-        sectionRef={commentsRef}
-        announcement={announcement}
-        noBunch={noBunch}
-        onReply={actions.reply}
-        onMyCommentMore={actions.myCommentMore}
-        onReportMore={actions.reportMore}
-        onOpenProfile={actions.openProfile}
-      />
+      {commentsDeferred ? (
+        // 댓글 영역 ref로 화면(main·전환 틀)을 찾는 처리(떠날 때 스크롤 붙잡기·번치 drill)가 그대로 동작하게 자리에 붙임
+        <div ref={commentsRef as RefObject<HTMLDivElement | null>}>
+          <BundleCommentsSkeleton />
+        </div>
+      ) : (
+        <BundleCommentList
+          thread={thread}
+          sectionRef={commentsRef}
+          announcement={announcement}
+          noBunch={noBunch}
+          onReply={actions.reply}
+          onMyCommentMore={actions.myCommentMore}
+          onReportMore={actions.reportMore}
+          onOpenProfile={actions.openProfile}
+        />
+      )}
     </PageShell>
   );
 }
