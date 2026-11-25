@@ -1,6 +1,7 @@
 import type { BridgeStore } from '@webview-bridge/types';
 import type {
   AppleAuthorizationResult,
+  AppVersion,
   NativeTabBarVisibilityParams,
   GalleryImage,
   HapticKind,
@@ -26,6 +27,7 @@ import type {
 export {
   appleAuthorizationResultSchema,
   appPostMessageSchema,
+  appVersionSchema,
   clipboardTextSchema,
   galleryImageSchema,
   hapticKindSchema,
@@ -70,6 +72,7 @@ export {
 } from './schema';
 export type {
   AppleAuthorizationResult,
+  AppVersion,
   NativeTabBarVisibilityParams,
   AppPostMessageSchema,
   GalleryImage,
@@ -168,6 +171,8 @@ export type AppBridgeMethods = {
   finishScreenSwitch: () => Promise<void>;
   /** 덮은 화면을 모션 없이 치움(전환 실패) */
   cancelScreenSwitch: () => Promise<void>;
+  /** 설치된 앱의 버전·빌드 번호(웹이 업데이트 필요 여부를 물을 때 씀). 이 메서드가 없는 이전 쉘(1.1.1 이하)은 웹이 `hasNativeMethod`로 가림 */
+  getAppVersion: () => Promise<AppVersion>;
 };
 
 /** bridge/linkBridge가 요구하는 store 계약 적용, 메서드 객체 직접 전달 시 index signature 불일치 */

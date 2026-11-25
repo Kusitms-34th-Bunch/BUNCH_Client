@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Toaster } from '@app/design-system';
 import { OverlayProvider } from 'overlay-kit';
 import { AppInstallGuide, AppOnlyGate } from '@/features/app-install-guide/components';
+import { AppUpdateDialog } from '@/features/app-update/components';
 import { AuthGate } from '@/features/auth/components/AuthGate';
 import { INTRO_PATH, LOGIN_PATH } from '@/features/auth/constants/paths';
 import { PushOpenNavigator } from '@/features/bunch-home/components/notifications/PushOpenNavigator';
@@ -28,6 +29,7 @@ import { RouteFocus } from './RouteFocus';
 // PushOpenNavigator: iOS 쉘에서 푸시를 눌러 앱을 열면 알림 목록과 같은 화면으로(Query 안이어야 함)
 // KeyboardViewport: 키보드가 떠 있는 동안 앱 틀을 보이는 높이로 줄이고 iOS가 올린 문서를 되돌림(헤더가 상태 바 뒤로 밀리지 않게)
 // RouteFocus: 다른 화면으로 이동하면 새 화면의 h1으로 초점(모든 화면 공통이라 여기 배치)
+// AppUpdateDialog: 앱 쉘이 최소 버전보다 낮으면 닫을 수 없는 업데이트 모달(로그인 전 화면도 막아야 해 여기 배치)
 // PendingToast: 화면 이동과 함께 예약한 토스트를 도착 화면의 전환·로딩이 끝난 뒤 띄움(모든 화면 공통이라 여기 배치)
 // AuthGate: 서버가 알려 준 로그인·가입 상태로 화면 접근을 제어(Query 안이어야 함). 가입을 마친 사용자의 도착 경로는 다른 feature 소유라 여기서 조합
 const DESTINATIONS = {
@@ -56,6 +58,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <KeyboardViewport />
         <RouteFocus />
         <PendingToast />
+        <AppUpdateDialog />
         <Toaster />
       </OverlayProvider>
     </QueryProvider>
