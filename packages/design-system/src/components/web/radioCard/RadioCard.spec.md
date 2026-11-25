@@ -69,7 +69,7 @@
 - Disabled (제외): Figma에 카드의 Disabled 상태가 없어 지원하지 않는다. `disabled`는 Props에서 제외했다. 필요해지면 디자인을 받은 뒤 추가한다.
 - 배경 토큰 값 (확정): 토큰 `surface-secondary`(`gray-100`)가 `#f7f7f8`이었고 Figma 변수는 `#f5f5f5`였다(렌더 픽셀로 확인). `surface-secondary`가 가리키는 기본 회색 `gray-100`을 Figma 값 `#f5f5f5`로 맞췄다(2026-10-26 디자이너 확인).
 - 선택됨 테두리: 안쪽 링으로 그려 선택 전후 글자 위치가 같다.
-- `DescriptionRadioCard`와 역할이 비슷하다(radius·여백·제목 굵기·색이 다름). 합칠 수 있는지 디자이너 확인이 필요하다.
+- `DescriptionRadioCard`와 합칠지 (해소, 2026-11-24): 색상 변경 시안에서 바탕·테두리·radius·글자가 모두 갈라져 분리 유지한다. 온보딩·번들 공개 범위는 `RadioCard`, 번치 프로필 편집은 `DescriptionRadioCard`다.
 
 ## 검증
 

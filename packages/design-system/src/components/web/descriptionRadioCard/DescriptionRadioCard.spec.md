@@ -3,7 +3,7 @@
 ## 메타데이터
 
 - 소유 경계: design-system `web` 구역
-- Status: 구현됨(Storybook 치수 확인, 실기기 미검증)
+- Status: 구현됨(2026-11-24 크기·색 변경 뒤 Storybook·앱 캡처로 확인, 픽셀 치수 재측정·실기기 미검증)
 - Figma: 「번치 및 번치 관련 상세 화면 컴포넌트」(`1873:31851`)의 `Radio Card - Description`(`2198:44570`: Disabled `2198:44571`, Default `2198:44578`, Pressed `2198:44592`, Selected `2198:44585`)
 - 이슈: #140, 2026-11-24 색상 변경 #570(「11/24(화) 색상변경 관련 UI」 번치 프로필 편집 `7916:106344`)
 
@@ -11,7 +11,7 @@
 
 - 제목과 설명이 있는 선택 카드(예: 공개 범위 「공개 / 누구나 우리 번치와 번들을 볼 수 있어요.」). 라디오는 왼쪽이다.
 - 기존 컴포넌트와 대조한 결과 따로 만들었다.
-  - `RadioCard`(Figma `Radio Card` `1379:22093`): 글자 한 줄, 높이 54, radius 8, 비활성 없음.
+  - `RadioCard`(Figma `Radio Card` `1379:22093`): 제목·설명 필수, 높이 78, radius 8(`r4`), 회색 바탕, 선택 `border-strong` 테두리, 비활성 없음. 온보딩·번들 공개 범위가 쓴다.
   - 아이콘 원이 있고 라디오가 보이지 않는 카드(Figma `633:2410`, 구현은 #290에서 삭제).
 - 그룹(`fieldset`·`legend`)과 선택 값은 호출자가 맡는다.
 
@@ -59,5 +59,5 @@
 
 - [x] test: 제목이 이름·설명이 설명, 카드 클릭으로 선택, 비활성, 설명 생략
 - [x] Story: Default, Selected, Disabled, Group, NoDescription, LongText
-- [x] Storybook Chromium 치수 대조
+- [x] Storybook Chromium 치수 대조(2026-11-24 크기 변경 전 기준, 변경 뒤 미측정)
 - [ ] 스크린 리더·실기기
