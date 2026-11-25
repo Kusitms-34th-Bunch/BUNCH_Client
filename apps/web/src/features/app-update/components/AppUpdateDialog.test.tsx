@@ -1,9 +1,12 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { server } from '@/mocks/server';
+import { shouldReportApiError } from '@/shared/lib/reportApiError';
 import { createQueryWrapper, createTestQueryClient } from '@/shared/query/testing';
+import { appUpdateKeys } from '../queries/keys';
 import { AppUpdateDialog } from './AppUpdateDialog';
 
 const shell = vi.hoisted(() => ({
@@ -25,8 +28,19 @@ const respond = (updateRequired: boolean, seen: URLSearchParams[] = []) =>
     }),
   );
 
-const renderDialog = () =>
-  render(<AppUpdateDialog />, { wrapper: createQueryWrapper(createTestQueryClient()) });
+const renderDialog = () => {
+  const client = createTestQueryClient();
+  render(<AppUpdateDialog />, { wrapper: createQueryWrapper(client) });
+  return client;
+};
+
+// 조회가 성공·오류로 끝날 때까지(모달을 잘못 여는 회귀를 놓치지 않게)
+const settled = async (client: QueryClient) => {
+  await vi.waitFor(() =>
+    expect(client.getQueryState(appUpdateKeys.required())?.status).not.toBe('pending'),
+  );
+  return client.getQueryState(appUpdateKeys.required());
+};
 
 describe('AppUpdateDialog', () => {
   afterEach(() => {
@@ -67,32 +81,28 @@ describe('AppUpdateDialog', () => {
     expect(seen[0]?.toString()).toBe('version=legacy');
   });
 
-  it('업데이트가 필요 없거나 확인에 실패하면 모달을 띄우지 않는다', async () => {
-    const seen: URLSearchParams[] = [];
-    respond(false, seen);
-    renderDialog();
-    await vi.waitFor(() => expect(seen).toHaveLength(1));
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-
-    let failed = 0;
-    server.use(
-      http.get('*/api/app-version', () => {
-        failed += 1;
-        return HttpResponse.error();
-      }),
-    );
-    renderDialog();
-    await vi.waitFor(() => expect(failed).toBe(1));
+  it('업데이트가 필요 없으면 모달을 띄우지 않는다', async () => {
+    respond(false);
+    const state = await settled(renderDialog());
+    expect(state?.status).toBe('success');
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
-  it('쉘이 버전을 주지 못하면(시간 초과) 묻지 않고 막지 않는다', async () => {
+  it('확인 요청이 실패하면 막지 않는다', async () => {
+    server.use(http.get('*/api/app-version', () => HttpResponse.error()));
+    const state = await settled(renderDialog());
+    expect(state?.status).toBe('error');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('쉘이 버전을 주지 못하면(시간 초과) 묻지 않고 막지 않으며, 성공으로 캐시하지 않고 보고에서 뺀다', async () => {
     shell.getAppVersion.mockResolvedValueOnce(undefined as never);
     const seen: URLSearchParams[] = [];
     respond(true, seen);
-    renderDialog();
-    await vi.waitFor(() => expect(shell.getAppVersion).toHaveBeenCalled());
+    const state = await settled(renderDialog());
     expect(seen).toHaveLength(0);
+    expect(state?.status).toBe('error');
+    expect(shouldReportApiError(state?.error)).toBe(false);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 

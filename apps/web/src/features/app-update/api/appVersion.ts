@@ -1,4 +1,4 @@
-import { normalizeError, parseOrThrow } from '@app/api-core';
+import { ApiError, normalizeError, parseOrThrow } from '@app/api-core';
 import { type AppVersion, appVersionSchema } from '@app/bridge';
 import { z } from 'zod';
 import { bffApi } from '@/shared/api/client/bffApi';
@@ -12,9 +12,11 @@ export const getUpdateRequired = async (signal?: AbortSignal) => {
   try {
     let app: AppVersion | 'legacy' = 'legacy';
     if (hasNativeMethod('getAppVersion')) {
-      // 쉘 실패·시간 초과(2초)는 값 없이 끝남: 막지 않고 보고 없이 건너뜀
+      // 쉘 실패·시간 초과(2초)는 값 없이 끝남: 네트워크 오류로 실패시켜 보고에서 빼고 다음 복귀 때 다시 물음
       const reported = (await appBridge.getAppVersion()) as AppVersion | undefined;
-      if (reported === undefined) return false;
+      if (reported === undefined) {
+        throw new ApiError({ message: 'app version bridge timeout', category: 'network' });
+      }
       app = parseOrThrow(appVersionSchema, reported, 'app version bridge');
     }
     const searchParams = app === 'legacy' ? { version: 'legacy' } : app;
