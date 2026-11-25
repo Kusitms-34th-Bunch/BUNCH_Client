@@ -30,11 +30,11 @@ describe('DescriptionRadioCard', () => {
     expect(screen.getByRole<HTMLInputElement>('radio', { name: '공개' }).checked).toBe(true);
   });
 
-  it('기본은 흰 바탕에 border-secondary 테두리, 선택하면 테두리만 border-strong-lighter', () => {
+  it('기본은 surface-secondary 바탕에 border-secondary 테두리, 선택하면 테두리만 border-strong-lighter', () => {
     const { container } = render(<DescriptionRadioCard title="공개" name="visibility" />);
     const card = container.firstElementChild;
 
-    expect(card?.classList.contains('bg-surface-primary')).toBe(true);
+    expect(card?.classList.contains('bg-surface-secondary')).toBe(true);
     expect(card?.classList.contains('ring-border-secondary')).toBe(true);
     expect(card?.classList.contains('has-checked:ring-border-strong-lighter')).toBe(true);
     expect(card?.className).not.toContain('has-checked:bg-');

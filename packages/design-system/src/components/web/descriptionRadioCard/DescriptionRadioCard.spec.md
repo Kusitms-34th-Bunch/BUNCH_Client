@@ -23,10 +23,10 @@
 
 ## 상태와 동작
 
-- Default: 바탕 `surface-primary`(흰색), 안쪽 1px `border-secondary`(`#E1E2E5`) 링. 2026-11-24 「색상 수정된 컴포넌트」(`2198:44570`) 기준으로 회색 바탕에서 변경.
+- Default: 바탕 `surface-secondary`(`#F5F5F5`), 안쪽 1px `border-secondary`(`#E1E2E5`) 링. 바탕은 컴포넌트 원본(`2198:44570`, `surface-primary`) 대신 번치 프로필 편집 화면 인스턴스(`7916:106324`)의 `surface-secondary`를 따른다(2026-11-25 사용자 결정).
 - Pressed: 바탕에 `overlay-hover`(10%, 2026-11-24 이전 `overlay-pressed` 20%), 라디오 회색 링·점(카드 어디를 눌러도 적용). 글자는 그대로.
-- Selected: 바탕은 그대로 흰색, 안쪽 1px `border-strong-lighter`(`#969AA0`) 링(2026-11-24 색상 변경으로 `surface-brand-subtle-1`·`border-brand-subtle`에서 변경), 라디오는 `core/radio`의 Selected(2026-11-24부터 `icon-tertiary` 회색 점).
-- Disabled: 바탕 `surface-secondary`, 테두리 없음, 카드 40% 흐림, 제목·설명 `text-disabled`, 누를 수 없음.
+- Selected: 바탕은 그대로 `surface-secondary`, 안쪽 1px `border-strong-lighter`(`#969AA0`) 링(2026-11-24 색상 변경으로 `surface-brand-subtle-1`·`border-brand-subtle`에서 변경), 라디오는 `core/radio`의 Selected(2026-11-24부터 `icon-tertiary` 회색 점).
+- Disabled: 바탕 `surface-secondary`(기본과 같음), 테두리 없음, 카드 40% 흐림, 제목·설명 `text-disabled`, 누를 수 없음.
 - 전환(화면설계서 `2145:39607` 5번): 눌림은 While Pressing / Dissolve / Ease out / 75ms, 선택은 On Click / Dissolve / Ease out / 75ms. 눌림 layer의 투명도와 선택 링(`box-shadow`)을 75ms ease-out으로 바꾼다. 동작 줄이기에서는 즉시 바뀐다.
 - 긴 제목·설명은 줄바꿈한다(`break-keep`, 공백 없는 긴 영문·URL은 `wrap-break-word`로 끊음).
 
@@ -37,23 +37,23 @@
 
 ## Styling과 의존성
 
-| Figma                                                                                                                      | 구현                                                                                                                            |
-| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| 패딩 12, radius `r5`(10), 바탕 `surface-primary`, 테두리 1px `border-secondary`, 높이 63(2026-11-24 시안 크기·색으로 변경) | `p-padding-p6 rounded-r5 bg-surface-primary ring-1 ring-inset ring-border-secondary`                                            |
-| 라디오·글자 간격 10                                                                                                        | `gap-s5`                                                                                                                        |
-| 제목·설명 간격 2                                                                                                           | `gap-s1`                                                                                                                        |
-| 제목 Body-3-Semibold(14/21), `text-primary`(2026-11-24 색상·글자 변경)                                                     | `typography-body-3-semibold text-text-primary`                                                                                  |
-| 설명 Caption-1-Regular, `text-tertiary`                                                                                    | `typography-caption-1-regular text-text-tertiary`                                                                               |
-| Control Radio 20                                                                                                           | `Radio`(`core/radio`)                                                                                                           |
-| 선택·눌림·흐림                                                                                                             | 눌림 `overlay-hover`, 흐림은 `surface-secondary` 바탕·40%. 선택은 링 색만 `border-strong-lighter`(`SuggestedBundleCard`와 같음) |
+| Figma                                                                                                                                                         | 구현                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 패딩 12, radius `r5`(10), 바탕 `surface-secondary`, 테두리 1px `border-secondary`, 높이 63(2026-11-24 시안 크기·색으로 변경, 바탕은 11-25 화면 인스턴스 기준) | `p-padding-p6 rounded-r5 bg-surface-secondary ring-1 ring-inset ring-border-secondary`                             |
+| 라디오·글자 간격 10                                                                                                                                           | `gap-s5`                                                                                                           |
+| 제목·설명 간격 2                                                                                                                                              | `gap-s1`                                                                                                           |
+| 제목 Body-3-Semibold(14/21), `text-primary`(2026-11-24 색상·글자 변경)                                                                                        | `typography-body-3-semibold text-text-primary`                                                                     |
+| 설명 Caption-1-Regular, `text-tertiary`                                                                                                                       | `typography-caption-1-regular text-text-tertiary`                                                                  |
+| Control Radio 20                                                                                                                                              | `Radio`(`core/radio`)                                                                                              |
+| 선택·눌림·흐림                                                                                                                                                | 눌림 `overlay-hover`, 흐림은 40%·테두리 없음. 선택은 링 색만 `border-strong-lighter`(`SuggestedBundleCard`와 같음) |
 
 ## 확인할 항목
 
 - 선택 테두리 (제안): 선택 전후 크기가 움직이지 않게 안쪽 `ring`을 썼다.
-- 선택 테두리 대비 (확정, 2026-11-24): `#969AA0`은 흰 카드 위 약 2.8:1로 비텍스트 3:1에 못 미친다. 선택은 라디오 점과 native `checked`로도 전달되고, 같은 테두리를 쓰는 추천 번들 카드처럼 시안 그대로 둔다.
+- 선택 테두리 대비 (확정, 2026-11-24): `#969AA0`은 카드 바탕(`#F5F5F5`) 위 약 2.6:1로 비텍스트 3:1에 못 미친다. 선택은 라디오 점과 native `checked`로도 전달되고, 같은 테두리를 쓰는 추천 번들 카드처럼 시안 그대로 둔다.
 - 이름 (제안): Figma `Radio Card - Description`을 기존 `RadioCard`와 구분해 `DescriptionRadioCard`로 지었다.
 - 초점 표시 (확인): 키보드 초점 테두리는 20px 라디오 원에만 그려진다(`core/radio`). 카드 전체에 그릴지는 Figma 초점 표현을 확인한 뒤 정한다.
-- 크기·글자·색 (반영, 2026-11-24): 「색상 수정된 컴포넌트」 시안의 `Radio Card - Description`(패딩 12·radius 10·제목 Body-3-Semibold·간격 10/2·높이 63, 흰 바탕·`border-secondary` 테두리)에 맞췄다. 이전 구현은 온보딩 `Radio Card`와 같은 여백 16/18·`r4`·Body-2-Medium(15)·간격 14/4·회색 바탕이었다. 번치 프로필 편집 화면 인스턴스(`7916:106325`)는 회색 바탕이지만 컴포넌트 원본을 따른다(2026-11-24 사용자 결정).
+- 크기·글자·색 (반영, 2026-11-24): 「색상 수정된 컴포넌트」 시안의 `Radio Card - Description`(패딩 12·radius 10·제목 Body-3-Semibold·간격 10/2·높이 63, `border-secondary` 테두리)에 맞췄다. 바탕은 2026-11-25 사용자 결정으로 화면 인스턴스의 `surface-secondary`. 이전 구현은 온보딩 `Radio Card`와 같은 여백 16/18·`r4`·Body-2-Medium(15)·간격 14/4·회색 바탕이었다.
 
 ## 검증
 
