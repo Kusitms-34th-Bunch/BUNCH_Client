@@ -30,6 +30,14 @@ describe('DescriptionRadioCard', () => {
     expect(screen.getByRole<HTMLInputElement>('radio', { name: '공개' }).checked).toBe(true);
   });
 
+  it('선택 표시는 회색 링이고 바탕색은 바꾸지 않는다', () => {
+    const { container } = render(<DescriptionRadioCard title="공개" name="visibility" />);
+    const card = container.firstElementChild;
+
+    expect(card?.classList.contains('has-checked:ring-border-strong-lighter')).toBe(true);
+    expect(card?.className).not.toContain('has-checked:bg-');
+  });
+
   it('비활성이면 눌러도 선택되지 않는다', () => {
     render(<DescriptionRadioCard title="공개" name="visibility" value="public" disabled />);
 
@@ -58,11 +66,11 @@ describe('DescriptionRadioCard', () => {
     expect(card.classList.contains('gap-s7')).toBe(true);
   });
 
-  it('제목은 Body-2-Medium text-tertiary, 설명은 Caption-1-Regular이다', () => {
+  it('제목은 Body-2-Medium text-primary, 설명은 Caption-1-Regular이다', () => {
     render(<DescriptionRadioCard name="g" value="a" title="비공개" description="설명" />);
 
     expect(screen.getByText('비공개').classList.contains('typography-body-2-medium')).toBe(true);
-    expect(screen.getByText('비공개').classList.contains('text-text-tertiary')).toBe(true);
+    expect(screen.getByText('비공개').classList.contains('text-text-primary')).toBe(true);
     expect(screen.getByText('설명').classList.contains('typography-caption-1-regular')).toBe(true);
   });
 });
