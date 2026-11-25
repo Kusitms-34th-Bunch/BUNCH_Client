@@ -97,6 +97,8 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       contentInsetAdjustmentBehavior="never"
       // 스크롤은 웹 화면 안쪽 영역(PageShell main)이 맡으므로 문서 전체가 당겨지며 바깥 흰 배경이 드러나지 않게
       bounces={false}
+      // 키보드가 뜰 때 iOS가 문서 전체를 끌어올리지 않게(앱 틀 높이는 웹 KeyboardViewport가 맞춤, 올린 채 남아 헤더까지 못 내려가던 문제 #568)
+      scrollEnabled={false}
       overScrollMode="never"
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
