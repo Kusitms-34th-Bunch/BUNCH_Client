@@ -14,6 +14,7 @@
 - 예시 파일(`*.example`)만 커밋하고 실제 `.env*` 값은 커밋하지 않는다.
 - Next.js의 `NEXT_PUBLIC_*`, Vite의 `VITE_*`, Expo의 `EXPO_PUBLIC_*`는 클라이언트 번들에 노출한다. 비밀값은 이 접두사를 사용하지 않는다.
 - 각 앱의 `build` task는 해당 앱의 `.env*` 변경을 Turbo cache input으로 포함한다.
+- 로컬 web은 개발 백엔드(`API_BASE_URL=https://dev.bunch.kr`, `apps/web/.env.example`)를 본다. 운영 백엔드는 운영 배포(Vercel)에만 둔다(#581). 실시간 연결도 개발 백엔드 주소(`NEXT_PUBLIC_WS_URL`)로 맞춘다.
 
 ## Applications
 

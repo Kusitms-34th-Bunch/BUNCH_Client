@@ -411,6 +411,12 @@ export const appVersionSchema = z
   .strict();
 export type AppVersion = z.infer<typeof appVersionSchema>;
 
+/**
+ * TestFlight 테스터용(staging) 쉘이 WebView User-Agent 끝에 붙이는 표시(#581). 웹이 보면 개발 백엔드·실시간 주소를 씀
+ * 누구나 꾸밀 수 있는 값이라 권한 판단에 쓰지 않음
+ */
+export const STAGING_SHELL_USER_AGENT = 'BunchShell/staging';
+
 /** 화면 사건에 맞춘 햅틱 종류. `success`: 완료 축하(컨페티), `tap`: 가벼운 누름(좋아요·콕하기·피드 끝) */
 export const hapticKindSchema = z.enum(['success', 'tap']);
 export type HapticKind = z.infer<typeof hapticKindSchema>;

@@ -15,7 +15,9 @@ const previewSchema = z.object({ name: z.string().trim().min(1).max(50) });
  */
 export const readInvitationBunchName = async (token: string): Promise<string | null> => {
   try {
-    const body = await createServerApi({ timeoutMs: PREVIEW_TIMEOUT_MS })
+    const body = await (
+      await createServerApi({ timeoutMs: PREVIEW_TIMEOUT_MS })
+    )
       // 재시도하면 대기가 상한(3초)을 넘음
       .get(`api/v1/invitations/${encodeURIComponent(token)}`, { retry: 0 })
       .json();

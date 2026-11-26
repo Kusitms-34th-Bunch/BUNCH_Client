@@ -15,13 +15,13 @@ const readTokenPair = async (response: Promise<unknown>): Promise<TokenPair> =>
   tokenPairSchema.parse(unwrapEnvelope(await response));
 
 /** 소셜 ID 토큰으로 백엔드 로그인. Apple·Kakao는 nonce 필수, Google은 미사용 */
-export const requestLogin = (input: {
+export const requestLogin = async (input: {
   provider: SocialProvider;
   idToken: string;
   nonce?: string | undefined;
 }) =>
   readTokenPair(
-    createServerApi()
+    (await createServerApi())
       .post(`api/v1/auth/${input.provider}/login`, {
         json:
           input.provider === 'google'
@@ -32,12 +32,14 @@ export const requestLogin = (input: {
   );
 
 /** refresh 토큰으로 토큰 쌍 재발급(백엔드가 refresh 토큰을 교체해 이전 토큰은 무효) */
-export const requestReissue = (refreshToken: string) =>
-  readTokenPair(createServerApi().post('api/v1/auth/reissue', { json: { refreshToken } }).json());
+export const requestReissue = async (refreshToken: string) =>
+  readTokenPair(
+    (await createServerApi()).post('api/v1/auth/reissue', { json: { refreshToken } }).json(),
+  );
 
 /** 현재 세션의 refresh 토큰 폐기 */
 export const requestLogout = async (accessToken: string) => {
-  await createServerApi({ accessToken }).post('api/v1/auth/logout');
+  await (await createServerApi({ accessToken })).post('api/v1/auth/logout');
 };
 
 const wsTokenSchema = z.object({
@@ -51,7 +53,9 @@ const wsTokenSchema = z.object({
  */
 export const requestWsToken = async (accessToken: string) =>
   wsTokenSchema.parse(
-    unwrapEnvelope(await createServerApi({ accessToken }).post('api/v1/auth/ws-token').json()),
+    unwrapEnvelope(
+      await (await createServerApi({ accessToken })).post('api/v1/auth/ws-token').json(),
+    ),
   );
 
 const RECENT_REISSUE_MS = 10_000;

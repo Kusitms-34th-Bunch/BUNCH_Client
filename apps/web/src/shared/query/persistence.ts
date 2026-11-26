@@ -1,4 +1,5 @@
 import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
+import { STAGING_SHELL_USER_AGENT } from '@app/bridge';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { type Query, type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
@@ -48,10 +49,18 @@ const keepFirstPages = (client: PersistedClient): PersistedClient => ({
 });
 
 /**
- * 배포(빌드)마다 바뀌는 값. 다르면 저장본을 버려 이전 배포의 데이터 모양이 복원되지 않게 함
- * 가짜 서버 여부도 넣어 가짜 데이터와 실서버 데이터가 섞여 복원되지 않게 함
+ * 저장본을 쓸 수 있는 조건. 다르면 저장본을 복원하지 않고 버림: 배포(빌드), 가짜 서버 여부,
+ * 백엔드 환경(TestFlight 테스터용 쉘은 개발 백엔드, #581). 같은 앱·출처라 저장소를 같이 써서 회원 ID가 겹쳐도 섞이지 않게
  */
-export const PERSIST_BUSTER = `${process.env.NEXT_PUBLIC_APP_BUILD ?? ''}:${process.env.NEXT_PUBLIC_API_MOCKING ?? ''}`;
+export const persistBusterFor = (userAgent: string | undefined) =>
+  `${process.env.NEXT_PUBLIC_APP_BUILD ?? ''}:${process.env.NEXT_PUBLIC_API_MOCKING ?? ''}:${
+    userAgent?.includes(STAGING_SHELL_USER_AGENT) ? 'staging' : ''
+  }`;
+
+/** 이 브라우저의 저장본 조건(서버 렌더에서는 복원하지 않아 쓰이지 않음) */
+export const PERSIST_BUSTER = persistBusterFor(
+  typeof navigator === 'undefined' ? undefined : navigator.userAgent,
+);
 
 // 서버 렌더와 저장소를 쓸 수 없는 환경(사생활 보호 모드 등)은 undefined라 persister가 아무것도 하지 않음
 const readStorage = () => {
