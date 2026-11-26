@@ -202,7 +202,8 @@ export function PhotoBoxScreen({
 
   const { bunch, members } = state.data;
   // 남은 사진을 받는 중이거나 받다 실패했으면 비었다고 단정할 수 없음(선택한 멤버의 사진이 받지 못한 쪽에 있을 수 있음)
-  const isEmpty = sections.length === 0 && undated.length === 0 && state.data.more === undefined;
+  const noVisiblePhotos = sections.length === 0 && undated.length === 0;
+  const isEmpty = noVisiblePhotos && state.data.more === undefined;
 
   let statusMessage = '';
   if (flow.saving) statusMessage = PHOTO_BOX_MESSAGES.saving;
@@ -220,7 +221,8 @@ export function PhotoBoxScreen({
           switcherOpen={switcherOpen}
           selecting={selecting}
           onSelectClick={flow.start}
-          selectDisabled={isEmpty}
+          // 고를 사진이 보이지 않으면 남은 사진을 받는 중·실패여도 비활성(헤더의 「보이는 목록 0장」)
+          selectDisabled={noVisiblePhotos}
           onCancelClick={handleCancel}
         />
       }
