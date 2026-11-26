@@ -63,5 +63,8 @@
     "oxfmt": "0.74.0",
     "turbo": "^2.10.5",
     "typescript": "catalog:"
+  },
+  "resolutions": {
+    "@ssgoi/core@npm:^7.4.1": "patch:@ssgoi/core@npm%3A7.4.1#~/.yarn/patches/@ssgoi-core-npm-7.4.1-4c853c2efc.patch"
   }
 }

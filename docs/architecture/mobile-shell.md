@@ -24,6 +24,7 @@ apps/mobile-shell/
     tab-crossfade/      탭 전환 80ms 크로스페이드·선택 햅틱·탭 바 꾹 누르기 제스처(로컬 Expo 모듈, iOS ObjC)
     screen-switch/      번치 전환 때 화면 전체를 덮는 모션
     tab-long-press/     tab-crossfade가 잡은 꾹 누르기를 JS 이벤트로 넘기고 받을 탭을 정함
+    swipe-back/         WebView 스와이프 뒤로 가기를 웹 전환과 맞춤(시작·취소 알림, 이동 순간 덮개, iOS Swift)
   assets/
     tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
     toast-icons/, fonts/, login-background/   네이티브 토스트 아이콘, 글꼴, 로그인 배경 영상

@@ -32,6 +32,16 @@
 | 앱 쉘에서 고른 사진 줄이기(웹이 직접 자를 원본 전달)                                      | `expo-image-manipulator`                                   | mobile-shell        | `docs/architecture/mobile-shell.md`                      |
 | 브라우저·모바일 hook과 유틸(목록 끝 감지, 키보드 회피, 디바운스, 길게 누르기, ref 합치기) | `react-simplikit`                                          | web·design-system   | 아래 「react-simplikit」                                 |
 
+### 고쳐 쓰는 패키지(`yarn patch`)
+
+| 패키지              | 패치                                                                             | 이유                                                                                                                                                                              |
+| ------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@ssgoi/core` 7.4.1 | `.yarn/patches/@ssgoi-core-npm-7.4.1-*.patch`, 루트 `package.json` `resolutions` | 앱 쉘이 알리는 스와이프 뒤로 가기(`ssgoi:swipe-back` 이벤트)로 전환을 건너뜀(#587, `docs/architecture/motion.md`). 외부에서 다음 전환을 건너뛰게 할 공개 API가 없음(7.5.1도 같음) |
+
+- 패키지를 올리면 패치가 맞지 않을 수 있다. 새 버전에서 고쳐졌는지 먼저 보고, 아니면 `yarn patch <패키지>`로 같은 수정을 다시 만든다.
+- `resolutions`는 의존 범위(`@ssgoi/core@npm:^7.4.1`)에 묶여 있어, `@ssgoi/react`를 올려 범위가 바뀌면 오류 없이 패치가 빠진다. 올린 뒤 `yarn.lock`에 `@ssgoi/core@patch:` 항목이 남았는지 확인한다.
+- ESM `dist/internal.js`와 CJS `dist/internal.cjs`를 모두 고친다. ESM은 `bunch patch` 주석, 한 줄로 압축된 CJS는 `ssgoi:swipe-back`으로 찾는다.
+
 ## 후보 (조건이 생기면 검토)
 
 | 요구                                                      | 후보                                            | 언제 꺼내나                                                                                               | 도입 전 확인                                                                                     |

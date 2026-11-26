@@ -172,6 +172,8 @@ export type AppBridgeMethods = {
   finishScreenSwitch: () => Promise<void>;
   /** 덮은 화면을 모션 없이 치움(전환 실패) */
   cancelScreenSwitch: () => Promise<void>;
+  /** iOS 쉘의 WebView 스와이프 뒤로 가기로 돌아간 화면을 웹이 그렸음. 쉘은 이동 순간 덮어 둔 화면을 걷음(흰 화면 방지, #587). 덮은 게 없으면 아무것도 하지 않고, 이 메서드가 없는 이전 쉘은 웹이 `hasNativeMethod`로 가림 */
+  swipeBackSettled: () => Promise<void>;
   /** 설치된 앱의 버전·빌드 번호(웹이 업데이트 필요 여부를 물을 때 씀). 이 메서드가 없는 이전 쉘(1.1.1 이하)은 웹이 `hasNativeMethod`로 가림 */
   getAppVersion: () => Promise<AppVersion>;
 };
