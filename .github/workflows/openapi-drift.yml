@@ -44,10 +44,23 @@ jobs:
           fi
           # 생성 스크립트는 응답 형식을 검사하지 않으므로 Swagger UI HTML 주소를 먼저 거름
           # 공개 로그에 스펙 서버 주소가 남지 않도록 curl 오류 메시지(호스트 포함)는 버림
-          content_type=$(curl -fsL -o /dev/null -w '%{content_type}' "$OPENAPI_SCHEMA_URL" 2>/dev/null) || {
-            echo "::error::OPENAPI_SCHEMA_URL 요청에 실패했습니다(러너에서 접근 가능한 주소인지 확인)."
-            exit 1
-          }
+          # 실패 원인을 알 수 있게 상태 코드만 남김(401·403이면 인증이 필요한 주소)
+          read -r status content_type < <(curl -sL --connect-timeout 10 --max-time 30 -o /dev/null -w '%{http_code} %{content_type}\n' "$OPENAPI_SCHEMA_URL" 2>/dev/null || echo "000")
+          case "$status" in
+            2??) ;;
+            000)
+              echo "::error::OPENAPI_SCHEMA_URL에 연결하지 못했습니다(러너에서 접근 가능한 주소인지 확인)."
+              exit 1
+              ;;
+            401 | 403)
+              echo "::error::OPENAPI_SCHEMA_URL이 상태 코드 ${status}로 응답합니다. 인증 없이 열리는 스펙 주소(개발 서버 /v3/api-docs)로 바꾸세요."
+              exit 1
+              ;;
+            *)
+              echo "::error::OPENAPI_SCHEMA_URL이 상태 코드 ${status}로 응답합니다."
+              exit 1
+              ;;
+          esac
           case "$content_type" in
             text/html*)
               echo "::error::OPENAPI_SCHEMA_URL이 HTML을 반환합니다. Swagger UI가 아니라 raw schema 주소를 쓰세요."
@@ -177,7 +190,7 @@ jobs:
           {
             echo "## ✨ 주요 변경사항"
             echo ""
-            echo "- 운영 OpenAPI 스펙이 바뀌어 생성 타입(\`${GENERATED_PATH}\`)을 다시 만들었습니다 (${DIFF_LINES})."
+            echo "- 개발 서버 OpenAPI 스펙이 바뀌어 생성 타입(\`${GENERATED_PATH}\`)을 다시 만들었습니다 (${DIFF_LINES})."
             echo ""
             echo "---"
             echo ""
