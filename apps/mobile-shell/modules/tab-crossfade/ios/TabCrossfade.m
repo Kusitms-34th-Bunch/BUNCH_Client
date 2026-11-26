@@ -8,14 +8,11 @@ static const NSTimeInterval kTabCrossfadeDuration = 0.08;
 // 들어오는 탭 WebView가 다시 그려지기를 기다리는 최대 시간. 다시 붙은 WebView는 약 60ms 빈 화면이라 그린 뒤 페이드
 static const NSTimeInterval kWebViewPaintTimeout = 0.15;
 
-// 탭 전환 애니메이션이 끝나는 시각(그동안 다른 탭 선택은 무시, 아래 shouldSelect). 끝 알림이 빠져도 풀리게 상한을 둔 시각으로 저장
-// 전환 중 다른 탭을 누르면 탭 바 선택 표시만 바뀌고 화면은 진행 중인 탭으로 끝나 어긋남(팀 QA, 번치 탭 두 번 누르기 직후 사진함)
-static CFTimeInterval BNTabTransitionUntil = 0;
-// 꾹 누르기가 인식된 뒤 손을 뗄 때까지(그동안 다른 탭 선택은 무시, 아래 shouldSelect). 같은 이유로 상한 시각
+// 꾹 누르기가 인식된 뒤 손을 뗄 때까지(그동안 다른 탭 선택은 무시, 아래 shouldSelect). 상한을 둔 시각으로 저장
 // iOS 26 탭 바는 누른 채 끌어 탭을 고를 수 있어, 전환 시트가 열린 채 다른 탭으로 넘어갔음(#583 시뮬레이터)
 static CFTimeInterval BNTabLongPressUntil = 0;
-// 상한: 전환은 페이드 대기 150ms + 80ms보다 넉넉히, 꾹 누르기는 시트를 연 채 끄는 시간
-static const CFTimeInterval kTabTransitionGuard = 0.5;
+// 상한: 시트를 연 채 끄는 시간(손 뗌 알림이 빠져도 풀리게)
+// 전환 중 다른 탭 선택은 막지 않음: 빠른 연타의 두 번째 누름이 버려졌음(#587 쉘 E2E 02 탭 전환 실패, 막았던 탭 어긋남은 재현되지 않은 방어였음)
 static const CFTimeInterval kTabLongPressGuard = 3;
 
 static WKWebView *BNFindWebView(UIView *view)
@@ -50,7 +47,6 @@ static WKWebView *BNFindWebView(UIView *view)
   UIView *fromView = [context viewForKey:UITransitionContextFromViewKey] ?: fromController.view;
   UIView *toView = [context viewForKey:UITransitionContextToViewKey] ?: toController.view;
 
-  BNTabTransitionUntil = CACurrentMediaTime() + kTabTransitionGuard;
   toView.frame = [context finalFrameForViewController:toController];
   if (fromView.superview == context.containerView) {
     [context.containerView insertSubview:toView belowSubview:fromView];
@@ -73,7 +69,6 @@ static WKWebView *BNFindWebView(UIView *view)
         completion:^(__unused BOOL finished) {
           BOOL cancelled = context.transitionWasCancelled;
           fromView.alpha = 1;
-          BNTabTransitionUntil = 0;
           if (cancelled) {
             [toView removeFromSuperview];
           }
@@ -390,11 +385,11 @@ static void BNInstallTabLongPress(UITabBarController *controller)
       (BOOL (*)(id, SEL, UITabBarController *, UIViewController *))method_getImplementation(shouldSelect);
   method_setImplementation(
       shouldSelect, imp_implementationWithBlock(^BOOL(id controller, UITabBarController *tabBar, UIViewController *target) {
-        // 전환 중·꾹 누르는 중 다른 탭 선택은 무시(탭 바 표시와 화면이 어긋나지 않게). 지금 탭 다시 누름은 그대로
-        // VoiceOver·스위치 제어는 막지 않음(빠른 연타·누른 채 끌기가 없고, 무시되면 알 수 없음)
+        // 꾹 누르는 중 다른 탭 선택은 무시(누른 채 끌어 다른 탭으로 넘어가지 않게). 지금 탭 다시 누름은 그대로
+        // VoiceOver·스위치 제어는 막지 않음(누른 채 끌기가 없고, 무시되면 알 수 없음)
         CFTimeInterval now = CACurrentMediaTime();
         BOOL assistive = UIAccessibilityIsVoiceOverRunning() || UIAccessibilityIsSwitchControlRunning();
-        if (!assistive && (now < BNTabTransitionUntil || now < BNTabLongPressUntil) &&
+        if (!assistive && now < BNTabLongPressUntil &&
             tabBar.selectedViewController != target) {
           return NO;
         }
