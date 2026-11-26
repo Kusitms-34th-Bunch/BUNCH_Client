@@ -414,3 +414,14 @@ describe('PhotoBoxScreen 로딩·오류', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('PhotoBoxScreen 선택 버튼(#583)', () => {
+  it('보이는 사진이 없으면 「선택」을 자리 그대로 비활성으로 두고, 사진이 있으면 켠다', () => {
+    const { unmount } = renderScreen(ready(emptyData));
+    expect(screen.getByRole('button', { name: '선택' })).toHaveProperty('disabled', true);
+    unmount();
+
+    renderScreen();
+    expect(screen.getByRole('button', { name: '선택' })).toHaveProperty('disabled', false);
+  });
+});

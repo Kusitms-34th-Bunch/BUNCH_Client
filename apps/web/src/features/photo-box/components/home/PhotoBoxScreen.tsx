@@ -209,6 +209,8 @@ export function PhotoBoxScreen({
   else if (selecting) statusMessage = PHOTO_BOX_MESSAGES.selectionStatus(selection.length);
   return (
     <PageShell
+      // 사진 격자가 화면을 채워 스크롤바를 그리지 않음(피드와 같음, #583 QA)
+      hideScrollbar
       onRefresh={onRefresh}
       refreshDisabled={selecting || busy}
       header={
@@ -218,6 +220,7 @@ export function PhotoBoxScreen({
           switcherOpen={switcherOpen}
           selecting={selecting}
           onSelectClick={flow.start}
+          selectDisabled={isEmpty}
           onCancelClick={handleCancel}
         />
       }
