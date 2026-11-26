@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stableSignedUrls } from './stableSignedUrls';
+import { forgetSignedUrl, stableSignedUrls } from './stableSignedUrls';
 
 const signed = (path: string, signature: string, { expires = 1800, extra = '' } = {}) =>
   `https://r2.example.com/bunch-dev/photos/${path}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261125T140000Z&X-Amz-Expires=${expires}&X-Amz-Signature=${signature}${extra}`;
@@ -40,5 +40,16 @@ describe('stableSignedUrls', () => {
     stableSignedUrls(signed('e/a.jpg', 'fake', { expires: 999_999_999 }), minutes(0));
     const real = signed('e/a.jpg', 'real');
     expect(stableSignedUrls(real, minutes(1))).toBe(real);
+  });
+
+  it('불러오지 못한 주소를 빼면 유효 시간이 남아도 다음 응답의 새 주소를 쓴다(#587)', () => {
+    const first = signed('e/thumbnail.jpg', 'aaa');
+    stableSignedUrls(first, minutes(0));
+    forgetSignedUrl(signed('e/thumbnail.jpg', 'other'));
+    expect(stableSignedUrls(signed('e/thumbnail.jpg', 'bbb'), minutes(1))).toBe(first);
+
+    forgetSignedUrl(first);
+    const fresh = signed('e/thumbnail.jpg', 'ccc');
+    expect(stableSignedUrls(fresh, minutes(2))).toBe(fresh);
   });
 });
