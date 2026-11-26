@@ -1,6 +1,6 @@
 'use client';
 
-import { Header, LineCloseMediumIcon, toast } from '@app/design-system';
+import { Header, IconButton, LineCloseMediumIcon, toast } from '@app/design-system';
 import { ChipButton, ProfileListItem } from '@app/design-system/web';
 import { useEffect, useRef, useState } from 'react';
 import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
@@ -133,8 +133,8 @@ export function DraftMemberManager({
                     roleLabel={badge ? BUNDLE_MESSAGES.roleLabel[badge] : undefined}
                     action={
                       removable ? (
-                        <button
-                          type="button"
+                        <IconButton
+                          variant="plain"
                           data-member-action={member.id}
                           aria-label={
                             isMe
@@ -167,10 +167,10 @@ export function DraftMemberManager({
                             }
                           }}
                           // 아이콘 20px·누르는 영역 40px(ProfileListItem의 더보기 버튼과 같은 배치)
-                          className="text-icon-primary -m-s5 p-s5 focus-visible:outline-border-brand relative inline-flex shrink-0 cursor-pointer touch-manipulation rounded-full focus-visible:outline-2"
+                          className="text-icon-primary -m-s5 p-s5 before:inset-0"
                         >
                           <LineCloseMediumIcon aria-hidden="true" />
-                        </button>
+                        </IconButton>
                       ) : undefined
                     }
                   />

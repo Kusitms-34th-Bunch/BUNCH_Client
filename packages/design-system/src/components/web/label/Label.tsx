@@ -18,7 +18,7 @@ export const Label = ({ className, children, ...props }: LabelProps) => (
       // 눌림: 선택된 모양(채운 아이콘·진한 글자·불투명)에 overlay-pressed(20%)를 아이콘·글자 위까지 덮어 표시
       'press-scale-large group/label rounded-r4 relative isolate block w-full cursor-pointer touch-manipulation',
       'before:bg-overlay-pressed before:rounded-r4 press-overlay before:z-10',
-      '[&:active:not(:has(input:disabled))]:before:opacity-100',
+      '[&:active:not(:root[data-touch-scrolling]_*,:has(input:disabled))]:before:opacity-100',
       // 비활성(disabled)일 때는 눌러도 눌림 모양 없음
       // 포커스 링은 흐려지는 안쪽 행이 아니라 이 바깥 label에 적용
       'has-[input:focus-visible]:outline-border-brand has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2',
@@ -27,16 +27,16 @@ export const Label = ({ className, children, ...props }: LabelProps) => (
     )}
   >
     <input type="checkbox" className="peer sr-only" {...props} />
-    <span className="bg-surface-secondary rounded-r4 px-padding-p4 py-padding-p5 gap-s3 flex items-center opacity-(--semantic-opacity-disabled) transition-opacity duration-75 ease-out group-has-[input:checked]/label:opacity-100 group-[:active:not(:has(input:disabled))]/label:opacity-100 motion-reduce:transition-none">
+    <span className="bg-surface-secondary rounded-r4 px-padding-p4 py-padding-p5 gap-s3 flex items-center opacity-(--semantic-opacity-disabled) transition-opacity duration-75 ease-out group-has-[input:checked]/label:opacity-100 group-[:active:not(:root[data-touch-scrolling]_*,:has(input:disabled))]/label:opacity-100 motion-reduce:transition-none">
       <LineCircleCheckMediumIcon
         aria-hidden="true"
-        className="text-icon-quaternary [&_path]:fill-surface-disabled shrink-0 group-has-[input:checked]/label:hidden group-[:active:not(:has(input:disabled))]/label:hidden"
+        className="text-icon-quaternary [&_path]:fill-surface-disabled shrink-0 group-has-[input:checked]/label:hidden group-[:active:not(:root[data-touch-scrolling]_*,:has(input:disabled))]/label:hidden"
       />
       <FillCircleCheckMediumIcon
         aria-hidden="true"
-        className="text-surface-inversed-lighter hidden shrink-0 group-has-[input:checked]/label:block group-[:active:not(:has(input:disabled))]/label:block"
+        className="text-surface-inversed-lighter hidden shrink-0 group-has-[input:checked]/label:block group-[:active:not(:root[data-touch-scrolling]_*,:has(input:disabled))]/label:block"
       />
-      <span className="typography-heading-2-semibold text-text-disabled group-[:active:not(:has(input:disabled))]/label:text-text-primary group-has-[input:checked]/label:text-text-primary min-w-0">
+      <span className="typography-heading-2-semibold text-text-disabled group-[:active:not(:root[data-touch-scrolling]_*,:has(input:disabled))]/label:text-text-primary group-has-[input:checked]/label:text-text-primary min-w-0">
         {children}
       </span>
     </span>

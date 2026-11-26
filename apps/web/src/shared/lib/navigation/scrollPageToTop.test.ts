@@ -20,26 +20,34 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-it('350ms 동안 천천히 시작해 맨 위에 멈춘다', () => {
+it('한 화면 거리는 350ms 동안 빠르게 출발해 맨 위에서 천천히 멈춘다', () => {
   reduceMotion(false);
-  const main = mainAt(1000);
+  const main = mainAt(800);
 
   scrollPageToTop();
-  vi.advanceTimersByTime(50);
+  vi.advanceTimersByTime(80);
   const early = main.scrollTop;
-  vi.advanceTimersByTime(400);
+  vi.advanceTimersByTime(200);
+  const late = main.scrollTop;
+  vi.advanceTimersByTime(100);
 
-  expect(early).toBeGreaterThan(900);
+  // 감속 곡선: 앞부분에 많이 움직이고 끝에서는 조금만
+  expect(early).toBeLessThan(600);
+  expect(late).toBeLessThan(40);
   expect(main.scrollTop).toBe(0);
 });
 
-it('두 화면보다 멀면 한 화면 위치로 바로 옮긴 뒤 그만큼만 움직인다', () => {
+it('멀어도 순간 이동 없이 전체 거리를 움직이고, 먼 만큼 길게(최대 650ms) 움직인다', () => {
   reduceMotion(false);
-  const main = mainAt(5000);
+  const main = mainAt(20000);
 
   scrollPageToTop();
-  expect(main.scrollTop).toBe(800);
-  vi.advanceTimersByTime(400);
+  vi.advanceTimersByTime(16);
+  // 예전처럼 한 화면 위치로 바로 옮기지 않음
+  expect(main.scrollTop).toBeGreaterThan(800);
+  vi.advanceTimersByTime(500);
+  expect(main.scrollTop).toBeGreaterThan(0);
+  vi.advanceTimersByTime(200);
   expect(main.scrollTop).toBe(0);
 });
 
@@ -69,7 +77,7 @@ it('동작 줄이기면 바로 맨 위로 간다', () => {
   expect(main.scrollTop).toBe(0);
 });
 
-it('움직이는 중 다시 누르면 앞 움직임을 멈추고 지금 위치에서 다시 350ms 동안 올린다', () => {
+it('움직이는 중 다시 누르면 앞 움직임을 멈추고 지금 위치에서 다시 올린다', () => {
   reduceMotion(false);
   const main = mainAt(1000);
 

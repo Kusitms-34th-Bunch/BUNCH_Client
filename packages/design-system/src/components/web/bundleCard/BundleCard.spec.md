@@ -28,7 +28,7 @@
 
 - 상태는 기본 하나다(Figma에 눌림·선택·비활성 없음).
 - 카드 눌림(Figma 없음): 카드 전체에 `overlay-hover`(10%)를 겹친다(`SuggestedBundleCard`와 같음).
-- 삭제 버튼 눌림(Figma 없음): 원 위에 `overlay-pressed`(20%)를 겹친다.
+- 삭제 버튼 눌림(Figma `8332:57930` 「아이콘 버튼 눌림 효과 · 적용 범위」 B, 2026-11-27): 아이콘이 0.917로 줄고 뒤에 `overlay-hover` 배경 36×36·모서리 8이 깔린다(`press-icon-overlay`). 이전에는 원 위에 `overlay-pressed`(20%)였다.
 - 긴 이름은 한 줄 말줄임. 참여자는 `BundleParticipants`로 앞의 3명 얼굴을 4px씩 겹치고, 넘는 인원은 「외 N명」으로 보인다.
 
 ## 접근성

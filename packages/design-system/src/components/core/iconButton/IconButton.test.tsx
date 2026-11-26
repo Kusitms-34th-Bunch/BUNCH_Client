@@ -80,10 +80,29 @@ describe('IconButton', () => {
 
     expect(classList.contains('before:bg-overlay-hover')).toBe(true);
     expect(classList.contains('active:before:opacity-100')).toBe(true);
-    // 위치·포인터 무시·75ms 전환·동작 줄이기 끔은 공통 덮개 바탕(utilities.css의 press-overlay)이 맡음
+    // 위치·포인터 무시·전환(150ms)·동작 줄이기 끔은 공통 덮개 바탕(utilities.css의 press-overlay)이 맡음
     expect(classList.contains('press-overlay')).toBe(true);
     // 아이콘 위까지 덮음
     expect(classList.contains('before:z-10')).toBe(true);
+  });
+
+  it('plain은 배경·원형 크기 없이 아이콘 눌림(뒤 배경)을 쓰고 비활성을 받는다(Figma 8311:57033)', () => {
+    renderButton({ variant: 'plain', disabled: true });
+    const { classList } = screen.getByRole('button', { name: '다음' });
+
+    expect(classList.contains('press-icon-overlay')).toBe(true);
+    expect(classList.contains('press-scale-small')).toBe(false);
+    expect(classList.contains('size-10')).toBe(false);
+    expect(classList.contains('press-overlay')).toBe(false);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: '다음' }).disabled).toBe(true);
+  });
+
+  it('plain의 fade는 뒤로 가기처럼 배경 없이 아이콘만 흐려진다', () => {
+    renderButton({ variant: 'plain', press: 'fade' });
+    const { classList } = screen.getByRole('button', { name: '다음' });
+
+    expect(classList.contains('press-icon-fade')).toBe(true);
+    expect(classList.contains('press-icon-overlay')).toBe(false);
   });
 
   it('type을 다시 정할 수 있고 className·button 속성이 합쳐진다', () => {

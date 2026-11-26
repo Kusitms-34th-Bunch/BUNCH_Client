@@ -202,6 +202,8 @@ export const photoHandlers = [
       photos: result.page.map((photo) => ({
         photoId: photo.photoId,
         thumbnailUrl: photo.thumbnailUrl,
+        width: photo.width,
+        height: photo.height,
         capturedDate: photo.capturedDate,
         capturedTime: photo.capturedTime,
         uploaderIds: photo.uploaderIds,
@@ -221,6 +223,8 @@ export const photoHandlers = [
       photos: result.page.map((photo) => ({
         photoId: photo.photoId,
         thumbnailUrl: photo.thumbnailUrl,
+        width: photo.width,
+        height: photo.height,
         uploaderIds: photo.uploaderIds,
         usedInDraftBundle: used.has(photo.photoId),
       })),
@@ -445,6 +449,8 @@ export const photoHandlers = [
     return ok({
       photoId: photo.photoId,
       imageUrl: photo.imageUrl,
+      width: photo.width,
+      height: photo.height,
       usedInDraftBundle: draftBundlePhotoIds(bunchId).has(photo.photoId),
       ...(photo.capturedDate ? { capturedDate: photo.capturedDate } : {}),
       uploaders: photo.uploaderIds.flatMap((memberId) => {

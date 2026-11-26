@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import { FillMapPinMediumIcon, LineDotsMediumIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { IconButton } from '../../core/iconButton';
 
 export type LocationCardProps = Omit<ComponentProps<'div'>, 'children' | 'onClick'> & {
   /** 장소 이름(예: 「봄날카페」), 길면 한 줄 말줄임 */
@@ -83,8 +84,9 @@ export const LocationCard = ({
           className={cn(
             'gap-s5 flex min-w-0 flex-1 cursor-pointer touch-manipulation items-start text-left',
             // 누름 영역과 눌림 겹침을 카드 전체로 넓힘(Figma Status2: 검정 10% 겹침)
-            'before:bg-overlay-hover before:rounded-r4 before:absolute before:inset-0 before:-z-10 before:opacity-0',
-            'before:transition-opacity before:duration-75 before:ease-out active:before:opacity-100 motion-reduce:before:transition-none',
+            // 덮개가 카드 전체를 덮어 누름 영역을 넓히므로 포인터를 받음(공통 press-overlay는 받지 않음)
+            'press-overlay before:pointer-events-auto before:bg-overlay-hover before:rounded-r4 before:-z-10',
+            'active:before:opacity-100',
             'focus-visible:before:outline-border-brand focus-visible:outline-none focus-visible:before:outline-2 focus-visible:before:-outline-offset-2',
           )}
         >
@@ -94,20 +96,15 @@ export const LocationCard = ({
         <div className="gap-s5 flex min-w-0 flex-1 items-start">{content}</div>
       )}
       {onMore ? (
-        // 아이콘 20px·누르는 영역 40px, 음수 margin으로 Figma 배치 유지. 카드 버튼 위에 오도록 relative
-        <button
-          type="button"
+        // 아이콘 20px·누르는 영역 40px, 음수 margin으로 Figma 배치 유지. 카드 버튼 위에 오도록 relative(IconButton). 눌림은 아이콘 버튼 공통(Figma 8311:57033)
+        <IconButton
+          variant="plain"
           aria-label={moreLabel ?? `${placeName} 더보기`}
           onClick={onMore}
-          className={cn(
-            'text-icon-quaternary -m-s5 p-s5 relative inline-flex shrink-0 cursor-pointer touch-manipulation rounded-full',
-            'before:bg-overlay-pressed before:inset-s5 before:absolute before:rounded-full before:opacity-0',
-            'before:transition-opacity before:duration-75 before:ease-out active:before:opacity-100 motion-reduce:before:transition-none',
-            'focus-visible:outline-border-brand focus-visible:outline-2',
-          )}
+          className="text-icon-quaternary -m-s5 p-s5 before:inset-0"
         >
           <LineDotsMediumIcon aria-hidden />
-        </button>
+        </IconButton>
       ) : null}
     </div>
   );

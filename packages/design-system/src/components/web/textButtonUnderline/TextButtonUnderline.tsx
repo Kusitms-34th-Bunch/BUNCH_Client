@@ -31,7 +31,7 @@ export const TextButtonUnderline = (props: TextButtonUnderlineProps) => {
     className: cn(
       'rounded-r2 p-padding-p1 relative isolate inline-flex cursor-pointer touch-manipulation items-center justify-center',
       'typography-caption-1-regular text-text-tertiary underline decoration-from-font [text-underline-position:from-font]',
-      'before:rounded-r2 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-[cubic-bezier(0,0,0.58,1)] motion-reduce:before:transition-none',
+      'press-overlay before:rounded-r2 before:bg-overlay-hover before:-z-10',
       // 비활성은 눌림 없이 글자 text-disabled와 전체 40%(Figma Disabled)
       'not-disabled:active:before:opacity-100 disabled:text-text-disabled disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',
       'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',

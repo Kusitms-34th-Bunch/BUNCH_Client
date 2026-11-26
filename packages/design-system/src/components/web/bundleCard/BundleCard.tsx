@@ -51,8 +51,8 @@ export const BundleCard = ({
       className={cn(
         'gap-s3 rounded-r2 relative isolate flex w-full items-stretch',
         // 눌림은 카드 위에 겹쳐 사진·얼굴까지 함께 어두워지게 처리
-        'before:rounded-r2 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-20 before:opacity-0',
-        'has-[[data-card-button]:active]:before:opacity-100',
+        'press-overlay before:rounded-r2 before:bg-overlay-hover before:z-20',
+        'has-[[data-card-button]:active:not(:root[data-touch-scrolling]_*)]:before:opacity-100',
         'has-[[data-card-button]:focus-visible]:outline-border-brand has-[[data-card-button]:focus-visible]:outline-2 has-[[data-card-button]:focus-visible]:outline-offset-2',
         className,
       )}
@@ -85,7 +85,8 @@ export const BundleCard = ({
                 'bg-surface-secondary text-icon-tertiary relative z-10 flex size-6 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full',
                 // 보이는 크기는 24px로 두고 터치 영역만 32px로 넓힘(Small 아이콘 기준)
                 "before:absolute before:-inset-1 before:content-['']",
-                'active:bg-[linear-gradient(var(--color-overlay-pressed),var(--color-overlay-pressed))]',
+                // 단독 아이콘 버튼 눌림: 아이콘 0.917과 뒤 overlay-hover 배경 36×36(Figma 8332:57930 B)
+                'press-icon-overlay',
                 'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
               )}
             >

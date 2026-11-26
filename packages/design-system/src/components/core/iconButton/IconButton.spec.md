@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system (`core`, 어드민도 캘린더를 써서 2026-11-25 #562에서 `web`에서 옮김. 공개 주소 `@app/design-system`)
 - Status: 구현됨(스크린 리더·실기기 검증 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Icon Button`(node `1577:13532`). 변형은 `Variant=Subtle·Outline·Primary` × `state=Default·Pressed` 6개다. `Calendar`의 이전·다음 달 화살표가 이 컴포넌트(Subtle)를 쓴다.
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Icon Button`(node `1577:13532`). 변형은 `Variant=Subtle·Outline·Primary` × `state=Default·Pressed` 6개다. `Calendar`의 이전·다음 달 화살표가 이 컴포넌트(Subtle)를 쓴다. 배경 없는 `plain`은 화면 곳곳의 아이콘 버튼(헤더 뒤로 가기·닫기·더보기, 복사, 지우기, 화살표 등)을 하나로 모은 변형이다(Figma `8311:57033` 「헤더 아이콘 눌림 효과」, 2026-11-26 #583).
 
 ## 목적과 범위
 
@@ -19,7 +19,7 @@
 
 ## Public API
 
-- Props: `aria-label`(필수), `children`(아이콘), `variant`(기본 `subtle`), 그리고 native `<button>`의 속성(`type`은 기본 `button`, `onClick`·`className` 등).
+- Props: `aria-label`(필수), `children`(아이콘), `variant`(기본 `subtle`, `plain`은 배경 없음), `press`(`plain`의 눌림: 기본 `overlay`, 뒤로 가기는 `fade`), 그리고 native `<button>`의 속성(`type`은 기본 `button`, `onClick`·`disabled`·`className` 등).
 - 이벤트: native `onClick`. Controlled / uncontrolled: 해당 없음.
 - 아이콘: Figma는 `Line/Icon-L/*`(Large 24px)를 쓴다. `children`에 `LineChevronRightLargeIcon` 같은 아이콘을 넣고, 장식이라 래퍼(`aria-hidden`) 안에서 숨겨진다.
 - 호출자 소유 책임: 접근성 이름(i18n), 동작.
@@ -30,7 +30,8 @@
 - Subtle: 배경 `surface-primary`, 아이콘 `icon-primary`(`#121212`).
 - Outline: Subtle에 1px `border-tertiary`(`#EAEAEA`) 테두리. 테두리는 40px 안에 포함된다.
 - Primary: 배경 `surface-inversed`(`#25282D`), 아이콘 `icon-inversed`(흰색).
-- Pressed(`:active`): 버튼 안쪽 전체(아이콘 포함)에 `overlay-hover`(검정 10%)를 얹어 어둡게 한다. 75ms ease-out 전환(동작 줄이기에서는 끔). Outline의 테두리는 눌러도 그대로이고 Primary는 `#212428`이 된다.
+- `plain`: 배경·크기가 없어 아이콘 크기를 따른다. 색(`text-icon-*`)과 누르는 범위(`before:-inset-*`, 24px 아이콘이면 `before:-inset-2`로 40px)는 쓰는 곳이 `className`으로 정한다. 누르는 동안 아이콘이 가운데 기준 0.917(24px 기준 2px, `docs/architecture/motion.md`)로 줄고(150ms, `cubic-bezier(0, 0, 0.15, 1)`), `overlay`는 아이콘 뒤에 `overlay-hover` 배경 36×36·모서리 8(`::after`, 레이아웃 영향 없음)을, `fade`는 배경 없이 아이콘 불투명도 60%를 쓴다(`press-icon-overlay`·`press-icon-fade`, `styles/utilities.css`). 누른 채 스크롤·비활성이면 눌림이 없고, 동작 줄이기면 줄지 않고 배경·흐려짐만 바로 바뀐다. 비활성은 40%로 흐린다.
+- Pressed(`:active`, 배경 있는 세 변형): 버튼 안쪽 전체(아이콘 포함)에 `overlay-hover`(검정 10%)를 얹어 어둡게 한다. 75ms ease-out 전환(동작 줄이기에서는 끔). Outline의 테두리는 눌러도 그대로이고 Primary는 `#212428`이 된다.
 - 포커스: 버튼 바깥 2px `border-brand` 윤곽선.
 
 ## 접근성

@@ -114,6 +114,30 @@ describe('DraftPhotoViewer 구성', () => {
     expect(screen.queryByText('경진')).not.toBeInTheDocument();
   });
 
+  it('사진함 원본의 원본 비율로 이미지를 받기 전부터 최종 높이로 그린다(#583)', () => {
+    const { container } = render(
+      <DraftPhotoViewer
+        draft={draftFixture}
+        viewer={creator}
+        actions={actions}
+        initialPhotoId="draft-photo-2"
+        sources={
+          new Map([
+            [
+              'photo-2',
+              { takenAt: '2026-06-05T10:00', uploaderIds: ['seohyeon'], aspectRatio: 0.75 },
+            ],
+          ])
+        }
+        currentYear={2026}
+        onBack={onBack}
+        onPhotoChange={onPhotoChange}
+      />,
+    );
+
+    expect(container.querySelector('[style*="calc(100cqw / 0.75)"]')).not.toBeNull();
+  });
+
   it('사진함 데이터를 받는 동안에도 화면은 보이고 배지와 날짜만 비운다', () => {
     render(
       <DraftPhotoViewer

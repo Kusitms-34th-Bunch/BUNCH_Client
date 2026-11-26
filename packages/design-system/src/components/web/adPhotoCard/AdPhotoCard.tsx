@@ -1,6 +1,7 @@
 import { useId, type ComponentProps } from 'react';
 import { FillCircleCheckLargeIcon, FillMapPinSmallIcon, LineDotsMediumIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { IconButton } from '../../core/iconButton';
 import { ColorBadge } from '../colorBadge';
 import { PlacePickButton } from '../placePickButton';
 import { ProfileImage } from '../profileImage';
@@ -159,14 +160,16 @@ export const AdPhotoCard = (props: AdPhotoCardProps) => {
             className="w-22"
           />
           {/* 아이콘 20px, 누르는 영역은 before로 40px */}
-          <button
-            type="button"
+          <IconButton
+            variant="plain"
+            // 사진 위 아이콘이라 배경 없이 흐려짐(Figma 8332:57930 A)
+            press="fade"
             aria-label={moreLabel ?? `${title} 광고 더보기`}
             onClick={onMore}
-            className="text-icon-inversed focus-visible:outline-border-inversed relative flex shrink-0 cursor-pointer touch-manipulation rounded-full before:absolute before:-inset-2.5 focus-visible:outline-2"
+            className="text-icon-inversed focus-visible:outline-border-inversed before:-inset-2.5"
           >
             <LineDotsMediumIcon aria-hidden />
-          </button>
+          </IconButton>
         </div>
       </div>
       <div className="px-padding-p8 pb-padding-p8 gap-s5 relative mt-auto flex flex-col">

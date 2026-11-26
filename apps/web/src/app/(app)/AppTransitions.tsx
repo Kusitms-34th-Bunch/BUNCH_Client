@@ -120,13 +120,27 @@ const feedBundleHero = hero(
 // 사진함 썸네일 → 사진 상세 hero(Figma에 정의 없음). 들어갈 때는 피드와 같은 곡선을 조금 짧게(550ms는 느리다는 사용자 의견, #568)
 // 돌아갈 때는 부드러운 spring(smooth) 그대로(사용자 확인)
 const PHOTO_HERO_MS = 450;
+// 두 화면을 함께 반투명하게 바꾸면 중간에 사진함이 하얗게 바래 뒤 사진들이 깜빡여 보임(#583)
+// 사진함은 그대로 두고 상세만 위에서 나타나고 사라지게: 들어갈 때 나가는 사진함은 끝까지 거의 그대로(강한 ease-in),
+// 돌아올 때 들어오는 사진함은 처음부터 보이게(강한 ease-out). 사진은 그대로 hero로 이어짐
+const HOLD_UNTIL_END = [1, 0, 1, 0] as const;
+const SHOW_AT_START = [0, 1, 0, 1] as const;
 const tunePhotoHero = ({ animation }: { animation: MultiAnimation<'shared' | 'out' | 'in'> }) => {
   animation.set({ integrator: cubicBezierIntegrator(PHOTO_HERO_MS, [0.3, 0, 0.15, 1]) });
+  animation.select('out').set({ integrator: cubicBezierIntegrator(PHOTO_HERO_MS, HOLD_UNTIL_END) });
+  guardHero({ animation });
+};
+const tunePhotoHeroBack = ({
+  animation,
+}: {
+  animation: MultiAnimation<'shared' | 'out' | 'in'>;
+}) => {
+  animation.select('in').set({ integrator: cubicBezierIntegrator(PHOTO_HERO_MS, SHOW_AT_START) });
   guardHero({ animation });
 };
 const photoHero = hero(
   { type: 'fade', variant: 'smooth' },
-  { override: { forward: tunePhotoHero, backward: guardHero } },
+  { override: { forward: tunePhotoHero, backward: tunePhotoHeroBack } },
 );
 // 피드 말풍선 → 번들 상세(댓글): 눌린 카드가 상세 화면 전체로 열리는 zoom static(뒤 피드는 그대로, 뒤로 가면 카드로 접힘)
 // 상세를 이미 댓글 위치로 내려 두고 열어 사진이 이어지는 hero 대신 씀(motion.md). 나가는 화면은 경계 id로 찾아 다른 전환과 같은 표식

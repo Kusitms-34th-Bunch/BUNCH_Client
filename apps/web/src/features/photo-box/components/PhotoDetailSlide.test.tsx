@@ -57,6 +57,20 @@ describe('PhotoDetailSlide 틀 높이', () => {
     expect(container.querySelector('img[src="/thumb.jpg"]')).toBeNull();
   });
 
+  it('서버가 준 원본 비율이 있으면 이미지를 받기 전부터 그 높이로 그려 원본이 와도 커지지 않는다(#583)', async () => {
+    const withRatio = { ...photo('/thumb-r.jpg'), aspectRatio: 0.75 };
+    const { container, rerender } = render(<PhotoDetailSlide photo={withRatio} {...props} />);
+    expect(frame().style.height).toBe('calc(100cqw / 0.75)');
+    // 정사각형 썸네일을 받아도 틀은 원본 비율 그대로
+    load(screen.getByRole('img', { name: '사진' }), 300, 300);
+    expect(frame().style.height).toBe('calc(100cqw / 0.75)');
+
+    rerender(<PhotoDetailSlide photo={{ ...withRatio, src: '/original-r.jpg' }} {...props} />);
+    load(pending(container, '/original-r.jpg'), 300, 400);
+    await nextFrame();
+    expect(frame().style.height).toBe('calc(100cqw / 0.75)');
+  });
+
   it('썸네일을 받기 전에 원본 주소로 바뀌어도 원본을 다 받으면 원본 비율로 바뀐다', async () => {
     const { container, rerender } = render(
       <PhotoDetailSlide photo={photo('/thumb-2.jpg')} {...props} />,

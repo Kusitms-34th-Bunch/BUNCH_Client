@@ -258,6 +258,9 @@ const photos = (): MockPhoto[] =>
     capturedTime: photo.time,
     thumbnailUrl: `${PHOTO_DIR}/${photo.label}-thumb.webp`,
     imageUrl: `${PHOTO_DIR}/${photo.label}.webp`,
+    // public/mock/photos 원본 크기(모두 3:4 세로)
+    width: 1086,
+    height: 1448,
   }));
 
 // UT 시나리오 시작 데이터(상태 A): 비공개 번치 「여행쥬아」와 멤버 5명, 사진 13장

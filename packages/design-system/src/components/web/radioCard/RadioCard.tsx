@@ -25,7 +25,7 @@ export const RadioCard = ({ className, title, description, ...props }: RadioCard
       className={cn(
         'press-scale-large bg-surface-secondary px-padding-p8 py-s9 gap-s7 rounded-r4 relative isolate flex w-full cursor-pointer touch-manipulation items-center',
         // hover는 카드 위에 겹쳐 라디오 원까지 함께 어두워지게 처리
-        'before:rounded-r4 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-10 before:opacity-0',
+        'press-overlay before:rounded-r4 before:bg-overlay-hover before:z-10',
         // Pressed(2026-11-25): 선택 여부와 관계없이 누르는 동안 overlay-hover
         'hover:not-has-checked:before:opacity-100 active:not-has-disabled:before:opacity-100',
         'has-checked:ring-border-strong has-checked:ring-1 has-checked:ring-inset',

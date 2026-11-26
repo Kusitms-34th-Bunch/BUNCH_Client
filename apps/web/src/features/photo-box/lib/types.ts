@@ -30,6 +30,11 @@ export type PhotoBoxPhoto = {
   /** 작성 중인 번들에 담긴 사진인지. 지우면 그 번들에서도 빠지므로 삭제 확인 창 문구가 달라짐(명세 3.3.5) */
   usedInDraftBundle: boolean;
   status: PhotoStatus;
+  /**
+   * 원본 가로/세로 비율(서버 `width`·`height`, 서버가 EXIF 방향을 적용해 90도 회전이면 가로·세로를 바꿔 저장함)
+   * 상세가 이미지를 받기 전에 최종 크기로 그림(#583). 옛 사진은 없음
+   */
+  aspectRatio?: number | undefined;
 };
 
 /** 지금 사진함을 보는 멤버. 삭제 권한과 확인 창 문구를 정하는 기준 */

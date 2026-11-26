@@ -24,11 +24,12 @@ export const Checkbox = ({ className, style, ...props }: CheckboxProps) => (
     <span
       aria-hidden="true"
       className={cn(
-        'bg-surface-primary border-border-secondary rounded-r2 pointer-events-none size-full border',
+        'bg-surface-primary border-border-secondary rounded-r2 pointer-events-none relative size-full border',
         'peer-checked:bg-surface-inversed-lighter peer-checked:border-surface-inversed-lighter',
-        // 누르는 동안(선택 전): 흰 상자 위에 pressed 겹침, 감싸는 label을 누를 때도 같은 모양
-        'peer-[:active:not(:checked,:disabled)]:bg-[linear-gradient(var(--color-overlay-pressed),var(--color-overlay-pressed))]',
-        '[label:active_.peer:not(:checked,:disabled)~&]:bg-[linear-gradient(var(--color-overlay-pressed),var(--color-overlay-pressed))]',
+        // 누르는 동안(선택 전): 흰 상자 위에 pressed 덮개, 감싸는 label을 누를 때도 같은 모양. 전환은 공통 press-overlay(#583)
+        'press-overlay before:bg-overlay-pressed before:rounded-[inherit]',
+        'peer-[:active:not(:root[data-touch-scrolling]_*,:checked,:disabled)]:before:opacity-100',
+        '[label:active:not(:root[data-touch-scrolling]_*)_.peer:not(:checked,:disabled)~&]:before:opacity-100',
         // 비활성: 회색 상자를 40%로 흐리게(선택 여부와 무관)
         'peer-disabled:bg-icon-disabled peer-disabled:border-border-disabled peer-disabled:opacity-(--semantic-opacity-disabled)',
         'forced-colors:border-[CanvasText] forced-colors:bg-[Canvas] forced-colors:forced-color-adjust-none forced-colors:peer-checked:bg-[CanvasText]',

@@ -6,6 +6,7 @@ import { usePreservedCallback } from 'react-simplikit';
 import { appBridge, isNativeShell, nativeShellTab } from '@/shared/bridge/client';
 import { useNativeToastPresenter } from '@/shared/hooks/native/useNativeToastPresenter';
 import { useModalOpen } from '@/shared/hooks/overlay/useModalOpen';
+import { afterBottomUncovered } from '@/shared/lib/nativeBottomCover';
 
 const subscribeNever = () => () => {};
 
@@ -46,18 +47,27 @@ export function useNativeFloatingButton({
   useEffect(() => {
     if (!inShell) return;
     let current = true;
-    appBridge
-      .setNativeFloatingButton({
-        tab,
-        button: modalOpen || hidden ? null : { icon, label, disabled, expanded },
-      })
-      .then((shown) => {
-        // 지우기 요청의 답은 웹 버튼 여부와 무관. 제한 시간을 넘긴 답(undefined)은 웹 버튼으로
-        if (current && !modalOpen && !hidden) setNative(shown === true);
-      })
-      .catch(() => current && setNative(false));
+    const removing = modalOpen || hidden;
+    const send = () =>
+      appBridge
+        .setNativeFloatingButton({
+          tab,
+          button: removing ? null : { icon, label, disabled, expanded },
+        })
+        .then((shown) => {
+          // 지우기 요청의 답은 웹 버튼 여부와 무관. 제한 시간을 넘긴 답(undefined)은 웹 버튼으로
+          if (current && !removing) setNative(shown === true);
+        })
+        .catch(() => current && setNative(false));
+    // 지우기가 아닌 모든 표시 요청은 닫히는 시트가 아래쪽에서 비켜난 뒤에(탭 바와 같은 판정, 내려가는 시트 위에 먼저 뜨지 않게 #583)
+    // 덮는 것이 없으면 한 프레임 뒤, 최대 1초
+    let cancel = () => {};
+    if (!removing && document.visibilityState === 'visible')
+      cancel = afterBottomUncovered(() => void send());
+    else void send();
     return () => {
       current = false;
+      cancel();
     };
   }, [inShell, tab, icon, label, disabled, expanded, hidden, modalOpen]);
 

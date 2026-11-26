@@ -31,7 +31,7 @@
 ## 상태와 동작
 
 - Default: 흰 바탕, 회색 테두리.
-- Pressed(더보기 버튼): 20px 원형 `overlay-pressed`(20%)가 점 아이콘 위에 겹친다. 75ms 전환(동작 줄이기에서는 끔).
+- Pressed(더보기 버튼): `IconButton plain`의 아이콘 버튼 눌림(아이콘 0.95와 뒤 `overlay-hover` 배경 36×36·모서리 8, Figma `8311:57033`, 2026-11-26 #583). 이전에는 20px 원형 `overlay-pressed`(20%)였다. 줄 전체가 비활성으로 흐려지면 버튼은 한 번 더 흐리지 않는다.
 - Disabled: 행 전체 `opacity-disabled`(40%).
 - 긴 이름은 말줄임, `suffix`·배지·동작은 줄어들지 않는다. 말줄임된 이름은 `title`로 전체를 보여 준다(터치 기기는 호출자가 상세 화면으로 연결).
 

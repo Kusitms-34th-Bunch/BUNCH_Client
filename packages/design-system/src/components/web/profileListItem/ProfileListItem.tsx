@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { LineDotsIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { IconButton } from '../../core/iconButton';
 import { ProfileImage } from '../profileImage';
 import { RoleBadge, type RoleBadgeRole } from '../roleBadge';
 
@@ -75,22 +76,17 @@ export const ProfileListItem = ({
         {action}
       </div>
     ) : onMore ? (
-      // 아이콘 20px·누르는 영역 40px, 음수 margin으로 Figma 배치 유지
-      <button
-        type="button"
+      // 아이콘 20px·누르는 영역 40px, 음수 margin으로 Figma 배치 유지. 눌림은 아이콘 버튼 공통(Figma 8311:57033)
+      <IconButton
+        variant="plain"
         aria-label={moreLabel ?? `${name} 더보기`}
         disabled={disabled}
         onClick={onMore}
-        className={cn(
-          'text-icon-quaternary -m-s5 p-s5 relative inline-flex shrink-0 cursor-pointer touch-manipulation rounded-full',
-          'before:bg-overlay-pressed before:inset-s5 before:absolute before:rounded-full before:opacity-0',
-          'before:transition-opacity before:duration-75 before:ease-out motion-reduce:before:transition-none',
-          'not-disabled:active:before:opacity-100 disabled:cursor-not-allowed',
-          'focus-visible:outline-border-brand focus-visible:outline-2',
-        )}
+        // 줄 전체가 이미 흐려지므로 버튼은 한 번 더 흐리지 않음
+        className="text-icon-quaternary -m-s5 p-s5 before:inset-0 disabled:opacity-100"
       >
         <LineDotsIcon size="md" aria-hidden />
-      </button>
+      </IconButton>
     ) : null}
   </div>
 );

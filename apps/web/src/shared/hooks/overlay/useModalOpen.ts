@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { isNativeShell } from '@/shared/bridge/client';
 
 // 바텀시트·대화상자(Base UI)는 열린 동안만 role이 dialog·alertdialog인 요소를 그림
-// 닫힘 애니메이션 중(data-ending-style)은 닫힌 것으로 봐 시트가 내려가기 시작할 때 네이티브 UI를 바로 다시 보임
+// 닫힘 애니메이션 중(data-ending-style)은 닫힌 것으로 봄. 네이티브 UI를 다시 보이는 시점은 쓰는 곳이 정함(nativeBottomCover)
 const MODAL_SELECTOR =
   '[role="dialog"]:not([data-ending-style]), [role="alertdialog"]:not([data-ending-style])';
 

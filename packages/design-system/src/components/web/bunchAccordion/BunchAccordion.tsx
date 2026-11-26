@@ -94,7 +94,7 @@ export const BunchAccordion = ({
           className={cn(
             'px-padding-p6 py-padding-p5 gap-s3 relative isolate flex w-full cursor-pointer touch-manipulation items-center text-left disabled:cursor-not-allowed',
             // 눌림은 글자 뒤 배경 층에서 겹침 처리
-            'before:bg-overlay-hover before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out enabled:active:before:opacity-100 motion-reduce:before:transition-none',
+            'press-overlay before:bg-overlay-hover before:-z-10 enabled:active:before:opacity-100',
             'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:-outline-offset-2',
           )}
         >

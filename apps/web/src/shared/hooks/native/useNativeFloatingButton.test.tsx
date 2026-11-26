@@ -44,6 +44,37 @@ describe('useNativeFloatingButton', () => {
     expect(setNativeFloatingButton).not.toHaveBeenCalled();
   });
 
+  it('닫히는 시트가 아래쪽을 덮는 동안은 기다렸다가 비켜나면 버튼을 다시 보인다(#583)', () => {
+    const frames: FrameRequestCallback[] = [];
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const runFrames = () => act(() => frames.splice(0).forEach((callback) => callback(0)));
+    const sheet = document.body.appendChild(document.createElement('div'));
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('data-ending-style', '');
+    const rect = vi.spyOn(sheet, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      right: window.innerWidth,
+      top: window.innerHeight * 0.5,
+      bottom: window.innerHeight * 1.5,
+    } as DOMRect);
+
+    renderHook(() => useNativeFloatingButton(options));
+    runFrames();
+    expect(setNativeFloatingButton).not.toHaveBeenCalled();
+
+    sheet.remove();
+    runFrames();
+    expect(setNativeFloatingButton).toHaveBeenLastCalledWith({
+      tab: 'bunch',
+      button: { icon: 'add', label: '번들 만들기' },
+    });
+    rect.mockRestore();
+    raf.mockRestore();
+  });
+
   it('쉘이 그리면 웹 버튼을 숨기고, 떠날 때 그 탭의 버튼을 지운다', async () => {
     const { result, unmount } = renderHook(() => useNativeFloatingButton(options));
     // 답을 받기 전에는 두 버튼이 겹치지 않게 숨김
