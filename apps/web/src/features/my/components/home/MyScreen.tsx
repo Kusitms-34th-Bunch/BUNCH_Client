@@ -89,7 +89,7 @@ export function MyScreen({ profile, contactUrl, profileLoading = false, onLogout
         ) : (
           <Link
             href={MY_PATHS.profile}
-            className="px-padding-p8 py-padding-p5 gap-s5 before:bg-overlay-hover focus-visible:outline-border-brand relative isolate flex touch-manipulation items-center before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 active:before:opacity-100 motion-reduce:before:transition-none"
+            className="press-overlay px-padding-p8 py-padding-p5 gap-s5 before:bg-overlay-hover focus-visible:outline-border-brand relative isolate flex touch-manipulation items-center before:-z-10 focus-visible:outline-2 focus-visible:-outline-offset-2 active:before:opacity-100"
           >
             <ProfileImage
               src={profile.imageSrc ?? DEFAULT_PROFILE_IMAGE}

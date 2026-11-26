@@ -23,9 +23,9 @@ export const InviteMemberCard = ({
   <button
     type="button"
     className={cn(
-      'gap-s8 p-s10 rounded-r7 bg-surface-secondary flex w-full cursor-pointer touch-manipulation items-start text-left',
-      // 눌림 표시는 배경 layer로 겹침
-      'active:bg-[linear-gradient(var(--color-overlay-hover),var(--color-overlay-hover))]',
+      'gap-s8 p-s10 rounded-r7 bg-surface-secondary relative isolate flex w-full cursor-pointer touch-manipulation items-start text-left',
+      // 눌림 표시는 글자 뒤 덮개로 겹침, 전환은 공통 press-overlay(#583)
+      'press-overlay before:rounded-r7 before:bg-overlay-hover before:-z-10 active:before:opacity-100',
       'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
       className,
     )}

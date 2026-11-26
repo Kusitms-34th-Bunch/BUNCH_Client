@@ -168,7 +168,7 @@ describe('ChipButton', () => {
 });
 
 describe('ChipButton 모션', () => {
-  it('색과 오버레이는 Dissolve·Ease out·300ms로 바뀌고 누르는 동안 0.95로 줄어든다', () => {
+  it('색과 오버레이는 Dissolve·Ease out·300ms로 바뀌고 누르는 동안 줄어든다(press-scale-small)', () => {
     render(<ChipButton>칩</ChipButton>);
     const { classList } = screen.getByRole('button');
     expect(classList.contains('press-scale-small')).toBe(true);

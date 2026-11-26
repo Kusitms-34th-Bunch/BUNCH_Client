@@ -42,12 +42,12 @@ export const UploadOptionCard = ({
       className={cn(
         // Figma 높이 82px은 토큰에 없어 기본 scale 20.5 적용
         'press-scale-large group/option bg-surface-secondary px-s7 gap-s5 rounded-r4 relative isolate flex min-h-20.5 w-full cursor-pointer touch-manipulation items-center text-left',
-        'before:rounded-r4 before:bg-overlay-hover before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out active:before:opacity-100 motion-reduce:before:transition-none',
+        'press-overlay before:rounded-r4 before:bg-overlay-hover before:-z-10 active:before:opacity-100',
         'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
         className,
       )}
     >
-      <span className="bg-surface-primary p-s5 before:bg-overlay-hover relative isolate flex shrink-0 rounded-full before:absolute before:inset-0 before:-z-10 before:rounded-full before:opacity-0 before:transition-opacity before:duration-75 before:ease-out group-active/option:before:opacity-100 motion-reduce:before:transition-none">
+      <span className="press-overlay bg-surface-primary p-s5 before:bg-overlay-hover relative isolate flex shrink-0 rounded-full before:-z-10 before:rounded-full group-active/option:before:opacity-100">
         <Icon className="text-icon-primary" />
       </span>
       <span className="gap-s1 flex min-w-0 flex-1 flex-col wrap-break-word break-keep">
